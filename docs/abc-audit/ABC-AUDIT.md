@@ -6,7 +6,7 @@ This is the master index for checking the simulator's ABC analog pages against t
 
 ## Current status
 
-- Overall ABC audit: **Not yet independently verified in this documentation task**
+- Overall ABC audit: **In progress — 1 of 54 pages started (ABC-005, partial)**. Version evidence and results: `docs/versions/v1.20.21/`.
 - Golden Reference source set: present in `document-references/`; individual expected behaviors still require traceable verification.
 - Simulator corrections: none made by this documentation task.
 - Release status: no release authorized.
@@ -69,8 +69,12 @@ Do not create empty version folders. Use the app's verified version, not a versi
 
 ## Findings summary
 
-No independently verified ABC defects are recorded here yet. Add only evidence-backed findings and link the relevant version report or source reference. Do not copy entire diagrams, spreadsheets, or PDFs into this document.
+| ID | Page | Summary | Status |
+|---|---|---|---|
+| F-1 | ABC-005 | DENSITY CORRECTION ÷ is drawn B/A; simulator computes A/B | Confirmed in simulator; fix not approved |
+
+Details: [v1.20.21 findings](../versions/v1.20.21/FINDINGS.md). Do not copy entire diagrams, spreadsheets, or PDFs into this document.
 
 ## Next step
 
-Inspect Claude's current C&E Golden output and align it with this method before making duplicate records. Audit one ABC page at a time. This document organizes the work; it does not itself certify that the logic or simulator is correct.
+Finish ABC-005 (control/trip logic, address cross-checks), then ABC-004A. Audit one ABC page at a time. This document organizes the work; it does not itself certify that the logic or simulator is correct.
