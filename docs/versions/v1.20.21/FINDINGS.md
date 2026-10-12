@@ -330,3 +330,11 @@ The two sheets have the same cascade: outlet temperature PID (TICBR1140 / TICMS1
 - Result: PA 50 % and SA 50 % give SI0187 = 50 and SI0188 = SI0189 = 50 (before: 0).
 - **Please verify** (V-17, general): after a BU-CMD pulse (for example 13 % at fan start, M.020E) the MV falls back to the operator manual value (0) when the pulse ends. The manual station (COS) does not track the back-up value. If the plant keeps the MV at the pulsed value, the tracking of the manual station needs a decision.
 
+## Batch 16 — ABC-026 and ABC-027 (furnace temperature (1) and (2))
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-026 | 01 | Structure: nine TT-FG1091-A ~ I (0 ~ 1200 °C) with SIG.AB / ALM; per TT two T (1:b): bad → 0 for the count (A = 1) and 0 for the temperature; top SUM of the nine counts + SI0120 (from ABC-027) → LLIM 1 → SI0100; bottom SUM of the nine temperatures + DI0000 (from ABC-027) ÷ SI0100 → SI0101 → 30 s lag → SI0102; M.3333 > 980, M.3334 > 950, M.3335 < 820, M.3331 / M.2501 < 150 °C | as listed | same | Pass |
+| ABC-026 | 02 | All TT 900 → average 900, count 9; TT A bad → count 8, sum 7200, average 900 | as drawn | as drawn | Pass |
+| ABC-027 | 01 / 02 | Same structure with TT-FG1090-A ~ I; outputs SI0120 (count) and DI0000 (sum) go to ABC-026 (linked after stepping: ABC-026 n41, n43 follow ABC-027); M.2504 > 700 and M.2505 > 450 on SI0122; all 500 → 500 (after the lag, 368 at 40 s); all 800 → 797, M.2504 = M.2505 = 1 | as drawn | as drawn | Pass |
+
