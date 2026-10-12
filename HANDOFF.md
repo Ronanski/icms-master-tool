@@ -37,12 +37,17 @@ ABC analog logic audit using a Cause & Effect / Golden Reference approach. User 
 
 - Batch scan of all 54 sheets done (read-only, automated): PID/MAN/SUMA parameters vs the workbook, and 176 AI tags vs the I/O list. Almost everything matches; open items are F-2, F-3, N-5 in `FINDINGS.md`. Audit now proceeds in batches, not page by page.
 
+## Corrections applied (user-approved, analog reader only; details and verification in `docs/versions/v1.20.21/FINDINGS.md`)
+- F-1: stacked B-over-A fraction on the ÷ block (ABC-005 density correction).
+- F-4: unlabeled ÷ block uses the through-line pin as dividend (ABC-032).
+- F-3: AI range text searched at 70 units when none found and no feedback model (ABC-008 AI0481).
+- Only `logic-sim-v1.20.21.html` changed (6 insertions, 2 deletions in `anCompile` / `anInit`). The `.apk` and `.exe` are NOT rebuilt (the user handles them) and no release was made. The user decides about the version number.
+
 ## Next actions
-1. **F-1 fix is approved by the user but NOT applied:** the environment's permission system blocked editing `logic-sim-v1.20.21.html`. Needed: the user either grants the edit permission or applies the patch described in `FINDINGS.md` ("F-1 fix status"). After applying, re-scan all 15 ÷ blocks (only ABC-005 block 21 should change) and re-run ABC-005-04.
-2. User decisions: F-2 (which file is the later readout for CUT/DH, unused by the sim), N-5 (why HIC-MWRL is overridden).
-3. Next batch: ABC-004A (source of SI0144, N-1/N-3), the 6 ÷ blocks not readable automatically (ABC-008, 000, 027, 032, 002 x2), F-3 (AI0481), then the remaining logic checks per page (digital logic, transfer blocks, tracking) automated the same way as ABC-005-05..09.
-4. Do not alter simulation logic beyond approved items, and no release unless approved.
+1. Open items needing the user only if they want them closed: F-2 (CUT/DH swapped between sim data and workbook; unused by sim), N-5 (why HIC-MWRL MV limits are overridden in code).
+2. Next audit batch: ABC-004A (source of SI0144 → N-1/N-3: magnitudes of the ABC-005 chain), then per-page logic checks (digital logic, transfer blocks, tracking) for the other pages, automated the same way as ABC-005-05..09.
+3. No release without GO STABLE / GO BETA.
 
 ## Current task status
-**Done:** ABC-005 traced, 11 tests run; batch parameter and tag scan over all sheets; findings documented. apk/exe testing is done by the user, not by Claude.
-**Not done:** F-1 fix (blocked), remaining per-page logic checks, ABC-005 PID auto dynamics/SUMA integration/ALM, any build or release.
+**Done:** ABC-005 traced and tested (11 tests); batch scan of all 54 sheets (parameters, AI tags, dividers, health); 3 corrections applied and verified; documents updated.
+**Not done:** per-page logic checks for the other pages, ABC-005 PID auto dynamics / SUMA integration / ALM limits, N-1 magnitudes, rebuilds and release.

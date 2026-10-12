@@ -1421,7 +1421,11 @@ function anCompile(S){
      break}
    case 'DIV':{const s=ins.slice().sort(posOrder);let num=null,den=null;const lt=near(b.cx,b.cy,30,t=>/(?:^|=)\s*[ab]\s*\/\s*[ab]\b/i.test(t.t.trim()))[0];
      if(lt){const m=lt.t.trim().toLowerCase().match(/(?:^|=)\s*([ab])\s*\/\s*([ab])\b/);num=s.find(p=>(p.lab||'').toLowerCase()===m[1]);den=s.find(p=>(p.lab||'').toLowerCase()===m[2])}
-     if(!num||!den){const la=s.find(p=>(p.lab||'').toLowerCase()==='a'),lb=s.find(p=>(p.lab||'').toLowerCase()==='b');if(la&&lb&&la!==lb){num=la;den=lb}else{num=s[0];den=s[1]}}b.nu=num?num.n:-1;b.de=den?den.n:-1;b.i=[b.nu,b.de].filter(x=>x>=0);break}
+     else{/* stacked fraction drawn as two texts (A over B, or B over A): the upper letter is the numerator; the pin letters are the other A/B texts, matched to the pin by the side of the box they sit on */
+      const ft=S.tx.filter(q=>/^[AB]$/.test(q.t.trim())&&Math.hypot(q.x-b.cx,q.y-b.cy)<40);let top=null,low=null;for(const u of ft)for(const w of ft)if(u!==w&&Math.abs(u.x-w.x)<2.5&&u.y-w.y>3&&u.y-w.y<12){top=u;low=w}
+      if(top&&low&&top.t.trim()!==low.t.trim()){const pl={};for(const q of ft){if(q===top||q===low)continue;const dx=q.x-b.cx,dy=q.y-b.cy;pl[Math.abs(dx)>Math.abs(dy)?(dx>0?'R':'L'):(dy>0?'T':'B')]=q.t.trim().toLowerCase()}
+       const byL=l=>s.find(p=>((p.lab||'').toLowerCase()||pl[p.side])===l);num=byL(top.t.trim().toLowerCase());den=byL(low.t.trim().toLowerCase())}}
+     if(!num||!den){const la=s.find(p=>(p.lab||'').toLowerCase()==='a'),lb=s.find(p=>(p.lab||'').toLowerCase()==='b');if(la&&lb&&la!==lb){num=la;den=lb}else{/* unlabeled: the dividend is the through-line pin (opposite side to the output), the divisor is the side input */const op=b.pins.find(p=>p.role==='out'),opp=op&&({T:'B',B:'T',L:'R',R:'L'})[op.side],na=s.filter(p=>p.side===opp);if(!lt&&s.length===2&&na.length===1){num=na[0];den=s.find(p=>p!==num)}else{num=s[0];den=s[1]}}}b.nu=num?num.n:-1;b.de=den?den.n:-1;b.i=[b.nu,b.de].filter(x=>x>=0);break}
    case 'PID':case 'PIDV':{const s=ins.slice().sort(posOrder);b.in0=s[0]?s[0].n:-1;b.i=s.map(p=>p.n);
      const at=near(b.cx,b.cy,40,t=>/^ACT\s*:\s*[RN]/i.test(t.t.trim()))[0];P.act=at&&/R/i.test(at.t.trim().split(':')[1]||'')?-1:1;
      {const rg=near(b.cx,b.cy,50,t=>/-?\d+(?:\.\d+)?\s*~\s*-?\d+(?:\.\d+)?/.test(t.t.trim()))[0];if(rg&&P.span==null){const m=/(-?\d+(?:\.\d+)?)\s*~\s*(-?\d+(?:\.\d+)?)\s*([A-Za-z%\/°0-9²³]*)/.exec(rg.t.trim());if(m&&Math.abs(+m[2]-+m[1])>0){P.rlo=+m[1];P.rhi=+m[2];P.unit=m[3]||'';P.span=Math.abs(+m[2]-+m[1])}}}
@@ -1522,7 +1526,7 @@ function anCompile(S){
  return S}
 function anInit(S){anDefaults(S);const N=S.nets.length,rt=S.rt={v:new Float64Array(N),t:0,ext:{},st:{},force:{},k:0,stp:new Int32Array(N),acc:new Float64Array(N)};
  for(const b of S.blk){const s=rt.st[b.id]={};
-  if(b.k==='AI'){const r=anRange(S,b,45);b.rng=r;s.val=r?r.lo:0}
+  if(b.k==='AI'){let r=anRange(S,b,45);if(!r&&!b.fb)r=anRange(S,b,70);/* range text a little further from the box (ABC-008 AI0481, 0 ~ 1200 rpm) */b.rng=r;s.val=r?r.lo:0}
   if(b.k==='MAN'){s.val=Math.max(b.p.lo,Math.min(b.p.hi,0));s.trk=null}
   if(b.k==='PID'||b.k==='PIDV'){s.I=0;s.out=0;s.trk=null}
   if(b.k==='SIGAB'){s.val=0}

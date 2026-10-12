@@ -71,7 +71,11 @@ Do not create empty version folders. Use the app's verified version, not a versi
 
 | ID | Page | Summary | Status |
 |---|---|---|---|
-| F-1 | ABC-005 | DENSITY CORRECTION ÷ is drawn B/A; simulator computes A/B | Confirmed in simulator; fix not approved |
+| F-1 | ABC-005 | DENSITY CORRECTION ÷ is drawn B/A; simulator computed A/B | Fixed, verified |
+| F-3 | ABC-008 | AI0481 (0–1200 rpm) had no range | Fixed, verified |
+| F-4 | ABC-032 | Unlabeled ÷ computed constant ÷ signal | Fixed, verified |
+| F-2 | all PID | CUT / DH values swapped between sim data and workbook (not used by sim) | Needs Verification |
+| N-5 | ABC-001B | HIC-MWRL MV limits overridden in code | Needs Verification |
 
 Details: [v1.20.21 findings](../versions/v1.20.21/FINDINGS.md). Do not copy entire diagrams, spreadsheets, or PDFs into this document.
 
