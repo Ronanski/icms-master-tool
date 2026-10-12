@@ -99,6 +99,7 @@ Run once over every sheet instead of page by page. Sources: `summary-of-pid-pidv
 12. `anCompile`, before the LINK drivers are made (ABC-007 only): the controller PV tags and the PV wire of the house-load subtraction are linked to the flow signals. → F-13.
 13. `anDefaults` (ABC-002 only): COAL CALORIE BASE constant 4450 → 0.445 (unit of the diesel calorie curve LN1). → F-14.
 14. `anFXIn`: a table whose X unit is just "RANGE" with X range 0 ~ 100 is a percent table (input scaled from the source range). → F-15.
+15. `anDefaults` (ABC-008 only): a number written on the wire into a divider is a constant; `anFXIn`: a divider by such a constant is a plain average (percent in, percent out), not a ratio. → F-16.
 
 Verification after the changes (same headless method):
 - All 15 ÷ blocks compared before / after: exactly 2 changed (ABC-005 #21, ABC-032 #26). ABC-001B #8 (formula "T = B / A * 100 / 60") was briefly affected during development and is unchanged in the final patch.
@@ -314,4 +315,18 @@ The two sheets have the same cascade: outlet temperature PID (TICBR1140 / TICMS1
 - Work done: a table whose X unit is only "RANGE" and whose X range is 0 ~ 100 is treated as a percent table. Only LN23 and LN24 of ABC-057 are affected (scan of all F(X) tables).
 - Result: bias MV 0 gives SI0170 = 0 (was −10); SI0230 at MW 150 is 15 (was 5); lower bias +5 adds 5 to SI0250 ~ SI0260.
 - Note (cosmetic, not changed): in the Analog view the wire of connector ③ (SI0178) also carries the text "S3 SI0171" near the top of each SUM; the values are correct (SI0250 = F(X) + SI0178 + SI0171 checked).
+
+## Batch 15 — ABC-008 (furnace pressure control)
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-008 | 01 | Structure: three PT (−600 ~ 600 mmH2O) with SIG.AB / ALM → AVERAGE select SI0180; M.3107 > 30, M.3108 < −50; PID PICFG108 (H/C control) and PICFG108A (damper control), both ACT:N; feed-forward: (PA MV × M.3302 + SA MV × M.3303) ÷ 2 → SI0187 → LN50 / LN51 → SI0188 / SI0189 (OMV); A/M T M.0205 / M.0204; BU-CMD T M.020D (H/C): M.020E (fan start, 13 %) / M.020F (fan stop, 0 %); S/R M.0202 hydraulic control selected (TPS M.0200 AND M.0207, reset TPS M.0201); LN13 H/C demand → damper demand; M.0207 = |PICFG108A.MV − SI0181| < 1 % | as listed | same after F-16 | Pass after F-16 |
+| ABC-008 | 02 | PA and SA MV 50 / 50, both fans running: SI0187 = 50, SI0188 = SI0189 = 50; M.0205 = OR(NOT ID fan running, M.0206 H/C MV < 14 %, NOT M.0202, three SIG.AB bad); M.0204; M.0202 set by M.0200 pulse; fan start pulse 2 s → MV 13 %; fan stop pulse → 0 % | as drawn | as drawn | Pass |
+
+### F-16 — ABC-008 feed-forward divider had no divisor and the table input was multiplied by 100 (Confirmed, fixed)
+- Problem: the divider after the PA / SA flow demand sum has "2" written on its input wire (average of the two demands). The simulator did not read a bare number as a constant, so the divisor was 0 and the feed-forward SI0187 was 0. Once the divisor was in place the divider was taken for a ratio, so its percent output was multiplied by 100 before LN50 / LN51.
+- Basis: drawing (the "2" on the divider input; SI0187 feeds LN50 / LN51, both 0 ~ 100 % identity tables, title "PA & SA flow ctl demand").
+- Work done: the number on the wire becomes the constant; a divider by a constant is a plain average. ABC-008 only (scan of all unfed analog inputs: no other sheet has this case).
+- Result: PA 50 % and SA 50 % give SI0187 = 50 and SI0188 = SI0189 = 50 (before: 0).
+- **Please verify** (V-17, general): after a BU-CMD pulse (for example 13 % at fan start, M.020E) the MV falls back to the operator manual value (0) when the pulse ends. The manual station (COS) does not track the back-up value. If the plant keeps the MV at the pulsed value, the tracking of the manual station needs a decision.
 
