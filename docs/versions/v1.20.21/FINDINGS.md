@@ -96,6 +96,7 @@ Run once over every sheet instead of page by page. Sources: `summary-of-pid-pidv
 9. `anDefaults` (ABC-011, ABC-012) plus an output multiplier `og` on AMT/SW: the outlet temperature PID output net carries °C. → F-10.
 10. `anCompile`, constants: a stacked fraction (numerator above denominator) next to an "A" box is read as a ratio; with a SCALE CONVERT label it is x 1. → F-11.
 11. `anCompile`, same-tag merge: an unsourced signal written at two places no longer links the two ends to each other (the input stays settable). → F-12.
+12. `anCompile`, before the LINK drivers are made (ABC-007 only): the controller PV tags and the PV wire of the house-load subtraction are linked to the flow signals. → F-13.
 
 Verification after the changes (same headless method):
 - All 15 ÷ blocks compared before / after: exactly 2 changed (ABC-005 #21, ABC-032 #26). ABC-001B #8 (formula "T = B / A * 100 / 60") was briefly affected during development and is unchanged in the final patch.
@@ -267,4 +268,18 @@ The two sheets have the same cascade: outlet temperature PID (TICBR1140 / TICMS1
 ### F-12 — M.3400 (feeder A running, from DITL 19-37) could not be set on ABC-004A (Confirmed, fixed)
 - Problem: M.3400 is written at two places on the sheet. The simulator linked each end to the other, so neither end was an input and feeder A could never be "running" in the analog page (M.0142, M.014E, SI0114, M.0141 stayed at their stopped values).
 - Work done: when the merged signal has no driver, the chain is followed back to its root, which stays an input. All 54 sheets compared before / after: only ABC-004A changed (M.3400 is now an input).
+
+## Batch 12 — ABC-007 (PA / SA air flow control)
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-007 | 01 | Structure (PA left, SA right): demand SI0045 / SI0044 → RAMPB 0.05 %/s bumpless (LOC bypass) → SV; PID FICFA1071 (0~648 T/H) / FICFA1081 (0~432 T/H), ACT:R, deviation SV − PV; fault hold T; A/M T (M.0180 / M.0190); BU-CMD T M.0181 (AND M.253F damper > 50 %, M.0182 MFT pulse 5 s) with RB-MV 50 %; house load: M.018D = AND(house op, NOT REM, LOC, NOT MAN), SI0169 / SI0179 (T of PV or 230 / 245 T/H, 0.5 T/s) written to the SV; ABS(230 / 245 − PV) ≤ 3 T/H (M.018E / M.019E) with TPS 2 s; PA flow < 220 (M.3130) and < 200 T/H TON 5 s (M.3131) | as listed | same after F-13 | Pass after F-13 |
+| ABC-007 | 02 | M.0178 = OR(MFT pulse, both furnace pressure controls in manual, any fuel flow SIG.AB); M.0188 = OR(M.0178, PA fan inlet temp / flow SIG.AB, NOT PA fan running); M.0198 = OR(M.0178, NOT SA fan running, FA blower temp pair, FA blower flow, SA fan temp / flow SIG.AB); M.0180 = OR(M.0098, M.018F, M.0188); M.0190 = OR(M.0098, M.0198, M.019F) — each input tried one by one | as drawn (PA fan inputs do not reach the SA side) | as drawn | Pass |
+| ABC-007 | 03 | Numeric: ramp 0.324 T/H/s (0.05 % of 648) and 0.216 T/H/s; house load ramp 0.5 T/s from 300 towards 230; low flow flags; band ± 3 T/H (233.0 true, 233.1 false) | as listed | same | Pass |
+
+### F-13 — PV tags on ABC-007 were not tied to the flow signal (Confirmed, fixed)
+- Problem: the controller PV tags FICFA1071.PV / FICFA1081.PV (house-load switch, set-point transfer) and the PV wire of the "230 / 245 T/H − PV" subtraction were separate inputs, not the flow signal FIFA1071.PV / FIFA1081.PV that feeds the PID. M.018E / M.019E (|house load setting − PV| ≤ 3 T/H) could never become true from the process, and the house-load set point switch used a PV that nothing drove.
+- Basis: the drawing labels the wire "PAF INLET AIR FLOW CONTROL PV FICFA1071.PV" and the controller PV is the flow (PA FLOW FIFA1071.PV, PAF 006).
+- Work done: the two tags and the unlabeled subtraction inputs are linked to the flow signals (ABC-007 only).
+- Result: PV 230 gives n(230 − PV) = 0 and M.018E = 1; PV 233.1 gives 0.
 

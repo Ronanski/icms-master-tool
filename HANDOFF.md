@@ -17,12 +17,13 @@ ABC analog logic audit (Cause & Effect / Golden Reference method of `docs/abc-au
 `README.md` overview · `PROJECT_RULES.md` rules and source order · this file · `docs/abc-audit/ABC-AUDIT.md` method, summary and findings index · `docs/versions/v1.20.21/` (`FINDINGS.md` evidence, `PROGRESS.md` per-sheet status, `UPDATE_REPORT.md`).
 
 ## Audit status
-- Traced and tested: ABC-005 (mostly), ABC-028, ABC-054, ABC-017, ABC-001B, ABC-056, ABC-033, ABC-013, ABC-055, ABC-014, ABC-029, ABC-004B, ABC-004C, ABC-035 to ABC-039, ABC-053, ABC-019, ABC-030, ABC-031, ABC-051, ABC-003E, ABC-011, ABC-012, ABC-004A; structure only: ABC-001A, ABC-034; partly: ABC-006, ABC-032, ABC-008. All 89 F(X) curves checked against the workbook. Details in `PROGRESS.md`.
+- Traced and tested: ABC-005 (mostly), ABC-028, ABC-054, ABC-017, ABC-001B, ABC-056, ABC-033, ABC-013, ABC-055, ABC-014, ABC-029, ABC-004B, ABC-004C, ABC-035 to ABC-039, ABC-053, ABC-019, ABC-030, ABC-031, ABC-051, ABC-003E, ABC-011, ABC-012, ABC-004A, ABC-007; structure only: ABC-001A, ABC-034; partly: ABC-006, ABC-032, ABC-008. All 89 F(X) curves checked against the workbook. Details in `PROGRESS.md`.
 - Batch scan of all 54 sheets: 140 controller blocks vs the parameter workbook, 176 AI tags vs the I/O list, 15 dividers, 222 comparators, simulator Health. Everything matches except the items below.
 - Fixed and verified (user approved, evidence in `FINDINGS.md`): F-1 divider B/A (ABC-005), F-3 AI0481 range (ABC-008), F-4 unlabeled divider order (ABC-032), F-5 HIC-MWRL limits (ABC-001B), F-6 comparator set points (ABC-001A), F-7 SCALE CONVERT constants are x1 in real values (16 constants on 9 sheets; basis: the ranges printed on the drawings, e.g. 648 + 432 + 35 = 1115 T/H on ABC-006).
 - F-9: ABC-003E oil master % to burner T/H (x 3.5/100), burner ramp 5 %/min, SET X% 0.105 T/H; user to verify PTN004029 / label names (V-13).
 - F-10: ABC-011 / 012 cascade set point % to °C (x 6); check the same pattern on ABC-004A and ABC-009A (V-14).
 - F-11 stacked fraction constants (ABC-004A 1/3, ABC-009A 1/4, ABC-003A SCALE CONVERT 35/140 x 1), F-12 ABC-004A M.3400 input. ABC-009A 1/4 to be checked on its audit (V-15).
+- F-13 ABC-007 PV tags tied to the flow signal. ABC-007 n87 / n100 ("PICFG108 / PICFG108A in manual" from ABC-008) show no cross-page link: check on ABC-008.
 - Closed: F-2 (PID CUT/DH swapped; simulator does not use them).
 - F-8: ABC-005 limestone chain now shows real values (feeder speed 46.95 % for S 3 %, CaCO3 60 %, coal 81 T/H); user to verify the constant 13 vs 1.3.
 - Open: **N-1** ABC-001B RATE LIMIT time input (T = B/A·100/60) is still of order 1e5–1e7. N-2, N-4 (ABC-005 constant 13 vs 1.3, SI0337 label position; N-3 SI0144 source resolved: sum of the three feeder flows, assumed 7.32 T/H in the app) and AB0114–0116 not found in any list (Cannot Verify). "%" set points are compared as literal numbers against engineering-unit values.

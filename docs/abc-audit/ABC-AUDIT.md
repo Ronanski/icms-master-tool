@@ -87,6 +87,7 @@ Do not create empty version folders. Use the app's verified version, not a versi
 | F-10 | ABC-011, 012 | Outlet temperature PID output (% of 0~600 °C) used as °C set point | Fixed, verified; user to verify V-14 |
 | F-11 | ABC-004A, 009A, 003A | Stacked fraction constants (1/3, 1/4, SCALE CONVERT 35/140) read as the first number | Fixed, verified |
 | F-12 | ABC-004A | M.3400 input linked to itself, could not be set | Fixed, verified |
+| F-13 | ABC-007 | Controller PV tags / house-load subtraction input not tied to the flow signal | Fixed, verified |
 | N-1 | ABC-001B | RATE LIMIT time input T = B/A·100/60 still 1e5–1e7 | Needs Verification |
 
 Details: [v1.20.21 findings](../versions/v1.20.21/FINDINGS.md). Do not copy entire diagrams, spreadsheets, or PDFs into this document.

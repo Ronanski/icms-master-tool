@@ -1524,6 +1524,10 @@ function anCompile(S){
    let master=src>=0?src:g.find(n=>!S.drv[n].length&&S.cns[n].length);if(master==null||master<0)continue;
    {/* a master that is itself the end of a connector link: go back to the root of that chain (otherwise two ends of one signal feed each other and the input can not be set) */let gd=0,lk;while(gd++<20&&(lk=S.link.find(x=>x[0]===master)))master=lk[1]}
    for(const n of g){if(n===master||S.drv[n].length||nets[n].dig!==nets[master].dig||S.link.some(x=>x[0]===n))continue;S.link.push([n,master])}}}
+ if(S.name==='ABC-007'){/* the controller PV tags FICFA1071.PV / FICFA1081.PV (and the unlabeled PV wire of the house-load subtraction) are the flow signals FIFA1071.PV / FIFA1081.PV that feed the PID */
+  const lb=t=>{let r=-1;S.lab.forEach((l,n)=>{if(r<0&&l&&l.t===t&&nets[n].segs.length)r=n});return r};
+  for(const[al,pv]of[['FICFA1071.PV','FIFA1071.PV'],['FICFA1081.PV','FIFA1081.PV']]){const x=lb(al),y=lb(pv);if(x>=0&&y>=0&&x!==y&&!S.drv[x].length&&!S.link.some(q=>q[0]===x))S.link.push([x,y])}
+  for(const b of blk)if(b.k==='SUB'&&b.i.length===2){const cn=b.i.find(n=>S.drv[n].some(d=>d.k==='CONST')),o=b.i.find(n=>n!==cn);if(cn!=null&&o!=null&&!S.drv[o].length&&!S.link.some(q=>q[0]===o)){const v=S.drv[cn].find(d=>d.k==='CONST').p.val,y=v===230?lb('FIFA1071.PV'):v===245?lb('FIFA1081.PV'):-1;if(y>=0&&y!==o)S.link.push([o,y])}}}
  S.link.forEach(([dst,srcN])=>{/* make the destination net driven */S.drv[dst].push({k:'LINK',id:-1,o:[dst],i:[srcN]})});
  /* order: dependencies first, back edges ignored (a loop reads the value of the previous step) */
  const ord=[],st=new Map();const vis=b=>{if(st.get(b)===2)return;if(st.get(b)===1)return;st.set(b,1);for(const n of b.i)for(const d of S.drv[n])if(d!==b)vis(d);st.set(b,2);ord.push(b)};
