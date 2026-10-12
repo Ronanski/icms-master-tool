@@ -105,6 +105,7 @@ Run once over every sheet instead of page by page. Sources: `summary-of-pid-pidv
 18. `anCompile`, case LAG: the analog signal is the first input, a digital enable ("1 : ENABLED") after it. Engine, case MAN: the set point input is the one driven by the B/T (auto / manual) selector, not always the third. `anDefaults` (ABC-001C only): boiler master in percent of 0 ~ 120 T/H. → F-20, F-21.
 19. `anDefaults` (ABC-009A / 009B) plus engine hooks `ag` (gain on the A input of a B/T selector) and `ia` per input of a SW: bottom ash screw coolers in rpm. → F-22.
 20. `anDefaults`: set points written in % of a range now in the signal's unit ("% MCR (y T/H)" in ABC-001C and ABC-006; 18.7 % of 65 T/H on ABC-003A ~ D; 5 % of 1242 mm on ABC-010). `anCompile`, SIGAB: when the tag is written in the middle of a wire (no wire end inside the text), the wire with that label carries the flag. → F-23, F-24.
+21. `anDefaults` (ABC-001B only): the SCALE CONVERT 10 / 200 constant that feeds the rate limit time is 0.05 (F-7 exception). → F-25.
 
 Verification after the changes (same headless method):
 - All 15 ÷ blocks compared before / after: exactly 2 changed (ABC-005 #21, ABC-032 #26). ABC-001B #8 (formula "T = B / A * 100 / 60") was briefly affected during development and is unchanged in the final patch.
@@ -443,4 +444,18 @@ ABC-003B / C / D are the same drawing as ABC-003A with their own tags (B / C / D
 - Problem: the FA blower temperature select used the inputs "FA BLOWER-A / B OUTLET AIR TEMP. SIG.AB B.0733 / B.074B (from ABC-006)". The simulator took them for free inputs, so the select never reacted to the SIG.AB state of the two temperature transmitters.
 - Work done: a SIG.AB tag written in the middle of a wire (no wire end inside the text) now uses the wire with that label. Other sheets where the same pattern existed now have the flag driven by the SIG.AB box instead of a free input (ABC-003A ~ D, 004B / C, 010, 017, 019, 028 ~ 035 and so on, 29 sheets; the flag value is the SIG.AB state, as in the drawing). All earlier scenarios of those sheets give the same results before and after.
 - Result: A running and A temperature bad → TT-B; A stopped and B temperature bad → TT-A (as drawn).
+
+## Batch 23 — ABC-032, ABC-034 (numeric) and ABC-001B (N-1 closed)
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-032 | 01 / 02 | Structure: FT-CD1120 (0 ~ 400 T/H) and FT-CD1121 (0 ~ 200 T/H) with square root, SUMA; FICCD1120 (ACT:R) and FICCD1121 (ACT:N); SV of the polisher flow = flow 1120 × 400/200 ÷ 2 with the motor valve open I.0255 (else 0), ramp 1 %/s; A/M by SIG.AB B.0974 / B.0975; BU-CMD M.0220 = OR(B.0974, NOT I.0255) → 100 %; valve outputs 100 % − MV | as listed | same: flow 300 T/H gives SV 150 T/H; ramp 2 T/H per second (1 % of 200); valve closed gives 0; SIG.AB bad gives MV 100 | Pass |
+| ABC-034 | 01 / 02 | Structure: steam seal valve (LN18) + HP turbine warming valve (LN19) summed (SI0246) × LN20 of the ramped (1 %/min of 600 °C) aux steam header temperature, × 0.8, LN21 → OMV SI0248; PID TICAS1017 (ACT:N, 0 ~ 300 °C) with the OMV sum; A/M by SIG.AB B.1086 | as listed | same; ramp 6 °C/min | Pass |
+| ABC-001B | 01 / 02 | Rate limit of the unit load demand: T = B / A × 100 / 60 (B = 10000, A = HIC-MWRL × 10/200), bypass with the turbine master in manual; HIC-MWRL limits 0.1 ~ 3 MW/min (workbook) | HIC-MWRL 3 MW/min → the unit load demand changes 3 MW per minute | 3.0 MW per minute after F-25 (before: 60 MW per minute, 20 times too fast) | Pass after F-25 |
+
+### F-25 — ABC-001B rate limit of the unit load demand was 20 times too fast; N-1 closed (Confirmed, fixed)
+- Problem: the rate limit time T = B / A × 100 / 60 uses A = HIC-MWRL × "10 / 200" (SCALE CONVERT). Since F-7 the constant was 1, so T was 20 times too small and the demand ramped at 1 MW/s with the setting at 3 MW/min (should be 0.05 MW/s). This was the open note N-1 (T of order 1e5 ~ 1e7 before the unit scaling).
+- Basis: with the ratio kept (0.05) the existing rate formula gives exactly the MW/min of the setting: 3 MW/min → T = 111111 → 0.05 MW/s. This is the only SCALE CONVERT that must keep its ratio, because it sets a time constant, not a signal range.
+- Work done: ABC-001B constant 10 / 200 = 0.05.
+- Result: HIC-MWRL 3 MW/min: SI0212 rises 3.0 MW in 60 s.
 

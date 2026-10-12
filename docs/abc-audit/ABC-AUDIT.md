@@ -99,7 +99,7 @@ Do not create empty version folders. Use the app's verified version, not a versi
 | F-22 | ABC-009A, 009B | Bottom ash screw cooler loop mixed rpm and % | Fixed, verified; user to verify V-20 |
 | F-23 | ABC-001C, 006, 003A ~ D, 010 | "% MCR" / "%" set points compared with T/H or mm signals | Fixed, verified |
 | F-24 | ABC-006 (and 28 sheets) | SIG.AB tag written mid-wire not tied to the SIG.AB box | Fixed, verified |
-| N-1 | ABC-001B | RATE LIMIT time input T = B/A·100/60 still 1e5–1e7 | Needs Verification |
+| F-25 | ABC-001B | Rate limit of the unit load demand 20 times too fast (SCALE CONVERT 10 / 200 taken as 1); closes N-1 | Fixed, verified |
 
 Details: [v1.20.21 findings](../versions/v1.20.21/FINDINGS.md). Do not copy entire diagrams, spreadsheets, or PDFs into this document.
 

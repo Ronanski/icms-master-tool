@@ -31,6 +31,8 @@ Legend: Done = structure traced against the drawing and scenarios run; Batch = a
 | ABC-003E | Done | Pass; F-9 fixed (units and ramp), V-13 to verify |
 | ABC-003A, B, C, D | Done | Pass after F-19 (selector label) |
 | ABC-020, ABC-050, ABC-052, ABC-015, ABC-016 | Done | Pass |
+| ABC-032, ABC-034 | Done | Pass |
+| ABC-001B | Done | Pass after F-25 (rate limit, N-1 closed) |
 | ABC-006 | Done | Pass after F-23, F-24 |
 | ABC-009A, ABC-009B | Done | Pass after F-22 (rpm / %), V-20 to verify |
 | ABC-001A | Done | Pass (numeric) |
