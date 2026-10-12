@@ -205,3 +205,10 @@ Scenario method: inputs written to external nets or forced, SIG.AB states set, s
 | ABC-030 | 02 | Temperature / pressure S/R hold and reset; turbine trip; both PT bad | as drawn | as drawn (trip: AO0580 = 30 %) | Pass |
 | ABC-031 | 01 | Structure: hot well LT with dumping loop (LICCD1110B: M.0165 = AND(NOT MFT, NOT B.1008), TPS 2 s M.0166, EX-CMD, SI0282 = T(0 / 100 %, M.0164), M.0164 = S/R 150 / 50 mm) and make-up loop (LICCD1110A); M.3211 < −300; three deaerator LT with AVERAGE → SI0202, flags > 300, > 200, < −500, < −2174; LICCD1104 with M.0160 = AND of the three SIG.AB; 100 − MV | as listed | same | Pass |
 | ABC-031 | 02 | S/R 150 / 50; M.3211; averages and four level flags; M.0160 only when all three SIG.AB are bad | as drawn | as drawn | Pass |
+
+## Batch 8 — ABC-051 (HP turbine bypass steam spray water temperature control)
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-051 | 01 | Structure: two TT with SIG.AB, SELECT → SI0160; saturation temperature from LN10 (SI0172); SV chain (SI0171 = 220, 300 when I.0418 = 1); trip I.0400 selects 1.0 / 0.5 (T "1:b" / "1:a"); M.071E → TPS 2 s → M.070A → M.0715, M.0174; M.0707 → M.0716 pulse; M.0702 → M.0174; M.012C → SI0177 = 100 | as listed | same | Pass |
+| ABC-051 | 02 | Average 510; saturation at 40 kg/cm² = 280.64; trip on / off; M.071E 2 s pulse; both TT bad; TT 210 vs saturation 213.86 | SI0172 280.64; trip on: n16 = 1, SI0178 66.4, SI0176 300; trip off: n16 = 0.5; M.071E: M.0715 = 1, M.0174 = 1, SI0177 = 0; both bad: M.0715 = 1; 210 < 213.86: M.0717 = 1 | same | Pass |
