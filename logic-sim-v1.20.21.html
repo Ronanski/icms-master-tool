@@ -1341,6 +1341,7 @@ function anDefaults(S){
   fx(19,13,1.3*100/27,'LIMESTONE DENSITY BASE : 1.3, feeder speed % to T/H (27 T/H = 100 %): 1.3 x 100 / 27')}
  for(const b of S.blk){/* a set point written as "x % MCR ( y T/H )": the signal is in T/H, the set point is y */
   if((b.k==='HC'||b.k==='LC'||b.k==='HLC')&&b.p&&typeof b.p.u==='string'){const m=/MCR\s*\(\s*([\d.]+)\s*T\/H\s*\)/i.exec(b.p.u);if(m){b.p.sp=+m[1];b.p.u='T/H';b.note='set point '+m[1]+' T/H (drawing: % MCR with the T/H value in brackets)'}}}
+ if(S.name==='ABC-001A'){for(const b of S.blk)if(b.k==='HC'&&b.p&&b.p.sp===0.1&&b.p.u==='%'){b.p.sp=0.2;b.p.u='MW';b.note='> 0.1 % of the 0.0 ~ 200.0 MW range = 0.2 MW (deviation block output compared in MW)'}}
  if(S.name==='ABC-006'){for(const b of S.blk)if(b.k==='LC'&&b.p&&b.p.sp===25&&/MCR/.test(b.p.u||'')){b.p.sp=151.5;b.p.u='T/H';b.note='25 % MCR = 151.5 T/H (drawing: TOTAL AIR FLOW < 25% MCR (151.5 T/H); 100% MCR = 606 T/H)'}}
  if(/^ABC-003[A-D]$/.test(S.name)){for(const b of S.blk)if(b.k==='LC'&&b.p&&b.p.sp===18.7&&b.p.u==='%'){b.p.sp=18.7*65/100;b.p.u='T/H';b.note='18.7 % of the 0 ~ 65 T/H SA flow range = 12.155 T/H'}}
  if(S.name==='ABC-010'){for(const b of S.blk)if(b.k==='HC'&&b.p&&b.p.sp===5&&b.p.u==='%'){b.p.sp=5*12.42;b.p.u='mm';b.note='5 % of the -422 ~ 820 mm level range = 62.1 mm (drum level (1) / (3) deviation)'}}
@@ -1440,6 +1441,7 @@ function anCompile(S){
      const lp=ins.filter(isCtl);let dg=lp.length?lp:ins.filter(p=>nets[p.n].dig);if(lp.length&&b.k==='AMT'){const ex=ins.filter(p=>!lp.includes(p)&&!isAB(p)&&nets[p.n].dig);if(ex.length&&ins.length-lp.length-ex.length>=1){const m0=/^\d\s*:\s*(\S+)/.exec(lp[0].lab||'');for(const q of ex)q.lab=m0&&/^a$/i.test(m0[1])?'1:B':'1:A';dg=[...lp,...ex];b.dig2=ex.length}}
      if(!dg.length){const c=ins.filter(p=>!isAB(p));if(c.length===1&&ins.length>=3){const q=c[0];if(!q.lab){let bt=null,bd=26;for(const t of tcand){const d=Math.hypot(t.x-q.x,t.y-q.y);if(d<bd){bd=d;bt=t}}if(bt)q.lab=bt.t.trim()}dg=[q]}}
      const an=ins.filter(p=>!dg.includes(p)).sort(posOrder);for(const q of dg)nets[q.n].dig=true;
+     if(b.k==='AMT'||b.k==='SW')b.buCmd=TX.some(q=>/^\s*BU-CMD\s*$/.test(q.t)&&Math.hypot(q.x-b.cx,q.y-b.cy)<70);
      if(b.k==='SW'&&dg.length===1&&!dg[0].lab){/* the condition label (1:a) sits beside a diagonal selector wire, away from the pin */const lt=TX.filter(t=>/^\s*1\s*:\s*[aAbB]\s*$/.test(t.t)&&Math.hypot(t.x-b.cx,t.y-b.cy)<40).sort((x,y)=>Math.hypot(x.x-b.cx,x.y-b.cy)-Math.hypot(y.x-b.cx,y.y-b.cy))[0];if(lt)dg[0].lab=lt.t.trim()}
      b.sel=dg[0]?dg[0].n:-1;const sl=dg[0]&&dg[0].lab||'';const m=sl.match(/^\d\s*:\s*(\S+)/);P.selA=!!((m&&/^a$/i.test(m[1]))||(yn&&!m));
      b.cs=dg.map(q=>{const mm=(q.lab||'').match(/^\d\s*:\s*(\S+)/);return{n:q.n,A:!!((mm&&/^a$/i.test(mm[1]))||(yn&&!mm))}});
@@ -1575,7 +1577,7 @@ function anCompile(S){
  {const devPV=d=>{let r=null;const ins=d.pins.filter(q=>q.role==='in');for(const t of TX.filter(q=>/^(PV|SV)$/i.test(q.t.trim())&&anD(q.x,q.y,d.cx,d.cy)<=30)){const p=ins.slice().sort((a,c)=>anD(a.x,a.y,t.x,t.y)-anD(c.x,c.y,t.x,t.y))[0],ip=p&&d.ip&&d.ip.find(x=>x.n===p.n);if(ip){if(/^PV$/i.test(t.t.trim()))r=ip.sg;else if(r==null)r=-ip.sg}}return r};
   for(const b of S.blk)if(b.k==='DCMP'&&b.dc&&b.i&&b.i.length){const dv=(S.drv[b.i[0]]||[]).find(q=>q.k==='DEV'),sg=dv?devPV(dv):null;for(const d of b.dc){const m=/^(PV|SV)\s*-\s*(PV|SV)/i.exec(d.txt||'');if(!m)continue;d.neg=/^PV$/i.test(m[1])!==(sg!==null&&sg>0)}}}
  /* tracking providers: block whose output net feeds the A input of a selector */
- for(const b of blk)if((b.k==='SW'||b.k==='AMT')&&b.a>=0)b.trkFrom=S.drv[b.a].filter(d=>d.k==='PID'||d.k==='PIDV'||d.k==='MAN');
+ for(const b of blk)if((b.k==='SW'||b.k==='AMT')&&b.a>=0){b.trkFrom=S.drv[b.a].filter(d=>d.k==='PID'||d.k==='PIDV'||d.k==='MAN');b.upA=S.drv[b.a].filter(d=>d.k==='AMT'&&d.id!==b.id)}
  return S}
 function anInit(S){anDefaults(S);const N=S.nets.length,rt=S.rt={v:new Float64Array(N),t:0,ext:{},st:{},force:{},k:0,stp:new Int32Array(N),acc:new Float64Array(N)};
  for(const b of S.blk){const s=rt.st[b.id]={};
@@ -1738,7 +1740,11 @@ function anStep(S,dt){const rt=S.rt,v=rt.v,nets=S.nets,B=x=>x>.5?1:0;rt.t+=dt;rt
      const n=pickB?b.b:b.a;if(n>=0){y=rd(n);if(pickB&&b.bg!=null)y*=b.bg;if(!pickB&&b.ag!=null)y*=b.ag;if(b.ia&&b.ia[n])y=y*b.ia[n][0]+b.ia[n][1]}else y=(s.hold!=null?s.hold:0);if(!pickB||b.b>=0)s.hold=y;s.y=y;
      const other=pickB?b.a:b.b;
      /* bumpless tracking: the PID / MAN that feeds the unselected A input follows the output */
-     if(b.trkFrom)for(const d of b.trkFrom){const ds=rt.st[d.id];if(ds)ds.trk=pickB?y:null}
+     /* interlock tracking (legend: "INTERLOCK TRACKING FOR PID CONTROLLER & MANUAL CONTROL STATION"): a back-up value selected by a downstream selector is also tracked by the upstream A/M selector, its PID and its COS manual value */
+     const bu=s.bu;
+     if(b.trkFrom)for(const d of b.trkFrom){const ds=rt.st[d.id];if(ds)ds.trk=bu!=null?bu:(pickB?y:null)}
+     if(b.upA)for(const u of b.upA){const us=rt.st[u.id];if(us)us.bu=bu!=null?bu:((pickB&&b.buCmd)?y:null)}
+     if(bu!=null&&b.b>=0&&S.ext&&S.ext.includes(b.b)&&/B\s*\/\s*T/.test((b.txt||[]).join('/'))&&s.bw!==bu){s.bw=bu;rt.ext[b.b]=b.bg!=null?bu/b.bg:bu}
      out(b.og!=null?y*b.og:y);break}
    case 'ADD':case 'SUM':case 'DEV':case 'SUB':{let y=0;for(const q of b.ip){let x=rd(q.n);if(q.ia)x=x*q.ia[0]+q.ia[1];y+=q.sg*x}out(y);break}
    case 'MUL':{let y=1;b.i.forEach((n,j)=>{y*=rd(n)/((b.nrm&&b.nrm[j])||1)});if(b.gain!=null)y*=b.gain;out(b.i.length?y:0);break}

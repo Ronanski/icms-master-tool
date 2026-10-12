@@ -459,3 +459,18 @@ ABC-003B / C / D are the same drawing as ABC-003A with their own tags (B / C / D
 - Work done: ABC-001B constant 10 / 200 = 0.05.
 - Result: HIC-MWRL 3 MW/min: SI0212 rises 3.0 MW in 60 s.
 
+
+## Batch 24 — user answers (phone form) and two corrections
+
+User answers: V-1 keep 1.3 (the printed 13 is a percent-style representation); V-13 5 %/min in both directions is right; V-18 the flow AI values are already real flow (square root done in the DCS), so the SQRT blocks are intentionally passed as identity and the compensation stays linear (also settles V-19 compensation).
+
+### F-26 — Interlock tracking (BU-CMD) was not applied through the auto / manual selector to the PID and the COS manual value (Confirmed, fixed)
+- Basis: the analog legend (ABC-000) defines the BU-CMD diamond as "INTERLOCK TRACKING FOR PID CONTROLLER & MANUAL CONTROL STATION", next to "AUTO/MANUAL SWITCH FOR PID CONTROLLER & MANUAL CONTROL STATION". The back-up value (RB-MV side) therefore must be tracked by the PID and by the manual station behind the A/M selector.
+- Problem: only a PID / MAN wired directly to the A input of the BU-CMD selector tracked. Where an A/M selector (B/T, COS manual value on B) sits between the PID and the BU-CMD selector (ABC-008, ABC-017, ABC-033 and others), the MV returned to the operator manual value as soon as the BU-CMD pulse ended (ABC-008 fan start: 13 % then 0 %).
+- Work done: a BU-CMD selector (label BU-CMD within 70 units of the diamond) passes its selected value back to the upstream A/M selector; that selector makes its PID track it and writes it as the COS manual value (once per pulse). Other selectors are unchanged.
+- Result: ABC-008 fan start: MV 13 % and it stays 13 % after the pulse (before: 0 after 3 s); ABC-017 I.024E: MV 0 % stays (before: 30); ABC-033 demand < 2 %: MV 0 % stays (before: 30). Regression over 112 stored scenarios: 14 scenario files differ, all at values after a BU-CMD pulse (ABC-003A, 003E, 004A, 008, 010, 011, 014, 017, 033, 056); other sheets identical.
+- Note: ABC-014 shows the back-up value (25) already at start-up because the blowers are stopped at start.
+
+### F-27 — ABC-001A "> 0.1 %" comparators M.2004 / M.2006 (Confirmed, fixed)
+- Basis: the deviation block output is compared as a percent of the 0.0 ~ 200.0 MW range printed on the setters (same principle as F-23): 0.1 % of 200 MW = 0.2 MW.
+- Work done: set point 0.2 MW on both comparators (ABC-001A only).
