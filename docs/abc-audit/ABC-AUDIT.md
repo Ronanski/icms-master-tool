@@ -96,6 +96,7 @@ Do not create empty version folders. Use the app's verified version, not a versi
 | F-19 | ABC-003A ~ D, 008, 020 | SW with its "1:a" label beside a diagonal wire selected b | Fixed, verified |
 | F-20 | ABC-001C, 020 (and the two-input MAN of 001A / 001B / 009A / 009B) | LAG enable taken as the signal; MAN did not follow its auto set point | Fixed, verified |
 | F-21 | ABC-001C | Boiler master chain mixed % and T/H | Fixed, verified; user to verify V-19 |
+| F-22 | ABC-009A, 009B | Bottom ash screw cooler loop mixed rpm and % | Fixed, verified; user to verify V-20 |
 | N-1 | ABC-001B | RATE LIMIT time input T = B/A·100/60 still 1e5–1e7 | Needs Verification |
 
 Details: [v1.20.21 findings](../versions/v1.20.21/FINDINGS.md). Do not copy entire diagrams, spreadsheets, or PDFs into this document.

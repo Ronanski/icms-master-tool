@@ -103,6 +103,7 @@ Run once over every sheet instead of page by page. Sources: `summary-of-pid-pidv
 16. `anDefaults` (ABC-010 only) plus engine hooks: an affine `ia` on one input of ADD / SUM / DEV / SUB and `oa` on the output of DIV: drum level compensation in percent, master MV % to T/H. → F-17, F-18.
 17. `anCompile`, case SW: when the selector pin has no "1:a / 1:b" label, the nearest condition label within 40 units gives the selected input (diagonal selector wires). → F-19.
 18. `anCompile`, case LAG: the analog signal is the first input, a digital enable ("1 : ENABLED") after it. Engine, case MAN: the set point input is the one driven by the B/T (auto / manual) selector, not always the third. `anDefaults` (ABC-001C only): boiler master in percent of 0 ~ 120 T/H. → F-20, F-21.
+19. `anDefaults` (ABC-009A / 009B) plus engine hooks `ag` (gain on the A input of a B/T selector) and `ia` per input of a SW: bottom ash screw coolers in rpm. → F-22.
 
 Verification after the changes (same headless method):
 - All 15 ÷ blocks compared before / after: exactly 2 changed (ABC-005 #21, ABC-032 #26). ABC-001B #8 (formula "T = B / A * 100 / 60") was briefly affected during development and is unchanged in the final patch.
@@ -409,4 +410,19 @@ ABC-003B / C / D are the same drawing as ABC-003A with their own tags (B / C / D
 - Work done (ABC-001C only): SI0213 = HIC-BM.MV × 1.2 (100 % = 120 T/H); SI0201 is converted to % (× 100 / 120) where it is added to PIC-COBM.MV; the RB-MV of the pressure controller in % (× 100 / 120); the constant −0.42 becomes −0.5 T/H; the 18 %/Hr rate becomes 21.6 T/H per hour.
 - Result: load demand 150 MW with PIC MV −25 %: HIC-BM 42.5 % and SI0213 51 T/H (before: HIC-BM stuck at 0, SI0201 = 82 with +1 offset).
 - **Please verify** (V-19): (a) 100 % of HIC-BM = 120 T/H (basis above); (b) steam flow compensation (SI0230, SI0228 / SI0229 are applied to the flow linearly and the square root block passes the value): about 4 % higher at 130 kg/cm2 and 540 °C than a compensation under the square root. Same question as V-18, not changed.
+
+## Batch 21 — ABC-009A, ABC-009B (furnace differential pressure control, A/B/C and D bottom ash screw coolers) and ABC-001A (numeric)
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-009A | 01 | Structure: two DPT (0 ~ 2500 mmH2O) → SI0190; furnace pressure PID DPICFG108 (ACT:N) with A/M (coal feeder flow SIG.AB / running pairs, PIC-BASC.MAN) and BU-CMD (M.0211, M.0212); screw cooler PID PIC-BASC (ACT:R, 0 ~ 100 %): SV = DPICFG108.MV, PV = SI0198 = average of the four cooler speeds (A = 1/4); selector (a / b / c / d by M.021A ~ D); per cooler A: MAN SICL1060x (0 ~ 5 rpm), bias MAN HICL1060x (−25 ~ 25) → LN34, SUM with PIC-BASC.MV, S/R M.0283 / 0293 / 0303, ramp, BU-CMD 12 % when stopped (M.0281 / 0291 / 0301 off delay), AUTO-MV with the conditions M.0280 / 0290 / 0300; flags M.3134 > 1900, M.3135 > 1500, M.3136 < 1600, M.3137 < 1400, M.3122 < 1150 | as listed | same after F-11, F-22 | Pass after F-22 |
+| ABC-009B | 01 | The same for cooler D (SICL1060D, HICL1060D, M.0320 ~ M.0328, 12 % back-up); links to ABC-009A (M.0211, M.0286, PIC-BASC.MV, SICL1060D.MV) | as drawn | same after F-22 | Pass after F-22 |
+| ABC-009A / 009B | 02 | AUTO-MV 50 % with the cooler running: speed set point 2.5 rpm, MV limited at 47 % = 2.35 rpm; back-up value 12 % = 0.6 rpm | 2.5 / 2.35 / 0.6 rpm | same | Pass |
+| ABC-001A | 01 / 02 | Numeric (the reader changes in F-5, F-6, F-20 re-checked): HIC-MWHL (MV limit 75.5 % = 151 MW) clamps the unit load demand: HL 200 gives 151, HL 110 gives 110; the low limit above the demand is forced to the actual MW (RB-MV X); ULD manual follows the generator MW | as drawn | as drawn (identical before and after F-20) | Pass |
+
+### F-22 — Bottom ash screw cooler loop mixed rpm and % (ABC-009A, ABC-009B) (Confirmed, fixed; needs user verification V-20)
+- Problem: the MAN SICL1060A ~ D work in rpm (0 ~ 5 rpm, MV limits 12 ~ 47 %, workbook). The loop signals around them are percent of 5 rpm: AUTO-MV (SI0341 = PIC-BASC MV + bias in %), the "12 %" back-up value, the comparison of the set point with the output (AO), and the PV of PIC-BASC (average of the four speeds). The simulator used the rpm value and the % number in the same equation (the back-up gave an MV of 12 rpm; the average speed 0 ~ 5 was compared with a 0 ~ 100 % set point).
+- Work done: AUTO-MV × 0.05 into the MAN (rpm); "12 %" constants = 0.6 rpm; the rpm outputs × 20 where they are compared with the percent set points; the average-of-four constant 1/4 becomes 5 (average speed in % of 5 rpm). ABC-009A / 009B only.
+- Result: AUTO-MV 50 % gives 2.5 rpm, limited to 2.35 rpm (47 %); the back-up value is 0.6 rpm (before: 12 rpm).
+- **Please verify** (V-20): that the loop signals are % of the 5 rpm range as assumed (basis: workbook range and limits, drawing "−25 ~ 25 rpm" / "−25 % ~ 25 %" on the bias, drawing "12 %").
 
