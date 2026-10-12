@@ -29,7 +29,7 @@ ABC analog logic audit (Cause & Effect / Golden Reference method of `docs/abc-au
 - F-16 ABC-008 divider by 2 (average of PA / SA demand). V-17: MV after a BU-CMD pulse returns to the manual value (COS does not track).
 - F-17 ABC-010 drum level compensation in %, F-18 master MV % to T/H (V-18, also the feed water flow compensation / SQRT question).
 - F-19 selector label beside diagonal wire (ABC-003A-D, ABC-008, ABC-020 #72 to re-check).
-- F-20 LAG enable / MAN set point input, F-21 ABC-001C % / T/H (V-19). Two-input MAN of 001A, 001B, 009A, 009B now follow their auto set point: re-run their sheets.
+- F-20 LAG enable / MAN set point input, F-21 ABC-001C % / T/H (V-19). Two-input MAN of 001B, 009A, 009B (SICL1060A-D), 020, 001C now follow their auto set point.
 - Closed: F-2 (PID CUT/DH swapped; simulator does not use them).
 - F-8: ABC-005 limestone chain now shows real values (feeder speed 46.95 % for S 3 %, CaCO3 60 %, coal 81 T/H); user to verify the constant 13 vs 1.3.
 - Open: **N-1** ABC-001B RATE LIMIT time input (T = B/A·100/60) is still of order 1e5–1e7. N-2, N-4 (ABC-005 constant 13 vs 1.3, SI0337 label position; N-3 SI0144 source resolved: sum of the three feeder flows, assumed 7.32 T/H in the app) and AB0114–0116 not found in any list (Cannot Verify). "%" set points are compared as literal numbers against engineering-unit values.
