@@ -11,7 +11,7 @@ Method: format of `docs/abc-audit/ABC-AUDIT.md`. Source = `document-references/a
 | ABC-005-01 | AB0114 ÷ max(AB0115, 1) × 3.13 × 10000 → SI0339 | AB0114 = 3, AB0115 = 60 | 3 / 60 × 3.13 × 10000 = 1565 (drawing: ÷ A/B, ×3.13, ×10000) | 1565 | **Pass** |
 | ABC-005-02 | Same path, LOW LIMIT block (constant 1) | AB0114 = 3, AB0115 = 0.5 and 1 | Denominator held at 1 → 93900 | 93900 in both cases | **Pass** |
 | ABC-005-03 | Same path, upper range | AB0114 = 3, AB0115 = 99.99 / AB0114 = 0.01, AB0115 = 60 | 939.09… / 5.2166… | 939.09… / 5.2166… | **Pass** |
-| ABC-005-04 | DENSITY CORRECTION ÷ → SI0337 | AB0116 = 1.1 / 1.3 / 1.5, other inputs fixed | Drawing marks this ÷ as **B/A** (B = limestone chain × 13, A = AB0116), so output must **fall** as AB0116 rises | Output **rises** with AB0116: 1.66e-6 / 1.96e-6 / 2.27e-6; equals AB0116 / (chain × 13), i.e. A/B | **Fail** (direction) |
+| ABC-005-04 | DENSITY CORRECTION ÷ → SI0337 | AB0116 = 1.1 / 1.3 / 1.5, other inputs fixed | Drawing marks this ÷ as **B/A** (B = limestone chain × 13, A = AB0116), so output must **fall** as AB0116 rises | Output **rises** with AB0116: 1.66e-6 / 1.96e-6 / 2.27e-6; equals AB0116 / (chain × 13), i.e. A/B | Before fix: output rose with AB0116 (1.66e-6 / 1.96e-6 / 2.27e-6). After fix: SI0337 = chain / AB0116 = 601,719 / 509,147 / 441,260, falling as density rises | **Pass** after fix (was Fail) |
 | ABC-005-05 | Coal feeders A/B/C running → NOT·NOT·NOT AND → OR bus → M.0148 | No feeder running (trip = 0) | M.0148 = 1 (all-stopped branch) | 1 | **Pass** |
 | ABC-005-06 | Same, one feeder running, all signals healthy | A running only / A+B+C running | M.0148 = 0 | 0 / 0 | **Pass** |
 | ABC-005-07 | Feeder-running AND flow SIG.AB bad, per feeder | A run + B.0718 bad; B run + B.0720 bad; C run + B.0728 bad; A run + B.0720 bad (B stopped) | M.0148 = 1, 1, 1, and 0 for the mismatched case | 1, 1, 1, 0 | **Pass** |
@@ -26,7 +26,7 @@ Method: format of `docs/abc-audit/ABC-AUDIT.md`. Source = `document-references/a
 - Likely cause (Suspected): the ÷ reader only understands an inline `a/b` text. A stacked fraction is two separate texts "A" and "B", so every ÷ falls back to A/B. Not yet checked whether other sheets have a stacked B/A ÷.
 - Effect: SI0337 (feedforward into the Σ/OMV summer) is wrong in direction. Plain explanation: when limestone density goes up, the real logic should lower the feeder speed demand; the simulator raises it.
 - Scope check (all 54 sheets): the sim has 15 ÷ blocks. Readable fraction: 4 stacked A/B, 5 inline, **1 stacked B/A (this one)**. 6 could not be read automatically and need checking when their pages are audited: ABC-008 #61, ABC-000 #13 (inputs unresolved, nu/de = -1), ABC-027 #72, ABC-032 #26, ABC-002 #41 and #44.
-- No fix applied. A fix changes ABC reader behavior and needs approval (see HANDOFF).
+- **Fixed** (approved by the user in chat; see "Corrections applied" below).
 
 ### Address / tag cross-check (`dcs-io-list.xls`, `memory-list-101.xls`)
 | Drawing item | Reference result | Verdict |
@@ -66,18 +66,35 @@ Run once over every sheet instead of page by page. Sources: `summary-of-pid-pidv
 | MAN limits (MH/ML converted from % of SH–SL to engineering units), 58 rows | 57 match; HIC-MWRL differs on purpose (see N-5) |
 | SUMA (PH, PL, RSTS, K, DT, TF, CUT, PHONDT, PLONDT, unit), 10 rows | All 10 match |
 | Workbook rows with no block in the sim / sim blocks with no workbook row | None / none (apart from the ABC-000 legend placeholders XXX-XX-XXX) |
-| AI tag, range and unit vs I/O list, 176 unique AI tags | 155 match, 0 not found in the I/O list. 19 have no range in the sim and are position-feedback AIs (I/O 0–100 %, handled by the valve feedback model) except **AI0481 (F-3)**. 2 are cosmetic unit text (AI0151 shows "% ( 0.00 ~ 27.00 T/H )", AI0131 "Kg/cm2" vs "kg/cm2") |
+| AI tag, range and unit vs I/O list, 176 unique AI tags | 155 match, 0 not found in the I/O list. 19 had no range in the sim and are position-feedback AIs (I/O 0–100 %, handled by the valve feedback model) except **AI0481 (F-3, now fixed)**. 2 are cosmetic unit text (AI0151 shows "% ( 0.00 ~ 27.00 T/H )", AI0131 "Kg/cm2" vs "kg/cm2") |
 | Sim built-in Health / warnings | Empty on every sheet |
 
 ### F-2 — PID CUT and DH values are swapped between the workbook and the sim data (Needs Verification which is right)
 - Sim data (`FACE`, "user file 2026-10-08"): CUT 0, DH 5 (or 0/10 …); repo workbook: CUT 5, DH 0 (or 10/0 …) on every PID row.
 - The workbook's own How-to sheet says the simulator does **not** use CUT or DH yet, so behavior is not affected. No change made. Needs the user to confirm which file is the later DCS readout.
 
-### F-3 — AI0481 (ABC-008, rpm, I/O range 0–1200) has no range in the sim (Suspected)
-- No range text was read for this transmitter and it has no feedback model, so the sim falls back to its default span. Needs a look at the ABC-008 drawing text before fixing.
+### F-3 — AI0481 (ABC-008, rpm, I/O range 0–1200) had no range in the sim (Confirmed, fixed)
+- The drawing text "0 ~ 1200 rpm" lies 45–70 units from the AI box, outside the reader's 45-unit search radius. The I/O list agrees (0–1200 rpm). **Fixed**, see below.
 
 ### N-5 — HIC-MWRL (ABC-001B) MV limits
 - Workbook / FACE: SH 10, MH 30 %, ML 1 % (= 3 and 0.1 MW/MIN). Code in `anFace` deliberately overrides it to the full range 0–10 (`if(e.tag==='HIC-MWRL'){P.lo=e.SL;P.hi=e.SH}`). Reason not documented. Needs the user's confirmation; no change made.
 
-### F-1 fix status
-Approved by the user in chat ("if logic says it is right, do it"). The planned patch: the ÷ reader also reads a stacked A/B or B/A fraction (the upper letter is the numerator). From the pre-patch scan it should change only ABC-005 block 21 among the 15 ÷ blocks, but this was **not tested**. The patch is **not applied**: the environment's permission system blocked editing `logic-sim-v1.20.21.html`, so the file is unchanged.
+### F-4 — ABC-032 ÷ block (SI0230 path) divided the constant by the signal (Confirmed, fixed)
+- Drawing: ÷ block with constant 2 entering from above and the condensate flow signal (after ×400/200) entering from the left; no A/B letters. Legend (`analog logic symbols legend.pdf`) does not define input order for ÷.
+- Sim computed 2 / signal (inverse of the flow), which has no engineering meaning; the drawing's through-line (signal) is the dividend.
+- Basis for the rule used: in the other unlabeled ÷ blocks (ABC-008 #61 sum ÷ 2, ABC-027 #72 sum ÷ quantity of normal transmitters, ABC-002 #41 demand ÷ CAL) the dividend is the pin opposite the output, and the sim was already correct there. The same rule now applies to ABC-032.
+
+## Corrections applied to `logic-sim-v1.20.21.html` (user-approved; analog reader only, DITL untouched)
+1. `anCompile`, case DIV: reads a stacked fraction (two texts, A over B or B over A; upper letter = numerator) and matches the pin letters by the side of the box they sit on. → F-1.
+2. `anCompile`, case DIV: for ÷ blocks with no label at all, the dividend is the pin opposite the output pin (only when there is no inline formula text). → F-4.
+3. `anInit`: an AI with no range and no feedback model searches 70 instead of 45 units for its "a ~ b unit" text. → F-3.
+
+Verification after the changes (same headless method):
+- All 15 ÷ blocks compared before / after: exactly 2 changed (ABC-005 #21, ABC-032 #26). ABC-001B #8 (formula "T = B / A * 100 / 60") was briefly affected during development and is unchanged in the final patch.
+- Controller parameters (140 blocks): identical. AI blocks: only AI0481 changed (now 0–1200 rpm, matches the I/O list). Simulator Health/warnings: empty on every sheet.
+- ABC-005-01..03 and 05..09 re-run: same results as before.
+- The diff is 6 insertions / 2 deletions, all inside the analog script.
+- Not tested: the apk and exe (user does those), and no release or rename was done. The file keeps its name; the user decides how and when to rebuild/release.
+
+### ÷ blocks not needing correction
+ABC-008 #61 (sum ÷ 2, Pass), ABC-027 #72 (sum ÷ SI0120, Pass), ABC-002 #41 (÷ CAL-004A, Pass), ABC-001B #8 (formula text, Pass), ABC-000 #13 (legend symbol only).
