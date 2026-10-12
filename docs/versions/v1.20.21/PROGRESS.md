@@ -18,7 +18,10 @@ Legend: Done = structure traced against the drawing and scenarios run; Batch = a
 | ABC-013 | Done | Pass |
 | ABC-055 | Done | Pass |
 | ABC-014 | Done | Pass |
+| ABC-029 | Done | Pass |
+| ABC-004B | Done | Pass |
+| ABC-004C | Done | Pass |
 | ABC-009B | Rendered, not traced | dense sheet; needs zoomed reading |
 | All F(X) tables | Done | 89 / 89 equal to the workbook |
 | ABC-000A / 000B / 000 | Not applicable | contents list and symbol legend |
-| Other 36 sheets | Batch only | parameters, AI tags, dividers, comparators, health |
+| Other 33 sheets | Batch only | parameters, AI tags, dividers, comparators, health |

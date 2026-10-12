@@ -174,3 +174,13 @@ Scenario method: inputs written to external nets or forced, SIG.AB states set, s
 
 ### Cross-page links (all sheets) — to check sheet by sheet
 - After stepping every sheet, 154 digital inputs are linked to their source page. 38 digital inputs sit next to a "( FROM ABC-xxx )" note without a link; many of them are false alarms because the note belongs to the next line (for example ABC-014: L.0044 comes from DITL, only B.0729 comes from ABC-006, and that one is linked). Each candidate is checked when its sheet is traced; none is counted as a defect yet.
+
+## Batch 5 — ABC-029, ABC-004B, ABC-004C
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-029 | 01 | Structure: right loop AI0514 → PV−SV (ACT:N) → PICDO1008; A/M T (1:A M.025C with SET SV 11.5; 1:B M.0408 = OR(B.0722, M.0409)); BU-CMD M.0409 = OR(M.0400, TPS 2 s of AND of four OR groups: burner A-D "oil supply valves all closed" OR "shutdown command"), RB-MV 100 %; left loop AI0276 → MAN HICDO1012, A/M T (M.0001), BU-CMD M.0401 = OR(M.0400, M.025C), RB-MV = T(100 % when M.025C, else 0 %); 100 − MV to AO0212 / AO0324 | as listed | same | Pass |
+| ABC-029 | 02 | MFT → 3 s pulse M.0400; house operation M.025C; four burner groups; one group missing; B.0722 bad | MFT: left MV 0 %, right MV 100 % for 3 s; M.025C: left MV 100 %, right auto; four groups → 2 s pulse of M.0409 (MV 100 %); three groups → nothing; B.0722 bad → manual | same | Pass |
+| ABC-004B | 01 | Structure: AI0512 → SI0124 = T(running: flow, else 0); M.0152 = TON 3 s of TOF 2 s of M.3401; bias MAN B-BIAS → LN25 → Σ with FIC-CF.MV → SI0126; rate block, S/R M.0155; A/M T (M.0151 = OR(M.025B, NOT M.0152, B.0720)); high limit T (M.3405: 83.3 / 100); BU-CMD (M.0157 = OR(NOT M.015E, M.0158)), M.0158 = OR(TPS 5 s of M.015E, TPS 25 s of AND(M.025B, M.015E)); ≥ 83.3 % → M.015F | as listed | same | Pass |
+| ABC-004B | 02 | Feeder start / stop, house operation, M.3405 | running confirmed after 2 + 3 s; manual (M.0151) until then; 5 s pulse M.0158 on start; house operation → manual + 25 s pulse; high limit 83.3 / 100 | same | Pass |
+| ABC-004C | 01 / 02 | Same structure with the C tags (M.3402, B.0728, M.0161, M.0167, M.0168, M.0166; M.3405 = n46) and the same scenarios | as ABC-004B | same | Pass |
