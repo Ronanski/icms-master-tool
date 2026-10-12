@@ -19,9 +19,9 @@ ABC analog logic audit (Cause & Effect / Golden Reference method of `docs/abc-au
 ## Audit status
 - Traced and tested: ABC-005 (mostly), ABC-028, ABC-054, ABC-017, ABC-001B, ABC-056, ABC-001A (structure). Details in `PROGRESS.md`.
 - Batch scan of all 54 sheets: 140 controller blocks vs the parameter workbook, 176 AI tags vs the I/O list, 15 dividers, 222 comparators, simulator Health. Everything matches except the items below.
-- Fixed and verified (user approved, evidence in `FINDINGS.md`): F-1 divider B/A (ABC-005), F-3 AI0481 range (ABC-008), F-4 unlabeled divider order (ABC-032), F-5 HIC-MWRL limits (ABC-001B), F-6 comparator set points (ABC-001A).
+- Fixed and verified (user approved, evidence in `FINDINGS.md`): F-1 divider B/A (ABC-005), F-3 AI0481 range (ABC-008), F-4 unlabeled divider order (ABC-032), F-5 HIC-MWRL limits (ABC-001B), F-6 comparator set points (ABC-001A), F-7 SCALE CONVERT constants are x1 in engineering units (16 constants on 9 sheets; basis: the ranges printed on the drawings, e.g. 648 + 432 + 35 = 1115 T/H on ABC-006).
 - Closed: F-2 (PID CUT/DH swapped; simulator does not use them).
-- Open: **N-1** probable cause is the signal unit basis (DCS passes % of range, the simulator carries engineering units, so "SCALE CONVERT a/b" constants and "%" set points can give wrong results, e.g. ABC-056 M.025F, size of SI0334/SI0337 on ABC-005). Suspected only; fixing it is a model change across about 15 sheets and needs a decision plus a regression run. N-2..N-4 (ABC-005 constant 13 vs 1.3, SI0144 source, SI0337 label position) and AB0114–0116 not found in any list (Cannot Verify).
+- Open: **N-1** count-scale chains (the DCS carries 100 % as 10000 counts, textbook): ABC-005 chain to SI0334/SI0337 and ABC-001B RATE time input are still of order 1e5–1e7 in the simulator; needs the DCS multiplier definition for % signals before any change. N-2..N-4 (ABC-005 constant 13 vs 1.3, SI0144 source, SI0337 label position) and AB0114–0116 not found in any list (Cannot Verify). "%" set points are compared as literal numbers against engineering-unit values.
 
 ## Method notes
 - Drawing PDFs have no text layer; read visually. The simulator is driven headless (Playwright + bundled Chromium): inputs written to external nets or forced, SIG.AB states set, time stepped, nets read. Nothing in the repo is modified by the tests.
@@ -30,9 +30,9 @@ ABC analog logic audit (Cause & Effect / Golden Reference method of `docs/abc-au
 ## Next actions
 1. Audit the next simplest sheets: ABC-033, ABC-034, then ABC-013, 009B, 055, 014, 029, 004B/C and so on (order by block count in the simulator).
 2. ABC-004A (source of SI0144) to settle N-3 and test N-1.
-3. Decide with the user whether to adopt a percent-of-range model (N-1) once more sheets show the same pattern.
+3. Resolve N-1 (count-scale multiplication) from the DCS function definitions; check the same for "%" set points.
 4. Release / rebuild only on GO STABLE / GO BETA.
 
 ## Current task status
-**Done:** corrections F-1, F-3, F-4, F-5, F-6; seven sheets traced; batch scan; records updated.
+**Done:** corrections F-1, F-3, F-4, F-5, F-6, F-7; seven sheets traced; batch scan; records updated.
 **Not done:** remaining sheets, N-1 decision, ABC-005 PID auto dynamics / SUMA integration / ALM limits, rebuilds and release.

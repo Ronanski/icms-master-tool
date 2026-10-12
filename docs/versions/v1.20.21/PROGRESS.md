@@ -8,8 +8,10 @@ Legend: Done = structure traced against the drawing and scenarios run; Batch = a
 | ABC-028 | Done | Pass |
 | ABC-054 | Done | Pass |
 | ABC-017 | Done | Pass |
-| ABC-001B | Done | Pass; magnitudes depend on N-1 |
-| ABC-056 | Done | Structure Pass; M.025F numeric case Needs Verification (N-1) |
+| ABC-001B | Done | Pass; RATE T chain magnitude open (N-1) |
+| ABC-056 | Done | Pass after F-7 |
+| ABC-006 | Partly | total air flow Pass after F-7; rest not traced |
+| ABC-032 | Partly | ÷ order (F-4) and SV scaling (F-7) Pass; rest not traced |
 | ABC-001A | Structure done | F-6 fixed; no numeric scenario yet |
 | ABC-033, ABC-034 | Next | simplest remaining sheets |
 | ABC-000A / 000B / 000 | Not applicable | contents list and symbol legend |

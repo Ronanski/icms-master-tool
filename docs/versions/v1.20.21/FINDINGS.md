@@ -90,6 +90,7 @@ Run once over every sheet instead of page by page. Sources: `summary-of-pid-pidv
 3. `anInit`: an AI with no range and no feedback model searches 70 instead of 45 units for its "a ~ b unit" text. → F-3.
 4. `anFace`, MAN: removed the HIC-MWRL exception. → F-5.
 5. `anCompile`, case HC/LC/HLC: if no set point text is found within 16 units, search 30. → F-6.
+6. `anCompile`, case CONST: a ratio constant next to a "SCALE CONVERT" label is ×1 in engineering units. → F-7.
 
 Verification after the changes (same headless method):
 - All 15 ÷ blocks compared before / after: exactly 2 changed (ABC-005 #21, ABC-032 #26). ABC-001B #8 (formula "T = B / A * 100 / 60") was briefly affected during development and is unchanged in the final patch.
@@ -122,15 +123,22 @@ Scenario method: inputs written to external nets or forced, SIG.AB states set, s
 | ABC-017 | 02 | B.0995 bad, or I.024E = 1, forces manual (M.0101 = (B.0995 OR I.024E) AND NOT M.0104) | M.0101 = 1, MV = COS 30 | 1, 30 | Pass |
 | ABC-017 | 03 | House operation M.025B → TPS 15 s → M.0104; SET SV = 18 | M.0104 = 1 for 15 s, SV 18 | 1 until t = 15 s, 0 at t = 17 s | Pass |
 | ABC-017 | 04 | I.024E → TPS 2 s → M.0103 (BU-CMD) | MV = RB-MV 0 % during the 2 s pulse, M.3235 = 1 | MV 0, M.3235 1; then back to 30 | Pass |
+| ABC-006 | 01 | TOTAL AIR FLOW = sum of PAF, SAF, FAB (ranges 648 + 432 + 35 = 1115 T/H, constants 648/1115 etc.) | each flow counted once in T/H | Sum of the three compensated flows (487.4 + 731.0 + 46.7 = 1265.0 with the compensation factor) after F-7; 545 at full range before | Pass after F-7 |
+| ABC-032 | 01 | ×400/200 then ÷2 into the polisher PID SV (range 0–200) | flow 400 T/H → SV 200 | 200 after F-7 (was 400) | Pass after F-7 |
 | ABC-001B | 01 | Structure: MAN HIC-MWRL, A/M T (M.0001), ×10/200, ÷ "T = B/A·100/60" (B = 10000), ×1/60, RATE LIMIT (bypass EIC-TM.MAN), ×200/200 | as listed | same; constants 0.05, 10000, 100, 1/60, 1 | Pass |
 | ABC-001B | 02 | Force manual M.0001 = 1 selects COS; MV limited to 0.1–3 (after F-5) | 2 → 2; 9 → 3; 0 → 0.1 | 2; 3; 0.1 | Pass |
 | ABC-056 | 01 | Structure: AI0417 → SV−PV (ACT:R) → PICCD1104; T sel B.0969 (B) and M.0124 (A, SET SV 3.5); BU-CMD M.0124 → RB-MV 100 %; AI0562 ×5/10 − PV → H/ >0 → M.025F | as listed | same | Pass |
 | ABC-056 | 02 | M.0124 = 1: SV 3.5 and output to RB-MV; B.0969 bad: manual | SV 3.5; manual 40 | SV 3.5; 40 (trip branch not isolated: output 75.8) | Pass (manual) / Needs Verification (trip output) |
-| ABC-056 | 03 | M.025F "ext pressure > deaerator pressure": ext 4.0 kg/cm² (0–5) vs deaerator 3.5 (0–10) | 1 (4.0 > 3.5) | 0: scaled ext = 4 × 0.5 = 2 and 2 − 3.5 < 0 | Needs Verification (see N-1) |
+| ABC-056 | 03 | M.025F "ext pressure > deaerator pressure": ext AI0562 (0–5 kg/cm²) vs deaerator PV (0–10), PV forced because the process model drives it | ext 4.0 vs 3.5 → 1; 2.0 vs 3.5 → 0; 3.5 vs 3.5 → 0; 4.0 vs 9 → 0 | Before F-7: 4.0 vs 3.5 gave 0 (scaled 4 × 0.5 = 2). After F-7: 1, 0, 0, 0 | **Pass** after F-7 (was Fail) |
 | ABC-001A | 01 | Structure: three MANs (HIC-ULD, MWHL, MWLL), T selectors, HLLIM SI0204/SI0206, H/ >0.1 % → M.2004 / M.2006, ± generator MW | as listed | same; after F-6 the two set points read 0.1 | Pass (not tested numerically) |
 
-### N-1 (updated) — probable root cause: signal unit basis (Suspected)
-- The drawing's "SCALE CONVERT a/b" constants (12000/2700, 10/200, 400/200, 5/10 …) are ratios of two ranges. They give the right answer if the signals between blocks are percent of range, which is how a DCS normally passes them. The simulator carries engineering-unit values (kg/cm², MW, T/H) and multiplies by the same constant (and compares "0.1 %" as the literal 0.1).
-- Worked example, ABC-056: ext pressure 4 kg/cm² on a 0–5 range is 80 %; × 5/10 = 40 % of the deaerator 0–10 range = 4 kg/cm²; compared with the deaerator pressure 3.5 → M.025F = 1. The sim gives 4 × 0.5 = 2 kg/cm² → 0.
-- The same effect would explain the size of SI0334 / SI0337 on ABC-005 (N-1).
-- Not proven: the textbook text could not be quoted for this (the relevant pages are not machine-readable). The sim has a partial normalization (`MUL.nrm`, only for F(X) factors). A fix is a model change across about 15 sheets, so it is not applied; it needs a decision on the intended unit basis and a regression run of all sheets.
+### F-7 — "SCALE CONVERT a / b" constants multiplied engineering-unit values (Confirmed, fixed)
+- Basis, from the drawings themselves: in every SCALE CONVERT the numerator is the source range and the denominator the destination range, e.g. ABC-006: PAF 0–648, SAF 0–432, FAB 0–35 T/H into TOTAL AIR FLOW 0–1115 T/H with constants 648/1115, 432/1115, 35/1115 (648 + 432 + 35 = 1115); ABC-056: AI0562 0–5 → ×5/10 → compared with the deaerator 0–10; ABC-032: FIQCD1120 0–400 → ×400/200 → polisher PID 0–200. Such a constant only makes sense on percent-of-range signals, which is also how the reference workbooks carry them (`flow-compensation.xls` ap/bp/at/bt in %, `drum-level-calculation.xls` F(X) in %), and how the textbook counts them (100 % = 10000 in the Full Scale Traveling Time formula).
+- The simulator carries engineering units (T/H, kg/cm², MW), where the same conversion is ×1. It multiplied by a/b, so the total air flow at full-range flows was 545 instead of 1115 T/H, the ABC-056 comparison was wrong, and the ABC-032 polisher SV was doubled.
+- Fix: the 16 constants that carry a ratio and sit within 50 units of a "SCALE CONVERT" label (distances 9–47; the only other ratio constant, 1/60 on ABC-001B, is 234 away and untouched) are now ×1. Their note says so. List: ABC-004A 40/120; ABC-005 12000/2700; ABC-006 35/1115, 432/1115, 648/1115; ABC-010 500/550; ABC-032 400/200; ABC-001B 10/200, 200/200; ABC-056 5/10; ABC-001C 240/200; ABC-002 140/1200, 648/1115, 35/1115, 1115/432, 432/1115.
+- Verified: controllers (140) and AI ranges unchanged; Health empty; no NaN after 5 s of run on the nine affected sheets; ABC-005, 017, 028, 054 scenarios give the same results as before; ABC-056 M.025F and ABC-032 SV now follow the drawing; ABC-006 total air flow is the plain sum of the three flows.
+
+### N-1 (updated) — remaining unit-basis questions (Needs Verification)
+- ABC-005: after F-7 the chain SI0339 (1565 counts) × coal flow × ... × 13 / AB0116 is still of the order 1e5. The constants 10000 and 3.13 look like a fixed-point count scale (100 % = 10000, textbook), and the sim's MUL does not divide by the count scale. Needs the DCS multiplier definition for % signals before changing; no change made.
+- ABC-001B: T = B / A · 100 / 60 with B = 10000 gives 1e5–1e7 in the sim for the RATE LIMIT time input; same count-scale question, plus the unit of the RATE block's T input.
+- ABC-001A / others: set points written as "%" (for example "> 0.1 %") are compared as the literal number against an engineering-unit value.
