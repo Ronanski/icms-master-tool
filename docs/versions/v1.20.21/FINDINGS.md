@@ -93,6 +93,7 @@ Run once over every sheet instead of page by page. Sources: `summary-of-pid-pidv
 6. `anCompile`, case CONST: a ratio constant next to a "SCALE CONVERT" label is ×1 in real values. → F-7.
 7. `anDefaults`: ABC-005 limestone chain constants scaled to real values (guarded). → F-8.
 8. `anDefaults` (ABC-003E only) plus small engine hooks: a `gain` on cross-sheet LINK drivers, a `bg` multiplier on the B input of AMT/SW, a fixed ramp on the four burner RATE blocks, a scaled set point for the four "< X%" comparators. → F-9.
+9. `anDefaults` (ABC-011, ABC-012) plus an output multiplier `og` on AMT/SW: the outlet temperature PID output net carries °C. → F-10.
 
 Verification after the changes (same headless method):
 - All 15 ÷ blocks compared before / after: exactly 2 changed (ABC-005 #21, ABC-032 #26). ABC-001B #8 (formula "T = B / A * 100 / 60") was briefly affected during development and is unchanged in the final patch.
@@ -229,4 +230,21 @@ Scenario method: inputs written to external nets or forced, SIG.AB states set, s
 - Work done: scale on the LINK feeding the four FIC-OM.MV copies, multiplier on the B input of the M.0092 selector, scaled set point of the four < X% blocks, fixed rate on the four ramp blocks (ABC-003E only).
 - Result: PV 5 / SV 8 gives master 18.1 % and burner SV 0.634 T/H; after 63 s the burner SV is 0.184 T/H (ramp 0.175 T/H/min); all LOC with SV-A 1.75 T/H gives RB-MV 50 % and burner SV 1.75 T/H.
 - **Please verify** (V-13): (a) PTN004029 (PS0003) is not in any reference; the sim uses 5 %/min for both directions. (b) Memory labels: the drawing prints M.5011 on the comparator output and M.5012 on the TONS output; the simulator has the two names swapped. No logic effect (the nets are separate in each burner).
+
+## Batch 10 — ABC-011 (S/H No.2 outlet steam temperature control), ABC-012 (main steam temperature control)
+
+The two sheets have the same cascade: outlet temperature PID (TICBR1140 / TICMS1004, ACT:R) → fault hold T (M.0231 / M.0241) → A/M T → BU-CMD T (RB-MV = spray PID PV) → high select with (saturation temperature + 15 °C) → set point of the spray water PID (TICBR1130 / TICBR1150, ACT:N) → two F(X) valve curves (LN46 / LN47 and LN48 / LN49) → AO.
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-011 | 01 | Structure: two outlet TT and two inlet TT with SIG.AB / ALM and SELECT; drum pressure F(X) LN42 + 15 °C (SI0273); HS > of the outlet PID MV and SI0273 → SI0274; two PID, signs (outlet SV − PV, spray PV − SV); fault T M.0231 = AND(REM, OR(AND(M.0237, M.023D), AND(NOT M.0237, M.0236))); M.0236 = (inlet PV − MV) > 15 °C; M.0234 = OR(M.0235, outlet pair bad, inlet pair bad, drum pressure pair bad); M.0235 = OR(AND(NOT B.0641, M.2001), AND(SOV1, SOV2 closed), MFT); S/R M.023D, M.0238, M.023C (< 0.3 % / > 1 %); M.2540 > 380, M.2541 < 350 | as listed | same | Pass |
+| ABC-011 | 02 | Drum 100 kg/cm2, outlet 520, inlet 400, SV 540; fault branches; M.0235 each branch; LOC; both outlet SIG.AB bad | saturation 311.8 °C, SI0273 326.8; spray SV = higher of PID output and SI0273; fault → hold; LOC → MV follows PV | same after F-10 | Pass after F-10 |
+| ABC-012 | 01 / 02 | Same structure with the main steam tags (LN43, M.0246 / M.0247 / M.0244 / M.0245, M.024D, B.0643 main steam pressure SIG.AB) plus M.310E > 550, M.310B > 548, M.310C < 525, M.310F < 510 and M.2543 > 440, M.2544 < 350; same scenarios | as ABC-011 | same after F-10 | Pass after F-10 |
+
+### F-10 — Cascade set point mixed % and °C (ABC-011, ABC-012) (Confirmed, fixed; needs user verification V-14)
+- Problem: the outlet PID output is a % of its range (0~600 °C). The drawing uses it as an engineering value: it goes into the high select with SI0273 (saturation + 15 °C), into the spray PID as the set point, and into the "PV − MV > 15 °C" test. RB-MV is the spray PID PV in °C. The simulator mixed the two: a PID output of 61.7 % was compared with 326.8 °C, and the A and B paths of the same T carried different units.
+- Basis: both PIDs are labelled 0~600 °C on the drawings; ranges in the parameter workbook. Real values (PROJECT_RULES 4a): MV % × 6 = °C.
+- Work done: the BU-CMD T that outputs xxx.MV multiplies its output by 6, divides the B input (RB-MV) by 6 for the PID tracking. ABC-011 and ABC-012 only.
+- Result (ABC-011, drum 100, outlet 520, SV 540, inlet 400): SI0274 = 370.3 °C (the PID output, above 326.8); before the change it was 326.8 (the 61.7 was lost). In LOC the MV follows the inlet temperature (400 °C).
+- **Please verify** (V-14): that the DCS cascade really passes the % of the 0~600 °C range (as a user would scale) and not a raw °C number. Other cascades in the same situation, still to check on their own sheets: ABC-004A (FIC-CM → FIC-CF) and ABC-009A (DPICFG108 → PIC-BASC).
 
