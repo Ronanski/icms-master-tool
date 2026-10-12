@@ -1339,6 +1339,13 @@ function anDefaults(S){
   fx(20,1,100/27,'SCALE CONVERT 12000 / 2700: limestone T/H to feeder speed % (27 T/H = 100 %): x 100 / 27');
   fx(28,13,1.3,'LIMESTONE DENSITY BASE : 1.3 (drawing label); drawing box shows 13');
   fx(19,13,1.3*100/27,'LIMESTONE DENSITY BASE : 1.3, feeder speed % to T/H (27 T/H = 100 %): 1.3 x 100 / 27')}
+ if(S.name==='ABC-010'){/* drum level pressure compensation is written in percent of the transmitter range (-422 ~ 820 mm = 0 ~ 100 %): 100 % - LT %, - LN38 %, / LN39; the simulator carries mm */
+  const lab=n=>S.lab[n]&&S.lab[n].t;
+  for(const b of S.blk){
+   if(b.k==='SUB'&&b.ip&&b.ip.length===2){const ci=b.ip.find(q=>S.drv[q.n].some(d=>d.k==='CONST'&&d.p&&d.p.val===100)),ai=b.ip.find(q=>q!==ci);if(ci&&ai&&S.drv[ai.n].some(d=>d.k==='AI')){ai.ia=[1/12.42,422/12.42];b.note='LT in mm -> % of -422 ~ 820 mm (the drawing subtracts it from 100 %)'}}
+   if(b.k==='DIV'&&lab(b.de)==='SI0252'){b.oa=[12.42,-422];b.note='compensated level in % of -422 ~ 820 mm -> mm'}
+   if(b.k==='SUM'&&b.ip&&b.ip.length===2){const q=b.ip.find(z=>lab(z.n)==='LICBR1001.MV');if(q){q.ia=[5.5,0];b.note='drum level master MV (%, limits -25 ~ 25 %) is a % of the feed water range 0 ~ 550 T/H: x 5.5 = T/H, added to the steam flow'}}
+   if(b.k==='AMT'&&b.o.some(n=>lab(n)==='LICBR1001.MV')){b.bg=100/550;b.note='RB-MV (feed water minus steam flow, T/H) -> % of 550 T/H for the master tracking'}}}
  if(S.name==='ABC-008'){/* "2" written on the wire into the divider (average of the two fan demands) */
   for(const b of S.blk)if(b.k==='DIV'&&b.i.length===2){const n=b.i[1];if(S.ext.includes(n)&&!S.nets[n].dig&&!(S.kn&&S.kn[n]!==undefined)){const ends=[];for(const i of S.nets[n].segs){const sg=S.seg[i];ends.push([sg.x1,sg.y1],[sg.x2,sg.y2])}let best=null,bd=8;for(const t of S.tx){if(!/^\s*-?\d+(?:\.\d+)?\s*$/.test(t.t.trim()))continue;for(const[x,y]of ends){const d=anD(t.x,t.y,x,y);if(d<bd){bd=d;best=t}}}if(best){(S.kn=S.kn||{})[n]=parseFloat(best.t);S.ext.splice(S.ext.indexOf(n),1);b.note='divisor "'+best.t.trim()+'" written on the wire'}}}}
  if(S.name==='ABC-002'){const c=S.blk.find(q=>q.id===34&&q.k==='CONST');if(c&&c.p&&Math.abs(c.p.val-4450)<1e-9){c.p.val=0.445;c.note='COAL CALORIE BASE 4450 kcal/kg; LN1 gives the diesel calorie in units of 10000 kcal/kg (MV 0-100 % = 8000-12000 kcal/kg = 0.8-1.2): base in the same unit = 0.445'}}
@@ -1709,9 +1716,9 @@ function anStep(S,dt){const rt=S.rt,v=rt.v,nets=S.nets,B=x=>x>.5?1:0;rt.t+=dt;rt
      /* bumpless tracking: the PID / MAN that feeds the unselected A input follows the output */
      if(b.trkFrom)for(const d of b.trkFrom){const ds=rt.st[d.id];if(ds)ds.trk=pickB?y:null}
      out(b.og!=null?y*b.og:y);break}
-   case 'ADD':case 'SUM':case 'DEV':case 'SUB':{let y=0;for(const q of b.ip)y+=q.sg*rd(q.n);out(y);break}
+   case 'ADD':case 'SUM':case 'DEV':case 'SUB':{let y=0;for(const q of b.ip){let x=rd(q.n);if(q.ia)x=x*q.ia[0]+q.ia[1];y+=q.sg*x}out(y);break}
    case 'MUL':{let y=1;b.i.forEach((n,j)=>{y*=rd(n)/((b.nrm&&b.nrm[j])||1)});if(b.gain!=null)y*=b.gain;out(b.i.length?y:0);break}
-   case 'DIV':{const d=rd(b.de);if(Math.abs(d)<1e-9){s.bad=1;out(s.good!=null?s.good:0)}else{s.bad=0;s.good=rd(b.nu)/d;out(s.good)}break}
+   case 'DIV':{const d=rd(b.de);if(Math.abs(d)<1e-9){s.bad=1;out(s.good!=null?s.good:0)}else{s.bad=0;s.good=rd(b.nu)/d;if(b.oa)s.good=s.good*b.oa[0]+b.oa[1];out(s.good)}break}
    case 'HLLIM':{let x=rd(b.main);if(b.lo>=0)x=Math.max(x,rd(b.lo));if(b.hi>=0)x=Math.min(x,rd(b.hi));out(x);break}
    case 'ABS':out(Math.abs(rd(b.i[0])));break;
    case 'SQRT':{const x=rd(b.i[0]);if(x<0){s.bad=1;out(0)}else{s.bad=0;const R=b.rin||100;out(b.idn?x:R*Math.sqrt(x/R))}break}

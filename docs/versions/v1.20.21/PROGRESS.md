@@ -29,6 +29,7 @@ Legend: Done = structure traced against the drawing and scenarios run; Batch = a
 | ABC-031 | Done | Pass |
 | ABC-051 | Done | Pass |
 | ABC-003E | Done | Pass; F-9 fixed (units and ramp), V-13 to verify |
+| ABC-010 | Done | Pass after F-17 (drum level % / mm), F-18 (master MV % to T/H), V-18 to verify |
 | ABC-026, ABC-027 | Done | Pass |
 | ABC-008 | Done | Pass after F-16 (divisor 2, average), V-17 to verify |
 | ABC-057 | Done | Pass after F-15 (bias MAN scaling) |

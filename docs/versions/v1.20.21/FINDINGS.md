@@ -100,6 +100,7 @@ Run once over every sheet instead of page by page. Sources: `summary-of-pid-pidv
 13. `anDefaults` (ABC-002 only): COAL CALORIE BASE constant 4450 → 0.445 (unit of the diesel calorie curve LN1). → F-14.
 14. `anFXIn`: a table whose X unit is just "RANGE" with X range 0 ~ 100 is a percent table (input scaled from the source range). → F-15.
 15. `anDefaults` (ABC-008 only): a number written on the wire into a divider is a constant; `anFXIn`: a divider by such a constant is a plain average (percent in, percent out), not a ratio. → F-16.
+16. `anDefaults` (ABC-010 only) plus engine hooks: an affine `ia` on one input of ADD / SUM / DEV / SUB and `oa` on the output of DIV: drum level compensation in percent, master MV % to T/H. → F-17, F-18.
 
 Verification after the changes (same headless method):
 - All 15 ÷ blocks compared before / after: exactly 2 changed (ABC-005 #21, ABC-032 #26). ABC-001B #8 (formula "T = B / A * 100 / 60") was briefly affected during development and is unchanged in the final patch.
@@ -337,4 +338,25 @@ The two sheets have the same cascade: outlet temperature PID (TICBR1140 / TICMS1
 | ABC-026 | 01 | Structure: nine TT-FG1091-A ~ I (0 ~ 1200 °C) with SIG.AB / ALM; per TT two T (1:b): bad → 0 for the count (A = 1) and 0 for the temperature; top SUM of the nine counts + SI0120 (from ABC-027) → LLIM 1 → SI0100; bottom SUM of the nine temperatures + DI0000 (from ABC-027) ÷ SI0100 → SI0101 → 30 s lag → SI0102; M.3333 > 980, M.3334 > 950, M.3335 < 820, M.3331 / M.2501 < 150 °C | as listed | same | Pass |
 | ABC-026 | 02 | All TT 900 → average 900, count 9; TT A bad → count 8, sum 7200, average 900 | as drawn | as drawn | Pass |
 | ABC-027 | 01 / 02 | Same structure with TT-FG1090-A ~ I; outputs SI0120 (count) and DI0000 (sum) go to ABC-026 (linked after stepping: ABC-026 n41, n43 follow ABC-027); M.2504 > 700 and M.2505 > 450 on SI0122; all 500 → 500 (after the lag, 368 at 40 s); all 800 → 797, M.2504 = M.2505 = 1 | as drawn | as drawn | Pass |
+
+## Batch 17 — ABC-010 (drum level control, feed water flow control)
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-010 | 01 | Structure: three LT (−422 ~ 820 mm) each with (100 % − LT) − LN38 over LN39 pressure compensation (drum-level-calculation.xls: LN39 = F3(p), LN38 = F4(p)); drum pressure PRI / SEC / AVG → SI0156; (1) / (3) / AVG select SI0256; three level PID (LICBR1001 3-element ACT:R, LICBR1001A 1-element, LICBR1001B start-up valve) and the feed water flow PID FICFW1007 (ACT:R, PV SI0269 = average of two compensated flows, SV = steam flow SI0246 + master MV); steam flow switch M.022B (lag 30 s); M.022E, M.0220 (level control inhibit), M.0221 / M.0222 (1-element selected), M.0223 / M.0224, M.0226 / M.0227 / M.0228; comparators ±254 mm, < −254 etc., drum level deviation 5 % | as listed | same after F-17, F-18 | Pass after F-17, F-18 |
+| ABC-010 | 02 | Digital: M.022E = OR(both ECO flow SIG.AB bad, ECO temp SIG.AB, steam flow SIG.AB, TON 60 s of steam flow < 100 T/H); M.0228 = OR(M.0220 group, NOT LICBR1001B.MAN, M.022E); M.0220 group = OR(level (1)&(3) bad, pressure (1)&(2) bad, both BFWP stopped); M.0221 / M.0222 latch; CRT select 1 / 3 element; M.022B = OR(house op, turbine trip, 52G1 open, blow-off) | as drawn | as drawn | Pass |
+| ABC-010 | 03 | Compensation values: P = 0 gives LT unchanged (−422, 0, 300, 820); P = 99 with LT 55 mm gives 199.0 mm | independent check from the workbook physics: LT 38.4 % reads 50 % true level (199.2 mm) at 99 kg/cm2 | 199.0 | Pass after F-17 |
+
+### F-17 — ABC-010 drum level compensation mixed % and mm (Confirmed, fixed)
+- Problem: the drawing computes (100 % − LT) − LN38, divided by LN39, with every signal in percent of the transmitter range. The simulator carries the LT in mm (range −422 ~ 820), so it subtracted the LT in mm from 100 and the correction from LN38 in % (for example at 99 kg/cm2 the offset was 5.2 mm instead of 5.2 % of 1242 mm = 65 mm).
+- Basis: drawing and drum-level-calculation.xls (dPmax, dPmin, Rw, Rs, R40); check by the workbook physics at 99 kg/cm2: dP = H (R40 − Rs − (Rw − Rs) x); 50 % true level gives LT = 38.4 % (55 mm); the compensated output must return 50 % (199 mm).
+- Work done: the LT input of the "100 % − LT" subtraction is converted to % of the range (mm + 422) / 12.42 and the divider output back to mm (x 12.42 − 422), for the three LT (ABC-010 only).
+- Result: P = 0 passes the LT through unchanged; P = 99, LT 55 mm gives 199.0 mm. Before the change the same input gave 94 mm.
+
+### F-18 — ABC-010 master level MV (%) was added to the steam flow (T/H) as a plain number (Confirmed, fixed)
+- Problem: SV of FICFW1007 = steam flow SI0246 + LICBR1001.MV. The master MV is a % (limits −25 ~ 25 %, workbook) of the feed water range 0 ~ 550 T/H, the steam flow is in T/H, so a 25 % correction was added as 25 T/H instead of 137.5 T/H. The back-up RB-MV (SI0258 = feed flow minus steam flow, T/H) was fed back to the master in T/H.
+- Basis: percent signals between blocks (PROJECT_RULES 4a): MV % x 5.5 = T/H; SI0246 is in the same range since the steam flow is converted by SCALE CONVERT 500 / 550.
+- Work done: x 5.5 on the master MV in the sum; RB-MV x 100 / 550 for the tracking (ABC-010 only).
+- Result: MV 25 % with steam 300 T/H gives SV 437.5 T/H (before: 325).
+- **Please verify** (V-18): (a) the master gain base: that the master MV (%) is a % of 550 T/H as assumed. (b) Feed water flow compensation: the simulator multiplies the flow by 1.03 and by the density factor (LN30 / 833.34) in a linear way and passes the square root block as identity, i.e. it treats the AI as a real flow. If the AI is the differential pressure of the DCS, the factors are under the square root (about 4 % less than shown). Not changed.
 
