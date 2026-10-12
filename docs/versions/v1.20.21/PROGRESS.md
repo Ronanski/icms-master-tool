@@ -4,7 +4,7 @@ Legend: Done = structure traced against the drawing and scenarios run; Batch = a
 
 | Sheet | Status | Detail (see `FINDINGS.md`) |
 |---|---|---|
-| ABC-005 | Mostly done | 11 tests; F-1 fixed; N-1 open (magnitudes); PID auto dynamics, SUMA integration, ALM limits not done |
+| ABC-005 | Mostly done | 11 tests; F-1 fixed; N-1 open (magnitudes); PID auto dynamics, SUMA integration, ALM limits not fully driven: V-21 to verify |
 | ABC-028 | Done | Pass |
 | ABC-054 | Done | Pass |
 | ABC-017 | Done | Pass |
