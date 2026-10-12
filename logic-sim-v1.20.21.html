@@ -1339,6 +1339,14 @@ function anDefaults(S){
   fx(20,1,100/27,'SCALE CONVERT 12000 / 2700: limestone T/H to feeder speed % (27 T/H = 100 %): x 100 / 27');
   fx(28,13,1.3,'LIMESTONE DENSITY BASE : 1.3 (drawing label); drawing box shows 13');
   fx(19,13,1.3*100/27,'LIMESTONE DENSITY BASE : 1.3, feeder speed % to T/H (27 T/H = 100 %): 1.3 x 100 / 27')}
+ if(S.name==='ABC-009A'||S.name==='ABC-009B'){/* bottom ash screw cooler speed controllers: the MAN SICL1060A ~ D work in rpm (0 ~ 5 rpm, workbook), the loop signals are percent of 5 rpm (AUTO-MV, "12 %" back-up value, comparison with the output, average of the four speeds as the PV of PIC-BASC) */
+  const labs=n=>[S.lab[n]&&S.lab[n].t||''].concat((S.tagN||[]).filter(z=>z.n===n).map(z=>z.t)).join('|');const lab=labs;const isMV=n=>/(^|\|)SICL1060[A-D]\.MV/.test(labs(n))||/(^|\|)AO0(211|323|339|787)\b/.test(labs(n));
+  for(const b of S.blk){
+   if(b.k==='AMT'&&/B\s*\/\s*T/.test((b.txt||[]).join('/'))&&b.o.some(n=>b.o.length&&S.cns[n].some(c=>c.k==='MAN'&&/SICL1060/.test((c.txt||[]).join('/'))))){b.ag=0.05;b.note='AUTO-MV in % of 5 rpm -> rpm'}
+   if(b.k==='SW'&&b.i.some(isMV)&&b.i.length>=3&&!b.o.some(n=>/SI03(23|43|53|73)/.test(labs(n)))){b.ia=b.ia||{};for(const n of b.i)if(isMV(n))b.ia[n]=[20,0];b.note='speed (rpm) -> % of 5 rpm'}
+   if(b.k==='DEV'&&b.ip&&b.ip.some(q=>isMV(q.n))&&b.ip.some(q=>/SI03[2-7]\d/.test(labs(q.n)))){for(const q of b.ip)if(isMV(q.n))q.ia=[20,0];b.note='speed (rpm) -> % of 5 rpm for the comparison'}
+   if(b.k==='CONST'&&b.p&&b.p.val===12&&S.cns[b.o[0]]&&S.cns[b.o[0]].some(c=>c.k==='SW')){b.p.val=0.6;b.note='12 % of 5 rpm = 0.6 rpm'}
+   if(b.k==='CONST'&&b.p&&b.p.val===0.25&&b.note&&/fraction/.test(b.note)){b.p.val=0.25*20;b.note='average of the four speeds (1/4) in % of 5 rpm (x 20)'}}}
  if(S.name==='ABC-001C'){/* the boiler master chain is written in percent of 0 ~ 120 T/H coal (the drawing: -0.42 % = -0.5 T/H, 18 % / Hr = 0.005 % / sec); HIC-BM is 0 ~ 100 % and SI0213 is the coal demand in T/H (ABC-002: 0 ~ 120 T/H) */
   for(const b of S.blk){
    if(b.k==='MUL'&&b.gain===1&&b.o.some(n=>S.lab[n]&&/^SI0213/.test(S.lab[n].t))){b.gain=1.2;b.note='boiler master MV % x 1.2 = coal demand T/H (100 % = 120 T/H)'}
@@ -1719,7 +1727,7 @@ function anStep(S,dt){const rt=S.rt,v=rt.v,nets=S.nets,B=x=>x>.5?1:0;rt.t+=dt;rt
      u=kp*es+s.I+Dt;if(u>hi){s.I-=u-hi;u=hi}else if(u<lo){s.I+=lo-u;u=lo}}
     s.ep=es;s.out=u;s.es=es;s.pt=kp*es;s.it=s.I;s.dd=Dt;s.inited=1;out(u);break}
    case 'SW':case 'AMT':{if(b.q4){const q=b.q4;let k=-1;for(let i=0;i<q.cond.length;i++)if(P['c'+(i+1)]>.5){k=i;break}if(k>=0)s.q4k=k;const lg=q.cond[s.q4k==null?0:s.q4k].leg;s.pk=lg.toUpperCase();s.q4l=lg;if(b.o.length)out(q.leg[lg]>=0?rd(q.leg[lg]):0);break}const sel=b.sel>=0?B(rd(b.sel)):0;let pickB=P.selA?!sel:!!sel;if(b.cs&&b.cs.length>1){const ua=!swTimer(S,b)&&b.cs.some(c=>(rt.force[c.n]!==undefined||(S.ext&&S.ext.includes(c.n)))&&B(rd(c.n)));if(ua&&!s.ub){s.ub=1;s.upk=s.pk==='B'?'B':'A'}else if(!ua&&s.ub){s.ub=0;s.pk=s.upk}}if(b.cs&&b.cs.length>1){const wB=b.cs.some(c=>!c.A&&B(rd(c.n))),wA=b.cs.some(c=>c.A&&B(rd(c.n)));pickB=wB?true:wA?false:s.pk==='B'}if(s.fm==='A')pickB=false;else if(s.fm==='B')pickB=true;s.pk=pickB?'B':'A';let y;
-     const n=pickB?b.b:b.a;if(n>=0){y=rd(n);if(pickB&&b.bg!=null)y*=b.bg}else y=(s.hold!=null?s.hold:0);if(!pickB||b.b>=0)s.hold=y;s.y=y;
+     const n=pickB?b.b:b.a;if(n>=0){y=rd(n);if(pickB&&b.bg!=null)y*=b.bg;if(!pickB&&b.ag!=null)y*=b.ag;if(b.ia&&b.ia[n])y=y*b.ia[n][0]+b.ia[n][1]}else y=(s.hold!=null?s.hold:0);if(!pickB||b.b>=0)s.hold=y;s.y=y;
      const other=pickB?b.a:b.b;
      /* bumpless tracking: the PID / MAN that feeds the unselected A input follows the output */
      if(b.trkFrom)for(const d of b.trkFrom){const ds=rt.st[d.id];if(ds)ds.trk=pickB?y:null}
