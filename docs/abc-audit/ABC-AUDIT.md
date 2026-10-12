@@ -83,6 +83,7 @@ Do not create empty version folders. Use the app's verified version, not a versi
 | F-2 | all PID | CUT / DH swapped between sim data and workbook (not used by sim) | Closed, no action |
 | F-7 | 9 sheets | SCALE CONVERT a/b multiplied engineering-unit values (source range / destination range) | Fixed, verified |
 | F-8 | ABC-005 | Limestone chain shows real values (count scale, T/H to %, density base 1.3) | Fixed, verified; user to verify constant 13 vs 1.3 |
+| F-9 | ABC-003E | Burner SV took the oil master % as T/H; burner ramp 5 %/min not applied | Fixed, verified; user to verify V-13 |
 | N-1 | ABC-001B | RATE LIMIT time input T = B/A·100/60 still 1e5–1e7 | Needs Verification |
 
 Details: [v1.20.21 findings](../versions/v1.20.21/FINDINGS.md). Do not copy entire diagrams, spreadsheets, or PDFs into this document.
