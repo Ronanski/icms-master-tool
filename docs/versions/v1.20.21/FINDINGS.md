@@ -101,6 +101,7 @@ Run once over every sheet instead of page by page. Sources: `summary-of-pid-pidv
 14. `anFXIn`: a table whose X unit is just "RANGE" with X range 0 ~ 100 is a percent table (input scaled from the source range). → F-15.
 15. `anDefaults` (ABC-008 only): a number written on the wire into a divider is a constant; `anFXIn`: a divider by such a constant is a plain average (percent in, percent out), not a ratio. → F-16.
 16. `anDefaults` (ABC-010 only) plus engine hooks: an affine `ia` on one input of ADD / SUM / DEV / SUB and `oa` on the output of DIV: drum level compensation in percent, master MV % to T/H. → F-17, F-18.
+17. `anCompile`, case SW: when the selector pin has no "1:a / 1:b" label, the nearest condition label within 40 units gives the selected input (diagonal selector wires). → F-19.
 
 Verification after the changes (same headless method):
 - All 15 ÷ blocks compared before / after: exactly 2 changed (ABC-005 #21, ABC-032 #26). ABC-001B #8 (formula "T = B / A * 100 / 60") was briefly affected during development and is unchanged in the final patch.
@@ -359,4 +360,21 @@ The two sheets have the same cascade: outlet temperature PID (TICBR1140 / TICMS1
 - Work done: x 5.5 on the master MV in the sum; RB-MV x 100 / 550 for the tracking (ABC-010 only).
 - Result: MV 25 % with steam 300 T/H gives SV 437.5 T/H (before: 325).
 - **Please verify** (V-18): (a) the master gain base: that the master MV (%) is a % of 550 T/H as assumed. (b) Feed water flow compensation: the simulator multiplies the flow by 1.03 and by the density factor (LN30 / 833.34) in a linear way and passes the square root block as identity, i.e. it treats the AI as a real flow. If the AI is the differential pressure of the DCS, the factors are under the square root (about 4 % less than shown). Not changed.
+
+## Batch 18 — ABC-003A, ABC-003B, ABC-003C, ABC-003D (start-up burner A ~ D fuel / air control)
+
+ABC-003B / C / D are the same drawing as ABC-003A with their own tags (B / C / D); 003A also holds the SA temperature select (TT-FA1086 / 1087 → SI0078) that the others receive.
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-003A | 01 | Structure: oil pressure PID PICDO1043A (ACT:R, SV − PV), oil flow PID FICDO1043A (ACT:R, SV from the oil master SI0305 or COS), SA flow PID FICFA1043A (ACT:R, 0 ~ 65 T/H, SV = ramp 1 %/s of (LN19 oil flow → SA demand × oil / air ratio LN21 0.8 ~ 1.2, min 0 + bias LN9 −10 ~ 10 T/H)); SA flow = TP + square root of AI0164 with the TT average; pressure / flow select S/R M.0359; M.0110, M.0118, M.0112, M.0121, M.0122, M.0123, M.0124, M.0350, M.0352, M.0353; SA damper positions: ignition 16 %, purge 25 %, bias 5 / 10 % (MW < 130); SV 49 T/H with house operation and burner in service (M.035C); total diesel oil flow SI0061 = sum of four burner flows (SCALE CONVERT 35 / 140 = x 1, F-11) | as listed | same after F-19 | Pass after F-19 |
+| ABC-003A | 02 | Oil flow 2 T/H: LN19 gives 45 T/H, ratio 0.8 / 1.2 gives 36 / 54, bias ±10 gives ±10 T/H; TP / square root: 30 T/H at 300 °C gives 30.1, at 400 °C 25.6; shutdown command, ignition position, MFT pulse, purge and shutdown-complete pulses | as drawn | as drawn (shutdown: SA damper to 16 %, purge pulse 25 %, then 5 %) | Pass |
+| ABC-003B, C, D | 01 / 02 | Same structure by netlist comparison (the three are identical to each other; 111 blocks against 141 of ABC-003A, the difference is the SA temperature select and its alarms); shutdown command M.3434: SA damper 16 % then 5 % | as ABC-003A | as ABC-003A after F-19 (tested on ABC-003B) | Pass |
+
+### F-19 — Selector with its condition label beside a diagonal wire selected the wrong input (ABC-003A ~ D, ABC-008, ABC-020) (Confirmed, fixed)
+- Problem: some T (SW) blocks have the condition label "1:a" next to the diagonal selector wire, not at the selector pin. The simulator did not link the label to the block and used the default "1:b". On ABC-003A ~ D the ignition position switch (a = 16 %, b = next switch) therefore gave the SA damper bias (5 %) when the shutdown command M.0122 was active instead of the ignition position 16 %. On ABC-008 the damper demand switch (a = LN13 of the H/C demand when hydraulic control is selected, M.0202) used the damper PID output.
+- Basis: the drawings show "1:a" at those T blocks.
+- Work done: for a SW whose selector pin has no label, the nearest "1:a / 1:b" label within 40 units is used. Scan of all SW / AMT blocks before / after: exactly six changed (ABC-003A #64, ABC-003B / C / D #48, ABC-008 #27, ABC-020 #72).
+- Result: ABC-003A shutdown: SI0093 = 16 (before 5). ABC-020 #72 is checked again on its own audit.
+- Note: the oil master use flag M.008F reaches ABC-003A ~ D from ABC-003E (connector 13). In the simulator it is the other sheet's own state: with the oil master not selected, M.0110 (oil flow auto / manual) stays at 1 on each burner sheet by design.
 
