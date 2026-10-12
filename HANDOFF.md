@@ -36,11 +36,11 @@ ABC analog logic audit using a Cause & Effect / Golden Reference approach. User 
 - Method note: ABC PDFs have no text layer (read visually). Simulator was driven headless (Playwright + bundled Chromium) by writing to the sheet's external-input nets and reading net values; nothing was modified.
 
 ## Next actions
-1. **Decision needed:** approve or reject a fix for F-1 (÷ reader should understand a stacked B-over-A fraction). Also check whether other sheets have the same pattern before deciding scope. No code is changed until approved.
-2. Finish ABC-005: PID AICFG10571 parameters/auto output, SUMA, ALM (read `summary-of-pid-pidv-suma-man-parameters.xlsx`).
+1. **Decision needed:** approve or reject a fix for F-1 (÷ reader should understand a stacked B-over-A fraction). Scope already checked: only 1 of 15 ÷ blocks is a readable stacked B/A (ABC-005); 6 unreadable ones (ABC-008, 000, 027, 032, 002 x2) are checked when their pages are audited. No code is changed until approved.
+2. Finish ABC-005: PID auto-mode dynamics, SUMA integration, ALM limits (PID/SUMA parameters already Pass).
 3. Audit ABC-004A next (source of SI0144) to settle N-1 and N-3.
 4. Do not alter simulation logic or create a release unless approved.
 
 ## Current task status
-**Done:** ABC-005 traced, 9 tests run, addresses cross-checked; findings documented. apk/exe testing is done by the user, not by Claude.
-**Not done:** remaining 53 ABC pages, ABC-005 PID/SUMA/auto numerics, any fix, build, or release.
+**Done:** ABC-005 traced, 11 tests run, addresses cross-checked; findings documented. apk/exe testing is done by the user, not by Claude.
+**Not done:** remaining 53 ABC pages, ABC-005 PID auto dynamics/SUMA integration/ALM, any fix, build, or release.
