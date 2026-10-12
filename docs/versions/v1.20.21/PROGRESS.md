@@ -28,6 +28,7 @@ Legend: Done = structure traced against the drawing and scenarios run; Batch = a
 | ABC-030 | Done | Pass |
 | ABC-031 | Done | Pass |
 | ABC-051 | Done | Pass |
+| ABC-003E | Done | Pass; F-9 fixed (units and ramp), V-13 to verify |
 | ABC-009B | Rendered, not traced | dense sheet; needs zoomed reading |
 | All F(X) tables | Done | 89 / 89 equal to the workbook |
 | ABC-000A / 000B / 000 | Not applicable | contents list and symbol legend |

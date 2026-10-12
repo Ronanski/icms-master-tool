@@ -92,6 +92,7 @@ Run once over every sheet instead of page by page. Sources: `summary-of-pid-pidv
 5. `anCompile`, case HC/LC/HLC: if no set point text is found within 16 units, search 30. → F-6.
 6. `anCompile`, case CONST: a ratio constant next to a "SCALE CONVERT" label is ×1 in real values. → F-7.
 7. `anDefaults`: ABC-005 limestone chain constants scaled to real values (guarded). → F-8.
+8. `anDefaults` (ABC-003E only) plus small engine hooks: a `gain` on cross-sheet LINK drivers, a `bg` multiplier on the B input of AMT/SW, a fixed ramp on the four burner RATE blocks, a scaled set point for the four "< X%" comparators. → F-9.
 
 Verification after the changes (same headless method):
 - All 15 ÷ blocks compared before / after: exactly 2 changed (ABC-005 #21, ABC-032 #26). ABC-001B #8 (formula "T = B / A * 100 / 60") was briefly affected during development and is unchanged in the final patch.
@@ -212,3 +213,20 @@ Scenario method: inputs written to external nets or forced, SIG.AB states set, s
 |---|---|---|---|---|---|
 | ABC-051 | 01 | Structure: two TT with SIG.AB, SELECT → SI0160; saturation temperature from LN10 (SI0172); SV chain (SI0171 = 220, 300 when I.0418 = 1); trip I.0400 selects 1.0 / 0.5 (T "1:b" / "1:a"); M.071E → TPS 2 s → M.070A → M.0715, M.0174; M.0707 → M.0716 pulse; M.0702 → M.0174; M.012C → SI0177 = 100 | as listed | same | Pass |
 | ABC-051 | 02 | Average 510; saturation at 40 kg/cm² = 280.64; trip on / off; M.071E 2 s pulse; both TT bad; TT 210 vs saturation 213.86 | SI0172 280.64; trip on: n16 = 1, SI0178 66.4, SI0176 300; trip off: n16 = 0.5; M.071E: M.0715 = 1, M.0174 = 1, SI0177 = 0; both bad: M.0715 = 1; 210 < 213.86: M.0717 = 1 | same | Pass |
+
+## Batch 9 — ABC-003E (oil master control, four burner oil flow function blocks)
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-003E | 01 | Structure: SI0061 (total diesel oil flow, T/H) PV and COS SV into a PID FIC-OM (ACT:R, deviation = SV − PV); T M.0091 (all four burners LOC) selects the COS manual value (1:B); T BU-CMD M.0092 = TOF 2 s of M.0091 selects RB-MV SI0304 (1:B); SI0304 = four-way selector (M.009A–D select a–d = FICDO1043A–D.SV); M.0093 = TON 2 s of NOT M.0091 | as listed | same | Pass |
+| ABC-003E | 02 | Selector a / b / c / d; PV 5 / SV 8; all LOC → SI0304 | SI0304 = chosen burner SV; MV rises when PV < SV; all LOC → manual value, then RB-MV | same (SI0304 2 / 3 / 4 / 5; n147 = 8 with all LOC) | Pass |
+| ABC-003E | 03 | Digital part: M.0095 (any SIG.AB), M.0090 (all in service), M.008E (any REM), M.009F (any in service), M.0097 = OR(M.0095, M.0096, NOT M.0090, NOT SAF REM, NOT PAF REM, NOT M.008E, TPS M.008D), M.008F = S/R(TPS M.008C, M.0097), M.0098 = TPS 2 s of NOT M.008F, M.008B = AND(M.009F, NOT M.0096) | as listed | same (burner out → M.0097 = 1, M.008F reset, 2 s pulse M.0098; M.0096 = 1 → M.008B = 0) | Pass |
+| ABC-003E | 04 | Burner function block A–D: T (NOT LOC AND M.0093) picks MV else SV; compare MV − SV < 3 % (M.5011), TONS 2 s of NOT LOC (M.5012), S/R M.5010; ramp 5 %/min (bypassed in LOC); final T (M.5010) → SV-A…D (SI0305…SI0308) | as listed | wiring same; see F-9 for units and ramp | Pass after F-9 |
+
+### F-9 — ABC-003E burner SV took the oil master % as T/H, and the burner ramp was not applied (Confirmed, fixed; needs user verification V-13)
+- Problem: the oil master FIC-OM (0.00 ~ 14.00 T/H, workbook row FIC-OM) outputs a % of its range. Each burner flow loop FICDO1043A–D works in T/H (range 0–3.5, workbook and I/O list). The drawing sends FIC-OM.MV straight into the burner function block (PS0001), where it becomes the burner SV (SI0305–SI0308). The simulator passed the number unchanged, so a master output of 18 % gave a burner SV of 18 T/H (saturated at 3.5). The RAMP: 5 %/min text (PS0004) was not applied: the ramp block had no rate and followed instantly. The "SET X% 3 %" window was compared with T/H values.
+- Basis: percent signals between blocks (PROJECT_RULES 4a, scale as a user would): burner SV = MV % × 3.5 / 100 (equal to 14 T/H ÷ 4 burners). RB-MV (SI0304, burner SV in T/H) goes back to the master in % (× 100 / 3.5). SET X% 3 % = 0.105 T/H. RAMP 5 %/min of 3.5 T/H = 0.175 T/H per minute, both directions.
+- Work done: scale on the LINK feeding the four FIC-OM.MV copies, multiplier on the B input of the M.0092 selector, scaled set point of the four < X% blocks, fixed rate on the four ramp blocks (ABC-003E only).
+- Result: PV 5 / SV 8 gives master 18.1 % and burner SV 0.634 T/H; after 63 s the burner SV is 0.184 T/H (ramp 0.175 T/H/min); all LOC with SV-A 1.75 T/H gives RB-MV 50 % and burner SV 1.75 T/H.
+- **Please verify** (V-13): (a) PTN004029 (PS0003) is not in any reference; the sim uses 5 %/min for both directions. (b) Memory labels: the drawing prints M.5011 on the comparator output and M.5012 on the TONS output; the simulator has the two names swapped. No logic effect (the nets are separate in each burner).
+
