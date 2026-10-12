@@ -48,6 +48,10 @@ Trace the complete path from input through blocks to output, including cross-pag
 - Never claim that HTML, portable EXE, or APK was built or tested unless it was actually done and evidence is available.
 - Keep the existing version naming convention. Do not infer the runtime version solely from a filename.
 
+## 4a. Value basis (user decision)
+
+The simulator shows **real values** (T/H, kg/cm², MW, %, °C). It does not simulate the DCS percent-of-range or count scaling (100 % = 10000). Where a drawing constant exists only for that scaling (SCALE CONVERT a/b, ×10000 and similar), the scaling is done **as a user would**, so the real value appears on screen. Each such change is recorded as a finding with its basis (the ranges and labels printed on the drawing, the reference workbooks) and listed for the user's verification.
+
 ## 5. Repository documentation — keep it clean
 
 Maintain only these central documents unless the project genuinely needs more:
