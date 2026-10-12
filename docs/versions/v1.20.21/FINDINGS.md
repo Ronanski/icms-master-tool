@@ -161,3 +161,16 @@ Scenario method: inputs written to external nets or forced, SIG.AB states set, s
 | ABC-013 | 01 | Structure: H/ > 134 → M.0254; trip M.3225 → TPS 9 s → M.0256; AND(NOT M.3225, M.0254) → TPS 2 s; OR → M.0252; SV 130 / 115 (T, TOF 2 s); BU-CMD OR(M.0256, M.025D); SI0362 = T(100 %, LN18); S/R FF 81.5 / 76 MW; OR of 52L1, 52G1, trip AND (TOF 10 s / TPS 300 s) → M.025B → TPS 3 s (M.025C), TPS 7 s (M.025D) | as listed | same | Pass |
 | ABC-013 | 02 | PV 140 → M.0252 pulse 2 s (SV 130); trip → M.0256 9 s, SV 115, M.025E = 1, AO = F(X); MW 85 + 52L1 open → M.025B, M.025C 3 s, M.025D 7 s (AO 100 % for 7 s); MW 70 resets the FF | as drawn | as drawn | Pass |
 | All sheets | F(X) | 89 LN curves of `linear-curves-fx.xls` vs the simulator tables (16 points each, title, drawing number); S1-LN38 / LN39 vs `drum-level-calculation.xls`; 111 F(X) blocks vs their table | equal | 89 / 89 equal (four ratio curves are stored as a factor 0.8 / 1 / 1.2 instead of 80 / 100 / 120 %); LN38 / LN39 equal; every block has a table; shared tables are by design (burners B-D use the ABC-003A tables, ash coolers A-D and heaters 35-39 share tables, as the workbook says) | Pass |
+
+## Batch 4 — ABC-055, ABC-014
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-055 | 01 | Structure: AI0181 → SV−PV (ACT:R) → PIDV HICBR1391 (MVA from B.065D); A/M T (1:A M.0310, 1:B B.065D); M.0310 = OR(M.031A, M.0319, M.031B); M.0315 = AND(MFT TON 2 s, M.254F, NOT PA fan running, M.321C, NOT drum level LL); three TPs 2 s (TR230 / TR231 / TR232); S/R M.0319; drop-rate H/ > 5 and /L < 4.7 → S/R → M.0314; S/R M.000A with BU-CMD conditional write | as listed | same | Pass |
+| ABC-055 | 02 | MFT + M.254F + M.321C, PA fan stopped, no drum LL | after TON 2 s M.0315 = 1; 2 s pulse M.0317 → M.031A = 1, M.0310 = 1, SV 25 % | same (pulse over after 2 s) | Pass |
+| ABC-055 | 03 | Same with drop rate > 5 (M.0314 = 1); then PA fan running | M.0316 pulse sets M.0319 (SV 20 %), stays latched; when M.0315 drops the M.0318 pulse resets it and M.031B = 1 for 2 s (SV 0 %) | same | Pass |
+| ABC-014 | 01 | Structure of the two loops: PV−SV ACT:R, PID FICFA1055A / B, M.0266 = OR(B.0729, NOT L.0044, NOT L.0043, NOT M.3308), BU-CMD = TPS 2 s of NOT(M.3308) with RB-MV 25 %, H/ > 23 AND /L < 27 → M.2550 | as listed | same (input nets matched to their labels one by one) | Pass |
+| ABC-014 | 02 | Blower A stops / outlet SOV not opened / silencer SOV not closed / B.0729 bad | M.0266 = 1 (manual); blower stop gives a 2 s BU-CMD pulse with MV 25 % | same | Pass |
+
+### Cross-page links (all sheets) — to check sheet by sheet
+- After stepping every sheet, 154 digital inputs are linked to their source page. 38 digital inputs sit next to a "( FROM ABC-xxx )" note without a link; many of them are false alarms because the note belongs to the next line (for example ABC-014: L.0044 comes from DITL, only B.0729 comes from ABC-006, and that one is linked). Each candidate is checked when its sheet is traced; none is counted as a defect yet.
