@@ -94,6 +94,8 @@ Do not create empty version folders. Use the app's verified version, not a versi
 | F-17 | ABC-010 | Drum level pressure compensation mixed % and mm | Fixed, verified |
 | F-18 | ABC-010 | Master level MV (%) added to steam flow (T/H) as a plain number | Fixed, verified; user to verify V-18 |
 | F-19 | ABC-003A ~ D, 008, 020 | SW with its "1:a" label beside a diagonal wire selected b | Fixed, verified |
+| F-20 | ABC-001C, 020 (and the two-input MAN of 001A / 001B / 009A / 009B) | LAG enable taken as the signal; MAN did not follow its auto set point | Fixed, verified |
+| F-21 | ABC-001C | Boiler master chain mixed % and T/H | Fixed, verified; user to verify V-19 |
 | N-1 | ABC-001B | RATE LIMIT time input T = B/A·100/60 still 1e5–1e7 | Needs Verification |
 
 Details: [v1.20.21 findings](../versions/v1.20.21/FINDINGS.md). Do not copy entire diagrams, spreadsheets, or PDFs into this document.

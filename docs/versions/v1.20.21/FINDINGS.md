@@ -102,6 +102,7 @@ Run once over every sheet instead of page by page. Sources: `summary-of-pid-pidv
 15. `anDefaults` (ABC-008 only): a number written on the wire into a divider is a constant; `anFXIn`: a divider by such a constant is a plain average (percent in, percent out), not a ratio. → F-16.
 16. `anDefaults` (ABC-010 only) plus engine hooks: an affine `ia` on one input of ADD / SUM / DEV / SUB and `oa` on the output of DIV: drum level compensation in percent, master MV % to T/H. → F-17, F-18.
 17. `anCompile`, case SW: when the selector pin has no "1:a / 1:b" label, the nearest condition label within 40 units gives the selected input (diagonal selector wires). → F-19.
+18. `anCompile`, case LAG: the analog signal is the first input, a digital enable ("1 : ENABLED") after it. Engine, case MAN: the set point input is the one driven by the B/T (auto / manual) selector, not always the third. `anDefaults` (ABC-001C only): boiler master in percent of 0 ~ 120 T/H. → F-20, F-21.
 
 Verification after the changes (same headless method):
 - All 15 ÷ blocks compared before / after: exactly 2 changed (ABC-005 #21, ABC-032 #26). ABC-001B #8 (formula "T = B / A * 100 / 60") was briefly affected during development and is unchanged in the final patch.
@@ -389,4 +390,23 @@ ABC-003B / C / D are the same drawing as ABC-003A with their own tags (B / C / D
 | ABC-052 | 01 / 02 | Structure: LP bypass pressure PID PICHR1003 (0 ~ 50 kg/cm2, ACT:N), SV = max(7.6, LN12(HP first stage pressure) + 5.1 when the HP bypass is closed, lag 3 s), ramp 1 %/s (0.5 kg/cm2/s); spray water PID TICHR1012 (0 ~ 300 °C, ACT:N); condenser vacuum M.0727 (2 of 3 switch pairs), M.0729 (spray CV opened and outlet > 265 °C TON 15 s, vacuum, condensate / seawater pumps TON 10 s), M.0722 / M.0723 / M.072C / M.0726 | as listed | same (SI0179 = 37.0 at 100 kg/cm2 HP, 7.6 minimum at 5, ramp 0.5/s, M.0727 only with two switches) | Pass |
 | ABC-015 | 01 / 02 | 12 identical MAN channels (HICFA1005 ~ 1016): AUTO-MV from ABC-057 (SI0230 ~ 0235, SI0250 ~ 0255), A / M by M.144C (1:A) and NOT M.144C (1:B), SIG.AB / AI positioners; M.144C = 1: MV follows SI0230; M.144C = 0: MV holds | as drawn | as drawn | Pass |
 | ABC-016 | 01 / 02 | 10 channels (HICFA1017 ~ 1026), same structure with SI0236 ~ 0240 and SI0256 ~ 0260; the ABC-057 outputs are all linked (22 = 12 + 10) | as ABC-015 | same by netlist and link check | Pass |
+
+## Batch 20 — ABC-001C (CCS / boiler master / turbine master) and ABC-001D (CCS BIR logic)
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-001C | 01 | Structure: MW(C) / MW(D) select × 240 / 200 → SI0239; turbine master MAN EIC-TM (SV = SI0236 = lagged unit load demand + LN55 pressure term); main steam pressure PID PIC-COBM (ACT:R, ±25 %) → SI0225 = PIC MV + SI0201; SI0201 = SI0250 + LN54(SI0226) + BIR SI0219; boiler master MAN HIC-BM (0 ~ 100 %) with BU-CMD (M.2000, RB-MV total fuel flow SI0017) and SI0213 = MV × 1; steam flow with pressure / temperature compensation and square root; M.0101 (> 220 T/H), M.2001 (< 10 % MCR 46 T/H), M.2002 / M.3154 (< 15 % MCR 69 T/H); pressure flags 134 / 130 / 100 / 72.9 kg/cm2; M.311D / M.311F (50 / 75 MW); M.2013, M.2016, M.2017, M.201B, M.2010, M.201F | as listed | same after F-20, F-21 | Pass after F-20, F-21 |
+| ABC-001C | 02 | Load demand 150 MW: SI0221 = LN54 = 81 T/H (design coal 81); auto flags: boiler master follows SI0225 (42.5 % = 81 T/H × 100 / 120 − 25 %), SI0213 = MV × 1.2 = 51 T/H; the tracking RB-MV −30 T/H = −25 % | as drawn | as drawn | Pass |
+| ABC-001D | 01 | Structure: MWD − X and ABS, load up / down S/R (≥ 2 / < 0.3 MW, ≤ −2 / > −0.3 MW), LN61 / LN62 coal curves, LN60 gain by MW/min, LN58 / LN59 gains, two rate blocks (2.7 T/HR = 2.25 %/HR and 1.8 T/HR = 1.5 %/HR, bypass M.2038 / M.2039), BIR = sum | as listed | same | Pass |
+| ABC-001D | 02 | MWD 120 / X 100 / rate 5 MW/min: SI0215 = 0.65 × 1.1 × 1.2 = 0.858 T/H; the rate block is bypassed while load up is active and ramps down at 2.7 T/h (0.00075 T/H/s: 0.858 → 0.406 in 603 s); MWD 80: SI0216 = −0.715 immediately, BIR = SI0217 + SI0218 | as drawn | as drawn | Pass |
+
+### F-20 — Two engine reading errors (ABC-001C, ABC-020 and the sheets listed) (Confirmed, fixed)
+- LAG with an enable input (ABC-001C f(t) 900 s): the simulator took the digital enable (always 1) as the signal, so SI0250 stayed at 1 T/H and the boiler master had a permanent +1 T/H offset. The analog input is now the signal. Scan of all LAG blocks: only ABC-001C #44 changed.
+- MAN with two inputs (PV, SV): the simulator expected the SV on the third input, so the manual station did not follow its AUTO-MV in auto. ABC-001C HIC-BM and EIC-TM stayed at 0 (so did SI0213), and ABC-020 HICHR1002A stayed at 19 while its auto value was 28.9. The SV is now the input driven by the B/T (auto / manual) selector. ABC-020 re-checked: HICHR1002A.MV = 28.91. Scan of all MAN blocks: the two-input MAN of ABC-001A, ABC-001B, ABC-009A, ABC-009B, ABC-020 and ABC-001C are affected; the earlier ABC-001B, ABC-004B / C, ABC-005 ~ 056 scenarios gave identical results before and after.
+
+### F-21 — ABC-001C boiler master chain mixed % and T/H (Confirmed, fixed; needs user verification V-19)
+- Problem: the chain is written in percent of 0 ~ 120 T/H of coal (the drawing says "−0.42 % (−0.5 T/H)" and "18 %/Hr (0.005 %/sec)"; ABC-002 labels SI0213 "0.0 ~ 120.0 T/H"). The simulator added the PID MV (%, ±25) to SI0201 (T/H), used −0.42 as T/H, and passed HIC-BM (0 ~ 100 %) as the coal demand (T/H) with the drawing's "× 1".
+- Work done (ABC-001C only): SI0213 = HIC-BM.MV × 1.2 (100 % = 120 T/H); SI0201 is converted to % (× 100 / 120) where it is added to PIC-COBM.MV; the RB-MV of the pressure controller in % (× 100 / 120); the constant −0.42 becomes −0.5 T/H; the 18 %/Hr rate becomes 21.6 T/H per hour.
+- Result: load demand 150 MW with PIC MV −25 %: HIC-BM 42.5 % and SI0213 51 T/H (before: HIC-BM stuck at 0, SI0201 = 82 with +1 offset).
+- **Please verify** (V-19): (a) 100 % of HIC-BM = 120 T/H (basis above); (b) steam flow compensation (SI0230, SI0228 / SI0229 are applied to the flow linearly and the square root block passes the value): about 4 % higher at 130 kg/cm2 and 540 °C than a compensation under the square root. Same question as V-18, not changed.
 
