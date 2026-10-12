@@ -13,6 +13,10 @@ Legend: Done = structure traced against the drawing and scenarios run; Batch = a
 | ABC-006 | Partly | total air flow Pass after F-7; rest not traced |
 | ABC-032 | Partly | ÷ order (F-4) and SV scaling (F-7) Pass; rest not traced |
 | ABC-001A | Structure done | F-6 fixed; no numeric scenario yet |
-| ABC-033, ABC-034 | Next | simplest remaining sheets |
+| ABC-033 | Done | Pass |
+| ABC-034 | Structure done | Pass; no numeric scenario yet |
+| ABC-013 | Done | Pass |
+| ABC-009B | Rendered, not traced | dense sheet; needs zoomed reading |
+| All F(X) tables | Done | 89 / 89 equal to the workbook |
 | ABC-000A / 000B / 000 | Not applicable | contents list and symbol legend |
-| Other 41 sheets | Batch only | parameters, AI tags, dividers, comparators, health |
+| Other 38 sheets | Batch only | parameters, AI tags, dividers, comparators, health |
