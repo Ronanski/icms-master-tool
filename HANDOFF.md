@@ -17,7 +17,7 @@ ABC analog logic audit (Cause & Effect / Golden Reference method of `docs/abc-au
 `README.md` overview · `PROJECT_RULES.md` rules and source order · this file · `docs/abc-audit/ABC-AUDIT.md` method, summary and findings index · `docs/versions/v1.20.21/` (`FINDINGS.md` evidence, `PROGRESS.md` per-sheet status, `UPDATE_REPORT.md`).
 
 ## Audit status
-- Traced and tested: ABC-005 (mostly), ABC-028, ABC-054, ABC-017, ABC-001B, ABC-056, ABC-033, ABC-013, ABC-055, ABC-014, ABC-029, ABC-004B, ABC-004C, ABC-035 to ABC-039, ABC-053, ABC-019, ABC-030, ABC-031, ABC-051, ABC-003E, ABC-011, ABC-012, ABC-004A, ABC-007, ABC-002, ABC-057, ABC-008, ABC-026, ABC-027, ABC-010, ABC-003A-D, ABC-020, ABC-050, ABC-052, ABC-015, ABC-016, ABC-001C, ABC-001D, ABC-009A, ABC-009B, ABC-001A; structure only: ABC-001A, ABC-034; partly: ABC-006, ABC-032, ABC-008. All 89 F(X) curves checked against the workbook. Details in `PROGRESS.md`.
+- Traced and tested: ABC-005 (mostly), ABC-028, ABC-054, ABC-017, ABC-001B, ABC-056, ABC-033, ABC-013, ABC-055, ABC-014, ABC-029, ABC-004B, ABC-004C, ABC-035 to ABC-039, ABC-053, ABC-019, ABC-030, ABC-031, ABC-051, ABC-003E, ABC-011, ABC-012, ABC-004A, ABC-007, ABC-002, ABC-057, ABC-008, ABC-026, ABC-027, ABC-010, ABC-003A-D, ABC-020, ABC-050, ABC-052, ABC-015, ABC-016, ABC-001C, ABC-001D, ABC-009A, ABC-009B, ABC-001A, ABC-006; structure only: ABC-001A, ABC-034; partly: ABC-006, ABC-032, ABC-008. All 89 F(X) curves checked against the workbook. Details in `PROGRESS.md`.
 - Batch scan of all 54 sheets: 140 controller blocks vs the parameter workbook, 176 AI tags vs the I/O list, 15 dividers, 222 comparators, simulator Health. Everything matches except the items below.
 - Fixed and verified (user approved, evidence in `FINDINGS.md`): F-1 divider B/A (ABC-005), F-3 AI0481 range (ABC-008), F-4 unlabeled divider order (ABC-032), F-5 HIC-MWRL limits (ABC-001B), F-6 comparator set points (ABC-001A), F-7 SCALE CONVERT constants are x1 in real values (16 constants on 9 sheets; basis: the ranges printed on the drawings, e.g. 648 + 432 + 35 = 1115 T/H on ABC-006).
 - F-9: ABC-003E oil master % to burner T/H (x 3.5/100), burner ramp 5 %/min, SET X% 0.105 T/H; user to verify PTN004029 / label names (V-13).
@@ -31,6 +31,7 @@ ABC analog logic audit (Cause & Effect / Golden Reference method of `docs/abc-au
 - F-19 selector label beside diagonal wire (ABC-003A-D, ABC-008, ABC-020 #72 to re-check).
 - F-20 LAG enable / MAN set point input, F-21 ABC-001C % / T/H (V-19). Two-input MAN of 001B, 009A, 009B (SICL1060A-D), 020, 001C now follow their auto set point.
 - F-22 ABC-009A / B bottom ash coolers in rpm vs % (V-20).
+- F-23 % MCR set points to T/H (ABC-001C, 006), 18.7 % SA flow, ABC-010 5 %; F-24 SIG.AB tag mid-wire.
 - Closed: F-2 (PID CUT/DH swapped; simulator does not use them).
 - F-8: ABC-005 limestone chain now shows real values (feeder speed 46.95 % for S 3 %, CaCO3 60 %, coal 81 T/H); user to verify the constant 13 vs 1.3.
 - Open: **N-1** ABC-001B RATE LIMIT time input (T = B/A·100/60) is still of order 1e5–1e7. N-2, N-4 (ABC-005 constant 13 vs 1.3, SI0337 label position; N-3 SI0144 source resolved: sum of the three feeder flows, assumed 7.32 T/H in the app) and AB0114–0116 not found in any list (Cannot Verify). "%" set points are compared as literal numbers against engineering-unit values.
@@ -43,7 +44,7 @@ The app shows real values (PROJECT_RULES 4a). DCS percent / count scaling is not
 - Rules to keep: audit before fixing, only change the ABC reader with evidence, never touch DITL without approval, no release or build claim without **GO STABLE** / **GO BETA**.
 
 ## Next actions
-1. Audit the sheets still partial: ABC-006 (air flow, only part traced), ABC-032, ABC-034 (numeric scenarios), rest of ABC-005 (PID auto, SUMA, ALM limits), and N-1 on ABC-001B. Then regenerate and send the PDF report (per sheet: where to look in the diagram, what was found / changed, items to verify V-1 ~ V-20).
+1. Audit the sheets still partial: ABC-032, ABC-034 (numeric scenarios), rest of ABC-005 (PID auto, SUMA, ALM limits), and N-1 on ABC-001B. Then regenerate and send the PDF report (per sheet: where to look in the diagram, what was found / changed, items to verify V-1 ~ V-20).
 2. ABC-004A (source of SI0144) to settle N-3 and test N-1.
 3. Resolve N-1 (count-scale multiplication) from the DCS function definitions; check the same for "%" set points.
 4. Release / rebuild only on GO STABLE / GO BETA.
