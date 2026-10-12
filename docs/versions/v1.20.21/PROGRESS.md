@@ -1,9 +1,16 @@
 # ABC Audit Progress — v1.20.21
 
-| Page | Status | Detail |
-|---|---|---|
-| ABC-005 | In progress | Ratio, low-limit, running/SIG.AB/trip logic, manual/BU-CMD transfer and addresses Pass; density-correction ÷ fixed (F-1); N-1..N-4 Needs Verification; PID/SUMA parameters Pass; auto-mode dynamics and ALM limits not done. See `FINDINGS.md`. |
-| All 54 sheets | Batch-scanned | PID/MAN/SUMA parameters, 176 AI tags, all 15 ÷ blocks, Health: done. Open: F-2, N-5. |
-| Remaining pages | Per-page logic checks not started | Same method as ABC-005-05..09 |
+Legend: Done = structure traced against the drawing and scenarios run; Batch = automated scan only (parameters vs workbook, AI tags vs I/O list, dividers, comparators, health).
 
-Next page after ABC-005 is closed: ABC-004A (source of SI0144) — needed for N-1 and N-3.
+| Sheet | Status | Detail (see `FINDINGS.md`) |
+|---|---|---|
+| ABC-005 | Mostly done | 11 tests; F-1 fixed; N-1 open (magnitudes); PID auto dynamics, SUMA integration, ALM limits not done |
+| ABC-028 | Done | Pass |
+| ABC-054 | Done | Pass |
+| ABC-017 | Done | Pass |
+| ABC-001B | Done | Pass; magnitudes depend on N-1 |
+| ABC-056 | Done | Structure Pass; M.025F numeric case Needs Verification (N-1) |
+| ABC-001A | Structure done | F-6 fixed; no numeric scenario yet |
+| ABC-033, ABC-034 | Next | simplest remaining sheets |
+| ABC-000A / 000B / 000 | Not applicable | contents list and symbol legend |
+| Other 41 sheets | Batch only | parameters, AI tags, dividers, comparators, health |

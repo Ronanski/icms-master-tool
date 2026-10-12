@@ -1324,7 +1324,7 @@ const AN_DEF={"TP":[{"sheet":"ABC-003A","kp":"FIFA1043A","ft":"FT-FA1043-A","des
 function anFace(S){const F=AN_DEF.FACE;if(!F)return;
  for(const b of S.blk){const k=b.k==='MAN'?'MAN':(b.k==='PID'||b.k==='PIDV')?'PID':b.k==='SUMA'?'SUMA':null;if(!k)continue;const m=(b.txt||[]).map(t=>/^S(\d)-MDL(\d+)$/i.exec(t)).find(Boolean);if(!m)continue;const stn=100+ +m[1],mno=+m[2],e=(F[k]||[]).find(q=>q.stn===stn&&q.mno===mno);if(!e)continue;const P=b.p;b.face=e;
   if(k==='PID'){if(e.P>0)P.kp=+(100/e.P).toFixed(6);P.ti=e.I;P.td=e.D;P.lo=e.ML;P.hi=e.MH;const sp=e.SH-e.SL;if(sp>0){P.span=sp;P.rlo=e.SL;P.rhi=e.SH}if(e.unit)P.unit=e.unit;P.ph=e.PH;P.pl=e.PL;P.dmvh=e.dMVH;P.dti=e.DTI;P.tf=e.TF;P.gap=e.GAP;P.bnd=e.BND;P.cut=e.CUT;P.dh=e.DH;P.phondt=e.PHONDT;P.plondt=e.PLONDT}
-  else if(k==='MAN'){const sp=e.SH-e.SL;if(sp>0){P.lo=e.SL+e.ML/100*sp;P.hi=e.SL+e.MH/100*sp;P.rlo=e.SL;P.rhi=e.SH;if(e.tag==='HIC-MWRL'){P.lo=e.SL;P.hi=e.SH}}if(e.unit)P.u=e.unit;P.ph=e.PH;P.pl=e.PL;P.dh=e.DH;P.dt=e.DT;P.tf=e.TF;P.fsc=e.FSC;P.cut=e.CUT;P.phondt=e.PHONDT;P.plondt=e.PLONDT}
+  else if(k==='MAN'){const sp=e.SH-e.SL;if(sp>0){P.lo=e.SL+e.ML/100*sp;P.hi=e.SL+e.MH/100*sp;P.rlo=e.SL;P.rhi=e.SH}if(e.unit)P.u=e.unit;P.ph=e.PH;P.pl=e.PL;P.dh=e.DH;P.dt=e.DT;P.tf=e.TF;P.fsc=e.FSC;P.cut=e.CUT;P.phondt=e.PHONDT;P.plondt=e.PLONDT}
   else{P.ph=e.PH;P.pl=e.PL;P.rsts=e.RSTS;P.kk=e.K;P.dt=e.DT;P.tf=e.TF;P.cut=e.CUT;P.phondt=e.PHONDT;P.plondt=e.PLONDT;P.sumUnit=e['SUM unit']}}}
 function anDefaults(S){
  /* H-16 the small two-cell box above an I/P converter (valve positioner, field side) was read as a SUB with one input and no output: it is a field device */
@@ -1459,7 +1459,7 @@ function anCompile(S){
    case 'RAMPB':{const t=b.txt.find(q=>/RAMP/i.test(q));P.rate=t?anNum(t.replace(/RAMP\s*:/i,''))/(/\/\s*min/i.test(t)?60:/\/\s*(hr|h)\b/i.test(t)?3600:1):1;P.pct=!!t&&/%/.test(t);P.rtxt=t||'';const mp=ins.find(p=>p.side==='L')||ins[0],bp=ins.find(p=>p!==mp&&/BYPASS|^1:/i.test(p.lab||''))||ins.find(p=>p!==mp&&p.side==='T');b.main=mp?mp.n:undefined;b.byp=bp?bp.n:-1;if(bp&&!nets[bp.n].sigab)nets[bp.n].dig=true;b.i=[b.main,b.byp].filter(x=>x!==undefined&&x>=0);break}
    case 'HC':case 'LC':case 'HLC':{/* set point is written beside the box: "> = 2%", ">= 83.3%", "< 50 T/H", "> 0 kg/cm2" */
      let op=b.k==='HC'?'>':'<',sp=0,inc=false,u='',hit=null;const cl=q=>q.t.replace(/%%%/g,'%').trim();
-     {let alt=null;for(const q of near(b.cx,b.cy,16)){const m=cl(q).match(/^([<>≤≥])\s*(=)?\s*(-?\d+(?:\.\d+)?)\s*(.*)$/);if(!m)continue;if(/[>≥]/.test(m[1])===(op==='>')){hit=m;break}if(!alt)alt=m}if(!hit)hit=alt}
+     {let alt=null;for(const R of [16,30]){if(hit||alt)break;/* second pass: set point written a little further from the box (ABC-001A "> 0.1%") */for(const q of near(b.cx,b.cy,R)){const m=cl(q).match(/^([<>≤≥])\s*(=)?\s*(-?\d+(?:\.\d+)?)\s*(.*)$/);if(!m)continue;if(/[>≥]/.test(m[1])===(op==='>')){hit=m;break}if(!alt)alt=m}}if(!hit)hit=alt}
      if(!hit)for(const q of near(b.cx,b.cy,16)){const m=cl(q).match(/^()()(-?\d+(?:\.\d+)?)\s*(%|[A-Za-z°][\w\/°%]*)?$/);if(m){hit=m;break}}
      if(hit){sp=+hit[3];u=hit[4]||'';if(hit[1]){op=/[>≥]/.test(hit[1])?'>':'<';inc=/[≥≤]/.test(hit[1])||hit[2]==='='}P.found=1}
      P.ref=-1;if(!hit)for(const q of near(b.cx,b.cy,16)){const m=cl(q).match(/^([<>≤≥])\s*(=)?\s*([A-Za-z][\w.]{3,})$/);if(!m)continue;{P.refTag=m[3];op=/[>≥]/.test(m[1])?'>':'<';inc=/[≥≤]/.test(m[1])||m[2]==='=';P.found=1;break}}
