@@ -1418,6 +1418,7 @@ function anCompile(S){
      const lp=ins.filter(isCtl);let dg=lp.length?lp:ins.filter(p=>nets[p.n].dig);if(lp.length&&b.k==='AMT'){const ex=ins.filter(p=>!lp.includes(p)&&!isAB(p)&&nets[p.n].dig);if(ex.length&&ins.length-lp.length-ex.length>=1){const m0=/^\d\s*:\s*(\S+)/.exec(lp[0].lab||'');for(const q of ex)q.lab=m0&&/^a$/i.test(m0[1])?'1:B':'1:A';dg=[...lp,...ex];b.dig2=ex.length}}
      if(!dg.length){const c=ins.filter(p=>!isAB(p));if(c.length===1&&ins.length>=3){const q=c[0];if(!q.lab){let bt=null,bd=26;for(const t of tcand){const d=Math.hypot(t.x-q.x,t.y-q.y);if(d<bd){bd=d;bt=t}}if(bt)q.lab=bt.t.trim()}dg=[q]}}
      const an=ins.filter(p=>!dg.includes(p)).sort(posOrder);for(const q of dg)nets[q.n].dig=true;
+     if(b.k==='SW'&&dg.length===1&&!dg[0].lab){/* the condition label (1:a) sits beside a diagonal selector wire, away from the pin */const lt=TX.filter(t=>/^\s*1\s*:\s*[aAbB]\s*$/.test(t.t)&&Math.hypot(t.x-b.cx,t.y-b.cy)<40).sort((x,y)=>Math.hypot(x.x-b.cx,x.y-b.cy)-Math.hypot(y.x-b.cx,y.y-b.cy))[0];if(lt)dg[0].lab=lt.t.trim()}
      b.sel=dg[0]?dg[0].n:-1;const sl=dg[0]&&dg[0].lab||'';const m=sl.match(/^\d\s*:\s*(\S+)/);P.selA=!!((m&&/^a$/i.test(m[1]))||(yn&&!m));
      b.cs=dg.map(q=>{const mm=(q.lab||'').match(/^\d\s*:\s*(\S+)/);return{n:q.n,A:!!((mm&&/^a$/i.test(mm[1]))||(yn&&!mm))}});
      let A=an.find(p=>/^a$/i.test(p.lab||'')),B=an.find(p=>/^b$/i.test(p.lab||''));
