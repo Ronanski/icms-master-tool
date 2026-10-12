@@ -91,6 +91,8 @@ Do not create empty version folders. Use the app's verified version, not a versi
 | F-14 | ABC-002 | Diesel to coal equivalent used 4450 against a calorie in units of 10000 kcal/kg (1e4 too small) | Fixed, verified; user to verify V-16 |
 | F-15 | ABC-057 | LN23 / LN24 table (X unit "RANGE") not scaled: bias MAN 0 read as −10 | Fixed, verified |
 | F-16 | ABC-008 | Divider with "2" on its wire: divisor missing, then taken as a ratio (x100) | Fixed, verified; user to verify V-17 |
+| F-17 | ABC-010 | Drum level pressure compensation mixed % and mm | Fixed, verified |
+| F-18 | ABC-010 | Master level MV (%) added to steam flow (T/H) as a plain number | Fixed, verified; user to verify V-18 |
 | N-1 | ABC-001B | RATE LIMIT time input T = B/A·100/60 still 1e5–1e7 | Needs Verification |
 
 Details: [v1.20.21 findings](../versions/v1.20.21/FINDINGS.md). Do not copy entire diagrams, spreadsheets, or PDFs into this document.
