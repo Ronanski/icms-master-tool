@@ -184,3 +184,11 @@ Scenario method: inputs written to external nets or forced, SIG.AB states set, s
 | ABC-004B | 01 | Structure: AI0512 → SI0124 = T(running: flow, else 0); M.0152 = TON 3 s of TOF 2 s of M.3401; bias MAN B-BIAS → LN25 → Σ with FIC-CF.MV → SI0126; rate block, S/R M.0155; A/M T (M.0151 = OR(M.025B, NOT M.0152, B.0720)); high limit T (M.3405: 83.3 / 100); BU-CMD (M.0157 = OR(NOT M.015E, M.0158)), M.0158 = OR(TPS 5 s of M.015E, TPS 25 s of AND(M.025B, M.015E)); ≥ 83.3 % → M.015F | as listed | same | Pass |
 | ABC-004B | 02 | Feeder start / stop, house operation, M.3405 | running confirmed after 2 + 3 s; manual (M.0151) until then; 5 s pulse M.0158 on start; house operation → manual + 25 s pulse; high limit 83.3 / 100 | same | Pass |
 | ABC-004C | 01 / 02 | Same structure with the C tags (M.3402, B.0728, M.0161, M.0167, M.0168, M.0166; M.3405 = n46) and the same scenarios | as ABC-004B | same | Pass |
+
+## Batch 6 — ABC-035 to ABC-039 (No.1 HPH, No.2 HPH, No.1 / 2 / 3 LPH level control)
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-035 | 01 | Structure: two LT (−300…310 mm) with SIG.AB and ALM, H/ > 140 (M.2510 / M.2513), H/ > 40 (M.2511 / M.2514), L/ < −40 (M.2512 / M.2515); SELECT PRI/SEC/AVG → SI0210; two PID (primary and alternate drain, same SV, ACT:N); primary A/M T (B.1014 AND B.106C bad → manual); alternate T EX-CMD (NOT of primary MAN, EX-MV SI0290 from LN39); alternate A/M T; LN38 on the primary MV; 100 − MV to AO0467 / AO0483; M.0193 (HH) = 2 of 3 (M.2510, M.2513, level switch); M.0194 = OR(M.2511, M.2514); M.0195 = OR(M.2512, M.2515) | as listed | same | Pass |
+| ABC-035 | 02 | PV1 10 / PV2 30; PV1 150; both 150; switch with one PV high; switch alone; both −50; both level signals bad; only one bad | average 20; M.2510 / M.2511 at 150; HH only with two of three; H = OR; L = OR; manual only when both are bad | same | Pass |
+| ABC-036 to 039 | 01 / 02 | Same structure (netlist identical to ABC-035 apart from block numbering and the tags; the drawing PDFs of these four were not looked at one by one) and the same scenarios with their own tags (LICHD11061 / 11011 / 11021 / 11031, switches I.029F / I.029B / I.029C / I.029D) | as ABC-035 | same, all four | Pass |
