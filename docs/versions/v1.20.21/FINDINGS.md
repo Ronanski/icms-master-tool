@@ -97,6 +97,7 @@ Run once over every sheet instead of page by page. Sources: `summary-of-pid-pidv
 10. `anCompile`, constants: a stacked fraction (numerator above denominator) next to an "A" box is read as a ratio; with a SCALE CONVERT label it is x 1. → F-11.
 11. `anCompile`, same-tag merge: an unsourced signal written at two places no longer links the two ends to each other (the input stays settable). → F-12.
 12. `anCompile`, before the LINK drivers are made (ABC-007 only): the controller PV tags and the PV wire of the house-load subtraction are linked to the flow signals. → F-13.
+13. `anDefaults` (ABC-002 only): COAL CALORIE BASE constant 4450 → 0.445 (unit of the diesel calorie curve LN1). → F-14.
 
 Verification after the changes (same headless method):
 - All 15 ÷ blocks compared before / after: exactly 2 changed (ABC-005 #21, ABC-032 #26). ABC-001B #8 (formula "T = B / A * 100 / 60") was briefly affected during development and is unchanged in the final patch.
@@ -282,4 +283,20 @@ The two sheets have the same cascade: outlet temperature PID (TICBR1140 / TICMS1
 - Basis: the drawing labels the wire "PAF INLET AIR FLOW CONTROL PV FICFA1071.PV" and the controller PV is the flow (PA FLOW FIFA1071.PV, PAF 006).
 - Work done: the two tags and the unlabeled subtraction inputs are linked to the flow signals (ABC-007 only).
 - Result: PV 230 gives n(230 − PV) = 0 and M.018E = 1; PV 233.1 gives 0.
+
+## Batch 13 — ABC-002 (combustion air control)
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-002 | 01 | Structure: oil calorie MAN HS-OIL → LN1 → A/B with COAL CALORIE BASE 4450; SI0061 × 1 × ratio → coal equivalent SI0004; demand − SI0004 with 30 s lead → ÷ coal calorie correction SI0003 → SI0010 coal flow demand; boiler demand → LN5 / ramp 0.2 %/s → total air demand (max select with the coal feed-forward LN22 × 0.8, 32 % minimum) → SI0036; minus PA (LN12 of coal flow + HIC-TADBS bias via LN14) and FA → SA demand; PA / SA demand selected by M.008B (LN8 / LN7 of the oil flow); O2 loop: LN16 + LN17 bias → 180 s lag → RAMPB 1 %/s → SV, PID AICFG112 (ACT:R), LN15 O2 correction (0.8 ~ 1.2), LN29; cross limit actions (AF → FF M.2500, FF → AF M.2501); M.0102 / M.0103 | as listed | same | Pass |
+| ABC-002 | 02 | Design load (coal 81 T/H, air 606): PA demand = LN12(81) = 380 T/H, SA demand 210 T/H (design 380 / 200), total air demand 616 | PA 380, SA about 200 | PA 380, SA 210 | Pass (this also confirms SCALE CONVERT = x 1 in real values, F-7) |
+| ABC-002 | 03 | A/B divider #44 (n62 / SI0042: a = SA flow × scale, b = SI0042) and #26, #41 (dividend = the pin opposite the output); M.0102 = OR(NOT SA REM, NOT M.0101); M.0103 = OR(M.2500, M.2501, M.0102, both O2 SIG.AB bad); cross limits with air flow 300 and coal 120 / master 40 | as drawn | as drawn | Pass |
+| ABC-002 | 04 | Diesel 5 T/H at 8000 kcal/kg: coal equivalent | 5 × 8000 / 4450 = 9.0 T/H | 8.99 after F-14 (0.001 before) | Pass after F-14 |
+
+### F-14 — ABC-002 diesel oil to coal equivalent was 10000 times too small (Confirmed, fixed; needs user verification V-16)
+- Problem: SI0004 = diesel flow × (SI0001 / 4450) × 1. LN1 outputs the diesel calorie as 0.8 ~ 1.2 (MV 0 ~ 100 % = 8000 ~ 12000 kcal/kg, drawing text 8000~12000 Kcal/Kg, curve S1-LN-01). Divided by the coal base 4450 this gave 0.0002, so 5 T/H of diesel counted as 0.001 T/H of coal and the coal demand did not drop.
+- Basis: DCS count scale (100 % = 10000, same principle as F-8): LN1 is in units of 10000 kcal/kg, so the base in the same unit is 0.445. Physical check: diesel 8000 kcal/kg over coal 4450 kcal/kg = 1.80 T of coal per T of oil.
+- Work done: constant 4450 → 0.445 (ABC-002 only, guarded).
+- Result: diesel 5 T/H at 8000 kcal/kg gives 8.99 T/H coal equivalent; coal demand falls from 81.5 to 72.5 T/H; with SI0003 = 1.1 it is 65.5.
+- **Please verify** (V-16): that LN1's 0.8 ~ 1.2 is the calorie in units of 10000 kcal/kg (and not a ratio against another base). Also: FICFA1081.REM (ABC-007) and its ABC-002 copy (n41) are separate inputs: set both.
 

@@ -1339,6 +1339,7 @@ function anDefaults(S){
   fx(20,1,100/27,'SCALE CONVERT 12000 / 2700: limestone T/H to feeder speed % (27 T/H = 100 %): x 100 / 27');
   fx(28,13,1.3,'LIMESTONE DENSITY BASE : 1.3 (drawing label); drawing box shows 13');
   fx(19,13,1.3*100/27,'LIMESTONE DENSITY BASE : 1.3, feeder speed % to T/H (27 T/H = 100 %): 1.3 x 100 / 27')}
+ if(S.name==='ABC-002'){const c=S.blk.find(q=>q.id===34&&q.k==='CONST');if(c&&c.p&&Math.abs(c.p.val-4450)<1e-9){c.p.val=0.445;c.note='COAL CALORIE BASE 4450 kcal/kg; LN1 gives the diesel calorie in units of 10000 kcal/kg (MV 0-100 % = 8000-12000 kcal/kg = 0.8-1.2): base in the same unit = 0.445'}}
  if(S.name==='ABC-011'||S.name==='ABC-012'){/* cascade: the outlet temperature PID output (% of 0-600 degC) is the set point of the spray water PID (0-600 degC): the net xxx.MV carries degC, the PID tracks in % */
   S.blk.forEach(b=>{if(b.k==='AMT'&&b.o.some(n=>S.lab[n]&&/^TIC(BR1140|MS1004)\.MV$/.test(S.lab[n].t))){b.og=6;b.bg=1/6;b.note='the outlet PID output is a % of 0-600 degC: x 6 = degC (set point of the spray PID); RB-MV (PV degC) / 6 for the PID tracking'}})}
  if(S.name==='ABC-003E'){/* oil master (0-14 T/H) output is a % of its range; each burner flow loop works in T/H (0-3.5): burner SV = MV % x 3.5 / 100 (basis: drawing range text 0.00~14.00 T/H, workbook FICDO1043A-D 0-3.5 T/H). RAMP 5 %/min of the burner range. */
