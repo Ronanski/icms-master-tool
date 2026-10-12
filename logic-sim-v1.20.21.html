@@ -1339,6 +1339,8 @@ function anDefaults(S){
   fx(20,1,100/27,'SCALE CONVERT 12000 / 2700: limestone T/H to feeder speed % (27 T/H = 100 %): x 100 / 27');
   fx(28,13,1.3,'LIMESTONE DENSITY BASE : 1.3 (drawing label); drawing box shows 13');
   fx(19,13,1.3*100/27,'LIMESTONE DENSITY BASE : 1.3, feeder speed % to T/H (27 T/H = 100 %): 1.3 x 100 / 27')}
+ if(S.name==='ABC-008'){/* "2" written on the wire into the divider (average of the two fan demands) */
+  for(const b of S.blk)if(b.k==='DIV'&&b.i.length===2){const n=b.i[1];if(S.ext.includes(n)&&!S.nets[n].dig&&!(S.kn&&S.kn[n]!==undefined)){const ends=[];for(const i of S.nets[n].segs){const sg=S.seg[i];ends.push([sg.x1,sg.y1],[sg.x2,sg.y2])}let best=null,bd=8;for(const t of S.tx){if(!/^\s*-?\d+(?:\.\d+)?\s*$/.test(t.t.trim()))continue;for(const[x,y]of ends){const d=anD(t.x,t.y,x,y);if(d<bd){bd=d;best=t}}}if(best){(S.kn=S.kn||{})[n]=parseFloat(best.t);S.ext.splice(S.ext.indexOf(n),1);b.note='divisor "'+best.t.trim()+'" written on the wire'}}}}
  if(S.name==='ABC-002'){const c=S.blk.find(q=>q.id===34&&q.k==='CONST');if(c&&c.p&&Math.abs(c.p.val-4450)<1e-9){c.p.val=0.445;c.note='COAL CALORIE BASE 4450 kcal/kg; LN1 gives the diesel calorie in units of 10000 kcal/kg (MV 0-100 % = 8000-12000 kcal/kg = 0.8-1.2): base in the same unit = 0.445'}}
  if(S.name==='ABC-011'||S.name==='ABC-012'){/* cascade: the outlet temperature PID output (% of 0-600 degC) is the set point of the spray water PID (0-600 degC): the net xxx.MV carries degC, the PID tracks in % */
   S.blk.forEach(b=>{if(b.k==='AMT'&&b.o.some(n=>S.lab[n]&&/^TIC(BR1140|MS1004)\.MV$/.test(S.lab[n].t))){b.og=6;b.bg=1/6;b.note='the outlet PID output is a % of 0-600 degC: x 6 = degC (set point of the spray PID); RB-MV (PV degC) / 6 for the PID tracking'}})}
@@ -1598,7 +1600,7 @@ function anFXIn(S,b){const t=b.p&&b.p.tbl;if(!t||!(/%/.test(t.xu||'')||(/^\s*RAN
     const r=anExtRange(S,n);return r?(r.lo===0&&r.hi===100?{k:'id'}:{k:'rng',lo:r.lo,hi:r.hi,u:r.u||''}):null}return null}
   const bl=dr.i===undefined&&dr.id!==undefined?S.blk.find(z=>z.id===dr.id):dr;if(!bl)return null;const k=bl.k;
   if(k==='PID'||k==='PIDV')return{k:'id'};
-  if(k==='DIV')return{k:'ratio'};
+  if(k==='DIV')return S.kn&&S.kn[bl.i[1]]!==undefined?{k:'id'}:{k:'ratio'};/* a divider by a constant written on the wire is a plain average, not a ratio */
   if(k==='AI'||k==='MAN'){const r=anNetRange(S,n);return r?(r.lo===0&&r.hi===100?{k:'id'}:{k:'rng',lo:r.lo,hi:r.hi,u:r.u||''}):null}
   if(k==='FX'){const y=bl.p&&bl.p.tbl&&bl.p.tbl.yr;return y&&y[0]===0&&y[1]===100?{k:'id'}:null}
   if(['LAG','LINK','RATE','RAMPB','ABS','LIM','HLIM','LLIM','AMT','SW','HS','LS','SEL'].includes(k)){let res=null;for(const m of bl.i){if(S.nets[m]&&S.nets[m].dig)continue;const q=src(S,m,d+1,seen);if(!q)continue;if(res&&!same(res,q))return null;res=q}return res}
