@@ -77,7 +77,8 @@ Do not create empty version folders. Use the app's verified version, not a versi
 | F-5 | ABC-001B | HIC-MWRL MV limits overridden in code | Fixed, verified |
 | F-6 | ABC-001A | Comparator set points "> 0.1 %" read as 0 | Fixed, verified |
 | F-2 | all PID | CUT / DH swapped between sim data and workbook (not used by sim) | Closed, no action |
-| N-1 | ABC-005, ABC-056, others | Probable cause: signal unit basis (EU in sim vs % in DCS) | Suspected, not fixed |
+| F-7 | 9 sheets | SCALE CONVERT a/b multiplied engineering-unit values (source range / destination range) | Fixed, verified |
+| N-1 | ABC-005, ABC-001B | Count-scale chains (10000 = 100 %) still of order 1e5–1e7 | Needs Verification |
 
 Details: [v1.20.21 findings](../versions/v1.20.21/FINDINGS.md). Do not copy entire diagrams, spreadsheets, or PDFs into this document.
 
