@@ -12,6 +12,11 @@ Method: format of `docs/abc-audit/ABC-AUDIT.md`. Source = `document-references/a
 | ABC-005-02 | Same path, LOW LIMIT block (constant 1) | AB0114 = 3, AB0115 = 0.5 and 1 | Denominator held at 1 → 93900 | 93900 in both cases | **Pass** |
 | ABC-005-03 | Same path, upper range | AB0114 = 3, AB0115 = 99.99 / AB0114 = 0.01, AB0115 = 60 | 939.09… / 5.2166… | 939.09… / 5.2166… | **Pass** |
 | ABC-005-04 | DENSITY CORRECTION ÷ → SI0337 | AB0116 = 1.1 / 1.3 / 1.5, other inputs fixed | Drawing marks this ÷ as **B/A** (B = limestone chain × 13, A = AB0116), so output must **fall** as AB0116 rises | Output **rises** with AB0116: 1.66e-6 / 1.96e-6 / 2.27e-6; equals AB0116 / (chain × 13), i.e. A/B | **Fail** (direction) |
+| ABC-005-05 | Coal feeders A/B/C running → NOT·NOT·NOT AND → OR bus → M.0148 | No feeder running (trip = 0) | M.0148 = 1 (all-stopped branch) | 1 | **Pass** |
+| ABC-005-06 | Same, one feeder running, all signals healthy | A running only / A+B+C running | M.0148 = 0 | 0 / 0 | **Pass** |
+| ABC-005-07 | Feeder-running AND flow SIG.AB bad, per feeder | A run + B.0718 bad; B run + B.0720 bad; C run + B.0728 bad; A run + B.0720 bad (B stopped) | M.0148 = 1, 1, 1, and 0 for the mismatched case | 1, 1, 1, 0 | **Pass** |
+| ABC-005-08 | SOx SIG.AB (B.0712) and limestone speed SIG.AB (B.064F) → bus | A,B,C running, each bad in turn | M.0148 = 1 | 1 / 1 | **Pass** |
+| ABC-005-09 | Inverter trip M.3403 (= M.0149 BU-CMD tap) → M.0148 and A/M-T-RB-MV transfer | A running + M.3403 = 1 | M.0148 = 1 and AO0788 = RB-MV PTN009001 = 0 %; with trip = 0 and M.0148 = 1, AO0788 = manual COS value (25 used) | 1, AO0788 = 0; AO0788 = 25 | **Pass** |
 
 ### F-1 — DENSITY CORRECTION divider is inverted (Confirmed in simulator; drawing reading visual)
 - Drawing: the other two ÷ blocks on the page (limestone density, S/CaCO3) are stacked **A over B**; the DENSITY CORRECTION block is stacked **B over A**.
@@ -20,10 +25,30 @@ Method: format of `docs/abc-audit/ABC-AUDIT.md`. Source = `document-references/a
 - Effect: SI0337 (feedforward into the Σ/OMV summer) is wrong in direction. Plain explanation: when limestone density goes up, the real logic should lower the feeder speed demand; the simulator raises it.
 - No fix applied. A fix changes ABC reader behavior and needs approval (see HANDOFF).
 
+### Address / tag cross-check (`dcs-io-list.xls`, `memory-list-101.xls`)
+| Drawing item | Reference result | Verdict |
+|---|---|---|
+| AI0466 / AT-FG1057-1 / B.0712, 0–500 ppm | I/O list Station 101: same tag, range, address | Pass |
+| AI0151 / ST-M1311 / B.064F, 0–100 % | I/O list: same | Pass |
+| AO0788 / INV-M1311, 0–100 %, "Logic ABC-005" | I/O list: same | Pass |
+| PTN009001 = 0 % | PTN list: 0 | Pass |
+| M.3400–M.3402 coal feeder running, M.3403 limestone feeder trip | WM list: same descriptions (from STN104 wiring) | Pass |
+| M.0148 (force manual), M.0149 (BU-CMD) | WM list M.0140+8 = "Stack outlet flue gas SOx ctl force manual", M.0140+9 = "SOx ctl BU-CMD" | Pass |
+| B.0718 / B.0720 / B.0728 | I/O list: coal feeder A/B/C feedrate AI (0–40 T/H) | Pass |
+| SI0334, SI0339 | SI list SI0330+4 / +9: "USED" | Pass |
+| SI0336 | SI0330+6 "Limestone rotary feeder speed across density modification" | Pass |
+| SI0144 (ABC-004A) | SI0140+4 "Total coal flow before * kcal/kg" | Pass (name only; ABC-004A not traced yet) |
+| SI0337 | SI0330+7 "Stack outlet flue gas SOx ctl OMV"; drawing prints SI0337 on the density-correction ÷ output line, not on the Σ OMV output | Needs Verification (N-4) |
+| AB0114 / AB0115 / AB0116 | Not found as AB addresses in I/O or memory list 101 (a WB entry B.2450 "Limestone Density (CRT)" exists, link unproven) | Cannot Verify |
+| AICFG10571 / S1-MDL037, SIM1311 / S1-MDL104, LIME-SUM / S1-MDL196 | Not found by tag in the lists | Cannot Verify (parameters: see summary workbook, not yet read) |
+
 ### Needs Verification (not decidable from the drawing alone)
-- **N-1** Magnitudes. With the drawing constants the chain gives values of the order 1e5 at SI0334/SI0337, far outside a 0–100 % feeder range. Either the units of cross-page SI0144 (TCFI-004A), the "SCALE CONVERT 12000/2700" direction (×4.444 vs ×0.225), or the "13" vs "BASE: 1.3" constant is not what the sim assumes. Needs ABC-004A, the Station 101 memory list and the DCS I/O list.
+- **N-1** Magnitudes. The chain gives values of the order 1e5 at SI0334 / SI0337, far outside a 0–100 % feeder range. SI0144 is plain total coal flow per the SI list, so its unit is not the explanation. Candidates: direction/value of "SCALE CONVERT 12000/2700" (×4.444 vs ×0.225), the "13" vs "BASE : 1.3" constant, or the ×10000 factor. Needs ABC-004A and the scaling intent from the plant.
 - **N-2** Constant "13" under the density-base box vs label "BASE : 1.3": the sim uses 13 in both places (blocks 19 and 28).
-- **N-3** SI0144 in the simulator is fed by a cross-page link (it read 7.32 and ignored a manual write); the source on ABC-004A was not traced.
+- **N-3** SI0144 comes from ABC-004A by cross-page link (it read 7.32; a manual write is overwritten). Source not traced yet.
+- **N-4** SI0337 label position vs memory-list description (above).
 
 ### Not checked yet on ABC-005
-PID AICFG10571 behaviour/parameters, A/M and BU-CMD/RB-MV transfer blocks, trip M.3403 / M.0149 / M.0148 logic, coal-feeder-running AND/OR logic, AO0788 output, SUMA S1-MDL196 totalizer, ALM SIM1311, and all tag/address cross-checks against `dcs-io-list.xls` and `memory-list-101.xls`.
+Auto-mode numeric output of PID AICFG10571 and its parameters (`summary-of-pid-pidv-suma-man-parameters.xlsx`), AO0788 in auto mode, SUMA S1-MDL196 totalizer, ALM SIM1311 limits. The AO0788 transfer results above use the manual/trip branches only.
+
+Test notes: the two "running" inputs per feeder (drawn twice) are separate input nets in the sim and were set together; the three flow SIG.AB inputs and SI0144 are cross-page links and were driven from ABC-004A/B/C.
