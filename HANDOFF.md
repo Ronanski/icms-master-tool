@@ -30,13 +30,17 @@ ABC analog logic audit using a Cause & Effect / Golden Reference approach. User 
 - Audit before fixing. Do not change DITL functionality during ABC-only work without explicit approval.
 - No Stable/Beta release until the user explicitly says **GO STABLE** or **GO BETA**.
 
+## Audit progress (v1.20.21 verified from the simulator title/badge; apk/exe not run)
+- No earlier C&E Golden work existed anywhere in the repo; the audit was started fresh using `docs/abc-audit/ABC-AUDIT.md`.
+- ABC-005 partly audited: ratio / low-limit chain Pass; **F-1** density-correction ÷ inverted (Fail); N-1..N-3 Needs Verification. Evidence: `docs/versions/v1.20.21/`.
+- Method note: ABC PDFs have no text layer (read visually). Simulator was driven headless (Playwright + bundled Chromium) by writing to the sheet's external-input nets and reading net values; nothing was modified.
+
 ## Next actions
-1. Inspect Claude's existing C&E Golden work before creating duplicate test cases or competing audit formats.
-2. Verify ABC pages one at a time: source diagram → trace → expected behavior → simulator result → evidence-backed verdict.
-3. When findings are real, add concise version-specific reports under `docs/versions/<verified-version>/` and update this handoff.
+1. **Decision needed:** approve or reject a fix for F-1 (÷ reader should understand a stacked B-over-A fraction). Also check whether other sheets have the same pattern before deciding scope. No code is changed until approved.
+2. Finish ABC-005: PID, transfer blocks, trip/running logic, AO0788, SUMA, tag/address cross-check with I/O list and memory list 101.
+3. Audit ABC-004A next (source of SI0144) to settle N-1 and N-3.
 4. Do not alter simulation logic or create a release unless approved.
 
 ## Current task status
-**Completed:** Added and merged the documentation structure (PR #1). README navigation, project rules, current handoff, and ABC audit index are present on `main`.
-
-**Not completed:** No independent ABC behavior audit, application-code change, build, or release was performed as part of this task.
+**Done:** ABC-005 traced and tested as above; findings documented.
+**Not done:** remaining 53 ABC pages, ABC-005 control/trip logic, I/O and memory-list cross-checks, any fix, build, or release.
