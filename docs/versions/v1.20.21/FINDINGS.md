@@ -150,3 +150,14 @@ Scenario method: inputs written to external nets or forced, SIG.AB states set, s
 - ABC-005: resolved by F-8.
 - ABC-001B: T = B / A · 100 / 60 with B = 10000 gives 1e5–1e7 in the sim for the RATE LIMIT time input; same count-scale question, plus the unit of the RATE block's T input.
 - ABC-001A / others: set points written as "%" (for example "> 0.1 %") are compared as the literal number against an engineering-unit value.
+
+## Batch 3 — ABC-033, ABC-034, ABC-013 and all F(X) tables
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-033 | 01 | Structure: AI0641 → PV−SV (ACT:N) → PICAS TICAS1001; M.0139 = OR(B.1009 bad, M.012F); M.012B = TPS 2 s of OR(M.0128, M.0124); M.012F = TPS 2 s of M.012E; M.0127 = OR(M.012F, M.0124); SI0276 from two T (80 % on trip, 0 % on M.012F) | as listed | same | Pass |
+| ABC-033 | 02 | B.1009 bad → manual; demand < 2 % (M.012E) → 2 s pulse → MV 0 %, then back; demand > 4 % (M.0128) → 2 s pulse, SV 350; turbine trip M.0124 → MV 80 % held | as drawn | as drawn | Pass |
+| ABC-034 | 01 | Structure: LN18 / LN19 / LN20 / LN21 F(X), Σ SI0242 + SI0243, ramp 1 %/min, × SI0246, × 0.8, SV−PV (ACT:N), "−" block, two Σ (OMV), A/M T (B.1086) | as listed | same | Pass (not tested numerically) |
+| ABC-013 | 01 | Structure: H/ > 134 → M.0254; trip M.3225 → TPS 9 s → M.0256; AND(NOT M.3225, M.0254) → TPS 2 s; OR → M.0252; SV 130 / 115 (T, TOF 2 s); BU-CMD OR(M.0256, M.025D); SI0362 = T(100 %, LN18); S/R FF 81.5 / 76 MW; OR of 52L1, 52G1, trip AND (TOF 10 s / TPS 300 s) → M.025B → TPS 3 s (M.025C), TPS 7 s (M.025D) | as listed | same | Pass |
+| ABC-013 | 02 | PV 140 → M.0252 pulse 2 s (SV 130); trip → M.0256 9 s, SV 115, M.025E = 1, AO = F(X); MW 85 + 52L1 open → M.025B, M.025C 3 s, M.025D 7 s (AO 100 % for 7 s); MW 70 resets the FF | as drawn | as drawn | Pass |
+| All sheets | F(X) | 89 LN curves of `linear-curves-fx.xls` vs the simulator tables (16 points each, title, drawing number); S1-LN38 / LN39 vs `drum-level-calculation.xls`; 111 F(X) blocks vs their table | equal | 89 / 89 equal (four ratio curves are stored as a factor 0.8 / 1 / 1.2 instead of 80 / 100 / 120 %); LN38 / LN39 equal; every block has a table; shared tables are by design (burners B-D use the ABC-003A tables, ash coolers A-D and heaters 35-39 share tables, as the workbook says) | Pass |
