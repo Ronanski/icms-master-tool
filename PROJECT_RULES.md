@@ -64,6 +64,14 @@ Create version-specific findings/progress/update reports only when there is actu
 
 After every meaningful task, update `HANDOFF.md` before finishing. For version-specific work, record findings and progress with evidence, and maintain the update report fields: Problem, As Found, Work Done, As Left, Status.
 
+## 5a. Report documents for the user (PDF / chat)
+
+- Language: Taglish (Tagalog with the usual English technical terms and tags), short sentences, plain words.
+- Layout: portrait A4, large type (body 10 pt or more), one item per card (Problem, As Found, Work Done, As Left, Status, Where, What to verify). No wide tables; the user reads on a phone or tablet.
+- Colors: dark background with soft light text (no bright white page); status colors muted (green Pass, amber Needs Verification, red Fail).
+- Content: say where in the diagram (sheet, tag, area) and what to type / expect; list the items needing user verification separately and last.
+- No release or build claim without GO STABLE / GO BETA.
+
 ## 6. Completion and communication
 
 Before reporting completion:
