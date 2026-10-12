@@ -104,6 +104,7 @@ Run once over every sheet instead of page by page. Sources: `summary-of-pid-pidv
 17. `anCompile`, case SW: when the selector pin has no "1:a / 1:b" label, the nearest condition label within 40 units gives the selected input (diagonal selector wires). → F-19.
 18. `anCompile`, case LAG: the analog signal is the first input, a digital enable ("1 : ENABLED") after it. Engine, case MAN: the set point input is the one driven by the B/T (auto / manual) selector, not always the third. `anDefaults` (ABC-001C only): boiler master in percent of 0 ~ 120 T/H. → F-20, F-21.
 19. `anDefaults` (ABC-009A / 009B) plus engine hooks `ag` (gain on the A input of a B/T selector) and `ia` per input of a SW: bottom ash screw coolers in rpm. → F-22.
+20. `anDefaults`: set points written in % of a range now in the signal's unit ("% MCR (y T/H)" in ABC-001C and ABC-006; 18.7 % of 65 T/H on ABC-003A ~ D; 5 % of 1242 mm on ABC-010). `anCompile`, SIGAB: when the tag is written in the middle of a wire (no wire end inside the text), the wire with that label carries the flag. → F-23, F-24.
 
 Verification after the changes (same headless method):
 - All 15 ÷ blocks compared before / after: exactly 2 changed (ABC-005 #21, ABC-032 #26). ABC-001B #8 (formula "T = B / A * 100 / 60") was briefly affected during development and is unchanged in the final patch.
@@ -425,4 +426,21 @@ ABC-003B / C / D are the same drawing as ABC-003A with their own tags (B / C / D
 - Work done: AUTO-MV × 0.05 into the MAN (rpm); "12 %" constants = 0.6 rpm; the rpm outputs × 20 where they are compared with the percent set points; the average-of-four constant 1/4 becomes 5 (average speed in % of 5 rpm). ABC-009A / 009B only.
 - Result: AUTO-MV 50 % gives 2.5 rpm, limited to 2.35 rpm (47 %); the back-up value is 0.6 rpm (before: 12 rpm).
 - **Please verify** (V-20): that the loop signals are % of the 5 rpm range as assumed (basis: workbook range and limits, drawing "−25 ~ 25 rpm" / "−25 % ~ 25 %" on the bias, drawing "12 %").
+
+## Batch 22 — ABC-006 (total air flow: PAF / SAF / FAB)
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-006 | 01 | Structure: SA, PA and primary air temperature / flow with TP + square root (FIFA1081 / 1071 / 1079 / 1055.PV); FA blower temperature select T (M.025F, 1:a) with M.025F = OR(AND(M.3308, NOT B.0733), AND(NOT M.3308, B.074B)); total air SI0060 = PA × 648/1115 + SA × 432/1115 + FA × 35/1115 (x 1 in real values); M.0340 < 25 % MCR (151.5 T/H) with TON 5 s → M.3100; M.3114 FA flow < 20 T/H | as listed | same after F-23, F-24 | Pass after F-23, F-24 |
+| ABC-006 | 02 | PA 380 + SA 200 + FA 26 = 606 T/H (design total air); total 150 T/H: M.0340 = 1, M.3100 after 5 s; FA flow 19: M.3114; temperature select: A running and A temperature good → TT-A, A running and B... all four cases | as drawn | as drawn | Pass |
+
+### F-23 — "% MCR" and "%" set points compared with signals in engineering units (ABC-001C, ABC-006, ABC-003A ~ D, ABC-010) (Confirmed, fixed)
+- Problem: set points written as a percent of a range were compared with the real value of the signal as a plain number. ABC-001C M.2001 "< 10 % MCR (46 T/H)" and M.2002 / M.3154 "< 15 % MCR (69 T/H)" compared the steam flow in T/H with 10 and 15; ABC-006 M.0340 "< 25 % MCR (151.5 T/H)" compared the total air flow (T/H) with 25; ABC-003A ~ D "BNR SA FLOW < 18.7 %" compared the SA flow (0 ~ 65 T/H) with 18.7; ABC-010 "deviation 5 %" compared the level difference in mm with 5.
+- Basis: the drawings give the T/H value in brackets (46, 69, 151.5; 100 % MCR = 606 T/H, 460 T/H main steam in the design base); 18.7 % of 65 T/H = 12.155 T/H; 5 % of the 1242 mm range = 62.1 mm.
+- Work done: set points now 46 / 69 / 151.5 T/H, 12.155 T/H, 62.1 mm. A scan of every "%" comparator (about 110) found no other signal in engineering units compared with a percent number (the others are on MV, positioner or position feedback signals in %).
+
+### F-24 — ABC-006: flags B.0733 / B.074B written under the middle of a wire were not tied to their SIG.AB (Confirmed, fixed)
+- Problem: the FA blower temperature select used the inputs "FA BLOWER-A / B OUTLET AIR TEMP. SIG.AB B.0733 / B.074B (from ABC-006)". The simulator took them for free inputs, so the select never reacted to the SIG.AB state of the two temperature transmitters.
+- Work done: a SIG.AB tag written in the middle of a wire (no wire end inside the text) now uses the wire with that label. Other sheets where the same pattern existed now have the flag driven by the SIG.AB box instead of a free input (ABC-003A ~ D, 004B / C, 010, 017, 019, 028 ~ 035 and so on, 29 sheets; the flag value is the SIG.AB state, as in the drawing). All earlier scenarios of those sheets give the same results before and after.
+- Result: A running and A temperature bad → TT-B; A stopped and B temperature bad → TT-A (as drawn).
 
