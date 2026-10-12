@@ -3,51 +3,36 @@
 > This is the single current handoff. Replace outdated status when work changes; do not append a cumulative chat transcript.
 
 ## Project
-DCS Logic Simulator in `Ronanski/icms-master-tool`.
+DCS Logic Simulator in `Ronanski/icms-master-tool`. Runtime version v1.20.21 (shown in the simulator title and header badge).
 
 ## Current focus
-ABC analog logic audit using a Cause & Effect / Golden Reference approach. User confirmed that Claude is already building expected behavior and comparing it with the simulator.
+ABC analog logic audit (Cause & Effect / Golden Reference method of `docs/abc-audit/ABC-AUDIT.md`). Simplest sheets first, then the rest in batches.
 
-## Repository state checked
-- Default branch: `main`.
-- Existing app artifacts are named `logic-sim-v1.20.21.html`, `logic-sim-v1.20.21-portable.exe`, and `logic-sim-v1.20.21.apk`. Runtime version has not been independently verified.
-- Source references are stored in `document-references/`; they include plant diagram archives/PDFs, symbol legends, DCS I/O list, memory lists STN101–STN105, linear F(X) curves, DCS training textbook, calculation workbooks, HMI samples, and PID/PIDV/SUMA/MAN parameter summary.
-- Documentation organization was merged to `main` through [PR #1](https://github.com/Ronanski/icms-master-tool/pull/1).
-- No simulator logic or application code has been changed as part of this documentation task.
+## Repository state
+- Default branch `main`; work branch `claude/adoring-carson-aylw3j`. Documentation structure merged earlier through [PR #1](https://github.com/Ronanski/icms-master-tool/pull/1).
+- Only `logic-sim-v1.20.21.html` has code changes (analog reader: `anCompile`, `anInit`, `anFace`). DITL is untouched. The `.apk` and `.exe` are committed binaries and are NOT rebuilt; the repository has no build files or workflow, so they cannot be rebuilt from here. No release was made.
+- Source references are in `document-references/` (plant drawings, I/O list, memory lists, F(X), legends, parameter workbook, textbook). Do not copy them elsewhere.
 
 ## Documentation layout
-- `README.md`: short overview and links to project documents.
-- `PROJECT_RULES.md`: permanent working rules, source hierarchy, approval and release rules.
-- `HANDOFF.md`: this current state and next actions.
-- `docs/abc-audit/ABC-AUDIT.md`: master ABC audit method and Golden Reference index.
-- Version-specific reports are created only when actual findings/progress exist.
+`README.md` overview · `PROJECT_RULES.md` rules and source order · this file · `docs/abc-audit/ABC-AUDIT.md` method, summary and findings index · `docs/versions/v1.20.21/` (`FINDINGS.md` evidence, `PROGRESS.md` per-sheet status, `UPDATE_REPORT.md`).
 
-## Audit rules
-- Plant-specific drawings are the primary reference for plant logic.
-- Use I/O lists, station memory lists, F(X) curves, symbol legends, parameter summaries, and calculation sheets to cross-check relevant details.
-- Expected results must cite the source and page/sheet where possible.
-- Mark unclear or conflicting evidence as **Needs Verification**; never invent expected values.
-- Audit before fixing. Do not change DITL functionality during ABC-only work without explicit approval.
-- No Stable/Beta release until the user explicitly says **GO STABLE** or **GO BETA**.
+## Audit status
+- Traced and tested: ABC-005 (mostly), ABC-028, ABC-054, ABC-017, ABC-001B, ABC-056, ABC-001A (structure). Details in `PROGRESS.md`.
+- Batch scan of all 54 sheets: 140 controller blocks vs the parameter workbook, 176 AI tags vs the I/O list, 15 dividers, 222 comparators, simulator Health. Everything matches except the items below.
+- Fixed and verified (user approved, evidence in `FINDINGS.md`): F-1 divider B/A (ABC-005), F-3 AI0481 range (ABC-008), F-4 unlabeled divider order (ABC-032), F-5 HIC-MWRL limits (ABC-001B), F-6 comparator set points (ABC-001A).
+- Closed: F-2 (PID CUT/DH swapped; simulator does not use them).
+- Open: **N-1** probable cause is the signal unit basis (DCS passes % of range, the simulator carries engineering units, so "SCALE CONVERT a/b" constants and "%" set points can give wrong results, e.g. ABC-056 M.025F, size of SI0334/SI0337 on ABC-005). Suspected only; fixing it is a model change across about 15 sheets and needs a decision plus a regression run. N-2..N-4 (ABC-005 constant 13 vs 1.3, SI0144 source, SI0337 label position) and AB0114–0116 not found in any list (Cannot Verify).
 
-## Audit progress (v1.20.21 verified from the simulator title/badge; apk/exe not run)
-- No earlier C&E Golden work existed anywhere in the repo; the audit was started fresh using `docs/abc-audit/ABC-AUDIT.md`.
-- ABC-005 mostly audited: ratio, low-limit, running/SIG.AB/trip logic, manual/BU-CMD transfer, and tag/address checks Pass; **F-1** density-correction ÷ inverted (Fail); N-1..N-4 Needs Verification; AB0114-0116 and controller tags Cannot Verify. Evidence: `docs/versions/v1.20.21/`.
-- Method note: ABC PDFs have no text layer (read visually). Simulator was driven headless (Playwright + bundled Chromium) by writing to the sheet's external-input nets and reading net values; nothing was modified.
-
-- Batch scan of all 54 sheets done (read-only, automated): PID/MAN/SUMA parameters vs the workbook, and 176 AI tags vs the I/O list. Almost everything matches; open items are F-2, F-3, N-5 in `FINDINGS.md`. Audit now proceeds in batches, not page by page.
-
-## Corrections applied (user-approved, analog reader only; details and verification in `docs/versions/v1.20.21/FINDINGS.md`)
-- F-1: stacked B-over-A fraction on the ÷ block (ABC-005 density correction).
-- F-4: unlabeled ÷ block uses the through-line pin as dividend (ABC-032).
-- F-3: AI range text searched at 70 units when none found and no feedback model (ABC-008 AI0481).
-- Only `logic-sim-v1.20.21.html` changed (6 insertions, 2 deletions in `anCompile` / `anInit`). The `.apk` and `.exe` are NOT rebuilt (the user handles them) and no release was made. The user decides about the version number.
+## Method notes
+- Drawing PDFs have no text layer; read visually. The simulator is driven headless (Playwright + bundled Chromium): inputs written to external nets or forced, SIG.AB states set, time stepped, nets read. Nothing in the repo is modified by the tests.
+- Rules to keep: audit before fixing, only change the ABC reader with evidence, never touch DITL without approval, no release or build claim without **GO STABLE** / **GO BETA**.
 
 ## Next actions
-1. Open items needing the user only if they want them closed: F-2 (CUT/DH swapped between sim data and workbook; unused by sim), N-5 (why HIC-MWRL MV limits are overridden in code).
-2. Next audit batch: ABC-004A (source of SI0144 → N-1/N-3: magnitudes of the ABC-005 chain), then per-page logic checks (digital logic, transfer blocks, tracking) for the other pages, automated the same way as ABC-005-05..09.
-3. No release without GO STABLE / GO BETA.
+1. Audit the next simplest sheets: ABC-033, ABC-034, then ABC-013, 009B, 055, 014, 029, 004B/C and so on (order by block count in the simulator).
+2. ABC-004A (source of SI0144) to settle N-3 and test N-1.
+3. Decide with the user whether to adopt a percent-of-range model (N-1) once more sheets show the same pattern.
+4. Release / rebuild only on GO STABLE / GO BETA.
 
 ## Current task status
-**Done:** ABC-005 traced and tested (11 tests); batch scan of all 54 sheets (parameters, AI tags, dividers, health); 3 corrections applied and verified; documents updated.
-**Not done:** per-page logic checks for the other pages, ABC-005 PID auto dynamics / SUMA integration / ALM limits, N-1 magnitudes, rebuilds and release.
+**Done:** corrections F-1, F-3, F-4, F-5, F-6; seven sheets traced; batch scan; records updated.
+**Not done:** remaining sheets, N-1 decision, ABC-005 PID auto dynamics / SUMA integration / ALM limits, rebuilds and release.

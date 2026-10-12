@@ -6,7 +6,7 @@ This is the master index for checking the simulator's ABC analog pages against t
 
 ## Current status
 
-- Overall ABC audit: **In progress — 1 of 54 pages started (ABC-005, mostly done)**. Version evidence and results: `docs/versions/v1.20.21/`.
+- Overall ABC audit: **In progress — 7 sheets traced (ABC-005, 028, 054, 017, 001B, 056, 001A); all 54 batch-scanned**. Version evidence and results: `docs/versions/v1.20.21/`.
 - Golden Reference source set: present in `document-references/`; individual expected behaviors still require traceable verification.
 - Simulator corrections: none made by this documentation task.
 - Release status: no release authorized.
@@ -74,8 +74,10 @@ Do not create empty version folders. Use the app's verified version, not a versi
 | F-1 | ABC-005 | DENSITY CORRECTION ÷ is drawn B/A; simulator computed A/B | Fixed, verified |
 | F-3 | ABC-008 | AI0481 (0–1200 rpm) had no range | Fixed, verified |
 | F-4 | ABC-032 | Unlabeled ÷ computed constant ÷ signal | Fixed, verified |
-| F-2 | all PID | CUT / DH values swapped between sim data and workbook (not used by sim) | Needs Verification |
-| N-5 | ABC-001B | HIC-MWRL MV limits overridden in code | Needs Verification |
+| F-5 | ABC-001B | HIC-MWRL MV limits overridden in code | Fixed, verified |
+| F-6 | ABC-001A | Comparator set points "> 0.1 %" read as 0 | Fixed, verified |
+| F-2 | all PID | CUT / DH swapped between sim data and workbook (not used by sim) | Closed, no action |
+| N-1 | ABC-005, ABC-056, others | Probable cause: signal unit basis (EU in sim vs % in DCS) | Suspected, not fixed |
 
 Details: [v1.20.21 findings](../versions/v1.20.21/FINDINGS.md). Do not copy entire diagrams, spreadsheets, or PDFs into this document.
 
