@@ -94,6 +94,8 @@ Run once over every sheet instead of page by page. Sources: `summary-of-pid-pidv
 7. `anDefaults`: ABC-005 limestone chain constants scaled to real values (guarded). → F-8.
 8. `anDefaults` (ABC-003E only) plus small engine hooks: a `gain` on cross-sheet LINK drivers, a `bg` multiplier on the B input of AMT/SW, a fixed ramp on the four burner RATE blocks, a scaled set point for the four "< X%" comparators. → F-9.
 9. `anDefaults` (ABC-011, ABC-012) plus an output multiplier `og` on AMT/SW: the outlet temperature PID output net carries °C. → F-10.
+10. `anCompile`, constants: a stacked fraction (numerator above denominator) next to an "A" box is read as a ratio; with a SCALE CONVERT label it is x 1. → F-11.
+11. `anCompile`, same-tag merge: an unsourced signal written at two places no longer links the two ends to each other (the input stays settable). → F-12.
 
 Verification after the changes (same headless method):
 - All 15 ÷ blocks compared before / after: exactly 2 changed (ABC-005 #21, ABC-032 #26). ABC-001B #8 (formula "T = B / A * 100 / 60") was briefly affected during development and is unchanged in the final patch.
@@ -247,4 +249,22 @@ The two sheets have the same cascade: outlet temperature PID (TICBR1140 / TICMS1
 - Work done: the BU-CMD T that outputs xxx.MV multiplies its output by 6, divides the B input (RB-MV) by 6 for the PID tracking. ABC-011 and ABC-012 only.
 - Result (ABC-011, drum 100, outlet 520, SV 540, inlet 400): SI0274 = 370.3 °C (the PID output, above 326.8); before the change it was 326.8 (the 61.7 was lost). In LOC the MV follows the inlet temperature (400 °C).
 - **Please verify** (V-14): that the DCS cascade really passes the % of the 0~600 °C range (as a user would scale) and not a raw °C number. Other cascades in the same situation, still to check on their own sheets: ABC-004A (FIC-CM → FIC-CF) and ABC-009A (DPICFG108 → PIC-BASC).
+
+## Batch 11 — ABC-004A (coal master control, coal feeder A control)
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-004A | 01 | Structure: demand SI0010 → RAMPB 1 %/s (bumpless, PTN003011) → SV SI0141 of FIC-CM (ACT:R, PV SI0144 = total coal flow); FIC-CM.MV → SV of FIC-CF (ACT:R, PV SI0143 = sum of the feeder MVs × 1/3); FIC-CF.MV + bias LN23 → SI0116 → feeder A MAN FICCL1061A (rate block 1 T/s, high limit M.3405 83.3 / 100); HS-COAL (calorific value correction, LN44 / LN3, SI0003) → SI0140; M.0130 = OR(M.0138, M.0137, NOT FIC-CF.REM, NOT SAF REM, NOT PAF REM); M.0137 = TON 30 s of OR(M.014F, M.015F, M.016F) AND M.3405; M.0138 = fuel flow SIG.AB groups; M.2020 = OR(PIC-COBM.MAN, NOT A / B / C run, NOT each burner oil valve pair closed M.3410 / 3411 / 3416 / 3417); M.2021 = TP 2 s of NOT PIC-COBM.MAN | as listed | same after F-11 and F-12 | Pass after F-11, F-12 |
+| ABC-004A | 02 | SV ramp (demand 60 → 90: SI0141 rises 1.2 T/H per second); SI0143 with A = 30 (B, C = 0); M.0130 each branch; M.0137 after 30 s and with M.3405 off; M.2020 / M.2021; M.0131 → M.0133 (TOF 2 s) and M.0132 (TON 2 s); house operation: M.0141, M.0146 (25 s pulse while running), M.0147; feeder stop: M.014E off-delay, M.0147, M.0141 | as drawn | as drawn | Pass |
+
+### F-11 — Stacked fraction constant was read as its first number (ABC-004A, ABC-009A, ABC-003A) (Confirmed, fixed)
+- Problem: a constant box "A" with the value written as a stacked fraction (1 above 3) took the first number. ABC-004A: "A 1/3" (the divider of the sum of the three feeder MVs, giving SI0143 = average % that FIC-CF controls) was 1, so the sum of three feeders (up to 300 %) was compared with a 0 ~ 100 % set point. ABC-003A: "SCALE CONVERT 35/140" (total diesel oil flow SI0061 → oil master, 35 / 140 = burner range / master range) was 35. ABC-009A: constant 1/4 was 1.
+- Basis: drawing (ABC-004A crop at the X box under SI0123: A, 1 over 3). SCALE CONVERT constants are x 1 in real values (F-7).
+- Work done: constants next to a stacked pair of numbers are read as upper / lower; with a SCALE CONVERT label they are x 1. Scan of all 262 constants before / after: exactly three changed (ABC-004A #63 1 → 1/3, ABC-009A #93 1 → 1/4, ABC-003A #75 35 → 1).
+- Result: ABC-004A with only feeder A at 30 % gives SI0143 = 10 %. SI0061 is now the plain sum of the burner flows.
+- **Please verify** (V-15): ABC-009A "1/4" is checked when ABC-009A is audited.
+
+### F-12 — M.3400 (feeder A running, from DITL 19-37) could not be set on ABC-004A (Confirmed, fixed)
+- Problem: M.3400 is written at two places on the sheet. The simulator linked each end to the other, so neither end was an input and feeder A could never be "running" in the analog page (M.0142, M.014E, SI0114, M.0141 stayed at their stopped values).
+- Work done: when the merged signal has no driver, the chain is followed back to its root, which stays an input. All 54 sheets compared before / after: only ABC-004A changed (M.3400 is now an input).
 
