@@ -1388,7 +1388,7 @@ function anCompile(S){
  {const K=blk.filter(b=>b.k==='CONST'&&!(b.txt[0]&&/^-?\d/.test(b.txt[0].replace(/%%%/g,'%')))),used=new Set(),pairs=[];
   const nt=TX.filter(q=>/^-?\d+(\.\d+)?\s*([%°A-Za-z][^:]{0,30})?$/.test(q.t.trim())&&!blk.some(o=>o.k!=='CONST'&&q.x>=o.x0&&q.x<=o.x1&&q.y>=o.y0&&q.y<=o.y1));
   for(const b of K)for(const q of nt){const dx=Math.max(b.x0-q.x,0,q.x-b.x1),dy=Math.max(b.y0-q.y,0,q.y-b.y1),d=Math.hypot(dx,dy);if(d<=9)pairs.push({b,q,d})}
-  pairs.sort((x,y)=>x.d-y.d);const ub=new Set();for(const p of pairs){if(ub.has(p.b)||used.has(p.q))continue;ub.add(p.b);used.add(p.q);p.b.p.val=anNum(p.q.t)}
+  pairs.sort((x,y)=>x.d-y.d);const ub=new Set();for(const p of pairs){if(ub.has(p.b)||used.has(p.q))continue;ub.add(p.b);used.add(p.q);p.b.p.val=anNum(p.q.t);/* stacked fraction (numerator above denominator) drawn next to the box */{const isN=z=>/^-?\d+(\.\d+)?$/.test(z.t.trim());const w=isN(p.q)?nt.find(z=>z!==p.q&&isN(z)&&Math.abs(z.x-p.q.x)<3&&Math.abs(z.y-p.q.y)>3&&Math.abs(z.y-p.q.y)<10):null;if(w){const up=p.q.y>w.y?p.q:w,lo=up===p.q?w:p.q;if(+lo.t){used.add(w);p.b.p.val=anNum(up.t)/anNum(lo.t);p.b.note='fraction '+up.t.trim()+' / '+lo.t.trim();if(TX.some(z=>/SCALE\s*CONVERT/i.test(z.t)&&Math.hypot(z.x-p.b.cx,z.y-p.b.cy)<50)){p.b.p.val=1;p.b.note='SCALE CONVERT '+up.t.trim()+' / '+lo.t.trim()+' (source range / destination range): x 1 in engineering units'}}}}}
   /* an "A" box labelled with a signal name (not a number) = a reference to that signal, not a constant */
   const tg=TX.filter(q=>/^[A-Za-z][A-Za-z0-9]*\d[A-Za-z0-9]*(\.[A-Za-z0-9]+)?$/.test(q.t.trim())&&q.t.trim().length>=6&&!blk.some(o=>o.k!=='CONST'&&q.x>=o.x0&&q.x<=o.x1&&q.y>=o.y0&&q.y<=o.y1));
   for(const b of K){if(ub.has(b))continue;if(TX.some(q=>/^\s*\(?\s*-?\d+(?:\.\d+)?\s*(?:%|\/\s*-?\d+(?:\.\d+)?)\s*\)?\s*$/.test(q.t.trim())&&Math.hypot(q.x-b.cx,q.y-b.cy)<16))continue;let bt=null,bd=9;for(const q of tg){const w=q.t.trim().length*(q.h||4)*.6,dx=Math.max(b.x0-(q.x+w),0,q.x-b.x1),dy=Math.max(b.y0-q.y,0,q.y-b.y1),d=Math.hypot(dx,dy);if(d<bd){bd=d;bt=q}}if(bt)b.ref=bt.t.trim()}}
@@ -1521,7 +1521,8 @@ function anCompile(S){
    S.tagN=(S.tagN||[]).filter(q=>!q.by);anAddr(S);
    for(const a of S.addr){const k=a.how==='circle tag'?'circle':a.how==='AO block input'?'AO':/^wire beside/.test(a.how)?'addr':null;if(!k)continue;add(a.t,a.eng);(S.tagN=S.tagN||[]).push({t:a.t,n:a.eng,d:k==='circle'?0:k==='AO'?9:a.gap,by:k})}}
   for(const k in G){const g=G[k];if(g.length<2)continue;const dg=nets[g[0]].dig,isL=n=>S.link.some(x=>x[0]===n);const src=g.find(n=>S.drv[n].length&&nets[n].dig===dg&&!S.drv[n].some(d=>d.k==='LINK'))??g.find(n=>isL(n))??-1;
-   const master=src>=0?src:g.find(n=>!S.drv[n].length&&S.cns[n].length);if(master==null||master<0)continue;
+   let master=src>=0?src:g.find(n=>!S.drv[n].length&&S.cns[n].length);if(master==null||master<0)continue;
+   {/* a master that is itself the end of a connector link: go back to the root of that chain (otherwise two ends of one signal feed each other and the input can not be set) */let gd=0,lk;while(gd++<20&&(lk=S.link.find(x=>x[0]===master)))master=lk[1]}
    for(const n of g){if(n===master||S.drv[n].length||nets[n].dig!==nets[master].dig||S.link.some(x=>x[0]===n))continue;S.link.push([n,master])}}}
  S.link.forEach(([dst,srcN])=>{/* make the destination net driven */S.drv[dst].push({k:'LINK',id:-1,o:[dst],i:[srcN]})});
  /* order: dependencies first, back edges ignored (a loop reads the value of the previous step) */
