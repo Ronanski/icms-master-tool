@@ -1344,6 +1344,8 @@ function anDefaults(S){
  if(S.name==='ABC-006'){for(const b of S.blk)if(b.k==='LC'&&b.p&&b.p.sp===25&&/MCR/.test(b.p.u||'')){b.p.sp=151.5;b.p.u='T/H';b.note='25 % MCR = 151.5 T/H (drawing: TOTAL AIR FLOW < 25% MCR (151.5 T/H); 100% MCR = 606 T/H)'}}
  if(/^ABC-003[A-D]$/.test(S.name)){for(const b of S.blk)if(b.k==='LC'&&b.p&&b.p.sp===18.7&&b.p.u==='%'){b.p.sp=18.7*65/100;b.p.u='T/H';b.note='18.7 % of the 0 ~ 65 T/H SA flow range = 12.155 T/H'}}
  if(S.name==='ABC-010'){for(const b of S.blk)if(b.k==='HC'&&b.p&&b.p.sp===5&&b.p.u==='%'){b.p.sp=5*12.42;b.p.u='mm';b.note='5 % of the -422 ~ 820 mm level range = 62.1 mm (drum level (1) / (3) deviation)'}}
+ if(S.name==='ABC-001B'){/* SCALE CONVERT 10 / 200 feeds the RATE LIMIT time T = B / A * 100 / 60 (B = 10000): here the ratio is kept (0.05), it makes the rate limit equal to the MW/min setting (HIC-MWRL 3 MW/min = 0.05 MW/s) */
+  for(const b of S.blk)if(b.k==='CONST'&&b.p&&b.p.val===1&&b.note&&/SCALE CONVERT 10\s*\/\s*200/.test(b.note)){b.p.val=0.05;b.note='SCALE CONVERT 10 / 200 = 0.05: the rate limit of the unit load equals the MW/min setting'}}
  if(S.name==='ABC-009A'||S.name==='ABC-009B'){/* bottom ash screw cooler speed controllers: the MAN SICL1060A ~ D work in rpm (0 ~ 5 rpm, workbook), the loop signals are percent of 5 rpm (AUTO-MV, "12 %" back-up value, comparison with the output, average of the four speeds as the PV of PIC-BASC) */
   const labs=n=>[S.lab[n]&&S.lab[n].t||''].concat((S.tagN||[]).filter(z=>z.n===n).map(z=>z.t)).join('|');const lab=labs;const isMV=n=>/(^|\|)SICL1060[A-D]\.MV/.test(labs(n))||/(^|\|)AO0(211|323|339|787)\b/.test(labs(n));
   for(const b of S.blk){
