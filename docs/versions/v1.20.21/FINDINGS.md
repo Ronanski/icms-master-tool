@@ -48,7 +48,7 @@ Method: format of `docs/abc-audit/ABC-AUDIT.md`. Source = `document-references/a
 ### Needs Verification (not decidable from the drawing alone)
 - **N-1** Magnitudes. The chain gives values of the order 1e5 at SI0334 / SI0337, far outside a 0–100 % feeder range. SI0144 is plain total coal flow per the SI list, so its unit is not the explanation. Candidates: direction/value of "SCALE CONVERT 12000/2700" (×4.444 vs ×0.225), the "13" vs "BASE : 1.3" constant, or the ×10000 factor. Needs ABC-004A and the scaling intent from the plant.
 - **N-2** Constant "13" under the density-base box vs label "BASE : 1.3": the sim uses 13 in both places (blocks 19 and 28).
-- **N-3** SI0144 comes from ABC-004A by cross-page link (it read 7.32; a manual write is overwritten). Source not traced yet.
+- **N-3** (resolved) SI0144 on ABC-004A = (SI0114 feeder A flow + SI0124 feeder B + SI0134 feeder C) × SCALE CONVERT 40/120 (now ×1 in real values) = total coal flow in T/H; SI0140 = SI0144 × SI0003 (calorie), as in the memory list. The app forces SI0144 to 7.32 T/H as an assumed value, so ABC-005 sees 7.32 T/H until that assumption is changed in the app's assumed values panel (or the force is removed).
 - **N-4** SI0337 label position vs memory-list description (above).
 
 ### Not checked yet on ABC-005
