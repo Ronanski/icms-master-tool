@@ -32,15 +32,15 @@ ABC analog logic audit using a Cause & Effect / Golden Reference approach. User 
 
 ## Audit progress (v1.20.21 verified from the simulator title/badge; apk/exe not run)
 - No earlier C&E Golden work existed anywhere in the repo; the audit was started fresh using `docs/abc-audit/ABC-AUDIT.md`.
-- ABC-005 partly audited: ratio / low-limit chain Pass; **F-1** density-correction ÷ inverted (Fail); N-1..N-3 Needs Verification. Evidence: `docs/versions/v1.20.21/`.
+- ABC-005 mostly audited: ratio, low-limit, running/SIG.AB/trip logic, manual/BU-CMD transfer, and tag/address checks Pass; **F-1** density-correction ÷ inverted (Fail); N-1..N-4 Needs Verification; AB0114-0116 and controller tags Cannot Verify. Evidence: `docs/versions/v1.20.21/`.
 - Method note: ABC PDFs have no text layer (read visually). Simulator was driven headless (Playwright + bundled Chromium) by writing to the sheet's external-input nets and reading net values; nothing was modified.
 
 ## Next actions
 1. **Decision needed:** approve or reject a fix for F-1 (÷ reader should understand a stacked B-over-A fraction). Also check whether other sheets have the same pattern before deciding scope. No code is changed until approved.
-2. Finish ABC-005: PID, transfer blocks, trip/running logic, AO0788, SUMA, tag/address cross-check with I/O list and memory list 101.
+2. Finish ABC-005: PID AICFG10571 parameters/auto output, SUMA, ALM (read `summary-of-pid-pidv-suma-man-parameters.xlsx`).
 3. Audit ABC-004A next (source of SI0144) to settle N-1 and N-3.
 4. Do not alter simulation logic or create a release unless approved.
 
 ## Current task status
-**Done:** ABC-005 traced and tested as above; findings documented.
-**Not done:** remaining 53 ABC pages, ABC-005 control/trip logic, I/O and memory-list cross-checks, any fix, build, or release.
+**Done:** ABC-005 traced, 9 tests run, addresses cross-checked; findings documented. apk/exe testing is done by the user, not by Claude.
+**Not done:** remaining 53 ABC pages, ABC-005 PID/SUMA/auto numerics, any fix, build, or release.

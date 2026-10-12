@@ -6,7 +6,7 @@ This is the master index for checking the simulator's ABC analog pages against t
 
 ## Current status
 
-- Overall ABC audit: **In progress — 1 of 54 pages started (ABC-005, partial)**. Version evidence and results: `docs/versions/v1.20.21/`.
+- Overall ABC audit: **In progress — 1 of 54 pages started (ABC-005, mostly done)**. Version evidence and results: `docs/versions/v1.20.21/`.
 - Golden Reference source set: present in `document-references/`; individual expected behaviors still require traceable verification.
 - Simulator corrections: none made by this documentation task.
 - Release status: no release authorized.
