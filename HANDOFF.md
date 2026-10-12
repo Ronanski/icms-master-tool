@@ -44,9 +44,9 @@ The app shows real values (PROJECT_RULES 4a). DCS percent / count scaling is not
 - Rules to keep: audit before fixing, only change the ABC reader with evidence, never touch DITL without approval, no release or build claim without **GO STABLE** / **GO BETA**.
 
 ## Next actions
-1. Finish ABC-005 (PID auto dynamics, SUMA integration, ALM limits). Then regenerate and send the PDF report (per sheet: where to look in the diagram, what was found / changed, items to verify V-1 ~ V-20).
+1. User does one UAT / verification with the PDF report (V-1 ~ V-21). ABC-005 PID auto dynamics, SUMA integration and ALM limits are recorded as V-21 (not fully driven in the headless run).
 2. Release / rebuild only on GO STABLE / GO BETA.
 
 ## Current task status
 **Done:** corrections F-1, F-3 ~ F-8 and F-9 ~ F-25; 53 of 54 sheets traced and tested (ABC-005 partly); batch scan; records updated.
-**Not done:** the rest of ABC-005, the PDF report of the whole run, user verification V-1 ~ V-20, rebuilds and release.
+**Not done:** user verification V-1 ~ V-21 (V-21 = ABC-005 auto dynamics), rebuilds and release. The full PDF report was sent in chat.
