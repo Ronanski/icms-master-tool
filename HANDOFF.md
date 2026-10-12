@@ -12,13 +12,14 @@ ABC analog logic audit using a Cause & Effect / Golden Reference approach. User 
 - Default branch: `main`.
 - Existing app artifacts are named `logic-sim-v1.20.21.html`, `logic-sim-v1.20.21-portable.exe`, and `logic-sim-v1.20.21.apk`. Runtime version has not been independently verified.
 - Source references are stored in `document-references/`; they include plant diagram archives/PDFs, symbol legends, DCS I/O list, memory lists STN101–STN105, linear F(X) curves, DCS training textbook, calculation workbooks, HMI samples, and PID/PIDV/SUMA/MAN parameter summary.
-- Repository access was checked through the connected GitHub integration. A documentation branch was created for this change.
+- Documentation organization was merged to `main` through [PR #1](https://github.com/Ronanski/icms-master-tool/pull/1).
 - No simulator logic or application code has been changed as part of this documentation task.
 
 ## Documentation layout
-- `PROJECT_RULES.md`: permanent working rules, source-of-truth order, approval and release rules.
+- `README.md`: short overview and links to project documents.
+- `PROJECT_RULES.md`: permanent working rules, source hierarchy, approval and release rules.
 - `HANDOFF.md`: this current state and next actions.
-- `docs/abc-audit/ABC-AUDIT.md`: master ABC audit and Golden Reference index.
+- `docs/abc-audit/ABC-AUDIT.md`: master ABC audit method and Golden Reference index.
 - Version-specific reports are created only when actual findings/progress exist.
 
 ## Audit rules
@@ -30,11 +31,12 @@ ABC analog logic audit using a Cause & Effect / Golden Reference approach. User 
 - No Stable/Beta release until the user explicitly says **GO STABLE** or **GO BETA**.
 
 ## Next actions
-1. Review `docs/abc-audit/ABC-AUDIT.md` and use it as the single master index for ABC audit evidence.
-2. Inspect Claude's existing C&E Golden work before creating duplicate test cases or competing audit formats.
-3. Verify ABC pages one at a time: source diagram → trace → expected behavior → simulator result → evidence-backed verdict.
-4. When findings are real, add concise version-specific reports under `docs/versions/<version>/` and update this handoff.
-5. Do not alter simulation logic or create a release unless approved.
+1. Inspect Claude's existing C&E Golden work before creating duplicate test cases or competing audit formats.
+2. Verify ABC pages one at a time: source diagram → trace → expected behavior → simulator result → evidence-backed verdict.
+3. When findings are real, add concise version-specific reports under `docs/versions/<verified-version>/` and update this handoff.
+4. Do not alter simulation logic or create a release unless approved.
 
 ## Current task status
-Documentation structure drafted on a separate branch for review/merge. App code unchanged. ABC behavior has not been independently audited in this task.
+**Completed:** Added and merged the documentation structure (PR #1). README navigation, project rules, current handoff, and ABC audit index are present on `main`.
+
+**Not completed:** No independent ABC behavior audit, application-code change, build, or release was performed as part of this task.
