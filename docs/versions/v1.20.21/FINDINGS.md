@@ -90,7 +90,8 @@ Run once over every sheet instead of page by page. Sources: `summary-of-pid-pidv
 3. `anInit`: an AI with no range and no feedback model searches 70 instead of 45 units for its "a ~ b unit" text. → F-3.
 4. `anFace`, MAN: removed the HIC-MWRL exception. → F-5.
 5. `anCompile`, case HC/LC/HLC: if no set point text is found within 16 units, search 30. → F-6.
-6. `anCompile`, case CONST: a ratio constant next to a "SCALE CONVERT" label is ×1 in engineering units. → F-7.
+6. `anCompile`, case CONST: a ratio constant next to a "SCALE CONVERT" label is ×1 in real values. → F-7.
+7. `anDefaults`: ABC-005 limestone chain constants scaled to real values (guarded). → F-8.
 
 Verification after the changes (same headless method):
 - All 15 ÷ blocks compared before / after: exactly 2 changed (ABC-005 #21, ABC-032 #26). ABC-001B #8 (formula "T = B / A * 100 / 60") was briefly affected during development and is unchanged in the final patch.
@@ -138,7 +139,14 @@ Scenario method: inputs written to external nets or forced, SIG.AB states set, s
 - Fix: the 16 constants that carry a ratio and sit within 50 units of a "SCALE CONVERT" label (distances 9–47; the only other ratio constant, 1/60 on ABC-001B, is 234 away and untouched) are now ×1. Their note says so. List: ABC-004A 40/120; ABC-005 12000/2700; ABC-006 35/1115, 432/1115, 648/1115; ABC-010 500/550; ABC-032 400/200; ABC-001B 10/200, 200/200; ABC-056 5/10; ABC-001C 240/200; ABC-002 140/1200, 648/1115, 35/1115, 1115/432, 432/1115.
 - Verified: controllers (140) and AI ranges unchanged; Health empty; no NaN after 5 s of run on the nine affected sheets; ABC-005, 017, 028, 054 scenarios give the same results as before; ABC-056 M.025F and ABC-032 SV now follow the drawing; ABC-006 total air flow is the plain sum of the three flows.
 
+### F-8 — ABC-005 limestone chain shows real values (Confirmed, fixed; needs user verification of the 13 vs 1.3 constant)
+- Principle (PROJECT_RULES 4a): real values on screen. The drawing chain is written for percent / counts: SI0339 = A/B × 3.13 × 10000 (counts, 100 % = 10000, textbook), × coal flow, × SCALE CONVERT 12000/2700 (coal range 120 T/H to feeder range 27 T/H, ×100 each), × density base / AB0116.
+- Hand calculation with real values: S = 3 %, CaCO3 = 60 %, coal 81 T/H → limestone = 3/60 × 3.13 × 81 = 12.68 T/H = 46.95 % of the 27 T/H feeder. The count-domain chain gives the same 46.94 % (1565 × 6750 / 10000 × 4.444 / 100), so the drawing constants are consistent with this reading.
+- Scaling applied (guarded: only when the constant still has the drawing value): constant 10000 → 1 (count scale); SCALE CONVERT 12000/2700 → 100/27 (T/H to feeder %); the density base constant that the drawing box shows as "13" → 1.3 (the drawing label printed twice says "LIMESTONE DENSITY BASE : 1.3"; with 13 the chain is ten times too large); the same 1.3 × 100/27 on the AB0116 path to the totalizer so that SI0336 is in T/H (SUMA is 0–27 T/H, integrates T/H).
+- Verified: SI0339 0.1565; SI0334 and SI0337 = 46.95 % at base density; 40.69 % at ρ 1.5 and 55.49 % at ρ 1.1 (denser limestone → lower speed); S 0.5 % / CaCO3 90 % → 5.22 %; SI0336 13.5 T/H at 50 % speed, 27 T/H at 100 %, 31.15 T/H at ρ 1.5. Controllers, AI ranges, Health and the ABC-005 logic scenarios are unchanged.
+- **Please verify** (N-2): the constant under the "LIMESTONE DENSITY BASE" boxes is printed as 13 but the label says 1.3.
+
 ### N-1 (updated) — remaining unit-basis questions (Needs Verification)
-- ABC-005: after F-7 the chain SI0339 (1565 counts) × coal flow × ... × 13 / AB0116 is still of the order 1e5. The constants 10000 and 3.13 look like a fixed-point count scale (100 % = 10000, textbook), and the sim's MUL does not divide by the count scale. Needs the DCS multiplier definition for % signals before changing; no change made.
+- ABC-005: resolved by F-8.
 - ABC-001B: T = B / A · 100 / 60 with B = 10000 gives 1e5–1e7 in the sim for the RATE LIMIT time input; same count-scale question, plus the unit of the RATE block's T input.
 - ABC-001A / others: set points written as "%" (for example "> 0.1 %") are compared as the literal number against an engineering-unit value.

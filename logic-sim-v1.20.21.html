@@ -1333,6 +1333,12 @@ function anDefaults(S){
  {const by={};for(const b of S.blk)if(b.k==='AI'){const o=b.pins.find(p=>p.role==='out'),t=o&&S.lab[o.n]?S.lab[o.n].t:null;if(t)(by[t]=by[t]||[]).push(b)}
   for(const t in by){const g=by[t];if(g.length<2)continue;const m=g.find(b=>b.fb);if(!m)continue;for(const b of g)if(b!==m&&!b.fb){b.fb=m.fb;b.twin=m;b.pins.filter(p=>p.role==='out').forEach(p=>{if(S._tr)S._tr[p.n]=m.fb.id})}}}
  if(typeof AN_DEF==='undefined')return;anFace(S);
+ /* real values: the DCS carries percent / counts (100 % = 10000), the simulator shows real values (T/H, %), so the scaling is done here as a user would. ABC-005 limestone chain; each change is applied only if the constant still has the drawing value */
+ if(S.name==='ABC-005'){const fx=(id,from,to,why)=>{const c=S.blk.find(q=>q.id===id&&q.k==='CONST');if(c&&c.p&&Math.abs(c.p.val-from)<1e-9){c.p.val=to;c.note=why}};
+  fx(27,10000,1,'x 10000 turns the ratio into counts (100 % = 10000); real value: x 1');
+  fx(20,1,100/27,'SCALE CONVERT 12000 / 2700: limestone T/H to feeder speed % (27 T/H = 100 %): x 100 / 27');
+  fx(28,13,1.3,'LIMESTONE DENSITY BASE : 1.3 (drawing label); drawing box shows 13');
+  fx(19,13,1.3*100/27,'LIMESTONE DENSITY BASE : 1.3, feeder speed % to T/H (27 T/H = 100 %): 1.3 x 100 / 27')}
  const kpOf=b=>{const q=S.tx.filter(t=>/^FIFA\d+[A-D]?\.KP2$/i.test(t.t.trim())&&anD(t.x,t.y,b.cx,b.cy)<=60).sort((p,r)=>anD(p.x,p.y,b.cx,b.cy)-anD(r.x,r.y,b.cx,b.cy))[0];return q?q.t.trim().toUpperCase().replace(/\.KP2$/,''):''};
  const fixedRate=S.blk.filter(b=>b.k==='RATE'&&b.main!==undefined&&b.up===undefined&&!(b.p.rate>0)).sort((p,q)=>p.id-q.id),rl=AN_DEF.RATE.filter(e=>e.sheet===S.name);
  fixedRate.forEach((b,i)=>{const e=rl[i];if(e){b.p.rate=e.rate;b.dflt={k:'RATE',e}}});

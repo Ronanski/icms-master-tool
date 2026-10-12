@@ -11,6 +11,10 @@ This is the master index for checking the simulator's ABC analog pages against t
 - Simulator corrections: none made by this documentation task.
 - Release status: no release authorized.
 
+## Value basis
+
+The app shows real values; DCS % / count scaling is done as a user would (PROJECT_RULES 4a).
+
 ## Source hierarchy
 
 1. **Plant-specific ABC logic diagrams** — primary reference for actual logic, connections, block arrangement, signal flow, and page links.
@@ -78,7 +82,8 @@ Do not create empty version folders. Use the app's verified version, not a versi
 | F-6 | ABC-001A | Comparator set points "> 0.1 %" read as 0 | Fixed, verified |
 | F-2 | all PID | CUT / DH swapped between sim data and workbook (not used by sim) | Closed, no action |
 | F-7 | 9 sheets | SCALE CONVERT a/b multiplied engineering-unit values (source range / destination range) | Fixed, verified |
-| N-1 | ABC-005, ABC-001B | Count-scale chains (10000 = 100 %) still of order 1e5–1e7 | Needs Verification |
+| F-8 | ABC-005 | Limestone chain shows real values (count scale, T/H to %, density base 1.3) | Fixed, verified; user to verify constant 13 vs 1.3 |
+| N-1 | ABC-001B | RATE LIMIT time input T = B/A·100/60 still 1e5–1e7 | Needs Verification |
 
 Details: [v1.20.21 findings](../versions/v1.20.21/FINDINGS.md). Do not copy entire diagrams, spreadsheets, or PDFs into this document.
 
