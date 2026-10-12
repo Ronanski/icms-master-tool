@@ -55,3 +55,29 @@ Method: format of `docs/abc-audit/ABC-AUDIT.md`. Source = `document-references/a
 Auto-mode dynamic/numeric behavior of the PID, AO0788 in auto mode, SUMA totalizer integration, ALM SIM1311 limits (ALM is not in the parameter workbook). The AO0788 transfer results above use the manual/trip branches only.
 
 Test notes: the two "running" inputs per feeder (drawn twice) are separate input nets in the sim and were set together; the three flow SIG.AB inputs and SI0144 are cross-page links and were driven from ABC-004A/B/C.
+
+## Batch scan — all 54 sheets (automated, read-only)
+
+Run once over every sheet instead of page by page. Sources: `summary-of-pid-pidv-suma-man-parameters.xlsx` (all 136 rows are marked OK by the user) and `dcs-io-list.xls` (Station 101–105).
+
+| Check | Result |
+|---|---|
+| PID / PIDV parameters (PH, PL, MH, ML, dMVH, P→Kp, I, D, DTI, TF, GAP, BND, PHONDT, PLONDT) vs workbook, 68 rows | All match, **except** the pair CUT / DH (see F-2) |
+| MAN limits (MH/ML converted from % of SH–SL to engineering units), 58 rows | 57 match; HIC-MWRL differs on purpose (see N-5) |
+| SUMA (PH, PL, RSTS, K, DT, TF, CUT, PHONDT, PLONDT, unit), 10 rows | All 10 match |
+| Workbook rows with no block in the sim / sim blocks with no workbook row | None / none (apart from the ABC-000 legend placeholders XXX-XX-XXX) |
+| AI tag, range and unit vs I/O list, 176 unique AI tags | 155 match, 0 not found in the I/O list. 19 have no range in the sim and are position-feedback AIs (I/O 0–100 %, handled by the valve feedback model) except **AI0481 (F-3)**. 2 are cosmetic unit text (AI0151 shows "% ( 0.00 ~ 27.00 T/H )", AI0131 "Kg/cm2" vs "kg/cm2") |
+| Sim built-in Health / warnings | Empty on every sheet |
+
+### F-2 — PID CUT and DH values are swapped between the workbook and the sim data (Needs Verification which is right)
+- Sim data (`FACE`, "user file 2026-10-08"): CUT 0, DH 5 (or 0/10 …); repo workbook: CUT 5, DH 0 (or 10/0 …) on every PID row.
+- The workbook's own How-to sheet says the simulator does **not** use CUT or DH yet, so behavior is not affected. No change made. Needs the user to confirm which file is the later DCS readout.
+
+### F-3 — AI0481 (ABC-008, rpm, I/O range 0–1200) has no range in the sim (Suspected)
+- No range text was read for this transmitter and it has no feedback model, so the sim falls back to its default span. Needs a look at the ABC-008 drawing text before fixing.
+
+### N-5 — HIC-MWRL (ABC-001B) MV limits
+- Workbook / FACE: SH 10, MH 30 %, ML 1 % (= 3 and 0.1 MW/MIN). Code in `anFace` deliberately overrides it to the full range 0–10 (`if(e.tag==='HIC-MWRL'){P.lo=e.SL;P.hi=e.SH}`). Reason not documented. Needs the user's confirmation; no change made.
+
+### F-1 fix status
+Approved by the user in chat ("if logic says it is right, do it"). The planned patch: the ÷ reader also reads a stacked A/B or B/A fraction (the upper letter is the numerator). From the pre-patch scan it should change only ABC-005 block 21 among the 15 ÷ blocks, but this was **not tested**. The patch is **not applied**: the environment's permission system blocked editing `logic-sim-v1.20.21.html`, so the file is unchanged.

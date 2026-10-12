@@ -35,12 +35,14 @@ ABC analog logic audit using a Cause & Effect / Golden Reference approach. User 
 - ABC-005 mostly audited: ratio, low-limit, running/SIG.AB/trip logic, manual/BU-CMD transfer, and tag/address checks Pass; **F-1** density-correction ÷ inverted (Fail); N-1..N-4 Needs Verification; AB0114-0116 and controller tags Cannot Verify. Evidence: `docs/versions/v1.20.21/`.
 - Method note: ABC PDFs have no text layer (read visually). Simulator was driven headless (Playwright + bundled Chromium) by writing to the sheet's external-input nets and reading net values; nothing was modified.
 
+- Batch scan of all 54 sheets done (read-only, automated): PID/MAN/SUMA parameters vs the workbook, and 176 AI tags vs the I/O list. Almost everything matches; open items are F-2, F-3, N-5 in `FINDINGS.md`. Audit now proceeds in batches, not page by page.
+
 ## Next actions
-1. **Decision needed:** approve or reject a fix for F-1 (÷ reader should understand a stacked B-over-A fraction). Scope already checked: only 1 of 15 ÷ blocks is a readable stacked B/A (ABC-005); 6 unreadable ones (ABC-008, 000, 027, 032, 002 x2) are checked when their pages are audited. No code is changed until approved.
-2. Finish ABC-005: PID auto-mode dynamics, SUMA integration, ALM limits (PID/SUMA parameters already Pass).
-3. Audit ABC-004A next (source of SI0144) to settle N-1 and N-3.
-4. Do not alter simulation logic or create a release unless approved.
+1. **F-1 fix is approved by the user but NOT applied:** the environment's permission system blocked editing `logic-sim-v1.20.21.html`. Needed: the user either grants the edit permission or applies the patch described in `FINDINGS.md` ("F-1 fix status"). After applying, re-scan all 15 ÷ blocks (only ABC-005 block 21 should change) and re-run ABC-005-04.
+2. User decisions: F-2 (which file is the later readout for CUT/DH, unused by the sim), N-5 (why HIC-MWRL is overridden).
+3. Next batch: ABC-004A (source of SI0144, N-1/N-3), the 6 ÷ blocks not readable automatically (ABC-008, 000, 027, 032, 002 x2), F-3 (AI0481), then the remaining logic checks per page (digital logic, transfer blocks, tracking) automated the same way as ABC-005-05..09.
+4. Do not alter simulation logic beyond approved items, and no release unless approved.
 
 ## Current task status
-**Done:** ABC-005 traced, 11 tests run, addresses cross-checked; findings documented. apk/exe testing is done by the user, not by Claude.
-**Not done:** remaining 53 ABC pages, ABC-005 PID auto dynamics/SUMA integration/ALM, any fix, build, or release.
+**Done:** ABC-005 traced, 11 tests run; batch parameter and tag scan over all sheets; findings documented. apk/exe testing is done by the user, not by Claude.
+**Not done:** F-1 fix (blocked), remaining per-page logic checks, ABC-005 PID auto dynamics/SUMA integration/ALM, any build or release.
