@@ -29,6 +29,7 @@ Legend: Done = structure traced against the drawing and scenarios run; Batch = a
 | ABC-031 | Done | Pass |
 | ABC-051 | Done | Pass |
 | ABC-003E | Done | Pass; F-9 fixed (units and ramp), V-13 to verify |
+| ABC-057 | Done | Pass after F-15 (bias MAN scaling) |
 | ABC-002 | Done | Pass after F-14 (diesel calorie unit), V-16 to verify |
 | ABC-007 | Done | Pass after F-13 (PV tags tied to the flow) |
 | ABC-004A | Done | Pass after F-11 (1/3 constant), F-12 (M.3400 input) |

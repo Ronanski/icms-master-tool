@@ -98,6 +98,7 @@ Run once over every sheet instead of page by page. Sources: `summary-of-pid-pidv
 11. `anCompile`, same-tag merge: an unsourced signal written at two places no longer links the two ends to each other (the input stays settable). → F-12.
 12. `anCompile`, before the LINK drivers are made (ABC-007 only): the controller PV tags and the PV wire of the house-load subtraction are linked to the flow signals. → F-13.
 13. `anDefaults` (ABC-002 only): COAL CALORIE BASE constant 4450 → 0.445 (unit of the diesel calorie curve LN1). → F-14.
+14. `anFXIn`: a table whose X unit is just "RANGE" with X range 0 ~ 100 is a percent table (input scaled from the source range). → F-15.
 
 Verification after the changes (same headless method):
 - All 15 ÷ blocks compared before / after: exactly 2 changed (ABC-005 #21, ABC-032 #26). ABC-001B #8 (formula "T = B / A * 100 / 60") was briefly affected during development and is unchanged in the final patch.
@@ -299,4 +300,18 @@ The two sheets have the same cascade: outlet temperature PID (TICBR1140 / TICMS1
 - Work done: constant 4450 → 0.445 (ABC-002 only, guarded).
 - Result: diesel 5 T/H at 8000 kcal/kg gives 8.99 T/H coal equivalent; coal demand falls from 81.5 to 72.5 T/H; with SI0003 = 1.1 it is 65.5.
 - **Please verify** (V-16): that LN1's 0.8 ~ 1.2 is the calorie in units of 10000 kcal/kg (and not a ratio against another base). Also: FICFA1081.REM (ABC-007) and its ABC-002 copy (n41) are separate inputs: set both.
+
+## Batch 14 — ABC-057 (furnace temperature (3): damper bias by MW)
+
+| Sheet | Test ID | What was checked | Expected (drawing) | Actual | Verdict |
+|---|---|---|---|---|---|
+| ABC-057 | 01 | Structure: MW (S1 SI0239) → 15 s lags → SI0172 / SI0174; ten F(X) + SI0170 (upper bias, MAN HICFABIASU −10 ~ 10 % via LN23) → SI0230 ~ SI0240; ten F(X) + SI0171 (lower bias, LN24) + SI0178 (ramped front / rear correction) → SI0250 ~ SI0260; furnace pressure (PIFA1085 0 ~ 3000 mmH2O, SIG.AB B.0678): > 1600 / < 1500 S/R M.145A → T 0 / 5 %; < 1400 / > 1500 S/R M.145B → T 0 / −5 %; SUM → ramp 0.1 %/s → SI0178; M.144C S/R (auto mode pulse 3 s, manual mode pulse 3 s, M.311E both MW SIG.AB bad) | as listed | same after F-15 | Pass after F-15 |
+| ABC-057 | 02 | MW 150 / 75 with bias 0 and ±; furnace pressure 1550 → 1650 → 1550 → 1450 → 1350 → 1550; SIG.AB bad; M.144C branches | as drawn | as drawn (M.145A sets > 1600, resets < 1500; M.145B sets < 1400, resets > 1500; SI0178 moves 0.1 %/s) | Pass |
+
+### F-15 — Damper bias MAN (−10 ~ 10 %) fed F(X) LN23 / LN24 without scaling (ABC-057) (Confirmed, fixed)
+- Problem: LN23 and LN24 (S1-LN-23 / 24) have X unit "RANGE" (no unit text) with X 0 ~ 100 and Y −10 ~ 10. The simulator only scaled the input to 0 ~ 100 % for tables whose X unit contains "%". The MAN bias HICFABIASU / HICFABIASL has the range −10 ~ 10 (workbook), so its neutral value 0 was read as 0 % and gave a permanent bias of −10 on all damper outputs (SI0230 ~ SI0260).
+- Basis: workbook rows HICFABIASU / HICFABIASL (range −10 ~ 10) and drawing text "−10.0 ~ 10.0 %" at both the MAN and LN23 / LN24 outputs; the table is symmetric (50 % → 0).
+- Work done: a table whose X unit is only "RANGE" and whose X range is 0 ~ 100 is treated as a percent table. Only LN23 and LN24 of ABC-057 are affected (scan of all F(X) tables).
+- Result: bias MV 0 gives SI0170 = 0 (was −10); SI0230 at MW 150 is 15 (was 5); lower bias +5 adds 5 to SI0250 ~ SI0260.
+- Note (cosmetic, not changed): in the Analog view the wire of connector ③ (SI0178) also carries the text "S3 SI0171" near the top of each SUM; the values are correct (SI0250 = F(X) + SI0178 + SI0171 checked).
 

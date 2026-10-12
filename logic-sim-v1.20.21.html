@@ -1591,7 +1591,7 @@ function aiBad(S,id){const a=S.blk.find(z=>z.id===id),q=a&&a.sig&&S.rt.st[a.sig.
 function anNetRange(S,n){const d=(S.drv[n]||[])[0],bl=d&&(d.i===undefined&&d.id!==undefined?S.blk.find(z=>z.id===d.id):d);if(!bl)return null;if(bl.k==='AI'&&bl.rng&&bl.rng.hi>bl.rng.lo)return{lo:bl.rng.lo,hi:bl.rng.hi,u:bl.rng.u||''};if(bl.k==='MAN'&&bl.p&&bl.p.hi>bl.p.lo)return{lo:bl.p.lo,hi:bl.p.hi,u:bl.p.u||''};if((bl.k==='PID'||bl.k==='PIDV')&&bl.p&&bl.p.hi>bl.p.lo)return{lo:bl.p.lo,hi:bl.p.hi,u:'%'};return null}
 function anExtRange(S,n){const sg0=S.seg[S.nets[n].segs[0]],r=anRange(S,{cx:sg0?sg0.x1:0,cy:sg0?sg0.y1:0},45);return r&&r.hi>r.lo?r:null}
 function anClamp(r,x){if(!r||!(r.hi>r.lo))return{x,cut:false};const y=Math.max(r.lo,Math.min(r.hi,x));return{x:y,cut:y!==x}}
-function anFXIn(S,b){const t=b.p&&b.p.tbl;if(!t||!/%/.test(t.xu||''))return null;
+function anFXIn(S,b){const t=b.p&&b.p.tbl;if(!t||!(/%/.test(t.xu||'')||(/^\s*RANGE\s*$/i.test(t.xu||'')&&t.xr&&t.xr[0]===0&&t.xr[1]===100)))return null;
  const same=(p,q)=>p.k===q.k&&p.lo===q.lo&&p.hi===q.hi;
  const src=(S,n,d,seen)=>{const key=S.name+'|'+n;if(d>14||seen.has(key))return null;seen.add(key);const dr=(S.drv[n]||[]).find(q=>q.k!=='LINK');
   if(!dr){if(S.ext.includes(n)){/* a signal from another sheet: follow the link to the sheet that drives it */if(!S.xlk){const shh=AN.sheets.find(z=>z.S===S);if(shh)try{linksOf(shh)}catch(e){}}const l=S.xlk&&S.xlk[n];if(l&&l.from&&l.from.S){const FS=l.from.S,fn=l.fromNets.find(m=>(FS.drv[m]||[]).some(q=>q.k!=='LINK'));if(fn!==undefined){const q=src(FS,fn,d+1,seen);if(q)return q}}
