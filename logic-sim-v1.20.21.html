@@ -1339,6 +1339,13 @@ function anDefaults(S){
   fx(20,1,100/27,'SCALE CONVERT 12000 / 2700: limestone T/H to feeder speed % (27 T/H = 100 %): x 100 / 27');
   fx(28,13,1.3,'LIMESTONE DENSITY BASE : 1.3 (drawing label); drawing box shows 13');
   fx(19,13,1.3*100/27,'LIMESTONE DENSITY BASE : 1.3, feeder speed % to T/H (27 T/H = 100 %): 1.3 x 100 / 27')}
+ if(S.name==='ABC-001C'){/* the boiler master chain is written in percent of 0 ~ 120 T/H coal (the drawing: -0.42 % = -0.5 T/H, 18 % / Hr = 0.005 % / sec); HIC-BM is 0 ~ 100 % and SI0213 is the coal demand in T/H (ABC-002: 0 ~ 120 T/H) */
+  for(const b of S.blk){
+   if(b.k==='MUL'&&b.gain===1&&b.o.some(n=>S.lab[n]&&/^SI0213/.test(S.lab[n].t))){b.gain=1.2;b.note='boiler master MV % x 1.2 = coal demand T/H (100 % = 120 T/H)'}
+   if(b.k==='ADD'&&b.ip&&b.ip.length===2&&b.ip.some(q=>S.lab[q.n]&&S.lab[q.n].t==='PIC-COBM.MV')){const q=b.ip.find(z=>!(S.lab[z.n]&&S.lab[z.n].t==='PIC-COBM.MV'));q.ia=[100/120,0];b.note='SI0201 (T/H) -> % of 120 T/H, added to the pressure controller MV (%)'}
+   if(b.k==='AMT'&&b.o.some(n=>S.lab[n]&&S.lab[n].t==='PIC-COBM.MV')){b.bg=100/120;b.note='RB-MV (T/H) -> % of 120 T/H for the PID tracking'}
+   if(b.k==='CONST'&&b.p&&Math.abs(b.p.val+0.42)<1e-9){b.p.val=-0.5;b.note='-0.42 % (-0.5 T/H) in T/H'}
+   if(b.k==='RATE'&&b.p&&b.p.hr===18){b.p.rate=18*1.2/3600;b.p.spanUnres=false;b.p.span=120;b.note='18 % / Hr of 0 ~ 120 T/H = 21.6 T/H per hour'}}}
  if(S.name==='ABC-010'){/* drum level pressure compensation is written in percent of the transmitter range (-422 ~ 820 mm = 0 ~ 100 %): 100 % - LT %, - LN38 %, / LN39; the simulator carries mm */
   const lab=n=>S.lab[n]&&S.lab[n].t;
   for(const b of S.blk){
@@ -1467,7 +1474,7 @@ function anCompile(S){
     if(P.val==null){P.val=0;b.warn='value not found'}b.i=[];break}
    case 'FX':{if(!P.ln)P.ln='';b.i=ins.map(p=>p.n);break}
    case 'DRATE':{b.i=ins.map(p=>p.n);break}
-   case 'LAG':{const t=near(b.cx,b.cy,24,q=>/^\d+(\.\d+)?\s*(sec|s|min)/i.test(q.t.trim()))[0];P.tau=t?anNum(t.t)*(/min/i.test(t.t)?60:1):15;b.i=ins.map(p=>p.n);break}
+   case 'LAG':{const t=near(b.cx,b.cy,24,q=>/^\d+(\.\d+)?\s*(sec|s|min)/i.test(q.t.trim()))[0];P.tau=t?anNum(t.t)*(/min/i.test(t.t)?60:1):15;b.i=ins.map(p=>p.n).sort((x,y)=>(nets[x].dig?1:0)-(nets[y].dig?1:0));/* the analog signal first, a digital enable (1: ENABLED) after it */break}
    case 'RATE':{const dg=ins.filter(p=>nets[p.n].dig),an=ins.filter(p=>!nets[p.n].dig);
      if(an.length>=2){/* rate limiter with its own limit inputs (ABC-003E): signal in on the side, two limit inputs, 1:BYPASS */
       const tt=near(b.cx,b.cy,320,q=>/^T\s*=/.test(q.t.trim()))[0];if(tt&&an.length>=2){const lp=an.find(p=>p.side==='L'),tp=an.find(p=>p.side==='T'),bp=an.find(p=>p.side==='B');if(lp&&tp&&lp!==tp){const rg2=anRange(S,b,120);b.main=tp.n;b.tpar=lp.n;b.span=rg2?Math.abs(rg2.hi-rg2.lo):100;b.byp=bp?bp.n:(dg[0]?dg[0].n:-1);if(bp)nets[bp.n].dig=true;b.up=undefined;P.rate=0;b.i=[b.main,b.tpar,b.byp].filter(x=>x>=0);break}}
@@ -1703,7 +1710,7 @@ function anStep(S,dt){const rt=S.rt,v=rt.v,nets=S.nets,B=x=>x>.5?1:0;rt.t+=dt;rt
    case 'AI':{const r=b.rng,sp=r?Math.max(1e-9,r.hi-r.lo):100;if(b.fb){const fs=rt.st[b.fb.id],pos=fs&&fs.pos!=null?fs.pos:0,lo=r?r.lo:0,hi=r?r.hi:100;s.val=lo+(hi-lo)*pos/100;s.act=s.val}else s.act=slew(s.act,s.val,sp);s.bad=b.sig&&rt.st[b.sig.id]&&rt.st[b.sig.id].val>.5?1:0;out(s.bad?(rt.st[b.sig.id].val>1.5?(r?r.hi:100):0):s.act);break}
    case 'CONST':out(P.mt?P.th*P.orig/100:P.val);break;
    case 'SIGAB':out(s.val>.5?1:0);break;
-   case 'MAN':{if(b.i&&b.i[2]!=null&&b.i[2]>=0){const dr=(S.drv[b.i[2]]||[]).find(x=>x.k==='AMT');if(dr&&rt.st[dr.id]&&rt.st[dr.id].pk==='A')s.val=rd(b.i[2])}if(s.trk!=null)s.val=s.trk;s.val=Math.max(P.lo,Math.min(P.hi,s.val));out(s.val);break}
+   case 'MAN':{if(b.svI===undefined){b.svI=-1;if(b.i)for(let j=0;j<b.i.length;j++){const dr=(S.drv[b.i[j]]||[]).find(x=>x.k==='AMT'&&/B\s*\/\s*T/.test((x.txt||[]).join('/')));if(dr){b.svI=j;break}}if(b.svI<0&&b.i&&b.i[2]!=null&&b.i[2]>=0)b.svI=2}if(b.svI>=0&&b.i[b.svI]!=null&&b.i[b.svI]>=0){const dr=(S.drv[b.i[b.svI]]||[]).find(x=>x.k==='AMT');if(dr&&rt.st[dr.id]&&rt.st[dr.id].pk==='A')s.val=rd(b.i[b.svI])}if(s.trk!=null)s.val=s.trk;s.val=Math.max(P.lo,Math.min(P.hi,s.val));out(s.val);break}
    case 'PID':case 'PIDV':{/* v1.11.0: input = deviation e = SV - PV (EU). Reverse action (ACT:R, P.act<0): PV below SV -> output up. u = Kp*(es + I/Ti + Td*des/dt), es in % of span; clamped to [lo,hi], integral frozen / back-calculated at the limits; while the downstream selector is on another input the controller TRACKS it (bumpless) */
     const span=Math.max(1e-9,P.span||100),pg=b._pgv!==undefined?b._pgv:(b._pgv=(()=>{try{const q=anPins(S,b);return q&&q.pvSg?q.pvSg:null}catch(e){return null}})()),sg=pg==null?(P.act<0?1:-1):(P.act<0?-1:1)*pg,es=sg*rd(b.in0)/span*100,lo=P.lo,hi=P.hi,kp=P.kp==null?1:P.kp;let u,Dt=0;
     if(b.vel){const e1=s.ep==null?es:s.ep;u=s.inited&&dt>0?kp*((es-e1)+(P.ti>0?es*dt/P.ti:0)):0;s.ep2=e1;s.ep=es;s.out=u;s.es=es;s.pt=u;s.it=0;s.dd=0;s.inited=1;out(u);break}
