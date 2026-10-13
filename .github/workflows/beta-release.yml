@@ -1,0 +1,39 @@
+name: Beta release
+
+# Manual only. Publishes a GitHub pre-release with the simulator HTML of the chosen commit.
+# Use only after the user's GO BETA (PROJECT_RULES section 4). The .apk and .exe are NOT built here:
+# the repository has no Android / Electron project or signing key.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag
+        required: true
+        default: v1.20.21-beta.1
+      target:
+        description: Commit SHA or branch to release
+        required: true
+        default: main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target }}
+      - name: Create pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          gh release create "$TAG" logic-sim-v1.20.21.html \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$(git rev-parse HEAD)" \
+            --prerelease \
+            --title "$TAG" \
+            --notes "Beta 1 of the ABC audit corrections (F-1 ~ F-31), see docs/versions/v1.20.21/UPDATE_REPORT.md. Contains only logic-sim-v1.20.21.html. The .apk and .exe in the repository are older builds and were not rebuilt."
