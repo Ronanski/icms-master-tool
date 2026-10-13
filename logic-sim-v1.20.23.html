@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Logic Sim v1.20.22</title>
+<title>Logic Sim v1.20.23</title>
 <style>
 :root{--bg:#0f1418;--panel:#161d23;--line:#2a3640;--tx:#d7e0e6;--dim:#7d8e9a;--acc:#4fd18b;--sel:#38c9ff;--live:#ff4d4d;--lives:rgba(255,77,77,.30)}
 *{box-sizing:border-box}html,body{height:100%;margin:0;background:var(--bg);color:var(--tx);font:13px 'Segoe UI',system-ui,sans-serif}
@@ -1668,6 +1668,8 @@ function anPins(S,b){if(b._pins!==undefined)return b._pins;let r=null;try{if((b.
   if(d){const ins=d.pins.filter(q=>q.role==='in');let psg=null,by=0;for(const t of S.tx||[]){const tt=t.t.trim();if(!/^(PV|SV)$/i.test(tt)||Math.hypot(t.x-d.cx,t.y-d.cy)>30)continue;const pn=ins.slice().sort((x,y)=>Math.hypot(x.x-t.x,x.y-t.y)-Math.hypot(y.x-t.x,y.y-t.y))[0],ip=pn&&d.ip.find(x=>x.n===pn.n);if(!ip)continue;psg=/^PV$/i.test(tt)?ip.sg:-ip.sg;by=1}
    if(psg==null)psg=b.p.act<0?-1:1;const pv=d.ip.find(q=>q.sg===psg)||d.ip[0],sv=d.ip.find(q=>q!==pv);r={dev:d,pv:pv.n,sv:sv?sv.n:-1,pvSg:psg,byLabel:by}}}}catch(e){r=null}return b._pins=r}
 /* PID input: filter time constant TF (first-order filter on the PV) and low input cut CUT (PV below CUT % of a zero-based range is taken as 0 %): faceplate parameters of the parameter workbook, names and ranges in the textbook (PID panel); the exact DCS formulas are not in the repository, so this is the usual definition (Needs Verification, FINDINGS N-5) */
+/* GAP (parameter workbook, 1 PID: HICBR1391 2.5 %): error inside +-GAP % of the span is treated as zero (gap / dead zone action) */
+function anGap(P,e){return P.gap>0&&Math.abs(e)<P.gap?0:e}
 function anPidIn(S,b,s,v,dt){const x=v[b.in0],P=b.p;if(!(P.tf>0||P.cut>0))return x;const r=anPins(S,b);if(!r||!r.byLabel||r.pv==null||r.pv<0)return x;const pv=v[r.pv];let q=pv;
  if(P.cut>0&&P.rlo>=0&&P.rhi>P.rlo&&q<P.rlo+P.cut/100*(P.rhi-P.rlo))q=P.rlo;
  if(P.tf>0){if(s.pvf==null||!isFinite(s.pvf))s.pvf=q;else if(dt>0)s.pvf+=(q-s.pvf)*(1-Math.exp(-dt/P.tf));q=s.pvf}else s.pvf=q;
@@ -1738,7 +1740,7 @@ function anStep(S,dt){const rt=S.rt,v=rt.v,nets=S.nets,B=x=>x>.5?1:0;rt.t+=dt;rt
    case 'SIGAB':out(s.val>.5?1:0);break;
    case 'MAN':{if(b.svI===undefined){b.svI=-1;if(b.i)for(let j=0;j<b.i.length;j++){const dr=(S.drv[b.i[j]]||[]).find(x=>x.k==='AMT'&&x.sel>=0&&/B\s*\/\s*T/.test((x.txt||[]).join('/')));if(dr){b.svI=j;break}}if(b.svI<0&&b.i&&b.i[2]!=null&&b.i[2]>=0)b.svI=2}if(b.svI>=0&&b.i[b.svI]!=null&&b.i[b.svI]>=0){const dr=(S.drv[b.i[b.svI]]||[]).find(x=>x.k==='AMT');if(dr&&rt.st[dr.id]&&rt.st[dr.id].pk==='A')s.val=rd(b.i[b.svI])}if(s.trk!=null)s.val=s.trk;s.val=Math.max(P.lo,Math.min(P.hi,s.val));out(s.val);break}
    case 'PID':case 'PIDV':{/* v1.11.0: input = deviation e = SV - PV (EU). Reverse action (ACT:R, P.act<0): PV below SV -> output up. u = Kp*(es + I/Ti + Td*des/dt), es in % of span; clamped to [lo,hi], integral frozen / back-calculated at the limits; while the downstream selector is on another input the controller TRACKS it (bumpless) */
-    const span=Math.max(1e-9,P.span||100),pg=b._pgv!==undefined?b._pgv:(b._pgv=(()=>{try{const q=anPins(S,b);return q&&q.pvSg?q.pvSg:null}catch(e){return null}})()),sg=pg==null?(P.act<0?1:-1):(P.act<0?-1:1)*pg,es=sg*anPidIn(S,b,s,v,dt)/span*100,lo=P.lo,hi=P.hi,kp=P.kp==null?1:P.kp;let u,Dt=0;
+    const span=Math.max(1e-9,P.span||100),pg=b._pgv!==undefined?b._pgv:(b._pgv=(()=>{try{const q=anPins(S,b);return q&&q.pvSg?q.pvSg:null}catch(e){return null}})()),sg=pg==null?(P.act<0?1:-1):(P.act<0?-1:1)*pg,es=anGap(P,sg*anPidIn(S,b,s,v,dt)/span*100),lo=P.lo,hi=P.hi,kp=P.kp==null?1:P.kp;let u,Dt=0;
     if(b.vel){const e1=s.ep==null?es:s.ep;u=s.inited&&dt>0?kp*((es-e1)+(P.ti>0?es*dt/P.ti:0)):0;s.ep2=e1;s.ep=es;s.out=u;s.es=es;s.pt=u;s.it=0;s.dd=0;s.inited=1;out(u);break}
     if(s.trk!=null){u=Math.max(lo,Math.min(hi,s.trk));s.I=u-kp*es}
     else{if(s.inited&&dt>0){if(P.ti>0){const sat=(s.out>=hi&&es>0)||(s.out<=lo&&es<0);if(!sat)s.I+=kp*es/P.ti*dt}if(P.td>0)Dt=kp*P.td*(es-(s.ep||0))/dt}
@@ -2328,7 +2330,7 @@ document.head.appendChild(Object.assign(document.createElement('style'),{id:'ski
  const chip=document.createElement('div');chip.id='stchip';const c1=document.createElement('span'),c2=document.createElement('span'),c3=document.createElement('span');chip.append(c1,c2,c3);
  const gs=document.getElementById('gsbar');if(gs){gs.append(chip,sel)}
  const upd=()=>{try{const an=AN.cat==='an';let m,k='';if(an){m=AN.view?'VIEW / TRACE':AN.run?'RUN':'PAUSED';k=AN.view?'view':AN.run?'run':''}else{m=SIM?'SIMULATE':'EDIT';k=SIM?'run':''}
-   c1.textContent=m;c1.className=k;const sh=an?AN.sheets[AN.i]:S.sheets[S.cur];c2.textContent=sh&&sh.name?sh.name:'';c3.textContent='v1.20.22'}catch(e){}};upd();setInterval(upd,400)}
+   c1.textContent=m;c1.className=k;const sh=an?AN.sheets[AN.i]:S.sheets[S.cur];c2.textContent=sh&&sh.name?sh.name:'';c3.textContent='v1.20.23'}catch(e){}};upd();setInterval(upd,400)}
 function anSide(){const sd=SC(),tg=$('sidetg');{const f=$('sidefl');if(f){if(AN._ph===undefined)AN._ph=f.placeholder;f.placeholder='Search sheets (001A, 57, DRUM, FURNACE...)'}}sd.classList.toggle('min',SIDEMIN==='1');tg.textContent=SIDEMIN==='1'?'▶':'◀';$('sidect').textContent='Analog sheets ('+AN.sheets.length+')';
  const c=cs();$('sidevt').textContent=c?c.name+'  ·  '+(anOrd().indexOf(AN.i)+1)+'/'+AN.sheets.length:'Analog';
  anSortUi();const key=AN.sheets.map(s=>s.name).join('|')+'#'+AN.fl+'#'+AN.sm;

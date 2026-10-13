@@ -1,5 +1,5 @@
 name: Release apk + exe
-# Manual. input go must be exactly "GO v<version>" (the version in the html file name). Builds the Stable and Beta shells
+# Manual. Assets: html, apk, portable exe, release report pdf, UAT form. input go must be exactly "GO v<version>" (the version in the html file name). Builds the Stable and Beta shells
 # (apk + portable exe). The shells load the site, so they only need a rebuild when the shell itself changes.
 # The app content is released by merging to main (Stable) or pushing a branch (Beta).
 # apk signing: signing/logic-sim.jks (self-signed, made by make-key.yml; alias logicsim). Never regenerate it: a new key means a reinstall.
@@ -91,5 +91,10 @@ jobs:
       - name: GitHub Release
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |
-          mkdir rel; find out -type f \( -name '*.apk' -o -name '*.exe' \) -exec cp {} rel/ \; ; ls rel
-          gh release create "${{ needs.gate.outputs.tag }}" rel/* --title "Logic Sim ${{ needs.gate.outputs.tag }}" --notes "Shells (apk + portable exe) for Stable and Beta. They load the site and update by themselves." --target "${{ github.sha }}"
+          V=${{ needs.gate.outputs.version }}
+          mkdir rel; find out -type f \( -name '*.apk' -o -name '*.exe' \) -exec cp {} rel/ \; 
+          cp "logic-sim-v$V.html" rel/
+          cp "docs/versions/v$V/Release-Report-v$V.pdf" rel/
+          cp "docs/versions/v$V/UAT-v$V.html" rel/
+          ls rel
+          gh release create "${{ needs.gate.outputs.tag }}" rel/* --title "Logic Sim ${{ needs.gate.outputs.tag }}" --notes "Stable. Files: logic-sim-v$V.html (the simulator), apk + portable exe (Stable and Beta shells, they load the site and update by themselves), Release-Report-v$V.pdf (what changed and what was checked), UAT-v$V.html (the acceptance test form, open it in the phone or tablet browser)." --target "${{ github.sha }}"

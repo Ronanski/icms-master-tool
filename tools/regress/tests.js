@@ -1,7 +1,7 @@
 // Regression tests for the ABC analog reader / engine. Run: node tools/regress/tests.js [html]
 // Every test returns {id, ref, ok, detail}. The expected values come from docs/versions/v1.20.21/FINDINGS.md (batch and finding named in `ref`).
 const {open}=require('./lib');
-const html=process.argv[2]||'logic-sim-v1.20.22.html';
+const html=process.argv[2]||'logic-sim-v1.20.23.html';
 (async()=>{
 const {browser,page,errs}=await open(html);
 const res=await page.evaluate(async()=>{
