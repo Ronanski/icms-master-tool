@@ -57,7 +57,7 @@ jobs:
           $BT/apksigner sign --ks ../../signing/logic-sim.jks --ks-pass env:KS_PASS --key-pass env:KS_PASS --ks-key-alias logicsim --out "../../logic-sim-${{ matrix.chan }}.apk" aligned.apk
           $BT/apksigner verify "../../logic-sim-${{ matrix.chan }}.apk"
       - uses: actions/upload-artifact@v4
-        with: { name: 'apk-${{ matrix.chan }}', path: 'android-app/logic-sim-${{ matrix.chan }}.apk' }
+        with: { name: 'apk-${{ matrix.chan }}', path: 'logic-sim-${{ matrix.chan }}.apk' }
   exe:
     needs: gate
     runs-on: windows-latest
@@ -92,9 +92,17 @@ jobs:
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |
           V=${{ needs.gate.outputs.version }}
-          mkdir rel; find out -type f \( -name '*.apk' -o -name '*.exe' \) -exec cp {} rel/ \; 
+          T=${{ needs.gate.outputs.tag }}
+          mkdir rel
+          for f in $(find out -type f -name '*.apk'); do c=$(basename "$f" .apk | sed 's/logic-sim-//'); cp "$f" "rel/Logic-Sim-v$V-$c.apk"; done
+          for f in $(find out -type f -name '*.exe'); do case "$f" in *Beta*) c=beta;; *) c=stable;; esac; cp "$f" "rel/Logic-Sim-v$V-$c-portable.exe"; done
           cp "logic-sim-v$V.html" rel/
           cp "docs/versions/v$V/Release-Report-v$V.pdf" rel/
           cp "docs/versions/v$V/UAT-v$V.html" rel/
           ls rel
-          gh release create "${{ needs.gate.outputs.tag }}" rel/* --title "Logic Sim ${{ needs.gate.outputs.tag }}" --notes "Stable. Files: logic-sim-v$V.html (the simulator), apk + portable exe (Stable and Beta shells, they load the site and update by themselves), Release-Report-v$V.pdf (what changed and what was checked), UAT-v$V.html (the acceptance test form, open it in the phone or tablet browser)." --target "${{ github.sha }}"
+          NOTES="Stable v$V. Files: logic-sim-v$V.html (the simulator), Logic-Sim-v$V-stable.apk and Logic-Sim-v$V-beta.apk, Logic-Sim-v$V-stable-portable.exe and Logic-Sim-v$V-beta-portable.exe (Stable and Beta apps load the site and update by themselves), Release-Report-v$V.pdf (what changed and what was checked), UAT-v$V.html (the acceptance test form, open it in the phone or tablet browser)."
+          if gh release view "$T" >/dev/null 2>&1; then
+            gh release upload "$T" rel/* --clobber
+          else
+            gh release create "$T" rel/* --title "Logic Sim $T" --notes "$NOTES" --target "${{ github.sha }}"
+          fi
