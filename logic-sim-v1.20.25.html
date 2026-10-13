@@ -33279,11 +33279,23 @@ function draw(){if(P.style.display!=='block')return;const sh=sheet();if(!sh)retu
  P.querySelectorAll('[data-live]').forEach(td=>{const [i,j]=td.dataset.live.split(',');const sc=L[+i],r=sc.rows[+j];const a=S.rt.v[r.k];const on=act&&act.name===sh.name&&act.i===+i;const el=on?S.rt.t-act.t0:0;const ok=isFinite(a)&&Math.abs(a-r.v)<=r.tol;td.textContent=on?fmt(a):'—';td.className='v '+(on?(ok?'y':(el>=sc.secs?'n':'w')):'')});
  P.querySelectorAll('[data-st]').forEach(el=>{const i=+el.dataset.st,sc=L[i],on=act&&act.name===sh.name&&act.i===i;if(!on){el.textContent='';return}const t=S.rt.t-act.t0;const all=sc.rows.every(r=>{const a=S.rt.v[r.k];return isFinite(a)&&Math.abs(a-r.v)<=r.tol});
   el.textContent=t<sc.secs?('Hintay: '+Math.max(0,Math.ceil(sc.secs-t))+' s (takbo '+t.toFixed(0)+' / '+sc.secs+' s)'+(all?' · tugma na ngayon':'')):(all?'TUGMA ✔ — pindutin ang OK':'HINDI TUGMA ✖ — pindutin ang MALI at isulat ang nakita mo');el.className='big '+(t<sc.secs?'w':(all?'y':'n'))})}
+let autoMsg='';
+async function autoAll(){const run0=AN.run;AN.run=false;const names=Object.keys(SC);let n=0,bad=0,sheets=0;const t0=Date.now();
+ for(const name of names){const sh=AN.sheets.find(x=>x.name===name);if(!sh)continue;const S=AN.ensure(sh);
+  for(let i=0;i<SC[name].length;i++){const sc=SC[name][i];if(!sc.secs)continue;
+   AN.reset();S.rt.force={};for(const k in sc.force)S.rt.force[k]=sc.force[k];for(const k in sc.ext)S.rt.ext[k]=sc.ext[k];for(const id in sc.fm){const st=S.rt.st[id];if(st)st.fm=sc.fm[id]}
+   for(let k=0;k<sc.secs*4;k++)AN.stepSet(sh,.25);
+   const miss=sc.rows.filter(r=>!(isFinite(S.rt.v[r.k])&&Math.abs(S.rt.v[r.k]-r.v)<=r.tol));n++;
+   if(miss.length){bad++;R[name+'|'+i]={v:'bad',auto:1,n:'AUTO: '+miss.map(r=>r.t+' dapat '+fmt(r.v)+' nakita '+fmt(S.rt.v[r.k])).join('; ')}}else R[name+'|'+i]={v:'ok',auto:1}}
+  sheets++;autoMsg='AUTO-TEST: '+sheets+' / '+names.length+' sheet ('+n+' scenario, '+bad+' HINDI TUGMA)...';P.dataset.drawn='0';draw();await new Promise(r=>setTimeout(r,0))}
+ AN.reset();AN.run=run0;save();autoMsg='TAPOS ang AUTO-TEST: '+n+' scenario sa '+sheets+' sheet, '+(n-bad)+' TUGMA, '+bad+' HINDI TUGMA ('+Math.round((Date.now()-t0)/1000)+' s). Ang natitira: kulay ng linya (ikaw ang titingin).';P.dataset.drawn='0';draw()}
+function looksOk(){for(const n in SC)SC[n].forEach((sc,i)=>{if(!sc.secs&&!(R[n+'|'+i]&&R[n+'|'+i].v==='bad'))R[n+'|'+i]={v:'ok'}});save();P.dataset.drawn='0';draw()}
 function build(){const sh=sheet(),L=SC[sh.name]||[];P.dataset.sheet=sh.name;P.dataset.act=act?act.name+act.i:'';P.dataset.drawn='1';P.innerHTML='';
  const tot=Object.keys(SC).length;let fnc=0;for(const n in SC){const s=sheetStat(n);if(s.n&&s.ok===s.n)fnc++}
  const s0=sheetStat(sh.name);
  P.append(E('div',{cls:'row'},[E('h3',{txt:sh.name+(s0.n&&s0.ok===s0.n?'  FUNCTIONAL ✓':'')}),E('button',{txt:'✕',on:()=>{P.style.display='none'}})]));
  P.append(E('div',{cls:'sub',txt:fnc+' / '+tot+' sheet FUNCTIONAL · pumili ng sheet sa kaliwa, tapos gawin ang mga scenario sa baba. I-click ang SETUP: ako na ang bahala sa reset, force at set point.'}));
+ P.append(E('div',{cls:'sc'},[E('b',{txt:'Pinakamabilis: walang gagawin'}),E('div',{cls:'sub',txt:'Ang AUTO-TEST ay ako ang gumagawa ng setup at pagbabasa sa lahat ng sheet. Mga 1 ~ 3 minuto. Mamaya, ang mga HINDI TUGMA lang ang titingnan mo.'}),E('div',{cls:'row'},[E('button',{cls:'go',txt:'▶ AUTO-TEST LAHAT',on:()=>{autoAll()}}),E('button',{txt:'Kulay: OK lahat',on:()=>{looksOk()}})]),E('div',{cls:'big w',txt:autoMsg})]));
  if(!L.length)P.append(E('div',{txt:'Walang scenario ang sheet na ito (legend / contents).'}));
  L.forEach((sc,i)=>{const on=act&&act.name===sh.name&&act.i===i,r=R[id(i)]||{};const box=E('div',{cls:'sc'+(on?' act':'')});
   box.append(E('b',{txt:sc.n}));box.append(E('div',{cls:'sub',txt:sc.s}));
@@ -33294,7 +33306,7 @@ function build(){const sh=sheet(),L=SC[sh.name]||[];P.dataset.sheet=sh.name;P.da
   if(sc.look)box.append(E('div',{cls:'sub',txt:sc.look}));
   const ok=E('button',{cls:'ok'+(r.v==='ok'?' on':''),txt:'✔ OK',on:()=>{R[id(i)]={v:r.v==='ok'?'':'ok'};save();build()}}),bad=E('button',{cls:'bad'+(r.v==='bad'?' on':''),txt:'✖ MALI',on:()=>{R[id(i)]={v:'bad',n:(r.n||'')};save();build()}});
   box.append(E('div',{cls:'row'},[ok,bad]));
-  if(r.v==='bad'){const inp=E('input',{placeholder:'ano ang nakita mo',value:r.n||''});inp.oninput=()=>{R[id(i)]={v:'bad',n:inp.value};save()};box.append(inp)}
+  if(r.auto)box.append(E('div',{cls:'sub',txt:'Sinagot ng AUTO-TEST: '+(r.v==='ok'?'TUGMA':'HINDI TUGMA')+(r.n?' — '+r.n:'')}));if(r.v==='bad'){const inp=E('input',{placeholder:'ano ang nakita mo',value:r.n||''});inp.oninput=()=>{R[id(i)]={v:'bad',n:inp.value};save()};box.append(inp)}
   P.append(box)});
  const cp=E('button',{txt:'Kopyahin ang mga MALI',on:()=>{const out=[];for(const n in SC)SC[n].forEach((sc,i)=>{const r=R[n+'|'+i];if(r&&r.v==='bad')out.push(n+' | '+sc.n+' | Dapat: '+sc.rows.map(x=>x.t+'='+(x.txt||fmt(x.v))).join(', ')+' | Nakita: '+(r.n||'(walang note)'))});const t=out.length?'UAT v'+VER+': '+out.length+' MALI\n'+out.join('\n'):'UAT v'+VER+': walang MALI';pre.textContent=t;pre.style.display='block';try{navigator.clipboard.writeText(t)}catch(e){}}});
  const pre=E('pre');pre.style.display='none';P.append(E('div',{cls:'row'},[cp]),pre)}
