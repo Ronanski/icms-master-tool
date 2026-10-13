@@ -26,7 +26,7 @@ function find(n){const sh=sheet(),S=sh.S,net=S.nets[n];if(!net)return;
  const visL=P.style.display==='block'?Math.max(0,P.getBoundingClientRect().right-r.left):0,ap=document.getElementById('anp'),visR=r.width-(ap?Math.max(0,r.right-ap.getBoundingClientRect().left):0);
  const cx=(visL+Math.max(visL+50,visR))/2;v[0]=gx-cx*upx;v[1]=-gy-(r.height/2)*upx;svg.setAttribute('viewBox',v.join(' '));
  const old=svg.querySelector('#uatring');if(old)old.remove();const ring=document.createElementNS('http://www.w3.org/2000/svg','circle');ring.setAttribute('id','uatring');ring.setAttribute('cx',gx);ring.setAttribute('cy',-gy);ring.setAttribute('r',18*upx);ring.setAttribute('fill','none');ring.setAttribute('stroke','#ffe14a');ring.setAttribute('stroke-width',3*upx);ring.setAttribute('pointer-events','none');svg.append(ring);setTimeout(()=>ring.remove(),6000)}
-function setup(i){const sh=sheet(),sc=SC[sh.name][i],S=AN.ensure(sh);AN.reset();S.rt.force={};for(const n in sc.force)S.rt.force[n]=sc.force[n];for(const n in sc.ext)S.rt.ext[n]=sc.ext[n];for(const id in sc.fm){const st=S.rt.st[id];if(st)st.fm=sc.fm[id]}
+function setup(i){const sh=sheet(),sc=SC[sh.name][i],S=AN.ensure(sh);AN.reset();normAI();S.rt.force={};for(const n in sc.force)S.rt.force[n]=sc.force[n];for(const n in sc.ext)S.rt.ext[n]=sc.ext[n];for(const id in sc.fm){const st=S.rt.st[id];if(st)st.fm=sc.fm[id]}
  act={name:sh.name,i,t0:S.rt.t};if(!AN.run){const b=[...document.querySelectorAll('button')].find(x=>/Run/.test(x.textContent)&&/▶/.test(x.textContent));if(b)b.click()}draw()}
 function rowState(sc,r,S,done){const a=S.rt.v[r.k];const ok=isFinite(a)&&Math.abs(a-r.v)<=r.tol;return{a,ok}}
 function id(i){return sheet().name+'|'+i}
@@ -38,15 +38,17 @@ function draw(){if(P.style.display!=='block')return;const sh=sheet();if(!sh)retu
  P.querySelectorAll('[data-st]').forEach(el=>{const i=+el.dataset.st,sc=L[i],on=act&&act.name===sh.name&&act.i===i;if(!on){el.textContent='';return}const t=S.rt.t-act.t0;const all=sc.rows.every(r=>{const a=S.rt.v[r.k];return isFinite(a)&&Math.abs(a-r.v)<=r.tol});
   el.textContent=t<sc.secs?('Hintay: '+Math.max(0,Math.ceil(sc.secs-t))+' s (takbo '+t.toFixed(0)+' / '+sc.secs+' s)'+(all?' · tugma na ngayon':'')):(all?'TUGMA ✔ — pindutin ang OK':'HINDI TUGMA ✖ — pindutin ang MALI at isulat ang nakita mo');el.className='big '+(t<sc.secs?'w':(all?'y':'n'))})}
 let autoMsg='';
-async function autoAll(){const run0=AN.run;AN.run=false;const names=Object.keys(SC);let n=0,bad=0,sheets=0;const t0=Date.now();
+/* the start values must not depend on what the user did before (RUN pressed, AI values left by the plant model): every AI block starts as in a fresh sheet */
+const normAI=()=>{for(const x of AN.sheets)if(x.S)for(const b of x.S.blk)if(b.k==='AI'){const st=x.S.rt.st[b.id];if(st){st.val=0;delete st.act;delete st.bad}}};
+async function autoAll(){const run0=AN.run;AN.run=false;const names=Object.keys(SC);let n=0,bad=0,chk=0,sheets=0;const t0=Date.now();
  for(const name of names){const sh=AN.sheets.find(x=>x.name===name);if(!sh)continue;const S=AN.ensure(sh);
   for(let i=0;i<SC[name].length;i++){const sc=SC[name][i];if(!sc.secs)continue;
-   AN.reset();S.rt.force={};for(const k in sc.force)S.rt.force[k]=sc.force[k];for(const k in sc.ext)S.rt.ext[k]=sc.ext[k];for(const id in sc.fm){const st=S.rt.st[id];if(st)st.fm=sc.fm[id]}
+   AN.reset();normAI();S.rt.force={};for(const k in sc.force)S.rt.force[k]=sc.force[k];for(const k in sc.ext)S.rt.ext[k]=sc.ext[k];for(const id in sc.fm){const st=S.rt.st[id];if(st)st.fm=sc.fm[id]}
    for(let k=0;k<sc.secs*4;k++)AN.stepSet(sh,.25);
    const miss=sc.rows.filter(r=>!(isFinite(S.rt.v[r.k])&&Math.abs(S.rt.v[r.k]-r.v)<=r.tol));n++;
-   if(miss.length){bad++;R[name+'|'+i]={v:'bad',auto:1,n:'AUTO: '+miss.map(r=>r.t+' dapat '+fmt(r.v)+' nakita '+fmt(S.rt.v[r.k])).join('; ')}}else R[name+'|'+i]={v:'ok',auto:1}}
-  sheets++;autoMsg='AUTO-TEST: '+sheets+' / '+names.length+' sheet ('+n+' scenario, '+bad+' HINDI TUGMA)...';P.dataset.drawn='0';draw();await new Promise(r=>setTimeout(r,0))}
- AN.reset();AN.run=run0;save();autoMsg='TAPOS ang AUTO-TEST: '+n+' scenario sa '+sheets+' sheet, '+(n-bad)+' TUGMA, '+bad+' HINDI TUGMA ('+Math.round((Date.now()-t0)/1000)+' s). Ang natitira: kulay ng linya (ikaw ang titingin).';P.dataset.drawn='0';draw()}
+   if(miss.length){const nt='AUTO: '+miss.map(r=>r.t+' dapat '+fmt(r.v)+' nakita '+fmt(S.rt.v[r.k])).join('; ');if(sc.det){bad++;R[name+'|'+i]={v:'bad',auto:1,n:nt}}else{chk++;R[name+'|'+i]={v:'chk',auto:1,n:nt}}}else R[name+'|'+i]={v:'ok',auto:1}}
+  sheets++;autoMsg='AUTO-TEST: '+sheets+' / '+names.length+' sheet ('+n+' scenario, '+bad+' HINDI TUGMA, '+chk+' TINGNAN)...';P.dataset.drawn='0';draw();await new Promise(r=>setTimeout(r,0))}
+ AN.reset();AN.run=run0;save();autoMsg='TAPOS ang AUTO-TEST: '+n+' scenario sa '+sheets+' sheet, '+(n-bad-chk)+' TUGMA, '+bad+' HINDI TUGMA, '+chk+' TINGNAN ('+Math.round((Date.now()-t0)/1000)+' s). Ang TINGNAN ay value na umaasa sa start ng plant model (iba ang resulta kapag nag-RUN muna): nasa HANDOFF bilang Needs Verification, hindi mo kailangang sagutan. Ang natitira sa iyo: kulay ng linya.';P.dataset.drawn='0';draw()}
 function looksOk(){for(const n in SC)SC[n].forEach((sc,i)=>{if(!sc.secs&&!(R[n+'|'+i]&&R[n+'|'+i].v==='bad'))R[n+'|'+i]={v:'ok'}});save();P.dataset.drawn='0';draw()}
 function build(){const sh=sheet(),L=SC[sh.name]||[];P.dataset.sheet=sh.name;P.dataset.act=act?act.name+act.i:'';P.dataset.drawn='1';P.innerHTML='';
  const tot=Object.keys(SC).length;let fnc=0;for(const n in SC){const s=sheetStat(n);if(s.n&&s.ok===s.n)fnc++}
@@ -67,7 +69,7 @@ const names=Object.keys(SC),pos=names.indexOf(sh.name);const go=k=>{const nm=nam
   if(sc.look)box.append(E('div',{cls:'sub',txt:sc.look}));
   const ok=E('button',{cls:'ok'+(r.v==='ok'?' on':''),txt:'✔ OK',on:()=>{R[id(i)]={v:r.v==='ok'?'':'ok'};save();build()}}),bad=E('button',{cls:'bad'+(r.v==='bad'?' on':''),txt:'✖ MALI',on:()=>{R[id(i)]={v:'bad',n:(r.n||'')};save();build()}});
   box.append(E('div',{cls:'row'},[ok,bad]));
-  if(r.auto)box.append(E('div',{cls:'sub',txt:'Sinagot ng AUTO-TEST: '+(r.v==='ok'?'TUGMA':'HINDI TUGMA')+(r.n?' — '+r.n:'')}));if(r.v==='bad'){const inp=E('input',{placeholder:'ano ang nakita mo',value:r.n||''});inp.oninput=()=>{R[id(i)]={v:'bad',n:inp.value};save()};box.append(inp)}
+  if(r.auto)box.append(E('div',{cls:'sub',txt:'Sinagot ng AUTO-TEST: '+(r.v==='ok'?'TUGMA':r.v==='chk'?'TINGNAN (umaasa sa start ng plant model)':'HINDI TUGMA')+(r.n?' — '+r.n:'')}));if(r.v==='bad'){const inp=E('input',{placeholder:'ano ang nakita mo',value:r.n||''});inp.oninput=()=>{R[id(i)]={v:'bad',n:inp.value};save()};box.append(inp)}
   P.append(box)});
  const cp=E('button',{txt:'Kopyahin ang mga MALI',on:()=>{const out=[];for(const n in SC)SC[n].forEach((sc,i)=>{const r=R[n+'|'+i];if(r&&r.v==='bad')out.push(n+' | '+sc.n+' | Dapat: '+sc.rows.map(x=>x.t+'='+(x.txt||fmt(x.v))).join(', ')+' | Nakita: '+(r.n||'(walang note)'))});const t=out.length?'UAT v'+VER+': '+out.length+' MALI\n'+out.join('\n'):'UAT v'+VER+': walang MALI';pre.textContent=t;pre.style.display='block';try{navigator.clipboard.writeText(t)}catch(e){}}});
  const pre=E('pre');pre.style.display='none';P.append(E('div',{cls:'row'},[cp]),pre)}
