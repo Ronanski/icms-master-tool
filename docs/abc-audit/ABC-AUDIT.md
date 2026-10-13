@@ -62,6 +62,23 @@ Every meaningful test case should contain:
 
 Do not invent numeric values, scaling ranges, formulas, tag mappings, or output states. If the drawing alone does not determine a result, identify the additional reference needed.
 
+## Coverage by block type (what was tested, and how)
+
+| Block type | Tested | How | Not yet |
+|---|---|---|---|
+| T switch (SW / AMT), COS A/M, HI / LO selector | all 54 sheets: 327 + 56 + 19 | select signal traced to its real inputs and driven in RUN mode; selected leg, output, scaling and drawn legs checked (batch 26, 27) | – |
+| F(X) tables | 89 / 89 tables, 111 blocks | against `linear-curves-fx.xls`; interpolation in the sheet scenarios | – |
+| Divider (÷) | 15 | order of A / B against the drawing (F-1, F-4, F-16) | – |
+| Comparators (HC / LC / HLC) | 222 | set point and unit (F-6, F-23, F-27) | – |
+| PID / MAN / SUMA parameters | 140 | against the parameter workbook | – |
+| PID / MAN behavior | per sheet | direction, limits, tracking, A/M, BU-CMD (F-20, F-26) in the sheet scenarios | numeric response against the DCS algorithm (no reference formula in the repository); ABC-005 auto dynamics (V-21) |
+| Timers, S/R, pulse | per sheet | in the sheet scenarios (ABC-013, 054, 017, 033 and others) | not a systematic test |
+| RATE / RAMP / LAG | per sheet | ABC-001B, 001C, 003E, 034 and others (F-20, F-25) | – |
+| Scaling / gains (F-9 ~ F-22) | per sheet | in the sheet scenarios | not a systematic test |
+| SUMA integration, ALM limits | – | – | not tested (V-21) |
+| TP compensation, SQRT | – | SQRT is identity by the user's answer (V-18) | TP against `flow-compensation.xls` |
+| Viewer (UI) | switches only | lit / grey legs (F-28, F-29) | labels and values on wires |
+
 ## Findings and version reports
 
 Keep this file as the master summary and index. Add a version-specific report only when actual findings or work exist:
