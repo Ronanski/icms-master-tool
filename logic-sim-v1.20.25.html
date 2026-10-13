@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Logic Sim v1.20.25</title><script>/* start-up error banner: if the program stops while starting, the message is shown here instead of an empty page */window.addEventListener('error',function(e){try{var d=document.getElementById('errbn');if(!d){d=document.createElement('div');d.id='errbn';d.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99999;background:#7a1f1f;color:#fff;font:13px/1.4 system-ui;padding:8px 12px;white-space:pre-wrap';(document.body||document.documentElement).append(d)}d.textContent+=(d.textContent?'\n':'')+'ERROR: '+(e.message||e)+' ('+(e.lineno||'?')+':'+(e.colno||'?')+')'}catch(x){}});window.addEventListener('unhandledrejection',function(e){try{var d=document.getElementById('errbn');if(!d){d=document.createElement('div');d.id='errbn';d.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99999;background:#7a1f1f;color:#fff;font:13px/1.4 system-ui;padding:8px 12px;white-space:pre-wrap';(document.body||document.documentElement).append(d)}d.textContent+=(d.textContent?'\n':'')+'ERROR: '+(e.reason&&e.reason.message||e.reason)}catch(x){}})</script>
+<title>Logic Sim v1.20.25</title><script>/* gunzip of the built-in data, with a second way if the first one fails in the browser */window.gunz=async function(bin){try{return await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text()}catch(e1){try{var ds=new DecompressionStream('gzip'),w=ds.writable.getWriter();w.write(bin);w.close();var r=ds.readable.getReader(),parts=[],n=0;for(;;){var q=await r.read();if(q.done)break;parts.push(q.value);n+=q.value.length}var all=new Uint8Array(n),o=0;for(var i=0;i<parts.length;i++){all.set(parts[i],o);o+=parts[i].length}return new TextDecoder().decode(all)}catch(e2){throw new Error('gunzip failed ('+bin.length+' bytes): '+e1.message+' / '+e2.message)}}};</script><script>/* start-up error banner: if the program stops while starting, the message is shown here instead of an empty page */window.addEventListener('error',function(e){try{var d=document.getElementById('errbn');if(!d){d=document.createElement('div');d.id='errbn';d.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99999;background:#7a1f1f;color:#fff;font:13px/1.4 system-ui;padding:8px 12px;white-space:pre-wrap';(document.body||document.documentElement).append(d)}d.textContent+=(d.textContent?'\n':'')+'ERROR: '+(e.message||e)+' ('+(e.lineno||'?')+':'+(e.colno||'?')+')'}catch(x){}});window.addEventListener('unhandledrejection',function(e){try{var d=document.getElementById('errbn');if(!d){d=document.createElement('div');d.id='errbn';d.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99999;background:#7a1f1f;color:#fff;font:13px/1.4 system-ui;padding:8px 12px;white-space:pre-wrap';(document.body||document.documentElement).append(d)}d.textContent+=(d.textContent?'\n':'')+'ERROR: '+(e.reason&&e.reason.message||e.reason)}catch(x){}})</script>
 <style>
 :root{--bg:#0f1418;--panel:#161d23;--line:#2a3640;--tx:#d7e0e6;--dim:#7d8e9a;--acc:#4fd18b;--sel:#38c9ff;--live:#ff4d4d;--lives:rgba(255,77,77,.30)}
 *{box-sizing:border-box}html,body{height:100%;margin:0;background:var(--bg);color:var(--tx);font:13px 'Segoe UI',system-ui,sans-serif}
@@ -823,7 +823,7 @@ addEventListener('load',async()=>{const e0=document.getElementById('pre');if(!e0
  if(typeof DecompressionStream==='undefined'){msg('This browser is too old to open the built-in sheets. Update Chrome / Safari.');return}
  msg('Loading built-in sheets...');
  try{const bin=Uint8Array.from(atob(e0.textContent.trim()),c=>c.charCodeAt(0));
-  const txt=await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  const txt=await gunz(bin);
   const pre=txt.split('\n').filter(Boolean).map(l=>JSON.parse(l)),old=new Map(S.sheets.map(x=>[x.name,x])),fx=fixLoad();
   const out=pre.map(p=>{const o=old.get(p.name);if(o&&o.bv===BV)return o;if(o){p.meta=o.meta||p.meta;p.mvt=o.mvt;p.pdur=o.pdur}const f=fx[p.name];if(f){p.links=f.links||p.links;p.pins=f.pins||p.pins}return p});
   S.sheets.forEach(x=>{if(!pre.some(p=>p.name===x.name))out.push(x)});
@@ -2162,7 +2162,7 @@ hmiAuto=function(){const sh=cs();if(!sh||!sh.S){msg('Open an analog sheet first'
 /* ---------- data (built-in sheets, lazy) ---------- */
 /* descriptions: station -> address -> record (IO list rows: tag, description, range, unit, type, SIG.AB address; memory lists: description, remark, timer type / seconds) */
 let ADES=null;
-async function adesLoad(){if(ADES)return ADES;const e=document.getElementById('ades');if(!e||!e.textContent.trim()){ADES={};return ADES}try{const bin=Uint8Array.from(atob(e.textContent.trim()),c=>c.charCodeAt(0));ADES=JSON.parse(await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text())}catch(x){ADES={}}return ADES}
+async function adesLoad(){if(ADES)return ADES;const e=document.getElementById('ades');if(!e||!e.textContent.trim()){ADES={};return ADES}try{const bin=Uint8Array.from(atob(e.textContent.trim()),c=>c.charCodeAt(0));ADES=JSON.parse(await gunz(bin))}catch(x){ADES={}}return ADES}
 function shStn(sh){if(sh.stn===undefined&&sh.S)sh.stn=stnOf(sh.S);return sh.stn}
 function adesFind(sh,text){if(!ADES||!text)return null;const t=String(text).trim();let m=/^(?:S(\d)\s*)?([A-Z]{1,2})\.([0-9A-F]{3,4})$/i.exec(t),pre,num,dot='.';
  if(m){pre=m[2].toUpperCase();num=m[3].toUpperCase().padStart(4,'0')}else{m=/^(?:S(\d)\s*)?(TR|SI|SO|AI|AO|DI|DO|FP|PTN)(\d{1,6})$/i.exec(t);if(!m)return null;pre=m[2].toUpperCase();dot='';num=pre==='PTN'?m[3].padStart(6,'0'):m[3].padStart(4,'0')}
@@ -2190,7 +2190,7 @@ function tagHi(){const sh=cs(),S=sh&&sh.S,n=S&&AN.sel&&AN.sel.net!=null?AN.sel.n
 async function loadData(){if(AN.data)return AN.data;
  AN.data=(async()=>{try{await AN.kv}catch(e){}try{await adesLoad()}catch(e){}AN.adesLoad=adesLoad;AN.adesFind=adesFind;AN.shStn=shStn;AN.tagHi=tagHi;if(document.readyState==='loading')await new Promise(r=>addEventListener('DOMContentLoaded',r,{once:true}));const e0=document.getElementById('apre');let rows=[];
   if(e0&&e0.textContent.trim()){const bin=Uint8Array.from(atob(e0.textContent.trim()),c=>c.charCodeAt(0));
-   const txt=await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text();rows=txt.split('\n').filter(Boolean).map(l=>JSON.parse(l))}
+   const txt=await gunz(bin);rows=txt.split('\n').filter(Boolean).map(l=>JSON.parse(l))}
   const keep=AN.sheets.filter(s=>s.imp);AN.sheets=rows.concat(keep);try{await impRestore()}catch(x){AN.impErr=String(x&&x.message||x)}return AN.sheets})();return AN.data}
 /* ---- P7: persistent DXF import + drawing-change report ---- */
 const impBuild=(R,name)=>anWire(anModel(anNets(anBuild(R,name))));
