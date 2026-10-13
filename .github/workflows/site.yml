@@ -1,0 +1,32 @@
+name: Site (Stable + Beta)
+# Stable = html of main at /, Beta = html of the branch that was just pushed at /beta/. The apk / exe load these pages, so they update by themselves.
+on:
+  workflow_run: { workflows: [Checks], types: [completed] }
+  workflow_dispatch:
+    inputs:
+      beta_ref: { description: 'Branch / sha for Beta (default main)', required: false, default: main }
+permissions: { contents: read, pages: write, id-token: write }
+concurrency: { group: pages, cancel-in-progress: true }
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment: { name: github-pages, url: '${{ steps.d.outputs.page_url }}' }
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, path: stable }
+      - uses: actions/checkout@v4
+        with: { ref: '${{ github.event.workflow_run.head_sha || inputs.beta_ref || ''main'' }}', path: beta }
+      - name: Assemble
+        run: |
+          mkdir -p site/beta
+          S=$(ls stable/logic-sim-v*.html | head -1); B=$(ls beta/logic-sim-v*.html | head -1)
+          cp "$S" site/index.html; cp "$B" site/beta/index.html
+          sv=$(echo "$S" | grep -o 'v[0-9.]*[0-9]'); bv=$(echo "$B" | grep -o 'v[0-9.]*[0-9]')
+          echo "{\"stable\":\"$sv\",\"beta\":\"$bv\"}" > site/version.json
+          touch site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: site }
+      - id: d
+        uses: actions/deploy-pages@v4
