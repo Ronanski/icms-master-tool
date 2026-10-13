@@ -1,0 +1,95 @@
+name: Release apk + exe
+# Manual. input go must be exactly "GO v<version>" (the version in the html file name). Builds the Stable and Beta shells
+# (apk + portable exe). The shells load the site, so they only need a rebuild when the shell itself changes.
+# The app content is released by merging to main (Stable) or pushing a branch (Beta).
+# apk signing: signing/logic-sim.jks (self-signed, made by make-key.yml; alias logicsim). Never regenerate it: a new key means a reinstall.
+on:
+  workflow_dispatch:
+    inputs:
+      go: { description: 'Type exactly: GO v<version>', required: true, type: string }
+      dry_run: { description: 'true = build only, no GitHub Release', required: true, default: 'true', type: choice, options: ['true','false'] }
+permissions: { contents: write }
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs: { version: '${{ steps.v.outputs.version }}', tag: '${{ steps.v.outputs.tag }}' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - id: v
+        run: |
+          node tools/version.js --github
+          V=$(node tools/version.js)
+          [ "${{ inputs.go }}" = "GO v$V" ] || { echo "go must be exactly: GO v$V"; exit 1; }
+  apk:
+    needs: gate
+    runs-on: ubuntu-latest
+    env:
+      KS_PASS: logicsim-icms
+    strategy:
+      matrix:
+        include:
+          - { chan: stable, id: com.ronanski.logicsim, name: 'Logic Sim', url: 'https://ronanski.github.io/icms-master-tool/' }
+          - { chan: beta, id: com.ronanski.logicsim.beta, name: 'Logic Sim Beta', url: 'https://ronanski.github.io/icms-master-tool/beta/' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - name: Capacitor project
+        working-directory: android-app
+        run: |
+          cat > capacitor.config.json <<EOF
+          {"appId":"${{ matrix.id }}","appName":"${{ matrix.name }}","webDir":"www","server":{"url":"${{ matrix.url }}","errorPath":"offline.html","androidScheme":"https"}}
+          EOF
+          npm install --no-audit --no-fund
+          npx cap add android
+          npx cap sync android
+          sed -i "s/versionName \".*\"/versionName \"${{ needs.gate.outputs.version }}\"/" android/app/build.gradle
+      - name: Build + sign
+        working-directory: android-app/android
+        run: |
+          ./gradlew assembleRelease --no-daemon
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          $BT/zipalign -p 4 app/build/outputs/apk/release/app-release-unsigned.apk aligned.apk
+          $BT/apksigner sign --ks ../../signing/logic-sim.jks --ks-pass env:KS_PASS --key-pass env:KS_PASS --ks-key-alias logicsim --out "../../logic-sim-${{ matrix.chan }}.apk" aligned.apk
+          $BT/apksigner verify "../../logic-sim-${{ matrix.chan }}.apk"
+      - uses: actions/upload-artifact@v4
+        with: { name: 'apk-${{ matrix.chan }}', path: 'android-app/logic-sim-${{ matrix.chan }}.apk' }
+  exe:
+    needs: gate
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - { chan: stable, name: 'Logic Sim', url: 'https://ronanski.github.io/icms-master-tool/' }
+          - { chan: beta, name: 'Logic Sim Beta', url: 'https://ronanski.github.io/icms-master-tool/beta/' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Build portable exe
+        working-directory: app
+        shell: bash
+        run: |
+          echo '{"name":"${{ matrix.name }}","url":"${{ matrix.url }}"}' > config.json
+          npm install --no-audit --no-fund
+          npx electron-builder --win portable -c.productName="${{ matrix.name }}" -c.extraMetadata.version=${{ needs.gate.outputs.version }}
+          ls dist
+      - uses: actions/upload-artifact@v4
+        with: { name: 'exe-${{ matrix.chan }}', path: 'app/dist/*-portable.exe' }
+  publish:
+    needs: [gate, apk, exe]
+    if: inputs.dry_run == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { path: out }
+      - name: GitHub Release
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          mkdir rel; find out -type f \( -name '*.apk' -o -name '*.exe' \) -exec cp {} rel/ \; ; ls rel
+          gh release create "${{ needs.gate.outputs.tag }}" rel/* --title "Logic Sim ${{ needs.gate.outputs.tag }}" --notes "Shells (apk + portable exe) for Stable and Beta. They load the site and update by themselves." --target "${{ github.sha }}"
