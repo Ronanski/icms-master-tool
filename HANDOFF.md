@@ -40,5 +40,5 @@ Second tab of the right pane (Detalye | Operator), `tools/hmi/` (hmi.css, hmi.js
 4. Left to the user's device test: apk / exe start, the update question (I-update ngayon / Huwag muna), the line colours (dilaw napili / abo hindi).
 
 
-## Beta v1.20.30 (branch `uat-blocks`)
-Block-by-block UAT in the app (see docs/versions/v1.20.30/UPDATE_REPORT.md). 84 of 1797 blocks mismatch the block definition (tools/uat/known.json): not triaged, Needs Verification. No release/merge done.
+## Beta v1.20.31 (branch `uat-blocks`)
+Block-by-block UAT in the app (see docs/versions/v1.20.31/UPDATE_REPORT.md). 11 of 1767 blocks mismatch the block definition (tools/uat/known.json): real findings, Needs Verification (8 PID, 2 switches, 1 MAN). No release/merge done.
