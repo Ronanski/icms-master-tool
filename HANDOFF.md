@@ -3,7 +3,7 @@
 > This is the single current handoff. Replace outdated status when work changes; do not append a cumulative chat transcript.
 
 ## Project
-DCS Logic Simulator in `Ronanski/icms-master-tool`. Runtime version **v1.20.22** (`logic-sim-v1.20.22.html` in the root, shown in the simulator title and header badge). v1.20.21 is the reference build, kept unedited in `document-references/logic-sim-v1.20.21.html`; all further work is on v1.20.22.
+DCS Logic Simulator in `Ronanski/icms-master-tool`. Runtime version **v1.20.23**, Stable (GO STABLE, 2026-10-13) (`logic-sim-v1.20.23.html` in the root, shown in the simulator title and header badge). v1.20.21 is the reference build, kept unedited in `document-references/logic-sim-v1.20.21.html`; all further work is on v1.20.23.
 
 ## Current focus
 ABC analog logic audit (Cause & Effect / Golden Reference method of `docs/abc-audit/ABC-AUDIT.md`). Simplest sheets first, then the rest in batches.
@@ -49,15 +49,21 @@ The app shows real values (PROJECT_RULES 4a). DCS percent / count scaling is not
 GO BETA given by the user. Beta 1 is published: GitHub pre-release `v1.20.21-beta.1` (commit fd2aab6 on `main`, PR #2) with the asset `logic-sim-v1.20.21.html`, created by the manual workflow `.github/workflows/beta-release.yml` (PR #3). The `.apk` and `.exe` were not rebuilt and do not contain these fixes; the release workflow for them exists but no run is recorded. No Stable release.
 
 ## Regression (batch 31)
-Harness in `tools/regress/` (see its README). Current build: all 54 sheets load, timers / LAG / ALM / F-30 shutdown hold / P-1 / dMVH tests pass, F(X), parameters and AI ranges equal the workbooks. Differential run: F-28 / F-29 change nothing in the engine; F-30 changes ABC-008 only; F-31 explains the other 22 sheets that differ. R-1 (CUT of F-31 inactive because CUT / DH were swapped in the data) is fixed in v1.20.22 as F-32 (`docs/versions/v1.20.22/`): parameters equal the workbook (136 rows, 0 differences), 9 sheets differ from v1.20.21, tests S1 ~ S6 pass. R-2 / R-3 are documentation notes. Details: FINDINGS batch 31 (v1.20.21) and `docs/versions/v1.20.22/`.
+Harness in `tools/regress/` (see its README). Current build: all 54 sheets load, timers / LAG / ALM / F-30 shutdown hold / P-1 / dMVH tests pass, F(X), parameters and AI ranges equal the workbooks. Differential run: F-28 / F-29 change nothing in the engine; F-30 changes ABC-008 only; F-31 explains the other 22 sheets that differ. R-1 (CUT of F-31 inactive because CUT / DH were swapped in the data) is fixed in v1.20.23 as F-32 (`docs/versions/v1.20.23/`): parameters equal the workbook (136 rows, 0 differences), 9 sheets differ from v1.20.21, tests S1 ~ S6 pass. R-2 / R-3 are documentation notes. Details: FINDINGS batch 31 (v1.20.21) and `docs/versions/v1.20.23/`.
+
+## Integration of the earlier v1.20.22 session (branch claude/adoring-carson-aylw3j, report `docs/abc-audit/HANDOFF-Report-v1.20.22.pdf`)
+Taken into the root html: percent-rate Reset fix (`ratePct0`; rates were compounded at every Reset) and the T switch without memory (only `SW`; the A/M switch `AMT` keeps its last leg, F-30 and batch 26 depend on it). Not taken: dropping the SIG.AB mid-wire tag change (F-24). Checked: with F-24 the same cross-sheet signals are linked as ordinary net links instead of flag links (228 vs 224 links in total, nothing lost); without it B.0733 / B.074B on ABC-006 stay untied. Their count "42 flag links" was a test expectation, not a requirement. Release `v1.20.22` (tag fdff2cd) holds the apk / exe shells; Stable and Beta Pages come from this repository. Rule 5b (this repository only) is in PROJECT_RULES.
+
+## Release v1.20.23 (Stable)
+Assets: html, apk (Stable, Beta), portable exe (Stable, Beta), `Release-Report-v1.20.23.pdf`, `UAT-v1.20.23.html` (made by `tools/uat/make-uat.js` and `make-report.js`; the form has 211 OK / MALI items over 51 sheets and a button that copies the MALI lines). Built by `release.yml` (input `GO v1.20.23`). The shells load the Pages site, so they update by themselves. Next: the user does the UAT and reports the MALI lines.
 
 ## Known limits (decided from the references, not user questions)
-dMVH per DTI (1 s), TF and CUT with the usual definitions; GAP (1 PID) not simulated; 25 "( FROM ABC-xxx )" inputs have no partner net (controller REM flags, HMI buttons) and stay operator inputs; viewer labels / values on wires not tested automatically. See `docs/versions/v1.20.22/FINDINGS.md`.
+dMVH per DTI (1 s), TF and CUT with the usual definitions; GAP implemented as a dead zone (F-35); the inputs next to a "( FROM ABC-xxx )" text without a partner net are operator / mode / DITL inputs by design (FINDINGS); viewer labels / values on wires not tested automatically. See `docs/versions/v1.20.23/FINDINGS.md`.
 
 ## Next actions
-1. User acceptance test of v1.20.22 (V-1 ~ V-21 were settled with basis; V-21 closed by run P-2).
+1. User acceptance test of v1.20.23 (V-1 ~ V-21 were settled with basis; V-21 closed by run P-2).
 2. Release / rebuild only on GO STABLE / GO BETA.
 
 ## Current task status
-**Done:** corrections F-1, F-3 ~ F-32 (v1.20.22); 53 of 54 sheets traced and tested (ABC-005 partly); batch scan; regression of the current build (batch 31); records updated.
-**Not done:** user acceptance test, release of the v1.20.22 html (Beta / Stable only on GO BETA / GO STABLE). The full PDF report was sent in chat.
+**Done:** corrections F-1, F-3 ~ F-32 (v1.20.23); 53 of 54 sheets traced and tested (ABC-005 partly); batch scan; regression of the current build (batch 31); records updated.
+**Not done:** the user's acceptance test of v1.20.23.

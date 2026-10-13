@@ -1,4 +1,4 @@
-# ABC Audit Findings — v1.20.22
+# ABC Audit Findings — v1.20.23
 
 Earlier findings F-1 ~ F-31 and batches 1 ~ 31: `docs/versions/v1.20.21/FINDINGS.md` (v1.20.21 is the reference build, not edited).
 
@@ -20,3 +20,17 @@ Earlier findings F-1 ~ F-31 and batches 1 ~ 31: `docs/versions/v1.20.21/FINDINGS
 - 25 inputs written "( FROM ABC-xxx )" on the drawings have no partner net in the other sheet's netlist (controller REM flags such as FICFA1043A.REM, HMI push buttons, M.3405, and others). They stay operator inputs in RUN.
 - AB0114 ~ AB0117 addresses are in no list (Cannot Verify the address only).
 - Viewer labels and values on wires were not tested automatically.
+
+## F-33 — Percent rate compounded at every Reset (Confirmed, fixed)
+- `anInit` runs at every Reset and converted `rate` from the already converted value (`rate = rate * span / 100` each time). Now the drawn percentage is kept in `ratePct0` and the rate is always `ratePct0 * span / 100`. Source: earlier v1.20.22 session; applied here by the same one-line change.
+
+## F-34 — T switch without memory (Confirmed, fixed, SW only)
+- A T switch (`SW`) with COS conditions kept its last leg when no condition was active; it follows its condition (`pickB = wB`). The A/M switch (`AMT`) keeps the last leg (batch 26 addendum, F-30 latch). The earlier session removed the memory from both; here only `SW`.
+- Not taken from that session: dropping F-24. With F-24 the same cross-sheet signals are linked as net links instead of flag links (228 vs 224 links, nothing lost), and B.0733 / B.074B on ABC-006 stay tied.
+- After both changes: `tests.js` T1 ~ T4, S1 ~ S6 pass.
+
+## F-35 — GAP implemented (1 PID, HICBR1391, 2.5 %)
+- Basis: parameter workbook column GAP. No formula in the references; implemented as the usual gap (dead zone) action: an error inside +-GAP % of the span is read as zero (`anGap`). Only HICBR1391 has a GAP.
+
+## Cross-sheet inputs (closed)
+- The inputs that sit next to a "( FROM ABC-xxx )" text and have no partner net are operator, mode or DITL inputs by design: `.MAN` / `.LOC` / `.REM` mode flags, HMI push buttons (M.008C / M.008D), CRT modes of ABC-057, DITL memory (M.3400 ~ M.3405), and the T switch select of ABC-009A (text conditions). They stay inputs the user sets in RUN. No signal that the drawing produces on another sheet is left unlinked.
