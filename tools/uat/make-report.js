@@ -4,7 +4,8 @@ const ver=require('fs').readdirSync('.').find(x=>/^logic-sim-v\d+\.\d+\.\d+\.htm
 const cards=[
 ['Ano ang laman ng release','Stable',[
  ['Mga file',`logic-sim-v${ver}.html (ang simulator) · Logic-Sim-v${ver}.apk (Android) · Logic-Sim-v${ver}-portable.exe (Windows) · ang report na ito. Isang apk at isang exe lang: Stable. Ang UAT ay nasa loob na ng app.`],
- ['Auto-update at Channel','Ang apk at exe ay naglo-load ng site, kaya nag-a-update sila nang kusa; hindi na kailangang mag-install ulit. Sa loob ng app, sa taas-kanan, may kahon na "Channel: Stable / Beta": ikaw ang pipili. Naaalala ito ng app. Ang Stable ay galing sa main (ikaw ang magpapasya kung kailan). Ang Beta ay para sa pagsubok ng bawat bagong ayos, galing sa branch, at wala sa Releases.'],
+ ['Update (ikaw ang magpapasya)','Ang web page (PWA), ang apk at ang exe ay nagse-save ng bersyong gamit mo, kaya mabilis magbukas. Pagbukas, tinitingnan nila kung may bagong bersyon sa channel mo (Stable o Beta). Kung meron, lalabas ang tanong: "I-update ngayon" o "Huwag muna". May button din na "⟳ Update?" sa taas para mag-check kahit kailan. Hindi na kailangang mag-install ulit ng apk o exe.'],
+['Channel','Sa loob ng app, sa taas-kanan, may kahon na "Channel: Stable / Beta": ikaw ang pipili. Naaalala ito ng app. Ang Stable ay galing sa main (ikaw ang magpapasya kung kailan). Ang Beta ay para sa pagsubok ng bawat bagong ayos, galing sa branch, at wala sa Releases.'],
  ['Bersyon',`v${ver}: may UAT na sa loob ng app (berdeng UAT button), may Channel box (Stable / Beta), at isang apk/exe lang sa Releases. Ang v1.20.21 ay reference lang (document-references/), hindi ginalaw.`]]],
 ['Mga naayos sa ABC sheets (sa simpleng salita)','Tapos',[
  ['Mga unit at value','Ang simulator ay nagpapakita ng totoong value (T/H, kg/cm², MW, °C, %, rpm), hindi ng DCS count. Inayos ang paghahalo ng % at T/H sa ABC-001C, 003A–E, 005, 006, 008, 009A/B, 010, 011/012, 002, 057 (F-7 hanggang F-25).'],
