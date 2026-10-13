@@ -45,6 +45,9 @@ The app shows real values (PROJECT_RULES 4a). DCS percent / count scaling is not
 - Drawing PDFs have no text layer; read visually. The simulator is driven headless (Playwright + bundled Chromium): inputs written to external nets or forced, SIG.AB states set, time stepped, nets read. Nothing in the repo is modified by the tests.
 - Rules to keep: audit before fixing, only change the ABC reader with evidence, never touch DITL without approval, no release or build claim without **GO STABLE** / **GO BETA**.
 
+## Beta
+GO BETA given by the user. Beta 1 = git tag `v1.20.21-beta.1` on `logic-sim-v1.20.21.html` (branch `claude/adoring-carson-aylw3j`). The `.apk` and `.exe` were not rebuilt (no build files, project or signing key in the repository) and do not contain these fixes. No Stable release.
+
 ## Next actions
 1. User does one UAT / verification with the PDF report (V-1 ~ V-21). ABC-005 PID auto dynamics, SUMA integration and ALM limits are recorded as V-21 (not fully driven in the headless run).
 2. Release / rebuild only on GO STABLE / GO BETA.
