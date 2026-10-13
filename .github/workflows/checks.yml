@@ -1,0 +1,24 @@
+name: Checks
+# Runs on every push. A green Checks run on a branch publishes the Beta site (site.yml); on main it publishes Stable.
+on: [push, workflow_dispatch]
+permissions: { contents: read }
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: One html, version in file name and title
+        run: |
+          V=$(node tools/version.js)
+          F=logic-sim-v$V.html
+          grep -q "<title>Logic Sim v$V</title>" "$F" || { echo "title does not say v$V"; exit 1; }
+          grep -q "c3.textContent='v$V'" "$F" || { echo "version label does not say v$V"; exit 1; }
+      - name: Scripts of the html parse
+        run: |
+          node -e "
+          const s=require('fs').readFileSync(require('fs').readdirSync('.').find(x=>/^logic-sim-v.*\.html$/.test(x)),'utf8');
+          const m=[...s.matchAll(/<script>([\s\S]*?)<\/script>/g)];let bad=0;
+          for(const x of m){try{new Function(x[1])}catch(e){bad++;console.log(e.message)}}
+          if(bad||!m.length)process.exit(1);console.log('scripts ok',m.length)"
