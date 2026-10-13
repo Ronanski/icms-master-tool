@@ -71,7 +71,7 @@ Do not invent numeric values, scaling ranges, formulas, tag mappings, or output 
 | Divider (÷) | 15 | order of A / B against the drawing (F-1, F-4, F-16) | – |
 | Comparators (HC / LC / HLC) | 222 | set point and unit (F-6, F-23, F-27) | – |
 | PID / MAN / SUMA parameters | 140 | against the parameter workbook | – |
-| PID algorithm | 68 | integral step and output against Kp, Ti, Td; ACT text against the sign (batch 28); TF, CUT, dMVH simulated (F-31) | GAP (1 PID); exact DCS formula of TF / CUT / dMVH Needs Verification; ABC-005 auto dynamics (V-21) |
+| PID algorithm | 68 | integral step and output against Kp, Ti, Td; ACT text against the sign (batch 28); TF, CUT, dMVH simulated (F-31) | GAP (1 PID); exact DCS formula of TF / CUT / dMVH Needs Verification; ABC-005 auto dynamics closed by run P-2 |
 | PID / MAN behavior | per sheet | direction, limits, tracking, A/M, BU-CMD (F-20, F-26) in the sheet scenarios | – |
 | Timers (TON / TOF / pulse) | 159 on all sheets | time of each timer against its parameter (batch 28) | S/R flip-flops only in the sheet scenarios |
 | LAG | 12 | time constant (batch 28) | – |

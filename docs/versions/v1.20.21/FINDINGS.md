@@ -523,3 +523,28 @@ User answers: V-1 keep 1.3 (the printed 13 is a percent-style representation); V
 
 ### Range audit
 - PID / MAN / AI / SUMA ranges of the app against the range printed beside the block on the drawing: 2 differences in the 100+ blocks that have a printed range nearby: ABC-010 LICBR1001A (drawing text near the block is the transmitter −422 ~ 820 mm; workbook faceplate −24 ~ 74) and ABC-020 HICHR1002A (drawing 0 ~ 100 %, workbook faceplate SL 10, SH 100, user-confirmed). Kept as the workbook (faceplate) value; listed as Needs Verification. 45 blocks have no printed range near them (not comparable).
+
+## Batch 30 — plant-level test runs (RUN engine, all linked sheets stepped together)
+
+### Run P-1: design points of `linear-curves-fx.xls` DATA sheet (150 MW CFB unit)
+- Setup: unit load demand SI0226 = 60 / 75 / 90 / 112.5 / 127.5 / 150 MW on ABC-001C; coal demand and total coal flow (SI0213, SI0140 on ABC-002) set to the DATA coal flow at each point; 200 s of RUN time.
+- Result (expected = DATA row, actual = simulator):
+  - Coal flow from the unit load demand (LN54, ABC-001C SI0221): 35 / 42.8 / 50.5 / 61.9 / 69.5 / 81 T/H = DATA COAL at every point.
+  - PA flow demand (LN12, ABC-002 SI0040 = SI0310): 285 / 310 / 330 / 345 / 362 / 380 T/H = DATA PA.
+  - O2 set point (LN16, SI0050): 8 / 6.2 / 5.6 / 4.6 / 3.8 / 3.5 % = DATA O2.
+  - Total air from the actual fuel flow (LN22, SI0315): 446 / 471 / 501 / 529 / 563 / 606 T/H = DATA TAF.
+  - Feed-forward total air demand (LN5, SI0033) is 446 / 490 / 520 / 548 / 582 / 616: higher than the DATA TAF by up to 19 T/H; the secondary air demand is that total minus PA minus the FA blower flow, multiplied by the O2 correction (LN15, 80 ~ 120 %). With the O2 correction at about 0.88: PA 310 + SA 154 x 0.877 + FA 26 = 471 T/H = DATA TAF; DATA SA 135 = (490 − 310 − 26) x 0.877. So the DATA SA / TAF are the O2-trimmed operating values, consistent with the chain. Verdict: Pass.
+- Not covered by the run: the O2 trim loop itself and the coordinated modes (HIC-BM auto, pressure set point) which the operator sets; with the pressure set point left at 0 the boiler master saturates at −25 %.
+
+### Run P-2: ABC-005 limestone feeder in auto (closes V-21)
+- Setup: three coal feeder run flags n21 / n23 / n26 = 1 (M.0148 = 0), SOx PV from the plant model 362 ppm, SV 200 ppm, 600 s of RUN time.
+- Result: M.0148 = 0; the velocity-form PID (OMV chain) raises AO0788 (feeder speed) from 0 to 32.5 % and the SOx PV falls to 207 ppm and keeps approaching 200 ppm; direction correct, no overshoot, no saturation. Verdict: Pass.
+
+### Run P-3: force-to-manual hold (F-30)
+- ABC-003A, shutdown command M.3433 (2 s pulse): AO0209 = 25 % (ignition position, M.312C true) and stays for 40 s of RUN time (before F-30: drifted to 8.5 %).
+
+### Cross-sheet signals
+- 485 connector circles; the signals between sheets are linked by number, tag or the "( FROM ABC-xxx )" text. 11 input nets that carry a "( FROM ABC-xxx )" text have no partner net in the other sheet and stay operator inputs: FICFA1043B / C / D.REM (ABC-003B / C / D), M.008C / M.008D (HMI push buttons of the oil master, memory list), M.3405 and one more on ABC-004A, ABC-009A n172, ABC-057 n74 / n79, ABC-002 n41. Needs Verification of their source on the partner drawing (set them by hand in RUN).
+
+### Run P-4: loop closure of every PID with its plant model (RUN, 900 s, SV step of 15 % of the span, loop forced to auto)
+- 54 PID / PIDV loops: 45 close (PV reaches 70 % or more of the SV step, direction correct); 9 do not in this generic run and need operator setup or another loop, none was traced to a logic defect: ABC-003E FIC-OM (needs the burners in service: its PV is the sum of the burner oil flows), ABC-005 (manual until the feeder run flags are set, closes in P-2), ABC-007 FICFA1071 / 1081 and ABC-014 FICFA1055A (fans / blower not running, flow 0), ABC-013 PICMS1002 (relief loop: only opens on a pressure above the SV), ABC-002 AICFG112 (O2 trim: its output biases the SA demand, the generic plant model has no O2 response), ABC-010 LICBR1001 (slow drum-level master, 65 % of the step after 900 s), ABC-020 TICHR1002A (forced switch from manual 28.9 % to the PID output 60 % moved the plant: test artifact without bumpless transfer).
