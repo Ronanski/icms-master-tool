@@ -2,7 +2,7 @@ name: Release apk + exe
 # Manual. Assets: html, apk, portable exe, release report pdf, UAT form. input go must be exactly "GO v<version>" (the version in the html file name). Builds the Stable and Beta shells
 # (apk + portable exe). The shells load the site, so they only need a rebuild when the shell itself changes.
 # The app content is released by merging to main (Stable) or pushing a branch (Beta).
-# apk signing: signing/logic-sim.jks (self-signed, made by make-key.yml; alias logicsim). Never regenerate it: a new key means a reinstall.
+# apk signing: signing/logic-sim.jks (self-signed, alias logicsim, made once). Never regenerate it: a new key means a reinstall.
 on:
   workflow_dispatch:
     inputs:
