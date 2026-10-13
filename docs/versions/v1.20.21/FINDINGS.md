@@ -513,7 +513,7 @@ User answers: V-1 keep 1.3 (the printed 13 is a percent-style representation); V
 
 ### F-30 — Force-to-manual pulse must latch manual (Confirmed, fixed)
 - Basis: memory list M.0110 "FORCE TO MANUAL"; the drawing drives it from 2 s pulses (TPs); the legend defines the A/M switch with its operator station (COS). A pulse that forces a loop to manual must leave it in manual until the operator sets auto; it cannot be a level that releases after 2 s.
-- Work done: an A/M switch (COS beside the T, select from a pulse timer, no other operator-memory switch on the same select) keeps manual after the pulse until the user forces input A; 11 switches (ABC-003A #46, 003B / C / D #33, 004A #55, 008 #18, 020 #40 / #45, 051 #22 and two on ABC-007 that share their select with a COS selector and are not changed).
+- Work done: an A/M switch (COS beside the T, select from a pulse timer, no other operator-memory switch on the same select) keeps manual after the pulse until the user forces input A; 8 switches at run time (ABC-003A #46, 003B / C / D #33, 004A #55, 008 #18, 020 #40 / #45; ABC-051 #22 and two on ABC-007 share their select with a COS selector and are not changed; corrected by batch 31, R-2).
 - Result: shutdown on ABC-003A: AO0209 = 25 % and it stays (23 % < 25 % < 27 %: M.312C true). Regression: only the ABC-003A / 003B scenarios change; ABC-007 identical.
 
 ### F-31 — PID parameters TF, CUT, dMVH now simulated (Needs Verification of the exact DCS formula; closes N-5 as an implementation)
@@ -548,3 +548,36 @@ User answers: V-1 keep 1.3 (the printed 13 is a percent-style representation); V
 
 ### Run P-4: loop closure of every PID with its plant model (RUN, 900 s, SV step of 15 % of the span, loop forced to auto)
 - 54 PID / PIDV loops: 45 close (PV reaches 70 % or more of the SV step, direction correct); 9 do not in this generic run and need operator setup or another loop, none was traced to a logic defect: ABC-003E FIC-OM (needs the burners in service: its PV is the sum of the burner oil flows), ABC-005 (manual until the feeder run flags are set, closes in P-2), ABC-007 FICFA1071 / 1081 and ABC-014 FICFA1055A (fans / blower not running, flow 0), ABC-013 PICMS1002 (relief loop: only opens on a pressure above the SV), ABC-002 AICFG112 (O2 trim: its output biases the SA demand, the generic plant model has no O2 response), ABC-010 LICBR1001 (slow drum-level master, 65 % of the step after 900 s), ABC-020 TICHR1002A (forced switch from manual 28.9 % to the PID output 60 % moved the plant: test artifact without bumpless transfer).
+
+## Batch 31 — regression run on the current HTML (ec35978 + CI commits; harness in `tools/regress/`)
+
+Why: the sheet-by-sheet traces were done before F-26, F-30 and F-31 (engine-level changes). This run re-checks the whole analog set on the current build. New headless harness (Playwright, nothing in the repository is modified); the earlier scratch scripts were not in the repository. Not a re-trace of the drawings.
+
+### Result
+| Check | Result |
+|---|---|
+| T1 all 54 sheets load and step 30 s (no exception, no NaN) | Pass, 54 / 54 |
+| T2 timers (TON / TOF / TPS) vs their parameter | Pass, 165 timers |
+| T3 LAG 63.2 % at one time constant | Pass, 15 LAG |
+| T4 ALM limits ordered, value passed through | Pass, 105 ALM |
+| S1 ABC-003A shutdown pulse: AO0209 = 25 %, stays 40 s, M.312C true (F-26 / F-30, P-3) | Pass |
+| S2 ABC-001A comparators 0.2 MW (F-27) | Pass |
+| S3 P-1 unit load to coal flow LN54 at 6 DATA points | Pass, all 6 equal DATA COAL |
+| S4 dMVH limits the MV change per second (F-31), 29 PID | Pass |
+| F(X): 89 tables vs `linear-curves-fx.xls` | 85 equal; LN15, LN21 are the known ratio curves (factor 0.8 / 1 / 1.2); LN38 / LN39 are compared with `drum-level-calculation.xls`, not this workbook |
+| PID / MAN / SUMA: 136 workbook rows vs the simulator | 0 differences (MAN MH / ML compared as % of the MV range) |
+| AI ranges: 157 AI tags vs `dcs-io-list.xls` | 0 differences (2 tags not found by name: ABC-054 AI0737, ABC-057 AI0288) |
+
+### Differential run (same seeded inputs, 54 sheets, 6 states of 20 s each; `tools/regress/diff.js`)
+- Before F-26 (3e27ddc) vs current: 34 sheets differ. Expected: F-26 BU-CMD tracking, F-27, F-30, F-31 (not separated in this comparison).
+- After F-26 (c146eda) vs current, and after F-28 / F-29 (9ca5312) vs current: the same 23 sheets differ, so F-28 / F-29 (UI only) change nothing in the engine, and all 23 differences come from ec35978 (F-30 and F-31).
+- With dMVH, TF and CUT set to 0 in the current build (F-31 off): 53 sheets are identical to 9ca5312, only ABC-008 differs (F-30, switch #18). So F-31 explains the other 22 sheets and nothing else changed unexpectedly.
+- F-31 on vs off, inputs held 900 s: 14 of 20 sheets reach the same steady state; ABC-003B (2 values), ABC-003E (1), ABC-032 (2), ABC-036 (2), ABC-037 (2) still differ by 0.1 ~ 5 %, ABC-010 differs on 42 values (slow drum-level master, not settled after 900 s, see P-4). Not a logic change; the dynamic response is slower with F-31, as intended.
+
+### New findings
+- **R-1 (Confirmed, Needs decision): the CUT function of F-31 is not active.** F-2 (CUT and DH swapped between the simulator data and the workbook) was closed "no action" because the simulator did not use them. F-31 now reads `p.cut`, which is 0 on all 64 PID that have CUT 5 or 10 % in the workbook; the workbook CUT sits in `p.dh` instead. Effect: the low input cut is never applied (dMVH and TF are applied). Proposed fix: swap CUT and DH in the simulator data of the 64 PID (data only), then F-31 CUT works. Not changed: needs approval (PROJECT_RULES section 4).
+- **R-2 (Confirmed, doc only):** F-30 lists ABC-051 #22 as latched, but at run time 8 switches latch, not 9: ABC-051 #22 shares its select (net 28) with the COS selector #2, and the rule excludes that case, like the two on ABC-007. Behavior is consistent with the rule; the F-30 text should say 8 switches.
+- **R-3 (doc only):** engine block counts are higher than the audit tables: switches SW + AMT 387 (audit 327 T + 56 COS = 383), HS + LS 21 (19), F(X) 112 (111), PID + PIDV 70 (68), timers 165 (159), LAG 15 (12), SUMA 11 (7), ALM 105 (104). T2, T3, T4 now cover every instance and pass; the extra switches, 2 PID and 4 SUMA were not individually tested.
+
+### Not re-run (unchanged since their last test, or no automated check)
+Switch end-to-end sweep (327 T, 56 COS, 19 HS / LS; batch 27), loop closure of every PID (P-4), ABC-005 auto (P-2), per-sheet drawing traces, ABC-036 ~ 039 drawings, viewer labels and values on wires, user UAT (V-1 ~ V-21).

@@ -3,21 +3,21 @@
 > This is the single current handoff. Replace outdated status when work changes; do not append a cumulative chat transcript.
 
 ## Project
-DCS Logic Simulator in `Ronanski/icms-master-tool`. Runtime version v1.20.21 (shown in the simulator title and header badge).
+DCS Logic Simulator in `Ronanski/icms-master-tool`. Runtime version **v1.20.22** (`logic-sim-v1.20.22.html` in the root, shown in the simulator title and header badge). v1.20.21 is the reference build, kept unedited in `document-references/logic-sim-v1.20.21.html`; all further work is on v1.20.22.
 
 ## Current focus
 ABC analog logic audit (Cause & Effect / Golden Reference method of `docs/abc-audit/ABC-AUDIT.md`). Simplest sheets first, then the rest in batches.
 
 ## Repository state
 - Default branch `main`; work branch `claude/adoring-carson-aylw3j`. Documentation structure merged earlier through [PR #1](https://github.com/Ronanski/icms-master-tool/pull/1).
-- Only `logic-sim-v1.20.21.html` has code changes (analog reader: `anCompile`, `anInit`, `anFace`). DITL is untouched. The `.apk` and `.exe` are committed binaries and are NOT rebuilt; the repository has no build files or workflow, so they cannot be rebuilt from here. No release was made.
+- Only the root html has code changes (analog reader: `anCompile`, `anInit`, `anFace`, and the PID data `AN_DEF.FACE`); v1.20.22 differs from v1.20.21 by F-32 only (CUT / DH data). `tools/version.js` and the workflows need exactly one `logic-sim-vX.Y.Z.html` in the root. DITL is untouched. The old `logic-sim-v1.20.21.apk` / `.exe` were removed from the repository root (82 MB; the shells are released as assets of `v1.20.22` and load the site, so they carry no app logic). Workflows now exist in `.github/workflows/` (Checks, Site, Beta release, Release apk + exe, make-key) and the self-signed apk key is in `signing/`; no apk / exe build is recorded. Only Beta 1 was released (see Beta).
 - Source references are in `document-references/` (plant drawings, I/O list, memory lists, F(X), legends, parameter workbook, textbook). Do not copy them elsewhere.
 
 ## Documentation layout
 `README.md` overview · `PROJECT_RULES.md` rules and source order · this file · `docs/abc-audit/ABC-AUDIT.md` method, summary and findings index · `docs/versions/v1.20.21/` (`FINDINGS.md` evidence, `PROGRESS.md` per-sheet status, `UPDATE_REPORT.md`).
 
 ## Audit status
-- Traced and tested: ABC-005 (mostly), ABC-028, ABC-054, ABC-017, ABC-001B, ABC-056, ABC-033, ABC-013, ABC-055, ABC-014, ABC-029, ABC-004B, ABC-004C, ABC-035 to ABC-039, ABC-053, ABC-019, ABC-030, ABC-031, ABC-051, ABC-003E, ABC-011, ABC-012, ABC-004A, ABC-007, ABC-002, ABC-057, ABC-008, ABC-026, ABC-027, ABC-010, ABC-003A-D, ABC-020, ABC-050, ABC-052, ABC-015, ABC-016, ABC-001C, ABC-001D, ABC-009A, ABC-009B, ABC-001A, ABC-006, ABC-032, ABC-034, ABC-001B; structure only: ABC-001A, ABC-034; partly: ABC-006, ABC-032, ABC-008. All 89 F(X) curves checked against the workbook. Details in `PROGRESS.md`.
+- Traced and tested: ABC-005 (mostly), ABC-028, ABC-054, ABC-017, ABC-001B, ABC-056, ABC-033, ABC-013, ABC-055, ABC-014, ABC-029, ABC-004B, ABC-004C, ABC-035 to ABC-039, ABC-053, ABC-019, ABC-030, ABC-031, ABC-051, ABC-003E, ABC-011, ABC-012, ABC-004A, ABC-007, ABC-002, ABC-057, ABC-008, ABC-026, ABC-027, ABC-010, ABC-003A-D, ABC-020, ABC-050, ABC-052, ABC-015, ABC-016, ABC-001C, ABC-001D, ABC-009A, ABC-009B, ABC-001A, ABC-006, ABC-032, ABC-034, ABC-001B; partly: ABC-005. All 89 F(X) curves checked against the workbook. Details in `PROGRESS.md`.
 - Batch scan of all 54 sheets: 140 controller blocks vs the parameter workbook, 176 AI tags vs the I/O list, 15 dividers, 222 comparators, simulator Health. Everything matches except the items below.
 - Fixed and verified (user approved, evidence in `FINDINGS.md`): F-1 divider B/A (ABC-005), F-3 AI0481 range (ABC-008), F-4 unlabeled divider order (ABC-032), F-5 HIC-MWRL limits (ABC-001B), F-6 comparator set points (ABC-001A), F-7 SCALE CONVERT constants are x1 in real values (16 constants on 9 sheets; basis: the ranges printed on the drawings, e.g. 648 + 432 + 35 = 1115 T/H on ABC-006).
 - F-9: ABC-003E oil master % to burner T/H (x 3.5/100), burner ramp 5 %/min, SET X% 0.105 T/H; user to verify PTN004029 / label names (V-13).
@@ -46,12 +46,18 @@ The app shows real values (PROJECT_RULES 4a). DCS percent / count scaling is not
 - Rules to keep: audit before fixing, only change the ABC reader with evidence, never touch DITL without approval, no release or build claim without **GO STABLE** / **GO BETA**.
 
 ## Beta
-GO BETA given by the user. Beta 1 is published: GitHub pre-release `v1.20.21-beta.1` (commit fd2aab6 on `main`, PR #2) with the asset `logic-sim-v1.20.21.html`, created by the manual workflow `.github/workflows/beta-release.yml` (PR #3). The `.apk` and `.exe` were not rebuilt (no Android / Electron project or signing key in the repository) and do not contain these fixes. No Stable release.
+GO BETA given by the user. Beta 1 is published: GitHub pre-release `v1.20.21-beta.1` (commit fd2aab6 on `main`, PR #2) with the asset `logic-sim-v1.20.21.html`, created by the manual workflow `.github/workflows/beta-release.yml` (PR #3). The `.apk` and `.exe` were not rebuilt and do not contain these fixes; the release workflow for them exists but no run is recorded. No Stable release.
+
+## Regression (batch 31)
+Harness in `tools/regress/` (see its README). Current build: all 54 sheets load, timers / LAG / ALM / F-30 shutdown hold / P-1 / dMVH tests pass, F(X), parameters and AI ranges equal the workbooks. Differential run: F-28 / F-29 change nothing in the engine; F-30 changes ABC-008 only; F-31 explains the other 22 sheets that differ. R-1 (CUT of F-31 inactive because CUT / DH were swapped in the data) is fixed in v1.20.22 as F-32 (`docs/versions/v1.20.22/`): parameters equal the workbook (136 rows, 0 differences), 9 sheets differ from v1.20.21, tests S1 ~ S6 pass. R-2 / R-3 are documentation notes. Details: FINDINGS batch 31 (v1.20.21) and `docs/versions/v1.20.22/`.
+
+## Known limits (decided from the references, not user questions)
+dMVH per DTI (1 s), TF and CUT with the usual definitions; GAP (1 PID) not simulated; 25 "( FROM ABC-xxx )" inputs have no partner net (controller REM flags, HMI buttons) and stay operator inputs; viewer labels / values on wires not tested automatically. See `docs/versions/v1.20.22/FINDINGS.md`.
 
 ## Next actions
-1. User does one UAT / verification with the PDF report (V-1 ~ V-21). ABC-005 PID auto dynamics, SUMA integration and ALM limits are recorded as V-21 (not fully driven in the headless run).
+1. User acceptance test of v1.20.22 (V-1 ~ V-21 were settled with basis; V-21 closed by run P-2).
 2. Release / rebuild only on GO STABLE / GO BETA.
 
 ## Current task status
-**Done:** corrections F-1, F-3 ~ F-8 and F-9 ~ F-25; 53 of 54 sheets traced and tested (ABC-005 partly); batch scan; records updated.
-**Not done:** user verification V-1 ~ V-21 (V-21 = ABC-005 auto dynamics), rebuilds and release. The full PDF report was sent in chat.
+**Done:** corrections F-1, F-3 ~ F-32 (v1.20.22); 53 of 54 sheets traced and tested (ABC-005 partly); batch scan; regression of the current build (batch 31); records updated.
+**Not done:** user acceptance test, release of the v1.20.22 html (Beta / Stable only on GO BETA / GO STABLE). The full PDF report was sent in chat.
