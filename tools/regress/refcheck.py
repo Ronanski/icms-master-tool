@@ -2,7 +2,7 @@
 # Usage: python3 tools/regress/refcheck.py [html]
 import re,json,subprocess,sys,os,xlrd,openpyxl
 root=os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
-html=sys.argv[1] if len(sys.argv)>1 else os.path.join(root,'logic-sim-v1.20.26.html')
+html=sys.argv[1] if len(sys.argv)>1 else os.path.join(root,'logic-sim-v1.20.27.html')
 out='/tmp/refcheck-dump.json'
 subprocess.run(['node',os.path.join(root,'tools/regress/dump.js'),html,out],check=True)
 D=json.load(open(out))
