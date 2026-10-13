@@ -513,7 +513,7 @@ User answers: V-1 keep 1.3 (the printed 13 is a percent-style representation); V
 
 ### F-30 — Force-to-manual pulse must latch manual (Confirmed, fixed)
 - Basis: memory list M.0110 "FORCE TO MANUAL"; the drawing drives it from 2 s pulses (TPs); the legend defines the A/M switch with its operator station (COS). A pulse that forces a loop to manual must leave it in manual until the operator sets auto; it cannot be a level that releases after 2 s.
-- Work done: an A/M switch (COS beside the T, select from a pulse timer, no other operator-memory switch on the same select) keeps manual after the pulse until the user forces input A; 11 switches (ABC-003A #46, 003B / C / D #33, 004A #55, 008 #18, 020 #40 / #45, 051 #22 and two on ABC-007 that share their select with a COS selector and are not changed).
+- Work done: an A/M switch (COS beside the T, select from a pulse timer, no other operator-memory switch on the same select) keeps manual after the pulse until the user forces input A; 8 switches at run time (ABC-003A #46, 003B / C / D #33, 004A #55, 008 #18, 020 #40 / #45; ABC-051 #22 and two on ABC-007 share their select with a COS selector and are not changed; corrected by batch 31, R-2).
 - Result: shutdown on ABC-003A: AO0209 = 25 % and it stays (23 % < 25 % < 27 %: M.312C true). Regression: only the ABC-003A / 003B scenarios change; ABC-007 identical.
 
 ### F-31 — PID parameters TF, CUT, dMVH now simulated (Needs Verification of the exact DCS formula; closes N-5 as an implementation)

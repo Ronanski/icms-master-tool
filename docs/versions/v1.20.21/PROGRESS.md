@@ -4,17 +4,12 @@ Legend: Done = structure traced against the drawing and scenarios run; Batch = a
 
 | Sheet | Status | Detail (see `FINDINGS.md`) |
 |---|---|---|
-| ABC-005 | Mostly done | 11 tests; F-1 fixed; N-1 open (magnitudes); PID auto dynamics, SUMA integration, ALM limits not fully driven: V-21 to verify |
+| ABC-005 | Mostly done | 11 tests; F-1 fixed; N-1 closed (F-25); auto dynamics Pass in run P-2 (V-21 closed); N-2, N-4 open |
 | ABC-028 | Done | Pass |
 | ABC-054 | Done | Pass |
 | ABC-017 | Done | Pass |
-| ABC-001B | Done | Pass; RATE T chain magnitude open (N-1) |
 | ABC-056 | Done | Pass after F-7 |
-| ABC-006 | Partly | total air flow Pass after F-7; rest not traced |
-| ABC-032 | Partly | ÷ order (F-4) and SV scaling (F-7) Pass; rest not traced |
-| ABC-001A | Structure done | F-6 fixed; no numeric scenario yet |
 | ABC-033 | Done | Pass |
-| ABC-034 | Structure done | Pass; no numeric scenario yet |
 | ABC-013 | Done | Pass |
 | ABC-055 | Done | Pass |
 | ABC-014 | Done | Pass |
@@ -46,7 +41,7 @@ Legend: Done = structure traced against the drawing and scenarios run; Batch = a
 | ABC-007 | Done | Pass after F-13 (PV tags tied to the flow) |
 | ABC-004A | Done | Pass after F-11 (1/3 constant), F-12 (M.3400 input) |
 | ABC-011, ABC-012 | Done | Pass; F-10 fixed (cascade % to °C), V-14 to verify |
-| ABC-009B | Rendered, not traced | dense sheet; needs zoomed reading |
 | All F(X) tables | Done | 89 / 89 equal to the workbook |
 | ABC-000A / 000B / 000 | Not applicable | contents list and symbol legend |
-| Other 24 sheets | Batch only | parameters, AI tags, dividers, comparators, health |
+| Regression (batch 31) | Done on the current build | `tools/regress/`: all 54 sheets load, timers / LAG / ALM / F-30 / P-1 / dMVH Pass, workbook comparisons equal; R-1 open |
+| Sheets without their own row | Batch scan and block-function tests only | parameters, AI tags, dividers, comparators, health, switches, timers |

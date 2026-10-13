@@ -6,10 +6,10 @@ This is the master index for checking the simulator's ABC analog pages against t
 
 ## Current status
 
-- Overall ABC audit: **In progress — 7 sheets traced (ABC-005, 028, 054, 017, 001B, 056, 001A); all 54 batch-scanned**. Version evidence and results: `docs/versions/v1.20.21/`.
+- Overall ABC audit: **Beta 1 level — 53 of 54 sheets traced and tested (ABC-005 partly), all 54 batch-scanned, regression run on the current build (FINDINGS batch 31)**. Version evidence and results: `docs/versions/v1.20.21/`.
 - Golden Reference source set: present in `document-references/`; individual expected behaviors still require traceable verification.
-- Simulator corrections: none made by this documentation task.
-- Release status: no release authorized.
+- Simulator corrections: F-1, F-3 ~ F-31 (user approved, analog reader and viewer of `logic-sim-v1.20.21.html` only; DITL untouched). Open decision: R-1 (CUT / DH swapped in the PID data, so the CUT function of F-31 is inactive).
+- Release status: Beta 1 published (pre-release `v1.20.21-beta.1`, GO BETA from the user). No Stable release. Release workflows exist in `.github/workflows/`; the `.apk` / `.exe` in the repository root were not rebuilt with these fixes.
 
 ## Value basis
 
@@ -81,6 +81,7 @@ Do not invent numeric values, scaling ranges, formulas, tag mappings, or output 
 | ALM limits | 104 | level at both sides of each limit (batch 28) | on-delay timers of the alarms |
 | TP compensation, SQRT | – | SQRT is identity by the user's answer (V-18) | TP against `flow-compensation.xls` |
 | Viewer (UI) | switches only | lit / grey legs (F-28, F-29) | labels and values on wires |
+| Regression of the current build | all 54 sheets | `tools/regress/` (batch 31): load / step, timers, LAG, ALM, F-30 hold, P-1, dMVH, differential run against older builds, F(X) / parameters / AI ranges against the workbooks | switch end-to-end sweep, P-4, P-2 not re-run; CUT of F-31 inactive (R-1) |
 
 ## Findings and version reports
 
@@ -126,10 +127,17 @@ Do not create empty version folders. Use the app's verified version, not a versi
 | F-28 | all sheets (viewer) | View / Trace mode did not show the deselected leg of a switch (UI only) | Fixed |
 | F-29 | all sheets (viewer) | 113 switch inputs had no lit / grey leg overlay (wire ends short of the pin) | Fixed (UI only) |
 | F-30 | ABC-003A, 003B ~ D, 004A, 008, 020, 051 | Force-to-manual pulse (2 s) released the A/M switch; MV drifted after shutdown | Fixed |
-| F-31 | 68 PIDs | TF, CUT, dMVH read but not simulated (N-5) | Implemented; formula Needs Verification |
+| F-31 | 68 PIDs | TF, CUT, dMVH read but not simulated (N-5) | Implemented; formula Needs Verification; CUT inactive (R-1) |
+| R-1 | 64 PIDs | CUT and DH swapped in the simulator data (F-2), so CUT of F-31 reads 0 | Confirmed, fix proposed, needs approval |
+| R-2 / R-3 | F-30, audit counts | 8 (not 9) latched A/M switches; engine block counts higher than the audit tables | Documentation notes |
 
 Details: [v1.20.21 findings](../versions/v1.20.21/FINDINGS.md). Do not copy entire diagrams, spreadsheets, or PDFs into this document.
 
 ## Next step
 
-Finish ABC-005 (control/trip logic, address cross-checks), then ABC-004A. Audit one ABC page at a time. This document organizes the work; it does not itself certify that the logic or simulator is correct.
+1. Decide R-1 (swap CUT and DH in the data of the 64 PIDs).
+2. User verification V-1 ~ V-21 (UAT form).
+3. Read ABC-036 ~ 039 against their drawings, viewer labels / values on wires, and decide the exact DCS formula of PID TF / CUT / dMVH (F-31).
+4. Release / rebuild only on **GO STABLE** / **GO BETA**.
+
+This document organizes the work; it does not itself certify that the logic or simulator is correct.
