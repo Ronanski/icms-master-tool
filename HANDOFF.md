@@ -38,3 +38,7 @@ Second tab of the right pane (Detalye | Operator), `tools/hmi/` (hmi.css, hmi.js
 2. Releases only on **GO STABLE** / **GO BETA**; new html = new version (v1.20.27 ...). No workflow run, merge or release without the user's order in that message.
 3. If the user reports MALI lines from the UAT: reproduce on the sheet named (tools/regress, tools/uat), fix, `node tools/uat/inject.js`, push a branch (that is Beta), wait for GO STABLE.
 4. Left to the user's device test: apk / exe start, the update question (I-update ngayon / Huwag muna), the line colours (dilaw napili / abo hindi).
+
+
+## Beta v1.20.30 (branch `uat-blocks`)
+Block-by-block UAT in the app (see docs/versions/v1.20.30/UPDATE_REPORT.md). 84 of 1797 blocks mismatch the block definition (tools/uat/known.json): not triaged, Needs Verification. No release/merge done.
