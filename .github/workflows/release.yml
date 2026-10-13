@@ -1,5 +1,5 @@
 name: Release apk + exe
-# Manual. Assets: html, apk, portable exe, release report pdf, UAT form. input go must be exactly "GO v<version>" (the version in the html file name). Builds the Stable and Beta shells
+# Manual. Assets: html, apk, portable exe (one each: Stable; the app has a Stable / Beta switch inside), release report pdf, UAT form. Beta is never a release: it is the html of a pushed branch on the Beta page. input go must be exactly "GO v<version>" (the version in the html file name). Builds the Stable and Beta shells
 # (apk + portable exe). The shells load the site, so they only need a rebuild when the shell itself changes.
 # The app content is released by merging to main (Stable) or pushing a branch (Beta).
 # apk signing: signing/logic-sim.jks (self-signed, alias logicsim, made once). Never regenerate it: a new key means a reinstall.
@@ -31,7 +31,6 @@ jobs:
       matrix:
         include:
           - { chan: stable, id: com.ronanski.logicsim, name: 'Logic Sim', url: 'https://ronanski.github.io/icms-master-tool/' }
-          - { chan: beta, id: com.ronanski.logicsim.beta, name: 'Logic Sim Beta', url: 'https://ronanski.github.io/icms-master-tool/beta/' }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -65,7 +64,6 @@ jobs:
       matrix:
         include:
           - { chan: stable, name: 'Logic Sim', url: 'https://ronanski.github.io/icms-master-tool/' }
-          - { chan: beta, name: 'Logic Sim Beta', url: 'https://ronanski.github.io/icms-master-tool/beta/' }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -94,15 +92,18 @@ jobs:
           V=${{ needs.gate.outputs.version }}
           T=${{ needs.gate.outputs.tag }}
           mkdir rel
-          find out -type f -name '*.apk' -print0 | while IFS= read -r -d '' f; do c=$(basename "$f" .apk | sed 's/logic-sim-//'); cp "$f" "rel/Logic-Sim-v$V-$c.apk"; done
-          find out -type f -name '*.exe' -print0 | while IFS= read -r -d '' f; do case "$f" in *Beta*) c=beta;; *) c=stable;; esac; cp "$f" "rel/Logic-Sim-v$V-$c-portable.exe"; done
-          # old unversioned names of the first v1.20.23 upload
-          for n in "Logic.Sim-portable.exe" "Logic.Sim.Beta-portable.exe"; do gh release delete-asset "$T" "$n" -y 2>/dev/null || true; done
+          find out -type f -name '*.apk' -print0 | while IFS= read -r -d '' f; do cp "$f" "rel/Logic-Sim-v$V.apk"; done
+          find out -type f -name '*.exe' -print0 | while IFS= read -r -d '' f; do cp "$f" "rel/Logic-Sim-v$V-portable.exe"; done
+          # no Beta in the releases: remove beta assets and beta pre-releases of earlier uploads
+          for r in $(gh release list --json tagName -q '.[].tagName'); do
+            for n in $(gh release view "$r" --json assets -q '.assets[].name' | grep -i beta || true); do gh release delete-asset "$r" "$n" -y || true; done
+          done
+          for r in $(gh release list --json tagName,isPrerelease -q '.[] | select(.isPrerelease) | .tagName'); do gh release delete "$r" -y --cleanup-tag || true; done
           cp "logic-sim-v$V.html" rel/
           cp "docs/versions/v$V/Release-Report-v$V.pdf" rel/
           cp "docs/versions/v$V/UAT-v$V.html" rel/
           ls rel
-          NOTES="Stable v$V. Files: logic-sim-v$V.html (the simulator), Logic-Sim-v$V-stable.apk and Logic-Sim-v$V-beta.apk, Logic-Sim-v$V-stable-portable.exe and Logic-Sim-v$V-beta-portable.exe (Stable and Beta apps load the site and update by themselves), Release-Report-v$V.pdf (what changed and what was checked), UAT-v$V.html (the acceptance test form, open it in the phone or tablet browser)."
+          NOTES="Stable v$V. Files: logic-sim-v$V.html (the simulator), Logic-Sim-v$V.apk (Android), Logic-Sim-v$V-portable.exe (Windows, portable). The apps load the site and update by themselves; inside the app, the Channel box (top right) switches between Stable and Beta. Release-Report-v$V.pdf (what changed and what was checked), UAT-v$V.html (the acceptance test form, open it in the phone or tablet browser)."
           if gh release view "$T" >/dev/null 2>&1; then
             gh release upload "$T" rel/* --clobber
           else

@@ -1,0 +1,7 @@
+# Update Report — v1.20.24
+
+- **Problem:** The Releases section carried two apps (Stable and Beta apk / exe), so the user had two installs of the same app. Beta is only the testing phase of each fix; Stable comes from the user.
+- **As Found:** v1.20.23: `release.yml` built Stable and Beta shells and published all four files; the app had no way to choose a channel.
+- **Work Done:** `logic-sim-v1.20.24.html` adds a **Channel** box (Stable / Beta) in the top bar, only on the GitHub Pages address: the choice is remembered in the browser storage; the Stable address redirects to `/beta/` when Beta is chosen, and the Beta page can switch back. The apk / exe (which open the Stable address) therefore follow the chosen channel. `release.yml` builds one apk and one portable exe (Stable) and no longer publishes Beta; it also removes beta assets and pre-releases of earlier uploads (v1.20.23 beta files, pre-release `v1.20.21-beta.1`). Beta stays what `site.yml` publishes from a pushed branch at `/beta/`. No change to the ABC logic.
+- **As Left:** Test with a simulated Pages address: Stable page shows "Channel: Stable"; choosing Beta opens `/beta/` and the box shows Beta; opening the Stable address again redirects to Beta; choosing Stable returns. `tests.js` passes. Release: `Logic-Sim-v1.20.24.apk`, `Logic-Sim-v1.20.24-portable.exe`, html, release report, UAT form.
+- **Status:** Stable release v1.20.24 (GO STABLE of the user applies to the current work; the user decides each Stable). Apk / exe on a device: user acceptance test.
