@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Logic Sim v1.20.21</title>
+<title>Logic Sim v1.20.22</title>
 <style>
 :root{--bg:#0f1418;--panel:#161d23;--line:#2a3640;--tx:#d7e0e6;--dim:#7d8e9a;--acc:#4fd18b;--sel:#38c9ff;--live:#ff4d4d;--lives:rgba(255,77,77,.30)}
 *{box-sizing:border-box}html,body{height:100%;margin:0;background:var(--bg);color:var(--tx);font:13px 'Segoe UI',system-ui,sans-serif}
@@ -2328,7 +2328,7 @@ document.head.appendChild(Object.assign(document.createElement('style'),{id:'ski
  const chip=document.createElement('div');chip.id='stchip';const c1=document.createElement('span'),c2=document.createElement('span'),c3=document.createElement('span');chip.append(c1,c2,c3);
  const gs=document.getElementById('gsbar');if(gs){gs.append(chip,sel)}
  const upd=()=>{try{const an=AN.cat==='an';let m,k='';if(an){m=AN.view?'VIEW / TRACE':AN.run?'RUN':'PAUSED';k=AN.view?'view':AN.run?'run':''}else{m=SIM?'SIMULATE':'EDIT';k=SIM?'run':''}
-   c1.textContent=m;c1.className=k;const sh=an?AN.sheets[AN.i]:S.sheets[S.cur];c2.textContent=sh&&sh.name?sh.name:'';c3.textContent='v1.20.21'}catch(e){}};upd();setInterval(upd,400)}
+   c1.textContent=m;c1.className=k;const sh=an?AN.sheets[AN.i]:S.sheets[S.cur];c2.textContent=sh&&sh.name?sh.name:'';c3.textContent='v1.20.22'}catch(e){}};upd();setInterval(upd,400)}
 function anSide(){const sd=SC(),tg=$('sidetg');{const f=$('sidefl');if(f){if(AN._ph===undefined)AN._ph=f.placeholder;f.placeholder='Search sheets (001A, 57, DRUM, FURNACE...)'}}sd.classList.toggle('min',SIDEMIN==='1');tg.textContent=SIDEMIN==='1'?'▶':'◀';$('sidect').textContent='Analog sheets ('+AN.sheets.length+')';
  const c=cs();$('sidevt').textContent=c?c.name+'  ·  '+(anOrd().indexOf(AN.i)+1)+'/'+AN.sheets.length:'Analog';
  anSortUi();const key=AN.sheets.map(s=>s.name).join('|')+'#'+AN.fl+'#'+AN.sm;

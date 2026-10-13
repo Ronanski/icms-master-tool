@@ -55,3 +55,8 @@ GO BETA given by the user. Beta 1 = `logic-sim-v1.20.21.html` on branch `claude/
 ## Current task status
 **Done:** corrections F-1, F-3 ~ F-8 and F-9 ~ F-25; 53 of 54 sheets traced and tested (ABC-005 partly); batch scan; records updated.
 **Not done:** user verification V-1 ~ V-21 (V-21 = ABC-005 auto dynamics), rebuilds and release. The full PDF report was sent in chat.
+
+## 2026-10-13 - standalone app build in THIS repo (no dependency on dcs-logic-sim)
+- The html is now `logic-sim-v1.20.22.html` (audit fixes F-1..F-31). Site: `checks.yml` -> `site.yml` publishes Stable (main) at `/` and Beta (pushed branch) at `/beta/` on GitHub Pages (Settings > Pages > Source = GitHub Actions, once).
+- Shells: `app/` (Electron portable exe) and `android-app/` (Capacitor apk) load the site, so they update by themselves; two of each (Stable, Beta, different app id). Built by `release.yml` (input `GO v1.20.22`, `dry_run`).
+- apk signing needs the repository secrets ANDROID_KEYSTORE_B64 and ANDROID_KS_PASS (no key in the repo yet). Old committed apk / exe removed. Not tested: builds on GitHub, apk / exe on a device.
