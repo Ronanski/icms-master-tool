@@ -5,7 +5,7 @@ const DATA=JSON.parse(document.getElementById('uatdata').textContent),VER=DATA.v
 let R={};try{R=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(R))}catch(e){}};
 const E=(t,a,c)=>{const e=document.createElement(t);if(a)for(const k in a){if(k==='txt')e.textContent=a[k];else if(k==='cls')e.className=a[k];else if(k==='on')e.onclick=a[k];else e.setAttribute(k,a[k])}(c||[]).forEach(x=>e.append(x));return e};
 const css=E('style',{txt:`#uatb{position:fixed;left:8px;bottom:36px;z-index:50;background:#1d3a2b;color:#bfe3cc;border:1px solid #6fbf8f;padding:8px 14px;border-radius:8px;font:600 14px system-ui;cursor:pointer}
-#uatp{position:fixed;right:0;top:0;bottom:0;width:min(420px,100vw);z-index:60;background:#10151a;color:#dbe5ec;border-left:1px solid #2a3743;overflow:auto;font:14px/1.4 system-ui;padding:10px 12px 40px;display:none}
+#uatp{position:fixed;left:0;top:0;bottom:0;width:min(400px,100vw);z-index:60;background:#10151a;color:#dbe5ec;border-right:1px solid #2a3743;overflow:auto;font:14px/1.4 system-ui;padding:10px 12px 40px;display:none}
 #uatp h3{margin:0 0 4px;font-size:16px;color:#6aaee0}#uatp .sub{color:#8a9aa6;font-size:12px;margin-bottom:8px}
 #uatp .sc{background:#18212a;border:1px solid #2a3743;border-radius:8px;padding:8px 10px;margin:10px 0}#uatp .sc.act{border-color:#6aaee0}
 #uatp button{background:#18212a;color:#dbe5ec;border:1px solid #2a3743;padding:8px 12px;border-radius:6px;font:inherit;cursor:pointer}
@@ -18,7 +18,14 @@ const btn=E('button',{id:'uatb',txt:'UAT',on:()=>{P.style.display=P.style.displa
 const P=E('div',{id:'uatp'});document.body.append(btn,P);
 const sheet=()=>AN.sheets[AN.i];const fmt=x=>x==null||!isFinite(x)?'—':Math.abs(x)>=100?x.toFixed(0):Math.abs(x)>=10?x.toFixed(1):x.toFixed(2);
 let act=null,lastSheet=null;
-function find(n){const sh=sheet(),S=sh.S,net=S.nets[n];if(!net)return;const g=S.seg[net.segs[0]];if(!g)return;const v=AN.av&&AN.av[sh.name];if(v){const w=Math.min(v[2],140),h=v[3]*w/v[2];v[2]=w;v[3]=h;v[0]=g.x1-w/2;v[1]=-g.y1-h/2;document.querySelector('svg').setAttribute('viewBox',v.join(' '))}AN.sel={net:n};try{AN.selBox()}catch(e){}try{AN.paint()}catch(e){}}
+function find(n){const sh=sheet(),S=sh.S,net=S.nets[n];if(!net)return;
+ const anp=document.getElementById('anp');if(!anp||anp.getBoundingClientRect().width<5){const pb=[...document.querySelectorAll('button')].find(x=>x.textContent.trim()==='Panel');if(pb)pb.click()}
+ AN.sel={net:n};try{AN.selBox()}catch(e){}try{AN.paint()}catch(e){}
+ const g=S.seg[net.segs[0]];if(!g)return;const gx=(g.x1+g.x2)/2,gy=(g.y1+g.y2)/2;
+ const svg=document.getElementById('svg'),r=svg.getBoundingClientRect(),v=AN.av&&AN.av[sh.name];if(!v)return;const upx=v[2]/r.width;
+ const visL=P.style.display==='block'?Math.max(0,P.getBoundingClientRect().right-r.left):0,ap=document.getElementById('anp'),visR=r.width-(ap?Math.max(0,r.right-ap.getBoundingClientRect().left):0);
+ const cx=(visL+Math.max(visL+50,visR))/2;v[0]=gx-cx*upx;v[1]=-gy-(r.height/2)*upx;svg.setAttribute('viewBox',v.join(' '));
+ const old=svg.querySelector('#uatring');if(old)old.remove();const ring=document.createElementNS('http://www.w3.org/2000/svg','circle');ring.setAttribute('id','uatring');ring.setAttribute('cx',gx);ring.setAttribute('cy',-gy);ring.setAttribute('r',18*upx);ring.setAttribute('fill','none');ring.setAttribute('stroke','#ffe14a');ring.setAttribute('stroke-width',3*upx);ring.setAttribute('pointer-events','none');svg.append(ring);setTimeout(()=>ring.remove(),6000)}
 function setup(i){const sh=sheet(),sc=SC[sh.name][i],S=AN.ensure(sh);AN.reset();S.rt.force={};for(const n in sc.force)S.rt.force[n]=sc.force[n];for(const n in sc.ext)S.rt.ext[n]=sc.ext[n];for(const id in sc.fm){const st=S.rt.st[id];if(st)st.fm=sc.fm[id]}
  act={name:sh.name,i,t0:S.rt.t};if(!AN.run){const b=[...document.querySelectorAll('button')].find(x=>/Run/.test(x.textContent)&&/▶/.test(x.textContent));if(b)b.click()}draw()}
 function rowState(sc,r,S,done){const a=S.rt.v[r.k];const ok=isFinite(a)&&Math.abs(a-r.v)<=r.tol;return{a,ok}}
@@ -45,7 +52,10 @@ function build(){const sh=sheet(),L=SC[sh.name]||[];P.dataset.sheet=sh.name;P.da
  const tot=Object.keys(SC).length;let fnc=0;for(const n in SC){const s=sheetStat(n);if(s.n&&s.ok===s.n)fnc++}
  const s0=sheetStat(sh.name);
  P.append(E('div',{cls:'row'},[E('h3',{txt:sh.name+(s0.n&&s0.ok===s0.n?'  FUNCTIONAL ✓':'')}),E('button',{txt:'✕',on:()=>{P.style.display='none'}})]));
- P.append(E('div',{cls:'sub',txt:fnc+' / '+tot+' sheet FUNCTIONAL · pumili ng sheet sa kaliwa, tapos gawin ang mga scenario sa baba. I-click ang SETUP: ako na ang bahala sa reset, force at set point.'}));
+const names=Object.keys(SC),pos=names.indexOf(sh.name);const go=k=>{const nm=names[(pos+k+names.length)%names.length];AN.go(AN.sheets.findIndex(x=>x.name===nm))};
+ const sel=E('select',{});names.forEach(nm=>{const o=E('option',{txt:nm+(sheetStat(nm).n&&sheetStat(nm).ok===sheetStat(nm).n?' ✓':'')});o.value=nm;sel.append(o)});sel.value=sh.name;sel.onchange=()=>AN.go(AN.sheets.findIndex(x=>x.name===sel.value));
+ P.append(E('div',{cls:'row'},[E('button',{txt:'◀',on:()=>go(-1)}),sel,E('button',{txt:'▶',on:()=>go(1)})]));
+ P.append(E('div',{cls:'sub',txt:fnc+' / '+tot+' sheet FUNCTIONAL · pumili ng sheet sa itaas (◀ ▶). I-click ang SETUP: ako na ang bahala sa reset, force at set point. Ang 📍 ay dadalhin ka sa tag at bubuksan ang monitor sa kanan, hindi nagbabago ang zoom.'}));
  P.append(E('div',{cls:'sc'},[E('b',{txt:'Pinakamabilis: walang gagawin'}),E('div',{cls:'sub',txt:'Ang AUTO-TEST ay ako ang gumagawa ng setup at pagbabasa sa lahat ng sheet. Mga 1 ~ 3 minuto. Mamaya, ang mga HINDI TUGMA lang ang titingnan mo.'}),E('div',{cls:'row'},[E('button',{cls:'go',txt:'▶ AUTO-TEST LAHAT',on:()=>{autoAll()}}),E('button',{txt:'Kulay: OK lahat',on:()=>{looksOk()}})]),E('div',{cls:'big w',txt:autoMsg})]));
  if(!L.length)P.append(E('div',{txt:'Walang scenario ang sheet na ito (legend / contents).'}));
  L.forEach((sc,i)=>{const on=act&&act.name===sh.name&&act.i===i,r=R[id(i)]||{};const box=E('div',{cls:'sc'+(on?' act':'')});
