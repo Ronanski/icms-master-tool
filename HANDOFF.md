@@ -10,7 +10,7 @@ ABC analog logic audit (Cause & Effect / Golden Reference method of `docs/abc-au
 
 ## Repository state
 - Default branch `main`; work branch `claude/adoring-carson-aylw3j`. Documentation structure merged earlier through [PR #1](https://github.com/Ronanski/icms-master-tool/pull/1).
-- Only `logic-sim-v1.20.21.html` has code changes (analog reader: `anCompile`, `anInit`, `anFace`). DITL is untouched. The `.apk` and `.exe` are committed binaries and are NOT rebuilt with these fixes. Workflows now exist in `.github/workflows/` (Checks, Site, Beta release, Release apk + exe, make-key) and the self-signed apk key is in `signing/`; no apk / exe build is recorded. Only Beta 1 was released (see Beta).
+- Only `logic-sim-v1.20.21.html` has code changes (analog reader: `anCompile`, `anInit`, `anFace`). DITL is untouched. The old `logic-sim-v1.20.21.apk` / `.exe` were removed from the repository root (82 MB; the shells are released as assets of `v1.20.22` and load the site, so they carry no app logic). Workflows now exist in `.github/workflows/` (Checks, Site, Beta release, Release apk + exe, make-key) and the self-signed apk key is in `signing/`; no apk / exe build is recorded. Only Beta 1 was released (see Beta).
 - Source references are in `document-references/` (plant drawings, I/O list, memory lists, F(X), legends, parameter workbook, textbook). Do not copy them elsewhere.
 
 ## Documentation layout

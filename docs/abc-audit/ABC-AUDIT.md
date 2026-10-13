@@ -9,7 +9,7 @@ This is the master index for checking the simulator's ABC analog pages against t
 - Overall ABC audit: **Beta 1 level — 53 of 54 sheets traced and tested (ABC-005 partly), all 54 batch-scanned, regression run on the current build (FINDINGS batch 31)**. Version evidence and results: `docs/versions/v1.20.21/`.
 - Golden Reference source set: present in `document-references/`; individual expected behaviors still require traceable verification.
 - Simulator corrections: F-1, F-3 ~ F-31 (user approved, analog reader and viewer of `logic-sim-v1.20.21.html` only; DITL untouched). Open decision: R-1 (CUT / DH swapped in the PID data, so the CUT function of F-31 is inactive).
-- Release status: Beta 1 published (pre-release `v1.20.21-beta.1`, GO BETA from the user). No Stable release. Release workflows exist in `.github/workflows/`; the `.apk` / `.exe` in the repository root were not rebuilt with these fixes.
+- Release status: Beta 1 published (pre-release `v1.20.21-beta.1`, GO BETA from the user). No Stable release. Release workflows exist in `.github/workflows/`; the old `.apk` / `.exe` were removed from the repository root; the shells are the assets of release `v1.20.22` and load the site. The base file `logic-sim-v1.20.21.html` stays in the root (Site, Release and `tools/version.js` need it).
 
 ## Value basis
 
