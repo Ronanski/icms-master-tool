@@ -474,3 +474,8 @@ User answers: V-1 keep 1.3 (the printed 13 is a percent-style representation); V
 ### F-27 — ABC-001A "> 0.1 %" comparators M.2004 / M.2006 (Confirmed, fixed)
 - Basis: the deviation block output is compared as a percent of the 0.0 ~ 200.0 MW range printed on the setters (same principle as F-23): 0.1 % of 200 MW = 0.2 MW.
 - Work done: set point 0.2 MW on both comparators (ABC-001A only).
+
+## Batch 25 — V-2, V-3, V-12 closed from the references
+- **V-2 (ABC-005, SI0337):** `memory-list-101.xls` STN101(SI): SI0336 = "LIMESTONE ROTARY FEEDER SPEED ACROSS DENSITY MODIFICATION" (feeder speed × density, the SUMA input wire) and SI0337 = "Stack outlet flue gas SOx ctl OMV". The drawing prints SI0337 on the wire from the DENSITY CORRECTION ÷ into the OMV Σ and SI0336 on the wire to the SUMA. The app labels match the drawing and the memory list. Verdict: Pass, no change.
+- **V-3 (AB0114 / AB0115 / AB0116):** these are HMI (COS) setup values; AB addresses are not in the I/O list or in any memory list (AB0117, "TARGET MW" on ABC-001A, is also missing; its mirror is SI0243 "TARGET MW FROM DCS"). Not a defect; the app lets the user type them (ranges on the drawing). Verdict: Pass (Cannot Verify the address only).
+- **V-12 (process model drives some PV):** simulator design, not ABC logic: a PV that the app's process model drives overwrites a value typed into its AI; use Force on the wire to hold a value. No change.
