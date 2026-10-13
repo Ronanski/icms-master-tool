@@ -42,6 +42,7 @@ For each ABC page or test case:
    - **Needs Verification** — evidence is incomplete, ambiguous, or conflicting.
    - **Cannot Verify** — required source or reproducible simulator behavior is unavailable.
 7. Record any discrepancy without changing logic until its cause and the proposed fix are reviewed and approved.
+8. Viewer check (added after F-28 / F-29): the test cases read net values, so they do not see what the analog viewer draws. For each page also check the drawn result in RUN mode: the energized leg of every switching block (T, A/M, HI / LO selector) is lit and the de-energized leg is grey, wire labels and values sit on the right wire, and the tracing view follows the same legs. Record these as viewer findings (UI only).
 
 ## Golden Reference test-case fields
 
