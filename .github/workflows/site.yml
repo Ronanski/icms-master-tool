@@ -24,6 +24,7 @@ jobs:
           cp "$S" site/index.html; cp "$B" site/beta/index.html
           sv=$(echo "$S" | grep -o 'v[0-9.]*[0-9]'); bv=$(echo "$B" | grep -o 'v[0-9.]*[0-9]')
           echo "{\"stable\":\"$sv\",\"beta\":\"$bv\"}" > site/version.json
+          for f in sw.js manifest.webmanifest icon-192.png icon-512.png; do cp "stable/$f" site/; cp "beta/$f" site/beta/ 2>/dev/null || cp "stable/$f" site/beta/; done
           touch site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
