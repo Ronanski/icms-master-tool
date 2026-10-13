@@ -46,7 +46,7 @@ The app shows real values (PROJECT_RULES 4a). DCS percent / count scaling is not
 - Rules to keep: audit before fixing, only change the ABC reader with evidence, never touch DITL without approval, no release or build claim without **GO STABLE** / **GO BETA**.
 
 ## Beta
-GO BETA given by the user. Beta 1 = `logic-sim-v1.20.21.html` on branch `claude/adoring-carson-aylw3j`. The tag `v1.20.21-beta.1` could not be pushed (HTTP 403) and no GitHub Release was created; create the tag / Release on GitHub from the latest commit of that branch. The `.apk` and `.exe` were not rebuilt (no build files, project or signing key in the repository) and do not contain these fixes. No Stable release.
+GO BETA given by the user. Beta 1 is published: GitHub pre-release `v1.20.21-beta.1` (commit fd2aab6 on `main`, PR #2) with the asset `logic-sim-v1.20.21.html`, created by the manual workflow `.github/workflows/beta-release.yml` (PR #3). The `.apk` and `.exe` were not rebuilt (no Android / Electron project or signing key in the repository) and do not contain these fixes. No Stable release.
 
 ## Next actions
 1. User does one UAT / verification with the PDF report (V-1 ~ V-21). ABC-005 PID auto dynamics, SUMA integration and ALM limits are recorded as V-21 (not fully driven in the headless run).
