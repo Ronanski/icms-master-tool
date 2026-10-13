@@ -80,3 +80,8 @@ Before reporting completion:
 - List remaining issues and the next concrete action.
 - Use precise statuses: Confirmed, Suspected, Needs Verification, Cannot Verify, Pass, or Fail.
 - Do not call a task complete merely because documentation was written.
+
+## 5b. Only this repository (user, 2026-10-13)
+- Work ONLY in Ronanski/icms-master-tool. Do not read, run, copy from, push to or change any other repository (including Ronanski/dcs-logic-sim), and do not run its tools. If something is needed from another repo, say so and wait for the user.
+- The apk / exe are built and released from this repository (release.yml); they load this repository's Pages site (Stable and Beta).
+- Record: before this rule, two commits were pushed by mistake to the working branch of dcs-logic-sim (9c18f57, 3492cbf) and the branch claude/v1.20.22-abc-audit was created there. They are left as they are; the user decides.

@@ -67,3 +67,6 @@ GO BETA given by the user. Beta 1 = `logic-sim-v1.20.21.html` on branch `claude/
 - Regression on the final html (tools of the dcs-logic-sim clone, read only): blocks, comparators, cos, switch-return, reset-rate, loops, verify-ab/sel/range, legend, links, pid, pid-all, math, rate, fixes, force-all, xsheet-flag, path, xref = rc 0. plant = rc 1 (same as v1.20.21), links-all = timeout (same as v1.20.21).
 - test-pidsign: 7 PROBLEM lines that v1.20.21 does not have. Cause: F-31 (PV filter TF) makes the P term lag in the 0.5 s test, the sign itself is right. F-31 stays "Needs Verification" (no formula in the repo).
 - Still open: ABC-036..039 drawing images not read; 11 cross-sheet inputs that are operator inputs; 9 PID loops need O2 trim / CCS setup; apk / exe not run on a device.
+
+## Rule (user, 2026-10-13): STRICTLY this repository only
+See PROJECT_RULES.md section 5b. No test or tool from another repo is used any more. The regression tools of this repo still have to be written here (not yet done).
