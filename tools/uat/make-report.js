@@ -3,9 +3,9 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/node22/lib/node_mo
 const ver=require('fs').readdirSync('.').find(x=>/^logic-sim-v\d+\.\d+\.\d+\.html$/.test(x)).match(/v(\d+\.\d+\.\d+)/)[1];
 const cards=[
 ['Ano ang laman ng release','Stable',[
- ['Mga file',`logic-sim-v${ver}.html (ang simulator) · Logic-Sim-v${ver}.apk (Android) · Logic-Sim-v${ver}-portable.exe (Windows) · ang report na ito · UAT-v${ver}.html (ang form na sasagutan mo). Isang apk at isang exe lang: Stable.`],
+ ['Mga file',`logic-sim-v${ver}.html (ang simulator) · Logic-Sim-v${ver}.apk (Android) · Logic-Sim-v${ver}-portable.exe (Windows) · ang report na ito. Isang apk at isang exe lang: Stable. Ang UAT ay nasa loob na ng app.`],
  ['Auto-update at Channel','Ang apk at exe ay naglo-load ng site, kaya nag-a-update sila nang kusa; hindi na kailangang mag-install ulit. Sa loob ng app, sa taas-kanan, may kahon na "Channel: Stable / Beta": ikaw ang pipili. Naaalala ito ng app. Ang Stable ay galing sa main (ikaw ang magpapasya kung kailan). Ang Beta ay para sa pagsubok ng bawat bagong ayos, galing sa branch, at wala sa Releases.'],
- ['Bersyon',`v${ver}: bagong sa bersyong ito ang Channel box (Stable / Beta) sa loob ng app at isang apk/exe lang sa Releases. Ang v1.20.21 ay reference lang (document-references/), hindi ginalaw.`]]],
+ ['Bersyon',`v${ver}: may UAT na sa loob ng app (berdeng UAT button), may Channel box (Stable / Beta), at isang apk/exe lang sa Releases. Ang v1.20.21 ay reference lang (document-references/), hindi ginalaw.`]]],
 ['Mga naayos sa ABC sheets (sa simpleng salita)','Tapos',[
  ['Mga unit at value','Ang simulator ay nagpapakita ng totoong value (T/H, kg/cm², MW, °C, %, rpm), hindi ng DCS count. Inayos ang paghahalo ng % at T/H sa ABC-001C, 003A–E, 005, 006, 008, 009A/B, 010, 011/012, 002, 057 (F-7 hanggang F-25).'],
  ['Pagpili ng switch','Tama na ang leg na pinipili ng T switch at A/M selector ayon sa label na "1:a / 1:b" (F-19). Ang BU-CMD interlock ay sinusundan ng PID (F-26). Ang force-to-manual pulse ay nananatiling manual (ABC-003A AO0209 = 25 % pagkatapos ng shutdown, F-30). Ang T switch ay walang memory; ang A/M switch ay may (F-34).'],
@@ -21,8 +21,8 @@ const cards=[
  ['Operator input','Ang mode input (.MAN / .LOC / .REM), HMI push button (M.008C/D), CRT mode ng ABC-057, at DITL signal (M.3400 hanggang M.3405) ay galing sa operator o sa DITL. Ikaw ang magse-set sa RUN, hindi ito kabilang sa link ng sheets.'],
  ['Mga pagpapalagay','dMVH ay kada 1 s (DTI) bilang % ng MV range. TF ay first-order filter. CUT ay low cut. GAP ay dead zone ng error. Walang formula sa repo, kaya karaniwang depinisyon ang ginamit. ABC-036 hanggang 039 ay kopya ng ABC-035 (parehong netlist).'],
  ['Mga loop','Ang ilang loop ay hindi magsasara hangga\'t hindi naka-on ang fan, burner o feeder, o hindi naka-auto ang boiler master. Hindi ito bug.']]],
-['Susunod: ang UAT mo','Gawin mo',[
- ['Paano',`Buksan ang UAT-v${ver}.html sa phone o tablet. Pindutin ang OK o MALI sa bawat linya. Sa dulo, "Kopyahin ang mga MALI" at i-paste sa chat. Ayusin ko ang bawat MALI.`]]]
+['Susunod: ang UAT mo (nasa loob ng app)','Gawin mo',[
+ ['Paano',`Buksan ang app at pindutin ang berdeng UAT button (kaliwa-baba). Pumili ng sheet. Sa bawat scenario pindutin ang SETUP: ako na ang bahala sa reset, force, switch at set point, at tumatakbo na ang simulation. Makikita mo ang DAPAT katabi ng NGAYON, at sasabihin ng app kung TUGMA o HINDI TUGMA. Pindutin lang ang OK o MALI. Ang 📍 ay naghahanap ng tag sa diagram. Kapag OK lahat ng scenario ng sheet, FUNCTIONAL na ang sheet. Sa dulo: Kopyahin ang mga MALI at i-paste sa chat.`]]]
 ];
 const html=`<!doctype html><meta charset="utf-8"><style>
 @page{size:A4 portrait;margin:14mm}*{box-sizing:border-box}body{background:#10151a;color:#dbe5ec;font:11pt/1.45 'DejaVu Sans',Arial,sans-serif;margin:0}
