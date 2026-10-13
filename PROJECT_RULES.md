@@ -48,6 +48,10 @@ Trace the complete path from input through blocks to output, including cross-pag
 - Never claim that HTML, portable EXE, or APK was built or tested unless it was actually done and evidence is available.
 - Keep the existing version naming convention. Do not infer the runtime version solely from a filename.
 
+## 4a. Value basis (user decision)
+
+The simulator shows **real values** (T/H, kg/cm², MW, %, °C). It does not simulate the DCS percent-of-range or count scaling (100 % = 10000). Where a drawing constant exists only for that scaling (SCALE CONVERT a/b, ×10000 and similar), the scaling is done **as a user would**, so the real value appears on screen. Each such change is recorded as a finding with its basis (the ranges and labels printed on the drawing, the reference workbooks) and listed for the user's verification.
+
 ## 5. Repository documentation — keep it clean
 
 Maintain only these central documents unless the project genuinely needs more:
@@ -59,6 +63,14 @@ Maintain only these central documents unless the project genuinely needs more:
 Create version-specific findings/progress/update reports only when there is actual work or evidence to record. Use one version folder per verified app version under `docs/versions/<version>/`; do not create empty placeholder files or duplicate the same status in multiple places. Keep large source PDFs, spreadsheets, ZIPs, and application binaries in their existing locations; do not copy them into documentation folders.
 
 After every meaningful task, update `HANDOFF.md` before finishing. For version-specific work, record findings and progress with evidence, and maintain the update report fields: Problem, As Found, Work Done, As Left, Status.
+
+## 5a. Report documents for the user (PDF / chat)
+
+- Language: Taglish (Tagalog with the usual English technical terms and tags), short sentences, plain words.
+- Layout: portrait A4, large type (body 10 pt or more), one item per card (Problem, As Found, Work Done, As Left, Status, Where, What to verify). No wide tables; the user reads on a phone or tablet.
+- Colors: dark background with soft light text (no bright white page); status colors muted (green Pass, amber Needs Verification, red Fail).
+- Content: say where in the diagram (sheet, tag, area) and what to type / expect; list the items needing user verification separately and last.
+- No release or build claim without GO STABLE / GO BETA.
 
 ## 6. Completion and communication
 
