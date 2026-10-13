@@ -20,3 +20,11 @@ Earlier findings F-1 ~ F-31 and batches 1 ~ 31: `docs/versions/v1.20.21/FINDINGS
 - 25 inputs written "( FROM ABC-xxx )" on the drawings have no partner net in the other sheet's netlist (controller REM flags such as FICFA1043A.REM, HMI push buttons, M.3405, and others). They stay operator inputs in RUN.
 - AB0114 ~ AB0117 addresses are in no list (Cannot Verify the address only).
 - Viewer labels and values on wires were not tested automatically.
+
+## F-33 — Percent rate compounded at every Reset (Confirmed, fixed)
+- `anInit` runs at every Reset and converted `rate` from the already converted value (`rate = rate * span / 100` each time). Now the drawn percentage is kept in `ratePct0` and the rate is always `ratePct0 * span / 100`. Source: earlier v1.20.22 session; applied here by the same one-line change.
+
+## F-34 — T switch without memory (Confirmed, fixed, SW only)
+- A T switch (`SW`) with COS conditions kept its last leg when no condition was active; it follows its condition (`pickB = wB`). The A/M switch (`AMT`) keeps the last leg (batch 26 addendum, F-30 latch). The earlier session removed the memory from both; here only `SW`.
+- Not taken from that session: dropping F-24. With F-24 the same cross-sheet signals are linked as net links instead of flag links (228 vs 224 links, nothing lost), and B.0733 / B.074B on ABC-006 stay tied.
+- After both changes: `tests.js` T1 ~ T4, S1 ~ S6 pass.
