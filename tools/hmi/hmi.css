@@ -1,0 +1,29 @@
+/* Operator faceplate (mini HMI) in the right pane: a second tab next to the detailed pane. UI only. */
+.hmitabs{display:flex;gap:6px;padding:8px 10px 0;position:sticky;top:0;z-index:5;background:inherit}
+.hmitabs button{flex:1;height:34px;border-radius:8px 8px 0 0;border:1px solid var(--line,#2a3640);border-bottom:0;background:#121a20;color:#9fb0bb;font:600 13px system-ui;cursor:pointer}
+.hmitabs button.on{background:#1b2a35;color:#fff;border-color:#4fd18b}
+body.ophmi #anp{display:none!important}
+#opp{display:none;flex-direction:column;width:380px;flex:none;background:var(--panel,#161d23);border-left:1px solid var(--line,#2a3640);overflow:auto;color:var(--tx,#d7e0e6);font:13px/1.4 system-ui}
+#opp .body{padding:8px 10px 40px}
+#opp h4{margin:14px 0 6px;font:700 11px system-ui;letter-spacing:.09em;text-transform:uppercase;color:#7d8e9a}
+#opp .hdr{font:700 15px system-ui;color:#fff}#opp .sub{color:#8fa0ab;font-size:12px;margin:2px 0 6px}
+#opp .fp{background:#10181e;border:1px solid #2c3d49;border-radius:10px;padding:8px 10px;margin:8px 0}
+#opp .fp .tg{display:flex;justify-content:space-between;align-items:baseline;gap:8px}#opp .fp .tg b{font-size:15px;color:#fff}#opp .fp .tg span{color:#8fa0ab;font-size:11px;text-align:right}
+#opp .dg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+#opp .dg div{background:#0b1217;border:1px solid #243642;border-radius:8px;padding:4px 8px}
+#opp .dg small{display:block;color:#7d8e9a;font-size:10px;letter-spacing:.06em}#opp .dg b{font:700 20px ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+#opp .pv b{color:#ffd84a}#opp .sv b{color:#5cc8ff}#opp .mv b{color:#6fe3a0}
+#opp .bar{height:8px;background:#0b1217;border:1px solid #243642;border-radius:5px;position:relative;margin:3px 0}
+#opp .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}#opp .bar u{position:absolute;top:-3px;bottom:-3px;width:2px;background:#5cc8ff}
+#opp .row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 0}
+#opp button.b{height:34px;padding:0 12px;border-radius:8px;border:1px solid #2f4a5a;background:#17232c;color:#dbe5ec;font:600 13px system-ui;cursor:pointer}
+#opp button.b.on{background:#1d6b45;border-color:#3fae78;color:#fff}#opp button.b.man.on{background:#7a5a14;border-color:#d8b860}
+#opp button.b.fon{background:#6b3b12;border-color:#ff9d2e;color:#ffd9a8}
+#opp input.n{width:84px;height:32px;background:#0b1217;color:#fff;border:1px solid #2c3d49;border-radius:6px;padding:0 6px;font:600 14px ui-monospace,Consolas,monospace;text-align:right}
+#opp svg.tr{width:100%;height:96px;background:#0b1217;border:1px solid #243642;border-radius:8px;display:block}
+#opp .lg{font-size:11px;color:#8fa0ab;display:flex;gap:10px;margin:2px 0}#opp .lg i{display:inline-block;width:10px;height:3px;vertical-align:middle;margin-right:4px}
+#opp .tbl{width:100%;border-collapse:collapse}#opp .tbl td{padding:4px 3px;border-top:1px solid #1e2c36;vertical-align:middle}#opp .tbl td.v{text-align:right;font:600 13px ui-monospace,Consolas,monospace;white-space:nowrap}
+#opp .tbl small{color:#7d8e9a;display:block;font-size:11px}
+#opp .lamp{display:inline-block;width:10px;height:10px;border-radius:50%;background:#2a3640;margin-right:6px}#opp .lamp.on{background:#ff4d4d;box-shadow:0 0 6px #f44}
+#opp input.f{width:100%;height:32px;background:#0b1217;color:#dbe5ec;border:1px solid #2c3d49;border-radius:6px;padding:0 8px;margin:4px 0}
+@media (max-width:1180px){#mid #opp{position:absolute;z-index:36;right:0;top:0;bottom:0;width:min(400px,94vw);box-shadow:-8px 0 24px #0009}}
