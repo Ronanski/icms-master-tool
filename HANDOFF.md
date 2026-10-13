@@ -55,10 +55,9 @@ Harness in `tools/regress/` (see its README). Current build: all 54 sheets load,
 dMVH per DTI (1 s), TF and CUT with the usual definitions; GAP (1 PID) not simulated; 25 "( FROM ABC-xxx )" inputs have no partner net (controller REM flags, HMI buttons) and stay operator inputs; viewer labels / values on wires not tested automatically. See `docs/versions/v1.20.22/FINDINGS.md`.
 
 ## Next actions
-0. Decide R-1 (swap CUT / DH in the data of the 64 PID so CUT works).
-1. User does one UAT / verification with the PDF report (V-1 ~ V-21; V-21 closed by run P-2).
+1. User acceptance test of v1.20.22 (V-1 ~ V-21 were settled with basis; V-21 closed by run P-2).
 2. Release / rebuild only on GO STABLE / GO BETA.
 
 ## Current task status
-**Done:** corrections F-1, F-3 ~ F-31; 53 of 54 sheets traced and tested (ABC-005 partly); batch scan; regression of the current build (batch 31); records updated.
-**Not done:** R-1 decision, user verification V-1 ~ V-21, ABC-036 ~ 039 drawing read, rebuilds and release. The full PDF report was sent in chat.
+**Done:** corrections F-1, F-3 ~ F-32 (v1.20.22); 53 of 54 sheets traced and tested (ABC-005 partly); batch scan; regression of the current build (batch 31); records updated.
+**Not done:** user acceptance test, release of the v1.20.22 html (Beta / Stable only on GO BETA / GO STABLE). The full PDF report was sent in chat.
