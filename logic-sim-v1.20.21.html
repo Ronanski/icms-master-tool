@@ -2505,7 +2505,7 @@ function drawSheet(sh){const svg=$('svg'),R=sh.R,S=sh.S;svg.innerHTML='';L={nets
   for(const b of S.blk){const hl=(b.k==='HS'||b.k==='LS')&&b.i.length>1&&new Set(b.i).size===b.i.length;if(!hl&&(!(b.k==='SW'||b.k==='AMT')||b.a<0||b.b<0||b.a===b.b))continue;
    for(const side of(hl?b.i.map((_,k)=>'h'+k):['a','b'])){const n=hl?b.i[+side.slice(1)]:b[side],net=S.nets[n],pin=b.pins.find(p=>p.n===n&&p.role==='in')||b.pins.find(p=>p.n===n);if(!pin||!net)continue;
     let cur=[pin.x,pin.y];const used=new Set(),segs=[];
-    for(let st=0;st<14;st++){let bi=-1,bd=1e9;for(const i of net.segs){if(used.has(i))continue;const s=S.seg[i];const d=Math.min(anD(s.x1,s.y1,cur[0],cur[1]),anD(s.x2,s.y2,cur[0],cur[1]));if(d<=TP&&d<bd){bd=d;bi=i}}
+    for(let st=0;st<14;st++){let bi=-1,bd=1e9;for(const i of net.segs){if(used.has(i))continue;const s=S.seg[i];const d=Math.min(anD(s.x1,s.y1,cur[0],cur[1]),anD(s.x2,s.y2,cur[0],cur[1]));if(d<=(st===0?8:TP)&&d<bd){bd=d;bi=i}}
      if(bi<0)break;used.add(bi);const s=S.seg[bi];segs.push(s);
      const far=anD(s.x1,s.y1,cur[0],cur[1])<=anD(s.x2,s.y2,cur[0],cur[1])?[s.x2,s.y2]:[s.x1,s.y1];
      const others=net.segs.filter(i=>!used.has(i)&&(ends(S.seg[i]).some(([x,y])=>anD(x,y,far[0],far[1])<=TP)||anPtSeg(far[0],far[1],S.seg[i])<=.45));
