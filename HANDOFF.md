@@ -48,7 +48,11 @@ The app shows real values (PROJECT_RULES 4a). DCS percent / count scaling is not
 ## Beta
 GO BETA given by the user. Beta 1 is published: GitHub pre-release `v1.20.21-beta.1` (commit fd2aab6 on `main`, PR #2) with the asset `logic-sim-v1.20.21.html`, created by the manual workflow `.github/workflows/beta-release.yml` (PR #3). The `.apk` and `.exe` were not rebuilt (no Android / Electron project or signing key in the repository) and do not contain these fixes. No Stable release.
 
+## Regression (batch 31)
+Harness in `tools/regress/` (see its README). Current build: all 54 sheets load, timers / LAG / ALM / F-30 shutdown hold / P-1 / dMVH tests pass, F(X), parameters and AI ranges equal the workbooks. Differential run: F-28 / F-29 change nothing in the engine; F-30 changes ABC-008 only; F-31 explains the other 22 sheets that differ. Open from it: **R-1** the CUT function of F-31 is inactive (CUT / DH swapped in the simulator data, F-2; proposed data swap, needs approval), R-2 / R-3 documentation counts. Details in FINDINGS batch 31.
+
 ## Next actions
+0. Decide R-1 (swap CUT / DH in the data of the 64 PID so CUT works).
 1. User does one UAT / verification with the PDF report (V-1 ~ V-21). ABC-005 PID auto dynamics, SUMA integration and ALM limits are recorded as V-21 (not fully driven in the headless run).
 2. Release / rebuild only on GO STABLE / GO BETA.
 
