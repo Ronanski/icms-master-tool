@@ -1,77 +1,81 @@
-/* In-app UAT (injected into the html by tools/uat/inject.js). The panel does the setup (reset, force, switch, set point), runs the
-   simulation, shows the expected value next to the live value, says TUGMA / HINDI TUGMA by itself, and the user only presses OK or MALI. */
+/* In-app UAT v2: every logic block and controller of a sheet is tested one by one, grouped by block type.
+   The panel sets up (reset, force, switch position), runs the simulation, compares the result with the expected value from the
+   block definition and shows PASS / FAIL per case. The user only checks the failures and the line colours. */
 (function(){
-const DATA=JSON.parse(document.getElementById('uatdata').textContent),VER=DATA.ver,SC=DATA.sheets,KEY='uat-in-app-'+VER;
+const D=JSON.parse(document.getElementById('uatdata').textContent),VER=D.ver,KNOWN=D.known||{},KEY='uat-blocks-'+VER;
 let R={};try{R=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(R))}catch(e){}};
 const E=(t,a,c)=>{const e=document.createElement(t);if(a)for(const k in a){if(k==='txt')e.textContent=a[k];else if(k==='cls')e.className=a[k];else if(k==='on')e.onclick=a[k];else e.setAttribute(k,a[k])}(c||[]).forEach(x=>e.append(x));return e};
-const css=E('style',{txt:`#uatb{position:fixed;left:8px;bottom:36px;z-index:50;background:#1d3a2b;color:#bfe3cc;border:1px solid #6fbf8f;padding:8px 14px;border-radius:8px;font:600 14px system-ui;cursor:pointer}
-#uatp{position:fixed;left:0;top:0;bottom:0;width:min(400px,100vw);z-index:60;background:#10151a;color:#dbe5ec;border-right:1px solid #2a3743;overflow:auto;font:14px/1.4 system-ui;padding:10px 12px 40px;display:none}
-#uatp h3{margin:0 0 4px;font-size:16px;color:#6aaee0}#uatp .sub{color:#8a9aa6;font-size:12px;margin-bottom:8px}
-#uatp .sc{background:#18212a;border:1px solid #2a3743;border-radius:8px;padding:8px 10px;margin:10px 0}#uatp .sc.act{border-color:#6aaee0}
-#uatp button{background:#18212a;color:#dbe5ec;border:1px solid #2a3743;padding:8px 12px;border-radius:6px;font:inherit;cursor:pointer}
-#uatp button.go{background:#16324a;border-color:#6aaee0}#uatp button.ok.on{background:#1d3a2b;border-color:#6fbf8f;color:#6fbf8f}#uatp button.bad.on{background:#3d2220;border-color:#d9786f;color:#d9786f}
-#uatp table{width:100%;border-collapse:collapse;margin:6px 0;font-size:13px}#uatp td{padding:3px 4px;border-top:1px solid #2a3743}#uatp td.v{text-align:right;font-variant-numeric:tabular-nums}
-#uatp .y{color:#6fbf8f}#uatp .n{color:#d9786f}#uatp .w{color:#d8b860}#uatp .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center}
-#uatp input{flex:1;min-width:120px;background:#0d1217;color:#dbe5ec;border:1px solid #2a3743;padding:7px;border-radius:6px;font:inherit}#uatp .big{font-weight:700;font-size:15px}#uatp pre{white-space:pre-wrap;background:#0d1217;padding:8px;border-radius:6px}`});
-document.head.append(css);
-const btn=E('button',{id:'uatb',txt:'UAT',on:()=>{P.style.display=P.style.display==='block'?'none':'block';draw()}});
-const P=E('div',{id:'uatp'});document.body.append(btn,P);
-const sheet=()=>AN.sheets[AN.i];const fmt=x=>x==null||!isFinite(x)?'—':Math.abs(x)>=100?x.toFixed(0):Math.abs(x)>=10?x.toFixed(1):x.toFixed(2);
-let act=null,lastSheet=null;
-function find(n){const sh=sheet(),S=sh.S,net=S.nets[n];if(!net)return;
+document.head.append(E('style',{txt:`#uatb{position:fixed;left:8px;bottom:36px;z-index:50;background:#1d3a2b;color:#bfe3cc;border:1px solid #6fbf8f;padding:8px 14px;border-radius:8px;font:600 14px system-ui;cursor:pointer}
+#uatp{position:fixed;left:0;top:0;bottom:0;width:min(440px,100vw);z-index:60;background:#10151a;color:#dbe5ec;border-right:1px solid #2a3743;overflow:auto;font:14px/1.4 system-ui;padding:10px 12px 40px;display:none}
+#uatp h3{margin:0;font-size:16px;color:#6aaee0;flex:1}#uatp .sub{color:#8a9aa6;font-size:12px;margin:4px 0}
+#uatp button,#uatp select{background:#18212a;color:#dbe5ec;border:1px solid #2a3743;padding:7px 11px;border-radius:6px;font:inherit;cursor:pointer}
+#uatp button.go{background:#16324a;border-color:#6aaee0}#uatp button.on{background:#1d3a2b;border-color:#6fbf8f;color:#6fbf8f}
+#uatp details{background:#18212a;border:1px solid #2a3743;border-radius:8px;margin:8px 0}#uatp summary{padding:9px 10px;cursor:pointer;font-weight:600;display:flex;gap:8px}
+#uatp summary span.c{margin-left:auto;font-weight:400;font-size:13px}
+#uatp .it{border-top:1px solid #2a3743;padding:7px 10px}#uatp .it .h{display:flex;gap:6px;align-items:center}#uatp .it .h b{flex:1;font-size:13px;word-break:break-word}
+#uatp .it .h button{padding:4px 8px}
+#uatp table{width:100%;border-collapse:collapse;margin:6px 0;font-size:12px}#uatp td{padding:3px 4px;border-top:1px solid #2a3743;vertical-align:top}#uatp td.v{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+#uatp .y{color:#6fbf8f}#uatp .n{color:#d9786f}#uatp .w{color:#d8b860}#uatp .row{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0;align-items:center}
+#uatp .bar{height:8px;background:#2a3743;border-radius:4px;overflow:hidden;margin:6px 0}#uatp .bar i{display:block;height:100%;background:#6fbf8f}
+#uatp pre{white-space:pre-wrap;background:#0d1217;padding:8px;border-radius:6px;font-size:12px}`}));
+const P=E('div',{id:'uatp'}),btn=E('button',{id:'uatb',txt:'UAT',on:()=>{P.style.display=P.style.display==='block'?'none':'block';build()}});
+document.body.append(btn,P);
+const sheet=()=>AN.sheets[AN.i];
+const SPEC={},RES={};
+const spec=sh=>SPEC[sh.name]||(SPEC[sh.name]=UATG.sheetSpec(sh));
+const rkey=(n,id)=>n+'|'+id;
+/* run: the app is stopped while a test runs (the tests reset and force the sheet by themselves); the user's run state is restored */
+function runItems(sh,items){const run0=AN.run;AN.run=false;try{for(const it of items){const r=UATR.runItem(sh,it);RES[rkey(sh.name,it.id)]=r}}finally{try{AN.reset()}catch(e){}AN.run=run0}}
+async function runSheet(sh,items){items=items||spec(sh).groups.flatMap(g=>g.items);for(let i=0;i<items.length;i+=40){runItems(sh,items.slice(i,i+40));await new Promise(r=>setTimeout(r,0))}}
+let msg='',busy=false;
+async function runAll(){if(busy)return;busy=true;const t0=Date.now();let k=0;const names=AN.sheets.filter(x=>!/^ABC-000/.test(x.name));
+ for(const sh of names){AN.ensure(sh)}
+ for(const sh of names){await runSheet(sh);k++;msg='AUTO-TEST: '+k+' / '+names.length+' sheets...';build()}
+ msg='AUTO-TEST finished in '+Math.round((Date.now()-t0)/1000)+' s.';busy=false;build()}
+function status(sh,it){const r=RES[rkey(sh.name,it.id)];const m=R[rkey(sh.name,it.id)];if(m&&m.v==='ok')return'ok-manual';if(!r)return'todo';if(r.ok)return r.res.every(c=>c.skip)?'skip':'pass';return'fail'}
+function counts(sh,items){const c={pass:0,fail:0,todo:0,skip:0};for(const it of items){const s=status(sh,it);if(s==='pass'||s==='ok-manual')c.pass++;else if(s==='fail')c.fail++;else if(s==='skip')c.skip++;else c.todo++}return c}
+function sheetState(sh){const all=spec(sh).groups.flatMap(g=>g.items);const c=counts(sh,all);const col=R[rkey(sh.name,'_colour')];
+ return {all,c,functional:all.length>0&&c.fail===0&&c.todo===0&&col&&col.v==='ok'}}
+/* pin: go to the block on the drawing (zoom is kept) */
+function find(it){const sh=sheet(),S=sh.S,svg=document.getElementById('svg'),v=AN.av&&AN.av[sh.name];if(!svg||!v||it.cx==null)return;
  const anp=document.getElementById('anp');if(!anp||anp.getBoundingClientRect().width<5){const pb=[...document.querySelectorAll('button')].find(x=>x.textContent.trim()==='Panel');if(pb)pb.click()}
- AN.sel={net:n};try{AN.selBox()}catch(e){}try{AN.paint()}catch(e){}
- const g=S.seg[net.segs[0]];if(!g)return;const gx=(g.x1+g.x2)/2,gy=(g.y1+g.y2)/2;
- const svg=document.getElementById('svg'),r=svg.getBoundingClientRect(),v=AN.av&&AN.av[sh.name];if(!v)return;const upx=v[2]/r.width;
- const visL=P.style.display==='block'?Math.max(0,P.getBoundingClientRect().right-r.left):0,ap=document.getElementById('anp'),visR=r.width-(ap?Math.max(0,r.right-ap.getBoundingClientRect().left):0);
- const cx=(visL+Math.max(visL+50,visR))/2;v[0]=gx-cx*upx;v[1]=-gy-(r.height/2)*upx;svg.setAttribute('viewBox',v.join(' '));
- const old=svg.querySelector('#uatring');if(old)old.remove();const ring=document.createElementNS('http://www.w3.org/2000/svg','circle');ring.setAttribute('id','uatring');ring.setAttribute('cx',gx);ring.setAttribute('cy',-gy);ring.setAttribute('r',18*upx);ring.setAttribute('fill','none');ring.setAttribute('stroke','#ffe14a');ring.setAttribute('stroke-width',3*upx);ring.setAttribute('pointer-events','none');svg.append(ring);setTimeout(()=>ring.remove(),6000)}
-function setup(i){const sh=sheet(),sc=SC[sh.name][i],S=AN.ensure(sh);AN.reset();normAI();S.rt.force={};for(const n in sc.force)S.rt.force[n]=sc.force[n];for(const n in sc.ext)S.rt.ext[n]=sc.ext[n];for(const id in sc.fm){const st=S.rt.st[id];if(st)st.fm=sc.fm[id]}
- act={name:sh.name,i,t0:S.rt.t};if(!AN.run){const b=[...document.querySelectorAll('button')].find(x=>/Run/.test(x.textContent)&&/▶/.test(x.textContent));if(b)b.click()}draw()}
-function rowState(sc,r,S,done){const a=S.rt.v[r.k];const ok=isFinite(a)&&Math.abs(a-r.v)<=r.tol;return{a,ok}}
-function id(i){return sheet().name+'|'+i}
-function sheetStat(name){const L=SC[name]||[];let ok=0,bad=0;L.forEach((_,i)=>{const r=R[name+'|'+i];if(r&&r.v==='ok')ok++;if(r&&r.v==='bad')bad++});return{n:L.length,ok,bad}}
-function draw(){if(P.style.display!=='block')return;const sh=sheet();if(!sh)return;const L=SC[sh.name]||[];const S=sh.S||AN.ensure(sh);
- if(P.dataset.sheet!==sh.name||P.dataset.act!==(act?act.name+act.i:'')||P.dataset.drawn!=='1'){build()}
- // live values only
- P.querySelectorAll('[data-live]').forEach(td=>{const [i,j]=td.dataset.live.split(',');const sc=L[+i],r=sc.rows[+j];const a=S.rt.v[r.k];const on=act&&act.name===sh.name&&act.i===+i;const el=on?S.rt.t-act.t0:0;const ok=isFinite(a)&&Math.abs(a-r.v)<=r.tol;td.textContent=on?fmt(a):'—';td.className='v '+(on?(ok?'y':(el>=sc.secs?'n':'w')):'')});
- P.querySelectorAll('[data-st]').forEach(el=>{const i=+el.dataset.st,sc=L[i],on=act&&act.name===sh.name&&act.i===i;if(!on){el.textContent='';return}const t=S.rt.t-act.t0;const all=sc.rows.every(r=>{const a=S.rt.v[r.k];return isFinite(a)&&Math.abs(a-r.v)<=r.tol});
-  el.textContent=t<sc.secs?('Hintay: '+Math.max(0,Math.ceil(sc.secs-t))+' s (takbo '+t.toFixed(0)+' / '+sc.secs+' s)'+(all?' · tugma na ngayon':'')):(all?'TUGMA ✔ — pindutin ang OK':'HINDI TUGMA ✖ — pindutin ang MALI at isulat ang nakita mo');el.className='big '+(t<sc.secs?'w':(all?'y':'n'))})}
-let autoMsg='';
-/* the start values must not depend on what the user did before (RUN pressed, AI values left by the plant model): every AI block starts as in a fresh sheet */
-const normAI=()=>{for(const x of AN.sheets)if(x.S)for(const b of x.S.blk)if(b.k==='AI'){const st=x.S.rt.st[b.id];if(st){st.val=0;delete st.act;delete st.bad}}};
-async function autoAll(){const run0=AN.run;AN.run=false;const names=Object.keys(SC);let n=0,bad=0,chk=0,sheets=0;const t0=Date.now();
- for(const name of names){const sh=AN.sheets.find(x=>x.name===name);if(!sh)continue;const S=AN.ensure(sh);
-  for(let i=0;i<SC[name].length;i++){const sc=SC[name][i];if(!sc.secs)continue;
-   AN.reset();normAI();S.rt.force={};for(const k in sc.force)S.rt.force[k]=sc.force[k];for(const k in sc.ext)S.rt.ext[k]=sc.ext[k];for(const id in sc.fm){const st=S.rt.st[id];if(st)st.fm=sc.fm[id]}
-   for(let k=0;k<sc.secs*4;k++)AN.stepSet(sh,.25);
-   const miss=sc.rows.filter(r=>!(isFinite(S.rt.v[r.k])&&Math.abs(S.rt.v[r.k]-r.v)<=r.tol));n++;
-   if(miss.length){const nt='AUTO: '+miss.map(r=>r.t+' dapat '+fmt(r.v)+' nakita '+fmt(S.rt.v[r.k])).join('; ');if(sc.det){bad++;R[name+'|'+i]={v:'bad',auto:1,n:nt}}else{chk++;R[name+'|'+i]={v:'chk',auto:1,n:nt}}}else R[name+'|'+i]={v:'ok',auto:1}}
-  sheets++;autoMsg='AUTO-TEST: '+sheets+' / '+names.length+' sheet ('+n+' scenario, '+bad+' HINDI TUGMA, '+chk+' TINGNAN)...';P.dataset.drawn='0';draw();await new Promise(r=>setTimeout(r,0))}
- AN.reset();AN.run=run0;save();autoMsg='TAPOS ang AUTO-TEST: '+n+' scenario sa '+sheets+' sheet, '+(n-bad-chk)+' TUGMA, '+bad+' HINDI TUGMA, '+chk+' TINGNAN ('+Math.round((Date.now()-t0)/1000)+' s). Ang TINGNAN ay value na umaasa sa start ng plant model (iba ang resulta kapag nag-RUN muna): nasa HANDOFF bilang Needs Verification, hindi mo kailangang sagutan. Ang natitira sa iyo: kulay ng linya.';P.dataset.drawn='0';draw()}
-function looksOk(){for(const n in SC)SC[n].forEach((sc,i)=>{if(!sc.secs&&!(R[n+'|'+i]&&R[n+'|'+i].v==='bad'))R[n+'|'+i]={v:'ok'}});save();P.dataset.drawn='0';draw()}
-function build(){const sh=sheet(),L=SC[sh.name]||[];P.dataset.sheet=sh.name;P.dataset.act=act?act.name+act.i:'';P.dataset.drawn='1';P.innerHTML='';
- const tot=Object.keys(SC).length;let fnc=0;for(const n in SC){const s=sheetStat(n);if(s.n&&s.ok===s.n)fnc++}
- const s0=sheetStat(sh.name);
- P.append(E('div',{cls:'row'},[E('h3',{txt:sh.name+(s0.n&&s0.ok===s0.n?'  FUNCTIONAL ✓':'')}),E('button',{txt:'✕',on:()=>{P.style.display='none'}})]));
-const names=Object.keys(SC),pos=names.indexOf(sh.name);const go=k=>{const nm=names[(pos+k+names.length)%names.length];AN.go(AN.sheets.findIndex(x=>x.name===nm))};
- const sel=E('select',{});names.forEach(nm=>{const o=E('option',{txt:nm+(sheetStat(nm).n&&sheetStat(nm).ok===sheetStat(nm).n?' ✓':'')});o.value=nm;sel.append(o)});sel.value=sh.name;sel.onchange=()=>AN.go(AN.sheets.findIndex(x=>x.name===sel.value));
+ const r=svg.getBoundingClientRect(),upx=v[2]/r.width,visL=P.style.display==='block'?Math.max(0,P.getBoundingClientRect().right-r.left):0,visR=r.width-(anp?Math.max(0,r.right-anp.getBoundingClientRect().left):0);
+ const cx=(visL+Math.max(visL+50,visR))/2;v[0]=it.cx-cx*upx;v[1]=-it.cy-(r.height/2)*upx;svg.setAttribute('viewBox',v.join(' '));
+ const old=svg.querySelector('#uatring');if(old)old.remove();const ring=document.createElementNS('http://www.w3.org/2000/svg','circle');
+ for(const [k,x] of [['id','uatring'],['cx',it.cx],['cy',-it.cy],['r',24*upx],['fill','none'],['stroke','#ffe14a'],['stroke-width',3*upx],['pointer-events','none']])ring.setAttribute(k,x);svg.append(ring);setTimeout(()=>ring.remove(),6000)}
+const icon={pass:['✔','y'],'ok-manual':['✔ (accepted)','y'],fail:['✖','n'],todo:['·','w'],skip:['skipped','w']};
+function itemEl(sh,g,it){const s=status(sh,it),r=RES[rkey(sh.name,it.id)],known=(KNOWN[sh.name]||[]).includes(it.id),box=E('div',{cls:'it'});
+ const open=E('details',{});
+ box.append(E('div',{cls:'h'},[E('span',{cls:icon[s][1],txt:icon[s][0]}),E('b',{txt:it.n}),E('button',{txt:'📍',title:'Show on the drawing',on:()=>find(it)}),E('button',{cls:'go',txt:'▶',title:'Run this block',on:()=>{runItems(sheet(),[it]);build()}})]));
+ if(r){const tb=E('table');for(const c of r.res){tb.append(E('tr',{},[E('td',{cls:c.ok?'y':'n',txt:c.skip?'skip':(c.ok?'✔':'✖')}),E('td',{colspan:3,txt:c.l})]));if(c.skip)tb.append(E('tr',{},[E('td'),E('td',{colspan:3,cls:'sub',txt:c.skip})]));for(const w of c.rows)tb.append(E('tr',{},[E('td'),E('td',{txt:w.t}),E('td',{cls:'v',txt:'expected '+w.exp}),E('td',{cls:'v '+(w.ok?'y':'n'),txt:'got '+w.act})]))}
+  box.append(tb);
+  if(s==='fail'){box.append(E('div',{cls:'sub',txt:known?'Listed as a known mismatch (HANDOFF, Needs Verification): the engine or the test setup differs from the block definition.':'New mismatch. Check it on the drawing with 📍, then press Accept or leave it as FAIL.'}));
+   box.append(E('div',{cls:'row'},[E('button',{txt:'Accept (behaviour is right)',on:()=>{R[rkey(sh.name,it.id)]={v:'ok'};save();build()}})]))}
+  if(s==='ok-manual')box.append(E('div',{cls:'row'},[E('button',{txt:'Undo accept',on:()=>{delete R[rkey(sh.name,it.id)];save();build()}})]))}
+ return box}
+function build(){if(P.style.display!=='block')return;const sh=sheet();if(!sh||/^ABC-000/.test(sh.name)){P.innerHTML='';P.append(E('div',{cls:'row'},[E('h3',{txt:'UAT'}),E('button',{txt:'✕',on:()=>{P.style.display='none'}})]),E('div',{cls:'sub',txt:'Open an ABC sheet (not the legend) to test it.'}));return}
+ const keep=[...P.querySelectorAll('details[data-g]')].filter(d=>d.open).map(d=>d.dataset.g),top=P.scrollTop;
+ const sp=spec(sh),st=sheetState(sh),names=AN.sheets.filter(x=>!/^ABC-000/.test(x.name)).map(x=>x.name),pos=names.indexOf(sh.name);
+ P.innerHTML='';
+ P.append(E('div',{cls:'row'},[E('h3',{txt:sh.name+(st.functional?'  FUNCTIONAL ✓':'')}),E('button',{txt:'✕',on:()=>{P.style.display='none'}})]));
+ const sel=E('select',{});names.forEach(nm=>{const o=E('option',{txt:nm});o.value=nm;sel.append(o)});sel.value=sh.name;sel.onchange=()=>AN.go(AN.sheets.findIndex(x=>x.name===sel.value));
+ const go=k=>AN.go(AN.sheets.findIndex(x=>x.name===names[(pos+k+names.length)%names.length]));
  P.append(E('div',{cls:'row'},[E('button',{txt:'◀',on:()=>go(-1)}),sel,E('button',{txt:'▶',on:()=>go(1)})]));
- P.append(E('div',{cls:'sub',txt:fnc+' / '+tot+' sheet FUNCTIONAL · pumili ng sheet sa itaas (◀ ▶). I-click ang SETUP: ako na ang bahala sa reset, force at set point. Ang 📍 ay dadalhin ka sa tag at bubuksan ang monitor sa kanan, hindi nagbabago ang zoom.'}));
- P.append(E('div',{cls:'sc'},[E('b',{txt:'Pinakamabilis: walang gagawin'}),E('div',{cls:'sub',txt:'Ang AUTO-TEST ay ako ang gumagawa ng setup at pagbabasa sa lahat ng sheet. Mga 1 ~ 3 minuto. Mamaya, ang mga HINDI TUGMA lang ang titingnan mo.'}),E('div',{cls:'row'},[E('button',{cls:'go',txt:'▶ AUTO-TEST LAHAT',on:()=>{autoAll()}}),E('button',{txt:'Kulay: OK lahat',on:()=>{looksOk()}})]),E('div',{cls:'big w',txt:autoMsg})]));
- if(!L.length)P.append(E('div',{txt:'Walang scenario ang sheet na ito (legend / contents).'}));
- L.forEach((sc,i)=>{const on=act&&act.name===sh.name&&act.i===i,r=R[id(i)]||{};const box=E('div',{cls:'sc'+(on?' act':'')});
-  box.append(E('b',{txt:sc.n}));box.append(E('div',{cls:'sub',txt:sc.s}));
-  box.append(E('div',{cls:'row'},[E('button',{cls:'go',txt:'▶ SETUP at takbo',on:()=>setup(i)})]));
-  const tb=E('table');tb.append(E('tr',{},[E('td',{txt:'Tag'}),E('td',{cls:'v',txt:'DAPAT'}),E('td',{cls:'v',txt:'NGAYON'}),E('td',{txt:''})]));
-  sc.rows.forEach((rw,j)=>{tb.append(E('tr',{},[E('td',{txt:rw.t}),E('td',{cls:'v',txt:rw.txt||fmt(rw.v)}),E('td',{'data-live':i+','+j,cls:'v',txt:'—'}),E('td',{},[E('button',{txt:'📍',title:'Hanapin sa diagram',on:()=>find(rw.k)})])]))});
-  box.append(tb);box.append(E('div',{'data-st':i,cls:'big'}));
-  if(sc.look)box.append(E('div',{cls:'sub',txt:sc.look}));
-  const ok=E('button',{cls:'ok'+(r.v==='ok'?' on':''),txt:'✔ OK',on:()=>{R[id(i)]={v:r.v==='ok'?'':'ok'};save();build()}}),bad=E('button',{cls:'bad'+(r.v==='bad'?' on':''),txt:'✖ MALI',on:()=>{R[id(i)]={v:'bad',n:(r.n||'')};save();build()}});
-  box.append(E('div',{cls:'row'},[ok,bad]));
-  if(r.auto)box.append(E('div',{cls:'sub',txt:'Sinagot ng AUTO-TEST: '+(r.v==='ok'?'TUGMA':r.v==='chk'?'TINGNAN (umaasa sa start ng plant model)':'HINDI TUGMA')+(r.n?' — '+r.n:'')}));if(r.v==='bad'){const inp=E('input',{placeholder:'ano ang nakita mo',value:r.n||''});inp.oninput=()=>{R[id(i)]={v:'bad',n:inp.value};save()};box.append(inp)}
-  P.append(box)});
- const cp=E('button',{txt:'Kopyahin ang mga MALI',on:()=>{const out=[];for(const n in SC)SC[n].forEach((sc,i)=>{const r=R[n+'|'+i];if(r&&r.v==='bad')out.push(n+' | '+sc.n+' | Dapat: '+sc.rows.map(x=>x.t+'='+(x.txt||fmt(x.v))).join(', ')+' | Nakita: '+(r.n||'(walang note)'))});const t=out.length?'UAT v'+VER+': '+out.length+' MALI\n'+out.join('\n'):'UAT v'+VER+': walang MALI';pre.textContent=t;pre.style.display='block';try{navigator.clipboard.writeText(t)}catch(e){}}});
- const pre=E('pre');pre.style.display='none';P.append(E('div',{cls:'row'},[cp]),pre)}
-setInterval(()=>{try{const sh=sheet();if(sh&&sh.name!==lastSheet){lastSheet=sh.name;P.dataset.drawn='0'}draw()}catch(e){}},400);
+ const c=st.c,tot=st.all.length||1;
+ P.append(E('div',{cls:'sub',txt:st.all.length+' blocks / controllers · '+c.pass+' pass · '+c.fail+' fail · '+c.todo+' not run'+(c.skip?' · '+c.skip+' skipped':'')}),E('div',{cls:'bar'},[E('i',{style:'width:'+Math.round(100*c.pass/tot)+'%'})]));
+ P.append(E('div',{cls:'row'},[E('button',{cls:'go',txt:'▶ Test this sheet',on:async()=>{await runSheet(sh);build()}}),E('button',{cls:'go',txt:'▶ Test ALL sheets',on:()=>{runAll()}})]));
+ if(msg)P.append(E('div',{cls:'sub w',txt:msg}));
+ P.append(E('div',{cls:'sub',txt:'Each block is forced with known inputs and its output is compared with the block definition (truth table, set point, delay, curve table, controller action). Open a group to see its blocks; ▶ runs one block, 📍 shows it on the drawing.'}));
+ sp.groups.forEach(g=>{const cc=counts(sh,g.items),d=E('details',{'data-g':g.g});if(keep.includes(g.g)||cc.fail)d.open=keep.includes(g.g);
+  d.append(E('summary',{},[E('span',{txt:g.g}),E('span',{cls:'c '+(cc.fail?'n':cc.todo?'w':'y'),txt:cc.pass+' / '+g.items.length+(cc.fail?' · '+cc.fail+' ✖':'')})]));
+  const btnRow=E('div',{cls:'row',style:'padding:0 10px'},[E('button',{txt:'▶ Test this group',on:async()=>{runItems(sh,g.items);build()}})]);d.append(btnRow);
+  d.addEventListener('toggle',()=>{});
+  g.items.forEach(it=>d.append(itemEl(sh,g,it)));P.append(d)});
+ const col=R[rkey(sh.name,'_colour')]||{};
+ P.append(E('div',{cls:'it',style:'background:#18212a;border:1px solid #2a3743;border-radius:8px;margin:8px 0'},[E('b',{txt:'Line colours (visual check, only you can do this)'}),E('div',{cls:'sub',txt:'Press RUN. Live signals must be yellow and bright, signals that do not drive anything must be dark amber, and the colours must follow when a switch changes leg.'}),E('div',{cls:'row'},[E('button',{cls:col.v==='ok'?'on':'',txt:col.v==='ok'?'✔ Colours OK':'Colours OK',on:()=>{R[rkey(sh.name,'_colour')]={v:col.v==='ok'?'':'ok'};save();build()}})])]));
+ const pre=E('pre');pre.style.display='none';
+ P.append(E('div',{cls:'row'},[E('button',{txt:'Copy report (all sheets)',on:()=>{const out=[];let nT=0,nP=0;for(const nm of names){const s=AN.sheets.find(x=>x.name===nm);if(!SPEC[nm])continue;for(const g of SPEC[nm].groups)for(const it of g.items){const r=RES[rkey(nm,it.id)];if(!r)continue;nT++;const m=R[rkey(nm,it.id)];if(r.ok||(m&&m.v==='ok')){nP++;continue}out.push(nm+' | '+g.g+' | '+it.n+' | '+r.res.filter(c=>!c.ok).map(c=>c.l+' => '+c.rows.filter(w=>!w.ok).map(w=>w.t+' expected '+w.exp+' got '+w.act).join('; ')).join(' || '))}}
+   const t='UAT v'+VER+': '+nT+' blocks tested, '+nP+' pass, '+out.length+' fail'+(out.length?'\n'+out.join('\n'):'');pre.textContent=t;pre.style.display='block';try{navigator.clipboard.writeText(t)}catch(e){}}})]),pre);
+ P.scrollTop=top}
+setInterval(()=>{try{const sh=sheet();if(sh&&P.style.display==='block'&&P.dataset.sheet!==sh.name){P.dataset.sheet=sh.name;build()}}catch(e){}},500);
 })();
