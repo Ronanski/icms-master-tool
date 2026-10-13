@@ -71,7 +71,7 @@ Do not invent numeric values, scaling ranges, formulas, tag mappings, or output 
 | Divider (÷) | 15 | order of A / B against the drawing (F-1, F-4, F-16) | – |
 | Comparators (HC / LC / HLC) | 222 | set point and unit (F-6, F-23, F-27) | – |
 | PID / MAN / SUMA parameters | 140 | against the parameter workbook | – |
-| PID algorithm | 68 | integral step and output against Kp, Ti, Td; ACT text against the sign (batch 28) | dMVH, CUT, TF, GAP are read but not simulated (N-5); ABC-005 auto dynamics (V-21) |
+| PID algorithm | 68 | integral step and output against Kp, Ti, Td; ACT text against the sign (batch 28); TF, CUT, dMVH simulated (F-31) | GAP (1 PID); exact DCS formula of TF / CUT / dMVH Needs Verification; ABC-005 auto dynamics (V-21) |
 | PID / MAN behavior | per sheet | direction, limits, tracking, A/M, BU-CMD (F-20, F-26) in the sheet scenarios | – |
 | Timers (TON / TOF / pulse) | 159 on all sheets | time of each timer against its parameter (batch 28) | S/R flip-flops only in the sheet scenarios |
 | LAG | 12 | time constant (batch 28) | – |
@@ -125,6 +125,8 @@ Do not create empty version folders. Use the app's verified version, not a versi
 | F-27 | ABC-001A | "> 0.1 %" comparators compared 0.1 MW; 0.1 % of 200 MW = 0.2 MW | Fixed |
 | F-28 | all sheets (viewer) | View / Trace mode did not show the deselected leg of a switch (UI only) | Fixed |
 | F-29 | all sheets (viewer) | 113 switch inputs had no lit / grey leg overlay (wire ends short of the pin) | Fixed (UI only) |
+| F-30 | ABC-003A, 003B ~ D, 004A, 008, 020, 051 | Force-to-manual pulse (2 s) released the A/M switch; MV drifted after shutdown | Fixed |
+| F-31 | 68 PIDs | TF, CUT, dMVH read but not simulated (N-5) | Implemented; formula Needs Verification |
 
 Details: [v1.20.21 findings](../versions/v1.20.21/FINDINGS.md). Do not copy entire diagrams, spreadsheets, or PDFs into this document.
 
