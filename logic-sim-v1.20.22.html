@@ -1453,7 +1453,6 @@ function anCompile(S){
      const tag=(b.txt.find(q=>!/SIG/i.test(q))||'').trim();b.i=[];if(!tag)break;const hit=new Set();
      for(const t of S.tx){if(t.t.trim()!==tag||Math.hypot(t.x-b.cx,t.y-b.cy)<16)continue;const w=tag.length*(t.h||3)*.6,x0=(t.a===2)?t.x-w:(t.a===1||t.a===4)?t.x-w/2:t.x,x1=x0+w;
       for(const sg of S.seg)for(const[x,y]of[[sg.x1,sg.y1],[sg.x2,sg.y2]])if(x>=x0-4&&x<=x1+4&&y>=t.y-4&&y<=t.y+(t.h||3)+3&&sg.net!=null)hit.add(sg.net)}
-     if(!hit.size)S.lab.forEach((l,n)=>{if(l&&l.t.trim()===tag&&nets[n]&&nets[n].segs.length)hit.add(n)});/* the tag written mid-wire: the wire carries the flag */
      for(const n of hit){if(blk.some(q=>q!==b&&q.pins.some(p=>p.role==='out'&&p.n===n))||nets[n].sigab)continue;if(!b.pins.some(p=>p.n===n)){b.pins.push({n,x:b.cx,y:b.cy,role:'out'});nets[n].dig=true}}
      b.o=[...new Set(b.pins.filter(p=>p.role==='out').map(p=>p.n))];break}
    case 'AI':b.i=[];break;
