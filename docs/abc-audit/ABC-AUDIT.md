@@ -71,11 +71,14 @@ Do not invent numeric values, scaling ranges, formulas, tag mappings, or output 
 | Divider (÷) | 15 | order of A / B against the drawing (F-1, F-4, F-16) | – |
 | Comparators (HC / LC / HLC) | 222 | set point and unit (F-6, F-23, F-27) | – |
 | PID / MAN / SUMA parameters | 140 | against the parameter workbook | – |
-| PID / MAN behavior | per sheet | direction, limits, tracking, A/M, BU-CMD (F-20, F-26) in the sheet scenarios | numeric response against the DCS algorithm (no reference formula in the repository); ABC-005 auto dynamics (V-21) |
-| Timers, S/R, pulse | per sheet | in the sheet scenarios (ABC-013, 054, 017, 033 and others) | not a systematic test |
-| RATE / RAMP / LAG | per sheet | ABC-001B, 001C, 003E, 034 and others (F-20, F-25) | – |
+| PID algorithm | 68 | integral step and output against Kp, Ti, Td; ACT text against the sign (batch 28) | dMVH, CUT, TF, GAP are read but not simulated (N-5); ABC-005 auto dynamics (V-21) |
+| PID / MAN behavior | per sheet | direction, limits, tracking, A/M, BU-CMD (F-20, F-26) in the sheet scenarios | – |
+| Timers (TON / TOF / pulse) | 159 on all sheets | time of each timer against its parameter (batch 28) | S/R flip-flops only in the sheet scenarios |
+| LAG | 12 | time constant (batch 28) | – |
+| RATE / RAMP | per sheet | ABC-001B, 001C, 003E, 034 and others (F-20, F-25) | – |
 | Scaling / gains (F-9 ~ F-22) | per sheet | in the sheet scenarios | not a systematic test |
-| SUMA integration, ALM limits | – | – | not tested (V-21) |
+| SUMA integration | 7 | 12 / h for 1 h = 12 (batch 28) | reset (RES / RSTS) not simulated |
+| ALM limits | 104 | level at both sides of each limit (batch 28) | on-delay timers of the alarms |
 | TP compensation, SQRT | – | SQRT is identity by the user's answer (V-18) | TP against `flow-compensation.xls` |
 | Viewer (UI) | switches only | lit / grey legs (F-28, F-29) | labels and values on wires |
 
