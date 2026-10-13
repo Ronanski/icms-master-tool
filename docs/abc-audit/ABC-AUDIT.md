@@ -102,6 +102,7 @@ Do not create empty version folders. Use the app's verified version, not a versi
 | F-25 | ABC-001B | Rate limit of the unit load demand 20 times too fast (SCALE CONVERT 10 / 200 taken as 1); closes N-1 | Fixed, verified |
 | F-26 | ABC-008, 017, 033 and other BU-CMD sheets | BU-CMD interlock tracking not applied through the A/M selector (MV returned to the manual value) | Fixed, 14 scenario files differ after BU-CMD pulses |
 | F-27 | ABC-001A | "> 0.1 %" comparators compared 0.1 MW; 0.1 % of 200 MW = 0.2 MW | Fixed |
+| F-28 | all sheets (viewer) | View / Trace mode did not show the deselected leg of a switch (UI only) | Fixed |
 
 Details: [v1.20.21 findings](../versions/v1.20.21/FINDINGS.md). Do not copy entire diagrams, spreadsheets, or PDFs into this document.
 
