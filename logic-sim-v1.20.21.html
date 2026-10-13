@@ -1324,7 +1324,7 @@ const AN_DEF={"TP":[{"sheet":"ABC-003A","kp":"FIFA1043A","ft":"FT-FA1043-A","des
 function anFace(S){const F=AN_DEF.FACE;if(!F)return;
  for(const b of S.blk){const k=b.k==='MAN'?'MAN':(b.k==='PID'||b.k==='PIDV')?'PID':b.k==='SUMA'?'SUMA':null;if(!k)continue;const m=(b.txt||[]).map(t=>/^S(\d)-MDL(\d+)$/i.exec(t)).find(Boolean);if(!m)continue;const stn=100+ +m[1],mno=+m[2],e=(F[k]||[]).find(q=>q.stn===stn&&q.mno===mno);if(!e)continue;const P=b.p;b.face=e;
   if(k==='PID'){if(e.P>0)P.kp=+(100/e.P).toFixed(6);P.ti=e.I;P.td=e.D;P.lo=e.ML;P.hi=e.MH;const sp=e.SH-e.SL;if(sp>0){P.span=sp;P.rlo=e.SL;P.rhi=e.SH}if(e.unit)P.unit=e.unit;P.ph=e.PH;P.pl=e.PL;P.dmvh=e.dMVH;P.dti=e.DTI;P.tf=e.TF;P.gap=e.GAP;P.bnd=e.BND;P.cut=e.CUT;P.dh=e.DH;P.phondt=e.PHONDT;P.plondt=e.PLONDT}
-  else if(k==='MAN'){const sp=e.SH-e.SL;if(sp>0){P.lo=e.SL+e.ML/100*sp;P.hi=e.SL+e.MH/100*sp;P.rlo=e.SL;P.rhi=e.SH;if(e.tag==='HIC-MWRL'){P.lo=e.SL;P.hi=e.SH}}if(e.unit)P.u=e.unit;P.ph=e.PH;P.pl=e.PL;P.dh=e.DH;P.dt=e.DT;P.tf=e.TF;P.fsc=e.FSC;P.cut=e.CUT;P.phondt=e.PHONDT;P.plondt=e.PLONDT}
+  else if(k==='MAN'){const sp=e.SH-e.SL;if(sp>0){P.lo=e.SL+e.ML/100*sp;P.hi=e.SL+e.MH/100*sp;P.rlo=e.SL;P.rhi=e.SH}if(e.unit)P.u=e.unit;P.ph=e.PH;P.pl=e.PL;P.dh=e.DH;P.dt=e.DT;P.tf=e.TF;P.fsc=e.FSC;P.cut=e.CUT;P.phondt=e.PHONDT;P.plondt=e.PLONDT}
   else{P.ph=e.PH;P.pl=e.PL;P.rsts=e.RSTS;P.kk=e.K;P.dt=e.DT;P.tf=e.TF;P.cut=e.CUT;P.phondt=e.PHONDT;P.plondt=e.PLONDT;P.sumUnit=e['SUM unit']}}}
 function anDefaults(S){
  /* H-16 the small two-cell box above an I/P converter (valve positioner, field side) was read as a SUB with one input and no output: it is a field device */
@@ -1333,6 +1333,53 @@ function anDefaults(S){
  {const by={};for(const b of S.blk)if(b.k==='AI'){const o=b.pins.find(p=>p.role==='out'),t=o&&S.lab[o.n]?S.lab[o.n].t:null;if(t)(by[t]=by[t]||[]).push(b)}
   for(const t in by){const g=by[t];if(g.length<2)continue;const m=g.find(b=>b.fb);if(!m)continue;for(const b of g)if(b!==m&&!b.fb){b.fb=m.fb;b.twin=m;b.pins.filter(p=>p.role==='out').forEach(p=>{if(S._tr)S._tr[p.n]=m.fb.id})}}}
  if(typeof AN_DEF==='undefined')return;anFace(S);
+ /* real values: the DCS carries percent / counts (100 % = 10000), the simulator shows real values (T/H, %), so the scaling is done here as a user would. ABC-005 limestone chain; each change is applied only if the constant still has the drawing value */
+ if(S.name==='ABC-005'){const fx=(id,from,to,why)=>{const c=S.blk.find(q=>q.id===id&&q.k==='CONST');if(c&&c.p&&Math.abs(c.p.val-from)<1e-9){c.p.val=to;c.note=why}};
+  fx(27,10000,1,'x 10000 turns the ratio into counts (100 % = 10000); real value: x 1');
+  fx(20,1,100/27,'SCALE CONVERT 12000 / 2700: limestone T/H to feeder speed % (27 T/H = 100 %): x 100 / 27');
+  fx(28,13,1.3,'LIMESTONE DENSITY BASE : 1.3 (drawing label); drawing box shows 13');
+  fx(19,13,1.3*100/27,'LIMESTONE DENSITY BASE : 1.3, feeder speed % to T/H (27 T/H = 100 %): 1.3 x 100 / 27')}
+ for(const b of S.blk){/* a set point written as "x % MCR ( y T/H )": the signal is in T/H, the set point is y */
+  if((b.k==='HC'||b.k==='LC'||b.k==='HLC')&&b.p&&typeof b.p.u==='string'){const m=/MCR\s*\(\s*([\d.]+)\s*T\/H\s*\)/i.exec(b.p.u);if(m){b.p.sp=+m[1];b.p.u='T/H';b.note='set point '+m[1]+' T/H (drawing: % MCR with the T/H value in brackets)'}}}
+ if(S.name==='ABC-001A'){for(const b of S.blk)if(b.k==='HC'&&b.p&&b.p.sp===0.1&&b.p.u==='%'){b.p.sp=0.2;b.p.u='MW';b.note='> 0.1 % of the 0.0 ~ 200.0 MW range = 0.2 MW (deviation block output compared in MW)'}}
+ if(S.name==='ABC-006'){for(const b of S.blk)if(b.k==='LC'&&b.p&&b.p.sp===25&&/MCR/.test(b.p.u||'')){b.p.sp=151.5;b.p.u='T/H';b.note='25 % MCR = 151.5 T/H (drawing: TOTAL AIR FLOW < 25% MCR (151.5 T/H); 100% MCR = 606 T/H)'}}
+ if(/^ABC-003[A-D]$/.test(S.name)){for(const b of S.blk)if(b.k==='LC'&&b.p&&b.p.sp===18.7&&b.p.u==='%'){b.p.sp=18.7*65/100;b.p.u='T/H';b.note='18.7 % of the 0 ~ 65 T/H SA flow range = 12.155 T/H'}}
+ if(S.name==='ABC-010'){for(const b of S.blk)if(b.k==='HC'&&b.p&&b.p.sp===5&&b.p.u==='%'){b.p.sp=5*12.42;b.p.u='mm';b.note='5 % of the -422 ~ 820 mm level range = 62.1 mm (drum level (1) / (3) deviation)'}}
+ if(S.name==='ABC-001B'){/* SCALE CONVERT 10 / 200 feeds the RATE LIMIT time T = B / A * 100 / 60 (B = 10000): here the ratio is kept (0.05), it makes the rate limit equal to the MW/min setting (HIC-MWRL 3 MW/min = 0.05 MW/s) */
+  for(const b of S.blk)if(b.k==='CONST'&&b.p&&b.p.val===1&&b.note&&/SCALE CONVERT 10\s*\/\s*200/.test(b.note)){b.p.val=0.05;b.note='SCALE CONVERT 10 / 200 = 0.05: the rate limit of the unit load equals the MW/min setting'}}
+ if(S.name==='ABC-009A'||S.name==='ABC-009B'){/* bottom ash screw cooler speed controllers: the MAN SICL1060A ~ D work in rpm (0 ~ 5 rpm, workbook), the loop signals are percent of 5 rpm (AUTO-MV, "12 %" back-up value, comparison with the output, average of the four speeds as the PV of PIC-BASC) */
+  const labs=n=>[S.lab[n]&&S.lab[n].t||''].concat((S.tagN||[]).filter(z=>z.n===n).map(z=>z.t)).join('|');const lab=labs;const isMV=n=>/(^|\|)SICL1060[A-D]\.MV/.test(labs(n))||/(^|\|)AO0(211|323|339|787)\b/.test(labs(n));
+  for(const b of S.blk){
+   if(b.k==='AMT'&&/B\s*\/\s*T/.test((b.txt||[]).join('/'))&&b.o.some(n=>b.o.length&&S.cns[n].some(c=>c.k==='MAN'&&/SICL1060/.test((c.txt||[]).join('/'))))){b.ag=0.05;b.note='AUTO-MV in % of 5 rpm -> rpm'}
+   if(b.k==='SW'&&b.i.some(isMV)&&b.i.length>=3&&!b.o.some(n=>/SI03(23|43|53|73)/.test(labs(n)))){b.ia=b.ia||{};for(const n of b.i)if(isMV(n))b.ia[n]=[20,0];b.note='speed (rpm) -> % of 5 rpm'}
+   if(b.k==='DEV'&&b.ip&&b.ip.some(q=>isMV(q.n))&&b.ip.some(q=>/SI03[2-7]\d/.test(labs(q.n)))){for(const q of b.ip)if(isMV(q.n))q.ia=[20,0];b.note='speed (rpm) -> % of 5 rpm for the comparison'}
+   if(b.k==='CONST'&&b.p&&b.p.val===12&&S.cns[b.o[0]]&&S.cns[b.o[0]].some(c=>c.k==='SW')){b.p.val=0.6;b.note='12 % of 5 rpm = 0.6 rpm'}
+   if(b.k==='CONST'&&b.p&&b.p.val===0.25&&b.note&&/fraction/.test(b.note)){b.p.val=0.25*20;b.note='average of the four speeds (1/4) in % of 5 rpm (x 20)'}}}
+ if(S.name==='ABC-001C'){/* the boiler master chain is written in percent of 0 ~ 120 T/H coal (the drawing: -0.42 % = -0.5 T/H, 18 % / Hr = 0.005 % / sec); HIC-BM is 0 ~ 100 % and SI0213 is the coal demand in T/H (ABC-002: 0 ~ 120 T/H) */
+  for(const b of S.blk){
+   if(b.k==='MUL'&&b.gain===1&&b.o.some(n=>S.lab[n]&&/^SI0213/.test(S.lab[n].t))){b.gain=1.2;b.note='boiler master MV % x 1.2 = coal demand T/H (100 % = 120 T/H)'}
+   if(b.k==='ADD'&&b.ip&&b.ip.length===2&&b.ip.some(q=>S.lab[q.n]&&S.lab[q.n].t==='PIC-COBM.MV')){const q=b.ip.find(z=>!(S.lab[z.n]&&S.lab[z.n].t==='PIC-COBM.MV'));q.ia=[100/120,0];b.note='SI0201 (T/H) -> % of 120 T/H, added to the pressure controller MV (%)'}
+   if(b.k==='AMT'&&b.o.some(n=>S.lab[n]&&S.lab[n].t==='PIC-COBM.MV')){b.bg=100/120;b.note='RB-MV (T/H) -> % of 120 T/H for the PID tracking'}
+   if(b.k==='CONST'&&b.p&&Math.abs(b.p.val+0.42)<1e-9){b.p.val=-0.5;b.note='-0.42 % (-0.5 T/H) in T/H'}
+   if(b.k==='RATE'&&b.p&&b.p.hr===18){b.p.rate=18*1.2/3600;b.p.spanUnres=false;b.p.span=120;b.note='18 % / Hr of 0 ~ 120 T/H = 21.6 T/H per hour'}}}
+ if(S.name==='ABC-010'){/* drum level pressure compensation is written in percent of the transmitter range (-422 ~ 820 mm = 0 ~ 100 %): 100 % - LT %, - LN38 %, / LN39; the simulator carries mm */
+  const lab=n=>S.lab[n]&&S.lab[n].t;
+  for(const b of S.blk){
+   if(b.k==='SUB'&&b.ip&&b.ip.length===2){const ci=b.ip.find(q=>S.drv[q.n].some(d=>d.k==='CONST'&&d.p&&d.p.val===100)),ai=b.ip.find(q=>q!==ci);if(ci&&ai&&S.drv[ai.n].some(d=>d.k==='AI')){ai.ia=[1/12.42,422/12.42];b.note='LT in mm -> % of -422 ~ 820 mm (the drawing subtracts it from 100 %)'}}
+   if(b.k==='DIV'&&lab(b.de)==='SI0252'){b.oa=[12.42,-422];b.note='compensated level in % of -422 ~ 820 mm -> mm'}
+   if(b.k==='SUM'&&b.ip&&b.ip.length===2){const q=b.ip.find(z=>lab(z.n)==='LICBR1001.MV');if(q){q.ia=[5.5,0];b.note='drum level master MV (%, limits -25 ~ 25 %) is a % of the feed water range 0 ~ 550 T/H: x 5.5 = T/H, added to the steam flow'}}
+   if(b.k==='AMT'&&b.o.some(n=>lab(n)==='LICBR1001.MV')){b.bg=100/550;b.note='RB-MV (feed water minus steam flow, T/H) -> % of 550 T/H for the master tracking'}}}
+ if(S.name==='ABC-008'){/* "2" written on the wire into the divider (average of the two fan demands) */
+  for(const b of S.blk)if(b.k==='DIV'&&b.i.length===2){const n=b.i[1];if(S.ext.includes(n)&&!S.nets[n].dig&&!(S.kn&&S.kn[n]!==undefined)){const ends=[];for(const i of S.nets[n].segs){const sg=S.seg[i];ends.push([sg.x1,sg.y1],[sg.x2,sg.y2])}let best=null,bd=8;for(const t of S.tx){if(!/^\s*-?\d+(?:\.\d+)?\s*$/.test(t.t.trim()))continue;for(const[x,y]of ends){const d=anD(t.x,t.y,x,y);if(d<bd){bd=d;best=t}}}if(best){(S.kn=S.kn||{})[n]=parseFloat(best.t);S.ext.splice(S.ext.indexOf(n),1);b.note='divisor "'+best.t.trim()+'" written on the wire'}}}}
+ if(S.name==='ABC-002'){const c=S.blk.find(q=>q.id===34&&q.k==='CONST');if(c&&c.p&&Math.abs(c.p.val-4450)<1e-9){c.p.val=0.445;c.note='COAL CALORIE BASE 4450 kcal/kg; LN1 gives the diesel calorie in units of 10000 kcal/kg (MV 0-100 % = 8000-12000 kcal/kg = 0.8-1.2): base in the same unit = 0.445'}}
+ if(S.name==='ABC-011'||S.name==='ABC-012'){/* cascade: the outlet temperature PID output (% of 0-600 degC) is the set point of the spray water PID (0-600 degC): the net xxx.MV carries degC, the PID tracks in % */
+  S.blk.forEach(b=>{if(b.k==='AMT'&&b.o.some(n=>S.lab[n]&&/^TIC(BR1140|MS1004)\.MV$/.test(S.lab[n].t))){b.og=6;b.bg=1/6;b.note='the outlet PID output is a % of 0-600 degC: x 6 = degC (set point of the spray PID); RB-MV (PV degC) / 6 for the PID tracking'}})}
+ if(S.name==='ABC-003E'){/* oil master (0-14 T/H) output is a % of its range; each burner flow loop works in T/H (0-3.5): burner SV = MV % x 3.5 / 100 (basis: drawing range text 0.00~14.00 T/H, workbook FICDO1043A-D 0-3.5 T/H). RAMP 5 %/min of the burner range. */
+  const R=3.5/100;
+  S.drv.forEach(l=>l.forEach(d=>{if(d.k==='LINK'&&S.lab[d.o[0]]&&S.lab[d.o[0]].t==='FIC-OM.MV'){d.gain=R}}));
+  S.blk.forEach(b=>{if(b.k==='AMT'&&S.lab[b.sel]&&S.lab[b.sel].t==='M.0092'){b.bg=1/R;b.note='RB-MV (burner SV, T/H) x 100 / 3.5 = % of the oil master range'}
+   if(b.k==='CMPK'&&b.p&&b.p.ref>=0&&S.kn&&S.kn[b.p.ref]===3){S.kn[b.p.ref]=3*R;b.note='SET X% = 3 % of the burner range 3.5 T/H = 0.105 T/H'}
+   if(b.k==='RATE'&&b.up!==undefined){b.up=undefined;b.dn=undefined;b.p.rate=0.05*3.5/60;b.p.rtxt='RAMP: 5 %/min';b.dflt=null;b.note='RAMP: 5 %/min of 3.5 T/H (drawing text next to PS0004); the PS0003 PTN004029 value is not in any reference'}})}
  const kpOf=b=>{const q=S.tx.filter(t=>/^FIFA\d+[A-D]?\.KP2$/i.test(t.t.trim())&&anD(t.x,t.y,b.cx,b.cy)<=60).sort((p,r)=>anD(p.x,p.y,b.cx,b.cy)-anD(r.x,r.y,b.cx,b.cy))[0];return q?q.t.trim().toUpperCase().replace(/\.KP2$/,''):''};
  const fixedRate=S.blk.filter(b=>b.k==='RATE'&&b.main!==undefined&&b.up===undefined&&!(b.p.rate>0)).sort((p,q)=>p.id-q.id),rl=AN_DEF.RATE.filter(e=>e.sheet===S.name);
  fixedRate.forEach((b,i)=>{const e=rl[i];if(e){b.p.rate=e.rate;b.dflt={k:'RATE',e}}});
@@ -1374,7 +1421,7 @@ function anCompile(S){
  {const K=blk.filter(b=>b.k==='CONST'&&!(b.txt[0]&&/^-?\d/.test(b.txt[0].replace(/%%%/g,'%')))),used=new Set(),pairs=[];
   const nt=TX.filter(q=>/^-?\d+(\.\d+)?\s*([%°A-Za-z][^:]{0,30})?$/.test(q.t.trim())&&!blk.some(o=>o.k!=='CONST'&&q.x>=o.x0&&q.x<=o.x1&&q.y>=o.y0&&q.y<=o.y1));
   for(const b of K)for(const q of nt){const dx=Math.max(b.x0-q.x,0,q.x-b.x1),dy=Math.max(b.y0-q.y,0,q.y-b.y1),d=Math.hypot(dx,dy);if(d<=9)pairs.push({b,q,d})}
-  pairs.sort((x,y)=>x.d-y.d);const ub=new Set();for(const p of pairs){if(ub.has(p.b)||used.has(p.q))continue;ub.add(p.b);used.add(p.q);p.b.p.val=anNum(p.q.t)}
+  pairs.sort((x,y)=>x.d-y.d);const ub=new Set();for(const p of pairs){if(ub.has(p.b)||used.has(p.q))continue;ub.add(p.b);used.add(p.q);p.b.p.val=anNum(p.q.t);/* stacked fraction (numerator above denominator) drawn next to the box */{const isN=z=>/^-?\d+(\.\d+)?$/.test(z.t.trim());const w=isN(p.q)?nt.find(z=>z!==p.q&&isN(z)&&Math.abs(z.x-p.q.x)<3&&Math.abs(z.y-p.q.y)>3&&Math.abs(z.y-p.q.y)<10):null;if(w){const up=p.q.y>w.y?p.q:w,lo=up===p.q?w:p.q;if(+lo.t){used.add(w);p.b.p.val=anNum(up.t)/anNum(lo.t);p.b.note='fraction '+up.t.trim()+' / '+lo.t.trim();if(TX.some(z=>/SCALE\s*CONVERT/i.test(z.t)&&Math.hypot(z.x-p.b.cx,z.y-p.b.cy)<50)){p.b.p.val=1;p.b.note='SCALE CONVERT '+up.t.trim()+' / '+lo.t.trim()+' (source range / destination range): x 1 in engineering units'}}}}}
   /* an "A" box labelled with a signal name (not a number) = a reference to that signal, not a constant */
   const tg=TX.filter(q=>/^[A-Za-z][A-Za-z0-9]*\d[A-Za-z0-9]*(\.[A-Za-z0-9]+)?$/.test(q.t.trim())&&q.t.trim().length>=6&&!blk.some(o=>o.k!=='CONST'&&q.x>=o.x0&&q.x<=o.x1&&q.y>=o.y0&&q.y<=o.y1));
   for(const b of K){if(ub.has(b))continue;if(TX.some(q=>/^\s*\(?\s*-?\d+(?:\.\d+)?\s*(?:%|\/\s*-?\d+(?:\.\d+)?)\s*\)?\s*$/.test(q.t.trim())&&Math.hypot(q.x-b.cx,q.y-b.cy)<16))continue;let bt=null,bd=9;for(const q of tg){const w=q.t.trim().length*(q.h||4)*.6,dx=Math.max(b.x0-(q.x+w),0,q.x-b.x1),dy=Math.max(b.y0-q.y,0,q.y-b.y1),d=Math.hypot(dx,dy);if(d<bd){bd=d;bt=q}}if(bt)b.ref=bt.t.trim()}}
@@ -1394,6 +1441,8 @@ function anCompile(S){
      const lp=ins.filter(isCtl);let dg=lp.length?lp:ins.filter(p=>nets[p.n].dig);if(lp.length&&b.k==='AMT'){const ex=ins.filter(p=>!lp.includes(p)&&!isAB(p)&&nets[p.n].dig);if(ex.length&&ins.length-lp.length-ex.length>=1){const m0=/^\d\s*:\s*(\S+)/.exec(lp[0].lab||'');for(const q of ex)q.lab=m0&&/^a$/i.test(m0[1])?'1:B':'1:A';dg=[...lp,...ex];b.dig2=ex.length}}
      if(!dg.length){const c=ins.filter(p=>!isAB(p));if(c.length===1&&ins.length>=3){const q=c[0];if(!q.lab){let bt=null,bd=26;for(const t of tcand){const d=Math.hypot(t.x-q.x,t.y-q.y);if(d<bd){bd=d;bt=t}}if(bt)q.lab=bt.t.trim()}dg=[q]}}
      const an=ins.filter(p=>!dg.includes(p)).sort(posOrder);for(const q of dg)nets[q.n].dig=true;
+     if(b.k==='AMT'||b.k==='SW')b.buCmd=TX.some(q=>/^\s*BU-CMD\s*$/.test(q.t)&&Math.hypot(q.x-b.cx,q.y-b.cy)<70);
+     if(b.k==='SW'&&dg.length===1&&!dg[0].lab){/* the condition label (1:a) sits beside a diagonal selector wire, away from the pin */const lt=TX.filter(t=>/^\s*1\s*:\s*[aAbB]\s*$/.test(t.t)&&Math.hypot(t.x-b.cx,t.y-b.cy)<40).sort((x,y)=>Math.hypot(x.x-b.cx,x.y-b.cy)-Math.hypot(y.x-b.cx,y.y-b.cy))[0];if(lt)dg[0].lab=lt.t.trim()}
      b.sel=dg[0]?dg[0].n:-1;const sl=dg[0]&&dg[0].lab||'';const m=sl.match(/^\d\s*:\s*(\S+)/);P.selA=!!((m&&/^a$/i.test(m[1]))||(yn&&!m));
      b.cs=dg.map(q=>{const mm=(q.lab||'').match(/^\d\s*:\s*(\S+)/);return{n:q.n,A:!!((mm&&/^a$/i.test(mm[1]))||(yn&&!mm))}});
      let A=an.find(p=>/^a$/i.test(p.lab||'')),B=an.find(p=>/^b$/i.test(p.lab||''));
@@ -1404,6 +1453,7 @@ function anCompile(S){
      const tag=(b.txt.find(q=>!/SIG/i.test(q))||'').trim();b.i=[];if(!tag)break;const hit=new Set();
      for(const t of S.tx){if(t.t.trim()!==tag||Math.hypot(t.x-b.cx,t.y-b.cy)<16)continue;const w=tag.length*(t.h||3)*.6,x0=(t.a===2)?t.x-w:(t.a===1||t.a===4)?t.x-w/2:t.x,x1=x0+w;
       for(const sg of S.seg)for(const[x,y]of[[sg.x1,sg.y1],[sg.x2,sg.y2]])if(x>=x0-4&&x<=x1+4&&y>=t.y-4&&y<=t.y+(t.h||3)+3&&sg.net!=null)hit.add(sg.net)}
+     if(!hit.size)S.lab.forEach((l,n)=>{if(l&&l.t.trim()===tag&&nets[n]&&nets[n].segs.length)hit.add(n)});/* the tag written mid-wire: the wire carries the flag */
      for(const n of hit){if(blk.some(q=>q!==b&&q.pins.some(p=>p.role==='out'&&p.n===n))||nets[n].sigab)continue;if(!b.pins.some(p=>p.n===n)){b.pins.push({n,x:b.cx,y:b.cy,role:'out'});nets[n].dig=true}}
      b.o=[...new Set(b.pins.filter(p=>p.role==='out').map(p=>p.n))];break}
    case 'AI':b.i=[];break;
@@ -1421,7 +1471,11 @@ function anCompile(S){
      break}
    case 'DIV':{const s=ins.slice().sort(posOrder);let num=null,den=null;const lt=near(b.cx,b.cy,30,t=>/(?:^|=)\s*[ab]\s*\/\s*[ab]\b/i.test(t.t.trim()))[0];
      if(lt){const m=lt.t.trim().toLowerCase().match(/(?:^|=)\s*([ab])\s*\/\s*([ab])\b/);num=s.find(p=>(p.lab||'').toLowerCase()===m[1]);den=s.find(p=>(p.lab||'').toLowerCase()===m[2])}
-     if(!num||!den){const la=s.find(p=>(p.lab||'').toLowerCase()==='a'),lb=s.find(p=>(p.lab||'').toLowerCase()==='b');if(la&&lb&&la!==lb){num=la;den=lb}else{num=s[0];den=s[1]}}b.nu=num?num.n:-1;b.de=den?den.n:-1;b.i=[b.nu,b.de].filter(x=>x>=0);break}
+     else{/* stacked fraction drawn as two texts (A over B, or B over A): the upper letter is the numerator; the pin letters are the other A/B texts, matched to the pin by the side of the box they sit on */
+      const ft=S.tx.filter(q=>/^[AB]$/.test(q.t.trim())&&Math.hypot(q.x-b.cx,q.y-b.cy)<40);let top=null,low=null;for(const u of ft)for(const w of ft)if(u!==w&&Math.abs(u.x-w.x)<2.5&&u.y-w.y>3&&u.y-w.y<12){top=u;low=w}
+      if(top&&low&&top.t.trim()!==low.t.trim()){const pl={};for(const q of ft){if(q===top||q===low)continue;const dx=q.x-b.cx,dy=q.y-b.cy;pl[Math.abs(dx)>Math.abs(dy)?(dx>0?'R':'L'):(dy>0?'T':'B')]=q.t.trim().toLowerCase()}
+       const byL=l=>s.find(p=>((p.lab||'').toLowerCase()||pl[p.side])===l);num=byL(top.t.trim().toLowerCase());den=byL(low.t.trim().toLowerCase())}}
+     if(!num||!den){const la=s.find(p=>(p.lab||'').toLowerCase()==='a'),lb=s.find(p=>(p.lab||'').toLowerCase()==='b');if(la&&lb&&la!==lb){num=la;den=lb}else{/* unlabeled: the dividend is the through-line pin (opposite side to the output), the divisor is the side input */const op=b.pins.find(p=>p.role==='out'),opp=op&&({T:'B',B:'T',L:'R',R:'L'})[op.side],na=s.filter(p=>p.side===opp);if(!lt&&s.length===2&&na.length===1){num=na[0];den=s.find(p=>p!==num)}else{num=s[0];den=s[1]}}}b.nu=num?num.n:-1;b.de=den?den.n:-1;b.i=[b.nu,b.de].filter(x=>x>=0);break}
    case 'PID':case 'PIDV':{const s=ins.slice().sort(posOrder);b.in0=s[0]?s[0].n:-1;b.i=s.map(p=>p.n);
      const at=near(b.cx,b.cy,40,t=>/^ACT\s*:\s*[RN]/i.test(t.t.trim()))[0];P.act=at&&/R/i.test(at.t.trim().split(':')[1]||'')?-1:1;
      {const rg=near(b.cx,b.cy,50,t=>/-?\d+(?:\.\d+)?\s*~\s*-?\d+(?:\.\d+)?/.test(t.t.trim()))[0];if(rg&&P.span==null){const m=/(-?\d+(?:\.\d+)?)\s*~\s*(-?\d+(?:\.\d+)?)\s*([A-Za-z%\/°0-9²³]*)/.exec(rg.t.trim());if(m&&Math.abs(+m[2]-+m[1])>0){P.rlo=+m[1];P.rhi=+m[2];P.unit=m[3]||'';P.span=Math.abs(+m[2]-+m[1])}}}
@@ -1432,13 +1486,13 @@ function anCompile(S){
    case 'AI':{break}
    case 'CONST':{if(b.ref){const on=b.pins.find(p=>p.role==='out');if(on){(S.tagN=S.tagN||[]).push({t:b.ref,n:on.n,d:0});b.o=[];b.i=[];P.val=0;break}}const tn=b.txt.length?b.txt[0].replace(/%%%/g,'%'):null;if(tn&&/^-?\d+(\.\d+)?\s*[%A-Za-z°\/]{0,8}$/.test(tn))P.val=anNum(tn);
     /* v1.12.1: value written as a ratio next to the box (SCALE CONVERT 40 / 120 = 0.3333) or as a number with a unit / percent note (7.6 kg/cm2, 1.0 (100%)) */
-    if(P.val==null){const fr=near(b.cx,b.cy,40,t=>/^\s*-?\d+(?:\.\d+)?\s*\/\s*-?\d+(?:\.\d+)?\s*$/.test(t.t.trim()))[0];if(fr){const m=/(-?\d+(?:\.\d+)?)\s*\/\s*(-?\d+(?:\.\d+)?)/.exec(fr.t);if(+m[2]){P.val=+m[1]/+m[2];b.note='ratio '+fr.t.trim()}}}
+    if(P.val==null){const fr=near(b.cx,b.cy,40,t=>/^\s*-?\d+(?:\.\d+)?\s*\/\s*-?\d+(?:\.\d+)?\s*$/.test(t.t.trim()))[0];if(fr){const m=/(-?\d+(?:\.\d+)?)\s*\/\s*(-?\d+(?:\.\d+)?)/.exec(fr.t);if(+m[2]){P.val=+m[1]/+m[2];b.note='ratio '+fr.t.trim();/* SCALE CONVERT a / b = source range / destination range: it changes the unit scale in percent-of-range signals. The simulator carries engineering units, where it is x 1 (ABC-006: 648 + 432 + 35 = 1115 T/H total) */if(near(b.cx,b.cy,50,t=>/SCALE\s*CONVERT/i.test(t.t)).length){P.val=1;b.note='SCALE CONVERT '+fr.t.trim()+' (source range / destination range): x 1 in engineering units'}}}}
     if(P.val==null){const pc=near(b.cx,b.cy,16,t=>/^\(?\s*-?\d+(?:\.\d+)?\s*%\s*\)?$/.test(t.t.trim()))[0];if(pc){P.val=parseFloat(pc.t.replace(/[()%\s]/g,''));b.note='value '+pc.t.trim()}}
     if(P.val==null){const nu=near(b.cx,b.cy,24,t=>(Math.abs(t.y-b.cy)<=4||/^\s*-?\d+(?:\.\d+)?\s*\(\s*\d+\s*%\s*\)\s*$/.test(t.t.trim()))&&/^\s*-?\d+(?:\.\d+)?\s*(?:[A-Za-z%°][\w%°\/²³]*\s*)?(?:\(.*\))?\s*$/.test(t.t.trim())&&/[A-Za-z%°(]/.test(t.t.trim()))[0];if(nu){P.val=parseFloat(nu.t.trim());b.note='value '+nu.t.trim()}}
     if(P.val==null){P.val=0;b.warn='value not found'}b.i=[];break}
    case 'FX':{if(!P.ln)P.ln='';b.i=ins.map(p=>p.n);break}
    case 'DRATE':{b.i=ins.map(p=>p.n);break}
-   case 'LAG':{const t=near(b.cx,b.cy,24,q=>/^\d+(\.\d+)?\s*(sec|s|min)/i.test(q.t.trim()))[0];P.tau=t?anNum(t.t)*(/min/i.test(t.t)?60:1):15;b.i=ins.map(p=>p.n);break}
+   case 'LAG':{const t=near(b.cx,b.cy,24,q=>/^\d+(\.\d+)?\s*(sec|s|min)/i.test(q.t.trim()))[0];P.tau=t?anNum(t.t)*(/min/i.test(t.t)?60:1):15;b.i=ins.map(p=>p.n).sort((x,y)=>(nets[x].dig?1:0)-(nets[y].dig?1:0));/* the analog signal first, a digital enable (1: ENABLED) after it */break}
    case 'RATE':{const dg=ins.filter(p=>nets[p.n].dig),an=ins.filter(p=>!nets[p.n].dig);
      if(an.length>=2){/* rate limiter with its own limit inputs (ABC-003E): signal in on the side, two limit inputs, 1:BYPASS */
       const tt=near(b.cx,b.cy,320,q=>/^T\s*=/.test(q.t.trim()))[0];if(tt&&an.length>=2){const lp=an.find(p=>p.side==='L'),tp=an.find(p=>p.side==='T'),bp=an.find(p=>p.side==='B');if(lp&&tp&&lp!==tp){const rg2=anRange(S,b,120);b.main=tp.n;b.tpar=lp.n;b.span=rg2?Math.abs(rg2.hi-rg2.lo):100;b.byp=bp?bp.n:(dg[0]?dg[0].n:-1);if(bp)nets[bp.n].dig=true;b.up=undefined;P.rate=0;b.i=[b.main,b.tpar,b.byp].filter(x=>x>=0);break}}
@@ -1455,7 +1509,7 @@ function anCompile(S){
    case 'RAMPB':{const t=b.txt.find(q=>/RAMP/i.test(q));P.rate=t?anNum(t.replace(/RAMP\s*:/i,''))/(/\/\s*min/i.test(t)?60:/\/\s*(hr|h)\b/i.test(t)?3600:1):1;P.pct=!!t&&/%/.test(t);P.rtxt=t||'';const mp=ins.find(p=>p.side==='L')||ins[0],bp=ins.find(p=>p!==mp&&/BYPASS|^1:/i.test(p.lab||''))||ins.find(p=>p!==mp&&p.side==='T');b.main=mp?mp.n:undefined;b.byp=bp?bp.n:-1;if(bp&&!nets[bp.n].sigab)nets[bp.n].dig=true;b.i=[b.main,b.byp].filter(x=>x!==undefined&&x>=0);break}
    case 'HC':case 'LC':case 'HLC':{/* set point is written beside the box: "> = 2%", ">= 83.3%", "< 50 T/H", "> 0 kg/cm2" */
      let op=b.k==='HC'?'>':'<',sp=0,inc=false,u='',hit=null;const cl=q=>q.t.replace(/%%%/g,'%').trim();
-     {let alt=null;for(const q of near(b.cx,b.cy,16)){const m=cl(q).match(/^([<>≤≥])\s*(=)?\s*(-?\d+(?:\.\d+)?)\s*(.*)$/);if(!m)continue;if(/[>≥]/.test(m[1])===(op==='>')){hit=m;break}if(!alt)alt=m}if(!hit)hit=alt}
+     {let alt=null;for(const R of [16,30]){if(hit||alt)break;/* second pass: set point written a little further from the box (ABC-001A "> 0.1%") */for(const q of near(b.cx,b.cy,R)){const m=cl(q).match(/^([<>≤≥])\s*(=)?\s*(-?\d+(?:\.\d+)?)\s*(.*)$/);if(!m)continue;if(/[>≥]/.test(m[1])===(op==='>')){hit=m;break}if(!alt)alt=m}}if(!hit)hit=alt}
      if(!hit)for(const q of near(b.cx,b.cy,16)){const m=cl(q).match(/^()()(-?\d+(?:\.\d+)?)\s*(%|[A-Za-z°][\w\/°%]*)?$/);if(m){hit=m;break}}
      if(hit){sp=+hit[3];u=hit[4]||'';if(hit[1]){op=/[>≥]/.test(hit[1])?'>':'<';inc=/[≥≤]/.test(hit[1])||hit[2]==='='}P.found=1}
      P.ref=-1;if(!hit)for(const q of near(b.cx,b.cy,16)){const m=cl(q).match(/^([<>≤≥])\s*(=)?\s*([A-Za-z][\w.]{3,})$/);if(!m)continue;{P.refTag=m[3];op=/[>≥]/.test(m[1])?'>':'<';inc=/[≥≤]/.test(m[1])||m[2]==='=';P.found=1;break}}
@@ -1503,8 +1557,13 @@ function anCompile(S){
    S.tagN=(S.tagN||[]).filter(q=>!q.by);anAddr(S);
    for(const a of S.addr){const k=a.how==='circle tag'?'circle':a.how==='AO block input'?'AO':/^wire beside/.test(a.how)?'addr':null;if(!k)continue;add(a.t,a.eng);(S.tagN=S.tagN||[]).push({t:a.t,n:a.eng,d:k==='circle'?0:k==='AO'?9:a.gap,by:k})}}
   for(const k in G){const g=G[k];if(g.length<2)continue;const dg=nets[g[0]].dig,isL=n=>S.link.some(x=>x[0]===n);const src=g.find(n=>S.drv[n].length&&nets[n].dig===dg&&!S.drv[n].some(d=>d.k==='LINK'))??g.find(n=>isL(n))??-1;
-   const master=src>=0?src:g.find(n=>!S.drv[n].length&&S.cns[n].length);if(master==null||master<0)continue;
+   let master=src>=0?src:g.find(n=>!S.drv[n].length&&S.cns[n].length);if(master==null||master<0)continue;
+   {/* a master that is itself the end of a connector link: go back to the root of that chain (otherwise two ends of one signal feed each other and the input can not be set) */let gd=0,lk;while(gd++<20&&(lk=S.link.find(x=>x[0]===master)))master=lk[1]}
    for(const n of g){if(n===master||S.drv[n].length||nets[n].dig!==nets[master].dig||S.link.some(x=>x[0]===n))continue;S.link.push([n,master])}}}
+ if(S.name==='ABC-007'){/* the controller PV tags FICFA1071.PV / FICFA1081.PV (and the unlabeled PV wire of the house-load subtraction) are the flow signals FIFA1071.PV / FIFA1081.PV that feed the PID */
+  const lb=t=>{let r=-1;S.lab.forEach((l,n)=>{if(r<0&&l&&l.t===t&&nets[n].segs.length)r=n});return r};
+  for(const[al,pv]of[['FICFA1071.PV','FIFA1071.PV'],['FICFA1081.PV','FIFA1081.PV']]){const x=lb(al),y=lb(pv);if(x>=0&&y>=0&&x!==y&&!S.drv[x].length&&!S.link.some(q=>q[0]===x))S.link.push([x,y])}
+  for(const b of blk)if(b.k==='SUB'&&b.i.length===2){const cn=b.i.find(n=>S.drv[n].some(d=>d.k==='CONST')),o=b.i.find(n=>n!==cn);if(cn!=null&&o!=null&&!S.drv[o].length&&!S.link.some(q=>q[0]===o)){const v=S.drv[cn].find(d=>d.k==='CONST').p.val,y=v===230?lb('FIFA1071.PV'):v===245?lb('FIFA1081.PV'):-1;if(y>=0&&y!==o)S.link.push([o,y])}}}
  S.link.forEach(([dst,srcN])=>{/* make the destination net driven */S.drv[dst].push({k:'LINK',id:-1,o:[dst],i:[srcN]})});
  /* order: dependencies first, back edges ignored (a loop reads the value of the previous step) */
  const ord=[],st=new Map();const vis=b=>{if(st.get(b)===2)return;if(st.get(b)===1)return;st.set(b,1);for(const n of b.i)for(const d of S.drv[n])if(d!==b)vis(d);st.set(b,2);ord.push(b)};
@@ -1518,11 +1577,14 @@ function anCompile(S){
  {const devPV=d=>{let r=null;const ins=d.pins.filter(q=>q.role==='in');for(const t of TX.filter(q=>/^(PV|SV)$/i.test(q.t.trim())&&anD(q.x,q.y,d.cx,d.cy)<=30)){const p=ins.slice().sort((a,c)=>anD(a.x,a.y,t.x,t.y)-anD(c.x,c.y,t.x,t.y))[0],ip=p&&d.ip&&d.ip.find(x=>x.n===p.n);if(ip){if(/^PV$/i.test(t.t.trim()))r=ip.sg;else if(r==null)r=-ip.sg}}return r};
   for(const b of S.blk)if(b.k==='DCMP'&&b.dc&&b.i&&b.i.length){const dv=(S.drv[b.i[0]]||[]).find(q=>q.k==='DEV'),sg=dv?devPV(dv):null;for(const d of b.dc){const m=/^(PV|SV)\s*-\s*(PV|SV)/i.exec(d.txt||'');if(!m)continue;d.neg=/^PV$/i.test(m[1])!==(sg!==null&&sg>0)}}}
  /* tracking providers: block whose output net feeds the A input of a selector */
- for(const b of blk)if((b.k==='SW'||b.k==='AMT')&&b.a>=0)b.trkFrom=S.drv[b.a].filter(d=>d.k==='PID'||d.k==='PIDV'||d.k==='MAN');
+ for(const b of blk)if((b.k==='SW'||b.k==='AMT')&&b.a>=0){b.trkFrom=S.drv[b.a].filter(d=>d.k==='PID'||d.k==='PIDV'||d.k==='MAN');b.upA=S.drv[b.a].filter(d=>d.k==='AMT'&&d.id!==b.id)}
+ /* auto / manual switch with a COS (operator station) whose select comes from a pulse ("FORCE TO MANUAL" 2 s pulse): the station stays in manual until the operator sets auto (memory list M.0110 "FORCE TO MANUAL", drawing TPs pulses) */
+ {const hasTPS=st=>{const seen=new Set(),q=[st];let f=false;while(q.length){const n=q.pop();if(n==null||n<0||seen.has(n))continue;seen.add(n);for(const d of (S.drv[n]||[])){if(d.k==='TPS'||d.k==='TPV')f=true;if(['AND','OR','NOT','XOR','FF','TON','TOF','TPS','TPV','HC','LC','HLC'].includes(d.k))(d.i||[]).forEach(x=>q.push(x))}}return f};
+  for(const b of blk)if(b.k==='AMT'&&b.sel>=0&&b.a>=0&&b.b>=0&&!(b.cs&&b.cs.length>1)&&blk.some(x=>x.k==='COS'&&Math.hypot(x.cx-b.cx,x.cy-b.cy)<14)&&!blk.some(x=>x!==b&&(x.k==='AMT'||x.k==='SW')&&x.sel===b.sel&&x.cs&&x.cs.length>1)&&hasTPS(b.sel))b.latch=1}
  return S}
 function anInit(S){anDefaults(S);const N=S.nets.length,rt=S.rt={v:new Float64Array(N),t:0,ext:{},st:{},force:{},k:0,stp:new Int32Array(N),acc:new Float64Array(N)};
  for(const b of S.blk){const s=rt.st[b.id]={};
-  if(b.k==='AI'){const r=anRange(S,b,45);b.rng=r;s.val=r?r.lo:0}
+  if(b.k==='AI'){let r=anRange(S,b,45);if(!r&&!b.fb)r=anRange(S,b,70);/* range text a little further from the box (ABC-008 AI0481, 0 ~ 1200 rpm) */b.rng=r;s.val=r?r.lo:0}
   if(b.k==='MAN'){s.val=Math.max(b.p.lo,Math.min(b.p.hi,0));s.trk=null}
   if(b.k==='PID'||b.k==='PIDV'){s.I=0;s.out=0;s.trk=null}
   if(b.k==='SIGAB'){s.val=0}
@@ -1567,14 +1629,14 @@ function aiBad(S,id){const a=S.blk.find(z=>z.id===id),q=a&&a.sig&&S.rt.st[a.sig.
 function anNetRange(S,n){const d=(S.drv[n]||[])[0],bl=d&&(d.i===undefined&&d.id!==undefined?S.blk.find(z=>z.id===d.id):d);if(!bl)return null;if(bl.k==='AI'&&bl.rng&&bl.rng.hi>bl.rng.lo)return{lo:bl.rng.lo,hi:bl.rng.hi,u:bl.rng.u||''};if(bl.k==='MAN'&&bl.p&&bl.p.hi>bl.p.lo)return{lo:bl.p.lo,hi:bl.p.hi,u:bl.p.u||''};if((bl.k==='PID'||bl.k==='PIDV')&&bl.p&&bl.p.hi>bl.p.lo)return{lo:bl.p.lo,hi:bl.p.hi,u:'%'};return null}
 function anExtRange(S,n){const sg0=S.seg[S.nets[n].segs[0]],r=anRange(S,{cx:sg0?sg0.x1:0,cy:sg0?sg0.y1:0},45);return r&&r.hi>r.lo?r:null}
 function anClamp(r,x){if(!r||!(r.hi>r.lo))return{x,cut:false};const y=Math.max(r.lo,Math.min(r.hi,x));return{x:y,cut:y!==x}}
-function anFXIn(S,b){const t=b.p&&b.p.tbl;if(!t||!/%/.test(t.xu||''))return null;
+function anFXIn(S,b){const t=b.p&&b.p.tbl;if(!t||!(/%/.test(t.xu||'')||(/^\s*RANGE\s*$/i.test(t.xu||'')&&t.xr&&t.xr[0]===0&&t.xr[1]===100)))return null;
  const same=(p,q)=>p.k===q.k&&p.lo===q.lo&&p.hi===q.hi;
  const src=(S,n,d,seen)=>{const key=S.name+'|'+n;if(d>14||seen.has(key))return null;seen.add(key);const dr=(S.drv[n]||[]).find(q=>q.k!=='LINK');
   if(!dr){if(S.ext.includes(n)){/* a signal from another sheet: follow the link to the sheet that drives it */if(!S.xlk){const shh=AN.sheets.find(z=>z.S===S);if(shh)try{linksOf(shh)}catch(e){}}const l=S.xlk&&S.xlk[n];if(l&&l.from&&l.from.S){const FS=l.from.S,fn=l.fromNets.find(m=>(FS.drv[m]||[]).some(q=>q.k!=='LINK'));if(fn!==undefined){const q=src(FS,fn,d+1,seen);if(q)return q}}
     const r=anExtRange(S,n);return r?(r.lo===0&&r.hi===100?{k:'id'}:{k:'rng',lo:r.lo,hi:r.hi,u:r.u||''}):null}return null}
   const bl=dr.i===undefined&&dr.id!==undefined?S.blk.find(z=>z.id===dr.id):dr;if(!bl)return null;const k=bl.k;
   if(k==='PID'||k==='PIDV')return{k:'id'};
-  if(k==='DIV')return{k:'ratio'};
+  if(k==='DIV')return S.kn&&S.kn[bl.i[1]]!==undefined?{k:'id'}:{k:'ratio'};/* a divider by a constant written on the wire is a plain average, not a ratio */
   if(k==='AI'||k==='MAN'){const r=anNetRange(S,n);return r?(r.lo===0&&r.hi===100?{k:'id'}:{k:'rng',lo:r.lo,hi:r.hi,u:r.u||''}):null}
   if(k==='FX'){const y=bl.p&&bl.p.tbl&&bl.p.tbl.yr;return y&&y[0]===0&&y[1]===100?{k:'id'}:null}
   if(['LAG','LINK','RATE','RAMPB','ABS','LIM','HLIM','LLIM','AMT','SW','HS','LS','SEL'].includes(k)){let res=null;for(const m of bl.i){if(S.nets[m]&&S.nets[m].dig)continue;const q=src(S,m,d+1,seen);if(!q)continue;if(res&&!same(res,q))return null;res=q}return res}
@@ -1605,6 +1667,11 @@ function anFX(P,x){const ln=P.ln,t=((typeof window!=='undefined'&&window.ANLN)||
 function anPins(S,b){if(b._pins!==undefined)return b._pins;let r=null;try{if((b.k==='PID'||b.k==='PIDV')&&b.in0>=0){const d=(S.drv[b.in0]||[]).map(x=>S.blk.find(q=>q.id===x.id)).find(q=>q&&q.k==='DEV'&&q.ip&&q.ip.length>=2);
   if(d){const ins=d.pins.filter(q=>q.role==='in');let psg=null,by=0;for(const t of S.tx||[]){const tt=t.t.trim();if(!/^(PV|SV)$/i.test(tt)||Math.hypot(t.x-d.cx,t.y-d.cy)>30)continue;const pn=ins.slice().sort((x,y)=>Math.hypot(x.x-t.x,x.y-t.y)-Math.hypot(y.x-t.x,y.y-t.y))[0],ip=pn&&d.ip.find(x=>x.n===pn.n);if(!ip)continue;psg=/^PV$/i.test(tt)?ip.sg:-ip.sg;by=1}
    if(psg==null)psg=b.p.act<0?-1:1;const pv=d.ip.find(q=>q.sg===psg)||d.ip[0],sv=d.ip.find(q=>q!==pv);r={dev:d,pv:pv.n,sv:sv?sv.n:-1,pvSg:psg,byLabel:by}}}}catch(e){r=null}return b._pins=r}
+/* PID input: filter time constant TF (first-order filter on the PV) and low input cut CUT (PV below CUT % of a zero-based range is taken as 0 %): faceplate parameters of the parameter workbook, names and ranges in the textbook (PID panel); the exact DCS formulas are not in the repository, so this is the usual definition (Needs Verification, FINDINGS N-5) */
+function anPidIn(S,b,s,v,dt){const x=v[b.in0],P=b.p;if(!(P.tf>0||P.cut>0))return x;const r=anPins(S,b);if(!r||!r.byLabel||r.pv==null||r.pv<0)return x;const pv=v[r.pv];let q=pv;
+ if(P.cut>0&&P.rlo>=0&&P.rhi>P.rlo&&q<P.rlo+P.cut/100*(P.rhi-P.rlo))q=P.rlo;
+ if(P.tf>0){if(s.pvf==null||!isFinite(s.pvf))s.pvf=q;else if(dt>0)s.pvf+=(q-s.pvf)*(1-Math.exp(-dt/P.tf));q=s.pvf}else s.pvf=q;
+ return x+r.pvSg*(q-pv)}
 function anProcEst(b){const P=b.p,lt=P.lt||'general',TAU={flow:6,pressure:25,temperature:60,level:90,analysis:40,speed:15,general:30},kp=P.kp>0?P.kp:1;
  /* a tuned loop: Ti is about the process time constant, Kp x K is about 0.6; dead time from Td, otherwise a tenth of T */
  const T=P.ti>0?Math.min(600,Math.max(3,P.ti)):(TAU[lt]||30),L=P.td>0?Math.min(T/3,Math.max(.5,P.td*2)):(lt==='flow'?1:Math.min(15,Math.max(1,T/12))),K=Math.min(1,Math.max(.2,.8*T/(kp*L)));return{K:+K.toFixed(2),T:+T.toFixed(1),L:+L.toFixed(1)}}
@@ -1663,29 +1730,35 @@ function anStep(S,dt){const rt=S.rt,v=rt.v,nets=S.nets,B=x=>x>.5?1:0;rt.t+=dt;rt
  for(const k in S.pre||{}){const pr=S.pre[k];if(S.ext.includes(+k)&&F[+k]===undefined)for(const q of[pr].concat(pr.alt||[]))if(q.eq===0?v[q.c]<.5:v[q.c]>.5){v[+k]=q.src!=null?v[q.src]:q.val;if(q.src!=null)rt.ext[+k]=v[+k]}}
  const rd=n=>n>=0?v[n]:0;
  for(const b of S.ord){
-  if(b.k==='LINK'){v[b.o[0]]=F[b.o[0]]!==undefined?F[b.o[0]]:v[b.i[0]];continue}
+  if(b.k==='LINK'){v[b.o[0]]=F[b.o[0]]!==undefined?F[b.o[0]]:v[b.i[0]]*(b.gain==null?1:b.gain);continue}
   const s=rt.st[b.id],P=b.p,out=x0=>{for(const n of b.o){const x=(S.aoN&&S.aoN.has(n)&&x0===x0)?Math.max(0,Math.min(100,x0)):x0;if(MU[n]){if(rt.stp[n]!==rt.k){rt.stp[n]=rt.k;rt.acc[n]=x}else if(x>rt.acc[n])rt.acc[n]=x;v[n]=rt.acc[n]}else v[n]=x;const pr=S.pre&&S.pre[n];if(pr)for(const q of[pr].concat(pr.alt||[]))if(q.eq===0?v[q.c]<.5:v[q.c]>.5)v[n]=q.src!=null?v[q.src]:q.val}};
   switch(b.k){
    case 'AI':{const r=b.rng,sp=r?Math.max(1e-9,r.hi-r.lo):100;if(b.fb){const fs=rt.st[b.fb.id],pos=fs&&fs.pos!=null?fs.pos:0,lo=r?r.lo:0,hi=r?r.hi:100;s.val=lo+(hi-lo)*pos/100;s.act=s.val}else s.act=slew(s.act,s.val,sp);s.bad=b.sig&&rt.st[b.sig.id]&&rt.st[b.sig.id].val>.5?1:0;out(s.bad?(rt.st[b.sig.id].val>1.5?(r?r.hi:100):0):s.act);break}
    case 'CONST':out(P.mt?P.th*P.orig/100:P.val);break;
    case 'SIGAB':out(s.val>.5?1:0);break;
-   case 'MAN':{if(b.i&&b.i[2]!=null&&b.i[2]>=0){const dr=(S.drv[b.i[2]]||[]).find(x=>x.k==='AMT');if(dr&&rt.st[dr.id]&&rt.st[dr.id].pk==='A')s.val=rd(b.i[2])}if(s.trk!=null)s.val=s.trk;s.val=Math.max(P.lo,Math.min(P.hi,s.val));out(s.val);break}
+   case 'MAN':{if(b.svI===undefined){b.svI=-1;if(b.i)for(let j=0;j<b.i.length;j++){const dr=(S.drv[b.i[j]]||[]).find(x=>x.k==='AMT'&&x.sel>=0&&/B\s*\/\s*T/.test((x.txt||[]).join('/')));if(dr){b.svI=j;break}}if(b.svI<0&&b.i&&b.i[2]!=null&&b.i[2]>=0)b.svI=2}if(b.svI>=0&&b.i[b.svI]!=null&&b.i[b.svI]>=0){const dr=(S.drv[b.i[b.svI]]||[]).find(x=>x.k==='AMT');if(dr&&rt.st[dr.id]&&rt.st[dr.id].pk==='A')s.val=rd(b.i[b.svI])}if(s.trk!=null)s.val=s.trk;s.val=Math.max(P.lo,Math.min(P.hi,s.val));out(s.val);break}
    case 'PID':case 'PIDV':{/* v1.11.0: input = deviation e = SV - PV (EU). Reverse action (ACT:R, P.act<0): PV below SV -> output up. u = Kp*(es + I/Ti + Td*des/dt), es in % of span; clamped to [lo,hi], integral frozen / back-calculated at the limits; while the downstream selector is on another input the controller TRACKS it (bumpless) */
-    const span=Math.max(1e-9,P.span||100),pg=b._pgv!==undefined?b._pgv:(b._pgv=(()=>{try{const q=anPins(S,b);return q&&q.pvSg?q.pvSg:null}catch(e){return null}})()),sg=pg==null?(P.act<0?1:-1):(P.act<0?-1:1)*pg,es=sg*rd(b.in0)/span*100,lo=P.lo,hi=P.hi,kp=P.kp==null?1:P.kp;let u,Dt=0;
+    const span=Math.max(1e-9,P.span||100),pg=b._pgv!==undefined?b._pgv:(b._pgv=(()=>{try{const q=anPins(S,b);return q&&q.pvSg?q.pvSg:null}catch(e){return null}})()),sg=pg==null?(P.act<0?1:-1):(P.act<0?-1:1)*pg,es=sg*anPidIn(S,b,s,v,dt)/span*100,lo=P.lo,hi=P.hi,kp=P.kp==null?1:P.kp;let u,Dt=0;
     if(b.vel){const e1=s.ep==null?es:s.ep;u=s.inited&&dt>0?kp*((es-e1)+(P.ti>0?es*dt/P.ti:0)):0;s.ep2=e1;s.ep=es;s.out=u;s.es=es;s.pt=u;s.it=0;s.dd=0;s.inited=1;out(u);break}
     if(s.trk!=null){u=Math.max(lo,Math.min(hi,s.trk));s.I=u-kp*es}
     else{if(s.inited&&dt>0){if(P.ti>0){const sat=(s.out>=hi&&es>0)||(s.out<=lo&&es<0);if(!sat)s.I+=kp*es/P.ti*dt}if(P.td>0)Dt=kp*P.td*(es-(s.ep||0))/dt}
-     u=kp*es+s.I+Dt;if(u>hi){s.I-=u-hi;u=hi}else if(u<lo){s.I+=lo-u;u=lo}}
+     u=kp*es+s.I+Dt;if(u>hi){s.I-=u-hi;u=hi}else if(u<lo){s.I+=lo-u;u=lo}
+     /* dMVH: manipulated output variable change ratio upper limit (% of the MV range per sampling interval DTI, 1 s) */
+     if(P.dmvh>0&&s.inited&&dt>0&&s.out!=null&&isFinite(s.out)){const lim=P.dmvh/100*(hi-lo)*dt/(P.dti>0?P.dti:1);if(u>s.out+lim)u=s.out+lim;else if(u<s.out-lim)u=s.out-lim}}
     s.ep=es;s.out=u;s.es=es;s.pt=kp*es;s.it=s.I;s.dd=Dt;s.inited=1;out(u);break}
-   case 'SW':case 'AMT':{if(b.q4){const q=b.q4;let k=-1;for(let i=0;i<q.cond.length;i++)if(P['c'+(i+1)]>.5){k=i;break}if(k>=0)s.q4k=k;const lg=q.cond[s.q4k==null?0:s.q4k].leg;s.pk=lg.toUpperCase();s.q4l=lg;if(b.o.length)out(q.leg[lg]>=0?rd(q.leg[lg]):0);break}const sel=b.sel>=0?B(rd(b.sel)):0;let pickB=P.selA?!sel:!!sel;if(b.cs&&b.cs.length>1){const ua=!swTimer(S,b)&&b.cs.some(c=>(rt.force[c.n]!==undefined||(S.ext&&S.ext.includes(c.n)))&&B(rd(c.n)));if(ua&&!s.ub){s.ub=1;s.upk=s.pk==='B'?'B':'A'}else if(!ua&&s.ub){s.ub=0;s.pk=s.upk}}if(b.cs&&b.cs.length>1){const wB=b.cs.some(c=>!c.A&&B(rd(c.n))),wA=b.cs.some(c=>c.A&&B(rd(c.n)));pickB=wB?true:wA?false:s.pk==='B'}if(s.fm==='A')pickB=false;else if(s.fm==='B')pickB=true;s.pk=pickB?'B':'A';let y;
-     const n=pickB?b.b:b.a;if(n>=0)y=rd(n);else y=(s.hold!=null?s.hold:0);if(!pickB||b.b>=0)s.hold=y;s.y=y;
+   case 'SW':case 'AMT':{if(b.q4){const q=b.q4;let k=-1;for(let i=0;i<q.cond.length;i++)if(P['c'+(i+1)]>.5){k=i;break}if(k>=0)s.q4k=k;const lg=q.cond[s.q4k==null?0:s.q4k].leg;s.pk=lg.toUpperCase();s.q4l=lg;if(b.o.length)out(q.leg[lg]>=0?rd(q.leg[lg]):0);break}const sel=b.sel>=0?B(rd(b.sel)):0;let pickB=P.selA?!sel:!!sel;if(b.latch){if(pickB)s.lb=1;else if(s.fm==='A')s.lb=0;pickB=!!s.lb}if(b.cs&&b.cs.length>1){const ua=!swTimer(S,b)&&b.cs.some(c=>(rt.force[c.n]!==undefined||(S.ext&&S.ext.includes(c.n)))&&B(rd(c.n)));if(ua&&!s.ub){s.ub=1;s.upk=s.pk==='B'?'B':'A'}else if(!ua&&s.ub){s.ub=0;s.pk=s.upk}}if(b.cs&&b.cs.length>1){const wB=b.cs.some(c=>!c.A&&B(rd(c.n))),wA=b.cs.some(c=>c.A&&B(rd(c.n)));pickB=wB?true:wA?false:s.pk==='B'}if(s.fm==='A')pickB=false;else if(s.fm==='B')pickB=true;s.pk=pickB?'B':'A';let y;
+     const n=pickB?b.b:b.a;if(n>=0){y=rd(n);if(pickB&&b.bg!=null)y*=b.bg;if(!pickB&&b.ag!=null)y*=b.ag;if(b.ia&&b.ia[n])y=y*b.ia[n][0]+b.ia[n][1]}else y=(s.hold!=null?s.hold:0);if(!pickB||b.b>=0)s.hold=y;s.y=y;
      const other=pickB?b.a:b.b;
      /* bumpless tracking: the PID / MAN that feeds the unselected A input follows the output */
-     if(b.trkFrom)for(const d of b.trkFrom){const ds=rt.st[d.id];if(ds)ds.trk=pickB?y:null}
-     out(y);break}
-   case 'ADD':case 'SUM':case 'DEV':case 'SUB':{let y=0;for(const q of b.ip)y+=q.sg*rd(q.n);out(y);break}
+     /* interlock tracking (legend: "INTERLOCK TRACKING FOR PID CONTROLLER & MANUAL CONTROL STATION"): a back-up value selected by a downstream selector is also tracked by the upstream A/M selector, its PID and its COS manual value */
+     const bu=s.bu;
+     if(b.trkFrom)for(const d of b.trkFrom){const ds=rt.st[d.id];if(ds)ds.trk=bu!=null?bu:(pickB?y:null)}
+     if(b.upA)for(const u of b.upA){const us=rt.st[u.id];if(us)us.bu=bu!=null?bu:((pickB&&b.buCmd)?y:null)}
+     if(bu!=null&&b.b>=0&&S.ext&&S.ext.includes(b.b)&&/B\s*\/\s*T/.test((b.txt||[]).join('/'))&&s.bw!==bu){s.bw=bu;rt.ext[b.b]=b.bg!=null?bu/b.bg:bu}
+     out(b.og!=null?y*b.og:y);break}
+   case 'ADD':case 'SUM':case 'DEV':case 'SUB':{let y=0;for(const q of b.ip){let x=rd(q.n);if(q.ia)x=x*q.ia[0]+q.ia[1];y+=q.sg*x}out(y);break}
    case 'MUL':{let y=1;b.i.forEach((n,j)=>{y*=rd(n)/((b.nrm&&b.nrm[j])||1)});if(b.gain!=null)y*=b.gain;out(b.i.length?y:0);break}
-   case 'DIV':{const d=rd(b.de);if(Math.abs(d)<1e-9){s.bad=1;out(s.good!=null?s.good:0)}else{s.bad=0;s.good=rd(b.nu)/d;out(s.good)}break}
+   case 'DIV':{const d=rd(b.de);if(Math.abs(d)<1e-9){s.bad=1;out(s.good!=null?s.good:0)}else{s.bad=0;s.good=rd(b.nu)/d;if(b.oa)s.good=s.good*b.oa[0]+b.oa[1];out(s.good)}break}
    case 'HLLIM':{let x=rd(b.main);if(b.lo>=0)x=Math.max(x,rd(b.lo));if(b.hi>=0)x=Math.min(x,rd(b.hi));out(x);break}
    case 'ABS':out(Math.abs(rd(b.i[0])));break;
    case 'SQRT':{const x=rd(b.i[0]);if(x<0){s.bad=1;out(0)}else{s.bad=0;const R=b.rin||100;out(b.idn?x:R*Math.sqrt(x/R))}break}
@@ -2442,7 +2515,7 @@ function drawSheet(sh){const svg=$('svg'),R=sh.R,S=sh.S;svg.innerHTML='';L={nets
   for(const b of S.blk){const hl=(b.k==='HS'||b.k==='LS')&&b.i.length>1&&new Set(b.i).size===b.i.length;if(!hl&&(!(b.k==='SW'||b.k==='AMT')||b.a<0||b.b<0||b.a===b.b))continue;
    for(const side of(hl?b.i.map((_,k)=>'h'+k):['a','b'])){const n=hl?b.i[+side.slice(1)]:b[side],net=S.nets[n],pin=b.pins.find(p=>p.n===n&&p.role==='in')||b.pins.find(p=>p.n===n);if(!pin||!net)continue;
     let cur=[pin.x,pin.y];const used=new Set(),segs=[];
-    for(let st=0;st<14;st++){let bi=-1,bd=1e9;for(const i of net.segs){if(used.has(i))continue;const s=S.seg[i];const d=Math.min(anD(s.x1,s.y1,cur[0],cur[1]),anD(s.x2,s.y2,cur[0],cur[1]));if(d<=TP&&d<bd){bd=d;bi=i}}
+    for(let st=0;st<14;st++){let bi=-1,bd=1e9;for(const i of net.segs){if(used.has(i))continue;const s=S.seg[i];const d=Math.min(anD(s.x1,s.y1,cur[0],cur[1]),anD(s.x2,s.y2,cur[0],cur[1]));if(d<=(st===0?8:TP)&&d<bd){bd=d;bi=i}}
      if(bi<0)break;used.add(bi);const s=S.seg[bi];segs.push(s);
      const far=anD(s.x1,s.y1,cur[0],cur[1])<=anD(s.x2,s.y2,cur[0],cur[1])?[s.x2,s.y2]:[s.x1,s.y1];
      const others=net.segs.filter(i=>!used.has(i)&&(ends(S.seg[i]).some(([x,y])=>anD(x,y,far[0],far[1])<=TP)||anPtSeg(far[0],far[1],S.seg[i])<=.45));
@@ -2626,7 +2699,7 @@ function paint0(){const sh=cs();if(!sh||!sh.S||!L)return;try{const m=document.ge
   if(BADN.has(n.id)&&!isD)c=BADC;const fo=!AN.view&&S.rt.force[n.id]!==undefined&&!(S.rt.pf&&S.rt.pf[n.id]);if(fo&&FCOL)c=FCOL;const sl=selNets&&selNets.has(n.id);if(sl)w+=.45;let hal='';{const T=trSet(sh);if(T){if(T.start.has(n.id))hal=TST;else if(T.up.has(n.id))hal=TUP;else if(T.dn.has(n.id))hal=TDN;else o=.35}if(hal&&AN.view){c='#dfe7ed';w+=.3}}if(e._h!==hal){e._h=hal;e.style.filter=hal?'drop-shadow(0 0 1.6px '+hal+') drop-shadow(0 0 1px '+hal+')':''}const dsh=fo?'1.4 .8':(BADN.has(n.id)&&!isD?'2 1':null);
   if(e._c!==c||e._d!==dsh||e._w!==w||e._o!==o||e._r!==AN.wsr){e._c=c;e._d=dsh;e._w=w;e._o=o;e._r=AN.wsr;(L.arw&&L.arw[n.id]||[]).forEach(q=>{q.setAttribute('fill',c);q.setAttribute('fill-opacity',o)});e.setAttribute('stroke',c);e.setAttribute('stroke-width',w);e.setAttribute('stroke-opacity',o);if(dsh)e.setAttribute('stroke-dasharray',dsh);else e.removeAttribute('stroke-dasharray');
    const k=L.core&&L.core[n.id];if(k){k.style.display=(n.pn?false:(n.dig?dTube:tube))?'':'none';k.setAttribute('stroke-width',w*.22);if(dsh)k.setAttribute('stroke-dasharray',dsh);else k.removeAttribute('stroke-dasharray')}}}
- for(const g of L.legs||[]){const q=S.rt.st[g.b.id],pk=q&&q.pk==='B'?'B':'A',dim=!AN.view&&(g.side[0]==='h'?g.n!==anHL(S,g.b):(g.side==='a')===(pk==='B')),ne=L.nets[g.n];if(!ne)continue;
+ for(const g of L.legs||[]){const q=S.rt.st[g.b.id],pk=q&&q.pk==='B'?'B':'A',dim=(g.side[0]==='h'?g.n!==anHL(S,g.b):(g.side==='a')===(pk==='B')),ne=L.nets[g.n];if(!ne)continue;
   if(dim){g.e.style.display='';g.e.setAttribute('stroke-width',((ne._w||.8)+.12).toFixed(2));g.on=1;for(const a of g.arw){a.setAttribute('fill','#3b4651');a.setAttribute('fill-opacity',1)}}
   else if(g.on){g.e.style.display='none';g.on=0;for(const a of g.arw){a.setAttribute('fill',ne._c||'#3b4651');a.setAttribute('fill-opacity',ne._o==null?1:ne._o)}}}
  for(const q of L.dots||[]){const ne=L.nets[q.n];if(ne&&ne._c&&q.c!==ne._c){q.c=ne._c;q.e.setAttribute('fill',ne._c)}}
