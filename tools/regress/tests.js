@@ -1,7 +1,7 @@
 // Regression tests for the ABC analog reader / engine. Run: node tools/regress/tests.js [html]
 // Every test returns {id, ref, ok, detail}. The expected values come from docs/versions/v1.20.21/FINDINGS.md (batch and finding named in `ref`).
 const {open}=require('./lib');
-const html=process.argv[2]||'logic-sim-v1.20.21.html';
+const html=process.argv[2]||'logic-sim-v1.20.22.html';
 (async()=>{
 const {browser,page,errs}=await open(html);
 const res=await page.evaluate(async()=>{
@@ -59,7 +59,10 @@ const res=await page.evaluate(async()=>{
     const lim=P.dmvh/100*(P.hi-P.lo)*.25/(P.dti>0?P.dti:1);if(mx>lim*1.05+1e-6)bad.push(s.name+'#'+b.id+' step '+mx.toFixed(3)+' > '+lim.toFixed(3))}}
   add('S4 F-31 dMVH limit','F-31: MV change <= dMVH % of range per DTI',bad.length===0,n+' PID tested ('+trk.length+' skipped: in interlock tracking by default, tracking is not rate limited); '+(bad.length?bad.slice(0,8).join('; '):'no step above the limit'))}
  // ---- S5: F-30 latch count
- {const l=[];for(const s of AN.sheets){const S=AN.ensure(s);for(const b of S.blk)if(b.latch)l.push(s.name+'#'+b.id)}add('S5 F-30 latched A/M switches','F-30 lists ABC-003A #46, 003B/C/D #33, 004A #55, 008 #18, 020 #40/#45, 051 #22',l.length===9,l.length+' latched: '+l.join(', ')+(l.length===9?'':'  (FINDINGS says 9; ABC-051 #22 shares its select with a COS selector and is excluded by the rule)'))}
+ {const l=[];for(const s of AN.sheets){const S=AN.ensure(s);for(const b of S.blk)if(b.latch)l.push(s.name+'#'+b.id)}add('S5 F-30 latched A/M switches','F-30 lists ABC-003A #46, 003B/C/D #33, 004A #55, 008 #18, 020 #40/#45, 051 #22',l.length===8,l.length+' latched: '+l.join(', ')+' (ABC-051 #22 and two on ABC-007 share their select with a COS selector and are excluded by the rule, batch 31 R-2)')}
+ // ---- S6: F-31 CUT: a PV below CUT % of the range gives the same output as PV = bottom of the range (R-1: CUT / DH data fixed in v1.20.22)
+ {let n=0,bad=[],none=0;for(const s of AN.sheets){const S=AN.ensure(s);for(const b of S.blk){if(b.k!=='PID'||!(b.p.cut>0)||!(b.p.rlo>=0)||b.vel)continue;const q=AN.anPins(S,b);if(!q||q.pv==null||q.pv<0||q.sv==null)continue;const P=b.p,run=pv=>{AN.reset();clean(S);const F=S.rt.force;F[q.sv]=P.rlo+.5*(P.rhi-P.rlo);F[q.pv]=pv;for(let i=0;i<20;i++)AN.stepSet(s,.25);if(S.rt.st[b.id].trk!=null)return null;const y=S.rt.v[b.o[0]];delete F[q.pv];delete F[q.sv];return y};const a=run(P.rlo),c=run(P.rlo+.5*P.cut/100*(P.rhi-P.rlo));if(a==null||c==null){none++;continue}n++;if(Math.abs(a-c)>1e-6)bad.push(s.name+'#'+b.id+' '+a+' vs '+c)}}
+  add('S6 F-31 CUT active','R-1: CUT from the workbook',bad.length===0&&n>0,n+' PID tested ('+none+' skipped, in tracking); '+(bad.length?bad.slice(0,6).join('; '):'PV below the cut is taken as the bottom of the range'))}
  return R});
 const t1=res.filter(x=>x.id.startsWith('T1 '));console.log((t1.every(x=>x.ok)?'PASS':'FAIL')+' T1 load / 30 s step: '+t1.filter(x=>x.ok).length+' of '+t1.length+' sheets'+t1.filter(x=>!x.ok).map(x=>' | '+x.id+': '+x.detail).join(''));
 for(const x of res.filter(x=>!x.id.startsWith('T1 ')))console.log((x.ok?'PASS':'FAIL')+' '+x.id+' ['+x.ref+'] '+x.detail);
