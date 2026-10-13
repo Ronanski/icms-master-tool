@@ -60,3 +60,10 @@ GO BETA given by the user. Beta 1 = `logic-sim-v1.20.21.html` on branch `claude/
 - The html is now `logic-sim-v1.20.22.html` (audit fixes F-1..F-31). Site: `checks.yml` -> `site.yml` publishes Stable (main) at `/` and Beta (pushed branch) at `/beta/` on GitHub Pages (Settings > Pages > Source = GitHub Actions, once).
 - Shells: `app/` (Electron portable exe) and `android-app/` (Capacitor apk) load the site, so they update by themselves; two of each (Stable, Beta, different app id). Built by `release.yml` (input `GO v1.20.22`, `dry_run`).
 - apk signing needs the repository secrets ANDROID_KEYSTORE_B64 and ANDROID_KS_PASS (no key in the repo yet). Old committed apk / exe removed. Not tested: builds on GitHub, apk / exe on a device.
+
+## 2026-10-13 (later) - RUN mode fixes in the standalone html
+- Removed the SIG.AB mid-wire tag change (F-24): cross-sheet flag links fell 42 -> 21 (test-xsheet-flag). Back to 42.
+- T switch without memory (`pickB=wB?true:false`, ABC-017 / ABC-029 return to A after force 0 / release) and the percent-rate Reset fix (rates were compounded at every Reset): same fixes as the dcs-logic-sim WIP v1.20.22, written here.
+- Regression on the final html (tools of the dcs-logic-sim clone, read only): blocks, comparators, cos, switch-return, reset-rate, loops, verify-ab/sel/range, legend, links, pid, pid-all, math, rate, fixes, force-all, xsheet-flag, path, xref = rc 0. plant = rc 1 (same as v1.20.21), links-all = timeout (same as v1.20.21).
+- test-pidsign: 7 PROBLEM lines that v1.20.21 does not have. Cause: F-31 (PV filter TF) makes the P term lag in the 0.5 s test, the sign itself is right. F-31 stays "Needs Verification" (no formula in the repo).
+- Still open: ABC-036..039 drawing images not read; 11 cross-sheet inputs that are operator inputs; 9 PID loops need O2 trim / CCS setup; apk / exe not run on a device.
