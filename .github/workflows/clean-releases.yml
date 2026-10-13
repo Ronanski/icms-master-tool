@@ -1,5 +1,5 @@
 name: Clean releases (no Beta)
-# Manual. Beta is never a release (it is the html of a pushed branch on the Beta page). Removes every beta asset and every pre-release from the Releases section.
+# Manual. Beta is never a release (it is the html of a pushed branch on the Beta page). Removes every beta and UAT asset and every pre-release from the Releases section.
 on: workflow_dispatch
 permissions: { contents: write }
 jobs:
@@ -9,7 +9,7 @@ jobs:
     steps:
       - run: |
           for r in $(gh release list --repo "$GITHUB_REPOSITORY" --json tagName -q '.[].tagName'); do
-            for n in $(gh release view "$r" --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' | grep -i beta || true); do gh release delete-asset "$r" "$n" --repo "$GITHUB_REPOSITORY" -y || true; done
+            for n in $(gh release view "$r" --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' | grep -i -E 'beta|UAT' || true); do gh release delete-asset "$r" "$n" --repo "$GITHUB_REPOSITORY" -y || true; done
           done
           for r in $(gh release list --repo "$GITHUB_REPOSITORY" --json tagName,isPrerelease -q '.[] | select(.isPrerelease) | .tagName'); do gh release delete "$r" --repo "$GITHUB_REPOSITORY" -y --cleanup-tag || true; done
           gh release list --repo "$GITHUB_REPOSITORY"
