@@ -94,8 +94,10 @@ jobs:
           V=${{ needs.gate.outputs.version }}
           T=${{ needs.gate.outputs.tag }}
           mkdir rel
-          for f in $(find out -type f -name '*.apk'); do c=$(basename "$f" .apk | sed 's/logic-sim-//'); cp "$f" "rel/Logic-Sim-v$V-$c.apk"; done
-          for f in $(find out -type f -name '*.exe'); do case "$f" in *Beta*) c=beta;; *) c=stable;; esac; cp "$f" "rel/Logic-Sim-v$V-$c-portable.exe"; done
+          find out -type f -name '*.apk' -print0 | while IFS= read -r -d '' f; do c=$(basename "$f" .apk | sed 's/logic-sim-//'); cp "$f" "rel/Logic-Sim-v$V-$c.apk"; done
+          find out -type f -name '*.exe' -print0 | while IFS= read -r -d '' f; do case "$f" in *Beta*) c=beta;; *) c=stable;; esac; cp "$f" "rel/Logic-Sim-v$V-$c-portable.exe"; done
+          # old unversioned names of the first v1.20.23 upload
+          for n in "Logic.Sim-portable.exe" "Logic.Sim.Beta-portable.exe"; do gh release delete-asset "$T" "$n" -y 2>/dev/null || true; done
           cp "logic-sim-v$V.html" rel/
           cp "docs/versions/v$V/Release-Report-v$V.pdf" rel/
           cp "docs/versions/v$V/UAT-v$V.html" rel/
