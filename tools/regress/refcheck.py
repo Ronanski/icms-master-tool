@@ -2,7 +2,7 @@
 # Usage: python3 tools/regress/refcheck.py [html]
 import re,json,subprocess,sys,os,xlrd,openpyxl
 root=os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
-html=sys.argv[1] if len(sys.argv)>1 else os.path.join(root,'logic-sim-v1.20.21.html')
+html=sys.argv[1] if len(sys.argv)>1 else os.path.join(root,'logic-sim-v1.20.22.html')
 out='/tmp/refcheck-dump.json'
 subprocess.run(['node',os.path.join(root,'tools/regress/dump.js'),html,out],check=True)
 D=json.load(open(out))
@@ -58,7 +58,7 @@ for sh in ('PID','MAN','SUMA'):
 KNOWN={'S1-LN15':'ratio curve stored as factor (FINDINGS batch 3)','S1-LN21':'ratio curve stored as factor (FINDINGS batch 3)'}
 print('  known F(X) exceptions in the list above: LN15, LN21 (ratio curves stored as a factor), LN38 / LN39 (compared with drum-level-calculation.xls, not this workbook)')
 print('Parameters: %d workbook rows (PID / MAN / SUMA), %d not found in the simulator, %d with differences'%(tot,len(missing),len(diffs)))
-print('  CUT / DH swapped between simulator data and workbook (F-2): %d PID. Simulator p.cut = 0 and p.dh = workbook CUT, so the CUT function of F-31 reads 0 on all of them.'%len(swap))
+print('  CUT / DH swapped between simulator data and workbook (F-2 / R-1): %d PID%s'%(len(swap),' (v1.20.21: CUT of F-31 reads 0)' if swap else ''))
 for m in missing: print('  not found:',m)
 for d in diffs: print('  diff:',d)
 
