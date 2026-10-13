@@ -1,6 +1,6 @@
 # Regression harness (ABC analog reader)
 
-Headless (Playwright + Chromium) checks of the root `logic-sim-vX.Y.Z.html` (default v1.20.22; the reference build v1.20.21 is in `document-references/`). Nothing in the repository is modified by them.
+Headless (Playwright + Chromium) checks of the root `logic-sim-vX.Y.Z.html` (default v1.20.23; the reference build v1.20.21 is in `document-references/`). Nothing in the repository is modified by them.
 
 | Command | What it does | Time |
 |---|---|---|
