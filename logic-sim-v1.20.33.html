@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Logic Sim v1.20.32</title><script>/* gunzip of the built-in data, with a second way if the first one fails in the browser */window.gunz=async function(bin){try{return await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text()}catch(e1){try{var ds=new DecompressionStream('gzip'),w=ds.writable.getWriter();w.write(bin);w.close();var r=ds.readable.getReader(),parts=[],n=0;for(;;){var q=await r.read();if(q.done)break;parts.push(q.value);n+=q.value.length}var all=new Uint8Array(n),o=0;for(var i=0;i<parts.length;i++){all.set(parts[i],o);o+=parts[i].length}return new TextDecoder().decode(all)}catch(e2){throw new Error('gunzip failed ('+bin.length+' bytes): '+e1.message+' / '+e2.message)}}};</script><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#10151a"><script>/* update check: the page, the apk and the exe keep the installed version and ASK before updating (Stable or Beta, the channel the user chose) */
+<title>Logic Sim v1.20.33</title><script>/* gunzip of the built-in data, with a second way if the first one fails in the browser */window.gunz=async function(bin){try{return await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text()}catch(e1){try{var ds=new DecompressionStream('gzip'),w=ds.writable.getWriter();w.write(bin);w.close();var r=ds.readable.getReader(),parts=[],n=0;for(;;){var q=await r.read();if(q.done)break;parts.push(q.value);n+=q.value.length}var all=new Uint8Array(n),o=0;for(var i=0;i<parts.length;i++){all.set(parts[i],o);o+=parts[i].length}return new TextDecoder().decode(all)}catch(e2){throw new Error('gunzip failed ('+bin.length+' bytes): '+e1.message+' / '+e2.message)}}};</script><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#10151a"><script>/* update check: the page, the apk and the exe keep the installed version and ASK before updating (Stable or Beta, the channel the user chose) */
 (function(){if(!/^https?:$/.test(location.protocol))return;var T=(document.title.match(/v\d+(\.\d+)+/)||[''])[0],beta=/\/beta\/(index\.html)?$/.test(location.pathname),dir=location.pathname.replace(/index\.html$/,''),base=dir.replace(/beta\/$/,'');
 function cmp(a,b){var x=a.replace('v','').split('.').map(Number),y=b.replace('v','').split('.').map(Number);for(var i=0;i<3;i++){if((x[i]||0)!==(y[i]||0))return(x[i]||0)-(y[i]||0)}return 0}
 function say(t){var d=document.getElementById('updtoast');if(!d){d=document.createElement('div');d.id='updtoast';d.style.cssText='position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:99998;background:#18212a;color:#dbe5ec;border:1px solid #6aaee0;border-radius:8px;padding:8px 14px;font:14px system-ui;max-width:90vw';document.body.append(d)}d.textContent=t;d.style.display='block';clearTimeout(say.t);say.t=setTimeout(function(){d.style.display='none'},5000)}
@@ -25575,7 +25575,7 @@ function anStep(S,dt){const rt=S.rt,v=rt.v,nets=S.nets,B=x=>x>.5?1:0;rt.t+=dt;rt
     if(b.vel){const e1=s.ep==null?es:s.ep;u=s.inited&&dt>0?kp*((es-e1)+(P.ti>0?es*dt/P.ti:0)):0;s.ep2=e1;s.ep=es;s.out=u;s.es=es;s.pt=u;s.it=0;s.dd=0;s.inited=1;out(u);break}
     if(s.trk!=null){u=Math.max(lo,Math.min(hi,s.trk));s.I=u-kp*es}
     else{if(s.inited&&dt>0){if(P.ti>0){const sat=(s.out>=hi&&es>0)||(s.out<=lo&&es<0);if(!sat)s.I+=kp*es/P.ti*dt}if(P.td>0)Dt=kp*P.td*(es-(s.ep||0))/dt}
-     const pi=kp*es+s.I;if(pi>hi)s.I-=pi-hi;else if(pi<lo)s.I+=lo-pi;/* v1.20.32: the back-calculation uses the PI part only, so a derivative kick cannot wind the integral up in the wrong direction */u=Math.max(lo,Math.min(hi,kp*es+s.I+Dt));
+     const pi=kp*es+s.I;if(pi>hi)s.I-=pi-hi;else if(pi<lo)s.I+=lo-pi;/* v1.20.33: the back-calculation uses the PI part only, so a derivative kick cannot wind the integral up in the wrong direction */u=Math.max(lo,Math.min(hi,kp*es+s.I+Dt));
      /* dMVH: manipulated output variable change ratio upper limit (% of the MV range per sampling interval DTI, 1 s) */
      if(P.dmvh>0&&s.inited&&dt>0&&s.out!=null&&isFinite(s.out)){const lim=P.dmvh/100*(hi-lo)*dt/(P.dti>0?P.dti:1);if(u>s.out+lim)u=s.out+lim;else if(u<s.out-lim)u=s.out-lim}}
     s.ep=es;s.out=u;s.es=es;s.pt=kp*es;s.it=s.I;s.dd=Dt;s.inited=1;out(u);break}
@@ -26166,7 +26166,7 @@ document.head.appendChild(Object.assign(document.createElement('style'),{id:'ski
    if(!beta&&ch==='beta'){location.replace(base+'beta/')}
    else if(gs){const cs=document.createElement('select');cs.id='chsel';cs.title='Stable = released by the owner. Beta = testing of the newest fixes. Your choice is remembered.';[['stable','Channel: Stable'],['beta','Channel: Beta']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;cs.append(o)});cs.value=beta?'beta':'stable';cs.onchange=()=>{try{localStorage.setItem('logic.channel',cs.value)}catch(e){}location.href=base+(cs.value==='beta'?'beta/':'')};gs.append(cs)}}}catch(e){}
  const upd=()=>{try{const an=AN.cat==='an';let m,k='';if(an){m=AN.view?'VIEW / TRACE':AN.run?'RUN':'PAUSED';k=AN.view?'view':AN.run?'run':''}else{m=SIM?'SIMULATE':'EDIT';k=SIM?'run':''}
-   c1.textContent=m;c1.className=k;const sh=an?AN.sheets[AN.i]:S.sheets[S.cur];c2.textContent=sh&&sh.name?sh.name:'';c3.textContent='v1.20.32'}catch(e){}};upd();setInterval(upd,400)}
+   c1.textContent=m;c1.className=k;const sh=an?AN.sheets[AN.i]:S.sheets[S.cur];c2.textContent=sh&&sh.name?sh.name:'';c3.textContent='v1.20.33'}catch(e){}};upd();setInterval(upd,400)}
 function anSide(){const sd=SC(),tg=$('sidetg');{const f=$('sidefl');if(f){if(AN._ph===undefined)AN._ph=f.placeholder;f.placeholder='Search sheets (001A, 57, DRUM, FURNACE...)'}}sd.classList.toggle('min',SIDEMIN==='1');tg.textContent=SIDEMIN==='1'?'▶':'◀';$('sidect').textContent='Analog sheets ('+AN.sheets.length+')';
  const c=cs();$('sidevt').textContent=c?c.name+'  ·  '+(anOrd().indexOf(AN.i)+1)+'/'+AN.sheets.length:'Analog';
  anSortUi();const key=AN.sheets.map(s=>s.name).join('|')+'#'+AN.fl+'#'+AN.sm;
@@ -33465,7 +33465,7 @@ body.ophmi #anp{display:none!important}
   setInterval(tick,250);return true}
  let n=0;const iv=setInterval(()=>{try{if(init()||++n>60)clearInterval(iv)}catch(e){clearInterval(iv)}},300);
 })();
-</script><!--HMI-END--><!--UAT-BEGIN--><script id="uatdata" type="application/json">{"ver":"1.20.32","known":{}}</script><script id="uatui">/* UAT runner: runs one test case of one block on the simulator (AN) and compares the result with the expected rows. Used by the generator (dry run) and by the UAT panel. */
+</script><!--HMI-END--><!--UAT-BEGIN--><script id="uatdata" type="application/json">{"ver":"1.20.33","known":{}}</script><script id="uatui">/* UAT runner: runs one test case of one block on the simulator (AN) and compares the result with the expected rows. Used by the generator (dry run) and by the UAT panel. */
 window.UATR=(function(){
  const fmt=x=>x==null||!isFinite(x)?'—':Math.abs(x)>=1000?x.toFixed(0):Math.abs(x)>=100?x.toFixed(1):Math.abs(x)>=10?x.toFixed(2):x.toFixed(3);
  function plantOff(){const sv=[];for(const x of AN.sheets)if(x.S)for(const b of x.S.procs||[]){sv.push([b,b.proc.on]);b.proc.on=false}return sv}
@@ -33656,4 +33656,59 @@ function build(){if(P.style.display!=='block')return;const sh=sheet();if(!sh||/^
  P.scrollTop=top}
 setInterval(()=>{try{const sh=sheet();if(sh&&P.style.display==='block'&&P.dataset.sheet!==sh.name){P.dataset.sheet=sh.name;build()}}catch(e){}},500);
 })();
-</script><!--UAT-END--></body></html>
+</script><!--UAT-END--><!--THEME-BEGIN--><style id="themecss">/* Diagram themes (html[data-dg]) and clearer text. Colours only: no layout, no engine. Standard = the colours of v1.20.32 plus clearer text. */
+html:not([data-ui]){--tx:#eaf2f8;--dim:#a6b8c8}
+html[data-ui=slate]{--panel:#1b2530;--line:#34475a;--tx:#edf3f8;--dim:#aebfce;--panel2:#233140;--in:#141c25;--bd:#40566b;--hv:#2a3a4b;--hv2:#31445a;--rowl:#202d3a;--sel2:#2f7fc0;--sbg:linear-gradient(#223040,#1b2530)}
+/* text halo: letters stay readable where a wire crosses them */
+#svg text{paint-order:stroke;stroke:var(--dgbg,#0f1418);stroke-width:2.2px;stroke-linejoin:round;font-weight:500}
+#svg text[fill="#d5dde3"]{fill:var(--dgtx,#f2f6f9)}
+#svg path[stroke="#3b4651"]{stroke:var(--dgdead,#4d5a66)}
+/* ---------- Calm: softer colours, same meaning ---------- */
+html[data-dg=calm]{--dgbg:#121a20;--dgtx:#f1f5f8;--dgdead:#55636f}
+html[data-dg=calm] #svg{background:#121a20}
+html[data-dg=calm] #svg [stroke="#35d6c8"]{stroke:#62bdb3}html[data-dg=calm] #svg [fill="#35d6c8"]{fill:#62bdb3}
+html[data-dg=calm] #svg [stroke="#5aa9ff"]{stroke:#78a6da}html[data-dg=calm] #svg [fill="#5aa9ff"]{fill:#78a6da}
+html[data-dg=calm] #svg [stroke="#ffc233"]{stroke:#dcb765}html[data-dg=calm] #svg [fill="#ffc233"]{fill:#dcb765}
+html[data-dg=calm] #svg [stroke="#ff7ad9"]{stroke:#cb8fbd}html[data-dg=calm] #svg [fill="#ff7ad9"]{fill:#cb8fbd}
+html[data-dg=calm] #svg [stroke="#b48cff"]{stroke:#a999d8}html[data-dg=calm] #svg [fill="#b48cff"]{fill:#a999d8}
+html[data-dg=calm] #svg [stroke="#b4e04a"]{stroke:#a6c36f}html[data-dg=calm] #svg [fill="#b4e04a"]{fill:#a6c36f}
+html[data-dg=calm] #svg [stroke="#4be08a"]{stroke:#72c79a}html[data-dg=calm] #svg [fill="#4be08a"]{fill:#72c79a}
+/* ---------- Clarity: only the live signals have colour, blocks are neutral ---------- */
+html[data-dg=clarity]{--dgbg:#141a1f;--dgtx:#ffffff;--dgdead:#5c6a76}
+html[data-dg=clarity] #svg{background:#141a1f}
+html[data-dg=clarity] #svg [stroke="#35d6c8"],html[data-dg=clarity] #svg [stroke="#5aa9ff"],html[data-dg=clarity] #svg [stroke="#ff7ad9"],html[data-dg=clarity] #svg [stroke="#b48cff"],html[data-dg=clarity] #svg [stroke="#b4e04a"],html[data-dg=clarity] #svg [stroke="#4be08a"]{stroke:#b9c6d1}
+html[data-dg=clarity] #svg [fill="#35d6c8"],html[data-dg=clarity] #svg [fill="#5aa9ff"],html[data-dg=clarity] #svg [fill="#ff7ad9"],html[data-dg=clarity] #svg [fill="#b48cff"],html[data-dg=clarity] #svg [fill="#b4e04a"],html[data-dg=clarity] #svg [fill="#4be08a"]{fill:#e4ebf1}
+html[data-dg=clarity] #svg [fill="rgb(17,44,44)"],html[data-dg=clarity] #svg [fill="rgb(45,31,47)"],html[data-dg=clarity] #svg [fill="rgb(22,37,52)"],html[data-dg=clarity] #svg [fill="rgb(35,45,27)"],html[data-dg=clarity] #svg [fill="rgb(20,45,36)"]{fill:#222b33}
+/* ---------- Paper: light grey page, dark ink (not pure white) ---------- */
+html[data-dg=paper]{--dgbg:#e8ecef;--dgtx:#12191f;--dgdead:#9aa6b0}
+html[data-dg=paper] #svg{background:#e8ecef}
+html[data-dg=paper] #svg path[stroke="#0b1013"]{stroke:#e8ecef}
+html[data-dg=paper] #svg [stroke="#35d6c8"]{stroke:#0b7a72}html[data-dg=paper] #svg [fill="#35d6c8"]{fill:#0b7a72}
+html[data-dg=paper] #svg [stroke="#5aa9ff"]{stroke:#1f5fae}html[data-dg=paper] #svg [fill="#5aa9ff"]{fill:#1f5fae}
+html[data-dg=paper] #svg [stroke="#ffc233"]{stroke:#a86a00}html[data-dg=paper] #svg [fill="#ffc233"]{fill:#a86a00}
+html[data-dg=paper] #svg [stroke="#ff7ad9"]{stroke:#a82e86}html[data-dg=paper] #svg [fill="#ff7ad9"]{fill:#a82e86}
+html[data-dg=paper] #svg [stroke="#b48cff"]{stroke:#6440b4}html[data-dg=paper] #svg [fill="#b48cff"]{fill:#6440b4}
+html[data-dg=paper] #svg [stroke="#b4e04a"]{stroke:#587a10}html[data-dg=paper] #svg [fill="#b4e04a"]{fill:#587a10}
+html[data-dg=paper] #svg [stroke="#4be08a"]{stroke:#157a46}html[data-dg=paper] #svg [fill="#4be08a"]{fill:#157a46}
+html[data-dg=paper] #svg [stroke="#c9d3dc"]{stroke:#44525e}html[data-dg=paper] #svg [fill="#e6edf3"]{fill:#12191f}
+html[data-dg=paper] #svg [fill="rgb(17,44,44)"],html[data-dg=paper] #svg [fill="rgb(45,31,47)"],html[data-dg=paper] #svg [fill="rgb(22,37,52)"],html[data-dg=paper] #svg [fill="rgb(35,45,27)"],html[data-dg=paper] #svg [fill="rgb(20,45,36)"],html[data-dg=paper] #svg [fill="rgb(38,43,47)"],html[data-dg=paper] #svg [fill="#1a2229"]{fill:#d7dee4}
+html[data-dg=paper] #svg text[style*="rgb(201, 209, 217)"],html[data-dg=paper] #svg text[style*="rgb(216, 196, 255)"]{fill:#12191f!important}
+#dgsel{margin-left:6px}
+html[data-dg=paper] #svg text.bd{fill:#0a6b3a}html[data-dg=paper] #svg text.bd.inp{fill:#0b5f8a}
+html[data-dg=paper] #svg [stroke="#aeb9c3"]{stroke:#5b6874}html[data-dg=paper] #svg [stroke="#e6edf3"]{stroke:#222c35}html[data-dg=paper] #svg [stroke="#4de6ff"]{stroke:#0a7aa0}
+html[data-dg=paper] #svg [fill="#0b1013"]{fill:#e8ecef}
+</style><script id="themejs">/* Diagram + UI theme selectors (colours only). Remembers the choice. */
+(function(){
+const DG=[['std','Standard'],['calm','Calm'],['clarity','Clarity'],['paper','Paper']],UI2=[['slate','Slate']];
+const get=k=>{try{return localStorage.getItem(k)}catch(e){return null}},set=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+const root=document.documentElement;
+function applyDg(v){if(!DG.some(x=>x[0]===v))v='std';if(v==='std')root.removeAttribute('data-dg');else root.setAttribute('data-dg',v);return v}
+let dg=applyDg(get('ditl.dg')||'std');
+function build(){const ui=document.getElementById('uisel');if(!ui||document.getElementById('dgsel'))return;
+ UI2.forEach(([k,n])=>{const o=document.createElement('option');o.value=k;o.textContent='UI: '+n;ui.append(o)});
+ const u=get('ditl.ui');if(u&&UI2.some(x=>x[0]===u)){root.setAttribute('data-ui',u);ui.value=u}
+ const sel=document.createElement('select');sel.id='dgsel';sel.title='Colours of the diagram';DG.forEach(([k,n])=>{const o=document.createElement('option');o.value=k;o.textContent='Diagram: '+n;sel.append(o)});sel.value=dg;
+ sel.onchange=()=>{dg=applyDg(sel.value);set('ditl.dg',dg)};ui.after(sel)}
+build();if(!document.getElementById('dgsel'))document.addEventListener('DOMContentLoaded',build);
+})();
+</script><!--THEME-END--></body></html>
