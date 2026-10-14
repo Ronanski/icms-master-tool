@@ -1,7 +1,7 @@
 // Reset fidelity: every sheet is mutated like a user would (digital inputs forced both ways, every switch flipped, 40 s of RUN with the plant on),
 // then Reset is pressed. The state of every block and net must equal the state of Reset on a freshly loaded page (the same start whatever the user did). Usage: node tests/regress/reset.js [html]
 const {open}=require('./lib.js');
-const html=process.argv[2]||require('fs').readdirSync('.').find(x=>/^logic-sim-v\d+\.\d+\.\d+\.html$/.test(x));
+const html=process.argv[2]||require('fs').readdirSync('dist').map(x=>'dist/'+x).find(x=>/logic-sim-v\d+\.\d+\.\d+\.html$/.test(x));
 const FP=`(()=>{const o={};for(const sh of AN.sheets)if(!/ABC-000/.test(sh.name))AN.ensure(sh);for(const sh of AN.sheets){if(/ABC-000/.test(sh.name))continue;const S=AN.ensure(sh);for(let i=0;i<6;i++)AN.stepSet(sh,0);
  const v=Array.from(S.rt.v).map(x=>+(+x).toFixed(4));const st={};for(const id in S.rt.st){const s=S.rt.st[id];const q={};for(const k in s){const x=s[k];if(typeof x==='number'||typeof x==='string'||x===null)q[k]=typeof x==='number'?+x.toFixed(4):x}st[id]=q}
  o[sh.name]={v,st,force:Object.keys(S.rt.force).length,ext:JSON.stringify(S.rt.ext)}}return o})()`;
