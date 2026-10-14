@@ -5,6 +5,7 @@ window.UATR=(function(){
  function plantRestore(sv){for(const [b,o] of sv)b.proc.on=o}
  function apply(S,st){for(const n in st.force||{})S.rt.force[n]=st.force[n];for(const n in st.unforce||{})delete S.rt.force[n];for(const n in st.ext||{})S.rt.ext[n]=st.ext[n];for(const id in st.fm||{}){const q=S.rt.st[id];if(q)q.fm=st.fm[id]}for(const id in st.st||{}){const q=S.rt.st[id];if(q)Object.assign(q,st.st[id])}}
  function runCase(sh,c){const S=AN.ensure(sh);
+  if(c.skipMsg)return {ok:true,skip:c.skipMsg,rows:[]};
   if(c.reset!==false){AN.reset();plantOff()}
   S.rt.force={};
   let start={};
@@ -17,6 +18,7 @@ window.UATR=(function(){
   for(const r of c.rows){let a=r.st?(S.rt.st[r.st.id]||{})[r.st.f]:S.rt.v[r.k],good,exp;
    if(r.cmp==='inc'){const s0=start[r.k];good=isFinite(a)&&(a>s0+r.d||(r.lim&&s0>=r.lim[1]-0.5));exp='rises (from '+fmt(s0)+')'}
    else if(r.cmp==='dec'){const s0=start[r.k];good=isFinite(a)&&(a<s0-r.d||(r.lim&&s0<=r.lim[0]+0.5));exp='falls (from '+fmt(s0)+')'}
+   else if(r.cmp==='delta'){const s0=start[r.k];good=isFinite(a)&&isFinite(s0)&&Math.abs((a-s0)-r.v)<=r.tol;exp='rises by '+fmt(r.v)+' (from '+fmt(s0)+')'}
    else if(r.eqk!=null){const b2=S.rt.v[r.eqk];good=isFinite(a)&&Math.abs(a-b2)<=r.tol;exp='= '+fmt(b2)}
    else{good=isFinite(a)&&Math.abs(a-r.v)<=r.tol;exp=r.txt||fmt(r.v)}
    if(!good)ok=false;out.push({t:r.t,exp,act:fmt(a),ok:good})}

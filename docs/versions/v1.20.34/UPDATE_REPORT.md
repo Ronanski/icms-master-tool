@@ -19,11 +19,21 @@
   - Headless na pagsubok ng embedded mode: offline (walang error, walang dialog), may bagong bersyon (lumalabas ang tanong), pagkatapos pumayag (bubukas ang site), at kapag naka-save ang choice (diretso sa site). 
 - **Status:** Beta (pushed branch). Hindi pa Stable.
 
+## Dagdag (pangalawang bahagi ng v1.20.34): ang UAT ay hindi pala sumasaklaw sa lahat
+- **Tapat na sukat ng lumang UAT (v1.20.32):** 1767 items ang "pasado" sa mahigit 3,800 na blocks. Walang test ang math blocks (SUM, SUB, ADD, MUL, DIV, DEV, SQRT, ABS), ang ramp / rate blocks (43), ang flip-flops (47), ang average selects (30) at ang constants; at ang report ay binibilang ang skipped bilang pass.
+- **Idinagdag na tests (expected galing sa kahulugan ng block o sa text ng drawing, hindi sa engine):** math (add / subtract / sum / deviation; multiply / divide / square root / abs), constants, flip-flops S / R, average select, CMPK, at ramps: ang rate ay binabasa mula sa text ng drawing ("RAMP:1% / sec", "(1T / Sec)", "2 kg/cm2 / min", "18% / Hr" ...) at ikinukumpara sa aktwal na taas ng output sa takdang oras. Ang mga ramp na walang nakasulat na rate, o ang rate ay galing sa signal, ay "NOT TESTED" na may dahilan.
+- **Resulta:** 2235 items, 6055 cases, 0 bagsak (dry run, 165 s). Sa unang takbo ay 37 ang bagsak: lahat ay mali sa setup ng test (ang ramp ay nagsisimula sa 0, may mga constant na hindi dapat i-force, ang mga net na papunta sa AO ay naka-clamp 0 ~ 100, ang constants na "%" ay ginagawang real value ayon sa PROJECT_RULES 4a); inayos ang test, hindi ang engine. Ang rate ng mga ramp na may text ay tumugma sa drawing.
+- **Hindi pa sakop ng UAT** (nakasulat din sa panel at sa report): AO, valves / actuators (ACT, VLV, IP), alarms (ALM), COS, SIG.AB, TXD, FIELD, ilang constants at comparators. Ang 103 na cases ay skipped (may dahilan).
+- **Ang Copy report** ay hiwalay na ngayong nagbibilang ng pass, NOT TESTED at fail.
+- **PV / SV / MV AUTO / MAN** (`tools/regress/pid_am.js`): MAN na may manual value habang ang PV ay 20 % sa itaas ng SV, tapos AUTO: 32 sa 32 PID ang tama (hawak ang manual value, sumusunod ang controller, walang talon). 13 PID ang hindi nasubukan dahil ang interlock back-up (BU-CMD) ay active by default at ang controller ay sumusunod doon ayon sa drawing (ABC-003A/B/C/D, 010, 011, 012, 019, 030, 032, 051, 052, 002). Ang HMI snapshots ay mga plant graphics (operating values), hindi faceplate: hindi nagagamit na basehan ng A/M.
+- **Doble-doble na live values (UI lang):** ang AO ay hindi na naglalagay ng ikalawang number sa block kung may address value na ng parehong net (halimbawa AO0352 0.00 at 0.00%), at kapag parehong may address value ang input at output ng AO, isa lang ang ipinapakita (halimbawa MCV-FA1054-1 0.00). Ang actuator (damper) % ay nananatili. Nasubukan sa headless sa ABC-007; hindi pa sa ibang sheet.
+- **Bumabagal (paliwanag, hindi pa ginagawa):** bawat 0.1 s, kinukwenta ng app ang ~36 na sheet kahit isa lang ang tinitingnan, dahil may mga signal na dumadaan sa pagitan ng mga sheet. Ang ayos: kuwentahin lang ang mga sheet na nagpapadala ng signal sa tinitingnang sheet (at ang sa kanila). Ang mga sheet na hindi konektado ay hihinto habang hindi tinitingnan (pareho na ito ngayon sa mga hindi konektado). Dapat ma-verify na pareho ang mga value; kailangan ng approval ng user.
+- **Themes (v1.20.33):** hindi pa kasama dahil sa pagsasama ng dalawang pagbabago sa iisang html na kailangan ng utos ng user; hiwalay pa rin sa branch `themes`.
+
 ## Hindi pa nasusuri / bukas
 - apk at exe ay HINDI pa na-build at HINDI nasubukan (walang Android / Windows build dito). Ang workflow ay may `dry_run` para sa build lang.
 - Ang embedded na kopya ay hiwalay ang storage sa site: ang saved settings ng user sa site ay hindi nakikita sa embedded (at kabaligtaran).
 - Bumabagal sa tablet: panukala, kailangan ng approval: i-step lang ang mga sheet na talagang konektado sa nakikitang sheet at i-throttle ang paint. Engine change, hindi pa ginawa.
-- Doble-doble na live values (halimbawa AO0352 0.00 + 0.00%, MCV-FA1054-1 0.00 + 0%): hindi pa ginalaw.
 - "Math blocks na walang symbol": ang ADD, SUB, MUL, SUM at DEV na tiningnan (ABC-001D) ay may symbol; hindi ko pa matukoy kung alin ang tinutukoy.
 - Ramp rate: 8 blocks na walang rate sa drawing (1 / s ang default) at ABC-052 (unit ng X% / sec).
-- PV/SV/MV AUTO/MAN: hindi pa sinuri laban sa HMI snapshots (hiwalay na gawain).
+- PV/SV/MV: ang 13 PID na may interlock back-up active by default ay hindi pa nasubukan sa MAN / AUTO.

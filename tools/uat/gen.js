@@ -6,6 +6,8 @@ window.UATG=(function(){
  const label=(S,n)=>{const l=S.lab&&S.lab[n];return l&&l.t?l.t.trim():''};
  const near=(S,b)=>{const t=[];for(const n of (b.o||[]).concat(b.i||[])){const l=label(S,n);if(l&&!t.includes(l)&&t.length<2)t.push(l)}return t.join(', ')};
  const free=(S,n)=>n!=null&&n>=0&&!(S.multi&&S.multi[n])&&!(S.pre&&S.pre[n]);
+ const kn=(S,n)=>S.kn&&S.kn[n]!==undefined;/* an input with a number written on the drawing is a constant: it is not forced, its value is used */
+ const clampAO=(S,o,e)=>S.aoN&&S.aoN.has(o)?Math.max(0,Math.min(100,e)):e;/* a net that feeds an AO is limited to 0 ~ 100 */
  const R=(k,t,v,tol)=>({k,t,v,tol:tol==null?0.05:tol});
  const st1=(force,secs,extra)=>Object.assign({force,secs:secs||0},extra||{});
  function interp(pts,x){for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1];if(x>=a[0]&&x<=b[0]&&b[0]>a[0])return a[1]+(b[1]-a[1])*(x-a[0])/(b[0]-a[0])}return null}
@@ -31,9 +33,54 @@ window.UATG=(function(){
     add('Logic gates (AND / OR / NOT)',item(b,b.k,cs))}
    if(b.k==='NOT'&&b.i.length===1&&free(S,o)){add('Logic gates (AND / OR / NOT)',item(b,'NOT',[0,1].map(v=>({l:'input = '+v+' -> output '+(1-v),steps:[st1({[b.i[0]]:v},0)],rows:[R(o,'output',1-v)],reset:false}))))}
    // comparators
-   if((b.k==='HC'||b.k==='LC')&&b.p&&isFinite(b.p.sp)&&!(b.p.ref>=0)&&(b.p.op==='>'||b.p.op==='<')&&b.i[0]!=null&&free(S,o)){
+   if((b.k==='HC'||b.k==='LC'||b.k==='CMPK')&&b.p&&isFinite(b.p.sp)&&!(b.p.ref>=0)&&(b.p.op==='>'||b.p.op==='<')&&b.i[0]!=null&&free(S,o)){
     const sp=b.p.sp,d=Math.max(1,Math.abs(sp)*0.1),cs=[];for(const [l,x] of [['below the set point',sp-d],['above the set point',sp+d]]){const e=b.p.op==='>'?(x>sp?1:0):(x<sp?1:0);cs.push({l:'input '+fmt(x)+' ('+l+' '+sp+') -> output '+e,steps:[st1({[b.i[0]]:x},0)],rows:[R(o,'output ('+b.p.op+' '+sp+(b.p.u?' '+b.p.u:'')+')',e)],reset:false})}
     add('Comparators',item(b,'Comparator '+b.p.op+' '+sp,cs))}
+   // math: add / subtract / sum / deviation (expected = sum of the signed inputs; the sign of each input is written in the test line)
+   if((b.k==='ADD'||b.k==='SUM'||b.k==='SUB'||b.k==='DEV')&&b.ip&&b.ip.length>=2&&b.ip.length<=8&&o!=null&&free(S,o)&&b.ip.every(q=>q.n>=0)){
+    const sg=b.ip.map(q=>q.sg>0?'+':'-').join(' '),mk=vals=>{const f={};let e=0;b.ip.forEach((q,j)=>{let x=kn(S,q.n)?S.kn[q.n]:vals[j];if(!kn(S,q.n))f[q.n]=vals[j];if(q.ia)x=x*q.ia[0]+q.ia[1];e+=q.sg*x});e=clampAO(S,o,e);return {f,e}};
+    const cs=[];for(const base of [[7,11,13,5,3,2,17,19],[20,3,9,14,6,4,1,8],[11,7,5,3,2,13,19,17]]){const m=mk(base),vs=b.ip.map((q,j)=>kn(S,q.n)?S.kn[q.n]:base[j]);cs.push({l:'inputs '+vs.join(', ')+' (signs '+sg+') -> sum '+fmt(m.e),steps:[st1(m.f,0)],rows:[R(o,'output = '+b.ip.map((q,j)=>(q.sg>0?'+':'-')+fmt(vs[j])).join(' '),m.e,Math.max(.05,Math.abs(m.e)*.002))],reset:false})}
+    add('Math: add / subtract / sum / deviation',item(b,(b.k==='ADD'?'Add':b.k==='SUM'?'Sum':b.k==='SUB'?'Subtract':'Deviation')+' ('+sg+')',cs))}
+   // math: multiply / divide / square root / absolute value
+   if(b.k==='MUL'&&b.i&&b.i.length>=2&&b.i.length<=4&&b.i.every(n=>n>=0)&&o!=null&&free(S,o)){
+    const cs=[];for(const base of [[4,5,2,3],[8,0.5,6,2]]){const vs=b.i.map((n,j)=>kn(S,n)?S.kn[n]:base[j]),f={};let e=1;b.i.forEach((n,j)=>{if(!kn(S,n))f[n]=vs[j];e*=vs[j]/((b.nrm&&b.nrm[j])||1)});if(b.gain!=null)e*=b.gain;e=clampAO(S,o,e);if(Math.abs(e)<1e6)cs.push({l:'inputs '+vs.join(' x ')+(b.gain!=null?' x gain '+b.gain:'')+(b.nrm&&b.nrm.some(Boolean)?' (inputs scaled by '+b.nrm.map(x=>x||1).join(', ')+')':'')+' -> '+fmt(e),steps:[st1(f,0)],rows:[R(o,'product',e,Math.max(.05,Math.abs(e)*.002))],reset:false})}
+    if(cs.length)add('Math: multiply / divide / square root / abs',item(b,'Multiply',cs))}
+   if(b.k==='DIV'&&b.nu>=0&&b.de>=0&&o!=null&&free(S,o)){
+    const cs=[];for(const [nu0,de0] of [[12,4],[9,3]]){const nu=kn(S,b.nu)?S.kn[b.nu]:nu0,de=kn(S,b.de)?S.kn[b.de]:de0;if(!de)continue;let e=nu/de;if(b.oa)e=e*b.oa[0]+b.oa[1];e=clampAO(S,o,e);const f={};if(!kn(S,b.nu))f[b.nu]=nu;if(!kn(S,b.de))f[b.de]=de;cs.push({l:'numerator '+nu+' / denominator '+de+' -> '+fmt(e),steps:[st1(f,0)],rows:[R(o,'quotient',e,Math.max(.05,Math.abs(e)*.002))],reset:false})}
+    add('Math: multiply / divide / square root / abs',item(b,'Divide',cs))}
+   if(b.k==='SQRT'&&b.i[0]!=null&&o!=null&&free(S,o)){
+    const Rn=b.rin||100,cs=[];if(kn(S,b.i[0])){add('Math: multiply / divide / square root / abs',item(b,'Square root',[{l:'not tested: the input is a constant written on the drawing',skipMsg:'the input is a constant written on the drawing',steps:[],rows:[]}]));continue}for(const x of [Rn*.25,Rn]){const e=clampAO(S,o,b.idn?x:Rn*Math.sqrt(x/Rn));cs.push({l:'input '+fmt(x)+(b.idn?'':' (range '+Rn+') -> '+fmt(Rn)+' x square root of ('+fmt(x)+' / '+Rn+')')+' = '+fmt(e),steps:[st1({[b.i[0]]:x},0)],rows:[R(o,'square root',e,Math.max(.05,Math.abs(e)*.002))],reset:false})}
+    add('Math: multiply / divide / square root / abs',item(b,'Square root',cs))}
+   if(b.k==='ABS'&&b.i[0]!=null&&o!=null&&free(S,o)){
+    add('Math: multiply / divide / square root / abs',item(b,'Absolute value',[-7,7].map(x=>({l:'input '+x+' -> '+Math.abs(x),steps:[st1({[b.i[0]]:x},0)],rows:[R(o,'output',Math.abs(x))],reset:false}))))}
+   // constants: the number written in the box
+   if(b.k==='CONST'&&!b.ref&&!(b.p&&b.p.mt)&&b.txt&&b.txt.length&&o!=null&&free(S,o)){
+    const tn=String(b.txt[0]).replace(/%%%/g,'%').trim();if(/^-?\d+(\.\d+)?\s*[%A-Za-z°\/]{0,8}$/.test(tn)){const e=parseFloat(tn);
+     if(/%/.test(tn))add('Constants (value written in the box)',item(b,'Constant '+tn,[{l:'not tested: a constant in % is turned into the real range of the signal it feeds (PROJECT_RULES 4a): check it with the eye button',skipMsg:'a constant in % is turned into the real range of the signal (rule 4a)',steps:[],rows:[]}]))
+     else add('Constants (value written in the box)',item(b,'Constant '+tn,[{l:'the box says "'+tn+'" -> output '+fmt(e),steps:[st1({},0)],rows:[R(o,'output',e,Math.max(.001,Math.abs(e)*.0005))],reset:false}]))}}
+   // flip-flop (S / R)
+   if(b.k==='FF'&&b.S>=0&&b.Rn>=0&&o!=null&&free(S,o)){
+    const q=(l,steps,e)=>({l,steps,rows:[R(o,'Q',e)]});
+    add('Flip-flops (S / R)',item(b,'Flip-flop S / R',[q('S = 1, R = 0 -> Q = 1',[st1({[b.S]:1,[b.Rn]:0},1)],1),q('S = 1 then S = 0 (R = 0) -> Q stays 1',[st1({[b.S]:1,[b.Rn]:0},1),st1({[b.S]:0,[b.Rn]:0},1)],1),q('S = 1, then R = 1 (S = 0) -> Q = 0',[st1({[b.S]:1,[b.Rn]:0},1),st1({[b.S]:0,[b.Rn]:1},1)],0),q('R = 1 then R = 0 (S = 0) -> Q stays 0',[st1({[b.S]:1,[b.Rn]:0},1),st1({[b.S]:0,[b.Rn]:1},1),st1({[b.S]:0,[b.Rn]:0},1)],0)]))}
+   // average select circuit
+   if(b.k==='SEL'&&b.i&&b.i.length>=2&&b.i.length<=6&&o!=null&&free(S,o)&&(!b.p||!b.p.mode||b.p.mode==='AVG')){
+    const vs=b.i.map((n,j)=>10+7*j),e=vs.reduce((a,c)=>a+c,0)/vs.length,f={};b.i.forEach((n,j)=>f[n]=vs[j]);
+    add('Average select circuits',item(b,'Average select',[{l:'all transmitters healthy, inputs '+vs.join(', ')+' -> average '+fmt(e),steps:[st1(f,0)],rows:[R(o,'average',e,Math.max(.05,Math.abs(e)*.002))],reset:false}]))}
+   // ramp / rate limiter: the rate comes from the text written on the drawing (independent of the reader)
+   if((b.k==='RATE'||b.k==='RAMPB')&&b.main!==undefined&&b.main>=0&&o!=null&&free(S,o)){
+    const rt=(b.p&&b.p.rtxt)||'',m=/(-?\d+(?:\.\d+)?)\s*([%A-Za-z\/\d²]*?)\s*\/\s*(sec|s|min|hr|h)\b/i.exec(rt);
+    const skip=msg=>add('Ramps (rate limiters)',item(b,(b.k==='RAMPB'?'Bumpless ramp':'Rate limiter')+(rt?'  "'+rt+'"':''),[{l:'not tested: '+msg,skipMsg:msg,steps:[],rows:[]}]));
+    if(b.tpar!==undefined)skip('the rate comes from a signal (time parameter T), not from a number on the drawing');
+    else if(b.up!==undefined)skip('the rate comes from a signal ("X % / sec"); the unit of that signal is Needs Verification');
+    else if(!m)skip('the drawing writes no rate near this box: the simulator uses 1 unit per second (user decision 2026-10-10)');
+    else{const per=/min/i.test(m[3])?60:/h/i.test(m[3])?3600:1,pct=/%/.test(m[2]);
+     if(pct&&!(b.span>0))skip('the rate is in % of the signal range ("'+rt+'") but the range of the signal is not found: Needs Verification');
+     else{const r=parseFloat(m[1])/per*(pct?b.span/100:1),t=Math.max(.25,Math.min(120,Math.round(20/r*4)/4)),cs=[];
+      if(S.aoN&&S.aoN.has(o)){skip('the output feeds an AO directly (limited 0 ~ 100)');}
+      else{
+      if(b.byp>=0)cs.push({l:'bypass = 1: the output follows the input at once (input 30 -> 30)',steps:[st1({[b.main]:30,[b.byp]:1},0)],rows:[R(o,'output',30)],reset:false});
+      cs.push({l:'rate written on the drawing: '+rt+' = '+fmt(r)+' units per second'+(pct?' (% of a range of '+fmt(b.span)+')':'')+'. The input jumps far above the output: in '+fmt(t)+' s the output must rise by '+fmt(r*t),steps:[st1(Object.assign({[b.main]:1e4},b.byp>=0?{[b.byp]:0}:{}),t)],rows:[{k:o,t:'output rise',cmp:'delta',v:r*t,tol:Math.max(.0005,r*t*.04)}],reset:true});
+      add('Ramps (rate limiters)',item(b,(b.k==='RAMPB'?'Bumpless ramp':'Rate limiter')+'  "'+rt+'"',cs))}}}}
    // timers
    if((b.k==='TON'||b.k==='TOF'||b.k==='TPS')&&b.p&&b.p.sec>0&&b.p.sec<=30&&b.i[0]!=null&&free(S,o)){
     const sec=b.p.sec,i0=b.i[0],q=x=>Math.max(.25,Math.round(x*4)/4),cs=[];
@@ -78,6 +125,6 @@ window.UATG=(function(){
      if(S.ext.includes(manNet))cs.push({l:'MAN: manual value 37 -> output 37',steps:[st1({},4,{fm:{[amt.id]:manLeg},ext:{[manNet]:37}})],skipBu:amt.id,rows:[R(amt.o[0],'output of the A/M switch',37,0.1)]})}
     add('Controllers (PID)',item(b,'PID '+tag+(P.act<0?' (reverse)':' (direct)'),cs))}
   }
-  const order=['Switches (T and A/M)','Operator selectors (COS)','Logic gates (AND / OR / NOT)','Comparators','Timers (TON / TOF / pulse)','Lag (first order)','Curves F(X) (workbook tables)','High / low selectors','Analog inputs (AI, transmitter range)','Analog outputs (AO, 0 ~ 100 %)','Manual stations (MAN)','Totalizers (SUMA)','Controllers (PID)'];
+  const order=['Switches (T and A/M)','Operator selectors (COS)','Logic gates (AND / OR / NOT)','Flip-flops (S / R)','Comparators','Constants (value written in the box)','Math: add / subtract / sum / deviation','Math: multiply / divide / square root / abs','Ramps (rate limiters)','Average select circuits','Timers (TON / TOF / pulse)','Lag (first order)','Curves F(X) (workbook tables)','High / low selectors','Analog inputs (AI, transmitter range)','Analog outputs (AO, 0 ~ 100 %)','Manual stations (MAN)','Totalizers (SUMA)','Controllers (PID)'];
   return {groups:order.filter(g=>G[g]).map(g=>({g,items:G[g]}))}}
  return {sheetSpec}})();
