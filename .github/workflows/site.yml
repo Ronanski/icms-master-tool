@@ -20,11 +20,11 @@ jobs:
       - name: Assemble
         run: |
           mkdir -p site/beta
-          S=$(ls stable/logic-sim-v*.html | head -1); B=$(ls beta/logic-sim-v*.html | head -1)
+          S=$(ls stable/dist/logic-sim-v*.html stable/logic-sim-v*.html 2>/dev/null | head -1); B=$(ls beta/dist/logic-sim-v*.html beta/logic-sim-v*.html 2>/dev/null | head -1)
           cp "$S" site/index.html; cp "$B" site/beta/index.html
           sv=$(echo "$S" | grep -o 'v[0-9.]*[0-9]'); bv=$(echo "$B" | grep -o 'v[0-9.]*[0-9]')
           echo "{\"stable\":\"$sv\",\"beta\":\"$bv\"}" > site/version.json
-          for f in sw.js manifest.webmanifest icon-192.png icon-512.png; do cp "stable/$f" site/; cp "beta/$f" site/beta/ 2>/dev/null || cp "stable/$f" site/beta/; done
+          for f in sw.js manifest.webmanifest icon-192.png icon-512.png; do for d in delivery/pwa .; do [ -f "stable/$d/$f" ] && { cp "stable/$d/$f" site/; break; }; done; for d in delivery/pwa .; do [ -f "beta/$d/$f" ] && { cp "beta/$d/$f" site/beta/; break; }; done; [ -f "site/beta/$f" ] || cp "site/$f" site/beta/; done
           touch site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

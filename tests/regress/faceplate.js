@@ -1,7 +1,7 @@
 // Operator faceplate (AUTO / MAN / MV buttons): each controller must move the A/M STATION (the selector after the PID that has the manual source), not the first selector (FAULT hold / back-up).
 // Usage: node tests/regress/faceplate.js [html]
 const {open}=require('./lib.js');
-(async()=>{const {browser,page,errs}=await open(process.argv[2]||require('fs').readdirSync('.').find(x=>/^logic-sim-v\d+\.\d+\.\d+\.html$/.test(x)));
+(async()=>{const {browser,page,errs}=await open(process.argv[2]||require('fs').readdirSync('dist').map(x=>'dist/'+x).find(x=>/logic-sim-v\d+\.\d+\.\d+\.html$/.test(x)));
 const r=await page.evaluate(()=>{const res=[];let n=0,ok=0,noManual=0;
  for(const x of AN.sheets)if(x.S)for(const p of x.S.procs||[])p.proc.on=false;
  for(const sh of AN.sheets){if(/ABC-000/.test(sh.name))continue;const S=AN.ensure(sh);AN.go(AN.sheets.indexOf(sh));

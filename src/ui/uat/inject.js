@@ -1,6 +1,6 @@
 // Injects the block-by-block UAT (runner + generator + panel) into the html. Usage: node src/ui/uat/inject.js [html]  (idempotent)
 const fs=require('fs');
-const html=process.argv[2]||fs.readdirSync('.').find(x=>/^logic-sim-v\d+\.\d+\.\d+\.html$/.test(x));
+const html=process.argv[2]||fs.readdirSync('dist').map(x=>'dist/'+x).find(x=>/logic-sim-v\d+\.\d+\.\d+\.html$/.test(x));
 const ver=html.match(/v(\d+\.\d+\.\d+)/)[1];
 const MARK_A='<!--UAT-BEGIN-->',MARK_B='<!--UAT-END-->';
 let src=fs.readFileSync(html,'utf8');const i=src.indexOf(MARK_A);if(i>=0){const j=src.indexOf(MARK_B);src=src.slice(0,i)+src.slice(j+MARK_B.length)}

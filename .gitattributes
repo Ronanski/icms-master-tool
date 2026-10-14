@@ -1,0 +1,7 @@
+# GitHub language bar: count the real sources (src/, tools/, tests/), not the build output, data or archive.
+logic-sim-v*.html linguist-generated=true
+src/data/** linguist-generated=true
+package-lock.json linguist-generated=true
+archive/** linguist-vendored=true
+document-references/** linguist-documentation=true
+docs/** linguist-documentation=true
