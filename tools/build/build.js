@@ -7,8 +7,10 @@ const fs=require('fs'),path=require('path'),os=require('os'),cp=require('child_p
 const root=path.resolve(__dirname,'..','..'),src=p=>path.join(root,'src',p);
 const ver=fs.readFileSync(src('version.txt'),'utf8').trim();
 const rd=p=>fs.readFileSync(src(p),'utf8');
+/* a .list file = the files of one script in order (paths relative to the folder of the list; # = comment) */
+const fileList=l=>{const d=path.posix.dirname(l);return rd(l).split(/\r?\n/).map(s=>s.trim()).filter(s=>s&&s[0]!=='#').map(f=>d+'/'+f)};
 function assemble(){let t=rd('index.template.html');
- t=t.replace(/@@INCLUDE:([\w\/.-]+)@@/g,(m,d)=>fs.readdirSync(src(d)).sort().map(f=>rd(d+'/'+f)).join(''));
+ t=t.replace(/@@LIST:([\w\/.-]+)@@/g,(m,l)=>fileList(l).map(rd).join(''));
  t=t.replace(/@@FILE:([\w\/.-]+)@@/g,(m,f)=>rd(f));
  return t.split('@@VERSION@@').join(ver)}
 function build(dir){const file=path.join(dir,'logic-sim-v'+ver+'.html');fs.writeFileSync(file,assemble());

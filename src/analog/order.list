@@ -1,0 +1,22 @@
+# Order in which the analog files are joined into ONE script (one closure). Do not reorder without a reason:
+# later files use the names of earlier ones when the page starts.
+reader/dxf.js
+reader/shapes-nets.js
+reader/nets-pins.js
+reader/blocks.js
+reader/pins-params.js
+engine/compile-step.js
+engine/plant.js
+ui/main.js
+ui/hmi-view.js
+ui/hmi-v2.js
+data/loader.js
+ui/category-search.js
+ui/links-canvas.js
+ui/paint.js
+ui/interaction.js
+ui/trace.js
+ui/panel.js
+ui/plant-window.js
+ui/tables-health.js
+boot.js

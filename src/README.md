@@ -4,15 +4,24 @@ The simulator is built from these files into ONE html file (`logic-sim-vX.Y.Z.ht
 
 **Edit the files here, then run `npm run build`.** Do not edit the html by hand (the Checks run on GitHub fails when the committed html is not exactly what `src/` builds: `npm run check`).
 
-| Path | What it is |
+| Folder | Stack (ano ang laman) |
 |---|---|
-| `index.template.html` | the page: head, toolbar markup, the order of the scripts (`@@FILE:...@@` = a file, `@@INCLUDE:js/analog@@` = all files of a folder in name order, `@@VERSION@@` = `version.txt`) |
-| `version.txt` | the version (the html file name follows it) |
-| `css/app.css` | styles of the page |
-| `js/head-*.js` | start-up scripts: gunzip, update question (Stable / Beta), error banner |
-| `js/ditl-app.js` | the DITL (digital logic) page |
-| `js/analog/NN-*.js` | the ABC (analog logic) app, ONE closure cut into sections in order: 01 ~ 05 reader and builder of the drawing (blocks, nets, pins), 06 engine (compile and step), 07 plant model, 08 ~ 19 screen (canvas, panels, HMI, search, paint, trace, plant window, tables), 20 boot and the list of `AN.*` functions that other scripts can use |
-| `data/*` | built-in data (drawings of DITL and ABC, F(X) tables, address list): gzip + base64 text, not code |
+| `index.template.html` | ang page: head, toolbar markup, ang pagkakasunod ng scripts (`@@FILE:` = isang file, `@@LIST:` = mga file ayon sa listahan, `@@VERSION@@` = `version.txt`) |
+| `version.txt` | ang version (sumusunod ang pangalan ng html) |
+| `boot/` | start-up bago ang app: gunzip, tanong sa update (Stable / Beta), error banner |
+| `styles/` | `app.css`, ang itsura ng page |
+| `digital/` | ang DITL (digital logic) page, hindi ginagalaw ng ABC work |
+| `analog/reader/` | **READER**: binabasa ang drawing (DXF), gumagawa ng blocks, nets, pins, parameters |
+| `analog/engine/` | **ENGINE**: compile at step ng logic (`compile-step.js`), plant model (`plant.js`) |
+| `analog/data/` | loader ng built-in data |
+| `analog/ui/` | **UI**: diagram canvas at paint, panels, HMI, search, trace, plant window, tables |
+| `analog/boot.js` | simula ng analog app at listahan ng `AN.*` na magagamit ng ibang script |
+| `analog/order.list` | ang pagkakasunod ng pagdugtong ng analog files (iisang closure pa rin) |
+| `data/` | built-in data (drawings, F(X), address list): gzip + base64 text, hindi code |
+
+Sa labas ng `src/`: `tools/build` (BUILDS), `tools/regress` + `tools/uat` (TEST), `tools/shell` (toolbar / drawers), `tools/hmi` (operator faceplate), `tools/theme` (themes), `tools/engine` (engine sa Node).
+
+**Susunod na hakbang ng pag-oorganisa** (isa-isang Beta, walang pagbabago sa behavior): (1) ihiwalay sa `engine/` ang mga function na walang DOM (anBuild, anNets, anCompile, anStep) para tumakbo sa Worker at sa Node; (2) ilipat ang drawing/panel na code sa hiwalay na modules; (3) ilipat sa Worker ang engine para hindi tumigil ang screen sa tablet.
 
 Added by the build after these files (their sources are in `tools/`): `tools/shell` (toolbar), `tools/hmi` (operator faceplate), `tools/theme` (themes), `tools/uat` (in-app UAT).
 

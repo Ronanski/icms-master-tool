@@ -1,3 +1,4 @@
+// NOTE: one-time tool, already used. The folder layout of src/ changed after it (see src/README.md); do not run it again.
 // ONE-TIME splitter: cuts the single html (logic-sim-vX.Y.Z.html) into the source files under src/ (template, scripts, css, data).
 // After this the sources are the truth and tools/build/build.js builds the html again, byte for byte. Usage: node tools/build/split.js [html]
 const fs=require('fs'),path=require('path');
