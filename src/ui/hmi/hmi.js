@@ -16,7 +16,9 @@
    const legOf=(sw,i)=>i===0?(sw.a===op?'A':'B'):(sw.a===chain[i-1].o[0]?'A':'B');let amt=null,autoLeg=null,manNet=null,manBlk=null;
    for(let i=0;i<chain.length&&!amt;i++){const sw=chain[i],pl=legOf(sw,i),o=pl==='A'?sw.b:sw.a;if(o==null||o<0)continue;const man=(S.drv[o]||[]).find(d=>d.k==='MAN');if(man||(S.ext.includes(o)&&!S.nets[o].dig)){amt=sw;autoLeg=pl;manNet=o;manBlk=man||null}}
    if(!amt){amt=S.blk.find(z=>(z.k==='AMT'||z.k==='SW')&&z.a!=null&&z.b!=null&&(b.o.includes(z.a)||b.o.includes(z.b))&&z.o[0]!=null)||null;autoLeg=amt?(b.o.includes(amt.a)?'A':'B'):null;manNet=amt?(autoLeg==='A'?amt.b:amt.a):null}
-   out.push({b,tag,q,amt,autoLeg,manNet,manBlk,out:amt?amt.o[0]:b.o[0],desc:(b.face&&b.face.desc)||''})}return out}
+   /* the SV is the output of a T switch whose B leg is a COS (the operator's SV, drawing ABC-007 etc.): the faceplate SV field sets that COS and picks leg B (LOCAL); REM goes back to the SV of the logic */
+   const svSw=(S.drv[q.sv]||[]).find(d=>(d.k==='AMT'||d.k==='SW')&&d.b>=0&&S.blk.some(c=>c.k==='COS'&&c.tb===d.id))||null;
+   out.push({b,tag,q,amt,autoLeg,manNet,manBlk,svSw,out:amt?amt.o[0]:b.o[0],desc:(b.face&&b.face.desc)||''})}return out}
  AN.hmiCtrls=ctrls;/* for the tests */
  function trendOf(key){return trends[key]||(trends[key]={t:[],pv:[],sv:[],mv:[]})}
  function drawTrend(svg,tr,rlo,rhi){const W=360,H=96;let s='';const n=tr.t.length;if(n<2){svg.innerHTML='<text x="10" y="50" fill="#7d8e9a" font-size="12">Walang data pa: i-RUN ang simulation.</text>';return}
@@ -35,23 +37,23 @@
    const pv=E('b',{txt:'—'}),sv=E('b',{txt:'—'}),mv=E('b',{txt:'—'});const barPv=E('i'),barSvm=E('u'),barMv=E('i');
    const bAuto=E('button',{cls:'b',txt:'AUTO'}),bMan=E('button',{cls:'b man',txt:'MAN'});
    const svIn=E('input',{cls:'n',type:'number',step:'any'}),mvIn=E('input',{cls:'n',type:'number',step:'any'});
-   const svOk=S.ext.includes(c.q.sv),mvOk=c.manNet!=null&&(S.ext.includes(c.manNet)||!!c.manBlk);
-   const svRow=E('div',{cls:'row'},[E('span',{txt:'SV'}),svIn,E('button',{cls:'b',txt:'−',on:()=>{const v=(+svIn.value||0)-(rhi-rlo)/100;svIn.value=v.toFixed(3);setIn(S,c.q.sv,v)}}),E('button',{cls:'b',txt:'+',on:()=>{const v=(+svIn.value||0)+(rhi-rlo)/100;svIn.value=v.toFixed(3);setIn(S,c.q.sv,v)}}),E('span',{cls:'sub',txt:unit})]);
-   const mvRow=E('div',{cls:'row'},[E('span',{txt:'MV (MAN)'}),mvIn,E('button',{cls:'b',txt:'0',on:()=>{mvIn.value=0;setMV(S,c,0)}}),E('button',{cls:'b',txt:'50',on:()=>{mvIn.value=50;setMV(S,c,50)}}),E('button',{cls:'b',txt:'100',on:()=>{mvIn.value=100;setMV(S,c,100)}})]);
-   if(svOk){svIn.onchange=()=>setIn(S,c.q.sv,+svIn.value)}else{svIn.disabled=true;svRow.append(E('span',{cls:'sub',txt:'(SV galing sa logic)'}))}
+   const svOk=S.ext.includes(c.q.sv)||!!c.svSw,svSet=v=>{if(S.ext.includes(c.q.sv)){setIn(S,c.q.sv,v)}else if(c.svSw){S.rt.ext[c.svSw.b]=v;const st=S.rt.st[c.svSw.id];if(st)st.fm='B';try{AN.settle()}catch(e){}}},mvOk=c.manNet!=null&&(S.ext.includes(c.manNet)||!!c.manBlk);
+   const svRow=E('div',{cls:'row'},[E('span',{txt:'SV'}),svIn,E('button',{cls:'b',txt:'−',on:()=>{const v=(+svIn.value||0)-(rhi-rlo)/100;svIn.value=v.toFixed(3);svSet(v)}}),E('button',{cls:'b',txt:'+',on:()=>{const v=(+svIn.value||0)+(rhi-rlo)/100;svIn.value=v.toFixed(3);svSet(v)}}),E('span',{cls:'sub',txt:unit})].concat(c.svSw?[E('button',{cls:'b',txt:'REM',title:'SV galing sa logic (remote); ang SV ng operator ay LOCAL',on:()=>{const st=S.rt.st[c.svSw.id];if(st)delete st.fm;try{AN.settle()}catch(e){}}})]:[]));
+   const mvB=[0,50,100].map(x=>E('button',{cls:'b',txt:String(x),on:()=>{mvIn.value=x;setMV(S,c,x)}})),mvRow=E('div',{cls:'row'},[E('span',{txt:'MV (MAN)'}),mvIn].concat(mvB)),fmEl=E('span',{cls:'sub',style:'color:#ff7a7a;font-weight:700'});
+   if(svOk){svIn.onchange=()=>svSet(+svIn.value)}else{svIn.disabled=true;svRow.append(E('span',{cls:'sub',txt:'(SV galing sa logic)'}))}
    if(mvOk){mvIn.onchange=()=>setMV(S,c,+mvIn.value)}else{mvIn.disabled=true;mvRow.append(E('span',{cls:'sub',txt:'(walang manual input)'}))}
-   const setMode=m=>{if(!c.amt)return;const st=S.rt.st[c.amt.id];if(!st)return;const manLeg=c.autoLeg==='A'?'B':'A';st.fm=m==='A'?c.autoLeg:manLeg;try{AN.settle()}catch(e){}};
+   const setMode=m=>{if(!c.amt)return;const st=S.rt.st[c.amt.id];if(!st)return;const manLeg=c.autoLeg==='A'?'B':'A';st.al=c.autoLeg;st.fm=m==='A'?c.autoLeg:manLeg;try{AN.settle()}catch(e){}};
    bAuto.onclick=()=>setMode('A');bMan.onclick=()=>setMode('M');
    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('class','tr');
    const card=E('div',{cls:'fp'},[E('div',{cls:'tg'},[E('b',{txt:c.tag}),E('span',{txt:(c.desc||'')+(unit?'  ['+fmt(rlo)+' ~ '+fmt(rhi)+' '+unit+']':'')})]),
     E('div',{cls:'dg'},[E('div',{cls:'pv'},[E('small',{txt:'PV'}),pv]),E('div',{cls:'sv'},[E('small',{txt:'SV'}),sv]),E('div',{cls:'mv'},[E('small',{txt:'MV %'}),mv])]),
     E('div',{cls:'bar'},[barPv,barSvm]),E('div',{cls:'bar'},[barMv]),
-    E('div',{cls:'row'},[bAuto,bMan,E('span',{cls:'sub',txt:c.amt?'':'(walang A/M switch)'})]),svRow,mvRow,svg,
+    E('div',{cls:'row'},[bAuto,bMan,fmEl,E('span',{cls:'sub',txt:c.amt?'':'(walang A/M switch)'})]),svRow,mvRow,svg,
     E('div',{cls:'lg'},[E('span',{},[E('i',{style:'background:#ffd84a'}),document.createTextNode('PV')]),E('span',{},[E('i',{style:'background:#5cc8ff'}),document.createTextNode('SV')]),E('span',{},[E('i',{style:'background:#6fe3a0'}),document.createTextNode('MV')])])]);
    body.append(card);
    live.push(()=>{const v=S.rt.v,pvv=v[c.q.pv],svv=v[c.q.sv],mvv=v[c.out];pv.textContent=fmt(pvv);sv.textContent=fmt(svv);mv.textContent=fmt(mvv);
     const f=x=>Math.max(0,Math.min(100,(x-rlo)/(rhi-rlo)*100));barPv.style.cssText='width:'+f(pvv)+'%;background:#ffd84a';barSvm.style.left=f(svv)+'%';barMv.style.cssText='width:'+Math.max(0,Math.min(100,mvv))+'%;background:#6fe3a0';
-    const pk=c.amt&&S.rt.st[c.amt.id]?S.rt.st[c.amt.id].pk:c.autoLeg;const isAuto=!c.amt||pk===c.autoLeg;bAuto.classList.toggle('on',isAuto);bMan.classList.toggle('on',!isAuto);
+    const pk=c.amt&&S.rt.st[c.amt.id]?S.rt.st[c.amt.id].pk:c.autoLeg;const isAuto=!c.amt||pk===c.autoLeg;bAuto.classList.toggle('on',isAuto);bMan.classList.toggle('on',!isAuto);const fm_=c.amt&&S.rt.st[c.amt.id]&&S.rt.st[c.amt.id].fman;fmEl.textContent=fm_?'FORCE MANUAL (logic): hindi puwedeng AUTO':'';bAuto.disabled=!!fm_;/* MV is only for MANUAL: in AUTO the operator changes the SV, not the MV */if(mvOk){mvIn.disabled=isAuto&&!!c.amt;mvB.forEach(x=>x.disabled=isAuto&&!!c.amt)}
     if(document.activeElement!==svIn&&isFinite(svv))svIn.value=(+svv.toFixed(3));if(document.activeElement!==mvIn&&c.manNet!=null&&isFinite(v[c.manNet]))mvIn.value=(+v[c.manNet].toFixed(2));
     const tr=trendOf(key);if(S.rt.t!==tr.last){tr.last=S.rt.t;tr.t.push(S.rt.t);tr.pv.push(pvv);tr.sv.push(svv);tr.mv.push(mvv);if(tr.t.length>600){for(const k of ['t','pv','sv','mv'])tr[k].shift()}}drawTrend(svg,tr,rlo,rhi)})});
   // 2. manual stations
