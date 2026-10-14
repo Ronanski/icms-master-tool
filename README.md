@@ -26,10 +26,12 @@ Ang simulator (ABC analog + DITL digital) ay binubuo mula sa `src/` papunta sa I
 | `tests/regress` | TEST | headless checks (README sa loob) |
 | `docs/` | DOCS | `abc-audit/`, `versions/` |
 | `document-references/` | REFERENCES | drawings, I/O list, memory lists, workbooks |
-| `android-app/`, `app/`, `signing/`, `sw.js`, `manifest.webmanifest`, `icon-*.png`, `.github/` | DELIVERY | apk, portable exe, Pages (hindi inilipat: dito umaasa ang workflows) |
+| `delivery/` | DELIVERY | `android/` (apk), `desktop/` (portable exe), `signing/` (apk key, huwag i-regenerate), `pwa/` (sw.js, manifest, icons ng Pages) |
+| `dist/` | BUILD OUTPUT | `logic-sim-vX.Y.Z.html`, ang isang html na ginagamit ng Beta / Stable page, apk at exe |
+| `.github/workflows/` | AUTOMATION | checks, site (Pages), release, clean-releases |
 | `archive/` | ARCHIVE | lumang ulat at lumang build |
 
-Ang `logic-sim-vX.Y.Z.html` sa root ay build output (huwag i-edit; `npm run build`, `npm run check`).
+Ang `logic-sim-vX.Y.Z.html` sa `dist/` ay build output (huwag i-edit; `npm run build`, `npm run check`).
 
 ## Change and release control
 

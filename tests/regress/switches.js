@@ -2,7 +2,7 @@
 // A run with the same time line and no force is the reference: after the release the switch (leg A / B) must be where the reference is.
 // Usage: node tests/regress/switches.js [html]   (about 3 min)
 const {open}=require('./lib.js');
-(async()=>{const {browser,page}=await open(process.argv[2]||require('fs').readdirSync('.').find(x=>/^logic-sim-v\d+\.\d+\.\d+\.html$/.test(x)));
+(async()=>{const {browser,page}=await open(process.argv[2]||require('fs').readdirSync('dist').map(x=>'dist/'+x).find(x=>/logic-sim-v\d+\.\d+\.\d+\.html$/.test(x)));
 const r=await page.evaluate(()=>{const out=[];let tot=0,bykind={};
  const plant=[];for(const x of AN.sheets)if(x.S)for(const b of x.S.procs||[]){plant.push([b,b.proc.on]);b.proc.on=false}
  for(const sh of AN.sheets){if(/ABC-000/.test(sh.name))continue;let S;try{S=AN.ensure(sh)}catch(e){continue}
