@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Logic Sim v1.20.38</title><script>/* gunzip of the built-in data, with a second way if the first one fails in the browser */window.gunz=async function(bin){try{return await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text()}catch(e1){try{var ds=new DecompressionStream('gzip'),w=ds.writable.getWriter();w.write(bin);w.close();var r=ds.readable.getReader(),parts=[],n=0;for(;;){var q=await r.read();if(q.done)break;parts.push(q.value);n+=q.value.length}var all=new Uint8Array(n),o=0;for(var i=0;i<parts.length;i++){all.set(parts[i],o);o+=parts[i].length}return new TextDecoder().decode(all)}catch(e2){throw new Error('gunzip failed ('+bin.length+' bytes): '+e1.message+' / '+e2.message)}}};</script><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#10151a"><script>/* update check: the page, the apk and the exe keep the installed version and ASK before updating (Stable or Beta, the channel the user chose) */
+<title>Logic Sim v1.20.39</title><script>/* gunzip of the built-in data, with a second way if the first one fails in the browser */window.gunz=async function(bin){try{return await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text()}catch(e1){try{var ds=new DecompressionStream('gzip'),w=ds.writable.getWriter();w.write(bin);w.close();var r=ds.readable.getReader(),parts=[],n=0;for(;;){var q=await r.read();if(q.done)break;parts.push(q.value);n+=q.value.length}var all=new Uint8Array(n),o=0;for(var i=0;i<parts.length;i++){all.set(parts[i],o);o+=parts[i].length}return new TextDecoder().decode(all)}catch(e2){throw new Error('gunzip failed ('+bin.length+' bytes): '+e1.message+' / '+e2.message)}}};</script><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#10151a"><script>/* update check: the page, the apk and the exe keep the installed version and ASK before updating (Stable or Beta, the channel the user chose) */
 (function(){/* B = the copy built into the apk / exe (file: or https://localhost): it starts at once and works without internet; the update check asks the site */var B=location.protocol==='file:'||(location.protocol==='https:'&&location.hostname==='localhost'&&!location.port);if(!B&&!/^https?:$/.test(location.protocol))return;var SITE='https://ronanski.github.io/icms-master-tool/',T=(document.title.match(/v\d+(\.\d+)+/)||[''])[0],beta=!B&&/\/beta\/(index\.html)?$/.test(location.pathname),dir=B?'':location.pathname.replace(/index\.html$/,''),base=B?SITE:dir.replace(/beta\/$/,'');
 function cmp(a,b){var x=a.replace('v','').split('.').map(Number),y=b.replace('v','').split('.').map(Number);for(var i=0;i<3;i++){if((x[i]||0)!==(y[i]||0))return(x[i]||0)-(y[i]||0)}return 0}
 function say(t){var d=document.getElementById('updtoast');if(!d){d=document.createElement('div');d.id='updtoast';d.style.cssText='position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:99998;background:#18212a;color:#dbe5ec;border:1px solid #6aaee0;border-radius:8px;padding:8px 14px;font:14px system-ui;max-width:90vw';document.body.append(d)}d.textContent=t;d.style.display='block';clearTimeout(say.t);say.t=setTimeout(function(){d.style.display='none'},5000)}
@@ -25580,14 +25580,18 @@ function anStep(S,dt){const rt=S.rt,v=rt.v,nets=S.nets,B=x=>x>.5?1:0;rt.t+=dt;rt
     if(b.vel){const e1=s.ep==null?es:s.ep;u=s.inited&&dt>0?kp*((es-e1)+(P.ti>0?es*dt/P.ti:0)):0;s.ep2=e1;s.ep=es;s.out=u;s.es=es;s.pt=u;s.it=0;s.dd=0;s.inited=1;out(u);break}
     if(s.trk!=null){u=Math.max(lo,Math.min(hi,s.trk));s.I=u-kp*es}
     else{if(s.inited&&dt>0){if(P.ti>0){const sat=(s.out>=hi&&es>0)||(s.out<=lo&&es<0);if(!sat)s.I+=kp*es/P.ti*dt}if(P.td>0)Dt=kp*P.td*(es-(s.ep||0))/dt}
-     const pi=kp*es+s.I;if(pi>hi)s.I-=pi-hi;else if(pi<lo)s.I+=lo-pi;/* v1.20.38: the back-calculation uses the PI part only, so a derivative kick cannot wind the integral up in the wrong direction */u=Math.max(lo,Math.min(hi,kp*es+s.I+Dt));
+     const pi=kp*es+s.I;if(pi>hi)s.I-=pi-hi;else if(pi<lo)s.I+=lo-pi;/* v1.20.39: the back-calculation uses the PI part only, so a derivative kick cannot wind the integral up in the wrong direction */u=Math.max(lo,Math.min(hi,kp*es+s.I+Dt));
      /* dMVH: manipulated output variable change ratio upper limit (% of the MV range per sampling interval DTI, 1 s) */
      if(P.dmvh>0&&s.inited&&dt>0&&s.out!=null&&isFinite(s.out)){const lim=P.dmvh/100*(hi-lo)*dt/(P.dti>0?P.dti:1);if(u>s.out+lim)u=s.out+lim;else if(u<s.out-lim)u=s.out-lim}}
     s.ep=es;s.out=u;s.es=es;s.pt=kp*es;s.it=s.I;s.dd=Dt;s.inited=1;out(u);break}
    case 'SW':case 'AMT':{if(b.q4){const q=b.q4;let k=-1;for(let i=0;i<q.cond.length;i++)if(P['c'+(i+1)]>.5){k=i;break}if(k>=0)s.q4k=k;const lg=q.cond[s.q4k==null?0:s.q4k].leg;s.pk=lg.toUpperCase();s.q4l=lg;if(b.o.length)out(q.leg[lg]>=0?rd(q.leg[lg]):0);break}
     /* forced control (the user's FORCE ON / OFF during a test): the selection and the latch before the first force come back when the LAST force on any control of this switch is released */
     {const fn=[];if(b.sel>=0)fn.push(b.sel);for(const c of b.cs||[])fn.push(c.n);const uf=fn.some(n=>rt.force[n]!==undefined);if(uf&&!s.uf){s.uf=1;s.fpk=s.pk==='B'?'B':'A';s.flb=s.lb||0}else if(!uf&&s.uf){s.uf=0;s.pk=s.fpk;s.lb=s.flb}}
-    const sel=b.sel>=0?B(rd(b.sel)):0;let pickB=P.selA?!sel:!!sel;if(b.latch){if(pickB)s.lb=1;else if(s.fm==='A')s.lb=0;pickB=!!s.lb}if(b.cs&&b.cs.length>1){const ua=!swTimer(S,b)&&b.cs.some(c=>(rt.force[c.n]!==undefined||(S.ext&&S.ext.includes(c.n)))&&B(rd(c.n)));if(ua&&!s.ub){s.ub=1;s.upk=s.pk==='B'?'B':'A'}else if(!ua&&s.ub){s.ub=0;s.pk=s.upk}}if(b.cs&&b.cs.length>1){const wB=b.cs.some(c=>!c.A&&B(rd(c.n))),wA=b.cs.some(c=>c.A&&B(rd(c.n)));pickB=wB?true:(wA||b.k==='SW')?false:s.pk==='B'}if(s.fm==='A')pickB=false;else if(s.fm==='B')pickB=true;s.pk=pickB?'B':'A';let y;
+    const sel=b.sel>=0?B(rd(b.sel)):0;let pickB=P.selA?!sel:!!sel;if(b.latch){if(pickB)s.lb=1;else if(s.fm==='A')s.lb=0;pickB=!!s.lb}if(b.cs&&b.cs.length>1){const ua=!swTimer(S,b)&&b.cs.some(c=>(rt.force[c.n]!==undefined||(S.ext&&S.ext.includes(c.n)))&&B(rd(c.n)));if(ua&&!s.ub){s.ub=1;s.upk=s.pk==='B'?'B':'A'}else if(!ua&&s.ub){s.ub=0;s.pk=s.upk}}let sigLeg=null;/* the leg that an ACTIVE select signal asks for (the drawing's 1:a / 1:b lines) */
+     if(b.cs&&b.cs.length>1){const wB=b.cs.some(c=>!c.A&&B(rd(c.n))),wA=b.cs.some(c=>c.A&&B(rd(c.n)));pickB=wB?true:(wA||b.k==='SW')?false:s.pk==='B';sigLeg=wB?'B':wA?'A':null}else if(b.sel>=0&&sel)sigLeg=P.selA?'A':'B';
+     /* FORCE MANUAL (v1.20.39): when an active select signal asks for the MANUAL leg, the operator's AUTO is refused, and the station stays manual after the signal goes (the operator presses AUTO again). s.al = the AUTO leg, set by the faceplate */
+     s.fman=0;if(s.fm&&s.al&&sigLeg&&sigLeg!==s.al){s.fman=1;if(s.fm===s.al)s.fm=sigLeg}
+     if(s.fm==='A')pickB=false;else if(s.fm==='B')pickB=true;s.pk=pickB?'B':'A';let y;
      const n=pickB?b.b:b.a;if(n>=0){y=rd(n);if(pickB&&b.bg!=null)y*=b.bg;if(!pickB&&b.ag!=null)y*=b.ag;if(b.ia&&b.ia[n])y=y*b.ia[n][0]+b.ia[n][1]}else y=(s.hold!=null?s.hold:0);if(!pickB||b.b>=0)s.hold=y;s.y=y;
      const other=pickB?b.a:b.b;
      /* bumpless tracking: the PID / MAN that feeds the unselected A input follows the output */
@@ -26177,7 +26181,7 @@ document.head.appendChild(Object.assign(document.createElement('style'),{id:'ski
    if(!beta&&ch==='beta'){location.replace(base+'beta/')}
    else if(gs){const cs=document.createElement('select');cs.id='chsel';cs.title='Stable = released by the owner. Beta = testing of the newest fixes. Your choice is remembered.';[['stable','Channel: Stable'],['beta','Channel: Beta']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;cs.append(o)});cs.value=beta?'beta':'stable';cs.onchange=()=>{try{localStorage.setItem('logic.channel',cs.value)}catch(e){}location.href=base+(cs.value==='beta'?'beta/':'')};gs.append(cs)}}}catch(e){}
  const upd=()=>{try{const an=AN.cat==='an';let m,k='';if(an){m=AN.view?'VIEW / TRACE':AN.run?'RUN':'PAUSED';k=AN.view?'view':AN.run?'run':''}else{m=SIM?'SIMULATE':'EDIT';k=SIM?'run':''}
-   c1.textContent=m;c1.className=k;const sh=an?AN.sheets[AN.i]:S.sheets[S.cur];c2.textContent=sh&&sh.name?sh.name:'';c3.textContent='v1.20.38'}catch(e){}};upd();setInterval(upd,400)}
+   c1.textContent=m;c1.className=k;const sh=an?AN.sheets[AN.i]:S.sheets[S.cur];c2.textContent=sh&&sh.name?sh.name:'';c3.textContent='v1.20.39'}catch(e){}};upd();setInterval(upd,400)}
 function anSide(){const sd=SC(),tg=$('sidetg');{const f=$('sidefl');if(f){if(AN._ph===undefined)AN._ph=f.placeholder;f.placeholder='Search sheets (001A, 57, DRUM, FURNACE...)'}}sd.classList.toggle('min',SIDEMIN==='1');tg.textContent=SIDEMIN==='1'?'▶':'◀';$('sidect').textContent='Analog sheets ('+AN.sheets.length+')';
  const c=cs();$('sidevt').textContent=c?c.name+'  ·  '+(anOrd().indexOf(AN.i)+1)+'/'+AN.sheets.length:'Analog';
  anSortUi();const key=AN.sheets.map(s=>s.name).join('|')+'#'+AN.fl+'#'+AN.sm;
@@ -27046,12 +27050,12 @@ function plOpen(){if(AN.plantUi.open){try{plWin&&plWin.focus()}catch(e){}return}
  AN.tickHooks=AN.tickHooks||[];if(!AN.tickHooks.includes(plTick))AN.tickHooks.push(plTick);clearInterval(plChk);plChk=setInterval(()=>{if(!AN.plantUi.open){clearInterval(plChk);return}if(plWin&&plWin.closed)plClose();else plUpd()},500);plRoot=root;plUpd();hmiApplyMode();msg('Plant window open ('+host+'). The sheets and the panel only show values while it is open; operate from the plant window.')}
 function plClose(fromWin){if(!AN.plantUi.open)return;AN.plantUi.open=false;clearInterval(plChk);AN.plantSheets=[];bPl.classList.remove('on');AN.tickHooks=(AN.tickHooks||[]).filter(f=>f!==plTick);try{if(plWin&&!plWin.closed&&!fromWin)plWin.close()}catch(e){}plWin=null;const f=document.getElementById('plantfloat');if(f)f.remove();plRoot=null;plUpdL=[];try{hmiApplyMode()}catch(e){}}
 bPl.onclick=()=>{if(AN.plantUi.open)plClose();else plOpen()};
-function plantSwitch(on,quiet){AN.plantOn=!!on;try{localStorage.setItem('ls-plantmodel',on?'1':'0')}catch(e){}
+function plantSwitch(on,quiet){AN.plantOn=!!on;try{localStorage.setItem('ls-plantmodel2',on?'1':'0')}catch(e){}
  for(const sh of AN.sheets){if(!sh.S)continue;for(const b of sh.S.procs||[])if(b.proc)b.proc.on=!!on;if(!on){sh.S.rt.pm={};sh.S.plantT=null;sh.S._rem=0}}
  bPm.textContent='Plant model: '+(on?'ON':'OFF');bPm.classList.toggle('on',!!on);if(!on&&AN.plantUi.open)plClose();
  try{settle()}catch(e){}try{buildPanel();panelUpd(true)}catch(e){}if(!quiet)msg(on?'Plant model ON: the PV follows the controller output':'Plant model OFF: transmitters / PV are free inputs, only the drawn logic runs')}
 bPm.onclick=()=>plantSwitch(!AN.plantOn);
-{let v=null;try{v=localStorage.getItem('ls-plantmodel')}catch(e){}AN.plantOn=v==='1';bPm.textContent='Plant model: '+(AN.plantOn?'ON':'OFF');bPm.classList.toggle('on',AN.plantOn)}
+{let v=null;try{v=localStorage.getItem('ls-plantmodel2')}catch(e){}AN.plantOn=v!=='0';/* v1.20.39: the plant model is always there (ON by default); the operator operates it */bPm.textContent='Plant model: '+(AN.plantOn?'ON':'OFF');bPm.classList.toggle('on',AN.plantOn)}
 function wrCtl(e){try{e.querySelectorAll&&e.querySelectorAll('input,button').forEach(x=>x.classList.add('wr'))}catch(x){}return e}
 function buildPanel(){const sh=cs(),S=sh.S;anp.innerHTML='';if(AN.plantUi&&AN.plantUi.open)anp.append(h$('div',{cls:'own',txt:'The Plant window is open: it is the controller (inputs, FORCE / SIM). This panel only shows the values. Close the Plant window to operate from the diagram and the panel.'}));else if(AN.hmiUi&&AN.hmiUi.open)anp.append(h$('div',{cls:'own',txt:'The HMI is open: it is the controller (inputs, FORCE / SIM). This panel only shows the values. Close the HMI to operate from the diagram and the panel.'}));PU=[];const sec=t=>anp.append(h$('h4',{txt:t}));
  const val=(n,dig)=>{const e=h$('span',{cls:'v'});PU.push(()=>{const x=S.rt.v[n];e.textContent=dig?(x>.5?'1':'0'):fmt(x);e.classList.toggle('d1',dig&&x>.5)});return e};
@@ -33424,7 +33428,9 @@ body.ophmi #anp{display:none!important}
    const legOf=(sw,i)=>i===0?(sw.a===op?'A':'B'):(sw.a===chain[i-1].o[0]?'A':'B');let amt=null,autoLeg=null,manNet=null,manBlk=null;
    for(let i=0;i<chain.length&&!amt;i++){const sw=chain[i],pl=legOf(sw,i),o=pl==='A'?sw.b:sw.a;if(o==null||o<0)continue;const man=(S.drv[o]||[]).find(d=>d.k==='MAN');if(man||(S.ext.includes(o)&&!S.nets[o].dig)){amt=sw;autoLeg=pl;manNet=o;manBlk=man||null}}
    if(!amt){amt=S.blk.find(z=>(z.k==='AMT'||z.k==='SW')&&z.a!=null&&z.b!=null&&(b.o.includes(z.a)||b.o.includes(z.b))&&z.o[0]!=null)||null;autoLeg=amt?(b.o.includes(amt.a)?'A':'B'):null;manNet=amt?(autoLeg==='A'?amt.b:amt.a):null}
-   out.push({b,tag,q,amt,autoLeg,manNet,manBlk,out:amt?amt.o[0]:b.o[0],desc:(b.face&&b.face.desc)||''})}return out}
+   /* the SV is the output of a T switch whose B leg is a COS (the operator's SV, drawing ABC-007 etc.): the faceplate SV field sets that COS and picks leg B (LOCAL); REM goes back to the SV of the logic */
+   const svSw=(S.drv[q.sv]||[]).find(d=>(d.k==='AMT'||d.k==='SW')&&d.b>=0&&S.blk.some(c=>c.k==='COS'&&c.tb===d.id))||null;
+   out.push({b,tag,q,amt,autoLeg,manNet,manBlk,svSw,out:amt?amt.o[0]:b.o[0],desc:(b.face&&b.face.desc)||''})}return out}
  AN.hmiCtrls=ctrls;/* for the tests */
  function trendOf(key){return trends[key]||(trends[key]={t:[],pv:[],sv:[],mv:[]})}
  function drawTrend(svg,tr,rlo,rhi){const W=360,H=96;let s='';const n=tr.t.length;if(n<2){svg.innerHTML='<text x="10" y="50" fill="#7d8e9a" font-size="12">Walang data pa: i-RUN ang simulation.</text>';return}
@@ -33443,23 +33449,23 @@ body.ophmi #anp{display:none!important}
    const pv=E('b',{txt:'—'}),sv=E('b',{txt:'—'}),mv=E('b',{txt:'—'});const barPv=E('i'),barSvm=E('u'),barMv=E('i');
    const bAuto=E('button',{cls:'b',txt:'AUTO'}),bMan=E('button',{cls:'b man',txt:'MAN'});
    const svIn=E('input',{cls:'n',type:'number',step:'any'}),mvIn=E('input',{cls:'n',type:'number',step:'any'});
-   const svOk=S.ext.includes(c.q.sv),mvOk=c.manNet!=null&&(S.ext.includes(c.manNet)||!!c.manBlk);
-   const svRow=E('div',{cls:'row'},[E('span',{txt:'SV'}),svIn,E('button',{cls:'b',txt:'−',on:()=>{const v=(+svIn.value||0)-(rhi-rlo)/100;svIn.value=v.toFixed(3);setIn(S,c.q.sv,v)}}),E('button',{cls:'b',txt:'+',on:()=>{const v=(+svIn.value||0)+(rhi-rlo)/100;svIn.value=v.toFixed(3);setIn(S,c.q.sv,v)}}),E('span',{cls:'sub',txt:unit})]);
-   const mvRow=E('div',{cls:'row'},[E('span',{txt:'MV (MAN)'}),mvIn,E('button',{cls:'b',txt:'0',on:()=>{mvIn.value=0;setMV(S,c,0)}}),E('button',{cls:'b',txt:'50',on:()=>{mvIn.value=50;setMV(S,c,50)}}),E('button',{cls:'b',txt:'100',on:()=>{mvIn.value=100;setMV(S,c,100)}})]);
-   if(svOk){svIn.onchange=()=>setIn(S,c.q.sv,+svIn.value)}else{svIn.disabled=true;svRow.append(E('span',{cls:'sub',txt:'(SV galing sa logic)'}))}
+   const svOk=S.ext.includes(c.q.sv)||!!c.svSw,svSet=v=>{if(S.ext.includes(c.q.sv)){setIn(S,c.q.sv,v)}else if(c.svSw){S.rt.ext[c.svSw.b]=v;const st=S.rt.st[c.svSw.id];if(st)st.fm='B';try{AN.settle()}catch(e){}}},mvOk=c.manNet!=null&&(S.ext.includes(c.manNet)||!!c.manBlk);
+   const svRow=E('div',{cls:'row'},[E('span',{txt:'SV'}),svIn,E('button',{cls:'b',txt:'−',on:()=>{const v=(+svIn.value||0)-(rhi-rlo)/100;svIn.value=v.toFixed(3);svSet(v)}}),E('button',{cls:'b',txt:'+',on:()=>{const v=(+svIn.value||0)+(rhi-rlo)/100;svIn.value=v.toFixed(3);svSet(v)}}),E('span',{cls:'sub',txt:unit})].concat(c.svSw?[E('button',{cls:'b',txt:'REM',title:'SV galing sa logic (remote); ang SV ng operator ay LOCAL',on:()=>{const st=S.rt.st[c.svSw.id];if(st)delete st.fm;try{AN.settle()}catch(e){}}})]:[]));
+   const mvB=[0,50,100].map(x=>E('button',{cls:'b',txt:String(x),on:()=>{mvIn.value=x;setMV(S,c,x)}})),mvRow=E('div',{cls:'row'},[E('span',{txt:'MV (MAN)'}),mvIn].concat(mvB)),fmEl=E('span',{cls:'sub',style:'color:#ff7a7a;font-weight:700'});
+   if(svOk){svIn.onchange=()=>svSet(+svIn.value)}else{svIn.disabled=true;svRow.append(E('span',{cls:'sub',txt:'(SV galing sa logic)'}))}
    if(mvOk){mvIn.onchange=()=>setMV(S,c,+mvIn.value)}else{mvIn.disabled=true;mvRow.append(E('span',{cls:'sub',txt:'(walang manual input)'}))}
-   const setMode=m=>{if(!c.amt)return;const st=S.rt.st[c.amt.id];if(!st)return;const manLeg=c.autoLeg==='A'?'B':'A';st.fm=m==='A'?c.autoLeg:manLeg;try{AN.settle()}catch(e){}};
+   const setMode=m=>{if(!c.amt)return;const st=S.rt.st[c.amt.id];if(!st)return;const manLeg=c.autoLeg==='A'?'B':'A';st.al=c.autoLeg;st.fm=m==='A'?c.autoLeg:manLeg;try{AN.settle()}catch(e){}};
    bAuto.onclick=()=>setMode('A');bMan.onclick=()=>setMode('M');
    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('class','tr');
    const card=E('div',{cls:'fp'},[E('div',{cls:'tg'},[E('b',{txt:c.tag}),E('span',{txt:(c.desc||'')+(unit?'  ['+fmt(rlo)+' ~ '+fmt(rhi)+' '+unit+']':'')})]),
     E('div',{cls:'dg'},[E('div',{cls:'pv'},[E('small',{txt:'PV'}),pv]),E('div',{cls:'sv'},[E('small',{txt:'SV'}),sv]),E('div',{cls:'mv'},[E('small',{txt:'MV %'}),mv])]),
     E('div',{cls:'bar'},[barPv,barSvm]),E('div',{cls:'bar'},[barMv]),
-    E('div',{cls:'row'},[bAuto,bMan,E('span',{cls:'sub',txt:c.amt?'':'(walang A/M switch)'})]),svRow,mvRow,svg,
+    E('div',{cls:'row'},[bAuto,bMan,fmEl,E('span',{cls:'sub',txt:c.amt?'':'(walang A/M switch)'})]),svRow,mvRow,svg,
     E('div',{cls:'lg'},[E('span',{},[E('i',{style:'background:#ffd84a'}),document.createTextNode('PV')]),E('span',{},[E('i',{style:'background:#5cc8ff'}),document.createTextNode('SV')]),E('span',{},[E('i',{style:'background:#6fe3a0'}),document.createTextNode('MV')])])]);
    body.append(card);
    live.push(()=>{const v=S.rt.v,pvv=v[c.q.pv],svv=v[c.q.sv],mvv=v[c.out];pv.textContent=fmt(pvv);sv.textContent=fmt(svv);mv.textContent=fmt(mvv);
     const f=x=>Math.max(0,Math.min(100,(x-rlo)/(rhi-rlo)*100));barPv.style.cssText='width:'+f(pvv)+'%;background:#ffd84a';barSvm.style.left=f(svv)+'%';barMv.style.cssText='width:'+Math.max(0,Math.min(100,mvv))+'%;background:#6fe3a0';
-    const pk=c.amt&&S.rt.st[c.amt.id]?S.rt.st[c.amt.id].pk:c.autoLeg;const isAuto=!c.amt||pk===c.autoLeg;bAuto.classList.toggle('on',isAuto);bMan.classList.toggle('on',!isAuto);
+    const pk=c.amt&&S.rt.st[c.amt.id]?S.rt.st[c.amt.id].pk:c.autoLeg;const isAuto=!c.amt||pk===c.autoLeg;bAuto.classList.toggle('on',isAuto);bMan.classList.toggle('on',!isAuto);const fm_=c.amt&&S.rt.st[c.amt.id]&&S.rt.st[c.amt.id].fman;fmEl.textContent=fm_?'FORCE MANUAL (logic): hindi puwedeng AUTO':'';bAuto.disabled=!!fm_;/* MV is only for MANUAL: in AUTO the operator changes the SV, not the MV */if(mvOk){mvIn.disabled=isAuto&&!!c.amt;mvB.forEach(x=>x.disabled=isAuto&&!!c.amt)}
     if(document.activeElement!==svIn&&isFinite(svv))svIn.value=(+svv.toFixed(3));if(document.activeElement!==mvIn&&c.manNet!=null&&isFinite(v[c.manNet]))mvIn.value=(+v[c.manNet].toFixed(2));
     const tr=trendOf(key);if(S.rt.t!==tr.last){tr.last=S.rt.t;tr.t.push(S.rt.t);tr.pv.push(pvv);tr.sv.push(svv);tr.mv.push(mvv);if(tr.t.length>600){for(const k of ['t','pv','sv','mv'])tr[k].shift()}}drawTrend(svg,tr,rlo,rhi)})});
   // 2. manual stations
@@ -33567,7 +33573,7 @@ function build(){const ui=document.getElementById('uisel');if(!ui||document.getE
  sel.onchange=()=>{dg=applyDg(sel.value);set('ditl.dg',dg)};ui.after(sel)}
 build();if(!document.getElementById('dgsel'))document.addEventListener('DOMContentLoaded',build);
 })();
-</script><!--THEME-END--><!--UAT-BEGIN--><script id="uatdata" type="application/json">{"ver":"1.20.38","known":{}}</script><script id="uatui">/* UAT runner: runs one test case of one block on the simulator (AN) and compares the result with the expected rows. Used by the generator (dry run) and by the UAT panel. */
+</script><!--THEME-END--><!--UAT-BEGIN--><script id="uatdata" type="application/json">{"ver":"1.20.39","known":{}}</script><script id="uatui">/* UAT runner: runs one test case of one block on the simulator (AN) and compares the result with the expected rows. Used by the generator (dry run) and by the UAT panel. */
 window.UATR=(function(){
  const fmt=x=>x==null||!isFinite(x)?'—':Math.abs(x)>=1000?x.toFixed(0):Math.abs(x)>=100?x.toFixed(1):Math.abs(x)>=10?x.toFixed(2):x.toFixed(3);
  function plantOff(){const sv=[];for(const x of AN.sheets)if(x.S)for(const b of x.S.procs||[]){sv.push([b,b.proc.on]);b.proc.on=false}return sv}
