@@ -44,7 +44,7 @@ Trace the complete path from input through blocks to output, including cross-pag
 - Do not change DITL logic, its engine, or page behavior during ABC-only work unless the user explicitly approves it.
 - UI-only changes are allowed only when they do not affect logic, simulation, or existing page behavior.
 - Explain the proposed functional change and its impact before asking for approval.
-- No Stable/Beta release, release packaging, or claim of successful build until the user explicitly says **GO STABLE** or **GO BETA**.
+- Stable release, merge to `main`, workflow run and release packaging only when the user says **GO STABLE** in that message. Beta needs no GO: see 5e.
 - Never claim that HTML, portable EXE, or APK was built or tested unless it was actually done and evidence is available.
 - Keep the existing version naming convention. Do not infer the runtime version solely from a filename.
 
@@ -70,7 +70,7 @@ After every meaningful task, update `HANDOFF.md` before finishing. For version-s
 - Layout: portrait A4, large type (body 10 pt or more), one item per card (Problem, As Found, Work Done, As Left, Status, Where, What to verify). No wide tables; the user reads on a phone or tablet.
 - Colors: dark background with soft light text (no bright white page); status colors muted (green Pass, amber Needs Verification, red Fail).
 - Content: say where in the diagram (sheet, tag, area) and what to type / expect; list the items needing user verification separately and last.
-- No release or build claim without GO STABLE / GO BETA.
+- No Stable release or build claim without GO STABLE.
 
 ## 6. Completion and communication
 
@@ -100,3 +100,8 @@ Before reporting completion:
 ## 5d. Sources and build (user, 2026-10-14)
 - The simulator is built from `src/` (see `src/README.md`). Edit `src/` and run `npm run build`; never edit `logic-sim-vX.Y.Z.html` by hand. The Checks run fails if the committed html is not exactly what `src/` builds.
 - The version is `src/version.txt`; when it changes, the build writes the new html and removes the old one.
+
+## 5e. Beta policy (user, 2026-10-14; replaces the GO BETA rule)
+- Every fix or update is committed and pushed to the working branch right away; the push IS the Beta release (the Beta page `/beta/` and the in-app channel detect the new version). No GO BETA needed any more.
+- Each push: bump `src/version.txt`, `npm run build`, `npm run check`, test only the fix, update `HANDOFF.md` and the version report, then tell the user what to check.
+- Still needs the user's explicit **GO STABLE** in that message: merge to `main`, any workflow run (release, clean), Stable release (apk, exe, html, report). Never assume permission from an older message.
