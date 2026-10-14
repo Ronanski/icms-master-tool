@@ -92,6 +92,17 @@ window.UATG=(function(){
      {l:'command full open for the whole stroke, then closed for a quarter of the stroke: the position is 75 %',steps:[st1({[n]:hi},T+1),st1({[n]:0},t)],rows:[{st:stk,t:'position (%)',v:75,tol:3}],reset:true}]))}
    // analog outputs without an output net: the limit 0 ~ 100 is applied on the net that feeds the AO (it is tested through the blocks that drive it)
    if(b.k==='AO'&&!(b.o&&b.o.length)){add('Analog outputs (AO, 0 ~ 100 %)',item(b,'AO',[{l:'not tested alone: the AO has no output net; its 0 ~ 100 limit is applied to the net that feeds it, and that is checked on the blocks that drive it (math and switches)',skipMsg:'no output net on the drawing',steps:[],rows:[]}]))}
+   // minimum air flow constant ("32 %" into the high selector): a percent of the TOTAL AIR FLOW scale; the scale is the most frequent denominator of the SCALE CONVERT constants written on the sheet (648 / 1115 ...)
+   if(b.k==='CONST'&&b.p&&b.p.mt&&o!=null&&free(S,o)){const dc={};for(const t of S.tx){const m=/^\s*\d+\s*\/\s*(\d+)\s*$/.exec(t.t);if(m)dc[m[1]]=(dc[m[1]]||0)+1}let den=0,bc=0;for(const k in dc)if(dc[k]>bc){bc=dc[k];den=+k}
+    if(den>0){const e=b.p.orig/100*den;add('Constants (value written in the box)',item(b,'Minimum air flow '+b.p.orig+' %',[{l:'the box says '+b.p.orig+' % and the sheet converts to a total air flow scale of 0 ~ '+den+' T/H -> '+fmt(e)+' T/H',steps:[st1({},0)],rows:[R(o,'output (T/H)',e,.5)],reset:false}]))}}
+   // F(X) with a percent input: the input is first turned into a percent of its own range, then the table of the workbook is read
+   if(b.k==='FX'&&b.p&&b.p.tbl&&b.fxin&&b.fxin.k==='rng'&&b.i[0]!=null&&o!=null&&free(S,o)){const t=b.p.tbl,q=b.fxin,pts=t.p2||t.pts,cs=[];
+    for(const pc of [25,50,80]){const y=interp(pts,pc);if(y==null)continue;const v=q.lo+(q.hi-q.lo)*pc/100;cs.push({l:'input '+fmt(v)+' '+(q.u||'')+' = '+pc+' % of its range '+q.lo+' ~ '+q.hi+' -> table '+b.p.ln+' at '+pc+' % = '+fmt(y),steps:[st1({[b.i[0]]:v},0)],rows:[R(o,'output (table '+b.p.ln+')',y,Math.max(.02,Math.abs(y)*.01))],reset:false})}
+    if(cs.length)add('Curves F(X) (workbook tables)',item(b,'F(X) '+b.p.ln+' with % input',cs))}
+   // average select circuit: an input at zero is a lost signal (SIG.AB): it is not averaged, the others are
+   if(b.k==='SEL'&&b.i&&b.i.length>=2&&b.i.length<=6&&o!=null&&free(S,o)&&(!b.p||!b.p.mode||b.p.mode==='AVG')){
+    const vs=b.i.map((n,j)=>j===0?0:10+7*j),rest=vs.slice(1),e=rest.reduce((a,c)=>a+c,0)/rest.length,f={};b.i.forEach((n,j)=>f[n]=vs[j]);
+    add('Average select circuits',item(b,'Average select, one input lost',[{l:'first input = 0 (lost), the others '+rest.join(', ')+' -> the average of the healthy ones '+fmt(e),steps:[st1(f,0)],rows:[R(o,'average of the healthy inputs',e,Math.max(.05,Math.abs(e)*.002))],reset:false}]))}
    // timers
    if((b.k==='TON'||b.k==='TOF'||b.k==='TPS')&&b.p&&b.p.sec>0&&b.p.sec<=30&&b.i[0]!=null&&free(S,o)){
     const sec=b.p.sec,i0=b.i[0],q=x=>Math.max(.25,Math.round(x*4)/4),cs=[];
