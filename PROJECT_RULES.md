@@ -95,3 +95,4 @@ Before reporting completion:
 - Symbols follow the legend `analog logic symbols legend.pdf`: a block with a wrong or empty symbol is a defect.
 - A test is only "pass" for what it really checked: a block that was skipped or not covered is reported as NOT TESTED, never as pass. The user does not verify; if something cannot be decided from the repository, say exactly what is missing instead of "Needs Verification".
 - Plant model: it only decides how the PV answers to the valve (ON: the PV moves with the controller output; OFF: the PV is an input the user sets). The logic and the A/M, PV / SV / MV relations must work in both cases.
+- Bawat pagbabago sa engine ay nagsisimula sa trace ng drawing (sheet, tag, block, legend), nakasulat sa `docs/versions/<version>/DRAWING_TRACE.md` bago ang code (user, 2026-10-14; ang trace ng v1.20.34 ay ginawa pagkatapos at ito ay pagkakamali).
