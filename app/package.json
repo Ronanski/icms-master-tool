@@ -1,2 +1,2 @@
 {"name":"logic-sim-desktop","version":"1.0.0","private":true,"main":"main.js","devDependencies":{"electron":"31.3.0","electron-builder":"24.13.3"},
- "build":{"appId":"com.ronanski.logicsim","files":["main.js","offline.html","config.json"],"win":{"target":"portable"},"portable":{"artifactName":"${productName}-portable.exe"}}}
+ "build":{"appId":"com.ronanski.logicsim","files":["main.js","offline.html","config.json","www/**"],"win":{"target":"portable"},"portable":{"artifactName":"${productName}-portable.exe"}}}
