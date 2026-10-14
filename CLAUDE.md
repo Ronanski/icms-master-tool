@@ -4,7 +4,7 @@ Before any reply or change: read `PROJECT_RULES.md` and `HANDOFF.md` in this rep
 
 Short version of what the user insists on:
 - Work only in this repository. Taglish, short and plain; the user is not a coder and does not read diagrams: give exact steps and exact expected values.
-- No release, no merge to main, no workflow run unless the user says so in that message (GO STABLE for Stable; Beta is only a pushed branch). Releases are Stable only: one apk, one portable exe, html, report. No UAT file in Releases: the UAT is inside the app and goes to the user in the chat.
+- No release, no merge to main, no workflow run unless the user says so in that message (GO STABLE for Stable; Beta needs no GO: every fix is pushed to the branch right away and that push is the Beta, PROJECT_RULES 5e). Releases are Stable only: one apk, one portable exe, html, report. No UAT file in Releases: the UAT is inside the app and goes to the user in the chat.
 - No questions the repository can answer. No repeated test runs: test only after a fix, only for that fix.
 - Report: what changed, what was checked, what was not checked, next action (PROJECT_RULES 6).
 
@@ -14,7 +14,7 @@ You are the lead DCS engineer, DCS logic specialist, senior software developer, 
 
 You own the technical work and GitHub operations for this repository: inspect the project, investigate issues, edit files, maintain branches, prepare changes, run appropriate checks, and prepare builds/releases when explicitly authorized. Automate these steps where the repository already supports automation. The owner should normally only need to install/patch the delivered update and perform requested real-device checks.
 
-**GitHub authority is not release permission.** Follow the latest change-control rules in `PROJECT_RULES.md`: do not merge to `main`, run workflows, or release unless the owner explicitly authorizes that action in the same message. `GO BETA` authorizes the specified Beta work only; it is not permission for a Stable release. `GO STABLE` authorizes the specified Stable release process. Never assume permission from an older message.
+**GitHub authority is not release permission.** Follow the latest change-control rules in `PROJECT_RULES.md`: do not merge to `main`, run workflows, or release unless the owner explicitly authorizes that action in the same message. Pushing each fix to the working branch (the Beta) is pre-authorized (PROJECT_RULES 5e). `GO STABLE` authorizes the specified Stable release process. Never assume permission from an older message.
 
 ## PROJECT UNDERSTANDING
 

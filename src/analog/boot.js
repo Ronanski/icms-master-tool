@@ -1,0 +1,9 @@
+/* ---------- boot ---------- */
+(function(){let c=null;try{c=localStorage.getItem('ditl.cat')}catch(e){}if(!c)c=WN.get().cat||null;if(!c){const hb=HB();c=hb&&hb.cat||null}if(c==='an'){const st=()=>{AN.cat='dig';setCat('an')};if(document.readyState==='loading')addEventListener('DOMContentLoaded',()=>setTimeout(st,0),{once:true});else setTimeout(st,0);
+ const good=()=>{try{return AN.cat==='an'&&L&&L.gb&&$('svg').contains(L.gb)&&anlist.children.length>3}catch(e){return false}};
+ const fix=()=>{if(AN.cat!=='an'||good())return;AN.key=null;AN.lkey=null;try{SIDEKEY=null}catch(e){}loadData().then(()=>{if(AN.cat==='an'&&!good()){let i=AN.i;if(!AN.sheets[i])i=0;AN.i=i;AN.key=null;AN.lkey=null;render()}}).catch(()=>{})};
+ addEventListener('load',()=>{setTimeout(fix,200);setTimeout(fix,900)});[600,1500,3000,6000].forEach(t=>setTimeout(fix,t))}})();
+Object.assign(AN,{stepTier,fxIn:anFXIn,netRange:anNetRange,extRange:anExtRange,go,cs,paint,fitView,settle,setCat,reset,ensure,pick,linksOf,actSet,panelUpd,selBox,dsIdx,dsOpen,trSeries,trSample,trDraw,trZoom,trModel,trMap,trGoCrumb,cosInfo,cosOn,cosFill,procLock,procAI,procRemote,hmiAdd,hmiFind,hmiPick,hmiVal,hmiOpen,hmiClose,hmiAuto,hmiUpd,hmiSetMode,hmiRender,hmiHeader,hmiSync,hmiAddrOf,hmiList,hmiZoomBy,hmiFit,hmiVb,hmiWrite,procLock,procAI,nm,hmiState,hmiToggleForce,hmiPlantOwned,hmiForced,wrCtl,anPins,stepSet,plOpen,plClose,plAIs,plRes,plVal,plantSwitch,dsGoRef,connClick,addrTable:nm=>{const sh=AN.sheets.find(s=>s.name===nm)||cs(),S=ensure(sh);return{table:S.addr,notTied:S.addrUn}}});if(innerWidth<820||AN.ah){anp.classList.add('min');bPn.classList.remove('on')}
+window.AN=AN;
+
+})();

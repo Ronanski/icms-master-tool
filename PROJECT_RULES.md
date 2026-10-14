@@ -44,7 +44,7 @@ Trace the complete path from input through blocks to output, including cross-pag
 - Do not change DITL logic, its engine, or page behavior during ABC-only work unless the user explicitly approves it.
 - UI-only changes are allowed only when they do not affect logic, simulation, or existing page behavior.
 - Explain the proposed functional change and its impact before asking for approval.
-- No Stable/Beta release, release packaging, or claim of successful build until the user explicitly says **GO STABLE** or **GO BETA**.
+- Stable release, merge to `main`, workflow run and release packaging only when the user says **GO STABLE** in that message. Beta needs no GO: see 5e.
 - Never claim that HTML, portable EXE, or APK was built or tested unless it was actually done and evidence is available.
 - Keep the existing version naming convention. Do not infer the runtime version solely from a filename.
 
@@ -70,7 +70,7 @@ After every meaningful task, update `HANDOFF.md` before finishing. For version-s
 - Layout: portrait A4, large type (body 10 pt or more), one item per card (Problem, As Found, Work Done, As Left, Status, Where, What to verify). No wide tables; the user reads on a phone or tablet.
 - Colors: dark background with soft light text (no bright white page); status colors muted (green Pass, amber Needs Verification, red Fail).
 - Content: say where in the diagram (sheet, tag, area) and what to type / expect; list the items needing user verification separately and last.
-- No release or build claim without GO STABLE / GO BETA.
+- No Stable release or build claim without GO STABLE.
 
 ## 6. Completion and communication
 
@@ -87,3 +87,21 @@ Before reporting completion:
 - Record: before this rule, two commits were pushed by mistake to the working branch of dcs-logic-sim (9c18f57, 3492cbf) and the branch claude/v1.20.22-abc-audit was created there. They are left as they are; the user decides.
 - Working style (user): Taglish, short; no questions the repository can answer; no repeated test runs, test only after a fix and only for that fix.
 - User rules (2026-10-13): (1) No release, no merge to main and no workflow run (release, clean, site) unless the user says so in that message. (2) The UAT goes to the user in the chat (SendUserFile), never into the Releases or any GitHub release asset; it lives inside the app (UAT button). (3) Releases are Stable only: one apk, one portable exe, html and report; Beta is only the html of a pushed branch. A change stays on its branch until the user says GO STABLE.
+
+## 5c. Live values, simulation and plant model (user, 2026-10-14; source: `document-references/values-logic-sim-end-user-report.xlsx`)
+- Read that workbook before touching the live values, the symbols, the selectors, the ranges or the ramps. Its RULES, "Findings / Wishlist" (20 items), UI list and "Priority next version" are the user's requirements.
+- Live values: one runtime value per net; every label and wire display of the net shows the same value; values do not hide wires, blocks, text or other values; side = aligned, above / below = centred. Shown on: instrument tags, module addresses (AI / AO / SI), tags with .SV / .MV / .PV, block inputs and outputs (not repeated where an address already shows it), wires without a tag. A valve / damper / motor shows its % opening on the equipment, not on its tag or positioner.
+- Ranges written on the drawing are strict for every input, slider and manual value (also where the signal is the output of another block).
+- Symbols follow the legend `analog logic symbols legend.pdf`: a block with a wrong or empty symbol is a defect.
+- A test is only "pass" for what it really checked: a block that was skipped or not covered is reported as NOT TESTED, never as pass. The user does not verify; if something cannot be decided from the repository, say exactly what is missing instead of "Needs Verification".
+- Plant model: it only decides how the PV answers to the valve (ON: the PV moves with the controller output; OFF: the PV is an input the user sets). The logic and the A/M, PV / SV / MV relations must work in both cases.
+- Bawat pagbabago sa engine ay nagsisimula sa trace ng drawing (sheet, tag, block, legend), nakasulat sa `docs/versions/<version>/DRAWING_TRACE.md` bago ang code (user, 2026-10-14; ang trace ng v1.20.34 ay ginawa pagkatapos at ito ay pagkakamali).
+
+## 5d. Sources and build (user, 2026-10-14)
+- The simulator is built from `src/` (see `src/README.md`). Edit `src/` and run `npm run build`; never edit `logic-sim-vX.Y.Z.html` by hand. The Checks run fails if the committed html is not exactly what `src/` builds.
+- The version is `src/version.txt`; when it changes, the build writes the new html and removes the old one.
+
+## 5e. Beta policy (user, 2026-10-14; replaces the GO BETA rule)
+- Every fix or update is committed and pushed to the working branch right away; the push IS the Beta release (the Beta page `/beta/` and the in-app channel detect the new version). No GO BETA needed any more.
+- Each push: bump `src/version.txt`, `npm run build`, `npm run check`, test only the fix, update `HANDOFF.md` and the version report, then tell the user what to check.
+- Still needs the user's explicit **GO STABLE** in that message: merge to `main`, any workflow run (release, clean), Stable release (apk, exe, html, report). Never assume permission from an older message.
