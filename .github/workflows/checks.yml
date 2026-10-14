@@ -15,6 +15,8 @@ jobs:
           F=logic-sim-v$V.html
           grep -q "<title>Logic Sim v$V</title>" "$F" || { echo "title does not say v$V"; exit 1; }
           grep -q "c3.textContent='v$V'" "$F" || { echo "version label does not say v$V"; exit 1; }
+      - name: The sources build exactly the committed html (src/ is the truth)
+        run: node tools/build/build.js --check
       - name: Scripts of the html parse
         run: |
           node -e "

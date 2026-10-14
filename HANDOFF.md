@@ -37,6 +37,9 @@ DCS Logic Simulator sa `Ronanski/icms-master-tool`. Basahin muna ang `CLAUDE.md`
 - `README.md` walang link sa `docs/versions/`; `tools/regress/README.md` default na html ay v1.20.25 pa (v1.20.32 na ang tama). Ayusin kapag may susunod na docs update.
 - Branch cleanup (kailangan ng desisyon ng user): 13 branches ay 0 commits sa unahan ng main (auto-chk, ui-shell, operator-hmi, uat-blocks, uat-in-app, uat-expected-values, channel-switch, no-uat-release, clean-releases, restore-html-android, beta/operator-hmi-v1.20.27, v1.20.26, ccr-a82cbeb0-zyf3i8). PR #8 (`claude/adoring-carson-aylw3j`, v1.20.22) ay luma na at superseded ng main.
 
+## Sources (v1.20.34, Beta)
+Ang app ay galing sa `src/` na ngayon (Vite dev server, `npm run build`, `npm run check`); basahin ang `src/README.md`. Ang html sa root ay build output (byte for byte, nasa Checks). Ang engine ay tumatakbo rin sa Node (`tools/engine/node-engine.js`). Susunod na hakbang ng paglilipat: ihiwalay ang engine sa drawing (hindi pa ginagawa; ang analog app ay iisang closure) at ilipat sa Worker.
+
 ## Next actions
 1. Ang user ay magte-test ng Beta v1.20.34 (`/beta/` page): sariling UAT (👁 sa bawat case), switch / force, Reset. Mga MALI: reproduce sa sheet, ayusin, `node tools/uat/inject.js`, push.
 2. Bukas (tingnan ang `docs/versions/v1.20.34/UPDATE_REPORT.md`): UAT na hindi pa sakop ang COS, SIG.AB, TXD, IP, FIELD, ilang constants (nakasulat sa panel); ramp rate (8 block na walang rate sa drawing, 1 / s ang default; ABC-052 unit); math block na walang symbol sa theme (Needs Verification); ang tiered stepping at ang naka-embed na html sa apk / exe ay hindi pa nasubukan sa totoong device.
@@ -46,5 +49,5 @@ DCS Logic Simulator sa `Ronanski/icms-master-tool`. Basahin muna ang `CLAUDE.md`
 
 ## Notes
 - Huwag ipadala ang html sa chat (naputol sa ~160-205 KB; 3.7 MB ang html). Gamitin ang Beta page o release asset.
-- Pagkatapos baguhin ang logic: `node tools/uat/inject.js` para sumunod ang UAT expected values; `node tools/uat/make-report.js` para sa report.
+- Pagkatapos baguhin ang logic: i-edit ang `src/` at `npm run build` (ito na rin ang naglalagay ng UAT, shell, HMI at theme; `npm run check` ang nagpapatunay na tama ang html); `node tools/uat/make-report.js` para sa report.
 - Ang user ay hindi coder, nagbabasa sa phone/tablet, ayaw ng mahaba/technical na sagot at ng paulit-ulit na test. Maikling Taglish, eksaktong hakbang at eksaktong inaasahang value, tapat sa hindi na-check.

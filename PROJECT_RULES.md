@@ -96,3 +96,7 @@ Before reporting completion:
 - A test is only "pass" for what it really checked: a block that was skipped or not covered is reported as NOT TESTED, never as pass. The user does not verify; if something cannot be decided from the repository, say exactly what is missing instead of "Needs Verification".
 - Plant model: it only decides how the PV answers to the valve (ON: the PV moves with the controller output; OFF: the PV is an input the user sets). The logic and the A/M, PV / SV / MV relations must work in both cases.
 - Bawat pagbabago sa engine ay nagsisimula sa trace ng drawing (sheet, tag, block, legend), nakasulat sa `docs/versions/<version>/DRAWING_TRACE.md` bago ang code (user, 2026-10-14; ang trace ng v1.20.34 ay ginawa pagkatapos at ito ay pagkakamali).
+
+## 5d. Sources and build (user, 2026-10-14)
+- The simulator is built from `src/` (see `src/README.md`). Edit `src/` and run `npm run build`; never edit `logic-sim-vX.Y.Z.html` by hand. The Checks run fails if the committed html is not exactly what `src/` builds.
+- The version is `src/version.txt`; when it changes, the build writes the new html and removes the old one.
