@@ -7,7 +7,7 @@ DCS Logic Simulator sa `Ronanski/icms-master-tool`. Basahin muna ang `CLAUDE.md`
 
 - **Stable: v1.20.32** (release tag `v1.20.32`, `main`). Sa root ng branch na ito: `logic-sim-v1.20.34.html` (isa lang); sa `main`: `logic-sim-v1.20.32.html`. Release assets: html, `Logic-Sim-v1.20.32.apk`, `Logic-Sim-v1.20.32-portable.exe`, `Release-Report-v1.20.32.pdf`. Walang UAT file sa release; ang UAT ay nasa loob ng app (berdeng UAT button).
 - **Beta: v1.20.34** (branch `claude/blissful-mendel-xtceew`, PR #21; base = Stable v1.20.32): switch restore pagkatapos ng FORCE (engine), Reset = fresh start (engine), 👁 own-check sa UAT, naka-embed na html sa apk/exe (offline). Detalye at ebidensya: `docs/versions/v1.20.34/UPDATE_REPORT.md`. Hindi pa nasusubukan ang apk / exe (hindi na-build). Hintay sa GO STABLE.
-- **Hiwalay na Beta: v1.20.33** (branch `themes`): diagram themes at UI theme Slate, kulay lang. Hindi kasama sa v1.20.34; kailangan ng utos ng user (at pagsasama ng html) bago pagsamahin.
+- **Kasama na ang themes** (dating v1.20.33, branch `themes`): diagram themes Standard / Calm / Clarity / Paper at UI theme Slate; kulay lang (`tools/theme/`, `node tools/theme/inject.js`). Sinuri: ang html ng themes ay pareho sa v1.20.32 maliban sa THEME block.
 - Reference build na hindi ginagalaw: `document-references/logic-sim-v1.20.21.html`.
 
 ## Saan ang mga bagay
@@ -39,7 +39,7 @@ DCS Logic Simulator sa `Ronanski/icms-master-tool`. Basahin muna ang `CLAUDE.md`
 
 ## Next actions
 1. Ang user ay magte-test ng Beta v1.20.34 (`/beta/` page): sariling UAT (👁 sa bawat case), switch / force, Reset. Mga MALI: reproduce sa sheet, ayusin, `node tools/uat/inject.js`, push.
-2. Bukas (tingnan ang `docs/versions/v1.20.34/UPDATE_REPORT.md`): 3 sheet na iba pa rin ang Reset sa fresh (010, 013, 001C); UAT na hindi sumasaklaw sa AO, valves, ALM, COS, SIG.AB, TXD (nakasulat sa panel); math block na walang symbol (hindi pa matukoy); ramp rate (8 block na walang rate sa drawing; ABC-052 unit); 13 PID na interlock back-up ang active; bigat sa tablet (step lang ng konektadong sheet: kailangan ng approval); isama ang `themes`: kailangan ng utos ng user.
+2. Bukas (tingnan ang `docs/versions/v1.20.34/UPDATE_REPORT.md`): 3 sheet na iba pa rin ang Reset sa fresh (010, 013, 001C); UAT na hindi sumasaklaw sa AO, valves, ALM, COS, SIG.AB, TXD (nakasulat sa panel); math block na walang symbol (hindi pa matukoy); ramp rate (8 block na walang rate sa drawing; ABC-052 unit); 13 PID na interlock back-up ang active; bigat sa tablet (step lang ng konektadong sheet: kailangan ng approval); 
 3. Test tools: `tools/regress/switches.js` (lahat ng switch), `tools/regress/reset.js` (Reset = fresh), `tools/regress/pid_am.js` (PID A/M), `tools/regress/tests.js`, `tools/uat/dry.js` (2235 items, 6055 cases, 0 bagsak).
 4. Release, merge sa main o workflow run: **GO STABLE** / **GO BETA** lang, sa mismong mensahe. Ang apk / exe ay may embedded na html mula v1.20.34: i-dry-run ang `release.yml` (`dry_run=true`) bago ang totoong release, kapag pinayagan ng user.
 

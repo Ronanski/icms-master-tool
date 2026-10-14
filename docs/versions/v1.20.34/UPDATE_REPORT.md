@@ -1,4 +1,4 @@
-# v1.20.34 (Beta, branch `claude/blissful-mendel-xtceew`; base = Stable v1.20.32, hindi kasama ang `themes` v1.20.33)
+# v1.20.34 (Beta, branch `claude/blissful-mendel-xtceew`; base = Stable v1.20.32 + themes v1.20.33)
 
 - **Problem:** Mga finding ng user sa Beta v1.20.33: (1) may switch na hindi bumabalik sa dati pagkatapos ng FORCE ON/OFF sa RUN; (2) kailangan ng internet para buksan ang app; (3) mabagal ang unang load; (4) UAT na pasado pero hindi nahuli ang mga ito; (5) gusto ng user ng sarili niyang UAT na siya ang humahatol.
 - **As Found:**
@@ -28,7 +28,7 @@
 - **PV / SV / MV AUTO / MAN** (`tools/regress/pid_am.js`): MAN na may manual value habang ang PV ay 20 % sa itaas ng SV, tapos AUTO: 32 sa 32 PID ang tama (hawak ang manual value, sumusunod ang controller, walang talon). 13 PID ang hindi nasubukan dahil ang interlock back-up (BU-CMD) ay active by default at ang controller ay sumusunod doon ayon sa drawing (ABC-003A/B/C/D, 010, 011, 012, 019, 030, 032, 051, 052, 002). Ang HMI snapshots ay mga plant graphics (operating values), hindi faceplate: hindi nagagamit na basehan ng A/M.
 - **Doble-doble na live values (UI lang):** ang AO ay hindi na naglalagay ng ikalawang number sa block kung may address value na ng parehong net (halimbawa AO0352 0.00 at 0.00%), at kapag parehong may address value ang input at output ng AO, isa lang ang ipinapakita (halimbawa MCV-FA1054-1 0.00). Ang actuator (damper) % ay nananatili. Nasubukan sa headless sa ABC-007; hindi pa sa ibang sheet.
 - **Bumabagal (paliwanag, hindi pa ginagawa):** bawat 0.1 s, kinukwenta ng app ang ~36 na sheet kahit isa lang ang tinitingnan, dahil may mga signal na dumadaan sa pagitan ng mga sheet. Ang ayos: kuwentahin lang ang mga sheet na nagpapadala ng signal sa tinitingnang sheet (at ang sa kanila). Ang mga sheet na hindi konektado ay hihinto habang hindi tinitingnan (pareho na ito ngayon sa mga hindi konektado). Dapat ma-verify na pareho ang mga value; kailangan ng approval ng user.
-- **Themes (v1.20.33):** hindi pa kasama dahil sa pagsasama ng dalawang pagbabago sa iisang html na kailangan ng utos ng user; hiwalay pa rin sa branch `themes`.
+- **Themes (v1.20.33):** kasama na (merge ng branch `themes`; ang html nila ay THEME block lang kaya inilagay ito ng `tools/theme/inject.js` sa v1.20.34).
 
 ## Hindi pa nasusuri / bukas
 - apk at exe ay HINDI pa na-build at HINDI nasubukan (walang Android / Windows build dito). Ang workflow ay may `dry_run` para sa build lang.
