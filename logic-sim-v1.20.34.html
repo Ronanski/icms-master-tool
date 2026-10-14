@@ -25588,8 +25588,8 @@ function anStep(S,dt){const rt=S.rt,v=rt.v,nets=S.nets,B=x=>x>.5?1:0;rt.t+=dt;rt
      /* bumpless tracking: the PID / MAN that feeds the unselected A input follows the output */
      /* interlock tracking (legend: "INTERLOCK TRACKING FOR PID CONTROLLER & MANUAL CONTROL STATION"): a back-up value selected by a downstream selector is also tracked by the upstream A/M selector, its PID and its COS manual value */
      const bu=s.bu;
-     if(b.trkFrom)for(const d of b.trkFrom){const ds=rt.st[d.id];if(ds)ds.trk=bu!=null?bu:(pickB?y:null)}
-     if(b.upA)for(const u of b.upA){const us=rt.st[u.id];if(us)us.bu=bu!=null?bu:((pickB&&b.buCmd)?y:null)}
+     if(b.trkFrom)for(const d of b.trkFrom){const ds=rt.st[d.id];if(ds)ds.trk=bu!=null?bu:(pickB?y:(s.tv!=null?s.tv:null))}
+     if(b.upA)for(const u of b.upA){const us=rt.st[u.id];if(us){us.bu=bu!=null?bu:((pickB&&b.buCmd)?y:null);/* bumpless through a chain of selectors: when a selector further down is on its manual / other leg, the selectors before it and the PID follow its output */us.tv=pickB?y:(s.tv!=null?s.tv:null)}}
      if(bu!=null&&b.b>=0&&S.ext&&S.ext.includes(b.b)&&/B\s*\/\s*T/.test((b.txt||[]).join('/'))&&s.bw!==bu){s.bw=bu;rt.ext[b.b]=b.bg!=null?bu/b.bg:bu}
      out(b.og!=null?y*b.og:y);break}
    case 'ADD':case 'SUM':case 'DEV':case 'SUB':{let y=0;for(const q of b.ip){let x=rd(q.n);if(q.ia)x=x*q.ia[0]+q.ia[1];y+=q.sg*x}out(y);break}
@@ -26389,6 +26389,12 @@ function drawSheet(sh){const svg=$('svg'),R=sh.R,S=sh.S;svg.innerHTML='';L={nets
  /* value badges */
  const th=R.tx.map(t=>t.h).sort((a,b)=>a-b),bs=Math.max(1.8,Math.min(3.2,(th[th.length>>1]||3)*.8))*(+AN.ws.vs||1);svg.style.setProperty('--bs',bs+'px');
  const gb=el('g',{},svg);L.gb=gb;L.bs=bs;
+ /* symbols of the legend (ABC-000) that the drawing reader leaves blank or wrong: DEVIATION = triangle in the box (80 of 92 boxes were empty), DIVISION = bar with a dot above and below (was only a bar), SUBTRACTION = bar (2 empty) */
+ {const hasInk=b=>S.seg.some(q=>{const mx=(q.x1+q.x2)/2,my=(q.y1+q.y2)/2;return mx>b.x0+.6&&mx<b.x1-.6&&my>b.y0+.6&&my<b.y1-.6})||(S.shp||[]).some(q=>q!==b.sh&&q.cx>b.x0+.6&&q.cx<b.x1-.6&&q.cy>b.y0+.6&&q.cy<b.y1-.6)||S.tx.some(t=>t.x>=b.x0&&t.x<=b.x1&&t.y>=b.y0-1&&t.y<=b.y1+1);
+  for(const b of S.blk){if(b.x0==null||!(b.k==='DEV'||b.k==='DIV'||b.k==='SUB'))continue;const cx=(b.x0+b.x1)/2,cy=(b.y0+b.y1)/2,u=Math.min(b.x1-b.x0,b.y1-b.y0),col=(typeof AN_KC!=='undefined'&&AN_KC[b.k])||'#4da3ff',A={fill:'none',stroke:col,'stroke-width':Math.max(.5,u*.08),'stroke-linejoin':'round','stroke-linecap':'round','pointer-events':'none'};
+   if(b.k==='DEV'){const t=(S.shp||[]).find(q=>q.ty==='tri'&&q.w>u*.35&&q.w<u*.95&&q.cx>b.x0&&q.cx<b.x1&&q.cy>b.y0&&q.cy<b.y1),tw=t?t.w/2:u*.24,th=t?t.h/2:u*.24,tx=t?t.cx:cx,ty=t?t.cy:cy;el('path',{d:'M'+(tx-tw)+' '+-(ty-th)+'L'+(tx+tw)+' '+-(ty-th)+'L'+tx+' '+-(ty+th)+'Z',...A},gp)}
+   else if(b.k==='SUB')el('path',{d:'M'+(cx-u*.25)+' '+-cy+'L'+(cx+u*.25)+' '+-cy,...A},gp);
+   else if(b.k==='DIV'){for(const dy of[-.24,.24])el('circle',{cx:cx,cy:-(cy+u*dy),r:Math.max(.35,u*.07),fill:col,stroke:'none','pointer-events':'none'},gp)}}}
  L.ov=[];{const mkp=pts=>'M'+pts.map(q=>q[0]+' '+-q[1]).join('L')+'Z',inp=b=>{const p=(b.k==='AO'&&b.pins.find(q=>q.role==='out'))||b.pins.find(q=>q.role==='in');return p?p.n:-1};
   S.blk.forEach(b=>{
    if(b.k==='VLV'&&b.pins.length){const e=el('path',{d:b.v.tri.map(t=>'M'+t.map(q=>q[0]+' '+-q[1]).join('L')+'Z').join(''),fill:'#fff','fill-opacity':0,stroke:'#f1f6f9','stroke-width':.8,'stroke-linejoin':'round','pointer-events':'none'},gb),t=el('text',{x:b.x1+1.2,y:-b.cy+bs*.35,class:'bd','text-anchor':'start'},gb);L.ov.push({b,k:'VLV',e,t,last:null})}
