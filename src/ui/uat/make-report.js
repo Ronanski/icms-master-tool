@@ -1,30 +1,26 @@
 // Release report PDF (Taglish, portrait A4, dark, cards): node src/ui/uat/make-report.js
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/node22/lib/node_modules/playwright');
 const ver=require('fs').readdirSync('.').find(x=>/^logic-sim-v\d+\.\d+\.\d+\.html$/.test(x)).match(/v(\d+\.\d+\.\d+)/)[1];
+const dry=process.env.DRY||'';
 const cards=[
 ['Ano ang laman ng release','Stable',[
- ['Mga file',`logic-sim-v${ver}.html (ang simulator) · Logic-Sim-v${ver}.apk (Android) · Logic-Sim-v${ver}-portable.exe (Windows) · ang report na ito. Isang apk at isang exe lang: Stable. Ang UAT ay nasa loob na ng app.`],
- ['Update (ikaw ang magpapasya)','Ang web page (PWA), ang apk at ang exe ay nagse-save ng bersyong gamit mo, kaya mabilis magbukas. Pagbukas, tinitingnan nila kung may bagong bersyon sa channel mo (Stable o Beta). Kung meron, lalabas ang tanong: "I-update ngayon" o "Huwag muna". May button din na "⟳ Update?" sa taas para mag-check kahit kailan. Hindi na kailangang mag-install ulit ng apk o exe.'],
-['Channel','Sa loob ng app, sa taas-kanan, may kahon na "Channel: Stable / Beta": ikaw ang pipili. Naaalala ito ng app. Ang Stable ay galing sa main (ikaw ang magpapasya kung kailan). Ang Beta ay para sa pagsubok ng bawat bagong ayos, galing sa branch, at wala sa Releases.'],
- ['Bersyon',`v${ver}: bagong UAT sa loob ng app na per sheet at per block (lahat ng logic block at controller, isa-isa, naka-group by type). Inayos ang PID: ang derivative kick ay hindi na nagpapa-wind up ng integral sa maling direksyon (F-36). Isang apk/exe lang sa Releases. Ang v1.20.21 ay reference lang (document-references/), hindi ginalaw.`]]],
-['Mga naayos sa ABC sheets (sa simpleng salita)','Tapos',[
- ['Mga unit at value','Ang simulator ay nagpapakita ng totoong value (T/H, kg/cm², MW, °C, %, rpm), hindi ng DCS count. Inayos ang paghahalo ng % at T/H sa ABC-001C, 003A–E, 005, 006, 008, 009A/B, 010, 011/012, 002, 057 (F-7 hanggang F-25).'],
- ['Pagpili ng switch','Tama na ang leg na pinipili ng T switch at A/M selector ayon sa label na "1:a / 1:b" (F-19). Ang BU-CMD interlock ay sinusundan ng PID (F-26). Ang force-to-manual pulse ay nananatiling manual (ABC-003A AO0209 = 25 % pagkatapos ng shutdown, F-30). Ang T switch ay walang memory; ang A/M switch ay may (F-34).'],
- ['PID','Ang 136 parameter (PID, MAN, SUMA) ay tugma sa workbook. Gumagana na ang dMVH (limit ng bilis ng MV), TF (filter ng PV), CUT (low cut ng PV) at GAP (dead zone). Inayos ang swap ng CUT/DH sa 64 PID (F-31, F-32).'],
- ['Reset','Hindi na nagko-compound ang rate ng RATE/RAMP sa bawat Reset (F-33).'],
- ['Kulay ng linya','Sa RUN at View: ang napiling leg ng switch ay dilaw at maliwanag; ang hindi napili ay abo (F-28, F-29).']]],
-['Saan galing ang basehan','Reference',[
- ['Diagram at mga file','Mga ABC drawing (analog-logic-abc.zip), dcs-io-list.xls, memory-list-101 hanggang 105, linear-curves-fx.xls (89 curve), parameter workbook, flow-compensation.xls, textbook at mga legend. Lahat ay nasa document-references/.']]],
+ ['Mga file',`logic-sim-v${ver}.html (ang simulator) · Logic-Sim-v${ver}.apk (Android) · Logic-Sim-v${ver}-portable.exe (Windows) · ang report na ito. Isang apk at isang exe lang. Ang UAT ay nasa loob ng app (berdeng UAT button).`],
+ ['Update at channel','Pagbukas, tinitingnan ng app kung may bagong bersyon sa channel mo (Stable o Beta, sa taas-kanan). Kung meron, tatanungin ka: I-update ngayon / Huwag muna.']]],
+['Ano ang bago mula v1.20.32 hanggang v1.20.37','Tapos',[
+ ['Switch at Reset','Ang T switch / selector na na-force ay bumabalik na sa tamang leg: 0 sa 438 ang hindi bumalik (dati 14). Ang Reset ay pareho na ng bagong bukas na app: 51 sa 51 sheets.'],
+ ['PID at operator faceplate','Sinusunod ng PID ang manual value kahit dumaan sa ilang selector (9 PID ang naayos). Ang faceplate ay gumagalaw na sa tamang A/M switch: 0 mali sa 68 controller. Sariling test: 52 pass, 14 hindi nasubukan (nakasulat ang dahilan).'],
+ ['Symbols, range, min air','Walang blank na DEV / DIV / SUB sa 495 sinuri na block (80 DEV ang dating walang laman). Ang range na nakasulat sa tabi ng input ay strict na (23 dagdag). Min air flow 32 % = 356.8 T/H (ABC-002).'],
+ ['Itsura at bilis','Themes: Standard, Calm, Clarity, Paper at UI na Slate. Mas mabilis ng 31 % ang pagbukas ng mga sheet. Ang live values ay hindi na nagpapatong sa timer / valve / switch values (patong sa ibang value: 277 naging 68).'],
+ ['Offline','Naka-embed na ang simulator sa apk at exe, kaya bumubukas kahit walang internet.']]],
 ['Ano ang nasubukan na','Pass',[
- ['Awtomatiko','Lahat ng 54 sheet ay tumatakbo sa RUN (30 s). 165 timer, 15 LAG, 105 alarm: tama. 327 T switch, 56 COS, 19 HS/LS: tama ang leg, output at kulay. Mga curve, parameter at AI range: walang pagkakaiba sa workbook. Coal flow sa 6 na punto ng DATA sheet: tama. Hindi bumabagsak ang MV sa dMVH limit.'],
- ['Hindi pa nasubukan sa device','Ang apk at exe sa totoong phone/PC. Ito ang UAT mo.']]],
+ ['Awtomatiko (headless)',`UAT dry run: ${dry||'tingnan ang update report'}. Hiwalay na test: switches (438), reset (51 sheets), PID A/M, faceplate, values layout.`],
+ ['Hindi pa nasubukan sa device','Ang apk at exe sa totoong phone / PC, ang tablet (kasama ang light mode ng tiered stepping), at ang pag-update ng Stable / Beta channel. Ito ang UAT mo.']]],
 ['Mga dapat mong malaman','Limitasyon',[
- ['Operator input','Ang mode input (.MAN / .LOC / .REM), HMI push button (M.008C/D), CRT mode ng ABC-057, at DITL signal (M.3400 hanggang M.3405) ay galing sa operator o sa DITL. Ikaw ang magse-set sa RUN, hindi ito kabilang sa link ng sheets.'],
- ['Mga pagpapalagay','dMVH ay kada 1 s (DTI) bilang % ng MV range. TF ay first-order filter. CUT ay low cut. GAP ay dead zone ng error. Walang formula sa repo, kaya karaniwang depinisyon ang ginamit. ABC-036 hanggang 039 ay kopya ng ABC-035 (parehong netlist).'],
- ['Mga loop','Ang ilang loop ay hindi magsasara hangga\'t hindi naka-on ang fan, burner o feeder, o hindi naka-auto ang boiler master. Hindi ito bug.']]],
+ ['Live values','Hindi pa zero ang patong ng live values sa masisikip na lugar (893 sa sukat ng test). Hindi pa naaayos.'],
+ ['Hindi pa nagagawa','Excel findings #1 (ilaw HS/LS), #3 (2nd sheet), #6 (ramp vs instant ng HS/LS), #13 (grey analog). 8 ramp block na walang rate sa drawing ay 1 unit/s ang default. ABC-031, 035 ~ 039, 052 at 053: hindi pa na-trace ang A/M sa PDF.'],
+ ['Mga pagpapalagay','dMVH kada 1 s, TF first-order filter, CUT low cut, GAP dead zone: walang formula sa repo.']]],
 ['Susunod: ang UAT mo (nasa loob ng app)','Gawin mo',[
- ['Paano','Buksan ang app at pindutin ang berdeng UAT button (kaliwa-baba). Pumili ng sheet, pindutin ang "Test this sheet" (o "Test ALL sheets"). Bawat logic block at controller ay ifo-force ng app sa kilalang input at ikukumpara ang output sa depinisyon ng block. Naka-group by type: Switches, COS, Gates, Comparators, Timers, Lag, F(X), High/Low select, AI, AO, MAN, Totalizers, PID. Buksan ang group para makita ang bawat block: ▶ para i-run ang isa, 📍 para makita sa drawing. Ang FAIL lang ang titingnan mo, at ang "Line colours" (ikaw lang ang makakasagot). Kapag lahat ay pass at na-OK mo ang colours, FUNCTIONAL ✓ ang sheet. "Copy report" para ipadala sa akin ang resulta.'],
- ['Nasubukan na ng dry run','1767 blocks, 4924 cases sa lahat ng ABC sheet: 0 ang hindi tumutugma. May mga case na "skipped" (nakasulat kung bakit): naka-tracking ang MAN/PID o aktibo ang BU-CMD.']]]
+ ['Paano','Buksan ang app, pindutin ang berdeng UAT button, pumili ng sheet at "Test this sheet" (o "Test ALL sheets"). Gamitin ang 👁 sa bawat case para tingnan mismo.']]]
 ];
 const html=`<!doctype html><meta charset="utf-8"><style>
 @page{size:A4 portrait;margin:14mm}*{box-sizing:border-box}body{background:#10151a;color:#dbe5ec;font:11pt/1.45 'DejaVu Sans',Arial,sans-serif;margin:0}
