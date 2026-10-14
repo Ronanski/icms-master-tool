@@ -10,12 +10,13 @@ const res=await page.evaluate(()=>{
  const hit=(x1,y1,x2,y2,r)=>{let t0=0,t1=1;const dx=x2-x1,dy=y2-y1;for(const[p,q]of[[-dx,x1-r[0]],[dx,r[2]-x1],[-dy,y1-r[1]],[dy,r[3]-y1]]){if(Math.abs(p)<1e-9){if(q<0)return false}else{const t=q/p;if(p<0){if(t>t1)return false;if(t>t0)t0=t}else{if(t<t0)return false;if(t<t1)t1=t}}}return true};
  const out=[],svg=document.getElementById('svg');
  for(let i=0;i<AN.sheets.length;i++){AN.go(i);const sh=AN.sheets[i],S=sh.S,R=sh.R;
-  const labs=[...svg.querySelectorAll('text.bd')].filter(e=>e.style.display!=='none');/* the hidden ones (value not shown by design) are not measured */labs.forEach(e=>{e.style.display='';if(e.textContent.length<6)e.textContent='888.88'});
+  AN.paint&&AN.paint();/* a text that is empty after painting shows no number (SW, COS, ACH, an AO whose address shows it): not measured; timer and alarm texts are empty until they are needed and ARE measured */const labs=[...svg.querySelectorAll('text.bd')].filter(e=>e.style.display!=='none'&&!(e.textContent===''&&['SW','COS','ACH','AO','PO','VLV','ACT'].includes(e.dataset.eq)));/* the hidden ones (value not shown by design) are not measured */labs.forEach(e=>{e.style.display='';if(e.textContent.length<6)e.textContent='888.88'});
   const bb=e=>{const b=e.getBBox();return[b.x,b.y,b.x+b.width,b.y+b.height]};
   const others=[...svg.querySelectorAll('text:not(.bd)')].filter(e=>e.textContent.trim()&&!e.closest('#reviewmarks,.xref')).map(e=>{const r=bb(e),sh_=(r[3]-r[1])*.18;return[r[0]+.1,r[1]+sh_,r[2]-.1,r[3]-sh_]});
   const blks=S.blk.map(b=>[b.x0-.3,-b.y1-.3,b.x1+.3,-b.y0+.3]);
   const segs=[].concat(R.seg,S.seg,S.gl||[],S.edge||[]).map(s=>[s.x1,-s.y1,s.x2,-s.y2]);
-  const L=labs.map(e=>({e,r:bb(e)}));let n=0,bad={text:0,value:0,block:0,wire:0,align:0,deep:0},ex=[];
+  /* the ink of a number is about 0.95 x the font size high; getBBox gives the whole line box (1.45 x), so the box is cut to the ink height, centred */
+  const L=labs.map(e=>{const r=bb(e),fs=parseFloat(getComputedStyle(e).fontSize)||2.4,h=fs*.95,cy=(r[1]+r[3])/2;return{e,r:[r[0],cy-h/2,r[2],cy+h/2]}});let n=0,bad={text:0,value:0,block:0,wire:0,align:0,deep:0},ex=[];
   L.forEach((a,k)=>{n++;const r=a.r,sm=[r[0]+.1,r[1]+.15,r[2]-.1,r[3]-.15],why=[];
    const dp=[r[0]+.7,r[1]+.7,r[2]-.7,r[3]-.7];let deep=0;/* deep = more than 0.7 unit into something (not just touching) */
    if(others.some(o=>ov(dp,o,0)))deep=1;if(L.some((b,j)=>j!==k&&ov(dp,b.r,0)))deep=1;if(blks.some(b=>ov(dp,b,0)))deep=1;if(segs.some(s=>hit(s[0],s[1],s[2],s[3],dp)))deep=1;if(deep)bad.deep=(bad.deep||0)+1;
