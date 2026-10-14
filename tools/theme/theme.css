@@ -1,0 +1,41 @@
+/* Diagram themes (html[data-dg]) and clearer text. Colours only: no layout, no engine. Standard = the colours of v1.20.32 plus clearer text. */
+html:not([data-ui]){--tx:#eaf2f8;--dim:#a6b8c8}
+html[data-ui=slate]{--panel:#1b2530;--line:#34475a;--tx:#edf3f8;--dim:#aebfce;--panel2:#233140;--in:#141c25;--bd:#40566b;--hv:#2a3a4b;--hv2:#31445a;--rowl:#202d3a;--sel2:#2f7fc0;--sbg:linear-gradient(#223040,#1b2530)}
+/* text halo: letters stay readable where a wire crosses them */
+#svg text{paint-order:stroke;stroke:var(--dgbg,#0f1418);stroke-width:2.2px;stroke-linejoin:round;font-weight:500}
+#svg text[fill="#d5dde3"]{fill:var(--dgtx,#f2f6f9)}
+#svg path[stroke="#3b4651"]{stroke:var(--dgdead,#4d5a66)}
+/* ---------- Calm: softer colours, same meaning ---------- */
+html[data-dg=calm]{--dgbg:#121a20;--dgtx:#f1f5f8;--dgdead:#55636f}
+html[data-dg=calm] #svg{background:#121a20}
+html[data-dg=calm] #svg [stroke="#35d6c8"]{stroke:#62bdb3}html[data-dg=calm] #svg [fill="#35d6c8"]{fill:#62bdb3}
+html[data-dg=calm] #svg [stroke="#5aa9ff"]{stroke:#78a6da}html[data-dg=calm] #svg [fill="#5aa9ff"]{fill:#78a6da}
+html[data-dg=calm] #svg [stroke="#ffc233"]{stroke:#dcb765}html[data-dg=calm] #svg [fill="#ffc233"]{fill:#dcb765}
+html[data-dg=calm] #svg [stroke="#ff7ad9"]{stroke:#cb8fbd}html[data-dg=calm] #svg [fill="#ff7ad9"]{fill:#cb8fbd}
+html[data-dg=calm] #svg [stroke="#b48cff"]{stroke:#a999d8}html[data-dg=calm] #svg [fill="#b48cff"]{fill:#a999d8}
+html[data-dg=calm] #svg [stroke="#b4e04a"]{stroke:#a6c36f}html[data-dg=calm] #svg [fill="#b4e04a"]{fill:#a6c36f}
+html[data-dg=calm] #svg [stroke="#4be08a"]{stroke:#72c79a}html[data-dg=calm] #svg [fill="#4be08a"]{fill:#72c79a}
+/* ---------- Clarity: only the live signals have colour, blocks are neutral ---------- */
+html[data-dg=clarity]{--dgbg:#141a1f;--dgtx:#ffffff;--dgdead:#5c6a76}
+html[data-dg=clarity] #svg{background:#141a1f}
+html[data-dg=clarity] #svg [stroke="#35d6c8"],html[data-dg=clarity] #svg [stroke="#5aa9ff"],html[data-dg=clarity] #svg [stroke="#ff7ad9"],html[data-dg=clarity] #svg [stroke="#b48cff"],html[data-dg=clarity] #svg [stroke="#b4e04a"],html[data-dg=clarity] #svg [stroke="#4be08a"]{stroke:#b9c6d1}
+html[data-dg=clarity] #svg [fill="#35d6c8"],html[data-dg=clarity] #svg [fill="#5aa9ff"],html[data-dg=clarity] #svg [fill="#ff7ad9"],html[data-dg=clarity] #svg [fill="#b48cff"],html[data-dg=clarity] #svg [fill="#b4e04a"],html[data-dg=clarity] #svg [fill="#4be08a"]{fill:#e4ebf1}
+html[data-dg=clarity] #svg [fill="rgb(17,44,44)"],html[data-dg=clarity] #svg [fill="rgb(45,31,47)"],html[data-dg=clarity] #svg [fill="rgb(22,37,52)"],html[data-dg=clarity] #svg [fill="rgb(35,45,27)"],html[data-dg=clarity] #svg [fill="rgb(20,45,36)"]{fill:#222b33}
+/* ---------- Paper: light grey page, dark ink (not pure white) ---------- */
+html[data-dg=paper]{--dgbg:#e8ecef;--dgtx:#12191f;--dgdead:#9aa6b0}
+html[data-dg=paper] #svg{background:#e8ecef}
+html[data-dg=paper] #svg path[stroke="#0b1013"]{stroke:#e8ecef}
+html[data-dg=paper] #svg [stroke="#35d6c8"]{stroke:#0b7a72}html[data-dg=paper] #svg [fill="#35d6c8"]{fill:#0b7a72}
+html[data-dg=paper] #svg [stroke="#5aa9ff"]{stroke:#1f5fae}html[data-dg=paper] #svg [fill="#5aa9ff"]{fill:#1f5fae}
+html[data-dg=paper] #svg [stroke="#ffc233"]{stroke:#a86a00}html[data-dg=paper] #svg [fill="#ffc233"]{fill:#a86a00}
+html[data-dg=paper] #svg [stroke="#ff7ad9"]{stroke:#a82e86}html[data-dg=paper] #svg [fill="#ff7ad9"]{fill:#a82e86}
+html[data-dg=paper] #svg [stroke="#b48cff"]{stroke:#6440b4}html[data-dg=paper] #svg [fill="#b48cff"]{fill:#6440b4}
+html[data-dg=paper] #svg [stroke="#b4e04a"]{stroke:#587a10}html[data-dg=paper] #svg [fill="#b4e04a"]{fill:#587a10}
+html[data-dg=paper] #svg [stroke="#4be08a"]{stroke:#157a46}html[data-dg=paper] #svg [fill="#4be08a"]{fill:#157a46}
+html[data-dg=paper] #svg [stroke="#c9d3dc"]{stroke:#44525e}html[data-dg=paper] #svg [fill="#e6edf3"]{fill:#12191f}
+html[data-dg=paper] #svg [fill="rgb(17,44,44)"],html[data-dg=paper] #svg [fill="rgb(45,31,47)"],html[data-dg=paper] #svg [fill="rgb(22,37,52)"],html[data-dg=paper] #svg [fill="rgb(35,45,27)"],html[data-dg=paper] #svg [fill="rgb(20,45,36)"],html[data-dg=paper] #svg [fill="rgb(38,43,47)"],html[data-dg=paper] #svg [fill="#1a2229"]{fill:#d7dee4}
+html[data-dg=paper] #svg text[style*="rgb(201, 209, 217)"],html[data-dg=paper] #svg text[style*="rgb(216, 196, 255)"]{fill:#12191f!important}
+#dgsel{margin-left:6px}
+html[data-dg=paper] #svg text.bd{fill:#0a6b3a}html[data-dg=paper] #svg text.bd.inp{fill:#0b5f8a}
+html[data-dg=paper] #svg [stroke="#aeb9c3"]{stroke:#5b6874}html[data-dg=paper] #svg [stroke="#e6edf3"]{stroke:#222c35}html[data-dg=paper] #svg [stroke="#4de6ff"]{stroke:#0a7aa0}
+html[data-dg=paper] #svg [fill="#0b1013"]{fill:#e8ecef}

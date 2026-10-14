@@ -42,3 +42,7 @@ Second tab of the right pane (Detalye | Operator), `tools/hmi/` (hmi.css, hmi.js
 
 ## Stable v1.20.32
 Block-by-block UAT in the app (docs/versions/v1.20.32/UPDATE_REPORT.md, tools/uat/). Engine change F-36 (PID anti-windup uses the PI part). Dry run 1767 blocks, 0 mismatch. Not checked on the real apk/exe/tablet. Beta branches auto-chk, ui-shell, operator-hmi, uat-blocks are merged into main.
+
+
+## Beta v1.20.33 (branch `themes`)
+Diagram themes (Standard / Calm / Clarity / Paper), UI theme Slate, clearer text; colours only (docs/versions/v1.20.33/UPDATE_REPORT.md, tools/theme/). Stable stays v1.20.32.
