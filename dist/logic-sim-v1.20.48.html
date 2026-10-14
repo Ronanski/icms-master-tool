@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Logic Sim v1.20.46</title><script>/* gunzip of the built-in data, with a second way if the first one fails in the browser */window.gunz=async function(bin){try{return await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text()}catch(e1){try{var ds=new DecompressionStream('gzip'),w=ds.writable.getWriter();w.write(bin);w.close();var r=ds.readable.getReader(),parts=[],n=0;for(;;){var q=await r.read();if(q.done)break;parts.push(q.value);n+=q.value.length}var all=new Uint8Array(n),o=0;for(var i=0;i<parts.length;i++){all.set(parts[i],o);o+=parts[i].length}return new TextDecoder().decode(all)}catch(e2){throw new Error('gunzip failed ('+bin.length+' bytes): '+e1.message+' / '+e2.message)}}};</script><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#10151a"><script>/* update check: the page, the apk and the exe keep the installed version and ASK before updating (Stable or Beta, the channel the user chose) */
+<title>Logic Sim v1.20.48</title><script>/* gunzip of the built-in data, with a second way if the first one fails in the browser */window.gunz=async function(bin){try{return await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text()}catch(e1){try{var ds=new DecompressionStream('gzip'),w=ds.writable.getWriter();w.write(bin);w.close();var r=ds.readable.getReader(),parts=[],n=0;for(;;){var q=await r.read();if(q.done)break;parts.push(q.value);n+=q.value.length}var all=new Uint8Array(n),o=0;for(var i=0;i<parts.length;i++){all.set(parts[i],o);o+=parts[i].length}return new TextDecoder().decode(all)}catch(e2){throw new Error('gunzip failed ('+bin.length+' bytes): '+e1.message+' / '+e2.message)}}};</script><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#10151a"><script>/* update check: the page, the apk and the exe keep the installed version and ASK before updating (Stable or Beta, the channel the user chose) */
 (function(){/* B = the copy built into the apk / exe (file: or https://localhost): it starts at once and works without internet; the update check asks the site */var B=location.protocol==='file:'||(location.protocol==='https:'&&location.hostname==='localhost'&&!location.port);if(!B&&!/^https?:$/.test(location.protocol))return;var SITE='https://ronanski.github.io/icms-master-tool/',T=(document.title.match(/v\d+(\.\d+)+/)||[''])[0],beta=!B&&/\/beta\/(index\.html)?$/.test(location.pathname),dir=B?'':location.pathname.replace(/index\.html$/,''),base=B?SITE:dir.replace(/beta\/$/,'');
 function cmp(a,b){var x=a.replace('v','').split('.').map(Number),y=b.replace('v','').split('.').map(Number);for(var i=0;i<3;i++){if((x[i]||0)!==(y[i]||0))return(x[i]||0)-(y[i]||0)}return 0}
 function say(t){var d=document.getElementById('updtoast');if(!d){d=document.createElement('div');d.id='updtoast';d.style.cssText='position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:99998;background:#18212a;color:#dbe5ec;border:1px solid #6aaee0;border-radius:8px;padding:8px 14px;font:14px system-ui;max-width:90vw';document.body.append(d)}d.textContent=t;d.style.display='block';clearTimeout(say.t);say.t=setTimeout(function(){d.style.display='none'},5000)}
@@ -25503,8 +25503,8 @@ function anRngRe(S){for(const b of S.blk){
  if(b.k==='MUL'&&b.i.length>=2){const rs=b.i.map(m=>anRngSrc(S,m,0));if(!rs.some(q=>q&&q.src==='AI')){b.nrm=null;continue}
   b.nrm=b.i.map((m,j)=>{const dr=(S.drv[m]||[]).find(q=>q.k!=='LINK'),q=rs[j];return dr&&dr.k==='FX'&&q&&q.src==='FX'&&q.lo===0&&q.hi!==1?q.hi:0});if(!b.nrm.some(x=>x))b.nrm=null}}}
 function anFXRe(sh){const S=sh.S;if(!S)return;for(const b of S.blk)if(b.k==='FX'&&b.p.tbl){const q=anFXIn(S,b);b.fxin=q&&q.k!=='?'&&q.k!=='id'?q:null;b.fxrev=!!(q&&q.k==='?')}}
-function anFXs(P,x){const ln=P.ln,t=((typeof window!=='undefined'&&window.ANLN)||{})[ln]||(P.tbl&&(P.tbl.p2||P.tbl.pts));if(!t||!t.length)return{y:x,st:'NOTABLE'};if(!(x===x))return{y:x,st:'NAN'};const w=P.lnWarn&&!(typeof window!=='undefined'&&window.ANLN&&window.ANLN[ln])?'WARN':'OK';if(x<t[0][0])return{y:t[0][1],st:'OUT'};if(x>t[t.length-1][0])return{y:t[t.length-1][1],st:'OUT'};return{y:anFX(P,x),st:w}}
-function anFX(P,x){const ln=P.ln,t=((typeof window!=='undefined'&&window.ANLN)||{})[ln]||(P.tbl&&(P.tbl.p2||P.tbl.pts));if(!t||!t.length)return x;if(x<=t[0][0])return t[0][1];for(let i=1;i<t.length;i++)if(x<=t[i][0]){const a=t[i-1],b=t[i];return a[1]+(b[1]-a[1])*(x-a[0])/((b[0]-a[0])||1)}return t[t.length-1][1]}
+function anFXs(P,x){const ln=P.ln,t=(AN.ln||{})[ln]||(P.tbl&&(P.tbl.p2||P.tbl.pts));if(!t||!t.length)return{y:x,st:'NOTABLE'};if(!(x===x))return{y:x,st:'NAN'};const w=P.lnWarn&&!(AN.ln&&AN.ln[ln])?'WARN':'OK';if(x<t[0][0])return{y:t[0][1],st:'OUT'};if(x>t[t.length-1][0])return{y:t[t.length-1][1],st:'OUT'};return{y:anFX(P,x),st:w}}
+function anFX(P,x){const ln=P.ln,t=(AN.ln||{})[ln]||(P.tbl&&(P.tbl.p2||P.tbl.pts));if(!t||!t.length)return x;if(x<=t[0][0])return t[0][1];for(let i=1;i<t.length;i++)if(x<=t[i][0]){const a=t[i-1],b=t[i];return a[1]+(b[1]-a[1])*(x-a[0])/((b[0]-a[0])||1)}return t[t.length-1][1]}
 /* PLANT LAYER (v1.18.x): the plant answers at the INPUT of the sheet, where the field writes: the transmitter (AI block) or the input wire of the PV. The blocks between the transmitter and the PID (selection, average, square root, deviation alarm...) keep running as drawn.
    The value to write is found by feedback (secant): the PV that the PID really sees is read back and the transmitter value is corrected until it equals the plant value; this also works through scaling / square root / selectors. A value that the USER forces (the PV wire, or a transmitter) is never overwritten: the plant keeps evolving underneath, the forced value stays (like a forced point in the DCS). */
 /* WHICH input of the deviation block is the PV? The drawing says it: the text "PV" / "SV" written beside the pin (nearest pin wins). Without text: reverse action -> PV on the minus pin, direct action -> PV on the plus pin (67 of 68 loops agree with their drawing). v1.18.x: before this the minus pin was always taken as PV, which is WRONG for direct-acting loops (the SV was driven as if it were the PV). */
@@ -25588,7 +25588,7 @@ function anStep(S,dt){const rt=S.rt,v=rt.v,nets=S.nets,B=x=>x>.5?1:0;rt.t+=dt;rt
     if(b.vel){const e1=s.ep==null?es:s.ep;u=s.inited&&dt>0?kp*((es-e1)+(P.ti>0?es*dt/P.ti:0)):0;s.ep2=e1;s.ep=es;s.out=u;s.es=es;s.pt=u;s.it=0;s.dd=0;s.inited=1;out(u);break}
     if(s.trk!=null){u=Math.max(lo,Math.min(hi,s.trk));s.I=u-kp*es}
     else{if(s.inited&&dt>0){if(P.ti>0){const sat=(s.out>=hi&&es>0)||(s.out<=lo&&es<0);if(!sat)s.I+=kp*es/P.ti*dt}if(P.td>0)Dt=kp*P.td*(es-(s.ep||0))/dt}
-     const pi=kp*es+s.I;if(pi>hi)s.I-=pi-hi;else if(pi<lo)s.I+=lo-pi;/* v1.20.46: the back-calculation uses the PI part only, so a derivative kick cannot wind the integral up in the wrong direction */u=Math.max(lo,Math.min(hi,kp*es+s.I+Dt));
+     const pi=kp*es+s.I;if(pi>hi)s.I-=pi-hi;else if(pi<lo)s.I+=lo-pi;/* v1.20.48: the back-calculation uses the PI part only, so a derivative kick cannot wind the integral up in the wrong direction */u=Math.max(lo,Math.min(hi,kp*es+s.I+Dt));
      /* dMVH: manipulated output variable change ratio upper limit (% of the MV range per sampling interval DTI, 1 s) */
      if(P.dmvh>0&&s.inited&&dt>0&&s.out!=null&&isFinite(s.out)){const lim=P.dmvh/100*(hi-lo)*dt/(P.dti>0?P.dti:1);if(u>s.out+lim)u=s.out+lim;else if(u<s.out-lim)u=s.out-lim}}
     s.ep=es;s.out=u;s.es=es;s.pt=kp*es;s.it=s.I;s.dd=Dt;s.inited=1;out(u);break}
@@ -25657,6 +25657,95 @@ function anStep(S,dt){const rt=S.rt,v=rt.v,nets=S.nets,B=x=>x>.5?1:0;rt.t+=dt;rt
 function anSettle(S,n){for(let i=0;i<(n||6);i++)anStep(S,0)}
 if(typeof module!=='undefined')module.exports={anRead,anExplode,anPtSeg,anBuild,anTimerCut,anNets,anTouch,anArrowAt,anDistPoly,anInPoly,anModel,anWire,anNum,anRange,anCompile,anInit,anFX,anFXs,anStep,anSettle,anProcList,anPins,anAddr};
 
+/* ===== ENGINE: sheets (one model per drawing: ensure), station of a sheet, F(X) tables of the LINEAR data, pull of the signals that come from other sheets. No page access: the page gives the raw tables through AN.lnSrc() and takes the result from AN.lt ===== */
+function shStn(sh){if(sh.stn===undefined&&sh.S)sh.stn=stnOf(sh.S);return sh.stn}
+function lnTables(){if(AN.lt)return AN.lt;let a=[];try{if(AN.lnSrc)a=AN.lnSrc()||[]}catch(x){}
+ a.forEach(t=>{const o=[];(t.pts||[]).forEach(p=>{const q=o[o.length-1];if(!q||q[0]!==p[0]||q[1]!==p[1])o.push([p[0],p[1]])});o.sort((p,q)=>p[0]-q[0]);t.p2=o});AN.lt=a;lnApplyEdits();return a}
+function lnApplyEdits(){for(const t of lnTables()){if(!t.o0)t.o0=(t.pts||[]).map(p=>[p[0],p[1]]);const e=AN.lne&&AN.lne[t.key];let pts=t.o0;if(e&&e.lx&&e.ly&&e.lx.length===t.o0.length&&t.xr&&t.yr)pts=e.lx.map((lx,i)=>[t.xr[0]+lx*(t.xr[1]-t.xr[0])/100,t.yr[0]+e.ly[i]*(t.yr[1]-t.yr[0])/100]);
+  t.pts=pts;const o=[];pts.forEach(p=>{const q=o[o.length-1];if(!q||q[0]!==p[0]||q[1]!==p[1])o.push([p[0],p[1]])});o.sort((p,q)=>p[0]-q[0]);t.p2=o;t.edited=!!e}}
+function stnOf(S){const c={};for(const t of S.tx){const m=/^S(\d)-(?:MDL|LN)/i.exec(t.t.trim());if(m)c[m[1]]=(c[m[1]]||0)+1}const e=Object.entries(c).sort((a,b)=>b[1]-a[1]);if(e.length)return+e[0][0];
+ const L=[...new Set(S.blk.filter(b=>b.k==='FX'&&b.p.ln).map(b=>+(/LN(\d+)/i.exec(b.p.ln)||[])[1]).filter(Boolean))];if(!L.length)return null;const tb=lnTables(),cand=[1,2,3,4,5].filter(s=>L.every(n=>tb.some(t=>t.stn===s&&t.ln===n)));return cand.length===1?cand[0]:null}
+function lnResolve(name,ln,stn){const m=/LN(\d+)/i.exec(ln||'');if(!m)return{};const n=+m[1],all=lnTables().filter(t=>t.ln===n);if(!all.length)return{warn:'no table LN'+n+' in the LINEAR data: the block passes the value (y = x)'};
+ if(stn!=null){const ex=all.find(t=>t.stn===stn);if(ex)return{t:ex};if(all.length===1)return{t:all[0],warn:'station S'+stn+' has no LN'+n+': using '+all[0].key+' (the only one that exists). Check the drawing.'};return{warn:'station S'+stn+' has no LN'+n+' (exists in '+all.map(t=>'S'+t.stn).join(', ')+'): no table, y = x'}}
+ const t=lnFind(name,ln);return t?{t,warn:'station of this sheet unknown: table chosen by drawing name ('+t.key+')'}:{warn:'station unknown and table LN'+n+' ambiguous'}}
+function lnFind(name,ln){const m=/LN(\d+)/i.exec(ln||'');if(!m)return null;const n=+m[1],c=lnTables().filter(t=>t.ln===n);if(!c.length)return null;const fo=x=>{const q=/^ABC-(\d+)/.exec(x||'');return q?+q[1]:null};
+ return c.find(t=>t.dwg===name)||c.find(t=>fo(t.dwg)!=null&&fo(t.dwg)===fo(name))||(c.length===1?c[0]:null)}
+function ensure(sh){if(sh.S)return sh.S;const S=anWire(anModel(anNets(anBuild(sh.R,sh.name))));anAoIp(S);anCompile(S);anInit(S);S.procs=anProcList(S);if(AN.procDefault===true||(AN.procDefault===undefined&&AN.plantOn===true))for(const b of S.procs)b.proc.on=true;sh.S=S;sh.cnt={};S.blk.forEach(b=>{sh.cnt[b.k]=(sh.cnt[b.k]||0)+1;if(b.k==='FX'&&b.p.ln){if(sh.stn===undefined)sh.stn=stnOf(S);const r=lnResolve(sh.name,b.p.ln,sh.stn);if(r.t){Object.defineProperty(b.p,'tbl',{value:r.t,writable:true,enumerable:false,configurable:true});const q=anFXIn(S,b);b.fxin=q&&q.k!=='?'&&q.k!=='id'?q:null;b.fxrev=!!(q&&q.k==='?')}if(r.warn)Object.defineProperty(b.p,'lnWarn',{value:r.warn,writable:true,enumerable:false,configurable:true})}b.p0=JSON.stringify(b.p)});anRngRe(S);if(AN.applySaved)AN.applySaved(sh);anPull(sh);anSettle(S,6);return S}
+function anPull(sh){try{const S=sh.S;if(!S)return;for(const l of linksOf(sh)){if(l.to!==sh)continue;const FS=l.from.S||ensure(l.from);if(!FS)continue;const val=l.flagSrc!=null?(FS.rt.st[l.flagSrc]&&FS.rt.st[l.flagSrc].val>.5?1:0):FS.rt.v[l.fromNets.find(n=>FS.drv[n].length)??l.fromNets[0]];for(const n of l.toNets)if(S.ext.includes(n)){S.rt.ext[n]=val;S.xlk=S.xlk||{};S.xlk[n]=l}}}catch(e){}}
+/* RESET of the model: every sheet back to the drawing (tuning kept in AN.sv), then all sheets are settled: the same start as a fresh load, whatever the sheet order */
+function anResetAll(){
+ for(const sh of AN.sheets){if(!sh.S)continue;const S=sh.S;S.look={};anInit(S);const v=AN.sv[sh.name];if(v&&v.p)for(const id in v.p){const b=S.blk[id];if(b)Object.assign(b.p,v.p[id])}sh._hs=[]}
+ {const seen=new Set(),fr=sh=>{if(!sh.S||seen.has(sh))return;seen.add(sh);try{for(const l of linksOf(sh))if(l.to===sh)fr(l.from)}catch(e){}anPull(sh);anSettle(sh.S,6)};for(const sh of AN.sheets)fr(sh)}/* all sheets are re-initialised first, then settled: the same start as a fresh load, whatever the sheet order (cross-sheet back-up values) */}
+/* ===== ENGINE: links between sheets (numbered circles, signal tags) and the stepping of the sheets that are joined by a signal (stepSet, stepTier). No page access ===== */
+const famOf=n=>{const m=/^ABC-(\d+)/.exec(n);return m?+m[1]:null};
+const codeOf=n=>String(n).replace(/^ABC-/,''),hasL=t=>/[A-Z]$/.test(String(t)),posCmp=(a,b)=>b.y-a.y||a.x-b.x;
+const tgtOf=(c,sh)=>AN.sheets.filter(p=>p!==sh&&(codeOf(p.name)===String(c.tgt)||(!hasL(c.tgt)&&famOf(p.name)===parseInt(c.tgt,10)&&!AN.sheets.some(z=>codeOf(z.name)===String(c.tgt)))));
+const pointsTo=(q,sh)=>String(q.tgt)===codeOf(sh.name)||(!hasL(q.tgt)&&parseInt(q.tgt,10)===famOf(sh.name));
+const role=(sh,c)=>{if(c.sink||c.nets.some(n=>sh.S.drv[n].some(d=>d.k!=='LINK')))return true;if(c.nets.some(n=>sh.S.cns[n].length))return false;return null};
+const pairRoles=(sh,c,p,pc)=>{let a=role(sh,c),b=role(p,pc);if(a!==null&&a===b){const ca=c.nets.some(n=>sh.S.cns[n].length),cb=pc.nets.some(n=>p.S.cns[n].length);if(ca&&!cb){a=false;b=true}else if(cb&&!ca){b=false;a=true}}return[a,b]};
+const effSink=(sh,c)=>role(sh,c)===true;/* an arrow-less circle that is fed by a block in its own sheet sends the signal out */
+function addLink(out,sh,c,p,pc,hint){let[a,b]=pairRoles(sh,c,p,pc);if(hint&&(a===null||b===null||a===b)){a=hint==='out';b=!a}if(a!==null&&a===b)return;const here=a===true||b===false?true:(b===true||a===false?false:null);if(here===null)return;const f=here?{sh,c}:{sh:p,c:pc},t=here?{sh:p,c:pc}:{sh,c};out.push({from:f.sh,to:t.sh,fromNets:f.c.nets,toNets:t.c.nets,fromC:f.c,toC:t.c,num:c.num,at:{sh,c},peer:{sh:p,c:pc}})}
+const TAGX=/^(S\d\s*)?[MB]\.[0-9A-F]{3,5}[A-Z]?$|^(S\d\s*)?(AI|S[IO])\d{3,5}$|^[A-Z0-9]{3,}[A-Z0-9-]*\.(MV|PV|SV|REM|LOC|OUT|SIG)$/;
+const ADDRK=/^(?:S(\d)\s*)?([MB]\.[0-9A-F]{3,5}[A-Z]?|(?:AI|S[IO])\d{3,5})$/;
+function tkey(sh,t){const m=ADDRK.exec(String(t).trim());if(!m)return String(t).trim();let st=m[1];if(!st){try{st=shStn(sh)}catch(e){}}return(st==null?'?':st)+'|'+m[2]}
+function tagIndex(){if(AN.tagIdx)return AN.tagIdx;const ix=AN.tagIdx=new Map();
+ for(const p of AN.sheets){let PS;try{PS=ensure(p)}catch(e){continue}
+  const add=(t,n)=>{if(!t||!PS.drv[n].some(d=>d.k!=='LINK'))return;const kk=tkey(p,t),a=ix.get(kk)||[];if(!a.some(q=>q.sh===p&&q.n===n))a.push({sh:p,n});ix.set(kk,a)};
+  PS.lab.forEach((l,n)=>{if(l)add(l.t,n)});(PS.tagN||[]).forEach(q=>{if(q.d<=4)add(q.t,q.n)});for(const g of PS.blk)if(g.k==='SIGAB'){const f=(g.txt||[]).map(x=>String(x).trim()).find(x=>/^[A-Z]\.[0-9A-F]{4}$/.test(x));if(f){const kk=tkey(p,f),a=ix.get(kk)||[];if(!a.some(q=>q.flag===g.id)){a.push({sh:p,n:-1,flag:g.id});ix.set(kk,a)}}}}
+ return ix}
+function linksOf(sh){if(sh.lk)return sh.lk;const S=ensure(sh),out=sh.lk=[],my=famOf(sh.name);
+ for(const c of S.xc||[]){let hit=null;for(const p of tgtOf(c,sh)){let PS;try{PS=ensure(p)}catch(e){continue}
+   const mine=(S.xc||[]).filter(q=>q.num===c.num&&String(q.tgt)===String(c.tgt)).sort(posCmp),idx=mine.indexOf(c);
+   let theirs=(PS.xc||[]).filter(q=>q.num===c.num&&pointsTo(q,sh)).sort(posCmp);if(!theirs.length)theirs=(PS.conn||[]).filter(q=>q.num===c.num).sort(posCmp);
+   if(theirs.length){const sh_=theirs.filter(q=>(c.tags||[]).some(t=>(q.tags||[]).includes(t))),pc=sh_.length===1?sh_[0]:theirs[Math.min(idx,theirs.length-1)],[a,b]=pairRoles(sh,c,p,pc);if(a===null||b===null||a!==b){hit=[p,pc];break}}}
+  if(hit)addLink(out,sh,c,hit[0],hit[1]);else c.nolink=1}
+ const grp={};S.conn.forEach(c=>{if(!c.lt)(grp[c.num]=grp[c.num]||[]).push(c)});
+ for(const n in grp){const g=grp[n];for(const c of g){if(g.some(q=>q!==c&&q.sink!==c.sink))continue;
+  for(const p of AN.sheets){if(p===sh||famOf(p.name)!==my)continue;let PS;try{PS=ensure(p)}catch(e){continue}const pg=PS.conn.filter(q=>q.num===c.num),pc=pg.find(q=>q.sink!==c.sink&&!pg.some(z=>z!==q&&z.sink!==q.sink));if(pc)addLink(out,sh,c,p,pc)}}}
+ /* v1.9.0: single circles that say "( FROM ABC-003A )" / "TO ABC-xxx": go to that drawing, match number + the M.xxxx tag written next to the circle */
+ {const linked=new Set(out.map(l=>l.at.c));
+  for(const c of S.conn){if(linked.has(c)||!c.ref)continue;const rc=role(sh,c);
+   if(S.conn.some(q=>q!==c&&q.num===c.num&&role(sh,q)!==null&&rc!==null&&role(sh,q)!==rc))continue;
+   const bests=[];for(const p of AN.sheets){if(p===sh||!((c.ref.codes||[c.ref.code]).includes(codeOf(p.name))||(!hasL(c.ref.code)&&famOf(p.name)===parseInt(c.ref.code,10))))continue;let PS;try{PS=ensure(p)}catch(e){continue}let best=null;
+    for(const q of PS.conn.filter(z=>z.num===c.num)){const[a,b]=pairRoles(sh,c,p,q),sc=(c.tags||[]).filter(t=>(q.tags||[]).includes(t)).length*4+(q.ref&&((q.ref.codes||[q.ref.code]).includes(codeOf(sh.name))||(!hasL(q.ref.code)&&+q.ref.code===my))?2:0)+(a!==null&&b!==null&&a!==b?1:0);if(!best||sc>best.sc)best={sc,p,q}}
+    if(best&&best.sc>=1)bests.push(best)}
+   for(const best of bests)addLink(out,sh,c,best.p,best.q,c.ref.dir==='FROM'?'in':'out')}}
+ /* v1.0.1: a signal tag that is an OUTPUT on one sheet and an INPUT on another sheet is ONE signal (M.0124, B.0646, SICL1060A.MV ...) */
+ {const done=new Set(out.filter(l=>l.to===sh).flatMap(l=>l.toNets));let ix=null;
+  for(const n of S.ext){if(done.has(n))continue;let lb=S.lab[n];
+   /* v1.9.0: tag a bit further from the wire, and the "( FROM ABC-xxx )" text next to it, are used too */
+   const near=(rx,mx)=>{let b=null,bd=mx;for(const t of S.tx){if(!rx.test(t.t.trim()))continue;for(const i of S.nets[n].segs){const d=anPtSeg(t.x,t.y,S.seg[i]);if(d<bd){bd=d;b=t}}}return b};
+   if(!lb||!TAGX.test(lb.t)){const t=near(TAGX,9);if(t)lb={t:t.t.trim(),x:t.x,y:t.y};else{let w=null;try{w=wireTag(S,n)}catch(e){}if(!w||!TAGX.test(String(w).trim()))continue;const sg0=S.seg[S.nets[n].segs[0]];lb={t:String(w).trim(),x:sg0?sg0.x1:0,y:sg0?sg0.y1:0}}}
+   const fr=near(/FROM\s+ABC[-\s]?\d{3}/i,14),fm=fr&&/FROM\s+ABC[-\s]?(\d{3}[A-Z]?)/i.exec(fr.t),rcode=fm&&fm[1].toUpperCase(),rs=rcode?AN.sheets.filter(p=>codeOf(p.name)===rcode||(!hasL(rcode)&&famOf(p.name)===parseInt(rcode,10))):[];
+   ix=ix||tagIndex();let cl=(ix.get(tkey(sh,lb.t))||[]).filter(q=>q.sh!==sh&&(q.flag!=null||q.sh.S.nets[q.n].dig===S.nets[n].dig));
+   if(rs.length){const pr=cl.filter(q=>rs.includes(q.sh));if(pr.length)cl=pr;else for(const p of rs){let PS;try{PS=ensure(p)}catch(e){continue}for(const q of PS.tagN||[])if(q.t===lb.t&&PS.drv[q.n].some(d=>d.k!=='LINK')&&PS.nets[q.n].dig===S.nets[n].dig&&p!==sh)cl.push({sh:p,n:q.n})}}
+   const c=cl[0];if(!c)continue;
+   const CS=c.sh.S,gb=c.flag!=null?CS.blk.find(z=>z.id===c.flag):null,sg=gb?null:CS.seg[CS.nets[c.n].segs[0]],sl=gb?{x:gb.cx,y:gb.cy}:(CS.lab[c.n]||(sg?{x:sg.x1,y:sg.y1}:{x:0,y:0}));
+   out.push({from:c.sh,to:sh,fromNets:c.flag!=null?[]:[c.n],flagSrc:c.flag,toNets:[n],fromC:{x:sl.x,y:sl.y,r:4},toC:{x:lb.x,y:lb.y,r:4},num:lb.t,tag:1,at:{sh,c:null},peer:{sh:c.sh,c:null}})}}
+ /* mark the nets that are fed from another sheet */
+ for(const l of out)if(l.to===sh){S.xlk=S.xlk||{};for(const n of l.toNets)if(S.ext.includes(n)){S.xlk[n]=l;try{const FS=l.from.S,fn=l.fromNets.find(m=>FS.drv[m].some(d=>d.k!=='LINK'));if(fn!==undefined&&!!FS.nets[fn].dig!==!!S.nets[n].dig&&!FS.nets[fn].sigab&&!S.nets[n].sigab)S.nets[n].dig=FS.nets[fn].dig}catch(e){}}}
+ return out}
+function actSet(sh){const set=[sh],seen=new Set([sh]),grow=()=>{for(let i=0;i<set.length&&set.length<64;i++){for(const l of linksOf(set[i]))for(const y of[l.from,l.to])if(!seen.has(y)&&set.length<64){seen.add(y);set.push(y)}}};grow();if(AN.p2&&!seen.has(AN.p2)){seen.add(AN.p2);set.push(AN.p2)}for(const nm of (AN.hmiSheets||[]).concat(AN.plantSheets||[])){const p=AN.sheets.find(s=>s.name===nm);if(p&&!seen.has(p)){seen.add(p);set.push(p)}}grow();return set}
+function stepSet(sh,dt){const set=actSet(sh);
+ for(const x of set)for(const l of x.lk||[]){if(l.to!==x)continue;const FS=l.from.S,TS=x.S;if(!FS||!TS)continue;const val=l.flagSrc!=null?(FS.rt.st[l.flagSrc]&&FS.rt.st[l.flagSrc].val>.5?1:0):FS.rt.v[l.fromNets.find(n=>FS.drv[n].length)??l.fromNets[0]];for(const n of l.toNets)if(TS.ext.includes(n)){TS.rt.ext[n]=val;TS.xlk=TS.xlk||{};TS.xlk[n]=l}}
+ for(const x of set)try{procRemote(x)}catch(e){}for(const x of set)anStep(x.S,dt)}
+function stepTier(sh,dt,K){const full=actSet(sh),near=new Set([sh]);try{for(const l of linksOf(sh)){near.add(l.from);near.add(l.to)}}catch(e){}
+ const tk=AN._tk=(AN._tk||0)+1,due=tk%K===0,set=full.filter(x=>near.has(x)||due);
+ for(const x of set)for(const l of x.lk||[]){if(l.to!==x)continue;const FS=l.from.S,TS=x.S;if(!FS||!TS)continue;const val=l.flagSrc!=null?(FS.rt.st[l.flagSrc]&&FS.rt.st[l.flagSrc].val>.5?1:0):FS.rt.v[l.fromNets.find(n=>FS.drv[n].length)??l.fromNets[0]];for(const n of l.toNets)if(TS.ext.includes(n)){TS.rt.ext[n]=val;TS.xlk=TS.xlk||{};TS.xlk[n]=l}}
+ for(const x of set)try{procRemote(x)}catch(e){}
+ for(const x of set){if(near.has(x))anStep(x.S,dt);else{const T=dt*K,m=Math.max(1,Math.ceil(T/.5));for(let i=0;i<m;i++)anStep(x.S,T/m)}}}
+function procRemote(x){if(!(AN.procDefault===true||(AN.procDefault===undefined&&AN.plantOn===true)))return;const S=x.S;if(!S||S._rem===1)return;S._rem=1;for(const b of S.procs||[]){const pr=b.proc;if(!pr||pr.mode==='shared'||pr.mode==='pin'||pr.mode==='transmitter')continue;const l=S.xlk&&S.xlk[pr.pv];if(!l||!l.from||!l.from.S)continue;
+  const FS=l.from.S,sn=l.fromNets.find(n=>FS.drv[n].length)??l.fromNets[0];if(sn==null)continue;const tag=(b.txt||[])[1]||b.k;
+  const ais=[],seen=new Set(),walk=(n,dp)=>{if(dp>8||seen.has(n))return;seen.add(n);for(const dr of FS.drv[n]||[]){const y=FS.blk.find(q=>q.id===dr.id);if(!y)continue;if(y.k==='AI'){if(!y.fb&&!ais.includes(y.id))ais.push(y.id);continue}if(y.k==='PID'||y.k==='PIDV'||y.k==='MAN')continue;for(const q of y.i||[])walk(q,dp+1)}};walk(sn,0);
+  const ext=FS.ext.includes(sn)&&!(FS.xlk&&FS.xlk[sn])?sn:null;FS.plantT=FS.plantT||{ai:new Map(),ext:new Map()};
+  const own=(FS.procs||[]).some(p=>p.proc&&p.proc.mode!=='shared'&&((p.proc.ai||[]).some(id=>ais.includes(id))||p.proc.pinExt===sn));
+  if(!ais.length&&ext==null){pr.mode='pin';pr.ai=[];pr.aiOut=[];continue}
+  if(own||ais.some(id=>FS.plantT.ai.has(id))||(ext!=null&&FS.plantT.ext.has(ext))){pr.mode='shared';pr.of='the controller that owns this measurement in '+l.from.name;continue}
+  let ai=ais.slice();if(ais.length){const pb=anProbe(FS,{pv:sn,ai:ais}),mx=Math.max(0,...pb.map(q=>Math.abs(q.sens)));if(mx<1e-6){pr.mode='pin';pr.ai=[];pr.aiOut=[];continue}ai=pb.filter(q=>Math.abs(q.sens)>=.3*mx).map(q=>q.id)}
+  const aiOut=ai.flatMap(id=>{const a=FS.blk.find(q=>q.id===id);return a?a.pins.filter(p=>p.role==='out').map(p=>p.n):[]});
+  pr.remote={S:FS,pin:sn,ai,aiOut,ext,allAI:ais};pr.mode='remote';pr.pinExt=null;pr.ai=[];pr.aiOut=[];ai.forEach(id=>FS.plantT.ai.set(id,tag));if(ext!=null)FS.plantT.ext.set(ext,tag)}}
+const TAGRE=/^(S\d\s*)?[A-Za-z]{1,6}\.?\d{3,6}[A-Za-z]?(\.[A-Za-z0-9]+)?$/;
+function wireTag(S,n){const c=S.nets[n]._wt;if(c!==undefined)return c;let best=null,bd=6;for(const t of S.tx){const q=t.t.trim();if(!TAGRE.test(q))continue;const w=q.length*(t.h||3)*.55;for(const i of S.nets[n].segs){const sg=S.seg[i];const d=Math.min(anPtSeg(t.x,t.y,sg),anPtSeg(t.x+w,t.y,sg),anPtSeg(t.x+w/2,t.y+(t.h||3)*.4,sg));if(d<bd){bd=d;best=q}}}return S.nets[n]._wt=best}
 /* ===== v29 ANALOG UI: category switch, sheet list, canvas, live simulation, panels ===== */
 const AN={ws:{th:'color',ac:'auto',as:'solid',wv:2,aw:1,dw:1,dc:'live',ds:'solid',fc:'white',pc:'sky',vc:'green',vi:'cyan',vz:'amber',vs:1,vf:'mono',vw:600},wsr:0,ramp:0,cat:'dig',sheets:[],i:-1,run:false,spd:1,vals:true,sel:null,data:null,sv:{},lne:{},fl:'',av:{}};
 try{AN.sv=JSON.parse(localStorage.getItem('ditl.an')||'{}')||{}}catch(e){AN.sv={}}
@@ -25667,6 +25756,10 @@ try{wsIn(JSON.parse(localStorage.getItem('ditl.an.ws')||'{}'))}catch(e){}
 const wsSave=()=>{const s=JSON.stringify(AN.ws);try{localStorage.setItem('ditl.an.ws',s)}catch(e){}KV.set('ws',s);WN.put('ws',AN.ws);persistAll()};
 
 try{window.ANLN=JSON.parse(localStorage.getItem('ditl.ln')||'{}')||{}}catch(e){window.ANLN={}}
+/* the engine reads the manual F(X) tables as AN.ln (no page access in the engine): it is the same object as window.ANLN, also when the page replaces it */
+Object.defineProperty(AN,'ln',{get:()=>window.ANLN,set:v=>{window.ANLN=v},configurable:true,enumerable:false});
+/* the raw LINEAR tables: the page reads them from its data block, the engine asks for them */
+AN.lnSrc=()=>{const e=document.getElementById('aln');return e?JSON.parse(e.textContent):[]};
 const KV=(()=>{const open=()=>new Promise(res=>{try{const r=indexedDB.open('ditl-an',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>res(null);r.onblocked=()=>res(null)}catch(e){res(null)}}),p=open();
  return{get:k=>p.then(d=>new Promise(res=>{if(!d)return res(undefined);try{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>res(undefined)}catch(e){res(undefined)}})),set:(k,v)=>p.then(d=>new Promise(res=>{if(!d)return res(false);try{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>res(true);t.onerror=()=>res(false);t.onabort=()=>res(false)}catch(e){res(false)}}))}})();
 const WN={get(){try{if(String(window.name).startsWith('ditl-an:'))return JSON.parse(window.name.slice(8))}catch(e){}return{}},put(k,v){try{if(window.name&&!String(window.name).startsWith('ditl-an:'))return;const o=WN.get();o[k]=v;window.name='ditl-an:'+JSON.stringify(o)}catch(e){}}};
@@ -26015,7 +26108,6 @@ hmiAuto=function(){const sh=cs();if(!sh||!sh.S){msg('Open an analog sheet first'
 /* descriptions: station -> address -> record (IO list rows: tag, description, range, unit, type, SIG.AB address; memory lists: description, remark, timer type / seconds) */
 let ADES=null;
 async function adesLoad(){if(ADES)return ADES;const e=document.getElementById('ades');if(!e||!e.textContent.trim()){ADES={};return ADES}try{const bin=Uint8Array.from(atob(e.textContent.trim()),c=>c.charCodeAt(0));ADES=JSON.parse(await gunz(bin))}catch(x){ADES={}}return ADES}
-function shStn(sh){if(sh.stn===undefined&&sh.S)sh.stn=stnOf(sh.S);return sh.stn}
 function adesFind(sh,text){if(!ADES||!text)return null;const t=String(text).trim();let m=/^(?:S(\d)\s*)?([A-Z]{1,2})\.([0-9A-F]{3,4})$/i.exec(t),pre,num,dot='.';
  if(m){pre=m[2].toUpperCase();num=m[3].toUpperCase().padStart(4,'0')}else{m=/^(?:S(\d)\s*)?(TR|SI|SO|AI|AO|DI|DO|FP|PTN)(\d{1,6})$/i.exec(t);if(!m)return null;pre=m[2].toUpperCase();dot='';num=pre==='PTN'?m[3].padStart(6,'0'):m[3].padStart(4,'0')}
  const stn=m[1]?+m[1]:(sh?shStn(sh):null),T=ADES[String(stn)],key=pre+dot+num,r=T&&T[key];return r?{rec:r,stn,key}:null}
@@ -26074,22 +26166,9 @@ async function impDrop(name){const list=((await KV.get('imp:list'))||[]).filter(
  if(AN.sv&&AN.sv[name]){delete AN.sv[name];try{anSave()}catch(x){}}AN.tagIdx=null;AN.sheets.forEach(s=>{delete s.lk;if(s.S)s.S.xlk=null});AN.key=null;AN.lkey=null;render()}
 const cs=()=>AN.sheets[AN.i];
 /* built-in LN tables (from DCS LINEAR CURVE.xls) */
-function lnTables(){if(window.ANLT)return window.ANLT;let a=[];try{const e=document.getElementById('aln');if(e)a=JSON.parse(e.textContent)}catch(x){}
- a.forEach(t=>{const o=[];(t.pts||[]).forEach(p=>{const q=o[o.length-1];if(!q||q[0]!==p[0]||q[1]!==p[1])o.push([p[0],p[1]])});o.sort((p,q)=>p[0]-q[0]);t.p2=o});window.ANLT=a;lnApplyEdits();return a}
 /* the edited tables (LX % / LY % of the ranges) replace the points of the table; the original points stay in o0 */
-function lnApplyEdits(){for(const t of lnTables()){if(!t.o0)t.o0=(t.pts||[]).map(p=>[p[0],p[1]]);const e=AN.lne&&AN.lne[t.key];let pts=t.o0;if(e&&e.lx&&e.ly&&e.lx.length===t.o0.length&&t.xr&&t.yr)pts=e.lx.map((lx,i)=>[t.xr[0]+lx*(t.xr[1]-t.xr[0])/100,t.yr[0]+e.ly[i]*(t.yr[1]-t.yr[0])/100]);
-  t.pts=pts;const o=[];pts.forEach(p=>{const q=o[o.length-1];if(!q||q[0]!==p[0]||q[1]!==p[1])o.push([p[0],p[1]])});o.sort((p,q)=>p[0]-q[0]);t.p2=o;t.edited=!!e}}
 /* station of a sheet = prefix of its own MDL tags (S1-MDL028); without any: the only station that has all the LN numbers of its FX blocks */
-function stnOf(S){const c={};for(const t of S.tx){const m=/^S(\d)-(?:MDL|LN)/i.exec(t.t.trim());if(m)c[m[1]]=(c[m[1]]||0)+1}const e=Object.entries(c).sort((a,b)=>b[1]-a[1]);if(e.length)return+e[0][0];
- const L=[...new Set(S.blk.filter(b=>b.k==='FX'&&b.p.ln).map(b=>+(/LN(\d+)/i.exec(b.p.ln)||[])[1]).filter(Boolean))];if(!L.length)return null;const tb=lnTables(),cand=[1,2,3,4,5].filter(s=>L.every(n=>tb.some(t=>t.stn===s&&t.ln===n)));return cand.length===1?cand[0]:null}
-function lnResolve(name,ln,stn){const m=/LN(\d+)/i.exec(ln||'');if(!m)return{};const n=+m[1],all=lnTables().filter(t=>t.ln===n);if(!all.length)return{warn:'no table LN'+n+' in the LINEAR data: the block passes the value (y = x)'};
- if(stn!=null){const ex=all.find(t=>t.stn===stn);if(ex)return{t:ex};if(all.length===1)return{t:all[0],warn:'station S'+stn+' has no LN'+n+': using '+all[0].key+' (the only one that exists). Check the drawing.'};return{warn:'station S'+stn+' has no LN'+n+' (exists in '+all.map(t=>'S'+t.stn).join(', ')+'): no table, y = x'}}
- const t=lnFind(name,ln);return t?{t,warn:'station of this sheet unknown: table chosen by drawing name ('+t.key+')'}:{warn:'station unknown and table LN'+n+' ambiguous'}}
-function lnFind(name,ln){const m=/LN(\d+)/i.exec(ln||'');if(!m)return null;const n=+m[1],c=lnTables().filter(t=>t.ln===n);if(!c.length)return null;const fo=x=>{const q=/^ABC-(\d+)/.exec(x||'');return q?+q[1]:null};
- return c.find(t=>t.dwg===name)||c.find(t=>fo(t.dwg)!=null&&fo(t.dwg)===fo(name))||(c.length===1?c[0]:null)}
-function ensure(sh){if(sh.S)return sh.S;const S=anWire(anModel(anNets(anBuild(sh.R,sh.name))));anAoIp(S);anCompile(S);anInit(S);S.procs=anProcList(S);if(AN.procDefault===true||(AN.procDefault===undefined&&AN.plantOn===true))for(const b of S.procs)b.proc.on=true;sh.S=S;sh.cnt={};S.blk.forEach(b=>{sh.cnt[b.k]=(sh.cnt[b.k]||0)+1;if(b.k==='FX'&&b.p.ln){if(sh.stn===undefined)sh.stn=stnOf(S);const r=lnResolve(sh.name,b.p.ln,sh.stn);if(r.t){Object.defineProperty(b.p,'tbl',{value:r.t,writable:true,enumerable:false,configurable:true});const q=anFXIn(S,b);b.fxin=q&&q.k!=='?'&&q.k!=='id'?q:null;b.fxrev=!!(q&&q.k==='?')}if(r.warn)Object.defineProperty(b.p,'lnWarn',{value:r.warn,writable:true,enumerable:false,configurable:true})}b.p0=JSON.stringify(b.p)});anRngRe(S);applySaved(sh);anPull(sh);anSettle(S,6);return S}
 /* inputs that come from another sheet take the value of that sheet BEFORE the first settle: otherwise a pulse timer sees a false rising edge at start-up (ABC-013 TPS#29: the link from ABC-001C arrived after the first step) */
-function anPull(sh){try{const S=sh.S;if(!S)return;for(const l of linksOf(sh)){if(l.to!==sh)continue;const FS=l.from.S||ensure(l.from);if(!FS)continue;const val=l.flagSrc!=null?(FS.rt.st[l.flagSrc]&&FS.rt.st[l.flagSrc].val>.5?1:0):FS.rt.v[l.fromNets.find(n=>FS.drv[n].length)??l.fromNets[0]];for(const n of l.toNets)if(S.ext.includes(n)){S.rt.ext[n]=val;S.xlk=S.xlk||{};S.xlk[n]=l}}}catch(e){}}
 const AN_PV=17;/* BUMP THIS whenever the drawing reader changes (net / block numbers move) *//* saved values use net / block numbers: they are dropped when the drawing reader changes */
 const sv=sh=>{const o=AN.sv[sh.name];if(o&&o.pv===AN_PV)return o;return AN.sv[sh.name]={pv:AN_PV}};
 function applySaved(sh){const S=sh.S,v=AN.sv[sh.name];if(!v)return;if(v.pv!==AN_PV){delete AN.sv[sh.name];anSave();return}
@@ -26101,10 +26180,10 @@ function applySaved(sh){const S=sh.S,v=AN.sv[sh.name];if(!v)return;if(v.pv!==AN_
  for(const id in v.proc||{}){const b=S.blk.find(q=>String(q.id)===String(id));if(b&&b.proc){const q=v.proc[id];if(q.ver===2)Object.assign(b.proc,q);else{b.proc.on=q.on;b.proc.dist=q.dist||0}if(!(AN.procDefault===true||(AN.procDefault===undefined&&AN.plantOn===true)))b.proc.on=false}}
  for(const id in v.sw||{}){const s=S.rt.st[id];if(s&&v.sw[id])s.fm=v.sw[id]}
  S.look=Object.assign({},v.look||{})}
+AN.applySaved=applySaved;/* ensure() (engine) asks the page for the saved values of a sheet through this hook */
 function reset(){/* RESET = everything back to the drawing: all sheets, all forced signals, switches, sliders, timers, tuning */
  {const keep={};for(const k in AN.sv){const q=AN.sv[k];if(q&&q.p&&Object.keys(q.p).length)keep[k]={pv:q.pv,p:q.p}}AN.sv=keep;anSave()}
- for(const sh of AN.sheets){if(!sh.S)continue;const S=sh.S;S.look={};anInit(S);const v=AN.sv[sh.name];if(v&&v.p)for(const id in v.p){const b=S.blk[id];if(b)Object.assign(b.p,v.p[id])}sh._hs=[]}
- {const seen=new Set(),fr=sh=>{if(!sh.S||seen.has(sh))return;seen.add(sh);try{for(const l of linksOf(sh))if(l.to===sh)fr(l.from)}catch(e){}anPull(sh);anSettle(sh.S,6)};for(const sh of AN.sheets)fr(sh)}/* all sheets are re-initialised first, then settled: the same start as a fresh load, whatever the sheet order (cross-sheet back-up values) */
+ anResetAll();/* the model part of the reset is in the engine (engine/sheets.js) */
  const sh=cs();if(!sh||!sh.S)return;for(let i=0;i<6;i++)stepSet(sh,0);AN.sel=null;selBox();buildPanel();paint();panelUpd(true);msg('Reset done: values, forced signals, switches and timers are back to the start. Block settings (rate, stroke time, tuning, limits) are kept: use "Reset this block to default" in the block panel.')}
 /* ---------- category ---------- */
 let simSaved=false;
@@ -26190,7 +26269,7 @@ document.head.appendChild(Object.assign(document.createElement('style'),{id:'ski
    if(!beta&&ch==='beta'){location.replace(base+'beta/')}
    else if(gs){const cs=document.createElement('select');cs.id='chsel';cs.title='Stable = released by the owner. Beta = testing of the newest fixes. Your choice is remembered.';[['stable','Channel: Stable'],['beta','Channel: Beta']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;cs.append(o)});cs.value=beta?'beta':'stable';cs.onchange=()=>{try{localStorage.setItem('logic.channel',cs.value)}catch(e){}location.href=base+(cs.value==='beta'?'beta/':'')};gs.append(cs)}}}catch(e){}
  const upd=()=>{try{const an=AN.cat==='an';let m,k='';if(an){m=AN.view?'VIEW / TRACE':AN.run?'RUN':'PAUSED';k=AN.view?'view':AN.run?'run':''}else{m=SIM?'SIMULATE':'EDIT';k=SIM?'run':''}
-   c1.textContent=m;c1.className=k;const sh=an?AN.sheets[AN.i]:S.sheets[S.cur];c2.textContent=sh&&sh.name?sh.name:'';c3.textContent='v1.20.46'}catch(e){}};upd();setInterval(upd,400)}
+   c1.textContent=m;c1.className=k;const sh=an?AN.sheets[AN.i]:S.sheets[S.cur];c2.textContent=sh&&sh.name?sh.name:'';c3.textContent='v1.20.48'}catch(e){}};upd();setInterval(upd,400)}
 function anSide(){const sd=SC(),tg=$('sidetg');{const f=$('sidefl');if(f){if(AN._ph===undefined)AN._ph=f.placeholder;f.placeholder='Search sheets (001A, 57, DRUM, FURNACE...)'}}sd.classList.toggle('min',SIDEMIN==='1');tg.textContent=SIDEMIN==='1'?'▶':'◀';$('sidect').textContent='Analog sheets ('+AN.sheets.length+')';
  const c=cs();$('sidevt').textContent=c?c.name+'  ·  '+(anOrd().indexOf(AN.i)+1)+'/'+AN.sheets.length:'Analog';
  anSortUi();const key=AN.sheets.map(s=>s.name).join('|')+'#'+AN.fl+'#'+AN.sm;
@@ -26207,68 +26286,11 @@ function go(i){if(i==null||i<0||i>=AN.sheets.length)return;if(AN.p2&&AN.p2===AN.
 bBk.onclick=()=>goBack();bPv.onclick=()=>go(anNb(-1));bNx.onclick=()=>go(anNb(1));sSh.onchange=()=>go(+sSh.value);
 /* ---------- canvas ---------- */
 /* ---------- links between sheets: circle with 2 numbers (02 / 051) and numbered circles continued on the next sheet of a family (004A -> 004B) ---------- */
-const famOf=n=>{const m=/^ABC-(\d+)/.exec(n);return m?+m[1]:null};
-const codeOf=n=>String(n).replace(/^ABC-/,''),hasL=t=>/[A-Z]$/.test(String(t)),posCmp=(a,b)=>b.y-a.y||a.x-b.x;
 /* sheets a circle points to: exact code (003E) or, for a bare number (061), the sheet of that number */
-const tgtOf=(c,sh)=>AN.sheets.filter(p=>p!==sh&&(codeOf(p.name)===String(c.tgt)||(!hasL(c.tgt)&&famOf(p.name)===parseInt(c.tgt,10)&&!AN.sheets.some(z=>codeOf(z.name)===String(c.tgt)))));
-const pointsTo=(q,sh)=>String(q.tgt)===codeOf(sh.name)||(!hasL(q.tgt)&&parseInt(q.tgt,10)===famOf(sh.name));
 /* true = this end sends the signal out, false = it receives, null = cannot tell */
-const role=(sh,c)=>{if(c.sink||c.nets.some(n=>sh.S.drv[n].some(d=>d.k!=='LINK')))return true;if(c.nets.some(n=>sh.S.cns[n].length))return false;return null};
 /* both ends say 'sends out' (or both 'receives'): the end whose wire has consumers in its sheet is the receiving one */
-const pairRoles=(sh,c,p,pc)=>{let a=role(sh,c),b=role(p,pc);if(a!==null&&a===b){const ca=c.nets.some(n=>sh.S.cns[n].length),cb=pc.nets.some(n=>p.S.cns[n].length);if(ca&&!cb){a=false;b=true}else if(cb&&!ca){b=false;a=true}}return[a,b]};
-const effSink=(sh,c)=>role(sh,c)===true;/* an arrow-less circle that is fed by a block in its own sheet sends the signal out */
-function addLink(out,sh,c,p,pc,hint){let[a,b]=pairRoles(sh,c,p,pc);if(hint&&(a===null||b===null||a===b)){a=hint==='out';b=!a}if(a!==null&&a===b)return;const here=a===true||b===false?true:(b===true||a===false?false:null);if(here===null)return;const f=here?{sh,c}:{sh:p,c:pc},t=here?{sh:p,c:pc}:{sh,c};out.push({from:f.sh,to:t.sh,fromNets:f.c.nets,toNets:t.c.nets,fromC:f.c,toC:t.c,num:c.num,at:{sh,c},peer:{sh:p,c:pc}})}
-const TAGX=/^(S\d\s*)?[MB]\.[0-9A-F]{3,5}[A-Z]?$|^(S\d\s*)?(AI|S[IO])\d{3,5}$|^[A-Z0-9]{3,}[A-Z0-9-]*\.(MV|PV|SV|REM|LOC|OUT|SIG)$/;
 /* index: signal tag -> the sheets / nets where a block DRIVES it (built once, all sheets) */
-const ADDRK=/^(?:S(\d)\s*)?([MB]\.[0-9A-F]{3,5}[A-Z]?|(?:AI|S[IO])\d{3,5})$/;
-function tkey(sh,t){const m=ADDRK.exec(String(t).trim());if(!m)return String(t).trim();let st=m[1];if(!st){try{st=shStn(sh)}catch(e){}}return(st==null?'?':st)+'|'+m[2]}
-function tagIndex(){if(AN.tagIdx)return AN.tagIdx;const ix=AN.tagIdx=new Map();
- for(const p of AN.sheets){let PS;try{PS=ensure(p)}catch(e){continue}
-  const add=(t,n)=>{if(!t||!PS.drv[n].some(d=>d.k!=='LINK'))return;const kk=tkey(p,t),a=ix.get(kk)||[];if(!a.some(q=>q.sh===p&&q.n===n))a.push({sh:p,n});ix.set(kk,a)};
-  PS.lab.forEach((l,n)=>{if(l)add(l.t,n)});(PS.tagN||[]).forEach(q=>{if(q.d<=4)add(q.t,q.n)});for(const g of PS.blk)if(g.k==='SIGAB'){const f=(g.txt||[]).map(x=>String(x).trim()).find(x=>/^[A-Z]\.[0-9A-F]{4}$/.test(x));if(f){const kk=tkey(p,f),a=ix.get(kk)||[];if(!a.some(q=>q.flag===g.id)){a.push({sh:p,n:-1,flag:g.id});ix.set(kk,a)}}}}
- return ix}
-function linksOf(sh){if(sh.lk)return sh.lk;const S=ensure(sh),out=sh.lk=[],my=famOf(sh.name);
- for(const c of S.xc||[]){let hit=null;for(const p of tgtOf(c,sh)){let PS;try{PS=ensure(p)}catch(e){continue}
-   const mine=(S.xc||[]).filter(q=>q.num===c.num&&String(q.tgt)===String(c.tgt)).sort(posCmp),idx=mine.indexOf(c);
-   let theirs=(PS.xc||[]).filter(q=>q.num===c.num&&pointsTo(q,sh)).sort(posCmp);if(!theirs.length)theirs=(PS.conn||[]).filter(q=>q.num===c.num).sort(posCmp);
-   if(theirs.length){const sh_=theirs.filter(q=>(c.tags||[]).some(t=>(q.tags||[]).includes(t))),pc=sh_.length===1?sh_[0]:theirs[Math.min(idx,theirs.length-1)],[a,b]=pairRoles(sh,c,p,pc);if(a===null||b===null||a!==b){hit=[p,pc];break}}}
-  if(hit)addLink(out,sh,c,hit[0],hit[1]);else c.nolink=1}
- const grp={};S.conn.forEach(c=>{if(!c.lt)(grp[c.num]=grp[c.num]||[]).push(c)});
- for(const n in grp){const g=grp[n];for(const c of g){if(g.some(q=>q!==c&&q.sink!==c.sink))continue;
-  for(const p of AN.sheets){if(p===sh||famOf(p.name)!==my)continue;let PS;try{PS=ensure(p)}catch(e){continue}const pg=PS.conn.filter(q=>q.num===c.num),pc=pg.find(q=>q.sink!==c.sink&&!pg.some(z=>z!==q&&z.sink!==q.sink));if(pc)addLink(out,sh,c,p,pc)}}}
- /* v1.9.0: single circles that say "( FROM ABC-003A )" / "TO ABC-xxx": go to that drawing, match number + the M.xxxx tag written next to the circle */
- {const linked=new Set(out.map(l=>l.at.c));
-  for(const c of S.conn){if(linked.has(c)||!c.ref)continue;const rc=role(sh,c);
-   if(S.conn.some(q=>q!==c&&q.num===c.num&&role(sh,q)!==null&&rc!==null&&role(sh,q)!==rc))continue;
-   const bests=[];for(const p of AN.sheets){if(p===sh||!((c.ref.codes||[c.ref.code]).includes(codeOf(p.name))||(!hasL(c.ref.code)&&famOf(p.name)===parseInt(c.ref.code,10))))continue;let PS;try{PS=ensure(p)}catch(e){continue}let best=null;
-    for(const q of PS.conn.filter(z=>z.num===c.num)){const[a,b]=pairRoles(sh,c,p,q),sc=(c.tags||[]).filter(t=>(q.tags||[]).includes(t)).length*4+(q.ref&&((q.ref.codes||[q.ref.code]).includes(codeOf(sh.name))||(!hasL(q.ref.code)&&+q.ref.code===my))?2:0)+(a!==null&&b!==null&&a!==b?1:0);if(!best||sc>best.sc)best={sc,p,q}}
-    if(best&&best.sc>=1)bests.push(best)}
-   for(const best of bests)addLink(out,sh,c,best.p,best.q,c.ref.dir==='FROM'?'in':'out')}}
- /* v1.0.1: a signal tag that is an OUTPUT on one sheet and an INPUT on another sheet is ONE signal (M.0124, B.0646, SICL1060A.MV ...) */
- {const done=new Set(out.filter(l=>l.to===sh).flatMap(l=>l.toNets));let ix=null;
-  for(const n of S.ext){if(done.has(n))continue;let lb=S.lab[n];
-   /* v1.9.0: tag a bit further from the wire, and the "( FROM ABC-xxx )" text next to it, are used too */
-   const near=(rx,mx)=>{let b=null,bd=mx;for(const t of S.tx){if(!rx.test(t.t.trim()))continue;for(const i of S.nets[n].segs){const d=anPtSeg(t.x,t.y,S.seg[i]);if(d<bd){bd=d;b=t}}}return b};
-   if(!lb||!TAGX.test(lb.t)){const t=near(TAGX,9);if(t)lb={t:t.t.trim(),x:t.x,y:t.y};else{let w=null;try{w=wireTag(S,n)}catch(e){}if(!w||!TAGX.test(String(w).trim()))continue;const sg0=S.seg[S.nets[n].segs[0]];lb={t:String(w).trim(),x:sg0?sg0.x1:0,y:sg0?sg0.y1:0}}}
-   const fr=near(/FROM\s+ABC[-\s]?\d{3}/i,14),fm=fr&&/FROM\s+ABC[-\s]?(\d{3}[A-Z]?)/i.exec(fr.t),rcode=fm&&fm[1].toUpperCase(),rs=rcode?AN.sheets.filter(p=>codeOf(p.name)===rcode||(!hasL(rcode)&&famOf(p.name)===parseInt(rcode,10))):[];
-   ix=ix||tagIndex();let cl=(ix.get(tkey(sh,lb.t))||[]).filter(q=>q.sh!==sh&&(q.flag!=null||q.sh.S.nets[q.n].dig===S.nets[n].dig));
-   if(rs.length){const pr=cl.filter(q=>rs.includes(q.sh));if(pr.length)cl=pr;else for(const p of rs){let PS;try{PS=ensure(p)}catch(e){continue}for(const q of PS.tagN||[])if(q.t===lb.t&&PS.drv[q.n].some(d=>d.k!=='LINK')&&PS.nets[q.n].dig===S.nets[n].dig&&p!==sh)cl.push({sh:p,n:q.n})}}
-   const c=cl[0];if(!c)continue;
-   const CS=c.sh.S,gb=c.flag!=null?CS.blk.find(z=>z.id===c.flag):null,sg=gb?null:CS.seg[CS.nets[c.n].segs[0]],sl=gb?{x:gb.cx,y:gb.cy}:(CS.lab[c.n]||(sg?{x:sg.x1,y:sg.y1}:{x:0,y:0}));
-   out.push({from:c.sh,to:sh,fromNets:c.flag!=null?[]:[c.n],flagSrc:c.flag,toNets:[n],fromC:{x:sl.x,y:sl.y,r:4},toC:{x:lb.x,y:lb.y,r:4},num:lb.t,tag:1,at:{sh,c:null},peer:{sh:c.sh,c:null}})}}
- /* mark the nets that are fed from another sheet */
- for(const l of out)if(l.to===sh){S.xlk=S.xlk||{};for(const n of l.toNets)if(S.ext.includes(n)){S.xlk[n]=l;try{const FS=l.from.S,fn=l.fromNets.find(m=>FS.drv[m].some(d=>d.k!=='LINK'));if(fn!==undefined&&!!FS.nets[fn].dig!==!!S.nets[n].dig&&!FS.nets[fn].sigab&&!S.nets[n].sigab)S.nets[n].dig=FS.nets[fn].dig}catch(e){}}}
- return out}
-function actSet(sh){const set=[sh],seen=new Set([sh]),grow=()=>{for(let i=0;i<set.length&&set.length<64;i++){for(const l of linksOf(set[i]))for(const y of[l.from,l.to])if(!seen.has(y)&&set.length<64){seen.add(y);set.push(y)}}};grow();if(AN.p2&&!seen.has(AN.p2)){seen.add(AN.p2);set.push(AN.p2)}for(const nm of (AN.hmiSheets||[]).concat(AN.plantSheets||[])){const p=AN.sheets.find(s=>s.name===nm);if(p&&!seen.has(p)){seen.add(p);set.push(p)}}grow();return set}
-function stepSet(sh,dt){const set=actSet(sh);
- for(const x of set)for(const l of x.lk||[]){if(l.to!==x)continue;const FS=l.from.S,TS=x.S;if(!FS||!TS)continue;const val=l.flagSrc!=null?(FS.rt.st[l.flagSrc]&&FS.rt.st[l.flagSrc].val>.5?1:0):FS.rt.v[l.fromNets.find(n=>FS.drv[n].length)??l.fromNets[0]];for(const n of l.toNets)if(TS.ext.includes(n)){TS.rt.ext[n]=val;TS.xlk=TS.xlk||{};TS.xlk[n]=l}}
- for(const x of set)try{procRemote(x)}catch(e){}for(const x of set)anStep(x.S,dt)}
 /* TIERED STEPPING (RUN only). The whole boiler keeps running, but the sheet you look at and the sheets joined to it by a signal are calculated at every tick, the rest of the plant every K-th tick with K times the time step (K is chosen by the app from the time one tick needs: 1 on a fast PC, up to 6 on a slow tablet). */
-function stepTier(sh,dt,K){const full=actSet(sh),near=new Set([sh]);try{for(const l of linksOf(sh)){near.add(l.from);near.add(l.to)}}catch(e){}
- const tk=AN._tk=(AN._tk||0)+1,due=tk%K===0,set=full.filter(x=>near.has(x)||due);
- for(const x of set)for(const l of x.lk||[]){if(l.to!==x)continue;const FS=l.from.S,TS=x.S;if(!FS||!TS)continue;const val=l.flagSrc!=null?(FS.rt.st[l.flagSrc]&&FS.rt.st[l.flagSrc].val>.5?1:0):FS.rt.v[l.fromNets.find(n=>FS.drv[n].length)??l.fromNets[0]];for(const n of l.toNets)if(TS.ext.includes(n)){TS.rt.ext[n]=val;TS.xlk=TS.xlk||{};TS.xlk[n]=l}}
- for(const x of set)try{procRemote(x)}catch(e){}
- for(const x of set){if(near.has(x))anStep(x.S,dt);else{const T=dt*K,m=Math.max(1,Math.ceil(T/.5));for(let i=0;i<m;i++)anStep(x.S,T/m)}}}
 /* ---------- jump to the other end of a numbered circle ---------- */
 AN.hist=[];
 function flash(x,y,r){if(!L||!L.selg)return;const sh=cs(),v=AN.av[sh.name],W=v?v[2]:100,R0=Math.max(r+1.5,W*.022),sw=Math.max(.5,W*.0035),g=L.selg,
@@ -26861,16 +26883,6 @@ function procPanel(d,b,sh){return;const p=b.proc;if(p&&p.mode==='shared'){d.appe
 function procLock(S,n){for(const b of S.procs||[]){const p=b.proc;if(p&&p.on&&(p.pinExt===n||(p.mode==='pin'&&p.pv===n)))return b}if(S.plantT&&S.plantT.ext.has(n))return{k:'PID',txt:['',S.plantT.ext.get(n)]};return null}
 function procAI(S,id){for(const b of S.procs||[]){const p=b.proc;if(p&&p.on&&p.ai&&p.ai.includes(id))return b}if(S.plantT&&S.plantT.ai.has(id))return{k:'PID',txt:['',S.plantT.ai.get(id)]};return null}
 /* the PV of a controller can come through a circle from another sheet (8 loops): the plant must write where the signal STARTS (the transmitter / input wire of the source sheet), so that every sheet that reads that signal sees the same value */
-function procRemote(x){if(!(AN.procDefault===true||(AN.procDefault===undefined&&AN.plantOn===true)))return;const S=x.S;if(!S||S._rem===1)return;S._rem=1;for(const b of S.procs||[]){const pr=b.proc;if(!pr||pr.mode==='shared'||pr.mode==='pin'||pr.mode==='transmitter')continue;const l=S.xlk&&S.xlk[pr.pv];if(!l||!l.from||!l.from.S)continue;
-  const FS=l.from.S,sn=l.fromNets.find(n=>FS.drv[n].length)??l.fromNets[0];if(sn==null)continue;const tag=(b.txt||[])[1]||b.k;
-  const ais=[],seen=new Set(),walk=(n,dp)=>{if(dp>8||seen.has(n))return;seen.add(n);for(const dr of FS.drv[n]||[]){const y=FS.blk.find(q=>q.id===dr.id);if(!y)continue;if(y.k==='AI'){if(!y.fb&&!ais.includes(y.id))ais.push(y.id);continue}if(y.k==='PID'||y.k==='PIDV'||y.k==='MAN')continue;for(const q of y.i||[])walk(q,dp+1)}};walk(sn,0);
-  const ext=FS.ext.includes(sn)&&!(FS.xlk&&FS.xlk[sn])?sn:null;FS.plantT=FS.plantT||{ai:new Map(),ext:new Map()};
-  const own=(FS.procs||[]).some(p=>p.proc&&p.proc.mode!=='shared'&&((p.proc.ai||[]).some(id=>ais.includes(id))||p.proc.pinExt===sn));
-  if(!ais.length&&ext==null){pr.mode='pin';pr.ai=[];pr.aiOut=[];continue}
-  if(own||ais.some(id=>FS.plantT.ai.has(id))||(ext!=null&&FS.plantT.ext.has(ext))){pr.mode='shared';pr.of='the controller that owns this measurement in '+l.from.name;continue}
-  let ai=ais.slice();if(ais.length){const pb=anProbe(FS,{pv:sn,ai:ais}),mx=Math.max(0,...pb.map(q=>Math.abs(q.sens)));if(mx<1e-6){pr.mode='pin';pr.ai=[];pr.aiOut=[];continue}ai=pb.filter(q=>Math.abs(q.sens)>=.3*mx).map(q=>q.id)}
-  const aiOut=ai.flatMap(id=>{const a=FS.blk.find(q=>q.id===id);return a?a.pins.filter(p=>p.role==='out').map(p=>p.n):[]});
-  pr.remote={S:FS,pin:sn,ai,aiOut,ext,allAI:ais};pr.mode='remote';pr.pinExt=null;pr.ai=[];pr.aiOut=[];ai.forEach(id=>FS.plantT.ai.set(id,tag));if(ext!=null)FS.plantT.ext.set(ext,tag)}}
 function whyTxt(S,b){const v=S.rt.v,st=S.rt.st[b.id]||{},P=b.p||{},on=x=>x>.5,val=n=>S.nets[n].dig?(on(v[n])?'1':'0'):fmt(v[n]),ins=b.pins.filter(p=>p.role==='in'),
   lst=a=>a.map(p=>(p.lab?p.lab+' ':'')+nm(S,p.n)+'='+val(p.n)).join(', '),o=b.o.length?val(b.o[0]):'';
  switch(b.k){
@@ -26890,8 +26902,6 @@ const num=(v,f,st)=>{const i=anEdit(h$('input',{type:'number',step:st||'any'}));
 function pauseHint(sh){if(AN.run||!sh||!sh.S||Date.now()-(pauseHint.t||0)<15000)return;if(sh.S.blk.some(b=>['VLV','ACT','TON','TOF','TPS','TPV','RATE','RAMPB','LAG'].includes(b.k))){pauseHint.t=Date.now();msg('Paused: the value is applied, but valves, timers and ramps only move after you press ▶ Run or Next ▶.')}}
 function settle(){const sh=cs();for(let i=0;i<6;i++)stepSet(sh,0);paint();panelUpd();pauseHint(sh)}
 function nearTx(S,n){const c=S.nets[n]._nt;if(c!==undefined)return c;let best=null,bd=11;for(const i of S.nets[n].segs){const s=S.seg[i];for(const[x,y]of[[s.x1,s.y1],[s.x2,s.y2]])for(const t of S.tx){const q=t.t.trim();if((q.length<3&&!/^(SV|PV|SP|MV)$/.test(q))||q.length>34||/^[-+\d.\s%~]+$/.test(q))continue;const d=Math.hypot(t.x-x,t.y-y);if(d<bd){bd=d;best=q}}}return S.nets[n]._nt=best}
-const TAGRE=/^(S\d\s*)?[A-Za-z]{1,6}\.?\d{3,6}[A-Za-z]?(\.[A-Za-z0-9]+)?$/;
-function wireTag(S,n){const c=S.nets[n]._wt;if(c!==undefined)return c;let best=null,bd=6;for(const t of S.tx){const q=t.t.trim();if(!TAGRE.test(q))continue;const w=q.length*(t.h||3)*.55;for(const i of S.nets[n].segs){const sg=S.seg[i];const d=Math.min(anPtSeg(t.x,t.y,sg),anPtSeg(t.x+w,t.y,sg),anPtSeg(t.x+w/2,t.y+(t.h||3)*.4,sg));if(d<bd){bd=d;best=q}}}return S.nets[n]._wt=best}
 function cosFromNets(S,nets,self){const seen=new Set();let fr=nets.slice(),g=0;while(fr.length&&g++<6){const nx=[];for(const n of fr){if(seen.has(n))continue;seen.add(n);const l=S.lab[n];if(l&&l.t&&!/^COS/.test(l.t)&&n!==nets[0])return l.t;for(const b of S.cns[n]||[]){const tg=b.tag||((b.k==='PID'||b.k==='PIDV')?(b.txt||[])[1]:'');if(tg&&b!==self)return b.k+' '+tg;if(b.k==='AO'||b.k==='IP'){const o=(b.pins||[]).map(p=>S.lab[p.n]&&S.lab[p.n].t).find(Boolean);if(o)return o}for(const m of b.o||[])nx.push(m)}}fr=nx}return ''}
 function cosRange(S,e){const t=e.t,seen=new Set();let hit=null;const up=(n,d)=>{if(hit||d>6||n==null||n<0||seen.has(n))return;seen.add(n);for(const dr of S.drv[n]||[]){const b=S.blk.find(q=>q.id===dr.id);if(!b)continue;if(b.k==='MAN'&&b.p&&b.p.lo!=null){hit={lo:b.p.rlo!=null?b.p.rlo:b.p.lo,hi:b.p.rhi!=null?b.p.rhi:b.p.hi,u:b.p.u||'%'};return}if((b.k==='PID'||b.k==='PIDV')&&b.p){hit={lo:b.p.lo==null?0:b.p.lo,hi:b.p.hi==null?100:b.p.hi,u:'%'};return}for(const q of b.i||[])up(q,d+1)}};if(t)up(t.a,0);
  if(!hit){try{const r=anRange(S,{cx:e.c.cx,cy:e.c.cy},60);if(r&&r.hi>r.lo)hit={lo:r.lo,hi:r.hi,u:r.u||''}}catch(x){}}return hit||{lo:0,hi:100,u:'%'}}
@@ -33591,7 +33601,7 @@ function build(){const ui=document.getElementById('uisel');if(!ui||document.getE
  sel.onchange=()=>{dg=applyDg(sel.value);set('ditl.dg',dg)};ui.after(sel)}
 build();if(!document.getElementById('dgsel'))document.addEventListener('DOMContentLoaded',build);
 })();
-</script><!--THEME-END--><!--UAT-BEGIN--><script id="uatdata" type="application/json">{"ver":"1.20.46","known":{}}</script><script id="uatui">/* UAT runner: runs one test case of one block on the simulator (AN) and compares the result with the expected rows. Used by the generator (dry run) and by the UAT panel. */
+</script><!--THEME-END--><!--UAT-BEGIN--><script id="uatdata" type="application/json">{"ver":"1.20.48","known":{}}</script><script id="uatui">/* UAT runner: runs one test case of one block on the simulator (AN) and compares the result with the expected rows. Used by the generator (dry run) and by the UAT panel. */
 window.UATR=(function(){
  const fmt=x=>x==null||!isFinite(x)?'—':Math.abs(x)>=1000?x.toFixed(0):Math.abs(x)>=100?x.toFixed(1):Math.abs(x)>=10?x.toFixed(2):x.toFixed(3);
  function plantOff(){const sv=[];for(const x of AN.sheets)if(x.S)for(const b of x.S.procs||[]){sv.push([b,b.proc.on]);b.proc.on=false}return sv}
