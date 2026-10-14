@@ -6,17 +6,17 @@ const cards=[
 ['Ano ang laman ng release','Stable',[
  ['Mga file',`logic-sim-v${ver}.html (ang simulator) · Logic-Sim-v${ver}.apk (Android) · Logic-Sim-v${ver}-portable.exe (Windows) · ang report na ito. Isang apk at isang exe lang. Ang UAT ay nasa loob ng app (berdeng UAT button).`],
  ['Update at channel','Pagbukas, tinitingnan ng app kung may bagong bersyon sa channel mo (Stable o Beta, sa taas-kanan). Kung meron, tatanungin ka: I-update ngayon / Huwag muna.']]],
-['Ano ang bago mula v1.20.32 hanggang v1.20.37','Tapos',[
+['Ano ang bago mula v1.20.32 hanggang v1.20.38','Tapos',[
  ['Switch at Reset','Ang T switch / selector na na-force ay bumabalik na sa tamang leg: 0 sa 438 ang hindi bumalik (dati 14). Ang Reset ay pareho na ng bagong bukas na app: 51 sa 51 sheets.'],
  ['PID at operator faceplate','Sinusunod ng PID ang manual value kahit dumaan sa ilang selector (9 PID ang naayos). Ang faceplate ay gumagalaw na sa tamang A/M switch: 0 mali sa 68 controller. Sariling test: 52 pass, 14 hindi nasubukan (nakasulat ang dahilan).'],
  ['Symbols, range, min air','Walang blank na DEV / DIV / SUB sa 495 sinuri na block (80 DEV ang dating walang laman). Ang range na nakasulat sa tabi ng input ay strict na (23 dagdag). Min air flow 32 % = 356.8 T/H (ABC-002).'],
- ['Itsura at bilis','Themes: Standard, Calm, Clarity, Paper at UI na Slate. Mas mabilis ng 31 % ang pagbukas ng mga sheet. Ang live values ay hindi na nagpapatong sa timer / valve / switch values (patong sa ibang value: 277 naging 68).'],
+ ['Itsura at bilis','Themes: Standard, Calm, Clarity, Paper at UI na Slate. Mas mabilis ng 31 % ang pagbukas ng mga sheet. Live values: sa 2426 value na talagang may numero, 26 lang ang malalim na nakapatong sa ibang bagay (1.1 %); wala nang puwang na nakalaan para sa text na hindi lumalabas. Ang repo ay inayos din (delivery/, dist/, archive/).'],
  ['Offline','Naka-embed na ang simulator sa apk at exe, kaya bumubukas kahit walang internet.']]],
 ['Ano ang nasubukan na','Pass',[
  ['Awtomatiko (headless)',`UAT dry run: ${dry||'tingnan ang update report'}. Hiwalay na test: switches (438), reset (51 sheets), PID A/M, faceplate, values layout.`],
  ['Hindi pa nasubukan sa device','Ang apk at exe sa totoong phone / PC, ang tablet (kasama ang light mode ng tiered stepping), at ang pag-update ng Stable / Beta channel. Ito ang UAT mo.']]],
 ['Mga dapat mong malaman','Limitasyon',[
- ['Live values','Hindi pa zero ang patong ng live values sa masisikip na lugar (893 sa sukat ng test). Hindi pa naaayos.'],
+ ['Live values','Hindi pa zero: 26 sa 2426 ang malalim na nakapatong sa masisikip na lugar, at may mga nagdidikit lang (text 31, block 78, wire 135). Hindi pa naaayos.'],
  ['Hindi pa nagagawa','Excel findings #1 (ilaw HS/LS), #3 (2nd sheet), #6 (ramp vs instant ng HS/LS), #13 (grey analog). 8 ramp block na walang rate sa drawing ay 1 unit/s ang default. ABC-031, 035 ~ 039, 052 at 053: hindi pa na-trace ang A/M sa PDF.'],
  ['Mga pagpapalagay','dMVH kada 1 s, TF first-order filter, CUT low cut, GAP dead zone: walang formula sa repo.']]],
 ['Susunod: ang UAT mo (nasa loob ng app)','Gawin mo',[
