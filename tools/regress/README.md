@@ -9,6 +9,7 @@ Headless (Playwright + Chromium) checks of the root `logic-sim-vX.Y.Z.html` (def
 | `node tools/regress/reset.js [html]` | Reset fidelity: force / flip / run every sheet, press Reset, compare with a fresh load (v1.20.34: 3 sheets still differ, see docs) | ~1 min |
 | `node tools/regress/switches.js [html]` | every SW / AMT block: force each control ON / OFF, release, compare with a run without force | ~3 min |
 | `node tools/regress/pid_am.js [html]` | PID auto / manual (PV, SV, MV): manual value kept, no jump when AUTO returns | ~1 min |
+| `node tools/regress/faceplate.js [html]` | Operator faceplate: AUTO / MAN / MV move the real A/M station of each controller | ~30 s |
 | `node tools/regress/closure.js html out.json` | loop closure of every PID with its plant model (P-4), 900 s | ~1 min |
 | `node tools/regress/diff.js old.html ... new.html` | the same seeded inputs on every sheet for several builds; lists the sheets whose nets differ. `--neutral` zeroes dMVH / TF / CUT on the last build (isolates F-31); `--hold=SECONDS` adds a steady-state state | 1 ~ 6 min |
 

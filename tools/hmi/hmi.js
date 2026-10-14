@@ -7,11 +7,17 @@
  const sheet=()=>AN.sheets&&AN.sheets[AN.i];
  let opp=null,body=null,built='',live=[],trends={},filter='',lastT=-1;
  const setIn=(S,n,v)=>{S.rt.ext[n]=v;try{AN.settle()}catch(e){}};
+ const setMV=(S,c,v)=>{if(c.manBlk&&S.rt.st[c.manBlk.id])S.rt.st[c.manBlk.id].val=v;else S.rt.ext[c.manNet]=v;try{AN.settle()}catch(e){}};
  function tagOf(S,id){for(const a of S.addr||[])if(a.ai===id&&a.t)return a.t;return ''}
  function describe(sh,t){try{const a=AN.adesFind&&AN.adesFind(sh,t);if(a&&a.rec){const r=a.rec;return r.k==='io'?[r.tag,r.d].filter(Boolean).join(' · '):[r.d,r.r].filter(Boolean).join(' · ')}}catch(e){}return ''}
  function ctrls(S){const out=[];for(const b of S.blk){if(b.k!=='PID'&&b.k!=='PIDV')continue;const tag=(b.txt||[])[1];if(!tag||/^X+-/.test(tag))continue;let q=null;try{q=AN.anPins(S,b)}catch(e){}if(!q||q.pv==null||q.pv<0)continue;
-   const amt=S.blk.find(z=>(z.k==='AMT'||z.k==='SW')&&z.a!=null&&z.b!=null&&(b.o.includes(z.a)||b.o.includes(z.b))&&z.o[0]!=null);const autoLeg=amt?(b.o.includes(amt.a)?'A':'B'):null;const manNet=amt?(autoLeg==='A'?amt.b:amt.a):null;
-   out.push({b,tag,q,amt,autoLeg,manNet,out:amt?amt.o[0]:b.o[0],desc:(b.face&&b.face.desc)||''})}return out}
+   /* the A/M station is the selector AFTER the PID that has a manual source (a MAN station or an operator input); a selector before it (FAULT hold, back-up) stays on the controller leg. Before v1.20.34 the first selector was taken: in 14 loops the AUTO / MAN buttons moved the wrong switch */
+   const po=b.o.find(n=>!S.nets[n].dig);const op=po!=null?po:b.o[0];const chain=[];let cur=op;for(let g=0;g<6;g++){const sw=S.blk.find(z=>(z.k==='AMT'||z.k==='SW')&&z.a!=null&&z.b!=null&&z.o[0]!=null&&(z.a===cur||z.b===cur)&&!chain.includes(z));if(!sw)break;chain.push(sw);cur=sw.o[0]}
+   const legOf=(sw,i)=>i===0?(sw.a===op?'A':'B'):(sw.a===chain[i-1].o[0]?'A':'B');let amt=null,autoLeg=null,manNet=null,manBlk=null;
+   for(let i=0;i<chain.length&&!amt;i++){const sw=chain[i],pl=legOf(sw,i),o=pl==='A'?sw.b:sw.a;if(o==null||o<0)continue;const man=(S.drv[o]||[]).find(d=>d.k==='MAN');if(man||(S.ext.includes(o)&&!S.nets[o].dig)){amt=sw;autoLeg=pl;manNet=o;manBlk=man||null}}
+   if(!amt){amt=S.blk.find(z=>(z.k==='AMT'||z.k==='SW')&&z.a!=null&&z.b!=null&&(b.o.includes(z.a)||b.o.includes(z.b))&&z.o[0]!=null)||null;autoLeg=amt?(b.o.includes(amt.a)?'A':'B'):null;manNet=amt?(autoLeg==='A'?amt.b:amt.a):null}
+   out.push({b,tag,q,amt,autoLeg,manNet,manBlk,out:amt?amt.o[0]:b.o[0],desc:(b.face&&b.face.desc)||''})}return out}
+ AN.hmiCtrls=ctrls;/* for the tests */
  function trendOf(key){return trends[key]||(trends[key]={t:[],pv:[],sv:[],mv:[]})}
  function drawTrend(svg,tr,rlo,rhi){const W=360,H=96;let s='';const n=tr.t.length;if(n<2){svg.innerHTML='<text x="10" y="50" fill="#7d8e9a" font-size="12">Walang data pa: i-RUN ang simulation.</text>';return}
   const t0=tr.t[0],t1=tr.t[n-1],dt=Math.max(1,t1-t0);const all=tr.pv.concat(tr.sv).filter(isFinite);let lo=isFinite(rlo)?rlo:Math.min(...all),hi=isFinite(rhi)?rhi:Math.max(...all);if(hi-lo<1e-9){hi=lo+1}
@@ -29,11 +35,11 @@
    const pv=E('b',{txt:'—'}),sv=E('b',{txt:'—'}),mv=E('b',{txt:'—'});const barPv=E('i'),barSvm=E('u'),barMv=E('i');
    const bAuto=E('button',{cls:'b',txt:'AUTO'}),bMan=E('button',{cls:'b man',txt:'MAN'});
    const svIn=E('input',{cls:'n',type:'number',step:'any'}),mvIn=E('input',{cls:'n',type:'number',step:'any'});
-   const svOk=S.ext.includes(c.q.sv),mvOk=c.manNet!=null&&S.ext.includes(c.manNet);
+   const svOk=S.ext.includes(c.q.sv),mvOk=c.manNet!=null&&(S.ext.includes(c.manNet)||!!c.manBlk);
    const svRow=E('div',{cls:'row'},[E('span',{txt:'SV'}),svIn,E('button',{cls:'b',txt:'−',on:()=>{const v=(+svIn.value||0)-(rhi-rlo)/100;svIn.value=v.toFixed(3);setIn(S,c.q.sv,v)}}),E('button',{cls:'b',txt:'+',on:()=>{const v=(+svIn.value||0)+(rhi-rlo)/100;svIn.value=v.toFixed(3);setIn(S,c.q.sv,v)}}),E('span',{cls:'sub',txt:unit})]);
-   const mvRow=E('div',{cls:'row'},[E('span',{txt:'MV (MAN)'}),mvIn,E('button',{cls:'b',txt:'0',on:()=>{mvIn.value=0;setIn(S,c.manNet,0)}}),E('button',{cls:'b',txt:'50',on:()=>{mvIn.value=50;setIn(S,c.manNet,50)}}),E('button',{cls:'b',txt:'100',on:()=>{mvIn.value=100;setIn(S,c.manNet,100)}})]);
+   const mvRow=E('div',{cls:'row'},[E('span',{txt:'MV (MAN)'}),mvIn,E('button',{cls:'b',txt:'0',on:()=>{mvIn.value=0;setMV(S,c,0)}}),E('button',{cls:'b',txt:'50',on:()=>{mvIn.value=50;setMV(S,c,50)}}),E('button',{cls:'b',txt:'100',on:()=>{mvIn.value=100;setMV(S,c,100)}})]);
    if(svOk){svIn.onchange=()=>setIn(S,c.q.sv,+svIn.value)}else{svIn.disabled=true;svRow.append(E('span',{cls:'sub',txt:'(SV galing sa logic)'}))}
-   if(mvOk){mvIn.onchange=()=>setIn(S,c.manNet,+mvIn.value)}else{mvIn.disabled=true;mvRow.append(E('span',{cls:'sub',txt:'(walang manual input)'}))}
+   if(mvOk){mvIn.onchange=()=>setMV(S,c,+mvIn.value)}else{mvIn.disabled=true;mvRow.append(E('span',{cls:'sub',txt:'(walang manual input)'}))}
    const setMode=m=>{if(!c.amt)return;const st=S.rt.st[c.amt.id];if(!st)return;const manLeg=c.autoLeg==='A'?'B':'A';st.fm=m==='A'?c.autoLeg:manLeg;try{AN.settle()}catch(e){}};
    bAuto.onclick=()=>setMode('A');bMan.onclick=()=>setMode('M');
    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('class','tr');
