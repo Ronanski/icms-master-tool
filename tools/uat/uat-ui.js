@@ -36,6 +36,16 @@ function status(sh,it){const r=RES[rkey(sh.name,it.id)];const m=R[rkey(sh.name,i
 function counts(sh,items){const c={pass:0,fail:0,todo:0,skip:0};for(const it of items){const s=status(sh,it);if(s==='pass'||s==='ok-manual')c.pass++;else if(s==='fail')c.fail++;else if(s==='skip')c.skip++;else c.todo++}return c}
 function sheetState(sh){const all=spec(sh).groups.flatMap(g=>g.items);const c=counts(sh,all);const col=R[rkey(sh.name,'_colour')];
  return {all,c,functional:all.length>0&&c.fail===0&&c.todo===0&&col&&col.v==='ok'}}
+/* manual check (the user's own test): the sheet is set up exactly like the case (plant model off, paused) and the user reads the real values on the drawing */
+let MAN=null;
+function manual(sh,it,k){const c=it.cases[k];if(!c)return;if(AN.run){const b=[...document.querySelectorAll('button')].find(x=>/Pause/.test(x.textContent));if(b)b.click();AN.run=false}
+ const sv=UATR.plantOff();let r;try{r=UATR.runCase(sh,c)}finally{UATR.plantRestore(sv)}
+ try{AN.wireVals=true}catch(e){}try{AN.paint&&AN.paint()}catch(e){}
+ MAN={sh:sh.name,it:it.id,k,l:c.l,n:it.n,rows:r.rows||[]};find(it);build()}
+function manBanner(sh){if(!MAN||MAN.sh!==sh.name)return null;const m=MAN,key=rkey(sh.name,m.it+'|m'+m.k);
+ const set=v=>{R[key]={v};save();MAN=null;build()};
+ return E('div',{cls:'it',style:'background:#1d2a1d;border:1px solid #6fbf8f;border-radius:8px;margin:8px 0'},[E('b',{txt:'YOUR OWN CHECK: '+m.n}),E('div',{cls:'sub',txt:'The sheet is paused and set up like this: '+m.l+'. The plant model is not moving anything. Look at the highlighted block on the drawing (turn on Values / Wire values to see the numbers). It must show:'}),
+  ...m.rows.map(w=>E('div',{txt:'• '+w.t+' = '+w.exp})),E('div',{cls:'row'},[E('button',{cls:'on',txt:'✔ Tama sa drawing',on:()=>set('ok')}),E('button',{txt:'✖ Mali sa drawing',on:()=>set('bad')}),E('button',{txt:'Close',on:()=>{MAN=null;build()}})])])}
 /* pin: go to the block on the drawing (zoom is kept) */
 function find(it){const sh=sheet(),S=sh.S,svg=document.getElementById('svg'),v=AN.av&&AN.av[sh.name];if(!svg||!v||it.cx==null)return;
  const anp=document.getElementById('anp');if(!anp||anp.getBoundingClientRect().width<5){const pb=[...document.querySelectorAll('button')].find(x=>x.textContent.trim()==='Panel');if(pb)pb.click()}
@@ -47,7 +57,7 @@ const icon={pass:['✔','y'],'ok-manual':['✔ (accepted)','y'],fail:['✖','n']
 function itemEl(sh,g,it){const s=status(sh,it),r=RES[rkey(sh.name,it.id)],known=(KNOWN[sh.name]||[]).includes(it.id),box=E('div',{cls:'it'});
  const open=E('details',{});
  box.append(E('div',{cls:'h'},[E('span',{cls:icon[s][1],txt:icon[s][0]}),E('b',{txt:it.n}),E('button',{txt:'📍',title:'Show on the drawing',on:()=>find(it)}),E('button',{cls:'go',txt:'▶',title:'Run this block',on:()=>{runItems(sheet(),[it]);build()}})]));
- if(r){const tb=E('table');for(const c of r.res){tb.append(E('tr',{},[E('td',{cls:c.ok?'y':'n',txt:c.skip?'skip':(c.ok?'✔':'✖')}),E('td',{colspan:3,txt:c.l})]));if(c.skip)tb.append(E('tr',{},[E('td'),E('td',{colspan:3,cls:'sub',txt:c.skip})]));for(const w of c.rows)tb.append(E('tr',{},[E('td'),E('td',{txt:w.t}),E('td',{cls:'v',txt:'expected '+w.exp}),E('td',{cls:'v '+(w.ok?'y':'n'),txt:'got '+w.act})]))}
+ if(r){const tb=E('table');let ci=-1;for(const c of r.res){const k=++ci,mv=(R[rkey(sh.name,it.id+'|m'+k)]||{}).v;tb.append(E('tr',{},[E('td',{cls:c.ok?'y':'n',txt:c.skip?'skip':(c.ok?'✔':'✖')}),E('td',{colspan:3},[document.createTextNode(c.l+' '),E('button',{txt:'👁'+(mv==='ok'?' ✔':mv==='bad'?' ✖':''),title:'Set the sheet up like this case and look at the drawing yourself',on:()=>manual(sh,it,k)})])]));if(c.skip)tb.append(E('tr',{},[E('td'),E('td',{colspan:3,cls:'sub',txt:c.skip})]));for(const w of c.rows)tb.append(E('tr',{},[E('td'),E('td',{txt:w.t}),E('td',{cls:'v',txt:'expected '+w.exp}),E('td',{cls:'v '+(w.ok?'y':'n'),txt:'got '+w.act})]))}
   box.append(tb);
   if(s==='fail'){box.append(E('div',{cls:'sub',txt:known?'Listed as a known mismatch (HANDOFF, Needs Verification): the engine or the test setup differs from the block definition.':'New mismatch. Check it on the drawing with 📍, then press Accept or leave it as FAIL.'}));
    box.append(E('div',{cls:'row'},[E('button',{txt:'Accept (behaviour is right)',on:()=>{R[rkey(sh.name,it.id)]={v:'ok'};save();build()}})]))}
@@ -65,6 +75,7 @@ function build(){if(P.style.display!=='block')return;const sh=sheet();if(!sh||/^
  P.append(E('div',{cls:'sub',txt:st.all.length+' blocks / controllers · '+c.pass+' pass · '+c.fail+' fail · '+c.todo+' not run'+(c.skip?' · '+c.skip+' skipped':'')}),E('div',{cls:'bar'},[E('i',{style:'width:'+Math.round(100*c.pass/tot)+'%'})]));
  P.append(E('div',{cls:'row'},[E('button',{cls:'go',txt:'▶ Test this sheet',on:async()=>{await runSheet(sh);build()}}),E('button',{cls:'go',txt:'▶ Test ALL sheets',on:()=>{runAll()}})]));
  if(msg)P.append(E('div',{cls:'sub w',txt:msg}));
+ {const mb=manBanner(sh);if(mb)P.append(mb)}
  P.append(E('div',{cls:'sub',txt:'Each block is forced with known inputs and its output is compared with the block definition (truth table, set point, delay, curve table, controller action). Open a group to see its blocks; ▶ runs one block, 📍 shows it on the drawing.'}));
  sp.groups.forEach(g=>{const cc=counts(sh,g.items),d=E('details',{'data-g':g.g});if(keep.includes(g.g)||cc.fail)d.open=keep.includes(g.g);
   d.append(E('summary',{},[E('span',{txt:g.g}),E('span',{cls:'c '+(cc.fail?'n':cc.todo?'w':'y'),txt:cc.pass+' / '+g.items.length+(cc.fail?' · '+cc.fail+' ✖':'')})]));
@@ -75,7 +86,7 @@ function build(){if(P.style.display!=='block')return;const sh=sheet();if(!sh||/^
  P.append(E('div',{cls:'it',style:'background:#18212a;border:1px solid #2a3743;border-radius:8px;margin:8px 0'},[E('b',{txt:'Line colours (visual check, only you can do this)'}),E('div',{cls:'sub',txt:'Press RUN. Live signals must be yellow and bright, signals that do not drive anything must be dark amber, and the colours must follow when a switch changes leg.'}),E('div',{cls:'row'},[E('button',{cls:col.v==='ok'?'on':'',txt:col.v==='ok'?'✔ Colours OK':'Colours OK',on:()=>{R[rkey(sh.name,'_colour')]={v:col.v==='ok'?'':'ok'};save();build()}})])]));
  const pre=E('pre');pre.style.display='none';
  P.append(E('div',{cls:'row'},[E('button',{txt:'Copy report (all sheets)',on:()=>{const out=[];let nT=0,nP=0;for(const nm of names){const s=AN.sheets.find(x=>x.name===nm);if(!SPEC[nm])continue;for(const g of SPEC[nm].groups)for(const it of g.items){const r=RES[rkey(nm,it.id)];if(!r)continue;nT++;const m=R[rkey(nm,it.id)];if(r.ok||(m&&m.v==='ok')){nP++;continue}out.push(nm+' | '+g.g+' | '+it.n+' | '+r.res.filter(c=>!c.ok).map(c=>c.l+' => '+c.rows.filter(w=>!w.ok).map(w=>w.t+' expected '+w.exp+' got '+w.act).join('; ')).join(' || '))}}
-   const t='UAT v'+VER+': '+nT+' blocks tested, '+nP+' pass, '+out.length+' fail'+(out.length?'\n'+out.join('\n'):'');pre.textContent=t;pre.style.display='block';try{navigator.clipboard.writeText(t)}catch(e){}}})]),pre);
+   const man=Object.keys(R).filter(x=>/\|m\d+$/.test(x)).map(x=>x+' = '+(R[x].v==='ok'?'OK (user)':'WRONG (user)'));const t='UAT v'+VER+': '+nT+' blocks tested, '+nP+' pass, '+out.length+' fail'+(out.length?'\n'+out.join('\n'):'')+(man.length?'\nYour own checks:\n'+man.join('\n'):'');pre.textContent=t;pre.style.display='block';try{navigator.clipboard.writeText(t)}catch(e){}}})]),pre);
  P.scrollTop=top}
 setInterval(()=>{try{const sh=sheet();if(sh&&P.style.display==='block'&&P.dataset.sheet!==sh.name){P.dataset.sheet=sh.name;build()}}catch(e){}},500);
 })();
