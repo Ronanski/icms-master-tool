@@ -26069,7 +26069,9 @@ function lnResolve(name,ln,stn){const m=/LN(\d+)/i.exec(ln||'');if(!m)return{};c
  const t=lnFind(name,ln);return t?{t,warn:'station of this sheet unknown: table chosen by drawing name ('+t.key+')'}:{warn:'station unknown and table LN'+n+' ambiguous'}}
 function lnFind(name,ln){const m=/LN(\d+)/i.exec(ln||'');if(!m)return null;const n=+m[1],c=lnTables().filter(t=>t.ln===n);if(!c.length)return null;const fo=x=>{const q=/^ABC-(\d+)/.exec(x||'');return q?+q[1]:null};
  return c.find(t=>t.dwg===name)||c.find(t=>fo(t.dwg)!=null&&fo(t.dwg)===fo(name))||(c.length===1?c[0]:null)}
-function ensure(sh){if(sh.S)return sh.S;const S=anWire(anModel(anNets(anBuild(sh.R,sh.name))));anAoIp(S);anCompile(S);anInit(S);S.procs=anProcList(S);if(AN.procDefault===true||(AN.procDefault===undefined&&AN.plantOn===true))for(const b of S.procs)b.proc.on=true;sh.S=S;sh.cnt={};S.blk.forEach(b=>{sh.cnt[b.k]=(sh.cnt[b.k]||0)+1;if(b.k==='FX'&&b.p.ln){if(sh.stn===undefined)sh.stn=stnOf(S);const r=lnResolve(sh.name,b.p.ln,sh.stn);if(r.t){Object.defineProperty(b.p,'tbl',{value:r.t,writable:true,enumerable:false,configurable:true});const q=anFXIn(S,b);b.fxin=q&&q.k!=='?'&&q.k!=='id'?q:null;b.fxrev=!!(q&&q.k==='?')}if(r.warn)Object.defineProperty(b.p,'lnWarn',{value:r.warn,writable:true,enumerable:false,configurable:true})}b.p0=JSON.stringify(b.p)});anRngRe(S);applySaved(sh);anSettle(S,6);return S}
+function ensure(sh){if(sh.S)return sh.S;const S=anWire(anModel(anNets(anBuild(sh.R,sh.name))));anAoIp(S);anCompile(S);anInit(S);S.procs=anProcList(S);if(AN.procDefault===true||(AN.procDefault===undefined&&AN.plantOn===true))for(const b of S.procs)b.proc.on=true;sh.S=S;sh.cnt={};S.blk.forEach(b=>{sh.cnt[b.k]=(sh.cnt[b.k]||0)+1;if(b.k==='FX'&&b.p.ln){if(sh.stn===undefined)sh.stn=stnOf(S);const r=lnResolve(sh.name,b.p.ln,sh.stn);if(r.t){Object.defineProperty(b.p,'tbl',{value:r.t,writable:true,enumerable:false,configurable:true});const q=anFXIn(S,b);b.fxin=q&&q.k!=='?'&&q.k!=='id'?q:null;b.fxrev=!!(q&&q.k==='?')}if(r.warn)Object.defineProperty(b.p,'lnWarn',{value:r.warn,writable:true,enumerable:false,configurable:true})}b.p0=JSON.stringify(b.p)});anRngRe(S);applySaved(sh);anPull(sh);anSettle(S,6);return S}
+/* inputs that come from another sheet take the value of that sheet BEFORE the first settle: otherwise a pulse timer sees a false rising edge at start-up (ABC-013 TPS#29: the link from ABC-001C arrived after the first step) */
+function anPull(sh){try{const S=sh.S;if(!S)return;for(const l of linksOf(sh)){if(l.to!==sh)continue;const FS=l.from.S||ensure(l.from);if(!FS)continue;const val=l.flagSrc!=null?(FS.rt.st[l.flagSrc]&&FS.rt.st[l.flagSrc].val>.5?1:0):FS.rt.v[l.fromNets.find(n=>FS.drv[n].length)??l.fromNets[0]];for(const n of l.toNets)if(S.ext.includes(n)){S.rt.ext[n]=val;S.xlk=S.xlk||{};S.xlk[n]=l}}}catch(e){}}
 const AN_PV=17;/* BUMP THIS whenever the drawing reader changes (net / block numbers move) *//* saved values use net / block numbers: they are dropped when the drawing reader changes */
 const sv=sh=>{const o=AN.sv[sh.name];if(o&&o.pv===AN_PV)return o;return AN.sv[sh.name]={pv:AN_PV}};
 function applySaved(sh){const S=sh.S,v=AN.sv[sh.name];if(!v)return;if(v.pv!==AN_PV){delete AN.sv[sh.name];anSave();return}
@@ -26084,7 +26086,7 @@ function applySaved(sh){const S=sh.S,v=AN.sv[sh.name];if(!v)return;if(v.pv!==AN_
 function reset(){/* RESET = everything back to the drawing: all sheets, all forced signals, switches, sliders, timers, tuning */
  {const keep={};for(const k in AN.sv){const q=AN.sv[k];if(q&&q.p&&Object.keys(q.p).length)keep[k]={pv:q.pv,p:q.p}}AN.sv=keep;anSave()}
  for(const sh of AN.sheets){if(!sh.S)continue;const S=sh.S;S.look={};anInit(S);const v=AN.sv[sh.name];if(v&&v.p)for(const id in v.p){const b=S.blk[id];if(b)Object.assign(b.p,v.p[id])}sh._hs=[]}
- for(const sh of AN.sheets)if(sh.S)anSettle(sh.S,6);/* all sheets are re-initialised first, then settled: the same start as a fresh load, whatever the sheet order (cross-sheet back-up values) */
+ {const seen=new Set(),fr=sh=>{if(!sh.S||seen.has(sh))return;seen.add(sh);try{for(const l of linksOf(sh))if(l.to===sh)fr(l.from)}catch(e){}anPull(sh);anSettle(sh.S,6)};for(const sh of AN.sheets)fr(sh)}/* all sheets are re-initialised first, then settled: the same start as a fresh load, whatever the sheet order (cross-sheet back-up values) */
  const sh=cs();if(!sh||!sh.S)return;for(let i=0;i<6;i++)stepSet(sh,0);AN.sel=null;selBox();buildPanel();paint();panelUpd(true);msg('Reset done: values, forced signals, switches and timers are back to the start. Block settings (rate, stroke time, tuning, limits) are kept: use "Reset this block to default" in the block panel.')}
 /* ---------- category ---------- */
 let simSaved=false;
@@ -26243,6 +26245,12 @@ function actSet(sh){const set=[sh],seen=new Set([sh]),grow=()=>{for(let i=0;i<se
 function stepSet(sh,dt){const set=actSet(sh);
  for(const x of set)for(const l of x.lk||[]){if(l.to!==x)continue;const FS=l.from.S,TS=x.S;if(!FS||!TS)continue;const val=l.flagSrc!=null?(FS.rt.st[l.flagSrc]&&FS.rt.st[l.flagSrc].val>.5?1:0):FS.rt.v[l.fromNets.find(n=>FS.drv[n].length)??l.fromNets[0]];for(const n of l.toNets)if(TS.ext.includes(n)){TS.rt.ext[n]=val;TS.xlk=TS.xlk||{};TS.xlk[n]=l}}
  for(const x of set)try{procRemote(x)}catch(e){}for(const x of set)anStep(x.S,dt)}
+/* TIERED STEPPING (RUN only). The whole boiler keeps running, but the sheet you look at and the sheets joined to it by a signal are calculated at every tick, the rest of the plant every K-th tick with K times the time step (K is chosen by the app from the time one tick needs: 1 on a fast PC, up to 6 on a slow tablet). */
+function stepTier(sh,dt,K){const full=actSet(sh),near=new Set([sh]);try{for(const l of linksOf(sh)){near.add(l.from);near.add(l.to)}}catch(e){}
+ const tk=AN._tk=(AN._tk||0)+1,due=tk%K===0,set=full.filter(x=>near.has(x)||due);
+ for(const x of set)for(const l of x.lk||[]){if(l.to!==x)continue;const FS=l.from.S,TS=x.S;if(!FS||!TS)continue;const val=l.flagSrc!=null?(FS.rt.st[l.flagSrc]&&FS.rt.st[l.flagSrc].val>.5?1:0):FS.rt.v[l.fromNets.find(n=>FS.drv[n].length)??l.fromNets[0]];for(const n of l.toNets)if(TS.ext.includes(n)){TS.rt.ext[n]=val;TS.xlk=TS.xlk||{};TS.xlk[n]=l}}
+ for(const x of set)try{procRemote(x)}catch(e){}
+ for(const x of set){if(near.has(x))anStep(x.S,dt);else{const T=dt*K,m=Math.max(1,Math.ceil(T/.5));for(let i=0;i<m;i++)anStep(x.S,T/m)}}}
 /* ---------- jump to the other end of a numbered circle ---------- */
 AN.hist=[];
 function flash(x,y,r){if(!L||!L.selg)return;const sh=cs(),v=AN.av[sh.name],W=v?v[2]:100,R0=Math.max(r+1.5,W*.022),sw=Math.max(.5,W*.0035),g=L.selg,
@@ -26435,8 +26443,13 @@ function drawSheet(sh){const svg=$('svg'),R=sh.R,S=sh.S;svg.innerHTML='';L={nets
    const e=el('text',{x:ex,y:-(a.y+bs*.2),class:'bd','text-anchor':'start'},gb);e.dataset.n=n;e.dataset.how=a.how;const nb={n,t:e,last:null,skip:false,wire:false,addr:true,ai:a.ai!=null?a.ai:null};L.bd.push(nb);rp.push({t:s,n,b:nb,x:a.x,y:a.y,how:a.how})}
   for(const q of oldB)if(!used.has(q)&&!q.circ){q.wire=true}
   for(const q of oldB)if(q.circ&&!q.addr&&an_.has(q.n)){q.skip=true;q.t.style.display='none'}
-  /* an AO passes its value on: when both its input and its output carry an address value, only the first one is shown (same number twice) */
-  for(const a of S.blk)if(a.k==='AO'&&a.o&&a.o[0]!=null&&a.i&&a.i[0]!=null){const bi=L.bd.find(q=>q.addr&&q.n===a.i[0]&&!q.skip),bo=L.bd.find(q=>q.addr&&q.n===a.o[0]&&!q.skip);if(bi&&bo&&bi!==bo){bo.skip=true;bo.t.style.display='none'}}
+  /* one number per signal chain: AO / IP / field / LINK pass the same value on, so when two numbers of the same chain stand close together (less than 120 units) only the one nearest to the source is shown (the others return when the signal is forced) */
+  {const PASS=['AO','IP','FIELD','PO','TP','LINK'],par=new Map(),fnd=x=>{while(par.get(x)!==x)x=par.get(x);return x},ad=x=>{if(!par.has(x))par.set(x,x)};
+   for(const a of S.blk)if(PASS.includes(a.k)&&a.i&&a.o&&!(a.k==='LINK'&&a.gain!=null&&a.gain!==1))for(const i of a.i)for(const o of a.o)if(i>=0&&o>=0){ad(i);ad(o);const A=fnd(i),B=fnd(o);if(A!==B)par.set(A,B)}
+   const depth=n=>{let d=0,x=n,g=0;while(g++<8){const dr=(S.drv[x]||[]).find(q=>PASS.includes(q.k)&&q.i&&q.i[0]!=null);if(!dr)break;x=dr.i[0];d++}return d};
+   const cls={};for(const q of L.bd){if(q.skip||q.t.style.display==='none'||!par.has(q.n))continue;const k=fnd(q.n);(cls[k]=cls[k]||[]).push(q)}
+   const pos=q=>[+q.t.getAttribute('x'),+q.t.getAttribute('y')],rank=q=>(q.addr?0:1)*100+depth(q.n);
+   for(const k in cls){const g=cls[k];g.forEach((q,i)=>{q._rk=rank(q);q._ix=i});const hide=[];for(const q of g){for(const p of g){if(p===q||p.n===q.n)continue;if(p._rk<q._rk||(p._rk===q._rk&&p._ix<q._ix)){const a=pos(p),c=pos(q);if(Math.hypot(a[0]-c[0],a[1]-c[1])<120){hide.push(q);break}}}}for(const q of hide){q.skip=true;q.t.style.display='none'}}}
   L.nUn=nUn}
  const gx=el('g',{class:'xref'},svg);{const RX=/(ABC-\d{3}[A-Z]?)|DITL[ -]?(\d{1,2}[A-H]?)-\d{1,3}/g;let nx=0;
   for(const t of S.tx){const str=String(t.t),w=(t.h||3)*.62,h=(t.h||3);let m;RX.lastIndex=0;
@@ -26568,7 +26581,7 @@ function paint0(){const sh=cs();if(!sh||!sh.S||!L)return;try{const m=document.ge
  L.gb.style.display=(vb&&!AN.view)?'':'none';if(vb&&!AN.view)for(const k in S.rt.force)if(!(S.rt.pf&&S.rt.pf[k])&&L.mkBadge&&!(L.have&&L.have.has(+k)))L.mkBadge(+k);
  for(const b of L.bd){if(b.wire&&!b.skip){const sw=AN.wireVals&&!(L.addrN&&L.addrN.has(b.n))&&!S.nets[b.n].dig?'':'none';if(b.sw!==sw){b.sw=sw;b.t.style.display=sw}}if(b.skip){const f=S.rt.force[b.n]!==undefined&&!(S.rt.pf&&S.rt.pf[b.n]);if(b.fv!==f){b.fv=f;b.t.style.display=f?'':'none'}}const q_=S._tr&&S._tr[b.n]!==undefined?S.rt.st[S._tr[b.n]]:null,x=(q_&&q_.mv?(q_.dir>0?'▲':'▼'):'')+(b.ai!=null&&S.rt.st[b.ai]&&S.rt.force[b.n]===undefined&&!aiBad(S,b.ai)?fmt(S.rt.st[b.ai].act):S.nets[b.n].dig?(v[b.n]>.5?'1':'0'):fmt(v[b.n]));if(b.last!==x){b.last=x;b.t.textContent=x}
   {const es=S._extSet||(S._extSet=new Set(S.ext)),ck=S.rt.force[b.n]!==undefined?'f':(es.has(b.n)&&!S.nets[b.n].dig)?'i':'';if(b.ck!==ck){b.ck=ck;b.t.classList.toggle('frc',ck==='f');b.t.classList.toggle('inp',ck==='i')}}}
- const t=S.rt.t;tClk.textContent='t = '+Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0')}
+ const t=S.rt.t;tClk.textContent='t = '+Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0')+(AN.run&&AN.tierK>1?'  · light mode x'+AN.tierK:'');tClk.title=AN.tierK>1?'Slow device: the sheets that are not joined to this one are calculated every '+AN.tierK+'th tick (the whole plant keeps running)':''}
 function cosPopClose(){const o=document.getElementById('cospop');if(o){if(o._pu)for(const f of o._pu){const k=PU.indexOf(f);if(k>=0)PU.splice(k,1)}o.remove()}}
 function cosPopPos(){const o=document.getElementById('cospop');if(!o||!L||!AN.sel||!AN.sel.blk)return;const b=AN.sel.blk,svg=L.gb&&L.gb.ownerSVGElement;if(!svg)return;const m=svg.getScreenCTM(),p=svg.createSVGPoint();p.x=b.x1+1;p.y=-b.y1;const q=p.matrixTransform(m);o.style.left=Math.max(4,Math.min(innerWidth-o.offsetWidth-4,q.x+6))+'px';o.style.top=Math.max(4,Math.min(innerHeight-o.offsetHeight-4,q.y-o.offsetHeight-6))+'px'}
 function cosPop(){cosPopClose();const sh=cs(),s=AN.sel;if(!sh||!sh.S||!s||!s.blk||s.blk.k!=='COS'||!s.blk.used||AN.cat!=='an')return;const S=sh.S,b=s.blk,n=b.vnet,e=cosInfo(S,n);if(!e)return;
@@ -26633,7 +26646,8 @@ function showPanel(on){if(!on)AN.tmp=false;const ov=!!AN.ah||!!AN.tmp;ptab.style
  const was=anp.classList.contains('min');anp.classList.toggle('min',!on);bPn.classList.toggle('on',on);if(!ov&&was!==!on)setTimeout(()=>dispatchEvent(new Event('resize')),30)}
 AN.ah=false;try{AN.ah=localStorage.getItem('ditl.an.ah')==='1'}catch(e){}
 bPn.onclick=()=>{AN.tmp=false;showPanel(anp.classList.contains('min'))};
-setInterval(()=>{if(!live()||!AN.run)return;const sh=cs();if(!sh||!sh.S)return;const dt=.1*AN.spd,n=Math.max(1,Math.ceil(dt/.5));histRec(sh,1);for(let i=0;i<n;i++)stepSet(sh,dt/n);paint();panelUpd()},100);
+setInterval(()=>{if(!live()||!AN.run)return;const sh=cs();if(!sh||!sh.S)return;const dt=.1*AN.spd,n=Math.max(1,Math.ceil(dt/.5));histRec(sh,1);const t0_=performance.now(),K=AN.tierK||1;for(let i=0;i<n;i++){if(K>1)stepTier(sh,dt/n,K);else stepSet(sh,dt/n)}paint();panelUpd();
+ {const ms=performance.now()-t0_;AN._ms=AN._ms==null?ms:AN._ms*.85+ms*.15;if(!AN.tierLock&&(AN._tn=(AN._tn||0)+1)%10===0){const k=AN.tierK||1;AN.tierK=AN._ms>35?Math.min(6,k+1):AN._ms<14?Math.max(1,k-1):k}}},100);
 /* ---------- v1.13.0 F: step / view / trace / why ---------- */
 {const st=document.createElement('style');st.textContent='body.anview #anp input,body.anview #anp select,body.anview #anp button:not(.keep){pointer-events:none;opacity:.45}body.anview #anp .keep{opacity:1}#anp .tr{cursor:pointer}#anp .tr:hover{background:#14231b}#anp .why{background:#10181d;border-left:3px solid var(--acc);padding:4px 6px;margin:4px 0;color:var(--tx)}';document.head.append(st)}
 /* trace / flash = a GLOW around the wire; the wire keeps its own colour (state: 1 / 0 / analog / forced) */const TUP='#3aa0ff',TDN='#ff2fd0',TST='#ffffff',TFL='#ffffff';AN.view=true;AN.allLegs=false;document.body.classList.add('anview');bVw.classList.add('on');
@@ -26881,7 +26895,7 @@ function cosCtl(S,sh,n,e){const ds=cosDesc(S,sh,e);if(e.dig){const bx=h$('span',
  const u=()=>{const o=cosOn(S,e);i.disabled=rg.disabled=ok.disabled=!o.on;box.style.opacity=o.on?1:.5;why.textContent=o.why;why.style.color=o.on?'#8fe3b0':'#ffb04d';const tgt=S.rt.ext[n]||0,now=S.rt.v[n];st.textContent='target '+fmt(tgt)+' → now '+fmt(now)+' '+r.u+(Math.abs(tgt-(now==null?0:now))>1e-6*(1+Math.abs(tgt))?'  (ramping)':'');if(document.activeElement!==i&&!i._d)i.value=tgt;if(document.activeElement!==rg)rg.value=tgt};u();u._s=1;PU.push(u);return box}
 function cosStatus(S,sh,e){const box=h$('span',{cls:'fc',style:'flex-wrap:wrap'}),w=h$('small',{style:'flex-basis:100%'}),ds=cosDesc(S,sh,e);box.append(h$('small',{txt:(ds?ds+' · ':'')+'A / M change-over by the switching logic (not a manual value)',style:'flex-basis:100%;color:#9ab'}),w);const u=()=>{const o=cosOn(S,e);w.textContent=o.why;w.style.color=o.on?'#8fe3b0':'#ffb04d'};u();u._s=1;PU.push(u);return box}
 function nm(S,n){{const ci=cosInfo(S,n);if(ci)return ci.name}const l=S.lab[n];if(l)return l.t;if(S.ext.includes(n)){const w=wireTag(S,n);if(w)return w;const t=nearTx(S,n);if(t)return t}const c=S.cns[n]&&S.cns[n][0],d=S.drv[n]&&S.drv[n][0];if(d&&d.k!=='LINK')return d.k+(d.tag?' '+d.tag:'')+' out';if(c)return '→ '+c.k+(c.tag?' '+c.tag:'')+(S.nets[n].dig?' (digital)':'');return 'net '+n}
-const almLv=(b,x)=>{const P=b.p;if(P.hh!=null&&x>=P.hh)return 'HIGH-HIGH';if(P.h!=null&&x>=P.h)return 'HIGH';if(P.ll!=null&&x<=P.ll)return 'LOW-LOW';if(P.l!=null&&x<=P.l)return 'LOW';return 'normal'};
+const almLv=(b,x)=>{const P=b.p;if(P.hh!=null&&x>=P.hh)return 'HIGH-HIGH';if(P.h!=null&&x>=P.h)return 'HIGH';if(P.ll!=null&&x<=P.ll)return 'LOW-LOW';if(P.l!=null&&x<=P.l)return 'LOW';return 'normal'};AN.almLv=almLv;
 function swSet(sh,b,m){const st=sh.S.rt.st[b.id];st.fm=m||undefined;(sv(sh).sw=sv(sh).sw||{})[b.id]=m||0;anSave();settle()}
 function pSet(sh,b,k,v){b.p[k]=v;const o=sv(sh);(o.p=o.p||{})[b.id]=Object.assign(o.p[b.id]||{},{[k]:v});anSave();settle();try{AN.panelUpd&&AN.panelUpd(true)}catch(e){}}
 /* FORCE: any wire (input or output of any block) can be forced to a value, the same as a bypass in the DCS */
@@ -27257,7 +27271,7 @@ fImp.onchange=async e=>{const fs=[...e.target.files];e.target.value='';let ok=0,
  const good=()=>{try{return AN.cat==='an'&&L&&L.gb&&$('svg').contains(L.gb)&&anlist.children.length>3}catch(e){return false}};
  const fix=()=>{if(AN.cat!=='an'||good())return;AN.key=null;AN.lkey=null;try{SIDEKEY=null}catch(e){}loadData().then(()=>{if(AN.cat==='an'&&!good()){let i=AN.i;if(!AN.sheets[i])i=0;AN.i=i;AN.key=null;AN.lkey=null;render()}}).catch(()=>{})};
  addEventListener('load',()=>{setTimeout(fix,200);setTimeout(fix,900)});[600,1500,3000,6000].forEach(t=>setTimeout(fix,t))}})();
-Object.assign(AN,{fxIn:anFXIn,netRange:anNetRange,extRange:anExtRange,go,cs,paint,fitView,settle,setCat,reset,ensure,pick,linksOf,actSet,panelUpd,selBox,dsIdx,dsOpen,trSeries,trSample,trDraw,trZoom,trModel,trMap,trGoCrumb,cosInfo,cosOn,cosFill,procLock,procAI,procRemote,hmiAdd,hmiFind,hmiPick,hmiVal,hmiOpen,hmiClose,hmiAuto,hmiUpd,hmiSetMode,hmiRender,hmiHeader,hmiSync,hmiAddrOf,hmiList,hmiZoomBy,hmiFit,hmiVb,hmiWrite,procLock,procAI,nm,hmiState,hmiToggleForce,hmiPlantOwned,hmiForced,wrCtl,anPins,stepSet,plOpen,plClose,plAIs,plRes,plVal,plantSwitch,dsGoRef,connClick,addrTable:nm=>{const sh=AN.sheets.find(s=>s.name===nm)||cs(),S=ensure(sh);return{table:S.addr,notTied:S.addrUn}}});if(innerWidth<820||AN.ah){anp.classList.add('min');bPn.classList.remove('on')}
+Object.assign(AN,{stepTier,fxIn:anFXIn,netRange:anNetRange,extRange:anExtRange,go,cs,paint,fitView,settle,setCat,reset,ensure,pick,linksOf,actSet,panelUpd,selBox,dsIdx,dsOpen,trSeries,trSample,trDraw,trZoom,trModel,trMap,trGoCrumb,cosInfo,cosOn,cosFill,procLock,procAI,procRemote,hmiAdd,hmiFind,hmiPick,hmiVal,hmiOpen,hmiClose,hmiAuto,hmiUpd,hmiSetMode,hmiRender,hmiHeader,hmiSync,hmiAddrOf,hmiList,hmiZoomBy,hmiFit,hmiVb,hmiWrite,procLock,procAI,nm,hmiState,hmiToggleForce,hmiPlantOwned,hmiForced,wrCtl,anPins,stepSet,plOpen,plClose,plAIs,plRes,plVal,plantSwitch,dsGoRef,connClick,addrTable:nm=>{const sh=AN.sheets.find(s=>s.name===nm)||cs(),S=ensure(sh);return{table:S.addr,notTied:S.addrUn}}});if(innerWidth<820||AN.ah){anp.classList.add('min');bPn.classList.remove('on')}
 window.AN=AN;
 
 })();</script>
@@ -33474,7 +33488,62 @@ body.ophmi #anp{display:none!important}
   setInterval(tick,250);return true}
  let n=0;const iv=setInterval(()=>{try{if(init()||++n>60)clearInterval(iv)}catch(e){clearInterval(iv)}},300);
 })();
-</script><!--HMI-END--><!--UAT-BEGIN--><script id="uatdata" type="application/json">{"ver":"1.20.34","known":{}}</script><script id="uatui">/* UAT runner: runs one test case of one block on the simulator (AN) and compares the result with the expected rows. Used by the generator (dry run) and by the UAT panel. */
+</script><!--HMI-END--><!--THEME-BEGIN--><style id="themecss">/* Diagram themes (html[data-dg]) and clearer text. Colours only: no layout, no engine. Standard = the colours of v1.20.32 plus clearer text. */
+html:not([data-ui]){--tx:#eaf2f8;--dim:#a6b8c8}
+html[data-ui=slate]{--panel:#1b2530;--line:#34475a;--tx:#edf3f8;--dim:#aebfce;--panel2:#233140;--in:#141c25;--bd:#40566b;--hv:#2a3a4b;--hv2:#31445a;--rowl:#202d3a;--sel2:#2f7fc0;--sbg:linear-gradient(#223040,#1b2530)}
+/* text halo: letters stay readable where a wire crosses them */
+#svg text{paint-order:stroke;stroke:var(--dgbg,#0f1418);stroke-width:2.2px;stroke-linejoin:round;font-weight:500}
+#svg text[fill="#d5dde3"]{fill:var(--dgtx,#f2f6f9)}
+#svg path[stroke="#3b4651"]{stroke:var(--dgdead,#4d5a66)}
+/* ---------- Calm: softer colours, same meaning ---------- */
+html[data-dg=calm]{--dgbg:#121a20;--dgtx:#f1f5f8;--dgdead:#55636f}
+html[data-dg=calm] #svg{background:#121a20}
+html[data-dg=calm] #svg [stroke="#35d6c8"]{stroke:#62bdb3}html[data-dg=calm] #svg [fill="#35d6c8"]{fill:#62bdb3}
+html[data-dg=calm] #svg [stroke="#5aa9ff"]{stroke:#78a6da}html[data-dg=calm] #svg [fill="#5aa9ff"]{fill:#78a6da}
+html[data-dg=calm] #svg [stroke="#ffc233"]{stroke:#dcb765}html[data-dg=calm] #svg [fill="#ffc233"]{fill:#dcb765}
+html[data-dg=calm] #svg [stroke="#ff7ad9"]{stroke:#cb8fbd}html[data-dg=calm] #svg [fill="#ff7ad9"]{fill:#cb8fbd}
+html[data-dg=calm] #svg [stroke="#b48cff"]{stroke:#a999d8}html[data-dg=calm] #svg [fill="#b48cff"]{fill:#a999d8}
+html[data-dg=calm] #svg [stroke="#b4e04a"]{stroke:#a6c36f}html[data-dg=calm] #svg [fill="#b4e04a"]{fill:#a6c36f}
+html[data-dg=calm] #svg [stroke="#4be08a"]{stroke:#72c79a}html[data-dg=calm] #svg [fill="#4be08a"]{fill:#72c79a}
+/* ---------- Clarity: only the live signals have colour, blocks are neutral ---------- */
+html[data-dg=clarity]{--dgbg:#141a1f;--dgtx:#ffffff;--dgdead:#5c6a76}
+html[data-dg=clarity] #svg{background:#141a1f}
+html[data-dg=clarity] #svg [stroke="#35d6c8"],html[data-dg=clarity] #svg [stroke="#5aa9ff"],html[data-dg=clarity] #svg [stroke="#ff7ad9"],html[data-dg=clarity] #svg [stroke="#b48cff"],html[data-dg=clarity] #svg [stroke="#b4e04a"],html[data-dg=clarity] #svg [stroke="#4be08a"]{stroke:#b9c6d1}
+html[data-dg=clarity] #svg [fill="#35d6c8"],html[data-dg=clarity] #svg [fill="#5aa9ff"],html[data-dg=clarity] #svg [fill="#ff7ad9"],html[data-dg=clarity] #svg [fill="#b48cff"],html[data-dg=clarity] #svg [fill="#b4e04a"],html[data-dg=clarity] #svg [fill="#4be08a"]{fill:#e4ebf1}
+html[data-dg=clarity] #svg [fill="rgb(17,44,44)"],html[data-dg=clarity] #svg [fill="rgb(45,31,47)"],html[data-dg=clarity] #svg [fill="rgb(22,37,52)"],html[data-dg=clarity] #svg [fill="rgb(35,45,27)"],html[data-dg=clarity] #svg [fill="rgb(20,45,36)"]{fill:#222b33}
+/* ---------- Paper: light grey page, dark ink (not pure white) ---------- */
+html[data-dg=paper]{--dgbg:#e8ecef;--dgtx:#12191f;--dgdead:#9aa6b0}
+html[data-dg=paper] #svg{background:#e8ecef}
+html[data-dg=paper] #svg path[stroke="#0b1013"]{stroke:#e8ecef}
+html[data-dg=paper] #svg [stroke="#35d6c8"]{stroke:#0b7a72}html[data-dg=paper] #svg [fill="#35d6c8"]{fill:#0b7a72}
+html[data-dg=paper] #svg [stroke="#5aa9ff"]{stroke:#1f5fae}html[data-dg=paper] #svg [fill="#5aa9ff"]{fill:#1f5fae}
+html[data-dg=paper] #svg [stroke="#ffc233"]{stroke:#a86a00}html[data-dg=paper] #svg [fill="#ffc233"]{fill:#a86a00}
+html[data-dg=paper] #svg [stroke="#ff7ad9"]{stroke:#a82e86}html[data-dg=paper] #svg [fill="#ff7ad9"]{fill:#a82e86}
+html[data-dg=paper] #svg [stroke="#b48cff"]{stroke:#6440b4}html[data-dg=paper] #svg [fill="#b48cff"]{fill:#6440b4}
+html[data-dg=paper] #svg [stroke="#b4e04a"]{stroke:#587a10}html[data-dg=paper] #svg [fill="#b4e04a"]{fill:#587a10}
+html[data-dg=paper] #svg [stroke="#4be08a"]{stroke:#157a46}html[data-dg=paper] #svg [fill="#4be08a"]{fill:#157a46}
+html[data-dg=paper] #svg [stroke="#c9d3dc"]{stroke:#44525e}html[data-dg=paper] #svg [fill="#e6edf3"]{fill:#12191f}
+html[data-dg=paper] #svg [fill="rgb(17,44,44)"],html[data-dg=paper] #svg [fill="rgb(45,31,47)"],html[data-dg=paper] #svg [fill="rgb(22,37,52)"],html[data-dg=paper] #svg [fill="rgb(35,45,27)"],html[data-dg=paper] #svg [fill="rgb(20,45,36)"],html[data-dg=paper] #svg [fill="rgb(38,43,47)"],html[data-dg=paper] #svg [fill="#1a2229"]{fill:#d7dee4}
+html[data-dg=paper] #svg text[style*="rgb(201, 209, 217)"],html[data-dg=paper] #svg text[style*="rgb(216, 196, 255)"]{fill:#12191f!important}
+#dgsel{margin-left:6px}
+html[data-dg=paper] #svg text.bd{fill:#0a6b3a}html[data-dg=paper] #svg text.bd.inp{fill:#0b5f8a}
+html[data-dg=paper] #svg [stroke="#aeb9c3"]{stroke:#5b6874}html[data-dg=paper] #svg [stroke="#e6edf3"]{stroke:#222c35}html[data-dg=paper] #svg [stroke="#4de6ff"]{stroke:#0a7aa0}
+html[data-dg=paper] #svg [fill="#0b1013"]{fill:#e8ecef}
+</style><script id="themejs">/* Diagram + UI theme selectors (colours only). Remembers the choice. */
+(function(){
+const DG=[['std','Standard'],['calm','Calm'],['clarity','Clarity'],['paper','Paper']],UI2=[['slate','Slate']];
+const get=k=>{try{return localStorage.getItem(k)}catch(e){return null}},set=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+const root=document.documentElement;
+function applyDg(v){if(!DG.some(x=>x[0]===v))v='std';if(v==='std')root.removeAttribute('data-dg');else root.setAttribute('data-dg',v);return v}
+let dg=applyDg(get('ditl.dg')||'std');
+function build(){const ui=document.getElementById('uisel');if(!ui||document.getElementById('dgsel'))return;
+ UI2.forEach(([k,n])=>{const o=document.createElement('option');o.value=k;o.textContent='UI: '+n;ui.append(o)});
+ const u=get('ditl.ui');if(u&&UI2.some(x=>x[0]===u)){root.setAttribute('data-ui',u);ui.value=u}
+ const sel=document.createElement('select');sel.id='dgsel';sel.title='Colours of the diagram';DG.forEach(([k,n])=>{const o=document.createElement('option');o.value=k;o.textContent='Diagram: '+n;sel.append(o)});sel.value=dg;
+ sel.onchange=()=>{dg=applyDg(sel.value);set('ditl.dg',dg)};ui.after(sel)}
+build();if(!document.getElementById('dgsel'))document.addEventListener('DOMContentLoaded',build);
+})();
+</script><!--THEME-END--><!--UAT-BEGIN--><script id="uatdata" type="application/json">{"ver":"1.20.34","known":{}}</script><script id="uatui">/* UAT runner: runs one test case of one block on the simulator (AN) and compares the result with the expected rows. Used by the generator (dry run) and by the UAT panel. */
 window.UATR=(function(){
  const fmt=x=>x==null||!isFinite(x)?'—':Math.abs(x)>=1000?x.toFixed(0):Math.abs(x)>=100?x.toFixed(1):Math.abs(x)>=10?x.toFixed(2):x.toFixed(3);
  function plantOff(){const sv=[];for(const x of AN.sheets)if(x.S)for(const b of x.S.procs||[]){sv.push([b,b.proc.on]);b.proc.on=false}return sv}
@@ -33491,13 +33560,14 @@ window.UATR=(function(){
   if(c.skipTrk!=null&&S.rt.st[c.skipTrk]&&S.rt.st[c.skipTrk].trk!=null)return {ok:true,skip:'tracking is active (the downstream selector is on another leg or interlock BU-CMD): the output follows that value, so it is not tested here',rows:[]};
   if(c.skipBu!=null&&S.rt.st[c.skipBu]&&S.rt.st[c.skipBu].bu!=null)return {ok:true,skip:'interlock back-up value (BU-CMD) is active on this selector: it forces its own value, not tested here',rows:[]};
   const out=[];let ok=true;
-  for(const r of c.rows){let a=r.st?(S.rt.st[r.st.id]||{})[r.st.f]:S.rt.v[r.k],good,exp;
+  for(const r of c.rows){let a=r.cmp==='eval'?r.fn(S):r.st?(S.rt.st[r.st.id]||{})[r.st.f]:S.rt.v[r.k],good,exp;
    if(r.cmp==='inc'){const s0=start[r.k];good=isFinite(a)&&(a>s0+r.d||(r.lim&&s0>=r.lim[1]-0.5));exp='rises (from '+fmt(s0)+')'}
    else if(r.cmp==='dec'){const s0=start[r.k];good=isFinite(a)&&(a<s0-r.d||(r.lim&&s0<=r.lim[0]+0.5));exp='falls (from '+fmt(s0)+')'}
    else if(r.cmp==='delta'){const s0=start[r.k];good=isFinite(a)&&isFinite(s0)&&Math.abs((a-s0)-r.v)<=r.tol;exp='rises by '+fmt(r.v)+' (from '+fmt(s0)+')'}
+   else if(r.cmp==='eval'){good=a===r.vs;exp=r.vs}
    else if(r.eqk!=null){const b2=S.rt.v[r.eqk];good=isFinite(a)&&Math.abs(a-b2)<=r.tol;exp='= '+fmt(b2)}
    else{good=isFinite(a)&&Math.abs(a-r.v)<=r.tol;exp=r.txt||fmt(r.v)}
-   if(!good)ok=false;out.push({t:r.t,exp,act:fmt(a),ok:good})}
+   if(!good)ok=false;out.push({t:r.t,exp,act:typeof a==='string'?a:fmt(a),ok:good})}
   return {ok,rows:out}}
  function runItem(sh,item){const sv=plantOff();let ok=true;const res=[];try{for(const c of item.cases){const r=runCase(sh,c);res.push({l:c.l,rows:r.rows,ok:r.ok,skip:r.skip});if(!r.ok)ok=false}}finally{plantRestore(sv)}return {ok,res}}
  return {runCase,runItem,fmt,plantOff,plantRestore}})();
@@ -33548,15 +33618,12 @@ window.UATG=(function(){
    // math: multiply / divide / square root / absolute value
    if(b.k==='MUL'&&b.i&&b.i.length>=2&&b.i.length<=4&&b.i.every(n=>n>=0)&&o!=null&&free(S,o)){
     const cs=[];for(const base of [[4,5,2,3],[8,0.5,6,2]]){const vs=b.i.map((n,j)=>kn(S,n)?S.kn[n]:base[j]),f={};let e=1;b.i.forEach((n,j)=>{if(!kn(S,n))f[n]=vs[j];e*=vs[j]/((b.nrm&&b.nrm[j])||1)});if(b.gain!=null)e*=b.gain;e=clampAO(S,o,e);if(Math.abs(e)<1e6)cs.push({l:'inputs '+vs.join(' x ')+(b.gain!=null?' x gain '+b.gain:'')+(b.nrm&&b.nrm.some(Boolean)?' (inputs scaled by '+b.nrm.map(x=>x||1).join(', ')+')':'')+' -> '+fmt(e),steps:[st1(f,0)],rows:[R(o,'product',e,Math.max(.05,Math.abs(e)*.002))],reset:false})}
-    if(cs.length)add('Math: multiply / divide / square root / abs',item(b,'Multiply',cs))}
+    if(cs.length)add('Math: multiply / divide / abs',item(b,'Multiply',cs))}
    if(b.k==='DIV'&&b.nu>=0&&b.de>=0&&o!=null&&free(S,o)){
     const cs=[];for(const [nu0,de0] of [[12,4],[9,3]]){const nu=kn(S,b.nu)?S.kn[b.nu]:nu0,de=kn(S,b.de)?S.kn[b.de]:de0;if(!de)continue;let e=nu/de;if(b.oa)e=e*b.oa[0]+b.oa[1];e=clampAO(S,o,e);const f={};if(!kn(S,b.nu))f[b.nu]=nu;if(!kn(S,b.de))f[b.de]=de;cs.push({l:'numerator '+nu+' / denominator '+de+' -> '+fmt(e),steps:[st1(f,0)],rows:[R(o,'quotient',e,Math.max(.05,Math.abs(e)*.002))],reset:false})}
-    add('Math: multiply / divide / square root / abs',item(b,'Divide',cs))}
-   if(b.k==='SQRT'&&b.i[0]!=null&&o!=null&&free(S,o)){
-    const Rn=b.rin||100,cs=[];if(kn(S,b.i[0])){add('Math: multiply / divide / square root / abs',item(b,'Square root',[{l:'not tested: the input is a constant written on the drawing',skipMsg:'the input is a constant written on the drawing',steps:[],rows:[]}]));continue}for(const x of [Rn*.25,Rn]){const e=clampAO(S,o,b.idn?x:Rn*Math.sqrt(x/Rn));cs.push({l:'input '+fmt(x)+(b.idn?'':' (range '+Rn+') -> '+fmt(Rn)+' x square root of ('+fmt(x)+' / '+Rn+')')+' = '+fmt(e),steps:[st1({[b.i[0]]:x},0)],rows:[R(o,'square root',e,Math.max(.05,Math.abs(e)*.002))],reset:false})}
-    add('Math: multiply / divide / square root / abs',item(b,'Square root',cs))}
+    add('Math: multiply / divide / abs',item(b,'Divide',cs))}
    if(b.k==='ABS'&&b.i[0]!=null&&o!=null&&free(S,o)){
-    add('Math: multiply / divide / square root / abs',item(b,'Absolute value',[-7,7].map(x=>({l:'input '+x+' -> '+Math.abs(x),steps:[st1({[b.i[0]]:x},0)],rows:[R(o,'output',Math.abs(x))],reset:false}))))}
+    add('Math: multiply / divide / abs',item(b,'Absolute value',[-7,7].map(x=>({l:'input '+x+' -> '+Math.abs(x),steps:[st1({[b.i[0]]:x},0)],rows:[R(o,'output',Math.abs(x))],reset:false}))))}
    // constants: the number written in the box
    if(b.k==='CONST'&&!b.ref&&!(b.p&&b.p.mt)&&b.txt&&b.txt.length&&o!=null&&free(S,o)){
     const tn=String(b.txt[0]).replace(/%%%/g,'%').trim();if(/^-?\d+(\.\d+)?\s*[%A-Za-z°\/]{0,8}$/.test(tn)){const e=parseFloat(tn);
@@ -33585,6 +33652,20 @@ window.UATG=(function(){
       if(b.byp>=0)cs.push({l:'bypass = 1: the output follows the input at once (input 30 -> 30)',steps:[st1({[b.main]:30,[b.byp]:1},0)],rows:[R(o,'output',30)],reset:false});
       cs.push({l:'rate written on the drawing: '+rt+' = '+fmt(r)+' units per second'+(pct?' (% of a range of '+fmt(b.span)+')':'')+'. The input jumps far above the output: in '+fmt(t)+' s the output must rise by '+fmt(r*t),steps:[st1(Object.assign({[b.main]:1e4},b.byp>=0?{[b.byp]:0}:{}),t)],rows:[{k:o,t:'output rise',cmp:'delta',v:r*t,tol:Math.max(.0005,r*t*.04)}],reset:true});
       add('Ramps (rate limiters)',item(b,(b.k==='RAMPB'?'Bumpless ramp':'Rate limiter')+'  "'+rt+'"',cs))}}}}
+   // alarms: the level shown to the operator, from the limits of the block (rule: >= high / <= low)
+   if(b.k==='ALM'&&b.p&&b.pins&&b.pins[0]&&b.pins[0].n>=0){const P=b.p,n=b.pins[0].n,has=x=>x!=null&&isFinite(x),cs=[];
+    const c=(x,e)=>cs.push({l:'input '+fmt(x)+' -> alarm "'+e+'"',steps:[st1({[n]:x},0)],rows:[{t:'alarm shown',cmp:'eval',fn:S2=>AN.almLv(b,S2.rt.v[n]),vs:e}],reset:false});
+    if(has(P.l)&&has(P.h)&&P.l<P.h){const sp=P.h-P.l;c((P.l+P.h)/2,'normal');
+     if(has(P.hh)&&P.hh>P.h){c((P.h+P.hh)/2,'HIGH');c(P.hh+sp*.1,'HIGH-HIGH')}else c(P.h+sp*.1,'HIGH');
+     if(has(P.ll)&&P.ll<P.l){c((P.l+P.ll)/2,'LOW');c(P.ll-sp*.1,'LOW-LOW')}else c(P.l-sp*.1,'LOW')}
+    if(cs.length)add('Alarms (ALM)',item(b,'Alarm limits LL '+(has(P.ll)?fmt(P.ll):'-')+' / L '+(has(P.l)?fmt(P.l):'-')+' / H '+(has(P.h)?fmt(P.h):'-')+' / HH '+(has(P.hh)?fmt(P.hh):'-'),cs))}
+   // valves / actuators: the position moves toward the command at 100 % per stroke time (stroke time is a simulator setting, 30 s unless set)
+   if((b.k==='ACT'||b.k==='VLV')&&b.i&&b.i[0]!=null&&b.p&&b.p.stroke>0){const n=b.i[0],dg=S.nets[n].dig,hi=dg?1:100,T=b.p.stroke,t=Math.max(.25,Math.round(T/4*4)/4),stk={id:b.id,f:'pos'};
+    add('Valves and actuators (stroke)',item(b,(b.k==='VLV'?'Valve':'Actuator')+' stroke '+fmt(T)+' s',[
+     {l:'command '+(dg?'0':'0 %')+' for the whole stroke (closed), then '+(dg?'1':'100 %')+': after '+fmt(t)+' s (a quarter of the stroke) the position is 25 %',steps:[st1({[n]:0},T+1),st1({[n]:hi},t)],rows:[{st:stk,t:'position (%)',v:25,tol:3}],reset:true},
+     {l:'command full open for the whole stroke, then closed for a quarter of the stroke: the position is 75 %',steps:[st1({[n]:hi},T+1),st1({[n]:0},t)],rows:[{st:stk,t:'position (%)',v:75,tol:3}],reset:true}]))}
+   // analog outputs without an output net: the limit 0 ~ 100 is applied on the net that feeds the AO (it is tested through the blocks that drive it)
+   if(b.k==='AO'&&!(b.o&&b.o.length)){add('Analog outputs (AO, 0 ~ 100 %)',item(b,'AO',[{l:'not tested alone: the AO has no output net; its 0 ~ 100 limit is applied to the net that feeds it, and that is checked on the blocks that drive it (math and switches)',skipMsg:'no output net on the drawing',steps:[],rows:[]}]))}
    // timers
    if((b.k==='TON'||b.k==='TOF'||b.k==='TPS')&&b.p&&b.p.sec>0&&b.p.sec<=30&&b.i[0]!=null&&free(S,o)){
     const sec=b.p.sec,i0=b.i[0],q=x=>Math.max(.25,Math.round(x*4)/4),cs=[];
@@ -33629,7 +33710,7 @@ window.UATG=(function(){
      if(S.ext.includes(manNet))cs.push({l:'MAN: manual value 37 -> output 37',steps:[st1({},4,{fm:{[amt.id]:manLeg},ext:{[manNet]:37}})],skipBu:amt.id,rows:[R(amt.o[0],'output of the A/M switch',37,0.1)]})}
     add('Controllers (PID)',item(b,'PID '+tag+(P.act<0?' (reverse)':' (direct)'),cs))}
   }
-  const order=['Switches (T and A/M)','Operator selectors (COS)','Logic gates (AND / OR / NOT)','Flip-flops (S / R)','Comparators','Constants (value written in the box)','Math: add / subtract / sum / deviation','Math: multiply / divide / square root / abs','Ramps (rate limiters)','Average select circuits','Timers (TON / TOF / pulse)','Lag (first order)','Curves F(X) (workbook tables)','High / low selectors','Analog inputs (AI, transmitter range)','Analog outputs (AO, 0 ~ 100 %)','Manual stations (MAN)','Totalizers (SUMA)','Controllers (PID)'];
+  const order=['Switches (T and A/M)','Operator selectors (COS)','Logic gates (AND / OR / NOT)','Flip-flops (S / R)','Comparators','Constants (value written in the box)','Alarms (ALM)','Valves and actuators (stroke)','Math: add / subtract / sum / deviation','Math: multiply / divide / abs','Ramps (rate limiters)','Average select circuits','Timers (TON / TOF / pulse)','Lag (first order)','Curves F(X) (workbook tables)','High / low selectors','Analog inputs (AI, transmitter range)','Analog outputs (AO, 0 ~ 100 %)','Manual stations (MAN)','Totalizers (SUMA)','Controllers (PID)'];
   return {groups:order.filter(g=>G[g]).map(g=>({g,items:G[g]}))}}
  return {sheetSpec}})();
 
@@ -33725,59 +33806,4 @@ function build(){if(P.style.display!=='block')return;const sh=sheet();if(!sh||/^
  P.scrollTop=top}
 setInterval(()=>{try{const sh=sheet();if(sh&&P.style.display==='block'&&P.dataset.sheet!==sh.name){P.dataset.sheet=sh.name;build()}}catch(e){}},500);
 })();
-</script><!--UAT-END--><!--THEME-BEGIN--><style id="themecss">/* Diagram themes (html[data-dg]) and clearer text. Colours only: no layout, no engine. Standard = the colours of v1.20.32 plus clearer text. */
-html:not([data-ui]){--tx:#eaf2f8;--dim:#a6b8c8}
-html[data-ui=slate]{--panel:#1b2530;--line:#34475a;--tx:#edf3f8;--dim:#aebfce;--panel2:#233140;--in:#141c25;--bd:#40566b;--hv:#2a3a4b;--hv2:#31445a;--rowl:#202d3a;--sel2:#2f7fc0;--sbg:linear-gradient(#223040,#1b2530)}
-/* text halo: letters stay readable where a wire crosses them */
-#svg text{paint-order:stroke;stroke:var(--dgbg,#0f1418);stroke-width:2.2px;stroke-linejoin:round;font-weight:500}
-#svg text[fill="#d5dde3"]{fill:var(--dgtx,#f2f6f9)}
-#svg path[stroke="#3b4651"]{stroke:var(--dgdead,#4d5a66)}
-/* ---------- Calm: softer colours, same meaning ---------- */
-html[data-dg=calm]{--dgbg:#121a20;--dgtx:#f1f5f8;--dgdead:#55636f}
-html[data-dg=calm] #svg{background:#121a20}
-html[data-dg=calm] #svg [stroke="#35d6c8"]{stroke:#62bdb3}html[data-dg=calm] #svg [fill="#35d6c8"]{fill:#62bdb3}
-html[data-dg=calm] #svg [stroke="#5aa9ff"]{stroke:#78a6da}html[data-dg=calm] #svg [fill="#5aa9ff"]{fill:#78a6da}
-html[data-dg=calm] #svg [stroke="#ffc233"]{stroke:#dcb765}html[data-dg=calm] #svg [fill="#ffc233"]{fill:#dcb765}
-html[data-dg=calm] #svg [stroke="#ff7ad9"]{stroke:#cb8fbd}html[data-dg=calm] #svg [fill="#ff7ad9"]{fill:#cb8fbd}
-html[data-dg=calm] #svg [stroke="#b48cff"]{stroke:#a999d8}html[data-dg=calm] #svg [fill="#b48cff"]{fill:#a999d8}
-html[data-dg=calm] #svg [stroke="#b4e04a"]{stroke:#a6c36f}html[data-dg=calm] #svg [fill="#b4e04a"]{fill:#a6c36f}
-html[data-dg=calm] #svg [stroke="#4be08a"]{stroke:#72c79a}html[data-dg=calm] #svg [fill="#4be08a"]{fill:#72c79a}
-/* ---------- Clarity: only the live signals have colour, blocks are neutral ---------- */
-html[data-dg=clarity]{--dgbg:#141a1f;--dgtx:#ffffff;--dgdead:#5c6a76}
-html[data-dg=clarity] #svg{background:#141a1f}
-html[data-dg=clarity] #svg [stroke="#35d6c8"],html[data-dg=clarity] #svg [stroke="#5aa9ff"],html[data-dg=clarity] #svg [stroke="#ff7ad9"],html[data-dg=clarity] #svg [stroke="#b48cff"],html[data-dg=clarity] #svg [stroke="#b4e04a"],html[data-dg=clarity] #svg [stroke="#4be08a"]{stroke:#b9c6d1}
-html[data-dg=clarity] #svg [fill="#35d6c8"],html[data-dg=clarity] #svg [fill="#5aa9ff"],html[data-dg=clarity] #svg [fill="#ff7ad9"],html[data-dg=clarity] #svg [fill="#b48cff"],html[data-dg=clarity] #svg [fill="#b4e04a"],html[data-dg=clarity] #svg [fill="#4be08a"]{fill:#e4ebf1}
-html[data-dg=clarity] #svg [fill="rgb(17,44,44)"],html[data-dg=clarity] #svg [fill="rgb(45,31,47)"],html[data-dg=clarity] #svg [fill="rgb(22,37,52)"],html[data-dg=clarity] #svg [fill="rgb(35,45,27)"],html[data-dg=clarity] #svg [fill="rgb(20,45,36)"]{fill:#222b33}
-/* ---------- Paper: light grey page, dark ink (not pure white) ---------- */
-html[data-dg=paper]{--dgbg:#e8ecef;--dgtx:#12191f;--dgdead:#9aa6b0}
-html[data-dg=paper] #svg{background:#e8ecef}
-html[data-dg=paper] #svg path[stroke="#0b1013"]{stroke:#e8ecef}
-html[data-dg=paper] #svg [stroke="#35d6c8"]{stroke:#0b7a72}html[data-dg=paper] #svg [fill="#35d6c8"]{fill:#0b7a72}
-html[data-dg=paper] #svg [stroke="#5aa9ff"]{stroke:#1f5fae}html[data-dg=paper] #svg [fill="#5aa9ff"]{fill:#1f5fae}
-html[data-dg=paper] #svg [stroke="#ffc233"]{stroke:#a86a00}html[data-dg=paper] #svg [fill="#ffc233"]{fill:#a86a00}
-html[data-dg=paper] #svg [stroke="#ff7ad9"]{stroke:#a82e86}html[data-dg=paper] #svg [fill="#ff7ad9"]{fill:#a82e86}
-html[data-dg=paper] #svg [stroke="#b48cff"]{stroke:#6440b4}html[data-dg=paper] #svg [fill="#b48cff"]{fill:#6440b4}
-html[data-dg=paper] #svg [stroke="#b4e04a"]{stroke:#587a10}html[data-dg=paper] #svg [fill="#b4e04a"]{fill:#587a10}
-html[data-dg=paper] #svg [stroke="#4be08a"]{stroke:#157a46}html[data-dg=paper] #svg [fill="#4be08a"]{fill:#157a46}
-html[data-dg=paper] #svg [stroke="#c9d3dc"]{stroke:#44525e}html[data-dg=paper] #svg [fill="#e6edf3"]{fill:#12191f}
-html[data-dg=paper] #svg [fill="rgb(17,44,44)"],html[data-dg=paper] #svg [fill="rgb(45,31,47)"],html[data-dg=paper] #svg [fill="rgb(22,37,52)"],html[data-dg=paper] #svg [fill="rgb(35,45,27)"],html[data-dg=paper] #svg [fill="rgb(20,45,36)"],html[data-dg=paper] #svg [fill="rgb(38,43,47)"],html[data-dg=paper] #svg [fill="#1a2229"]{fill:#d7dee4}
-html[data-dg=paper] #svg text[style*="rgb(201, 209, 217)"],html[data-dg=paper] #svg text[style*="rgb(216, 196, 255)"]{fill:#12191f!important}
-#dgsel{margin-left:6px}
-html[data-dg=paper] #svg text.bd{fill:#0a6b3a}html[data-dg=paper] #svg text.bd.inp{fill:#0b5f8a}
-html[data-dg=paper] #svg [stroke="#aeb9c3"]{stroke:#5b6874}html[data-dg=paper] #svg [stroke="#e6edf3"]{stroke:#222c35}html[data-dg=paper] #svg [stroke="#4de6ff"]{stroke:#0a7aa0}
-html[data-dg=paper] #svg [fill="#0b1013"]{fill:#e8ecef}
-</style><script id="themejs">/* Diagram + UI theme selectors (colours only). Remembers the choice. */
-(function(){
-const DG=[['std','Standard'],['calm','Calm'],['clarity','Clarity'],['paper','Paper']],UI2=[['slate','Slate']];
-const get=k=>{try{return localStorage.getItem(k)}catch(e){return null}},set=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
-const root=document.documentElement;
-function applyDg(v){if(!DG.some(x=>x[0]===v))v='std';if(v==='std')root.removeAttribute('data-dg');else root.setAttribute('data-dg',v);return v}
-let dg=applyDg(get('ditl.dg')||'std');
-function build(){const ui=document.getElementById('uisel');if(!ui||document.getElementById('dgsel'))return;
- UI2.forEach(([k,n])=>{const o=document.createElement('option');o.value=k;o.textContent='UI: '+n;ui.append(o)});
- const u=get('ditl.ui');if(u&&UI2.some(x=>x[0]===u)){root.setAttribute('data-ui',u);ui.value=u}
- const sel=document.createElement('select');sel.id='dgsel';sel.title='Colours of the diagram';DG.forEach(([k,n])=>{const o=document.createElement('option');o.value=k;o.textContent='Diagram: '+n;sel.append(o)});sel.value=dg;
- sel.onchange=()=>{dg=applyDg(sel.value);set('ditl.dg',dg)};ui.after(sel)}
-build();if(!document.getElementById('dgsel'))document.addEventListener('DOMContentLoaded',build);
-})();
-</script><!--THEME-END--></body></html>
+</script><!--UAT-END--></body></html>

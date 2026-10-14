@@ -39,8 +39,8 @@ DCS Logic Simulator sa `Ronanski/icms-master-tool`. Basahin muna ang `CLAUDE.md`
 
 ## Next actions
 1. Ang user ay magte-test ng Beta v1.20.34 (`/beta/` page): sariling UAT (👁 sa bawat case), switch / force, Reset. Mga MALI: reproduce sa sheet, ayusin, `node tools/uat/inject.js`, push.
-2. Bukas (tingnan ang `docs/versions/v1.20.34/UPDATE_REPORT.md`): 3 sheet na iba pa rin ang Reset sa fresh (010, 013, 001C); UAT na hindi sumasaklaw sa AO, valves, ALM, COS, SIG.AB, TXD (nakasulat sa panel); math block na walang symbol (hindi pa matukoy); ramp rate (8 block na walang rate sa drawing; ABC-052 unit); 13 PID na interlock back-up ang active; bigat sa tablet (step lang ng konektadong sheet: kailangan ng approval); 
-3. Test tools: `tools/regress/switches.js` (lahat ng switch), `tools/regress/reset.js` (Reset = fresh), `tools/regress/pid_am.js` (PID A/M), `tools/regress/tests.js`, `tools/uat/dry.js` (2235 items, 6055 cases, 0 bagsak).
+2. Bukas (tingnan ang `docs/versions/v1.20.34/UPDATE_REPORT.md`): UAT na hindi pa sakop ang COS, SIG.AB, TXD, IP, FIELD, ilang constants (nakasulat sa panel); ramp rate (8 block na walang rate sa drawing, 1 / s ang default; ABC-052 unit); math block na walang symbol sa theme (Needs Verification); ang tiered stepping at ang naka-embed na html sa apk / exe ay hindi pa nasubukan sa totoong device.
+3. Test tools: `tools/regress/switches.js` (lahat ng switch), `tools/regress/reset.js` (Reset = fresh), `tools/regress/pid_am.js` (PID A/M), `tools/regress/tests.js`, `tools/uat/dry.js` (2406 items, 6706 cases, 0 bagsak).
 4. Release, merge sa main o workflow run: **GO STABLE** / **GO BETA** lang, sa mismong mensahe. Ang apk / exe ay may embedded na html mula v1.20.34: i-dry-run ang `release.yml` (`dry_run=true`) bago ang totoong release, kapag pinayagan ng user.
 
 ## Notes

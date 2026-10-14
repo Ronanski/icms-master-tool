@@ -1,5 +1,5 @@
 // PID auto / manual relation (PV / SV / MV): MAN with a manual value while PV is 20 % above SV, then back to AUTO: the A/M output must hold the manual value
-// and must not jump when AUTO returns (bumpless). Usage: node tools/regress/pid_am.js [html]
+// and must not jump when AUTO returns (bumpless). The selectors after the A/M station are released to their A leg (interlock back-up off). Usage: node tools/regress/pid_am.js [html]
 const {open}=require('./lib.js');
 (async()=>{const {browser,page}=await open(process.argv[2]||require('fs').readdirSync('.').find(x=>/^logic-sim-v\d+\.\d+\.\d+\.html$/.test(x)));
 const r=await page.evaluate(()=>{const out=[],skipped=[];let n=0;
@@ -10,6 +10,8 @@ const r=await page.evaluate(()=>{const out=[],skipped=[];let n=0;
    const autoLeg=b.o.includes(amt.a)?'A':'B',manLeg=autoLeg==='A'?'B':'A',manNet=autoLeg==='A'?amt.b:amt.a;if(!S.ext.includes(manNet))continue;
    const P=b.p,rlo=P.rlo!=null?P.rlo:0,rhi=P.rhi!=null?P.rhi:100,span=rhi-rlo,mid=rlo+.5*span,hi=P.hi!=null?P.hi:100,lo=P.lo!=null?P.lo:0;
    AN.reset();for(let i=0;i<6;i++)AN.stepSet(sh,0);const st=S.rt.st[amt.id],ao=amt.o[0];
+   /* the selectors after the A/M station are put on their A leg (interlock back-up released), so the controller output reaches the valve */
+   {let c=amt;for(let g=0;g<4;g++){const d=S.blk.find(z=>(z.k==='AMT'||z.k==='SW')&&z.a===c.o[0]&&z!==c);if(!d)break;S.rt.st[d.id].fm='A';c=d}}
    const run=(sec)=>{for(let i=0;i<sec*4;i++)AN.stepSet(sh,.25)};
    S.rt.force[q.pv]=mid;S.rt.force[q.sv]=mid;st.fm=autoLeg;run(10);
    const manV=lo+(hi-lo)*.37;S.rt.force[q.pv]=mid+.2*span;st.fm=manLeg;S.rt.ext[manNet]=manV;run(20);

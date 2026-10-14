@@ -44,15 +44,12 @@ window.UATG=(function(){
    // math: multiply / divide / square root / absolute value
    if(b.k==='MUL'&&b.i&&b.i.length>=2&&b.i.length<=4&&b.i.every(n=>n>=0)&&o!=null&&free(S,o)){
     const cs=[];for(const base of [[4,5,2,3],[8,0.5,6,2]]){const vs=b.i.map((n,j)=>kn(S,n)?S.kn[n]:base[j]),f={};let e=1;b.i.forEach((n,j)=>{if(!kn(S,n))f[n]=vs[j];e*=vs[j]/((b.nrm&&b.nrm[j])||1)});if(b.gain!=null)e*=b.gain;e=clampAO(S,o,e);if(Math.abs(e)<1e6)cs.push({l:'inputs '+vs.join(' x ')+(b.gain!=null?' x gain '+b.gain:'')+(b.nrm&&b.nrm.some(Boolean)?' (inputs scaled by '+b.nrm.map(x=>x||1).join(', ')+')':'')+' -> '+fmt(e),steps:[st1(f,0)],rows:[R(o,'product',e,Math.max(.05,Math.abs(e)*.002))],reset:false})}
-    if(cs.length)add('Math: multiply / divide / square root / abs',item(b,'Multiply',cs))}
+    if(cs.length)add('Math: multiply / divide / abs',item(b,'Multiply',cs))}
    if(b.k==='DIV'&&b.nu>=0&&b.de>=0&&o!=null&&free(S,o)){
     const cs=[];for(const [nu0,de0] of [[12,4],[9,3]]){const nu=kn(S,b.nu)?S.kn[b.nu]:nu0,de=kn(S,b.de)?S.kn[b.de]:de0;if(!de)continue;let e=nu/de;if(b.oa)e=e*b.oa[0]+b.oa[1];e=clampAO(S,o,e);const f={};if(!kn(S,b.nu))f[b.nu]=nu;if(!kn(S,b.de))f[b.de]=de;cs.push({l:'numerator '+nu+' / denominator '+de+' -> '+fmt(e),steps:[st1(f,0)],rows:[R(o,'quotient',e,Math.max(.05,Math.abs(e)*.002))],reset:false})}
-    add('Math: multiply / divide / square root / abs',item(b,'Divide',cs))}
-   if(b.k==='SQRT'&&b.i[0]!=null&&o!=null&&free(S,o)){
-    const Rn=b.rin||100,cs=[];if(kn(S,b.i[0])){add('Math: multiply / divide / square root / abs',item(b,'Square root',[{l:'not tested: the input is a constant written on the drawing',skipMsg:'the input is a constant written on the drawing',steps:[],rows:[]}]));continue}for(const x of [Rn*.25,Rn]){const e=clampAO(S,o,b.idn?x:Rn*Math.sqrt(x/Rn));cs.push({l:'input '+fmt(x)+(b.idn?'':' (range '+Rn+') -> '+fmt(Rn)+' x square root of ('+fmt(x)+' / '+Rn+')')+' = '+fmt(e),steps:[st1({[b.i[0]]:x},0)],rows:[R(o,'square root',e,Math.max(.05,Math.abs(e)*.002))],reset:false})}
-    add('Math: multiply / divide / square root / abs',item(b,'Square root',cs))}
+    add('Math: multiply / divide / abs',item(b,'Divide',cs))}
    if(b.k==='ABS'&&b.i[0]!=null&&o!=null&&free(S,o)){
-    add('Math: multiply / divide / square root / abs',item(b,'Absolute value',[-7,7].map(x=>({l:'input '+x+' -> '+Math.abs(x),steps:[st1({[b.i[0]]:x},0)],rows:[R(o,'output',Math.abs(x))],reset:false}))))}
+    add('Math: multiply / divide / abs',item(b,'Absolute value',[-7,7].map(x=>({l:'input '+x+' -> '+Math.abs(x),steps:[st1({[b.i[0]]:x},0)],rows:[R(o,'output',Math.abs(x))],reset:false}))))}
    // constants: the number written in the box
    if(b.k==='CONST'&&!b.ref&&!(b.p&&b.p.mt)&&b.txt&&b.txt.length&&o!=null&&free(S,o)){
     const tn=String(b.txt[0]).replace(/%%%/g,'%').trim();if(/^-?\d+(\.\d+)?\s*[%A-Za-z°\/]{0,8}$/.test(tn)){const e=parseFloat(tn);
@@ -81,6 +78,20 @@ window.UATG=(function(){
       if(b.byp>=0)cs.push({l:'bypass = 1: the output follows the input at once (input 30 -> 30)',steps:[st1({[b.main]:30,[b.byp]:1},0)],rows:[R(o,'output',30)],reset:false});
       cs.push({l:'rate written on the drawing: '+rt+' = '+fmt(r)+' units per second'+(pct?' (% of a range of '+fmt(b.span)+')':'')+'. The input jumps far above the output: in '+fmt(t)+' s the output must rise by '+fmt(r*t),steps:[st1(Object.assign({[b.main]:1e4},b.byp>=0?{[b.byp]:0}:{}),t)],rows:[{k:o,t:'output rise',cmp:'delta',v:r*t,tol:Math.max(.0005,r*t*.04)}],reset:true});
       add('Ramps (rate limiters)',item(b,(b.k==='RAMPB'?'Bumpless ramp':'Rate limiter')+'  "'+rt+'"',cs))}}}}
+   // alarms: the level shown to the operator, from the limits of the block (rule: >= high / <= low)
+   if(b.k==='ALM'&&b.p&&b.pins&&b.pins[0]&&b.pins[0].n>=0){const P=b.p,n=b.pins[0].n,has=x=>x!=null&&isFinite(x),cs=[];
+    const c=(x,e)=>cs.push({l:'input '+fmt(x)+' -> alarm "'+e+'"',steps:[st1({[n]:x},0)],rows:[{t:'alarm shown',cmp:'eval',fn:S2=>AN.almLv(b,S2.rt.v[n]),vs:e}],reset:false});
+    if(has(P.l)&&has(P.h)&&P.l<P.h){const sp=P.h-P.l;c((P.l+P.h)/2,'normal');
+     if(has(P.hh)&&P.hh>P.h){c((P.h+P.hh)/2,'HIGH');c(P.hh+sp*.1,'HIGH-HIGH')}else c(P.h+sp*.1,'HIGH');
+     if(has(P.ll)&&P.ll<P.l){c((P.l+P.ll)/2,'LOW');c(P.ll-sp*.1,'LOW-LOW')}else c(P.l-sp*.1,'LOW')}
+    if(cs.length)add('Alarms (ALM)',item(b,'Alarm limits LL '+(has(P.ll)?fmt(P.ll):'-')+' / L '+(has(P.l)?fmt(P.l):'-')+' / H '+(has(P.h)?fmt(P.h):'-')+' / HH '+(has(P.hh)?fmt(P.hh):'-'),cs))}
+   // valves / actuators: the position moves toward the command at 100 % per stroke time (stroke time is a simulator setting, 30 s unless set)
+   if((b.k==='ACT'||b.k==='VLV')&&b.i&&b.i[0]!=null&&b.p&&b.p.stroke>0){const n=b.i[0],dg=S.nets[n].dig,hi=dg?1:100,T=b.p.stroke,t=Math.max(.25,Math.round(T/4*4)/4),stk={id:b.id,f:'pos'};
+    add('Valves and actuators (stroke)',item(b,(b.k==='VLV'?'Valve':'Actuator')+' stroke '+fmt(T)+' s',[
+     {l:'command '+(dg?'0':'0 %')+' for the whole stroke (closed), then '+(dg?'1':'100 %')+': after '+fmt(t)+' s (a quarter of the stroke) the position is 25 %',steps:[st1({[n]:0},T+1),st1({[n]:hi},t)],rows:[{st:stk,t:'position (%)',v:25,tol:3}],reset:true},
+     {l:'command full open for the whole stroke, then closed for a quarter of the stroke: the position is 75 %',steps:[st1({[n]:hi},T+1),st1({[n]:0},t)],rows:[{st:stk,t:'position (%)',v:75,tol:3}],reset:true}]))}
+   // analog outputs without an output net: the limit 0 ~ 100 is applied on the net that feeds the AO (it is tested through the blocks that drive it)
+   if(b.k==='AO'&&!(b.o&&b.o.length)){add('Analog outputs (AO, 0 ~ 100 %)',item(b,'AO',[{l:'not tested alone: the AO has no output net; its 0 ~ 100 limit is applied to the net that feeds it, and that is checked on the blocks that drive it (math and switches)',skipMsg:'no output net on the drawing',steps:[],rows:[]}]))}
    // timers
    if((b.k==='TON'||b.k==='TOF'||b.k==='TPS')&&b.p&&b.p.sec>0&&b.p.sec<=30&&b.i[0]!=null&&free(S,o)){
     const sec=b.p.sec,i0=b.i[0],q=x=>Math.max(.25,Math.round(x*4)/4),cs=[];
@@ -125,6 +136,6 @@ window.UATG=(function(){
      if(S.ext.includes(manNet))cs.push({l:'MAN: manual value 37 -> output 37',steps:[st1({},4,{fm:{[amt.id]:manLeg},ext:{[manNet]:37}})],skipBu:amt.id,rows:[R(amt.o[0],'output of the A/M switch',37,0.1)]})}
     add('Controllers (PID)',item(b,'PID '+tag+(P.act<0?' (reverse)':' (direct)'),cs))}
   }
-  const order=['Switches (T and A/M)','Operator selectors (COS)','Logic gates (AND / OR / NOT)','Flip-flops (S / R)','Comparators','Constants (value written in the box)','Math: add / subtract / sum / deviation','Math: multiply / divide / square root / abs','Ramps (rate limiters)','Average select circuits','Timers (TON / TOF / pulse)','Lag (first order)','Curves F(X) (workbook tables)','High / low selectors','Analog inputs (AI, transmitter range)','Analog outputs (AO, 0 ~ 100 %)','Manual stations (MAN)','Totalizers (SUMA)','Controllers (PID)'];
+  const order=['Switches (T and A/M)','Operator selectors (COS)','Logic gates (AND / OR / NOT)','Flip-flops (S / R)','Comparators','Constants (value written in the box)','Alarms (ALM)','Valves and actuators (stroke)','Math: add / subtract / sum / deviation','Math: multiply / divide / abs','Ramps (rate limiters)','Average select circuits','Timers (TON / TOF / pulse)','Lag (first order)','Curves F(X) (workbook tables)','High / low selectors','Analog inputs (AI, transmitter range)','Analog outputs (AO, 0 ~ 100 %)','Manual stations (MAN)','Totalizers (SUMA)','Controllers (PID)'];
   return {groups:order.filter(g=>G[g]).map(g=>({g,items:G[g]}))}}
  return {sheetSpec}})();
