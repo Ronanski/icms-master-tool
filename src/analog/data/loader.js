@@ -2,7 +2,6 @@
 /* descriptions: station -> address -> record (IO list rows: tag, description, range, unit, type, SIG.AB address; memory lists: description, remark, timer type / seconds) */
 let ADES=null;
 async function adesLoad(){if(ADES)return ADES;const e=document.getElementById('ades');if(!e||!e.textContent.trim()){ADES={};return ADES}try{const bin=Uint8Array.from(atob(e.textContent.trim()),c=>c.charCodeAt(0));ADES=JSON.parse(await gunz(bin))}catch(x){ADES={}}return ADES}
-function shStn(sh){if(sh.stn===undefined&&sh.S)sh.stn=stnOf(sh.S);return sh.stn}
 function adesFind(sh,text){if(!ADES||!text)return null;const t=String(text).trim();let m=/^(?:S(\d)\s*)?([A-Z]{1,2})\.([0-9A-F]{3,4})$/i.exec(t),pre,num,dot='.';
  if(m){pre=m[2].toUpperCase();num=m[3].toUpperCase().padStart(4,'0')}else{m=/^(?:S(\d)\s*)?(TR|SI|SO|AI|AO|DI|DO|FP|PTN)(\d{1,6})$/i.exec(t);if(!m)return null;pre=m[2].toUpperCase();dot='';num=pre==='PTN'?m[3].padStart(6,'0'):m[3].padStart(4,'0')}
  const stn=m[1]?+m[1]:(sh?shStn(sh):null),T=ADES[String(stn)],key=pre+dot+num,r=T&&T[key];return r?{rec:r,stn,key}:null}
@@ -61,22 +60,9 @@ async function impDrop(name){const list=((await KV.get('imp:list'))||[]).filter(
  if(AN.sv&&AN.sv[name]){delete AN.sv[name];try{anSave()}catch(x){}}AN.tagIdx=null;AN.sheets.forEach(s=>{delete s.lk;if(s.S)s.S.xlk=null});AN.key=null;AN.lkey=null;render()}
 const cs=()=>AN.sheets[AN.i];
 /* built-in LN tables (from DCS LINEAR CURVE.xls) */
-function lnTables(){if(window.ANLT)return window.ANLT;let a=[];try{const e=document.getElementById('aln');if(e)a=JSON.parse(e.textContent)}catch(x){}
- a.forEach(t=>{const o=[];(t.pts||[]).forEach(p=>{const q=o[o.length-1];if(!q||q[0]!==p[0]||q[1]!==p[1])o.push([p[0],p[1]])});o.sort((p,q)=>p[0]-q[0]);t.p2=o});window.ANLT=a;lnApplyEdits();return a}
 /* the edited tables (LX % / LY % of the ranges) replace the points of the table; the original points stay in o0 */
-function lnApplyEdits(){for(const t of lnTables()){if(!t.o0)t.o0=(t.pts||[]).map(p=>[p[0],p[1]]);const e=AN.lne&&AN.lne[t.key];let pts=t.o0;if(e&&e.lx&&e.ly&&e.lx.length===t.o0.length&&t.xr&&t.yr)pts=e.lx.map((lx,i)=>[t.xr[0]+lx*(t.xr[1]-t.xr[0])/100,t.yr[0]+e.ly[i]*(t.yr[1]-t.yr[0])/100]);
-  t.pts=pts;const o=[];pts.forEach(p=>{const q=o[o.length-1];if(!q||q[0]!==p[0]||q[1]!==p[1])o.push([p[0],p[1]])});o.sort((p,q)=>p[0]-q[0]);t.p2=o;t.edited=!!e}}
 /* station of a sheet = prefix of its own MDL tags (S1-MDL028); without any: the only station that has all the LN numbers of its FX blocks */
-function stnOf(S){const c={};for(const t of S.tx){const m=/^S(\d)-(?:MDL|LN)/i.exec(t.t.trim());if(m)c[m[1]]=(c[m[1]]||0)+1}const e=Object.entries(c).sort((a,b)=>b[1]-a[1]);if(e.length)return+e[0][0];
- const L=[...new Set(S.blk.filter(b=>b.k==='FX'&&b.p.ln).map(b=>+(/LN(\d+)/i.exec(b.p.ln)||[])[1]).filter(Boolean))];if(!L.length)return null;const tb=lnTables(),cand=[1,2,3,4,5].filter(s=>L.every(n=>tb.some(t=>t.stn===s&&t.ln===n)));return cand.length===1?cand[0]:null}
-function lnResolve(name,ln,stn){const m=/LN(\d+)/i.exec(ln||'');if(!m)return{};const n=+m[1],all=lnTables().filter(t=>t.ln===n);if(!all.length)return{warn:'no table LN'+n+' in the LINEAR data: the block passes the value (y = x)'};
- if(stn!=null){const ex=all.find(t=>t.stn===stn);if(ex)return{t:ex};if(all.length===1)return{t:all[0],warn:'station S'+stn+' has no LN'+n+': using '+all[0].key+' (the only one that exists). Check the drawing.'};return{warn:'station S'+stn+' has no LN'+n+' (exists in '+all.map(t=>'S'+t.stn).join(', ')+'): no table, y = x'}}
- const t=lnFind(name,ln);return t?{t,warn:'station of this sheet unknown: table chosen by drawing name ('+t.key+')'}:{warn:'station unknown and table LN'+n+' ambiguous'}}
-function lnFind(name,ln){const m=/LN(\d+)/i.exec(ln||'');if(!m)return null;const n=+m[1],c=lnTables().filter(t=>t.ln===n);if(!c.length)return null;const fo=x=>{const q=/^ABC-(\d+)/.exec(x||'');return q?+q[1]:null};
- return c.find(t=>t.dwg===name)||c.find(t=>fo(t.dwg)!=null&&fo(t.dwg)===fo(name))||(c.length===1?c[0]:null)}
-function ensure(sh){if(sh.S)return sh.S;const S=anWire(anModel(anNets(anBuild(sh.R,sh.name))));anAoIp(S);anCompile(S);anInit(S);S.procs=anProcList(S);if(AN.procDefault===true||(AN.procDefault===undefined&&AN.plantOn===true))for(const b of S.procs)b.proc.on=true;sh.S=S;sh.cnt={};S.blk.forEach(b=>{sh.cnt[b.k]=(sh.cnt[b.k]||0)+1;if(b.k==='FX'&&b.p.ln){if(sh.stn===undefined)sh.stn=stnOf(S);const r=lnResolve(sh.name,b.p.ln,sh.stn);if(r.t){Object.defineProperty(b.p,'tbl',{value:r.t,writable:true,enumerable:false,configurable:true});const q=anFXIn(S,b);b.fxin=q&&q.k!=='?'&&q.k!=='id'?q:null;b.fxrev=!!(q&&q.k==='?')}if(r.warn)Object.defineProperty(b.p,'lnWarn',{value:r.warn,writable:true,enumerable:false,configurable:true})}b.p0=JSON.stringify(b.p)});anRngRe(S);applySaved(sh);anPull(sh);anSettle(S,6);return S}
 /* inputs that come from another sheet take the value of that sheet BEFORE the first settle: otherwise a pulse timer sees a false rising edge at start-up (ABC-013 TPS#29: the link from ABC-001C arrived after the first step) */
-function anPull(sh){try{const S=sh.S;if(!S)return;for(const l of linksOf(sh)){if(l.to!==sh)continue;const FS=l.from.S||ensure(l.from);if(!FS)continue;const val=l.flagSrc!=null?(FS.rt.st[l.flagSrc]&&FS.rt.st[l.flagSrc].val>.5?1:0):FS.rt.v[l.fromNets.find(n=>FS.drv[n].length)??l.fromNets[0]];for(const n of l.toNets)if(S.ext.includes(n)){S.rt.ext[n]=val;S.xlk=S.xlk||{};S.xlk[n]=l}}}catch(e){}}
 const AN_PV=17;/* BUMP THIS whenever the drawing reader changes (net / block numbers move) *//* saved values use net / block numbers: they are dropped when the drawing reader changes */
 const sv=sh=>{const o=AN.sv[sh.name];if(o&&o.pv===AN_PV)return o;return AN.sv[sh.name]={pv:AN_PV}};
 function applySaved(sh){const S=sh.S,v=AN.sv[sh.name];if(!v)return;if(v.pv!==AN_PV){delete AN.sv[sh.name];anSave();return}
@@ -88,8 +74,8 @@ function applySaved(sh){const S=sh.S,v=AN.sv[sh.name];if(!v)return;if(v.pv!==AN_
  for(const id in v.proc||{}){const b=S.blk.find(q=>String(q.id)===String(id));if(b&&b.proc){const q=v.proc[id];if(q.ver===2)Object.assign(b.proc,q);else{b.proc.on=q.on;b.proc.dist=q.dist||0}if(!(AN.procDefault===true||(AN.procDefault===undefined&&AN.plantOn===true)))b.proc.on=false}}
  for(const id in v.sw||{}){const s=S.rt.st[id];if(s&&v.sw[id])s.fm=v.sw[id]}
  S.look=Object.assign({},v.look||{})}
+AN.applySaved=applySaved;/* ensure() (engine) asks the page for the saved values of a sheet through this hook */
 function reset(){/* RESET = everything back to the drawing: all sheets, all forced signals, switches, sliders, timers, tuning */
  {const keep={};for(const k in AN.sv){const q=AN.sv[k];if(q&&q.p&&Object.keys(q.p).length)keep[k]={pv:q.pv,p:q.p}}AN.sv=keep;anSave()}
- for(const sh of AN.sheets){if(!sh.S)continue;const S=sh.S;S.look={};anInit(S);const v=AN.sv[sh.name];if(v&&v.p)for(const id in v.p){const b=S.blk[id];if(b)Object.assign(b.p,v.p[id])}sh._hs=[]}
- {const seen=new Set(),fr=sh=>{if(!sh.S||seen.has(sh))return;seen.add(sh);try{for(const l of linksOf(sh))if(l.to===sh)fr(l.from)}catch(e){}anPull(sh);anSettle(sh.S,6)};for(const sh of AN.sheets)fr(sh)}/* all sheets are re-initialised first, then settled: the same start as a fresh load, whatever the sheet order (cross-sheet back-up values) */
+ anResetAll();/* the model part of the reset is in the engine (engine/sheets.js) */
  const sh=cs();if(!sh||!sh.S)return;for(let i=0;i<6;i++)stepSet(sh,0);AN.sel=null;selBox();buildPanel();paint();panelUpd(true);msg('Reset done: values, forced signals, switches and timers are back to the start. Block settings (rate, stroke time, tuning, limits) are kept: use "Reset this block to default" in the block panel.')}
