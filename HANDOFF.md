@@ -3,7 +3,7 @@
 > Single current handoff. Replace outdated status when work changes; do not append a chat transcript.
 
 ## Project
-DCS Logic Simulator in `Ronanski/icms-master-tool`. Current Stable **v1.20.26** (Beta: v1.20.29 on branch `operator-hmi` = v1.20.27 AUTO-TEST TINGNAN + v1.20.28 toolbar / tablet layout + operator faceplate, waiting for GO STABLE) (GO STABLE, 2026-10-13; in-app UAT with AUTO-TEST and 670 scenarios, update check with the user's choice): `logic-sim-v1.20.26.html` in the root (title and header badge say v1.20.26). `document-references/logic-sim-v1.20.21.html` is the unedited reference build. Work only in this repository (PROJECT_RULES 5b).
+DCS Logic Simulator in `Ronanski/icms-master-tool`. Current Stable **v1.20.32** (before it, Beta v1.20.29 on branch `operator-hmi` = v1.20.27 AUTO-TEST TINGNAN + v1.20.28 toolbar / tablet layout + operator faceplate, waiting for GO STABLE) (GO STABLE, 2026-10-13; in-app UAT with AUTO-TEST and 670 scenarios, update check with the user's choice): `logic-sim-v1.20.26.html` in the root (title and header badge say v1.20.26). `document-references/logic-sim-v1.20.21.html` is the unedited reference build. Work only in this repository (PROJECT_RULES 5b).
 
 ## Where things are
 - Rules: `PROJECT_RULES.md`. ABC audit method, coverage and findings index: `docs/abc-audit/ABC-AUDIT.md`. Evidence: `docs/versions/v1.20.21/` (F-1 ~ F-31, batches 1 ~ 31) `docs/versions/v1.20.23/` (F-32 ~ F-35) and `docs/versions/v1.20.24/` (Channel box) and `docs/versions/v1.20.25/` (in-app UAT, update check) and `docs/versions/v1.20.26/` (pin fix, commissioning checks, update report, release report PDF).
@@ -13,7 +13,7 @@ DCS Logic Simulator in `Ronanski/icms-master-tool`. Current Stable **v1.20.26** 
 
 ## State
 - All 54 ABC sheets run in RUN mode; switches, timers, LAG, ALM, PID (dMVH, TF, CUT, GAP), F(X), parameters and AI ranges are checked against the drawings and workbooks. Units are real values (PROJECT_RULES 4a).
-- Release v1.20.26 assets: html, `Logic-Sim-v1.20.26.apk`, `Logic-Sim-v1.20.26-portable.exe` (Stable only), `Release-Report-v1.20.26.pdf` (no UAT file: the UAT is inside the app, green UAT button). The apps load the Pages site; `sw.js` keeps the installed page and the app ASKS before updating (I-update ngayon / Huwag muna, button ⟳ Update?), for the PWA, the apk and the exe. Inside the app a Channel box (top right) switches Stable / Beta and remembers the choice; Beta is never a release, it is the html of a pushed branch at `/beta/`.
+- Release v1.20.32 assets: html, `Logic-Sim-v1.20.32.apk`, `Logic-Sim-v1.20.32-portable.exe` (Stable only), `Release-Report-v1.20.32.pdf` (no UAT file: the UAT is inside the app, green UAT button). The apps load the Pages site; `sw.js` keeps the installed page and the app ASKS before updating (I-update ngayon / Huwag muna, button ⟳ Update?), for the PWA, the apk and the exe. Inside the app a Channel box (top right) switches Stable / Beta and remembers the choice; Beta is never a release, it is the html of a pushed branch at `/beta/`.
 - Inputs next to a "( FROM ABC-xxx )" text without a partner net are operator / mode / DITL inputs by design (FINDINGS v1.20.23).
 - Assumptions without a formula in the references: dMVH per 1 s, TF first-order filter, CUT low cut, GAP dead zone.
 
@@ -40,5 +40,5 @@ Second tab of the right pane (Detalye | Operator), `tools/hmi/` (hmi.css, hmi.js
 4. Left to the user's device test: apk / exe start, the update question (I-update ngayon / Huwag muna), the line colours (dilaw napili / abo hindi).
 
 
-## Beta v1.20.31 (branch `uat-blocks`)
-Block-by-block UAT in the app (see docs/versions/v1.20.31/UPDATE_REPORT.md). 11 of 1767 blocks mismatch the block definition (tools/uat/known.json): real findings, Needs Verification (8 PID, 2 switches, 1 MAN). No release/merge done.
+## Stable v1.20.32
+Block-by-block UAT in the app (docs/versions/v1.20.32/UPDATE_REPORT.md, tools/uat/). Engine change F-36 (PID anti-windup uses the PI part). Dry run 1767 blocks, 0 mismatch. Not checked on the real apk/exe/tablet. Beta branches auto-chk, ui-shell, operator-hmi, uat-blocks are merged into main.

@@ -12,6 +12,7 @@ window.UATR=(function(){
    if(i===c.steps.length-1){for(const r of c.rows)if(r.k!=null)start[r.k]=S.rt.v[r.k]}
    apply(S,st);const dt=st.secs>0?.25:0,n=st.secs>0?Math.round(st.secs*4):3;for(let k=0;k<n;k++)AN.stepSet(sh,dt)}
   if(c.skipTrk!=null&&S.rt.st[c.skipTrk]&&S.rt.st[c.skipTrk].trk!=null)return {ok:true,skip:'tracking is active (the downstream selector is on another leg or interlock BU-CMD): the output follows that value, so it is not tested here',rows:[]};
+  if(c.skipBu!=null&&S.rt.st[c.skipBu]&&S.rt.st[c.skipBu].bu!=null)return {ok:true,skip:'interlock back-up value (BU-CMD) is active on this selector: it forces its own value, not tested here',rows:[]};
   const out=[];let ok=true;
   for(const r of c.rows){let a=r.st?(S.rt.st[r.st.id]||{})[r.st.f]:S.rt.v[r.k],good,exp;
    if(r.cmp==='inc'){const s0=start[r.k];good=isFinite(a)&&(a>s0+r.d||(r.lim&&s0>=r.lim[1]-0.5));exp='rises (from '+fmt(s0)+')'}

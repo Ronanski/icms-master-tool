@@ -10,7 +10,7 @@ window.UATG=(function(){
  const st1=(force,secs,extra)=>Object.assign({force,secs:secs||0},extra||{});
  function interp(pts,x){for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1];if(x>=a[0]&&x<=b[0]&&b[0]>a[0])return a[1]+(b[1]-a[1])*(x-a[0])/(b[0]-a[0])}return null}
  /* the switch applies the gain / scaling that is drawn on the leg (bg, ag, ia): the expected value includes it */
- const leg=(b,pickB,x)=>{const n=pickB?b.b:b.a;let y=x;if(pickB&&b.bg!=null)y*=b.bg;if(!pickB&&b.ag!=null)y*=b.ag;if(b.ia&&b.ia[n])y=y*b.ia[n][0]+b.ia[n][1];return y};
+ const leg=(b,pickB,x)=>{const n=pickB?b.b:b.a;let y=x;if(pickB&&b.bg!=null)y*=b.bg;if(!pickB&&b.ag!=null)y*=b.ag;if(b.ia&&b.ia[n])y=y*b.ia[n][0]+b.ia[n][1];if(b.og!=null)y*=b.og;return y};
  const gtxt=(b,pickB)=>{const n=pickB?b.b:b.a;return (pickB?b.bg:b.ag)!=null||(b.ia&&b.ia[n])?' (with the gain drawn on that leg)':''};
  function sheetSpec(sh){const S=AN.ensure(sh);const G={};const add=(g,it)=>{(G[g]=G[g]||[]).push(it)};
   const item=(b,kind,cases,extra)=>Object.assign({id:b.id,n:kind+' #'+b.id+(near(S,b)?'  ('+near(S,b)+')':''),blk:b.id,cx:b.cx,cy:b.cy,cases},extra||{});
@@ -60,22 +60,22 @@ window.UATG=(function(){
    if(b.k==='AI'&&!b.fb&&b.rng&&b.rng.hi>b.rng.lo&&o!=null&&free(S,o)){
     const lo=b.rng.lo,hi=b.rng.hi,pts=[lo,(lo+hi)/2,hi];add('Analog inputs (AI, transmitter range)',item(b,'AI '+(label(S,o)||''),pts.map(x=>({l:'signal '+fmt(x)+(b.rng.u?' '+b.rng.u:'')+' -> value on the drawing',steps:[st1({},2,{ext:{[o]:x},st:{[b.id]:{val:x,act:x,bad:0}}})],rows:[R(o,'value',x,Math.max(.05,Math.abs(hi-lo)*.005))]}))))}
    // manual stations
-   if(b.k==='MAN'&&b.p&&o!=null&&free(S,o)){const lo=b.p.lo!=null?b.p.lo:0,hi0=b.p.hi!=null?b.p.hi:100,hi=S.aoN&&S.aoN.has(o)?Math.min(hi0,100):hi0;let svI=-1;for(let j=0;j<(b.i||[]).length;j++){const dr=(S.drv[b.i[j]]||[]).find(x=>x.k==='AMT'&&x.sel>=0&&/B\s*\/\s*T/.test((x.txt||[]).join('/')));if(dr){svI=j;break}}if(svI<0&&b.i&&b.i[2]!=null&&b.i[2]>=0)svI=2;const fmD=svI>=0?(S.drv[b.i[svI]]||[]).find(x=>x.k==='AMT'):null;const fmx=fmD?{[fmD.id]:'B'}:{};
-    add('Manual stations (MAN)',item(b,'Manual station '+((b.txt||[])[0]||''),[[lo+(hi-lo)*.3,lo+(hi-lo)*.3,'30 % of the range'],[hi+(hi-lo)*.2,hi,'above the high limit (clamped)']].map(([x,e,l])=>({l:'set '+fmt(x)+' ('+l+') -> output '+fmt(e),steps:[st1({},2,{fm:fmx,st:{[b.id]:{val:x}}})],skipTrk:b.id,rows:[R(o,'output',e,Math.max(.05,(hi-lo)*.005))]}))))}
+   if(b.k==='MAN'&&b.p&&o!=null&&free(S,o)){const lo=b.p.lo!=null?b.p.lo:0,hi0=b.p.hi!=null?b.p.hi:100,hi=S.aoN&&S.aoN.has(o)?Math.min(hi0,100):hi0;let svI=-1;for(let j=0;j<(b.i||[]).length;j++){const dr=(S.drv[b.i[j]]||[]).find(x=>x.k==='AMT'&&x.sel>=0&&/B\s*\/\s*T/.test((x.txt||[]).join('/')));if(dr){svI=j;break}}if(svI<0&&b.i&&b.i[2]!=null&&b.i[2]>=0)svI=2;const fmD=svI>=0?(S.drv[b.i[svI]]||[]).find(x=>x.k==='AMT'):null;const fmx=fmD?{[fmD.id]:'B'}:{};const dn=S.blk.find(z=>(z.k==='AMT'||z.k==='SW')&&(b.o.includes(z.a)||b.o.includes(z.b))&&z.o[0]!=null);if(dn&&!(fmD&&fmD.id===dn.id))fmx[dn.id]=b.o.includes(dn.a)?'A':'B';
+    add('Manual stations (MAN)',item(b,'Manual station '+((b.txt||[])[0]||''),[[lo+(hi-lo)*.3,lo+(hi-lo)*.3,'30 % of the range'],[hi+(hi-lo)*.2,hi,'above the high limit (clamped)']].map(([x,e,l])=>({l:'set '+fmt(x)+' ('+l+') -> output '+fmt(e),steps:[st1({},0,{fm:fmx}),st1({},2,{st:{[b.id]:{val:x}}})],skipTrk:b.id,rows:[R(o,'output',e,Math.max(.05,(hi-lo)*.005))]}))))}
    // totalizer
    if(b.k==='SUMA'&&b.i[0]!=null&&o!=null&&free(S,o)){add('Totalizers (SUMA)',item(b,'Totalizer',[{l:'input 36 for 100 s -> total 1.0 (36 per hour x 100 s)',steps:[st1({[b.i[0]]:36},100)],rows:[R(o,'total',1.0,0.03)]}]))}
    // controllers
    if((b.k==='PID')&&b.p&&o!=null){const tag=(b.txt||[])[1];if(!tag||/^X+-/.test(tag))continue;let q=null;try{q=AN.anPins(S,b)}catch(e){}if(!q||q.pv==null||q.pv<0||q.sv==null)continue;
     const P=b.p,rlo=P.rlo!=null?P.rlo:0,rhi=P.rhi!=null?P.rhi:100,span=rhi-rlo,mid=rlo+.5*span,hi=P.hi!=null?P.hi:100,lo=P.lo!=null?P.lo:0,rev=P.act<0;
     const amt0=S.blk.find(z=>(z.k==='AMT'||z.k==='SW')&&z.a!=null&&z.b!=null&&(b.o.includes(z.a)||b.o.includes(z.b))&&z.o[0]!=null),fmA=amt0?{fm:{[amt0.id]:b.o.includes(amt0.a)?'A':'B'}}:{};
-    const lim=[lo,hi],d=Math.max(.5,(hi-lo)*.01),cs=[];
-    cs.push({l:'PV 20 % above the set point -> output '+(rev?'falls (reverse action)':'rises (direct action)'),steps:[st1({[q.pv]:mid,[q.sv]:mid},10,fmA),st1({[q.pv]:mid+.2*span,[q.sv]:mid},20,fmA)],skipTrk:b.id,rows:[{k:o,t:'controller output',cmp:rev?'dec':'inc',d,lim}]});
-    cs.push({l:'PV 20 % below the set point -> output '+(rev?'rises (reverse action)':'falls (direct action)'),steps:[st1({[q.pv]:mid,[q.sv]:mid},10,fmA),st1({[q.pv]:mid-.2*span,[q.sv]:mid},20,fmA)],skipTrk:b.id,rows:[{k:o,t:'controller output',cmp:rev?'inc':'dec',d,lim}]});
-    cs.push({l:'output is always inside its limits ('+fmt(lo)+' ~ '+fmt(hi)+')',steps:[st1({[q.pv]:rlo,[q.sv]:rhi},30,fmA)],skipTrk:b.id,rows:[{k:o,t:'controller output (PV at the bottom, set point at the top)',v:(lo+hi)/2,tol:(hi-lo)/2+0.01}]});
+    const lim=[lo,hi],d=b.vel?1e-4:Math.max(.01,(hi-lo)*.002),cs=[],tf=P.tf>0?P.tf:0,t1=Math.max(10,Math.ceil(6*tf)),t2=Math.max(20,Math.ceil(3*tf)),velN=b.vel?' (velocity form: the output is the change per step, only its sign is checked)':'';
+    cs.push({l:'PV 20 % above the set point -> output '+(rev?'falls (reverse action)':'rises (direct action)')+velN,steps:[st1({[q.pv]:mid,[q.sv]:mid},t1,fmA),st1({[q.pv]:mid+.2*span,[q.sv]:mid},t2,fmA)],skipTrk:b.id,rows:[{k:o,t:'controller output',cmp:rev?'dec':'inc',d,lim}]});
+    cs.push({l:'PV 20 % below the set point -> output '+(rev?'rises (reverse action)':'falls (direct action)')+velN,steps:[st1({[q.pv]:mid,[q.sv]:mid},t1,fmA),st1({[q.pv]:mid-.2*span,[q.sv]:mid},t2,fmA)],skipTrk:b.id,rows:[{k:o,t:'controller output',cmp:rev?'inc':'dec',d,lim}]});
+    if(!b.vel)cs.push({l:'output is always inside its limits ('+fmt(lo)+' ~ '+fmt(hi)+')',steps:[st1({[q.pv]:rlo,[q.sv]:rhi},30,fmA)],skipTrk:b.id,rows:[{k:o,t:'controller output (PV at the bottom, set point at the top)',v:(lo+hi)/2,tol:(hi-lo)/2+0.01}]});
     const amt=S.blk.find(z=>(z.k==='AMT'||z.k==='SW')&&z.a!=null&&z.b!=null&&(b.o.includes(z.a)||b.o.includes(z.b))&&z.o[0]!=null);
     if(amt){const autoLeg=b.o.includes(amt.a)?'A':'B',manLeg=autoLeg==='A'?'B':'A',manNet=autoLeg==='A'?amt.b:amt.a;
      cs.push({l:'AUTO: the loop output goes through the A/M switch unchanged',steps:[st1({[q.pv]:mid,[q.sv]:mid},5,{fm:{[amt.id]:autoLeg}})],rows:[{k:amt.o[0],t:'output of the A/M switch',eqk:o,tol:0.1}]});
-     if(S.ext.includes(manNet))cs.push({l:'MAN: manual value 37 -> output 37',steps:[st1({},4,{fm:{[amt.id]:manLeg},ext:{[manNet]:37}})],rows:[R(amt.o[0],'output of the A/M switch',37,0.1)]})}
+     if(S.ext.includes(manNet))cs.push({l:'MAN: manual value 37 -> output 37',steps:[st1({},4,{fm:{[amt.id]:manLeg},ext:{[manNet]:37}})],skipBu:amt.id,rows:[R(amt.o[0],'output of the A/M switch',37,0.1)]})}
     add('Controllers (PID)',item(b,'PID '+tag+(P.act<0?' (reverse)':' (direct)'),cs))}
   }
   const order=['Switches (T and A/M)','Operator selectors (COS)','Logic gates (AND / OR / NOT)','Comparators','Timers (TON / TOF / pulse)','Lag (first order)','Curves F(X) (workbook tables)','High / low selectors','Analog inputs (AI, transmitter range)','Analog outputs (AO, 0 ~ 100 %)','Manual stations (MAN)','Totalizers (SUMA)','Controllers (PID)'];
