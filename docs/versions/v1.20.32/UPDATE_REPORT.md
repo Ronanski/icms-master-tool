@@ -7,7 +7,7 @@ Changed
 
 Checked
 - UAT dry run on all ABC sheets: 1767 blocks, 4924 cases, 0 mismatch after the fix (before: 84, then 11; the first 73 were test errors: leg gains/og, hold structures; the 11 real ones were 8 PID, 2 switch gain, 1 MAN; the PID ones were velocity-form controllers, long TF filters, derivative-kick windup (F-36), a rate limit; test setups corrected, F-36 fixed in the engine).
-- tools/regress/tests.js: all PASS (T1-T5, S1-S6). Loop closure of 62 PID: 5 loops (all PID with TD at saturation, e.g. ABC-013 PICMS1002, ABC-050 PICMS1006, ABC-052 PICHR1003, ABC-053 TICLO1002, ABC-001C PIC-COBM) differ slightly, same direction of progress.
+- tests/regress/tests.js: all PASS (T1-T5, S1-S6). Loop closure of 62 PID: 5 loops (all PID with TD at saturation, e.g. ABC-013 PICMS1002, ABC-050 PICMS1006, ABC-052 PICHR1003, ABC-053 TICLO1002, ABC-001C PIC-COBM) differ slightly, same direction of progress.
 - UAT panel opened and run on ABC-003E in headless Chromium: 50 / 50 pass, no page errors.
 
 Not checked

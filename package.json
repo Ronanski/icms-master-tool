@@ -1,0 +1,16 @@
+{
+  "name": "logic-sim",
+  "version": "1.20.35",
+  "private": true,
+  "description": "DCS Logic Simulator (ABC analog + DITL digital). The sources are in src/; the build writes ONE html file.",
+  "scripts": {
+    "dev": "vite",
+    "build": "node tools/build/build.js",
+    "check": "node tools/build/build.js --check",
+    "test": "node tests/regress/tests.js",
+    "uat": "node src/ui/uat/dry.js"
+  },
+  "devDependencies": {
+    "vite": "^7.0.0"
+  }
+}
