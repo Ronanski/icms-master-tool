@@ -104,7 +104,7 @@ function anStep(S,dt){const rt=S.rt,v=rt.v,nets=S.nets,B=x=>x>.5?1:0;rt.t+=dt;rt
      if(bu!=null&&b.b>=0&&S.ext&&S.ext.includes(b.b)&&/B\s*\/\s*T/.test((b.txt||[]).join('/'))&&s.bw!==bu){s.bw=bu;rt.ext[b.b]=b.bg!=null?bu/b.bg:bu}
      out(b.og!=null?y*b.og:y);break}
    case 'ADD':case 'SUM':case 'DEV':case 'SUB':{let y=0;for(const q of b.ip){let x=rd(q.n);if(q.ia)x=x*q.ia[0]+q.ia[1];y+=q.sg*x}out(y);break}
-   case 'MUL':{let y=1;b.i.forEach((n,j)=>{y*=rd(n)/((b.nrm&&b.nrm[j])||1)});if(b.gain!=null)y*=b.gain;out(b.i.length?y:0);break}
+   case 'MUL':{let y=1;b.i.forEach((n,j)=>{y*=rd(n)/(((b.nrm&&b.nrm[j])||1)*((b.scn&&b.scn[j])||1))});if(b.gain!=null)y*=b.gain;out(b.i.length?y:0);break}
    case 'DIV':{const d=rd(b.de);if(Math.abs(d)<1e-9){s.bad=1;out(s.good!=null?s.good:0)}else{s.bad=0;s.good=rd(b.nu)/d;if(b.oa)s.good=s.good*b.oa[0]+b.oa[1];out(s.good)}break}
    case 'HLLIM':{let x=rd(b.main);if(b.lo>=0)x=Math.max(x,rd(b.lo));if(b.hi>=0)x=Math.min(x,rd(b.hi));out(x);break}
    case 'ABS':out(Math.abs(rd(b.i[0])));break;
