@@ -99,6 +99,7 @@ function anStep(S,dt){const rt=S.rt,v=rt.v,nets=S.nets,B=x=>x>.5?1:0;rt.t+=dt;rt
      /* interlock tracking (legend: "INTERLOCK TRACKING FOR PID CONTROLLER & MANUAL CONTROL STATION"): a back-up value selected by a downstream selector is also tracked by the upstream A/M selector, its PID and its COS manual value */
      const bu=s.bu;
      if(b.trkFrom)for(const d of b.trkFrom){const ds=rt.st[d.id];if(ds)ds.trk=bu!=null?bu:(pickB?y:(s.tv!=null?s.tv:null))}
+     if(b.trkSum)for(const tt of b.trkSum){const ds=rt.st[tt.pid.id];if(ds){const tg=bu!=null?bu:(pickB?y:(s.tv!=null?s.tv:null));if(tg==null)ds.trk=null;else{let oth=0;for(const q of tt.others)oth+=q.sg*rd(q.n);ds.trk=(tg-oth)/tt.sg}}}
      if(b.upA)for(const u of b.upA){const us=rt.st[u.id];if(us){us.bu=bu!=null?bu:((pickB&&b.buCmd)?y:null);/* bumpless through a chain of selectors: when a selector further down is on its manual / other leg, the selectors before it and the PID follow its output */us.tv=pickB?y:(s.tv!=null?s.tv:null)}}
      if(bu!=null&&b.b>=0&&S.ext&&S.ext.includes(b.b)&&/B\s*\/\s*T/.test((b.txt||[]).join('/'))&&s.bw!==bu){s.bw=bu;rt.ext[b.b]=b.bg!=null?bu/b.bg:bu}
      out(b.og!=null?y*b.og:y);break}
