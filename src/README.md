@@ -1,6 +1,6 @@
 # src/ - sources of the DCS Logic Simulator
 
-The simulator is built from these files into ONE html file (`logic-sim-vX.Y.Z.html` in the repository root). The html is what the Beta / Stable pages, the apk and the exe use, so it works without internet.
+The simulator is built from these files into ONE html file (`logic-sim-vX.Y.Z.html` in `dist/`). The html is what the Beta / Stable pages, the apk and the exe use, so it works without internet.
 
 **Edit the files here, then run `npm run build`.** Do not edit the html by hand (the Checks run on GitHub fails when the committed html is not exactly what `src/` builds: `npm run check`).
 

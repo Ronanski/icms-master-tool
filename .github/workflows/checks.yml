@@ -12,7 +12,7 @@ jobs:
       - name: One html, version in file name and title
         run: |
           V=$(node tools/version.js)
-          F=logic-sim-v$V.html
+          F=dist/logic-sim-v$V.html
           grep -q "<title>Logic Sim v$V</title>" "$F" || { echo "title does not say v$V"; exit 1; }
           grep -q "c3.textContent='v$V'" "$F" || { echo "version label does not say v$V"; exit 1; }
       - name: The sources build exactly the committed html (src/ is the truth)
@@ -20,7 +20,7 @@ jobs:
       - name: Scripts of the html parse
         run: |
           node -e "
-          const s=require('fs').readFileSync(require('fs').readdirSync('.').find(x=>/^logic-sim-v.*\.html$/.test(x)),'utf8');
+          const s=require('fs').readFileSync('dist/'+require('fs').readdirSync('dist').find(x=>/^logic-sim-v.*\.html$/.test(x)),'utf8');
           const m=[...s.matchAll(/<script>([\s\S]*?)<\/script>/g)];let bad=0;
           for(const x of m){try{new Function(x[1])}catch(e){bad++;console.log(e.message)}}
           if(bad||!m.length)process.exit(1);console.log('scripts ok',m.length)"

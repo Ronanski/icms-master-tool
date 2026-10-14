@@ -2,7 +2,7 @@ name: Release apk + exe
 # Manual. Assets: html, apk, portable exe (one each: Stable; the app has a Stable / Beta switch inside), release report pdf. No UAT file in the release (the UAT is inside the app). Beta is never a release: it is the html of a pushed branch on the Beta page. input go must be exactly "GO v<version>" (the version in the html file name). Builds the Stable and Beta shells
 # (apk + portable exe). The apk and the exe have the simulator built in (offline); the page asks the site for a newer version and the user chooses.
 # The app content is released by merging to main (Stable) or pushing a branch (Beta).
-# apk signing: signing/logic-sim.jks (self-signed, alias logicsim, made once). Never regenerate it: a new key means a reinstall.
+# apk signing: delivery/signing/logic-sim.jks (self-signed, alias logicsim, made once). Never regenerate it: a new key means a reinstall.
 on:
   workflow_dispatch:
     inputs:
@@ -38,19 +38,19 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
       - name: Capacitor project
-        working-directory: android-app
+        working-directory: delivery/android
         run: |
           cat > capacitor.config.json <<EOF
           {"appId":"${{ matrix.id }}","appName":"${{ matrix.name }}","webDir":"www","server":{"androidScheme":"https"}}
           EOF
           # the simulator is built into the apk (opens at once, works without internet); the page asks the site for updates
-          cp "../logic-sim-v${{ needs.gate.outputs.version }}.html" www/index.html
+          cp "../../dist/logic-sim-v${{ needs.gate.outputs.version }}.html" www/index.html
           npm install --no-audit --no-fund
           npx cap add android
           npx cap sync android
           sed -i "s/versionName \".*\"/versionName \"${{ needs.gate.outputs.version }}\"/" android/app/build.gradle
       - name: Build + sign
-        working-directory: android-app/android
+        working-directory: delivery/android/android
         run: |
           ./gradlew assembleRelease --no-daemon
           BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
@@ -58,7 +58,7 @@ jobs:
           $BT/apksigner sign --ks ../../signing/logic-sim.jks --ks-pass env:KS_PASS --key-pass env:KS_PASS --ks-key-alias logicsim --out "../../logic-sim-${{ matrix.chan }}.apk" aligned.apk
           $BT/apksigner verify "../../logic-sim-${{ matrix.chan }}.apk"
       - uses: actions/upload-artifact@v4
-        with: { name: 'apk-${{ matrix.chan }}', path: 'logic-sim-${{ matrix.chan }}.apk' }
+        with: { name: 'apk-${{ matrix.chan }}', path: 'delivery/logic-sim-${{ matrix.chan }}.apk' }
   exe:
     needs: gate
     runs-on: windows-latest
@@ -71,16 +71,16 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - name: Build portable exe
-        working-directory: app
+        working-directory: delivery/desktop
         shell: bash
         run: |
           echo '{"name":"${{ matrix.name }}","url":"${{ matrix.url }}"}' > config.json
-          mkdir -p www && cp "../logic-sim-v${{ needs.gate.outputs.version }}.html" www/index.html
+          mkdir -p www && cp "../../dist/logic-sim-v${{ needs.gate.outputs.version }}.html" www/index.html
           npm install --no-audit --no-fund
           npx electron-builder --win portable -c.productName="${{ matrix.name }}" -c.extraMetadata.version=${{ needs.gate.outputs.version }}
           ls dist
       - uses: actions/upload-artifact@v4
-        with: { name: 'exe-${{ matrix.chan }}', path: 'app/dist/*-portable.exe' }
+        with: { name: 'exe-${{ matrix.chan }}', path: 'delivery/desktop/dist/*-portable.exe' }
   publish:
     needs: [gate, apk, exe]
     if: inputs.dry_run == 'false'
@@ -102,7 +102,7 @@ jobs:
             for n in $(gh release view "$r" --json assets -q '.assets[].name' | grep -i beta || true); do gh release delete-asset "$r" "$n" -y || true; done
           done
           for r in $(gh release list --json tagName,isPrerelease -q '.[] | select(.isPrerelease) | .tagName'); do gh release delete "$r" -y --cleanup-tag || true; done
-          cp "logic-sim-v$V.html" rel/
+          cp "dist/logic-sim-v$V.html" rel/
           cp "docs/versions/v$V/Release-Report-v$V.pdf" rel/
           ls rel
           NOTES="Stable v$V. Files: logic-sim-v$V.html (the simulator), Logic-Sim-v$V.apk (Android), Logic-Sim-v$V-portable.exe (Windows, portable). The apps load the site and update by themselves; inside the app, the Channel box (top right) switches between Stable and Beta. Release-Report-v$V.pdf (what changed and what was checked)."
