@@ -38,7 +38,7 @@ DCS Logic Simulator sa `Ronanski/icms-master-tool`. Basahin muna ang `CLAUDE.md`
 - Branch cleanup (kailangan ng desisyon ng user): 13 branches ay 0 commits sa unahan ng main (auto-chk, ui-shell, operator-hmi, uat-blocks, uat-in-app, uat-expected-values, channel-switch, no-uat-release, clean-releases, restore-html-android, beta/operator-hmi-v1.20.27, v1.20.26, ccr-a82cbeb0-zyf3i8). PR #8 (`claude/adoring-carson-aylw3j`, v1.20.22) ay luma na at superseded ng main.
 
 ## Sources (v1.20.34, Beta)
-Ang app ay galing sa `src/` na ngayon (Vite dev server, `npm run build`, `npm run check`); basahin ang `src/README.md`. Ang html sa root ay build output (byte for byte, nasa Checks). Ang engine ay tumatakbo rin sa Node (`tools/engine/node-engine.js`). Susunod na hakbang ng paglilipat: ihiwalay ang engine sa drawing (hindi pa ginagawa; ang analog app ay iisang closure) at ilipat sa Worker.
+Ang app ay galing sa `src/` na ngayon (nakahiwalay na ang stacks: boot, styles, digital, analog/{reader,engine,data,ui}; byte-identical pa rin ang html) (Vite dev server, `npm run build`, `npm run check`); basahin ang `src/README.md`. Ang html sa root ay build output (byte for byte, nasa Checks). Ang engine ay tumatakbo rin sa Node (`tools/engine/node-engine.js`). Susunod na hakbang ng paglilipat: ihiwalay ang engine sa drawing (hindi pa ginagawa; ang analog app ay iisang closure) at ilipat sa Worker.
 
 ## Next actions
 1. Ang user ay magte-test ng Beta v1.20.34 (`/beta/` page): sariling UAT (👁 sa bawat case), switch / force, Reset. Mga MALI: reproduce sa sheet, ayusin, `node tools/uat/inject.js`, push.
