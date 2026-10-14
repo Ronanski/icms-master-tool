@@ -25450,7 +25450,7 @@ function anInit(S){anDefaults(S);const N=S.nets.length,rt=S.rt={v:new Float64Arr
   else if(U){pick=U;why='upstream '+U.t}
   else if(Uamb)why='AMBIGUOUS upstream: '+Uamb;
   if(pick){if(b.p.ratePct0==null)b.p.ratePct0=b.p.rate;/* anInit runs at every Reset: convert from the DRAWN percentage, never from the already converted rate */b.p.span=pick.sp;b.p.spanSrc=why;b.p.ratePct=b.p.ratePct0;b.p.rate=b.p.ratePct0*pick.sp/100}else{b.p.spanUnres=true;b.p.span=100;b.p.spanSrc=(why||'no range source found')+' -> old behaviour kept (span 100)'}}
- for(const b of S.blk)if(b.k==='CONST'&&P_isMinAir(S,b)&&b.p.val>0){const P=b.p;if(P.orig==null)P.orig=P.val;if(P.th==null)P.th=400;P.mt=1}
+ for(const b of S.blk)if(b.k==='CONST'&&P_isMinAir(S,b)&&b.p.val>0){const P=b.p;if(P.orig==null)P.orig=P.val;if(P.th==null||P.th===400)P.th=1115;P.mt=1}
  for(const b of S.blk)if((b.k==='RATE'||b.k==='RAMPB')&&b.main!==undefined&&b.up===undefined&&!b.p.rtxt){b.p.rate=1;b.dflt={k:'RATE',e:{rate:1,u:'signal units / s',loop:'DEFAULT',basis:'the drawing writes no rate: default 1 per second (user decision 2026-10-10). Change it here; "Reset this block to default" restores it.'}}}
  for(const n of S.ext){rt.ext[n]=S.nets[n].dig?0:0}
  rt.ramp=(typeof AN!=='undefined'&&AN.ramp!=null)?AN.ramp:.05;
@@ -25458,7 +25458,12 @@ function anInit(S){anDefaults(S);const N=S.nets.length,rt=S.rt={v:new Float64Arr
 function P_isMinAir(S,b){return (S.tx||[]).some(t=>/MIN\.?\s*AIR\s*FLOW/i.test(t.t)&&Math.hypot(t.x-b.cx,t.y-b.cy)<=60)&&(S.tx||[]).some(t=>/^32\s*%/.test(t.t.trim())&&Math.hypot(t.x-b.cx,t.y-b.cy)<=40)}
 function aiBad(S,id){const a=S.blk.find(z=>z.id===id),q=a&&a.sig&&S.rt.st[a.sig.id];return !!(q&&q.val>.5)}
 function anNetRange(S,n){const d=(S.drv[n]||[])[0],bl=d&&(d.i===undefined&&d.id!==undefined?S.blk.find(z=>z.id===d.id):d);if(!bl)return null;if(bl.k==='AI'&&bl.rng&&bl.rng.hi>bl.rng.lo)return{lo:bl.rng.lo,hi:bl.rng.hi,u:bl.rng.u||''};if(bl.k==='MAN'&&bl.p&&bl.p.hi>bl.p.lo)return{lo:bl.p.lo,hi:bl.p.hi,u:bl.p.u||''};if((bl.k==='PID'||bl.k==='PIDV')&&bl.p&&bl.p.hi>bl.p.lo)return{lo:bl.p.lo,hi:bl.p.hi,u:'%'};return null}
-function anExtRange(S,n){const sg0=S.seg[S.nets[n].segs[0]],r=anRange(S,{cx:sg0?sg0.x1:0,cy:sg0?sg0.y1:0},45);return r&&r.hi>r.lo?r:null}
+function anExtRange(S,n){const sg0=S.seg[S.nets[n].segs[0]],r=anRange(S,{cx:sg0?sg0.x1:0,cy:sg0?sg0.y1:0},45);if(r&&r.hi>r.lo)return r;
+ /* the range text written beside an input (also "RANGE : a ~ b %") belongs to the external input nearest to it (any end of any wire of the net, up to 60 units) */
+ if(!S._er){S._er={};const rx=/(-?\d+(?:\.\d+)?)\s*~\s*(-?\d+(?:\.\d+)?)\s*(.*)$/,nets=S.ext.filter(m=>S.nets[m]&&!S.nets[m].dig);
+  for(const t of S.tx){const mm=t.t.replace(/%%%/g,'%').match(rx);if(!mm)continue;let bn=null,bd=60;for(const m of nets)for(const i of S.nets[m].segs){const s=S.seg[i];for(const[x,y]of[[s.x1,s.y1],[s.x2,s.y2]]){const d=anD(t.x,t.y,x,y);if(d<bd){bd=d;bn=m}}}
+   if(bn!=null&&!(S._er[bn]&&S._er[bn].d<=bd))S._er[bn]={lo:+mm[1],hi:+mm[2],u:(mm[3]||'').trim(),d:bd}}}
+ const q=S._er[n];return q&&q.hi>q.lo?{lo:q.lo,hi:q.hi,u:q.u}:null}
 function anClamp(r,x){if(!r||!(r.hi>r.lo))return{x,cut:false};const y=Math.max(r.lo,Math.min(r.hi,x));return{x:y,cut:y!==x}}
 function anFXIn(S,b){const t=b.p&&b.p.tbl;if(!t||!(/%/.test(t.xu||'')||(/^\s*RANGE\s*$/i.test(t.xu||'')&&t.xr&&t.xr[0]===0&&t.xr[1]===100)))return null;
  const same=(p,q)=>p.k===q.k&&p.lo===q.lo&&p.hi===q.hi;
@@ -25601,7 +25606,7 @@ function anStep(S,dt){const rt=S.rt,v=rt.v,nets=S.nets,B=x=>x>.5?1:0;rt.t+=dt;rt
    case 'HS':case 'LLIM':if(b.cmp){out(rd(b.cmpA)>rd(b.cmpB)?1:0);break}out(b.i.length?Math.max(...b.i.map(rd)):0);break;
    case 'LS':case 'HLIM':if(b.cmp){out(rd(b.cmpA)<rd(b.cmpB)?1:0);break}out(b.i.length?Math.min(...b.i.map(rd)):0);break;
    case 'SEL':{/* AVERAGE SELECT CIRCUIT: average of the inputs whose transmitter is healthy (SIG.AB = 0); all bad: hold the last value */
-     const all=b.i.map(rd),hk=all.map((_,k)=>{const sid=b.sgi&&b.sgi[k];const q=sid!=null&&rt.st[sid];return!(q&&q.val>.5)}),ok=all.filter((_,k)=>hk[k]);
+     const all=b.i.map(rd),hk=all.map((x,k)=>{const sid=b.sgi&&b.sgi[k];const q=sid!=null&&rt.st[sid];return!(q&&q.val>.5)&&Math.abs(x)>1e-9/* zero = lost signal (user rule, SIG.AB) */}),ok=all.filter((_,k)=>hk[k]);
      const md=P.mode||'AVG',ki=md!=='AVG'&&b.mi?b.mi[md]:null;let y;
      if(ki!=null&&hk[ki]){y=all[ki];s.last=y;s.use=md}
      else if(ok.length){y=ok.reduce((p,q)=>p+q,0)/ok.length;s.last=y;s.use=ki!=null?'AVG (the selected input is bad)':'AVG'}
@@ -26482,7 +26487,7 @@ function anMix(c,bg){const p=s=>{let m=/^#?([0-9a-f]{6})$/i.exec(s);if(m){const 
 function anHL(S,b){const v=S.rt.v;let bi=-1,bv=0;for(const n of b.i){const x=v[n];if(bi<0||(b.k==='HS'?x>bv:x<bv)){bi=n;bv=x}}return bi}
 function anDead(S){const dead=new Set(),N=S.nets.length,uns=b=>{const q=S.rt.st[b.id];return q&&q.pk==='B'?b.a:b.b};
  for(let it=0;it<12;it++){let ch=0;for(let n=0;n<N;n++){if(dead.has(n))continue;const C=S.cns[n];if(!C||!C.length)continue;let live=false;
-   for(const b of C){if((b.k==='HS'||b.k==='LS')&&b.i.length>1&&b.i.includes(n)&&n!==anHL(S,b))continue;if((b.k==='SW'||b.k==='AMT')&&b.a>=0&&b.b>=0&&b.a!==b.b&&n===uns(b)&&n!==b.sel)continue;if((b.k==='SW'||b.k==='AMT')&&(n===b.sel||(b.cs||[]).some(c=>c.n===n))){live=true;break}if((b.k==='SW'||b.k==='AMT')&&b.a>=0&&b.b>=0&&b.a!==b.b&&n===(uns(b)===b.a?b.b:b.a)){live=true;break}if(b.o&&b.o.length&&b.o.every(o=>dead.has(o)))continue;live=true;break}
+   for(const b of C){if((b.k==='HS'||b.k==='LS')&&b.i.length>1&&b.i.includes(n)&&n!==anHL(S,b))continue;if(b.k==='SEL'&&b.i.includes(n)&&Math.abs(S.rt.v[n])<1e-9&&b.i.some(m=>m!==n&&Math.abs(S.rt.v[m])>1e-9))continue;/* a lost (zero) input of a select circuit is not followed while another input is healthy */if((b.k==='SW'||b.k==='AMT')&&b.a>=0&&b.b>=0&&b.a!==b.b&&n===uns(b)&&n!==b.sel)continue;if((b.k==='SW'||b.k==='AMT')&&(n===b.sel||(b.cs||[]).some(c=>c.n===n))){live=true;break}if((b.k==='SW'||b.k==='AMT')&&b.a>=0&&b.b>=0&&b.a!==b.b&&n===(uns(b)===b.a?b.b:b.a)){live=true;break}if(b.o&&b.o.length&&b.o.every(o=>dead.has(o)))continue;live=true;break}
    if(!live){dead.add(n);ch=1}}if(!ch)break}
  const direct=new Set();for(const b of S.blk)if((b.k==='SW'||b.k==='AMT')&&b.a>=0&&b.b>=0&&b.a!==b.b){const u=uns(b);if(u!==b.sel&&dead.has(u))direct.add(u)}
  dead.direct=direct;return dead}
@@ -26925,7 +26930,7 @@ function fpUpd(){const d=$('anfp');if(!d)return;const sh=cs(),S=sh.S,ks=Object.k
 function inCtl(S,sh,n){const dig=S.nets[n].dig,setE=x=>{if(!S.nets[n].dig){const c_=anClamp(anExtRange(S,n),x);if(c_.cut){const r_=anExtRange(S,n);msg('Limited to the range written on the drawing: '+r_.lo+' ~ '+r_.hi+' '+r_.u)}x=c_.x}S.rt.ext[n]=x;(sv(sh).ext=sv(sh).ext||{})[n]=x;anSave();settle()};
  if(dig){const bt=h$('button',{title:'This is an input: click to switch it'});bt.onclick=()=>setE(S.rt.ext[n]>.5?0:1);const u=()=>{const o=S.rt.ext[n]>.5;bt.textContent=o?'INPUT 1 · ON':'INPUT 0 · OFF';bt.classList.toggle('on',o)};u();u._s=1;PU.push(u);return bt}
  const i=anEdit(h$('input',{type:'number',step:'any'}));i.value=S.rt.ext[n]||0;i.style.width='74px';const ok=h$('button',{txt:'✓',title:'Accept this input value (Enter)'});const acc=()=>{const v=parseFloat(i.value);if(isFinite(v)){i._clr();setE(v)}else msg('Type a number first, then press ✓')};ok.onclick=acc;i.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();acc()}};
- const sg0=S.seg[S.nets[n].segs[0]],rr=anRange(S,{cx:sg0?sg0.x1:0,cy:sg0?sg0.y1:0},45)||{lo:0,hi:100},rg=h$('input',{type:'range',min:rr.lo,max:rr.hi,step:(rr.hi-rr.lo)/1000});rg.style.width='100%';rg.value=S.rt.ext[n]||0;rg.oninput=()=>setE(+rg.value);
+ const sg0=S.seg[S.nets[n].segs[0]],rr=anExtRange(S,n)||{lo:0,hi:100},rg=h$('input',{type:'range',min:rr.lo,max:rr.hi,step:(rr.hi-rr.lo)/1000});rg.style.width='100%';rg.value=S.rt.ext[n]||0;rg.oninput=()=>setE(+rg.value);
  const u=()=>{if(document.activeElement!==i&&!i._d)i.value=S.rt.ext[n]||0;if(document.activeElement!==rg)rg.value=S.rt.ext[n]||0};u._s=1;PU.push(u);return h$('span',{cls:'fc',style:'flex-wrap:wrap'},[h$('small',{txt:'INPUT'}),i,ok,rg])}
 const ctl=(S,sh,n)=>wrCtl(ctl0(S,sh,n));const ctl0=(S,sh,n)=>{{const lb=procLock(S,n);if(lb)return h$('small',{style:'color:#ffb04d',txt:'PV of '+((lb.txt||[])[1]||lb.k)+' is simulated by its process model: set the SV instead (or turn the model off in the controller panel).'})}const e=cosInfo(S,n);if(e&&S.ext.includes(n)&&!(S.xlk&&S.xlk[n]))return cosCtl(S,sh,n,e);return S.ext.includes(n)&&!(S.xlk&&S.xlk[n])?inCtl(S,sh,n):forceCtl(S,sh,n)};
 function rowFocus(key){const r=AN.rows&&AN.rows[key];if(!r||!r.isConnected)return;const d=r.closest('details');if(d)d.open=true;if(r.style.display==='none')r.style.display='';{const a=r.closest('#anp');if(a)a.scrollTop+=r.getBoundingClientRect().top-a.getBoundingClientRect().top-a.clientHeight/2}r.classList.add('hl');setTimeout(()=>r.classList.remove('hl'),1600)}
@@ -27180,7 +27185,7 @@ function selUpd0_(d){const sh=cs(),S=sh.S,s=AN.sel;d._k=JSON.stringify(s&&{b:s.b
  else if(b.k==='LAG')pr('tau','Time constant (sec)');
  else if(b.k==='DRATE'){if(P.win==null)P.win=30;pr('win','Window to measure the rate (sec): 5 / 10 / 30 / 60')}
  else if(b.k==='RATE'||b.k==='RAMPB'){pr('rate','Rate (signal units per sec)');if(b.dflt)d.append(h$('small',{txt:'ASSUMED rate ('+b.dflt.e.rate+' '+b.dflt.e.u+'): the drawing shows no number for this box. '+b.dflt.e.loop+' · '+b.dflt.e.basis}))}
- else if(b.k==='CONST'&&P.mt){d.append(h$('div',{cls:'r'},[h$('span',{cls:'n',style:'font-weight:bold',txt:'Minimum air flow (T/H) - editable'}),num(P.th,x=>pSet(sh,b,'th',x),5)]),h$('small',{txt:'The drawing says '+P.orig+' % OF the minimum air flow. Minimum air flow default 400 T/H (same unit as SI0036 TAF DEMAND, T/H).'}),h$('div',{cls:'r'},[h$('span',{cls:'n',txt:P.orig+' % x minimum air flow = signal to the high selector'}),h$('b',{txt:(Math.round(P.th*P.orig/100*1000)/1000)+' T/H'})]))}
+ else if(b.k==='CONST'&&P.mt){d.append(h$('div',{cls:'r'},[h$('span',{cls:'n',style:'font-weight:bold',txt:'Total air flow scale (T/H) - editable'}),num(P.th,x=>pSet(sh,b,'th',x),5)]),h$('small',{txt:'The drawing says '+P.orig+' % OF the minimum air flow. The signal is a percent of the TOTAL AIR FLOW scale 0 ~ 1115 T/H (the SCALE CONVERT constants of the drawing: PAF 648 + SAF 432 + FA 35 = 1115), so the default is 1115 T/H (same unit as SI0036 TAF DEMAND, T/H).'}),h$('div',{cls:'r'},[h$('span',{cls:'n',txt:P.orig+' % x minimum air flow = signal to the high selector'}),h$('b',{txt:(Math.round(P.th*P.orig/100*1000)/1000)+' T/H'})]))}
  else if(b.k==='CONST')pr('val','Value');
  else if(b.k==='FX'){const man=(window.ANLN||{})[P.ln],tb=P.tbl,pts=man||(tb&&(tb.p2||tb.pts));
   d.append(h$('div',{cls:'r'},[h$('span',{cls:'n',txt:'Table '+(P.ln||'?')}),h$('small',{txt:pts&&pts.length?(man?'manual table · ':'')+(tb&&!man?tb.key+' · '+tb.dwg+' · '+(tb.src?'FROM THE FILE '+tb.src+' (not in LINEAR.xls) · ':''):'')+pts.length+' points':'no table: y = x'}),h$('button',{txt:'Load…',onclick:()=>lnOpen()})]));
@@ -33672,6 +33677,17 @@ window.UATG=(function(){
      {l:'command full open for the whole stroke, then closed for a quarter of the stroke: the position is 75 %',steps:[st1({[n]:hi},T+1),st1({[n]:0},t)],rows:[{st:stk,t:'position (%)',v:75,tol:3}],reset:true}]))}
    // analog outputs without an output net: the limit 0 ~ 100 is applied on the net that feeds the AO (it is tested through the blocks that drive it)
    if(b.k==='AO'&&!(b.o&&b.o.length)){add('Analog outputs (AO, 0 ~ 100 %)',item(b,'AO',[{l:'not tested alone: the AO has no output net; its 0 ~ 100 limit is applied to the net that feeds it, and that is checked on the blocks that drive it (math and switches)',skipMsg:'no output net on the drawing',steps:[],rows:[]}]))}
+   // minimum air flow constant ("32 %" into the high selector): a percent of the TOTAL AIR FLOW scale; the scale is the most frequent denominator of the SCALE CONVERT constants written on the sheet (648 / 1115 ...)
+   if(b.k==='CONST'&&b.p&&b.p.mt&&o!=null&&free(S,o)){const dc={};for(const t of S.tx){const m=/^\s*\d+\s*\/\s*(\d+)\s*$/.exec(t.t);if(m)dc[m[1]]=(dc[m[1]]||0)+1}let den=0,bc=0;for(const k in dc)if(dc[k]>bc){bc=dc[k];den=+k}
+    if(den>0){const e=b.p.orig/100*den;add('Constants (value written in the box)',item(b,'Minimum air flow '+b.p.orig+' %',[{l:'the box says '+b.p.orig+' % and the sheet converts to a total air flow scale of 0 ~ '+den+' T/H -> '+fmt(e)+' T/H',steps:[st1({},0)],rows:[R(o,'output (T/H)',e,.5)],reset:false}]))}}
+   // F(X) with a percent input: the input is first turned into a percent of its own range, then the table of the workbook is read
+   if(b.k==='FX'&&b.p&&b.p.tbl&&b.fxin&&b.fxin.k==='rng'&&b.i[0]!=null&&o!=null&&free(S,o)){const t=b.p.tbl,q=b.fxin,pts=t.p2||t.pts,cs=[];
+    for(const pc of [25,50,80]){const y=interp(pts,pc);if(y==null)continue;const v=q.lo+(q.hi-q.lo)*pc/100;cs.push({l:'input '+fmt(v)+' '+(q.u||'')+' = '+pc+' % of its range '+q.lo+' ~ '+q.hi+' -> table '+b.p.ln+' at '+pc+' % = '+fmt(y),steps:[st1({[b.i[0]]:v},0)],rows:[R(o,'output (table '+b.p.ln+')',y,Math.max(.02,Math.abs(y)*.01))],reset:false})}
+    if(cs.length)add('Curves F(X) (workbook tables)',item(b,'F(X) '+b.p.ln+' with % input',cs))}
+   // average select circuit: an input at zero is a lost signal (SIG.AB): it is not averaged, the others are
+   if(b.k==='SEL'&&b.i&&b.i.length>=2&&b.i.length<=6&&o!=null&&free(S,o)&&(!b.p||!b.p.mode||b.p.mode==='AVG')){
+    const vs=b.i.map((n,j)=>j===0?0:10+7*j),rest=vs.slice(1),e=rest.reduce((a,c)=>a+c,0)/rest.length,f={};b.i.forEach((n,j)=>f[n]=vs[j]);
+    add('Average select circuits',item(b,'Average select, one input lost',[{l:'first input = 0 (lost), the others '+rest.join(', ')+' -> the average of the healthy ones '+fmt(e),steps:[st1(f,0)],rows:[R(o,'average of the healthy inputs',e,Math.max(.05,Math.abs(e)*.002))],reset:false}]))}
    // timers
    if((b.k==='TON'||b.k==='TOF'||b.k==='TPS')&&b.p&&b.p.sec>0&&b.p.sec<=30&&b.i[0]!=null&&free(S,o)){
     const sec=b.p.sec,i0=b.i[0],q=x=>Math.max(.25,Math.round(x*4)/4),cs=[];

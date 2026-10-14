@@ -18,3 +18,17 @@ Ayon sa CLAUDE.md: bago baguhin ang engine, i-trace ang drawing (input, mga bloc
 
 ## Tuntunin mula ngayon
 Bawat pagbabago sa engine ay may nakasulat na trace ng drawing (sheet, tag, block, legend) BAGO ang pagbabago, sa `docs/versions/<version>/DRAWING_TRACE.md`.
+
+## 4. Minimum air flow "32 %" (ABC-002) - Excel finding 11
+- **Nasa drawing (ABC-002, PDF):** ang constant na "32 % MIN. AIR FLOW" ay pumapasok sa isang HIGH SELECT (">") kasama ang SI0021; ang output ay SI0036 "TAF DEMAND". Ang mga SCALE CONVERT constant ng sheet ay 648 / 1115 (PAF), 432 / 1115 (SAF) at 35 / 1115 (FA): 648 + 432 + 35 = 1115. Kaya ang TOTAL AIR FLOW scale ay 0 ~ 1115 T/H at ang 32 % ay 0.32 x 1115 = **356.8 T/H**.
+- **Dati sa simulator:** 400 T/H ang default (walang batayan sa drawing) kaya 128 T/H.
+- **Ngayon:** 1115 T/H; 356.8 T/H. May UAT na (expected galing sa mga constant ng sheet).
+- **Babala:** ang 356.8 T/H ay 59 % ng design base na 606 T/H ng planta. Ito ang resulta ng aritmetika ng drawing; kung may ibang basehan ng 32 % (halimbawa MCR), sabihin lang ng user.
+
+## 5. Range sa tabi ng input (Excel findings 4 at 17)
+- **Nasa drawing:** halimbawa ABC-005 "RANGE : 0.01 ~ 9.99 %", "RANGE : 1.1 ~ 1.5", ABC-011 "0 ~ 600 degC", ABC-017 "0.0 ~ 50.0 kg/cm2".
+- **Dati:** 34 sa 200 na analog input ay may range na nakasulat pero hindi pinipilit ng simulator. **Ngayon:** 23 pa ang nasama (ang range text ay iniuugnay sa pinakamalapit na external input, hanggang 60 units); 14 ang nananatiling hindi iniuugnay (tingnan ang EXCEL_FINDINGS_STATUS).
+
+## 6. Select circuit (Excel finding 16)
+- **Legend (ABC-000):** AVERAGE SELECT CIRCUIT Y = (A + B + C) / 3; PRIMARY / SECONDARY / AVERAGE SELECT CIRCUIT. Ang SIG.AB ay nakasulat sa bawat transmitter.
+- **Utos ng user:** ang input na zero ay lost signal: hindi na ina-average, ang primary / secondary ay lumilipat sa healthy; ang path nito ay hindi na iilaw. Ito ang ipinatupad (hindi ito nakasulat sa drawing; ito ang kahulugan na ibinigay ng user).
