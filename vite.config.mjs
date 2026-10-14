@@ -18,7 +18,7 @@ function simulator() {
   return {
     name: 'logic-sim',
     configureServer(server) {
-      const watch = ['src', 'tools/shell', 'tools/hmi', 'tools/theme', 'tools/uat'].map((p) => path.join(root, p))
+      const watch = ['src'].map((p) => path.join(root, p))
       server.watcher.add(watch)
       server.watcher.on('all', (ev, file) => {
         if (watch.some((w) => file.startsWith(w))) { html = null; server.ws.send({ type: 'full-reload' }) }

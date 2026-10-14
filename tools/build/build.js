@@ -14,7 +14,7 @@ function assemble(){let t=rd('index.template.html');
  t=t.replace(/@@FILE:([\w\/.-]+)@@/g,(m,f)=>rd(f));
  return t.split('@@VERSION@@').join(ver)}
 function build(dir){const file=path.join(dir,'logic-sim-v'+ver+'.html');fs.writeFileSync(file,assemble());
- for(const t of['shell','hmi','theme','uat'])cp.execFileSync('node',[path.join(root,'tools',t,'inject.js'),file],{cwd:root,stdio:'pipe'});
+ for(const t of['shell','hmi','theme','uat'])cp.execFileSync('node',[path.join(root,'src','ui',t,'inject.js'),file],{cwd:root,stdio:'pipe'});
  return file}
 const sha=f=>crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');
 const oi=process.argv.indexOf('--out');

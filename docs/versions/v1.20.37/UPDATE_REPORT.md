@@ -3,7 +3,7 @@
 ## Problem
 Excel rule (5c): ang live values ay hindi dapat humaharang sa text, block, ibang live value o wire; side = level, itaas / baba = centered. Wala pang sukat; ang nakikita lang ay mga patong-patong na numero.
 
-## As Found (v1.20.36, sinukat gamit ang bagong `tools/regress/values_layout.js`, 54 sheets, 2925 label, worst-case na 6-character na value)
+## As Found (v1.20.36, sinukat gamit ang bagong `tests/regress/values_layout.js`, 54 sheets, 2925 label, worst-case na 6-character na value)
 Mga label na may patong: sa text 173, sa ibang value 277, sa block 243, sa wire 335. Alignment (side level / itaas-baba centered): 0 mali.
 
 ## Work Done

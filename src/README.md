@@ -19,11 +19,11 @@ The simulator is built from these files into ONE html file (`logic-sim-vX.Y.Z.ht
 | `analog/order.list` | ang pagkakasunod ng pagdugtong ng analog files (iisang closure pa rin) |
 | `data/` | built-in data (drawings, F(X), address list): gzip + base64 text, hindi code |
 
-Sa labas ng `src/`: `tools/build` (BUILDS), `tools/regress` + `tools/uat` (TEST), `tools/shell` (toolbar / drawers), `tools/hmi` (operator faceplate), `tools/theme` (themes), `tools/engine` (engine sa Node).
+Sa loob ng `src/ui/`: `shell` (toolbar / drawers), `hmi` (operator faceplate), `theme` (themes), `uat` (in-app UAT at ang dry run nito); ang build ang naglalagay ng mga ito sa html pagkatapos ng mga file sa itaas. Sa labas ng `src/`: `tools/build` (BUILDS), `tools/engine` (engine sa Node), `tests/regress` (TEST).
 
 **Susunod na hakbang ng pag-oorganisa** (isa-isang Beta, walang pagbabago sa behavior): (1) ihiwalay sa `engine/` ang mga function na walang DOM (anBuild, anNets, anCompile, anStep) para tumakbo sa Worker at sa Node; (2) ilipat ang drawing/panel na code sa hiwalay na modules; (3) ilipat sa Worker ang engine para hindi tumigil ang screen sa tablet.
 
-Added by the build after these files (their sources are in `tools/`): `tools/shell` (toolbar), `tools/hmi` (operator faceplate), `tools/theme` (themes), `tools/uat` (in-app UAT).
+Added by the build after these files (their sources are in `tools/`): `src/ui/shell` (toolbar), `src/ui/hmi` (operator faceplate), `src/ui/theme` (themes), `src/ui/uat` (in-app UAT).
 
 ## Commands
 - `npm run build` - writes `logic-sim-v<version>.html` (and removes the older ones).
