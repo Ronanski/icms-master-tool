@@ -122,6 +122,8 @@ function anCompile(S){
      const unl=ins.filter(p=>!isCtl(p)&&!isAB(p));
      const pr=[];for(const p of unl)for(const t of tcand)if(!usedT.has(t)){const d=Math.hypot(t.x-p.x,t.y-p.y);if(d<=24)pr.push({p,t,d})}
      pr.sort((x,y)=>x.d-y.d);const up=new Set();for(const q of pr){if(up.has(q.p)||usedT.has(q.t))continue;up.add(q.p);usedT.add(q.t);q.p.lab=q.t.t.trim()}
+     /* a select signal is a digital net. When the label "1:A / 1:B" landed on an ANALOG pin (e.g. the PID output arrives at the same corner of the diamond as the diagonal select wire: ABC-003A FICFA1043A), the label belongs to the unlabelled digital pin */
+     for(const p of ins)if(isCtl(p)&&!nets[p.n].dig){const q=ins.find(z=>z!==p&&!isCtl(z)&&!isAB(z)&&nets[z.n].dig);if(q){q.lab=p.lab;p.lab=''}}
      const lp=ins.filter(isCtl);let dg=lp.length?lp:ins.filter(p=>nets[p.n].dig);if(lp.length&&b.k==='AMT'){const ex=ins.filter(p=>!lp.includes(p)&&!isAB(p)&&nets[p.n].dig);if(ex.length&&ins.length-lp.length-ex.length>=1){const m0=/^\d\s*:\s*(\S+)/.exec(lp[0].lab||'');for(const q of ex)q.lab=m0&&/^a$/i.test(m0[1])?'1:B':'1:A';dg=[...lp,...ex];b.dig2=ex.length}}
      if(!dg.length){const c=ins.filter(p=>!isAB(p));if(c.length===1&&ins.length>=3){const q=c[0];if(!q.lab){let bt=null,bd=26;for(const t of tcand){const d=Math.hypot(t.x-q.x,t.y-q.y);if(d<bd){bd=d;bt=t}}if(bt)q.lab=bt.t.trim()}dg=[q]}}
      const an=ins.filter(p=>!dg.includes(p)).sort(posOrder);for(const q of dg)nets[q.n].dig=true;
