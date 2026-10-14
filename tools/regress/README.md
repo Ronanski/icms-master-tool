@@ -8,6 +8,7 @@ Headless (Playwright + Chromium) checks of the root `logic-sim-vX.Y.Z.html` (def
 | `python3 tools/regress/refcheck.py [html]` | F(X) tables vs `linear-curves-fx.xls`; PID / MAN / SUMA parameters vs the parameter workbook; AI ranges vs `dcs-io-list.xls` | ~20 s |
 | `node tools/regress/reset.js [html]` | Reset fidelity: force / flip / run every sheet, press Reset, compare with a fresh load (v1.20.34: 3 sheets still differ, see docs) | ~1 min |
 | `node tools/regress/switches.js [html]` | every SW / AMT block: force each control ON / OFF, release, compare with a run without force | ~3 min |
+| `node tools/regress/values_layout.js [html] [--list]` | live values: does any value cover text, another value, a block or a wire; side values level, above / below values centred (measured from the rendered text, all 54 sheets) | ~30 s |
 | `node tools/regress/pid_am.js [html]` | PID auto / manual (PV, SV, MV): manual value kept, no jump when AUTO returns | ~1 min |
 | `node tools/regress/faceplate.js [html]` | Operator faceplate: AUTO / MAN / MV move the real A/M station of each controller | ~30 s |
 | `node tools/regress/closure.js html out.json` | loop closure of every PID with its plant model (P-4), 900 s | ~1 min |
