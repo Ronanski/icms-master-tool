@@ -35,3 +35,8 @@ Sheet: ABC-007 (sheet 19 ng 54), `analog-logic-abc.zip` -> `PDF/(19)ABC-007.pdf`
 - Faceplate: ang SV field ay nagtatakda ng COS ng SV T at pinipili ang leg B (LOCAL SV); may "REM" para bumalik sa SV galing sa logic. Ang MV field ay para sa manual lang (naka-disable kapag AUTO).
 - Plant model: default ON.
 - Hindi pa sakop (nakalista sa HANDOFF): ang 50 COS na hindi nakakabit, ang SV tracking ng M.019D.
+
+## Dagdag (v1.20.40): ABC-003A / B / C / D, FICFA1043x (basahin sa PDF ng 003A)
+- A/M T switch (A/M): A = output ng PID (galing sa itaas), B = COS, **1:A = M.035C** (TPs 2s ng M.035B = house operation at BNR-A in service), **1:B = M.0121** (force manual). Kasunod: BU-CMD T (A = A/M out, B = RB-MV SI0093, 1:B = M.0123).
+- Mali ng reader: ang PID output ay nakuhang "1:A" (control) at ang M.035C ay nakuhang A input, kaya walang A/M station ang faceplate. Ayos: ang select signal ay digital net; kapag ang label na "1:A / 1:B" ay nasa analog na pin, ililipat sa digital na pin na walang label (`compile-step.js`, case SW/AMT). Nagbago lang ang 4 na switch sa 387 (003A#15, 003B#9, 003C#9, 003D#9), pawang ganitong kaso.
+- Kapag nawala ang force-manual signal: AUTO ulit nang kusa (ang AUTO request ng operator ay naka-hold lang), at pareho ang ipinapakita ng HMI at ng diagram.
