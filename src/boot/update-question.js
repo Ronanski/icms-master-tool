@@ -1,15 +1,154 @@
 /* update check: the page, the apk and the exe keep the installed version and ASK before updating (Stable or Beta, the channel the user chose) */
-(function(){/* B = the copy built into the apk / exe (file: or https://localhost): it starts at once and works without internet; the update check asks the site */var B=location.protocol==='file:'||(location.protocol==='https:'&&location.hostname==='localhost'&&!location.port);if(!B&&!/^https?:$/.test(location.protocol))return;var SITE='https://ronanski.github.io/icms-master-tool/',T=(document.title.match(/v\d+(\.\d+)+(-beta\.\d+)?/)||[''])[0],beta=!B&&/\/beta\/(index\.html)?$/.test(location.pathname),dir=B?'':location.pathname.replace(/index\.html$/,''),base=B?SITE:dir.replace(/beta\/$/,'');
-/* SemVer: 1.21.0-beta.2 > 1.21.0-beta.1; 1.21.0 (Stable) > 1.21.0-beta.9; ang numero ng bersyon ay nag-a-advance lang kapag may Stable (PROJECT_RULES 5f) */
-function pv(a){var m=a.replace('v','').split('-beta.');return{n:m[0].split('.').map(Number),b:m.length>1?Number(m[1]):Infinity}}
-function cmp(a,b){var x=pv(a),y=pv(b);for(var i=0;i<3;i++){if((x.n[i]||0)!==(y.n[i]||0))return(x.n[i]||0)-(y.n[i]||0)}return x.b===y.b?0:(x.b>y.b?1:-1)}
-function say(t){var d=document.getElementById('updtoast');if(!d){d=document.createElement('div');d.id='updtoast';d.style.cssText='position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:99998;background:#18212a;color:#dbe5ec;border:1px solid #6aaee0;border-radius:8px;padding:8px 14px;font:14px system-ui;max-width:90vw';document.body.append(d)}d.textContent=t;d.style.display='block';clearTimeout(say.t);say.t=setTimeout(function(){d.style.display='none'},5000)}
-function ask(v){var d=document.getElementById('updask');if(d)d.remove();d=document.createElement('div');d.id='updask';d.style.cssText='position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:99997;background:#16324a;color:#fff;border:1px solid #6aaee0;border-radius:10px;padding:12px 16px;font:15px/1.4 system-ui;max-width:92vw;box-shadow:0 4px 20px #0008';
- d.innerHTML='<b>May bagong bersyon: '+v+'</b> ('+(beta?'Beta':'Stable')+')<br>Ang gamit mo ngayon: '+T+'. I-update ba?<br><span id=updbs style="display:inline-flex;gap:8px;margin-top:8px"></span>';
- function bt(t,f,c){var b=document.createElement('button');b.textContent=t;b.style.cssText='padding:8px 14px;border-radius:6px;border:1px solid #6aaee0;background:'+c+';color:#fff;font:600 14px system-ui;cursor:pointer';b.onclick=f;d.querySelector('#updbs').append(b)}
- bt('I-update ngayon',function(){d.remove();go()},'#1d6b45');bt('Huwag muna',function(){try{sessionStorage.setItem('updskip',v)}catch(e){}d.remove()},'#2a3743');document.body.append(d)}
-function go(){if(B){try{localStorage.setItem('ls-site','1')}catch(e){}location.href=SITE;return}var sw=navigator.serviceWorker;if(sw&&sw.controller){say('Dina-download ang update...');sw.controller.postMessage('update')}else location.reload()}
-function check(manual){fetch(base+'version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){var v=j[beta?'beta':'stable'];if(B){var fl='';try{fl=localStorage.getItem('ls-site')}catch(e){}if(fl==='1'){location.replace(SITE);return}}if(v&&T&&cmp(v,T)>0){var sk='';try{sk=sessionStorage.getItem('updskip')}catch(e){}if(manual||sk!==v)ask(v)}else if(manual)say('Updated ka na: '+T+' ('+(beta?'Beta':'Stable')+').')}).catch(function(){if(manual)say('Walang koneksyon: hindi ma-check ang update.')})}
-window.lsCheckUpdate=check;
-if(!B&&'serviceWorker' in navigator){navigator.serviceWorker.register(dir+'sw.js',{scope:dir}).catch(function(){});navigator.serviceWorker.addEventListener('message',function(e){if(e.data==='updated')location.reload();if(e.data==='failed')say('Hindi na-download ang update. Subukan ulit.')})}
-window.addEventListener('load',function(){setTimeout(function(){var g=document.getElementById('gsbar');if(g&&!document.getElementById('updbtn')){var b=document.createElement('button');b.id='updbtn';b.textContent='⟳ Update?';b.title='I-check kung may bagong bersyon';b.style.cssText='margin-left:6px';b.onclick=function(){check(true)};g.append(b)}check(false)},1500)})})();
+(function () {
+  /* B = the copy built into the apk / exe (file: or https://localhost): it starts at once and works without internet; the update check asks the site */ var B =
+    location.protocol === 'file:' ||
+    (location.protocol === 'https:' && location.hostname === 'localhost' && !location.port);
+  if (!B && !/^https?:$/.test(location.protocol)) return;
+  var SITE = 'https://ronanski.github.io/icms-master-tool/',
+    T = (document.title.match(/v\d+(\.\d+)+(-beta\.\d+)?/) || [''])[0],
+    beta = !B && /\/beta\/(index\.html)?$/.test(location.pathname),
+    dir = B ? '' : location.pathname.replace(/index\.html$/, ''),
+    base = B ? SITE : dir.replace(/beta\/$/, '');
+  /* SemVer: 1.21.0-beta.2 > 1.21.0-beta.1; 1.21.0 (Stable) > 1.21.0-beta.9; ang numero ng bersyon ay nag-a-advance lang kapag may Stable (PROJECT_RULES 5f) */
+  function pv(a) {
+    var m = a.replace('v', '').split('-beta.');
+    return { n: m[0].split('.').map(Number), b: m.length > 1 ? Number(m[1]) : Infinity };
+  }
+  function cmp(a, b) {
+    var x = pv(a),
+      y = pv(b);
+    for (var i = 0; i < 3; i++) {
+      if ((x.n[i] || 0) !== (y.n[i] || 0)) return (x.n[i] || 0) - (y.n[i] || 0);
+    }
+    return x.b === y.b ? 0 : x.b > y.b ? 1 : -1;
+  }
+  function say(t) {
+    var d = document.getElementById('updtoast');
+    if (!d) {
+      d = document.createElement('div');
+      d.id = 'updtoast';
+      d.style.cssText =
+        'position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:99998;background:#18212a;color:#dbe5ec;border:1px solid #6aaee0;border-radius:8px;padding:8px 14px;font:14px system-ui;max-width:90vw';
+      document.body.append(d);
+    }
+    d.textContent = t;
+    d.style.display = 'block';
+    clearTimeout(say.t);
+    say.t = setTimeout(function () {
+      d.style.display = 'none';
+    }, 5000);
+  }
+  function ask(v) {
+    var d = document.getElementById('updask');
+    if (d) d.remove();
+    d = document.createElement('div');
+    d.id = 'updask';
+    d.style.cssText =
+      'position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:99997;background:#16324a;color:#fff;border:1px solid #6aaee0;border-radius:10px;padding:12px 16px;font:15px/1.4 system-ui;max-width:92vw;box-shadow:0 4px 20px #0008';
+    d.innerHTML =
+      '<b>May bagong bersyon: ' +
+      v +
+      '</b> (' +
+      (beta ? 'Beta' : 'Stable') +
+      ')<br>Ang gamit mo ngayon: ' +
+      T +
+      '. I-update ba?<br><span id=updbs style="display:inline-flex;gap:8px;margin-top:8px"></span>';
+    function bt(t, f, c) {
+      var b = document.createElement('button');
+      b.textContent = t;
+      b.style.cssText =
+        'padding:8px 14px;border-radius:6px;border:1px solid #6aaee0;background:' +
+        c +
+        ';color:#fff;font:600 14px system-ui;cursor:pointer';
+      b.onclick = f;
+      d.querySelector('#updbs').append(b);
+    }
+    bt(
+      'I-update ngayon',
+      function () {
+        d.remove();
+        go();
+      },
+      '#1d6b45'
+    );
+    bt(
+      'Huwag muna',
+      function () {
+        try {
+          sessionStorage.setItem('updskip', v);
+        } catch (e) {}
+        d.remove();
+      },
+      '#2a3743'
+    );
+    document.body.append(d);
+  }
+  function go() {
+    if (B) {
+      try {
+        localStorage.setItem('ls-site', '1');
+      } catch (e) {}
+      location.href = SITE;
+      return;
+    }
+    var sw = navigator.serviceWorker;
+    if (sw && sw.controller) {
+      say('Dina-download ang update...');
+      sw.controller.postMessage('update');
+    } else location.reload();
+  }
+  function check(manual) {
+    fetch(base + 'version.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (j) {
+        var v = j[beta ? 'beta' : 'stable'];
+        if (B) {
+          var fl = '';
+          try {
+            fl = localStorage.getItem('ls-site');
+          } catch (e) {}
+          if (fl === '1') {
+            location.replace(SITE);
+            return;
+          }
+        }
+        if (v && T && cmp(v, T) > 0) {
+          var sk = '';
+          try {
+            sk = sessionStorage.getItem('updskip');
+          } catch (e) {}
+          if (manual || sk !== v) ask(v);
+        } else if (manual) say('Updated ka na: ' + T + ' (' + (beta ? 'Beta' : 'Stable') + ').');
+      })
+      .catch(function () {
+        if (manual) say('Walang koneksyon: hindi ma-check ang update.');
+      });
+  }
+  window.lsCheckUpdate = check;
+  if (!B && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.register(dir + 'sw.js', { scope: dir }).catch(function () {});
+    navigator.serviceWorker.addEventListener('message', function (e) {
+      if (e.data === 'updated') location.reload();
+      if (e.data === 'failed') say('Hindi na-download ang update. Subukan ulit.');
+    });
+  }
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      var g = document.getElementById('gsbar');
+      if (g && !document.getElementById('updbtn')) {
+        var b = document.createElement('button');
+        b.id = 'updbtn';
+        b.textContent = '⟳ Update?';
+        b.title = 'I-check kung may bagong bersyon';
+        b.style.cssText = 'margin-left:6px';
+        b.onclick = function () {
+          check(true);
+        };
+        g.append(b);
+      }
+      check(false);
+    }, 1500);
+  });
+})();

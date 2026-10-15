@@ -25,7 +25,7 @@ Walang kategorya, isang listahan lang. `[ ]` = hindi pa; `[x]` = tapos at na-che
 19. [F] **Tuning lab:** subukan ang P / I / D ng loop sa plant model at tingnan ang tugon ng PV; ang parameter ay mula sa summary sa repo. (3–4 oras)
 20. [F] **Rehearsal ng startup at shutdown** (scenario na hakbang-hakbang, may marka). (6–8 oras)
 21. [F] **"Compare" ng dalawang bersyon ng sheet** bago baguhin ang logic: ano ang naapektuhan. (6–8 oras)
-22. [ ] **Linisin ang code:** hatiin ang malalaking file (`compile-step.js` 116 KB, `ditl-app.js` 125 KB, `plant-window.js` 62 KB) at ayusin ang napakahabang linya. Walang magbabago sa gawi; ang html ay dapat pareho ang gawi. (4–6 oras; ang DITL ay hindi gagalawin nang walang utos)
+22. [~] **Linisin ang code (TAPOS ang bahagi: ayos ng format at paghati ng `compile-step.js`; natitira ang `plant-window.js`, `links-canvas.js` at ang DITL na hindi gagalawin):** hatiin ang malalaking file (`compile-step.js` 116 KB, `ditl-app.js` 125 KB, `plant-window.js` 62 KB) at ayusin ang napakahabang linya. Walang magbabago sa gawi; ang html ay dapat pareho ang gawi. (4–6 oras; ang DITL ay hindi gagalawin nang walang utos)
 23. [F] **Rebisyon ng UI / UX para sa tablet:** mas malaking button, iisang ibabang bar, buong-screen na faceplate at trend page. Dagdag, hindi overhaul. (4–6 oras)
 24. [F] **Overhaul ng app:** HINDI inirerekomenda ngayon; ang engine at mga test ay matatag na. Pag-isipan lang kapag natapos na ang #13 at #14.
 
@@ -34,3 +34,8 @@ Walang kategorya, isang listahan lang. `[ ]` = hindi pa; `[x]` = tapos at na-che
 **Sheet por sheet o per loop (dugtong-dugtong na sheet)?** Pinakamabisa ang **pinaghalo**: (1) bawat sheet ay sinusuri ng awtomatiko (#10, #11, #12), mabilis; (2) bawat **cluster** ng magkakadugtong na sheet ang sinusuri ng scenario mula sa PDF (#13), dahil ang cause-and-effect ay tumatawid sa mga sheet (hal. M.0098 ng ABC-003E ay nagfo-force ng 007). Nasukat sa app: 39 sa 54 na sheet ay iisang malaking konektadong bahagi, kaya hindi puwede ang "lahat ng konektado"; ginamit ko ang bilang ng link: ABC-015 / 016 ↔ 057 (37 at 31 link), 004A ↔ 004B / 004C (20), 009A ↔ 009B (17), 050 ↔ 051 / 052 (14 at 12), 003A ↔ 003B / 003C / 003D / 003E (12). Sa bawat natapos na cluster, ibibigay ko ang UAT para masubukan mo.
 
 **Malinis ba ang app?** Mas maayos na: ang html ay iisang file lang bilang resulta ng build (kailangan para sa apk / exe na offline, 3.8 MB kasama ang 3 MB na data ng diagram); ang source ay hiwalay: `src/analog` (reader, engine, ui, data), `src/digital`, `src/ui` (shell, hmi, theme, uat), `src/boot`, `tests`, `tools`, `delivery`, `docs`, `archive`. Ang hindi pa malinis: (1) may napakalalaking file at napakahabang linya (#22); (2) maraming folder ng bersyon sa `docs/versions` (#2); (3) ang DITL ay iisang 125 KB na file (hindi gagalawin nang walang utos).
+
+## Tala ng paglilinis (beta.4)
+- Ang lahat ng `src/analog`, `src/ui`, `src/boot` na js ay naka-format na ng Prettier (`.prettierrc`; `npm run format`). Napatunayan na walang nagbago sa gawi: ang minified na bundle ng analog ay pareho (457187 byte bago at pagkatapos ng paghati; ang tanging pagkakaiba sa pag-format ay ang pagtanggal ng sobrang panaklong sa isang arrow function sa `hmi-view.js`). Ang DITL (`src/digital`) ay hindi ginalaw.
+- Ang `compile-step.js` (6624 linya) ay hinati: `face-defaults.js` (4078 linya na data ng faceplate), `compile-step.js` (2319), `ranges-fx.js` (230).
+- Mga test na umaasa sa eksaktong teksto ng code ay inayos (`tests/engine/isolated.js` ay gumagamit na ng regex).
