@@ -26,6 +26,7 @@ const r=await page.evaluate(()=>{const res=[];let total=0;
    setPass();run(10);
    const mvv=lo+(hi-lo)*.37;
    if(q&&q.pv>=0)S.rt.force[q.pv]=mid+.2*span;
+   {const svs=AN.anSvSwitchOf(S,b);if(svs&&S.rt.st[svs.id])S.rt.st[svs.id].fm='B'}/* MANUAL needs LOCAL: in REMOTE the station is AUTO for sure (user rule 2026-10-15) */
    S.rt.st[station.sw.id].fm=station.manLeg;
    if(station.man)S.rt.st[station.man.id].val=mvv;else S.rt.ext[station.net]=mvv;
    run(20);

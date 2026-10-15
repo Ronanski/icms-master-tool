@@ -19,7 +19,7 @@ window.UATG=(function(){
   for(const b of S.blk){const o=b.o&&b.o[0];
    // switches (T / A-M)
    if((b.k==='SW'||b.k==='AMT')&&!b.q4&&!b.latch&&b.sel>=0&&b.a>=0&&b.b>=0&&o!=null&&free(S,o)&&o!==b.a&&o!==b.b&&!(b.cs&&b.cs.length>1)){
-    const cs=[];for(const sel of [0,1]){const pickB=b.p.selA?!sel:!!sel;cs.push({l:'select = '+sel+' -> output follows input '+(pickB?'B':'A'),steps:[st1({[b.a]:11,[b.b]:22,[b.sel]:sel},0)],rows:[R(o,'output (A = 11, B = 22)'+gtxt(b,pickB),leg(b,pickB,pickB?22:11),Math.max(.05,Math.abs(leg(b,pickB,pickB?22:11))*.002))],reset:false})}
+    const cs=[];for(const sel of [0,1]){const pickB=b.p.selA?!sel:!!sel;cs.push({l:'select = '+sel+' -> output follows input '+(pickB?'B':'A'),steps:(S.rt.st[b.id]&&S.rt.st[b.id].al)?[st1({[b.a]:11,[b.b]:22,[b.sel]:sel},0),st1({},0,{fm:{[b.id]:pickB?'B':'A'}})]:[st1({[b.a]:11,[b.b]:22,[b.sel]:sel},0)],/* an A/M station keeps the leg a select signal gave it: first the signals, then the operator picks the leg (AUTO / MAN) */rows:[R(o,'output (A = 11, B = 22)'+gtxt(b,pickB),leg(b,pickB,pickB?22:11),Math.max(.05,Math.abs(leg(b,pickB,pickB?22:11))*.002))],reset:false})}
     add('Switches (T and A/M)',item(b,b.k==='AMT'?'A/M switch':'T switch',cs))}
    // operator selectors (with COS conditions)
    if((b.k==='SW'||b.k==='AMT')&&!b.q4&&b.a>=0&&b.b>=0&&o!=null&&free(S,o)&&b.cs&&b.cs.length>1){
@@ -43,7 +43,7 @@ window.UATG=(function(){
     add('Math: add / subtract / sum / deviation',item(b,(b.k==='ADD'?'Add':b.k==='SUM'?'Sum':b.k==='SUB'?'Subtract':'Deviation')+' ('+sg+')',cs))}
    // math: multiply / divide / square root / absolute value
    if(b.k==='MUL'&&b.i&&b.i.length>=2&&b.i.length<=4&&b.i.every(n=>n>=0)&&o!=null&&free(S,o)){
-    const cs=[];for(const base of [[4,5,2,3],[8,0.5,6,2]]){const vs=b.i.map((n,j)=>kn(S,n)?S.kn[n]:base[j]),f={};let e=1;b.i.forEach((n,j)=>{if(!kn(S,n))f[n]=vs[j];e*=vs[j]/((b.nrm&&b.nrm[j])||1)});if(b.gain!=null)e*=b.gain;e=clampAO(S,o,e);if(Math.abs(e)<1e6)cs.push({l:'inputs '+vs.join(' x ')+(b.gain!=null?' x gain '+b.gain:'')+(b.nrm&&b.nrm.some(Boolean)?' (inputs scaled by '+b.nrm.map(x=>x||1).join(', ')+')':'')+' -> '+fmt(e),steps:[st1(f,0)],rows:[R(o,'product',e,Math.max(.05,Math.abs(e)*.002))],reset:false})}
+    const cs=[];for(const base of [[4,5,2,3],[8,0.5,6,2]]){const vs=b.i.map((n,j)=>kn(S,n)?S.kn[n]:base[j]),f={};let e=1;b.i.forEach((n,j)=>{if(!kn(S,n))f[n]=vs[j];e*=vs[j]/(((b.nrm&&b.nrm[j])||1)*((b.scn&&b.scn[j])||1))});if(b.gain!=null)e*=b.gain;e=clampAO(S,o,e);if(Math.abs(e)<1e6)cs.push({l:'inputs '+vs.join(' x ')+(b.gain!=null?' x gain '+b.gain:'')+(b.nrm&&b.nrm.some(Boolean)?' (inputs scaled by '+b.nrm.map(x=>x||1).join(', ')+')':'')+' -> '+fmt(e),steps:[st1(f,0)],rows:[R(o,'product',e,Math.max(.05,Math.abs(e)*.002))],reset:false})}
     if(cs.length)add('Math: multiply / divide / abs',item(b,'Multiply',cs))}
    if(b.k==='DIV'&&b.nu>=0&&b.de>=0&&o!=null&&free(S,o)){
     const cs=[];for(const [nu0,de0] of [[12,4],[9,3]]){const nu=kn(S,b.nu)?S.kn[b.nu]:nu0,de=kn(S,b.de)?S.kn[b.de]:de0;if(!de)continue;let e=nu/de;if(b.oa)e=e*b.oa[0]+b.oa[1];e=clampAO(S,o,e);const f={};if(!kn(S,b.nu))f[b.nu]=nu;if(!kn(S,b.de))f[b.de]=de;cs.push({l:'numerator '+nu+' / denominator '+de+' -> '+fmt(e),steps:[st1(f,0)],rows:[R(o,'quotient',e,Math.max(.05,Math.abs(e)*.002))],reset:false})}
@@ -144,7 +144,7 @@ window.UATG=(function(){
     const amt=S.blk.find(z=>(z.k==='AMT'||z.k==='SW')&&z.a!=null&&z.b!=null&&(b.o.includes(z.a)||b.o.includes(z.b))&&z.o[0]!=null);
     if(amt){const autoLeg=b.o.includes(amt.a)?'A':'B',manLeg=autoLeg==='A'?'B':'A',manNet=autoLeg==='A'?amt.b:amt.a;
      cs.push({l:'AUTO: the loop output goes through the A/M switch unchanged',steps:[st1({[q.pv]:mid,[q.sv]:mid},5,{fm:{[amt.id]:autoLeg}})],rows:[{k:amt.o[0],t:'output of the A/M switch',eqk:o,tol:0.1}]});
-     if(S.ext.includes(manNet))cs.push({l:'MAN: manual value 37 -> output 37',steps:[st1({},4,{fm:{[amt.id]:manLeg},ext:{[manNet]:37}})],skipBu:amt.id,rows:[R(amt.o[0],'output of the A/M switch',37,0.1)]})}
+     if(S.ext.includes(manNet))cs.push({l:'MAN: manual value 37 -> output 37',steps:[st1({},4,{fm:Object.assign({[amt.id]:manLeg},(()=>{const sv=AN.anSvSwitchOf(S,b);return sv?{[sv.id]:'B'}:{}})()),ext:{[manNet]:37}})],skipBu:amt.id,rows:[R(amt.o[0],'output of the A/M switch',37,0.1)]})}
     add('Controllers (PID)',item(b,'PID '+tag+(P.act<0?' (reverse)':' (direct)'),cs))}
   }
   const order=['Switches (T and A/M)','Operator selectors (COS)','Logic gates (AND / OR / NOT)','Flip-flops (S / R)','Comparators','Constants (value written in the box)','Alarms (ALM)','Valves and actuators (stroke)','Math: add / subtract / sum / deviation','Math: multiply / divide / abs','Ramps (rate limiters)','Average select circuits','Timers (TON / TOF / pulse)','Lag (first order)','Curves F(X) (workbook tables)','High / low selectors','Analog inputs (AI, transmitter range)','Analog outputs (AO, 0 ~ 100 %)','Manual stations (MAN)','Totalizers (SUMA)','Controllers (PID)'];

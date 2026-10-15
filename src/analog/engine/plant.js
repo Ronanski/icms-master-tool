@@ -36,7 +36,7 @@ function anProcList(S){S.procs=[];const out=[];for(const b of S.blk){if(b.k!=='P
 function anProcStep(S,dt){const rt=S.rt,v=rt.v,F=rt.force,pm=rt.pm||(rt.pm={}),pf=rt.pf||(rt.pf={});
  for(const b of S.procs){const pr=b.proc;if(!pr||pr.mode==='shared')continue;let q=pm[b.id];
   if(!pr.on){if(q)delete pm[b.id];if(pf[pr.pv]){delete F[pr.pv];delete pf[pr.pv]}continue}
-  const st=rt.st[b.id]||{},u=b.vel&&b.velNet!=null?v[b.velNet]:(st.out==null?0:st.out),span=b.p.span>0?b.p.span:100,lo=b.p.rlo!=null?b.p.rlo:0,um=((b.p.lo==null?0:b.p.lo)+(b.p.hi==null?100:b.p.hi))/2;
+  const st=rt.st[b.id]||{},uOf=g=>{const t=rt.st[g.id]||{};return g.vel&&g.velNet!=null?v[g.velNet]:(t.out==null?0:t.out)},u=(()=>{/* two controllers on the same PV (valves in parallel, e.g. A and B side): the PV answers the average of their open commands (v1.20.58) */const sh=b._sh||(b._sh=S.procs.filter(g=>g!==b&&g.proc&&g.proc.mode==='shared'&&g.proc.pv===pr.pv));if(!sh.length)return uOf(b);const us=[uOf(b)].concat(sh.map(uOf)).filter(x=>Math.abs(x)>1e-9);/* a closed (0) stand-by valve does not dilute the others */return us.length?us.reduce((a,x)=>a+x,0)/us.length:0})(),span=b.p.span>0?b.p.span:100,lo=b.p.rlo!=null?b.p.rlo:0,um=((b.p.lo==null?0:b.p.lo)+(b.p.hi==null?100:b.p.hi))/2;
   /* plant: steady state PV = bottom of the range + span * (0.5 + sign * K * (command - middle) / 100) + disturbance; dead time, then first order; it cannot leave the range of the instrument */
   const ss=c=>lo+span*(.5+pr.sg*pr.K*(c-um)/100)+(pr.dist||0)/100*span+(pr.op||0);
   if(!q)q=pm[b.id]={y:ss(u),h:[],u:null};
@@ -88,18 +88,26 @@ function anStep(S,dt){const rt=S.rt,v=rt.v,nets=S.nets,B=x=>x>.5?1:0;rt.t+=dt;rt
    case 'SW':case 'AMT':{if(b.q4){const q=b.q4;let k=-1;for(let i=0;i<q.cond.length;i++)if(P['c'+(i+1)]>.5){k=i;break}if(k>=0)s.q4k=k;const lg=q.cond[s.q4k==null?0:s.q4k].leg;s.pk=lg.toUpperCase();s.q4l=lg;if(b.o.length)out(q.leg[lg]>=0?rd(q.leg[lg]):0);break}
     /* forced control (the user's FORCE ON / OFF during a test): the selection and the latch before the first force come back when the LAST force on any control of this switch is released */
     {const fn=[];if(b.sel>=0)fn.push(b.sel);for(const c of b.cs||[])fn.push(c.n);const uf=fn.some(n=>rt.force[n]!==undefined);if(uf&&!s.uf){s.uf=1;s.fpk=s.pk==='B'?'B':'A';s.flb=s.lb||0}else if(!uf&&s.uf){s.uf=0;s.pk=s.fpk;s.lb=s.flb}}
-    const sel=b.sel>=0?B(rd(b.sel)):0;let pickB=P.selA?!sel:!!sel;if(b.latch){if(pickB)s.lb=1;else if(s.fm==='A')s.lb=0;pickB=!!s.lb}if(b.cs&&b.cs.length>1){const ua=!swTimer(S,b)&&b.cs.some(c=>(rt.force[c.n]!==undefined||(S.ext&&S.ext.includes(c.n)))&&B(rd(c.n)));if(ua&&!s.ub){s.ub=1;s.upk=s.pk==='B'?'B':'A'}else if(!ua&&s.ub){s.ub=0;s.pk=s.upk}}if(b.cs&&b.cs.length>1){const wB=b.cs.some(c=>!c.A&&B(rd(c.n))),wA=b.cs.some(c=>c.A&&B(rd(c.n)));pickB=wB?true:(wA||b.k==='SW')?false:s.pk==='B'}if(s.fm==='A')pickB=false;else if(s.fm==='B')pickB=true;s.pk=pickB?'B':'A';let y;
+    const sel=b.sel>=0?B(rd(b.sel)):0;let pickB=P.selA?!sel:!!sel;if(b.latch){if(pickB)s.lb=1;else if(s.fm==='A')s.lb=0;pickB=!!s.lb}if(b.cs&&b.cs.length>1){const ua=!swTimer(S,b)&&b.cs.some(c=>(rt.force[c.n]!==undefined||(S.ext&&S.ext.includes(c.n)))&&B(rd(c.n)));if(ua&&!s.ub){s.ub=1;s.upk=s.pk==='B'?'B':'A'}else if(!ua&&s.ub){s.ub=0;s.pk=s.upk}}let sigLeg=null;/* the leg that an ACTIVE select signal asks for (the drawing's 1:a / 1:b lines) */
+     if(b.cs&&b.cs.length>1){const wB=b.cs.some(c=>!c.A&&B(rd(c.n))),wA=b.cs.some(c=>c.A&&B(rd(c.n)));pickB=wB?true:(wA||b.k==='SW')?false:s.pk==='B';sigLeg=wB?'B':wA?'A':null}else if(b.sel>=0&&sel)sigLeg=P.selA?'A':'B';
+     /* FORCE MANUAL (user rule 2026-10-15): while an active select signal asks for the MANUAL leg, the operator's AUTO is refused; when the signal is gone the station STAYS manual until the operator presses AUTO (it does not go to AUTO by itself). s.al = the AUTO leg of an A/M station (anStationOf) */
+     s.fman=0;if(s.al&&sigLeg){/* an ACTIVE select signal of the drawing wins over the operator and the station KEEPS that leg afterwards (it does not go back by itself): 1:B (force manual) is a LEVEL: MANUAL while it is 1 and after it, until the operator presses AUTO; 1:A (AUTO of the logic) acts when it COMES (a pulse, e.g. M.019C); a 1:A that stays at 1 does not block the operator's MAN */
+      if(sigLeg!==s.al){s.fman=1;s.fm=sigLeg;s.pa=0}else{if(!s.pa)s.fm=sigLeg;s.pa=1}}else s.pa=0;
+     /* REMOTE (user rule 2026-10-15): while the SV switch of this controller is on its REMOTE leg the station is AUTO and cannot be made manual (not even the SV); only a force-manual signal of the drawing can take it out */
+     s.rem=0;if(s.rmSw!=null){const q=rt.st[s.rmSw];if(s.fman&&q)q.fm='B';/* force manual cancels REMOTE: the SV switch goes LOCAL and stays there until the operator selects REMOTE */if(q&&q.pk==='A'&&!s.fman){s.rem=1;s.fm=s.al}}
+     if(s.fm==='A')pickB=false;else if(s.fm==='B')pickB=true;s.pk=pickB?'B':'A';let y;
      const n=pickB?b.b:b.a;if(n>=0){y=rd(n);if(pickB&&b.bg!=null)y*=b.bg;if(!pickB&&b.ag!=null)y*=b.ag;if(b.ia&&b.ia[n])y=y*b.ia[n][0]+b.ia[n][1]}else y=(s.hold!=null?s.hold:0);if(!pickB||b.b>=0)s.hold=y;s.y=y;
      const other=pickB?b.a:b.b;
      /* bumpless tracking: the PID / MAN that feeds the unselected A input follows the output */
      /* interlock tracking (legend: "INTERLOCK TRACKING FOR PID CONTROLLER & MANUAL CONTROL STATION"): a back-up value selected by a downstream selector is also tracked by the upstream A/M selector, its PID and its COS manual value */
      const bu=s.bu;
      if(b.trkFrom)for(const d of b.trkFrom){const ds=rt.st[d.id];if(ds)ds.trk=bu!=null?bu:(pickB?y:(s.tv!=null?s.tv:null))}
+     if(b.trkSum)for(const tt of b.trkSum){const ds=rt.st[tt.pid.id];if(ds){const tg=bu!=null?bu:(pickB?y:(s.tv!=null?s.tv:null));if(tg==null)ds.trk=null;else{let oth=0;for(const q of tt.others)oth+=q.sg*rd(q.n);ds.trk=(tg-oth)/tt.sg}}}
      if(b.upA)for(const u of b.upA){const us=rt.st[u.id];if(us){us.bu=bu!=null?bu:((pickB&&b.buCmd)?y:null);/* bumpless through a chain of selectors: when a selector further down is on its manual / other leg, the selectors before it and the PID follow its output */us.tv=pickB?y:(s.tv!=null?s.tv:null)}}
      if(bu!=null&&b.b>=0&&S.ext&&S.ext.includes(b.b)&&/B\s*\/\s*T/.test((b.txt||[]).join('/'))&&s.bw!==bu){s.bw=bu;rt.ext[b.b]=b.bg!=null?bu/b.bg:bu}
      out(b.og!=null?y*b.og:y);break}
    case 'ADD':case 'SUM':case 'DEV':case 'SUB':{let y=0;for(const q of b.ip){let x=rd(q.n);if(q.ia)x=x*q.ia[0]+q.ia[1];y+=q.sg*x}out(y);break}
-   case 'MUL':{let y=1;b.i.forEach((n,j)=>{y*=rd(n)/((b.nrm&&b.nrm[j])||1)});if(b.gain!=null)y*=b.gain;out(b.i.length?y:0);break}
+   case 'MUL':{let y=1;b.i.forEach((n,j)=>{y*=rd(n)/(((b.nrm&&b.nrm[j])||1)*((b.scn&&b.scn[j])||1))});if(b.gain!=null)y*=b.gain;out(b.i.length?y:0);break}
    case 'DIV':{const d=rd(b.de);if(Math.abs(d)<1e-9){s.bad=1;out(s.good!=null?s.good:0)}else{s.bad=0;s.good=rd(b.nu)/d;if(b.oa)s.good=s.good*b.oa[0]+b.oa[1];out(s.good)}break}
    case 'HLLIM':{let x=rd(b.main);if(b.lo>=0)x=Math.max(x,rd(b.lo));if(b.hi>=0)x=Math.min(x,rd(b.hi));out(x);break}
    case 'ABS':out(Math.abs(rd(b.i[0])));break;

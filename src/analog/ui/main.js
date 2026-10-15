@@ -8,6 +8,10 @@ try{wsIn(JSON.parse(localStorage.getItem('ditl.an.ws')||'{}'))}catch(e){}
 const wsSave=()=>{const s=JSON.stringify(AN.ws);try{localStorage.setItem('ditl.an.ws',s)}catch(e){}KV.set('ws',s);WN.put('ws',AN.ws);persistAll()};
 
 try{window.ANLN=JSON.parse(localStorage.getItem('ditl.ln')||'{}')||{}}catch(e){window.ANLN={}}
+/* the engine reads the manual F(X) tables as AN.ln (no page access in the engine): it is the same object as window.ANLN, also when the page replaces it */
+Object.defineProperty(AN,'ln',{get:()=>window.ANLN,set:v=>{window.ANLN=v},configurable:true,enumerable:false});
+/* the raw LINEAR tables: the page reads them from its data block, the engine asks for them */
+AN.lnSrc=()=>{const e=document.getElementById('aln');return e?JSON.parse(e.textContent):[]};
 const KV=(()=>{const open=()=>new Promise(res=>{try{const r=indexedDB.open('ditl-an',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>res(null);r.onblocked=()=>res(null)}catch(e){res(null)}}),p=open();
  return{get:k=>p.then(d=>new Promise(res=>{if(!d)return res(undefined);try{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>res(undefined)}catch(e){res(undefined)}})),set:(k,v)=>p.then(d=>new Promise(res=>{if(!d)return res(false);try{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>res(true);t.onerror=()=>res(false);t.onabort=()=>res(false)}catch(e){res(false)}}))}})();
 const WN={get(){try{if(String(window.name).startsWith('ditl-an:'))return JSON.parse(window.name.slice(8))}catch(e){}return{}},put(k,v){try{if(window.name&&!String(window.name).startsWith('ditl-an:'))return;const o=WN.get();o[k]=v;window.name='ditl-an:'+JSON.stringify(o)}catch(e){}}};

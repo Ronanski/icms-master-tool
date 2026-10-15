@@ -7,6 +7,8 @@ reader/blocks.js
 reader/pins-params.js
 engine/compile-step.js
 engine/plant.js
+engine/sheets.js
+engine/links.js
 ui/main.js
 ui/hmi-view.js
 ui/hmi-v2.js

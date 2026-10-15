@@ -3,7 +3,7 @@ window.UATR=(function(){
  const fmt=x=>x==null||!isFinite(x)?'—':Math.abs(x)>=1000?x.toFixed(0):Math.abs(x)>=100?x.toFixed(1):Math.abs(x)>=10?x.toFixed(2):x.toFixed(3);
  function plantOff(){const sv=[];for(const x of AN.sheets)if(x.S)for(const b of x.S.procs||[]){sv.push([b,b.proc.on]);b.proc.on=false}return sv}
  function plantRestore(sv){for(const [b,o] of sv)b.proc.on=o}
- function apply(S,st){for(const n in st.force||{})S.rt.force[n]=st.force[n];for(const n in st.unforce||{})delete S.rt.force[n];for(const n in st.ext||{})S.rt.ext[n]=st.ext[n];for(const id in st.fm||{}){const q=S.rt.st[id];if(q)q.fm=st.fm[id]}for(const id in st.st||{}){const q=S.rt.st[id];if(q)Object.assign(q,st.st[id])}}
+ function apply(S,st){for(const n in st.force||{})S.rt.force[n]=st.force[n];for(const n in st.unforce||{})delete S.rt.force[n];for(const n in st.ext||{})S.rt.ext[n]=st.ext[n];for(const id in st.fm||{}){const q=S.rt.st[id];if(q)q.fm=st.fm[id]}for(const id in st.st||{}){const q=S.rt.st[id];if(q)Object.assign(q,st.st[id])}try{AN.settle()}catch(e){}/* like the page: a forced signal is settled at once, so the first step does not see the old value (a switch that keeps its leg would catch it) */}
  function runCase(sh,c){const S=AN.ensure(sh);
   if(c.skipMsg)return {ok:true,skip:c.skipMsg,rows:[]};
   if(c.reset!==false){AN.reset();plantOff()}
