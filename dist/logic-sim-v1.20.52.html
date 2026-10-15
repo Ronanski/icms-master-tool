@@ -33609,7 +33609,7 @@ function build(){const ui=document.getElementById('uisel');if(!ui||document.getE
  sel.onchange=()=>{dg=applyDg(sel.value);set('ditl.dg',dg)};ui.after(sel)}
 build();if(!document.getElementById('dgsel'))document.addEventListener('DOMContentLoaded',build);
 })();
-</script><!--THEME-END--><!--UAT-BEGIN--><script id="uatdata" type="application/json">{"ver":"1.20.52","known":{"ABC-003B":[23],"ABC-003C":[23],"ABC-003D":[23],"ABC-004A":[2,8,48],"ABC-005":[10],"ABC-008":[12],"ABC-009A":[7],"ABC-010":[22,42,74,0],"ABC-011":[2],"ABC-012":[2],"ABC-014":[1,12],"ABC-019":[27],"ABC-020":[36],"ABC-030":[3],"ABC-001C":[11],"ABC-002":[14],"ABC-003A":[34]}}</script><script id="uatui">/* UAT runner: runs one test case of one block on the simulator (AN) and compares the result with the expected rows. Used by the generator (dry run) and by the UAT panel. */
+</script><!--THEME-END--><!--UAT-BEGIN--><script id="uatdata" type="application/json">{"ver":"1.20.52","known":{}}</script><script id="uatui">/* UAT runner: runs one test case of one block on the simulator (AN) and compares the result with the expected rows. Used by the generator (dry run) and by the UAT panel. */
 window.UATR=(function(){
  const fmt=x=>x==null||!isFinite(x)?'—':Math.abs(x)>=1000?x.toFixed(0):Math.abs(x)>=100?x.toFixed(1):Math.abs(x)>=10?x.toFixed(2):x.toFixed(3);
  function plantOff(){const sv=[];for(const x of AN.sheets)if(x.S)for(const b of x.S.procs||[]){sv.push([b,b.proc.on]);b.proc.on=false}return sv}
