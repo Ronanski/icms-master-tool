@@ -63,6 +63,20 @@ function itemEl(sh,g,it){const s=status(sh,it),r=RES[rkey(sh.name,it.id)],known=
    box.append(E('div',{cls:'row'},[E('button',{txt:'Accept (behaviour is right)',on:()=>{R[rkey(sh.name,it.id)]={v:'ok'};save();build()}})]))}
   if(s==='ok-manual')box.append(E('div',{cls:'row'},[E('button',{txt:'Undo accept',on:()=>{delete R[rkey(sh.name,it.id)];save();build()}})]))}
  return box}
+/* SCENARIO TEST: operator + proseso nang sabay (src/ui/uat/scen.js, scenarios/<sheet>.json). Isang pindot, isang linya bawat tseke. */
+const SRES={};let sbusy=false;
+async function runScen(sh,list){if(sbusy)return;sbusy=true;try{for(const sc of list){SRES[sh.name+'|'+sc.id]={lines:[],pass:0,fail:0,running:true};build();const r=await UATS.run(sh.name,sc,l=>{SRES[sh.name+'|'+sc.id].lines.push(l);if(SRES[sh.name+'|'+sc.id].lines.length%4===0)build()});SRES[sh.name+'|'+sc.id]=r;build()}}finally{sbusy=false;build()}}
+function scenBlock(sh){const sp=(D.scen||{})[sh.name];if(!sp)return null;const box=E('div',{cls:'it',style:'background:#18212a;border:1px solid #6aaee0;border-radius:8px;margin:8px 0'});
+ const all=sp.scenarios.map(x=>SRES[sh.name+'|'+x.id]).filter(x=>x&&!x.running),tp=all.reduce((a,x)=>a+x.pass,0),tf=all.reduce((a,x)=>a+x.fail,0);
+ box.append(E('div',{cls:'h'},[E('b',{txt:'SCENARIO TEST: '+sp.title}),E('span',{cls:tf?'n':all.length?'y':'w',txt:all.length?(tf?tf+' ✖':'✔ '+tp):'hindi pa tumatakbo'})]));
+ box.append(E('div',{cls:'sub',txt:'Parang tunay na operator + proseso: itinatakda ang mga input, pinipindot ang AUTO / MAN / REMOTE / LOCAL, MV at SV sa operator panel, at tinitingnan ang resulta mula input hanggang output. Ang inaasahan ay galing sa drawing, hindi sa engine. Naka-pause ang app habang tumatakbo; may mga pagsubok na tumatagal ng ilang minuto ng simulation.'}));
+ box.append(E('div',{cls:'row'},[E('button',{cls:'go',txt:sbusy?'Tumatakbo...':'▶ Patakbuhin ang LAHAT ng scenario',on:()=>runScen(sh,sp.scenarios)})]));
+ for(const sc of sp.scenarios){const r=SRES[sh.name+'|'+sc.id],d=E('details',{});if(r&&(r.fail||r.running))d.open=true;
+  d.append(E('summary',{},[E('span',{cls:r&&!r.running?(r.fail?'n':'y'):'w',txt:r&&!r.running?(r.fail?'✖':'✔'):(r?'…':'·')}),E('span',{txt:sc.title}),E('span',{cls:'c',txt:r&&!r.running?r.pass+' / '+(r.pass+r.fail):''})]));
+  d.append(E('div',{cls:'sub',txt:'Sa drawing: '+sc.drawing}));d.append(E('div',{cls:'row',style:'padding:0 10px'},[E('button',{txt:'▶ Patakbuhin ito',on:()=>runScen(sh,[sc])})]));
+  if(r){const tb=E('table');for(const l of r.lines)tb.append(E('tr',{},[E('td',{cls:l.k==='ok'?'y':l.k==='bad'?'n':'w',txt:l.k==='ok'?'✔':l.k==='bad'?'✖':'›'}),E('td',{},[document.createTextNode(l.t+(l.k!=='do'&&l.exp!==undefined?'  →  inaasahan: '+l.exp+' | nakita: '+l.got:''))])]));d.append(tb)}
+  box.append(d)}
+ return box}
 function build(){if(P.style.display!=='block')return;const sh=sheet();if(!sh||/^ABC-000/.test(sh.name)){P.innerHTML='';P.append(E('div',{cls:'row'},[E('h3',{txt:'UAT'}),E('button',{txt:'✕',on:()=>{P.style.display='none'}})]),E('div',{cls:'sub',txt:'Open an ABC sheet (not the legend) to test it.'}));return}
  const keep=[...P.querySelectorAll('details[data-g]')].filter(d=>d.open).map(d=>d.dataset.g),top=P.scrollTop;
  const sp=spec(sh),st=sheetState(sh),names=AN.sheets.filter(x=>!/^ABC-000/.test(x.name)).map(x=>x.name),pos=names.indexOf(sh.name);
@@ -75,6 +89,7 @@ function build(){if(P.style.display!=='block')return;const sh=sheet();if(!sh||/^
  P.append(E('div',{cls:'sub',txt:st.all.length+' blocks / controllers · '+c.pass+' pass · '+c.fail+' fail · '+c.todo+' not run'+(c.skip?' · '+c.skip+' skipped':'')}),E('div',{cls:'bar'},[E('i',{style:'width:'+Math.round(100*c.pass/tot)+'%'})]));
  P.append(E('div',{cls:'row'},[E('button',{cls:'go',txt:'▶ Test this sheet',on:async()=>{await runSheet(sh);build()}}),E('button',{cls:'go',txt:'▶ Test ALL sheets',on:()=>{runAll()}})]));
  if(msg)P.append(E('div',{cls:'sub w',txt:msg}));
+ {const sb=scenBlock(sh);if(sb)P.append(sb)}
  {const mb=manBanner(sh);if(mb)P.append(mb)}
  P.append(E('div',{cls:'sub',txt:'Each block is forced with known inputs and its output is compared with the block definition (truth table, set point, delay, curve table, controller action). Open a group to see its blocks; ▶ runs one block, 📍 shows it on the drawing. 👁 on a case = YOUR OWN check: the sheet is set up and you judge on the drawing.'}),E('div',{cls:'sub w',txt:'NOT covered by this UAT yet (about 1700 of 4000 blocks): AO outputs, valves / actuators (ACT, VLV, IP), alarms (ALM), operator selector circles (COS), SIG.AB flags, tag texts (TXD), field blocks, some constants / comparators; skipped cases show the reason. A pass here means only that the tested blocks follow their definition, not that the whole sheet is right.'}));
  sp.groups.forEach(g=>{const cc=counts(sh,g.items),d=E('details',{'data-g':g.g});if(keep.includes(g.g)||cc.fail)d.open=keep.includes(g.g);
