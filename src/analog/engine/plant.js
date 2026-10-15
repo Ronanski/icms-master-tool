@@ -220,6 +220,25 @@ function anProcList(S) {
   S.procs = out;
   return out;
 }
+/* 2.0.0 (user tip): OPERATING POINTS of the real plant, from the control-room HMI snapshots (docs/hmi/operating-points.json,
+   about 150 MW). The plant model is ANCHORED there: with the snapshot MV the PV settles at the snapshot PV; the slope (K) and
+   the direction (ACT) stay as before. Only loops that run in AUTO / REMOTE on the snapshot with their own valve; cascade
+   masters, parallel valves and measurements shared by two controllers are not anchored (their PV is made by other loops). */
+const AN_HMI_OP = {
+  'TICBR1140': { mv: 65.6, pv: 462.0, src: '03.png' },
+  'TICBR1130': { mv: 57.6, pv: 394.0, src: '03.png' },
+  'TICMS1004': { mv: 69.7, pv: 542.0, src: '03.png' },
+  'TICBR1150': { mv: 30.2, pv: 420.0, src: '03.png' },
+  'LICBR1001A': { mv: 56.0, pv: 3.0, src: '03.png' },
+  'FICFW1007': { mv: 56.0, pv: 499.1, src: '03.png' },
+  'FICCL1061A': { mv: 72.8, pv: 29.0, src: '11.png' },
+  'FICCL1061B': { mv: 72.8, pv: 29.1, src: '11.png' },
+  'FICCL1061C': { mv: 72.8, pv: 28.9, src: '11.png' },
+  'TICHR1002A': { mv: 36.0, pv: 541.0, src: '39.PNG' },
+  'TICHR1002': { mv: 79.4, pv: 541.0, src: '39.PNG' },
+  'HICHR1002A': { mv: 11.0, pv: 11.0, src: '39.PNG' },
+  'HICHR1002B': { mv: 89.0, pv: 89.0, src: '39.PNG' }
+};
 function anProcStep(S, dt) {
   const rt = S.rt,
     v = rt.v,
@@ -254,6 +273,7 @@ function anProcStep(S, dt) {
             const stn = anStationOf(S, g),
               so = stn && stn.amt && stn.amt.o;
             let cur = so && so[0] >= 0 ? so[0] : null;
+            g._ao = cur;
             if (cur != null) {
               const seen = new Set();
               for (let k = 0; k < 6; k++) {
@@ -268,7 +288,17 @@ function anProcStep(S, dt) {
             }
           } catch (e) {}
         }
-        return g._fo != null && isFinite(v[g._fo]) ? v[g._fo] : t.out == null ? 0 : t.out;
+        /* 2.0.0: a cascade master: the net after its station is the SV of the slave in ENGINEERING units (ABC-011 TICBR1140.MV =
+           358.2 °C for 59.7 %), not a valve command in %: the model takes the output of the station then (before: the PV went
+           to the top of its range, 600 °C, whatever the MV) */
+        if (g._fo != null && isFinite(v[g._fo])) {
+          const fv = v[g._fo],
+            plo = g.p.lo == null ? 0 : g.p.lo,
+            phi = g.p.hi == null ? 100 : g.p.hi;
+          if (fv >= Math.min(plo, 0) - 10 && fv <= Math.max(phi, 100) + 10) return fv;
+          if (g._ao != null && isFinite(v[g._ao])) return v[g._ao];
+        }
+        return t.out == null ? 0 : t.out;
       },
       uOf = g => uOfS(S, g),
       u = (() => {
@@ -302,7 +332,13 @@ function anProcStep(S, dt) {
         const e0 = (pr.sg * pr.K * (c - um)) / 100;
         return xe.length ? (e0 + xe.reduce((a, x) => a + x, 0)) / (1 + xe.length) : e0;
       };
-    const ss = c => lo + span * (0.5 + eff(c)) + ((pr.dist || 0) / 100) * span + (pr.op || 0);
+    if (pr.hop === undefined) {
+      const h = AN_HMI_OP[(b.txt || [])[1]];
+      pr.hop = h && !xe.length && !(b._sh && b._sh.length) && h.pv >= lo && h.pv <= lo + span ? h : null;
+    }
+    const ss0 = c => lo + span * (0.5 + eff(c)),
+      anc = pr.hop ? pr.hop.pv - ss0(pr.hop.mv) : 0,
+      ss = c => ss0(c) + anc + ((pr.dist || 0) / 100) * span + (pr.op || 0);
     if (!q) q = pm[b.id] = { y: ss(u), h: [], u: null };
     if (dt > 0) {
       q.h.push([rt.t, u]);

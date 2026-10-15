@@ -96,3 +96,7 @@ body.ophmi #anp{display:none!important}
 #opp .fpman .tg .b{height:26px;padding:0 10px;background:#0e2a18;border-color:#0b3a1b;color:#d8ffe6}
 #opp .fpman .tg .b.on{background:#7a5a14;border-color:#d8b860;color:#fff}
 #opp button.stp{min-width:46px;font-size:15px;touch-action:none;user-select:none;-webkit-user-select:none}
+/* 2.0.0 (user): faceplates not too wide, like a DCS faceplate window */
+#opp .fp.fpx{max-width:300px;margin-left:auto;margin-right:auto}
+#opp .fpg{width:60px}
+#opp .fpx .fpt{white-space:normal;line-height:1.25}

@@ -25,7 +25,7 @@
             ? x.toFixed(2)
             : x.toFixed(3);
   const sheet = () => AN.sheets && AN.sheets[AN.i];
-  /* 2.0.0: touch screens (tablet / phone): the value boxes never open the keyboard; the operator uses the ▲ ▼ buttons only */
+  /* 2.0.0: touch screens (tablet / phone) */
   const TOUCH = (() => {
     try {
       return matchMedia('(pointer:coarse)').matches;
@@ -33,8 +33,9 @@
       return false;
     }
   })();
+  /* user 2026-10-15: SV / MV / manual value in a faceplate are changed with the ▲ ▼ buttons only: no keyboard on any device */
   const noKb = el => {
-    if (TOUCH && el) {
+    if (el) {
       el.readOnly = true;
       el.setAttribute('inputmode', 'none');
     }
@@ -556,7 +557,7 @@
       const raCol = E('div', { cls: 'fpr' }, (c.remote ? [bRem] : []).concat([bAuto, bMan])),
         mvBr = E('div', { cls: 'mvb' }, [barMv]);
       const card = E('div', { cls: 'fp fpx' }, [
-        E('div', { cls: 'fpt', txt: c.desc || c.tag }),
+        E('div', { cls: 'fpt', txt: c.desc || (AN.descOf && AN.descOf(sh, c.tag)) || c.tag }),
         E('div', { cls: 'fpm' }, [
           graph,
           E('div', { cls: 'fpc' }, [pvBox, svBox, E('div', { cls: 'fps' }, [raCol, mvBr]), mvBox])
@@ -635,12 +636,12 @@
           ]),
           E('div', { cls: 'row' }, [popVal, E('span', { cls: 'sub', txt: k === 'SV' ? unit : '%' })]),
           E('div', { cls: 'row' }, [
-            B('▲▲', st, '+1 % (hold = faster)'),
-            B('▲', st / 10, '+0.1 % (hold = faster)'),
-            B('▼', -st / 10, '-0.1 % (hold = faster)'),
-            B('▼▼', -st, '-1 % (hold = faster)')
+            B('▲▲', st * 5, '+5 % (hold = faster)'),
+            B('▲', st, '+1 % (hold = faster)'),
+            B('▼', -st, '-1 % (hold = faster)'),
+            B('▼▼', -st * 5, '-5 % (hold = faster)')
           ]),
-          E('div', { cls: 'sub', txt: '▲ ' + fmt(st / 10) + ' · ▲▲ ' + fmt(st) + ' ' + (k === 'SV' ? unit : '%') + ' per press; hold to ramp' })
+          E('div', { cls: 'sub', txt: '▲ ' + fmt(st) + ' · ▲▲ ' + fmt(st * 5) + ' ' + (k === 'SV' ? unit : '%') + ' per press; hold to ramp' })
         );
         if (k === 'MV')
           popEl.append(
@@ -842,8 +843,8 @@
           const v = S.rt.v[b.o[0]];
           return isFinite(v) ? v : +inp.value || 0;
         },
-        fine = span / 1000,
-        coarse = span / 100;
+        fine = span / 100,
+        coarse = span / 20;
       inp.onchange = () => set(+inp.value);
       const manB = E('button', {
         cls: 'b',
@@ -864,10 +865,10 @@
               E('div', { cls: 'fl' }, [E('span', { txt: 'MV' }), E('span', { txt: u })]),
               inp,
               E('div', { cls: 'row mls' }, [
-                stepBtn('▲▲', '+1 % of range (hold = faster)', m => set(cur() + coarse * m)),
-                stepBtn('▲', '+0.1 % of range (hold = faster)', m => set(cur() + fine * m)),
-                stepBtn('▼', '-0.1 % of range (hold = faster)', m => set(cur() - fine * m)),
-                stepBtn('▼▼', '-1 % of range (hold = faster)', m => set(cur() - coarse * m))
+                stepBtn('▲▲', '+5 % of range (hold = faster)', m => set(cur() + coarse * m)),
+                stepBtn('▲', '+1 % of range (hold = faster)', m => set(cur() + fine * m)),
+                stepBtn('▼', '-1 % of range (hold = faster)', m => set(cur() - fine * m)),
+                stepBtn('▼▼', '-5 % of range (hold = faster)', m => set(cur() - coarse * m))
               ]),
               E('div', { cls: 'sub', txt: '▲ ' + fmt(fine) + ' · ▲▲ ' + fmt(coarse) + ' ' + u + ' per press; hold to ramp' })
             ])

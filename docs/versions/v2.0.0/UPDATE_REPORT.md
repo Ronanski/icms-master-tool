@@ -2,6 +2,33 @@
 
 Base: Stable v1.23.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f). Bakit 2.0.0: bagong henerasyon ng itsura at English ang buong app (PROJECT_RULES 5f, user 2026-10-15: "standard tayo, baka umabot ng v1.9999").
 
+## 2.0.0-beta.4 — Beta switch ayos, faceplate (1 % / 5 %, walang keyboard, description, makitid), legend, plant model na naka-angkla sa HMI, "Start at 150 MW"
+
+- **Problem (user):**
+  1. Sa tablet (Stable v1.23.0 apk), hindi makalipat sa Beta.
+  2. Sa faceplate: ▲ = 1, ▲▲ = 5; walang keyboard kahit saan sa faceplate; may description; hindi malapad.
+  3. Ang legend ng kulay sa sheet strip ay laging "tube" kahit "Solid" ang pinili.
+  4. Ibangga ang plant model sa HMI snapshots.
+- **As Found:**
+  1. Kapag may lumang Beta na naka-save sa app (hal. 1.22.0-beta.4 mula sa v1.22 install), ang pagpili ng Beta ay **binubuksan ang lumang kopya na iyon** at hindi kumukuha ng bago. Na-reproduce sa headless (tablet 1180 px, totoong pindot sa ⚙ → Channel).
+  3. Ang legend ay naka-hardcode na tube.
+  4. Ang plant model ay PV = 50 % ng range kapag MV = 50 %; hindi ito nakaangkla sa tunay na planta. Sa cascade master (hal. ABC-011 TICBR1140), ang command na nahanap ng model ay ang SV ng slave sa °C (358.2), kaya laging 600 °C ang PV.
+- **Work Done:**
+  1. `update-question.js`: ang naka-save na kopyang mas luma sa kopya sa loob ng app ay hindi na binubuksan (tinatanggal). `category-search.js`: ang Beta ay laging nagda-download ng pinakabago kapag may internet; ang naka-save na kopya ay para lang sa offline.
+  2. `hmi.js`: ▲ / ▼ = 1 % ng range, ▲▲ / ▼▼ = 5 %, hold-to-ramp; ang value box sa faceplate ay walang keyboard sa lahat ng device; ang header ng faceplate ay description (126 / 126 faceplate); ang faceplate ay max 300 px.
+  3. `paint.js`: ang legend ay sumusunod sa Legend & style (solid / tube, kulay, kapal).
+  4. `plant.js`: ang 13 loop na tumatakbo sa snapshot (A / R, sariling valve) ay naka-angkla: sa MV ng snapshot, ang PV ay ang PV ng snapshot (hal. FICFW1007 MV 56 % → 499 T/H). Cascade master: kapag ang command ay nasa engineering unit, ang output ng station (%) ang ginagamit.
+  5. **Bago: ⚙ → Simulation → "Start at 150 MW (HMI snapshot)"** (`src/analog/engine/hmi-op.js`): Reset, tapos 105 transmitter (AI, per station at address) at 36 controller (SV, MV, A / R / M) ay itinatakda mula sa mga snapshot. Hindi na cold start.
+- **As Left (headless):**
+  - `stale_beta.js` 4 / 4; `inapp_update.js` ALL PASS; `manstation.js` 12 / 12; overview, faceplate: PASS.
+  - Sa 150 MW state (pagkatapos ng 300 s): TICBR1130 PV 395.5 °C (snapshot 394), TICBR1150 420.1 (420), TICBR1140 461.0 (462, AUTO), FICFW1007 494.9 T/H (499.1). TICMS1004 ay papalapit (569 → SV 541).
+  - Buong regression: tingnan ang commit.
+- **Hindi pa:**
+  - Sa 150 MW state, ang FICFW1007 / TICBR1130 / TICBR1150 ay naka-MAN dahil sa force manual ng drawing. Kailangan ang mga digital signal ng planta (hal. BFWP A running M.3343, galing DITL); wala pa ang mga ito sa snapshot data.
+  - Ang drum level (tatlong controller sa iisang PV) ay hindi pa naka-angkla.
+  - Ang Stable v1.23.0 na naka-install ay may lumang code pa. Gawin sa tablet: piliin ang Beta. Kung ang bumukas ay v1.22.0-beta.x, pindutin ang ⚙ / Update → "I-update ngayon" (na-subok sa headless: lilipat sa pinakabagong Beta).
+- **Status:** Pass (headless), Beta.
+
 ## 2.0.0-beta.3 — Faceplate ng MAN station, ▲ ▼ na pino at hold-to-ramp, walang keyboard sa tablet; HMI operating points
 
 - **Problem (user):** Ang MAN station sa Operator tab ay walang faceplate at "MAN" lang ang pangalan. Ang − / + ay 1 % ng range (5 sa range na 0~500). Sa tablet, lumalabas ang keyboard sa SV / MV.

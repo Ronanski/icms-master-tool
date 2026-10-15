@@ -57,6 +57,14 @@
     else {
       beta = CH === 'beta'; /* Beta chosen but not downloaded yet: the update check offers the Beta */
       var want = STORE[CH];
+      /* 2.0.0: a stored copy OLDER than the copy inside the app is never opened (it was a Beta downloaded by an older
+         install, e.g. 1.22.0-beta.4 under Stable 1.23.0: choosing Beta opened that old copy, so the switch looked broken).
+         It is dropped; the update check then offers the newest Beta. */
+      if (want && cmp(want, T) < 0) {
+        delete STORE[CH];
+        ls('ls-store', JSON.stringify(STORE));
+        want = '';
+      }
       /* Beta: the downloaded Beta; Stable: the downloaded Stable only when it is newer than the copy inside the app */
       if (want && (CH === 'beta' || cmp(want, T) > 0)) {
         /* the rest of this page (the copy inside the app) becomes hidden text, so its scripts do not start */

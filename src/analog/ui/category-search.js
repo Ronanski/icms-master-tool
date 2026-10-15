@@ -662,15 +662,20 @@ document.head.appendChild(
           }
           /* 1.22.0: inside the app the channel is DOWNLOADED and runs from the app (no Chrome, works without internet afterwards) */
           const st = (window.lsStore && window.lsStore()) || {};
-          if (ch === 'stable' || st[ch]) {
+          if (ch === 'stable' || !window.lsDownload) {
             location.reload();
             return;
           }
-          if (!window.lsDownload) return;
+          /* 2.0.0: Beta always fetches the newest Beta first (online); the stored copy is used only when offline */
+          msg('Downloading the newest Beta...');
           window
             .lsDownload(ch)
             .then(() => location.reload())
             .catch(e => {
+              if (st[ch]) {
+                location.reload();
+                return;
+              }
               msg('Beta download failed: ' + ((e && e.message) || 'no internet') + '. Internet is needed once.');
               try {
                 localStorage.setItem('logic.channel', runBeta ? 'beta' : 'stable');

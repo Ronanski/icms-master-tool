@@ -313,6 +313,26 @@
       w.classList.add(an.contains(w) ? 'an-only' : 'dit-only');
       set.m.append(w);
     });
+    {
+      /* 2.0.0: start the simulation like the plant in service (HMI snapshots, about 150 MW) instead of a cold boiler */
+      const ld = document.createElement('button');
+      ld.className = 'an-only';
+      ld.id = 'load150';
+      ld.textContent = 'Start at 150 MW (HMI snapshot)';
+      ld.title = 'Reset, then every transmitter that is on the control-room HMI snapshots takes its snapshot value (docs/hmi)';
+      ld.onclick = () => {
+        try {
+          AN.reset();
+          const n = AN.plantLoad150();
+          AN.settle();
+          AN.paint();
+          msg('Plant at 150 MW: ' + n + ' transmitters set from the HMI snapshots. Press Run.');
+        } catch (e) {
+          msg('Could not load the 150 MW state: ' + e.message);
+        }
+      };
+      set.m.append(ld);
+    }
     set.head('Channel at update');
     const ch = $('chsel'),
       up = $('updbtn');
