@@ -263,10 +263,14 @@ function anProcStep(S, dt) {
         /* two controllers on the same PV (valves in parallel, e.g. A and B side): the PV answers the average of their open commands (v1.20.58) */ const sh =
           b._sh || (b._sh = S.procs.filter(g => g !== b && g.proc && g.proc.mode === 'shared' && g.proc.pv === pr.pv));
         if (!sh.length) return uOf(b);
-        const us = [uOf(b)].concat(sh.map(uOf)).filter(x => Math.abs(x) > 1e-9);
-        /* a closed (0) stand-by valve does not dilute the others */ return us.length
-          ? us.reduce((a, x) => a + x, 0) / us.length
-          : 0;
+        /* 1.22.0: valves in parallel on one header: their flows ADD (a stand-by valve at 0 adds nothing), up to the top of the
+           command range. Before: the average of the open valves, so closing one of two open valves did not move the PV
+           (ABC-030 PICAS1004 + PICAS1005) */
+        const hi = b.p.hi == null ? 100 : b.p.hi;
+        return Math.min(
+          hi,
+          [uOf(b)].concat(sh.map(uOf)).reduce((a, x) => a + Math.max(0, x), 0)
+        );
       })(),
       span = b.p.span > 0 ? b.p.span : 100,
       lo = b.p.rlo != null ? b.p.rlo : 0,
