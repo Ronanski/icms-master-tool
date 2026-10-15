@@ -179,8 +179,8 @@
         }),
         ...m.rows.map(w => E('div', { txt: '• ' + w.t + ' = ' + w.exp })),
         E('div', { cls: 'row' }, [
-          E('button', { cls: 'on', txt: '✔ Tama sa drawing', on: () => set('ok') }),
-          E('button', { txt: '✖ Mali sa drawing', on: () => set('bad') }),
+          E('button', { cls: 'on', txt: '✔ Matches the drawing', on: () => set('ok') }),
+          E('button', { txt: '✖ Does not match', on: () => set('bad') }),
           E('button', {
             txt: 'Close',
             on: () => {
@@ -364,21 +364,21 @@
         E('b', { txt: 'SCENARIO TEST: ' + sp.title }),
         E('span', {
           cls: tf ? 'n' : all.length ? 'y' : 'w',
-          txt: all.length ? (tf ? tf + ' ✖' : '✔ ' + tp) : 'hindi pa tumatakbo'
+          txt: all.length ? (tf ? tf + ' ✖' : '✔ ' + tp) : 'not run yet'
         })
       ])
     );
     box.append(
       E('div', {
         cls: 'sub',
-        txt: 'Parang tunay na operator + proseso: itinatakda ang mga input, pinipindot ang AUTO / MAN / REMOTE / LOCAL, MV at SV sa operator panel, at tinitingnan ang resulta mula input hanggang output. Ang inaasahan ay galing sa drawing, hindi sa engine. Naka-pause ang app habang tumatakbo; may mga pagsubok na tumatagal ng ilang minuto ng simulation.'
+        txt: 'Operator + process test: sets the inputs, presses AUTO / MAN / REMOTE / LOCAL, MV and SV on the operator panel and checks the result from input to output. Expected values come from the drawing, not from the engine. The app is paused while it runs; some tests take several minutes of simulation time.'
       })
     );
     box.append(
       E('div', { cls: 'row' }, [
         E('button', {
           cls: 'go',
-          txt: sbusy ? 'Tumatakbo...' : '▶ Patakbuhin ang LAHAT ng scenario',
+          txt: sbusy ? 'Running...' : '▶ Run ALL scenarios',
           on: () => runScen(sh, sp.scenarios)
         })
       ])
@@ -400,7 +400,7 @@
       d.append(E('div', { cls: 'sub', txt: 'Sa drawing: ' + sc.drawing }));
       d.append(
         E('div', { cls: 'row', style: 'padding:0 10px' }, [
-          E('button', { txt: '▶ Patakbuhin ito', on: () => runScen(sh, [sc]) })
+          E('button', { txt: '▶ Run this one', on: () => runScen(sh, [sc]) })
         ])
       );
       if (r) {
@@ -414,7 +414,7 @@
               }),
               E('td', {}, [
                 document.createTextNode(
-                  l.t + (l.k !== 'do' && l.exp !== undefined ? '  →  inaasahan: ' + l.exp + ' | nakita: ' + l.got : '')
+                  l.t + (l.k !== 'do' && l.exp !== undefined ? '  →  expected: ' + l.exp + ' | actual: ' + l.got : '')
                 )
               ])
             ])
@@ -455,10 +455,10 @@
   function spotBox(sh) {
     const box = E('div', { cls: 'it', style: 'border-color:#3a5670' }, [
       E('div', { cls: 'h' }, [
-        E('b', { txt: 'Spot check · ' + SPOT.res.filter(r => r.ok).length + ' / ' + SPOT.res.length + ' tama' }),
+        E('b', { txt: 'Spot check · ' + SPOT.res.filter(r => r.ok).length + ' / ' + SPOT.res.length + ' correct' }),
         E('button', { txt: '✕', on: () => ((SPOT = null), build()) })
       ]),
-      E('div', { cls: 'sub', txt: 'Suriin mo ang bawat isa: ang kuwenta ay nakasulat sa numero. 📍 = ipakita ang block sa drawing.' })
+      E('div', { cls: 'sub', txt: 'Check each one: the rule is written in numbers. 📍 = show the block on the drawing.' })
     ]);
     for (const r of SPOT.res)
       box.append(
@@ -471,7 +471,7 @@
           E('div', { cls: 'sub', txt: r.g + ' · ' + r.l })
         ].concat(
           r.rows.map(x =>
-            E('div', { cls: 'sub', style: 'font-family:var(--mf,monospace)' , txt: '  ' + x.t + ': inaasahan ' + x.exp + ' · nakita ' + x.act + (x.ok ? '  ✔' : '  ✖') })
+            E('div', { cls: 'sub', style: 'font-family:var(--mf,monospace)' , txt: '  ' + x.t + ': expected ' + x.exp + ' · actual ' + x.act + (x.ok ? '  ✔' : '  ✖') })
           )
         ))
       );
@@ -567,7 +567,7 @@
         }),
         E('button', {
           txt: '🎲 Spot check (5)',
-          title: 'Pumili ng 5 random na case: makikita ang kuwenta sa numero, ang inaasahan at ang nakita; suriin mo mismo (calculator / drawing)',
+          title: '5 random cases with the rule in numbers, the expected and the actual value; check them yourself (calculator / drawing)',
           on: () => spotCheck(sh, sp)
         })
       ])

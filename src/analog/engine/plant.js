@@ -220,6 +220,25 @@ function anProcList(S) {
   S.procs = out;
   return out;
 }
+/* 2.0.0 (user tip): OPERATING POINTS of the real plant, from the control-room HMI snapshots (docs/hmi/operating-points.json,
+   about 150 MW). The plant model is ANCHORED there: with the snapshot MV the PV settles at the snapshot PV; the slope (K) and
+   the direction (ACT) stay as before. Only loops that run in AUTO / REMOTE on the snapshot with their own valve; cascade
+   masters, parallel valves and measurements shared by two controllers are not anchored (their PV is made by other loops). */
+const AN_HMI_OP = {
+  'TICBR1140': { mv: 65.6, pv: 462.0, src: '03.png' },
+  'TICBR1130': { mv: 57.6, pv: 394.0, src: '03.png' },
+  'TICMS1004': { mv: 69.7, pv: 542.0, src: '03.png' },
+  'TICBR1150': { mv: 30.2, pv: 420.0, src: '03.png' },
+  'LICBR1001A': { mv: 56.0, pv: 3.0, src: '03.png' },
+  'FICFW1007': { mv: 56.0, pv: 499.1, src: '03.png' },
+  'FICCL1061A': { mv: 72.8, pv: 29.0, src: '11.png' },
+  'FICCL1061B': { mv: 72.8, pv: 29.1, src: '11.png' },
+  'FICCL1061C': { mv: 72.8, pv: 28.9, src: '11.png' },
+  'TICHR1002A': { mv: 36.0, pv: 541.0, src: '39.PNG' },
+  'TICHR1002': { mv: 79.4, pv: 541.0, src: '39.PNG' },
+  'HICHR1002A': { mv: 11.0, pv: 11.0, src: '39.PNG' },
+  'HICHR1002B': { mv: 89.0, pv: 89.0, src: '39.PNG' }
+};
 function anProcStep(S, dt) {
   const rt = S.rt,
     v = rt.v,
@@ -254,6 +273,7 @@ function anProcStep(S, dt) {
             const stn = anStationOf(S, g),
               so = stn && stn.amt && stn.amt.o;
             let cur = so && so[0] >= 0 ? so[0] : null;
+            g._ao = cur;
             if (cur != null) {
               const seen = new Set();
               for (let k = 0; k < 6; k++) {
@@ -268,7 +288,17 @@ function anProcStep(S, dt) {
             }
           } catch (e) {}
         }
-        return g._fo != null && isFinite(v[g._fo]) ? v[g._fo] : t.out == null ? 0 : t.out;
+        /* 2.0.0: a cascade master: the net after its station is the SV of the slave in ENGINEERING units (ABC-011 TICBR1140.MV =
+           358.2 °C for 59.7 %), not a valve command in %: the model takes the output of the station then (before: the PV went
+           to the top of its range, 600 °C, whatever the MV) */
+        if (g._fo != null && isFinite(v[g._fo])) {
+          const fv = v[g._fo],
+            plo = g.p.lo == null ? 0 : g.p.lo,
+            phi = g.p.hi == null ? 100 : g.p.hi;
+          if (fv >= Math.min(plo, 0) - 10 && fv <= Math.max(phi, 100) + 10) return fv;
+          if (g._ao != null && isFinite(v[g._ao])) return v[g._ao];
+        }
+        return t.out == null ? 0 : t.out;
       },
       uOf = g => uOfS(S, g),
       u = (() => {
@@ -299,12 +329,66 @@ function anProcStep(S, dt) {
           return (xs * (xp.K || 1) * (uOfS(x.S, x.b) - xum)) / 100;
         }),
       eff = c => {
-        const e0 = (pr.sg * pr.K * (c - um)) / 100;
+        const e0 = (pr.sg * (pr.Ka || pr.K) * (c - um)) / 100;
         return xe.length ? (e0 + xe.reduce((a, x) => a + x, 0)) / (1 + xe.length) : e0;
       };
-    const ss = c => lo + span * (0.5 + eff(c)) + ((pr.dist || 0) / 100) * span + (pr.op || 0);
-    if (!q) q = pm[b.id] = { y: ss(u), h: [], u: null };
-    if (dt > 0) {
+    if (pr.hop === undefined) {
+      const h = AN_HMI_OP[(b.txt || [])[1]];
+      pr.hop = h && !xe.length && !(b._sh && b._sh.length) && h.pv >= lo && h.pv <= lo + span ? h : null;
+      /* the gain of an anchored loop is limited so that MV 0 ... 100 % keeps the PV inside the range of the instrument
+         (ABC-019 TICHR1002: 541 °C at 79.4 % spray; with K = 1 the PV was 600 °C, the top, for any MV below 70 %) */
+      if (pr.hop) {
+        const plo = b.p.lo == null ? 0 : b.p.lo,
+          phi = b.p.hi == null ? 100 : b.p.hi,
+          up = ((lo + span - pr.hop.pv) / span) * 100,
+          dn = ((pr.hop.pv - lo) / span) * 100,
+          dl = Math.max(1e-6, pr.hop.mv - plo),
+          dh = Math.max(1e-6, phi - pr.hop.mv),
+          /* the side the PV goes to when the valve CLOSES (MV -> 0) must stay inside the range; the other side may saturate.
+             A flow is proportional to the valve (MV 0 = no flow: ABC-010 FICFW1007 499 T/H at 56 % -> 0 T/H at 0 %) */
+          kdn = pr.sg > 0 ? dn / dl : up / dl;
+        void dh;
+        pr.Ka = b.p.lt === 'flow' ? Math.max(0.02, kdn) : Math.max(0.02, Math.min(pr.K, 0.9 * kdn));
+      }
+    }
+    const ss0 = c => lo + span * (0.5 + eff(c)),
+      anc = pr.hop ? pr.hop.pv - ss0(pr.hop.mv) : 0,
+      ss = c => ss0(c) + anc + ((pr.dist || 0) / 100) * span + (pr.op || 0);
+    if (pr.integ === undefined) {
+      pr.integ = null;
+      try {
+        if (b.p.lt === 'level' && (b.txt || [])[1] === 'LICBR1001') {
+          const fw = S.procs.find(x => (x.txt || [])[1] === 'FICFW1007'),
+            s1 = AN.sheets.find(x => x.name === 'ABC-001C');
+          /* the start-up feedwater valve FCVFW11302 (LICBR1001B) feeds the drum beside the main valve: its flow is added. Its size is
+             not in the repository: 30 % of the feedwater range at 100 % open is ASSUMED (a typical start-up valve) */
+          const su = S.procs.find(x => (x.txt || [])[1] === 'LICBR1001B'),
+            fsp = fw && fw.p ? (fw.p.span > 0 ? fw.p.span : 550) : 550;
+          if (fw && fw.proc && s1) pr.integ = { fw: fw.proc.pv, su, suK: 0.3 * fsp, sh1: s1, k: 0.02 }; /* about 0.36 mm/s for 20 T/H of imbalance (drum about 22 m2 of water surface) */
+        }
+      } catch (e) {}
+    }
+    if (!q) q = pm[b.id] = { y: pr.integ && isFinite(v[pr.pv]) ? v[pr.pv] : ss(u), h: [], u: null };
+    /* 2.0.0: the DRUM LEVEL is an integrating process: the level rises when more feedwater goes in than steam goes out
+       (dL/dt = k x (feedwater flow - main steam flow)). ABC-010: feedwater flow = PV of FICFW1007 (FT-FW1007, economizer inlet),
+       steam flow = FT-MS1031 (STN101 AI0129, ABC-001C). Before: a first-order answer to the command of the 3-element master,
+       so the level did not follow the water balance. */
+    if (pr.integ && dt > 0) {
+      const S1 = pr.integ.sh1.S;
+      let fst = 0;
+      if (S1) {
+        if (pr.integ.ai == null) {
+          const a = S1.blk.find(z => z.k === 'AI' && z.o && S1.lab[z.o[0]] && String(S1.lab[z.o[0]].t).trim() === 'AI0129'); /* engine only: the label of the net, not the UI name */
+          pr.integ.ai = a ? a.id : -1;
+        }
+        const st = pr.integ.ai >= 0 ? S1.rt.st[pr.integ.ai] : null;
+        fst = st ? (st.act != null ? +st.act : +st.val) || 0 : 0;
+      }
+      let ffw = +v[pr.integ.fw] || 0;
+      if (pr.integ.su) ffw += (Math.max(0, Math.min(100, +uOf(pr.integ.su) || 0)) / 100) * pr.integ.suK;
+      q.y = Math.max(lo, Math.min(lo + span, q.y + dt * pr.integ.k * (ffw - fst)));
+      q.h.length = 0;
+    } else if (dt > 0) {
       q.h.push([rt.t, u]);
       while (q.h.length > 2 && q.h[1][0] <= rt.t - pr.L) q.h.shift();
       const tgt = ss(q.h[0][1]);

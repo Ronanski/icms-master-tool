@@ -214,21 +214,21 @@
       } catch (e) {
         W.on = false;
         console.error(e);
-        msg('Iisang mundo: hindi mabuo (' + e.message + ')');
+        msg('One world: could not be built (' + e.message + ')');
       }
       if (W.on && W.stat)
         msg(
-          'Iisang mundo ON: ' +
+          'One world ON: ' +
             W.stat.ditlDitl +
             ' DITL ↔ DITL, ' +
             (AN.sheets.length
-              ? W.stat.fromDitl + ' FROM DITL, ' + W.stat.toDitl + ' TO DITL na nakakabit'
-              : 'ang ABC ay ikakabit pagbukas ng ABC page') +
-            (W.stat.lost.length ? ' · ' + W.stat.lost.length + ' reference na walang katapat (tingnan ang WORLD.stat.lost)' : '')
+              ? W.stat.fromDitl + ' FROM DITL, ' + W.stat.toDitl + ' TO DITL linked'
+              : 'the ABC is linked when the ABC page opens') +
+            (W.stat.lost.length ? ' · ' + W.stat.lost.length + ' references without a match (see WORLD.stat.lost)' : '')
         );
     } else {
       off();
-      msg('Iisang mundo OFF: ang FROM DITL ay manual na input ulit');
+      msg('One world OFF: FROM DITL signals are manual inputs again');
     }
     upd();
   };
@@ -267,7 +267,7 @@
     const b = document.createElement('button');
     b.className = 'wbtn';
     b.title =
-      'Iisang mundo: ON = ang DITL ay tumatakbo kasabay ng ABC, at ang mga signal ay dumadaan ayon sa reference ng drawing (FROM DITL 26A-55, TO DITL, ang FROM column ng DITL). OFF = ang FROM DITL ay manual na input.';
+      'One world: ON = the DITL runs together with the ABC and signals pass along the drawing references (FROM DITL 26A-55, TO DITL, the DITL FROM column). OFF = FROM DITL signals are manual inputs.';
     b.onclick = e => {
       e.stopPropagation();
       W.set(!W.on);

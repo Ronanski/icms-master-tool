@@ -6,7 +6,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/node22/lib/node_mo
 const fs=require('fs'),path=require('path'),os=require('os'),cp=require('child_process');
 const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 const src=fs.readFileSync(html,'utf8'),V=(src.match(/<title>Logic Sim v([^<]+)<\/title>/)||[])[1];
-const m=/^(\d+)\.(\d+)\.(\d+)(?:-beta\.(\d+))?$/.exec(V),SV=`${m[1]}.${m[2]}.${+m[3]+1}`,BV=`${m[1]}.${m[2]}.${m[3]}-beta.${(+m[4]||0)+1}`;
+const m=/^(\d+)\.(\d+)\.(\d+)(?:-beta\.(\d+))?$/.exec(V),SV=`${m[1]}.${m[2]}.${+m[3]+1}`,BV=m[4]?`${m[1]}.${m[2]}.${m[3]}-beta.${+m[4]+1}`:`${m[1]}.${+m[2]+1}.0-beta.1`;/* a Stable app: the next Beta is the Beta of the next MINOR (a Beta older than the app copy is never opened, 2.0.0) */
 const as=v=>src.split(`Logic Sim v${V}`).join(`Logic Sim v${v}`).split(`'v${V}'`).join(`'v${v}'`);
 const dir=fs.mkdtempSync(path.join(os.tmpdir(),'appdir-'));cp.execFileSync('node',['tools/build/app-folder.js',html,dir]);
 (async()=>{const b=await chromium.launch({executablePath:process.env.CHROMIUM||'/opt/pw-browsers/chromium'});const ctx=await b.newContext({viewport:{width:1024,height:768}});
@@ -32,10 +32,10 @@ ck(ok1>=100,'the Beta works offline: '+ok1+' DITL sheets');
 // back to Stable (offline): the copy inside the app
 await p.evaluate(()=>{const c=document.getElementById('chsel');c.value='stable';c.dispatchEvent(new Event('change'))});await p.waitForFunction(v=>document.title==='Logic Sim v'+v,V,{timeout:30000});await ready();
 ck((await title())==='Logic Sim v'+V,'Stable chosen offline: the copy inside the app '+(await title()));
-// update of the Stable when online: question, I-update ngayon, downloaded, runs from the app
+// update of the Stable when online: question, Update now, downloaded, runs from the app
 online=true;await p.evaluate(()=>window.lsCheckUpdate(true));await p.waitForSelector('#updask',{timeout:20000});
 ck(/v[\d.]+/.test(await p.textContent('#updask'))&&(await p.textContent('#updask')).includes(SV),'asks: '+(await p.textContent('#updask')).replace(/\s+/g,' ').slice(0,80));
-await p.click('text=I-update ngayon');await p.waitForFunction(v=>document.title==='Logic Sim v'+v,SV,{timeout:30000});await ready();
+await p.click('text=Update now');await p.waitForFunction(v=>document.title==='Logic Sim v'+v,SV,{timeout:30000});await ready();
 ck((await title())==='Logic Sim v'+SV,'updated in the app: '+(await title()));
 online=false;await p.reload();await p.waitForFunction(v=>document.title==='Logic Sim v'+v,SV,{timeout:30000});
 ck(true,'no internet, started again: still the updated Stable');

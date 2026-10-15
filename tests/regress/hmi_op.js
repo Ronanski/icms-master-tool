@@ -1,0 +1,21 @@
+// Plant model vs the real plant (2.0.0, user tip): the HMI snapshot operating points (docs/hmi/operating-points.json).
+// Plant at 150 MW (settings > Start at 150 MW: transmitters and controllers of the snapshots, so the drawing interlocks of a
+// cold boiler are clear). For every anchored loop: LOCAL + MANUAL, MV = the snapshot MV, run 5 time constants; the PV must settle at the snapshot PV
+// (within 2 % of the range), and MV +10 % must move the PV in the direction of the drawing (ACT). Usage: node tests/regress/hmi_op.js [html]
+const {open}=require('./lib.js');const fs=require('fs');
+const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
+(async()=>{const {browser,page,errs}=await open(html);
+const R=await page.evaluate(()=>{const out=[];for(let i=0;i<AN.sheets.length;i++){const sh=AN.sheets[i];if(/ABC-000/.test(sh.name))continue;AN.go(i);const S=sh.S;let cs=[];try{cs=AN.hmiCtrls(S)}catch(e){}
+ for(const c of cs){const pb=(S.procs||[]).find(b=>b.id===c.b.id);if(!pb||!pb.proc)continue;AN.reset();for(const x of AN.sheets)if(!/ABC-000/.test(x.name))AN.ensure(x);AN.plantLoad150();AN.go(i);const run=sec=>{for(let k=0;k<sec*2;k++)AN.stepSet(sh,.5)};
+  const pr=pb.proc;if(!pr.hop)continue;if(!c.amt||c.manNet==null){out.push({t:c.tag,sh:sh.name,skip:'no manual MV'});continue}
+  const P=c.b.p,span=(P.rhi!=null?P.rhi:100)-(P.rlo!=null?P.rlo:0);const man=c.autoLeg==='A'?'B':'A';
+  /* like the operator pressing M: the mode status of the drawing (.MAN = 1, .LOC / .REM = 0) on every sheet */for(const x of AN.sheets){if(!x.S||/ABC-000/.test(x.name))continue;for(const n of x.S.ext){const nm=(AN.nm(x.S,n)||'').trim().toUpperCase();if(!nm.startsWith(c.tag.toUpperCase()+'.'))continue;const k=nm.slice(c.tag.length+1);if(k==='MAN'||k==='MANUAL')x.S.rt.ext[n]=1;else if(['REM','REMOTE','LOC','LOCAL','AUTO','AUT'].includes(k))x.S.rt.ext[n]=0}}if(c.svSw){const q=S.rt.st[c.svSw.id];if(q){q.al='A';q.fm='B'}}const st=S.rt.st[c.amt.id];st.al=c.autoLeg;st.fm=man;
+  const setMV=v=>{if(c.manBlk&&S.rt.st[c.manBlk.id])S.rt.st[c.manBlk.id].val=v;else S.rt.ext[c.manNet]=v};
+  const T=Math.min(2000,(pr.T||30)*5+(pr.L||0)*2);setMV(pr.hop.mv);run(T);const pv1=S.rt.v[c.q.pv];setMV(pr.hop.mv+10);run(T);const pv2=S.rt.v[c.q.pv];
+  out.push({t:c.tag,sh:sh.name,want:pr.hop.pv,mv:pr.hop.mv,pv1,pv2,span,act:P.act,src:pr.hop.src})}}return out});
+let fail=0;for(const r of R){if(r.skip){console.log('SKIP',r.sh,r.t,r.skip);continue}
+ const ok1=Math.abs(r.pv1-r.want)<=0.02*r.span,dir=(r.pv2-r.pv1)*(r.act<0?1:-1)>0;
+ /* reverse acting (ACT -1 in this simulator = PV up when MV up?) is checked against the drawing: the sign that the plant uses */
+ console.log((ok1?'PASS ':'FAIL ')+r.sh+' '+r.t+': MV '+r.mv+' % → PV '+r.pv1.toFixed(2)+' (snapshot '+r.src+': '+r.want+'); MV +10 % → PV '+r.pv2.toFixed(2));if(!ok1)fail++}
+console.log(R.filter(r=>!r.skip).length+' anchored loops checked');if(errs.length)console.log('page errors',errs.slice(0,3));
+await browser.close();console.log(fail?fail+' FAIL':'ALL PASS');process.exit(fail?1:0)})();

@@ -25,6 +25,60 @@
             ? x.toFixed(2)
             : x.toFixed(3);
   const sheet = () => AN.sheets && AN.sheets[AN.i];
+  /* 2.0.0: touch screens (tablet / phone) */
+  const TOUCH = (() => {
+    try {
+      return matchMedia('(pointer:coarse)').matches;
+    } catch (e) {
+      return false;
+    }
+  })();
+  /* user 2026-10-15: SV / MV / manual value in a faceplate are changed with the ▲ ▼ buttons only: no keyboard on any device */
+  const noKb = el => {
+    if (el) {
+      el.readOnly = true;
+      el.setAttribute('inputmode', 'none');
+    }
+    return el;
+  };
+  /* 2.0.0 (user): SV and manual values step in the UNIT of the parameter: ▲ = one round unit (1, 0.1, 10 ... about 1 % of
+     the range, rounded down to 1 / 10 / 100), ▲▲ = 5 of them; e.g. 0 ~ 600 °C: 1 / 5 °C, 0 ~ 2.6 T/H: 0.01 / 0.05 T/H */
+  const sfmt = x => String(+(+x).toPrecision(3));
+  const niceStep = span => {
+    const x = Math.abs(span) / 100;
+    return x > 0 && isFinite(x) ? Math.pow(10, Math.floor(Math.log10(x) + 1e-9)) : 1;
+  };
+  /* 2.0.0: an ▲ / ▼ button like the DCS faceplate: one press = one step; held down it repeats (after 0.4 s, 10 per second)
+     and after 2 s it goes 5 times faster. A plain click (mouse, keyboard, test) is one step. */
+  const stepBtn = (txt, title, fn) => {
+    const b = E('button', { cls: 'b stp', txt, title });
+    let t1 = null,
+      t2 = null,
+      n = 0,
+      byPtr = false;
+    const stop = () => {
+      clearTimeout(t1);
+      clearInterval(t2);
+      t1 = t2 = null;
+    };
+    b.addEventListener('pointerdown', e => {
+      if (e.button) return;
+      byPtr = true;
+      n = 0;
+      fn(1);
+      stop();
+      t1 = setTimeout(() => {
+        t2 = setInterval(() => fn(++n > 20 ? 5 : 1), 100);
+      }, 400);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(k => b.addEventListener(k, stop));
+    b.addEventListener('contextmenu', e => e.preventDefault());
+    b.onclick = () => {
+      if (byPtr) byPtr = false;
+      else fn(1);
+    };
+    return b;
+  };
   let opp = null,
     body = null,
     built = '',
@@ -292,7 +346,7 @@
     );
     // 1. controllers
     const cs = ctrls(S);
-    if (cs.length) body.append(E('h4', { txt: 'Mga controller (faceplate)' }));
+    if (cs.length) body.append(E('h4', { txt: 'Controllers (faceplate)' }));
     cs.forEach(c => {
       const P = c.b.p,
         rlo = P.rlo != null ? P.rlo : 0,
@@ -309,11 +363,11 @@
       const bAuto = E('button', {
           cls: 'b ra',
           txt: 'A',
-          title: 'A = AUTO (SV ng operator / LOCAL kung may REMOTE sa loop)'
+          title: 'A = AUTO (operator SV / LOCAL when the loop has REMOTE)'
         }),
-        bMan = E('button', { cls: 'b ra man', txt: 'M', title: 'M = MANUAL (ang operator ang nagtatakda ng MV)' });
-      const svIn = E('input', { cls: 'n', type: 'number', step: 'any' }),
-        mvIn = E('input', { cls: 'n', type: 'number', step: 'any' });
+        bMan = E('button', { cls: 'b ra man', txt: 'M', title: 'M = MANUAL (the operator sets the MV)' });
+      const svIn = noKb(E('input', { cls: 'n', type: 'number', step: 'any' })),
+        mvIn = noKb(E('input', { cls: 'n', type: 'number', step: 'any' }));
       const svOk = S.ext.includes(c.q.sv) || !!c.svSw,
         svSet = v => {
           if (S.ext.includes(c.q.sv)) {
@@ -369,8 +423,8 @@
           cls: 'b' + (c.remote ? ' ra' : ''),
           txt: c.remote ? 'R' : 'SV: LOGIC',
           title: c.remote
-            ? 'REMOTE: AUTO talaga; SV galing sa logic path; hindi mamamanual, pati SV'
-            : 'SV galing sa logic path',
+            ? 'REMOTE: AUTO; SV from the logic path; MV and SV cannot be set by hand'
+            : 'SV from the logic path',
           on: () => {
             swMode('A');
             if (c.remote) pulse(['REM', 'REMOTE']);
@@ -380,7 +434,7 @@
           cls: 'b',
           style: c.remote ? 'display:none' : '',
           txt: c.remote ? 'LOCAL' : 'SV: OPERATOR',
-          title: c.remote ? 'LOCAL: puwede nang i-MAN at i-set ang SV (COS ng operator)' : 'SV ng operator (COS)',
+          title: c.remote ? 'LOCAL: MAN allowed, SV set by the operator (COS)' : 'Operator SV (COS)',
           on: () => swMode('B')
         }),
         modeRow = c.svSw && !c.remote ? E('div', { cls: 'row' }, [E('span', { txt: 'SV' }), bRem, bLoc]) : null;
@@ -388,9 +442,9 @@
           const e = E('span', {
             cls: 'sg',
             title:
-              'Signal ng drawing: ' +
+              'Drawing signal: ' +
               z.name +
-              (z.role === 'MAN' ? ' (pumipili ng MANUAL / force manual)' : ' (pumipili ng AUTO)')
+              (z.role === 'MAN' ? ' (selects MANUAL / force manual)' : ' (selects AUTO)')
           });
           return { z, e };
         }),
@@ -398,7 +452,7 @@
           const e = E('button', {
             cls: 'b',
             txt: '.' + z.kind,
-            title: z.name + ' = input ng drawing (HMI); parehong signal sa diagram',
+            title: z.name + ' = drawing input (HMI); the same signal as on the diagram',
             on: () => {
               const v = S.rt.ext[z.n] > 0.5 ? 0 : 1;
               setIn(S, z.n, v);
@@ -428,7 +482,7 @@
         cutWhy = E('button', {
           cls: 'b',
           txt: 'Sanhi?',
-          title: 'Hanapin ang mga input ng drawing na, kapag binago, magpapawala sa interlock',
+          title: 'Find the drawing inputs that clear this interlock when changed',
           style: 'margin-left:6px',
           on: () => whyCut()
         }),
@@ -439,13 +493,13 @@
         svIn.onchange = () => svSet(+svIn.value);
       } else {
         svIn.disabled = true;
-        svRow.append(E('span', { cls: 'sub', txt: '(SV galing sa logic)' }));
+        svRow.append(E('span', { cls: 'sub', txt: '(SV from the logic)' }));
       }
       if (mvOk) {
         mvIn.onchange = () => setMV(S, c, +mvIn.value);
       } else {
         mvIn.disabled = true;
-        mvRow.append(E('span', { cls: 'sub', txt: '(walang manual input)' }));
+        mvRow.append(E('span', { cls: 'sub', txt: '(no manual input)' }));
       }
       const setMode = m => {
         if (!c.amt) return;
@@ -503,14 +557,14 @@
       const graph = E('div', { cls: 'fpg' }, [
         E('span', { cls: 'hi', txt: fmt(rhi) }),
         E('span', { cls: 'lo', txt: fmt(rlo) }),
-        E('div', { cls: 'gm', title: 'PL ~ PH: normal na saklaw ng PV (ayon sa data ng DCS)' }, [barBand]),
+        E('div', { cls: 'gm', title: 'PL ~ PH: normal PV range (from the DCS data)' }, [barBand]),
         E('div', { cls: 'gb' }, [barPv]),
         E('div', { cls: 'gb' }, [barSvm])
       ]);
       const raCol = E('div', { cls: 'fpr' }, (c.remote ? [bRem] : []).concat([bAuto, bMan])),
         mvBr = E('div', { cls: 'mvb' }, [barMv]);
       const card = E('div', { cls: 'fp fpx' }, [
-        E('div', { cls: 'fpt', txt: c.desc || c.tag }),
+        E('div', { cls: 'fpt', txt: c.desc || (AN.descOf && AN.descOf(sh, c.tag)) || c.tag }),
         E('div', { cls: 'fpm' }, [
           graph,
           E('div', { cls: 'fpc' }, [pvBox, svBox, E('div', { cls: 'fps' }, [raCol, mvBr]), mvBox])
@@ -522,13 +576,13 @@
           E('span', {
             txt:
               (unit ? '[' + fmt(rlo) + ' ~ ' + fmt(rhi) + ' ' + unit + ']' : '') +
-              (c.amt ? '' : '  (walang A/M switch)')
+              (c.amt ? '' : '  (no A/M switch)')
           })
         ]),
         E(
           'details',
           { cls: 'fpe' },
-          [E('summary', { txt: 'Engineering: signal ng drawing, SV / MV buttons, trend' }), sgRow]
+          [E('summary', { txt: 'Engineering: drawing signals, SV / MV buttons, trend' }), sgRow]
             .concat(modeRow ? [modeRow] : [])
             .concat([
               svRow,
@@ -551,7 +605,7 @@
       const popIn = k => (k === 'SV' ? svIn : mvIn),
         popLo = k => (k === 'SV' ? rlo : 0),
         popHi = k => (k === 'SV' ? rhi : 100),
-        popStep = k => (popHi(k) - popLo(k)) / 100;
+        popStep = k => (k === 'SV' ? niceStep(popHi(k) - popLo(k)) : 1);
       const popSet = (k, v) => {
         v = Math.max(popLo(k), Math.min(popHi(k), v));
         popIn(k).value = +v.toFixed(3);
@@ -578,10 +632,10 @@
         popEl.innerHTML = '';
         const st = popStep(k),
           n = x => +x;
-        popVal = E('input', { cls: 'n', type: 'number', step: 'any' });
+        popVal = noKb(E('input', { cls: 'n', type: 'number', step: 'any' }));
         popVal.value = popIn(k).value;
         popVal.onchange = () => popSet(k, n(popVal.value));
-        const B = (t, d, title) => E('button', { cls: 'b', txt: t, title, on: () => popSet(k, n(popIn(k).value) + d) });
+        const B = (t, d, title) => stepBtn(t, title, m => popSet(k, n(popIn(k).value) + d * m));
         popEl.append(
           E('div', { cls: 'row', style: 'justify-content:space-between' }, [
             E('b', { txt: k + '  ' + c.tag }),
@@ -589,11 +643,12 @@
           ]),
           E('div', { cls: 'row' }, [popVal, E('span', { cls: 'sub', txt: k === 'SV' ? unit : '%' })]),
           E('div', { cls: 'row' }, [
-            B('▲▲', st * 10, '+10 %'),
-            B('▲', st, '+1 %'),
-            B('▼', -st, '-1 %'),
-            B('▼▼', -st * 10, '-10 %')
-          ])
+            B('▲▲', st * 5, '+' + sfmt(st * 5) + ' ' + (k === 'SV' ? unit : '%') + ' (hold = faster)'),
+            B('▲', st, '+' + sfmt(st) + ' ' + (k === 'SV' ? unit : '%') + ' (hold = faster)'),
+            B('▼', -st, '-' + sfmt(st) + ' ' + (k === 'SV' ? unit : '%') + ' (hold = faster)'),
+            B('▼▼', -st * 5, '-' + sfmt(st * 5) + ' ' + (k === 'SV' ? unit : '%') + ' (hold = faster)')
+          ]),
+          E('div', { cls: 'sub', txt: '▲ ' + sfmt(st) + ' · ▲▲ ' + sfmt(st * 5) + ' ' + (k === 'SV' ? unit : '%') + ' per press; hold to ramp' })
         );
         if (k === 'MV')
           popEl.append(
@@ -654,8 +709,8 @@
           E('span', {
             cls: 'sub',
             txt: hits.length
-              ? 'Ang isang input na ito, kapag binago, ay magpapawala ng interlock (pindutin para itakda):'
-              : 'Walang iisang input sa sheet na ito ang makakapagpawala (kailangan ng higit sa isa, o galing sa ibang sheet / sa measurement).'
+              ? 'Changing this one input clears the interlock (press to set it):'
+              : 'No single input on this sheet clears it (it needs more than one, or it comes from another sheet / a measurement).'
           })
         );
         for (const h of hits)
@@ -685,9 +740,9 @@
           const on = S.rt.v[x.z.n] > 0.5;
           x.e.textContent = x.z.name + ' → ' + x.z.role + ' ' + (on ? '1' : '0');
           x.e.title =
-            'Signal ng drawing: ' +
+            'Drawing signal: ' +
             x.z.name +
-            (x.z.role === 'MAN' ? ' (pumipili ng MANUAL / force manual)' : ' (pumipili ng AUTO)') +
+            (x.z.role === 'MAN' ? ' (selects MANUAL / force manual)' : ' (selects AUTO)') +
             (x.z.src.length ? ' ← ' + x.z.src.map(q => q.name + '=' + (S.rt.v[q.n] > 0.5 ? 1 : 0)).join(', ') : '');
           x.e.style.cssText =
             'padding:1px 6px;border-radius:9px;font-size:11px;border:1px solid ' +
@@ -708,11 +763,11 @@
         ) {
           svSrc.textContent = c.remote
             ? pkA
-              ? 'REMOTE: AUTO, SV galing sa logic path'
-              : 'LOCAL: SV ng operator (COS)'
+              ? 'REMOTE: AUTO, SV from the logic path'
+              : 'LOCAL: operator SV (COS)'
             : pkA
-              ? 'SV: galing sa logic path'
-              : 'SV: ng operator (COS)';
+              ? 'SV: from the logic path'
+              : 'SV: operator (COS)';
           bRem.classList.toggle('on', pkA);
           bLoc.classList.toggle('on', !pkA);
           bRem.disabled = !!(q_ && q_.fman) || pkA;
@@ -738,14 +793,14 @@
             return t && t.pk === 'B';
           });
           cutTx.textContent = cg
-            ? 'OUTPUT PUTOL ng interlock: ' +
+            ? 'OUTPUT CUT BY INTERLOCK: ' +
               ((S.lab[cg.sel] && S.lab[cg.sel].t) || 'n' + cg.sel) +
-              ' = 1 → valve command = back-up leg ng drawing (hindi ang MV sa itaas)'
+              ' = 1 → valve command = back-up leg of the drawing (not the MV above)'
             : '';
           cutWhy.style.display = cg ? '' : 'none';
           if (!cg) cutList.textContent = '';
         }
-        fmEl.textContent = fm_ ? 'FORCE MANUAL (' + (fsg ? fsg.name + ' = 1' : 'logic') + '): hindi puwedeng AUTO' : '';
+        fmEl.textContent = fm_ ? 'FORCE MANUAL (' + (fsg ? fsg.name + ' = 1' : 'logic') + '): AUTO not allowed' : '';
         bAuto.disabled = !!fm_;
         /* MV is only for MANUAL: in AUTO the operator changes the SV, not the MV */ if (mvOk) {
           mvIn.disabled = (isAuto || rem) && !!c.amt;
@@ -767,55 +822,77 @@
         drawTrend(svg, tr, rlo, rhi);
       });
     });
-    // 2. manual stations
-    const mans = S.blk.filter(b => b.k === 'MAN' && b.o[0] != null && (b.txt || [])[0]);
-    if (mans.length) body.append(E('h4', { txt: 'Manual station' }));
+    // 2. manual stations (2.0.0): a faceplate like the DCS manual loader: description, output bar, value, ▲ ▼, tag and station
+    const mans = S.blk.filter(b => b.k === 'MAN' && b.o[0] != null && (b.tag || (b.txt || []).some(t => t && t !== 'MAN')));
+    if (mans.length) body.append(E('h4', { txt: 'Manual stations (' + mans.length + ')' }));
     mans.forEach(b => {
       const P = b.p,
         lo = P.lo != null ? P.lo : 0,
         hi = P.hi != null ? P.hi : 100,
-        tag = (b.txt || [])[0];
-      const val = E('b', { txt: '—' }),
-        inp = E('input', { cls: 'n', type: 'number', step: 'any' });
-      const set = v => {
-        const st = S.rt.st[b.id];
-        if (st) {
-          st.val = Math.max(lo, Math.min(hi, v));
-        }
-        try {
-          AN.settle();
-        } catch (e) {}
-      };
+        u = P.u || '',
+        span = hi - lo || 1,
+        tag = b.tag || (b.txt || []).find(t => t && t !== 'MAN' && !/^S\d-MDL/.test(t)) || 'MAN',
+        stn = (b.txt || []).find(t => /^S\d-MDL/.test(t)) || '';
+      let desc = '';
+      try {
+        desc = (AN.descOf && AN.descOf(sh, tag)) || '';
+      } catch (e) {}
+      const inp = noKb(E('input', { cls: 'n fv', type: 'number', step: 'any' })),
+        bar = E('i', {}),
+        set = v => {
+          const st = S.rt.st[b.id];
+          if (st) st.val = Math.max(lo, Math.min(hi, v));
+          try {
+            AN.settle();
+          } catch (e) {}
+        },
+        cur = () => {
+          const v = S.rt.v[b.o[0]];
+          return isFinite(v) ? v : +inp.value || 0;
+        },
+        fine = niceStep(span),
+        coarse = fine * 5;
       inp.onchange = () => set(+inp.value);
+      const manB = E('button', {
+        cls: 'b',
+        txt: 'MAN',
+        title: tag + '.MAN: MANUAL status (ON / OFF) on every sheet that uses this tag',
+        on: () => {
+          const ns = modeNetsByTag(tag, MODEK.MAN),
+            on = !ns.some(([S2, n]) => S2.rt.ext[n] > 0.5);
+          ns.forEach(([S2, n]) => setIn(S2, n, on ? 1 : 0));
+        }
+      });
       body.append(
-        E('div', { cls: 'fp' }, [
+        E('div', { cls: 'fp fpx fpman', 'data-tag': tag }, [
+          E('div', { cls: 'fpt', txt: desc || tag }),
+          E('div', { cls: 'mlr' }, [
+            E('div', { cls: 'mlb', title: 'Output: ' + fmt(lo) + ' ~ ' + fmt(hi) + ' ' + u }, [bar]),
+            E('div', { cls: 'mlc' }, [
+              E('div', { cls: 'fl' }, [E('span', { txt: 'MV' }), E('span', { txt: u })]),
+              inp,
+              E('div', { cls: 'row mls' }, [
+                stepBtn('▲▲', '+' + sfmt(coarse) + ' ' + u + ' (hold = faster)', m => set(cur() + coarse * m)),
+                stepBtn('▲', '+' + sfmt(fine) + ' ' + u + ' (hold = faster)', m => set(cur() + fine * m)),
+                stepBtn('▼', '-' + sfmt(fine) + ' ' + u + ' (hold = faster)', m => set(cur() - fine * m)),
+                stepBtn('▼▼', '-' + sfmt(coarse) + ' ' + u + ' (hold = faster)', m => set(cur() - coarse * m))
+              ]),
+              E('div', { cls: 'sub', txt: '▲ ' + sfmt(fine) + ' · ▲▲ ' + sfmt(coarse) + ' ' + u + ' per press; hold to ramp' })
+            ])
+          ]),
           E('div', { cls: 'tg' }, [
             E('b', { txt: tag }),
-            E('span', { txt: fmt(lo) + ' ~ ' + fmt(hi) + (P.u ? ' ' + P.u : '') })
-          ]),
-          E('div', { cls: 'row' }, [
-            E('span', { txt: 'Value' }),
-            inp,
-            E('button', { cls: 'b', txt: '−', on: () => set((+inp.value || 0) - (hi - lo) / 100) }),
-            E('button', { cls: 'b', txt: '+', on: () => set((+inp.value || 0) + (hi - lo) / 100) }),
-            E('button', {
-              cls: 'b',
-              txt: 'MAN',
-              title: tag + '.MAN: estado ng MANUAL (ON / OFF) sa lahat ng sheet na gumagamit ng tag na ito',
-              on: () => {
-                const ns = modeNetsByTag(tag, MODEK.MAN),
-                  on = !ns.some(([S2, n]) => S2.rt.ext[n] > 0.5);
-                ns.forEach(([S2, n]) => setIn(S2, n, on ? 1 : 0));
-              }
-            }),
-            val
+            E('span', { txt: '[' + fmt(lo) + ' ~ ' + fmt(hi) + (u ? ' ' + u : '') + ']' + (stn ? '  ' + stn : '') }),
+            manB
           ])
         ])
       );
       live.push(() => {
         const v = S.rt.v[b.o[0]];
-        val.textContent = fmt(v);
+        bar.style.height = Math.max(0, Math.min(100, ((v - lo) / span) * 100)) + '%';
         if (document.activeElement !== inp && isFinite(v)) inp.value = +v.toFixed(3);
+        const ns = modeNetsByTag(tag, MODEK.MAN);
+        manB.classList.toggle('on', ns.some(([S2, n]) => S2.rt.ext[n] > 0.5));
       });
     });
     // 3. digital inputs: operator buttons and force
@@ -826,8 +903,8 @@
       if (l && !/^\(/.test(l) && !dig.some(x => x[1] === l)) dig.push([n, l]);
     }
     const sig = S.blk.filter(b => b.k === 'SIGAB' && b.o[0] != null && (b.txt || [])[1]);
-    body.append(E('h4', { txt: 'Mga button (digital input): ON / OFF at FORCE' }));
-    const fin = E('input', { cls: 'f', placeholder: 'hanapin ang tag o description…' });
+    body.append(E('h4', { txt: 'Buttons (digital inputs): ON / OFF and FORCE' }));
+    const fin = E('input', { cls: 'f', placeholder: 'Find tag or description…' });
     body.append(fin);
     const dlist = E('div');
     body.append(dlist);
@@ -835,7 +912,7 @@
     dig.forEach(([n, l]) => {
       const desc = describe(sh, l);
       const state = E('button', { cls: 'b', txt: 'OFF' }),
-        fb = E('button', { cls: 'b', txt: 'FORCE', title: 'I-force ang value kahit ano ang logic' });
+        fb = E('button', { cls: 'b', txt: 'FORCE', title: 'Force the value, whatever the logic says' });
       const linked = () => !!(S.xlk && S.xlk[n]);
       state.onclick = () => {
         const cur = S.rt.force[n] !== undefined ? S.rt.force[n] : linked() ? S.rt.v[n] : S.rt.ext[n] || 0;
@@ -856,7 +933,7 @@
       const tr = E('tr', {}, [
         E('td', {}, [
           E('b', { txt: l }),
-          E('small', { txt: desc + (S.xlk && S.xlk[n] ? '  (galing sa ibang sheet: ON/OFF = force)' : '') })
+          E('small', { txt: desc + (S.xlk && S.xlk[n] ? '  (from another sheet: ON/OFF = force)' : '') })
         ]),
         E('td', { cls: 'v' }, [state, document.createTextNode(' '), fb])
       ]);
@@ -883,7 +960,7 @@
         }
       };
       const tr = E('tr', {}, [
-        E('td', {}, [E('b', { txt: 'SIG.AB ' + tg }), E('small', { txt: 'Bad signal (simulation lang)' })]),
+        E('td', {}, [E('b', { txt: 'SIG.AB ' + tg }), E('small', { txt: 'Bad signal (simulation only)' })]),
         E('td', { cls: 'v' }, [st])
       ]);
       tr._h = ('sig.ab ' + tg + ' bad signal').toLowerCase();
@@ -898,14 +975,14 @@
     const tb = E('table', { cls: 'tbl' });
     rows.forEach(r => tb.append(r));
     dlist.append(tb);
-    if (!rows.length) dlist.append(E('div', { cls: 'sub', txt: 'Walang digital input ang sheet na ito.' }));
+    if (!rows.length) dlist.append(E('div', { cls: 'sub', txt: 'This sheet has no digital inputs.' }));
     fin.oninput = () => {
       const q = fin.value.trim().toLowerCase();
       rows.forEach(r => (r.style.display = !q || r._h.indexOf(q) >= 0 ? '' : 'none'));
     };
     // 4. monitoring: analog inputs to outputs
     const ais = S.blk.filter(b => b.k === 'AI' && b.o[0] != null);
-    if (ais.length) body.append(E('h4', { txt: 'Monitoring: mga input (transmitter)' }));
+    if (ais.length) body.append(E('h4', { txt: 'Monitoring: inputs (transmitters)' }));
     if (ais.length) {
       const t = E('table', { cls: 'tbl' });
       ais.forEach(b => {
@@ -950,7 +1027,7 @@
       aos.push([b, best && bd < 80 ? best : 'AO#' + b.id]);
     }
     if (aos.length) {
-      body.append(E('h4', { txt: 'Monitoring: mga output (AO)' }));
+      body.append(E('h4', { txt: 'Monitoring: outputs (AO)' }));
       const t = E('table', { cls: 'tbl' });
       aos.forEach(([b, tag]) => {
         const v = E('td', { cls: 'v', txt: '—' });
@@ -970,7 +1047,7 @@
       if (/^(M|B)\.[0-9A-F]{3,4}$/i.test(l) && !flags.some(f => f[1] === l)) flags.push([n, l]);
     }
     if (flags.length) {
-      body.append(E('h4', { txt: 'Mga flag ng logic (lamp: pula = 1)' }));
+      body.append(E('h4', { txt: 'Logic flags (lamp: red = 1)' }));
       const t = E('table', { cls: 'tbl' });
       flags.slice(0, 60).forEach(([n, l]) => {
         const lamp = E('span', { cls: 'lamp' });
@@ -996,7 +1073,7 @@
   }
   function tabs(active) {
     const w = E('div', { cls: 'hmitabs' }, [
-      E('button', { cls: active === 'd' ? 'on' : '', txt: 'Detalye', on: () => mode(false) }),
+      E('button', { cls: active === 'd' ? 'on' : '', txt: 'Details', on: () => mode(false) }),
       E('button', { cls: active === 'o' ? 'on' : '', txt: 'Operator', on: () => mode(true) })
     ]);
     w.dataset.hmi = '1';

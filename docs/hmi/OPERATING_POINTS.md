@@ -1,0 +1,1236 @@
+# HMI Operating Points (control room snapshots)
+
+Ito ang mga numerong nakita sa 35 HMI screenshot ng control room (`document-references/hmi-snapshot-sample.zip`), isa-isang binasa: header (MSP, MST, MSF, RHP, RHT, COAL, PWR), bawat controller, valve, damper, motor at measurement na may value, unit at mode.
+Gamitin ito bilang "tamang sagot" kapag sinusuri ang plant model at ang scenarios ng app: ihambing ang PV / SV / MV / valve % at mode sa app sa parehong load (karamihan ~150 MW full load; 02.png ~60 MW; P35SHAFT ~130 MW; SCSHOT = shutdown / MFT).
+Ang `→ ABC` ay ang controller sa ABC sheet (valve → controller: galing sa netlist trace ng app, controller output → AO → tag ng valve sa drawing). Machine-readable: `operating-points.json` (parehong laman).
+
+Basahin muna: sa HMI, **pula = bukas / tumatakbo**, **berde = sarado / hinto**; sa checklist, **pulang check = TOTOO (1)**, **berdeng X = HINDI (0)** (patunay: SCSHOT "IDF RUNNING" pula at "IDF STOP" berde). Mode letters: R = remote (cascade), A = auto, M = manual, L = local, TQ = torque switch ng motor valve. "K" sa header = kg/cm2. Format ng linya: `TAG — value unit — mode — note`.
+
+## 02.png — 002 FEED WATER PREHEATING
+- Oras: not shown
+- Header: MSP 89.9 K, MST 517 C, MSF 203.7 T/H, RHP 15.0 K, RHT 499 C, COAL 41.8 T/H, PWR 60.3 MW
+- Tala: Low load ~60 MW: 1 BFWP (A) tumatakbo, CP B tumatakbo, HPH drains naka-M at sarado (0.1 %), aux steam PCVAS1030 naka-M.
+
+- MVMU1001 — 0.0 % — R — make-up water to condenser; no ABC controller found; IO: #1 Make-up water to condenser motor valve position [ZT-MU1001, STN102 AI0773, 0.0 ~ 100.0 %]
+- LCVMU1110 — 10.6 % — A — make-up to condenser hotwell level control; → ABC LICCD1110A (ABC-031); IO: #1 Condenser make-up water level control valve [LCV-MU1110, STN102 AO0576, 0.0 ~ 100.0 %]
+- LIMU0708A — 13.0 m — - — T-0708A/B demi water tank level; IO: Boiler demi. water tank level (A) [LT-MU0708-A, STN105 AI0160, 0.0 ~ 15.0 M]
+- LIMU0708B — 13.0 m — - — T-0708A/B demi water tank level; IO: Boiler demi. water tank level (B) [LT-MU0708-B, STN105 AI0240, 0.0 ~ 15.0 M]
+- CP A — 0.0 A — R A — condensate pump A stopped (green)
+- CP B — 23.6 A — R M — condensate pump B running
+- FCVCD1120 — 100.0 % — A — condensate recirculation/flow valve near CP discharge; → ABC FICCD1120 (ABC-032); IO: #1 Condensate system minimum flow recirculation control valve [FCV-CD1120, STN102 AO0401, 0.0 ~ 100.0 %]
+- LICD1110 — 11 mm — - — hotwell level; → ABC LICD1110 (ABC-031); IO: #1 Condenser hot well water level [LT-CD1110, STN102 AI0640, -436 ~ 464 mm]
+- DPIMU0709A — 0.029 kg/cm2 — - — MWP-A strainer DP; IO: Make-up water pump-A suction strainer diff. pressure [DPT-MU0709-A, STN105 AI0178, 0.000 ~ 1.000 kg/cm2]
+- DPIMU0709B — 0.042 kg/cm2 — - — MWP-B strainer DP; IO: Make-up water pump-B suction strainer diff. pressure [DPT-MU0709-B, STN105 AI0194, 0.000 ~ 1.000 kg/cm2]
+- DPIMU0709C — 0.001 kg/cm2 — - — MWP-C strainer DP; IO: Make-up water pump-C suction strainer diff. pressure [DPT-MU0709-C, STN105 AI0210, 0.000 ~ 1.000 kg/cm2]
+- MWP-A (P-0709A) — 20.7 A — R M — make-up water pump A running (red)
+- MWP-B (P-0709B) — 0.0 A — R A — make-up water pump B stopped (green)
+- MWP-C (P-0709C) — 20.7 A — R M — make-up water pump C running (red)
+- PIMU0709 — 9.0 kg/cm2 — - — make-up water header pressure; IO: Make-up water pump common header pressure [PT-MU0709, STN105 AI0197, 0.0 ~ 10.0 kg/cm2]
+- LCVCD1104 — 17.5 % — A — condensate to deaerator (deaerator storage tank level); → ABC LICCD1104 (ABC-031); IO: #1 Deaerator storage tank level control valve [LCV-CD1104, STN102 AO0579, 0.0 ~ 100.0 %]
+- LCVCD1110 — 0.1 % — A — hotwell level control (dump) valve; → ABC LICCD1110B (ABC-031); IO: #1 Condenser dumping to raw pit level control valve [LCV-CD1110, STN102 AO0402, 0.0 ~ 100.0 %]
+- PIHD1101 — -0.717 kg/cm2 — - — #1 LPH shell pressure (vacuum); IO: #1 NO.1 LPH steam pressure [PT-HD1101, STN102 AI0419, -1.0 ~ 5.0 kg/cm2]
+- LCVHD11012 — 0.1 % — A — #1 LPH drain to flash chamber; → ABC LICHD11012 (ABC-037); IO: #1 NO.1 LPH alternate drain level control valve [LCV-HD1101-2, STN102 AO0480, 0.0 ~ 100.0 %]
+- LCVHD11011 — 13.6 % — A — #1 LPH drain to condenser; → ABC LICHD11011 (ABC-037); IO: #1 NO.1 LPH primary drain level control valve [LCV-HD1101-1, STN102 AO0464, 0.0 ~ 100.0 %]
+- LIHD11011 — -3 mm — - — #1 LPH level; → ABC LIHD11011 (ABC-037); IO: #1 NO.1 LPH level (1) [LT-HD1101-1, STN102 AI0673, -320 ~ 290 mm]
+- LIHD11012 — -3 mm — - — #1 LPH level; → ABC LIHD11012 (ABC-037); IO: #1 NO.1 LPH level (2) [LT-HD1101-2, STN102 AI0849, -320 ~ 290 mm]
+- MVCD1001 — 99.6 % — R — condensate inlet #1 LPH; no ABC controller found; IO: #1 NO.1 LPH inlet motor valve position [ZT-CD1001, STN102 AI0786, 0.0 ~ 100.0 %]
+- MVCD1002 — 99.4 % — R — condensate outlet #1 LPH; no ABC controller found; IO: #1 NO.1 LPH outlet motor valve position [ZT-CD1002, STN102 AI0787, 0.0 ~ 100.0 %]
+- MVCD1003 — 0.0 % — R TQ — #1 LPH bypass; no ABC controller found; IO: #1 NO.1 LPH bypass motor valve position [ZT-CD1003, STN102 AI0788, 0.0 ~ 100.0 %]
+- TICD1101 — 43 C — - — condensate temp before #1 LPH; IO: #1 NO.1 LPH inlet water temperature [TT-CD1101, STN102 AI0833, 0 ~ 100 °C]
+- TICD1102 — 57 C — - — condensate after #1 LPH; IO: #1 NO.2 LPH inlet water temperature [TT-CD1102, STN102 AI0834, 0 ~ 200 °C]
+- LCVHD11022 — 53.7 % — A — #2 LPH drain to flash chamber; → ABC LICHD11022 (ABC-038); IO: #1 NO.2 LPH alternate drain level control valve [LCV-HD1102-2, STN102 AO0481, 0.0 ~ 100.0 %]
+- FIQHD1102 — 3.4 T/H — - — #2 LPH drain flow; IO: #1 NO.2 LPH drain water flow [FT-HD1102, STN102 AI0432, 0.0 ~ 27.5 T/H]
+- LCVHD11021 — 99.9 % — A — #2 LPH drain cascade to #1 LPH; → ABC LICHD11021 (ABC-038); IO: #1 NO.2 LPH primary drain level control valve [LCV-HD1102-1, STN102 AO0465, 0.0 ~ 100.0 %]
+- TIHD1102 — 46 C — - — #2 LPH drain temp; IO: #1 NO.2 LPH drain water temperature [TT-HD1102, STN102 AI0929, 0 ~ 200 °C]
+- LIHD11021 — -5 mm — - — #2 LPH level; → ABC LIHD11021 (ABC-038); IO: #1 NO.2 LPH level (1) [LT-HD1102-1, STN102 AI0674, -315 ~ 295 mm]
+- LIHD11022 — -1 mm — - — #2 LPH level; → ABC LIHD11022 (ABC-038); IO: #1 NO.2 LPH level (2) [LT-HD1102-2, STN102 AI0850, -315 ~ 295 mm]
+- TICD11031 — 71 C — - — condensate after #2 LPH; IO: #1 NO.3 LPH inlet water temperature [TT-CD1103-1, STN102 AI0835, 0 ~ 200 °C]
+- MVTS1005 — 100.4 % — A R — T/B extraction 5 to #2 LPH; no ABC controller found; IO: #1 T/G NO.5 ext. to #2 LPH motor valve position [ZT-TS1005, STN102 AI0742, 0.0 ~ 100.0 %]
+- MVTS1004 — 99.0 % — A R — T/B extraction 4 to #3 LPH; no ABC controller found; IO: #1 T/G NO.4 ext. to #3 LPH motor valve position [ZT-TS1004, STN102 AI0741, 0.0 ~ 100.0 %]
+- LCVHD11032 — 0.1 % — A — #3 LPH drain to flash chamber; → ABC LICHD11032 (ABC-039); IO: #1 NO.3 LPH alternate drain level control valve [LCV-HD1103-2, STN102 AO0482, 0.0 ~ 100.0 %]
+- FIQHD1103 — 7.7 T/H — - — #3 LPH drain flow; IO: #1 NO.3 LPH drain water flow [FT-HD1103, STN102 AI0433, 0.0 ~ 20.0 T/H]
+- LCVHD11031 — 32.4 % — A — #3 LPH drain cascade to #2 LPH; → ABC LICHD11031 (ABC-039); IO: #1 NO.3 LPH primary drain level control valve [LCV-HD1103-1, STN102 AO0466, 0.0 ~ 100.0 %]
+- TIHD1103 — 74 C — - — #3 LPH drain temp; IO: #1 NO.3 LPH drain water temperature [TT-HD1103, STN102 AI0930, 0 ~ 200 °C]
+- LIHD11031 — -11 mm — - — #3 LPH level; → ABC LIHD11031 (ABC-039); IO: #1 NO.3 LPH level (1) [LT-HD1103-1, STN102 AI0675, -310 ~ 300 mm]
+- LIHD11032 — -1 mm — - — #3 LPH level; → ABC LIHD11032 (ABC-039); IO: #1 NO.3 LPH level (2) [LT-HD1103-2, STN102 AI0851, -310 ~ 300 mm]
+- TICD11032 — 94 C — - — condensate after #3 LPH to deaerator; IO: #1 NO.3 LPH outlet water temperature [TT-CD1103-2, STN102 AI0836, 0 ~ 200 °C]
+- FIQCD1122 — 165.4 T/H — - — condensate flow to deaerator; IO: #1 Boiler deaerator inlet flow [FT-CD1122, STN102 AI0545, 0.0 ~ 450.0 T/H]
+- TICD1122 — 93 C — - — condensate temp to deaerator; IO: #1 Boiler deaerator inlet temperature [TT-CD1122, STN102 AI0821, 0 ~ 200 °C]
+- PICD1122 — 3.8 kg/cm2 — - — condensate pressure to deaerator; IO: #1 Boiler deaerator inlet pressure [PT-CD1122, STN102 AI0422, 0.0 ~ 25.0 kg/cm2]
+- PCVAS1030 — 0.4 % — M — aux steam to deaerator pressure control; → ABC PICCD1104 (ABC-056); IO: #1 Deaerator pegging steam pressure control valve [PCV-AS1030, STN102 AO0403, 0.0 ~ 100.0 %]
+- MVTS1003 — 100.4 % — A R — T/B extraction 3 to deaerator; no ABC controller found; IO: #1 T/G NO.3 ext. to deaerator motor valve position [ZT-TS1003, STN102 AI0740, 0.0 ~ 100.0 %]
+- XVTS1740 — - — - — extraction 3 check/isolation (no value shown); no ABC controller found
+- PICD1104 — 2.2 kg/cm2 — - — H-1104 deaerator pressure; → ABC PICD1104 (ABC-056); IO: #1 Boiler deaerator pressure [PT-CD1104, STN102 AI0417, 0.0 ~ 10.0 kg/cm2]
+- LCVHD11052 — 0.1 % — A — #1 HPH drain to condenser; → ABC LICHD11052 (ABC-035); IO: #1 NO.1 HPH alternate drain level control valve [LCV-HD1105-2, STN102 AO0483, 0.0 ~ 100.0 %]
+- LCVHD11051 — 0.1 % — A — #1 HPH drain (to deaerator, arrow 1); → ABC LICHD11051 (ABC-035); IO: #1 NO.1 HPH primary drain level control valve [LCV-HD1105-1, STN102 AO0467, 0.0 ~ 100.0 %]
+- TIHD1105 — 156 C — - — #1 HPH drain temp; IO: #1 NO.1 HPH drain water temperature [TT-HD1105, STN102 AI0931, 0 ~ 300 °C]
+- FIQHD1105 — 22.9 T/H — - — #1 HPH drain flow; IO: #1 NO.1 HPH drain water flow [FT-HD1105, STN102 AI0434, 0.0 ~ 69.0 T/H]
+- LIHD11051 — -91 mm — - — #1 HPH level; → ABC LIHD11051 (ABC-035); IO: #1 NO.1 HPH level (1) [LT-HD1105-1, STN102 AI0676, -300 ~ 310 mm]
+- LIHD11052 — -80 mm — - — #1 HPH level; → ABC LIHD11052 (ABC-035); IO: #1 NO.1 HPH level (2) [LT-HD1105-2, STN102 AI0852, -300 ~ 310 mm]
+- LCVHD11062 — 0.1 % — M — #2 HPH drain to condenser; → ABC LICHD11062 (ABC-036); IO: #1 NO.2 HPH alternate drain level control valve [LCV-HD1106-2, STN102 AO0484, 0.0 ~ 100.0 %]
+- LCVHD11061 — 0.1 % — M — #2 HPH drain cascade to #1 HPH; → ABC LICHD11061 (ABC-036); IO: #1 NO.2 HPH primary drain level control valve [LCV-HD1106-1, STN102 AO0468, 0.0 ~ 100.0 %]
+- FIQHD1106 — 3.1 T/H — - — #2 HPH drain flow; IO: #1 NO.2 HPH drain water flow [FT-HD1106, STN102 AI0435, 0.0 ~ 45.0 T/H]
+- TIHD1106 — 91 C — - — #2 HPH drain temp; IO: #1 NO.2 HPH drain water temperature [TT-HD1106, STN102 AI0932, 0 ~ 300 °C]
+- LIHD11061 — -151 mm — - — #2 HPH level; → ABC LIHD11061 (ABC-036); IO: #1 NO.2 HPH level (1) [LT-HD1106-1, STN102 AI0677, -300 ~ 310 mm]
+- LIHD11062 — -151 mm — - — #2 HPH level; → ABC LIHD11062 (ABC-036); IO: #1 NO.2 HPH level (2) [LT-HD1106-2, STN102 AI0853, -300 ~ 310 mm]
+- TIFW1105 — 166 C — - — FW after #1 HPH; IO: #1 NO.1 HPH outlet water temperature [TT-FW1105, STN102 AI0913, 0 ~ 300 °C]
+- TIFW1011 — 135 C — - — BFP discharge FW temp; IO: #1 BFWP common discharge water temperature [TT-FW1011, STN102 AI0912, 0 ~ 200 °C]
+- PIFW1011 — 202.9 kg/cm2 — - — BFP discharge pressure; IO: #1 Boiler BFWP common discharge water pressure [PT-FW1011, STN102 AI0418, 0.0 ~ 250.0 kg/cm2]
+- TIFW1106 — 166 C — - — FW to economizer; IO: #1 NO.2 HPH outlet water temperature [TT-FW1106, STN102 AI0914, 0 ~ 300 °C]
+- MVFW1001 — 101.5 % — R — BFWP-A discharge valve; no ABC controller found; IO: #1 BFWP-A outlet motor valve position [ZT-FW1001, STN102 AI0768, 0.0 ~ 100.0 %]
+- MVFW1391 — 0.0 % — R TQ — BFWP-A recirc/bypass valve; no ABC controller found; IO: #1 BFWP-A outlet bypass motor valve position [ZT-FW1391, STN102 AI0769, 0.0 ~ 100.0 %]
+- MVFW1002 — 100.5 % — R — BFWP-B discharge valve; no ABC controller found; IO: #1 BFWP-B outlet motor valve position [ZT-FW1002, STN102 AI0784, 0.0 ~ 100.0 %]
+- MVFW1392 — 0.5 % — R TQ — BFWP-B recirc/bypass valve; no ABC controller found; IO: #1 BFWP-B outlet bypass motor valve position [ZT-FW1392, STN102 AI0785, 0.0 ~ 100.0 %]
+- BFWP-A (P-1115A) — 207.2 A — R M — BFWP-A running
+- DPIFW1115A — 0.07 kg/cm2 — - — BFWP-A suction strainer DP; IO: #1 Boiler BFWP-A suction strainer diff. pressure [DPT-FW1115-A, STN102 AI0451, 0.00 ~ 1.00 kg/cm2]
+- PIFW1115A — 3.9 kg/cm2 — - — BFWP-A suction pressure; IO: #1 Boiler BFWP-A suction pressure [PT-FW1115-A, STN102 AI0420, 0.0 ~ 10.0 kg/cm2]
+- BFWP-B (P-1115B) — 0.0 A — R A — BFWP-B standby (stopped)
+- DPIFW1115B — 0.00 kg/cm2 — - — BFWP-B suction strainer DP; IO: #1 Boiler BFWP-B suction strainer diff. pressure [DPT-FW1115-B, STN102 AI0803, 0.00 ~ 1.00 kg/cm2]
+- PIFW1115B — 4.0 kg/cm2 — - — BFWP-B suction pressure; IO: #1 Boiler BFWP-B suction pressure [PT-FW1115-B, STN102 AI0565, 0.0 ~ 10.0 kg/cm2]
+- TIFW1010 — 131 C — - — deaerator outlet (BFP suction) temp; IO: #1 BFWP inlet feed water temperature [TT-FW1010, STN102 AI0901, 0 ~ 300 °C]
+- XVCD11042 — - — - — deaerator tank overflow to condenser (no value); no ABC controller found; IO: #1 Deaerator tank emergency drain valve to condenser close solenoid [XV-CD1104-2, STN102 O.012D]
+- LICD11041 — 71 mm — - — deaerator tank level; → ABC LICD11041 (ABC-031); IO: #1 Boiler deaerator storage tank level (1) [LT-CD1104-1, STN102 AI0672, -2335 ~ 1095 mm]
+- LICD11042 — 60 mm — - — deaerator tank level; → ABC LICD11042 (ABC-031); IO: #1 Boiler deaerator storage tank level (2) [LT-CD1104-2, STN102 AI0848, -2335 ~ 1095 mm]
+- LICD11043 — 65 mm — - — deaerator tank level; → ABC LICD11043 (ABC-031); IO: #1 Boiler deaerator storage tank level (3) [LT-CD1104-3, STN102 AI0928, -2335 ~ 1095 mm]
+- TICD1104 — 131 C — - — deaerator tank temp (label beside LSLLCD11044, small text); IO: #1 Deaerator storage tank water temp. [TT-CD1104, STN102 AI0822, 0 ~ 200 °C]
+
+## 03.png — 003 MAIN WATER/STEAM SYSTEM
+- Oras: 2023.10.18 10:46:28 (alarm line 10/18/2023 10:45:49 105-AB656 P-0808A Filter Water Pump STOP)
+- Header: MSP 122.6 K, MST 542 C, MSF 474.1 T/H, RHP 34.0 K, RHT 542 C, COAL 87.0 T/H, PWR 150.5 MW
+- Tala: Full load ~150 MW. Drum level control THREE ELEM.
+
+- MVBR1391 — 0.0 % — R TQ (A) — S/H no.1 outlet header to reheater; → ABC HICBR1391 (ABC-055); IO: #1 S/H NO.1 outlet header to reheater motor valve position [ZT-BR1391, STN101 AI0181, 0.0 ~ 100.0 %]
+- TIBR11302 — 395 C — - — → ABC TIBR11302 (ABC-011); IO: #1 Superheater NO.2 inlet header steam temperature (2) [TT-BR1130-2, STN101 AI0641, 0 ~ 600 °C]
+- TIBR11301 — 393 C — - — → ABC TIBR11301 (ABC-011); IO: #1 Superheater NO.2 inlet header steam temperature (1) [TT-BR1130-1, STN101 AI0609, 0 ~ 600 °C]
+- PIBR1130 — 127.8 kg/cm2 — - — SH pressure after S/H panel #1; IO: #1 NO.2 S/H panel inlet steam pressure [PT-BR1130, STN101 AI0145, 0.0 ~ 250.0 kg/cm2]
+- TIBR11401 — 461 C — - — S/H panel #2 outlet; → ABC TIBR11401 (ABC-011); IO: #1 Superheater NO.2 outlet header steam temperature (1) [TT-BR1140-1, STN101 AI0610, 0 ~ 600 °C]
+- TIBR11402 — 463 C — - — S/H panel #2 outlet; → ABC TIBR11402 (ABC-011); IO: #1 Superheater NO.2 outlet header steam temperature (2) [TT-BR1140-2, STN101 AI0642, 0 ~ 600 °C]
+- PIBR1150 — 124.9 kg/cm2 — - — before finishing SH; IO: #1 Finishing S/H inlet steam pressure [PT-BR1150, STN101 AI0275, 0.0 ~ 250.0 kg/cm2]
+- TIBR11501 — 421 C — - — finishing SH inlet (after #2 spray); → ABC TIBR11501 (ABC-012); IO: #1 Finishing S/H inlet header steam temperature (1) [TT-BR1150-1, STN101 AI0611, 0 ~ 600 °C]
+- TIBR11502 — 419 C — - — finishing SH inlet; → ABC TIBR11502 (ABC-012); IO: #1 Finishing S/H inlet header steam temperature (2) [TT-BR1150-2, STN101 AI0643, 0 ~ 600 °C]
+- FIQMS1031 — 474.1 T/H — - — main steam flow; → ABC FIQMS1031 (ABC-001C, ABC-010, ABC-050); IO: #1 Boiler main steam flow [FT-MS1031, STN101 AI0129, 0.0 ~ 500.0 T/H]
+- PIMS1002 — 122.6 kg/cm2 — - — main steam pressure; → ABC PIMS1002 (ABC-001C); IO: #1 Boiler finishing superheater outlet main steam pressure [PT-MS1002, STN101 AI0131, 0.0 ~ 150.0 kg/cm2]
+- TIMS10041 — 542 C — - — main steam temp; → ABC TIMS10041 (ABC-012); IO: #1 Boiler finishing S/H outlet main steam temp. (1) [TT-MS1004-1, STN101 AI0612, 0 ~ 600 °C]
+- TIMS10042 — 543 C — - — main steam temp; → ABC TIMS10042 (ABC-012); IO: #1 Boiler finishing S/H outlet main steam temp. (2) [TT-MS1004-2, STN101 AI0644, 0 ~ 600 °C]
+- PCVMS1001 — 0.4 % — A — main steam to silencer (start-up vent); → ABC PICMS1002 (ABC-013); IO: #1 Boiler main steam blow-off pressure control valve [PCV-MS1001, STN101 AO0354, 0.0 ~ 100.0 %]
+- TIBR11202 — 454 C — - — IO: #1 Superheater NO.1 outlet header steam temperature (2) [TT-BR1120-2, STN101 AI0640, 0 ~ 600 °C]
+- TIBR11201 — 458 C — - — IO: #1 Superheater NO.1 outlet header steam temperature (1) [TT-BR1120-1, STN101 AI0608, 0 ~ 600 °C]
+- #2 OUTLET TEMP CTL — PV 462 C / SV 462 C / MV 65.6 % — A — outer (cascade master) of #1 spray; → ABC TICBR1140 (ABC-011)
+- #1 SPRAY TEMP CTL — PV 394 C / SV 394 C / MV 57.6 % — R — #1 desuperheater spray (inner); → ABC TICBR1130 (ABC-011)
+- TCVFW11102 — 100.7 % — R — #1 spray line valve (side 1); → ABC TICBR1130 (ABC-011); IO: #1 Boiler S/H NO.1 outlet desuperheater spray water temp. control valve (2) [TCV-FW1110-2, STN101 AO0353, 0.0 ~ 100.0 %]
+- TCVFW11101 — 45.5 % — R — #1 spray control valve; → ABC TICBR1130 (ABC-011); IO: #1 Boiler S/H NO.1 outlet desuperheater spray water temp. control valve (1) [TCV-FW1110-1, STN101 AO0225, 0.0 ~ 100.0 %]
+- TCVFW11202 — 99.7 % — R — #2 spray line valve; → ABC TICBR1150 (ABC-012); IO: #1 Boiler S/H NO.2 outlet desuperheater spray water temp. control valve (2) [TCV-FW1120-2, STN101 AO0358, 0.0 ~ 100.0 %]
+- TCVFW11201 — 14.9 % — R — #2 spray control valve; → ABC TICBR1150 (ABC-012); IO: #1 Boiler S/H NO.2 outlet desuperheater spray water temp. control valve (1) [TCV-FW1120-1, STN101 AO0229, 0.0 ~ 100.0 %]
+- XVFW11112 — - — - — A, N (#1 spray block); no ABC controller found; IO: #1 S/H NO.1 outlet desuperheater spray water block valve(2) open solenoid [XV-FW1111-2, STN101 O.0200]
+- XVFW11111 — - — - — A, N (#1 spray block); no ABC controller found; IO: #1 S/H NO.1 outlet desuperheater spray water block valve(1) open solenoid [XV-FW1111-1, STN101 O.0160]
+- XVFW11212 — - — - — A, N (#2 spray block); no ABC controller found; IO: #1 S/H NO.2 outlet desuperheater spray water block valve(2) open solenoid [XV-FW1121-2, STN101 O.0201]
+- XVFW11211 — - — - — A, N (#2 spray block); no ABC controller found; IO: #1 S/H NO.2 outlet desuperheater spray water block valve(1) open solenoid [XV-FW1121-1, STN101 O.0161]
+- FIQFW1109 — 37.5 T/H — - — #1 spray water flow; IO: #1 Boiler S/H NO.1 outlet desuperheater spray water flow [FT-FW1109, STN101 AI0165, 0.0 ~ 40.0 T/H]
+- FIQFW1119 — 28.2 T/H — - — #2 spray water flow; IO: #1 Boiler S/H NO.2 outlet desuperheater spray water flow [FT-FW1119, STN101 AI0257, 0.0 ~ 40.0 T/H]
+- MAIN STEAM TEMP CTL — PV 542 C / SV 541 C / MV 69.7 % — A — outer of #2 spray; → ABC TICMS1004 (ABC-012)
+- #2 SPRAY TEMP CTL — PV 420 C / SV 418 C / MV 30.2 % — R — #2 desuperheater spray (inner); → ABC TICBR1150 (ABC-012)
+- BFWP-A vib — X(DE) 2.6 / Y(DE) 3.2 / X(NDE) 0.9 / Y(NDE) 1.5 mm/s-rms — -
+- BFWP-A (P-1115A) — 289.4 A — R M — running
+- DPIFW1115A — 0.29 kg/cm2 — - — IO: #1 Boiler BFWP-A suction strainer diff. pressure [DPT-FW1115-A, STN102 AI0451, 0.00 ~ 1.00 kg/cm2]
+- PIFW1115A — 6.7 kg/cm2 — - — IO: #1 Boiler BFWP-A suction pressure [PT-FW1115-A, STN102 AI0420, 0.0 ~ 10.0 kg/cm2]
+- BFWP-B (P-1115B) — 0.0 A — R A — standby
+- DPIFW1115B — 0.00 kg/cm2 — - — IO: #1 Boiler BFWP-B suction strainer diff. pressure [DPT-FW1115-B, STN102 AI0803, 0.00 ~ 1.00 kg/cm2]
+- PIFW1115B — 7.1 kg/cm2 — - — IO: #1 Boiler BFWP-B suction pressure [PT-FW1115-B, STN102 AI0565, 0.0 ~ 10.0 kg/cm2]
+- BFWP-B vib — X(DE) 0.1 / Y(DE) 0.1 / X(NDE) 0.2 / Y(NDE) 0.2 mm/s-rms — -
+- MVFW1001 — 101.4 % — R — no ABC controller found; IO: #1 BFWP-A outlet motor valve position [ZT-FW1001, STN102 AI0768, 0.0 ~ 100.0 %]
+- MVFW1391 — 0.0 % — R TQ — no ABC controller found; IO: #1 BFWP-A outlet bypass motor valve position [ZT-FW1391, STN102 AI0769, 0.0 ~ 100.0 %]
+- MVFW1002 — 100.4 % — R — no ABC controller found; IO: #1 BFWP-B outlet motor valve position [ZT-FW1002, STN102 AI0784, 0.0 ~ 100.0 %]
+- MVFW1392 — 0.2 % — R TQ — no ABC controller found; IO: #1 BFWP-B outlet bypass motor valve position [ZT-FW1392, STN102 AI0785, 0.0 ~ 100.0 %]
+- TIBR1110 — 371 C — - — IO: #1 Superheater NO.1 inlet header steam temperature [TT-BR1110, STN101 AI0646, 0 ~ 600 °C]
+- PIBR10011 — 134.2 kg/cm2 — - — drum pressure; → ABC PIBR10011 (ABC-010); IO: #1 Boiler drum pressure (1) [PT-BR1001-1, STN101 AI0128, 0.0 ~ 250.0 kg/cm2]
+- PIBR10012 — 134.1 kg/cm2 — - — drum pressure; → ABC PIBR10012 (ABC-010); IO: #1 Boiler drum pressure(2) [PT-BR1001-2, STN101 AI0385, 0.0 ~ 250.0 kg/cm2]
+- LIBR10011 — 0 mm — - — drum level; → ABC LIBR10011 (ABC-010); IO: #1 Boiler drum level (1) [LT-BR1001-1, STN101 AI0130, -422 ~ 820 mm]
+- LIBR10012 — 2 mm — - — drum level; → ABC LIBR10012 (ABC-010); IO: #1 Boiler drum level (2) [LT-BR1001-2, STN101 AI0258, -422 ~ 820 mm]
+- LIBR10013 — 8 mm — - — drum level; → ABC LIBR10013 (ABC-010); IO: #1 Boiler drum level (3) [LT-BR1001-3, STN101 AI0386, -422 ~ 820 mm]
+- DRUM T-1001 level — 3 mm — - — selected drum level
+- TIBR1040 — 305 C — - — ECO #3 outlet; IO: #1 Boiler economizer #3 outlet water temperature [TT-BR1040, STN101 AI0645, 0 ~ 600 °C]
+- TIBR1030 — 275 C — - — ECO #2 outlet; IO: #1 Boiler economizer #2 outlet water temperature [TT-BR1030, STN101 AI0614, 0 ~ 600 °C]
+- TIBR1020 — 263 C — - — ECO #1 outlet; IO: #1 Boiler economizer #1 outlet water temperature [TT-BR1020, STN101 AI0613, 0 ~ 600 °C]
+- MVBD1002 — 2.1 % — R — continuous blowdown to flash tank; no ABC controller found; IO: #1 Continuous blow down motor valve position [ZT-BD1002, STN101 AI0178, 0.0 ~ 100.0 %]
+- MVBD1001 — 0.0 % — R — blowdown to blowdown tank; no ABC controller found; IO: #1 Mass blow down motor valve position [ZT-BD1001, STN101 AI0177, 0.0 ~ 100.0 %]
+- CONTROL MODE — THREE ELEM. — - — drum level control mode
+- 1 ELEM CONTROL — PV 3 mm / SV 0 mm / MV 56.0 % — A — → ABC LICBR1001A (ABC-010)
+- 3 ELEM CONTROL — PV 3 mm / SV 0 mm / MV 4.8 % — A — → ABC LICBR1001 (ABC-010)
+- FEEDWATER FLOW CTL — PV 499.1 T/H / SV 500.3 T/H / MV 56.0 % — R — → ABC FICFW1007 (ABC-010)
+- TIFW1011 — 162 C — - — IO: #1 BFWP common discharge water temperature [TT-FW1011, STN102 AI0912, 0 ~ 200 °C]
+- PIFW1011 — 165.4 kg/cm2 — - — IO: #1 Boiler BFWP common discharge water pressure [PT-FW1011, STN102 AI0418, 0.0 ~ 250.0 kg/cm2]
+- LIHD11051 — -6 mm — - — → ABC LIHD11051 (ABC-035); IO: #1 NO.1 HPH level (1) [LT-HD1105-1, STN102 AI0676, -300 ~ 310 mm]
+- LIHD11052 — 0 mm — - — → ABC LIHD11052 (ABC-035); IO: #1 NO.1 HPH level (2) [LT-HD1105-2, STN102 AI0852, -300 ~ 310 mm]
+- LIHD11061 — -4 mm — - — → ABC LIHD11061 (ABC-036); IO: #1 NO.2 HPH level (1) [LT-HD1106-1, STN102 AI0677, -300 ~ 310 mm]
+- LIHD11062 — 3 mm — - — → ABC LIHD11062 (ABC-036); IO: #1 NO.2 HPH level (2) [LT-HD1106-2, STN102 AI0853, -300 ~ 310 mm]
+- TIFW1106 — 243 C — - — IO: #1 NO.2 HPH outlet water temperature [TT-FW1106, STN102 AI0914, 0 ~ 300 °C]
+- TIFW1105 — 198 C — - — IO: #1 NO.1 HPH outlet water temperature [TT-FW1105, STN102 AI0913, 0 ~ 300 °C]
+- FIQFW10072 — 499.2 T/H — - — feedwater flow; → ABC FIQFW10072 (ABC-010); IO: #1 Boiler feed water flow (2) [FT-FW1007-2, STN101 AI0384, 0.0 ~ 550.0 T/H]
+- FIQFW10071 — 498.9 T/H — - — feedwater flow; → ABC FIQFW10071 (ABC-010); IO: #1 Boiler feed water flow (1) [FT-FW1007-1, STN101 AI0256, 0.0 ~ 550.0 T/H]
+- FCVFW11301 — 56.1 % — - — main FW control valve; → ABC FICFW1007 (ABC-010); IO: #1 Boiler drum level control valve [FCV-FW1130-1, STN101 AO0227, 0.0 ~ 100.0 %]
+- FCVFW11302 — 0.6 % — M — start-up (low load) FW control valve; → ABC LICBR1001B (ABC-010); IO: #1 Boiler feed water flow control valve for start-up [FCV-FW1130-2, STN101 AO0340, 0.0 ~ 100.0 %]
+- TIFW1160 — 244 C — - — economizer inlet; → ABC TIFW1160 (ABC-010); IO: #1 Boiler economizer #1 inlet water temperature [TT-FW1160, STN101 AI0592, 0 ~ 300 °C]
+- PIFW1160 — 137.7 kg/cm2 — - — economizer inlet pressure; IO: #1 Boiler economizer #1 inlet water pressure [PT-FW1160, STN101 AI0259, 0.0 ~ 250.0 kg/cm2]
+- MS1031 — 474.1 T/H — - — steam flow (3-elem summary)
+- FW10072 — 499.2 T/H — -
+- FW10071 — 498.9 T/H — -
+- steam-feed mismatch — -25 T/H — -
+
+## 11.png — 011 COAL FEEDER SYSTEM
+- Oras: 2023.10.18 14:14:25 (alarm line 10/18/2023 14:14:05 104-WI053 Drum level HH(1) LSHHBR10011 OCCUR)
+- Header: MSP 120.9 K, MST 541 C, MSF 479.0 T/H, RHP 33.7 K, RHT 541 C, COAL 87.0 T/H, PWR 150.7 MW
+- Tala: 3 coal feeders tumatakbo (pula), lahat naka-A sa feeder control, ang COAL MASTER at TOTAL COAL FLOW CORRECT ay naka-R (cascade).
+
+- LICL1008A — 4.56 M — - — coal silo A level; IO: #1 Boiler coal silo-A level [LT-CL1008-A, STN101 AI0144, 0.00 ~ 9.50 M]
+- LICL1008B — 3.65 M — - — coal silo B level; IO: #1 Boiler coal silo-B level [LT-CL1008-B, STN101 AI0272, 0.00 ~ 9.50 M]
+- LICL1008C — 3.89 M — - — coal silo C level; IO: #1 Boiler coal silo-C level [LT-CL1008-C, STN101 AI0400, 0.00 ~ 9.50 M]
+- SUM CL1061A — 1307517.1 T — - — feeder A totalizer
+- SUM CL1061B — 1296411.7 T — - — feeder B totalizer
+- SUM CL1061C — 1309808.5 T — - — feeder C totalizer
+- MICL1061A — PV 29.0 T/H / SV 29.1 T/H / MV 72.8 % — A — feeder A speed; BIAS 0.0 T/H; → ABC FICCL1061A (ABC-004A)
+- MICL1061B — PV 29.1 T/H / SV 29.1 T/H / MV 72.8 % — A — feeder B; BIAS 0.0 T/H; → ABC FICCL1061B (ABC-004B)
+- MICL1061C — PV 28.9 T/H / SV 29.1 T/H / MV 72.8 % — A — feeder C; BIAS 0.0 T/H; → ABC FICCL1061C (ABC-004C)
+- L-1061A COAL FEEDER-A — running — R M — red belt = running; clean-out conveyor A RUNNING, AUTO
+- L-1061B COAL FEEDER-B — running — R M — clean-out conveyor B RUNNING, AUTO
+- L-1061C COAL FEEDER-C — running — R M — clean-out conveyor C RUNNING, AUTO
+- XVCL1061A — open — R — feeder A outlet gate to fuel port (red); no ABC controller found; IO: #1 Coal feeder-A outlet discharge isolation valve open command [XV-CL1061-A, STN104 O.0242]
+- XVCL1061B — open — R — feeder B outlet gate; no ABC controller found; IO: #1 Coal feeder-B outlet discharge isolation valve open command [XV-CL1061-B, STN104 O.060D]
+- XVCL1061C — open — R — feeder C outlet gate; no ABC controller found; IO: #1 Coal feeder-C outlet discharge isolation valve open command [XV-CL1061-C, STN104 O.0762]
+- MIACL1061A3 — alarm (red) — - — A-INLET PLUGGING active; IO: #1 Coal feeder-A inlet plugging [MIA-CL1061-A3, STN104 I.0129]
+- MIACL1061B3 — alarm (red) — - — B-INLET PLUGGING active; IO: #1 Coal feeder-B inlet plugging [MIA-CL1061-B3, STN104 I.0449]
+- MIACL1061B7 — alarm (red) — - — B-BELT TRACKING active; IO: #1 Coal feeder-B belt tracking [MIA-CL1061-B7, STN104 I.044D]
+- MIACL1061C3 — alarm (red) — - — C-INLET PLUGGING active; IO: #1 Coal feeder-C inlet plugging [MIA-CL1061-C3, STN104 I.0489]
+- COAL MASTER CONTROL — PV 87.0 T/H / SV 87.4 T/H / MV 73.0 % — R — → ABC FIC-CM (ABC-004A)
+- TOTAL COAL FLOW CORRECT. — PV 81.2 T/H / SV 81.2 T/H / MV 33.1 % — R — → ABC FIC-CF (ABC-004A)
+- COAL CALORIE CORR. — 4150 Kcal/Kg — -
+- COAL/POWER RATIO — 0.570 Tc/Tp — -
+- MSF/POWER RATIO — 3.180 Tf/Tp — -
+
+## 12.PNG — 012 START-UP BURNER A
+- Oras: not shown
+- Header: MSP 123.7 K, MST 541 C, MSF 473.9 T/H, RHP 33.9 K, RHT 541 C, COAL 88.7 T/H, PWR 149.7 MW
+- Tala: Full load, burner A naka-OFF (igniter at burner OFF berde). Ang flame picture ay simbolo lang.
+
+- BID01043A — 100.2 % — - — burner A flame intensity (scanner)
+- BNR LIGHTING timer — 0 M 0 S — -
+- OIL GUN PURGE timer — 0 M 0 S — -
+- HOT SEC. AIR FLOW BIAS — 0.00 T/H — -
+- MCVFA1043A — 2.5 % — M (L shown, R-SV 26.0) — hot secondary air damper to burner A; → ABC FICFA1043A (ABC-003A); IO: #1 Boiler start up burner-A hot secondary air flow control damper [MCV-FA1043-A, STN101 AO0208, 0.0 ~ 100.0 %]
+- FIFA1043A — 22.9 T/H — - — hot sec. air flow to burner A; → ABC FIFA1043A (ABC-003A); IO: #1 Boiler start up burner-A hot secondary air inlet flow [FT-FA1043-A, STN101 AI0164, 0.0 ~ 65.0 T/H]
+- PID01043A2 — 0.0 kg/cm2 — - — burner A oil pressure
+- XVPA1043A3 — closed — - — plant air purge (green); no ABC controller found
+- XVDO1043A2 — closed — - — diesel oil shutoff (green); no ABC controller found
+- XVDO1043A1 — closed — - — diesel oil shutoff (green); no ABC controller found
+- XVPA1043A2 — closed — - — plant air atomizing (green); no ABC controller found
+- FCVDO1043A3 — 25.0 % — - — oil supply flow control valve A (ignition pos 25%); → ABC FICDO1043A (ABC-003A); IO: #1 Boiler start up burner-A supply oil line flow control valve [FCV-DO1043-A3, STN101 AO0209, 0.0 ~ 100.0 %]
+- FIQD01043A — 0.00 T/H — - — burner A oil flow
+- BNR-A OIL PRESS. CTL — PV 0.0 kg/cm2 / SV 0.0 kg/cm2 / MV 25.0 % — M — → ABC PICDO1043A (ABC-003A)
+- BNR-A OIL FLOW CTL — PV 0.00 T/H / SV 0.00 T/H / MV 25.0 % — M — → ABC FICDO1043A (ABC-003A)
+- TOTAL AIR FLOW — 591.0 T/H — -
+- FURNACE PRESSURE — -13 mmH2O — -
+- OIL RETURN LINE PRESS. — 11.0 kg/cm2 — -
+- OIL PUMP OUTLET PRESS. — 12.8 kg/cm2 — -
+- OIL SUPPLY FLOW — 0.00 T/H — -
+- IGNITER & BURNER — REMOTE lit (red); IGNITER-A OFF; BURNER-A OFF — -
+
+## 13.PNG — 013 START-UP BURNER B
+- Oras: not shown
+- Header: MSP 123.8 K, MST 541 C, MSF 473.4 T/H, RHP 33.9 K, RHT 541 C, COAL 88.5 T/H, PWR 149.7 MW
+- Tala: Full load, burner B OFF. Kapareho ng burner A ang layout.
+
+- BID01043B — 100.1 % — - — burner B flame intensity
+- HOT SEC. AIR FLOW BIAS — 0.00 T/H — -
+- MCVFA1043B — 5.5 % — M (R shown, R-SV 26.0) — hot secondary air damper to burner B; → ABC FICFA1043B (ABC-003B); IO: #1 Boiler start up burner-B hot secondary air flow control damper [MCV-FA1043-B, STN101 AO0320, 0.0 ~ 100.0 %]
+- FIFA1043B — 22.5 T/H — - — hot sec. air flow to burner B; → ABC FIFA1043B (ABC-003B); IO: #1 Boiler start up burner-B hot secondary air inlet flow [FT-FA1043-B, STN101 AI0290, 0.0 ~ 65.0 T/H]
+- PID01043B2 — 0.0 kg/cm2 — -
+- FCVDO1043B3 — 24.9 % — - — oil supply flow control valve B; → ABC FICDO1043B (ABC-003B); IO: #1 Boiler start up burner-B supply oil line flow control valve [FCV-DO1043-B3, STN101 AO0321, 0.0 ~ 100.0 %]
+- FIQD01043B — 0.00 T/H — -
+- XVDO1043B1 — closed — - — no ABC controller found
+- XVDO1043B2 — closed — - — no ABC controller found
+- XVPA1043B2 — closed — - — no ABC controller found
+- XVPA1043B3 — closed — - — no ABC controller found
+- BNR-B OIL PRESS. CTL — PV 0.0 kg/cm2 / SV 0.0 kg/cm2 / MV 25.0 % — M — → ABC PICDO1043B (ABC-003B)
+- BNR-B OIL FLOW CTL — PV 0.00 T/H / SV 0.00 T/H / MV 25.0 % — M — → ABC FICDO1043B (ABC-003B)
+- TOTAL AIR FLOW — 593.8 T/H — -
+- FURNACE PRESSURE — -13 mmH2O — -
+- OIL RETURN LINE PRESS. — 11.0 kg/cm2 — -
+- OIL PUMP OUTLET PRESS. — 12.8 kg/cm2 — -
+- OIL SUPPLY FLOW — 0.00 T/H — -
+
+## 14.PNG — 014 START-UP BURNER C
+- Oras: not shown
+- Header: MSP 123.9 K, MST 541 C, MSF 473.7 T/H, RHP 33.9 K, RHT 541 C, COAL 88.6 T/H, PWR 149.9 MW
+- Tala: Full load, burner C OFF.
+
+- BID01043C — 100.1 % — - — burner C flame intensity
+- HOT SEC. AIR FLOW BIAS — 0.00 T/H — -
+- MCVFA1043C — 5.0 % — M (L shown, R-SV 26.0) — hot secondary air damper to burner C; → ABC FICFA1043C (ABC-003C); IO: #1 Boiler start up burner-C hot secondary air flow control damper [MCV-FA1043-C, STN101 AO0336, 0.0 ~ 100.0 %]
+- FIFA1043C — 21.8 T/H — - — → ABC FIFA1043C (ABC-003C); IO: #1 Boiler start up burner-C hot secondary air inlet flow [FT-FA1043-C, STN101 AI0403, 0.0 ~ 65.0 T/H]
+- PID01043C2 — 0.0 kg/cm2 — -
+- FCVDO1043C3 — 25.0 % — - — oil supply flow control valve C; → ABC FICDO1043C (ABC-003C); IO: #1 Boiler start up burner-C supply oil line flow control valve [FCV-DO1043-C3, STN101 AO0337, 0.0 ~ 100.0 %]
+- FIQD01043C — 0.00 T/H — -
+- XVDO1043C1 — closed — - — no ABC controller found
+- XVDO1043C2 — closed — - — no ABC controller found
+- XVPA1043C2 — closed — - — no ABC controller found
+- XVPA1043C3 — closed — - — no ABC controller found
+- BNR-C OIL PRESS. CTL — PV 0.0 kg/cm2 / SV 0.0 kg/cm2 / MV 25.0 % — M — → ABC PICDO1043C (ABC-003C)
+- BNR-C OIL FLOW CTL — PV 0.00 T/H / SV 0.00 T/H / MV 25.0 % — M — → ABC FICDO1043C (ABC-003C)
+- TOTAL AIR FLOW — 595.0 T/H — -
+- FURNACE PRESSURE — -24 mmH2O — -
+- OIL RETURN LINE PRESS. — 11.1 kg/cm2 — -
+- OIL PUMP OUTLET PRESS. — 12.9 kg/cm2 — -
+- OIL SUPPLY FLOW — 0.00 T/H — -
+
+## 15.PNG — 015 START-UP BURNER D
+- Oras: not shown
+- Header: MSP 124.1 K, MST 540 C, MSF 472.6 T/H, RHP 33.9 K, RHT 541 C, COAL 89.0 T/H, PWR 149.9 MW
+- Tala: Full load, burner D OFF. Intensity 37.7 % lang (iba sa A/B/C na ~100 %); ang "BURNER-D NO FLAME" ay pulang check dito (sa A/B/C berde).
+
+- BID01043D — 37.7 % — - — burner D flame intensity
+- HOT SEC. AIR FLOW BIAS — 0.00 T/H — -
+- MCVFA1043D — 1.7 % — M (L shown, R-SV 26.0) — hot secondary air damper to burner D; → ABC FICFA1043D (ABC-003D); IO: #1 Boiler start up burner-D hot secondary air flow control damper [MCV-FA1043-D, STN101 AO0784, 0.0 ~ 100.0 %]
+- FIFA1043D — 26.8 T/H — - — → ABC FIFA1043D (ABC-003D); IO: #1 Boiler start up burner-D hot secondary air inlet flow [FT-FA1043-D, STN101 AI0597, 0.0 ~ 65.0 T/H]
+- PID01043D2 — 0.0 kg/cm2 — -
+- FCVDO1043D3 — 25.0 % — - — oil supply flow control valve D; → ABC FICDO1043D (ABC-003D); IO: #1 Boiler start up burner-D supply oil line flow control valve [FCV-DO1043-D3, STN101 AO0785, 0.0 ~ 100.0 %]
+- FIQD01043D — 0.00 T/H — -
+- XVDO1043D1 — closed — - — no ABC controller found
+- XVDO1043D2 — closed — - — no ABC controller found
+- XVPA1043D2 — closed — - — no ABC controller found
+- XVPA1043D3 — closed — - — no ABC controller found
+- BNR-D OIL PRESS. CTL — PV 0.0 kg/cm2 / SV 0.0 kg/cm2 / MV 25.0 % — M — → ABC PICDO1043D (ABC-003D)
+- BNR-D OIL FLOW CTL — PV 0.00 T/H / SV 0.00 T/H / MV 25.0 % — M — → ABC FICDO1043D (ABC-003D)
+- TOTAL AIR FLOW — 593.4 T/H — -
+- FURNACE PRESSURE — -14 mmH2O — -
+- OIL RETURN LINE PRESS. — 10.2 kg/cm2 — -
+- OIL PUMP OUTLET PRESS. — 11.9 kg/cm2 — -
+- OIL SUPPLY FLOW — 0.00 T/H — -
+
+## 16.PNG — 016 BOTTOM ASH REMOVAL SYSTEM
+- Oras: not shown
+- Header: MSP 124.9 K, MST 540 C, MSF 473.8 T/H, RHP 33.9 K, RHT 540 C, COAL 88.6 T/H, PWR 149.8 MW
+- Tala: Ash coolers A-D naka-hinto (0.0 A, speed 0 rpm); bottom ash auto sequence = MANUAL.
+
+- TICW1156 — 37 C — - — cooling water to ash coolers; IO: #1 Boiler cooling water of bottom ash cooler cooiling water temp. [TT-CW1156, STN103 AI0385, 0 ~ 150 °C]
+- PICW1156 — 5.3 kg/cm2 — - — cooling water pressure; IO: #1 Boiler cooling water of bottom ash cooler cooiling water pressure [PT-CW1156, STN103 AI0384, 0.0 ~ 16.0 kg/cm2]
+- L-1091 BUCKET ELEVATOR — running (red) — R
+- L-1092 SCREW CONVEYOR — running (red) — R
+- F-1091 VENTING FAN — running (red) — R
+- L-1094 TWO-WAY SEPARATOR — - — -
+- S-1092 VIBRATING SCREEN A — stopped (green) — R
+- S-1092 VIBRATING SCREEN B — stopped (green) — R
+- SVBH1758 — closed — - — bag filter air; no ABC controller found; IO: #1 Bottom ash dedust bag filter purge air unit on command [SV-BH1758, STN103 O.021E]
+- SVBH1756 — closed — - — silo T-1090 outlet to loading spout; no ABC controller found
+- LIBH1750 — 15.8 % — - — bottom ash silo T-1090 level; IO: #1 Boiler bottom ash silo level [LT-BH1750, STN103 AI0386, 0.0 ~ 100.0 %]
+- HVBH1060A — open (red) — M — ash cooler A inlet; no ABC controller found
+- HVBH1060B — open (red) — M — ash cooler B inlet; no ABC controller found
+- HVBH1060C — open (red) — M — ash cooler C inlet; no ABC controller found
+- HVBH1060D — open (red) — M — ash cooler D inlet; no ABC controller found
+- L-1060A ASH COOLER-A — stopped (green) — M R
+- L-1060B ASH COOLER-B — stopped (green) — M R
+- L-1060C ASH COOLER-C — stopped (green) — M R
+- L-1060D ASH COOLER-D — stopped (green) — M R
+- TIBH1060A1 — 55 C — - — IO: #1 Boiler bottom ash cooler-A inlet ash temp. [TT-BH1060-A1, STN103 AI0768, 0 ~ 1200 °C]
+- TIBH1060A2 — 31 C — - — IO: #1 Boiler bottom ash cooler-A outlet ash temp. [TT-BH1060-A2, STN103 AI0771, 0 ~ 300 °C]
+- TICW1060A1 — 36 C — - — IO: #1 bottom ash cooler-A cooling water of shell side outlet water temp. [TT-CW1060-A1, STN103 AI0769, 0 ~ 150 °C]
+- TICW1060A2 — 38 C — - — IO: #1 bottom ash cooler-A cooling water of shaft outlet water temp. [TT-CW1060-A2, STN103 AI0770, 0 ~ 150 °C]
+- TIBH1060B1 — 34 C — - — IO: #1 Boiler bottom ash cooler-B inlet ash temp. [TT-BH1060-B1, STN103 AI0784, 0 ~ 1200 °C]
+- TIBH1060B2 — 32 C — - — IO: #1 Boiler bottom ash cooler-B outlet ash temp. [TT-BH1060-B2, STN103 AI0787, 0 ~ 300 °C]
+- TICW1060B1 — 38 C — - — IO: #1 bottom ash cooler-B cooling water of shell side outlet water temp. [TT-CW1060-B1, STN103 AI0785, 0 ~ 150 °C]
+- TICW1060B2 — 38 C — - — IO: #1 bottom ash cooler-B cooling water of shaft outlet water temp. [TT-CW1060-B2, STN103 AI0786, 0 ~ 150 °C]
+- TIBH1060C1 — 54 C — - — IO: #1 Boiler bottom ash cooler-C inlet ash temp. [TT-BH1060-C1, STN103 AI0800, 0 ~ 1200 °C]
+- TIBH1060C2 — 32 C — - — IO: #1 Boiler bottom ash cooler-C outlet ash temp. [TT-BH1060-C2, STN103 AI0803, 0 ~ 300 °C]
+- TICW1060C1 — 38 C — - — IO: #1 bottom ash cooler-C cooling water of shell side outlet water temp. [TT-CW1060-C1, STN103 AI0801, 0 ~ 150 °C]
+- TICW1060C2 — 38 C — - — IO: #1 bottom ash cooler-C cooling water of shaft outlet water temp. [TT-CW1060-C2, STN103 AI0802, 0 ~ 150 °C]
+- TIBH1060D1 — 37 C — - — IO: #1 Boiler bottom ash cooler-D inlet ash temp. [TT-BH1060-D1, STN103 AI0896, 0 ~ 1200 °C]
+- TIBH1060D2 — 32 C — - — IO: #1 Boiler bottom ash cooler-D outlet ash temp. [TT-BH1060-D2, STN103 AI0899, 0 ~ 300 °C]
+- TICW1060D1 — 38 C — - — IO: #1 bottom ash cooler-D cooling water of shell side outlet water temp. [TT-CW1060-D1, STN103 AI0902, 0 ~ 150 °C]
+- TICW1060D2 — 38 C — - — IO: #1 bottom ash cooler-D cooling water of shaft outlet water temp. [TT-CW1060-D2, STN103 AI0898, 0 ~ 150 °C]
+- IIL1060A — 0.0 A — - — IO: #1 Bottom ash screw cooler-A current [IT-L1060A, STN103 AI0772, 0.0 ~ 8.1 A]
+- IIL1060B — 0.0 A — - — IO: #1 Bottom ash screw cooler-B current [IT-L1060B, STN103 AI0788, 0.0 ~ 8.1 A]
+- IIL1060C — 0.0 A — - — IO: #1 Bottom ash screw cooler-C current [IT-L1060C, STN103 AI0804, 0.0 ~ 8.1 A]
+- IIL1060D — 0.0 A — - — IO: #1 Bottom ash screw cooler-D current [IT-L1060D, STN103 AI0900, 0.0 ~ 8.1 A]
+- CYCLE MODE TMR A/B/C/D — 15 M 0 S — -
+- #A SPEED CTRL — PV 0.0 rpm / SV 0.6 rpm — M — #A SCREW BIAS 0 rpm; → ABC SICL1060A (ABC-009A)
+- #B SPEED CTRL — PV 0.0 rpm / SV 0.6 rpm — M — #B SCREW BIAS 0 rpm; → ABC SICL1060B (ABC-009A)
+- #C SPEED CTRL — PV 0.0 rpm / SV 0.6 rpm — M — #C SCREW BIAS 0 rpm; → ABC SICL1060C (ABC-009A)
+- #D SPEED CTRL — PV 0.0 rpm / SV 0.6 rpm — M — #D SCREW BIAS 0 rpm; → ABC SICL1060D (ABC-009B)
+- L-1090 CHAIN CONVEYOR — running (red) — M R
+- DPIFG1081 — 1426 mmH2O — - — furnace differential pressure; → ABC DPIFG1081 (ABC-009A); IO: #1 Furnace plenum/upper layer diff. pressure (A) [DPT-FG1081, STN101 AI0134, 0 ~ 2500 mmH2O]
+- DPIFG1082 — 1432 mmH2O — - — furnace differential pressure; → ABC DPIFG1082 (ABC-009A); IO: #1 Furnace plenum/upper layer diff. pressure (B) [DPT-FG1082, STN101 AI0262, 0 ~ 2500 mmH2O]
+- FURNACE DIFF. PRESS. CTL — PV 1434 mmH2O / SV 1475 mmH2O / MV 0.0 % — M — bed DP via ash cooler speed; → ABC DPICFG108 (ABC-009A)
+
+## 18.PNG — 018 SOOTBLOWER SYSTEM
+- Oras: not shown
+- Header: MSP 124.1 K, MST 540 C, MSF 472.6 T/H, RHP 33.9 K, RHT 540 C, COAL 88.6 T/H, PWR 149.8 MW
+- Tala: Sootblower N1011-N1038, N1040, N1042 lahat STOP/ENAB, naka-RETRACT; walang blowing. Steam source = S/H panel #1 outlet.
+
+- PISB1052 — 0.4 kg/cm2 — - — sootblower steam header pressure; → ABC PISB1052 (ABC-017); IO: #1 Boiler sootblower header steam pressure [PT-SB1052, STN102 AI0533, 0.0 ~ 50.0 kg/cm2]
+- PCVSB1053 — 0.2 % — M — sootblower steam pressure control valve; → ABC PICSB1052 (ABC-017); IO: #1 Boiler sootblower steam supply pressure control valve [PCV-SB1053, STN102 AO0613, 0.0 ~ 100.0 %]
+- MVSB1001 — 0.0 % — R TQ — sootblower main steam motor valve (from S/H panel #1 outlet); no ABC controller found; IO: #1 Sootblower steam supply motor valve position [ZT-SB1001, STN102 AI0770, 0.0 ~ 100.0 %]
+- S/B NO. — 0 S/B — - — ALL RETRACT
+- FORWARD timer — 0 M 0 S — -
+- BACKWARD timer — 0 M 0 S — -
+- S/B SYSTEM CURRENT — 0.0 A — -
+- MAIN STEAM MOTOR VALVE WARM-UP TIME — 0 M 0 S — -
+- PISB1040 — 0.0 kg/cm2 — - — hot end air heater S/B pressure; IO: #1 Air preheater hot end steam pressure [PT-SB1040, STN102 AI0549, 0.0 ~ 16.0 kg/cm2]
+- PISB1042 — 0.0 kg/cm2 — - — cold end air heater S/B pressure; IO: #1 Air preheater cold end steam pressure [PT-SB1042, STN102 AI0550, 0.0 ~ 16.0 kg/cm2]
+- TISB1056 — 107 C — - — S/B drain temp (permissive > 220 C); IO: #1 Boiler sootblower steam drain temperature (A) [TT-SB1056, STN102 AI0916, 0 ~ 600 °C]
+- TISB1057 — 105 C — - — S/B drain temp (permissive > 220 C); IO: #1 Boiler sootblower steam drain temperature (B) [TT-SB1057, STN102 AI0917, 0 ~ 600 °C]
+- XVSB1054 — open (red) — - — drain to blowdown tank; no ABC controller found; IO: #1 Boiler sootblower steam drain valve(L) open solenoid [XV-SB1054, STN102 O.0123]
+- XVSB1059 — open (red) — - — drain to blowdown tank; no ABC controller found; IO: #1 Boiler sootblower steam drain valve(R) open solenoid [XV-SB1059, STN102 O.0122]
+- AIR HEATER S/B SOURCE SELECT — STEAM — -
+
+## 19.PNG — 019 LIMESTONE INJECTION SYSTEM
+- Oras: not shown
+- Header: MSP 124.4 K, MST 540 C, MSF 473.6 T/H, RHP 33.9 K, RHT 540 C, COAL 89.0 T/H, PWR 149.8 MW
+- Tala: Limestone feeding sequence STOP. SOx control naka-M.
+
+- F-1313 VENTING FAN — stopped (green) — R M
+- LILM1800 — 69.4 % — - — limestone silo T-1311 level; IO: #1 Boiler limestone silo level [LT-LM1800, STN104 AI0432, 0.0 ~ 100.0 %]
+- XVLM1814A — closed — - — vent valve; no ABC controller found
+- XVLM1814B — closed — - — balance valve; no ABC controller found
+- XVLM1812 — closed — - — silo to lock vessel dome valve; no ABC controller found
+- XVLM1813A — closed — - — no ABC controller found
+- XVLM1813B — closed — - — no ABC controller found
+- PILM1811 — 0.0 kg/cm2 — - — lock vessel S-1311 pressure; IO: #1 Boiler limestone lock vessel pressure [PT-LM1811, STN104 AI0434, 0.0 ~ 6.0 kg/cm2]
+- XVPA1814C — closed — - — no ABC controller found
+- XVLM1815 — closed — - — lock to dispensing vessel dome valve; no ABC controller found
+- PILM1812 — 0.1 kg/cm2 — - — dispensing vessel S-1312 pressure; IO: #1 Boiler limestone dispensing vessel pressure [PT-LM1812, STN104 AI0433, 0.0 ~ 6.0 kg/cm2]
+- XVLM1812A — open (red) — - — plant air; no ABC controller found
+- XVLM1812B — open (red) — - — plant air; no ABC controller found
+- XVLM1814D — closed — - — no ABC controller found
+- XVLM1814E — closed — - — no ABC controller found
+- XVLM1814F — closed — - — no ABC controller found
+- XVLM1811A~F — closed — - — front side isolating valves (A-H: CLOSE); no ABC controller found
+- XVLM1811G — closed — - — rear side; no ABC controller found
+- XVLM1811H — closed — - — rear side; no ABC controller found
+- L-1311 ROTO FEEDER — running (green M symbol; checkbox ROTO FEEDER RUNNING green) — R
+- SIM1311 — 0.0 % — - — roto feeder speed; → ABC SIM1311 (ABC-005); IO: #1 Limestone feeder speed [ST-M1311, STN101 AI0151, 0.0 ~ 100.0 %]
+- FURNACE TOTAL TEMP AVERAGE — 938 C — -
+- FURNACE UPPER TEMP AVERAGE — 942 C — -
+- FURNACE LOWER TEMP AVERAGE — 934 C — -
+- furnace temp rate — 0.24 C/MIN — -
+- COAL CONTENT SULFUR — 5.00 % — -
+- COAL CONTENT CaCO3 — 5.00 % — -
+- SOx CONTROL — PV 41 ppm / SV 200 ppm / MV 11.0 % — M — → ABC AICFG10571 (ABC-005)
+- LIMESTONE FILLING — 0.00 T/H — -
+- LIMESTONE SUMMATION — 64503.24 T — -
+- DENSITY (STD=1.3) — 1.1 (1.1~1.9) — -
+
+## 20.PNG — 020 SAND INJECTION SYSTEM
+- Oras: not shown
+- Header: MSP 124.6 K, MST 540 C, MSF 472.6 T/H, RHP 33.9 K, RHT 540 C, COAL 88.4 T/H, PWR 149.5 MW
+- Tala: Sand injection naka-STOP; isolating valve CLOSE.
+
+- F-1301 VENTING FAN — stopped (green) — R M
+- LISD1800 — 50.1 % — - — sand silo T-1300 level; IO: #1 Boiler sand silo level [LT-SD1800, STN103 AI0387, 0.0 ~ 100.0 %]
+- PISD1800 — 0.0 kg/cm2 — - — dispensing vessel S-1300 pressure; IO: #1 Boiler sand vessel pressure [PT-SD1800, STN103 AI0432, 0.0 ~ 10.0 kg/cm2]
+- XVAV1803 — closed — - — no ABC controller found
+- XVSD1804 — closed — - — silo to dispensing vessel dome valve; no ABC controller found
+- XVPA1806A — closed — - — no ABC controller found
+- XVPA1806B — closed — - — no ABC controller found
+- XVPA1800 — closed — - — no ABC controller found
+- XVPA1805A — closed — - — no ABC controller found
+- XVPA1805B — closed — - — no ABC controller found
+- XVSD1801 — closed — - — vessel outlet; no ABC controller found
+- XVSD1802A — closed — - — to boiler rear side; no ABC controller found
+- XVSD1802B — closed — - — to boiler rear side; no ABC controller found
+- XVPA1807 — open (red) — - — plant air; no ABC controller found
+
+## 21.PNG — 021 SAMPLING SYSTEM
+- Oras: not shown
+- Header: MSP 124.9 K, MST 540 C, MSF 472.1 T/H, RHP 33.9 K, RHT 540 C, COAL 88.7 T/H, PWR 149.9 MW
+- Tala: Water/steam chemistry analyzers. SAMPLING SYSTEM ANALYZER COMMON ALARM = pulang check.
+
+- AISP1012 — 4.6 uS/cm — - — drum blowdown specific cond.; IO: #1 Drum blowdown water specific conductivity [AT-SP1012, STN104 AI0340, 0.0 ~ 100.0 µS/cm]
+- AISP1011 — 9.5 pH — - — drum blowdown pH; IO: #1 Drum blowdown water pH [AT-SP1011, STN104 AI0339, 0.0 ~ 14.0 pH]
+- AISP1013 — 0.3 ppb — - — drum blowdown silica; IO: #1 Drum blowdown water silica [AT-SP1013, STN104 AI0341, 0.0 ~ 500.0 ppb]
+- AISP1014 — 3.8 uS/cm — - — drum sat. steam specific cond.; IO: #1 Drum saturated steam specific conductivity [AT-SP1014, STN104 AI0342, 0.0 ~ 100.0 µS/cm]
+- AISP1015 — 0.0 ppb — - — drum sat. steam silica (tag highlighted/alarm color); IO: #1 Drum saturated steam silica [AT-SP1015, STN104 AI0352, 0.0 ~ 100.0 ppb]
+- AISP1009 — 9.1 pH — - — eco inlet FW pH; IO: #1 ECO. inlet water pH [AT-SP1009, STN104 AI0337, 0.0 ~ 14.0 pH]
+- AISP1010 — 103.2 ppb — - — eco inlet dissolved oxygen; IO: #1 ECO. inlet water dissolved oxygen [AT-SP1010, STN104 AI0338, 0.0 ~ 100.0 ppb]
+- AISP1005 — 0.070 uS/cm — - — deaerator outlet cation cond.; IO: #1 Deaerator outlet water cation conductivity [AT-SP1005, STN104 AI0324, 0.000 ~ 100.000 µS/cm]
+- AISP1003 — 7.9 pH — - — deaerator outlet pH; IO: #1 Deaerator outlet water pH [AT-SP1003, STN104 AI0322, 0.0 ~ 14.0 pH]
+- AISP1004 — 115.8 ppb — - — deaerator outlet dissolved oxygen (tag highlighted); IO: #1 Deaerator outlet water dissolved oxygen [AT-SP1004, STN104 AI0323, 0.0 ~ 100.0 ppb]
+- AISP1002 — 0.460 uS/cm — - — deaerator upstream cation cond.; IO: #1 Deaerator upstream water cation conductivity [AT-SP1002, STN104 AI0321, 0.000 ~ 100.000 µS/cm]
+- AISP1001 — 8.8 pH — - — deaerator upstream pH; IO: #1 Deaerator upstream water pH [AT-SP1001, STN104 AI0320, 0.0 ~ 14.0 pH]
+- AISP1018 — 0.320 uS/cm — - — condensate pump outlet cation cond.(1); IO: #1 Condensate pump outlet water cation conductivity (1) [AT-SP1018, STN104 AI0355, 0.000 ~ 100.000 µS/cm]
+- AISP1019 — 0.560 uS/cm — - — condensate pump outlet cation cond.(2); IO: #1 Condensate pump outlet water cation conductivity (2) [AT-SP1019, STN104 AI0356, 0.000 ~ 100.000 µS/cm]
+- AISP1020 — 2.0 ppb — - — condensate pump outlet sodium; IO: #1 Condensate pump outlet water sodium [AT-SP1020, STN104 AI0357, 0.0 ~ 100.0 ppb]
+- AISP1007 — 0.9 uS/cm — - — make-up pump outlet specific cond.; IO: #1 Make-up water pump outlet water specific conductivity [AT-SP1007, STN104 AI0326, 0.0 ~ 100.0 µS/cm]
+- AISP1006 — 4.0 pH — - — make-up pump outlet pH; IO: #1 Make-up water pump outlet water pH [AT-SP1006, STN104 AI0325, 0.0 ~ 14.0 pH]
+- AISP1008 — 0.2 ppb — - — make-up pump outlet silica; IO: #1 Make-up water pump outlet water silica [AT-SP1008, STN104 AI0336, 0.0 ~ 100.0 ppb]
+- AISP1021 — 0.570 uS/cm — - — main steam cation cond.; IO: #1 Main steam line cation conductivity [AT-SP1021, STN104 AI0358, 0.000 ~ 100.000 µS/cm]
+- AISP1016 — 4.9 pH — - — main steam pH; IO: #1 Main steam pH analyzer [AT-SP1016, STN104 AI0353, 0.0 ~ 14.0 pH]
+- AISP1017 — 0.0 ppb — - — main steam silica (tag highlighted); IO: #1 Main steam silica [AT-SP1017, STN104 AI0354, 0.0 ~ 100.0 ppb]
+
+## 27.PNG — 027 CLOSED COOLING WATER
+- Oras: not shown
+- Header: MSP 122.7 K, MST 540 C, MSF 471.5 T/H, RHP 33.6 K, RHT 542 C, COAL 89.0 T/H, PWR 148.2 MW
+- Tala: ACWP-A tumatakbo, ACWP-B standby. TCVCW1201 ang nagkokontrol ng cooling water sa turbine oil coolers (lube oil temp).
+
+- TCVCW1201 — 53.1 % — R — CCW to turbine oil cooler A/B (lube oil temp control); → ABC TICLO1002 (ABC-053); IO: #1 Turbine lube oil temperature control valve [TCV-CW1201, STN102 AO0469, 0.0 ~ 100.0 %]
+- TILO10022 — 46 C — - — TG lube oil temp; → ABC TILO10022 (ABC-053)
+- TILO10021 — 46 C — - — TG lube oil temp; → ABC TILO10021 (ABC-053)
+- TICW1153 — 38 C — - — CCW supply after CCWHE; IO: #1 Aux. cooling water heater exchanger outlet common discharge temperature [TT-CW1153, STN103 AI0404, 0 ~ 100 °C]
+- PICW1153 — 5.2 kg/cm2 — - — CCW supply pressure; IO: #1 Aux. cooling water heater exchanger outlet common discharge pressure [PT-CW1153, STN103 AI0405, 0.0 ~ 10.0 kg/cm2]
+- TICW1152 — 40 C — - — CCW pump discharge temp; IO: #1 Aux. cooling water pump common discharge temperature [TT-CW1152, STN103 AI0403, 0 ~ 100 °C]
+- PICW1152 — 6.4 kg/cm2 — - — CCW pump discharge pressure; IO: #1 Aux. cooling water pump common discharge pressure [PT-CW1152, STN103 AI0406, 0.0 ~ 10.0 kg/cm2]
+- XVMU1109 — closed — A — make-up to expansion tank T-1109; no ABC controller found; IO: #1 Make-up water to expansion tank inlet shut-off valve close solenoid [XV-MU1109, STN103 O.061E]
+- LICW1109 — 0.80 M — - — expansion tank level; IO: #1 Boiler expansion tank level [LT-CW1109, STN103 AI0389, 0.0 ~ 2.0 M]
+- ACWP-A (P-1108A) — 28.2 A — R M — running, IIP1108A
+- DPICW1108A — 0.27 kg/cm2 — - — ACWP-A strainer DP; IO: #1 Aux. cooling water pump-A suction strainer diff. pressure [DPT-CW1108-A, STN103 AI0518, 0.00 ~ 1.00 kg/cm2]
+- ACWP-B (P-1108B) — 0.0 A — R A — standby, IIP1108B
+- DPICW1108B — 0.00 kg/cm2 — - — ACWP-B strainer DP; IO: #1 Aux. cooling water pump-B suction strainer diff. pressure [DPT-CW1108-B, STN103 AI0534, 0.00 ~ 1.00 kg/cm2]
+
+## 28.png — 028 CONDENSATE SYSTEM
+- Oras: 2023.10.18 11:01:15 (alarm line 10/18/2023 11:01:13 101-WI001 CEMS common alarm LI1FG1057 OCCUR)
+- Header: MSP 121.5 K, MST 540 C, MSF 480.3 T/H, RHP 33.9 K, RHT 539 C, COAL 87.2 T/H, PWR 151.3 MW
+- Tala: Full load. Condensate pump A tumatakbo (28.1 A), B standby. FCVCD1121 (M, 100.6 %) at FIQCD1120 380.0 T/H.
+
+- LIMU0708A — 13.8 M — - — demi water tank A level; IO: Boiler demi. water tank level (A) [LT-MU0708-A, STN105 AI0160, 0.0 ~ 15.0 M]
+- LIMU0708B — 13.7 M — - — demi water tank B level; IO: Boiler demi. water tank level (B) [LT-MU0708-B, STN105 AI0240, 0.0 ~ 15.0 M]
+- DPIMU0709A — 0.029 kg/cm2 — - — IO: Make-up water pump-A suction strainer diff. pressure [DPT-MU0709-A, STN105 AI0178, 0.000 ~ 1.000 kg/cm2]
+- DPIMU0709B — 0.000 kg/cm2 — - — IO: Make-up water pump-B suction strainer diff. pressure [DPT-MU0709-B, STN105 AI0194, 0.000 ~ 1.000 kg/cm2]
+- DPIMU0709C — 0.001 kg/cm2 — - — IO: Make-up water pump-C suction strainer diff. pressure [DPT-MU0709-C, STN105 AI0210, 0.000 ~ 1.000 kg/cm2]
+- MWP-A (P-0709A) — 20.5 A — R M — running
+- MWP-B (P-0709B) — 0.0 A — R M — stopped (green)
+- MWP-C (P-0709C) — 20.8 A — R M — running
+- PIMU0709 — 9.1 kg/cm2 — - — make-up water header; IO: Make-up water pump common header pressure [PT-MU0709, STN105 AI0197, 0.0 ~ 10.0 kg/cm2]
+- FIMU1001 — 14.7 m3/hr — - — make-up water flow; IO: #1 Make-up water flow [FT-MU1001, STN103 AI0901, 0.0 ~ 1081.0 m3/Hr]
+- FIMU0001 — 28.6 m3/hr — - — make-up water flow; IO: Phase 1 make-up water flow [FT-MU0001, STN105 AI0064, 0.0 ~ 1081.0 m3/Hr]
+- LCVCD1110 — 0.1 % — A — hotwell level dump to expansion/#1 LPH line; → ABC LICCD1110B (ABC-031); IO: #1 Condenser dumping to raw pit level control valve [LCV-CD1110, STN102 AO0402, 0.0 ~ 100.0 %]
+- XVCD1006 — closed — A — no ABC controller found; IO: #1 Condenser curtain spray valve close solenoid [XV-CD1006, STN102 O.0120]
+- MVMU1001 POSITION DEMAND HIGH LIMIT — 5.0 % — - — IO: #1 Make-up water to condenser motor valve position [ZT-MU1001, STN102 AI0773, 0.0 ~ 100.0 %]
+- MVMU1001 — 0.0 % — R — make-up to condenser; no ABC controller found; IO: #1 Make-up water to condenser motor valve position [ZT-MU1001, STN102 AI0773, 0.0 ~ 100.0 %]
+- LCVMU1110 — 14.0 % — A — make-up to condenser (hotwell level); → ABC LICCD1110A (ABC-031); IO: #1 Condenser make-up water level control valve [LCV-MU1110, STN102 AO0576, 0.0 ~ 100.0 %]
+- FCVCD1120 — 0.1 % — A — condensate recirculation / min flow; → ABC FICCD1120 (ABC-032); IO: #1 Condensate system minimum flow recirculation control valve [FCV-CD1120, STN102 AO0401, 0.0 ~ 100.0 %]
+- PIST11101 — 0.058 kg/cm2A — - — condenser pressure (vacuum)
+- TICD11101 — 40 C — - — IO: #1 Condenser hot well water temperature (1) [TT-CD1110-1, STN102 AI0678, 0 ~ 100 °C]
+- TICD11103 — 40 C — - — IO: #1 Condenser neck temperature [TT-CD1110-3, STN102 AI0869, 0 ~ 100 °C]
+- PICD1110 — 0.056 kg/cm2A — - — condenser pressure; IO: #1 Condenser pressure [PT-CD1110, STN102 AI0532, 0.000 ~ 6.000 kg/cm2A]
+- LICD1110 — 3 mm — - — hotwell level; → ABC LICD1110 (ABC-031); IO: #1 Condenser hot well water level [LT-CD1110, STN102 AI0640, -436 ~ 464 mm]
+- TICD11102 — 40 C — - — IO: #1 Condenser hot well water temperature (2) [TT-CD1110-2, STN102 AI0854, 0 ~ 100 °C]
+- TICD11104 — 42 C — - — IO: #1 Condenser flash chamber temperature [TT-CD1110-4, STN102 AI0915, 0 ~ 200 °C]
+- XVCD1123 — closed — A — condensate to aux steam desuperheater; no ABC controller found; IO: #1 Aux. steam desuperheater spray water block valve open solenoid [XV-CD1123, STN102 O.012B]
+- XVCD1125 — closed — A — condensate to gland steam desuperheater; no ABC controller found; IO: #1 Gland steam desuperheater spray water block valve open solenoid [XV-CD1125, STN102 O.012C]
+- XVCD1114 — closed — A — condensate to LP turbine bypass desuperheater; no ABC controller found; IO: #1 LP turbine bypass desuperheater spray water block valve open solenoid [XV-CD1114, STN102 O.012A]
+- FIQCD1115 — 0.0 T/H — - — LP bypass spray flow; IO: #1 LP turbine bypass spray water flow [FT-CD1115, STN102 AI0544, 0.0 ~ 46.0 T/H]
+- MVCD1008 — 0.0 % — R TQ — condensate polisher bypass/inlet; no ABC controller found; IO: #1 Condensate polisher outlet motor valve position [ZT-CD1008, STN102 AI0772, 0.0 ~ 100.0 %]
+- FIQCD1121 — 0.0 T/H — - — polisher flow; → ABC FIQCD1121 (ABC-032); IO: #1 Condensate polisher inlet water flow [FT-CD1121, STN102 AI0436, 0.0 ~ 200.0 T/H]
+- MVCD1007 — 0.0 % — R TQ — condensate polisher; no ABC controller found; IO: #1 Condensate polisher inlet motor valve position [ZT-CD1007, STN102 AI0771, 0.0 ~ 100.0 %]
+- FCVCD1121 — 100.6 % — M — main condensate line (polisher bypass) valve; → ABC FICCD1121 (ABC-032); IO: #1 Condensate polisher flow control valve [FCV-CD1121, STN102 AO0400, 0.0 ~ 100.0 %]
+- FIQCD1120 — 380.0 T/H — - — condensate flow; → ABC FIQCD1120 (ABC-032); IO: #1 Condensate water flow [FT-CD1120, STN102 AI0437, 0.0 ~ 400.0 T/H]
+- TICD1120 — 42 C — - — IO: #1 Gland steam condenser outlet water temperature [TT-CD1120, STN102 AI0832, 0 ~ 100 °C]
+- TICD1119 — 41 C — - — IO: #1 Steam jet air ejector condenser outlet water temperature [TT-CD1119, STN102 AI0838, 0 ~ 100 °C]
+- XVCD1004 — open (red) — A — no ABC controller found; IO: #1 Flash chamber spray valve (normal operation) close solenoid [XV-CD1004, STN102 O.0841]
+- XVCD1005 — closed — A — no ABC controller found; IO: #1 Flash chamber spray valve close solenoid [XV-CD1005, STN102 O.0121]
+- DPICD1001 — 0.019 kg/cm2 — - — COND-A strainer DP; IO: #1 Condensate pump-A suction strainer diff. pressure [DPT-CD1001, STN102 AI0450, 0.000 ~ 1.000 kg/cm2]
+- DPICD1002 — 0.000 kg/cm2 — - — COND-B strainer DP; IO: #1 Condensate pump-B suction strainer diff. pressure [DPT-CD1002, STN102 AI0802, 0.000 ~ 1.000 kg/cm2]
+- CP-A (P-1116A) — 28.1 A — R M — condensate pump A running (IIP1116A)
+- CP-B (P-1116B) — 0.0 A — R A — condensate pump B standby (IIP1116B)
+- PICD1117 — 16.9 kg/cm2 — - — condensate pump discharge pressure; IO: #1 Condensate pump outlet pressure [PT-CD1117, STN102 AI0564, 0.0 ~ 25.0 kg/cm2]
+- TICD1118 — 40 C — - — IO: #1 Condensate water temperature [TT-CD1118, STN102 AI0837, 0 ~ 100 °C]
+
+## 29.PNG — 029 AUX. STEAM/PACKING SYSTEM
+- Oras: 12/1/2023 9:29 (Windows taskbar clock)
+- Header: MSP 122.3 K, MST 540 C, MSF 482.4 T/H, RHP 34.1 K, RHT 542 C, COAL 88.8 T/H, PWR 151.3 MW
+- Tala: Full load: aux steam galing sa cold reheater (PCVAS10201/10202) at main steam (MVAS1391 bukas, PCVAS1010 0.6 %). Gland steam sa turbine: PCVGS1034 42.6 % papuntang #1 LPH.
+
+- PCVAS1030 — 0.1 % — A — aux steam to deaerator; → ABC PICCD1104 (ABC-056); IO: #1 Deaerator pegging steam pressure control valve [PCV-AS1030, STN102 AO0403, 0.0 ~ 100.0 %]
+- MVAS1391 — 98.6 % — R — main steam to aux steam header (via PCVAS1010); no ABC controller found; IO: #1 Main steam pipe to aux. steam header motor valve position [ZT-AS1391, STN102 AI0752, 0.0 ~ 100.0 %]
+- PICAS1004 — SV 9.4 kg/cm2 / MV 0.0 % (PV not shown; PIAS1004 10.2) — A — aux steam header pressure from main steam (PCVAS1010); → ABC PICAS1004 (ABC-030)
+- PCVAS1010 — 0.6 % — A — main steam -> aux steam header pressure reducing valve; → ABC PICAS1004 (ABC-030); IO: #1 Main steam pipe to aux. steam supply pressure control valve [PCV-AS1010, STN102 AO0580, 0.0 ~ 100.0 %]
+- TIAS1003 — 236 C — - — aux steam header temp; → ABC TIAS1003 (ABC-034); IO: #1 Aux. steam header temperature [TT-AS1003, STN102 AI0642, 0 ~ 600 °C]
+- PIAS1004 — 10.2 kg/cm2 — - — aux steam header pressure; → ABC PIAS1004 (ABC-030); IO: #1 Main steam pipe to aux. steam supply pressure [PT-AS1004, STN102 AI0514, 0.0 ~ 15.0 kg/cm2]
+- PIAS1005 — 10.2 kg/cm2 — - — aux steam header pressure; → ABC PIAS1005 (ABC-030); IO: #1 Cold reheat to aux. steam supply pressure [PT-AS1005, STN102 AI0515, 0.0 ~ 15.0 kg/cm2]
+- TIAS1001 — 103 C — - — → ABC TIAS1001 (ABC-033); IO: #1 Main steam to aux. steam desuperheater temperature [TT-AS1001, STN102 AI0641, 0 ~ 600 °C]
+- XVCD1123 — closed — A — condensate to aux steam desuperheater; no ABC controller found; IO: #1 Aux. steam desuperheater spray water block valve open solenoid [XV-CD1123, STN102 O.012B]
+- TCVCD1124 — 0.1 % — M — aux steam desuperheater spray (condensate); → ABC TICAS1001 (ABC-033); IO: #1 Main steam to aux. steam desuperheater spray water control valve [TCV-CD1124, STN102 AO0611, 0.0 ~ 100.0 %]
+- PCVAS10202 — 32.2 % — A — cold reheat -> aux steam header (valve 2); → ABC PICAS1005 (ABC-030); IO: #1 Cold reheat to aux. steam supply pressure control valve (2) [PCV-AS1020-2, STN102 AO0614, 0.0 ~ 100.0 %]
+- PCVAS10201 — 0.1 % — A — cold reheat -> aux steam header (valve 1); → ABC PICAS1005 (ABC-030); IO: #1 Cold reheat to aux. steam supply pressure control valve (1) [PCV-AS1020-1, STN102 AO0581, 0.0 ~ 100.0 %]
+- PICAS1005 — SV 10.2 kg/cm2 / MV 4.2 % (PV not shown) — A — aux steam header pressure from cold reheat (PCVAS10201/10202); → ABC PICAS1005 (ABC-030)
+- MVAS1392 — 0.0 % — M R TQ — aux steam header drain; no ABC controller found; IO: #1 Auxiliary steam header drain motor valve MV-AS1392 position [ZT-AS1392, STN102 AI0753, 0.0 ~ 100.0 %]
+- MVAS1395 — 0.0 % — R — aux steam to Z-1120 start-up ejector; no ABC controller found; IO: #1 Aux. steam header to start-up ejector motor valve position [ZT-AS1395, STN102 AI0755, 0.0 ~ 100.0 %]
+- MVAS1396 — 100.6 % — M R — aux steam to steam jet air ejectors (H-1119); no ABC controller found; IO: #1 Aux. steam header to steam air ejector motor valve MV-AS1396 position [ZT-AS1396, STN102 AI0756, 0.0 ~ 100.0 %]
+- TIAS1017 — 185 C — - — → ABC TIAS1017 (ABC-034); IO: #1 Gland steam turbine side temperature [TT-AS1017, STN102 AI0902, 0 ~ 300 °C]
+- TIAS1015 — 257 C — - — IO: #1 Gland steam desuperheater outlet temperature [TT-AS1015, STN102 AI0643, 0 ~ 300 °C]
+- MVAS1397 — 0.0 % — A R TQ — drawn on the HP WARMING STEAM line; no ABC controller found; IO: #1 Turbine gland steam line drain motor valve MV-AS1397 position [ZT-AS1397, STN102 AI0743, 0.0 ~ 100.0 %]
+- MVAS1393 — 0.0 % — A R TQ — gland steam drain separator drain; no ABC controller found; IO: #1 Gland steam drain separator drain motor valve MV-AS1393 position [ZT-AS1393, STN102 AI0754, 0.0 ~ 100.0 %]
+- XVCD1125 — closed — A — condensate to gland steam desuperheater; no ABC controller found; IO: #1 Gland steam desuperheater spray water block valve open solenoid [XV-CD1125, STN102 O.012C]
+- TCVCD1126 — 0.1 % — A — gland steam desuperheater spray; → ABC TICAS1017 (ABC-034); IO: #1 Gland steam desuperheater spray water control valve [TCV-CD1126, STN102 AO0612, 0.0 ~ 100.0 %]
+- XVFS1005 — closed — A — flash pipe drain; no ABC controller found; IO: #1 Flash pipe drain valve close solenoid [XV-FS1005, STN103 O.061F]
+- FVGS1039 — closed — - — HP gland leak-off to flash chamber; no ABC controller found
+- TIGS1003 — 362 C — -
+- TIGS1002 — 364 C — - — gland steam temp
+- PIGS10011 — 0.32 kg/cm2 — - — gland steam header pressure
+- PIGS10012 — 0.32 kg/cm2 — - — gland steam header pressure
+- TIST11101 — 38 C — -
+- TIST11102 — 38 C — -
+- TIST11103 — 37 C — -
+- PIST11101 — 0.056 kg/cm2A — - — condenser pressure
+- PIST11102 — 0.053 kg/cm2A — - — condenser pressure
+- PIST11103 — 0.053 kg/cm2A — - — condenser pressure
+- PCVGS1034 — 42.6 % — - — gland steam spill to #1 LPH; no ABC controller found
+- FVGS1036 — - — - — gland steam to #1 LPH (no value); no ABC controller found
+- VGS1032 — closed — - — no ABC controller found
+- PCVGS1031 — MV 0.0 / ZT 0.9 % — - — gland steam make-up to flash chamber; ZT = position feedback; no ABC controller found
+
+## 30.PNG — 030 SEAWATER SYSTEM
+- Oras: 12/1/2023 9:30 (Windows taskbar clock)
+- Header: MSP 122.7 K, MST 540 C, MSF 465.8 T/H, RHP 33.7 K, RHT 542 C, COAL 88.7 T/H, PWR 147.9 MW
+- Tala: 2 sa 3 seawater pump tumatakbo (B, C); booster pump A at C tumatakbo, B standby.
+
+- LISW1501 — -8.76 M / 40.8 % — - — seawater pump inlet pool level; IO: #1 Seawater pump inlet level [LT-SW1501, STN103 AI0390, -14.80 ~ 0.00 M]
+- SWP-A (P-1501A) — 0.0 A — R M — stopped (IIP1501A)
+- SWP-B (P-1501B) — 242.5 A — R M — running (IIP1501B)
+- SWP-C (P-1501C) — 207.6 A — R M — running (IIP1501C)
+- TISW1110A2 — 35.3 C — - — condenser seawater outlet A; IO: #1 Condenser outlet seawater temperature (A) [TT-SW1110-A2, STN102 AI0806, 0.0 ~ 100.0 °C]
+- PISW1110A2 — 0.4 kg/cm2 — - — IO: #1 Condenser outlet seawater pressure(A) [PT-SW1110-A2, STN102 AI0449, 0.0 ~ 5.0 kg/cm2]
+- TISW1110B2 — 35.1 C — - — condenser seawater outlet B; IO: #1 Condenser outlet seawater temperature (B) [TT-SW1110-B2, STN102 AI0934, 0.0 ~ 100.0 °C]
+- PISW1110B2 — 0.5 kg/cm2 — - — IO: #1 Condenser outlet seawater pressure(B) [PT-SW1110-B2, STN102 AI0801, 0.0 ~ 5.0 kg/cm2]
+- TISW1110A1 — 28.5 C — - — condenser seawater inlet A; IO: #1 Condenser inlet seawater temperature (A) [TT-SW1110-A1, STN102 AI0805, 0.0 ~ 100.0 °C]
+- PISW1110A1 — 1.0 kg/cm2 — - — IO: #1 Condenser inlet seawater pressure(A) [PT-SW1110-A1, STN102 AI0448, 0.0 ~ 5.0 kg/cm2]
+- TISW1110B1 — 28.6 C — - — condenser seawater inlet B; IO: #1 Condenser inlet seawater temperature (B) [TT-SW1110-B1, STN102 AI0933, 0.0 ~ 100.0 °C]
+- PISW1110B1 — 1.0 kg/cm2 — - — IO: #1 Condenser inlet seawater pressure(B) [PT-SW1110-B1, STN102 AI0800, 0.0 ~ 5.0 kg/cm2]
+- P-1114 BALL RECIRCULATING — stopped (green) — -
+- P-1113 BALL RECIRCULATING — stopped (green) — -
+- SWBP-A (P-1503A) — 87.3 A — R M — running (IIP1503A) to CCWHE
+- SWBP-B (P-1503B) — 0.0 A — R A — standby (IIP1503B)
+- SWBP-C (P-1503C) — 87.2 A — R M — running (IIP1503C)
+- CTCS-A — STOP — - — condenser tube cleaning
+- CTCS-B — STOP — -
+
+## 33.PNG — 033 CCS OPERATION
+- Oras: not shown
+- Header: MSP 122.7 K, MST 541 C, MSF 473.0 T/H, RHP 34.0 K, RHT 541 C, COAL 89.2 T/H, PWR 148.5 MW
+- Tala: CCS mode (pulang check sa CCS; BOILER FOLLOW at BASE berde). Faceplate: ang naka-dilaw na letra ang aktibong mode; sa Coal master ang R ay orange (aktibo) at may arrow.
+
+- OUTPUT CHANGE RATE SET — 3.0 MW/MIN — -
+- MW OUTPUT HIGH LIMIT SET — 238.4 MW — -
+- MW OUTPUT LOW LIMIT SET — 0.0 MW — -
+- GEN. POWER(PV)-C — 148.6 MW — -
+- GEN. POWER(PV)-D — 149.7 MW — -
+- GEN. POWER(SV) — 149.5 MW — -
+- LOAD UP RATE(SV) — 2.0 %/MIN — -
+- MAIN STEAM PRESS. — 122.7 kg/cm2 — -
+- MAIN STEAM TEMP. — 541 C — -
+- MAIN STEAM FLOW — 473.0 T/H — -
+- FEEDWATER FLOW — 511.9 T/H — -
+- DRUM LEVEL — -5 mm — -
+- FURNACE PRESS. — -9 mmH2O — -
+- TOTAL AIR FLOW — 600.4 T/H — -
+- BIR — 0.00 T/H — - — boiler input rate
+- TARGET MW (ULD SETTER IN AUTO MODE) — 150.0 MW — -
+- TARGET MW SETPOINT — 149.5 MW — -
+- HIC-ULD — PV 150.0 MW / SV 150.0 MW / MV 75.0 % — A — ULD SETTER, scale 0-200; → ABC HIC-ULD (ABC-001A)
+- EIC-TM — PV 148.6 MW / SV 150.0 MW / MV 75.0 % — A (PVT shown) — TURBINE MASTER (CCS), scale 0-200; → ABC EIC-TM (ABC-001C)
+- PIC-COBM — PV 122.7 kg/cm2 / SV 122.3 kg/cm2 / MV 0.8 % — A — BOILER PRESSURE CONTROL (CCS), scale 0-150; → ABC PIC-COBM (ABC-001C)
+- HIC-BM — PV 68.4 % / SV 68.3 % / MV 68.3 % — A — BOILER MASTER, scale 0-100; → ABC HIC-BM (ABC-001C)
+- FIC-CM — PV 89.2 T/H / SV 89.1 T/H / MV 74.4 % — R — COAL MASTER, scale 0-120; → ABC FIC-CM (ABC-004A)
+
+## 36.PNG — 036 TURBINE OIL SYSTEM
+- Oras: 12/1/2023 9:27 (Windows taskbar clock)
+- Header: MSP 123.0 K, MST 541 C, MSF 475.3 T/H, RHP 33.7 K, RHT 541 C, COAL 89.4 T/H, PWR 149.2 MW
+- Tala: Main oil pump A at control oil pump B ang tumatakbo (may pressure).
+
+- TIGE1007 — 55 C — - — generator bearing temp
+- TIGE1008 — 56 C — - — generator bearing temp
+- PILO10061 — 163.6 kg/cm2 — - — control oil to MSV/CV/CRV
+- PILO10062 — 163.5 kg/cm2 — -
+- PILO10063 — 163.7 kg/cm2 — -
+- PILO1931A — 0.0 kg/cm2 — - — control oil pump A discharge (stopped)
+- PILO1931B — 164.2 kg/cm2 — - — control oil pump B discharge (running)
+- TILO10022 — 46 C — - — lube oil after cooler; → ABC TILO10022 (ABC-053)
+- TILO10021 — 46 C — - — lube oil after cooler; → ABC TILO10021 (ABC-053)
+- TILO1001 — 62 C — - — lube oil return/tank temp
+- PILO10031 — 3.3 kg/cm2 — - — lube oil header
+- PILO10032 — 3.3 kg/cm2 — -
+- PILO10033 — 3.3 kg/cm2 — -
+- PILO1922B — 0.0 kg/cm2 — - — main oil pump B (stopped)
+- PILO1922A — 6.9 kg/cm2 — - — main oil pump A (running)
+- PILO1923 — 0.0 kg/cm2 — - — emergency oil pump (stopped)
+- PILO10071 — 163.7 kg/cm2 — - — trip oil
+- PILO10072 — 163.6 kg/cm2 — -
+- PILO10073 — 163.2 kg/cm2 — -
+
+## 37.PNG — 037 GENERATOR
+- Oras: 12/1/2023 9:28 (Windows taskbar clock)
+- Header: MSP 122.4 K, MST 541 C, MSF 481.4 T/H, RHP 34.2 K, RHT 541 C, COAL 88.8 T/H, PWR 151.1 MW
+- Tala: Naka-synchronize: 52L1, DS, 52G1, field CB sarado (pula). NORMAL OPERATION MODE = pulang check.
+
+- GCPAI1001 GEN. MW(C) — 151.1 MW — - — → ABC GCPAI1001 (ABC-001C); IO: #1 Generator MW (C) [GCP-AI1001, STN101 AI0419, 0.0 ~ 240.0 MW]
+- GCPAI1002 GEN. MW(D) — 151.9 MW — - — → ABC GCPAI1002 (ABC-001C); IO: #1 Generator MW (D) [GCP-AI1002, STN101 AI0774, 0.0 ~ 240.0 MW]
+- GEN. MVAR — 33.1 MVar — -
+- GEN. WATT-HOUR — 7266257 MWH — -
+- GEN. VAR-HOUR — 882996 MVarH — -
+- FREQUENCY — 60.1 Hz — -
+- POWER FACTOR — 0.977 — -
+- VOLTAGE(A-B) — 13.9 kV — -
+- VOLTAGE(B-C) — 13.8 kV — -
+- VOLTAGE(C-A) — 13.8 kV — -
+- CURRENT(A) — 6.3 kA — -
+- CURRENT(B) — 6.4 kA — -
+- CURRENT(C) — 6.6 kA — -
+- FIELD VOLTAGE — 46.0 VDC — -
+- FIELD CURRENT — 8.7 A — -
+- 52L1 — closed (red) — - — line breaker
+- DS — closed (red) — -
+- 52G1 — closed (red) — - — generator CB (GCB 52G1 ON red check)
+- FIELD CB — closed (red) — -
+
+## 38.PNG — 038 AIR PREHEATER
+- Oras: 12/1/2023 9:37 (Windows taskbar clock)
+- Header: MSP 121.8 K, MST 542 C, MSF 477.3 T/H, RHP 33.9 K, RHT 542 C, COAL 89.2 T/H, PWR 149.9 MW
+- Tala: Air preheater main drive motor tumatakbo (pula, 4.7 A), NORMAL SPEED SELECT.
+
+- APH MAIN DRIVE MOTOR (IIFA1052M1) — 4.7 A — R — running; IO: #1 Air preheater current [IT-FA1052M1, STN103 AI0470, 0.0 ~ 35.2 A]
+- SVPA1052 — closed — A — compressed air supply (air motor); no ABC controller found; IO: #1 Air preheater air motor solenoid valve open command [SV-PA1052, STN103 O.029F]
+- TIFA1052 — 287 C — - — average hot SA temp; IO: #1 Air preheater average measured SA outlet gas temp. [TI-FA1052, STN103 AI0402, 0 ~ 500 °C]
+- TIFA10526 — 60 C — - — top bearing temp (hot)
+- TIFA10527 — 47 C — - — bottom bearing temp (cold)
+- PISB1040 — 0.0 kg/cm2 — - — hot end S/B; IO: #1 Air preheater hot end steam pressure [PT-SB1040, STN102 AI0549, 0.0 ~ 16.0 kg/cm2]
+- PISB1042 — 0.0 kg/cm2 — - — cold end S/B; IO: #1 Air preheater cold end steam pressure [PT-SB1042, STN102 AI0550, 0.0 ~ 16.0 kg/cm2]
+
+## 39.PNG — 039 RH/SH BIASING DAMPER
+- Oras: not shown
+- Header: MSP 123.7 K, MST 541 C, MSF 471.9 T/H, RHP 33.9 K, RHT 541 C, COAL 88.2 T/H, PWR 149.9 MW
+- Tala: RH damper ~11 % lang, SH damper ~89 %: ang reheater temp ay kinokontrol ng damper (cascade R) + DSH spray (A, MV 79.4 %).
+
+- TIFG1100 — 864 C — - — flue gas before RH (rear pass); IO: #1 Reheater-1 inlet flue gas temperature [TT-FG1100, STN104 AI0448, 0 ~ 900 °C]
+- TIFG1101 — 854 C — - — flue gas before finish S/H; IO: #1 Finishing S/H-1 inlet flue gas temperature [TT-FG1101, STN104 AI0453, 0 ~ 900 °C]
+- TIFG1102 — 657 C — - — IO: #1 Reheater-2 inlet flue gas temperature [TT-FG1102, STN104 AI0449, 0 ~ 900 °C]
+- TIFG1103 — 694 C — - — IO: #1 Finishing S/H-2 inlet flue gas temperature [TT-FG1103, STN104 AI0454, 0 ~ 900 °C]
+- TIFG1104 — 504 C — - — IO: #1 Reheater-3 inlet flue gas temperature [TT-FG1104, STN104 AI0464, 0 ~ 600 °C]
+- TIFG1105 — 584 C — - — IO: #1 Finishing S/H-3 inlet flue gas temperature [TT-FG1105, STN104 AI0469, 0 ~ 900 °C]
+- TIFG1106 — 443 C — - — IO: #1 Reheater-4 inlet flue gas temperature [TT-FG1106, STN104 AI0465, 0 ~ 600 °C]
+- TIFG1107 — 502 C — - — IO: #1 ECO. #3 upper inlet flue gas temperature [TT-FG1107, STN104 AI0452, 0 ~ 600 °C]
+- TIFG1108 — 388 C — - — IO: #1 ECO. #2R inlet flue gas temperature [TT-FG1108, STN104 AI0450, 0 ~ 600 °C]
+- TIFG1109 — 426 C — - — IO: #1 ECO. #3 lower inlet flue gas temperature [TT-FG1109, STN104 AI0468, 0 ~ 600 °C]
+- TIFG1111 — 382 C — - — IO: #1 ECO. #2S inlet flue gas temperature [TT-FG1111, STN104 AI0451, 0 ~ 600 °C]
+- TIFG1110 — 359 C — - — RH side outlet before ECO#1; IO: #1 ECO. #2R outlet flue gas temperature [TT-FG1110, STN104 AI0466, 0 ~ 600 °C]
+- TIFG1113 — 370 C — - — SH side outlet before ECO#1; IO: #1 ECO. #2S outlet flue gas temperature [TT-FG1113, STN104 AI0467, 0 ~ 600 °C]
+- TCVFG1116A — 10.9 % — - — reheater flue gas biasing damper A; → ABC HICHR1002A (ABC-020); IO: #1 Reheater pass flue gas biasing damper (1) [TCV-FG1116-A, STN104 AO0480, 0.0 ~ 100.0 %]
+- TCVFG1116B — 11.3 % — - — reheater flue gas biasing damper B; → ABC HICHR1002A (ABC-020); IO: #1 Reheater pass flue gas biasing damper (2) [TCV-FG1116-B, STN104 AO0481, 0.0 ~ 100.0 %]
+- TCVFG1116C — 10.8 % — - — reheater flue gas biasing damper C; → ABC HICHR1002A (ABC-020); IO: #1 Reheater pass flue gas biasing damper (3) [TCV-FG1116-C, STN104 AO0482, 0.0 ~ 100.0 %]
+- TCVFG1116D — 10.9 % — - — reheater flue gas biasing damper D; → ABC HICHR1002A (ABC-020); IO: #1 Reheater pass flue gas biasing damper (4) [TCV-FG1116-D, STN104 AO0483, 0.0 ~ 100.0 %]
+- TCVFG1117A — 89.1 % — - — superheater flue gas biasing damper A; → ABC HICHR1002B (ABC-020); IO: #1 Superheater pass flue gas biasing damper (1) [TCV-FG1117-A, STN104 AO0496, 0.0 ~ 100.0 %]
+- TCVFG1117B — 89.1 % — - — superheater flue gas biasing damper B; → ABC HICHR1002B (ABC-020); IO: #1 Superheater pass flue gas biasing damper (2) [TCV-FG1117-B, STN104 AO0497, 0.0 ~ 100.0 %]
+- TCVFG1117C — 88.4 % — - — superheater flue gas biasing damper C; → ABC HICHR1002B (ABC-020); IO: #1 Superheater pass flue gas biasing damper (3) [TCV-FG1117-C, STN104 AO0498, 0.0 ~ 100.0 %]
+- TCVFG1117D — 88.7 % — - — superheater flue gas biasing damper D; → ABC HICHR1002B (ABC-020); IO: #1 Superheater pass flue gas biasing damper (4) [TCV-FG1117-D, STN104 AO0499, 0.0 ~ 100.0 %]
+- REHEATER OUTLET HEADER TEMP. CTL — PV 541 C / SV 538 C / MV 36.0 % — R (R-SV 538) — outer, feeds RH gas bias damper SV; → ABC TICHR1002A (ABC-020)
+- REHEATER DSH SPRAY WATER CTL — PV 541 C / SV 541 C / MV 79.4 % — A (R-SV 543) — reheater desuperheater spray; → ABC TICHR1002 (ABC-019)
+- REHEATER GAS BIAS. DAMPER CTL — PV 11.0 % / SV 11.0 % / MV 11.0 % — A — → ABC HICHR1002A (ABC-020)
+- SUPERHEATER GAS BIAS. DAMPER CTL — PV 89.0 % / SV 89.0 % / MV 89.0 % — A — → ABC HICHR1002B (ABC-020)
+- PIIA1064A — 7.0 kg/cm2 — - — biasing damper IA buffer tank A; IO: #1 Air buffer tank of biasing damper-A pressure [PT-IA1064-A, STN104 AI0438, 0.0 ~ 10.0 kg/cm2]
+- PIIA1064B — 7.0 kg/cm2 — - — biasing damper IA buffer tank B; IO: #1 Air buffer tank of biasing damper-B pressure [PT-IA1064-B, STN104 AI0470, 0.0 ~ 10.0 kg/cm2]
+
+## 4.PNG — 004 EXTRACTION STEAM
+- Oras: 12/1/2023 9:29 (Windows taskbar clock)
+- Header: MSP 122.9 K, MST 540 C, MSF 472.7 T/H, RHP 33.6 K, RHT 541 C, COAL 89.0 T/H, PWR 148.8 MW
+- Tala: Turbine 3617 rpm, naka-load. HP bypass PCVMS1020 1.0 % (halos sarado); TCVFW1060 ang nag-i-spray ng BFP extraction water sa HP bypass line (0.1 %, M).
+
+- FIQMS1031 — 472.7 T/H — - — main steam flow (boiler outlet); → ABC FIQMS1031 (ABC-001C, ABC-010, ABC-050); IO: #1 Boiler main steam flow [FT-MS1031, STN101 AI0129, 0.0 ~ 500.0 T/H]
+- PIMS10061 — 122.0 kg/cm2 — - — main steam pressure at turbine; → ABC PIMS10061 (ABC-050); IO: #1 Turbine main steam pressure(1) [PT-MS1006-1, STN102 AI0416, 0.0 ~ 150.0 kg/cm2]
+- PIMS10062 — 122.0 kg/cm2 — - — → ABC PIMS10062 (ABC-050); IO: #1 Turbine main steam pressure(2) [PT-MS1006-2, STN102 AI0512, 0.0 ~ 150.0 kg/cm2]
+- TIMS1007 — 538 C — - — IO: #1 Turbine main steam temperature [TT-MS1007, STN102 AI0918, 0 ~ 600 °C]
+- MVMS1391 — 100.2 % — R — main steam stop motor valve; no ABC controller found; IO: #1 Main steam line motor valve position [ZT-MS1391, STN102 AI0736, 0.0 ~ 100.0 %]
+- MVMS1392 — 0.0 % — R TQ — main steam bypass motor valve; no ABC controller found; IO: #1 Main steam bypass motor valve position [ZT-MS1392, STN102 AI0548, 0.0 ~ 100.0 %]
+- XV-MS1011 — closed (green) — A — drain pot DP-MS01 drain; no ABC controller found; IO: #1 Main steam drain pot DP-MS01 drain valve close solenoid [XV-MS1011, STN102 O.0124]
+- PIMS19011 — 121.9 kg/cm2 — - — before MSV
+- PIMS19012 — 122.0 kg/cm2 — -
+- TIMS19021 — 539 C — -
+- TIMS19022 — 538 C — -
+- TIMS19023 — 539 C — -
+- TIMS19024 — 538 C — -
+- MSV(A) ZIST1903A — A 99.9 / B 99.7 / C 99.9 % — - — main stop valve A position; no ABC controller found
+- MSV(B) ZIST1903B — A 99.5 / B 99.6 / C 99.6 % — - — main stop valve B position; no ABC controller found
+- CV(A) ZIST1904A — A 46.6 / B 45.9 / C 46.3 % — - — control valve A position; no ABC controller found
+- CV(B) ZIST1904B — A 43.7 / B 42.8 / C 43.3 % — - — control valve B position; no ABC controller found
+- TURBINE SPEED — 3617 rpm — -
+- FIQFW1059 — 1.8 T/H — - — BFP extraction spray water to HP bypass; IO: #1 HP turbine bypass desuperheater spray water flow [FT-FW1059, STN102 AI0546, 0.0 ~ 40.0 T/H]
+- XVFW1061 — closed (green) — A — BFP extraction spray block valve; no ABC controller found; IO: #1 HP turbine bypass desuperheater spray water block valve open solenoid [XV-FW1061, STN102 O.012E]
+- TCVFW1060 — 0.1 % — M — sprays BFP extraction water into the HP bypass line (HP bypass desuperheater); → ABC TICMS1022 (ABC-051); IO: #1 HP turbine bypass desuperheater spray water control valve [TCV-FW1060, STN102 AO0577, 0.0 ~ 100.0 %]
+- PCVMS1020 — 1.0 % — R — HP turbine bypass valve (main steam -> cold reheat); → ABC PICMS1006 (ABC-050); IO: #1 HP turbine bypass steam pressure control valve [PCV-MS1020, STN102 AO0608, 0.0 ~ 100.0 %]
+- TIMS10221 — 359 C — - — HP bypass downstream temp; → ABC TIMS10221 (ABC-051); IO: #1 HP turbine bypass outlet temperature (1) [TT-MS1022-1, STN102 AI0865, 0 ~ 600 °C]
+- TIMS10222 — 356 C — - — → ABC TIMS10222 (ABC-051); IO: #1 HP turbine bypass outlet temperature (2) [TT-MS1022-2, STN102 AI0897, 0 ~ 600 °C]
+- PIMS1021 — 35.0 kg/cm2 — - — HP bypass downstream (cold reheat) pressure; → ABC PIMS1021 (ABC-051); IO: #1 HP turbine bypass outlet pressure [PT-MS1021, STN102 AI0566, 0.0 ~ 50.0 kg/cm2]
+- XV-MS1023 — closed (green) — A — drain pot DP-MS02; no ABC controller found; IO: #1 Main steam drain pot DP-MS02 drain valve close solenoid [XV-MS1023, STN102 O.0125]
+- XV-CR1012 — closed (green) — A — drain pot DP-CR02; no ABC controller found; IO: #1 Cold reheat drain pot DP-CR02 drain valve close solenoid [XV-CR1012, STN102 O.0127]
+- XVCR1901 — open (red) — - — no ABC controller found
+- XV-CR1011 — closed (green) — A — drain pot DP-CR01; no ABC controller found; IO: #1 Cold reheat drain pot DP-CR01 drain valve close solenoid [XV-CR1011, STN102 O.0126]
+- FVCR1902 — closed (green) — - — to flash chamber; no ABC controller found
+- PICR19013 — 34.9 kg/cm2 — - — cold reheat pressure
+- PICR19012 — 35.3 kg/cm2 — -
+- PICR19011 — 35.4 kg/cm2 — -
+- MVAS1011 — 0.0 % — - — HP turbine warming valve; no ABC controller found; IO: #1 HP turbine warming valve position [ZT-AS1011, STN102 AI0757, 0.0 ~ 100.0 %]
+- MVAS1394 — 0.0 % — A R TQ — no ABC controller found; IO: #1 Turbine warming valve inlet drain motor valve position [ZT-AS1394, STN102 AI0790, 0.0 ~ 100.0 %]
+- TITS1011 — 371 C — - — extraction to #2 HP heater; IO: #1 Cold reheat to NO.2 HPH steam temperature [TT-TS1011, STN102 AI0816, 0 ~ 600 °C]
+- MVTS1001 — 99.8 % — A R — extraction #1 to #2 HP heater; no ABC controller found; IO: #1 T/G NO.1 ext. to #2 HPH motor valve position [ZT-TS1001, STN102 AI0738, 0.0 ~ 100.0 %]
+- MVTS1397 — 0.0 % — A R TQ — drain to flash chamber; no ABC controller found; IO: #1 T/G NO.1 ext. drain motor valve MV-TS1397 position [ZT-TS1397, STN102 AI0454, 0.0 ~ 100.0 %]
+- MVTS1391 — 0.0 % — A R TQ — drain to flash chamber; no ABC controller found; IO: #1 T/G NO.1 ext. drain motor valve MV-TS1391 position [ZT-TS1391, STN102 AI0498, 0.0 ~ 100.0 %]
+- XVTS1700 — open (red) — - — extraction check valve; no ABC controller found
+- MVTS1002 — 99.4 % — A R — extraction #2 to #1 HP heater; no ABC controller found; IO: #1 T/G NO.2 ext. to #1 HPH motor valve position [ZT-TS1002, STN102 AI0739, 0.0 ~ 100.0 %]
+- MVTS1396 — 0.0 % — A R TQ — no ABC controller found; IO: #1 T/G NO.2 ext. drain motor valve MV-TS1396 position [ZT-TS1396, STN102 AI0453, 0.0 ~ 100.0 %]
+- MVTS1392 — 0.0 % — A R TQ — no ABC controller found; IO: #1 T/G NO.2 ext. drain motor valve MV-TS1392 position [ZT-TS1392, STN102 AI0499, 0.0 ~ 100.0 %]
+- TITS1014 — 426 C — - — IO: #1 Turbine NO.2 extraction steam temperature [TT-TS1014, STN102 AI0817, 0 ~ 600 °C]
+- PITS1013 — 14.07 kg/cm2 — - — extraction #2 pressure; IO: #1 Turbine NO.2 extraction steam pressure [PT-TS1013, STN102 AI0560, 0.00 ~ 25.00 kg/cm2]
+- MVTS1003 — 100.5 % — A R — extraction #3 to deaerator; no ABC controller found; IO: #1 T/G NO.3 ext. to deaerator motor valve position [ZT-TS1003, STN102 AI0740, 0.0 ~ 100.0 %]
+- XVTS1740 — open (red) — - — no ABC controller found
+- XVTS1710 — open (red) — - — no ABC controller found
+- MVTS1400 — 0.0 % — A R TQ — no ABC controller found; IO: #1 T/G NO.3 ext. drain motor valve MV-TS1400 position [ZT-TS1400, STN102 AI0774, 0.0 ~ 100.0 %]
+- MVTS1398 — 0.0 % — A R TQ — no ABC controller found; IO: #1 T/G NO.3 ext. drain motor valve MV-TS1398 position [ZT-TS1398, STN102 AI0517, 0.0 ~ 100.0 %]
+- MVTS1399 — 0.0 % — A R TQ — no ABC controller found; IO: #1 T/G NO.3 ext. drain motor valve MV-TS1399 position [ZT-TS1399, STN102 AI0518, 0.0 ~ 100.0 %]
+- PITS1017 — 5.30 kg/cm2 — - — extraction #3 pressure; IO: #1 Turbine NO.3 extraction steam pressure [PT-TS1017, STN102 AI0561, 0.00 ~ 10.00 kg/cm2]
+- TITS1018 — 314 C — - — IO: #1 Turbine NO.3 extraction steam temperature [TT-TS1018, STN102 AI0818, 0 ~ 600 °C]
+- MVTS1393 — 0.0 % — A R TQ — no ABC controller found; IO: #1 T/G NO.3 ext. drain motor valve MV-TS1393 position [ZT-TS1393, STN102 AI0500, 0.0 ~ 100.0 %]
+- PITS1022 — 1.29 kg/cm2 — - — extraction #4 pressure; → ABC PITS1022 (ABC-056); IO: #1 Turbine NO.4 extraction steam pressure [PT-TS1022, STN102 AI0562, 0.00 ~ 5.00 kg/cm2]
+- TITS1023 — 188 C — - — IO: #1 Turbine NO.4 extraction steam temperature [TT-TS1023, STN102 AI0819, 0 ~ 300 °C]
+- MVTS1004 — 99.0 % — A R — extraction #4 to #3 LP heater; no ABC controller found; IO: #1 T/G NO.4 ext. to #3 LPH motor valve position [ZT-TS1004, STN102 AI0741, 0.0 ~ 100.0 %]
+- XVTS1720 — open (red) — - — no ABC controller found
+- MVTS1390 — 0.0 % — A R TQ — no ABC controller found; IO: #1 T/G NO.4 ext. drain motor valve MV-TS1390 position [ZT-TS1390, STN102 AI0497, 0.0 ~ 100.0 %]
+- MVTS1394 — 0.0 % — A R TQ — no ABC controller found; IO: #1 T/G NO.4 ext. drain motor valve MV-TS1394 position [ZT-TS1394, STN102 AI0501, 0.0 ~ 100.0 %]
+- MVTS1005 — 100.4 % — A R — extraction #5 to #2 LP heater; no ABC controller found; IO: #1 T/G NO.5 ext. to #2 LPH motor valve position [ZT-TS1005, STN102 AI0742, 0.0 ~ 100.0 %]
+- XVTS1730 — open (red) — - — no ABC controller found
+- MVTS1389 — 0.0 % — A R TQ — no ABC controller found; IO: #1 T/G NO.5 ext. drain motor valve MV-TS1389 position [ZT-TS1389, STN102 AI0496, 0.0 ~ 100.0 %]
+- MVTS1395 — 0.3 % — A R TQ — no ABC controller found; IO: #1 T/G NO.5 ext. drain motor valve MV-TS1395 position [ZT-TS1395, STN102 AI0502, 0.0 ~ 100.0 %]
+- PITS1026 — 0.25 kg/cm2 — - — extraction #5 pressure; IO: #1 Turbine NO.5 extraction steam pressure [PT-TS1026, STN102 AI0563, -1.00 ~ 5.00 kg/cm2]
+- TITS1027 — 91 C — - — IO: #1 Turbine NO.5 extraction steam temperature [TT-TS1027, STN102 AI0820, 0 ~ 300 °C]
+- CONDENSER PRESSURE — 0.050 kg/cm2A — -
+
+## 5.png — 005 REHEATER STEAM SYSTEM
+- Oras: 2023.10.18 15:46:00 (alarm line 10/18/2023 15:45:38 104-WI053 Drum level HH(1) LSHHBR10011 OCCUR)
+- Header: MSP 122.1 K, MST 539 C, MSF 482.2 T/H, RHP 34.4 K, RHT 540 C, COAL 87.2 T/H, PWR 152.5 MW
+- Tala: Full load. HP bypass (PCVMS1020) 1.1 % at LP bypass (PCVHR1010) 1.3 %, halos sarado; RH DSH spray TCVFW1150 66.0 % (A), 14.8 T/H. Kanang listahan = buod ng bypass/aux controllers.
+
+- FIQMS1031 — 482.2 T/H — - — → ABC FIQMS1031 (ABC-001C, ABC-010, ABC-050); IO: #1 Boiler main steam flow [FT-MS1031, STN101 AI0129, 0.0 ~ 500.0 T/H]
+- PIMS10061 — 121.1 kg/cm2 — - — → ABC PIMS10061 (ABC-050); IO: #1 Turbine main steam pressure(1) [PT-MS1006-1, STN102 AI0416, 0.0 ~ 150.0 kg/cm2]
+- PIMS10062 — 121.1 kg/cm2 — - — → ABC PIMS10062 (ABC-050); IO: #1 Turbine main steam pressure(2) [PT-MS1006-2, STN102 AI0512, 0.0 ~ 150.0 kg/cm2]
+- TIMS1007 — 538 C — - — IO: #1 Turbine main steam temperature [TT-MS1007, STN102 AI0918, 0 ~ 600 °C]
+- MVMS1391 — 100.2 % — R — no ABC controller found; IO: #1 Main steam line motor valve position [ZT-MS1391, STN102 AI0736, 0.0 ~ 100.0 %]
+- MVMS1392 — 0.0 % — R TQ — no ABC controller found; IO: #1 Main steam bypass motor valve position [ZT-MS1392, STN102 AI0548, 0.0 ~ 100.0 %]
+- PIMS19011 — 121.1 kg/cm2 — -
+- PIMS19012 — 121.1 kg/cm2 — -
+- TIMS19021 — 539 C — -
+- TIMS19022 — 538 C — -
+- TIMS19023 — 539 C — -
+- TIMS19024 — 538 C — -
+- TURBINE SPEED — 3610 rpm — -
+- MSV(A) — A 100.0 / B 99.8 / C 99.9 % — -
+- MSV(B) — A 99.5 / B 99.7 / C 99.6 % — -
+- CV(A) — A 45.7 / B 45.1 / C 45.4 % — -
+- CV(B) — A 43.0 / B 42.2 / C 42.7 % — -
+- ICV TO CV TRANSFER COMPLETE — red check — -
+- FIQFW1059 — 1.8 T/H — - — BFP extraction spray to HP bypass; IO: #1 HP turbine bypass desuperheater spray water flow [FT-FW1059, STN102 AI0546, 0.0 ~ 40.0 T/H]
+- XVFW1061 — closed (green) — A — no ABC controller found; IO: #1 HP turbine bypass desuperheater spray water block valve open solenoid [XV-FW1061, STN102 O.012E]
+- TCVFW1060 — 0.1 % — M — HP bypass desuperheater spray; → ABC TICMS1022 (ABC-051); IO: #1 HP turbine bypass desuperheater spray water control valve [TCV-FW1060, STN102 AO0577, 0.0 ~ 100.0 %]
+- PCVMS1020 — 1.1 % — R — HP turbine bypass; → ABC PICMS1006 (ABC-050); IO: #1 HP turbine bypass steam pressure control valve [PCV-MS1020, STN102 AO0608, 0.0 ~ 100.0 %]
+- TIMS10221 — 362 C — - — → ABC TIMS10221 (ABC-051); IO: #1 HP turbine bypass outlet temperature (1) [TT-MS1022-1, STN102 AI0865, 0 ~ 600 °C]
+- TIMS10222 — 358 C — - — → ABC TIMS10222 (ABC-051); IO: #1 HP turbine bypass outlet temperature (2) [TT-MS1022-2, STN102 AI0897, 0 ~ 600 °C]
+- PIMS1021 — 35.7 kg/cm2 — - — → ABC PIMS1021 (ABC-051); IO: #1 HP turbine bypass outlet pressure [PT-MS1021, STN102 AI0566, 0.0 ~ 50.0 kg/cm2]
+- PICR1003 — 35.3 kg/cm2 — - — cold reheat pressure; → ABC PICR1003 (ABC-030, ABC-051); IO: #1 Cold reheat steam pressure [PT-CR1003, STN102 AI0528, 0.0 ~ 50.0 kg/cm2]
+- TICR1004 — 370 C — - — cold reheat temp; → ABC TICR1004 (ABC-019, ABC-030, ABC-051); IO: #1 Cold reheat steam temperature [TT-CR1004, STN102 AI0900, 0 ~ 600 °C]
+- FIQFW1149 — 14.8 T/H — - — RH desuperheater spray flow; IO: #1 Reheater inlet desuperheater spray water flow [FT-FW1149, STN102 AI0547, 0.0 ~ 25.0 T/H]
+- XVFW1151 — open (red) — A — RH spray block valve (N box shown); no ABC controller found; IO: #1 Reheater inlet desuperheater spray water block valve open solenoid [XV-FW1151, STN102 O.0840]
+- TCVFW1150 — 66.0 % — A — reheater desuperheater spray control valve; → ABC TICHR1002 (ABC-019); IO: #1 Reheater inlet desuperheater spray water control valve [TCV-FW1150, STN102 AO0578, 0.0 ~ 100.0 %]
+- TICR10051 — 331 C — - — after RH DSH; → ABC TICR10051 (ABC-019); IO: #1 Reheater inlet desuperheater temperature (1) [TT-CR1005-1, STN102 AI0866, 0 ~ 600 °C]
+- TICR10052 — 327 C — - — after RH DSH; → ABC TICR10052 (ABC-019); IO: #1 Reheater inlet desuperheater temperature (2) [TT-CR1005-2, STN102 AI0898, 0 ~ 600 °C]
+- MVBR1391 — 0.0 % — R TQ (A) — S/H no.1 outlet header to reheater (drawn at S/H panel #2 inlet); → ABC HICBR1391 (ABC-055); IO: #1 S/H NO.1 outlet header to reheater motor valve position [ZT-BR1391, STN101 AI0181, 0.0 ~ 100.0 %]
+- HOT R/H STM PRESS. CTL — PV 34.4 kg/cm2 / SV 35.5 kg/cm2 — A — → ABC PICHR1391 (ABC-054)
+- MVHR1391 — 0.0 % — R TQ — hot reheat to silencer; → ABC PICHR1391 (ABC-054); IO: #1 Hot reheat steam blow-off motor valve position [ZT-HR1391, STN102 AI0737, 0.0 ~ 100.0 %]
+- TIHR10022 — 540 C — - — → ABC TIHR10022 (ABC-019); IO: #1 Reheater outlet header temperature (2) [TT-HR1002-2, STN102 AI0899, 0 ~ 600 °C]
+- TIHR10021 — 540 C — - — → ABC TIHR10021 (ABC-019); IO: #1 Reheater outlet header temperature (1) [TT-HR1002-1, STN102 AI0867, 0 ~ 600 °C]
+- PICR1006 — 34.9 kg/cm2 — - — → ABC PICR1006 (ABC-019); IO: #1 Reheat inlet header pressure [PT-CR1006, STN102 AI0529, 0.0 ~ 50.0 kg/cm2]
+- PIHR1001 — 35.0 kg/cm2 — - — hot reheat pressure; IO: #1 Reheat outlet header pressure [PT-HR1001, STN102 AI0530, 0.0 ~ 50.0 kg/cm2]
+- PIHR10031 — 34.3 kg/cm2 — - — → ABC PIHR10031 (ABC-052); IO: #1 Hot reheat steam pressure(1) [PT-HR1003-1, STN102 AI0421, 0.0 ~ 50.0 kg/cm2]
+- PIHR10032 — 34.4 kg/cm2 — - — → ABC PIHR10032 (ABC-052); IO: #1 Hot reheat steam pressure(2) [PT-HR1003-2, STN102 AI0513, 0.0 ~ 50.0 kg/cm2]
+- TIHR1004 — 540 C — - — → ABC TIHR1004 (ABC-052); IO: #1 Hot reheat steam temperature [TT-HR1004, STN102 AI0868, 0 ~ 600 °C]
+- XV-MS1023 — closed — A — no ABC controller found; IO: #1 Main steam drain pot DP-MS02 drain valve close solenoid [XV-MS1023, STN102 O.0125]
+- XV-CR1012 — closed — A — no ABC controller found; IO: #1 Cold reheat drain pot DP-CR02 drain valve close solenoid [XV-CR1012, STN102 O.0127]
+- XVCR1901 — open (red) — - — no ABC controller found
+- MVAS1011 — 0.0 % — - — HP turbine warming valve; no ABC controller found; IO: #1 HP turbine warming valve position [ZT-AS1011, STN102 AI0757, 0.0 ~ 100.0 %]
+- MVAS1394 — 0.0 % — A R TQ — no ABC controller found; IO: #1 Turbine warming valve inlet drain motor valve position [ZT-AS1394, STN102 AI0790, 0.0 ~ 100.0 %]
+- XV-CR1011 — closed — A — no ABC controller found; IO: #1 Cold reheat drain pot DP-CR01 drain valve close solenoid [XV-CR1011, STN102 O.0126]
+- FVCR1902 — closed — - — no ABC controller found
+- PICR19013 — 35.6 kg/cm2 — -
+- PICR19012 — 36.1 kg/cm2 — -
+- PICR19011 — 36.1 kg/cm2 — -
+- PIHR1901 — 34.0 kg/cm2 — -
+- TIHR1902 — 539 C — -
+- RSV(A) ZIST1905A1~3 — A 100.4 / B 100.4 / C 100.4 % — - — reheat stop valve A; no ABC controller found
+- ICV(A) ZIST1905A4~6 — A 101.6 / B 101.8 / C 101.7 % — - — intercept valve A; no ABC controller found
+- RSV(B) ZIST1905B1~3 — A 100.6 / B 100.5 / C 100.6 % — - — no ABC controller found
+- ICV(B) ZIST1905B4~6 — A 99.6 / B 99.7 / C 99.8 % — - — no ABC controller found
+- PIST10021 — 33.0 kg/cm2 — -
+- PIST10022 — 33.2 kg/cm2 — -
+- PIST10023 — 33.2 kg/cm2 — -
+- XV-HR1022 — closed — A — drain pot DP-HR02; no ABC controller found; IO: #1 Hot reheat drain pot DP-HR02 drain valve close solenoid [XV-HR1022, STN102 O.0129]
+- XV-HR1021 — closed — A — drain pot DP-HR01; no ABC controller found; IO: #1 Hot reheat drain pot DP-HR01 drain valve close solenoid [XV-HR1021, STN102 O.0128]
+- XVHR10101 — closed — M — no ABC controller found; IO: #1 LP turbine bypass steam pressure warming solenoid valve open command [XV-HR1010-1, STN102 O.0846]
+- PCVHR1010 — 1.3 % — R — LP turbine bypass (hot reheat -> condenser); → ABC PICHR1003 (ABC-052); IO: #1 LP turbine bypass steam pressure control valve [PCV-HR1010, STN102 AO0609, 0.0 ~ 100.0 %]
+- TIHR1010 — 228 C — - — IO: #1 LP turbine bypass control valve outlet temperature [TT-HR1010, STN102 AI0870, 0 ~ 600 °C]
+- TCVCD1115 — 0.2 % — M — LP bypass desuperheater spray (condensate); → ABC TICHR1012 (ABC-052); IO: #1 LP turbine bypass desuperheater spray water control valve [TCV-CD1115, STN102 AO0610, 0.0 ~ 100.0 %]
+- XVCD1114 — closed — A — no ABC controller found; IO: #1 LP turbine bypass desuperheater spray water block valve open solenoid [XV-CD1114, STN102 O.012A]
+- FIQCD1115 — 0.0 T/H — - — IO: #1 LP turbine bypass spray water flow [FT-CD1115, STN102 AI0544, 0.0 ~ 46.0 T/H]
+- PIHR1011 — 0.0 kg/cm2 — - — IO: #1 LP turbine bypass outlet pressure [PT-HR1011, STN102 AI0531, 0.0 ~ 50.0 kg/cm2]
+- TIHR10121 — 137 C — - — → ABC TIHR10121 (ABC-052); IO: #1 LP turbine bypass outlet temperature (1) [TT-HR1012-1, STN102 AI0864, 0 ~ 300 °C]
+- TIHR10122 — 135 C — - — → ABC TIHR10122 (ABC-052); IO: #1 LP turbine bypass outlet temperature (2) [TT-HR1012-2, STN102 AI0896, 0 ~ 300 °C]
+- PICD1110 — 0.057 kg/cm2A — - — condenser; IO: #1 Condenser pressure [PT-CD1110, STN102 AI0532, 0.000 ~ 6.000 kg/cm2A]
+- BLOW-OFF — PV 122.1 / SV 128.0 / MV 0.0 — A — summary list; → ABC PICMS1002 (ABC-013)
+- AUX.CONV — PV 10.2 / SV 9.4 / MV 0.0 — A — summary list (aux steam from main steam); → ABC PICAS1004 (ABC-030)
+- GRAND(TCV) — PV 185 / SV 259 / MV 0.0 — A — summary list (gland steam temp); → ABC TICAS1017 (ABC-034)
+- DEAERATOR — PV 5.9 / SV 1.5 / MV 0.0 — A — summary list (deaerator pegging); → ABC PICCD1104 (ABC-056)
+- HP-BYPASS(PCV) — PV 121.1 / SV 123.1 / MV 0.0 — R — summary list; → ABC PICMS1006 (ABC-050)
+- HP-BYPASS(TCV) — PV 360 / SV 300 / MV 0.0 — M — summary list; → ABC TICMS1022 (ABC-051)
+- LP-BYPASS(PCV) — PV 34.4 / SV 36.0 / MV 0.8 — R — summary list; → ABC PICHR1003 (ABC-052)
+- LP-BYPASS(TCV) — PV 136 / SV 137 / MV 0.0 — M — summary list; → ABC TICHR1012 (ABC-052)
+- REHEATER AUX — PV 10.2 / SV 10.2 / MV 4.2 — A — summary list (aux steam from cold reheat); → ABC PICAS1005 (ABC-030)
+
+## 6.PNG — 006 DIESEL OIL SYSTEM
+- Oras: not shown
+- Header: MSP 123.7 K, MST 541 C, MSF 472.3 T/H, RHP 33.9 K, RHT 541 C, COAL 89.1 T/H, PWR 149.8 MW
+- Tala: Lahat ng burner naka-OFF (valve sarado, oil flow 0); ang apoy na larawan sa A/B/C ay simbolo lang. OIL MASTER = OFF. Oil recirculates via FCVDO1012 to #2 start-up burner.
+
+- LIDO0701 — 4.978 M — - — oil service tank T-0701 level; IO: Boiler oil service tank level [LT-DO0701, STN105 AI0245, 0.000 ~ 8.200 M]
+- TOTAL DIESEL OIL CONSUMPTION — 7995.06 T — -
+- DPIDO0001 — 0.029 kg/cm2 — - — oil strainer DP; IO: Diesel oil pump of start-up burner suction strainer diff. pressure [DPT-DO0001, STN105 AI0182, 0.000 ~ 1.000 kg/cm2]
+- P-0702A DIESEL OIL PUMP — 25.4 A — R M — running
+- P-0702B DIESEL OIL PUMP — 0.0 A — R A — standby
+- PCVDO0002 — 24.2 % — A — oil pump recirculation to tank (pressure control); → ABC PICDO0005 (ABC-028); IO: Diesel oil pump outlet return to tank pressure control valve [PCV-DO0002, STN105 AO0224, 0.0 ~ 100.0 %]
+- PIDO0005 — 12.8 kg/cm2 — - — oil pump outlet pressure; → ABC PIDO0005 (ABC-028); IO: Diesel oil pump outlet to start-up burner oil pressure [PT-DO0005, STN105 AI0181, 0.0 ~ 25.0 kg/cm2]
+- FCVDO1012 — 100.1 % — M — oil to #2 start-up burner line; → ABC HICDO1012 (ABC-029); IO: #1 Diesel oil pump to burner flow control valve [FCV-DO1012, STN101 AO0324, 0.0 ~ 100.0 %]
+- PCVDO1009 — 85.7 % — A — oil return line pressure control; → ABC PICDO1008 (ABC-029); IO: #1 Boiler diesel oil return pressure control valve [PCV-DO1009, STN101 AO0212, 0.0 ~ 100.0 %]
+- PIDO1008 — 11.0 kg/cm2 — - — oil return line pressure; → ABC PIDO1008 (ABC-029); IO: #1 Boiler start up burner diesel oil circulation line oil pressure [PT-DO1008, STN101 AI0514, 0.0 ~ 25.0 kg/cm2]
+- OIL MASTER — PV 0.0 T/H / SV 0.0 T/H / MV 0.0 % — M — OIL MASTER OFF; → ABC FIC-OM (ABC-003E)
+- PIDO1043A2 — 0.0 kg/cm2 — - — → ABC PIDO1043A2 (ABC-003A); IO: #1 Boiler start up burner-A diesel oil supply line oil pressure [PT-DO1043-A2, STN101 AI0293, 0.0 ~ 10.0 kg/cm2]
+- PIDO1043B2 — 0.0 kg/cm2 — - — → ABC PIDO1043B2 (ABC-003B); IO: #1 Boiler start up burner-B diesel oil supply line oil pressure [PT-DO1043-B2, STN101 AI0439, 0.0 ~ 10.0 kg/cm2]
+- PIDO1043C2 — 0.0 kg/cm2 — - — → ABC PIDO1043C2 (ABC-003C); IO: #1 Boiler start up burner-C diesel oil supply line oil pressure [PT-DO1043-C2, STN101 AI0596, 0.0 ~ 10.0 kg/cm2]
+- PIDO1043D2 — 0.0 kg/cm2 — - — → ABC PIDO1043D2 (ABC-003D); IO: #1 Boiler start up burner-D diesel oil supply line oil pressure [PT-DO1043-D2, STN101 AI0771, 0.0 ~ 10.0 kg/cm2]
+- FCVDO1043A3 — 24.7 % — - — → ABC FICDO1043A (ABC-003A); IO: #1 Boiler start up burner-A supply oil line flow control valve [FCV-DO1043-A3, STN101 AO0209, 0.0 ~ 100.0 %]
+- FCVDO1043B3 — 24.9 % — - — → ABC FICDO1043B (ABC-003B); IO: #1 Boiler start up burner-B supply oil line flow control valve [FCV-DO1043-B3, STN101 AO0321, 0.0 ~ 100.0 %]
+- FCVDO1043C3 — 25.0 % — - — → ABC FICDO1043C (ABC-003C); IO: #1 Boiler start up burner-C supply oil line flow control valve [FCV-DO1043-C3, STN101 AO0337, 0.0 ~ 100.0 %]
+- FCVDO1043D3 — 25.0 % — - — → ABC FICDO1043D (ABC-003D); IO: #1 Boiler start up burner-D supply oil line flow control valve [FCV-DO1043-D3, STN101 AO0785, 0.0 ~ 100.0 %]
+- FIQDO1043A — 0.00 T/H — - — → ABC FIQDO1043A (ABC-003A); IO: #1 Boiler start up burner-A supply line oil flow [FT-DO1043-A, STN101 AI0515, 0.00 ~ 3.50 T/H]
+- FIQDO1043B — 0.00 T/H — - — → ABC FIQDO1043B (ABC-003B); IO: #1 Boiler start up burner-B supply line oil flow [FT-DO1043-B, STN101 AI0546, 0.00 ~ 3.50 T/H]
+- FIQDO1043C — 0.00 T/H — - — → ABC FIQDO1043C (ABC-003C); IO: #1 Boiler start up burner-C supply line oil flow [FT-DO1043-C, STN101 AI0517, 0.00 ~ 3.50 T/H]
+- FIQDO1043D — 0.00 T/H — - — → ABC FIQDO1043D (ABC-003D); IO: #1 Boiler start up burner-D supply line oil flow [FT-DO1043-D, STN101 AI0548, 0.00 ~ 3.50 T/H]
+- BNR-A..D OIL PRESS. CTL — PV 0.0 / SV 0.0 / MV 25.0 % — M — each burner; → ABC PICDO1043A~D (ABC-003A~D)
+- BNR-A..D OIL FLOW CTL — PV 0.00 / SV 0.00 / MV 25.0 % — M — each burner; → ABC FICDO1043A~D (ABC-003A~D)
+- XVDO1043A1/A2..D1/D2 — closed (green) — - — oil shutoff valves; no ABC controller found
+
+## 7.PNG — 007 AIR/FLUE GAS SYSTEM
+- Oras: not shown
+- Header: MSP 122.1 K, MST 540 C, MSF 479.3 T/H, RHP 34.1 K, RHT 542 C, COAL 89.1 T/H, PWR 151.0 MW
+- Tala: Full load: PAF 354 T/H (inlet damper 35.6 %), SAF 213 T/H (37.1 %), IDF via hydraulic coupling 46.1 % (furnace press. control mode HYDRAULIC), furnace -14..-17 mmH2O, O2 4.0 %.
+
+- DRUM LEVEL — 10 mm — -
+- PIFG1085 — -16 mmH2O — - — furnace pressure; → ABC PIFG1085 (ABC-008); IO: #1 Furnace pressure (A) [PT-FG1085, STN101 AI0132, -600 ~ 600 mmH2O]
+- PIFG1086 — -17 mmH2O — - — furnace pressure; → ABC PIFG1086 (ABC-008); IO: #1 Furnace pressure (B) [PT-FG1086, STN101 AI0260, -600 ~ 600 mmH2O]
+- PIFG10871 — -15 mmH2O — - — furnace pressure; → ABC PIFG10871 (ABC-008); IO: #1 Furnace pressure ( C ) -1 [PT-FG1087-1, STN101 AI0388, -600 ~ 600 mmH2O]
+- PIFG10872 — -14 mmH2O — - — furnace pressure; IO: #1 Furnace pressure ( C ) -2 [PT-FG1087-2, STN101 AI0773, -600 ~ 600 mmH2O]
+- DPIFG1081 — 1419 mmH2O — - — furnace bed DP; → ABC DPIFG1081 (ABC-009A); IO: #1 Furnace plenum/upper layer diff. pressure (A) [DPT-FG1081, STN101 AI0134, 0 ~ 2500 mmH2O]
+- DPIFG1082 — 1419 mmH2O — - — furnace bed DP; → ABC DPIFG1082 (ABC-009A); IO: #1 Furnace plenum/upper layer diff. pressure (B) [DPT-FG1082, STN101 AI0262, 0 ~ 2500 mmH2O]
+- DPIFG1083 — 70 mmH2O — - — IO: #1 Furnace lower/upper layer diff. pressure (1) [DPT-FG1083, STN101 AI0389, -1500 ~ 1500 mmH2O]
+- DPIFG1183 — 41 mmH2O — - — IO: #1 Furnace lower/upper layer diff. pressure (2) [DPT-FG1183, STN101 AI0448, -1500 ~ 1500 mmH2O]
+- DPIFG1084 — 1016 mmH2O — - — IO: #1 Furnace plenum/lower layer diff. pressure (1) [DPT-FG1084, STN101 AI0390, 0 ~ 2500 mmH2O]
+- DPIFG1184 — 1014 mmH2O — - — IO: #1 Furnace plenum/lower layer diff. pressure (2) [DPT-FG1184, STN101 AI0449, 0 ~ 2500 mmH2O]
+- TIFG1091A — 957 C — - — furnace temp; → ABC TIFG1091A (ABC-026); IO: #1 Furnace lower layer above temp. (A) [TT-FG1091-A, STN103 AI0816, 0 ~ 1200 °C]
+- TIFG1091B — 956 C — - — → ABC TIFG1091B (ABC-026); IO: #1 Furnace lower layer above temp. (B) [TT-FG1091-B, STN103 AI0817, 0 ~ 1200 °C]
+- TIFG1091C — 956 C — - — → ABC TIFG1091C (ABC-026); IO: #1 Furnace lower layer above temp. (C) [TT-FG1091-C, STN103 AI0818, 0 ~ 1200 °C]
+- TIFG1091D — 951 C — - — → ABC TIFG1091D (ABC-026); IO: #1 Furnace lower layer above temp. (D) [TT-FG1091-D, STN103 AI0819, 0 ~ 1200 °C]
+- TIFG1091E — 920 C — - — → ABC TIFG1091E (ABC-026); IO: #1 Furnace lower layer above temp. (E) [TT-FG1091-E, STN103 AI0820, 0 ~ 1200 °C]
+- TIFG1091F — 943 C — - — → ABC TIFG1091F (ABC-026); IO: #1 Furnace lower layer above temp. (F) [TT-FG1091-F, STN103 AI0821, 0 ~ 1200 °C]
+- TIFG1090A — 927 C — - — → ABC TIFG1090A (ABC-027); IO: #1 Furnace lower layer under temp. (A) [TT-FG1090-A, STN103 AI0832, 0 ~ 1200 °C]
+- TIFG1090B — 944 C — - — → ABC TIFG1090B (ABC-027); IO: #1 Furnace lower layer under temp. (B) [TT-FG1090-B, STN103 AI0833, 0 ~ 1200 °C]
+- TIFG1090C — 960 C — - — → ABC TIFG1090C (ABC-027); IO: #1 Furnace lower layer under temp. (C) [TT-FG1090-C, STN103 AI0834, 0 ~ 1200 °C]
+- TIFG1090D — 941 C — - — → ABC TIFG1090D (ABC-027); IO: #1 Furnace lower layer under temp. (D) [TT-FG1090-D, STN103 AI0835, 0 ~ 1200 °C]
+- TIFG1090E — 934 C — - — → ABC TIFG1090E (ABC-027); IO: #1 Furnace lower layer under temp. (E) [TT-FG1090-E, STN103 AI0836, 0 ~ 1200 °C]
+- TIFG1090F — 930 C — - — → ABC TIFG1090F (ABC-027); IO: #1 Furnace lower layer under temp. (F) [TT-FG1090-F, STN103 AI0837, 0 ~ 1200 °C]
+- TIFG1091G — 940 C — - — → ABC TIFG1091G (ABC-026); IO: #1 Furnace lower layer above temp. (G) [TT-FG1091-G, STN103 AI0848, 0 ~ 1200 °C]
+- TIFG1091H — 926 C — - — → ABC TIFG1091H (ABC-026); IO: #1 Furnace lower layer above temp. (H) [TT-FG1091-H, STN103 AI0849, 0 ~ 1200 °C]
+- TIFG1091I — 926 C — - — → ABC TIFG1091I (ABC-026); IO: #1 Furnace lower layer above temp. (I) [TT-FG1091-I, STN103 AI0850, 0 ~ 1200 °C]
+- TIFG1090G — 938 C — - — → ABC TIFG1090G (ABC-027); IO: #1 Furnace lower layer under temp. (G) [TT-FG1090-G, STN103 AI0864, 0 ~ 1200 °C]
+- TIFG1090H — 919 C — - — → ABC TIFG1090H (ABC-027); IO: #1 Furnace lower layer under temp. (H) [TT-FG1090-H, STN103 AI0865, 0 ~ 1200 °C]
+- TIFG1090I — 910 C — - — → ABC TIFG1090I (ABC-027); IO: #1 Furnace lower layer under temp. (I) [TT-FG1090-I, STN103 AI0866, 0 ~ 1200 °C]
+- TIFG1095A — 882 C — - — furnace outlet; rate 0.24 C/MIN; IO: #1 Boiler cyclone-A outlet flue gas temperature (1) [TT-FG1095-A, STN101 AI0660, 0 ~ 1200 °C]
+- TIFG1096A — 855 C — - — IO: #1 Boiler cyclone-A outlet flue gas temperature (2) [TT-FG1096-A, STN101 AI0676, 0 ~ 1200 °C]
+- TIFG1095B — 873 C — - — rate 0.12 C/MIN; IO: #1 Boiler cyclone-B outlet flue gas temperature (1) [TT-FG1095-B, STN101 AI0661, 0 ~ 1200 °C]
+- TIFG1096B — 846 C — - — IO: #1 Boiler cyclone-B outlet flue gas temperature (2) [TT-FG1096-B, STN101 AI0677, 0 ~ 1200 °C]
+- PIFG1009A1 — -82 mmH2O — - — cyclone; IO: #1 Boiler cyclone-A seal pot fluidized pressure (1) [PT-FG1009-A1, STN101 AI0146, -1000 ~ 10000 mmH2O]
+- PIFG1009B1 — -84 mmH2O — - — IO: #1 Boiler cyclone-B seal pot fluidized pressure (1) [PT-FG1009-B1, STN101 AI0147, -1000 ~ 10000 mmH2O]
+- PIFG1009A2 — 533 mmH2O — - — IO: #1 Boiler cyclone-A seal pot fluidized pressure (2) [PT-FG1009-A2, STN101 AI0401, -1000 ~ 10000 mmH2O]
+- PIFG1009B2 — 308 mmH2O — - — IO: #1 Boiler cyclone-B seal pot fluidized pressure (2) [PT-FG1009-B2, STN101 AI0402, -1000 ~ 10000 mmH2O]
+- TIFG1009A — 870 C — - — cyclone; rate 0.12 C/MIN; IO: #1 Boiler cyclone-A seal pot temperature [TT-FG1009-A, STN101 AI0594, 0 ~ 1200 °C]
+- TIFG1009B — 870 C — - — rate 0.00 C/MIN; IO: #1 Boiler cyclone-B seal pot temperature [TT-FG1009-B, STN101 AI0662, 0 ~ 1200 °C]
+- TIFG1100 — 861 C — - — IO: #1 Reheater-1 inlet flue gas temperature [TT-FG1100, STN104 AI0448, 0 ~ 900 °C]
+- TIFG1101 — 850 C — - — IO: #1 Finishing S/H-1 inlet flue gas temperature [TT-FG1101, STN104 AI0453, 0 ~ 900 °C]
+- TIFG1102 — 657 C — - — IO: #1 Reheater-2 inlet flue gas temperature [TT-FG1102, STN104 AI0449, 0 ~ 900 °C]
+- TIFG1103 — 691 C — - — IO: #1 Finishing S/H-2 inlet flue gas temperature [TT-FG1103, STN104 AI0454, 0 ~ 900 °C]
+- TIFG1104 — 504 C — - — IO: #1 Reheater-3 inlet flue gas temperature [TT-FG1104, STN104 AI0464, 0 ~ 600 °C]
+- TIFG1105 — 583 C — - — IO: #1 Finishing S/H-3 inlet flue gas temperature [TT-FG1105, STN104 AI0469, 0 ~ 900 °C]
+- TIFG1106 — 443 C — - — IO: #1 Reheater-4 inlet flue gas temperature [TT-FG1106, STN104 AI0465, 0 ~ 600 °C]
+- TIFG1107 — 501 C — - — IO: #1 ECO. #3 upper inlet flue gas temperature [TT-FG1107, STN104 AI0452, 0 ~ 600 °C]
+- TIFG1108 — 388 C — - — IO: #1 ECO. #2R inlet flue gas temperature [TT-FG1108, STN104 AI0450, 0 ~ 600 °C]
+- TIFG1109 — 425 C — - — IO: #1 ECO. #3 lower inlet flue gas temperature [TT-FG1109, STN104 AI0468, 0 ~ 600 °C]
+- TIFG1110 — 359 C — - — IO: #1 ECO. #2R outlet flue gas temperature [TT-FG1110, STN104 AI0466, 0 ~ 600 °C]
+- TIFG1111 — 383 C — - — IO: #1 ECO. #2S inlet flue gas temperature [TT-FG1111, STN104 AI0451, 0 ~ 600 °C]
+- TIFG1113 — 369 C — - — IO: #1 ECO. #2S outlet flue gas temperature [TT-FG1113, STN104 AI0467, 0 ~ 600 °C]
+- RH gas biasing damper — 11.6 % — - — → ABC HICHR1002A (ABC-020)
+- SH gas biasing damper — 88.1 % — - — → ABC HICHR1002B (ABC-020)
+- O2 (stack analyzer) — 4.0 % — -
+- NOx — 69 ppm / 136 mg/m3 — -
+- CO — 0 ppm / 595 mg/m3 — -
+- SOx — 39 ppm / 108 mg/m3 — -
+- OPA. — 12.5 % — - — opacity
+- PARTI. — 2.9 mg/m3 — -
+- FLOW (stack) — 21.5 M/Sec — -
+- TEMP (stack) — 50 C — -
+- O2 CONTROL — R-SV 3.5 — R — → ABC AICFG112 (ABC-002)
+- O2 BIAS — 0.00 % — -
+- CHANGE OVER DEVIATION — 0.0 % — -
+- HYDRAULIC COUPLING (IDF) — 46.1 % / 872 rpm — A — POS 100% and POS 0% shown green; → ABC PICFG108 (ABC-008)
+- FURNACE PRESS. CONTROL MODE — HYDRAULIC — -
+- TIFG1152 — 148 C — - — IDF inlet temp; IO: #1 Boiler IDF outlet to stack flue gas temp. [TT-FG1152, STN101 AI0593, 0 ~ 200 °C]
+- PIFG1151 — -7 mmH2O — - — IO: #1 Boiler IDF outlet flue gas pressure [PT-FG1151, STN101 AI0432, -600 ~ 600 mmH2O]
+- PIFG1121 — -233 mmH2O — - — IO: #1 Boiler air preheater inlet flue gas pressure [PT-FG1121, STN101 AI0162, -600 ~ 0 mmH2O]
+- TIFG1124 — 313 C — - — IO: #1 Boiler air preheater inlet flue gas temp. (A) [TT-FG1124, STN101 AI0658, 0 ~ 600 °C]
+- TIFG1125 — 317 C — - — IO: #1 Boiler air preheater inlet flue gas temp. (B) [TT-FG1125, STN101 AI0674, 0 ~ 600 °C]
+- AIFG1122 — 6.4 % — - — O2 before APH; → ABC AIFG1122 (ABC-002); IO: #1 Boiler air preheater inlet flue gas O2 analyzer (A) [AT-FG1122, STN101 AI0273, 0.0 ~ 25.0 %]
+- AIFG1123 — 2.2 % — - — O2 before APH; → ABC AIFG1123 (ABC-002); IO: #1 Boiler air preheater inlet flue gas O2 analyzer (B) [AT-FG1123, STN101 AI0433, 0.0 ~ 25.0 %]
+- TAF — 592.1 T/H — - — total air flow
+- DPIFG10525 — 113 mmH2O — - — APH gas side DP; IO: #1 Air preheater differential pressure [DPT-FG1052-5, STN101 AI0768, 0 ~ 3300 mmH2O]
+- PISB1040 — 0.0 kg/cm2 — - — IO: #1 Air preheater hot end steam pressure [PT-SB1040, STN102 AI0549, 0.0 ~ 16.0 kg/cm2]
+- PISB1042 — 0.0 kg/cm2 — - — IO: #1 Air preheater cold end steam pressure [PT-SB1042, STN102 AI0550, 0.0 ~ 16.0 kg/cm2]
+- PIFG1141A — -442 mmH2O — - — ESP inlet/outlet draft; IO: #1 Boiler E/P outlet to IDF flue gas pressure (1) [PT-FG1141-A, STN101 AI0416, -600 ~ 0 mmH2O]
+- PIFG1141B — -450 mmH2O — - — IO: #1 Boiler E/P outlet to IDF flue gas pressure (2) [PT-FG1141-B, STN101 AI0772, -600 ~ 0 mmH2O]
+- PCDFG10561 — 99.1 % — M — IDF inlet damper; → ABC PICFG108A (ABC-008); IO: #1 Boiler IDF inlet vane control damper [PCD-FG1056-1, STN101 AO0226, 0.0 ~ 100.0 %]
+- F-1056 IDF — 199.6 A — R — IIF1056 running
+- TIFA1087 — 289 C — - — hot SA temp; → ABC TIFA1087 (ABC-003A); IO: #1 Boiler air preheater outlet to furnace secondary air temp. (B) [TT-FA1087, STN101 AI0673, 0 ~ 600 °C]
+- TIFA1086 — 288 C — - — → ABC TIFA1086 (ABC-003A); IO: #1 Boiler air preheater outlet to furnace secondary air temp. (A) [TT-FA1086, STN101 AI0657, 0 ~ 600 °C]
+- PIFA1088 — 1273 mmH2O — - — hot secondary air pressure; → ABC PIFA1088 (ABC-003A); IO: #1 Boiler air preheater outlet to furnace secondary air pressure [PT-FA1088, STN101 AI0289, 0 ~ 3000 mmH2O]
+- TIFA1077 — 281 C — - — hot PA temp; → ABC TIFA1077 (ABC-006); IO: #1 Boiler air preheater outlet to furnace primary air temp. (B) [TT-FA1077, STN101 AI0672, 0 ~ 600 °C]
+- TIFA1076 — 282 C — - — → ABC TIFA1076 (ABC-006); IO: #1 Boiler air preheater outlet to furnace primary air temp. (A) [TT-FA1076, STN101 AI0656, 0 ~ 600 °C]
+- PIFA1078 — 1444 mmH2O — - — hot primary air pressure; IO: #1 Boiler air preheater outlet to furnace primary air pressure [PT-FA1078, STN101 AI0161, 0 ~ 3000 mmH2O]
+- PIFA1085 — 1427 mmH2O — - — → ABC PIFA1085 (ABC-057); IO: #1 Boiler SAF outlet to air preheater air pressure [PT-FA1085, STN101 AI0288, 0 ~ 3000 mmH2O]
+- FIFA1079 — 328.2 T/H — - — → ABC FIFA1079 (ABC-006); IO: #1 Boiler air preheater outlet to furnace primary air flow [FT-FA1079, STN101 AI0166, 0.0 ~ 510.0 T/H]
+- APH motor — 4.7 A — R
+- SAF FLOW CTL — R-SV 215.3 T/H — R — → ABC FICFA1081 (ABC-007)
+- FIFA1081 — 213.0 T/H — - — secondary air flow; → ABC FIFA1081 (ABC-002, ABC-006, ABC-007); IO: #1 Boiler SAF inlet air flow [FT-FA1081, STN101 AI0513, 0.0 ~ 432.0 T/H]
+- TIFA1082 — 31 C — - — SAF inlet temp; → ABC TIFA1082 (ABC-006); IO: #1 Boiler SAF inlet air temperature [TT-FA1082, STN101 AI0628, 0 ~ 100 °C]
+- MCVFA10541 — 37.1 % — R — SAF inlet damper; → ABC FICFA1081 (ABC-007); IO: #1 SAF inlet flow control damper [MCV-FA1054-1, STN101 AO0352, 0.0 ~ 100.0 %]
+- F-1054 SAF — 134.0 A — R — IIF1054 running
+- TIFA1083 — 55 C — - — IO: #1 Boiler SAF outlet to air preheater air temperature (A) [TT-FA1083, STN101 AI0577, 0 ~ 100 °C]
+- TIFA1084 — 55 C — - — IO: #1 Boiler SAF outlet to air preheater air temperature (B) [TT-FA1084, STN101 AI0625, 0 ~ 100 °C]
+- PIFA1075 — 1551 mmH2O — - — PAF discharge pressure; IO: #1 Boiler PAF outlet to air preheater air pressure [PT-FA1075, STN101 AI0160, 0 ~ 3000 mmH2O]
+- PAF FLOW CTL — R-SV 354.6 T/H — R — → ABC FICFA1071 (ABC-007)
+- FIFA1071 — 354.0 T/H — - — primary air flow; → ABC FIFA1071 (ABC-006, ABC-007); IO: #1 Boiler PAF inlet air flow [FT-FA1071, STN101 AI0484, 0.0 ~ 648.0 T/H]
+- TIFA1072 — 30 C — - — PAF inlet temp; → ABC TIFA1072 (ABC-006); IO: #1 Boiler PAF inlet air temperature [TT-FA1072, STN101 AI0580, 0 ~ 100 °C]
+- MCVFA10531 — 35.6 % — R — PAF inlet damper; → ABC FICFA1071 (ABC-007); IO: #1 PAF inlet flow control damper [MCV-FA1053-1, STN101 AO0224, 0.0 ~ 100.0 %]
+- F-1053 PAF — 253.6 A — R — IIF1053 running
+- TIFA1074 — 62 C — - — IO: #1 Boiler PAF outlet to air preheater air temperature (B) [TT-FA1074, STN101 AI0624, 0 ~ 100 °C]
+- TIFA1073 — 61 C — - — IO: #1 Boiler PAF outlet to air preheater air temperature (A) [TT-FA1073, STN101 AI0576, 0 ~ 100 °C]
+- AIFG1131 — 19.2 % — - — IO: #1 Boiler air preheater outlet flue gas O2 analyzer [AT-FG1131, STN101 AI0455, 0.0 ~ 25.0 %]
+- TIFG1132 — 146 C — - — IO: #1 Boiler air preheater outlet to E/P flue gas temp. (A) [TT-FG1132, STN101 AI0578, 0 ~ 200 °C]
+- TIFG1133 — 134 C — - — IO: #1 Boiler air preheater outlet to E/P flue gas temp. (B) [TT-FG1133, STN101 AI0626, 0 ~ 200 °C]
+- PIFG1134 — -372 mmH2O — - — IO: #1 Boiler air preheater outlet to EP flue gas pressure [PT-FG1134, STN101 AI0163, -600 ~ 0 mmH2O]
+- PAF FLOW BIAS — -30.0 T/H — -
+- LOP-A (PAF) — stopped (green) — R A
+- LOP-B (PAF) — running (red) — R M
+- FURNACE TOTAL TEMP AVERAGE — 937 C — -
+- FURNACE UPPER TEMP AVERAGE — 941 C — -
+- FURNACE LOWER TEMP AVERAGE — 933 C — - — rate 0.12 C/MIN
+- FURNACE UPPER TEMP rate — -0.36 C/MIN — -
+
+## 8.PNG — 008 PRIMARY/SECONDARY AIR
+- Oras: 12/1/2023 9:32 (Windows taskbar clock)
+- Header: MSP 122.0 K, MST 540 C, MSF 476.2 T/H, RHP 34.1 K, RHT 542 C, COAL 89.6 T/H, PWR 150.3 MW
+- Tala: Furnace front/rear wall damper mode AUTO. Upper dampers ~25 % (auto demand 25.0), lower ~49 % (auto demand 49.0); MCVFA1018 0.5 % (L, TQ) at MCVFA1005/1009 may TQ (magenta).
+
+- FURNACE UPPER DAMPER BIAS — 0.0 % — -
+- FRONT/REAR UPPER DAMPER AUTO DEMAND — 25.0 % — -
+- FURNACE LOWER DAMPER BIAS — 4.0 % — -
+- FRONT/REAR LOWER DAMPER AUTO DEMAND — 49.0 % — -
+- PIFA1088 — 1251 mmH2O — - — hot SA pressure; → ABC PIFA1088 (ABC-003A); IO: #1 Boiler air preheater outlet to furnace secondary air pressure [PT-FA1088, STN101 AI0289, 0 ~ 3000 mmH2O]
+- TIFA1086 — 288 C — - — → ABC TIFA1086 (ABC-003A); IO: #1 Boiler air preheater outlet to furnace secondary air temp. (A) [TT-FA1086, STN101 AI0657, 0 ~ 600 °C]
+- TIFA1087 — 289 C — - — → ABC TIFA1087 (ABC-003A); IO: #1 Boiler air preheater outlet to furnace secondary air temp. (B) [TT-FA1087, STN101 AI0673, 0 ~ 600 °C]
+- TIFA1076 — 282 C — - — → ABC TIFA1076 (ABC-006); IO: #1 Boiler air preheater outlet to furnace primary air temp. (A) [TT-FA1076, STN101 AI0656, 0 ~ 600 °C]
+- TIFA1077 — 281 C — - — → ABC TIFA1077 (ABC-006); IO: #1 Boiler air preheater outlet to furnace primary air temp. (B) [TT-FA1077, STN101 AI0672, 0 ~ 600 °C]
+- PIFA1078 — 1458 mmH2O — - — hot PA pressure; IO: #1 Boiler air preheater outlet to furnace primary air pressure [PT-FA1078, STN101 AI0161, 0 ~ 3000 mmH2O]
+- DPIFG10525 — 120 mmH2O — - — IO: #1 Air preheater differential pressure [DPT-FG1052-5, STN101 AI0768, 0 ~ 3300 mmH2O]
+- APH motor — 4.6 A — R
+- PIFA1085 — 1417 mmH2O — - — → ABC PIFA1085 (ABC-057); IO: #1 Boiler SAF outlet to air preheater air pressure [PT-FA1085, STN101 AI0288, 0 ~ 3000 mmH2O]
+- TIFA1084 — 55 C — - — IO: #1 Boiler SAF outlet to air preheater air temperature (B) [TT-FA1084, STN101 AI0625, 0 ~ 100 °C]
+- TIFA1083 — 55 C — - — IO: #1 Boiler SAF outlet to air preheater air temperature (A) [TT-FA1083, STN101 AI0577, 0 ~ 100 °C]
+- PIFA1075 — 1568 mmH2O — - — IO: #1 Boiler PAF outlet to air preheater air pressure [PT-FA1075, STN101 AI0160, 0 ~ 3000 mmH2O]
+- TIFA1074 — 62 C — - — IO: #1 Boiler PAF outlet to air preheater air temperature (B) [TT-FA1074, STN101 AI0624, 0 ~ 100 °C]
+- TIFA1073 — 61 C — - — IO: #1 Boiler PAF outlet to air preheater air temperature (A) [TT-FA1073, STN101 AI0576, 0 ~ 100 °C]
+- FIFA1081 — 216.1 T/H — - — SA flow; → ABC FIFA1081 (ABC-002, ABC-006, ABC-007); IO: #1 Boiler SAF inlet air flow [FT-FA1081, STN101 AI0513, 0.0 ~ 432.0 T/H]
+- TIFA1082 — 31 C — - — → ABC TIFA1082 (ABC-006); IO: #1 Boiler SAF inlet air temperature [TT-FA1082, STN101 AI0628, 0 ~ 100 °C]
+- MCVFA10541 — 37.1 % — R — SAF inlet damper; → ABC FICFA1081 (ABC-007); IO: #1 SAF inlet flow control damper [MCV-FA1054-1, STN101 AO0352, 0.0 ~ 100.0 %]
+- F-1054 SAF — 135.8 A — R
+- FIFA1071 — 353.6 T/H — - — PA flow; → ABC FIFA1071 (ABC-006, ABC-007); IO: #1 Boiler PAF inlet air flow [FT-FA1071, STN101 AI0484, 0.0 ~ 648.0 T/H]
+- TIFA1072 — 30 C — - — → ABC TIFA1072 (ABC-006); IO: #1 Boiler PAF inlet air temperature [TT-FA1072, STN101 AI0580, 0 ~ 100 °C]
+- MCVFA10531 — 35.6 % — R — PAF inlet damper; → ABC FICFA1071 (ABC-007); IO: #1 PAF inlet flow control damper [MCV-FA1053-1, STN101 AO0224, 0.0 ~ 100.0 %]
+- F-1053 PAF — 256.3 A — R
+- MCVFA1019 — 25.5 % — R A — rear wall upper SA damper; → ABC HICFA1019 (ABC-016); IO: #1 Furnace temp. rear wall motor control damper FA1019 demand control [MCV-FA1019, STN103 AO0576, 0.0 ~ 100.0 %]
+- MCVFA1021 — 24.6 % — R A — rear wall upper; → ABC HICFA1021 (ABC-016); IO: #1 Furnace temp. rear wall motor control damper FA1021 demand control [MCV-FA1021, STN103 AO0577, 0.0 ~ 100.0 %]
+- MCVFA1023 — 23.5 % — R A — rear wall upper; → ABC HICFA1023 (ABC-016); IO: #1 Furnace temp. rear wall motor control damper FA1023 demand control [MCV-FA1023, STN103 AO0578, 0.0 ~ 100.0 %]
+- MCVFA1025 — 25.4 % — R A — rear wall upper; → ABC HICFA1025 (ABC-016); IO: #1 Furnace temp. rear wall motor control damper FA1025 demand control [MCV-FA1025, STN103 AO0579, 0.0 ~ 100.0 %]
+- MCVFA1020 — 49.1 % — R A — rear wall lower; → ABC HICFA1020 (ABC-016); IO: #1 Furnace temp. rear wall motor control damper FA1020 demand control [MCV-FA1020, STN103 AO0880, 0.0 ~ 100.0 %]
+- MCVFA1022 — 48.7 % — R A — rear wall lower; → ABC HICFA1022 (ABC-016); IO: #1 Furnace temp. rear wall motor control damper FA1022 demand control [MCV-FA1022, STN103 AO0881, 0.0 ~ 100.0 %]
+- MCVFA1024 — 48.7 % — R A — rear wall lower; → ABC HICFA1024 (ABC-016); IO: #1 Furnace temp. rear wall motor control damper FA1024 demand control [MCV-FA1024, STN103 AO0882, 0.0 ~ 100.0 %]
+- MCVFA1026 — 48.3 % — R A — rear wall lower; → ABC HICFA1026 (ABC-016); IO: #1 Furnace temp. rear wall motor control damper FA1026 demand control [MCV-FA1026, STN103 AO0883, 0.0 ~ 100.0 %]
+- TIFG1091G — 939 C — - — → ABC TIFG1091G (ABC-026); IO: #1 Furnace lower layer above temp. (G) [TT-FG1091-G, STN103 AI0848, 0 ~ 1200 °C]
+- TIFG1091H — 926 C — - — → ABC TIFG1091H (ABC-026); IO: #1 Furnace lower layer above temp. (H) [TT-FG1091-H, STN103 AI0849, 0 ~ 1200 °C]
+- TIFG1091I — 926 C — - — → ABC TIFG1091I (ABC-026); IO: #1 Furnace lower layer above temp. (I) [TT-FG1091-I, STN103 AI0850, 0 ~ 1200 °C]
+- TIFG1090G — 938 C — - — → ABC TIFG1090G (ABC-027); IO: #1 Furnace lower layer under temp. (G) [TT-FG1090-G, STN103 AI0864, 0 ~ 1200 °C]
+- TIFG1090H — 919 C — - — → ABC TIFG1090H (ABC-027); IO: #1 Furnace lower layer under temp. (H) [TT-FG1090-H, STN103 AI0865, 0 ~ 1200 °C]
+- TIFG1090I — 910 C — - — → ABC TIFG1090I (ABC-027); IO: #1 Furnace lower layer under temp. (I) [TT-FG1090-I, STN103 AI0866, 0 ~ 1200 °C]
+- MCVFA1005 — 24.9 % — R A TQ (magenta) — front wall upper; → ABC HICFA1005 (ABC-015); IO: #1 Furnace temp. front wall motor control damper FA1005 demand control [MCV-FA1005, STN103 AO0592, 0.0 ~ 100.0 %]
+- MCVFA1007 — 25.3 % — R A — front wall upper; → ABC HICFA1007 (ABC-015); IO: #1 Furnace temp. front wall motor control damper FA1007 demand control [MCV-FA1007, STN103 AO0593, 0.0 ~ 100.0 %]
+- MCVFA1009 — 21.2 % — R A TQ (magenta) — front wall upper; → ABC HICFA1009 (ABC-015); IO: #1 Furnace temp. front wall motor control damper FA1009 demand control [MCV-FA1009, STN103 AO0594, 0.0 ~ 100.0 %]
+- MCVFA1011 — 25.3 % — R A — front wall upper; → ABC HICFA1011 (ABC-015); IO: #1 Furnace temp. front wall motor control damper FA1011 demand control [MCV-FA1011, STN103 AO0595, 0.0 ~ 100.0 %]
+- MCVFA1013 — 24.2 % — R A — front wall upper; → ABC HICFA1013 (ABC-015); IO: #1 Furnace temp. front wall motor control damper FA1013 demand control [MCV-FA1013, STN103 AO0596, 0.0 ~ 100.0 %]
+- MCVFA1015 — 24.3 % — R A — front wall upper; → ABC HICFA1015 (ABC-015); IO: #1 Furnace temp. front wall motor control damper FA1015 demand control [MCV-FA1015, STN103 AO0597, 0.0 ~ 100.0 %]
+- MCVFA1017 — 25.1 % — R A — front wall upper; → ABC HICFA1017 (ABC-016); IO: #1 Furnace temp. front wall motor control damper FA1017 demand control [MCV-FA1017, STN103 AO0598, 0.0 ~ 100.0 %]
+- MCVFA1006 — 49.2 % — R A — front wall lower; → ABC HICFA1006 (ABC-015); IO: #1 Furnace temp. front wall motor control damper FA1006 demand control [MCV-FA1006, STN103 AO0944, 0.0 ~ 100.0 %]
+- MCVFA1008 — 49.1 % — R A — front wall lower; → ABC HICFA1008 (ABC-015); IO: #1 Furnace temp. front wall motor control damper FA1008 demand control [MCV-FA1008, STN103 AO0945, 0.0 ~ 100.0 %]
+- MCVFA1010 — 48.5 % — R A — front wall lower; → ABC HICFA1010 (ABC-015); IO: #1 Furnace temp. front wall motor control damper FA1010 demand control [MCV-FA1010, STN103 AO0946, 0.0 ~ 100.0 %]
+- MCVFA1012 — 48.8 % — R A — front wall lower; → ABC HICFA1012 (ABC-015); IO: #1 Furnace temp. front wall motor control damper FA1012 demand control [MCV-FA1012, STN103 AO0947, 0.0 ~ 100.0 %]
+- MCVFA1014 — 49.4 % — R A — front wall lower; → ABC HICFA1014 (ABC-015); IO: #1 Furnace temp. front wall motor control damper FA1014 demand control [MCV-FA1014, STN103 AO0948, 0.0 ~ 100.0 %]
+- MCVFA1016 — 49.0 % — R A — front wall lower; → ABC HICFA1016 (ABC-015); IO: #1 Furnace temp. front wall motor control damper FA1016 demand control [MCV-FA1016, STN103 AO0949, 0.0 ~ 100.0 %]
+- MCVFA1018 — 0.5 % — L A TQ (magenta) — front wall lower; L = local; → ABC HICFA1018 (ABC-016); IO: #1 Furnace temp. front wall motor control damper FA1018 demand control [MCV-FA1018, STN103 AO0950, 0.0 ~ 100.0 %]
+- TIFG1091A — 957 C — - — → ABC TIFG1091A (ABC-026); IO: #1 Furnace lower layer above temp. (A) [TT-FG1091-A, STN103 AI0816, 0 ~ 1200 °C]
+- TIFG1091B — 956 C — - — → ABC TIFG1091B (ABC-026); IO: #1 Furnace lower layer above temp. (B) [TT-FG1091-B, STN103 AI0817, 0 ~ 1200 °C]
+- TIFG1091C — 955 C — - — → ABC TIFG1091C (ABC-026); IO: #1 Furnace lower layer above temp. (C) [TT-FG1091-C, STN103 AI0818, 0 ~ 1200 °C]
+- TIFG1091D — 951 C — - — → ABC TIFG1091D (ABC-026); IO: #1 Furnace lower layer above temp. (D) [TT-FG1091-D, STN103 AI0819, 0 ~ 1200 °C]
+- TIFG1091E — 920 C — - — → ABC TIFG1091E (ABC-026); IO: #1 Furnace lower layer above temp. (E) [TT-FG1091-E, STN103 AI0820, 0 ~ 1200 °C]
+- TIFG1091F — 943 C — - — → ABC TIFG1091F (ABC-026); IO: #1 Furnace lower layer above temp. (F) [TT-FG1091-F, STN103 AI0821, 0 ~ 1200 °C]
+- TIFG1090A — 928 C — - — → ABC TIFG1090A (ABC-027); IO: #1 Furnace lower layer under temp. (A) [TT-FG1090-A, STN103 AI0832, 0 ~ 1200 °C]
+- TIFG1090B — 944 C — - — → ABC TIFG1090B (ABC-027); IO: #1 Furnace lower layer under temp. (B) [TT-FG1090-B, STN103 AI0833, 0 ~ 1200 °C]
+- TIFG1090C — 960 C — - — → ABC TIFG1090C (ABC-027); IO: #1 Furnace lower layer under temp. (C) [TT-FG1090-C, STN103 AI0834, 0 ~ 1200 °C]
+- TIFG1090D — 941 C — - — → ABC TIFG1090D (ABC-027); IO: #1 Furnace lower layer under temp. (D) [TT-FG1090-D, STN103 AI0835, 0 ~ 1200 °C]
+- TIFG1090E — 933 C — - — → ABC TIFG1090E (ABC-027); IO: #1 Furnace lower layer under temp. (E) [TT-FG1090-E, STN103 AI0836, 0 ~ 1200 °C]
+- TIFG1090F — 930 C — - — → ABC TIFG1090F (ABC-027); IO: #1 Furnace lower layer under temp. (F) [TT-FG1090-F, STN103 AI0837, 0 ~ 1200 °C]
+
+## 9.png — 009 FLUIDIZING AIR SYSTEM
+- Oras: 2023.10.18 10:40:32 (alarm line 10/18/2023 10:39:23 102-WB097 LPH#2 drain water flow FIQHD1102 SIGNAL ABNORMAL)
+- Header: MSP 122.7 K, MST 540 C, MSF 476.4 T/H, RHP 33.9 K, RHT 542 C, COAL 86.7 T/H, PWR 150.3 MW
+- Tala: FA blower A tumatakbo (37.3 A), B standby. Fluidizing air papunta sa seal pot A/B ng cyclone.
+
+- TIFG1095A — 914 C — - — cyclone A outlet; IO: #1 Boiler cyclone-A outlet flue gas temperature (1) [TT-FG1095-A, STN101 AI0660, 0 ~ 1200 °C]
+- TIFG1096A — 910 C — - — cyclone A outlet; IO: #1 Boiler cyclone-A outlet flue gas temperature (2) [TT-FG1096-A, STN101 AI0676, 0 ~ 1200 °C]
+- CYCLONE A OUTLET AVG — 912 C — - — rate -0.12 C/MIN
+- TIFG1095B — 891 C — - — cyclone B outlet; IO: #1 Boiler cyclone-B outlet flue gas temperature (1) [TT-FG1095-B, STN101 AI0661, 0 ~ 1200 °C]
+- TIFG1096B — 870 C — - — IO: #1 Boiler cyclone-B outlet flue gas temperature (2) [TT-FG1096-B, STN101 AI0677, 0 ~ 1200 °C]
+- CYCLONE B OUTLET AVG — 881 C — - — rate 0.00 C/MIN
+- PIFG1009A1 — -84 mmH2O — - — seal pot A; IO: #1 Boiler cyclone-A seal pot fluidized pressure (1) [PT-FG1009-A1, STN101 AI0146, -1000 ~ 10000 mmH2O]
+- PIFG1009A2 — 465 mmH2O — - — seal pot A; IO: #1 Boiler cyclone-A seal pot fluidized pressure (2) [PT-FG1009-A2, STN101 AI0401, -1000 ~ 10000 mmH2O]
+- TIFG1009A — 880 C — - — seal pot A; rate -0.36 C/MIN; IO: #1 Boiler cyclone-A seal pot temperature [TT-FG1009-A, STN101 AI0594, 0 ~ 1200 °C]
+- PIFG1009B1 — -86 mmH2O — - — seal pot B; IO: #1 Boiler cyclone-B seal pot fluidized pressure (1) [PT-FG1009-B1, STN101 AI0147, -1000 ~ 10000 mmH2O]
+- PIFG1009B2 — 382 mmH2O — - — seal pot B; IO: #1 Boiler cyclone-B seal pot fluidized pressure (2) [PT-FG1009-B2, STN101 AI0402, -1000 ~ 10000 mmH2O]
+- TIFG1009B — 840 C — - — seal pot B; rate 0.00 C/MIN; IO: #1 Boiler cyclone-B seal pot temperature [TT-FG1009-B, STN101 AI0662, 0 ~ 1200 °C]
+- FIFA1055 — 26.3 T/H — - — fluidizing air flow; → ABC FIFA1055 (ABC-002, ABC-006, ABC-014); IO: #1 Boiler FA-blower outlet common air flow [FT-FA1055, STN101 AI0545, 0.0 ~ 35.0 T/H]
+- F-1055A FA BLOWER-A — 37.3 A — R M — running (IIF1055A)
+- F-1055B FA BLOWER-B — 0.0 A — R A — standby (IIF1055B)
+- FCVFA1055A1 — 42.8 % — A — FA blower A inlet flow control; → ABC FICFA1055A (ABC-014); IO: #1 Boiler FA blower-A inlet flow control damper [FCV-FA1055-A1, STN101 AO0228, 0.0 ~ 100.0 %]
+- FCVFA1055B1 — 24.9 % — M — FA blower B inlet flow control; → ABC FICFA1055B (ABC-014); IO: #1 Boiler FA blower-B inlet flow control damper [FCV-FA1055-B1, STN101 AO0355, 0.0 ~ 100.0 %]
+- XVFA1055A2 — closed (green) — A — FA-A blow-off to silencer; no ABC controller found; IO: #1 Boiler FA blower-A to silencer solenoid valve close command [XV-FA1055-A2, STN101 O.0168]
+- XVFA1055B2 — open (red) — A — FA-B blow-off to silencer; no ABC controller found; IO: #1 Boiler FA blower-B to silencer solenoid valve close command [XV-FA1055-B2, STN101 O.0208]
+- XVFA1055A3 — open (red) — A — FA-A discharge; no ABC controller found; IO: #1 Boiler FA blower-A outlet flow solenoid valve close command [XV-FA1055-A3, STN101 O.0169]
+- XVFA1055B3 — closed (green) — A — FA-B discharge; no ABC controller found; IO: #1 Boiler FA blower-B outlet flow solenoid valve close command [XV-FA1055-B3, STN101 O.0209]
+- PIFA1055A — 3257 mmH2O — - — FA-A discharge pressure; IO: #1 Boiler FA blower-A outlet air pressure [PT-FA1055-A, STN101 AI0294, 0 ~ 10000 mmH2O]
+- PIFA1055B — 3315 mmH2O — - — FA-B discharge pressure; IO: #1 Boiler FA blower-B outlet air pressure [PT-FA1055-B, STN101 AI0417, 0 ~ 10000 mmH2O]
+- TIFA1055A — 81 C — - — → ABC TIFA1055A (ABC-006); IO: #1 Boiler FA-blower-A outlet air temperature [TT-FA1055-A, STN101 AI0579, 0 ~ 200 °C]
+- TIFA1055B — 76 C — - — → ABC TIFA1055B (ABC-006); IO: #1 Boiler FA-blower-B outlet air temperature [TT-FA1055-B, STN101 AI0627, 0 ~ 200 °C]
+
+## AIRFLUEGAS_HMIDRAFT.PNG — 07.LMYP#1 AIR/FLUE GAS SYSTEM (HMI draft)
+- Oras: not shown
+- Header: MSP 99999 K (placeholder), MST 999 C (placeholder), MSF 99999 T/H (placeholder), RHP 9999 K (placeholder), RHT 999 C (placeholder), COAL 99999 T/H (placeholder), PWR 99999 MW (placeholder)
+- Tala: DRAFT ng graphic (bagong HMI build): lahat ng value ay 9999 placeholder, walang operating value. Gamitin lang para sa layout/tag list, hindi para sa operating point.
+- (walang operating value: draft / placeholder lang)
+
+## COALFEEDERSYSTEM_HMIDRAFT.PNG — 11.LMYP#1 COAL FEEDER SYSTEM (HMI draft)
+- Oras: not shown
+- Header: all placeholders (99999 / 999)
+- Tala: DRAFT: lahat ng value ay 9999 placeholder. Pareho ang tag sa 11.png (MICL1061A/B/C, LICL1008A/B/C, XVCL1061A/B/C, COAL MASTER CONTROL, TOTAL COAL FLOW CORRECT.). Walang operating value.
+- (walang operating value: draft / placeholder lang)
+
+## CONDENSATESYSTEM_HMIDRAFT.PNG — 28.LMYP#1 CONDENSATE SYSTEM (HMI draft)
+- Oras: not shown
+- Header: all placeholders (99999 / 999)
+- Tala: DRAFT: lahat ng value ay 9999 placeholder (PIST11101 ay 99.999). Pareho ang tag sa 28.png. Walang operating value.
+- (walang operating value: draft / placeholder lang)
+
+## FEEDWATERPREHEATING_HMIDRAFT.PNG — 02.LMYP#1 FEED WATER PREHEATING (HMI draft)
+- Oras: not shown
+- Header: all placeholders (99999 / 999)
+- Tala: DRAFT: lahat ng value ay 9999 placeholder (MVMU1001 99.99). Pareho ang tag sa 02.png. Walang operating value.
+- (walang operating value: draft / placeholder lang)
+
+## MAINWATERSTEAM_HMIDRAFT.PNG — 03.LMYP#1 MAIN WATER/STEAM (HMI draft)
+- Oras: not shown
+- Header: all placeholders (99999 / 999)
+- Tala: DRAFT: lahat ng value ay 9999 placeholder. Pareho ang tag sa 03.png; may dagdag na text na "DRUM LEVEL HH BYPASS(10MINs)" at "52G1 OPENED HOUSE OPERATION ON". Walang operating value.
+- (walang operating value: draft / placeholder lang)
+
+## P35SHAFT.JPG — 035 SHAFT MONITOR
+- Oras: not shown
+- Header: MSP 121.7 K, MST 539 C, MSF 380.2 T/H, RHP 31.0 K, RHT 538 C, COAL 84.8 T/H, PWR 130.0 MW
+- Tala: Part load ~130 MW. Turbine 3596-3597 rpm; turning gear disengaged (pulang check = totoo).
+
+- PIIA1128 — 7.4 kg/cm2 — - — turning gear IA buffer tank T-1128; IO: #1 Air buffer tank of turning gear pressure [PT-IA1128, STN104 AI0437, 0.0 ~ 10.0 kg/cm2]
+- ZIST1004 — 0.00 mm — - — low speed eccentricity
+- SIST10011~13 — A 3596 / B 3596 / C 3597 rpm — - — turbine speed
+- ZIST1001 — 24.9 mm — - — shell expansion
+- ZIST10021 — -2.4 mm — - — diff. expansion
+- ZIST10022 — -2.4 mm — - — diff. expansion
+- TIST10111 — 54 C — - — front-end thrust brg
+- TIST10112 — 55 C — -
+- TIST10121 — 63 C — - — rear-end thrust brg
+- TIST10122 — 60 C — -
+- ZIST10031 — -0.26 mm — - — rotor position
+- ZIST10032 — -0.25 mm — -
+- ZIST10033 — -0.25 mm — -
+- TIST1009 — 91 C — -
+- VIST10011 — 0.033 mm — - — vibration
+- VIST10012 — 0.035 mm — -
+- TIST1010 — 102 C — -
+- VIST10021 — 0.038 mm — -
+- VIST10022 — 0.028 mm — -
+- TIGE1001 — 80 C — -
+- VIGE10011 — 0.016 mm — -
+- VIGE10012 — 0.016 mm — -
+- TIGE10041 — 39 C — - — generator cooling air
+- TIGE10042 — 38 C — -
+- TIGE10043 — 43 C — -
+- TIGE10044 — 44 C — -
+- TIGE1005 — 80 C — -
+- TIGE1002 — 78 C — -
+- VIGE10021 — 0.063 mm — -
+- VIGE10022 — 0.037 mm — -
+- TIGE10061 — 81 C — - — stator coil
+- TIGE10062 — 84 C — -
+- TIGE10063 — 81 C — -
+- TIGE10064 — 83 C — -
+- TIGE10065 — 79 C — -
+- TIGE10066 — 84 C — -
+
+## P35SHAFT2.JPG — 035 SHAFT MONITOR (Graphic Define editor, draft)
+- Oras: not shown
+- Header: all placeholders (99999 / 999)
+- Tala: Graphic editor screen ("Graphic Define [0035]"): lahat 99999 placeholder. Pareho ang tag sa P35SHAFT.JPG. Walang operating value.
+- (walang operating value: draft / placeholder lang)
+
+## SCSHOT.JPG — 010 FURNACE PURGE
+- Oras: 2/6/2024 15:37 (Windows taskbar clock)
+- Header: MSP 0.3 K, MST 75 C, MSF 18.0 T/H, RHP 0.7 K, RHT 109 C, COAL 0.0 T/H, PWR 0.4 MW
+- Tala: Unit naka-shutdown / MFT (MASTER FUEL TRIP pula). Dito makikita ang kahulugan ng check: PULANG CHECK = TOTOO (1), BERDENG X = HINDI (0) (hal. "IDF RUNNING" pula at "IDF STOP" berde; "PAF STOP" pula at "PAF RUNNING" berde).
+
+- FURNACE PURGE — NO OK — - — step 2 present state
+- PURGE READY — 0 (green X) — -
+- FURNACE PURGE TIME — 0 MIN 0 SEC — -
+- STEP1 TRUE (red check) — IDF RUNNING; ALL COAL FEEDER STOP; ALL BURNER NO FLAME; ALL BNR OIL VALVES CLOSE; ALL COAL FEEDER OUTLET ISOLATION VALVES CLOSE; LIMESTONE FEEDER ROTARY VALVE STOP; R/H DAMPER POS >= 30%; S/H DAMPER POS >= 60%; CYCLONE OUTLET GAS TEMP NOT H.H.; REHEATER OUTLET HEADER TEMP NOT H.H. — -
+- STEP1 FALSE (green X) — TOTAL AIR FLOW > 25% MCR; SAF RUNNING; ANY FA BLOWER RUNNING; PAF RUNNING; NO BOILER TRIP COMMAND — -
+- BOILER FUEL TRIP CONDITION TRUE — PAF STOP; SAF STOP; TOTAL AIR FLOW < 25% MCR; ALL FA BLOWER STOP; PRIMARY AIR FLOW L.L.; ALL BNR OIL VALVES CLOSE; TURBINE TRIP — -
+- BOILER FUEL TRIP FIRST OUT — TURBINE TRIP (red check) — -

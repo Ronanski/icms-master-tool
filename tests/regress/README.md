@@ -18,6 +18,9 @@ Headless (Playwright + Chromium) checks of `dist/logic-sim-vX.Y.Z.html` (default
 | `node tests/regress/overview.js [html]` | Operator tab: overview ng controllers, isang faceplate kapag pinili, force list (FORCE 0 ng M.0228 sa ABC-010 → AUTO), release | ~30 s |
 | `node tests/regress/infocard.js [html]` | info card ng search: M.0228 (OR, 2 reader, force manual FICFW1007), M.3410 (4 lugar, link mula ABC-004A, HS-COAL, TO DITL 07-05), read only | ~30 s |
 | `node tests/regress/events.js [html]` | event log: FORCE 0 sa M.0228 (ABC-010) → FM event, pindot A → MODE FICFW1007 → AUTO, drawer | ~30 s |
+| `node tests/regress/manstation.js [html]` | faceplate ng MAN station: tunay na tag, ▲ 0.1 % / ▲▲ 1 %, hold-to-ramp, walang keyboard sa touch | ~30 s |
+| `node tests/regress/stale_beta.js [html]` | lumang naka-save na Beta (mas luma sa app) ay hindi binubuksan; ang Beta ay kumukuha ng pinakabago | ~30 s |
+| `node tests/regress/hmi_op.js [html]` | plant model vs HMI snapshot: sa MV ng snapshot, PV = PV ng snapshot (±2 % ng range) | ~3 min |
 | `node tests/regress/world.js [html]` | iisang mundo ABC + DITL: OFF = dating gawi; ON = lahat ng reference may katapat, ABC input = DITL output, DITL row = ABC net, kadena DITL → ABC, bilis ng scan | ~1 min |
 | `node tests/regress/closure.js html out.json` | loop closure of every PID with its plant model (P-4), 900 s | ~1 min |
 | `node tests/regress/diff.js old.html ... new.html` | the same seeded inputs on every sheet for several builds; lists the sheets whose nets differ. `--neutral` zeroes dMVH / TF / CUT on the last build (isolates F-31); `--hold=SECONDS` adds a steady-state state | 1 ~ 6 min |

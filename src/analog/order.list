@@ -9,6 +9,7 @@ engine/face-defaults.js
 engine/compile-step.js
 engine/ranges-fx.js
 engine/plant.js
+engine/hmi-op.js
 engine/sheets.js
 engine/links.js
 ui/main.js

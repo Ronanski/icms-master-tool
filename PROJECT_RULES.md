@@ -104,7 +104,9 @@ Before reporting completion:
 ## 5f. Version standard (user, 2026-10-15: "istandard natin"; SemVer)
 - Format: `MAJOR.MINOR.PATCH` for Stable and `MAJOR.MINOR.PATCH-beta.N` for Beta (example: Stable `1.21.0`, Beta `1.21.0-beta.7`). The html is `dist/logic-sim-v<version>.html`.
 - The Stable number moves ONLY at a Stable release (GO STABLE). Between two Stables every push is a Beta of the NEXT Stable: only `N` goes up (`-beta.1`, `-beta.2`, ...). Never use up a patch number for a Beta push (this is why v1.20.38 became v1.20.67 in two days: wrong).
-- MINOR (`1.20.x` -> `1.21.0`): something new that the user sees or a behaviour change (new faceplate, new UAT, new rule). PATCH (`1.21.0` -> `1.21.1`): fixes only. MAJOR: only for an incompatible change (reserved).
+- MINOR (`1.20.x` -> `1.21.0`): something new that the user sees or a behaviour change (new faceplate, new UAT, new rule). PATCH (`1.21.0` -> `1.21.1`): fixes only. MAJOR (`1.x` -> `2.0.0`): a new generation of the app (whole new look and workflow, or a change that does not work with old saved data). User, 2026-10-15: "standard tayo, baka umabot ng v1.9999": the Console look + English app text is `2.0.0`.
+- A Stable that has fixes only is a PATCH (`2.0.1`), not a MINOR. Batch the new features of several Betas into one MINOR Stable; do not release a MINOR for every small change.
+- Language: the app text (buttons, labels, messages, tests shown in the app) is professional English; the chat and the docs stay Taglish (user, 2026-10-15).
 - Release: before GO STABLE, set `src/version.txt` to the Stable number (no `-beta.N`), build, then merge and run `release.yml` with `GO v<version>`; the workflow refuses a version that has `-beta`.
 - The in-app update check compares in SemVer order: `1.21.0-beta.2` > `1.21.0-beta.1`, and `1.21.0` > any `1.21.0-beta.N`.
 - Reports: one folder per TARGET version, `docs/versions/v<MAJOR.MINOR.PATCH>/UPDATE_REPORT.md`, with a section per Beta (`beta.N`); the release report PDF is made at the Stable only. Folders `v1.20.60` ~ `v1.20.67` are the history before this standard (= the work of `1.21.0-beta.1`).

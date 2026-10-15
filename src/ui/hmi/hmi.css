@@ -85,3 +85,18 @@ body.ophmi #anp{display:none!important}
 #evbox .evr{display:flex;gap:10px;padding:3px 10px;border-bottom:1px solid #141b21}
 #evbox .tm{color:#7d8e9a;width:56px;flex:none}#evbox .kd{width:44px;flex:none;font-weight:700}#evbox .sh{width:70px;flex:none;color:#9fb0bd}
 #evbox .k-MODE .kd{color:#9ff0c4}#evbox .k-FM .kd{color:#ffd78a}#evbox .k-ALM .kd,#evbox .k-TRIP .kd{color:#ff8a8a}#evbox .k-RTN .kd,#evbox .k-RST .kd{color:#9fb0bd}
+/* 2.0.0: manual station faceplate (manual loader) and step buttons */
+#opp .fpman .mlr{display:flex;gap:10px;align-items:stretch}
+#opp .fpman .mlb{width:22px;min-height:110px;background:#0b1217;border:1px solid #243642;position:relative;flex:none}
+#opp .fpman .mlb i{position:absolute;left:0;right:0;bottom:0;background:#6fe3a0}
+#opp .fpman .mlc{flex:1;display:flex;flex-direction:column;gap:4px}
+#opp .fpman .fl{display:flex;justify-content:space-between;font:700 11px system-ui;color:#cfd8de}
+#opp .fpman .fv{width:100%;box-sizing:border-box;height:30px;background:#06090c;border:1px solid #55656f;color:#6fe3a0;font:700 20px ui-monospace,Consolas,monospace;text-align:right;padding:0 6px}
+#opp .fpman .tg{display:flex;gap:8px}#opp .fpman .tg span{flex:1}
+#opp .fpman .tg .b{height:26px;padding:0 10px;background:#0e2a18;border-color:#0b3a1b;color:#d8ffe6}
+#opp .fpman .tg .b.on{background:#7a5a14;border-color:#d8b860;color:#fff}
+#opp button.stp{min-width:46px;font-size:15px;touch-action:none;user-select:none;-webkit-user-select:none}
+/* 2.0.0 (user): faceplates not too wide, like a DCS faceplate window */
+#opp .fp.fpx{max-width:380px;margin-left:auto;margin-right:auto}
+#opp .fpg{width:60px}
+#opp .fpx .fpt{white-space:normal;line-height:1.25}
