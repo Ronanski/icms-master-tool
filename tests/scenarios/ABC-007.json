@@ -1,53 +1,894 @@
-{"sheet":"ABC-007","title":"PAF inlet air flow control FICFA1071 (A / M / REMOTE, force manual, interlock)","pdf":"analog-logic-abc.zip > (19)ABC-007.pdf",
-"scenarios":[
-{"id":"A1","loop":"FICFA1071","title":"Malamig na simula: tumigil ang PA fan (M.3302 = 0)",
- "drawing":"M.0180 = OR(M.0098, M.018F, M.0188); sa M.0188 ang M.3302 PA FAN RUNNING ay may NOT (⊠). M.0180 ay 1:B ng A/M T switch (force manual) at 1:B ng SV T switch (force LOCAL).",
- "steps":[
-  {"do":"set","tag":"M.3302","value":0},{"do":"wait","s":10},
-  {"expect":"signal","tag":"M.0180","value":1,"say":"M.0180 (force manual)","why":"fan hindi tumatakbo"},
-  {"expect":"mode","value":"MANUAL","say":"mode ng loop"},
-  {"expect":"faceplate","value":"FORCE MANUAL","say":"nakasulat sa panel"},
-  {"expect":"disabled","button":"AUTO","value":"disabled","say":"AUTO button","why":"hindi puwedeng AUTO habang may force"},
-  {"expect":"sv-switch","value":"B (operator / LOCAL)","say":"SV switch","why":"M.0180 = 1:B ng SV T switch"}]},
-{"id":"A2","loop":"FICFA1071","title":"Tumakbo ang PA fan: nawala ang force, pero HINDI automatic na AUTO",
- "drawing":"Pag M.3302 = 1 ang NOT ay 0, M.0188 = 0, M.0180 = 0 (kung walang ibang kondisyon). Ang A/M T switch ay walang 1:A pulse kaya hawak niya ang huling leg (B = manual). Ang operator ang pipili ng AUTO.",
- "steps":[
-  {"do":"set","tag":"M.3302","value":0},{"do":"wait","s":10},
-  {"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},
-  {"expect":"signal","tag":"M.0180","value":0,"say":"M.0180 (force manual)","why":"fan tumatakbo na"},
-  {"expect":"mode","value":"MANUAL","say":"mode ng loop","why":"hindi automatic na lumilipat sa AUTO"},
-  {"expect":"disabled","button":"AUTO","value":"enabled","say":"AUTO button"},
-  {"do":"press","button":"AUTO","say":"pindutin ang AUTO"},
-  {"expect":"mode","value":"AUTO","say":"mode ng loop pagkatapos pindutin ang AUTO"}]},
-{"id":"A3","loop":"FICFA1071","title":"AUTO ang loop, tapos tumigil ang fan: pabalik sa MANUAL agad",
- "drawing":"M.0180 = 1 → 1:B ng A/M T switch: leg B (manual) ang pipiliin kahit AUTO.",
- "steps":[
-  {"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":"AUTO","say":"AUTO"},
-  {"expect":"mode","value":"AUTO","say":"mode bago tumigil ang fan"},
-  {"do":"set","tag":"M.3302","value":0},{"do":"wait","s":3},
-  {"expect":"signal","tag":"M.0180","value":1,"say":"M.0180 (force manual)"},
-  {"expect":"mode","value":"MANUAL","say":"mode pagkatapos tumigil ang fan"},
-  {"expect":"disabled","button":"AUTO","value":"disabled","say":"AUTO button"}]},
-{"id":"A4","loop":"FICFA1071","title":"MANUAL: ang MV na itinakda ng operator ay lumalabas sa FICFA1071.MV",
- "drawing":"A/M T switch B = COS (manual MV ng operator). Susunod ang BU-CMD T switch (A = A/M out, B = RB-MV 50 %, 1:B = M.0181). Kung M.0181 = 0, A ang pinapasa.",
- "steps":[
-  {"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":"MAN","say":"MAN"},
-  {"do":"mv","value":40,"say":"itakda ang MV = 40"},{"do":"wait","s":3},
-  {"expect":"signal","tag":"M.0181","value":0,"say":"M.0181 (backup command)"},
-  {"expect":"signal","tag":"FICFA1071.MV","value":40,"tol":0.5,"say":"FICFA1071.MV"},
-  {"do":"mv","value":75,"say":"itakda ang MV = 75"},{"do":"wait","s":3},
-  {"expect":"signal","tag":"FICFA1071.MV","value":75,"tol":0.5,"say":"FICFA1071.MV"}]},
-{"id":"A5","loop":"FICFA1071","title":"MFT pulse (TPS 5 s) ay nagiging force manual sa loob ng 5 segundo lang",
- "drawing":"L000F MFT PULSE → TPS/5s (TR30) → M.0182 → M.0178 → M.0188 → M.0180. Ang TPS ay pulse: 1 sa loob ng 5 s pagkatapos ng pagtaas ng input, kahit nananatiling 1 ang input.",
- "steps":[
-  {"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":"AUTO","say":"AUTO"},
-  {"expect":"mode","value":"AUTO","say":"mode bago ang MFT"},
-  {"do":"set","near":"MFT PULSE","value":1,"say":"MFT pulse = 1 (at hindi na binababa)"},{"do":"wait","s":2},
-  {"expect":"signal","tag":"M.0182","value":1,"say":"M.0182 sa 2 s"},
-  {"expect":"signal","tag":"M.0180","value":1,"say":"M.0180 sa 2 s"},
-  {"expect":"mode","value":"MANUAL","say":"mode sa 2 s"},
-  {"do":"wait","s":6},
-  {"expect":"signal","tag":"M.0182","value":0,"say":"M.0182 sa 8 s","why":"tapos na ang 5 s na pulse"},
-  {"expect":"signal","tag":"M.0180","value":0,"say":"M.0180 sa 8 s"},
-  {"expect":"mode","value":"MANUAL","say":"mode sa 8 s","why":"hindi bumabalik sa AUTO nang kusa"}]}
-]}
+{
+ "sheet": "ABC-007",
+ "title": "PAF inlet air flow control FICFA1071 (A / M / REMOTE, force manual, interlock)",
+ "pdf": "analog-logic-abc.zip > (19)ABC-007.pdf",
+ "scenarios": [
+  {
+   "id": "A1",
+   "loop": "FICFA1071",
+   "title": "Malamig na simula: tumigil ang PA fan (M.3302 = 0)",
+   "drawing": "M.0180 = OR(M.0098, M.018F, M.0188); sa M.0188 ang M.3302 PA FAN RUNNING ay may NOT (⊠). M.0180 ay 1:B ng A/M T switch (force manual) at 1:B ng SV T switch (force LOCAL).",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 0
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0180",
+     "value": 1,
+     "say": "M.0180 (force manual)",
+     "why": "fan hindi tumatakbo"
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "mode ng loop"
+    },
+    {
+     "expect": "faceplate",
+     "value": "FORCE MANUAL",
+     "say": "nakasulat sa panel"
+    },
+    {
+     "expect": "disabled",
+     "button": "AUTO",
+     "value": "disabled",
+     "say": "AUTO button",
+     "why": "hindi puwedeng AUTO habang may force"
+    },
+    {
+     "expect": "sv-switch",
+     "value": "B (operator / LOCAL)",
+     "say": "SV switch",
+     "why": "M.0180 = 1:B ng SV T switch"
+    }
+   ]
+  },
+  {
+   "id": "A2",
+   "loop": "FICFA1071",
+   "title": "Tumakbo ang PA fan: nawala ang force, pero HINDI automatic na AUTO",
+   "drawing": "Pag M.3302 = 1 ang NOT ay 0, M.0188 = 0, M.0180 = 0 (kung walang ibang kondisyon). Ang A/M T switch ay walang 1:A pulse kaya hawak niya ang huling leg (B = manual). Ang operator ang pipili ng AUTO.",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 0
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0180",
+     "value": 0,
+     "say": "M.0180 (force manual)",
+     "why": "fan tumatakbo na"
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "mode ng loop",
+     "why": "hindi automatic na lumilipat sa AUTO"
+    },
+    {
+     "expect": "disabled",
+     "button": "AUTO",
+     "value": "enabled",
+     "say": "AUTO button"
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "pindutin ang AUTO"
+    },
+    {
+     "expect": "mode",
+     "value": "AUTO",
+     "say": "mode ng loop pagkatapos pindutin ang AUTO"
+    }
+   ]
+  },
+  {
+   "id": "A3",
+   "loop": "FICFA1071",
+   "title": "AUTO ang loop, tapos tumigil ang fan: pabalik sa MANUAL agad",
+   "drawing": "M.0180 = 1 → 1:B ng A/M T switch: leg B (manual) ang pipiliin kahit AUTO.",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "AUTO"
+    },
+    {
+     "expect": "mode",
+     "value": "AUTO",
+     "say": "mode bago tumigil ang fan"
+    },
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 0
+    },
+    {
+     "do": "wait",
+     "s": 3
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0180",
+     "value": 1,
+     "say": "M.0180 (force manual)"
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "mode pagkatapos tumigil ang fan"
+    },
+    {
+     "expect": "disabled",
+     "button": "AUTO",
+     "value": "disabled",
+     "say": "AUTO button"
+    }
+   ]
+  },
+  {
+   "id": "A4",
+   "loop": "FICFA1071",
+   "title": "MANUAL: ang MV na itinakda ng operator ay lumalabas sa FICFA1071.MV",
+   "drawing": "A/M T switch B = COS (manual MV ng operator). Susunod ang BU-CMD T switch (A = A/M out, B = RB-MV 50 %, 1:B = M.0181). Kung M.0181 = 0, A ang pinapasa.",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "press",
+     "button": "MAN",
+     "say": "MAN"
+    },
+    {
+     "do": "mv",
+     "value": 40,
+     "say": "itakda ang MV = 40"
+    },
+    {
+     "do": "wait",
+     "s": 3
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0181",
+     "value": 0,
+     "say": "M.0181 (backup command)"
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1071.MV",
+     "value": 40,
+     "tol": 0.5,
+     "say": "FICFA1071.MV"
+    },
+    {
+     "do": "mv",
+     "value": 75,
+     "say": "itakda ang MV = 75"
+    },
+    {
+     "do": "wait",
+     "s": 3
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1071.MV",
+     "value": 75,
+     "tol": 0.5,
+     "say": "FICFA1071.MV"
+    }
+   ]
+  },
+  {
+   "id": "A5",
+   "loop": "FICFA1071",
+   "title": "MFT pulse (TPS 5 s) ay nagiging force manual sa loob ng 5 segundo lang",
+   "drawing": "L000F MFT PULSE → TPS/5s (TR30) → M.0182 → M.0178 → M.0188 → M.0180. Ang TPS ay pulse: 1 sa loob ng 5 s pagkatapos ng pagtaas ng input, kahit nananatiling 1 ang input.",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "AUTO"
+    },
+    {
+     "expect": "mode",
+     "value": "AUTO",
+     "say": "mode bago ang MFT"
+    },
+    {
+     "do": "set",
+     "near": "MFT PULSE",
+     "value": 1,
+     "say": "MFT pulse = 1 (at hindi na binababa)"
+    },
+    {
+     "do": "wait",
+     "s": 2
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0182",
+     "value": 1,
+     "say": "M.0182 sa 2 s"
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0180",
+     "value": 1,
+     "say": "M.0180 sa 2 s"
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "mode sa 2 s"
+    },
+    {
+     "do": "wait",
+     "s": 6
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0182",
+     "value": 0,
+     "say": "M.0182 sa 8 s",
+     "why": "tapos na ang 5 s na pulse"
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0180",
+     "value": 0,
+     "say": "M.0180 sa 8 s"
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "mode sa 8 s",
+     "why": "hindi bumabalik sa AUTO nang kusa"
+    }
+   ]
+  },
+  {
+   "id": "T1",
+   "loop": "FICFA1071",
+   "title": "Force manual ng PA (M.0180) at SA (M.0190): bawat kondisyon ng drawing, steady-state",
+   "wait": 12,
+   "base": [
+    {
+     "tag": "M.3302",
+     "value": 1,
+     "say": "PA fan tumatakbo"
+    },
+    {
+     "tag": "M.3303",
+     "value": 1,
+     "say": "SA fan tumatakbo"
+    }
+   ],
+   "drawing": "M.0180 PA MASTER FORCE MANUAL = OR(M.0098, M.018F, M.0188). M.0188 = OR(M.0178, B.0734, B.071C, NOT M.3302). M.0178 'PA FAN AUTO INHIBIT' = OR(MFT pulse, AND(PICFG108.MAN, PICFG108A.MAN), M.0138 ANY FUEL FLOW). M.0190 SA MASTER FORCE MANUAL = OR(M.0098, M.019F, M.0198); M.0198 = OR(M.0178, NOT M.3303, B.074C, B.0721, B.0729, AND(B.0733, B.074B)). Memory list: M.0180 'PA MASTER FORCE MANUAL', M.0190 'SA MASTER FORCE MANUAL'. Ang house operation: M.018E = |setting - PV| <= 3 T/H (setting 230 PAF / 245 SAF); AND ng M.025B; TPS 2 s (TR49 / TR69) = pulse lang, 2 segundo.",
+   "cases": [
+    {
+     "say": "lahat normal (parehong fan tumatakbo, walang abnormal)",
+     "set": [],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 0,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 0,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ]
+    },
+    {
+     "say": "PA fan tumigil (M.3302 = 0): PA lang",
+     "set": [
+      {
+       "tag": "M.3302",
+       "value": 0
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 1,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 0,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ]
+    },
+    {
+     "say": "SA fan tumigil (M.3303 = 0): SA lang",
+     "set": [
+      {
+       "tag": "M.3303",
+       "value": 0
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 0,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 1,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ]
+    },
+    {
+     "say": "PA fan inlet temp abnormal (B.0734): PA lang",
+     "set": [
+      {
+       "tag": "B.0734",
+       "value": 1
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 1,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 0,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ]
+    },
+    {
+     "say": "PA fan inlet flow abnormal (B.071C): PA lang",
+     "set": [
+      {
+       "tag": "B.071C",
+       "value": 1
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 1,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 0,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ]
+    },
+    {
+     "say": "SA fan inlet temp abnormal (B.074C): SA lang",
+     "set": [
+      {
+       "tag": "B.074C",
+       "value": 1
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 0,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 1,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ]
+    },
+    {
+     "say": "SA fan inlet flow abnormal (B.0721): SA lang",
+     "set": [
+      {
+       "tag": "B.0721",
+       "value": 1
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 0,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 1,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ]
+    },
+    {
+     "say": "FA blower outlet flow abnormal (B.0729): SA lang",
+     "set": [
+      {
+       "tag": "B.0729",
+       "value": 1
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 0,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 1,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ]
+    },
+    {
+     "say": "FA blower-A temp lang abnormal (B.0733): wala (AND)",
+     "set": [
+      {
+       "tag": "B.0733",
+       "value": 1
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 0,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 0,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ]
+    },
+    {
+     "say": "FA blower-B temp lang abnormal (B.074B): wala (AND)",
+     "set": [
+      {
+       "tag": "B.074B",
+       "value": 1
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 0,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 0,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ]
+    },
+    {
+     "say": "FA blower-A AT B temp abnormal: SA",
+     "set": [
+      {
+       "tag": "B.0733",
+       "value": 1
+      },
+      {
+       "tag": "B.074B",
+       "value": 1
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 0,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 1,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ]
+    },
+    {
+     "say": "ANY FUEL FLOW SIG.AB (M.0138): PA at SA",
+     "set": [
+      {
+       "tag": "M.0138",
+       "value": 1
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 1,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 1,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ]
+    },
+    {
+     "say": "PICFG108.MAN lang: wala (AND)",
+     "set": [
+      {
+       "near": "FURNACE PRESSURE CONTROL(H/C) IN MANUAL",
+       "value": 1
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 0,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 0,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ]
+    },
+    {
+     "say": "PICFG108A.MAN lang: wala (AND)",
+     "set": [
+      {
+       "near": "FURNACE PRESSURE CONTROL(DAMPER) IN MANUAL",
+       "value": 1
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 0,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 0,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ]
+    },
+    {
+     "say": "PICFG108.MAN AT PICFG108A.MAN: PA at SA",
+     "set": [
+      {
+       "near": "FURNACE PRESSURE CONTROL(H/C) IN MANUAL",
+       "value": 1
+      },
+      {
+       "near": "FURNACE PRESSURE CONTROL(DAMPER) IN MANUAL",
+       "value": 1
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 1,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 1,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ]
+    },
+    {
+     "say": "M.0098 mula ABC-003E: PA at SA",
+     "set": [
+      {
+       "tag": "M.0098",
+       "value": 1
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 1,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 1,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ]
+    },
+    {
+     "say": "house operation (M.025B = 1), PV ng PA = 230 T/H (setting): PA lang (TPS 2 s pulse: tingnan sa loob ng 2 s)",
+     "set": [
+      {
+       "tag": "M.025B",
+       "value": 1
+      },
+      {
+       "tag": "FIFA1071.PV",
+       "value": 230
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 1,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 0,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ],
+     "wait": 1
+    },
+    {
+     "say": "house operation, PV ng SA = 245 T/H (setting): SA lang (TPS 2 s pulse: tingnan sa loob ng 2 s)",
+     "set": [
+      {
+       "tag": "M.025B",
+       "value": 1
+      },
+      {
+       "tag": "FIFA1081.PV",
+       "value": 245
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 0,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 1,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ],
+     "wait": 1
+    },
+    {
+     "say": "house operation pero malayo ang PV (100 T/H): wala",
+     "set": [
+      {
+       "tag": "M.025B",
+       "value": 1
+      },
+      {
+       "tag": "FIFA1071.PV",
+       "value": 100
+      },
+      {
+       "tag": "FIFA1081.PV",
+       "value": 100
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 0,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 0,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ]
+    },
+    {
+     "say": "PV = setting pero hindi house operation (M.025B = 0): wala",
+     "set": [
+      {
+       "tag": "FIFA1071.PV",
+       "value": 230
+      },
+      {
+       "tag": "FIFA1081.PV",
+       "value": 245
+      }
+     ],
+     "expect": [
+      {
+       "tag": "M.0180",
+       "value": 0,
+       "say": "M.0180 PA MASTER FORCE MANUAL"
+      },
+      {
+       "tag": "M.0190",
+       "value": 0,
+       "say": "M.0190 SA MASTER FORCE MANUAL"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "T2",
+   "loop": "FICFA1071",
+   "title": "SV path ng PAF: REMOTE, demand, BUMPLESS ramp, house operation",
+   "drawing": "SV T switch A = SI0160: demand SI0045 sa BUMPLESS RAMP 0.05 %/sec ng 648 T/H = 0.324 T/H bawat segundo; 1:BYPASS = FICFA1071.LOC (LOCAL = diretso ang demand). Sa house operation (M.025B) ang SV ay ang setting 230 T/H sa rate limit 0.5T/Sec; ang rate limit ay naka-bypass (⊠ = NOT) kapag HINDI house operation, kaya sumusunod agad sa PV (T switch a = FICFA1071.PV). Ang demand SI0045 ay galing sa ABC-002 (circle PAD/002), kaya itinatakda ito sa ABC-002 at tinitingnan ang epekto dito.",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 1
+    },
+    {
+     "do": "set",
+     "tag": "M.3303",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "press",
+     "button": "REMOTE",
+     "say": "pindutin ang REMOTE (SV galing sa logic)"
+    },
+    {
+     "expect": "sv-switch",
+     "value": "A (logic / REMOTE)",
+     "say": "SV switch pagkatapos ng REMOTE"
+    },
+    {
+     "expect": "mode",
+     "value": "AUTO",
+     "say": "mode (REMOTE = AUTO talaga)"
+    },
+    {
+     "do": "set",
+     "tag": "FICFA1071.LOC",
+     "value": 1
+    },
+    {
+     "do": "set",
+     "tag": "SI0045",
+     "value": 300,
+     "sheet": "ABC-002"
+    },
+    {
+     "do": "wait",
+     "s": 3
+    },
+    {
+     "expect": "signal",
+     "tag": "SI0160",
+     "value": 300,
+     "tol": 1,
+     "say": "SI0160 kapag LOCAL (bypass ng ramp)",
+     "why": "diretso ang demand"
+    },
+    {
+     "do": "set",
+     "tag": "FICFA1071.LOC",
+     "value": 0
+    },
+    {
+     "do": "set",
+     "tag": "SI0045",
+     "value": 320,
+     "sheet": "ABC-002"
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "expect": "signal",
+     "tag": "SI0160",
+     "value": 303.24,
+     "tol": 0.7,
+     "say": "SI0160 10 s pagkatapos mag-hakbang ang demand sa 320 (hindi LOCAL)",
+     "why": "0.324 T/H bawat segundo x 10 s mula 300"
+    },
+    {
+     "do": "set",
+     "tag": "FIFA1071.PV",
+     "value": 150
+    },
+    {
+     "do": "wait",
+     "s": 3
+    },
+    {
+     "expect": "signal",
+     "tag": "SI0169",
+     "value": 150,
+     "tol": 1,
+     "say": "SI0169 kapag hindi house operation",
+     "why": "naka-bypass ang rate limit, sumusunod sa PV"
+    },
+    {
+     "do": "set",
+     "tag": "M.025B",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 4
+    },
+    {
+     "expect": "signal",
+     "tag": "SI0169",
+     "value": 152,
+     "tol": 1.2,
+     "say": "SI0169 4 s pagkatapos pumasok ang house operation (rate limit 0.5 T/s, pataas patungong 230)",
+     "why": "0.5 T/s x ~3 s (1 s TON bago pumili ng 230)"
+    },
+    {
+     "do": "wait",
+     "s": 300
+    },
+    {
+     "expect": "signal",
+     "tag": "SI0169",
+     "value": 230,
+     "tol": 0.5,
+     "say": "SI0169 pagkatapos ng mahabang oras sa house operation",
+     "why": "umabot sa house setting 230 T/H"
+    }
+   ]
+  }
+ ]
+}
