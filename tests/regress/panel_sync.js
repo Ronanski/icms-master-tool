@@ -1,6 +1,6 @@
 // Operator panel in the REAL page (DOM clicks) must match the diagram's switching signals (user rule, 2026-10-14):
 // the panel shows the select signals of the A/M station (name, MAN / AUTO role, live 0/1), the mode inputs (.MAN .LOC .REM) are buttons on the same signals,
-// FORCE MANUAL (signal = 1) disables AUTO, and when the signal goes the station is AUTO again by itself.
+// FORCE MANUAL (signal = 1) disables AUTO, and when the signal goes the station STAYS manual until the operator presses AUTO.
 // Usage: node tests/regress/panel_sync.js [html] [sheet] [tag]    (default ABC-007 FICFA1081)
 const {open}=require('./lib.js');const fs=require('fs');
 const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+\.html$/.test(x));
@@ -17,5 +17,6 @@ const sync=async()=>{await stepN(8);await page.waitForTimeout(600);return card()
 await frc(0);c=await sync();ck(c.chips.some(x=>x.startsWith(mansig+' → MAN 0'))&&!c.autoOff,'signal 0: AUTO is available');
 await page.evaluate(t=>{const fp=[...document.querySelectorAll('#opp .fp')].find(x=>x.querySelector('.tg b').textContent===t);[...fp.querySelectorAll('button')].find(e=>e.textContent==='AUTO').click()},tag);c=await sync();ck(c.auto&&!c.man,'AUTO pressed: the panel shows AUTO');
 await frc(1);c=await sync();ck(c.man&&!c.auto&&c.autoOff,'signal 1 (force manual): the panel shows MAN, AUTO is disabled');
-await frc(0);c=await sync();ck(c.auto&&!c.man,'signal back to 0: AUTO again by itself');
+await frc(0);c=await sync();ck(c.man&&!c.auto&&!c.autoOff,'signal back to 0: STILL MAN (not automatic), AUTO is available again');
+await page.evaluate(t=>{const fp=[...document.querySelectorAll('#opp .fp')].find(x=>x.querySelector('.tg b').textContent===t);[...fp.querySelectorAll('button')].find(e=>e.textContent==='AUTO').click()},tag);c=await sync();ck(c.auto&&!c.man,'operator presses AUTO: AUTO');
 if(errs.length)console.log('page errors',errs.slice(0,3));await browser.close();process.exit(fail?1:0)})();
