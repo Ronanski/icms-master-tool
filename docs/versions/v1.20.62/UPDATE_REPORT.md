@@ -1,0 +1,6 @@
+# v1.20.62 (Beta) — Scenario tests: input -> output ng engine, tama ang RESULTA (user rule 2026-10-15)
+
+**Problem:** Ang UAT ay block-level lang (bawat AND / PID / selector ay tama ayon sa kahulugan nito). Hindi nito sinusuri ang buong daloy sa isang sheet ayon sa PDF, at hindi nito sinasabing "tama" ang resulta ng loop.
+**Work Done:** `tests/scenarios/` (`npm run scenarios`): bawat scenario ay serye ng GAWIN (itakda ang input, maghintay, pindutin ang AUTO / MAN / REMOTE / LOCAL, itakda ang MV / SV sa tunay na operator panel) at TINGNAN (signal, mode, button, SV switch, MV) na may inaasahang halaga na isinulat mula sa PDF, hindi mula sa engine. `docs/scenarios/ABC-007.md` = bersyong madaling basahin ng user para itama.
+**ABC-007 (FICFA1071), 5 scenario, 23 tseke:** malamig na simula (fan tumigil -> force manual, AUTO disabled, SV LOCAL), pagbalik ng fan (nawawala ang force pero HINDI automatic na AUTO), AUTO tapos tumigil ang fan, MV ng manual hanggang FICFA1071.MV, MFT pulse TPS 5 s. Lahat 23 tama.
+**Limitasyon:** ako ang sumulat ng inaasahan mula sa PDF; kailangang basahin at itama mo (DCS engineer) ang `docs/scenarios/ABC-007.md`. Isang sheet / loop pa lang (FICFA1071). Ang PV (plant model) ay hindi pa sakop. Hindi ito pamalit sa pagsubok sa device.
