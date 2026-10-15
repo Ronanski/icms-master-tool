@@ -12,19 +12,25 @@ Base: Stable v1.21.0 (`main`, release `v1.21.0`). Bawat Beta ay push sa `claude/
   - Ang PV ay sumusunod na sa utos na umaabot sa valve. Kapag ang interlock selector ng drawing ay nagpapadala ng 0 %, sarado ang valve, kaya hindi gagalaw ang PV.
   - Ang controller na nasa ibang sheet at may sariling actuator (valve / damper / AO) ay kasama na sa plant model ng may-ari ng measurement. Bawat isa ay may sariling direksyon (ACT ng PID). Ang cascade master na walang actuator (hal. FIC-OM) ay hindi kasama: gumagalaw ito sa pamamagitan ng mga slave.
   - Ang PV-reacts check (`tests/regress/pv_reacts.js`) ay nagsasabi na kung BAKIT hindi gumagalaw ang PV: aling selector at aling signal ang pumuputol, o kung cascade master ito.
+  - Dalawang valve na parallel sa iisang PV (sa parehong sheet, hal. ABC-030 PICAS1004 + PICAS1005): ang flow nila ay NAGDADAGDAG na (hanggang 100 %). Dati, average ng mga bukas na valve, kaya walang epekto sa pressure kapag isinara ang isa sa dalawang bukas na valve.
+  - Operator tester (in-app UAT, scenario G2 "PV sumusunod sa MV"):
+    - Inilalagay muna sa MAN = 50 % ang katabing controller sa parehong PV, gaya ng gagawin ng operator. Dati, ang naka-AUTO na PICAS1004 ang humahawak sa pressure, kaya MALI ang lumalabas sa PICAS1005.
+    - Kapag naka-cut ng interlock ng drawing ang valve, HINDI NASURI na ang lalabas (kasama ang pangalan ng signal), hindi MALI.
 - **As Left (ang makikita mo sa app, Plant model ON, LOCAL + MAN):**
   - ABC-030 PICAS1005, kapag M.0129 = 0: MV 0 % → PV 0 kg/cm², MV 100 % → PV 14.96 kg/cm².
   - ABC-030 PICAS1005, kapag M.0129 = 1: 0 % ang napupunta sa valve (interlock ng drawing), kaya hindi gumagalaw ang PV. Tama ito.
   - ABC-020 TICHR1002A (damper) sa MAN, habang sarado ang spray dahil sa M.0173: damper 20 % → reheater outlet 327.7 °C, damper 80 % → 446.4 °C.
-  - 57 sa 68 controller: gumagalaw ang PV kapag binago ang MV (dati: 54).
-  - Ang 11 na hindi gumagalaw, lahat may sanhi sa drawing:
+  - ABC-030 PICAS1005, operator tester: 32 / 32 tama (dati 31 / 32). PICAS1004: 24 / 24.
+  - 56 sa 68 controller: gumagalaw ang PV kapag binago ang MV, at lahat ng iba pa ay naka-AUTO (dati: 54).
+  - Ang 12 na hindi gumagalaw, lahat may sanhi sa drawing:
     - Interlock na nagsasara ng valve sa cold start:
       - PICDO1043A / B / C / D: OR = 1, wala sa serbisyo ang burner;
       - TICBR1130: M.0235;
       - TICBR1150: M.0245;
       - PICAS1005: M.0129;
       - TICHR1012: M.072C.
-    - Cascade master, ang PV ay kabuuan ng mga slave: FIC-CF (coal feeders), HS-COAL, PIC-BASC (4 na screw cooler).
+    - Cascade master, ang PV ay kabuuan ng mga slave: FIC-CF (coal feeders), HS-COAL, PIC-BASC (4 na screw cooler), FIC-OM (oil master; sarado ang 4 na burner dahil sa interlock ng burner).
+  - UAT dry run: 2458 items, 6808 cases, 0 bagsak. Ang engine na mag-isa ay pareho sa buong simulator (54 sheet, 5128 net).
 - **Status:** Pass (headless). Tingnan sa app: ABC-020, MAN, galawin ang MV ng TICHR1002A, at bantayan ang temperatura sa ABC-019.
 
 ## 1.22.0-beta.2 — IISANG MUNDO ng ABC at DITL (CHECKLIST #25, unang bahagi)
