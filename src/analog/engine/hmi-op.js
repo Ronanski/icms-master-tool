@@ -291,6 +291,7 @@ const AN_HMI_AI = {
 };
 /* the controllers on the same snapshots: PV / SV / MV and the mode shown (A = AUTO, R = REMOTE, M = MANUAL) */
 const AN_HMI_CTL = {
+  'LICBR1001B': { pv: null, sv: null, mv: 0.6, mode: 'M' } /* start-up drum level valve FCVFW11302 0.6 % M (03.png) */,
   'AICFG10571': { pv: 41.0, sv: 200.0, mv: 11.0, mode: 'M' },
   'AICFG112': { pv: null, sv: 3.5, mv: null, mode: 'R' },
   'DPICFG108': { pv: 1434.0, sv: 1475.0, mv: 0.0, mode: 'M' },
@@ -340,6 +341,29 @@ const AN_HMI_CTL = {
   'TICMS1004': { pv: 542.0, sv: 541.0, mv: 69.7, mode: 'A' },
   'TICMS1022': { pv: 360.0, sv: 300.0, mv: 0.0, mode: 'M' }
 };
+/* plant equipment in service on the same snapshots (digital inputs of the ABC sheets; the meaning is the text written beside
+   the address on the drawing / the memory list): 1 = running / complete, 0 = stopped / standby */
+const AN_HMI_DI = {
+  'M.3343': [1, 'BFWP A running (03.png: BFWP-A 289.4 A)'],
+  'M.3344': [0, 'BFWP B running (03.png: BFWP-B standby)'],
+  'M.3400': [1, 'A-coal feeder running (11.png; memory list 101)'],
+  'M.3401': [1, 'B-coal feeder running (11.png)'],
+  'M.3402': [1, 'C-coal feeder running (11.png)'],
+  'M.3405': [1, 'coal feeder A/B/C all in REMOTE and running (11.png)'],
+  'M.3302': [1, 'PA fan running (7.PNG: F-1053 PAF 253.6 A)'],
+  'M.3303': [1, 'SA fan running (7.PNG: F-1054 SAF 134.0 A)'],
+  'M.3304': [1, 'ID fan running (7.PNG: F-1056 IDF 199.6 A)'],
+  'M.3308': [1, 'FA blower A running (9.png: F-1055A 37.3 A)'],
+  'M.3309': [0, 'FA blower B running (9.png: F-1055B standby)'],
+  'M.3350': [1, 'condensate pump A running (28.png: CP-A 28.1 A)'],
+  'M.3351': [0, 'condensate pump B running (28.png: CP-B standby)'],
+  'M.3353': [0, 'seawater pump A running (30.PNG: SWP-A stopped)'],
+  'M.3354': [1, 'seawater pump B running (30.PNG: SWP-B 242.5 A)'],
+  'M.3355': [1, 'seawater pump C running (30.PNG: SWP-C 207.6 A)'],
+  'M.3200': [0, 'turbine trip (unit at 148.8 MW)'],
+  'M.3220': [0, '52G1 opened (generator breaker closed at 148.8 MW)'],
+  'I.0418': [1, 'ICV to CV transfer complete (4.PNG: turbine on CV, CV(A) 46 %)']
+};
 function anPlantLoad150() {
   let n = 0;
   for (const sh of AN.sheets) {
@@ -367,8 +391,23 @@ function anPlantLoad150() {
       n++;
     }
   }
+  /* equipment in service */
+  let nd = 0;
+  for (const sh of AN.sheets) {
+    if (/^ABC-000/.test(sh.name) || !sh.S) continue;
+    const S = sh.S;
+    for (const n of S.ext) {
+      if (!S.nets[n] || !S.nets[n].dig) continue;
+      const x = AN_HMI_DI[(AN.nm(S, n) || '').trim()];
+      if (x) {
+        S.rt.ext[n] = x[0];
+        nd++;
+      }
+    }
+  }
   /* controllers: MV, operator SV and mode as on the snapshot (the station and the SV switch, like the operator would set them) */
   let nc = 0;
+  const modes = [];
   if (AN.hmiCtrls)
     for (const sh of AN.sheets) {
       if (/^ABC-000/.test(sh.name) || !sh.S) continue;
@@ -389,23 +428,47 @@ function anPlantLoad150() {
           else if (c.manNet != null && S.ext.includes(c.manNet)) rt.ext[c.manNet] = h.mv;
         }
         if (h.sv != null && c.q && c.q.sv != null && S.ext.includes(c.q.sv) && !(S.xlk && S.xlk[c.q.sv])) rt.ext[c.q.sv] = h.sv;
-        if (c.amt && h.mode) {
-          const st = rt.st[c.amt.id];
-          if (st) {
-            st.al = c.autoLeg;
-            st.fm = h.mode === 'M' ? (c.autoLeg === 'A' ? 'B' : 'A') : c.autoLeg;
-          }
-        }
-        if (c.svSw && h.mode) {
-          const q = rt.st[c.svSw.id];
-          if (q) {
-            q.al = 'A';
-            q.fm = h.mode === 'R' ? 'A' : 'B';
-          }
-        }
+        if (h.mode) modes.push([S, c, h.mode]);
       }
       rt.pm = {}; /* the plant model starts again from these commands (anchored at the snapshot) */
     }
-  AN.load150 = { ai: n, ctl: nc };
+  /* mode status of the drawing (.MAN / .LOC / .REM, every sheet with the tag): M = MANUAL, A = LOCAL (AUTO), R = REMOTE */
+  const MK = { MAN: ['MAN', 'MANUAL'], LOC: ['LOC', 'LOCAL', 'AUTO', 'AUT'], REM: ['REM', 'REMOTE'] };
+  for (const [, c, m] of modes)
+    for (const sh of AN.sheets) {
+      if (/^ABC-000/.test(sh.name) || !sh.S) continue;
+      const S = sh.S;
+      for (const n of S.ext) {
+        const nm = (AN.nm(S, n) || '').trim().toUpperCase(),
+          k = nm.startsWith(c.tag.toUpperCase() + '.') ? nm.slice(c.tag.length + 1) : null;
+        if (!k) continue;
+        if (MK.MAN.includes(k)) S.rt.ext[n] = m === 'M' ? 1 : 0;
+        else if (MK.REM.includes(k)) S.rt.ext[n] = m === 'R' ? 1 : 0;
+        else if (MK.LOC.includes(k)) S.rt.ext[n] = m === 'A' ? 1 : 0;
+      }
+    }
+  /* the plant runs 10 s so that the interlocks of the cold boiler clear, then the operator sets the modes (a station that
+     was forced to MANUAL stays MANUAL until AUTO is pressed again: user rule 2026-10-15) */
+  try {
+    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) for (let k = 0; k < 20; k++) stepSet(sh, 0.5);
+  } catch (e) {}
+  for (const [S, c, m] of modes) {
+    const rt = S.rt;
+    if (c.amt) {
+      const st = rt.st[c.amt.id];
+      if (st) {
+        st.al = c.autoLeg;
+        st.fm = m === 'M' ? (c.autoLeg === 'A' ? 'B' : 'A') : c.autoLeg;
+      }
+    }
+    if (c.svSw) {
+      const q = rt.st[c.svSw.id];
+      if (q) {
+        q.al = 'A';
+        q.fm = m === 'R' ? 'A' : 'B';
+      }
+    }
+  }
+  AN.load150 = { ai: n, ctl: nc, di: nd };
   return n;
 }
