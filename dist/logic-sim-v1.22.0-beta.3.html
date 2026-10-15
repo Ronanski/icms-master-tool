@@ -61252,10 +61252,16 @@ body.ophmi #anp{display:none!important}
     }
     return out;
   };
-  const pulseNets = ns => {
-    if (!ns.length) return;
-    ns.forEach(([S2, n]) => setIn(S2, n, 1));
-    setTimeout(() => ns.forEach(([S2, n]) => setIn(S2, n, 0)), 700);
+  /* 1.22.0: .MAN / .LOC / .REM are the MODE STATUS of the controller (textbook: status word .MAN = MANUAL, .LOC = LOCAL,
+     .REM = REMOTE), not a short pulse: pressing M / A / R sets that one to 1 and the other two to 0, on every sheet with the tag,
+     and it STAYS until another mode is pressed. The drawing reads it as a level (ABC-010: "DRUM LEVEL CONTROL MANUAL FOR
+     START-UP  LICBR1001B.MAN" -> NOT -> force manual of FICFW1007: with a pulse the feedwater loop could never go to AUTO) */
+  const MODEK = { MAN: ['MAN', 'MANUAL'], LOC: ['LOC', 'LOCAL', 'AUTO', 'AUT'], REM: ['REM', 'REMOTE'] };
+  const latchMode = (tag, kind, own) => {
+    for (const k in MODEK) {
+      const ns = modeNetsByTag(tag, MODEK[k], k === kind ? own : null);
+      ns.forEach(([S2, n]) => setIn(S2, n, k === kind ? 1 : 0));
+    }
   };
   const setMV = (S, c, v) => {
     if (c.manBlk && S.rt.st[c.manBlk.id]) S.rt.st[c.manBlk.id].val = v;
@@ -61605,11 +61611,11 @@ body.ophmi #anp{display:none!important}
           AN.settle();
         } catch (e) {}
       };
-      /* sa planta, ang R / A / M ay HMI command: pulse ng input ng drawing (.REM / .LOC / .MAN); ang mga ito ang gumagamit ng 1:BYPASS at ng SET rule (hal. M.018D) */
-      /* ang .MAN / .LOC / .REM ng controller ay iisang HMI command sa buong DCS: pinipindot ang lahat ng input na may ganitong tag sa lahat ng sheet (hindi lang ang sa sheet ng controller) */
+      /* R / A / M set the mode status of the drawing (.REM / .LOC / .MAN) on every sheet with this tag; it stays (1.22.0, see latchMode) */
       const pulse = kinds => {
-        const m = c.modes.find(z => kinds.includes(z.kind));
-        pulseNets(modeNetsByTag(c.tag, kinds, m ? [S, m.n] : null));
+        const kind = kinds.includes('MAN') ? 'MAN' : kinds.includes('REM') ? 'REM' : 'LOC',
+          m = c.modes.find(z => MODEK[kind].includes(z.kind));
+        latchMode(c.tag, kind, m ? [S, m.n] : null);
       };
       bAuto.onclick = () => {
         if (c.remote && c.svSw) {
@@ -61948,8 +61954,12 @@ body.ophmi #anp{display:none!important}
             E('button', {
               cls: 'b',
               txt: 'MAN',
-              title: tag + '.MAN: HMI command (pulse) sa lahat ng sheet na gumagamit ng tag na ito',
-              on: () => pulseNets(modeNetsByTag(tag, ['MAN']))
+              title: tag + '.MAN: estado ng MANUAL (ON / OFF) sa lahat ng sheet na gumagamit ng tag na ito',
+              on: () => {
+                const ns = modeNetsByTag(tag, MODEK.MAN),
+                  on = !ns.some(([S2, n]) => S2.rt.ext[n] > 0.5);
+                ns.forEach(([S2, n]) => setIn(S2, n, on ? 1 : 0));
+              }
             }),
             val
           ])

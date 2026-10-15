@@ -19,6 +19,11 @@ Base: Stable v1.21.0 (`main`, release `v1.21.0`). Bawat Beta ay push sa `claude/
   - ABC-004A FIC-CM (PV = average ng tatlong coal feeder; ang nakahintong feeder ay 0):
     - Dati, pinipilit ng plant ang PV sa 7.32 T/H habang nakahinto ang lahat ng feeder.
     - Ngayon, walang plant model ang FIC-CM, dahil cascade master ito na walang sariling actuator. Ang drawing ang kumukuwenta ng PV mula sa mga feeder, kaya 0 ito kapag nakahinto ang lahat. Wala nang loop na naka-"pin".
+  - **.MAN / .LOC / .REM = ESTADO ng mode** (dati, pulse na 0.7 s):
+    - Ang pindot ng M / A / R ay nagse-set ng isa sa 1 at ng dalawa pa sa 0, sa lahat ng sheet na may tag, at nananatili ito.
+    - Batayan: textbook (status word `.MAN` = MANUAL); ABC-010 "DRUM LEVEL CONTROL MANUAL FOR START-UP  LICBR1001B.MAN" → NOT → force manual ng FICFW1007. Sa pulse, hindi kailanman makaka-AUTO ang feedwater.
+    - Ngayon, ABC-010: M sa LICBR1001B + BFWP A RUNNING + main steam flow 150 T/H → M.0228 = 0 → A sa FICFW1007 = AUTO.
+    - ABC-007 scenario test: 184 tama, 0 mali.
   - Operator tester (in-app UAT, scenario G2 "PV sumusunod sa MV"):
     - Inilalagay muna sa MAN = 50 % ang katabing controller sa parehong PV, gaya ng gagawin ng operator. Dati, ang naka-AUTO na PICAS1004 ang humahawak sa pressure, kaya MALI ang lumalabas sa PICAS1005.
     - Kapag naka-cut ng interlock ng drawing ang valve, HINDI NASURI na ang lalabas (kasama ang pangalan ng signal), hindi MALI.
