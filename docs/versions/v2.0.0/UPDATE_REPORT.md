@@ -1,6 +1,15 @@
-# v2.0.0 (target ng susunod na Stable) — mga Beta
+# v2.0.0 — Stable at mga Beta
 
 Base: Stable v1.23.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f). Bakit 2.0.0: bagong henerasyon ng itsura at English ang buong app (PROJECT_RULES 5f, user 2026-10-15: "standard tayo, baka umabot ng v1.9999").
+
+## 2.0.0 — STABLE (GO STABLE ng user, 2026-10-15)
+
+- **Problem:** Hindi makalipat sa Beta sa tablet (Stable v1.23.0). Kailangang mailabas ang lahat ng 2.0.0-beta.1 ~ beta.7.
+- **As Found:** Ang naka-save na lumang Beta (1.22.0-beta.x) ang binubuksan kapag pinili ang Beta (na-reproduce sa headless, tablet size, totoong pindot).
+- **Work Done:** Lahat ng 2.0.0-beta.1 ~ beta.7 (detalye sa ibaba); `tests/regress/inapp_update.js`: sa Stable na app, ang susunod na Beta ay Beta ng susunod na MINOR.
+- **As Left:** stale Beta, in-app update, overview, MAN station, info card: PASS sa v2.0.0 build. Buong regression ng beta.7: tingnan sa ibaba (hmi_op 7 / 7, engine = simulator, ABC-007 184 / 0).
+- **Hindi pa nasubok:** totoong tablet / phone / exe. Reset: 5 sheet (pareho sa v1.23.0).
+- **Status:** Stable 2.0.0.
 
 ## 2.0.0-beta.7 — Marshalling wiring sa LIBRARY (pinagsama sa I/O list), mga ayos sa engine
 

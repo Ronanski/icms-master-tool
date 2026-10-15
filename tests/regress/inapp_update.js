@@ -6,7 +6,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/node22/lib/node_mo
 const fs=require('fs'),path=require('path'),os=require('os'),cp=require('child_process');
 const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 const src=fs.readFileSync(html,'utf8'),V=(src.match(/<title>Logic Sim v([^<]+)<\/title>/)||[])[1];
-const m=/^(\d+)\.(\d+)\.(\d+)(?:-beta\.(\d+))?$/.exec(V),SV=`${m[1]}.${m[2]}.${+m[3]+1}`,BV=`${m[1]}.${m[2]}.${m[3]}-beta.${(+m[4]||0)+1}`;
+const m=/^(\d+)\.(\d+)\.(\d+)(?:-beta\.(\d+))?$/.exec(V),SV=`${m[1]}.${m[2]}.${+m[3]+1}`,BV=m[4]?`${m[1]}.${m[2]}.${m[3]}-beta.${+m[4]+1}`:`${m[1]}.${+m[2]+1}.0-beta.1`;/* a Stable app: the next Beta is the Beta of the next MINOR (a Beta older than the app copy is never opened, 2.0.0) */
 const as=v=>src.split(`Logic Sim v${V}`).join(`Logic Sim v${v}`).split(`'v${V}'`).join(`'v${v}'`);
 const dir=fs.mkdtempSync(path.join(os.tmpdir(),'appdir-'));cp.execFileSync('node',['tools/build/app-folder.js',html,dir]);
 (async()=>{const b=await chromium.launch({executablePath:process.env.CHROMIUM||'/opt/pw-browsers/chromium'});const ctx=await b.newContext({viewport:{width:1024,height:768}});
