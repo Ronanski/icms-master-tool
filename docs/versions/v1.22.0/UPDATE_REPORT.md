@@ -2,6 +2,24 @@
 
 Base: Stable v1.21.0 (`main`, release `v1.21.0`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 1.22.0-beta.4 — In-app update at Beta sa apk / exe (walang Chrome, gumagana offline)
+
+- **Problem:** Sa tablet, kapag pinili ang Beta o pinindot ang "I-update ngayon", lumilipat sa Chrome ang app at kailangan ng internet.
+- **As Found:** Ang apk / exe ay lumilipat sa web page (`location.href` = site). Ang link na palabas ng app ay ipinapasa ng Android sa Chrome. May lumang flag din (`ls-site`) na laging nagdadala sa web page.
+- **Work Done (`src/boot/update-question.js`, channel box sa `src/analog/ui/category-search.js`):**
+  - Ang update at ang Beta ay DINA-DOWNLOAD sa loob ng app (IndexedDB, mga 4 MB). Sa susunod na pagbukas, iyon ang tumatakbo, kahit walang internet.
+  - Stable: ang naka-download na Stable, kung mas bago ito kaysa sa kasama sa app; kung hindi, ang kasama sa app.
+  - Beta: ang naka-download na Beta.
+  - Tinanggal na ang lumang `ls-site` na flag.
+  - Ang web page (Pages) ay walang binago.
+- **As Left:** `tests/regress/inapp_update.js` 12 / 12 PASS (app folder mula sa file, may mock na site):
+  - Beta → na-download at tumatakbo, hindi lumabas ng app.
+  - Walang internet → Beta pa rin, gumagana (134 sheet).
+  - Stable offline → ang kasama sa app.
+  - Update ng Stable → tanong, na-download, tumatakbo offline.
+- **Kailangan:** gagana lang ito sa tablet kapag naka-install na ang apk na may bagong code. Ang apk mo ngayon (v1.21.0) ay may lumang code pa, kaya kailangan ng bagong apk (release.yml, GO STABLE). Hindi pa nasubok sa totoong tablet / exe.
+- **Status:** Pass (headless).
+
 ## 1.22.0-beta.3 — ABC: ang PV ay sumusunod sa tunay na utos sa valve; ang damper ng reheat ay may epekto na
 
 - **Problem:** Sa ABC-030, naka-MAN ang PICAS1005 at MV 0 → 100 %, pero hindi gumagalaw ang PV. Sa ABC-020, ang RH/SH flue gas damper (TICHR1002A) ay walang epekto sa reheater outlet temperature.

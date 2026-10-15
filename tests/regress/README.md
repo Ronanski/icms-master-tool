@@ -14,6 +14,7 @@ Headless (Playwright + Chromium) checks of `dist/logic-sim-vX.Y.Z.html` (default
 | `node tests/regress/pid_am.js [html]` | PID auto / manual (PV, SV, MV): manual value kept, no jump when AUTO returns | ~1 min |
 | `node tests/regress/faceplate.js [html]` | Operator faceplate: AUTO / MAN / MV move the real A/M station of each controller | ~30 s |
 | `node tests/regress/ditl_toolbar.js [html]` | DITL page toolbar (desktop, tablet, phone): walang ABC toolbar sa DITL, Simulate / Fit nakikita, editor tools nasa "⋯ Tools", Health bumubukas, lipat sa ABC | ~30 s |
+| `node tests/regress/inapp_update.js [html]` | apk / exe: Beta at update na dina-download sa app, gumagana offline, hindi lumalabas sa Chrome (mock na site) | ~1 min |
 | `node tests/regress/world.js [html]` | iisang mundo ABC + DITL: OFF = dating gawi; ON = lahat ng reference may katapat, ABC input = DITL output, DITL row = ABC net, kadena DITL → ABC, bilis ng scan | ~1 min |
 | `node tests/regress/closure.js html out.json` | loop closure of every PID with its plant model (P-4), 900 s | ~1 min |
 | `node tests/regress/diff.js old.html ... new.html` | the same seeded inputs on every sheet for several builds; lists the sheets whose nets differ. `--neutral` zeroes dMVH / TF / CUT on the last build (isolates F-31); `--hold=SECONDS` adds a steady-state state | 1 ~ 6 min |
