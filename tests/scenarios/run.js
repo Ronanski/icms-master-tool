@@ -36,6 +36,11 @@ for(const f of files){const spec=JSON.parse(fs.readFileSync(path.join(__dirname,
     if(st.do==='mv'){const inp=[...fp.querySelectorAll('input')].find(i=>i.title===''||true);const ins=[...fp.querySelectorAll('input')];const mvIn=ins[ins.length-1];if(mvIn.disabled)return{ok:1,note:'disabled ang MV field'};mvIn.value=st.value;mvIn.dispatchEvent(new Event('change'));step(.5);return{ok:1}}
     if(st.do==='sv'){const ins=[...fp.querySelectorAll('input')];const svIn=ins[0];if(svIn.disabled)return{ok:1,note:'disabled ang SV field'};svIn.value=st.value;svIn.dispatchEvent(new Event('change'));step(.5);return{ok:1}}
     if(st.expect==='signal'){const n=net(st);if(n<0)return{err:'walang signal na '+(st.tag||st.near)};return{got:+rt.v[n].toFixed(3)}}
+    if(st.do==='mark'){window.__mk=window.__mk||{};window.__mk[st.as]=st.what==='mv'?rt.v[ctl.out]:st.what==='sv'?rt.v[ctl.q.sv]:rt.v[ctl.q.pv];return{ok:1}}
+    if(st.expect==='cmp'){const cur=st.what==='mv'?rt.v[ctl.out]:st.what==='sv'?rt.v[ctl.q.sv]:rt.v[ctl.q.pv],ref=window.__mk[st.than],d=cur-ref;if(st.min)return{got:(d>=st.min?'tumaas':d<=-st.min?'bumaba':'kulang ang galaw')+' ('+d.toFixed(1)+')'};return{got:Math.abs(d)<=(st.tol==null?1:st.tol)?'pareho':(d>0?'tumaas':'bumaba')+' ('+d.toFixed(1)+')'}}
+    if(st.expect==='field'){const ins=[...fp.querySelectorAll('input')];const f=st.name==='SV'?ins[0]:ins[ins.length-1];return{got:f.disabled?'disabled':'enabled'}}
+    if(st.expect==='sv'){return{got:+rt.v[ctl.q.sv].toFixed(2)}}
+    if(st.expect==='near-pv'){const sv=rt.v[ctl.q.sv],pv=rt.v[ctl.q.pv],sp=(ctl.b.p.rhi-ctl.b.p.rlo)||100;return{got:Math.abs(sv-pv)<=sp*(st.pct||3)/100?'abot-SV':'malayo sa SV (SV '+sv.toFixed(1)+', PV '+pv.toFixed(1)+')'}}
     if(st.expect==='mode')return{got:mode()};
     if(st.expect==='disabled'){const b=btn(st.button);return{got:b?(b.disabled?'disabled':'enabled'):'walang button'}}
     if(st.expect==='faceplate'){const t=fp?fp.textContent:'';return{got:/FORCE MANUAL/.test(t)?'FORCE MANUAL':'wala'}}
@@ -46,7 +51,7 @@ for(const f of files){const spec=JSON.parse(fs.readFileSync(path.join(__dirname,
     return{err:'hindi kilalang step '+JSON.stringify(st)}},[st,sc.loop,spec.sheet]);
    if(r.err){console.log('   ✘ #'+n+' '+r.err);fail++;continue}
    if(st.do)await page.waitForTimeout(450);/* the operator panel redraws on its own timer: wait like a person would */
-   if(st.expect){const tol=st.tol==null?0.05:st.tol;const ok=typeof st.value==='number'?Math.abs(r.got-st.value)<=tol:String(r.got)===String(st.value);
+   if(st.expect){const tol=st.tol==null?0.05:st.tol;const ok=typeof st.value==='number'?Math.abs(r.got-st.value)<=tol:(st.expect==='cmp'&&st.min?String(r.got).startsWith(String(st.value)):String(r.got)===String(st.value));
     console.log('   '+(ok?'✔':'✘')+' #'+n+' '+(st.say||st.expect)+'  → inaasahan: '+st.value+' | nakita: '+r.got+(st.why?'   ('+st.why+')':''));ok?pass++:fail++}
    else console.log('     · #'+n+' '+(st.say||st.do)+(r.note?'  ['+r.note+']':''))}}}
 console.log('\nKABUUAN: '+pass+' tama, '+fail+' mali'+(errs.length?' | page errors: '+errs.slice(0,2):''));await browser.close();process.exit(fail?1:0)})();
