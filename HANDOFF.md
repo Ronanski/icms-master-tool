@@ -62,7 +62,7 @@ Ang user ay gustong isa-isahin ang sheet laban sa PDF (function, process, cause 
 - `document-references/dcs-training-textbook.pdf` (talaan ng status word ng MNO, mga hanay PID / PIDV / RF / ... ): `.MAN` = MANUAL, `.REM` = REMOTE, `.LOC` = LOCAL, `.PVT` = PV-TRACK, `.LCK` = LOCK, `.FLT` = FAULT, `.BUP` = BACK UP. Para sa PID / PIDV, ang REMOTE / LOCAL ay ang pinagmulan ng SV: REMOTE = SV mula sa logic (cascade / demand); LOCAL = SV na itinakda sa faceplate ng operator sa control room. (Sa mga hanay ng equipment tulad ng PGCS / PGCM / ON / OFF, ang REMOTE / LOCAL ay DCS laban sa field.)
 - `document-references/hmi-snapshot-sample.zip` (AIRFLUEGAS_HMIDRAFT.PNG): "R-SV 999.9" na katabi ng mga flow loop = ang remote SV; ang maliit na M / R / A sa tabi ng damper at fan = mode ng loop / equipment.
 - Faceplate ng planta (larawan ng user): R / A / M. R = REMOTE (SV mula sa logic, AUTO talaga); A = AUTO na may LOCAL SV (itinakda ng operator sa faceplate); M = MANUAL (MV ng operator). SV ay para sa A lang; MV ay para sa M lang.
-- Ang .MAN / .LOC / .REM ng drawing ay HMI command (pulse mula sa pindot ng M / A / R); ang `.LOC` ay ginagamit din bilang 1:BYPASS ng BUMPLESS ramp at ng SET rule (M.018D).
+- Ang .MAN / .LOC / .REM ng drawing ay ESTADO ng mode (1.22.0-beta.3: ang pindot ng M / A / R ay nagse-set at nananatili; dati pulse); ang `.LOC` ay ginagamit din bilang 1:BYPASS ng BUMPLESS ramp at ng SET rule (M.018D).
 
 ## Bukas (v1.20.58)
 - Web Worker (OPLAN-L1PAT): HINDI KAILANGAN (user 2026-10-15: okay ang bilis sa tablet niya); buksan lang ulit kung may reklamo. Sukat: pinakamabigat na sheet 3.8 ms/step sa desktop (ABC-004A), average 1.2 ms; sukatin muna sa tablet.
