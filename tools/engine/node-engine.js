@@ -16,7 +16,7 @@ async function loadEngine(opt={}){
  // the same scripts as the page, in the same order (the head scripts only define gunz)
  const T=(l)=>{if(opt.verbose){console.error(l,Date.now()-t0,'ms')}},t0=Date.now();
  run('head-gunz.js',fs.readFileSync(src('boot/gunz.js'),'utf8'));
- const analog=fs.readFileSync(src('analog/order.list'),'utf8').split(/\r?\n/).map(s=>s.trim()).filter(s=>s&&s[0]!=='#').map(f=>fs.readFileSync(src('analog/'+f),'utf8')).join('');
+ let analog=fs.readFileSync(src('analog/order.list'),'utf8').split(/\r?\n/).map(s=>s.trim()).filter(s=>s&&s[0]!=='#').map(f=>fs.readFileSync(src('analog/'+f),'utf8')).join('');if(opt.patch)analog=opt.patch(analog);/* opt.patch(code): tests may add a probe to the code (the simulator itself is not changed) */
  // the DITL script is not needed for the analog engine; the analog script needs a few names of it (it is written to be loaded after it)
  T('start');try{run('ditl-app.js',fs.readFileSync(src('digital/ditl-app.js'),'utf8').replace(/v@@VERSION@@/g,'v'+ver))}catch(e){if(opt.verbose)console.error('ditl-app:',e.message)}
  T('ditl done');run('analog',analog);T('analog script done');
