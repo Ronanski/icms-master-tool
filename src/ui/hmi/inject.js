@@ -22,6 +22,8 @@ const block =
   fs.readFileSync(__dirname + '/hmi.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/overview.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/events.js', 'utf8') +
   '</script>' +
   B;
 const k = s.lastIndexOf('</body>');
