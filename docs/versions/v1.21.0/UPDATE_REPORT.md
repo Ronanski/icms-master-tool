@@ -9,3 +9,10 @@
 - UAT sa loob ng app: SCENARIO TEST (operator + proseso) para sa ABC-007 (160 tseke) at awtomatikong tester para sa bawat controller (`tests/scenarios/generic.js`, 68 controller); coverage ng input / output (`tests/scenarios/cone.js`).
 - Babala at "Sanhi?" sa panel kapag may interlock na pumuputol sa output.
 - Ang resulta ng awtomatikong tester sa 68 controller ay nasa HANDOFF.
+
+## 1.21.0-beta.2 ~ beta.6
+- beta.2: tester ng controller ay naghihintay sa trip, at nilalaktawan na may tala kapag ang trip ay depende sa proseso.
+- beta.3: paghahanap ng estado ng tester na may pulse ng latch at pares ng input.
+- beta.4: lahat ng source ng analog at ui ay naka-format (Prettier), hinati ang `compile-step.js`; napatunayang walang nagbago sa gawi.
+- beta.5: multi-file na app folder (`index.html` + `js/*.js`) para sa apk / exe; iisang html pa rin para sa Pages at release.
+- beta.6: DITL cleanup (format at hati sa 7 bahagi; utos ng user, istruktura lang, walang binago sa gawi).
