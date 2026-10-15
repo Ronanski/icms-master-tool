@@ -38,6 +38,31 @@
       AN.settle();
     } catch (e) {}
   };
+  /* ang .MAN / .LOC / .REM ng isang tag ay iisang HMI command sa buong DCS: lahat ng input na may ganitong pangalan sa lahat ng sheet (hindi lang ang sa sheet ng controller) */
+  const modeNetsByTag = (tag, kinds, own) => {
+    const out = own ? [own] : [],
+      want = new Set(kinds.map(k => (tag + '.' + k).toLowerCase()));
+    for (const sh2 of AN.sheets) {
+      if (/^ABC-000/.test(sh2.name)) continue;
+      let S2;
+      try {
+        S2 = AN.ensure(sh2);
+      } catch (e) {
+        continue;
+      }
+      if (!S2 || !S2.ext) continue;
+      for (const n of S2.ext) {
+        const t = S2.lab[n] && S2.lab[n].t;
+        if (t && want.has(t.trim().toLowerCase()) && !out.some(q => q[0] === S2 && q[1] === n)) out.push([S2, n]);
+      }
+    }
+    return out;
+  };
+  const pulseNets = ns => {
+    if (!ns.length) return;
+    ns.forEach(([S2, n]) => setIn(S2, n, 1));
+    setTimeout(() => ns.forEach(([S2, n]) => setIn(S2, n, 0)), 700);
+  };
   const setMV = (S, c, v) => {
     if (c.manBlk && S.rt.st[c.manBlk.id]) S.rt.st[c.manBlk.id].val = v;
     else S.rt.ext[c.manNet] = v;
@@ -301,13 +326,7 @@
             : 'SV galing sa logic path',
           on: () => {
             swMode('A');
-            if (c.remote) {
-              const m = c.modes.find(z => ['REM', 'REMOTE'].includes(z.kind));
-              if (m) {
-                setIn(S, m.n, 1);
-                setTimeout(() => setIn(S, m.n, 0), 700);
-              }
-            }
+            if (c.remote) pulse(['REM', 'REMOTE']);
           }
         }),
         bLoc = E('button', {
@@ -393,11 +412,10 @@
         } catch (e) {}
       };
       /* sa planta, ang R / A / M ay HMI command: pulse ng input ng drawing (.REM / .LOC / .MAN); ang mga ito ang gumagamit ng 1:BYPASS at ng SET rule (hal. M.018D) */
+      /* ang .MAN / .LOC / .REM ng controller ay iisang HMI command sa buong DCS: pinipindot ang lahat ng input na may ganitong tag sa lahat ng sheet (hindi lang ang sa sheet ng controller) */
       const pulse = kinds => {
         const m = c.modes.find(z => kinds.includes(z.kind));
-        if (!m) return;
-        setIn(S, m.n, 1);
-        setTimeout(() => setIn(S, m.n, 0), 700);
+        pulseNets(modeNetsByTag(c.tag, kinds, m ? [S, m.n] : null));
       };
       bAuto.onclick = () => {
         if (c.remote && c.svSw) {
@@ -733,6 +751,12 @@
             inp,
             E('button', { cls: 'b', txt: '−', on: () => set((+inp.value || 0) - (hi - lo) / 100) }),
             E('button', { cls: 'b', txt: '+', on: () => set((+inp.value || 0) + (hi - lo) / 100) }),
+            E('button', {
+              cls: 'b',
+              txt: 'MAN',
+              title: tag + '.MAN: HMI command (pulse) sa lahat ng sheet na gumagamit ng tag na ito',
+              on: () => pulseNets(modeNetsByTag(tag, ['MAN']))
+            }),
             val
           ])
         ])
