@@ -16,3 +16,11 @@
 - beta.4: lahat ng source ng analog at ui ay naka-format (Prettier), hinati ang `compile-step.js`; napatunayang walang nagbago sa gawi.
 - beta.5: multi-file na app folder (`index.html` + `js/*.js`) para sa apk / exe; iisang html pa rin para sa Pages at release.
 - beta.6: DITL cleanup (format at hati sa 7 bahagi; utos ng user, istruktura lang, walang binago sa gawi).
+
+## 1.21.0-beta.7 — Update check ayos (hindi nagtutuloy ang update)
+
+- **Problem:** Sa Beta, laging lumalabas "May bagong bersyon: v1.21.0, gamit mo beta.3" kahit i-update; hindi natatapos.
+- **As Found:** Ang `site.yml` na tumatakbo sa Pages ay yung nasa `main` (lumang bersyon): pinuputol nito ang `-beta.N` kaya `version.json` ay `v1.21.0` lang. Ang v1.21.0 (Stable) ay mas mataas kaysa beta.N kaya paulit-ulit ang tanong.
+- **Work Done:** Kapag Beta at ang nasa `version.json` ay walang `-beta.N`, binabasa na ng app ang title ng mismong Beta page para sa totoong bersyon. Hindi na kailangan ang pagbabago sa `main`.
+- **As Left:** Bago ang unang update: pindutin ang "I-update ngayon" nang isang beses (kukunin ang beta.7); pagkatapos nito, "Updated ka na". Hindi pa nasubukan sa tablet; ang live site ay hindi maabot mula dito.
+- **Status:** Beta pushed. Ang tamang `site.yml` ay mapupunta sa main sa susunod na GO STABLE.

@@ -104,6 +104,25 @@
       })
       .then(function (j) {
         var v = j[beta ? 'beta' : 'stable'];
+        /* ang version.json ng lumang site.yml ay pinuputol ang '-beta.N' (v1.21.0 lang): sa Beta, basahin ang mismong pahina ng Beta para sa totoong bersyon */
+        if (beta && v && !/-beta\./.test(v))
+          return fetch(base + 'beta/?t=' + Date.now(), { cache: 'no-store' })
+            .then(function (r) {
+              return r.text();
+            })
+            .then(function (h) {
+              var m = h.match(/<title>[^<]*?(v\d+(\.\d+)+(-beta\.\d+)?)/);
+              fin(m ? m[1] : v, manual);
+            });
+        fin(v, manual);
+      })
+      .catch(function () {
+        if (manual) say('Walang koneksyon: hindi ma-check ang update.');
+      });
+  }
+  function fin(v, manual) {
+    {
+      {
         if (B) {
           var fl = '';
           try {
@@ -121,10 +140,8 @@
           } catch (e) {}
           if (manual || sk !== v) ask(v);
         } else if (manual) say('Updated ka na: ' + T + ' (' + (beta ? 'Beta' : 'Stable') + ').');
-      })
-      .catch(function () {
-        if (manual) say('Walang koneksyon: hindi ma-check ang update.');
-      });
+      }
+    }
   }
   window.lsCheckUpdate = check;
   if (!B && 'serviceWorker' in navigator) {
