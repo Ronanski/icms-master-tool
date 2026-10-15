@@ -315,7 +315,7 @@ function anInit(S){anDefaults(S);const N=S.nets.length,rt=S.rt={v:new Float64Arr
  for(const b of S.blk)if((b.k==='RATE'||b.k==='RAMPB')&&b.main!==undefined&&b.up===undefined&&!b.p.rtxt){b.p.rate=1;b.dflt={k:'RATE',e:{rate:1,u:'signal units / s',loop:'DEFAULT',basis:'the drawing writes no rate: default 1 per second (user decision 2026-10-10). Change it here; "Reset this block to default" restores it.'}}}
  for(const n of S.ext){rt.ext[n]=S.nets[n].dig?0:0}
  /* the A/M stations: the engine knows which leg is AUTO, so a FORCE MANUAL signal works without the panel (s.al) */
- for(const b of S.blk)if(b.k==='PID'||b.k==='PIDV'){try{const t=anStationOf(S,b),sw=anSvSwitchOf(S,b);if(t.amt&&rt.st[t.amt.id])rt.st[t.amt.id].al=t.autoLeg;/* the SV switch is a station too: leg A = REMOTE (its auto leg), leg B = LOCAL; REMOTE locks the A/M station to AUTO (see plant.js) */if(sw&&rt.st[sw.id]){rt.st[sw.id].al='A';if(t.amt&&rt.st[t.amt.id])rt.st[t.amt.id].rmSw=sw.id}}catch(e){}}
+ for(const b of S.blk)if(b.k==='PID'||b.k==='PIDV'){try{const t=anStationOf(S,b),sw=anSvSwitchOf(S,b);if(t.amt&&rt.st[t.amt.id])rt.st[t.amt.id].al=t.autoLeg;/* the SV switch is a station too: leg A = REMOTE (its auto leg), leg B = LOCAL; REMOTE locks the A/M station to AUTO (see plant.js) */if(sw&&rt.st[sw.id]){rt.st[sw.id].al='A';if(t.amt&&rt.st[t.amt.id]&&anHasRemote(S,b))rt.st[t.amt.id].rmSw=sw.id}}catch(e){}}
  rt.ramp=(typeof AN!=='undefined'&&AN.ramp!=null)?AN.ramp:.05;
  return rt}
 function P_isMinAir(S,b){return (S.tx||[]).some(t=>/MIN\.?\s*AIR\s*FLOW/i.test(t.t)&&Math.hypot(t.x-b.cx,t.y-b.cy)<=60)&&(S.tx||[]).some(t=>/^32\s*%/.test(t.t.trim())&&Math.hypot(t.x-b.cx,t.y-b.cy)<=40)}

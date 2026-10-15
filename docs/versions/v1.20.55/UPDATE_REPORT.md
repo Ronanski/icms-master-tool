@@ -19,3 +19,9 @@ Ang SV ay output ng T switch na may COS: A = SV path ng logic (SI0170, demand ra
 
 ## Status
 Beta.
+
+## Dagdag (v1.20.56): hindi lahat ay may REMOTE (user)
+- Ang REMOTE / LOCAL at ang lock ay para lang sa controller na may REMOTE ayon sa drawing: may mode input na `TAG.REM`, o may salitang REMOTE sa tabi ng controller (REMOTE MODE, FORCE REMOTE). Ito ay `anHasRemote` sa `engine/sheets.js`.
+- Nasukat sa 68 controller: **16 ang may REMOTE / LOCAL** (ABC-003A ~ D FICFA1043x, ABC-004A FIC-CM / FIC-CF / HS-COAL, ABC-007 FICFA1081 / FICFA1071, ABC-009A PIC-BASC, ABC-010 FICFW1007, ABC-011 TICBR1130, ABC-012 TICBR1150, ABC-019 TICHR1002, ABC-050 PICMS1006, ABC-052 PICHR1003). Ang **52 ay AUTO / MAN lang** sa faceplate (walang REMOTE at walang lock).
+- Sa AUTO / MAN lang na may SV switch na COS (9 controller): may "SV: LOGIC / SV: OPERATOR"; ang pagtype ng SV ay pumipili ng SV ng operator.
+- `panel_sync.js`: ABC-007 (REMOTE) 12 sa 12; ABC-020 TICHR1002A at ABC-053 TICLO1002 (AUTO / MAN lang) pasa, kasama ang "laging puwedeng MAN kapag walang signal na pumipilit".

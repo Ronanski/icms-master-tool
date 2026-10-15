@@ -28,4 +28,5 @@ if(hasMode){await frc(0);await sync();await btn('LOCAL');await sync();await btn(
  await btn('MAN');c=await sync();k=await ctl();ck(k.auto&&!k.man,'REMOTE: pressing MAN does nothing, still AUTO');
  await frc(1);c=await sync();k=await ctl();ck(k.man&&k.loc&&!k.rem,'force manual (signal = 1) cancels REMOTE: MAN and LOCAL');
  await frc(0);c=await sync();k=await ctl();ck(k.man&&k.loc,'signal gone: stays LOCAL and MAN until the operator selects REMOTE / AUTO')}
+if(!hasMode){/* AUTO / MANUAL only on this faceplate: no REMOTE, nothing locks the station */await frc(0);await sync();await btn('AUTO');await sync();await btn('MAN');c=await sync();ck(c.man&&!c.auto,'AUTO / MAN only (no REMOTE on this loop): the operator can always go MAN when no signal forces it')}
 if(errs.length)console.log('page errors',errs.slice(0,3));await browser.close();process.exit(fail?1:0)})();

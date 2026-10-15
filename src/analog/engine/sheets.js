@@ -29,3 +29,7 @@ function anStationOf(S,b){
    return {amt,autoLeg,manNet,manBlk,op}}
 /* the SV switch of a controller: the T switch that drives the SV of the PID and whose B leg is a COS (the operator's SV). Leg A = REMOTE (the SV path of the logic), leg B = LOCAL (the COS). null when the SV is an external input */
 function anSvSwitchOf(S,b){let q=null;try{q=anPins(S,b)}catch(e){}if(!q||q.sv==null||q.sv<0)return null;return (S.drv[q.sv]||[]).find(d=>(d.k==='AMT'||d.k==='SW')&&d.b>=0&&S.blk.some(c=>c.k==='COS'&&c.tb===d.id))||null}
+/* does this controller have a REMOTE mode on its faceplate? Only when the drawing says so: a mode input TAG.REM, or the word REMOTE written beside the controller (REMOTE MODE, FORCE REMOTE, CONTROL REMOTE). A loop with only AUTO / MANUAL (and an SV set by the operator) has no REMOTE and no remote lock. */
+function anHasRemote(S,b){const tag=(b.txt||[])[1];if(!tag)return false;const esc=tag.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),re=new RegExp('^'+esc+'\\.(REM|REMOTE)$','i');
+ for(let n=0;n<S.nets.length;n++){const t=S.lab[n]&&S.lab[n].t;if(t&&re.test(t.trim()))return true}
+ return (S.tx||[]).some(t=>/\bREMOTE\b/i.test(t.t)&&Math.hypot(t.x-b.cx,t.y-b.cy)<160)}
