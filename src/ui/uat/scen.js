@@ -68,15 +68,25 @@ window.UATS=(function(){
    const bases=[[],dg.map(n=>[n,1]),dg.map((n,k)=>[n,k%2]),dg.map((n,k)=>[n,(k+1)%2])];for(let j=0;j<10;j++)bases.push(dg.map(n=>[n,rnd()<.3?1:0]));
    /* mga analog na input mula sa ibang sheet / field (flow, pressure ...) ay nasa GITNA ng range ("boiler in service"), hindi 0: ang 0 ay nagti-trip ng mga low-flow interlock; hindi kasama ang PV, SV at MV ng mismong controller */
    const an=S.ext.filter(n=>!S.nets[n].dig&&n!==c0.q.pv&&n!==c0.q.sv&&n!==c0.manNet&&!(S.lab[n]&&S.lab[n].t==='COS manual value')).map(n=>{const r=AN.extRange&&AN.extRange(S,n);return[n,r&&r.hi>r.lo?(r.lo+r.hi)/2:50]});
-   const setup=async(sets)=>{AN.reset();AN.go(idx);sets=an.concat(sets);for(const [n,v] of sets){if(S.xlk&&S.xlk[n]||!S.ext.includes(n))S.rt.force[n]=v;else S.rt.ext[n]=v}try{AN.settle()}catch(e){}await stepSim(sh,20);const c=AN.hmiCtrls(S).find(c=>c.tag===tag),st=S.rt.st[c.amt.id];return{st,c}};
-   /* score = force + putol (1000 bawat isa) + dami ng aktibong net sa itaas ng pumipiling signal: may "slope" ang paghahanap kahit OR ng maraming NOT (hal. lahat ng running feedback ay kailangang 1) */
-   const msig=c0.sigs.filter(z=>z.role==='MAN').map(z=>z.n),up=new Set();{const q=msig.slice();while(q.length&&up.size<500){const n=q.pop();if(up.has(n))continue;up.add(n);if(S.ext.includes(n))continue;for(const g of S.drv[n]||[])for(const i of g.i||[])if(i>=0)q.push(i)}}
-   const score=async(b)=>{const {st,c}=await setup(b);const cut=(c.dn||[]).some(d=>{const t=S.rt.st[d.id];return t&&t.pk==='B'});let cnt=0;for(const n of up)if(!S.ext.includes(n)&&S.rt.v[n]>.5)cnt++;return (st.fman?1000:0)+(cut?1000:0)+cnt};
-   let base=null,best=null,bs0=1e9;for(const b of bases){const sc0=await score(b);if(sc0<bs0){bs0=sc0;best=b}}
-   if(bs0>=1000&&best){let cur=best.map(x=>x.slice()),cs=bs0;for(let it=0;it<14&&cs>=1000;it++){let imp=false;for(const n of dg){const nb=cur.filter(x=>x[0]!==n).concat([[n,((cur.find(x=>x[0]===n)||[n,0])[1])?0:1]]);const sc1=await score(nb);if(sc1<cs){cur=nb;cs=sc1;imp=true;if(cs<1000)break}}if(!imp)break}if(cs<1000)base=cur}else if(best)base=best;
-   if(!base){let why='';try{const {st,c}=await setup(best||[]);const ms=c.sigs.filter(z=>z.role==='MAN'&&S.rt.v[z.n]>.5).map(z=>z.name+' = 1');const ct=(c.dn||[]).filter(d=>{const t=S.rt.st[d.id];return t&&t.pk==='B'}).map(d=>(labTxt(S,d.sel)||('n'+d.sel))+' = 1 (output putol)');why=' | natitira: '+(st.fman?'force manual ['+ms.join(', ')+'] ':'')+ct.join(', ')}catch(e){}return{loop:tag,note:'walang malinis na estado sa mga panimulang kondisyon at sa paghahanap (hill-climb)'+why}}
-   let trig=null;for(const n of dg){const cur=(base.find(x=>x[0]===n)||[n,0])[1];const {st}=await setup(base.filter(x=>x[0]!==n).concat([[n,cur?0:1]]));if(st.fman){trig=[n,cur?0:1];break}}
-   const bs=an.concat(base).map(([n,v])=>({do:'set',net:n,value:v})),hasR=!!c0.remote;
+   const put=(n,v)=>{if(S.xlk&&S.xlk[n]||!S.ext.includes(n))S.rt.force[n]=v;else S.rt.ext[n]=v};
+   /* estado = {sets:[[net,value]], pulses:[net]}: ang pulse ay pagtatakda ng 1 nang 3 s at pagbalik sa 0 (para sa latch / flip-flop na kailangang i-set) */
+   const setup=async(stt)=>{if(Array.isArray(stt))stt={sets:stt,pulses:[]};AN.reset();AN.go(idx);for(const [n,v] of an.concat(stt.sets))put(n,v);try{AN.settle()}catch(e){}if(stt.pulses.length){await stepSim(sh,5);for(const n of stt.pulses){const cur=(stt.sets.find(x=>x[0]===n)||[n,0])[1];put(n,cur?0:1);await stepSim(sh,3);put(n,cur);await stepSim(sh,5)}}await stepSim(sh,20);const c=AN.hmiCtrls(S).find(c=>c.tag===tag),st=S.rt.st[c.amt.id];return{st,c}};
+   /* score = force + putol (1000 bawat isa) + dami ng aktibong net sa itaas ng pumipiling signal at ng mga selector na pumuputol: may "slope" ang paghahanap kahit OR ng maraming NOT */
+   const up=new Set();{const q=c0.sigs.filter(z=>z.role==='MAN').map(z=>z.n).concat((c0.dn||[]).map(d=>d.sel));while(q.length&&up.size<600){const n=q.pop();if(n==null||up.has(n))continue;up.add(n);if(S.ext.includes(n))continue;for(const g of S.drv[n]||[])for(const i of g.i||[])if(i>=0)q.push(i)}}
+   const cands=[...up].filter(n=>S.ext.includes(n)&&S.nets[n].dig),cd=cands.length?cands:dg;
+   const score=async(stt)=>{const {st,c}=await setup(stt);const cut=(c.dn||[]).some(d=>{const t=S.rt.st[d.id];return t&&t.pk==='B'});let cnt=0;for(const n of up)if(!S.ext.includes(n)&&S.rt.v[n]>.5)cnt++;return (st.fman?1000:0)+(cut?1000:0)+cnt};
+   const flip=(stt,n)=>({sets:stt.sets.filter(x=>x[0]!==n).concat([[n,((stt.sets.find(x=>x[0]===n)||[n,0])[1])?0:1]]),pulses:stt.pulses.slice()});
+   const pul=(stt,n)=>({sets:stt.sets.map(x=>x.slice()),pulses:stt.pulses.includes(n)?stt.pulses.filter(x=>x!==n):stt.pulses.concat([n])});
+   let base=null,best=null,bs0=1e9;for(const b of bases){const st0={sets:b,pulses:[]};const sc0=await score(st0);if(sc0<bs0){bs0=sc0;best=st0}}
+   if(bs0>=1000&&best){let cur=best,cs=bs0;for(let it=0;it<16&&cs>=1000;it++){let imp=false;
+     for(const n of cd){const nb=flip(cur,n),sc1=await score(nb);if(sc1<cs){cur=nb;cs=sc1;imp=true;if(cs<1000)break}}
+     if(!imp||cs>=1000)for(const n of cd){if(cs<1000)break;const nb=pul(cur,n),sc1=await score(nb);if(sc1<cs){cur=nb;cs=sc1;imp=true;break}}
+     if(!imp&&cs>=1000&&cd.length<=12){outer:for(let a=0;a<cd.length;a++)for(let b2=a+1;b2<cd.length;b2++){const nb=flip(flip(cur,cd[a]),cd[b2]),sc1=await score(nb);if(sc1<cs){cur=nb;cs=sc1;imp=true;break outer}}}
+     if(!imp)break}if(cs<1000)base=cur;else best=cur}else if(best)base=best;
+   if(!base){let why='';try{const {st,c}=await setup(best||{sets:[],pulses:[]});const ms=c.sigs.filter(z=>z.role==='MAN'&&S.rt.v[z.n]>.5).map(z=>z.name+' = 1');const ct=(c.dn||[]).filter(d=>{const t=S.rt.st[d.id];return t&&t.pk==='B'}).map(d=>(labTxt(S,d.sel)||('n'+d.sel))+' = 1 (output putol)');why=' | natitira: '+(st.fman?'force manual ['+ms.join(', ')+'] ':'')+ct.join(', ')}catch(e){}return{loop:tag,note:'walang malinis na estado (sinubok: panimulang kondisyon, pag-flip, pulse ng latch, pares)'+why}}
+   let trig=null;for(const n of cd.concat(dg.filter(x=>!cd.includes(x)))){const cur=(base.sets.find(x=>x[0]===n)||[n,0])[1];const {st}=await setup({sets:base.sets.filter(x=>x[0]!==n).concat([[n,cur?0:1]]),pulses:base.pulses});if(st.fman){trig=[n,cur?0:1];break}}
+   const bs=an.concat(base.sets).map(([n,v])=>({do:'set',net:n,value:v})),hasR=!!c0.remote;
+   if(base.pulses.length){bs.push({do:'wait',s:5,say:'maghintay'});for(const n of base.pulses){const cur=(base.sets.find(x=>x[0]===n)||[n,0])[1];bs.push({do:'set',net:n,value:cur?0:1,say:'pulse (i-set ang latch): '+(labTxt(S,n)||'n'+n)},{do:'wait',s:3},{do:'set',net:n,value:cur},{do:'wait',s:5})}}
    const pr=(S.procs||[]).find(b=>b.id===c0.b.id),T=pr&&pr.proc&&pr.proc.T?pr.proc.T:150,wp=Math.max(120,Math.min(1500,Math.round(T*6)));
    const sc=[];const pre=bs.concat([{do:'wait',s:20}]).concat(hasR?[{do:'press',button:'A',say:'A (lumabas muna sa REMOTE kung nasa REMOTE)'}]:[]);
    sc.push({id:'G1',loop:tag,title:tag+': MANUAL — MV field at mga button (0 / 50 / 100); proseso',drawing:'A/M switch B = manual MV ng operator; ang MV ay lumalabas sa output ng A/M switch.',steps:pre.concat([
@@ -108,6 +118,6 @@ window.UATS=(function(){
      {expect:'mode',value:'MANUAL',say:'mode pagkatapos ng trip'},{expect:'bumpless',than:'mT',value:'pareho',tol:0.3,say:'MV pagkatapos ng trip kumpara sa dati (bumpless, eksakto; maliban kung may interlock na pumuputol sa output sa drawing)'},{expect:'disabled',button:'A',value:'disabled',say:'A button'},
      {do:'set',net:trig[0],value:trig[1]?0:1,say:'alisin ang trip'},{do:'watch',s:15},{expect:'mode-after-clear',value:'MANUAL',say:'mode pagkatapos mawala ang trip',why:'hindi automatic, maliban kung ang drawing mismo ay may 1:A (AUTO) signal'},{expect:'disabled',button:'A',value:'enabled',say:'A button'},
      {do:'press',button:'A',say:'pindutin ang A'},{expect:'mode',value:'AUTO',say:'mode pagkatapos pindutin ang A'}])});
-   return{loop:tag,scenarios:sc,notes,base:base.length,trig:trig?labTxt(S,trig[0])||('n'+trig[0]):null}
+   return{loop:tag,scenarios:sc,notes,base:base.sets.length,pulses:base.pulses.length,trig:trig?labTxt(S,trig[0])||('n'+trig[0]):null}
   }finally{try{AN.reset()}catch(e){}AN.run=run0}}
  return{run,expand,generic}})();
