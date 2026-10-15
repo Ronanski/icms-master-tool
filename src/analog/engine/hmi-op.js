@@ -323,6 +323,8 @@ const AN_HMI_CTL = {
   'PICDO1043B': { pv: 0.0, sv: 0.0, mv: 25.0, mode: 'M' },
   'PICDO1043C': { pv: 0.0, sv: 0.0, mv: 25.0, mode: 'M' },
   'PICDO1043D': { pv: 0.0, sv: 0.0, mv: 25.0, mode: 'M' },
+  'PICFG108': { pv: -16.0, sv: -16.0, mv: 46.1, mode: 'A' } /* 2.1.0-beta.6: IDF hydraulic coupling A 46.1 % (7.PNG) */,
+  'PICFG108A': { pv: null, sv: null, mv: 99.1, mode: 'M' } /* 2.1.0-beta.6: IDF inlet damper PCDFG10561 M 99.1 % (7.PNG) */,
   'PICHR1003': { pv: 34.4, sv: 36.0, mv: 0.8, mode: 'R' },
   'PICHR1391': { pv: 34.4, sv: 35.5, mv: null, mode: 'A' },
   'PICMS1002': { pv: 122.1, sv: 128.0, mv: 0.0, mode: 'A' },
@@ -340,6 +342,11 @@ const AN_HMI_CTL = {
   'TICHR1012': { pv: 136.0, sv: 137.0, mv: 0.0, mode: 'M' },
   'TICMS1004': { pv: 542.0, sv: 541.0, mv: 69.7, mode: 'A' },
   'TICMS1022': { pv: 360.0, sv: 300.0, mv: 0.0, mode: 'M' }
+};
+/* 2.1.0-beta.6: selections the operator made earlier that the drawing keeps in a flip-flop (sheet|output of the FF): on the snapshot
+   they are already made. ABC-008 M.0202 = HYDRAULIC CONTROL SELECT (7.PNG: hydraulic coupling PICFG108 in AUTO, damper in MANUAL) */
+const AN_HMI_FF = {
+  'ABC-008|M.0202': [1, 'IDF hydraulic coupling control selected (7.PNG)']
 };
 /* plant equipment in service on the same snapshots (digital inputs of the ABC sheets; the meaning is the text written beside
    the address on the drawing / the memory list): 1 = running / complete, 0 = stopped / standby */
@@ -388,6 +395,7 @@ function anPlantLoad150() {
         s = S.rt.st[b.id];
       if (!x || !s) continue;
       s.val = s.act = x[0];
+      s.snap = 1;
       n++;
     }
   }
@@ -404,6 +412,13 @@ function anPlantLoad150() {
         nd++;
       }
     }
+  }
+  for (const k in AN_HMI_FF) {
+    const [sn, lb] = k.split('|'),
+      sh = AN.sheets.find(x => x.name === sn);
+    if (!sh || !sh.S) continue;
+    const S = sh.S;
+    for (const b of S.blk) if (b.k === 'FF' && (b.o || []).some(n => (AN.nm(S, n) || '').trim() === lb) && S.rt.st[b.id]) S.rt.st[b.id].q = AN_HMI_FF[k][0];
   }
   /* controllers: MV, operator SV and mode as on the snapshot (the station and the SV switch, like the operator would set them) */
   let nc = 0;
@@ -447,10 +462,54 @@ function anPlantLoad150() {
         else if (MK.LOC.includes(k)) S.rt.ext[n] = m === 'A' ? 1 : 0;
       }
     }
+  /* 2.1.0-beta.6: the PV of every loop from the snapshot transmitters, with the plant model OFF for a moment (logic only); the
+     plant model of the loop is anchored at that PV (plant.js pr.hopReq) at the end of the load, with the MV of the snapshot */
+  const caps = [];
+  try {
+    const L = AN.sheets.filter(sh => sh.S && !/^ABC-000/.test(sh.name)),
+      was = [];
+    for (const sh of L)
+      for (const b of sh.S.procs || [])
+        if (b.proc) {
+          was.push([b.proc, b.proc.on]);
+          b.proc.on = false;
+        }
+    for (let k = 0; k < 6; k++) for (const sh of L) stepSet(sh, 0);
+    for (const sh of L) {
+      const S = sh.S;
+      for (const b of S.procs || []) {
+        const pr = b.proc;
+        if (!pr || pr.mode === 'shared') continue;
+        const TS = pr.remote ? pr.remote.S : S,
+          ids = (pr.remote ? pr.remote.ai : pr.ai) || [];
+        if (ids.some(id => TS.rt.st[id] && TS.rt.st[id].snap)) caps.push([pr, S.rt.v[pr.pv]]);
+      }
+    }
+    for (const [pr, on] of was) pr.on = on;
+  } catch (e) {}
   /* the plant runs 10 s so that the interlocks of the cold boiler clear, then the operator sets the modes (a station that
      was forced to MANUAL stays MANUAL until AUTO is pressed again: user rule 2026-10-15) */
   try {
     for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) for (let k = 0; k < 20; k++) stepSet(sh, 0.5);
+  } catch (e) {}
+  /* 2.1.0-beta.6: the MV of the snapshot again after the 10 s: a start pulse of the drawing may have preset it (ABC-008 M.020E:
+     ID fan start -> PICFG108 MV 13 %), but on the snapshot the equipment was already running; then 2 s so the force manual
+     that came from that preset clears (M.0206 = MV < 14 %) */
+  try {
+    for (const [S, c] of modes) {
+      const h = AN_HMI_CTL[c.tag],
+        rt = S.rt;
+      if (!h || h.mv == null) continue;
+      if (c.manBlk && rt.st[c.manBlk.id]) rt.st[c.manBlk.id].val = h.mv;
+      else if (c.manNet != null && S.ext.includes(c.manNet)) rt.ext[c.manNet] = h.mv;
+      const ps = rt.st[c.b.id];
+      if (ps) ps.out = h.mv;
+    }
+    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) for (let k = 0; k < 4; k++) stepSet(sh, 0.5);
+  } catch (e) {}
+  for (const [pr, pv] of caps) pr.hopReq = { pv };
+  try {
+    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0.5);
   } catch (e) {}
   for (const [S, c, m] of modes) {
     const rt = S.rt;

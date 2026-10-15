@@ -183,6 +183,15 @@ function anResetAll() {
     /* 2.1.0: the plant model of every sheet follows the same rule as a fresh load (ensure): before, a sheet loaded before the
        plant was switched on kept it OFF until RUN, so Reset on a fresh page and Reset after a run gave another start (5 sheets) */
     if (AN.procDefault === true || (AN.procDefault === undefined && AN.plantOn === true)) for (const b of S.procs || []) if (b.proc) b.proc.on = true;
+    /* 2.1.0-beta.6: the anchors made by "Start at 150 MW" go away: Reset = cold start */
+    for (const b of S.procs || [])
+      if (b.proc) {
+        if (b.proc.hop && b.proc.hop.dyn) {
+          b.proc.hop = undefined;
+          b.proc.Ka = undefined;
+        }
+        b.proc.hopReq = null;
+      }
     const v = AN.sv[sh.name];
     if (v && v.p)
       for (const id in v.p) {

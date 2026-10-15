@@ -2,6 +2,18 @@
 
 Base: Stable v2.0.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 2.1.0-beta.6 — Start at 150 MW: mas tugma sa HMI (plant model)
+
+- **Problem:** Sa PLANT LIVE, 66 nakakabit na tag (full-load) ang lumalayo sa snapshot pagkatapos ng Start at 150 MW.
+- **As Found:** (1) Ang plant model ng loop na walang anchor (13 lang ang naka-anchor) ay may sariling steady state at isinusulat ito sa transmitter. (2) ABC-008: ang hydraulic coupling PICFG108 at inlet damper PICFG108A ng ID fan ay SERIES, pero ang model ay nagdadagdag (parallel). Ang MV preset 13 % sa pagtakbo ng ID fan (M.020E) ay pumapalit sa MV ng snapshot habang naglo-load; ang hydraulic select (FF M.0202) ay 0. (3) ABC-010: ang drum level model ay sumusulat sa drum pressure (compensation, AI0128 → 0) at ang FW flow model sa FW temperature (TIFW1160 → 300 °C).
+- **Work Done (engine, plant model lang; trace: `DRAWING_TRACE.md`):**
+  - Start at 150 MW: ang PV ng bawat loop ay kinukuha mula sa snapshot transmitters (plant model OFF sandali), saka naka-anchor ang loop sa (kasalukuyang MV → PV ng snapshot). Hindi: static anchor, drum level, measurement na kahati sa ibang sheet, flow na 0 o sarado ang valve. Nawawala sa Reset.
+  - ABC-008: series = produkto ng dalawang bukas; PICFG108 (A 46.1 %), PICFG108A (M 99.1 %), M.0202 = 1 (7.PNG); ang MV ng snapshot ay ibinabalik pagkatapos ng 10 s.
+  - Plant model ay sumusulat lang sa transmitter na kapareho ng unit ng PV.
+- **As Left (headless):** mismatch 66 → 44; furnace pressure −16 mmH2O at PICFG108 AUTO 46.1 % (gaya ng 7.PNG); drum pressure 134.2. Regression: isolated PASS, tests PASS, reset 0 differ, hmi_op 24 / 24, faceplate PASS, plant_live PASS, scenarios 244 / 0.
+- **Hindi pa nasubok:** totoong tablet; ang 44 natitirang tag (listahan sa `PLANT_LIVE_VS_SNAPSHOT.md`). Ang generic all-sheets run ay itinigil (luma ang build).
+- **Status:** Beta.
+
 ## 2.1.0-beta.5 — PLANT workspace LIVE: nakakabit na ang graphics sa simulation
 
 - **Problem:** Ang PLANT HMI graphics (27 system) ay snapshot value lang ("no address linked yet").
