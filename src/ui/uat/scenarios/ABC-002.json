@@ -1,0 +1,217 @@
+{
+ "sheet": "ABC-002",
+ "title": "TEST CARD: O2 trim AICFG112 — force manual M.0103",
+ "pdf": "analog-logic-abc.zip > ABC-002.pdf",
+ "scenarios": [
+  {
+   "id": "TC1",
+   "loop": "AICFG112",
+   "title": "Cold start: AICFG112 is forced to MANUAL",
+   "drawing": "M.0103 = OR( |SI0014 − SI0019| ≤ 0 % (connector 1: the low select LS of boiler master BM and the air limit SI0019 picks the limit), |SI0018 − SI0021| ≤ 0 % (connector 2: the high select picks SI0018), M.0102 = OR( NOT FICFA1081.REM, NOT M.0101 = BOILER MAIN STEAM FLOW > 220 T/H ), SIG.AB B.0671·B.0701 ). M.0103 is 1:B of the AICFG112 A/M T switch.",
+   "steps": [
+    {
+     "do": "wait",
+     "s": 5
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0102",
+     "value": 1,
+     "say": "M.0102",
+     "why": "FICFA1081 not in REMOTE, steam flow below 220 T/H"
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0103",
+     "value": 1,
+     "say": "M.0103 (force manual)"
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "AICFG112 mode"
+    },
+    {
+     "expect": "faceplate",
+     "value": "FORCE MANUAL",
+     "say": "Panel indication"
+    },
+    {
+     "expect": "disabled",
+     "button": "AUTO",
+     "value": "disabled",
+     "say": "AUTO button"
+    }
+   ]
+  },
+  {
+   "id": "TC2",
+   "loop": "AICFG112",
+   "title": "FICFA1081 in REMOTE, steam flow above 220 T/H, no cross limit active: force clears",
+   "drawing": "M.0101 = 1 (> 220 T/H), FICFA1081.REM = 1: M.0102 = 0. BM below SI0019: the low select gives BM, the difference is not 0; SI0018 below SI0021: the high select gives SI0021, the difference is not 0. The A/M T switch holds the MANUAL leg: the operator selects AUTO.",
+   "steps": [
+    {
+     "do": "set",
+     "sheet": "ABC-002",
+     "tag": "FICFA1081.REM",
+     "value": 1,
+     "say": "Secondary air flow FICFA1081 in REMOTE (FICFA1081.REM = 1)"
+    },
+    {
+     "do": "set",
+     "sheet": "ABC-001C",
+     "tag": "AI0129",
+     "value": 474.1,
+     "say": "Main steam flow transmitter AI0129 (ABC-001C) = 474.1 T/H (150 MW snapshot): M.0101 = steam flow > 220 T/H"
+    },
+    {
+     "do": "set",
+     "sheet": "ABC-006",
+     "tag": "FIFA1081.PV",
+     "value": 300,
+     "say": "Secondary air flow FIFA1081.PV (ABC-006) = 300"
+    },
+    {
+     "do": "set",
+     "sheet": "ABC-006",
+     "tag": "FIFA1071.PV",
+     "value": 200,
+     "say": "Primary air flow FIFA1071.PV (ABC-006) = 200: total air flow (TAF) about 501"
+    },
+    {
+     "do": "set",
+     "sheet": "ABC-001C",
+     "tag": "SI0213",
+     "value": 30,
+     "say": "Boiler master SI0213 (ABC-001C, BM) = 30, below the air limit SI0019"
+    },
+    {
+     "do": "wait",
+     "s": 30
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0101",
+     "value": 1,
+     "say": "M.0101 (main steam flow > 220 T/H, from ABC-001C)"
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0102",
+     "value": 0,
+     "say": "M.0102"
+    },
+    {
+     "expect": "signal",
+     "tag": "SI0014",
+     "value": 30,
+     "tol": 0.5,
+     "say": "SI0014 = low select (gives BM 30)"
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0103",
+     "value": 0,
+     "say": "M.0103 (force manual)",
+     "why": "all permissives made"
+    },
+    {
+     "expect": "disabled",
+     "button": "AUTO",
+     "value": "enabled",
+     "say": "AUTO button"
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "AICFG112: press A"
+    },
+    {
+     "expect": "mode",
+     "value": "AUTO",
+     "say": "AICFG112 mode after A"
+    }
+   ]
+  },
+  {
+   "id": "TC3",
+   "loop": "AICFG112",
+   "title": "In AUTO, boiler master rises above the air limit (cross limit active): AICFG112 to MANUAL",
+   "drawing": "BM 90 > SI0019: the low select gives SI0019, |SI0014 − SI0019| = 0, connector 1 = 1, M.0103 = 1.",
+   "steps": [
+    {
+     "do": "set",
+     "sheet": "ABC-002",
+     "tag": "FICFA1081.REM",
+     "value": 1,
+     "say": "Secondary air flow FICFA1081 in REMOTE (FICFA1081.REM = 1)"
+    },
+    {
+     "do": "set",
+     "sheet": "ABC-001C",
+     "tag": "AI0129",
+     "value": 474.1,
+     "say": "Main steam flow transmitter AI0129 (ABC-001C) = 474.1 T/H (150 MW snapshot): M.0101 = steam flow > 220 T/H"
+    },
+    {
+     "do": "set",
+     "sheet": "ABC-006",
+     "tag": "FIFA1081.PV",
+     "value": 300,
+     "say": "Secondary air flow FIFA1081.PV (ABC-006) = 300"
+    },
+    {
+     "do": "set",
+     "sheet": "ABC-006",
+     "tag": "FIFA1071.PV",
+     "value": 200,
+     "say": "Primary air flow FIFA1071.PV (ABC-006) = 200: total air flow (TAF) about 501"
+    },
+    {
+     "do": "set",
+     "sheet": "ABC-001C",
+     "tag": "SI0213",
+     "value": 30,
+     "say": "Boiler master SI0213 (ABC-001C, BM) = 30, below the air limit SI0019"
+    },
+    {
+     "do": "wait",
+     "s": 30
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "AICFG112: press A"
+    },
+    {
+     "expect": "mode",
+     "value": "AUTO",
+     "say": "AICFG112 mode"
+    },
+    {
+     "do": "set",
+     "sheet": "ABC-001C",
+     "tag": "SI0213",
+     "value": 90,
+     "say": "Boiler master SI0213 = 90 (above the air limit)"
+    },
+    {
+     "do": "wait",
+     "s": 2
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0103",
+     "value": 1,
+     "say": "M.0103 (force manual)",
+     "why": "air cross limit active"
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "AICFG112 mode"
+    }
+   ]
+  }
+ ]
+}

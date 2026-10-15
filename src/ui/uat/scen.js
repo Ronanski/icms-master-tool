@@ -26,8 +26,8 @@ window.UATS = (function () {
       for (let n = 0; n < S.nets.length; n++) if (labTxt(S, n) === t) return n;
       return -1;
     };
-    const nearOf = txt => {
-      const tx = (S.tx || []).find(x => x.t.trim() === txt);
+    const nearOf = (txt, nth) => {
+      const tx = nth == null ? (S.tx || []).find(x => x.t.trim() === txt) : (S.tx || []).filter(x => x.t.trim() === txt).sort((a, b) => a.y - b.y || a.x - b.x)[nth]; /* nth: the same text written more than once, counted top to bottom */
       if (!tx) return -1;
       let bn = -1,
         bd = 60;
@@ -47,7 +47,7 @@ window.UATS = (function () {
         }
       return bn;
     };
-    const net = o => (o.net !== undefined ? o.net : o.near ? nearOf(o.near) : netOf(o.tag));
+    const net = o => (o.net !== undefined ? o.net : o.near ? nearOf(o.near, o.nth) : netOf(o.tag));
     const ctl = AN.hmiCtrls(S).find(c => c.tag === loop),
       fp = [...document.querySelectorAll('#opp .fp')].find(
         x => x.querySelector('.tg b') && x.querySelector('.tg b').textContent === loop
@@ -84,7 +84,7 @@ window.UATS = (function () {
     try {
       for (const st of sc.steps) {
         if (skipRest) continue;
-        const c = ctx(sheet, sc.loop),
+        const c = ctx(sheet, st.loop || sc.loop) /* st.loop: a step on another faceplate of the sheet */,
           { sh, S, rt, net, ctl, fp, stn } = c;
         const AL = { AUTO: 'A', MAN: 'M', REMOTE: 'R', LOCAL: 'A' },
           btn = t => fp && [...fp.querySelectorAll('button')].find(e => e.textContent.trim() === (AL[t] || t));
