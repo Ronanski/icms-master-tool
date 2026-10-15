@@ -18,7 +18,7 @@ async function loadEngine(opt={}){
  run('head-gunz.js',fs.readFileSync(src('boot/gunz.js'),'utf8'));
  let analog=fs.readFileSync(src('analog/order.list'),'utf8').split(/\r?\n/).map(s=>s.trim()).filter(s=>s&&s[0]!=='#').map(f=>fs.readFileSync(src('analog/'+f),'utf8')).join('');if(opt.patch)analog=opt.patch(analog);/* opt.patch(code): tests may add a probe to the code (the simulator itself is not changed) */
  // the DITL script is not needed for the analog engine; the analog script needs a few names of it (it is written to be loaded after it)
- T('start');try{run('ditl-app.js',fs.readFileSync(src('digital/ditl-app.js'),'utf8').replace(/v@@VERSION@@/g,'v'+ver))}catch(e){if(opt.verbose)console.error('ditl-app:',e.message)}
+ T('start');try{run('ditl-app.js',fs.readFileSync(src('digital/order.list'),'utf8').split(/\r?\n/).map(x=>x.trim()).filter(x=>x&&x[0]!=='#').map(f=>fs.readFileSync(src('digital/'+f),'utf8')).join('').replace(/v@@VERSION@@/g,'v'+ver))}catch(e){if(opt.verbose)console.error('ditl-app:',e.message)}
  T('ditl done');run('analog',analog);T('analog script done');
  if(opt.verbose)console.error('types',['loadData','anBuild','AN','ensure','stepSet'].map(n=>n+':'+vm.runInContext('typeof '+n,ctx)).join(' '));
  const AN=vm.runInContext('AN',ctx);AN.setCat('an');/* the page does this when the user opens the analog tab: it loads the sheets */await AN.data;T('data loaded');

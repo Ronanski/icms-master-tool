@@ -25,7 +25,7 @@ Walang kategorya, isang listahan lang. `[ ]` = hindi pa; `[x]` = tapos at na-che
 19. [F] **Tuning lab:** subukan ang P / I / D ng loop sa plant model at tingnan ang tugon ng PV; ang parameter ay mula sa summary sa repo. (3–4 oras)
 20. [F] **Rehearsal ng startup at shutdown** (scenario na hakbang-hakbang, may marka). (6–8 oras)
 21. [F] **"Compare" ng dalawang bersyon ng sheet** bago baguhin ang logic: ano ang naapektuhan. (6–8 oras)
-22. [~] **Linisin ang code (TAPOS ang bahagi: ayos ng format at paghati ng `compile-step.js`; natitira ang `plant-window.js`, `links-canvas.js` at ang DITL na hindi gagalawin):** hatiin ang malalaking file (`compile-step.js` 116 KB, `ditl-app.js` 125 KB, `plant-window.js` 62 KB) at ayusin ang napakahabang linya. Walang magbabago sa gawi; ang html ay dapat pareho ang gawi. (4–6 oras; ang DITL ay hindi gagalawin nang walang utos)
+22. [~] **Linisin ang code (TAPOS ang bahagi: ayos ng format at paghati ng `compile-step.js`; natitira ang `plant-window.js` at `links-canvas.js`; ang DITL ay TAPOS na rin, format at paghati lang, utos ng user 2026-10-15):** hatiin ang malalaking file (`compile-step.js` 116 KB, `ditl-app.js` 125 KB, `plant-window.js` 62 KB) at ayusin ang napakahabang linya. Walang magbabago sa gawi; ang html ay dapat pareho ang gawi. (4–6 oras; ang DITL ay hindi gagalawin nang walang utos)
 23. [F] **Rebisyon ng UI / UX para sa tablet:** mas malaking button, iisang ibabang bar, buong-screen na faceplate at trend page. Dagdag, hindi overhaul. (4–6 oras)
 24. [F] **Overhaul ng app:** HINDI inirerekomenda ngayon; ang engine at mga test ay matatag na. Pag-isipan lang kapag natapos na ang #13 at #14.
 
@@ -44,3 +44,8 @@ Walang kategorya, isang listahan lang. `[ ]` = hindi pa; `[x]` = tapos at na-che
 - `tools/build/app-folder.js` (`npm run build:app`): mula sa iisang html, gumagawa ng folder na `index.html` + `js/*.js` (ang data ay `js/data-<id>.js`). Ang apk at exe ay ito na ang laman (`release.yml`). Ang Pages at ang release asset ay iisang html pa rin. Hindi ito kasama sa repo; nabubuo sa build.
 - Napatunayan sa headless Chromium na galing sa `file://`: 160 / 160 na scenario ng ABC-007, panel_sync 0 FAIL, faceplate 68 controller; pareho ang 134 na sheet ng digital at ang mga data element; walang error.
 - HINDI pa nasusubok ang pagbuo ng apk / exe mismo (kailangan ng workflow run: GO STABLE).
+
+## Tala ng DITL cleanup (beta.6, utos ng user: "go DITL cleanup")
+- Exemption sa rule na "huwag galawin ang DITL": **istruktura lang** (format at paghati ng file). Walang binago sa logic, engine o gawi.
+- `src/digital/ditl-app.js` (125 KB, 784 linya) ay naging `src/digital/parts/01-parse-build.js`, `02-netlist.js` (1640 linya), `03-models.js`, `04-render.js`, `05-overlay-interaction.js`, `06-panels.js`, `07-app-events.js`, na pinagdugtong ng `src/digital/order.list` sa iisang script (global scope, parang dati).
+- Patunay: (1) pagkatapos ng format, ang minified na DITL ay pareho (sha1 aecde129...); (2) pagkatapos ng paghati, pareho pa rin; (3) sa built html, ang DITL script ay pareho pagkatapos i-minify; (4) 5 digital na sheet sa headless: pareho ang laki ng SVG at ang bilang ng element bago / pagkatapos / sa multi-file; (5) 134 sheet ay pareho; (6) pasado: `npm test`, 5128 net ng engine, scenario ng ABC-007, panel_sync.
