@@ -59,6 +59,22 @@
     fmEl,cutEl,E('div',{cls:'tg'},[E('b',{txt:c.tag}),E('span',{txt:(unit?'['+fmt(rlo)+' ~ '+fmt(rhi)+' '+unit+']':'')+(c.amt?'':'  (walang A/M switch)')})]),
     E('details',{cls:'fpe'},[E('summary',{txt:'Engineering: signal ng drawing, SV / MV buttons, trend'}),sgRow].concat(modeRow?[modeRow]:[]).concat([svRow,mvRow,svg,
      E('div',{cls:'lg'},[E('span',{},[E('i',{style:'background:#ffd84a'}),document.createTextNode('PV')]),E('span',{},[E('i',{style:'background:#5cc8ff'}),document.createTextNode('SV')]),E('span',{},[E('i',{style:'background:#6fe3a0'}),document.createTextNode('MV')])])]))]);
+   /* click sa kahon ng SV / MV (ayon sa DCS ng planta): lumalabas ang control na pang-taas / pang-baba; clickable lang kapag enabled sa tamang scenario */
+   card.style.position='relative';const popEl=E('div',{cls:'fpop'});card.append(popEl);let popK=null,popVal=null;
+   const popIn=k=>k==='SV'?svIn:mvIn,popLo=k=>k==='SV'?rlo:0,popHi=k=>k==='SV'?rhi:100,popStep=k=>(popHi(k)-popLo(k))/100;
+   const popSet=(k,v)=>{v=Math.max(popLo(k),Math.min(popHi(k),v));popIn(k).value=(+v.toFixed(3));if(k==='SV')svSet(v);else setMV(S,c,v);popRefresh()};
+   const popRefresh=()=>{if(!popK)return;const inp=popIn(popK);if(inp.disabled){closePop();return}if(popVal&&document.activeElement!==popVal)popVal.value=inp.value};
+   const closePop=()=>{popEl.style.display='none';popK=null};
+   const openPop=(k,box)=>{if(popIn(k).disabled)return;popK=k;popEl.innerHTML='';const st=popStep(k),n=x=>+x;
+    popVal=E('input',{cls:'n',type:'number',step:'any'});popVal.value=popIn(k).value;popVal.onchange=()=>popSet(k,n(popVal.value));
+    const B=(t,d,title)=>E('button',{cls:'b',txt:t,title,on:()=>popSet(k,n(popIn(k).value)+d)});
+    popEl.append(E('div',{cls:'row',style:'justify-content:space-between'},[E('b',{txt:k+'  '+c.tag}),E('button',{cls:'b',txt:'✕',on:closePop})]),
+     E('div',{cls:'row'},[popVal,E('span',{cls:'sub',txt:k==='SV'?unit:'%'})]),
+     E('div',{cls:'row'},[B('▲▲',st*10,'+10 %'),B('▲',st,'+1 %'),B('▼',-st,'-1 %'),B('▼▼',-st*10,'-10 %')]));
+    if(k==='MV')popEl.append(E('div',{cls:'row'},[0,50,100].map(x=>E('button',{cls:'b',txt:String(x),on:()=>popSet('MV',x)}))));
+    popEl.style.display='block';popEl.style.top=(box.offsetTop+box.offsetHeight+4)+'px'};
+   svBox.addEventListener('click',e=>{if(e.target.closest('.fpop'))return;openPop('SV',svBox)});mvBox.addEventListener('click',e=>{if(e.target.closest('.fpop'))return;openPop('MV',mvBox)});
+   live.push(popRefresh);
    const whyCut=()=>{const cg=(c.dn||[]).find(d=>{const t=S.rt.st[d.id];return t&&t.pk==='B'});cutList.textContent='';if(!cg)return;const seen=new Set(),cand=[],q=[cg.sel];while(q.length&&seen.size<400){const n=q.shift();if(seen.has(n))continue;seen.add(n);if(S.ext.includes(n)){if(S.nets[n].dig&&S.rt.force[n]===undefined&&!(S.xlk&&S.xlk[n]))cand.push(n);continue}for(const g of S.drv[n]||[])for(const i of g.i||[])if(i>=0)q.push(i)}
     const was=S.rt.v[cg.sel],hits=[];for(const n of cand.slice(0,40)){const o=S.rt.ext[n]||0;S.rt.ext[n]=o>.5?0:1;try{AN.settle()}catch(e){}if((S.rt.v[cg.sel]>.5?1:0)!==(was>.5?1:0))hits.push({n,to:S.rt.ext[n],name:(S.lab[n]&&S.lab[n].t)||('n'+n+' (walang label)')});S.rt.ext[n]=o}try{AN.settle()}catch(e){}
     cutList.append(E('span',{cls:'sub',txt:hits.length?'Ang isang input na ito, kapag binago, ay magpapawala ng interlock (pindutin para itakda):':'Walang iisang input sa sheet na ito ang makakapagpawala (kailangan ng higit sa isa, o galing sa ibang sheet / sa measurement).'}));for(const h of hits)cutList.append(E('button',{cls:'b',txt:h.name+' → '+h.to,style:'margin:2px',on:()=>setIn(S,h.n,h.to)}))};
