@@ -1,7 +1,7 @@
 // Lists EVERY controller (PID / PIDV) of the 54 sheets with what the operator can do on its faceplate and why not: A/M station, the select signals (and the leg they ask for), manual MV source, SV source.
 // Usage: node tests/regress/controllers_table.js [html] > table.json
 const {open}=require('./lib.js');const fs=require('fs');
-const html=process.argv[2]||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+\.html$/.test(x));
+const html=process.argv[2]||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 (async()=>{const {browser,page}=await open(html);
 const rows=await page.evaluate(()=>{const R=[];for(let i=0;i<AN.sheets.length;i++){const sh=AN.sheets[i];AN.go(i);const S=sh.S;let cs=[];try{cs=AN.hmiCtrls(S)}catch(e){}
  const nm=n=>n<0||n==null?'-':((S.lab[n]&&S.lab[n].t)||('n'+n));

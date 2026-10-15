@@ -3,7 +3,7 @@
 // Also: side labels are centred on their anchor vertically, above / below labels are centred horizontally.
 // Usage: node tests/regress/values_layout.js [logic-sim-vX.Y.Z.html] [--list]   (exit 1 when any label covers something)
 const {open}=require('./lib.js');const fs=require('fs');
-const html=process.argv.find(a=>/\.html$/.test(a))||fs.readdirSync('dist').map(x=>'dist/'+x).find(f=>/logic-sim-v[\d.]+\.html$/.test(f));
+const html=process.argv.find(a=>/\.html$/.test(a))||fs.readdirSync('dist').map(x=>'dist/'+x).find(f=>/logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(f));
 (async()=>{const {browser,page,errs}=await open(html);
 const res=await page.evaluate(()=>{
  const ov=(a,c,m=.15)=>{const w=Math.min(a[2],c[2])-Math.max(a[0],c[0]),h=Math.min(a[3],c[3])-Math.max(a[1],c[1]);return w>m&&h>m?w*h:0};

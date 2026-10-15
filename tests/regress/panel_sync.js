@@ -3,7 +3,7 @@
 // FORCE MANUAL (signal = 1) disables AUTO, and when the signal goes the station STAYS manual until the operator presses AUTO.
 // Usage: node tests/regress/panel_sync.js [html] [sheet] [tag]    (default ABC-007 FICFA1081)
 const {open}=require('./lib.js');const fs=require('fs');
-const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+\.html$/.test(x));
+const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 const args=process.argv.filter(a=>!/\.html$/.test(a)).slice(2),sheet=args[0]||'ABC-007',tag=args[1]||'FICFA1081';
 (async()=>{const {browser,page,errs}=await open(html);let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
 await page.evaluate(s=>AN.go(AN.sheets.findIndex(x=>x.name===s)),sheet);

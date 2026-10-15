@@ -5,7 +5,7 @@
 //  - output (sink / AO / controller output) na walang input na nakakaapekto = "patay na output"
 // Usage: node tests/scenarios/cone.js [html] [sheet ...]
 const fs=require('fs');const {open}=require('../regress/lib.js');
-const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+\.html$/.test(x));
+const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 const want=process.argv.slice(2).filter(a=>!/\.html$/.test(a));
 (async()=>{const {browser,page,errs}=await open(html);
 const names=await page.evaluate(()=>AN.sheets.map(s=>s.name).filter(n=>!/^ABC-000/.test(n)));let bad=0,deadIn=0,deadOut=0,tin=0,tout=0;
