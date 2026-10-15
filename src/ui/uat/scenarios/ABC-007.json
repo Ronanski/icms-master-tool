@@ -2279,6 +2279,170 @@
      "say": "mode pagkatapos pindutin ang AUTO"
     }
    ]
+  },
+  {
+   "id": "B1",
+   "loop": "FICFA1071",
+   "title": "BU-CMD: MFT pulse habang bukas ang damper > 50 % — ang MV ay pinipilit sa 50 % (RB-MV), tapos bumabalik",
+   "drawing": "M.0181 = AND(M.253F, M.0182). M.253F = HC > 50 ng positioner feedback AI0192. M.0182 = TPS 5 s ng MFT pulse (I.000F). Kapag M.0181 = 1, ang BU-CMD T switch ay pumapasa sa B = RB-MV 50 %.",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "press",
+     "button": "MAN",
+     "say": "MAN"
+    },
+    {
+     "do": "mv",
+     "value": 80,
+     "say": "MV = 80"
+    },
+    {
+     "do": "wait",
+     "s": 20
+    },
+    {
+     "expect": "signal",
+     "tag": "M.253F",
+     "value": 1,
+     "say": "M.253F (damper > 50 %)"
+    },
+    {
+     "do": "set",
+     "near": "MFT PULSE",
+     "value": 1,
+     "say": "MFT pulse = 1"
+    },
+    {
+     "do": "wait",
+     "s": 2
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0182",
+     "value": 1,
+     "say": "M.0182"
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0181",
+     "value": 1,
+     "say": "M.0181"
+    },
+    {
+     "do": "wait",
+     "s": 30
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1071.MV",
+     "value": 50,
+     "tol": 1,
+     "say": "FICFA1071.MV sa 32 s"
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0182",
+     "value": 0,
+     "say": "M.0182 tapos ang 5 s"
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0181",
+     "value": 0,
+     "say": "M.0181 tapos ang pulse"
+    },
+    {
+     "do": "wait",
+     "s": 30
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1071.MV",
+     "value": 50,
+     "tol": 1,
+     "say": "MV pagkatapos ng pulse (tracking: ang A/M station ay sumusunod sa BU-CMD, hindi bumabalik sa 80)",
+     "why": "Needs Verification sa planta: ang drawing ay hindi nagsasabi kung bumabalik ang MV ng operator; sinusunod ng engine ang bumpless tracking ng A/M station."
+    }
+   ]
+  },
+  {
+   "id": "B2",
+   "loop": "FICFA1071",
+   "title": "BU-CMD: MFT pulse pero sarado ang damper (< 50 %) — walang BU-CMD, ang MV ng operator ay hindi gagalaw",
+   "drawing": "M.0181 = AND(M.253F, M.0182): kung ang AI0192 ay wala sa > 50 %, kahit may MFT pulse ay M.0181 = 0.",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "press",
+     "button": "MAN",
+     "say": "MAN"
+    },
+    {
+     "do": "mv",
+     "value": 20,
+     "say": "MV = 20"
+    },
+    {
+     "do": "wait",
+     "s": 20
+    },
+    {
+     "expect": "signal",
+     "tag": "M.253F",
+     "value": 0,
+     "say": "M.253F (damper < 50 %)"
+    },
+    {
+     "do": "set",
+     "near": "MFT PULSE",
+     "value": 1,
+     "say": "MFT pulse = 1"
+    },
+    {
+     "do": "wait",
+     "s": 2
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0182",
+     "value": 1,
+     "say": "M.0182"
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0181",
+     "value": 0,
+     "say": "M.0181"
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1071.MV",
+     "value": 20,
+     "tol": 1,
+     "say": "FICFA1071.MV"
+    }
+   ]
   }
  ]
 }
