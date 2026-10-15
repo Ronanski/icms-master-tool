@@ -101,7 +101,15 @@ Before reporting completion:
 - The simulator is built from `src/` (see `src/README.md`). Edit `src/` and run `npm run build`; never edit `logic-sim-vX.Y.Z.html` by hand. The Checks run fails if the committed html is not exactly what `src/` builds.
 - The version is `src/version.txt`; when it changes, the build writes the new html and removes the old one.
 
+## 5f. Version standard (user, 2026-10-15: "istandard natin"; SemVer)
+- Format: `MAJOR.MINOR.PATCH` for Stable and `MAJOR.MINOR.PATCH-beta.N` for Beta (example: Stable `1.21.0`, Beta `1.21.0-beta.7`). The html is `dist/logic-sim-v<version>.html`.
+- The Stable number moves ONLY at a Stable release (GO STABLE). Between two Stables every push is a Beta of the NEXT Stable: only `N` goes up (`-beta.1`, `-beta.2`, ...). Never use up a patch number for a Beta push (this is why v1.20.38 became v1.20.67 in two days: wrong).
+- MINOR (`1.20.x` -> `1.21.0`): something new that the user sees or a behaviour change (new faceplate, new UAT, new rule). PATCH (`1.21.0` -> `1.21.1`): fixes only. MAJOR: only for an incompatible change (reserved).
+- Release: before GO STABLE, set `src/version.txt` to the Stable number (no `-beta.N`), build, then merge and run `release.yml` with `GO v<version>`; the workflow refuses a version that has `-beta`.
+- The in-app update check compares in SemVer order: `1.21.0-beta.2` > `1.21.0-beta.1`, and `1.21.0` > any `1.21.0-beta.N`.
+- Reports: one folder per TARGET version, `docs/versions/v<MAJOR.MINOR.PATCH>/UPDATE_REPORT.md`, with a section per Beta (`beta.N`); the release report PDF is made at the Stable only. Folders `v1.20.60` ~ `v1.20.67` are the history before this standard (= the work of `1.21.0-beta.1`).
+
 ## 5e. Beta policy (user, 2026-10-14; replaces the GO BETA rule)
 - Every fix or update is committed and pushed to the working branch right away; the push IS the Beta release (the Beta page `/beta/` and the in-app channel detect the new version). No GO BETA needed any more.
-- Each push: bump `src/version.txt`, `npm run build`, `npm run check`, test only the fix, update `HANDOFF.md` and the version report, then tell the user what to check.
+- Each push: bump the Beta number in `src/version.txt` (see 5f), `npm run build`, `npm run check`, test only the fix, update `HANDOFF.md` and the version report, then tell the user what to check.
 - Still needs the user's explicit **GO STABLE** in that message: merge to `main`, any workflow run (release, clean), Stable release (apk, exe, html, report). Never assume permission from an older message.

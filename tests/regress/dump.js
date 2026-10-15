@@ -1,6 +1,6 @@
 // Dumps the simulator data that refcheck.py compares with the reference workbooks (document-references/).
 const {open}=require('./lib');
-(async()=>{const {browser,page}=await open(process.argv[2]||require('fs').readdirSync('dist').map(x=>'dist/'+x).find(x=>/logic-sim-v\d+\.\d+\.\d+\.html$/.test(x)));
+(async()=>{const {browser,page}=await open(process.argv[2]||require('fs').readdirSync('dist').map(x=>'dist/'+x).find(x=>/logic-sim-v\d+\.\d+\.\d+(?:-beta\.\d+)?\.html$/.test(x)));
 const d=await page.evaluate(()=>{const fx={},bl=[],ai=[];
  for(const sh of AN.sheets){const S=AN.ensure(sh);
   for(const b of S.blk){

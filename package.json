@@ -8,9 +8,14 @@
     "build": "node tools/build/build.js",
     "check": "node tools/build/build.js --check",
     "test": "node tests/regress/tests.js",
-    "uat": "node src/ui/uat/dry.js"
+    "uat": "node src/ui/uat/dry.js",
+    "scenarios": "node tests/scenarios/run.js",
+    "format": "prettier --write \"src/analog/**/*.js\" \"src/ui/**/*.js\" \"src/boot/**/*.js\" \"tests/**/*.js\" \"tools/**/*.js\"",
+    "format:check": "prettier --check \"src/analog/**/*.js\" \"src/ui/**/*.js\" \"src/boot/**/*.js\"",
+    "build:app": "node tools/build/app-folder.js"
   },
   "devDependencies": {
+    "prettier": "^3.9.10",
     "vite": "^7.0.0"
   }
 }

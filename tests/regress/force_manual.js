@@ -4,7 +4,7 @@
 // Controllers whose manual-leg select signal cannot be found are listed as NOT TESTED with the reason. Usage: node tests/regress/force_manual.js [html] [--sheets=ABC-007,ABC-003A]
 const {open}=require('./lib.js');const fs=require('fs');
 const only=(process.argv.find(a=>/^--sheets=/.test(a))||'').slice(9).split(',').filter(Boolean);
-const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+\.html$/.test(x));
+const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 (async()=>{const {browser,page,errs}=await open(html);
 const r=await page.evaluate((only)=>{const R={pass:0,fail:[],nt:{}};const nt=(k,w)=>{R.nt[k]=(R.nt[k]||[]);R.nt[k].push(w)};
  for(let i=0;i<AN.sheets.length;i++){const sh=AN.sheets[i];if(only.length&&!only.includes(sh.name))continue;AN.go(i);const S=sh.S;let cs=[];try{cs=AN.hmiCtrls(S)}catch(e){}

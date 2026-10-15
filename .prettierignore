@@ -1,0 +1,8 @@
+dist/
+archive/
+node_modules/
+document-references/
+src/data/
+**/*.html
+**/*.json
+**/*.css

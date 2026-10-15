@@ -21,6 +21,7 @@ jobs:
         run: |
           node tools/version.js --github
           V=$(node tools/version.js)
+          case "$V" in *-beta*) echo "v$V is a Beta: set src/version.txt to the Stable number (no -beta.N) before the release"; exit 1;; esac
           [ "${{ inputs.go }}" = "GO v$V" ] || { echo "go must be exactly: GO v$V"; exit 1; }
   apk:
     needs: gate
@@ -43,8 +44,8 @@ jobs:
           cat > capacitor.config.json <<EOF
           {"appId":"${{ matrix.id }}","appName":"${{ matrix.name }}","webDir":"www","server":{"androidScheme":"https"}}
           EOF
-          # the simulator is built into the apk (opens at once, works without internet); the page asks the site for updates
-          cp "../../dist/logic-sim-v${{ needs.gate.outputs.version }}.html" www/index.html
+          # the simulator is built into the apk as a FOLDER (index.html + js/*.js, same content as the single html; opens at once, works without internet); the page asks the site for updates
+          node ../../tools/build/app-folder.js "../../dist/logic-sim-v${{ needs.gate.outputs.version }}.html" www
           npm install --no-audit --no-fund
           npx cap add android
           npx cap sync android
@@ -75,7 +76,7 @@ jobs:
         shell: bash
         run: |
           echo '{"name":"${{ matrix.name }}","url":"${{ matrix.url }}"}' > config.json
-          mkdir -p www && cp "../../dist/logic-sim-v${{ needs.gate.outputs.version }}.html" www/index.html
+          node ../../tools/build/app-folder.js "../../dist/logic-sim-v${{ needs.gate.outputs.version }}.html" www
           npm install --no-audit --no-fund
           npx electron-builder --win portable -c.productName="${{ matrix.name }}" -c.extraMetadata.version=${{ needs.gate.outputs.version }}
           ls dist
