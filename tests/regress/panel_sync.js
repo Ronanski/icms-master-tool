@@ -19,4 +19,13 @@ await page.evaluate(t=>{const fp=[...document.querySelectorAll('#opp .fp')].find
 await frc(1);c=await sync();ck(c.man&&!c.auto&&c.autoOff,'signal 1 (force manual): the panel shows MAN, AUTO is disabled');
 await frc(0);c=await sync();ck(c.man&&!c.auto&&!c.autoOff,'signal back to 0: STILL MAN (not automatic), AUTO is available again');
 await page.evaluate(t=>{const fp=[...document.querySelectorAll('#opp .fp')].find(x=>x.querySelector('.tg b').textContent===t);[...fp.querySelectorAll('button')].find(e=>e.textContent==='AUTO').click()},tag);c=await sync();ck(c.auto&&!c.man,'operator presses AUTO: AUTO');
+/* REMOTE / LOCAL (user rule 2026-10-15): in REMOTE the station is AUTO and cannot be made manual, not even the SV; LOCAL allows MAN and the SV of the operator; a force-manual signal cancels REMOTE */
+const btn=n=>page.evaluate(([t,n])=>{const fp=[...document.querySelectorAll('#opp .fp')].find(x=>x.querySelector('.tg b').textContent===t);const b=[...fp.querySelectorAll('button')].find(e=>e.textContent===n);if(b&&!b.disabled)b.click();return b?!b.disabled:null},[tag,n]);
+const ctl=()=>page.evaluate(t=>{const fp=[...document.querySelectorAll('#opp .fp')].find(x=>x.querySelector('.tg b').textContent===t);const bs=[...fp.querySelectorAll('button')];const g=n=>bs.find(e=>e.textContent===n);const ins=[...fp.querySelectorAll('input')];return{rem:g('REMOTE')&&g('REMOTE').classList.contains('on'),loc:g('LOCAL')&&g('LOCAL').classList.contains('on'),manOff:g('MAN').disabled,auto:g('AUTO').classList.contains('on'),man:g('MAN').classList.contains('on'),svOff:ins[0]&&ins[0].disabled,mvOff:ins[1]&&ins[1].disabled}},tag);
+const hasMode=await page.evaluate(t=>{const fp=[...document.querySelectorAll('#opp .fp')].find(x=>x.querySelector('.tg b').textContent===t);return !![...fp.querySelectorAll('button')].find(e=>e.textContent==='REMOTE')},tag);
+if(hasMode){await frc(0);await sync();await btn('LOCAL');await sync();await btn('MAN');c=await sync();let k=await ctl();ck(k.loc&&k.man&&!k.manOff&&!k.svOff&&!k.mvOff,'LOCAL: MAN is allowed, SV and MV can be set');
+ await btn('REMOTE');c=await sync();k=await ctl();ck(k.rem&&k.auto&&!k.man&&k.manOff&&k.svOff&&k.mvOff,'REMOTE: AUTO for sure, MAN / SV / MV disabled');
+ await btn('MAN');c=await sync();k=await ctl();ck(k.auto&&!k.man,'REMOTE: pressing MAN does nothing, still AUTO');
+ await frc(1);c=await sync();k=await ctl();ck(k.man&&k.loc&&!k.rem,'force manual (signal = 1) cancels REMOTE: MAN and LOCAL');
+ await frc(0);c=await sync();k=await ctl();ck(k.man&&k.loc,'signal gone: stays LOCAL and MAN until the operator selects REMOTE / AUTO')}
 if(errs.length)console.log('page errors',errs.slice(0,3));await browser.close();process.exit(fail?1:0)})();
