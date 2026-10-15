@@ -10,7 +10,7 @@ The simulator is built from these files into ONE html file (`logic-sim-vX.Y.Z.ht
 | `version.txt` | ang version (sumusunod ang pangalan ng html) |
 | `boot/` | start-up bago ang app: gunzip, tanong sa update (Stable / Beta), error banner |
 | `styles/` | `app.css`, ang itsura ng page |
-| `digital/` | ang DITL (digital logic) page, hindi ginagalaw ng ABC work |
+| `digital/` | ang DITL (digital logic) page: `parts/01..07-*.js` (parse / netlist / models / render / overlay / panels / events) na pinagdugtong ayon sa `order.list`; ang logic at gawi ay HINDI ginalaw (format at paghati lang, napatunayan: pareho ang minified na bundle; 2026-10-15, utos ng user) |
 | `analog/reader/` | **READER** (DOM-free): binabasa ang drawing (DXF), gumagawa ng blocks, nets, pins, parameters |
 | `analog/engine/` | **ENGINE** (DOM-free, tumatakbo mag-isa): compile at step (`compile-step.js`; ang data ng faceplate ay `face-defaults.js`, ang range / F(X) ay `ranges-fx.js`), plant model (`plant.js`), sheets / F(X) / Reset (`sheets.js`), links ng sheets at stepping (`links.js`) |
 | `analog/data/` | loader ng built-in data |

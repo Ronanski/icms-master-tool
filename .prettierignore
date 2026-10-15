@@ -3,7 +3,6 @@ archive/
 node_modules/
 document-references/
 src/data/
-src/digital/
 **/*.html
 **/*.json
 **/*.css
