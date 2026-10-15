@@ -1,6 +1,6 @@
 // Release report PDF (Taglish, portrait A4, dark, cards): node src/ui/uat/make-report.js
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/node22/lib/node_modules/playwright');
-const ver=require('fs').readdirSync('dist').map(x=>'dist/'+x).find(x=>/logic-sim-v\d+\.\d+\.\d+\.html$/.test(x)).match(/v(\d+\.\d+\.\d+)/)[1];
+const ver=require('fs').readdirSync('dist').map(x=>'dist/'+x).find(x=>/logic-sim-v\d+\.\d+\.\d+(?:-beta\.\d+)?\.html$/.test(x)).match(/v(\d+\.\d+\.\d+(?:-beta\.\d+)?)\.html/)[1];
 const dry=process.env.DRY||'';
 const cards=[
 ['Ano ang laman ng release','Stable',[

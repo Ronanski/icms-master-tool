@@ -2,8 +2,8 @@
 // ONE-TIME splitter: cuts the single html (logic-sim-vX.Y.Z.html) into the source files under src/ (template, scripts, css, data).
 // After this the sources are the truth and tools/build/build.js builds the html again, byte for byte. Usage: node tools/build/split.js [html]
 const fs=require('fs'),path=require('path');
-const html=process.argv[2]||fs.readdirSync('dist').map(x=>'dist/'+x).find(x=>/logic-sim-v\d+\.\d+\.\d+\.html$/.test(x));
-const ver=html.match(/v(\d+\.\d+\.\d+)/)[1];
+const html=process.argv[2]||fs.readdirSync('dist').map(x=>'dist/'+x).find(x=>/logic-sim-v\d+\.\d+\.\d+(?:-beta\.\d+)?\.html$/.test(x));
+const ver=html.match(/v(\d+\.\d+\.\d+(?:-beta\.\d+)?)\.html/)[1];
 if(fs.existsSync('src')&&!process.argv.includes('--force')){console.error('src/ already exists: the sources are the truth now. Use --force only to start again from the html (it deletes src/).');process.exit(1)}
 let s=fs.readFileSync(html,'utf8');
 // 1. the blocks that other tools inject (shell, hmi, theme, uat) are not part of the sources: build.js injects them again

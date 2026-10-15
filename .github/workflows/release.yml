@@ -21,6 +21,7 @@ jobs:
         run: |
           node tools/version.js --github
           V=$(node tools/version.js)
+          case "$V" in *-beta*) echo "v$V is a Beta: set src/version.txt to the Stable number (no -beta.N) before the release"; exit 1;; esac
           [ "${{ inputs.go }}" = "GO v$V" ] || { echo "go must be exactly: GO v$V"; exit 1; }
   apk:
     needs: gate
