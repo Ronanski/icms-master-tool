@@ -36,7 +36,7 @@ function anProcList(S){S.procs=[];const out=[];for(const b of S.blk){if(b.k!=='P
 function anProcStep(S,dt){const rt=S.rt,v=rt.v,F=rt.force,pm=rt.pm||(rt.pm={}),pf=rt.pf||(rt.pf={});
  for(const b of S.procs){const pr=b.proc;if(!pr||pr.mode==='shared')continue;let q=pm[b.id];
   if(!pr.on){if(q)delete pm[b.id];if(pf[pr.pv]){delete F[pr.pv];delete pf[pr.pv]}continue}
-  const st=rt.st[b.id]||{},u=b.vel&&b.velNet!=null?v[b.velNet]:(st.out==null?0:st.out),span=b.p.span>0?b.p.span:100,lo=b.p.rlo!=null?b.p.rlo:0,um=((b.p.lo==null?0:b.p.lo)+(b.p.hi==null?100:b.p.hi))/2;
+  const st=rt.st[b.id]||{},uOf=g=>{const t=rt.st[g.id]||{};return g.vel&&g.velNet!=null?v[g.velNet]:(t.out==null?0:t.out)},u=(()=>{/* two controllers on the same PV (valves in parallel, e.g. A and B side): the PV answers the average of their open commands (v1.20.58) */const sh=b._sh||(b._sh=S.procs.filter(g=>g!==b&&g.proc&&g.proc.mode==='shared'&&g.proc.pv===pr.pv));if(!sh.length)return uOf(b);const us=[uOf(b)].concat(sh.map(uOf)).filter(x=>Math.abs(x)>1e-9);/* a closed (0) stand-by valve does not dilute the others */return us.length?us.reduce((a,x)=>a+x,0)/us.length:0})(),span=b.p.span>0?b.p.span:100,lo=b.p.rlo!=null?b.p.rlo:0,um=((b.p.lo==null?0:b.p.lo)+(b.p.hi==null?100:b.p.hi))/2;
   /* plant: steady state PV = bottom of the range + span * (0.5 + sign * K * (command - middle) / 100) + disturbance; dead time, then first order; it cannot leave the range of the instrument */
   const ss=c=>lo+span*(.5+pr.sg*pr.K*(c-um)/100)+(pr.dist||0)/100*span+(pr.op||0);
   if(!q)q=pm[b.id]={y:ss(u),h:[],u:null};
