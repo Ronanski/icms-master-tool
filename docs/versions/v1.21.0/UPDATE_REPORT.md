@@ -24,3 +24,11 @@
 - **Work Done:** Kapag Beta at ang nasa `version.json` ay walang `-beta.N`, binabasa na ng app ang title ng mismong Beta page para sa totoong bersyon. Hindi na kailangan ang pagbabago sa `main`.
 - **As Left:** Bago ang unang update: pindutin ang "I-update ngayon" nang isang beses (kukunin ang beta.7); pagkatapos nito, "Updated ka na". Hindi pa nasubukan sa tablet; ang live site ay hindi maabot mula dito.
 - **Status:** Beta pushed. Ang tamang `site.yml` ay mapupunta sa main sa susunod na GO STABLE.
+
+## 1.21.0-beta.8 — Channel (Stable/Beta) sa apk / exe
+
+- **Problem:** Sa apk/exe (v1.20.59) walang "Channel: Stable/Beta" na option.
+- **As Found:** Ang selector ay lumalabas lang kapag ang address ay `*.github.io` (browser). Ang apk/exe ay bukas sa `file:` / `localhost`, kaya wala.
+- **Work Done:** Lumalabas na ang selector sa apk/exe. Ang Beta ay bubukas sa Beta page ng site at maaalala (kailangan ng internet).
+- **As Left:** Nasubukan na lumalabas ang selector (file:, 2 option). Hindi pa nasubukan ang paglipat mismo sa tablet. Ang apk na nakainstall (v1.20.59) ay walang ganito hanggang sa susunod na Stable build.
+- **Status:** Beta pushed.

@@ -622,13 +622,18 @@ document.head.appendChild(
   /* channel: Stable (released by the owner) or Beta (testing of the newest fixes, from a branch); the choice is remembered, so the apk / exe (which open the Stable address) go to the chosen channel */
   try {
     const beta = /\/beta\/(index\.html)?$/.test(location.pathname);
-    if (/\.github\.io$/.test(location.hostname)) {
-      const base = location.pathname.replace(/beta\/(index\.html)?$/, '').replace(/index\.html$/, '');
+    /* the apk / exe copy (file: or https://localhost) has the selector too: Beta opens the site's Beta page and remembers it (like the update question does) */
+    const inApp =
+      location.protocol === 'file:' ||
+      (location.protocol === 'https:' && location.hostname === 'localhost' && !location.port);
+    if (inApp || /\.github\.io$/.test(location.hostname)) {
+      const SITE = 'https://ronanski.github.io/icms-master-tool/';
+      const base = inApp ? SITE : location.pathname.replace(/beta\/(index\.html)?$/, '').replace(/index\.html$/, '');
       let ch = 'stable';
       try {
         ch = localStorage.getItem('logic.channel') || 'stable';
       } catch (e) {}
-      if (!beta && ch === 'beta') {
+      if (!inApp && !beta && ch === 'beta') {
         location.replace(base + 'beta/');
       } else if (gs) {
         const cs = document.createElement('select');
@@ -647,6 +652,7 @@ document.head.appendChild(
         cs.onchange = () => {
           try {
             localStorage.setItem('logic.channel', cs.value);
+            if (inApp) localStorage.setItem('ls-site', '1');
           } catch (e) {}
           location.href = base + (cs.value === 'beta' ? 'beta/' : '');
         };
