@@ -183,10 +183,27 @@ function anColor() {
   const l = ($('slive') || {}).value;
   return l === 'Yellow' || l === 'Green' || l === 'Magenta' ? '#35d0ff' : '#ffc233';
 }
+/* 2.0.0: the legend follows the wire style chosen in Legend & style (solid / tube, colour), like the drawing */
+function anLgdSvg(col, tube, w) {
+  return tube
+    ? '<svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="' + col + '" stroke-width="' + (5 * w).toFixed(1) + '"/><line x1="0" y1="6" x2="30" y2="6" stroke="#0f1418" stroke-width="' + (2 * w).toFixed(1) + '"/></svg>'
+    : '<svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="' + col + '" stroke-width="' + (2 * w).toFixed(1) + '"/></svg>';
+}
+let anLgdKey = '';
+function anLgdUpd() {
+  const ws = AN.ws || {},
+    k = [ws.ds, ws.dc, ws.as, ws.ac, ws.dw, ws.aw, ($('slive') || {}).value].join('|');
+  const s = document.querySelector('#anmeta .lg .lgw');
+  if (!s || (k === anLgdKey && s.firstChild)) return;
+  anLgdKey = k;
+  s.innerHTML =
+    '<i>' + anLgdSvg(anDcol(), ws.ds === 'tube', Math.min(1.6, +ws.dw || 1) * 0.8) + 'digital</i><i>' +
+    anLgdSvg(anColor(), ws.as !== 'solid', Math.min(1.6, +ws.aw || 1)) + 'analog</i>';
+}
 function lgd() {
   const s = h$('span', { cls: 'lg' });
-  s.innerHTML =
-    '<i><svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="var(--live)" stroke-width="1.6"/></svg>digital</i><i><svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="var(--alive,#ffb020)" stroke-width="5"/><line x1="0" y1="6" x2="30" y2="6" stroke="#0f1418" stroke-width="2"/></svg>analog</i>';
+  s.innerHTML = '<span class="lgw" style="display:contents"></span>';
+  setTimeout(anLgdUpd, 0);
   const bt = h$('button', {
     txt: 'Legend & style ▾',
     title: 'Colour code of the symbols, valves and wires; wire style settings'
@@ -905,6 +922,7 @@ function paint0() {
     tube = AN.ws.as !== 'solid';
   document.documentElement.style.setProperty('--alive', ANC);
   document.documentElement.style.setProperty('--alv', anLite(ANC));
+  anLgdUpd();
   for (const b of S.blk)
     if (b.k === 'VLV' && b.pnl) {
       const q = S.rt.st[b.id],
