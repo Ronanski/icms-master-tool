@@ -352,7 +352,8 @@ function actSet(sh) {
     seen.add(AN.p2);
     set.push(AN.p2);
   }
-  for (const nm of (AN.hmiSheets || []).concat(AN.plantSheets || [])) {
+  /* AN.worldSheets (1.22.0): ABC sheets whose outputs go TO the DITL, stepped while the one world (ABC + DITL) is ON */
+  for (const nm of (AN.hmiSheets || []).concat(AN.plantSheets || [], AN.worldSheets || [])) {
     const p = AN.sheets.find(s => s.name === nm);
     if (p && !seen.has(p)) {
       seen.add(p);

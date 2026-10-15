@@ -1,6 +1,7 @@
 /* DITL (digital logic) - Timers, buttons, keyboard, loading of the built-in sheets. Part of ONE script (joined by src/digital/order.list, in this order). */
 setInterval(() => {
   const s = cur();
+  if (window.WORLD && WORLD.live) return; /* the one world steps the timers / MOV / motors of EVERY sheet (src/world/world.js) */
   if (!SIM || !s || !s.nl) {
     tick.t = 0;
     return;
