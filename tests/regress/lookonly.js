@@ -10,6 +10,8 @@ ok(io.length>50&&/STN101 · NODE 0 · I\/O UNIT 0 · DI/.test(io[0]),'I/O LIST g
 await page.evaluate(()=>[...document.querySelectorAll('.libtabs button')].find(b=>b.dataset.k==='mem').click());await W(800);
 const mem=await page.evaluate(()=>[...document.querySelectorAll('#libtb .libg')].map(e=>e.innerText.split('\n')[0]));
 ok(['WM','TR','PTN','SI','DI','WB','FP'].every(k=>mem.some(m=>m.includes('STN101 ('+k+')'))),'MEMORY LIST groups by station / sheet (WM TR PTN SI DI WB FP)');
+const wm=await page.evaluate(()=>[...document.querySelectorAll('#libtb .libg')].map(e=>e.innerText.replace(/\n/g,' ')).find(t=>/STN101 \(WM\)/.test(t)));
+ok(/3504 rows · 1866 vacant/.test(wm||''),'MEMORY LIST STN101 WM = 3504 addresses like the Excel, vacant shown ('+wm+')');
 await page.evaluate(()=>{window.lsLibrary(false)});await runMode();await W(300);
 await page.evaluate(()=>{window.lsLibrary(true);[...document.querySelectorAll('.libtabs button')].find(b=>b.dataset.k==='io').click();const f=document.querySelector('#libws .libf');f.value='AI0129';f.dispatchEvent(new Event('input'))});await W(800);
 await page.evaluate(()=>document.querySelector('#libtb .libr .ds').click());await W(900);
