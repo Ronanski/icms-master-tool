@@ -2443,6 +2443,190 @@
      "say": "FICFA1071.MV"
     }
    ]
+  },
+  {
+   "id": "B3",
+   "loop": "FICFA1071",
+   "title": "Alarm ng mababang PA flow: M.3130 (< 220 T/H) at M.3131 (< 200 T/H, TON 5 s)",
+   "drawing": "PAF FLOW (n72) -> LC < 220 T/H -> M.3130 (PRIMARY AIR FLOW LOW, TO DITL 41-01). n72 -> LC < 200 T/H -> TON 5 s -> M.3131 (PRIMARY AIR FLOW LL, TO DITL 03F-17).",
+   "steps": [
+    {
+     "do": "set",
+     "net": 72,
+     "value": 250,
+     "say": "PA flow = 250 T/H"
+    },
+    {
+     "do": "wait",
+     "s": 8
+    },
+    {
+     "expect": "signal",
+     "tag": "M.3130",
+     "value": 0,
+     "say": "M.3130 sa 250 T/H"
+    },
+    {
+     "expect": "signal",
+     "tag": "M.3131",
+     "value": 0,
+     "say": "M.3131 sa 250 T/H"
+    },
+    {
+     "do": "set",
+     "net": 72,
+     "value": 210,
+     "say": "PA flow = 210 T/H"
+    },
+    {
+     "do": "wait",
+     "s": 8
+    },
+    {
+     "expect": "signal",
+     "tag": "M.3130",
+     "value": 1,
+     "say": "M.3130 sa 210 T/H"
+    },
+    {
+     "expect": "signal",
+     "tag": "M.3131",
+     "value": 0,
+     "say": "M.3131 sa 210 T/H (hindi pa 200)"
+    },
+    {
+     "do": "set",
+     "net": 72,
+     "value": 190,
+     "say": "PA flow = 190 T/H"
+    },
+    {
+     "do": "wait",
+     "s": 2
+    },
+    {
+     "expect": "signal",
+     "tag": "M.3131",
+     "value": 0,
+     "say": "M.3131 sa 2 s (TON 5 s)"
+    },
+    {
+     "do": "wait",
+     "s": 6
+    },
+    {
+     "expect": "signal",
+     "tag": "M.3130",
+     "value": 1,
+     "say": "M.3130 sa 190 T/H"
+    },
+    {
+     "expect": "signal",
+     "tag": "M.3131",
+     "value": 1,
+     "say": "M.3131 pagkatapos ng 5 s"
+    },
+    {
+     "do": "set",
+     "net": 72,
+     "value": 250,
+     "say": "PA flow bumalik = 250 T/H"
+    },
+    {
+     "do": "wait",
+     "s": 8
+    },
+    {
+     "expect": "signal",
+     "tag": "M.3130",
+     "value": 0,
+     "say": "M.3130 bumalik"
+    },
+    {
+     "expect": "signal",
+     "tag": "M.3131",
+     "value": 0,
+     "say": "M.3131 bumalik"
+    }
+   ]
+  },
+  {
+   "id": "B4",
+   "loop": "FICFA1071",
+   "title": "FAULT T switch: sa 2 s pulse ng M.018B (TPS ng M.025B) ang output ng PID ay hawak, kahit nagbago ang SV; pagkatapos ay gumagalaw ulit",
+   "drawing": "AMT na may \"FAULT\": B = sariling output (hawak ang huling halaga) kapag M.018B = 1. M.018B = TPS 2 s ng M.025B (HOUSE OPERATION ON). Ang SV ay binago habang naka-hold: ang MV ay hindi dapat gumalaw sa loob ng 2 s, at gagalaw pagkatapos.",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "AUTO"
+    },
+    {
+     "do": "wait",
+     "s": 120
+    },
+    {
+     "do": "mark",
+     "what": "mv",
+     "as": "m0"
+    },
+    {
+     "do": "set",
+     "tag": "M.025B",
+     "value": 1,
+     "say": "HOUSE OPERATION ON = 1 (nagsisimula ang 2 s na hold)"
+    },
+    {
+     "do": "sv",
+     "value": 150,
+     "say": "SV = 150 sa loob ng hold"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "signal",
+     "tag": "M.018B",
+     "value": 1,
+     "say": "M.018B sa 1 s"
+    },
+    {
+     "expect": "cmp",
+     "what": "mv",
+     "than": "m0",
+     "value": "pareho",
+     "tol": 0.3,
+     "say": "MV sa 1 s (hawak)"
+    },
+    {
+     "do": "wait",
+     "s": 20
+    },
+    {
+     "expect": "signal",
+     "tag": "M.018B",
+     "value": 0,
+     "say": "M.018B sa 21 s (tapos na ang 2 s)"
+    },
+    {
+     "expect": "cmp",
+     "what": "mv",
+     "than": "m0",
+     "value": "tumaas",
+     "min": 0.5,
+     "say": "MV pagkatapos ng hold: gumalaw na (tumaas o bumaba)"
+    }
+   ]
   }
  ]
 }

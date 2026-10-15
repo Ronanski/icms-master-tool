@@ -119,6 +119,22 @@ window.UATS = (function () {
             try {
               AN.settle();
             } catch (e) {}
+          } else if (st.do === 'ai') {
+            /* itakda ang transmitter (AI block): block = id, o tag = pangalan ng AI (hal. AI0866) */
+            const bk = S.blk.find(
+              b =>
+                b.k === 'AI' && (st.block != null ? b.id === st.block : (b.o || []).some(n => labTxt(S, n) === st.tag))
+            );
+            if (!bk) {
+              push({ k: 'bad', t: 'walang transmitter ' + (st.tag || st.block) });
+              fail++;
+              continue;
+            }
+            const t = rt.st[bk.id];
+            t.val = t.act = st.value;
+            try {
+              AN.settle();
+            } catch (e) {}
           } else if (st.do === 'wait') await stepSim(sh, st.s);
           else if (st.do === 'reset') {
             AN.reset();
@@ -357,8 +373,11 @@ window.UATS = (function () {
           const r = AN.extRange && AN.extRange(S, n);
           return [n, r && r.hi > r.lo ? (r.lo + r.hi) / 2 : 50];
         });
-      const anOv =
-        new Map(); /* analog na binago ng paghahanap (hal. PV malapit sa SV para pumasa ang deviation permissive) */
+      let mvPre =
+        null; /* MV (manual) na ipinapasok ng operator bago subukan: may controller na naka-force manual hangga't mababa ang MV (PICFG108: MV < 14 %, M.0206) */
+      const aiOv = new Map(),
+        anOv =
+          new Map(); /* analog na binago ng paghahanap (hal. PV malapit sa SV para pumasa ang deviation permissive) */
       const put = (n, v) => {
         if ((S.xlk && S.xlk[n]) || !S.ext.includes(n)) S.rt.force[n] = v;
         else S.rt.ext[n] = v;
@@ -369,6 +388,14 @@ window.UATS = (function () {
         AN.reset();
         AN.go(idx);
         for (const [n, v] of an.map(([n, v]) => [n, anOv.has(n) ? anOv.get(n) : v]).concat(stt.sets)) put(n, v);
+        for (const [id, v] of aiOv) {
+          const t = S.rt.st[id];
+          if (t) t.val = t.act = v;
+        }
+        if (mvPre != null) {
+          if (c0.manBlk && S.rt.st[c0.manBlk.id]) S.rt.st[c0.manBlk.id].val = mvPre;
+          else S.rt.ext[c0.manNet] = mvPre;
+        }
         try {
           AN.settle();
         } catch (e) {}
@@ -433,9 +460,8 @@ window.UATS = (function () {
           best = st0;
         }
       }
-      if (bs0 >= 1000 && best) {
-        let cur = best,
-          cs = bs0;
+      /* paghahanap ng estado ng digital (flip, pulse ng latch, pares) hanggang mawala ang force / putol */
+      const climb = async (cur, cs) => {
         for (let it = 0; it < 16 && cs >= 1000; it++) {
           let imp = false;
           for (const n of cd) {
@@ -448,19 +474,7 @@ window.UATS = (function () {
               if (cs < 1000) break;
             }
           }
-          if (!imp || cs >= 1000)
-            for (const n of cd) {
-              if (cs < 1000) break;
-              const nb = pul(cur, n),
-                sc1 = await score(nb);
-              if (sc1 < cs) {
-                cur = nb;
-                cs = sc1;
-                imp = true;
-                break;
-              }
-            }
-          if (!imp && cs >= 1000 && cd.length <= 12) {
+          if (!imp && cs >= 1000 && cd.length <= 14) {
             outer: for (let a = 0; a < cd.length; a++)
               for (let b2 = a + 1; b2 < cd.length; b2++) {
                 const nb = flip(flip(cur, cd[a]), cd[b2]),
@@ -473,35 +487,123 @@ window.UATS = (function () {
                 }
               }
           }
+          if (!imp && cs >= 1000)
+            for (const n of cd) {
+              if (cs < 1000) break;
+              const nb = pul(cur, n),
+                sc1 = await score(nb);
+              if (sc1 < cs) {
+                cur = nb;
+                cs = sc1;
+                imp = true;
+                break;
+              }
+            }
           if (!imp) break;
         }
+        return { cur, cs };
+      };
+      if (bs0 >= 1000 && best) {
+        const r0 = await climb(best, bs0);
+        const cur = r0.cur,
+          cs = r0.cs;
         if (cs < 1000) base = cur;
         else best = cur;
       } else if (best) base = best;
       if (!base && best) {
         /* huling pagsubok: analog na input sa cone (deviation / limit na kailangang pumasa): subukan ang 10 / 30 / 70 / 90 % ng range, isa-isa, hawak ang pinakamababang score */
         const ac = an.filter(([n]) => up.has(n));
-        let cur = best,
-          cs = bs0;
-        for (let pass = 0; pass < 2 && cs >= 1000; pass++)
-          for (const [n, mid] of ac) {
-            const r = AN.extRange && AN.extRange(S, n),
-              keep = anOv.has(n) ? anOv.get(n) : mid;
-            let bv = keep;
-            if (r && r.hi > r.lo)
-              for (const f of [0.1, 0.3, 0.7, 0.9]) {
-                anOv.set(n, r.lo + f * (r.hi - r.lo));
-                const sc1 = await score(cur);
+        /* ang operator ay nagtataas ng MV sa manual (50 %) bago ang lahat */
+        mvPre = 50;
+        {
+          const r0 = await climb(best, await score(best));
+          if (r0.cs < bs0) {
+            best = r0.cur;
+            bs0 = r0.cs;
+          }
+          if (bs0 < 1000) base = best;
+        }
+        if (!base) {
+          let cur = best,
+            cs = bs0;
+          /* lahat ng analog na input sa cone sabay (hal. hangin at gatong na may kaugnayan: SI0019 = 1.2 x ...) */
+          if (cs >= 1000 && ac.length > 1)
+            for (const f of [0.5, 0.7, 0.9, 0.3]) {
+              for (const [n] of ac) {
+                const r = AN.extRange && AN.extRange(S, n);
+                if (r && r.hi > r.lo) anOv.set(n, r.lo + f * (r.hi - r.lo));
+              }
+              const r1 = await climb(cur, await score(cur));
+              if (r1.cs < cs) {
+                cs = r1.cs;
+                cur = r1.cur;
+                break;
+              }
+              anOv.clear();
+            }
+          for (let pass = 0; pass < 2 && cs >= 1000; pass++)
+            for (const [n, mid] of ac) {
+              const r = AN.extRange && AN.extRange(S, n),
+                keep = anOv.has(n) ? anOv.get(n) : mid;
+              let bv = keep;
+              if (r && r.hi > r.lo)
+                for (const f of [0.1, 0.3, 0.7, 0.9]) {
+                  anOv.set(n, r.lo + f * (r.hi - r.lo));
+                  const r1 = await climb(cur, await score(cur)),
+                    sc1 = r1.cs;
+                  if (sc1 < cs) {
+                    cs = sc1;
+                    cur = r1.cur;
+                    bv = anOv.get(n);
+                  }
+                }
+              anOv.set(n, bv);
+              if (cs < 1000) break;
+            }
+          /* mga transmitter (AI) sa cone: hal. temperatura na kailangang lampas sa saturation + 11 °C (TICHR1002, M.0172) */
+          const aib = S.blk.filter(
+            b => b.k === 'AI' && (b.o || []).some(n => up.has(n)) && b.rng && b.rng.hi > b.rng.lo
+          );
+          /* lahat ng transmitter sa cone ay sabay na itinataas / ibinababa (hal. dalawang sensor ng parehong temperatura) */
+          if (cs >= 1000 && aib.length > 1)
+            for (const f of [0.1, 0.3, 0.5, 0.7, 0.9]) {
+              for (const b of aib) aiOv.set(b.id, b.rng.lo + f * (b.rng.hi - b.rng.lo));
+              const r1 = await climb(cur, await score(cur)),
+                sc1 = r1.cs;
+              if (sc1 < cs) {
+                cs = sc1;
+                cur = r1.cur;
+                break;
+              }
+              aiOv.clear();
+            }
+          if (cs >= 1000)
+            for (const b of S.blk.filter(
+              b => b.k === 'AI' && (b.o || []).some(n => up.has(n)) && b.rng && b.rng.hi > b.rng.lo
+            )) {
+              const keep = aiOv.has(b.id) ? aiOv.get(b.id) : null;
+              let bv = keep;
+              for (const f of [0.1, 0.3, 0.5, 0.7, 0.9, 1]) {
+                aiOv.set(b.id, b.rng.lo + f * (b.rng.hi - b.rng.lo));
+                const r1 = await climb(cur, await score(cur)),
+                  sc1 = r1.cs;
                 if (sc1 < cs) {
                   cs = sc1;
-                  bv = anOv.get(n);
+                  cur = r1.cur;
+                  bv = aiOv.get(b.id);
                 }
               }
-            anOv.set(n, bv);
-            if (cs < 1000) break;
+              if (bv == null) aiOv.delete(b.id);
+              else aiOv.set(b.id, bv);
+              if (cs < 1000) break;
+            }
+          if (cs < 1000) base = cur;
+          else {
+            anOv.clear();
+            aiOv.clear();
+            mvPre = null;
           }
-        if (cs < 1000) base = cur;
-        else anOv.clear();
+        }
       }
       if (!base) {
         let why = '';
@@ -533,7 +635,13 @@ window.UATS = (function () {
           break;
         }
       }
-      const bs = an.concat(base.sets).map(([n, v]) => ({ do: 'set', net: n, value: v })),
+      const bs = an
+          .map(([n, v]) => [n, anOv.has(n) ? anOv.get(n) : v])
+          .concat(base.sets)
+          .map(([n, v]) => ({ do: 'set', net: n, value: v }))
+          .concat(
+            [...aiOv].map(([id, v]) => ({ do: 'ai', block: id, value: v, say: 'transmitter (AI) ' + id + ' = ' + v }))
+          ),
         hasR = !!c0.remote;
       if (base.pulses.length) {
         bs.push({ do: 'wait', s: 5, say: 'maghintay' });
@@ -547,6 +655,12 @@ window.UATS = (function () {
           );
         }
       }
+      if (mvPre != null)
+        bs.push({
+          do: 'mv',
+          value: mvPre,
+          say: 'itaas ang MV sa manual = ' + mvPre + ' (kailangan para mawala ang force manual ng drawing)'
+        });
       const pr = (S.procs || []).find(b => b.id === c0.b.id),
         T = pr && pr.proc && pr.proc.T ? pr.proc.T : 150,
         wp = Math.max(120, Math.min(1500, Math.round(T * 6)));
