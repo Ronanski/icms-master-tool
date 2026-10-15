@@ -2,6 +2,19 @@
 
 Base: Stable v1.23.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f). Bakit 2.0.0: bagong henerasyon ng itsura at English ang buong app (PROJECT_RULES 5f, user 2026-10-15: "standard tayo, baka umabot ng v1.9999").
 
+## 2.0.0-beta.3 — Faceplate ng MAN station, ▲ ▼ na pino at hold-to-ramp, walang keyboard sa tablet; HMI operating points
+
+- **Problem (user):** Ang MAN station sa Operator tab ay walang faceplate at "MAN" lang ang pangalan. Ang − / + ay 1 % ng range (5 sa range na 0~500). Sa tablet, lumalabas ang keyboard sa SV / MV.
+- **As Found:** `hmi.js` ay gumagamit ng `b.txt[0]` bilang tag, pero sa 58 MAN block, ang `txt[0]` ay karaniwang "MAN"; ang tunay na tag ay `b.tag`.
+- **Work Done:**
+  - Faceplate ng MAN station: description (MAN parameter workbook, `AN.descOf`), output bar, MV box, ▲▲ ▲ ▼ ▼▼, tag + range + station (S3-MDL001), MAN button na umiilaw.
+  - ▲ / ▼ = 0.1 % ng range, ▲▲ / ▼▼ = 1 %. Kapag hinawakan, umuulit (10 / s) at bumibilis ×5 pagkalipas ng 2 s. Pareho sa SV / MV popup ng PID faceplate.
+  - Tablet / phone (`pointer:coarse`): ang value box ay readonly at `inputmode=none`, kaya walang keyboard.
+  - `docs/hmi/OPERATING_POINTS.md` at `operating-points.json`: 35 HMI snapshot, 1019 item; 53 controller ay may katapat na ABC tag at sheet.
+- **As Left (headless):** `tests/regress/manstation.js` 12 / 12 (desktop + touch); overview: ALL PASS. Ang operator scenario (generic) ng ABC-010 at ABC-008 ay tumatakbo pa nang i-push ito.
+- **Hindi pa nasubok:** totoong tablet.
+- **Status:** Pass (headless), Beta.
+
 ## 2.0.0-beta.2 — English ang text ng scenario test (UAT)
 
 - **Problem:** Tagalog pa ang mga hakbang at resulta ng scenario test sa UAT panel (ABC-007), at ang "expected / actual" ng Spot check.
