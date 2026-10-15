@@ -1,6 +1,25 @@
-# v1.23.0 (target ng susunod na Stable) — mga Beta
+# v1.23.0 — Stable at mga Beta
 
 Base: Stable v1.22.0 (`main`, release `v1.22.0`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
+
+## 1.23.0 — STABLE (GO STABLE ng user, 2026-10-15)
+
+- **Problem:** Hindi makalipat ang user sa Beta mula sa Stable v1.22.0 sa device. Kailangang makuha ang lahat ng bago (UI ayon sa mockup v2, info card, event log) bilang Stable.
+- **As Found:**
+  - Sa headless test (desktop 1024 px at phone 412 px), ang Stable v1.22.0 → Channel: Beta ay nagda-download at tumatakbo ang 1.23.0-beta.4. Hindi ko ma-reproduce ang problema sa device (hindi ko hawak ang tablet).
+  - Sa phone, nasa ☰ menu ang Channel box (nakatago hangga't hindi binubuksan ang menu).
+  - Bug na nakita: ang `PIC-COBM.MAN` (boiler pressure control in manual) ay hindi nakakabit sa M / A ng PIC-COBM. Sa drawing, ang wire ay may description bilang pangalan ("CONTROL IN MANUAL" sa ABC-004A, "BOILER PRESSURE CONTROL IN MANUAL" ×4 sa ABC-001C) at ang tag text ay nasa dulo. Kaya laging 0 ito, at hindi tama ang force manual ng HS-COAL (M.2020) at ang mga logic ng ABC-001C na bumabasa nito.
+- **Work Done:**
+  - Lahat ng 1.23.0-beta.1 ~ beta.4 (detalye sa ibaba): iisang top bar ng ABC at DITL, ⚙ settings, mga font na mapipili, overview ng controller at force list, info card sa search, event log, Spot check.
+  - `src/ui/hmi/hmi.js` `modeNetsByTag`: ang M / A / R ay pumipindot din sa digital input wire na nagtatapos sa tag text (< 14). Pagkatapos, ang parehong description ay hinahanap sa ibang sheet na may parehong tag text. Hindi kasama ang wire na address ang pangalan (hal. B.0641) o galing sa link.
+  - Audit sa lahat ng controller: tatlo lang ang bagong kabit, at tugma ang lahat sa drawing:
+    - PIC-COBM.MAN: ABC-004A ×1, ABC-001C ×4;
+    - FICFW1007.LOC: ABC-010 "NOT REMOTE MODE FEED WATER CONTROL".
+- **As Left (headless):**
+  - PIC-COBM: M → ang 5 wire = 1; A → 0.
+  - Regression: tingnan ang listahan sa ibaba ng commit (tests, faceplate, panel sync, PID A/M, overview, events, info card, DITL toolbar, iisang mundo, in-app update, ABC-007 scenarios).
+- **Hindi pa nasubok:** totoong tablet / phone / exe. Ang eksaktong dahilan kung bakit hindi makalipat sa Beta sa device ng user (hindi ma-reproduce dito).
+- **Status:** Stable 1.23.0.
 
 ## 1.23.0-beta.4 — Event log at Spot check
 

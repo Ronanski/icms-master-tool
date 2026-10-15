@@ -39,9 +39,15 @@
     } catch (e) {}
   };
   /* ang .MAN / .LOC / .REM ng isang tag ay iisang HMI command sa buong DCS: lahat ng input na may ganitong pangalan sa lahat ng sheet (hindi lang ang sa sheet ng controller) */
+  /* a wire named by its description only: not an address (B.0641, M.0228, AI0641) and not linked from another sheet */
+  const descWire = (S2, n) =>
+    !(S2.xlk && S2.xlk[n]) && !/^(?:[A-Z]{1,2}\.[0-9A-F]{4}|[A-Z]{2}\d{4}|[A-Z]{2,}[A-Z0-9-]*\.[A-Z]{2,4})$/.test((AN.nm(S2, n) || '').trim());
   const modeNetsByTag = (tag, kinds, own) => {
     const out = own ? [own] : [],
-      want = new Set(kinds.map(k => (tag + '.' + k).toLowerCase()));
+      want = new Set(kinds.map(k => (tag + '.' + k).toLowerCase())),
+      add = (S2, n) => !out.some(q => q[0] === S2 && q[1] === n) && out.push([S2, n]),
+      descs = new Set(),
+      tagged = [];
     for (const sh2 of AN.sheets) {
       if (/^ABC-000/.test(sh2.name)) continue;
       let S2;
@@ -53,9 +59,44 @@
       if (!S2 || !S2.ext) continue;
       for (const n of S2.ext) {
         const t = S2.lab[n] && S2.lab[n].t;
-        if (t && want.has(t.trim().toLowerCase()) && !out.some(q => q[0] === S2 && q[1] === n)) out.push([S2, n]);
+        if (t && want.has(t.trim().toLowerCase())) add(S2, n);
+      }
+      /* 1.23.0: the wire may carry the description as its name with the tag text written at its end (ABC-004A "CONTROL IN
+         MANUAL" + "PIC-COBM.MAN"): the digital input wire that ends at the tag text (< 14) is that address */
+      const tq = (S2.tx || []).filter(q => want.has(String(q.t).trim().toLowerCase()));
+      if (!tq.length) continue;
+      tagged.push(S2);
+      for (const q of tq) {
+        let best = -1,
+          bd = 14;
+        for (const n of S2.ext) {
+          const nn = S2.nets[n];
+          if (!nn || !nn.dig || !descWire(S2, n)) continue;
+          for (const i of nn.segs) {
+            const g = S2.seg[i],
+              d = Math.min(Math.hypot(q.x - g.x1, q.y - g.y1), Math.hypot(q.x - g.x2, q.y - g.y2));
+            if (d < bd) {
+              bd = d;
+              best = n;
+            }
+          }
+        }
+        if (best >= 0) {
+          add(S2, best);
+          const d = (AN.nm(S2, best) || '').trim().toUpperCase();
+          if (d.length >= 10 && !/^[A-Z]{1,3}\.\w{4}$/.test(d) && !d.includes(tag.toUpperCase())) descs.add(d);
+        }
       }
     }
+    /* the same description on another sheet that shows the same tag text (ABC-001C "BOILER PRESSURE CONTROL IN MANUAL"
+       with "PIC-COBM.MAN" a little further away, under other wires) */
+    if (descs.size)
+      for (const S2 of tagged)
+        for (const n of S2.ext) {
+          const nn = S2.nets[n],
+            d = (AN.nm(S2, n) || '').trim().toUpperCase();
+          if (nn && nn.dig && descWire(S2, n) && [...descs].some(x => d === x || d.endsWith(' ' + x))) add(S2, n);
+        }
     return out;
   };
   /* 1.22.0: .MAN / .LOC / .REM are the MODE STATUS of the controller (textbook: status word .MAN = MANUAL, .LOC = LOCAL,
