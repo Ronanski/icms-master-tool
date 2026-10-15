@@ -1,6 +1,6 @@
 // FORCE MANUAL (user rule, 2026-10-14; drawing ABC-007 "1:B" M.0190): when the logic signal that selects the MANUAL leg of the A/M station is 1,
-// the operator's AUTO must be refused; after the signal is gone the station is AUTO again by itself (HMI and diagram show the same).
-// For every controller with an A/M station on all 54 sheets: force the manual-leg select signal to 1, press AUTO, expect MANUAL; release, expect AUTO by itself (unless the logic still forces manual).
+// the operator's AUTO must be refused; after the signal is gone the station STAYS manual until the operator presses AUTO (HMI and diagram show the same).
+// For every controller with an A/M station on all 54 sheets: force the manual-leg select signal to 1, press AUTO, expect MANUAL; release, expect still MANUAL; press AUTO, expect AUTO (unless the logic still forces manual).
 // Controllers whose manual-leg select signal cannot be found are listed as NOT TESTED with the reason. Usage: node tests/regress/force_manual.js [html] [--sheets=ABC-007,ABC-003A]
 const {open}=require('./lib.js');const fs=require('fs');
 const only=(process.argv.find(a=>/^--sheets=/.test(a))||'').slice(9).split(',').filter(Boolean);
@@ -16,8 +16,13 @@ const r=await page.evaluate((only)=>{const R={pass:0,fail:[],nt:{}};const nt=(k,
    const press=m=>{const s=st();s.al=c.autoLeg;s.fm=m==='A'?c.autoLeg:man;try{AN.settle()}catch(e){}};
    try{
     AN.reset();step(2);delete S.rt.force[n];S.rt.force[n]=1;step(4);press('A');step(6);const a=st().pk===man&&st().fman===1;
-    delete S.rt.force[n];step(6);const still=S.rt.v[n]>.5;/* the logic itself may still ask for manual (a real force-manual condition): then it must stay manual */const b=still?st().pk===man:st().pk===c.autoLeg;/* signal gone: AUTO again BY ITSELF (the request stays) */const d=b;
-    if(a&&b&&d)R.pass++;else R.fail.push(w+' '+(a?'':'AUTO accepted while forced; ')+(b?'':(still?'went AUTO although the logic still forces manual; ':'did not return to AUTO after release; ')));
+    /* from here the logic may move the station by itself with its own signals (1:A pulse = AUTO, a force-manual condition that comes back after AUTO): the test follows every step and accepts what the drawing's signals ask */
+    delete S.rt.force[n];let sawA=false,sawB=false;for(let j=0;j<12;j++){step(1);if((amt.cs||[]).some(q=>q.A&&S.rt.v[q.n]>.5))sawA=true;if((amt.cs||[]).some(q=>!q.A&&S.rt.v[q.n]>.5))sawB=true}
+    const b=sawB?true:sawA?st().pk===c.autoLeg:st().pk===man;/* signal gone: it STAYS manual, it does not go to AUTO by itself (user rule 2026-10-15), unless the drawing's own 1:A signal asked for AUTO */
+    press('A');sawB=false;for(let j=0;j<12;j++){step(1);if((amt.cs||[]).some(q=>!q.A&&S.rt.v[q.n]>.5))sawB=true}
+    const d=sawB?true:st().pk===c.autoLeg;/* the operator presses AUTO: AUTO, unless a force-manual condition of the logic asks for manual */
+    const still=false,sigA=false;
+    if(a&&b&&d)R.pass++;else R.fail.push(w+' '+(a?'':'AUTO accepted while forced; ')+(b?'':'did not stay manual / did not follow the 1:A signal after the signal went; ')+(d?'':'the operator cannot go AUTO although no signal asks for manual'));
    }catch(e){nt('error',w+' '+e.message)}
    delete S.rt.force[n]}}
  return R},only);

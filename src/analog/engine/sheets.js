@@ -17,3 +17,13 @@ function anPull(sh){try{const S=sh.S;if(!S)return;for(const l of linksOf(sh)){if
 function anResetAll(){
  for(const sh of AN.sheets){if(!sh.S)continue;const S=sh.S;S.look={};anInit(S);const v=AN.sv[sh.name];if(v&&v.p)for(const id in v.p){const b=S.blk[id];if(b)Object.assign(b.p,v.p[id])}sh._hs=[]}
  {const seen=new Set(),fr=sh=>{if(!sh.S||seen.has(sh))return;seen.add(sh);try{for(const l of linksOf(sh))if(l.to===sh)fr(l.from)}catch(e){}anPull(sh);anSettle(sh.S,6)};for(const sh of AN.sheets)fr(sh)}/* all sheets are re-initialised first, then settled: the same start as a fresh load, whatever the sheet order (cross-sheet back-up values) */}
+/* A/M STATION of a controller (PID / PIDV): the selector AFTER the PID that has a manual source (a MAN station or an operator input / COS); a selector before it (FAULT hold, back-up) stays on the controller leg. autoLeg = the leg that carries the controller output (AUTO), the other leg is MANUAL. Used by the panel and by the force-manual logic of the engine. */
+function anStationOf(S,b){
+      /* the controller output is the analog output of the PID that leads to a switch (a PID can have a second output pin: ABC-005 AICFG10571) */
+   const cands=b.o.filter(n=>!S.nets[n].dig);if(!cands.length)cands.push(b.o[0]);let chain=[],st0=cands[0],op=cands[0];
+   for(const c0 of cands){const ch=[];let cur=c0,s0=c0;for(let g=0;g<6;g++){let sw=S.blk.find(z=>(z.k==='AMT'||z.k==='SW')&&z.a!=null&&z.b!=null&&z.o[0]!=null&&(z.a===cur||z.b===cur)&&!ch.includes(z));if(!sw&&!ch.length){/* the first switch is behind summing blocks (bias / feed-forward) */for(let h=0;h<3&&!sw;h++){const m=S.blk.find(z=>(z.k==='SUM'||z.k==='ADD'||z.k==='SUB')&&z.ip&&z.ip.some(q=>q.n===cur)&&z.o&&z.o.length===1);if(!m)break;cur=m.o[0];sw=S.blk.find(z=>(z.k==='AMT'||z.k==='SW')&&z.a!=null&&z.b!=null&&z.o[0]!=null&&(z.a===cur||z.b===cur))}if(sw)s0=cur}if(!sw)break;ch.push(sw);cur=sw.o[0]}
+    if(ch.length){chain=ch;st0=s0;op=c0;break}}
+   const legOf=(sw,i)=>i===0?(sw.a===st0?'A':'B'):(sw.a===chain[i-1].o[0]?'A':'B');let amt=null,autoLeg=null,manNet=null,manBlk=null;
+   for(let i=0;i<chain.length&&!amt;i++){const sw=chain[i],pl=legOf(sw,i),o=pl==='A'?sw.b:sw.a;if(o==null||o<0)continue;const man=(S.drv[o]||[]).find(d=>d.k==='MAN');if(man||(S.ext.includes(o)&&!S.nets[o].dig)){amt=sw;autoLeg=pl;manNet=o;manBlk=man||null}}
+   if(!amt){amt=S.blk.find(z=>(z.k==='AMT'||z.k==='SW')&&z.a!=null&&z.b!=null&&(b.o.includes(z.a)||b.o.includes(z.b))&&z.o[0]!=null)||null;autoLeg=amt?(b.o.includes(amt.a)?'A':'B'):null;manNet=amt?(autoLeg==='A'?amt.b:amt.a):null}
+   return {amt,autoLeg,manNet,manBlk,op}}
