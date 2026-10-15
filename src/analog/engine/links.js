@@ -352,7 +352,8 @@ function actSet(sh) {
     seen.add(AN.p2);
     set.push(AN.p2);
   }
-  for (const nm of (AN.hmiSheets || []).concat(AN.plantSheets || [])) {
+  /* AN.worldSheets (1.22.0): ABC sheets whose outputs go TO the DITL, stepped while the one world (ABC + DITL) is ON */
+  for (const nm of (AN.hmiSheets || []).concat(AN.plantSheets || [], AN.worldSheets || [])) {
     const p = AN.sheets.find(s => s.name === nm);
     if (p && !seen.has(p)) {
       seen.add(p);
@@ -479,6 +480,19 @@ function procRemote(x) {
     if (own || ais.some(id => FS.plantT.ai.has(id)) || (ext != null && FS.plantT.ext.has(ext))) {
       pr.mode = 'shared';
       pr.of = 'the controller that owns this measurement in ' + l.from.name;
+      /* 1.22.0: the owner's plant model also hears this controller (ABC-020 TICHR1002A RH / SH flue gas damper and ABC-019
+         TICHR1002 spray both move the reheater outlet temperature; before, the damper had no effect on the PV) */
+      const ow = (FS.procs || []).find(
+        p =>
+          p.proc &&
+          p.proc.mode !== 'shared' &&
+          ((p.proc.ai || []).some(id => ais.includes(id)) || p.proc.pinExt === sn || (p.proc.remote && p.proc.remote.pin === sn))
+      );
+      /* only a controller with its own actuator (valve / damper / AO); a cascade master (ABC-003E FIC-OM, act -1) moves the PV through its slaves */
+      if (ow && pr.act >= 0) {
+        const xs = (ow.proc.xsh = (ow.proc.xsh || []).filter(q => q.b !== b));
+        xs.push({ S, b });
+      }
       continue;
     }
     let ai = ais.slice();

@@ -623,8 +623,10 @@ function dsIdx(sh) {
       if (d <= 20) near.push({ id: nn.id, d });
     }
     near.sort((p, q) => p.d - q.d);
+    /* 1.22.0: a FROM text that touches a wire (<= 8) names THAT wire, even when an input wire is a bit farther
+       (ABC-004A: the four "( FROM DITL 07-64 )" were put on the SIG.AB flags B.0723 ... at 8 ~ 9 instead of M.3410 ... at 5; ABC-003B: M.025B at 18 instead of M.3434 at 5) */
     const pick = isFrom
-      ? near.find(q => S.ext.includes(q.id)) || near[0]
+      ? (near[0] && near[0].d <= 8 ? near[0] : null) || near.find(q => S.ext.includes(q.id)) || near[0]
       : near.find(q => !S.ext.includes(q.id) && S.drv[q.id] && S.drv[q.id].some(d => d.k !== 'LINK')) || near[0];
     if (!pick) {
       lost.push({ t: t.t, x: Math.round(t.x), y: Math.round(t.y) });

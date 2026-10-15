@@ -172,6 +172,27 @@ function simulate(nl, act) {
   nl._v = v;
   return v;
 }
+/* one sheet in simulate mode: active input rows, net values and active output rows (1.22.0: taken out of render so the
+   drawing and the one world, src/world/world.js, compute the SAME thing) */
+function simSheet(s) {
+  s.nl.ufx = (s.nl.usr || []).filter(u => s.usw && s.usw[u.key]).map(u => u.n);
+  const rowOn = simIn(s),
+    v = simulate(s.nl, rowOn),
+    outOn = new Set();
+  s.nl.outs.forEach(o => {
+    if (v[o.n]) outOn.add(o.row);
+  });
+  mvOut(s, rowOn).forEach((x, row) => {
+    if (x) {
+      outOn.add(row);
+      s.nl.outs.forEach(o => {
+        if (o.row === row) v[o.n] = 1;
+      });
+    } else outOn.delete(row);
+  });
+  if (!s.nl.gates.length) rowOn.forEach(i => outOn.add(i));
+  return { rowOn, v, outOn };
+}
 /* ---------- render ---------- */
 const COL = { CON: '#4fd18b', HID: '#35505f', CEN: '#e0a030', DCS: '#ffd24a', SYM: '#4fd18b' },
   stk = l => COL[l] || '#cfd8dc';
@@ -226,25 +247,17 @@ function render() {
     outOn = new Set(),
     barLit = new Set();
   let FRC = new Map();
-  if (SIM && s) {
-    s.nl.ufx = (s.nl.usr || []).filter(u => s.usw && s.usw[u.key]).map(u => u.n);
+  if (simOn() && s) {
     FRC = mvForced(s);
-    rowOn = simIn(s);
-    SV = simulate(s.nl, rowOn);
+    const R = simSheet(s);
+    rowOn = R.rowOn;
+    SV = R.v;
+    outOn = R.outOn;
     (s.nl.mir || []).forEach(m => FRC.set(m.row, !!SV[m.n]));
     grpState(s).forEach((v, i) => FRC.set(i, v));
-    s.nl.outs.forEach(o => {
-      if (SV[o.n]) outOn.add(o.row);
-    });
-    mvOut(s, rowOn).forEach((v, row) => {
-      if (v) {
-        outOn.add(row);
-        s.nl.outs.forEach(o => {
-          if (o.row === row) SV[o.n] = 1;
-        });
-      } else outOn.delete(row);
-    });
-    if (!s.nl.gates.length) rowOn.forEach(i => outOn.add(i));
+    /* one world: an input row fed by another sheet shows its value (dashed = it comes from elsewhere, not from a click) */
+    const WD = window.WORLD && WORLD.live && WORLD.idx && WORLD.idx.din.get(s);
+    if (WD) WD.forEach((_, i) => FRC.set(i, rowOn.has(i)));
     s.nl.gates.forEach(g => {
       if (g.bar >= 0 && g.ins.some(n => SV[n])) barLit.add(g.bar);
     });
@@ -628,7 +641,10 @@ function render() {
   renderMeta();
   $('bwire').textContent = 'Wire fix: ' + (WT ? 'On' : 'Off');
   $('bwire').className = WT ? 'on' : '';
-  $('bmode').textContent = 'Mode: ' + (SIM ? 'Simulate' : 'Edit');
+  $('bmode').textContent = SIM ? '✎ Edit' : '▶ Simulate';
+  $('bmode').title = SIM
+    ? 'Simulate mode: click a cell = 1 / 0. Press to go back to Edit mode.'
+    : 'Edit mode: click = select. Press to simulate (click a cell = 1 / 0).';
   $('bmode').className = SIM ? 'on' : '';
 }
 /* ---------- state ---------- */

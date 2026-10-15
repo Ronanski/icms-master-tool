@@ -135,6 +135,22 @@ window.UATS = (function () {
             try {
               AN.settle();
             } catch (e) {}
+          } else if (st.do === 'partnerman') {
+            /* the other controllers on the SAME measurement (valves in parallel) go to MANUAL at a fixed MV, so this valve alone moves the PV */
+            for (const t of st.tags || []) {
+              const pc = (AN.hmiCtrls(S) || []).find(x => x.tag === t);
+              if (!pc || !pc.amt || pc.manNet == null) continue;
+              const q = rt.st[pc.amt.id];
+              if (q) {
+                q.al = pc.autoLeg;
+                q.fm = pc.autoLeg === 'A' ? 'B' : 'A';
+              }
+              if (pc.manBlk && rt.st[pc.manBlk.id]) rt.st[pc.manBlk.id].val = st.value;
+              else rt.ext[pc.manNet] = st.value;
+            }
+            try {
+              AN.settle();
+            } catch (e) {}
           } else if (st.do === 'wait') await stepSim(sh, st.s);
           else if (st.do === 'reset') {
             AN.reset();
@@ -300,6 +316,27 @@ window.UATS = (function () {
               ? 'abot-SV'
               : 'malayo sa SV (SV ' + sv.toFixed(1) + ', PV ' + pv.toFixed(1) + ')';
         } else if (st.expect === 'cmp') {
+          /* PV vs MV while an interlock selector of the drawing sends 0 % to the valve: the process cannot answer, NOT TESTED (not pass, not fail) */
+          const cutB =
+            st.what === 'pv' &&
+            (ctl.dn || []).find(d => {
+              const t = rt.st[d.id];
+              return t && t.pk === 'B';
+            });
+          if (cutB) {
+            const sw = S.blk.find(z => z.id === cutB.id),
+              sn = sw && sw.sel != null && sw.sel >= 0 ? AN.nm(S, sw.sel) + ' = ' + (rt.v[sw.sel] > 0.5 ? 1 : 0) : '?';
+            push({
+              k: 'do',
+              t:
+                'HINDI NASURI (' +
+                (st.say || 'PV') +
+                '): sarado ang valve dahil sa interlock ng drawing (' +
+                sn +
+                ' → leg B); ang PV ay hindi gagalaw hangga’t hindi nawawala ang kondisyon'
+            });
+            continue;
+          }
           const d = val(st.what) - mk[st.than];
           got = st.min
             ? (d >= st.min ? 'tumaas' : d <= -st.min ? 'bumaba' : 'kulang ang galaw') + ' (' + d.toFixed(1) + ')'
@@ -736,6 +773,13 @@ window.UATS = (function () {
           'G2 (PV vs MV) hindi sinuri: ang PV ay hawak ng ' + (pr.proc.of || 'ibang controller') + ' (shared)'
         );
       else if (casc) notes.push('G2 (PV vs MV) hindi sinuri: cascade master (ang output ay SV ng ibang controller)');
+      /* valves in parallel on this measurement (same sheet): the operator puts the others in MANUAL at 50 % first, else an AUTO partner holds the PV */
+      const partners = pr
+        ? (S.procs || [])
+            .filter(g => g !== pr && g.proc && g.proc.mode === 'shared' && g.proc.pv === pr.proc.pv)
+            .map(g => (g.txt || [])[1])
+            .filter(Boolean)
+        : [];
       if (pr && pr.proc && pr.proc.on && !notes.length)
         sc.push({
           id: 'G2',
@@ -743,6 +787,16 @@ window.UATS = (function () {
           title: tag + ': ang PV ay sumasagot sa MV (proseso)',
           drawing: 'Ang proseso ay first-order na may dead time; ang PV ay lumilipat ayon sa MV.',
           steps: pre.concat([
+            ...(partners.length
+              ? [
+                  {
+                    do: 'partnerman',
+                    tags: partners,
+                    value: 50,
+                    say: 'ilagay sa MAN = 50 % ang katabing controller sa parehong PV: ' + partners.join(', ')
+                  }
+                ]
+              : []),
             { do: 'press', button: 'M', say: 'M' },
             { do: 'mv', value: 0, say: 'MV = 0' },
             { do: 'wait', s: wp },

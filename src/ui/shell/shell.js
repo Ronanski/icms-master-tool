@@ -115,12 +115,93 @@
     bar.dataset.shell = '1';
     return true;
   }
+  /* DITL toolbar (1.22.0): the same elements regrouped like the ABC toolbar. Mode / Fit / Live / sheet stay in view;
+     the drawing-editor tools (Import, project, Undo / Redo, Clear, Delete, Wire fix, Health) go into "⋯ Tools". Handlers are not touched. */
+  function buildDitl() {
+    const bar = $('bar');
+    if (!bar || bar.dataset.shell) return !!(bar && bar.dataset.shell);
+    const cat = bar.querySelector('.cat'),
+      mode = $('bmode'),
+      fit = $('bfit'),
+      live = $('slive'),
+      shbox = $('shbox');
+    if (!cat || !mode || !fit) return false;
+    const lab = id => {
+      const i = $(id);
+      return i && i.closest('label');
+    };
+    const mk = (cls, label, els) => {
+      const g = document.createElement('div');
+      g.className = 'tbg ' + cls;
+      g.dataset.l = label;
+      els.filter(Boolean).forEach(e => g.append(e));
+      return g;
+    };
+    const gSim = mk('tbg-run', 'Takbo', [mode]);
+    const gView = mk('', 'Tingin', [fit, live]);
+    const gSheet = mk('tbg-sheet', 'Sheet', [shbox]);
+    const more = document.createElement('div');
+    more.className = 'tb-more';
+    const mb = document.createElement('button');
+    mb.textContent = '⋯ Tools';
+    mb.title = 'Mga tool sa pag-edit ng drawing at project';
+    const menu = document.createElement('div');
+    menu.className = 'tb-menu';
+    const head = x => {
+      const h = document.createElement('div');
+      h.className = 'tb-mh';
+      h.textContent = x;
+      menu.append(h);
+    };
+    head('Project');
+    [lab('fdxf'), lab('fjson'), $('bsave')].forEach(e => e && menu.append(e));
+    head('Edit ng drawing');
+    [$('bundo'), $('bredo'), $('bclr'), $('bdel'), $('bwire')].forEach(e => e && menu.append(e));
+    head('Tseke');
+    [$('bhp')].forEach(e => e && menu.append(e));
+    more.append(mb, menu);
+    mb.onclick = e => {
+      e.stopPropagation();
+      more.classList.toggle('open');
+    };
+    document.addEventListener('click', e => {
+      if (!more.contains(e.target)) more.classList.remove('open');
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') more.classList.remove('open');
+    });
+    menu.addEventListener('click', e => {
+      if (e.target.tagName === 'BUTTON') setTimeout(() => more.classList.remove('open'), 50);
+    });
+    const mbtn = document.createElement('button');
+    mbtn.id = 'mbtn2';
+    mbtn.textContent = '☰';
+    mbtn.title = 'Menu';
+    mbtn.onclick = e => {
+      e.stopPropagation();
+      document.body.classList.toggle('mmenu');
+    };
+    const tabs = $('tabs');
+    bar.prepend(mbtn);
+    cat.after(gSim, gView, gSheet, more);
+    if (tabs) bar.append(tabs);
+    bar.dataset.shell = '1';
+    return true;
+  }
   let n = 0;
   const iv = setInterval(() => {
     try {
       if (build() || ++n > 40) clearInterval(iv);
     } catch (e) {
       clearInterval(iv);
+    }
+  }, 300);
+  let n2 = 0;
+  const iv2 = setInterval(() => {
+    try {
+      if (buildDitl() || ++n2 > 40) clearInterval(iv2);
+    } catch (e) {
+      clearInterval(iv2);
     }
   }, 300);
 })();
