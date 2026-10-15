@@ -38660,9 +38660,12 @@ function anProbe(S, pr) {
         q.val = q.act = rr.lo + 0.4 * (rr.hi - rr.lo);
       }
       const p1 = ev();
-      s.val = s.act = r.lo + 0.5 * sp;
+      /* 1.22.0: never probe at exactly 0: the AVERAGE SELECT takes 0 as a lost signal (ABC-008 furnace pressure -600 ~ +600 mmH2O:
+         50 % = 0, so no transmitter seemed to matter, the plant forced the PV to +600 while the three transmitters showed -600) */
+      const f = Math.abs(r.lo + 0.5 * sp) < 1e-9 ? 0.6 : 0.5;
+      s.val = s.act = r.lo + f * sp;
       const p2 = ev();
-      res.push({ id, sens: ((p2 - p1) / (0.1 * sp)) * sp });
+      res.push({ id, sens: ((p2 - p1) / ((f - 0.4) * sp)) * sp });
     }
   } catch (e) {}
   anRtBack(rt, sn);
@@ -38737,6 +38740,15 @@ function anProcList(S) {
         mx = Math.max(0, ...sn.map(q => Math.abs(q.sens)));
       pr.sens = sn;
       if (mx < 1e-6) {
+        /* 1.22.0: a cascade master (no actuator of its own) whose transmitters are switched out by the drawing (ABC-004A FIC-CM:
+           PV = average of the three coal feeders, a stopped feeder counts 0): NO plant model, the drawing computes the PV from
+           the feeders (before: the PV was forced to 7.32 T/H with every feeder stopped) */
+        if (act < 0) {
+          pr.mode = 'none';
+          pr.ai = [];
+          pr.aiOut = [];
+          continue;
+        }
         pr.mode = 'pin';
         pr.ai = [];
       } else pr.ai = sn.filter(q => Math.abs(q.sens) >= 0.3 * mx).map(q => q.id);
