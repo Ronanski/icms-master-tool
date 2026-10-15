@@ -14,7 +14,7 @@ const R=await page.evaluate((want)=>{const out=[];for(const sh of AN.sheets){if(
  for(const s of S.sets||[])for(const a of [s.src,s.ctl]){add(fwd,a,s.tgt);add(bwd,s.tgt,a)}
  const reach=(m,n)=>{const seen=new Set([n]),q=[n];while(q.length){const x=q.pop();for(const y of m.get(x)||[])if(!seen.has(y)){seen.add(y);q.push(y)}}seen.delete(n);return seen};
  const consumed=n=>S.blk.concat(S.ord||[]).some(b=>(b.i||[]).includes(n));
- const outs=[];for(let n=0;n<S.nets.length;n++)if(!S.ext.includes(n)&&(S.drv[n]||[]).length&&(!consumed(n)||S.blk.some(b=>b.k==='AO'&&(b.i||[]).includes(n))))outs.push(n);
+ const outs=[];for(let n=0;n<S.nets.length;n++)if(!S.ext.includes(n)&&(S.drv[n]||[]).length&&(!consumed(n)||S.blk.some(b=>(b.k==='AO'||b.k==='FOUT')&&(b.i||[]).includes(n))))outs.push(n);
  const unconn=[],dead=[];for(const n of S.ext){const isCos=S.lab[n]&&S.lab[n].t==='COS manual value';const cons=S.blk.concat(S.ord||[]).filter(b=>(b.i||[]).includes(n)).length;if(!cons&&!(S.pre&&S.pre[n]))unconn.push(lab(n)+(isCos?' (COS)':'')+(S.xlk&&S.xlk[n]?' <'+S.xlk[n].from.name:''));else{const r=reach(fwd,n);if(![...r].some(x=>outs.includes(x)||S.nets[x]&&consumed(x)===false))dead.push(lab(n))}}
  const constOut=outs.filter(o=>![...reach(bwd,o)].some(x=>S.ext.includes(x))).map(lab);
  out.push({sh:sh.name,ext:S.ext.length,outs:outs.length,unconn,dead,constOut})}return out},want);

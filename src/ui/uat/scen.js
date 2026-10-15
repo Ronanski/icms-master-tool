@@ -357,6 +357,8 @@ window.UATS = (function () {
           const r = AN.extRange && AN.extRange(S, n);
           return [n, r && r.hi > r.lo ? (r.lo + r.hi) / 2 : 50];
         });
+      const anOv =
+        new Map(); /* analog na binago ng paghahanap (hal. PV malapit sa SV para pumasa ang deviation permissive) */
       const put = (n, v) => {
         if ((S.xlk && S.xlk[n]) || !S.ext.includes(n)) S.rt.force[n] = v;
         else S.rt.ext[n] = v;
@@ -366,7 +368,7 @@ window.UATS = (function () {
         if (Array.isArray(stt)) stt = { sets: stt, pulses: [] };
         AN.reset();
         AN.go(idx);
-        for (const [n, v] of an.concat(stt.sets)) put(n, v);
+        for (const [n, v] of an.map(([n, v]) => [n, anOv.has(n) ? anOv.get(n) : v]).concat(stt.sets)) put(n, v);
         try {
           AN.settle();
         } catch (e) {}
@@ -476,6 +478,31 @@ window.UATS = (function () {
         if (cs < 1000) base = cur;
         else best = cur;
       } else if (best) base = best;
+      if (!base && best) {
+        /* huling pagsubok: analog na input sa cone (deviation / limit na kailangang pumasa): subukan ang 10 / 30 / 70 / 90 % ng range, isa-isa, hawak ang pinakamababang score */
+        const ac = an.filter(([n]) => up.has(n));
+        let cur = best,
+          cs = bs0;
+        for (let pass = 0; pass < 2 && cs >= 1000; pass++)
+          for (const [n, mid] of ac) {
+            const r = AN.extRange && AN.extRange(S, n),
+              keep = anOv.has(n) ? anOv.get(n) : mid;
+            let bv = keep;
+            if (r && r.hi > r.lo)
+              for (const f of [0.1, 0.3, 0.7, 0.9]) {
+                anOv.set(n, r.lo + f * (r.hi - r.lo));
+                const sc1 = await score(cur);
+                if (sc1 < cs) {
+                  cs = sc1;
+                  bv = anOv.get(n);
+                }
+              }
+            anOv.set(n, bv);
+            if (cs < 1000) break;
+          }
+        if (cs < 1000) base = cur;
+        else anOv.clear();
+      }
       if (!base) {
         let why = '';
         try {

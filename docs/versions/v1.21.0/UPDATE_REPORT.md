@@ -32,3 +32,9 @@
 - **Work Done:** Lumalabas na ang selector sa apk/exe. Ang Beta ay bubukas sa Beta page ng site at maaalala (kailangan ng internet).
 - **As Left:** Nasubukan na lumalabas ang selector (file:, 2 option). Hindi pa nasubukan ang paglipat mismo sa tablet. Ang apk na nakainstall (v1.20.59) ay walang ganito hanggang sa susunod na Stable build.
 - **Status:** Beta pushed.
+
+## 1.21.0-beta.9 — #4 coverage, #5 generic tester (analog), #6 ABC-007 BU-CMD (bahagi)
+
+- **#4:** `tests/scenarios/structure.js` (kinikilala na ang FOUT bilang output): 51 sheet, 731 input, 567 output; hindi nakakabit 1 (ABC-001A COS target, sakop ng SET rule), dead end 2 (ABC-054 n12 / ABC-055 n49: valve feedback na VLV lang ang kumakain, walang output). ABC-001C n2/n9/n11 ay umaabot sa O.0178 / O.0179 (FOUT papuntang DITL): hindi sira. Ang simulation cone (`cone.js`) ay hindi natapos sa lahat ng sheet (1 sa 4 na bahagi ay walang resulta); ang "patay" nito ay karamihan gated ng interlock o COS: Needs Verification.
+- **#5:** Ang generic tester ay may huling pagsubok na analog (10/30/70/90 % ng range ng mga analog input sa cone). TICHR1002: ang M.0172 (HC > 11 °C ng SI0110 − SI0112) ay kondisyon ng proseso, hindi ng switch: tingnan ang resulta ng generic run.
+- **#6:** ABC-007 B1 (BU-CMD: MFT pulse + damper > 50 % → MV 50 %) at B2 (damper < 50 % → walang BU-CMD). Ang M.0181 = AND(M.253F, M.0182). Pagkatapos ng pulse, nananatili ang MV sa 50 (tracking ng A/M station): Needs Verification. Hindi pa: FAULT hold (M.018B/M.019B), alarm M.3130/M.3131, SIG.AB.
