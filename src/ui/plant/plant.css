@@ -69,3 +69,5 @@
 #libws .libdrum .dr.h{color:#6f8191;font:600 10.5px var(--uf,sans-serif)}
 #libws .libr.hasw .ds::before{content:'⇄ '}
 #libws.calc .libhd{display:none}
+#plantws .pllive{margin-left:auto;font:600 10.5px var(--uf,sans-serif);letter-spacing:.1em;color:#ffd27a;border-color:#6b5a2a}
+#plantws .pllive.on{color:#35e08a;border-color:#2c6b48}
