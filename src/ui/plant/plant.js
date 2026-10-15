@@ -1,6 +1,7 @@
 /* PLANT HMI WORKSPACE (2.1.0, draft): a third workspace next to ABC and DITL. Per system (left list) a plant graphic drawn
    after the control-room HMI snapshot (src/ui/plant/systems.js, scaled), with the snapshot text and values; the value list of
-   that snapshot on the right (src/ui/plant/values.js). Static snapshot values: no address is linked yet. UI only. */
+   that snapshot on the right (src/ui/plant/values.js). LIVE (2.1.0-beta.5): values, controllers and valves read the simulation
+   (read only); what is not linked keeps the snapshot value, grey. UI only. */
 (function () {
   const $ = id => document.getElementById(id);
   const NS = 'http://www.w3.org/2000/svg';
@@ -48,6 +49,154 @@
         out.push({ id: v.src, title: v.title, src: v.src, g: null });
     return out;
   };
+  /* ---- LIVE LINK (2.1.0-beta.5): each value / controller / valve of the graphic is tied to the engine (read only):
+     val   : TAG.PV wire of a sheet, else the I/O list transmitter of the indicator (TI -> TT / TE, PI -> PT, FIQ -> FT ...) = its AI block;
+     ctl   : the faceplate of the controller (PV, SV, MV, A / M / R);
+     valve : the valve tag written on the drawing next to a control valve (its position demand), else the AO address of the I/O list.
+     Not linked = the snapshot value, shown grey. ---- */
+  const N = t => String(t || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  let IX = null,
+    liveOn = true,
+    LV = [],
+    tmr = null;
+  const shOf = n => (window.AN && AN.sheets ? AN.sheets.find(s => s.name === n) : null);
+  async function index() {
+    if (IX) return IX;
+    const A = window.AN;
+    if (!A || !A.sheets) return null;
+    try {
+      await A.ades();
+    } catch (e) {}
+    const pv = new Map(),
+      ctl = new Map(),
+      vt = new Map(),
+      lab = new Map(),
+      ai = new Map();
+    for (const sh of A.sheets) {
+      if (/ABC-000/.test(sh.name)) continue;
+      let S;
+      try {
+        S = A.ensure(sh);
+      } catch (e) {
+        continue;
+      }
+      if (!S) continue;
+      try {
+        A.adesFind(sh, 'AI0001'); /* sets sh.stn */
+      } catch (e) {}
+      S.lab.forEach((l, n) => {
+        const t = l && l.t ? l.t.trim() : '';
+        if (!t) return;
+        if (/\.PV$/.test(t) && !pv.has(N(t.slice(0, -3)))) pv.set(N(t.slice(0, -3)), { sh: sh.name, n });
+        if (/^(AI|AO)\d{4}$/.test(t) && !lab.has(sh.stn + '|' + t)) lab.set(sh.stn + '|' + t, { sh: sh.name, n });
+      });
+      try {
+        for (const c of A.hmiCtrls(S) || []) if (!ctl.has(c.tag)) ctl.set(c.tag, { sh: sh.name, c });
+      } catch (e) {}
+      /* valve tag text next to a control valve symbol */
+      for (const b of S.blk)
+        if (b.k === 'VLV' && b.pins && b.pins.length) {
+          let best = null,
+            bd = 60;
+          for (const t of S.tx || []) {
+            const x = t.t.trim();
+            if (!/^[A-Z]{2,4}-[A-Z]{2}\d{4}(-[A-Z0-9]{1,3})?$/.test(x) || !/V|D/.test(x.split('-')[0])) continue;
+            const d = Math.hypot(t.x - b.cx, t.y - b.cy);
+            if (d < bd) {
+              bd = d;
+              best = x;
+            }
+          }
+          if (best && !vt.has(N(best))) vt.set(N(best), { sh: sh.name, n: b.pins[0].n });
+        }
+    }
+    try {
+      for (const [k, L] of A.plAIs()) if (L && L.length) ai.set(N(k), { sh: L[0].sh.name, n: L[0].n });
+    } catch (e) {}
+    const io = new Map();
+    try {
+      const D = await A.ades();
+      for (const st in D)
+        for (const a in D[st]) {
+          const r = D[st][a];
+          if (r && r.tag && /^A[IO]\d{4}$/.test(a)) {
+            const k = N(r.tag);
+            if (!io.has(k)) io.set(k, { st: +st, a });
+          }
+        }
+    } catch (e) {}
+    IX = { pv, ctl, vt, lab, ai, io };
+    return IX;
+  }
+  /* the transmitter tag of an indicator tag: TIBR11302 -> TTBR11302 / TEBR11302; FIQMS1031 -> FTMS1031 */
+  const tx = k => {
+    const m = /^(D?P|T|F|L|A|S|E|Z|W|H|J)I(?:Q|C)?(.*)$/.exec(k);
+    return m ? [m[1] + 'T' + m[2], m[1] + 'E' + m[2]] : [];
+  };
+  function resolve(it) {
+    if (!IX || !it.tag) return null;
+    const k = N(String(it.tag).split('/')[0]);
+    if (it.t === 'ctl') {
+      const c = IX.ctl.get(it.tag);
+      return c ? { k: 'ctl', sh: c.sh, c: c.c } : null;
+    }
+    if (it.t === 'val') {
+      if (/AVERAGE/i.test(it.v || '')) return null;
+      if (IX.pv.has(k)) return Object.assign({ k: 'net', how: it.tag + '.PV' }, IX.pv.get(k));
+      for (const c of [k].concat(tx(k))) {
+        if (IX.ai.has(c)) return Object.assign({ k: 'net', how: 'AI of ' + c }, IX.ai.get(c));
+        const r = IX.io.get(c);
+        if (r && IX.lab.has(r.st + '|' + r.a)) return Object.assign({ k: 'net', how: r.a + ' STN10' + r.st, a: r.a, st: r.st }, IX.lab.get(r.st + '|' + r.a));
+      }
+      return null;
+    }
+    if (it.t === 'valve' || it.t === 'damper') {
+      if (IX.vt.has(k)) return Object.assign({ k: 'net', how: 'valve on the drawing' }, IX.vt.get(k));
+      const r = IX.io.get(k);
+      if (r && IX.lab.has(r.st + '|' + r.a)) return Object.assign({ k: 'net', how: r.a + ' STN10' + r.st, a: r.a, st: r.st }, IX.lab.get(r.st + '|' + r.a));
+    }
+    return null;
+  }
+  const fmtV = (x, ref) => {
+    if (x == null || !isFinite(x)) return '—';
+    const d = String(ref || '').split('.')[1];
+    const n = d ? Math.min(3, d.length) : Math.abs(x) >= 100 ? 0 : 1;
+    return x.toFixed(n);
+  };
+  function netVal(r) {
+    const sh = shOf(r.sh);
+    return sh && sh.S && sh.S.rt ? sh.S.rt.v[r.n] : null;
+  }
+  function liveTick() {
+    if (!ws || ws.style.display !== 'grid') return;
+    for (const o of LV) {
+      const r = o.r;
+      try {
+        if (!liveOn || !r) {
+          o.set(null);
+          continue;
+        }
+        if (r.k === 'ctl') {
+          const sh = shOf(r.sh),
+            S = sh && sh.S,
+            c = r.c,
+            v = S.rt.v;
+          const pk = c.amt && S.rt.st[c.amt.id] ? S.rt.st[c.amt.id].pk : c.autoLeg;
+          const auto = !c.amt || pk === c.autoLeg,
+            rem = !!(c.remote && c.svSw && S.rt.st[c.svSw.id] && S.rt.st[c.svSw.id].pk === 'A');
+          o.set({ pv: v[c.q.pv], sv: v[c.q.sv], mv: v[c.out], m: !auto ? 'M' : rem ? 'R' : 'A' });
+        } else o.set({ v: netVal(r) });
+      } catch (e) {}
+    }
+  }
+  function liveCount() {
+    const n = LV.filter(o => o.r).length;
+    const el = $('pllive');
+    if (el) {
+      el.textContent = liveOn ? 'LIVE · ' + n + ' / ' + LV.length + ' linked' : 'SNAPSHOT';
+      el.classList.toggle('on', liveOn);
+    }
+  }
   function valve(g, it, c) {
     const x = it.x,
       y = it.y,
@@ -74,6 +223,7 @@
   }
   function draw(sys) {
     svg.innerHTML = '';
+    LV = [];
     const g = S_('g', {});
     svg.append(g);
     const w = sys.w || 1920,
@@ -99,8 +249,12 @@
           const open = parseFloat(it.v) > 1;
           valve(g, it, open ? '#e05555' : '#3fbf6a');
           txt(g, it.x + 14, it.y - 10, it.tag || '', { z: 12, b: 1 });
-          if (it.v != null) txt(g, it.x + 14, it.y + 6, it.v + ' ' + (it.u || '%'), { z: 13, mono: 1, c: '#5cd6ff' });
+          const vt = txt(g, it.x + 14, it.y + 6, (it.v != null ? it.v : '—') + ' ' + (it.u || '%'), { z: 13, mono: 1, c: '#5cd6ff' });
           if (it.m) txt(g, it.x - 14, it.y - 10, it.m, { z: 11, c: it.m === 'M' ? '#ffd27a' : '#9ff0c4', a: 'end', b: 1 });
+          reg(it, x => {
+            vt.textContent = x ? fmtV(x.v, it.v) + ' ' + (it.u || '%') : (it.v != null ? it.v : '—') + ' ' + (it.u || '%');
+            vt.setAttribute('fill', x ? '#5cd6ff' : '#7f90a0');
+          });
         } else if (it.t === 'mov') {
           valve(g, it, it.st === 'open' ? '#e05555' : '#3fbf6a');
           if (it.tag) txt(g, it.x + 14, it.y - 10, it.tag, { z: 11 });
@@ -123,16 +277,30 @@
           txt(g, it.x, it.y, it.s, { z: it.z || 13, b: it.b, c: it.c });
         } else if (it.t === 'val') {
           if (it.tag) txt(g, it.x, it.y - 15, it.tag, { z: 11, c: '#a9b7c4' });
-          txt(g, it.x, it.y, (it.v != null ? it.v : '—') + (it.u ? ' ' + it.u : ''), { z: 14, mono: 1, c: '#5cd6ff' });
+          const vt = txt(g, it.x, it.y, (it.v != null ? it.v : '—') + (it.u ? ' ' + it.u : ''), { z: 14, mono: 1, c: '#5cd6ff' });
+          reg(it, x => {
+            vt.textContent = (x ? fmtV(x.v, it.v) : it.v != null ? it.v : '—') + (it.u ? ' ' + it.u : '');
+            vt.setAttribute('fill', x ? '#5cd6ff' : '#7f90a0');
+          }, vt);
         } else if (it.t === 'ctl') {
           const bw = 168,
             bh = 70;
-          g.append(S_('rect', { x: it.x, y: it.y, width: bw, height: bh, rx: 3, fill: '#0d1319', stroke: '#2a6a98', 'stroke-width': 1.5 }));
+          const box = S_('rect', { x: it.x, y: it.y, width: bw, height: bh, rx: 3, fill: '#0d1319', stroke: '#2a6a98', 'stroke-width': 1.5 });
+          g.append(box);
           txt(g, it.x + 6, it.y + 15, (it.label || it.tag || '').slice(0, 28), { z: 11, c: '#a9b7c4' });
           txt(g, it.x + 6, it.y + 31, it.tag || '', { z: 12, b: 1, mono: 1 });
-          if (it.m) txt(g, it.x + bw - 6, it.y + 31, it.m, { z: 12, b: 1, a: 'end', c: it.m === 'M' ? '#ffd27a' : '#9ff0c4' });
-          txt(g, it.x + 6, it.y + 50, 'PV ' + (it.pv != null ? it.pv : '—') + '  SV ' + (it.sv != null ? it.sv : '—'), { z: 12, mono: 1, c: '#5cd6ff' });
-          txt(g, it.x + 6, it.y + 66, 'MV ' + (it.mv != null ? it.mv + ' %' : '—') + (it.u ? '   ' + it.u : ''), { z: 12, mono: 1, c: '#9ff0c4' });
+          const mt = txt(g, it.x + bw - 6, it.y + 31, it.m || '', { z: 12, b: 1, a: 'end', c: it.m === 'M' ? '#ffd27a' : '#9ff0c4' });
+          const t1 = txt(g, it.x + 6, it.y + 50, 'PV ' + (it.pv != null ? it.pv : '—') + '  SV ' + (it.sv != null ? it.sv : '—'), { z: 12, mono: 1, c: '#5cd6ff' });
+          const t2 = txt(g, it.x + 6, it.y + 66, 'MV ' + (it.mv != null ? it.mv + ' %' : '—') + (it.u ? '   ' + it.u : ''), { z: 12, mono: 1, c: '#9ff0c4' });
+          reg(it, x => {
+            const m = x ? x.m : it.m || '';
+            mt.textContent = m;
+            mt.setAttribute('fill', m === 'M' ? '#ffd27a' : '#9ff0c4');
+            t1.textContent = 'PV ' + (x ? fmtV(x.pv, it.pv) : it.pv != null ? it.pv : '—') + '  SV ' + (x ? fmtV(x.sv, it.sv) : it.sv != null ? it.sv : '—');
+            t2.textContent = 'MV ' + (x ? fmtV(x.mv, it.mv) + ' %' : it.mv != null ? it.mv + ' %' : '—') + (it.u ? '   ' + it.u : '');
+            t1.setAttribute('fill', x ? '#5cd6ff' : '#7f90a0');
+            t2.setAttribute('fill', x ? '#9ff0c4' : '#7f90a0');
+          }, box);
         } else if (it.t === 'header') {
           let x = 20;
           g.append(S_('rect', { x: 0, y: 0, width: w, height: 34, fill: '#141c25' }));
@@ -147,6 +315,26 @@
     }
     vb = [0, 0, w, h];
     fit();
+    index().then(() => {
+      for (const o of LV) o.r = resolve(o.it);
+      for (const o of LV)
+        if (o.r && o.hit) {
+          o.hit.style.cursor = 'pointer';
+          o.hit.addEventListener('click', e => {
+            e.stopPropagation();
+            try {
+              if (o.r.k === 'ctl') window.lsInfo && window.lsInfo(o.it.tag);
+              else if (o.r.a) window.lsInfo && window.lsInfo(o.r.a, { stn: o.r.st });
+              else window.lsInfo && window.lsInfo(o.it.tag + '.PV');
+            } catch (x) {}
+          });
+        }
+      liveCount();
+      liveTick();
+    });
+  }
+  function reg(it, set, hit) {
+    LV.push({ it, set, hit, r: null });
   }
   function fit() {
     if (!vb || !svg) return;
@@ -227,7 +415,17 @@
     svg = S_('svg', { id: 'plsvg' });
     const bar = E('div', { cls: 'plbar' }, [
       E('b', { id: 'pltitle', txt: '' }),
-      E('span', { cls: 'pldraft', txt: 'DRAFT · snapshot values, not live · no address linked yet' }),
+      E('button', {
+        id: 'pllive',
+        cls: 'b pllive on',
+        txt: 'LIVE',
+        title: 'LIVE: values from the simulation (tag.PV, I/O list address, valve on the drawing); grey = not linked, snapshot value. Click: show the snapshot values.',
+        on: () => {
+          liveOn = !liveOn;
+          liveCount();
+          liveTick();
+        }
+      }),
       E('button', { cls: 'b', txt: 'Fit', on: () => (cur && cur.g ? draw(cur.g) : fit()) }),
       E('button', { cls: 'b', txt: 'Values', on: () => ws.classList.toggle(matchMedia('(max-width:1180px)').matches ? 'vals' : 'novals') })
     ]);
@@ -291,9 +489,11 @@
       } catch (e) {}
       place();
       setTimeout(() => (cur && cur.g ? draw(cur.g) : fit()), 30);
+      if (!tmr) tmr = setInterval(liveTick, 1000);
     }
   }
   window.lsPlant = open;
+  window.lsPlantLive = () => LV.map(o => ({ tag: o.it.tag, t: o.it.t, snap: o.it.t === 'ctl' ? o.it.pv + '/' + o.it.sv + '/' + o.it.mv + ' ' + o.it.m : o.it.v, how: o.r ? o.r.how || o.r.k : null, sh: o.r ? o.r.sh : null, live: o.r && o.r.k === 'net' ? netVal(o.r) : o.r && o.r.k === 'ctl' ? (() => { const S = shOf(o.r.sh).S, c = o.r.c; return [S.rt.v[c.q.pv], S.rt.v[c.q.sv], S.rt.v[c.out]].map(x => +(+x).toFixed(1)).join('/'); })() : null })); /* for the tests */
   addEventListener('resize', () => {
     if (ws && ws.style.display === 'grid') {
       place();

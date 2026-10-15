@@ -2,6 +2,20 @@
 
 Base: Stable v2.0.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 2.1.0-beta.5 — PLANT workspace LIVE: nakakabit na ang graphics sa simulation
+
+- **Problem:** Ang PLANT HMI graphics (27 system) ay snapshot value lang ("no address linked yet").
+- **As Found:** Ang tag sa HMI ay indicator (TIBR11302, FIQMS1031); sa I/O list ay transmitter (TT-BR1130-2, FT-MS1031); ang valve tag (TCV-FW1110-1) ay nakasulat sa drawing sa tabi ng control valve.
+- **Work Done (`src/ui/plant/plant.js`, read only, walang engine change):**
+  - Bawat value: (1) wire na `TAG.PV` sa sheet, o (2) transmitter ng I/O list (TI → TT / TE, PI → PT, FIQ → FT, LI → LT, DPI → DPT, AI → AT) = ang AI block nito, o (3) ang AI address sa station.
+  - Bawat controller box: PV / SV / MV at A / M / R mula sa faceplate.
+  - Bawat valve / damper: ang valve tag sa drawing (position demand), o ang AO address ng I/O list.
+  - Button **LIVE · N / M linked** (pindot = snapshot ulit). Grey = hindi nakakabit, snapshot value. Click sa nakakabit na value / controller = info card.
+- **As Left (headless, `tests/regress/plant_live.js`):** 235 sa 806 item ay nakakabit (27 system); ang MV sa box ng TICBR1140 ay sumusunod sa engine; walang page error.
+- **Finding para sa plant model:** 96 na nakakabit na tag ang lumalayo sa snapshot sa "Start at 150 MW" (hal. HP bypass PCVMS1020: HMI 1.0 %, sim 86.7 %; FW flow FIQFW10071: HMI 498.9, sim 550). Tama ang link; ang estado ng simulation ang hindi pa tugma. Listahan: `PLANT_LIVE_VS_SNAPSHOT.md`. Ito ang susunod na trabaho (task: plant model vs HMI).
+- **Hindi pa nasubok:** totoong tablet; ang 571 item na hindi pa nakakabit (walang AI block sa drawing para sa tag, o pangalan lang tulad ng "DRUM LEVEL").
+- **Status:** Beta.
+
 ## 2.1.0-beta.4 — Test Cards: FICFW1007, HS-COAL, PICFG108, AICFG112
 
 - **Problem (task):** Ang force manual ng apat na loop ay may maraming kondisyon; gusto ng user ng gabay na test na galing sa drawing, hindi hula.
