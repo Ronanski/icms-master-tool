@@ -425,6 +425,58 @@
     }
     return box;
   }
+  /* SPOT CHECK (1.23.0): 5 random cases of this sheet, each shown with its inputs and the rule written in numbers, the expected
+     value (from the block definition, not from the engine) and what the simulator gave, so the user can check them by hand */
+  let SPOT = null;
+  function spotCheck(sh, sp) {
+    const all = [];
+    sp.groups.forEach(g => g.items.forEach(it => (it.cases || []).forEach(c => !c.skipMsg && all.push({ g: g.g, it, c }))));
+    const pick = [];
+    while (pick.length < Math.min(5, all.length)) {
+      const x = all[Math.floor(Math.random() * all.length)];
+      if (!pick.includes(x)) pick.push(x);
+    }
+    const sv = UATR.plantOff(),
+      res = [];
+    try {
+      for (const p of pick) {
+        const r = UATR.runCase(sh, p.c);
+        res.push({ g: p.g, it: p.it, l: p.c.l, rows: r.rows || [], ok: r.ok });
+      }
+    } finally {
+      UATR.plantRestore(sv);
+      try {
+        AN.reset();
+      } catch (e) {}
+    }
+    SPOT = { sheet: sh.name, res };
+    build();
+  }
+  function spotBox(sh) {
+    const box = E('div', { cls: 'it', style: 'border-color:#3a5670' }, [
+      E('div', { cls: 'h' }, [
+        E('b', { txt: 'Spot check · ' + SPOT.res.filter(r => r.ok).length + ' / ' + SPOT.res.length + ' tama' }),
+        E('button', { txt: '✕', on: () => ((SPOT = null), build()) })
+      ]),
+      E('div', { cls: 'sub', txt: 'Suriin mo ang bawat isa: ang kuwenta ay nakasulat sa numero. 📍 = ipakita ang block sa drawing.' })
+    ]);
+    for (const r of SPOT.res)
+      box.append(
+        E('div', { style: 'border-top:1px solid #26313c;padding:6px 0' }, [
+          E('div', { cls: 'h' }, [
+            E('span', { txt: r.ok ? '✔' : '✖', style: 'color:' + (r.ok ? '#6fe3a0' : '#ff7a7a') + ';font-weight:700' }),
+            E('b', { txt: r.it.n }),
+            E('button', { txt: '📍', title: 'Show on the drawing', on: () => find(r.it) })
+          ]),
+          E('div', { cls: 'sub', txt: r.g + ' · ' + r.l })
+        ].concat(
+          r.rows.map(x =>
+            E('div', { cls: 'sub', style: 'font-family:var(--mf,monospace)' , txt: '  ' + x.t + ': inaasahan ' + x.exp + ' · nakita ' + x.act + (x.ok ? '  ✔' : '  ✖') })
+          )
+        ))
+      );
+    return box;
+  }
   function build() {
     if (P.style.display !== 'block') return;
     const sh = sheet();
@@ -512,9 +564,15 @@
           on: () => {
             runAll();
           }
+        }),
+        E('button', {
+          txt: '🎲 Spot check (5)',
+          title: 'Pumili ng 5 random na case: makikita ang kuwenta sa numero, ang inaasahan at ang nakita; suriin mo mismo (calculator / drawing)',
+          on: () => spotCheck(sh, sp)
         })
       ])
     );
+    if (SPOT && SPOT.sheet === sh.name) P.append(spotBox(sh));
     if (msg) P.append(E('div', { cls: 'sub w', txt: msg }));
     {
       const sb = scenBlock(sh);

@@ -2,6 +2,19 @@
 
 Base: Stable v1.22.0 (`main`, release `v1.22.0`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 1.23.0-beta.4 — Event log at Spot check
+
+- **Problem:** Habang tumatakbo ang simulation, hindi alam kung KAILAN nagbago ang mode, ang force manual, ang alarm o ang trip. Ang "▶ Test ALL sheets" ay mahaba; walang mabilis na paraan para makita mismo ang ilang case.
+- **Work Done (itsura at pagbasa lang, walang binago sa engine):**
+  - `src/ui/hmi/events.js` (bago): button **Events** sa status bar sa ibaba. Bawat 0.5 s, binabasa ang kasalukuyang ABC sheet at isinusulat ang pagbabago na may oras ng simulation:
+    - MODE: AUTO / MAN / REMOTE ng controller;
+    - FM: force manual signal ng drawing (on / cleared, kasama ang address);
+    - ALM / RTN: alarm level ng ALM block;
+    - TRIP / RST: net na may pangalang TRIP / MFT / STOP.
+  - `src/ui/uat/uat-ui.js`: button **🎲 Spot check (5)** sa tabi ng "▶ Test ALL sheets". Limang random na case ng sheet: ipinapakita ang rule (sa numero), ang inaasahan, ang nakita, ✔ / ✖ at 📍 (hanapin sa drawing). Ikaw mismo ang makakakita kung tama, hindi lang tiwala sa "pass".
+- **As Left (headless):** `tests/regress/events.js` 5 / 5 (ABC-010: FORCE 0 sa M.0228 → "FM FICFW1007 force manual cleared ← M.0228 = 0"; pindot A → "MODE FICFW1007 → AUTO"). Spot check sa ABC-010: 5 / 5 tama. Pasado ang overview, info card, DITL toolbar, faceplate at ABC-007 184 / 0. Hindi pa nasubok sa tablet.
+- **Status:** Pass (headless). Susunod: Test Cards (FICFW1007, HS-COAL, PICFG108, AICFG112).
+
 ## 1.23.0-beta.3 — Info card sa global search (galing sa / ginagamit sa / Trip?)
 
 - **Problem:** Bago ang activity, ang tanong: "may tripping ba ito? saan ginagamit? paano malalaman kung ginagamit nga?" Ang search ay nagbubukas lang ng sheet.

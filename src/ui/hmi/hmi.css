@@ -76,3 +76,12 @@ body.ophmi #anp{display:none!important}
 .fpov .ovf td.c .b{height:22px;min-width:24px;padding:0 6px;font-size:11px;margin-left:2px}
 .fpov .ovf td.c input{width:58px;height:22px;background:#0b1015;color:#cfd9e2;border:1px solid #26313c;border-radius:4px;font:11px "Cascadia Mono",Consolas,monospace}
 .fpov .ovf tr.frc td{background:#2a2112}.fpov .ovf tr.frc td.v{color:#e8b04a;font-weight:700}
+/* event log (1.23.0) */
+#evbtn{height:20px!important;padding:0 8px!important;font-size:11px!important;border-radius:4px}
+#evbtn.new{border-color:#e8b04a!important;color:#e8b04a!important}
+#evbox{display:none;position:fixed;left:6px;right:6px;bottom:28px;max-height:34vh;overflow:auto;z-index:110;background:#0d1217f5;border:1px solid #2f4a5a;border-radius:8px;box-shadow:0 -8px 24px #000a;font:11.5px var(--mf,monospace)}
+#evbox .evh{display:flex;align-items:center;gap:10px;padding:6px 10px;border-bottom:1px solid #26313c;position:sticky;top:0;background:#0d1217}
+#evbox .evh span{color:#7d8e9a;margin-right:auto}#evbox .evh .b{height:22px;padding:0 8px;font-size:11px}
+#evbox .evr{display:flex;gap:10px;padding:3px 10px;border-bottom:1px solid #141b21}
+#evbox .tm{color:#7d8e9a;width:56px;flex:none}#evbox .kd{width:44px;flex:none;font-weight:700}#evbox .sh{width:70px;flex:none;color:#9fb0bd}
+#evbox .k-MODE .kd{color:#9ff0c4}#evbox .k-FM .kd{color:#ffd78a}#evbox .k-ALM .kd,#evbox .k-TRIP .kd{color:#ff8a8a}#evbox .k-RTN .kd,#evbox .k-RST .kd{color:#9fb0bd}
