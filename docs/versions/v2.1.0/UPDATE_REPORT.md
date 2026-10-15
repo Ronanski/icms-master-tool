@@ -2,6 +2,18 @@
 
 Base: Stable v2.0.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 2.1.0-beta.8 — Search = tingin lang; LIBRARY naka-grupo gaya ng Excel
+
+- **Problem (user):** (1) Kapag search lang, hindi dapat makapag-force / simulate, kahit hindi makita ang current value. (2) Sa LIBRARY, i-grupo gaya ng Excel (per sheet, may groupings).
+- **As Found:** Ang result ng global search, ang info card ng search / LIBRARY at ang "Show" ay nagbubukas ng sheet sa kasalukuyang mode (RUN o DITL Simulate). Ang LIBRARY ay isang mahabang listahan. Sa Excel: ang I/O list ay may sheet bawat station at ang address ay naka-ayos sa NODE (N) / I/O UNIT (I) / channel (NO); ang memory list ay may workbook bawat station at sheet bawat uri (WM, TR, PTN, SI, DI, WB, FP).
+- **Work Done (UI lang):**
+  - `AN.lookOnly()` (`src/analog/boot.js`): ABC → VIEW / TRACE; DITL → Simulate off. Tinatawag sa: result ng global search (sheet / text / drawing hit), hit sa side search, "Show" ng info card na binuksan ng search o LIBRARY. Ang info card na galing sa search / LIBRARY ay walang "= value".
+  - LIBRARY: `tools/data/iogroups.py` → `src/ui/plant/iogroups.js` (3816 address: N, I, NO, PICT). I/O LIST: grupo "STN10x · NODE n · I/O UNIT i · uri", rows ayon sa channel, PICT sa Range / remark. MEMORY LIST: grupo "STN10x (WM) · word memory (M.)", TR, PTN, SI, DI, WB, FP. WIRING: station · uri · FCS cabinet. RELAY / SER: panel sheet. Ang header ng grupo ay pindot = bukas / sara; walang search = sarado lahat, may search = bukas ang may tugma.
+  - Ang PLANT workspace (LIVE) ay hindi apektado: doon, ang click ay may value pa rin.
+- **As Left (headless, `tests/regress/lookonly.js`):** 219 I/O grupo, 7 memory sheet bawat station; LIBRARY card walang value; Show → VIEW; global search → Show → VIEW; DITL Simulate + DITL result → Simulate off. `infocard.js`, `abcbar.js`, `plant_live.js` pasado.
+- **Hindi pa nasubok:** totoong tablet.
+- **Status:** Beta.
+
 ## 2.1.0-beta.7 — DITL page: "ALSO IN ABC"
 
 - **Problem (user):** "Hindi lang DITL. Dapat kung meron din sa ABC." Sa DITL page, ang napiling signal ay hindi nagpapakita kung saan ito ginagamit sa ABC.

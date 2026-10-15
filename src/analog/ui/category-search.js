@@ -205,7 +205,10 @@ function anHits(f) {
         h$('span', { cls: 'sn', txt: r.e.t + (r.e.u ? '  ·  used in the logic' : '  ·  text') }),
         h$('span', { cls: 'st', txt: r.e.d || '' })
       ]);
-      b.onclick = () => anLocate(r.i, r.e.x, r.e.y);
+      b.onclick = () => {
+        anLocate(r.i, r.e.x, r.e.y);
+        AN.lookOnly(); /* 2.1.0-beta.8: a search hit opens for looking only */
+      };
       box.append(b);
     }
   };
@@ -416,6 +419,7 @@ AN.gsc = (() => {
           ring();
         }
       }
+      AN.lookOnly(); /* 2.1.0-beta.8 (user): a search result opens for looking only (no force / simulate) */
     } catch (e) {
       msg('Could not open: ' + e.message);
     }

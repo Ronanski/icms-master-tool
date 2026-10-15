@@ -287,6 +287,7 @@
     const i = AN.sheets.indexOf(o.sh);
     if (AN.cat !== 'an') AN.setCat('an');
     AN.go(i);
+    if (look) AN.lookOnly();
     setTimeout(() => {
       try {
         AN.sel = { net: o.n };
@@ -296,9 +297,11 @@
       } catch (e) {}
     }, 300);
   }
+  let look = false;
   function open(raw, opt) {
     const q = norm(raw),
       stn = opt && opt.stn;
+    look = !!(opt && opt.look); /* 2.1.0-beta.8: opened by a search (global / LIBRARY): look only, no value, no force / simulate */
     if (!looks(q) || !window.AN || !AN.sheets || !AN.sheets.length) return false;
     const oc = occurrences(q),
       dp = ditlPlaces(q),
@@ -364,7 +367,7 @@
       const sec = E('div', { cls: 'ics' }, [
         E('div', { cls: 'ict' }, [
           E('b', { txt: o.sh.name }),
-          E('span', { cls: 'icv', txt: '= ' + val(o.S, o.n) }),
+          look ? null : E('span', { cls: 'icv', txt: '= ' + val(o.S, o.n) }),
           E('button', { cls: 'b', txt: 'Show', title: 'Open the sheet and select the wire', on: () => show(o) })
         ]),
         E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Source' }), src.txt]),
@@ -410,6 +413,7 @@
                   on: () => {
                     close();
                     AN.setCat('dig');
+                    if (look) AN.lookOnly();
                     S.cur = d.i;
                     render();
                   }
@@ -431,7 +435,7 @@
     if (sb && !sb.dataset.info) {
       sb.dataset.info = '1';
       sb.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && open(sb.value)) {
+        if (e.key === 'Enter' && open(sb.value, { look: 1 })) {
           const f = $('anfind');
           if (f) f.style.display = 'none';
         }
@@ -445,7 +449,7 @@
           txt: 'ⓘ',
           title: 'Info card: source, used by, trip? (address or tag in the search box)',
           on: () => {
-            if (!open(($('ansb') || {}).value || '')) {
+            if (!open(($('ansb') || {}).value || '', { look: 1 })) {
               const t = $('toast');
               try {
                 msg('Type an address or tag (e.g. M.0228, AI0641, FICFW1007.MAN), then ⓘ or Enter');
