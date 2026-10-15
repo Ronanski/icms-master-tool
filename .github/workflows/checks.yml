@@ -9,12 +9,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
+      - name: The multi-file app folder (for the apk / exe) builds from the html
+        run: |
+          V=$(node tools/version.js)
+          node tools/build/app-folder.js "dist/logic-sim-v$V.html" /tmp/app-folder
+          test -f /tmp/app-folder/index.html && test -f /tmp/app-folder/js/06-analogjs.js && test -f /tmp/app-folder/js/data-pre.js
+          grep -q 'src="js/06-analogjs.js"' /tmp/app-folder/index.html
       - name: One html, version in file name and title
         run: |
           V=$(node tools/version.js)
           F=dist/logic-sim-v$V.html
           grep -q "<title>Logic Sim v$V</title>" "$F" || { echo "title does not say v$V"; exit 1; }
-          grep -q "c3.textContent='v$V'" "$F" || { echo "version label does not say v$V"; exit 1; }
+          grep -qE "c3\.textContent ?= ?'v$V'" "$F" || { echo "version label does not say v$V"; exit 1; }
       - name: The sources build exactly the committed html (src/ is the truth)
         run: node tools/build/build.js --check
       - name: Scripts of the html parse

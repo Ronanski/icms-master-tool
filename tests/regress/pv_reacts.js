@@ -4,7 +4,7 @@
 const {open}=require('./lib.js');const fs=require('fs');
 const running=process.argv.includes('--running');/* diagnosis: every measurement (AI) that no controller drives starts at the middle of its range = boiler in service, not cold */
 const only=(process.argv.find(a=>/^--sheets=/.test(a))||'').slice(9).split(',').filter(Boolean);
-const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+\.html$/.test(x));
+const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 (async()=>{const {browser,page,errs}=await open(html);
 const R=await page.evaluate(([only,running])=>{const out=[];const mid=()=>{for(const sh of AN.sheets){AN.go(AN.sheets.indexOf(sh));const S=sh.S;const pins=new Set();for(const b of S.procs||[])for(const id of (b.proc&&b.proc.allAI)||[])pins.add(id);for(const b of S.blk)if(b.k==='AI'&&!pins.has(b.id)&&b.rng&&S.rt.st[b.id]){const x=b.rng.lo+.5*(b.rng.hi-b.rng.lo);S.rt.st[b.id].val=x;S.rt.st[b.id].act=x}}};
  for(let i=0;i<AN.sheets.length;i++){const sh=AN.sheets[i];if(only.length&&!only.includes(sh.name))continue;AN.go(i);const S=sh.S;let cs=[];try{cs=AN.hmiCtrls(S)}catch(e){}
