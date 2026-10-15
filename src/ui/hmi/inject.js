@@ -32,6 +32,8 @@ const block =
   fs.readFileSync(__dirname + '/../plant/values.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/../plant/plant.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/../plant/library.js', 'utf8') +
   '</script>' +
   B;
 const k = s.lastIndexOf('</body>');

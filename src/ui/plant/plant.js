@@ -104,12 +104,15 @@
         } else if (it.t === 'mov') {
           valve(g, it, it.st === 'open' ? '#e05555' : '#3fbf6a');
           if (it.tag) txt(g, it.x + 14, it.y - 10, it.tag, { z: 11 });
+          if (it.v != null) txt(g, it.x + 14, it.y + 6, it.v + ' ' + (it.u || '%'), { z: 12, mono: 1, c: '#5cd6ff' });
+          if (it.m) txt(g, it.x - 14, it.y - 10, it.m, { z: 10, c: '#9ff0c4', a: 'end', b: 1 });
         } else if (it.t === 'pump' || it.t === 'fan') {
           const c = it.st === 'run' ? '#e05555' : '#3fbf6a';
           g.append(S_('circle', { cx: it.x, cy: it.y, r: 14, fill: 'none', stroke: c, 'stroke-width': 2.5 }));
           if (it.t === 'pump') g.append(S_('polygon', { points: `${it.x - 8},${it.y + 8} ${it.x + 8},${it.y} ${it.x - 8},${it.y - 8}`, fill: c }));
           else g.append(S_('path', { d: `M${it.x - 9},${it.y} L${it.x + 9},${it.y} M${it.x},${it.y - 9} L${it.x},${it.y + 9}`, stroke: c, 'stroke-width': 2.5 }));
           if (it.tag) txt(g, it.x, it.y + 30, it.tag, { z: 11, a: 'middle' });
+          if (it.m) txt(g, it.x + 18, it.y - 12, it.m, { z: 10, c: '#9ff0c4', b: 1 });
         } else if (it.t === 'vessel') {
           const rx = it.shape === 'drum' || it.shape === 'tank' ? Math.min(it.w, it.h) / 2 : it.shape === 'turbine' ? 4 : 6;
           if (it.shape === 'turbine')
@@ -122,8 +125,8 @@
           if (it.tag) txt(g, it.x, it.y - 15, it.tag, { z: 11, c: '#a9b7c4' });
           txt(g, it.x, it.y, (it.v != null ? it.v : '—') + (it.u ? ' ' + it.u : ''), { z: 14, mono: 1, c: '#5cd6ff' });
         } else if (it.t === 'ctl') {
-          const bw = 190,
-            bh = 74;
+          const bw = 168,
+            bh = 70;
           g.append(S_('rect', { x: it.x, y: it.y, width: bw, height: bh, rx: 3, fill: '#0d1319', stroke: '#2a6a98', 'stroke-width': 1.5 }));
           txt(g, it.x + 6, it.y + 15, (it.label || it.tag || '').slice(0, 28), { z: 11, c: '#a9b7c4' });
           txt(g, it.x + 6, it.y + 31, it.tag || '', { z: 12, b: 1, mono: 1 });
@@ -283,6 +286,9 @@
     if (btn) btn.classList.toggle('on', !!on);
     document.querySelectorAll('#gsbar .cat button').forEach(b => b !== btn && on && b.classList.remove('on'));
     if (on) {
+      try {
+        window.lsLibrary && window.lsLibrary(false);
+      } catch (e) {}
       place();
       setTimeout(() => (cur && cur.g ? draw(cur.g) : fit()), 30);
     }

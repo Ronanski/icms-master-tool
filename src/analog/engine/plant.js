@@ -360,7 +360,11 @@ function anProcStep(S, dt) {
         if (b.p.lt === 'level' && (b.txt || [])[1] === 'LICBR1001') {
           const fw = S.procs.find(x => (x.txt || [])[1] === 'FICFW1007'),
             s1 = AN.sheets.find(x => x.name === 'ABC-001C');
-          if (fw && fw.proc && s1) pr.integ = { fw: fw.proc.pv, sh1: s1, k: 0.02 }; /* about 0.36 mm/s for 20 T/H of imbalance (drum about 22 m2 of water surface) */
+          /* the start-up feedwater valve FCVFW11302 (LICBR1001B) feeds the drum beside the main valve: its flow is added. Its size is
+             not in the repository: 30 % of the feedwater range at 100 % open is ASSUMED (a typical start-up valve) */
+          const su = S.procs.find(x => (x.txt || [])[1] === 'LICBR1001B'),
+            fsp = fw && fw.p ? (fw.p.span > 0 ? fw.p.span : 550) : 550;
+          if (fw && fw.proc && s1) pr.integ = { fw: fw.proc.pv, su, suK: 0.3 * fsp, sh1: s1, k: 0.02 }; /* about 0.36 mm/s for 20 T/H of imbalance (drum about 22 m2 of water surface) */
         }
       } catch (e) {}
     }
@@ -380,7 +384,8 @@ function anProcStep(S, dt) {
         const st = pr.integ.ai >= 0 ? S1.rt.st[pr.integ.ai] : null;
         fst = st ? (st.act != null ? +st.act : +st.val) || 0 : 0;
       }
-      const ffw = +v[pr.integ.fw] || 0;
+      let ffw = +v[pr.integ.fw] || 0;
+      if (pr.integ.su) ffw += (Math.max(0, Math.min(100, +uOf(pr.integ.su) || 0)) / 100) * pr.integ.suK;
       q.y = Math.max(lo, Math.min(lo + span, q.y + dt * pr.integ.k * (ffw - fst)));
       q.h.length = 0;
     } else if (dt > 0) {

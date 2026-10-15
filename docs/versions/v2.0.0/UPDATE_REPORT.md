@@ -2,6 +2,17 @@
 
 Base: Stable v1.23.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f). Bakit 2.0.0: bagong henerasyon ng itsura at English ang buong app (PROJECT_RULES 5f, user 2026-10-15: "standard tayo, baka umabot ng v1.9999").
 
+## 2.0.0-beta.6 — LIBRARY workspace (I/O list, memory list), 27 Plant HMI graphics, start-up feedwater valve sa drum level
+
+- **Problem (user):** Gusto ng workspace para sa I/O LIST at MEMORY LIST na madaling i-search at i-copy sa search bar. Sa susunod, ang marshalling wiring ay isasama rito.
+- **Work Done:**
+  - `src/ui/plant/library.js` (bago): button LIBRARY. Tabs I/O LIST, MEMORY LIST, WIRING (reserved). Station filter; search ng address / tag / description (maraming salita = lahat dapat tumugma); click sa address o tag = copy; Find = search bar + info card. 400 row kada pagpapakita (mabilis sa mahinang device). Data: ang I/O at memory list na nasa app na (`AN.ades()`).
+  - `src/ui/plant/systems.js`: 27 system ang may graphic, mula sa mga snapshot (draft, static values). Ipinapakita ng renderer ang % at mode ng motor valve at ang mode ng pump / fan.
+  - `plant.js` (engine): ang flow ng start-up feedwater valve (LICBR1001B, FCVFW11302) ay idinadagdag sa tubig na pumapasok sa drum. ASSUMED ang laki: 30 % ng FW range kapag 100 % bukas (wala sa repo ang sukat).
+- **As Left (headless):** LIBRARY: "main steam" → 61 row, Find AI0129 → info card; walang page error. Drum level sa 150 MW: −11 mm, FW = steam. LICBR1001B ay gumagalaw na ang level sa cold start.
+- **Hindi pa:** totoong tablet; ang WIRING tab (hinihintay ang file ng user).
+- **Status:** Beta.
+
 ## 2.0.0-beta.5 — Drum level na integrating, 150 MW state na may kagamitan at mode, SV step sa unit, Plant HMI workspace (draft)
 
 - **Problem (user):** Ang SV ay hindi %, depende sa unit ng parameter. Masyadong makitid ang faceplate (hindi kita ang trend). Gusto ng PLANT HMI workspace, per system (draft). Ayusin muna ang logic.
