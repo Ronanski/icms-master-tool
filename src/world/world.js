@@ -223,7 +223,7 @@
             ' DITL ↔ DITL, ' +
             (AN.sheets.length
               ? W.stat.fromDitl + ' FROM DITL, ' + W.stat.toDitl + ' TO DITL na nakakabit'
-              : 'ang ABC ay ikakabit pagbukas ng Analog · ABC') +
+              : 'ang ABC ay ikakabit pagbukas ng ABC page') +
             (W.stat.lost.length ? ' · ' + W.stat.lost.length + ' reference na walang katapat (tingnan ang WORLD.stat.lost)' : '')
         );
     } else {
@@ -259,7 +259,7 @@
   const btns = [];
   function upd() {
     btns.forEach(b => {
-      b.textContent = '🌐 ABC + DITL: ' + (W.on ? 'ON' : 'OFF');
+      b.textContent = 'ABC+DITL ' + (W.on ? 'ON' : 'OFF');
       b.classList.toggle('on', W.on);
     });
   }
