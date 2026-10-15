@@ -41,6 +41,13 @@
     }
     return el;
   };
+  /* 2.0.0 (user): SV and manual values step in the UNIT of the parameter: ▲ = one round unit (1, 0.1, 10 ... about 1 % of
+     the range, rounded down to 1 / 10 / 100), ▲▲ = 5 of them; e.g. 0 ~ 600 °C: 1 / 5 °C, 0 ~ 2.6 T/H: 0.01 / 0.05 T/H */
+  const sfmt = x => String(+(+x).toPrecision(3));
+  const niceStep = span => {
+    const x = Math.abs(span) / 100;
+    return x > 0 && isFinite(x) ? Math.pow(10, Math.floor(Math.log10(x) + 1e-9)) : 1;
+  };
   /* 2.0.0: an ▲ / ▼ button like the DCS faceplate: one press = one step; held down it repeats (after 0.4 s, 10 per second)
      and after 2 s it goes 5 times faster. A plain click (mouse, keyboard, test) is one step. */
   const stepBtn = (txt, title, fn) => {
@@ -598,7 +605,7 @@
       const popIn = k => (k === 'SV' ? svIn : mvIn),
         popLo = k => (k === 'SV' ? rlo : 0),
         popHi = k => (k === 'SV' ? rhi : 100),
-        popStep = k => (popHi(k) - popLo(k)) / 100;
+        popStep = k => (k === 'SV' ? niceStep(popHi(k) - popLo(k)) : 1);
       const popSet = (k, v) => {
         v = Math.max(popLo(k), Math.min(popHi(k), v));
         popIn(k).value = +v.toFixed(3);
@@ -636,12 +643,12 @@
           ]),
           E('div', { cls: 'row' }, [popVal, E('span', { cls: 'sub', txt: k === 'SV' ? unit : '%' })]),
           E('div', { cls: 'row' }, [
-            B('▲▲', st * 5, '+5 % (hold = faster)'),
-            B('▲', st, '+1 % (hold = faster)'),
-            B('▼', -st, '-1 % (hold = faster)'),
-            B('▼▼', -st * 5, '-5 % (hold = faster)')
+            B('▲▲', st * 5, '+' + sfmt(st * 5) + ' ' + (k === 'SV' ? unit : '%') + ' (hold = faster)'),
+            B('▲', st, '+' + sfmt(st) + ' ' + (k === 'SV' ? unit : '%') + ' (hold = faster)'),
+            B('▼', -st, '-' + sfmt(st) + ' ' + (k === 'SV' ? unit : '%') + ' (hold = faster)'),
+            B('▼▼', -st * 5, '-' + sfmt(st * 5) + ' ' + (k === 'SV' ? unit : '%') + ' (hold = faster)')
           ]),
-          E('div', { cls: 'sub', txt: '▲ ' + fmt(st) + ' · ▲▲ ' + fmt(st * 5) + ' ' + (k === 'SV' ? unit : '%') + ' per press; hold to ramp' })
+          E('div', { cls: 'sub', txt: '▲ ' + sfmt(st) + ' · ▲▲ ' + sfmt(st * 5) + ' ' + (k === 'SV' ? unit : '%') + ' per press; hold to ramp' })
         );
         if (k === 'MV')
           popEl.append(
@@ -843,8 +850,8 @@
           const v = S.rt.v[b.o[0]];
           return isFinite(v) ? v : +inp.value || 0;
         },
-        fine = span / 100,
-        coarse = span / 20;
+        fine = niceStep(span),
+        coarse = fine * 5;
       inp.onchange = () => set(+inp.value);
       const manB = E('button', {
         cls: 'b',
@@ -865,12 +872,12 @@
               E('div', { cls: 'fl' }, [E('span', { txt: 'MV' }), E('span', { txt: u })]),
               inp,
               E('div', { cls: 'row mls' }, [
-                stepBtn('▲▲', '+5 % of range (hold = faster)', m => set(cur() + coarse * m)),
-                stepBtn('▲', '+1 % of range (hold = faster)', m => set(cur() + fine * m)),
-                stepBtn('▼', '-1 % of range (hold = faster)', m => set(cur() - fine * m)),
-                stepBtn('▼▼', '-5 % of range (hold = faster)', m => set(cur() - coarse * m))
+                stepBtn('▲▲', '+' + sfmt(coarse) + ' ' + u + ' (hold = faster)', m => set(cur() + coarse * m)),
+                stepBtn('▲', '+' + sfmt(fine) + ' ' + u + ' (hold = faster)', m => set(cur() + fine * m)),
+                stepBtn('▼', '-' + sfmt(fine) + ' ' + u + ' (hold = faster)', m => set(cur() - fine * m)),
+                stepBtn('▼▼', '-' + sfmt(coarse) + ' ' + u + ' (hold = faster)', m => set(cur() - coarse * m))
               ]),
-              E('div', { cls: 'sub', txt: '▲ ' + fmt(fine) + ' · ▲▲ ' + fmt(coarse) + ' ' + u + ' per press; hold to ramp' })
+              E('div', { cls: 'sub', txt: '▲ ' + sfmt(fine) + ' · ▲▲ ' + sfmt(coarse) + ' ' + u + ' per press; hold to ramp' })
             ])
           ]),
           E('div', { cls: 'tg' }, [

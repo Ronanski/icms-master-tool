@@ -388,7 +388,8 @@ window.UATS = (function () {
         P = c0.b.p,
         rlo = P.rlo != null ? P.rlo : 0,
         rhi = P.rhi != null ? P.rhi : 100,
-        span = rhi - rlo;
+        span = rhi - rlo,
+        ns = Math.pow(10, Math.floor(Math.log10(Math.abs(span) / 100) + 1e-9)); /* SV step of the faceplate ▲ (one round unit) */
       let seed = 777;
       const rnd = () => {
         seed = (seed * 1103515245 + 12345) & 0x7fffffff;
@@ -833,15 +834,15 @@ window.UATS = (function () {
           { expect: 'sv', value: +(rlo + span * 0.41).toFixed(3), tol: span * 0.002, say: 'SV after +' },
           { do: 'popopen', name: 'SV', say: 'Click the SV box' },
           { expect: 'pop', name: 'SV', value: 'open', say: 'SV control shown' },
-          { do: 'popbtn', button: '▲▲', say: 'Press ▲▲ (+5 %)' },
+          { do: 'popbtn', button: '▲▲', say: 'Press ▲▲ (+5 units, ' + 5 * ns + ')' },
           { do: 'settle', what: 'sv' },
-          { expect: 'sv', value: +(rlo + span * 0.46).toFixed(3), tol: span * 0.002, say: 'SV after ▲▲' },
-          { do: 'popbtn', button: '▼', say: 'Press ▼ (-1 %)' },
+          { expect: 'sv', value: +(rlo + span * 0.41 + 5 * ns).toFixed(3), tol: span * 0.002, say: 'SV after ▲▲' },
+          { do: 'popbtn', button: '▼', say: 'Press ▼ (-1 unit, ' + ns + ')' },
           { do: 'settle', what: 'sv' },
-          { expect: 'sv', value: +(rlo + span * 0.45).toFixed(3), tol: span * 0.002, say: 'SV after ▼' },
-          { do: 'popbtn', button: '▼▼', say: 'Press ▼▼ (-5 %)' },
+          { expect: 'sv', value: +(rlo + span * 0.41 + 4 * ns).toFixed(3), tol: span * 0.002, say: 'SV after ▼' },
+          { do: 'popbtn', button: '▼▼', say: 'Press ▼▼ (-5 units)' },
           { do: 'settle', what: 'sv' },
-          { expect: 'sv', value: +(rlo + span * 0.4).toFixed(3), tol: span * 0.002, say: 'SV after ▼▼' },
+          { expect: 'sv', value: +(rlo + span * 0.41 - ns).toFixed(3), tol: span * 0.002, say: 'SV after ▼▼' },
           { do: 'popclose' },
           { do: 'press', button: '−', say: 'Press −' },
           { do: 'settle', what: 'sv' },

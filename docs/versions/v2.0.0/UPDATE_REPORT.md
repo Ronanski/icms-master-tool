@@ -2,6 +2,25 @@
 
 Base: Stable v1.23.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f). Bakit 2.0.0: bagong henerasyon ng itsura at English ang buong app (PROJECT_RULES 5f, user 2026-10-15: "standard tayo, baka umabot ng v1.9999").
 
+## 2.0.0-beta.5 — Drum level na integrating, 150 MW state na may kagamitan at mode, SV step sa unit, Plant HMI workspace (draft)
+
+- **Problem (user):** Ang SV ay hindi %, depende sa unit ng parameter. Masyadong makitid ang faceplate (hindi kita ang trend). Gusto ng PLANT HMI workspace, per system (draft). Ayusin muna ang logic.
+- **As Found:**
+  - Ang drum level ay sumasagot sa command ng 3-element master na parang first-order process, hindi sa water balance.
+  - Sa naka-angklang flow loop, masyadong maliit ang gain: FICFW1007 sa MV 0 % = 440 T/H.
+  - Sa 150 MW state, naka-MAN ang mga slave dahil itinakda ang mode habang aktibo pa ang force-manual ng cold start. Kulang din ang mga digital signal (BFWP running, ICV → CV transfer).
+- **Work Done:**
+  - `plant.js`: drum level dL/dt = 0.02 × (FW flow FICFW1007 PV − main steam FT-MS1031 AI0129); ang simula ay ang value ng transmitter. Anchored gain: ang panig na pinupuntahan ng PV kapag sumasara ang valve ay nasa loob ng range; ang flow ay proportional sa valve.
+  - `hmi-op.js`: 19 digital input ng kagamitan mula sa snapshot (BFWP-A, coal feeder A/B/C, PAF, SAF, IDF, FA blower A, CP-A, SWP-B/C, ICV → CV), mode status .MAN / .LOC / .REM, LICBR1001B MANUAL; tatakbo muna nang 10 s, saka itatakda ang mode.
+  - `hmi.js`: SV ▲ / ▲▲ = 1 / 5 na bilog na unit ng parameter (hal. 1 / 5 °C, 10 / 50 mm, 0.01 / 0.05 T/H); MV 1 / 5 %; faceplate max 380 px.
+  - `src/ui/plant/` (bago): PLANT button sa tabi ng ABC / DITL; listahan ng system (29), viewer (fit, zoom, pan), at value list ng snapshot. Draft: walang address.
+- **As Left (headless):**
+  - 150 MW, pagkatapos ng 1800 s: drum level −11 mm (SV 0), FW 474.7 T/H = steam 474.1 T/H, FW MV 53.3 % (snapshot 56 %).
+  - `hmi_op.js` (bago ang drum level): 5 / 7 naka-angklang loop ay nasa ±2 % ng snapshot.
+  - Buong regression: tumatakbo nang i-push ito.
+- **Hindi pa nasubok:** totoong tablet / exe. Ang graphics ng Plant HMI (ginagawa pa).
+- **Status:** Beta.
+
 ## 2.0.0-beta.4 — Beta switch ayos, faceplate (1 % / 5 %, walang keyboard, description, makitid), legend, plant model na naka-angkla sa HMI, "Start at 150 MW"
 
 - **Problem (user):**

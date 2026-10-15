@@ -329,18 +329,61 @@ function anProcStep(S, dt) {
           return (xs * (xp.K || 1) * (uOfS(x.S, x.b) - xum)) / 100;
         }),
       eff = c => {
-        const e0 = (pr.sg * pr.K * (c - um)) / 100;
+        const e0 = (pr.sg * (pr.Ka || pr.K) * (c - um)) / 100;
         return xe.length ? (e0 + xe.reduce((a, x) => a + x, 0)) / (1 + xe.length) : e0;
       };
     if (pr.hop === undefined) {
       const h = AN_HMI_OP[(b.txt || [])[1]];
       pr.hop = h && !xe.length && !(b._sh && b._sh.length) && h.pv >= lo && h.pv <= lo + span ? h : null;
+      /* the gain of an anchored loop is limited so that MV 0 ... 100 % keeps the PV inside the range of the instrument
+         (ABC-019 TICHR1002: 541 °C at 79.4 % spray; with K = 1 the PV was 600 °C, the top, for any MV below 70 %) */
+      if (pr.hop) {
+        const plo = b.p.lo == null ? 0 : b.p.lo,
+          phi = b.p.hi == null ? 100 : b.p.hi,
+          up = ((lo + span - pr.hop.pv) / span) * 100,
+          dn = ((pr.hop.pv - lo) / span) * 100,
+          dl = Math.max(1e-6, pr.hop.mv - plo),
+          dh = Math.max(1e-6, phi - pr.hop.mv),
+          /* the side the PV goes to when the valve CLOSES (MV -> 0) must stay inside the range; the other side may saturate.
+             A flow is proportional to the valve (MV 0 = no flow: ABC-010 FICFW1007 499 T/H at 56 % -> 0 T/H at 0 %) */
+          kdn = pr.sg > 0 ? dn / dl : up / dl;
+        void dh;
+        pr.Ka = b.p.lt === 'flow' ? Math.max(0.02, kdn) : Math.max(0.02, Math.min(pr.K, 0.9 * kdn));
+      }
     }
     const ss0 = c => lo + span * (0.5 + eff(c)),
       anc = pr.hop ? pr.hop.pv - ss0(pr.hop.mv) : 0,
       ss = c => ss0(c) + anc + ((pr.dist || 0) / 100) * span + (pr.op || 0);
-    if (!q) q = pm[b.id] = { y: ss(u), h: [], u: null };
-    if (dt > 0) {
+    if (pr.integ === undefined) {
+      pr.integ = null;
+      try {
+        if (b.p.lt === 'level' && (b.txt || [])[1] === 'LICBR1001') {
+          const fw = S.procs.find(x => (x.txt || [])[1] === 'FICFW1007'),
+            s1 = AN.sheets.find(x => x.name === 'ABC-001C');
+          if (fw && fw.proc && s1) pr.integ = { fw: fw.proc.pv, sh1: s1, k: 0.02 }; /* about 0.36 mm/s for 20 T/H of imbalance (drum about 22 m2 of water surface) */
+        }
+      } catch (e) {}
+    }
+    if (!q) q = pm[b.id] = { y: pr.integ && isFinite(v[pr.pv]) ? v[pr.pv] : ss(u), h: [], u: null };
+    /* 2.0.0: the DRUM LEVEL is an integrating process: the level rises when more feedwater goes in than steam goes out
+       (dL/dt = k x (feedwater flow - main steam flow)). ABC-010: feedwater flow = PV of FICFW1007 (FT-FW1007, economizer inlet),
+       steam flow = FT-MS1031 (STN101 AI0129, ABC-001C). Before: a first-order answer to the command of the 3-element master,
+       so the level did not follow the water balance. */
+    if (pr.integ && dt > 0) {
+      const S1 = pr.integ.sh1.S;
+      let fst = 0;
+      if (S1) {
+        if (pr.integ.ai == null) {
+          const a = S1.blk.find(z => z.k === 'AI' && z.o && nm(S1, z.o[0]) === 'AI0129');
+          pr.integ.ai = a ? a.id : -1;
+        }
+        const st = pr.integ.ai >= 0 ? S1.rt.st[pr.integ.ai] : null;
+        fst = st ? (st.act != null ? +st.act : +st.val) || 0 : 0;
+      }
+      const ffw = +v[pr.integ.fw] || 0;
+      q.y = Math.max(lo, Math.min(lo + span, q.y + dt * pr.integ.k * (ffw - fst)));
+      q.h.length = 0;
+    } else if (dt > 0) {
       q.h.push([rt.t, u]);
       while (q.h.length > 2 && q.h[1][0] <= rt.t - pr.L) q.h.shift();
       const tgt = ss(q.h[0][1]);
