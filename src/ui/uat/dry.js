@@ -1,6 +1,6 @@
 // Dry run of the generated block tests on the engine: node src/ui/uat/dry.js [html] [sheet]
 const fs=require('fs');const {open}=require('../../../tests/regress/lib');
-const html=process.argv[2]||fs.readdirSync('dist').map(x=>'dist/'+x).find(x=>/logic-sim-v\d+\.\d+\.\d+\.html$/.test(x));const only=process.argv[3];
+const html=process.argv[2]||fs.readdirSync('dist').map(x=>'dist/'+x).find(x=>/logic-sim-v\d+\.\d+\.\d+(?:-beta\.\d+)?\.html$/.test(x));const only=process.argv[3];
 (async()=>{const {browser,page}=await open(html);
 await page.addScriptTag({content:fs.readFileSync(__dirname+'/runner.js','utf8')});await page.addScriptTag({content:fs.readFileSync(__dirname+'/gen.js','utf8')});
 const r=await page.evaluate(async(only)=>{const stat={},fails=[],known={};let items=0,cases=0;const t0=Date.now();

@@ -24,5 +24,5 @@ if(oi>0){const d=path.resolve(process.argv[oi+1]);fs.mkdirSync(d,{recursive:true
  const a=sha(f),b=sha(cur);console.log('built    ',a,fs.statSync(f).size,'bytes\ncommitted',b,fs.statSync(cur).size,'bytes');
  if(a!==b){console.error('DIFFERENT: run "node tools/build/build.js" and commit the html');process.exit(1)}console.log('SAME: the committed html is exactly what the sources build');
 }else{
- fs.mkdirSync(dist,{recursive:true});const f=build(dist);for(const x of fs.readdirSync(dist))if(/^logic-sim-v\d+\.\d+\.\d+\.html$/.test(x)&&x!==path.basename(f))fs.unlinkSync(path.join(dist,x));
+ fs.mkdirSync(dist,{recursive:true});const f=build(dist);for(const x of fs.readdirSync(dist))if(/^logic-sim-v\d+\.\d+\.\d+(?:-beta\.\d+)?\.html$/.test(x)&&x!==path.basename(f))fs.unlinkSync(path.join(dist,x));
  console.log('built',f,fs.statSync(f).size,'bytes');}

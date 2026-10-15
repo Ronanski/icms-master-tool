@@ -2,7 +2,7 @@
 // with a manual value while PV is 20 % above SV: the selector output must be the manual value, the PID must follow it (bumpless) and the output must not jump when AUTO returns.
 // PID whose A/M cannot be reached this way are listed as NOT TESTED with the reason. Usage: node tests/regress/pid_am.js [html]
 const {open}=require('./lib.js');
-(async()=>{const {browser,page}=await open(process.argv[2]||require('fs').readdirSync('dist').map(x=>'dist/'+x).find(x=>/logic-sim-v\d+\.\d+\.\d+\.html$/.test(x)));
+(async()=>{const {browser,page}=await open(process.argv[2]||require('fs').readdirSync('dist').map(x=>'dist/'+x).find(x=>/logic-sim-v\d+\.\d+\.\d+(?:-beta\.\d+)?\.html$/.test(x)));
 const r=await page.evaluate(()=>{const res=[];let total=0;
  for(const x of AN.sheets)if(x.S)for(const b of x.S.procs||[])b.proc.on=false;
  for(const sh of AN.sheets){if(/ABC-000/.test(sh.name))continue;let S;try{S=AN.ensure(sh)}catch(e){continue}
