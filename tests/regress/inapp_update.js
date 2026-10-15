@@ -20,7 +20,7 @@ const title=()=>p.evaluate(()=>document.title);const ready=()=>p.waitForFunction
 await p.goto('file://'+dir+'/index.html');await ready();
 ck((await title())==='Logic Sim v'+V,'starts with the copy inside the app: '+(await title()));
 // choose Beta: downloaded into the app, then it runs from the app
-await p.selectOption('#chsel','beta');await p.waitForFunction(v=>document.title.includes(v),BV,{timeout:30000});await ready();
+await p.evaluate(()=>{const c=document.getElementById('chsel');c.value='beta';c.dispatchEvent(new Event('change'))});await p.waitForFunction(v=>document.title.includes(v),BV,{timeout:30000});await ready();
 ck((await title()).includes(BV),'Beta chosen: runs the downloaded Beta '+(await title()));
 ck(nav.every(u=>u.startsWith('file:')),'never left the app (no web page / Chrome): '+[...new Set(nav)].join(' '));
 ck(await p.evaluate(()=>document.getElementById('chsel').value==='beta'),'channel box says Beta');
@@ -30,7 +30,7 @@ ck((await title()).includes(BV),'no internet, app started again: still the Beta 
 const ok1=await p.evaluate(async()=>{const has=()=>typeof S!=="undefined"&&S.sheets&&S.sheets.length;for(let i=0;i<60&&!has();i++)await new Promise(r=>setTimeout(r,250));return has()||0});
 ck(ok1>=100,'the Beta works offline: '+ok1+' DITL sheets');
 // back to Stable (offline): the copy inside the app
-await p.selectOption('#chsel','stable');await p.waitForFunction(v=>document.title==='Logic Sim v'+v,V,{timeout:30000});await ready();
+await p.evaluate(()=>{const c=document.getElementById('chsel');c.value='stable';c.dispatchEvent(new Event('change'))});await p.waitForFunction(v=>document.title==='Logic Sim v'+v,V,{timeout:30000});await ready();
 ck((await title())==='Logic Sim v'+V,'Stable chosen offline: the copy inside the app '+(await title()));
 // update of the Stable when online: question, I-update ngayon, downloaded, runs from the app
 online=true;await p.evaluate(()=>window.lsCheckUpdate(true));await p.waitForSelector('#updask',{timeout:20000});

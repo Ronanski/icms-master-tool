@@ -20,7 +20,7 @@ AN.xrefGo = tg => {
   const ss = document.getElementById('shsel');
   ss.value = o.value;
   ss.dispatchEvent(new Event('change'));
-  msg('Opened ' + tg.d + ' - use the "Analog · ABC" tab to come back');
+  msg('Opened ' + tg.d + ' - use the "ABC" button to come back');
 };
 function setCat(c) {
   if (AN.cat === c) return;

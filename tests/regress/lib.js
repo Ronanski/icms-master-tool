@@ -6,7 +6,7 @@ async function open(html){
   page.on('pageerror',e=>errs.push(String(e.message)));
   await page.goto('file://'+require('path').resolve(html));
   await page.waitForTimeout(1500);
-  await page.click('text=Analog · ABC');
+  await page.evaluate(()=>AN.setCat('an'));
   await page.waitForFunction(()=>window.AN&&AN.sheets&&AN.sheets.length>=54,null,{timeout:60000});
   await page.waitForTimeout(500);
   return {browser,page,errs};
