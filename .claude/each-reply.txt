@@ -1,0 +1,5 @@
+[REPO-FIRST REMINDER — awtomatikong ipinapasok sa bawat mensahe ng user]
+1. Ang repo ang sagot: CLAUDE.md (seksyong "HINDI NAGBABAGO NA KAALAMAN"), PROJECT_RULES.md, HANDOFF.md, docs/CHECKLIST.md, document-references/ (diagram, I/O list, memory list, PID params, HMI snapshot). Tingnan muna ito at ang aktwal na estado ng code BAGO sumagot. Huwag sumagot mula sa alaala.
+2. IISANG MUNDO ang lahat ng sheet (ABC at DITL): ang address ay per station, iisa ang halaga sa lahat ng sheet. Ang .MAN / .LOC / .REM ay HMI command na nakakabit sa lahat ng sheet na may tag.
+3. Bawal: "patay na input", "needs verification", "walang malinis na estado", at mga tanong na masasagot ng repo. Ang finding ay bug na naayos, tama na may ebidensya, o hindi mabasa na may eksaktong pangalan.
+4. Taglish, maikli. Report: ano ang binago, ano ang sinubok, ano ang hindi, susunod na gagawin. Walang merge/release/workflow kung walang GO sa mensahe.
