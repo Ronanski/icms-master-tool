@@ -237,7 +237,37 @@
     [$('ansb'), $('gscope')].forEach(e => e && srch.append(e));
     /* settings ⚙: looks, live colour, channel and update */
     const set = mkMenu('gs-set', GEAR, 'Settings: itsura, kulay, channel, update');
-    set.head('Itsura');
+    set.head('Appearance');
+    {
+      /* font of the app (built in, works offline); the drawing keeps the font of its theme */
+      const fs_ = document.createElement('select');
+      fs_.id = 'fontsel';
+      fs_.title = 'Font ng app (hindi kasama ang drawing)';
+      [
+        ['inter', 'Font: Inter + JetBrains Mono'],
+        ['plex', 'Font: IBM Plex Sans + Mono'],
+        ['roboto', 'Font: Roboto + Roboto Mono'],
+        ['device', 'Font: Device default']
+      ].forEach(([v, t]) => {
+        const o = document.createElement('option');
+        o.value = v;
+        o.textContent = t;
+        fs_.append(o);
+      });
+      let f0 = 'inter';
+      try {
+        f0 = localStorage.getItem('ls-font') || 'inter';
+      } catch (e) {}
+      fs_.value = f0;
+      document.documentElement.dataset.font = f0;
+      fs_.onchange = () => {
+        document.documentElement.dataset.font = fs_.value;
+        try {
+          localStorage.setItem('ls-font', fs_.value);
+        } catch (e) {}
+      };
+      set.m.append(fs_);
+    }
     [$('uisel'), $('dgsel')].forEach(e => e && set.m.append(e));
     const anSel = [...an.querySelectorAll('.tb-menu select')];
     anSel.forEach(s => {

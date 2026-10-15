@@ -54,3 +54,25 @@ body.ophmi #anp{display:none!important}
 #opp .fpop .row button.b{min-width:44px;font-size:16px}
 #opp .fpb input.fv:not(:disabled),#opp .fpb{cursor:pointer}
 #opp .fpg .gm{position:relative;width:5px;background:#1a242b}#opp .fpg .gm i{position:absolute;left:0;right:0;background:#4be36a}
+/* overview grid + force list (1.23.0) */
+.fpov{margin:4px 0 8px;border:1px solid #26313c;border-radius:6px;background:#10161c;padding:6px}
+.fpov .ovh{display:flex;justify-content:space-between;align-items:center;font:600 10.5px "Segoe UI",Roboto,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#7d8e9a;margin:0 0 4px}
+.fpov .ovh .b{height:22px;padding:0 8px;font-size:11px;letter-spacing:0;text-transform:none}
+.fpov .ovg{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:4px}
+.fpov .ovc{border:1px solid #26313c;border-radius:5px;background:#161d24;padding:4px;cursor:pointer;display:flex;flex-direction:column;gap:3px}
+.fpov .ovc:hover{border-color:#3d6d93}.fpov .ovc.on{border-color:#3d9cf0;box-shadow:inset 0 0 0 1px #3d9cf0}
+.fpov .tt{font:700 10.5px "Cascadia Mono",Consolas,ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fpov .bars{display:flex;gap:3px;height:38px;align-items:flex-end}
+.fpov .ovb{flex:1;height:38px;background:#0b1015;border:1px solid #26313c;position:relative}
+.fpov .ovb i{position:absolute;left:0;right:0;bottom:0}.fpov i.pv{background:#5cc8ff}.fpov i.sv{background:#ffd84a}.fpov i.mv{background:#6fe3a0}
+.fpov .ft{display:flex;justify-content:space-between;font:700 10px "Cascadia Mono",Consolas,ui-monospace,monospace;gap:4px}
+.fpov .ft .nm{color:#9fb0bd;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fpov .md{padding:0 4px;border-radius:3px}.fpov .m-A{color:#9ff0c4}.fpov .m-M{color:#ffd78a}.fpov .m-R{color:#9fd0ff}
+.fpov .ovfl{margin-top:6px;border-top:1px solid #26313c;padding-top:6px}
+.fpov .ovf{width:100%;border-collapse:collapse;font:11px "Cascadia Mono",Consolas,ui-monospace,monospace}
+.fpov .ovf td{padding:3px 4px;border-bottom:1px solid #1a232b;vertical-align:middle}
+.fpov .ovf td.nm b{display:block;font-weight:600}.fpov .ovf td.nm small{color:#7d8e9a;font-size:10px}
+.fpov .ovf td.v{text-align:right;width:62px}.fpov .ovf td.c{text-align:right;white-space:nowrap;width:110px}
+.fpov .ovf td.c .b{height:22px;min-width:24px;padding:0 6px;font-size:11px;margin-left:2px}
+.fpov .ovf td.c input{width:58px;height:22px;background:#0b1015;color:#cfd9e2;border:1px solid #26313c;border-radius:4px;font:11px "Cascadia Mono",Consolas,monospace}
+.fpov .ovf tr.frc td{background:#2a2112}.fpov .ovf tr.frc td.v{color:#e8b04a;font-weight:700}

@@ -2,6 +2,19 @@
 
 Base: Stable v1.22.0 (`main`, release `v1.22.0`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 1.23.0-beta.2 — Overview ng mga controller, force list, at mga font na pipiliin
+
+- **Problem:** Sa Operator tab, bawat faceplate ay mga 390 px ang taas (4 na controller = 4488 px na kailangang i-scroll). Walang mabilis na force ng mga signal ng loop. Pangit ang font sa ibang device (fallback ng system).
+- **Work Done:**
+  - `src/ui/hmi/overview.js` (bago, itsura at operasyon lang): grid ng maliliit na card sa itaas ng Operator tab, isa kada controller (tag, A / M / R, PV · MV, bar ng PV / SV / MV). I-click ang card: iyon lang ang faceplate na makikita, bukas ang Engineering (trend, signals), at lalabas ang **Force list** ng loop:
+    - PV;
+    - mga select signal ng A/M station (force manual / AUTO);
+    - mga mode input (.MAN / .LOC / .REM);
+    - bawat isa ay may [0] [1] (o value) at [×] release.
+  - Mga font sa loob ng app (offline, OFL license, `src/ui/fonts/`): ⚙ → Appearance → **Font**: Inter + JetBrains Mono (default), IBM Plex Sans + Mono, Roboto + Roboto Mono, o Device default. Ang drawing ay may sariling font ng theme. Dagdag na laki: mga 290 KB.
+- **As Left:** `tests/regress/overview.js` 9 / 9 (ABC-010: 4 card; FICFW1007 lang ang makikita; force list SI0269, M.0228, FICFW1007.MAN; FORCE 0 sa M.0228 → enabled ang AUTO; × → bumalik sa 1). Pasado ang faceplate, operator panel at ABC-007 184 / 0. Hindi pa nasubok sa tablet.
+- **Status:** Pass (headless).
+
 ## 1.23.0-beta.1 — Iisang top bar (ABC + DITL), ⚙ settings, status bar, iisang font (UI ayon sa mockup v2, bahagi 1)
 
 - **Problem:** Tatlong hilera sa itaas (search, toolbar, pamagat), malalaking button, apat na dropdown (UI, Diagram, Channel, Update) na laging nakalabas, emoji sa mga button, at magkakaibang font. Hindi pang-engineering ang dating (puna ng user sa mockup v1).

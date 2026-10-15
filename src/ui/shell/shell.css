@@ -101,8 +101,13 @@ body:not(.an) #anbar{display:none!important}
 }
 
 /* ===== ONE TOP BAR, ABC + DITL (1.23.0, mockup v2). Looks only: the same buttons and handlers. ===== */
-:root{--uf:"Segoe UI",Roboto,"Helvetica Neue",Arial,system-ui,sans-serif;--mf:"Cascadia Mono",Consolas,"Roboto Mono","DejaVu Sans Mono",ui-monospace,monospace}
-body.top1,body.top1 button,body.top1 select,body.top1 input{font-family:var(--uf)}
+:root{--uf:'Inter',system-ui,sans-serif;--mf:'JetBrains Mono',ui-monospace,monospace}
+html[data-font=plex]{--uf:'IBM Plex Sans',system-ui,sans-serif;--mf:'IBM Plex Mono',ui-monospace,monospace}
+html[data-font=roboto]{--uf:'Roboto',system-ui,sans-serif;--mf:'Roboto Mono',ui-monospace,monospace}
+html[data-font=device]{--uf:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mf:ui-monospace,Consolas,"Roboto Mono",monospace}
+/* the UI font everywhere except the drawing (the diagram keeps the font of its theme) */
+body.top1 :not(svg):not(svg *){font-family:var(--uf)!important}
+body.top1 :is(#sfoot,#sfoot *,#ansb,.fv,.fv *,.fpov .tt,.fpov .ft,.fpov .ft *,.fpov .ovf,.fpov .ovf *,input[type=number],code,pre,textarea,.mono){font-family:var(--mf)!important}
 body.top1 #gsbar[data-top]{display:flex!important;flex-wrap:nowrap;align-items:center;gap:6px;min-height:40px;padding:0 6px!important;background:linear-gradient(#151c23,#10161b)!important;border-bottom:1px solid #26313c!important;overflow:visible;position:relative;z-index:50}
 #gsbar[data-top]>#bar,#gsbar[data-top]>#anbar{padding:0!important;margin:0;background:transparent!important;border:0!important;gap:4px!important;flex-wrap:nowrap!important;min-width:0;flex:none}
 body.an #gsbar[data-top]>#anbar{display:flex!important}
