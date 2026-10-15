@@ -2,6 +2,14 @@
 
 Base: Stable v2.0.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 2.1.0-beta.7 — DITL page: "ALSO IN ABC"
+
+- **Problem (user):** "Hindi lang DITL. Dapat kung meron din sa ABC." Sa DITL page, ang napiling signal ay hindi nagpapakita kung saan ito ginagamit sa ABC.
+- **Work Done (`src/ui/shell/info.js`, `shell.css`, UI lang, read only):** kapag pumili ng input / output cell sa DITL na may address o tag na nasa ABC din, lalabas sa ibaba ang bar na **ALSO IN ABC**: ang mga ABC sheet (may station), pindot = buksan ang sheet na iyon (at ang info card); **ⓘ** = info card (source, used by, Effects sa lahat ng ABC sheet na naaabot). Nawawala kapag walang napili.
+- **As Left (headless, `tests/regress/abcbar.js`):** DITL-01, M.3302 (PAF running) → ABC-007, ABC-008, ABC-055 (STN101); ⓘ → info card; walang page error. `infocard.js` pasado.
+- **Hindi pa nasubok:** totoong tablet.
+- **Status:** Beta.
+
 ## 2.1.0-beta.6 — Start at 150 MW: mas tugma sa HMI (plant model)
 
 - **Problem:** Sa PLANT LIVE, 66 nakakabit na tag (full-load) ang lumalayo sa snapshot pagkatapos ng Start at 150 MW.

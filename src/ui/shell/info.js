@@ -460,4 +460,69 @@
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') close();
   });
+  /* 2.1.0-beta.7 (user: "hindi lang DITL, dapat kung meron din sa ABC"): on the DITL page, the selected input / output cell whose
+     address or tag is also on ABC sheets shows those sheets in a bar; ⓘ = the info card (source, used by, effects on every ABC
+     sheet it reaches), a sheet button = that sheet. One address = one signal (CLAUDE.md 1). Read only. */
+  {
+    const oc = new Map(),
+      ocOf = q => {
+        if (!oc.has(q)) oc.set(q, occurrences(q));
+        return oc.get(q);
+      };
+    let bar = null,
+      key = '';
+    const hide = () => {
+      if (bar) bar.style.display = 'none';
+      key = '';
+    };
+    setInterval(() => {
+      try {
+        if (!window.AN || AN.cat === 'an' || typeof sel === 'undefined' || !sel || typeof S === 'undefined' || !S.sheets) return hide();
+        const s = S.sheets[S.cur],
+          cell = s && s.cells && s.cells[sel.k];
+        if (!cell) return hide();
+        const hits = [];
+        for (const t of cell)
+          for (const w of String(t.t || '').split(/\s+/)) {
+            const q = norm(w);
+            if (!looks(q) || !/\d/.test(q) || hits.some(h => h.q === q)) continue;
+            const L = ocOf(q);
+            if (L.length) hits.push({ q, L });
+          }
+        const k = S.cur + '|' + sel.k + '|' + hits.map(h => h.q).join(',');
+        if (k === key) return;
+        key = k;
+        if (!hits.length) return hide();
+        if (!bar) {
+          bar = E('div', { id: 'abcbar' });
+          document.body.append(bar);
+        }
+        bar.innerHTML = '';
+        for (const h of hits) {
+          const shs = [...new Set(h.L.map(o => o.sh))];
+          bar.append(
+            E('div', { cls: 'abr' }, [
+              E('b', { txt: 'ALSO IN ABC' }),
+              E('span', { cls: 'abq', txt: h.L[0].nm }),
+              ...shs.slice(0, 6).map(sh =>
+                E('button', {
+                  cls: 'b',
+                  txt: sh.name + (sh.stn ? ' · STN10' + sh.stn : ''),
+                  title: 'Open ' + sh.name + ' (ABC) at ' + h.L[0].nm,
+                  on: () => {
+                    AN.setCat('an');
+                    AN.go(AN.sheets.indexOf(sh));
+                    setTimeout(() => open(h.q), 300);
+                  }
+                })
+              ),
+              shs.length > 6 ? E('span', { txt: '+' + (shs.length - 6) }) : null,
+              E('button', { cls: 'b', txt: 'ⓘ', title: 'Info card: source, used by, effects on the ABC sheets', on: () => open(h.q) })
+            ])
+          );
+        }
+        bar.style.display = 'block';
+      } catch (e) {}
+    }, 500);
+  }
 })();

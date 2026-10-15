@@ -192,3 +192,7 @@ body.top1 #meta #mctl button,body.top1 #meta #mctl select{height:24px;padding:0 
 #infocard .tg{margin-right:4px}
 #infocard .f-ilk{color:#ffd78a}#infocard .f-sw{color:#9fd0ff}
 #infocard .icl .k.k2{width:150px;font-size:10.5px}#libws .libw .ics{border:0;padding:0}
+#abcbar{position:fixed;left:50%;transform:translateX(-50%);bottom:34px;z-index:60;display:none;max-width:min(760px,96vw);background:var(--c-panel,#10161c);border:1px solid var(--c-line,#2a3a48);border-radius:4px;padding:4px 8px;font:12px var(--uf,sans-serif);box-shadow:0 4px 14px #0008}
+#abcbar .abr{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:2px 0}
+#abcbar .abr b{font-size:10.5px;letter-spacing:.08em;color:#9ff0c4}
+#abcbar .abq{font-family:var(--mf,monospace);color:#ffd27a}
