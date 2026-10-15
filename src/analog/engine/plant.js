@@ -194,7 +194,21 @@ function anProcList(S) {
         }
         pr.mode = 'pin';
         pr.ai = [];
-      } else pr.ai = sn.filter(q => Math.abs(q.sens) >= 0.3 * mx).map(q => q.id);
+      } else {
+        let pick = sn.filter(q => Math.abs(q.sens) >= 0.3 * mx);
+        /* 2.1.0-beta.6: only the transmitters of the measurement itself (same unit as the PV): the pressure / temperature of a
+           level or flow COMPENSATION is another measurement (ABC-010: the drum level model wrote the drum pressure AI0128,
+           134.2 -> 0 kg/cm2; the feedwater flow model wrote the feedwater temperature TIFW1160, 244 -> 300 °C) */
+        const pu = String(b.p.unit || '').trim().toLowerCase();
+        if (pu) {
+          const same = pick.filter(q => {
+            const a = S.blk.find(z => z.id === q.id);
+            return a && a.rng && String(a.rng.u || '').trim().toLowerCase() === pu;
+          });
+          if (same.length) pick = same;
+        }
+        pr.ai = pick.map(q => q.id);
+      }
     }
     pr.aiOut = pr.ai.flatMap(id => {
       const a = S.blk.find(q => q.id === id);
@@ -224,6 +238,8 @@ function anProcList(S) {
    about 150 MW). The plant model is ANCHORED there: with the snapshot MV the PV settles at the snapshot PV; the slope (K) and
    the direction (ACT) stay as before. Only loops that run in AUTO / REMOTE on the snapshot with their own valve; cascade
    masters, parallel valves and measurements shared by two controllers are not anchored (their PV is made by other loops). */
+/* actuators in series on one fan (see u below): tag -> 1 */
+const AN_SERIES = { PICFG108: 1, PICFG108A: 1 };
 const AN_HMI_OP = {
   'TICBR1140': { mv: 65.6, pv: 462.0, src: '03.png' },
   'TICBR1130': { mv: 57.6, pv: 394.0, src: '03.png' },
@@ -305,6 +321,11 @@ function anProcStep(S, dt) {
         /* two controllers on the same PV (valves in parallel, e.g. A and B side): the PV answers the average of their open commands (v1.20.58) */ const sh =
           b._sh || (b._sh = S.procs.filter(g => g !== b && g.proc && g.proc.mode === 'shared' && g.proc.pv === pr.pv));
         if (!sh.length) return uOf(b);
+        /* 2.1.0-beta.6: two actuators IN SERIES on one fan (ABC-008: IDF hydraulic coupling PICFG108 and IDF inlet damper
+           PICFG108A; the drawing selects one of them to control, HYDRAULIC / DAMPER CONTROL SELECT): the flow answers the
+           product of the two openings (7.PNG: 46.1 % x 99.1 %), not their sum */
+        if ([b].concat(sh).some(g => AN_SERIES[(g.txt || [])[1]]))
+          return [b].concat(sh).reduce((a, g) => (a * Math.max(0, Math.min(100, uOf(g)))) / 100, 100);
         /* 1.22.0: valves in parallel on one header: their flows ADD (a stand-by valve at 0 adds nothing), up to the top of the
            command range. Before: the average of the open valves, so closing one of two open valves did not move the PV
            (ABC-030 PICAS1004 + PICAS1005) */
@@ -332,9 +353,36 @@ function anProcStep(S, dt) {
         const e0 = (pr.sg * (pr.Ka || pr.K) * (c - um)) / 100;
         return xe.length ? (e0 + xe.reduce((a, x) => a + x, 0)) / (1 + xe.length) : e0;
       };
-    if (pr.hop === undefined) {
-      const h = AN_HMI_OP[(b.txt || [])[1]];
-      pr.hop = h && !xe.length && !(b._sh && b._sh.length) && h.pv >= lo && h.pv <= lo + span ? h : null;
+    /* 2.1.0-beta.6: "Start at 150 MW" (hmi-op.js) gave the PV of the snapshot transmitters (pr.hopReq): a loop without a static
+       anchor is anchored NOW at (the command that goes to the valve now -> that PV), so the plant model keeps the snapshot
+       value instead of its own steady state. Not for: a static anchor, the drum level (integrating), parallel valves or a
+       measurement shared with another sheet, a flow loop whose valve is closed or whose flow is 0 on the snapshot. Reset removes it (anResetAll). */
+    if (pr.hopReq) {
+      const hr = pr.hopReq,
+        tg = (b.txt || [])[1];
+      pr.hopReq = null;
+      if (
+        !AN_HMI_OP[tg] &&
+        tg !== 'LICBR1001' &&
+        !xe.length &&
+        (!(b._sh && b._sh.length) || b._sh.concat([b]).some(g => AN_SERIES[(g.txt || [])[1]])) &&
+        isFinite(hr.pv) &&
+        isFinite(u) &&
+        hr.pv >= lo &&
+        hr.pv <= lo + span &&
+        (b.p.lt !== 'flow' || (u >= 2 && hr.pv - lo > 0.02 * span)) /* a flow at 0 with the valve open = an isolation valve is shut (oil burner out of service): not the control valve */
+      ) {
+        pr.hop = { mv: u, pv: hr.pv, src: '150 MW load', dyn: 1 };
+        pr.Ka = undefined;
+        delete pm[b.id];
+        q = null;
+      }
+    }
+    if (pr.hop === undefined || (pr.hop && pr.hop.dyn && pr.Ka === undefined)) {
+      if (pr.hop === undefined) {
+        const h = AN_HMI_OP[(b.txt || [])[1]];
+        pr.hop = h && !xe.length && !(b._sh && b._sh.length) && h.pv >= lo && h.pv <= lo + span ? h : null;
+      }
       /* the gain of an anchored loop is limited so that MV 0 ... 100 % keeps the PV inside the range of the instrument
          (ABC-019 TICHR1002: 541 °C at 79.4 % spray; with K = 1 the PV was 600 °C, the top, for any MV below 70 %) */
       if (pr.hop) {
