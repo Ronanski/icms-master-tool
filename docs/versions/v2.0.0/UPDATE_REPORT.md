@@ -2,6 +2,24 @@
 
 Base: Stable v1.23.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f). Bakit 2.0.0: bagong henerasyon ng itsura at English ang buong app (PROJECT_RULES 5f, user 2026-10-15: "standard tayo, baka umabot ng v1.9999").
 
+## 2.0.0-beta.7 — Marshalling wiring sa LIBRARY (pinagsama sa I/O list), mga ayos sa engine
+
+- **Problem (user):** In-upload ang hardware documents (wiring mula marshalling panel papunta sa controller, per address / tag, per station). Isama sa I/O list bilang iisang information center. Mag-ingat sa merged cells.
+- **As Found:** `LMYP-1(#1) WIRING.xls`: mga sheet na AIO / DI / DO. Dalawang row kada signal (terminal + / −) na may merged cells. Ang FCS code na 10SN = STN10S (hal. 1012 = STN101), tumutugma sa I/O list ang 2544 / 2545 na row.
+- **Work Done:**
+  - `document-references/dcs-hardware-wiring.zip`: ang buong upload (System, PDP, SER, ARP / IRP, MPL, Wiring PDF / XLS).
+  - `tools/data/wiring.py`: kinokopya ang value ng bawat merged cell sa lahat ng row na sakop nito; isang record kada signal; isinusulat ang `src/ui/plant/wiring.js` (3816 signal).
+  - LIBRARY: ang **WIRING** tab ay ang lahat ng wiring (search: address, tag, cable, MPL, JB). Sa I/O LIST, ang row na may ▸ ay may wiring: i-click para makita ang FCS (node / slot / channel / board / terminal), cable at core, marshalling (MPL, TB strip, TB), cross wiring, at junction box.
+  - Engine: hindi na gumagamit ng UI function ang plant.js (pumasa ulit ang engine-only test). Test `hmi_op.js`: Start at 150 MW, at ang operator ay pumipindot ng M (status .MAN).
+- **As Left (headless):**
+  - `hmi_op.js`: 7 / 7 naka-angklang loop ay tugma sa snapshot (±2 %) at tama ang direksyon. TICBR1130 394.0 / 394, TICBR1150 420.0 / 420, TICHR1002 541.0 / 541.
+  - Engine-only = buong simulator: 54 sheet, 5128 net. ABC-007 scenarios: 184 / 0.
+  - Pasado ang tests, faceplate, panel sync, PID A/M, overview, events, info card, DITL toolbar, iisang mundo, in-app update, stale Beta at MAN station.
+  - Reset: 5 sheet ang naiiba sa bagong page. Pareho rin ito sa Stable v1.23.0 (ABC-012, 013, 019, 020, 001C), kaya hindi galing sa bersyong ito.
+  - `pv_reacts`: ang mga walang galaw sa cold start ay interlock ng drawing (spray cut: I.0418 ICV → CV, M.0235 / M.0245; oil burners), cascade master, at LICBR1001 (FW naka-MAN dahil sa force manual sa cold start).
+- **Hindi pa:** totoong tablet / exe. Ang SER / ARP / IRP xls (nasa zip, hindi pa ginagamit).
+- **Status:** Pass (headless), Beta.
+
 ## 2.0.0-beta.6 — LIBRARY workspace (I/O list, memory list), 27 Plant HMI graphics, start-up feedwater valve sa drum level
 
 - **Problem (user):** Gusto ng workspace para sa I/O LIST at MEMORY LIST na madaling i-search at i-copy sa search bar. Sa susunod, ang marshalling wiring ay isasama rito.

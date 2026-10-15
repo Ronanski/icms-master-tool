@@ -378,7 +378,7 @@ function anProcStep(S, dt) {
       let fst = 0;
       if (S1) {
         if (pr.integ.ai == null) {
-          const a = S1.blk.find(z => z.k === 'AI' && z.o && nm(S1, z.o[0]) === 'AI0129');
+          const a = S1.blk.find(z => z.k === 'AI' && z.o && S1.lab[z.o[0]] && String(S1.lab[z.o[0]].t).trim() === 'AI0129'); /* engine only: the label of the net, not the UI name */
           pr.integ.ai = a ? a.id : -1;
         }
         const st = pr.integ.ai >= 0 ? S1.rt.st[pr.integ.ai] : null;

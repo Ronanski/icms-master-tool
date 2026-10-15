@@ -1,7 +1,6 @@
 /* LIBRARY WORKSPACE (2.1.0): the I/O list and the memory lists of the five stations (STN101 ~ STN105), the same data the app
-   uses for descriptions (AN.ades()). Search by address, tag or description; a click on the address or the tag copies it (to
-   paste in the search bar), "Find" puts it in the search bar and opens the info card. Read only. A tab for the marshalling
-   panel wiring is reserved (the owner will add the wiring list later). */
+   uses for descriptions (AN.ades()), and the marshalling panel wiring (WIRING tab; on the I/O LIST a click on a row shows it). Search by address, tag or description; a click on the address or the tag copies it (to
+   paste in the search bar), "Find" puts it in the search bar and opens the info card. Read only. */
 (function () {
   const $ = id => document.getElementById(id);
   const E = (t, a, kids) => {
@@ -19,7 +18,8 @@
   const MAX = 400;
   let ws = null,
     btn = null,
-    rows = { io: [], mem: [] },
+    rows = { io: [], mem: [], wire: [] },
+    WIX = {},
     tab = 'io',
     stn = '',
     q = '',
@@ -70,6 +70,33 @@
     try {
       A = (await AN.ades()) || {};
     } catch (e) {}
+    /* marshalling wiring (src/ui/plant/wiring.js): one row per signal, indexed by station + address */
+    const WF = window.WIRING_F || [],
+      W = window.WIRING || [],
+      fi = k => WF.indexOf(k);
+    for (const w of W) {
+      const g = k => w[fi(k)] || '';
+      const r = {
+        st: g('s'),
+        s: 'STN10' + g('s'),
+        a: g('a'),
+        tag: g('tag'),
+        d: g('d'),
+        x: g('mpl2') + ' ' + g('tbs') + '-' + g('tbn').replace(/,/g, '/'),
+        t: g('k') + (g('sig') && g('sig') !== g('k') ? ' ' + g('sig') : ''),
+        ab: '',
+        w: {
+          fcs: g('ext') + ' · node ' + g('node') + ' · slot ' + g('slot') + ' · ' + g('ch') + ' · board ' + g('board') + ' · cab ' + g('fcab') + ' · TB ' + g('exttb') + ' ' + g('fcstb').replace(/,/g, ' / '),
+          cable: g('cab') + (g('spec') ? ' (' + g('spec') + ')' : '') + ' · core ' + g('core').replace(/,/g, ' / '),
+          mpl: g('mpl2') + ' · TB strip ' + g('tbs') + ' · TB ' + g('tbn').replace(/,/g, ' / '),
+          cross: g('xcab') ? g('xcab') + (g('xspec') ? ' (' + g('xspec') + ')' : '') + ' · core ' + g('xcore').replace(/,/g, ' / ') : '',
+          jb: g('jb') ? g('mpl') + ' · ' + g('jb') + ' · TB ' + g('tb').replace(/,/g, ' / ') : ''
+        }
+      };
+      r.h = (r.s + ' ' + r.a + ' ' + r.tag + ' ' + r.d + ' ' + Object.values(r.w).join(' ')).toUpperCase();
+      rows.wire.push(r);
+      WIX[r.st + '|' + r.a] = r.w;
+    }
     for (const st of Object.keys(A).sort()) {
       const T = A[st];
       for (const k of Object.keys(T).sort()) {
@@ -89,16 +116,6 @@
       cnt = $('libcnt');
     if (!box) return;
     box.innerHTML = '';
-    if (tab === 'wire') {
-      box.append(
-        E('div', { cls: 'libempty' }, [
-          E('b', { txt: 'Marshalling panel wiring' }),
-          E('div', { txt: 'Reserved: the wiring from the marshalling panel to the controller (per address / tag, per station) will be added here and merged with the I/O list.' })
-        ])
-      );
-      cnt.textContent = '';
-      return;
-    }
     const src = rows[tab],
       words = q
         .toUpperCase()
@@ -120,6 +137,30 @@
         E('span', { cls: 'ty', txt: r.t + (r.ab ? ' · ' + r.ab : '') }),
         E('button', { cls: 'b', txt: 'Find', title: 'Put it in the search bar and open the info card' })
       ]);
+      const wd = r.w || WIX[r.st + '|' + r.a];
+      if (wd) {
+        row.classList.add('hasw');
+        row.title = 'Click the row: marshalling wiring of this signal';
+        row.addEventListener('click', e => {
+          if (e.target.closest('.ad,.tg,button')) return;
+          const nx = row.nextSibling;
+          if (nx && nx.classList && nx.classList.contains('libw')) {
+            nx.remove();
+            return;
+          }
+          row.after(
+            E('div', { cls: 'libw' }, [
+              ['FCS', wd.fcs],
+              ['Cable', wd.cable],
+              ['Marshalling', wd.mpl],
+              ['Cross wiring', wd.cross],
+              ['Junction box', wd.jb]
+            ]
+              .filter(x => x[1])
+              .map(([k, v]) => E('div', {}, [E('b', { txt: k }), E('span', { txt: v })])))
+          );
+        });
+      }
       row.children[1].onclick = () => copy(r.a);
       row.children[2].onclick = () => r.tag && copy(r.tag);
       row.children[6].onclick = () => find(r.a.length && /^[A-Z]{1,2}\.|^AI|^AO|^SI|^SO/.test(r.a) ? r.a : r.tag);
