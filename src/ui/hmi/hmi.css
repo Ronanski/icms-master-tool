@@ -53,3 +53,4 @@ body.ophmi #anp{display:none!important}
 #opp .fpop{display:none;position:absolute;left:10px;right:10px;z-index:30;background:#1b2630;border:1px solid #6aaee0;border-radius:8px;padding:8px 10px;box-shadow:0 8px 24px #000a}
 #opp .fpop .row button.b{min-width:44px;font-size:16px}
 #opp .fpb input.fv:not(:disabled),#opp .fpb{cursor:pointer}
+#opp .fpg .gm{position:relative;width:5px;background:#1a242b}#opp .fpg .gm i{position:absolute;left:0;right:0;background:#4be36a}

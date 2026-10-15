@@ -97,6 +97,8 @@ function anStep(S,dt){const rt=S.rt,v=rt.v,nets=S.nets,B=x=>x>.5?1:0;rt.t+=dt;rt
      s.rem=0;if(s.rmSw!=null){const q=rt.st[s.rmSw];if(s.fman&&q)q.fm='B';/* force manual cancels REMOTE: the SV switch goes LOCAL and stays there until the operator selects REMOTE */if(q&&q.pk==='A'&&!s.fman){s.rem=1;s.fm=s.al}}
      if(s.fm==='A')pickB=false;else if(s.fm==='B')pickB=true;s.pk=pickB?'B':'A';let y;
      const n=pickB?b.b:b.a;if(n>=0){y=rd(n);if(pickB&&b.bg!=null)y*=b.bg;if(!pickB&&b.ag!=null)y*=b.ag;if(b.ia&&b.ia[n])y=y*b.ia[n][0]+b.ia[n][1]}else y=(s.hold!=null?s.hold:0);if(!pickB||b.b>=0)s.hold=y;s.y=y;
+     /* bumpless transfer to MANUAL / LOCAL (v1.20.65): while the A leg is selected, the operator's COS (B leg: manual MV or the SV of the operator) follows the output, so the change-over to B continues from the last value (no jump) */
+     if(!pickB&&b.cosB&&b.b>=0&&rt.force[b.b]===undefined&&S.ext&&S.ext.includes(b.b)&&isFinite(y)){rt.ext[b.b]=b.bg!=null&&b.bg!==0?y/b.bg:y}
      const other=pickB?b.a:b.b;
      /* bumpless tracking: the PID / MAN that feeds the unselected A input follows the output */
      /* interlock tracking (legend: "INTERLOCK TRACKING FOR PID CONTROLLER & MANUAL CONTROL STATION"): a back-up value selected by a downstream selector is also tracked by the upstream A/M selector, its PID and its COS manual value */

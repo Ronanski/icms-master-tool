@@ -1036,6 +1036,18 @@
      "s": 10
     },
     {
+     "expect": "field",
+     "name": "SV",
+     "value": "disabled",
+     "say": "SV field sa MANUAL",
+     "why": "SV ay para sa AUTO lang"
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "pindutin ang AUTO"
+    },
+    {
      "do": "sv",
      "value": 300,
      "say": "i-type ang SV = 300"
@@ -1103,11 +1115,6 @@
      "s": 10
     },
     {
-     "do": "sv",
-     "value": 298.08000000000004,
-     "say": "SV = 46 % ng range"
-    },
-    {
      "do": "mv",
      "value": 50,
      "say": "MV = 50 (manual)"
@@ -1120,6 +1127,11 @@
      "do": "press",
      "button": "AUTO",
      "say": "pindutin ang AUTO"
+    },
+    {
+     "do": "sv",
+     "value": 298.08000000000004,
+     "say": "SV = 46 % ng range"
     },
     {
      "expect": "mode",
@@ -1176,11 +1188,6 @@
      "s": 10
     },
     {
-     "do": "sv",
-     "value": 324.0,
-     "say": "SV"
-    },
-    {
      "do": "mv",
      "value": 50,
      "say": "MV = 50"
@@ -1193,6 +1200,11 @@
      "do": "press",
      "button": "AUTO",
      "say": "pindutin ang AUTO"
+    },
+    {
+     "do": "sv",
+     "value": 324.0,
+     "say": "SV"
     },
     {
      "do": "wait",
@@ -1222,7 +1234,7 @@
      "what": "mv",
      "than": "mvA",
      "value": "pareho",
-     "tol": 1.5,
+     "tol": 0.3,
      "say": "MV pagkatapos ng MAN kumpara sa MV bago ito"
     }
    ]
@@ -1246,6 +1258,15 @@
      "do": "press",
      "button": "REMOTE",
      "say": "pindutin ang REMOTE"
+    },
+    {
+     "do": "wait",
+     "s": 3
+    },
+    {
+     "do": "mark",
+     "what": "sv",
+     "as": "svR"
     },
     {
      "expect": "sv-switch",
@@ -1279,6 +1300,18 @@
      "do": "press",
      "button": "LOCAL",
      "say": "pindutin ang LOCAL"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "cmp",
+     "what": "sv",
+     "than": "svR",
+     "value": "pareho",
+     "tol": 1,
+     "say": "SV pagkatapos ng LOCAL kumpara sa SV sa REMOTE (bumpless)"
     },
     {
      "expect": "sv-switch",
@@ -1438,11 +1471,6 @@
      "s": 10
     },
     {
-     "do": "sv",
-     "value": 324.0,
-     "say": "SV"
-    },
-    {
      "do": "mv",
      "value": 50,
      "say": "MV"
@@ -1455,6 +1483,11 @@
      "do": "press",
      "button": "AUTO",
      "say": "pindutin ang AUTO"
+    },
+    {
+     "do": "sv",
+     "value": 324.0,
+     "say": "SV"
     },
     {
      "do": "wait",
@@ -1489,7 +1522,7 @@
      "what": "mv",
      "than": "mvT",
      "value": "pareho",
-     "tol": 1.5,
+     "tol": 0.3,
      "say": "MV pagkatapos ng trip kumpara sa dati (bumpless)"
     },
     {
@@ -1698,6 +1731,18 @@
      "s": 10
     },
     {
+     "expect": "field",
+     "name": "SV",
+     "value": "disabled",
+     "say": "SV field sa MANUAL",
+     "why": "SV ay para sa AUTO lang"
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "pindutin ang AUTO"
+    },
+    {
      "do": "sv",
      "value": 300,
      "say": "i-type ang SV = 300"
@@ -1765,11 +1810,6 @@
      "s": 10
     },
     {
-     "do": "sv",
-     "value": 198.72,
-     "say": "SV = 46 % ng range"
-    },
-    {
      "do": "mv",
      "value": 50,
      "say": "MV = 50 (manual)"
@@ -1782,6 +1822,11 @@
      "do": "press",
      "button": "AUTO",
      "say": "pindutin ang AUTO"
+    },
+    {
+     "do": "sv",
+     "value": 198.72,
+     "say": "SV = 46 % ng range"
     },
     {
      "expect": "mode",
@@ -1838,11 +1883,6 @@
      "s": 10
     },
     {
-     "do": "sv",
-     "value": 216.0,
-     "say": "SV"
-    },
-    {
      "do": "mv",
      "value": 50,
      "say": "MV = 50"
@@ -1855,6 +1895,11 @@
      "do": "press",
      "button": "AUTO",
      "say": "pindutin ang AUTO"
+    },
+    {
+     "do": "sv",
+     "value": 216.0,
+     "say": "SV"
     },
     {
      "do": "wait",
@@ -1884,7 +1929,7 @@
      "what": "mv",
      "than": "mvA",
      "value": "pareho",
-     "tol": 1.5,
+     "tol": 0.3,
      "say": "MV pagkatapos ng MAN kumpara sa MV bago ito"
     }
    ]
@@ -1908,6 +1953,15 @@
      "do": "press",
      "button": "REMOTE",
      "say": "pindutin ang REMOTE"
+    },
+    {
+     "do": "wait",
+     "s": 3
+    },
+    {
+     "do": "mark",
+     "what": "sv",
+     "as": "svR"
     },
     {
      "expect": "sv-switch",
@@ -1941,6 +1995,18 @@
      "do": "press",
      "button": "LOCAL",
      "say": "pindutin ang LOCAL"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "cmp",
+     "what": "sv",
+     "than": "svR",
+     "value": "pareho",
+     "tol": 1,
+     "say": "SV pagkatapos ng LOCAL kumpara sa SV sa REMOTE (bumpless)"
     },
     {
      "expect": "sv-switch",
@@ -2100,11 +2166,6 @@
      "s": 10
     },
     {
-     "do": "sv",
-     "value": 216.0,
-     "say": "SV"
-    },
-    {
      "do": "mv",
      "value": 50,
      "say": "MV"
@@ -2117,6 +2178,11 @@
      "do": "press",
      "button": "AUTO",
      "say": "pindutin ang AUTO"
+    },
+    {
+     "do": "sv",
+     "value": 216.0,
+     "say": "SV"
     },
     {
      "do": "wait",
@@ -2151,7 +2217,7 @@
      "what": "mv",
      "than": "mvT",
      "value": "pareho",
-     "tol": 1.5,
+     "tol": 0.3,
      "say": "MV pagkatapos ng trip kumpara sa dati (bumpless)"
     },
     {
