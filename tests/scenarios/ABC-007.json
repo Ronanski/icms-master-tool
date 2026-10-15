@@ -889,6 +889,1330 @@
      "why": "umabot sa house setting 230 T/H"
     }
    ]
+  },
+  {
+   "id": "O1-FICFA1071",
+   "loop": "FICFA1071",
+   "title": "FICFA1071: MANUAL — MV field, 0 / 50 / 100 buttons, at ang PV (proseso) ay sumasagot",
+   "drawing": "A/M T switch B = COS = manual MV ng operator; BU-CMD T pass-through kapag M.0181 = 0; AO = damper. Ang damper ay mas bukas = mas maraming hangin = tumataas ang PV (PV = flow ng hangin).",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "mode sa simula (fan tumatakbo, hindi pa AUTO)"
+    },
+    {
+     "do": "mark",
+     "what": "pv",
+     "as": "pv0"
+    },
+    {
+     "do": "press",
+     "button": "100",
+     "say": "pindutin ang 100"
+    },
+    {
+     "do": "wait",
+     "s": 2
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1071.MV",
+     "value": 100,
+     "tol": 0.5,
+     "say": "FICFA1071.MV matapos ang button 100"
+    },
+    {
+     "do": "wait",
+     "s": 400
+    },
+    {
+     "expect": "cmp",
+     "what": "pv",
+     "than": "pv0",
+     "value": "tumaas",
+     "min": 259.2,
+     "say": "PV pagkatapos ng 400 s na MV = 100 (ang proseso ay sumasagot)"
+    },
+    {
+     "do": "mark",
+     "what": "pv",
+     "as": "pv100"
+    },
+    {
+     "do": "wait",
+     "s": 2
+    },
+    {
+     "do": "press",
+     "button": "0",
+     "say": "pindutin ang 0"
+    },
+    {
+     "do": "wait",
+     "s": 2
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1071.MV",
+     "value": 0,
+     "tol": 0.5,
+     "say": "FICFA1071.MV matapos ang button 0"
+    },
+    {
+     "do": "wait",
+     "s": 600
+    },
+    {
+     "expect": "cmp",
+     "what": "pv",
+     "than": "pv100",
+     "value": "bumaba",
+     "min": 259.2,
+     "say": "PV pagkatapos ng 10 min na MV = 0 (ang proseso ay sumasagot)"
+    },
+    {
+     "do": "press",
+     "button": "50",
+     "say": "pindutin ang 50"
+    },
+    {
+     "do": "wait",
+     "s": 2
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1071.MV",
+     "value": 50,
+     "tol": 0.5,
+     "say": "FICFA1071.MV matapos ang button 50"
+    },
+    {
+     "do": "mv",
+     "value": 75,
+     "say": "i-type ang MV = 75"
+    },
+    {
+     "do": "wait",
+     "s": 2
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1071.MV",
+     "value": 75,
+     "tol": 0.5,
+     "say": "FICFA1071.MV matapos i-type ang 75"
+    },
+    {
+     "expect": "field",
+     "name": "MV",
+     "value": "enabled",
+     "say": "MV field sa MANUAL"
+    }
+   ]
+  },
+  {
+   "id": "O2-FICFA1071",
+   "loop": "FICFA1071",
+   "title": "FICFA1071: SV ng operator (LOCAL) — SV field, + at − buttons",
+   "drawing": "SV T switch B = COS = SV ng operator. Ang + at − ay 1 % ng range (648 T/H = 6.48 T/H bawat pindot).",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "sv",
+     "value": 300,
+     "say": "i-type ang SV = 300"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "sv",
+     "value": 300,
+     "tol": 0.1,
+     "say": "SV net"
+    },
+    {
+     "do": "press",
+     "button": "+",
+     "say": "pindutin ang +"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "sv",
+     "value": 306.48,
+     "tol": 0.1,
+     "say": "SV pagkatapos ng +"
+    },
+    {
+     "do": "press",
+     "button": "−",
+     "say": "pindutin ang −"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "sv",
+     "value": 300,
+     "tol": 0.1,
+     "say": "SV pagkatapos ng −"
+    },
+    {
+     "expect": "sv-switch",
+     "value": "B (operator / LOCAL)",
+     "say": "SV switch"
+    }
+   ]
+  },
+  {
+   "id": "O3-FICFA1071",
+   "loop": "FICFA1071",
+   "title": "FICFA1071: AUTO na may proseso — ang PID ay dapat dalhin ang PV sa SV, at sa AUTO ang SV ang ginagalaw (hindi ang MV)",
+   "drawing": "PID ACT:R (reverse: PV mas mababa sa SV = lumalaki ang MV). A/M T: A = PID output. Sa AUTO, hindi hawak ng operator ang MV.",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "sv",
+     "value": 298.08000000000004,
+     "say": "SV = 46 % ng range"
+    },
+    {
+     "do": "mv",
+     "value": 50,
+     "say": "MV = 50 (manual)"
+    },
+    {
+     "do": "wait",
+     "s": 120
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "pindutin ang AUTO"
+    },
+    {
+     "expect": "mode",
+     "value": "AUTO",
+     "say": "mode pagkatapos pindutin ang AUTO"
+    },
+    {
+     "expect": "field",
+     "name": "MV",
+     "value": "disabled",
+     "say": "MV field sa AUTO",
+     "why": "sa AUTO, SV ang ginagalaw ng operator"
+    },
+    {
+     "do": "wait",
+     "s": 1200
+    },
+    {
+     "expect": "near-pv",
+     "pct": 4,
+     "value": "abot-SV",
+     "say": "PV malapit sa SV pagkatapos ng 20 min sa AUTO"
+    },
+    {
+     "do": "sv",
+     "value": 356.40000000000003,
+     "say": "baguhin ang SV sa 55 % ng range"
+    },
+    {
+     "do": "wait",
+     "s": 1200
+    },
+    {
+     "expect": "near-pv",
+     "pct": 4,
+     "value": "abot-SV",
+     "say": "PV malapit sa bagong SV pagkatapos ng 20 min"
+    }
+   ]
+  },
+  {
+   "id": "O4-FICFA1071",
+   "loop": "FICFA1071",
+   "title": "FICFA1071: AUTO -> MAN na walang talon ng MV (bumpless)",
+   "drawing": "Ang PID at ang COS ay sumusunod (tracking) sa output kapag B ang pinili, kaya walang talon.",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "sv",
+     "value": 324.0,
+     "say": "SV"
+    },
+    {
+     "do": "mv",
+     "value": 50,
+     "say": "MV = 50"
+    },
+    {
+     "do": "wait",
+     "s": 60
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "pindutin ang AUTO"
+    },
+    {
+     "do": "wait",
+     "s": 300
+    },
+    {
+     "do": "mark",
+     "what": "mv",
+     "as": "mvA"
+    },
+    {
+     "do": "press",
+     "button": "MAN",
+     "say": "pindutin ang MAN"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "mode pagkatapos ng MAN"
+    },
+    {
+     "expect": "cmp",
+     "what": "mv",
+     "than": "mvA",
+     "value": "pareho",
+     "tol": 1.5,
+     "say": "MV pagkatapos ng MAN kumpara sa MV bago ito"
+    }
+   ]
+  },
+  {
+   "id": "O5-FICFA1071",
+   "loop": "FICFA1071",
+   "title": "FICFA1071: REMOTE at LOCAL — REMOTE = AUTO talaga, hindi mamamanual, pati SV; LOCAL = bumabalik ang operator",
+   "drawing": "REMOTE: ang SV T switch ay A (SI0160 / SI0170 = demand sa BUMPLESS ramp). Ang operator ay hindi makakapag-MAN o makapag-set ng SV. Ang LOCAL ay B (COS).",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "press",
+     "button": "REMOTE",
+     "say": "pindutin ang REMOTE"
+    },
+    {
+     "expect": "sv-switch",
+     "value": "A (logic / REMOTE)",
+     "say": "SV switch"
+    },
+    {
+     "expect": "mode",
+     "value": "AUTO",
+     "say": "mode"
+    },
+    {
+     "expect": "disabled",
+     "button": "MAN",
+     "value": "disabled",
+     "say": "MAN button"
+    },
+    {
+     "expect": "field",
+     "name": "SV",
+     "value": "disabled",
+     "say": "SV field"
+    },
+    {
+     "expect": "field",
+     "name": "MV",
+     "value": "disabled",
+     "say": "MV field"
+    },
+    {
+     "do": "press",
+     "button": "LOCAL",
+     "say": "pindutin ang LOCAL"
+    },
+    {
+     "expect": "sv-switch",
+     "value": "B (operator / LOCAL)",
+     "say": "SV switch pagkatapos ng LOCAL"
+    },
+    {
+     "expect": "disabled",
+     "button": "MAN",
+     "value": "enabled",
+     "say": "MAN button pagkatapos ng LOCAL"
+    },
+    {
+     "expect": "field",
+     "name": "SV",
+     "value": "enabled",
+     "say": "SV field pagkatapos ng LOCAL"
+    },
+    {
+     "do": "press",
+     "button": "MAN",
+     "say": "pindutin ang MAN"
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "mode pagkatapos ng MAN"
+    },
+    {
+     "expect": "field",
+     "name": "MV",
+     "value": "enabled",
+     "say": "MV field sa MANUAL"
+    }
+   ]
+  },
+  {
+   "id": "O6-FICFA1071",
+   "loop": "FICFA1071",
+   "title": "FICFA1071: mga mode input ng drawing (.MAN .LOC .REM) ay mga button ng HMI",
+   "drawing": "FICFA1071.MAN, FICFA1071.LOC, FICFA1071.REM ay mga input ng drawing mula sa HMI; ang M.018D / M.019D ay OR ng mga ito at ng house operation (SET SV rule).",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "press",
+     "button": ".LOC",
+     "say": "pindutin ang .LOC"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1071.LOC",
+     "value": 1,
+     "say": "FICFA1071.LOC"
+    },
+    {
+     "do": "press",
+     "button": ".LOC",
+     "say": "pindutin ang .LOC"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1071.LOC",
+     "value": 0,
+     "say": "FICFA1071.LOC pagkatapos ng ikalawang pindot (toggle)"
+    },
+    {
+     "do": "press",
+     "button": ".REM",
+     "say": "pindutin ang .REM"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1071.REM",
+     "value": 1,
+     "say": "FICFA1071.REM"
+    },
+    {
+     "do": "press",
+     "button": ".REM",
+     "say": "pindutin ang .REM"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1071.REM",
+     "value": 0,
+     "say": "FICFA1071.REM toggle"
+    },
+    {
+     "do": "press",
+     "button": ".MAN",
+     "say": "pindutin ang .MAN"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1071.MAN",
+     "value": 1,
+     "say": "FICFA1071.MAN"
+    },
+    {
+     "do": "press",
+     "button": ".MAN",
+     "say": "pindutin ang .MAN"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1071.MAN",
+     "value": 0,
+     "say": "FICFA1071.MAN toggle"
+    }
+   ]
+  },
+  {
+   "id": "O7-FICFA1071",
+   "loop": "FICFA1071",
+   "title": "FICFA1071: AUTO na may proseso, tumigil ang fan, bumalik ang fan, at ang operator ang pumili ng AUTO",
+   "drawing": "M.0180 / M.0190 = 1 -> 1:B ng A/M T (manual, bumpless: tuloy ang MV) at ng SV T (LOCAL). Pagkawala ng signal, hindi automatic na AUTO.",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "sv",
+     "value": 324.0,
+     "say": "SV"
+    },
+    {
+     "do": "mv",
+     "value": 50,
+     "say": "MV"
+    },
+    {
+     "do": "wait",
+     "s": 60
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "pindutin ang AUTO"
+    },
+    {
+     "do": "wait",
+     "s": 600
+    },
+    {
+     "expect": "mode",
+     "value": "AUTO",
+     "say": "mode bago ang trip"
+    },
+    {
+     "do": "mark",
+     "what": "mv",
+     "as": "mvT"
+    },
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 0
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "mode pagkatapos tumigil ang fan"
+    },
+    {
+     "expect": "cmp",
+     "what": "mv",
+     "than": "mvT",
+     "value": "pareho",
+     "tol": 1.5,
+     "say": "MV pagkatapos ng trip kumpara sa dati (bumpless)"
+    },
+    {
+     "expect": "disabled",
+     "button": "AUTO",
+     "value": "disabled",
+     "say": "AUTO button"
+    },
+    {
+     "expect": "sv-switch",
+     "value": "B (operator / LOCAL)",
+     "say": "SV switch"
+    },
+    {
+     "do": "mv",
+     "value": 20,
+     "say": "manual MV = 20 habang force"
+    },
+    {
+     "do": "wait",
+     "s": 2
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1071.MV",
+     "value": 20,
+     "tol": 0.5,
+     "say": "FICFA1071.MV"
+    },
+    {
+     "do": "set",
+     "tag": "M.3302",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "mode pagkatapos bumalik ang fan",
+     "why": "hindi automatic"
+    },
+    {
+     "expect": "disabled",
+     "button": "AUTO",
+     "value": "enabled",
+     "say": "AUTO button"
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "pindutin ang AUTO"
+    },
+    {
+     "expect": "mode",
+     "value": "AUTO",
+     "say": "mode pagkatapos pindutin ang AUTO"
+    }
+   ]
+  },
+  {
+   "id": "O1-FICFA1081",
+   "loop": "FICFA1081",
+   "title": "FICFA1081: MANUAL — MV field, 0 / 50 / 100 buttons, at ang PV (proseso) ay sumasagot",
+   "drawing": "A/M T switch B = COS = manual MV ng operator; BU-CMD T pass-through kapag M.0181 = 0; AO = damper. Ang damper ay mas bukas = mas maraming hangin = tumataas ang PV (PV = flow ng hangin).",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3303",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "mode sa simula (fan tumatakbo, hindi pa AUTO)"
+    },
+    {
+     "do": "mark",
+     "what": "pv",
+     "as": "pv0"
+    },
+    {
+     "do": "press",
+     "button": "100",
+     "say": "pindutin ang 100"
+    },
+    {
+     "do": "wait",
+     "s": 2
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1081.MV",
+     "value": 100,
+     "tol": 0.5,
+     "say": "FICFA1081.MV matapos ang button 100"
+    },
+    {
+     "do": "wait",
+     "s": 400
+    },
+    {
+     "expect": "cmp",
+     "what": "pv",
+     "than": "pv0",
+     "value": "tumaas",
+     "min": 172.8,
+     "say": "PV pagkatapos ng 400 s na MV = 100 (ang proseso ay sumasagot)"
+    },
+    {
+     "do": "mark",
+     "what": "pv",
+     "as": "pv100"
+    },
+    {
+     "do": "wait",
+     "s": 2
+    },
+    {
+     "do": "press",
+     "button": "0",
+     "say": "pindutin ang 0"
+    },
+    {
+     "do": "wait",
+     "s": 2
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1081.MV",
+     "value": 0,
+     "tol": 0.5,
+     "say": "FICFA1081.MV matapos ang button 0"
+    },
+    {
+     "do": "wait",
+     "s": 600
+    },
+    {
+     "expect": "cmp",
+     "what": "pv",
+     "than": "pv100",
+     "value": "bumaba",
+     "min": 172.8,
+     "say": "PV pagkatapos ng 10 min na MV = 0 (ang proseso ay sumasagot)"
+    },
+    {
+     "do": "press",
+     "button": "50",
+     "say": "pindutin ang 50"
+    },
+    {
+     "do": "wait",
+     "s": 2
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1081.MV",
+     "value": 50,
+     "tol": 0.5,
+     "say": "FICFA1081.MV matapos ang button 50"
+    },
+    {
+     "do": "mv",
+     "value": 75,
+     "say": "i-type ang MV = 75"
+    },
+    {
+     "do": "wait",
+     "s": 2
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1081.MV",
+     "value": 75,
+     "tol": 0.5,
+     "say": "FICFA1081.MV matapos i-type ang 75"
+    },
+    {
+     "expect": "field",
+     "name": "MV",
+     "value": "enabled",
+     "say": "MV field sa MANUAL"
+    }
+   ]
+  },
+  {
+   "id": "O2-FICFA1081",
+   "loop": "FICFA1081",
+   "title": "FICFA1081: SV ng operator (LOCAL) — SV field, + at − buttons",
+   "drawing": "SV T switch B = COS = SV ng operator. Ang + at − ay 1 % ng range (432 T/H = 4.32 T/H bawat pindot).",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3303",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "sv",
+     "value": 300,
+     "say": "i-type ang SV = 300"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "sv",
+     "value": 300,
+     "tol": 0.1,
+     "say": "SV net"
+    },
+    {
+     "do": "press",
+     "button": "+",
+     "say": "pindutin ang +"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "sv",
+     "value": 304.32,
+     "tol": 0.1,
+     "say": "SV pagkatapos ng +"
+    },
+    {
+     "do": "press",
+     "button": "−",
+     "say": "pindutin ang −"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "sv",
+     "value": 300,
+     "tol": 0.1,
+     "say": "SV pagkatapos ng −"
+    },
+    {
+     "expect": "sv-switch",
+     "value": "B (operator / LOCAL)",
+     "say": "SV switch"
+    }
+   ]
+  },
+  {
+   "id": "O3-FICFA1081",
+   "loop": "FICFA1081",
+   "title": "FICFA1081: AUTO na may proseso — ang PID ay dapat dalhin ang PV sa SV, at sa AUTO ang SV ang ginagalaw (hindi ang MV)",
+   "drawing": "PID ACT:R (reverse: PV mas mababa sa SV = lumalaki ang MV). A/M T: A = PID output. Sa AUTO, hindi hawak ng operator ang MV.",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3303",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "sv",
+     "value": 198.72,
+     "say": "SV = 46 % ng range"
+    },
+    {
+     "do": "mv",
+     "value": 50,
+     "say": "MV = 50 (manual)"
+    },
+    {
+     "do": "wait",
+     "s": 120
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "pindutin ang AUTO"
+    },
+    {
+     "expect": "mode",
+     "value": "AUTO",
+     "say": "mode pagkatapos pindutin ang AUTO"
+    },
+    {
+     "expect": "field",
+     "name": "MV",
+     "value": "disabled",
+     "say": "MV field sa AUTO",
+     "why": "sa AUTO, SV ang ginagalaw ng operator"
+    },
+    {
+     "do": "wait",
+     "s": 1200
+    },
+    {
+     "expect": "near-pv",
+     "pct": 4,
+     "value": "abot-SV",
+     "say": "PV malapit sa SV pagkatapos ng 20 min sa AUTO"
+    },
+    {
+     "do": "sv",
+     "value": 237.60000000000002,
+     "say": "baguhin ang SV sa 55 % ng range"
+    },
+    {
+     "do": "wait",
+     "s": 1200
+    },
+    {
+     "expect": "near-pv",
+     "pct": 4,
+     "value": "abot-SV",
+     "say": "PV malapit sa bagong SV pagkatapos ng 20 min"
+    }
+   ]
+  },
+  {
+   "id": "O4-FICFA1081",
+   "loop": "FICFA1081",
+   "title": "FICFA1081: AUTO -> MAN na walang talon ng MV (bumpless)",
+   "drawing": "Ang PID at ang COS ay sumusunod (tracking) sa output kapag B ang pinili, kaya walang talon.",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3303",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "sv",
+     "value": 216.0,
+     "say": "SV"
+    },
+    {
+     "do": "mv",
+     "value": 50,
+     "say": "MV = 50"
+    },
+    {
+     "do": "wait",
+     "s": 60
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "pindutin ang AUTO"
+    },
+    {
+     "do": "wait",
+     "s": 300
+    },
+    {
+     "do": "mark",
+     "what": "mv",
+     "as": "mvA"
+    },
+    {
+     "do": "press",
+     "button": "MAN",
+     "say": "pindutin ang MAN"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "mode pagkatapos ng MAN"
+    },
+    {
+     "expect": "cmp",
+     "what": "mv",
+     "than": "mvA",
+     "value": "pareho",
+     "tol": 1.5,
+     "say": "MV pagkatapos ng MAN kumpara sa MV bago ito"
+    }
+   ]
+  },
+  {
+   "id": "O5-FICFA1081",
+   "loop": "FICFA1081",
+   "title": "FICFA1081: REMOTE at LOCAL — REMOTE = AUTO talaga, hindi mamamanual, pati SV; LOCAL = bumabalik ang operator",
+   "drawing": "REMOTE: ang SV T switch ay A (SI0160 / SI0170 = demand sa BUMPLESS ramp). Ang operator ay hindi makakapag-MAN o makapag-set ng SV. Ang LOCAL ay B (COS).",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3303",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "press",
+     "button": "REMOTE",
+     "say": "pindutin ang REMOTE"
+    },
+    {
+     "expect": "sv-switch",
+     "value": "A (logic / REMOTE)",
+     "say": "SV switch"
+    },
+    {
+     "expect": "mode",
+     "value": "AUTO",
+     "say": "mode"
+    },
+    {
+     "expect": "disabled",
+     "button": "MAN",
+     "value": "disabled",
+     "say": "MAN button"
+    },
+    {
+     "expect": "field",
+     "name": "SV",
+     "value": "disabled",
+     "say": "SV field"
+    },
+    {
+     "expect": "field",
+     "name": "MV",
+     "value": "disabled",
+     "say": "MV field"
+    },
+    {
+     "do": "press",
+     "button": "LOCAL",
+     "say": "pindutin ang LOCAL"
+    },
+    {
+     "expect": "sv-switch",
+     "value": "B (operator / LOCAL)",
+     "say": "SV switch pagkatapos ng LOCAL"
+    },
+    {
+     "expect": "disabled",
+     "button": "MAN",
+     "value": "enabled",
+     "say": "MAN button pagkatapos ng LOCAL"
+    },
+    {
+     "expect": "field",
+     "name": "SV",
+     "value": "enabled",
+     "say": "SV field pagkatapos ng LOCAL"
+    },
+    {
+     "do": "press",
+     "button": "MAN",
+     "say": "pindutin ang MAN"
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "mode pagkatapos ng MAN"
+    },
+    {
+     "expect": "field",
+     "name": "MV",
+     "value": "enabled",
+     "say": "MV field sa MANUAL"
+    }
+   ]
+  },
+  {
+   "id": "O6-FICFA1081",
+   "loop": "FICFA1081",
+   "title": "FICFA1081: mga mode input ng drawing (.MAN .LOC .REM) ay mga button ng HMI",
+   "drawing": "FICFA1081.MAN, FICFA1081.LOC, FICFA1081.REM ay mga input ng drawing mula sa HMI; ang M.018D / M.019D ay OR ng mga ito at ng house operation (SET SV rule).",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3303",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "press",
+     "button": ".LOC",
+     "say": "pindutin ang .LOC"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1081.LOC",
+     "value": 1,
+     "say": "FICFA1081.LOC"
+    },
+    {
+     "do": "press",
+     "button": ".LOC",
+     "say": "pindutin ang .LOC"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1081.LOC",
+     "value": 0,
+     "say": "FICFA1081.LOC pagkatapos ng ikalawang pindot (toggle)"
+    },
+    {
+     "do": "press",
+     "button": ".REM",
+     "say": "pindutin ang .REM"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1081.REM",
+     "value": 1,
+     "say": "FICFA1081.REM"
+    },
+    {
+     "do": "press",
+     "button": ".REM",
+     "say": "pindutin ang .REM"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1081.REM",
+     "value": 0,
+     "say": "FICFA1081.REM toggle"
+    },
+    {
+     "do": "press",
+     "button": ".MAN",
+     "say": "pindutin ang .MAN"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1081.MAN",
+     "value": 1,
+     "say": "FICFA1081.MAN"
+    },
+    {
+     "do": "press",
+     "button": ".MAN",
+     "say": "pindutin ang .MAN"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1081.MAN",
+     "value": 0,
+     "say": "FICFA1081.MAN toggle"
+    }
+   ]
+  },
+  {
+   "id": "O7-FICFA1081",
+   "loop": "FICFA1081",
+   "title": "FICFA1081: AUTO na may proseso, tumigil ang fan, bumalik ang fan, at ang operator ang pumili ng AUTO",
+   "drawing": "M.0180 / M.0190 = 1 -> 1:B ng A/M T (manual, bumpless: tuloy ang MV) at ng SV T (LOCAL). Pagkawala ng signal, hindi automatic na AUTO.",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3303",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "do": "sv",
+     "value": 216.0,
+     "say": "SV"
+    },
+    {
+     "do": "mv",
+     "value": 50,
+     "say": "MV"
+    },
+    {
+     "do": "wait",
+     "s": 60
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "pindutin ang AUTO"
+    },
+    {
+     "do": "wait",
+     "s": 600
+    },
+    {
+     "expect": "mode",
+     "value": "AUTO",
+     "say": "mode bago ang trip"
+    },
+    {
+     "do": "mark",
+     "what": "mv",
+     "as": "mvT"
+    },
+    {
+     "do": "set",
+     "tag": "M.3303",
+     "value": 0
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "mode pagkatapos tumigil ang fan"
+    },
+    {
+     "expect": "cmp",
+     "what": "mv",
+     "than": "mvT",
+     "value": "pareho",
+     "tol": 1.5,
+     "say": "MV pagkatapos ng trip kumpara sa dati (bumpless)"
+    },
+    {
+     "expect": "disabled",
+     "button": "AUTO",
+     "value": "disabled",
+     "say": "AUTO button"
+    },
+    {
+     "expect": "sv-switch",
+     "value": "B (operator / LOCAL)",
+     "say": "SV switch"
+    },
+    {
+     "do": "mv",
+     "value": 20,
+     "say": "manual MV = 20 habang force"
+    },
+    {
+     "do": "wait",
+     "s": 2
+    },
+    {
+     "expect": "signal",
+     "tag": "FICFA1081.MV",
+     "value": 20,
+     "tol": 0.5,
+     "say": "FICFA1081.MV"
+    },
+    {
+     "do": "set",
+     "tag": "M.3303",
+     "value": 1
+    },
+    {
+     "do": "wait",
+     "s": 10
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "mode pagkatapos bumalik ang fan",
+     "why": "hindi automatic"
+    },
+    {
+     "expect": "disabled",
+     "button": "AUTO",
+     "value": "enabled",
+     "say": "AUTO button"
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "pindutin ang AUTO"
+    },
+    {
+     "expect": "mode",
+     "value": "AUTO",
+     "say": "mode pagkatapos pindutin ang AUTO"
+    }
+   ]
   }
  ]
 }

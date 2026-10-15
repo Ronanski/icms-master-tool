@@ -12,3 +12,14 @@
 - **Mali ang inaasahan ko, hindi ang app:** inakala kong naka-bypass ang rate limit sa house operation; ayon sa ⊠ (NOT) ay kabaligtaran.
 - **Tala:** pagkatapos ng Reset, ang M.0098 ng ABC-003E ay 2 s na pulse (TPS) kaya parehong loop ay force manual nang 2 s sa simula. Hindi ko pa alam kung ganito rin sa totoong DCS (false rising edge sa start-up); Needs Verification.
 - `docs/scenarios/ABC-007.md` ay talaan na madaling basahin para itama ng user.
+
+## Dagdag 2: lahat ng control ng operator, kasabay ang proseso (user: "parang nagsisimulate ka at operator sabay")
+Sa parehong loop (FICFA1071 at FICFA1081), pindot sa tunay na panel + gumagalaw na plant model: 156 tseke, lahat tama (tatlong sunod na takbo ang pareho).
+- **O1 MANUAL:** MV field, mga button 0 / 50 / 100, at ang PV ay sumasagot sa proseso (MV 100 sa 400 s: PV tumaas ng higit 40 % ng range; MV 0 sa 10 min: bumaba).
+- **O2 SV (LOCAL):** SV field, + at − (1 % ng range bawat pindot), SV switch = B.
+- **O3 AUTO na may proseso:** MV field disabled sa AUTO; pagkatapos ng 20 min, ang PV ay nasa loob ng 4 % ng range mula sa SV; baguhin ang SV at sumusunod ulit ang PV.
+- **O4 bumpless:** AUTO -> MAN, walang talon ng MV (<= 1.5).
+- **O5 REMOTE / LOCAL:** REMOTE = AUTO talaga (MAN, SV field, MV field ay disabled; SV switch A); LOCAL = bumabalik ang operator.
+- **O6 mode input:** .LOC .REM .MAN ay nagtatakda at nagto-toggle ng mga input ng drawing.
+- **O7 trip sa AUTO:** tumigil ang fan -> MANUAL nang walang talon ng MV, SV LOCAL, AUTO disabled; MV manual ay sinusunod; pagbalik ng fan -> MANUAL pa rin; pindutin ang AUTO -> AUTO.
+Hindi pa sakop: BU-CMD (M.0181 / RB-MV 50 %), MFT sa MV, positioner (AI0192). Susunod na kapag sinabi mong okay ang mga ito.
