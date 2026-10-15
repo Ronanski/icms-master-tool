@@ -139,7 +139,13 @@ function anWire(S){
   for(const s of S.seg){const hx=Math.abs(s.y1-s.y2)<.06,vx=Math.abs(s.x1-s.x2)<.06;let d=1e9;
    if(hx&&t.x>=Math.min(s.x1,s.x2)-t.t.length*t.h*.5-1&&t.x<=Math.max(s.x1,s.x2)+4)d=Math.abs(t.y+t.h*.5-s.y1);else if(vx&&t.y>=Math.min(s.y1,s.y2)-3&&t.y<=Math.max(s.y1,s.y2)+3)d=Math.abs(t.x-s.x1-1)*.9;else d=anPtSeg(t.x,t.y,s)+2;
    if(d<bd){bd=d;best=s}}
-  if(best){const n=best.net;(S.tagN=S.tagN||[]).push({t:x,n,d:bd});if(!lab[n]||bd<lab[n].d)lab[n]={t:x,d:bd,x:t.x,y:t.y}}}
+  if(best){const n=best.net;(S.tagN=S.tagN||[]).push({t:x,n,d:bd,src:t});if(!lab[n]||bd<lab[n].d)lab[n]={t:x,d:bd,x:t.x,y:t.y}}}
+ /* (v1.20.61) a tag written just LEFT of the free left end of a horizontal wire names that wire (input arrows, e.g. "M.3302 PA FAN RUNNING (FROM DITL 26A-55)" in ABC-007). Only texts that no wire claimed above, only a free end (nothing else touches it), only a net that has no label yet. */
+ {const ec=new Map(),key=(x,y)=>Math.round(x*2)+','+Math.round(y*2);for(const sg of S.seg){for(const [x,y] of [[sg.x1,sg.y1],[sg.x2,sg.y2]])ec.set(key(x,y),(ec.get(key(x,y))||0)+1)}
+  for(const t of TX){const x=t.t.trim();if(!SIGRX.test(x)||(S.tagN||[]).some(q=>q.src===t))continue;
+   const w=x.length*t.h*.62;let best=null,bd=1e9;
+   for(const sg of S.seg){if(Math.abs(sg.y1-sg.y2)>.06||lab[sg.net])continue;const lx=Math.min(sg.x1,sg.x2);if(ec.get(key(lx,sg.y1))!==1)continue;const dy=Math.abs(t.y+t.h*.5-sg.y1);if(dy>5)continue;const dd=Math.abs(t.x+w-lx);if(dd<5&&dd+dy<bd){bd=dd+dy;best=sg}}
+   if(best&&!lab[best.net]){lab[best.net]={t:x,d:bd,x:t.x,y:t.y};(S.tagN=S.tagN||[]).push({t:x,n:best.net,d:bd,src:t})}}}
  for(const b of blk)if(b.k==='AI'){const o=b.pins.find(p=>p.role==='out');const tt=TX.filter(q=>/^(S\d\s*)?AI\d{3,5}$/.test(q.t.trim())&&anD(q.x,q.y,b.cx,b.cy)<30).sort((a,c)=>anD(a.x,a.y,b.cx,b.cy)-anD(c.x,c.y,b.cx,b.cy))[0];if(o&&tt){lab[o.n]={t:tt.t.trim(),d:0,x:tt.x,y:tt.y};b.tagAI=tt.t.trim()}}
  /* numbered connectors */
  S.conn=[];S.xc=[];

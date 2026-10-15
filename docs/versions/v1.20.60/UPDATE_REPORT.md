@@ -25,3 +25,10 @@ Sa simula, FORCE MANUAL at SV LOCAL ang dalawang loop dahil hindi tumatakbo ang 
 
 ## Status
 Beta. Susunod: ABC-011, 012, 019, 003A-E, 030, 052 (kapag naaprubahan o hindi ang F2).
+
+# v1.20.61 (Beta) — pangalan ng mga input (F2), inaprubahan ng user ("go lang")
+**Problem:** 126 input na ang tag text (hal. M.3302 PA FAN RUNNING) ay nasa kaliwa ng dulo ng wire ay walang pangalan sa app.
+**Work Done:** reader (`pins-params.js`): ang tag na katabi ng KALIWANG LIBRENG dulo ng pahalang na wire (walang ibang dumidikit, at wala pang pangalan ang net) ang nagpapangalan dito. Additive lang: ang mga label na dati nang naka-bind ay hindi ginalaw.
+**Nasukat (lahat ng 54 sheet, 60 s pagkatapos ng Reset, bago / pagkatapos):** +169 label; ang mga net na nagbago ng halaga: 4 na net lang sa 4 na sheet, at lahat ay mga signal na nasa drawing pala at dati ay 0 dahil walang pangalan para maikabit sa kabilang sheet: ABC-004A SI0140 (0 -> 5.856, mula ABC-004B/C), ABC-004B / C SI0311 (0 -> 4), ABC-005 SI0144 TOTAL COAL FLOW (0 -> 7.32, mula ABC-004A; nakikita sa PDF ng ABC-005). Cross-sheet links: ABC-004A +2, ABC-005 +1, ABC-009A -2 / ABC-009B +2 (nalipat sa tamang sheet).
+**Na-check:** UAT dry run 2458 items, 6808 cases, 0 failing; force_manual 68 / 68; panel_sync 0 fail.
+**Hindi pa na-check:** sa device. Hindi ko pa sinuri isa-isa sa PDF ang bawat isa sa 126 pangalan (ginawa ko ang test na nagbibilang ng pagbabago ng halaga, at ang mga nagbago ay tugma sa drawing).
