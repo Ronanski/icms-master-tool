@@ -188,6 +188,153 @@
     bar.dataset.shell = '1';
     return true;
   }
+  /* ONE TOP BAR for ABC and DITL (1.23.0, mockup v2): the page toolbar (#anbar or #bar, the same elements and handlers),
+     the global search and the ⚙ settings menu in one 36 px row; the status chip goes to the status bar at the bottom. Looks only. */
+  const GEAR =
+    '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
+  let topTry = 0;
+  function buildTop() {
+    const gs = $('gsbar'),
+      bar = $('bar'),
+      an = $('anbar');
+    if (!gs || !bar || !an || !bar.dataset.shell || !an.dataset.shell) return false;
+    if (gs.dataset.top) return true;
+    /* wait (max ~12 s) for the update button of the boot script and the channel box */
+    if ((!$('updbtn') || !$('stchip')) && ++topTry < 40) return false;
+    const mkMenu = (cls, icon, title) => {
+      const w = document.createElement('div');
+      w.className = 'tb-more ' + cls;
+      const b = document.createElement('button');
+      b.className = 'ico';
+      b.innerHTML = icon;
+      b.title = title;
+      const m = document.createElement('div');
+      m.className = 'tb-menu';
+      w.append(b, m);
+      b.onclick = e => {
+        e.stopPropagation();
+        document.querySelectorAll('.tb-more.open').forEach(x => x !== w && x.classList.remove('open'));
+        w.classList.toggle('open');
+      };
+      document.addEventListener('click', e => {
+        if (!w.contains(e.target)) w.classList.remove('open');
+      });
+      m.addEventListener('click', e => {
+        if (e.target.tagName === 'BUTTON') setTimeout(() => w.classList.remove('open'), 50);
+      });
+      return { w, m, head: t => {
+        const h = document.createElement('div');
+        h.className = 'tb-mh';
+        h.textContent = t;
+        m.append(h);
+      } };
+    };
+    /* search */
+    const srch = document.createElement('div');
+    srch.className = 'gs-search';
+    const lab = gs.querySelector(':scope > b');
+    if (lab) lab.remove();
+    [$('ansb'), $('gscope')].forEach(e => e && srch.append(e));
+    /* settings ⚙: looks, live colour, channel and update */
+    const set = mkMenu('gs-set', GEAR, 'Settings: itsura, kulay, channel, update');
+    set.head('Appearance');
+    {
+      /* font of the app (built in, works offline); the drawing keeps the font of its theme */
+      const fs_ = document.createElement('select');
+      fs_.id = 'fontsel';
+      fs_.title = 'Font ng app (hindi kasama ang drawing)';
+      [
+        ['inter', 'Font: Inter + JetBrains Mono'],
+        ['plex', 'Font: IBM Plex Sans + Mono'],
+        ['roboto', 'Font: Roboto + Roboto Mono'],
+        ['device', 'Font: Device default']
+      ].forEach(([v, t]) => {
+        const o = document.createElement('option');
+        o.value = v;
+        o.textContent = t;
+        fs_.append(o);
+      });
+      let f0 = 'inter';
+      try {
+        f0 = localStorage.getItem('ls-font') || 'inter';
+      } catch (e) {}
+      fs_.value = f0;
+      document.documentElement.dataset.font = f0;
+      fs_.onchange = () => {
+        document.documentElement.dataset.font = fs_.value;
+        try {
+          localStorage.setItem('ls-font', fs_.value);
+        } catch (e) {}
+      };
+      set.m.append(fs_);
+    }
+    [$('uisel'), $('dgsel')].forEach(e => e && set.m.append(e));
+    const anSel = [...an.querySelectorAll('.tb-menu select')];
+    anSel.forEach(s => {
+      s.classList.add('an-only');
+      set.m.append(s);
+    });
+    const sl = $('slive');
+    if (sl) {
+      sl.classList.add('dit-only');
+      set.m.append(sl);
+    }
+    set.head('Simulation');
+    document.querySelectorAll('.wbtn').forEach(w => {
+      w.classList.add(an.contains(w) ? 'an-only' : 'dit-only');
+      set.m.append(w);
+    });
+    set.head('Channel at update');
+    const ch = $('chsel'),
+      up = $('updbtn');
+    if (ch) set.m.append(ch);
+    if (up) {
+      up.textContent = 'Check for update';
+      set.m.append(up);
+    }
+    /* short labels (the handlers do not read these texts) */
+    const cats = [...document.querySelectorAll('.cat button')];
+    cats.forEach(b => (b.textContent = /DITL/.test(b.textContent) ? 'DITL' : 'ABC'));
+    const lbl = (re, t) => {
+      const b = [...an.querySelectorAll('button')].find(x => re.test(x.textContent.trim()));
+      if (b) b.textContent = t;
+    };
+    lbl(/^◀\s*Back$/, '◀◀');
+    lbl(/^Next\s*▶$/, '▶▶');
+    lbl(/^Wire values$/, 'Wire');
+    lbl(/^⋯\s*More$/, '⋯');
+    const tl = [...bar.querySelectorAll('button')].find(x => /^⋯\s*Tools$/.test(x.textContent.trim()));
+    if (tl) tl.textContent = '⋯';
+    /* status bar: RUN / VIEW chip, sheet, version + the hint line */
+    const st = $('st'),
+      chip = $('stchip');
+    if (st && chip) {
+      const foot = document.createElement('div');
+      foot.id = 'sfoot';
+      st.before(foot);
+      foot.append(chip);
+      /* the simulation clock of the ABC (t = 0:00) goes to the status bar */
+      const clk = [...an.querySelectorAll('span')].find(s => /^t\s*=/.test(s.textContent.trim()));
+      if (clk) {
+        clk.classList.add('an-only', 'sclock');
+        foot.append(clk);
+      }
+      foot.append(st);
+    }
+    gs.prepend(bar, an);
+    gs.append(srch, set.w);
+    gs.dataset.top = '1';
+    document.body.classList.add('top1');
+    return true;
+  }
+  let n3 = 0;
+  const iv3 = setInterval(() => {
+    try {
+      if (buildTop() || ++n3 > 60) clearInterval(iv3);
+    } catch (e) {
+      clearInterval(iv3);
+    }
+  }, 300);
   let n = 0;
   const iv = setInterval(() => {
     try {

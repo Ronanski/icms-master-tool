@@ -99,3 +99,82 @@ body:not(.an) #anbar{display:none!important}
  #bar .tbg::before{display:none}
  #bar .tbg{padding:4px}
 }
+
+/* ===== ONE TOP BAR, ABC + DITL (1.23.0, mockup v2). Looks only: the same buttons and handlers. ===== */
+:root{--uf:'Inter',system-ui,sans-serif;--mf:'JetBrains Mono',ui-monospace,monospace}
+html[data-font=plex]{--uf:'IBM Plex Sans',system-ui,sans-serif;--mf:'IBM Plex Mono',ui-monospace,monospace}
+html[data-font=roboto]{--uf:'Roboto',system-ui,sans-serif;--mf:'Roboto Mono',ui-monospace,monospace}
+html[data-font=device]{--uf:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mf:ui-monospace,Consolas,"Roboto Mono",monospace}
+/* the UI font everywhere except the drawing (the diagram keeps the font of its theme) */
+body.top1 :not(svg):not(svg *){font-family:var(--uf)!important}
+body.top1 :is(#sfoot,#sfoot *,#ansb,.fv,.fv *,.fpov .tt,.fpov .ft,.fpov .ft *,.fpov .ovf,.fpov .ovf *,input[type=number],code,pre,textarea,.mono){font-family:var(--mf)!important}
+body.top1 #gsbar[data-top]{display:flex!important;flex-wrap:nowrap;align-items:center;gap:6px;min-height:40px;padding:0 6px!important;background:linear-gradient(#151c23,#10161b)!important;border-bottom:1px solid #26313c!important;overflow:visible;position:relative;z-index:50}
+#gsbar[data-top]>#bar,#gsbar[data-top]>#anbar{padding:0!important;margin:0;background:transparent!important;border:0!important;gap:4px!important;flex-wrap:nowrap!important;min-width:0;flex:none}
+body.an #gsbar[data-top]>#anbar{display:flex!important}
+#gsbar[data-top] .tbg{border:0!important;border-right:1px solid #26313c!important;border-radius:0!important;background:transparent!important;padding:0 6px 0 2px!important;gap:3px!important}
+#gsbar[data-top] .tbg::before{display:none!important}
+#gsbar[data-top] button,#gsbar[data-top] select,#gsbar[data-top] label.b{height:26px!important;min-height:26px!important;font-size:12px!important;padding:0 8px!important;border-radius:5px!important;line-height:24px}
+#gsbar[data-top] .cat{display:flex;gap:0;border:1px solid #26313c;border-radius:6px;overflow:hidden;margin-right:2px}
+#gsbar[data-top] .cat button{border:0!important;border-radius:0!important;min-width:46px;font-weight:600}
+#gsbar[data-top] .cat button.on{background:#173048!important;color:#d6eaff!important}
+#gsbar[data-top] .tb-run,#gsbar[data-top] #bmode{min-width:64px!important;font-weight:600}
+#gsbar[data-top] #anshbox select,#gsbar[data-top] #shsel{max-width:210px}
+.gs-search{flex:1 1 160px;display:flex;align-items:center;gap:4px;min-width:120px}
+.gs-search #ansb{flex:1;height:26px!important;min-width:80px;font:12px var(--mf)!important;padding:0 8px!important;border-radius:5px!important}
+.gs-search #gscope{padding:1px!important}
+.gs-search #gscope button{padding:0 6px!important;height:22px!important;min-height:22px!important;line-height:20px;font-size:11px!important}
+#gsbar[data-top] .tb-more{position:relative;margin-left:0!important}
+#gsbar[data-top] .tb-more>button{min-width:28px!important}
+#gsbar .ico{display:inline-flex!important;align-items:center;justify-content:center;min-width:28px;padding:0 6px!important}
+.gs-set .tb-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:95;min-width:250px;max-width:92vw;max-height:72vh;overflow:auto;background:#10181e;border:1px solid #2f4a5a;border-radius:8px;padding:8px;box-shadow:0 10px 30px #000a}
+.gs-set.open .tb-menu{display:block}
+.gs-set .tb-menu>*{display:block;width:100%;margin:0 0 6px!important;text-align:left}
+.gs-set .tb-menu .tb-mh{font:600 10px var(--uf);letter-spacing:.08em;text-transform:uppercase;color:#7d8e9a;margin:8px 0 4px!important}
+body.top1.an .dit-only,body.top1:not(.an) .an-only{display:none!important}
+#gsbar .ico svg{width:15px!important;height:15px!important;display:block}
+#gsbar[data-top] .tbg-run select{width:62px!important;padding:0 4px!important}
+#sfoot .sclock{font:11px var(--mf)!important;color:#9fb0bd!important;padding:0 6px;border-left:1px solid #26313c}
+/* status bar */
+#sfoot{display:flex;align-items:center;gap:6px;background:var(--panel,#111b27);border-top:1px solid #26313c;min-height:24px;padding:0 6px;flex:none}
+#sfoot #stchip{display:flex;gap:4px;flex:none}
+#sfoot #stchip span{font:600 11px var(--mf)!important;padding:1px 8px!important;border-radius:4px!important}
+#sfoot #st{flex:1;min-width:0;border:0!important;padding:0 6px!important;background:transparent!important;font:11px var(--mf)!important;color:#7d8e9a}
+/* sheet title strip: one compact line */
+body.top1 #anmeta{min-height:28px;padding:2px 10px!important}
+body.top1 #meta{padding:3px 12px!important}
+/* tablet: the search goes to a second row instead of squeezing the buttons */
+@media (max-width:1180px){
+ body.top1 #gsbar[data-top]{flex-wrap:wrap;row-gap:4px;padding:4px 6px!important}
+ .gs-search{order:9;flex:1 1 300px}
+ .gs-set{order:10}
+ body.top1 #anmeta{flex-wrap:nowrap;overflow:hidden}
+ body.top1 #anmeta>*{white-space:nowrap}
+ body.top1 #anmeta>span:nth-of-type(1){overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+ body.top1 #anmeta small{display:none}
+}
+/* phone: one row (☰ Run Fit Panel sheet); ☰ shows the search, ABC / DITL and ⚙ */
+@media (max-width:700px){
+ body.top1:not(.mmenu) #gsbar[data-top]{display:flex!important}
+ body.top1:not(.mmenu) .gs-search,body.top1:not(.mmenu) .gs-set{display:none!important}
+ body.top1 #gsbar[data-top] button,body.top1 #gsbar[data-top] select{height:36px!important;min-height:36px!important}
+ #sfoot #stchip span:nth-child(n+2){display:none}
+}
+/* DITL title strip: the same compact line as the ABC (uniform) */
+body.top1 #meta{min-height:34px;align-items:center}
+body.top1 #meta #m_title{font-size:15px!important;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.top1 #meta #m_sub{font-size:11px;margin-top:0}
+body.top1 #meta #mctl button,body.top1 #meta #mctl select{height:24px;padding:0 6px;font-size:11px}
+/* search info card (1.23.0) */
+#infocard{position:fixed;top:48px;left:50%;transform:translateX(-50%);z-index:120;width:min(460px,96vw);max-height:78vh;overflow:auto;background:#0f151bf5;border:1px solid #3a5670;border-radius:8px;box-shadow:0 12px 36px #000c;font-size:12px;color:#cfd9e2}
+#infocard .ich{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid #26313c;position:sticky;top:0;background:#0f151b}
+#infocard .ich b{font:700 15px var(--mf)}#infocard .icn{color:#7d8e9a;font-size:11px;margin-left:auto}
+#infocard .icd{padding:6px 10px;border-bottom:1px solid #1a232b;color:#b7c6d2}
+#infocard .ics{padding:6px 10px;border-bottom:1px solid #1a232b}
+#infocard .ict{display:flex;align-items:center;gap:8px;margin-bottom:4px}#infocard .ict b{font:700 12.5px var(--mf)}
+#infocard .icv{font:700 12px var(--mf);color:#e8b04a;margin-right:auto}
+#infocard .icl{margin:3px 0}#infocard .icl .k{display:inline-block;width:86px;color:#7d8e9a}
+#infocard .icu{margin:2px 0 4px 18px;padding:0;font:11px var(--mf)}#infocard .icu li{margin:1px 0}
+#infocard .f-fm{color:#ffd78a}#infocard .f-trip{color:#ffb3b3}#infocard .f-ditl{color:#9fd0ff}
+#infocard .tg{display:inline-block;padding:1px 6px;border-radius:3px;font-weight:700;font-size:10.5px}
+#infocard .t-trip{background:#4a1d1d;color:#ffb3b3}#infocard .t-ok{background:#123a26;color:#9ff0c4}
+#infocard .b{height:24px;padding:0 8px;font-size:11px;border-radius:5px}
