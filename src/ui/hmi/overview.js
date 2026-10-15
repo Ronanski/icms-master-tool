@@ -71,7 +71,7 @@
         };
         ctl.append(inp);
       }
-      ctl.append(E('button', { cls: 'b', txt: '×', title: 'Release (alisin ang force)', on: () => force(S, r.n, null) }));
+      ctl.append(E('button', { cls: 'b', txt: '×', title: 'Release (remove the force)', on: () => force(S, r.n, null) }));
       const tr = E('tr', {}, [E('td', { cls: 'nm' }, [E('b', { txt: r.name }), E('small', { txt: r.why })]), vEl, ctl]);
       tr._u = () => {
         const x = S.rt.v[r.n],
@@ -133,7 +133,7 @@
           mv = E('i', { cls: 'mv' }),
           md = E('span', { cls: 'md' }),
           nums = E('span', { cls: 'nm' });
-        const card = E('div', { cls: 'ovc', title: (c.desc || '') + ' — click: ito lang ang ipakita' }, [
+        const card = E('div', { cls: 'ovc', title: (c.desc || '') + ' — click: show only this one' }, [
           E('div', { cls: 'tt', txt: c.tag }),
           E('div', { cls: 'bars' }, [E('div', { cls: 'ovb' }, [pv]), E('div', { cls: 'ovb' }, [sv]), E('div', { cls: 'ovb' }, [mv])]),
           E('div', { cls: 'ft' }, [md, nums])
@@ -149,7 +149,7 @@
       ov.append(
         E('div', { cls: 'ovh' }, [
           document.createTextNode('Controllers (' + cs.length + ')'),
-          E('button', { cls: 'b', txt: 'Lahat', title: 'Ipakita ang lahat ng faceplate', on: () => ((sel = null), apply(opp, ov)) })
+          E('button', { cls: 'b', txt: 'All', title: 'Show all faceplates', on: () => ((sel = null), apply(opp, ov)) })
         ]),
         grid,
         E('div', { cls: 'ovfl', style: 'display:none' })

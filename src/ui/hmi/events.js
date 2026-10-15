@@ -85,7 +85,7 @@
     box.innerHTML = '';
     const hd = document.createElement('div');
     hd.className = 'evh';
-    hd.innerHTML = '<b>Event log</b><span>' + LOG.length + ' (oras ng simulation)</span>';
+    hd.innerHTML = '<b>Event log</b><span>' + LOG.length + ' (simulation time)</span>';
     const clr = document.createElement('button');
     clr.className = 'b';
     clr.textContent = 'Clear';
@@ -99,7 +99,7 @@
     if (!LOG.length) {
       const d = document.createElement('div');
       d.className = 'evr';
-      d.textContent = 'Wala pa. Pindutin ang Run: dito lalabas ang mode, force manual, alarm at trip.';
+      d.textContent = 'No events yet. Press Run: mode changes, force manual, alarms and trips appear here.';
       box.append(d);
     }
     for (const e of LOG) {
@@ -119,7 +119,7 @@
     btn = document.createElement('button');
     btn.id = 'evbtn';
     btn.className = 'b an-only';
-    btn.title = 'Event log: mode, force manual, alarm, trip (oras ng simulation)';
+    btn.title = 'Event log: mode, force manual, alarm, trip (simulation time)';
     box = document.createElement('div');
     box.id = 'evbox';
     btn.onclick = e => {

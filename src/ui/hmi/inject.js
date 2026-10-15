@@ -24,6 +24,18 @@ const block =
   fs.readFileSync(__dirname + '/overview.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/events.js', 'utf8') +
+  '</script><style id="plantcss">' +
+  fs.readFileSync(__dirname + '/../plant/plant.css', 'utf8') +
+  '</style><script id="plantjs">' +
+  (fs.existsSync(__dirname + '/../plant/systems.js') ? fs.readFileSync(__dirname + '/../plant/systems.js', 'utf8') : '') +
+  '\n' +
+  fs.readFileSync(__dirname + '/../plant/values.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/../plant/plant.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/../plant/wiring.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/../plant/library.js', 'utf8') +
   '</script>' +
   B;
 const k = s.lastIndexOf('</body>');

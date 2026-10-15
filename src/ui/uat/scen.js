@@ -7,11 +7,11 @@ window.UATS = (function () {
     if (!sc.cases) return sc;
     const steps = [];
     for (const c of sc.cases) {
-      steps.push({ do: 'reset', say: 'Bagong simula: ' + c.say });
-      steps.push({ do: 'wait', s: 3, say: 'hintayin ang startup pulse ng ibang sheet' });
+      steps.push({ do: 'reset', say: 'New start: ' + c.say });
+      steps.push({ do: 'wait', s: 3, say: 'Wait for the startup pulse of other sheets' });
       for (const b of sc.base || []) steps.push(Object.assign({ do: 'set' }, b));
       for (const x of c.set || []) steps.push(Object.assign({ do: 'set' }, x));
-      steps.push({ do: 'wait', s: c.wait || sc.wait || 12, say: 'maghintay' });
+      steps.push({ do: 'wait', s: c.wait || sc.wait || 12, say: 'Wait' });
       for (const e of c.expect)
         steps.push(Object.assign({ expect: 'signal' }, e, { say: c.say + ': ' + (e.say || e.tag) }));
     }
@@ -99,7 +99,7 @@ window.UATS = (function () {
             let n2 = -1;
             for (let n = 0; n < S2.nets.length; n++) if (labTxt(S2, n) === st.tag) n2 = n;
             if (n2 < 0) {
-              push({ k: 'bad', t: 'walang ' + st.tag + ' sa ' + st.sheet });
+              push({ k: 'bad', t: 'No ' + st.tag + ' on ' + st.sheet });
               fail++;
               continue;
             }
@@ -110,7 +110,7 @@ window.UATS = (function () {
           } else if (st.do === 'set') {
             const n = net(st);
             if (n < 0) {
-              push({ k: 'bad', t: 'walang input na ' + (st.tag || st.near) });
+              push({ k: 'bad', t: 'No input ' + (st.tag || st.near) });
               fail++;
               continue;
             }
@@ -126,7 +126,7 @@ window.UATS = (function () {
                 b.k === 'AI' && (st.block != null ? b.id === st.block : (b.o || []).some(n => labTxt(S, n) === st.tag))
             );
             if (!bk) {
-              push({ k: 'bad', t: 'walang transmitter ' + (st.tag || st.block) });
+              push({ k: 'bad', t: 'No transmitter ' + (st.tag || st.block) });
               fail++;
               continue;
             }
@@ -158,11 +158,11 @@ window.UATS = (function () {
           } else if (st.do === 'press') {
             const b = btn(st.button);
             if (!b) {
-              push({ k: 'bad', t: 'walang button ' + st.button });
+              push({ k: 'bad', t: 'No button ' + st.button });
               fail++;
               continue;
             }
-            if (b.disabled) note = ' (disabled, hindi napindot)';
+            if (b.disabled) note = ' (disabled, not pressed)';
             else {
               b.click();
               await stepSim(sh, 0.5);
@@ -170,7 +170,7 @@ window.UATS = (function () {
           } else if (st.do === 'mv' || st.do === 'sv') {
             const ins = [...fp.querySelectorAll('input')],
               f = st.do === 'sv' ? ins[0] : ins[ins.length - 1];
-            if (f.disabled) note = ' (disabled ang field)';
+            if (f.disabled) note = ' (field disabled)';
             else {
               f.value = st.value;
               f.dispatchEvent(new Event('change'));
@@ -184,7 +184,7 @@ window.UATS = (function () {
             const pp = fp.querySelector('.fpop'),
               b = pp && [...pp.querySelectorAll('button')].find(e => e.textContent.trim() === st.button);
             if (!b) {
-              push({ k: 'bad', t: 'walang button ' + st.button + ' sa popup' });
+              push({ k: 'bad', t: 'No button ' + st.button + ' in popup' });
               fail++;
               continue;
             }
@@ -241,7 +241,7 @@ window.UATS = (function () {
               skipRest = true;
               push({
                 k: 'do',
-                t: 'HINDI SINUSURI ANG NATITIRA: ang trip na input ay hindi nagpa-force sa estado ng scenario na ito (ang kondisyon ay depende sa proseso, hal. PV / temperatura); sinuri ito sa panimulang estado lang'
+                t: 'REMAINING STEPS NOT TESTED: the trip input did not cause a force in this scenario state (the condition depends on the process, e.g. PV / temperature); tested in the initial state only'
               });
             }
           } else if (st.do === 'watch') {
@@ -265,24 +265,24 @@ window.UATS = (function () {
         if (st.expect === 'signal') {
           const n = net(st);
           if (n < 0) {
-            push({ k: 'bad', t: 'walang signal na ' + (st.tag || st.near) });
+            push({ k: 'bad', t: 'No signal ' + (st.tag || st.near) });
             fail++;
             continue;
           }
           got = +rt.v[n].toFixed(3);
         } else if (st.expect === 'pop') {
           const pp = fp.querySelector('.fpop');
-          got = pp && pp.style.display === 'block' ? 'bukas' : 'hindi bumukas';
+          got = pp && pp.style.display === 'block' ? 'open' : 'did not open';
         } else if (st.expect === 'mv') got = +rt.v[ctl.out].toFixed(2);
         else if (st.expect === 'cut') {
           const g = (ctl.dn || []).find(d => {
             const t = rt.st[d.id];
             return t && t.pk === 'B';
           });
-          got = g ? 'putol' : 'malaya';
+          got = g ? 'cut' : 'free';
         } else if (st.expect === 'mode-after-clear') {
           const sn = mk.__autoSeen;
-          got = mode() + (sn ? ' (may AUTO signal ng drawing: ' + sn + ')' : '');
+          got = mode() + (sn ? ' (drawing AUTO signal: ' + sn + ')' : '');
         } else if (st.expect === 'bumpless') {
           const cut = (ctl.dn || []).find(d => {
               const t = rt.st[d.id];
@@ -290,19 +290,19 @@ window.UATS = (function () {
             }),
             d = rt.v[ctl.out] - mk[st.than];
           got = cut
-            ? 'putol ng interlock ng drawing'
+            ? 'cut by drawing interlock'
             : Math.abs(d) <= (st.tol == null ? 0.3 : st.tol)
-              ? 'pareho'
-              : (d > 0 ? 'tumaas' : 'bumaba') + ' (' + d.toFixed(1) + ')';
+              ? 'unchanged'
+              : (d > 0 ? 'increased' : 'decreased') + ' (' + d.toFixed(1) + ')';
         } else if (st.expect === 'mode') got = mode();
         else if (st.expect === 'disabled') {
           const b = btn(st.button);
-          got = b ? (b.disabled ? 'disabled' : 'enabled') : 'walang button';
+          got = b ? (b.disabled ? 'disabled' : 'enabled') : 'no button';
         } else if (st.expect === 'field') {
           const ins = [...fp.querySelectorAll('input')],
             f = st.name === 'SV' ? ins[0] : ins[ins.length - 1];
           got = f.disabled ? 'disabled' : 'enabled';
-        } else if (st.expect === 'faceplate') got = /FORCE MANUAL/.test(fp.textContent) ? 'FORCE MANUAL' : 'wala';
+        } else if (st.expect === 'faceplate') got = /FORCE MANUAL/.test(fp.textContent) ? 'FORCE MANUAL' : 'none';
         else if (st.expect === 'sv-switch') {
           const q = ctl.svSw && rt.st[ctl.svSw.id];
           got = !q ? '?' : q.pk === 'A' ? 'A (logic / REMOTE)' : 'B (operator / LOCAL)';
@@ -313,8 +313,8 @@ window.UATS = (function () {
             sp = ctl.b.p.rhi - ctl.b.p.rlo || 100;
           got =
             Math.abs(sv - pv) <= (sp * (st.pct || 3)) / 100
-              ? 'abot-SV'
-              : 'malayo sa SV (SV ' + sv.toFixed(1) + ', PV ' + pv.toFixed(1) + ')';
+              ? 'at SV'
+              : 'far from SV (SV ' + sv.toFixed(1) + ', PV ' + pv.toFixed(1) + ')';
         } else if (st.expect === 'cmp') {
           /* PV vs MV while an interlock selector of the drawing sends 0 % to the valve: the process cannot answer, NOT TESTED (not pass, not fail) */
           const cutB =
@@ -329,26 +329,26 @@ window.UATS = (function () {
             push({
               k: 'do',
               t:
-                'HINDI NASURI (' +
+                'NOT TESTED (' +
                 (st.say || 'PV') +
-                '): sarado ang valve dahil sa interlock ng drawing (' +
+                '): valve closed by drawing interlock (' +
                 sn +
-                ' → leg B); ang PV ay hindi gagalaw hangga’t hindi nawawala ang kondisyon'
+                ' → leg B); PV will not move until the condition clears'
             });
             continue;
           }
           const d = val(st.what) - mk[st.than];
           got = st.min
-            ? (d >= st.min ? 'tumaas' : d <= -st.min ? 'bumaba' : 'kulang ang galaw') + ' (' + d.toFixed(1) + ')'
+            ? (d >= st.min ? 'increased' : d <= -st.min ? 'decreased' : 'insufficient change') + ' (' + d.toFixed(1) + ')'
             : Math.abs(d) <= (st.tol == null ? 1 : st.tol)
-              ? 'pareho'
-              : (d > 0 ? 'tumaas' : 'bumaba') + ' (' + d.toFixed(1) + ')';
+              ? 'unchanged'
+              : (d > 0 ? 'increased' : 'decreased') + ' (' + d.toFixed(1) + ')';
         } else {
-          push({ k: 'bad', t: 'hindi kilalang tseke ' + st.expect });
+          push({ k: 'bad', t: 'Unknown check ' + st.expect });
           fail++;
           continue;
         }
-        if (st.expect === 'bumpless') ok = got === 'pareho' || /^putol/.test(got);
+        if (st.expect === 'bumpless') ok = got === 'unchanged' || /^cut/.test(got);
         else if (st.expect === 'mode-after-clear') ok = String(got).startsWith(mk.__autoSeen ? 'AUTO' : 'MANUAL');
         else
           ok =
@@ -388,7 +388,8 @@ window.UATS = (function () {
         P = c0.b.p,
         rlo = P.rlo != null ? P.rlo : 0,
         rhi = P.rhi != null ? P.rhi : 100,
-        span = rhi - rlo;
+        span = rhi - rlo,
+        ns = Math.pow(10, Math.floor(Math.log10(Math.abs(span) / 100) + 1e-9)); /* SV step of the faceplate ▲ (one round unit) */
       let seed = 777;
       const rnd = () => {
         seed = (seed * 1103515245 + 12345) & 0x7fffffff;
@@ -656,12 +657,12 @@ window.UATS = (function () {
               const t = S.rt.st[d.id];
               return t && t.pk === 'B';
             })
-            .map(d => (labTxt(S, d.sel) || 'n' + d.sel) + ' = 1 (output putol)');
-          why = ' | natitira: ' + (st.fman ? 'force manual [' + ms.join(', ') + '] ' : '') + ct.join(', ');
+            .map(d => (labTxt(S, d.sel) || 'n' + d.sel) + ' = 1 (output cut)');
+          why = ' | remaining: ' + (st.fman ? 'force manual [' + ms.join(', ') + '] ' : '') + ct.join(', ');
         } catch (e) {}
         return {
           loop: tag,
-          note: 'walang malinis na estado (sinubok: panimulang kondisyon, pag-flip, pulse ng latch, pares)' + why
+          note: 'no clean state found (tried: initial condition, flip, latch pulse, pairs)' + why
         };
       }
       let trig = null;
@@ -681,15 +682,15 @@ window.UATS = (function () {
           .concat(base.sets)
           .map(([n, v]) => ({ do: 'set', net: n, value: v }))
           .concat(
-            [...aiOv].map(([id, v]) => ({ do: 'ai', block: id, value: v, say: 'transmitter (AI) ' + id + ' = ' + v }))
+            [...aiOv].map(([id, v]) => ({ do: 'ai', block: id, value: v, say: 'Transmitter (AI) ' + id + ' = ' + v }))
           ),
         hasR = !!c0.remote;
       if (base.pulses.length) {
-        bs.push({ do: 'wait', s: 5, say: 'maghintay' });
+        bs.push({ do: 'wait', s: 5, say: 'Wait' });
         for (const n of base.pulses) {
           const cur = (base.sets.find(x => x[0] === n) || [n, 0])[1];
           bs.push(
-            { do: 'set', net: n, value: cur ? 0 : 1, say: 'pulse (i-set ang latch): ' + (labTxt(S, n) || 'n' + n) },
+            { do: 'set', net: n, value: cur ? 0 : 1, say: 'Pulse (set the latch): ' + (labTxt(S, n) || 'n' + n) },
             { do: 'wait', s: 3 },
             { do: 'set', net: n, value: cur },
             { do: 'wait', s: 5 }
@@ -700,7 +701,7 @@ window.UATS = (function () {
         bs.push({
           do: 'mv',
           value: mvPre,
-          say: 'itaas ang MV sa manual = ' + mvPre + ' (kailangan para mawala ang force manual ng drawing)'
+          say: 'Raise MV in manual = ' + mvPre + ' (required to clear the drawing force manual)'
         });
       const pr = (S.procs || []).find(b => b.id === c0.b.id),
         T = pr && pr.proc && pr.proc.T ? pr.proc.T : 150,
@@ -708,39 +709,39 @@ window.UATS = (function () {
       const sc = [];
       const pre = bs
         .concat([{ do: 'wait', s: 20 }])
-        .concat(hasR ? [{ do: 'press', button: 'A', say: 'A (lumabas muna sa REMOTE kung nasa REMOTE)' }] : []);
+        .concat(hasR ? [{ do: 'press', button: 'A', say: 'A (leave REMOTE first if in REMOTE)' }] : []);
       sc.push({
         id: 'G1',
         loop: tag,
-        title: tag + ': MANUAL — MV field at mga button (0 / 50 / 100); proseso',
-        drawing: 'A/M switch B = manual MV ng operator; ang MV ay lumalabas sa output ng A/M switch.',
+        title: tag + ': MANUAL — MV field and buttons (0 / 50 / 100); process',
+        drawing: 'A/M switch B = operator manual MV; the MV is the output of the A/M switch.',
         steps: pre.concat([
-          { do: 'press', button: 'M', say: 'pindutin ang M' },
-          { expect: 'mode', value: 'MANUAL', say: 'mode' },
-          { expect: 'field', name: 'MV', value: 'enabled', say: 'MV field sa MANUAL' },
-          { do: 'mv', value: 75, say: 'i-type ang MV = 75' },
+          { do: 'press', button: 'M', say: 'Press M' },
+          { expect: 'mode', value: 'MANUAL', say: 'Mode' },
+          { expect: 'field', name: 'MV', value: 'enabled', say: 'MV field in MANUAL' },
+          { do: 'mv', value: 75, say: 'Enter MV = 75' },
           { do: 'settle', what: 'mv' },
           { expect: 'mv', value: 75, tol: 0.6, say: 'MV' },
-          { do: 'press', button: '0', say: 'pindutin ang 0' },
+          { do: 'press', button: '0', say: 'Press 0' },
           { do: 'settle', what: 'mv' },
-          { expect: 'mv', value: 0, tol: 0.6, say: 'MV matapos ang 0' },
-          { do: 'press', button: '50', say: 'pindutin ang 50' },
+          { expect: 'mv', value: 0, tol: 0.6, say: 'MV after 0' },
+          { do: 'press', button: '50', say: 'Press 50' },
           { do: 'settle', what: 'mv' },
-          { expect: 'mv', value: 50, tol: 0.6, say: 'MV matapos ang 50' },
-          { do: 'press', button: '100', say: 'pindutin ang 100' },
+          { expect: 'mv', value: 50, tol: 0.6, say: 'MV after 50' },
+          { do: 'press', button: '100', say: 'Press 100' },
           { do: 'settle', what: 'mv' },
-          { expect: 'mv', value: 100, tol: 0.6, say: 'MV matapos ang 100' },
-          { do: 'popopen', name: 'MV', say: 'i-click ang kahon ng MV' },
-          { expect: 'pop', name: 'MV', value: 'bukas', say: 'lumabas ang control ng MV (MANUAL)' },
-          { do: 'popbtn', button: '▼▼', say: 'pindutin ang ▼▼ (-10)' },
+          { expect: 'mv', value: 100, tol: 0.6, say: 'MV after 100' },
+          { do: 'popopen', name: 'MV', say: 'Click the MV box' },
+          { expect: 'pop', name: 'MV', value: 'open', say: 'MV control shown (MANUAL)' },
+          { do: 'popbtn', button: '▼▼', say: 'Press ▼▼ (-5 %)' },
           { do: 'settle', what: 'mv' },
-          { expect: 'mv', value: 90, tol: 0.6, say: 'MV pagkatapos ng ▼▼' },
-          { do: 'popbtn', button: '▲', say: 'pindutin ang ▲ (+1)' },
+          { expect: 'mv', value: 95, tol: 0.3, say: 'MV after ▼▼' },
+          { do: 'popbtn', button: '▲', say: 'Press ▲ (+1 %)' },
           { do: 'settle', what: 'mv' },
-          { expect: 'mv', value: 91, tol: 0.6, say: 'MV pagkatapos ng ▲' },
-          { do: 'popbtn', button: '50', say: 'pindutin ang 50 sa popup' },
+          { expect: 'mv', value: 96, tol: 0.3, say: 'MV after ▲' },
+          { do: 'popbtn', button: '50', say: 'Press 50 in popup' },
           { do: 'settle', what: 'mv' },
-          { expect: 'mv', value: 50, tol: 0.6, say: 'MV pagkatapos ng 50' },
+          { expect: 'mv', value: 50, tol: 0.6, say: 'MV after 50' },
           { do: 'popclose' }
         ])
       });
@@ -770,9 +771,9 @@ window.UATS = (function () {
       const notes = [];
       if (pr && pr.proc && pr.proc.mode === 'shared')
         notes.push(
-          'G2 (PV vs MV) hindi sinuri: ang PV ay hawak ng ' + (pr.proc.of || 'ibang controller') + ' (shared)'
+          'G2 (PV vs MV) not tested: PV is held by ' + (pr.proc.of || 'another controller') + ' (shared)'
         );
-      else if (casc) notes.push('G2 (PV vs MV) hindi sinuri: cascade master (ang output ay SV ng ibang controller)');
+      else if (casc) notes.push('G2 (PV vs MV) not tested: cascade master (output is the SV of another controller)');
       /* valves in parallel on this measurement (same sheet): the operator puts the others in MANUAL at 50 % first, else an AUTO partner holds the PV */
       const partners = pr
         ? (S.procs || [])
@@ -784,8 +785,8 @@ window.UATS = (function () {
         sc.push({
           id: 'G2',
           loop: tag,
-          title: tag + ': ang PV ay sumasagot sa MV (proseso)',
-          drawing: 'Ang proseso ay first-order na may dead time; ang PV ay lumilipat ayon sa MV.',
+          title: tag + ': PV responds to MV (process)',
+          drawing: 'The process is first-order with dead time; the PV follows the MV.',
           steps: pre.concat([
             ...(partners.length
               ? [
@@ -793,7 +794,7 @@ window.UATS = (function () {
                     do: 'partnerman',
                     tags: partners,
                     value: 50,
-                    say: 'ilagay sa MAN = 50 % ang katabing controller sa parehong PV: ' + partners.join(', ')
+                    say: 'Put the parallel controller(s) on the same PV in MAN = 50 %: ' + partners.join(', ')
                   }
                 ]
               : []),
@@ -807,86 +808,86 @@ window.UATS = (function () {
               expect: 'cmp',
               what: 'pv',
               than: 'p0',
-              value: Math.abs(pr.proc.sg) === 1 && pr.proc.sg < 0 ? 'bumaba' : 'tumaas',
+              value: Math.abs(pr.proc.sg) === 1 && pr.proc.sg < 0 ? 'decreased' : 'increased',
               min: span * 0.08,
-              say: 'PV pagkatapos ng ' + wp + ' s sa MV = 100 kumpara sa MV = 0',
-              why: 'ang direksyon ay ayon sa action ng controller / proseso'
+              say: 'PV after ' + wp + ' s at MV = 100 vs. MV = 0',
+              why: 'direction follows the controller action / process'
             }
           ])
         });
       sc.push({
         id: 'G3',
         loop: tag,
-        title: tag + ': SV ng operator (LOCAL) — SV field, + at −',
-        drawing: 'SV switch B = SV ng operator (o ang SV pin ng controller kung walang switch).',
+        title: tag + ': Operator SV (LOCAL) — SV field, + and −',
+        drawing: 'SV switch B = operator SV (or the controller SV pin if there is no switch).',
         steps: pre.concat([
           { do: 'press', button: 'M', say: 'M' },
-          { expect: 'field', name: 'SV', value: 'disabled', say: 'SV field sa MANUAL', why: 'SV ay para sa AUTO lang' },
-          { do: 'popopen', name: 'SV', say: 'i-click ang kahon ng SV sa MANUAL' },
-          { expect: 'pop', name: 'SV', value: 'hindi bumukas', say: 'control ng SV sa MANUAL' },
+          { expect: 'field', name: 'SV', value: 'disabled', say: 'SV field in MANUAL', why: 'SV is for AUTO only' },
+          { do: 'popopen', name: 'SV', say: 'Click the SV box in MANUAL' },
+          { expect: 'pop', name: 'SV', value: 'did not open', say: 'SV control in MANUAL' },
           { do: 'press', button: 'A', say: 'A' },
-          { do: 'sv', value: +(rlo + span * 0.4).toFixed(3), say: 'i-type ang SV = 40 % ng range' },
+          { do: 'sv', value: +(rlo + span * 0.4).toFixed(3), say: 'Enter SV = 40 % of range' },
           { do: 'settle', what: 'sv' },
           { expect: 'sv', value: +(rlo + span * 0.4).toFixed(3), tol: span * 0.002, say: 'SV' },
-          { do: 'press', button: '+', say: 'pindutin ang +' },
+          { do: 'press', button: '+', say: 'Press +' },
           { do: 'settle', what: 'sv' },
-          { expect: 'sv', value: +(rlo + span * 0.41).toFixed(3), tol: span * 0.002, say: 'SV pagkatapos ng +' },
-          { do: 'popopen', name: 'SV', say: 'i-click ang kahon ng SV' },
-          { expect: 'pop', name: 'SV', value: 'bukas', say: 'lumabas ang control ng SV' },
-          { do: 'popbtn', button: '▲▲', say: 'pindutin ang ▲▲ (+10 %)' },
+          { expect: 'sv', value: +(rlo + span * 0.41).toFixed(3), tol: span * 0.002, say: 'SV after +' },
+          { do: 'popopen', name: 'SV', say: 'Click the SV box' },
+          { expect: 'pop', name: 'SV', value: 'open', say: 'SV control shown' },
+          { do: 'popbtn', button: '▲▲', say: 'Press ▲▲ (+5 units, ' + 5 * ns + ')' },
           { do: 'settle', what: 'sv' },
-          { expect: 'sv', value: +(rlo + span * 0.51).toFixed(3), tol: span * 0.002, say: 'SV pagkatapos ng ▲▲' },
-          { do: 'popbtn', button: '▼', say: 'pindutin ang ▼ (-1 %)' },
+          { expect: 'sv', value: +(rlo + span * 0.41 + 5 * ns).toFixed(3), tol: span * 0.002, say: 'SV after ▲▲' },
+          { do: 'popbtn', button: '▼', say: 'Press ▼ (-1 unit, ' + ns + ')' },
           { do: 'settle', what: 'sv' },
-          { expect: 'sv', value: +(rlo + span * 0.5).toFixed(3), tol: span * 0.002, say: 'SV pagkatapos ng ▼' },
-          { do: 'popbtn', button: '▼▼', say: 'pindutin ang ▼▼ (-10 %)' },
+          { expect: 'sv', value: +(rlo + span * 0.41 + 4 * ns).toFixed(3), tol: span * 0.002, say: 'SV after ▼' },
+          { do: 'popbtn', button: '▼▼', say: 'Press ▼▼ (-5 units)' },
           { do: 'settle', what: 'sv' },
-          { expect: 'sv', value: +(rlo + span * 0.4).toFixed(3), tol: span * 0.002, say: 'SV pagkatapos ng ▼▼' },
+          { expect: 'sv', value: +(rlo + span * 0.41 - ns).toFixed(3), tol: span * 0.002, say: 'SV after ▼▼' },
           { do: 'popclose' },
-          { do: 'press', button: '−', say: 'pindutin ang −' },
+          { do: 'press', button: '−', say: 'Press −' },
           { do: 'settle', what: 'sv' },
           {
             expect: 'sv',
             value: +(rlo + span * 0.39).toFixed(3),
             tol: span * 0.002,
-            say: 'SV pagkatapos ng − (40 % → 39 %)'
+            say: 'SV after − (40 % → 39 %)'
           }
         ])
       });
       sc.push({
         id: 'G4',
         loop: tag,
-        title: tag + ': AUTO — MV field naka-disable; AUTO -> MAN na walang talon ng MV (bumpless)',
+        title: tag + ': AUTO — MV field disabled; AUTO -> MAN without MV bump (bumpless)',
         drawing:
-          'Sa AUTO, ang SV ang ginagalaw ng operator, hindi ang MV. Ang PID at ang COS ay sumusunod sa output kaya walang talon.',
+          'In AUTO, the operator moves the SV, not the MV. PID and COS track the output, so there is no bump.',
         steps: pre.concat([
           { do: 'press', button: 'M', say: 'M' },
           { do: 'mv', value: 50, say: 'MV = 50' },
           { do: 'wait', s: 30 },
-          { do: 'press', button: 'A', say: 'pindutin ang A' },
-          { do: 'sv', value: +(rlo + span * 0.5).toFixed(3), say: 'SV = 50 % ng range' },
-          { expect: 'mode', value: 'AUTO', say: 'mode' },
-          { expect: 'field', name: 'MV', value: 'disabled', say: 'MV field sa AUTO' },
-          { do: 'popopen', name: 'MV', say: 'i-click ang kahon ng MV sa AUTO' },
+          { do: 'press', button: 'A', say: 'Press A' },
+          { do: 'sv', value: +(rlo + span * 0.5).toFixed(3), say: 'SV = 50 % of range' },
+          { expect: 'mode', value: 'AUTO', say: 'Mode' },
+          { expect: 'field', name: 'MV', value: 'disabled', say: 'MV field in AUTO' },
+          { do: 'popopen', name: 'MV', say: 'Click the MV box in AUTO' },
           {
             expect: 'pop',
             name: 'MV',
-            value: 'hindi bumukas',
-            say: 'control ng MV sa AUTO',
-            why: 'MV ay para sa MANUAL lang'
+            value: 'did not open',
+            say: 'MV control in AUTO',
+            why: 'MV is for MANUAL only'
           },
           { do: 'wait', s: wp },
           { do: 'mark', what: 'mv', as: 'mA' },
-          { do: 'press', button: 'M', say: 'pindutin ang M' },
+          { do: 'press', button: 'M', say: 'Press M' },
           { do: 'wait', s: 1 },
-          { expect: 'mode', value: 'MANUAL', say: 'mode' },
+          { expect: 'mode', value: 'MANUAL', say: 'Mode' },
           {
             expect: 'cmp',
             what: 'mv',
             than: 'mA',
-            value: 'pareho',
+            value: 'unchanged',
             tol: 0.3,
-            say: 'MV pagkatapos ng M kumpara sa MV bago ito (bumpless, eksakto)'
+            say: 'MV after M vs. MV before (bumpless, exact)'
           }
         ])
       });
@@ -894,36 +895,36 @@ window.UATS = (function () {
         sc.push({
           id: 'G5',
           loop: tag,
-          title: tag + ': REMOTE — AUTO talaga, hindi mamamanual, pati SV; A ay bumabalik sa operator',
-          drawing: 'REMOTE: ang SV switch ay A (SV galing sa logic). Ang operator ay hindi makapag-M, SV o MV.',
+          title: tag + ': REMOTE — actually AUTO, no MAN, no SV entry; A returns control to the operator',
+          drawing: 'REMOTE: SV switch is A (SV from logic). The operator cannot use M, SV or MV.',
           steps: pre.concat([
-            { do: 'press', button: 'R', say: 'pindutin ang R' },
+            { do: 'press', button: 'R', say: 'Press R' },
             { do: 'wait', s: 3 },
             { do: 'mark', what: 'sv', as: 'svR' },
             { expect: 'sv-switch', value: 'A (logic / REMOTE)', say: 'SV switch' },
-            { expect: 'mode', value: 'AUTO', say: 'mode' },
+            { expect: 'mode', value: 'AUTO', say: 'Mode' },
             { expect: 'disabled', button: 'M', value: 'disabled', say: 'M button' },
             { expect: 'field', name: 'SV', value: 'disabled', say: 'SV field' },
             { expect: 'field', name: 'MV', value: 'disabled', say: 'MV field' },
-            { do: 'popopen', name: 'SV', say: 'i-click ang kahon ng SV sa REMOTE' },
+            { do: 'popopen', name: 'SV', say: 'Click the SV box in REMOTE' },
             {
               expect: 'pop',
               name: 'SV',
-              value: 'hindi bumukas',
-              say: 'control ng SV sa REMOTE',
-              why: 'REMOTE: hindi mababago ng operator ang SV'
+              value: 'did not open',
+              say: 'SV control in REMOTE',
+              why: 'REMOTE: the operator cannot change the SV'
             },
-            { do: 'press', button: 'A', say: 'pindutin ang A' },
+            { do: 'press', button: 'A', say: 'Press A' },
             { do: 'wait', s: 1 },
             {
               expect: 'cmp',
               what: 'sv',
               than: 'svR',
-              value: 'pareho',
+              value: 'unchanged',
               tol: span * 0.002,
-              say: 'SV pagkatapos ng A kumpara sa SV sa REMOTE (bumpless)'
+              say: 'SV after A vs. SV in REMOTE (bumpless)'
             },
-            { expect: 'sv-switch', value: 'B (operator / LOCAL)', say: 'SV switch pagkatapos ng A' },
+            { expect: 'sv-switch', value: 'B (operator / LOCAL)', say: 'SV switch after A' },
             { expect: 'disabled', button: 'M', value: 'enabled', say: 'M button' },
             { expect: 'field', name: 'SV', value: 'enabled', say: 'SV field' }
           ])
@@ -934,9 +935,9 @@ window.UATS = (function () {
           loop: tag,
           title:
             tag +
-            ': trip (force manual) habang AUTO — MANUAL agad na walang talon ng MV; pagkawala ng signal ay HINDI automatic na AUTO',
+            ': trip (force manual) in AUTO — immediate MANUAL without MV bump; NO automatic return to AUTO when the signal clears',
           drawing:
-            'Ang signal na pumipili ng B leg ng A/M switch (force manual) ay may prayoridad. Ang operator ang pipili ng AUTO pagkatapos.',
+            'The signal that selects the B leg of the A/M switch (force manual) has priority. The operator selects AUTO afterwards.',
           steps: pre.concat([
             { do: 'press', button: 'M', say: 'M' },
             { do: 'mv', value: 50, say: 'MV = 50' },
@@ -944,36 +945,36 @@ window.UATS = (function () {
             { do: 'press', button: 'A', say: 'A' },
             { do: 'sv', value: +(rlo + span * 0.5).toFixed(3), say: 'SV' },
             { do: 'wait', s: Math.min(wp, 300) },
-            { expect: 'mode', value: 'AUTO', say: 'mode bago ang trip' },
+            { expect: 'mode', value: 'AUTO', say: 'Mode before trip' },
             { do: 'mark', what: 'mv', as: 'mT' },
             {
               do: 'set',
               net: trig[0],
               value: trig[1],
-              say: 'itakda ang input na nagpapa-force: ' + (labTxt(S, trig[0]) || 'n' + trig[0]) + ' = ' + trig[1]
+              say: 'Set the forcing input: ' + (labTxt(S, trig[0]) || 'n' + trig[0]) + ' = ' + trig[1]
             },
             { do: 'waitforce', max: 40 },
             { do: 'skipunless' },
-            { expect: 'mode', value: 'MANUAL', say: 'mode pagkatapos ng trip' },
+            { expect: 'mode', value: 'MANUAL', say: 'Mode after trip' },
             {
               expect: 'bumpless',
               than: 'mT',
-              value: 'pareho',
+              value: 'unchanged',
               tol: 0.3,
-              say: 'MV pagkatapos ng trip kumpara sa dati (bumpless, eksakto; maliban kung may interlock na pumuputol sa output sa drawing)'
+              say: 'MV after trip vs. before (bumpless, exact; unless a drawing interlock cuts the output)'
             },
             { expect: 'disabled', button: 'A', value: 'disabled', say: 'A button' },
-            { do: 'set', net: trig[0], value: trig[1] ? 0 : 1, say: 'alisin ang trip' },
+            { do: 'set', net: trig[0], value: trig[1] ? 0 : 1, say: 'Clear the trip' },
             { do: 'watch', s: 15 },
             {
               expect: 'mode-after-clear',
               value: 'MANUAL',
-              say: 'mode pagkatapos mawala ang trip',
-              why: 'hindi automatic, maliban kung ang drawing mismo ay may 1:A (AUTO) signal'
+              say: 'Mode after trip clears',
+              why: 'not automatic, unless the drawing itself has a 1:A (AUTO) signal'
             },
             { expect: 'disabled', button: 'A', value: 'enabled', say: 'A button' },
-            { do: 'press', button: 'A', say: 'pindutin ang A' },
-            { expect: 'mode', value: 'AUTO', say: 'mode pagkatapos pindutin ang A' }
+            { do: 'press', button: 'A', say: 'Press A' },
+            { expect: 'mode', value: 'AUTO', say: 'Mode after pressing A' }
           ])
         });
       return {
