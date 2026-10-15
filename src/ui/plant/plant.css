@@ -55,3 +55,8 @@
 #libws .libempty{padding:30px;color:#a9b7c4;max-width:640px}#libws .libempty b{display:block;font-size:15px;margin-bottom:6px;color:#e6edf3}
 #gsbar .cat .libbtn{min-width:64px;font-weight:600}
 @media (max-width:820px){#libws .libhd{display:none}#libws .libr{grid-template-columns:70px 1fr 48px;grid-template-areas:"ad tg b" "ds ds ds" "rx ty st"}#libws .libr .ad{grid-area:ad}#libws .libr .tg{grid-area:tg}#libws .libr .ds{grid-area:ds}#libws .libr .rx{grid-area:rx}#libws .libr .ty{grid-area:ty}#libws .libr .st{grid-area:st;text-align:right}#libws .libr .b{grid-area:b}}
+#libws .libr.hasw{cursor:pointer}
+#libws .libr.hasw .ds::before{content:'▸ ';color:#38a8f0}
+#libws .libw{margin:0 10px 6px 152px;padding:6px 10px;border-left:2px solid #38a8f0;background:#0b1219;font:11.5px var(--mf,monospace);color:#c3cfda}
+#libws .libw div{display:flex;gap:10px;padding:1px 0}#libws .libw b{width:96px;flex:none;color:#6f8191;font-weight:600}
+@media (max-width:820px){#libws .libw{margin-left:10px}}
