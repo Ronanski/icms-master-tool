@@ -33927,16 +33927,19 @@ window.UATS=(function(){
    const dg=S.ext.filter(n=>S.nets[n].dig),P=c0.b.p,rlo=P.rlo!=null?P.rlo:0,rhi=P.rhi!=null?P.rhi:100,span=rhi-rlo;
    let seed=777;const rnd=()=>{seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff};
    const bases=[[],dg.map(n=>[n,1]),dg.map((n,k)=>[n,k%2]),dg.map((n,k)=>[n,(k+1)%2])];for(let j=0;j<10;j++)bases.push(dg.map(n=>[n,rnd()<.3?1:0]));
-   const setup=async(sets)=>{AN.reset();AN.go(idx);for(const [n,v] of sets){if(S.xlk&&S.xlk[n]||!S.ext.includes(n))S.rt.force[n]=v;else S.rt.ext[n]=v}try{AN.settle()}catch(e){}await stepSim(sh,8);const c=AN.hmiCtrls(S).find(c=>c.tag===tag),st=S.rt.st[c.amt.id];return{st,c}};
-   const score=async(b)=>{const {st,c}=await setup(b);const cut=(c.dn||[]).some(d=>{const t=S.rt.st[d.id];return t&&t.pk==='B'});return (st.fman?1:0)+(cut?1:0)};
-   let base=null,best=null,bs0=9;for(const b of bases){const sc0=await score(b);if(sc0===0){base=b;break}if(sc0<bs0){bs0=sc0;best=b}}
-   /* hill-climb: baligtarin ang isang input na nagpapababa ng force / putol, ulitin */
-   if(!base&&best){let cur=best.map(x=>x.slice()),cs=bs0;for(let it=0;it<8&&cs>0;it++){let imp=false;for(const n of dg){const nb=cur.filter(x=>x[0]!==n).concat([[n,((cur.find(x=>x[0]===n)||[n,0])[1])?0:1]]);const sc1=await score(nb);if(sc1<cs){cur=nb;cs=sc1;imp=true;if(cs===0)break}}if(!imp)break}if(cs===0)base=cur}
+   /* mga analog na input mula sa ibang sheet / field (flow, pressure ...) ay nasa GITNA ng range ("boiler in service"), hindi 0: ang 0 ay nagti-trip ng mga low-flow interlock; hindi kasama ang PV, SV at MV ng mismong controller */
+   const an=S.ext.filter(n=>!S.nets[n].dig&&n!==c0.q.pv&&n!==c0.q.sv&&n!==c0.manNet&&!(S.lab[n]&&S.lab[n].t==='COS manual value')).map(n=>{const r=AN.extRange&&AN.extRange(S,n);return[n,r&&r.hi>r.lo?(r.lo+r.hi)/2:50]});
+   const setup=async(sets)=>{AN.reset();AN.go(idx);sets=an.concat(sets);for(const [n,v] of sets){if(S.xlk&&S.xlk[n]||!S.ext.includes(n))S.rt.force[n]=v;else S.rt.ext[n]=v}try{AN.settle()}catch(e){}await stepSim(sh,8);const c=AN.hmiCtrls(S).find(c=>c.tag===tag),st=S.rt.st[c.amt.id];return{st,c}};
+   /* score = force + putol (1000 bawat isa) + dami ng aktibong net sa itaas ng pumipiling signal: may "slope" ang paghahanap kahit OR ng maraming NOT (hal. lahat ng running feedback ay kailangang 1) */
+   const msig=c0.sigs.filter(z=>z.role==='MAN').map(z=>z.n),up=new Set();{const q=msig.slice();while(q.length&&up.size<500){const n=q.pop();if(up.has(n))continue;up.add(n);if(S.ext.includes(n))continue;for(const g of S.drv[n]||[])for(const i of g.i||[])if(i>=0)q.push(i)}}
+   const score=async(b)=>{const {st,c}=await setup(b);const cut=(c.dn||[]).some(d=>{const t=S.rt.st[d.id];return t&&t.pk==='B'});let cnt=0;for(const n of up)if(!S.ext.includes(n)&&S.rt.v[n]>.5)cnt++;return (st.fman?1000:0)+(cut?1000:0)+cnt};
+   let base=null,best=null,bs0=1e9;for(const b of bases){const sc0=await score(b);if(sc0<bs0){bs0=sc0;best=b}}
+   if(bs0>=1000&&best){let cur=best.map(x=>x.slice()),cs=bs0;for(let it=0;it<14&&cs>=1000;it++){let imp=false;for(const n of dg){const nb=cur.filter(x=>x[0]!==n).concat([[n,((cur.find(x=>x[0]===n)||[n,0])[1])?0:1]]);const sc1=await score(nb);if(sc1<cs){cur=nb;cs=sc1;imp=true;if(cs<1000)break}}if(!imp)break}if(cs<1000)base=cur}else if(best)base=best;
    if(!base)return{loop:tag,note:'walang malinis na estado (laging may force manual o putol na output sa 14 na panimulang kondisyon)'};
    let trig=null;for(const n of dg){const cur=(base.find(x=>x[0]===n)||[n,0])[1];const {st}=await setup(base.filter(x=>x[0]!==n).concat([[n,cur?0:1]]));if(st.fman){trig=[n,cur?0:1];break}}
-   const bs=base.map(([n,v])=>({do:'set',net:n,value:v})),hasR=!!c0.remote;
+   const bs=an.concat(base).map(([n,v])=>({do:'set',net:n,value:v})),hasR=!!c0.remote;
    const pr=(S.procs||[]).find(b=>b.id===c0.b.id),T=pr&&pr.proc&&pr.proc.T?pr.proc.T:150,wp=Math.max(120,Math.min(1500,Math.round(T*6)));
-   const sc=[];const pre=bs.concat([{do:'wait',s:10}]);
+   const sc=[];const pre=bs.concat([{do:'wait',s:10}]).concat(hasR?[{do:'press',button:'A',say:'A (lumabas muna sa REMOTE kung nasa REMOTE)'}]:[]);
    sc.push({id:'G1',loop:tag,title:tag+': MANUAL — MV field at mga button (0 / 50 / 100); proseso',drawing:'A/M switch B = manual MV ng operator; ang MV ay lumalabas sa output ng A/M switch.',steps:pre.concat([
      {do:'press',button:'M',say:'pindutin ang M'},{expect:'mode',value:'MANUAL',say:'mode'},{expect:'field',name:'MV',value:'enabled',say:'MV field sa MANUAL'},
      {do:'mv',value:75,say:'i-type ang MV = 75'},{do:'wait',s:2},{expect:'mv',value:75,tol:0.6,say:'MV'},
