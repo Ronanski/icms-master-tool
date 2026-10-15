@@ -70,12 +70,13 @@
     const { S, n } = o;
     return (S.cns[n] || []).filter(b => b.k !== 'LINK').map(b => b);
   }
-  /* downstream: every net reached inside the sheet, then what that means */
-  function effects(o) {
-    const { sh, S, n } = o,
-      seen = new Set([n]),
-      q = [n];
-    for (let k = 0; k < q.length && k < 4000; k++) {
+  /* downstream (2.1.0): every net the signal reaches, on this sheet and, through the links, on the other sheets; then what
+     that means for the operator: TRIP / MFT, INTERLOCK (a selector after a controller output that cuts it to the back-up
+     leg), selector switches that change leg, FORCE MANUAL / AUTO select of a controller, TO DITL. Read only. */
+  function reach(S, starts) {
+    const seen = new Set(starts),
+      q = [...starts];
+    for (let k = 0; k < q.length && k < 6000; k++) {
       for (const b of S.cns[q[k]] || [])
         for (const m of b.o || [])
           if (m != null && m >= 0 && !seen.has(m)) {
@@ -88,48 +89,87 @@
           q.push(d);
         }
     }
+    return seen;
+  }
+  function sheetFx(sh, S, seen, own) {
     const fx = [];
+    let cs = [];
     try {
-      for (const c of AN.hmiCtrls(S) || []) {
-        const z = (c.sigs || []).find(s => seen.has(s.n));
-        if (z) fx.push({ k: z.role === 'MAN' ? 'fm' : 'auto', t: (z.role === 'MAN' ? 'FORCE MANUAL of ' : 'AUTO select of ') + c.tag + ' (' + z.name + ')' });
-      }
+      cs = AN.hmiCtrls(S) || [];
     } catch (e) {}
+    const cutIds = new Set();
+    for (const c of cs) {
+      const z = (c.sigs || []).find(x => seen.has(x.n));
+      if (z) fx.push({ k: z.role === 'MAN' ? 'fm' : 'auto', t: (z.role === 'MAN' ? 'FORCE MANUAL of ' : 'AUTO select of ') + c.tag + ' (' + z.name + ')' });
+      for (const d of c.dn || [])
+        if (d.sel != null && seen.has(d.sel)) {
+          cutIds.add(d.id);
+          fx.push({ k: 'ilk', t: 'INTERLOCK: cuts the output of ' + c.tag + ' to the back-up leg (' + (AN.nm(S, d.sel) || 'select') + ')' });
+        }
+    }
+    const sws = S.blk.filter(b => (b.k === 'SW' || b.k === 'AMT') && !cutIds.has(b.id) && !cs.some(c => c.amt && c.amt.id === b.id) && ((b.cs && b.cs.some(x => seen.has(x.n))) || (b.sel != null && seen.has(b.sel))));
+    if (sws.length)
+      fx.push({
+        k: 'sw',
+        t: 'SWITCH: ' + sws.length + ' selector' + (sws.length > 1 ? 's change' : ' changes') + ' leg (' + sws.slice(0, 4).map(b => AN.nm(S, b.o[0]) || b.k + '#' + b.id).join(', ') + (sws.length > 4 ? ' …' : '') + ')'
+      });
     const tr = new Set();
     for (const m of seen) {
       const nm = (AN.nm(S, m) || '').trim();
-      if (m !== n && nm && TRIP.test(nm)) tr.add(nm);
+      if (!own.has(m) && nm && TRIP.test(nm)) tr.add(nm);
     }
     for (const t of S.tx || [])
       if (TRIP.test(t.t))
         for (const m of seen) {
           const nn = S.nets[m];
-          if (!nn || !nn.segs.length || m === n) continue;
-          let near = false;
-          for (const i of nn.segs) {
+          if (!nn || !nn.segs.length || own.has(m)) continue;
+          if (nn.segs.some(i => {
             const g = S.seg[i];
-            if (Math.min(Math.hypot(t.x - g.x1, t.y - g.y1), Math.hypot(t.x - g.x2, t.y - g.y2)) < 10) {
-              near = true;
-              break;
-            }
-          }
-          if (near) {
+            return Math.min(Math.hypot(t.x - g.x1, t.y - g.y1), Math.hypot(t.x - g.x2, t.y - g.y2)) < 10;
+          })) {
             tr.add(t.t.trim());
             break;
           }
         }
-    [...tr].slice(0, 6).forEach(t => fx.push({ k: 'trip', t: 'reaches: ' + t }));
+    [...tr].slice(0, 6).forEach(t => fx.push({ k: 'trip', t: 'TRIP / MFT: ' + t }));
     try {
       const ix = AN.dsIdx(sh);
       for (const [m, refs] of ix.to) if (seen.has(m)) fx.push({ k: 'ditl', t: 'TO DITL ' + refs.join(', ') + ' (' + AN.nm(S, m) + ')' });
     } catch (e) {}
-    try {
-      const os = new Set();
-      for (const x of AN.sheets)
-        for (const l of x.lk || []) if (l.from === sh && l.to !== sh && l.fromNets.some(m => seen.has(m))) os.add(l.to.name);
-      if (os.size) fx.push({ k: 'sheet', t: 'also reaches sheet: ' + [...os].join(', ') });
-    } catch (e) {}
     return fx;
+  }
+  function effects(o) {
+    const out = [],
+      done = new Set(),
+      q = [[o.sh, [o.n], true]];
+    for (let k = 0; k < q.length && done.size < 14; k++) {
+      const [sh, starts, first] = q[k];
+      if (done.has(sh)) continue;
+      done.add(sh);
+      let S;
+      try {
+        S = AN.ensure(sh);
+      } catch (e) {
+        continue;
+      }
+      const seen = reach(S, starts),
+        fx = sheetFx(sh, S, seen, new Set(starts));
+      fx.forEach(f => out.push(Object.assign(f, { sh: first ? '' : sh.name })));
+      try {
+        for (const x of AN.sheets)
+          for (const l of x.lk || [])
+            if (l.from === sh && l.to !== sh && !done.has(l.to) && l.fromNets.some(m => seen.has(m))) q.push([l.to, l.toNets, false]);
+      } catch (e) {}
+    }
+    const uq = new Set();
+    for (let i = out.length - 1; i >= 0; i--) {
+      const key = out[i].sh + '|' + out[i].t;
+      if (uq.has(key)) out.splice(i, 1);
+      else uq.add(key);
+    }
+    const other = [...done].filter(x => x !== o.sh).map(x => x.name);
+    if (other.length) out.push({ k: 'sheet', t: 'reaches the sheets: ' + other.join(', ') });
+    return out;
   }
   function ditlPlaces(q) {
     const out = [];
@@ -198,7 +238,7 @@
     if (o.k === 'DO') steps.reverse();
     const box = E('div', { cls: 'icw' });
     steps.forEach((st, i) => {
-      if (i) box.append(E('div', { cls: 'icwa', txt: o.k === 'DO' ? '▼ output' : '▼' }));
+      if (i) box.append(E('div', { cls: 'icwa', txt: '→' }));
       box.append(E('div', { cls: 'icwb' + (st[0] === 'ADDRESS' ? ' ad' : st[0] === 'FIELD' ? ' fd' : '') }, [E('small', { txt: st[0] }), E('b', { txt: st[1] }), st[2] ? E('span', { txt: st[2] }) : null]));
     });
     return box;
@@ -273,8 +313,9 @@
         ])
       );
     }
+    if (wr.length) card.classList.add('wide');
     for (const o of wr.slice(0, 3))
-      body.append(E('div', { cls: 'ics' }, [E('div', { cls: 'ict' }, [E('b', { txt: 'WIRING · marshalling panel → controller' })]), wireChart(o)]));
+      body.append(E('div', { cls: 'ics' }, [E('div', { cls: 'ict' }, [E('b', { txt: o.k === 'DO' ? 'WIRING · controller → field (output)' : 'WIRING · field → controller' })]), wireChart(o)]));
     for (const c of cp)
       body.append(
         E('div', { cls: 'ics' }, [
@@ -309,10 +350,16 @@
         ]),
         rd.length ? E('ul', { cls: 'icu' }, rd.slice(0, 8).map(b => E('li', { txt: bname(b) }))) : null,
         E('div', { cls: 'icl' }, [
-          E('span', { cls: 'k', txt: 'Trip?' }),
-          fx.some(f => f.k === 'trip' || f.k === 'fm') ? E('span', { cls: 'tg t-trip', txt: 'AFFECTS' }) : E('span', { cls: 'tg t-ok', txt: 'no trip / force manual on this sheet' })
+          E('span', { cls: 'k', txt: 'Effects' }),
+          fx.some(f => f.k === 'trip')
+            ? E('span', { cls: 'tg t-trip', txt: 'TRIP' })
+            : null,
+          fx.some(f => f.k === 'ilk') ? E('span', { cls: 'tg t-ilk', txt: 'INTERLOCK' }) : null,
+          fx.some(f => f.k === 'fm') ? E('span', { cls: 'tg t-fm', txt: 'FORCE MANUAL' }) : null,
+          fx.some(f => f.k === 'sw') ? E('span', { cls: 'tg t-sw', txt: 'SWITCH' }) : null,
+          fx.some(f => ['trip', 'ilk', 'fm', 'sw'].includes(f.k)) ? null : E('span', { cls: 'tg t-ok', txt: 'no trip, interlock or force manual (all sheets it reaches)' })
         ]),
-        fx.length ? E('ul', { cls: 'icu' }, fx.map(f => E('li', { cls: 'f-' + f.k, txt: f.t }))) : null
+        fx.length ? E('ul', { cls: 'icu' }, fx.map(f => E('li', { cls: 'f-' + f.k, txt: (f.sh ? f.sh + ': ' : '') + f.t }))) : null
       ]);
       body.append(sec);
     }
