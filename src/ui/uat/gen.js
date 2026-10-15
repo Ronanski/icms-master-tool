@@ -19,7 +19,7 @@ window.UATG=(function(){
   for(const b of S.blk){const o=b.o&&b.o[0];
    // switches (T / A-M)
    if((b.k==='SW'||b.k==='AMT')&&!b.q4&&!b.latch&&b.sel>=0&&b.a>=0&&b.b>=0&&o!=null&&free(S,o)&&o!==b.a&&o!==b.b&&!(b.cs&&b.cs.length>1)){
-    const cs=[];for(const sel of [0,1]){const pickB=b.p.selA?!sel:!!sel;cs.push({l:'select = '+sel+' -> output follows input '+(pickB?'B':'A'),steps:[st1({[b.a]:11,[b.b]:22,[b.sel]:sel},0)],rows:[R(o,'output (A = 11, B = 22)'+gtxt(b,pickB),leg(b,pickB,pickB?22:11),Math.max(.05,Math.abs(leg(b,pickB,pickB?22:11))*.002))],reset:false})}
+    const cs=[];for(const sel of [0,1]){const pickB=b.p.selA?!sel:!!sel;cs.push({l:'select = '+sel+' -> output follows input '+(pickB?'B':'A'),steps:(S.rt.st[b.id]&&S.rt.st[b.id].al)?[st1({[b.a]:11,[b.b]:22,[b.sel]:sel},0),st1({},0,{fm:{[b.id]:pickB?'B':'A'}})]:[st1({[b.a]:11,[b.b]:22,[b.sel]:sel},0)],/* an A/M station keeps the leg a select signal gave it: first the signals, then the operator picks the leg (AUTO / MAN) */rows:[R(o,'output (A = 11, B = 22)'+gtxt(b,pickB),leg(b,pickB,pickB?22:11),Math.max(.05,Math.abs(leg(b,pickB,pickB?22:11))*.002))],reset:false})}
     add('Switches (T and A/M)',item(b,b.k==='AMT'?'A/M switch':'T switch',cs))}
    // operator selectors (with COS conditions)
    if((b.k==='SW'||b.k==='AMT')&&!b.q4&&b.a>=0&&b.b>=0&&o!=null&&free(S,o)&&b.cs&&b.cs.length>1){
