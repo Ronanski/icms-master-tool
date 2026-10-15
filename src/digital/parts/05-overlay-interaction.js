@@ -502,10 +502,17 @@ function grpState(s) {
   });
   return m;
 }
+/* simulate mode: the DITL Simulate button, or the one world (ABC + DITL, src/world/world.js) while it runs */
+function simOn() {
+  return SIM || !!(window.WORLD && WORLD.live);
+}
 function simIn(s) {
-  const on = new Set(),
-    F = SIM ? mvForced(s) : new Map(),
-    GR = SIM ? grpState(s) : new Map();
+  const sim = simOn(),
+    on = new Set(),
+    F = sim ? mvForced(s) : new Map(),
+    GR = sim ? grpState(s) : new Map();
+  /* one world: input rows driven by another DITL sheet (FROM column, e.g. 28A-77) or by the ABC (TO DITL) */
+  if (sim && s._win) s._win.forEach(i => on.add(i));
   for (const k in s.sig)
     if (s.sig[k] && k.split(':')[1] === 'S') {
       const i = +k.split(':')[0];
@@ -517,7 +524,7 @@ function simIn(s) {
   F.forEach((v, i) => {
     if (v) on.add(i);
   });
-  if (SIM && s.nl && s.nl.mv && s.nl.mv.length) {
+  if (sim && s.nl && s.nl.mv && s.nl.mv.length) {
     const rt = mvRT(s);
     s.nl.mv.forEach((b, j) => {
       if (rt[j].tq)

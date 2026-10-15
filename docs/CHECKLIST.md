@@ -28,7 +28,12 @@ Walang kategorya, isang listahan lang. `[ ]` = hindi pa; `[x]` = tapos at na-che
 22. [~] **Linisin ang code (TAPOS ang bahagi: ayos ng format at paghati ng `compile-step.js`; natitira ang `plant-window.js` at `links-canvas.js`; ang DITL ay TAPOS na rin, format at paghati lang, utos ng user 2026-10-15):** hatiin ang malalaking file (`compile-step.js` 116 KB, `ditl-app.js` 125 KB, `plant-window.js` 62 KB) at ayusin ang napakahabang linya. Walang magbabago sa gawi; ang html ay dapat pareho ang gawi. (4–6 oras; ang DITL ay hindi gagalawin nang walang utos)
 23. [F] **Rebisyon ng UI / UX para sa tablet:** mas malaking button, iisang ibabang bar, buong-screen na faceplate at trend page. Dagdag, hindi overhaul. (4–6 oras)
 24. [F] **Overhaul ng app:** HINDI inirerekomenda ngayon; ang engine at mga test ay matatag na. Pag-isipan lang kapag natapos na ang #13 at #14.
-25. [ ] **IISANG MUNDO ng ABC at DITL (user, 2026-10-15):** global address registry (station + address = isang halaga) gamit ang memory list, I/O list at "FROM DITL xx-yy" ng diagram; ang DITL engine ay tumatakbo kasabay ng ABC; panel ng mundo (bawat address: halaga, pinagmulan, lahat ng gumagamit). 103 na address sa ABC ang naghihintay dito. (malaki: ilang session)
+25. [~] **IISANG MUNDO ng ABC at DITL (user, 2026-10-15):** BAHAGI 1 TAPOS (1.22.0-beta.2, `src/world/world.js`):
+    - Ang DITL ay tumatakbo kasabay ng ABC.
+    - Ang mga reference ng drawing ay nakakabit: 110 FROM DITL, 86 TO DITL, 874 DITL → DITL.
+    - Kulang pa: panel ng address, ang station + address ng memory list, at user values ng DITL sa sheet na hindi pa nabubuksan.
+
+    Orihinal na plano: global address registry (station + address = isang halaga) gamit ang memory list, I/O list at "FROM DITL xx-yy" ng diagram; ang DITL engine ay tumatakbo kasabay ng ABC; panel ng mundo (bawat address: halaga, pinagmulan, lahat ng gumagamit). 103 na address sa ABC ang naghihintay dito. (malaki: ilang session)
 
 ## Mga sagot sa tanong ng user
 

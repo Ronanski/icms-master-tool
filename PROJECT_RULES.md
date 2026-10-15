@@ -41,7 +41,7 @@ Trace the complete path from input through blocks to output, including cross-pag
 ## 4. Change-control rules
 
 - Audit first; do not change logic just to make it match an unverified Golden Reference.
-- Do not change DITL logic, its engine, or page behavior during ABC-only work unless the user explicitly approves it.
+- DITL (user, 2026-10-15: "nirerevoke ko na ang DITL rule ko"): the DITL logic, its engine and its page MAY be changed when it improves the simulation of the whole app (tracing per click, forcing, plant simulation, one world ABC + DITL). Still: follow the drawing, keep what works, prove the change with a test, and report it like any engine change.
 - UI-only changes are allowed only when they do not affect logic, simulation, or existing page behavior.
 - Explain the proposed functional change and its impact before asking for approval.
 - Stable release, merge to `main`, workflow run and release packaging only when the user says **GO STABLE** in that message. Beta needs no GO: see 5e.

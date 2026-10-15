@@ -648,13 +648,35 @@ document.head.appendChild(
           o.textContent = t;
           cs.append(o);
         });
-        cs.value = beta ? 'beta' : 'stable';
+        /* apk / exe: the running channel is the copy that was opened (src/boot/update-question.js), not the web address */
+        const runBeta = inApp ? /-beta\.\d+/.test(document.title) : beta;
+        cs.value = runBeta ? 'beta' : 'stable';
         cs.onchange = () => {
+          const ch = cs.value;
           try {
-            localStorage.setItem('logic.channel', cs.value);
-            if (inApp) localStorage.setItem('ls-site', '1');
+            localStorage.setItem('logic.channel', ch);
           } catch (e) {}
-          location.href = base + (cs.value === 'beta' ? 'beta/' : '');
+          if (!inApp) {
+            location.href = base + (ch === 'beta' ? 'beta/' : '');
+            return;
+          }
+          /* 1.22.0: inside the app the channel is DOWNLOADED and runs from the app (no Chrome, works without internet afterwards) */
+          const st = (window.lsStore && window.lsStore()) || {};
+          if (ch === 'stable' || st[ch]) {
+            location.reload();
+            return;
+          }
+          if (!window.lsDownload) return;
+          window
+            .lsDownload(ch)
+            .then(() => location.reload())
+            .catch(e => {
+              msg('Hindi ma-download ang Beta: ' + ((e && e.message) || 'walang internet') + '. Kailangan ng internet isang beses.');
+              try {
+                localStorage.setItem('logic.channel', runBeta ? 'beta' : 'stable');
+              } catch (x) {}
+              cs.value = runBeta ? 'beta' : 'stable';
+            });
         };
         gs.append(cs);
       }

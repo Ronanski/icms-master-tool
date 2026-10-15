@@ -9,6 +9,102 @@
     beta = !B && /\/beta\/(index\.html)?$/.test(location.pathname),
     dir = B ? '' : location.pathname.replace(/index\.html$/, ''),
     base = B ? SITE : dir.replace(/beta\/$/, '');
+  /* IN-APP UPDATE (1.22.0, apk / exe): the update and the Beta are DOWNLOADED into the app (IndexedDB) and run from there,
+     also without internet. Before: the app went to the web page, so Android opened Chrome and it needed internet. */
+  function ls(k, v) {
+    try {
+      if (v === undefined) return localStorage.getItem(k);
+      if (v === null) localStorage.removeItem(k);
+      else localStorage.setItem(k, v);
+    } catch (e) {}
+    return null;
+  }
+  function idb(mode, key, val) {
+    return new Promise(function (ok, no) {
+      var r = indexedDB.open('logic-sim-app', 1);
+      r.onupgradeneeded = function () {
+        r.result.createObjectStore('pages');
+      };
+      r.onerror = function () {
+        no(r.error);
+      };
+      r.onsuccess = function () {
+        var tx = r.result.transaction('pages', mode),
+          st = tx.objectStore('pages'),
+          q = mode === 'readonly' ? st.get(key) : st.put(val, key);
+        q.onsuccess = function () {
+          ok(q.result);
+        };
+        q.onerror = function () {
+          no(q.error);
+        };
+      };
+    });
+  }
+  var CH = B ? ls('logic.channel') || 'stable' : null,
+    STORE = {};
+  if (B) {
+    ls('ls-site', null); /* old flag of v1.20 ~ v1.21: it sent the app to the web page (Chrome) */
+    try {
+      STORE = JSON.parse(ls('ls-store') || '{}') || {};
+    } catch (e) {}
+    var sw0 = '';
+    try {
+      sw0 = sessionStorage.getItem('ls-swapped') || '';
+      sessionStorage.removeItem('ls-swapped');
+    } catch (e) {}
+    if (sw0) beta = sw0 === 'beta';
+    else {
+      beta = CH === 'beta'; /* Beta chosen but not downloaded yet: the update check offers the Beta */
+      var want = STORE[CH];
+      /* Beta: the downloaded Beta; Stable: the downloaded Stable only when it is newer than the copy inside the app */
+      if (want && (CH === 'beta' || cmp(want, T) > 0)) {
+        /* the rest of this page (the copy inside the app) becomes hidden text, so its scripts do not start */
+        document.write('<plaintext style="display:none">');
+        idb('readonly', CH)
+          .then(function (h) {
+            if (!h || h.indexOf('<title>Logic Sim ' + want) < 0) throw new Error('no copy');
+            try {
+              sessionStorage.setItem('ls-swapped', CH);
+            } catch (e) {}
+            document.open();
+            document.write(h);
+            document.close();
+          })
+          .catch(function () {
+            delete STORE[CH];
+            ls('ls-store', JSON.stringify(STORE));
+            try {
+              sessionStorage.setItem('ls-swapped', 'stable');
+            } catch (e) {}
+            location.reload();
+          });
+        return;
+      }
+    }
+  }
+  /* download the page of a channel into the app; then it runs from the app (no internet needed after this) */
+  function download(ch) {
+    say('Dina-download ang ' + (ch === 'beta' ? 'Beta' : 'Stable') + ' (mga 4 MB)...');
+    return fetch(SITE + (ch === 'beta' ? 'beta/' : '') + '?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      })
+      .then(function (h) {
+        var m = h.match(/<title>Logic Sim (v\d+(\.\d+)+(-beta\.\d+)?)<\/title>/);
+        if (!m || h.length < 500000) throw new Error('hindi buo ang na-download');
+        return idb('readwrite', ch, h).then(function () {
+          STORE[ch] = m[1];
+          ls('ls-store', JSON.stringify(STORE));
+          return m[1];
+        });
+      });
+  }
+  window.lsDownload = download;
+  window.lsStore = function () {
+    return STORE;
+  };
   /* SemVer: 1.21.0-beta.2 > 1.21.0-beta.1; 1.21.0 (Stable) > 1.21.0-beta.9; ang numero ng bersyon ay nag-a-advance lang kapag may Stable (PROJECT_RULES 5f) */
   function pv(a) {
     var m = a.replace('v', '').split('-beta.');
@@ -85,10 +181,17 @@
   }
   function go() {
     if (B) {
-      try {
-        localStorage.setItem('ls-site', '1');
-      } catch (e) {}
-      location.href = SITE;
+      var ch = beta ? 'beta' : 'stable';
+      download(ch)
+        .then(function (v) {
+          say('Na-download: ' + v + '. Binubuksan...');
+          setTimeout(function () {
+            location.reload();
+          }, 600);
+        })
+        .catch(function (e) {
+          say('Hindi na-download (' + ((e && e.message) || 'walang koneksyon') + '). Subukan ulit kapag may internet.');
+        });
       return;
     }
     var sw = navigator.serviceWorker;
@@ -123,16 +226,6 @@
   function fin(v, manual) {
     {
       {
-        if (B) {
-          var fl = '';
-          try {
-            fl = localStorage.getItem('ls-site');
-          } catch (e) {}
-          if (fl === '1') {
-            location.replace(SITE);
-            return;
-          }
-        }
         if (v && T && cmp(v, T) > 0) {
           var sk = '';
           try {
