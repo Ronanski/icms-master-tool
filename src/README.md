@@ -12,7 +12,7 @@ The simulator is built from these files into ONE html file (`logic-sim-vX.Y.Z.ht
 | `styles/` | `app.css`, ang itsura ng page |
 | `digital/` | ang DITL (digital logic) page, hindi ginagalaw ng ABC work |
 | `analog/reader/` | **READER** (DOM-free): binabasa ang drawing (DXF), gumagawa ng blocks, nets, pins, parameters |
-| `analog/engine/` | **ENGINE** (DOM-free, tumatakbo mag-isa): compile at step (`compile-step.js`), plant model (`plant.js`), sheets / F(X) / Reset (`sheets.js`), links ng sheets at stepping (`links.js`) |
+| `analog/engine/` | **ENGINE** (DOM-free, tumatakbo mag-isa): compile at step (`compile-step.js`; ang data ng faceplate ay `face-defaults.js`, ang range / F(X) ay `ranges-fx.js`), plant model (`plant.js`), sheets / F(X) / Reset (`sheets.js`), links ng sheets at stepping (`links.js`) |
 | `analog/data/` | loader ng built-in data |
 | `analog/ui/` | **UI**: diagram canvas at paint, panels, HMI, search, trace, plant window, tables |
 | `analog/boot.js` | simula ng analog app at listahan ng `AN.*` na magagamit ng ibang script |

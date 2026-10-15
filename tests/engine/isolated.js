@@ -10,7 +10,7 @@ const core=coreFiles.map(f=>fs.readFileSync(path.join(root,'src/analog',f),'utf8
 const STEPS=60,DT=.5;
 (async()=>{
  /* the page builds the sheet models in an order of its own (search index, links); the model of a sheet depends a little on that order, so the probe records it and the isolated engine does the same */
- const {AN:full}=await loadEngine({patch:c=>c.replace('function ensure(sh){if(sh.S)return sh.S;','function ensure(sh){if(sh.S)return sh.S;(AN.__ord=AN.__ord||[]).push(sh.name);')});
+ const {AN:full}=await loadEngine({patch:c=>c.replace(/function ensure\(sh\)\s*\{\s*if\s*\(sh\.S\)\s*return sh\.S;/,m=>m+'(AN.__ord=AN.__ord||[]).push(sh.name);')});
  const order=full.__ord||[];
  const sheets=full.sheets.map(s=>({name:s.name,json:JSON.stringify(s.R)}));/* the drawings as the reader gave them, before any use */
  /* the isolated context: only the language itself; AN is the one object the engine may use */
