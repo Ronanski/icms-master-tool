@@ -46,3 +46,12 @@
 - **Work Done:** Sa lapad ≤ 700 px: isang hanay ng toolbar (☰, Run, Fit, Panel, sheet ◀ ▶); ang ☰ ay naglalabas ng lahat ng iba; ang Panel ay bottom sheet; mas malaking tap target (40 px); ang UAT button ay nasa gilid at lumalabas lang kapag bukas ang ☰. CSS at shell lang; hindi ginalaw ang engine at logic. Ang tablet at desktop ay hindi nagbago.
 - **As Left:** Nasubok sa emulation (390×780, touch): walang horizontal scroll, walang page error, ang faceplate ay mababasa at gumagana ang R/A/M. Hindi pa nasubok sa totoong cp; ang diagram na pahalang ay maliit pa rin sa portrait (gumamit ng pinch-zoom).
 - **Status:** Beta pushed.
+
+## 1.21.0 — STABLE (GO STABLE ng user, 2026-10-15)
+
+- **Problem:** Kailangang mailabas ang lahat ng ayos mula v1.20.59: bagong faceplate, mas tamang engine, UAT at tester, malinis na code, update check, at phone layout.
+- **As Found:** Stable v1.20.59.
+- **Work Done:** Lahat ng 1.21.0-beta.1 ~ beta.10 (tingnan sa itaas). Ang numero ng version ay 1.21.0 (SemVer, PROJECT_RULES 5f). Ang apk / exe ay gumagamit ng multi-file na app folder (index.html + js/*.js); ang Pages at ang release html ay iisang html.
+- **As Left:** Stable 1.21.0. Mga nasuri: `npm run check`, regress faceplate, scenario ABC-007 (170 tama, 1 mali na itinama ang inaasahan: tracking ng A/M station pagkatapos ng BU-CMD, Needs Verification), generic tester (62 sa 68 controller malinis), structure (51 sheet), ACT:R / ACT:N (68 PID tugma sa drawing), phone layout sa emulation.
+- **Hindi pa nasuri / mga kilalang limitasyon:** apk / exe sa totoong device; phone layout sa totoong cp; 5 controller (PICFG108, PICAS1005, TICHR1002, AICFG112, HS-COAL) na kailangan ng hand-written na scenario dahil kondisyon ng proseso ang pumipigil; FICFW1007 (cascade slave); direksyon ng output ayon sa ACT:R / N bilang test; simulation cone (`cone.js`) na hindi kumpleto; ABC-007 FAULT hold, alarm M.3130 / M.3131 at SIG.AB; ang karamihan ng 53 sheet ay wala pang sariling scenario.
+- **Status:** Stable 1.21.0.
