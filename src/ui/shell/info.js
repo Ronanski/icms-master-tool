@@ -146,6 +146,68 @@
     } catch (e) {}
     return out.slice(0, 12);
   }
+  /* 2.1.0: the I/O list / memory list record, the marshalling wiring and the flow compensation of the address or tag */
+  let ADS = null,
+    TIX = null,
+    WI = null;
+  const ades = () => {
+    if (!ADS && window.AN && AN.ades)
+      AN.ades().then(a => {
+        ADS = a || {};
+        TIX = {};
+        for (const st in ADS) for (const k in ADS[st]) {
+          const r = ADS[st][k];
+          if (r.tag) (TIX[r.tag.toUpperCase()] = TIX[r.tag.toUpperCase()] || []).push({ st, a: k, r });
+        }
+      });
+    return ADS;
+  };
+  const wix = () => {
+    if (WI || !window.WIRING) return WI;
+    WI = { a: {}, t: {} };
+    const F = window.WIRING_F;
+    for (const w of window.WIRING) {
+      const o = {};
+      F.forEach((k, i) => (o[k] = w[i]));
+      WI.a[o.s + '|' + o.a] = o;
+      if (o.tag) (WI.t[o.tag.toUpperCase()] = WI.t[o.tag.toUpperCase()] || []).push(o);
+    }
+    return WI;
+  };
+  function ioRecs(q, stn) {
+    const A = ades();
+    if (!A) return [];
+    const out = [];
+    for (const st of stn ? [String(stn)] : Object.keys(A)) if (A[st] && A[st][q]) out.push({ st, a: q, r: A[st][q] });
+    if (!out.length && TIX && TIX[q]) for (const x of TIX[q]) if (!stn || x.st === String(stn)) out.push(x);
+    return out;
+  }
+  const sl = x => String(x || '').replace(/,/g, ' / ');
+  /* the signal path as a small flow chart, from the field to the address (DO: from the address to the field) */
+  function wireChart(o) {
+    const steps = [
+      ['FIELD', o.tag || '—', o.d || ''],
+      ['JB → MPL field TB', o.mpl + ' · ' + (o.jb || '—'), 'TB ' + sl(o.tb)],
+      ['CROSS WIRING', o.xcab || '—', (o.xspec ? o.xspec + ' · ' : '') + 'core ' + sl(o.xcore)],
+      ['MPL system TB', o.mpl2 + ' · ' + o.tbs, 'TB ' + sl(o.tbn)],
+      ['SYSTEM CABLE', o.cab, (o.spec ? o.spec + ' · ' : '') + 'core ' + sl(o.core)],
+      ['FCS TERMINAL BOARD', o.ext + ' · ' + o.exttb, 'TB ' + sl(o.fcstb) + ' · cab ' + o.fcab],
+      ['I/O MODULE', o.board, 'node ' + o.node + ' · slot ' + o.slot + ' · ' + o.ch],
+      ['ADDRESS', o.a + ' · STN10' + o.s, o.sig || o.k]
+    ];
+    if (o.k === 'DO') steps.reverse();
+    const box = E('div', { cls: 'icw' });
+    steps.forEach((st, i) => {
+      if (i) box.append(E('div', { cls: 'icwa', txt: o.k === 'DO' ? '▼ output' : '▼' }));
+      box.append(E('div', { cls: 'icwb' + (st[0] === 'ADDRESS' ? ' ad' : st[0] === 'FIELD' ? ' fd' : '') }, [E('small', { txt: st[0] }), E('b', { txt: st[1] }), st[2] ? E('span', { txt: st[2] }) : null]));
+    });
+    return box;
+  }
+  function compOf(tag) {
+    const C = window.CALC_COMP || [],
+      t = String(tag || '').toUpperCase();
+    return C.filter(c => [c.flow, c.ptag, c.ttag, c.ttag2].some(x => x && String(x).toUpperCase() === t));
+  }
   let card = null;
   function close() {
     if (card) card.remove();
@@ -165,12 +227,21 @@
       } catch (e) {}
     }, 300);
   }
-  function open(raw) {
-    const q = norm(raw);
+  function open(raw, opt) {
+    const q = norm(raw),
+      stn = opt && opt.stn;
     if (!looks(q) || !window.AN || !AN.sheets || !AN.sheets.length) return false;
     const oc = occurrences(q),
-      dp = ditlPlaces(q);
-    if (!oc.length && !dp.length) return false;
+      dp = ditlPlaces(q),
+      io = ioRecs(q, stn),
+      W = wix(),
+      wr = [];
+    if (W) {
+      for (const x of io) if (W.a[x.st + '|' + x.a]) wr.push(W.a[x.st + '|' + x.a]);
+      if (!wr.length && W.t[q]) for (const o of W.t[q]) if (!stn || o.s === String(stn)) wr.push(o);
+    }
+    const cp = compOf(io.length && io[0].r.tag ? io[0].r.tag : q);
+    if (!oc.length && !dp.length && !io.length && !wr.length && !cp.length) return false;
     close();
     const tag = oc.length ? oc[0].nm : raw.trim();
     let desc = '';
@@ -182,12 +253,38 @@
     card = E('div', { id: 'infocard' }, [
       E('div', { cls: 'ich' }, [
         E('b', { txt: tag }),
-        E('span', { cls: 'icn', txt: oc.length + ' in ABC · ' + dp.length + ' in DITL' }),
+        E('span', { cls: 'icn', txt: oc.length + ' in ABC · ' + dp.length + ' in DITL' + (wr.length ? ' · wiring' : '') }),
         E('button', { cls: 'b', txt: '✕', title: 'Close', on: close })
       ]),
       desc ? E('div', { cls: 'icd', txt: desc }) : null,
       body
     ]);
+    for (const x of io.slice(0, 5)) {
+      const r = x.r,
+        rg = r.lo != null || r.hi != null ? r.lo + ' ~ ' + r.hi + (r.u ? ' ' + r.u : '') : r.u || '';
+      body.append(
+        E('div', { cls: 'ics' }, [
+          E('div', { cls: 'ict' }, [E('b', { txt: (r.k === 'io' ? 'I/O LIST' : 'MEMORY LIST') + ' · STN10' + x.st }), E('span', { cls: 'icv', txt: x.a })]),
+          r.tag ? E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Tag' }), r.tag]) : null,
+          r.d ? E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Description' }), r.d]) : null,
+          rg ? E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Range' }), rg]) : null,
+          r.t || r.ab ? E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Type' }), [r.t, r.ab ? 'SIG.AB ' + r.ab : ''].filter(Boolean).join(' · ')]) : null,
+          r.r ? E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Remark' }), r.r]) : null
+        ])
+      );
+    }
+    for (const o of wr.slice(0, 3))
+      body.append(E('div', { cls: 'ics' }, [E('div', { cls: 'ict' }, [E('b', { txt: 'WIRING · marshalling panel → controller' })]), wireChart(o)]));
+    for (const c of cp)
+      body.append(
+        E('div', { cls: 'ics' }, [
+          E('div', { cls: 'ict' }, [E('b', { txt: 'FLOW COMPENSATION · ' + c.stn }), E('span', { cls: 'icv', txt: c.flow })]),
+          E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Flow' }), c.flow + ' · ' + c.desc]),
+          c.ptag ? E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Pressure' }), c.ptag + ' (FS ' + c.pfs + ', BS ' + c.pbs + ', design ' + c.pop + ') · ap ' + c.ap + ' · bp ' + c.bp]) : null,
+          E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Temperature' }), [c.ttag, c.ttag2].filter(Boolean).join(' / ') + ' (FS ' + c.tfs + ', BS ' + c.tbs + ', design ' + c.top + ' °C, abs ' + c.abs + ') · at ' + (+c.at).toFixed(4) + ' · bt ' + (+c.bt).toFixed(4)]),
+          E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Atmosphere' }), c.atm + ' kg/cm2'])
+        ])
+      );
     for (const o of oc.slice(0, 8)) {
       const src = source(o),
         rd = readers(o),
@@ -248,6 +345,7 @@
     return true;
   }
   window.lsInfo = open;
+  setTimeout(ades, 3000);
   let n = 0;
   const iv = setInterval(() => {
     const sb = $('ansb'),
