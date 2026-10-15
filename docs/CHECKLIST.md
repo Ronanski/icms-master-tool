@@ -39,3 +39,8 @@ Walang kategorya, isang listahan lang. `[ ]` = hindi pa; `[x]` = tapos at na-che
 - Ang lahat ng `src/analog`, `src/ui`, `src/boot` na js ay naka-format na ng Prettier (`.prettierrc`; `npm run format`). Napatunayan na walang nagbago sa gawi: ang minified na bundle ng analog ay pareho (457187 byte bago at pagkatapos ng paghati; ang tanging pagkakaiba sa pag-format ay ang pagtanggal ng sobrang panaklong sa isang arrow function sa `hmi-view.js`). Ang DITL (`src/digital`) ay hindi ginalaw.
 - Ang `compile-step.js` (6624 linya) ay hinati: `face-defaults.js` (4078 linya na data ng faceplate), `compile-step.js` (2319), `ranges-fx.js` (230).
 - Mga test na umaasa sa eksaktong teksto ng code ay inayos (`tests/engine/isolated.js` ay gumagamit na ng regex).
+
+## Tala ng multi-file na app (beta.5)
+- `tools/build/app-folder.js` (`npm run build:app`): mula sa iisang html, gumagawa ng folder na `index.html` + `js/*.js` (ang data ay `js/data-<id>.js`). Ang apk at exe ay ito na ang laman (`release.yml`). Ang Pages at ang release asset ay iisang html pa rin. Hindi ito kasama sa repo; nabubuo sa build.
+- Napatunayan sa headless Chromium na galing sa `file://`: 160 / 160 na scenario ng ABC-007, panel_sync 0 FAIL, faceplate 68 controller; pareho ang 134 na sheet ng digital at ang mga data element; walang error.
+- HINDI pa nasusubok ang pagbuo ng apk / exe mismo (kailangan ng workflow run: GO STABLE).

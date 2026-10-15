@@ -11,7 +11,8 @@
     "uat": "node src/ui/uat/dry.js",
     "scenarios": "node tests/scenarios/run.js",
     "format": "prettier --write \"src/analog/**/*.js\" \"src/ui/**/*.js\" \"src/boot/**/*.js\" \"tests/**/*.js\" \"tools/**/*.js\"",
-    "format:check": "prettier --check \"src/analog/**/*.js\" \"src/ui/**/*.js\" \"src/boot/**/*.js\""
+    "format:check": "prettier --check \"src/analog/**/*.js\" \"src/ui/**/*.js\" \"src/boot/**/*.js\"",
+    "build:app": "node tools/build/app-folder.js"
   },
   "devDependencies": {
     "prettier": "^3.9.10",
