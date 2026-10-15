@@ -35,8 +35,18 @@
     [/^SI/, 'SI', 'software internal analog (SI)'],
     [/^DI/, 'DI', 'digital internal (DI)'],
     [/^B\./, 'WB', 'bit memory (B.)'],
-    [/^FP/, 'FP', 'floating parameters (FP)']
+    [/^FP/, 'FP', 'floating parameters (FP)'],
+    [/^DB/, 'DB', 'digital bit (DB)']
   ];
+  /* 2.1.0-beta.9 (user): the VACANT addresses are shown like in the I/O list (memory: tools/data/memspace.py, rows with no
+     description in the Excel; I/O and wiring: a channel with no tag and no description) */
+  const VAC = 'vacant';
+  const nextA = (a, hx) => {
+    const m = /^([A-Z]+\.?)([0-9A-F]+)$/.exec(a);
+    if (!m) return a;
+    const v = parseInt(m[2], hx ? 16 : 10) + 1;
+    return m[1] + (hx ? v.toString(16).toUpperCase() : String(v)).padStart(m[2].length, '0');
+  };
   const pad = (x, n) => String(x).padStart(n || 3, '0');
   let tog = {}; /* group key -> true (open) / false (closed), set by a click on the header */
   function copy(t) {
@@ -156,6 +166,23 @@
         }
       }
     }
+    const MV = window.MEM_VACANT || {};
+    for (const st in MV)
+      for (const kind in MV[st]) {
+        const mi = Math.max(0, MEMK.findIndex(m => m[1] === kind)),
+          M = MEMK[mi],
+          s = 'STN10' + st,
+          T = A[st] || {};
+        for (const [a0, cnt] of MV[st][kind].r) {
+          let a = a0;
+          for (let i = 0; i < cnt; i++, a = nextA(a, MV[st][kind].h))
+            if (!T[a]) rows.mem.push({ st, s, a, tag: '', d: '', x: '', t: '', ab: '', vac: 1, gk: st + '|' + mi, gl: s + ' (' + M[1] + ') · ' + M[2], h: (s + ' ' + a + ' VACANT SPARE').toUpperCase() });
+        }
+      }
+    for (const r of rows.io.concat(rows.wire)) if (!r.tag && !r.d) {
+      r.vac = 1;
+      r.h += ' VACANT SPARE';
+    }
   }
   function sortGroups() {
     rows.io.sort((a, b) => (a.gk < b.gk ? -1 : a.gk > b.gk ? 1 : a.ch - b.ch || (a.a < b.a ? -1 : 1)));
@@ -211,7 +238,11 @@
     if (tog._k !== tk) tog = { _k: tk }; /* a new search / station / tab: the groups follow the default again */
     const ms = src.filter(r => (!stn || r.st === stn) && (!words.length || words.every(w => r.h.includes(w)))),
       gc = {};
-    for (const r of ms) gc[r.gk] = (gc[r.gk] || 0) + 1;
+    const gv = {};
+    for (const r of ms) {
+      gc[r.gk] = (gc[r.gk] || 0) + 1;
+      if (r.vac) gv[r.gk] = (gv[r.gk] || 0) + 1;
+    }
     const ng = Object.keys(gc).length,
       isOpen = k => (tog[k] !== undefined ? tog[k] : words.length > 0 || ng === 1);
     let gk0 = null;
@@ -224,18 +255,18 @@
         frag.append(
           E('div', { cls: 'libg' + (op ? ' on' : ''), title: op ? 'Close this group' : 'Open this group', on: () => ((tog[k] = !op), render()) }, [
             E('b', { txt: (op ? '▾ ' : '▸ ') + r.gl }),
-            E('span', { txt: gc[k] + (gc[k] === 1 ? ' row' : ' rows') })
+            E('span', { txt: gc[k] + (gc[k] === 1 ? ' row' : ' rows') + (gv[k] ? ' · ' + gv[k] + ' ' + VAC : '') })
           ])
         );
       }
       if (r.gk !== undefined && !isOpen(r.gk)) continue;
       shown++;
       if (shown > MAX) continue;
-      const row = E('div', { cls: 'libr' }, [
+      const row = E('div', { cls: 'libr' + (r.vac ? ' vac' : '') }, [
         E('span', { cls: 'st', txt: r.s }),
         E('span', { cls: 'ad', title: 'Copy the address', txt: r.a }),
         E('span', { cls: 'tg', title: r.tag ? 'Copy the tag' : '', txt: r.tag }),
-        E('span', { cls: 'ds', txt: r.d }),
+        E('span', { cls: 'ds', txt: r.vac ? '— ' + VAC + ' —' : r.d }),
         E('span', { cls: 'rx', txt: r.x }),
         E('span', { cls: 'ty', txt: r.t + (r.ab ? ' · ' + r.ab : '') }),
         E('button', { cls: 'b', txt: 'Find', title: 'Put it in the search bar and open the info card' })

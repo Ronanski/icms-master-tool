@@ -74,3 +74,5 @@
 #libws .libg{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 8px;margin-top:2px;background:var(--c-panel2,#141c25);border-top:1px solid var(--c-line,#2a3a48);cursor:pointer;font:600 12px var(--uf,sans-serif);color:#cfe3f3;position:sticky;top:0;z-index:1}
 #libws .libg span{font-weight:400;color:#8fa3b5;font-size:11px}
 #libws .libg.on b{color:#9ff0c4}
+#libws .libr.vac .ds{color:#6f8191;font-style:italic}
+#libws .libr.vac .ad{color:#8fa3b5}

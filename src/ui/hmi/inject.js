@@ -41,6 +41,8 @@ const block =
   '\n' +
   fs.readFileSync(__dirname + '/../plant/iogroups.js', 'utf8') +
   '\n' +
+  fs.readFileSync(__dirname + '/../plant/memspace.js', 'utf8') +
+  '\n' +
   fs.readFileSync(__dirname + '/../plant/library.js', 'utf8') +
   '</script>' +
   B;

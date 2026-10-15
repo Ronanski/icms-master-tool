@@ -2,6 +2,15 @@
 
 Base: Stable v2.0.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 2.1.0-beta.9 — LIBRARY: makikita ang VACANT sa memory list at wiring
+
+- **Problem (user):** Sa wiring at memory list, ipakita ang mga vacant gaya ng sa I/O list.
+- **As Found:** Ang embedded memory list (ADES) ay may address lang na may description o remark: STN101 WM 1638 sa 3504 row ng Excel. Ang wiring ay may 980 channel na walang tag at description, pero blangko lang ang itsura.
+- **Work Done:** `tools/data/memspace.py` → `src/ui/plant/memspace.js` (mga address na walang description sa Excel, naka-run [unang address, bilang]; hex sa M. / B. / DB). Sa LIBRARY: lahat ng address ng bawat memory sheet ay nakalista gaya ng Excel; ang bakante ay "— vacant —" (grey); ang I/O at wiring channel na walang tag at description ay vacant din. Ang header ng grupo ay may bilang ng vacant. Ang search na "vacant" / "spare" ay naghahanap sa kanila.
+- **As Left (headless, `tests/regress/lookonly.js`):** STN101 WM = 3504 row, 1866 vacant (gaya ng Excel); I/O STN101 node 0 unit 0: 32 row · 11 vacant; wiring STN101 AIO: 320 · 81 vacant. Walang page error.
+- **Hindi pa nasubok:** totoong tablet.
+- **Status:** Beta.
+
 ## 2.1.0-beta.8 — Search = tingin lang; LIBRARY naka-grupo gaya ng Excel
 
 - **Problem (user):** (1) Kapag search lang, hindi dapat makapag-force / simulate, kahit hindi makita ang current value. (2) Sa LIBRARY, i-grupo gaya ng Excel (per sheet, may groupings).
