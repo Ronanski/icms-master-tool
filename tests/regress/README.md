@@ -18,3 +18,6 @@ Headless (Playwright + Chromium) checks of `dist/logic-sim-vX.Y.Z.html` (default
 
 Old builds for `diff.js`: `git show <commit>:logic-sim-v1.20.21.html > old.html`.
 Needs `playwright` (module path in `PLAYWRIGHT_MODULE`), Chromium (`CHROMIUM`), `xlrd` and `openpyxl`.
+
+## Scenario tests (tests/scenarios, `npm run scenarios`)
+Mula input hanggang output ng mismong engine; ang inaasahang sagot ay isinulat mula sa PDF (hindi kinuwenta ng engine). Operator actions = pindot sa tunay na panel. Madaling basahing talaan para sa user: `docs/scenarios/<sheet>.md` (`node tests/scenarios/report.js`).
