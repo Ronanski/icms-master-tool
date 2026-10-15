@@ -9,7 +9,7 @@ const sheets=await page.evaluate(()=>Object.keys(JSON.parse(document.getElementB
 for(const sh of sheets.filter(x=>!want.length||want.includes(x))){
  const ids=await page.evaluate(s=>JSON.parse(document.getElementById('uatdata').textContent).scen[s].scenarios.map(x=>x.id),sh);
  console.log('\n=== '+sh);
- for(const id of ids){const r=await page.evaluate(async([s,id])=>{const sp=JSON.parse(document.getElementById('uatdata').textContent).scen[s];const sc=sp.scenarios.find(x=>x.id===id);const r=await UATS.run(s,sc);return{title:sc.title,drawing:sc.drawing,lines:r.lines,pass:r.pass,fail:r.fail}},[sh,id]);
+ for(const id of ids.filter(i=>!process.env.SC||process.env.SC.split(',').includes(i))){const r=await page.evaluate(async([s,id])=>{const sp=JSON.parse(document.getElementById('uatdata').textContent).scen[s];const sc=sp.scenarios.find(x=>x.id===id);const r=await UATS.run(s,sc);return{title:sc.title,drawing:sc.drawing,lines:r.lines,pass:r.pass,fail:r.fail}},[sh,id]);
   console.log('\n['+id+'] '+r.title+'  →  '+(r.fail?r.fail+' MALI':'tama lahat')+' ('+r.pass+'/'+(r.pass+r.fail)+')');
   for(const l of r.lines)if(l.k==='bad')console.log('   ✘ '+l.t+'  → inaasahan: '+l.exp+' | nakita: '+l.got);
   pass+=r.pass;fail+=r.fail}}
