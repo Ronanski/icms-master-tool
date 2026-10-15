@@ -116,6 +116,31 @@
       cnt = $('libcnt');
     if (!box) return;
     box.innerHTML = '';
+    if (ws) ws.classList.toggle('calc', tab === 'calc');
+    if (tab === 'calc') {
+      cnt.textContent = '';
+      const C = window.CALC_COMP || [],
+        D = window.CALC_DRUM;
+      box.append(E('div', { cls: 'libsec', txt: 'FLOW COMPENSATION (document-references/flow-compensation.xls) · ' + C.length + ' flows' }));
+      for (const c of C)
+        box.append(
+          E('div', { cls: 'libcalc' }, [
+            E('b', { txt: c.stn + ' · ' + c.flow }),
+            E('span', { txt: c.desc }),
+            E('span', { cls: 'm', txt: (c.ptag ? 'P ' + c.ptag + ' (design ' + c.pop + ') · ' : 'P: atm ' + c.atm + ' kg/cm2 · ') + 'T ' + [c.ttag, c.ttag2].filter(Boolean).join(' / ') + ' (design ' + c.top + ' °C) · at ' + (+c.at).toFixed(4) + ' bt ' + (+c.bt).toFixed(4) }),
+            E('button', { cls: 'b', txt: 'Find', on: () => find(c.flow) })
+          ])
+        );
+      if (D) {
+        box.append(E('div', { cls: 'libsec', txt: 'DRUM LEVEL CORRECTION (document-references/drum-level-calculation.xls) · ' + D.head }));
+        const t = E('div', { cls: 'libdrum' });
+        const keep = D.cols.map((c, i) => i).filter(i => i > 0 && (D.cols[i] || D.units[i]));
+        t.append(E('div', { cls: 'dr h' }, keep.map(i => E('span', { txt: D.cols[i] + (D.units[i] ? ' [' + D.units[i] + ']' : '') }))));
+        for (const r of D.rows) t.append(E('div', { cls: 'dr' }, keep.map(i => E('span', { txt: typeof r[i] === 'number' ? String(+r[i].toPrecision(6)) : String(r[i]) }))));
+        box.append(t);
+      }
+      return;
+    }
     const src = rows[tab],
       words = q
         .toUpperCase()
@@ -138,29 +163,15 @@
         E('button', { cls: 'b', txt: 'Find', title: 'Put it in the search bar and open the info card' })
       ]);
       const wd = r.w || WIX[r.st + '|' + r.a];
-      if (wd) {
-        row.classList.add('hasw');
-        row.title = 'Click the row: marshalling wiring of this signal';
-        row.addEventListener('click', e => {
-          if (e.target.closest('.ad,.tg,button')) return;
-          const nx = row.nextSibling;
-          if (nx && nx.classList && nx.classList.contains('libw')) {
-            nx.remove();
-            return;
-          }
-          row.after(
-            E('div', { cls: 'libw' }, [
-              ['FCS', wd.fcs],
-              ['Cable', wd.cable],
-              ['Marshalling', wd.mpl],
-              ['Cross wiring', wd.cross],
-              ['Junction box', wd.jb]
-            ]
-              .filter(x => x[1])
-              .map(([k, v]) => E('div', {}, [E('b', { txt: k }), E('span', { txt: v })])))
-          );
-        });
-      }
+      if (wd) row.classList.add('hasw');
+      /* 2.1.0: a click on the row opens the info card (I/O record, wiring flow chart, compensation, where it is used) */
+      row.title = 'Click: info card' + (wd ? ' with the wiring' : '');
+      row.addEventListener('click', e => {
+        if (e.target.closest('.ad,.tg,button')) return;
+        try {
+          window.lsInfo && window.lsInfo(r.a, { stn: r.st });
+        } catch (x) {}
+      });
       row.children[1].onclick = () => copy(r.a);
       row.children[2].onclick = () => r.tag && copy(r.tag);
       row.children[6].onclick = () => find(r.a.length && /^[A-Z]{1,2}\.|^AI|^AO|^SI|^SO/.test(r.a) ? r.a : r.tag);
@@ -189,7 +200,7 @@
             render();
           }
         });
-    tabs.append(mk('io', 'I/O LIST'), mk('mem', 'MEMORY LIST'), mk('wire', 'WIRING'));
+    tabs.append(mk('io', 'I/O LIST'), mk('mem', 'MEMORY LIST'), mk('wire', 'WIRING'), mk('calc', 'CALC'));
     const ss = E('select', { cls: 'libst' });
     [['', 'All stations'], ['1', 'STN101'], ['2', 'STN102'], ['3', 'STN103'], ['4', 'STN104'], ['5', 'STN105']].forEach(([v, t]) => {
       const o = E('option', { txt: t });

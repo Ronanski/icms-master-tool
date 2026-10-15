@@ -178,3 +178,12 @@ body.top1 #meta #mctl button,body.top1 #meta #mctl select{height:24px;padding:0 
 #infocard .tg{display:inline-block;padding:1px 6px;border-radius:3px;font-weight:700;font-size:10.5px}
 #infocard .t-trip{background:#4a1d1d;color:#ffb3b3}#infocard .t-ok{background:#123a26;color:#9ff0c4}
 #infocard .b{height:24px;padding:0 8px;font-size:11px;border-radius:5px}
+/* info card: wiring flow chart (2.1.0) */
+#infocard .icw{display:flex;flex-direction:column;align-items:stretch;gap:0;margin:4px 0 2px}
+#infocard .icwb{border:1px solid #2a3846;border-radius:4px;background:#0b1219;padding:4px 8px;display:grid;grid-template-columns:118px 1fr;gap:0 8px;align-items:baseline}
+#infocard .icwb small{grid-row:span 2;font:600 9.5px var(--uf);letter-spacing:.1em;color:#6f8191}
+#infocard .icwb b{font:600 12px var(--mf);color:#e6edf3;word-break:break-all}
+#infocard .icwb span{font:11px var(--mf);color:#5cd6ff}
+#infocard .icwb.ad{border-color:#2a6a98;background:#0e2536}
+#infocard .icwb.fd{border-color:#5a4a20;background:#1a160b}#infocard .icwb.fd b{color:#ffd78a}
+#infocard .icwa{text-align:center;color:#38a8f0;font-size:11px;line-height:14px;height:14px}
