@@ -27,3 +27,25 @@ body.ophmi #anp{display:none!important}
 #opp .lamp{display:inline-block;width:10px;height:10px;border-radius:50%;background:#2a3640;margin-right:6px}#opp .lamp.on{background:#ff4d4d;box-shadow:0 0 6px #f44}
 #opp input.f{width:100%;height:32px;background:#0b1217;color:#dbe5ec;border:1px solid #2c3d49;border-radius:6px;padding:0 8px;margin:4px 0}
 @media (max-width:1180px){#mid #opp{position:absolute;z-index:36;right:0;top:0;bottom:0;width:min(400px,94vw);box-shadow:-8px 0 24px #0009}}
+/* v1.20.64: faceplate ayon sa DCS ng planta: bar graph (PV cyan, SV dilaw), kahon ng PV / SV, selector R / A / M, MV, pangalan ng tag sa ibaba */
+#opp .fpx .fpt{background:#c9d4dc;color:#1b252c;border-radius:4px 4px 0 0;padding:6px 8px;font:600 13px system-ui;margin:-8px -10px 8px}
+#opp .fpm{display:flex;gap:10px;align-items:stretch}
+#opp .fpg{position:relative;width:74px;min-height:250px;background:#0b1217;border:1px solid #243642;display:flex;gap:10px;justify-content:center;padding:14px 4px 14px}
+#opp .fpg .hi{position:absolute;left:3px;top:0;font:700 11px ui-monospace,monospace;color:#cfe}#opp .fpg .lo{position:absolute;left:3px;bottom:0;font:700 11px ui-monospace,monospace;color:#cfe}
+#opp .fpg .gb{position:relative;width:16px;background:#1a242b;border:1px solid #2c3d49}#opp .fpg .gb i{position:absolute;left:0;right:0;bottom:0}
+#opp .fpg .gpv{background:#38c8d8}#opp .fpg .gsv{background:#ffd84a}
+#opp .fpc{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
+#opp .fpb .fl{display:flex;justify-content:space-between;align-items:baseline;font:700 11px system-ui;color:#cfd8de}
+#opp .fpb .fv{display:block;width:100%;box-sizing:border-box;height:30px;background:#06090c;border:1px solid #55656f;color:#38c8d8;font:700 20px ui-monospace,Consolas,monospace;text-align:right;padding:0 6px}
+#opp .fpb .fv.pv{display:flex;align-items:center;justify-content:flex-end}#opp .fpb .fv.pv b{font:inherit;color:#38c8d8}
+#opp .fpb input.fv:disabled{color:#38c8d8;opacity:1}
+#opp .fps{display:flex;gap:10px;align-items:flex-end;justify-content:center;min-height:120px}
+#opp .fpr{display:flex;flex-direction:column;gap:4px}
+#opp button.b.ra{width:44px;height:38px;padding:0;border-radius:2px;border:1px solid #556;background:#d9dfe4;color:#111;font:700 22px system-ui;position:relative}
+#opp button.b.ra:disabled{opacity:.45}
+#opp button.b.ra.on{background:#f1d21a;border-color:#aa9500;color:#111}#opp button.b.ra.man.on{background:#3fdc4a;border-color:#1c8f25}
+#opp button.b.ra.on::after{content:"◀";position:absolute;right:-17px;top:9px;font-size:14px;color:#f1d21a}
+#opp .mvb{position:relative;width:12px;height:118px;border-left:2px solid #8aa;border-top:2px solid #8aa;border-bottom:2px solid #8aa}
+#opp .mvb .mvp{position:absolute;left:-12px;width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-right:12px solid #3fdc4a;margin-bottom:-7px}
+#opp .fpx .tg{background:#3fbf6a;color:#06210f;border-radius:0 0 4px 4px;padding:5px 8px;margin:8px -10px -2px;align-items:center}#opp .fpx .tg b{color:#06210f;font:700 14px system-ui}#opp .fpx .tg span{color:#0b3a1b}
+#opp .fpe{margin-top:8px}#opp .fpe summary{cursor:pointer;color:#8fa0ab;font-size:11px}
