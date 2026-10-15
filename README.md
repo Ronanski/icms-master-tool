@@ -35,4 +35,4 @@ Ang `logic-sim-vX.Y.Z.html` sa `dist/` ay build output (huwag i-edit; `npm run b
 
 ## Change and release control
 
-Audit against source documents before proposing logic changes. Do not modify DITL behavior during ABC-only work without approval. Beta: bawat ayos ay push agad sa working branch (PROJECT_RULES 5e). Stable release, merge sa `main` at workflow run: **GO STABLE** lang.
+Audit against source documents before proposing logic changes. DITL: puwede nang galawin para sa ikabubuti ng simulation (user 2026-10-15, PROJECT_RULES 4). Beta: bawat ayos ay push agad sa working branch (PROJECT_RULES 5e). Stable release, merge sa `main` at workflow run: **GO STABLE** lang.
