@@ -6,11 +6,14 @@ const fs=require('fs'),path=require('path');const {open}=require('../regress/lib
 const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+\.html$/.test(x));
 const want=process.argv.slice(2).filter(a=>!/\.html$/.test(a));
 const files=fs.readdirSync(__dirname).filter(f=>/^ABC-.*\.json$/.test(f)&&(!want.length||want.includes(f.replace('.json',''))));
+/* "cases": talaan ng katotohanan (steady-state): bawat case = bagong simula, itakda ang mga input, maghintay, tingnan ang target. Walang umaasa sa oras maliban sa timer na nasa drawing (hinihintay nang sapat). */
+const expand=sc=>{if(!sc.cases)return sc;const steps=[];for(const c of sc.cases){steps.push({do:'reset',say:'BAGONG SIMULA: '+c.say});steps.push({do:'wait',s:3,say:'hintayin ang startup pulse ng ibang sheet (hal. M.0098 ng ABC-003E ay 2 s na pulse pagkatapos ng Reset)'});for(const b of sc.base||[])steps.push(Object.assign({do:'set'},b));for(const x of c.set||[])steps.push(Object.assign({do:'set'},x));steps.push({do:'wait',s:c.wait||sc.wait||12});for(const e of c.expect)steps.push(Object.assign({expect:'signal'},e));}return Object.assign({},sc,{steps})};
 (async()=>{const {browser,page,errs}=await open(html);let fail=0,pass=0;
 for(const f of files){const spec=JSON.parse(fs.readFileSync(path.join(__dirname,f),'utf8'));
  console.log('\n=== '+spec.sheet+' · '+spec.title+'  (PDF: '+spec.pdf+')');
- for(const sc of spec.scenarios){
-  await page.evaluate(s=>{AN.go(AN.sheets.findIndex(x=>x.name===s));AN.reset();AN.go(AN.sheets.findIndex(x=>x.name===s));[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Operator').forEach(b=>b.click());AN.run=true},spec.sheet);
+ for(const sc0 of spec.scenarios){
+  const sc=expand(sc0);
+  await page.evaluate(s=>{AN.go(AN.sheets.findIndex(x=>x.name===s));AN.reset();AN.go(AN.sheets.findIndex(x=>x.name===s));[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Operator').forEach(b=>b.click());AN.run=false},spec.sheet);
   await page.waitForTimeout(1200);
   console.log('\n['+sc.id+'] '+sc.title+'\n   drawing: '+sc.drawing);
   let n=0;
@@ -24,9 +27,11 @@ for(const f of files){const spec=JSON.parse(fs.readFileSync(path.join(__dirname,
     const ctl=AN.hmiCtrls(S).find(c=>c.tag===loop),fp=[...document.querySelectorAll('#opp .fp')].find(x=>x.querySelector('.tg b')&&x.querySelector('.tg b').textContent===loop);
     const btn=t=>fp&&[...fp.querySelectorAll('button')].find(e=>e.textContent.trim()===t);
     const stn=ctl&&ctl.amt?rt.st[ctl.amt.id]:null,mode=()=>!stn?'?':(stn.pk===ctl.autoLeg?'AUTO':'MANUAL');
+    if(st.do==='set'&&st.sheet){/* ang signal ay galing sa ibang sheet: itakda doon (ang link ng dalawang sheet ang sinusubok) */const o=AN.sheets.find(x=>x.name===st.sheet);AN.ensure(o);const S2=o.S;let n2=-1;for(let n=0;n<S2.nets.length;n++)if(S2.lab[n]&&S2.lab[n].t&&S2.lab[n].t.trim()===st.tag)n2=n;if(n2<0)return{err:'walang '+st.tag+' sa '+st.sheet};S2.rt.force[n2]=st.value;try{AN.settle()}catch(e){}return{ok:1}}
     if(st.do==='set'){const n=net(st);if(n<0)return{err:'walang input na '+(st.tag||st.near)};if(S.xlk&&S.xlk[n]||!S.ext.includes(n))rt.force[n]=st.value;else rt.ext[n]=st.value;try{AN.settle()}catch(e){}return{ok:1}}
     if(st.do==='release'){const n=net(st);delete rt.force[n];try{AN.settle()}catch(e){}return{ok:1}}
     if(st.do==='wait'){step(st.s);return{ok:1}}
+    if(st.do==='reset'){AN.reset();AN.go(AN.sheets.findIndex(x=>x.name===sheet));return{ok:1}}
     if(st.do==='press'){const b=btn(st.button);if(!b)return{err:'walang button '+st.button};if(b.disabled)return{ok:1,note:'disabled ang '+st.button+' (hindi napindot)'};b.click();step(.5);return{ok:1}}
     if(st.do==='mv'){const inp=[...fp.querySelectorAll('input')].find(i=>i.title===''||true);const ins=[...fp.querySelectorAll('input')];const mvIn=ins[ins.length-1];if(mvIn.disabled)return{ok:1,note:'disabled ang MV field'};mvIn.value=st.value;mvIn.dispatchEvent(new Event('change'));step(.5);return{ok:1}}
     if(st.do==='sv'){const ins=[...fp.querySelectorAll('input')];const svIn=ins[0];if(svIn.disabled)return{ok:1,note:'disabled ang SV field'};svIn.value=st.value;svIn.dispatchEvent(new Event('change'));step(.5);return{ok:1}}
