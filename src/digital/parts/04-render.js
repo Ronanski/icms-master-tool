@@ -628,7 +628,10 @@ function render() {
   renderMeta();
   $('bwire').textContent = 'Wire fix: ' + (WT ? 'On' : 'Off');
   $('bwire').className = WT ? 'on' : '';
-  $('bmode').textContent = 'Mode: ' + (SIM ? 'Simulate' : 'Edit');
+  $('bmode').textContent = SIM ? '✎ Edit' : '▶ Simulate';
+  $('bmode').title = SIM
+    ? 'Simulate mode: click a cell = 1 / 0. Press to go back to Edit mode.'
+    : 'Edit mode: click = select. Press to simulate (click a cell = 1 / 0).';
   $('bmode').className = SIM ? 'on' : '';
 }
 /* ---------- state ---------- */

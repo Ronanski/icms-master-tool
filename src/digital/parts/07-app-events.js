@@ -481,6 +481,12 @@ const lockd = (s, i) =>
   (s.nl.mir || []).some(m => m.row === i) ||
   grpState(s).has(i); /* v10: the input of a row = its SERVICE cell, only rows that a wire reaches */
 function diag(s) {
+  /* 1.22.0: the netlist of a sheet is built when the sheet is first opened (render); Health reads every sheet, so build it here too
+     (before: "Cannot read properties of undefined (reading 'src')" and the Health panel did not open) */
+  if (!s.nl || s.nl.v !== 10) {
+    s.nl = netlist(s);
+    s.uvDone = false;
+  }
   const n = s.nl,
     is = [],
     S1 = s.rng.S[1],
