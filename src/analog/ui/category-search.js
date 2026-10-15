@@ -671,7 +671,7 @@ document.head.appendChild(
             .lsDownload(ch)
             .then(() => location.reload())
             .catch(e => {
-              msg('Hindi ma-download ang Beta: ' + ((e && e.message) || 'walang internet') + '. Kailangan ng internet isang beses.');
+              msg('Beta download failed: ' + ((e && e.message) || 'no internet') + '. Internet is needed once.');
               try {
                 localStorage.setItem('logic.channel', runBeta ? 'beta' : 'stable');
               } catch (x) {}

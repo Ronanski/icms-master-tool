@@ -292,7 +292,7 @@
     );
     // 1. controllers
     const cs = ctrls(S);
-    if (cs.length) body.append(E('h4', { txt: 'Mga controller (faceplate)' }));
+    if (cs.length) body.append(E('h4', { txt: 'Controllers (faceplate)' }));
     cs.forEach(c => {
       const P = c.b.p,
         rlo = P.rlo != null ? P.rlo : 0,
@@ -309,9 +309,9 @@
       const bAuto = E('button', {
           cls: 'b ra',
           txt: 'A',
-          title: 'A = AUTO (SV ng operator / LOCAL kung may REMOTE sa loop)'
+          title: 'A = AUTO (operator SV / LOCAL when the loop has REMOTE)'
         }),
-        bMan = E('button', { cls: 'b ra man', txt: 'M', title: 'M = MANUAL (ang operator ang nagtatakda ng MV)' });
+        bMan = E('button', { cls: 'b ra man', txt: 'M', title: 'M = MANUAL (the operator sets the MV)' });
       const svIn = E('input', { cls: 'n', type: 'number', step: 'any' }),
         mvIn = E('input', { cls: 'n', type: 'number', step: 'any' });
       const svOk = S.ext.includes(c.q.sv) || !!c.svSw,
@@ -369,8 +369,8 @@
           cls: 'b' + (c.remote ? ' ra' : ''),
           txt: c.remote ? 'R' : 'SV: LOGIC',
           title: c.remote
-            ? 'REMOTE: AUTO talaga; SV galing sa logic path; hindi mamamanual, pati SV'
-            : 'SV galing sa logic path',
+            ? 'REMOTE: AUTO; SV from the logic path; MV and SV cannot be set by hand'
+            : 'SV from the logic path',
           on: () => {
             swMode('A');
             if (c.remote) pulse(['REM', 'REMOTE']);
@@ -380,7 +380,7 @@
           cls: 'b',
           style: c.remote ? 'display:none' : '',
           txt: c.remote ? 'LOCAL' : 'SV: OPERATOR',
-          title: c.remote ? 'LOCAL: puwede nang i-MAN at i-set ang SV (COS ng operator)' : 'SV ng operator (COS)',
+          title: c.remote ? 'LOCAL: MAN allowed, SV set by the operator (COS)' : 'Operator SV (COS)',
           on: () => swMode('B')
         }),
         modeRow = c.svSw && !c.remote ? E('div', { cls: 'row' }, [E('span', { txt: 'SV' }), bRem, bLoc]) : null;
@@ -388,9 +388,9 @@
           const e = E('span', {
             cls: 'sg',
             title:
-              'Signal ng drawing: ' +
+              'Drawing signal: ' +
               z.name +
-              (z.role === 'MAN' ? ' (pumipili ng MANUAL / force manual)' : ' (pumipili ng AUTO)')
+              (z.role === 'MAN' ? ' (selects MANUAL / force manual)' : ' (selects AUTO)')
           });
           return { z, e };
         }),
@@ -398,7 +398,7 @@
           const e = E('button', {
             cls: 'b',
             txt: '.' + z.kind,
-            title: z.name + ' = input ng drawing (HMI); parehong signal sa diagram',
+            title: z.name + ' = drawing input (HMI); the same signal as on the diagram',
             on: () => {
               const v = S.rt.ext[z.n] > 0.5 ? 0 : 1;
               setIn(S, z.n, v);
@@ -428,7 +428,7 @@
         cutWhy = E('button', {
           cls: 'b',
           txt: 'Sanhi?',
-          title: 'Hanapin ang mga input ng drawing na, kapag binago, magpapawala sa interlock',
+          title: 'Find the drawing inputs that clear this interlock when changed',
           style: 'margin-left:6px',
           on: () => whyCut()
         }),
@@ -439,13 +439,13 @@
         svIn.onchange = () => svSet(+svIn.value);
       } else {
         svIn.disabled = true;
-        svRow.append(E('span', { cls: 'sub', txt: '(SV galing sa logic)' }));
+        svRow.append(E('span', { cls: 'sub', txt: '(SV from the logic)' }));
       }
       if (mvOk) {
         mvIn.onchange = () => setMV(S, c, +mvIn.value);
       } else {
         mvIn.disabled = true;
-        mvRow.append(E('span', { cls: 'sub', txt: '(walang manual input)' }));
+        mvRow.append(E('span', { cls: 'sub', txt: '(no manual input)' }));
       }
       const setMode = m => {
         if (!c.amt) return;
@@ -503,7 +503,7 @@
       const graph = E('div', { cls: 'fpg' }, [
         E('span', { cls: 'hi', txt: fmt(rhi) }),
         E('span', { cls: 'lo', txt: fmt(rlo) }),
-        E('div', { cls: 'gm', title: 'PL ~ PH: normal na saklaw ng PV (ayon sa data ng DCS)' }, [barBand]),
+        E('div', { cls: 'gm', title: 'PL ~ PH: normal PV range (from the DCS data)' }, [barBand]),
         E('div', { cls: 'gb' }, [barPv]),
         E('div', { cls: 'gb' }, [barSvm])
       ]);
@@ -528,7 +528,7 @@
         E(
           'details',
           { cls: 'fpe' },
-          [E('summary', { txt: 'Engineering: signal ng drawing, SV / MV buttons, trend' }), sgRow]
+          [E('summary', { txt: 'Engineering: drawing signals, SV / MV buttons, trend' }), sgRow]
             .concat(modeRow ? [modeRow] : [])
             .concat([
               svRow,
@@ -654,8 +654,8 @@
           E('span', {
             cls: 'sub',
             txt: hits.length
-              ? 'Ang isang input na ito, kapag binago, ay magpapawala ng interlock (pindutin para itakda):'
-              : 'Walang iisang input sa sheet na ito ang makakapagpawala (kailangan ng higit sa isa, o galing sa ibang sheet / sa measurement).'
+              ? 'Changing this one input clears the interlock (press to set it):'
+              : 'No single input on this sheet clears it (it needs more than one, or it comes from another sheet / a measurement).'
           })
         );
         for (const h of hits)
@@ -685,9 +685,9 @@
           const on = S.rt.v[x.z.n] > 0.5;
           x.e.textContent = x.z.name + ' → ' + x.z.role + ' ' + (on ? '1' : '0');
           x.e.title =
-            'Signal ng drawing: ' +
+            'Drawing signal: ' +
             x.z.name +
-            (x.z.role === 'MAN' ? ' (pumipili ng MANUAL / force manual)' : ' (pumipili ng AUTO)') +
+            (x.z.role === 'MAN' ? ' (selects MANUAL / force manual)' : ' (selects AUTO)') +
             (x.z.src.length ? ' ← ' + x.z.src.map(q => q.name + '=' + (S.rt.v[q.n] > 0.5 ? 1 : 0)).join(', ') : '');
           x.e.style.cssText =
             'padding:1px 6px;border-radius:9px;font-size:11px;border:1px solid ' +
@@ -708,11 +708,11 @@
         ) {
           svSrc.textContent = c.remote
             ? pkA
-              ? 'REMOTE: AUTO, SV galing sa logic path'
-              : 'LOCAL: SV ng operator (COS)'
+              ? 'REMOTE: AUTO, SV from the logic path'
+              : 'LOCAL: operator SV (COS)'
             : pkA
-              ? 'SV: galing sa logic path'
-              : 'SV: ng operator (COS)';
+              ? 'SV: from the logic path'
+              : 'SV: operator (COS)';
           bRem.classList.toggle('on', pkA);
           bLoc.classList.toggle('on', !pkA);
           bRem.disabled = !!(q_ && q_.fman) || pkA;
@@ -738,14 +738,14 @@
             return t && t.pk === 'B';
           });
           cutTx.textContent = cg
-            ? 'OUTPUT PUTOL ng interlock: ' +
+            ? 'OUTPUT CUT BY INTERLOCK: ' +
               ((S.lab[cg.sel] && S.lab[cg.sel].t) || 'n' + cg.sel) +
-              ' = 1 → valve command = back-up leg ng drawing (hindi ang MV sa itaas)'
+              ' = 1 → valve command = back-up leg of the drawing (not the MV above)'
             : '';
           cutWhy.style.display = cg ? '' : 'none';
           if (!cg) cutList.textContent = '';
         }
-        fmEl.textContent = fm_ ? 'FORCE MANUAL (' + (fsg ? fsg.name + ' = 1' : 'logic') + '): hindi puwedeng AUTO' : '';
+        fmEl.textContent = fm_ ? 'FORCE MANUAL (' + (fsg ? fsg.name + ' = 1' : 'logic') + '): AUTO not allowed' : '';
         bAuto.disabled = !!fm_;
         /* MV is only for MANUAL: in AUTO the operator changes the SV, not the MV */ if (mvOk) {
           mvIn.disabled = (isAuto || rem) && !!c.amt;
@@ -801,7 +801,7 @@
             E('button', {
               cls: 'b',
               txt: 'MAN',
-              title: tag + '.MAN: estado ng MANUAL (ON / OFF) sa lahat ng sheet na gumagamit ng tag na ito',
+              title: tag + '.MAN: MANUAL status (ON / OFF) on every sheet that uses this tag',
               on: () => {
                 const ns = modeNetsByTag(tag, MODEK.MAN),
                   on = !ns.some(([S2, n]) => S2.rt.ext[n] > 0.5);
@@ -826,8 +826,8 @@
       if (l && !/^\(/.test(l) && !dig.some(x => x[1] === l)) dig.push([n, l]);
     }
     const sig = S.blk.filter(b => b.k === 'SIGAB' && b.o[0] != null && (b.txt || [])[1]);
-    body.append(E('h4', { txt: 'Mga button (digital input): ON / OFF at FORCE' }));
-    const fin = E('input', { cls: 'f', placeholder: 'hanapin ang tag o description…' });
+    body.append(E('h4', { txt: 'Buttons (digital inputs): ON / OFF and FORCE' }));
+    const fin = E('input', { cls: 'f', placeholder: 'Find tag or description…' });
     body.append(fin);
     const dlist = E('div');
     body.append(dlist);
@@ -835,7 +835,7 @@
     dig.forEach(([n, l]) => {
       const desc = describe(sh, l);
       const state = E('button', { cls: 'b', txt: 'OFF' }),
-        fb = E('button', { cls: 'b', txt: 'FORCE', title: 'I-force ang value kahit ano ang logic' });
+        fb = E('button', { cls: 'b', txt: 'FORCE', title: 'Force the value, whatever the logic says' });
       const linked = () => !!(S.xlk && S.xlk[n]);
       state.onclick = () => {
         const cur = S.rt.force[n] !== undefined ? S.rt.force[n] : linked() ? S.rt.v[n] : S.rt.ext[n] || 0;
@@ -856,7 +856,7 @@
       const tr = E('tr', {}, [
         E('td', {}, [
           E('b', { txt: l }),
-          E('small', { txt: desc + (S.xlk && S.xlk[n] ? '  (galing sa ibang sheet: ON/OFF = force)' : '') })
+          E('small', { txt: desc + (S.xlk && S.xlk[n] ? '  (from another sheet: ON/OFF = force)' : '') })
         ]),
         E('td', { cls: 'v' }, [state, document.createTextNode(' '), fb])
       ]);
@@ -883,7 +883,7 @@
         }
       };
       const tr = E('tr', {}, [
-        E('td', {}, [E('b', { txt: 'SIG.AB ' + tg }), E('small', { txt: 'Bad signal (simulation lang)' })]),
+        E('td', {}, [E('b', { txt: 'SIG.AB ' + tg }), E('small', { txt: 'Bad signal (simulation only)' })]),
         E('td', { cls: 'v' }, [st])
       ]);
       tr._h = ('sig.ab ' + tg + ' bad signal').toLowerCase();
@@ -898,14 +898,14 @@
     const tb = E('table', { cls: 'tbl' });
     rows.forEach(r => tb.append(r));
     dlist.append(tb);
-    if (!rows.length) dlist.append(E('div', { cls: 'sub', txt: 'Walang digital input ang sheet na ito.' }));
+    if (!rows.length) dlist.append(E('div', { cls: 'sub', txt: 'This sheet has no digital inputs.' }));
     fin.oninput = () => {
       const q = fin.value.trim().toLowerCase();
       rows.forEach(r => (r.style.display = !q || r._h.indexOf(q) >= 0 ? '' : 'none'));
     };
     // 4. monitoring: analog inputs to outputs
     const ais = S.blk.filter(b => b.k === 'AI' && b.o[0] != null);
-    if (ais.length) body.append(E('h4', { txt: 'Monitoring: mga input (transmitter)' }));
+    if (ais.length) body.append(E('h4', { txt: 'Monitoring: inputs (transmitters)' }));
     if (ais.length) {
       const t = E('table', { cls: 'tbl' });
       ais.forEach(b => {
@@ -950,7 +950,7 @@
       aos.push([b, best && bd < 80 ? best : 'AO#' + b.id]);
     }
     if (aos.length) {
-      body.append(E('h4', { txt: 'Monitoring: mga output (AO)' }));
+      body.append(E('h4', { txt: 'Monitoring: outputs (AO)' }));
       const t = E('table', { cls: 'tbl' });
       aos.forEach(([b, tag]) => {
         const v = E('td', { cls: 'v', txt: '—' });
@@ -970,7 +970,7 @@
       if (/^(M|B)\.[0-9A-F]{3,4}$/i.test(l) && !flags.some(f => f[1] === l)) flags.push([n, l]);
     }
     if (flags.length) {
-      body.append(E('h4', { txt: 'Mga flag ng logic (lamp: pula = 1)' }));
+      body.append(E('h4', { txt: 'Logic flags (lamp: red = 1)' }));
       const t = E('table', { cls: 'tbl' });
       flags.slice(0, 60).forEach(([n, l]) => {
         const lamp = E('span', { cls: 'lamp' });
@@ -996,7 +996,7 @@
   }
   function tabs(active) {
     const w = E('div', { cls: 'hmitabs' }, [
-      E('button', { cls: active === 'd' ? 'on' : '', txt: 'Detalye', on: () => mode(false) }),
+      E('button', { cls: active === 'd' ? 'on' : '', txt: 'Details', on: () => mode(false) }),
       E('button', { cls: active === 'o' ? 'on' : '', txt: 'Operator', on: () => mode(true) })
     ]);
     w.dataset.hmi = '1';

@@ -425,7 +425,7 @@ const bRun = h$('button', { txt: '▶ Run', title: 'Run / pause simulation (Spac
       'OFF = every transmitter / PV is a free input and only the drawn logic runs (simulation debugging). ON = the process model makes the PV follow the controller output.'
   }),
   bPl = h$('button', {
-    txt: 'Plant',
+    txt: 'Plant window',
     title:
       'Plant window: plant graphics of a system (pop-out window), live values of the addresses, F box (FORCE / SIM)'
   }),
@@ -770,6 +770,7 @@ bar.append(
   bAs,
   bDs,
   bP2,
+  bPl,
   bPn,
   shb,
   tClk

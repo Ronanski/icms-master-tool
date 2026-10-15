@@ -59,12 +59,12 @@
             .slice(0, 8)
             .map(i => ({ nm: AN.nm(S, i) || 'net', v: val(S, i), dig: !!(S.nets[i] && S.nets[i].dig) }))
         : [];
-      return { k: 'logic', txt: 'kinukuwenta dito ng ' + (b ? bname(b) : d[0].k), ins };
+      return { k: 'logic', txt: 'computed here by ' + (b ? bname(b) : d[0].k), ins };
     }
     const l = S.xlk && S.xlk[n];
-    if (l) return { k: 'link', txt: l.ditl ? 'galing sa DITL (' + (l.tag || '') + ')' : 'galing sa ' + (l.from && l.from.name), ins: [] };
-    if (S.ext.includes(n)) return { k: 'input', txt: 'input ng sheet (switch / slider / HMI)', ins: [] };
-    return { k: 'copy', txt: 'kopya mula sa bilog (circle) sa sheet na ito', ins: [] };
+    if (l) return { k: 'link', txt: l.ditl ? 'from DITL (' + (l.tag || '') + ')' : 'from ' + (l.from && l.from.name), ins: [] };
+    if (S.ext.includes(n)) return { k: 'input', txt: 'sheet input (switch / slider / HMI)', ins: [] };
+    return { k: 'copy', txt: 'copy of a circle on this sheet', ins: [] };
   }
   function readers(o) {
     const { S, n } = o;
@@ -92,7 +92,7 @@
     try {
       for (const c of AN.hmiCtrls(S) || []) {
         const z = (c.sigs || []).find(s => seen.has(s.n));
-        if (z) fx.push({ k: z.role === 'MAN' ? 'fm' : 'auto', t: (z.role === 'MAN' ? 'FORCE MANUAL ng ' : 'AUTO select ng ') + c.tag + ' (' + z.name + ')' });
+        if (z) fx.push({ k: z.role === 'MAN' ? 'fm' : 'auto', t: (z.role === 'MAN' ? 'FORCE MANUAL of ' : 'AUTO select of ') + c.tag + ' (' + z.name + ')' });
       }
     } catch (e) {}
     const tr = new Set();
@@ -118,7 +118,7 @@
             break;
           }
         }
-    [...tr].slice(0, 6).forEach(t => fx.push({ k: 'trip', t: 'umaabot sa: ' + t }));
+    [...tr].slice(0, 6).forEach(t => fx.push({ k: 'trip', t: 'reaches: ' + t }));
     try {
       const ix = AN.dsIdx(sh);
       for (const [m, refs] of ix.to) if (seen.has(m)) fx.push({ k: 'ditl', t: 'TO DITL ' + refs.join(', ') + ' (' + AN.nm(S, m) + ')' });
@@ -127,7 +127,7 @@
       const os = new Set();
       for (const x of AN.sheets)
         for (const l of x.lk || []) if (l.from === sh && l.to !== sh && l.fromNets.some(m => seen.has(m))) os.add(l.to.name);
-      if (os.size) fx.push({ k: 'sheet', t: 'umaabot din sa sheet: ' + [...os].join(', ') });
+      if (os.size) fx.push({ k: 'sheet', t: 'also reaches sheet: ' + [...os].join(', ') });
     } catch (e) {}
     return fx;
   }
@@ -182,8 +182,8 @@
     card = E('div', { id: 'infocard' }, [
       E('div', { cls: 'ich' }, [
         E('b', { txt: tag }),
-        E('span', { cls: 'icn', txt: oc.length + ' sa ABC · ' + dp.length + ' sa DITL' }),
-        E('button', { cls: 'b', txt: '✕', title: 'Isara', on: close })
+        E('span', { cls: 'icn', txt: oc.length + ' in ABC · ' + dp.length + ' in DITL' }),
+        E('button', { cls: 'b', txt: '✕', title: 'Close', on: close })
       ]),
       desc ? E('div', { cls: 'icd', txt: desc }) : null,
       body
@@ -196,9 +196,9 @@
         E('div', { cls: 'ict' }, [
           E('b', { txt: o.sh.name }),
           E('span', { cls: 'icv', txt: '= ' + val(o.S, o.n) }),
-          E('button', { cls: 'b', txt: 'Show', title: 'Buksan ang sheet at piliin ang wire', on: () => show(o) })
+          E('button', { cls: 'b', txt: 'Show', title: 'Open the sheet and select the wire', on: () => show(o) })
         ]),
-        E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Galing sa' }), src.txt]),
+        E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Source' }), src.txt]),
         src.ins.length
           ? E(
               'ul',
@@ -207,13 +207,13 @@
             )
           : null,
         E('div', { cls: 'icl' }, [
-          E('span', { cls: 'k', txt: 'Ginagamit sa' }),
-          rd.length ? rd.length + ' block' : 'WALA: display lang, walang logic na bumabasa nito sa sheet na ito'
+          E('span', { cls: 'k', txt: 'Used by' }),
+          rd.length ? rd.length + ' blocks' : 'NONE: display only, no logic reads it on this sheet'
         ]),
         rd.length ? E('ul', { cls: 'icu' }, rd.slice(0, 8).map(b => E('li', { txt: bname(b) }))) : null,
         E('div', { cls: 'icl' }, [
           E('span', { cls: 'k', txt: 'Trip?' }),
-          fx.some(f => f.k === 'trip' || f.k === 'fm') ? E('span', { cls: 'tg t-trip', txt: 'MAY EPEKTO' }) : E('span', { cls: 'tg t-ok', txt: 'walang trip / force manual sa sheet na ito' })
+          fx.some(f => f.k === 'trip' || f.k === 'fm') ? E('span', { cls: 'tg t-trip', txt: 'AFFECTS' }) : E('span', { cls: 'tg t-ok', txt: 'no trip / force manual on this sheet' })
         ]),
         fx.length ? E('ul', { cls: 'icu' }, fx.map(f => E('li', { cls: 'f-' + f.k, txt: f.t }))) : null
       ]);
@@ -267,12 +267,12 @@
         E('button', {
           cls: 'b infob',
           txt: 'ⓘ',
-          title: 'Info card: galing sa, ginagamit sa, Trip? (address o tag sa search)',
+          title: 'Info card: source, used by, trip? (address or tag in the search box)',
           on: () => {
             if (!open(($('ansb') || {}).value || '')) {
               const t = $('toast');
               try {
-                msg('I-type ang address o tag (hal. M.0228, AI0641, FICFW1007.MAN), tapos ⓘ o Enter');
+                msg('Type an address or tag (e.g. M.0228, AI0641, FICFW1007.MAN), then ⓘ or Enter');
               } catch (e) {}
             }
           }

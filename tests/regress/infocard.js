@@ -7,12 +7,12 @@ const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist
 const card=async q=>{await page.fill('#ansb',q);await page.press('#ansb','Enter');await page.waitForTimeout(1200);return page.evaluate(()=>{const c=document.getElementById('infocard');return c?c.innerText:''})};
 let t=await card('M.0228');
 ck(/FEED WATER CONTROL FORCE MANUAL/.test(t),'M.0228: description from the memory list');
-ck(/kinukuwenta dito ng OR/.test(t)&&/2 block/.test(t),'M.0228: computed by an OR, read by 2 blocks');
-ck(/FORCE MANUAL ng FICFW1007/.test(t),'M.0228: reaches the force manual of FICFW1007');
+ck(/computed here by OR/.test(t)&&/2 block/.test(t),'M.0228: computed by an OR, read by 2 blocks');
+ck(/FORCE MANUAL of FICFW1007/.test(t),'M.0228: reaches the force manual of FICFW1007');
 t=await card('M.3410');
-ck(/4 sa ABC/.test(t),'M.3410: 4 places in the ABC');
-ck(/galing sa ABC-004A/.test(t),'M.3410 on ABC-029 / 003A: comes from ABC-004A (link)');
-ck(/FORCE MANUAL ng HS-COAL/.test(t)&&/TO DITL DITL 07-05/.test(t),'M.3410: force manual of HS-COAL, TO DITL 07-05');
+ck(/4 in ABC/.test(t),'M.3410: 4 places in the ABC');
+ck(/from ABC-004A/.test(t),'M.3410 on ABC-029 / 003A: comes from ABC-004A (link)');
+ck(/FORCE MANUAL of HS-COAL/.test(t)&&/TO DITL DITL 07-05/.test(t),'M.3410: force manual of HS-COAL, TO DITL 07-05');
 const v0=await page.evaluate(()=>JSON.stringify(AN.sheets.filter(s=>s.S).map(s=>Object.keys(s.S.rt.force).length)));
 await page.evaluate(()=>{const b=[...document.querySelectorAll('#infocard .b')].find(x=>x.textContent==='✕');b&&b.click()});
 ck(await page.evaluate(()=>!document.getElementById('infocard')),'✕ closes the card');
