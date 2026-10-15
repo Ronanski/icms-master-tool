@@ -71,3 +71,6 @@
 #libws.calc .libhd{display:none}
 #plantws .pllive{margin-left:auto;font:600 10.5px var(--uf,sans-serif);letter-spacing:.1em;color:#ffd27a;border-color:#6b5a2a}
 #plantws .pllive.on{color:#35e08a;border-color:#2c6b48}
+#libws .libg{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 8px;margin-top:2px;background:var(--c-panel2,#141c25);border-top:1px solid var(--c-line,#2a3a48);cursor:pointer;font:600 12px var(--uf,sans-serif);color:#cfe3f3;position:sticky;top:0;z-index:1}
+#libws .libg span{font-weight:400;color:#8fa3b5;font-size:11px}
+#libws .libg.on b{color:#9ff0c4}

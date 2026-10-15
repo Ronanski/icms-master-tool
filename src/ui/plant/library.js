@@ -25,6 +25,20 @@
     q = '',
     loaded = false;
   const fmt = x => (x == null || x === '' ? '' : String(+(+x).toPrecision(6)));
+  /* 2.1.0-beta.8 (user): groups like the Excel files. I/O list: one sheet per station, then NODE (N) / I/O UNIT (I), rows by channel.
+     Memory list: one workbook per station, one sheet per kind (WM, TR, PTN, SI, DI, WB, FP). Wiring: station / signal kind.
+     Relay: the panel sheet (SER, IRP, ARP). A group header opens / closes its rows. */
+  const MEMK = [
+    [/^M\./, 'WM', 'word memory (M.)'],
+    [/^TR/, 'TR', 'timers (type, setting)'],
+    [/^PTN/, 'PTN', 'linear patterns (F(X))'],
+    [/^SI/, 'SI', 'software internal analog (SI)'],
+    [/^DI/, 'DI', 'digital internal (DI)'],
+    [/^B\./, 'WB', 'bit memory (B.)'],
+    [/^FP/, 'FP', 'floating parameters (FP)']
+  ];
+  const pad = (x, n) => String(x).padStart(n || 3, '0');
+  let tog = {}; /* group key -> true (open) / false (closed), set by a click on the header */
   function copy(t) {
     const done = () => {
       try {
@@ -57,7 +71,7 @@
     sb.value = t;
     sb.dispatchEvent(new Event('input', { bubbles: true }));
     try {
-      if (window.lsInfo && window.lsInfo(t)) {
+      if (window.lsInfo && window.lsInfo(t, { look: 1 })) {
         const f = $('anfind');
         if (f) f.style.display = 'none';
       }
@@ -94,6 +108,8 @@
         }
       };
       r.h = (r.s + ' ' + r.a + ' ' + r.tag + ' ' + r.d + ' ' + Object.values(r.w).join(' ')).toUpperCase();
+      r.gk = r.st + '|' + g('k');
+      r.gl = r.s + ' · ' + g('k') + (g('fcab') ? ' · FCS cabinet ' + g('fcab') : '');
       rows.wire.push(r);
       WIX[r.st + '|' + r.a] = r.w;
     }
@@ -114,6 +130,8 @@
         rel: r
       };
       row.h = (r.sh + ' ' + r.item + ' ' + vals.join(' ') + ' ' + (r.keys || []).join(' ')).toUpperCase();
+      row.gk = r.sh;
+      row.gl = r.sh;
       rows.relay.push(row);
     }
     for (const st of Object.keys(A).sort()) {
@@ -123,11 +141,32 @@
           s = 'STN10' + st;
         if (r.k === 'io') {
           const rg = r.lo != null || r.hi != null ? fmt(r.lo) + ' ~ ' + fmt(r.hi) + (r.u ? ' ' + r.u : '') : r.u || '';
-          rows.io.push({ st, s, a: k, tag: r.tag || '', d: r.d || '', x: rg, t: r.t || '', ab: r.ab || '', h: (s + ' ' + k + ' ' + (r.tag || '') + ' ' + (r.d || '') + ' ' + (r.ab || '')).toUpperCase() });
+          const G = (window.IO_GROUPS || {})[st + '|' + k] || ['', '', '', ''];
+          rows.io.push({
+            st, s, a: k, tag: r.tag || '', d: r.d || '', x: rg + (G[3] ? (rg ? ' · ' : '') + G[3] : ''), t: r.t || '', ab: r.ab || '',
+            gk: st + '|' + pad(G[0]) + '|' + pad(G[1]),
+            gl: s + ' · NODE ' + G[0] + ' · I/O UNIT ' + G[1],
+            ch: +G[2] || 0,
+            h: (s + ' ' + k + ' ' + (r.tag || '') + ' ' + (r.d || '') + ' ' + (r.ab || '') + ' ' + G[3]).toUpperCase()
+          });
         } else {
-          rows.mem.push({ st, s, a: k, tag: '', d: r.d || '', x: r.r || '', t: r.tt || r.ts || '', ab: '', h: (s + ' ' + k + ' ' + (r.d || '') + ' ' + (r.r || '')).toUpperCase() });
+          const mi = Math.max(0, MEMK.findIndex(m => m[0].test(k))),
+            M = MEMK[mi];
+          rows.mem.push({ st, s, a: k, tag: '', d: r.d || '', x: r.r || '', t: r.tt || r.ts || '', ab: '', gk: st + '|' + mi, gl: s + ' (' + M[1] + ') · ' + M[2], h: (s + ' ' + k + ' ' + (r.d || '') + ' ' + (r.r || '')).toUpperCase() });
         }
       }
+    }
+  }
+  function sortGroups() {
+    rows.io.sort((a, b) => (a.gk < b.gk ? -1 : a.gk > b.gk ? 1 : a.ch - b.ch || (a.a < b.a ? -1 : 1)));
+    rows.mem.sort((a, b) => (a.gk < b.gk ? -1 : a.gk > b.gk ? 1 : a.a < b.a ? -1 : 1));
+    rows.wire.sort((a, b) => (a.gk < b.gk ? -1 : a.gk > b.gk ? 1 : a.a < b.a ? -1 : 1));
+    /* the I/O unit header names the signal kind(s) of the unit (DI, AI ...) */
+    const kinds = {};
+    for (const r of rows.io) (kinds[r.gk] = kinds[r.gk] || new Set()).add(r.t);
+    for (const r of rows.io) if (!r._k) {
+      r.gl += ' · ' + [...kinds[r.gk]].filter(Boolean).join(' / ');
+      r._k = 1;
     }
   }
   function render() {
@@ -165,13 +204,33 @@
         .toUpperCase()
         .split(/\s+/)
         .filter(Boolean);
-    let n = 0;
+    let n = 0,
+      shown = 0;
     const frag = document.createDocumentFragment();
-    for (const r of src) {
-      if (stn && r.st !== stn) continue;
-      if (words.length && !words.every(w => r.h.includes(w))) continue;
+    const tk = tab + '|' + stn + '|' + q;
+    if (tog._k !== tk) tog = { _k: tk }; /* a new search / station / tab: the groups follow the default again */
+    const ms = src.filter(r => (!stn || r.st === stn) && (!words.length || words.every(w => r.h.includes(w)))),
+      gc = {};
+    for (const r of ms) gc[r.gk] = (gc[r.gk] || 0) + 1;
+    const ng = Object.keys(gc).length,
+      isOpen = k => (tog[k] !== undefined ? tog[k] : words.length > 0 || ng === 1);
+    let gk0 = null;
+    for (const r of ms) {
       n++;
-      if (n > MAX) continue;
+      if (r.gk !== undefined && r.gk !== gk0) {
+        gk0 = r.gk;
+        const k = r.gk,
+          op = isOpen(k);
+        frag.append(
+          E('div', { cls: 'libg' + (op ? ' on' : ''), title: op ? 'Close this group' : 'Open this group', on: () => ((tog[k] = !op), render()) }, [
+            E('b', { txt: (op ? '▾ ' : '▸ ') + r.gl }),
+            E('span', { txt: gc[k] + (gc[k] === 1 ? ' row' : ' rows') })
+          ])
+        );
+      }
+      if (r.gk !== undefined && !isOpen(r.gk)) continue;
+      shown++;
+      if (shown > MAX) continue;
       const row = E('div', { cls: 'libr' }, [
         E('span', { cls: 'st', txt: r.s }),
         E('span', { cls: 'ad', title: 'Copy the address', txt: r.a }),
@@ -193,7 +252,7 @@
           return;
         }
         try {
-          window.lsInfo && window.lsInfo(r.a, { stn: r.st });
+          window.lsInfo && window.lsInfo(r.a, { stn: r.st, look: 1 });
         } catch (x) {}
       });
       row.children[1].onclick = () => copy(r.a);
@@ -208,7 +267,7 @@
         m = rows[ot].filter(r => (!stn || r.st === stn) && words.every(w => r.h.includes(w))).length;
       if (m) other = ' · ' + m + ' in the ' + (ot === 'io' ? 'I/O LIST' : 'MEMORY LIST') + ' tab';
     }
-    cnt.textContent = (n > MAX ? MAX + ' of ' : '') + n + ' rows' + (n > MAX ? ' (type more to narrow)' : '') + other;
+    cnt.textContent = n + (n === 1 ? ' row · ' : ' rows · ') + ng + (ng === 1 ? ' group' : ' groups') + (shown > MAX ? ' · ' + MAX + ' of ' + shown + ' shown (type more to narrow)' : '') + other;
   }
   function build() {
     ws = E('div', { id: 'libws' });
@@ -250,7 +309,10 @@
       E('div', { id: 'libtb' })
     );
     document.body.append(ws);
-    load().then(render);
+    load().then(() => {
+      sortGroups();
+      render();
+    });
   }
   function place() {
     if (!ws) return;
