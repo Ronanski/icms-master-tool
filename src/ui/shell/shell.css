@@ -164,3 +164,17 @@ body.top1 #meta{min-height:34px;align-items:center}
 body.top1 #meta #m_title{font-size:15px!important;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body.top1 #meta #m_sub{font-size:11px;margin-top:0}
 body.top1 #meta #mctl button,body.top1 #meta #mctl select{height:24px;padding:0 6px;font-size:11px}
+/* search info card (1.23.0) */
+#infocard{position:fixed;top:48px;left:50%;transform:translateX(-50%);z-index:120;width:min(460px,96vw);max-height:78vh;overflow:auto;background:#0f151bf5;border:1px solid #3a5670;border-radius:8px;box-shadow:0 12px 36px #000c;font-size:12px;color:#cfd9e2}
+#infocard .ich{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid #26313c;position:sticky;top:0;background:#0f151b}
+#infocard .ich b{font:700 15px var(--mf)}#infocard .icn{color:#7d8e9a;font-size:11px;margin-left:auto}
+#infocard .icd{padding:6px 10px;border-bottom:1px solid #1a232b;color:#b7c6d2}
+#infocard .ics{padding:6px 10px;border-bottom:1px solid #1a232b}
+#infocard .ict{display:flex;align-items:center;gap:8px;margin-bottom:4px}#infocard .ict b{font:700 12.5px var(--mf)}
+#infocard .icv{font:700 12px var(--mf);color:#e8b04a;margin-right:auto}
+#infocard .icl{margin:3px 0}#infocard .icl .k{display:inline-block;width:86px;color:#7d8e9a}
+#infocard .icu{margin:2px 0 4px 18px;padding:0;font:11px var(--mf)}#infocard .icu li{margin:1px 0}
+#infocard .f-fm{color:#ffd78a}#infocard .f-trip{color:#ffb3b3}#infocard .f-ditl{color:#9fd0ff}
+#infocard .tg{display:inline-block;padding:1px 6px;border-radius:3px;font-weight:700;font-size:10.5px}
+#infocard .t-trip{background:#4a1d1d;color:#ffb3b3}#infocard .t-ok{background:#123a26;color:#9ff0c4}
+#infocard .b{height:24px;padding:0 8px;font-size:11px;border-radius:5px}

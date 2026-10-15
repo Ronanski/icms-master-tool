@@ -2,6 +2,22 @@
 
 Base: Stable v1.22.0 (`main`, release `v1.22.0`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 1.23.0-beta.3 — Info card sa global search (galing sa / ginagamit sa / Trip?)
+
+- **Problem:** Bago ang activity, ang tanong: "may tripping ba ito? saan ginagamit? paano malalaman kung ginagamit nga?" Ang search ay nagbubukas lang ng sheet.
+- **Work Done (`src/ui/shell/info.js`, bago; read only):** i-type ang address o tag sa search, tapos **Enter** o **ⓘ**. Lalabas ang card na galing sa netlist ng drawing:
+  - **Description** (I/O list / memory list) at live value sa bawat sheet.
+  - **Galing sa:** kinukuwenta ng aling block (kasama ang mga input nito at ang value), galing sa ibang sheet o DITL, o input ng sheet.
+  - **Ginagamit sa:** mga block na bumabasa nito. **WALA = display lang** (walang logic na bumabasa sa sheet na iyon).
+  - **Trip?:** sinusundan ang signal pababa sa sheet: force manual / AUTO select ng controller, TRIP / MFT / STOP / ESD / RUN BACK, TO DITL, at ibang sheet na naaabot.
+  - **DITL:** saan ito sa DITL page (sheet, row, input / output).
+  - May **Show** para buksan ang sheet at piliin ang wire.
+- **As Left:** `tests/regress/infocard.js` 9 / 9:
+  - M.0228: OR; ginagamit ng 2 block; FORCE MANUAL ng FICFW1007.
+  - M.3410: 4 na lugar sa ABC; sa ABC-029 / 003A ay galing sa ABC-004A; FORCE MANUAL ng HS-COAL; TO DITL 07-05.
+  - Walang nagbabagong value.
+- **Status:** Pass (headless).
+
 ## 1.23.0-beta.2 — Overview ng mga controller, force list, at mga font na pipiliin
 
 - **Problem:** Sa Operator tab, bawat faceplate ay mga 390 px ang taas (4 na controller = 4488 px na kailangang i-scroll). Walang mabilis na force ng mga signal ng loop. Pangit ang font sa ibang device (fallback ng system).
