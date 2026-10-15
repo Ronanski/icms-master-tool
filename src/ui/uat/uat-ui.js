@@ -378,7 +378,7 @@
       E('div', { cls: 'row' }, [
         E('button', {
           cls: 'go',
-          txt: sbusy ? 'Tumatakbo...' : '▶ Run ALL scenarios',
+          txt: sbusy ? 'Running...' : '▶ Run ALL scenarios',
           on: () => runScen(sh, sp.scenarios)
         })
       ])
@@ -414,7 +414,7 @@
               }),
               E('td', {}, [
                 document.createTextNode(
-                  l.t + (l.k !== 'do' && l.exp !== undefined ? '  →  inaasahan: ' + l.exp + ' | nakita: ' + l.got : '')
+                  l.t + (l.k !== 'do' && l.exp !== undefined ? '  →  expected: ' + l.exp + ' | actual: ' + l.got : '')
                 )
               ])
             ])
@@ -471,7 +471,7 @@
           E('div', { cls: 'sub', txt: r.g + ' · ' + r.l })
         ].concat(
           r.rows.map(x =>
-            E('div', { cls: 'sub', style: 'font-family:var(--mf,monospace)' , txt: '  ' + x.t + ': inaasahan ' + x.exp + ' · nakita ' + x.act + (x.ok ? '  ✔' : '  ✖') })
+            E('div', { cls: 'sub', style: 'font-family:var(--mf,monospace)' , txt: '  ' + x.t + ': expected ' + x.exp + ' · actual ' + x.act + (x.ok ? '  ✔' : '  ✖') })
           )
         ))
       );
