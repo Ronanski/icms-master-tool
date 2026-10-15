@@ -52,6 +52,6 @@ Walang kategorya, isang listahan lang. `[ ]` = hindi pa; `[x]` = tapos at na-che
 
 ## Katayuan (2026-10-15)
 - **TAPOS `[x]`:** #1, #2.
-- **BAHAGYA `[~]`:** #9 (COS: naisuri na sa PDF; ang pangalan sa panel ay hindi pa), #22 (linis ng code: tapos ang analog at DITL; hindi pa ang `plant-window.js` at `links-canvas.js`), #13 at #14 (tapos lang ang ABC-007), #5 (62 sa 68 controller ang malinis; 5 ang walang malinis na estado at 1 ang may mali), #4 (tumatakbo pa; may bahagyang resulta).
+- **BAHAGYA `[~]`:** #9 (COS: naisuri na sa PDF; ang pangalan sa panel ay hindi pa), #22 (linis ng code: tapos ang analog at DITL; hindi pa ang `plant-window.js` at `links-canvas.js`), #13 at #14 (tapos lang ang ABC-007), #5 (62 sa 68 controller ang malinis; 5 ay kailangan ng hand-written na scenario dahil kondisyon ng proseso ang pumipigil; FICFW1007 ay hindi pa ginagalaw), #4 (structure.js: 51 sheet, 1 hindi nakakabit at 2 dead end na benign; ang simulation cone ay hindi pa kumpleto), #6 (ABC-007: B1/B2 BU-CMD tapos; kulang pa ang FAULT hold, alarm M.3130/M.3131, SIG.AB).
 - **HINDI PA `[ ]`:** #3, #6, #7, #8, #10, #11, #12, #13 (ibang cluster), #14 (53 sheet), at lahat ng `[F]`.
 - Mga natapos na wala sa orihinal na listahan: SemVer na version, multi-file na app para sa apk / exe, DITL cleanup, faceplate ayon sa planta, bumpless na AUTO -> MAN (engine), proseso na sumusunod sa tunay na utos sa valve, SV para sa AUTO lang, awtomatikong tester ng controller (headless).
