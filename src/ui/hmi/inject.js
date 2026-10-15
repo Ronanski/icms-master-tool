@@ -20,6 +20,8 @@ const block =
   fs.readFileSync(__dirname + '/hmi.css', 'utf8') +
   '</style><script id="hmijs">' +
   fs.readFileSync(__dirname + '/hmi.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/overview.js', 'utf8') +
   '</script>' +
   B;
 const k = s.lastIndexOf('</body>');
