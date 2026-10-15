@@ -546,9 +546,12 @@ window.UATS = (function () {
               const r = AN.extRange && AN.extRange(S, n),
                 keep = anOv.has(n) ? anOv.get(n) : mid;
               let bv = keep;
-              if (r && r.hi > r.lo)
-                for (const f of [0.1, 0.3, 0.7, 0.9]) {
-                  anOv.set(n, r.lo + f * (r.hi - r.lo));
+              /* walang range na kilala (linked na PV mula sa ibang sheet): mga karaniwang halaga ng proseso (°C, kg/cm2, T/H) */
+              const cand =
+                r && r.hi > r.lo ? [0.1, 0.3, 0.7, 0.9].map(f => r.lo + f * (r.hi - r.lo)) : [10, 100, 250, 400, 700];
+              for (const v of cand) {
+                {
+                  anOv.set(n, v);
                   const r1 = await climb(cur, await score(cur)),
                     sc1 = r1.cs;
                   if (sc1 < cs) {
@@ -557,6 +560,7 @@ window.UATS = (function () {
                     bv = anOv.get(n);
                   }
                 }
+              }
               anOv.set(n, bv);
               if (cs < 1000) break;
             }
