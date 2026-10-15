@@ -46,6 +46,8 @@ const block =
   fs.readFileSync(__dirname + '/shell.css', 'utf8') +
   '</style><script id="shelljs">' +
   fs.readFileSync(__dirname + '/shell.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/info.js', 'utf8') +
   '</script>' +
   B;
 const k = s.lastIndexOf('</body>');
