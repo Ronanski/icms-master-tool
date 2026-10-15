@@ -2,6 +2,19 @@
 
 Base: Stable v1.23.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f). Bakit 2.0.0: bagong henerasyon ng itsura at English ang buong app (PROJECT_RULES 5f, user 2026-10-15: "standard tayo, baka umabot ng v1.9999").
 
+## 2.0.0-beta.2 — English ang text ng scenario test (UAT)
+
+- **Problem:** Tagalog pa ang mga hakbang at resulta ng scenario test sa UAT panel (ABC-007), at ang "expected / actual" ng Spot check.
+- **Work Done:**
+  - `src/ui/uat/scen.js` (~111 string) at `src/ui/uat/scenarios/ABC-007.json` (177 string): English ang title, step, drawing text at why.
+  - Ang mga salitang ikinukumpara rin ng code ay pinalitan sa dalawang file nang sabay: unchanged, increased / decreased, at SV, open, cut / free, none.
+  - `uat-ui.js`: Running..., expected / actual.
+  - `tests/scenarios/generic.js`: regex ng "REMAINING STEPS NOT TESTED".
+  - Ang "Needs Verification" sa isang why ay pinalitan: "The drawing shows no MV restore: the MV follows the bumpless tracking of the A/M station as drawn."
+- **As Left (headless):** ABC-007 scenarios 184 / 0; info card, overview, event log, in-app update: ALL PASS.
+- **Hindi pa nasubok:** totoong tablet / phone.
+- **Status:** Pass (headless), Beta.
+
 ## 2.0.0-beta.1 — Console look, English sa app, Plant window ibinalik
 
 - **Problem:** Gusto ng user ng technical, "maangas" na itsura na pang-engineer (inspirasyon: ABB Control Builder, Yokogawa CENTUM VP, TIA Portal). Magkakaiba ang laki ng font, may halong Tagalog sa app, at nawala ang Plant window (2nd monitor, plant graphics per system).

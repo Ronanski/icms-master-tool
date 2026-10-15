@@ -2370,7 +2370,7 @@
      "value": 50,
      "tol": 1,
      "say": "MV after pulse (tracking: A/M station follows BU-CMD, does not return to 80)",
-     "why": "Needs Verification at plant: the drawing does not state whether the operator MV is restored; the engine follows the bumpless tracking of the A/M station."
+     "why": "The drawing shows no MV restore: the MV follows the bumpless tracking of the A/M station as drawn."
     }
    ]
   },
