@@ -2,7 +2,7 @@
 // Ang scenarios ay nasa src/ui/uat/scenarios/<sheet>.json (inaasahang sagot mula sa PDF, hindi kinuwenta ng engine).
 // Usage: node tests/scenarios/run.js [html] [sheet ...]
 const fs=require('fs');const {open}=require('../regress/lib.js');
-const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+\.html$/.test(x));
+const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 const want=process.argv.slice(2).filter(a=>!/\.html$/.test(a));
 (async()=>{const {browser,page,errs}=await open(html);let pass=0,fail=0;
 const sheets=await page.evaluate(()=>Object.keys(JSON.parse(document.getElementById('uatdata').textContent).scen));

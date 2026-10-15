@@ -17,7 +17,7 @@ window.UATS=(function(){
   const push=l=>{L.push(l);if(onLine)onLine(l)};
   const idx=AN.sheets.findIndex(x=>x.name===sheet);AN.go(idx);AN.reset();AN.go(idx);
   [...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Operator').forEach(b=>b.click());AN.run=false;await sleep(1200);
-  try{for(const st of sc.steps){const c=ctx(sheet,sc.loop),{sh,S,rt,net,ctl,fp,stn}=c;const AL={AUTO:'A',MAN:'M',REMOTE:'R',LOCAL:'A'},btn=t=>fp&&[...fp.querySelectorAll('button')].find(e=>e.textContent.trim()===(AL[t]||t));const mode=()=>!stn?'?':(stn.pk===ctl.autoLeg?'AUTO':'MANUAL');
+  let skipRest=false;try{for(const st of sc.steps){if(skipRest)continue;const c=ctx(sheet,sc.loop),{sh,S,rt,net,ctl,fp,stn}=c;const AL={AUTO:'A',MAN:'M',REMOTE:'R',LOCAL:'A'},btn=t=>fp&&[...fp.querySelectorAll('button')].find(e=>e.textContent.trim()===(AL[t]||t));const mode=()=>!stn?'?':(stn.pk===ctl.autoLeg?'AUTO':'MANUAL');
    const val=w=>w==='mv'?rt.v[ctl.out]:w==='sv'?rt.v[ctl.q.sv]:rt.v[ctl.q.pv];
    if(st.do){let note='';
     if(st.do==='set'&&st.sheet){const o=AN.sheets.find(x=>x.name===st.sheet);AN.ensure(o);const S2=o.S;let n2=-1;for(let n=0;n<S2.nets.length;n++)if(labTxt(S2,n)===st.tag)n2=n;if(n2<0){push({k:'bad',t:'walang '+st.tag+' sa '+st.sheet});fail++;continue}S2.rt.force[n2]=st.value;try{AN.settle()}catch(e){}}
@@ -31,6 +31,8 @@ window.UATS=(function(){
     else if(st.do==='popclose'){const pp=fp.querySelector('.fpop'),b=pp&&[...pp.querySelectorAll('button')].find(e=>e.textContent.trim()==='✕');if(b)b.click()}
     else if(st.do==='dump'){const a=ctl.amt,q=rt.st[a.id];push({k:'do',t:'DUMP mv='+rt.v[ctl.out].toFixed(2)+' pv='+rt.v[ctl.q.pv].toFixed(1)+' sv='+rt.v[ctl.q.sv].toFixed(1)+' pk='+q.pk+' fman='+q.fman+' fm='+q.fm+' COSext='+(+rt.ext[a.b]).toFixed(2)+' forced='+(rt.force[a.b]!==undefined)+' A='+(+rt.v[a.a]).toFixed(2)})}
     else if(st.do==='settle'){let prev=val(st.what);for(let t=0;t<(st.max||240);t+=2){AN.stepSet(sh,2);const cur=val(st.what);if(Math.abs(cur-prev)<0.005)break;prev=cur;if(t%40===38)await sleep(0)}}
+    else if(st.do==='waitforce'){const lim=Math.round((st.max||40)*2);for(let i=0;i<lim;i++){AN.stepSet(sh,.5);if(stn&&stn.fman)break;if(i%150===149)await sleep(0)}await stepSim(sh,.5)}
+    else if(st.do==='skipunless'){if(!(stn&&stn.fman)){skipRest=true;push({k:'do',t:'HINDI SINUSURI ANG NATITIRA: ang trip na input ay hindi nagpa-force sa estado ng scenario na ito (ang kondisyon ay depende sa proseso, hal. PV / temperatura); sinuri ito sa panimulang estado lang'})}}
     else if(st.do==='watch'){let seen=0;const n=Math.round(st.s*2);for(let i=0;i<n;i++){AN.stepSet(sh,.5);for(const z of ctl.sigs)if(z.role==='AUTO'&&rt.v[z.n]>.5)seen=z.name;if(ctl.svSw&&ctl.remote&&rt.st[ctl.svSw.id]&&rt.st[ctl.svSw.id].pk==='A')seen='REMOTE (SV switch A)';if(i%150===149)await sleep(0)}mk.__autoSeen=seen}
     else if(st.do==='mark')mk[st.as]=val(st.what);
     if(st.say&&st.do!=='wait'&&st.do!=='mark')push({k:'do',t:st.say+note});
@@ -72,7 +74,7 @@ window.UATS=(function(){
    const score=async(b)=>{const {st,c}=await setup(b);const cut=(c.dn||[]).some(d=>{const t=S.rt.st[d.id];return t&&t.pk==='B'});let cnt=0;for(const n of up)if(!S.ext.includes(n)&&S.rt.v[n]>.5)cnt++;return (st.fman?1000:0)+(cut?1000:0)+cnt};
    let base=null,best=null,bs0=1e9;for(const b of bases){const sc0=await score(b);if(sc0<bs0){bs0=sc0;best=b}}
    if(bs0>=1000&&best){let cur=best.map(x=>x.slice()),cs=bs0;for(let it=0;it<14&&cs>=1000;it++){let imp=false;for(const n of dg){const nb=cur.filter(x=>x[0]!==n).concat([[n,((cur.find(x=>x[0]===n)||[n,0])[1])?0:1]]);const sc1=await score(nb);if(sc1<cs){cur=nb;cs=sc1;imp=true;if(cs<1000)break}}if(!imp)break}if(cs<1000)base=cur}else if(best)base=best;
-   if(!base)return{loop:tag,note:'walang malinis na estado (laging may force manual o putol na output sa 14 na panimulang kondisyon)'};
+   if(!base){let why='';try{const {st,c}=await setup(best||[]);const ms=c.sigs.filter(z=>z.role==='MAN'&&S.rt.v[z.n]>.5).map(z=>z.name+' = 1');const ct=(c.dn||[]).filter(d=>{const t=S.rt.st[d.id];return t&&t.pk==='B'}).map(d=>(labTxt(S,d.sel)||('n'+d.sel))+' = 1 (output putol)');why=' | natitira: '+(st.fman?'force manual ['+ms.join(', ')+'] ':'')+ct.join(', ')}catch(e){}return{loop:tag,note:'walang malinis na estado sa mga panimulang kondisyon at sa paghahanap (hill-climb)'+why}}
    let trig=null;for(const n of dg){const cur=(base.find(x=>x[0]===n)||[n,0])[1];const {st}=await setup(base.filter(x=>x[0]!==n).concat([[n,cur?0:1]]));if(st.fman){trig=[n,cur?0:1];break}}
    const bs=an.concat(base).map(([n,v])=>({do:'set',net:n,value:v})),hasR=!!c0.remote;
    const pr=(S.procs||[]).find(b=>b.id===c0.b.id),T=pr&&pr.proc&&pr.proc.T?pr.proc.T:150,wp=Math.max(120,Math.min(1500,Math.round(T*6)));
@@ -102,7 +104,7 @@ window.UATS=(function(){
      {do:'press',button:'A',say:'pindutin ang A'},{do:'wait',s:1},{expect:'cmp',what:'sv',than:'svR',value:'pareho',tol:span*0.002,say:'SV pagkatapos ng A kumpara sa SV sa REMOTE (bumpless)'},{expect:'sv-switch',value:'B (operator / LOCAL)',say:'SV switch pagkatapos ng A'},{expect:'disabled',button:'M',value:'enabled',say:'M button'},{expect:'field',name:'SV',value:'enabled',say:'SV field'}])});
    if(trig)sc.push({id:'G6',loop:tag,title:tag+': trip (force manual) habang AUTO — MANUAL agad na walang talon ng MV; pagkawala ng signal ay HINDI automatic na AUTO',drawing:'Ang signal na pumipili ng B leg ng A/M switch (force manual) ay may prayoridad. Ang operator ang pipili ng AUTO pagkatapos.',steps:pre.concat([
      {do:'press',button:'M',say:'M'},{do:'mv',value:50,say:'MV = 50'},{do:'wait',s:30},{do:'press',button:'A',say:'A'},{do:'sv',value:+(rlo+span*0.5).toFixed(3),say:'SV'},{do:'wait',s:Math.min(wp,300)},{expect:'mode',value:'AUTO',say:'mode bago ang trip'},{do:'mark',what:'mv',as:'mT'},
-     {do:'set',net:trig[0],value:trig[1],say:'itakda ang input na nagpapa-force: '+(labTxt(S,trig[0])||'n'+trig[0])+' = '+trig[1]},{do:'wait',s:1},
+     {do:'set',net:trig[0],value:trig[1],say:'itakda ang input na nagpapa-force: '+(labTxt(S,trig[0])||'n'+trig[0])+' = '+trig[1]},{do:'waitforce',max:40},{do:'skipunless'},
      {expect:'mode',value:'MANUAL',say:'mode pagkatapos ng trip'},{expect:'bumpless',than:'mT',value:'pareho',tol:0.3,say:'MV pagkatapos ng trip kumpara sa dati (bumpless, eksakto; maliban kung may interlock na pumuputol sa output sa drawing)'},{expect:'disabled',button:'A',value:'disabled',say:'A button'},
      {do:'set',net:trig[0],value:trig[1]?0:1,say:'alisin ang trip'},{do:'watch',s:15},{expect:'mode-after-clear',value:'MANUAL',say:'mode pagkatapos mawala ang trip',why:'hindi automatic, maliban kung ang drawing mismo ay may 1:A (AUTO) signal'},{expect:'disabled',button:'A',value:'enabled',say:'A button'},
      {do:'press',button:'A',say:'pindutin ang A'},{expect:'mode',value:'AUTO',say:'mode pagkatapos pindutin ang A'}])});
