@@ -1,5 +1,7 @@
 # Checklist ng lahat ng gagawin (user 2026-10-15) — pinakamabilis hanggang pinakamatagal
 
+Ang oras ay ang oras ng trabaho at takbo ng test ko (hindi araw ng tao). HINDI kasama ang hintay sa pagsubok mo sa device at sa pag-apruba. Ang mga estimate ay hula; ang pinakamahaba ay ang pagbasa ng PDF (isa-isang sheet) at ang takbo ng simulation (ang buong tester ng controller ay umabot ng ~40 minuto sa 4 na sabay na proseso).
+
 Walang kategorya, isang listahan lang. `[ ]` = hindi pa; `[x]` = tapos at na-check; `[F]` = FUTURE PLAN (hindi pa ipatutupad, hintayin ang utos). Ang hatol ng user: ang bawat sheet ay sinusuri mula INPUT hanggang sa halaga ng bawat block, tama ang switching sa bawat scenario, at lahat ay ayon sa PDF diagram sa repo.
 
 1. [ ] **Itala ang mga plano sa HANDOFF at i-link ang checklist na ito.** Para kahit bagong session ay alam agad ang susunod. (minuto)
@@ -11,20 +13,20 @@ Walang kategorya, isang listahan lang. `[ ]` = hindi pa; `[x]` = tapos at na-che
 7. [ ] **Pangalan ng natitirang input na walang tag** (mga ~600 na tag na hindi pa nakakabit sa wire). Alamin kung alin ang tunay na input; ang pangalan ay tumutulong sa panel at sa "Bakit?". (3~4 oras)
 8. [ ] **26 na live-value na nagkakapatong** sa drawing (UI lang). Subukan nang paisa-isa sa mga sheet na may problema. (3~4 oras)
 9. [ ] **Ang 7 COS / 42 COS na hindi 'used':** naisuri na ang lahat sa PDF; tapusin ang ulat at ang pangalan ng bawat isa sa panel. (2 oras)
-10. [ ] **Pagsubok ng digital logic sa lahat ng kombinasyon ng input** sa mga bahagi ng sheet na maliit ang bilang ng input (AND / OR / NOT / timer / flip-flop). Hinahambing sa hiwalay na pagkuwenta, kaya nahuhuli ang bug ng engine. (kalahating araw)
-11. [ ] **Awtomatikong tester ng halaga ng bawat block sa bawat sheet** (ang hiningi ng user: "from input, tama ang lalabas na value ng bawat block"): hiwalay na tagakuwenta (oracle) ng AND, OR, NOT, ADD, SUB, MUL, DIV, SQRT, ABS, HC, LC, MAX, MIN, F(X), LAG, RATE, TPS, TON, TOF, SEL, at iba pa; random na input; inihahambing sa engine sa bawat net ng 54 na sheet. (1~2 araw)
-12. [ ] **Awtomatikong tester ng switching** (SW, AMT, T switch, selector): sa bawat selector sa bawat sheet, subukan ang lahat ng leg at ang select signal na 1:A / 1:B; ang inaasahan ay hiwalay na kuwenta. (1 araw, kasabay ng #11)
-13. [ ] **Scenario mula sa PDF para sa mga loop na ginagamit ng operator** (cluster ng sheet, tingnan ang sagot sa ibaba): force manual / interlock truth table, SV path, AUTO / MAN / REMOTE, trip at pagbalik, para sa bawat cluster: (a) 003A–E + 007 + 006 (burner oil at hangin), (b) 004A–C + 005 + 002 (coal feeder at limestone), (c) 001A–D + 002 + 013 + 001C (load at main steam pressure), (d) 010 (drum level), (e) 011 + 012 (SH temp), (f) 019 + 020 (reheat temp), (g) 050 + 051 + 052 (bypass at reheat), (h) 009A + 009B, (i) 015 + 016 + 057, (j) 026 + 027 + 028 + 029 + 030 + 033 + 053 + 054 + 055 + 056, (k) 031 + 032 + 034 ~ 039 (condenser, heater drain). (ilang oras bawat cluster; ilang araw kabuuan)
-14. [ ] **Audit ng bawat sheet laban sa PDF** (function, process, cause-and-effect; lalo na AUTO / REMOTE / MANUAL): ginawa na ang ABC-007; ang natitirang 53 ay sabay sa #13. (ilang araw)
-15. [F] **"Bakit?" at "Sanhi?" na buo:** piliin ang valve o controller at sasabihin sa simpleng salita kung bakit hindi bumukas, bakit ganito lang ang opening, bakit ganito ang demand, o bakit mataas pa rin ang temperatura kahit ibinago ang hangin. Sumusunod sa logic ng drawing, hanggang sa pinagmulang input at sa proseso (hal. air / fuel / spray / pressure). (1~2 araw)
-16. [F] **Checklist ng permissive:** ano ang kailangan para makapag-AUTO, makapag-start o magbukas, may ✔ / ✖ ayon sa kasalukuyang estado. (1 araw)
-17. [F] **Cause-and-effect matrix na kusang gawa at i-export sa Excel.** (1 araw)
-18. [F] **Audit ng drawing laban sa I/O list at memory list** (address, paglalarawan, patay na tag). (1 araw)
-19. [F] **Tuning lab:** subukan ang P / I / D ng loop sa plant model at tingnan ang tugon ng PV; ang parameter ay mula sa summary sa repo. (1 araw)
-20. [F] **Rehearsal ng startup at shutdown** (scenario na hakbang-hakbang, may marka). (2~3 araw)
-21. [F] **"Compare" ng dalawang bersyon ng sheet** bago baguhin ang logic: ano ang naapektuhan. (2~3 araw)
-22. [ ] **Linisin ang code:** hatiin ang malalaking file (`compile-step.js` 116 KB, `ditl-app.js` 125 KB, `plant-window.js` 62 KB) at ayusin ang napakahabang linya. Walang magbabago sa gawi; ang html ay dapat pareho ang gawi. (2~3 araw; ang DITL ay hindi gagalawin nang walang utos)
-23. [F] **Rebisyon ng UI / UX para sa tablet:** mas malaking button, iisang ibabang bar, buong-screen na faceplate at trend page. Dagdag, hindi overhaul. (2~3 araw)
+10. [ ] **Pagsubok ng digital logic sa lahat ng kombinasyon ng input** sa mga bahagi ng sheet na maliit ang bilang ng input (AND / OR / NOT / timer / flip-flop). Hinahambing sa hiwalay na pagkuwenta, kaya nahuhuli ang bug ng engine. (2–3 oras)
+11. [ ] **Awtomatikong tester ng halaga ng bawat block sa bawat sheet** (ang hiningi ng user: "from input, tama ang lalabas na value ng bawat block"): hiwalay na tagakuwenta (oracle) ng AND, OR, NOT, ADD, SUB, MUL, DIV, SQRT, ABS, HC, LC, MAX, MIN, F(X), LAG, RATE, TPS, TON, TOF, SEL, at iba pa; random na input; inihahambing sa engine sa bawat net ng 54 na sheet. (4–6 oras)
+12. [ ] **Awtomatikong tester ng switching** (SW, AMT, T switch, selector): sa bawat selector sa bawat sheet, subukan ang lahat ng leg at ang select signal na 1:A / 1:B; ang inaasahan ay hiwalay na kuwenta. (2–3 oras, kasabay ng #11)
+13. [ ] **Scenario mula sa PDF para sa mga loop na ginagamit ng operator** (cluster ng sheet, tingnan ang sagot sa ibaba): force manual / interlock truth table, SV path, AUTO / MAN / REMOTE, trip at pagbalik, para sa bawat cluster: (a) 003A–E + 007 + 006 (burner oil at hangin), (b) 004A–C + 005 + 002 (coal feeder at limestone), (c) 001A–D + 002 + 013 + 001C (load at main steam pressure), (d) 010 (drum level), (e) 011 + 012 (SH temp), (f) 019 + 020 (reheat temp), (g) 050 + 051 + 052 (bypass at reheat), (h) 009A + 009B, (i) 015 + 016 + 057, (j) 026 + 027 + 028 + 029 + 030 + 033 + 053 + 054 + 055 + 056, (k) 031 + 032 + 034 ~ 039 (condenser, heater drain). (2–3 oras kada cluster, 11 cluster = mga 25–30 oras kabuuan; ang pinakamahaba ay ang pagbasa ng PDF at ang takbo ng simulation)
+14. [ ] **Audit ng bawat sheet laban sa PDF** (function, process, cause-and-effect; lalo na AUTO / REMOTE / MANUAL): ginawa na ang ABC-007; ang natitirang 53 ay sabay sa #13. (kasama sa oras ng #13)
+15. [F] **"Bakit?" at "Sanhi?" na buo:** piliin ang valve o controller at sasabihin sa simpleng salita kung bakit hindi bumukas, bakit ganito lang ang opening, bakit ganito ang demand, o bakit mataas pa rin ang temperatura kahit ibinago ang hangin. Sumusunod sa logic ng drawing, hanggang sa pinagmulang input at sa proseso (hal. air / fuel / spray / pressure). (4–6 oras)
+16. [F] **Checklist ng permissive:** ano ang kailangan para makapag-AUTO, makapag-start o magbukas, may ✔ / ✖ ayon sa kasalukuyang estado. (2–3 oras)
+17. [F] **Cause-and-effect matrix na kusang gawa at i-export sa Excel.** (2–3 oras)
+18. [F] **Audit ng drawing laban sa I/O list at memory list** (address, paglalarawan, patay na tag). (2–3 oras)
+19. [F] **Tuning lab:** subukan ang P / I / D ng loop sa plant model at tingnan ang tugon ng PV; ang parameter ay mula sa summary sa repo. (3–4 oras)
+20. [F] **Rehearsal ng startup at shutdown** (scenario na hakbang-hakbang, may marka). (6–8 oras)
+21. [F] **"Compare" ng dalawang bersyon ng sheet** bago baguhin ang logic: ano ang naapektuhan. (6–8 oras)
+22. [ ] **Linisin ang code:** hatiin ang malalaking file (`compile-step.js` 116 KB, `ditl-app.js` 125 KB, `plant-window.js` 62 KB) at ayusin ang napakahabang linya. Walang magbabago sa gawi; ang html ay dapat pareho ang gawi. (4–6 oras; ang DITL ay hindi gagalawin nang walang utos)
+23. [F] **Rebisyon ng UI / UX para sa tablet:** mas malaking button, iisang ibabang bar, buong-screen na faceplate at trend page. Dagdag, hindi overhaul. (4–6 oras)
 24. [F] **Overhaul ng app:** HINDI inirerekomenda ngayon; ang engine at mga test ay matatag na. Pag-isipan lang kapag natapos na ang #13 at #14.
 
 ## Mga sagot sa tanong ng user
