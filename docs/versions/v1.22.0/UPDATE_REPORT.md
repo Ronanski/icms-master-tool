@@ -2,6 +2,31 @@
 
 Base: Stable v1.21.0 (`main`, release `v1.21.0`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 1.22.0-beta.3 — ABC: ang PV ay sumusunod sa tunay na utos sa valve; ang damper ng reheat ay may epekto na
+
+- **Problem:** Sa ABC-030, naka-MAN ang PICAS1005 at MV 0 → 100 %, pero hindi gumagalaw ang PV. Sa ABC-020, ang RH/SH flue gas damper (TICHR1002A) ay walang epekto sa reheater outlet temperature.
+- **As Found:**
+  1. Sa plant model, ang utos sa valve (output ng A/M station pagkatapos ng mga interlock selector) ay hinahanap sa maling lugar (`plant.js`: `stn.o` sa halip na `stn.amt.o`). Kaya sa LAHAT ng loop, ang proseso ay sumasagot sa internal output ng PID, hindi sa utos na talagang umaabot sa valve.
+  2. Ang measurement na hawak ng controller sa ibang sheet ay sa may-ari lang nakikinig. Halimbawa, ang reheater outlet temp ng ABC-019 ay galing sa spray (TICHR1002) at sa damper ng ABC-020 (TICHR1002A), pero ang spray lang ang binibilang.
+- **Work Done:**
+  - Ang PV ay sumusunod na sa utos na umaabot sa valve. Kapag ang interlock selector ng drawing ay nagpapadala ng 0 %, sarado ang valve, kaya hindi gagalaw ang PV.
+  - Ang controller na nasa ibang sheet at may sariling actuator (valve / damper / AO) ay kasama na sa plant model ng may-ari ng measurement. Bawat isa ay may sariling direksyon (ACT ng PID). Ang cascade master na walang actuator (hal. FIC-OM) ay hindi kasama: gumagalaw ito sa pamamagitan ng mga slave.
+  - Ang PV-reacts check (`tests/regress/pv_reacts.js`) ay nagsasabi na kung BAKIT hindi gumagalaw ang PV: aling selector at aling signal ang pumuputol, o kung cascade master ito.
+- **As Left (ang makikita mo sa app, Plant model ON, LOCAL + MAN):**
+  - ABC-030 PICAS1005, kapag M.0129 = 0: MV 0 % → PV 0 kg/cm², MV 100 % → PV 14.96 kg/cm².
+  - ABC-030 PICAS1005, kapag M.0129 = 1: 0 % ang napupunta sa valve (interlock ng drawing), kaya hindi gumagalaw ang PV. Tama ito.
+  - ABC-020 TICHR1002A (damper) sa MAN, habang sarado ang spray dahil sa M.0173: damper 20 % → reheater outlet 327.7 °C, damper 80 % → 446.4 °C.
+  - 57 sa 68 controller: gumagalaw ang PV kapag binago ang MV (dati: 54).
+  - Ang 11 na hindi gumagalaw, lahat may sanhi sa drawing:
+    - Interlock na nagsasara ng valve sa cold start:
+      - PICDO1043A / B / C / D: OR = 1, wala sa serbisyo ang burner;
+      - TICBR1130: M.0235;
+      - TICBR1150: M.0245;
+      - PICAS1005: M.0129;
+      - TICHR1012: M.072C.
+    - Cascade master, ang PV ay kabuuan ng mga slave: FIC-CF (coal feeders), HS-COAL, PIC-BASC (4 na screw cooler).
+- **Status:** Pass (headless). Tingnan sa app: ABC-020, MAN, galawin ang MV ng TICHR1002A, at bantayan ang temperatura sa ABC-019.
+
 ## 1.22.0-beta.2 — IISANG MUNDO ng ABC at DITL (CHECKLIST #25, unang bahagi)
 
 - **Problem:** Hindi tumatakbo ang DITL kasabay ng ABC. Ang "FROM DITL" na input ng ABC ay manual na switch lang, at hindi nakakarating sa DITL ang "TO DITL" na output ng ABC. Ang DITL sheet ay hindi rin nakakatanggap mula sa ibang DITL sheet. Kaya walang plant simulation ng buong boiler.

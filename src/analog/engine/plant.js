@@ -226,17 +226,22 @@ function anProcStep(S, dt) {
       }
       continue;
     }
-    const st = rt.st[b.id] || {},
-      uOf = g => {
-        const t = rt.st[g.id] || {};
+    /* the command of controller g of sheet GS (the owner sheet, or another sheet for a measurement shared across sheets) */
+    const uOfS = (GS, g) => {
+        const t = GS.rt.st[g.id] || {},
+          v = GS.rt.v,
+          S = GS;
         if (g.vel && g.velNet != null) return v[g.velNet];
         /* the process answers the COMMAND THAT REALLY GOES TO THE VALVE: the output of the A / M station after the selectors that follow it (interlock / back-up legs), not the internal output of the PID (v1.20.67: a shared controller in MANUAL or a PID that is not tracking gave 0) */ if (
           g._fo === undefined
         ) {
           g._fo = null;
           try {
-            const stn = anStationOf(S, g);
-            let cur = stn && stn.o && stn.o[0] >= 0 ? stn.o[0] : null;
+            /* 1.22.0: anStationOf gives { amt, ... }: the output of the station is amt.o[0] (before: stn.o, always undefined, so the
+               process answered the internal PID output, e.g. ABC-030 PICAS1005 PV did not move with MV 0 -> 100 % in MANUAL) */
+            const stn = anStationOf(S, g),
+              so = stn && stn.amt && stn.amt.o;
+            let cur = so && so[0] >= 0 ? so[0] : null;
             if (cur != null) {
               const seen = new Set();
               for (let k = 0; k < 6; k++) {
@@ -253,6 +258,7 @@ function anProcStep(S, dt) {
         }
         return g._fo != null && isFinite(v[g._fo]) ? v[g._fo] : t.out == null ? 0 : t.out;
       },
+      uOf = g => uOfS(S, g),
       u = (() => {
         /* two controllers on the same PV (valves in parallel, e.g. A and B side): the PV answers the average of their open commands (v1.20.58) */ const sh =
           b._sh || (b._sh = S.procs.filter(g => g !== b && g.proc && g.proc.mode === 'shared' && g.proc.pv === pr.pv));
@@ -266,7 +272,21 @@ function anProcStep(S, dt) {
       lo = b.p.rlo != null ? b.p.rlo : 0,
       um = ((b.p.lo == null ? 0 : b.p.lo) + (b.p.hi == null ? 100 : b.p.hi)) / 2;
     /* plant: steady state PV = bottom of the range + span * (0.5 + sign * K * (command - middle) / 100) + disturbance; dead time, then first order; it cannot leave the range of the instrument */
-    const ss = c => lo + span * (0.5 + (pr.sg * pr.K * (c - um)) / 100) + ((pr.dist || 0) / 100) * span + (pr.op || 0);
+    /* 1.22.0: controllers of OTHER sheets on this measurement (pr.xsh, links.js procRemote): each one moves the PV in its own
+       direction (ACT of its PID); the PV answers the average effect of this controller and of them (one controller: as before) */
+    const xe = (pr.xsh || [])
+        .filter(x => x.b.proc && x.b.proc.on && x.S.rt)
+        .map(x => {
+          const xp = x.b.proc,
+            xum = ((x.b.p.lo == null ? 0 : x.b.p.lo) + (x.b.p.hi == null ? 100 : x.b.p.hi)) / 2,
+            xs = x.b.p.act < 0 ? 1 : -1;
+          return (xs * (xp.K || 1) * (uOfS(x.S, x.b) - xum)) / 100;
+        }),
+      eff = c => {
+        const e0 = (pr.sg * pr.K * (c - um)) / 100;
+        return xe.length ? (e0 + xe.reduce((a, x) => a + x, 0)) / (1 + xe.length) : e0;
+      };
+    const ss = c => lo + span * (0.5 + eff(c)) + ((pr.dist || 0) / 100) * span + (pr.op || 0);
     if (!q) q = pm[b.id] = { y: ss(u), h: [], u: null };
     if (dt > 0) {
       q.h.push([rt.t, u]);

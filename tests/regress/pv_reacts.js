@@ -16,13 +16,14 @@ const R=await page.evaluate(([only,running])=>{const out=[];const mid=()=>{for(c
     const setMV=v=>{if(c.manBlk&&S.rt.st[c.manBlk.id])S.rt.st[c.manBlk.id].val=v;else S.rt.ext[c.manNet]=v};
     setMV(40);run(20);const pv1=S.rt.v[c.q.pv],mv1=S.rt.v[c.out];setMV(65);run(60);const pv2=S.rt.v[c.q.pv],mv2=S.rt.v[c.out];
     const pr=(S.procs||[]).filter(b=>b.proc&&(b.id===c.b.id||(b.txt||[])[1]===c.tag)).map(b=>({on:b.proc.on,mode:b.proc.mode}));
-    out.push({sh:sh.name,tag:c.tag,pv1:+pv1.toFixed(3),pv2:+pv2.toFixed(3),mv1:+mv1.toFixed(2),mv2:+mv2.toFixed(2),span,moved:Math.abs(pv2-pv1),pr,pk:st.pk,rem:!!st.rem})
+    /* why: follow the command to the valve like the plant does (the switches after the A/M station) */const why=(()=>{const nm=n=>n==null||n<0?'?':AN.nm(S,n)+'='+(+S.rt.v[n]).toFixed(2);if(!pr.length)return 'no plant model: the PV is computed by the drawing ('+((S.drv[c.q.pv]||[]).map(d=>d.k).join('/')||'input')+') from other loops / feeders';let cur=c.amt.o[0],cut='';const seen=new Set();for(let k=0;k<6;k++){const x=S.blk.find(z=>(z.k==='AMT'||z.k==='SW')&&z.a===cur&&z.b!==cur&&!seen.has(z.id));if(!x||!x.o||x.o[0]==null)break;seen.add(x.id);const q=S.rt.st[x.id]||{};if(q.pk==='B'&&!cut)cut=x.k+'#'+x.id+' select '+nm(x.sel)+' -> leg B '+nm(x.b);cur=x.o[0]}return 'valve command '+nm(cur)+(cut?' | cut by '+cut:'')})();
+    out.push({why,sh:sh.name,tag:c.tag,pv1:+pv1.toFixed(3),pv2:+pv2.toFixed(3),mv1:+mv1.toFixed(2),mv2:+mv2.toFixed(2),span,moved:Math.abs(pv2-pv1),pr,pk:st.pk,rem:!!st.rem})
    }catch(e){out.push({sh:sh.name,tag:c.tag,err:String(e.message).slice(0,100)})}}}
  return out},[only,running]);
 const bad=R.filter(x=>x.err||(x.mv2-x.mv1>1&&x.moved<0.02*x.span)||x.pk!==(x.pk));
 const nr=R.filter(x=>!x.err&&Math.abs(x.mv2-x.mv1)>1&&x.moved<0.02*x.span),mvStuck=R.filter(x=>!x.err&&Math.abs(x.mv2-x.mv1)<=1);
 console.log('controllers tested',R.length,'| PV answers:',R.length-nr.length-mvStuck.length-R.filter(x=>x.err).length,'| PV does NOT answer:',nr.length,'| MV did not follow (manual not accepted):',mvStuck.length,'| errors:',R.filter(x=>x.err).length);
-nr.forEach(x=>console.log('  NO REACTION',x.sh,x.tag,'MV',x.mv1,'->',x.mv2,'PV',x.pv1,'->',x.pv2,'(range',x.span+')','plant',JSON.stringify(x.pr)));
+nr.forEach(x=>console.log('  NO REACTION',x.sh,x.tag,'MV',x.mv1,'->',x.mv2,'PV',x.pv1,'->',x.pv2,'(range',x.span+')','plant',JSON.stringify(x.pr),'\n      why:',x.why));
 mvStuck.forEach(x=>console.log('  MV STUCK',x.sh,x.tag,'MV',x.mv1,'->',x.mv2,'pk',x.pk,'remote-lock',x.rem));
 R.filter(x=>x.err).forEach(x=>console.log('  ERROR',x.sh,x.tag,x.err));
 if(errs.length)console.log('page errors',errs.slice(0,3));await browser.close();process.exit(nr.length?1:0)})();
