@@ -2,6 +2,17 @@
 
 Base: Stable v2.0.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 2.1.0-beta.10 — Start at 150 MW (SV, valve position, parallel valves); PLANT: pump / fan / MOV LIVE
+
+- **Problem:** (item 1) 44 tag ang hindi tugma sa snapshot. (item 2) Ang pump, fan at motor valve sa PLANT ay snapshot lang.
+- **As Found (item 1):** maraming loop na naka-AUTO pero SV = 0 pagkatapos ng load (ang SV ay nasa operator leg ng SV switch, hindi naisusulat); 39 valve na may posisyon sa snapshot pero wala sa 150 MW table; ang parallel valves (make-up / dump) ay pinagsasama kahit kabaligtaran ang direksyon; ang REMOTE SV ng LP bypass ay galing sa first stage pressure na wala sa screen. Detalye at basehan: `DRAWING_TRACE.md` (beta.10).
+- **Work Done:**
+  - Engine (`hmi-op.js`, `plant.js`, plant model lang): SV write gaya ng faceplate; SV = PV ng loop na walang SV sa snapshot (hindi REMOTE, hindi naka-limit ang valve); 39 valve position + mode; anchor sa MV ng snapshot; parallel valves kasama (kabaligtaran ACT = ibinabawas, hindi kapag 100 %); AI0883 ~ 0885 = 96.8 kg/cm2.
+  - PLANT (`plant.js`, UI): pump / fan = running bit ng memory list na ginagamit ng ABC ("A-BFWP RUNNING (BC FROM S3)" = M.3343), MOV = ZSO / ZSC ng I/O list; valve ng controller (`tools/data/valvectl.py` → `valvectl.js`): MV kapag walang valve sa drawing, at fail-open valve (signal = 100 − MV) ay ipinapakita bilang bukas ng valve.
+- **As Left (headless):** mismatch 44 → 37 (mas maraming nakakabit). BFWP-A run, BFWP-B stop, IDF / SAF / PAF / FA-A run, FA-B stop (gaya ng snapshot). LP bypass PICHR1003: SV 36.0, sarado. Regression: isolated PASS, reset 0 differ, hmi_op 28 / 28, faceplate PASS, plant_live PASS, lookonly PASS, scenarios 244 / 0. pv_reacts: 1 bagong "walang reaksyon" (ABC-031 LICCD1110B dump valve sa cold start: ang level ay nasa ibaba na ng range, −411; ang pagbukas ng dump ay nagpapababa: tamang direksyon).
+- **Hindi pa nasubok:** totoong tablet; ang 37 natitira (`PLANT_LIVE_VS_SNAPSHOT.md`).
+- **Status:** Beta.
+
 ## 2.1.0-beta.9 — LIBRARY: makikita ang VACANT sa memory list at wiring
 
 - **Problem (user):** Sa wiring at memory list, ipakita ang mga vacant gaya ng sa I/O list.
