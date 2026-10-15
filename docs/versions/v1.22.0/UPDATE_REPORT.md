@@ -2,6 +2,31 @@
 
 Base: Stable v1.21.0 (`main`, release `v1.21.0`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 1.22.0 — STABLE (GO STABLE ng user, 2026-10-15)
+
+- **Problem:** Kailangang mailabas ang lahat ng ayos mula v1.21.0, lalo na ang in-app update: sa tablet, laging lumilipat sa Chrome ang Beta at ang update.
+- **As Found:** Stable v1.21.0.
+- **Work Done:** Lahat ng 1.22.0-beta.1 ~ beta.4 (detalye sa ibaba):
+  - DITL toolbar: malinis, may phone layout, at bumubukas na ang Health.
+  - Iisang mundo ng ABC at DITL (button, default OFF).
+  - ABC plant model:
+    - ang PV ay sumusunod sa tunay na utos sa valve;
+    - ang mga parallel valve ay nagdadagdag ng flow;
+    - ang damper ng reheat ay may epekto na;
+    - tama na ang furnace pressure;
+    - ang FIC-CM ay 0 kapag nakahinto ang mga feeder.
+  - .MAN / .LOC / .REM = estado ng mode, kaya nakaka-AUTO na ang FICFW1007.
+  - In-app update at Beta sa apk / exe (walang Chrome, gumagana offline).
+- **As Left:**
+  - Block UAT: 2458 items / 6808 cases / 0 mali.
+  - ABC-007 scenarios: 184 / 0.
+  - Engine mag-isa = buong simulator (54 sheet, 5128 net).
+  - PV sumusunod sa MV: 55 / 68 (ang 13 ay interlock ng drawing sa cold start o cascade master).
+  - Operator tester: 32 sa 68 controller ang tapos sa bagong build, 0 mali; ang iba ay tumatakbo pa.
+  - In-app update: 12 / 12.
+- **Hindi pa nasubok:** totoong tablet / phone / exe. Hindi pa nasusubok ng tester ang PICFG108, HS-COAL at AICFG112 (kailangan ng estado ng planta mula sa drawing).
+- **Status:** Stable 1.22.0.
+
 ## 1.22.0-beta.4 — In-app update at Beta sa apk / exe (walang Chrome, gumagana offline)
 
 - **Problem:** Sa tablet, kapag pinili ang Beta o pinindot ang "I-update ngayon", lumilipat sa Chrome ang app at kailangan ng internet.
