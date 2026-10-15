@@ -11,7 +11,7 @@ const R=await page.evaluate(([only,running])=>{const out=[];const mid=()=>{for(c
   for(const c of cs){if(!c.amt||c.manNet==null)continue;AN.reset();if(running){mid();AN.go(i)}const P=c.b.p,rlo=P.rlo!=null?P.rlo:0,rhi=P.rhi!=null?P.rhi:100,span=rhi-rlo;const man=c.autoLeg==='A'?'B':'A';
    const run=sec=>{for(let k=0;k<sec*2;k++)AN.stepSet(sh,.5)};
    try{
-    if(c.svSw){const q=S.rt.st[c.svSw.id];if(q){q.al='A';q.fm='B'}}
+    if(c.svSw){run(10);/* the drawing may switch to REMOTE by itself at the start (1:A signal); the operator then presses LOCAL */const q=S.rt.st[c.svSw.id];if(q){q.al='A';q.fm='B'}}
     const st=S.rt.st[c.amt.id];st.al=c.autoLeg;st.fm=man;
     const setMV=v=>{if(c.manBlk&&S.rt.st[c.manBlk.id])S.rt.st[c.manBlk.id].val=v;else S.rt.ext[c.manNet]=v};
     setMV(40);run(20);const pv1=S.rt.v[c.q.pv],mv1=S.rt.v[c.out];setMV(65);run(60);const pv2=S.rt.v[c.q.pv],mv2=S.rt.v[c.out];
