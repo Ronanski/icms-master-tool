@@ -25,6 +25,52 @@
             ? x.toFixed(2)
             : x.toFixed(3);
   const sheet = () => AN.sheets && AN.sheets[AN.i];
+  /* 2.0.0: touch screens (tablet / phone): the value boxes never open the keyboard; the operator uses the ▲ ▼ buttons only */
+  const TOUCH = (() => {
+    try {
+      return matchMedia('(pointer:coarse)').matches;
+    } catch (e) {
+      return false;
+    }
+  })();
+  const noKb = el => {
+    if (TOUCH && el) {
+      el.readOnly = true;
+      el.setAttribute('inputmode', 'none');
+    }
+    return el;
+  };
+  /* 2.0.0: an ▲ / ▼ button like the DCS faceplate: one press = one step; held down it repeats (after 0.4 s, 10 per second)
+     and after 2 s it goes 5 times faster. A plain click (mouse, keyboard, test) is one step. */
+  const stepBtn = (txt, title, fn) => {
+    const b = E('button', { cls: 'b stp', txt, title });
+    let t1 = null,
+      t2 = null,
+      n = 0,
+      byPtr = false;
+    const stop = () => {
+      clearTimeout(t1);
+      clearInterval(t2);
+      t1 = t2 = null;
+    };
+    b.addEventListener('pointerdown', e => {
+      if (e.button) return;
+      byPtr = true;
+      n = 0;
+      fn(1);
+      stop();
+      t1 = setTimeout(() => {
+        t2 = setInterval(() => fn(++n > 20 ? 5 : 1), 100);
+      }, 400);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(k => b.addEventListener(k, stop));
+    b.addEventListener('contextmenu', e => e.preventDefault());
+    b.onclick = () => {
+      if (byPtr) byPtr = false;
+      else fn(1);
+    };
+    return b;
+  };
   let opp = null,
     body = null,
     built = '',
@@ -312,8 +358,8 @@
           title: 'A = AUTO (operator SV / LOCAL when the loop has REMOTE)'
         }),
         bMan = E('button', { cls: 'b ra man', txt: 'M', title: 'M = MANUAL (the operator sets the MV)' });
-      const svIn = E('input', { cls: 'n', type: 'number', step: 'any' }),
-        mvIn = E('input', { cls: 'n', type: 'number', step: 'any' });
+      const svIn = noKb(E('input', { cls: 'n', type: 'number', step: 'any' })),
+        mvIn = noKb(E('input', { cls: 'n', type: 'number', step: 'any' }));
       const svOk = S.ext.includes(c.q.sv) || !!c.svSw,
         svSet = v => {
           if (S.ext.includes(c.q.sv)) {
@@ -522,7 +568,7 @@
           E('span', {
             txt:
               (unit ? '[' + fmt(rlo) + ' ~ ' + fmt(rhi) + ' ' + unit + ']' : '') +
-              (c.amt ? '' : '  (walang A/M switch)')
+              (c.amt ? '' : '  (no A/M switch)')
           })
         ]),
         E(
@@ -578,10 +624,10 @@
         popEl.innerHTML = '';
         const st = popStep(k),
           n = x => +x;
-        popVal = E('input', { cls: 'n', type: 'number', step: 'any' });
+        popVal = noKb(E('input', { cls: 'n', type: 'number', step: 'any' }));
         popVal.value = popIn(k).value;
         popVal.onchange = () => popSet(k, n(popVal.value));
-        const B = (t, d, title) => E('button', { cls: 'b', txt: t, title, on: () => popSet(k, n(popIn(k).value) + d) });
+        const B = (t, d, title) => stepBtn(t, title, m => popSet(k, n(popIn(k).value) + d * m));
         popEl.append(
           E('div', { cls: 'row', style: 'justify-content:space-between' }, [
             E('b', { txt: k + '  ' + c.tag }),
@@ -589,11 +635,12 @@
           ]),
           E('div', { cls: 'row' }, [popVal, E('span', { cls: 'sub', txt: k === 'SV' ? unit : '%' })]),
           E('div', { cls: 'row' }, [
-            B('▲▲', st * 10, '+10 %'),
-            B('▲', st, '+1 %'),
-            B('▼', -st, '-1 %'),
-            B('▼▼', -st * 10, '-10 %')
-          ])
+            B('▲▲', st, '+1 % (hold = faster)'),
+            B('▲', st / 10, '+0.1 % (hold = faster)'),
+            B('▼', -st / 10, '-0.1 % (hold = faster)'),
+            B('▼▼', -st, '-1 % (hold = faster)')
+          ]),
+          E('div', { cls: 'sub', txt: '▲ ' + fmt(st / 10) + ' · ▲▲ ' + fmt(st) + ' ' + (k === 'SV' ? unit : '%') + ' per press; hold to ramp' })
         );
         if (k === 'MV')
           popEl.append(
@@ -767,55 +814,77 @@
         drawTrend(svg, tr, rlo, rhi);
       });
     });
-    // 2. manual stations
-    const mans = S.blk.filter(b => b.k === 'MAN' && b.o[0] != null && (b.txt || [])[0]);
-    if (mans.length) body.append(E('h4', { txt: 'Manual station' }));
+    // 2. manual stations (2.0.0): a faceplate like the DCS manual loader: description, output bar, value, ▲ ▼, tag and station
+    const mans = S.blk.filter(b => b.k === 'MAN' && b.o[0] != null && (b.tag || (b.txt || []).some(t => t && t !== 'MAN')));
+    if (mans.length) body.append(E('h4', { txt: 'Manual stations (' + mans.length + ')' }));
     mans.forEach(b => {
       const P = b.p,
         lo = P.lo != null ? P.lo : 0,
         hi = P.hi != null ? P.hi : 100,
-        tag = (b.txt || [])[0];
-      const val = E('b', { txt: '—' }),
-        inp = E('input', { cls: 'n', type: 'number', step: 'any' });
-      const set = v => {
-        const st = S.rt.st[b.id];
-        if (st) {
-          st.val = Math.max(lo, Math.min(hi, v));
-        }
-        try {
-          AN.settle();
-        } catch (e) {}
-      };
+        u = P.u || '',
+        span = hi - lo || 1,
+        tag = b.tag || (b.txt || []).find(t => t && t !== 'MAN' && !/^S\d-MDL/.test(t)) || 'MAN',
+        stn = (b.txt || []).find(t => /^S\d-MDL/.test(t)) || '';
+      let desc = '';
+      try {
+        desc = (AN.descOf && AN.descOf(sh, tag)) || '';
+      } catch (e) {}
+      const inp = noKb(E('input', { cls: 'n fv', type: 'number', step: 'any' })),
+        bar = E('i', {}),
+        set = v => {
+          const st = S.rt.st[b.id];
+          if (st) st.val = Math.max(lo, Math.min(hi, v));
+          try {
+            AN.settle();
+          } catch (e) {}
+        },
+        cur = () => {
+          const v = S.rt.v[b.o[0]];
+          return isFinite(v) ? v : +inp.value || 0;
+        },
+        fine = span / 1000,
+        coarse = span / 100;
       inp.onchange = () => set(+inp.value);
+      const manB = E('button', {
+        cls: 'b',
+        txt: 'MAN',
+        title: tag + '.MAN: MANUAL status (ON / OFF) on every sheet that uses this tag',
+        on: () => {
+          const ns = modeNetsByTag(tag, MODEK.MAN),
+            on = !ns.some(([S2, n]) => S2.rt.ext[n] > 0.5);
+          ns.forEach(([S2, n]) => setIn(S2, n, on ? 1 : 0));
+        }
+      });
       body.append(
-        E('div', { cls: 'fp' }, [
+        E('div', { cls: 'fp fpx fpman', 'data-tag': tag }, [
+          E('div', { cls: 'fpt', txt: desc || tag }),
+          E('div', { cls: 'mlr' }, [
+            E('div', { cls: 'mlb', title: 'Output: ' + fmt(lo) + ' ~ ' + fmt(hi) + ' ' + u }, [bar]),
+            E('div', { cls: 'mlc' }, [
+              E('div', { cls: 'fl' }, [E('span', { txt: 'MV' }), E('span', { txt: u })]),
+              inp,
+              E('div', { cls: 'row mls' }, [
+                stepBtn('▲▲', '+1 % of range (hold = faster)', m => set(cur() + coarse * m)),
+                stepBtn('▲', '+0.1 % of range (hold = faster)', m => set(cur() + fine * m)),
+                stepBtn('▼', '-0.1 % of range (hold = faster)', m => set(cur() - fine * m)),
+                stepBtn('▼▼', '-1 % of range (hold = faster)', m => set(cur() - coarse * m))
+              ]),
+              E('div', { cls: 'sub', txt: '▲ ' + fmt(fine) + ' · ▲▲ ' + fmt(coarse) + ' ' + u + ' per press; hold to ramp' })
+            ])
+          ]),
           E('div', { cls: 'tg' }, [
             E('b', { txt: tag }),
-            E('span', { txt: fmt(lo) + ' ~ ' + fmt(hi) + (P.u ? ' ' + P.u : '') })
-          ]),
-          E('div', { cls: 'row' }, [
-            E('span', { txt: 'Value' }),
-            inp,
-            E('button', { cls: 'b', txt: '−', on: () => set((+inp.value || 0) - (hi - lo) / 100) }),
-            E('button', { cls: 'b', txt: '+', on: () => set((+inp.value || 0) + (hi - lo) / 100) }),
-            E('button', {
-              cls: 'b',
-              txt: 'MAN',
-              title: tag + '.MAN: MANUAL status (ON / OFF) on every sheet that uses this tag',
-              on: () => {
-                const ns = modeNetsByTag(tag, MODEK.MAN),
-                  on = !ns.some(([S2, n]) => S2.rt.ext[n] > 0.5);
-                ns.forEach(([S2, n]) => setIn(S2, n, on ? 1 : 0));
-              }
-            }),
-            val
+            E('span', { txt: '[' + fmt(lo) + ' ~ ' + fmt(hi) + (u ? ' ' + u : '') + ']' + (stn ? '  ' + stn : '') }),
+            manB
           ])
         ])
       );
       live.push(() => {
         const v = S.rt.v[b.o[0]];
-        val.textContent = fmt(v);
+        bar.style.height = Math.max(0, Math.min(100, ((v - lo) / span) * 100)) + '%';
         if (document.activeElement !== inp && isFinite(v)) inp.value = +v.toFixed(3);
+        const ns = modeNetsByTag(tag, MODEK.MAN);
+        manB.classList.toggle('on', ns.some(([S2, n]) => S2.rt.ext[n] > 0.5));
       });
     });
     // 3. digital inputs: operator buttons and force
