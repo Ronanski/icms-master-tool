@@ -40050,7 +40050,7 @@ function addLink(out, sh, c, p, pc, hint) {
   });
 }
 const TAGX =
-  /^(S\d\s*)?[MB]\.[0-9A-F]{3,5}[A-Z]?$|^(S\d\s*)?(AI|S[IO])\d{3,5}$|^[A-Z0-9]{3,}[A-Z0-9-]*\.(MV|PV|SV|REM|LOC|OUT|SIG)$/;
+  /^(S\d\s*)?[MB]\.[0-9A-F]{3,5}[A-Z]?$|^(S\d\s*)?(AI|S[IO])\d{3,5}$|^[A-Z0-9]{3,}[A-Z0-9-]*\.(MV|PV|SV|REM|LOC|MAN|OUT|SIG)$/;
 const ADDRK = /^(?:S(\d)\s*)?([MB]\.[0-9A-F]{3,5}[A-Z]?|(?:AI|S[IO])\d{3,5})$/;
 function tkey(sh, t) {
   const m = ADDRK.exec(String(t).trim());
@@ -40066,6 +40066,16 @@ function tkey(sh, t) {
 function tagIndex() {
   if (AN.tagIdx) return AN.tagIdx;
   const ix = (AN.tagIdx = new Map());
+  /* habang binubuo ang index, maaaring may sheet na makalkula na ang links gamit ang kalahating index (ang sheet na nauuna sa listahan ay hindi nakikita ang tag ng sheet na nasa dulo): pagkatapos, ibinabalik ang lahat ng links para makalkula ulit sa buong index */
+  const had = AN.sheets.filter(p => p.lk);
+  try {
+    tagIndexBuild(ix);
+  } finally {
+    for (const p of AN.sheets) if (p.lk && !had.includes(p)) p.lk = null;
+  }
+  return ix;
+}
+function tagIndexBuild(ix) {
   for (const p of AN.sheets) {
     let PS;
     try {
@@ -40073,8 +40083,17 @@ function tagIndex() {
     } catch (e) {
       continue;
     }
+    /* ang .MAN / .LOC / .REM ng isang controller ay HMI command: iisang signal sa buong DCS. Ang sheet na may PID / MAN block ng controller na iyon ang may-ari; ang ibang sheet na gumagamit ng parehong tag ay kumukuha ng halaga mula sa may-ari (dati ay magkakahiwalay: ang pindot sa faceplate ay hindi umaabot sa ibang sheet) */
+    const ownsMode = (t, n) => {
+      const m = /^(.+)\.(MAN|LOC|REM)$/.exec(String(t).trim());
+      return (
+        !!m &&
+        PS.ext.includes(n) &&
+        PS.blk.some(b => (b.k === 'PID' || b.k === 'PIDV' || b.k === 'MAN' || b.k === 'SUMA') && b.tag === m[1])
+      );
+    };
     const add = (t, n) => {
-      if (!t || !PS.drv[n].some(d => d.k !== 'LINK')) return;
+      if (!t || !(PS.drv[n].some(d => d.k !== 'LINK') || ownsMode(t, n))) return;
       const kk = tkey(p, t),
         a = ix.get(kk) || [];
       if (!a.some(q => q.sh === p && q.n === n)) a.push({ sh: p, n });
@@ -40099,9 +40118,10 @@ function tagIndex() {
         }
       }
   }
-  return ix;
 }
 function linksOf(sh) {
+  if (sh.lk) return sh.lk;
+  tagIndex(); /* buuin muna ang buong index bago kalkulahin ang links ng sheet na ito */
   if (sh.lk) return sh.lk;
   const S = ensure(sh),
     out = (sh.lk = []),
