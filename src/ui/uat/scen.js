@@ -17,7 +17,7 @@ window.UATS=(function(){
   const push=l=>{L.push(l);if(onLine)onLine(l)};
   const idx=AN.sheets.findIndex(x=>x.name===sheet);AN.go(idx);AN.reset();AN.go(idx);
   [...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Operator').forEach(b=>b.click());AN.run=false;await sleep(1200);
-  try{for(const st of sc.steps){const c=ctx(sheet,sc.loop),{sh,S,rt,net,ctl,fp,stn}=c;const btn=t=>fp&&[...fp.querySelectorAll('button')].find(e=>e.textContent.trim()===t);const mode=()=>!stn?'?':(stn.pk===ctl.autoLeg?'AUTO':'MANUAL');
+  try{for(const st of sc.steps){const c=ctx(sheet,sc.loop),{sh,S,rt,net,ctl,fp,stn}=c;const AL={AUTO:'A',MAN:'M',REMOTE:'R',LOCAL:'A'},btn=t=>fp&&[...fp.querySelectorAll('button')].find(e=>e.textContent.trim()===(AL[t]||t));const mode=()=>!stn?'?':(stn.pk===ctl.autoLeg?'AUTO':'MANUAL');
    const val=w=>w==='mv'?rt.v[ctl.out]:w==='sv'?rt.v[ctl.q.sv]:rt.v[ctl.q.pv];
    if(st.do){let note='';
     if(st.do==='set'&&st.sheet){const o=AN.sheets.find(x=>x.name===st.sheet);AN.ensure(o);const S2=o.S;let n2=-1;for(let n=0;n<S2.nets.length;n++)if(labTxt(S2,n)===st.tag)n2=n;if(n2<0){push({k:'bad',t:'walang '+st.tag+' sa '+st.sheet});fail++;continue}S2.rt.force[n2]=st.value;try{AN.settle()}catch(e){}}
