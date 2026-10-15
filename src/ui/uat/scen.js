@@ -848,9 +848,9 @@ window.UATS = (function () {
           { do: 'settle', what: 'sv' },
           {
             expect: 'sv',
-            value: +(rlo + span * 0.39).toFixed(3),
+            value: +(rlo + span * 0.4 - ns).toFixed(3),
             tol: span * 0.002,
-            say: 'SV after − (40 % → 39 %)'
+            say: 'SV after − (−1 % of range)'
           }
         ])
       });

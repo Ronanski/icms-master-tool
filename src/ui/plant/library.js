@@ -18,7 +18,7 @@
   const MAX = 400;
   let ws = null,
     btn = null,
-    rows = { io: [], mem: [], wire: [] },
+    rows = { io: [], mem: [], wire: [], relay: [] },
     WIX = {},
     tab = 'io',
     stn = '',
@@ -97,6 +97,25 @@
       rows.wire.push(r);
       WIX[r.st + '|' + r.a] = r.w;
     }
+    /* IRP / ARP / SER items (src/ui/plant/relay.js) */
+    for (const r of window.RELAY || []) {
+      const vals = Object.values(r.cols),
+        k0 = (r.keys || []).find(k => !k.startsWith('T|')),
+        t0 = (r.keys || []).find(k => k.startsWith('T|'));
+      const row = {
+        st: k0 ? k0.split('|')[0] : '',
+        s: r.sh,
+        a: '#' + r.item,
+        tag: t0 ? t0.slice(2) : '',
+        d: vals[0] || '',
+        x: Object.entries(r.cols).filter(([k]) => /RELAY/.test(k)).map(([, v]) => v).join(' ') || '',
+        t: (r.keys || []).filter(k => !k.startsWith('T|')).map(k => k.split('|')[1]).join(' '),
+        ab: '',
+        rel: r
+      };
+      row.h = (r.sh + ' ' + r.item + ' ' + vals.join(' ') + ' ' + (r.keys || []).join(' ')).toUpperCase();
+      rows.relay.push(row);
+    }
     for (const st of Object.keys(A).sort()) {
       const T = A[st];
       for (const k of Object.keys(T).sort()) {
@@ -168,6 +187,11 @@
       row.title = 'Click: info card' + (wd ? ' with the wiring' : '');
       row.addEventListener('click', e => {
         if (e.target.closest('.ad,.tg,button')) return;
+        if (r.rel) {
+          /* a relay item: its connection list in a popup card */
+          if (window.lsRelayCard) window.lsRelayCard(r.rel);
+          return;
+        }
         try {
           window.lsInfo && window.lsInfo(r.a, { stn: r.st });
         } catch (x) {}
@@ -200,7 +224,7 @@
             render();
           }
         });
-    tabs.append(mk('io', 'I/O LIST'), mk('mem', 'MEMORY LIST'), mk('wire', 'WIRING'), mk('calc', 'CALC'));
+    tabs.append(mk('io', 'I/O LIST'), mk('mem', 'MEMORY LIST'), mk('wire', 'WIRING'), mk('relay', 'RELAY / SER'), mk('calc', 'CALC'));
     const ss = E('select', { cls: 'libst' });
     [['', 'All stations'], ['1', 'STN101'], ['2', 'STN102'], ['3', 'STN103'], ['4', 'STN104'], ['5', 'STN105']].forEach(([v, t]) => {
       const o = E('option', { txt: t });

@@ -243,6 +243,35 @@
     });
     return box;
   }
+  /* IRP / ARP / SER items (src/ui/plant/relay.js) by address (station|address) or tag */
+  let RX = null;
+  const relays = keys => {
+    if (!RX && window.RELAY) {
+      RX = {};
+      for (const r of window.RELAY) for (const k of r.keys || []) (RX[k] = RX[k] || []).push(r);
+    }
+    if (!RX) return [];
+    const out = [];
+    for (const k of keys) for (const r of RX[k] || []) if (!out.includes(r)) out.push(r);
+    return out;
+  };
+  window.lsRelayKeys = relays;
+  function relaySec(r) {
+    const kind = /^IRP/.test(r.sh) ? 'INTERPOSING RELAY' : /^ARP/.test(r.sh) ? 'ALARM / AUX RELAY' : 'SEQUENCE OF EVENTS (SER)';
+    return E('div', { cls: 'ics' }, [
+      E('div', { cls: 'ict' }, [E('b', { txt: kind + ' · ' + r.sh + ' item ' + r.item })]),
+      ...Object.entries(r.cols).map(([k, v]) => E('div', { cls: 'icl' }, [E('span', { cls: 'k k2', txt: k }), v]))
+    ]);
+  }
+  window.lsRelaySec = relaySec;
+  window.lsRelayCard = r => {
+    close();
+    card = E('div', { id: 'infocard', cls: 'wide' }, [
+      E('div', { cls: 'ich' }, [E('b', { txt: r.sh + ' #' + r.item }), E('span', { cls: 'icn', txt: (r.keys || []).map(k => k.replace(/^T\|/, '').replace(/^(\d)\|/, 'STN10$1 ')).join(' · ') }), E('button', { cls: 'b', txt: '✕', title: 'Close', on: close })]),
+      E('div', { cls: 'icb' }, [relaySec(r)])
+    ]);
+    document.body.append(card);
+  };
   function compOf(tag) {
     const C = window.CALC_COMP || [],
       t = String(tag || '').toUpperCase();
@@ -280,8 +309,9 @@
       for (const x of io) if (W.a[x.st + '|' + x.a]) wr.push(W.a[x.st + '|' + x.a]);
       if (!wr.length && W.t[q]) for (const o of W.t[q]) if (!stn || o.s === String(stn)) wr.push(o);
     }
-    const cp = compOf(io.length && io[0].r.tag ? io[0].r.tag : q);
-    if (!oc.length && !dp.length && !io.length && !wr.length && !cp.length) return false;
+    const cp = compOf(io.length && io[0].r.tag ? io[0].r.tag : q),
+      rl = relays([...io.map(x => x.st + '|' + x.a), ...io.filter(x => x.r.tag).map(x => 'T|' + x.r.tag), 'T|' + q, ...(stn ? [stn + '|' + q] : ['1', '2', '3', '4', '5'].map(st => st + '|' + q))]);
+    if (!oc.length && !dp.length && !io.length && !wr.length && !cp.length && !rl.length) return false;
     close();
     const tag = oc.length ? oc[0].nm : raw.trim();
     let desc = '';
@@ -316,6 +346,7 @@
     if (wr.length) card.classList.add('wide');
     for (const o of wr.slice(0, 3))
       body.append(E('div', { cls: 'ics' }, [E('div', { cls: 'ict' }, [E('b', { txt: o.k === 'DO' ? 'WIRING · controller → field (output)' : 'WIRING · field → controller' })]), wireChart(o)]));
+    for (const r of rl.slice(0, 4)) body.append(relaySec(r));
     for (const c of cp)
       body.append(
         E('div', { cls: 'ics' }, [
