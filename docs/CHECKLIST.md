@@ -4,15 +4,15 @@ Ang oras ay ang oras ng trabaho at takbo ng test ko (hindi araw ng tao). HINDI k
 
 Walang kategorya, isang listahan lang. `[ ]` = hindi pa; `[x]` = tapos at na-check; `[F]` = FUTURE PLAN (hindi pa ipatutupad, hintayin ang utos). Ang hatol ng user: ang bawat sheet ay sinusuri mula INPUT hanggang sa halaga ng bawat block, tama ang switching sa bawat scenario, at lahat ay ayon sa PDF diagram sa repo.
 
-1. [ ] **Itala ang mga plano sa HANDOFF at i-link ang checklist na ito.** Para kahit bagong session ay alam agad ang susunod. (minuto)
-2. [ ] **Ayusin ang pangalan ng bersyon sa mga dating ulat.** Ang `docs/versions/v1.20.60 ~ v1.20.67` ay history bago ang SemVer; lagyan ng tala at iisang `v1.21.0` na ulat. (minuto)
+1. [x] **Itala ang mga plano sa HANDOFF at i-link ang checklist na ito.** Para kahit bagong session ay alam agad ang susunod. (minuto)
+2. [x] **Ayusin ang pangalan ng bersyon sa mga dating ulat.** Ang `docs/versions/v1.20.60 ~ v1.20.67` ay history bago ang SemVer; lagyan ng tala at iisang `v1.21.0` na ulat. (minuto)
 3. [ ] **Ilagay ang awtomatikong controller tester sa UAT panel ng app** (isang pindot kada controller). Ngayon sa computer lang ito tumatakbo. (1 oras)
 4. [ ] **Pag-aralan ang resulta ng coverage ng input / output (`cone.js`) sa 54 na sheet** at ilista ang mga patay na input at patay na output. Ang bawat isa ay posibleng nawawalang kontinuidad ng signal. (1~2 oras)
 5. [ ] **Ang natitirang 5 controller na walang malinis na panimulang estado** (PICFG108, PICAS1005, TICHR1002, AICFG112, HS-COAL) **at ang FICFW1007** (cascade slave): alamin kung anong kondisyon sa drawing ang kailangan at isama sa tester. (2~3 oras)
 6. [ ] **Tapusin ang ABC-007:** BU-CMD (M.0181 / RB-MV 50 %), epekto ng MFT sa MV, positioner AI0192 (M.253F), FAULT T (hold ng MV, M.018B / M.019B), SIG.AB B.0660 / B.0661, mga alarm M.3130 / M.3131 (PV < 220 / 200 T/H), mga SET rule. (3~4 oras)
 7. [ ] **Pangalan ng natitirang input na walang tag** (mga ~600 na tag na hindi pa nakakabit sa wire). Alamin kung alin ang tunay na input; ang pangalan ay tumutulong sa panel at sa "Bakit?". (3~4 oras)
 8. [ ] **26 na live-value na nagkakapatong** sa drawing (UI lang). Subukan nang paisa-isa sa mga sheet na may problema. (3~4 oras)
-9. [ ] **Ang 7 COS / 42 COS na hindi 'used':** naisuri na ang lahat sa PDF; tapusin ang ulat at ang pangalan ng bawat isa sa panel. (2 oras)
+9. [~] **Ang 7 COS / 42 COS na hindi 'used':** naisuri na ang lahat sa PDF; tapusin ang ulat at ang pangalan ng bawat isa sa panel. (2 oras)
 10. [ ] **Pagsubok ng digital logic sa lahat ng kombinasyon ng input** sa mga bahagi ng sheet na maliit ang bilang ng input (AND / OR / NOT / timer / flip-flop). Hinahambing sa hiwalay na pagkuwenta, kaya nahuhuli ang bug ng engine. (2–3 oras)
 11. [ ] **Awtomatikong tester ng halaga ng bawat block sa bawat sheet** (ang hiningi ng user: "from input, tama ang lalabas na value ng bawat block"): hiwalay na tagakuwenta (oracle) ng AND, OR, NOT, ADD, SUB, MUL, DIV, SQRT, ABS, HC, LC, MAX, MIN, F(X), LAG, RATE, TPS, TON, TOF, SEL, at iba pa; random na input; inihahambing sa engine sa bawat net ng 54 na sheet. (4–6 oras)
 12. [ ] **Awtomatikong tester ng switching** (SW, AMT, T switch, selector): sa bawat selector sa bawat sheet, subukan ang lahat ng leg at ang select signal na 1:A / 1:B; ang inaasahan ay hiwalay na kuwenta. (2–3 oras, kasabay ng #11)
@@ -49,3 +49,9 @@ Walang kategorya, isang listahan lang. `[ ]` = hindi pa; `[x]` = tapos at na-che
 - Exemption sa rule na "huwag galawin ang DITL": **istruktura lang** (format at paghati ng file). Walang binago sa logic, engine o gawi.
 - `src/digital/ditl-app.js` (125 KB, 784 linya) ay naging `src/digital/parts/01-parse-build.js`, `02-netlist.js` (1640 linya), `03-models.js`, `04-render.js`, `05-overlay-interaction.js`, `06-panels.js`, `07-app-events.js`, na pinagdugtong ng `src/digital/order.list` sa iisang script (global scope, parang dati).
 - Patunay: (1) pagkatapos ng format, ang minified na DITL ay pareho (sha1 aecde129...); (2) pagkatapos ng paghati, pareho pa rin; (3) sa built html, ang DITL script ay pareho pagkatapos i-minify; (4) 5 digital na sheet sa headless: pareho ang laki ng SVG at ang bilang ng element bago / pagkatapos / sa multi-file; (5) 134 sheet ay pareho; (6) pasado: `npm test`, 5128 net ng engine, scenario ng ABC-007, panel_sync.
+
+## Katayuan (2026-10-15)
+- **TAPOS `[x]`:** #1, #2.
+- **BAHAGYA `[~]`:** #9 (COS: naisuri na sa PDF; ang pangalan sa panel ay hindi pa), #22 (linis ng code: tapos ang analog at DITL; hindi pa ang `plant-window.js` at `links-canvas.js`), #13 at #14 (tapos lang ang ABC-007), #5 (62 sa 68 controller ang malinis; 5 ang walang malinis na estado at 1 ang may mali), #4 (tumatakbo pa; may bahagyang resulta).
+- **HINDI PA `[ ]`:** #3, #6, #7, #8, #10, #11, #12, #13 (ibang cluster), #14 (53 sheet), at lahat ng `[F]`.
+- Mga natapos na wala sa orihinal na listahan: SemVer na version, multi-file na app para sa apk / exe, DITL cleanup, faceplate ayon sa planta, bumpless na AUTO -> MAN (engine), proseso na sumusunod sa tunay na utos sa valve, SV para sa AUTO lang, awtomatikong tester ng controller (headless).
