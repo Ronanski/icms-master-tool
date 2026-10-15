@@ -2,6 +2,20 @@
 
 Base: Stable v2.0.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 2.1.0-beta.3 — Reset fidelity ayos (51 / 0); IRP / ARP / SER sa LIBRARY at info card
+
+- **Problem:** (1) Pagkatapos ng Reset, 5 sheet ay hindi bumabalik sa simulang value (luma na, nasa v1.23.0 din). (2) Wala pa sa app ang IRP / ARP / SER list (`IRP_ARP_SER.xls` ng user).
+- **As Found:** (1) Ang `pr.xsh` (controller sa ibang sheet na kahati sa iisang measurement, hal. reheat temp ABC-019 + ABC-020) ay ginagawa lang ng `procRemote` sa unang load, hindi bago ang settle ng Reset; kaya iba ang PV pagkatapos ng Reset. (2) Walang data file.
+- **Work Done:**
+  - `src/analog/engine/sheets.js` (`anResetAll`): tinatawag ang `procRemote` ng bawat sheet bago ang settle; ang plant model ON / OFF default ay ibinabalik din.
+  - `tools/data/relay.py` → `src/ui/plant/relay.js`: 290 item (SER 144, IRP 105, ARP 41). Pinunan ang merged cell; ang column na walang pamagat = "Remark".
+  - LIBRARY: bagong **RELAY / SER** tab (search, station filter, click = popup card).
+  - Info card: section na **RELAY / SER** kapag ang address o tag ay nasa list (hal. O.0771 STN103 → ARP-1 item 01; S-MFT → IRP-1 #87, SER-1 #01).
+  - UAT G3 (generic): ang inaasahang SV pagkatapos ng "−" ay sumusunod na sa bagong ▲ / ▼ step (dati 39 % ang hinihintay, mali ang test, tama ang app).
+- **As Left (headless):** `reset.js`: 51 sheet, 0 differ. Engine isolated: PASS (54 sheet, 5128 net). LIBRARY RELAY / SER "IDF" → 8 row, walang page error.
+- **Hindi pa nasubok:** totoong tablet.
+- **Status:** Beta.
+
 ## 2.1.0-beta.2 — Wiring chart pahalang; "Effects" sa lahat ng sheet (interlock, switch, force manual, trip, TO DITL)
 
 - **Problem (user):** Mas maganda kung pahalang ang wiring flow. Hindi lang dapat trip ang hinahanap, kundi pati ang interlock na apektado, sa lahat ng sheet.
