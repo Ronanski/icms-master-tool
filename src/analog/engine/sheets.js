@@ -27,3 +27,5 @@ function anStationOf(S,b){
    for(let i=0;i<chain.length&&!amt;i++){const sw=chain[i],pl=legOf(sw,i),o=pl==='A'?sw.b:sw.a;if(o==null||o<0)continue;const man=(S.drv[o]||[]).find(d=>d.k==='MAN');if(man||(S.ext.includes(o)&&!S.nets[o].dig)){amt=sw;autoLeg=pl;manNet=o;manBlk=man||null}}
    if(!amt){amt=S.blk.find(z=>(z.k==='AMT'||z.k==='SW')&&z.a!=null&&z.b!=null&&(b.o.includes(z.a)||b.o.includes(z.b))&&z.o[0]!=null)||null;autoLeg=amt?(b.o.includes(amt.a)?'A':'B'):null;manNet=amt?(autoLeg==='A'?amt.b:amt.a):null}
    return {amt,autoLeg,manNet,manBlk,op}}
+/* the SV switch of a controller: the T switch that drives the SV of the PID and whose B leg is a COS (the operator's SV). Leg A = REMOTE (the SV path of the logic), leg B = LOCAL (the COS). null when the SV is an external input */
+function anSvSwitchOf(S,b){let q=null;try{q=anPins(S,b)}catch(e){}if(!q||q.sv==null||q.sv<0)return null;return (S.drv[q.sv]||[]).find(d=>(d.k==='AMT'||d.k==='SW')&&d.b>=0&&S.blk.some(c=>c.k==='COS'&&c.tb===d.id))||null}

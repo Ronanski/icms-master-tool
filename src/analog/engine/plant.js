@@ -93,6 +93,8 @@ function anStep(S,dt){const rt=S.rt,v=rt.v,nets=S.nets,B=x=>x>.5?1:0;rt.t+=dt;rt
      /* FORCE MANUAL (user rule 2026-10-15): while an active select signal asks for the MANUAL leg, the operator's AUTO is refused; when the signal is gone the station STAYS manual until the operator presses AUTO (it does not go to AUTO by itself). s.al = the AUTO leg of an A/M station (anStationOf) */
      s.fman=0;if(s.al&&sigLeg){/* an ACTIVE select signal of the drawing wins over the operator and the station KEEPS that leg afterwards (it does not go back by itself): 1:B (force manual) is a LEVEL: MANUAL while it is 1 and after it, until the operator presses AUTO; 1:A (AUTO of the logic) acts when it COMES (a pulse, e.g. M.019C); a 1:A that stays at 1 does not block the operator's MAN */
       if(sigLeg!==s.al){s.fman=1;s.fm=sigLeg;s.pa=0}else{if(!s.pa)s.fm=sigLeg;s.pa=1}}else s.pa=0;
+     /* REMOTE (user rule 2026-10-15): while the SV switch of this controller is on its REMOTE leg the station is AUTO and cannot be made manual (not even the SV); only a force-manual signal of the drawing can take it out */
+     s.rem=0;if(s.rmSw!=null){const q=rt.st[s.rmSw];if(s.fman&&q)q.fm='B';/* force manual cancels REMOTE: the SV switch goes LOCAL and stays there until the operator selects REMOTE */if(q&&q.pk==='A'&&!s.fman){s.rem=1;s.fm=s.al}}
      if(s.fm==='A')pickB=false;else if(s.fm==='B')pickB=true;s.pk=pickB?'B':'A';let y;
      const n=pickB?b.b:b.a;if(n>=0){y=rd(n);if(pickB&&b.bg!=null)y*=b.bg;if(!pickB&&b.ag!=null)y*=b.ag;if(b.ia&&b.ia[n])y=y*b.ia[n][0]+b.ia[n][1]}else y=(s.hold!=null?s.hold:0);if(!pickB||b.b>=0)s.hold=y;s.y=y;
      const other=pickB?b.a:b.b;
