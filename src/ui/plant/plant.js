@@ -88,7 +88,7 @@
         const t = l && l.t ? l.t.trim() : '';
         if (!t) return;
         if (/\.PV$/.test(t) && !pv.has(N(t.slice(0, -3)))) pv.set(N(t.slice(0, -3)), { sh: sh.name, n });
-        if (/^(AI|AO)\d{4}$/.test(t) && !lab.has(sh.stn + '|' + t)) lab.set(sh.stn + '|' + t, { sh: sh.name, n });
+        if ((/^(AI|AO)\d{4}$/.test(t) || /^[IOMB]\.[0-9A-F]{4}$/.test(t)) && !lab.has(sh.stn + '|' + t)) lab.set(sh.stn + '|' + t, { sh: sh.name, n });
       });
       try {
         for (const c of A.hmiCtrls(S) || []) if (!ctl.has(c.tag)) ctl.set(c.tag, { sh: sh.name, c });
@@ -113,19 +113,29 @@
     try {
       for (const [k, L] of A.plAIs()) if (L && L.length) ai.set(N(k), { sh: L[0].sh.name, n: L[0].n });
     } catch (e) {}
-    const io = new Map();
+    const io = new Map(),
+      run = new Map();
     try {
       const D = await A.ades();
       for (const st in D)
         for (const a in D[st]) {
           const r = D[st][a];
-          if (r && r.tag && /^A[IO]\d{4}$/.test(a)) {
+          if (r && r.tag && (/^A[IO]\d{4}$/.test(a) || /^[IO]\.[0-9A-F]{4}$/.test(a))) {
             const k = N(r.tag);
             if (!io.has(k)) io.set(k, { st: +st, a });
           }
+          /* memory list: "A-BFWP RUNNING (BC FROM S3)" = the run state that the ABC sheets use (M.3343) */
+          const m = r && r.k !== 'io' && /^([A-Z0-9 \-\/]+?)\s+RUNNING\b/.exec(String(r.d || '').toUpperCase());
+          if (m && /^M\./.test(a)) {
+            const k = N(m[1]);
+            if (!run.has(k)) run.set(k, []);
+            /* the equipment bit itself first ("(BC FROM S3)", remark "STATION WIRING"), not a pulse or a timer made from it (M.020E) */
+            run.get(k).push({ st: +st, a, p: /BC FROM|STATION WIRING/i.test(String(r.d || '') + ' ' + String(r.r || '')) ? 0 : 1 });
+            run.get(k).sort((x, y) => x.p - y.p);
+          }
         }
     } catch (e) {}
-    IX = { pv, ctl, vt, lab, ai, io };
+    IX = { pv, ctl, vt, lab, ai, io, run };
     return IX;
   }
   /* the transmitter tag of an indicator tag: TIBR11302 -> TTBR11302 / TEBR11302; FIQMS1031 -> FTMS1031 */
@@ -150,8 +160,35 @@
       }
       return null;
     }
+    if (it.t === 'pump' || it.t === 'fan') {
+      /* the run state: the memory bit the ABC sheets use (memory list "... RUNNING"), else the running DI of the I/O list (MIR-P1115A) */
+      const words = String(it.tag).toUpperCase().split(/\s+/).filter(w => !/^[PF]-?\d{4}/.test(w)),
+        full = words.join(' '),
+        sw = /^(.+)-([A-Z])$/.exec(full),
+        cands = [N(full)].concat(sw ? [N(sw[2] + '-' + sw[1])] : []);
+      for (const c of cands)
+        for (const x of IX.run.get(c) || []) if (IX.lab.has(x.st + '|' + x.a)) return Object.assign({ k: 'dig', how: x.a + ' STN10' + x.st, a: x.a, st: x.st }, IX.lab.get(x.st + '|' + x.a));
+      const eq = /([PF])-?(\d{4}[A-Z]?\d?)/.exec(String(it.tag).toUpperCase());
+      const r = eq && IX.io.get('MIR' + eq[1] + eq[2]);
+      if (r && IX.lab.has(r.st + '|' + r.a)) return Object.assign({ k: 'dig', how: r.a + ' STN10' + r.st, a: r.a, st: r.st }, IX.lab.get(r.st + '|' + r.a));
+      return null;
+    }
+    if (it.t === 'mov') {
+      /* open / close limit switches of the I/O list: ZSO-BR1391 / ZSC-BR1391 for MVBR1391 */
+      const rest = k.slice(2);
+      for (const [pre, open] of [['ZSO', 1], ['ZSC', 0]]) {
+        const r = IX.io.get(pre + rest);
+        if (r && IX.lab.has(r.st + '|' + r.a)) return Object.assign({ k: 'dig', open, how: r.a + ' STN10' + r.st, a: r.a, st: r.st }, IX.lab.get(r.st + '|' + r.a));
+      }
+      return null;
+    }
     if (it.t === 'valve' || it.t === 'damper') {
-      if (IX.vt.has(k)) return Object.assign({ k: 'net', how: 'valve on the drawing' }, IX.vt.get(k));
+      /* 2.1.0-beta.10: the controller of the valve (HMI snapshot mapping): used when the drawing has no valve for the tag (its MV),
+         and to read a fail-open valve right: its signal on the drawing is 100 - MV, the HMI shows the opening = MV */
+      const vc = (window.PLANT_VALVE_CTL || {})[k],
+        cc = vc && IX.ctl.get(vc);
+      if (IX.vt.has(k)) return Object.assign({ k: 'net', how: 'valve on the drawing', cc }, IX.vt.get(k));
+      if (cc) return { k: 'mv', sh: cc.sh, c: cc.c, how: 'MV of ' + vc };
       const r = IX.io.get(k);
       if (r && IX.lab.has(r.st + '|' + r.a)) return Object.assign({ k: 'net', how: r.a + ' STN10' + r.st, a: r.a, st: r.st }, IX.lab.get(r.st + '|' + r.a));
     }
@@ -185,7 +222,15 @@
           const auto = !c.amt || pk === c.autoLeg,
             rem = !!(c.remote && c.svSw && S.rt.st[c.svSw.id] && S.rt.st[c.svSw.id].pk === 'A');
           o.set({ pv: v[c.q.pv], sv: v[c.q.sv], mv: v[c.out], m: !auto ? 'M' : rem ? 'R' : 'A' });
-        } else o.set({ v: netVal(r) });
+        } else if (r.k === 'mv') {
+          const S = shOf(r.sh).S;
+          o.set({ v: S.rt.v[r.c.out], r });
+        } else if (r.cc) {
+          let x = netVal(r);
+          const mv = shOf(r.cc.sh).S.rt.v[r.cc.c.out];
+          if (isFinite(x) && isFinite(mv) && Math.abs(x - (100 - mv)) < 0.5 && Math.abs(x - mv) > 1) x = 100 - x; /* fail-open valve */
+          o.set({ v: x, r });
+        } else o.set({ v: netVal(r), r });
       } catch (e) {}
     }
   }
@@ -257,14 +302,32 @@
           });
         } else if (it.t === 'mov') {
           valve(g, it, it.st === 'open' ? '#e05555' : '#3fbf6a');
+          {
+            const parts = [...g.childNodes].slice(-3);
+            reg(it, x => {
+              const on = x && x.v != null ? (x.r && x.r.open === 0 ? x.v < 0.5 : x.v > 0.5) : it.st === 'open';
+              const c = on ? '#e05555' : '#3fbf6a';
+              for (const e of parts) e.setAttribute(e.tagName === 'line' ? 'stroke' : 'fill', c);
+            }, parts[0]);
+          }
           if (it.tag) txt(g, it.x + 14, it.y - 10, it.tag, { z: 11 });
           if (it.v != null) txt(g, it.x + 14, it.y + 6, it.v + ' ' + (it.u || '%'), { z: 12, mono: 1, c: '#5cd6ff' });
           if (it.m) txt(g, it.x - 14, it.y - 10, it.m, { z: 10, c: '#9ff0c4', a: 'end', b: 1 });
         } else if (it.t === 'pump' || it.t === 'fan') {
           const c = it.st === 'run' ? '#e05555' : '#3fbf6a';
           g.append(S_('circle', { cx: it.x, cy: it.y, r: 14, fill: 'none', stroke: c, 'stroke-width': 2.5 }));
+          const ring = g.lastChild;
           if (it.t === 'pump') g.append(S_('polygon', { points: `${it.x - 8},${it.y + 8} ${it.x + 8},${it.y} ${it.x - 8},${it.y - 8}`, fill: c }));
           else g.append(S_('path', { d: `M${it.x - 9},${it.y} L${it.x + 9},${it.y} M${it.x},${it.y - 9} L${it.x},${it.y + 9}`, stroke: c, 'stroke-width': 2.5 }));
+          {
+            const sym = g.lastChild;
+            reg(it, x => {
+              const on = x && x.v != null ? x.v > 0.5 : it.st === 'run';
+              const c2 = on ? '#e05555' : '#3fbf6a';
+              ring.setAttribute('stroke', c2);
+              sym.setAttribute(it.t === 'pump' ? 'fill' : 'stroke', c2);
+            }, ring);
+          }
           if (it.tag) txt(g, it.x, it.y + 30, it.tag, { z: 11, a: 'middle' });
           if (it.m) txt(g, it.x + 18, it.y - 12, it.m, { z: 10, c: '#9ff0c4', b: 1 });
         } else if (it.t === 'vessel') {
@@ -324,6 +387,7 @@
             e.stopPropagation();
             try {
               if (o.r.k === 'ctl') window.lsInfo && window.lsInfo(o.it.tag);
+              else if (o.r.k === 'mv') window.lsInfo && window.lsInfo(o.r.c.tag);
               else if (o.r.a) window.lsInfo && window.lsInfo(o.r.a, { stn: o.r.st });
               else window.lsInfo && window.lsInfo(o.it.tag + '.PV');
             } catch (x) {}
@@ -493,7 +557,7 @@
     }
   }
   window.lsPlant = open;
-  window.lsPlantLive = () => LV.map(o => ({ tag: o.it.tag, t: o.it.t, snap: o.it.t === 'ctl' ? o.it.pv + '/' + o.it.sv + '/' + o.it.mv + ' ' + o.it.m : o.it.v, how: o.r ? o.r.how || o.r.k : null, sh: o.r ? o.r.sh : null, live: o.r && o.r.k === 'net' ? netVal(o.r) : o.r && o.r.k === 'ctl' ? (() => { const S = shOf(o.r.sh).S, c = o.r.c; return [S.rt.v[c.q.pv], S.rt.v[c.q.sv], S.rt.v[c.out]].map(x => +(+x).toFixed(1)).join('/'); })() : null })); /* for the tests */
+  window.lsPlantLive = () => LV.map(o => ({ tag: o.it.tag, t: o.it.t, snap: o.it.t === 'ctl' ? o.it.pv + '/' + o.it.sv + '/' + o.it.mv + ' ' + o.it.m : o.it.v, how: o.r ? o.r.how || o.r.k : null, sh: o.r ? o.r.sh : null, live: o.r && o.r.k === 'mv' ? shOf(o.r.sh).S.rt.v[o.r.c.out] : o.r && o.r.cc ? (() => { const x = netVal(o.r), mv = shOf(o.r.cc.sh).S.rt.v[o.r.cc.c.out]; return Math.abs(x - (100 - mv)) < 0.5 && Math.abs(x - mv) > 1 ? 100 - x : x; })() : o.r && (o.r.k === 'net' || o.r.k === 'dig') ? netVal(o.r) : o.r && o.r.k === 'ctl' ? (() => { const S = shOf(o.r.sh).S, c = o.r.c; return [S.rt.v[c.q.pv], S.rt.v[c.q.sv], S.rt.v[c.out]].map(x => +(+x).toFixed(1)).join('/'); })() : null })); /* for the tests */
   addEventListener('resize', () => {
     if (ws && ws.style.display === 'grid') {
       place();

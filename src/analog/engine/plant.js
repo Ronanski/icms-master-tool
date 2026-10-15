@@ -330,9 +330,15 @@ function anProcStep(S, dt) {
            command range. Before: the average of the open valves, so closing one of two open valves did not move the PV
            (ABC-030 PICAS1004 + PICAS1005) */
         const hi = b.p.hi == null ? 100 : b.p.hi;
-        return Math.min(
-          hi,
-          [uOf(b)].concat(sh.map(uOf)).reduce((a, x) => a + Math.max(0, x), 0)
+        /* 2.1.0-beta.10: a valve on the same PV whose PID acts the other way (ACT) works against it (ABC-031: make-up valve
+           LICCD1110A raises the hotwell level, dump valve LICCD1110B lowers it): its opening is subtracted, not added */
+        const dir = g => ((g.p.act < 0) === (b.p.act < 0) ? 1 : -1);
+        return Math.max(
+          -hi,
+          Math.min(
+            hi,
+            [uOf(b)].concat(sh.map(uOf)).reduce((a, x, i) => a + (i ? dir(sh[i - 1]) : 1) * Math.max(0, x), 0)
+          )
         );
       })(),
       span = b.p.span > 0 ? b.p.span : 100,
@@ -355,8 +361,8 @@ function anProcStep(S, dt) {
       };
     /* 2.1.0-beta.6: "Start at 150 MW" (hmi-op.js) gave the PV of the snapshot transmitters (pr.hopReq): a loop without a static
        anchor is anchored NOW at (the command that goes to the valve now -> that PV), so the plant model keeps the snapshot
-       value instead of its own steady state. Not for: a static anchor, the drum level (integrating), parallel valves or a
-       measurement shared with another sheet, a flow loop whose valve is closed or whose flow is 0 on the snapshot. Reset removes it (anResetAll). */
+       value instead of its own steady state. Not for: a static anchor, the drum level (integrating), a measurement shared
+       with another sheet, a flow loop whose valve is closed or whose flow is 0 on the snapshot. Reset removes it (anResetAll). */
     if (pr.hopReq) {
       const hr = pr.hopReq,
         tg = (b.txt || [])[1];
@@ -365,14 +371,16 @@ function anProcStep(S, dt) {
         !AN_HMI_OP[tg] &&
         tg !== 'LICBR1001' &&
         !xe.length &&
-        (!(b._sh && b._sh.length) || b._sh.concat([b]).some(g => AN_SERIES[(g.txt || [])[1]])) &&
+        /* 2.1.0-beta.10: parallel valves on one PV too: the anchor is the sum of their commands now (ABC-031 LICCD1110A + B), but
+           not when that sum is at the top of the command range (clamped: the model would have no slope left) */
+        !(b._sh && b._sh.length && !b._sh.concat([b]).some(g => AN_SERIES[(g.txt || [])[1]]) && (hr.mv != null ? hr.mv : u) >= (b.p.hi == null ? 100 : b.p.hi) - 0.5) &&
         isFinite(hr.pv) &&
         isFinite(u) &&
         hr.pv >= lo &&
         hr.pv <= lo + span &&
-        (b.p.lt !== 'flow' || (u >= 2 && hr.pv - lo > 0.02 * span)) /* a flow at 0 with the valve open = an isolation valve is shut (oil burner out of service): not the control valve */
+        (b.p.lt !== 'flow' || ((hr.mv != null ? hr.mv : u) >= 2 && hr.pv - lo > 0.02 * span)) /* a flow at 0 with the valve open = an isolation valve is shut (oil burner out of service): not the control valve */
       ) {
-        pr.hop = { mv: u, pv: hr.pv, src: '150 MW load', dyn: 1 };
+        pr.hop = { mv: hr.mv != null ? hr.mv : u, pv: hr.pv, src: '150 MW load', dyn: 1 }; /* the MV of the snapshot when known, else the command now */
         pr.Ka = undefined;
         delete pm[b.id];
         q = null;
