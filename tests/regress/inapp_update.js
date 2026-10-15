@@ -32,10 +32,10 @@ ck(ok1>=100,'the Beta works offline: '+ok1+' DITL sheets');
 // back to Stable (offline): the copy inside the app
 await p.evaluate(()=>{const c=document.getElementById('chsel');c.value='stable';c.dispatchEvent(new Event('change'))});await p.waitForFunction(v=>document.title==='Logic Sim v'+v,V,{timeout:30000});await ready();
 ck((await title())==='Logic Sim v'+V,'Stable chosen offline: the copy inside the app '+(await title()));
-// update of the Stable when online: question, I-update ngayon, downloaded, runs from the app
+// update of the Stable when online: question, Update now, downloaded, runs from the app
 online=true;await p.evaluate(()=>window.lsCheckUpdate(true));await p.waitForSelector('#updask',{timeout:20000});
 ck(/v[\d.]+/.test(await p.textContent('#updask'))&&(await p.textContent('#updask')).includes(SV),'asks: '+(await p.textContent('#updask')).replace(/\s+/g,' ').slice(0,80));
-await p.click('text=I-update ngayon');await p.waitForFunction(v=>document.title==='Logic Sim v'+v,SV,{timeout:30000});await ready();
+await p.click('text=Update now');await p.waitForFunction(v=>document.title==='Logic Sim v'+v,SV,{timeout:30000});await ready();
 ck((await title())==='Logic Sim v'+SV,'updated in the app: '+(await title()));
 online=false;await p.reload();await p.waitForFunction(v=>document.title==='Logic Sim v'+v,SV,{timeout:30000});
 ck(true,'no internet, started again: still the updated Stable');

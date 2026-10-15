@@ -1,0 +1,22 @@
+# v2.0.0 (target ng susunod na Stable) — mga Beta
+
+Base: Stable v1.23.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f). Bakit 2.0.0: bagong henerasyon ng itsura at English ang buong app (PROJECT_RULES 5f, user 2026-10-15: "standard tayo, baka umabot ng v1.9999").
+
+## 2.0.0-beta.1 — Console look, English sa app, Plant window ibinalik
+
+- **Problem:** Gusto ng user ng technical, "maangas" na itsura na pang-engineer (inspirasyon: ABB Control Builder, Yokogawa CENTUM VP, TIA Portal). Magkakaiba ang laki ng font, may halong Tagalog sa app, at nawala ang Plant window (2nd monitor, plant graphics per system).
+- **As Found:**
+  - Ang button na "Plant" (`bPl`, `src/analog/ui/main.js`) ay ginawa pero hindi kailanman inilagay sa toolbar, kahit noong unang ginawa ang `src/`. Buo pa ang `src/analog/ui/plant-window.js`.
+  - Ang "2nd sheet" ay nasa ⋯ menu.
+- **Work Done:**
+  - `src/ui/shell/console.css` (bago, itsura lang): Console look (default). ⚙ → Look: Classic = ang itsura ng 1.23.0.
+    - Manipis na border, pane title strip (ALL CAPS na 11 px na label lang), at kulay para sa estado lang (asul = napili, berde = RUN / AUTO, amber = MAN, pula = alarm).
+    - Dot grid sa likod ng drawing at segmented status bar.
+    - 4 na laki ng font: 11 px label, 12.5 px text at button, 14 px title, at mono para sa values.
+  - Mga font: **IBM Plex Sans Condensed** (default) at Barlow Semi Condensed (bago, OFL, `src/ui/fonts/`). Ang tag at numero ay JetBrains Mono.
+  - English ang lahat ng text sa app: faceplate, info card, event log, Spot check, update question ("Update now" / "Later"), one world, at ang mga toolbar group.
+  - Ang Plant window ay nasa ⋯ → Windows (kasama ang 2nd sheet at DITL signals).
+  - PROJECT_RULES 5f: PATCH = fix lang; MINOR = pinagsamang mga bagong feature; MAJOR = bagong henerasyon. Ang app ay English, ang chat at docs ay Taglish.
+- **As Left (headless):** info card, overview, event log, DITL toolbar, in-app update: ALL PASS. Screenshot: desktop, tablet, phone.
+- **Hindi pa nasubok:** totoong tablet / phone. Ang Plant window sa apk (pop-out window sa Android). Ang pagsasalin ng scenario text (ABC-007) ay ginagawa pa.
+- **Status:** Pass (headless), Beta.

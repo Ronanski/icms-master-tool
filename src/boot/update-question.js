@@ -85,7 +85,7 @@
   }
   /* download the page of a channel into the app; then it runs from the app (no internet needed after this) */
   function download(ch) {
-    say('Dina-download ang ' + (ch === 'beta' ? 'Beta' : 'Stable') + ' (mga 4 MB)...');
+    say('Downloading ' + (ch === 'beta' ? 'Beta' : 'Stable') + ' (about 4 MB)...');
     return fetch(SITE + (ch === 'beta' ? 'beta/' : '') + '?t=' + Date.now(), { cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -93,7 +93,7 @@
       })
       .then(function (h) {
         var m = h.match(/<title>Logic Sim (v\d+(\.\d+)+(-beta\.\d+)?)<\/title>/);
-        if (!m || h.length < 500000) throw new Error('hindi buo ang na-download');
+        if (!m || h.length < 500000) throw new Error('incomplete download');
         return idb('readwrite', ch, h).then(function () {
           STORE[ch] = m[1];
           ls('ls-store', JSON.stringify(STORE));
@@ -142,13 +142,13 @@
     d.style.cssText =
       'position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:99997;background:#16324a;color:#fff;border:1px solid #6aaee0;border-radius:10px;padding:12px 16px;font:15px/1.4 system-ui;max-width:92vw;box-shadow:0 4px 20px #0008';
     d.innerHTML =
-      '<b>May bagong bersyon: ' +
+      '<b>New version available: ' +
       v +
       '</b> (' +
       (beta ? 'Beta' : 'Stable') +
-      ')<br>Ang gamit mo ngayon: ' +
+      ')<br>Installed: ' +
       T +
-      '. I-update ba?<br><span id=updbs style="display:inline-flex;gap:8px;margin-top:8px"></span>';
+      '. Update now?<br><span id=updbs style="display:inline-flex;gap:8px;margin-top:8px"></span>';
     function bt(t, f, c) {
       var b = document.createElement('button');
       b.textContent = t;
@@ -160,7 +160,7 @@
       d.querySelector('#updbs').append(b);
     }
     bt(
-      'I-update ngayon',
+      'Update now',
       function () {
         d.remove();
         go();
@@ -168,7 +168,7 @@
       '#1d6b45'
     );
     bt(
-      'Huwag muna',
+      'Later',
       function () {
         try {
           sessionStorage.setItem('updskip', v);
@@ -190,13 +190,13 @@
           }, 600);
         })
         .catch(function (e) {
-          say('Hindi na-download (' + ((e && e.message) || 'walang koneksyon') + '). Subukan ulit kapag may internet.');
+          say('Download failed (' + ((e && e.message) || 'no connection') + '). Subukan ulit kapag may internet.');
         });
       return;
     }
     var sw = navigator.serviceWorker;
     if (sw && sw.controller) {
-      say('Dina-download ang update...');
+      say('Downloading the update...');
       sw.controller.postMessage('update');
     } else location.reload();
   }
@@ -220,7 +220,7 @@
         fin(v, manual);
       })
       .catch(function () {
-        if (manual) say('Walang koneksyon: hindi ma-check ang update.');
+        if (manual) say('No connection: cannot check for updates.');
       });
   }
   function fin(v, manual) {
@@ -232,7 +232,7 @@
             sk = sessionStorage.getItem('updskip');
           } catch (e) {}
           if (manual || sk !== v) ask(v);
-        } else if (manual) say('Updated ka na: ' + T + ' (' + (beta ? 'Beta' : 'Stable') + ').');
+        } else if (manual) say('Up to date: ' + T + ' (' + (beta ? 'Beta' : 'Stable') + ').');
       }
     }
   }
@@ -241,7 +241,7 @@
     navigator.serviceWorker.register(dir + 'sw.js', { scope: dir }).catch(function () {});
     navigator.serviceWorker.addEventListener('message', function (e) {
       if (e.data === 'updated') location.reload();
-      if (e.data === 'failed') say('Hindi na-download ang update. Subukan ulit.');
+      if (e.data === 'failed') say('The update could not be downloaded. Try again.');
     });
   }
   window.addEventListener('load', function () {
@@ -251,7 +251,7 @@
         var b = document.createElement('button');
         b.id = 'updbtn';
         b.textContent = '⟳ Update?';
-        b.title = 'I-check kung may bagong bersyon';
+        b.title = 'Check for a new version';
         b.style.cssText = 'margin-left:6px';
         b.onclick = function () {
           check(true);

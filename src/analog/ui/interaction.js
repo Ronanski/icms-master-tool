@@ -169,14 +169,14 @@ function digClick(sh, n, shift) {
       ' = ' +
       (S.rt.v[n] > 0.5 ? 1 : 0) +
       (lk
-        ? ' · galing sa sheet ' +
+        ? ' · from sheet ' +
           lk.from.name +
           ' (' +
           (lk.tag ? 'tag ' : 'circle ') +
           lk.num +
-          ') - hindi ito input, ang logic doon ang nagpapasya.'
-        : ' · output ng logic sa sheet na ito - hindi ito input, ang logic ang nagpapasya.') +
-      ' Para i-force: FORCE button sa panel.';
+          ') - not an input: the logic there decides it.'
+        : ' · logic output on this sheet - not an input: the logic decides it.') +
+      ' To force it: FORCE button in the panel.';
   }
   AN.sel = { net: n };
   selBox();

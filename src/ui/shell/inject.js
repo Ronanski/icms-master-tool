@@ -22,7 +22,9 @@ const FD = __dirname + '/../fonts/',
     ['IBM Plex Sans', 'ibm-plex-sans', [400, 600]],
     ['IBM Plex Mono', 'ibm-plex-mono', [400, 600]],
     ['Roboto', 'roboto', [400, 500]],
-    ['Roboto Mono', 'roboto-mono', [400, 600]]
+    ['Roboto Mono', 'roboto-mono', [400, 600]],
+    ['IBM Plex Sans Condensed', 'ibm-plex-sans-condensed', [400, 500, 600]],
+    ['Barlow Semi Condensed', 'barlow-semi-condensed', [400, 500, 600]]
   ],
   fontCss = FACES.map(([fam, f, ws]) =>
     ws
@@ -31,7 +33,7 @@ const FD = __dirname + '/../fonts/',
           "@font-face{font-family:'" +
           fam +
           "';font-style:normal;font-weight:" +
-          (w === 500 ? '500 700' : w === 600 ? '600 700' : w) +
+          (ws.includes(600) && w === 500 ? 500 : w === 500 ? '500 700' : w === 600 ? '600 700' : w) +
           ';font-display:swap;src:url(data:font/woff2;base64,' +
           fs.readFileSync(FD + f + '-latin-' + w + '-normal.woff2').toString('base64') +
           ") format('woff2')}"
@@ -44,6 +46,7 @@ const block =
   fontCss +
   '</style><style id="shellcss">' +
   fs.readFileSync(__dirname + '/shell.css', 'utf8') +
+  fs.readFileSync(__dirname + '/console.css', 'utf8') +
   '</style><script id="shelljs">' +
   fs.readFileSync(__dirname + '/shell.js', 'utf8') +
   '\n' +

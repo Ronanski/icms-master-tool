@@ -30,7 +30,8 @@
       ln = btn(/^LN tables/),
       assumed = btn(/^Assumed/),
       ditl = btn(/^DITL signals/),
-      second = btn(/^2nd sheet/);
+      second = btn(/^2nd sheet/),
+      plant = btn(/^Plant window$/);
     const shbox = $('anshbox'),
       time = kids.find(k => k.tagName === 'SPAN' && /^t\s*=/.test(t(k)));
     if (!view || !run || !fit || !panel || !shbox) return false;
@@ -45,20 +46,20 @@
     const sheets = document.createElement('button');
     sheets.id = 'tbsheets';
     sheets.textContent = '☰ Sheets';
-    sheets.title = 'Listahan ng mga sheet';
+    sheets.title = 'Sheet list';
     sheets.onclick = e => {
       e.stopPropagation();
       const s = $('side');
       if (s) s.classList.toggle('uiopen');
     };
-    const gSim = mk('tbg-run', 'Takbo', [run, back, next, stepSel, speedSel, reset, view]);
-    const gView = mk('', 'Tingin', [fit, values, wire, panel]);
+    const gSim = mk('tbg-run', 'Run', [run, back, next, stepSel, speedSel, reset, view]);
+    const gView = mk('', 'View', [fit, values, wire, panel]);
     const gSheet = mk('', 'Sheet', [sheets, shbox, time]);
     const more = document.createElement('div');
     more.className = 'tb-more';
     const mb = document.createElement('button');
     mb.textContent = '⋯ More';
-    mb.title = 'Iba pang mga button';
+    mb.title = 'More commands';
     const menu = document.createElement('div');
     menu.className = 'tb-menu';
     const head = x => {
@@ -67,12 +68,12 @@
       h.textContent = x;
       menu.append(h);
     };
-    head('Tingin');
+    head('View');
     [review, live, theme, xback].forEach(e => e && menu.append(e));
-    head('Tseke');
+    head('Check');
     [health, audit, ln, assumed].forEach(e => e && menu.append(e));
-    head('Iba pang pahina');
-    [ditl, second].forEach(e => e && menu.append(e));
+    head('Windows');
+    [second, plant, ditl].forEach(e => e && menu.append(e));
     more.append(mb, menu);
     mb.onclick = e => {
       e.stopPropagation();
@@ -137,14 +138,14 @@
       els.filter(Boolean).forEach(e => g.append(e));
       return g;
     };
-    const gSim = mk('tbg-run', 'Takbo', [mode]);
-    const gView = mk('', 'Tingin', [fit, live]);
+    const gSim = mk('tbg-run', 'Run', [mode]);
+    const gView = mk('', 'View', [fit, live]);
     const gSheet = mk('tbg-sheet', 'Sheet', [shbox]);
     const more = document.createElement('div');
     more.className = 'tb-more';
     const mb = document.createElement('button');
     mb.textContent = '⋯ Tools';
-    mb.title = 'Mga tool sa pag-edit ng drawing at project';
+    mb.title = 'Drawing and project editing tools';
     const menu = document.createElement('div');
     menu.className = 'tb-menu';
     const head = x => {
@@ -155,9 +156,9 @@
     };
     head('Project');
     [lab('fdxf'), lab('fjson'), $('bsave')].forEach(e => e && menu.append(e));
-    head('Edit ng drawing');
+    head('Drawing edit');
     [$('bundo'), $('bredo'), $('bclr'), $('bdel'), $('bwire')].forEach(e => e && menu.append(e));
-    head('Tseke');
+    head('Check');
     [$('bhp')].forEach(e => e && menu.append(e));
     more.append(mb, menu);
     mb.onclick = e => {
@@ -236,14 +237,16 @@
     if (lab) lab.remove();
     [$('ansb'), $('gscope')].forEach(e => e && srch.append(e));
     /* settings ⚙: looks, live colour, channel and update */
-    const set = mkMenu('gs-set', GEAR, 'Settings: itsura, kulay, channel, update');
+    const set = mkMenu('gs-set', GEAR, 'Settings: appearance, colours, channel, update');
     set.head('Appearance');
     {
       /* font of the app (built in, works offline); the drawing keeps the font of its theme */
       const fs_ = document.createElement('select');
       fs_.id = 'fontsel';
-      fs_.title = 'Font ng app (hindi kasama ang drawing)';
+      fs_.title = 'App font (the drawing keeps its own)';
       [
+        ['plexc', 'Font: IBM Plex Sans Condensed'],
+        ['barlow', 'Font: Barlow Semi Condensed'],
         ['inter', 'Font: Inter + JetBrains Mono'],
         ['plex', 'Font: IBM Plex Sans + Mono'],
         ['roboto', 'Font: Roboto + Roboto Mono'],
@@ -254,9 +257,9 @@
         o.textContent = t;
         fs_.append(o);
       });
-      let f0 = 'inter';
+      let f0 = 'plexc';
       try {
-        f0 = localStorage.getItem('ls-font') || 'inter';
+        f0 = localStorage.getItem('ls-font') || 'plexc';
       } catch (e) {}
       fs_.value = f0;
       document.documentElement.dataset.font = f0;
@@ -267,6 +270,32 @@
         } catch (e) {}
       };
       set.m.append(fs_);
+      /* look of the app (1.24.0): Console = engineering-tool look (default), Classic = the 1.23.0 look */
+      const lk = document.createElement('select');
+      lk.id = 'looksel';
+      lk.title = 'App look (the drawing is not changed)';
+      [
+        ['console', 'Look: Console'],
+        ['classic', 'Look: Classic']
+      ].forEach(([v, t]) => {
+        const o = document.createElement('option');
+        o.value = v;
+        o.textContent = t;
+        lk.append(o);
+      });
+      let l0 = 'console';
+      try {
+        l0 = localStorage.getItem('ls-look') || 'console';
+      } catch (e) {}
+      lk.value = l0;
+      document.documentElement.dataset.look = l0;
+      lk.onchange = () => {
+        document.documentElement.dataset.look = lk.value;
+        try {
+          localStorage.setItem('ls-look', lk.value);
+        } catch (e) {}
+      };
+      set.m.append(lk);
     }
     [$('uisel'), $('dgsel')].forEach(e => e && set.m.append(e));
     const anSel = [...an.querySelectorAll('.tb-menu select')];
