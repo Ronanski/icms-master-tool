@@ -2,6 +2,23 @@
 
 Base: Stable v2.0.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 2.1.0-beta.4 — Test Cards: FICFW1007, HS-COAL, PICFG108, AICFG112
+
+- **Problem (task):** Ang force manual ng apat na loop ay may maraming kondisyon; gusto ng user ng gabay na test na galing sa drawing, hindi hula.
+- **As Found (trace ng netlist):**
+  - **FICFW1007 (ABC-010) M.0228** = OR( NOT LICBR1001B.MAN, BFWP A M.3343 at B M.3344 parehong patay, SIG.AB, M.022E = TON 60 s ng M.022C "MAIN STEAM FLOW < 100 T/H" ). Ang M.022C ay galing sa comparator sa parehong sheet sa connector #1: nakakabit (tama).
+  - **HS-COAL (ABC-004A) M.2020** = OR( PIC-COBM.MAN, NOT feeder A (M.3400, TOF 2 s) / B (M.015E) / C (M.016E), NOT "oil valve (1) at (2) close" ng burner A / B / C / D ). Ang mga oil valve close ay description lang sa drawing; sa I/O list: I.0001 / I.0003 (A), I.0321 / I.0323 (B), I.0641 / I.0643 (C), I.0961 / I.0963 (D), STN104.
+  - **PICFG108 (ABC-008) M.0205** = OR( NOT ID fan M.3304, MV < 14 %, NOT M.0202 ). Ang M.0202 (FF) ay na-se-set ng CRT "HYDRAULIC CONTROL SELECT" kapag |PICFG108A.MV − F(X) ng PICFG108.MV| < 1 %. Pagtakbo ng ID fan, ang MV ay preset sa 13 % (F(X) = 92.9 %), kaya kailangang itugma muna ang damper PICFG108A MV.
+  - **AICFG112 (ABC-002) M.0103** = OR( cross limit ng air (low select BM / SI0019), cross limit ng fuel (high select), M.0102 = NOT FICFA1081.REM o NOT M.0101 (steam flow > 220 T/H, ABC-001C), SIG.AB ).
+- **Work Done:**
+  - Bagong scenario file: `src/ui/uat/scenarios/ABC-010.json`, `ABC-004A.json`, `ABC-008.json`, `ABC-002.json` (3 ~ 4 card bawat loop: cold start = forced; permissive = clear + A; trip pabalik sa MANUAL).
+  - `src/ui/uat/scen.js`: `loop` kada step (pumindot sa ibang faceplate ng sheet, hal. M ng LICBR1001B) at `nth` para sa text na inuulit (oil valve). Walang pagbabago sa engine.
+  - UAT panel: ang pamagat na "TEST CARD" ay hindi na may "SCENARIO TEST:" sa unahan.
+- **As Left (headless, `npm run scenarios`):** ABC-010 13 / 0, ABC-004A 16 / 0, ABC-008 17 / 0, ABC-002 14 / 0, ABC-007 184 / 0 (kabuuan 244 / 0).
+- **Saan sa app:** UAT → piliin ang sheet (ABC-010, 004A, 008, 002) → kahon na "TEST CARD" → ▶ Run.
+- **Hindi pa nasubok:** totoong tablet.
+- **Status:** Beta.
+
 ## 2.1.0-beta.3 — Reset fidelity ayos (51 / 0); IRP / ARP / SER sa LIBRARY at info card
 
 - **Problem:** (1) Pagkatapos ng Reset, 5 sheet ay hindi bumabalik sa simulang value (luma na, nasa v1.23.0 din). (2) Wala pa sa app ang IRP / ARP / SER list (`IRP_ARP_SER.xls` ng user).

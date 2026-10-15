@@ -1,0 +1,57 @@
+{
+ "sheet": "ABC-010",
+ "title": "TEST CARD: feedwater flow control FICFW1007 — force manual M.0228",
+ "pdf": "analog-logic-abc.zip > ABC-010.pdf",
+ "scenarios": [
+  {
+   "id": "TC1",
+   "loop": "FICFW1007",
+   "title": "Cold start: FICFW1007 is forced to MANUAL",
+   "drawing": "M.0228 = OR( NOT LICBR1001B.MAN (DRUM LEVEL CONTROL MANUAL FOR START-UP), BFWP A (M.3343) and B (M.3344) both stopped, SIG.AB B.0689·B.0640 / B.068A·B.0642, M.022E ). M.022E = OR( TON 60 s of M.022C = BOILER MAIN STEAM FLOW < 100 T/H, SIG.AB ). M.0228 is 1:B of the FICFW1007 A/M T switch (force manual).",
+   "steps": [
+    { "do": "wait", "s": 5 },
+    { "expect": "signal", "tag": "M.0228", "value": 1, "say": "M.0228 (force manual)", "why": "cold start: no BFWP running, start-up level control not in MANUAL, steam flow < 100 T/H" },
+    { "expect": "mode", "value": "MANUAL", "say": "FICFW1007 mode" },
+    { "expect": "faceplate", "value": "FORCE MANUAL", "say": "Panel indication" },
+    { "expect": "disabled", "button": "AUTO", "value": "disabled", "say": "AUTO button", "why": "AUTO not allowed while force is active" }
+   ]
+  },
+  {
+   "id": "TC2",
+   "loop": "FICFW1007",
+   "title": "Permissives made: start-up control in MANUAL, BFWP A running, steam flow above 100 T/H for 60 s: force clears",
+   "drawing": "All OR inputs of M.0228 at 0: LICBR1001B.MAN = 1 (operator presses M on LICBR1001B), M.3343 = 1, FIQMS1031.PV above 100 T/H (AI0129 on ABC-001C; > 100: M.022C = 0, the TON 60 s output drops). The A/M T switch holds the MANUAL leg: the operator selects AUTO.",
+   "steps": [
+    { "do": "press", "loop": "LICBR1001B", "button": "MAN", "say": "LICBR1001B: press M (start-up drum level control to MANUAL)" },
+    { "do": "set", "tag": "M.3343", "value": 1, "say": "BFWP A running (M.3343 = 1)" },
+    { "do": "set", "sheet": "ABC-001C", "tag": "AI0129", "value": 200, "say": "Main steam flow transmitter AI0129 (ABC-001C) = 200 T/H" },
+    { "do": "wait", "s": 65 },
+    { "expect": "signal", "tag": "LICBR1001B.MAN", "value": 1, "say": "LICBR1001B.MAN" },
+    { "expect": "signal", "tag": "M.022C", "value": 0, "say": "M.022C (steam flow < 100 T/H)" },
+    { "expect": "signal", "tag": "M.0228", "value": 0, "say": "M.0228 (force manual)", "why": "all permissives made" },
+    { "expect": "mode", "value": "MANUAL", "say": "FICFW1007 mode", "why": "no automatic return to AUTO" },
+    { "expect": "disabled", "button": "AUTO", "value": "enabled", "say": "AUTO button" },
+    { "do": "press", "button": "AUTO", "say": "FICFW1007: press A" },
+    { "expect": "mode", "value": "AUTO", "say": "FICFW1007 mode after A" }
+   ]
+  },
+  {
+   "id": "TC3",
+   "loop": "FICFW1007",
+   "title": "In AUTO, both BFWP stop: FICFW1007 trips to MANUAL",
+   "drawing": "M.3343 = 0 and M.3344 = 0: the AND of the two NOTs is 1, M.0228 = 1, the A/M T switch goes to B (MANUAL) at once.",
+   "steps": [
+    { "do": "press", "loop": "LICBR1001B", "button": "MAN", "say": "LICBR1001B: press M" },
+    { "do": "set", "tag": "M.3343", "value": 1, "say": "BFWP A running" },
+    { "do": "set", "sheet": "ABC-001C", "tag": "AI0129", "value": 200, "say": "Main steam flow transmitter AI0129 = 200 T/H" },
+    { "do": "wait", "s": 65 },
+    { "do": "press", "button": "AUTO", "say": "FICFW1007: press A" },
+    { "expect": "mode", "value": "AUTO", "say": "FICFW1007 mode" },
+    { "do": "set", "tag": "M.3343", "value": 0, "say": "BFWP A stops (B already stopped)" },
+    { "do": "wait", "s": 2 },
+    { "expect": "signal", "tag": "M.0228", "value": 1, "say": "M.0228 (force manual)" },
+    { "expect": "mode", "value": "MANUAL", "say": "FICFW1007 mode", "why": "forced to MANUAL" }
+   ]
+  }
+ ]
+}
