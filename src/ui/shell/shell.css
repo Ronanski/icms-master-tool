@@ -178,12 +178,16 @@ body.top1 #meta #mctl button,body.top1 #meta #mctl select{height:24px;padding:0 
 #infocard .tg{display:inline-block;padding:1px 6px;border-radius:3px;font-weight:700;font-size:10.5px}
 #infocard .t-trip{background:#4a1d1d;color:#ffb3b3}#infocard .t-ok{background:#123a26;color:#9ff0c4}
 #infocard .b{height:24px;padding:0 8px;font-size:11px;border-radius:5px}
-/* info card: wiring flow chart (2.1.0) */
-#infocard .icw{display:flex;flex-direction:column;align-items:stretch;gap:0;margin:4px 0 2px}
-#infocard .icwb{border:1px solid #2a3846;border-radius:4px;background:#0b1219;padding:4px 8px;display:grid;grid-template-columns:118px 1fr;gap:0 8px;align-items:baseline}
-#infocard .icwb small{grid-row:span 2;font:600 9.5px var(--uf);letter-spacing:.1em;color:#6f8191}
-#infocard .icwb b{font:600 12px var(--mf);color:#e6edf3;word-break:break-all}
-#infocard .icwb span{font:11px var(--mf);color:#5cd6ff}
+/* info card: wiring flow chart (2.1.0), left to right */
+#infocard.wide{width:min(900px,96vw)}
+#infocard .icw{display:flex;flex-direction:row;flex-wrap:wrap;align-items:stretch;gap:6px 0;margin:4px 0 2px}
+#infocard .icwb{flex:0 0 132px;border:1px solid #2a3846;border-radius:4px;background:#0b1219;padding:5px 7px;display:flex;flex-direction:column;gap:2px}
+#infocard .icwb small{font:600 9px var(--uf);letter-spacing:.08em;color:#6f8191;text-transform:uppercase}
+#infocard .icwb b{font:600 11.5px var(--mf);color:#e6edf3;word-break:break-all;line-height:1.25}
+#infocard .icwb span{font:10.5px var(--mf);color:#5cd6ff;line-height:1.25}
 #infocard .icwb.ad{border-color:#2a6a98;background:#0e2536}
 #infocard .icwb.fd{border-color:#5a4a20;background:#1a160b}#infocard .icwb.fd b{color:#ffd78a}
-#infocard .icwa{text-align:center;color:#38a8f0;font-size:11px;line-height:14px;height:14px}
+#infocard .icwa{flex:0 0 18px;align-self:center;text-align:center;color:#38a8f0;font-size:15px;font-weight:700}
+#infocard .t-ilk{background:#4a3a12;color:#ffd78a}#infocard .t-fm{background:#3a2a10;color:#ffcf8a}#infocard .t-sw{background:#123048;color:#9fd0ff}
+#infocard .tg{margin-right:4px}
+#infocard .f-ilk{color:#ffd78a}#infocard .f-sw{color:#9fd0ff}
