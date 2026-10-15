@@ -47,7 +47,7 @@ Ang app ay galing sa `src/` na ngayon (nakahiwalay na ang stacks: boot, styles, 
 
 ## Bukas (v1.20.58)
 - Web Worker (OPLAN-L1PAT): HINDI KAILANGAN (user 2026-10-15: okay ang bilis sa tablet niya); buksan lang ulit kung may reklamo. Sukat: pinakamabigat na sheet 3.8 ms/step sa desktop (ABC-004A), average 1.2 ms; sukatin muna sa tablet.
-- 174 COS: 42 ang hindi 'used' ng engine. 37 ay SV COS ng loop na ang SV pin ay bukas na ext net (nasasakop ng SV sa faceplate). Needs Verification (basahin ang drawing): ABC-001A COS#4; ABC-003E COS#3, ABC-013 COS#11, ABC-054 COS#1 (parehong input ng DEV ay ext).
+- 174 COS: 42 ang hindi 'used' ng engine. 37 ay SV COS ng loop na ang SV pin ay bukas na ext net (nasasakop ng SV sa faceplate). Lahat ng 42 ay nasuri na sa PDF (v1.20.59 report): SV COS = sakop ng SV, setup COS = ext input (ABC-005 gitna ng range; ABC-001A COS#4 = AB0117 'TARGET MW SETUP' = AUTO-MV ext net, may SET rule na). 
 - 26 malalim na patong ng live values (ng 2426) - hindi pa inaayos.
 - Natitirang PV na 'hindi gumagalaw' ay interlock ng drawing sa cold start (ext input = 0): gamitin ang 'Sanhi?' sa panel.
 
