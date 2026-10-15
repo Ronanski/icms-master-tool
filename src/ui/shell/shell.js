@@ -95,6 +95,16 @@
     rest.forEach(k => {
       if (k.parentElement === bar && !k.classList.contains('tbg')) menu.append(k);
     }); /* anything else stays reachable in More */
+    /* phone (<= 700 px): isang linya lang ang toolbar; ang ☰ ay naglalabas ng lahat ng iba (search, channel, update, step, speed, reset ...) */
+    const mbtn = document.createElement('button');
+    mbtn.id = 'mbtn';
+    mbtn.textContent = '☰';
+    mbtn.title = 'Menu';
+    mbtn.onclick = e => {
+      e.stopPropagation();
+      document.body.classList.toggle('mmenu');
+    };
+    bar.prepend(mbtn);
     bar.append(gSim, gView, gSheet, more);
     const lst = $('anlist');
     if (lst)
