@@ -2931,10 +2931,10 @@
     "value": "PV 81.2 T/H / SV 81.2 T/H / MV 33.1 %",
     "unit": "",
     "mode": "R",
-    "abcTag": "FIC-CF",
+    "abcTag": "HS-COAL",
     "sheet": "ABC-004A",
     "note": "",
-    "abcMap": "by elimination: FIC-CF is the only other master on ABC-004A (unit on faceplate list is %, HMI shows T/H)"
+    "abcMap": "2.2.0-beta.1: HS-COAL TOTAL COAL FLOW CORRECTION CONTROL 0 ~ 120 T/H (S1-MDL051): MV 33.1 % -> LN3 0.932; 87.0 T/H x 0.932 = 81.1 T/H; 4450 x 0.932 = 4150 Kcal/Kg (COAL CALORIE CORR.)"
    },
    {
     "tag": "COAL CALORIE CORR.",
