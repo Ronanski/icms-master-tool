@@ -1,0 +1,428 @@
+{
+ "sheet": "ABC-004A",
+ "title": "TEST CARD: coal master HS-COAL — force manual M.2020",
+ "pdf": "analog-logic-abc.zip > ABC-004A.pdf",
+ "scenarios": [
+  {
+   "id": "TC1",
+   "loop": "HS-COAL",
+   "title": "Cold start: HS-COAL is forced to MANUAL",
+   "drawing": "M.2020 = OR( PIC-COBM.MAN (CONTROL IN MANUAL), NOT A-CF RUN (M.3400 via TOF 2 s, connector 7), NOT B-CF RUN (M.015E), NOT C-CF RUN (M.016E), NOT M.3410 / M.3411 / M.3416 / M.3417 = AND of the two SUPPLY OIL VALVE CLOSE inputs of burner A / B / C / D ). M.2020 is 1:B of the HS-COAL A/M T switch.",
+   "steps": [
+    {
+     "do": "wait",
+     "s": 5
+    },
+    {
+     "expect": "signal",
+     "tag": "M.2020",
+     "value": 1,
+     "say": "M.2020 (force manual)",
+     "why": "cold start: coal feeders stopped, oil valve close signals 0"
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "HS-COAL mode"
+    },
+    {
+     "expect": "faceplate",
+     "value": "FORCE MANUAL",
+     "say": "Panel indication"
+    },
+    {
+     "expect": "disabled",
+     "button": "AUTO",
+     "value": "disabled",
+     "say": "AUTO button"
+    }
+   ]
+  },
+  {
+   "id": "TC2",
+   "loop": "HS-COAL",
+   "title": "All coal feeders running, all burner oil valves closed, coal master not in MANUAL: force clears",
+   "drawing": "Every OR input of M.2020 at 0. The A/M T switch holds the MANUAL leg; the operator selects AUTO.",
+   "steps": [
+    {
+     "do": "set",
+     "near": "PIC-COBM.MAN",
+     "value": 0,
+     "say": "Coal master PIC-COBM not in MANUAL (PIC-COBM.MAN = 0)"
+    },
+    {
+     "do": "set",
+     "tag": "M.3400",
+     "value": 1,
+     "say": "Coal feeder A running (M.3400 = 1)"
+    },
+    {
+     "do": "set",
+     "tag": "M.015E",
+     "value": 1,
+     "say": "Coal feeder B running (M.015E, from ABC-004B)"
+    },
+    {
+     "do": "set",
+     "tag": "M.016E",
+     "value": 1,
+     "say": "Coal feeder C running (M.016E, from ABC-004C)"
+    },
+    {
+     "do": "set",
+     "near": "A-BNR SUPPLY OIL",
+     "nth": 0,
+     "value": 1,
+     "say": "A burner oil valve(2) closed (I.0003 ZSC-DO1043-A2)"
+    },
+    {
+     "do": "set",
+     "near": "A-BNR SUPPLY OIL",
+     "nth": 1,
+     "value": 1,
+     "say": "A burner oil valve(1) closed (I.0001 ZSC-DO1043-A1)"
+    },
+    {
+     "do": "set",
+     "near": "B-BNR SUPPLY OIL",
+     "nth": 0,
+     "value": 1,
+     "say": "B burner oil valve(2) closed (I.0323)"
+    },
+    {
+     "do": "set",
+     "near": "B-BNR SUPPLY OIL",
+     "nth": 1,
+     "value": 1,
+     "say": "B burner oil valve(1) closed (I.0321)"
+    },
+    {
+     "do": "set",
+     "near": "C-BNR SUPPLY OIL",
+     "nth": 0,
+     "value": 1,
+     "say": "C burner oil valve(2) closed (I.0643)"
+    },
+    {
+     "do": "set",
+     "near": "C-BNR SUPPLY OIL",
+     "nth": 1,
+     "value": 1,
+     "say": "C burner oil valve(1) closed (I.0641)"
+    },
+    {
+     "do": "set",
+     "near": "D-BNR SUPPLY OIL",
+     "nth": 0,
+     "value": 1,
+     "say": "D burner oil valve(2) closed (I.0963)"
+    },
+    {
+     "do": "set",
+     "near": "D-BNR SUPPLY OIL",
+     "nth": 1,
+     "value": 1,
+     "say": "D burner oil valve(1) closed (I.0961)"
+    },
+    {
+     "do": "wait",
+     "s": 5
+    },
+    {
+     "expect": "signal",
+     "tag": "M.3410",
+     "value": 1,
+     "say": "M.3410 (A burner oil valves both closed)"
+    },
+    {
+     "expect": "signal",
+     "tag": "M.3417",
+     "value": 1,
+     "say": "M.3417 (D burner oil valves both closed)"
+    },
+    {
+     "expect": "signal",
+     "tag": "M.2020",
+     "value": 0,
+     "say": "M.2020 (force manual)",
+     "why": "all permissives made"
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "HS-COAL mode",
+     "why": "no automatic return to AUTO"
+    },
+    {
+     "expect": "disabled",
+     "button": "AUTO",
+     "value": "enabled",
+     "say": "AUTO button"
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "HS-COAL: press A"
+    },
+    {
+     "expect": "mode",
+     "value": "AUTO",
+     "say": "HS-COAL mode after A"
+    }
+   ]
+  },
+  {
+   "id": "TC3",
+   "loop": "HS-COAL",
+   "title": "In AUTO, coal feeder A stops: HS-COAL to MANUAL after the 2 s TOF",
+   "drawing": "M.3400 = 0: TOF 2 s keeps M.014E at 1 for 2 s, then NOT M.014E = 1, M.2020 = 1.",
+   "steps": [
+    {
+     "do": "set",
+     "near": "PIC-COBM.MAN",
+     "value": 0,
+     "say": "Coal master PIC-COBM not in MANUAL (PIC-COBM.MAN = 0)"
+    },
+    {
+     "do": "set",
+     "tag": "M.3400",
+     "value": 1,
+     "say": "Coal feeder A running (M.3400 = 1)"
+    },
+    {
+     "do": "set",
+     "tag": "M.015E",
+     "value": 1,
+     "say": "Coal feeder B running (M.015E, from ABC-004B)"
+    },
+    {
+     "do": "set",
+     "tag": "M.016E",
+     "value": 1,
+     "say": "Coal feeder C running (M.016E, from ABC-004C)"
+    },
+    {
+     "do": "set",
+     "near": "A-BNR SUPPLY OIL",
+     "nth": 0,
+     "value": 1,
+     "say": "A burner oil valve(2) closed (I.0003 ZSC-DO1043-A2)"
+    },
+    {
+     "do": "set",
+     "near": "A-BNR SUPPLY OIL",
+     "nth": 1,
+     "value": 1,
+     "say": "A burner oil valve(1) closed (I.0001 ZSC-DO1043-A1)"
+    },
+    {
+     "do": "set",
+     "near": "B-BNR SUPPLY OIL",
+     "nth": 0,
+     "value": 1,
+     "say": "B burner oil valve(2) closed (I.0323)"
+    },
+    {
+     "do": "set",
+     "near": "B-BNR SUPPLY OIL",
+     "nth": 1,
+     "value": 1,
+     "say": "B burner oil valve(1) closed (I.0321)"
+    },
+    {
+     "do": "set",
+     "near": "C-BNR SUPPLY OIL",
+     "nth": 0,
+     "value": 1,
+     "say": "C burner oil valve(2) closed (I.0643)"
+    },
+    {
+     "do": "set",
+     "near": "C-BNR SUPPLY OIL",
+     "nth": 1,
+     "value": 1,
+     "say": "C burner oil valve(1) closed (I.0641)"
+    },
+    {
+     "do": "set",
+     "near": "D-BNR SUPPLY OIL",
+     "nth": 0,
+     "value": 1,
+     "say": "D burner oil valve(2) closed (I.0963)"
+    },
+    {
+     "do": "set",
+     "near": "D-BNR SUPPLY OIL",
+     "nth": 1,
+     "value": 1,
+     "say": "D burner oil valve(1) closed (I.0961)"
+    },
+    {
+     "do": "wait",
+     "s": 5
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "HS-COAL: press A"
+    },
+    {
+     "expect": "mode",
+     "value": "AUTO",
+     "say": "HS-COAL mode"
+    },
+    {
+     "do": "set",
+     "tag": "M.3400",
+     "value": 0,
+     "say": "Coal feeder A stops"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "signal",
+     "tag": "M.2020",
+     "value": 0,
+     "say": "M.2020 after 1 s",
+     "why": "TOF 2 s still holds"
+    },
+    {
+     "do": "wait",
+     "s": 3
+    },
+    {
+     "expect": "signal",
+     "tag": "M.2020",
+     "value": 1,
+     "say": "M.2020 after 4 s"
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "HS-COAL mode"
+    }
+   ]
+  },
+  {
+   "id": "TC4",
+   "loop": "HS-COAL",
+   "title": "In AUTO, one burner oil valve opens: HS-COAL to MANUAL",
+   "drawing": "A-BNR SUPPLY OIL VALVE(1) CLOSE = 0: M.3410 = 0, NOT M.3410 = 1, M.2020 = 1.",
+   "steps": [
+    {
+     "do": "set",
+     "near": "PIC-COBM.MAN",
+     "value": 0,
+     "say": "Coal master PIC-COBM not in MANUAL (PIC-COBM.MAN = 0)"
+    },
+    {
+     "do": "set",
+     "tag": "M.3400",
+     "value": 1,
+     "say": "Coal feeder A running (M.3400 = 1)"
+    },
+    {
+     "do": "set",
+     "tag": "M.015E",
+     "value": 1,
+     "say": "Coal feeder B running (M.015E, from ABC-004B)"
+    },
+    {
+     "do": "set",
+     "tag": "M.016E",
+     "value": 1,
+     "say": "Coal feeder C running (M.016E, from ABC-004C)"
+    },
+    {
+     "do": "set",
+     "near": "A-BNR SUPPLY OIL",
+     "nth": 0,
+     "value": 1,
+     "say": "A burner oil valve(2) closed (I.0003 ZSC-DO1043-A2)"
+    },
+    {
+     "do": "set",
+     "near": "A-BNR SUPPLY OIL",
+     "nth": 1,
+     "value": 1,
+     "say": "A burner oil valve(1) closed (I.0001 ZSC-DO1043-A1)"
+    },
+    {
+     "do": "set",
+     "near": "B-BNR SUPPLY OIL",
+     "nth": 0,
+     "value": 1,
+     "say": "B burner oil valve(2) closed (I.0323)"
+    },
+    {
+     "do": "set",
+     "near": "B-BNR SUPPLY OIL",
+     "nth": 1,
+     "value": 1,
+     "say": "B burner oil valve(1) closed (I.0321)"
+    },
+    {
+     "do": "set",
+     "near": "C-BNR SUPPLY OIL",
+     "nth": 0,
+     "value": 1,
+     "say": "C burner oil valve(2) closed (I.0643)"
+    },
+    {
+     "do": "set",
+     "near": "C-BNR SUPPLY OIL",
+     "nth": 1,
+     "value": 1,
+     "say": "C burner oil valve(1) closed (I.0641)"
+    },
+    {
+     "do": "set",
+     "near": "D-BNR SUPPLY OIL",
+     "nth": 0,
+     "value": 1,
+     "say": "D burner oil valve(2) closed (I.0963)"
+    },
+    {
+     "do": "set",
+     "near": "D-BNR SUPPLY OIL",
+     "nth": 1,
+     "value": 1,
+     "say": "D burner oil valve(1) closed (I.0961)"
+    },
+    {
+     "do": "wait",
+     "s": 5
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "HS-COAL: press A"
+    },
+    {
+     "do": "set",
+     "near": "A-BNR SUPPLY OIL",
+     "nth": 1,
+     "value": 0,
+     "say": "A burner oil valve(1) not closed"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "signal",
+     "tag": "M.2020",
+     "value": 1,
+     "say": "M.2020 (force manual)"
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "HS-COAL mode"
+    }
+   ]
+  }
+ ]
+}

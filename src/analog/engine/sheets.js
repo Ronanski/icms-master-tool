@@ -180,6 +180,19 @@ function anResetAll() {
     const S = sh.S;
     S.look = {};
     anInit(S);
+    /* 2.1.0: the plant model of every sheet follows the same rule as a fresh load (ensure): before, a sheet loaded before the
+       plant was switched on kept it OFF until RUN, so Reset on a fresh page and Reset after a run gave another start (5 sheets) */
+    if (AN.procDefault === true || (AN.procDefault === undefined && AN.plantOn === true)) for (const b of S.procs || []) if (b.proc) b.proc.on = true;
+    /* 2.1.0-beta.6: the anchors made by "Start at 150 MW" go away: Reset = cold start */
+    for (const b of S.procs || [])
+      if (b.proc) {
+        if (b.proc.hop && b.proc.hop.dyn) {
+          b.proc.hop = undefined;
+          b.proc.Ka = undefined;
+        }
+        b.proc.hopReq = null;
+        b.proc.integLoss = 0;
+      }
     const v = AN.sv[sh.name];
     if (v && v.p)
       for (const id in v.p) {
@@ -188,6 +201,13 @@ function anResetAll() {
       }
     sh._hs = [];
   }
+  /* 2.1.0: the controllers of other sheets on the same measurement (procRemote, pr.xsh) are known before the settle, like
+     during RUN: before, the first Reset of a fresh page settled without them (ABC-001C main steam pressure 75 instead of 112.5) */
+  for (const sh of AN.sheets)
+    if (sh.S)
+      try {
+        procRemote(sh);
+      } catch (e) {}
   {
     const seen = new Set(),
       fr = sh => {

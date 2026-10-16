@@ -1,0 +1,257 @@
+{
+ "sheet": "ABC-008",
+ "title": "TEST CARD: furnace pressure (hydraulic coupling) PICFG108 — force manual M.0205",
+ "pdf": "analog-logic-abc.zip > ABC-008.pdf",
+ "scenarios": [
+  {
+   "id": "TC1",
+   "loop": "PICFG108",
+   "title": "Cold start: PICFG108 is forced to MANUAL",
+   "drawing": "M.0205 = OR( NOT M.3304 (ID FAN RUNNING), M.0206 = PICFG108.MV < 14 %, NOT M.0202, SIG.AB ). M.0202 = FF: S = TPS 2 s of HYDRAULIC CONTROL SELECT (CRT) AND |PICFG108A.MV − F(X) of PICFG108.MV| < 1 %; R = TPS 2 s of M.0201. M.0205 is 1:B of the PICFG108 A/M T switch.",
+   "steps": [
+    {
+     "do": "wait",
+     "s": 5
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0205",
+     "value": 1,
+     "say": "M.0205 (force manual)",
+     "why": "cold start: ID fan stopped"
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "PICFG108 mode"
+    },
+    {
+     "expect": "faceplate",
+     "value": "FORCE MANUAL",
+     "say": "Panel indication"
+    },
+    {
+     "expect": "disabled",
+     "button": "AUTO",
+     "value": "disabled",
+     "say": "AUTO button"
+    }
+   ]
+  },
+  {
+   "id": "TC2",
+   "loop": "PICFG108",
+   "title": "ID fan running, damper MV matched, hydraulic control selected, MV still 13 %: still forced; raise MV to 20 %: force clears",
+   "drawing": "On ID fan start the MV is preset to 13 % (SI0183, M.020E). The CRT HYDRAULIC CONTROL SELECT sets M.0202 only when |PICFG108A.MV − F(X) of PICFG108.MV| < 1 % (bumpless transfer from damper to hydraulic coupling). M.0206 = MV < 14 % keeps M.0205 = 1 until the operator raises the MV.",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3304",
+     "value": 1,
+     "say": "ID fan running (M.3304 = 1): PICFG108 MV preset to 13 % (M.020E, constant 13)"
+    },
+    {
+     "do": "wait",
+     "s": 3
+    },
+    {
+     "expect": "signal",
+     "tag": "SI0181",
+     "value": 92.857,
+     "tol": 0.1,
+     "say": "SI0181 = F(X) LN13 of PICFG108.MV (13 %)"
+    },
+    {
+     "do": "mv",
+     "loop": "PICFG108A",
+     "value": 92.9,
+     "say": "PICFG108A (damper): MV = 92.9 % to match SI0181"
+    },
+    {
+     "do": "wait",
+     "s": 3
+    },
+    {
+     "expect": "signal",
+     "tag": "SI0182",
+     "value": 0.04,
+     "tol": 0.5,
+     "say": "SI0182 = |PICFG108A.MV − SI0181| (must be < 1 %)"
+    },
+    {
+     "do": "set",
+     "near": "HYDRAULIC CONTROL SELECT",
+     "value": 1,
+     "say": "Operator (CRT): HYDRAULIC CONTROL SELECT"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "do": "set",
+     "near": "HYDRAULIC CONTROL SELECT",
+     "value": 0,
+     "say": "release the CRT button"
+    },
+    {
+     "do": "wait",
+     "s": 3
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0202",
+     "value": 1,
+     "say": "M.0202 (hydraulic control selected)"
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0205",
+     "value": 1,
+     "say": "M.0205 with MV 13 %",
+     "why": "M.0206: MV < 14 %"
+    },
+    {
+     "do": "mv",
+     "value": 20,
+     "say": "MV = 20 %"
+    },
+    {
+     "do": "wait",
+     "s": 3
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0206",
+     "value": 0,
+     "say": "M.0206 (MV < 14 %)"
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0205",
+     "value": 0,
+     "say": "M.0205 (force manual)",
+     "why": "all permissives made"
+    },
+    {
+     "expect": "disabled",
+     "button": "AUTO",
+     "value": "enabled",
+     "say": "AUTO button"
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "PICFG108: press A"
+    },
+    {
+     "expect": "mode",
+     "value": "AUTO",
+     "say": "PICFG108 mode after A"
+    }
+   ]
+  },
+  {
+   "id": "TC3",
+   "loop": "PICFG108",
+   "title": "In AUTO, ID fan stops: PICFG108 to MANUAL",
+   "drawing": "M.3304 = 0: NOT M.3304 = 1, M.0205 = 1.",
+   "steps": [
+    {
+     "do": "set",
+     "tag": "M.3304",
+     "value": 1,
+     "say": "ID fan running (M.3304 = 1): PICFG108 MV preset to 13 % (M.020E, constant 13)"
+    },
+    {
+     "do": "wait",
+     "s": 3
+    },
+    {
+     "expect": "signal",
+     "tag": "SI0181",
+     "value": 92.857,
+     "tol": 0.1,
+     "say": "SI0181 = F(X) LN13 of PICFG108.MV (13 %)"
+    },
+    {
+     "do": "mv",
+     "loop": "PICFG108A",
+     "value": 92.9,
+     "say": "PICFG108A (damper): MV = 92.9 % to match SI0181"
+    },
+    {
+     "do": "wait",
+     "s": 3
+    },
+    {
+     "expect": "signal",
+     "tag": "SI0182",
+     "value": 0.04,
+     "tol": 0.5,
+     "say": "SI0182 = |PICFG108A.MV − SI0181| (must be < 1 %)"
+    },
+    {
+     "do": "set",
+     "near": "HYDRAULIC CONTROL SELECT",
+     "value": 1,
+     "say": "Operator (CRT): HYDRAULIC CONTROL SELECT"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "do": "set",
+     "near": "HYDRAULIC CONTROL SELECT",
+     "value": 0,
+     "say": "release the CRT button"
+    },
+    {
+     "do": "wait",
+     "s": 3
+    },
+    {
+     "do": "mv",
+     "value": 20,
+     "say": "MV = 20 %"
+    },
+    {
+     "do": "wait",
+     "s": 3
+    },
+    {
+     "do": "press",
+     "button": "AUTO",
+     "say": "PICFG108: press A"
+    },
+    {
+     "expect": "mode",
+     "value": "AUTO",
+     "say": "PICFG108 mode"
+    },
+    {
+     "do": "set",
+     "tag": "M.3304",
+     "value": 0,
+     "say": "ID fan stops"
+    },
+    {
+     "do": "wait",
+     "s": 1
+    },
+    {
+     "expect": "signal",
+     "tag": "M.0205",
+     "value": 1,
+     "say": "M.0205 (force manual)"
+    },
+    {
+     "expect": "mode",
+     "value": "MANUAL",
+     "say": "PICFG108 mode"
+    }
+   ]
+  }
+ ]
+}
