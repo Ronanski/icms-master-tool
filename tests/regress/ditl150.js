@@ -29,6 +29,10 @@ const r=await page.evaluate(async()=>{
   d23.sig[ti+':S']=true;for(let k=0;k<4;k++){for(const s of all)AN.stepSet(s,.5);WORLD.tick(.5)}delete d23.sig[ti+':S'];
   for(let k=0;k<10;k++){for(const s of all)AN.stepSet(s,.5);WORLD.tick(.5)}
   o.tripRow=ti;o.bfwpT=out('23A',55);o.m3343T=abc('ABC-010','M.3343');o.fmT=abc('ABC-010','M.0228');
+  /* protection from the ABC: main steam pressure < 72.9 kg/cm2 (ABC-001C M.310D) -> DITL-40 MAIN STEAM PRESSURE LOW LOW */
+  {const d40=S.sheets.find(s=>/DITL-40$/.test(s.name)),S1=AN.sheets.find(s=>s.name==='ABC-001C').S,a=S1.blk.find(b=>b.k==='AI'&&(AN.nm(S1,b.o[0])||'').trim()==='AI0131');
+   const ll=()=>{WORLD.live=true;const R=simSheet(d40);WORLD.live=false;return R.outOn.has(8)?1:0};o.ll0=ll();o.lnk=WORLD.stat.digFix.join(',');
+   for(const b of S1.procs||[])if(b.proc)b.proc.on=false;S1.rt.st[a.id].val=S1.rt.st[a.id].act=60;for(let k=0;k<6;k++){for(const s of all)AN.stepSet(s,.5);WORLD.tick(.5)}o.ll1=ll()}
   /* Reset = cold */
   AN.reset();WORLD.tick(1);WORLD.tick(1);o.resetOn=DITL150.on;o.mftR=out('03A',63);
   WORLD.set(false);return o});
@@ -38,5 +42,6 @@ ck(r.bfwp&&r.idf&&r.paf&&r.saf&&r.fab&&r.cf,'running: BFWP A '+r.bfwp+', IDF '+r
 ck(r.diff===0,'DITL outputs read by the ABC = the 150 MW load of the ABC: '+r.diff+' differ '+r.diffL.join(', '));
 ck(r.mft60===0&&r.bfwp60===1&&r.mftAbc===0&&Math.abs(r.lvl)<100,'after 60 s: MFT '+r.mft60+', ABC-010 M.3343 '+r.bfwp60+', ABC-007 I.000F '+r.mftAbc+', drum level '+(+r.lvl).toFixed(1)+' mm');
 ck(r.tripRow>=0&&r.bfwpT===0&&r.m3343T===0&&r.fmT===1,'BFWP A STOP P.B. (DITL-23A row '+(r.tripRow+1)+'): 23A-55 '+r.bfwpT+', ABC-010 M.3343 '+r.m3343T+', M.0228 force manual FICFW1007 '+r.fmT);
+ck(r.ll0===0&&r.ll1===1&&/M\.310D/.test(r.lnk),'DITL-40 MAIN STEAM PRESSURE LOW LOW from ABC-001C M.310D ('+r.lnk+'): at 150 MW '+r.ll0+', at 60 kg/cm2 '+r.ll1);
 ck(r.resetOn===false&&r.mftR===1,'Reset: DITL cold again (MFT '+r.mftR+')');
 ck(!errs.length,'no page error '+errs.slice(0,2).join(' | '));console.log(fail?'FAILED '+fail:'ALL PASS');await browser.close();process.exit(fail?1:0)})();

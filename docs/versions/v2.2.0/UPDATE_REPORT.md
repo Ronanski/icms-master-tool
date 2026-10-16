@@ -2,6 +2,14 @@
 
 Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 2.2.0-beta.4 — DITL-40 MAIN STEAM PRESSURE LOW LOW nakakabit na (protection)
+
+- **Problem (user):** "Bakit hindi kinabit? Paano yan magti-trigger? Protection yan."
+- **As Found:** sa beta.3, ang link ay inalis (mali ang napiling wire: analog AI0131 sa tabi ng text). Ang tunay na signal sa ABC-001C ay M.310D = AI0131 < 72.9 kg/cm2.
+- **Work Done:** ang tag reader (`trace.js` dsIdx) ay nagtatala ng pinakamalapit na digital net ng logic; ang world ay ikinakabit ang DITL-40 row 9 sa M.310D.
+- **As Left (headless):** 150 MW (122.4 kg/cm2) → DITL-40 LOW LOW 0; 60 kg/cm2 → 1. ditl150, world, infocard, lookonly ALL PASS; scenarios 244 / 0.
+- **Status:** Beta.
+
 ## 2.2.0-beta.3 — DITL sa 150 MW (Yugto 1 at 2), at ang ABC load na walang trip
 
 - **Problem (user):** "Sige DITL 150": dapat nasa 150 MW din ang DITL sheets para magamit ang ABC + DITL nang sabay sa trip / load scenario.

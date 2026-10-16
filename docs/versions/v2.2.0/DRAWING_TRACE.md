@@ -37,7 +37,7 @@
 - **Ref na nasa panaklong, hal. "(19-57)", "(23A-55)":** ito ay ang parehong item ng IBANG makina na gumagamit ng drawing (DITL-19 = coal feeder A; B / C ay may sariling address). Dati ay ikinakabit sa makinang A: tumatakbo ang BFWP B kapag tumatakbo ang A, at ang "PAF LUB OIL PUMP B STOPPED" ay naka-latch. Ayos: hindi na ikinakabit.
 - **ABC input ng makinang B / C sa drawing ng A** (memory list "B-BFWP RUNNING" M.3344 ← 23A-55 "BFWP A RUNNING"): hindi na ikinakabit; nananatiling input ng ABC.
 - **ABC-027 "TO DITL 02-25, DITL 03F-16, DITL 19-16":** una lang ang nababasa dati; ngayon lahat (FURNACE LOWER LAYER > 700 °C ADEQUATE FOR COAL FIRING).
-- **ABC-001C AI0131 (main steam pressure, analog) → "TO DITL 40-09" MAIN STEAM PRESSURE LOW LOW:** ang analog value (122 kg/cm2) ay nababasang 1. Ayos: ang analog net ay hindi ikinakabit sa DITL row na limit (LOW / HIGH / H.H. / L.L.).
+- **ABC-001C "TO DITL 40-09" MAIN STEAM PRESSURE LOW LOW:** ang text ay nasa tabi ng analog wire na AI0131 (122 kg/cm2, nababasang 1). Ang tunay na signal ay ang output ng comparator sa tabi nito: **LC AI0131 < 72.9 kg/cm2 → M.310D** (kasunod ang LOW < 100 → M.310A = 40-08, HIGH > 130 → M.3109 = 40-07). beta.3: hindi muna ikinabit. **beta.4 (user: "protection yan"):** nakakabit na sa M.310D; para sa TO DITL na nasa tabi ng analog wire at limit ang DITL row, ang pinakamalapit na digital net na output ng logic ang kinukuha. Sinubok: 150 MW → 0, 60 kg/cm2 → 1.
 
 ### C. ABC 150 MW load: mga transient na nagti-trip ng MFT (`hmi-op.js`, `plant.js`)
 - **Raw vs compensated:** ang snapshot value ay compensated, pero isinusulat bilang raw transmitter. Ayos (`AN_HMI_COMP`): hinahanap ang raw para lumabas ang compensated ng snapshot.
