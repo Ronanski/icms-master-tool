@@ -346,6 +346,10 @@ $('bmode').onclick = () => {
     });
   });
   tick.t = 0;
+  /* 2.2.0-beta.3: after "Start at 150 MW" the DITL starts again in the 150 MW state (src/world/ditl150.js) */
+  try {
+    if (SIM && window.DITL150 && DITL150.on) DITL150.apply();
+  } catch (e) {}
   if (SIM && cur())
     msg(
       'Simulate: click the SERVICE cell of an input row (switch icon) to turn it ON/OFF. PB rows are push buttons: press and hold.'
@@ -427,7 +431,10 @@ const isAn = (s, i) =>
     s.nl.anRows &&
     s.nl.anRows.has(i)
   ); /* v26: row that feeds only limit comparators = analog input (numeric value, not a switch) */
-const anVal = (s, a) => (s.av && s.av[a.key] !== undefined ? s.av[a.key] : a.def);
+const anVal = (s, a) => {
+  const v = avOf(s);
+  return v && v[a.key] !== undefined ? v[a.key] : a.def;
+};
 const anValN = (s, n) => {
   const a = (s.nl.an || []).find(x => x.net === n);
   return a ? anVal(s, a) : 0;
@@ -460,7 +467,7 @@ function anAsk(s, a) {
   if (!isFinite(x)) return;
   s.av = s.av || {};
   s.av[a.key] = x;
-  s.nl.avk = s.av;
+  s.nl.avk = avOf(s);
   render();
 }
 const fbk = (s, i, c) =>

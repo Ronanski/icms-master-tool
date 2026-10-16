@@ -327,6 +327,14 @@
           AN.settle();
           AN.paint();
           msg('Plant at 150 MW: ' + n + ' transmitters set from the HMI snapshots. Press Run.');
+          /* 2.2.0-beta.3: the DITL sheets in the 150 MW state too (MFT reset, equipment of the snapshots running) */
+          if (window.DITL150)
+            (AN.ades ? AN.ades() : Promise.resolve())
+              .then(() => {
+                const r = DITL150.apply();
+                if (r) msg('Plant at 150 MW: ' + n + ' ABC transmitters from the HMI snapshots, DITL in service (MFT reset). Press Run.');
+              })
+              .catch(() => {});
         } catch (e) {
           msg('Could not load the 150 MW state: ' + e.message);
         }

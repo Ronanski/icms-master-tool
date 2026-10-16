@@ -255,6 +255,20 @@ const AN_HMI_OP = {
   'HICHR1002A': { mv: 11.0, pv: 11.0, src: '39.PNG' },
   'HICHR1002B': { mv: 89.0, pv: 89.0, src: '39.PNG' }
 };
+/* 2.2.0-beta.3: the output of the SQRT (flow compensation) whose inputs come from the transmitter ai (ABC-001C: main steam flow
+   = SQRT of LN31(p) x LN32(T) x AI0129); -1 when the sheet has none */
+function anCompNet(S, ai) {
+  const has = (n, d) => {
+    if (d > 4) return false;
+    for (const x of S.drv[n] || []) {
+      if (x.k === 'AI' && x.o && S.lab[x.o[0]] && String(S.lab[x.o[0]].t).trim() === ai) return true;
+      if ((x.i || []).some(i => has(i, d + 1))) return true;
+    }
+    return false;
+  };
+  const q = S.blk.find(z => z.k === 'SQRT' && z.o && z.o.length && (z.i || []).some(i => has(i, 0)));
+  return q ? q.o[0] : -1;
+}
 function anProcStep(S, dt) {
   const rt = S.rt,
     v = rt.v,
@@ -424,7 +438,12 @@ function anProcStep(S, dt) {
         }
       } catch (e) {}
     }
-    if (!q) q = pm[b.id] = { y: pr.integ && isFinite(v[pr.pv]) ? v[pr.pv] : ss(u), h: [], u: null };
+    /* 2.2.0-beta.3: pr.y0 (Start at 150 MW): the model starts from the PV of the snapshot, then follows the valve with its own
+       time constant (before: from its steady state for the command of that moment, ABC-012 TICMS1004 482 C instead of 542 C) */
+    if (!q) {
+      q = pm[b.id] = { y: (pr.integ || pr.y0) && isFinite(v[pr.pv]) ? v[pr.pv] : ss(u), h: [], u: null };
+      pr.y0 = 0;
+    }
     /* 2.2.0-beta.1: the drawing gates the measurement: the PV comes through a T switch that now selects a constant
        (ABC-003A SI0070 = 0 while both SUPPLY OIL VALVEs of burner A are closed, M.3410). The plant does not fight the gate:
        a gated flow is 0 (isolation shut, oil burner out of service) and the model never pins the PV net over the logic */
@@ -457,9 +476,13 @@ function anProcStep(S, dt) {
         if (pr.integ.ai == null) {
           const a = S1.blk.find(z => z.k === 'AI' && z.o && S1.lab[z.o[0]] && String(S1.lab[z.o[0]].t).trim() === 'AI0129'); /* engine only: the label of the net, not the UI name */
           pr.integ.ai = a ? a.id : -1;
+          /* 2.2.0-beta.3: the steam flow of the balance is the COMPENSATED flow of the drawing (SQRT of LN31(p) x LN32(T) x AI0129,
+             the value on the screens), not the raw transmitter */
+          pr.integ.cn = anCompNet(S1, 'AI0129');
         }
         const st = pr.integ.ai >= 0 ? S1.rt.st[pr.integ.ai] : null;
-        fst = st ? (st.act != null ? +st.act : +st.val) || 0 : 0;
+        fst =
+          pr.integ.cn >= 0 && isFinite(S1.rt.v[pr.integ.cn]) ? +S1.rt.v[pr.integ.cn] : st ? (st.act != null ? +st.act : +st.val) || 0 : 0;
       }
       let ffw = +v[pr.integ.fw] || 0;
       if (pr.integ.su) ffw += (Math.max(0, Math.min(100, +uOf(pr.integ.su) || 0)) / 100) * pr.integ.suK;
@@ -524,6 +547,14 @@ function anProcStep(S, dt) {
     if (q.u == null) {
       w = y;
       q.g = 1;
+      /* 2.2.0-beta.3: the PV already equals the model (Start at 150 MW): keep the raw transmitter where it is. A compensated
+         measurement (ABC-010 drum level: raw DP level -> pressure compensation) is not equal to its raw value; writing the PV
+         into the raw AI made the compensated level jump 156 mm */
+      {
+        const p0 = tv[tpin],
+          a0 = tai.length ? tr.st[tai[0]] : null;
+        if (a0 && isFinite(p0) && Math.abs(y - p0) < 0.005 * span && isFinite(a0.val)) w = a0.val;
+      }
       /* compensation inputs of the chain (pressure, temperature...) that are not driven: start at the middle of their range, not at the bottom (a chain divided by a compensation of 0 gives nothing) */ for (const id of (R
         ? R.allAI
         : pr.allAI) || []) {

@@ -614,6 +614,11 @@ function dsIdx(sh) {
     const refs = [];
     let m;
     while ((m = DS_RX.exec(t.t))) refs.push('DITL ' + m[2] + '-' + m[3]);
+    /* 2.2.0-beta.3: a list after the first one ("TO DITL 02-25, DITL 03F-16, DITL 19-16", ABC-027 M.2504): every reference, not the first only */
+    if (refs.length) {
+      const L = /,\s*(?:DITL\s*)?([0-9]{2}[A-Z]?)\s*-\s*(\d+)/gi;
+      while ((m = L.exec(t.t))) if (!refs.includes('DITL ' + m[1] + '-' + m[2])) refs.push('DITL ' + m[1] + '-' + m[2]);
+    }
     if (!refs.length) refs.push(t.t.replace(/[()]/g, '').trim());
     const near = [];
     for (const nn of S.nets) {

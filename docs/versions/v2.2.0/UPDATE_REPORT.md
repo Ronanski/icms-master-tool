@@ -2,6 +2,29 @@
 
 Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 2.2.0-beta.3 — DITL sa 150 MW (Yugto 1 at 2), at ang ABC load na walang trip
+
+- **Problem (user):** "Sige DITL 150": dapat nasa 150 MW din ang DITL sheets para magamit ang ABC + DITL nang sabay sa trip / load scenario.
+- **As Found:** ang DITL ay cold start (MFT naka-trip, lahat ng motor STOPPED): 50 / 110 DITL → ABC signal ang mali kapag ABC+DITL ON. Habang inaayos, may nakitang 6 na bug ng reader / world at 6 na transient ng ABC 150 MW load (detalye: `DRAWING_TRACE.md` beta.3).
+- **Work Done:**
+  - Bago: `src/world/ditl150.js` (field inputs mula sa snapshot, latch / motor / valve sa estado ng tumatakbong planta, RESET ng operator).
+  - Start at 150 MW = ABC + DITL; Reset = cold; Simulate ng DITL page = bumabalik sa 150 MW.
+  - DITL reader: DITL-20 discharge valve command (FF output, hindi ang reset wire); DITL-03F N.C. emergency trip buttons.
+  - World: ref sa panaklong = ibang makina; ABC input ng makinang B / C; listahan ng TO DITL sa ABC-027; analog net ≠ limit row.
+  - ABC load: raw vs compensated (drum level, main steam flow, PA / SA flow); plant model naka-hold hanggang may anchor; LP heater / deaerator level mula 02.png; PAF / SAF MV mula 7.PNG.
+- **As Left (headless):**
+  - Start at 150 MW, ABC+DITL ON: MFT = 0.
+  - Tumatakbo: BFWP A, IDF, PAF, SAF, FAB A, coal feeder A.
+  - 0 sa 110 DITL → ABC signal na may ebidensya ang mali.
+  - 585 output row ng DITL ang tiningnan; 7 ang hindi tugma (maliliit na indicator: ash cooler mode, FAB A FCD READY, PAF STOPPED FIRST OUT).
+  - Pagkalipas ng 60 s: MFT 0, drum level 0.0 mm.
+  - BFWP A STOP P.B. sa DITL → ABC M.3343 = 0 → force manual ng FICFW1007.
+  - Reset → cold. DITL 150 = 1.2 s (desktop).
+  - `tests/regress/ditl150.js` ALL PASS.
+- **Hindi pa nasubok:** totoong tablet / exe / apk; ang bilis sa tablet.
+- **Limitasyon (tama, may ebidensya):** ang "IDF STOPPED" ng MFT ay galing sa M.3318 (FROM STATION WIRING, breaker status ng ibang station na wala sa drawing). Kaya ang IDF breaker trip ay hindi pa umaabot sa MFT sa simulation; ang trip ng drawing (STOP P.B., bearing / winding H.H.) ay umaandar.
+- **Status:** Beta.
+
 ## 2.2.0-beta.2 — Load down mula sa Start at 150 MW (HIC-ULD TARGET MW)
 
 - **Problem (tanong ng user):** "Pde ako mag-load down?" Sa faceplate ng HIC-ULD (ABC-001A, TARGET MW), ang ▲ / ▼ ay walang epekto habang naka-AUTO ang station.

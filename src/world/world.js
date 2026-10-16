@@ -15,7 +15,8 @@
     const o = [];
     let m;
     RX.lastIndex = 0;
-    while ((m = RX.exec(String(t || '')))) o.push({ code: m[1].toUpperCase(), nn: +m[2] });
+    while ((m = RX.exec(String(t || ''))))
+      o.push({ code: m[1].toUpperCase(), nn: +m[2], other: /^\(/.test(m[0]) && /\)$/.test(m[0]) });
     return o;
   };
   const codeOf = name => {
@@ -44,7 +45,9 @@
     const din = new Map(), // DITL sheet -> Map(row -> [sources])
       ain = [], // ABC inputs fed by a DITL output
       logic = [], // FROM DITL text on a net that the ABC logic computes
-      lost = [];
+      lost = [],
+      otherAbc = [] /* ABC inputs of machine B / C on a drawing simulated for machine A */,
+      notLimit = []; /* 2.2.0-beta.3: an analog net next to a TO DITL of a limit row (ABC-001C AI0131 -> 40-09 MAIN STEAM PRESSURE LOW LOW) */
     const addIn = (s, row, src) => {
       if (!din.has(s)) din.set(s, new Map());
       const m = din.get(s);
@@ -57,7 +60,19 @@
       const r = d.rows.findIndex(x => +x.n === nn - 50);
       return r >= 0 ? { d, row: r } : null;
     };
-    let dd = 0;
+    const machOfDesc = t => {
+        const m =
+          /(?:^|[\s(])([A-D])-(?=[A-Z])/.exec(t || '') ||
+          /-([A-D])\d\b/.exec(t || '') ||
+          /\b(?:BLOWER|PUMP|FEEDER|BFWP|BURNER|BNR|FAN)-([A-D])\b/i.exec(t || '');
+        return m ? m[1].toUpperCase() : null;
+      },
+      machOfDitl = t => {
+        const m = /\b(?:BFWP|FAB|BURNER|BNR|FEEDER|PUMP|BLOWER|COOLER|IGNITER|COMPRESSOR|DRYER|IWP|MWP|DOP|SWBP|SWP)\s*-?([A-D])\b/i.exec(t || '');
+        return m ? m[1].toUpperCase() : null;
+      };
+    let dd = 0,
+      other = 0;
     for (const s of S.sheets) {
       nlOf(s);
       s.rows.forEach((r, i) => {
@@ -65,6 +80,12 @@
         if (!c) return;
         for (const f of refsOf(c.map(x => x.t).join(' '))) {
           const o = outRow(f.code, f.nn);
+          /* 2.2.0-beta.3: "(19-57)" in brackets = the same item of the OTHER machine drawn on this sheet (DITL-19 is drawn for coal
+             feeder A, B and C use it with their own addresses "I.0130/450/490"); only machine A is simulated, so it is not linked */
+          if (o && f.other) {
+            other++;
+            continue;
+          }
           if (o) {
             /* also the same sheet: an output that comes back as an input of the sheet (DITL-26A row 1 PAF TRIP = 26A-66) */
             addIn(s, i, { k: 'd', d: o.d, row: o.row, ref: f.code + '-' + f.nn });
@@ -89,9 +110,19 @@
         let ok = null;
         for (const r of refs)
           for (const f of refsOf(r)) {
-            const o = !ok && outRow(f.code, f.nn);
+            const o = !ok && !f.other && outRow(f.code, f.nn);
             if (o) ok = Object.assign(o, { ref: f.code + '-' + f.nn });
           }
+        /* 2.2.0-beta.3: a DITL drawing used for several machines (DITL-23A: BFWP A, and B with the addresses after the "/") is
+           simulated for machine A only: the ABC input of machine B / C (memory list: "B-BFWP RUNNING", M.3344) is not linked */
+        if (ok) {
+          const ma = machOfDesc(AN.descOf ? AN.descOf(sh, AN.nm(sh.S, n)) : ''),
+            md = machOfDitl((ok.d.cells[ok.row + ':RS'] || []).map(x => x.t).join(' '));
+          if (ma && md && ma !== md) {
+            otherAbc.push(sh.name + ' ' + AN.nm(sh.S, n) + ' (' + ok.ref + ')');
+            continue;
+          }
+        }
         /* only a real input of the sheet; a net that the ABC logic computes (ABC-004A M.3410 = AND of the two valve CLOSE) keeps its logic */
         if (ok && sh.S.ext.includes(n)) {
           ain.push({ sh, n, d: ok.d, row: ok.row, ref: ok.ref });
@@ -100,25 +131,38 @@
         else lost.push(sh.name + ' FROM ' + refs.join('/'));
       }
       for (const [n, refs] of ix.to) {
-        let hit = false;
+        let hit = false,
+          lim = false;
         for (const r of refs)
           for (const f of refsOf(r)) {
             const d = dSheet(f.code);
             if (!d || f.nn > 50) continue;
             const row = d.rows.findIndex(x => +x.n === f.nn);
             if (row < 0) continue;
+            /* 2.2.0-beta.3: a measurement (analog net) is not a limit: "TO DITL 40-09" beside the main steam pressure AI0131 of
+               ABC-001C made DITL-40 MAIN STEAM PRESSURE LOW LOW = 1 at 122 kg/cm2 (any value above 0.5) */
+            const net = sh.S.nets && sh.S.nets[n];
+            if (
+              net &&
+              !net.dig &&
+              /\bLOW\b|\bHIGH\b|H\.\s?H\.|L\.\s?L\.|[<>]/i.test((d.cells[row + ':S'] || []).map(x => x.t).join(' '))
+            ) {
+              lim = true;
+              continue;
+            }
             addIn(d, row, { k: 'a', sh, n, ref: sh.name });
             hit = true;
           }
         if (hit) {
           ta++;
           wsh.add(sh.name);
-        } else lost.push(sh.name + ' TO ' + refs.join('/'));
+        } else if (lim) notLimit.push(sh.name + ' ' + AN.nm(sh.S, n) + ' TO ' + refs.join('/'));
+        else lost.push(sh.name + ' TO ' + refs.join('/'));
       }
     }
     W.idx = { din, ain };
     W._nA = AN.sheets.length;
-    W.stat = { ditlDitl: dd, fromDitl: fa, toDitl: ta, logic, lost, ms: Math.round(performance.now() - t0) };
+    W.stat = { ditlDitl: dd, other, otherAbc, notLimit, fromDitl: fa, toDitl: ta, logic, lost, ms: Math.round(performance.now() - t0) };
     AN.worldSheets = [...wsh];
   }
   const XL = new WeakMap();
@@ -127,7 +171,7 @@
     return XL.get(d);
   }
   /* one scan of the whole world */
-  function tick(dt) {
+  function tick(dt, opt) {
     const t0 = performance.now(),
       { din, ain } = W.idx,
       prev = W.out,
@@ -159,7 +203,7 @@
     let chCur = false;
     for (const s of S.sheets) {
       if (!s.nl) continue;
-      s.nl.avk = s.av || null;
+      s.nl.avk = avOf(s);
       let R = simSheet(s),
         ch = false;
       for (const g of s.nl.gates) if (g.t === 'TMR' && tmStep(g, g.ins.some(n => R.v[n]), dt)) ch = true;
@@ -174,8 +218,8 @@
       }
     }
     W.out = out;
-    /* 3. DITL -> ABC */
-    for (const a of ain) {
+    /* 3. DITL -> ABC (not while the one world is OFF: then the DITL 150 MW state is computed for the DITL only) */
+    for (const a of opt && opt.noAbc ? [] : ain) {
       const AS = a.sh.S;
       if (!AS || !AS.rt) continue;
       AS.rt.ext[a.n] = out[a.d.name] && out[a.d.name].has(a.row) ? 1 : 0;
@@ -203,12 +247,31 @@
       }
     AN.worldSheets = [];
   }
+  /* 2.2.0-beta.3: one scan on demand (DITL 150 MW state, src/world/ditl150.js) */
+  W.tick = (dt, opt) => {
+    if (!W.idx) return;
+    const lv = W.live;
+    W.live = true;
+    try {
+      tick(dt, opt);
+    } finally {
+      W.live = lv;
+    }
+  };
+  W.build = () => build();
   W.set = on => {
     W.on = !!on;
     try {
       localStorage.setItem('ls-world', W.on ? '1' : '0');
     } catch (e) {}
     if (W.on) {
+      /* the memory list descriptions (machine A / B of a shared drawing) come with the ABC data: build again when they are in */
+      try {
+        if (AN.ades)
+          AN.ades().then(() => {
+            if (W.on) build();
+          });
+      } catch (e) {}
       try {
         build();
       } catch (e) {
