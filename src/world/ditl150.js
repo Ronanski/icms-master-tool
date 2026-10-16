@@ -40,19 +40,31 @@
   ];
   /* valves and dampers at 150 MW: open = 1 (OPENED 1, CLOSED 0), shut = 0, null = modulating (neither end switch made) */
   const VALVES = [
+    /* 2.2.0-beta.6: drains first (29.PNG MVAS1392 / 1393 / 1397 0.0 % TQ: the gland steam drains are shut too; before, the
+       GLAND rule below read "GLAND STM DRAIN SEPARATOR DRAIN MOV" as open) */
+    [/DRAIN (MOV|VALVE|VLV)|DRN (MOV|VLV)|WARMING LINE DRN|LINE DRAIN|\bDRAIN\b.*\bMOV\b/, 0, '29.PNG / 4.PNG: unit on load, the drains are shut (MVAS1392 / 1393 / 1397 0.0 % TQ)'],
+    [/GLAND.*DESUPERHEATER|DESUPERHEATER.*GLAND/, 0, '29.PNG XVCD1125 condensate to gland steam desuperheater: closed'],
+    [/(FAB|BLOWER)-?\s*B\s*OUTLET/, 0, '9.png XVFA1055B3 FA blower-B (standby) discharge: closed (green)'],
+    [/LP HTR.*BYPASS|LPH.*BYPASS/, 0, '02.png MVCD1003 #1 LPH bypass 0.0 % TQ'],
+    [/LP HTR.*(INLET|OUTLET)|LPH.*(INLET|OUTLET)/, 1, '02.png MVCD1001 / MVCD1002 #1 LPH inlet 99.6 % / outlet 99.4 %'],
+    [/START-UP EJECTOR/, 0, '29.PNG MVAS1395 aux steam to start-up ejector 0.0 %'],
+    [/STEAM JET AIR EJECTOR/, 1, '29.PNG MVAS1396 aux steam to steam jet air ejectors 100.6 %'],
+    [/VACUUM\s*BREAKER/, 0, '4.PNG condenser 0.057 kg/cm2A: vacuum held, the vacuum breaker is shut'],
     [/DISCHARGE VALVE/, 1, '11.png: coal feeders A / B / C running, outlet discharge valve open'],
     [/SILO.*OUTLET VALVE/, 1, '11.png: coal silos feed the running feeders'],
     [/\bOIL\b.*(VALVE|\bFV\b|SOV)|IGNITER.*VALVE/, 0, '6.PNG: oil burners out of service, supply oil valves closed'],
     [/BYPASS.*DESUPERHEATING/, 0, '5.PNG: HP / LP bypass shut on load, their spray block valves shut'],
     [/EMERGENCY DRAIN/, 0, 'unit on load: emergency drains shut'],
     [/SPRAY WATER.*(SOV|SHUT|BLOCK)|DESUPERHEATER SPRAY/, 1, '03.png / 4.PNG: SH and RH spray in service (TCV 69.7 %, 66 %)'],
-    [/TO SILENCE|SILENCER/, 0, 'FA blower A in service: the surge valve to the silencer is shut'],
+    [/(FAB|BLOWER)-?\s*B\b.*SILENCE|SILENCE.*(FAB|BLOWER)-?\s*B\b/, 1, '9.png XVFA1055B2 FA blower-B (standby) to silencer: open (red)'],
+    [/TO SILENCE|SILENCER/, 0, '9.png XVFA1055A2 FA blower-A (running) to silencer: closed (green); 4.PNG main steam / hot reheat to silencer shut'],
     [/FAB\s*A\s*OUTLET|BLOWER-?A OUTLET/, 1, 'FA blower A in service: outlet valve open'],
     [/INLET VANE|BIAS DAMPER|\bVANE\b/, null, '7.PNG: fan vanes and the bias dampers modulate'],
     [/EXTRACTION STM NO\.?\s*\d\s*SHUT-?OFF/, 1, '4.PNG: unit on load, the heaters are in service (extraction steam open)'],
     [/MAIN STM TO AUX|AUX STEAM HEADER|GLAND/, 1, 'unit on load: steam to the auxiliary and gland headers'],
-    [/DRAIN (MOV|VALVE|VLV)|DRN (MOV|VLV)|WARMING LINE DRN/, 0, 'unit on load: the drains are shut'],
-    [/BYPASS.*(VALVE|VLV)/, 0, '5.PNG: HP / LP bypass shut on load']
+    [/BYPASS.*(VALVE|VLV)/, 0, '5.PNG: HP / LP bypass shut on load'],
+    [/POLISHER.*(INLET|OUTLET).*MOV/, 0, '28.png MVCD1007 / MVCD1008 0.0 %: condensate polisher bypassed (FCVCD1121 100.6 %)'],
+    [/MAKE-UP WTR TO COND.*SHUT-?OFF/, 0, '28.png MVMU1001 make-up to condenser 0.0 %']
   ];
   /* analog inputs of the DITL comparators at 150 MW (transmitter tag in the row text -> value of the snapshot) */
   const ANALOG = [
@@ -79,13 +91,25 @@
   function rowVal(raw) {
     const t = String(raw || '')
       .toUpperCase()
+      /* 2.2.0-beta.6: the address / tag written inside the service text ("EXTRACTION STM NO.1 I.0010 SHUT-OFF MOV FULLY OPEN")
+         is not part of the words of the rules */
+      .replace(/(^|\s)-?[IOMB]\.[0-9A-F]{4}(\/[0-9A-F]{3,4})*\b/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
     if (!t) return null;
+    /* 37.PNG GENERATOR: synchronized, 52L1 / DS / 52G1 / field CB closed (red), NORMAL OPERATION MODE (not house operation) */
+    if (/HOUSE OPERATION/.test(t)) return 0;
+    if (/\b52G1?\b|\bGCB\b/.test(t) && /\bON\b|CLOSED/.test(t)) return 1;
+    if (/\b52G1?\b|\bGCB\b/.test(t) && /\bOFF\b|OPEN/.test(t)) return 0;
     /* a compound condition ("... NOT RUNNING AND SPEED L/LL") is left to the logic */
     if (/\bNOT\b/.test(t) && /\bAND\b/.test(t)) return null;
     if (/\bNOT\b/.test(t)) {
       const b = rowVal(t.replace(/\bNOT\b/, ' '));
+      return b == null ? null : b ? 0 : 1;
+    }
+    /* "NO TRIP PRESENT" (DITL-05 78), "NO BOILER TRIP COMMAND": the opposite of the rest ("NO." is a number) */
+    if (/(^|\s)NO\s+[A-Z]/.test(t)) {
+      const b = rowVal(t.replace(/(^|\s)NO\s+/, ' '));
       return b == null ? null : b ? 0 : 1;
     }
     /* a normally closed contact is closed (1) while nobody presses it: BOILER EMERGENCY TRIP P.B.(1) (N.C.) */
@@ -96,8 +120,11 @@
        computed by the drawing from the analog position (DITL-03H HP BYPASS ... POS. < 10 %) */
     if (/PURGE/.test(t)) return null;
     if (/\bPOS(\.|ITION)/.test(t) && /[<>]/.test(t)) return null;
-    if (/P\.\s*B\.?|PUSH ?BUTTON|\bCOMMAND\b|\bRESET\b|ACKNOW|LAMP TEST|\bTEST\b|AUTO START|STARTING|STOPPING/.test(t))
+    if (/P\.\s*B\.?|\bPB\b|PUSH ?BUTTON|\bCOMMAND\b|\bRESET\b|ACKNOW|LAMP TEST|\bTEST\b|AUTO START|STARTING|STOPPING/.test(t))
       return 0;
+    /* HI-HI / LO-LO level switches: not made on load (the MOV TORQUE switch is left to the MOV model: a drain MOV shut on
+       its seat shows TQ on the screens, 28.png MVCD1007 "R TQ") */
+    if (/HI-HI|LO-LO/.test(t)) return 0;
     if (
       /TRIP|FAULT|FAIL|ABNORMAL|OVERLOAD|ALARM|UNSUCCESSFUL|PLUG|LEAK|\bFIRE\b(?! WATER| PUMP| FIGHTING)|\bH\.?\s?H\.?\b|\bL\.?\s?L\.?\b|\bHIGH\b|\bLOW\b|\bL\.(?=\s|$)|\bH\.(?=\s|$)|[<>]|VIBRATION|EXCESS|OVER ?SPEED|SHUTDOWN MODE|MFT/.test(
         t
@@ -123,7 +150,13 @@
     if (/AVAILABLE|NORMAL|PERMISSI|PROVEN|CONFIRM|ESTABLISH/.test(t)) return 1;
     return null;
   }
+  /* every DITL sheet and every machine instance of a shared drawing (src/world/world.js) */
+  const ALL = () => S.sheets.concat(window.WORLD.inst || []);
   function textOf(s, i, k) {
+    const t0 = textOf0(s, i, k);
+    return window.WORLD && WORLD.remap ? WORLD.remap(s, t0) : t0;
+  }
+  function textOf0(s, i, k) {
     const t = (s.cells[i + ':' + k] || []).map(x => x.t).join(' ');
     /* old template (DITL-51 ~ 121): the service text of an input row is in the TAG column (the SERVICE cell may hold only a
        timer name, DITL-99 "TR25") */
@@ -148,7 +181,7 @@
   /* 1. the field state */
   D.setInputs = () => {
     const rep = { set: 0, zero: 0, none: [] };
-    for (const s of S.sheets) {
+    for (const s of ALL()) {
       if (!s.nl || s.nl.v !== 10) {
         s.nl = netlist(s);
         s.uvDone = false;
@@ -165,7 +198,7 @@
       for (const i of plantRows(s)) {
         /* a bit that the 150 MW load of the ABC takes from a snapshot (hmi-op.js AN_HMI_DI, e.g. I.0418 ICV TO CV TRANSFER
            COMPLETE = 1 on 4.PNG) is the same address here */
-        const ad = (textOf(s, i, 'S').match(/\b[IM]\.[0-9A-F]{4}\b/) || [])[0],
+        const ad = WORLD.addrK ? WORLD.addrK(s, i) : (textOf(s, i, 'S').match(/\b[IM]\.[0-9A-F]{4}\b/) || [])[0],
           hd = ad && AN.hmiDI ? AN.hmiDI[ad] : null,
           v = hd ? hd[0] : rowVal(textOf(s, i, 'S'));
         if (v) {
@@ -185,7 +218,7 @@
   D.clear = () => {
     MST = {};
     MS = {};
-    for (const x of S.sheets) {
+    for (const x of ALL()) {
       x.sig = {};
       x.usw = {};
       x.av150 = null;
@@ -205,6 +238,11 @@
   const outVal = raw => {
     const t = String(raw || '').toUpperCase();
     if (/P\.\s*B\.?|PUSH ?BUTTON|\bCOMMAND\b|\bRESET\b|\bSTART\b|\bSTOP\b(?!PED)/.test(t)) return null;
+    /* a READY output is a start permissive that the drawing computes from its inputs (DITL-28B 77 FAB FCD READY = FCD
+       demand at 25 % AND silencer SOV opened): not a state to wish */
+    if (/READY/.test(t)) return null;
+    /* the torque switch of a MOV is the MOV model's (a valve shut on its seat shows TQ) */
+    if (/\bTORQUE\b/.test(t)) return null;
     return rowVal(t);
   };
   /* the wanted outputs: the text of the output rows, and the DITL outputs that the ABC reads (their value after the 150 MW
@@ -220,8 +258,14 @@
         if (m.has(k) && m.get(k) !== v) bad.add(s.name + '#' + k);
         m.set(k, v);
       };
-    for (const s of S.sheets)
+    for (const s of ALL())
       for (const o of s.nl.outs) {
+        /* an output made by a PULSE timer is a momentary command (DITL-21C 57 / 59, 21D 59 "... NOT USED AUTO SEQUENCE"):
+           0 between the pulses, not a state */
+        if (s.nl.gates.some(g => g.t === 'TMR' && (g.out || []).includes(o.n) && g.tm && /PULSE/.test(g.tm.lab || ''))) continue;
+        /* an output to another system's PLC is a command / hand-shake of the drawing (DITL-65 63 "OUTLET MOV FULLY OPEN" =
+           CONDENSATE PUMP A OR B RUNNING -> DOR-CD1008 O.0451 -> WATER TREATMENT SYSTEM), not the state its text names */
+        if (/\bPLC\b/.test(textOf(s, o.row, 'RL'))) continue;
         const v = outVal(textOf(s, o.row, 'RS'));
         if (v != null) put(s, o.row, v);
       }
@@ -372,11 +416,17 @@
       }
       /* the operator acknowledges what the start-up left latched (RESET FIRST OUT ...): the RESET push buttons of the CRT */
       const rs = [];
-      for (const s of S.sheets)
+      for (const s of ALL()) {
         for (const i of plantRows(s)) {
           const t = textOf(s, i, 'S').toUpperCase();
           if (/\bRESET\b/.test(t) && /P\.\s*B|RESET FIRST OUT/.test(t + ' ' + textOf(s, i, 'L')) && !/LOCAL|LOP/.test(t)) rs.push([s, i]);
         }
+        /* 2.2.0-beta.6: DITL-05 / 06 row 2 RESET FIRST OUT <- DITL-02 out 58 (the MFT reset at the end of the purge of the
+           last start-up): the unit reached 150 MW after that reset, so the first-out memories are clear */
+        for (const z of s.nl.src)
+          if (/^RESET FIRST OUT\b/.test((s.cells[z.row + ':S'] || []).map(x => x.t).join(' ').trim().toUpperCase()) && !rs.some(([a, b]) => a === s && b === z.row))
+            rs.push([s, z.row]);
+      }
       rs.forEach(([s, i]) => (s.sig[i + ':S'] = true));
       D.scan(3, 1);
       rs.forEach(([s, i]) => delete s.sig[i + ':S']);

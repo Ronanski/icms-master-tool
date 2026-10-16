@@ -2,6 +2,39 @@
 
 Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 2.2.0-beta.6 — Lahat ng B / C / D nakakabit sa tamang makina; DITL 150 ayon sa drawing at snapshot
+
+- **Problem (user):** "Wala kang tatanggalin. Ikokonek mo sa tamang connection. Magbabase sa repo, PDF, diagram." Sa beta.5, 79 DITL row at 48 ABC input ng makinang B / C / D ay hindi nakakabit; may mga estado ng 150 MW na hula.
+- **As Found:**
+  - 35 drawing ay "SAME FOR B / C / D" na may address list, pero iisang kopya (A) lang ang nasa app.
+  - Ang address group ay pindot lang ang binabasa (PAF trip).
+  - Ang TO column "(28A-29)" ay hindi binabasa (FAB B ay kumukuha ng signal ng FAB A).
+  - Ang relay contact ng DCS output (DITL-21A lamp 66 / 68) ay hindi binabasa.
+  - May mga text rule na hula (listahan: `UNLINK_AUDIT.md` "LAHAT NG MALI KO").
+- **Work Done:**
+  - `src/world/world.js`:
+    - bawat makinang B / C / D = sariling instance ng drawing (73);
+    - ang link ay pinipili ayon sa address list, letra ng makina, kapatid na sheet, memory list, at TO column na may panaklong.
+  - `src/digital/parts/05-overlay-interaction.js`: ang address group ay sumusunod sa nakakabit na row.
+  - `src/digital/parts/02-netlist.js`: ang N.O. contact ng relay ng DCS output sa DC 24V ay sumusunod sa output na iyon (DITL-21A lang ang tinamaan; sinuri ang 108 contact sa lahat ng sheet).
+  - `src/world/ditl150.js`:
+    - ang estado ay galing sa snapshot (9.png, 28.png, 29.PNG, 02.png, 37.PNG, 4.PNG) at sa drawing (pulse / READY / PLC output ay hindi estado; ang RESET FIRST OUT ay galing sa MFT reset ng huling start-up);
+    - talaan: `UNLINK_AUDIT.md` seksyon 4.
+- **As Left (headless):**
+  - Link: 0 hindi nakakabit (dati 79 + 48), 0 lost.
+  - Start at 150 MW:
+    - MFT 0;
+    - BFWP A, IDF, PAF, SAF, FAB A, coal feeder A / B / C tumatakbo;
+    - lahat ng 868 output na may inaasahang estado ay tugma (dati 70 hindi tugma);
+    - ang DITL output na binabasa ng ABC = 150 MW load ng ABC (0 differ);
+    - 60 s stable.
+  - BFWP A STOP: M.3343 0, force manual FICFW1007.
+  - DITL-40 LL gumagana.
+- **Natitira (`UNLINK_AUDIT.md` seksyon 5):** 344 field input row na wala pang sariling rule (212 analog, 89 AUTO / MANUAL ng MOV / pump na wala sa snapshot, 36 MOV limit / torque, 7 iba pa); boiler / turbine physics.
+- **Regression (headless, beta.6):** world, ditl150, tests, reset (51 / 0), hmi_op, plant_live, loaddown, abcbar, lookonly, ditl_toolbar, faceplate, manstation, infocard, events, overview, stale_beta, force_manual 68 / 0, panel_sync, scenarios 244 / 0, isolated PASS. Ang switches ay 40 / 438 na hindi bumabalik, PAREHO sa beta.5 (hindi galing sa beta.6): susunod na trabaho.
+- **Hindi pa nasubok:** totoong device.
+- **Status:** Beta.
+
 ## 2.2.0-beta.5 — Audit ng hindi ikinabit; DITL-21E naibalik
 
 - **Problem (user):** "Ilang address ang ginawa mong ganyan, inalis para lang may gumana? Sinuri mo ba sa PDF?"
