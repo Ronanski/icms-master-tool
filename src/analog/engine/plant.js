@@ -425,6 +425,27 @@ function anProcStep(S, dt) {
       } catch (e) {}
     }
     if (!q) q = pm[b.id] = { y: pr.integ && isFinite(v[pr.pv]) ? v[pr.pv] : ss(u), h: [], u: null };
+    /* 2.2.0-beta.1: the drawing gates the measurement: the PV comes through a T switch that now selects a constant
+       (ABC-003A SI0070 = 0 while both SUPPLY OIL VALVEs of burner A are closed, M.3410). The plant does not fight the gate:
+       a gated flow is 0 (isolation shut, oil burner out of service) and the model never pins the PV net over the logic */
+    const gate = (() => {
+      for (const d of S.drv[pr.pv] || []) {
+        if (d.k !== 'SW' && d.k !== 'AMT') continue;
+        const st = rt.st[d.id];
+        if (!st || !st.pk) continue;
+        const leg = st.pk === 'B' ? d.b : d.a;
+        const c = leg >= 0 ? (S.drv[leg] || []).find(x => x.k === 'CONST') : null;
+        if (c) return c.p && c.p.val === 0 ? 'zero' : 'const';
+      }
+      return false;
+    })();
+    if (gate && pr.mode === 'pin') {
+      if (pf[pr.pv]) {
+        delete F[pr.pv];
+        delete pf[pr.pv];
+      }
+      continue;
+    }
     /* 2.0.0: the DRUM LEVEL is an integrating process: the level rises when more feedwater goes in than steam goes out
        (dL/dt = k x (feedwater flow - main steam flow)). ABC-010: feedwater flow = PV of FICFW1007 (FT-FW1007, economizer inlet),
        steam flow = FT-MS1031 (STN101 AI0129, ABC-001C). Before: a first-order answer to the command of the 3-element master,
@@ -453,6 +474,7 @@ function anProcStep(S, dt) {
       q.y += (1 - Math.exp(-dt / Math.max(pr.T, 0.05))) * (tgt - q.y);
       q.y = Math.max(lo, Math.min(lo + span, q.y));
     }
+    if (gate === 'zero' && b.p.lt === 'flow') q.y = lo;
     if (dt <= 0 && q.u != null) continue;
     const y = q.y;
     if (pr.mode === 'pin') {
@@ -538,7 +560,7 @@ function anProcStep(S, dt) {
         const hit = w < rl || w > rh;
         w = Math.max(rl, Math.min(rh, w));
         const p = tv[tpin];
-        q.bad = hit && !pinF && !aiF && Math.abs(y - p) > 0.05 * span ? (q.bad || 0) + 1 : 0;
+        q.bad = hit && !pinF && !aiF && !gate && Math.abs(y - p) > 0.05 * span ? (q.bad || 0) + 1 : 0;
         if (q.bad >= 30) {
           pr.mode = 'pin';
           pr.fell = 1;
@@ -562,6 +584,35 @@ function anProcStep(S, dt) {
       s.act = x;
     }
   }
+}
+/* 2.2.0-beta.1: coal feeder A / B / C (ABC-004A / B / C). The feedrate transmitter (MIF-CL1061-A / B / C = AI0480 / AI0512 / AI0544,
+   0 ~ 40 T/H) is the PV of the MAN station FICCL1061x; the feeder delivers the demand that goes to its inverter
+   (FICCL1061x.MV, T/H in the simulator) while it runs (M.0142 / M.0152 / M.0162, C/F RUNNING ON/OFF DELAY), and 0 when it is
+   stopped. 11.png: SV 29.1 T/H, PV 29.0 / 29.1 / 28.9 T/H. Before: the feedrate stayed at its value, so the coal master
+   (PV = sum of the three) never saw its own MV */
+function anFeederStep(S) {
+  if (S.feed === undefined) {
+    S.feed = null;
+    if (/^ABC-004[ABC]$/.test(S.name)) {
+      const m = S.blk.find(b => b.k === 'MAN' && /^FICCL1061[ABC]$/.test(b.tag || ''));
+      const ai = m && (m.i || []).map(n => (S.drv[n] || []).find(x => x.k === 'AI')).find(Boolean);
+      const lab = re => S.lab.findIndex((l, n) => l && re.test(String(l.t).trim()) && (S.drv[n] || []).length);
+      const mv = m ? lab(new RegExp('^' + m.tag + '\\.MV$')) : -1,
+        run = lab(/^M\.01[456]2$/);
+      if (ai && mv >= 0 && run >= 0) S.feed = { ai: ai.id, mv, run, tag: m.tag };
+    }
+  }
+  const f = S.feed;
+  if (!f || !(AN.procDefault === true || (AN.procDefault === undefined && AN.plantOn === true))) return;
+  const rt = S.rt,
+    a = S.blk.find(x => x.id === f.ai),
+    st = rt.st[f.ai];
+  if (!a || !st || a.pins.some(p => p.role === 'out' && rt.force[p.n] !== undefined)) return;
+  const r = a.rng || { lo: 0, hi: 40 },
+    y = rt.v[f.run] > 0.5 ? +rt.v[f.mv] || 0 : r.lo;
+  st.val = Math.max(r.lo, Math.min(r.hi, y));
+  const T = S.plantT || (S.plantT = { ai: new Map(), ext: new Map() });
+  T.ai.set(f.ai, f.tag);
 }
 /* a control that has a timer (TPS TPV TP TON TOF) or a flip-flop upstream: the HOLD of the switch is the drawing's own latch (BY DESIGN, user 2026-10-12 CLAUDE.md rule Q) */
 function swTimer(S, b) {
@@ -593,6 +644,7 @@ function anStep(S, dt) {
     rmp = rt.ramp == null ? 0.05 : rt.ramp;
   if (S.procs === undefined) S.procs = anProcList(S);
   if (S.procs.length) anProcStep(S, dt);
+  if (S.feed !== null) anFeederStep(S);
   /* analog values that the USER sets move toward the target like a real process (rmp = fraction of the range per second; 0 = jump) */
   const slew = (cur, tgt, span) => {
     if (cur == null || !isFinite(cur)) return tgt;
