@@ -57,7 +57,7 @@ Ang app ay galing sa `src/` na ngayon (nakahiwalay na ang stacks: boot, styles, 
 
 ## Rule ng user (2026-10-14, galit): kapag may sheet na nire-report, ang sheet LANG na iyon ang susuriin at aayusin; basahin muna ang PDF at ang text sa drawing (ang text ay reference, hindi design lang); huwag baguhin ang code ng ibang function block; walang malawakang test o ayos nang walang utos.
 
-## Checklist (TAPOS / GAGAWIN / LALAKTAWAN / SA HINAHARAP): `docs/CHECKLIST.md`. Utos ng user 2026-10-16: ABC (analog) muna; ang DITL ay i-force / i-simulate na lang.
+## Roadmap hanggang matapos ang project: `docs/ROADMAP.md` (M0 ~ M6). Checklist (TAPOS / GAGAWIN / LALAKTAWAN / SA HINAHARAP): `docs/CHECKLIST.md`. Utos ng user 2026-10-16: ABC (analog) muna; ang DITL ay i-force / i-simulate na lang.
 
 ## Audit per sheet (user 2026-10-15)
 Ang user ay gustong isa-isahin ang sheet laban sa PDF (function, process, cause and effect; lalo na AUTO / REMOTE / MANUAL). Tapos: ABC-007 (`docs/versions/v1.20.60`, scenario UAT sa app v1.20.63: `src/ui/uat/scenarios/ABC-007.json`). Rule ng user: walang babasahin sa repo; ang UAT ay nasa app, malinaw at tama ang resulta; sakop ang lahat ng control + proseso. Template ng bawat sheet: force manual / interlock truth table, SV path, MANUAL / SV / AUTO na may proseso, bumpless, REMOTE / LOCAL, mode input, trip at pagbalik. Susunod: ABC-011, 012, 019, 003A-E, 030, 052. Bukas na tanong (kailangan ng approval): F2 = 111 ext input na ang tag text ay nasa kaliwa ng dulo ng wire ay walang pangalan sa app (reader, `pins-params.js` ~137); epekto: pangalan sa panel at posibleng cross-sheet links.
