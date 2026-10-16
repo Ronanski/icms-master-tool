@@ -2,6 +2,8 @@
 
 Ito ang iisang listahan ng progress. Ina-update ito pagkatapos ng bawat Beta. Ang detalye ng bawat Beta ay nasa `docs/versions/<ver>/UPDATE_REPORT.md`.
 
+Ang mga milestone hanggang matapos ang project (M0 ~ M6, may "pasado kung") ay nasa `docs/ROADMAP.md`.
+
 Utos ng user (2026-10-16): **"Analog muna. Ang DITL ay i-simulate / i-force na lang."** Ang DITL signal na binabasa ng ABC ay puwedeng i-force sa ABC: ang input na "FROM DITL" ay manual input kapag OFF ang ABC + DITL, at FORCE kapag ON. Hindi na gagastos ng oras sa pagbasa ng bawat DITL row.
 
 ## A. GAGAWIN NGAYON (ABC / analog), sunod-sunod
