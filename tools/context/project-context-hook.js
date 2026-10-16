@@ -103,7 +103,7 @@ function graphQuery(root, prompt) {
     const parts = [
       '[AUTOMATIC PROJECT MEMORY — injected on this user prompt]',
       'Treat this as required context, not as a replacement for checking current files.',
-      memory ? memory.slice(0, 6800) : 'PROJECT_MEMORY.md is missing. Read CLAUDE.md, PROJECT_RULES.md, and HANDOFF.md before repository work.',
+      memory ? memory.slice(0, 4300) : 'PROJECT_MEMORY.md is missing. Read CLAUDE.md, PROJECT_RULES.md, and HANDOFF.md before repository work.',
     ];
     if (graph) parts.push('[Graphify query results — use as navigation hints, verify source files before conclusions]\n' + graph);
     else if (snippets) parts.push('[Targeted findings/report matches — verify against original source where needed]\n' + snippets);
@@ -112,7 +112,7 @@ function graphQuery(root, prompt) {
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {
         hookEventName: 'UserPromptSubmit',
-        additionalContext: parts.join('\n\n').slice(0, 10500),
+        additionalContext: parts.join('\n\n').slice(0, 6800),
       },
     }));
   } catch {
