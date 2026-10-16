@@ -47,6 +47,7 @@
       logic = [], // FROM DITL text on a net that the ABC logic computes
       lost = [],
       otherAbc = [] /* ABC inputs of machine B / C on a drawing simulated for machine A */,
+      digFix = [] /* TO DITL by an analog wire: the comparator output next to it */,
       notLimit = []; /* 2.2.0-beta.3: an analog net next to a TO DITL of a limit row (ABC-001C AI0131 -> 40-09 MAIN STEAM PRESSURE LOW LOW) */
     const addIn = (s, row, src) => {
       if (!din.has(s)) din.set(s, new Map());
@@ -139,18 +140,25 @@
             if (!d || f.nn > 50) continue;
             const row = d.rows.findIndex(x => +x.n === f.nn);
             if (row < 0) continue;
-            /* 2.2.0-beta.3: a measurement (analog net) is not a limit: "TO DITL 40-09" beside the main steam pressure AI0131 of
-               ABC-001C made DITL-40 MAIN STEAM PRESSURE LOW LOW = 1 at 122 kg/cm2 (any value above 0.5) */
+            /* 2.2.0-beta.3/4: a measurement (analog net) is not a limit. "TO DITL 40-09" (MAIN STEAM PRESSURE LOW LOW) sits by
+               the main steam pressure AI0131 of ABC-001C: the limit is the output of the comparator next to it (M.310D,
+               AI0131 < 72.9 kg/cm2). Before: the analog value (122 kg/cm2) read as 1 */
             const net = sh.S.nets && sh.S.nets[n];
+            let src = n;
             if (
               net &&
               !net.dig &&
               /\bLOW\b|\bHIGH\b|H\.\s?H\.|L\.\s?L\.|[<>]/i.test((d.cells[row + ':S'] || []).map(x => x.t).join(' '))
             ) {
-              lim = true;
-              continue;
+              const alt = ix.toDig && ix.toDig.get(r + '@' + n);
+              if (alt == null) {
+                lim = true;
+                continue;
+              }
+              src = alt;
+              digFix.push(sh.name + ' ' + AN.nm(sh.S, n) + ' -> ' + AN.nm(sh.S, alt) + ' (' + r + ')');
             }
-            addIn(d, row, { k: 'a', sh, n, ref: sh.name });
+            addIn(d, row, { k: 'a', sh, n: src, ref: sh.name });
             hit = true;
           }
         if (hit) {
@@ -162,7 +170,7 @@
     }
     W.idx = { din, ain };
     W._nA = AN.sheets.length;
-    W.stat = { ditlDitl: dd, other, otherAbc, notLimit, fromDitl: fa, toDitl: ta, logic, lost, ms: Math.round(performance.now() - t0) };
+    W.stat = { ditlDitl: dd, other, otherAbc, notLimit, digFix, fromDitl: fa, toDitl: ta, logic, lost, ms: Math.round(performance.now() - t0) };
     AN.worldSheets = [...wsh];
   }
   const XL = new WeakMap();
