@@ -361,18 +361,37 @@ function anProcStep(S, dt) {
     /* plant: steady state PV = bottom of the range + span * (0.5 + sign * K * (command - middle) / 100) + disturbance; dead time, then first order; it cannot leave the range of the instrument */
     /* 1.22.0: controllers of OTHER sheets on this measurement (pr.xsh, links.js procRemote): each one moves the PV in its own
        direction (ACT of its PID); the PV answers the average effect of this controller and of them (one controller: as before) */
-    const xe = (pr.xsh || [])
-        .filter(x => x.b.proc && x.b.proc.on && x.S.rt)
-        .map(x => {
-          const xp = x.b.proc,
-            xum = ((x.b.p.lo == null ? 0 : x.b.p.lo) + (x.b.p.hi == null ? 100 : x.b.p.hi)) / 2,
-            xs = x.b.p.act < 0 ? 1 : -1;
-          return (xs * (xp.K || 1) * (uOfS(x.S, x.b) - xum)) / 100;
-        }),
-      eff = c => {
-        const e0 = (pr.sg * (pr.Ka || pr.K) * (c - um)) / 100;
-        return xe.length ? (e0 + xe.reduce((a, x) => a + x, 0)) / (1 + xe.length) : e0;
-      };
+    /* 2.2.0-beta.8 (A6, plant physics): the effects of the actuators on one measurement ADD (ABC-019 RH spray TICHR1002 cools,
+       ABC-020 RH / SH flue gas damper TICHR1002A heats the same reheater outlet). Before: their AVERAGE, so each one moved the
+       PV by half (spray 0 -> 100 % = -33 C instead of -67 C), and the anchor at the snapshot was taken with the damper of THAT
+       moment, so a damper move was cancelled by the anchor in the steady state. Now the anchor is the snapshot command of every
+       actuator (xa: AN_HMI_OP mv of the other controller, else its command now) */
+    const xsl = (pr.xsh || []).filter(x => x.b.proc && x.b.proc.on && x.S.rt),
+      xg = x => {
+        const xp = x.b.proc,
+          xlo = x.b.p.lo == null ? 0 : x.b.p.lo,
+          xhi = x.b.p.hi == null ? 100 : x.b.p.hi,
+          xum = (xlo + xhi) / 2,
+          xs = x.b.p.act < 0 ? 1 : -1,
+          h = pr.hop && AN_HMI_OP[(x.b.txt || [])[1]];
+        let k = xp.K || 1;
+        /* anchored measurement: the other actuator, from its snapshot command to either end (0 or 100 %), keeps the PV inside the
+           range of the instrument, like the gain of the owner (Ka below). Before (K = 1): the RH / SH damper from 36 to 50 %
+           raised the reheater outlet by 84 C, to the top of the range */
+        if (h) {
+          const up = (lo + span - pr.hop.pv) / span,
+            dn = (pr.hop.pv - lo) / span,
+            kd = Math.min((xs > 0 ? up : dn) / Math.max(1e-6, (xhi - h.mv) / 100), (xs > 0 ? dn : up) / Math.max(1e-6, (h.mv - xlo) / 100));
+          k = Math.max(0.02, Math.min(k, 0.9 * kd));
+        }
+        return c => (xs * k * (c - xum)) / 100;
+      },
+      xe = xsl.map(x => xg(x)(uOfS(x.S, x.b))),
+      xa = xsl.map(x => {
+        const h = AN_HMI_OP[(x.b.txt || [])[1]];
+        return xg(x)(h ? h.mv : uOfS(x.S, x.b));
+      }),
+      eff = (c, an) => (pr.sg * (pr.Ka || pr.K) * (c - um)) / 100 + (an ? xa : xe).reduce((a, x) => a + x, 0);
     /* 2.1.0-beta.6: "Start at 150 MW" (hmi-op.js) gave the PV of the snapshot transmitters (pr.hopReq): a loop without a static
        anchor is anchored NOW at (the command that goes to the valve now -> that PV), so the plant model keeps the snapshot
        value instead of its own steady state. Not for: a static anchor, the drum level (integrating), a flow loop whose valve is closed or whose flow is 0 on the snapshot. Reset removes it (anResetAll). */
@@ -429,8 +448,8 @@ function anProcStep(S, dt) {
             : Math.max(0.02, Math.min(pr.K, 0.9 * kdn));
       }
     }
-    const ss0 = c => lo + span * (0.5 + eff(c)),
-      anc = pr.hop ? (pr.hop.dyn ? (pr.hop.anc != null ? pr.hop.anc : (pr.hop.anc = pr.hop.pv - ss0(pr.hop.mv))) : pr.hop.pv - ss0(pr.hop.mv)) : 0,
+    const ss0 = (c, an) => lo + span * (0.5 + eff(c, an)),
+      anc = pr.hop ? (pr.hop.dyn ? (pr.hop.anc != null ? pr.hop.anc : (pr.hop.anc = pr.hop.pv - ss0(pr.hop.mv))) : pr.hop.pv - ss0(pr.hop.mv, true)) : 0,
       ss = c => ss0(c) + anc + ((pr.dist || 0) / 100) * span + (pr.op || 0);
     if (pr.integ === undefined) {
       pr.integ = null;

@@ -2,6 +2,30 @@
 
 Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 2.2.0-beta.8 — A6: mga controller na mahirap simulan, sa planta na tumatakbo (plant physics)
+
+- **Problem:** Generic operator tester (68 controller, 2.1.0): 3 hindi nasubok (PICFG108, AICFG112, HS-COAL) at 4 mali (FICFW1007 G6 ×3, TICHR1002 G2 ×1).
+- **As Found:**
+  - Ang force manual ng mga ito ay KONDISYON NG PROSESO (ID fan at MV ≥ 14 %, air / fuel cross limit, lahat ng feeder at mill tumatakbo, steam flow > 100 T/H nang 60 s), hindi switch. Ang random na input sa cold start ay hindi planta. Ang FICFW1007 ay mukhang malinis sa 20 s, pero na-fo-force pagkatapos ng TON 60 s.
+  - TICHR1002 (bug ng plant model): ang epekto ng spray (ABC-019) at ng RH / SH damper TICHR1002A (ABC-020) sa iisang RH outlet temperature ay **ina-average**. Kaya kalahati lang ang epekto ng spray (0 → 100 %: −33 °C sa halip na −67 °C). Ang damper ay **walang epekto** sa steady state (20 % o 50 % → 541.0 °C pa rin), dahil kinukuha ang anchor gamit ang damper sa kasalukuyan.
+- **Work Done:**
+  - `src/ui/uat/scen.js` (generic tester): ang malinis na estado ay dapat manatiling malinis nang 80 s pa. Kapag walang mahanap, ang estado ay ang **planta na tumatakbo** (Start at 150 MW). Sa estadong iyon, ang trip ay ang unang input sa cone ng force manual na nagfo-force. Bagong hakbang na `load150` (magagamit din sa UAT ng app).
+  - `src/analog/engine/plant.js`: ang epekto ng mga actuator sa iisang measurement ay **nagdadagdag**. Ang anchor ay ang snapshot command ng bawat actuator. Ang gain ng damper ay nililimitahan sa rule ng spray: mula sa operating point, ang 0 ~ 100 % ay nasa loob ng range na 0 ~ 600 °C.
+  - Trace: `DRAWING_TRACE.md` beta.8.
+- **As Left (headless):**
+  - Generic tester:
+    - AICFG112 32 / 32 (trip M.0101, steam flow);
+    - HS-COAL 41 / 41 (trip M.3400, feeder A);
+    - FICFW1007 42 / 42;
+    - TICHR1002 42 / 42;
+    - PICAS1005 32 / 32;
+    - LICBR1001 / 1001A / 1001B, FIC-CM, FIC-CF, TICHR1002A: lahat tama.
+  - **PICFG108: tumatakbo pa ang test sa oras ng save.**
+  - RH outlet: spray 0 / 100 % → 594.1 / 527.2 °C; damper 36 → 50 % = 552.6 °C, 36 → 20 % = 527.7 °C; Start at 150 MW = 541.2 °C.
+  - Regression: `hmi_op` 40 anchored loop ALL PASS; isolated engine PASS (5128 net); `npm run check` SAME.
+- **Hindi pa nasubok:** PICFG108 (tumatakbo pa); ang buong 68-controller run; switches, reset at 150 MW mismatch count pagkatapos ng pagbabago sa `plant.js`; totoong device.
+- **Status:** Beta (save ng progress).
+
 ## 2.2.0-beta.7 — M1 "ABC malinis": switches test at ang 150 MW snapshot
 
 - **Problem:** (1) Switches test: 40 / 438 ang hindi bumabalik. (2) Start at 150 MW: 27 value ang lumalayo sa snapshot (PLANT LIVE, 300 s).
