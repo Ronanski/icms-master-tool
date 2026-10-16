@@ -23,7 +23,7 @@ Utos ng user (2026-10-16): **"Analog muna. Ang DITL ay i-simulate / i-force na l
    - (j) 026 ~ 030, 033, 053 ~ 056;
    - (k) 031, 032, 034 ~ 039 (condenser, heater drain).
 5. [ ] **Audit ng bawat ABC sheet laban sa PDF** (function, cause-and-effect, AUTO / REMOTE / MANUAL), kasabay ng #4. Tapos ang ABC-007; 53 pa.
-6. [~] **(2.2.0-beta.8: AICFG112 32/32, HS-COAL 41/41, FICFW1007 42/42, TICHR1002 42/42, PICAS1005 32/32 sa planta na tumatakbo; PICFG108 sinusubok pa) Controller na mahirap simulan**: PICFG108, AICFG112, HS-COAL, FICFW1007, PICAS1005 (natitirang kaso). May Test Cards na sa UAT.
+6. [x] **(2.2.0-beta.8: generic tester 68 controller, 0 mali, 0 hindi nasubok; ang mahihirap ay sinubok sa planta na tumatakbo; RH spray + damper nagdadagdag) Controller na mahirap simulan**: PICFG108, AICFG112, HS-COAL, FICFW1007, PICAS1005.
 7. [ ] **Tester ng halaga ng bawat block** (oracle ng AND, OR, ADD, SQRT, F(X), LAG, RATE, SEL…) sa bawat net ng 54 ABC sheet.
 8. [ ] **Tester ng switching** (SW, AMT, T switch, selector) sa bawat leg; kasama ang #1.
 9. [ ] **Controller tester sa UAT panel ng app** (isang pindot kada controller). Ngayon, sa computer lang ito tumatakbo.
