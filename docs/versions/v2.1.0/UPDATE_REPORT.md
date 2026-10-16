@@ -2,6 +2,16 @@
 
 Base: Stable v2.0.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 2.1.0-beta.12 — In-app Beta / update: hindi na bumabalik sa Stable pagkatapos mag-download
+
+- **Problem (user, exe at apk v2.0.0):** "Pag sinelect ko Beta, magda-download, sabay balik sa Stable, then repeat."
+- **As Found:** Sa headless test (v2.0.0 app folder bilang `file://` at `https://localhost`, gaya ng exe at apk), gumagana ang paglipat; tama ang Beta page sa site (Site run: beta = 2da5af3). Ang dahilan sa code (`src/boot/update-question.js` `idb()`): ang pag-save ng ~6 MB na pahina ay itinuturing na tapos sa "request success", bago pa ma-commit ang transaction sa disk; nagre-reload agad ang app. Sa totoong device (mas mabagal ang storage), napuputol ng reload ang pag-save; sa pagbukas, walang kopya → bumabalik sa Stable nang walang mensahe at binubura ang tala → umuulit.
+- **Work Done:** ang write ay tapos lang sa `transaction complete` (hindi na sa request success); binabasa ulit ang kopya bago mag-reload (dapat pareho ang laki); kapag hindi mabuksan ang naka-download na kopya, may mensahe na sa susunod na bukas (dati tahimik). "about 6 MB".
+- **As Left (headless):** `inapp_update.js` ALL PASS, `stale_beta.js` ALL PASS.
+- **Mahalaga:** ang ayos ay nasa kopyang naka-install. Ang exe / apk na v2.0.0 ay may lumang code pa, kaya hindi nito ito makukuha nang kusa (ang in-app update ng v2.0.0 ay may parehong problema). Kailangan ng bagong Stable (GO STABLE) at isang beses na mano-manong install ng bagong apk / exe; pagkatapos noon, in-app na ulit ang Beta at update.
+- **Hindi pa nasubok:** totoong exe / apk.
+- **Status:** Beta.
+
 ## 2.1.0-beta.11 — Start at 150 MW: FW, coal, boiler master, air
 
 - **Problem:** FW flow 459 (snapshot 499), coal master PV 0 (87), SAF 134 (213), boiler master feedforward 0.
