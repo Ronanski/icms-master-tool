@@ -842,6 +842,16 @@
         set = v => {
           const st = S.rt.st[b.id];
           if (st) st.val = Math.max(lo, Math.min(hi, v));
+          /* 2.2.0-beta.2: a station in AUTO follows its set input (leg A of its SV switch); when that input is the operator's own
+             set (an input of the sheet, e.g. ABC-001A HIC-ULD: TARGET MW, COS SI0243 "TARGET MW SETUP FROM CCS CRT"), the
+             faceplate writes it. Before: the value was overwritten by the target at the next step, so ▼ did nothing in AUTO */
+          try {
+            const si = b.svI >= 0 ? b.i[b.svI] : null,
+              dr = si != null ? (S.drv[si] || []).find(z => z.k === 'AMT') : null,
+              ds = dr && S.rt.st[dr.id];
+            if (dr && ds && ds.pk === 'A' && dr.a != null && S.ext.includes(dr.a) && !(S.xlk && S.xlk[dr.a]))
+              S.rt.ext[dr.a] = Math.max(lo, Math.min(hi, v));
+          } catch (e) {}
           try {
             AN.settle();
           } catch (e) {}
