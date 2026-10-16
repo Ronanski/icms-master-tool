@@ -1,6 +1,6 @@
 # Read first (user rule)
 
-Before any reply or change: read `PROJECT_RULES.md` and `HANDOFF.md` in this repository. Look at the repository state first (git log, files), never answer from memory.
+Before any repository work: read `PROJECT_RULES.md` and `HANDOFF.md` and inspect current repository state. The UserPromptSubmit hook injects a compact project memory index and task-relevant findings on every submitted prompt; use those retrieval results, then verify original sources when needed. Hooks are a retrieval aid, not proof that a source was checked.
 
 Short version of what the user insists on:
 - Work only in this repository. Taglish, short and plain; the user is not a coder and does not read diagrams: give exact steps and exact expected values.
