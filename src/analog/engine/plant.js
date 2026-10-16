@@ -255,6 +255,20 @@ const AN_HMI_OP = {
   'HICHR1002A': { mv: 11.0, pv: 11.0, src: '39.PNG' },
   'HICHR1002B': { mv: 89.0, pv: 89.0, src: '39.PNG' }
 };
+/* 2.2.0-beta.3: the output of the SQRT (flow compensation) whose inputs come from the transmitter ai (ABC-001C: main steam flow
+   = SQRT of LN31(p) x LN32(T) x AI0129); -1 when the sheet has none */
+function anCompNet(S, ai) {
+  const has = (n, d) => {
+    if (d > 4) return false;
+    for (const x of S.drv[n] || []) {
+      if (x.k === 'AI' && x.o && S.lab[x.o[0]] && String(S.lab[x.o[0]].t).trim() === ai) return true;
+      if ((x.i || []).some(i => has(i, d + 1))) return true;
+    }
+    return false;
+  };
+  const q = S.blk.find(z => z.k === 'SQRT' && z.o && z.o.length && (z.i || []).some(i => has(i, 0)));
+  return q ? q.o[0] : -1;
+}
 function anProcStep(S, dt) {
   const rt = S.rt,
     v = rt.v,
@@ -378,7 +392,7 @@ function anProcStep(S, dt) {
         isFinite(u) &&
         hr.pv >= lo &&
         hr.pv <= lo + span &&
-        (b.p.lt !== 'flow' || ((hr.mv != null ? hr.mv : u) >= 2 && hr.pv - lo > 0.02 * span)) /* a flow at 0 with the valve open = an isolation valve is shut (oil burner out of service): not the control valve */
+        (b.p.lt !== 'flow' || hr.pv - lo > 0.02 * span) /* a flow at 0 with the valve open = an isolation valve is shut (oil burner out of service): not the control valve. 2.2.0-beta.7: a valve almost shut with flow through it is anchored too (15.PNG MCVFA1043D 1.7 % -> FIFA1043D 26.8 T/H; 28.png min-flow recirculation FCVCD1120 0.1 % with condensate flow FIQCD1120 380 T/H): see the gain below */
       ) {
         pr.hop = { mv: hr.mv != null ? hr.mv : u, pv: hr.pv, src: '150 MW load', dyn: 1 }; /* the MV of the snapshot when known, else the command now */
         pr.Ka = undefined;
@@ -404,7 +418,15 @@ function anProcStep(S, dt) {
              A flow is proportional to the valve (MV 0 = no flow: ABC-010 FICFW1007 499 T/H at 56 % -> 0 T/H at 0 %) */
           kdn = pr.sg > 0 ? dn / dl : up / dl;
         void dh;
-        pr.Ka = b.p.lt === 'flow' ? Math.max(0.02, kdn) : Math.max(0.02, Math.min(pr.K, 0.9 * kdn));
+        /* 2.2.0-beta.7: a flow with its valve almost shut (< 2 %) is not made by that valve alone (28.png: 380 T/H of condensate
+           with the min-flow recirculation valve at 0.1 %; the condensate pump and the deaerator level valve make it): the valve
+           adds to the flow of the snapshot (offset, gain K), instead of a flow proportional to a 0.1 % opening */
+        pr.Ka =
+          b.p.lt === 'flow'
+            ? pr.hop.mv < 2
+              ? pr.K
+              : Math.max(0.02, kdn)
+            : Math.max(0.02, Math.min(pr.K, 0.9 * kdn));
       }
     }
     const ss0 = c => lo + span * (0.5 + eff(c)),
@@ -424,7 +446,33 @@ function anProcStep(S, dt) {
         }
       } catch (e) {}
     }
-    if (!q) q = pm[b.id] = { y: pr.integ && isFinite(v[pr.pv]) ? v[pr.pv] : ss(u), h: [], u: null };
+    /* 2.2.0-beta.3: pr.y0 (Start at 150 MW): the model starts from the PV of the snapshot, then follows the valve with its own
+       time constant (before: from its steady state for the command of that moment, ABC-012 TICMS1004 482 C instead of 542 C) */
+    if (!q) {
+      q = pm[b.id] = { y: (pr.integ || pr.y0) && isFinite(v[pr.pv]) ? v[pr.pv] : ss(u), h: [], u: null };
+      pr.y0 = 0;
+    }
+    /* 2.2.0-beta.1: the drawing gates the measurement: the PV comes through a T switch that now selects a constant
+       (ABC-003A SI0070 = 0 while both SUPPLY OIL VALVEs of burner A are closed, M.3410). The plant does not fight the gate:
+       a gated flow is 0 (isolation shut, oil burner out of service) and the model never pins the PV net over the logic */
+    const gate = (() => {
+      for (const d of S.drv[pr.pv] || []) {
+        if (d.k !== 'SW' && d.k !== 'AMT') continue;
+        const st = rt.st[d.id];
+        if (!st || !st.pk) continue;
+        const leg = st.pk === 'B' ? d.b : d.a;
+        const c = leg >= 0 ? (S.drv[leg] || []).find(x => x.k === 'CONST') : null;
+        if (c) return c.p && c.p.val === 0 ? 'zero' : 'const';
+      }
+      return false;
+    })();
+    if (gate && pr.mode === 'pin') {
+      if (pf[pr.pv]) {
+        delete F[pr.pv];
+        delete pf[pr.pv];
+      }
+      continue;
+    }
     /* 2.0.0: the DRUM LEVEL is an integrating process: the level rises when more feedwater goes in than steam goes out
        (dL/dt = k x (feedwater flow - main steam flow)). ABC-010: feedwater flow = PV of FICFW1007 (FT-FW1007, economizer inlet),
        steam flow = FT-MS1031 (STN101 AI0129, ABC-001C). Before: a first-order answer to the command of the 3-element master,
@@ -436,9 +484,13 @@ function anProcStep(S, dt) {
         if (pr.integ.ai == null) {
           const a = S1.blk.find(z => z.k === 'AI' && z.o && S1.lab[z.o[0]] && String(S1.lab[z.o[0]].t).trim() === 'AI0129'); /* engine only: the label of the net, not the UI name */
           pr.integ.ai = a ? a.id : -1;
+          /* 2.2.0-beta.3: the steam flow of the balance is the COMPENSATED flow of the drawing (SQRT of LN31(p) x LN32(T) x AI0129,
+             the value on the screens), not the raw transmitter */
+          pr.integ.cn = anCompNet(S1, 'AI0129');
         }
         const st = pr.integ.ai >= 0 ? S1.rt.st[pr.integ.ai] : null;
-        fst = st ? (st.act != null ? +st.act : +st.val) || 0 : 0;
+        fst =
+          pr.integ.cn >= 0 && isFinite(S1.rt.v[pr.integ.cn]) ? +S1.rt.v[pr.integ.cn] : st ? (st.act != null ? +st.act : +st.val) || 0 : 0;
       }
       let ffw = +v[pr.integ.fw] || 0;
       if (pr.integ.su) ffw += (Math.max(0, Math.min(100, +uOf(pr.integ.su) || 0)) / 100) * pr.integ.suK;
@@ -453,6 +505,7 @@ function anProcStep(S, dt) {
       q.y += (1 - Math.exp(-dt / Math.max(pr.T, 0.05))) * (tgt - q.y);
       q.y = Math.max(lo, Math.min(lo + span, q.y));
     }
+    if (gate === 'zero' && b.p.lt === 'flow') q.y = lo;
     if (dt <= 0 && q.u != null) continue;
     const y = q.y;
     if (pr.mode === 'pin') {
@@ -502,6 +555,25 @@ function anProcStep(S, dt) {
     if (q.u == null) {
       w = y;
       q.g = 1;
+      /* 2.2.0-beta.7: several transmitters of one measurement (ABC-002 O2 before the APH: AIFG1122 side A 6.4 %, AIFG1123 side B
+         2.2 %, PV = their average 4.3 %, 7.PNG) keep their own reading around the model: each keeps its offset from their mean at
+         the first write (0 after a Reset: they start equal) */
+      if (tai.length > 1) {
+        const vs = tai.map(id => tr.st[id] && +tr.st[id].val);
+        if (vs.every(isFinite)) {
+          const m = vs.reduce((a, b) => a + b, 0) / vs.length;
+          q.off = {};
+          tai.forEach((id, i) => (q.off[id] = vs[i] - m));
+        }
+      }
+      /* 2.2.0-beta.3: the PV already equals the model (Start at 150 MW): keep the raw transmitter where it is. A compensated
+         measurement (ABC-010 drum level: raw DP level -> pressure compensation) is not equal to its raw value; writing the PV
+         into the raw AI made the compensated level jump 156 mm */
+      {
+        const p0 = tv[tpin],
+          a0 = tai.length ? tr.st[tai[0]] : null;
+        if (a0 && isFinite(p0) && Math.abs(y - p0) < 0.005 * span && isFinite(a0.val)) w = q.off ? a0.val - q.off[tai[0]] : a0.val;
+      }
       /* compensation inputs of the chain (pressure, temperature...) that are not driven: start at the middle of their range, not at the bottom (a chain divided by a compensation of 0 gives nothing) */ for (const id of (R
         ? R.allAI
         : pr.allAI) || []) {
@@ -538,7 +610,7 @@ function anProcStep(S, dt) {
         const hit = w < rl || w > rh;
         w = Math.max(rl, Math.min(rh, w));
         const p = tv[tpin];
-        q.bad = hit && !pinF && !aiF && Math.abs(y - p) > 0.05 * span ? (q.bad || 0) + 1 : 0;
+        q.bad = hit && !pinF && !aiF && !gate && Math.abs(y - p) > 0.05 * span ? (q.bad || 0) + 1 : 0;
         if (q.bad >= 30) {
           pr.mode = 'pin';
           pr.fell = 1;
@@ -557,11 +629,41 @@ function anProcStep(S, dt) {
       const on_ = a.pins.filter(p => p.role === 'out').map(p => p.n);
       if (on_.some(n => tF[n] !== undefined)) continue;
       const r = a.rng,
-        x = r ? Math.max(r.lo, Math.min(r.hi, w)) : w;
+        w1 = w + ((q.off && q.off[id]) || 0),
+        x = r ? Math.max(r.lo, Math.min(r.hi, w1)) : w1;
       s.val = x;
       s.act = x;
     }
   }
+}
+/* 2.2.0-beta.1: coal feeder A / B / C (ABC-004A / B / C). The feedrate transmitter (MIF-CL1061-A / B / C = AI0480 / AI0512 / AI0544,
+   0 ~ 40 T/H) is the PV of the MAN station FICCL1061x; the feeder delivers the demand that goes to its inverter
+   (FICCL1061x.MV, T/H in the simulator) while it runs (M.0142 / M.0152 / M.0162, C/F RUNNING ON/OFF DELAY), and 0 when it is
+   stopped. 11.png: SV 29.1 T/H, PV 29.0 / 29.1 / 28.9 T/H. Before: the feedrate stayed at its value, so the coal master
+   (PV = sum of the three) never saw its own MV */
+function anFeederStep(S) {
+  if (S.feed === undefined) {
+    S.feed = null;
+    if (/^ABC-004[ABC]$/.test(S.name)) {
+      const m = S.blk.find(b => b.k === 'MAN' && /^FICCL1061[ABC]$/.test(b.tag || ''));
+      const ai = m && (m.i || []).map(n => (S.drv[n] || []).find(x => x.k === 'AI')).find(Boolean);
+      const lab = re => S.lab.findIndex((l, n) => l && re.test(String(l.t).trim()) && (S.drv[n] || []).length);
+      const mv = m ? lab(new RegExp('^' + m.tag + '\\.MV$')) : -1,
+        run = lab(/^M\.01[456]2$/);
+      if (ai && mv >= 0 && run >= 0) S.feed = { ai: ai.id, mv, run, tag: m.tag };
+    }
+  }
+  const f = S.feed;
+  if (!f || !(AN.procDefault === true || (AN.procDefault === undefined && AN.plantOn === true))) return;
+  const rt = S.rt,
+    a = S.blk.find(x => x.id === f.ai),
+    st = rt.st[f.ai];
+  if (!a || !st || a.pins.some(p => p.role === 'out' && rt.force[p.n] !== undefined)) return;
+  const r = a.rng || { lo: 0, hi: 40 },
+    y = rt.v[f.run] > 0.5 ? +rt.v[f.mv] || 0 : r.lo;
+  st.val = Math.max(r.lo, Math.min(r.hi, y));
+  const T = S.plantT || (S.plantT = { ai: new Map(), ext: new Map() });
+  T.ai.set(f.ai, f.tag);
 }
 /* a control that has a timer (TPS TPV TP TON TOF) or a flip-flop upstream: the HOLD of the switch is the drawing's own latch (BY DESIGN, user 2026-10-12 CLAUDE.md rule Q) */
 function swTimer(S, b) {
@@ -593,6 +695,7 @@ function anStep(S, dt) {
     rmp = rt.ramp == null ? 0.05 : rt.ramp;
   if (S.procs === undefined) S.procs = anProcList(S);
   if (S.procs.length) anProcStep(S, dt);
+  if (S.feed !== null) anFeederStep(S);
   /* analog values that the USER sets move toward the target like a real process (rmp = fraction of the range per second; 0 = jump) */
   const slew = (cur, tgt, span) => {
     if (cur == null || !isFinite(cur)) return tgt;
@@ -1251,7 +1354,7 @@ function anStep(S, dt) {
       case 'TPV': {
         const x = b.sg >= 0 ? B(rd(b.sg)) : 0,
           T = b.xin >= 0 ? rd(b.xin) : 0;
-        if (x && !s.prev && !s.run) {
+        if (x && !s.prev && !s.run && !AN.steady) {
           s.run = 1;
           s.acc = 0;
         }
@@ -1266,7 +1369,10 @@ function anStep(S, dt) {
       }
       case 'TPS': {
         const x = B(rd(b.i[0]));
-        if (x && !s.prev && !s.run) {
+        /* 2.2.0-beta.7: not while "Start at 150 MW" loads the plant (AN.steady): the snapshot is a steady state, a signal that the load
+           sets (ABC-050 I.0931 GCB 52G1 ON) closed long ago, so its pulse is over (before: a new "synchronization" pulse set ABC-052
+           M.070F and the LP bypass went to its 33 % preset) */
+        if (x && !s.prev && !s.run && !AN.steady) {
           s.run = 1;
           s.acc = 0;
         }

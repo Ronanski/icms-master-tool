@@ -479,6 +479,10 @@ function reset() {
     anSave();
   }
   anResetAll(); /* the model part of the reset is in the engine (engine/sheets.js) */
+  /* 2.2.0-beta.3: Reset = cold start, the DITL 150 MW state too (src/world/ditl150.js) */
+  try {
+    if (window.DITL150 && DITL150.on) DITL150.clear();
+  } catch (e) {}
   const sh = cs();
   if (!sh || !sh.S) return;
   for (let i = 0; i < 6; i++) stepSet(sh, 0);
