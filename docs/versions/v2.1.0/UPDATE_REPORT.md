@@ -1,4 +1,10 @@
-# v2.1.0 (target ng susunod na Stable) — mga Beta
+# v2.1.0 — Stable (GO STABLE 2026-10-16) at mga Beta
+
+## 2.1.0 Stable
+
+- Laman: 2.1.0-beta.1 ~ beta.12 (sa ibaba). Release report: `Release-Report-v2.1.0.pdf`. Assets: html, apk, portable exe, report.
+- Isang beses na mano-manong install ng apk / exe ang kailangan (ang in-app update ng v2.0.0 ay may sira na naayos sa beta.12).
+- **Status:** Stable.
 
 Base: Stable v2.0.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
