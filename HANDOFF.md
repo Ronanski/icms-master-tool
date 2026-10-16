@@ -2,6 +2,15 @@
 
 > Single current handoff. Palitan ang lumang status kapag nagbago ang trabaho; huwag mag-append ng chat transcript.
 
+## Persistent context retrieval (work in progress; branch only)
+- Branch: `feat/persistent-context-retrieval`.
+- Added `docs/PROJECT_MEMORY.md` as a compact, source-backed retrieval index.
+- Added `tools/context/project-context-hook.js` to inject the memory index and retrieve relevant existing Markdown findings on every submitted prompt; if a Graphify graph already exists and CLI is available, it attempts a bounded query.
+- Updated `.claude/settings.json` to preserve the existing reminder hook and add the retrieval hook. Updated `.claude/each-reply.txt` to remove contradictory blanket prohibitions and align with `PROJECT_RULES.md`.
+- Updated `CLAUDE.md` to explain the retrieval behavior.
+- **Not yet verified in the user's actual Claude Cloud session.** The hook is a Claude Code `UserPromptSubmit` hook; confirm that the connected Cloud environment executes repository hooks and that `CLAUDE_PROJECT_DIR` and Node.js are available. Until confirmed, do not claim automatic retrieval is active in Cloud.
+- No simulator code changed. No tests/build/workflow/release run. No merge to `main`.
+
 ## Project
 DCS Logic Simulator sa `Ronanski/icms-master-tool`. Basahin muna ang `CLAUDE.md` at `PROJECT_RULES.md`. Dito lang sa repository na ito gagawa (PROJECT_RULES 5b).
 
