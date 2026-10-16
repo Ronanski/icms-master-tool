@@ -191,6 +191,7 @@ function anResetAll() {
           b.proc.Ka = undefined;
         }
         b.proc.hopReq = null;
+        b.proc.integLoss = 0;
       }
     const v = AN.sv[sh.name];
     if (v && v.p)

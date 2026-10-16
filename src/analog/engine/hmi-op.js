@@ -54,7 +54,10 @@ const AN_HMI_AI = {
   '1|AI0448': [41.0, 'DPIFG1183'],
   '1|AI0449': [1014.0, 'DPIFG1184'],
   '1|AI0455': [19.2, 'AIFG1131'],
+  '1|AI0480': [29.0, 'MIFCL1061A'] /* 2.1.0-beta.11: coal feeder-A feedrate MIF-CL1061-A (11.png MICL1061A PV 29.0 T/H) */,
   '1|AI0484': [354.0, 'FIFA1071'],
+  '1|AI0512': [29.1, 'MIFCL1061B'] /* 2.1.0-beta.11: coal feeder-B feedrate (11.png 29.1 T/H) */,
+  '1|AI0544': [28.9, 'MIFCL1061C'] /* 2.1.0-beta.11: coal feeder-C feedrate (11.png 28.9 T/H) */,
   '1|AI0513': [213.0, 'FIFA1081'],
   '1|AI0514': [11.0, 'PIDO1008'],
   '1|AI0515': [0.0, 'FIQDO1043A'],
@@ -367,6 +370,7 @@ const AN_HMI_CTL = {
   'PICSB1052': { pv: null, sv: null, mv: 0.2, mode: 'M' } /* 2.1.0-beta.10: valve PCVSB1053 0.2 % M (18.PNG) */,
   'TICAS1001': { pv: null, sv: null, mv: 0.1, mode: 'M' } /* 2.1.0-beta.10: valve TCVCD1124 0.1 % M (29.PNG) */,
   'TICLO1002': { pv: null, sv: null, mv: 53.1, mode: 'R' } /* 2.1.0-beta.10: valve TCVCW1201 53.1 % R (27.PNG) */,
+  'HS-COAL': { pv: null, sv: null, mv: null, mode: 'A' } /* 2.1.0-beta.11: not on a screen; in AUTO on 11.png (coal master FIC-CM REMOTE MV 73.0 %, feeders at SV 29.1 T/H follow it) */,
   'PICFG108': { pv: -16.0, sv: -16.0, mv: 46.1, mode: 'A' } /* 2.1.0-beta.6: IDF hydraulic coupling A 46.1 % (7.PNG) */,
   'PICFG108A': { pv: null, sv: null, mv: 99.1, mode: 'M' } /* 2.1.0-beta.6: IDF inlet damper PCDFG10561 M 99.1 % (7.PNG) */,
   'PICHR1003': { pv: 34.4, sv: 36.0, mv: 0.8, mode: 'R' },
@@ -392,6 +396,42 @@ const AN_HMI_CTL = {
 const AN_HMI_FF = {
   'ABC-008|M.0202': [1, 'IDF hydraulic coupling control selected (7.PNG)']
 };
+/* 2.1.0-beta.11: manual stations (MAN blocks, hand loaders) of the snapshots, in the unit of the station: 33.PNG MW OUTPUT HIGH /
+   LOW LIMIT SET, OUTPUT CHANGE RATE SET; the MAN stations that are in AN_HMI_CTL take their MV (% station) or PV (other unit) */
+const AN_HMI_MAN = {
+  'HIC-MWHL': [238.4, '33.PNG MW OUTPUT HIGH LIMIT SET (clamped to the range of the station)'],
+  'HIC-MWLL': [0.0, '33.PNG MW OUTPUT LOW LIMIT SET'],
+  'HIC-MWRL': [3.0, '33.PNG OUTPUT CHANGE RATE SET (MW/MIN)']
+};
+/* 2.1.0-beta.11: digital inputs that the drawing names only by a text beside the wire (no address): [sheet, text, nth (same text
+   counted top to bottom), value, why]. ABC-004A: the 8 "BNR SUPPLY OIL VALVE CLOSE" inputs of HS-COAL (I/O list STN104
+   I.0001 / I.0003 / I.0321 / I.0323 / I.0641 / I.0643 / I.0961 / I.0963); the oil burners are out of service at full load
+   (6.PNG: oil flows 0, FIC-OM M 0 %), the valves are closed */
+const AN_HMI_TXT = [
+  ['ABC-004A', 'A-BNR SUPPLY OIL', 0, 1], ['ABC-004A', 'A-BNR SUPPLY OIL', 1, 1],
+  ['ABC-004A', 'B-BNR SUPPLY OIL', 0, 1], ['ABC-004A', 'B-BNR SUPPLY OIL', 1, 1],
+  ['ABC-004A', 'C-BNR SUPPLY OIL', 0, 1], ['ABC-004A', 'C-BNR SUPPLY OIL', 1, 1],
+  ['ABC-004A', 'D-BNR SUPPLY OIL', 0, 1], ['ABC-004A', 'D-BNR SUPPLY OIL', 1, 1]
+];
+/* the input wire whose free end is nearest to the text (the same rule as the UAT scenarios, src/ui/uat/scen.js nearOf) */
+function hmiNearNet(S, txt, nth) {
+  const tx = (S.tx || []).filter(x => String(x.t).trim() === txt).sort((a, b) => a.y - b.y || a.x - b.x)[nth || 0];
+  if (!tx) return -1;
+  let bn = -1,
+    bd = 60;
+  for (const m of S.ext)
+    for (const i of S.nets[m].segs) {
+      const g = S.seg[i];
+      for (const [x, y] of [[g.x1, g.y1], [g.x2, g.y2]]) {
+        const d = Math.hypot(tx.x - x, tx.y - y);
+        if (d < bd) {
+          bd = d;
+          bn = m;
+        }
+      }
+    }
+  return bn;
+}
 /* plant equipment in service on the same snapshots (digital inputs of the ABC sheets; the meaning is the text written beside
    the address on the drawing / the memory list): 1 = running / complete, 0 = stopped / standby */
 const AN_HMI_DI = {
@@ -464,6 +504,41 @@ function anPlantLoad150() {
     const S = sh.S;
     for (const b of S.blk) if (b.k === 'FF' && (b.o || []).some(n => (AN.nm(S, n) || '').trim() === lb) && S.rt.st[b.id]) S.rt.st[b.id].q = AN_HMI_FF[k][0];
   }
+  for (const [sn, t, k, val] of AN_HMI_TXT) {
+    const sh = AN.sheets.find(x => x.name === sn);
+    if (!sh || !sh.S) continue;
+    const m = hmiNearNet(sh.S, t, k);
+    if (m >= 0 && sh.S.nets[m].dig) {
+      sh.S.rt.ext[m] = val;
+      nd++;
+    }
+  }
+  let nm_ = 0;
+  for (const sh of AN.sheets) {
+    if (/^ABC-000/.test(sh.name) || !sh.S) continue;
+    const S = sh.S;
+    for (const b of S.blk) {
+      if (b.k !== 'MAN' || !S.rt.st[b.id]) continue;
+      const tag = b.tag || (b.txt || []).find(t => t && t !== 'MAN' && !/^S\d-MDL/.test(t));
+      const P = b.p || {},
+        lo = P.lo != null ? P.lo : 0,
+        hi = P.hi != null ? P.hi : 100,
+        h = AN_HMI_CTL[tag],
+        x = AN_HMI_MAN[tag];
+      let v = x ? x[0] : null;
+      if (v == null && h) v = String(P.u || '%').trim() === '%' ? (h.mv != null ? h.mv : h.pv) : h.pv != null ? h.pv : h.sv;
+      if (v == null || !isFinite(v)) continue;
+      S.rt.st[b.id].val = Math.max(lo, Math.min(hi, v));
+      /* a station that follows its own set input in AUTO (plant.js MAN: svI from an AMT on leg A): that input is the target
+         (ABC-001A HIC-ULD: TARGET MW, COS SI0243 = 150 MW on 33.PNG) */
+      try {
+        const si = b.svI >= 0 ? b.i[b.svI] : null,
+          dr = si != null ? (S.drv[si] || []).find(z => z.k === 'AMT') : null;
+        if (dr && dr.a != null && S.ext.includes(dr.a) && !(S.xlk && S.xlk[dr.a])) S.rt.ext[dr.a] = Math.max(lo, Math.min(hi, v));
+      } catch (e) {}
+      nm_++;
+    }
+  }
   /* controllers: MV, operator SV and mode as on the snapshot (the station and the SV switch, like the operator would set them) */
   let nc = 0;
   const modes = [];
@@ -482,7 +557,7 @@ function anPlantLoad150() {
         nc++;
         if (h.mv != null) {
           const ps = rt.st[c.b.id];
-          if (ps) ps.out = h.mv;
+          if (ps) hmiPidSet(ps, c.b, h.mv);
           if (c.manBlk && rt.st[c.manBlk.id]) rt.st[c.manBlk.id].val = h.mv;
           else if (c.manNet != null && S.ext.includes(c.manNet)) rt.ext[c.manNet] = h.mv;
         }
@@ -570,11 +645,20 @@ function anPlantLoad150() {
       if (c.manBlk && rt.st[c.manBlk.id]) rt.st[c.manBlk.id].val = h.mv;
       else if (c.manNet != null && S.ext.includes(c.manNet)) rt.ext[c.manNet] = h.mv;
       const ps = rt.st[c.b.id];
-      if (ps) ps.out = h.mv;
+      if (ps) hmiPidSet(ps, c.b, h.mv);
     }
     for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) for (let k = 0; k < 4; k++) stepSet(sh, 0.5);
   } catch (e) {}
   for (const [pr, pv, mv] of caps) pr.hopReq = { pv, mv };
+  /* 2.1.0-beta.11: drum level (integrating, plant.js): the feedwater that does not leave as main steam on the snapshot
+     (03.png: FICFW1007 499.1 T/H, main steam AI0129 474.1 T/H) */
+  try {
+    const fw = AN_HMI_CTL.FICFW1007,
+      ms = AN_HMI_AI['1|AI0129'];
+    for (const sh of AN.sheets)
+      if (sh.S)
+        for (const b of sh.S.procs || []) if (b.proc && (b.txt || [])[1] === 'LICBR1001' && fw && ms) b.proc.integLoss = Math.max(0, fw.pv - ms[0]);
+  } catch (e) {}
   try {
     for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0.5);
   } catch (e) {}
@@ -595,8 +679,39 @@ function anPlantLoad150() {
       }
     }
   }
-  AN.load150 = { ai: n, ctl: nc, di: nd, sv: nsv };
+  /* 2.1.0-beta.11: the plant runs steady at full load: the rate limiters and the lags of the drawing have reached their input
+     (before, the MW demand ABC-001B SI0212 started at 0 and its rate limit of 3 MW/min needed 50 min to reach 150 MW, so the
+     boiler master feedforward, the fuel and the air demands stayed low) */
+  try {
+    for (let it = 0; it < 6; it++) {
+      for (const sh of AN.sheets) {
+        if (/^ABC-000/.test(sh.name) || !sh.S) continue;
+        const S = sh.S,
+          rt = S.rt;
+        for (const b of S.blk) {
+          const st = rt.st[b.id];
+          if (!st) continue;
+          if (b.k === 'LAG' && b.i && b.i[0] != null && isFinite(rt.v[b.i[0]])) st.y = rt.v[b.i[0]];
+          else if ((b.k === 'RATE' || b.k === 'RAMPB') && b.main !== undefined && isFinite(rt.v[b.main])) st.y = rt.v[b.main];
+        }
+      }
+      for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0);
+      /* the controller outputs of the snapshot once more: an integral that moved while the demands were still low comes back
+         (ABC-001C PIC-COBM: 0.8 % on 33.PNG, 13.1 % after the 10 s) */
+      for (const [S, c] of modes) {
+        const h = AN_HMI_CTL[c.tag],
+          ps = h && h.mv != null ? S.rt.st[c.b.id] : null;
+        if (ps) hmiPidSet(ps, c.b, h.mv);
+      }
+    }
+  } catch (e) {}
+  AN.load150 = { ai: n, ctl: nc, di: nd, sv: nsv, man: nm_ };
   return n;
+}
+/* the output of a PID (plant.js PID: u = kp * es + I): the output and the integral, so it stays there when PV = SV */
+function hmiPidSet(ps, b, mv) {
+  ps.out = mv;
+  ps.I = mv - ((b.p && b.p.kp != null ? b.p.kp : 1) * (ps.es || 0));
 }
 /* the operator SV of a controller, written where the faceplate writes it (src/ui/hmi/hmi.js svSet): the SV net when it is an input,
    else the operator leg (B) of the SV switch */
