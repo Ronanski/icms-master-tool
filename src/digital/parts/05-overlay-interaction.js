@@ -380,6 +380,8 @@ function tmStep(g, inp, dt) {
         st.acc = 0;
       }
     }
+  } else if (g.nc) {
+    st.out = inp ? 1 : 0;
   } else {
     const trg = g.k === 'npulse' ? !inp && st.pre : inp && !st.pre;
     if (trg && !st.run) {
@@ -687,7 +689,7 @@ function uvApply(s) {
       }
     });
   }
-  s.nl.avk = s.av || null;
+  s.nl.avk = avOf(s);
 }
 function uvSave() {
   const o = { ...UVL };
