@@ -48,3 +48,11 @@
 - **Drum level balance:** ang steam flow ay ang compensated flow (SQRT), hindi ang raw AI0129.
 - **LP heaters at deaerator (02.png lang ang may screen):** kontrolado ang level kaya ang level ng 02.png ang operating point. Dati ay nasa dulo ng range (LPH −320 / −287 / −310 mm, LEVEL LOW; deaerator 1095 mm, HIGH). Ang valve position ay galing sa 60 MW.
 - **PAF / SAF flow control:** MV = inlet damper ng 7.PNG (35.6 / 37.1 %); dati 3.3 / 17.9 %.
+
+## beta.6 — Machine instance B / C / D (drawing "SAME FOR B / C / D")
+- **Drawing:** halimbawa DITL-23A (BFWP A), note "THE DIAGRAM IS THE SAME FOR BFWP B"; ang address ng row ay listahan (`M.3343/3344` = A / B). Ang k-th address = makina k.
+- **Engine:** `src/world/world.js` `machinesOf` (bilang ng makina = letra sa note + haba ng address list, max 4), `makeInst` (kopya ng sheet, sariling `nl`, `sig`, `usw`, estado ng FF / timer / motor), `target` / `pick` (address -> letra -> kapatid na sheet -> parehong k), `remap` (iniikot ang letra ng makina sa text, sa parehong pamilya lang). `tick` ay pinapatakbo ang lahat ng sheet + instance.
+- **Address group (`grpState`, 05-overlay-interaction.js):** ang master row na pinapakain ng ibang sheet (FROM) ay binabasa ang `_win`; ang reader na may sariling FROM link ay sumusunod sa link na iyon. DITL-24 row 26 "-I.037C PAF LUB OIL PUMP B STOPPED" (F = 24-61) = NOT ng LOP B RUNNING ng `DITL-24 #B`, ayon sa drawing.
+- **Patunay:** `tests/regress/ditl150.js` ALL PASS; `tests/regress/world.js` (bilang ng link, 0 lost).
+- **TO column na may panaklong (world.js):** DITL-03B out 70 "FAB A STOPPED" TO 28A-29, out 71 "FAB B STOPPED" TO "(28A-29)"; DITL-03D out 68 "FAB A STOP COMMAND" TO 28A-21, out 69 "FAB B STOP COMMAND" TO "(28A-21)". Ang row ng instance k ay kumukuha sa output na may "(sheet-row)" sa TO column. 2 link (`WORLD.stat.byTo`).
+- **Relay contact ng DCS output (02-netlist.js):** DITL-21A: OR (RUNNING) -> O.021C "LOR-L1060A" -> relay; NOT -> O.021D "LOS-L1060A" -> relay; ang N.O. contact (dalawang bilog r 1.85, 9 ang pagitan, flat bar sa itaas) sa DC 24V line -> LCP lamp 66 RUNNING / 68 STOPPED. Ang wire ng lamp ay sumasama sa wire ng DCS output arrow sa parehong taas, kaliwa ng DC 24V line. Sinuri ang 108 two-circle contact sa lahat ng sheet: DITL-21A lang ang nagbago (ang slant-bar contact ay limit switch ng SV / MOV, hindi ginalaw).

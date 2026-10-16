@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Logic Sim v2.2.0-beta.5</title><script>/* gunzip of the built-in data, with a second way if the first one fails in the browser */ window.gunz =
+<title>Logic Sim v2.2.0-beta.6</title><script>/* gunzip of the built-in data, with a second way if the first one fails in the browser */ window.gunz =
   async function (bin) {
     try {
       return await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
@@ -1725,6 +1725,37 @@ function netlistCore(sh, strict) {
     CM.forEach(c => {
       if (c.sp === undefined) u(c.Lf, c.Rt);
     });
+  }
+  /* 2.2.0-beta.6: relay contact of a DCS output (DITL-21A rows 66 / 68: OR -> O.021C "LOR-L1060A" -> relay; its normally open contact "o o" (two circles, flat bar) on the DC 24V line lights the LCP lamp RUNNING; NOT -> O.021D "LOS-L1060A" -> lamp STOPPED).
+     The contact closes when the DCS output arrow on the same level, just left of the DC 24V line, is ON: the lamp wire joins that output wire. The DC 24V common (left of the contact) stays apart. Only a contact whose right wire runs to an output cell. */
+  {
+    const cc = (r.ci || []).filter(c => c[2] > 1.2 && c[2] < 2.6),
+      bars = [];
+    (r.ln || []).forEach(q => {
+      if (Math.abs(q[1] - q[3]) < 0.3) bars.push([Math.min(q[0], q[2]), Math.max(q[0], q[2]), q[1]]);
+    });
+    (r.pl || []).forEach(([p]) => {
+      for (let i = 0; i + 1 < p.length; i++)
+        if (Math.abs(p[i][1] - p[i + 1][1]) < 0.3)
+          bars.push([Math.min(p[i][0], p[i + 1][0]), Math.max(p[i][0], p[i + 1][0]), p[i][1]]);
+    });
+    cc.forEach(a =>
+      cc.forEach(b => {
+        const d = b[0] - a[0],
+          y = a[1];
+        if (d < 6 || d > 12 || Math.abs(a[1] - b[1]) > 0.3) return;
+        if (!bars.some(z => z[0] < a[0] + 1.5 && z[1] > b[0] - 1.5 && z[1] - z[0] < d + 4 && Math.abs(z[2] - y) > 2 && Math.abs(z[2] - y) < 5)) return;
+        const Rt = segs.findIndex(q => q.h && Math.abs(q.y1 - y) < 0.6 && Math.abs(q.x1 - (b[0] + b[2])) < 1.2 && q.x2 >= R0 - 8);
+        const Lf = segs.findIndex(q => q.h && Math.abs(q.y1 - y) < 0.6 && Math.abs(q.x2 - (a[0] - a[2])) < 1.2);
+        if (Rt < 0 || Lf < 0) return;
+        const ar = tri
+          .filter(t => t.d === 1 && Math.abs(t.y - y) < 1.2 && t.x < segs[Lf].x1 + 0.5 && segs[Lf].x1 - t.x < 12)
+          .sort((p, q) => q.x - p.x)[0];
+        if (!ar) return;
+        const w = segs.findIndex(q => q.h && Math.abs(q.y1 - ar.by) < 0.6 && Math.abs(q.x2 - ar.bx) < 1.6);
+        if (w >= 0) u(Rt, w);
+      })
+    );
   }
   /* v17: numbered circle connectors (1..14 in a small circle at the end of a wire): the same number on the same sheet = the same wire (DITL-76 timer output M.1237 -> (1) -> MOS gate). A number that appears once goes to another sheet (linking, on hold). */
   const cons = [];
@@ -4418,10 +4449,15 @@ function mvForced(s) {
   return F;
 }
 function grpState(s) {
-  const m = new Map();
+  const m = new Map(),
+    /* one world (2.2.0-beta.6): the master row can be fed by another sheet (FROM column); a reader that has its own FROM link follows that link */
+    W = window.WORLD && WORLD.live && s._win,
+    D = W && WORLD.idx && WORLD.idx.din.get(s);
   ((s.nl && s.nl.grp) || []).forEach(g => {
-    const v = !!s.sig[g.master + ':S'];
-    g.readers.forEach(r => m.set(r.row, r.inv ? !v : v));
+    const v = !!s.sig[g.master + ':S'] || !!(W && s._win.has(g.master));
+    g.readers.forEach(r => {
+      if (!(D && D.has(r.row))) m.set(r.row, r.inv ? !v : v);
+    });
   });
   return m;
 }
@@ -39599,7 +39635,7 @@ function anStep(S, dt) {
           const pi = kp * es + s.I;
           if (pi > hi) s.I -= pi - hi;
           else if (pi < lo) s.I += lo - pi;
-          /* v2.2.0-beta.5: the back-calculation uses the PI part only, so a derivative kick cannot wind the integral up in the wrong direction */ u =
+          /* v2.2.0-beta.6: the back-calculation uses the PI part only, so a derivative kick cannot wind the integral up in the wrong direction */ u =
             Math.max(lo, Math.min(hi, kp * es + s.I + Dt));
           /* dMVH: manipulated output variable change ratio upper limit (% of the MV range per sampling interval DTI, 1 s) */
           if (P.dmvh > 0 && s.inited && dt > 0 && s.out != null && isFinite(s.out)) {
@@ -46075,7 +46111,7 @@ document.head.appendChild(
       c1.className = k;
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
-      c3.textContent = 'v2.2.0-beta.5';
+      c3.textContent = 'v2.2.0-beta.6';
     } catch (e) {}
   };
   upd();
@@ -61920,6 +61956,147 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     }
     return s.nl;
   }
+  /* 2.2.0-beta.6: MACHINES OF A SHARED DRAWING. A DITL drawing says "NOTE: THE DIAGRAM IS THE SAME FOR BURNER B,C,D" (35 sheets)
+     and every row carries the address of each machine ("I.0056/376" = BFWP A / B; "M.0122/222/1622/1722" = burner A ~ D).
+     Machine A is the sheet itself; B / C / D are INSTANCES of it (same logic, own latches, timers, motors, valves). Every
+     reference is connected to the instance of the machine it belongs to (beta.3 ~ 5 left 79 + 48 of them unconnected). */
+  const LET = ['A', 'B', 'C', 'D'];
+  const txtOf = s => {
+    if (s._alltx === undefined)
+      s._alltx = Object.values(s.cells || {})
+        .flat()
+        .map(x => x.t)
+        .concat(((s.tx || []).map ? s.tx : []).map(x => x.t))
+        .join(' \n ');
+    return s._alltx;
+  };
+  /* "I.0056/376" -> [I.0056, I.0376]; "M.0122/222/1622/1722" -> [M.0122, M.0222, M.1622, M.1722]; "M.0470/480/ M.0490" -> 3 */
+  const LRX = /\b([IMOB])\.([0-9A-F]{4})((?:\s*\/\s*(?:[IMOB]\.)?[0-9A-F]{3,4})+)/i;
+  const addrList = t => {
+    const m = LRX.exec(String(t || ''));
+    if (!m) {
+      const one = /\b([IMOB])\.([0-9A-F]{4})\b/i.exec(String(t || ''));
+      return one ? [one[1].toUpperCase() + '.' + one[2].toUpperCase()] : [];
+    }
+    const p = m[1].toUpperCase() + '.',
+      b = m[2].toUpperCase(),
+      o = [p + b];
+    for (const q of m[3].split('/').map(x => x.replace(/[IMOB]\./i, '').trim().toUpperCase()).filter(Boolean))
+      o.push(p + (q.length >= 4 ? q : b.slice(0, 4 - q.length) + q));
+    return o;
+  };
+  const cellTxt = (s, i, k) => (s.cells[i + ':' + k] || []).map(x => x.t).join(' ');
+  /* the machines of a sheet: the note of the drawing, and the longest address list */
+  function machinesOf(s) {
+    if (s._mach !== undefined) return s._mach;
+    const t = txtOf(s);
+    let n = 1;
+    if (/DIAGRAM IS (?:THE )?SAME|SAME\s+FOR\b|^\s*FOR\s+.*\b[B-D]\b/im.test(t)) {
+      const nt = /(?:SAME\s+)?FOR\s+([^\n]{0,80})/i.exec(t.slice(t.search(/SAME|FOR\s+[A-Z]/i)));
+      const lets = new Set();
+      if (nt) for (const m of nt[1].matchAll(/\b([B-D])\b/g)) lets.add(m[1]);
+      n = Math.max(n, 1 + lets.size);
+      let mx = 1;
+      for (const k in s.cells) mx = Math.max(mx, addrList(cellTxt(s, +k.split(':')[0], k.split(':')[1])).length);
+      for (const x of (s.tx || []).map ? s.tx : []) mx = Math.max(mx, addrList(x.t).length);
+      n = Math.max(n, Math.min(4, mx));
+    }
+    return (s._mach = n);
+  }
+  /* the machine letter of a text: the LAST machine named ("BFWP A AUX. LOP B TRIP" = B) */
+  const MRX =
+    /\b(?:BFWP|FAB|BURNER|BNR|FEEDER|PUMP|BLOWER|COOLER|IGNITER|COMPRESSOR|DRYER|IWP|MWP|DOP|SWBP|SWP|LOP|CWP|CP|VALVE|SILO)\s*-?\(?([A-D])\)?(?![A-Z0-9])/gi;
+  const machOfDitl = t => {
+    const all = [...String(t || '').matchAll(MRX)];
+    return all.length ? all[all.length - 1][1].toUpperCase() : null;
+  };
+  /* the equipment word of the last machine named ("MWP B RUNNING" -> MWP) */
+  const machWord = t => {
+    const all = [...String(t || '').matchAll(MRX)];
+    return all.length ? all[all.length - 1][0].replace(/\s*-?\(?[A-D]\)?$/i, '').trim().toUpperCase() : null;
+  };
+  /* the equipment of a drawing, from its title ("MAKE-UP WATER PUMP A" -> PUMP, "COAL FEEDER A START/STOP" -> FEEDER) */
+  /* one kind of equipment, several words on the drawings */
+  const GROUP = w => {
+    w = String(w || '').toUpperCase();
+    if (/^(PUMP|BFWP|MWP|IWP|DOP|SWP|SWBP|CWP|CP|LOP)$/.test(w)) return 'PUMP';
+    if (/^(BLOWER|FAB)$/.test(w)) return 'BLOWER';
+    if (/^(BURNER|BNR|IGNITER)$/.test(w)) return 'BURNER';
+    if (/^(FEEDER|SILO)$/.test(w)) return 'FEEDER';
+    if (/^(COOLER|COLLER)$/.test(w)) return 'COOLER';
+    return w;
+  };
+  const famOf = s => {
+    if (s._fam === undefined) {
+      let f = machWord(s.title || '');
+      if (!f) {
+        /* no machine letter in the title (DITL-07 PERMISSION TO BURNER (1)): the note "THE DIAGRAM IS THE SAME FOR BURNER B,C,D" */
+        const t = txtOf(s),
+          m = /FOR\s+([A-Z .]+?)\s*-?\s*[B-D]\b/i.exec(t.slice(Math.max(0, t.search(/SAME|FOR\s+[A-Z]/i))));
+        if (m) f = (m[1].trim().split(/\s+/).pop() || '').replace(/\.$/, '');
+      }
+      s._fam = f ? GROUP(f) : null;
+    }
+    return s._fam;
+  };
+  /* a row names the machine of THIS drawing family (its letter turns with the instance) or an absolute one (BURNER B on the coal
+     feeder drawing DITL-19 is burner B for every feeder) */
+  const relative = (sb, rowT) => {
+    const w = machWord(rowT),
+      f = famOf(sb);
+    if (!w || !f) return false;
+    return GROUP(w) === f;
+  };
+  const machOfDesc = t => {
+    const m =
+      /(?:^|[\s(])([A-D])-(?=[A-Z])/.exec(t || '') ||
+      /-([A-D])\d\b/.exec(t || '') ||
+      /\b(?:BLOWER|PUMP|FEEDER|BFWP|BURNER|BNR|FAN)-([A-D])\b/i.exec(t || '');
+    return m ? m[1].toUpperCase() : null;
+  };
+  /* sister sheets of another machine: DITL-12 BURNER A LIGHT OFF SEQUENCE (1) -> DITL-12A / 12B / 12C (contents DITL-0A ~ 0D) */
+  function sister(base, L) {
+    if (L === 'A') return base;
+    const ti = String(base.title || '').toUpperCase();
+    const m = /\b(BURNER|PUMP|FEEDER|COOLER|BLOWER|FAN)\s+A\b/.exec(ti);
+    if (!m) return null;
+    const want = ti.replace(m[0], m[1] + ' ' + L);
+    return S.sheets.find(x => String(x.title || '').toUpperCase() === want) || null;
+  }
+  /* instance k of a base sheet (k = 0 is the sheet itself) */
+  function makeInst(base, k) {
+    const o = Object.assign(Object.create(Object.getPrototypeOf(base)), base, {
+      name: base.name + ' #' + LET[k],
+      sig: {},
+      usw: {},
+      av: null,
+      av150: null,
+      _win: null,
+      nl: null,
+      uvDone: true,
+      _inst: { base, k, n: machinesOf(base) }
+    });
+    o.nl = netlist(o);
+    return o;
+  }
+  /* the text of a row as it reads for machine instance k (the drawing is written for machine A: "BFWP A RUNNING" is "BFWP B
+     RUNNING" in instance B, "BFWP B" the other pump is A); the k-th address of the row */
+  W.remap = (s, t) => {
+    const I = s && s._inst;
+    if (!I || !I.k) return t;
+    return String(t || '').replace(MRX, (m, L) => {
+      if (!relative(I.base, m)) return m;
+      const u = L.toUpperCase(),
+        to = LET[(LET.indexOf(u) + I.k) % Math.max(I.n, LET.indexOf(u) + 1)];
+      return m.replace(/([A-D])(\)?)$/i, to + '$2');
+    });
+  };
+  W.addrK = (s, i) => {
+    const I = s && s._inst,
+      b = I ? I.base : s,
+      la = addrList(cellTxt(b, i, 'T') || cellTxt(b, i, 'S'));
+    return la[I ? I.k : 0] || la[0] || null;
+  };
   /* index of every link, built once when the world is turned on */
   function build() {
     const t0 = performance.now();
@@ -61928,13 +62105,37 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       const c = codeOf(s.name);
       if (c && !W._byCode[c]) W._byCode[c] = s;
     }
-    const din = new Map(), // DITL sheet -> Map(row -> [sources])
+    /* the instances (kept when the world is built again: their state stays) */
+    const old = new Map((W.inst || []).map(x => [x.name, x]));
+    W.inst = [];
+    W.instOf = new Map();
+    for (const s of S.sheets) {
+      nlOf(s);
+      const n = machinesOf(s);
+      s._inst = { base: s, k: 0, n };
+      const L = [s];
+      for (let k = 1; k < n; k++) {
+        const nm = s.name + ' #' + LET[k];
+        const x = old.get(nm) || makeInst(s, k);
+        W.inst.push(x);
+        L.push(x);
+      }
+      W.instOf.set(s, L);
+    }
+    const inst = (base, k) => {
+      const L = W.instOf.get(base);
+      return L ? L[k] || null : null;
+    };
+    const din = new Map(), // DITL sheet (or instance) -> Map(row -> [sources])
       ain = [], // ABC inputs fed by a DITL output
       logic = [], // FROM DITL text on a net that the ABC logic computes
       lost = [],
-      otherAbc = [] /* ABC inputs of machine B / C on a drawing simulated for machine A */,
       digFix = [] /* TO DITL by an analog wire: the comparator output next to it */,
-      notLimit = []; /* 2.2.0-beta.3: an analog net next to a TO DITL of a limit row (ABC-001C AI0131 -> 40-09 MAIN STEAM PRESSURE LOW LOW) */
+      byAddr = [],
+      byLetter = [],
+      bySister = [],
+      byTo = [],
+      noMach = [];
     const addIn = (s, row, src) => {
       if (!din.has(s)) din.set(s, new Map());
       const m = din.get(s);
@@ -61947,86 +62148,81 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       const r = d.rows.findIndex(x => +x.n === nn - 50);
       return r >= 0 ? { d, row: r } : null;
     };
-    const machOfDesc = t => {
-        const m =
-          /(?:^|[\s(])([A-D])-(?=[A-Z])/.exec(t || '') ||
-          /-([A-D])\d\b/.exec(t || '') ||
-          /\b(?:BLOWER|PUMP|FEEDER|BFWP|BURNER|BNR|FAN)-([A-D])\b/i.exec(t || '');
-        return m ? m[1].toUpperCase() : null;
-      },
-      machOfDitl = t => {
-        const m = /\b(?:BFWP|FAB|BURNER|BNR|FEEDER|PUMP|BLOWER|COOLER|IGNITER|COMPRESSOR|DRYER|IWP|MWP|DOP|SWBP|SWP|LOP|CWP|CP)\s*-?\(?([A-D])\)?\b/i.exec(t || '');
-        return m ? m[1].toUpperCase() : null;
-      };
-    /* machine letters of a text: "BURNER B" -> [B]; "B~D" / "A~C" -> the range */
-    const machs = t => {
-      const r = /\b([A-D])\s*~\s*([A-D])\b/i.exec(t || '');
-      if (r) {
-        const o = [];
-        for (let k = r[1].toUpperCase().charCodeAt(0); k <= r[2].toUpperCase().charCodeAt(0); k++) o.push(String.fromCharCode(k));
-        return o;
-      }
-      /* the LAST machine named is the one of the signal ("BFWP A AUX. LOP B TRIP" = LOP B) */
-      const all = [
-        ...String(t || '').matchAll(
-          /\b(?:BFWP|FAB|BURNER|BNR|FEEDER|PUMP|BLOWER|COOLER|IGNITER|COMPRESSOR|DRYER|IWP|MWP|DOP|SWBP|SWP|LOP|CWP|CP|VALVE)\s*-?\(?([A-D])\)?\b/gi
-        )
-      ];
-      return all.length ? [all[all.length - 1][1].toUpperCase()] : [];
-    };
-    /* a sheet whose drawing says "THE DIAGRAM IS THE SAME FOR ... B/C/D" (DITL-117, DITL-24 ...) is drawn for machine A */
-    const sameFor = d => {
-      if (d._same === undefined) {
-        const t = Object.values(d.cells || {})
-          .flat()
-          .map(x => x.t)
-          .concat(((d.tx || []).map ? d.tx : []).map(x => x.t))
-          .join(' ');
-        d._same = /DIAGRAM IS (?:THE )?SAME FOR/i.test(t);
-      }
-      return d._same;
-    };
-    const otherMach = (rowTxt, outTxt, od) => {
-      const a = machs(rowTxt.replace(/\(\s*[0-9]{2,3}[A-Z]?\s*-\s*\d{1,2}\s*\)/g, ' ')),
-        b0 = machs(outTxt),
-        b = b0.length ? b0 : od && sameFor(od) ? ['A'] : [];
-      return a.length && b.length && !a.some(x => b.includes(x));
-    };
-    let dd = 0,
-      other = 0;
-    for (const s of S.sheets) {
-      nlOf(s);
-      s.rows.forEach((r, i) => {
-        const c = s.cells[i + ':F'];
-        if (!c) return;
-        for (const f of refsOf(c.map(x => x.t).join(' '))) {
-          const o = outRow(f.code, f.nn);
-          /* 2.2.0-beta.3: "(19-57)" in brackets = the same item of the OTHER machine drawn on this sheet (DITL-19 is drawn for coal
-             feeder A, B and C use it with their own addresses "I.0130/450/490"); only machine A is simulated, so it is not linked */
-          /* 2.2.0-beta.5: only when the row and the output name DIFFERENT machines (DITL-24 row 26 "PAF LUB. OIL PUMP B
-             STOPPED (24-61)" -> 24-61 "PUMP A STOPPED"). The same machine or a range that holds it is linked (DITL-21E row 2
-             "SCREW COOLER D START COMMAND (21E-70) M.2158" -> 21E-70 "START COMMAND B~D" M.2148/50/58). beta.3 skipped every
-             bracket */
-          if (
-            o &&
-            f.other &&
-            otherMach(
-              ['S', 'T'].map(k => (s.cells[i + ':' + k] || []).map(x => x.t).join(' ')).join(' '),
-              (o.d.cells[o.row + ':RS'] || []).map(x => x.t).join(' '),
-              o.d
-            )
-          ) {
-            other++;
-            continue;
-          }
-          if (o) {
-            /* also the same sheet: an output that comes back as an input of the sheet (DITL-26A row 1 PAF TRIP = 26A-66) */
-            addIn(s, i, { k: 'd', d: o.d, row: o.row, ref: f.code + '-' + f.nn });
-            dd++;
+    /* the instance (or sister sheet) that a row of machine-instance k of sheet sb gives for the output (d, orow) */
+    const target = (sb, k, i, d, orow, other) => {
+      const nd = machinesOf(d),
+        rowT = cellTxt(sb, i, 'S') + ' ' + cellTxt(sb, i, 'T'),
+        n = machinesOf(sb);
+      if (nd > 1) {
+        /* 1. the address of this machine on the row = the address of one machine on the output */
+        const la = addrList(cellTxt(sb, i, 'T') || cellTxt(sb, i, 'S'));
+        if (la.length > 1 && la[k]) {
+          const lo = addrList(cellTxt(d, orow, 'RS') + ' ' + cellTxt(d, orow, 'RT'));
+          const j = lo.indexOf(la[k]);
+          if (j >= 0 && inst(d, j)) {
+            byAddr.push(1);
+            return inst(d, j);
           }
         }
-      });
-    }
+        /* 2. the machine named on the row (the drawing is written from machine A: in instance k the names turn by k) */
+        const rt = rowT.replace(/\(\s*[0-9]{2,3}[A-Z]?\s*-\s*\d{1,2}\s*\)/g, ' '),
+          Lr = machOfDitl(rt);
+        if (Lr) {
+          const j = relative(sb, rt) ? (LET.indexOf(Lr) + k) % Math.max(n, nd, LET.indexOf(Lr) + 1) : LET.indexOf(Lr);
+          if (inst(d, j)) {
+            byLetter.push(1);
+            return inst(d, j);
+          }
+        }
+        /* 3. the other machine of a pair, or the same instance */
+        if (other && nd === 2) return inst(d, 1 - Math.min(k, 1));
+        return inst(d, k < nd ? k : 0);
+      }
+      /* one drawing per machine (DITL-12 / 12A / 12B / 12C): the sister sheet of the machine named on the row */
+      const rt = rowT.replace(/\(\s*[0-9]{2,3}[A-Z]?\s*-\s*\d{1,2}\s*\)/g, ' '),
+        Lr = machOfDitl(rt);
+      if (Lr && (Lr !== 'A' || k > 0)) {
+        const L2 = relative(sb, rt) ? LET[(LET.indexOf(Lr) + k) % Math.max(n, LET.indexOf(Lr) + 1)] : Lr;
+        const ss = sister(d, L2);
+        if (ss) {
+          bySister.push(1);
+          return ss;
+        }
+        if (other) noMach.push(sb.name + ' r' + (i + 1) + ' ' + Lr + ' -> ' + d.name);
+      }
+      return d;
+    };
+    let dd = 0;
+    for (const sb of S.sheets)
+      W.instOf.get(sb).forEach((s, k) =>
+        sb.rows.forEach((r, i) => {
+          const c = sb.cells[i + ':F'];
+          if (!c) return;
+          for (const f of refsOf(c.map(x => x.t).join(' '))) {
+            const o = outRow(f.code, f.nn);
+            if (!o) continue;
+            /* 2.2.0-beta.6: machine k of this row on a drawing made for one machine: the output whose TO column names this row
+               in brackets is the one of the other machine (DITL-03B out 70 FAB A STOPPED TO 28A-29, out 71 FAB B STOPPED TO
+               "(28A-29)"): FAB B of DITL-28A #B row 29 reads out 71, not out 70 */
+            if (k > 0 && machinesOf(o.d) < 2) {
+              const me = codeOf(sb.name) + '-' + String(+sb.rows[i].n).padStart(2, '0'),
+                alt = o.d.rows
+                  .map((_, j) => j)
+                  .filter(j => j !== o.row && refsOf(cellTxt(o.d, j, 'RT')).some(g => g.other && g.code + '-' + String(g.nn).padStart(2, '0') === me));
+              if (alt[k - 1] != null) {
+                byTo.push(sb.name + ' #' + LET[k] + ' r' + (i + 1) + ' -> ' + o.d.name + ' out ' + (+o.d.rows[alt[k - 1]].n + 50));
+                addIn(s, i, { k: 'd', d: o.d, row: alt[k - 1], ref: f.code + '-' + (+o.d.rows[alt[k - 1]].n + 50) });
+                dd++;
+                continue;
+              }
+            }
+            /* also the same sheet: an output that comes back as an input of the sheet (DITL-26A row 1 PAF TRIP = 26A-66) */
+            const d = target(sb, k, i, o.d, o.row, f.other);
+            addIn(s, i, { k: 'd', d, row: o.row, ref: f.code + '-' + f.nn });
+            dd++;
+          }
+        })
+      );
     let fa = 0,
       ta = 0;
     const wsh = new Set();
@@ -62039,23 +62235,34 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       } catch (e) {
         continue;
       }
+      /* the machine of an ABC signal: its memory list description ("B-BFWP RUNNING (BC FROM S3)", M.3344) */
+      const machAbc = n => machOfDesc(AN.descOf ? AN.descOf(sh, AN.nm(sh.S, n)) : '');
+      const pick = (d, L, adr, row, isTo) => {
+        const nd = machinesOf(d);
+        if (nd > 1) {
+          /* the address of the ABC signal is one of the machine addresses of the row (ABC-003B M.3125 -> DITL-07 row 4
+             "M.3124/3125/3144/3145" = burner B; ABC-011 I.0091 -> DITL-32 73 "I.0011/91" = valve (2)) */
+          if (adr) {
+            const la = addrList(
+              isTo ? cellTxt(d, row, 'T') || cellTxt(d, row, 'S') : cellTxt(d, row, 'RS') + ' ' + cellTxt(d, row, 'RT')
+            );
+            const j = la.indexOf(adr);
+            if (j >= 0 && inst(d, j)) return inst(d, j);
+          }
+          if (L && inst(d, LET.indexOf(L))) return inst(d, LET.indexOf(L));
+          return d;
+        }
+        if (L && L !== 'A') return sister(d, L) || d;
+        return d;
+      };
       for (const [n, refs] of ix.from) {
         let ok = null;
         for (const r of refs)
           for (const f of refsOf(r)) {
-            const o = !ok && !f.other && outRow(f.code, f.nn);
+            const o = !ok && outRow(f.code, f.nn);
             if (o) ok = Object.assign(o, { ref: f.code + '-' + f.nn });
           }
-        /* 2.2.0-beta.3: a DITL drawing used for several machines (DITL-23A: BFWP A, and B with the addresses after the "/") is
-           simulated for machine A only: the ABC input of machine B / C (memory list: "B-BFWP RUNNING", M.3344) is not linked */
-        if (ok) {
-          const ma = machOfDesc(AN.descOf ? AN.descOf(sh, AN.nm(sh.S, n)) : ''),
-            md = machOfDitl((ok.d.cells[ok.row + ':RS'] || []).map(x => x.t).join(' '));
-          if (ma && md && ma !== md) {
-            otherAbc.push(sh.name + ' ' + AN.nm(sh.S, n) + ' (' + ok.ref + ')');
-            continue;
-          }
-        }
+        if (ok) ok.d = pick(ok.d, machAbc(n), String(AN.nm(sh.S, n) || '').replace(/^S\d\s*/, '').trim(), ok.row, false);
         /* only a real input of the sheet; a net that the ABC logic computes (ABC-004A M.3410 = AND of the two valve CLOSE) keeps its logic */
         if (ok && sh.S.ext.includes(n)) {
           ain.push({ sh, n, d: ok.d, row: ok.row, ref: ok.ref });
@@ -62064,45 +62271,55 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
         else lost.push(sh.name + ' FROM ' + refs.join('/'));
       }
       for (const [n, refs] of ix.to) {
-        let hit = false,
-          lim = false;
+        let hit = false;
         for (const r of refs)
           for (const f of refsOf(r)) {
-            const d = dSheet(f.code);
-            if (!d || f.nn > 50) continue;
-            const row = d.rows.findIndex(x => +x.n === f.nn);
+            const d0 = dSheet(f.code);
+            if (!d0 || f.nn > 50) continue;
+            const row = d0.rows.findIndex(x => +x.n === f.nn);
             if (row < 0) continue;
-            /* 2.2.0-beta.3/4: a measurement (analog net) is not a limit. "TO DITL 40-09" (MAIN STEAM PRESSURE LOW LOW) sits by
-               the main steam pressure AI0131 of ABC-001C: the limit is the output of the comparator next to it (M.310D,
-               AI0131 < 72.9 kg/cm2). Before: the analog value (122 kg/cm2) read as 1 */
+            /* 2.2.0-beta.4: a TO DITL by an analog wire, to a limit row: the comparator output next to it ("TO DITL 40-09"
+               MAIN STEAM PRESSURE LOW LOW by AI0131 of ABC-001C = M.310D, AI0131 < 72.9 kg/cm2) */
             const net = sh.S.nets && sh.S.nets[n];
             let src = n;
             if (
               net &&
               !net.dig &&
-              /\bLOW\b|\bHIGH\b|H\.\s?H\.|L\.\s?L\.|[<>]/i.test((d.cells[row + ':S'] || []).map(x => x.t).join(' '))
+              /\bLOW\b|\bHIGH\b|H\.\s?H\.|L\.\s?L\.|[<>]/i.test((d0.cells[row + ':S'] || []).map(x => x.t).join(' '))
             ) {
               const alt = ix.toDig && ix.toDig.get(r + '@' + n);
-              if (alt == null) {
-                lim = true;
-                continue;
-              }
-              src = alt;
-              digFix.push(sh.name + ' ' + AN.nm(sh.S, n) + ' -> ' + AN.nm(sh.S, alt) + ' (' + r + ')');
+              if (alt != null) {
+                src = alt;
+                digFix.push(sh.name + ' ' + AN.nm(sh.S, n) + ' -> ' + AN.nm(sh.S, alt) + ' (' + r + ')');
+              } else lost.push(sh.name + ' ' + AN.nm(sh.S, n) + ' TO ' + r + ' (analog wire, no comparator output beside it)');
             }
+            const d = pick(d0, machAbc(src), String(AN.nm(sh.S, src) || '').trim(), row, true);
             addIn(d, row, { k: 'a', sh, n: src, ref: sh.name });
             hit = true;
           }
         if (hit) {
           ta++;
           wsh.add(sh.name);
-        } else if (lim) notLimit.push(sh.name + ' ' + AN.nm(sh.S, n) + ' TO ' + refs.join('/'));
-        else lost.push(sh.name + ' TO ' + refs.join('/'));
+        } else lost.push(sh.name + ' TO ' + refs.join('/'));
       }
     }
     W.idx = { din, ain };
     W._nA = AN.sheets.length;
-    W.stat = { ditlDitl: dd, other, otherAbc, notLimit, digFix, fromDitl: fa, toDitl: ta, logic, lost, ms: Math.round(performance.now() - t0) };
+    W.stat = {
+      ditlDitl: dd,
+      inst: W.inst.length,
+      byAddr: byAddr.length,
+      byLetter: byLetter.length,
+      bySister: bySister.length,
+      byTo,
+      noMach,
+      digFix,
+      fromDitl: fa,
+      toDitl: ta,
+      logic,
+      lost,
+      ms: Math.round(performance.now() - t0)
+    };
     AN.worldSheets = [...wsh];
   }
   const XL = new WeakMap();
@@ -62116,8 +62333,9 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       { din, ain } = W.idx,
       prev = W.out,
       out = {};
-    /* 1. inputs of every DITL sheet from the last scan (one scan delay, like the DCS) */
-    for (const s of S.sheets) {
+    const ALL = S.sheets.concat(W.inst || []);
+    /* 1. inputs of every DITL sheet (and machine instance) from the last scan (one scan delay, like the DCS) */
+    for (const s of ALL) {
       const m = din.get(s);
       if (!m) {
         s._win = null;
@@ -62141,7 +62359,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     /* 2. every DITL sheet: logic, timers, MOV, motors */
     const c = cur();
     let chCur = false;
-    for (const s of S.sheets) {
+    for (const s of ALL) {
       if (!s.nl) continue;
       s.nl.avk = avOf(s);
       let R = simSheet(s),
@@ -62179,7 +62397,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   }
   function off() {
     W.live = false;
-    for (const s of S.sheets) s._win = null;
+    for (const s of S.sheets.concat(W.inst || [])) s._win = null;
     if (W.idx)
       for (const a of W.idx.ain) {
         const AS = a.sh.S;
@@ -62334,19 +62552,31 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   ];
   /* valves and dampers at 150 MW: open = 1 (OPENED 1, CLOSED 0), shut = 0, null = modulating (neither end switch made) */
   const VALVES = [
+    /* 2.2.0-beta.6: drains first (29.PNG MVAS1392 / 1393 / 1397 0.0 % TQ: the gland steam drains are shut too; before, the
+       GLAND rule below read "GLAND STM DRAIN SEPARATOR DRAIN MOV" as open) */
+    [/DRAIN (MOV|VALVE|VLV)|DRN (MOV|VLV)|WARMING LINE DRN|LINE DRAIN|\bDRAIN\b.*\bMOV\b/, 0, '29.PNG / 4.PNG: unit on load, the drains are shut (MVAS1392 / 1393 / 1397 0.0 % TQ)'],
+    [/GLAND.*DESUPERHEATER|DESUPERHEATER.*GLAND/, 0, '29.PNG XVCD1125 condensate to gland steam desuperheater: closed'],
+    [/(FAB|BLOWER)-?\s*B\s*OUTLET/, 0, '9.png XVFA1055B3 FA blower-B (standby) discharge: closed (green)'],
+    [/LP HTR.*BYPASS|LPH.*BYPASS/, 0, '02.png MVCD1003 #1 LPH bypass 0.0 % TQ'],
+    [/LP HTR.*(INLET|OUTLET)|LPH.*(INLET|OUTLET)/, 1, '02.png MVCD1001 / MVCD1002 #1 LPH inlet 99.6 % / outlet 99.4 %'],
+    [/START-UP EJECTOR/, 0, '29.PNG MVAS1395 aux steam to start-up ejector 0.0 %'],
+    [/STEAM JET AIR EJECTOR/, 1, '29.PNG MVAS1396 aux steam to steam jet air ejectors 100.6 %'],
+    [/VACUUM\s*BREAKER/, 0, '4.PNG condenser 0.057 kg/cm2A: vacuum held, the vacuum breaker is shut'],
     [/DISCHARGE VALVE/, 1, '11.png: coal feeders A / B / C running, outlet discharge valve open'],
     [/SILO.*OUTLET VALVE/, 1, '11.png: coal silos feed the running feeders'],
     [/\bOIL\b.*(VALVE|\bFV\b|SOV)|IGNITER.*VALVE/, 0, '6.PNG: oil burners out of service, supply oil valves closed'],
     [/BYPASS.*DESUPERHEATING/, 0, '5.PNG: HP / LP bypass shut on load, their spray block valves shut'],
     [/EMERGENCY DRAIN/, 0, 'unit on load: emergency drains shut'],
     [/SPRAY WATER.*(SOV|SHUT|BLOCK)|DESUPERHEATER SPRAY/, 1, '03.png / 4.PNG: SH and RH spray in service (TCV 69.7 %, 66 %)'],
-    [/TO SILENCE|SILENCER/, 0, 'FA blower A in service: the surge valve to the silencer is shut'],
+    [/(FAB|BLOWER)-?\s*B\b.*SILENCE|SILENCE.*(FAB|BLOWER)-?\s*B\b/, 1, '9.png XVFA1055B2 FA blower-B (standby) to silencer: open (red)'],
+    [/TO SILENCE|SILENCER/, 0, '9.png XVFA1055A2 FA blower-A (running) to silencer: closed (green); 4.PNG main steam / hot reheat to silencer shut'],
     [/FAB\s*A\s*OUTLET|BLOWER-?A OUTLET/, 1, 'FA blower A in service: outlet valve open'],
     [/INLET VANE|BIAS DAMPER|\bVANE\b/, null, '7.PNG: fan vanes and the bias dampers modulate'],
     [/EXTRACTION STM NO\.?\s*\d\s*SHUT-?OFF/, 1, '4.PNG: unit on load, the heaters are in service (extraction steam open)'],
     [/MAIN STM TO AUX|AUX STEAM HEADER|GLAND/, 1, 'unit on load: steam to the auxiliary and gland headers'],
-    [/DRAIN (MOV|VALVE|VLV)|DRN (MOV|VLV)|WARMING LINE DRN/, 0, 'unit on load: the drains are shut'],
-    [/BYPASS.*(VALVE|VLV)/, 0, '5.PNG: HP / LP bypass shut on load']
+    [/BYPASS.*(VALVE|VLV)/, 0, '5.PNG: HP / LP bypass shut on load'],
+    [/POLISHER.*(INLET|OUTLET).*MOV/, 0, '28.png MVCD1007 / MVCD1008 0.0 %: condensate polisher bypassed (FCVCD1121 100.6 %)'],
+    [/MAKE-UP WTR TO COND.*SHUT-?OFF/, 0, '28.png MVMU1001 make-up to condenser 0.0 %']
   ];
   /* analog inputs of the DITL comparators at 150 MW (transmitter tag in the row text -> value of the snapshot) */
   const ANALOG = [
@@ -62373,13 +62603,25 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   function rowVal(raw) {
     const t = String(raw || '')
       .toUpperCase()
+      /* 2.2.0-beta.6: the address / tag written inside the service text ("EXTRACTION STM NO.1 I.0010 SHUT-OFF MOV FULLY OPEN")
+         is not part of the words of the rules */
+      .replace(/(^|\s)-?[IOMB]\.[0-9A-F]{4}(\/[0-9A-F]{3,4})*\b/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
     if (!t) return null;
+    /* 37.PNG GENERATOR: synchronized, 52L1 / DS / 52G1 / field CB closed (red), NORMAL OPERATION MODE (not house operation) */
+    if (/HOUSE OPERATION/.test(t)) return 0;
+    if (/\b52G1?\b|\bGCB\b/.test(t) && /\bON\b|CLOSED/.test(t)) return 1;
+    if (/\b52G1?\b|\bGCB\b/.test(t) && /\bOFF\b|OPEN/.test(t)) return 0;
     /* a compound condition ("... NOT RUNNING AND SPEED L/LL") is left to the logic */
     if (/\bNOT\b/.test(t) && /\bAND\b/.test(t)) return null;
     if (/\bNOT\b/.test(t)) {
       const b = rowVal(t.replace(/\bNOT\b/, ' '));
+      return b == null ? null : b ? 0 : 1;
+    }
+    /* "NO TRIP PRESENT" (DITL-05 78), "NO BOILER TRIP COMMAND": the opposite of the rest ("NO." is a number) */
+    if (/(^|\s)NO\s+[A-Z]/.test(t)) {
+      const b = rowVal(t.replace(/(^|\s)NO\s+/, ' '));
       return b == null ? null : b ? 0 : 1;
     }
     /* a normally closed contact is closed (1) while nobody presses it: BOILER EMERGENCY TRIP P.B.(1) (N.C.) */
@@ -62390,8 +62632,11 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
        computed by the drawing from the analog position (DITL-03H HP BYPASS ... POS. < 10 %) */
     if (/PURGE/.test(t)) return null;
     if (/\bPOS(\.|ITION)/.test(t) && /[<>]/.test(t)) return null;
-    if (/P\.\s*B\.?|PUSH ?BUTTON|\bCOMMAND\b|\bRESET\b|ACKNOW|LAMP TEST|\bTEST\b|AUTO START|STARTING|STOPPING/.test(t))
+    if (/P\.\s*B\.?|\bPB\b|PUSH ?BUTTON|\bCOMMAND\b|\bRESET\b|ACKNOW|LAMP TEST|\bTEST\b|AUTO START|STARTING|STOPPING/.test(t))
       return 0;
+    /* HI-HI / LO-LO level switches: not made on load (the MOV TORQUE switch is left to the MOV model: a drain MOV shut on
+       its seat shows TQ on the screens, 28.png MVCD1007 "R TQ") */
+    if (/HI-HI|LO-LO/.test(t)) return 0;
     if (
       /TRIP|FAULT|FAIL|ABNORMAL|OVERLOAD|ALARM|UNSUCCESSFUL|PLUG|LEAK|\bFIRE\b(?! WATER| PUMP| FIGHTING)|\bH\.?\s?H\.?\b|\bL\.?\s?L\.?\b|\bHIGH\b|\bLOW\b|\bL\.(?=\s|$)|\bH\.(?=\s|$)|[<>]|VIBRATION|EXCESS|OVER ?SPEED|SHUTDOWN MODE|MFT/.test(
         t
@@ -62417,7 +62662,13 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     if (/AVAILABLE|NORMAL|PERMISSI|PROVEN|CONFIRM|ESTABLISH/.test(t)) return 1;
     return null;
   }
+  /* every DITL sheet and every machine instance of a shared drawing (src/world/world.js) */
+  const ALL = () => S.sheets.concat(window.WORLD.inst || []);
   function textOf(s, i, k) {
+    const t0 = textOf0(s, i, k);
+    return window.WORLD && WORLD.remap ? WORLD.remap(s, t0) : t0;
+  }
+  function textOf0(s, i, k) {
     const t = (s.cells[i + ':' + k] || []).map(x => x.t).join(' ');
     /* old template (DITL-51 ~ 121): the service text of an input row is in the TAG column (the SERVICE cell may hold only a
        timer name, DITL-99 "TR25") */
@@ -62442,7 +62693,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   /* 1. the field state */
   D.setInputs = () => {
     const rep = { set: 0, zero: 0, none: [] };
-    for (const s of S.sheets) {
+    for (const s of ALL()) {
       if (!s.nl || s.nl.v !== 10) {
         s.nl = netlist(s);
         s.uvDone = false;
@@ -62459,7 +62710,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       for (const i of plantRows(s)) {
         /* a bit that the 150 MW load of the ABC takes from a snapshot (hmi-op.js AN_HMI_DI, e.g. I.0418 ICV TO CV TRANSFER
            COMPLETE = 1 on 4.PNG) is the same address here */
-        const ad = (textOf(s, i, 'S').match(/\b[IM]\.[0-9A-F]{4}\b/) || [])[0],
+        const ad = WORLD.addrK ? WORLD.addrK(s, i) : (textOf(s, i, 'S').match(/\b[IM]\.[0-9A-F]{4}\b/) || [])[0],
           hd = ad && AN.hmiDI ? AN.hmiDI[ad] : null,
           v = hd ? hd[0] : rowVal(textOf(s, i, 'S'));
         if (v) {
@@ -62479,7 +62730,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   D.clear = () => {
     MST = {};
     MS = {};
-    for (const x of S.sheets) {
+    for (const x of ALL()) {
       x.sig = {};
       x.usw = {};
       x.av150 = null;
@@ -62499,6 +62750,11 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   const outVal = raw => {
     const t = String(raw || '').toUpperCase();
     if (/P\.\s*B\.?|PUSH ?BUTTON|\bCOMMAND\b|\bRESET\b|\bSTART\b|\bSTOP\b(?!PED)/.test(t)) return null;
+    /* a READY output is a start permissive that the drawing computes from its inputs (DITL-28B 77 FAB FCD READY = FCD
+       demand at 25 % AND silencer SOV opened): not a state to wish */
+    if (/READY/.test(t)) return null;
+    /* the torque switch of a MOV is the MOV model's (a valve shut on its seat shows TQ) */
+    if (/\bTORQUE\b/.test(t)) return null;
     return rowVal(t);
   };
   /* the wanted outputs: the text of the output rows, and the DITL outputs that the ABC reads (their value after the 150 MW
@@ -62514,8 +62770,14 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
         if (m.has(k) && m.get(k) !== v) bad.add(s.name + '#' + k);
         m.set(k, v);
       };
-    for (const s of S.sheets)
+    for (const s of ALL())
       for (const o of s.nl.outs) {
+        /* an output made by a PULSE timer is a momentary command (DITL-21C 57 / 59, 21D 59 "... NOT USED AUTO SEQUENCE"):
+           0 between the pulses, not a state */
+        if (s.nl.gates.some(g => g.t === 'TMR' && (g.out || []).includes(o.n) && g.tm && /PULSE/.test(g.tm.lab || ''))) continue;
+        /* an output to another system's PLC is a command / hand-shake of the drawing (DITL-65 63 "OUTLET MOV FULLY OPEN" =
+           CONDENSATE PUMP A OR B RUNNING -> DOR-CD1008 O.0451 -> WATER TREATMENT SYSTEM), not the state its text names */
+        if (/\bPLC\b/.test(textOf(s, o.row, 'RL'))) continue;
         const v = outVal(textOf(s, o.row, 'RS'));
         if (v != null) put(s, o.row, v);
       }
@@ -62666,11 +62928,17 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       }
       /* the operator acknowledges what the start-up left latched (RESET FIRST OUT ...): the RESET push buttons of the CRT */
       const rs = [];
-      for (const s of S.sheets)
+      for (const s of ALL()) {
         for (const i of plantRows(s)) {
           const t = textOf(s, i, 'S').toUpperCase();
           if (/\bRESET\b/.test(t) && /P\.\s*B|RESET FIRST OUT/.test(t + ' ' + textOf(s, i, 'L')) && !/LOCAL|LOP/.test(t)) rs.push([s, i]);
         }
+        /* 2.2.0-beta.6: DITL-05 / 06 row 2 RESET FIRST OUT <- DITL-02 out 58 (the MFT reset at the end of the purge of the
+           last start-up): the unit reached 150 MW after that reset, so the first-out memories are clear */
+        for (const z of s.nl.src)
+          if (/^RESET FIRST OUT\b/.test((s.cells[z.row + ':S'] || []).map(x => x.t).join(' ').trim().toUpperCase()) && !rs.some(([a, b]) => a === s && b === z.row))
+            rs.push([s, z.row]);
+      }
       rs.forEach(([s, i]) => (s.sig[i + ':S'] = true));
       D.scan(3, 1);
       rs.forEach(([s, i]) => delete s.sig[i + ':S']);
@@ -70261,7 +70529,7 @@ html[data-dg=paper] #svg [fill="#0b1013"]{fill:#e8ecef}
   build();
   if (!document.getElementById('dgsel')) document.addEventListener('DOMContentLoaded', build);
 })();
-</script><!--THEME-END--><!--UAT-BEGIN--><script id="uatdata" type="application/json">{"ver":"2.2.0-beta.5","known":{},"scen":{"ABC-002":{"sheet":"ABC-002","title":"TEST CARD: O2 trim AICFG112 — force manual M.0103","pdf":"analog-logic-abc.zip > ABC-002.pdf","scenarios":[{"id":"TC1","loop":"AICFG112","title":"Cold start: AICFG112 is forced to MANUAL","drawing":"M.0103 = OR( |SI0014 − SI0019| ≤ 0 % (connector 1: the low select LS of boiler master BM and the air limit SI0019 picks the limit), |SI0018 − SI0021| ≤ 0 % (connector 2: the high select picks SI0018), M.0102 = OR( NOT FICFA1081.REM, NOT M.0101 = BOILER MAIN STEAM FLOW > 220 T/H ), SIG.AB B.0671·B.0701 ). M.0103 is 1:B of the AICFG112 A/M T switch.","steps":[{"do":"wait","s":5},{"expect":"signal","tag":"M.0102","value":1,"say":"M.0102","why":"FICFA1081 not in REMOTE, steam flow below 220 T/H"},{"expect":"signal","tag":"M.0103","value":1,"say":"M.0103 (force manual)"},{"expect":"mode","value":"MANUAL","say":"AICFG112 mode"},{"expect":"faceplate","value":"FORCE MANUAL","say":"Panel indication"},{"expect":"disabled","button":"AUTO","value":"disabled","say":"AUTO button"}]},{"id":"TC2","loop":"AICFG112","title":"FICFA1081 in REMOTE, steam flow above 220 T/H, no cross limit active: force clears","drawing":"M.0101 = 1 (> 220 T/H), FICFA1081.REM = 1: M.0102 = 0. BM below SI0019: the low select gives BM, the difference is not 0; SI0018 below SI0021: the high select gives SI0021, the difference is not 0. The A/M T switch holds the MANUAL leg: the operator selects AUTO.","steps":[{"do":"set","sheet":"ABC-002","tag":"FICFA1081.REM","value":1,"say":"Secondary air flow FICFA1081 in REMOTE (FICFA1081.REM = 1)"},{"do":"set","sheet":"ABC-001C","tag":"AI0129","value":474.1,"say":"Main steam flow transmitter AI0129 (ABC-001C) = 474.1 T/H (150 MW snapshot): M.0101 = steam flow > 220 T/H"},{"do":"set","sheet":"ABC-006","tag":"FIFA1081.PV","value":300,"say":"Secondary air flow FIFA1081.PV (ABC-006) = 300"},{"do":"set","sheet":"ABC-006","tag":"FIFA1071.PV","value":200,"say":"Primary air flow FIFA1071.PV (ABC-006) = 200: total air flow (TAF) about 501"},{"do":"set","sheet":"ABC-001C","tag":"SI0213","value":30,"say":"Boiler master SI0213 (ABC-001C, BM) = 30, below the air limit SI0019"},{"do":"wait","s":30},{"expect":"signal","tag":"M.0101","value":1,"say":"M.0101 (main steam flow > 220 T/H, from ABC-001C)"},{"expect":"signal","tag":"M.0102","value":0,"say":"M.0102"},{"expect":"signal","tag":"SI0014","value":30,"tol":0.5,"say":"SI0014 = low select (gives BM 30)"},{"expect":"signal","tag":"M.0103","value":0,"say":"M.0103 (force manual)","why":"all permissives made"},{"expect":"disabled","button":"AUTO","value":"enabled","say":"AUTO button"},{"do":"press","button":"AUTO","say":"AICFG112: press A"},{"expect":"mode","value":"AUTO","say":"AICFG112 mode after A"}]},{"id":"TC3","loop":"AICFG112","title":"In AUTO, boiler master rises above the air limit (cross limit active): AICFG112 to MANUAL","drawing":"BM 90 > SI0019: the low select gives SI0019, |SI0014 − SI0019| = 0, connector 1 = 1, M.0103 = 1.","steps":[{"do":"set","sheet":"ABC-002","tag":"FICFA1081.REM","value":1,"say":"Secondary air flow FICFA1081 in REMOTE (FICFA1081.REM = 1)"},{"do":"set","sheet":"ABC-001C","tag":"AI0129","value":474.1,"say":"Main steam flow transmitter AI0129 (ABC-001C) = 474.1 T/H (150 MW snapshot): M.0101 = steam flow > 220 T/H"},{"do":"set","sheet":"ABC-006","tag":"FIFA1081.PV","value":300,"say":"Secondary air flow FIFA1081.PV (ABC-006) = 300"},{"do":"set","sheet":"ABC-006","tag":"FIFA1071.PV","value":200,"say":"Primary air flow FIFA1071.PV (ABC-006) = 200: total air flow (TAF) about 501"},{"do":"set","sheet":"ABC-001C","tag":"SI0213","value":30,"say":"Boiler master SI0213 (ABC-001C, BM) = 30, below the air limit SI0019"},{"do":"wait","s":30},{"do":"press","button":"AUTO","say":"AICFG112: press A"},{"expect":"mode","value":"AUTO","say":"AICFG112 mode"},{"do":"set","sheet":"ABC-001C","tag":"SI0213","value":90,"say":"Boiler master SI0213 = 90 (above the air limit)"},{"do":"wait","s":2},{"expect":"signal","tag":"M.0103","value":1,"say":"M.0103 (force manual)","why":"air cross limit active"},{"expect":"mode","value":"MANUAL","say":"AICFG112 mode"}]}]},"ABC-004A":{"sheet":"ABC-004A","title":"TEST CARD: coal master HS-COAL — force manual M.2020","pdf":"analog-logic-abc.zip > ABC-004A.pdf","scenarios":[{"id":"TC1","loop":"HS-COAL","title":"Cold start: HS-COAL is forced to MANUAL","drawing":"M.2020 = OR( PIC-COBM.MAN (CONTROL IN MANUAL), NOT A-CF RUN (M.3400 via TOF 2 s, connector 7), NOT B-CF RUN (M.015E), NOT C-CF RUN (M.016E), NOT M.3410 / M.3411 / M.3416 / M.3417 = AND of the two SUPPLY OIL VALVE CLOSE inputs of burner A / B / C / D ). M.2020 is 1:B of the HS-COAL A/M T switch.","steps":[{"do":"wait","s":5},{"expect":"signal","tag":"M.2020","value":1,"say":"M.2020 (force manual)","why":"cold start: coal feeders stopped, oil valve close signals 0"},{"expect":"mode","value":"MANUAL","say":"HS-COAL mode"},{"expect":"faceplate","value":"FORCE MANUAL","say":"Panel indication"},{"expect":"disabled","button":"AUTO","value":"disabled","say":"AUTO button"}]},{"id":"TC2","loop":"HS-COAL","title":"All coal feeders running, all burner oil valves closed, coal master not in MANUAL: force clears","drawing":"Every OR input of M.2020 at 0. The A/M T switch holds the MANUAL leg; the operator selects AUTO.","steps":[{"do":"set","near":"PIC-COBM.MAN","value":0,"say":"Coal master PIC-COBM not in MANUAL (PIC-COBM.MAN = 0)"},{"do":"set","tag":"M.3400","value":1,"say":"Coal feeder A running (M.3400 = 1)"},{"do":"set","tag":"M.015E","value":1,"say":"Coal feeder B running (M.015E, from ABC-004B)"},{"do":"set","tag":"M.016E","value":1,"say":"Coal feeder C running (M.016E, from ABC-004C)"},{"do":"set","near":"A-BNR SUPPLY OIL","nth":0,"value":1,"say":"A burner oil valve(2) closed (I.0003 ZSC-DO1043-A2)"},{"do":"set","near":"A-BNR SUPPLY OIL","nth":1,"value":1,"say":"A burner oil valve(1) closed (I.0001 ZSC-DO1043-A1)"},{"do":"set","near":"B-BNR SUPPLY OIL","nth":0,"value":1,"say":"B burner oil valve(2) closed (I.0323)"},{"do":"set","near":"B-BNR SUPPLY OIL","nth":1,"value":1,"say":"B burner oil valve(1) closed (I.0321)"},{"do":"set","near":"C-BNR SUPPLY OIL","nth":0,"value":1,"say":"C burner oil valve(2) closed (I.0643)"},{"do":"set","near":"C-BNR SUPPLY OIL","nth":1,"value":1,"say":"C burner oil valve(1) closed (I.0641)"},{"do":"set","near":"D-BNR SUPPLY OIL","nth":0,"value":1,"say":"D burner oil valve(2) closed (I.0963)"},{"do":"set","near":"D-BNR SUPPLY OIL","nth":1,"value":1,"say":"D burner oil valve(1) closed (I.0961)"},{"do":"wait","s":5},{"expect":"signal","tag":"M.3410","value":1,"say":"M.3410 (A burner oil valves both closed)"},{"expect":"signal","tag":"M.3417","value":1,"say":"M.3417 (D burner oil valves both closed)"},{"expect":"signal","tag":"M.2020","value":0,"say":"M.2020 (force manual)","why":"all permissives made"},{"expect":"mode","value":"MANUAL","say":"HS-COAL mode","why":"no automatic return to AUTO"},{"expect":"disabled","button":"AUTO","value":"enabled","say":"AUTO button"},{"do":"press","button":"AUTO","say":"HS-COAL: press A"},{"expect":"mode","value":"AUTO","say":"HS-COAL mode after A"}]},{"id":"TC3","loop":"HS-COAL","title":"In AUTO, coal feeder A stops: HS-COAL to MANUAL after the 2 s TOF","drawing":"M.3400 = 0: TOF 2 s keeps M.014E at 1 for 2 s, then NOT M.014E = 1, M.2020 = 1.","steps":[{"do":"set","near":"PIC-COBM.MAN","value":0,"say":"Coal master PIC-COBM not in MANUAL (PIC-COBM.MAN = 0)"},{"do":"set","tag":"M.3400","value":1,"say":"Coal feeder A running (M.3400 = 1)"},{"do":"set","tag":"M.015E","value":1,"say":"Coal feeder B running (M.015E, from ABC-004B)"},{"do":"set","tag":"M.016E","value":1,"say":"Coal feeder C running (M.016E, from ABC-004C)"},{"do":"set","near":"A-BNR SUPPLY OIL","nth":0,"value":1,"say":"A burner oil valve(2) closed (I.0003 ZSC-DO1043-A2)"},{"do":"set","near":"A-BNR SUPPLY OIL","nth":1,"value":1,"say":"A burner oil valve(1) closed (I.0001 ZSC-DO1043-A1)"},{"do":"set","near":"B-BNR SUPPLY OIL","nth":0,"value":1,"say":"B burner oil valve(2) closed (I.0323)"},{"do":"set","near":"B-BNR SUPPLY OIL","nth":1,"value":1,"say":"B burner oil valve(1) closed (I.0321)"},{"do":"set","near":"C-BNR SUPPLY OIL","nth":0,"value":1,"say":"C burner oil valve(2) closed (I.0643)"},{"do":"set","near":"C-BNR SUPPLY OIL","nth":1,"value":1,"say":"C burner oil valve(1) closed (I.0641)"},{"do":"set","near":"D-BNR SUPPLY OIL","nth":0,"value":1,"say":"D burner oil valve(2) closed (I.0963)"},{"do":"set","near":"D-BNR SUPPLY OIL","nth":1,"value":1,"say":"D burner oil valve(1) closed (I.0961)"},{"do":"wait","s":5},{"do":"press","button":"AUTO","say":"HS-COAL: press A"},{"expect":"mode","value":"AUTO","say":"HS-COAL mode"},{"do":"set","tag":"M.3400","value":0,"say":"Coal feeder A stops"},{"do":"wait","s":1},{"expect":"signal","tag":"M.2020","value":0,"say":"M.2020 after 1 s","why":"TOF 2 s still holds"},{"do":"wait","s":3},{"expect":"signal","tag":"M.2020","value":1,"say":"M.2020 after 4 s"},{"expect":"mode","value":"MANUAL","say":"HS-COAL mode"}]},{"id":"TC4","loop":"HS-COAL","title":"In AUTO, one burner oil valve opens: HS-COAL to MANUAL","drawing":"A-BNR SUPPLY OIL VALVE(1) CLOSE = 0: M.3410 = 0, NOT M.3410 = 1, M.2020 = 1.","steps":[{"do":"set","near":"PIC-COBM.MAN","value":0,"say":"Coal master PIC-COBM not in MANUAL (PIC-COBM.MAN = 0)"},{"do":"set","tag":"M.3400","value":1,"say":"Coal feeder A running (M.3400 = 1)"},{"do":"set","tag":"M.015E","value":1,"say":"Coal feeder B running (M.015E, from ABC-004B)"},{"do":"set","tag":"M.016E","value":1,"say":"Coal feeder C running (M.016E, from ABC-004C)"},{"do":"set","near":"A-BNR SUPPLY OIL","nth":0,"value":1,"say":"A burner oil valve(2) closed (I.0003 ZSC-DO1043-A2)"},{"do":"set","near":"A-BNR SUPPLY OIL","nth":1,"value":1,"say":"A burner oil valve(1) closed (I.0001 ZSC-DO1043-A1)"},{"do":"set","near":"B-BNR SUPPLY OIL","nth":0,"value":1,"say":"B burner oil valve(2) closed (I.0323)"},{"do":"set","near":"B-BNR SUPPLY OIL","nth":1,"value":1,"say":"B burner oil valve(1) closed (I.0321)"},{"do":"set","near":"C-BNR SUPPLY OIL","nth":0,"value":1,"say":"C burner oil valve(2) closed (I.0643)"},{"do":"set","near":"C-BNR SUPPLY OIL","nth":1,"value":1,"say":"C burner oil valve(1) closed (I.0641)"},{"do":"set","near":"D-BNR SUPPLY OIL","nth":0,"value":1,"say":"D burner oil valve(2) closed (I.0963)"},{"do":"set","near":"D-BNR SUPPLY OIL","nth":1,"value":1,"say":"D burner oil valve(1) closed (I.0961)"},{"do":"wait","s":5},{"do":"press","button":"AUTO","say":"HS-COAL: press A"},{"do":"set","near":"A-BNR SUPPLY OIL","nth":1,"value":0,"say":"A burner oil valve(1) not closed"},{"do":"wait","s":1},{"expect":"signal","tag":"M.2020","value":1,"say":"M.2020 (force manual)"},{"expect":"mode","value":"MANUAL","say":"HS-COAL mode"}]}]},"ABC-007":{"sheet":"ABC-007","title":"PAF inlet air flow control FICFA1071 (A / M / REMOTE, force manual, interlock)","pdf":"analog-logic-abc.zip > (19)ABC-007.pdf","scenarios":[{"id":"A1","loop":"FICFA1071","title":"Cold start: PA fan stopped (M.3302 = 0)","drawing":"M.0180 = OR(M.0098, M.018F, M.0188); at M.0188, M.3302 PA FAN RUNNING has a NOT (⊠). M.0180 is 1:B of the A/M T switch (force manual) and 1:B of the SV T switch (force LOCAL).","steps":[{"do":"set","tag":"M.3302","value":0},{"do":"wait","s":10},{"expect":"signal","tag":"M.0180","value":1,"say":"M.0180 (force manual)","why":"fan not running"},{"expect":"mode","value":"MANUAL","say":"Loop mode"},{"expect":"faceplate","value":"FORCE MANUAL","say":"Panel indication"},{"expect":"disabled","button":"AUTO","value":"disabled","say":"AUTO button","why":"AUTO not allowed while force is active"},{"expect":"sv-switch","value":"B (operator / LOCAL)","say":"SV switch","why":"M.0180 = 1:B of SV T switch"}]},{"id":"A2","loop":"FICFA1071","title":"PA fan running: force cleared, but NO automatic return to AUTO","drawing":"When M.3302 = 1 the NOT is 0, M.0188 = 0, M.0180 = 0 (if no other condition). The A/M T switch has no 1:A pulse, so it holds the last leg (B = manual). The operator selects AUTO.","steps":[{"do":"set","tag":"M.3302","value":0},{"do":"wait","s":10},{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"expect":"signal","tag":"M.0180","value":0,"say":"M.0180 (force manual)","why":"fan now running"},{"expect":"mode","value":"MANUAL","say":"Loop mode","why":"no automatic transfer to AUTO"},{"expect":"disabled","button":"AUTO","value":"enabled","say":"AUTO button"},{"do":"press","button":"AUTO","say":"Press AUTO"},{"expect":"mode","value":"AUTO","say":"Loop mode after pressing AUTO"}]},{"id":"A3","loop":"FICFA1071","title":"Loop in AUTO, then fan stops: immediate return to MANUAL","drawing":"M.0180 = 1 → 1:B of A/M T switch: leg B (manual) is selected even in AUTO.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":"AUTO","say":"AUTO"},{"expect":"mode","value":"AUTO","say":"Mode before fan stop"},{"do":"set","tag":"M.3302","value":0},{"do":"wait","s":3},{"expect":"signal","tag":"M.0180","value":1,"say":"M.0180 (force manual)"},{"expect":"mode","value":"MANUAL","say":"Mode after fan stop"},{"expect":"disabled","button":"AUTO","value":"disabled","say":"AUTO button"}]},{"id":"A4","loop":"FICFA1071","title":"MANUAL: operator MV appears at FICFA1071.MV","drawing":"A/M T switch B = COS (operator manual MV). Followed by the BU-CMD T switch (A = A/M out, B = RB-MV 50 %, 1:B = M.0181). If M.0181 = 0, A is passed.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":"MAN","say":"MAN"},{"do":"mv","value":40,"say":"Set MV = 40"},{"do":"wait","s":3},{"expect":"signal","tag":"M.0181","value":0,"say":"M.0181 (backup command)"},{"expect":"signal","tag":"FICFA1071.MV","value":40,"tol":0.5,"say":"FICFA1071.MV"},{"do":"mv","value":75,"say":"Set MV = 75"},{"do":"wait","s":3},{"expect":"signal","tag":"FICFA1071.MV","value":75,"tol":0.5,"say":"FICFA1071.MV"}]},{"id":"A5","loop":"FICFA1071","title":"MFT pulse (TPS 5 s) causes force manual for 5 seconds only","drawing":"L000F MFT PULSE → TPS/5s (TR30) → M.0182 → M.0178 → M.0188 → M.0180. TPS is a pulse: 1 for 5 s after the input rising edge, even if the input stays 1.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":"AUTO","say":"AUTO"},{"expect":"mode","value":"AUTO","say":"Mode before MFT"},{"do":"set","near":"MFT PULSE","value":1,"say":"MFT pulse = 1 (held, not reset)"},{"do":"wait","s":2},{"expect":"signal","tag":"M.0182","value":1,"say":"M.0182 at 2 s"},{"expect":"signal","tag":"M.0180","value":1,"say":"M.0180 at 2 s"},{"expect":"mode","value":"MANUAL","say":"Mode at 2 s"},{"do":"wait","s":6},{"expect":"signal","tag":"M.0182","value":0,"say":"M.0182 at 8 s","why":"5 s pulse ended"},{"expect":"signal","tag":"M.0180","value":0,"say":"M.0180 at 8 s"},{"expect":"mode","value":"MANUAL","say":"Mode at 8 s","why":"does not return to AUTO by itself"}]},{"id":"T1","loop":"FICFA1071","title":"Force manual of PA (M.0180) and SA (M.0190): each drawing condition, steady state","wait":12,"base":[{"tag":"M.3302","value":1,"say":"PA fan running"},{"tag":"M.3303","value":1,"say":"SA fan running"}],"drawing":"M.0180 PA MASTER FORCE MANUAL = OR(M.0098, M.018F, M.0188). M.0188 = OR(M.0178, B.0734, B.071C, NOT M.3302). M.0178 'PA FAN AUTO INHIBIT' = OR(MFT pulse, AND(PICFG108.MAN, PICFG108A.MAN), M.0138 ANY FUEL FLOW). M.0190 SA MASTER FORCE MANUAL = OR(M.0098, M.019F, M.0198); M.0198 = OR(M.0178, NOT M.3303, B.074C, B.0721, B.0729, AND(B.0733, B.074B)). Memory list: M.0180 'PA MASTER FORCE MANUAL', M.0190 'SA MASTER FORCE MANUAL'. House operation: M.018E = |setting - PV| \u003c= 3 T/H (setting 230 PAF / 245 SAF); AND with M.025B; TPS 2 s (TR49 / TR69) = pulse only, 2 seconds.","cases":[{"say":"All normal (both fans running, no abnormal)","set":[],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"PA fan stopped (M.3302 = 0): PA only","set":[{"tag":"M.3302","value":0}],"expect":[{"tag":"M.0180","value":1,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"SA fan stopped (M.3303 = 0): SA only","set":[{"tag":"M.3303","value":0}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":1,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"PA fan inlet temp abnormal (B.0734): PA only","set":[{"tag":"B.0734","value":1}],"expect":[{"tag":"M.0180","value":1,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"PA fan inlet flow abnormal (B.071C): PA only","set":[{"tag":"B.071C","value":1}],"expect":[{"tag":"M.0180","value":1,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"SA fan inlet temp abnormal (B.074C): SA only","set":[{"tag":"B.074C","value":1}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":1,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"SA fan inlet flow abnormal (B.0721): SA only","set":[{"tag":"B.0721","value":1}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":1,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"FA blower outlet flow abnormal (B.0729): SA only","set":[{"tag":"B.0729","value":1}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":1,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"FA blower-A temp abnormal only (B.0733): none (AND)","set":[{"tag":"B.0733","value":1}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"FA blower-B temp abnormal only (B.074B): none (AND)","set":[{"tag":"B.074B","value":1}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"FA blower-A AND B temp abnormal: SA","set":[{"tag":"B.0733","value":1},{"tag":"B.074B","value":1}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":1,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"ANY FUEL FLOW SIG.AB (M.0138): PA and SA","set":[{"tag":"M.0138","value":1}],"expect":[{"tag":"M.0180","value":1,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":1,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"PICFG108.MAN only: none (AND)","set":[{"near":"FURNACE PRESSURE CONTROL(H/C) IN MANUAL","value":1}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"PICFG108A.MAN only: none (AND)","set":[{"near":"FURNACE PRESSURE CONTROL(DAMPER) IN MANUAL","value":1}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"PICFG108.MAN AND PICFG108A.MAN: PA and SA","set":[{"near":"FURNACE PRESSURE CONTROL(H/C) IN MANUAL","value":1},{"near":"FURNACE PRESSURE CONTROL(DAMPER) IN MANUAL","value":1}],"expect":[{"tag":"M.0180","value":1,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":1,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"M.0098 from ABC-003E: PA and SA","set":[{"tag":"M.0098","value":1}],"expect":[{"tag":"M.0180","value":1,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":1,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"House operation (M.025B = 1), PA PV = 230 T/H (setting): PA only (TPS 2 s pulse: check within 2 s)","set":[{"tag":"M.025B","value":1},{"tag":"FIFA1071.PV","value":230}],"expect":[{"tag":"M.0180","value":1,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}],"wait":1},{"say":"House operation, SA PV = 245 T/H (setting): SA only (TPS 2 s pulse: check within 2 s)","set":[{"tag":"M.025B","value":1},{"tag":"FIFA1081.PV","value":245}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":1,"say":"M.0190 SA MASTER FORCE MANUAL"}],"wait":1},{"say":"House operation but PV far off (100 T/H): none","set":[{"tag":"M.025B","value":1},{"tag":"FIFA1071.PV","value":100},{"tag":"FIFA1081.PV","value":100}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"PV = setting but not house operation (M.025B = 0): none","set":[{"tag":"FIFA1071.PV","value":230},{"tag":"FIFA1081.PV","value":245}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]}]},{"id":"T2","loop":"FICFA1071","title":"PAF SV path: REMOTE, demand, BUMPLESS ramp, house operation","drawing":"SV T switch A = SI0160: demand SI0045 through BUMPLESS RAMP 0.05 %/sec of 648 T/H = 0.324 T/H per second; 1:BYPASS = FICFA1071.LOC (LOCAL = demand passed directly). In house operation (M.025B) the SV is the 230 T/H setting at rate limit 0.5T/Sec; the rate limit is bypassed (⊠ = NOT) when NOT in house operation, so it follows the PV immediately (T switch a = FICFA1071.PV). Demand SI0045 comes from ABC-002 (circle PAD/002), so it is set on ABC-002 and the effect is checked here.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"set","tag":"M.3303","value":1},{"do":"wait","s":10},{"do":"press","button":"REMOTE","say":"Press REMOTE (SV from logic)"},{"expect":"sv-switch","value":"A (logic / REMOTE)","say":"SV switch after REMOTE"},{"expect":"mode","value":"AUTO","say":"Mode (REMOTE = actually AUTO)"},{"do":"set","tag":"FICFA1071.LOC","value":1},{"do":"set","tag":"SI0045","value":300,"sheet":"ABC-002"},{"do":"wait","s":3},{"expect":"signal","tag":"SI0160","value":300,"tol":1,"say":"SI0160 in LOCAL (ramp bypassed)","why":"demand passed directly"},{"do":"set","tag":"FICFA1071.LOC","value":0},{"do":"set","tag":"SI0045","value":320,"sheet":"ABC-002"},{"do":"wait","s":10},{"expect":"signal","tag":"SI0160","value":303.24,"tol":0.7,"say":"SI0160 10 s after demand step to 320 (not LOCAL)","why":"0.324 T/H per second x 10 s from 300"},{"do":"set","tag":"FIFA1071.PV","value":150},{"do":"wait","s":3},{"expect":"signal","tag":"SI0169","value":150,"tol":1,"say":"SI0169 when not in house operation","why":"rate limit bypassed, follows PV"},{"do":"set","tag":"M.025B","value":1},{"do":"wait","s":4},{"expect":"signal","tag":"SI0169","value":152,"tol":1.2,"say":"SI0169 4 s after house operation starts (rate limit 0.5 T/s, rising toward 230)","why":"0.5 T/s x ~3 s (1 s TON before selecting 230)"},{"do":"wait","s":300},{"expect":"signal","tag":"SI0169","value":230,"tol":0.5,"say":"SI0169 after a long time in house operation","why":"reached house setting 230 T/H"}]},{"id":"O1-FICFA1071","loop":"FICFA1071","title":"FICFA1071: MANUAL — MV field, 0 / 50 / 100 buttons, and PV (process) response","drawing":"A/M T switch B = COS = operator manual MV; BU-CMD T passes through when M.0181 = 0; AO = damper. Damper more open = more air = PV increases (PV = air flow).","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"expect":"mode","value":"MANUAL","say":"Initial mode (fan running, not yet AUTO)"},{"do":"mark","what":"pv","as":"pv0"},{"do":"press","button":"100","say":"Press 100"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1071.MV","value":100,"tol":0.5,"say":"FICFA1071.MV after button 100"},{"do":"wait","s":400},{"expect":"cmp","what":"pv","than":"pv0","value":"increased","min":259.2,"say":"PV after 400 s at MV = 100 (process responds)"},{"do":"mark","what":"pv","as":"pv100"},{"do":"wait","s":2},{"do":"press","button":"0","say":"Press 0"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1071.MV","value":0,"tol":0.5,"say":"FICFA1071.MV after button 0"},{"do":"wait","s":600},{"expect":"cmp","what":"pv","than":"pv100","value":"decreased","min":259.2,"say":"PV after 10 min at MV = 0 (process responds)"},{"do":"press","button":"50","say":"Press 50"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1071.MV","value":50,"tol":0.5,"say":"FICFA1071.MV after button 50"},{"do":"mv","value":75,"say":"Enter MV = 75"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1071.MV","value":75,"tol":0.5,"say":"FICFA1071.MV after entering 75"},{"expect":"field","name":"MV","value":"enabled","say":"MV field in MANUAL"}]},{"id":"O2-FICFA1071","loop":"FICFA1071","title":"FICFA1071: Operator SV (LOCAL) — SV field, + and − buttons","drawing":"SV T switch B = COS = operator SV. + and − are 1 % of range (648 T/H = 6.48 T/H per press).","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"expect":"field","name":"SV","value":"disabled","say":"SV field in MANUAL","why":"SV is for AUTO only"},{"do":"press","button":"AUTO","say":"Press AUTO"},{"do":"sv","value":300,"say":"Enter SV = 300"},{"do":"wait","s":1},{"expect":"sv","value":300,"tol":0.1,"say":"SV net"},{"do":"press","button":"+","say":"Press +"},{"do":"wait","s":1},{"expect":"sv","value":306.48,"tol":0.1,"say":"SV after +"},{"do":"press","button":"−","say":"Press −"},{"do":"wait","s":1},{"expect":"sv","value":300,"tol":0.1,"say":"SV after −"},{"expect":"sv-switch","value":"B (operator / LOCAL)","say":"SV switch"}]},{"id":"O3-FICFA1071","loop":"FICFA1071","title":"FICFA1071: AUTO with process — PID must bring PV to SV; in AUTO the operator moves the SV (not the MV)","drawing":"PID ACT:R (reverse: PV below SV = MV increases). A/M T: A = PID output. In AUTO, the operator does not control the MV.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"mv","value":50,"say":"MV = 50 (manual)"},{"do":"wait","s":120},{"do":"press","button":"AUTO","say":"Press AUTO"},{"do":"sv","value":298.08000000000004,"say":"SV = 46 % of range"},{"expect":"mode","value":"AUTO","say":"Mode after pressing AUTO"},{"expect":"field","name":"MV","value":"disabled","say":"MV field in AUTO","why":"in AUTO, the operator moves the SV"},{"do":"wait","s":1200},{"expect":"near-pv","pct":4,"value":"at SV","say":"PV near SV after 20 min in AUTO"},{"do":"sv","value":356.40000000000003,"say":"Change SV to 55 % of range"},{"do":"wait","s":1200},{"expect":"near-pv","pct":4,"value":"at SV","say":"PV near new SV after 20 min"}]},{"id":"O4-FICFA1071","loop":"FICFA1071","title":"FICFA1071: AUTO -> MAN without MV bump (bumpless)","drawing":"PID and COS track the output when B is selected, so there is no bump.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"mv","value":50,"say":"MV = 50"},{"do":"wait","s":60},{"do":"press","button":"AUTO","say":"Press AUTO"},{"do":"sv","value":324,"say":"SV"},{"do":"wait","s":300},{"do":"mark","what":"mv","as":"mvA"},{"do":"press","button":"MAN","say":"Press MAN"},{"do":"wait","s":1},{"expect":"mode","value":"MANUAL","say":"Mode after MAN"},{"expect":"cmp","what":"mv","than":"mvA","value":"unchanged","tol":0.3,"say":"MV after MAN vs. MV before"}]},{"id":"O5-FICFA1071","loop":"FICFA1071","title":"FICFA1071: REMOTE and LOCAL — REMOTE = actually AUTO, no MAN, no SV entry; LOCAL = operator control restored","drawing":"REMOTE: SV T switch is A (SI0160 / SI0170 = demand through BUMPLESS ramp). The operator cannot select MAN or set the SV. LOCAL is B (COS).","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":"REMOTE","say":"Press REMOTE"},{"do":"wait","s":3},{"do":"mark","what":"sv","as":"svR"},{"expect":"sv-switch","value":"A (logic / REMOTE)","say":"SV switch"},{"expect":"mode","value":"AUTO","say":"Mode"},{"expect":"disabled","button":"MAN","value":"disabled","say":"MAN button"},{"expect":"field","name":"SV","value":"disabled","say":"SV field"},{"expect":"field","name":"MV","value":"disabled","say":"MV field"},{"do":"press","button":"LOCAL","say":"Press LOCAL"},{"do":"wait","s":1},{"expect":"cmp","what":"sv","than":"svR","value":"unchanged","tol":1,"say":"SV after LOCAL vs. SV in REMOTE (bumpless)"},{"expect":"sv-switch","value":"B (operator / LOCAL)","say":"SV switch after LOCAL"},{"expect":"disabled","button":"MAN","value":"enabled","say":"MAN button after LOCAL"},{"expect":"field","name":"SV","value":"enabled","say":"SV field after LOCAL"},{"do":"press","button":"MAN","say":"Press MAN"},{"expect":"mode","value":"MANUAL","say":"Mode after MAN"},{"expect":"field","name":"MV","value":"enabled","say":"MV field in MANUAL"}]},{"id":"O6-FICFA1071","loop":"FICFA1071","title":"FICFA1071: drawing mode inputs (.MAN .LOC .REM) are HMI buttons","drawing":"FICFA1071.MAN, FICFA1071.LOC, FICFA1071.REM are drawing inputs from the HMI; M.018D / M.019D = OR of these and house operation (SET SV rule).","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":".LOC","say":"Press .LOC"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1071.LOC","value":1,"say":"FICFA1071.LOC"},{"do":"press","button":".LOC","say":"Press .LOC"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1071.LOC","value":0,"say":"FICFA1071.LOC after second press (toggle)"},{"do":"press","button":".REM","say":"Press .REM"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1071.REM","value":1,"say":"FICFA1071.REM"},{"do":"press","button":".REM","say":"Press .REM"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1071.REM","value":0,"say":"FICFA1071.REM toggle"},{"do":"press","button":".MAN","say":"Press .MAN"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1071.MAN","value":1,"say":"FICFA1071.MAN"},{"do":"press","button":".MAN","say":"Press .MAN"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1071.MAN","value":0,"say":"FICFA1071.MAN toggle"}]},{"id":"O7-FICFA1071","loop":"FICFA1071","title":"FICFA1071: AUTO with process, fan stops, fan restarts, operator selects AUTO","drawing":"M.0180 / M.0190 = 1 -> 1:B of A/M T (manual, bumpless: MV continues) and of SV T (LOCAL). When the signal clears, no automatic return to AUTO.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"mv","value":50,"say":"MV"},{"do":"wait","s":60},{"do":"press","button":"AUTO","say":"Press AUTO"},{"do":"sv","value":324,"say":"SV"},{"do":"wait","s":600},{"expect":"mode","value":"AUTO","say":"Mode before trip"},{"do":"mark","what":"mv","as":"mvT"},{"do":"set","tag":"M.3302","value":0},{"do":"wait","s":1},{"expect":"mode","value":"MANUAL","say":"Mode after fan stop"},{"expect":"cmp","what":"mv","than":"mvT","value":"unchanged","tol":0.3,"say":"MV after trip vs. before (bumpless)"},{"expect":"disabled","button":"AUTO","value":"disabled","say":"AUTO button"},{"expect":"sv-switch","value":"B (operator / LOCAL)","say":"SV switch"},{"do":"mv","value":20,"say":"Manual MV = 20 during force"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1071.MV","value":20,"tol":0.5,"say":"FICFA1071.MV"},{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"expect":"mode","value":"MANUAL","say":"Mode after fan restart","why":"not automatic"},{"expect":"disabled","button":"AUTO","value":"enabled","say":"AUTO button"},{"do":"press","button":"AUTO","say":"Press AUTO"},{"expect":"mode","value":"AUTO","say":"Mode after pressing AUTO"}]},{"id":"O1-FICFA1081","loop":"FICFA1081","title":"FICFA1081: MANUAL — MV field, 0 / 50 / 100 buttons, and PV (process) response","drawing":"A/M T switch B = COS = operator manual MV; BU-CMD T passes through when M.0181 = 0; AO = damper. Damper more open = more air = PV increases (PV = air flow).","steps":[{"do":"set","tag":"M.3303","value":1},{"do":"wait","s":10},{"expect":"mode","value":"MANUAL","say":"Initial mode (fan running, not yet AUTO)"},{"do":"mark","what":"pv","as":"pv0"},{"do":"press","button":"100","say":"Press 100"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1081.MV","value":100,"tol":0.5,"say":"FICFA1081.MV after button 100"},{"do":"wait","s":400},{"expect":"cmp","what":"pv","than":"pv0","value":"increased","min":172.8,"say":"PV after 400 s at MV = 100 (process responds)"},{"do":"mark","what":"pv","as":"pv100"},{"do":"wait","s":2},{"do":"press","button":"0","say":"Press 0"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1081.MV","value":0,"tol":0.5,"say":"FICFA1081.MV after button 0"},{"do":"wait","s":600},{"expect":"cmp","what":"pv","than":"pv100","value":"decreased","min":172.8,"say":"PV after 10 min at MV = 0 (process responds)"},{"do":"press","button":"50","say":"Press 50"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1081.MV","value":50,"tol":0.5,"say":"FICFA1081.MV after button 50"},{"do":"mv","value":75,"say":"Enter MV = 75"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1081.MV","value":75,"tol":0.5,"say":"FICFA1081.MV after entering 75"},{"expect":"field","name":"MV","value":"enabled","say":"MV field in MANUAL"}]},{"id":"O2-FICFA1081","loop":"FICFA1081","title":"FICFA1081: Operator SV (LOCAL) — SV field, + and − buttons","drawing":"SV T switch B = COS = operator SV. + and − are 1 % of range (432 T/H = 4.32 T/H per press).","steps":[{"do":"set","tag":"M.3303","value":1},{"do":"wait","s":10},{"expect":"field","name":"SV","value":"disabled","say":"SV field in MANUAL","why":"SV is for AUTO only"},{"do":"press","button":"AUTO","say":"Press AUTO"},{"do":"sv","value":300,"say":"Enter SV = 300"},{"do":"wait","s":1},{"expect":"sv","value":300,"tol":0.1,"say":"SV net"},{"do":"press","button":"+","say":"Press +"},{"do":"wait","s":1},{"expect":"sv","value":304.32,"tol":0.1,"say":"SV after +"},{"do":"press","button":"−","say":"Press −"},{"do":"wait","s":1},{"expect":"sv","value":300,"tol":0.1,"say":"SV after −"},{"expect":"sv-switch","value":"B (operator / LOCAL)","say":"SV switch"}]},{"id":"O3-FICFA1081","loop":"FICFA1081","title":"FICFA1081: AUTO with process — PID must bring PV to SV; in AUTO the operator moves the SV (not the MV)","drawing":"PID ACT:R (reverse: PV below SV = MV increases). A/M T: A = PID output. In AUTO, the operator does not control the MV.","steps":[{"do":"set","tag":"M.3303","value":1},{"do":"wait","s":10},{"do":"mv","value":50,"say":"MV = 50 (manual)"},{"do":"wait","s":120},{"do":"press","button":"AUTO","say":"Press AUTO"},{"do":"sv","value":198.72,"say":"SV = 46 % of range"},{"expect":"mode","value":"AUTO","say":"Mode after pressing AUTO"},{"expect":"field","name":"MV","value":"disabled","say":"MV field in AUTO","why":"in AUTO, the operator moves the SV"},{"do":"wait","s":1200},{"expect":"near-pv","pct":4,"value":"at SV","say":"PV near SV after 20 min in AUTO"},{"do":"sv","value":237.60000000000002,"say":"Change SV to 55 % of range"},{"do":"wait","s":1200},{"expect":"near-pv","pct":4,"value":"at SV","say":"PV near new SV after 20 min"}]},{"id":"O4-FICFA1081","loop":"FICFA1081","title":"FICFA1081: AUTO -> MAN without MV bump (bumpless)","drawing":"PID and COS track the output when B is selected, so there is no bump.","steps":[{"do":"set","tag":"M.3303","value":1},{"do":"wait","s":10},{"do":"mv","value":50,"say":"MV = 50"},{"do":"wait","s":60},{"do":"press","button":"AUTO","say":"Press AUTO"},{"do":"sv","value":216,"say":"SV"},{"do":"wait","s":300},{"do":"mark","what":"mv","as":"mvA"},{"do":"press","button":"MAN","say":"Press MAN"},{"do":"wait","s":1},{"expect":"mode","value":"MANUAL","say":"Mode after MAN"},{"expect":"cmp","what":"mv","than":"mvA","value":"unchanged","tol":0.3,"say":"MV after MAN vs. MV before"}]},{"id":"O5-FICFA1081","loop":"FICFA1081","title":"FICFA1081: REMOTE and LOCAL — REMOTE = actually AUTO, no MAN, no SV entry; LOCAL = operator control restored","drawing":"REMOTE: SV T switch is A (SI0160 / SI0170 = demand through BUMPLESS ramp). The operator cannot select MAN or set the SV. LOCAL is B (COS).","steps":[{"do":"set","tag":"M.3303","value":1},{"do":"wait","s":10},{"do":"press","button":"REMOTE","say":"Press REMOTE"},{"do":"wait","s":3},{"do":"mark","what":"sv","as":"svR"},{"expect":"sv-switch","value":"A (logic / REMOTE)","say":"SV switch"},{"expect":"mode","value":"AUTO","say":"Mode"},{"expect":"disabled","button":"MAN","value":"disabled","say":"MAN button"},{"expect":"field","name":"SV","value":"disabled","say":"SV field"},{"expect":"field","name":"MV","value":"disabled","say":"MV field"},{"do":"press","button":"LOCAL","say":"Press LOCAL"},{"do":"wait","s":1},{"expect":"cmp","what":"sv","than":"svR","value":"unchanged","tol":1,"say":"SV after LOCAL vs. SV in REMOTE (bumpless)"},{"expect":"sv-switch","value":"B (operator / LOCAL)","say":"SV switch after LOCAL"},{"expect":"disabled","button":"MAN","value":"enabled","say":"MAN button after LOCAL"},{"expect":"field","name":"SV","value":"enabled","say":"SV field after LOCAL"},{"do":"press","button":"MAN","say":"Press MAN"},{"expect":"mode","value":"MANUAL","say":"Mode after MAN"},{"expect":"field","name":"MV","value":"enabled","say":"MV field in MANUAL"}]},{"id":"O6-FICFA1081","loop":"FICFA1081","title":"FICFA1081: drawing mode inputs (.MAN .LOC .REM) are HMI buttons","drawing":"FICFA1081.MAN, FICFA1081.LOC, FICFA1081.REM are drawing inputs from the HMI; M.018D / M.019D = OR of these and house operation (SET SV rule).","steps":[{"do":"set","tag":"M.3303","value":1},{"do":"wait","s":10},{"do":"press","button":".LOC","say":"Press .LOC"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1081.LOC","value":1,"say":"FICFA1081.LOC"},{"do":"press","button":".LOC","say":"Press .LOC"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1081.LOC","value":0,"say":"FICFA1081.LOC after second press (toggle)"},{"do":"press","button":".REM","say":"Press .REM"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1081.REM","value":1,"say":"FICFA1081.REM"},{"do":"press","button":".REM","say":"Press .REM"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1081.REM","value":0,"say":"FICFA1081.REM toggle"},{"do":"press","button":".MAN","say":"Press .MAN"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1081.MAN","value":1,"say":"FICFA1081.MAN"},{"do":"press","button":".MAN","say":"Press .MAN"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1081.MAN","value":0,"say":"FICFA1081.MAN toggle"}]},{"id":"O7-FICFA1081","loop":"FICFA1081","title":"FICFA1081: AUTO with process, fan stops, fan restarts, operator selects AUTO","drawing":"M.0180 / M.0190 = 1 -> 1:B of A/M T (manual, bumpless: MV continues) and of SV T (LOCAL). When the signal clears, no automatic return to AUTO.","steps":[{"do":"set","tag":"M.3303","value":1},{"do":"wait","s":10},{"do":"mv","value":50,"say":"MV"},{"do":"wait","s":60},{"do":"press","button":"AUTO","say":"Press AUTO"},{"do":"sv","value":216,"say":"SV"},{"do":"wait","s":600},{"expect":"mode","value":"AUTO","say":"Mode before trip"},{"do":"mark","what":"mv","as":"mvT"},{"do":"set","tag":"M.3303","value":0},{"do":"wait","s":1},{"expect":"mode","value":"MANUAL","say":"Mode after fan stop"},{"expect":"cmp","what":"mv","than":"mvT","value":"unchanged","tol":0.3,"say":"MV after trip vs. before (bumpless)"},{"expect":"disabled","button":"AUTO","value":"disabled","say":"AUTO button"},{"expect":"sv-switch","value":"B (operator / LOCAL)","say":"SV switch"},{"do":"mv","value":20,"say":"Manual MV = 20 during force"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1081.MV","value":20,"tol":0.5,"say":"FICFA1081.MV"},{"do":"set","tag":"M.3303","value":1},{"do":"wait","s":10},{"expect":"mode","value":"MANUAL","say":"Mode after fan restart","why":"not automatic"},{"expect":"disabled","button":"AUTO","value":"enabled","say":"AUTO button"},{"do":"press","button":"AUTO","say":"Press AUTO"},{"expect":"mode","value":"AUTO","say":"Mode after pressing AUTO"}]},{"id":"B1","loop":"FICFA1071","title":"BU-CMD: MFT pulse with damper open > 50 % — MV forced to 50 % (RB-MV), then released","drawing":"M.0181 = AND(M.253F, M.0182). M.253F = HC > 50 of positioner feedback AI0192. M.0182 = TPS 5 s of MFT pulse (I.000F). When M.0181 = 1, the BU-CMD T switch passes B = RB-MV 50 %.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":"MAN","say":"MAN"},{"do":"mv","value":80,"say":"MV = 80"},{"do":"wait","s":20},{"expect":"signal","tag":"M.253F","value":1,"say":"M.253F (damper > 50 %)"},{"do":"set","near":"MFT PULSE","value":1,"say":"MFT pulse = 1"},{"do":"wait","s":2},{"expect":"signal","tag":"M.0182","value":1,"say":"M.0182"},{"expect":"signal","tag":"M.0181","value":1,"say":"M.0181"},{"do":"wait","s":30},{"expect":"signal","tag":"FICFA1071.MV","value":50,"tol":1,"say":"FICFA1071.MV at 32 s"},{"expect":"signal","tag":"M.0182","value":0,"say":"M.0182 after 5 s"},{"expect":"signal","tag":"M.0181","value":0,"say":"M.0181 after the pulse"},{"do":"wait","s":30},{"expect":"signal","tag":"FICFA1071.MV","value":50,"tol":1,"say":"MV after pulse (tracking: A/M station follows BU-CMD, does not return to 80)","why":"The drawing shows no MV restore: the MV follows the bumpless tracking of the A/M station as drawn."}]},{"id":"B2","loop":"FICFA1071","title":"BU-CMD: MFT pulse with damper closed (\u003c 50 %) — no BU-CMD, operator MV unchanged","drawing":"M.0181 = AND(M.253F, M.0182): if AI0192 is not > 50 %, M.0181 = 0 even with an MFT pulse.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":"MAN","say":"MAN"},{"do":"mv","value":20,"say":"MV = 20"},{"do":"wait","s":20},{"expect":"signal","tag":"M.253F","value":0,"say":"M.253F (damper \u003c 50 %)"},{"do":"set","near":"MFT PULSE","value":1,"say":"MFT pulse = 1"},{"do":"wait","s":2},{"expect":"signal","tag":"M.0182","value":1,"say":"M.0182"},{"expect":"signal","tag":"M.0181","value":0,"say":"M.0181"},{"do":"wait","s":10},{"expect":"signal","tag":"FICFA1071.MV","value":20,"tol":1,"say":"FICFA1071.MV"}]},{"id":"B3","loop":"FICFA1071","title":"Low PA flow alarm: M.3130 (\u003c 220 T/H) and M.3131 (\u003c 200 T/H, TON 5 s)","drawing":"PAF FLOW (n72) -> LC \u003c 220 T/H -> M.3130 (PRIMARY AIR FLOW LOW, TO DITL 41-01). n72 -> LC \u003c 200 T/H -> TON 5 s -> M.3131 (PRIMARY AIR FLOW LL, TO DITL 03F-17).","steps":[{"do":"set","net":72,"value":250,"say":"PA flow = 250 T/H"},{"do":"wait","s":8},{"expect":"signal","tag":"M.3130","value":0,"say":"M.3130 at 250 T/H"},{"expect":"signal","tag":"M.3131","value":0,"say":"M.3131 at 250 T/H"},{"do":"set","net":72,"value":210,"say":"PA flow = 210 T/H"},{"do":"wait","s":8},{"expect":"signal","tag":"M.3130","value":1,"say":"M.3130 at 210 T/H"},{"expect":"signal","tag":"M.3131","value":0,"say":"M.3131 at 210 T/H (not yet 200)"},{"do":"set","net":72,"value":190,"say":"PA flow = 190 T/H"},{"do":"wait","s":2},{"expect":"signal","tag":"M.3131","value":0,"say":"M.3131 at 2 s (TON 5 s)"},{"do":"wait","s":6},{"expect":"signal","tag":"M.3130","value":1,"say":"M.3130 at 190 T/H"},{"expect":"signal","tag":"M.3131","value":1,"say":"M.3131 after 5 s"},{"do":"set","net":72,"value":250,"say":"PA flow restored = 250 T/H"},{"do":"wait","s":8},{"expect":"signal","tag":"M.3130","value":0,"say":"M.3130 restored"},{"expect":"signal","tag":"M.3131","value":0,"say":"M.3131 restored"}]},{"id":"B4","loop":"FICFA1071","title":"FAULT T switch: during the 2 s pulse of M.018B (TPS of M.025B) the PID output is held even if SV changes; it moves again afterwards","drawing":"AMT with \"FAULT\": B = own output (last value held) when M.018B = 1. M.018B = TPS 2 s of M.025B (HOUSE OPERATION ON). SV is changed during the hold: MV must not move within 2 s, and moves afterwards.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":"AUTO","say":"AUTO"},{"do":"wait","s":120},{"do":"mark","what":"mv","as":"m0"},{"do":"set","tag":"M.025B","value":1,"say":"HOUSE OPERATION ON = 1 (2 s hold starts)"},{"do":"sv","value":150,"say":"SV = 150 during hold"},{"do":"wait","s":1},{"expect":"signal","tag":"M.018B","value":1,"say":"M.018B at 1 s"},{"expect":"cmp","what":"mv","than":"m0","value":"unchanged","tol":0.3,"say":"MV at 1 s (held)"},{"do":"wait","s":20},{"expect":"signal","tag":"M.018B","value":0,"say":"M.018B at 21 s (2 s elapsed)"},{"expect":"cmp","what":"mv","than":"m0","value":"increased","min":0.5,"say":"MV after hold: moved (increased or decreased)"}]}]},"ABC-008":{"sheet":"ABC-008","title":"TEST CARD: furnace pressure (hydraulic coupling) PICFG108 — force manual M.0205","pdf":"analog-logic-abc.zip > ABC-008.pdf","scenarios":[{"id":"TC1","loop":"PICFG108","title":"Cold start: PICFG108 is forced to MANUAL","drawing":"M.0205 = OR( NOT M.3304 (ID FAN RUNNING), M.0206 = PICFG108.MV \u003c 14 %, NOT M.0202, SIG.AB ). M.0202 = FF: S = TPS 2 s of HYDRAULIC CONTROL SELECT (CRT) AND |PICFG108A.MV − F(X) of PICFG108.MV| \u003c 1 %; R = TPS 2 s of M.0201. M.0205 is 1:B of the PICFG108 A/M T switch.","steps":[{"do":"wait","s":5},{"expect":"signal","tag":"M.0205","value":1,"say":"M.0205 (force manual)","why":"cold start: ID fan stopped"},{"expect":"mode","value":"MANUAL","say":"PICFG108 mode"},{"expect":"faceplate","value":"FORCE MANUAL","say":"Panel indication"},{"expect":"disabled","button":"AUTO","value":"disabled","say":"AUTO button"}]},{"id":"TC2","loop":"PICFG108","title":"ID fan running, damper MV matched, hydraulic control selected, MV still 13 %: still forced; raise MV to 20 %: force clears","drawing":"On ID fan start the MV is preset to 13 % (SI0183, M.020E). The CRT HYDRAULIC CONTROL SELECT sets M.0202 only when |PICFG108A.MV − F(X) of PICFG108.MV| \u003c 1 % (bumpless transfer from damper to hydraulic coupling). M.0206 = MV \u003c 14 % keeps M.0205 = 1 until the operator raises the MV.","steps":[{"do":"set","tag":"M.3304","value":1,"say":"ID fan running (M.3304 = 1): PICFG108 MV preset to 13 % (M.020E, constant 13)"},{"do":"wait","s":3},{"expect":"signal","tag":"SI0181","value":92.857,"tol":0.1,"say":"SI0181 = F(X) LN13 of PICFG108.MV (13 %)"},{"do":"mv","loop":"PICFG108A","value":92.9,"say":"PICFG108A (damper): MV = 92.9 % to match SI0181"},{"do":"wait","s":3},{"expect":"signal","tag":"SI0182","value":0.04,"tol":0.5,"say":"SI0182 = |PICFG108A.MV − SI0181| (must be \u003c 1 %)"},{"do":"set","near":"HYDRAULIC CONTROL SELECT","value":1,"say":"Operator (CRT): HYDRAULIC CONTROL SELECT"},{"do":"wait","s":1},{"do":"set","near":"HYDRAULIC CONTROL SELECT","value":0,"say":"release the CRT button"},{"do":"wait","s":3},{"expect":"signal","tag":"M.0202","value":1,"say":"M.0202 (hydraulic control selected)"},{"expect":"signal","tag":"M.0205","value":1,"say":"M.0205 with MV 13 %","why":"M.0206: MV \u003c 14 %"},{"do":"mv","value":20,"say":"MV = 20 %"},{"do":"wait","s":3},{"expect":"signal","tag":"M.0206","value":0,"say":"M.0206 (MV \u003c 14 %)"},{"expect":"signal","tag":"M.0205","value":0,"say":"M.0205 (force manual)","why":"all permissives made"},{"expect":"disabled","button":"AUTO","value":"enabled","say":"AUTO button"},{"do":"press","button":"AUTO","say":"PICFG108: press A"},{"expect":"mode","value":"AUTO","say":"PICFG108 mode after A"}]},{"id":"TC3","loop":"PICFG108","title":"In AUTO, ID fan stops: PICFG108 to MANUAL","drawing":"M.3304 = 0: NOT M.3304 = 1, M.0205 = 1.","steps":[{"do":"set","tag":"M.3304","value":1,"say":"ID fan running (M.3304 = 1): PICFG108 MV preset to 13 % (M.020E, constant 13)"},{"do":"wait","s":3},{"expect":"signal","tag":"SI0181","value":92.857,"tol":0.1,"say":"SI0181 = F(X) LN13 of PICFG108.MV (13 %)"},{"do":"mv","loop":"PICFG108A","value":92.9,"say":"PICFG108A (damper): MV = 92.9 % to match SI0181"},{"do":"wait","s":3},{"expect":"signal","tag":"SI0182","value":0.04,"tol":0.5,"say":"SI0182 = |PICFG108A.MV − SI0181| (must be \u003c 1 %)"},{"do":"set","near":"HYDRAULIC CONTROL SELECT","value":1,"say":"Operator (CRT): HYDRAULIC CONTROL SELECT"},{"do":"wait","s":1},{"do":"set","near":"HYDRAULIC CONTROL SELECT","value":0,"say":"release the CRT button"},{"do":"wait","s":3},{"do":"mv","value":20,"say":"MV = 20 %"},{"do":"wait","s":3},{"do":"press","button":"AUTO","say":"PICFG108: press A"},{"expect":"mode","value":"AUTO","say":"PICFG108 mode"},{"do":"set","tag":"M.3304","value":0,"say":"ID fan stops"},{"do":"wait","s":1},{"expect":"signal","tag":"M.0205","value":1,"say":"M.0205 (force manual)"},{"expect":"mode","value":"MANUAL","say":"PICFG108 mode"}]}]},"ABC-010":{"sheet":"ABC-010","title":"TEST CARD: feedwater flow control FICFW1007 — force manual M.0228","pdf":"analog-logic-abc.zip > ABC-010.pdf","scenarios":[{"id":"TC1","loop":"FICFW1007","title":"Cold start: FICFW1007 is forced to MANUAL","drawing":"M.0228 = OR( NOT LICBR1001B.MAN (DRUM LEVEL CONTROL MANUAL FOR START-UP), BFWP A (M.3343) and B (M.3344) both stopped, SIG.AB B.0689·B.0640 / B.068A·B.0642, M.022E ). M.022E = OR( TON 60 s of M.022C = BOILER MAIN STEAM FLOW \u003c 100 T/H, SIG.AB ). M.0228 is 1:B of the FICFW1007 A/M T switch (force manual).","steps":[{"do":"wait","s":5},{"expect":"signal","tag":"M.0228","value":1,"say":"M.0228 (force manual)","why":"cold start: no BFWP running, start-up level control not in MANUAL, steam flow \u003c 100 T/H"},{"expect":"mode","value":"MANUAL","say":"FICFW1007 mode"},{"expect":"faceplate","value":"FORCE MANUAL","say":"Panel indication"},{"expect":"disabled","button":"AUTO","value":"disabled","say":"AUTO button","why":"AUTO not allowed while force is active"}]},{"id":"TC2","loop":"FICFW1007","title":"Permissives made: start-up control in MANUAL, BFWP A running, steam flow above 100 T/H for 60 s: force clears","drawing":"All OR inputs of M.0228 at 0: LICBR1001B.MAN = 1 (operator presses M on LICBR1001B), M.3343 = 1, FIQMS1031.PV above 100 T/H (AI0129 on ABC-001C; > 100: M.022C = 0, the TON 60 s output drops). The A/M T switch holds the MANUAL leg: the operator selects AUTO.","steps":[{"do":"press","loop":"LICBR1001B","button":"MAN","say":"LICBR1001B: press M (start-up drum level control to MANUAL)"},{"do":"set","tag":"M.3343","value":1,"say":"BFWP A running (M.3343 = 1)"},{"do":"set","sheet":"ABC-001C","tag":"AI0129","value":200,"say":"Main steam flow transmitter AI0129 (ABC-001C) = 200 T/H"},{"do":"wait","s":65},{"expect":"signal","tag":"LICBR1001B.MAN","value":1,"say":"LICBR1001B.MAN"},{"expect":"signal","tag":"M.022C","value":0,"say":"M.022C (steam flow \u003c 100 T/H)"},{"expect":"signal","tag":"M.0228","value":0,"say":"M.0228 (force manual)","why":"all permissives made"},{"expect":"mode","value":"MANUAL","say":"FICFW1007 mode","why":"no automatic return to AUTO"},{"expect":"disabled","button":"AUTO","value":"enabled","say":"AUTO button"},{"do":"press","button":"AUTO","say":"FICFW1007: press A"},{"expect":"mode","value":"AUTO","say":"FICFW1007 mode after A"}]},{"id":"TC3","loop":"FICFW1007","title":"In AUTO, both BFWP stop: FICFW1007 trips to MANUAL","drawing":"M.3343 = 0 and M.3344 = 0: the AND of the two NOTs is 1, M.0228 = 1, the A/M T switch goes to B (MANUAL) at once.","steps":[{"do":"press","loop":"LICBR1001B","button":"MAN","say":"LICBR1001B: press M"},{"do":"set","tag":"M.3343","value":1,"say":"BFWP A running"},{"do":"set","sheet":"ABC-001C","tag":"AI0129","value":200,"say":"Main steam flow transmitter AI0129 = 200 T/H"},{"do":"wait","s":65},{"do":"press","button":"AUTO","say":"FICFW1007: press A"},{"expect":"mode","value":"AUTO","say":"FICFW1007 mode"},{"do":"set","tag":"M.3343","value":0,"say":"BFWP A stops (B already stopped)"},{"do":"wait","s":2},{"expect":"signal","tag":"M.0228","value":1,"say":"M.0228 (force manual)"},{"expect":"mode","value":"MANUAL","say":"FICFW1007 mode","why":"forced to MANUAL"}]}]}}}</script><script id="uatui">/* UAT runner: runs one test case of one block on the simulator (AN) and compares the result with the expected rows. Used by the generator (dry run) and by the UAT panel. */
+</script><!--THEME-END--><!--UAT-BEGIN--><script id="uatdata" type="application/json">{"ver":"2.2.0-beta.6","known":{},"scen":{"ABC-002":{"sheet":"ABC-002","title":"TEST CARD: O2 trim AICFG112 — force manual M.0103","pdf":"analog-logic-abc.zip > ABC-002.pdf","scenarios":[{"id":"TC1","loop":"AICFG112","title":"Cold start: AICFG112 is forced to MANUAL","drawing":"M.0103 = OR( |SI0014 − SI0019| ≤ 0 % (connector 1: the low select LS of boiler master BM and the air limit SI0019 picks the limit), |SI0018 − SI0021| ≤ 0 % (connector 2: the high select picks SI0018), M.0102 = OR( NOT FICFA1081.REM, NOT M.0101 = BOILER MAIN STEAM FLOW > 220 T/H ), SIG.AB B.0671·B.0701 ). M.0103 is 1:B of the AICFG112 A/M T switch.","steps":[{"do":"wait","s":5},{"expect":"signal","tag":"M.0102","value":1,"say":"M.0102","why":"FICFA1081 not in REMOTE, steam flow below 220 T/H"},{"expect":"signal","tag":"M.0103","value":1,"say":"M.0103 (force manual)"},{"expect":"mode","value":"MANUAL","say":"AICFG112 mode"},{"expect":"faceplate","value":"FORCE MANUAL","say":"Panel indication"},{"expect":"disabled","button":"AUTO","value":"disabled","say":"AUTO button"}]},{"id":"TC2","loop":"AICFG112","title":"FICFA1081 in REMOTE, steam flow above 220 T/H, no cross limit active: force clears","drawing":"M.0101 = 1 (> 220 T/H), FICFA1081.REM = 1: M.0102 = 0. BM below SI0019: the low select gives BM, the difference is not 0; SI0018 below SI0021: the high select gives SI0021, the difference is not 0. The A/M T switch holds the MANUAL leg: the operator selects AUTO.","steps":[{"do":"set","sheet":"ABC-002","tag":"FICFA1081.REM","value":1,"say":"Secondary air flow FICFA1081 in REMOTE (FICFA1081.REM = 1)"},{"do":"set","sheet":"ABC-001C","tag":"AI0129","value":474.1,"say":"Main steam flow transmitter AI0129 (ABC-001C) = 474.1 T/H (150 MW snapshot): M.0101 = steam flow > 220 T/H"},{"do":"set","sheet":"ABC-006","tag":"FIFA1081.PV","value":300,"say":"Secondary air flow FIFA1081.PV (ABC-006) = 300"},{"do":"set","sheet":"ABC-006","tag":"FIFA1071.PV","value":200,"say":"Primary air flow FIFA1071.PV (ABC-006) = 200: total air flow (TAF) about 501"},{"do":"set","sheet":"ABC-001C","tag":"SI0213","value":30,"say":"Boiler master SI0213 (ABC-001C, BM) = 30, below the air limit SI0019"},{"do":"wait","s":30},{"expect":"signal","tag":"M.0101","value":1,"say":"M.0101 (main steam flow > 220 T/H, from ABC-001C)"},{"expect":"signal","tag":"M.0102","value":0,"say":"M.0102"},{"expect":"signal","tag":"SI0014","value":30,"tol":0.5,"say":"SI0014 = low select (gives BM 30)"},{"expect":"signal","tag":"M.0103","value":0,"say":"M.0103 (force manual)","why":"all permissives made"},{"expect":"disabled","button":"AUTO","value":"enabled","say":"AUTO button"},{"do":"press","button":"AUTO","say":"AICFG112: press A"},{"expect":"mode","value":"AUTO","say":"AICFG112 mode after A"}]},{"id":"TC3","loop":"AICFG112","title":"In AUTO, boiler master rises above the air limit (cross limit active): AICFG112 to MANUAL","drawing":"BM 90 > SI0019: the low select gives SI0019, |SI0014 − SI0019| = 0, connector 1 = 1, M.0103 = 1.","steps":[{"do":"set","sheet":"ABC-002","tag":"FICFA1081.REM","value":1,"say":"Secondary air flow FICFA1081 in REMOTE (FICFA1081.REM = 1)"},{"do":"set","sheet":"ABC-001C","tag":"AI0129","value":474.1,"say":"Main steam flow transmitter AI0129 (ABC-001C) = 474.1 T/H (150 MW snapshot): M.0101 = steam flow > 220 T/H"},{"do":"set","sheet":"ABC-006","tag":"FIFA1081.PV","value":300,"say":"Secondary air flow FIFA1081.PV (ABC-006) = 300"},{"do":"set","sheet":"ABC-006","tag":"FIFA1071.PV","value":200,"say":"Primary air flow FIFA1071.PV (ABC-006) = 200: total air flow (TAF) about 501"},{"do":"set","sheet":"ABC-001C","tag":"SI0213","value":30,"say":"Boiler master SI0213 (ABC-001C, BM) = 30, below the air limit SI0019"},{"do":"wait","s":30},{"do":"press","button":"AUTO","say":"AICFG112: press A"},{"expect":"mode","value":"AUTO","say":"AICFG112 mode"},{"do":"set","sheet":"ABC-001C","tag":"SI0213","value":90,"say":"Boiler master SI0213 = 90 (above the air limit)"},{"do":"wait","s":2},{"expect":"signal","tag":"M.0103","value":1,"say":"M.0103 (force manual)","why":"air cross limit active"},{"expect":"mode","value":"MANUAL","say":"AICFG112 mode"}]}]},"ABC-004A":{"sheet":"ABC-004A","title":"TEST CARD: coal master HS-COAL — force manual M.2020","pdf":"analog-logic-abc.zip > ABC-004A.pdf","scenarios":[{"id":"TC1","loop":"HS-COAL","title":"Cold start: HS-COAL is forced to MANUAL","drawing":"M.2020 = OR( PIC-COBM.MAN (CONTROL IN MANUAL), NOT A-CF RUN (M.3400 via TOF 2 s, connector 7), NOT B-CF RUN (M.015E), NOT C-CF RUN (M.016E), NOT M.3410 / M.3411 / M.3416 / M.3417 = AND of the two SUPPLY OIL VALVE CLOSE inputs of burner A / B / C / D ). M.2020 is 1:B of the HS-COAL A/M T switch.","steps":[{"do":"wait","s":5},{"expect":"signal","tag":"M.2020","value":1,"say":"M.2020 (force manual)","why":"cold start: coal feeders stopped, oil valve close signals 0"},{"expect":"mode","value":"MANUAL","say":"HS-COAL mode"},{"expect":"faceplate","value":"FORCE MANUAL","say":"Panel indication"},{"expect":"disabled","button":"AUTO","value":"disabled","say":"AUTO button"}]},{"id":"TC2","loop":"HS-COAL","title":"All coal feeders running, all burner oil valves closed, coal master not in MANUAL: force clears","drawing":"Every OR input of M.2020 at 0. The A/M T switch holds the MANUAL leg; the operator selects AUTO.","steps":[{"do":"set","near":"PIC-COBM.MAN","value":0,"say":"Coal master PIC-COBM not in MANUAL (PIC-COBM.MAN = 0)"},{"do":"set","tag":"M.3400","value":1,"say":"Coal feeder A running (M.3400 = 1)"},{"do":"set","tag":"M.015E","value":1,"say":"Coal feeder B running (M.015E, from ABC-004B)"},{"do":"set","tag":"M.016E","value":1,"say":"Coal feeder C running (M.016E, from ABC-004C)"},{"do":"set","near":"A-BNR SUPPLY OIL","nth":0,"value":1,"say":"A burner oil valve(2) closed (I.0003 ZSC-DO1043-A2)"},{"do":"set","near":"A-BNR SUPPLY OIL","nth":1,"value":1,"say":"A burner oil valve(1) closed (I.0001 ZSC-DO1043-A1)"},{"do":"set","near":"B-BNR SUPPLY OIL","nth":0,"value":1,"say":"B burner oil valve(2) closed (I.0323)"},{"do":"set","near":"B-BNR SUPPLY OIL","nth":1,"value":1,"say":"B burner oil valve(1) closed (I.0321)"},{"do":"set","near":"C-BNR SUPPLY OIL","nth":0,"value":1,"say":"C burner oil valve(2) closed (I.0643)"},{"do":"set","near":"C-BNR SUPPLY OIL","nth":1,"value":1,"say":"C burner oil valve(1) closed (I.0641)"},{"do":"set","near":"D-BNR SUPPLY OIL","nth":0,"value":1,"say":"D burner oil valve(2) closed (I.0963)"},{"do":"set","near":"D-BNR SUPPLY OIL","nth":1,"value":1,"say":"D burner oil valve(1) closed (I.0961)"},{"do":"wait","s":5},{"expect":"signal","tag":"M.3410","value":1,"say":"M.3410 (A burner oil valves both closed)"},{"expect":"signal","tag":"M.3417","value":1,"say":"M.3417 (D burner oil valves both closed)"},{"expect":"signal","tag":"M.2020","value":0,"say":"M.2020 (force manual)","why":"all permissives made"},{"expect":"mode","value":"MANUAL","say":"HS-COAL mode","why":"no automatic return to AUTO"},{"expect":"disabled","button":"AUTO","value":"enabled","say":"AUTO button"},{"do":"press","button":"AUTO","say":"HS-COAL: press A"},{"expect":"mode","value":"AUTO","say":"HS-COAL mode after A"}]},{"id":"TC3","loop":"HS-COAL","title":"In AUTO, coal feeder A stops: HS-COAL to MANUAL after the 2 s TOF","drawing":"M.3400 = 0: TOF 2 s keeps M.014E at 1 for 2 s, then NOT M.014E = 1, M.2020 = 1.","steps":[{"do":"set","near":"PIC-COBM.MAN","value":0,"say":"Coal master PIC-COBM not in MANUAL (PIC-COBM.MAN = 0)"},{"do":"set","tag":"M.3400","value":1,"say":"Coal feeder A running (M.3400 = 1)"},{"do":"set","tag":"M.015E","value":1,"say":"Coal feeder B running (M.015E, from ABC-004B)"},{"do":"set","tag":"M.016E","value":1,"say":"Coal feeder C running (M.016E, from ABC-004C)"},{"do":"set","near":"A-BNR SUPPLY OIL","nth":0,"value":1,"say":"A burner oil valve(2) closed (I.0003 ZSC-DO1043-A2)"},{"do":"set","near":"A-BNR SUPPLY OIL","nth":1,"value":1,"say":"A burner oil valve(1) closed (I.0001 ZSC-DO1043-A1)"},{"do":"set","near":"B-BNR SUPPLY OIL","nth":0,"value":1,"say":"B burner oil valve(2) closed (I.0323)"},{"do":"set","near":"B-BNR SUPPLY OIL","nth":1,"value":1,"say":"B burner oil valve(1) closed (I.0321)"},{"do":"set","near":"C-BNR SUPPLY OIL","nth":0,"value":1,"say":"C burner oil valve(2) closed (I.0643)"},{"do":"set","near":"C-BNR SUPPLY OIL","nth":1,"value":1,"say":"C burner oil valve(1) closed (I.0641)"},{"do":"set","near":"D-BNR SUPPLY OIL","nth":0,"value":1,"say":"D burner oil valve(2) closed (I.0963)"},{"do":"set","near":"D-BNR SUPPLY OIL","nth":1,"value":1,"say":"D burner oil valve(1) closed (I.0961)"},{"do":"wait","s":5},{"do":"press","button":"AUTO","say":"HS-COAL: press A"},{"expect":"mode","value":"AUTO","say":"HS-COAL mode"},{"do":"set","tag":"M.3400","value":0,"say":"Coal feeder A stops"},{"do":"wait","s":1},{"expect":"signal","tag":"M.2020","value":0,"say":"M.2020 after 1 s","why":"TOF 2 s still holds"},{"do":"wait","s":3},{"expect":"signal","tag":"M.2020","value":1,"say":"M.2020 after 4 s"},{"expect":"mode","value":"MANUAL","say":"HS-COAL mode"}]},{"id":"TC4","loop":"HS-COAL","title":"In AUTO, one burner oil valve opens: HS-COAL to MANUAL","drawing":"A-BNR SUPPLY OIL VALVE(1) CLOSE = 0: M.3410 = 0, NOT M.3410 = 1, M.2020 = 1.","steps":[{"do":"set","near":"PIC-COBM.MAN","value":0,"say":"Coal master PIC-COBM not in MANUAL (PIC-COBM.MAN = 0)"},{"do":"set","tag":"M.3400","value":1,"say":"Coal feeder A running (M.3400 = 1)"},{"do":"set","tag":"M.015E","value":1,"say":"Coal feeder B running (M.015E, from ABC-004B)"},{"do":"set","tag":"M.016E","value":1,"say":"Coal feeder C running (M.016E, from ABC-004C)"},{"do":"set","near":"A-BNR SUPPLY OIL","nth":0,"value":1,"say":"A burner oil valve(2) closed (I.0003 ZSC-DO1043-A2)"},{"do":"set","near":"A-BNR SUPPLY OIL","nth":1,"value":1,"say":"A burner oil valve(1) closed (I.0001 ZSC-DO1043-A1)"},{"do":"set","near":"B-BNR SUPPLY OIL","nth":0,"value":1,"say":"B burner oil valve(2) closed (I.0323)"},{"do":"set","near":"B-BNR SUPPLY OIL","nth":1,"value":1,"say":"B burner oil valve(1) closed (I.0321)"},{"do":"set","near":"C-BNR SUPPLY OIL","nth":0,"value":1,"say":"C burner oil valve(2) closed (I.0643)"},{"do":"set","near":"C-BNR SUPPLY OIL","nth":1,"value":1,"say":"C burner oil valve(1) closed (I.0641)"},{"do":"set","near":"D-BNR SUPPLY OIL","nth":0,"value":1,"say":"D burner oil valve(2) closed (I.0963)"},{"do":"set","near":"D-BNR SUPPLY OIL","nth":1,"value":1,"say":"D burner oil valve(1) closed (I.0961)"},{"do":"wait","s":5},{"do":"press","button":"AUTO","say":"HS-COAL: press A"},{"do":"set","near":"A-BNR SUPPLY OIL","nth":1,"value":0,"say":"A burner oil valve(1) not closed"},{"do":"wait","s":1},{"expect":"signal","tag":"M.2020","value":1,"say":"M.2020 (force manual)"},{"expect":"mode","value":"MANUAL","say":"HS-COAL mode"}]}]},"ABC-007":{"sheet":"ABC-007","title":"PAF inlet air flow control FICFA1071 (A / M / REMOTE, force manual, interlock)","pdf":"analog-logic-abc.zip > (19)ABC-007.pdf","scenarios":[{"id":"A1","loop":"FICFA1071","title":"Cold start: PA fan stopped (M.3302 = 0)","drawing":"M.0180 = OR(M.0098, M.018F, M.0188); at M.0188, M.3302 PA FAN RUNNING has a NOT (⊠). M.0180 is 1:B of the A/M T switch (force manual) and 1:B of the SV T switch (force LOCAL).","steps":[{"do":"set","tag":"M.3302","value":0},{"do":"wait","s":10},{"expect":"signal","tag":"M.0180","value":1,"say":"M.0180 (force manual)","why":"fan not running"},{"expect":"mode","value":"MANUAL","say":"Loop mode"},{"expect":"faceplate","value":"FORCE MANUAL","say":"Panel indication"},{"expect":"disabled","button":"AUTO","value":"disabled","say":"AUTO button","why":"AUTO not allowed while force is active"},{"expect":"sv-switch","value":"B (operator / LOCAL)","say":"SV switch","why":"M.0180 = 1:B of SV T switch"}]},{"id":"A2","loop":"FICFA1071","title":"PA fan running: force cleared, but NO automatic return to AUTO","drawing":"When M.3302 = 1 the NOT is 0, M.0188 = 0, M.0180 = 0 (if no other condition). The A/M T switch has no 1:A pulse, so it holds the last leg (B = manual). The operator selects AUTO.","steps":[{"do":"set","tag":"M.3302","value":0},{"do":"wait","s":10},{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"expect":"signal","tag":"M.0180","value":0,"say":"M.0180 (force manual)","why":"fan now running"},{"expect":"mode","value":"MANUAL","say":"Loop mode","why":"no automatic transfer to AUTO"},{"expect":"disabled","button":"AUTO","value":"enabled","say":"AUTO button"},{"do":"press","button":"AUTO","say":"Press AUTO"},{"expect":"mode","value":"AUTO","say":"Loop mode after pressing AUTO"}]},{"id":"A3","loop":"FICFA1071","title":"Loop in AUTO, then fan stops: immediate return to MANUAL","drawing":"M.0180 = 1 → 1:B of A/M T switch: leg B (manual) is selected even in AUTO.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":"AUTO","say":"AUTO"},{"expect":"mode","value":"AUTO","say":"Mode before fan stop"},{"do":"set","tag":"M.3302","value":0},{"do":"wait","s":3},{"expect":"signal","tag":"M.0180","value":1,"say":"M.0180 (force manual)"},{"expect":"mode","value":"MANUAL","say":"Mode after fan stop"},{"expect":"disabled","button":"AUTO","value":"disabled","say":"AUTO button"}]},{"id":"A4","loop":"FICFA1071","title":"MANUAL: operator MV appears at FICFA1071.MV","drawing":"A/M T switch B = COS (operator manual MV). Followed by the BU-CMD T switch (A = A/M out, B = RB-MV 50 %, 1:B = M.0181). If M.0181 = 0, A is passed.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":"MAN","say":"MAN"},{"do":"mv","value":40,"say":"Set MV = 40"},{"do":"wait","s":3},{"expect":"signal","tag":"M.0181","value":0,"say":"M.0181 (backup command)"},{"expect":"signal","tag":"FICFA1071.MV","value":40,"tol":0.5,"say":"FICFA1071.MV"},{"do":"mv","value":75,"say":"Set MV = 75"},{"do":"wait","s":3},{"expect":"signal","tag":"FICFA1071.MV","value":75,"tol":0.5,"say":"FICFA1071.MV"}]},{"id":"A5","loop":"FICFA1071","title":"MFT pulse (TPS 5 s) causes force manual for 5 seconds only","drawing":"L000F MFT PULSE → TPS/5s (TR30) → M.0182 → M.0178 → M.0188 → M.0180. TPS is a pulse: 1 for 5 s after the input rising edge, even if the input stays 1.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":"AUTO","say":"AUTO"},{"expect":"mode","value":"AUTO","say":"Mode before MFT"},{"do":"set","near":"MFT PULSE","value":1,"say":"MFT pulse = 1 (held, not reset)"},{"do":"wait","s":2},{"expect":"signal","tag":"M.0182","value":1,"say":"M.0182 at 2 s"},{"expect":"signal","tag":"M.0180","value":1,"say":"M.0180 at 2 s"},{"expect":"mode","value":"MANUAL","say":"Mode at 2 s"},{"do":"wait","s":6},{"expect":"signal","tag":"M.0182","value":0,"say":"M.0182 at 8 s","why":"5 s pulse ended"},{"expect":"signal","tag":"M.0180","value":0,"say":"M.0180 at 8 s"},{"expect":"mode","value":"MANUAL","say":"Mode at 8 s","why":"does not return to AUTO by itself"}]},{"id":"T1","loop":"FICFA1071","title":"Force manual of PA (M.0180) and SA (M.0190): each drawing condition, steady state","wait":12,"base":[{"tag":"M.3302","value":1,"say":"PA fan running"},{"tag":"M.3303","value":1,"say":"SA fan running"}],"drawing":"M.0180 PA MASTER FORCE MANUAL = OR(M.0098, M.018F, M.0188). M.0188 = OR(M.0178, B.0734, B.071C, NOT M.3302). M.0178 'PA FAN AUTO INHIBIT' = OR(MFT pulse, AND(PICFG108.MAN, PICFG108A.MAN), M.0138 ANY FUEL FLOW). M.0190 SA MASTER FORCE MANUAL = OR(M.0098, M.019F, M.0198); M.0198 = OR(M.0178, NOT M.3303, B.074C, B.0721, B.0729, AND(B.0733, B.074B)). Memory list: M.0180 'PA MASTER FORCE MANUAL', M.0190 'SA MASTER FORCE MANUAL'. House operation: M.018E = |setting - PV| \u003c= 3 T/H (setting 230 PAF / 245 SAF); AND with M.025B; TPS 2 s (TR49 / TR69) = pulse only, 2 seconds.","cases":[{"say":"All normal (both fans running, no abnormal)","set":[],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"PA fan stopped (M.3302 = 0): PA only","set":[{"tag":"M.3302","value":0}],"expect":[{"tag":"M.0180","value":1,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"SA fan stopped (M.3303 = 0): SA only","set":[{"tag":"M.3303","value":0}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":1,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"PA fan inlet temp abnormal (B.0734): PA only","set":[{"tag":"B.0734","value":1}],"expect":[{"tag":"M.0180","value":1,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"PA fan inlet flow abnormal (B.071C): PA only","set":[{"tag":"B.071C","value":1}],"expect":[{"tag":"M.0180","value":1,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"SA fan inlet temp abnormal (B.074C): SA only","set":[{"tag":"B.074C","value":1}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":1,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"SA fan inlet flow abnormal (B.0721): SA only","set":[{"tag":"B.0721","value":1}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":1,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"FA blower outlet flow abnormal (B.0729): SA only","set":[{"tag":"B.0729","value":1}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":1,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"FA blower-A temp abnormal only (B.0733): none (AND)","set":[{"tag":"B.0733","value":1}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"FA blower-B temp abnormal only (B.074B): none (AND)","set":[{"tag":"B.074B","value":1}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"FA blower-A AND B temp abnormal: SA","set":[{"tag":"B.0733","value":1},{"tag":"B.074B","value":1}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":1,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"ANY FUEL FLOW SIG.AB (M.0138): PA and SA","set":[{"tag":"M.0138","value":1}],"expect":[{"tag":"M.0180","value":1,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":1,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"PICFG108.MAN only: none (AND)","set":[{"near":"FURNACE PRESSURE CONTROL(H/C) IN MANUAL","value":1}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"PICFG108A.MAN only: none (AND)","set":[{"near":"FURNACE PRESSURE CONTROL(DAMPER) IN MANUAL","value":1}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"PICFG108.MAN AND PICFG108A.MAN: PA and SA","set":[{"near":"FURNACE PRESSURE CONTROL(H/C) IN MANUAL","value":1},{"near":"FURNACE PRESSURE CONTROL(DAMPER) IN MANUAL","value":1}],"expect":[{"tag":"M.0180","value":1,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":1,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"M.0098 from ABC-003E: PA and SA","set":[{"tag":"M.0098","value":1}],"expect":[{"tag":"M.0180","value":1,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":1,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"House operation (M.025B = 1), PA PV = 230 T/H (setting): PA only (TPS 2 s pulse: check within 2 s)","set":[{"tag":"M.025B","value":1},{"tag":"FIFA1071.PV","value":230}],"expect":[{"tag":"M.0180","value":1,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}],"wait":1},{"say":"House operation, SA PV = 245 T/H (setting): SA only (TPS 2 s pulse: check within 2 s)","set":[{"tag":"M.025B","value":1},{"tag":"FIFA1081.PV","value":245}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":1,"say":"M.0190 SA MASTER FORCE MANUAL"}],"wait":1},{"say":"House operation but PV far off (100 T/H): none","set":[{"tag":"M.025B","value":1},{"tag":"FIFA1071.PV","value":100},{"tag":"FIFA1081.PV","value":100}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]},{"say":"PV = setting but not house operation (M.025B = 0): none","set":[{"tag":"FIFA1071.PV","value":230},{"tag":"FIFA1081.PV","value":245}],"expect":[{"tag":"M.0180","value":0,"say":"M.0180 PA MASTER FORCE MANUAL"},{"tag":"M.0190","value":0,"say":"M.0190 SA MASTER FORCE MANUAL"}]}]},{"id":"T2","loop":"FICFA1071","title":"PAF SV path: REMOTE, demand, BUMPLESS ramp, house operation","drawing":"SV T switch A = SI0160: demand SI0045 through BUMPLESS RAMP 0.05 %/sec of 648 T/H = 0.324 T/H per second; 1:BYPASS = FICFA1071.LOC (LOCAL = demand passed directly). In house operation (M.025B) the SV is the 230 T/H setting at rate limit 0.5T/Sec; the rate limit is bypassed (⊠ = NOT) when NOT in house operation, so it follows the PV immediately (T switch a = FICFA1071.PV). Demand SI0045 comes from ABC-002 (circle PAD/002), so it is set on ABC-002 and the effect is checked here.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"set","tag":"M.3303","value":1},{"do":"wait","s":10},{"do":"press","button":"REMOTE","say":"Press REMOTE (SV from logic)"},{"expect":"sv-switch","value":"A (logic / REMOTE)","say":"SV switch after REMOTE"},{"expect":"mode","value":"AUTO","say":"Mode (REMOTE = actually AUTO)"},{"do":"set","tag":"FICFA1071.LOC","value":1},{"do":"set","tag":"SI0045","value":300,"sheet":"ABC-002"},{"do":"wait","s":3},{"expect":"signal","tag":"SI0160","value":300,"tol":1,"say":"SI0160 in LOCAL (ramp bypassed)","why":"demand passed directly"},{"do":"set","tag":"FICFA1071.LOC","value":0},{"do":"set","tag":"SI0045","value":320,"sheet":"ABC-002"},{"do":"wait","s":10},{"expect":"signal","tag":"SI0160","value":303.24,"tol":0.7,"say":"SI0160 10 s after demand step to 320 (not LOCAL)","why":"0.324 T/H per second x 10 s from 300"},{"do":"set","tag":"FIFA1071.PV","value":150},{"do":"wait","s":3},{"expect":"signal","tag":"SI0169","value":150,"tol":1,"say":"SI0169 when not in house operation","why":"rate limit bypassed, follows PV"},{"do":"set","tag":"M.025B","value":1},{"do":"wait","s":4},{"expect":"signal","tag":"SI0169","value":152,"tol":1.2,"say":"SI0169 4 s after house operation starts (rate limit 0.5 T/s, rising toward 230)","why":"0.5 T/s x ~3 s (1 s TON before selecting 230)"},{"do":"wait","s":300},{"expect":"signal","tag":"SI0169","value":230,"tol":0.5,"say":"SI0169 after a long time in house operation","why":"reached house setting 230 T/H"}]},{"id":"O1-FICFA1071","loop":"FICFA1071","title":"FICFA1071: MANUAL — MV field, 0 / 50 / 100 buttons, and PV (process) response","drawing":"A/M T switch B = COS = operator manual MV; BU-CMD T passes through when M.0181 = 0; AO = damper. Damper more open = more air = PV increases (PV = air flow).","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"expect":"mode","value":"MANUAL","say":"Initial mode (fan running, not yet AUTO)"},{"do":"mark","what":"pv","as":"pv0"},{"do":"press","button":"100","say":"Press 100"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1071.MV","value":100,"tol":0.5,"say":"FICFA1071.MV after button 100"},{"do":"wait","s":400},{"expect":"cmp","what":"pv","than":"pv0","value":"increased","min":259.2,"say":"PV after 400 s at MV = 100 (process responds)"},{"do":"mark","what":"pv","as":"pv100"},{"do":"wait","s":2},{"do":"press","button":"0","say":"Press 0"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1071.MV","value":0,"tol":0.5,"say":"FICFA1071.MV after button 0"},{"do":"wait","s":600},{"expect":"cmp","what":"pv","than":"pv100","value":"decreased","min":259.2,"say":"PV after 10 min at MV = 0 (process responds)"},{"do":"press","button":"50","say":"Press 50"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1071.MV","value":50,"tol":0.5,"say":"FICFA1071.MV after button 50"},{"do":"mv","value":75,"say":"Enter MV = 75"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1071.MV","value":75,"tol":0.5,"say":"FICFA1071.MV after entering 75"},{"expect":"field","name":"MV","value":"enabled","say":"MV field in MANUAL"}]},{"id":"O2-FICFA1071","loop":"FICFA1071","title":"FICFA1071: Operator SV (LOCAL) — SV field, + and − buttons","drawing":"SV T switch B = COS = operator SV. + and − are 1 % of range (648 T/H = 6.48 T/H per press).","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"expect":"field","name":"SV","value":"disabled","say":"SV field in MANUAL","why":"SV is for AUTO only"},{"do":"press","button":"AUTO","say":"Press AUTO"},{"do":"sv","value":300,"say":"Enter SV = 300"},{"do":"wait","s":1},{"expect":"sv","value":300,"tol":0.1,"say":"SV net"},{"do":"press","button":"+","say":"Press +"},{"do":"wait","s":1},{"expect":"sv","value":306.48,"tol":0.1,"say":"SV after +"},{"do":"press","button":"−","say":"Press −"},{"do":"wait","s":1},{"expect":"sv","value":300,"tol":0.1,"say":"SV after −"},{"expect":"sv-switch","value":"B (operator / LOCAL)","say":"SV switch"}]},{"id":"O3-FICFA1071","loop":"FICFA1071","title":"FICFA1071: AUTO with process — PID must bring PV to SV; in AUTO the operator moves the SV (not the MV)","drawing":"PID ACT:R (reverse: PV below SV = MV increases). A/M T: A = PID output. In AUTO, the operator does not control the MV.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"mv","value":50,"say":"MV = 50 (manual)"},{"do":"wait","s":120},{"do":"press","button":"AUTO","say":"Press AUTO"},{"do":"sv","value":298.08000000000004,"say":"SV = 46 % of range"},{"expect":"mode","value":"AUTO","say":"Mode after pressing AUTO"},{"expect":"field","name":"MV","value":"disabled","say":"MV field in AUTO","why":"in AUTO, the operator moves the SV"},{"do":"wait","s":1200},{"expect":"near-pv","pct":4,"value":"at SV","say":"PV near SV after 20 min in AUTO"},{"do":"sv","value":356.40000000000003,"say":"Change SV to 55 % of range"},{"do":"wait","s":1200},{"expect":"near-pv","pct":4,"value":"at SV","say":"PV near new SV after 20 min"}]},{"id":"O4-FICFA1071","loop":"FICFA1071","title":"FICFA1071: AUTO -> MAN without MV bump (bumpless)","drawing":"PID and COS track the output when B is selected, so there is no bump.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"mv","value":50,"say":"MV = 50"},{"do":"wait","s":60},{"do":"press","button":"AUTO","say":"Press AUTO"},{"do":"sv","value":324,"say":"SV"},{"do":"wait","s":300},{"do":"mark","what":"mv","as":"mvA"},{"do":"press","button":"MAN","say":"Press MAN"},{"do":"wait","s":1},{"expect":"mode","value":"MANUAL","say":"Mode after MAN"},{"expect":"cmp","what":"mv","than":"mvA","value":"unchanged","tol":0.3,"say":"MV after MAN vs. MV before"}]},{"id":"O5-FICFA1071","loop":"FICFA1071","title":"FICFA1071: REMOTE and LOCAL — REMOTE = actually AUTO, no MAN, no SV entry; LOCAL = operator control restored","drawing":"REMOTE: SV T switch is A (SI0160 / SI0170 = demand through BUMPLESS ramp). The operator cannot select MAN or set the SV. LOCAL is B (COS).","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":"REMOTE","say":"Press REMOTE"},{"do":"wait","s":3},{"do":"mark","what":"sv","as":"svR"},{"expect":"sv-switch","value":"A (logic / REMOTE)","say":"SV switch"},{"expect":"mode","value":"AUTO","say":"Mode"},{"expect":"disabled","button":"MAN","value":"disabled","say":"MAN button"},{"expect":"field","name":"SV","value":"disabled","say":"SV field"},{"expect":"field","name":"MV","value":"disabled","say":"MV field"},{"do":"press","button":"LOCAL","say":"Press LOCAL"},{"do":"wait","s":1},{"expect":"cmp","what":"sv","than":"svR","value":"unchanged","tol":1,"say":"SV after LOCAL vs. SV in REMOTE (bumpless)"},{"expect":"sv-switch","value":"B (operator / LOCAL)","say":"SV switch after LOCAL"},{"expect":"disabled","button":"MAN","value":"enabled","say":"MAN button after LOCAL"},{"expect":"field","name":"SV","value":"enabled","say":"SV field after LOCAL"},{"do":"press","button":"MAN","say":"Press MAN"},{"expect":"mode","value":"MANUAL","say":"Mode after MAN"},{"expect":"field","name":"MV","value":"enabled","say":"MV field in MANUAL"}]},{"id":"O6-FICFA1071","loop":"FICFA1071","title":"FICFA1071: drawing mode inputs (.MAN .LOC .REM) are HMI buttons","drawing":"FICFA1071.MAN, FICFA1071.LOC, FICFA1071.REM are drawing inputs from the HMI; M.018D / M.019D = OR of these and house operation (SET SV rule).","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":".LOC","say":"Press .LOC"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1071.LOC","value":1,"say":"FICFA1071.LOC"},{"do":"press","button":".LOC","say":"Press .LOC"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1071.LOC","value":0,"say":"FICFA1071.LOC after second press (toggle)"},{"do":"press","button":".REM","say":"Press .REM"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1071.REM","value":1,"say":"FICFA1071.REM"},{"do":"press","button":".REM","say":"Press .REM"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1071.REM","value":0,"say":"FICFA1071.REM toggle"},{"do":"press","button":".MAN","say":"Press .MAN"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1071.MAN","value":1,"say":"FICFA1071.MAN"},{"do":"press","button":".MAN","say":"Press .MAN"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1071.MAN","value":0,"say":"FICFA1071.MAN toggle"}]},{"id":"O7-FICFA1071","loop":"FICFA1071","title":"FICFA1071: AUTO with process, fan stops, fan restarts, operator selects AUTO","drawing":"M.0180 / M.0190 = 1 -> 1:B of A/M T (manual, bumpless: MV continues) and of SV T (LOCAL). When the signal clears, no automatic return to AUTO.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"mv","value":50,"say":"MV"},{"do":"wait","s":60},{"do":"press","button":"AUTO","say":"Press AUTO"},{"do":"sv","value":324,"say":"SV"},{"do":"wait","s":600},{"expect":"mode","value":"AUTO","say":"Mode before trip"},{"do":"mark","what":"mv","as":"mvT"},{"do":"set","tag":"M.3302","value":0},{"do":"wait","s":1},{"expect":"mode","value":"MANUAL","say":"Mode after fan stop"},{"expect":"cmp","what":"mv","than":"mvT","value":"unchanged","tol":0.3,"say":"MV after trip vs. before (bumpless)"},{"expect":"disabled","button":"AUTO","value":"disabled","say":"AUTO button"},{"expect":"sv-switch","value":"B (operator / LOCAL)","say":"SV switch"},{"do":"mv","value":20,"say":"Manual MV = 20 during force"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1071.MV","value":20,"tol":0.5,"say":"FICFA1071.MV"},{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"expect":"mode","value":"MANUAL","say":"Mode after fan restart","why":"not automatic"},{"expect":"disabled","button":"AUTO","value":"enabled","say":"AUTO button"},{"do":"press","button":"AUTO","say":"Press AUTO"},{"expect":"mode","value":"AUTO","say":"Mode after pressing AUTO"}]},{"id":"O1-FICFA1081","loop":"FICFA1081","title":"FICFA1081: MANUAL — MV field, 0 / 50 / 100 buttons, and PV (process) response","drawing":"A/M T switch B = COS = operator manual MV; BU-CMD T passes through when M.0181 = 0; AO = damper. Damper more open = more air = PV increases (PV = air flow).","steps":[{"do":"set","tag":"M.3303","value":1},{"do":"wait","s":10},{"expect":"mode","value":"MANUAL","say":"Initial mode (fan running, not yet AUTO)"},{"do":"mark","what":"pv","as":"pv0"},{"do":"press","button":"100","say":"Press 100"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1081.MV","value":100,"tol":0.5,"say":"FICFA1081.MV after button 100"},{"do":"wait","s":400},{"expect":"cmp","what":"pv","than":"pv0","value":"increased","min":172.8,"say":"PV after 400 s at MV = 100 (process responds)"},{"do":"mark","what":"pv","as":"pv100"},{"do":"wait","s":2},{"do":"press","button":"0","say":"Press 0"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1081.MV","value":0,"tol":0.5,"say":"FICFA1081.MV after button 0"},{"do":"wait","s":600},{"expect":"cmp","what":"pv","than":"pv100","value":"decreased","min":172.8,"say":"PV after 10 min at MV = 0 (process responds)"},{"do":"press","button":"50","say":"Press 50"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1081.MV","value":50,"tol":0.5,"say":"FICFA1081.MV after button 50"},{"do":"mv","value":75,"say":"Enter MV = 75"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1081.MV","value":75,"tol":0.5,"say":"FICFA1081.MV after entering 75"},{"expect":"field","name":"MV","value":"enabled","say":"MV field in MANUAL"}]},{"id":"O2-FICFA1081","loop":"FICFA1081","title":"FICFA1081: Operator SV (LOCAL) — SV field, + and − buttons","drawing":"SV T switch B = COS = operator SV. + and − are 1 % of range (432 T/H = 4.32 T/H per press).","steps":[{"do":"set","tag":"M.3303","value":1},{"do":"wait","s":10},{"expect":"field","name":"SV","value":"disabled","say":"SV field in MANUAL","why":"SV is for AUTO only"},{"do":"press","button":"AUTO","say":"Press AUTO"},{"do":"sv","value":300,"say":"Enter SV = 300"},{"do":"wait","s":1},{"expect":"sv","value":300,"tol":0.1,"say":"SV net"},{"do":"press","button":"+","say":"Press +"},{"do":"wait","s":1},{"expect":"sv","value":304.32,"tol":0.1,"say":"SV after +"},{"do":"press","button":"−","say":"Press −"},{"do":"wait","s":1},{"expect":"sv","value":300,"tol":0.1,"say":"SV after −"},{"expect":"sv-switch","value":"B (operator / LOCAL)","say":"SV switch"}]},{"id":"O3-FICFA1081","loop":"FICFA1081","title":"FICFA1081: AUTO with process — PID must bring PV to SV; in AUTO the operator moves the SV (not the MV)","drawing":"PID ACT:R (reverse: PV below SV = MV increases). A/M T: A = PID output. In AUTO, the operator does not control the MV.","steps":[{"do":"set","tag":"M.3303","value":1},{"do":"wait","s":10},{"do":"mv","value":50,"say":"MV = 50 (manual)"},{"do":"wait","s":120},{"do":"press","button":"AUTO","say":"Press AUTO"},{"do":"sv","value":198.72,"say":"SV = 46 % of range"},{"expect":"mode","value":"AUTO","say":"Mode after pressing AUTO"},{"expect":"field","name":"MV","value":"disabled","say":"MV field in AUTO","why":"in AUTO, the operator moves the SV"},{"do":"wait","s":1200},{"expect":"near-pv","pct":4,"value":"at SV","say":"PV near SV after 20 min in AUTO"},{"do":"sv","value":237.60000000000002,"say":"Change SV to 55 % of range"},{"do":"wait","s":1200},{"expect":"near-pv","pct":4,"value":"at SV","say":"PV near new SV after 20 min"}]},{"id":"O4-FICFA1081","loop":"FICFA1081","title":"FICFA1081: AUTO -> MAN without MV bump (bumpless)","drawing":"PID and COS track the output when B is selected, so there is no bump.","steps":[{"do":"set","tag":"M.3303","value":1},{"do":"wait","s":10},{"do":"mv","value":50,"say":"MV = 50"},{"do":"wait","s":60},{"do":"press","button":"AUTO","say":"Press AUTO"},{"do":"sv","value":216,"say":"SV"},{"do":"wait","s":300},{"do":"mark","what":"mv","as":"mvA"},{"do":"press","button":"MAN","say":"Press MAN"},{"do":"wait","s":1},{"expect":"mode","value":"MANUAL","say":"Mode after MAN"},{"expect":"cmp","what":"mv","than":"mvA","value":"unchanged","tol":0.3,"say":"MV after MAN vs. MV before"}]},{"id":"O5-FICFA1081","loop":"FICFA1081","title":"FICFA1081: REMOTE and LOCAL — REMOTE = actually AUTO, no MAN, no SV entry; LOCAL = operator control restored","drawing":"REMOTE: SV T switch is A (SI0160 / SI0170 = demand through BUMPLESS ramp). The operator cannot select MAN or set the SV. LOCAL is B (COS).","steps":[{"do":"set","tag":"M.3303","value":1},{"do":"wait","s":10},{"do":"press","button":"REMOTE","say":"Press REMOTE"},{"do":"wait","s":3},{"do":"mark","what":"sv","as":"svR"},{"expect":"sv-switch","value":"A (logic / REMOTE)","say":"SV switch"},{"expect":"mode","value":"AUTO","say":"Mode"},{"expect":"disabled","button":"MAN","value":"disabled","say":"MAN button"},{"expect":"field","name":"SV","value":"disabled","say":"SV field"},{"expect":"field","name":"MV","value":"disabled","say":"MV field"},{"do":"press","button":"LOCAL","say":"Press LOCAL"},{"do":"wait","s":1},{"expect":"cmp","what":"sv","than":"svR","value":"unchanged","tol":1,"say":"SV after LOCAL vs. SV in REMOTE (bumpless)"},{"expect":"sv-switch","value":"B (operator / LOCAL)","say":"SV switch after LOCAL"},{"expect":"disabled","button":"MAN","value":"enabled","say":"MAN button after LOCAL"},{"expect":"field","name":"SV","value":"enabled","say":"SV field after LOCAL"},{"do":"press","button":"MAN","say":"Press MAN"},{"expect":"mode","value":"MANUAL","say":"Mode after MAN"},{"expect":"field","name":"MV","value":"enabled","say":"MV field in MANUAL"}]},{"id":"O6-FICFA1081","loop":"FICFA1081","title":"FICFA1081: drawing mode inputs (.MAN .LOC .REM) are HMI buttons","drawing":"FICFA1081.MAN, FICFA1081.LOC, FICFA1081.REM are drawing inputs from the HMI; M.018D / M.019D = OR of these and house operation (SET SV rule).","steps":[{"do":"set","tag":"M.3303","value":1},{"do":"wait","s":10},{"do":"press","button":".LOC","say":"Press .LOC"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1081.LOC","value":1,"say":"FICFA1081.LOC"},{"do":"press","button":".LOC","say":"Press .LOC"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1081.LOC","value":0,"say":"FICFA1081.LOC after second press (toggle)"},{"do":"press","button":".REM","say":"Press .REM"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1081.REM","value":1,"say":"FICFA1081.REM"},{"do":"press","button":".REM","say":"Press .REM"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1081.REM","value":0,"say":"FICFA1081.REM toggle"},{"do":"press","button":".MAN","say":"Press .MAN"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1081.MAN","value":1,"say":"FICFA1081.MAN"},{"do":"press","button":".MAN","say":"Press .MAN"},{"do":"wait","s":1},{"expect":"signal","tag":"FICFA1081.MAN","value":0,"say":"FICFA1081.MAN toggle"}]},{"id":"O7-FICFA1081","loop":"FICFA1081","title":"FICFA1081: AUTO with process, fan stops, fan restarts, operator selects AUTO","drawing":"M.0180 / M.0190 = 1 -> 1:B of A/M T (manual, bumpless: MV continues) and of SV T (LOCAL). When the signal clears, no automatic return to AUTO.","steps":[{"do":"set","tag":"M.3303","value":1},{"do":"wait","s":10},{"do":"mv","value":50,"say":"MV"},{"do":"wait","s":60},{"do":"press","button":"AUTO","say":"Press AUTO"},{"do":"sv","value":216,"say":"SV"},{"do":"wait","s":600},{"expect":"mode","value":"AUTO","say":"Mode before trip"},{"do":"mark","what":"mv","as":"mvT"},{"do":"set","tag":"M.3303","value":0},{"do":"wait","s":1},{"expect":"mode","value":"MANUAL","say":"Mode after fan stop"},{"expect":"cmp","what":"mv","than":"mvT","value":"unchanged","tol":0.3,"say":"MV after trip vs. before (bumpless)"},{"expect":"disabled","button":"AUTO","value":"disabled","say":"AUTO button"},{"expect":"sv-switch","value":"B (operator / LOCAL)","say":"SV switch"},{"do":"mv","value":20,"say":"Manual MV = 20 during force"},{"do":"wait","s":2},{"expect":"signal","tag":"FICFA1081.MV","value":20,"tol":0.5,"say":"FICFA1081.MV"},{"do":"set","tag":"M.3303","value":1},{"do":"wait","s":10},{"expect":"mode","value":"MANUAL","say":"Mode after fan restart","why":"not automatic"},{"expect":"disabled","button":"AUTO","value":"enabled","say":"AUTO button"},{"do":"press","button":"AUTO","say":"Press AUTO"},{"expect":"mode","value":"AUTO","say":"Mode after pressing AUTO"}]},{"id":"B1","loop":"FICFA1071","title":"BU-CMD: MFT pulse with damper open > 50 % — MV forced to 50 % (RB-MV), then released","drawing":"M.0181 = AND(M.253F, M.0182). M.253F = HC > 50 of positioner feedback AI0192. M.0182 = TPS 5 s of MFT pulse (I.000F). When M.0181 = 1, the BU-CMD T switch passes B = RB-MV 50 %.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":"MAN","say":"MAN"},{"do":"mv","value":80,"say":"MV = 80"},{"do":"wait","s":20},{"expect":"signal","tag":"M.253F","value":1,"say":"M.253F (damper > 50 %)"},{"do":"set","near":"MFT PULSE","value":1,"say":"MFT pulse = 1"},{"do":"wait","s":2},{"expect":"signal","tag":"M.0182","value":1,"say":"M.0182"},{"expect":"signal","tag":"M.0181","value":1,"say":"M.0181"},{"do":"wait","s":30},{"expect":"signal","tag":"FICFA1071.MV","value":50,"tol":1,"say":"FICFA1071.MV at 32 s"},{"expect":"signal","tag":"M.0182","value":0,"say":"M.0182 after 5 s"},{"expect":"signal","tag":"M.0181","value":0,"say":"M.0181 after the pulse"},{"do":"wait","s":30},{"expect":"signal","tag":"FICFA1071.MV","value":50,"tol":1,"say":"MV after pulse (tracking: A/M station follows BU-CMD, does not return to 80)","why":"The drawing shows no MV restore: the MV follows the bumpless tracking of the A/M station as drawn."}]},{"id":"B2","loop":"FICFA1071","title":"BU-CMD: MFT pulse with damper closed (\u003c 50 %) — no BU-CMD, operator MV unchanged","drawing":"M.0181 = AND(M.253F, M.0182): if AI0192 is not > 50 %, M.0181 = 0 even with an MFT pulse.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":"MAN","say":"MAN"},{"do":"mv","value":20,"say":"MV = 20"},{"do":"wait","s":20},{"expect":"signal","tag":"M.253F","value":0,"say":"M.253F (damper \u003c 50 %)"},{"do":"set","near":"MFT PULSE","value":1,"say":"MFT pulse = 1"},{"do":"wait","s":2},{"expect":"signal","tag":"M.0182","value":1,"say":"M.0182"},{"expect":"signal","tag":"M.0181","value":0,"say":"M.0181"},{"do":"wait","s":10},{"expect":"signal","tag":"FICFA1071.MV","value":20,"tol":1,"say":"FICFA1071.MV"}]},{"id":"B3","loop":"FICFA1071","title":"Low PA flow alarm: M.3130 (\u003c 220 T/H) and M.3131 (\u003c 200 T/H, TON 5 s)","drawing":"PAF FLOW (n72) -> LC \u003c 220 T/H -> M.3130 (PRIMARY AIR FLOW LOW, TO DITL 41-01). n72 -> LC \u003c 200 T/H -> TON 5 s -> M.3131 (PRIMARY AIR FLOW LL, TO DITL 03F-17).","steps":[{"do":"set","net":72,"value":250,"say":"PA flow = 250 T/H"},{"do":"wait","s":8},{"expect":"signal","tag":"M.3130","value":0,"say":"M.3130 at 250 T/H"},{"expect":"signal","tag":"M.3131","value":0,"say":"M.3131 at 250 T/H"},{"do":"set","net":72,"value":210,"say":"PA flow = 210 T/H"},{"do":"wait","s":8},{"expect":"signal","tag":"M.3130","value":1,"say":"M.3130 at 210 T/H"},{"expect":"signal","tag":"M.3131","value":0,"say":"M.3131 at 210 T/H (not yet 200)"},{"do":"set","net":72,"value":190,"say":"PA flow = 190 T/H"},{"do":"wait","s":2},{"expect":"signal","tag":"M.3131","value":0,"say":"M.3131 at 2 s (TON 5 s)"},{"do":"wait","s":6},{"expect":"signal","tag":"M.3130","value":1,"say":"M.3130 at 190 T/H"},{"expect":"signal","tag":"M.3131","value":1,"say":"M.3131 after 5 s"},{"do":"set","net":72,"value":250,"say":"PA flow restored = 250 T/H"},{"do":"wait","s":8},{"expect":"signal","tag":"M.3130","value":0,"say":"M.3130 restored"},{"expect":"signal","tag":"M.3131","value":0,"say":"M.3131 restored"}]},{"id":"B4","loop":"FICFA1071","title":"FAULT T switch: during the 2 s pulse of M.018B (TPS of M.025B) the PID output is held even if SV changes; it moves again afterwards","drawing":"AMT with \"FAULT\": B = own output (last value held) when M.018B = 1. M.018B = TPS 2 s of M.025B (HOUSE OPERATION ON). SV is changed during the hold: MV must not move within 2 s, and moves afterwards.","steps":[{"do":"set","tag":"M.3302","value":1},{"do":"wait","s":10},{"do":"press","button":"AUTO","say":"AUTO"},{"do":"wait","s":120},{"do":"mark","what":"mv","as":"m0"},{"do":"set","tag":"M.025B","value":1,"say":"HOUSE OPERATION ON = 1 (2 s hold starts)"},{"do":"sv","value":150,"say":"SV = 150 during hold"},{"do":"wait","s":1},{"expect":"signal","tag":"M.018B","value":1,"say":"M.018B at 1 s"},{"expect":"cmp","what":"mv","than":"m0","value":"unchanged","tol":0.3,"say":"MV at 1 s (held)"},{"do":"wait","s":20},{"expect":"signal","tag":"M.018B","value":0,"say":"M.018B at 21 s (2 s elapsed)"},{"expect":"cmp","what":"mv","than":"m0","value":"increased","min":0.5,"say":"MV after hold: moved (increased or decreased)"}]}]},"ABC-008":{"sheet":"ABC-008","title":"TEST CARD: furnace pressure (hydraulic coupling) PICFG108 — force manual M.0205","pdf":"analog-logic-abc.zip > ABC-008.pdf","scenarios":[{"id":"TC1","loop":"PICFG108","title":"Cold start: PICFG108 is forced to MANUAL","drawing":"M.0205 = OR( NOT M.3304 (ID FAN RUNNING), M.0206 = PICFG108.MV \u003c 14 %, NOT M.0202, SIG.AB ). M.0202 = FF: S = TPS 2 s of HYDRAULIC CONTROL SELECT (CRT) AND |PICFG108A.MV − F(X) of PICFG108.MV| \u003c 1 %; R = TPS 2 s of M.0201. M.0205 is 1:B of the PICFG108 A/M T switch.","steps":[{"do":"wait","s":5},{"expect":"signal","tag":"M.0205","value":1,"say":"M.0205 (force manual)","why":"cold start: ID fan stopped"},{"expect":"mode","value":"MANUAL","say":"PICFG108 mode"},{"expect":"faceplate","value":"FORCE MANUAL","say":"Panel indication"},{"expect":"disabled","button":"AUTO","value":"disabled","say":"AUTO button"}]},{"id":"TC2","loop":"PICFG108","title":"ID fan running, damper MV matched, hydraulic control selected, MV still 13 %: still forced; raise MV to 20 %: force clears","drawing":"On ID fan start the MV is preset to 13 % (SI0183, M.020E). The CRT HYDRAULIC CONTROL SELECT sets M.0202 only when |PICFG108A.MV − F(X) of PICFG108.MV| \u003c 1 % (bumpless transfer from damper to hydraulic coupling). M.0206 = MV \u003c 14 % keeps M.0205 = 1 until the operator raises the MV.","steps":[{"do":"set","tag":"M.3304","value":1,"say":"ID fan running (M.3304 = 1): PICFG108 MV preset to 13 % (M.020E, constant 13)"},{"do":"wait","s":3},{"expect":"signal","tag":"SI0181","value":92.857,"tol":0.1,"say":"SI0181 = F(X) LN13 of PICFG108.MV (13 %)"},{"do":"mv","loop":"PICFG108A","value":92.9,"say":"PICFG108A (damper): MV = 92.9 % to match SI0181"},{"do":"wait","s":3},{"expect":"signal","tag":"SI0182","value":0.04,"tol":0.5,"say":"SI0182 = |PICFG108A.MV − SI0181| (must be \u003c 1 %)"},{"do":"set","near":"HYDRAULIC CONTROL SELECT","value":1,"say":"Operator (CRT): HYDRAULIC CONTROL SELECT"},{"do":"wait","s":1},{"do":"set","near":"HYDRAULIC CONTROL SELECT","value":0,"say":"release the CRT button"},{"do":"wait","s":3},{"expect":"signal","tag":"M.0202","value":1,"say":"M.0202 (hydraulic control selected)"},{"expect":"signal","tag":"M.0205","value":1,"say":"M.0205 with MV 13 %","why":"M.0206: MV \u003c 14 %"},{"do":"mv","value":20,"say":"MV = 20 %"},{"do":"wait","s":3},{"expect":"signal","tag":"M.0206","value":0,"say":"M.0206 (MV \u003c 14 %)"},{"expect":"signal","tag":"M.0205","value":0,"say":"M.0205 (force manual)","why":"all permissives made"},{"expect":"disabled","button":"AUTO","value":"enabled","say":"AUTO button"},{"do":"press","button":"AUTO","say":"PICFG108: press A"},{"expect":"mode","value":"AUTO","say":"PICFG108 mode after A"}]},{"id":"TC3","loop":"PICFG108","title":"In AUTO, ID fan stops: PICFG108 to MANUAL","drawing":"M.3304 = 0: NOT M.3304 = 1, M.0205 = 1.","steps":[{"do":"set","tag":"M.3304","value":1,"say":"ID fan running (M.3304 = 1): PICFG108 MV preset to 13 % (M.020E, constant 13)"},{"do":"wait","s":3},{"expect":"signal","tag":"SI0181","value":92.857,"tol":0.1,"say":"SI0181 = F(X) LN13 of PICFG108.MV (13 %)"},{"do":"mv","loop":"PICFG108A","value":92.9,"say":"PICFG108A (damper): MV = 92.9 % to match SI0181"},{"do":"wait","s":3},{"expect":"signal","tag":"SI0182","value":0.04,"tol":0.5,"say":"SI0182 = |PICFG108A.MV − SI0181| (must be \u003c 1 %)"},{"do":"set","near":"HYDRAULIC CONTROL SELECT","value":1,"say":"Operator (CRT): HYDRAULIC CONTROL SELECT"},{"do":"wait","s":1},{"do":"set","near":"HYDRAULIC CONTROL SELECT","value":0,"say":"release the CRT button"},{"do":"wait","s":3},{"do":"mv","value":20,"say":"MV = 20 %"},{"do":"wait","s":3},{"do":"press","button":"AUTO","say":"PICFG108: press A"},{"expect":"mode","value":"AUTO","say":"PICFG108 mode"},{"do":"set","tag":"M.3304","value":0,"say":"ID fan stops"},{"do":"wait","s":1},{"expect":"signal","tag":"M.0205","value":1,"say":"M.0205 (force manual)"},{"expect":"mode","value":"MANUAL","say":"PICFG108 mode"}]}]},"ABC-010":{"sheet":"ABC-010","title":"TEST CARD: feedwater flow control FICFW1007 — force manual M.0228","pdf":"analog-logic-abc.zip > ABC-010.pdf","scenarios":[{"id":"TC1","loop":"FICFW1007","title":"Cold start: FICFW1007 is forced to MANUAL","drawing":"M.0228 = OR( NOT LICBR1001B.MAN (DRUM LEVEL CONTROL MANUAL FOR START-UP), BFWP A (M.3343) and B (M.3344) both stopped, SIG.AB B.0689·B.0640 / B.068A·B.0642, M.022E ). M.022E = OR( TON 60 s of M.022C = BOILER MAIN STEAM FLOW \u003c 100 T/H, SIG.AB ). M.0228 is 1:B of the FICFW1007 A/M T switch (force manual).","steps":[{"do":"wait","s":5},{"expect":"signal","tag":"M.0228","value":1,"say":"M.0228 (force manual)","why":"cold start: no BFWP running, start-up level control not in MANUAL, steam flow \u003c 100 T/H"},{"expect":"mode","value":"MANUAL","say":"FICFW1007 mode"},{"expect":"faceplate","value":"FORCE MANUAL","say":"Panel indication"},{"expect":"disabled","button":"AUTO","value":"disabled","say":"AUTO button","why":"AUTO not allowed while force is active"}]},{"id":"TC2","loop":"FICFW1007","title":"Permissives made: start-up control in MANUAL, BFWP A running, steam flow above 100 T/H for 60 s: force clears","drawing":"All OR inputs of M.0228 at 0: LICBR1001B.MAN = 1 (operator presses M on LICBR1001B), M.3343 = 1, FIQMS1031.PV above 100 T/H (AI0129 on ABC-001C; > 100: M.022C = 0, the TON 60 s output drops). The A/M T switch holds the MANUAL leg: the operator selects AUTO.","steps":[{"do":"press","loop":"LICBR1001B","button":"MAN","say":"LICBR1001B: press M (start-up drum level control to MANUAL)"},{"do":"set","tag":"M.3343","value":1,"say":"BFWP A running (M.3343 = 1)"},{"do":"set","sheet":"ABC-001C","tag":"AI0129","value":200,"say":"Main steam flow transmitter AI0129 (ABC-001C) = 200 T/H"},{"do":"wait","s":65},{"expect":"signal","tag":"LICBR1001B.MAN","value":1,"say":"LICBR1001B.MAN"},{"expect":"signal","tag":"M.022C","value":0,"say":"M.022C (steam flow \u003c 100 T/H)"},{"expect":"signal","tag":"M.0228","value":0,"say":"M.0228 (force manual)","why":"all permissives made"},{"expect":"mode","value":"MANUAL","say":"FICFW1007 mode","why":"no automatic return to AUTO"},{"expect":"disabled","button":"AUTO","value":"enabled","say":"AUTO button"},{"do":"press","button":"AUTO","say":"FICFW1007: press A"},{"expect":"mode","value":"AUTO","say":"FICFW1007 mode after A"}]},{"id":"TC3","loop":"FICFW1007","title":"In AUTO, both BFWP stop: FICFW1007 trips to MANUAL","drawing":"M.3343 = 0 and M.3344 = 0: the AND of the two NOTs is 1, M.0228 = 1, the A/M T switch goes to B (MANUAL) at once.","steps":[{"do":"press","loop":"LICBR1001B","button":"MAN","say":"LICBR1001B: press M"},{"do":"set","tag":"M.3343","value":1,"say":"BFWP A running"},{"do":"set","sheet":"ABC-001C","tag":"AI0129","value":200,"say":"Main steam flow transmitter AI0129 = 200 T/H"},{"do":"wait","s":65},{"do":"press","button":"AUTO","say":"FICFW1007: press A"},{"expect":"mode","value":"AUTO","say":"FICFW1007 mode"},{"do":"set","tag":"M.3343","value":0,"say":"BFWP A stops (B already stopped)"},{"do":"wait","s":2},{"expect":"signal","tag":"M.0228","value":1,"say":"M.0228 (force manual)"},{"expect":"mode","value":"MANUAL","say":"FICFW1007 mode","why":"forced to MANUAL"}]}]}}}</script><script id="uatui">/* UAT runner: runs one test case of one block on the simulator (AN) and compares the result with the expected rows. Used by the generator (dry run) and by the UAT panel. */
 window.UATR = (function () {
   const fmt = x =>
     x == null || !isFinite(x)
