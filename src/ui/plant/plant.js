@@ -99,7 +99,8 @@
           let best = null,
             bd = 60;
           for (const t of S.tx || []) {
-            const x = t.t.trim();
+            /* 2.2.0-beta.7: a note in brackets after the tag is not part of it (ABC-030 "PCV-AS1020-1 ( NORMAL )", "PCV-AS1020-2 ( START-UP )") */
+            const x = t.t.trim().replace(/\s*\([^)]*\)\s*$/, '');
             if (!/^[A-Z]{2,4}-[A-Z]{2}\d{4}(-[A-Z0-9]{1,3})?$/.test(x) || !/V|D/.test(x.split('-')[0])) continue;
             const d = Math.hypot(t.x - b.cx, t.y - b.cy);
             if (d < bd) {
@@ -107,7 +108,19 @@
               best = x;
             }
           }
-          if (best && !vt.has(N(best))) vt.set(N(best), { sh: sh.name, n: b.pins[0].n });
+          /* 2.2.0-beta.7: a valve whose command is 100 - MV on the drawing (ABC-029 FCV-DO1012: AO = CONST 100 - HICDO1012.MV, I/P,
+             reverse acting): the screen shows the opening (6.PNG FCVDO1012 100.1 % with the station at 100 %), so the link shows 100 - signal */
+          let inv = 0;
+          try {
+            const up = n => (S.drv[n] || []).find(d => d.k !== 'LINK');
+            let d = up(b.pins[0].n);
+            for (let k = 0; k < 3 && d && (d.k === 'IP' || d.k === 'AO'); k++) d = up(d.i[0]);
+            if (d && d.k === 'SUB' && d.i.length === 2) {
+              const c = up(d.i[0]);
+              if (c && c.k === 'CONST' && Math.abs(S.rt.v[d.i[0]] - 100) < 1e-6) inv = 1;
+            }
+          } catch (e) {}
+          if (best && !vt.has(N(best))) vt.set(N(best), { sh: sh.name, n: b.pins[0].n, inv });
         }
     }
     try {
@@ -202,7 +215,7 @@
   };
   function netVal(r) {
     const sh = shOf(r.sh);
-    return sh && sh.S && sh.S.rt ? sh.S.rt.v[r.n] : null;
+    return sh && sh.S && sh.S.rt ? (r.inv ? 100 - sh.S.rt.v[r.n] : sh.S.rt.v[r.n]) : null;
   }
   function liveTick() {
     if (!ws || ws.style.display !== 'grid') return;

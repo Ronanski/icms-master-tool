@@ -66,6 +66,7 @@ const AN_HMI_AI = {
   '1|AI0448': [41.0, 'DPIFG1183'],
   '1|AI0449': [1014.0, 'DPIFG1184'],
   '1|AI0455': [19.2, 'AIFG1131'],
+  '1|AI0466': [41.0, 'AICFG10571'] /* 2.2.0-beta.7: stack outlet SOx AT-FG1057-1 (I/O list STN101 AI0466, 0 ~ 500 ppm) = PV of the SOx CONTROL (19.PNG PV 41 ppm, limestone feeding STOP); before, the model went to 307.5 ppm */,
   '1|AI0480': [29.0, 'MIFCL1061A'] /* 2.1.0-beta.11: coal feeder-A feedrate MIF-CL1061-A (11.png MICL1061A PV 29.0 T/H) */,
   '1|AI0484': [354.0, 'FIFA1071'],
   '1|AI0512': [29.1, 'MIFCL1061B'] /* 2.1.0-beta.11: coal feeder-B feedrate (11.png 29.1 T/H) */,
@@ -321,7 +322,7 @@ const AN_HMI_CTL = {
   LICHD11032: { pv: null, sv: null, mv: 0.1, mode: 'A' },
   'LICBR1001B': { pv: null, sv: null, mv: 0.6, mode: 'M' } /* start-up drum level valve FCVFW11302 0.6 % M (03.png) */,
   'AICFG10571': { pv: 41.0, sv: 200.0, mv: 11.0, mode: 'M' },
-  'AICFG112': { pv: null, sv: 3.5, mv: null, mode: 'R' },
+  'AICFG112': { pv: null, sv: 3.5, mv: 50.0, mode: 'R' } /* 2.2.0-beta.7: MV from the drawing: SA demand 211.5 T/H x O2 trim = SAF FLOW CTL R-SV 215.3 (7.PNG) -> trim 1.0 = S1-LN15(50 %), the MH of AICFG112 (PID summary). Before: the O2 model was anchored at the manual 100 % of the cold start and went to 2.4 % */,
   'DPICFG108': { pv: 1434.0, sv: 1475.0, mv: 0.0, mode: 'M' },
   'EIC-TM': { pv: 148.6, sv: 150.0, mv: 75.0, mode: 'A' },
   'FIC-CF': { pv: 72.8, sv: 73.0, mv: 72.8, mode: 'R' } /* 2.2.0-beta.1: not on a screen; from the drawing: PV = average of the 3 feeder MVs (72.8 %), MV = feeder AUTO-MV (bias 0.0), SV = FIC-CM.MV 73.0 % */,
@@ -421,7 +422,10 @@ const AN_HMI_FF = {
 const AN_HMI_MAN = {
   'HIC-MWHL': [238.4, '33.PNG MW OUTPUT HIGH LIMIT SET (clamped to the range of the station)'],
   'HIC-MWLL': [0.0, '33.PNG MW OUTPUT LOW LIMIT SET'],
-  'HIC-MWRL': [3.0, '33.PNG OUTPUT CHANGE RATE SET (MW/MIN)']
+  'HIC-MWRL': [3.0, '33.PNG OUTPUT CHANGE RATE SET (MW/MIN)'],
+  /* 2.2.0-beta.7: ABC-002 HIC-TADBS (station -50 ~ +50) -> F(X) S1-LN14 "PA FLOW BIAS" (x 0 % -> -30 T/H, 50 % -> 0, 100 % -> +30):
+     7.PNG PAF FLOW BIAS -30.0 T/H = station -50. PA demand = S1-LN12(coal 81 T/H) 380 - 30 = 350 T/H (7.PNG PAF FLOW CTL R-SV 354.6) */
+  'HIC-TADBS': [-50.0, '7.PNG PAF FLOW BIAS -30.0 T/H']
 };
 /* 2.1.0-beta.11: digital inputs that the drawing names only by a text beside the wire (no address): [sheet, text, nth (same text
    counted top to bottom), value, why]. ABC-004A: the 8 "BNR SUPPLY OIL VALVE CLOSE" inputs of HS-COAL (I/O list STN104
@@ -486,7 +490,11 @@ const AN_HMI_DI = {
   'M.3355': [1, 'seawater pump C running (30.PNG: SWP-C 207.6 A)'],
   'M.3200': [0, 'turbine trip (unit at 148.8 MW)'],
   'M.3220': [0, '52G1 opened (generator breaker closed at 148.8 MW)'],
-  'I.0418': [1, 'ICV to CV transfer complete (4.PNG: turbine on CV, CV(A) 46 %)']
+  'I.0418': [1, 'ICV to CV transfer complete (4.PNG: turbine on CV, CV(A) 46 %)'],
+  /* 2.2.0-beta.7: I/O list STN102 I.0931 MIG-52G1-1 "#1 GCB 52G1 on" (ABC-050, ABC-053). ABC-053: with the breaker on, the lube oil
+     temperature SV is 46 C (CONST 46), else LN22 (38 C); 27.PNG / 36.PNG lube oil after the coolers 46 C. Before: 0, SV 38 C, the
+     oil went to 40 C and the cooling water valve to 62 % (27.PNG TCVCW1201 53.1 %) */
+  'I.0931': [1, 'GCB 52G1 on (37.PNG: synchronized, 52G1 closed, red)']
 };
 /* 2.2.0-beta.3: the drum level transmitters LT-BR1001-1 / 2 / 3 (ABC-010 AI0130 / AI0258 / AI0386) and the main steam flow
    FT-MS1031 (ABC-001C AI0129) are raw values; the snapshot value is the COMPENSATED one that the drawing computes from them
@@ -534,6 +542,14 @@ function hmiComp() {
   } catch (e) {}
 }
 function anPlantLoad150() {
+  AN.steady = true;
+  try {
+    return anPlantLoad150_();
+  } finally {
+    AN.steady = false;
+  }
+}
+function anPlantLoad150_() {
   let n = 0;
   for (const sh of AN.sheets) {
     if (/^ABC-000/.test(sh.name)) continue;
@@ -803,6 +819,38 @@ function anPlantLoad150() {
           ps = h && h.mv != null ? S.rt.st[c.b.id] : null;
         if (ps) hmiPidSet(ps, c.b, h.mv);
       }
+    }
+  } catch (e) {}
+  /* 2.2.0-beta.7: the operator's mode selection once more, after the plant has settled: an interlock that a not-yet-selected mode
+     held for one scan (ABC-002 M.0103 / M.0102 = NOT FICFA1081.REM: the O2 trim AICFG112 is forced manual until the SA flow is in
+     REMOTE) is clear now, like the operator who puts the SA flow in REMOTE first and then the O2 trim in AUTO (7.PNG O2 CONTROL R).
+     A force manual of the drawing that is still active keeps the station manual (plant.js) */
+  try {
+    for (const [S, c, m] of modes) {
+      if (m === 'M') {
+        /* a MANUAL station: its manual MV of the snapshot again (the COS of the manual leg followed the PID output while the auto
+           leg was selected in the cold start: ABC-051 TICMS1022 HP bypass spray 7.9 % instead of 0.0 %, 4.PNG TCVFW1060 0.1 % M) */
+        const h = AN_HMI_CTL[c.tag],
+          rt = S.rt;
+        if (h && h.mv != null) {
+          if (c.manBlk && rt.st[c.manBlk.id]) rt.st[c.manBlk.id].val = h.mv;
+          else if (c.manNet != null && S.ext.includes(c.manNet)) rt.ext[c.manNet] = h.mv;
+          if (c.amt && rt.st[c.amt.id]) rt.st[c.amt.id].hold = h.mv;
+        }
+        continue;
+      }
+      const st = c.amt ? S.rt.st[c.amt.id] : null;
+      if (st) st.fm = c.autoLeg;
+      if (c.svSw && m === 'R') {
+        const q = S.rt.st[c.svSw.id];
+        if (q) q.fm = 'A';
+      }
+    }
+    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0);
+    for (const [S, c] of modes) {
+      const h = AN_HMI_CTL[c.tag],
+        ps = h && h.mv != null ? S.rt.st[c.b.id] : null;
+      if (ps) hmiPidSet(ps, c.b, h.mv);
     }
   } catch (e) {}
   AN.load150 = { ai: n, ctl: nc, di: nd, sv: nsv, man: nm_ };

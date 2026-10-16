@@ -392,7 +392,7 @@ function anProcStep(S, dt) {
         isFinite(u) &&
         hr.pv >= lo &&
         hr.pv <= lo + span &&
-        (b.p.lt !== 'flow' || ((hr.mv != null ? hr.mv : u) >= 2 && hr.pv - lo > 0.02 * span)) /* a flow at 0 with the valve open = an isolation valve is shut (oil burner out of service): not the control valve */
+        (b.p.lt !== 'flow' || hr.pv - lo > 0.02 * span) /* a flow at 0 with the valve open = an isolation valve is shut (oil burner out of service): not the control valve. 2.2.0-beta.7: a valve almost shut with flow through it is anchored too (15.PNG MCVFA1043D 1.7 % -> FIFA1043D 26.8 T/H; 28.png min-flow recirculation FCVCD1120 0.1 % with condensate flow FIQCD1120 380 T/H): see the gain below */
       ) {
         pr.hop = { mv: hr.mv != null ? hr.mv : u, pv: hr.pv, src: '150 MW load', dyn: 1 }; /* the MV of the snapshot when known, else the command now */
         pr.Ka = undefined;
@@ -418,7 +418,15 @@ function anProcStep(S, dt) {
              A flow is proportional to the valve (MV 0 = no flow: ABC-010 FICFW1007 499 T/H at 56 % -> 0 T/H at 0 %) */
           kdn = pr.sg > 0 ? dn / dl : up / dl;
         void dh;
-        pr.Ka = b.p.lt === 'flow' ? Math.max(0.02, kdn) : Math.max(0.02, Math.min(pr.K, 0.9 * kdn));
+        /* 2.2.0-beta.7: a flow with its valve almost shut (< 2 %) is not made by that valve alone (28.png: 380 T/H of condensate
+           with the min-flow recirculation valve at 0.1 %; the condensate pump and the deaerator level valve make it): the valve
+           adds to the flow of the snapshot (offset, gain K), instead of a flow proportional to a 0.1 % opening */
+        pr.Ka =
+          b.p.lt === 'flow'
+            ? pr.hop.mv < 2
+              ? pr.K
+              : Math.max(0.02, kdn)
+            : Math.max(0.02, Math.min(pr.K, 0.9 * kdn));
       }
     }
     const ss0 = c => lo + span * (0.5 + eff(c)),
@@ -547,13 +555,24 @@ function anProcStep(S, dt) {
     if (q.u == null) {
       w = y;
       q.g = 1;
+      /* 2.2.0-beta.7: several transmitters of one measurement (ABC-002 O2 before the APH: AIFG1122 side A 6.4 %, AIFG1123 side B
+         2.2 %, PV = their average 4.3 %, 7.PNG) keep their own reading around the model: each keeps its offset from their mean at
+         the first write (0 after a Reset: they start equal) */
+      if (tai.length > 1) {
+        const vs = tai.map(id => tr.st[id] && +tr.st[id].val);
+        if (vs.every(isFinite)) {
+          const m = vs.reduce((a, b) => a + b, 0) / vs.length;
+          q.off = {};
+          tai.forEach((id, i) => (q.off[id] = vs[i] - m));
+        }
+      }
       /* 2.2.0-beta.3: the PV already equals the model (Start at 150 MW): keep the raw transmitter where it is. A compensated
          measurement (ABC-010 drum level: raw DP level -> pressure compensation) is not equal to its raw value; writing the PV
          into the raw AI made the compensated level jump 156 mm */
       {
         const p0 = tv[tpin],
           a0 = tai.length ? tr.st[tai[0]] : null;
-        if (a0 && isFinite(p0) && Math.abs(y - p0) < 0.005 * span && isFinite(a0.val)) w = a0.val;
+        if (a0 && isFinite(p0) && Math.abs(y - p0) < 0.005 * span && isFinite(a0.val)) w = q.off ? a0.val - q.off[tai[0]] : a0.val;
       }
       /* compensation inputs of the chain (pressure, temperature...) that are not driven: start at the middle of their range, not at the bottom (a chain divided by a compensation of 0 gives nothing) */ for (const id of (R
         ? R.allAI
@@ -610,7 +629,8 @@ function anProcStep(S, dt) {
       const on_ = a.pins.filter(p => p.role === 'out').map(p => p.n);
       if (on_.some(n => tF[n] !== undefined)) continue;
       const r = a.rng,
-        x = r ? Math.max(r.lo, Math.min(r.hi, w)) : w;
+        w1 = w + ((q.off && q.off[id]) || 0),
+        x = r ? Math.max(r.lo, Math.min(r.hi, w1)) : w1;
       s.val = x;
       s.act = x;
     }
@@ -1334,7 +1354,7 @@ function anStep(S, dt) {
       case 'TPV': {
         const x = b.sg >= 0 ? B(rd(b.sg)) : 0,
           T = b.xin >= 0 ? rd(b.xin) : 0;
-        if (x && !s.prev && !s.run) {
+        if (x && !s.prev && !s.run && !AN.steady) {
           s.run = 1;
           s.acc = 0;
         }
@@ -1349,7 +1369,10 @@ function anStep(S, dt) {
       }
       case 'TPS': {
         const x = B(rd(b.i[0]));
-        if (x && !s.prev && !s.run) {
+        /* 2.2.0-beta.7: not while "Start at 150 MW" loads the plant (AN.steady): the snapshot is a steady state, a signal that the load
+           sets (ABC-050 I.0931 GCB 52G1 ON) closed long ago, so its pulse is over (before: a new "synchronization" pulse set ABC-052
+           M.070F and the LP bypass went to its 33 % preset) */
+        if (x && !s.prev && !s.run && !AN.steady) {
           s.run = 1;
           s.acc = 0;
         }
