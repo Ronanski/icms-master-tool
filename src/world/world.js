@@ -69,9 +69,43 @@
         return m ? m[1].toUpperCase() : null;
       },
       machOfDitl = t => {
-        const m = /\b(?:BFWP|FAB|BURNER|BNR|FEEDER|PUMP|BLOWER|COOLER|IGNITER|COMPRESSOR|DRYER|IWP|MWP|DOP|SWBP|SWP)\s*-?([A-D])\b/i.exec(t || '');
+        const m = /\b(?:BFWP|FAB|BURNER|BNR|FEEDER|PUMP|BLOWER|COOLER|IGNITER|COMPRESSOR|DRYER|IWP|MWP|DOP|SWBP|SWP|LOP|CWP|CP)\s*-?\(?([A-D])\)?\b/i.exec(t || '');
         return m ? m[1].toUpperCase() : null;
       };
+    /* machine letters of a text: "BURNER B" -> [B]; "B~D" / "A~C" -> the range */
+    const machs = t => {
+      const r = /\b([A-D])\s*~\s*([A-D])\b/i.exec(t || '');
+      if (r) {
+        const o = [];
+        for (let k = r[1].toUpperCase().charCodeAt(0); k <= r[2].toUpperCase().charCodeAt(0); k++) o.push(String.fromCharCode(k));
+        return o;
+      }
+      /* the LAST machine named is the one of the signal ("BFWP A AUX. LOP B TRIP" = LOP B) */
+      const all = [
+        ...String(t || '').matchAll(
+          /\b(?:BFWP|FAB|BURNER|BNR|FEEDER|PUMP|BLOWER|COOLER|IGNITER|COMPRESSOR|DRYER|IWP|MWP|DOP|SWBP|SWP|LOP|CWP|CP|VALVE)\s*-?\(?([A-D])\)?\b/gi
+        )
+      ];
+      return all.length ? [all[all.length - 1][1].toUpperCase()] : [];
+    };
+    /* a sheet whose drawing says "THE DIAGRAM IS THE SAME FOR ... B/C/D" (DITL-117, DITL-24 ...) is drawn for machine A */
+    const sameFor = d => {
+      if (d._same === undefined) {
+        const t = Object.values(d.cells || {})
+          .flat()
+          .map(x => x.t)
+          .concat(((d.tx || []).map ? d.tx : []).map(x => x.t))
+          .join(' ');
+        d._same = /DIAGRAM IS (?:THE )?SAME FOR/i.test(t);
+      }
+      return d._same;
+    };
+    const otherMach = (rowTxt, outTxt, od) => {
+      const a = machs(rowTxt.replace(/\(\s*[0-9]{2,3}[A-Z]?\s*-\s*\d{1,2}\s*\)/g, ' ')),
+        b0 = machs(outTxt),
+        b = b0.length ? b0 : od && sameFor(od) ? ['A'] : [];
+      return a.length && b.length && !a.some(x => b.includes(x));
+    };
     let dd = 0,
       other = 0;
     for (const s of S.sheets) {
@@ -83,7 +117,19 @@
           const o = outRow(f.code, f.nn);
           /* 2.2.0-beta.3: "(19-57)" in brackets = the same item of the OTHER machine drawn on this sheet (DITL-19 is drawn for coal
              feeder A, B and C use it with their own addresses "I.0130/450/490"); only machine A is simulated, so it is not linked */
-          if (o && f.other) {
+          /* 2.2.0-beta.5: only when the row and the output name DIFFERENT machines (DITL-24 row 26 "PAF LUB. OIL PUMP B
+             STOPPED (24-61)" -> 24-61 "PUMP A STOPPED"). The same machine or a range that holds it is linked (DITL-21E row 2
+             "SCREW COOLER D START COMMAND (21E-70) M.2158" -> 21E-70 "START COMMAND B~D" M.2148/50/58). beta.3 skipped every
+             bracket */
+          if (
+            o &&
+            f.other &&
+            otherMach(
+              ['S', 'T'].map(k => (s.cells[i + ':' + k] || []).map(x => x.t).join(' ')).join(' '),
+              (o.d.cells[o.row + ':RS'] || []).map(x => x.t).join(' '),
+              o.d
+            )
+          ) {
             other++;
             continue;
           }

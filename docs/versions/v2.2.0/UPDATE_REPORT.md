@@ -2,6 +2,14 @@
 
 Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 2.2.0-beta.5 — Audit ng hindi ikinabit; DITL-21E naibalik
+
+- **Problem (user):** "Ilang address ang ginawa mong ganyan, inalis para lang may gumana? Sinuri mo ba sa PDF?"
+- **As Found:** beta.3 nilaktawan ang LAHAT ng ref na nasa panaklong (84). Sa PDF, 4 sa DITL-21E ay hindi ibang makina (output 70 / 74 = command ng B~D): mali ang paglaktaw.
+- **Work Done:** lalaktawan lang kapag magkaiba ang makina ng row at ng output (o ang drawing ay may note na "SAME FOR ..."); DITL-21E row 2 / 5 / 16 / 19 nakakabit na. Buong listahan at ebidensya: `UNLINK_AUDIT.md`.
+- **As Left (headless):** 79 row ng makinang B / C / D na hindi ikinakabit sa A (bawat isa may letra ng ibang makina o note "SAME FOR"); 48 ABC input ng makinang B / C. ditl150 ALL PASS, world ALL PASS, scenarios 244 / 0.
+- **Status:** Beta.
+
 ## 2.2.0-beta.4 — DITL-40 MAIN STEAM PRESSURE LOW LOW nakakabit na (protection)
 
 - **Problem (user):** "Bakit hindi kinabit? Paano yan magti-trigger? Protection yan."
