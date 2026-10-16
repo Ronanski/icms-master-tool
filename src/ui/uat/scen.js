@@ -668,6 +668,22 @@ window.UATS = (function () {
       /* 2.2.0-beta.8 (A6, user: "sundin ang plant physics"): a clean state must STAY clean. A permissive of the drawing that is
          a process condition behind a timer (ABC-010 M.022E = TON 60 s of MAIN STEAM FLOW < 100 T/H) forces the station later,
          so the state found in 20 s is not a state of the plant */
+      /* 2.2.0-beta.8: the PV gated by the drawing to a constant (ABC-003C SI0460 = SW(M.3416)[ AI0517, CONST ]: both supply oil
+         valves of burner C closed -> no oil flow): the equipment in service instead, when the state stays clean (an oil flow
+         answers the valve only while the burner is in service) */
+      if (base) {
+        const pvc = c0.q && c0.q.pv;
+        for (const d of (pvc != null && S.drv[pvc]) || []) {
+          if (d.k !== 'SW' || d.sel == null || d.sel < 0 || !S.ext.includes(d.sel)) continue;
+          const isC = l => l >= 0 && (S.drv[l] || []).some(x => x.k === 'CONST');
+          if (isC(d.a) === isC(d.b)) continue;
+          await setup(base);
+          const t = S.rt.st[d.id];
+          if (!t || !isC(t.pk === 'B' ? d.b : d.a)) continue;
+          const nb = flip(base, d.sel);
+          if ((await score(nb)) < 1000) base = nb;
+        }
+      }
       if (base) {
         const { st } = await setup(base);
         await stepSim(sh, 80);
