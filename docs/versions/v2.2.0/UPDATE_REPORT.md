@@ -2,6 +2,15 @@
 
 Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 2.2.0-beta.2 — Load down mula sa Start at 150 MW (HIC-ULD TARGET MW)
+
+- **Problem (tanong ng user):** "Pde ako mag-load down?" Sa faceplate ng HIC-ULD (ABC-001A, TARGET MW), ang ▲ / ▼ ay walang epekto habang naka-AUTO ang station.
+- **As Found:** sa AUTO, ang station ay sumusunod sa set input nito (A leg = COS SI0243 "TARGET MW SETUP FROM CCS CRT"). Ang faceplate ay sumusulat lang sa value ng station, na pinapalitan ng target sa susunod na step.
+- **Work Done:** `src/ui/hmi/hmi.js`: kapag naka-AUTO ang station at ang A leg ay set input ng operator (input ng sheet, hindi link), ang ▲ / ▼ / type ay sumusulat sa target na iyon. Walang binago sa engine.
+- **As Left (headless, `tests/regress/loaddown.js`):** 150 MW → ▼▼ × 6 = TARGET 120 MW; MW demand 134.4 sa 4 min (3 MW/min, HIC-MWRL), 120.0 sa 10 min; coal demand 86.9 → 70.6 T/H; feeder A 29.0 → 23.5 T/H. manstation PASS, faceplate PASS, tests PASS, scenarios 244 / 0.
+- **Limitasyon (tama, may ebidensya):** ang sumusunod sa load ay ang DEMAND side (MW demand, boiler master, coal, air). Ang planta mismo (main steam flow AI0129, FW flow, main steam pressure, aktwal na MW) ay hindi sumusunod: walang boiler / turbine model (fuel → steam → MW) ang app; bawat loop ay may sariling plant model lang.
+- **Status:** Beta.
+
 ## 2.2.0-beta.1 — Coal feeders, coal master at oil sa Start at 150 MW
 
 - **Problem:** Sa Start at 150 MW, ang FIC-CF ay PV 40 / MV 100 %, ang 3 coal feeder ay umaakyat sa 40 T/H (max), at ang coal master (FIC-CM) ay bumababa sa 0 % sa loob ng 300 s. Snapshot 11.png: feeder SV 29.1 T/H / MV 72.8 %, coal master PV 87.0 / SV 87.4 / MV 73.0 %.

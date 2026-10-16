@@ -22,6 +22,7 @@ Headless (Playwright + Chromium) checks of `dist/logic-sim-vX.Y.Z.html` (default
 | `node tests/regress/events.js [html]` | event log: FORCE 0 sa M.0228 (ABC-010) → FM event, pindot A → MODE FICFW1007 → AUTO, drawer | ~30 s |
 | `node tests/regress/manstation.js [html]` | faceplate ng MAN station: tunay na tag, ▲ 0.1 % / ▲▲ 1 %, hold-to-ramp, walang keyboard sa touch | ~30 s |
 | `node tests/regress/stale_beta.js [html]` | lumang naka-save na Beta (mas luma sa app) ay hindi binubuksan; ang Beta ay kumukuha ng pinakabago | ~30 s |
+| `node tests/regress/loaddown.js [html]` | load down: Start at 150 MW, HIC-ULD ▼▼ × 6 sa AUTO = 120 MW; MW demand 3 MW/min, coal at feeder bumababa | ~1 min |
 | `node tests/regress/hmi_op.js [html]` | plant model vs HMI snapshot: sa MV ng snapshot, PV = PV ng snapshot (±2 % ng range) | ~3 min |
 | `node tests/regress/plant_live.js [html]` | PLANT LIVE: pagkatapos ng Start at 150 MW, ≥ 200 value / controller / valve ay nakakabit; FIQMS1031, TICBR1140, TIBR11401, TCVFW11101, DPIFG1081 sa tamang sheet; ang MV sa box = MV ng engine | ~1 min |
 | `node tests/regress/world.js [html]` | iisang mundo ABC + DITL: OFF = dating gawi; ON = lahat ng reference may katapat, ABC input = DITL output, DITL row = ABC net, kadena DITL → ABC, bilis ng scan | ~1 min |
