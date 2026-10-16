@@ -23,7 +23,7 @@ Pagkatapos ng M6: ang `[F]` sa CHECKLIST seksyon D ay dagdag lang, hindi kailang
 
 ## Nasaan tayo ngayon (2026-10-16)
 - **M0:** nilaktawan muna (user 2026-10-16: "no need n m0").
-- **M1:** 2.2.0-beta.7: switches 0 / 438 (pasado). 150 MW snapshot 27 → 11 (ang hangganan ay ≤ 5: hindi pa pasado sa bilang; bawat isa sa 11 ay may paliwanag mula sa drawing / physics, 4 dito ay ang snapshot na hindi steady o magkasalungat na screen). A6 (2.2.0-beta.8): generic tester sa planta na tumatakbo (Start at 150 MW) + RH temperature physics (spray + damper nagdadagdag): AICFG112, HS-COAL, FICFW1007, TICHR1002, PICAS1005 tama lahat; PICFG108 sinusubok pa. Natitira sa M1: PICFG108, buong 68-controller run, bilang ng 150 MW mismatch pagkatapos ng beta.8.
+- **M1:** 2.2.0-beta.7: switches 0 / 438 (pasado). 150 MW snapshot 27 → 11 (ang hangganan ay ≤ 5: hindi pa pasado sa bilang; bawat isa sa 11 ay may paliwanag mula sa drawing / physics, 4 dito ay ang snapshot na hindi steady o magkasalungat na screen). A6 (2.2.0-beta.8): TAPOS. Generic tester: 68 controller, 0 mali, 0 hindi nasubok (ang mahihirap ay nasa planta na tumatakbo; RH spray + damper nagdadagdag). Natitira sa M1: ang hangganan na ≤ 5 sa snapshot (11 pa; user 2026-10-16: huwag umasa nang buo sa HMI snapshot, sundin ang plant physics). Ang hatol kung pasado ang M1 ay sa user.
 - **M2 ~ M6:** hindi pa nasisimulan. May batayan na ang M2: ang load down ay gumagana sa demand side (2.2.0-beta.2), at nasa repo na ang 3 procedure.
 
 ## Paano binibilang ang progress
