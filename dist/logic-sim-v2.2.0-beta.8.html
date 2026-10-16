@@ -72040,6 +72040,19 @@ window.UATS = (function () {
               if (i % 150 === 149) await sleep(0);
             }
             mk.__autoSeen = seen;
+          } else if (st.do === 'opclear') {
+            /* 2.2.0-beta.8: the trip input is back, but the drawing still forces the station through a permissive the restart itself
+               set (ABC-008: ID fan start M.020E presets PICFG108 MV 13 %, M.0206 = MV < 14 %): the operator raises the MV in MANUAL */
+            if (stn && stn.fman) {
+              const ins = [...fp.querySelectorAll('input')],
+                f = ins[ins.length - 1];
+              if (f && !f.disabled) {
+                f.value = st.value;
+                f.dispatchEvent(new Event('change'));
+                await stepSim(sh, 5);
+                note = ' (drawing still forced after the trip cleared: MV ' + st.value + ' entered; force now ' + (stn.fman ? 'ACTIVE' : 'clear') + ')';
+              } else note = ' (drawing still forced; MV field disabled)';
+            } else note = ' (not needed: no force)';
           } else if (st.do === 'mark') mk[st.as] = val(st.what);
           if (st.say && st.do !== 'wait' && st.do !== 'mark') push({ k: 'do', t: st.say + note });
           await sleep(450);
@@ -72825,6 +72838,7 @@ window.UATS = (function () {
               say: 'Mode after trip clears',
               why: 'not automatic, unless the drawing itself has a 1:A (AUTO) signal'
             },
+            { do: 'opclear', value: 50, say: 'If the drawing still forces: operator raises MV in MANUAL = 50' },
             { expect: 'disabled', button: 'A', value: 'enabled', say: 'A button' },
             { do: 'press', button: 'A', say: 'Press A' },
             { expect: 'mode', value: 'AUTO', say: 'Mode after pressing A' }
