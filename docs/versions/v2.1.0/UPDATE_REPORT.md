@@ -2,6 +2,19 @@
 
 Base: Stable v2.0.0 (`main`). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 2.1.0-beta.11 — Start at 150 MW: FW, coal, boiler master, air
+
+- **Problem:** FW flow 459 (snapshot 499), coal master PV 0 (87), SAF 134 (213), boiler master feedforward 0.
+- **As Found / Work Done (engine, plant model at 150 MW load; trace: `DRAWING_TRACE.md` beta.11):**
+  - Drum level: 25.0 T/H na umaalis bukod sa main steam (03.png FW 499.1 − steam 474.1).
+  - Coal feeder feedrate AI0480 / 0512 / 0544 = 29.0 / 29.1 / 28.9 T/H (11.png); HS-COAL oil valve close inputs = 1 (patay ang oil burner); HS-COAL = AUTO.
+  - MAN stations sa load (HIC-ULD 150 MW, HIC-MWHL, HIC-MWLL, HIC-MWRL 3.0 MW/min, HIC-BM ...); ang AUTO target ng station (COS) = 150 MW.
+  - RATE / LAG ng drawing nasa steady state sa load (dati 50 min bago umabot sa 150 MW ang MW demand).
+  - PID output + integral ng snapshot (PIC-COBM 0.8 %); anchor ng main steam pressure (kahati ng tatlong sheet) na may fixed offset.
+- **As Left (headless, Start at 150 MW + 300 s):** FW 498.1 T/H sa 55.9 %; drum level 0 mm; coal master PV 87.0, SV 94.0 (snapshot 87.4); HIC-BM ~68 %; PIC-COBM MV 0.4 % (0.8); PAF 362.2 (354); SAF 228.8 (213); furnace pressure −16. Mismatch 37 → 33. Regression: isolated PASS, tests PASS, reset 0 differ, hmi_op 30 / 30, pv_reacts parehong 19 (walang bago), faceplate PASS, plant_live PASS, scenarios 244 / 0.
+- **Hindi pa:** FIC-CF (PV 40 vs 81.2: coal calorie correction / unit), ang iba sa `PLANT_LIVE_VS_SNAPSHOT.md`; totoong tablet.
+- **Status:** Beta.
+
 ## 2.1.0-beta.10 — Start at 150 MW (SV, valve position, parallel valves); PLANT: pump / fan / MOV LIVE
 
 - **Problem:** (item 1) 44 tag ang hindi tugma sa snapshot. (item 2) Ang pump, fan at motor valve sa PLANT ay snapshot lang.

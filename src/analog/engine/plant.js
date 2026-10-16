@@ -361,8 +361,7 @@ function anProcStep(S, dt) {
       };
     /* 2.1.0-beta.6: "Start at 150 MW" (hmi-op.js) gave the PV of the snapshot transmitters (pr.hopReq): a loop without a static
        anchor is anchored NOW at (the command that goes to the valve now -> that PV), so the plant model keeps the snapshot
-       value instead of its own steady state. Not for: a static anchor, the drum level (integrating), a measurement shared
-       with another sheet, a flow loop whose valve is closed or whose flow is 0 on the snapshot. Reset removes it (anResetAll). */
+       value instead of its own steady state. Not for: a static anchor, the drum level (integrating), a flow loop whose valve is closed or whose flow is 0 on the snapshot. Reset removes it (anResetAll). */
     if (pr.hopReq) {
       const hr = pr.hopReq,
         tg = (b.txt || [])[1];
@@ -370,7 +369,8 @@ function anProcStep(S, dt) {
       if (
         !AN_HMI_OP[tg] &&
         tg !== 'LICBR1001' &&
-        !xe.length &&
+        /* 2.1.0-beta.11: a measurement shared with controllers of other sheets too (ABC-001C PIC-COBM main steam pressure):
+           the anchor offset is fixed once (pr.hop.anc below), so their effect on the PV still works */
         /* 2.1.0-beta.10: parallel valves on one PV too: the anchor is the sum of their commands now (ABC-031 LICCD1110A + B), but
            not when that sum is at the top of the command range (clamped: the model would have no slope left) */
         !(b._sh && b._sh.length && !b._sh.concat([b]).some(g => AN_SERIES[(g.txt || [])[1]]) && (hr.mv != null ? hr.mv : u) >= (b.p.hi == null ? 100 : b.p.hi) - 0.5) &&
@@ -408,7 +408,7 @@ function anProcStep(S, dt) {
       }
     }
     const ss0 = c => lo + span * (0.5 + eff(c)),
-      anc = pr.hop ? pr.hop.pv - ss0(pr.hop.mv) : 0,
+      anc = pr.hop ? (pr.hop.dyn ? (pr.hop.anc != null ? pr.hop.anc : (pr.hop.anc = pr.hop.pv - ss0(pr.hop.mv))) : pr.hop.pv - ss0(pr.hop.mv)) : 0,
       ss = c => ss0(c) + anc + ((pr.dist || 0) / 100) * span + (pr.op || 0);
     if (pr.integ === undefined) {
       pr.integ = null;
@@ -442,7 +442,9 @@ function anProcStep(S, dt) {
       }
       let ffw = +v[pr.integ.fw] || 0;
       if (pr.integ.su) ffw += (Math.max(0, Math.min(100, +uOf(pr.integ.su) || 0)) / 100) * pr.integ.suK;
-      q.y = Math.max(lo, Math.min(lo + span, q.y + dt * pr.integ.k * (ffw - fst)));
+      /* 2.1.0-beta.11: water that leaves the drum besides the main steam (blowdown and the rest), from "Start at 150 MW":
+         03.png feedwater 499.1 - main steam 474.1 = 25.0 T/H (pr.integLoss, removed by Reset) */
+      q.y = Math.max(lo, Math.min(lo + span, q.y + dt * pr.integ.k * (ffw - fst - (pr.integLoss || 0))));
       q.h.length = 0;
     } else if (dt > 0) {
       q.h.push([rt.t, u]);
