@@ -22,8 +22,8 @@ Bawat milestone ay may **pasado kung**: ang masusukat na resulta na nagsasabing 
 Pagkatapos ng M6: ang `[F]` sa CHECKLIST seksyon D ay dagdag lang, hindi kailangan para matapos ang project. Kasama rito ang "Bakit?", permissive checklist, tuning lab, compare, at buong DITL plant state.
 
 ## Nasaan tayo ngayon (2026-10-16)
-- **M0:** naghihintay sa pagsubok mo at GO STABLE.
-- **M1:** susunod na trabaho (A1 switches, 40 kaso).
+- **M0:** nilaktawan muna (user 2026-10-16: "no need n m0").
+- **M1:** 2.2.0-beta.7: switches 0 / 438 (pasado). 150 MW snapshot 27 → 11 (ang hangganan ay ≤ 5: hindi pa pasado sa bilang; bawat isa sa 11 ay may paliwanag mula sa drawing / physics, 4 dito ay ang snapshot na hindi steady o magkasalungat na screen). Natitira sa M1: A6 (mga controller na mahirap simulan).
 - **M2 ~ M6:** hindi pa nasisimulan. May batayan na ang M2: ang load down ay gumagana sa demand side (2.2.0-beta.2), at nasa repo na ang 3 procedure.
 
 ## Paano binibilang ang progress

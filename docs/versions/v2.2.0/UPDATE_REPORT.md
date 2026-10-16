@@ -2,6 +2,41 @@
 
 Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 2.2.0-beta.7 — M1 "ABC malinis": switches test at ang 150 MW snapshot
+
+- **Problem:** (1) Switches test: 40 / 438 ang hindi bumabalik. (2) Start at 150 MW: 27 value ang lumalayo sa snapshot (PLANT LIVE, 300 s).
+- **As Found:**
+  - (1) Lahat ng 40 ay A/M station. Ang engine ay sumusunod sa rule ng user (2026-10-15): kapag na-force manual, MANUAL ang station hanggang pindutin ang AUTO. Luma ang test (2026-10-14).
+  - (2) Mga sanhi:
+    - mali ang link ng PLANT screen (FIC-CF sa halip na HS-COAL; reverse valve; text na "( NORMAL )");
+    - kulang ang 150 MW load: SOx AI0466, PAF FLOW BIAS −30 (HIC-TADBS), GCB 52G1 ON (I.0931), O2 trim MV;
+    - ang O2 trim ay naiwang na-force manual (M.0102 = NOT FICFA1081.REM sa unang scan);
+    - may pulse ng drawing na nag-fire habang nagla-load (sync pulse ng I.0931 → LP bypass preset 33 %);
+    - ang manual MV ay sumunod sa PID sa cold start (HP bypass spray);
+    - plant model: ang valve na halos sarado ay hindi na-anchor (burner D hot SA, condensate min-flow); iisang value ang isinusulat sa dalawang O2 analyzer.
+- **Work Done:**
+  - `tests/regress/switches.js`: ang A/M station ay dapat manatili sa forced leg at bumalik sa pindot ng operator. Ang reference at ang force run ay nasa parehong oras.
+  - `src/ui/plant/systems.js` / `plant.js`: HS-COAL; reverse valve (AO = 100 − MV) = opening; tag na may paliwanag sa panaklong.
+  - `src/analog/engine/hmi-op.js`:
+    - AI0466 41 ppm, HIC-TADBS −50, I.0931 = 1, AICFG112 MV 50 %;
+    - ilalapat ulit ang mga mode at ang manual MV pagkatapos mag-settle;
+    - walang pulse habang nagla-load (`AN.steady`).
+  - `src/analog/engine/plant.js`:
+    - anchor ng flow na halos sarado ang valve (offset, gain K);
+    - offset ng bawat transmitter ng iisang measurement;
+    - TPS / TPV walang edge habang `AN.steady`.
+- **As Left (headless, 300 s):**
+  - Snapshot: 27 → 11 na lumalayo, bawat isa may paliwanag (`DRAWING_TRACE.md` beta.7):
+    - O2 / SA: naka-AUTO, kaya O2 → SV 3.5 % (4.3 sa snapshot, hindi pa nasa SV);
+    - drum level: SV 0 (3 mm = 0.2 % ng range);
+    - FW = steam + loss (499 sa snapshot habang tumataas ang level, may HH alarm sa 11.png);
+    - TCVFW1150: 79.4 % sa 39.PNG, 66 % sa 5.png;
+    - TICHR1002A: ML = 50 % sa PID summary;
+    - FIFA1055: 0.7 T/H.
+  - Switches: 0 / 438.
+- **Hindi pa nasubok:** totoong device.
+- **Status:** Beta.
+
 ## 2.2.0-beta.6 — Lahat ng B / C / D nakakabit sa tamang makina; DITL 150 ayon sa drawing at snapshot
 
 - **Problem (user):** "Wala kang tatanggalin. Ikokonek mo sa tamang connection. Magbabase sa repo, PDF, diagram." Sa beta.5, 79 DITL row at 48 ABC input ng makinang B / C / D ay hindi nakakabit; may mga estado ng 150 MW na hula.

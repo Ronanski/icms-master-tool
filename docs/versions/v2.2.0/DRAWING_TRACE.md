@@ -56,3 +56,11 @@
 - **Patunay:** `tests/regress/ditl150.js` ALL PASS; `tests/regress/world.js` (bilang ng link, 0 lost).
 - **TO column na may panaklong (world.js):** DITL-03B out 70 "FAB A STOPPED" TO 28A-29, out 71 "FAB B STOPPED" TO "(28A-29)"; DITL-03D out 68 "FAB A STOP COMMAND" TO 28A-21, out 69 "FAB B STOP COMMAND" TO "(28A-21)". Ang row ng instance k ay kumukuha sa output na may "(sheet-row)" sa TO column. 2 link (`WORLD.stat.byTo`).
 - **Relay contact ng DCS output (02-netlist.js):** DITL-21A: OR (RUNNING) -> O.021C "LOR-L1060A" -> relay; NOT -> O.021D "LOS-L1060A" -> relay; ang N.O. contact (dalawang bilog r 1.85, 9 ang pagitan, flat bar sa itaas) sa DC 24V line -> LCP lamp 66 RUNNING / 68 STOPPED. Ang wire ng lamp ay sumasama sa wire ng DCS output arrow sa parehong taas, kaliwa ng DC 24V line. Sinuri ang 108 two-circle contact sa lahat ng sheet: DITL-21A lang ang nagbago (ang slant-bar contact ay limit switch ng SV / MOV, hindi ginalaw).
+
+## beta.7 — 150 MW snapshot (M1)
+- **PA flow:** ABC-002 SI0045 = SW(M.008B)[ SUM( S1-LN14(HIC-TADBS), HS(RATE(S1-LN12(SI0140))) ) ]. S1-LN12: 81.0 T/H coal → 380 T/H. S1-LN14 "PA FLOW BIAS": x 0 % → −30, 50 % → 0, 100 % → +30 T/H; HIC-TADBS −50 ~ +50 → x = (MV + 50). 7.PNG PAF FLOW BIAS −30.0 → MV −50. 380 − 30 = 350 (7.PNG R-SV 354.6).
+- **SA flow / O2:** SI0044 = SI0042 × S1-LN15(AICFG112 trim): x 0 → 0.8, 50 → 1.0, 100 → 1.2; AICFG112 MH 50 (PID summary). M.0103 (force manual ng trim) = OR(analyzer deviation, M.0102 = NOT FICFA1081.REM OR NOT M.0101, B.0671 AND B.0701).
+- **Lube oil (ABC-053):** SV = AMT(I.0931)[ CONST 46, S2-LN22 ] → RAMPB → TICLO1002; I.0931 = STN102 MIG-52G1-1 "#1 GCB 52G1 on".
+- **Sync pulse (ABC-050 → ABC-052):** I.0931 AND … → TPS 2 s (M.070D) → FF M.070F (reset: M.071D LP demand ≤ 0 %) → TON 1 s M.0714 → AMT#68 leg SI0224 (LP bypass preset). Sa snapshot, matagal nang sarado ang GCB: walang pulse.
+- **Reverse valve:** ABC-029 FCV-DO1012: AO = CONST 100 − HICDO1012.MV → I/P. ABC-030 PCV-AS1020-1 / -2: signal 100 / 67.7 → opening 0.0 / 32.3 (29.PNG 0.1 / 32.2).
+- **Condensate (ABC-032):** FICCD1120 = min-flow recirculation; PV FT-CD1120 = condensate flow papunta sa deaerator (380 T/H, 28.png), hindi gawa ng recirc valve (0.1 %).

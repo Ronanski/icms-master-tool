@@ -449,7 +449,7 @@ window.PLANT_SYS = [
     { t: 'text', x: 1097, y: 734, s: 'C-OUTLET TEMP. HIGH (MIACL1061C6)', z: 12, c: '#8b9aa8' },
     { t: 'text', x: 1097, y: 754, s: 'C-BELT TRACKING (MIACL1061C7)', z: 12, c: '#8b9aa8' },
     { t: 'ctl', x: 1645, y: 272, tag: 'FIC-CM', label: 'COAL MASTER CONTROL', pv: '87.0', sv: '87.4', mv: '73.0', u: 'T/H', m: 'R' },
-    { t: 'ctl', x: 1645, y: 387, tag: 'FIC-CF', label: 'TOTAL COAL FLOW CORRECT.', pv: '81.2', sv: '81.2', mv: '33.1', u: 'T/H', m: 'R' },
+    { t: 'ctl', x: 1645, y: 387, tag: 'HS-COAL', label: 'TOTAL COAL FLOW CORRECT.', pv: '81.2', sv: '81.2', mv: '33.1', u: 'T/H', m: 'R' },
     { t: 'val', x: 1683, y: 530, tag: 'COAL CALORIE CORR.', v: '4150', u: 'Kcal/Kg' },
     { t: 'val', x: 1670, y: 572, tag: 'COAL/POWER RATIO', v: '0.570', u: 'Tc/Tp' },
     { t: 'val', x: 1670, y: 613, tag: 'MSF/POWER RATIO', v: '3.180', u: 'Tf/Tp' },
