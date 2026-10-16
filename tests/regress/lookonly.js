@@ -1,0 +1,31 @@
+// Search = look only (2.1.0-beta.8, user): a result of the global search / LIBRARY opens without force or simulate (ABC: VIEW / TRACE,
+// DITL: Simulate off) and the info card shows no live value. LIBRARY groups like the Excel files. Usage: node tests/regress/lookonly.js [html]
+const fs=require('fs');const {open}=require('./lib.js');
+const html=process.argv[2]||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
+(async()=>{const {browser,page,errs}=await open(html);let fail=0;const ok=(c,t)=>{console.log((c?'PASS ':'FAIL ')+t);if(!c)fail++};const W=ms=>page.waitForTimeout(ms);
+const runMode=()=>page.evaluate(()=>{AN.setCat('an');if(AN.view)[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='View').click()});
+await page.evaluate(()=>window.lsLibrary(true));await W(2500);
+const io=await page.evaluate(()=>[...document.querySelectorAll('#libtb .libg')].map(e=>e.innerText));
+ok(io.length>50&&/STN101 · NODE 0 · I\/O UNIT 0 · DI/.test(io[0]),'I/O LIST groups by station / node / I/O unit ('+io.length+' groups, first: '+(io[0]||'').replace(/\n/g,' ')+')');
+await page.evaluate(()=>[...document.querySelectorAll('.libtabs button')].find(b=>b.dataset.k==='mem').click());await W(800);
+const mem=await page.evaluate(()=>[...document.querySelectorAll('#libtb .libg')].map(e=>e.innerText.split('\n')[0]));
+ok(['WM','TR','PTN','SI','DI','WB','FP'].every(k=>mem.some(m=>m.includes('STN101 ('+k+')'))),'MEMORY LIST groups by station / sheet (WM TR PTN SI DI WB FP)');
+const wm=await page.evaluate(()=>[...document.querySelectorAll('#libtb .libg')].map(e=>e.innerText.replace(/\n/g,' ')).find(t=>/STN101 \(WM\)/.test(t)));
+ok(/3504 rows · 1866 vacant/.test(wm||''),'MEMORY LIST STN101 WM = 3504 addresses like the Excel, vacant shown ('+wm+')');
+await page.evaluate(()=>{window.lsLibrary(false)});await runMode();await W(300);
+await page.evaluate(()=>{window.lsLibrary(true);[...document.querySelectorAll('.libtabs button')].find(b=>b.dataset.k==='io').click();const f=document.querySelector('#libws .libf');f.value='AI0129';f.dispatchEvent(new Event('input'))});await W(800);
+await page.evaluate(()=>document.querySelector('#libtb .libr .ds').click());await W(900);
+const c1=await page.evaluate(()=>[...document.querySelectorAll('#infocard .icv')].map(e=>e.textContent).join(' '));
+ok(!/^=|\s=\s/.test(c1),'LIBRARY info card: no live value ('+c1+')');
+await page.evaluate(()=>[...document.querySelectorAll('#infocard button')].find(x=>x.textContent==='Show').click());await W(900);
+ok(await page.evaluate(()=>AN.view&&!AN.run),'LIBRARY card Show -> VIEW / TRACE (no simulate)');
+await page.evaluate(()=>window.lsLibrary(false));await runMode();await W(300);
+await page.fill('#ansb','M.0228');await page.press('#ansb','Enter');await W(1200);
+await page.evaluate(()=>[...document.querySelectorAll('#infocard button')].find(x=>x.textContent==='Show').click());await W(900);
+ok(await page.evaluate(()=>AN.view&&!AN.run),'global search Enter -> card -> Show: VIEW / TRACE');
+await page.evaluate(()=>{const c=document.getElementById('infocard');c&&c.remove();AN.setCat('dig')});await W(500);await page.click('#bmode');await W(300);
+await page.fill('#ansb','M.3302');await W(2500);
+await page.evaluate(()=>[...document.querySelectorAll('#anfind button')].find(x=>/^Open .*DITL/.test(x.title)).click());await W(900);
+ok(await page.evaluate(()=>!SIM),'DITL in Simulate, a DITL search result -> Simulate off');
+ok(!errs.length,'no page error');
+console.log(fail?'FAIL':'ALL PASS');await browser.close();process.exit(fail?1:0)})();

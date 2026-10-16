@@ -32,9 +32,21 @@
         var tx = r.result.transaction('pages', mode),
           st = tx.objectStore('pages'),
           q = mode === 'readonly' ? st.get(key) : st.put(val, key);
-        q.onsuccess = function () {
-          ok(q.result);
-        };
+        /* 2.1.0-beta.12: a write is done only when its TRANSACTION is complete (on the disk). Before, the app reloaded at the
+           request success: on a real exe / apk the 6 MB write was still running and the reload aborted it, so the Beta was
+           not there at the start, the app went back to Stable and the user downloaded again (user report, v2.0.0) */
+        if (mode === 'readonly') {
+          q.onsuccess = function () {
+            ok(q.result);
+          };
+        } else {
+          tx.oncomplete = function () {
+            ok(q.result);
+          };
+          tx.onabort = function () {
+            no(tx.error || new Error('storage write aborted'));
+          };
+        }
         q.onerror = function () {
           no(q.error);
         };
@@ -79,9 +91,18 @@
             document.write(h);
             document.close();
           })
-          .catch(function () {
+          .catch(function (e) {
             delete STORE[CH];
             ls('ls-store', JSON.stringify(STORE));
+            /* 2.1.0-beta.12: say why, once, on the copy inside the app (before: back to Stable without a word) */
+            ls(
+              'ls-swap-err',
+              (CH === 'beta' ? 'Beta ' : 'Update ') +
+                want +
+                ' could not be opened (' +
+                ((e && e.message) || 'storage') +
+                '). Choose it again to download it once more.'
+            );
             try {
               sessionStorage.setItem('ls-swapped', 'stable');
             } catch (e) {}
@@ -91,9 +112,16 @@
       }
     }
   }
+  if (B && ls('ls-swap-err')) {
+    var se = ls('ls-swap-err');
+    ls('ls-swap-err', null);
+    setTimeout(function () {
+      say(se);
+    }, 1500);
+  }
   /* download the page of a channel into the app; then it runs from the app (no internet needed after this) */
   function download(ch) {
-    say('Downloading ' + (ch === 'beta' ? 'Beta' : 'Stable') + ' (about 4 MB)...');
+    say('Downloading ' + (ch === 'beta' ? 'Beta' : 'Stable') + ' (about 6 MB)...');
     return fetch(SITE + (ch === 'beta' ? 'beta/' : '') + '?t=' + Date.now(), { cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -102,11 +130,19 @@
       .then(function (h) {
         var m = h.match(/<title>Logic Sim (v\d+(\.\d+)+(-beta\.\d+)?)<\/title>/);
         if (!m || h.length < 500000) throw new Error('incomplete download');
-        return idb('readwrite', ch, h).then(function () {
-          STORE[ch] = m[1];
-          ls('ls-store', JSON.stringify(STORE));
-          return m[1];
-        });
+        return idb('readwrite', ch, h)
+          .then(function () {
+            /* read it back before the reload: the copy that will be opened is really there */
+            return idb('readonly', ch);
+          })
+          .then(function (b) {
+            if (!b || b.length !== h.length) throw new Error('the copy was not saved in the app (storage)');
+          })
+          .then(function () {
+            STORE[ch] = m[1];
+            ls('ls-store', JSON.stringify(STORE));
+            return m[1];
+          });
       });
   }
   window.lsDownload = download;

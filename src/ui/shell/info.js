@@ -70,12 +70,13 @@
     const { S, n } = o;
     return (S.cns[n] || []).filter(b => b.k !== 'LINK').map(b => b);
   }
-  /* downstream: every net reached inside the sheet, then what that means */
-  function effects(o) {
-    const { sh, S, n } = o,
-      seen = new Set([n]),
-      q = [n];
-    for (let k = 0; k < q.length && k < 4000; k++) {
+  /* downstream (2.1.0): every net the signal reaches, on this sheet and, through the links, on the other sheets; then what
+     that means for the operator: TRIP / MFT, INTERLOCK (a selector after a controller output that cuts it to the back-up
+     leg), selector switches that change leg, FORCE MANUAL / AUTO select of a controller, TO DITL. Read only. */
+  function reach(S, starts) {
+    const seen = new Set(starts),
+      q = [...starts];
+    for (let k = 0; k < q.length && k < 6000; k++) {
       for (const b of S.cns[q[k]] || [])
         for (const m of b.o || [])
           if (m != null && m >= 0 && !seen.has(m)) {
@@ -88,48 +89,87 @@
           q.push(d);
         }
     }
+    return seen;
+  }
+  function sheetFx(sh, S, seen, own) {
     const fx = [];
+    let cs = [];
     try {
-      for (const c of AN.hmiCtrls(S) || []) {
-        const z = (c.sigs || []).find(s => seen.has(s.n));
-        if (z) fx.push({ k: z.role === 'MAN' ? 'fm' : 'auto', t: (z.role === 'MAN' ? 'FORCE MANUAL of ' : 'AUTO select of ') + c.tag + ' (' + z.name + ')' });
-      }
+      cs = AN.hmiCtrls(S) || [];
     } catch (e) {}
+    const cutIds = new Set();
+    for (const c of cs) {
+      const z = (c.sigs || []).find(x => seen.has(x.n));
+      if (z) fx.push({ k: z.role === 'MAN' ? 'fm' : 'auto', t: (z.role === 'MAN' ? 'FORCE MANUAL of ' : 'AUTO select of ') + c.tag + ' (' + z.name + ')' });
+      for (const d of c.dn || [])
+        if (d.sel != null && seen.has(d.sel)) {
+          cutIds.add(d.id);
+          fx.push({ k: 'ilk', t: 'INTERLOCK: cuts the output of ' + c.tag + ' to the back-up leg (' + (AN.nm(S, d.sel) || 'select') + ')' });
+        }
+    }
+    const sws = S.blk.filter(b => (b.k === 'SW' || b.k === 'AMT') && !cutIds.has(b.id) && !cs.some(c => c.amt && c.amt.id === b.id) && ((b.cs && b.cs.some(x => seen.has(x.n))) || (b.sel != null && seen.has(b.sel))));
+    if (sws.length)
+      fx.push({
+        k: 'sw',
+        t: 'SWITCH: ' + sws.length + ' selector' + (sws.length > 1 ? 's change' : ' changes') + ' leg (' + sws.slice(0, 4).map(b => AN.nm(S, b.o[0]) || b.k + '#' + b.id).join(', ') + (sws.length > 4 ? ' …' : '') + ')'
+      });
     const tr = new Set();
     for (const m of seen) {
       const nm = (AN.nm(S, m) || '').trim();
-      if (m !== n && nm && TRIP.test(nm)) tr.add(nm);
+      if (!own.has(m) && nm && TRIP.test(nm)) tr.add(nm);
     }
     for (const t of S.tx || [])
       if (TRIP.test(t.t))
         for (const m of seen) {
           const nn = S.nets[m];
-          if (!nn || !nn.segs.length || m === n) continue;
-          let near = false;
-          for (const i of nn.segs) {
+          if (!nn || !nn.segs.length || own.has(m)) continue;
+          if (nn.segs.some(i => {
             const g = S.seg[i];
-            if (Math.min(Math.hypot(t.x - g.x1, t.y - g.y1), Math.hypot(t.x - g.x2, t.y - g.y2)) < 10) {
-              near = true;
-              break;
-            }
-          }
-          if (near) {
+            return Math.min(Math.hypot(t.x - g.x1, t.y - g.y1), Math.hypot(t.x - g.x2, t.y - g.y2)) < 10;
+          })) {
             tr.add(t.t.trim());
             break;
           }
         }
-    [...tr].slice(0, 6).forEach(t => fx.push({ k: 'trip', t: 'reaches: ' + t }));
+    [...tr].slice(0, 6).forEach(t => fx.push({ k: 'trip', t: 'TRIP / MFT: ' + t }));
     try {
       const ix = AN.dsIdx(sh);
       for (const [m, refs] of ix.to) if (seen.has(m)) fx.push({ k: 'ditl', t: 'TO DITL ' + refs.join(', ') + ' (' + AN.nm(S, m) + ')' });
     } catch (e) {}
-    try {
-      const os = new Set();
-      for (const x of AN.sheets)
-        for (const l of x.lk || []) if (l.from === sh && l.to !== sh && l.fromNets.some(m => seen.has(m))) os.add(l.to.name);
-      if (os.size) fx.push({ k: 'sheet', t: 'also reaches sheet: ' + [...os].join(', ') });
-    } catch (e) {}
     return fx;
+  }
+  function effects(o) {
+    const out = [],
+      done = new Set(),
+      q = [[o.sh, [o.n], true]];
+    for (let k = 0; k < q.length && done.size < 14; k++) {
+      const [sh, starts, first] = q[k];
+      if (done.has(sh)) continue;
+      done.add(sh);
+      let S;
+      try {
+        S = AN.ensure(sh);
+      } catch (e) {
+        continue;
+      }
+      const seen = reach(S, starts),
+        fx = sheetFx(sh, S, seen, new Set(starts));
+      fx.forEach(f => out.push(Object.assign(f, { sh: first ? '' : sh.name })));
+      try {
+        for (const x of AN.sheets)
+          for (const l of x.lk || [])
+            if (l.from === sh && l.to !== sh && !done.has(l.to) && l.fromNets.some(m => seen.has(m))) q.push([l.to, l.toNets, false]);
+      } catch (e) {}
+    }
+    const uq = new Set();
+    for (let i = out.length - 1; i >= 0; i--) {
+      const key = out[i].sh + '|' + out[i].t;
+      if (uq.has(key)) out.splice(i, 1);
+      else uq.add(key);
+    }
+    const other = [...done].filter(x => x !== o.sh).map(x => x.name);
+    if (other.length) out.push({ k: 'sheet', t: 'reaches the sheets: ' + other.join(', ') });
+    return out;
   }
   function ditlPlaces(q) {
     const out = [];
@@ -146,6 +186,97 @@
     } catch (e) {}
     return out.slice(0, 12);
   }
+  /* 2.1.0: the I/O list / memory list record, the marshalling wiring and the flow compensation of the address or tag */
+  let ADS = null,
+    TIX = null,
+    WI = null;
+  const ades = () => {
+    if (!ADS && window.AN && AN.ades)
+      AN.ades().then(a => {
+        ADS = a || {};
+        TIX = {};
+        for (const st in ADS) for (const k in ADS[st]) {
+          const r = ADS[st][k];
+          if (r.tag) (TIX[r.tag.toUpperCase()] = TIX[r.tag.toUpperCase()] || []).push({ st, a: k, r });
+        }
+      });
+    return ADS;
+  };
+  const wix = () => {
+    if (WI || !window.WIRING) return WI;
+    WI = { a: {}, t: {} };
+    const F = window.WIRING_F;
+    for (const w of window.WIRING) {
+      const o = {};
+      F.forEach((k, i) => (o[k] = w[i]));
+      WI.a[o.s + '|' + o.a] = o;
+      if (o.tag) (WI.t[o.tag.toUpperCase()] = WI.t[o.tag.toUpperCase()] || []).push(o);
+    }
+    return WI;
+  };
+  function ioRecs(q, stn) {
+    const A = ades();
+    if (!A) return [];
+    const out = [];
+    for (const st of stn ? [String(stn)] : Object.keys(A)) if (A[st] && A[st][q]) out.push({ st, a: q, r: A[st][q] });
+    if (!out.length && TIX && TIX[q]) for (const x of TIX[q]) if (!stn || x.st === String(stn)) out.push(x);
+    return out;
+  }
+  const sl = x => String(x || '').replace(/,/g, ' / ');
+  /* the signal path as a small flow chart, from the field to the address (DO: from the address to the field) */
+  function wireChart(o) {
+    const steps = [
+      ['FIELD', o.tag || '—', o.d || ''],
+      ['JB → MPL field TB', o.mpl + ' · ' + (o.jb || '—'), 'TB ' + sl(o.tb)],
+      ['CROSS WIRING', o.xcab || '—', (o.xspec ? o.xspec + ' · ' : '') + 'core ' + sl(o.xcore)],
+      ['MPL system TB', o.mpl2 + ' · ' + o.tbs, 'TB ' + sl(o.tbn)],
+      ['SYSTEM CABLE', o.cab, (o.spec ? o.spec + ' · ' : '') + 'core ' + sl(o.core)],
+      ['FCS TERMINAL BOARD', o.ext + ' · ' + o.exttb, 'TB ' + sl(o.fcstb) + ' · cab ' + o.fcab],
+      ['I/O MODULE', o.board, 'node ' + o.node + ' · slot ' + o.slot + ' · ' + o.ch],
+      ['ADDRESS', o.a + ' · STN10' + o.s, o.sig || o.k]
+    ];
+    if (o.k === 'DO') steps.reverse();
+    const box = E('div', { cls: 'icw' });
+    steps.forEach((st, i) => {
+      if (i) box.append(E('div', { cls: 'icwa', txt: '→' }));
+      box.append(E('div', { cls: 'icwb' + (st[0] === 'ADDRESS' ? ' ad' : st[0] === 'FIELD' ? ' fd' : '') }, [E('small', { txt: st[0] }), E('b', { txt: st[1] }), st[2] ? E('span', { txt: st[2] }) : null]));
+    });
+    return box;
+  }
+  /* IRP / ARP / SER items (src/ui/plant/relay.js) by address (station|address) or tag */
+  let RX = null;
+  const relays = keys => {
+    if (!RX && window.RELAY) {
+      RX = {};
+      for (const r of window.RELAY) for (const k of r.keys || []) (RX[k] = RX[k] || []).push(r);
+    }
+    if (!RX) return [];
+    const out = [];
+    for (const k of keys) for (const r of RX[k] || []) if (!out.includes(r)) out.push(r);
+    return out;
+  };
+  window.lsRelayKeys = relays;
+  function relaySec(r) {
+    const kind = /^IRP/.test(r.sh) ? 'INTERPOSING RELAY' : /^ARP/.test(r.sh) ? 'ALARM / AUX RELAY' : 'SEQUENCE OF EVENTS (SER)';
+    return E('div', { cls: 'ics' }, [
+      E('div', { cls: 'ict' }, [E('b', { txt: kind + ' · ' + r.sh + ' item ' + r.item })]),
+      ...Object.entries(r.cols).map(([k, v]) => E('div', { cls: 'icl' }, [E('span', { cls: 'k k2', txt: k }), v]))
+    ]);
+  }
+  window.lsRelaySec = relaySec;
+  window.lsRelayCard = r => {
+    close();
+    card = E('div', { id: 'infocard', cls: 'wide' }, [
+      E('div', { cls: 'ich' }, [E('b', { txt: r.sh + ' #' + r.item }), E('span', { cls: 'icn', txt: (r.keys || []).map(k => k.replace(/^T\|/, '').replace(/^(\d)\|/, 'STN10$1 ')).join(' · ') }), E('button', { cls: 'b', txt: '✕', title: 'Close', on: close })]),
+      E('div', { cls: 'icb' }, [relaySec(r)])
+    ]);
+    document.body.append(card);
+  };
+  function compOf(tag) {
+    const C = window.CALC_COMP || [],
+      t = String(tag || '').toUpperCase();
+    return C.filter(c => [c.flow, c.ptag, c.ttag, c.ttag2].some(x => x && String(x).toUpperCase() === t));
+  }
   let card = null;
   function close() {
     if (card) card.remove();
@@ -156,6 +287,7 @@
     const i = AN.sheets.indexOf(o.sh);
     if (AN.cat !== 'an') AN.setCat('an');
     AN.go(i);
+    if (look) AN.lookOnly();
     setTimeout(() => {
       try {
         AN.sel = { net: o.n };
@@ -165,12 +297,24 @@
       } catch (e) {}
     }, 300);
   }
-  function open(raw) {
-    const q = norm(raw);
+  let look = false;
+  function open(raw, opt) {
+    const q = norm(raw),
+      stn = opt && opt.stn;
+    look = !!(opt && opt.look); /* 2.1.0-beta.8: opened by a search (global / LIBRARY): look only, no value, no force / simulate */
     if (!looks(q) || !window.AN || !AN.sheets || !AN.sheets.length) return false;
     const oc = occurrences(q),
-      dp = ditlPlaces(q);
-    if (!oc.length && !dp.length) return false;
+      dp = ditlPlaces(q),
+      io = ioRecs(q, stn),
+      W = wix(),
+      wr = [];
+    if (W) {
+      for (const x of io) if (W.a[x.st + '|' + x.a]) wr.push(W.a[x.st + '|' + x.a]);
+      if (!wr.length && W.t[q]) for (const o of W.t[q]) if (!stn || o.s === String(stn)) wr.push(o);
+    }
+    const cp = compOf(io.length && io[0].r.tag ? io[0].r.tag : q),
+      rl = relays([...io.map(x => x.st + '|' + x.a), ...io.filter(x => x.r.tag).map(x => 'T|' + x.r.tag), 'T|' + q, ...(stn ? [stn + '|' + q] : ['1', '2', '3', '4', '5'].map(st => st + '|' + q))]);
+    if (!oc.length && !dp.length && !io.length && !wr.length && !cp.length && !rl.length) return false;
     close();
     const tag = oc.length ? oc[0].nm : raw.trim();
     let desc = '';
@@ -182,12 +326,40 @@
     card = E('div', { id: 'infocard' }, [
       E('div', { cls: 'ich' }, [
         E('b', { txt: tag }),
-        E('span', { cls: 'icn', txt: oc.length + ' in ABC · ' + dp.length + ' in DITL' }),
+        E('span', { cls: 'icn', txt: oc.length + ' in ABC · ' + dp.length + ' in DITL' + (wr.length ? ' · wiring' : '') }),
         E('button', { cls: 'b', txt: '✕', title: 'Close', on: close })
       ]),
       desc ? E('div', { cls: 'icd', txt: desc }) : null,
       body
     ]);
+    for (const x of io.slice(0, 5)) {
+      const r = x.r,
+        rg = r.lo != null || r.hi != null ? r.lo + ' ~ ' + r.hi + (r.u ? ' ' + r.u : '') : r.u || '';
+      body.append(
+        E('div', { cls: 'ics' }, [
+          E('div', { cls: 'ict' }, [E('b', { txt: (r.k === 'io' ? 'I/O LIST' : 'MEMORY LIST') + ' · STN10' + x.st }), E('span', { cls: 'icv', txt: x.a })]),
+          r.tag ? E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Tag' }), r.tag]) : null,
+          r.d ? E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Description' }), r.d]) : null,
+          rg ? E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Range' }), rg]) : null,
+          r.t || r.ab ? E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Type' }), [r.t, r.ab ? 'SIG.AB ' + r.ab : ''].filter(Boolean).join(' · ')]) : null,
+          r.r ? E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Remark' }), r.r]) : null
+        ])
+      );
+    }
+    if (wr.length) card.classList.add('wide');
+    for (const o of wr.slice(0, 3))
+      body.append(E('div', { cls: 'ics' }, [E('div', { cls: 'ict' }, [E('b', { txt: o.k === 'DO' ? 'WIRING · controller → field (output)' : 'WIRING · field → controller' })]), wireChart(o)]));
+    for (const r of rl.slice(0, 4)) body.append(relaySec(r));
+    for (const c of cp)
+      body.append(
+        E('div', { cls: 'ics' }, [
+          E('div', { cls: 'ict' }, [E('b', { txt: 'FLOW COMPENSATION · ' + c.stn }), E('span', { cls: 'icv', txt: c.flow })]),
+          E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Flow' }), c.flow + ' · ' + c.desc]),
+          c.ptag ? E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Pressure' }), c.ptag + ' (FS ' + c.pfs + ', BS ' + c.pbs + ', design ' + c.pop + ') · ap ' + c.ap + ' · bp ' + c.bp]) : null,
+          E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Temperature' }), [c.ttag, c.ttag2].filter(Boolean).join(' / ') + ' (FS ' + c.tfs + ', BS ' + c.tbs + ', design ' + c.top + ' °C, abs ' + c.abs + ') · at ' + (+c.at).toFixed(4) + ' · bt ' + (+c.bt).toFixed(4)]),
+          E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Atmosphere' }), c.atm + ' kg/cm2'])
+        ])
+      );
     for (const o of oc.slice(0, 8)) {
       const src = source(o),
         rd = readers(o),
@@ -195,7 +367,7 @@
       const sec = E('div', { cls: 'ics' }, [
         E('div', { cls: 'ict' }, [
           E('b', { txt: o.sh.name }),
-          E('span', { cls: 'icv', txt: '= ' + val(o.S, o.n) }),
+          look ? null : E('span', { cls: 'icv', txt: '= ' + val(o.S, o.n) }),
           E('button', { cls: 'b', txt: 'Show', title: 'Open the sheet and select the wire', on: () => show(o) })
         ]),
         E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Source' }), src.txt]),
@@ -212,10 +384,16 @@
         ]),
         rd.length ? E('ul', { cls: 'icu' }, rd.slice(0, 8).map(b => E('li', { txt: bname(b) }))) : null,
         E('div', { cls: 'icl' }, [
-          E('span', { cls: 'k', txt: 'Trip?' }),
-          fx.some(f => f.k === 'trip' || f.k === 'fm') ? E('span', { cls: 'tg t-trip', txt: 'AFFECTS' }) : E('span', { cls: 'tg t-ok', txt: 'no trip / force manual on this sheet' })
+          E('span', { cls: 'k', txt: 'Effects' }),
+          fx.some(f => f.k === 'trip')
+            ? E('span', { cls: 'tg t-trip', txt: 'TRIP' })
+            : null,
+          fx.some(f => f.k === 'ilk') ? E('span', { cls: 'tg t-ilk', txt: 'INTERLOCK' }) : null,
+          fx.some(f => f.k === 'fm') ? E('span', { cls: 'tg t-fm', txt: 'FORCE MANUAL' }) : null,
+          fx.some(f => f.k === 'sw') ? E('span', { cls: 'tg t-sw', txt: 'SWITCH' }) : null,
+          fx.some(f => ['trip', 'ilk', 'fm', 'sw'].includes(f.k)) ? null : E('span', { cls: 'tg t-ok', txt: 'no trip, interlock or force manual (all sheets it reaches)' })
         ]),
-        fx.length ? E('ul', { cls: 'icu' }, fx.map(f => E('li', { cls: 'f-' + f.k, txt: f.t }))) : null
+        fx.length ? E('ul', { cls: 'icu' }, fx.map(f => E('li', { cls: 'f-' + f.k, txt: (f.sh ? f.sh + ': ' : '') + f.t }))) : null
       ]);
       body.append(sec);
     }
@@ -235,6 +413,7 @@
                   on: () => {
                     close();
                     AN.setCat('dig');
+                    if (look) AN.lookOnly();
                     S.cur = d.i;
                     render();
                   }
@@ -248,6 +427,7 @@
     return true;
   }
   window.lsInfo = open;
+  setTimeout(ades, 3000);
   let n = 0;
   const iv = setInterval(() => {
     const sb = $('ansb'),
@@ -255,7 +435,7 @@
     if (sb && !sb.dataset.info) {
       sb.dataset.info = '1';
       sb.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && open(sb.value)) {
+        if (e.key === 'Enter' && open(sb.value, { look: 1 })) {
           const f = $('anfind');
           if (f) f.style.display = 'none';
         }
@@ -269,7 +449,7 @@
           txt: 'ⓘ',
           title: 'Info card: source, used by, trip? (address or tag in the search box)',
           on: () => {
-            if (!open(($('ansb') || {}).value || '')) {
+            if (!open(($('ansb') || {}).value || '', { look: 1 })) {
               const t = $('toast');
               try {
                 msg('Type an address or tag (e.g. M.0228, AI0641, FICFW1007.MAN), then ⓘ or Enter');
@@ -284,4 +464,69 @@
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') close();
   });
+  /* 2.1.0-beta.7 (user: "hindi lang DITL, dapat kung meron din sa ABC"): on the DITL page, the selected input / output cell whose
+     address or tag is also on ABC sheets shows those sheets in a bar; ⓘ = the info card (source, used by, effects on every ABC
+     sheet it reaches), a sheet button = that sheet. One address = one signal (CLAUDE.md 1). Read only. */
+  {
+    const oc = new Map(),
+      ocOf = q => {
+        if (!oc.has(q)) oc.set(q, occurrences(q));
+        return oc.get(q);
+      };
+    let bar = null,
+      key = '';
+    const hide = () => {
+      if (bar) bar.style.display = 'none';
+      key = '';
+    };
+    setInterval(() => {
+      try {
+        if (!window.AN || AN.cat === 'an' || typeof sel === 'undefined' || !sel || typeof S === 'undefined' || !S.sheets) return hide();
+        const s = S.sheets[S.cur],
+          cell = s && s.cells && s.cells[sel.k];
+        if (!cell) return hide();
+        const hits = [];
+        for (const t of cell)
+          for (const w of String(t.t || '').split(/\s+/)) {
+            const q = norm(w);
+            if (!looks(q) || !/\d/.test(q) || hits.some(h => h.q === q)) continue;
+            const L = ocOf(q);
+            if (L.length) hits.push({ q, L });
+          }
+        const k = S.cur + '|' + sel.k + '|' + hits.map(h => h.q).join(',');
+        if (k === key) return;
+        key = k;
+        if (!hits.length) return hide();
+        if (!bar) {
+          bar = E('div', { id: 'abcbar' });
+          document.body.append(bar);
+        }
+        bar.innerHTML = '';
+        for (const h of hits) {
+          const shs = [...new Set(h.L.map(o => o.sh))];
+          bar.append(
+            E('div', { cls: 'abr' }, [
+              E('b', { txt: 'ALSO IN ABC' }),
+              E('span', { cls: 'abq', txt: h.L[0].nm }),
+              ...shs.slice(0, 6).map(sh =>
+                E('button', {
+                  cls: 'b',
+                  txt: sh.name + (sh.stn ? ' · STN10' + sh.stn : ''),
+                  title: 'Open ' + sh.name + ' (ABC) at ' + h.L[0].nm,
+                  on: () => {
+                    AN.setCat('an');
+                    AN.go(AN.sheets.indexOf(sh));
+                    setTimeout(() => open(h.q), 300);
+                  }
+                })
+              ),
+              shs.length > 6 ? E('span', { txt: '+' + (shs.length - 6) }) : null,
+              E('button', { cls: 'b', txt: 'ⓘ', title: 'Info card: source, used by, effects on the ABC sheets', on: () => open(h.q) })
+            ])
+          );
+        }
+        bar.style.display = 'block';
+      } catch (e) {}
+    }, 500);
+  }
 })();

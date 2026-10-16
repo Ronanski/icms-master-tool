@@ -361,7 +361,7 @@
       tf = all.reduce((a, x) => a + x.fail, 0);
     box.append(
       E('div', { cls: 'h' }, [
-        E('b', { txt: 'SCENARIO TEST: ' + sp.title }),
+        E('b', { txt: (/^TEST CARD/.test(sp.title) ? '' : 'SCENARIO TEST: ') + sp.title }),
         E('span', {
           cls: tf ? 'n' : all.length ? 'y' : 'w',
           txt: all.length ? (tf ? tf + ' ✖' : '✔ ' + tp) : 'not run yet'

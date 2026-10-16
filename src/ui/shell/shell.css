@@ -178,3 +178,21 @@ body.top1 #meta #mctl button,body.top1 #meta #mctl select{height:24px;padding:0 
 #infocard .tg{display:inline-block;padding:1px 6px;border-radius:3px;font-weight:700;font-size:10.5px}
 #infocard .t-trip{background:#4a1d1d;color:#ffb3b3}#infocard .t-ok{background:#123a26;color:#9ff0c4}
 #infocard .b{height:24px;padding:0 8px;font-size:11px;border-radius:5px}
+/* info card: wiring flow chart (2.1.0), left to right */
+#infocard.wide{width:min(900px,96vw)}
+#infocard .icw{display:flex;flex-direction:row;flex-wrap:wrap;align-items:stretch;gap:6px 0;margin:4px 0 2px}
+#infocard .icwb{flex:0 0 132px;border:1px solid #2a3846;border-radius:4px;background:#0b1219;padding:5px 7px;display:flex;flex-direction:column;gap:2px}
+#infocard .icwb small{font:600 9px var(--uf);letter-spacing:.08em;color:#6f8191;text-transform:uppercase}
+#infocard .icwb b{font:600 11.5px var(--mf);color:#e6edf3;word-break:break-all;line-height:1.25}
+#infocard .icwb span{font:10.5px var(--mf);color:#5cd6ff;line-height:1.25}
+#infocard .icwb.ad{border-color:#2a6a98;background:#0e2536}
+#infocard .icwb.fd{border-color:#5a4a20;background:#1a160b}#infocard .icwb.fd b{color:#ffd78a}
+#infocard .icwa{flex:0 0 18px;align-self:center;text-align:center;color:#38a8f0;font-size:15px;font-weight:700}
+#infocard .t-ilk{background:#4a3a12;color:#ffd78a}#infocard .t-fm{background:#3a2a10;color:#ffcf8a}#infocard .t-sw{background:#123048;color:#9fd0ff}
+#infocard .tg{margin-right:4px}
+#infocard .f-ilk{color:#ffd78a}#infocard .f-sw{color:#9fd0ff}
+#infocard .icl .k.k2{width:150px;font-size:10.5px}#libws .libw .ics{border:0;padding:0}
+#abcbar{position:fixed;left:50%;transform:translateX(-50%);bottom:34px;z-index:60;display:none;max-width:min(760px,96vw);background:var(--c-panel,#10161c);border:1px solid var(--c-line,#2a3a48);border-radius:4px;padding:4px 8px;font:12px var(--uf,sans-serif);box-shadow:0 4px 14px #0008}
+#abcbar .abr{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:2px 0}
+#abcbar .abr b{font-size:10.5px;letter-spacing:.08em;color:#9ff0c4}
+#abcbar .abq{font-family:var(--mf,monospace);color:#ffd27a}
