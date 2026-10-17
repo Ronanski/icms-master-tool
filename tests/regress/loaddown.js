@@ -7,7 +7,9 @@ await page.setViewportSize({width:1400,height:900});
 await page.evaluate(()=>{AN.reset();AN.plantLoad150();AN.settle();AN.go(AN.sheets.findIndex(s=>s.name==='ABC-001A'));[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Operator').forEach(b=>b.click())});
 await page.waitForSelector('#opp .fpman',{timeout:20000});await page.waitForTimeout(800);
 const st=()=>page.evaluate(()=>{const g=(n,l)=>{const S=AN.sheets.find(s=>s.name===n).S;const i=S.lab.findIndex(x=>x&&x.t===l);return +S.rt.v[i]};return {mv:g('ABC-001A','HIC-ULD.MV'),dem:g('ABC-001A','SI0226'),coal:g('ABC-002','SI0010'),fa:g('ABC-004A','AI0480')}});
-const run=s=>page.evaluate(s=>{const all=AN.sheets.filter(x=>x.S&&!/ABC-000/.test(x.name));for(let k=0;k<s*2;k++)for(const x of all)AN.stepSet(x,.5)},s);
+/* 2.2.0-beta.9: like the app, ONE stepSet per 0.5 s (the 36 linked sheets of ABC-001C step once each); before, every sheet stepped
+   all its linked sheets, so ABC-001B ran about 30 times per tick and the 0.1 MW/MIN of the broken HIC-MWRL looked like 3 MW/MIN */
+const run=s=>page.evaluate(s=>{const C1=AN.sheets.find(x=>x.name==='ABC-001C');for(let k=0;k<s*2;k++)AN.stepSet(C1,.5)},s);
 await run(120);const a=await st();
 for(let k=0;k<6;k++){await page.evaluate(()=>{const f=[...document.querySelectorAll('#opp .fpman')].find(x=>x.dataset.tag==='HIC-ULD');const b=[...f.querySelectorAll('button')].find(e=>e.textContent==='▼▼');b.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));b.dispatchEvent(new PointerEvent('pointerup',{bubbles:true}));b.click()});await page.waitForTimeout(150)}
 const b=await st();await run(240);const c=await st();await run(360);const d=await st();
