@@ -357,6 +357,23 @@
         }
       };
       set.m.append(cd);
+      /* 2.2.0-beta.15 (M4 step 2): the plant warm = the end of the cold start (30 kg/cm2, bed 480 C, 4 burners lit) */
+      const wm = document.createElement('button');
+      wm.className = 'an-only';
+      wm.id = 'loadwarm';
+      wm.textContent = 'Start warm (M4: 30 kg/cm2, burners lit)';
+      wm.title = 'Start cold, then the plant as at the end of the cold start: drum 30 kg/cm2, bed 480 C, fans running, 4 start-up burners at 30 %. For the coal transfer and the next steps of PR-OPE-5002.';
+      wm.onclick = () => {
+        try {
+          AN.reset();
+          const n = AN.plantWarm();
+          AN.paint();
+          msg('Plant warm: drum 30 kg/cm2, bed 480 C, 4 start-up burners lit. Press Run; coal transfer: CHECK panel has the steps. ' + n + ' anchors.');
+        } catch (e) {
+          msg('Could not load the warm state: ' + e.message);
+        }
+      };
+      set.m.append(wm);
     }
     set.head('Channel at update');
     const ch = $('chsel'),

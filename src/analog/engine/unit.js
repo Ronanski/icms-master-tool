@@ -88,8 +88,8 @@ const AN_UNIT = {
      ambient, no coal, turbine valves shut (U.turb = false until the turbine is rolled, M4 step 4). The physics added here:
      - FIRING = coal + oil of the four start-up burners (ABC-003A ~ D FICDO1043A ~ D, PV SI0070 / 0380 / 0460 / 0480 = AI0515 / 0546 /
        0517 / 0548 0 ~ 3.5 T/H after the gate of the SUPPLY OIL VALVE CLOSE M.3410 / 3411 / 3416 / 3417). One T/H of oil makes ao
-       times the steam of one T/H of coal (ASSUMED 2: the fuel heating values of the design data Tab_1 are an image without text;
-       coal 89 T/H at MCR 460 T/H against diesel oil about 42 MJ/kg); the offset of the firing line (m0 - a x F0) fades out below
+       times the steam of one T/H of coal (ao = 2.55: PR-OPE-5002 "2.55 TPH coal = 1 TPH diesel"; the heating values of the design
+       data Tab_1 are an image without text); the offset of the firing line (m0 - a x F0) fades out below
        30 % of the anchor coal so that a small fire makes a small steam flow and the anchored behaviour above stays the same.
      - WATER HEAT-UP: below the saturation temperature of the drum pressure the firing heats the water (no steam): Cw (T/H) x s of
        steam-equivalent per C of the boiler water (ASSUMED 200 t of water: 200 t x 4.19 MJ/t/C / 2000 MJ/t x 3600 = 1508); at
@@ -97,12 +97,16 @@ const AN_UNIT = {
        temperature rises at firing / Cw: 2 burners about 45 T/H steam-equivalent = 107 C/h, the limit of Fig 1 (110 C/h) is the
        operator's duty (firing), as on the plant.
      - BED TEMPERATURE (no DCS transmitter: the bed thermocouples are on the DITL / local; model state U.Tb): first order (tauB) to
-       Tamb + (Tb0 - Tamb) x (firing share / air share) ^ 0.7 (Fig 8: furnace about 850 C at full load; two start-up burners at the
-       minimum air give about 450 C = the coal batch permissive of PR-OPE-5002, 400 ~ 450 C; 600 C continuous).
+       Tamb + (Tb0 - Tamb) x (fuel share / air share) ^ 0.45 (Fig 8: furnace about 850 C at full load; two start-up burners at the
+       light-off air give about 450 C = the coal batch permissive of PR-OPE-5002, 400 ~ 450 C; 600 C continuous).
      - STEAM TEMPERATURE while cold: the superheaters cannot give more than the gas (plant.js pr.tcap = bed temperature) and not
        less than saturation (pr.tsat); TAB_9: SH outlet <= 535 C before synchronisation */
   Tamb: 30,
-  ao: 2,
+  ao: 2.55 /* PR-OPE-5002 4.3.x: "Approximately: 2.55 TPH coal = 1 TPH diesel" (2.2.0-beta.15; beta.14 had 2 ASSUMED) */,
+  /* 2.2.0-beta.15 (M4 step 2, coal transfer): the coal burns only in a hot bed: burnt share 0 at 350 C, 1 at 600 C (ASSUMED,
+     PR-OPE-5002: batch firing at 400 ~ 450 C to see that the coal burns, continuous feeding above 600 C); the rest leaves unburnt */
+  Tburn0: 350,
+  Tburn1: 600,
   Cw: 1508,
   tauB: 900,
   Tb0: 850
@@ -163,6 +167,7 @@ function anUnitStop() {
   U.cold = false;
   U.turb = true;
   for (const m of U.mul || []) for (const p of m.pr) p.mul = undefined;
+  if (U.fwp && U.fwp.pr) U.fwp.pr.op = undefined;
   for (const p of U.fp || []) {
     p.pr.uf = undefined;
     p.pr.ld = 0;
@@ -349,6 +354,13 @@ function anUnitStart() {
     { pr: procsOf('ABC-007', ['FICFA1071']).map(p => p.pr), run: [labOf('ABC-007', 'M.3302')] },
     { pr: procsOf('ABC-007', ['FICFA1081']).map(p => p.pr), run: [labOf('ABC-007', 'M.3303')] }
   ].map(m => Object.assign(m, { run: m.run.filter(Boolean) }));
+  /* 2.2.0-beta.15 (M4 step 2): the start-up feedwater valve (ABC-010 LICBR1001B, single-element drum level control for the start-up,
+     FCV-FW1060) is a second line into the drum beside the main valve of FICFW1007: its flow is added to the feedwater flow
+     transmitter (plant.js pr.op of the FICFW1007 loop), ksu = 30 % of the anchor feedwater at 100 % open (ASSUMED: the size of a
+     start-up control valve is not in the repository; the snapshots show it at 0.1 % M at 150 MW) */
+  U.suv = ctlOut('ABC-010', 'LICBR1001B');
+  U.fwp = procOf('ABC-010', 'FICFW1007');
+  U.ksu = 0.3;
   /* furnace pressure: the two IDF actuators in series (hydraulic coupling PICFG108, inlet damper PICFG108A) take the flue gas out */
   U.fp = procsOf('ABC-008', ['PICFG108', 'PICFG108A']);
   U.idf = labOf('ABC-008', 'M.3304');
@@ -382,6 +394,8 @@ function anUnitCold() {
     Tw: U.Tamb,
     Tb: U.Tamb,
     oilF: 0,
+    burn: 0,
+    unb: 0,
     t: 0
   });
   U.o2v = 21;
@@ -402,9 +416,12 @@ function anUnitStep(dt) {
   /* 2.2.0-beta.14: + the oil of the start-up burners (ao x coal); the offset of the firing line fades out below 30 % of the anchor coal */
   const F = U.fuel.reduce((a, l) => a + (anUnitVal(l) || 0), 0),
     oil = (U.oilN || []).reduce((a, x) => a + Math.max(0, +x.S.rt.v[x.n] || 0), 0),
-    Fe = F + U.ao * oil,
+    bf = Math.max(0, Math.min(1, (U.Tb - U.Tburn0) / (U.Tburn1 - U.Tburn0))),
+    Fe = bf * F + U.ao * oil,
     Qss = Math.max(0, U.a * Fe + (U.m0 - U.a * U.F0) * Math.min(1, Fe / (0.3 * U.F0)));
   U.oilF = oil;
+  U.burn = bf;
+  U.unb = F * (1 - bf);
   U.Qs += ((Qss - U.Qs) * dt) / U.tauF;
   /* ---- 2.2.0-beta.12 (M3): station wiring S2 -> S1, turbine trip ---- */
   for (const [a, tg] of U.bcast || []) {
@@ -466,9 +483,11 @@ function anUnitStep(dt) {
   {
     const taf = U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0),
       as = U.taf0 > 0 ? Math.max(0.05, taf / U.taf0) : 1,
-      /* exponent 0.7 (ASSUMED): 850 C at full load (Fig 8) and about 450 C with two start-up burners at the minimum air (the coal
-         batch permissive of PR-OPE-5002, 400 ~ 450 C) */
-      Tbss = U.Tamb + (U.Tb0 - U.Tamb) * Math.pow(Math.min(3, U.Qs / Math.max(1, U.m0) / as), 0.7);
+      /* fuel share (coal-equivalent, burnt) over air share, exponent 0.45 (ASSUMED, calibrated: 850 C at full load, Fig 8; about
+         450 C with two start-up burners at 60 % and the light-off air, the coal batch permissive of PR-OPE-5002 400 ~ 450 C; coal
+         alone at O2 4 ~ 5 % about 800 C). 2.2.0-beta.15: on the fuel, not on the steam made (the fixed loss of the firing line
+         made a small fire too cold) */
+      Tbss = U.Tamb + (U.Tb0 - U.Tamb) * Math.pow(Math.min(3, Fe / Math.max(1, U.F0) / as), 0.45);
     U.Tb += ((Math.max(U.Tamb, Tbss) - U.Tb) * dt) / U.tauB;
   }
   const Pms = Math.max(0, U.Pd - U.kdp * U.ms * U.ms);
@@ -560,6 +579,12 @@ function anUnitStep(dt) {
   }
   /* PA to the furnace follows the PAF flow */
   if (U.paN >= 0 && U.pa0 > 0 && U.pa.length) scaled(U.pa, Math.max(0, +U.tafS.rt.v[U.paN]) / U.pa0);
+  /* ---- 2.2.0-beta.15 (M4 step 2): the start-up feedwater valve adds to the feedwater flow ---- */
+  if (U.suv && U.fwp && U.fwp.pr) {
+    const o = Math.max(0, Math.min(100, +U.suv.S.rt.v[U.suv.n] || 0)),
+      fw0 = U.fwp.pr.hop && U.fwp.pr.hop.pv > 0 ? U.fwp.pr.hop.pv : 500;
+    U.fwp.pr.op = (U.ksu * fw0 * o) / 100;
+  }
   /* ---- 2.2.0-beta.12 (M3): machines stopped, furnace pressure ---- */
   for (const m of U.mul || []) {
     const run = !m.run.length || m.run.some(r => +r.S.rt.v[r.n] > 0.5);

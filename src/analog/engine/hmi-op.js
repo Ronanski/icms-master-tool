@@ -940,6 +940,76 @@ const AN_HMI_DI_COLD = {
   'I.0932': 1 /* GCB 52G1 off: the generator is not synchronised */,
   'I.0418': 0 /* no ICV -> CV transfer */
 };
+/* 2.2.0-beta.15: the SUPPLY OIL VALVE (1)(2) CLOSE of a start-up burner (M.3410 / 3411 / 3416 / 3417, memory list BC FROM S4) is the
+   AND of the two limit switches on the coal feeder sheets (ABC-004A ~ C), linked to ABC-003x and ABC-029. The operator opens (or
+   closes) the two valves = the two inputs of that AND (one address = one signal, CLAUDE.md 1). Returns the inputs written */
+function anOilValve(addr, open) {
+  let n = 0;
+  for (const sh of AN.sheets) {
+    if (!sh.S || /^ABC-000/.test(sh.name)) continue;
+    const T = sh.S;
+    for (let k = 0; k < T.lab.length; k++) {
+      if (!T.lab[k] || String(T.lab[k].t).trim() !== addr || T.ext.includes(k)) continue;
+      for (const g of T.drv[k] || [])
+        if (g.k === 'AND')
+          for (const i of g.i || [])
+            if (T.ext.includes(i) && T.rt.force[i] === undefined) {
+              T.rt.ext[i] = open ? 0 : 1;
+              n++;
+            }
+    }
+  }
+  return n;
+}
+/* 2.2.0-beta.15 (M4 step 2): START WARM = the cold plant already fired: drum at P kg/cm2 (water at saturation), bed at Tb, fans
+   running with the light-off air, the start-up burners lit (supply oil valves open, BURNER IN SERVICE, FICDO1043x MANUAL at mv %),
+   the blow-off holding the pressure. The end of the CHECK "M4 - Cold start" (30 kg/cm2, 4 burners), so the next steps of the
+   procedure (coal transfer, bypass, roll) start here instead of running the cold start again (boiler manual Fig 3 warm start-up:
+   bed below 700 C, the same steps from a kept pressure). o = { P, Tb, burners, mv, air } */
+const AN_BURNER = [
+  ['ABC-003A', 'FICDO1043A', 'M.3410', 'M.3412'],
+  ['ABC-003B', 'FICDO1043B', 'M.3411', 'M.3413'],
+  ['ABC-003C', 'FICDO1043C', 'M.3416', 'M.3418'],
+  ['ABC-003D', 'FICDO1043D', 'M.3417', 'M.3419']
+];
+function anPlantWarm(o) {
+  o = Object.assign({ P: 30, Tb: 480, burners: 4, mv: 30, air: 10 }, o || {});
+  const n = anPlantCold();
+  if (!AN_UNIT.on) return 0;
+  const U = AN_UNIT,
+    L = AN.sheets.filter(sh => sh.S && !/^ABC-000/.test(sh.name)),
+    setx = (l, x) => {
+      for (const sh of L)
+        for (const e of sh.S.ext) if ((AN.nm(sh.S, e) || '').trim() === l && sh.S.rt.force[e] === undefined) sh.S.rt.ext[e] = x;
+    },
+    man = (k, t, x) => {
+      const sh = AN.sheets.find(y => y.name === k),
+        S = sh && sh.S,
+        c = S && AN.hmiCtrls ? (AN.hmiCtrls(S) || []).find(q => q.tag === t) : null;
+      if (!c) return;
+      if (c.manBlk && S.rt.st[c.manBlk.id]) S.rt.st[c.manBlk.id].val = x;
+      else if (c.manNet != null && S.ext.includes(c.manNet)) S.rt.ext[c.manNet] = x;
+      if (c.amt && S.rt.st[c.amt.id]) S.rt.st[c.amt.id].hold = x;
+    };
+  for (const l of ['M.3302', 'M.3303', 'M.3304']) setx(l, 1);
+  man('ABC-007', 'FICFA1071', o.air);
+  man('ABC-007', 'FICFA1081', o.air);
+  AN_BURNER.slice(0, Math.max(0, Math.min(4, o.burners))).forEach(([k, t, vc, ins]) => {
+    anOilValve(vc, true);
+    setx(ins, 1);
+    man(k, t, o.mv);
+  });
+  Object.assign(U, { Pd: o.P, Tw: 100 + 47.1 * Math.log(o.P + 1), Tb: o.Tb });
+  try {
+    const C1 = AN.sheets.find(x => x.name === 'ABC-001C');
+    for (let k = 0; k < 4; k++) stepSet(C1, 0.5);
+    for (const sh of L) sh.S.rt.pm = {};
+    hmiComp(ai => /^AI0(130|258|386)$/.test(ai));
+    for (let k = 0; k < 2; k++) for (const sh of L) stepSet(sh, 0.5);
+  } catch (e) {}
+  U.Qs = U.a * (U.oilF * U.ao); /* the fire is already there */
+  return n;
+}
 function anPlantCold() {
   const n = anPlantLoad150();
   if (!AN_UNIT.on) return 0;
@@ -967,6 +1037,12 @@ function anPlantCold() {
       else if (c.manNet != null && S.ext.includes(c.manNet) && !(S.xlk && S.xlk[c.manNet])) rt.ext[c.manNet] = 0;
       const ps = rt.st[c.b.id];
       if (ps) hmiPidSet(ps, c.b, 0);
+      /* .MAN = 1 (.LOC / .REM = 0) on every sheet with the tag: the mode STATUS the drawing reads (CLAUDE.md 2; ABC-010 M.0226: the
+         start-up level control LICBR1001B is allowed only while FICFW1007 and LICBR1001A are in MANUAL) */
+      if (AN.latchMode)
+        try {
+          AN.latchMode(c.tag, 'MAN');
+        } catch (e) {}
     }
     for (const b of S.procs || []) if (b.proc && (b.txt || [])[1] === 'LICBR1001') b.proc.integLoss = 0;
   }

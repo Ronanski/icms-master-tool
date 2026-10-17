@@ -1,10 +1,10 @@
 // 2.2.0-beta.13: the CHECK panel (src/ui/uat/check.js) runs each plant scenario in the page and every expected result is ✓.
 // Also: one address = one value on every sheet of the station (links.js shareExt): I.000F pressed on one sheet reaches the others.
 // 2.2.0-beta.14: + cold (M4 step 1: start cold, purge, light-off of burners A / B, water heat-up, pressure 0 -> 30 kg/cm2, Fig 1 rate).
-// Usage: node tests/regress/check_panel.js [load|tt|mft|bfwp|idf|paf|hh|cold|share] [html]
+// Usage: node tests/regress/check_panel.js [load|tt|mft|bfwp|idf|paf|hh|cold|coal|share] [html]
 const {open}=require('./lib.js');const fs=require('fs');
 const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
-const want=process.argv.slice(2).filter(a=>!/\.html$/.test(a));const SC=want.length?want:['share','tt','mft','bfwp','idf','paf','hh','cold','load'];
+const want=process.argv.slice(2).filter(a=>!/\.html$/.test(a));const SC=want.length?want:['share','tt','mft','bfwp','idf','paf','hh','cold','coal','load'];
 (async()=>{const {browser,page,errs}=await open(html);let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
 for(const id of SC){
  if(id==='share'){const r=await page.evaluate(()=>{AN.reset();AN.plantLoad150();const C1=AN.sheets.find(s=>s.name==='ABC-001C');const C=AN.sheets.find(s=>s.name==='ABC-007').S;const n=C.ext.find(e=>String(C.lab[e]&&C.lab[e].t).trim()==='I.000F');C.rt.ext[n]=1;AN.stepSet(C1,0.5);
