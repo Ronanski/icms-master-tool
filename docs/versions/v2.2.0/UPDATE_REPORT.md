@@ -2,6 +2,24 @@
 
 Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (beta.1 ~ beta.7) at `ccr-3def3a81-kcpwgn` (beta.8 ~; PR #31) (PROJECT_RULES 5e, 5f).
 
+## 2.2.0-beta.13 — CHECK panel (M2 / M3 sa isang pindot) at iisang address = iisang halaga sa lahat ng sheet
+
+- **Problem (user, 2026-10-17):** "Paano i-check ang M2 at M3? Walang guide, expected result, procedure." At: "babawan mo lang, ayaw ko ng kumplikado."
+- **As Found:**
+  - Ang iisang digital input ng drawing na nakasulat sa maraming sheet ng iisang station (hal. I.000F MFT FROM IRP sa 7 sheet ng STN101, M.3343 sa ABC-010 at ABC-050) ay may sariling kopya sa bawat sheet: ang ON sa isang sheet ay hindi umaabot sa iba (probe sa beta.12). Lumalabag sa CLAUDE.md rule 1 (iisang signal sa buong DCS). Kaya ang MFT nang mano-mano = 11 pindot + 3 pulse + 4 feeder bit: walang praktikal na procedure.
+  - Walang lugar sa app na nagsasabi ng hakbang at inaasahang resulta ng M2 / M3; nasa headless test lang (`unit_load.js`, `unit_trip.js`).
+- **Work Done:**
+  - `src/analog/engine/links.js` `shareExt` (sa bawat `stepSet` / `stepTier`): ang mga digital ext input na may address `I.xxxx` / `M.xxxx` / `B.xxxx` (may prefix `S<n>` = ibang station; kung wala, station ng sheet) ay iisang grupo kada station|address; ang nagbago sa isang sheet ay isinusulat sa lahat (hindi sinusulatan ang net na hawak ng link `xlk` o ng force, pero ang pagbabago nito ay kumakalat). Ang I.000F ng STN102 ay hiwalay sa I.000F ng STN101 (sariling input ng bawat station: tama sa I/O list).
+  - `src/ui/uat/check.js` (bago, injected kasama ng UAT): button **CHECK** (ibabang kaliwa). 7 scenario: M2 Load 150 → 60 → 150, M3 turbine trip, MFT, BFWP trip, IDF trip, PAF trip, drum level HH. Bawat isa: Start at 150 MW, hakbang ng operator at ng DITL (forced), mabilis na pagtakbo (batch ng 0.5 s steps), live na value, tapos ✓ / ✗ sa bawat inaasahan (parehong tseke ng mga test). Taglish, maikli: "Ginagawa" at "Inaasahan" sa bawat card.
+  - `docs/versions/v2.2.0/CHECK_M2_M3.md`: ang gabay (hakbang, 7 scenario, inaasahan, mano-manong paraan, saan galing ang value).
+  - `tests/regress/check_panel.js` (bago): pinipindot ang CHECK sa page, tinatakbo ang bawat scenario, dapat PASADO lahat; at ang share test (I.000F ON sa ABC-007 → lahat ng sheet ng station 1; ang ibang station hindi).
+- **As Left (headless, build 2.2.0-beta.13):**
+  - `check_panel.js`: share PASS (7 sheet ng station 1 sumunod; S2 sheets 0); M2 Load PASADO 14 / 14 (60 MW: MW 60.0, MSF 201, coal 40.1, MSP 121.3 / SV 122.3, MST 516 / RHT 496, RHP 15.2, O2 10.7; 150 MW: MW 150.0, MSF 471, MSP 122.4, MST 541 / RHT 543 / RHP 34.7; drum ±33 mm, MSP min 119.9); turbine trip 10 / 10; MFT 7 / 7; BFWP 7 / 7; IDF 7 / 7; PAF 6 / 6; drum HH 3 / 3.
+  - Regression: unit_trip 6 / 6 ALL PASS, unit_load ALL PASS, hmi_op ALL PASS (34 anchored loops), plant_live ALL PASS, switches PASS (438 / 0), reset PASS (51 / 0), force_manual PASS 68 / 0, isolated PASS (54 sheets, 5128 nets), scenarios 244 / 0, generic tester 68 controller, 2145 tama, 0 mali, 0 hindi nasubok
+- **Ano ang makikita ng operator:** button **CHECK** sa ibabang kaliwa (katabi ng UAT). Pindutin ▶ Takbo sa isang scenario, hintayin ang bar, basahin ang ✓ / ✗. Pagkatapos, PLANT → UNIT at ang mga sheet ay nasa huling estado ng scenario. Sa mano-manong trip: isang ON ng I.000F sa alinmang sheet ng station 1 ay sapat para sa buong station.
+- **Hindi pa nasubok:** totoong tablet / apk / exe (laki ng panel sa phone: min(460px, 100vw)); ang M2 scenario sa mabagal na device (~3 min sa desktop headless).
+- **Status:** Beta.
+
 ## 2.2.0-beta.12 — M3 Trip: turbine trip, MFT, BFWP trip, IDF / PAF trip, drum level LL / HH, furnace pressure vs hangin
 
 - **Problem (roadmap M3):** Wala pang sagot ang planta sa mga trip: nakakabit ang force manual / BU-CMD ng drawing (beta.10), pero ang PV ay hindi gumagalaw (hal. nakahinto ang BFWP pero may FW flow pa; nakahinto ang IDF pero hindi tumataas ang furnace pressure; turbine trip pero MW 150 pa). Ang input ng STN102 (I.0400 turbine trip) ay hindi dumadaan sa STN101 (M.3200).
