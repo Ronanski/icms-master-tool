@@ -46,8 +46,19 @@ const AN_UNIT = {
      - O2 (ABC-002 AT-FG1122 / 1123): O2 = 21 x (1 - stoichiometric air / total air), total air = PA + SA + FA of ABC-006 (FT-FA1071,
        FT-FA1081, FT-FA1055), stoichiometric air per T/H of coal from the anchor (O2 4.3 % at the snapshot air and coal: excess air
        about 26 %; design 20 %). Analyzer lag tauO2 (ASSUMED). PA to the furnace FT-FA1079 (ABC-006 indicator) follows the PAF flow */
-  lpb: 0.3,
+  lpb: 0.8 /* 2.2.0-beta.16: was 0.3; sized so that at 7.5 kg/cm2 it passes the HP bypass flow of the bypass servicing with the valve
+    in its working range (PR-OPE-5002: steam flow > 40 T/H, RH pressure 7.5 ksc held by the LP bypass in AUTO): 0.8 x 475 x 7.6 / 34.4 =
+    84 T/H, about 60 % open at 50 T/H (ASSUMED; a two-stage bypass is usually sized for 60 ~ 100 % of the boiler flow) */,
   tauRH: 10,
+  /* 2.2.0-beta.16 (M4 step 3, bypass system and pressure raise): while the turbine is shut (cold start, before the roll) the reheater
+     is a closed volume: the HP bypass fills it, the LP bypass (ABC-052 PCV-HR1003) and the RH blow-off (ABC-054 PICHR1391, PR-OPE-5002
+     "Reheat blow-off MVHR1391 open" for warming, closed when the LP bypass is in service) empty it. Crh = steam stored per kg/cm2 of
+     hot reheat pressure ((T/H) x s per kg/cm2; the reheater + piping volume is not in the repository, ASSUMED about 200 m3: steam at
+     7.6 kg/cm2 is about 4 kg/m3, so about 110 kg per kg/cm2 = 400 (T/H) x s; 40 T/H through the HP bypass fills 0 -> 7.6 kg/cm2 in
+     about 75 s); rhb = size of the RH blow-off as a share of the anchor flow at the anchor reheat pressure (ASSUMED, as the main steam
+     blow-off) */
+  Crh: 400,
+  rhb: 0.1,
   tauT: 120,
   tauO2: 20,
   mcr: 460 /* T/H, boiler MCR (SECT_7) */,
@@ -289,6 +300,21 @@ function anUnitStart() {
   U.lpv = ctlOut('ABC-052', 'PICHR1003');
   U.rr = 1;
   U.mhp = 0;
+  /* 2.2.0-beta.16 (M4 step 3): the RH blow-off PICHR1391 (ABC-054) takes steam out of the hot reheat while the turbine is shut. Its PV
+     is the hot reheat pressure of ABC-052 (drawing ABC-054: "HOT REHEAT STEAM PRESSURE HRP 052 S2 SI0180" -> STN102017), a link
+     between stations that the reader leaves as an input of the sheet: written here every step, like the station wiring (one address =
+     one signal, CLAUDE.md 1), unless the user forces it */
+  U.rhbv = ctlOut('ABC-054', 'PICHR1391');
+  U.alink = [];
+  {
+    const s52 = shOf('ABC-052'),
+      s54 = shOf('ABC-054');
+    if (s52 && s52.S && s54 && s54.S) {
+      const a = netOf(s52.S, 'SI0180'),
+        b = netOf(s54.S, 'STN102017');
+      if (a >= 0 && b >= 0 && s54.S.ext.includes(b)) U.alink.push([{ S: s52.S, n: a }, { S: s54.S, n: b }]);
+    }
+  }
   /* the spray loops and the fall of the temperature below 60 % MCR (C per unit of load share) */
   U.ld = [
     [procOf('ABC-011', 'TICBR1130'), 0],
@@ -406,6 +432,12 @@ function anUnitOwns(T, ids) {
   const U = AN_UNIT;
   return U.on && ids && ids.length && ids.some(id => U.own.has(T.rt.st[id]));
 }
+/* 2.2.0-beta.16: a PV that is an input of the sheet and that the unit model links from another sheet (ABC-054 PICHR1391 <- ABC-052
+   SI0180): the loop model of that controller does not write it */
+function anUnitOwnsPv(S, n) {
+  const U = AN_UNIT;
+  return U.on && n != null && (U.alink || []).some(([a, t]) => t.S === S && t.n === n);
+}
 /* one step of dt seconds (called by the plant step of ABC-001C) */
 function anUnitStep(dt) {
   const U = AN_UNIT;
@@ -428,6 +460,10 @@ function anUnitStep(dt) {
     const x = a.S.rt.force[a.n] !== undefined ? a.S.rt.force[a.n] : a.S.rt.ext[a.n];
     if (x === undefined) continue;
     for (const t of tg) if (t.S.rt.force[t.n] === undefined && t.S.rt.ext[t.n] !== x) t.S.rt.ext[t.n] = x;
+  }
+  for (const [a, t] of U.alink || []) {
+    const x = +a.S.rt.v[a.n];
+    if (isFinite(x) && t.S.rt.force[t.n] === undefined) t.S.rt.ext[t.n] = x;
   }
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
   /* turbine valves (TCS): MW to the turbine master demand */
@@ -515,9 +551,19 @@ function anUnitStep(dt) {
     shifted = (L, d) => anUnitWrite(L, i => L.a0[i] + d);
   /* reheat pressure: proportional to the steam through the IP / LP turbine = turbine steam + HP bypass, less what the LP bypass
      takes (its size lpb x the anchor flow at the anchor pressure); first stage pressure: proportional to the turbine steam */
-  const olp = U.lpv ? Math.max(0, Math.min(100, +U.lpv.S.rt.v[U.lpv.n] || 0)) : 0,
-    rrs = (U.ms + U.mhp) / (U.m0 * (1 + (U.lpb * olp) / 100));
-  U.rr += ((rrs - U.rr) * dt) / U.tauRH;
+  const olp = U.lpv ? Math.max(0, Math.min(100, +U.lpv.S.rt.v[U.lpv.n] || 0)) : 0;
+  if (U.turb === false) {
+    /* 2.2.0-beta.16 (M4 step 3): turbine shut (no IP / LP turbine flow): the hot reheat pressure is the steam stored in the
+       reheater: in = HP bypass (U.mhp), out = LP bypass + RH blow-off, each = size x anchor flow x opening x pressure / anchor
+       pressure (as the outlets of the main steam line) */
+    const Prh0 = U.rhp.length && U.rhp[0].a0.length && U.rhp[0].a0[0] > 0 ? U.rhp[0].a0[0] : 34,
+      orb = U.rhbv ? Math.max(0, Math.min(100, +U.rhbv.S.rt.v[U.rhbv.n] || 0)) : 0,
+      qout = (U.m0 * U.rr * (U.lpb * olp + U.rhb * orb)) / 100;
+    U.rr = Math.max(0, U.rr + ((U.mhp - qout) * dt) / (U.Crh * Prh0));
+  } else {
+    const rrs = (U.ms + U.mhp) / (U.m0 * (1 + (U.lpb * olp) / 100));
+    U.rr += ((rrs - U.rr) * dt) / U.tauRH;
+  }
   for (const L of U.rhp) scaled(L, U.rr);
   for (const L of U.pist) scaled(L, U.ms / U.m0);
   /* SH / RH temperature versus load: the spray loops see a load disturbance (plant.js pr.ld, in units of the PV). At the anchor

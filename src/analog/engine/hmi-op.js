@@ -1000,6 +1000,7 @@ function anPlantWarm(o) {
     man(k, t, o.mv);
   });
   Object.assign(U, { Pd: o.P, Tw: 100 + 47.1 * Math.log(o.P + 1), Tb: o.Tb });
+  AN.steady = true; /* 2.2.0-beta.16: a steady state, no pulse from the inputs it sets (see anPlantCold) */
   try {
     const C1 = AN.sheets.find(x => x.name === 'ABC-001C');
     for (let k = 0; k < 4; k++) stepSet(C1, 0.5);
@@ -1007,6 +1008,7 @@ function anPlantWarm(o) {
     hmiComp(ai => /^AI0(130|258|386)$/.test(ai));
     for (let k = 0; k < 2; k++) for (const sh of L) stepSet(sh, 0.5);
   } catch (e) {}
+  AN.steady = false;
   U.Qs = U.a * (U.oilF * U.ao); /* the fire is already there */
   return n;
 }
@@ -1014,6 +1016,11 @@ function anPlantCold() {
   const n = anPlantLoad150();
   if (!AN_UNIT.on) return 0;
   const L = AN.sheets.filter(sh => sh.S && !/^ABC-000/.test(sh.name));
+  /* 2.2.0-beta.16: the cold state is a steady state too: a digital input the cold map sets (ABC-050 I.0932 "GCB 52G1 off" = 1) changed
+     long ago, so its pulse is over (plant.js TPS: no pulse while AN.steady). Before: the edge fired M.0124 "TURBINE TRIP / HOUSE LOAD /
+     52G OPEN (PULSE)" on ABC-050 / 052 / 030 / 033 / 013 during Start cold: the LP bypass PICHR1003 was forced AUTO for 5 s, opened to
+     100 % against a reheat pressure of 0.6 kg/cm2, and the bumpless COS kept 45.6 % in MANUAL after it (TICHR1012 80 %, PICAS1004 17 %) */
+  AN.steady = true;
   for (const sh of L) {
     const S = sh.S,
       rt = S.rt;
@@ -1072,6 +1079,7 @@ function anPlantCold() {
     }
     for (let k = 0; k < 2; k++) for (const sh of L) stepSet(sh, 0.5);
   } catch (e) {}
+  AN.steady = false;
   AN.cold = true;
   return n;
 }

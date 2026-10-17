@@ -26,7 +26,7 @@ Utos ng user (2026-10-16): **"Analog muna. Ang DITL ay i-simulate / i-force na l
 6. [x] **(2.2.0-beta.8: generic tester 68 controller, 0 mali, 0 hindi nasubok; ang mahihirap ay sinubok sa planta na tumatakbo; RH spray + damper nagdadagdag) Controller na mahirap simulan**: PICFG108, AICFG112, HS-COAL, FICFW1007, PICAS1005.
 7. [ ] **Tester ng halaga ng bawat block** (oracle ng AND, OR, ADD, SQRT, F(X), LAG, RATE, SEL…) sa bawat net ng 54 ABC sheet.
 8. [ ] **Tester ng switching** (SW, AMT, T switch, selector) sa bawat leg; kasama ang #1.
-9. [ ] **(2.2.0-beta.13 ~ beta.15: ang mga PLANT scenario ng M2 / M3 / M4-1 / M4-2 ay nasa app na: button CHECK, isang pindot kada scenario, ✓ / ✗; ang generic controller tester ay sa computer pa) Controller tester sa UAT panel ng app** (isang pindot kada controller). Ngayon, sa computer lang ito tumatakbo.
+9. [ ] **(2.2.0-beta.13 ~ beta.16: ang mga PLANT scenario ng M2 / M3 / M4-1 ~ M4-3 ay nasa app na: button CHECK, isang pindot kada scenario, ✓ / ✗; ang generic controller tester ay sa computer pa) Controller tester sa UAT panel ng app** (isang pindot kada controller). Ngayon, sa computer lang ito tumatakbo.
 10. [ ] **Pangalan ng 7 COS / 42 COS na hindi "used"** sa panel. Nasuri na sa PDF.
 11. [ ] **26 na live value na nagkakapatong** sa drawing (UI lang).
 
