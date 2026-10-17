@@ -34,6 +34,7 @@
     ash: '#8a8f94',
     sig: '#6f8191'
   };
+  const HDR = { MSP: 'ABC-001C|AI0131', MST: 'pv:TICMS1004', MSF: 'ABC-001C|SI0230', RHP: 'pv:PICHR1003', RHT: 'pv:TICHR1002', COAL: 'pv:FIC-CM', PWR: 'ABC-001C|AI0419' };
   const SYS = () => window.PLANT_SYS || [],
     VALS = () => window.PLANT_VALS || [];
   let ws = null,
@@ -69,6 +70,7 @@
     } catch (e) {}
     const pv = new Map(),
       ctl = new Map(),
+      man = new Map(),
       vt = new Map(),
       lab = new Map(),
       ai = new Map();
@@ -93,6 +95,13 @@
       try {
         for (const c of A.hmiCtrls(S) || []) if (!ctl.has(c.tag)) ctl.set(c.tag, { sh: sh.name, c });
       } catch (e) {}
+      /* 2.2.0-beta.19: the MAN stations too (ABC-001C HIC-BM / EIC-TM, ABC-001A HIC-ULD): the faceplate of the loader, so the
+         033 CCS and UNIT screens follow the simulation. Before, only PID faceplates were linked and these three stayed grey */
+      for (const b of S.blk)
+        if (b.k === 'MAN' && b.o && b.o[0] != null) {
+          const t = b.tag || (b.txt || []).find(x => x && x !== 'MAN' && !/^S\d-MDL/.test(x));
+          if (t && !ctl.has(t) && !man.has(t)) man.set(t, { sh: sh.name, b });
+        }
       /* valve tag text next to a control valve symbol */
       for (const b of S.blk)
         if (b.k === 'VLV' && b.pins && b.pins.length) {
@@ -148,7 +157,7 @@
           }
         }
     } catch (e) {}
-    IX = { pv, ctl, vt, lab, ai, io, run };
+    IX = { pv, ctl, man, vt, lab, ai, io, run };
     return IX;
   }
   /* the transmitter tag of an indicator tag: TIBR11302 -> TTBR11302 / TEBR11302; FIQMS1031 -> FTMS1031 */
@@ -156,12 +165,53 @@
     const m = /^(D?P|T|F|L|A|S|E|Z|W|H|J)I(?:Q|C)?(.*)$/.exec(k);
     return m ? [m[1] + 'T' + m[2], m[1] + 'E' + m[2]] : [];
   };
+  /* 2.2.0-beta.19: a reference written on the item (systems.js `ref`): 'SHEET|LABEL' = the net of that sheet with that label
+     (AI0419, SI0230, M.201F, I.0082) or that name ('MAN HIC-BM out'); 'pv:TAG' / 'mv:TAG' = the PV / MV of a faceplate (PID or MAN).
+     For the values and flags that the HMI draws without a tag (033 CCS OPERATION, the header bar) */
+  function byRef(ref) {
+    if (!ref || !IX) return null;
+    let m = /^(pv|mv):(.+)$/.exec(ref);
+    if (m) {
+      const c = IX.ctl.get(m[2]),
+        b = IX.man.get(m[2]);
+      if (c) return { k: 'net', how: m[1].toUpperCase() + ' of ' + m[2], sh: c.sh, n: m[1] === 'pv' ? c.c.q.pv : c.c.out };
+      if (b) {
+        const S = shOf(b.sh).S,
+          pvn = IX.pv.get(N(m[2]));
+        return m[1] === 'mv' ? { k: 'net', how: 'MV of ' + m[2], sh: b.sh, n: b.b.o[0] } : pvn ? { k: 'net', how: 'PV of ' + m[2], sh: pvn.sh, n: pvn.n } : b.b.svI >= 0 && S ? { k: 'net', how: 'set input of ' + m[2], sh: b.sh, n: b.b.i[b.b.svI] } : null;
+      }
+      return null;
+    }
+    m = /^([A-Z]+-[0-9A-Z]+)\|(.+)$/.exec(ref);
+    if (!m) return null;
+    const sh = shOf(m[1]),
+      S = sh && sh.S;
+    if (!S) return null;
+    const want = m[2].trim();
+    let n = S.lab.findIndex(x => x && String(x.t).trim() === want);
+    if (n < 0) for (let i = 0; i < S.rt.v.length; i++) if (((window.AN && AN.nm && AN.nm(S, i)) || '').trim() === want) { n = i; break; }
+    return n < 0 ? null : { k: 'net', how: want + ' ' + m[1], sh: m[1], n, a: /^[IOMB]\.[0-9A-F]{4}$|^A[IO]\d{4}$/.test(want) ? want : null, st: sh.stn };
+  }
   function resolve(it) {
-    if (!IX || !it.tag) return null;
+    if (!IX) return null;
+    if (it.t === 'flag') {
+      /* a mode lamp of the HMI: ☑ (red) when the signal is 1, ☒ (green) when 0; `nor` = lit when every signal is 0 (BASE mode =
+         neither CCS nor BOILER FOLLOW) */
+      const L = (it.refs || [it.ref]).map(byRef);
+      if (L.some(x => !x)) return null;
+      return { k: 'flag', op: it.op || 'or', L, how: (it.refs || [it.ref]).join(' ') };
+    }
+    if (it.ref) {
+      const r = byRef(it.ref);
+      if (r) return r;
+    }
+    if (!it.tag) return null;
     const k = N(String(it.tag).split('/')[0]);
     if (it.t === 'ctl') {
       const c = IX.ctl.get(it.tag);
-      return c ? { k: 'ctl', sh: c.sh, c: c.c } : null;
+      if (c) return { k: 'ctl', sh: c.sh, c: c.c };
+      const b = IX.man.get(it.tag);
+      return b ? { k: 'man', sh: b.sh, b: b.b, how: 'MAN station', pv: IX.pv.get(k) || null } : null;
     }
     if (it.t === 'val') {
       if (/AVERAGE/i.test(it.v || '')) return null;
@@ -237,6 +287,21 @@
           const auto = !c.amt || pk === c.autoLeg,
             rem = !!(c.remote && c.svSw && S.rt.st[c.svSw.id] && S.rt.st[c.svSw.id].pk === 'A');
           o.set({ pv: v[c.q.pv], sv: v[c.q.sv], mv: v[c.out], m: !auto ? 'M' : rem ? 'R' : 'A' });
+        } else if (r.k === 'man') {
+          /* MAN station (plant.js MAN): MV = its output; SV = its set input (the AUTO demand, leg A of the A / M switch on that
+             input); PV = the TAG.PV wire when the drawing has one (EIC-TM.PV = MW actual), else the set input; A when that switch
+             is on leg A (the station follows its input), else M (operator or BU-CMD, CLAUDE.md 10) */
+          const S = shOf(r.sh).S,
+            b = r.b,
+            v = S.rt.v,
+            si = b.svI >= 0 ? b.i[b.svI] : null,
+            dr = si != null ? (S.drv[si] || []).find(x => x.k === 'AMT') : null,
+            auto = !!(dr && S.rt.st[dr.id] && S.rt.st[dr.id].pk === 'A'),
+            pv = r.pv ? shOf(r.pv.sh).S.rt.v[r.pv.n] : si != null ? v[si] : NaN;
+          o.set({ pv, sv: si != null ? v[si] : NaN, mv: v[b.o[0]], m: auto ? 'A' : 'M' });
+        } else if (r.k === 'flag') {
+          const bits = r.L.map(x => netVal(x) > 0.5);
+          o.set({ v: r.op === 'nor' ? (bits.every(b => !b) ? 1 : 0) : r.op === 'and' ? (bits.every(b => b) ? 1 : 0) : bits.some(b => b) ? 1 : 0, r });
         } else if (r.k === 'unit') {
           const U = window.AN && AN.unit;
           o.set(U && U.on && isFinite(U[r.f]) ? { v: +U[r.f], r } : null);
@@ -356,6 +421,14 @@
           if (it.label) txt(g, it.x + it.w / 2, it.y + it.h / 2 + 5, it.label, { z: 13, a: 'middle', b: 1 });
         } else if (it.t === 'text') {
           txt(g, it.x, it.y, it.s, { z: it.z || 13, b: it.b, c: it.c });
+        } else if (it.t === 'flag') {
+          /* 2.2.0-beta.19: ☑ red = 1, ☒ green = 0 (HMI convention of the 033 screen); grey = not linked (snapshot) */
+          const ft = txt(g, it.x, it.y, (it.on ? '☑ ' : '☒ ') + it.s, { z: it.z || 13, b: it.b, c: it.on ? '#e05555' : '#3fbf6a' });
+          reg(it, x => {
+            const on = x ? x.v > 0.5 : !!it.on;
+            ft.textContent = (on ? '☑ ' : '☒ ') + it.s;
+            ft.setAttribute('fill', !x ? '#7f90a0' : on ? '#e05555' : '#3fbf6a');
+          }, ft);
         } else if (it.t === 'val') {
           if (it.tag) txt(g, it.x, it.y - 15, it.tag, { z: 11, c: '#a9b7c4' });
           const vt = txt(g, it.x, it.y, (it.v != null ? it.v : '—') + (it.u ? ' ' + it.u : ''), { z: 14, mono: 1, c: '#5cd6ff' });
@@ -378,7 +451,8 @@
             mt.textContent = m;
             mt.setAttribute('fill', m === 'M' ? '#ffd27a' : '#9ff0c4');
             t1.textContent = 'PV ' + (x ? fmtV(x.pv, it.pv) : it.pv != null ? it.pv : '—') + '  SV ' + (x ? fmtV(x.sv, it.sv) : it.sv != null ? it.sv : '—');
-            t2.textContent = 'MV ' + (x ? fmtV(x.mv, it.mv) + ' %' : it.mv != null ? it.mv + ' %' : '—') + (it.u ? '   ' + it.u : '');
+            /* 2.2.0-beta.19: the unit of the MV once (a MAN station in MW, a PID in %); before "68.3 % %" */
+            t2.textContent = 'MV ' + (x ? fmtV(x.mv, it.mv) : it.mv != null ? it.mv : '—') + (it.u && it.u !== '%' ? ' ' + it.u : ' %');
             t1.setAttribute('fill', x ? '#5cd6ff' : '#7f90a0');
             t2.setAttribute('fill', x ? '#9ff0c4' : '#7f90a0');
           }, box);
@@ -389,7 +463,15 @@
             txt(g, x, 23, k, { z: 14, c: '#a9b7c4', b: 1 });
             const t = txt(g, x + 50, 23, v + ' ' + (u || ''), { z: 15, mono: 1, c: '#5cd6ff' });
             x += 60 + Math.max(90, (v + ' ' + (u || '')).length * 10);
-            void t;
+            /* 2.2.0-beta.19: the header bar of every screen (MSP, MST, MSF, RHP, RHT, COAL, PWR) reads the simulation: the same
+               signals as the HMI header (ABC-001C AI0131 PT-MS1002, TICMS1004, SI0230 compensated main steam flow, AI0419 GCP-AI1001
+               generator MW; ABC-052 PICHR1003 reheat pressure, ABC-019 TICHR1002 reheat temperature, ABC-002 coal master PV) */
+            const hi = { t: 'val', tag: k, ref: HDR[k], v, u };
+            if (HDR[k])
+              reg(hi, y => {
+                t.textContent = (y ? fmtV(y.v, v) : v) + ' ' + (u || '');
+                t.setAttribute('fill', y ? '#5cd6ff' : '#7f90a0');
+              }, t);
           }
         }
       } catch (e) {}
@@ -404,7 +486,7 @@
           o.hit.addEventListener('click', e => {
             e.stopPropagation();
             try {
-              if (o.r.k === 'ctl') window.lsInfo && window.lsInfo(o.it.tag);
+              if (o.r.k === 'ctl' || o.r.k === 'man') window.lsInfo && window.lsInfo(o.it.tag);
               else if (o.r.k === 'mv') window.lsInfo && window.lsInfo(o.r.c.tag);
               else if (o.r.a) window.lsInfo && window.lsInfo(o.r.a, { stn: o.r.st });
               else window.lsInfo && window.lsInfo(o.it.tag + '.PV');
@@ -575,7 +657,7 @@
     }
   }
   window.lsPlant = open;
-  window.lsPlantLive = () => LV.map(o => ({ tag: o.it.tag, t: o.it.t, snap: o.it.t === 'ctl' ? o.it.pv + '/' + o.it.sv + '/' + o.it.mv + ' ' + o.it.m : o.it.v, how: o.r ? o.r.how || o.r.k : null, sh: o.r ? o.r.sh : null, live: o.r && o.r.k === 'mv' ? shOf(o.r.sh).S.rt.v[o.r.c.out] : o.r && o.r.cc ? (() => { const x = netVal(o.r), mv = shOf(o.r.cc.sh).S.rt.v[o.r.cc.c.out]; return Math.abs(x - (100 - mv)) < 0.5 && Math.abs(x - mv) > 1 ? 100 - x : x; })() : o.r && (o.r.k === 'net' || o.r.k === 'dig') ? netVal(o.r) : o.r && o.r.k === 'ctl' ? (() => { const S = shOf(o.r.sh).S, c = o.r.c; return [S.rt.v[c.q.pv], S.rt.v[c.q.sv], S.rt.v[c.out]].map(x => +(+x).toFixed(1)).join('/'); })() : null })); /* for the tests */
+  window.lsPlantLive = () => LV.map(o => ({ tag: o.it.tag, t: o.it.t, snap: o.it.t === 'ctl' ? o.it.pv + '/' + o.it.sv + '/' + o.it.mv + ' ' + o.it.m : o.it.v, how: o.r ? o.r.how || o.r.k : null, sh: o.r ? o.r.sh : null, live: o.r && o.r.k === 'mv' ? shOf(o.r.sh).S.rt.v[o.r.c.out] : o.r && o.r.cc ? (() => { const x = netVal(o.r), mv = shOf(o.r.cc.sh).S.rt.v[o.r.cc.c.out]; return Math.abs(x - (100 - mv)) < 0.5 && Math.abs(x - mv) > 1 ? 100 - x : x; })() : o.r && (o.r.k === 'net' || o.r.k === 'dig') ? netVal(o.r) : o.r && o.r.k === 'ctl' ? (() => { const S = shOf(o.r.sh).S, c = o.r.c; return [S.rt.v[c.q.pv], S.rt.v[c.q.sv], S.rt.v[c.out]].map(x => +(+x).toFixed(1)).join('/'); })() : o.r && o.r.k === 'man' ? +(+shOf(o.r.sh).S.rt.v[o.r.b.o[0]]).toFixed(1) : null })); /* for the tests */
   addEventListener('resize', () => {
     if (ws && ws.style.display === 'grid') {
       place();
