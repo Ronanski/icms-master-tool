@@ -3,10 +3,10 @@ window.PLANT_SYS = [
   /* 2.2.0-beta.11 (M2 step 4): UNIT screen: the boiler and the turbine as one plant (src/analog/engine/unit.js), the values that the
      load moves on one screen. Not a control-room snapshot: drawn for the simulator. Static values = 150 MW (4.PNG / 03.png / 11.png);
      LIVE = the simulation (I/O list transmitter tags and controller faceplates, like the other screens) */
-  { id: 'UNIT', title: 'UNIT: BOILER + TURBINE (plant model)', src: 'UNIT', w: 1920, h: 900, items: [
+  { id: 'UNIT', title: 'UNIT: BOILER + TURBINE (plant model)', src: 'UNIT', w: 1920, h: 980, items: [
     { t: 'text', x: 40, y: 40, s: 'UNIT: coal -> firing -> drum -> superheaters -> turbine -> MW. Start at 150 MW, then change TARGET MW (HIC-ULD) or the turbine master; the plant model answers.', z: 14, c: '#a9b7c4' },
     // columns
-    { t: 'vessel', x: 40, y: 70, w: 560, h: 790, label: '', shape: 'box' },
+    { t: 'vessel', x: 40, y: 70, w: 560, h: 880, label: '', shape: 'box' },
     { t: 'vessel', x: 640, y: 70, w: 620, h: 790, label: '', shape: 'box' },
     { t: 'vessel', x: 1300, y: 70, w: 580, h: 790, label: '', shape: 'box' },
     { t: 'text', x: 60, y: 100, s: 'FUEL + AIR + FLUE GAS', z: 16, b: 1 },
@@ -49,6 +49,12 @@ window.PLANT_SYS = [
     { t: 'val', x: 60, y: 840, tag: 'UNIT.oilF', v: '0.0', u: 'T/H' },
     { t: 'val', x: 240, y: 840, tag: 'UNIT.Tb', v: '850', u: 'C' },
     { t: 'val', x: 420, y: 840, tag: 'UNIT.Tw', v: '331', u: 'C' },
+    // 2.2.0-beta.17 (M4 step 4): the turbine black box (TCS): speed, ICV, state
+    { t: 'text', x: 60, y: 880, s: 'Turbine (TCS, plant model): speed, ICV, state', z: 12, c: '#a9b7c4' },
+    { t: 'val', x: 60, y: 925, tag: 'UNIT.rpm', v: '3600', u: 'rpm' },
+    { t: 'val', x: 240, y: 925, tag: 'UNIT.icvp', v: '100', u: '% ICV' },
+    { t: 'val', x: 420, y: 925, tag: 'UNIT.tbn', v: '3', u: '' },
+    { t: 'text', x: 420, y: 945, s: '0 off · 1 roll · 2 sync · 3 load', z: 10, c: '#7f90a0' },
     // ---- column 2: drum (ABC-010), superheaters (ABC-011 / 012), main steam (ABC-001C)
     { t: 'text', x: 660, y: 140, s: 'Drum and feedwater', z: 12, c: '#a9b7c4' },
     { t: 'val', x: 660, y: 185, tag: 'PT-BR1001-1', v: '134.2', u: 'kg/cm2' },

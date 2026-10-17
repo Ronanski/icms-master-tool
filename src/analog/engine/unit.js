@@ -59,6 +59,25 @@ const AN_UNIT = {
      blow-off) */
   Crh: 400,
   rhb: 0.1,
+  /* 2.2.0-beta.17 (M4 step 4, turbine roll / sync / load up; PR-OPE-5002 4.4 ~ 4.6): the turbine and its TCS are a black box outside
+     the DCS drawings (the DCS only sees the TCS digital inputs of the I/O list and the TARGET MW feedback AI0420). State U.tb:
+     st 'off' (stop valves shut) -> 'roll' (rpm ramps at rollRate, IP START MODE: the ICV lets roll steam from the hot reheat, icvRoll)
+     -> 'sync' (3600 rpm, the TCS closes the GCB: I.0931 = 1 / I.0932 = 0, INITIAL LOAD 4.5 MW on the ICV) -> 'load' (LOAD UP
+     at rate MW/min = 5 % of 150 MW per minute; at MWxf = 20 MW or the ICV full open the HP control valves take over, ICV -> CV
+     TRANSFER COMPLETE I.0418 = 1, "transfer at 20 MW or HP bypass closed"). While the generator is on the grid the MW is the HP
+     steam (1 - cIP) + the IP / LP steam cIP (reheat unit: about 60 % of the work in the IP / LP, ASSUMED) less the anchor losses
+     (c x m0 - MW0, fading out with a small IP flow). Before the transfer the IP / LP steam comes from the HP bypass through the
+     reheater (U.rr integrator of beta.16, with the ICV flow out). DCS CONTROL MODE PERMISSIVE I.0081 = 1 above MWperm (NORMAL
+     OPERATION, 30 % load, PR-OPE-5002 4.6; the TCS logic is not in the repository, ASSUMED), DCS CONTROL MODE ON I.0082 set by the
+     pulse O.0178 of ABC-001C while I.0081, reset by O.0179. These inputs are written only in a start-up (U.cold); the snapshot of
+     "Start at 150 MW" keeps its own. */
+  rollRate: 120 /* rpm/min, PR-OPE-5002 cold start (the holds at 1800 / 3600 rpm of the procedure are the operator's; not modelled) */,
+  icvRoll: 0.13 /* ICV opening for the roll steam (about 14 T/H at 7.6 kg/cm2 reheat, ASSUMED) */,
+  cIP: 0.6,
+  MWxf: 20,
+  MWperm: 45,
+  MWinit: 4.5 /* PR-OPE-5002: initial load 4.5 MW */,
+  rateUp: 7.5 /* MW/min = 5 % / min (PR-OPE-5002 LOAD UP), AI0421 max load-up rate 0 ~ 5 %/min */,
   tauT: 120,
   tauO2: 20,
   mcr: 460 /* T/H, boiler MCR (SECT_7) */,
@@ -266,6 +285,7 @@ function anUnitStart() {
     t: 0,
     cold: false,
     turb: true,
+    tb: { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN },
     Tb: U.Tb0,
     Tw: 100 + 47.1 * Math.log(Pd0 + 1),
     oilF: 0
@@ -371,6 +391,22 @@ function anUnitStart() {
     .filter(([a, b]) => a && a.S.ext.includes(a.n))
     .map(([a, b]) => [a, b.filter(x => x && x.S.ext.includes(x.n))]);
   U.trip = [labOf('ABC-050', 'I.0400'), labOf('ABC-001C', 'M.3200')].filter(Boolean);
+  /* 2.2.0-beta.17: the TCS inputs of the I/O list this black box writes in a start-up (ABC-050 STN102: GCB 52G1 on / off, ICV -> CV
+     transfer complete; ABC-001C STN101: DCS control mode permissive / on feedback), the DCS mode commands it reads (O.0178 / O.0179),
+     and the turbine speed TCSAI1004 (ABC-053 AI0534, lag -> SI0261 -> ABC-010 SI0246 while the GCB is open) */
+  U.di = {
+    gcbOn: labOf('ABC-050', 'I.0931'),
+    gcbOff: labOf('ABC-050', 'I.0932'),
+    xfer: labOf('ABC-050', 'I.0418'),
+    perm: labOf('ABC-001C', 'I.0081'),
+    on: labOf('ABC-001C', 'I.0082'),
+    onCmd: netOf(S, 'O.0178'),
+    offCmd: netOf(S, 'O.0179')
+  };
+  {
+    const st2 = stOf('ABC-053');
+    U.spd = st2 != null ? anUnitAIs(st2 + '|AI0534') : [];
+  }
   /* flows that need a machine running: feedwater (BFWP A / B), primary air (PAF), secondary air (SAF) */
   U.mul = [
     {
@@ -394,7 +430,7 @@ function anUnitStart() {
     null; /* the pressure rise when the ID fan takes nothing out, from the loop model (so that no air and no ID fan = the anchor) */
   /* the transmitters this model writes: the plant model of a loop on them stops writing (ABC-001C PIC-COBM: main steam pressure) */
   const own = new Set();
-  const lists = [U.msp, U.drum, U.msf].concat(U.mw, U.tin, U.rhp, U.pist, U.o2, [U.pa]).concat(...U.sh.map(h => h.L));
+  const lists = [U.msp, U.drum, U.msf, U.spd || []].concat(U.mw, U.tin, U.rhp, U.pist, U.o2, [U.pa]).concat(...U.sh.map(h => h.L));
   for (const l of lists) for (const [S2, b] of l) own.add(S2.rt.st[b.id]);
   U.own = own;
   U.on = true;
@@ -408,6 +444,7 @@ function anUnitCold() {
   Object.assign(U, {
     cold: true,
     turb: false,
+    tb: { st: 'off', rpm: 0, icv: 0, xfer: false, tgt: 0, aim: 0 },
     Pd: 0,
     Qs: 0,
     ms: 0,
@@ -427,6 +464,37 @@ function anUnitCold() {
   U.o2v = 21;
   for (const h of U.sh) h.x = U.Tamb;
   return true;
+}
+/* 2.2.0-beta.17 (M4 step 4): the operator on the TCS panel (outside the DCS): 'roll' (open the stop valves, IP start mode, rpm up
+   at rollRate), 'sync' (at 3600 rpm: GCB closed, initial load MWinit), 'loadup' (target MW at rateUp MW/min; default 45 = NORMAL
+   OPERATION). Returns the state or a reason ('' = done) */
+function anTurbine(cmd, arg) {
+  const U = AN_UNIT;
+  if (!U.on || !U.tb) return 'walang unit model (Start cold / warm muna)';
+  const tb = U.tb;
+  if (cmd === 'roll') {
+    if (tb.st !== 'off') return 'umiikot na ang turbine (' + tb.st + ')';
+    Object.assign(tb, { st: 'roll', xfer: false, tgt: 0, aim: 0 });
+    return '';
+  }
+  if (cmd === 'sync') {
+    if (tb.st !== 'roll') return tb.st === 'off' ? 'i-roll muna ang turbine' : 'naka-sync na';
+    if (tb.rpm < 3599) return 'hindi pa 3600 rpm (' + tb.rpm.toFixed(0) + ')';
+    Object.assign(tb, { st: 'sync', tgt: 0, aim: U.MWinit });
+    const dirt = (l, x) => {
+      if (l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n)) l.S.rt.ext[l.n] = x;
+    };
+    dirt(U.di.gcbOn, 1);
+    dirt(U.di.gcbOff, 0);
+    return '';
+  }
+  if (cmd === 'loadup') {
+    if (tb.st !== 'sync' && tb.st !== 'load') return 'i-sync muna ang generator';
+    tb.st = 'load';
+    tb.aim = isFinite(+arg) ? +arg : 45;
+    return '';
+  }
+  return 'hindi kilalang utos: ' + cmd;
 }
 function anUnitOwns(T, ids) {
   const U = AN_UNIT;
@@ -466,24 +534,70 @@ function anUnitStep(dt) {
     if (isFinite(x) && t.S.rt.force[t.n] === undefined) t.S.rt.ext[t.n] = x;
   }
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
+  /* ---- 2.2.0-beta.17 (M4 step 4): the turbine black box (see AN_UNIT rollRate ...) ---- */
+  const tb = U.tb || (U.tb = { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN }),
+    dirt = (l, x) => {
+      if (l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== x) l.S.rt.ext[l.n] = x;
+    };
+  if (trip && tb.st !== 'off') {
+    /* the TCS closes the ICV too (the HP valves below); in a start-up the machine is lost: stop valves shut, GCB open (I.0932, the
+       generator protection), no transfer, no DCS mode */
+    tb.icv = Math.max(0, tb.icv - dt / U.tauTrip);
+    if (U.cold) {
+      Object.assign(tb, { st: 'off', xfer: false, tgt: 0, aim: 0 });
+      dirt(U.di.gcbOn, 0);
+      dirt(U.di.gcbOff, 1);
+      dirt(U.di.xfer, 0);
+      dirt(U.di.perm, 0);
+      dirt(U.di.on, 0);
+    }
+  }
+  U.turb = tb.st !== 'off';
+  const onGrid = tb.st === 'sync' || tb.st === 'load';
+  if (tb.st === 'roll') {
+    tb.rpm = Math.min(3600, tb.rpm + (U.rollRate * dt) / 60);
+    tb.icv = Math.min(U.icvRoll, tb.icv + (U.icvRoll * dt) / 60);
+  } else if (!U.turb) tb.rpm = Math.max(0, tb.rpm - (3600 * dt) / 600);
   /* turbine valves (TCS): MW to the turbine master demand */
   /* DCS control mode ON (CCS, 33.PNG): the TCS follows the turbine master of the DCS (EIC-TM output, AO0359 TO TCS; in AUTO it is
-     SI0236 = MW demand + pressure correction LN55). OFF: the TCS keeps its own target (where the load is when it went OFF) */
+     the unit load demand of HIC-ULD + the pressure correction; in MANUAL the operator's MW). OFF: the TCS keeps its own target
+     (2.2.0-beta.17: the operator's target on the TCS panel, tb.aim, reached at rateUp MW/min: INITIAL LOAD, LOAD UP) */
   const on = U.dcs < 0 || +v[U.dcs] > 0.5,
     tmo = U.tm && U.tm.o && U.tm.o[0] != null ? +v[U.tm.o[0]] : NaN,
     ds = U.dem >= 0 ? +v[U.dem] : NaN;
   if (on) U.tcsT = isFinite(tmo) ? tmo : isFinite(ds) ? ds : U.MW;
-  else if (!isFinite(U.tcsT)) U.tcsT = U.MW;
+  else if (onGrid && isFinite(tb.aim)) {
+    if (!isFinite(tb.tgt)) tb.tgt = U.MW;
+    tb.tgt += Math.max(-(U.rateUp * dt) / 60, Math.min((U.rateUp * dt) / 60, tb.aim - tb.tgt));
+    U.tcsT = tb.tgt;
+  } else if (!isFinite(U.tcsT)) U.tcsT = U.MW;
   const D = U.tcsT;
   if (U.turb === false) {
     /* 2.2.0-beta.14: cold start, the turbine is not rolled yet: the stop valves are shut (M4 step 4 opens them) */
     U.gv = 0;
     U.tcsT = 0;
+    tb.icv = 0;
   } else if (trip) {
     /* turbine trip: the TCS closes the valves; the load set point is gone (the TCS reloads the unit when the trip is reset) */
     U.gv = Math.max(0, U.gv - dt / U.tauTrip);
     U.tcsT = 0;
-  } else U.gv = Math.max(0.02, Math.min(1.4, U.gv + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
+  } else if (tb.st === 'roll') {
+    U.gv = 0;
+    U.tcsT = 0;
+  } else if (!tb.xfer) {
+    /* IP start mode: the ICV controls the load, the HP control valves are shut; ICV -> CV transfer at MWxf or ICV full open */
+    U.gv = 0;
+    tb.icv = Math.max(0, Math.min(1, tb.icv + (dt * (D - U.MW)) / (2 * U.tcs * U.MWxf)));
+    if (tb.icv >= 1 || U.MW >= U.MWxf) {
+      tb.xfer = true;
+      tb.icv = 1;
+      U.gv = 0.02;
+      if (U.cold) dirt(U.di.xfer, 1);
+    }
+  } else {
+    tb.icv = 1;
+    U.gv = Math.max(0.02, Math.min(1.4, U.gv + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
+  }
   /* steam flow through the valves: m = Kt x gv x MSP, MSP = drum - kdp x m^2 */
   const k = U.Kt * U.gv,
     a2 = U.kdp * k,
@@ -527,9 +641,28 @@ function anUnitStep(dt) {
     U.Tb += ((Math.max(U.Tamb, Tbss) - U.Tb) * dt) / U.tauB;
   }
   const Pms = Math.max(0, U.Pd - U.kdp * U.ms * U.ms);
-  /* generator */
-  const MWss = Math.max(0, U.MW0 + U.c * (U.ms - U.m0));
+  /* generator. 2.2.0-beta.17: HP steam (1 - cIP) + IP / LP steam cIP (qip = the reheat pressure x the ICV opening, = the HP steam
+     when the bypass is shut and the ICV full open: the same line MW0 + c x (ms - m0) as before) less the anchor losses; 0 off the grid */
+  const qip = U.m0 * U.rr * tb.icv,
+    MWss = onGrid
+      ? Math.max(
+          0,
+          U.c * ((1 - U.cIP) * U.ms + U.cIP * qip) - (U.c * U.m0 - U.MW0) * Math.min(1, qip / (0.3 * U.m0))
+        )
+      : 0;
   U.MW += ((MWss - U.MW) * dt) / U.tauMW;
+  U.rpm = tb.rpm;
+  U.icvp = 100 * tb.icv;
+  U.tbn = { off: 0, roll: 1, sync: 2, load: 3 }[tb.st];
+  /* the TCS inputs of the DCS in a start-up (the snapshot of "Start at 150 MW" keeps its own) */
+  if (U.cold) {
+    /* with a 2 MW hysteresis: the TCS permissive does not flicker at the load it is given at (45.0 MW) */
+    tb.perm = onGrid && (tb.perm ? U.MW >= U.MWperm - 2 : U.MW >= U.MWperm);
+    dirt(U.di.perm, tb.perm ? 1 : 0);
+    if (U.di.onCmd >= 0 && +v[U.di.onCmd] > 0.5 && U.di.perm && +v[U.di.perm.n] > 0.5) dirt(U.di.on, 1);
+    if (U.di.offCmd >= 0 && +v[U.di.offCmd] > 0.5) dirt(U.di.on, 0);
+    if (U.spd && U.spd.length) anUnitWrite(U.spd, tb.rpm);
+  }
   U.t += dt;
   /* transmitters */
   anUnitWrite(U.msp, Pms);
@@ -552,20 +685,22 @@ function anUnitStep(dt) {
   /* reheat pressure: proportional to the steam through the IP / LP turbine = turbine steam + HP bypass, less what the LP bypass
      takes (its size lpb x the anchor flow at the anchor pressure); first stage pressure: proportional to the turbine steam */
   const olp = U.lpv ? Math.max(0, Math.min(100, +U.lpv.S.rt.v[U.lpv.n] || 0)) : 0;
-  if (U.turb === false) {
+  if (!tb.xfer) {
     /* 2.2.0-beta.16 (M4 step 3): turbine shut (no IP / LP turbine flow): the hot reheat pressure is the steam stored in the
        reheater: in = HP bypass (U.mhp), out = LP bypass + RH blow-off, each = size x anchor flow x opening x pressure / anchor
-       pressure (as the outlets of the main steam line) */
+       pressure (as the outlets of the main steam line). 2.2.0-beta.17: + the ICV flow (roll steam, initial load) until the transfer */
     const Prh0 = U.rhp.length && U.rhp[0].a0.length && U.rhp[0].a0[0] > 0 ? U.rhp[0].a0[0] : 34,
       orb = U.rhbv ? Math.max(0, Math.min(100, +U.rhbv.S.rt.v[U.rhbv.n] || 0)) : 0,
-      qout = (U.m0 * U.rr * (U.lpb * olp + U.rhb * orb)) / 100;
-    U.rr = Math.max(0, U.rr + ((U.mhp - qout) * dt) / (U.Crh * Prh0));
+      qout = (U.m0 * U.rr * (U.lpb * olp + U.rhb * orb)) / 100 + qip;
+    U.rr = Math.max(0, U.rr + ((U.mhp + U.ms - qout) * dt) / (U.Crh * Prh0));
   } else {
     const rrs = (U.ms + U.mhp) / (U.m0 * (1 + (U.lpb * olp) / 100));
     U.rr += ((rrs - U.rr) * dt) / U.tauRH;
   }
   for (const L of U.rhp) scaled(L, U.rr);
-  for (const L of U.pist) scaled(L, U.ms / U.m0);
+  /* 2.2.0-beta.17: not exactly 0 while the HP valves are shut: the SELECT CIRCUIT of ABC-052 (SI0181) reads 0 as a lost transmitter
+     (SIG.AB) and would hold the 150 MW value, so the LP bypass REMOTE set point (LN12 of the first stage + 5.1) would stay at 30.9 */
+  for (const L of U.pist) scaled(L, Math.max(1e-3, U.ms / U.m0));
   /* SH / RH temperature versus load: the spray loops see a load disturbance (plant.js pr.ld, in units of the PV). At the anchor
      (MCR) it is 0; down to 60 % MCR it grows to the authority of the spray of the snapshot (the spray closes, the PV stays at the set
      point: Fig 6 / Fig 10); below 60 % the PV falls at the slope of the snapshots (02.png) */

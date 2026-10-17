@@ -1,4 +1,4 @@
-# Paano i-check ang M2, M3 at M4 sa app (2.2.0-beta.16)
+# Paano i-check ang M2, M3 at M4 sa app (2.2.0-beta.17)
 
 Simple lang: nasa app na ang check. Isang pindot bawat scenario, tapos ✓ / ✗ sa bawat inaasahang resulta.
 
@@ -6,16 +6,17 @@ Simple lang: nasa app na ang check. Isang pindot bawat scenario, tapos ✓ / ✗
 1. Buksan ang app (html ng Beta, exe, o apk). Analog (ABC) ang nakabukas.
 2. Pindutin ang **CHECK** (asul na button sa ibabang kaliwa, katabi ng UAT).
 3. Sa bawat scenario, pindutin **▶ Takbo**. Ang app mismo ang gagawa ng:
-   - Start at 150 MW (HMI snapshot), o **Start cold** sa M4 (drum 0 kg/cm2, tubig at bed 30 °C, walang apoy), o **Start warm** (dulo ng cold start: 30 kg/cm2, bed 480 °C, 4 burner),
+   - Start at 150 MW (HMI snapshot), o **Start cold** sa M4 (drum 0 kg/cm2, tubig at bed 30 °C, walang apoy), o **Start warm** (dulo ng cold start: 30 kg/cm2, bed 480 °C, 4 burner), o **Start hot** (dulo ng pressure raise: 123 kg/cm2 sa HP bypass, bed 750 °C, 3 coal feeder, burners out),
    - hakbang ng operator (hal. TARGET MW 60, A / M sa faceplate, MV 100 %),
    - signal ng DITL na forced (hal. MFT, fan trip; CLAUDE.md 7),
    - mabilis na pagtakbo ng planta (M3: ~5 ~ 20 s; M2: ~3 min, may progress bar).
 4. Tingnan ang resulta: **PASADO n / n** (lahat ✓) o **MAY MALI** (may ✗, nakasulat ang nakuhang value).
 5. Pagkatapos ng scenario, nakatigil ang simulation sa huling estado: buksan ang **PLANT → UNIT** o ang sheet (hal. ABC-001C, ABC-010) para makita ang mga value at mode. Pindutin ▶ Run kung gusto mong ipagpatuloy.
 
-## Ang 10 scenario at ang inaasahan
+## Ang 11 scenario at ang inaasahan
 | Scenario | Ginagawa ng app | Inaasahan (✓) |
 |---|---|---|
+| **M4 · Turbine roll, sync, load up to 45 MW** (beta.17) | Start hot; TCS panel (⚙, labas ng DCS): ROLL sa 1 min (120 rpm/min, roll steam sa ICV mula sa reheat), sa 3600 rpm SYNC (ABC-050 I.0931 = 1 / I.0932 = 0, initial load 4.5 MW) at LP bypass R; 5 min; LOAD UP 45 MW (7.5 MW/min); transfer sa ICV full open (I.0418); HP bypass R kung hindi kusang lumipat; LP bypass preset 33 % (drawing M.070F) → M, isara, R + A; coal FIC-CF +2 ~ 3 % / min habang paakyat, ±1 para sa 123; O2 3.5 ~ 8; furnace −15 (PICFG108 M); feedwater ayon sa ABC-010: LICBR1001B > 30 % → LICBR1001B M + LICBR1001A A 0, pasara 5 % / min; FW > 100 at M.0228 = 0 → FICFW1007 R, LICBR1001 A 0, pushbutton M.054E (3-ELEMENT); tigil 10 min pagkatapos ng 45 MW (~52 min plant time, ~4 min real) | 0 → 3600 rpm sa 30 min; GCB sarado (I.0931 1, M.3220 0); initial load 4.5 ± 1 MW; 4.5 → 45 sa 5 ~ 12 min; transfer sa 8 ~ 22 MW (I.0418 = 1); HP at LP bypass 0 % (M.0709 = 0), HP bypass REMOTE; MSP 123 ± 8 mula sync, HIC-BM M (M.2013, MSF < 220); 3-element: FICFW1007 R + A, LICBR1001 A, M.0228 = 0, M.0222 = 0, LICBR1001B 0 %; MST 345 ~ 535; drum level ±150; MW ≥ 44.5, I.0081 = 1, walang trip, furnace −55 ~ +25 |
 | **M2 · Load 150 → 60 → 150 MW** | TARGET MW 60 sa HIC-ULD (3 MW/min); sa ilalim ng 220 T/H M ang boiler master (BU-CMD), operator ang humahawak ng pressure at naglalagay ng O2 trim sa 50 %; pabalik: A sa HIC-BM / EIC-TM sa itaas ng 230 T/H, TARGET 150 | 60 MW: MW 60, MSF 204, coal 42, MSP sa SV, MST 517, RHT 499, RHP 15.0 (±5 %, 02.png), O2 5 ~ 12 %; 150 MW: MW 150, MSF 474, MST / RHT 542, RHP 34 (4.PNG); boiler master nanatiling M hanggang pinindot ang A; walang trip |
 | **M3 · Turbine trip** | ABC-050 S2 I.0400 = 1; MFT (DITL: TURBINE TRIP = MFT first out, memory list STN104) | M.3200 sa ABC-001C / 010; HIC-BM at EIC-TM M; HP / LP bypass at blow-off bumukas; MW 0 sa 60 s; MSP ≤ 150 tapos bumababa; coal 0 |
 | **M3 · MFT** | I.000F = 1, M.0341 pulse, feeders stopped | coal 0 sa 10 s; SH spray 0 %; PA / SA master M; O2 21 %; MST bumababa; MSP → LOW LOW 72.9 (M.310D → DITL-40) |
@@ -28,7 +29,7 @@ Simple lang: nasa app na ang check. Isang pindot bawat scenario, tapos ✓ / ✗
 | **M4 · Bypass system at pressure raise: blow-off → HP / LP bypass → 123 kg/cm2** (beta.16) | Start warm; LICBR1001B A SV 0; MS blow-off A SV 50; HP bypass PICMS1006 A SV 50 (LOCAL); LP bypass PICHR1003 A SV 7.6; RH blow-off PICHR1391 M 20 %; oil +5 % / 2 min habang ≤ 90 °C/h; furnace −15 sa PICFG108 M; sa 50 ksc / 40 T/H: HP bypass SV +1 / min hanggang 123, blow-off SV = HP bypass + 5 (sasara), RH blow-off sarado, oil hawak / bawas | servicing sa ~50 ksc / > 40 T/H; MSP 123 (saturation ≤ 110 °C/h); HP bypass ang kumukuha ng steam, MS blow-off 0 %; RH pressure 7.5 ± 1.5 hawak ng LP bypass AUTO, RH blow-off 0 %; MST 345 ~ 535 °C; drum level ±150 hawak ng LICBR1001B, FICFW1007 force manual ayon sa drawing (FW < 100, M.022C); 50 → 123 sa loob ng 2 h; MW 0, walang trip, furnace −55 ~ +25 |
 
 ## Kung gusto mong gawin nang mano-mano (gaya ng operator)
-- Start: ⚙ → **Start at 150 MW (HMI snapshot)**, speed **60x**, ▶ Run. Para sa M4: ⚙ → **Start cold (M4 start-up)**, speed 300x; fans ON (M.3302 / 3303 / 3304), FICFA1071 / 1081 M 35 %, pagkatapos ng 5 min: ABC-004A Buttons → dalawang input ng AND M.3410 at M.3411 OFF, M.3412 / 3413 ON, FICDO1043A / B M 60 %, FICFA1071 / 1081 M 10 %; tingnan sa PLANT → UNIT ang oil, bed (UNIT.Tb), tubig (UNIT.Tw), drum pressure. Coal transfer: ⚙ → **Start warm**, tapos ang mga hakbang sa UPDATE_REPORT beta.15 ("Ano ang makikita ng operator"). Bypass at pressure raise: ⚙ → **Start warm**, tapos ang mga hakbang sa UPDATE_REPORT beta.16.
+- Start: ⚙ → **Start at 150 MW (HMI snapshot)**, speed **60x**, ▶ Run. Para sa M4: ⚙ → **Start cold (M4 start-up)**, speed 300x; fans ON (M.3302 / 3303 / 3304), FICFA1071 / 1081 M 35 %, pagkatapos ng 5 min: ABC-004A Buttons → dalawang input ng AND M.3410 at M.3411 OFF, M.3412 / 3413 ON, FICDO1043A / B M 60 %, FICFA1071 / 1081 M 10 %; tingnan sa PLANT → UNIT ang oil, bed (UNIT.Tb), tubig (UNIT.Tw), drum pressure. Coal transfer: ⚙ → **Start warm**, tapos ang mga hakbang sa UPDATE_REPORT beta.15 ("Ano ang makikita ng operator"). Bypass at pressure raise: ⚙ → **Start warm**, tapos ang mga hakbang sa UPDATE_REPORT beta.16. Turbine: ⚙ → **Start hot**, ▶ Run 300x, ⚙ → **Turbine ROLL (TCS)**; sa 3600 rpm (PLANT → UNIT) ⚙ → **SYNC + initial load 4.5 MW**; ⚙ → **LOAD UP to 45 MW**; ang mga hakbang ng operator (bypass, feedwater, coal) ay sa UPDATE_REPORT beta.17 "Ano ang makikita ng operator".
 - Trip input: buksan ang sheet (hal. ABC-050), **Panel** → **Buttons (digital inputs)** → hanapin ang address (hal. `S2 I.0400`) → **ON**. Mula beta.13, ang iisang address ay iisang halaga sa lahat ng sheet ng station (hal. I.000F ng STN101: isang pindot sa alinmang sheet ng station 1). Ang I.000F ng STN102 / 103 ay sariling input (MFT FROM IRP ng bawat station): pindutin din kung kailangan.
 - Faceplate: **Panel** → **Controllers (faceplate)** → tag → A / M / R / L, SV, MV.
 - Tingnan: **PLANT → UNIT** (MW, MSP, MSF, coal, FW, drum level, temperatura, O2, furnace pressure, 21 faceplate) o ang **Logic flags** ng sheet (hal. ABC-001C M.2013, ABC-010 M.0170 ~ M.0175).
