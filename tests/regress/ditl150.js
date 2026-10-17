@@ -32,7 +32,7 @@ const r=await page.evaluate(async()=>{
   /* protection from the ABC: main steam pressure < 72.9 kg/cm2 (ABC-001C M.310D) -> DITL-40 MAIN STEAM PRESSURE LOW LOW */
   {const d40=S.sheets.find(s=>/DITL-40$/.test(s.name)),S1=AN.sheets.find(s=>s.name==='ABC-001C').S,a=S1.blk.find(b=>b.k==='AI'&&(AN.nm(S1,b.o[0])||'').trim()==='AI0131');
    const ll=()=>{WORLD.live=true;const R=simSheet(d40);WORLD.live=false;return R.outOn.has(8)?1:0};o.ll0=ll();o.lnk=WORLD.stat.digFix.join(',');
-   for(const b of S1.procs||[])if(b.proc)b.proc.on=false;S1.rt.st[a.id].val=S1.rt.st[a.id].act=60;for(let k=0;k<6;k++){for(const s of all)AN.stepSet(s,.5);WORLD.tick(.5)}o.ll1=ll()}
+   for(const b of S1.procs||[])if(b.proc)b.proc.on=false;if(AN.unit)AN.unit.on=false;/* 2.2.0-beta.9: the unit model writes AI0131 too */S1.rt.st[a.id].val=S1.rt.st[a.id].act=60;for(let k=0;k<6;k++){for(const s of all)AN.stepSet(s,.5);WORLD.tick(.5)}o.ll1=ll()}
   /* Reset = cold */
   AN.reset();WORLD.tick(1);WORLD.tick(1);o.resetOn=DITL150.on;o.mftR=out('03A',63);
   WORLD.set(false);return o});
