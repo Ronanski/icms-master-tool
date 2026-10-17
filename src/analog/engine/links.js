@@ -363,6 +363,46 @@ function actSet(sh) {
   grow();
   return set;
 }
+/* 2.2.0-beta.13 (CLAUDE.md rule 1: one address = one signal in the whole DCS). A digital INPUT of the drawing (I.xxxx, M.xxxx,
+   B.xxxx; "S2 I.0400" names another station) that is written on several sheets of the same station is ONE value: when the operator
+   (or a test) changes it on one sheet, every other sheet of that station takes it. Before: every sheet had its own copy, so an MFT
+   (I.000F on 11 sheets) needed 11 presses. A net that a link drives (xlk) or that is forced is not overwritten (the link / the
+   force wins on that sheet), but a change on it still spreads to the others */
+function shareExt(set) {
+  const comp = AN.sheets.filter(sh => sh.S && !/^ABC-000/.test(sh.name));
+  let X = AN._xs;
+  if (!X || X.n !== comp.length) {
+    const g = {};
+    for (const sh of comp) {
+      const S = sh.S,
+        st = shStn(sh);
+      for (const n of S.ext) {
+        if (!S.nets[n] || !S.nets[n].dig) continue;
+        const t = S.lab[n] && S.lab[n].t ? String(S.lab[n].t).trim() : '';
+        const m = /^(?:S(\d)\s+)?([IMB]\.[0-9A-F]{4})(?![0-9A-F])/.exec(t);
+        if (!m) continue;
+        const k = (m[1] || st || '?') + '|' + m[2];
+        (g[k] = g[k] || []).push({ S, n, v: undefined });
+      }
+    }
+    X = AN._xs = { n: comp.length, g: Object.values(g).filter(l => l.length > 1) };
+  }
+  const cur = e => (e.S.rt.force[e.n] !== undefined ? e.S.rt.force[e.n] : e.S.rt.ext[e.n]);
+  for (const l of X.g) {
+    let w = null;
+    for (const e of l) {
+      const c = cur(e);
+      if (e.v !== undefined && c !== undefined && c !== e.v) {
+        w = c;
+        break;
+      }
+    }
+    if (w !== null)
+      for (const e of l)
+        if (e.S.rt.force[e.n] === undefined && !(e.S.xlk && e.S.xlk[e.n]) && e.S.rt.ext[e.n] !== w) e.S.rt.ext[e.n] = w;
+    for (const e of l) e.v = cur(e);
+  }
+}
 function stepSet(sh, dt) {
   const set = actSet(sh);
   for (const x of set)
@@ -388,6 +428,9 @@ function stepSet(sh, dt) {
     try {
       procRemote(x);
     } catch (e) {}
+  try {
+    shareExt(set);
+  } catch (e) {}
   for (const x of set) anStep(x.S, dt);
 }
 function stepTier(sh, dt, K) {
@@ -425,6 +468,9 @@ function stepTier(sh, dt, K) {
     try {
       procRemote(x);
     } catch (e) {}
+  try {
+    shareExt(set);
+  } catch (e) {}
   for (const x of set) {
     if (near.has(x)) anStep(x.S, dt);
     else {
@@ -486,7 +532,9 @@ function procRemote(x) {
         p =>
           p.proc &&
           p.proc.mode !== 'shared' &&
-          ((p.proc.ai || []).some(id => ais.includes(id)) || p.proc.pinExt === sn || (p.proc.remote && p.proc.remote.pin === sn))
+          ((p.proc.ai || []).some(id => ais.includes(id)) ||
+            p.proc.pinExt === sn ||
+            (p.proc.remote && p.proc.remote.pin === sn))
       );
       /* only a controller with its own actuator (valve / damper / AO); a cascade master (ABC-003E FIC-OM, act -1) moves the PV through its slaves */
       if (ow && pr.act >= 0) {
