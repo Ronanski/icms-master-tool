@@ -17,6 +17,7 @@ const AN_HMI_AI = {
   '2|AI0851': [-1.0, 'LIHD11032 (02.png)'],
   '1|AI0128': [134.2, 'PIBR10011'],
   '1|AI0129': [474.1, 'FIQMS1031'],
+  '1|AI0420': [149.5, 'TCS-AI1001 TARGET MW SETPOINT FROM TCS (33.PNG)'],
   '1|AI0130': [0.0, 'LIBR10011'],
   '1|AI0131': [122.6, 'PIMS1002'],
   '1|AI0132': [-16.0, 'PIFG1085'],
@@ -489,6 +490,11 @@ const AN_HMI_DI = {
   'M.3354': [1, 'seawater pump B running (30.PNG: SWP-B 242.5 A)'],
   'M.3355': [1, 'seawater pump C running (30.PNG: SWP-C 207.6 A)'],
   'M.3200': [0, 'turbine trip (unit at 148.8 MW)'],
+  /* 2.2.0-beta.9: 33.PNG CCS OPERATION: the plant is in CCS (EIC-TM turbine master A, SV 150 / MV 75 %, TARGET MW SETPOINT FROM TCS
+     149.5 MW): the TCS gives the control to the DCS (ABC-001C I.0081 DCS CONTROL MODE PERMISSIVE FROM TCS, I.0082 DCS CONTROL MODE ON
+     FROM TCS; M.2017 = NOT I.0082 forced the turbine master to MANUAL before) */
+  'I.0081': [1, 'DCS control mode permissive from TCS (33.PNG CCS)'],
+  'I.0082': [1, 'DCS control mode ON from TCS (33.PNG CCS)'],
   'M.3220': [0, '52G1 opened (generator breaker closed at 148.8 MW)'],
   'I.0418': [1, 'ICV to CV transfer complete (4.PNG: turbine on CV, CV(A) 46 %)'],
   /* 2.2.0-beta.7: I/O list STN102 I.0931 MIG-52G1-1 "#1 GCB 52G1 on" (ABC-050, ABC-053). ABC-053: with the breaker on, the lube oil
@@ -630,6 +636,14 @@ function anPlantLoad150_() {
         const si = b.svI >= 0 ? b.i[b.svI] : null,
           dr = si != null ? (S.drv[si] || []).find(z => z.k === 'AMT') : null;
         if (dr && dr.a != null && S.ext.includes(dr.a) && !(S.xlk && S.xlk[dr.a])) S.rt.ext[dr.a] = Math.max(lo, Math.min(hi, v));
+        /* 2.2.0-beta.9: a station whose set input is its OWN output through the AMT (ABC-001B HIC-MWRL: AMT leg A = HIC-MWRL.MV): the
+           value goes on that loop too (output nets and AMT out), else the next scan read the old output back (0.1 MW/MIN instead of
+           3.0 MW/MIN of 33.PNG: the unit load changed 30 times slower than the operator set it) */
+        if (dr && dr.o && dr.o[0] != null && !S.ext.includes(dr.a)) {
+          const x = Math.max(lo, Math.min(hi, v));
+          S.rt.v[dr.o[0]] = x;
+          for (const n of b.o || []) if (n != null && n >= 0) S.rt.v[n] = x;
+        }
       } catch (e) {}
       nm_++;
     }
@@ -853,7 +867,11 @@ function anPlantLoad150_() {
       if (ps) hmiPidSet(ps, c.b, h.mv);
     }
   } catch (e) {}
-  AN.load150 = { ai: n, ctl: nc, di: nd, sv: nsv, man: nm_ };
+  /* 2.2.0-beta.9 (M2): the boiler and the turbine run as one plant from here (unit.js) */
+  try {
+    anUnitStart();
+  } catch (e) {}
+  AN.load150 = { ai: n, ctl: nc, di: nd, sv: nsv, man: nm_, unit: AN_UNIT.on };
   AN.hmiDI = AN_HMI_DI;
   AN.hmiComp = hmiComp;
   return n;

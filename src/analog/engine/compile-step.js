@@ -1093,7 +1093,34 @@ function anCompile(S) {
       case 'SEL': {
         const s2 = ins.slice().sort((p, q) => p.x - q.x);
         b.i = s2.map(p => {
-          const m = anSelIn(S, blk, p.n);
+          let m = anSelIn(S, blk, p.n);
+          /* 2.2.0-beta.9: an input wire that no block drives, where the transmitter wire ENDS ON ITS SIDE (a T without a junction dot;
+             ABC-001C PRI / SEC / AVG SELECT CIRCUIT: AI0419 GEN MW (C) and AI0774 GEN MW (D) run sideways into the wires that come
+             down from their SIG.AB boxes to the select circuit): that transmitter is the input. Before, both inputs were 0 and the
+             turbine master PV EIC-TM.PV was 0 MW (33.PNG: 148.6 MW) */
+          if (m === p.n && !blk.some(x => x.pins.some(q => q.role === 'out' && q.n === m))) {
+            const own = (nets[m] ? nets[m].segs : []).map(i => S.seg[i]);
+            const ai = blk.find(
+              x =>
+                x.k === 'AI' &&
+                x.pins.some(
+                  q =>
+                    q.role === 'out' &&
+                    q.n != null &&
+                    q.n !== m &&
+                    nets[q.n] &&
+                    nets[q.n].segs.some(i => {
+                      const g = S.seg[i];
+                      return [
+                        [g.x1, g.y1],
+                        [g.x2, g.y2]
+                      ].some(([x, y]) => own.some(o => anPtSeg(x, y, o) < 0.5));
+                    })
+                )
+            );
+            const ao = ai && ai.pins.find(q => q.role === 'out');
+            if (ao) m = ao.n;
+          }
           if (m !== p.n) (S.selw = S.selw || {})[p.n] = m;
           return m;
         });

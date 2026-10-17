@@ -275,9 +275,16 @@ function anProcStep(S, dt) {
     F = rt.force,
     pm = rt.pm || (rt.pm = {}),
     pf = rt.pf || (rt.pf = {});
+  /* 2.2.0-beta.9 (M2): the unit model (unit.js) steps with the sheet of the boiler master (ABC-001C) */
+  if (AN_UNIT.on && S === AN_UNIT.S) anUnitStep(dt);
   for (const b of S.procs) {
     const pr = b.proc;
     if (!pr || pr.mode === 'shared') continue;
+    /* a measurement of the unit model (main steam pressure ...): the loop model does not write it */
+    if (AN_UNIT.on && anUnitOwns(pr.remote ? pr.remote.S : S, pr.remote ? pr.remote.ai : pr.ai)) {
+      delete pm[b.id];
+      continue;
+    }
     let q = pm[b.id];
     if (!pr.on) {
       if (q) delete pm[b.id];
@@ -661,8 +668,10 @@ function anProcStep(S, dt) {
    stopped. 11.png: SV 29.1 T/H, PV 29.0 / 29.1 / 28.9 T/H. Before: the feedrate stayed at its value, so the coal master
    (PV = sum of the three) never saw its own MV */
 function anFeederStep(S) {
-  if (S.feed === undefined) {
+  /* 2.2.0-beta.9: a coal feeder sheet whose feeder is not found yet (its links not made yet) looks again at the next step */
+  if (S.feed === undefined || (S.feed === null && S.feedTry !== undefined && S.feedTry++ < 50)) {
     S.feed = null;
+    if (S.feedTry === undefined) S.feedTry = 0;
     if (/^ABC-004[ABC]$/.test(S.name)) {
       const m = S.blk.find(b => b.k === 'MAN' && /^FICCL1061[ABC]$/.test(b.tag || ''));
       const ai = m && (m.i || []).map(n => (S.drv[n] || []).find(x => x.k === 'AI')).find(Boolean);
@@ -820,6 +829,35 @@ function anStep(S, dt) {
         if (b.svI >= 0 && b.i[b.svI] != null && b.i[b.svI] >= 0) {
           const dr = (S.drv[b.i[b.svI]] || []).find(x => x.k === 'AMT');
           if (dr && rt.st[dr.id] && rt.st[dr.id].pk === 'A') s.val = rd(b.i[b.svI]);
+          /* 2.2.0-beta.9: .MAN is the MODE STATUS of the station (textbook status word; CLAUDE.md 2): while its A / M switch of the
+             drawing is on the operator leg (B = COS manual, A = AUTO-MV) because the drawing forces it (BU-CMD: ABC-001C M.2013 =
+             NOT M.0101, main steam flow < 220 T/H), the station IS in MANUAL, and the drawing reads that status (ABC-001C "BOILER
+             MASTER IN MANUAL  HIC-BM.MAN": the boiler pressure controller PIC-COBM tracks HIC-BM - feedforward, SI0224, so the
+             return to AUTO is bumpless). Before, only a press on the faceplate set it: the boiler master came back to AUTO with a
+             step of -11 % (36 -> 25 %), the main steam pressure fell to 89 kg/cm2 and the coal master was forced to manual at its
+             top. Only the status this rule set is cleared by it (a MAN pressed by the operator stays) */
+          if (dr && dr.sel != null && dr.sel >= 0 && !S.ext.includes(dr.sel) && rt.st[dr.id] && b.tag && AN.modeNets) {
+            if (dr._cosB === undefined) dr._cosB = dr.b != null && /^COS manual/.test(AN.nm(S, dr.b) || '') && !(b.o || []).includes(dr.a);
+            if (dr._cosB) {
+              const fm = rt.st[dr.id].pk === 'B';
+              /* only when every sheet is loaded: AN.modeNets loads the sheets, and loading a sheet inside a step ran its first
+                 step before its links were made (ABC-004B / 004C coal feeders lost their feeder model, FIC feedrate stuck) */
+              if (b._mn === undefined && AN.sheets.every(x => x.S || /^ABC-000/.test(x.name)))
+                try {
+                  b._mn = AN.modeNets(b.tag) || [];
+                } catch (e) {
+                  b._mn = [];
+                }
+              if (!b._mn) {
+              } else if (fm && b._mn.length) {
+                for (const [S2, n] of b._mn) if (S2.rt.force[n] === undefined) S2.rt.ext[n] = 1;
+                s.fmSet = 1;
+              } else if (!fm && s.fmSet) {
+                for (const [S2, n] of b._mn) if (S2.rt.force[n] === undefined) S2.rt.ext[n] = 0;
+                s.fmSet = 0;
+              }
+            }
+          }
         }
         if (s.trk != null) s.val = s.trk;
         s.val = Math.max(P.lo, Math.min(P.hi, s.val));

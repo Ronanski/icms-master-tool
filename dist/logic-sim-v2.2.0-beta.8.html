@@ -37301,7 +37301,34 @@ function anCompile(S) {
       case 'SEL': {
         const s2 = ins.slice().sort((p, q) => p.x - q.x);
         b.i = s2.map(p => {
-          const m = anSelIn(S, blk, p.n);
+          let m = anSelIn(S, blk, p.n);
+          /* 2.2.0-beta.9: an input wire that no block drives, where the transmitter wire ENDS ON ITS SIDE (a T without a junction dot;
+             ABC-001C PRI / SEC / AVG SELECT CIRCUIT: AI0419 GEN MW (C) and AI0774 GEN MW (D) run sideways into the wires that come
+             down from their SIG.AB boxes to the select circuit): that transmitter is the input. Before, both inputs were 0 and the
+             turbine master PV EIC-TM.PV was 0 MW (33.PNG: 148.6 MW) */
+          if (m === p.n && !blk.some(x => x.pins.some(q => q.role === 'out' && q.n === m))) {
+            const own = (nets[m] ? nets[m].segs : []).map(i => S.seg[i]);
+            const ai = blk.find(
+              x =>
+                x.k === 'AI' &&
+                x.pins.some(
+                  q =>
+                    q.role === 'out' &&
+                    q.n != null &&
+                    q.n !== m &&
+                    nets[q.n] &&
+                    nets[q.n].segs.some(i => {
+                      const g = S.seg[i];
+                      return [
+                        [g.x1, g.y1],
+                        [g.x2, g.y2]
+                      ].some(([x, y]) => own.some(o => anPtSeg(x, y, o) < 0.5));
+                    })
+                )
+            );
+            const ao = ai && ai.pins.find(q => q.role === 'out');
+            if (ao) m = ao.n;
+          }
           if (m !== p.n) (S.selw = S.selw || {})[p.n] = m;
           return m;
         });
@@ -39073,9 +39100,16 @@ function anProcStep(S, dt) {
     F = rt.force,
     pm = rt.pm || (rt.pm = {}),
     pf = rt.pf || (rt.pf = {});
+  /* 2.2.0-beta.9 (M2): the unit model (unit.js) steps with the sheet of the boiler master (ABC-001C) */
+  if (AN_UNIT.on && S === AN_UNIT.S) anUnitStep(dt);
   for (const b of S.procs) {
     const pr = b.proc;
     if (!pr || pr.mode === 'shared') continue;
+    /* a measurement of the unit model (main steam pressure ...): the loop model does not write it */
+    if (AN_UNIT.on && anUnitOwns(pr.remote ? pr.remote.S : S, pr.remote ? pr.remote.ai : pr.ai)) {
+      delete pm[b.id];
+      continue;
+    }
     let q = pm[b.id];
     if (!pr.on) {
       if (q) delete pm[b.id];
@@ -39459,8 +39493,10 @@ function anProcStep(S, dt) {
    stopped. 11.png: SV 29.1 T/H, PV 29.0 / 29.1 / 28.9 T/H. Before: the feedrate stayed at its value, so the coal master
    (PV = sum of the three) never saw its own MV */
 function anFeederStep(S) {
-  if (S.feed === undefined) {
+  /* 2.2.0-beta.9: a coal feeder sheet whose feeder is not found yet (its links not made yet) looks again at the next step */
+  if (S.feed === undefined || (S.feed === null && S.feedTry !== undefined && S.feedTry++ < 50)) {
     S.feed = null;
+    if (S.feedTry === undefined) S.feedTry = 0;
     if (/^ABC-004[ABC]$/.test(S.name)) {
       const m = S.blk.find(b => b.k === 'MAN' && /^FICCL1061[ABC]$/.test(b.tag || ''));
       const ai = m && (m.i || []).map(n => (S.drv[n] || []).find(x => x.k === 'AI')).find(Boolean);
@@ -39618,6 +39654,35 @@ function anStep(S, dt) {
         if (b.svI >= 0 && b.i[b.svI] != null && b.i[b.svI] >= 0) {
           const dr = (S.drv[b.i[b.svI]] || []).find(x => x.k === 'AMT');
           if (dr && rt.st[dr.id] && rt.st[dr.id].pk === 'A') s.val = rd(b.i[b.svI]);
+          /* 2.2.0-beta.9: .MAN is the MODE STATUS of the station (textbook status word; CLAUDE.md 2): while its A / M switch of the
+             drawing is on the operator leg (B = COS manual, A = AUTO-MV) because the drawing forces it (BU-CMD: ABC-001C M.2013 =
+             NOT M.0101, main steam flow < 220 T/H), the station IS in MANUAL, and the drawing reads that status (ABC-001C "BOILER
+             MASTER IN MANUAL  HIC-BM.MAN": the boiler pressure controller PIC-COBM tracks HIC-BM - feedforward, SI0224, so the
+             return to AUTO is bumpless). Before, only a press on the faceplate set it: the boiler master came back to AUTO with a
+             step of -11 % (36 -> 25 %), the main steam pressure fell to 89 kg/cm2 and the coal master was forced to manual at its
+             top. Only the status this rule set is cleared by it (a MAN pressed by the operator stays) */
+          if (dr && dr.sel != null && dr.sel >= 0 && !S.ext.includes(dr.sel) && rt.st[dr.id] && b.tag && AN.modeNets) {
+            if (dr._cosB === undefined) dr._cosB = dr.b != null && /^COS manual/.test(AN.nm(S, dr.b) || '') && !(b.o || []).includes(dr.a);
+            if (dr._cosB) {
+              const fm = rt.st[dr.id].pk === 'B';
+              /* only when every sheet is loaded: AN.modeNets loads the sheets, and loading a sheet inside a step ran its first
+                 step before its links were made (ABC-004B / 004C coal feeders lost their feeder model, FIC feedrate stuck) */
+              if (b._mn === undefined && AN.sheets.every(x => x.S || /^ABC-000/.test(x.name)))
+                try {
+                  b._mn = AN.modeNets(b.tag) || [];
+                } catch (e) {
+                  b._mn = [];
+                }
+              if (!b._mn) {
+              } else if (fm && b._mn.length) {
+                for (const [S2, n] of b._mn) if (S2.rt.force[n] === undefined) S2.rt.ext[n] = 1;
+                s.fmSet = 1;
+              } else if (!fm && s.fmSet) {
+                for (const [S2, n] of b._mn) if (S2.rt.force[n] === undefined) S2.rt.ext[n] = 0;
+                s.fmSet = 0;
+              }
+            }
+          }
         }
         if (s.trk != null) s.val = s.trk;
         s.val = Math.max(P.lo, Math.min(P.hi, s.val));
@@ -40240,6 +40305,208 @@ if (typeof module !== 'undefined')
     anPins,
     anAddr
   };
+/* 2.2.0-beta.9 (M2, user: "sundin ang plant physics"): UNIT MODEL. The boiler and the turbine as ONE plant, so that a load change
+   moves the plant and not only the demands of the drawing:
+     coal (feeder feedrate transmitters, ABC-004A / B / C) -> firing (lag) -> steam made in the drum -> stored energy = drum
+     pressure -> turbine valves of the TCS -> main steam flow -> MW.
+   The TCS (turbine control system) is outside the DCS drawings: it opens the turbine valves until the generator MW equals the
+   turbine master demand of ABC-001C (EIC-TM, MAN station: MW demand + pressure correction LN55). The boiler master of ABC-001C
+   (feedforward LN54 + pressure PID PIC-COBM) answers the main steam pressure of this model.
+   It runs only while the plant is in service ("Start at 150 MW"): Reset = cold boiler, as before.
+   Numbers (docs/versions/v2.2.0/DRAWING_TRACE.md beta.9):
+     - anchor: the plant at "Start at 150 MW" (MSF 474.1 T/H, drum 134.2, MSP 122.6 kg/cm2, MW of the transmitters);
+     - steam per coal a and MW per steam c: the two loads of the snapshots (4.PNG / 03.png about 150 MW: coal 88.6 T/H,
+       MSF 474.1 T/H, 150.5 MW; 02.png: coal 41.8 T/H, MSF 203.7 T/H, 60.3 MW);
+     - superheater pressure drop: drum 134.2 - MSP 122.6 at 474.1 T/H, proportional to the flow squared;
+     - storage C, firing lag, MW lag and the TCS speed: not in the repository; typical values of a 150 MW drum boiler (ASSUMED,
+       written here so they can be changed) */
+const AN_UNIT = {
+  on: false,
+  a: (474.1 - 203.7) / (88.6 - 41.8) /* T/H of steam per T/H of coal */,
+  c: (150.5 - 60.3) / (474.1 - 203.7) /* MW per T/H of steam */,
+  /* storage and firing lag from the TUNING OF THE PLANT (PID summary: PIC-COBM Kp 3.0, Ti 165 s, Td 7 s): the pressure of a drum
+     whose steam flow the TCS holds is an integrator, and a PI on an integrator with a lag is stable only when the lag is well below
+     Ti. With 700 / 150 s the loop of the plant tuning oscillated (MSP 70 ~ 126 kg/cm2 at 85 MW, the PID at +-25 %); with
+     1500 / 60 s the cross-over of that PI is where its phase is best (about 0.01 rad/s). Not measured on the plant */
+  C: 1500 /* (T/H) x s per kg/cm2 of drum pressure */,
+  tauF: 60 /* s, coal -> steam made */,
+  tauMW: 10 /* s, steam flow -> MW (reheater, ASSUMED) */,
+  tcs: 20 /* s, TCS load loop (ASSUMED) */,
+  /* other steam outlets of the main steam line, flow at 100 % open and the anchor pressure, as a share of the anchor flow (the valve
+     sizes are not in the repository, ASSUMED): ABC-050 PICMS1006 HP turbine bypass PCV-MS1020 (main steam -> cold reheat) and
+     ABC-013 PICMS1002 main steam blow-off PCV-MS1001 (start-up vent to the silencer) */
+  hpb: 0.3,
+  blo: 0.1
+};
+/* the AI blocks of one address on every sheet (station | address, like "Start at 150 MW") */
+function anUnitAIs(key) {
+  const out = [];
+  for (const sh of AN.sheets) {
+    if (/^ABC-000/.test(sh.name) || !sh.S) continue;
+    let st = null;
+    try {
+      st = shStn(sh);
+    } catch (e) {}
+    const S = sh.S;
+    for (const b of S.blk) {
+      if (b.k !== 'AI' || !b.o || b.o[0] == null) continue;
+      const m = /^(?:S(\d)\s*)?(AI\d{4})$/.exec((AN.nm(S, b.o[0]) || '').trim());
+      if (m && (m[1] || st) + '|' + m[2] === key) out.push([S, b]);
+    }
+  }
+  return out;
+}
+function anUnitVal(list) {
+  for (const [S, b] of list) {
+    const s = S.rt.st[b.id];
+    if (s && isFinite(s.val)) return +s.val;
+  }
+  return NaN;
+}
+function anUnitWrite(list, x) {
+  for (const [S, b] of list) {
+    const s = S.rt.st[b.id];
+    if (!s || b.pins.some(p => p.role === 'out' && S.rt.force[p.n] !== undefined)) continue;
+    const r = b.rng,
+      y = r ? Math.max(r.lo, Math.min(r.hi, x)) : x;
+    s.val = s.act = y;
+  }
+}
+/* start: the plant as it is now (end of "Start at 150 MW") is the steady state */
+function anUnitStart() {
+  const U = AN_UNIT;
+  U.on = false;
+  const sh = AN.sheets.find(x => x.name === 'ABC-001C');
+  if (!sh || !sh.S) return;
+  const S = sh.S;
+  U.S = S;
+  /* coal feeder feedrate transmitters (station of each sheet) */
+  U.fuel = [
+    ['ABC-004A', 'AI0480'],
+    ['ABC-004B', 'AI0512'],
+    ['ABC-004C', 'AI0544']
+  ].map(([k, ai]) => {
+    const s4 = AN.sheets.find(x => x.name === k);
+    return s4 && s4.S ? anUnitAIs(shStn(s4) + '|' + ai) : [];
+  });
+  const s1 = shStn(sh);
+  U.msp = anUnitAIs(s1 + '|AI0131');
+  U.drum = anUnitAIs(s1 + '|AI0128');
+  U.msf = anUnitAIs(s1 + '|AI0129');
+  U.mw = [s1 + '|AI0419', s1 + '|AI0774'].map(anUnitAIs);
+  /* the TCS: TARGET MW SETPOINT FROM TCS (AI0420) and DCS CONTROL MODE ON FROM TCS (I.0082) */
+  U.tgt = anUnitAIs(s1 + '|AI0420');
+  U.dcs = S.lab.findIndex(l => l && String(l.t).trim() === 'I.0082');
+  U.tm = S.blk.find(b => b.k === 'MAN' && b.tag === 'EIC-TM');
+  /* the turbine inlet pressure (ABC-050 PT-MS1006-1 / -2, the PV of the HP bypass): the same steam, after the main steam line */
+  const s50 = AN.sheets.find(x => x.name === 'ABC-050');
+  U.tin = s50 && s50.S ? [anUnitAIs(shStn(s50) + '|AI0416'), anUnitAIs(shStn(s50) + '|AI0512')] : [];
+  /* the valve commands of the other outlets (output of their A / M station after the interlocks) */
+  U.vlv = [
+    ['ABC-050', 'PICMS1006', U.hpb],
+    ['ABC-013', 'PICMS1002', U.blo]
+  ]
+    .map(([k, t, f]) => {
+      const x = AN.sheets.find(y => y.name === k),
+        c = x && x.S && AN.hmiCtrls ? (AN.hmiCtrls(x.S) || []).find(q => q.tag === t) : null;
+      return c && c.out != null ? { S: x.S, n: c.out, f } : null;
+    })
+    .filter(Boolean);
+  /* the demand to the TCS: SI0236 = MW demand + pressure correction LN55 (ABC-001C). On the snapshots the turbine master EIC-TM is
+     MANUAL (M.2016 = 1, output 0: DCS CONTROL MODE OFF, the TCS holds the load); the TCS set point itself is not in the
+     repository, so the TCS follows the unit demand of the DCS */
+  U.dem = S.lab.findIndex(l => l && String(l.t).trim() === 'SI0236');
+  U.cn = anCompNet(S, 'AI0129');
+  if (!U.msp.length || !U.drum.length || !U.msf.length || U.dem < 0 || U.cn < 0) return;
+  const F0 = U.fuel.reduce((a, l) => a + (anUnitVal(l) || 0), 0),
+    m0 = +S.rt.v[U.cn],
+    P0 = anUnitVal(U.msp),
+    Pd0 = anUnitVal(U.drum),
+    mwv = U.mw.map(anUnitVal).filter(isFinite),
+    MW0 = mwv.length ? mwv.slice(0, 2).reduce((a, x) => a + x, 0) / Math.min(2, mwv.length) : NaN,
+    Ptin = U.tin.length ? anUnitVal(U.tin[0]) : NaN;
+  if (![F0, m0, P0, Pd0, MW0].every(isFinite) || m0 <= 0 || P0 <= 0 || Pd0 <= P0) return;
+  Object.assign(U, {
+    F0,
+    m0,
+    P0,
+    Pd0,
+    MW0,
+    kdp: (Pd0 - P0) / (m0 * m0),
+    kln: isFinite(Ptin) && Ptin <= P0 ? (P0 - Ptin) / (m0 * m0) : 0 /* main steam line drop to the turbine inlet */,
+    Kt: m0 / P0 /* valve opening 1 = the opening at the anchor */,
+    gv: 1,
+    Pd: Pd0,
+    Qs: m0,
+    ms: m0,
+    MW: MW0,
+    tcsT: NaN,
+    t: 0
+  });
+  /* the transmitters this model writes: the plant model of a loop on them stops writing (ABC-001C PIC-COBM: main steam pressure) */
+  const own = new Set();
+  for (const l of [U.msp, U.drum, U.msf].concat(U.mw, U.tin)) for (const [S2, b] of l) own.add(S2.rt.st[b.id]);
+  U.own = own;
+  U.on = true;
+  AN.unit = U;
+}
+function anUnitOwns(T, ids) {
+  const U = AN_UNIT;
+  return U.on && ids && ids.length && ids.some(id => U.own.has(T.rt.st[id]));
+}
+/* one step of dt seconds (called by the plant step of ABC-001C) */
+function anUnitStep(dt) {
+  const U = AN_UNIT;
+  if (!U.on || !(dt > 0)) return;
+  const S = U.S,
+    v = S.rt.v;
+  /* coal of the three feeders (T/H) -> steam made in the drum (T/H), first order */
+  const F = U.fuel.reduce((a, l) => a + (anUnitVal(l) || 0), 0),
+    Qss = Math.max(0, U.m0 + U.a * (F - U.F0));
+  U.Qs += ((Qss - U.Qs) * dt) / U.tauF;
+  /* turbine valves (TCS): MW to the turbine master demand */
+  /* DCS control mode ON (CCS, 33.PNG): the TCS follows the turbine master of the DCS (EIC-TM output, AO0359 TO TCS; in AUTO it is
+     SI0236 = MW demand + pressure correction LN55). OFF: the TCS keeps its own target (where the load is when it went OFF) */
+  const on = U.dcs < 0 || +v[U.dcs] > 0.5,
+    tmo = U.tm && U.tm.o && U.tm.o[0] != null ? +v[U.tm.o[0]] : NaN,
+    ds = U.dem >= 0 ? +v[U.dem] : NaN;
+  if (on) U.tcsT = isFinite(tmo) ? tmo : isFinite(ds) ? ds : U.MW;
+  else if (!isFinite(U.tcsT)) U.tcsT = U.MW;
+  const D = U.tcsT;
+  U.gv = Math.max(0.02, Math.min(1.4, U.gv + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
+  /* steam flow through the valves: m = Kt x gv x MSP, MSP = drum - kdp x m^2 */
+  const k = U.Kt * U.gv,
+    a2 = U.kdp * k,
+    ms = a2 > 0 ? (-1 + Math.sqrt(1 + 4 * a2 * k * Math.max(0, U.Pd))) / (2 * a2) : k * U.Pd;
+  U.ms = Math.max(0, ms);
+  /* the other outlets: flow = share x anchor flow x opening x MSP / anchor MSP */
+  const P1 = Math.max(0, U.Pd - U.kdp * U.ms * U.ms);
+  U.mb = 0;
+  for (const x of U.vlv) {
+    const o = Math.max(0, Math.min(100, +x.S.rt.v[x.n] || 0));
+    U.mb += (((x.f * U.m0 * o) / 100) * P1) / U.P0;
+  }
+  /* drum: stored energy */
+  U.Pd = Math.max(0, U.Pd + ((U.Qs - U.ms - U.mb) * dt) / U.C);
+  const Pms = Math.max(0, U.Pd - U.kdp * U.ms * U.ms);
+  /* generator */
+  const MWss = Math.max(0, U.MW0 + U.c * (U.ms - U.m0));
+  U.MW += ((MWss - U.MW) * dt) / U.tauMW;
+  U.t += dt;
+  /* transmitters */
+  anUnitWrite(U.msp, Pms);
+  for (const l of U.tin) anUnitWrite(l, Math.max(0, Pms - U.kln * U.ms * U.ms));
+  anUnitWrite(U.drum, U.Pd);
+  for (const l of U.mw) anUnitWrite(l, U.MW);
+  anUnitWrite(U.tgt, U.tcsT);
+  /* main steam flow: the RAW transmitter, so that the compensation of the drawing (SQRT(LN31(p) x LN32(T) x raw)) gives U.ms: the
+     compensated flow is proportional to the raw value at a given pressure and temperature (SQRT block: out = in, in units of
+     flow), so raw = U.ms x raw / compensated of the last scan */
+  const raw = anUnitVal(U.msf),
+    cmp = +v[U.cn];
+  if (isFinite(raw) && raw > 0 && isFinite(cmp) && cmp > 1) anUnitWrite(U.msf, (U.ms * raw) / cmp);
+  else anUnitWrite(U.msf, U.ms);
+}
 /* 2.0.0 (user tip): PLANT AT 150 MW. The measurements of the control-room HMI snapshots (docs/hmi/operating-points.json, the
    full-load screens of 2023-10-18 / 2023-12-01; the 60 MW screen, the MFT screen and the drafts are left out), by station and
    address (STN101 AI0129 = '1|AI0129'). AN.plantLoad150() writes them into the transmitters (AI blocks) of every sheet, so the
@@ -40259,6 +40526,7 @@ const AN_HMI_AI = {
   '2|AI0851': [-1.0, 'LIHD11032 (02.png)'],
   '1|AI0128': [134.2, 'PIBR10011'],
   '1|AI0129': [474.1, 'FIQMS1031'],
+  '1|AI0420': [149.5, 'TCS-AI1001 TARGET MW SETPOINT FROM TCS (33.PNG)'],
   '1|AI0130': [0.0, 'LIBR10011'],
   '1|AI0131': [122.6, 'PIMS1002'],
   '1|AI0132': [-16.0, 'PIFG1085'],
@@ -40731,6 +40999,11 @@ const AN_HMI_DI = {
   'M.3354': [1, 'seawater pump B running (30.PNG: SWP-B 242.5 A)'],
   'M.3355': [1, 'seawater pump C running (30.PNG: SWP-C 207.6 A)'],
   'M.3200': [0, 'turbine trip (unit at 148.8 MW)'],
+  /* 2.2.0-beta.9: 33.PNG CCS OPERATION: the plant is in CCS (EIC-TM turbine master A, SV 150 / MV 75 %, TARGET MW SETPOINT FROM TCS
+     149.5 MW): the TCS gives the control to the DCS (ABC-001C I.0081 DCS CONTROL MODE PERMISSIVE FROM TCS, I.0082 DCS CONTROL MODE ON
+     FROM TCS; M.2017 = NOT I.0082 forced the turbine master to MANUAL before) */
+  'I.0081': [1, 'DCS control mode permissive from TCS (33.PNG CCS)'],
+  'I.0082': [1, 'DCS control mode ON from TCS (33.PNG CCS)'],
   'M.3220': [0, '52G1 opened (generator breaker closed at 148.8 MW)'],
   'I.0418': [1, 'ICV to CV transfer complete (4.PNG: turbine on CV, CV(A) 46 %)'],
   /* 2.2.0-beta.7: I/O list STN102 I.0931 MIG-52G1-1 "#1 GCB 52G1 on" (ABC-050, ABC-053). ABC-053: with the breaker on, the lube oil
@@ -40872,6 +41145,14 @@ function anPlantLoad150_() {
         const si = b.svI >= 0 ? b.i[b.svI] : null,
           dr = si != null ? (S.drv[si] || []).find(z => z.k === 'AMT') : null;
         if (dr && dr.a != null && S.ext.includes(dr.a) && !(S.xlk && S.xlk[dr.a])) S.rt.ext[dr.a] = Math.max(lo, Math.min(hi, v));
+        /* 2.2.0-beta.9: a station whose set input is its OWN output through the AMT (ABC-001B HIC-MWRL: AMT leg A = HIC-MWRL.MV): the
+           value goes on that loop too (output nets and AMT out), else the next scan read the old output back (0.1 MW/MIN instead of
+           3.0 MW/MIN of 33.PNG: the unit load changed 30 times slower than the operator set it) */
+        if (dr && dr.o && dr.o[0] != null && !S.ext.includes(dr.a)) {
+          const x = Math.max(lo, Math.min(hi, v));
+          S.rt.v[dr.o[0]] = x;
+          for (const n of b.o || []) if (n != null && n >= 0) S.rt.v[n] = x;
+        }
       } catch (e) {}
       nm_++;
     }
@@ -41095,7 +41376,11 @@ function anPlantLoad150_() {
       if (ps) hmiPidSet(ps, c.b, h.mv);
     }
   } catch (e) {}
-  AN.load150 = { ai: n, ctl: nc, di: nd, sv: nsv, man: nm_ };
+  /* 2.2.0-beta.9 (M2): the boiler and the turbine run as one plant from here (unit.js) */
+  try {
+    anUnitStart();
+  } catch (e) {}
+  AN.load150 = { ai: n, ctl: nc, di: nd, sv: nsv, man: nm_, unit: AN_UNIT.on };
   AN.hmiDI = AN_HMI_DI;
   AN.hmiComp = hmiComp;
   return n;
@@ -41296,6 +41581,7 @@ function anPull(sh) {
 }
 /* RESET of the model: every sheet back to the drawing (tuning kept in AN.sv), then all sheets are settled: the same start as a fresh load, whatever the sheet order */
 function anResetAll() {
+  AN_UNIT.on = false; /* 2.2.0-beta.9: Reset = cold boiler, the unit model stops */
   for (const sh of AN.sheets) {
     if (!sh.S) continue;
     const S = sh.S;
@@ -64477,7 +64763,8 @@ body.ophmi #anp{display:none!important}
   /* ang .MAN / .LOC / .REM ng isang tag ay iisang HMI command sa buong DCS: lahat ng input na may ganitong pangalan sa lahat ng sheet (hindi lang ang sa sheet ng controller) */
   /* a wire named by its description only: not an address (B.0641, M.0228, AI0641) and not linked from another sheet */
   const descWire = (S2, n) =>
-    !(S2.xlk && S2.xlk[n]) && !/^(?:[A-Z]{1,2}\.[0-9A-F]{4}|[A-Z]{2}\d{4}|[A-Z]{2,}[A-Z0-9-]*\.[A-Z]{2,4})$/.test((AN.nm(S2, n) || '').trim());
+    !(S2.xlk && S2.xlk[n]) &&
+    !/^(?:(?:S\d\s+)?[A-Z]{1,2}\.[0-9A-F]{4}|(?:S\d\s+)?[A-Z]{2}\d{4}|[A-Z]{2,}[A-Z0-9-]*\.[A-Z]{2,4}|\d\s*:\s*[A-Z])$/.test((AN.nm(S2, n) || '').trim()); /* 2.2.0-beta.9: also an address with its station (S2 M.2502) and a switch leg mark (1:B) */
   const modeNetsByTag = (tag, kinds, own) => {
     const out = own ? [own] : [],
       want = new Set(kinds.map(k => (tag + '.' + k).toLowerCase())),
@@ -64504,13 +64791,21 @@ body.ophmi #anp{display:none!important}
       tagged.push(S2);
       for (const q of tq) {
         let best = -1,
-          bd = 14;
+          bd = 8; /* 2.2.0-beta.9: distance to the line of the wire (the own wire is about 5 units under its tag text) */
         for (const n of S2.ext) {
           const nn = S2.nets[n];
           if (!nn || !nn.dig || !descWire(S2, n)) continue;
           for (const i of nn.segs) {
+            /* 2.2.0-beta.9: the distance to the LINE of the wire, not to its ends: the tag text is written on its own wire (ABC-001C
+               "HIC-BM.MAN" over the wire "BOILER MASTER IN MANUAL"); with the ends, a shorter wire of the pair above was nearer
+               ("TURBINE MASTER IN MANUAL", 12 units from its end, while the own wire ends 34 units away), so HIC-BM.MAN was the
+               turbine master wire */
             const g = S2.seg[i],
-              d = Math.min(Math.hypot(q.x - g.x1, q.y - g.y1), Math.hypot(q.x - g.x2, q.y - g.y2));
+              dx = g.x2 - g.x1,
+              dy = g.y2 - g.y1,
+              L2 = dx * dx + dy * dy,
+              t = L2 > 0 ? Math.max(0, Math.min(1, ((q.x - g.x1) * dx + (q.y - g.y1) * dy) / L2)) : 0,
+              d = Math.hypot(q.x - (g.x1 + t * dx), q.y - (g.y1 + t * dy));
             if (d < bd) {
               bd = d;
               best = n;
@@ -64681,6 +64976,8 @@ body.ophmi #anp{display:none!important}
     return out;
   }
   AN.hmiCtrls = ctrls; /* for the tests */
+  /* 2.2.0-beta.9: the .MAN / .LOC / .REM addresses of a tag on every sheet, for the engine (plant.js MAN station status) */
+  AN.modeNets = (tag, kinds) => modeNetsByTag(tag, kinds || MODEK.MAN);
   function trendOf(key) {
     return trends[key] || (trends[key] = { t: [], pv: [], sv: [], mv: [] });
   }
