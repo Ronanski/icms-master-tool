@@ -369,7 +369,7 @@
           const c = it.c || KC[it.k] || KC.sig;
           g.append(S_('polygon', { points: it.p.map(q => q.join(',')).join(' '), fill: c, 'fill-opacity': it.o != null ? it.o : 0.3, stroke: c, 'stroke-width': 2 }));
         } else if (it.t === 'line') {
-          const c = KC[it.k] || KC.sig;
+          const c = it.c || KC[it.k] || KC.sig; /* beta.19: c = own colour (yellow seal pot loop) */
           g.append(S_('polyline', { points: it.p.map(q => q.join(',')).join(' '), fill: 'none', stroke: c, 'stroke-width': it.k === 'sig' ? 1 : it.w || 3 /* beta.19: 3 px pipes (2.5), w: for a thicker duct */, 'stroke-dasharray': it.k === 'sig' ? '4 3' : '' }));
           if (it.a && it.p.length > 1) {
             const [a, b] = [it.p[it.p.length - 2], it.p[it.p.length - 1]],
