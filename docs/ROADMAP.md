@@ -24,7 +24,7 @@ Pagkatapos ng M6: ang `[F]` sa CHECKLIST seksyon D ay dagdag lang, hindi kailang
 ## Nasaan tayo ngayon (2026-10-16)
 - **M0:** nilaktawan muna (user 2026-10-16: "no need n m0").
 - **M1:** 2.2.0-beta.7: switches 0 / 438 (pasado). 150 MW snapshot 27 → 11 (ang hangganan ay ≤ 5: hindi pa pasado sa bilang; bawat isa sa 11 ay may paliwanag mula sa drawing / physics, 4 dito ay ang snapshot na hindi steady o magkasalungat na screen). A6 (2.2.0-beta.8): TAPOS. Generic tester: 68 controller, 0 mali, 0 hindi nasubok (ang mahihirap ay nasa planta na tumatakbo; RH spray + damper nagdadagdag). Natitira sa M1: ang hangganan na ≤ 5 sa snapshot (11 pa; user 2026-10-16: huwag umasa nang buo sa HMI snapshot, sundin ang plant physics). Ang hatol kung pasado ang M1 ay sa user.
-- **M2 (2.2.0-beta.9, ginagawa):** unit model (boiler + turbine). Pasado: 150 → 60 → 150 MW, ang MW, MSP, MSF, FW, drum level ay sumusunod; sa 60 MW ang MW / MSF / coal ay nasa ±4 % ng 02.png; sa 150 MW nasa ±1 % ng 4.PNG; walang trip (`tests/regress/unit_load.js`). Natitira sa M2: temperatura (MST / RHT) ayon sa load (02.png 517 / 499 °C), RH pressure.
+- **M2 (2.2.0-beta.9, ginagawa):** unit model (boiler + turbine). Pasado: 150 → 60 → 150 MW, ang MW, MSP, MSF, FW, drum level ay sumusunod; sa 60 MW ang MW / MSF / coal ay nasa ±4 % ng 02.png; sa 150 MW nasa ±1 % ng 4.PNG; walang trip (`tests/regress/unit_load.js`); regression: generic 68 / 0 mali, scenarios 244 / 0, switches 0 / 438, reset 51 / 0. Natitira sa M2: temperatura (MST / RHT) ayon sa load (02.png 517 / 499 °C), RH pressure.
 - **M3 ~ M6:** hindi pa nasisimulan.
 
 ## Paano binibilang ang progress

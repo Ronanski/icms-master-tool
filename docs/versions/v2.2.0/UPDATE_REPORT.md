@@ -22,7 +22,8 @@ Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-ap
 - **As Left (headless):**
   - `unit_load.js` ALL PASS: 150 MW steady (MW 149.9, MSF 470.5, MSP 122.3); load down 3 MW/min, MW sumusunod sa turbine demand SI0236; **60 MW: MW 60.0, MSF 201.0 T/H, coal 40.1 T/H (02.png 60.3 / 203.7 / 41.8), MSP 121.2 (SV 122.3)**; boiler master MANUAL sa ibaba ng 220 T/H (drawing); balik sa 150 MW: MW 150.0, MSF 470.9, MSP 122.1, AUTO; pinakamababang MSP 119.8, drum level ±29 mm, walang trip.
   - Regression: switches 0 / 438; reset 51 / 0; hmi_op 38 PASS (2 = unit model); ditl150, loaddown (3 MW/min = 138 MW sa 4 min), plant_live, world, tests.js, pid_am, faceplate, overview, events, infocard, manstation: PASS. Mode nets: 2 tag lang ang nagbago (HIC-BM.MAN, EIC-TM.MAN). SEL: 1 block lang ang nagbago.
-- **Hindi pa nasubok:** ang buong 68-controller tester (tumatakbo pa sa oras ng save; 22 controller tapos, walang mali), isolated engine at scenarios (tumatakbo pa); temperatura sa mababang load (02.png MST 517 / RHT 499, sa app 541: hindi pa ginagawa); totoong device.
+  - Generic tester (lahat ng sheet): 68 controller, 2145 tama, 0 mali, 0 hindi nasubok. Scenarios 244 / 0. Isolated engine PASS.
+- **Hindi pa nasubok:** temperatura sa mababang load (02.png MST 517 / RHT 499, sa app 541: hindi pa ginagawa); totoong device.
 - **Status:** Beta (save ng progress).
 
 ## 2.2.0-beta.8 — A6: mga controller na mahirap simulan, sa planta na tumatakbo (plant physics)
