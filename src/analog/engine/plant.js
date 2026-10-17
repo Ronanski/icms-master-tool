@@ -493,6 +493,9 @@ function anProcStep(S, dt) {
         /* 2.2.0-beta.12: pr.fr = firing ratio of the unit model (steam made / steam flowing, 0 ~ 1) on a steam temperature: without firing the
            superheat is lost and the temperature goes to the saturation temperature pr.tsat of the drum (MFT), whatever the spray does */
         if (pr.fr != null && pr.tsat != null) y = pr.tsat + (y - pr.tsat) * pr.fr;
+        /* 2.2.0-beta.14 (M4 cold start): pr.tcap = the gas temperature (bed) of the unit model: a superheater cannot give more than the
+           gas, and the steam is never below saturation */
+        if (pr.tcap != null) y = Math.max(pr.tsat != null ? pr.tsat : -1e9, Math.min(y, pr.tcap));
         return pr.mul == null ? y : pr.mul * y + (1 - pr.mul) * lo;
       };
     if (pr.integ === undefined) {

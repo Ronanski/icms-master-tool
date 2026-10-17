@@ -165,6 +165,8 @@
     }
     if (it.t === 'val') {
       if (/AVERAGE/i.test(it.v || '')) return null;
+      /* 2.2.0-beta.14: a state of the unit model that has no DCS transmitter (bed temperature, water temperature, oil of the burners) */
+      if (/^UNIT\./.test(String(it.tag))) return { k: 'unit', f: String(it.tag).slice(5), how: 'plant model (unit.js)' };
       if (IX.pv.has(k)) return Object.assign({ k: 'net', how: it.tag + '.PV' }, IX.pv.get(k));
       for (const c of [k].concat(tx(k))) {
         if (IX.ai.has(c)) return Object.assign({ k: 'net', how: 'AI of ' + c }, IX.ai.get(c));
@@ -235,6 +237,9 @@
           const auto = !c.amt || pk === c.autoLeg,
             rem = !!(c.remote && c.svSw && S.rt.st[c.svSw.id] && S.rt.st[c.svSw.id].pk === 'A');
           o.set({ pv: v[c.q.pv], sv: v[c.q.sv], mv: v[c.out], m: !auto ? 'M' : rem ? 'R' : 'A' });
+        } else if (r.k === 'unit') {
+          const U = window.AN && AN.unit;
+          o.set(U && U.on && isFinite(U[r.f]) ? { v: +U[r.f], r } : null);
         } else if (r.k === 'mv') {
           const S = shOf(r.sh).S;
           o.set({ v: S.rt.v[r.c.out], r });

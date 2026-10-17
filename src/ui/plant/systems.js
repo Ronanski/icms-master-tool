@@ -44,6 +44,11 @@ window.PLANT_SYS = [
     { t: 'text', x: 420, y: 645, s: 'Furnace pressure', z: 10, c: '#7f90a0' },
     { t: 'ctl', x: 60, y: 680, tag: 'AICFG112', label: 'O2 TRIM', pv: '4.2', sv: '3.5', mv: '47.7', u: '%', m: 'A' },
     { t: 'ctl', x: 250, y: 680, tag: 'PICFG108', label: 'FURNACE PRESS.', pv: '-18.4', sv: '-16.0', mv: '45.8', u: 'mmH2O', m: 'A' },
+    // 2.2.0-beta.14 (M4): start-up firing, states of the plant model (no DCS transmitter: bed thermocouples are on the DITL)
+    { t: 'text', x: 60, y: 795, s: 'Start-up (plant model): oil of burners A ~ D, bed, boiler water', z: 12, c: '#a9b7c4' },
+    { t: 'val', x: 60, y: 840, tag: 'UNIT.oilF', v: '0.0', u: 'T/H' },
+    { t: 'val', x: 240, y: 840, tag: 'UNIT.Tb', v: '850', u: 'C' },
+    { t: 'val', x: 420, y: 840, tag: 'UNIT.Tw', v: '331', u: 'C' },
     // ---- column 2: drum (ABC-010), superheaters (ABC-011 / 012), main steam (ABC-001C)
     { t: 'text', x: 660, y: 140, s: 'Drum and feedwater', z: 12, c: '#a9b7c4' },
     { t: 'val', x: 660, y: 185, tag: 'PT-BR1001-1', v: '134.2', u: 'kg/cm2' },

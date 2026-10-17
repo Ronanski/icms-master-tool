@@ -35,7 +35,7 @@
     btn = E('button', {
       id: 'chkb',
       txt: 'CHECK',
-      title: 'Check M2 / M3: isang pindot bawat scenario, inaasahang resulta na may ✓ / ✗',
+      title: 'Check M2 / M3 / M4: isang pindot bawat scenario, inaasahang resulta na may ✓ / ✗',
       on: () => {
         P.style.display = P.style.display === 'block' ? 'none' : 'block';
         if (!P.childNodes.length) build();
@@ -114,6 +114,46 @@
       MST = () => pv('ABC-012', 'TICMS1004'),
       RHT = () => pv('ABC-019', 'TICHR1002'),
       RHP = () => pv('ABC-052', 'PICHR1003');
+    /* the operator on a faceplate: L (LOCAL), M (MANUAL), MV x % (2.2.0-beta.14) */
+    const man = (k, t, x) => {
+      const T = sh(k),
+        c = ctl(k, t);
+      if (!c) return false;
+      if (c.svSw && T.rt.st[c.svSw.id]) {
+        T.rt.st[c.svSw.id].al = 'A';
+        T.rt.st[c.svSw.id].fm = 'B';
+      }
+      if (c.amt && T.rt.st[c.amt.id]) {
+        T.rt.st[c.amt.id].al = c.autoLeg;
+        T.rt.st[c.amt.id].fm = c.autoLeg === 'A' ? 'B' : 'A';
+      }
+      if (c.manBlk && T.rt.st[c.manBlk.id]) T.rt.st[c.manBlk.id].val = x;
+      else if (c.manNet != null) T.rt.ext[c.manNet] = x;
+      return true;
+    };
+    /* the SUPPLY OIL VALVE (1)(2) CLOSE of a start-up burner (M.3410 / 3411 / 3416 / 3417, memory list BC FROM S4) is the AND of the
+       two limit switches on the coal feeder sheets (ABC-004A ~ C), linked to ABC-003x and ABC-029: the operator opens the two valves
+       = the two inputs of that AND are 0 (one address = one signal, CLAUDE.md 1) */
+    const oilValve = (addr, open) => {
+      let n = 0;
+      for (const s of ALL) {
+        const T = s.S;
+        for (let k = 0; k < T.lab.length; k++) {
+          if (!T.lab[k] || String(T.lab[k].t).trim() !== addr || T.ext.includes(k)) continue;
+          for (const g of T.drv[k] || [])
+            if (g.k === 'AND')
+              for (const i of g.i || [])
+                if (T.ext.includes(i) && T.rt.force[i] === undefined) {
+                  T.rt.ext[i] = open ? 0 : 1;
+                  n++;
+                }
+        }
+      }
+      return n;
+    };
+    const SA = () => val('ABC-006', 'FIFA1081.PV'),
+      FA = () => val('ABC-006', 'FIFA1055.PV'),
+      tsat = P => 100 + 47.1 * Math.log(Math.max(0, P) + 1);
     /* the DITL MFT, forced (CLAUDE.md 7): I.000F MFT FROM IRP on every station, M.0341 MFT TPs (2 s), coal feeders stopped */
     const mft = o => {
       setx(null, 'I.000F', 1);
@@ -194,6 +234,11 @@
       RHT,
       RHP,
       mft,
+      man,
+      oilValve,
+      SA,
+      FA,
+      tsat,
       live
     };
   };
@@ -202,6 +247,131 @@
     f1 = x => (isFinite(x) ? (+x).toFixed(1) : '-');
   /* ---- the scenarios: steps (what the operator / the DITL does), each(t) every 0.5 s, checks at the end ---- */
   const SC = [
+    {
+      id: 'cold',
+      cold: true,
+      title: 'M4 · Cold start: purge, light-off, pressure raise',
+      how: 'Start cold (drum 0 kg/cm2, tubig at bed 30 °C, walang coal, turbine sarado, lahat ng controller L + M 0 %). Operator: PAF / SAF / IDF start (M.3302 / 3303 / 3304), PA at SA flow M para sa purge > 25 % MCR, 5 min (PR-OPE-5002); tapos burner A at B: supply oil valve (1)(2) bukas (ang dalawang limit switch input ng AND M.3410 / M.3411 sa ABC-004A = 0) at BURNER IN SERVICE (M.3412 / M.3413, DITL forced), FICDO1043A / B M 60 %, air pababa sa minimum; tapos binabantayan ang pagtaas ng saturation temperature (Fig 1 ≤ 110 °C/h): dagdag ng oil kapag < 80 °C/h at > 5 kg/cm2, bawas kapag > 100; burner C at D sa 15 kg/cm2. Tumitigil kapag 30 kg/cm2.',
+      want: 'Purge: air > 150 T/H; oil A at B > 0.5 T/H; tubig 30 → 100 °C bago tumaas ang pressure; drum 0 → 30 kg/cm2 sa loob ng 3 oras; saturation ≤ 110 °C/h; bed ≥ 400 °C (coal batch permissive); furnace pressure −50 ~ +30 mmH2O (walang HIGH); MST ≥ saturation at ≤ 535 °C (TAB_9); MW 0, coal 0; drum level hawak (± 150 mm).',
+      secs: 12000,
+      run(h, o) {
+        o.lvl0 = h.lvl();
+        o.lvMin = o.lvMax = o.lvl0;
+        o.rate = 0;
+        o.pBoil = 0;
+        o.tsP = null;
+        o.P30 = null;
+        o.ab = 60;
+        o.cd = 0;
+      },
+      each(h, o) {
+        const t = o.t,
+          U = h.U;
+        if (t === 10) {
+          for (const l of ['M.3302', 'M.3303', 'M.3304']) h.setx(null, l, 1);
+          h.man('ABC-007', 'FICFA1071', 35);
+          h.man('ABC-007', 'FICFA1081', 35);
+        }
+        if (t === 310) o.air = h.PA() + h.SA() + h.FA();
+        if (t === 320) {
+          h.oilValve('M.3410', true);
+          h.oilValve('M.3411', true);
+          h.setx(null, 'M.3412', 1);
+          h.setx(null, 'M.3413', 1);
+          h.man('ABC-003A', 'FICDO1043A', 60);
+          h.man('ABC-003B', 'FICDO1043B', 60);
+          h.man('ABC-007', 'FICFA1071', 10);
+          h.man('ABC-007', 'FICFA1081', 10);
+        }
+        if (t === 400) {
+          o.oilA = h.pv('ABC-003A', 'FICDO1043A');
+          o.oilB = h.pv('ABC-003B', 'FICDO1043B');
+        }
+        if (o.tBoil == null && U.Tw >= 99.9) {
+          o.tBoil = t;
+          o.pBoil = U.Pd;
+        }
+        o.lvMin = Math.min(o.lvMin, h.lvl());
+        o.lvMax = Math.max(o.lvMax, h.lvl());
+        if (t % 60 === 0) {
+          const ts = h.tsat(U.Pd),
+            r = o.tsP != null && o.tBoil != null ? (ts - o.tsP) * 60 : 0;
+          if (o.tsP != null && o.tBoil != null) o.rate = Math.max(o.rate, r);
+          o.tsP = ts;
+          /* the operator watches the saturation temperature (Fig 1, <= 110 C/h) and moves the firing step by step (PR-OPE-5002):
+             more oil when the rise is below 80 C/h and the drum is above 5 kg/cm2, less when above 100; burners C and D at 15 kg/cm2 */
+          if (o.tBoil != null && t > 320) {
+            if (r > 100) {
+              o.ab = Math.max(30, o.ab - 10);
+              if (o.cd) o.cd = Math.max(30, o.cd - 10);
+            } else if (r < 80 && U.Pd >= 5) {
+              if (o.ab < 100) o.ab = Math.min(100, o.ab + 10);
+              else if (!o.cd && U.Pd >= 15) {
+                o.cd = 40;
+                h.oilValve('M.3416', true);
+                h.oilValve('M.3417', true);
+                h.setx(null, 'M.3418', 1);
+                h.setx(null, 'M.3419', 1);
+              } else if (o.cd) o.cd = Math.min(100, o.cd + 10);
+            }
+            h.man('ABC-003A', 'FICDO1043A', o.ab);
+            h.man('ABC-003B', 'FICDO1043B', o.ab);
+            if (o.cd) {
+              h.man('ABC-003C', 'FICDO1043C', o.cd);
+              h.man('ABC-003D', 'FICDO1043D', o.cd);
+            }
+          }
+        }
+        if (o.P30 == null && U.Pd >= 30) o.P30 = t;
+      },
+      done(h, o) {
+        return o.P30 != null && o.t >= o.P30 + 60;
+      },
+      checks(h, o) {
+        const U = h.U,
+          ts = h.tsat(U.Pd);
+        return [
+          [o.air > 150, 'purge: total air ' + f0(o.air) + ' T/H (> 25 % MCR) na may PAF / SAF / IDF'],
+          [
+            o.oilA > 0.5 && o.oilB > 0.5,
+            'oil burner A ' + f1(o.oilA) + ' / B ' + f1(o.oilB) + ' T/H (FICDO1043A / B, gate M.3410 / 3411 bukas)'
+          ],
+          [
+            o.tBoil != null && o.pBoil < 0.5,
+            'tubig 30 → 100 °C sa ' +
+              f0(o.tBoil / 60) +
+              ' min, drum ' +
+              f1(o.pBoil) +
+              ' kg/cm2 pa (walang steam bago kumulo)'
+          ],
+          [
+            o.P30 != null && o.P30 <= 10800,
+            'drum 0 → 30 kg/cm2 sa ' + (o.P30 != null ? f0(o.P30 / 60) + ' min' : 'hindi naabot')
+          ],
+          [o.rate > 0 && o.rate <= 110, 'saturation temperature ' + f0(o.rate) + ' °C/h max (Fig 1: ≤ 110)'],
+          [
+            U.Tb >= 400,
+            'bed ' + f0(U.Tb) + ' °C (coal batch permissive 400 ~ 450); oil ' + f1(U.oilF) + ' T/H sa 4 burner'
+          ],
+          [
+            h.FP() > -50 && h.FP() < 30 && h.bit('ABC-008', 'M.3107') < 0.5,
+            'furnace pressure ' +
+              f0(h.FP()) +
+              ' mmH2O, walang HIGH (M.3107); PICFG108 ' +
+              (h.pk('ABC-008', 'PICFG108') === 'B' ? 'M (force manual ng drawing: MV < 14 %)' : 'A')
+          ],
+          [
+            h.MST() >= ts - 5 && h.MST() <= 535,
+            'MST ' + f0(h.MST()) + ' °C: ≥ saturation ' + f0(ts) + ', ≤ 535 (TAB_9)'
+          ],
+          [h.MW() < 0.5 && h.coal() < 1, 'MW ' + f1(h.MW()) + ', coal ' + f1(h.coal()) + ' T/H'],
+          [
+            Math.abs(o.lvMax - o.lvl0) < 150 && Math.abs(o.lvMin - o.lvl0) < 150,
+            'drum level ' + f0(o.lvMin) + ' ~ ' + f0(o.lvMax) + ' mm (walang trip)'
+          ]
+        ];
+      }
+    },
     {
       id: 'load',
       title: 'M2 · Load 150 → 60 → 150 MW',
@@ -669,7 +839,8 @@
     try {
       AN.run = false;
       AN.reset();
-      AN.plantLoad150();
+      if (sc.cold) AN.plantCold();
+      else AN.plantLoad150();
       const h = H(),
         o = { t: 0 };
       sc.run(h, o);
@@ -680,6 +851,7 @@
         if (o.mftAt != null && Math.abs(o.t - o.mftAt - 2) < 0.01)
           for (const k of ['ABC-003B', 'ABC-003C', 'ABC-003D']) h.setx(k, 'M.0341', 0);
         sc.each(h, o);
+        if (sc.done && sc.done(h, o)) break;
         if (i % 20 === 19) {
           ui.bar.style.width = ((100 * (i + 1)) / steps).toFixed(1) + '%';
           ui.live.textContent = 't = ' + o.t.toFixed(0) + ' s\n' + h.live();
@@ -714,12 +886,12 @@
   function build() {
     P.append(
       E('div', { style: 'display:flex;gap:8px;align-items:center' }, [
-        E('h3', { txt: 'CHECK M2 / M3' }),
+        E('h3', { txt: 'CHECK M2 / M3 / M4' }),
         E('button', { txt: '✕', on: () => (P.style.display = 'none') })
       ]),
       E('div', {
         cls: 'sub',
-        txt: 'Isang pindot bawat scenario: Start at 150 MW, tapos ginagawa ng app ang hakbang ng operator at ng DITL (forced), mabilis. Inaasahang resulta = drawing + physics (02.png / 4.PNG / boiler manual). Pagkatapos, makikita sa PLANT → UNIT at sa mga sheet ang huling estado.'
+        txt: 'Isang pindot bawat scenario: Start at 150 MW (o Start cold sa M4), tapos ginagawa ng app ang hakbang ng operator at ng DITL (forced), mabilis. Inaasahang resulta = drawing + physics (02.png / 4.PNG / boiler manual). Pagkatapos, makikita sa PLANT → UNIT at sa mga sheet ang huling estado.'
       })
     );
     for (const sc of SC) {
