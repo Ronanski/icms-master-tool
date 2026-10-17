@@ -175,7 +175,7 @@ function anPull(sh) {
 }
 /* RESET of the model: every sheet back to the drawing (tuning kept in AN.sv), then all sheets are settled: the same start as a fresh load, whatever the sheet order */
 function anResetAll() {
-  AN_UNIT.on = false; /* 2.2.0-beta.9: Reset = cold boiler, the unit model stops */
+  anUnitStop(); /* 2.2.0-beta.9: Reset = cold boiler, the unit model stops (2.2.0-beta.11: and its load disturbance of the spray loops) */
   for (const sh of AN.sheets) {
     if (!sh.S) continue;
     const S = sh.S;

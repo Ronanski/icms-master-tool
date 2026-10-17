@@ -457,7 +457,7 @@ function anProcStep(S, dt) {
     }
     const ss0 = (c, an) => lo + span * (0.5 + eff(c, an)),
       anc = pr.hop ? (pr.hop.dyn ? (pr.hop.anc != null ? pr.hop.anc : (pr.hop.anc = pr.hop.pv - ss0(pr.hop.mv))) : pr.hop.pv - ss0(pr.hop.mv, true)) : 0,
-      ss = c => ss0(c) + anc + ((pr.dist || 0) / 100) * span + (pr.op || 0);
+      ss = c => ss0(c) + anc + ((pr.dist || 0) / 100) * span + (pr.op || 0) + (pr.ld || 0); /* 2.2.0-beta.11: pr.ld = load disturbance of the unit model (unit.js), units of the PV */
     if (pr.integ === undefined) {
       pr.integ = null;
       try {
