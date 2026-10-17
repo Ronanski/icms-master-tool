@@ -310,6 +310,8 @@
   AN.hmiCtrls = ctrls; /* for the tests */
   /* 2.2.0-beta.9: the .MAN / .LOC / .REM addresses of a tag on every sheet, for the engine (plant.js MAN station status) */
   AN.modeNets = (tag, kinds) => modeNetsByTag(tag, kinds || MODEK.MAN);
+  /* 2.2.0-beta.15: the operator's M / A (LOC) / R on a tag, for the engine (Start cold: every controller MANUAL = .MAN 1) and the CHECK */
+  AN.latchMode = latchMode;
   function trendOf(key) {
     return trends[key] || (trends[key] = { t: [], pv: [], sv: [], mv: [] });
   }

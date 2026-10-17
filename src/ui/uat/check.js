@@ -129,27 +129,36 @@
       }
       if (c.manBlk && T.rt.st[c.manBlk.id]) T.rt.st[c.manBlk.id].val = x;
       else if (c.manNet != null) T.rt.ext[c.manNet] = x;
+      if (AN.latchMode) AN.latchMode(t, 'MAN');
       return true;
     };
+    /* AUTO = the A / M switch on its auto leg */
+    const isAuto = (k, t) => {
+      const c = ctl(k, t);
+      return !!(c && c.amt && sh(k).rt.st[c.amt.id].pk === c.autoLeg);
+    };
+    /* the mode status of a tag on every sheet (faceplate M / A / R): 'MAN' | 'LOC' (AUTO) | 'REM' */
+    const mode = (t, k) => AN.latchMode && AN.latchMode(t, k);
     /* the SUPPLY OIL VALVE (1)(2) CLOSE of a start-up burner (M.3410 / 3411 / 3416 / 3417, memory list BC FROM S4) is the AND of the
        two limit switches on the coal feeder sheets (ABC-004A ~ C), linked to ABC-003x and ABC-029: the operator opens the two valves
        = the two inputs of that AND are 0 (one address = one signal, CLAUDE.md 1) */
-    const oilValve = (addr, open) => {
-      let n = 0;
-      for (const s of ALL) {
-        const T = s.S;
-        for (let k = 0; k < T.lab.length; k++) {
-          if (!T.lab[k] || String(T.lab[k].t).trim() !== addr || T.ext.includes(k)) continue;
-          for (const g of T.drv[k] || [])
-            if (g.k === 'AND')
-              for (const i of g.i || [])
-                if (T.ext.includes(i) && T.rt.force[i] === undefined) {
-                  T.rt.ext[i] = open ? 0 : 1;
-                  n++;
-                }
-        }
+    const oilValve = (addr, open) => AN.oilValve(addr, open);
+    /* A (AUTO) with the operator SV (LOCAL): the SV net when it is an input, else the operator leg of the SV switch (hmi.js svSet) */
+    const autoSv = (k, t, sv) => {
+      const T = sh(k),
+        c = ctl(k, t);
+      if (!c) return false;
+      if (sv != null && c.q && c.q.sv != null) {
+        if (T.ext.includes(c.q.sv) && !(T.xlk && T.xlk[c.q.sv])) T.rt.ext[c.q.sv] = sv;
+        else if (c.svSw && c.svSw.b != null && T.ext.includes(c.svSw.b)) T.rt.ext[c.svSw.b] = sv;
       }
-      return n;
+      if (c.svSw && T.rt.st[c.svSw.id]) {
+        T.rt.st[c.svSw.id].al = 'A';
+        T.rt.st[c.svSw.id].fm = 'B';
+      }
+      if (c.amt && T.rt.st[c.amt.id]) T.rt.st[c.amt.id].fm = c.autoLeg;
+      if (AN.latchMode) AN.latchMode(t, 'LOC');
+      return true;
     };
     const SA = () => val('ABC-006', 'FIFA1081.PV'),
       FA = () => val('ABC-006', 'FIFA1055.PV'),
@@ -235,7 +244,10 @@
       RHP,
       mft,
       man,
+      mode,
+      isAuto,
       oilValve,
+      autoSv,
       SA,
       FA,
       tsat,
@@ -251,9 +263,9 @@
       id: 'cold',
       cold: true,
       title: 'M4 · Cold start: purge, light-off, pressure raise',
-      how: 'Start cold (drum 0 kg/cm2, tubig at bed 30 °C, walang coal, turbine sarado, lahat ng controller L + M 0 %). Operator: PAF / SAF / IDF start (M.3302 / 3303 / 3304), PA at SA flow M para sa purge > 25 % MCR, 5 min (PR-OPE-5002); tapos burner A at B: supply oil valve (1)(2) bukas (ang dalawang limit switch input ng AND M.3410 / M.3411 sa ABC-004A = 0) at BURNER IN SERVICE (M.3412 / M.3413, DITL forced), FICDO1043A / B M 60 %, air pababa sa minimum; tapos binabantayan ang pagtaas ng saturation temperature (Fig 1 ≤ 110 °C/h): dagdag ng oil kapag < 80 °C/h at > 5 kg/cm2, bawas kapag > 100; burner C at D sa 15 kg/cm2. Tumitigil kapag 30 kg/cm2.',
-      want: 'Purge: air > 150 T/H; oil A at B > 0.5 T/H; tubig 30 → 100 °C bago tumaas ang pressure; drum 0 → 30 kg/cm2 sa loob ng 3 oras; saturation ≤ 110 °C/h; bed ≥ 400 °C (coal batch permissive); furnace pressure −50 ~ +30 mmH2O (walang HIGH); MST ≥ saturation at ≤ 535 °C (TAB_9); MW 0, coal 0; drum level hawak (± 150 mm).',
-      secs: 12000,
+      how: 'Start cold (drum 0 kg/cm2, tubig at bed 30 °C, walang coal, turbine sarado, lahat ng controller L + M 0 %). Operator: PAF / SAF / IDF start (M.3302 / 3303 / 3304), PA at SA flow M para sa purge > 25 % MCR, 5 min (PR-OPE-5002); tapos burner A at B: supply oil valve (1)(2) bukas (ang dalawang limit switch input ng AND M.3410 / M.3411 sa ABC-004A = 0) at BURNER IN SERVICE (M.3412 / M.3413, DITL forced), FICDO1043A / B M 60 %, air pababa sa minimum; tapos binabantayan ang pagtaas ng saturation temperature (Fig 1 ≤ 110 °C/h): +5 % oil kapag < 85 °C/h at > 5 kg/cm2, −5 % kapag > 100; burner C at D sa 15 kg/cm2. Tumitigil kapag 30 kg/cm2.',
+      want: 'Purge: air > 150 T/H; oil A at B > 0.5 T/H; tubig 30 → 100 °C bago tumaas ang pressure; drum 0 → 30 kg/cm2 sa loob ng 4 oras (Fig 2 ~5 h); saturation ≤ 110 °C/h; bed ≥ 400 °C (coal batch permissive); furnace pressure −50 ~ +30 mmH2O (walang HIGH); MST ≥ saturation at ≤ 535 °C (TAB_9); MW 0, coal 0; drum level hawak (± 150 mm).',
+      secs: 15000,
       run(h, o) {
         o.lvl0 = h.lvl();
         o.lvMin = o.lvMax = o.lvl0;
@@ -294,25 +306,30 @@
         o.lvMin = Math.min(o.lvMin, h.lvl());
         o.lvMax = Math.max(o.lvMax, h.lvl());
         if (t % 60 === 0) {
+          /* the rate of the saturation temperature as Fig 1 reads it: over 5 minutes, in C/h. The operator watches the water
+             temperature too while it heats up (the same rise reaches the drum metal): U.Tw = saturation once boiling */
           const ts = h.tsat(U.Pd),
-            r = o.tsP != null && o.tBoil != null ? (ts - o.tsP) * 60 : 0;
-          if (o.tsP != null && o.tBoil != null) o.rate = Math.max(o.rate, r);
-          o.tsP = ts;
+            r = o.tsP != null ? (U.Tw - o.tsP) * 60 : 0;
+          o.tsH = o.tsH || [];
+          o.tsH.push(ts);
+          if (o.tsH.length > 6) o.tsH.shift();
+          if (o.tBoil != null && o.tsH.length === 6) o.rate = Math.max(o.rate, (ts - o.tsH[0]) * 12);
+          o.tsP = U.Tw;
           /* the operator watches the saturation temperature (Fig 1, <= 110 C/h) and moves the firing step by step (PR-OPE-5002):
              more oil when the rise is below 80 C/h and the drum is above 5 kg/cm2, less when above 100; burners C and D at 15 kg/cm2 */
-          if (o.tBoil != null && t > 320) {
+          if (t > 320) {
             if (r > 100) {
-              o.ab = Math.max(30, o.ab - 10);
-              if (o.cd) o.cd = Math.max(30, o.cd - 10);
-            } else if (r < 80 && U.Pd >= 5) {
-              if (o.ab < 100) o.ab = Math.min(100, o.ab + 10);
+              o.ab = Math.max(30, o.ab - 5);
+              if (o.cd) o.cd = Math.max(30, o.cd - 5);
+            } else if (r < 85 && U.Pd >= 5) {
+              if (o.ab < 100) o.ab = Math.min(100, o.ab + 5);
               else if (!o.cd && U.Pd >= 15) {
-                o.cd = 40;
+                o.cd = 20;
                 h.oilValve('M.3416', true);
                 h.oilValve('M.3417', true);
                 h.setx(null, 'M.3418', 1);
                 h.setx(null, 'M.3419', 1);
-              } else if (o.cd) o.cd = Math.min(100, o.cd + 10);
+              } else if (o.cd) o.cd = Math.min(100, o.cd + 5);
             }
             h.man('ABC-003A', 'FICDO1043A', o.ab);
             h.man('ABC-003B', 'FICDO1043B', o.ab);
@@ -345,10 +362,12 @@
               ' kg/cm2 pa (walang steam bago kumulo)'
           ],
           [
-            o.P30 != null && o.P30 <= 10800,
-            'drum 0 → 30 kg/cm2 sa ' + (o.P30 != null ? f0(o.P30 / 60) + ' min' : 'hindi naabot')
+            o.P30 != null && o.P30 <= 14400,
+            'drum 0 → 30 kg/cm2 sa ' +
+              (o.P30 != null ? f0(o.P30 / 60) + ' min' : 'hindi naabot') +
+              ' (Fig 2: fire → roll ~5 h)'
           ],
-          [o.rate > 0 && o.rate <= 110, 'saturation temperature ' + f0(o.rate) + ' °C/h max (Fig 1: ≤ 110)'],
+          [o.rate > 0 && o.rate <= 110, 'saturation temperature ' + f0(o.rate) + ' °C/h max sa 5 min (Fig 1: ≤ 110)'],
           [
             U.Tb >= 400,
             'bed ' + f0(U.Tb) + ' °C (coal batch permissive 400 ~ 450); oil ' + f1(U.oilF) + ' T/H sa 4 burner'
@@ -369,6 +388,215 @@
             Math.abs(o.lvMax - o.lvl0) < 150 && Math.abs(o.lvMin - o.lvl0) < 150,
             'drum level ' + f0(o.lvMin) + ' ~ ' + f0(o.lvMax) + ' mm (walang trip)'
           ]
+        ];
+      }
+    },
+    {
+      id: 'coal',
+      warm: { P: 30, Tb: 480, burners: 4, mv: 30, air: 10 },
+      title: 'M4 · Coal transfer: batch → feeders → retract ng burners',
+      how: 'Start warm (dulo ng cold start: 30 kg/cm2, bed 480 °C, 4 burner 30 %). LICBR1001B (start-up drum level) A sa SV 0 (pinapayagan ng drawing dahil FICFW1007 at LICBR1001A ay M); blow-off PICMS1002 A sa SV 35. FIC-CF M 10 % (= 4 T/H, minimum ng feeder). Bed 400 ~ 450+: batch ng feeder A (M.3400 10 s ON, 60 s OFF, PR-OPE-5002); bed > 600: feeder A tuluy-tuloy at A (AUTO) pagkatapos tumakbo (ang drawing ay nagpo-force manual habang nakatigil), bawas ng oil 5 % kada minuto; feeder B; bed > 650: feeder C; FIC-CF paakyat sa 15 % (6 T/H kada feeder; hawak ang saturation ≤ 110 °C/h, Fig 1: wala pang turbine na kumukuha ng steam, Fig 2 ay coal pagkatapos ng roll); bed > 700: retract ng burner A, D, B, C isa-isa hanggang > 750. O2 hawak sa 3.5 ~ 5.5 % (PA / SA). Dulo: FIC-CM L + A sa kasalukuyang coal (ang drawing ang sasagot).',
+      want: 'Coal nasusunog lang sa mainit na bed (burnt share); bed ≥ 750 °C; 3 feeder tumatakbo sa AUTO (~18 T/H); oil 0 (lahat ng valve sarado, burners out); O2 3 ~ 10 %; MSP tumataas pero < 125 kg/cm2 at saturation ≤ 110 °C/h (Fig 1); drum level hawak ng LICBR1001B (±150 mm); coal master FIC-CM: ang A ay hindi tinatanggap ng drawing (M.0130: FIC-CF / PA / SA hindi pa REMOTE, hakbang 4), SV = coal; MW 0; walang trip.',
+      secs: 9000,
+      run(h, o) {
+        o.ab = 30;
+        o.cf = 10;
+        o.feed = 0;
+        o.auto = [0, 0, 0];
+        o.lvl0 = h.lvl();
+        o.lvMin = o.lvMax = o.lvl0;
+        o.rate = 0;
+        o.tsP = null;
+        o.lit = [1, 1, 1, 1];
+        o.lastRet = -1e9;
+        o.lastFeed = -1e9;
+        o.pMin = 1e9;
+        o.pMax = 0;
+        o.o2Min = 21;
+        o.o2Max = 0;
+        o.batch = 0;
+      },
+      each(h, o) {
+        const t = o.t,
+          U = h.U;
+        if (t === 10) {
+          h.autoSv('ABC-010', 'LICBR1001B', 0);
+          h.autoSv('ABC-013', 'PICMS1002', 35);
+          h.man('ABC-004A', 'FIC-CF', o.cf);
+        }
+        if (t < 20) return;
+        o.lvMin = Math.min(o.lvMin, h.lvl());
+        o.lvMax = Math.max(o.lvMax, h.lvl());
+        /* a running feeder to AUTO 30 s after its start (the drawing forces MANUAL while it is stopped; AUTO needs PV = SV, so FIC-CF
+           is at the minimum of the feeder) */
+        [
+          ['M.3400', 'FICCL1061A'],
+          ['M.3401', 'FICCL1061B'],
+          ['M.3402', 'FICCL1061C']
+        ].forEach(([l, tg], i) => {
+          if (o.feed > i && !o.auto[i] && t - o.lastFeed >= 30 && h.bit('ABC-005', l) > 0.5) {
+            h.mode(tg, 'LOC');
+            o.auto[i] = t;
+          }
+        });
+        /* feeder A in batches while the bed is below 600 C (10 s on, 60 s off) */
+        if (o.feed === 0 && U.Tb < 600) {
+          const ph = (t - 20) % 70;
+          if (ph === 0) {
+            h.setx(null, 'M.3400', 1);
+            o.batch++;
+          }
+          if (ph === 10) h.setx(null, 'M.3400', 0);
+        }
+        if (o.feed === 0 && U.Tb >= 600) {
+          o.feed = 1;
+          o.lastFeed = t;
+          h.setx(null, 'M.3400', 1);
+        }
+        if (o.feed === 1 && t - o.lastFeed >= 300) {
+          o.feed = 2;
+          o.lastFeed = t;
+          h.setx(null, 'M.3401', 1);
+        }
+        if (o.feed === 2 && U.Tb >= 650 && t - o.lastFeed >= 300) {
+          o.feed = 3;
+          o.lastFeed = t;
+          h.setx(null, 'M.3402', 1);
+          h.setx(null, 'M.3405', 1);
+        }
+        if (t % 60 === 0) {
+          const ts = h.tsat(U.Pd),
+            r = o.tsP != null ? (ts - o.tsP) * 60 : 0;
+          o.tsH = o.tsH || [];
+          o.tsH.push(ts);
+          if (o.tsH.length > 6) o.tsH.shift();
+          if (o.tsH.length === 6) o.rate = Math.max(o.rate, (ts - o.tsH[0]) * 12);
+          o.tsP = ts;
+          /* coal demand up 5 % a minute to 25 % (10 T/H a feeder) once the feeders are in AUTO */
+          if (r > 110 && o.cf > 10) {
+            o.cf -= 5;
+            h.man('ABC-004A', 'FIC-CF', o.cf);
+          } else if (
+            r < 90 &&
+            o.feed >= 1 &&
+            o.auto[0] &&
+            o.cf < 15 &&
+            (o.feed < 2 || o.auto[1]) &&
+            (o.feed < 3 || o.auto[2])
+          ) {
+            o.cf += 5;
+            h.man('ABC-004A', 'FIC-CF', o.cf);
+          }
+          /* oil down 5 % a minute once a feeder runs continuously (min 20 %, about the minimum flow of a burner 0.6 T/H) */
+          if (o.feed >= 1 && o.ab > 20) {
+            o.ab -= 5;
+            for (const [k, tg] of [
+              ['ABC-003A', 'FICDO1043A'],
+              ['ABC-003B', 'FICDO1043B'],
+              ['ABC-003C', 'FICDO1043C'],
+              ['ABC-003D', 'FICDO1043D']
+            ])
+              h.man(k, tg, o.ab);
+          }
+          /* retract the burners one by one (A, D, B, C) above 700 C, 3 min apart, until all are out */
+          if (o.feed >= 3 && U.Tb > 700 && t - o.lastRet >= 180) {
+            const order = [0, 3, 1, 2],
+              i = order.find(j => o.lit[j]);
+            if (i != null) {
+              o.lit[i] = 0;
+              o.lastRet = t;
+              const vc = ['M.3410', 'M.3411', 'M.3416', 'M.3417'][i],
+                ins = ['M.3412', 'M.3413', 'M.3418', 'M.3419'][i];
+              h.oilValve(vc, false);
+              h.setx(null, ins, 0);
+              if (!o.lit.some(Boolean)) o.allOut = t;
+            }
+          }
+          /* O2 3.5 ~ 5.5 %: PA / SA 2 % a minute (floor 10 %) */
+          if (o.feed >= 1) {
+            const x = h.O2();
+            o.airMv = o.airMv == null ? 10 : o.airMv;
+            if (x > 5.5) o.airMv = Math.max(10, o.airMv - 2);
+            else if (x < 3.5) o.airMv = Math.min(60, o.airMv + 2);
+            h.man('ABC-007', 'FICFA1071', o.airMv);
+            h.man('ABC-007', 'FICFA1081', o.airMv);
+          }
+          /* coal master to AUTO at the coal of now, once every burner is out */
+          if (o.allOut != null && !o.cmAuto && t - o.allOut >= 300) {
+            o.cmAuto = t;
+            o.cmSv = h.coal();
+            h.autoSv('ABC-004A', 'FIC-CM', o.cmSv);
+          }
+        }
+        if (o.allOut != null) {
+          o.pMin = Math.min(o.pMin, h.MSP());
+          o.pMax = Math.max(o.pMax, h.MSP());
+          o.o2Min = Math.min(o.o2Min, h.O2());
+          o.o2Max = Math.max(o.o2Max, h.O2());
+        }
+      },
+      done(h, o) {
+        return o.cmAuto != null && o.t >= o.cmAuto + 600;
+      },
+      checks(h, o) {
+        const U = h.U,
+          run = ['M.3400', 'M.3401', 'M.3402'].map(l => h.bit('ABC-005', l) > 0.5),
+          fr = U.fuel.map(l => (l.length ? +l[0][0].rt.st[l[0][1].id].val : 0)),
+          cm = h.ctl('ABC-004A', 'FIC-CM'),
+          cmSv = +h.sh('ABC-004A').rt.v[cm.q.sv];
+        return [
+          [
+            o.batch >= 3 && U.burn >= 0.99,
+            'batch firing ' +
+              o.batch +
+              ' burping (feeder A 10 s / 60 s) hanggang bed 600 °C; coal burnt share ngayon ' +
+              f1(U.burn * 100) +
+              ' %'
+          ],
+          [U.Tb >= 750, 'bed ' + f0(U.Tb) + ' °C (≥ 750: lahat ng burner retracted)'],
+          [
+            run.every(Boolean) && fr.every(x => x > 4) && o.auto.every(Boolean),
+            'feeder A / B / C tumatakbo sa AUTO: ' + fr.map(f1).join(' / ') + ' T/H'
+          ],
+          [
+            o.allOut != null && U.oilF < 0.05,
+            'oil ' + f1(U.oilF) + ' T/H (lahat ng supply oil valve sarado, burners out of service)'
+          ],
+          [
+            o.o2Min > 3 && o.o2Max < 10,
+            'O2 ' +
+              f1(o.o2Min) +
+              ' ~ ' +
+              f1(o.o2Max) +
+              ' % pagkatapos ng retract (PA / SA sa minimum na hangin ng fluidization, 10 %: mataas ang O2 sa maliit na load)'
+          ],
+          [
+            h.MSP() < 125 && o.rate <= 110,
+            'MSP ' +
+              f1(h.MSP()) +
+              ' kg/cm2 (< 125), saturation ' +
+              f0(o.rate) +
+              ' °C/h max (Fig 1 ≤ 110); blow-off ' +
+              f0(h.mv('ABC-013', 'PICMS1002')) +
+              ' %'
+          ],
+          [
+            Math.abs(o.lvMax - o.lvl0) < 150 && Math.abs(o.lvMin - o.lvl0) < 150,
+            'drum level ' + f0(o.lvMin) + ' ~ ' + f0(o.lvMax) + ' mm (LICBR1001B start-up control)'
+          ],
+          [
+            o.cmAuto != null &&
+              !h.isAuto('ABC-004A', 'FIC-CM') &&
+              h.sh('ABC-004A').rt.st[cm.amt.id].fman &&
+              h.bit('ABC-004A', 'M.0130') > 0.5 &&
+              near(h.coal(), cmSv, 10),
+            'coal master FIC-CM MANUAL kahit pinindot ang A: force manual ng drawing M.0130 (FIC-CF / FICFA1071 / FICFA1081 hindi pa REMOTE; AUTO sa hakbang 4 kasama ng boiler master); SV ' +
+              f1(cmSv) +
+              ' = coal ' +
+              f1(h.coal()) +
+              ' T/H'
+          ],
+          [h.MW() < 0.5 && h.bit('ABC-001C', 'M.3200') < 0.5, 'MW ' + f1(h.MW()) + ', walang trip']
         ];
       }
     },
@@ -840,6 +1068,7 @@
       AN.run = false;
       AN.reset();
       if (sc.cold) AN.plantCold();
+      else if (sc.warm) AN.plantWarm(sc.warm);
       else AN.plantLoad150();
       const h = H(),
         o = { t: 0 };
