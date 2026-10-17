@@ -27,6 +27,14 @@ Pagkatapos ng M6: ang `[F]` sa CHECKLIST seksyon D ay dagdag lang, hindi kailang
 - **M2 (2.2.0-beta.9, ginagawa):** unit model (boiler + turbine). Pasado: 150 → 60 → 150 MW, ang MW, MSP, MSF, FW, drum level ay sumusunod; sa 60 MW ang MW / MSF / coal ay nasa ±4 % ng 02.png; sa 150 MW nasa ±1 % ng 4.PNG; walang trip (`tests/regress/unit_load.js`); regression: generic 68 / 0 mali, scenarios 244 / 0, switches 0 / 438, reset 51 / 0. Natitira sa M2: temperatura (MST / RHT) ayon sa load (02.png 517 / 499 °C), RH pressure.
 - **M3 ~ M6:** hindi pa nasisimulan.
 
+## Susunod na aayusin (napagkasunduan, user 2026-10-17)
+Walang bagong mode: ang plant physics ay tumatakbo sa loob ng app pagkatapos ng Start at 150 MW (at sa start-up sa M4). Ang turbine ay "black box" lang: ang interface ng TCS sa I/O list at drawing (MW, target, DCS control mode, turbine trip), hindi ang loob ng TCS (wala sa repo).
+1. **Reheat pressure** ayon sa steam flow (34 kg/cm2 sa 474 T/H, 15 sa 204 T/H). M2.
+2. **Temperatura SH / RH** ayon sa load (02.png: 517 / 499 °C sa 60 MW; sarado na ang spray). M2.
+3. **Hangin at flue gas**: air flow mula sa fan, O2 mula sa hangin vs coal, furnace pressure mula sa FD vs ID fan. Dulo ng M2 / simula ng M3.
+4. **"UNIT" screen sa PLANT tab**: coal, steam, pressure, MW, hangin, gas sa iisang screen (parang header ng HMI).
+5. **M3:** turbine trip (M.3200) at fan trip, gamit ang black-box na turbine.
+
 ## Paano binibilang ang progress
 - Ang bawat Beta ay may tala sa `docs/versions/<ver>/UPDATE_REPORT.md`.
 - Ang bawat natapos na gawain ay `[x]` sa `docs/CHECKLIST.md`.
