@@ -28,7 +28,7 @@ Utos ng user (2026-10-16): **"Analog muna. Ang DITL ay i-simulate / i-force na l
 8. [ ] **Tester ng switching** (SW, AMT, T switch, selector) sa bawat leg; kasama ang #1.
 9. [ ] **(2.2.0-beta.13 ~ beta.17: ang mga PLANT scenario ng M2 / M3 / M4-1 ~ M4-4 ay nasa app na: button CHECK, isang pindot kada scenario, ✓ / ✗; ang generic controller tester ay sa computer pa) Controller tester sa UAT panel ng app** (isang pindot kada controller). Ngayon, sa computer lang ito tumatakbo.
 10. [ ] **Pangalan ng 7 COS / 42 COS na hindi "used"** sa panel. Nasuri na sa PDF.
-11. [ ] **26 na live value na nagkakapatong** sa drawing (UI lang).
+11. [x] **(2.2.0-beta.19: 0 nagkakapatong na text sa 28 PLANT screen, headless detector; header at ducts gaya ng HMI) 26 na live value na nagkakapatong** sa drawing (UI lang).
 
 ## B. LALAKTAWAN NGAYON (utos ng user 2026-10-16: DITL ay i-force / i-simulate na lang)
 - [-] **344 DITL field input na walang sariling rule** sa Start at 150 MW: 212 analog, 89 AUTO / MANUAL, 36 MOV limit / torque, 7 iba pa. Hindi binabasa ng ABC ang mga ito. Kung kailangan sa isang test, i-force.
