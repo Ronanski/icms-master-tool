@@ -199,11 +199,19 @@ function anProcList(S) {
         /* 2.1.0-beta.6: only the transmitters of the measurement itself (same unit as the PV): the pressure / temperature of a
            level or flow COMPENSATION is another measurement (ABC-010: the drum level model wrote the drum pressure AI0128,
            134.2 -> 0 kg/cm2; the feedwater flow model wrote the feedwater temperature TIFW1160, 244 -> 300 °C) */
-        const pu = String(b.p.unit || '').trim().toLowerCase();
+        const pu = String(b.p.unit || '')
+          .trim()
+          .toLowerCase();
         if (pu) {
           const same = pick.filter(q => {
             const a = S.blk.find(z => z.id === q.id);
-            return a && a.rng && String(a.rng.u || '').trim().toLowerCase() === pu;
+            return (
+              a &&
+              a.rng &&
+              String(a.rng.u || '')
+                .trim()
+                .toLowerCase() === pu
+            );
           });
           if (same.length) pick = same;
         }
@@ -241,19 +249,19 @@ function anProcList(S) {
 /* actuators in series on one fan (see u below): tag -> 1 */
 const AN_SERIES = { PICFG108: 1, PICFG108A: 1 };
 const AN_HMI_OP = {
-  'TICBR1140': { mv: 65.6, pv: 462.0, src: '03.png' },
-  'TICBR1130': { mv: 57.6, pv: 394.0, src: '03.png' },
-  'TICMS1004': { mv: 69.7, pv: 542.0, src: '03.png' },
-  'TICBR1150': { mv: 30.2, pv: 420.0, src: '03.png' },
-  'LICBR1001A': { mv: 56.0, pv: 3.0, src: '03.png' },
-  'FICFW1007': { mv: 56.0, pv: 499.1, src: '03.png' },
-  'FICCL1061A': { mv: 72.8, pv: 29.0, src: '11.png' },
-  'FICCL1061B': { mv: 72.8, pv: 29.1, src: '11.png' },
-  'FICCL1061C': { mv: 72.8, pv: 28.9, src: '11.png' },
-  'TICHR1002A': { mv: 36.0, pv: 541.0, src: '39.PNG' },
-  'TICHR1002': { mv: 79.4, pv: 541.0, src: '39.PNG' },
-  'HICHR1002A': { mv: 11.0, pv: 11.0, src: '39.PNG' },
-  'HICHR1002B': { mv: 89.0, pv: 89.0, src: '39.PNG' }
+  TICBR1140: { mv: 65.6, pv: 462.0, src: '03.png' },
+  TICBR1130: { mv: 57.6, pv: 394.0, src: '03.png' },
+  TICMS1004: { mv: 69.7, pv: 542.0, src: '03.png' },
+  TICBR1150: { mv: 30.2, pv: 420.0, src: '03.png' },
+  LICBR1001A: { mv: 56.0, pv: 3.0, src: '03.png' },
+  FICFW1007: { mv: 56.0, pv: 499.1, src: '03.png' },
+  FICCL1061A: { mv: 72.8, pv: 29.0, src: '11.png' },
+  FICCL1061B: { mv: 72.8, pv: 29.1, src: '11.png' },
+  FICCL1061C: { mv: 72.8, pv: 28.9, src: '11.png' },
+  TICHR1002A: { mv: 36.0, pv: 541.0, src: '39.PNG' },
+  TICHR1002: { mv: 79.4, pv: 541.0, src: '39.PNG' },
+  HICHR1002A: { mv: 11.0, pv: 11.0, src: '39.PNG' },
+  HICHR1002B: { mv: 89.0, pv: 89.0, src: '39.PNG' }
 };
 /* 2.2.0-beta.3: the output of the SQRT (flow compensation) whose inputs come from the transmitter ai (ABC-001C: main steam flow
    = SQRT of LN31(p) x LN32(T) x AI0129); -1 when the sheet has none */
@@ -337,34 +345,37 @@ function anProcStep(S, dt) {
         }
         return t.out == null ? 0 : t.out;
       },
-      uOf = g => uOfS(S, g),
-      u = (() => {
-        /* two controllers on the same PV (valves in parallel, e.g. A and B side): the PV answers the average of their open commands (v1.20.58) */ const sh =
-          b._sh || (b._sh = S.procs.filter(g => g !== b && g.proc && g.proc.mode === 'shared' && g.proc.pv === pr.pv));
-        if (!sh.length) return uOf(b);
-        /* 2.1.0-beta.6: two actuators IN SERIES on one fan (ABC-008: IDF hydraulic coupling PICFG108 and IDF inlet damper
+      uOf = g => uOfS(S, g);
+    let u = (() => {
+      /* two controllers on the same PV (valves in parallel, e.g. A and B side): the PV answers the average of their open commands (v1.20.58) */ const sh =
+        b._sh || (b._sh = S.procs.filter(g => g !== b && g.proc && g.proc.mode === 'shared' && g.proc.pv === pr.pv));
+      if (!sh.length) return uOf(b);
+      /* 2.1.0-beta.6: two actuators IN SERIES on one fan (ABC-008: IDF hydraulic coupling PICFG108 and IDF inlet damper
            PICFG108A; the drawing selects one of them to control, HYDRAULIC / DAMPER CONTROL SELECT): the flow answers the
            product of the two openings (7.PNG: 46.1 % x 99.1 %), not their sum */
-        if ([b].concat(sh).some(g => AN_SERIES[(g.txt || [])[1]]))
-          return [b].concat(sh).reduce((a, g) => (a * Math.max(0, Math.min(100, uOf(g)))) / 100, 100);
-        /* 1.22.0: valves in parallel on one header: their flows ADD (a stand-by valve at 0 adds nothing), up to the top of the
+      if ([b].concat(sh).some(g => AN_SERIES[(g.txt || [])[1]]))
+        return [b].concat(sh).reduce((a, g) => (a * Math.max(0, Math.min(100, uOf(g)))) / 100, 100);
+      /* 1.22.0: valves in parallel on one header: their flows ADD (a stand-by valve at 0 adds nothing), up to the top of the
            command range. Before: the average of the open valves, so closing one of two open valves did not move the PV
            (ABC-030 PICAS1004 + PICAS1005) */
-        const hi = b.p.hi == null ? 100 : b.p.hi;
-        /* 2.1.0-beta.10: a valve on the same PV whose PID acts the other way (ACT) works against it (ABC-031: make-up valve
+      const hi = b.p.hi == null ? 100 : b.p.hi;
+      /* 2.1.0-beta.10: a valve on the same PV whose PID acts the other way (ACT) works against it (ABC-031: make-up valve
            LICCD1110A raises the hotwell level, dump valve LICCD1110B lowers it): its opening is subtracted, not added */
-        const dir = g => ((g.p.act < 0) === (b.p.act < 0) ? 1 : -1);
-        return Math.max(
-          -hi,
-          Math.min(
-            hi,
-            [uOf(b)].concat(sh.map(uOf)).reduce((a, x, i) => a + (i ? dir(sh[i - 1]) : 1) * Math.max(0, x), 0)
-          )
-        );
-      })(),
-      span = b.p.span > 0 ? b.p.span : 100,
+      const dir = g => (g.p.act < 0 === b.p.act < 0 ? 1 : -1);
+      return Math.max(
+        -hi,
+        Math.min(
+          hi,
+          [uOf(b)].concat(sh.map(uOf)).reduce((a, x, i) => a + (i ? dir(sh[i - 1]) : 1) * Math.max(0, x), 0)
+        )
+      );
+    })();
+    const span = b.p.span > 0 ? b.p.span : 100,
       lo = b.p.rlo != null ? b.p.rlo : 0,
       um = ((b.p.lo == null ? 0 : b.p.lo) + (b.p.hi == null ? 100 : b.p.hi)) / 2;
+    /* 2.2.0-beta.12 (M3, unit.js): pr.uf = the share of the command that reaches the process (0 = the machine behind the actuator is
+       stopped: ABC-008 IDF, its openings move nothing) */
+    if (pr.uf != null) u = u * pr.uf + (1 - pr.uf) * (b.p.lo == null ? 0 : b.p.lo);
     /* plant: steady state PV = bottom of the range + span * (0.5 + sign * K * (command - middle) / 100) + disturbance; dead time, then first order; it cannot leave the range of the instrument */
     /* 1.22.0: controllers of OTHER sheets on this measurement (pr.xsh, links.js procRemote): each one moves the PV in its own
        direction (ACT of its PID); the PV answers the average effect of this controller and of them (one controller: as before) */
@@ -388,7 +399,10 @@ function anProcStep(S, dt) {
         if (h) {
           const up = (lo + span - pr.hop.pv) / span,
             dn = (pr.hop.pv - lo) / span,
-            kd = Math.min((xs > 0 ? up : dn) / Math.max(1e-6, (xhi - h.mv) / 100), (xs > 0 ? dn : up) / Math.max(1e-6, (h.mv - xlo) / 100));
+            kd = Math.min(
+              (xs > 0 ? up : dn) / Math.max(1e-6, (xhi - h.mv) / 100),
+              (xs > 0 ? dn : up) / Math.max(1e-6, (h.mv - xlo) / 100)
+            );
           k = Math.max(0.02, Math.min(k, 0.9 * kd));
         }
         return c => (xs * k * (c - xum)) / 100;
@@ -413,14 +427,27 @@ function anProcStep(S, dt) {
            the anchor offset is fixed once (pr.hop.anc below), so their effect on the PV still works */
         /* 2.1.0-beta.10: parallel valves on one PV too: the anchor is the sum of their commands now (ABC-031 LICCD1110A + B), but
            not when that sum is at the top of the command range (clamped: the model would have no slope left) */
-        !(b._sh && b._sh.length && !b._sh.concat([b]).some(g => AN_SERIES[(g.txt || [])[1]]) && (hr.mv != null ? hr.mv : u) >= (b.p.hi == null ? 100 : b.p.hi) - 0.5) &&
+        !(
+          b._sh &&
+          b._sh.length &&
+          !b._sh.concat([b]).some(g => AN_SERIES[(g.txt || [])[1]]) &&
+          (hr.mv != null ? hr.mv : u) >= (b.p.hi == null ? 100 : b.p.hi) - 0.5
+        ) &&
         isFinite(hr.pv) &&
         isFinite(u) &&
         hr.pv >= lo &&
         hr.pv <= lo + span &&
-        (b.p.lt !== 'flow' || hr.pv - lo > 0.02 * span) /* a flow at 0 with the valve open = an isolation valve is shut (oil burner out of service): not the control valve. 2.2.0-beta.7: a valve almost shut with flow through it is anchored too (15.PNG MCVFA1043D 1.7 % -> FIFA1043D 26.8 T/H; 28.png min-flow recirculation FCVCD1120 0.1 % with condensate flow FIQCD1120 380 T/H): see the gain below */
+        (b.p.lt !== 'flow' ||
+          hr.pv - lo >
+            0.02 *
+              span) /* a flow at 0 with the valve open = an isolation valve is shut (oil burner out of service): not the control valve. 2.2.0-beta.7: a valve almost shut with flow through it is anchored too (15.PNG MCVFA1043D 1.7 % -> FIFA1043D 26.8 T/H; 28.png min-flow recirculation FCVCD1120 0.1 % with condensate flow FIQCD1120 380 T/H): see the gain below */
       ) {
-        pr.hop = { mv: hr.mv != null ? hr.mv : u, pv: hr.pv, src: '150 MW load', dyn: 1 }; /* the MV of the snapshot when known, else the command now */
+        pr.hop = {
+          mv: hr.mv != null ? hr.mv : u,
+          pv: hr.pv,
+          src: '150 MW load',
+          dyn: 1
+        }; /* the MV of the snapshot when known, else the command now */
         pr.Ka = undefined;
         delete pm[b.id];
         q = null;
@@ -448,16 +475,26 @@ function anProcStep(S, dt) {
            with the min-flow recirculation valve at 0.1 %; the condensate pump and the deaerator level valve make it): the valve
            adds to the flow of the snapshot (offset, gain K), instead of a flow proportional to a 0.1 % opening */
         pr.Ka =
-          b.p.lt === 'flow'
-            ? pr.hop.mv < 2
-              ? pr.K
-              : Math.max(0.02, kdn)
-            : Math.max(0.02, Math.min(pr.K, 0.9 * kdn));
+          b.p.lt === 'flow' ? (pr.hop.mv < 2 ? pr.K : Math.max(0.02, kdn)) : Math.max(0.02, Math.min(pr.K, 0.9 * kdn));
       }
     }
     const ss0 = (c, an) => lo + span * (0.5 + eff(c, an)),
-      anc = pr.hop ? (pr.hop.dyn ? (pr.hop.anc != null ? pr.hop.anc : (pr.hop.anc = pr.hop.pv - ss0(pr.hop.mv))) : pr.hop.pv - ss0(pr.hop.mv, true)) : 0,
-      ss = c => ss0(c) + anc + ((pr.dist || 0) / 100) * span + (pr.op || 0) + (pr.ld || 0); /* 2.2.0-beta.11: pr.ld = load disturbance of the unit model (unit.js), units of the PV */
+      anc = pr.hop
+        ? pr.hop.dyn
+          ? pr.hop.anc != null
+            ? pr.hop.anc
+            : (pr.hop.anc = pr.hop.pv - ss0(pr.hop.mv))
+          : pr.hop.pv - ss0(pr.hop.mv, true)
+        : 0,
+      /* 2.2.0-beta.11: pr.ld = load disturbance of the unit model (unit.js), units of the PV. 2.2.0-beta.12: pr.mul = 0 when the machine that
+         makes the flow is stopped (no BFWP: no feedwater; fan stopped: no air), the PV is then the bottom of the range */
+      ss = c => {
+        let y = ss0(c) + anc + ((pr.dist || 0) / 100) * span + (pr.op || 0) + (pr.ld || 0);
+        /* 2.2.0-beta.12: pr.fr = firing ratio of the unit model (steam made / steam flowing, 0 ~ 1) on a steam temperature: without firing the
+           superheat is lost and the temperature goes to the saturation temperature pr.tsat of the drum (MFT), whatever the spray does */
+        if (pr.fr != null && pr.tsat != null) y = pr.tsat + (y - pr.tsat) * pr.fr;
+        return pr.mul == null ? y : pr.mul * y + (1 - pr.mul) * lo;
+      };
     if (pr.integ === undefined) {
       pr.integ = null;
       try {
@@ -468,7 +505,17 @@ function anProcStep(S, dt) {
              not in the repository: 30 % of the feedwater range at 100 % open is ASSUMED (a typical start-up valve) */
           const su = S.procs.find(x => (x.txt || [])[1] === 'LICBR1001B'),
             fsp = fw && fw.p ? (fw.p.span > 0 ? fw.p.span : 550) : 550;
-          if (fw && fw.proc && s1) pr.integ = { fw: fw.proc.pv, su, suK: 0.3 * fsp, sh1: s1, k: 0.02 }; /* about 0.36 mm/s for 20 T/H of imbalance (drum about 22 m2 of water surface) */
+          if (fw && fw.proc && s1)
+            pr.integ = {
+              fw: fw.proc.pv,
+              fwp: fw.proc,
+              su,
+              suK: 0.3 * fsp,
+              sh1: s1,
+              k: 0.02,
+              ks: 10,
+              tauS: 60
+            }; /* about 0.36 mm/s for 20 T/H of imbalance (drum about 22 m2 of water surface) */
         }
       } catch (e) {}
     }
@@ -508,21 +555,55 @@ function anProcStep(S, dt) {
       let fst = 0;
       if (S1) {
         if (pr.integ.ai == null) {
-          const a = S1.blk.find(z => z.k === 'AI' && z.o && S1.lab[z.o[0]] && String(S1.lab[z.o[0]].t).trim() === 'AI0129'); /* engine only: the label of the net, not the UI name */
+          const a = S1.blk.find(
+            z => z.k === 'AI' && z.o && S1.lab[z.o[0]] && String(S1.lab[z.o[0]].t).trim() === 'AI0129'
+          ); /* engine only: the label of the net, not the UI name */
           pr.integ.ai = a ? a.id : -1;
           /* 2.2.0-beta.3: the steam flow of the balance is the COMPENSATED flow of the drawing (SQRT of LN31(p) x LN32(T) x AI0129,
              the value on the screens), not the raw transmitter */
           pr.integ.cn = anCompNet(S1, 'AI0129');
+          /* 2.2.0-beta.12: the drum pressure (AI0128) for the shrink / swell */
+          const pd = S1.blk.find(
+            z => z.k === 'AI' && z.o && S1.lab[z.o[0]] && String(S1.lab[z.o[0]].t).trim() === 'AI0128'
+          );
+          pr.integ.pd = pd ? pd.id : -1;
         }
         const st = pr.integ.ai >= 0 ? S1.rt.st[pr.integ.ai] : null;
         fst =
-          pr.integ.cn >= 0 && isFinite(S1.rt.v[pr.integ.cn]) ? +S1.rt.v[pr.integ.cn] : st ? (st.act != null ? +st.act : +st.val) || 0 : 0;
+          pr.integ.cn >= 0 && isFinite(S1.rt.v[pr.integ.cn])
+            ? +S1.rt.v[pr.integ.cn]
+            : st
+              ? (st.act != null ? +st.act : +st.val) || 0
+              : 0;
       }
       let ffw = +v[pr.integ.fw] || 0;
-      if (pr.integ.su) ffw += (Math.max(0, Math.min(100, +uOf(pr.integ.su) || 0)) / 100) * pr.integ.suK;
+      if (pr.integ.su)
+        ffw +=
+          (Math.max(0, Math.min(100, +uOf(pr.integ.su) || 0)) / 100) *
+          pr.integ.suK *
+          (pr.integ.fwp && pr.integ.fwp.mul != null
+            ? pr.integ.fwp.mul
+            : 1); /* 2.2.0-beta.12: no BFWP, no start-up flow */
       /* 2.1.0-beta.11: water that leaves the drum besides the main steam (blowdown and the rest), from "Start at 150 MW":
          03.png feedwater 499.1 - main steam 474.1 = 25.0 T/H (pr.integLoss, removed by Reset) */
       q.y = Math.max(lo, Math.min(lo + span, q.y + dt * pr.integ.k * (ffw - fst - (pr.integLoss || 0))));
+      /* 2.2.0-beta.12 (M3): SHRINK / SWELL. A fast change of the drum pressure moves the level the other way for a while (the steam
+         bubbles in the water collapse when the pressure rises after a turbine trip, grow when it falls after an MFT): the level
+         read is the water level minus ks x (pressure - its lag of tauS), so a pressure step gives a transient of ks mm per
+         kg/cm2 that fades in tauS (ASSUMED: ks 10 mm per kg/cm2, tauS 60 s; not in the repository) */
+      if (S1 && pr.integ.pd >= 0) {
+        const ps = S1.rt.st[pr.integ.pd],
+          P = ps && isFinite(ps.val) ? +ps.val : NaN;
+        if (isFinite(P)) {
+          if (q.pl == null) q.pl = P;
+          q.pl += ((P - q.pl) * dt) / pr.integ.tauS;
+          q.sw = pr.integ.ks * (P - q.pl);
+        }
+      }
+      q.h.length = 0;
+    } else if (dt > 0 && pr.mul === 0) {
+      q.y =
+        lo; /* 2.2.0-beta.12: the machine that makes the flow stopped (no BFWP, fan stopped): the flow is gone at once, not with the lag of the valve */
       q.h.length = 0;
     } else if (dt > 0) {
       q.h.push([rt.t, u]);
@@ -533,7 +614,7 @@ function anProcStep(S, dt) {
     }
     if (gate === 'zero' && b.p.lt === 'flow') q.y = lo;
     if (dt <= 0 && q.u != null) continue;
-    const y = q.y;
+    const y = pr.integ && q.sw ? Math.max(lo, Math.min(lo + span, q.y - q.sw)) : q.y;
     if (pr.mode === 'pin') {
       if (F[pr.pv] === undefined || pf[pr.pv]) {
         F[pr.pv] = y;
@@ -598,7 +679,8 @@ function anProcStep(S, dt) {
       {
         const p0 = tv[tpin],
           a0 = tai.length ? tr.st[tai[0]] : null;
-        if (a0 && isFinite(p0) && Math.abs(y - p0) < 0.005 * span && isFinite(a0.val)) w = q.off ? a0.val - q.off[tai[0]] : a0.val;
+        if (a0 && isFinite(p0) && Math.abs(y - p0) < 0.005 * span && isFinite(a0.val))
+          w = q.off ? a0.val - q.off[tai[0]] : a0.val;
       }
       /* compensation inputs of the chain (pressure, temperature...) that are not driven: start at the middle of their range, not at the bottom (a chain divided by a compensation of 0 gives nothing) */ for (const id of (R
         ? R.allAI
@@ -837,7 +919,8 @@ function anStep(S, dt) {
              step of -11 % (36 -> 25 %), the main steam pressure fell to 89 kg/cm2 and the coal master was forced to manual at its
              top. Only the status this rule set is cleared by it (a MAN pressed by the operator stays) */
           if (dr && dr.sel != null && dr.sel >= 0 && !S.ext.includes(dr.sel) && rt.st[dr.id] && b.tag && AN.modeNets) {
-            if (dr._cosB === undefined) dr._cosB = dr.b != null && /^COS manual/.test(AN.nm(S, dr.b) || '') && !(b.o || []).includes(dr.a);
+            if (dr._cosB === undefined)
+              dr._cosB = dr.b != null && /^COS manual/.test(AN.nm(S, dr.b) || '') && !(b.o || []).includes(dr.a);
             if (dr._cosB) {
               /* 2.2.0-beta.10 (user 2026-10-17, CLAUDE.md 10: BU-CMD = protection): the A / M switch knows its AUTO leg (A = AUTO-MV), so
                  the force-manual rule of the AMT holds it: MANUAL while the BU-CMD is 1 AND AFTER IT, until the operator selects AUTO
@@ -1091,17 +1174,13 @@ function anStep(S, dt) {
                 pickB ? y : s.tv != null ? s.tv : null;
             }
           }
-        if (
-          bu != null &&
-          b.b >= 0 &&
-          S.ext &&
-          S.ext.includes(b.b) &&
-          /B\s*\/\s*T/.test((b.txt || []).join('/')) &&
-          s.bw !== bu
-        ) {
+        /* 2.2.0-beta.12: the COS follows the back-up value for as long as the back-up is selected (legend: interlock tracking). Before: written
+           once per change of the value, so a second back-up of the same value (ABC-008 IDF NOT RUNNING TPs -> MV 0, after the cold start had
+           already written 0) left the manual value where it was and the IDF demand came back after the 2 s pulse */
+        if (bu != null && b.b >= 0 && S.ext && S.ext.includes(b.b) && /B\s*\/\s*T/.test((b.txt || []).join('/'))) {
           s.bw = bu;
           rt.ext[b.b] = b.bg != null ? bu / b.bg : bu;
-        }
+        } else if (bu == null) s.bw = null;
         out(b.og != null ? y * b.og : y);
         break;
       }

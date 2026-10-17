@@ -2,6 +2,39 @@
 
 Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (beta.1 ~ beta.7) at `ccr-3def3a81-kcpwgn` (beta.8 ~; PR #31) (PROJECT_RULES 5e, 5f).
 
+## 2.2.0-beta.12 — M3 Trip: turbine trip, MFT, BFWP trip, IDF / PAF trip, drum level LL / HH, furnace pressure vs hangin
+
+- **Problem (roadmap M3):** Wala pang sagot ang planta sa mga trip: nakakabit ang force manual / BU-CMD ng drawing (beta.10), pero ang PV ay hindi gumagalaw (hal. nakahinto ang BFWP pero may FW flow pa; nakahinto ang IDF pero hindi tumataas ang furnace pressure; turbine trip pero MW 150 pa). Ang input ng STN102 (I.0400 turbine trip) ay hindi dumadaan sa STN101 (M.3200).
+- **As Found (trace: `DRAWING_TRACE.md` beta.12):**
+  - Station wiring S2 → S1 (memory list: M.3200 "T/B TRIP (BC FROM S2)", M.3220 "52G1 OPENED (BC FROM S2)") ay hindi ginagawa ng app: dalawang magkahiwalay na ext input.
+  - TURBINE TRIP ay MFT first out sa DITL (memory list STN104 M.053F / B.125F) at sa procedure PR-OPE-5003 ("bypass turbine trip alarm at MFT ... to maintain boiler operation" sa normal shutdown lang). Ang unang bersyon ng test ay umasa sa operator na pumutol ng apoy habang tumatakbo ang boiler sa bypass: umabot sa 150 kg/cm2 (dulo ng range ng AI0131) ang pressure dahil ang HP bypass 30 % + blow-off 10 % (IPINALAGAY na laki) ay hindi kaya ang 474 T/H.
+  - BU-CMD tracking ng COS (beta.10) ay minsanan lang sa pagbabago: pagkatapos ng 2 s pulse ng M.020F, bumalik ang PICFG108.MV sa 45.9 % (dapat 0 hawak).
+  - FT-MS1031 ay sinusulat bilang steam sa turbine lang: sa turbine trip ay 0 ang MSF kahit may 150 T/H sa bypass → M.2001 (< 46 T/H) mali, bumagsak ang FW demand, drum level 820 mm.
+  - Sa MFT, umakyat ang temperatura pagkatapos ng spray (561 / 600 °C) dahil ang sarado na spray (M.0240) ay nagdadagdag ng authority sa loop model, kahit walang apoy.
+  - Sa REMOTE ang FICFW1007 (cascade ng LICBR1001): naka-lock sa AUTO ang station (`hmi.js` bMan disabled); ang operator ay dapat L muna bago M.
+- **Work Done:**
+  - `src/analog/engine/unit.js`: (1) station wiring `U.bcast`: ABC-050 I.0400 → M.3200 (ABC-001C, ABC-010), I.0932 → M.3220 (ABC-010); (2) turbine trip: sarado ang turbine valves sa 1 s (`tauTrip`), MW → 0, TCS target 0; (3) FT-MS1031 = steam sa turbine + HP bypass + blow-off (`mso`); load share `xl = mso / MCR`; (4) firing ratio `pr.fr` at saturation `pr.tsat = 100 + 47.1 ln(Pd + 1)`: kapag walang apoy, ang mga temperatura ay bumababa patungong saturation; (5) `U.mul`: FW (FICFW1007, LICBR1001B) × BFWP running (M.3343 / M.3344), PA × M.3302, SA × M.3303; `U.fp` / `U.idf`: furnace pressure (PICFG108 / 108A) = kfp × (total air / anchor − 1), IDF command × M.3304 (`pr.uf`), `kfp` = authority ng IDF loop ng anchor (`U.kfpA`). `anUnitStop` (Reset) ay inaalis ang lahat ng ito.
+  - `src/analog/engine/plant.js`: `pr.mul` (0 = nakahinto ang makina: PV = ibaba ng range nang walang lag), `pr.uf`, `pr.fr` / `pr.tsat`, drum level shrink / swell (`ks` 10 mm bawat kg/cm2, lag 60 s), start-up valve × mul, BU-CMD tracking tuluy-tuloy habang 1 ang BU-CMD (ayos ng PICFG108 sa itaas).
+  - `tests/regress/unit_trip.js` (bago): 6 scenario mula Start at 150 MW, DITL forced (CLAUDE.md 7): `tt` turbine trip (+ MFT), `mft`, `bfwp`, `idf`, `paf`, `hh`; `node tests/regress/unit_trip.js [tt|mft|bfwp|idf|paf|hh] [html]`.
+- **As Left (headless, build 2.2.0-beta.12, `unit_trip.js` 6 / 6 ALL PASS):**
+  - **tt:** I.0400 → M.3200 sa ABC-001C at ABC-010; HIC-BM M (M.2013), EIC-TM M (M.2016); M.0124 pulse 5 s, M.0705 HP bypass BU-CMD; M.022B (FW demand = LAG ng steam); MW 0.3 pagkatapos ng 60 s; MSF 146 T/H sa bypass (HP bypass, LP bypass, blow-off umabot sa 100 %); M.2001 hindi nag-1 sa unang 60 s; MSP max 140.9 (range 150), 126.5 pagkatapos ng 300 s (122.9 dati); coal 0.
+  - **mft:** I.000F sa 11 sheet; coal 0 sa 10 s; SH spray 0 % (M.0230 / M.0240); PA / SA master M (M.0098); O2 21 %; MST 455 °C pagkatapos ng 400 s; MSP 45.0 (122.9 dati) → M.310D MAIN STEAM PRESSURE LOW LOW (72.9) → DITL-40; boiler / turbine master M (M.0101).
+  - **bfwp:** FW 1.2 T/H 3 s pagkatapos huminto; FICFW1007 force manual M.0228; M.0702 ALL BFWP STOPPED (15 s) → M.0705; HP bypass M; drum level LL (−254) pagkatapos ng 31 s → MFT (forced); ABC-055 M.0315 = 0 (NOT M.3407).
+  - **idf:** PICFG108 force manual (M.0205), M.020F pulse, MV 0 hawak (0.0 / 0.0 %); M.3107 HIGH (> 30) sa 12.5 s; H.H. (> 300) sa 64 s → MFT + PAF / SAF trip (forced); furnace pressure bumalik sa 47 mmH2O; coal 0, PA 0.
+  - **paf:** PA 0.9 T/H sa 3 s; FICFA1071 M (M.0180); furnace pressure −174 mmH2O (−19 dati); IDF demand 45.9 → 27.1 % (AUTO); coal 86.8 → 12.1 T/H sa 120 s (cross limit LN40) → MFT (forced): coal 0, O2 20.8.
+  - **hh:** FICFW1007 L + M + MV 100 %: FW 501 → 550 T/H; drum level HH (+254) pagkatapos ng 217 s → MFT (forced); coal 0.
+  - `unit_load.js` (M2) ALL PASS pa rin: 60 MW MW 60.0 / MSF 201 / MST 516 / RHT 496 / RHP 15.2 / O2 10.7; balik 150 MW; drum level ±33 mm; walang trip.
+  - Regression: hmi_op ALL PASS (34 anchored loops), plant_live ALL PASS, switches PASS (438 control cases, 0 hindi bumalik), reset PASS (51 sheets, 0 differ), force_manual PASS 68 / FAIL 0, isolated PASS (54 sheets, 5128 nets), scenarios 244 tama / 0 mali, generic tester 68 controller, 2145 tama, 0 mali, 0 hindi nasubok
+- **Ano ang makikita ng operator (RUN, pagkatapos ng Start at 150 MW, panel INPUT ng sheet):**
+  - ABC-050 "S2 I.0400" = 1 (turbine trip): M ang HIC-BM at EIC-TM (ABC-001C), bumubukas ang HP bypass (ABC-050), LP bypass (ABC-052) at blow-off (ABC-013), MW → 0, MSP umaakyat hanggang ~141 tapos bumababa. Ang MFT ng DITL ay i-force (I.000F = 1, M.0341 pulse, M.3400 ~ M.3402 = 0): coal 0, bumababa ang pressure at temperatura.
+  - ABC-010 "M.3343" at "M.3344" = 0 (walang BFWP): FW 0 kahit bukas ang valve, M ang FICFW1007 (M.0228), bumababa ang drum level hanggang L.L. sa ~30 s; pagkatapos ng 15 s ay M ang HP bypass (M.0702).
+  - ABC-008 "M.3304" = 0 (IDF stopped): M ang PICFG108 at 0 % ang demand (hawak), tumataas ang furnace pressure (HIGH sa 12 s, H.H. sa ~1 min).
+  - ABC-007 "M.3302" = 0 (PAF stopped): PA 0, M ang FICFA1071, bumababa ang furnace pressure (−170), ang IDF ay bumababa (AUTO), pinuputol ng cross limit ang coal.
+  - FICFW1007 faceplate: L → M → MV 100 %: FW 550, drum level H.H. sa ~3.5 min.
+- **Ipinalagay (nakasulat sa `unit.js`):** turbine valves 1 s; kfp = authority ng IDF loop (fallback 150 mmH2O); shrink / swell 10 mm bawat kg/cm2, lag 60 s; saturation fit 100 + 47.1 ln(P + 1); laki ng HP bypass 30 % / blow-off 10 % (beta.9) — ito ang dahilan kung bakit umakyat sa 141 ang MSP sa turbine trip.
+- **Hindi pa nasubok:** HOUSE LOAD / 52G OPEN (I.0932 / I.0937: boiler tumatakbo sa bypass, operator ang pumuputol ng apoy); MFT → turbine trip (ARP: wiring sa `dcs-hardware-wiring.zip`, hindi pa binasa: sa test ang turbine ay tumatakbo sa stored steam pagkatapos ng MFT, MW 147 → 77); main steam pressure LL bilang trip ng DITL-40 (nakakabit sa beta.4; sa `mft` ay umaabot sa M.310D); totoong tablet / apk / exe.
+- **Status:** Beta.
+
 ## 2.2.0-beta.11 — M2 hakbang 1 ~ 4: reheat pressure, temperatura SH / RH ayon sa load, O2, UNIT screen
 
 - **Problem (roadmap M2, natitira pagkatapos ng beta.9 / 10):** Sa 60 MW ang temperatura ay 541 °C pa rin (02.png: MST 517, RHT 499), ang hot reheat pressure 35 kg/cm2 (02.png: 15.0), ang first stage pressure 96.8 (hindi gumagalaw), ang O2 4.3 (hindi gumagalaw; Fig 7 ng boiler manual: 8.8 % sa 40 % MCR). Walang iisang screen ng unit.
