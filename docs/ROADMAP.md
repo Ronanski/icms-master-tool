@@ -28,12 +28,14 @@ Pagkatapos ng M6: ang `[F]` sa CHECKLIST seksyon D ay dagdag lang, hindi kailang
 - **M3 ~ M6:** hindi pa nasisimulan.
 
 ## Susunod na aayusin (napagkasunduan, user 2026-10-17)
-Walang bagong mode: ang plant physics ay tumatakbo sa loob ng app pagkatapos ng Start at 150 MW (at sa start-up sa M4). Ang turbine ay "black box" lang: ang interface ng TCS sa I/O list at drawing (MW, target, DCS control mode, turbine trip), hindi ang loob ng TCS (wala sa repo).
-1. **Reheat pressure** ayon sa steam flow (34 kg/cm2 sa 474 T/H, 15 sa 204 T/H). M2.
-2. **Temperatura SH / RH** ayon sa load (02.png: 517 / 499 °C sa 60 MW; sarado na ang spray). M2.
-3. **Hangin at flue gas**: air flow mula sa fan, O2 mula sa hangin vs coal, furnace pressure mula sa FD vs ID fan. Dulo ng M2 / simula ng M3.
-4. **"UNIT" screen sa PLANT tab**: coal, steam, pressure, MW, hangin, gas sa iisang screen (parang header ng HMI).
+Walang bagong mode: ang plant physics ay tumatakbo sa loob ng app pagkatapos ng Start at 150 MW (at sa start-up sa M4). Ang turbine ay "black box" lang (interface ng TCS sa I/O list at drawing), hindi ang loob ng TCS (wala sa repo). Ang mga numero ay galing na sa `boiler-cfb-design-operation-manual.zip` at `fan-instruction-manual-SAF-PAF-IDF.pdf` (dati: ipinalagay).
+0. **BU-CMD = protection:** ang MAN station na na-force ng BU-CMD (HIC-BM M.2013, EIC-TM M.2016 at iba pa) → MANUAL (`.MAN` = 1), hawak ang MV, at NANANATILING MANUAL hanggang pindutin ng operator ang A (PR-OPE-5002 "Put Boiler Master to Auto"). Ngayon ay kusang bumabalik sa AUTO: aayusin. M2.
+1. **Reheat pressure** ayon sa steam flow (design: RH 181.9 T/H, 36.6 → 35.1 kg/cm2 sa MCR). M2.
+2. **Temperatura SH / RH** ayon sa load (curve "SH & RH steam temperature versus load", "SH spray versus load"). M2.
+3. **Hangin at flue gas**: air flow ("air flow vs load", fan curves), O2 ("O2 vs load"), furnace pressure (FD vs ID fan). Dulo ng M2 / simula ng M3.
+4. **"UNIT" screen sa PLANT tab**: coal, steam, pressure, MW, hangin, gas sa iisang screen. M2.
 5. **M3:** turbine trip (M.3200) at fan trip, gamit ang black-box na turbine.
+6. **M4:** start-up ayon sa PR-OPE-5002 at sa cold / warm / hot start-up curves ng boiler manual.
 
 ## Paano binibilang ang progress
 - Ang bawat Beta ay may tala sa `docs/versions/<ver>/UPDATE_REPORT.md`.
