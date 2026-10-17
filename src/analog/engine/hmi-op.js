@@ -762,6 +762,32 @@ function anPlantLoad150_() {
   try {
     for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) for (let k = 0; k < 20; k++) stepSet(sh, 0.5);
   } catch (e) {}
+  /* 2.2.0-beta.10 (CLAUDE.md 10): a MAN station that a BU-CMD of the drawing forced to MANUAL while the cold plant was loading stays
+     MANUAL (the latch, plant.js). Right after the 10 s the operator selects the modes of the snapshot: AUTO (MAN off) for a station
+     that is not M there and whose BU-CMD is gone (33.PNG: HIC-BM A, EIC-TM A; 11.png feeders A). It is done HERE, before the MV of
+     the snapshot is written again and before the plant models are anchored: done after them, the coal feeders A / B / C kept the
+     values they tracked while MANUAL (26.5 / 38.2 / 38.2 T/H instead of 29) and the unit model anchored its coal at 103 T/H */
+  try {
+    for (let k = 0; k < 2; k++) {
+      for (const sh of AN.sheets) {
+        if (/^ABC-000/.test(sh.name) || !sh.S) continue;
+        const S = sh.S;
+        for (const b of S.blk) {
+          const s = b.k === 'MAN' && S.rt.st[b.id];
+          if (!s || !s.fmSet || !b._mn) continue;
+          const h = AN_HMI_CTL[b.tag];
+          if (h && h.mode === 'M') continue;
+          const dr = b.svI >= 0 ? (S.drv[b.i[b.svI]] || []).find(x => x.k === 'AMT') : null,
+            ast = dr && S.rt.st[dr.id];
+          if (!ast || ast.fman) continue;
+          for (const [S2, n] of b._mn) if (S2.rt.force[n] === undefined) S2.rt.ext[n] = 0;
+          ast.fm = 'A';
+          s.fmSet = 0;
+        }
+      }
+      for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0);
+    }
+  } catch (e) {}
   /* 2.1.0-beta.6: the MV of the snapshot again after the 10 s: a start pulse of the drawing may have preset it (ABC-008 M.020E:
      ID fan start -> PICFG108 MV 13 %), but on the snapshot the equipment was already running; then 2 s so the force manual
      that came from that preset clears (M.0206 = MV < 14 %) */
