@@ -1,6 +1,24 @@
 # v2.2.0 — Mga Beta
 
-Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
+Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (beta.1 ~ beta.7) at `ccr-3def3a81-kcpwgn` (beta.8 ~; PR #31) (PROJECT_RULES 5e, 5f).
+
+## 2.2.0-beta.10 — BU-CMD = protection: ang MAN station ay nananatiling MANUAL hanggang ang operator ang mag-AUTO
+
+- **Problem (user, 2026-10-17, CLAUDE.md 10):** Kapag nag-BU-CMD ang isang MAN station (ABC-001C HIC-BM M.2013 = MSF < 220 T/H, HP bypass > 5 %, turbine trip; EIC-TM M.2016), MANUAL ito at hawak ang MV. Sa beta.9, kusang bumabalik sa AUTO ang station kapag nawala ang BU-CMD. Sa planta, ang operator ang nagpa-AUTO (PR-OPE-5002 "At 230 T/H MSF ... Put Boiler Master to Auto").
+- **As Found (trace: `DRAWING_TRACE.md` beta.10):**
+  - Ang A/M switch (AMT) ng MAN station ay walang `al` (AUTO leg), kaya hindi ito sinasakop ng force-manual rule ng AMT (plant.js: 1:B = LEVEL, MANUAL hanggang pindutin ang AUTO). Ang PID stations ay may `al` na (user rule 2026-10-15); ang MAN stations wala.
+  - Sinimulan ng naunang session (wip patch, hindi na-push): ang `unit_load.js` ay bumagsak (10 FAIL) dahil ang operator AUTO sa Start at 150 MW ay ginawa PAGKATAPOS ng MV re-write at ng anchor ng plant model: ang coal feeder A / B / C ay nanatili sa halagang na-track nila habang MANUAL (26.5 / 38.2 / 38.2 T/H, snapshot 29), kaya ang unit model ay naka-anchor sa 103 T/H ng coal sa halip na 87.5; bumaba ang MSP, umakyat ang boiler master sa 92 %, na-force manual ang coal master sa itaas.
+- **Work Done:**
+  - `src/analog/engine/plant.js` (MAN station): ang AMT na may BU-CMD ay may `al = 'A'` (AUTO-MV leg), kaya hawak ito ng latch ng AMT: MANUAL habang 1 ang BU-CMD AT PAGKATAPOS, hanggang ang operator ang mag-AUTO. `.MAN` = 1 sa pagpasok (tracking ng PIC-COBM, bumpless). Operator MAN off (faceplate) = AUTO kapag wala na ang BU-CMD; habang may BU-CMD, nananatiling MANUAL. Operator MAN on = MANUAL din ang A/M switch.
+  - `src/analog/engine/hmi-op.js` (Start at 150 MW): pagkatapos ng 10 s ng cold start, ang operator ang nagpa-AUTO (MAN off) sa mga station na na-latch ng BU-CMD habang naglo-load, maliban sa M sa snapshot o may BU-CMD pa. Inilagay ito BAGO ang MV re-write ng snapshot at ang anchor ng plant model (ito ang ayos ng pagbagsak sa itaas).
+  - `tests/regress/unit_load.js`: ang operator ang nagpa-AUTO sa HIC-BM, tapos sa EIC-TM, sa itaas ng 230 T/H at kapag wala na ang BU-CMD; bagong tseke: ang boiler master ay HINDI kusang bumalik sa AUTO.
+- **As Left (headless, build 2.2.0-beta.10):**
+  - Start at 150 MW: feeders 29.2 / 29.2 / 29.2 T/H, coal anchor 87.6 T/H (gaya ng beta.9); HIC-BM AUTO 68.3 %, EIC-TM AUTO 150.
+  - `unit_load.js` ALL PASS (150 MW steady; 60 MW: MW 60.0, MSF 201.0, coal 40.1, MSP 121.3; boiler master MANUAL sa ibaba ng 220 T/H, NANATILING MANUAL pagkatapos mawala ang BU-CMD hanggang pinindot ng operator; balik 150 MW: MW 150.0, MSF 470.9, MSP 122.4; drum level ±29 mm; walang trip).
+  - Regression: switches 0 / 438; reset 51 / 0; hmi_op ALL PASS (38 anchored loops); manstation, force_manual (68 / 0), isolated engine (5128 net) PASS; scenarios 244 / 0; `npm test` PASS. Generic tester (68 controller): tumatakbo pa sa oras ng push na ito; ang resulta ay nasa susunod na docs commit.
+- **Ano ang makikita ng operator:** sa load down sa ibaba ng 220 T/H ng main steam, ang boiler master HIC-BM ay MANUAL (M sa faceplate); pag-akyat pabalik sa itaas ng 220 T/H, nananatili itong M hanggang pindutin mo ang A (dati kusang A). Kapag pinindot ang A habang may BU-CMD pa, mananatiling M.
+- **Hindi pa nasubok:** totoong tablet / apk / exe.
+- **Status:** Beta.
 
 ## 2.2.0-beta.9 — M2: Normal operation + load down / up (unit model: boiler + turbine)
 

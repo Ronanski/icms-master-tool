@@ -35,7 +35,13 @@ const run=(sec,rec)=>page.evaluate(async([sec,rec])=>{const u=window.__u,U=AN.un
   if(st.pk==='B'){u.man=1;const m=S.rt.st[u.hbm.id];
    if(u.up){m.val=Math.min(100,m.val+0.05);if(tmS.pk==='B')tm.val=Math.max(0,Math.min(200,tm.val+Math.max(-0.2,Math.min(0.2,0.1*(P-sv)))));}
    else{m.val=Math.max(0,Math.min(100,m.val+Math.max(-1,Math.min(1,0.0011*(sv-P)-0.2*dP))));if(tmS.pk==='B')tm.val=Math.max(u.goal,tm.val-0.2);}}
-  else if(u.up&&u.man){u.auto=1}
+  /* PR-OPE-5002 "At 230 T/H MSF ... Put Boiler Master to Auto" (CLAUDE.md 10): the stations stay MANUAL after the BU-CMD; the
+     operator turns MAN off on HIC-BM, then on EIC-TM (CCS), above 230 T/H and with the BU-CMD gone */
+  if(u.up&&st.pk==='B'&&U.ms>230&&+v[u.lab(S,'M.2013')]<0.5){u.bmA=(u.bmA||0)+1;for(const [S2,n] of AN.modeNets('HIC-BM'))S2.rt.ext[n]=0}
+  if(u.up&&st.pk==='A'&&tmS.pk==='B'&&+v[u.lab(S,'M.2016')]<0.5){u.tmA2=(u.tmA2||0)+1;for(const [S2,n] of AN.modeNets('EIC-TM'))S2.rt.ext[n]=0}
+  if(u.up&&u.man&&st.pk==='A'&&tmS.pk==='A'){u.auto=1}
+  /* while the BU-CMD is still there, the station stays MANUAL; it must NOT go to AUTO by itself when the BU-CMD goes */
+  if(u.up&&u.man&&!u.bmA&&st.pk==='A')u.selfAuto=1;
   if(u.auto&&st.pk==='A'&&tmS.pk==='A')u.SU.rt.ext[u.tgt]=150;
   if(u.dbg&&t%60===50)u.log.push('t+'+(t+10)+' dem='+(+u.SU.rt.v[u.lab(u.SU,'SI0226')]).toFixed(1)+' tgt='+(+u.SU.rt.ext[u.tgt]).toFixed(1)+' D='+(+v[u.lab(S,'SI0236')]).toFixed(1)+' MW='+U.MW.toFixed(1)+' P='+P.toFixed(1)+' Pd='+U.Pd.toFixed(1)+' ms='+U.ms.toFixed(0)+' Qs='+U.Qs.toFixed(0)+' BM='+(+v[u.lab(S,'HIC-BM.MV')]).toFixed(1)+' pk='+st.pk+' COBM='+(+v[u.lab(S,'PIC-COBM.MV')]).toFixed(1)+' FF='+(+v[u.lab(S,'SI0201')]).toFixed(1)+' M2013='+v[u.lab(S,'M.2013')]+' mb='+(U.mb||0).toFixed(0)+' bpv='+(U.vlv||[]).map(x=>(+x.S.rt.v[x.n]).toFixed(1)).join('/')+' CM='+(()=>{const S4=AN.sheets.find(x=>x.name==='ABC-004A').S;const c=AN.hmiCtrls(S4).find(c=>c.tag==='FIC-CM');const q=S4.rt.st[c.amt.id];const f=AN.hmiCtrls(S4).find(c=>c.tag==='HS-COAL');return 'pv'+(+S4.rt.v[c.q.pv]).toFixed(0)+'/sv'+(+S4.rt.v[c.q.sv]).toFixed(0)+'/mv'+(+S4.rt.v[c.out]).toFixed(0)+'/'+q.pk+(q.fman?'F':'')+' HS'+S4.rt.st[f.amt.id].pk+(S4.rt.st[f.amt.id].fman?'F':'')+' SI0010='+(+S4.rt.v[u.lab(S4,'SI0010')]).toFixed(0)})()+' TM='+tmS.pk+(+tm.val).toFixed(1)+' coal='+U.fuel.reduce((a,l)=>a+(+l[0][0].rt.st[l[0][1].id].val),0).toFixed(1));
   if(t%300===290)await new Promise(r=>setTimeout(r,0))}},[sec,rec]);
@@ -56,7 +62,9 @@ ck(c.bm==='B','60 MW: boiler master MANUAL (MSF < 220 T/H, M.2013 = NOT M.0101)'
 await page.evaluate(()=>{const u=window.__u;u.up=1});
 await run(5400,1);const d=await st();say('back to 150, settled',d);
 ck(near(d.MW,150,3)&&near(d.MSF,474.1,5)&&near(d.MSP,d.SV,5),'back to 150 MW: MW '+d.MW.toFixed(1)+', MSF '+d.MSF.toFixed(1)+' (474.1), MSP '+d.MSP.toFixed(1));
-ck(d.bm==='A','150 MW: boiler master back in AUTO (operator pressed A above 220 T/H)');
+ck(d.bm==='A','150 MW: boiler master back in AUTO (operator turned MAN off above 230 T/H, PR-OPE-5002)');
+{const z2=await page.evaluate(()=>{const u=window.__u;return{self:!!u.selfAuto,bm:u.bmA||0,tm:u.tmA2||0}});
+ ck(!z2.self&&z2.bm>0,'BU-CMD latch: the boiler master stayed MANUAL after the BU-CMD went, until the operator selected AUTO ('+(z2.self?'went to AUTO BY ITSELF':'operator AUTO pressed')+')')}
 const z=await page.evaluate(()=>{const u=window.__u;return{minP:u.minP,maxL:u.maxL,ll:u.ll}});
 ck(z.maxL<=100&&!z.ll,'no trip: drum level within '+z.maxL.toFixed(0)+' mm (limit 100), lowest MSP '+z.minP.toFixed(1)+' (LL 72.9: '+(z.ll?'REACHED':'not reached')+')');
 if(process.env.UDBG)console.log((await page.evaluate(()=>window.__u.log)).join('\n'));

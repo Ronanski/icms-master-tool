@@ -839,7 +839,13 @@ function anStep(S, dt) {
           if (dr && dr.sel != null && dr.sel >= 0 && !S.ext.includes(dr.sel) && rt.st[dr.id] && b.tag && AN.modeNets) {
             if (dr._cosB === undefined) dr._cosB = dr.b != null && /^COS manual/.test(AN.nm(S, dr.b) || '') && !(b.o || []).includes(dr.a);
             if (dr._cosB) {
-              const fm = rt.st[dr.id].pk === 'B';
+              /* 2.2.0-beta.10 (user 2026-10-17, CLAUDE.md 10: BU-CMD = protection): the A / M switch knows its AUTO leg (A = AUTO-MV), so
+                 the force-manual rule of the AMT holds it: MANUAL while the BU-CMD is 1 AND AFTER IT, until the operator selects AUTO
+                 (PR-OPE-5002 "Put Boiler Master to Auto"). The operator's AUTO on a MAN station is the MAN status turned off (faceplate
+                 MAN button); while the BU-CMD is still 1 the drawing keeps it MANUAL */
+              const ast = rt.st[dr.id];
+              if (ast.al === undefined) ast.al = 'A';
+              const fm = ast.pk === 'B';
               /* only when every sheet is loaded: AN.modeNets loads the sheets, and loading a sheet inside a step ran its first
                  step before its links were made (ABC-004B / 004C coal feeders lost their feeder model, FIC feedrate stuck) */
               if (b._mn === undefined && AN.sheets.every(x => x.S || /^ABC-000/.test(x.name)))
@@ -849,12 +855,22 @@ function anStep(S, dt) {
                   b._mn = [];
                 }
               if (!b._mn) {
-              } else if (fm && b._mn.length) {
+              } else if (fm && b._mn.length && !s.fmSet) {
                 for (const [S2, n] of b._mn) if (S2.rt.force[n] === undefined) S2.rt.ext[n] = 1;
                 s.fmSet = 1;
+              } else if (fm && s.fmSet && ast.fman) {
+                for (const [S2, n] of b._mn) if (S2.rt.force[n] === undefined) S2.rt.ext[n] = 1;
+              } else if (fm && s.fmSet && b._mn.every(([S2, n]) => !(+S2.rt.ext[n] > 0.5))) {
+                ast.fm = 'A'; /* the BU-CMD is gone and the operator turned MAN off: AUTO */
+                s.fmSet = 0;
               } else if (!fm && s.fmSet) {
                 for (const [S2, n] of b._mn) if (S2.rt.force[n] === undefined) S2.rt.ext[n] = 0;
                 s.fmSet = 0;
+              }
+              /* the operator turned MAN on (faceplate MAN button, CLAUDE.md 2: .MAN is the mode): the A / M switch goes MANUAL too */
+              else if (!fm && !s.fmSet && b._mn && b._mn.length && b._mn.some(([S2, n]) => +S2.rt.ext[n] > 0.5)) {
+                ast.fm = 'B';
+                s.fmSet = 1;
               }
             }
           }
