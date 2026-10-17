@@ -289,7 +289,10 @@ function anProcStep(S, dt) {
     const pr = b.proc;
     if (!pr || pr.mode === 'shared') continue;
     /* a measurement of the unit model (main steam pressure ...): the loop model does not write it */
-    if (AN_UNIT.on && anUnitOwns(pr.remote ? pr.remote.S : S, pr.remote ? pr.remote.ai : pr.ai)) {
+    if (
+      AN_UNIT.on &&
+      (anUnitOwns(pr.remote ? pr.remote.S : S, pr.remote ? pr.remote.ai : pr.ai) || anUnitOwnsPv(S, pr.pv))
+    ) {
       delete pm[b.id];
       continue;
     }

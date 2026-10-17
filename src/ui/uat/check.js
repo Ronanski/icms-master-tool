@@ -160,6 +160,19 @@
       if (AN.latchMode) AN.latchMode(t, 'LOC');
       return true;
     };
+    /* R (REMOTE, cascade SV from the drawing) + A: the SV switch on its A leg, the station on its auto leg (2.2.0-beta.16) */
+    const rem = (k, t) => {
+      const T = sh(k),
+        c = ctl(k, t);
+      if (!c) return false;
+      if (c.svSw && T.rt.st[c.svSw.id]) {
+        T.rt.st[c.svSw.id].al = 'A';
+        T.rt.st[c.svSw.id].fm = 'A';
+      }
+      if (c.amt && T.rt.st[c.amt.id]) T.rt.st[c.amt.id].fm = c.autoLeg;
+      if (AN.latchMode) AN.latchMode(t, 'REM');
+      return true;
+    };
     const SA = () => val('ABC-006', 'FIFA1081.PV'),
       FA = () => val('ABC-006', 'FIFA1055.PV'),
       tsat = P => 100 + 47.1 * Math.log(Math.max(0, P) + 1);
@@ -248,6 +261,7 @@
       isAuto,
       oilValve,
       autoSv,
+      rem,
       SA,
       FA,
       tsat,
@@ -597,6 +611,196 @@
               ' T/H'
           ],
           [h.MW() < 0.5 && h.bit('ABC-001C', 'M.3200') < 0.5, 'MW ' + f1(h.MW()) + ', walang trip']
+        ];
+      }
+    },
+    {
+      id: 'byp',
+      warm: { P: 30, Tb: 480, burners: 4, mv: 30, air: 10 },
+      title: 'M4 · Bypass system at pressure raise: blow-off → HP / LP bypass → 123 kg/cm2',
+      how: 'Start warm (30 kg/cm2, 4 burner). LICBR1001B A SV 0 (start-up level control). MS blow-off PICMS1002 A SV 50 (hawak ang 50 ksc hanggang nasa serbisyo ang bypass, PR-OPE-5002). HP bypass PICMS1006 A SV 50 (LOCAL), LP bypass PICHR1003 A SV 7.6 (procedure: 7.5 ksc), RH blow-off PICHR1391 M 20 % (bukas sa warming). Oil 5 % kada 2 min habang ≤ 90 °C/h (Fig 1), bawas kapag > 100 °C/h; pagkatapos ng servicing hawak ang oil (bawas kapag > 65 T/H, 2 sa itaas ng SV, o papalapit na ang SV sa 123; dagdag kada 5 min kapag hindi nakakasunod ang pressure); O2 3.5 ~ 8 % sa PA / SA; furnace −15 mmH2O sa PICFG108 M (PR-OPE-5002: hydraulic coupling mano-mano). Sa MSP ≥ 48 at MSF ≥ 40 T/H (bypass servicing): SV ng HP bypass +1 kg/cm2 kada minuto hanggang 123 (habang nakakasunod ang pressure), blow-off SV = HP bypass SV + 5 (sasara), RH blow-off −5 % kada minuto hanggang sarado. Tigil 10 min pagkatapos umabot sa 123.',
+      want: 'Bypass servicing sa ~50 ksc / > 40 T/H; MSP 123 kg/cm2 (SV ng HP bypass) na may saturation ≤ 110 °C/h; HP bypass ang kumukuha ng steam, MS blow-off sarado; RH pressure 7.5 ± 1.5 kg/cm2 hawak ng LP bypass sa AUTO, RH blow-off sarado; MST ≥ 345 °C (procedure, admission) at ≤ 535 (TAB_9); drum level ±150 mm hawak ng LICBR1001B, FICFW1007 force manual ayon sa drawing (M.0228: FW < 100 T/H, M.022C; 3-element sa hakbang 4); MW 0, walang trip, furnace −55 ~ +25 mmH2O; 50 → 123 sa loob ng 2 h.',
+      secs: 12000,
+      run(h, o) {
+        o.ab = 30;
+        o.airMv = 10;
+        o.lvl0 = h.lvl();
+        o.lvMin = o.lvMax = o.lvl0;
+        o.rate = 0;
+        o.tsH = [];
+        o.hpSv = 50;
+        o.rb = 20;
+        o.svc = null;
+        o.p123 = null;
+        o.rhMin = 1e9;
+        o.rhMax = 0;
+        o.fpMv = h.mv('ABC-008', 'PICFG108');
+      },
+      each(h, o) {
+        const t = o.t,
+          U = h.U;
+        if (t === 10) {
+          h.autoSv('ABC-010', 'LICBR1001B', 0);
+          h.autoSv('ABC-013', 'PICMS1002', 50);
+          h.autoSv('ABC-050', 'PICMS1006', o.hpSv);
+          h.autoSv('ABC-052', 'PICHR1003', 7.6);
+          h.man('ABC-054', 'PICHR1391', o.rb);
+        }
+        if (t < 20) return;
+        o.lvMin = Math.min(o.lvMin, h.lvl());
+        o.lvMax = Math.max(o.lvMax, h.lvl());
+        if (t % 60 === 0) {
+          const ts = h.tsat(U.Pd);
+          o.tsH.push(ts);
+          if (o.tsH.length > 6) o.tsH.shift();
+          const r = o.tsH.length === 6 ? (ts - o.tsH[0]) * 12 : 0;
+          o.rate = Math.max(o.rate, r);
+          /* firing: oil 5 % every 2 min while Fig 1 allows; after the servicing the bypass is the only outlet, so the operator keeps the
+             steam flow at 40 ~ 55 T/H (PR-OPE-5002: "increase the oil firing rate if necessary") and the HP bypass sets the pressure */
+          const msf = h.MSF();
+          if (
+            r > 100 ||
+            (o.svc != null && (msf > 65 || h.MSP() > o.hpSv + 2 || (o.hpSv >= 120 && o.ab > 25)))
+          )
+            o.ab = Math.max(20, o.ab - 5);
+          else if (o.svc == null && t % 120 === 0 && r < 90 && o.ab < 80) o.ab += 5;
+          else if (o.svc != null && t % 300 === 0 && r < 90 && o.ab < 80 && h.MSP() < o.hpSv - 1) o.ab += 5;
+          for (const [k, tg] of [
+            ['ABC-003A', 'FICDO1043A'],
+            ['ABC-003B', 'FICDO1043B'],
+            ['ABC-003C', 'FICDO1043C'],
+            ['ABC-003D', 'FICDO1043D']
+          ])
+            h.man(k, tg, o.ab);
+          /* O2 3.5 ~ 8 %: PA / SA 2 % a minute (floor 10 %) */
+          const x = h.O2();
+          if (x > 8) o.airMv = Math.max(10, o.airMv - 2);
+          else if (x < 3.5) o.airMv = Math.min(60, o.airMv + 2);
+          h.man('ABC-007', 'FICFA1071', o.airMv);
+          h.man('ABC-007', 'FICFA1081', o.airMv);
+          /* furnace pressure −15 mmH2O by hand on the IDF hydraulic coupling (PR-OPE-5002; the drawing forces PICFG108 MANUAL below 14 %) */
+          const fp = h.FP();
+          if (fp < -30) o.fpMv = Math.max(5, o.fpMv - 1);
+          else if (fp > 0) o.fpMv = Math.min(60, o.fpMv + 1);
+          h.man('ABC-008', 'PICFG108', o.fpMv);
+          /* bypass servicing (PR-OPE-5002: 50 ksc, steam flow > 40 T/H) */
+          if (o.svc == null && h.MSP() >= 48 && h.MSF() >= 40) {
+            o.svc = t;
+            o.svcP = h.MSP();
+            o.svcF = h.MSF();
+          }
+          if (o.svc != null) {
+            if (o.hpSv < 123 && h.MSP() >= o.hpSv - 1) {
+              o.hpSv = Math.min(123, o.hpSv + 1);
+              h.autoSv('ABC-050', 'PICMS1006', o.hpSv);
+            }
+            h.autoSv('ABC-013', 'PICMS1002', o.hpSv + 5);
+            if (o.rb > 0) {
+              o.rb = Math.max(0, o.rb - 5);
+              h.man('ABC-054', 'PICHR1391', o.rb);
+            }
+          }
+        }
+        if (o.svc != null && t >= o.svc + 1200) {
+          o.rhMin = Math.min(o.rhMin, h.RHP());
+          o.rhMax = Math.max(o.rhMax, h.RHP());
+        }
+        if (o.p123 == null && h.MSP() >= 122.5) o.p123 = t;
+        if (window.__tr && t % 30 === 0)
+          window.__tr.push([t, h.RHP(), h.mv('ABC-052', 'PICHR1003'), U.mhp, h.MSF(), o.ab, h.MSP(), o.hpSv, h.mv('ABC-050', 'PICMS1006'), h.mv('ABC-054', 'PICHR1391')].map(x => +(+x).toFixed(2)));
+      },
+      done(h, o) {
+        return o.p123 != null && o.t >= o.p123 + 600;
+      },
+      checks(h, o) {
+        const U = h.U,
+          mso = U.ms + U.mb,
+          fwc = h.ctl('ABC-010', 'FICFW1007');
+        return [
+          [
+            o.svc != null,
+            o.svc != null
+              ? 'bypass servicing sa MSP ' +
+                f1(o.svcP) +
+                ' kg/cm2, MSF ' +
+                f0(o.svcF) +
+                ' T/H (PR-OPE-5002: 50 ksc, > 40 T/H) sa ' +
+                f0(o.svc / 60) +
+                ' min'
+              : 'hindi umabot sa 50 ksc / 40 T/H: MSP ' + f1(h.MSP()) + ', MSF ' + f0(h.MSF())
+          ],
+          [
+            h.MSP() >= 120 && o.rate <= 110,
+            'MSP ' +
+              f1(h.MSP()) +
+              ' kg/cm2 (target 123 = SV ng HP bypass), saturation ' +
+              f0(o.rate) +
+              ' °C/h max sa 5 min (Fig 1 ≤ 110)'
+          ],
+          [
+            h.mv('ABC-050', 'PICMS1006') > 3 && h.mv('ABC-013', 'PICMS1002') < 1 && U.mhp >= 0.9 * U.mb,
+            'HP bypass ' +
+              f0(h.mv('ABC-050', 'PICMS1006')) +
+              ' % ang kumukuha ng steam (' +
+              f0(U.mhp) +
+              ' ng ' +
+              f0(mso) +
+              ' T/H), MS blow-off ' +
+              f0(h.mv('ABC-013', 'PICMS1002')) +
+              ' % (sarado)'
+          ],
+          [
+            o.rhMin > 6 && o.rhMax < 9 && h.isAuto('ABC-052', 'PICHR1003') && h.mv('ABC-054', 'PICHR1391') < 0.5,
+            'RH pressure ' +
+              f1(o.rhMin) +
+              ' ~ ' +
+              f1(o.rhMax) +
+              ' kg/cm2 (7.5 ± 1.5) hawak ng LP bypass sa AUTO (SV 7.6, MV ' +
+              f0(h.mv('ABC-052', 'PICHR1003')) +
+              ' %); RH blow-off ' +
+              f0(h.mv('ABC-054', 'PICHR1391')) +
+              ' %'
+          ],
+          [
+            h.MST() >= 345 && h.MST() <= 535,
+            'MST ' + f0(h.MST()) + ' °C (PR-OPE-5002: ≥ 345 bago ang admission; TAB_9: ≤ 535 bago ang sync), bed ' + f0(U.Tb) + ' °C'
+          ],
+          [
+            Math.abs(o.lvMax - o.lvl0) < 150 &&
+              Math.abs(o.lvMin - o.lvl0) < 150 &&
+              h.isAuto('ABC-010', 'LICBR1001B') &&
+              h.sh('ABC-010').rt.st[fwc.amt.id].fman &&
+              h.bit('ABC-010', 'M.0228') > 0.5,
+            'drum level ' +
+              f0(o.lvMin) +
+              ' ~ ' +
+              f0(o.lvMax) +
+              ' mm hawak ng LICBR1001B (start-up valve ' +
+              f0(h.mv('ABC-010', 'LICBR1001B')) +
+              ' %, AUTO); FICFW1007 force manual ayon sa drawing (M.0228: FW ' +
+              f0(h.FW()) +
+              ' T/H < 100, M.022C; 3-element sa hakbang 4)'
+          ],
+          [
+            o.p123 != null && o.svc != null && o.p123 - o.svc <= 7200,
+            '50 → 123 kg/cm2 sa ' +
+              (o.p123 != null && o.svc != null ? f0((o.p123 - o.svc) / 60) : '—') +
+              ' min pagkatapos ng servicing (Fig 2: apoy → roll ~5 h); oil ' +
+              f1(U.oilF) +
+              ' T/H, O2 ' +
+              f1(h.O2()) +
+              ' %'
+          ],
+          [
+            h.MW() < 0.5 && h.bit('ABC-001C', 'M.3200') < 0.5 && h.FP() > -55 && h.FP() < 25,
+            'MW ' +
+              f1(h.MW()) +
+              ', walang trip; furnace ' +
+              f0(h.FP()) +
+              ' mmH2O (PICFG108 M ' +
+              f0(h.mv('ABC-008', 'PICFG108')) +
+              ' %, PR-OPE-5002: −15 mano-mano)'
+          ]
         ];
       }
     },
