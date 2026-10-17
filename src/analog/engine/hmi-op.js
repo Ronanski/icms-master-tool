@@ -503,8 +503,9 @@ const AN_HMI_DI = {
    written as the raw one: drum level 393 / 146 / 393 mm at the end of the load (DRUM LEVEL H.H. > 254 mm, M.0173 / M.0175 ->
    MFT on the DITL), steam flow 461 instead of 474.1 T/H. The raw value is found so that the compensated one is the snapshot
    (secant, 4 steps); the drum level plant model (integrating) starts again from there */
-function hmiComp() {
+function hmiComp(only) {
   for (const [shn, ai, pv, want] of AN_HMI_COMP) {
+    if (only && !only(ai)) continue;
     try {
       const sh = AN.sheets.find(x => x.name === shn),
         S = sh && sh.S;
@@ -910,6 +911,92 @@ function anPlantLoad150_() {
   AN.load150 = { ai: n, ctl: nc, di: nd, sv: nsv, man: nm_, unit: AN_UNIT.on };
   AN.hmiDI = AN_HMI_DI;
   AN.hmiComp = hmiComp;
+  return n;
+}
+/* 2.2.0-beta.14 (M4 step 1, PR-OPE-5002 / boiler manual Fig 2): START COLD. The anchors of "Start at 150 MW" are kept (they are
+   the gains of every loop model), then the plant is put cold: the digital inputs of a boiler out of service (coal feeders and fans
+   stopped, supply oil valves closed, burners out of service, generator breaker open), every controller LOCAL + MANUAL at 0 % (the
+   operator starts the plant from the faceplates; the furnace pressure PICFG108 / 108A stays AUTO as the operator leaves it before
+   the purge), the drum level model without the blowdown loss of the snapshot, and the unit model cold (unit.js anUnitCold: drum
+   0 kg/cm2, water and bed at 30 C, turbine shut). The DITL sequence (purge, igniters, burner in service) is forced by the operator or
+   by the CHECK scenario (CLAUDE.md 7) */
+const AN_HMI_DI_COLD = {
+  'M.3400': 0,
+  'M.3401': 0,
+  'M.3402': 0,
+  'M.3405': 0 /* coal feeders A / B / C stopped */,
+  'M.3302': 0,
+  'M.3303': 0,
+  'M.3304': 0 /* PAF / SAF / IDF stopped: the operator starts them for the purge */,
+  'M.3410': 1,
+  'M.3411': 1,
+  'M.3416': 1,
+  'M.3417': 1 /* A ~ D start-up burner SUPPLY OIL VALVE (1)(2) CLOSE (memory list, BC FROM S4) */,
+  'M.3412': 0,
+  'M.3413': 0,
+  'M.3418': 0,
+  'M.3419': 0 /* A ~ D BURNER IN SERVICE */,
+  'I.0931': 0,
+  'I.0932': 1 /* GCB 52G1 off: the generator is not synchronised */,
+  'I.0418': 0 /* no ICV -> CV transfer */
+};
+function anPlantCold() {
+  const n = anPlantLoad150();
+  if (!AN_UNIT.on) return 0;
+  const L = AN.sheets.filter(sh => sh.S && !/^ABC-000/.test(sh.name));
+  for (const sh of L) {
+    const S = sh.S,
+      rt = S.rt;
+    for (const e of S.ext) {
+      const x = AN_HMI_DI_COLD[(AN.nm(S, e) || '').trim()];
+      if (x !== undefined && rt.force[e] === undefined) rt.ext[e] = x;
+    }
+    for (const c of (AN.hmiCtrls && AN.hmiCtrls(S)) || []) {
+      if (c.tag === 'PICFG108' || c.tag === 'PICFG108A') continue;
+      if (c.svSw && rt.st[c.svSw.id]) {
+        rt.st[c.svSw.id].al = 'A';
+        rt.st[c.svSw.id].fm = 'B';
+      }
+      if (c.amt && rt.st[c.amt.id]) {
+        const st = rt.st[c.amt.id];
+        st.al = c.autoLeg;
+        st.fm = c.autoLeg === 'A' ? 'B' : 'A';
+        st.hold = 0;
+      }
+      if (c.manBlk && rt.st[c.manBlk.id]) rt.st[c.manBlk.id].val = 0;
+      else if (c.manNet != null && S.ext.includes(c.manNet) && !(S.xlk && S.xlk[c.manNet])) rt.ext[c.manNet] = 0;
+      const ps = rt.st[c.b.id];
+      if (ps) hmiPidSet(ps, c.b, 0);
+    }
+    for (const b of S.procs || []) if (b.proc && (b.txt || [])[1] === 'LICBR1001') b.proc.integLoss = 0;
+  }
+  anUnitCold();
+  try {
+    /* one step: the unit model writes its transmitters (drum 0, MSP 0, MW 0 ...) */
+    stepSet(AN.sheets.find(x => x.name === 'ABC-001C'), 0.5);
+    /* every loop model starts again at the steady state of its (new) command: no feedwater flow decaying from 499 T/H into the
+       drum of a cold boiler (an integrating level keeps its PV) */
+    for (const sh of L) sh.S.rt.pm = {};
+    /* the drum level transmitters: the raw value that gives the snapshot level at the cold drum pressure (the density
+       compensation LN38 / LN39 of the drawing changes with the pressure) */
+    hmiComp(ai => /^AI0(130|258|386)$/.test(ai));
+  } catch (e) {}
+  /* the lags and the rate limiters of the drawing at their (new) inputs, like anPlantLoad150 */
+  try {
+    for (let it = 0; it < 4; it++) {
+      for (const sh of L)
+        for (const b of sh.S.blk) {
+          const st = sh.S.rt.st[b.id],
+            v = sh.S.rt.v;
+          if (!st) continue;
+          if (b.k === 'LAG' && b.i && b.i[0] != null && isFinite(v[b.i[0]])) st.y = v[b.i[0]];
+          else if ((b.k === 'RATE' || b.k === 'RAMPB') && b.main !== undefined && isFinite(v[b.main])) st.y = v[b.main];
+        }
+      for (const sh of L) stepSet(sh, 0);
+    }
+    for (let k = 0; k < 2; k++) for (const sh of L) stepSet(sh, 0.5);
+  } catch (e) {}
+  AN.cold = true;
   return n;
 }
 /* the output of a PID (plant.js PID: u = kp * es + I): the output and the integral, so it stays there when PV = SV */

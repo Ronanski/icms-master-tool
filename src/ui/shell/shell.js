@@ -340,6 +340,23 @@
         }
       };
       set.m.append(ld);
+      /* 2.2.0-beta.14 (M4): the plant cold, ready for the start-up procedure (PR-OPE-5002): purge, light-off, pressure raise */
+      const cd = document.createElement('button');
+      cd.className = 'an-only';
+      cd.id = 'loadcold';
+      cd.textContent = 'Start cold (M4 start-up)';
+      cd.title = 'Reset, the 150 MW anchors, then the plant cold: drum 0 kg/cm2, water and bed 30 C, feeders and fans stopped, oil valves closed, every controller LOCAL + MANUAL 0 %. The CHECK panel has the procedure.';
+      cd.onclick = () => {
+        try {
+          AN.reset();
+          const n = AN.plantCold();
+          AN.paint();
+          msg('Plant cold: drum 0 kg/cm2, water 30 C, no fire. Press Run, then start the fans (Buttons M.3302 / 3303 / 3304), purge, open the oil valves (M.3410 / 3411 = 0) and fire the burners (FICDO1043A / B). ' + n + ' anchors.');
+        } catch (e) {
+          msg('Could not load the cold state: ' + e.message);
+        }
+      };
+      set.m.append(cd);
     }
     set.head('Channel at update');
     const ch = $('chsel'),

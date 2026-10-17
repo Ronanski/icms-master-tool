@@ -82,7 +82,30 @@ const AN_UNIT = {
      The DITL consequences (fan trip -> MFT, drum level L.L. -> MFT, MFT -> turbine trip) are the DITL's: with the one world OFF the
      operator forces them (CLAUDE.md 7, user 2026-10-16) */
   tauTrip: 1,
-  kfp: 150 /* fallback; the authority of the ID fan of the anchored loop model is used when known (anUnitStart) */
+  kfp: 150 /* fallback; the authority of the ID fan of the anchored loop model is used when known (anUnitStart) */,
+  /* 2.2.0-beta.14 (M4 step 1, PR-OPE-5002 / boiler manual SECT_7 Fig 1 / 2): COLD START. "Start cold" (hmi-op.js anPlantCold) keeps
+     the anchors of "Start at 150 MW" (the gains of every loop model) and puts the plant cold: drum 0 kg/cm2, water and bed at the
+     ambient, no coal, turbine valves shut (U.turb = false until the turbine is rolled, M4 step 4). The physics added here:
+     - FIRING = coal + oil of the four start-up burners (ABC-003A ~ D FICDO1043A ~ D, PV SI0070 / 0380 / 0460 / 0480 = AI0515 / 0546 /
+       0517 / 0548 0 ~ 3.5 T/H after the gate of the SUPPLY OIL VALVE CLOSE M.3410 / 3411 / 3416 / 3417). One T/H of oil makes ao
+       times the steam of one T/H of coal (ASSUMED 2: the fuel heating values of the design data Tab_1 are an image without text;
+       coal 89 T/H at MCR 460 T/H against diesel oil about 42 MJ/kg); the offset of the firing line (m0 - a x F0) fades out below
+       30 % of the anchor coal so that a small fire makes a small steam flow and the anchored behaviour above stays the same.
+     - WATER HEAT-UP: below the saturation temperature of the drum pressure the firing heats the water (no steam): Cw (T/H) x s of
+       steam-equivalent per C of the boiler water (ASSUMED 200 t of water: 200 t x 4.19 MJ/t/C / 2000 MJ/t x 3600 = 1508); at
+       saturation the pressure rises against C + Cw x dTsat/dP (dTsat/dP = 47.1 / (P + 1) of the Tsat fit), so the saturation
+       temperature rises at firing / Cw: 2 burners about 45 T/H steam-equivalent = 107 C/h, the limit of Fig 1 (110 C/h) is the
+       operator's duty (firing), as on the plant.
+     - BED TEMPERATURE (no DCS transmitter: the bed thermocouples are on the DITL / local; model state U.Tb): first order (tauB) to
+       Tamb + (Tb0 - Tamb) x (firing share / air share) ^ 0.7 (Fig 8: furnace about 850 C at full load; two start-up burners at the
+       minimum air give about 450 C = the coal batch permissive of PR-OPE-5002, 400 ~ 450 C; 600 C continuous).
+     - STEAM TEMPERATURE while cold: the superheaters cannot give more than the gas (plant.js pr.tcap = bed temperature) and not
+       less than saturation (pr.tsat); TAB_9: SH outlet <= 535 C before synchronisation */
+  Tamb: 30,
+  ao: 2,
+  Cw: 1508,
+  tauB: 900,
+  Tb0: 850
 };
 /* the AI blocks of one address on every sheet (station | address, like "Start at 150 MW") */
 function anUnitAIs(key) {
@@ -135,8 +158,10 @@ function anUnitStop() {
   for (const e of U.ld || [])
     if (e.pr) {
       e.pr.ld = 0;
-      e.pr.fr = e.pr.tsat = undefined;
+      e.pr.fr = e.pr.tsat = e.pr.tcap = undefined;
     }
+  U.cold = false;
+  U.turb = true;
   for (const m of U.mul || []) for (const p of m.pr) p.mul = undefined;
   for (const p of U.fp || []) {
     p.pr.uf = undefined;
@@ -188,6 +213,11 @@ function anUnitStart() {
       return o ? { S: o.S, n: o.n, f, rh } : null;
     })
     .filter(Boolean);
+  /* 2.2.0-beta.14: the oil flow of the four start-up burners (PV of FICDO1043A ~ D after the gate of the drawing) */
+  U.oilN = ['ABC-003A', 'ABC-003B', 'ABC-003C', 'ABC-003D']
+    .map((k, i) => ctlOut(k, 'FICDO1043' + 'ABCD'[i]))
+    .filter(o => o && o.c.q && o.c.q.pv != null)
+    .map(o => ({ S: o.S, n: o.c.q.pv }));
   /* the demand to the TCS: SI0236 = MW demand + pressure correction LN55 (ABC-001C). On the snapshots the turbine master EIC-TM is
      MANUAL (M.2016 = 1, output 0: DCS CONTROL MODE OFF, the TCS holds the load); the TCS set point itself is not in the
      repository, so the TCS follows the unit demand of the DCS */
@@ -217,7 +247,12 @@ function anUnitStart() {
     ms: m0,
     MW: MW0,
     tcsT: NaN,
-    t: 0
+    t: 0,
+    cold: false,
+    turb: true,
+    Tb: U.Tb0,
+    Tw: 100 + 47.1 * Math.log(Pd0 + 1),
+    oilF: 0
   });
   /* 2.2.0-beta.11 (M2 steps 1 ~ 3, see AN_UNIT): reheat, SH / RH temperatures, O2 */
   const shOf = k => AN.sheets.find(y => y.name === k),
@@ -327,6 +362,32 @@ function anUnitStart() {
   U.on = true;
   AN.unit = U;
 }
+/* 2.2.0-beta.14 (M4 step 1): the plant cold, with the anchors of "Start at 150 MW" kept (called by hmi-op.js anPlantCold after
+   anPlantLoad150): drum 0 kg/cm2, water and bed at the ambient, no steam, turbine shut, MW 0 */
+function anUnitCold() {
+  const U = AN_UNIT;
+  if (!U.on) return false;
+  Object.assign(U, {
+    cold: true,
+    turb: false,
+    Pd: 0,
+    Qs: 0,
+    ms: 0,
+    mb: 0,
+    mhp: 0,
+    MW: 0,
+    gv: 0,
+    tcsT: 0,
+    rr: 0,
+    Tw: U.Tamb,
+    Tb: U.Tamb,
+    oilF: 0,
+    t: 0
+  });
+  U.o2v = 21;
+  for (const h of U.sh) h.x = U.Tamb;
+  return true;
+}
 function anUnitOwns(T, ids) {
   const U = AN_UNIT;
   return U.on && ids && ids.length && ids.some(id => U.own.has(T.rt.st[id]));
@@ -338,8 +399,12 @@ function anUnitStep(dt) {
   const S = U.S,
     v = S.rt.v;
   /* coal of the three feeders (T/H) -> steam made in the drum (T/H), first order */
+  /* 2.2.0-beta.14: + the oil of the start-up burners (ao x coal); the offset of the firing line fades out below 30 % of the anchor coal */
   const F = U.fuel.reduce((a, l) => a + (anUnitVal(l) || 0), 0),
-    Qss = Math.max(0, U.m0 + U.a * (F - U.F0));
+    oil = (U.oilN || []).reduce((a, x) => a + Math.max(0, +x.S.rt.v[x.n] || 0), 0),
+    Fe = F + U.ao * oil,
+    Qss = Math.max(0, U.a * Fe + (U.m0 - U.a * U.F0) * Math.min(1, Fe / (0.3 * U.F0)));
+  U.oilF = oil;
   U.Qs += ((Qss - U.Qs) * dt) / U.tauF;
   /* ---- 2.2.0-beta.12 (M3): station wiring S2 -> S1, turbine trip ---- */
   for (const [a, tg] of U.bcast || []) {
@@ -357,7 +422,11 @@ function anUnitStep(dt) {
   if (on) U.tcsT = isFinite(tmo) ? tmo : isFinite(ds) ? ds : U.MW;
   else if (!isFinite(U.tcsT)) U.tcsT = U.MW;
   const D = U.tcsT;
-  if (trip) {
+  if (U.turb === false) {
+    /* 2.2.0-beta.14: cold start, the turbine is not rolled yet: the stop valves are shut (M4 step 4 opens them) */
+    U.gv = 0;
+    U.tcsT = 0;
+  } else if (trip) {
     /* turbine trip: the TCS closes the valves; the load set point is gone (the TCS reloads the unit when the trip is reset) */
     U.gv = Math.max(0, U.gv - dt / U.tauTrip);
     U.tcsT = 0;
@@ -377,8 +446,31 @@ function anUnitStep(dt) {
     U.mb += q;
     if (x.rh) U.mhp += q;
   }
-  /* drum: stored energy */
-  U.Pd = Math.max(0, U.Pd + ((U.Qs - U.ms - U.mb) * dt) / U.C);
+  /* drum: stored energy. 2.2.0-beta.14 (cold start): the firing heats the water first (U.Tw), then the pressure rises against the
+     storage of the steam AND of the saturated water (C + Cw x dTsat/dP) */
+  const tsatOf = P => 100 + 47.1 * Math.log(Math.max(0, P) + 1);
+  if (U.cold) {
+    const ts = tsatOf(U.Pd);
+    if (U.Tw < ts - 0.01) {
+      U.Tw = Math.min(ts, U.Tw + (U.Qs * dt) / U.Cw);
+      U.Pd = Math.max(0, U.Pd - ((U.ms + U.mb) * dt) / U.C);
+    } else {
+      U.Pd = Math.max(0, U.Pd + ((U.Qs - U.ms - U.mb) * dt) / (U.C + (U.Cw * 47.1) / (U.Pd + 1)));
+      U.Tw = tsatOf(U.Pd);
+    }
+  } else {
+    U.Pd = Math.max(0, U.Pd + ((U.Qs - U.ms - U.mb) * dt) / U.C);
+    U.Tw = tsatOf(U.Pd);
+  }
+  /* bed temperature: firing share over air share, first order */
+  {
+    const taf = U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0),
+      as = U.taf0 > 0 ? Math.max(0.05, taf / U.taf0) : 1,
+      /* exponent 0.7 (ASSUMED): 850 C at full load (Fig 8) and about 450 C with two start-up burners at the minimum air (the coal
+         batch permissive of PR-OPE-5002, 400 ~ 450 C) */
+      Tbss = U.Tamb + (U.Tb0 - U.Tamb) * Math.pow(Math.min(3, U.Qs / Math.max(1, U.m0) / as), 0.7);
+    U.Tb += ((Math.max(U.Tamb, Tbss) - U.Tb) * dt) / U.tauB;
+  }
   const Pms = Math.max(0, U.Pd - U.kdp * U.ms * U.ms);
   /* generator */
   const MWss = Math.max(0, U.MW0 + U.c * (U.ms - U.m0));
@@ -430,12 +522,13 @@ function anUnitStep(dt) {
        the superheat goes with the firing, the temperature falls to the saturation temperature of the drum pressure (fit Tsat = 100 +
        47.1 x ln(P + 1), P in kg/cm2: 331 C at 134 kg/cm2, 100 C at 0; ASSUMED within 20 C of the steam table) */
     fr = Math.max(0, Math.min(1, U.Qs / Math.max(1, mso))),
-    tsat = 100 + 47.1 * Math.log(Math.max(0, U.Pd) + 1);
+    tsat = tsatOf(U.Pd);
   for (const e of U.ld) {
     const pr = e.pr,
       p = e.b.p || {};
     pr.fr = fr;
     pr.tsat = tsat;
+    pr.tcap = U.cold ? U.Tb : undefined;
     if (!pr.hop || !(pr.Ka > 0)) {
       pr.ld = 0;
       continue;
@@ -452,12 +545,16 @@ function anUnitStep(dt) {
     const pv = +h.S.rt.v[h.n];
     if (!isFinite(pv)) continue;
     h.x += ((pv - h.x) * dt) / U.tauT;
-    for (const L of h.L) shifted(L, h.x - h.pv0);
+    /* 2.2.0-beta.14 (cold): the header after the spray cannot be above the gas (bed) nor below saturation either */
+    if (U.cold) {
+      const cap = Math.max(tsat, U.Tb);
+      for (const L of h.L) anUnitWrite(L, i => Math.max(tsat, Math.min(cap, L.a0[i] + h.x - h.pv0)));
+    } else for (const L of h.L) shifted(L, h.x - h.pv0);
   }
   /* O2 of the flue gas: 21 x (1 - stoichiometric air / total air), analyzer lag; each analyzer keeps its offset of the snapshot */
   if (U.afs > 0) {
     const taf = U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0),
-      o2s = Math.max(0, Math.min(21, 21 * (1 - (F * U.afs) / Math.max(1, taf))));
+      o2s = Math.max(0, Math.min(21, 21 * (1 - (Fe * U.afs) / Math.max(1, taf))));
     U.o2v += ((o2s - U.o2v) * dt) / U.tauO2;
     for (const L of U.o2) shifted(L, U.o2v - U.O20);
   }
