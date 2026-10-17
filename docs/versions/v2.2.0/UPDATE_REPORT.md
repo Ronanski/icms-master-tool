@@ -2,6 +2,29 @@
 
 Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (PROJECT_RULES 5e, 5f).
 
+## 2.2.0-beta.9 — M2: Normal operation + load down / up (unit model: boiler + turbine)
+
+- **Problem:** Sa load down mula 150 MW, ang demand lang ang sumusunod (MW demand, coal, air). Hindi gumagalaw ang MW, ang main steam pressure / flow at ang FW (150 → 60 MW: MW 151.9, MSF 489, MSP 122.3 pa rin). Ang coal ay bumababa hanggang 7 T/H (02.png: 41.8).
+- **As Found (trace: `DRAWING_TRACE.md` beta.9):**
+  - Walang modelo ng planta mismo: gatong → steam → pressure → turbine → MW.
+  - HIC-MWRL (OUTPUT CHANGE RATE) = 0.1 MW/MIN sa app, hindi 3.0 (33.PNG): ang station ay binabasa ang sarili nitong lumang output. Ang load ay 30× mas mabagal. Natatakpan ng lumang `loaddown.js` (humahakbang sa ABC-001B ~30× bawat tick).
+  - Start at 150 MW: naka-MANUAL ang turbine master EIC-TM (M.2017 = NOT I.0082), pero sa 33.PNG ay CCS (EIC-TM A, TARGET MW SETPOINT FROM TCS 149.5).
+  - HIC-BM.MAN ("BOILER MASTER IN MANUAL") ay nakakabit sa mga wire ng "TURBINE MASTER IN MANUAL" (sinusukat ang dulo ng wire, hindi ang linya), at ang .MAN ay hindi nagiging 1 kapag ang drawing ang nag-force manual (BU-CMD). Kaya walang tracking ng PIC-COBM (SI0224) at may bump pagbalik sa AUTO.
+  - EIC-TM.PV = 0: ang GEN MW C / D (AI0419 / AI0774) ay pumapasok sa PRI/SEC/AVG SELECT sa T na walang tuldok.
+  - ABC-004B / 004C: ang feeder model ay hindi nakikita kapag nauna ang step bago ang link (feedrate hindi sumusunod sa MV).
+- **Work Done:**
+  - `src/analog/engine/unit.js` (bago): unit model. Coal ng 3 feeder → steam (lag 60 s, 5.78 T/H bawat T/H coal) → drum pressure (storage) → MSP (pressure drop ∝ flow²) → turbine valve ng TCS (MW = target; ang target ay ang output ng EIC-TM habang ON ang DCS control mode) → MW (0.334 MW bawat T/H). Lumalabas din ang steam sa HP bypass (PICMS1006) at blow-off (PICMS1002). Sinusulat ang MSP, drum pressure, MSF (raw, kaya tama ang compensated), GEN MW C / D, TCS target, turbine inlet pressure. Tumatakbo lang pagkatapos ng Start at 150 MW; Reset = cold.
+  - `hmi-op.js`: HIC-MWRL 3.0 ay nananatili; CCS: STN101 I.0081 / I.0082 = 1 sa ABC-001C lang (ang I.0082 ng STN102 ay ibang signal: CP-A REMOTE SELECTED).
+  - `plant.js`: .MAN ng MAN station = 1 habang ang A/M switch ng drawing ay nasa operator leg dahil sa BU-CMD; feeder model hinahanap ulit; gumagamit ng unit model ang mga loop na hawak nito.
+  - `hmi.js`: tag text → wire: layo sa linya ng wire (≤ 8), hindi sa dulo; hindi kasama ang address na may station (S2 M.2502) at ang "1:B".
+  - `compile-step.js`: SEL input na walang driver → ang AI na ang wire ay nagtatapos sa gilid nito (ABC-001C lang ang nagbago).
+  - Tests: bagong `tests/regress/unit_load.js`; `loaddown.js`, `ditl150.js`, `hmi_op.js` inayos para sa unit model at sa stepping ng app.
+- **As Left (headless):**
+  - `unit_load.js` ALL PASS: 150 MW steady (MW 149.9, MSF 470.5, MSP 122.3); load down 3 MW/min, MW sumusunod sa turbine demand SI0236; **60 MW: MW 60.0, MSF 201.0 T/H, coal 40.1 T/H (02.png 60.3 / 203.7 / 41.8), MSP 121.2 (SV 122.3)**; boiler master MANUAL sa ibaba ng 220 T/H (drawing); balik sa 150 MW: MW 150.0, MSF 470.9, MSP 122.1, AUTO; pinakamababang MSP 119.8, drum level ±29 mm, walang trip.
+  - Regression: switches 0 / 438; reset 51 / 0; hmi_op 38 PASS (2 = unit model); ditl150, loaddown (3 MW/min = 138 MW sa 4 min), plant_live, world, tests.js, pid_am, faceplate, overview, events, infocard, manstation: PASS. Mode nets: 2 tag lang ang nagbago (HIC-BM.MAN, EIC-TM.MAN). SEL: 1 block lang ang nagbago.
+- **Hindi pa nasubok:** ang buong 68-controller tester (tumatakbo pa sa oras ng save; 22 controller tapos, walang mali), isolated engine at scenarios (tumatakbo pa); temperatura sa mababang load (02.png MST 517 / RHT 499, sa app 541: hindi pa ginagawa); totoong device.
+- **Status:** Beta (save ng progress).
+
 ## 2.2.0-beta.8 — A6: mga controller na mahirap simulan, sa planta na tumatakbo (plant physics)
 
 - **Problem:** Generic operator tester (68 controller, 2.1.0): 3 hindi nasubok (PICFG108, AICFG112, HS-COAL) at 4 mali (FICFW1007 G6 ×3, TICHR1002 G2 ×1). Sa beta.7, may isa pa: ABC-003C FICDO1043C G2.

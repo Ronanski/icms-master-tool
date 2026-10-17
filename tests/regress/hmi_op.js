@@ -7,7 +7,9 @@ const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist
 (async()=>{const {browser,page,errs}=await open(html);
 const R=await page.evaluate(()=>{const out=[];for(let i=0;i<AN.sheets.length;i++){const sh=AN.sheets[i];if(/ABC-000/.test(sh.name))continue;AN.go(i);const S=sh.S;let cs=[];try{cs=AN.hmiCtrls(S)}catch(e){}
  for(const c of cs){const pb=(S.procs||[]).find(b=>b.id===c.b.id);if(!pb||!pb.proc)continue;AN.reset();for(const x of AN.sheets)if(!/ABC-000/.test(x.name))AN.ensure(x);AN.plantLoad150();AN.go(i);const run=sec=>{for(let k=0;k<sec*2;k++)AN.stepSet(sh,.5)};
-  const pr=pb.proc;if(!pr.hop)continue;if(!c.amt||c.manNet==null){out.push({t:c.tag,sh:sh.name,skip:'no manual MV'});continue}
+  const pr=pb.proc;if(!pr.hop)continue;
+  /* 2.2.0-beta.9: a PV made by the unit model (main steam pressure: firing -> drum -> TCS), not by its own loop model: tested by unit_load.js */
+  if(AN.unit&&AN.unit.on&&(pr.ai||[]).some(id=>AN.unit.own.has(S.rt.st[id]))){out.push({t:c.tag,sh:sh.name,skip:'PV from the unit model (tests/regress/unit_load.js)'});continue}if(!c.amt||c.manNet==null){out.push({t:c.tag,sh:sh.name,skip:'no manual MV'});continue}
   const P=c.b.p,span=(P.rhi!=null?P.rhi:100)-(P.rlo!=null?P.rlo:0);const man=c.autoLeg==='A'?'B':'A';
   /* like the operator pressing M: the mode status of the drawing (.MAN = 1, .LOC / .REM = 0) on every sheet */for(const x of AN.sheets){if(!x.S||/ABC-000/.test(x.name))continue;for(const n of x.S.ext){const nm=(AN.nm(x.S,n)||'').trim().toUpperCase();if(!nm.startsWith(c.tag.toUpperCase()+'.'))continue;const k=nm.slice(c.tag.length+1);if(k==='MAN'||k==='MANUAL')x.S.rt.ext[n]=1;else if(['REM','REMOTE','LOC','LOCAL','AUTO','AUT'].includes(k))x.S.rt.ext[n]=0}}if(c.svSw){const q=S.rt.st[c.svSw.id];if(q){q.al='A';q.fm='B'}}const st=S.rt.st[c.amt.id];st.al=c.autoLeg;st.fm=man;
   const setMV=v=>{if(c.manBlk&&S.rt.st[c.manBlk.id])S.rt.st[c.manBlk.id].val=v;else S.rt.ext[c.manNet]=v};
