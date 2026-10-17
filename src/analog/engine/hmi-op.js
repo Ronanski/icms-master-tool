@@ -938,7 +938,9 @@ const AN_HMI_DI_COLD = {
   'M.3419': 0 /* A ~ D BURNER IN SERVICE */,
   'I.0931': 0,
   'I.0932': 1 /* GCB 52G1 off: the generator is not synchronised */,
-  'I.0418': 0 /* no ICV -> CV transfer */
+  'I.0418': 0 /* no ICV -> CV transfer */,
+  'I.0081': 0 /* 2.2.0-beta.17: DCS control mode permissive from the TCS: none before NORMAL OPERATION (PR-OPE-5002 4.6) */,
+  'I.0082': 0 /* DCS control mode ON from the TCS: off (the snapshot of 150 MW has both = 1) */
 };
 /* 2.2.0-beta.15: the SUPPLY OIL VALVE (1)(2) CLOSE of a start-up burner (M.3410 / 3411 / 3416 / 3417, memory list BC FROM S4) is the
    AND of the two limit switches on the coal feeder sheets (ABC-004A ~ C), linked to ABC-003x and ABC-029. The operator opens (or
@@ -972,8 +974,11 @@ const AN_BURNER = [
   ['ABC-003C', 'FICDO1043C', 'M.3416', 'M.3418'],
   ['ABC-003D', 'FICDO1043D', 'M.3417', 'M.3419']
 ];
+/* 2.2.0-beta.17 (M4 step 4): options coal (FIC-CF % with the three feeders A / B / C running and in AUTO: after the coal transfer),
+   rh (hot reheat pressure kg/cm2 in the reheater), hot (the bypass system in service: HP bypass AUTO at P, MS blow-off AUTO at P + 7
+   (shut), LP bypass AUTO 7.6, RH blow-off MANUAL 0, LICBR1001B AUTO 0: the end of step 3) */
 function anPlantWarm(o) {
-  o = Object.assign({ P: 30, Tb: 480, burners: 4, mv: 30, air: 10 }, o || {});
+  o = Object.assign({ P: 30, Tb: 480, burners: 4, mv: 30, air: 10, coal: 0, rh: 0, hot: false }, o || {});
   const n = anPlantCold();
   if (!AN_UNIT.on) return 0;
   const U = AN_UNIT,
@@ -982,14 +987,32 @@ function anPlantWarm(o) {
       for (const sh of L)
         for (const e of sh.S.ext) if ((AN.nm(sh.S, e) || '').trim() === l && sh.S.rt.force[e] === undefined) sh.S.rt.ext[e] = x;
     },
-    man = (k, t, x) => {
+    ctlOf = (k, t) => {
       const sh = AN.sheets.find(y => y.name === k),
         S = sh && sh.S,
         c = S && AN.hmiCtrls ? (AN.hmiCtrls(S) || []).find(q => q.tag === t) : null;
-      if (!c) return;
+      return c ? [S, c] : null;
+    },
+    man = (k, t, x) => {
+      const r = ctlOf(k, t);
+      if (!r) return;
+      const [S, c] = r;
       if (c.manBlk && S.rt.st[c.manBlk.id]) S.rt.st[c.manBlk.id].val = x;
       else if (c.manNet != null && S.ext.includes(c.manNet)) S.rt.ext[c.manNet] = x;
       if (c.amt && S.rt.st[c.amt.id]) S.rt.st[c.amt.id].hold = x;
+    },
+    /* A (AUTO) with the operator SV (LOCAL), as the faceplate: the SV where hmi.js writes it, the switches on their auto legs */
+    auto = (k, t, sv) => {
+      const r = ctlOf(k, t);
+      if (!r) return;
+      const [S, c] = r;
+      hmiSvWrite(S, c, sv);
+      if (c.svSw && S.rt.st[c.svSw.id]) {
+        S.rt.st[c.svSw.id].al = 'A';
+        S.rt.st[c.svSw.id].fm = 'B';
+      }
+      if (c.amt && S.rt.st[c.amt.id]) S.rt.st[c.amt.id].fm = c.autoLeg;
+      if (AN.latchMode) AN.latchMode(t, 'LOC');
     };
   for (const l of ['M.3302', 'M.3303', 'M.3304']) setx(l, 1);
   man('ABC-007', 'FICFA1071', o.air);
@@ -999,7 +1022,19 @@ function anPlantWarm(o) {
     setx(ins, 1);
     man(k, t, o.mv);
   });
+  if (o.coal > 0) {
+    for (const l of ['M.3400', 'M.3401', 'M.3402']) setx(l, 1);
+    man('ABC-004A', 'FIC-CF', o.coal);
+  }
+  if (o.hot) {
+    auto('ABC-010', 'LICBR1001B', 0);
+    auto('ABC-013', 'PICMS1002', o.P + 7);
+    auto('ABC-050', 'PICMS1006', o.P);
+    auto('ABC-052', 'PICHR1003', 7.6);
+    man('ABC-054', 'PICHR1391', 0);
+  }
   Object.assign(U, { Pd: o.P, Tw: 100 + 47.1 * Math.log(o.P + 1), Tb: o.Tb });
+  if (o.rh > 0 && U.rhp && U.rhp.length && U.rhp[0].a0 && U.rhp[0].a0[0] > 0) U.rr = o.rh / U.rhp[0].a0[0];
   AN.steady = true; /* 2.2.0-beta.16: a steady state, no pulse from the inputs it sets (see anPlantCold) */
   try {
     const C1 = AN.sheets.find(x => x.name === 'ABC-001C');
@@ -1007,10 +1042,23 @@ function anPlantWarm(o) {
     for (const sh of L) sh.S.rt.pm = {};
     hmiComp(ai => /^AI0(130|258|386)$/.test(ai));
     for (let k = 0; k < 2; k++) for (const sh of L) stepSet(sh, 0.5);
+    /* the running feeders in AUTO (the drawing forces MANUAL while a feeder is stopped) */
+    if (o.coal > 0 && AN.latchMode) for (const t of ['FICCL1061A', 'FICCL1061B', 'FICCL1061C']) AN.latchMode(t, 'LOC');
   } catch (e) {}
   AN.steady = false;
-  U.Qs = U.a * (U.oilF * U.ao); /* the fire is already there */
+  /* the fire is already there: oil + the coal that burns in the bed (unit.js anUnitStep) */
+  {
+    const F = (U.fuel || []).reduce((a, l) => a + (anUnitVal(l) || 0), 0),
+      bf = Math.max(0, Math.min(1, (U.Tb - U.Tburn0) / (U.Tburn1 - U.Tburn0))),
+      Fe = bf * F + U.ao * U.oilF;
+    U.Qs = Math.max(0, U.a * Fe + (U.m0 - U.a * U.F0) * Math.min(1, Fe / (0.3 * U.F0)));
+  }
   return n;
+}
+/* 2.2.0-beta.17: the plant at the end of M4 step 3, ready for the turbine: 123 kg/cm2 on the HP bypass, bed 750 C, three coal feeders
+   at FIC-CF 12 % (about 14 T/H), burners out, hot reheat 7.6 kg/cm2 on the LP bypass */
+function anPlantHot() {
+  return anPlantWarm({ P: 123, Tb: 750, burners: 0, mv: 0, air: 14, coal: 12, rh: 7.6, hot: true });
 }
 function anPlantCold() {
   const n = anPlantLoad150();

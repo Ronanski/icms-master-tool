@@ -805,6 +805,207 @@
       }
     },
     {
+      id: 'roll',
+      hot: true,
+      title: 'M4 · Turbine roll, sync, load up to 45 MW',
+      how: 'Start hot (dulo ng hakbang 3: 123 kg/cm2 sa HP bypass AUTO, LP bypass AUTO 7.6, bed 750 °C, 3 feeder sa FIC-CF 12 %, burners out). Operator sa TCS panel (labas ng DCS drawing): ROLL sa t = 1 min (120 rpm/min, IP start mode: roll steam mula sa reheat sa ICV); sa 3600 rpm SYNC (GCB 52G1 sarado: ABC-050 I.0931 = 1 / I.0932 = 0, initial load 4.5 MW), LP bypass R (REMOTE: SV = first stage + 5.1); 5 min hold; LOAD UP 45 MW (5 %/min = 7.5 MW/min). Sa 20 MW o ICV full open: ICV → CV transfer (I.0418 = 1; ang drawing ang nagpapa-REMOTE ng HP bypass SV = PV + 2 sa sync pulse M.070D, kaya sumasara). Coal: FIC-CF +2 ~ 3 % kada minuto habang paakyat (+3 kapag MSP < 118), ±1 pagkatapos para hawak ang 123; O2 3.5 ~ 8 (PA / SA); furnace −15 sa PICFG108 M. Feedwater ayon sa interlock ng ABC-010: kapag LICBR1001B > 30 %: LICBR1001B M (hawak), LICBR1001A A SV 0 (single-element sa main valve; M.0227: isa lang ang level controller), LICBR1001B pasara 5 % kada minuto; kapag FW > 100 T/H at wala na ang force manual (M.0228 = 0: M.022C → TON 60 s): FICFW1007 R (SV = steam flow + level master), LICBR1001 A SV 0, pindot ng 3-ELEMENT pushbutton M.054E (FF M.0222). Tigil 10 min pagkatapos umabot sa 45 MW.',
+      want: '0 → 3600 rpm sa 30 min; GCB sarado (I.0931 = 1, M.3220 = 0 sa ABC-010); initial load 4.5 ± 1 MW; 4.5 → 45 MW sa loob ng 5 ~ 12 min; transfer sa 15 ~ 22 MW (I.0418); HP at LP bypass sarado sa 45 MW (M.0709 = 0), HP bypass REMOTE (LP bypass: preset 33 % ng drawing sa transfer, isinasara ng operator sa M tapos R + A); MSP 123 ± 8 kg/cm2 habang nakakarga, HIC-BM MANUAL (M.2013 BU-CMD: MSF < 220); 3-element feedwater: FICFW1007 R + A, LICBR1001 A, M.0228 = 0, M.0222 = 0, LICBR1001B sarado; MST 345 ~ 535 °C; drum level ±150 mm; MW ≥ 44.5 at I.0081 = 1 (NORMAL OPERATION); walang trip, furnace −55 ~ +25.',
+      secs: 6000,
+      run(h, o) {
+        o.cf = 12;
+        o.airMv = 14;
+        o.fpMv = h.mv('ABC-008', 'PICFG108');
+        o.lvl0 = h.lvl();
+        o.lvMin = o.lvMax = o.lvl0;
+        o.rate = 0;
+        o.tsH = [];
+        o.roll = o.sync = o.load = o.xfer = o.p45 = o.fw3 = null;
+        o.mwInit = NaN;
+        o.xferMW = NaN;
+        o.mspMin = 1e9;
+        o.mspMax = 0;
+        o.fwA = null;
+        o.suv = null;
+        o.pb = null;
+        o.remOp = false;
+      },
+      each(h, o) {
+        const t = o.t,
+          U = h.U,
+          tb = U.tb;
+        if (t === 40) for (const tg of ['FICCL1061A', 'FICCL1061B', 'FICCL1061C']) h.mode(tg, 'LOC');
+        if (t === 60) {
+          AN.turbine('roll');
+          o.roll = t;
+        }
+        if (o.sync == null && tb.st === 'roll' && tb.rpm >= 3600) {
+          AN.turbine('sync');
+          o.sync = t;
+          h.rem('ABC-052', 'PICHR1003');
+        }
+        if (o.sync != null && o.load == null && t >= o.sync + 300) {
+          o.mwInit = h.MW();
+          AN.turbine('loadup', 45);
+          o.load = t;
+        }
+        if (o.xfer == null && h.bit('ABC-050', 'I.0418') > 0.5) {
+          o.xfer = t;
+          o.xferMW = h.MW();
+        }
+        /* the drawing puts the HP bypass SV to REMOTE (PV + 2) on the sync pulse M.070D; if not, the operator presses R */
+        if (o.xfer != null && t === o.xfer + 60 && h.sh('ABC-050').rt.st[h.ctl('ABC-050', 'PICMS1006').svSw.id].pk !== 'A') {
+          h.rem('ABC-050', 'PICMS1006');
+          o.remOp = true;
+        }
+        if (o.p45 == null && o.load != null && h.MW() >= 44.5) o.p45 = t;
+        /* the 3-ELEMENT select pushbutton (ABC-010 M.054E, TPS 2 s -> FF M.0222 reset): pressed for 2 s */
+        if (o.pb != null && t >= o.pb + 2.5) {
+          h.setx(null, 'M.054E', 0);
+          o.pb = null;
+        }
+        if (t < 20) return;
+        o.lvMin = Math.min(o.lvMin, h.lvl());
+        o.lvMax = Math.max(o.lvMax, h.lvl());
+        if (o.sync != null) {
+          o.mspMin = Math.min(o.mspMin, h.MSP());
+          o.mspMax = Math.max(o.mspMax, h.MSP());
+        }
+        if (t % 60 === 0) {
+          const ts = h.tsat(U.Pd);
+          o.tsH.push(ts);
+          if (o.tsH.length > 6) o.tsH.shift();
+          o.rate = Math.max(o.rate, o.tsH.length === 6 ? (ts - o.tsH[0]) * 12 : 0);
+          /* coal: the boiler master is MANUAL (BU-CMD below 220 T/H): the operator fires for the load and holds 123 kg/cm2 */
+          const msp = h.MSP(),
+            hb = h.mv('ABC-050', 'PICMS1006');
+          if (o.load != null && o.p45 == null && msp < 125) o.cf += msp < 118 ? 3 : 2;
+          else if (msp < 121 || (o.load != null && o.xfer == null && hb < 15)) o.cf += 1;
+          else if (msp > 125) o.cf -= 1;
+          o.cf = Math.max(10, Math.min(60, o.cf));
+          h.man('ABC-004A', 'FIC-CF', o.cf);
+          /* O2 3.5 ~ 8 %: PA / SA 2 % a minute (floor 10 %) */
+          const x = h.O2();
+          if (x > 8) o.airMv = Math.max(10, o.airMv - 2);
+          else if (x < 3.5) o.airMv = Math.min(80, o.airMv + 2);
+          h.man('ABC-007', 'FICFA1071', o.airMv);
+          h.man('ABC-007', 'FICFA1081', o.airMv);
+          /* furnace pressure −15 mmH2O by hand (PICFG108 forced MANUAL below 14 %) */
+          const fp = h.FP();
+          if (fp < -30) o.fpMv = Math.max(5, o.fpMv - 1);
+          else if (fp > 0) o.fpMv = Math.min(80, o.fpMv + 1);
+          h.man('ABC-008', 'PICFG108', o.fpMv);
+          /* LP bypass after the transfer (ABC-052): the sync pulse M.070D sets FF M.070F -> TON 1 s M.0714 -> the valve goes to the PRESET
+             SI0224 (RATE from the demand, 33 %); the FF resets only when the demand is <= 0 % (M.071D), and the demand is the preset
+             itself while it is selected. The operator closes it: M, -10 % a minute to 0 (M.071D resets the FF), then R + A again */
+          if (o.xfer != null && h.bit('ABC-052', 'M.070F') > 0.5) {
+            o.lpMan = true;
+            h.man('ABC-052', 'PICHR1003', Math.max(0, h.mv('ABC-052', 'PICHR1003') - 10));
+          } else if (o.lpMan && o.lpBack == null && h.bit('ABC-052', 'M.070F') < 0.5 && !h.isAuto('ABC-052', 'PICHR1003')) {
+            h.rem('ABC-052', 'PICHR1003');
+            o.lpBack = t;
+          }
+          /* feedwater, as the drawing ABC-010 interlocks it: (1) start-up valve LICBR1001B to M (hold) and the single-element
+             controller of the main valve LICBR1001A to A (M.0227 = NOT LICBR1001B.MAN: one level controller at a time; M.0222 = 1:
+             FICFW1007.MV = LICBR1001A.MV), start-up valve shut 10 % a minute; (2) FW > 100 T/H -> M.022C -> TON 60 s -> M.022E = 0 ->
+             M.0228 = 0: FICFW1007 to R (SV = SI0259 = steam flow + the level master LICBR1001), LICBR1001 to A, 3-ELEMENT pushbutton
+             M.054E (FF M.0222 reset) */
+          if (o.fwA == null) {
+            if (h.mv('ABC-010', 'LICBR1001B') > 30) {
+              o.suv = h.mv('ABC-010', 'LICBR1001B');
+              h.man('ABC-010', 'LICBR1001B', o.suv);
+              h.autoSv('ABC-010', 'LICBR1001A', 0);
+              o.fwA = t;
+            }
+          } else {
+            if (o.suv > 0) {
+              o.suv = Math.max(0, o.suv - 5);
+              h.man('ABC-010', 'LICBR1001B', o.suv);
+            }
+            if (o.fw3 == null && h.FW() > 100 && h.bit('ABC-010', 'M.0228') < 0.5) {
+              h.rem('ABC-010', 'FICFW1007');
+              h.autoSv('ABC-010', 'LICBR1001', 0);
+              h.setx(null, 'M.054E', 1);
+              o.pb = t;
+              o.fw3 = t;
+            }
+          }
+        }
+        if (window.__tr && t % 30 === 0)
+          window.__tr.push(
+            [t, tb.rpm, tb.icv, h.MW(), U.tcsT, h.MSP(), h.MSF(), h.RHP(), h.mv('ABC-050', 'PICMS1006'), h.mv('ABC-052', 'PICHR1003'), +h.sh('ABC-052').rt.v[h.ctl('ABC-052', 'PICHR1003').q.sv], h.pk('ABC-052', 'PICHR1003') === 'B' ? 1 : 0, h.bit('ABC-052', 'M.0723'), o.cf, h.coal(), h.FW(), h.lvl(), h.mv('ABC-010', 'LICBR1001B'), h.mv('ABC-010', 'FICFW1007'), h.bit('ABC-010', 'M.0228'), h.MST(), h.O2(), h.FP()].map(x => +(+x).toFixed(2))
+          );
+      },
+      done(h, o) {
+        return o.p45 != null && o.t >= o.p45 + 600;
+      },
+      checks(h, o) {
+        const U = h.U,
+          tb = U.tb,
+          S50 = h.sh('ABC-050'),
+          S10 = h.sh('ABC-010'),
+          fwc = h.ctl('ABC-010', 'FICFW1007'),
+          hbc = h.ctl('ABC-050', 'PICMS1006'),
+          mins = (a, b) => (a != null && b != null ? f0((a - b) / 60) : '—');
+        return [
+          [
+            o.sync != null && tb.rpm >= 3599 && o.sync - o.roll >= 29 * 60 && o.sync - o.roll <= 31 * 60,
+            'roll 0 → 3600 rpm sa ' + mins(o.sync, o.roll) + ' min (120 rpm/min, PR-OPE-5002 cold); ngayon ' + f0(tb.rpm) + ' rpm, estado ' + tb.st
+          ],
+          [
+            h.bit('ABC-050', 'I.0931') > 0.5 && h.bit('ABC-050', 'I.0932') < 0.5 && h.bit('ABC-010', 'M.3220') < 0.5,
+            'GCB 52G1 sarado: ABC-050 I.0931 ' + f0(h.bit('ABC-050', 'I.0931')) + ', I.0932 ' + f0(h.bit('ABC-050', 'I.0932')) + ', ABC-010 M.3220 (52G1 OPENED) ' + f0(h.bit('ABC-010', 'M.3220'))
+          ],
+          [isFinite(o.mwInit) && Math.abs(o.mwInit - 4.5) <= 1, 'initial load ' + f1(o.mwInit) + ' MW pagkatapos ng 5 min (PR-OPE-5002: 4.5 MW)'],
+          [
+            o.p45 != null && o.p45 - o.load >= 5 * 60 && o.p45 - o.load <= 12 * 60,
+            'LOAD UP 4.5 → 45 MW sa ' + mins(o.p45, o.load) + ' min (5 %/min = 7.5 MW/min; TCS target ' + f1(U.tcsT) + ', MW ' + f1(h.MW()) + ')'
+          ],
+          [
+            o.xfer != null && o.xferMW >= 8 && o.xferMW <= 22 && h.bit('ABC-050', 'I.0418') > 0.5,
+            'ICV → CV transfer sa ' + f1(o.xferMW) + ' MW (PR-OPE-5002: sa 20 MW o kapag ICV full open; dito full open ang ICV: 7.6 kg/cm2 lang ang reheat na hawak ng LP bypass hanggang bumukas ang CV), I.0418 ' + f0(h.bit('ABC-050', 'I.0418')) + ', ICV ' + f0(100 * tb.icv) + ' %'
+          ],
+          [
+            h.mv('ABC-050', 'PICMS1006') < 1 && h.mv('ABC-052', 'PICHR1003') < 1 && h.bit('ABC-050', 'M.0709') < 0.5 && S50.rt.st[hbc.svSw.id].pk === 'A',
+            'HP bypass ' + f0(h.mv('ABC-050', 'PICMS1006')) + ' % (M.0709 HP BYPASS OPENED > 5 % = ' + f0(h.bit('ABC-050', 'M.0709')) + '), SV REMOTE (PV + 2' + (o.remOp ? ', pinindot ng operator ang R' : ', sync pulse M.070D ng drawing') + '); LP bypass ' + f0(h.mv('ABC-052', 'PICHR1003')) + ' % (' + (h.isAuto('ABC-052', 'PICHR1003') ? 'AUTO' : 'MANUAL') + ', SV ' + f1(+h.sh('ABC-052').rt.v[h.ctl('ABC-052', 'PICHR1003').q.sv]) + (o.lpMan ? '; preset 33 % ng drawing sa sync pulse (M.070F), isinara ng operator sa M, bumalik sa R + A' + (o.lpBack != null ? ' sa ' + f0(o.lpBack / 60) + ' min' : ' (hindi pa bumalik)') : '') + ')'
+          ],
+          [
+            o.mspMin >= 115 && o.mspMax <= 131 && h.S.rt.st[h.bmA.id].pk === 'B' && h.bit('ABC-001C', 'M.2013') > 0.5,
+            'MSP ' + f1(o.mspMin) + ' ~ ' + f1(o.mspMax) + ' kg/cm2 mula sync (123 ± 8), ngayon ' + f1(h.MSP()) + '; HIC-BM M (M.2013 BU-CMD: MSF ' + f0(h.MSF()) + ' T/H < 220); FIC-CF ' + f0(o.cf) + ' %, coal ' + f1(h.coal()) + ' T/H'
+          ],
+          [
+            o.fw3 != null &&
+              S10.rt.st[fwc.svSw.id].pk === 'A' &&
+              h.isAuto('ABC-010', 'FICFW1007') &&
+              h.isAuto('ABC-010', 'LICBR1001') &&
+              h.bit('ABC-010', 'M.0228') < 0.5 &&
+              h.bit('ABC-010', 'M.0222') < 0.5 &&
+              h.mv('ABC-010', 'LICBR1001B') < 1,
+            '3-element feedwater: FICFW1007 R + A (SV ' +
+              f0(+S10.rt.v[fwc.q.sv]) +
+              ' = steam flow + level master LICBR1001 A, PV ' +
+              f0(h.FW()) +
+              ' T/H), M.0228 ' +
+              f0(h.bit('ABC-010', 'M.0228')) +
+              ' (FW > 100, M.022C), M.0222 single-element ' +
+              f0(h.bit('ABC-010', 'M.0222')) +
+              ' (pushbutton M.054E); start-up valve LICBR1001B ' +
+              f0(h.mv('ABC-010', 'LICBR1001B')) +
+              ' %' +
+              (o.fwA != null ? '; main valve mula ' + f0(o.fwA / 60) + ' min, 3-element mula ' + f0(o.fw3 / 60) + ' min' : '')
+          ],
+          [h.MST() >= 345 && h.MST() <= 535, 'MST ' + f0(h.MST()) + ' °C (PR-OPE-5002 ≥ 345; TAB_9 ≤ 535), RHT ' + f0(h.RHT()) + ' °C, RHP ' + f1(h.RHP()) + ' kg/cm2, saturation ' + f0(o.rate) + ' °C/h max'],
+          [
+            Math.abs(o.lvMax - o.lvl0) < 150 && Math.abs(o.lvMin - o.lvl0) < 150,
+            'drum level ' + f0(o.lvMin) + ' ~ ' + f0(o.lvMax) + ' mm (±150)'
+          ],
+          [
+            h.MW() >= 44.5 && h.bit('ABC-001C', 'I.0081') > 0.5 && h.bit('ABC-001C', 'M.3200') < 0.5 && h.FP() > -55 && h.FP() < 25,
+            'MW ' + f1(h.MW()) + ' (NORMAL OPERATION 45 MW), I.0081 DCS control mode permissive ' + f0(h.bit('ABC-001C', 'I.0081')) + '; walang trip; furnace ' + f0(h.FP()) + ' mmH2O; O2 ' + f1(h.O2()) + ' %'
+          ]
+        ];
+      }
+    },
+    {
       id: 'load',
       title: 'M2 · Load 150 → 60 → 150 MW',
       how: 'Start at 150 MW. HIC-ULD TARGET MW 60 (3 MW/min). Sa ilalim ng 220 T/H: M ang boiler master (BU-CMD), ang operator ang humahawak ng pressure at naglalagay ng O2 trim sa 50 %. Pabalik: A sa HIC-BM at EIC-TM sa itaas ng 230 T/H, TARGET 150.',
@@ -1272,6 +1473,7 @@
       AN.run = false;
       AN.reset();
       if (sc.cold) AN.plantCold();
+      else if (sc.hot) AN.plantHot();
       else if (sc.warm) AN.plantWarm(sc.warm);
       else AN.plantLoad150();
       const h = H(),
