@@ -334,13 +334,15 @@
     g.append(S_('line', { x1: x, y1: y, x2: x, y2: y - 14, stroke: c, 'stroke-width': 2 }));
     g.append(S_('rect', { x: x - 6, y: y - 20, width: 12, height: 7, fill: c }));
   }
+  let itIx = -1; /* index of the item being drawn (data-it on its texts: the overlap check of the tests tells items apart) */
   function txt(g, x, y, s, o) {
     o = o || {};
     const t = S_('text', {
+      'data-it': itIx,
       x,
       y,
       fill: o.c || '#d3dce5',
-      'font-size': o.z || 13,
+      'font-size': (o.z || 13) + 2 /* 2.2.0-beta.19: +2 px on every screen; the HMI text is ~16 px at 1920 wide */,
       'font-family': o.mono ? 'var(--mf, monospace)' : 'var(--uf, sans-serif)',
       'font-weight': o.b ? 600 : 400,
       'text-anchor': o.a || 'start'
@@ -352,16 +354,23 @@
   function draw(sys) {
     svg.innerHTML = '';
     LV = [];
+    itIx = -1;
     const g = S_('g', {});
     svg.append(g);
     const w = sys.w || 1920,
       h = sys.h || 1000;
     g.append(S_('rect', { x: 0, y: 0, width: w, height: h, fill: '#06090c' }));
     for (const it of sys.items || []) {
+      itIx++;
       try {
-        if (it.t === 'line') {
+        if (it.t === 'duct') {
+          /* 2.2.0-beta.19: a filled duct / vessel body like the HMI (yellow flue gas duct, green air duct, tan furnace): polygon
+             with the colour of its kind (k) or its own colour (c), translucent fill */
+          const c = it.c || KC[it.k] || KC.sig;
+          g.append(S_('polygon', { points: it.p.map(q => q.join(',')).join(' '), fill: c, 'fill-opacity': it.o != null ? it.o : 0.3, stroke: c, 'stroke-width': 2 }));
+        } else if (it.t === 'line') {
           const c = KC[it.k] || KC.sig;
-          g.append(S_('polyline', { points: it.p.map(q => q.join(',')).join(' '), fill: 'none', stroke: c, 'stroke-width': it.k === 'sig' ? 1 : 2.5, 'stroke-dasharray': it.k === 'sig' ? '4 3' : '' }));
+          g.append(S_('polyline', { points: it.p.map(q => q.join(',')).join(' '), fill: 'none', stroke: c, 'stroke-width': it.k === 'sig' ? 1 : it.w || 3 /* beta.19: 3 px pipes (2.5), w: for a thicker duct */, 'stroke-dasharray': it.k === 'sig' ? '4 3' : '' }));
           if (it.a && it.p.length > 1) {
             const [a, b] = [it.p[it.p.length - 2], it.p[it.p.length - 1]],
               an = Math.atan2(b[1] - a[1], b[0] - a[0]),
@@ -378,7 +387,7 @@
           valve(g, it, open ? '#e05555' : '#3fbf6a');
           txt(g, it.x + 14, it.y - 10, it.tag || '', { z: 12, b: 1 });
           const vt = txt(g, it.x + 14, it.y + 6, (it.v != null ? it.v : '—') + ' ' + (it.u || '%'), { z: 13, mono: 1, c: '#5cd6ff' });
-          if (it.m) txt(g, it.x - 14, it.y - 10, it.m, { z: 11, c: it.m === 'M' ? '#ffd27a' : '#9ff0c4', a: 'end', b: 1 });
+          if (it.m) txt(g, it.x - 14, it.y + 6, it.m, { z: 11, c: it.m === 'M' ? '#ffd27a' : '#9ff0c4', a: 'end', b: 1 }); /* beta.19: on the value line, clear of the tag of the damper beside it (008) */
           reg(it, x => {
             vt.textContent = x ? fmtV(x.v, it.v) + ' ' + (it.u || '%') : (it.v != null ? it.v : '—') + ' ' + (it.u || '%');
             vt.setAttribute('fill', x ? '#5cd6ff' : '#7f90a0');
@@ -417,7 +426,7 @@
           const rx = it.shape === 'drum' || it.shape === 'tank' ? Math.min(it.w, it.h) / 2 : it.shape === 'turbine' ? 4 : 6;
           if (it.shape === 'turbine')
             g.append(S_('polygon', { points: `${it.x},${it.y + it.h * 0.3} ${it.x + it.w},${it.y} ${it.x + it.w},${it.y + it.h} ${it.x},${it.y + it.h * 0.7}`, fill: '#1b2530', stroke: '#8b9aa8', 'stroke-width': 2 }));
-          else g.append(S_('rect', { x: it.x, y: it.y, width: it.w, height: it.h, rx, fill: '#121a22', stroke: '#8b9aa8', 'stroke-width': 2 }));
+          else g.append(S_('rect', { x: it.x, y: it.y, width: it.w, height: it.h, rx, fill: it.f || '#121a22', stroke: it.f ? '#a9b7c4' : '#8b9aa8', 'stroke-width': 2 })); /* beta.19: f = own fill (plenum, wall, APH) */
           if (it.label) txt(g, it.x + it.w / 2, it.y + it.h / 2 + 5, it.label, { z: 13, a: 'middle', b: 1 });
         } else if (it.t === 'text') {
           txt(g, it.x, it.y, it.s, { z: it.z || 13, b: it.b, c: it.c });
@@ -457,22 +466,32 @@
             t2.setAttribute('fill', x ? '#9ff0c4' : '#7f90a0');
           }, box);
         } else if (it.t === 'header') {
-          let x = 20;
-          g.append(S_('rect', { x: 0, y: 0, width: w, height: 34, fill: '#141c25' }));
-          for (const [k, v, u] of it.items || []) {
-            txt(g, x, 23, k, { z: 14, c: '#a9b7c4', b: 1 });
-            const t = txt(g, x + 50, 23, v + ' ' + (u || ''), { z: 15, mono: 1, c: '#5cd6ff' });
-            x += 60 + Math.max(90, (v + ' ' + (u || '')).length * 10);
-            /* 2.2.0-beta.19: the header bar of every screen (MSP, MST, MSF, RHP, RHT, COAL, PWR) reads the simulation: the same
+          /* 2.2.0-beta.19: the header bar like the HMI: seven cells spread over the full width, bold label, the value in a dark box
+             (big, mono, cyan), the unit after it; before a thin left-aligned strip with 14 px text */
+          const items = it.items || [],
+            n = Math.max(1, items.length),
+            cw = (w - 40) / n,
+            bh = 46;
+          g.append(S_('rect', { x: 0, y: 0, width: w, height: bh, fill: '#141c25' }));
+          g.append(S_('line', { x1: 0, y1: bh, x2: w, y2: bh, stroke: '#2a3a4a', 'stroke-width': 1 }));
+          items.forEach(([k, v, u], i) => {
+            const x0 = 20 + i * cw;
+            txt(g, x0, bh / 2 + 7, k, { z: 19, c: '#f0b0d8', b: 1 });
+            const lw = 10 + k.length * 12,
+              bw = Math.max(86, (String(v).length + 1) * 13);
+            g.append(S_('rect', { x: x0 + lw, y: 8, width: bw, height: bh - 16, rx: 3, fill: '#05080b', stroke: '#2a6a98', 'stroke-width': 1 }));
+            const t = txt(g, x0 + lw + bw / 2, bh / 2 + 8, v, { z: 22, mono: 1, c: '#5cd6ff', b: 1, a: 'middle' });
+            txt(g, x0 + lw + bw + 8, bh / 2 + 7, u || '', { z: 17, c: '#f0b0d8', b: 1 });
+            /* the header bar of every screen (MSP, MST, MSF, RHP, RHT, COAL, PWR) reads the simulation: the same
                signals as the HMI header (ABC-001C AI0131 PT-MS1002, TICMS1004, SI0230 compensated main steam flow, AI0419 GCP-AI1001
                generator MW; ABC-052 PICHR1003 reheat pressure, ABC-019 TICHR1002 reheat temperature, ABC-002 coal master PV) */
             const hi = { t: 'val', tag: k, ref: HDR[k], v, u };
             if (HDR[k])
               reg(hi, y => {
-                t.textContent = (y ? fmtV(y.v, v) : v) + ' ' + (u || '');
+                t.textContent = y ? fmtV(y.v, v) : v;
                 t.setAttribute('fill', y ? '#5cd6ff' : '#7f90a0');
               }, t);
-          }
+          });
         }
       } catch (e) {}
     }
