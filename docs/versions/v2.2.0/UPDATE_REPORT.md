@@ -15,7 +15,7 @@ Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-ap
 - **As Left (headless, build 2.2.0-beta.10):**
   - Start at 150 MW: feeders 29.2 / 29.2 / 29.2 T/H, coal anchor 87.6 T/H (gaya ng beta.9); HIC-BM AUTO 68.3 %, EIC-TM AUTO 150.
   - `unit_load.js` ALL PASS (150 MW steady; 60 MW: MW 60.0, MSF 201.0, coal 40.1, MSP 121.3; boiler master MANUAL sa ibaba ng 220 T/H, NANATILING MANUAL pagkatapos mawala ang BU-CMD hanggang pinindot ng operator; balik 150 MW: MW 150.0, MSF 470.9, MSP 122.4; drum level ±29 mm; walang trip).
-  - Regression: switches 0 / 438; reset 51 / 0; hmi_op ALL PASS (38 anchored loops); manstation, force_manual (68 / 0), isolated engine (5128 net) PASS; scenarios 244 / 0; `npm test` PASS. Generic tester (68 controller): tumatakbo pa sa oras ng push na ito; ang resulta ay nasa susunod na docs commit.
+  - Regression: switches 0 / 438; reset 51 / 0; hmi_op ALL PASS (38 anchored loops); manstation, force_manual (68 / 0), isolated engine (5128 net) PASS; scenarios 244 / 0; `npm test` PASS. Generic tester (lahat ng sheet, build beta.10): 68 controller, 2145 tama, 0 mali, 0 hindi nasubok.
 - **Ano ang makikita ng operator:** sa load down sa ibaba ng 220 T/H ng main steam, ang boiler master HIC-BM ay MANUAL (M sa faceplate); pag-akyat pabalik sa itaas ng 220 T/H, nananatili itong M hanggang pindutin mo ang A (dati kusang A). Kapag pinindot ang A habang may BU-CMD pa, mananatiling M.
 - **Hindi pa nasubok:** totoong tablet / apk / exe.
 - **Status:** Beta.
