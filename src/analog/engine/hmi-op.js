@@ -1046,13 +1046,15 @@ function anPlantWarm(o) {
     if (o.coal > 0 && AN.latchMode) for (const t of ['FICCL1061A', 'FICCL1061B', 'FICCL1061C']) AN.latchMode(t, 'LOC');
   } catch (e) {}
   AN.steady = false;
-  /* the fire is already there: oil + the coal that burns in the bed (unit.js anUnitStep) */
-  {
+  /* the fire is already there. Oil only (Start warm, beta.16): as before. 2.2.0-beta.17 with coal (Start hot): the steady state of the
+     firing line of anUnitStep (oil + the coal that burns in the bed); the Start warm value is kept as it was so that the verified
+     bypass scenario of beta.16 starts from the same state */
+  if (o.coal > 0) {
     const F = (U.fuel || []).reduce((a, l) => a + (anUnitVal(l) || 0), 0),
       bf = Math.max(0, Math.min(1, (U.Tb - U.Tburn0) / (U.Tburn1 - U.Tburn0))),
       Fe = bf * F + U.ao * U.oilF;
     U.Qs = Math.max(0, U.a * Fe + (U.m0 - U.a * U.F0) * Math.min(1, Fe / (0.3 * U.F0)));
-  }
+  } else U.Qs = U.a * (U.oilF * U.ao);
   return n;
 }
 /* 2.2.0-beta.17: the plant at the end of M4 step 3, ready for the turbine: 123 kg/cm2 on the HP bypass, bed 750 C, three coal feeders
