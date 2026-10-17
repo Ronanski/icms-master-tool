@@ -95,7 +95,8 @@
   /* ang .MAN / .LOC / .REM ng isang tag ay iisang HMI command sa buong DCS: lahat ng input na may ganitong pangalan sa lahat ng sheet (hindi lang ang sa sheet ng controller) */
   /* a wire named by its description only: not an address (B.0641, M.0228, AI0641) and not linked from another sheet */
   const descWire = (S2, n) =>
-    !(S2.xlk && S2.xlk[n]) && !/^(?:[A-Z]{1,2}\.[0-9A-F]{4}|[A-Z]{2}\d{4}|[A-Z]{2,}[A-Z0-9-]*\.[A-Z]{2,4})$/.test((AN.nm(S2, n) || '').trim());
+    !(S2.xlk && S2.xlk[n]) &&
+    !/^(?:(?:S\d\s+)?[A-Z]{1,2}\.[0-9A-F]{4}|(?:S\d\s+)?[A-Z]{2}\d{4}|[A-Z]{2,}[A-Z0-9-]*\.[A-Z]{2,4}|\d\s*:\s*[A-Z])$/.test((AN.nm(S2, n) || '').trim()); /* 2.2.0-beta.9: also an address with its station (S2 M.2502) and a switch leg mark (1:B) */
   const modeNetsByTag = (tag, kinds, own) => {
     const out = own ? [own] : [],
       want = new Set(kinds.map(k => (tag + '.' + k).toLowerCase())),
@@ -122,13 +123,21 @@
       tagged.push(S2);
       for (const q of tq) {
         let best = -1,
-          bd = 14;
+          bd = 8; /* 2.2.0-beta.9: distance to the line of the wire (the own wire is about 5 units under its tag text) */
         for (const n of S2.ext) {
           const nn = S2.nets[n];
           if (!nn || !nn.dig || !descWire(S2, n)) continue;
           for (const i of nn.segs) {
+            /* 2.2.0-beta.9: the distance to the LINE of the wire, not to its ends: the tag text is written on its own wire (ABC-001C
+               "HIC-BM.MAN" over the wire "BOILER MASTER IN MANUAL"); with the ends, a shorter wire of the pair above was nearer
+               ("TURBINE MASTER IN MANUAL", 12 units from its end, while the own wire ends 34 units away), so HIC-BM.MAN was the
+               turbine master wire */
             const g = S2.seg[i],
-              d = Math.min(Math.hypot(q.x - g.x1, q.y - g.y1), Math.hypot(q.x - g.x2, q.y - g.y2));
+              dx = g.x2 - g.x1,
+              dy = g.y2 - g.y1,
+              L2 = dx * dx + dy * dy,
+              t = L2 > 0 ? Math.max(0, Math.min(1, ((q.x - g.x1) * dx + (q.y - g.y1) * dy) / L2)) : 0,
+              d = Math.hypot(q.x - (g.x1 + t * dx), q.y - (g.y1 + t * dy));
             if (d < bd) {
               bd = d;
               best = n;
@@ -299,6 +308,10 @@
     return out;
   }
   AN.hmiCtrls = ctrls; /* for the tests */
+  /* 2.2.0-beta.9: the .MAN / .LOC / .REM addresses of a tag on every sheet, for the engine (plant.js MAN station status) */
+  AN.modeNets = (tag, kinds) => modeNetsByTag(tag, kinds || MODEK.MAN);
+  /* 2.2.0-beta.15: the operator's M / A (LOC) / R on a tag, for the engine (Start cold: every controller MANUAL = .MAN 1) and the CHECK */
+  AN.latchMode = latchMode;
   function trendOf(key) {
     return trends[key] || (trends[key] = { t: [], pv: [], sv: [], mv: [] });
   }
@@ -842,6 +855,16 @@
         set = v => {
           const st = S.rt.st[b.id];
           if (st) st.val = Math.max(lo, Math.min(hi, v));
+          /* 2.2.0-beta.2: a station in AUTO follows its set input (leg A of its SV switch); when that input is the operator's own
+             set (an input of the sheet, e.g. ABC-001A HIC-ULD: TARGET MW, COS SI0243 "TARGET MW SETUP FROM CCS CRT"), the
+             faceplate writes it. Before: the value was overwritten by the target at the next step, so ▼ did nothing in AUTO */
+          try {
+            const si = b.svI >= 0 ? b.i[b.svI] : null,
+              dr = si != null ? (S.drv[si] || []).find(z => z.k === 'AMT') : null,
+              ds = dr && S.rt.st[dr.id];
+            if (dr && ds && ds.pk === 'A' && dr.a != null && S.ext.includes(dr.a) && !(S.xlk && S.xlk[dr.a]))
+              S.rt.ext[dr.a] = Math.max(lo, Math.min(hi, v));
+          } catch (e) {}
           try {
             AN.settle();
           } catch (e) {}

@@ -327,11 +327,89 @@
           AN.settle();
           AN.paint();
           msg('Plant at 150 MW: ' + n + ' transmitters set from the HMI snapshots. Press Run.');
+          /* 2.2.0-beta.3: the DITL sheets in the 150 MW state too (MFT reset, equipment of the snapshots running) */
+          if (window.DITL150)
+            (AN.ades ? AN.ades() : Promise.resolve())
+              .then(() => {
+                const r = DITL150.apply();
+                if (r) msg('Plant at 150 MW: ' + n + ' ABC transmitters from the HMI snapshots, DITL in service (MFT reset). Press Run.');
+              })
+              .catch(() => {});
         } catch (e) {
           msg('Could not load the 150 MW state: ' + e.message);
         }
       };
       set.m.append(ld);
+      /* 2.2.0-beta.14 (M4): the plant cold, ready for the start-up procedure (PR-OPE-5002): purge, light-off, pressure raise */
+      const cd = document.createElement('button');
+      cd.className = 'an-only';
+      cd.id = 'loadcold';
+      cd.textContent = 'Start cold (M4 start-up)';
+      cd.title = 'Reset, the 150 MW anchors, then the plant cold: drum 0 kg/cm2, water and bed 30 C, feeders and fans stopped, oil valves closed, every controller LOCAL + MANUAL 0 %. The CHECK panel has the procedure.';
+      cd.onclick = () => {
+        try {
+          AN.reset();
+          const n = AN.plantCold();
+          AN.paint();
+          msg('Plant cold: drum 0 kg/cm2, water 30 C, no fire. Press Run, then start the fans (Buttons M.3302 / 3303 / 3304), purge, open the oil valves (M.3410 / 3411 = 0) and fire the burners (FICDO1043A / B). ' + n + ' anchors.');
+        } catch (e) {
+          msg('Could not load the cold state: ' + e.message);
+        }
+      };
+      set.m.append(cd);
+      /* 2.2.0-beta.15 (M4 step 2): the plant warm = the end of the cold start (30 kg/cm2, bed 480 C, 4 burners lit) */
+      const wm = document.createElement('button');
+      wm.className = 'an-only';
+      wm.id = 'loadwarm';
+      wm.textContent = 'Start warm (M4: 30 kg/cm2, burners lit)';
+      wm.title = 'Start cold, then the plant as at the end of the cold start: drum 30 kg/cm2, bed 480 C, fans running, 4 start-up burners at 30 %. For the coal transfer and the next steps of PR-OPE-5002.';
+      wm.onclick = () => {
+        try {
+          AN.reset();
+          const n = AN.plantWarm();
+          AN.paint();
+          msg('Plant warm: drum 30 kg/cm2, bed 480 C, 4 start-up burners lit. Press Run; coal transfer: CHECK panel has the steps. ' + n + ' anchors.');
+        } catch (e) {
+          msg('Could not load the warm state: ' + e.message);
+        }
+      };
+      set.m.append(wm);
+      /* 2.2.0-beta.17 (M4 step 4): the plant at the end of step 3 and the operator on the TCS panel (outside the DCS drawings) */
+      const ht = document.createElement('button');
+      ht.className = 'an-only';
+      ht.id = 'loadhot';
+      ht.textContent = 'Start hot (M4: 123 kg/cm2 on bypass, coal)';
+      ht.title = 'Start cold, then the plant as at the end of M4 step 3: drum 123 kg/cm2 on the HP bypass (AUTO), LP bypass AUTO 7.6, bed 750 C, three coal feeders at 12 %, burners out. Ready for the turbine roll.';
+      ht.onclick = () => {
+        try {
+          AN.reset();
+          const n = AN.plantHot();
+          AN.paint();
+          msg('Plant hot: 123 kg/cm2 on the HP bypass, bed 750 C, 3 feeders. Press Run, then Turbine ROLL (30 min to 3600 rpm), SYNC, LOAD UP. ' + n + ' anchors.');
+        } catch (e) {
+          msg('Could not load the hot state: ' + e.message);
+        }
+      };
+      set.m.append(ht);
+      const tcs = (id, label, title, cmd, arg, ok) => {
+        const b = document.createElement('button');
+        b.className = 'an-only';
+        b.id = id;
+        b.textContent = label;
+        b.title = title;
+        b.onclick = () => {
+          try {
+            const r = AN.turbine(cmd, arg);
+            msg(r ? 'TCS: ' + r : ok);
+          } catch (e) {
+            msg('TCS: ' + e.message);
+          }
+        };
+        set.m.append(b);
+      };
+      tcs('tcsroll', 'Turbine ROLL (TCS)', 'TCS panel: open the stop valves, IP start mode, 120 rpm/min to 3600 rpm (PR-OPE-5002 4.4). Needs Start cold / warm / hot and the plant running.', 'roll', null, 'TCS: turbine rolling, 120 rpm/min to 3600 (PLANT > UNIT shows the speed).');
+      tcs('tcssync', 'SYNC + initial load 4.5 MW (TCS)', 'TCS panel at 3600 rpm: GCB 52G1 closed (ABC-050 I.0931 = 1, I.0932 = 0), initial load 4.5 MW on the ICV (PR-OPE-5002 4.5).', 'sync', null, 'TCS: generator synchronised, initial load 4.5 MW.');
+      tcs('tcsload', 'LOAD UP to 45 MW (TCS)', 'TCS panel: target 45 MW at 5 %/min (7.5 MW/min). ICV -> CV transfer at 20 MW (I.0418 = 1), DCS control mode permissive I.0081 at 45 MW (PR-OPE-5002 4.6).', 'loadup', 45, 'TCS: load up to 45 MW at 7.5 MW/min.');
     }
     set.head('Channel at update');
     const ch = $('chsel'),

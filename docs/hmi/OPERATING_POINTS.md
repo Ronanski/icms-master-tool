@@ -201,7 +201,7 @@ Basahin muna: sa HMI, **pula = bukas / tumatakbo**, **berde = sarado / hinto**; 
 - MIACL1061B7 — alarm (red) — - — B-BELT TRACKING active; IO: #1 Coal feeder-B belt tracking [MIA-CL1061-B7, STN104 I.044D]
 - MIACL1061C3 — alarm (red) — - — C-INLET PLUGGING active; IO: #1 Coal feeder-C inlet plugging [MIA-CL1061-C3, STN104 I.0489]
 - COAL MASTER CONTROL — PV 87.0 T/H / SV 87.4 T/H / MV 73.0 % — R — → ABC FIC-CM (ABC-004A)
-- TOTAL COAL FLOW CORRECT. — PV 81.2 T/H / SV 81.2 T/H / MV 33.1 % — R — → ABC FIC-CF (ABC-004A)
+- TOTAL COAL FLOW CORRECT. — PV 81.2 T/H / SV 81.2 T/H / MV 33.1 % — R — → ABC HS-COAL (ABC-004A)
 - COAL CALORIE CORR. — 4150 Kcal/Kg — -
 - COAL/POWER RATIO — 0.570 Tc/Tp — -
 - MSF/POWER RATIO — 3.180 Tf/Tp — -

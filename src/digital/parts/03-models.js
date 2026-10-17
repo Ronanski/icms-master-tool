@@ -173,18 +173,21 @@ function svModel(sh, nl) {
       );
     const noZS =
       !zs.length; /* ZS tag may differ from the SV tag (DITL-20 CL1061-A7): inside the same box counts. v26: no ZS at all (DITL-44, 86, 92, 93) = only the coil is shown */
+    /* 2.2.0-beta.3: a command wire that ENTERS the field box (DITL-20: the output 0.0242 of the OPEN latch goes into XV-CL1061-A to
+       the contact of SV-CL1061-A) is the command; before, only wires that stop at the box edge were looked at, and the wire of the
+       latch reset (MFT / CLOSE P.B.) was taken: the valve opened on MFT and was shut in service */
+    const into = q => q.x1 < bx.x1 - 1 && q.x2 > bx.x1 - 1 && q.x2 <= bx.x2;
     const sg = nl.segs
       .filter(
         q =>
           q.h &&
           D.has(q.n) &&
-          q.x2 <= bx.x1 + 1 &&
-          q.x2 >= bx.x1 - 46 &&
+          ((q.x2 <= bx.x1 + 1 && q.x2 >= bx.x1 - 46) || into(q)) &&
           q.y1 >= bx.y1 - 4 &&
           q.y1 <= bx.y2 + 4 &&
           Math.abs(q.y1 - t.y) < 28
       )
-      .sort((a, b) => b.x2 - a.x2 || Math.abs(a.y1 - t.y) - Math.abs(b.y1 - t.y))[0];
+      .sort((a, b) => into(b) - into(a) || b.x2 - a.x2 || Math.abs(a.y1 - t.y) - Math.abs(b.y1 - t.y))[0];
     if (!sg) continue;
     seen.add(suf + '@' + bx.x1.toFixed(0) + bx.y1.toFixed(0));
     const ct = all

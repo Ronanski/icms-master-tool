@@ -152,7 +152,12 @@ window.UATS = (function () {
               AN.settle();
             } catch (e) {}
           } else if (st.do === 'wait') await stepSim(sh, st.s);
-          else if (st.do === 'reset') {
+          else if (st.do === 'load150') {
+            /* 2.2.0-beta.8: the plant in service (Start at 150 MW, hmi-op.js): every sheet at the operating point of the plant */
+            AN.reset();
+            AN.plantLoad150();
+            AN.go(idx);
+          } else if (st.do === 'reset') {
             AN.reset();
             AN.go(idx);
           } else if (st.do === 'press') {
@@ -255,6 +260,19 @@ window.UATS = (function () {
               if (i % 150 === 149) await sleep(0);
             }
             mk.__autoSeen = seen;
+          } else if (st.do === 'opclear') {
+            /* 2.2.0-beta.8: the trip input is back, but the drawing still forces the station through a permissive the restart itself
+               set (ABC-008: ID fan start M.020E presets PICFG108 MV 13 %, M.0206 = MV < 14 %): the operator raises the MV in MANUAL */
+            if (stn && stn.fman) {
+              const ins = [...fp.querySelectorAll('input')],
+                f = ins[ins.length - 1];
+              if (f && !f.disabled) {
+                f.value = st.value;
+                f.dispatchEvent(new Event('change'));
+                await stepSim(sh, 5);
+                note = ' (drawing still forced after the trip cleared: MV ' + st.value + ' entered; force now ' + (stn.fman ? 'ACTIVE' : 'clear') + ')';
+              } else note = ' (drawing still forced; MV field disabled)';
+            } else note = ' (not needed: no force)';
           } else if (st.do === 'mark') mk[st.as] = val(st.what);
           if (st.say && st.do !== 'wait' && st.do !== 'mark') push({ k: 'do', t: st.say + note });
           await sleep(450);
@@ -647,6 +665,62 @@ window.UATS = (function () {
           }
         }
       }
+      /* 2.2.0-beta.8 (A6, user: "sundin ang plant physics"): a clean state must STAY clean. A permissive of the drawing that is
+         a process condition behind a timer (ABC-010 M.022E = TON 60 s of MAIN STEAM FLOW < 100 T/H) forces the station later,
+         so the state found in 20 s is not a state of the plant */
+      /* 2.2.0-beta.8: the PV gated by the drawing to a constant (ABC-003C SI0460 = SW(M.3416)[ AI0517, CONST ]: both supply oil
+         valves of burner C closed -> no oil flow): the equipment in service instead, when the state stays clean (an oil flow
+         answers the valve only while the burner is in service) */
+      if (base) {
+        const pvc = c0.q && c0.q.pv;
+        for (const d of (pvc != null && S.drv[pvc]) || []) {
+          if (d.k !== 'SW' || d.sel == null || d.sel < 0 || !S.ext.includes(d.sel)) continue;
+          const isC = l => l >= 0 && (S.drv[l] || []).some(x => x.k === 'CONST');
+          if (isC(d.a) === isC(d.b)) continue;
+          await setup(base);
+          const t = S.rt.st[d.id];
+          if (!t || !isC(t.pk === 'B' ? d.b : d.a)) continue;
+          const nb = flip(base, d.sel);
+          if ((await score(nb)) < 1000) base = nb;
+        }
+      }
+      if (base) {
+        const { st } = await setup(base);
+        await stepSim(sh, 80);
+        const cut = (c0.dn || []).some(d => {
+          const t = S.rt.st[d.id];
+          return t && t.pk === 'B';
+        });
+        if (st.fman || cut) base = null;
+      }
+      /* 2.2.0-beta.8 (A6): no clean state from the inputs alone (PICFG108, AICFG112, HS-COAL, FICFW1007): the permissives are
+         process conditions (ID fan running and MV >= 14 %, air / fuel cross limits, every feeder and mill running, steam flow).
+         The state is then the PLANT IN SERVICE (Start at 150 MW: transmitters, equipment and modes of the operating point),
+         the same plant the operator runs, not a guess of the inputs */
+      let svc = false;
+      if (!base) {
+        const loadSvc = async () => {
+          AN.reset();
+          AN.plantLoad150();
+          AN.go(idx);
+          await stepSim(sh, 5);
+          const c = AN.hmiCtrls(S).find(c => c.tag === tag),
+            st = S.rt.st[c.amt.id],
+            cut = (c.dn || []).some(d => {
+              const t = S.rt.st[d.id];
+              return t && t.pk === 'B';
+            });
+          return { st, c, cut };
+        };
+        const r0 = await loadSvc();
+        if (!r0.st.fman && !r0.cut) {
+          svc = true;
+          base = { sets: [], pulses: [] };
+          anOv.clear();
+          aiOv.clear();
+          mvPre = null;
+        }
+      }
       if (!base) {
         let why = '';
         try {
@@ -666,6 +740,31 @@ window.UATS = (function () {
         };
       }
       let trig = null;
+      if (svc) {
+        /* in service: the plant is loaded once; each input of the force-manual cone is turned over for 3 s and back (an input that
+           does not force the station leaves the plant as it was); the first one that forces the station is the trip */
+        AN.reset();
+        AN.plantLoad150();
+        AN.go(idx);
+        await stepSim(sh, 5);
+        for (const n of cd) {
+          const stn = S.rt.st[c0.amt.id];
+          if (stn.fman) break;
+          const xl = (S.xlk && S.xlk[n]) || !S.ext.includes(n),
+            cur = (xl ? S.rt.v[n] : S.rt.ext[n]) > 0.5 ? 1 : 0;
+          put(n, cur ? 0 : 1);
+          await stepSim(sh, 3);
+          const f = S.rt.st[c0.amt.id].fman;
+          if (xl) delete S.rt.force[n];
+          else S.rt.ext[n] = cur;
+          if (f) {
+            trig = [n, cur ? 0 : 1];
+            break;
+          }
+          await stepSim(sh, 2);
+        }
+      }
+      if (!svc)
       for (const n of cd.concat(dg.filter(x => !cd.includes(x)))) {
         const cur = (base.sets.find(x => x[0] === n) || [n, 0])[1];
         const { st } = await setup({
@@ -707,8 +806,11 @@ window.UATS = (function () {
         T = pr && pr.proc && pr.proc.T ? pr.proc.T : 150,
         wp = Math.max(120, Math.min(1500, Math.round(T * 6)));
       const sc = [];
-      const pre = bs
-        .concat([{ do: 'wait', s: 20 }])
+      const pre = (
+        svc
+          ? [{ do: 'load150', say: 'Plant in service: Start at 150 MW (operating point of the plant)' }, { do: 'wait', s: 5 }]
+          : bs.concat([{ do: 'wait', s: 20 }])
+      )
         .concat(hasR ? [{ do: 'press', button: 'A', say: 'A (leave REMOTE first if in REMOTE)' }] : []);
       sc.push({
         id: 'G1',
@@ -972,6 +1074,7 @@ window.UATS = (function () {
               say: 'Mode after trip clears',
               why: 'not automatic, unless the drawing itself has a 1:A (AUTO) signal'
             },
+            { do: 'opclear', value: 50, say: 'If the drawing still forces: operator raises MV in MANUAL = 50' },
             { expect: 'disabled', button: 'A', value: 'enabled', say: 'A button' },
             { do: 'press', button: 'A', say: 'Press A' },
             { expect: 'mode', value: 'AUTO', say: 'Mode after pressing A' }
@@ -980,7 +1083,8 @@ window.UATS = (function () {
       return {
         loop: tag,
         scenarios: sc,
-        notes,
+        notes: svc ? ['state: plant in service (Start at 150 MW); no clean state from the inputs alone'].concat(notes) : notes,
+        svc,
         base: base.sets.length,
         pulses: base.pulses.length,
         trig: trig ? labTxt(S, trig[0]) || 'n' + trig[0] : null
