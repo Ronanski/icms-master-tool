@@ -19,7 +19,9 @@ Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-ap
   - Sakop ng block test: 2517 sa 3573 na block. Ang natitira ay text ng tag, SIG.AB flag, COS (sinusubok sa switch nito), AO na walang output, constant na reference, field block, at 11 switch.
   - Pangalan ng COS: 173 COS, 0 na walang pangalan (dati 22). Halimbawa: ABC-010 "COS manual ▸ PID LICBR1001B (manual of this loop)".
   - UAT panel ng ABC-010: bukas, 0 error sa page.
-- **Hindi pa nasubok:** totoong tablet. Ang buong generic controller tester (beta.23) ay tumatakbo pa sa background.
+- **Generic controller tester (natapos pagkatapos ng push, build beta.23 / beta.24):** 68 controller, 2145 tama, 0 mali, 0 hindi nasubok (kapareho ng beta.13 ~ beta.17: 2145). Ibig sabihin: kumikilos ang bawat controller ayon sa basa ng app sa drawing, sa parameter summary at sa rules ng CLAUDE.md. Hindi nito napapatunayan ang basa ng drawing mismo; iyan ang audit ng sheet (53 pa).
+- **M4 Cold start-up (buo) 16 / 17, sinuri:** ang RH pressure ay umaabot sa 9.1 (limit 9.0) kapag biglang kumuha ng steam ang HP bypass (MSP 126.5 sa SV 123, 31 → 75 T/H sa 6 min). Sinubukan ang mas maagang pagbukas ng RH blow-off ng operator (hanggang 80 %): walang epekto, ibinalik. Sanhi: maliit ang RH blow-off sa unit model (`unit.js` rhb 0.1, IPINALAGAY). Ayos pagkatapos ng Stable (laki ng blow-off), dahil apektado ang ibang scenario.
+- **Hindi pa nasubok:** totoong tablet.
 - **Status:** Beta (push sa branch). Susunod: ang 7 switch na ang output ay kapareho ng isang leg (suriin sa PDF), Stable prep.
 
 ## 2.2.0-beta.23 — M6 hakbang 1: mabilis na controller tester + CONTROLLER TEST sa UAT panel (checklist A6 / A9)
