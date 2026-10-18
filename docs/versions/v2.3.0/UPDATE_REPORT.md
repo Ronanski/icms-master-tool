@@ -23,3 +23,15 @@
   - Walang binagong formula, range, timer o parameter.
 - **As Left:** Test `tests/regress/audit230.js`: 19 / 19 PASS (bawat ayos sa itaas, sa app mismo). Regression: tests.js 11 / 11, world.js 11 / 11, ditl150.js 9 / 9, plant_live.js 12 / 12, faceplate.js, engine isolated.js: lahat PASS. Binago ang inaasahan ng world.js (ABC-017 I.024E ay PLC na, hindi DITL) at ng ditl150.js (40-09 ay direktang M.310D na).
 - **Status:** Pass (beta.1). Natitira: DITL-21C row 19 / 20 (M.311A / B, walang pinagmulan sa ABC-009A ng app; hindi mabasa). Susunod: beta.2 behavior (grupo B), beta.3 datos (grupo C).
+
+## beta.2 — Behavior ayon sa drawing (grupo B, 2026-10-19)
+
+- **Problem:** Apat na gawi ng engine na iba sa nakasulat sa drawing (`DRAWING_AUDIT.md` grupo B).
+- **As Found:**
+  - Coal feeder A / B / C: ang MV ay umaabot sa 40 T/H kahit lahat ay REMOTE at tumatakbo (dapat ≤ 83.3 % = 33.3 T/H).
+  - Burner A ~ D SA flow: ang "SET SV = 49 T/H" sa house operation ay hindi umaabot sa SV ng controller.
+  - Oil master: ang tracking (SI0304) ay laging kumukuha sa burner A, kahit ibang burner ang REMOTE (may talon).
+  - Ramp ng air demand / PA demand 11x / 6.5x mas mabagal; ramp ng HP bypass spray temperature SV 12x mas mabagal.
+- **Work Done:** (`DRAWING_TRACE.md` beta.2) MV high limit mula sa `<tag>.MHD` sa MAN station; SET SV sa operator SV na nananatili; pili ng SI0304 mula sa REMOTE ng FICDO1043A ~ D; span ng ramp 1115 T/H, 648 T/H, 600 °C. Walang binagong link.
+- **As Left:** `tests/engine/audit230b.js` 4 / 4 PASS (33.32 T/H kapag M.3405 = 1, 38 T/H kapag 0; SV 20.8 → 49 at nananatili; C lang ang REMOTE → leg C; 2.23 / 1.296 T/H bawat s, 10 °C / min). Regression: tingnan ang ulat sa chat.
+- **Status:** Pass. Susunod: beta.3 datos (grupo C).
