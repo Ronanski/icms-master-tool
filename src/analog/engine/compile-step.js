@@ -285,6 +285,14 @@ function anDefaults(S) {
         b.bg = 100 / 120;
         b.note = 'RB-MV (T/H) -> % of 120 T/H for the PID tracking';
       }
+      /* 2.2.0-beta.20: the same for the boiler master switch (M.2000 = NOT FIC-CM.REM: B = SI0017 TOTAL FUEL FLOW "RB-MV", T/H of
+         0 ~ 120): while the coal master is not REMOTE the boiler master output tracks the fuel in % of its own range (150 MW: 81 T/H
+         = 67.5 %, 4.PNG 68.3). Before, the T/H value went in as %: at 45 MW the boiler master read 33.6 % for 36 T/H of coal, its
+         demand (x 1.2 / calorie correction) was 46 T/H and the coal master never saw SV = PV for its REMOTE */
+      if (b.k === 'AMT' && b.o.some(n => S.lab[n] && S.lab[n].t === 'HIC-BM.MV')) {
+        b.bg = 100 / 120;
+        b.note = 'RB-MV SI0017 TOTAL FUEL FLOW (T/H) -> % of 120 T/H: the boiler master tracks the fuel while the coal master is not REMOTE (M.2000)';
+      }
       if (b.k === 'CONST' && b.p && Math.abs(b.p.val + 0.42) < 1e-9) {
         b.p.val = -0.5;
         b.note = '-0.42 % (-0.5 T/H) in T/H';

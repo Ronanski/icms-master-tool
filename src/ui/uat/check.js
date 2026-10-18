@@ -399,7 +399,7 @@
           ],
           [h.MW() < 0.5 && h.coal() < 1, 'MW ' + f1(h.MW()) + ', coal ' + f1(h.coal()) + ' T/H'],
           [
-            Math.abs(o.lvMax - o.lvl0) < 150 && Math.abs(o.lvMin - o.lvl0) < 150,
+            Math.abs(o.lvMax) < 150 && Math.abs(o.lvMin) < 150,
             'drum level ' + f0(o.lvMin) + ' ~ ' + f0(o.lvMax) + ' mm (walang trip)'
           ]
         ];
@@ -413,7 +413,9 @@
       want: 'Coal nasusunog lang sa mainit na bed (burnt share); bed ≥ 750 °C; 3 feeder tumatakbo sa AUTO (~18 T/H); oil 0 (lahat ng valve sarado, burners out); O2 3 ~ 10 %; MSP tumataas pero < 125 kg/cm2 at saturation ≤ 110 °C/h (Fig 1); drum level hawak ng LICBR1001B (±150 mm); coal master FIC-CM: ang A ay hindi tinatanggap ng drawing (M.0130: FIC-CF / PA / SA hindi pa REMOTE, hakbang 4), SV = coal; MW 0; walang trip.',
       secs: 9000,
       run(h, o) {
-        o.ab = 30;
+        /* 2.2.0-beta.20: inside the full start-up chain the stage starts from the plant as the stage before left it */
+        o.ab = o.chain ? Math.round(['A', 'B', 'C', 'D'].reduce((a, k) => a + h.mv('ABC-003' + k, 'FICDO1043' + k), 0) / 4) : 30;
+        if (o.chain) o.airMv = h.mv('ABC-007', 'FICFA1071');
         o.cf = 10;
         o.feed = 0;
         o.auto = [0, 0, 0];
@@ -429,6 +431,7 @@
         o.o2Min = 21;
         o.o2Max = 0;
         o.batch = 0;
+        o.tb0 = h.U.Tb; /* chain: the bed can already be above 600 C (no batch needed, PR-OPE-5002: batch at 400 ~ 600) */
       },
       each(h, o) {
         const t = o.t,
@@ -560,10 +563,12 @@
           cmSv = +h.sh('ABC-004A').rt.v[cm.q.sv];
         return [
           [
-            o.batch >= 3 && U.burn >= 0.99,
+            (o.batch >= 3 || o.tb0 >= 600) && U.burn >= 0.99,
             'batch firing ' +
               o.batch +
-              ' burping (feeder A 10 s / 60 s) hanggang bed 600 °C; coal burnt share ngayon ' +
+              ' burping (feeder A 10 s / 60 s) hanggang bed 600 °C' +
+              (o.tb0 >= 600 ? ' (bed ' + f0(o.tb0) + ' °C na sa simula: walang batch, PR-OPE-5002 batch sa 400 ~ 600)' : '') +
+              '; coal burnt share ngayon ' +
               f1(U.burn * 100) +
               ' %'
           ],
@@ -595,7 +600,7 @@
               ' %'
           ],
           [
-            Math.abs(o.lvMax - o.lvl0) < 150 && Math.abs(o.lvMin - o.lvl0) < 150,
+            Math.abs(o.lvMax) < 150 && Math.abs(o.lvMin) < 150,
             'drum level ' + f0(o.lvMin) + ' ~ ' + f0(o.lvMax) + ' mm (LICBR1001B start-up control)'
           ],
           [
@@ -622,8 +627,11 @@
       want: 'Bypass servicing sa ~50 ksc / > 40 T/H; MSP 123 kg/cm2 (SV ng HP bypass) na may saturation ≤ 110 °C/h; HP bypass ang kumukuha ng steam, MS blow-off sarado; RH pressure 7.5 ± 1.5 kg/cm2 hawak ng LP bypass sa AUTO, RH blow-off sarado; MST ≥ 345 °C (procedure, admission) at ≤ 535 (TAB_9); drum level ±150 mm hawak ng LICBR1001B, FICFW1007 force manual ayon sa drawing (M.0228: FW < 100 T/H, M.022C; 3-element sa hakbang 4); MW 0, walang trip, furnace −55 ~ +25 mmH2O; 50 → 123 sa loob ng 2 h.',
       secs: 12000,
       run(h, o) {
-        o.ab = 30;
-        o.airMv = 10;
+        /* 2.2.0-beta.20: in the chain the burners are out after the coal transfer: the operator fires with the coal (FIC-CF) */
+        o.coalFire = !!o.chain && h.coal() > 1;
+        o.ab = o.chain ? Math.round(['A', 'B', 'C', 'D'].reduce((a, k) => a + h.mv('ABC-003' + k, 'FICDO1043' + k), 0) / 4) : 30;
+        o.cf = h.mv('ABC-004A', 'FIC-CF');
+        o.airMv = o.chain ? h.mv('ABC-007', 'FICFA1071') : 10;
         o.lvl0 = h.lvl();
         o.lvMin = o.lvMax = o.lvl0;
         o.rate = 0;
@@ -640,8 +648,12 @@
         const t = o.t,
           U = h.U;
         if (t === 10) {
+          /* chain: the coal stage leaves the pressure at ~ 80 kg/cm2; an HP bypass SV of 50 there opens the bypass wide at once
+             (steam flow 44 -> 124 T/H in 3 min: drum level -148 then +243 mm, reheat 12.5 kg/cm2). PR-OPE-5002 (7150): set the SV to
+             the PV before AUTO; the servicing then raises it 1 kg/cm2 a minute to 123. Blow-off 5 above, as in the servicing */
+          o.hpSv = Math.max(50, Math.min(123, Math.ceil(h.MSP())));
           h.autoSv('ABC-010', 'LICBR1001B', 0);
-          h.autoSv('ABC-013', 'PICMS1002', 50);
+          h.autoSv('ABC-013', 'PICMS1002', o.hpSv > 50 ? o.hpSv + 5 : 50);
           h.autoSv('ABC-050', 'PICMS1006', o.hpSv);
           h.autoSv('ABC-052', 'PICHR1003', 7.6);
           h.man('ABC-054', 'PICHR1391', o.rb);
@@ -657,21 +669,31 @@
           o.rate = Math.max(o.rate, r);
           /* firing: oil 5 % every 2 min while Fig 1 allows; after the servicing the bypass is the only outlet, so the operator keeps the
              steam flow at 40 ~ 55 T/H (PR-OPE-5002: "increase the oil firing rate if necessary") and the HP bypass sets the pressure */
-          const msf = h.MSF();
-          if (
-            r > 100 ||
-            (o.svc != null && (msf > 65 || h.MSP() > o.hpSv + 2 || (o.hpSv >= 120 && o.ab > 25)))
-          )
-            o.ab = Math.max(20, o.ab - 5);
-          else if (o.svc == null && t % 120 === 0 && r < 90 && o.ab < 80) o.ab += 5;
-          else if (o.svc != null && t % 300 === 0 && r < 90 && o.ab < 80 && h.MSP() < o.hpSv - 1) o.ab += 5;
-          for (const [k, tg] of [
-            ['ABC-003A', 'FICDO1043A'],
-            ['ABC-003B', 'FICDO1043B'],
-            ['ABC-003C', 'FICDO1043C'],
-            ['ABC-003D', 'FICDO1043D']
-          ])
-            h.man(k, tg, o.ab);
+          const msf = h.MSF(),
+            fire = o.coalFire ? o.cf : o.ab,
+            fmin = o.coalFire ? 10 : 20,
+            fmax = o.coalFire ? 40 : 80,
+            dn = r > 100 || (o.svc != null && (msf > 65 || h.MSP() > o.hpSv + (o.coalFire ? 0.5 : 2) || (o.hpSv >= 120 && fire > fmin + 5))),
+            up =
+              (o.svc == null && t % 120 === 0 && r < 90 && fire < fmax) ||
+              (o.svc != null && t % 300 === 0 && r < 90 && fire < fmax && h.MSP() < o.hpSv - 1);
+          if (o.coalFire) {
+            /* 2.2.0-beta.20 (chain): the coal master is MANUAL (M.0130 until REMOTE), FIC-CF 1 % a step (about 1.2 T/H on 3 feeders);
+               2 % when the pressure is already over the HP bypass SV (the HP bypass then opens wide and the reheat pressure runs over 9) */
+            if (dn) o.cf = Math.max(fmin, o.cf - (o.svc != null && h.MSP() > o.hpSv + 0.5 ? 2 : 1));
+            else if (up) o.cf += 1;
+            h.man('ABC-004A', 'FIC-CF', o.cf);
+          } else {
+            if (dn) o.ab = Math.max(fmin, o.ab - 5);
+            else if (up) o.ab += 5;
+            for (const [k, tg] of [
+              ['ABC-003A', 'FICDO1043A'],
+              ['ABC-003B', 'FICDO1043B'],
+              ['ABC-003C', 'FICDO1043C'],
+              ['ABC-003D', 'FICDO1043D']
+            ])
+              h.man(k, tg, o.ab);
+          }
           /* O2 3.5 ~ 8 %: PA / SA 2 % a minute (floor 10 %) */
           const x = h.O2();
           if (x > 8) o.airMv = Math.max(10, o.airMv - 2);
@@ -683,6 +705,28 @@
           if (fp < -30) o.fpMv = Math.max(5, o.fpMv - 1);
           else if (fp > 0) o.fpMv = Math.min(60, o.fpMv + 1);
           h.man('ABC-008', 'PICFG108', o.fpMv);
+          /* drum level: the start-up valve loop LICBR1001B (AUTO, SV 0) lags the evaporation of a coal fire (chain: −218 mm at 72 T/H
+             of steam, valve 22 %), so the operator opens the valve by hand, +5 % a minute while the level is under −60 mm, and gives it
+             back to AUTO (SV 0, bumpless) as soon as the level stops falling or is over −50 mm (+10 % a minute and AUTO only at −20
+             overshot to +243 mm; +5 % with AUTO at −40: +154) */
+          {
+            const lv = h.lvl(),
+              falling = lv < (o.lvPrev == null ? lv : o.lvPrev) - 1;
+            o.lvPrev = lv;
+            if (!o.lvMan && lv < -60 && falling) {
+              o.lvMan = 1;
+              o.lvMv = h.mv('ABC-010', 'LICBR1001B');
+            }
+            if (o.lvMan) {
+              if (lv < -50 && falling) {
+                o.lvMv = Math.min(100, o.lvMv + 5);
+                h.man('ABC-010', 'LICBR1001B', o.lvMv);
+              } else {
+                h.autoSv('ABC-010', 'LICBR1001B', 0);
+                o.lvMan = 0;
+              }
+            }
+          }
           /* bypass servicing (PR-OPE-5002: 50 ksc, steam flow > 40 T/H) */
           if (o.svc == null && h.MSP() >= 48 && h.MSF() >= 40) {
             o.svc = t;
@@ -695,10 +739,16 @@
               h.autoSv('ABC-050', 'PICMS1006', o.hpSv);
             }
             h.autoSv('ABC-013', 'PICMS1002', o.hpSv + 5);
-            if (o.rb > 0) {
-              o.rb = Math.max(0, o.rb - 5);
-              h.man('ABC-054', 'PICHR1391', o.rb);
-            }
+          }
+          /* RH blow-off PICHR1391 (MANUAL, PR-OPE-5002: open while warming, "closing the RH blow off valve slowly until fully close,
+             maintain 7.5 ksc"): the LP bypass PID of ABC-052 lags when the HP bypass opens (chain: 55 -> 75 T/H in 5 min, RH 10.2),
+             so the operator opens the blow-off 5 % a minute over 8.2 kg/cm2 (10 % over 8.5) and closes it 5 % a minute under 8 */
+          {
+            const rp = h.RHP();
+            if (rp > 8.5) o.rb = Math.min(60, o.rb + 10);
+            else if (rp > 8.2) o.rb = Math.min(60, o.rb + 5);
+            else if (o.svc != null && rp < 8.2 && o.rb > 0) o.rb = Math.max(0, o.rb - 5);
+            h.man('ABC-054', 'PICHR1391', o.rb);
           }
         }
         if (o.svc != null && t >= o.svc + 1200) {
@@ -707,10 +757,11 @@
         }
         if (o.p123 == null && h.MSP() >= 122.5) o.p123 = t;
         if (window.__tr && t % 30 === 0)
-          window.__tr.push([t, h.RHP(), h.mv('ABC-052', 'PICHR1003'), U.mhp, h.MSF(), o.ab, h.MSP(), o.hpSv, h.mv('ABC-050', 'PICMS1006'), h.mv('ABC-054', 'PICHR1391')].map(x => +(+x).toFixed(2)));
+          window.__tr.push([t, h.RHP(), h.mv('ABC-052', 'PICHR1003'), U.mhp, h.MSF(), o.coalFire ? o.cf : o.ab, h.MSP(), o.hpSv, h.mv('ABC-050', 'PICMS1006'), h.mv('ABC-054', 'PICHR1391'), h.lvl(), h.mv('ABC-010', 'LICBR1001B'), h.FW(), h.coal()].map(x => +(+x).toFixed(2)));
       },
       done(h, o) {
-        return o.p123 != null && o.t >= o.p123 + 600;
+        /* 10 min at 123; the RH blow-off closed (the operator closes it 5 % a minute once the reheat is under 8.2), at most 30 min */
+        return o.p123 != null && o.t >= o.p123 + 600 && (o.rb === 0 || o.t >= o.p123 + 1800);
       },
       checks(h, o) {
         const U = h.U,
@@ -766,8 +817,8 @@
             'MST ' + f0(h.MST()) + ' °C (PR-OPE-5002: ≥ 345 bago ang admission; TAB_9: ≤ 535 bago ang sync), bed ' + f0(U.Tb) + ' °C'
           ],
           [
-            Math.abs(o.lvMax - o.lvl0) < 150 &&
-              Math.abs(o.lvMin - o.lvl0) < 150 &&
+            Math.abs(o.lvMax) < 150 &&
+              Math.abs(o.lvMin) < 150 &&
               h.isAuto('ABC-010', 'LICBR1001B') &&
               h.sh('ABC-010').rt.st[fwc.amt.id].fman &&
               h.bit('ABC-010', 'M.0228') > 0.5,
@@ -812,8 +863,8 @@
       want: '0 → 3600 rpm sa 30 min; GCB sarado (I.0931 = 1, M.3220 = 0 sa ABC-010); initial load 4.5 ± 1 MW; 4.5 → 45 MW sa loob ng 5 ~ 12 min; transfer sa 15 ~ 22 MW (I.0418); HP at LP bypass sarado sa 45 MW (M.0709 = 0), HP bypass REMOTE (LP bypass: preset 33 % ng drawing sa transfer, isinasara ng operator sa M tapos R + A); MSP 123 ± 8 kg/cm2 habang nakakarga, HIC-BM MANUAL (M.2013 BU-CMD: MSF < 220); 3-element feedwater: FICFW1007 R + A, LICBR1001 A, M.0228 = 0, M.0222 = 0, LICBR1001B sarado; MST 345 ~ 535 °C; drum level ±150 mm; MW ≥ 44.5 at I.0081 = 1 (NORMAL OPERATION); walang trip, furnace −55 ~ +25.',
       secs: 6000,
       run(h, o) {
-        o.cf = 12;
-        o.airMv = 14;
+        o.cf = o.chain ? h.mv('ABC-004A', 'FIC-CF') : 12; /* 2.2.0-beta.20: in the chain, the coal of the stage before */
+        o.airMv = o.chain ? h.mv('ABC-007', 'FICFA1071') : 14;
         o.fpMv = h.mv('ABC-008', 'PICFG108');
         o.lvl0 = h.lvl();
         o.lvMin = o.lvMax = o.lvl0;
@@ -910,10 +961,16 @@
              M.0228 = 0: FICFW1007 to R (SV = SI0259 = steam flow + the level master LICBR1001), LICBR1001 to A, 3-ELEMENT pushbutton
              M.054E (FF M.0222 reset) */
           if (o.fwA == null) {
-            if (h.mv('ABC-010', 'LICBR1001B') > 30) {
+            /* at the start of the load up (4.5 -> 45 MW: steam 23 -> 157 T/H in 5 min): waiting for the start-up valve to reach 30 %
+               left the level at -148 mm before the main valve took over, and LICBR1001A to A at -148 opened it to 252 T/H (+236 mm) */
+            if (o.load != null || h.MSF() > 60 || h.mv('ABC-010', 'LICBR1001B') > 30) {
               o.suv = h.mv('ABC-010', 'LICBR1001B');
               h.man('ABC-010', 'LICBR1001B', o.suv);
               h.autoSv('ABC-010', 'LICBR1001A', 0);
+              /* the level master LICBR1001 (3-element: FICFW1007 SV = steam flow + LICBR1001.MV) to M 0 % now, so that its A at the
+                 transfer starts from 0 (in the chain it had wound up to 100 % while the level was low for hours: SV 156 + 100 ->
+                 FW 252 T/H, drum level +237 mm) */
+              h.man('ABC-010', 'LICBR1001', 0);
               o.fwA = t;
             }
           } else {
@@ -921,12 +978,22 @@
               o.suv = Math.max(0, o.suv - 5);
               h.man('ABC-010', 'LICBR1001B', o.suv);
             }
-            if (o.fw3 == null && h.FW() > 100 && h.bit('ABC-010', 'M.0228') < 0.5) {
+            /* FW > 110 (not 100: a FW of 100 ~ 116 T/H dips under 100, M.022C -> TON 60 s -> M.022E -> M.0221 sets the FF M.0222
+               back to single element after the pushbutton); the operator presses 3-ELEMENT again when the FF went back (standalone
+               roll: FW 102 at the first press, 98 a minute later -> M.0222 = 1 at 45 MW) */
+            if (o.fw3 != null && h.bit('ABC-010', 'M.0228') < 0.5 && (!h.isAuto('ABC-010', 'FICFW1007') || h.sh('ABC-010').rt.st[h.ctl('ABC-010', 'FICFW1007').svSw.id].pk !== 'A')) {
+              /* a FW dip under 100 T/H after the transfer forced FICFW1007 MANUAL / LOCAL again (M.0228 -> TON 60 s), and the station
+                 stays there after the force is gone (BU-CMD latch, CLAUDE.md 10): the operator puts it back to R + A */
               h.rem('ABC-010', 'FICFW1007');
-              h.autoSv('ABC-010', 'LICBR1001', 0);
+            }
+            if (h.FW() > 110 && h.bit('ABC-010', 'M.0228') < 0.5 && (o.fw3 == null || h.bit('ABC-010', 'M.0222') > 0.5)) {
+              if (o.fw3 == null) {
+                h.rem('ABC-010', 'FICFW1007');
+                h.autoSv('ABC-010', 'LICBR1001', 0);
+                o.fw3 = t;
+              }
               h.setx(null, 'M.054E', 1);
               o.pb = t;
-              o.fw3 = t;
             }
           }
         }
@@ -995,7 +1062,7 @@
           ],
           [h.MST() >= 345 && h.MST() <= 535, 'MST ' + f0(h.MST()) + ' °C (PR-OPE-5002 ≥ 345; TAB_9 ≤ 535), RHT ' + f0(h.RHT()) + ' °C, RHP ' + f1(h.RHP()) + ' kg/cm2, saturation ' + f0(o.rate) + ' °C/h max'],
           [
-            Math.abs(o.lvMax - o.lvl0) < 150 && Math.abs(o.lvMin - o.lvl0) < 150,
+            Math.abs(o.lvMax) < 150 && Math.abs(o.lvMin) < 150,
             'drum level ' + f0(o.lvMin) + ' ~ ' + f0(o.lvMax) + ' mm (±150)'
           ],
           [
@@ -1003,6 +1070,391 @@
             'MW ' + f1(h.MW()) + ' (NORMAL OPERATION 45 MW), I.0081 DCS control mode permissive ' + f0(h.bit('ABC-001C', 'I.0081')) + '; walang trip; furnace ' + f0(h.FP()) + ' mmH2O; O2 ' + f1(h.O2()) + ' %'
           ]
         ];
+      }
+    },
+    {
+      /* 2.2.0-beta.20 (M4 step 5): runs only inside a chain, after the roll stage (the plant at 45 MW, NORMAL OPERATION) */
+      id: 'up',
+      stage: true,
+      title: 'M4 · 45 → 150 MW: coal master REMOTE, boiler master AUTO, DCS control mode ON, EIC-TM AUTO, CCS',
+      secs: 9000,
+      run(h, o) {
+        const S = h.S;
+        o.bm = +S.rt.st[h.hbm.id].val;
+        o.S4 = h.sh('ABC-004A');
+        o.cm = h.ctl('ABC-004A', 'FIC-CM');
+        o.S2 = h.sh('ABC-002');
+        o.o2 = h.ctl('ABC-002', 'AICFG112');
+        const L = AN.sheets.filter(s => s.S && !/ABC-000/.test(s.name));
+        for (const s of L) {
+          const z = s.S.blk.find(z => z.k === 'MAN' && (z.tag === 'HIC-ULD' || (z.txt || []).includes('HIC-ULD')));
+          if (z) {
+            o.SU = s.S;
+            o.ubu = z;
+            break;
+          }
+        }
+        o.tgt = (o.SU.drv[o.ubu.i[o.ubu.svI]] || []).find(z => z.k === 'AMT').a;
+        o.lvl0 = h.lvl();
+        o.lvMin = o.lvMax = o.lvl0;
+        o.mspMin = 1e9;
+        o.mspMax = 0;
+        o.pP = null;
+        o.aim = h.MW();
+        o.fpMv = h.mv('ABC-008', 'PICFG108');
+        o.cmRem = o.cmAuto = o.cobmA = o.bmAuto = o.dcsOn = o.tmAuto = o.uldA = o.p150 = o.fgA = o.o2auto = null;
+        o.bmMsf = NaN;
+        o.o2man = 0;
+      },
+      each(h, o) {
+        const t = o.t,
+          S = h.S,
+          S4 = o.S4;
+        const bmSet = x => {
+          o.bm = Math.max(5, Math.min(100, x));
+          S.rt.st[h.hbm.id].val = o.bm;
+        };
+        if (t === 10) {
+          /* COAL CALORIE CORR. 4150 kcal/kg = HS-COAL 33.1 % (11.png), set by hand before the coal master. FIC-CF: A (LOCAL) at its PV
+             first: while FIC-CF is LOCAL the coal master output tracks the SV of FIC-CF (ABC-004A: the B / T selectors up to the COS
+             of FIC-CM), so the change to REMOTE is bumpless; a LOCAL SV left at 0 would take the coal to 0. PA / SA REMOTE: the air
+             follows the air demand of the drawing (ABC-006 LN5 of the boiler master, minimum 446 T/H) */
+          h.man('ABC-004A', 'HS-COAL', 33.1);
+          h.autoSv('ABC-004A', 'FIC-CF', h.pv('ABC-004A', 'FIC-CF'));
+          /* O2 trim AICFG112 is forced MANUAL under 220 T/H (M.0102): its output multiplies the SA demand (LN15: 0 % = x 0.8, 50 % = x 1.0),
+             so the operator puts it at 50 % (neutral) BEFORE PA / SA go REMOTE. Left low, the SA stays 15 ~ 20 % under its demand, the
+             total air 416 ~ 434 T/H is under the 446 T/H minimum of LN5 and the fuel limit LN40 (414 T/H -> 0, 446 -> 35) cuts the coal
+             demand: the coal master never sees SV = PV for its REMOTE */
+          {
+            const oq = o.S2.rt.st[o.o2.amt.id];
+            if (oq.pk === 'B' && o.o2.manNet != null) o.S2.rt.ext[o.o2.manNet] = 50;
+          }
+          /* PA FLOW BIAS HIC-TADBS (ABC-002, -50 ~ +50 -> LN14 -30 ~ +30 T/H on the PA SV only): the app starts it at -50 (7.PNG,
+             150 MW: -30 T/H). The SA demand is LN5(BM) - PA DEMAND without the bias, so a -30 bias takes 30 T/H off the TOTAL air:
+             at the LN5 minimum 446 the total is 416 = under the LN40 knee (414 -> 0 fuel) and the coal demand is cut to ~ 2 T/H.
+             Start-up: bias 0 (neutral); the -30 of 7.PNG is a 150 MW trim of the operator */
+          {
+            const T2 = h.sh('ABC-002'),
+              tb = T2 && T2.blk.find(b => b.k === 'MAN' && b.tag === 'HIC-TADBS');
+            if (tb && T2.rt.st[tb.id]) T2.rt.st[tb.id].val = 0;
+          }
+          h.rem('ABC-007', 'FICFA1071');
+          h.rem('ABC-007', 'FICFA1081');
+        }
+        if (t === 40) {
+          /* M.0130 (ABC-004A): the coal master stays MANUAL until FIC-CF, FICFA1071 and FICFA1081 are REMOTE */
+          h.rem('ABC-004A', 'FIC-CF');
+          o.cmRem = t;
+        }
+        if (t < 20) return;
+        o.lvMin = Math.min(o.lvMin, h.lvl());
+        o.lvMax = Math.max(o.lvMax, h.lvl());
+        o.mspMin = Math.min(o.mspMin, h.MSP());
+        o.mspMax = Math.max(o.mspMax, h.MSP());
+        /* HIC-ULD (MANUAL) tracks the MW while the TCS still runs on its own target. EIC-TM (MANUAL) is tracked by the drawing itself
+           (ABC-001C AMT "T" of M.2017 = NOT I.0082: while the DCS is not in control the station follows AI0420, the TCS target), so at
+           DCS CONTROL MODE ON the TCS keeps its target: no jump */
+        if (o.uldA == null) o.SU.rt.st[o.ubu.id].val = h.MW();
+        if (o.dcsOn == null && h.bit('ABC-001C', 'I.0082') > 0.5) o.dcsOn = t;
+        if (o.p150 == null && o.uldA != null && h.MW() >= 149) o.p150 = t;
+        if (t % 10 !== 0) return;
+        const P = h.MSP(),
+          dP = o.pP == null ? 0 : P - o.pP,
+          bmA = S.rt.st[h.bmA.id].pk === 'A';
+        o.pP = P;
+        /* (1) FIC-CM R + A when the drawing allows it (M.0130 = 0) and its REMOTE SV (SI0141, the fuel demand of ABC-002: HIC-BM.MV
+           limited by the air, LN40) is the coal of now. While FIC-CM is not REMOTE the boiler master output tracks the fuel (ABC-001C
+           M.2000: HIC-BM.MV = SI0017), so the demand comes to the coal by itself once the air is above the cross limit (PA / SA REMOTE) */
+        if (o.cmAuto == null && t >= 60) {
+          const sv = h.val('ABC-004A', 'SI0141'),
+            pv = +S4.rt.v[o.cm.q.pv];
+          if (h.bit('ABC-004A', 'M.0130') < 0.5 && Math.abs(sv - pv) < 1.5) {
+            h.rem('ABC-004A', 'FIC-CM');
+            o.cmAuto = t;
+            o.bm = +S.rt.st[h.hbm.id].val;
+          }
+        }
+        /* (2) load up by hand to 230 T/H of main steam (PR-OPE-5002: boiler master AUTO at 230 T/H), boiler follow by hand: the firing
+           (HIC-BM) is only RAISED, up to 0.5 % every 10 s while the pressure is under 123 and not rising; the TCS target follows the
+           pressure (3 MW/min = the HIC-MWRL rate at MSP >= 124, 1.5 at >= 121, 0.5 at >= 118, a hold below). A cut of the firing near the
+           minimum air takes the air demand down with it and the fuel demand under the cross limit of the air (ABC-002 LN40) */
+        if (o.cmAuto != null && !bmA) {
+          if (t % 60 === 0 && o.aim < 80) {
+            const step = P >= 124 ? 3 : P >= 121 ? 1.5 : P >= 118 ? 0.5 : 0;
+            if (step) {
+              o.aim = Math.min(80, o.aim + step);
+              AN.turbine('loadup', o.aim);
+            }
+          }
+          bmSet(o.bm + Math.max(0, Math.min(0.5, 0.02 * (123 - P) - 0.3 * dP + (o.aim < 80 ? 0.04 : 0))));
+        }
+        /* SH spray (PR-OPE-5002 "SERVICE MS & RH FOR TEMPERATURE CONTROL": the MS desuperheater to AUTO with the SV of the start-up
+           curve; "Set Steam Temp. Controls on AUTO at boiler load > 60 %"; HPBV desup: "change Set Value to PV Value" before AUTO): the
+           inner loops TICBR1130 / TICBR1150 A at their SV (394 / 418 C) once the spray outlet is within 5 C of it, the outer TICBR1140
+           (462) / TICMS1004 (541) A within 10 C of the SV, then the inner R (cascade). 4.PNG: #1 / #2 SPRAY TEMP CTL R, #2 OUTLET TEMP
+           CTL / MAIN STEAM TEMP CTL A. Without this the spray stays shut and the main steam temperature runs to the top of the range */
+        {
+          const svOf = (k, tg) => {
+            const c = h.ctl(k, tg);
+            return c && c.q && c.q.sv != null ? +h.sh(k).rt.v[c.q.sv] : NaN;
+          };
+          o.spr = o.spr || {};
+          for (const [k, inn, outt, sv2] of [
+            ['ABC-011', 'TICBR1130', 'TICBR1140', 462],
+            ['ABC-012', 'TICBR1150', 'TICMS1004', 541]
+          ]) {
+            const q = o.spr[inn] || (o.spr[inn] = {});
+            if (q.a == null && h.pv(k, inn) >= svOf(k, inn) - 5) {
+              h.autoSv(k, inn, svOf(k, inn));
+              q.a = t;
+            }
+            if (q.a != null && q.o == null && h.pv(k, outt) >= sv2 - 10) {
+              h.autoSv(k, outt, sv2);
+              q.o = t;
+            }
+            if (q.o != null && q.r == null && t >= q.o + 60) {
+              h.rem(k, inn);
+              q.r = t;
+            }
+          }
+        }
+        /* (3) above 230 T/H and with the BU-CMD gone (M.2013 = 0: HP bypass shut, M.0101): PIC-COBM A at 123 (its output tracked
+           HIC-BM.MV − SI0201 while the boiler master was MANUAL: bumpless), HS-COAL A (M.2021 pulse puts its SV to REMOTE), then
+           HIC-BM A: .MAN = 0 on every sheet (CLAUDE.md 10: the station does not go to AUTO by itself) */
+        if (o.cmAuto != null && o.cobmA == null && h.MSF() > 230 && h.bit('ABC-001C', 'M.2013') < 0.5) {
+          h.autoSv('ABC-001C', 'PIC-COBM', 123);
+          h.rem('ABC-004A', 'HS-COAL');
+          o.cobmA = t;
+        }
+        if (o.cobmA != null && (o.bmAuto == null || t >= o.bmAuto + 60) && t >= o.cobmA + 30 && !bmA && h.bit('ABC-001C', 'M.2013') < 0.5) {
+          /* pressed again a minute later if the BU-CMD came back in between (the operator presses A once more) */
+          for (const [S2, n] of AN.modeNets('HIC-BM')) S2.rt.ext[n] = 0;
+          if (o.bmAuto == null) o.bmMsf = h.MSF();
+          o.bmAuto = t;
+        }
+        /* (4) DCS CONTROL MODE ON is the drawing's: O.0178 = TPS 2 s of AND(I.0081, TON 2 s of (PIC-COBM and HIC-BM not MANUAL)) → TCS
+           → I.0082; then EIC-TM A (M.2016 = 0: CCS, the TCS follows AO0359) */
+        /* bumpless: only when the AUTO value of the station (SI0236 "AO0359 TO TCS": HIC-ULD through the HIC-MWRL rate limiter) has
+           caught up with the TCS target (the limiter lags a ramping load by several MW; A before that took the TCS target from 71.3 to
+           64.6 MW, the main steam flow under 220 T/H and the boiler master back to MANUAL by its BU-CMD) */
+        if (o.tmAuto != null && o.uldA == null && S.rt.st[h.tmA.id].pk === 'B') o.tmAuto = null;
+        if (
+          o.bmAuto != null &&
+          o.tmAuto == null &&
+          bmA &&
+          o.dcsOn != null &&
+          h.bit('ABC-001C', 'M.2016') < 0.5 &&
+          S.rt.st[h.tmA.id].pk === 'B' &&
+          Math.abs(+h.v[h.lab(S, 'SI0236')] - h.U.tcsT) < 1
+        ) {
+          for (const [S2, n] of AN.modeNets('EIC-TM')) S2.rt.ext[n] = 0;
+          o.tmAuto = t;
+        }
+        /* (5) HIC-ULD A, TARGET MW 150 (HIC-MWRL 3 MW/min, 33.PNG) */
+        if (o.tmAuto != null && o.uldA == null && S.rt.st[h.tmA.id].pk === 'A' && t >= o.tmAuto + 30) {
+          h.mode('HIC-ULD', 'LOC');
+          o.SU.rt.ext[o.tgt] = 150;
+          o.uldA = t;
+        }
+        /* O2 trim (ABC-002 AICFG112): forced MANUAL below 220 T/H (M.0102); 50 % by hand, A again above 220 T/H near its SV (as M2) */
+        {
+          const oq = o.S2.rt.st[o.o2.amt.id];
+          if (oq.pk === 'B') {
+            o.o2man = 1;
+            if (o.o2.manNet != null) {
+              const m = +o.S2.rt.ext[o.o2.manNet];
+              if (isFinite(m)) o.S2.rt.ext[o.o2.manNet] = m + Math.max(-1, Math.min(1, 50 - m));
+            }
+            if (!oq.fman && h.bit('ABC-001C', 'M.0101') > 0.5 && Math.abs(+o.S2.rt.v[o.o2.q.pv] - +o.S2.rt.v[o.o2.q.sv]) < 1.5) {
+              oq.al = o.o2.autoLeg;
+              oq.fm = o.o2.autoLeg;
+              for (const [S3, n] of AN.modeNets('AICFG112')) S3.rt.ext[n] = 0;
+              o.o2auto = t;
+            }
+          }
+        }
+        /* furnace pressure: PICFG108 by hand (−15) while the drawing forces MANUAL below 14 % (M.0205); A at SV −15 above 16 % */
+        if (o.fgA == null) {
+          if (h.mv('ABC-008', 'PICFG108') >= 16 && h.bit('ABC-008', 'M.0205') < 0.5) {
+            h.autoSv('ABC-008', 'PICFG108', -15);
+            o.fgA = t;
+          } else if (t % 60 === 0) {
+            const fp = h.FP();
+            if (fp < -30) o.fpMv = Math.max(5, o.fpMv - 1);
+            else if (fp > 0) o.fpMv = Math.min(80, o.fpMv + 1);
+            h.man('ABC-008', 'PICFG108', o.fpMv);
+          }
+        }
+        if (window.__tr && t % 30 === 0)
+          window.__tr.push(
+            [t, h.MW(), o.aim, h.U.tcsT, h.MSP(), h.MSF(), o.bm, +h.v[h.lab(S, 'HIC-BM.MV')], h.mv('ABC-001C', 'PIC-COBM'), h.val('ABC-004A', 'SI0141'), +S4.rt.v[o.cm.q.pv], h.mv('ABC-004A', 'FIC-CM'), h.mv('ABC-004A', 'FIC-CF'), h.coal(), h.PA(), h.SA(), h.O2(), h.FP(), h.FW(), h.lvl(), h.MST(), h.RHT(), h.RHP(), h.bit('ABC-004A', 'M.0130'), h.bit('ABC-001C', 'M.2013'), h.bit('ABC-001C', 'I.0082'), h.bit('ABC-001C', 'M.2016'), S.rt.st[h.bmA.id].pk === 'A' ? 1 : 0, S.rt.st[h.tmA.id].pk === 'A' ? 1 : 0, +o.SU.rt.v[h.lab(o.SU, 'SI0226')], h.U.Tb].map(x => +(+x).toFixed(2))
+          );
+      },
+      done(h, o) {
+        return o.p150 != null && o.t >= o.p150 + 900;
+      },
+      checks(h, o) {
+        const S = h.S,
+          S4 = o.S4,
+          bm = S.rt.st[h.bmA.id].pk === 'A',
+          tm = S.rt.st[h.tmA.id].pk === 'A',
+          oq = o.S2.rt.st[o.o2.amt.id],
+          svPk = (k, tg) => {
+            const c = h.ctl(k, tg);
+            return c && c.svSw ? h.sh(k).rt.st[c.svSw.id].pk : '?';
+          },
+          mins = (a, b) => (a != null && b != null ? f0((a - b) / 60) : '—'),
+          fwc = h.ctl('ABC-010', 'FICFW1007');
+        return [
+          [
+            o.cmAuto != null &&
+              h.isAuto('ABC-004A', 'FIC-CM') &&
+              h.bit('ABC-004A', 'M.0130') < 0.5 &&
+              svPk('ABC-004A', 'FIC-CF') === 'A' &&
+              svPk('ABC-007', 'FICFA1071') === 'A' &&
+              svPk('ABC-007', 'FICFA1081') === 'A',
+            'coal master FIC-CM R + A sa ' +
+              mins(o.cmAuto, 0) +
+              ' min: FIC-CF, FICFA1071, FICFA1081 REMOTE (M.0130 = ' +
+              f0(h.bit('ABC-004A', 'M.0130')) +
+              '); HS-COAL 33.1 % (COAL CALORIE CORR. 4150 kcal/kg, 11.png) → ' +
+              (h.isAuto('ABC-004A', 'HS-COAL') ? 'A' : 'M') +
+              ' ' +
+              f1(h.mv('ABC-004A', 'HS-COAL')) +
+              ' %; FIC-CM PV ' +
+              f1(+S4.rt.v[o.cm.q.pv]) +
+              ' / SV ' +
+              f1(+S4.rt.v[o.cm.q.sv]) +
+              ' T/H / MV ' +
+              f1(h.mv('ABC-004A', 'FIC-CM')) +
+              ' % (4.PNG: 89.2 / 89.1 / 74.4)'
+          ],
+          [
+            o.bmAuto != null && o.bmMsf > 230 && bm && h.bit('ABC-001C', 'M.2013') < 0.5 && h.isAuto('ABC-001C', 'PIC-COBM'),
+            'boiler master HIC-BM A sa ' +
+              mins(o.bmAuto, 0) +
+              ' min sa MSF ' +
+              f0(o.bmMsf) +
+              ' T/H (PR-OPE-5002: 230 T/H; BU-CMD M.2013 = ' +
+              f0(h.bit('ABC-001C', 'M.2013')) +
+              '); PIC-COBM A SV 123 (MV ' +
+              f1(h.mv('ABC-001C', 'PIC-COBM')) +
+              ' %); HIC-BM ' +
+              f1(+h.v[h.lab(S, 'HIC-BM.MV')] || 0) +
+              ' % (4.PNG 68.3)'
+          ],
+          [
+            o.dcsOn != null && o.bmAuto != null && o.dcsOn >= o.bmAuto && o.dcsOn - o.bmAuto <= 20 && h.bit('ABC-001C', 'I.0082') > 0.5,
+            'DCS CONTROL MODE ON: pulse O.0178 ng drawing (I.0081 AT HIC-BM at PIC-COBM hindi MANUAL, 2 s) → TCS → I.0082 = ' +
+              f0(h.bit('ABC-001C', 'I.0082')) +
+              (o.dcsOn != null && o.bmAuto != null ? ', ' + f0(o.dcsOn - o.bmAuto) + ' s pagkatapos ng HIC-BM A' : ' (wala pa)')
+          ],
+          [
+            o.tmAuto != null && tm && h.bit('ABC-001C', 'M.2016') < 0.5,
+            'turbine master EIC-TM A sa ' +
+              mins(o.tmAuto, 0) +
+              ' min (M.2016 = ' +
+              f0(h.bit('ABC-001C', 'M.2016')) +
+              '; CCS: AO0359 TO TCS = ' +
+              f1(+h.v[h.lab(S, 'SI0236')]) +
+              ' MW, TCS target ' +
+              f1(h.U.tcsT) +
+              ')'
+          ],
+          [
+            o.uldA != null && o.p150 != null && o.p150 - o.uldA >= 15 * 60 && o.p150 - o.uldA <= 60 * 60,
+            'HIC-ULD A TARGET 150 MW sa ' +
+              mins(o.uldA, 0) +
+              ' min → 149 MW pagkatapos ng ' +
+              mins(o.p150, o.uldA) +
+              ' min (HIC-MWRL 3 MW/min, 33.PNG; 45 → 150 MW lahat: ' +
+              mins(o.p150, 0) +
+              ' min)'
+          ],
+          [
+            near(h.MW(), 150, 3) && near(h.MSF(), 474.1, 5) && near(h.MSP(), h.SV(), 3),
+            '150 MW steady (15 min): MW ' + f1(h.MW()) + ' (4.PNG 148.8), MSF ' + f0(h.MSF()) + ' T/H (472.7), MSP ' + f1(h.MSP()) + ' sa SV ' + f1(h.SV()) + ' (122.9)'
+          ],
+          [near(h.coal(), 87.0, 10), 'coal ' + f1(h.coal()) + ' T/H (03.png / 11.png 87.0: 3 feeder × 29.0), FIC-CF ' + f0(h.mv('ABC-004A', 'FIC-CF')) + ' % (72.8)'],
+          [
+            near(h.MST(), 542, 5) && near(h.RHT(), 542, 5) && near(h.RHP(), 34.0, 5),
+            'MST ' + f0(h.MST()) + ' / RHT ' + f0(h.RHT()) + ' °C / RHP ' + f1(h.RHP()) + ' kg/cm2 (4.PNG 540 / 541 / 33.6)'
+          ],
+          [
+            !!(o.spr && o.spr.TICBR1130 && o.spr.TICBR1150 && o.spr.TICBR1130.r != null && o.spr.TICBR1150.r != null) &&
+              h.isAuto('ABC-011', 'TICBR1130') &&
+              h.isAuto('ABC-012', 'TICBR1150') &&
+              h.isAuto('ABC-011', 'TICBR1140') &&
+              h.isAuto('ABC-012', 'TICMS1004') &&
+              svPk('ABC-011', 'TICBR1130') === 'A' &&
+              svPk('ABC-012', 'TICBR1150') === 'A',
+            'SH spray: TICBR1130 A sa ' +
+              mins(o.spr && o.spr.TICBR1130 && o.spr.TICBR1130.a, 0) +
+              ' min, R sa ' +
+              mins(o.spr && o.spr.TICBR1130 && o.spr.TICBR1130.r, 0) +
+              '; TICBR1150 A sa ' +
+              mins(o.spr && o.spr.TICBR1150 && o.spr.TICBR1150.a, 0) +
+              ' min, R sa ' +
+              mins(o.spr && o.spr.TICBR1150 && o.spr.TICBR1150.r, 0) +
+              ' (PR-OPE-5002 steam temp. controls AUTO > 60 %); TICBR1140 / TICMS1004 ' +
+              (h.isAuto('ABC-011', 'TICBR1140') ? 'A' : 'M') +
+              ' / ' +
+              (h.isAuto('ABC-012', 'TICMS1004') ? 'A' : 'M') +
+              '; MV ' +
+              f0(h.mv('ABC-011', 'TICBR1130')) +
+              ' / ' +
+              f0(h.mv('ABC-012', 'TICBR1150')) +
+              ' % (4.PNG 57.6 / 30.2)'
+          ],
+          [
+            !!o.o2man && o.o2auto != null && oq.pk === 'A' && h.O2() >= 2.5 && h.O2() <= 6.5,
+            'O2 trim AICFG112: na-force M sa ilalim ng 220 T/H (M.0102), 50 % ng operator, A ulit sa ' + mins(o.o2auto, 0) + ' min; O2 ' + f1(h.O2()) + ' % (03.png 4.3); PA ' + f0(h.PA()) + ' / SA ' + f0(h.SA()) + ' T/H sa REMOTE'
+          ],
+          [
+            o.fgA != null && h.isAuto('ABC-008', 'PICFG108') && h.FP() > -55 && h.FP() < 25,
+            'furnace pressure PICFG108 A sa ' + mins(o.fgA, 0) + ' min (MV ≥ 14 %, M.0205 = 0), ' + f0(h.FP()) + ' mmH2O (SV −15; 4.PNG −9)'
+          ],
+          [
+            Math.abs(o.lvMax) < 150 &&
+              Math.abs(o.lvMin) < 150 &&
+              h.isAuto('ABC-010', 'FICFW1007') &&
+              h.sh('ABC-010').rt.st[fwc.svSw.id].pk === 'A' &&
+              h.bit('ABC-010', 'M.0228') < 0.5,
+            'drum level ' + f0(o.lvMin) + ' ~ ' + f0(o.lvMax) + ' mm (±150), 3-element FICFW1007 R + A (FW ' + f0(h.FW()) + ' T/H), M.0228 = ' + f0(h.bit('ABC-010', 'M.0228'))
+          ],
+          [
+            o.mspMin >= 113 && o.mspMax <= 133 && h.bit('ABC-001C', 'M.3200') < 0.5 && h.bit('ABC-001C', 'M.310D') < 0.5 && h.mv('ABC-050', 'PICMS1006') < 1,
+            'MSP ' + f1(o.mspMin) + ' ~ ' + f1(o.mspMax) + ' kg/cm2 sa buong 45 → 150 MW (123 ± 10); walang trip (M.3200 = 0, LL M.310D = 0); HP bypass ' + f0(h.mv('ABC-050', 'PICMS1006')) + ' %'
+          ]
+        ];
+      }
+    },
+    {
+      id: 'load150',
+      hot: true,
+      chain: ['roll', 'up'],
+      title: 'M4 · 45 → 150 MW: coal master REMOTE, boiler master AUTO, DCS control mode ON, CCS',
+      how: 'Start hot, tapos ang hakbang 4 (roll → sync → 45 MW: isang summary row), tapos ang hakbang 5: HS-COAL M 33.1 % (COAL CALORIE CORR. 4150, 11.png); PA FLOW BIAS HIC-TADBS M 0 (ABC-002: ang −30 T/H ng 7.PNG ay trim sa 150 MW; sa minimum air ay pinuputol nito ang coal demand, LN40); FIC-CM M = FIC-CF; FIC-CF, FICFA1071, FICFA1081 R (REMOTE: hangin ayon sa air demand ng drawing, ABC-006, minimum 446 T/H); HIC-BM (M) inililipat hanggang SV ng FIC-CM = coal, tapos FIC-CM R + A (tinatanggap ng drawing: M.0130 = 0); TCS target 0.5 ~ 3 MW / min ayon sa MSP (3 sa ≥ 124, 1.5 sa ≥ 121, 0.5 sa ≥ 118, tigil sa ilalim), HIC-BM (M) dinadagdagan lang hanggang 123; SH spray: TICBR1130 / TICBR1150 A sa SV (394 / 418 °C) kapag 5 °C na lang ang layo ng PV, TICBR1140 (462) / TICMS1004 (541) A, tapos inner R (cascade, 4.PNG); sa MSF > 230 T/H at wala na ang BU-CMD (M.2013 = 0): PIC-COBM A SV 123, HS-COAL A, HIC-BM A (.MAN = 0); ang drawing ang nagpapadala ng DCS CONTROL MODE ON (O.0178 → TCS → I.0082); EIC-TM A (M.2016 = 0); HIC-ULD A TARGET 150 (HIC-MWRL 3 MW/min); O2 trim 50 % → A sa itaas ng 220 T/H; PICFG108 A sa MV ≥ 16 %. Tigil 15 min pagkatapos ng 150 MW (~2.5 h plant time, ~3 min real).',
+      want: 'Hakbang 4 11 / 11; coal master FIC-CM R + A (M.0130 = 0), HS-COAL A; HIC-BM A sa > 230 T/H, PIC-COBM A; I.0082 = 1 sa loob ng 20 s pagkatapos ng HIC-BM A (O.0178 ng drawing); EIC-TM A (M.2016 = 0); 150 MW sa 15 ~ 60 min mula HIC-ULD A; 150 MW: MW 150 ± 3 %, MSF 474 ± 5 %, MSP sa SV ± 3 %, coal 87 ± 10 %, MST / RHT 542 ± 5 %, RHP 34 ± 5 % (4.PNG / 03.png); SH spray R + A (MV ≈ 58 / 30 %); O2 trim A, O2 2.5 ~ 6.5 %; PICFG108 A; drum level ±150, 3-element; MSP 113 ~ 133 buong daan; walang trip; HP bypass sarado.',
+      secs: 0,
+      run() {},
+      each() {},
+      checks() {
+        return [];
+      }
+    },
+    {
+      id: 'full',
+      cold: true,
+      chain: ['cold', 'coal', 'byp', 'roll', 'up'],
+      title: 'M4 · Cold start-up (buo): purge → light-off → coal → pressure raise → roll → sync → 150 MW',
+      how: 'Start cold, tapos sunod-sunod sa iisang planta ang 5 hakbang ng PR-OPE-5002 (ang bawat hakbang ay nagsisimula sa iniwan ng nauna, hindi sa canned state): 1 purge, light-off ng burner A / B / C / D, tubig 30 → 100 °C, drum 0 → 30 kg/cm2 (Fig 1 ≤ 110 °C/h); 2 coal batch sa bed 400 ~ 600 °C, feeder A / B / C tuluy-tuloy, retract ng burners sa > 700 °C (blow-off hawak ang 35 kg/cm2); 3 bypass servicing sa 50 ksc / 40 T/H, HP bypass SV +1 / min hanggang 123 (coal ang apoy: FIC-CF 1 % kada hakbang), LP bypass 7.6, RH blow-off sarado; 4 roll 120 rpm/min, sync, 4.5 MW, load up 45 MW, transfer, 3-element feedwater; 5 coal master REMOTE, boiler master AUTO sa 230 T/H, DCS control mode ON, EIC-TM A, HIC-ULD 150 MW. Compressed ang oras (Fig 2: 14 h; dito ~10 h plant time, ~12 min real).',
+      want: 'Isang row bawat hakbang 1 ~ 4 (n / n ng sariling tseke, kasama ang oras), tapos ang 14 tseke ng hakbang 5 (150 MW tugma sa 4.PNG / 03.png). Lahat ✓ = PASADO ang buong cold start-up.',
+      secs: 0,
+      run() {},
+      each() {},
+      checks() {
+        return [];
       }
     },
     {
@@ -1476,26 +1928,46 @@
       else if (sc.hot) AN.plantHot();
       else if (sc.warm) AN.plantWarm(sc.warm);
       else AN.plantLoad150();
-      const h = H(),
-        o = { t: 0 };
-      sc.run(h, o);
-      const steps = sc.secs * 2;
+      const h = H();
+      /* 2.2.0-beta.20: a scenario may be a CHAIN of stages run one after the other on the same plant (the full start-up: cold → coal →
+         bypass → roll → 150 MW); each stage keeps its own o, starts from the plant as the stage before left it (o.chain), and its
+         checks become one summary row; the last stage's checks are shown in full */
+      const stages = sc.chain ? sc.chain.map(id => SC.find(s => s.id === id)) : [sc],
+        steps = stages.reduce((a, s) => a + s.secs * 2, 0),
+        sum = [];
+      let k = 0,
+        o = { t: 0, chain: !!sc.chain },
+        T = 0;
+      stages[0].run(h, o);
       for (let i = 0; i < steps; i++) {
         AN.stepSet(h.C1, 0.5);
         o.t += 0.5;
+        T += 0.5;
         if (o.mftAt != null && Math.abs(o.t - o.mftAt - 2) < 0.01)
           for (const k of ['ABC-003B', 'ABC-003C', 'ABC-003D']) h.setx(k, 'M.0341', 0);
-        sc.each(h, o);
-        if (sc.done && sc.done(h, o)) break;
+        stages[k].each(h, o);
+        if ((stages[k].done && stages[k].done(h, o)) || o.t >= stages[k].secs) {
+          if (k === stages.length - 1) break;
+          const ck = stages[k].checks(h, o);
+          sum.push({ title: stages[k].title, ck, t: o.t });
+          k++;
+          o = { t: 0, chain: true };
+          stages[k].run(h, o);
+        }
         if (i % 20 === 19) {
           ui.bar.style.width = ((100 * (i + 1)) / steps).toFixed(1) + '%';
-          ui.live.textContent = 't = ' + o.t.toFixed(0) + ' s\n' + h.live();
+          ui.live.textContent = (sc.chain ? 'hakbang ' + (k + 1) + ' / ' + stages.length + ' · ' + stages[k].title + '\n' : '') + 't = ' + T.toFixed(0) + ' s\n' + h.live();
           await new Promise(r => setTimeout(r, 0));
         }
       }
       ui.bar.style.width = '100%';
-      ui.live.textContent = 't = ' + o.t.toFixed(0) + ' s\n' + h.live();
-      const ck = sc.checks(h, o);
+      ui.live.textContent = 't = ' + T.toFixed(0) + ' s' + (sc.chain ? ' (' + f0(T / 3600) + ' h ' + f0((T % 3600) / 60) + ' min plant time)' : '') + '\n' + h.live();
+      const ck = sum
+        .map(x => {
+          const ok = x.ck.filter(y => y[0]).length;
+          return [ok === x.ck.length, x.title.replace(/^M4 · /, '') + ': ' + ok + ' / ' + x.ck.length + ' sa ' + f0(x.t / 60) + ' min' + (ok === x.ck.length ? '' : ' — ' + x.ck.filter(y => !y[0]).map(y => y[1]).join('; '))];
+        })
+        .concat(stages[k].checks(h, o));
       let ok = 0;
       const tb = E('table');
       for (const [y, w] of ck) {
@@ -1530,6 +2002,7 @@
       })
     );
     for (const sc of SC) {
+      if (sc.stage) continue; /* 2.2.0-beta.20: runs only inside a chain */
       const ui = { bar: E('i'), live: E('div', { cls: 'live' }), res: E('div') };
       const go = E('button', { cls: 'go', txt: '▶ Takbo', on: () => runSc(sc, ui) });
       P.append(
@@ -1549,7 +2022,7 @@
       const sc = SC.find(s => s.id === id);
       if (!sc) return null;
       if (!P.childNodes.length) build();
-      const i = SC.indexOf(sc);
+      const i = SC.filter(s => !s.stage).indexOf(sc);
       const box = P.querySelectorAll('.sc')[i];
       return runSc(sc, {
         bar: box.querySelector('.bar i'),
@@ -1557,6 +2030,7 @@
         res: box.children[box.children.length - 1]
       });
     },
-    SC
+    SC,
+    H /* 2.2.0-beta.20: the helpers, for the headless probes */
   };
 })();
