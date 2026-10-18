@@ -2005,6 +2005,25 @@ function anCompile(S) {
             for (const q of S.tagN || []) if (q.n === f.n && q.t === f.move) q.n = id;
             for (const a of S.addr || []) if (a.eng === f.n && a.t === f.move) a.eng = id;
           }
+        } else if (f.op === 'setCos') {
+          /* "IF M.035C = 1 SET SV = 49 T/H": the SET writes the controller SV = the operator SV (COS, LOCAL leg of the SV switch) and
+             it stays, as a SV the operator typed; the REMOTE leg keeps its own set */
+          const pr = S.pre[b.a],
+            cos = blk.some(z => z.k === 'COS' && z.vnet === b.b);
+          if (!pr || !cos) {
+            bad(f.id + ': no SET on B' + f.blk);
+            continue;
+          }
+          S.pre[b.b] = Object.assign({}, pr, { hold: 1, alt: undefined });
+        } else if (f.op === 'q4sig') {
+          if (!b.q4 || b.q4.cond.length !== f.sig.length) {
+            bad(f.id + ': B' + f.blk + ' is not a 4-leg switch');
+            continue;
+          }
+          b.q4.sig = b.q4.cond.map(c => f.sig.find(z => z.tag === c.tag) || null);
+        } else if (f.op === 'span') {
+          /* the range of a "% / sec" ramp, from the drawing (where the reader found none or the wrong one) */
+          b.spanFix = { sp: f.sp, t: f.why };
         } else if (f.op === 'dsTo') {
           /* the "TO DITL" text belongs to the wire named here (it is written under its own box) */
           (S.dsTo = S.dsTo || {})[f.ref] = f.t;
@@ -2387,7 +2406,10 @@ function anInit(S) {
       }
       let pick = null,
         why = '';
-      if (D) {
+      if (b.spanFix) {
+        pick = b.spanFix;
+        why = 'drawing audit 2.3.0: ' + b.spanFix.t;
+      } else if (D) {
         pick = D;
         why =
           'downstream ' +

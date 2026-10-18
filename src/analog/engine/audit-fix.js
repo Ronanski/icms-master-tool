@@ -8,7 +8,11 @@
        link  = the wire n is the wire src of the same sheet (on-page connector, same tag text)
        and   = the wire n is the AND of the wires src (one text names two mode states: "B & C ALL IN MANUAL")
        split = segments segs of net n are their own wire (move = its name goes with it, to = the gate it enters)
-       dsTo  = the "TO DITL" text ref belongs to the wire named t */
+       dsTo  = the "TO DITL" text ref belongs to the wire named t
+   2.3.0-beta.2 (behaviour, group B):
+       setCos = "IF M.0x5C = 1 SET SV = 49 T/H" also writes the operator SV (COS of the SV switch blk) and holds it
+       q4sig  = the conditions of a 4-leg switch are signals (SV switch blk of sheet sh on leg), not user settings
+       span   = the range sp of a "% / sec" ramp, from the drawing */
 const AN_AUDIT_FIX = {
   'ABC-001C': [
     /* ABC-001C-1: OR M.2013 (HIC-BM force manual) has 8 inputs; the 8th is M.2000 = NOT FIC-CM.REM */
@@ -76,5 +80,36 @@ const AN_AUDIT_FIX = {
     /* ABC-057-1: "FURNACE FRONT / REAR WALL AUTO MODE (CRT) S3 M.144A", "... MANUAL MODE (CRT) S3 M.144B" */
     { id: 'ABC-057-1', op: 'lab', n: 79, was: '', t: 'S3 M.144A' },
     { id: 'ABC-057-1', op: 'lab', n: 74, was: '', t: 'S3 M.144B' }
+  ],
+  'ABC-002': [
+    /* ABC-002-1: "0.2 %/sec" on the air demand: 0.2 % of the total air range 0 ~ 1115 T/H (the same line is compared with
+       "32 % MIN. AIR FLOW" = 356.8 T/H) = 2.23 T/H per s */
+    { id: 'ABC-002-1', op: 'span', blk: 76, k: 'RATE', sp: 1115, why: 'total air flow 0 ~ 1115 T/H (32 % MIN. AIR FLOW = 356.8 T/H)' },
+    /* ABC-002-2: "0.2 %/sec" on the PA flow demand: PA range 0 ~ 648 T/H (SI0031 scaled 648 / 1115) = 1.296 T/H per s */
+    { id: 'ABC-002-2', op: 'span', blk: 75, k: 'RATE', sp: 648, why: 'primary air flow 0 ~ 648 T/H (648 / 1115 of the total air)' }
+  ],
+  'ABC-003A': [{ id: 'ABC-003A-1', op: 'setCos', blk: 12, k: 'AMT' }],
+  'ABC-003B': [{ id: 'ABC-003B-1', op: 'setCos', blk: 6, k: 'AMT' }],
+  'ABC-003C': [{ id: 'ABC-003C-1', op: 'setCos', blk: 6, k: 'AMT' }],
+  'ABC-003D': [{ id: 'ABC-003D-1', op: 'setCos', blk: 6, k: 'AMT' }],
+  'ABC-003E': [
+    /* ABC-003E-1: "(1) IF BNR-A OIL FLOW CONTROL REMOTE (M.009A) SELECT TO a" ... (4) M.009D: REMOTE of FICDO1043A ~ D = its SV
+       switch on the A leg (SV from the oil master, ABC-003E) */
+    {
+      id: 'ABC-003E-1',
+      op: 'q4sig',
+      blk: 4,
+      k: 'SW',
+      sig: [
+        { tag: 'M.009A', sh: 'ABC-003A', blk: 48, leg: 'A' },
+        { tag: 'M.009B', sh: 'ABC-003B', blk: 35, leg: 'A' },
+        { tag: 'M.009C', sh: 'ABC-003C', blk: 35, leg: 'A' },
+        { tag: 'M.009D', sh: 'ABC-003D', blk: 35, leg: 'A' }
+      ]
+    }
+  ],
+  'ABC-051': [
+    /* ABC-051-1: BUMPLESS "RAMP: 1.67 % / min" of the temperature set point (LN10 output 0 ~ 600 C, TICMS1022 0 ~ 600 C) = 10 C/min */
+    { id: 'ABC-051-1', op: 'span', blk: 24, k: 'RAMPB', sp: 600, why: 'temperature set point 0 ~ 600 C (LN10 output, TICMS1022)' }
   ]
 };

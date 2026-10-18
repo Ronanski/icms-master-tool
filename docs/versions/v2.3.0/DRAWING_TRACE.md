@@ -31,3 +31,18 @@ Saklaw: label / link / kulang na input lang. Walang binagong formula, range, tim
 Hindi kasama sa beta.1: DITL-21C row 19 / 20 (M.311A / B, walang pinagmulan sa ABC-009A ng app; nasa "hindi mabasa" ng audit).
 
 Patunay na kailangan: sa app (headless), bawat ayos ay sinusubok: ang input ay umaabot sa block, ang mode button ay umaabot sa net, at ang DITL input ay sumusunod sa ABC (iisang mundo ON).
+
+## beta.2 — Behavior (grupo B)
+
+Saklaw: 4 na gawi ng engine na hindi tugma sa nakasulat sa drawing. Nasa talaan pa rin (`audit-fix.js`) ang sheet / block; ang engine (`plant.js`, `compile-step.js` anInit) ay nagbabasa nito.
+
+| ID | Sheet / block | Nakasulat sa drawing | Ayos |
+|---|---|---|---|
+| ABC-004A-1, 004B-1, 004C-1 | MAN FICCL1061A / B / C, input "FICCL1061x.MHD" (SW: 83.3 % kapag M.3405 A / B / C ALL IN REMOTE AND RUNNING, kung hindi 100 %) | "FICCL1061A MV HIGH LIMIT SETTING VALUE" | ang MV ng MAN station ay hindi lalampas sa MHD % ng range (83.3 % ng 40 T/H = 33.3 T/H). Pangkalahatan: bawat MAN na may input na `<tag>.MHD` |
+| ABC-003A-1 ~ 003D-1 | SV switch ng FICFA1043A ~ D (003A B12, 003B / C / D B6) | "IF M.0x5C = 1 SET SV = 49 T/H" | isinusulat din sa SV ng operator (COS, LOCAL leg) at nananatili (SET), hindi lang sa REMOTE leg sa loob ng 2 s |
+| ABC-003E-1 | 4-leg switch SI0304 (B4), RB-MV ng FIC-OM | "(1) IF BNR-A OIL FLOW CONTROL REMOTE (M.009A) SELECT TO a … (4) M.009D SELECT TO d" | ang pili ay mula sa REMOTE ng FICDO1043A ~ D (ang SV switch nila ay nasa A leg = SV mula sa oil master), hindi sa setting ng user |
+| ABC-002-1 | RATE B76 "0.2 % / sec" (air demand SI0033) | ang parehong linya ay "32 % MIN. AIR FLOW" = 32 % ng 1115 T/H | span 1115 T/H (2.23 T/H bawat s) |
+| ABC-002-2 | RATE B75 "0.2 % / sec" (PA demand SI0040) | SI0031 × 648 / 1115 | span 648 T/H (1.296 T/H bawat s) |
+| ABC-051-1 | RAMPB B24 "RAMP: 1.67 % / min" (SI0173 → SI0174) | LN10 output 0 ~ 600 °C, TICMS1022 0 ~ 600 °C | span 600 °C (10 °C / min), hindi 0 ~ 50 kg/cm2 ng pressure bago ang LN10 |
+
+Patunay na kailangan: sa app, bawat isa: MV ng feeder ≤ 33.3 T/H kapag M.3405 = 1; SV ng burner SA = 49 T/H pagkatapos ng M.035C at nananatili; ang SI0304 ay sumusunod sa burner na REMOTE; bilis ng ramp ayon sa span.
