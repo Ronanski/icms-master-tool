@@ -11,7 +11,7 @@ Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-ap
     - Ang AI0480 / AI0512 / AI0544 (feedrate ng coal feeder) ay isinusulat ng feeder model.
     - Ang ABC-014 FICFA1055A / B at ABC-033 TICAS1001 ay may back-up ng interlock (BU-CMD 25 % / 0 %) na tama ayon sa legend ("interlock tracking"). Ang test ay tumitingin lang sa huling scan.
 - **Work Done:**
-  - `src/ui/uat/gen.js`: bagong grupo "Converters and other blocks" (square root, I/P, T/P, HLLIM, PV < SV, conditional write, drop rate); DCMP sa Comparators; TPV sa Timers; latched select (1 → B, 0 → nananatiling B, AUTO ng operator → A) at operator-only A/M; feeder AI = skip na may dahilan; PID MAN test: select signals = 0.
+  - `src/ui/uat/gen.js`: bagong grupo "Converters and other blocks" (SQRT = identity ayon sa desisyon ng user V-18, lahat ng 13 SQRT; I/P, T/P, HLLIM, PV < SV, conditional write, drop rate); DCMP sa Comparators; TPV sa Timers; latched select (1 → B, 0 → nananatiling B, AUTO ng operator → A) at operator-only A/M; feeder AI = skip na may dahilan; PID MAN test: select signals = 0.
   - `src/ui/uat/runner.js`: ang back-up ng interlock na nakita sa ANUMANG scan ng test ay skip na may dahilan.
   - `src/analog/ui/panel.js` (`cosFromUp`): ang COS na walang label hanggang valve ay pinapangalanan ayon sa controller ng loop (hal. "COS manual ▸ PID LICBR1001B (manual of this loop)").
 - **As Left (headless, build 2.2.0-beta.24):**
