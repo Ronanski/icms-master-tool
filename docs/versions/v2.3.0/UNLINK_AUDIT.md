@@ -12,3 +12,10 @@ Walang link na tinanggal para lang gumana. Ang dalawang binago sa ibaba ay MALIN
    - Dati: ang pangalang M.331D ay nasa net ng output ng AND(B.0646, B.066E), dahil ang wire ng M.331D at ang output ng AND ay pumapasok sa iisang input bar ng OR M.0320. Kaya ang M.331D ng ABC-009A ay sumusunod sa SIG.AB ng furnace DP, hindi sa DITL.
    - Ebidensya: PDF ABC-009B, x376 ~ 448 y286: "BOTTOM ASH SCREW COOLER SPEED CONTROL MANUAL MODE ( FROM DITL 21D-59 ) M.331D" ay sariling wire papasok sa OR; ang AND ng B.0646 / B.066E (FURNACE DP (A) / (B) SIG.AB) ay hiwalay na input ng parehong OR.
    - Ngayon: dalawang net. Ang M.331D ay DITL input (iisang address sa ABC-009A at 009B); ang output ng AND ay input pa rin ng OR.
+
+## beta.3
+
+3. **ABC-008 "B.0664 FURNACE PRESSURE (A) SIG.AB"** (ABC-008-1).
+   - Dati: ang input ng AND B74 (→ OR M.0204, force manual ng IDF inlet damper PICFG108A) ay B.0664, walang pinagmulan, laging 0.
+   - Ebidensya: ang text sa tabi ng address ay "FURNACE PRESSURE (A) SIG.AB". Sa kaliwang kalahati ng parehong sheet, ang FURNACE PRESSURE (A) SIG.AB ay B.0644 (SIG.AB ng AI0132), at ang dalawa pang input ng parehong AND ay B.066C / B.068C, kapareho ng kaliwang AND (B.0644, B.066C, B.068C). Sa repo, ang B.0664 ay SIG.AB ng AI0196 = ZT-FA1055-B1 (FA blower-B inlet damper position, ABC-014): ibang equipment.
+   - Ngayon: nakakabit sa B.0644. Kapag sira ang tatlong furnace pressure transmitter, napupunta sa MAN ang hydraulic coupling AT ang IDF inlet damper.
