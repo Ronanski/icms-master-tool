@@ -5,7 +5,7 @@
     'body.anview #anp input,body.anview #anp select,body.anview #anp button:not(.keep){pointer-events:none;opacity:.45}body.anview #anp .keep{opacity:1}#anp .tr{cursor:pointer}#anp .tr:hover{background:#14231b}#anp .why{background:#10181d;border-left:3px solid var(--acc);padding:4px 6px;margin:4px 0;color:var(--tx)}';
   document.head.append(st);
 }
-/* trace / flash = a GLOW around the wire; the wire keeps its own colour (state: 1 / 0 / analog / forced) */ const TUP =
+/* trace = the wire takes a solid colour (2.3.0: no glow): white = selected, blue = upstream, magenta = downstream */ const TUP =
     '#3aa0ff',
   TDN = '#ff2fd0',
   TST = '#ffffff',
@@ -332,13 +332,13 @@ function trList(d) {
   }
   const cap = 60;
   d.append(
-    h$('small', { txt: 'Driven by (upstream, blue glow): ' + T.upL.length, style: 'display:block;margin-top:6px' })
+    h$('small', { txt: 'Driven by (upstream, blue): ' + T.upL.length, style: 'display:block;margin-top:6px' })
   );
   T.upL.slice(0, cap).forEach(n => d.append(row(n), ...xr(n)));
   if (T.upL.length > cap)
     d.append(h$('small', { txt: '… +' + (T.upL.length - cap) + ' more', style: 'display:block;margin-top:6px' }));
   d.append(
-    h$('small', { txt: 'Feeds (downstream, magenta glow): ' + T.dnL.length, style: 'display:block;margin-top:6px' })
+    h$('small', { txt: 'Feeds (downstream, magenta): ' + T.dnL.length, style: 'display:block;margin-top:6px' })
   );
   T.dnL.slice(0, cap).forEach(n => d.append(row(n), ...xr(n)));
   if (T.dnL.length > cap)

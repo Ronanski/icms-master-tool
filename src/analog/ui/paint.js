@@ -1011,16 +1011,17 @@ function paint0() {
         if (T.start.has(n.id)) hal = TST;
         else if (T.up.has(n.id)) hal = TUP;
         else if (T.dn.has(n.id)) hal = TDN;
-        else o = 0.35;
+        else o = 0.18;
       }
+      /* 2.3.0 (user: the glow is ugly): the traced wire itself takes the trace colour, solid and thicker, no blur */
       if (hal && AN.view) {
-        c = '#dfe7ed';
-        w += 0.3;
+        c = hal;
+        w += T.start.has(n.id) ? 0.7 : 0.45;
       }
     }
     if (e._h !== hal) {
       e._h = hal;
-      e.style.filter = hal ? 'drop-shadow(0 0 1.6px ' + hal + ') drop-shadow(0 0 1px ' + hal + ')' : '';
+      e.style.filter = '';
     }
     const dsh = fo ? '1.4 .8' : BADN.has(n.id) && !isD ? '2 1' : null;
     if (e._c !== c || e._d !== dsh || e._w !== w || e._o !== o || e._r !== AN.wsr) {

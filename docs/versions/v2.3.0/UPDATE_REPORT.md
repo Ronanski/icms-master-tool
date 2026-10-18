@@ -33,7 +33,7 @@
   - Oil master: ang tracking (SI0304) ay laging kumukuha sa burner A, kahit ibang burner ang REMOTE (may talon).
   - Ramp ng air demand / PA demand 11x / 6.5x mas mabagal; ramp ng HP bypass spray temperature SV 12x mas mabagal.
 - **Work Done:** (`DRAWING_TRACE.md` beta.2) MV high limit mula sa `<tag>.MHD` sa MAN station; SET SV sa operator SV na nananatili; pili ng SI0304 mula sa REMOTE ng FICDO1043A ~ D; span ng ramp 1115 T/H, 648 T/H, 600 °C. Walang binagong link.
-- **As Left:** `tests/engine/audit230b.js` 4 / 4 PASS (33.32 T/H kapag M.3405 = 1, 38 T/H kapag 0; SV 20.8 → 49 at nananatili; C lang ang REMOTE → leg C; 2.23 / 1.296 T/H bawat s, 10 °C / min). Regression: tingnan ang ulat sa chat.
+- **As Left:** `tests/engine/audit230b.js` 4 / 4 PASS (33.32 T/H kapag M.3405 = 1, 38 T/H kapag 0; SV 20.8 → 49 at nananatili; C lang ang REMOTE → leg C; 2.23 / 1.296 T/H bawat s, 10 °C / min). Regression sa beta.2 html: audit230 19 / 19, tests.js 11 / 11, world 11 / 11, ditl150 9 / 9, plant_live 12 / 12, faceplate, isolated PASS. pid_am: 1 mali (FIC-CM ABC-004A, MANUAL value 0 sa halip na 32.5); pareho rin ang mali sa v2.2.0 Stable at sa beta.1, kaya hindi galing sa beta.2 (dating isyu, hiwalay na ayos).
 - **Status:** Pass. Susunod: beta.3 datos (grupo C).
 
 ## beta.3 — Datos ayon sa drawing (grupo C, 2026-10-19)
@@ -44,5 +44,13 @@
   - ABC-008 AND B74 (force manual ng PICFG108A sa M.0204): ang input na "B.0664" ay hindi nakakabit (laging 0); ang FURNACE PRESSURE (A) SIG.AB sa kaliwa ng sheet ay B.0644.
   - ABC-004B / 004C: baligtad ang pangalan ng "<1 %" at TONS 2 s (M.0154 / M.0156, M.0164 / M.0166). Pangalan lang, pareho ang logic.
 - **Work Done:** (`DRAWING_TRACE.md` beta.3, `UNLINK_AUDIT.md` 3) range ng LICBR1001A mula sa drawing (inilalapat pagkatapos ng parameter workbook sa bawat Reset); B74 input = B.0644; tamang pangalan ng 4 na signal. Walang inalis na link.
-- **As Left:** `tests/engine/audit230c.js` 5 / 5 PASS (range -422 ~ 820 span 1242; tatlong SIG.AB → B74 = 1; mga pangalan). Build at check SAME. Regression (hmi_op, unit_load, tests, world, isolated): tumatakbo pa sa push; resulta sa chat at sa susunod na commit.
+- **As Left:** `tests/engine/audit230c.js` 5 / 5 PASS (range -422 ~ 820 span 1242; tatlong SIG.AB → B74 = 1; mga pangalan). Build at check SAME. Regression sa beta.3 html: hmi_op 34 / 34 (kasama ang drum level loop), unit_load 19 / 19, audit230 19 / 19, audit230b 4 / 4, tests.js 11 / 11, world 11 / 11, isolated PASS.
 - **Status:** Pass ang test ng ayos.
+
+## beta.4 — Itsura: trace at status bar (user, 2026-10-19)
+
+- **Problem:** User: "pag nagtrace may glow effect" (pangit, mahirap basahin); ang UAT / CHECK button ay nakalutang at tumatakip sa sheet list.
+- **As Found:** ang trace ay blur na liwanag sa paligid ng wire (CSS drop-shadow); ang ibang wire ay 35 % pa rin ang liwanag. UAT / CHECK ay `position: fixed` sa ibabang kaliwa, sa ibabaw ng sheet list.
+- **Work Done:** (itsura lang, walang binago sa logic o engine) ang na-trace na wire mismo ang may kulay: puti = pinili, asul = pinanggagalingan, magenta = pinupuntahan; mas makapal, walang blur; ang ibang wire 18 %. UAT at CHECK nasa status bar na (katabi ng Events).
+- **As Left:** screenshot ng ABC-010 trace ng LICBR1001A.MV (malinaw na asul na linya, walang blur; UAT / CHECK sa status bar, hindi na natatakpan ang sheet list). tests.js 11 / 11, check SAME.
+- **Status:** Pass. Susunod (hinihintay ang pili ng user): pangalan at icon ng exe / apk, Loop view, value sa bawat block, "Bakit MANUAL?".
