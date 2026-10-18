@@ -63,8 +63,15 @@ function anFace(S) {
     } else if (k === 'MAN') {
       const sp = e.SH - e.SL;
       if (sp > 0) {
-        P.lo = e.SL + (e.ML / 100) * sp;
-        P.hi = e.SL + (e.MH / 100) * sp;
+        /* 2.2.0-beta.21: a station whose output IS a % position (unit %, SV range inside 0 ~ 100) has its MV limits ML / MH in that
+           same %: ABC-020 HICHR1002A (RH gas biasing damper) SL 10 / SH 100, ML 10 / MH 100 = damper 10 ~ 100 %. Before, ML was
+           taken as 10 % OF the SV span (10 + 0.1 x 90 = 19 %): the operator could not go below 19 %, while the HMI snapshot
+           39.PNG shows 11.0 % and PR-OPE-5003 puts the RH damper to 10 % after the turbine trip. A bias station in % with a
+           range outside 0 ~ 100 (ABC-002 HS-O2 -4 ~ 4, ABC-057 HICFABIASU / L -10 ~ 10) keeps the span mapping (its output is
+           the engineering value of the range) */
+        const pct = String(e.unit || '').trim() === '%' && e.SL >= 0 && e.SH <= 100;
+        P.lo = pct ? e.ML : e.SL + (e.ML / 100) * sp;
+        P.hi = pct ? e.MH : e.SL + (e.MH / 100) * sp;
         P.rlo = e.SL;
         P.rhi = e.SH;
       }

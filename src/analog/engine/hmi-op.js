@@ -1062,6 +1062,12 @@ function anPlantWarm(o) {
 function anPlantHot() {
   return anPlantWarm({ P: 123, Tb: 750, burners: 0, mv: 0, air: 14, coal: 12, rh: 7.6, hot: true });
 }
+/* 2.2.0-beta.21 (M5): Start at 150 MW with the shutdown physics on (unit.js anUnitLive) */
+function anPlantLive() {
+  const n = anPlantLoad150();
+  if (AN_UNIT.on) anUnitLive();
+  return n;
+}
 function anPlantCold() {
   const n = anPlantLoad150();
   if (!AN_UNIT.on) return 0;

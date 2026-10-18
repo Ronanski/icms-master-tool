@@ -1458,6 +1458,621 @@
       }
     },
     {
+      id: 'down',
+      stage: true,
+      title: 'M5 · Load down 150 → 30 MW: 1-element, start-up valve, SUB firing, coal out (PR-OPE-5003)',
+      secs: 16200,
+      run(h, o) {
+        const L = AN.sheets.filter(s => s.S && !/ABC-000/.test(s.name));
+        for (const s of L) {
+          const z = s.S.blk.find(z => z.k === 'MAN' && (z.tag === 'HIC-ULD' || (z.txt || []).includes('HIC-ULD')));
+          if (z) {
+            o.SU = s.S;
+            o.ubu = z;
+            break;
+          }
+        }
+        o.tgt = (o.SU.drv[o.ubu.i[o.ubu.svI]] || []).find(z => z.k === 'AMT').a;
+        o.S2 = h.sh('ABC-002');
+        o.o2 = h.ctl('ABC-002', 'AICFG112');
+        o.aim = h.MW();
+        o.hold = null;
+        o.pP = null;
+        o.lvMin = o.lvMax = h.lvl();
+        o.mspMin = 1e9;
+        o.mspMax = 0;
+        o.t150 = o.t90 = o.t45 = o.t30 = o.h90 = o.h45 = o.e90 = o.e45 = null;
+        o.bmMan = o.tmMan = o.e1 = o.e1Ok = o.suv = o.sub = o.feedStop = o.daAt = o.pb = null;
+        o.feeds = 3;
+        o.lastStop = -1e9;
+        o.oil = 0;
+        o.cmMv = null;
+        o.airMv = null;
+        o.fwMv = null;
+        o.fpMv = h.mv('ABC-008', 'PICFG108');
+        o.ll = 0;
+        o.o2man = 0;
+      },
+      each(h, o) {
+        const t = o.t,
+          S = h.S,
+          U = h.U;
+        if (t < 10) return;
+        o.lvMin = Math.min(o.lvMin, h.lvl());
+        o.lvMax = Math.max(o.lvMax, h.lvl());
+        o.mspMin = Math.min(o.mspMin, h.MSP());
+        o.mspMax = Math.max(o.mspMax, h.MSP());
+        if (h.bit('ABC-001C', 'M.310D') > 0.5) o.ll = 1;
+        const MW = h.MW(),
+          MSF = h.MSF();
+        if (o.t150 == null && MW < 149) o.t150 = t;
+        if (o.t90 == null && MW <= 91) o.t90 = t;
+        if (o.t45 == null && MW <= 46) o.t45 = t;
+        if (o.t30 == null && MW <= 31) o.t30 = t;
+        /* the 1-ELEMENT pushbutton (ABC-010 M.054F, TPS 2 s -> M.0221 -> FF M.0222 set): pressed for 2 s */
+        if (o.pb != null && t >= o.pb + 2) {
+          h.setx(null, 'M.054F', 0);
+          o.pb = null;
+        }
+        if (o.e1 != null && o.e1Ok == null && t >= o.e1 + 30) o.e1Ok = h.bit('ABC-010', 'M.0222') > 0.5 ? 1 : 0;
+        if (t % 10 !== 0) return;
+        /* (1) load down by hand (PR-OPE-5003 "Reduce load (Manual Operation)"): 1.2 MW/min to 90 MW, hold 9 min (procedure 8 ~ 10);
+           0.6 MW/min to 45, hold 9 min; 0.4 MW/min to 30. The target goes to HIC-ULD (CCS) while EIC-TM is AUTO; below 220 T/H the
+           drawing forces EIC-TM MANUAL (M.2016): the operator's MW goes to the TCS through the station (AO0359); the TCS panel target too */
+        const rate = o.aim > 90 ? 1.2 : o.aim > 45 ? 0.6 : 0.4;
+        if (o.hold != null) {
+          if (t >= o.hold + 540 && MW <= o.aim + 1) {
+            if (o.aim === 90) o.e90 = t;
+            else o.e45 = t;
+            o.hold = null;
+          }
+        } else if (o.aim > 30) {
+          let nx = o.aim - rate / 6;
+          if (o.aim > 90 && nx <= 90) {
+            nx = 90;
+            o.hold = o.h90 = t;
+          } else if (o.aim > 45 && o.aim <= 90 && nx <= 45) {
+            nx = 45;
+            o.hold = o.h45 = t;
+          }
+          o.aim = Math.max(30, nx);
+        }
+        const tmS = S.rt.st[h.tmA.id],
+          tm = S.rt.st[h.htm.id],
+          st = S.rt.st[h.bmA.id];
+        if (tmS.pk === 'A') o.SU.rt.ext[o.tgt] = o.aim;
+        else {
+          if (o.tmMan == null) o.tmMan = t;
+          tm.val = Math.max(0, Math.min(200, o.aim));
+        }
+        AN.turbine('loadup', o.aim);
+        /* (2) boiler master MANUAL by its BU-CMD below 220 T/H (M.2013, CLAUDE.md 10): the firing by hand holds the pressure at the SV
+           (PR-OPE-5003 "Maintain MS Pressure 123 ~ 126 ksc"), until the coal master is taken by hand for the SUB firing */
+        const P = h.MSP(),
+          sv = h.SV(),
+          dP = o.pP == null ? 0 : P - o.pP;
+        o.pP = P;
+        if (st.pk === 'B') {
+          if (o.bmMan == null) {
+            o.bmMan = t;
+            o.bmMsf = MSF;
+          }
+          if (o.sub == null) {
+            const m = S.rt.st[h.hbm.id];
+            m.val = Math.max(0, Math.min(100, m.val + Math.max(-1, Math.min(1, 0.0011 * (sv - P) - 0.2 * dP))));
+          }
+        }
+        /* O2 trim AICFG112: forced MANUAL below 220 T/H (M.0102); the operator puts it at 50 % (neutral) */
+        {
+          const oq = o.S2.rt.st[o.o2.amt.id];
+          if (oq.pk === 'B') {
+            o.o2man = 1;
+            if (o.o2.manNet != null) {
+              const m = +o.S2.rt.ext[o.o2.manNet];
+              if (isFinite(m)) o.S2.rt.ext[o.o2.manNet] = m + Math.max(-1, Math.min(1, 50 - m));
+            }
+          }
+        }
+        /* furnace pressure PICFG108: forced MANUAL by the drawing under 14 % (M.0205); -15 mmH2O by hand then */
+        if (h.pk('ABC-008', 'PICFG108') === 'B') {
+          if (o.fgMan == null) o.fgMan = t;
+          if (t % 60 === 0) {
+            const fp = h.FP();
+            if (fp < -30) o.fpMv = Math.max(3, o.fpMv - 1);
+            else if (fp > 0) o.fpMv = Math.min(80, o.fpMv + 1);
+            h.man('ABC-008', 'PICFG108', o.fpMv);
+          }
+        } else o.fpMv = h.mv('ABC-008', 'PICFG108');
+        /* (3) PR-OPE-5003 "At approximately 72 MW or 230 t/h MSF, put level control to 1 element": the 1-ELEMENT pushbutton M.054F */
+        if (o.e1 == null && MSF <= 230) {
+          h.setx(null, 'M.054F', 1);
+          o.pb = o.e1 = t;
+          o.e1Msf = MSF;
+        }
+        /* (4) "At less than 120 t/h MSF, change level control from main to start-up then put to auto": FICFW1007 and LICBR1001A to
+           MANUAL (ABC-010 M.0226: the start-up control LICBR1001B is allowed only while both are MANUAL), LICBR1001B A SV 0, the main
+           valve shut 5 % a minute while the level is not falling */
+        o.lowN = MSF < 120 ? (o.lowN || 0) + 1 : 0;
+        const mainMv = x => {
+          /* the main valve: FICFW1007.MV = LICBR1001A.MV while the FF M.0222 = 1 (single element), the station FICFW1007 otherwise: both
+             stations in MANUAL are written, so the valve follows whichever the selector takes */
+          h.man('ABC-010', 'FICFW1007', x);
+          h.man('ABC-010', 'LICBR1001A', x);
+        };
+        if (o.suv == null && o.e1 != null && o.lowN >= 12) {
+          /* the single-element PID swings the main valve 0 ~ 40 % at this load: taken by hand at about the steady opening (10 %) */
+          o.fwMv = 10;
+          mainMv(o.fwMv);
+          o.suv = t;
+          o.suvMsf = MSF;
+        }
+        if (o.suv != null && t === o.suv + 10) h.autoSv('ABC-010', 'LICBR1001B', 0);
+        if (o.suv != null && t > o.suv + 10 && t % 30 === 0) {
+          /* the main valve is shut 3 % a minute only while the start-up valve has taken the flow (LICBR1001B > 15 %, FW >= steam, level
+             not low); opened again when the level falls (the start-up valve PID is slow: SV 0) */
+          const lv = h.lvl();
+          if (lv < -80) o.fwMv = Math.min(60, o.fwMv + 5);
+          else if (lv < -40) o.fwMv = Math.min(60, o.fwMv + 2);
+          else if (lv > 150) o.fwMv = 0;
+          else if (lv > 60) o.fwMv = Math.max(0, o.fwMv - 5);
+          else if (lv > 0 || (t % 60 === 0 && h.mv('ABC-010', 'LICBR1001B') > 15 && lv > -20 && h.FW() >= MSF - 5)) o.fwMv = Math.max(0, o.fwMv - 3);
+          mainMv(o.fwMv);
+        }
+        /* (5) "At 750 C bed temperature: PAF / SAF damper to manual, SUB firing one by one, coal down to the minimum (4 t/h a feeder)":
+           the bed of the model is the fuel / air share (unit.js), so the SUB is lit at 750 C or at 50 MW, whichever comes first under
+           60 MW. Burners A / B first, C / D 3 min later; the coal master FIC-CM to MANUAL, coal down 1 % a minute while the pressure
+           holds, the oil up / down 5 % a minute to hold the pressure */
+        if (o.sub == null && MW < 60 && (U.Tb <= 750 || MW <= 50)) {
+          o.sub = t;
+          o.subTb = U.Tb;
+          o.subMW = MW;
+          o.airMv = { pa: h.mv('ABC-007', 'FICFA1071'), sa: h.mv('ABC-007', 'FICFA1081') };
+          h.man('ABC-007', 'FICFA1071', o.airMv.pa);
+          h.man('ABC-007', 'FICFA1081', Math.min(100, o.airMv.sa + 5));
+          h.oilValve('M.3410', true);
+          h.oilValve('M.3411', true);
+          h.setx(null, 'M.3412', 1);
+          h.setx(null, 'M.3413', 1);
+          o.oil = 30;
+          h.man('ABC-003A', 'FICDO1043A', o.oil);
+          h.man('ABC-003B', 'FICDO1043B', o.oil);
+          o.cmMv = h.mv('ABC-004A', 'FIC-CM');
+          h.man('ABC-004A', 'FIC-CM', o.cmMv);
+        }
+        if (o.sub != null && t === o.sub + 180) {
+          h.oilValve('M.3416', true);
+          h.oilValve('M.3417', true);
+          h.setx(null, 'M.3418', 1);
+          h.setx(null, 'M.3419', 1);
+          o.cd = 1;
+        }
+        const oilSet = x => {
+          o.oil = Math.max(20, Math.min(100, x));
+          h.man('ABC-003A', 'FICDO1043A', o.oil);
+          h.man('ABC-003B', 'FICDO1043B', o.oil);
+          if (o.cd) {
+            h.man('ABC-003C', 'FICDO1043C', o.oil);
+            h.man('ABC-003D', 'FICDO1043D', o.oil);
+          }
+        };
+        if (o.sub != null && t % 30 === 0) {
+          /* "Gradually increase diesel flow while reducing coal flow": the oil comes up first (5 % a minute to 40 % while the pressure
+             is not above SV + 3), the coal goes down only while the pressure holds; the oil holds the pressure (every 30 s: 5 % when
+             the error is above 5 kg/cm2, 2 % above 1 ~ 2) */
+          const e = sv - P,
+            d = o.p30 == null ? 0 : P - o.p30;
+          o.p30 = P;
+          if (o.feeds > 0 && o.oil < 40 && e >= -3) oilSet(o.oil + 5);
+          else oilSet(o.oil + Math.max(-5, Math.min(5, 0.3 * e - 3 * d)));
+        }
+        if (o.sub != null && t % 60 === 0) {
+          /* the coal master demand is the TOTAL coal: a stopped feeder's share goes to the others (FIC-CF), so only FIC-CM takes the
+             coal down; 1 % a minute (2 above SV + 3) while the pressure holds, to the minimum 10 % */
+          if (o.feeds > 0 && o.cmMv > 10 && P >= sv - 1) {
+            o.cmMv = Math.max(10, o.cmMv - (P > sv + 3 ? 2 : 1));
+            h.man('ABC-004A', 'FIC-CM', o.cmMv);
+          }
+          /* "Gradually reduce PAF damper opening until 20 %" once the feeders stop */
+          if (o.feedStop != null && o.airMv.pa > 20) {
+            o.airMv.pa = Math.max(20, o.airMv.pa - 2);
+            h.man('ABC-007', 'FICFA1071', o.airMv.pa);
+          }
+          if (o.feedStop != null && h.O2() > 10 && o.airMv.sa > 15) {
+            o.airMv.sa = Math.max(15, o.airMv.sa - 2);
+            h.man('ABC-007', 'FICFA1081', o.airMv.sa);
+          }
+        }
+        /* (6) "At 700 C bed temperature (or 40 MW): stop coal feeder one by one": A, B, C 5 min apart, once the coal demand is at the
+           minimum (or the bed at 700 C / 40 MW), while the pressure holds. The last feeder takes the coal to 0: the oil is raised with
+           it (12 T/H of coal = about 4.7 T/H of oil = 33 % of the four burners), then trimmed */
+        if (o.sub != null && t >= o.sub + 300 && o.feeds > 0 && (U.Tb <= 700 || MW <= 40 || o.cmMv <= 10) && t - o.lastStop >= 300 && P >= sv - 2 && dP > -0.3 && o.oil >= 30) {
+          if (o.feedStop == null) {
+            o.feedStop = t;
+            o.stopTb = U.Tb;
+            o.stopMW = MW;
+          }
+          o.feeds--;
+          h.setx(null, ['M.3400', 'M.3401', 'M.3402'][2 - o.feeds], 0);
+          if (o.feeds === 0) oilSet(o.oil + 30);
+          if (o.feeds === 0) {
+            h.setx(null, 'M.3405', 0);
+            o.coalOut = t;
+          }
+          o.lastStop = t;
+        }
+        /* (7) "At 40 MW: set D/A pressure control valve to 2.5 ksc" (PCVAS1030 = PICCD1104, ABC-056) */
+        if (o.daAt == null && MW <= 40) {
+          o.daAt = t;
+          o.daOk = h.ctl('ABC-056', 'PICCD1104') ? h.autoSv('ABC-056', 'PICCD1104', 2.5) : false;
+        }
+        if (window.__tr && t % 30 === 0)
+          window.__tr.push([t, MW, o.aim, h.U.tcsT, P, MSF, +S.rt.st[h.hbm.id].val, h.coal(), U.oilF, U.Tb, h.PA(), h.SA(), h.O2(), h.FP(), h.FW(), h.lvl(), h.mv('ABC-010', 'FICFW1007'), h.mv('ABC-010', 'LICBR1001B'), h.bit('ABC-010', 'M.0222'), h.MST(), h.RHT(), h.RHP(), st.pk === 'A' ? 1 : 0, tmS.pk === 'A' ? 1 : 0, h.bit('ABC-001C', 'I.0082'), o.cmMv == null ? -1 : o.cmMv, o.oil].map(x => +(+x).toFixed(2)));
+      },
+      done(h, o) {
+        return o.t30 != null && (o.suv != null ? o.t >= o.suv + 300 : o.t >= o.t30 + 1200);
+      },
+      checks(h, o) {
+        const U = h.U,
+          S = h.S,
+          mins = (a, b) => (a != null && b != null ? (b - a) / 60 : NaN),
+          fm = x => (isFinite(x) ? f0(x) : '-'),
+          d1 = mins(o.t150, o.t90),
+          d2 = mins(o.e90, o.t45),
+          d3 = mins(o.e45, o.t30),
+          hd1 = mins(o.h90, o.e90),
+          hd2 = mins(o.h45, o.e45),
+          run = ['M.3400', 'M.3401', 'M.3402'].map(l => h.bit('ABC-005', l) > 0.5);
+        return [
+          [d1 >= 40 && d1 <= 65, '150 → 90 MW sa ' + fm(d1) + ' min (1.2 MW/min = 50 min)'],
+          [hd1 >= 8, 'hold sa 90 MW ' + fm(hd1) + ' min (procedure 8 ~ 10)'],
+          [d2 >= 60 && d2 <= 95, '90 → 45 MW sa ' + fm(d2) + ' min (0.6 MW/min = 75 min)'],
+          [hd2 >= 8, 'hold sa 45 MW ' + fm(hd2) + ' min (8 ~ 10)'],
+          [d3 >= 28 && d3 <= 55, '45 → 30 MW sa ' + fm(d3) + ' min (0.4 MW/min = 37.5 min); MW ngayon ' + f1(h.MW())],
+          [
+            o.mspMin >= 113 && o.mspMax <= 133 && !o.ll && h.bit('ABC-001C', 'M.3200') < 0.5,
+            'MSP ' + f1(o.mspMin) + ' ~ ' + f1(o.mspMax) + ' kg/cm2 sa buong 150 → 30 MW (procedure 123 ~ 126; tseke 123 ± 10); walang trip (M.3200 = 0, LL M.310D = 0)'
+          ],
+          [
+            o.bmMan != null && o.bmMsf > 195 && o.bmMsf < 245 && S.rt.st[h.bmA.id].pk === 'B' && h.bit('ABC-001C', 'M.2013') > 0.5 && o.tmMan != null && S.rt.st[h.tmA.id].pk === 'B',
+            'boiler master HIC-BM MANUAL (BU-CMD M.2013) sa MSF ' + f0(o.bmMsf) + ' T/H (< 220, ' + f0(mins(0, o.bmMan)) + ' min); EIC-TM MANUAL (M.2016) sa ' + f0(mins(0, o.tmMan)) + ' min: pressure hawak ng operator'
+          ],
+          [
+            o.e1 != null && o.e1Msf <= 232 && o.e1Ok === 1 && h.bit('ABC-010', 'M.0222') > 0.5 && h.bit('ABC-010', 'M.0224') < 0.5,
+            '1-ELEMENT pushbutton M.054F sa MSF ' + f0(o.e1Msf) + ' T/H (' + f0(mins(0, o.e1)) + ' min): FF M.0222 = ' + f0(h.bit('ABC-010', 'M.0222')) + ' (LICBR1001A ang gumagalaw sa main valve, FICFW1007 tumutunton)'
+          ],
+          [
+            o.suv != null && o.suvMsf < 120 && h.isAuto('ABC-010', 'LICBR1001B') && h.pk('ABC-010', 'FICFW1007') === 'B' && h.bit('ABC-010', 'M.0226') < 0.5,
+            'start-up valve LICBR1001B A sa MSF ' + f0(o.suvMsf) + ' T/H (< 120); FICFW1007 M ' + f0(h.mv('ABC-010', 'FICFW1007')) + ' % (pasara), LICBR1001A M; M.0226 = ' + f0(h.bit('ABC-010', 'M.0226')) + '; FW ' + f0(h.FW()) + ' T/H'
+          ],
+          [Math.abs(o.lvMax) < 150 && Math.abs(o.lvMin) < 150, 'drum level ' + f0(o.lvMin) + ' ~ ' + f0(o.lvMax) + ' mm (±150)'],
+          [
+            o.sub != null && U.oilF > 0.5 && h.pv('ABC-003A', 'FICDO1043A') > 0.3 && h.pv('ABC-003B', 'FICDO1043B') > 0.3,
+            'SUB A / B / C / D in service sa ' + f0(o.subMW) + ' MW, bed ' + f0(o.subTb) + ' °C (procedure 750): oil ' + f1(U.oilF) + ' T/H sa ' + f0(o.oil) + ' %; PAF / SAF M ' + f0(h.mv('ABC-007', 'FICFA1071')) + ' / ' + f0(h.mv('ABC-007', 'FICFA1081')) + ' %'
+          ],
+          [
+            o.feeds === 0 && !run.some(Boolean) && h.coal() < 1,
+            'coal feeders A / B / C pinahinto isa-isa mula ' + f0(o.stopMW) + ' MW, bed ' + f0(o.stopTb) + ' °C (procedure 700); coal ' + f1(h.coal()) + ' T/H; bed ngayon ' + f0(U.Tb) + ' °C'
+          ],
+          [
+            !!o.o2man && h.O2() >= 3 && h.O2() <= 16,
+            'O2 trim AICFG112 na-force M sa ilalim ng 220 T/H (M.0102), 50 % ng operator; O2 ' + f1(h.O2()) + ' % (PA ' + f0(h.PA()) + ' / SA ' + f0(h.SA()) + ' T/H)'
+          ],
+          [
+            near(h.MW(), 30, 7) && h.bit('ABC-050', 'I.0931') > 0.5 && h.bit('ABC-001C', 'M.3200') < 0.5,
+            'MW ' + f1(h.MW()) + ' (30 ± 2), generator nakakabit (I.0931 = 1), turbine hindi pa tripped; MST ' + f0(h.MST()) + ' / RHT ' + f0(h.RHT()) + ' °C, RHP ' + f1(h.RHP()) + '; D/A PICCD1104 ' + (o.daOk ? 'A SV 2.5' : 'walang station sa ABC-056')
+          ]
+        ];
+      }
+    },
+    {
+      id: 'off',
+      stage: true,
+      title: 'M5 · Turbine trip sa 30 MW → bypass → SUB out → purge → fans stop (PR-OPE-5003)',
+      secs: 9000,
+      run(h, o) {
+        o.P0 = h.MSP();
+        o.Tb0 = h.U.Tb;
+        o.tripAt = o.hpMan = o.cyc = o.purge = o.fansOff = o.bfpOff = o.lvMan = null;
+        o.hpMax = 0;
+        o.rhMin = 1e9;
+        o.rhMax = 0;
+        o.mspMax = 0;
+        o.coolMax = 0;
+        o.tsH = [];
+        o.lvMin = o.lvMax = h.lvl();
+        o.fpMin = 0;
+        o.fpMax = 0;
+        o.airMax = 0;
+        o.oil = h.mv('ABC-003A', 'FICDO1043A') || 30;
+        o.suvMv = h.mv('ABC-010', 'LICBR1001B');
+        o.fwMv = h.mv('ABC-010', 'LICBR1001A');
+        o.seen = {};
+        o.hpSv = null;
+        o.msfByp = 0;
+        o.purgeMv = 0;
+        o.fpMv = h.mv('ABC-008', 'PICFG108');
+      },
+      each(h, o) {
+        const t = o.t,
+          U = h.U;
+        if (t === 30) {
+          /* PR-OPE-5003 "At 30 MW: turbine shutdown / turbine trip" (ABC-050 S2 I.0400 #1 Turbine trip FROM ARP). The DITL would MFT
+             on a turbine trip; the procedure bypasses it ("bypass turbine trip alarm at MFT ... to maintain boiler operation"): no MFT */
+          h.setx('ABC-050', 'I.0400', 1);
+          o.tripAt = t;
+        }
+        if (o.tripAt == null) return;
+        const MSF = h.MSF();
+        o.hpMax = Math.max(o.hpMax, h.mv('ABC-050', 'PICMS1006'));
+        o.mspMax = Math.max(o.mspMax, h.MSP());
+        if (o.cyc == null) {
+          o.lvMin = Math.min(o.lvMin, h.lvl());
+          o.lvMax = Math.max(o.lvMax, h.lvl());
+        }
+        if (h.bit('ABC-050', 'M.0705') > 0.5) o.seen.bu = 1;
+        if (h.bit('ABC-050', 'M.0124') > 0.5) o.seen.p = 1;
+        if (t === o.tripAt + 60) {
+          o.mw60 = h.MW();
+          o.oil60 = U.oilF;
+        }
+        if (t === o.tripAt + 60) {
+          /* "Reduce diesel flow" (cooling -1 C/min): the four burners to 20 %, C and D retracted 2 min later; the boiler on two
+             burners at the minimum while the bypass takes the steam */
+          o.oil = 20;
+          for (const [k, tg] of [
+            ['ABC-003A', 'FICDO1043A'],
+            ['ABC-003B', 'FICDO1043B'],
+            ['ABC-003C', 'FICDO1043C'],
+            ['ABC-003D', 'FICDO1043D']
+          ])
+            h.man(k, tg, o.oil);
+        }
+        if (t === o.tripAt + 180) {
+          h.oilValve('M.3416', false);
+          h.oilValve('M.3417', false);
+          h.setx(null, 'M.3418', 0);
+          h.setx(null, 'M.3419', 0);
+        }
+        /* a hand station (HIC, MAN block): its value by hand, or read back */
+        const hic = (k, tag, x) => {
+          const T = h.sh(k),
+            b = T && T.blk.find(b => b.k === 'MAN' && b.tag === tag);
+          if (!b || !T.rt.st[b.id]) return false;
+          if (x != null) {
+            /* MAN first (.MAN = 1 on every sheet: the A / M switch of the station leaves the AUTO leg, plant.js MAN), then the value:
+               the station value and its MV input from the HMI when the drawing has one (ABC-020 "HICHR1002A.MV") */
+            if (AN.latchMode) AN.latchMode(tag, 'MAN');
+            T.rt.st[b.id].val = x;
+            for (const n of b.i || []) if (n >= 0 && T.ext.includes(n) && !(T.xlk && T.xlk[n]) && (AN.nm(T, n) || '').trim() === tag + '.MV') T.rt.ext[n] = x;
+          }
+          return +T.rt.st[b.id].val;
+        };
+        if (t === o.tripAt + 30) {
+          /* "Put biasing damper to manual, RH = 10 % and MS = 90 %" (ABC-020 HICHR1002A / B, hand stations) */
+          o.bias = hic('ABC-020', 'HICHR1002A', 10) !== false && hic('ABC-020', 'HICHR1002B', 90) !== false;
+        }
+        if (t === o.tripAt + 90) {
+          /* the bypass holds the plant (procedure: "HP and LP bypass and RH BOV automatically open to maintain RHP SV = 7.6"): HP bypass
+             A at the pressure of now (its SV down 1 kg/cm2 a minute within the cooling rate: "Shutdown to Cold" curve), MS blow-off A
+             5 above it (shut while the bypass holds), LP bypass A 7.6. "Put HP bypass to manual, open to 12 %": the minimum opening,
+             taken when the AUTO output falls under 12 % */
+          o.hpSv = Math.ceil(h.MSP());
+          h.autoSv('ABC-050', 'PICMS1006', o.hpSv);
+          h.autoSv('ABC-013', 'PICMS1002', o.hpSv + 5);
+          h.autoSv('ABC-052', 'PICHR1003', 7.6);
+        }
+        if (o.hpSv != null && o.cyc == null && o.hpMan == null && t > o.tripAt + 120 && h.mv('ABC-050', 'PICMS1006') < 12) {
+          h.man('ABC-050', 'PICMS1006', 12);
+          o.hpMan = t;
+        }
+        if (t > o.tripAt + 300 && o.cyc == null) {
+          o.rhMin = Math.min(o.rhMin, h.RHP());
+          o.rhMax = Math.max(o.rhMax, h.RHP());
+          o.msfByp = Math.max(o.msfByp, MSF);
+        }
+        if (t % 10 !== 0) return;
+        if (o.fansOff == null) {
+          o.fpMin = Math.min(o.fpMin, h.FP());
+          o.fpMax = Math.max(o.fpMax, h.FP());
+        }
+        /* furnace pressure by hand while the drawing forces PICFG108 MANUAL (M.0205) */
+        if (h.pk('ABC-008', 'PICFG108') === 'B' && o.fansOff == null && t % 60 === 0) {
+          const fp = h.FP();
+          if (fp < -30) o.fpMv = Math.max(3, o.fpMv - 1);
+          else if (fp > 0) o.fpMv = Math.min(80, o.fpMv + 1);
+          h.man('ABC-008', 'PICFG108', o.fpMv);
+        }
+        /* RH blow-off PICHR1391 (ABC-054) by hand when the reheat pressure runs away from the LP bypass */
+        if (o.cyc == null && t % 60 === 0) {
+          const rp = h.RHP();
+          o.rb = o.rb || 0;
+          if (rp > 9) o.rb = Math.min(60, o.rb + 10);
+          else if (rp < 8.2 && o.rb > 0) o.rb = Math.max(0, o.rb - 10);
+          h.man('ABC-054', 'PICHR1391', o.rb);
+        }
+        /* the drum level by hand (every 30 s, target 0; +200 once the fans are off: "Before stopping BFP, set the drum level near HH"):
+           the main valve (LICBR1001A / FICFW1007 stations in MANUAL, single element) until the steam is under 60 T/H, then "control by
+           manual" on the start-up valve LICBR1001B M while the main valve shuts */
+        if (o.lvMan == null && MSF < 60 && t >= o.tripAt + 120) {
+          o.lvMan = t;
+          o.suvMv = h.mv('ABC-010', 'LICBR1001B');
+          h.man('ABC-010', 'LICBR1001B', o.suvMv);
+        }
+        if (o.bfpOff == null && t % 30 === 0) {
+          const lv = h.lvl(),
+            e = (o.fansOff != null || (o.cyc != null && MSF < 5) ? 200 : 0) - lv,
+            step = Math.max(-4, Math.min(4, 0.02 * e - 0.1 * (o.lvP == null ? 0 : lv - o.lvP)));
+          o.lvP = lv;
+          if (o.lvMan == null) o.fwMv = Math.max(0, Math.min(60, o.fwMv + step));
+          else {
+            o.suvMv = Math.max(0, Math.min(100, o.suvMv + step));
+            h.man('ABC-010', 'LICBR1001B', o.suvMv);
+            o.fwMv = Math.max(0, o.fwMv + (e > 100 ? 0 : Math.min(-3, step))); /* the main valve shuts (at least 3 % per 30 s) unless the level is low */
+          }
+          h.man('ABC-010', 'FICFW1007', o.fwMv);
+          h.man('ABC-010', 'LICBR1001A', o.fwMv);
+        }
+        if (t % 60 === 0) {
+          /* cooling rate of the saturation temperature over 5 min (procedure: not more than 85 C/h) */
+          const ts = h.tsat(U.Pd);
+          o.tsH.push(ts);
+          if (o.tsH.length > 6) o.tsH.shift();
+          if (o.tsH.length === 6) o.coolMax = Math.max(o.coolMax, (o.tsH[0] - ts) * 12);
+          if (o.hpSv != null && o.cyc == null && o.coolMax < 85 && o.hpSv > 20) {
+            o.hpSv -= 1;
+            if (o.hpMan == null) h.autoSv('ABC-050', 'PICMS1006', o.hpSv);
+            h.autoSv('ABC-013', 'PICMS1002', o.hpSv + 5);
+          }
+        }
+        /* "Maintain bypass operation until cyclone exit temperature < 535 C": the gas of the model is the bed (U.Tb); then stop SUB,
+           stop bypass (MS blow-off close), purge, stop the draft system */
+        if (o.cyc == null && t >= o.tripAt + 600 && U.Tb < 535) {
+          o.cyc = t;
+          for (const [k, tg] of [
+            ['ABC-003A', 'FICDO1043A'],
+            ['ABC-003B', 'FICDO1043B'],
+            ['ABC-003C', 'FICDO1043C'],
+            ['ABC-003D', 'FICDO1043D']
+          ])
+            h.man(k, tg, 0);
+          for (const vc of ['M.3410', 'M.3411', 'M.3416', 'M.3417']) h.oilValve(vc, false);
+          for (const ins of ['M.3412', 'M.3413', 'M.3418', 'M.3419']) h.setx(null, ins, 0);
+          h.man('ABC-050', 'PICMS1006', 0);
+          h.man('ABC-052', 'PICHR1003', 0);
+          h.man('ABC-013', 'PICMS1002', 0);
+          h.man('ABC-054', 'PICHR1391', 0);
+          /* purge: PA / SA up 2.5 % every 30 s to 25 % (held while the furnace pressure is above +5), 5 min */
+          o.purgeMv = Math.max(h.mv('ABC-007', 'FICFA1071'), h.mv('ABC-007', 'FICFA1081'));
+          o.purge = t;
+        }
+        if (o.purge != null && o.fansOff == null) {
+          o.airMax = Math.max(o.airMax, h.PA() + h.SA() + h.FA());
+          if (t % 30 === 0 && o.purgeMv < 25 && h.FP() < 5) {
+            o.purgeMv = Math.min(25, o.purgeMv + 2.5);
+            h.man('ABC-007', 'FICFA1071', o.purgeMv);
+            h.man('ABC-007', 'FICFA1081', o.purgeMv);
+          }
+        }
+        if (o.purge != null && o.fansOff == null && t >= o.purge + 300) {
+          /* "Stop draft system: PAF & SAF dampers close, IDF damper 3 ~ 5 %": PAF / SAF / IDF stopped (M.3302 / 3303 / 3304) */
+          h.man('ABC-007', 'FICFA1071', 0);
+          h.man('ABC-007', 'FICFA1081', 0);
+          h.man('ABC-008', 'PICFG108', 4);
+          for (const l of ['M.3302', 'M.3303', 'M.3304']) h.setx(null, l, 0);
+          o.fansOff = t;
+        }
+        /* "Before stopping BFP, set the drum level near HH" (the hand rule above aims at +200 once the fans are off): BFP-A stopped
+           (M.3343) at +150. With the bypass shut (no steam) the level rises on the minimum flow of the feedwater line (the loop model of
+           FICFW1007 gives about 86 T/H at 0 %): the pump is stopped at +150 then too, as the procedure wants the drum near HH */
+        if (o.bfpOff == null && (o.fansOff != null || (o.cyc != null && MSF < 5)) && (h.lvl() >= 150 || (o.fansOff != null && t >= o.fansOff + 1800))) {
+          o.lvBfp = h.lvl();
+          h.man('ABC-010', 'LICBR1001B', 0);
+          h.man('ABC-010', 'FICFW1007', 0);
+          h.man('ABC-010', 'LICBR1001A', 0);
+          h.setx(null, 'M.3343', 0);
+          o.bfpOff = t;
+        }
+        if (window.__tr && t % 30 === 0)
+          window.__tr.push([t, h.MW(), h.MSP(), MSF, U.Pd, h.RHP(), h.mv('ABC-050', 'PICMS1006'), h.mv('ABC-052', 'PICHR1003'), h.mv('ABC-013', 'PICMS1002'), o.rb || 0, U.oilF, U.Tb, h.PA(), h.SA(), h.FP(), h.FW(), h.lvl(), h.mv('ABC-010', 'LICBR1001B'), h.MST(), h.bit('ABC-050', 'I.0931'), h.bit('ABC-050', 'I.0932'), h.bit('ABC-001C', 'I.0082'), h.U.tb.st === 'off' ? 1 : 0].map(x => +(+x).toFixed(2)));
+      },
+      done(h, o) {
+        return o.bfpOff != null && o.t >= o.bfpOff + 300;
+      },
+      checks(h, o) {
+        const U = h.U,
+          mins = (a, b) => (a != null && b != null ? f0((b - a) / 60) : '-'),
+          hic = (k, tag) => {
+            const T = h.sh(k),
+              b = T && T.blk.find(b => b.k === 'MAN' && b.tag === tag);
+            return b && T.rt.st[b.id] ? +T.rt.st[b.id].val : NaN;
+          },
+          /* a digital input by its address on the first sheet that has it (one address = one value, CLAUDE.md 1) */
+          bitAny = l => {
+            for (const s2 of AN.sheets) {
+              if (!s2.S || /ABC-000/.test(s2.name)) continue;
+              const n = s2.S.ext.find(e => String((s2.S.lab[e] && s2.S.lab[e].t) || '').trim() === l);
+              if (n != null) return +s2.S.rt.ext[n];
+            }
+            return NaN;
+          };
+        return [
+          [
+            o.tripAt != null && h.bit('ABC-050', 'I.0932') > 0.5 && h.bit('ABC-050', 'I.0931') < 0.5 && h.bit('ABC-001C', 'M.3200') > 0.5 && o.mw60 < 1 && U.tb.st === 'off',
+            'turbine trip sa 30 MW (I.0400): 52G bukas (I.0932 = ' + f0(h.bit('ABC-050', 'I.0932')) + ', I.0931 = ' + f0(h.bit('ABC-050', 'I.0931')) + '), STN101 M.3200 = ' + f0(h.bit('ABC-001C', 'M.3200')) + ', MW ' + f1(o.mw60) + ' pagkatapos ng 60 s, turbine ' + U.tb.st + ' ' + f0(U.rpm) + ' rpm'
+          ],
+          [
+            o.mftAt == null && o.oil60 > 0.3,
+            'boiler tumatakbo pa (procedure: turbine trip → MFT bypassed): oil ' + f1(o.oil60) + ' T/H 60 s pagkatapos ng trip, walang MFT'
+          ],
+          [
+            h.S.rt.st[h.bmA.id].pk === 'B' && h.bit('ABC-001C', 'M.2013') > 0.5 && h.S.rt.st[h.tmA.id].pk === 'B' && h.bit('ABC-001C', 'M.2016') > 0.5 && h.bit('ABC-001C', 'I.0082') < 0.5,
+            'HIC-BM / EIC-TM MANUAL (M.2013 / M.2016), DCS control mode OFF (I.0082 = ' + f0(h.bit('ABC-001C', 'I.0082')) + ')'
+          ],
+          [
+            !!o.seen.bu && o.hpMax > 10 && o.hpSv != null,
+            'HP bypass: BU-CMD M.0705 (bumukas hanggang ' + f0(o.hpMax) + ' %), tapos A sa pressure (SV pababa 1 / min hanggang ' + f0(o.hpSv) + ')' + (o.hpMan != null ? ', M 12 % (minimum ng procedure) sa ' + mins(o.tripAt, o.hpMan) + ' min' : '') + '; pulse M.0124 ' + (o.seen.p ? 'nakita' : 'wala')
+          ],
+          [
+            o.rhMin >= 4 && o.rhMax <= 9.1,
+            'reheat pressure ' + f1(o.rhMin) + ' ~ ' + f1(o.rhMax) + ' kg/cm2 sa bypass (LP bypass A SV 7.6: hawak hanggang may steam sa HP bypass, ≤ 9.1' + (o.rb ? ', RH blow-off hanggang ' + f0(o.rb) + ' %' : '') + ')'
+          ],
+          [
+            o.mspMax <= 150.5 && o.coolMax <= 85 && o.msfByp > 20,
+            'MSP max ' + f1(o.mspMax) + ' (range 150), ngayon ' + f1(h.MSP()) + ' (dati ' + f1(o.P0) + '); steam sa bypass hanggang ' + f0(o.msfByp) + ' T/H; saturation −' + f0(o.coolMax) + ' °C/h max (procedure ≤ 85)'
+          ],
+          [
+            !!o.bias && Math.abs(hic('ABC-020', 'HICHR1002A') - 10) < 2 && Math.abs(hic('ABC-020', 'HICHR1002B') - 90) < 2,
+            'biasing damper (ABC-020 HICHR1002A / B) by hand: RH ' + f0(hic('ABC-020', 'HICHR1002A')) + ' % / MS ' + f0(hic('ABC-020', 'HICHR1002B')) + ' % (procedure 10 / 90)'
+          ],
+          [
+            o.cyc != null && U.oilF < 0.05 && bitAny('M.3412') < 0.5 && bitAny('M.3413') < 0.5 && h.mv('ABC-050', 'PICMS1006') < 1 && h.mv('ABC-052', 'PICHR1003') < 1 && h.mv('ABC-013', 'PICMS1002') < 1,
+            'gas (bed) < 535 °C sa ' + mins(o.tripAt, o.cyc) + ' min pagkatapos ng trip: SUB out (oil ' + f1(U.oilF) + '), bypass at MS blow-off sarado'
+          ],
+          [
+            o.purge != null && o.airMax > 150 && o.fansOff != null && bitAny('M.3302') < 0.5 && bitAny('M.3303') < 0.5 && bitAny('M.3304') < 0.5 && h.PA() + h.SA() < 20,
+            'purge ' + f0(o.airMax) + ' T/H 5 min, tapos PAF / SAF / IDF pinahinto (M.3302 / 3303 / 3304 = 0): hangin ' + f0(h.PA() + h.SA()) + ' T/H'
+          ],
+          [o.fpMin > -60 && o.fpMax < 30, 'furnace pressure ' + f0(o.fpMin) + ' ~ ' + f0(o.fpMax) + ' mmH2O hanggang huminto ang fans'],
+          [
+            Math.abs(o.lvMin) < 160 && Math.abs(o.lvMax) < 160 && o.bfpOff != null && o.lvBfp >= 150 && o.lvBfp <= 260 && h.FW() < 1,
+            'drum level ' + f0(o.lvMin) + ' ~ ' + f0(o.lvMax) + ' mm habang nasa bypass; pinuno sa ' + f0(o.lvBfp) + ' mm (malapit sa HH +254) bago pinahinto ang BFP-A (M.3343): FW ' + f0(h.FW()) + ' T/H, level ngayon ' + f0(h.lvl())
+          ],
+          [
+            h.MW() < 0.5 && h.coal() < 1 && U.oilF < 0.05 && U.Pd <= 150 && U.Tb < o.Tb0 - 100,
+            'dulo: MW 0, coal 0, oil 0, drum ' + f1(U.Pd) + ' kg/cm2 nakakulong (bottle-up ang susunod, PR-OPE-5004), bed ' + f0(U.Tb) + ' °C (dati ' + f0(o.Tb0) + '): lumalamig; MST ' + f0(h.MST()) + ' °C'
+          ]
+        ];
+      }
+    },
+    {
+      id: 'shut1',
+      live: true,
+      chain: ['down'],
+      title: 'M5 · Load down 150 → 30 MW (PR-OPE-5003 normal shutdown, unang bahagi)',
+      how: 'Start at 150 MW (buong physics: bed, burners, trip). Operator ayon sa PR-OPE-5003: load down by hand 1.2 MW/min hanggang 90 (hold 9 min), 0.6 hanggang 45 (hold 9 min), 0.4 hanggang 30; MSP hawak 123 (sa ilalim ng 220 T/H: HIC-BM at EIC-TM M ng drawing, BU-CMD; firing by hand; O2 trim 50 %); sa 230 T/H pindot ng 1-ELEMENT (M.054F); sa < 120 T/H FICFW1007 at LICBR1001A M, LICBR1001B A SV 0, main valve pasara; sa bed 750 °C o 50 MW: PAF / SAF M, SUB A / B tapos C / D, coal master M pababa habang hawak ng oil ang pressure; sa bed 700 o 40 MW: feeder A / B / C pahinto isa-isa, PAF damper → 20 %; sa 40 MW D/A PICCD1104 A 2.5. ~3.5 h plant time, ~4 min real.',
+      want: 'Oras ng bawat ramp at hold tugma sa procedure; MSP 123 ± 10 buong daan, walang trip; HIC-BM / EIC-TM M sa < 220 T/H; M.0222 = 1 (1-element) sa 230 T/H; LICBR1001B A sa < 120 T/H; drum ±150; SUB in service, coal 0 sa dulo; 30 MW, generator nakakabit.',
+      secs: 0,
+      run() {},
+      each() {},
+      checks() {
+        return [];
+      }
+    },
+    {
+      id: 'shut',
+      live: true,
+      chain: ['down', 'off'],
+      title: 'M5 · Normal shutdown (buo): 150 → 30 MW → turbine trip → bypass → SUB out → purge → fans at BFP stop',
+      how: 'Hakbang 1 (load down, isang summary row), tapos hakbang 2 sa iisang planta: turbine trip sa 30 MW (I.0400; MFT bypassed ayon sa procedure); biasing damper M RH 10 / MS 90; LP bypass A 7.6, HP bypass M 12 %, MS blow-off A pababa 1 kg/cm2 kada minuto habang ≤ 85 °C/h; LICBR1001B M sa < 60 T/H; kapag < 535 °C ang gas (bed ng model): SUB out, bypass at blow-off sarado, purge 5 min, PAF / SAF / IDF stop (IDF damper 4 %), drum pinuno sa +200 bago BFP stop. ~5 h plant time, ~6 min real.',
+      want: 'Hakbang 1 pasado; trip: 52G bukas, MW 0, M.3200, HIC-BM / EIC-TM M, I.0082 = 0; HP bypass BU-CMD tapos 12 %; RHP 7.6 ± 1.5; MSP bumababa ≤ 85 °C/h; SUB out at bypass sarado sa < 535 °C; purge > 150 T/H; fans at BFP stop; drum ±150 tapos +200; boiler lumalamig.',
+      secs: 0,
+      run() {},
+      each() {},
+      checks() {
+        return [];
+      }
+    },
+    {
       id: 'load',
       title: 'M2 · Load 150 → 60 → 150 MW',
       how: 'Start at 150 MW. HIC-ULD TARGET MW 60 (3 MW/min). Sa ilalim ng 220 T/H: M ang boiler master (BU-CMD), ang operator ang humahawak ng pressure at naglalagay ng O2 trim sa 50 %. Pabalik: A sa HIC-BM at EIC-TM sa itaas ng 230 T/H, TARGET 150.',
@@ -1927,6 +2542,7 @@
       if (sc.cold) AN.plantCold();
       else if (sc.hot) AN.plantHot();
       else if (sc.warm) AN.plantWarm(sc.warm);
+      else if (sc.live) AN.plantLive(); /* 2.2.0-beta.21 (M5): 150 MW with the shutdown physics on */
       else AN.plantLoad150();
       const h = H();
       /* 2.2.0-beta.20: a scenario may be a CHAIN of stages run one after the other on the same plant (the full start-up: cold → coal →
@@ -1961,11 +2577,11 @@
         }
       }
       ui.bar.style.width = '100%';
-      ui.live.textContent = 't = ' + T.toFixed(0) + ' s' + (sc.chain ? ' (' + f0(T / 3600) + ' h ' + f0((T % 3600) / 60) + ' min plant time)' : '') + '\n' + h.live();
+      ui.live.textContent = 't = ' + T.toFixed(0) + ' s' + (sc.chain ? ' (' + Math.floor(T / 3600) + ' h ' + Math.floor((T % 3600) / 60) + ' min plant time)' : '') + '\n' + h.live();
       const ck = sum
         .map(x => {
           const ok = x.ck.filter(y => y[0]).length;
-          return [ok === x.ck.length, x.title.replace(/^M4 · /, '') + ': ' + ok + ' / ' + x.ck.length + ' sa ' + f0(x.t / 60) + ' min' + (ok === x.ck.length ? '' : ' — ' + x.ck.filter(y => !y[0]).map(y => y[1]).join('; '))];
+          return [ok === x.ck.length, x.title.replace(/^M\d · /, '') + ': ' + ok + ' / ' + x.ck.length + ' sa ' + f0(x.t / 60) + ' min' + (ok === x.ck.length ? '' : ' — ' + x.ck.filter(y => !y[0]).map(y => y[1]).join('; '))];
         })
         .concat(stages[k].checks(h, o));
       let ok = 0;
@@ -1993,12 +2609,12 @@
   function build() {
     P.append(
       E('div', { style: 'display:flex;gap:8px;align-items:center' }, [
-        E('h3', { txt: 'CHECK M2 / M3 / M4' }),
+        E('h3', { txt: 'CHECK M2 / M3 / M4 / M5' }),
         E('button', { txt: '✕', on: () => (P.style.display = 'none') })
       ]),
       E('div', {
         cls: 'sub',
-        txt: 'Isang pindot bawat scenario: Start at 150 MW (o Start cold sa M4), tapos ginagawa ng app ang hakbang ng operator at ng DITL (forced), mabilis. Inaasahang resulta = drawing + physics (02.png / 4.PNG / boiler manual). Pagkatapos, makikita sa PLANT → UNIT at sa mga sheet ang huling estado.'
+        txt: 'Isang pindot bawat scenario: Start at 150 MW (o Start cold sa M4; sa M5 ang 150 MW na may buong physics ng start-up / shutdown), tapos ginagawa ng app ang hakbang ng operator at ng DITL (forced), mabilis. Inaasahang resulta = drawing + physics (02.png / 4.PNG / boiler manual). Pagkatapos, makikita sa PLANT → UNIT at sa mga sheet ang huling estado.'
       })
     );
     for (const sc of SC) {
