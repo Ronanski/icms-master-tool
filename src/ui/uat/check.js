@@ -1765,9 +1765,9 @@
       }
     },
     {
-      id: 'off',
+      id: 'trip',
       stage: true,
-      title: 'M5 · Turbine trip sa 30 MW → bypass → SUB out → purge → fans stop (PR-OPE-5003)',
+      title: 'M5 · Turbine trip sa 30 MW → bypass hanggang < 535 °C (PR-OPE-5003 / 5004, iisang bahagi)',
       secs: 9000,
       run(h, o) {
         o.P0 = h.MSP();
@@ -1795,6 +1795,7 @@
       each(h, o) {
         const t = o.t,
           U = h.U;
+        h.M5 = o; /* the stages after this one (off: PR-OPE-5003, bu: PR-OPE-5004) carry on from here */
         if (t === 30) {
           /* PR-OPE-5003 "At 30 MW: turbine shutdown / turbine trip" (ABC-050 S2 I.0400 #1 Turbine trip FROM ARP). The DITL would MFT
              on a turbine trip; the procedure bypasses it ("bypass turbine trip alarm at MFT ... to maintain boiler operation"): no MFT */
@@ -1924,59 +1925,13 @@
             h.autoSv('ABC-013', 'PICMS1002', o.hpSv + 5);
           }
         }
-        /* "Maintain bypass operation until cyclone exit temperature < 535 C": the gas of the model is the bed (U.Tb); then stop SUB,
-           stop bypass (MS blow-off close), purge, stop the draft system */
-        if (o.cyc == null && t >= o.tripAt + 600 && U.Tb < 535) {
-          o.cyc = t;
-          for (const [k, tg] of [
-            ['ABC-003A', 'FICDO1043A'],
-            ['ABC-003B', 'FICDO1043B'],
-            ['ABC-003C', 'FICDO1043C'],
-            ['ABC-003D', 'FICDO1043D']
-          ])
-            h.man(k, tg, 0);
-          for (const vc of ['M.3410', 'M.3411', 'M.3416', 'M.3417']) h.oilValve(vc, false);
-          for (const ins of ['M.3412', 'M.3413', 'M.3418', 'M.3419']) h.setx(null, ins, 0);
-          h.man('ABC-050', 'PICMS1006', 0);
-          h.man('ABC-052', 'PICHR1003', 0);
-          h.man('ABC-013', 'PICMS1002', 0);
-          h.man('ABC-054', 'PICHR1391', 0);
-          /* purge: PA / SA up 2.5 % every 30 s to 25 % (held while the furnace pressure is above +5), 5 min */
-          o.purgeMv = Math.max(h.mv('ABC-007', 'FICFA1071'), h.mv('ABC-007', 'FICFA1081'));
-          o.purge = t;
-        }
-        if (o.purge != null && o.fansOff == null) {
-          o.airMax = Math.max(o.airMax, h.PA() + h.SA() + h.FA());
-          if (t % 30 === 0 && o.purgeMv < 25 && h.FP() < 5) {
-            o.purgeMv = Math.min(25, o.purgeMv + 2.5);
-            h.man('ABC-007', 'FICFA1071', o.purgeMv);
-            h.man('ABC-007', 'FICFA1081', o.purgeMv);
-          }
-        }
-        if (o.purge != null && o.fansOff == null && t >= o.purge + 300) {
-          /* "Stop draft system: PAF & SAF dampers close, IDF damper 3 ~ 5 %": PAF / SAF / IDF stopped (M.3302 / 3303 / 3304) */
-          h.man('ABC-007', 'FICFA1071', 0);
-          h.man('ABC-007', 'FICFA1081', 0);
-          h.man('ABC-008', 'PICFG108', 4);
-          for (const l of ['M.3302', 'M.3303', 'M.3304']) h.setx(null, l, 0);
-          o.fansOff = t;
-        }
-        /* "Before stopping BFP, set the drum level near HH" (the hand rule above aims at +200 once the fans are off): BFP-A stopped
-           (M.3343) at +150. With the bypass shut (no steam) the level rises on the minimum flow of the feedwater line (the loop model of
-           FICFW1007 gives about 86 T/H at 0 %): the pump is stopped at +150 then too, as the procedure wants the drum near HH */
-        if (o.bfpOff == null && (o.fansOff != null || (o.cyc != null && MSF < 5)) && (h.lvl() >= 150 || (o.fansOff != null && t >= o.fansOff + 1800))) {
-          o.lvBfp = h.lvl();
-          h.man('ABC-010', 'LICBR1001B', 0);
-          h.man('ABC-010', 'FICFW1007', 0);
-          h.man('ABC-010', 'LICBR1001A', 0);
-          h.setx(null, 'M.3343', 0);
-          o.bfpOff = t;
-        }
-        if (window.__tr && t % 30 === 0)
-          window.__tr.push([t, h.MW(), h.MSP(), MSF, U.Pd, h.RHP(), h.mv('ABC-050', 'PICMS1006'), h.mv('ABC-052', 'PICHR1003'), h.mv('ABC-013', 'PICMS1002'), o.rb || 0, U.oilF, U.Tb, h.PA(), h.SA(), h.FP(), h.FW(), h.lvl(), h.mv('ABC-010', 'LICBR1001B'), h.MST(), h.bit('ABC-050', 'I.0931'), h.bit('ABC-050', 'I.0932'), h.bit('ABC-001C', 'I.0082'), h.U.tb.st === 'off' ? 1 : 0].map(x => +(+x).toFixed(2)));
+        /* "Maintain bypass operation until cyclone exit temperature < 535 C" (the gas of the model is the bed U.Tb): the end of the
+           common part; PR-OPE-5003 (stage off) or PR-OPE-5004 (stage bu) continues */
+        if (o.cyc == null && t >= o.tripAt + 600 && U.Tb < 535) o.cyc = t;
+        if (window.__tr && t % 30 === 0) window.__tr.push([t, h.MW(), h.MSP(), MSF, U.Pd, h.RHP(), h.mv('ABC-050', 'PICMS1006'), h.mv('ABC-052', 'PICHR1003'), h.mv('ABC-013', 'PICMS1002'), o.rb || 0, U.oilF, U.Tb, h.PA(), h.SA(), h.FP(), h.FW(), h.lvl(), h.mv('ABC-010', 'LICBR1001B'), h.MST()].map(x => +(+x).toFixed(2)));
       },
       done(h, o) {
-        return o.bfpOff != null && o.t >= o.bfpOff + 300;
+        return o.cyc != null && o.t >= o.cyc + 10;
       },
       checks(h, o) {
         const U = h.U,
@@ -2025,8 +1980,143 @@
             'biasing damper (ABC-020 HICHR1002A / B) by hand: RH ' + f0(hic('ABC-020', 'HICHR1002A')) + ' % / MS ' + f0(hic('ABC-020', 'HICHR1002B')) + ' % (procedure 10 / 90)'
           ],
           [
+            o.lvMin > -254 && o.lvMax < 254,
+            'drum level ' + f0(o.lvMin) + ' ~ ' + f0(o.lvMax) + ' mm habang nasa bypass (walang LL −254 / HH +254: walang MFT)'
+          ],
+          [
+            o.cyc != null,
+            'gas (bed) < 535 °C sa ' + mins(o.tripAt, o.cyc) + ' min pagkatapos ng trip: handa para sa SUB out at pagtigil ng bypass (bed ' + f0(U.Tb) + ' °C)'
+          ]
+        ];
+      }
+    },
+    {
+      id: 'off',
+      stage: true,
+      title: 'M5 · SUB out → purge → fans at BFP stop (PR-OPE-5003, dulo)',
+      secs: 9000,
+      run(h, o) {
+        /* carried from the trip stage (h.M5): the hand values of the operator and the plant before the trip */
+        const p = h.M5 || {};
+        o.P0 = p.P0 != null ? p.P0 : h.MSP();
+        o.Tb0 = p.Tb0 != null ? p.Tb0 : h.U.Tb;
+        o.cycMin = p.cyc != null && p.tripAt != null ? (p.cyc - p.tripAt) / 60 : NaN;
+        o.cyc = o.purge = o.fansOff = o.bfpOff = null;
+        o.lvMan = p.lvMan != null ? 0 : null;
+        o.suvMv = h.mv('ABC-010', 'LICBR1001B');
+        o.fwMv = h.mv('ABC-010', 'LICBR1001A');
+        o.lvP = null;
+        o.fpMv = h.mv('ABC-008', 'PICFG108');
+        o.fpMin = 0;
+        o.fpMax = 0;
+        o.airMax = 0;
+        o.purgeMv = 0;
+      },
+      each(h, o) {
+        const t = o.t,
+          U = h.U,
+          MSF = h.MSF();
+        if (o.cyc == null) {
+          /* at < 535 C: stop SUB, stop bypass (MS blow-off close), purge, stop the draft system */
+          o.cyc = t;
+          for (const [k, tg] of [
+            ['ABC-003A', 'FICDO1043A'],
+            ['ABC-003B', 'FICDO1043B'],
+            ['ABC-003C', 'FICDO1043C'],
+            ['ABC-003D', 'FICDO1043D']
+          ])
+            h.man(k, tg, 0);
+          for (const vc of ['M.3410', 'M.3411', 'M.3416', 'M.3417']) h.oilValve(vc, false);
+          for (const ins of ['M.3412', 'M.3413', 'M.3418', 'M.3419']) h.setx(null, ins, 0);
+          h.man('ABC-050', 'PICMS1006', 0);
+          h.man('ABC-052', 'PICHR1003', 0);
+          h.man('ABC-013', 'PICMS1002', 0);
+          h.man('ABC-054', 'PICHR1391', 0);
+          /* purge: PA / SA up 2.5 % every 30 s to 25 % (held while the furnace pressure is above +5), 5 min */
+          o.purgeMv = Math.max(h.mv('ABC-007', 'FICFA1071'), h.mv('ABC-007', 'FICFA1081'));
+          o.purge = t;
+          return;
+        }
+        if (t % 10 !== 0) return;
+        if (o.fansOff == null) {
+          o.fpMin = Math.min(o.fpMin, h.FP());
+          o.fpMax = Math.max(o.fpMax, h.FP());
+        }
+        /* furnace pressure by hand while the drawing forces PICFG108 MANUAL (M.0205) */
+        if (h.pk('ABC-008', 'PICFG108') === 'B' && o.fansOff == null && t % 60 === 0) {
+          const fp = h.FP();
+          if (fp < -30) o.fpMv = Math.max(3, o.fpMv - 1);
+          else if (fp > 0) o.fpMv = Math.min(80, o.fpMv + 1);
+          h.man('ABC-008', 'PICFG108', o.fpMv);
+        }
+        /* the drum level by hand (every 30 s; +200 once the fans are off or the steam is gone: "Before stopping BFP, set the drum
+           level near HH"): the start-up valve LICBR1001B M while the main valve shuts */
+        if (o.lvMan == null && MSF < 60) {
+          o.lvMan = t;
+          o.suvMv = h.mv('ABC-010', 'LICBR1001B');
+          h.man('ABC-010', 'LICBR1001B', o.suvMv);
+        }
+        if (o.bfpOff == null && t % 30 === 0) {
+          const lv = h.lvl(),
+            e = (o.fansOff != null || MSF < 5 ? 200 : 0) - lv,
+            step = Math.max(-4, Math.min(4, 0.02 * e - 0.1 * (o.lvP == null ? 0 : lv - o.lvP)));
+          o.lvP = lv;
+          if (o.lvMan == null) o.fwMv = Math.max(0, Math.min(60, o.fwMv + step));
+          else {
+            o.suvMv = Math.max(0, Math.min(100, o.suvMv + step));
+            h.man('ABC-010', 'LICBR1001B', o.suvMv);
+            o.fwMv = Math.max(0, o.fwMv + (e > 100 ? 0 : Math.min(-3, step))); /* the main valve shuts (at least 3 % per 30 s) unless the level is low */
+          }
+          h.man('ABC-010', 'FICFW1007', o.fwMv);
+          h.man('ABC-010', 'LICBR1001A', o.fwMv);
+        }
+        if (o.purge != null && o.fansOff == null) {
+          o.airMax = Math.max(o.airMax, h.PA() + h.SA() + h.FA());
+          if (t % 30 === 0 && o.purgeMv < 25 && h.FP() < 5) {
+            o.purgeMv = Math.min(25, o.purgeMv + 2.5);
+            h.man('ABC-007', 'FICFA1071', o.purgeMv);
+            h.man('ABC-007', 'FICFA1081', o.purgeMv);
+          }
+        }
+        if (o.purge != null && o.fansOff == null && t >= o.purge + 300) {
+          /* "Stop draft system as fast as possible to minimize temperature drop: PAF & SAF dampers close, IDF damper 3 ~ 5 %" (PAF /
+             SAF / IDF stopped, M.3302 / 3303 / 3304) */
+          h.man('ABC-007', 'FICFA1071', 0);
+          h.man('ABC-007', 'FICFA1081', 0);
+          h.man('ABC-008', 'PICFG108', 4);
+          for (const l of ['M.3302', 'M.3303', 'M.3304']) h.setx(null, l, 0);
+          o.fansOff = t;
+        }
+        /* "Before stopping BFP, set the drum level near HH": BFP-A stopped (M.3343) at +150 (with the bypass shut the level rises on
+           the minimum flow of the feedwater line) */
+        if (o.bfpOff == null && (o.fansOff != null || MSF < 5) && (h.lvl() >= 150 || (o.fansOff != null && t >= o.fansOff + 1800))) {
+          o.lvBfp = h.lvl();
+          AN.blowdown(false); /* "blow down valve must be close" */
+          h.man('ABC-010', 'LICBR1001B', 0);
+          h.man('ABC-010', 'FICFW1007', 0);
+          h.man('ABC-010', 'LICBR1001A', 0);
+          h.setx(null, 'M.3343', 0);
+          o.bfpOff = t;
+        }
+        if (window.__tr && t % 30 === 0) window.__tr.push([t, h.MW(), h.MSP(), MSF, U.Pd, h.RHP(), U.oilF, U.Tb, h.PA(), h.SA(), h.FP(), h.FW(), h.lvl(), h.mv('ABC-010', 'LICBR1001B'), h.MST()].map(x => +(+x).toFixed(2)));
+      },
+      done(h, o) {
+        return o.bfpOff != null && o.t >= o.bfpOff + 300;
+      },
+      checks(h, o) {
+        const U = h.U,
+          bitAny = l => {
+            for (const s2 of AN.sheets) {
+              if (!s2.S || /ABC-000/.test(s2.name)) continue;
+              const n = s2.S.ext.find(e => String((s2.S.lab[e] && s2.S.lab[e].t) || '').trim() === l);
+              if (n != null) return +s2.S.rt.ext[n];
+            }
+            return NaN;
+          };
+        return [
+          [
             o.cyc != null && U.oilF < 0.05 && bitAny('M.3412') < 0.5 && bitAny('M.3413') < 0.5 && h.mv('ABC-050', 'PICMS1006') < 1 && h.mv('ABC-052', 'PICHR1003') < 1 && h.mv('ABC-013', 'PICMS1002') < 1,
-            'gas (bed) < 535 °C sa ' + mins(o.tripAt, o.cyc) + ' min pagkatapos ng trip: SUB out (oil ' + f1(U.oilF) + '), bypass at MS blow-off sarado'
+            'gas (bed) < 535 °C sa ' + f0(o.cycMin) + ' min pagkatapos ng trip: SUB out (oil ' + f1(U.oilF) + '), bypass at MS blow-off sarado'
           ],
           [
             o.purge != null && o.airMax > 150 && o.fansOff != null && bitAny('M.3302') < 0.5 && bitAny('M.3303') < 0.5 && bitAny('M.3304') < 0.5 && h.PA() + h.SA() < 20,
@@ -2034,12 +2124,289 @@
           ],
           [o.fpMin > -60 && o.fpMax < 30, 'furnace pressure ' + f0(o.fpMin) + ' ~ ' + f0(o.fpMax) + ' mmH2O hanggang huminto ang fans'],
           [
-            Math.abs(o.lvMin) < 160 && Math.abs(o.lvMax) < 160 && o.bfpOff != null && o.lvBfp >= 150 && o.lvBfp <= 260 && h.FW() < 1,
-            'drum level ' + f0(o.lvMin) + ' ~ ' + f0(o.lvMax) + ' mm habang nasa bypass; pinuno sa ' + f0(o.lvBfp) + ' mm (malapit sa HH +254) bago pinahinto ang BFP-A (M.3343): FW ' + f0(h.FW()) + ' T/H, level ngayon ' + f0(h.lvl())
+            o.bfpOff != null && o.lvBfp >= 150 && o.lvBfp <= 260 && h.FW() < 1,
+            'drum pinuno sa ' + f0(o.lvBfp) + ' mm (malapit sa HH +254) bago pinahinto ang BFP-A (M.3343): FW ' + f0(h.FW()) + ' T/H, level ngayon ' + f0(h.lvl())
           ],
           [
             h.MW() < 0.5 && h.coal() < 1 && U.oilF < 0.05 && U.Pd <= 150 && U.Tb < o.Tb0 - 100,
-            'dulo: MW 0, coal 0, oil 0, drum ' + f1(U.Pd) + ' kg/cm2 nakakulong (bottle-up ang susunod, PR-OPE-5004), bed ' + f0(U.Tb) + ' °C (dati ' + f0(o.Tb0) + '): lumalamig; MST ' + f0(h.MST()) + ' °C'
+            'dulo: MW 0, coal 0, oil 0, drum ' + f1(U.Pd) + ' kg/cm2 nakakulong (mabagal na lamig, ~1.5 kg/cm2 / h), bed ' + f0(U.Tb) + ' °C (dati ' + f0(o.Tb0) + '): lumalamig; MST ' + f0(h.MST()) + ' °C'
+          ]
+        ];
+      }
+    },
+    {
+      /* 2.2.0-beta.22 (M5 part 2): PR-OPE-5004 SHUTDOWN TO BOTTLE-UP, from the bypass stage (< 535 C) to the cold boiler: bypass
+         system closed, drain pots (DITL valves, not in the ABC: noted), hot reheat released on the RH blow-off, drum +200 and BFP
+         stopped, deaerator 0 mm, SUB 25 % then OFF, oil pressure valves 100 %, the boiler cooled by the draft (Fig. 5) to ~ 0 kg/cm2,
+         drains (DITL), biasing dampers 100 %, the draft stopped in order (SAF damper to 20 %, PAF damper to 0 and PAF stop, FAB stop,
+         H/C < 16 % force manual, SAF stop, H/C 0 and IDF stop, DAMPER CONTROL, damper 5 % then 2.5 % steps) */
+      id: 'bu',
+      stage: true,
+      sheets: ['ABC-028', 'ABC-029', 'ABC-031', 'ABC-055'],
+      title: 'M5 · Shutdown to bottle-up (PR-OPE-5004): bypass sarado, drum +200, BFP stop, SUB off, lamig sa ~0 kg/cm2, draft stop sa ayos',
+      secs: 60000,
+      dt(h, o) {
+        return o.cool != null && o.drain == null ? 2 : 0.5;
+      },
+      run(h, o) {
+        const p = h.M5 || {};
+        o.P0 = p.P0 != null ? p.P0 : h.MSP();
+        o.Tb0 = p.Tb0 != null ? p.Tb0 : h.U.Tb;
+        o.Pd0 = h.U.Pd;
+        o.lvMan = p.lvMan != null ? 0 : null;
+        o.suvMv = h.mv('ABC-010', 'LICBR1001B');
+        o.fwMv = h.mv('ABC-010', 'LICBR1001A');
+        o.lvP = null;
+        o.fpMv = h.mv('ABC-008', 'PICFG108');
+        o.fpMin = 0;
+        o.fpMax = 0;
+        o.ph = null;
+        o.rhRel = o.rhClosed = o.bfpOff = o.daSv = o.subOff = o.oilP = o.cool = o.drain = o.bias100 = o.pafOff = o.fabOff = o.safOff = o.idfOff = o.hc16 = o.dmpSel = o.dmp = null;
+        o.paMv = h.mv('ABC-007', 'FICFA1071');
+        o.saMv = h.mv('ABC-007', 'FICFA1081');
+        o.rhMax = 0;
+      },
+      each(h, o) {
+        const t = o.t,
+          U = h.U,
+          hic = (k, tag, x) => {
+            const T = h.sh(k),
+              b = T && T.blk.find(b => b.k === 'MAN' && b.tag === tag);
+            if (!b || !T.rt.st[b.id]) return false;
+            if (x != null) {
+              if (AN.latchMode) AN.latchMode(tag, 'MAN');
+              T.rt.st[b.id].val = x;
+              for (const n of b.i || []) if (n >= 0 && T.ext.includes(n) && !(T.xlk && T.xlk[n]) && (AN.nm(T, n) || '').trim() === tag + '.MV') T.rt.ext[n] = x;
+            }
+            return +T.rt.st[b.id].val;
+          };
+        if (t === 0.5) {
+          /* "CLOSE MV-MS1391 (ABC-055 HICBR1391), PCV-MS1001 blow-off, HP bypass isolation": the bypass system closed; the LP bypass
+             follows (no steam) */
+          h.man('ABC-050', 'PICMS1006', 0);
+          h.man('ABC-052', 'PICHR1003', 0);
+          h.man('ABC-013', 'PICMS1002', 0);
+          if (h.ctl('ABC-055', 'HICBR1391')) h.man('ABC-055', 'HICBR1391', 0);
+          /* "OPEN hot reheat blow-off (MV-HR1391, ABC-054 PICHR1391) to release the hot reheat line pressure, then CLOSE" */
+          h.man('ABC-054', 'PICHR1391', 50);
+          o.rhRel = t;
+          return;
+        }
+        if (t === 60) {
+          /* "Fill the deaerator up to 0 mm" (ABC-031 LICCD1104 AUTO SV 0) */
+          o.daSv = h.autoSv('ABC-031', 'LICCD1104', 0) ? t : null;
+          /* "Start reducing SUB: FIC-DO1043 to 25 %" */
+          for (const [k, tg] of [
+            ['ABC-003A', 'FICDO1043A'],
+            ['ABC-003B', 'FICDO1043B']
+          ])
+            h.man(k, tg, 25);
+        }
+        if (t === 300) {
+          /* "Press OFF: igniter and oil gun retract" (oil 0, supply valves closed, BURNER IN SERVICE off) */
+          for (const [k, tg] of [
+            ['ABC-003A', 'FICDO1043A'],
+            ['ABC-003B', 'FICDO1043B'],
+            ['ABC-003C', 'FICDO1043C'],
+            ['ABC-003D', 'FICDO1043D']
+          ])
+            h.man(k, tg, 0);
+          for (const vc of ['M.3410', 'M.3411', 'M.3416', 'M.3417']) h.oilValve(vc, false);
+          for (const ins of ['M.3412', 'M.3413', 'M.3418', 'M.3419']) h.setx(null, ins, 0);
+          o.subOff = t;
+        }
+        if (t === 360) {
+          /* "PCV-DO0002 (ABC-028 PICDO0005), PCV-DO1009 (ABC-029 PICDO1008) MANUAL, OPEN them and FCV-DO1012 (ABC-029 HICDO1012) to
+             100 %; STOP the diesel pump" (the pump is a DITL motor: not in the ABC) */
+          h.man('ABC-028', 'PICDO0005', 100);
+          h.man('ABC-029', 'PICDO1008', 100);
+          hic('ABC-029', 'HICDO1012', 100);
+          o.oilP = t;
+          o.cool = t;
+        }
+        if (o.rhRel != null && o.rhClosed == null && t > o.rhRel + 60 && h.RHP() < 1) {
+          h.man('ABC-054', 'PICHR1391', 0);
+          o.rhClosed = t;
+        }
+        if (t % 10 !== 0) return;
+        if (window.__tr && t % 60 === 0) window.__tr.push([t, h.MSP(), U.Pd, h.RHP(), U.oilF, U.Tb, h.PA(), h.SA(), h.FP(), h.FW(), h.lvl(), h.MST(), h.mv('ABC-008', 'PICFG108'), h.mv('ABC-008', 'PICFG108A'), U.Tw, h.bit('ABC-008', 'M.0202'), h.bit('ABC-008', 'M.0205')].map(x => +(+x).toFixed(2)));
+        o.rhMax = Math.max(o.rhMax, h.RHP());
+        if (o.idfOff == null) {
+          o.fpMin = Math.min(o.fpMin, h.FP());
+          o.fpMax = Math.max(o.fpMax, h.FP());
+        }
+        /* furnace pressure by hand on the H/C: before the draft stop only when the drawing forces PICFG108 MANUAL (M.0205); during the
+           draft stop the operator holds -15 mmH2O on the H/C (PR-OPE-5004 "maintaining the furnace pressure at -15 mmH2O"), every
+           10 s, until the H/C is run down */
+        if (o.idfOff == null && o.ph !== 'hc0' && (o.drain != null || (h.pk('ABC-008', 'PICFG108') === 'B' && t % 60 === 0))) {
+          const fp = h.FP();
+          if (o.drain != null) o.fpMv = Math.max(0, Math.min(80, o.fpMv + Math.max(-3, Math.min(3, 0.08 * (fp + 15)))));
+          else if (fp < -30) o.fpMv = Math.max(3, o.fpMv - 1);
+          else if (fp > 0) o.fpMv = Math.min(80, o.fpMv + 1);
+          h.man('ABC-008', 'PICFG108', o.fpMv);
+        }
+        /* "Fill the steam drum to +200 mm" by hand (start-up valve LICBR1001B M, main valve shut), then "CLOSE the BFP outlet valve,
+           STOP BFP" (M.3343) */
+        if (o.lvMan == null) {
+          o.lvMan = t;
+          o.suvMv = h.mv('ABC-010', 'LICBR1001B');
+          h.man('ABC-010', 'LICBR1001B', o.suvMv);
+        }
+        if (o.bfpOff == null && t % 30 === 0) {
+          const lv = h.lvl(),
+            e = 200 - lv,
+            step = Math.max(-4, Math.min(4, 0.02 * e - 0.1 * (o.lvP == null ? 0 : lv - o.lvP)));
+          o.lvP = lv;
+          o.suvMv = Math.max(0, Math.min(100, o.suvMv + step));
+          h.man('ABC-010', 'LICBR1001B', o.suvMv);
+          o.fwMv = Math.max(0, o.fwMv + (e > 100 ? 0 : Math.min(-3, step)));
+          h.man('ABC-010', 'FICFW1007', o.fwMv);
+          h.man('ABC-010', 'LICBR1001A', o.fwMv);
+          if (lv >= 200 && t >= 120) {
+            o.lvBfp = lv;
+            AN.blowdown(false); /* PR-OPE-5003: "blow down valve must be close" before the BFP stop */
+            h.man('ABC-010', 'LICBR1001B', 0);
+            h.man('ABC-010', 'FICFW1007', 0);
+            h.man('ABC-010', 'LICBR1001A', 0);
+            h.setx(null, 'M.3343', 0);
+            o.bfpOff = t;
+          }
+        }
+        /* cooling by the draft (Fig. 5) until "pressure is almost 0 kg/cm2": then the CR / HR header drains (DITL valves: noted; the
+           drawing ABC-055 has the same mark, DRUM PRESSURE < 1.5 kg/cm2) */
+        if (o.cool != null && o.drain == null && U.Pd < 1.5) {
+          o.drain = t;
+          o.coolH = (t - o.cool) / 3600;
+          /* "Check RH and SH biasing damper opening should be 100 % before shut off the draft balance system" */
+          o.bias100 = hic('ABC-020', 'HICHR1002A', 100) !== false && hic('ABC-020', 'HICHR1002B', 100) !== false ? t : null;
+          o.fpMv = h.mv('ABC-008', 'PICFG108');
+          o.ph = 'saf20';
+        }
+        if (o.drain == null || t % 30 !== 0) return;
+        /* the draft stopped in the order of the procedure */
+        if (o.ph === 'saf20') {
+          /* "Reduce SAF inlet damper opening with 5 % decrement ... up to 20 % opening" (one step a minute) */
+          if (t % 60 === 0) {
+            o.saMv = Math.max(20, o.saMv - 5);
+            h.man('ABC-007', 'FICFA1081', o.saMv);
+            if (o.saMv <= 20) o.ph = 'paf0';
+          }
+        } else if (o.ph === 'paf0') {
+          /* "Reduce the PAF inlet damper opening with 1 % decrement ... up to 0 %; initiate stop at PAF; initiate stop at FAB" */
+          o.paMv = Math.max(0, o.paMv - 1);
+          h.man('ABC-007', 'FICFA1071', o.paMv);
+          if (o.paMv <= 0 && o.pafOff == null) {
+            h.setx(null, 'M.3302', 0);
+            o.pafOff = t;
+          } else if (o.pafOff != null && t >= o.pafOff + 60) {
+            h.setx(null, 'M.3308', 0);
+            h.setx(null, 'M.3309', 0);
+            o.fabOff = t;
+            o.ph = 'saf0';
+          }
+        } else if (o.ph === 'saf0') {
+          /* "At < 16 % scoop tube position the H/C goes to MANUAL (drawing: M.0206 < 14 % -> M.0205)"; "reduce SAF 5 % decrement ...
+             initiate stop at SAF" */
+          if (t % 60 === 0) {
+            o.saMv = Math.max(0, o.saMv - 5);
+            h.man('ABC-007', 'FICFA1081', o.saMv);
+            if (o.saMv <= 0) {
+              h.setx(null, 'M.3303', 0);
+              o.safOff = t;
+              o.ph = 'hc0';
+            }
+          }
+        } else if (o.ph === 'hc0') {
+          /* "Reduce H/C position with 1 % decrement ... when the scoop tube reaches 0 %: initiate stop at IDF" */
+          if (h.FP() < 20) o.fpMv = Math.max(0, o.fpMv - 1);
+          h.man('ABC-008', 'PICFG108', o.fpMv);
+          if (o.fpMv < 14 && o.hc16 == null && h.bit('ABC-008', 'M.0205') > 0.5) o.hc16 = t;
+          if (o.fpMv <= 0) {
+            h.setx(null, 'M.3304', 0);
+            o.idfOff = t;
+            /* "Change furnace pressure control to DAMPER CONTROL" (ABC-008 DAMPER CONTROL SELECT push button -> M.0202 = 0),
+               "OPEN DAMPER to 5 %" (PICFG108A M) */
+            o.dmpSel = h.setx('ABC-008', 'M.0201', 1) ? t : null; /* memory list 101: M.0201 IDF DAMPER CONTROL SELECT (CRT) */
+            o.dmpMv = 5;
+            h.man('ABC-008', 'PICFG108A', o.dmpMv);
+            o.ph = 'dmp';
+          }
+        } else if (o.ph === 'dmp') {
+          if (o.dmpSel != null && t === o.dmpSel + 30) h.setx('ABC-008', 'M.0201', 0);
+          /* "Reduce damper opening around 2.5 % until the furnace pressure is around -20 ~ 20 mmH2O" */
+          if (t % 60 === 0 && o.dmp == null) {
+            const fp = h.FP();
+            if (fp > -20 && fp < 20) o.dmp = t;
+            else o.dmpMv = Math.max(0, o.dmpMv - 2.5);
+            h.man('ABC-008', 'PICFG108A', o.dmpMv);
+          }
+        }
+      },
+      done(h, o) {
+        return o.dmp != null && o.t >= o.dmp + 120;
+      },
+      checks(h, o) {
+        const U = h.U,
+          hic = (k, tag) => {
+            const T = h.sh(k),
+              b = T && T.blk.find(b => b.k === 'MAN' && b.tag === tag);
+            return b && T.rt.st[b.id] ? +T.rt.st[b.id].val : NaN;
+          },
+          bitAny = l => {
+            for (const s2 of AN.sheets) {
+              if (!s2.S || /ABC-000/.test(s2.name)) continue;
+              const n = s2.S.ext.find(e => String((s2.S.lab[e] && s2.S.lab[e].t) || '').trim() === l);
+              if (n != null) return +s2.S.rt.ext[n];
+            }
+            return NaN;
+          },
+          hm = x => (x != null ? f1(x / 3600) + ' h' : '-'),
+          da = h.ctl('ABC-031', 'LICCD1104'),
+          daSv = da && da.q && da.q.sv != null ? +h.sh('ABC-031').rt.v[da.q.sv] : NaN,
+          mv1391 = h.ctl('ABC-055', 'HICBR1391') ? h.mv('ABC-055', 'HICBR1391') : 0;
+        return [
+          [
+            h.mv('ABC-050', 'PICMS1006') < 1 && h.mv('ABC-052', 'PICHR1003') < 1 && h.mv('ABC-013', 'PICMS1002') < 1 && mv1391 < 1,
+            'bypass system sarado sa < 535 °C: HP / LP bypass, MS blow-off PCV-MS1001, MV-MS1391 (ABC-055 HICBR1391 ' + f0(mv1391) + ' %); TG drain pots = DITL valve (wala sa ABC)'
+          ],
+          [
+            o.rhRel != null && o.rhClosed != null && h.mv('ABC-054', 'PICHR1391') < 1 && h.RHP() < 1.5,
+            'hot reheat pinakawalan sa RH blow-off MV-HR1391 (ABC-054 PICHR1391 50 % sa ' + hm(o.rhRel) + ', sarado sa ' + hm(o.rhClosed) + '): RHP ' + f1(h.RHP()) + ' kg/cm2'
+          ],
+          [
+            o.bfpOff != null && o.lvBfp >= 190 && o.lvBfp <= 270 && bitAny('M.3343') < 0.5 && h.FW() < 1 && h.lvl() > -254 && h.lvl() < 400,
+            'drum pinuno sa +' + f0(o.lvBfp) + ' mm (procedure +200), blowdown sarado, tapos BFP-A stop (M.3343 = 0) sa ' + hm(o.bfpOff) + ': FW ' + f0(h.FW()) + ' T/H, level sa dulo ' + f0(h.lvl()) + ' mm'
+          ],
+          [o.daSv != null && h.isAuto('ABC-031', 'LICCD1104') && Math.abs(daSv) < 1, 'deaerator (ABC-031 LICCD1104) A SV 0 mm: SV ngayon ' + f0(daSv)],
+          [
+            o.subOff != null && U.oilF < 0.05 && bitAny('M.3412') < 0.5 && bitAny('M.3413') < 0.5 && bitAny('M.3418') < 0.5 && bitAny('M.3419') < 0.5,
+            'SUB: FIC-DO1043 25 % sa 1 min, OFF (retract) sa 5 min: oil ' + f1(U.oilF) + ' T/H, BURNER IN SERVICE 0'
+          ],
+          [
+            o.oilP != null && h.mv('ABC-028', 'PICDO0005') >= 99 && h.mv('ABC-029', 'PICDO1008') >= 99 && hic('ABC-029', 'HICDO1012') >= 99,
+            'oil system M 100 %: PCV-DO0002 (ABC-028 PICDO0005 ' + f0(h.mv('ABC-028', 'PICDO0005')) + '), PCV-DO1009 (ABC-029 PICDO1008 ' + f0(h.mv('ABC-029', 'PICDO1008')) + '), FCV-DO1012 (HICDO1012 ' + f0(hic('ABC-029', 'HICDO1012')) + '); diesel pump stop = DITL motor'
+          ],
+          [
+            o.drain != null && o.coolH >= 2 && o.coolH <= 10 && U.Pd < 1.5,
+            'lumamig sa draft (Fig. 5 cold shutdown: 95 → 0 kg/cm2 sa ~5 h): drum ' + f1(o.Pd0) + ' → ' + f1(U.Pd) + ' kg/cm2 sa ' + f1(o.coolH || 0) + ' h; CR / HR header drains sa < 1.5 kg/cm2 (ABC-055 marka; DITL valve); MST ' + f0(h.MST()) + ' °C, tubig ' + f0(U.Tw) + ' °C'
+          ],
+          [
+            o.bias100 != null && o.pafOff != null && o.bias100 <= o.pafOff && Math.abs(hic('ABC-020', 'HICHR1002A') - 100) < 1 && Math.abs(hic('ABC-020', 'HICHR1002B') - 100) < 1,
+            'biasing damper RH / SH 100 % (ABC-020 ' + f0(hic('ABC-020', 'HICHR1002A')) + ' / ' + f0(hic('ABC-020', 'HICHR1002B')) + ') bago patayin ang draft'
+          ],
+          [
+            o.pafOff != null && o.fabOff != null && o.safOff != null && o.idfOff != null && o.pafOff < o.fabOff && o.fabOff < o.safOff && o.safOff < o.idfOff && bitAny('M.3302') < 0.5 && bitAny('M.3308') < 0.5 && bitAny('M.3303') < 0.5 && bitAny('M.3304') < 0.5,
+            'draft stop sa ayos: SAF damper → 20 %, PAF damper → 0 at PAF stop (' + hm(o.pafOff) + '), FAB stop (' + hm(o.fabOff) + '), SAF stop (' + hm(o.safOff) + '), H/C → 0 at IDF stop (' + hm(o.idfOff) + '); M.3302 / 3308 / 3303 / 3304 = 0'
+          ],
+          [o.hc16 != null, 'H/C < 16 % (drawing ABC-008 M.0206 < 14 %): PICFG108 force MANUAL M.0205 = 1 (nakita sa ' + hm(o.hc16) + ')'],
+          [o.fpMin > -60 && o.fpMax < 30, 'furnace pressure ' + f0(o.fpMin) + ' ~ ' + f0(o.fpMax) + ' mmH2O hanggang huminto ang IDF'],
+          [
+            o.dmpSel != null && h.bit('ABC-008', 'M.0202') < 0.5 && o.dmp != null && h.mv('ABC-008', 'PICFG108A') <= 5.1 && Math.abs(h.FP()) < 20,
+            'DAMPER CONTROL SELECT (ABC-008: M.0202 hydraulic = ' + f0(h.bit('ABC-008', 'M.0202')) + '), damper PICFG108A 5 % tapos −2.5 % hanggang furnace −20 ~ 20: ' + f1(h.mv('ABC-008', 'PICFG108A')) + ' %, furnace ' + f0(h.FP()) + ' mmH2O'
+          ],
+          [
+            h.MW() < 0.5 && h.coal() < 1 && U.oilF < 0.05 && U.Pd < 1.5 && U.Tb < 300 && h.PA() + h.SA() < 5,
+            'dulo (bottle-up): MW 0, coal 0, oil 0, drum ' + f1(U.Pd) + ' kg/cm2, bed ' + f0(U.Tb) + ' °C (dati ' + f0(o.Tb0) + '), hangin ' + f0(h.PA() + h.SA()) + ' T/H, fans off'
           ]
         ];
       }
@@ -2061,10 +2428,24 @@
     {
       id: 'shut',
       live: true,
-      chain: ['down', 'off'],
+      chain: ['down', 'trip', 'off'],
       title: 'M5 · Normal shutdown (buo): 150 → 30 MW → turbine trip → bypass → SUB out → purge → fans at BFP stop',
       how: 'Hakbang 1 (load down, isang summary row), tapos hakbang 2 sa iisang planta: turbine trip sa 30 MW (I.0400; MFT bypassed ayon sa procedure); biasing damper M RH 10 / MS 90; LP bypass A 7.6, HP bypass M 12 %, MS blow-off A pababa 1 kg/cm2 kada minuto habang ≤ 85 °C/h; LICBR1001B M sa < 60 T/H; kapag < 535 °C ang gas (bed ng model): SUB out, bypass at blow-off sarado, purge 5 min, PAF / SAF / IDF stop (IDF damper 4 %), drum pinuno sa +200 bago BFP stop. ~5 h plant time, ~6 min real.',
       want: 'Hakbang 1 pasado; trip: 52G bukas, MW 0, M.3200, HIC-BM / EIC-TM M, I.0082 = 0; HP bypass BU-CMD tapos 12 %; RHP 7.6 ± 1.5; MSP bumababa ≤ 85 °C/h; SUB out at bypass sarado sa < 535 °C; purge > 150 T/H; fans at BFP stop; drum ±150 tapos +200; boiler lumalamig.',
+      secs: 0,
+      run() {},
+      each() {},
+      checks() {
+        return [];
+      }
+    },
+    {
+      id: 'bottle',
+      live: true,
+      chain: ['down', 'trip', 'bu'],
+      title: 'M5 · Shutdown to bottle-up (buo): 150 → 30 MW → turbine trip → bypass → PR-OPE-5004 hanggang malamig na boiler',
+      how: 'Hakbang 1 (load down) at 2 (trip at bypass hanggang < 535 °C) bilang summary row, tapos PR-OPE-5004 sa iisang planta: bypass system sarado (HP / LP bypass, MS blow-off, MV-MS1391); hot reheat pinakawalan sa RH blow-off; drum pinuno sa +200 tapos BFP stop; deaerator A SV 0; SUB 25 % tapos OFF; PCV-DO0002 / PCV-DO1009 / FCV-DO1012 M 100 %; lumalamig sa draft (Fig. 5, ~5 h) hanggang < 1.5 kg/cm2; biasing damper 100 %; draft stop sa ayos: SAF → 20 %, PAF → 0 + stop, FAB stop, H/C < 16 % force manual, SAF stop, H/C → 0 + IDF stop, DAMPER CONTROL 5 % → −2.5 % hanggang furnace ±20. ~9 h plant time, ~5 min real.',
+      want: 'Hakbang 1 at 2 pasado; bypass sarado; RHP < 1.5; drum +200 at BFP off; SUB off, oil valves 100 %; drum pressure → < 1.5 kg/cm2 sa 2 ~ 10 h; biasing 100 / 100; PAF → FAB → SAF → IDF stop, M.0205 sa < 14 %; furnace −60 ~ +30; M.0202 = 0, damper ≤ 5 %; dulo malamig na boiler.',
       secs: 0,
       run() {},
       each() {},
@@ -2551,14 +2932,18 @@
       const stages = sc.chain ? sc.chain.map(id => SC.find(s => s.id === id)) : [sc],
         steps = stages.reduce((a, s) => a + s.secs * 2, 0),
         sum = [];
+      /* 2.2.0-beta.22: the sheets the scenario operates that are not linked to ABC-001C are stepped too (links.js actSet) */
+      AN.checkSheets = [...new Set([].concat(...stages.map(s => s.sheets || [])))];
       let k = 0,
         o = { t: 0, chain: !!sc.chain },
         T = 0;
       stages[0].run(h, o);
       for (let i = 0; i < steps; i++) {
-        AN.stepSet(h.C1, 0.5);
-        o.t += 0.5;
-        T += 0.5;
+        /* 2.2.0-beta.22: a stage may ask for a longer step while nothing moves (the hours of cooling of the bottle-up) */
+        const dts = (stages[k].dt && stages[k].dt(h, o)) || 0.5;
+        AN.stepSet(h.C1, dts);
+        o.t += dts;
+        T += dts;
         if (o.mftAt != null && Math.abs(o.t - o.mftAt - 2) < 0.01)
           for (const k of ['ABC-003B', 'ABC-003C', 'ABC-003D']) h.setx(k, 'M.0341', 0);
         stages[k].each(h, o);

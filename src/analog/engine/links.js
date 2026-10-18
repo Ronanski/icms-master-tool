@@ -354,7 +354,10 @@ function actSet(sh) {
   }
   /* AN.worldSheets (1.22.0): ABC sheets whose outputs go TO the DITL, stepped while the one world (ABC + DITL) is ON; AN.unitSheets
      (2.2.0-beta.20): sheets the unit model reads that have no drawn link to the set (ABC-054 RH blow-off) */
-  for (const nm of (AN.hmiSheets || []).concat(AN.plantSheets || [], AN.worldSheets || [], AN.unitSheets || [])) {
+  /* AN.checkSheets (2.2.0-beta.22): the sheets a CHECK scenario operates by faceplate (as an open HMI page does with AN.hmiSheets):
+     ABC-028 / ABC-031 of the bottle-up have no drawn link to the set of ABC-001C, so their stations were never stepped (PCV-DO0002
+     stayed at 24 % after M 100, the deaerator SV at 65 after A SV 0) */
+  for (const nm of (AN.hmiSheets || []).concat(AN.plantSheets || [], AN.worldSheets || [], AN.unitSheets || [], AN.checkSheets || [])) {
     const p = AN.sheets.find(s => s.name === nm);
     if (p && !seen.has(p)) {
       seen.add(p);

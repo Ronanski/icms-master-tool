@@ -5,10 +5,11 @@
 //   and full (the whole cold start-up as one chain: cold -> coal -> byp -> roll -> up, ~4 min real).
 // 2.2.0-beta.21: + shut1 (M5: Start live 150 MW -> load down to 30 MW, 1-element, start-up valve, SUB firing, coal out, ~1.5 min real)
 //   and shut (M5 whole normal shutdown: load down -> turbine trip -> bypass -> SUB out -> purge -> fans and BFP stop, ~4 min real).
-// Usage: node tests/regress/check_panel.js [share|tt|mft|bfwp|idf|paf|hh|cold|coal|byp|roll|load150|load|full|shut1|shut] [html]
+// 2.2.0-beta.22: + bottle (M5 shutdown to bottle-up PR-OPE-5004: load down -> trip -> bypass -> cooling by the draft -> draft stop in order, ~6 min real).
+// Usage: node tests/regress/check_panel.js [share|tt|mft|bfwp|idf|paf|hh|cold|coal|byp|roll|load150|load|full|shut1|shut|bottle] [html]
 const {open}=require('./lib.js');const fs=require('fs');
 const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
-const want=process.argv.slice(2).filter(a=>!/\.html$/.test(a));const SC=want.length?want:['share','tt','mft','bfwp','idf','paf','hh','cold','coal','byp','roll','load150','load','full','shut1','shut'];
+const want=process.argv.slice(2).filter(a=>!/\.html$/.test(a));const SC=want.length?want:['share','tt','mft','bfwp','idf','paf','hh','cold','coal','byp','roll','load150','load','full','shut1','shut','bottle'];
 (async()=>{const {browser,page,errs}=await open(html);let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
 for(const id of SC){
  if(id==='share'){const r=await page.evaluate(()=>{AN.reset();AN.plantLoad150();const C1=AN.sheets.find(s=>s.name==='ABC-001C');const C=AN.sheets.find(s=>s.name==='ABC-007').S;const n=C.ext.find(e=>String(C.lab[e]&&C.lab[e].t).trim()==='I.000F');C.rt.ext[n]=1;AN.stepSet(C1,0.5);

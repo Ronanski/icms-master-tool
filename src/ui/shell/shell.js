@@ -428,6 +428,19 @@
         }
       };
       set.m.append(tg);
+      /* 2.2.0-beta.22 (M5): the drum blowdown valve (field, PR-OPE-5003: closed before the BFP stop) */
+      for (const [id, txt, open, ok] of [
+        ['bdclose', 'Drum BLOWDOWN valve CLOSE (field)', false, 'Blowdown sarado: walang tubig na lumalabas sa drum maliban sa steam.'],
+        ['bdopen', 'Drum BLOWDOWN valve OPEN (field)', true, 'Blowdown bukas: 25 T/H (03.png, 150 MW).']
+      ]) {
+        const b = document.createElement('button');
+        b.className = 'an-only';
+        b.id = id;
+        b.textContent = txt;
+        b.title = 'Field hand valve of the drum blowdown (not a DCS station). PR-OPE-5003: "Before stopping BFP, set the drum level near HH (blow down valve must be close)".';
+        b.onclick = () => msg(AN.blowdown && AN.blowdown(open) ? ok : 'Blowdown: walang drum level loop.');
+        set.m.append(b);
+      }
     }
     set.head('Channel at update');
     const ch = $('chsel'),
