@@ -613,6 +613,30 @@ function cosFromNets(S, nets, self) {
   }
   return '';
 }
+/* 2.2.0-beta.24 (M6 / checklist A10): a COS whose switch output carries no label down to the valve (AO -> I/P -> valve without a tag
+   on the drawing: ABC-010, 031, 036 ~ 039 ...) is named by the controller / station on the OTHER leg of its switch (the loop it is
+   the manual of). Before: "COS manual ▸ T23" (22 of 173 COS) */
+function cosUpTag(S, n, d, seen) {
+  if (n == null || n < 0 || d > 5 || seen.has(n)) return '';
+  seen.add(n);
+  for (const b of S.drv[n] || []) {
+    const tg = b.tag || (b.k === 'PID' || b.k === 'PIDV' ? (b.txt || [])[1] : '');
+    if (tg) return b.k + ' ' + tg;
+    for (const i of b.i || []) {
+      const r = cosUpTag(S, i, d + 1, seen);
+      if (r) return r;
+    }
+  }
+  return '';
+}
+function cosFromUp(S, t) {
+  const seen = new Set();
+  for (const n of [t.a, t.b].concat(t.i || [])) {
+    const r = cosUpTag(S, n, 0, seen);
+    if (r) return r + ' (manual of this loop)';
+  }
+  return '';
+}
 function cosRange(S, e) {
   const t = e.t,
     seen = new Set();
@@ -764,7 +788,7 @@ function cosFill(S, e) {
     }
     return e;
   }
-  e.out = cosFromNets(S, e.t.o || [], e.t);
+  e.out = cosFromNets(S, e.t.o || [], e.t) || cosFromUp(S, e.t);
   e.name = 'COS manual' + (e.dig ? ' (on / off)' : '') + ' ▸ ' + (e.out || 'T' + e.t.id);
   e.rng = e.dig ? { lo: 0, hi: 1, u: '' } : cosSvRange(S, e) || cosRange(S, e);
   return e;
