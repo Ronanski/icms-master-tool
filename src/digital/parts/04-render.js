@@ -177,6 +177,8 @@ function simulate(nl, act) {
 /* 2.2.0-beta.3: the analog values of the sheet: what the user typed, over the 150 MW values of the HMI snapshots (s.av150,
    src/world/ditl150.js; kept apart so they are never saved as the user's own values) */
 function avOf(s) {
+  /* 2.3.0-beta.1: s.avw = an analog value that the one world brings from the ABC (DITL-79 row 6 TICMS1022.MV of ABC-051) */
+  if (s.avw) return { ...(s.av150 || {}), ...(s.av || {}), ...s.avw };
   return s.av150 ? { ...s.av150, ...(s.av || {}) } : s.av || null;
 }
 function simSheet(s) {

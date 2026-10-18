@@ -392,8 +392,11 @@ function anUnitStart() {
   /* station wiring: STN102 digital inputs broadcast to STN101 (memory list "BC FROM S2"); written only on nets that are inputs of
      the drawing (S.ext) and not forced by the user */
   U.bcast = [
-    [labOf('ABC-050', 'I.0400'), [labOf('ABC-001C', 'M.3200'), labOf('ABC-010', 'M.3200')]],
-    [labOf('ABC-050', 'I.0932'), [labOf('ABC-010', 'M.3220')]]
+    /* 2.3.0-beta.1 (ABC-013-1): the house operation OR of ABC-013 reads them too ("TURBINE TRIP M.3200 (FROM S2 L0400)", "52G1 OPEN
+       M.3220 (FROM S2 L0932)", "52L1 OPEN FOR HOUSE OPERATION M.3221 (FROM S2 L0937)") */
+    [labOf('ABC-050', 'I.0400'), [labOf('ABC-001C', 'M.3200'), labOf('ABC-010', 'M.3200'), labOf('ABC-013', 'M.3200')]],
+    [labOf('ABC-050', 'I.0932'), [labOf('ABC-010', 'M.3220'), labOf('ABC-013', 'M.3220')]],
+    [labOf('ABC-050', 'I.0937'), [labOf('ABC-013', 'M.3221')]]
   ]
     .filter(([a, b]) => a && a.S.ext.includes(a.n))
     .map(([a, b]) => [a, b.filter(x => x && x.S.ext.includes(x.n))]);

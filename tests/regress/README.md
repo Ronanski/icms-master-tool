@@ -28,6 +28,7 @@ Headless (Playwright + Chromium) checks of `dist/logic-sim-vX.Y.Z.html` (default
 | `node tests/regress/hmi_op.js [html]` | plant model vs HMI snapshot: sa MV ng snapshot, PV = PV ng snapshot (±2 % ng range) | ~3 min |
 | `node tests/regress/plant_live.js [html]` | PLANT LIVE: pagkatapos ng Start at 150 MW, ≥ 200 value / controller / valve ay nakakabit; FIQMS1031, TICBR1140, TIBR11401, TCVFW11101, DPIFG1081 sa tamang sheet; ang MV sa box = MV ng engine | ~1 min |
 | `node tests/regress/world.js [html]` | iisang mundo ABC + DITL: OFF = dating gawi; ON = lahat ng reference may katapat, ABC input = DITL output, DITL row = ABC net, kadena DITL → ABC, bilis ng scan | ~1 min |
+| `node tests/regress/audit230.js [html]` | 2.3.0 drawing audit, mga link: force manual input ng ABC (M.2000, M.331D, SICL1060A ~ D.MAN, PIC-BASC.MAN, B & C IN MANUAL), mode alias (TICBR1130 / 1150 .LOC), station wiring ng ABC-013, TO DITL 40-xx, DITL row 21A, "3A-63", 80S = PLC, DITL row FROM ABC (address / tag / analog / MANUAL) | ~1 min |
 | `node tests/regress/closure.js html out.json` | loop closure of every PID with its plant model (P-4), 900 s | ~1 min |
 | `node tests/regress/diff.js old.html ... new.html` | the same seeded inputs on every sheet for several builds; lists the sheets whose nets differ. `--neutral` zeroes dMVH / TF / CUT on the last build (isolates F-31); `--hold=SECONDS` adds a steady-state state | 1 ~ 6 min |
 
