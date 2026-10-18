@@ -425,6 +425,104 @@
     }
     return box;
   }
+  /* CONTROLLER TEST (2.2.0-beta.23, M6 / checklist A9): the generic operator + process test of every controller of the sheet (UATS.generic,
+     src/ui/uat/scen.js), one press per controller, in the app; before it ran only on the computer (tests/scenarios/generic.js) */
+  const GRES = {};
+  let gbusy = false;
+  async function runGen(sh, tags) {
+    if (gbusy || sbusy) return;
+    gbusy = true;
+    const run0 = AN.run;
+    try {
+      for (const tag of tags) {
+        const k = sh.name + '|' + tag;
+        GRES[k] = { running: true, res: [], notes: [] };
+        build();
+        await new Promise(r => setTimeout(r, 0));
+        let g = null;
+        try {
+          g = await UATS.generic(sh.name, tag);
+        } catch (e) {
+          g = { note: String(e && e.message) };
+        }
+        if (!g || !g.scenarios) {
+          GRES[k] = { res: [], notes: [(g && g.note) || 'walang A / M o manual MV'], none: true };
+          build();
+          continue;
+        }
+        const res = [];
+        for (const sc of g.scenarios) {
+          const r = await UATS.run(sh.name, sc);
+          res.push({ sc, r });
+          GRES[k] = { running: true, res: res.slice(), notes: g.notes || [], trig: g.trig };
+          build();
+        }
+        GRES[k] = { res, notes: g.notes || [], trig: g.trig };
+        build();
+      }
+    } finally {
+      gbusy = false;
+      AN.run = run0;
+      build();
+    }
+  }
+  function genBlock(sh) {
+    let tags = [];
+    try {
+      tags = AN.hmiCtrls(sh.S)
+        .filter(c => c.amt && c.manNet != null)
+        .map(c => c.tag);
+    } catch (e) {}
+    if (!tags.length) return null;
+    const box = E('div', {
+      cls: 'it',
+      style: 'background:#18212a;border:1px solid #6fbf8f;border-radius:8px;margin:8px 0'
+    });
+    const done = tags.map(t => GRES[sh.name + '|' + t]).filter(x => x && !x.running),
+      nf = done.reduce((a, x) => a + x.res.reduce((b, y) => b + y.r.fail, 0), 0),
+      np = done.reduce((a, x) => a + x.res.reduce((b, y) => b + y.r.pass, 0), 0);
+    box.append(
+      E('div', { cls: 'h' }, [
+        E('b', { txt: 'CONTROLLER TEST (' + tags.length + ')' }),
+        E('span', { cls: nf ? 'n' : done.length ? 'y' : 'w', txt: done.length ? (nf ? nf + ' ✖' : '✔ ' + np) : 'not run yet' })
+      ]),
+      E('div', {
+        cls: 'sub',
+        txt: 'Bawat controller: hinahanap ng app ang malinis na estado mula sa drawing (walang force manual / interlock), tapos A / M / R, MV, SV, trip at pagbalik, at ang sagot ng proseso. Ang inaasahan ay mula sa drawing. Nakatigil ang app habang tumatakbo; 1 ~ 8 min bawat controller.'
+      }),
+      E('div', { cls: 'row' }, [
+        E('button', { cls: 'go', txt: gbusy ? 'Running...' : '▶ Test ALL controllers', on: () => runGen(sh, tags) })
+      ])
+    );
+    for (const tag of tags) {
+      const x = GRES[sh.name + '|' + tag],
+        f = x ? x.res.reduce((b, y) => b + y.r.fail, 0) : 0,
+        p2 = x ? x.res.reduce((b, y) => b + y.r.pass, 0) : 0,
+        d = E('details', {});
+      if (x && (f || x.running)) d.open = true;
+      d.append(
+        E('summary', {}, [
+          E('span', { cls: x && !x.running ? (f || x.none ? 'n' : 'y') : 'w', txt: x && !x.running ? (f || x.none ? '✖' : '✔') : x ? '…' : '·' }),
+          E('span', { txt: tag }),
+          E('span', { cls: 'c', txt: x && !x.running && !x.none ? p2 + ' / ' + (p2 + f) : '' })
+        ])
+      );
+      d.append(E('div', { cls: 'row', style: 'padding:0 10px' }, [E('button', { txt: '▶ Test ' + tag, on: () => runGen(sh, [tag]) })]));
+      if (x) {
+        if (x.trig) d.append(E('div', { cls: 'sub', style: 'padding:0 10px', txt: 'trip input: ' + x.trig }));
+        for (const n of x.notes || []) d.append(E('div', { cls: 'sub', style: 'padding:0 10px', txt: '· ' + n }));
+        const tb = E('table');
+        for (const { sc, r } of x.res) {
+          tb.append(E('tr', {}, [E('td', { cls: r.fail ? 'n' : 'y', txt: r.fail ? '✖' : '✔' }), E('td', { txt: sc.title + '  ' + r.pass + ' / ' + (r.pass + r.fail) })]));
+          for (const l of r.lines.filter(l => l.k === 'bad'))
+            tb.append(E('tr', {}, [E('td', { cls: 'n', txt: '' }), E('td', { txt: l.t + '  →  expected: ' + l.exp + ' | actual: ' + l.got })]));
+        }
+        d.append(tb);
+      }
+      box.append(d);
+    }
+    return box;
+  }
   /* SPOT CHECK (1.23.0): 5 random cases of this sheet, each shown with its inputs and the rule written in numbers, the expected
      value (from the block definition, not from the engine) and what the simulator gave, so the user can check them by hand */
   let SPOT = null;
@@ -577,6 +675,10 @@
     {
       const sb = scenBlock(sh);
       if (sb) P.append(sb);
+    }
+    {
+      const gb = genBlock(sh);
+      if (gb) P.append(gb);
     }
     {
       const mb = manBanner(sh);

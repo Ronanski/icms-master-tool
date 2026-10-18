@@ -2,6 +2,20 @@
 
 Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (beta.1 ~ beta.7) at `ccr-3def3a81-kcpwgn` (beta.8 ~; PR #31) (PROJECT_RULES 5e, 5f).
 
+## 2.2.0-beta.23 — M6 hakbang 1: mabilis na controller tester + CONTROLLER TEST sa UAT panel (checklist A6 / A9)
+- **Problem:** (1) Ang generic controller tester (`UATS.generic`) ay tumatakbo nang ilang oras mula beta.20. (2) Ang tester ay sa computer lang tumatakbo (`tests/scenarios/generic.js`), wala sa app (checklist A9).
+- **As Found:** Mula beta.20 (tamang link ng mode nets, `UNLINK_AUDIT.md` 6), ang ABC-004A M.0131 = OR(FICCL1061A / B / C.MAN) ay nagfo-force MANUAL sa FIC-CF sa bawat lumang panimulang estado ng search. Ang search ay nagfi-flip ng input isa-isa (mga 1 s bawat estado, hanggang 16 × 50 estado bawat controller).
+- **Work Done (`src/ui/uat/scen.js`, `src/ui/uat/uat-ui.js`):**
+  - Bagong panimulang estado: ang mga mode input ng ibang station (`.MAN` = 0, `.LOC` / `.REM` = 1, ibig sabihin "planta naka-AUTO / REMOTE", CLAUDE.md 2).
+  - Budget na 400 estado bawat controller. Kapag lumampas, sinusubok ang controller sa planta na tumatakbo (Start at 150 MW), gaya ng HS-COAL mula beta.8. May tala sa resulta: "search stopped at 400 input states (budget)".
+  - Tala ng resulta na pinalitan ang salita: "the permissives of the drawing need the running plant" (CLAUDE.md 5).
+  - UAT panel: bagong kahon **CONTROLLER TEST (n)**: "▶ Test ALL controllers" at "▶ Test <tag>" bawat controller; ✔ / ✖ at bilang ng tama, ang bawat scenario (MANUAL, Operator SV, AUTO bumpless, REMOTE, trip) at ang mali na may inaasahan / nakita.
+- **As Left (headless, build 2.2.0-beta.23):**
+  - Tester sa ABC-004A (pinakamabagal na sheet): 3 controller, 116 / 116 tama, 0 mali (FIC-CM 41 / 41, FIC-CF 34 / 34, HS-COAL 41 / 41), **17 min 19 s** para sa 3 controller. Kapareho ng bilang ng beta.19 (116 / 116). Ang FIC-CM at FIC-CF ay sinubok na sa planta na tumatakbo (budget naabot sa FIC-CM).
+  - UAT panel sa app (ABC-004A, pindot "▶ Test FIC-CF"): ✔ 34 / 34 sa 143 s, 0 error sa page; screenshot sinuri (kahon, mga row, tala).
+- **Hindi pa nasubok:** buong generic tester ng 54 sheet (tumatakbo sa background pagkatapos ng push; iuulat), totoong tablet.
+- **Status:** Beta (push sa branch). Susunod sa M6: UAT ng 5 scenario sa app, A7 block value tester, A8 switching tester, A10 COS names, Stable prep (GO STABLE lang).
+
 ## 2.2.0-beta.22 — M5 bahagi 2: Shutdown to bottle-up (PR-OPE-5004), paglamig ng boiler sa draft
 
 - **Problem (roadmap M5; user card "Bottle-up muna"):** ang normal shutdown (beta.21) ay nag-iiwan ng boiler na nakakulong sa 122.7 kg/cm2 magpakailanman (walang heat loss). Walang PR-OPE-5004: paglamig sa draft hanggang ~0 kg/cm2, drum +200 / BFP stop, SUB off, oil system, biasing 100 %, at ang sunod-sunod na draft stop (PAF → FAB → SAF → IDF, DAMPER CONTROL).
