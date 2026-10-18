@@ -414,6 +414,20 @@ window.UATS = (function () {
         return seed / 0x7fffffff;
       };
       const bases = [[], dg.map(n => [n, 1]), dg.map((n, k) => [n, k % 2]), dg.map((n, k) => [n, (k + 1) % 2])];
+      /* 2.2.0-beta.22 (M6): the MODE inputs of the other stations (xxx.MAN / .LOC / .REM, CLAUDE.md 2: the status word of a controller)
+         seeded as "the plant in AUTO / REMOTE": .MAN = 0, .LOC / .REM = 1. Since beta.20 (left-end rule of the mode nets) ABC-004A
+         M.0131 = OR(feeder A / B / C .MAN) forces FIC-CF MANUAL from every old base; the climb then flipped the inputs one by one
+         (about 1 s each, more than 16 x 50 states): the tester ran for hours */
+      {
+        const lb = n => String((S.lab[n] && S.lab[n].t) || AN.nm(S, n) || '').trim(),
+          md = dg.filter(n => /\.(MAN|LOC|REM)$/i.test(lb(n)));
+        if (md.length) {
+          const auto = n => (/\.MAN$/i.test(lb(n)) ? 0 : 1);
+          bases.push(md.map(n => [n, auto(n)]));
+          bases.push(dg.map(n => [n, md.includes(n) ? auto(n) : 0]));
+          bases.push(dg.map(n => [n, md.includes(n) ? auto(n) : 1]));
+        }
+      }
       for (let j = 0; j < 10; j++) bases.push(dg.map(n => [n, rnd() < 0.3 ? 1 : 0]));
       /* mga analog na input mula sa ibang sheet / field (flow, pressure ...) ay nasa GITNA ng range ("boiler in service"), hindi 0: ang 0 ay nagti-trip ng mga low-flow interlock; hindi kasama ang PV, SV at MV ng mismong controller */
       const an = S.ext
@@ -487,7 +501,13 @@ window.UATS = (function () {
       }
       const cands = [...up].filter(n => S.ext.includes(n) && S.nets[n].dig),
         cd = cands.length ? cands : dg;
+      /* 2.2.0-beta.22 (M6): a budget of plant states per controller (each state = reset + settle + 20 s, about 1 s real); past it the
+         search stops and the controller is tested on the PLANT IN SERVICE (below), as a controller with no clean state from its inputs */
+      let nScore = 0;
+      const budget = 400;
       const score = async stt => {
+        nScore++;
+        if (nScore > budget) return 1e9;
         const { st, c } = await setup(stt);
         const cut = (c.dn || []).some(d => {
           const t = S.rt.st[d.id];
@@ -518,7 +538,7 @@ window.UATS = (function () {
       }
       /* paghahanap ng estado ng digital (flip, pulse ng latch, pares) hanggang mawala ang force / putol */
       const climb = async (cur, cs) => {
-        for (let it = 0; it < 16 && cs >= 1000; it++) {
+        for (let it = 0; it < 16 && cs >= 1000 && nScore <= budget; it++) {
           let imp = false;
           for (const n of cd) {
             const nb = flip(cur, n),
@@ -736,7 +756,7 @@ window.UATS = (function () {
         } catch (e) {}
         return {
           loop: tag,
-          note: 'no clean state found (tried: initial condition, flip, latch pulse, pairs)' + why
+          note: 'the force / interlock stays in every input state tried (initial condition, flip, latch pulse, pairs)' + why
         };
       }
       let trig = null;
@@ -1083,7 +1103,7 @@ window.UATS = (function () {
       return {
         loop: tag,
         scenarios: sc,
-        notes: svc ? ['state: plant in service (Start at 150 MW); no clean state from the inputs alone'].concat(notes) : notes,
+        notes: (nScore > budget ? ['search stopped at ' + budget + ' input states (budget)'] : []).concat(svc ? ['state: plant in service (Start at 150 MW): the permissives of the drawing need the running plant'].concat(notes) : notes),
         svc,
         base: base.sets.length,
         pulses: base.pulses.length,
