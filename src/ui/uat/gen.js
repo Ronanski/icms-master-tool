@@ -46,6 +46,7 @@ window.UATG = (function () {
     const n = pickB ? b.b : b.a;
     return (pickB ? b.bg : b.ag) != null || (b.ia && b.ia[n]) ? ' (with the gain drawn on that leg)' : '';
   };
+  const GX = 'Converters and other blocks (square root, I/P, T/P, limits, conditional write)';
   function sheetSpec(sh) {
     const S = AN.ensure(sh);
     const G = {};
@@ -101,6 +102,50 @@ window.UATG = (function () {
           });
         }
         add('Switches (T and A/M)', item(b, b.k === 'AMT' ? 'A/M switch' : 'T switch', cs));
+      }
+      /* 2.2.0-beta.24 (M6 / checklist A8): the switches that had no test. (1) LATCHED select (the drawing's 1:B is a level that the
+         station KEEPS, CLAUDE.md 10 / force manual rule): select 1 -> leg B, select back to 0 -> STILL leg B, the operator's AUTO -> leg A.
+         (2) A/M with no select signal (operator only): the operator's A / M picks the leg */
+      if ((b.k === 'SW' || b.k === 'AMT') && !b.q4 && b.a >= 0 && b.b >= 0 && o != null && free(S, o) && o !== b.a && o !== b.b && !(b.cs && b.cs.length > 1)) {
+        const out = (pickB, t) => R(o, t + gtxt(b, pickB), leg(b, pickB, pickB ? 22 : 11), Math.max(0.05, Math.abs(leg(b, pickB, pickB ? 22 : 11)) * 0.002));
+        if (b.latch && b.sel >= 0 && !b.p.selA && !kn(S, b.sel))
+          add(
+            'Switches (T and A/M)',
+            item(b, (b.k === 'AMT' ? 'A/M switch' : 'T switch') + ' (latched select)', [
+              {
+                l: 'select 1 -> leg B (A = 11, B = 22)',
+                steps: [st1({ [b.a]: 11, [b.b]: 22, [b.sel]: 1 }, 1)],
+                rows: [out(true, 'output')],
+                reset: true
+              },
+              {
+                l: 'select back to 0 -> STILL leg B (the switch keeps it until the operator presses AUTO)',
+                steps: [st1({ [b.a]: 11, [b.b]: 22, [b.sel]: 0 }, 1)],
+                rows: [out(true, 'output')],
+                reset: false
+              },
+              {
+                l: 'operator AUTO (A) -> leg A',
+                steps: [st1({ [b.a]: 11, [b.b]: 22, [b.sel]: 0 }, 1, { fm: { [b.id]: 'A' } })],
+                rows: [out(false, 'output')],
+                reset: false
+              }
+            ])
+          );
+        else if (b.sel < 0 && !(b.cs && b.cs.length))
+          add(
+            'Switches (T and A/M)',
+            item(
+              b,
+              (b.k === 'AMT' ? 'A/M switch' : 'T switch') + ' (operator only, no select signal)',
+              ['A', 'B'].map(lg => ({
+                l: 'operator picks leg ' + lg + ' (A = 11, B = 22)',
+                steps: [st1({ [b.a]: 11, [b.b]: 22 }, 0, { fm: { [b.id]: lg } })],
+                rows: [out(lg === 'B', 'output')],
+                reset: false
+              }))
+            )
+          );
       }
       // operator selectors (with COS conditions)
       if (
@@ -774,6 +819,192 @@ window.UATG = (function () {
         }
         if (cs.length) add('Curves F(X) (workbook tables)', item(b, 'F(X) ' + b.p.ln, cs));
       }
+      /* 2.2.0-beta.24 (M6 / checklist A7): the block kinds that had no test yet. The expected value is the rule of the block
+         (DCS textbook / legend), written in the test line; the app's reading of the drawing is named where it decides the rule */
+      const fr = n => n != null && n >= 0 && !kn(S, n);
+      if (b.k === 'SQRT' && fr(b.i[0]) && o != null && free(S, o)) {
+        const Rr = b.rin || 100,
+          xs = b.idn ? [0.25 * Rr, Rr] : [25, 81];
+        add(
+          GX,
+          item(
+            b,
+            b.idn ? 'Square root (input from a flow transmitter 0 ~ ' + fmt(Rr) + ': already in flow units)' : 'Square root (0 ~ ' + fmt(Rr) + ')',
+            xs
+              .map(x => {
+                const e = b.idn ? x : Rr * Math.sqrt(x / Rr);
+                return {
+                  l: 'input ' + fmt(x) + ' -> ' + fmt(e) + (b.idn ? ' (the AI range is the flow range: the square root is in the transmitter)' : ' (' + fmt(Rr) + ' x sqrt(input / ' + fmt(Rr) + '))'),
+                  steps: [st1({ [b.i[0]]: x }, 0)],
+                  rows: [R(o, 'output', e, Math.max(0.05, Math.abs(e) * 0.002))],
+                  reset: false
+                };
+              })
+              .concat(
+                b.idn
+                  ? []
+                  : [
+                      {
+                        l: 'input -4 (below 0) -> output 0 and BAD',
+                        steps: [st1({ [b.i[0]]: -4 }, 0)],
+                        rows: [R(o, 'output', 0)],
+                        reset: false
+                      }
+                    ]
+              )
+          )
+        );
+      }
+      if (b.k === 'IP' && fr(b.i[0]) && o != null && free(S, o))
+        add(
+          GX,
+          item(
+            b,
+            'I/P converter',
+            [37, 82].map(x => ({
+              l: 'signal ' + x + ' % -> ' + x + ' % (the converter passes the signal; the valve stroke is on the valve block)',
+              steps: [st1({ [b.i[0]]: x }, 0)],
+              rows: [R(o, 'output', x)],
+              reset: false
+            }))
+          )
+        );
+      if (b.k === 'TP' && fr(b.tpd) && o != null && free(S, o)) {
+        const tr = b.p && b.p.tref != null ? b.p.tref : null,
+          cs = [];
+        if (tr == null)
+          cs.push({
+            l: 'DP 40 -> 40 (no design temperature entered in the block: no compensation)',
+            steps: [st1(Object.assign({ [b.tpd]: 40 }, fr(b.tpt) ? { [b.tpt]: 300 } : {}), 0)],
+            rows: [R(o, 'output', 40)],
+            reset: false
+          });
+        else if (fr(b.tpt))
+          for (const tt of [tr, tr + 100]) {
+            const e = 40 / ((tt + 273.15) / (tr + 273.15));
+            cs.push({
+              l: 'DP 40, temperature ' + fmt(tt) + ' °C (design ' + fmt(tr) + ') -> ' + fmt(e) + ' (DP x (Tdesign + 273.15) / (T + 273.15))',
+              steps: [st1({ [b.tpd]: 40, [b.tpt]: tt }, 0)],
+              rows: [R(o, 'output', e, 0.1)],
+              reset: false
+            });
+          }
+        if (cs.length) add(GX, item(b, 'Temperature compensation T/P', cs));
+      }
+      if (b.k === 'HLLIM' && fr(b.main) && o != null && free(S, o)) {
+        const lo = b.lo >= 0 ? (kn(S, b.lo) ? S.kn[b.lo] : 20) : -Infinity,
+          hi = b.hi >= 0 ? (kn(S, b.hi) ? S.kn[b.hi] : 80) : Infinity,
+          f0 = {};
+        if (b.lo >= 0 && !kn(S, b.lo)) f0[b.lo] = lo;
+        if (b.hi >= 0 && !kn(S, b.hi)) f0[b.hi] = hi;
+        const xs = [isFinite(lo) ? lo - 10 : -50, isFinite(lo) && isFinite(hi) ? (lo + hi) / 2 : 0, isFinite(hi) ? hi + 10 : 150];
+        add(
+          GX,
+          item(
+            b,
+            'High / low limiter',
+            xs.map(x => {
+              const e = Math.min(hi, Math.max(lo, x));
+              return {
+                l: 'input ' + fmt(x) + ', limits ' + (isFinite(lo) ? fmt(lo) : '-') + ' ~ ' + (isFinite(hi) ? fmt(hi) : '-') + ' -> ' + fmt(e),
+                steps: [st1(Object.assign({ [b.main]: x }, f0), 0)],
+                rows: [R(o, 'output', e)],
+                reset: false
+              };
+            })
+          )
+        );
+      }
+      if (b.k === 'PVSV' && fr(b.pv) && fr(b.sv) && o != null && free(S, o))
+        add(
+          GX,
+          item(
+            b,
+            'PV < SV',
+            [
+              [10, 20, 1],
+              [30, 20, 0]
+            ].map(([pv, sv, e]) => ({
+              l: 'PV ' + pv + ', SV ' + sv + ' -> ' + e,
+              steps: [st1({ [b.pv]: pv, [b.sv]: sv }, 0)],
+              rows: [R(o, 'output', e)],
+              reset: false
+            }))
+          )
+        );
+      if (b.k === 'CTK' && fr(b.ctl) && fr(b.cin) && o != null && free(S, o))
+        add(
+          GX,
+          item(b, 'Conditional write (SET ... IF)', [
+            {
+              l: 'condition 1, value 42 -> 42; then condition 0, value 7 -> still 42 (no write while the condition is 0)',
+              steps: [st1({ [b.ctl]: 1, [b.cin]: 42 }, 1), st1({ [b.ctl]: 0, [b.cin]: 7 }, 1)],
+              rows: [R(o, 'output', 42)]
+            },
+            {
+              l: 'condition 1, value 7 -> 7',
+              steps: [st1({ [b.ctl]: 1, [b.cin]: 7 }, 1)],
+              rows: [R(o, 'output', 7)]
+            }
+          ])
+        );
+      if (b.k === 'DCMP' && b.dc && b.dc.length && fr(b.i[0])) {
+        const cs = [];
+        for (const d of b.dc) {
+          if (!free(S, d.n) || !isFinite(d.sp)) continue;
+          const dd = Math.max(1, Math.abs(d.sp) * 0.1);
+          for (const x of [d.sp - dd, d.sp + dd]) {
+            const xi = d.neg ? -x : x,
+              e = d.op === '>' ? (x > d.sp ? 1 : 0) : x < d.sp ? 1 : 0;
+            cs.push({
+              l: 'input ' + fmt(xi) + ' -> ' + (d.neg ? '-input ' : 'input ') + d.op + ' ' + fmt(d.sp) + ' = ' + e,
+              steps: [st1({ [b.i[0]]: xi }, 0)],
+              rows: [R(d.n, 'output (' + (d.neg ? '-x ' : 'x ') + d.op + ' ' + fmt(d.sp) + ')', e)],
+              reset: false
+            });
+          }
+        }
+        if (cs.length) add('Comparators', item(b, 'Double comparator H / L', cs));
+      }
+      if (b.k === 'DRATE' && fr(b.i[0]) && o != null && free(S, o)) {
+        const W = (b.p && b.p.win) || 30;
+        add(
+          GX,
+          item(b, 'Drop rate (per minute, window ' + fmt(W) + ' s)', [
+            {
+              l: 'input steady 100 -> drop rate 0',
+              steps: [st1({ [b.i[0]]: 100 }, W + 5)],
+              rows: [R(o, 'output', 0, 0.5)]
+            },
+            {
+              l: 'input 100 for ' + fmt(W + 5) + ' s, then 70 -> (100 - 70) per ' + fmt(W) + ' s = ' + fmt((30 * 60) / W) + ' per minute',
+              steps: [st1({ [b.i[0]]: 100 }, W + 5), st1({ [b.i[0]]: 70 }, 0.25)],
+              rows: [R(o, 'output', (30 * 60) / W, ((30 * 60) / W) * 0.05)]
+            }
+          ])
+        );
+      }
+      if (b.k === 'TPV' && fr(b.sg) && b.xin >= 0 && o != null && free(S, o)) {
+        const T = kn(S, b.xin) ? S.kn[b.xin] : 6,
+          fx = kn(S, b.xin) ? {} : { [b.xin]: T },
+          q = x => Math.max(0.25, Math.round(x * 4) / 4);
+        if (T > 1 && T <= 60)
+          add(
+            'Timers (TON / TOF / pulse)',
+            item(b, 'Pulse with time from a signal (' + fmt(T) + ' s)', [
+              {
+                l: 'rising edge, ' + fmt(T - 1) + ' s later -> pulse still 1',
+                steps: [st1(Object.assign({ [b.sg]: 0 }, fx), 1), st1(Object.assign({ [b.sg]: 1 }, fx), q(T - 1))],
+                rows: [R(o, 'output', 1)]
+              },
+              {
+                l: 'rising edge, ' + fmt(T + 1) + ' s later -> pulse ended (0)',
+                steps: [st1(Object.assign({ [b.sg]: 0 }, fx), 1), st1(Object.assign({ [b.sg]: 1 }, fx), q(T + 1))],
+                rows: [R(o, 'output', 0)]
+              }
+            ])
+          );
+      }
       // high / low select
       if (
         (b.k === 'HS' || b.k === 'LS' || b.k === 'HLIM' || b.k === 'LLIM') &&
@@ -819,7 +1050,25 @@ window.UATG = (function () {
         );
       }
       // analog inputs
-      if (b.k === 'AI' && !b.fb && b.rng && b.rng.hi > b.rng.lo && o != null && free(S, o)) {
+      /* 2.2.0-beta.24: the coal feeder feedrate AI (ABC-004A / B / C, PV of FICCL1061x) is written by the feeder model while the plant
+         model is on (plant.js anFeederStep: feedrate = demand while the feeder runs): it is tested in CHECK "M4 · Coal transfer" */
+      const feedAI =
+        b.k === 'AI' &&
+        /^ABC-004[ABC]$/.test(sh.name) &&
+        S.blk.some(m => m.k === 'MAN' && /^FICCL1061[ABC]$/.test(m.tag || '') && (m.i || []).some(n => (S.drv[n] || []).some(x => x.id === b.id)));
+      if (feedAI && o != null)
+        add(
+          'Analog inputs (AI, transmitter range)',
+          item(b, 'AI ' + (label(S, o) || '') + ' (coal feeder feedrate)', [
+            {
+              l: 'not tested alone: the feedrate is the coal feeder model (= its demand while the feeder runs, 0 when stopped); see CHECK "M4 · Coal transfer"',
+              skipMsg: 'written by the coal feeder model',
+              steps: [],
+              rows: []
+            }
+          ])
+        );
+      else if (b.k === 'AI' && !b.fb && b.rng && b.rng.hi > b.rng.lo && o != null && free(S, o)) {
         const lo = b.rng.lo,
           hi = b.rng.hi,
           pts = [lo, (lo + hi) / 2, hi];
@@ -830,7 +1079,8 @@ window.UATG = (function () {
             'AI ' + (label(S, o) || ''),
             pts.map(x => ({
               l: 'signal ' + fmt(x) + (b.rng.u ? ' ' + b.rng.u : '') + ' -> value on the drawing',
-              steps: [st1({}, 2, { ext: { [o]: x }, st: { [b.id]: { val: x, act: x, bad: 0 } } })],
+              /* the SIG.AB flag of the transmitter (bad signal) is cleared for this test: a bad AI gives 0 / top of range */
+              steps: [st1({}, 2, { ext: { [o]: x }, st: Object.assign({ [b.id]: { val: x, act: x, bad: 0 } }, b.sig ? { [b.sig.id]: { val: 0 } } : {}) })],
               rows: [R(o, 'value', x, Math.max(0.05, Math.abs(hi - lo) * 0.005))]
             }))
           )
@@ -1013,6 +1263,7 @@ window.UATG = (function () {
       'Analog outputs (AO, 0 ~ 100 %)',
       'Manual stations (MAN)',
       'Totalizers (SUMA)',
+      GX,
       'Controllers (PID)'
     ];
     return { groups: order.filter(g => G[g]).map(g => ({ g, items: G[g] })) };

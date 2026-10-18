@@ -174,8 +174,23 @@ function simulate(nl, act) {
 }
 /* one sheet in simulate mode: active input rows, net values and active output rows (1.22.0: taken out of render so the
    drawing and the one world, src/world/world.js, compute the SAME thing) */
+/* 2.2.0-beta.3: the analog values of the sheet: what the user typed, over the 150 MW values of the HMI snapshots (s.av150,
+   src/world/ditl150.js; kept apart so they are never saved as the user's own values) */
+function avOf(s) {
+  return s.av150 ? { ...s.av150, ...(s.av || {}) } : s.av || null;
+}
 function simSheet(s) {
   s.nl.ufx = (s.nl.usr || []).filter(u => s.usw && s.usw[u.key]).map(u => u.n);
+  /* 2.2.0-beta.3: the falling-edge mark on a NORMALLY CLOSED contact (DITL-03F rows 25 / 26 BOILER EMERGENCY TRIP P.B.(1) / (2)
+     (N.C.) -> OR -> NOT -> BOILER EMERGENCY TRIP P.B. ON (OPC)) is the contact itself (closed = 1 while nobody presses it):
+     read as a 2 s pulse, the trip was ON at rest and the MFT could never be reset. As a level, the trip is ON when both
+     buttons are pressed. The falling pulse of a normal push button (LOCAL STOP P.B.) is unchanged */
+  if (!s.nl._nc) {
+    s.nl._nc = 1;
+    for (const g of s.nl.gates)
+      if (g.t === 'TMR' && g.k === 'npulse')
+        g.nc = s.nl.src.some(z => g.ins.includes(z.n) && /N\.\s*C\./i.test((s.cells[z.row + ':S'] || []).map(x => x.t).join(' ')));
+  }
   const rowOn = simIn(s),
     v = simulate(s.nl, rowOn),
     outOn = new Set();
@@ -239,7 +254,7 @@ function render() {
     s.nl = netlist(s);
     s.uvDone = false;
   }
-  if (s && s.nl) s.nl.avk = s.av || null;
+  if (s && s.nl) s.nl.avk = avOf(s);
   uvApply(s);
   uvSave();
   let SV = null,

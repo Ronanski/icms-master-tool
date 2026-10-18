@@ -606,6 +606,7 @@ function dsIdx(sh) {
   const S = ensure(sh),
     from = new Map(),
     to = new Map(),
+    toDig = new Map(),
     lost = [];
   for (const t of S.tx) {
     if (!/DITL/i.test(t.t)) continue;
@@ -614,6 +615,11 @@ function dsIdx(sh) {
     const refs = [];
     let m;
     while ((m = DS_RX.exec(t.t))) refs.push('DITL ' + m[2] + '-' + m[3]);
+    /* 2.2.0-beta.3: a list after the first one ("TO DITL 02-25, DITL 03F-16, DITL 19-16", ABC-027 M.2504): every reference, not the first only */
+    if (refs.length) {
+      const L = /,\s*(?:DITL\s*)?([0-9]{2}[A-Z]?)\s*-\s*(\d+)/gi;
+      while ((m = L.exec(t.t))) if (!refs.includes('DITL ' + m[1] + '-' + m[2])) refs.push('DITL ' + m[1] + '-' + m[2]);
+    }
     if (!refs.length) refs.push(t.t.replace(/[()]/g, '').trim());
     const near = [];
     for (const nn of S.nets) {
@@ -636,8 +642,14 @@ function dsIdx(sh) {
     const o = M.get(pick.id) || [];
     for (const r of refs) if (!o.includes(r)) o.push(r);
     M.set(pick.id, o);
+    /* 2.2.0-beta.4: the nearest DIGITAL net driven by the logic, for a TO DITL text that sits by an analog wire (ABC-001C "TO DITL
+       40-09" between the main steam pressure AI0131 and the output M.310D of its LOW LOW comparator, < 72.9 kg/cm2) */
+    if (!isFrom && S.nets[pick.id] && !S.nets[pick.id].dig) {
+      const dg = near.find(q => S.nets[q.id] && S.nets[q.id].dig && !S.ext.includes(q.id) && S.drv[q.id] && S.drv[q.id].length);
+      if (dg) for (const r of refs) toDig.set(r + '@' + pick.id, dg.id);
+    }
   }
-  return (sh._ds = { from, to, lost });
+  return (sh._ds = { from, to, toDig, lost });
 }
 const TR_COL = ['#4da3ff', '#ff8a3d', '#35e08a', '#ff4dd0', '#ffd84d', '#9b8cff', '#7fe0e0', '#c0c0c0'],
   TR_DT = 0.25,

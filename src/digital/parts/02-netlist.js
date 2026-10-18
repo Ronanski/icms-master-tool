@@ -748,6 +748,37 @@ function netlistCore(sh, strict) {
       if (c.sp === undefined) u(c.Lf, c.Rt);
     });
   }
+  /* 2.2.0-beta.6: relay contact of a DCS output (DITL-21A rows 66 / 68: OR -> O.021C "LOR-L1060A" -> relay; its normally open contact "o o" (two circles, flat bar) on the DC 24V line lights the LCP lamp RUNNING; NOT -> O.021D "LOS-L1060A" -> lamp STOPPED).
+     The contact closes when the DCS output arrow on the same level, just left of the DC 24V line, is ON: the lamp wire joins that output wire. The DC 24V common (left of the contact) stays apart. Only a contact whose right wire runs to an output cell. */
+  {
+    const cc = (r.ci || []).filter(c => c[2] > 1.2 && c[2] < 2.6),
+      bars = [];
+    (r.ln || []).forEach(q => {
+      if (Math.abs(q[1] - q[3]) < 0.3) bars.push([Math.min(q[0], q[2]), Math.max(q[0], q[2]), q[1]]);
+    });
+    (r.pl || []).forEach(([p]) => {
+      for (let i = 0; i + 1 < p.length; i++)
+        if (Math.abs(p[i][1] - p[i + 1][1]) < 0.3)
+          bars.push([Math.min(p[i][0], p[i + 1][0]), Math.max(p[i][0], p[i + 1][0]), p[i][1]]);
+    });
+    cc.forEach(a =>
+      cc.forEach(b => {
+        const d = b[0] - a[0],
+          y = a[1];
+        if (d < 6 || d > 12 || Math.abs(a[1] - b[1]) > 0.3) return;
+        if (!bars.some(z => z[0] < a[0] + 1.5 && z[1] > b[0] - 1.5 && z[1] - z[0] < d + 4 && Math.abs(z[2] - y) > 2 && Math.abs(z[2] - y) < 5)) return;
+        const Rt = segs.findIndex(q => q.h && Math.abs(q.y1 - y) < 0.6 && Math.abs(q.x1 - (b[0] + b[2])) < 1.2 && q.x2 >= R0 - 8);
+        const Lf = segs.findIndex(q => q.h && Math.abs(q.y1 - y) < 0.6 && Math.abs(q.x2 - (a[0] - a[2])) < 1.2);
+        if (Rt < 0 || Lf < 0) return;
+        const ar = tri
+          .filter(t => t.d === 1 && Math.abs(t.y - y) < 1.2 && t.x < segs[Lf].x1 + 0.5 && segs[Lf].x1 - t.x < 12)
+          .sort((p, q) => q.x - p.x)[0];
+        if (!ar) return;
+        const w = segs.findIndex(q => q.h && Math.abs(q.y1 - ar.by) < 0.6 && Math.abs(q.x2 - ar.bx) < 1.6);
+        if (w >= 0) u(Rt, w);
+      })
+    );
+  }
   /* v17: numbered circle connectors (1..14 in a small circle at the end of a wire): the same number on the same sheet = the same wire (DITL-76 timer output M.1237 -> (1) -> MOS gate). A number that appears once goes to another sheet (linking, on hold). */
   const cons = [];
   {

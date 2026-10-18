@@ -63,8 +63,15 @@ function anFace(S) {
     } else if (k === 'MAN') {
       const sp = e.SH - e.SL;
       if (sp > 0) {
-        P.lo = e.SL + (e.ML / 100) * sp;
-        P.hi = e.SL + (e.MH / 100) * sp;
+        /* 2.2.0-beta.21: a station whose output IS a % position (unit %, SV range inside 0 ~ 100) has its MV limits ML / MH in that
+           same %: ABC-020 HICHR1002A (RH gas biasing damper) SL 10 / SH 100, ML 10 / MH 100 = damper 10 ~ 100 %. Before, ML was
+           taken as 10 % OF the SV span (10 + 0.1 x 90 = 19 %): the operator could not go below 19 %, while the HMI snapshot
+           39.PNG shows 11.0 % and PR-OPE-5003 puts the RH damper to 10 % after the turbine trip. A bias station in % with a
+           range outside 0 ~ 100 (ABC-002 HS-O2 -4 ~ 4, ABC-057 HICFABIASU / L -10 ~ 10) keeps the span mapping (its output is
+           the engineering value of the range) */
+        const pct = String(e.unit || '').trim() === '%' && e.SL >= 0 && e.SH <= 100;
+        P.lo = pct ? e.ML : e.SL + (e.ML / 100) * sp;
+        P.hi = pct ? e.MH : e.SL + (e.MH / 100) * sp;
         P.rlo = e.SL;
         P.rhi = e.SH;
       }
@@ -194,6 +201,47 @@ function anDefaults(S) {
         b.note = 'SCALE CONVERT 10 / 200 = 0.05: the rate limit of the unit load equals the MW/min setting';
       }
   }
+  if (/^ABC-004[ABC]$/.test(S.name)) {
+    /* 2.2.0-beta.1: coal feeders A / B / C. The MAN FICCL1061x works in T/H (0 ~ 40 T/H); its MV on the drawing is percent of 40 T/H (AO to the inverter, "MV >= 83.3 %", FIC-CF PV = average of the three MVs in %, AUTO-MV = FIC-CF.MV % + bias). The simulator keeps T/H inside the station and converts at the edges */
+    const labs = n =>
+      [(S.lab[n] && S.lab[n].t) || ''].concat((S.tagN || []).filter(z => z.n === n).map(z => z.t)).join('|');
+    const has = (n, re) => re.test(labs(n));
+    const isMV = n => has(n, /(^|\|)(FICCL1061[ABC]\.MV|AO0(231|356|800))(\||$)/);
+    const isSum = n => has(n, /(^|\|)SI01[123]6(\||$)/);
+    for (const b of S.blk) {
+      if (
+        b.k === 'AMT' &&
+        /B\s*\/\s*T/.test((b.txt || []).join('/')) &&
+        b.o.some(n => S.cns[n].some(c => c.k === 'MAN' && /FICCL1061/.test((c.txt || []).join('/'))))
+      ) {
+        b.ag = 0.4;
+        b.note = 'AUTO-MV in % of 40 T/H -> T/H';
+      }
+      if ((b.k === 'SUM' || b.k === 'ADD') && b.ip && b.o.some(isSum))
+        for (const q of b.ip)
+          if (has(q.n, /(^|\|)SI01[123]0(\||$)/)) {
+            q.ia = [2.5, 0];
+            b.note = 'bias (T/H) -> % of 40 T/H, added to FIC-CF.MV (%)';
+          }
+      if (b.k === 'SW' && b.i.some(isMV) && (b.o.some(n => has(n, /(^|\|)SI01[123]3(\||$)/)) || b.i.some(isSum))) {
+        b.ia = b.ia || {};
+        for (const n of b.i) if (isMV(n)) b.ia[n] = [2.5, 0];
+        b.note = 'feeder MV (T/H) -> % of 40 T/H';
+      }
+      if (b.k === 'DEV' && b.ip && b.ip.some(q => isMV(q.n)) && b.ip.some(q => isSum(q.n))) {
+        for (const q of b.ip) if (isMV(q.n)) q.ia = [2.5, 0];
+        b.note = 'feeder MV (T/H) -> % of 40 T/H for the comparison';
+      }
+      if (b.k === 'HC' && b.p && b.p.sp === 83.3 && b.i.some(isMV)) {
+        b.p.sp = 83.3 * 0.4;
+        b.note = 'MV >= 83.3 % of 40 T/H = 33.32 T/H';
+      }
+      if (b.k === 'AMT' && b.o.some(n => has(n, /(^|\|)FIC-CF\.MV(\||$)/)) && b.i.some(n => has(n, /(^|\|)SI0145(\||$)/))) {
+        b.bg = 2.5;
+        b.note = 'RB-MV SI0145 (T/H) -> % of 40 T/H for the FIC-CF tracking';
+      }
+    }
+  }
   if (S.name === 'ABC-009A' || S.name === 'ABC-009B') {
     /* bottom ash screw cooler speed controllers: the MAN SICL1060A ~ D work in rpm (0 ~ 5 rpm, workbook), the loop signals are percent of 5 rpm (AUTO-MV, "12 %" back-up value, comparison with the output, average of the four speeds as the PV of PIC-BASC) */
     const labs = n =>
@@ -243,6 +291,14 @@ function anDefaults(S) {
       if (b.k === 'AMT' && b.o.some(n => S.lab[n] && S.lab[n].t === 'PIC-COBM.MV')) {
         b.bg = 100 / 120;
         b.note = 'RB-MV (T/H) -> % of 120 T/H for the PID tracking';
+      }
+      /* 2.2.0-beta.20: the same for the boiler master switch (M.2000 = NOT FIC-CM.REM: B = SI0017 TOTAL FUEL FLOW "RB-MV", T/H of
+         0 ~ 120): while the coal master is not REMOTE the boiler master output tracks the fuel in % of its own range (150 MW: 81 T/H
+         = 67.5 %, 4.PNG 68.3). Before, the T/H value went in as %: at 45 MW the boiler master read 33.6 % for 36 T/H of coal, its
+         demand (x 1.2 / calorie correction) was 46 T/H and the coal master never saw SV = PV for its REMOTE */
+      if (b.k === 'AMT' && b.o.some(n => S.lab[n] && S.lab[n].t === 'HIC-BM.MV')) {
+        b.bg = 100 / 120;
+        b.note = 'RB-MV SI0017 TOTAL FUEL FLOW (T/H) -> % of 120 T/H: the boiler master tracks the fuel while the coal master is not REMOTE (M.2000)';
       }
       if (b.k === 'CONST' && b.p && Math.abs(b.p.val + 0.42) < 1e-9) {
         b.p.val = -0.5;
@@ -1052,7 +1108,34 @@ function anCompile(S) {
       case 'SEL': {
         const s2 = ins.slice().sort((p, q) => p.x - q.x);
         b.i = s2.map(p => {
-          const m = anSelIn(S, blk, p.n);
+          let m = anSelIn(S, blk, p.n);
+          /* 2.2.0-beta.9: an input wire that no block drives, where the transmitter wire ENDS ON ITS SIDE (a T without a junction dot;
+             ABC-001C PRI / SEC / AVG SELECT CIRCUIT: AI0419 GEN MW (C) and AI0774 GEN MW (D) run sideways into the wires that come
+             down from their SIG.AB boxes to the select circuit): that transmitter is the input. Before, both inputs were 0 and the
+             turbine master PV EIC-TM.PV was 0 MW (33.PNG: 148.6 MW) */
+          if (m === p.n && !blk.some(x => x.pins.some(q => q.role === 'out' && q.n === m))) {
+            const own = (nets[m] ? nets[m].segs : []).map(i => S.seg[i]);
+            const ai = blk.find(
+              x =>
+                x.k === 'AI' &&
+                x.pins.some(
+                  q =>
+                    q.role === 'out' &&
+                    q.n != null &&
+                    q.n !== m &&
+                    nets[q.n] &&
+                    nets[q.n].segs.some(i => {
+                      const g = S.seg[i];
+                      return [
+                        [g.x1, g.y1],
+                        [g.x2, g.y2]
+                      ].some(([x, y]) => own.some(o => anPtSeg(x, y, o) < 0.5));
+                    })
+                )
+            );
+            const ao = ai && ai.pins.find(q => q.role === 'out');
+            if (ao) m = ao.n;
+          }
           if (m !== p.n) (S.selw = S.selw || {})[p.n] = m;
           return m;
         });

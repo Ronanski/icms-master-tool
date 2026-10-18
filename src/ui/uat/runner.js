@@ -47,7 +47,8 @@ window.UATR = (function () {
       plantOff();
     }
     S.rt.force = {};
-    let start = {};
+    let start = {},
+      sawBu = 0;
     for (let i = 0; i < c.steps.length; i++) {
       const st = c.steps[i];
       if (i === c.steps.length - 1) {
@@ -56,7 +57,11 @@ window.UATR = (function () {
       apply(S, st);
       const dt = st.secs > 0 ? 0.25 : 0,
         n = st.secs > 0 ? Math.round(st.secs * 4) : 3;
-      for (let k = 0; k < n; k++) AN.stepSet(sh, dt);
+      for (let k = 0; k < n; k++) {
+        AN.stepSet(sh, dt);
+        /* 2.2.0-beta.24: a back-up value seen at ANY step of the case (the downstream selector sets it one scan later) */
+        if (c.skipBu != null && S.rt.st[c.skipBu] && S.rt.st[c.skipBu].bu != null) sawBu = 1;
+      }
     }
     if (c.skipTrk != null && S.rt.st[c.skipTrk] && S.rt.st[c.skipTrk].trk != null)
       return {
@@ -64,7 +69,7 @@ window.UATR = (function () {
         skip: 'tracking is active (the downstream selector is on another leg or interlock BU-CMD): the output follows that value, so it is not tested here',
         rows: []
       };
-    if (c.skipBu != null && S.rt.st[c.skipBu] && S.rt.st[c.skipBu].bu != null)
+    if (c.skipBu != null && (sawBu || (S.rt.st[c.skipBu] && S.rt.st[c.skipBu].bu != null)))
       return {
         ok: true,
         skip: 'interlock back-up value (BU-CMD) is active on this selector: it forces its own value, not tested here',
