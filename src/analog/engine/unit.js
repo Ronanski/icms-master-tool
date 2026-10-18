@@ -138,6 +138,8 @@ const AN_UNIT = {
   Tburn0: 350,
   Tburn1: 600,
   Cw: 1508,
+  kcool: 60 /* 2.2.0-beta.21: cooling of the unfired boiler by the air, T/H steam-equivalent at the anchor air and 300 C (ASSUMED, Fig. 5) */,
+  kamb: 1 /* 2.2.0-beta.21: bottled boiler loss to the ambient, T/H steam-equivalent at 300 C (ASSUMED) */,
   tauB: 900,
   Tb0: 850
 };
@@ -634,13 +636,27 @@ function anUnitStep(dt) {
   /* drum: stored energy. 2.2.0-beta.14 (cold start): the firing heats the water first (U.Tw), then the pressure rises against the
      storage of the steam AND of the saturated water (C + Cw x dTsat/dP) */
   const tsatOf = P => 100 + 47.1 * Math.log(Math.max(0, P) + 1);
+  /* air share (total air over the anchor), used by the cooling below and by the bed temperature */
+  const taf = U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0),
+    as = U.taf0 > 0 ? Math.max(0.05, taf / U.taf0) : 1;
+  /* 2.2.0-beta.21 (M5 shutdown to bottle-up, PR-OPE-5004): an UNFIRED boiler is cooled by the air the fans push through it (boiler
+     manual SECT_7 Fig. 5 BOILER COLD SHUTDOWN: burners off at 3.6 h, SH outlet pressure 95 -> 60 kg/cm2 in 1 h, 20 at 6 h, 0 at
+     8 h with the draft running) and, bottled (fans off), by the ambient. Steam-equivalent heat loss: kcool (T/H at the anchor air
+     and 300 C above the ambient; air x 0.24 kcal/kg C x dT / 500 kcal/kg, ASSUMED 60) x air share + kamb (ASSUMED 1 T/H: about
+     1.5 kg/cm2 per hour bottled), times (Tw - Tamb) / 300, fading in as the firing falls below 10 % of the anchor fuel (a fired
+     boiler already carries its flue gas loss in the fuel -> steam line). Start-up / shutdown physics only (U.cold) */
+  let Qloss = 0;
+  if (U.cold) {
+    const unf = Math.max(0, 1 - Fe / (0.1 * U.F0));
+    Qloss = unf * (U.kcool * as + U.kamb) * Math.max(0, (U.Tw - U.Tamb) / 300);
+  }
   if (U.cold) {
     const ts = tsatOf(U.Pd);
     if (U.Tw < ts - 0.01) {
-      U.Tw = Math.min(ts, U.Tw + (U.Qs * dt) / U.Cw);
+      U.Tw = Math.max(U.Tamb, Math.min(ts, U.Tw + ((U.Qs - Qloss) * dt) / U.Cw));
       U.Pd = Math.max(0, U.Pd - ((U.ms + U.mb) * dt) / U.C);
     } else {
-      U.Pd = Math.max(0, U.Pd + ((U.Qs - U.ms - U.mb) * dt) / (U.C + (U.Cw * 47.1) / (U.Pd + 1)));
+      U.Pd = Math.max(0, U.Pd + ((U.Qs - Qloss - U.ms - U.mb) * dt) / (U.C + (U.Cw * 47.1) / (U.Pd + 1)));
       U.Tw = tsatOf(U.Pd);
     }
   } else {
@@ -649,9 +665,7 @@ function anUnitStep(dt) {
   }
   /* bed temperature: firing share over air share, first order */
   {
-    const taf = U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0),
-      as = U.taf0 > 0 ? Math.max(0.05, taf / U.taf0) : 1,
-      /* fuel share (coal-equivalent, burnt) over air share, exponent 0.45 (ASSUMED, calibrated: 850 C at full load, Fig 8; about
+    const /* fuel share (coal-equivalent, burnt) over air share, exponent 0.45 (ASSUMED, calibrated: 850 C at full load, Fig 8; about
          450 C with two start-up burners at 60 % and the light-off air, the coal batch permissive of PR-OPE-5002 400 ~ 450 C; coal
          alone at O2 4 ~ 5 % about 800 C). 2.2.0-beta.15: on the fuel, not on the steam made (the fixed loss of the firing line
          made a small fire too cold) */

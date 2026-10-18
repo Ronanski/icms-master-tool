@@ -1,6 +1,6 @@
-# OPERATOR GUIDE — Manu-manong cold start-up hanggang 150 MW, at normal shutdown (Taglish)
+# OPERATOR GUIDE — Manu-manong cold start-up hanggang 150 MW, normal shutdown at shutdown to bottle-up (Taglish)
 
-Para sa DCS engineer na natututong mag-operate. Ang app (Logic Simulator 2.2.0-beta.21) ay sumusunod sa drawing (ABC analog logic) at sa procedure ng planta PR-OPE-5002-02 (cold start-up). Ang bawat hakbang dito ay ang **ginagawa ng CHECK scenario nang awtomatiko** (CHECK → M4 · Cold start-up (buo)); dito ikaw mismo ang pipindot.
+Para sa DCS engineer na natututong mag-operate. Ang app (Logic Simulator 2.2.0-beta.22) ay sumusunod sa drawing (ABC analog logic) at sa procedure ng planta PR-OPE-5002-02 (cold start-up). Ang bawat hakbang dito ay ang **ginagawa ng CHECK scenario nang awtomatiko** (CHECK → M4 · Cold start-up (buo)); dito ikaw mismo ang pipindot.
 
 **Paano basahin:** `Sheet · Tag` = saan ang faceplate (ABC page → sheet → click ang controller, o OPERATOR tab). **M** = MANUAL, **A** = AUTO, **L** = LOCAL (SV mo), **R** = REMOTE (SV mula sa logic). "Permissive" = kondisyon ng drawing bago tanggapin ang pindot mo; kapag hindi pa tama, babalik sa M / L ang station (force manual = BU-CMD, nananatili hanggang pindutin mo ulit ang A).
 
@@ -143,7 +143,7 @@ Ito ang ginagawa ng **CHECK → M5 · Normal shutdown (buo)** (~4 min real, 3 h 
 | 7.10 | **ABC-020 biasing damper M: HICHR1002A (RH) 10 %, HICHR1002B (MS) 90 %.** | MAN parameter: ML 10 % (minimum 10). Bago ang beta.21 hindi makababa sa 19 % (bug, naayos). | 10 / 90 %. |
 | 7.11 | **Bed (gas) < 535 °C: SUB out** (FICDO 0 %, valves sarado M.3410 / 3411 / 3416 / 3417 = 1, in-service bits 0), **HP / LP bypass at MS blow-off sarado**. | PR-OPE-5003: SUB out sa gas temp < 535 °C. | Oil 0, bypass 0 %. |
 | 7.12 | **Purge:** PAF / SAF M para sa > 150 T/H hangin (dahan-dahan: furnace pressure ±30 mmH2O), 5 min, tapos **PAF / SAF / IDF off** (M.3302 / 3303 / 3304 = 0). | Furnace −60 ~ +30 mmH2O. | Hangin 0 T/H; bed lumalamig (≈ 310 °C). |
-| 7.13 | **Drum level: punuin sa ~150 ~ 250 mm** (LICBR1001B M / FICFW1007 M) bago **BFP-A off (M.3343 = 0)**; FICFW1007 / LICBR1001A / LICBR1001B M 0. | Procedure: fill before BFP stop (HH +254). | FW 0; drum nakakulong ~122 kg/cm2 (bottle-up ang susunod, PR-OPE-5004). |
+| 7.13 | **Drum level: punuin sa ~150 ~ 250 mm** (LICBR1001B M / FICFW1007 M), **⚙ Drum BLOWDOWN valve CLOSE (field)** ("blow down valve must be close"), bago **BFP-A off (M.3343 = 0)**; FICFW1007 / LICBR1001A / LICBR1001B M 0. | Procedure: fill before BFP stop (HH +254). | FW 0; drum nakakulong ~122 kg/cm2 (bottle-up ang susunod, PR-OPE-5004). |
 
 **Sa dulo dapat:** MW 0, coal 0, oil 0, hangin 0, MSP ≈ 122 kg/cm2 nakakulong, bed < 750 °C at lumalamig, MST ≈ 330 °C, HIC-BM / EIC-TM / FICFW1007 / PICFG108 M.
 
@@ -154,6 +154,28 @@ Ito ang ginagawa ng **CHECK → M5 · Normal shutdown (buo)** (~4 min real, 3 h 
 | MSP bumagsak < 100 habang binabawasan ang coal | coal pinutol bago ang oil; FF ng feeder stop | SUB muna (7.5), FIC-CM ibaba muna bago ang feeder stop |
 | Drum level < −150 pagkatapos lumipat sa start-up valve | main valve sarado nang bigla; LICBR1001B mabagal | main valve 10 % muna (LICBR1001A.MV sa 1-element), +5 % kapag < −80 |
 | HICHR1002A hindi makababa sa 10 % | (naayos sa beta.21: ML 10 % = 10 %) | i-update ang app |
-| Pressure hindi bumababa pagkatapos ng fans off | walang heat-loss model habang nakakulong (bottle-up stage: PR-OPE-5004) | susunod na Beta |
+| Drum level bumabagsak pagkatapos ng BFP stop | bukas ang blowdown (25 T/H) | ⚙ Drum BLOWDOWN valve CLOSE |
+| Pressure halos hindi bumababa pagkatapos ng fans off | nakakulong: ~1.5 kg/cm2 kada oras lang (beta.22) | Para sa mabilis na lamig: seksyon 8 (lamig sa draft, PR-OPE-5004) |
 
-Sanggunian: `docs/versions/v2.2.0/DRAWING_TRACE.md` (bawat permissive, net at drawing), `docs/versions/v2.2.0/CHECK_M2_M3.md` (mga tseke), `document-references/procedure-start-up-PR-OPE-5002-02.docx`, `procedure-normal-shutdown-PR-OPE-5003-01.docx`, `docs/hmi/OPERATING_POINTS.md` (4.PNG / 03.png / 02.png).
+---
+
+## 8. Shutdown to bottle-up: mula sa bypass hanggang malamig na boiler (PR-OPE-5004)
+
+Ito ang ginagawa ng **CHECK → M5 · Shutdown to bottle-up (buo)** (~5 min real, ~9 h plant time). Simula: ang hakbang 7.1 ~ 7.9 (load down, trip, bypass hanggang < 535 °C ang gas). Pagkatapos, sa halip na ang mabilis na draft stop ng 7.11 ~ 7.13, ang PR-OPE-5004: pinalalamig ang boiler sa draft hanggang halos 0 kg/cm2 bago patayin ang fans (boiler manual Fig. 5 BOILER COLD SHUTDOWN: 95 → 0 kg/cm2 sa ~5 h). Ang mga DITL valve (drain pots, header drains, diesel pump) ay wala sa ABC: nakasulat lang sa tseke.
+
+| # | Gawin | Permissive / drawing | Inaasahan |
+|---|---|---|---|
+| 8.1 | **Bypass system sarado:** ABC-050 PICMS1006 M 0, ABC-052 PICHR1003 M 0, ABC-013 PICMS1002 (PCV-MS1001 blow-off) M 0, ABC-055 HICBR1391 (MV-MS1391) M 0. | Sa < 535 °C. | MSF 0, pressure nakakulong. |
+| 8.2 | **Hot reheat pakawalan:** ABC-054 PICHR1391 (MV-HR1391) M 50 %, tapos M 0 kapag RHP < 1. | — | RHP < 1.5 kg/cm2. |
+| 8.3 | **Drum +200 mm:** LICBR1001B M (start-up valve) pataas; FICFW1007 / LICBR1001A M 0. Kapag ≥ +200: **⚙ Drum BLOWDOWN valve CLOSE (field)**, tapos **BFP-A stop (M.3343 = 0)**, lahat ng FW station M 0. | Procedure: fill to +200, blowdown sarado, close BFP outlet, stop BFP. | FW 0, level ≈ +200 ~ +280 (hawak). Kung bukas ang blowdown: 25 T/H palabas, level −422 sa ~25 min. |
+| 8.4 | **Deaerator:** ABC-031 LICCD1104 **A SV 0 mm**. | — | SV 0. |
+| 8.5 | **SUB:** FICDO1043A / B **M 25 %**, pagkatapos ng 4 min **OFF**: FICDO 0, oil valves sarado (M.3410 / 3411 / 3416 / 3417 = 1), in-service 0 (M.3412 / 3413 / 3418 / 3419). | — | Oil 0 T/H. |
+| 8.6 | **Oil system:** ABC-028 PICDO0005 (PCV-DO0002) **M 100**, ABC-029 PICDO1008 (PCV-DO1009) **M 100**, HICDO1012 (FCV-DO1012) **M 100**; diesel pump stop (DITL). | — | 100 / 100 / 100 %. |
+| 8.7 | **Paglamig sa draft:** PAF / SAF damper (FICFA1071 / 1081 M) sa iniwan (~20 %), furnace −15 sa PICFG108 M (±1 % kada minuto). Hintayin na **< 1.5 kg/cm2** ang drum (~5 h; sa app 300x ≈ 1 min). Sa < 1.5: CR / HR header drains (DITL; ang ABC-055 ay may parehong marka "DRUM PRESSURE < 1.5"). | Fig. 5: 95 → 60 sa 1 h, 20 sa 6 h, 0 sa 8 h. | Drum → < 1.5, MST at tubig pababa. |
+| 8.8 | **Biasing damper 100 %:** ABC-020 HICHR1002A at B **M 100** bago patayin ang draft. | PR-OPE-5004. | 100 / 100. |
+| 8.9 | **Draft stop sa ayos:** SAF damper −5 % kada minuto hanggang 20 %; PAF damper −1 % kada 30 s hanggang 0 → **PAF stop (M.3302 = 0)**, **FAB stop (M.3308 / 3309 = 0)**; SAF −5 % hanggang 0 → **SAF stop (M.3303 = 0)**; H/C PICFG108 −1 % hanggang 0 (sa < 14 %: **M.0205 force manual**, procedure "< 16 %") → **IDF stop (M.3304 = 0)**. | ABC-008 M.0205 = OR(NOT M.3304, M.0206 < 14 %, NOT M.0202). | Furnace −60 ~ +30 mmH2O; fans 0. |
+| 8.10 | **DAMPER CONTROL:** ABC-008 Buttons **DAMPER CONTROL SELECT** (M.0202 = 0), **PICFG108A M 5 %**, tapos −2.5 % kada minuto hanggang furnace −20 ~ +20. | ABC-008 HYDRAULIC / DAMPER CONTROL SELECT (CRT). | Damper ≤ 5 %, furnace ≈ 0. |
+
+**Sa dulo dapat:** MW 0, coal 0, oil 0, hangin 0, drum < 1.5 kg/cm2, tubig ≈ 100 °C, bed < 300 °C, lahat ng fans at BFP off: bottle-up / cold boiler, handa sa cold start-up (seksyon 0).
+
+Sanggunian: `docs/versions/v2.2.0/DRAWING_TRACE.md` (bawat permissive, net at drawing), `docs/versions/v2.2.0/CHECK_M2_M3.md` (mga tseke), `document-references/procedure-start-up-PR-OPE-5002-02.docx`, `procedure-normal-shutdown-PR-OPE-5003-01.docx`, `procedure-shutdown-to-bottle-up-PR-OPE-5004-01.docx`, `docs/hmi/OPERATING_POINTS.md` (4.PNG / 03.png / 02.png).

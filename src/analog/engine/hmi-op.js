@@ -824,7 +824,7 @@ function anPlantLoad150_() {
       ms = AN_HMI_AI['1|AI0129'];
     for (const sh of AN.sheets)
       if (sh.S)
-        for (const b of sh.S.procs || []) if (b.proc && (b.txt || [])[1] === 'LICBR1001' && fw && ms) b.proc.integLoss = Math.max(0, fw.pv - ms[0]);
+        for (const b of sh.S.procs || []) if (b.proc && (b.txt || [])[1] === 'LICBR1001' && fw && ms) b.proc.integLoss = b.proc.integLoss0 = Math.max(0, fw.pv - ms[0]);
   } catch (e) {}
   try {
     for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0.5);
@@ -945,6 +945,21 @@ const AN_HMI_DI_COLD = {
 /* 2.2.0-beta.15: the SUPPLY OIL VALVE (1)(2) CLOSE of a start-up burner (M.3410 / 3411 / 3416 / 3417, memory list BC FROM S4) is the
    AND of the two limit switches on the coal feeder sheets (ABC-004A ~ C), linked to ABC-003x and ABC-029. The operator opens (or
    closes) the two valves = the two inputs of that AND (one address = one signal, CLAUDE.md 1). Returns the inputs written */
+/* 2.2.0-beta.22 (M5): the drum BLOWDOWN valve (field hand valve, not a DCS station): the water that leaves the drum besides the main
+   steam (pr.integLoss, 25 T/H from 03.png at 150 MW). PR-OPE-5003 "Before stopping BFP, set the drum level near HH (blow down valve
+   must be close)". Before: the 25 T/H left the drum for ever, so a bottled boiler emptied (drum level -422 mm, the bottom of the
+   range, 25 min after the BFP stop) */
+function anBlowdown(open) {
+  let n = 0;
+  for (const sh of AN.sheets)
+    if (sh.S)
+      for (const b of sh.S.procs || [])
+        if (b.proc && (b.txt || [])[1] === 'LICBR1001') {
+          b.proc.integLoss = open ? b.proc.integLoss0 || 0 : 0;
+          n++;
+        }
+  return n;
+}
 function anOilValve(addr, open) {
   let n = 0;
   for (const sh of AN.sheets) {
