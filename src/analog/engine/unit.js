@@ -470,6 +470,19 @@ function anUnitCold() {
   for (const h of U.sh) h.x = U.Tamb;
   return true;
 }
+/* 2.2.0-beta.21 (M5 shutdown): the plant at 150 MW WITH the start-up / shutdown physics on (U.cold: the water heat storage of the
+   drum, the steam temperature capped by the gas, the oil of the start-up burners, the bed temperature, a turbine trip = machine off
+   and GCB open, the TCS inputs of the DCS written by the model). The anchors of "Start at 150 MW" stay as they are: the plant is at
+   full load, on the grid, DCS control mode ON. Called after anPlantLoad150 (hmi-op.js anPlantLive, CHECK M5) */
+function anUnitLive() {
+  const U = AN_UNIT;
+  if (!U.on) return false;
+  U.cold = true;
+  U.turb = true;
+  U.tb = { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN, perm: true };
+  U.Tw = 100 + 47.1 * Math.log(Math.max(0, U.Pd) + 1);
+  return true;
+}
 /* 2.2.0-beta.17 (M4 step 4): the operator on the TCS panel (outside the DCS): 'roll' (open the stop valves, IP start mode, rpm up
    at rollRate), 'sync' (at 3600 rpm: GCB closed, initial load MWinit), 'loadup' (target MW at rateUp MW/min; default 45 = NORMAL
    OPERATION). Returns the state or a reason ('' = done) */

@@ -43,7 +43,7 @@ Utos ng user (2026-10-16): **"Analog muna. Ang DITL ay i-simulate / i-force na l
 - [ ] **Branch cleanup**: 15 lumang branch (0 commit sa unahan ng `main`). Na-block ang pag-delete sa session; i-delete sa GitHub (Branches page) o sabihin ang "OK delete" para subukan ulit.
 
 ## D. SA HINAHARAP (hindi pa gagawin; hintayin ang utos)
-- [F] **Rehearsal ng start-up at shutdown**: hakbang-hakbang, may marka, ayon sa PR-OPE-5002 / 5003 / 5004. Start-up: TAPOS (2.2.0-beta.20, CHECK "M4 · Cold start-up (buo)"); shutdown: M5. Susunod: OPERATOR GUIDE para sa mano-manong operasyon.
+- [F] **Rehearsal ng start-up at shutdown**: hakbang-hakbang, may marka, ayon sa PR-OPE-5002 / 5003 / 5004. Start-up: TAPOS (2.2.0-beta.20, CHECK "M4 · Cold start-up (buo)"); shutdown normal: TAPOS (2.2.0-beta.21, CHECK "M5 · Normal shutdown (buo)" 13 / 13, OPERATOR_GUIDE seksyon 7); bottle-up (PR-OPE-5004): susunod. Susunod: OPERATOR GUIDE para sa mano-manong operasyon.
 - [F] **"Bakit?" at "Sanhi?" na buo**: piliin ang valve o controller, sasabihin kung bakit hindi bumukas o bakit ganito ang demand, hanggang sa pinagmulang input.
 - [F] **Checklist ng permissive**: ano ang kailangan para makapag-AUTO, makapag-start o makapagbukas (✔ / ✖).
 - [F] **Cause-and-effect matrix**, i-export sa Excel.

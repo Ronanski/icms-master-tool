@@ -1,6 +1,6 @@
-# OPERATOR GUIDE — Manu-manong cold start-up hanggang 150 MW (Taglish)
+# OPERATOR GUIDE — Manu-manong cold start-up hanggang 150 MW, at normal shutdown (Taglish)
 
-Para sa DCS engineer na natututong mag-operate. Ang app (Logic Simulator 2.2.0-beta.20) ay sumusunod sa drawing (ABC analog logic) at sa procedure ng planta PR-OPE-5002-02 (cold start-up). Ang bawat hakbang dito ay ang **ginagawa ng CHECK scenario nang awtomatiko** (CHECK → M4 · Cold start-up (buo)); dito ikaw mismo ang pipindot.
+Para sa DCS engineer na natututong mag-operate. Ang app (Logic Simulator 2.2.0-beta.21) ay sumusunod sa drawing (ABC analog logic) at sa procedure ng planta PR-OPE-5002-02 (cold start-up). Ang bawat hakbang dito ay ang **ginagawa ng CHECK scenario nang awtomatiko** (CHECK → M4 · Cold start-up (buo)); dito ikaw mismo ang pipindot.
 
 **Paano basahin:** `Sheet · Tag` = saan ang faceplate (ABC page → sheet → click ang controller, o OPERATOR tab). **M** = MANUAL, **A** = AUTO, **L** = LOCAL (SV mo), **R** = REMOTE (SV mula sa logic). "Permissive" = kondisyon ng drawing bago tanggapin ang pindot mo; kapag hindi pa tama, babalik sa M / L ang station (force manual = BU-CMD, nananatili hanggang pindutin mo ulit ang A).
 
@@ -123,4 +123,37 @@ Tingnan sa PLANT → UNIT: MSP 0, drum level ≈ 0 mm, MW 0.
 | Drum level bumagsak sa roll / load up | start-up valve nahuhuli (MSF 23 → 157 T/H) | 4.2: main valve maaga, LICBR1001A A |
 | RH pressure > 9 sa bypass | LP bypass PID nahuhuli | RH blow-off M +10 % kada minuto; isara sa < 8.2 |
 
-Sanggunian: `docs/versions/v2.2.0/DRAWING_TRACE.md` (bawat permissive, net at drawing), `docs/versions/v2.2.0/CHECK_M2_M3.md` (mga tseke), `document-references/procedure-start-up-PR-OPE-5002-02.docx`, `docs/hmi/OPERATING_POINTS.md` (4.PNG / 03.png / 02.png).
+---
+
+## 7. Normal shutdown: 150 → 30 MW, turbine trip, bypass, SUB out, purge, fans at BFP stop (PR-OPE-5003)
+
+Ito ang ginagawa ng **CHECK → M5 · Normal shutdown (buo)** (~4 min real, 3 h 18 min plant time; "M5 · Load down 150 → 30 MW" = unang bahagi lang, ~1.5 min). Simula: ⚙ → **Start live (150 MW, start-up / shutdown physics ON)**, speed 300x. Ang HIC-ULD TARGET MW ang bumababa (CCS), ang boiler ang sumusunod; sa ilalim ng 220 T/H ikaw na ang humahawak ng firing.
+
+| # | Gawin | Permissive / drawing | Inaasahan |
+|---|---|---|---|
+| 7.1 | **ABC-001A HIC-ULD TARGET 100 MW** (3 MW/min), hintayin; tapos **75 MW**. | CCS: EIC-TM A, HIC-BM A, PIC-COBM A 123. | MSP 117 ~ 127 kg/cm2, drum ±80 mm. |
+| 7.2 | **Sa MSF < 220 T/H:** HIC-BM at EIC-TM ay **M nang kusa** (ABC-001C M.2013 BU-CMD, M.2016). Hawakan mo ang **HIC-BM M** (firing): −1 % kada minuto kapag MSP > SV + 1, +1 kapag < SV − 1. | BU-CMD = protection (CLAUDE.md 10): hindi babalik sa A nang kusa. | DCS control mode I.0082 = 0; MSP hawak sa 117 ~ 125. |
+| 7.3 | **Sa MSF ≈ 230 T/H: ABC-010 1-ELEMENT** (Buttons: M.054F pulse) → M.0222 = 1. **FICFW1007 at LICBR1001A: LICBR1001A A** (single element: level controller → main valve). | M.0222: FICFW1007 SV = LICBR1001A.MV. | Drum −80 ~ +90 mm; ang main valve ay umuugoy 0 ~ 40 % sa mababang load (PID ng 1-element; level nananatili ±30 mm). |
+| 7.4 | **Sa MSF < 120 T/H (2 min): start-up valve.** **FICFW1007 M at LICBR1001A M 10 %** (main valve by hand), tapos **LICBR1001B A SV 0**. Buksan ang main valve +5 % kapag level < −80, isara −3 ~ −5 % kapag > 0 ~ 60 mm. | M.0226 = OR(NOT FICFW1007.MAN, NOT LICBR1001A.MAN): AUTO ang LICBR1001B kapag MANUAL ang dalawa. | FW ≈ MSF; drum −80 ~ +90 mm. |
+| 7.5 | **TARGET 60 MW**, tapos **45**, tapos **30 MW**. Sa **60 MW (bed ≈ 720 °C): SUB (oil) in service**: ABC-004A oil valves M.3410 / 3411 (burner A / B) at ABC-004B M.3416 / 3417 (C / D) = 0 (bukas), M.3412 / 3413 / 3418 / 3419 = 1, **FICDO1043A ~ D M 30 ~ 40 %** (oil muna bago bawasan ang coal, para hindi bumagsak ang pressure). | PR-OPE-5003: "At 60 MW put SUB in service". | Oil 9 ~ 14 T/H, MSP hawak. |
+| 7.6 | **Coal out, isa-isa (mula ~54 MW, 5 min pagitan):** **FIC-CM M** ibaba −1 ~ −2 % kada minuto hanggang 10 %, tapos **feeder A off (M.3400 = 0)**, B (M.3401), C (M.3402, M.3405 = 0). Ang demand ng coal master ay KABUUAN: kapag may pinahinto, ang bahagi nito ay napupunta sa natitira, kaya ibaba muna ang FIC-CM. Sa huling feeder: oil +30 %. | Feeder running bits sa ABC-004A ~ C. | Coal 0 sa 30 MW; MSP ≥ SV − 2 bago ang bawat stop; bed ≤ 700 °C. |
+| 7.7 | **O2 / hangin:** PAF 20 %, **SAF (FICFA1081 M) −2 % / min habang O2 > 10 %** (minimum 15 %). | O2 trim M.0102 force manual < 220 T/H. | O2 < 12 %. |
+| 7.8 | **Sa 30 MW: turbine trip** (ABC-050 Buttons `S2 I.0400` ON). | Procedure: turbine trip → MFT bypassed (boiler tumatakbo pa). | I.0932 = 1 (52G bukas), M.3200 = 1, MW 0 sa 60 s; **HP bypass BU-CMD M.0705 bumukas 100 %**, pulse M.0124; LP bypass A SV 7.6. |
+| 7.9 | **HP bypass PICMS1006 A sa pressure**, SV −1 / min hanggang ~111, tapos **M 12 %** (minimum ng procedure). **Oil 20 %**, retract C / D. | Saturation ≤ 85 °C/h. | MSP max ≤ 150, RHP 4 ~ 9 kg/cm2, MSF 20 ~ 60 T/H sa bypass. |
+| 7.10 | **ABC-020 biasing damper M: HICHR1002A (RH) 10 %, HICHR1002B (MS) 90 %.** | MAN parameter: ML 10 % (minimum 10). Bago ang beta.21 hindi makababa sa 19 % (bug, naayos). | 10 / 90 %. |
+| 7.11 | **Bed (gas) < 535 °C: SUB out** (FICDO 0 %, valves sarado M.3410 / 3411 / 3416 / 3417 = 1, in-service bits 0), **HP / LP bypass at MS blow-off sarado**. | PR-OPE-5003: SUB out sa gas temp < 535 °C. | Oil 0, bypass 0 %. |
+| 7.12 | **Purge:** PAF / SAF M para sa > 150 T/H hangin (dahan-dahan: furnace pressure ±30 mmH2O), 5 min, tapos **PAF / SAF / IDF off** (M.3302 / 3303 / 3304 = 0). | Furnace −60 ~ +30 mmH2O. | Hangin 0 T/H; bed lumalamig (≈ 310 °C). |
+| 7.13 | **Drum level: punuin sa ~150 ~ 250 mm** (LICBR1001B M / FICFW1007 M) bago **BFP-A off (M.3343 = 0)**; FICFW1007 / LICBR1001A / LICBR1001B M 0. | Procedure: fill before BFP stop (HH +254). | FW 0; drum nakakulong ~122 kg/cm2 (bottle-up ang susunod, PR-OPE-5004). |
+
+**Sa dulo dapat:** MW 0, coal 0, oil 0, hangin 0, MSP ≈ 122 kg/cm2 nakakulong, bed < 750 °C at lumalamig, MST ≈ 330 °C, HIC-BM / EIC-TM / FICFW1007 / PICFG108 M.
+
+**Dagdag sa "Kung may mali" (shutdown):**
+
+| Nakikita | Dahilan (drawing) | Gawin |
+|---|---|---|
+| MSP bumagsak < 100 habang binabawasan ang coal | coal pinutol bago ang oil; FF ng feeder stop | SUB muna (7.5), FIC-CM ibaba muna bago ang feeder stop |
+| Drum level < −150 pagkatapos lumipat sa start-up valve | main valve sarado nang bigla; LICBR1001B mabagal | main valve 10 % muna (LICBR1001A.MV sa 1-element), +5 % kapag < −80 |
+| HICHR1002A hindi makababa sa 10 % | (naayos sa beta.21: ML 10 % = 10 %) | i-update ang app |
+| Pressure hindi bumababa pagkatapos ng fans off | walang heat-loss model habang nakakulong (bottle-up stage: PR-OPE-5004) | susunod na Beta |
+
+Sanggunian: `docs/versions/v2.2.0/DRAWING_TRACE.md` (bawat permissive, net at drawing), `docs/versions/v2.2.0/CHECK_M2_M3.md` (mga tseke), `document-references/procedure-start-up-PR-OPE-5002-02.docx`, `procedure-normal-shutdown-PR-OPE-5003-01.docx`, `docs/hmi/OPERATING_POINTS.md` (4.PNG / 03.png / 02.png).
