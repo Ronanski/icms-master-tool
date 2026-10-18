@@ -2,6 +2,12 @@
 
 Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (beta.1 ~ beta.7) at `ccr-3def3a81-kcpwgn` (beta.8 ~; PR #31) (PROJECT_RULES 5e, 5f).
 
+## 2.2.0 Stable (GO STABLE ng user, 2026-10-18)
+- Ang 2.2.0-beta.1 ~ beta.24 bilang Stable. `src/version.txt` = 2.2.0, `dist/logic-sim-v2.2.0.html`, check SAME. Na-merge muna ang `main` (bagong references: alarm list, analog PDF, controller para, DCS manuals, TCS references) sa branch.
+- Release report: `Release-Report-v2.2.0.pdf` (buod, milestones, ayos, sinubok, kilalang isyu).
+- Sinubok sa build na ito: bukas ang app (54 sheet, 0 page error, Start at 150 MW), CHECK M3 turbine trip 10 / 10.
+- Bersyon: 2.2.0 (hindi 3.0.0 ng ROADMAP): ayon sa version standard (PROJECT_RULES 5f) ang mga Beta ay 2.2.0-beta.N at ang bagong feature ay MINOR, hindi MAJOR.
+
 ## 2.2.0-beta.24 — M6 hakbang 2: block tester (A7), switching tester (A8), pangalan ng COS (A10)
 - **Problem:** (A7) Ang UAT block test ng app ay walang test para sa 15 uri ng block. (A8) May 24 switch / A-M station na walang test. (A10) 22 sa 173 COS ay "COS manual ▸ T23" ang pangalan sa panel.
 - **As Found (sukat sa buong 54 sheet, headless):**
