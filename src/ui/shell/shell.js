@@ -410,6 +410,24 @@
       tcs('tcsroll', 'Turbine ROLL (TCS)', 'TCS panel: open the stop valves, IP start mode, 120 rpm/min to 3600 rpm (PR-OPE-5002 4.4). Needs Start cold / warm / hot and the plant running.', 'roll', null, 'TCS: turbine rolling, 120 rpm/min to 3600 (PLANT > UNIT shows the speed).');
       tcs('tcssync', 'SYNC + initial load 4.5 MW (TCS)', 'TCS panel at 3600 rpm: GCB 52G1 closed (ABC-050 I.0931 = 1, I.0932 = 0), initial load 4.5 MW on the ICV (PR-OPE-5002 4.5).', 'sync', null, 'TCS: generator synchronised, initial load 4.5 MW.');
       tcs('tcsload', 'LOAD UP to 45 MW (TCS)', 'TCS panel: target 45 MW at 5 %/min (7.5 MW/min). ICV -> CV transfer at 20 MW (I.0418 = 1), DCS control mode permissive I.0081 at 45 MW (PR-OPE-5002 4.6).', 'loadup', 45, 'TCS: load up to 45 MW at 7.5 MW/min.');
+      /* 2.2.0-beta.20 (M4 step 5): the TCS target of the operator above 45 MW while the DCS control mode is still OFF (the boiler
+         master is MANUAL below 230 T/H: fire first with HIC-BM, then raise the target a few MW at a time) */
+      const tg = document.createElement('button');
+      tg.className = 'an-only';
+      tg.id = 'tcstarget';
+      tg.textContent = 'TCS TARGET MW... (TCS)';
+      tg.title = 'TCS panel: a target MW of your own (reached at 7.5 MW/min) while the DCS control mode is OFF. Once I.0082 = 1 (boiler master and PIC-COBM in AUTO above 230 T/H) the TCS follows the turbine master EIC-TM of the DCS instead.';
+      tg.onclick = () => {
+        const x = prompt('TCS target MW (4.5 ~ 150):', '50');
+        if (x == null) return;
+        try {
+          const r = AN.turbine('loadup', Math.max(4.5, Math.min(150, +x)));
+          msg(r ? 'TCS: ' + r : 'TCS: target ' + x + ' MW at 7.5 MW/min (the DCS target takes over when I.0082 = 1).');
+        } catch (e) {
+          msg('TCS: ' + e.message);
+        }
+      };
+      set.m.append(tg);
     }
     set.head('Channel at update');
     const ch = $('chsel'),

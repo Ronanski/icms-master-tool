@@ -144,10 +144,39 @@
             }
           }
         }
+        /* 2.2.0-beta.20: the tag text written at the LEFT END of its wire, as a label (ABC-004A "FICCL1061B.MAN  C/F B FLOW CTL IN
+           MANUAL ( FROM ABC-004B )": the text ends about where the wire starts, 40 units right of the text's origin): a digital
+           description wire whose end is within 60 units right of the text, on the same line (dy <= 4) */
+        let leftEnd = false;
+        if (best < 0) {
+          let bx = 61;
+          for (const n of S2.ext) {
+            const nn = S2.nets[n];
+            if (!nn || !nn.dig || !descWire(S2, n)) continue;
+            /* the leftmost end of a horizontal segment of the wire */
+            let lx = 1e9,
+              ly = 0;
+            for (const i of nn.segs) {
+              const g = S2.seg[i];
+              if (Math.abs(g.y1 - g.y2) > 1) continue;
+              const ex = Math.min(g.x1, g.x2);
+              if (ex < lx) {
+                lx = ex;
+                ly = g.y1;
+              }
+            }
+            const dx = lx - q.x;
+            if (dx > 0 && dx < bx && Math.abs(ly - q.y) <= 4) {
+              bx = dx;
+              best = n;
+              leftEnd = true;
+            }
+          }
+        }
         if (best >= 0) {
           add(S2, best);
           const d = (AN.nm(S2, best) || '').trim().toUpperCase();
-          if (d.length >= 10 && !/^[A-Z]{1,3}\.\w{4}$/.test(d) && !d.includes(tag.toUpperCase())) descs.add(d);
+          if (!leftEnd && d.length >= 10 && !/^[A-Z]{1,3}\.\w{4}$/.test(d) && !d.includes(tag.toUpperCase())) descs.add(d);
         }
       }
     }
@@ -168,10 +197,18 @@
      START-UP  LICBR1001B.MAN" -> NOT -> force manual of FICFW1007: with a pulse the feedwater loop could never go to AUTO) */
   const MODEK = { MAN: ['MAN', 'MANUAL'], LOC: ['LOC', 'LOCAL', 'AUTO', 'AUT'], REM: ['REM', 'REMOTE'] };
   const latchMode = (tag, kind, own) => {
-    for (const k in MODEK) {
-      const ns = modeNetsByTag(tag, MODEK[k], k === kind ? own : null);
-      ns.forEach(([S2, n]) => setIn(S2, n, k === kind ? 1 : 0));
-    }
+    /* 2.2.0-beta.20: ONE command. Every .MAN / .LOC / .REM address of the tag is written first (the selected mode last), then the
+       sheets settle once. Before, each address settled on its own (setIn): for those scans the controller was in no mode at all
+       (MAN = 0, LOC = 0, REM still 0). FIC-CM R (M4 step 5) took its SV to 0 for those scans, the fuel SI0017 fell with it, and the
+       boiler master, tracking SI0017 while the coal master is not REMOTE (ABC-001C M.2000), kept 27.0 % instead of 33.6 %: the coal
+       fell from 36 to 11 T/H and the main steam pressure to 108.7 kg/cm2 */
+    const w = [];
+    for (const k in MODEK) for (const [S2, n] of modeNetsByTag(tag, MODEK[k], k === kind ? own : null)) w.push([S2, n, k === kind ? 1 : 0]);
+    w.sort((a, b) => a[2] - b[2]);
+    for (const [S2, n, v] of w) S2.rt.ext[n] = v;
+    try {
+      AN.settle();
+    } catch (e) {}
   };
   const setMV = (S, c, v) => {
     if (c.manBlk && S.rt.st[c.manBlk.id]) S.rt.st[c.manBlk.id].val = v;

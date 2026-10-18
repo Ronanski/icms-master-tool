@@ -333,6 +333,11 @@ function anUnitStart() {
       const a = netOf(s52.S, 'SI0180'),
         b = netOf(s54.S, 'STN102017');
       if (a >= 0 && b >= 0 && s54.S.ext.includes(b)) U.alink.push([{ S: s52.S, n: a }, { S: s54.S, n: b }]);
+      /* 2.2.0-beta.20 (bug, fixed): ABC-054 has no drawn link to the set of ABC-001C (its PV comes through this alink), so the run
+         loop never stepped it: the RH blow-off stayed at the value it had when the sheet was loaded (0 %) whatever the operator or
+         the PIDV did, and the unit model read that 0 (CHECK bypass stage: "RH blow-off 0 %" in every run). The sheets the unit
+         model reads are stepped with the set (links.js actSet, like AN.plantSheets) */
+      AN.unitSheets = ['ABC-054'];
     }
   }
   /* the spray loops and the fall of the temperature below 60 % MCR (C per unit of load share) */

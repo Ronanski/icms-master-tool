@@ -214,3 +214,13 @@ ABC-003A M.3419 (12-70)
 ## 5. Hindi pa isinasaalang-alang
 - Boiler at turbine physics (fuel -> heat -> steam -> pressure -> MW): wala pa; ang plant model ay per loop lang.
 - 344 field input row ng DITL na wala pang sariling rule at naiiwan sa 0: 212 analog (temperature / vibration / DP / position, ang comparator ay nasa normal), 89 AUTO / MANUAL mode ng MOV at pump na wala sa snapshot, 36 MOV limit / torque (ang MOV model ang nagbibigay), 7 iba pa. Hindi binabasa ng ABC ang mga ito at tugma ang lahat ng 868 output na may inaasahang estado. Susunod: basahin ang bawat isa sa I/O list at memory list.
+
+## 6. beta.20 — mga DAGDAG na link (walang tinanggal): tag text sa kaliwang dulo ng wire
+Rule (`src/ui/hmi/hmi.js modeNetsByTag`, 2.2.0-beta.20): kapag walang wire na malapit sa tag text (< 8 unit, rule ng beta.9), ang digital description wire na ang kaliwang dulo ay nasa loob ng 60 unit sa kanan ng text at nasa parehong linya (|dy| ≤ 4) ay ang address na iyon: ang text ay LABEL ng wire ("FICCL1061B.MAN  C/F B FLOW CTL IN MANUAL ( FROM ABC-004B )"). Walang descs propagation mula sa rule na ito. Dagdag (lahat sinuri sa PDF, crop ng drawing):
+| Sheet | Address | Wire (netlist) | PDF |
+|---|---|---|---|
+| ABC-004A | FICCL1061A.MAN, FICCL1061B.MAN, FICCL1061C.MAN | n103, n105 "( FROM ABC-004B )", n104 "( FROM ABC-004C )" → AND **M.0131** → FIC-CF force manual | Tatlong wire sa kaliwa ng AND M.0131, bawat isa may tag text sa kaliwang dulo at description "C/F A / B / C FLOW CTL IN MANUAL"; ang B at C ay "( FROM ABC-004B / 004C )" = ang .MAN status ng feeder controller ng ibang sheet (iisang address, CLAUDE.md 1) |
+| ABC-007 | PICFG108.MAN, PICFG108A.MAN | n87, n100 → AND **M.0181** → BU-CMD ng FICFA1071 (PA fan) | Dalawang wire sa kaliwa ng AND M.0181 "FURNACE PRESS. CTL IN MANUAL" (108 at 108A): kapag parehong MANUAL ang furnace pressure control, BU-CMD ang PA flow control |
+| ABC-009A | SICL1060C.MAN, SICL1060D.MAN | n174, n107 → AND **M.0212** → TON 2 s TR36 (A/M ng PIC-BASC), TOF 2 s TR37 → M.0213 BU-CMD | Apat na wire "BOTTOM ASH SCREW COOLER A / B / C / D SPEED CONTROL IN MANUAL" sa kaliwa ng AND M.0212; ang A at B ay nakakabit na dati (malapit ang text), ang C at D ay hindi (mas malayo ang text) |
+Epekto: ABC-004A FIC-CF ay force manual habang MANUAL ang lahat ng feeder (cold start bago ang coal transfer: tama, ang coal flow master ay walang kinokontrol); ABC-007 FICFA1071 BU-CMD habang MANUAL ang furnace pressure control (cold start: PA sa MANUAL din ng operator, walang pagbabago sa CHECK "M4 · Cold start" 10 / 10); ABC-009A PIC-BASC A/M ayon sa apat na cooler. Regression ng beta.20: tingnan ang `UPDATE_REPORT.md`.
+

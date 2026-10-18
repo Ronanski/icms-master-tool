@@ -1,10 +1,12 @@
 // 2.2.0-beta.13: the CHECK panel (src/ui/uat/check.js) runs each plant scenario in the page and every expected result is ✓.
 // Also: one address = one value on every sheet of the station (links.js shareExt): I.000F pressed on one sheet reaches the others.
 // 2.2.0-beta.14: + cold (M4 step 1: start cold, purge, light-off of burners A / B, water heat-up, pressure 0 -> 30 kg/cm2, Fig 1 rate).
-// Usage: node tests/regress/check_panel.js [load|tt|mft|bfwp|idf|paf|hh|cold|coal|share] [html]
+// 2.2.0-beta.20: + load150 (M4 step 5: Start hot -> roll -> 45 -> 150 MW, coal master REMOTE, boiler master AUTO, DCS control mode, CCS)
+//   and full (the whole cold start-up as one chain: cold -> coal -> byp -> roll -> up, ~4 min real).
+// Usage: node tests/regress/check_panel.js [share|tt|mft|bfwp|idf|paf|hh|cold|coal|byp|roll|load150|load|full] [html]
 const {open}=require('./lib.js');const fs=require('fs');
 const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
-const want=process.argv.slice(2).filter(a=>!/\.html$/.test(a));const SC=want.length?want:['share','tt','mft','bfwp','idf','paf','hh','cold','coal','byp', 'roll','load'];
+const want=process.argv.slice(2).filter(a=>!/\.html$/.test(a));const SC=want.length?want:['share','tt','mft','bfwp','idf','paf','hh','cold','coal','byp','roll','load150','load','full'];
 (async()=>{const {browser,page,errs}=await open(html);let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
 for(const id of SC){
  if(id==='share'){const r=await page.evaluate(()=>{AN.reset();AN.plantLoad150();const C1=AN.sheets.find(s=>s.name==='ABC-001C');const C=AN.sheets.find(s=>s.name==='ABC-007').S;const n=C.ext.find(e=>String(C.lab[e]&&C.lab[e].t).trim()==='I.000F');C.rt.ext[n]=1;AN.stepSet(C1,0.5);
@@ -18,7 +20,7 @@ for(const id of SC){
   ck(oth.every(x=>x[2]<0.5),'the I.000F of the other stations is their own input, still 0: '+oth.map(x=>x[0]+'(S'+x[1]+')='+x[2]).join(' '));
   const b1=r.back.filter(x=>x[1]==='1');ck(b1.every(x=>x[2]<0.5),'"S1 I.000F" OFF on ABC-054 reaches every sheet of station 1: '+b1.map(x=>x[2]).join(''));
   continue}
- const r=await page.evaluate(async id=>{document.getElementById('chkb').click();const sc=CHECK.SC.find(s=>s.id===id);await CHECK.run(id);const i=CHECK.SC.indexOf(sc);const box=document.querySelectorAll('#chkp .sc')[i];
+ const r=await page.evaluate(async id=>{document.getElementById('chkb').click();const sc=CHECK.SC.find(s=>s.id===id);await CHECK.run(id);const i=CHECK.SC.filter(s=>!s.stage).indexOf(sc);/* 2.2.0-beta.20: the stages of a chain have no box */const box=document.querySelectorAll('#chkp .sc')[i];
   return {title:sc.title,head:box.querySelector('table')?box.children[box.children.length-1].firstChild.textContent:'(no result)',rows:[...box.querySelectorAll('table tr')].map(tr=>tr.children[0].textContent+' '+tr.children[1].textContent),live:box.querySelector('.live').textContent}},id);
  console.log('=== '+r.title);for(const l of r.rows)console.log('     '+l);console.log('     '+r.live.replace(/\n/g,'\n     '));
  ck(/^PASADO/.test(r.head),r.title+': '+r.head);

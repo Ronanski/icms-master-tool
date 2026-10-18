@@ -26,7 +26,7 @@ Utos ng user (2026-10-16): **"Analog muna. Ang DITL ay i-simulate / i-force na l
 6. [x] **(2.2.0-beta.8: generic tester 68 controller, 0 mali, 0 hindi nasubok; ang mahihirap ay sinubok sa planta na tumatakbo; RH spray + damper nagdadagdag) Controller na mahirap simulan**: PICFG108, AICFG112, HS-COAL, FICFW1007, PICAS1005.
 7. [ ] **Tester ng halaga ng bawat block** (oracle ng AND, OR, ADD, SQRT, F(X), LAG, RATE, SEL…) sa bawat net ng 54 ABC sheet.
 8. [ ] **Tester ng switching** (SW, AMT, T switch, selector) sa bawat leg; kasama ang #1.
-9. [ ] **(2.2.0-beta.13 ~ beta.17: ang mga PLANT scenario ng M2 / M3 / M4-1 ~ M4-4 ay nasa app na: button CHECK, isang pindot kada scenario, ✓ / ✗; ang generic controller tester ay sa computer pa) Controller tester sa UAT panel ng app** (isang pindot kada controller). Ngayon, sa computer lang ito tumatakbo.
+9. [ ] **(2.2.0-beta.13 ~ beta.20: ang mga PLANT scenario ng M2 / M3 / M4-1 ~ M4-5 at ang buong cold start-up ay nasa app na: button CHECK, isang pindot kada scenario, ✓ / ✗; ang generic controller tester ay sa computer pa) Controller tester sa UAT panel ng app** (isang pindot kada controller). Ngayon, sa computer lang ito tumatakbo.
 10. [ ] **Pangalan ng 7 COS / 42 COS na hindi "used"** sa panel. Nasuri na sa PDF.
 11. [x] **(2.2.0-beta.19: 0 nagkakapatong na text sa 28 PLANT screen, headless detector; header at ducts gaya ng HMI) 26 na live value na nagkakapatong** sa drawing (UI lang).
 
@@ -43,7 +43,7 @@ Utos ng user (2026-10-16): **"Analog muna. Ang DITL ay i-simulate / i-force na l
 - [ ] **Branch cleanup**: 15 lumang branch (0 commit sa unahan ng `main`). Na-block ang pag-delete sa session; i-delete sa GitHub (Branches page) o sabihin ang "OK delete" para subukan ulit.
 
 ## D. SA HINAHARAP (hindi pa gagawin; hintayin ang utos)
-- [F] **Rehearsal ng start-up at shutdown**: hakbang-hakbang, may marka, ayon sa PR-OPE-5002 / 5003 / 5004. Kailangan muna ang #3.
+- [F] **Rehearsal ng start-up at shutdown**: hakbang-hakbang, may marka, ayon sa PR-OPE-5002 / 5003 / 5004. Start-up: TAPOS (2.2.0-beta.20, CHECK "M4 · Cold start-up (buo)"); shutdown: M5. Susunod: OPERATOR GUIDE para sa mano-manong operasyon.
 - [F] **"Bakit?" at "Sanhi?" na buo**: piliin ang valve o controller, sasabihin kung bakit hindi bumukas o bakit ganito ang demand, hanggang sa pinagmulang input.
 - [F] **Checklist ng permissive**: ano ang kailangan para makapag-AUTO, makapag-start o makapagbukas (✔ / ✖).
 - [F] **Cause-and-effect matrix**, i-export sa Excel.
