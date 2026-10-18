@@ -39,7 +39,7 @@ Utos ng user (2026-10-16): **"Analog muna. Ang DITL ay i-simulate / i-force na l
 ## C. HINIHINTAY SA USER
 - [ ] **DITL right side pane** na tulad ng sa ABC: hinihintay ang "go side pane".
 - [ ] **Pagsubok sa totoong tablet / apk / exe** ng 2.2.0-beta.1 ~ beta.6.
-- [ ] **GO STABLE** ng 2.2.0 (kapag OK ka na sa Beta).
+- [x] **GO STABLE** ng 2.2.0 (2026-10-18: Stable v2.2.0).
 - [ ] **Branch cleanup**: 15 lumang branch (0 commit sa unahan ng `main`). Na-block ang pag-delete sa session; i-delete sa GitHub (Branches page) o sabihin ang "OK delete" para subukan ulit.
 
 ## D. SA HINAHARAP (hindi pa gagawin; hintayin ang utos)
