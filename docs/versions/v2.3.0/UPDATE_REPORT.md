@@ -35,3 +35,14 @@
 - **Work Done:** (`DRAWING_TRACE.md` beta.2) MV high limit mula sa `<tag>.MHD` sa MAN station; SET SV sa operator SV na nananatili; pili ng SI0304 mula sa REMOTE ng FICDO1043A ~ D; span ng ramp 1115 T/H, 648 T/H, 600 °C. Walang binagong link.
 - **As Left:** `tests/engine/audit230b.js` 4 / 4 PASS (33.32 T/H kapag M.3405 = 1, 38 T/H kapag 0; SV 20.8 → 49 at nananatili; C lang ang REMOTE → leg C; 2.23 / 1.296 T/H bawat s, 10 °C / min). Regression: tingnan ang ulat sa chat.
 - **Status:** Pass. Susunod: beta.3 datos (grupo C).
+
+## beta.3 — Datos ayon sa drawing (grupo C, 2026-10-19)
+
+- **Problem:** Apat na datos sa app na iba sa drawing (`DRAWING_AUDIT.md` grupo C).
+- **As Found:**
+  - LICBR1001A (drum level 1 element, ABC-010): range -24 ~ 74 mm mula sa parameter workbook; ang drawing ay "-422 ~ 820 mm" (pareho ng LICBR1001 / LICBR1001B).
+  - ABC-008 AND B74 (force manual ng PICFG108A sa M.0204): ang input na "B.0664" ay hindi nakakabit (laging 0); ang FURNACE PRESSURE (A) SIG.AB sa kaliwa ng sheet ay B.0644.
+  - ABC-004B / 004C: baligtad ang pangalan ng "<1 %" at TONS 2 s (M.0154 / M.0156, M.0164 / M.0166). Pangalan lang, pareho ang logic.
+- **Work Done:** (`DRAWING_TRACE.md` beta.3, `UNLINK_AUDIT.md` 3) range ng LICBR1001A mula sa drawing (inilalapat pagkatapos ng parameter workbook sa bawat Reset); B74 input = B.0644; tamang pangalan ng 4 na signal. Walang inalis na link.
+- **As Left:** `tests/engine/audit230c.js` 5 / 5 PASS (range -422 ~ 820 span 1242; tatlong SIG.AB → B74 = 1; mga pangalan). Build at check SAME. Regression (hmi_op, unit_load, tests, world, isolated): tumatakbo pa sa push; resulta sa chat at sa susunod na commit.
+- **Status:** Pass ang test ng ayos.

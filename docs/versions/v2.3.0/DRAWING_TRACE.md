@@ -46,3 +46,12 @@ Saklaw: 4 na gawi ng engine na hindi tugma sa nakasulat sa drawing. Nasa talaan 
 | ABC-051-1 | RAMPB B24 "RAMP: 1.67 % / min" (SI0173 → SI0174) | LN10 output 0 ~ 600 °C, TICMS1022 0 ~ 600 °C | span 600 °C (10 °C / min), hindi 0 ~ 50 kg/cm2 ng pressure bago ang LN10 |
 
 Patunay na kailangan: sa app, bawat isa: MV ng feeder ≤ 33.3 T/H kapag M.3405 = 1; SV ng burner SA = 49 T/H pagkatapos ng M.035C at nananatili; ang SI0304 ay sumusunod sa burner na REMOTE; bilis ng ramp ayon sa span.
+
+## beta.3 — Datos (grupo C)
+
+| ID | Sheet / block | Drawing | App dati | Ayos |
+|---|---|---|---|---|
+| ABC-010-1 | PID LICBR1001A (B20) | "DRUM LEVEL 1 ELEMENT CONTROL -422 ~ 820 mm" (pareho ng LICBR1001 / LICBR1001B) | -24 ~ 74 mm mula sa parameter workbook (salungat sa sariling PH 127 / PL -178) | range -422 ~ 820 mm (source order: drawing 1 > workbook 6) |
+| ABC-008-1 | AND B74 (→ OR M.0204, force manual ng PICFG108A) | "B.0664 FURNACE PRESSURE (A) SIG.AB"; sa kaliwa ng sheet ang FURNACE PRESSURE (A) SIG.AB ay B.0644 | ext input, laging 0 | itinatali sa B.0644 (SIG.AB ng AI0132) |
+| ABC-004B-2 | CMPK B12 / TONS B41 | "<1 %" → M.0154, TONS 2 s → M.0156 | baligtad | pangalan lang (pareho ang logic) |
+| ABC-004C-2 | CMPK B20 / TONS B43 | "<1 %" → M.0164, TONS 2 s → M.0166 | baligtad | pangalan lang |

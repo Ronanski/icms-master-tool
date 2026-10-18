@@ -131,6 +131,16 @@ function anDefaults(S) {
   }
   if (typeof AN_DEF === 'undefined') return;
   anFace(S);
+  /* 2.3.0-beta.3 (drawing audit, group C): the range written on the drawing wins over the parameter workbook (source order 1 > 6) */
+  for (const f of (typeof AN_AUDIT_FIX !== 'undefined' && AN_AUDIT_FIX[S.name]) || [])
+    if (f.op === 'range') {
+      const b = S.blk.find(z => z.id === f.blk && z.k === f.k);
+      if (!b) continue;
+      b.p.rlo = f.rlo;
+      b.p.rhi = f.rhi;
+      b.p.span = f.rhi - f.rlo;
+      b.note = f.why;
+    }
   /* real values: the DCS carries percent / counts (100 % = 10000), the simulator shows real values (T/H, %), so the scaling is done here as a user would. ABC-005 limestone chain; each change is applied only if the constant still has the drawing value */
   if (S.name === 'ABC-005') {
     const fx = (id, from, to, why) => {
@@ -2024,6 +2034,8 @@ function anCompile(S) {
         } else if (f.op === 'span') {
           /* the range of a "% / sec" ramp, from the drawing (where the reader found none or the wrong one) */
           b.spanFix = { sp: f.sp, t: f.why };
+        } else if (f.op === 'range') {
+          /* applied in anDefaults, after the parameter workbook (anFace) */
         } else if (f.op === 'dsTo') {
           /* the "TO DITL" text belongs to the wire named here (it is written under its own box) */
           (S.dsTo = S.dsTo || {})[f.ref] = f.t;

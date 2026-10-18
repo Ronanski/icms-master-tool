@@ -12,7 +12,9 @@
    2.3.0-beta.2 (behaviour, group B):
        setCos = "IF M.0x5C = 1 SET SV = 49 T/H" also writes the operator SV (COS of the SV switch blk) and holds it
        q4sig  = the conditions of a 4-leg switch are signals (SV switch blk of sheet sh on leg), not user settings
-       span   = the range sp of a "% / sec" ramp, from the drawing */
+       span   = the range sp of a "% / sec" ramp, from the drawing
+   2.3.0-beta.3 (data, group C):
+       range  = the range of a controller written on the drawing (applied in anDefaults after the parameter workbook) */
 const AN_AUDIT_FIX = {
   'ABC-001C': [
     /* ABC-001C-1: OR M.2013 (HIC-BM force manual) has 8 inputs; the 8th is M.2000 = NOT FIC-CM.REM */
@@ -37,7 +39,11 @@ const AN_AUDIT_FIX = {
     /* ABC-008-2: TPS TR142 input "HYDRAULIC CONTROL SELECT (CRT) M.0200" */
     { id: 'ABC-008-2', op: 'lab', blk: 80, k: 'TPS', n: 53, was: '', t: 'M.0200' },
     /* LINK-3: "TO DITL 40-13" FURNACE PRESS. HIGH = M.3107 (> 30) */
-    { id: 'LINK-3', op: 'dsTo', ref: '40-13', t: 'M.3107' }
+    { id: 'LINK-3', op: 'dsTo', ref: '40-13', t: 'M.3107' },
+    /* ABC-008-1 (beta.3): "B.0664 FURNACE PRESSURE (A) SIG.AB" into AND B74 is B.0644 (typo; the left half of the sheet: B.0644 = SIG.AB of
+       AI0132 FURNACE PRESSURE (A); B.0664 is the FA blower-B inlet damper position flag of ABC-014). UNLINK_AUDIT beta.3 */
+    { id: 'ABC-008-1', op: 'lab', blk: 74, k: 'AND', n: 85, was: 'B.0664', t: 'B.0644' },
+    { id: 'ABC-008-1', op: 'link', n: 85, src: 96 }
   ],
   'ABC-009A': [
     /* ABC-009A-1: OR M.0290 (screw cooler B force manual) has the DITL input M.331D too, as M.0280 / M.0300 */
@@ -111,5 +117,19 @@ const AN_AUDIT_FIX = {
   'ABC-051': [
     /* ABC-051-1: BUMPLESS "RAMP: 1.67 % / min" of the temperature set point (LN10 output 0 ~ 600 C, TICMS1022 0 ~ 600 C) = 10 C/min */
     { id: 'ABC-051-1', op: 'span', blk: 24, k: 'RAMPB', sp: 600, why: 'temperature set point 0 ~ 600 C (LN10 output, TICMS1022)' }
+  ],
+  'ABC-004B': [
+    /* ABC-004B-2: the "<1 %" comparator output is M.0154, the TONS 2 s (TR71) output is M.0156 */
+    { id: 'ABC-004B-2', op: 'lab', blk: 12, k: 'CMPK', n: 45, was: 'M.0156', t: 'M.0154' },
+    { id: 'ABC-004B-2', op: 'lab', blk: 41, k: 'TON', n: 11, was: '', t: 'M.0156' }
+  ],
+  'ABC-004C': [
+    /* ABC-004C-2: the "<1 %" comparator output is M.0164, the TONS 2 s (TR72) output is M.0166 */
+    { id: 'ABC-004C-2', op: 'lab', blk: 20, k: 'CMPK', n: 18, was: 'M.0166', t: 'M.0164' },
+    { id: 'ABC-004C-2', op: 'lab', blk: 43, k: 'TON', n: 6, was: '', t: 'M.0166' }
+  ],
+  'ABC-010': [
+    /* ABC-010-1: PID LICBR1001A "DRUM LEVEL 1 ELEMENT CONTROL -422 ~ 820 mm" (the workbook SL -24 / SH 74 contradicts its own PH 127 / PL -178) */
+    { id: 'ABC-010-1', op: 'range', blk: 20, k: 'PID', rlo: -422, rhi: 820, why: 'range -422 ~ 820 mm from the drawing (workbook -24 ~ 74 mm)' }
   ]
 };
