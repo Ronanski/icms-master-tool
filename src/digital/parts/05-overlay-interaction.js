@@ -380,6 +380,8 @@ function tmStep(g, inp, dt) {
         st.acc = 0;
       }
     }
+  } else if (g.nc) {
+    st.out = inp ? 1 : 0;
   } else {
     const trg = g.k === 'npulse' ? !inp && st.pre : inp && !st.pre;
     if (trg && !st.run) {
@@ -495,10 +497,15 @@ function mvForced(s) {
   return F;
 }
 function grpState(s) {
-  const m = new Map();
+  const m = new Map(),
+    /* one world (2.2.0-beta.6): the master row can be fed by another sheet (FROM column); a reader that has its own FROM link follows that link */
+    W = window.WORLD && WORLD.live && s._win,
+    D = W && WORLD.idx && WORLD.idx.din.get(s);
   ((s.nl && s.nl.grp) || []).forEach(g => {
-    const v = !!s.sig[g.master + ':S'];
-    g.readers.forEach(r => m.set(r.row, r.inv ? !v : v));
+    const v = !!s.sig[g.master + ':S'] || !!(W && s._win.has(g.master));
+    g.readers.forEach(r => {
+      if (!(D && D.has(r.row))) m.set(r.row, r.inv ? !v : v);
+    });
   });
   return m;
 }
@@ -687,7 +694,7 @@ function uvApply(s) {
       }
     });
   }
-  s.nl.avk = s.av || null;
+  s.nl.avk = avOf(s);
 }
 function uvSave() {
   const o = { ...UVL };

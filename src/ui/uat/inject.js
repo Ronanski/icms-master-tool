@@ -38,6 +38,8 @@ const block =
   rd('scen.js') +
   '\n' +
   rd('uat-ui.js') +
+  '\n' +
+  rd('check.js') +
   '</script>' +
   MARK_B;
 const k = src.lastIndexOf('</body>');
