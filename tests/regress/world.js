@@ -11,7 +11,8 @@ ck(await page.evaluate(()=>!WORLD.on&&!WORLD.live),'default OFF');
 const free0=await page.evaluate(()=>{let n=0,x=0;for(const sh of AN.sheets){if(/ABC-000/.test(sh.name))continue;const A=AN.ensure(sh);for(const [k] of AN.dsIdx(sh).from){n++;if(A.xlk&&A.xlk[k]&&A.xlk[k].ditl)x++}}return {n,x}});
 ck(free0.x===0,'OFF: '+free0.n+' FROM DITL inputs, none is driven by the DITL');
 const st=await page.evaluate(()=>{WORLD.set(true);return Object.assign({},WORLD.stat,{lost:WORLD.stat.lost.slice(0,20)})});
-ck(st.fromDitl+st.logic.length>=131&&st.toDitl>=86&&st.ditlDitl>=1400&&st.inst>=70,'ON: '+st.fromDitl+' FROM DITL inputs (+'+st.logic.length+' by logic), '+st.toDitl+' TO DITL ('+st.digFix.length+' by an analog wire: the comparator output next to it), '+st.ditlDitl+' DITL -> DITL with '+st.inst+' machine instances B / C / D (machine found by address '+st.byAddr+', by letter '+st.byLetter+', by sister sheet '+st.bySister+'), built in '+st.ms+' ms');
+/* 2.3.0-beta.1: ABC-017 I.024E "FROM DITL 80S-57 FOR S/B LOGIC" is the sootblower PLC (not in the app): counted in st.plc */
+ck(st.fromDitl+st.logic.length+(st.plc||[]).length>=131&&st.toDitl>=86&&st.ditlDitl>=1400&&st.inst>=70,'ON: '+st.fromDitl+' FROM DITL inputs (+'+st.logic.length+' by logic), '+st.toDitl+' TO DITL ('+st.digFix.length+' by an analog wire: the comparator output next to it), '+st.ditlDitl+' DITL -> DITL with '+st.inst+' machine instances B / C / D (machine found by address '+st.byAddr+', by letter '+st.byLetter+', by sister sheet '+st.bySister+'), built in '+st.ms+' ms');
 console.log('INFO FROM DITL text on a net that the ABC logic computes (the logic stays, '+st.logic.length+'): '+st.logic.join(' | '));
 ck(st.lost.length===0,'every reference has its partner'+(st.lost.length?': '+st.lost.join(' | '):''));
 await page.evaluate(()=>{AN.go(AN.sheets.findIndex(s=>s.name==='ABC-007'));AN.run=true});await wait(1500);

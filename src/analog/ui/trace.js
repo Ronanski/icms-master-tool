@@ -649,6 +649,31 @@ function dsIdx(sh) {
       if (dg) for (const r of refs) toDig.set(r + '@' + pick.id, dg.id);
     }
   }
+  /* 2.3.0-beta.1 (LINK-3): a "TO DITL" text written under its own comparator box belongs to the wire named in S.dsTo (ABC-001C
+     "TO DITL 40-06" = O.0177 > 134 kg/cm2, not M.3109 under it; DITL-40 rows 6 ~ 9, 13) */
+  if (S.dsTo) {
+    const key = r => {
+      const m = /([0-9]{2,3}[A-Z]?)\s*-\s*(\d+)/.exec(r);
+      return m ? m[1] + '-' + +m[2] : r;
+    };
+    for (const ref in S.dsTo) {
+      const n = S.lab.findIndex((l, i) => l && String(l.t).trim() === S.dsTo[ref] && S.drv[i] && S.drv[i].length);
+      if (n < 0) continue;
+      let full = null;
+      for (const [id, o] of [...to]) {
+        const j = o.findIndex(r => key(r) === ref);
+        if (j < 0) continue;
+        full = o[j];
+        o.splice(j, 1);
+        if (!o.length) to.delete(id);
+        toDig.delete(full + '@' + id);
+      }
+      if (!full) continue;
+      const o = to.get(n) || [];
+      if (!o.includes(full)) o.push(full);
+      to.set(n, o);
+    }
+  }
   return (sh._ds = { from, to, toDig, lost });
 }
 const TR_COL = ['#4da3ff', '#ff8a3d', '#35e08a', '#ff4dd0', '#ffd84d', '#9b8cff', '#7fe0e0', '#c0c0c0'],

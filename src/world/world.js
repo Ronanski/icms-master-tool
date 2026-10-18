@@ -10,13 +10,18 @@
   try {
     W.on = localStorage.getItem('ls-world') === '1';
   } catch (e) {}
-  const RX = /\(?\s*([0-9]{2,3}[A-Z]?)\s*-\s*(\d{1,2})\s*\)?/gi;
+  /* 2.3.0-beta.1 (LINK-4): also a one-digit code with its letter, written without the 0 (DITL-15 row 10 MFT "3A-63" = 03A-63) */
+  const RX = /\(?\s*([0-9]{2,3}[A-Z]?|[0-9][A-Z])\s*-\s*(\d{1,2})\s*\)?/gi;
   const refsOf = t => {
     const o = [];
     let m;
     RX.lastIndex = 0;
     while ((m = RX.exec(String(t || ''))))
-      o.push({ code: m[1].toUpperCase(), nn: +m[2], other: /^\(/.test(m[0]) && /\)$/.test(m[0]) });
+      o.push({
+        code: (/^[0-9][A-Z]$/i.test(m[1]) ? '0' : '') + m[1].toUpperCase(),
+        nn: +m[2],
+        other: /^\(/.test(m[0]) && /\)$/.test(m[0])
+      });
     return o;
   };
   const codeOf = name => {
@@ -25,6 +30,8 @@
   };
   function dSheet(code) {
     const byCode = W._byCode;
+    /* 2.3.0-beta.1 (LINK-1): "80S" is the sootblower PLC logic (ABC-017 "FROM DITL 80S-57 FOR S/B LOGIC"), not DITL-80: no fall back */
+    if (/S$/.test(code)) return byCode[code] || null;
     return byCode[code] || byCode[code.replace(/[A-Z]$/, '')] || null;
   }
   function nlOf(s) {
@@ -209,6 +216,7 @@
       logic = [], // FROM DITL text on a net that the ABC logic computes
       lost = [],
       digFix = [] /* TO DITL by an analog wire: the comparator output next to it */,
+      plc = [],
       byAddr = [],
       byLetter = [],
       bySister = [],
@@ -346,6 +354,9 @@
           ain.push({ sh, n, d: ok.d, row: ok.row, ref: ok.ref });
           fa++;
         } else if (ok) logic.push(sh.name + ' ' + AN.nm(sh.S, n) + ' (' + ok.ref + ')');
+        else if (refs.some(r => refsOf(r).some(f => /S$/.test(f.code) && !dSheet(f.code))))
+          /* 2.3.0-beta.1 (LINK-1): a PLC logic reference ("FROM DITL 80S-57 FOR S/B LOGIC"): that PLC is not in the app, set by hand */
+          plc.push(sh.name + ' ' + AN.nm(sh.S, n) + ' FROM ' + refs.join('/'));
         else lost.push(sh.name + ' FROM ' + refs.join('/'));
       }
       for (const [n, refs] of ix.to) {
@@ -381,6 +392,94 @@
         } else lost.push(sh.name + ' TO ' + refs.join('/'));
       }
     }
+    /* 2.3.0-beta.1 (LINK-4): a DITL input row "FROM ABC-xxx" whose ABC drawing has no "TO DITL" text for it: the address or tag of
+       the row (TAG NO. column, or the tag written on the row wire: DITL-115 row 17 "PICMS1006.MAN") is a signal of that ABC sheet
+       (CLAUDE.md rule 1: one address = one signal). The address may be written there as "M.025B ( TO S4 M.3101 )" (ABC-013).
+       A row that the DITL compares (DITL-79 row 6 TICMS1022.MV > 2 % / < 1 %) takes the analog value; a .MAN of a controller is
+       its MANUAL state (the faceplate) */
+    const fromAbc = [],
+      abcMiss = [],
+      abcOf = code => {
+        const c = /^\d{2}[A-Z]?$/.test(code) ? '0' + code : code;
+        return AN.sheets.filter(p => p.name === 'ABC-' + c || (/^\d{3}$/.test(c) && new RegExp('^ABC-' + c + '[A-Z]$').test(p.name)));
+      };
+    for (const sb of S.sheets)
+      W.instOf.get(sb).forEach((s, k) =>
+        sb.rows.forEach((r, i) => {
+          const F = cellTxt(sb, i, 'F'),
+            fm = /ABC[-\s]?(\d{2,3}[A-Z]?)\b/i.exec(F);
+          if (!fm) return;
+          const have = din.get(s) && din.get(s).get(i);
+          if (have && have.some(q => q.k === 'a' || q.k === 'v' || q.k === 'm')) return;
+          const sheets = abcOf(fm[1].toUpperCase());
+          if (!sheets.length) return;
+          const T = cellTxt(sb, i, 'T') + ' ' + cellTxt(sb, i, 'S'),
+            la = addrList(cellTxt(sb, i, 'T') || cellTxt(sb, i, 'S'));
+          /* machine B / C / D of a shared drawing: only its own address (the address of machine A is not its signal) */
+          if (k > 0 && !la[k]) return;
+          const adr = la[k] || null,
+            wt = (sb.tx || []).filter(x => x && x.t && Math.abs((x.iy != null ? x.iy : x.y) - r.y) < 5 && /^[A-Z0-9-]{4,}\.(MAN|MV|PV|SV)$/.test(String(x.t).trim())),
+            tm = /\b([A-Z]{2,}[A-Z0-9-]*\d[A-Z0-9-]*\.(?:MAN|MV|PV|SV))\b/.exec(T),
+            tag = tm ? tm[1] : wt.length ? String(wt[0].t).trim() : null,
+            an = s.nl && (s.nl.an || []).find(a => a.row === i);
+          let src = null;
+          for (const sh of sheets) {
+            let SS;
+            try {
+              SS = AN.ensure(sh);
+            } catch (e) {
+              continue;
+            }
+            const nmOf = n => String(AN.nm(SS, n) || '').replace(/^S\d\s*/, '').trim(),
+              drv = n => SS.drv[n] && SS.drv[n].some(d => d.k !== 'LINK');
+            if (adr) {
+              let n = SS.nets.findIndex((_, j) => nmOf(j) === adr && drv(j));
+              if (n < 0) {
+                const re = new RegExp('([IMB]\\.[0-9A-F]{4})\\s*\\(?\\s*TO\\s+S\\d\\s+' + adr.replace('.', '\\.') + '\\b'),
+                  tx = (SS.tx || []).find(x => re.test(x.t)),
+                  t = tx && re.exec(tx.t);
+                if (t) n = SS.nets.findIndex((_, j) => nmOf(j) === t[1] && drv(j));
+                if (t && n < 0) {
+                  /* the address text names the wire it is written on (ABC-013 "M.025B ( TO S4 M.3101 )"): the nearest digital wire of the logic */
+                  let bd = 20;
+                  SS.nets.forEach((nn, j) => {
+                    if (!nn.dig || !drv(j)) return;
+                    for (const i of nn.segs) {
+                      const g = SS.seg[i],
+                        dx = g.x2 - g.x1,
+                        dy = g.y2 - g.y1,
+                        L2 = dx * dx + dy * dy,
+                        u = L2 > 0 ? Math.max(0, Math.min(1, ((tx.x - g.x1) * dx + (tx.y - g.y1) * dy) / L2)) : 0,
+                        d = Math.hypot(tx.x - (g.x1 + u * dx), tx.y - (g.y1 + u * dy));
+                      if (d < bd) {
+                        bd = d;
+                        n = j;
+                      }
+                    }
+                  });
+                }
+              }
+              if (n >= 0) src = { k: an ? 'v' : 'a', sh, n, ref: sh.name + ' ' + adr };
+            }
+            if (!src && tag && /\.MAN$/.test(tag)) {
+              const c = (AN.hmiCtrls ? AN.hmiCtrls(SS) : []).find(z => z.tag === tag.replace(/\.MAN$/, ''));
+              if (c && c.amt) src = { k: 'm', sh, c, ref: sh.name + ' ' + tag };
+            }
+            if (!src && tag && /\.(MV|PV|SV)$/.test(tag)) {
+              const c = (AN.hmiCtrls ? AN.hmiCtrls(SS) : []).find(z => z.tag === tag.replace(/\.\w+$/, ''));
+              let n = SS.nets.findIndex((_, j) => nmOf(j) === tag && drv(j));
+              if (n < 0 && c && /\.MV$/.test(tag)) n = c.out;
+              if (n >= 0) src = { k: an ? 'v' : 'a', sh, n, key: an ? an.key : null, ref: sh.name + ' ' + tag };
+            }
+            if (src) break;
+          }
+          if (src) {
+            if (src.k === 'v') src.key = an.key;
+            addIn(s, i, src);
+            fromAbc.push(s.name + ' r' + r.n + ' <- ' + src.ref);
+          } else abcMiss.push(s.name + ' r' + r.n + ' FROM ' + F + ' (no ' + (adr || tag || 'address') + ' on the ABC sheet)');
+        })
+      );
     W.idx = { din, ain };
     W._nA = AN.sheets.length;
     W.stat = {
@@ -393,6 +492,9 @@
       noMach,
       digFix,
       fromDitl: fa,
+      fromAbc,
+      abcMiss,
+      plc,
       toDitl: ta,
       logic,
       lost,
@@ -422,10 +524,21 @@
       const on = new Set();
       m.forEach((srcs, row) => {
         for (const q of srcs) {
+          /* 2.3.0-beta.1: an analog ABC value into a DITL comparator row, and the MANUAL state of an ABC controller */
+          if (q.k === 'v') {
+            const x = q.sh.S && q.sh.S.rt ? +q.sh.S.rt.v[q.n] : NaN;
+            if (isFinite(x)) (s.avw = s.avw || {})[q.key] = x;
+            continue;
+          }
           const v =
             q.k === 'd'
               ? !!(prev[q.d.name] && prev[q.d.name].has(q.row))
-              : !!(q.sh.S && q.sh.S.rt && q.sh.S.rt.v[q.n] > 0.5);
+              : q.k === 'm'
+                ? (() => {
+                    const st = q.sh.S && q.sh.S.rt && q.sh.S.rt.st[q.c.amt.id];
+                    return !!st && st.pk !== q.c.autoLeg;
+                  })()
+                : !!(q.sh.S && q.sh.S.rt && q.sh.S.rt.v[q.n] > 0.5);
           if (v) {
             on.add(row);
             break;
@@ -475,7 +588,10 @@
   }
   function off() {
     W.live = false;
-    for (const s of S.sheets.concat(W.inst || [])) s._win = null;
+    for (const s of S.sheets.concat(W.inst || [])) {
+      s._win = null;
+      s.avw = null;
+    }
     if (W.idx)
       for (const a of W.idx.ain) {
         const AS = a.sh.S;

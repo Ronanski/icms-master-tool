@@ -6,6 +6,7 @@ reader/nets-pins.js
 reader/blocks.js
 reader/pins-params.js
 engine/face-defaults.js
+engine/audit-fix.js
 engine/compile-step.js
 engine/ranges-fx.js
 engine/plant.js

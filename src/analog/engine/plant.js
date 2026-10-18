@@ -856,7 +856,13 @@ function anStep(S, dt) {
   const rd = n => (n >= 0 ? v[n] : 0);
   for (const b of S.ord) {
     if (b.k === 'LINK') {
-      v[b.o[0]] = F[b.o[0]] !== undefined ? F[b.o[0]] : v[b.i[0]] * (b.gain == null ? 1 : b.gain);
+      /* 2.3.0-beta.1: an AND link (ABC-004A "COAL FEEDER B & C ALL IN MANUAL" = FICCL1061B.MAN and FICCL1061C.MAN) */
+      v[b.o[0]] =
+        F[b.o[0]] !== undefined
+          ? F[b.o[0]]
+          : b.and
+            ? +b.i.every(n => v[n] > 0.5)
+            : v[b.i[0]] * (b.gain == null ? 1 : b.gain);
       continue;
     }
     const s = rt.st[b.id],

@@ -115,6 +115,8 @@
       for (const n of S2.ext) {
         const t = S2.lab[n] && S2.lab[n].t;
         if (t && want.has(t.trim().toLowerCase())) add(S2, n);
+        /* 2.3.0-beta.1: the mode status written beside a wire that carries an address (ABC-011 "TICBR1130.LOC" = M.0230) */
+        if (S2.alias && S2.alias[n] && S2.alias[n].some(a => want.has(a.toLowerCase()))) add(S2, n);
       }
       /* 1.23.0: the wire may carry the description as its name with the tag text written at its end (ABC-004A "CONTROL IN
          MANUAL" + "PIC-COBM.MAN"): the digital input wire that ends at the tag text (< 14) is that address */
