@@ -2,6 +2,26 @@
 
 Base: Stable v2.1.0 (`main` 0aac342). Bawat Beta ay push sa `claude/logic-sim-app-review-tbmfdr` (beta.1 ~ beta.7) at `ccr-3def3a81-kcpwgn` (beta.8 ~; PR #31) (PROJECT_RULES 5e, 5f).
 
+## 2.2.0-beta.24 — M6 hakbang 2: block tester (A7), switching tester (A8), pangalan ng COS (A10)
+- **Problem:** (A7) Ang UAT block test ng app ay walang test para sa 15 uri ng block. (A8) May 24 switch / A-M station na walang test. (A10) 22 sa 173 COS ay "COS manual ▸ T23" ang pangalan sa panel.
+- **As Found (sukat sa buong 54 sheet, headless):**
+  - Walang test: SQRT 13, I/P 45, T/P 8, conditional write (CTK) 6, DCMP 3, PV < SV 2, HLLIM 1, DROP RATE 1, TPV 1 (pati PO 2, PIDV 2, na nasa controller test).
+  - Switch na walang test: 9 na latched select (hal. ABC-003A ~ D #33, ABC-020 #40 / #45), 2 na operator lang (ABC-001A #8 / #12), 2 na may 4 na kondisyon (ABC-003E #4, ABC-009A #32), 4 na output na may ibang sumusulat (ABC-007 #6 / #13, ABC-051 #22, ABC-052 #4), 7 na ang output wire ay kapareho ng isang leg sa basa ng drawing (ABC-007 #20 / #21, ABC-011 #33, ABC-012 #33, ABC-019 #21, ABC-050 #74, ABC-051 #42, ABC-052 #73). Ang huling 7 ay susuriin sa PDF sa susunod.
+  - Ang unang UAT dry run ng v2.2.0 ay may 6 na mali, at lahat ay mali ng test, hindi ng app:
+    - Ang AI0480 / AI0512 / AI0544 (feedrate ng coal feeder) ay isinusulat ng feeder model.
+    - Ang ABC-014 FICFA1055A / B at ABC-033 TICAS1001 ay may back-up ng interlock (BU-CMD 25 % / 0 %) na tama ayon sa legend ("interlock tracking"). Ang test ay tumitingin lang sa huling scan.
+- **Work Done:**
+  - `src/ui/uat/gen.js`: bagong grupo "Converters and other blocks" (square root, I/P, T/P, HLLIM, PV < SV, conditional write, drop rate); DCMP sa Comparators; TPV sa Timers; latched select (1 → B, 0 → nananatiling B, AUTO ng operator → A) at operator-only A/M; feeder AI = skip na may dahilan; PID MAN test: select signals = 0.
+  - `src/ui/uat/runner.js`: ang back-up ng interlock na nakita sa ANUMANG scan ng test ay skip na may dahilan.
+  - `src/analog/ui/panel.js` (`cosFromUp`): ang COS na walang label hanggang valve ay pinapangalanan ayon sa controller ng loop (hal. "COS manual ▸ PID LICBR1001B (manual of this loop)").
+- **As Left (headless, build 2.2.0-beta.24):**
+  - Buong UAT block test (`src/ui/uat/dry.js`, 54 sheet): 2547 item, 6998 case. Ang tanging mali sa unang takbo (ABC-001C PIC-COBM, dahil sa una kong ayos ng PID MAN test) ay ibinalik ko. Pagkatapos noon, ABC-001C, ABC-014, ABC-033 at ABC-004A ay 0 mali. Ang 76 na bagong test ng converter at ang bagong switch test ay 0 mali.
+  - Sakop ng block test: 2517 sa 3573 na block. Ang natitira ay text ng tag, SIG.AB flag, COS (sinusubok sa switch nito), AO na walang output, constant na reference, field block, at 11 switch.
+  - Pangalan ng COS: 173 COS, 0 na walang pangalan (dati 22). Halimbawa: ABC-010 "COS manual ▸ PID LICBR1001B (manual of this loop)".
+  - UAT panel ng ABC-010: bukas, 0 error sa page.
+- **Hindi pa nasubok:** totoong tablet. Ang buong generic controller tester (beta.23) ay tumatakbo pa sa background.
+- **Status:** Beta (push sa branch). Susunod: ang 7 switch na ang output ay kapareho ng isang leg (suriin sa PDF), Stable prep.
+
 ## 2.2.0-beta.23 — M6 hakbang 1: mabilis na controller tester + CONTROLLER TEST sa UAT panel (checklist A6 / A9)
 - **Problem:** (1) Ang generic controller tester (`UATS.generic`) ay tumatakbo nang ilang oras mula beta.20. (2) Ang tester ay sa computer lang tumatakbo (`tests/scenarios/generic.js`), wala sa app (checklist A9).
 - **As Found:** Mula beta.20 (tamang link ng mode nets, `UNLINK_AUDIT.md` 6), ang ABC-004A M.0131 = OR(FICCL1061A / B / C.MAN) ay nagfo-force MANUAL sa FIC-CF sa bawat lumang panimulang estado ng search. Ang search ay nagfi-flip ng input isa-isa (mga 1 s bawat estado, hanggang 16 × 50 estado bawat controller).

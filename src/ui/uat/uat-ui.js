@@ -691,7 +691,7 @@
       }),
       E('div', {
         cls: 'sub w',
-        txt: 'NOT covered by this UAT yet (about 1700 of 4000 blocks): AO outputs, valves / actuators (ACT, VLV, IP), alarms (ALM), operator selector circles (COS), SIG.AB flags, tag texts (TXD), field blocks, some constants / comparators; skipped cases show the reason. A pass here means only that the tested blocks follow their definition, not that the whole sheet is right.'
+        txt: 'NOT covered by this block test (about 1050 of 3570 blocks; 2.2.0-beta.24): tag texts (TXD), SIG.AB flags, operator selector circles (COS: tested through their switch), AO without an output net, constants that are a reference, field blocks (inverter, MCC, solenoid), 11 switches; skipped cases show the reason. A pass here means only that the tested blocks follow their definition, not that the whole sheet is right.'
       })
     );
     sp.groups.forEach(g => {
