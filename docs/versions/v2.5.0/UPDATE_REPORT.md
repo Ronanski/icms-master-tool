@@ -61,4 +61,5 @@
 
 - **Problem:** Inilabas ang v2.4.0 Stable (bagong shell, icon, pangalan, plant model switch) sa `main` habang bukas pa ang PR #32. Hindi kasama roon ang drawing audit.
 - **Work Done:** merge ng `main` sa branch (walang rebase / force push). Bersyon 2.5.0-beta.1. Ang ayos ng UAT / CHECK sa status bar (dating beta.4) ay ibinalik sa ayos ng 2.4.0, dahil ang bagong shell na ang naglalagay sa kanila. Nanatili ang solid na trace (walang glow). Docs inilipat sa `docs/versions/v2.5.0/`.
-- **As Left:** tingnan ang mga test sa ibaba ng seksyong ito (idinadagdag pagkatapos ng takbo).
+- **As Left:** sa 2.5.0-beta.1 html: audit230 19 / 19, audit230b 4 / 4, audit230c 5 / 5, tests.js 11 / 11, world 11 / 11, ditl150 9 / 9, hmi_op 34 / 34, unit_load 19 / 19, plant_view 18 / 18 (test ng 2.4.0), isolated PASS, check SAME.
+- **Status:** Pass.
