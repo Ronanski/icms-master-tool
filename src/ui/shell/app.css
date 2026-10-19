@@ -288,3 +288,8 @@ body.app2 #toast{display:none!important}
 #sfoot .smsg{display:none;flex:1 1 auto;min-width:0;font:600 11px var(--mf)!important;color:#d8eeff;background:var(--c-accbg);box-shadow:inset 3px 0 0 var(--c-acc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:24px;cursor:pointer}
 body.hasmsg #sfoot .smsg{display:block}
 body.hasmsg #sfoot :is(#st,.shint){display:none!important}
+/* plant model OFF: a flag in the status bar, so a forgotten OFF is seen */
+#sfoot .spm{display:none!important;font:600 11px var(--mf)!important;color:#1a1200;background:var(--c-man);letter-spacing:.06em}
+body.pmoff #sfoot .spm{display:flex!important}
+/* engine buttons carry their old toolbar spacing inline: inside the bar and the cards the gap alone spaces them */
+body.app2 :is(#gsbar,#toolsws,.ddm) :is(button,select,label.b){margin-left:0!important;margin-right:0!important}

@@ -234,7 +234,7 @@
       clock.classList.add('an-only', 'sclock');
       foot.append(clock);
     }
-    foot.append(st, E('span', { cls: 'shint' }));
+    foot.append(st, E('span', { cls: 'shint' }), E('span', { cls: 'spm', txt: 'PLANT MODEL OFF', title: 'The plant model is OFF (TOOLS > Simulation): the PV does not answer the valves' }));
     /* the app's messages (the old toast) show in the status bar for 7 s; a click hides them */
     {
       const sm = E('span', { cls: 'smsg', title: 'Message (click to hide)', on: () => document.body.classList.remove('hasmsg') });
@@ -373,7 +373,25 @@
       AN_(hmi),
       DI_($('bhp'))
     ]);
-    const cSim = card('Simulation', 'ABC+DITL ON = the DITL runs together with the ABC (one world). The old Plant window is the previous version of the OPERATE tab.', [AN_(plantwin)]);
+    /* plant model ON / OFF (2.4.0-beta.4, user): ON = the PV answers the valve (loop model of each PID + boiler / turbine model);
+       OFF = transmitters are free inputs and only the drawn logic runs (debugging the logic). The switch is the engine's own (AN.plantSwitch) */
+    const pmBtn = E('button', {
+      id: 'pmbtn',
+      title: 'Plant model ON: the PV follows the valve (each PID loop + the boiler / turbine model). OFF: the PV is a free input, only the drawing logic runs.',
+      on: () => {
+        try {
+          AN.plantSwitch(!AN.plantOn);
+        } catch (e) {}
+        pmUpd();
+      }
+    });
+    const pmUpd = () => {
+      const on = !!(window.AN && AN.plantOn);
+      pmBtn.textContent = 'Plant model: ' + (on ? 'ON' : 'OFF');
+      pmBtn.classList.toggle('on', on);
+      document.body.classList.toggle('pmoff', !on);
+    };
+    const cSim = card('Simulation', 'Plant model ON = the PV answers the valve (each PID loop and the boiler / turbine model); OFF = the PV is a free input, only the drawing logic runs. ABC+DITL ON = the 134 DITL sheets run with the ABC Run and pass signals both ways (one world).', [AN_(pmBtn), AN_(plantwin)]);
     if (prj) prj.classList.add('lp');
     const cPrj = card('Project files', 'Save or open the forced values, user values and the sheets you changed.', [AN_(save), AN_(saveas), AN_(openp), AN_(prj), AN_(importAbc), DI_(lab('fdxf')), DI_(lab('fjson')), DI_($('bsave'))]);
     const cEdit = card('DITL drawing edit', 'Only on the DITL page: cells of the drawing, loose wires, a whole sheet.', [DI_($('bundo')), DI_($('bredo')), DI_($('bclr')), DI_($('bdel')), DI_($('bwire'))]);
@@ -434,6 +452,7 @@
       const an_ = document.body.classList.contains('an');
       subBtns.an.classList.toggle('on', an_);
       subBtns.dig.classList.toggle('on', !an_);
+      pmUpd();
     }, 300);
     addEventListener('resize', place);
     document.body.classList.add('app2');
