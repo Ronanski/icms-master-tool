@@ -1,4 +1,6 @@
-# 2.3.0 — Update report (Beta)
+# 2.5.0 — Update report (Beta)
+
+> Ang beta.1 ~ beta.4 sa ibaba ay ginawa bilang 2.3.0-beta.N. Habang ginagawa, inilabas ang v2.4.0 Stable (bagong shell) sa `main`, kaya ang drawing audit ay pinagsama sa `main` at binilang ulit bilang 2.5.0-beta.1 (PROJECT_RULES 5f: hindi pababa ang version).
 
 ## beta.1 — Drawing audit at ayos ng mga link (2026-10-19)
 
@@ -54,3 +56,9 @@
 - **Work Done:** (itsura lang, walang binago sa logic o engine) ang na-trace na wire mismo ang may kulay: puti = pinili, asul = pinanggagalingan, magenta = pinupuntahan; mas makapal, walang blur; ang ibang wire 18 %. UAT at CHECK nasa status bar na (katabi ng Events).
 - **As Left:** screenshot ng ABC-010 trace ng LICBR1001A.MV (malinaw na asul na linya, walang blur; UAT / CHECK sa status bar, hindi na natatakpan ang sheet list). tests.js 11 / 11, check SAME.
 - **Status:** Pass. Susunod (hinihintay ang pili ng user): pangalan at icon ng exe / apk, Loop view, value sa bawat block, "Bakit MANUAL?".
+
+## 2.5.0-beta.1 — Pinagsama sa v2.4.0 (2026-10-19)
+
+- **Problem:** Inilabas ang v2.4.0 Stable (bagong shell, icon, pangalan, plant model switch) sa `main` habang bukas pa ang PR #32. Hindi kasama roon ang drawing audit.
+- **Work Done:** merge ng `main` sa branch (walang rebase / force push). Bersyon 2.5.0-beta.1. Ang ayos ng UAT / CHECK sa status bar (dating beta.4) ay ibinalik sa ayos ng 2.4.0, dahil ang bagong shell na ang naglalagay sa kanila. Nanatili ang solid na trace (walang glow). Docs inilipat sa `docs/versions/v2.5.0/`.
+- **As Left:** tingnan ang mga test sa ibaba ng seksyong ito (idinadagdag pagkatapos ng takbo).

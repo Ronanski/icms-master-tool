@@ -16,7 +16,7 @@ await ctx.route('https://ronanski.github.io/**',r=>{const u=r.request().url();if
  if(/\/beta\/(\?|$)/.test(u))return r.fulfill({headers:{'access-control-allow-origin':'*'},contentType:'text/html',body:as(BV)});return r.fulfill({headers:{'access-control-allow-origin':'*'},contentType:'text/html',body:as(SV)})});
 const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));p.on('framenavigated',f=>{if(f===p.mainFrame())nav.push(f.url())});
 let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
-const title=()=>p.evaluate(()=>document.title);const ready=()=>p.waitForFunction(()=>document.getElementById('chsel'),null,{timeout:30000});
+const title=()=>p.evaluate(()=>document.title.replace(/^DCS Logic Simulator /,'Logic Sim '));const ready=()=>p.waitForFunction(()=>document.getElementById('chsel'),null,{timeout:30000});
 await p.goto('file://'+dir+'/index.html');await ready();
 ck((await title())==='Logic Sim v'+V,'starts with the copy inside the app: '+(await title()));
 // choose Beta: downloaded into the app, then it runs from the app
@@ -30,14 +30,14 @@ ck((await title()).includes(BV),'no internet, app started again: still the Beta 
 const ok1=await p.evaluate(async()=>{const has=()=>typeof S!=="undefined"&&S.sheets&&S.sheets.length;for(let i=0;i<60&&!has();i++)await new Promise(r=>setTimeout(r,250));return has()||0});
 ck(ok1>=100,'the Beta works offline: '+ok1+' DITL sheets');
 // back to Stable (offline): the copy inside the app
-await p.evaluate(()=>{const c=document.getElementById('chsel');c.value='stable';c.dispatchEvent(new Event('change'))});await p.waitForFunction(v=>document.title==='Logic Sim v'+v,V,{timeout:30000});await ready();
+await p.evaluate(()=>{const c=document.getElementById('chsel');c.value='stable';c.dispatchEvent(new Event('change'))});await p.waitForFunction(v=>document.title.replace(/^DCS Logic Simulator /,'Logic Sim ')==='Logic Sim v'+v,V,{timeout:30000});await ready();
 ck((await title())==='Logic Sim v'+V,'Stable chosen offline: the copy inside the app '+(await title()));
 // update of the Stable when online: question, Update now, downloaded, runs from the app
 online=true;await p.evaluate(()=>window.lsCheckUpdate(true));await p.waitForSelector('#updask',{timeout:20000});
 ck(/v[\d.]+/.test(await p.textContent('#updask'))&&(await p.textContent('#updask')).includes(SV),'asks: '+(await p.textContent('#updask')).replace(/\s+/g,' ').slice(0,80));
-await p.click('text=Update now');await p.waitForFunction(v=>document.title==='Logic Sim v'+v,SV,{timeout:30000});await ready();
+await p.click('text=Update now');await p.waitForFunction(v=>document.title.replace(/^DCS Logic Simulator /,'Logic Sim ')==='Logic Sim v'+v,SV,{timeout:30000});await ready();
 ck((await title())==='Logic Sim v'+SV,'updated in the app: '+(await title()));
-online=false;await p.reload();await p.waitForFunction(v=>document.title==='Logic Sim v'+v,SV,{timeout:30000});
+online=false;await p.reload();await p.waitForFunction(v=>document.title.replace(/^DCS Logic Simulator /,'Logic Sim ')==='Logic Sim v'+v,SV,{timeout:30000});
 ck(true,'no internet, started again: still the updated Stable');
 ck(nav.every(u=>u.startsWith('file:')),'never left the app');
 ck(errs.length===0,'no page error'+(errs.length?' ('+errs[0]+')':''));

@@ -1,4 +1,4 @@
-/* 2.3.0-beta.1 DRAWING AUDIT: what the PDF says and the reader missed (docs/versions/v2.3.0/DRAWING_AUDIT.md, DRAWING_TRACE.md).
+/* 2.3.0-beta.1 DRAWING AUDIT: what the PDF says and the reader missed (docs/versions/v2.5.0/DRAWING_AUDIT.md, DRAWING_TRACE.md).
    Applied in anCompile (compile-step.js) after the links of the sheet are read. Each entry names the block id / net id of the
    reading of the DWG and checks them (k = block kind, was = the name the net has now); a mismatch is skipped with a warning.
    op: in    = a missing input of a gate (wire n enters gate blk)

@@ -13,7 +13,7 @@ const cards = [
     [
       [
         'Mga file',
-        `logic-sim-v${ver}.html (ang simulator) · Logic-Sim-v${ver}.apk (Android) · Logic-Sim-v${ver}-portable.exe (Windows) · ang report na ito. Isang apk at isang exe lang. Ang UAT ay nasa loob ng app (berdeng UAT button).`
+        `DCS-Logic-Simulator-${ver}.apk (Android) · DCS-Logic-Simulator-${ver}-Windows.exe (Windows) · DCS-Logic-Simulator-${ver}.html (browser) · ang report na ito. Isang apk at isang exe lang. Ang UAT ay nasa loob ng app (berdeng UAT button).`
       ],
       [
         'Update at channel',
@@ -91,7 +91,7 @@ h1{font-size:19pt;margin:0 0 4px}.sub{color:#8a9aa6;font-size:10pt;margin-bottom
 .hd{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #2a3743;padding-bottom:5px;margin-bottom:6px}
 .hd b{font-size:13pt;color:#6aaee0}.st{font-size:10pt;font-weight:bold;color:#6fbf8f}.st.w{color:#d8b860}
 .k{color:#9bb0bf;font-weight:bold;font-size:10pt;margin-top:7px}.v{margin:0}</style>
-<h1>Logic Sim v${ver}: release report</h1><div class="sub">2026-10-15 · Stable · repo Ronanski/icms-master-tool · sa Taglish, para sa user</div>
+<h1>DCS Logic Simulator ${ver}: release report</h1><div class="sub">2026-10-15 · Stable · repo Ronanski/icms-master-tool · sa Taglish, para sa user</div>
 ${cards.map(c => `<div class="card"><div class="hd"><b>${c[0]}</b><span class="st ${c[1] === 'Limitasyon' || c[1] === 'Gawin mo' ? 'w' : ''}">${c[1]}</span></div>${c[2].map(r => `<div class="k">${r[0]}</div><p class="v">${r[1]}</p>`).join('')}</div>`).join('')}`;
 (async () => {
   const b = await chromium.launch({ executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium' });

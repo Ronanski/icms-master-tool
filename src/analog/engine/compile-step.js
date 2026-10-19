@@ -1943,7 +1943,7 @@ function anCompile(S) {
         }
       }
   }
-  /* 2.3.0-beta.1 DRAWING AUDIT (docs/versions/v2.3.0/DRAWING_AUDIT.md, DRAWING_TRACE.md): links of the PDF that the reader missed.
+  /* 2.3.0-beta.1 DRAWING AUDIT (docs/versions/v2.5.0/DRAWING_AUDIT.md, DRAWING_TRACE.md): links of the PDF that the reader missed.
      Every entry names the block / net of THIS reading and what it must be; an entry whose block or net is not the expected one
      (the reading changed) is skipped with a warning, never applied to another wire */
   {

@@ -19,7 +19,6 @@
   document.head.append(
     E('style', {
       txt: `#chkb{position:fixed;left:72px;bottom:36px;z-index:50;background:#16324a;color:#cfe3f5;border:1px solid #6aaee0;padding:8px 14px;border-radius:8px;font:600 13px system-ui;cursor:pointer}
-#sfoot #uatb,#sfoot #chkb{position:static;padding:0 10px;font:600 12px system-ui;border-radius:4px;line-height:20px;flex:none}
 #chkp{display:none;position:fixed;left:0;top:0;bottom:0;width:min(460px,100vw);z-index:60;background:#10151a;color:#dbe5ec;border-right:1px solid #2a3743;overflow:auto;font:13px/1.4 system-ui;padding:10px 12px;box-sizing:border-box}
 #chkp h3{margin:0;font-size:16px;color:#6aaee0;flex:1}#chkp .sub{color:#8a9aa6;font-size:12px;margin:4px 0}
 #chkp button{background:#18212a;color:#dbe5ec;border:1px solid #2a3743;padding:7px 11px;border-radius:6px;font:inherit;cursor:pointer}
@@ -43,16 +42,6 @@
       }
     });
   document.body.append(btn, P);
-  /* 2.3.0 (user: UI): UAT and CHECK go to the status bar; floating, they covered the sheet list */
-  const mvb = setInterval(() => {
-    const f = document.getElementById('sfoot'),
-      st = document.getElementById('st'),
-      u = document.getElementById('uatb');
-    if (!f || !st || !u) return;
-    f.insertBefore(u, st);
-    f.insertBefore(btn, st);
-    clearInterval(mvb);
-  }, 400);
   let busy = false;
   /* ---- helpers on the running plant (same as the tests) ---- */
   const H = () => {

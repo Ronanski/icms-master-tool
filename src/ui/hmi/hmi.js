@@ -85,7 +85,8 @@
     live = [],
     trends = {},
     filter = '',
-    lastT = -1;
+    lastT = -1,
+    only = null; /* 2.4.0-beta.5: PLANT VIEW builds the faceplate of one tag only (AN.fpBuild) */
   const setIn = (S, n, v) => {
     S.rt.ext[n] = v;
     try {
@@ -347,6 +348,60 @@
     return out;
   }
   AN.hmiCtrls = ctrls; /* for the tests */
+  function manTag(b) {
+    return b.tag || (b.txt || []).find(t => t && t !== 'MAN' && !/^S\d-MDL/.test(t)) || 'MAN';
+  }
+  /* 2.4.0-beta.5 PLANT VIEW: the sheet that holds the controller (PID / PIDV) or MAN station of a tag; the same faceplate as the
+     Operator pane, built for that one tag (A / M / R, SV, MV, trend, interlock); the engine is not changed */
+  let fpIx = null;
+  AN.fpFind = tag => {
+    const T = String(tag || '').trim().toUpperCase();
+    if (!T) return null;
+    if (!fpIx) {
+      fpIx = {};
+      for (const sh of AN.sheets || []) {
+        if (!/^ABC-/.test(sh.name) || /^ABC-000/.test(sh.name)) continue;
+        let S;
+        try {
+          S = AN.ensure(sh);
+        } catch (e) {
+          continue;
+        }
+        if (!S || !S.blk) continue;
+        try {
+          for (const c of ctrls(S)) fpIx[c.tag.toUpperCase()] = fpIx[c.tag.toUpperCase()] || sh.name;
+        } catch (e) {}
+        for (const b of S.blk)
+          if (b.k === 'MAN' && b.o[0] != null && (b.tag || (b.txt || []).some(t => t && t !== 'MAN'))) {
+            const t = manTag(b).toUpperCase();
+            if (t !== 'MAN' && !fpIx[t]) fpIx[t] = sh.name;
+          }
+      }
+    }
+    return fpIx[T] || null;
+  };
+  AN.fpBuild = (tag, box) => {
+    const nm = AN.fpFind(tag),
+      sh = nm && AN.sheets.find(s => s.name === nm);
+    if (!sh) return null;
+    try {
+      AN.ensure(sh);
+    } catch (e) {}
+    const sb = body,
+      sl = live;
+    body = box;
+    only = String(tag).trim().toUpperCase();
+    let out = null;
+    try {
+      build(sh);
+      out = { sheet: sh.name, live };
+    } finally {
+      body = sb;
+      live = sl;
+      only = null;
+    }
+    return out && out.live.length ? out : null;
+  };
   /* 2.2.0-beta.9: the .MAN / .LOC / .REM addresses of a tag on every sheet, for the engine (plant.js MAN station status) */
   AN.modeNets = (tag, kinds) => modeNetsByTag(tag, kinds || MODEK.MAN);
   /* 2.2.0-beta.15: the operator's M / A (LOC) / R on a tag, for the engine (Start cold: every controller MANUAL = .MAN 1) and the CHECK */
@@ -385,11 +440,11 @@
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     svg.innerHTML = s;
   }
-  function build() {
-    const sh = sheet();
+  function build(shArg) {
+    const sh = shArg || sheet();
     if (!sh || !sh.S) return;
     const S = sh.S;
-    built = sh.name;
+    if (!shArg) built = sh.name;
     live = [];
     body.innerHTML = '';
     body.append(
@@ -397,8 +452,8 @@
       E('div', { cls: 'sub', txt: (sh.title || '').replace(/\s+/g, ' ') })
     );
     // 1. controllers
-    const cs = ctrls(S);
-    if (cs.length) body.append(E('h4', { txt: 'Controllers (faceplate)' }));
+    const cs = ctrls(S).filter(c => !only || only === c.tag.toUpperCase());
+    if (cs.length && !only) body.append(E('h4', { txt: 'Controllers (faceplate)' }));
     cs.forEach(c => {
       const P = c.b.p,
         rlo = P.rlo != null ? P.rlo : 0,
@@ -875,15 +930,15 @@
       });
     });
     // 2. manual stations (2.0.0): a faceplate like the DCS manual loader: description, output bar, value, ▲ ▼, tag and station
-    const mans = S.blk.filter(b => b.k === 'MAN' && b.o[0] != null && (b.tag || (b.txt || []).some(t => t && t !== 'MAN')));
-    if (mans.length) body.append(E('h4', { txt: 'Manual stations (' + mans.length + ')' }));
+    const mans = S.blk.filter(b => b.k === 'MAN' && b.o[0] != null && (b.tag || (b.txt || []).some(t => t && t !== 'MAN')) && (!only || only === manTag(b).toUpperCase()));
+    if (mans.length && !only) body.append(E('h4', { txt: 'Manual stations (' + mans.length + ')' }));
     mans.forEach(b => {
       const P = b.p,
         lo = P.lo != null ? P.lo : 0,
         hi = P.hi != null ? P.hi : 100,
         u = P.u || '',
         span = hi - lo || 1,
-        tag = b.tag || (b.txt || []).find(t => t && t !== 'MAN' && !/^S\d-MDL/.test(t)) || 'MAN',
+        tag = manTag(b),
         stn = (b.txt || []).find(t => /^S\d-MDL/.test(t)) || '';
       let desc = '';
       try {
@@ -957,6 +1012,7 @@
         manB.classList.toggle('on', ns.some(([S2, n]) => S2.rt.ext[n] > 0.5));
       });
     });
+    if (only) return;
     // 3. digital inputs: operator buttons and force
     const dig = [];
     for (const n of S.ext) {

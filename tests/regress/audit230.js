@@ -1,4 +1,4 @@
-// 2.3.0-beta.1 drawing audit, links (docs/versions/v2.3.0/DRAWING_AUDIT.md, DRAWING_TRACE.md): each link that the PDF shows and the reader
+// 2.3.0-beta.1 drawing audit, links (docs/versions/v2.5.0/DRAWING_AUDIT.md, DRAWING_TRACE.md): each link that the PDF shows and the reader
 // missed now carries its signal (ABC force manual inputs, mode status M / A / R, station wiring, DITL rows FROM ABC, TO DITL 40-xx, row 21A).
 // Usage: node tests/regress/audit230.js [html]
 const {open}=require('./lib.js');const fs=require('fs');
