@@ -74,10 +74,14 @@
     if (!gs) return;
     const top = gs.getBoundingClientRect().bottom,
       fh = foot ? foot.getBoundingClientRect().height : 0;
-    if (toolsws) {
-      toolsws.style.top = top + 'px';
-      toolsws.style.bottom = fh + 'px';
-    }
+    const r = document.documentElement.style;
+    r.setProperty('--topH', top + 'px');
+    r.setProperty('--footH', fh + 'px');
+    [toolsws, $('plantws'), $('libws')].forEach(w => {
+      if (!w) return;
+      w.style.top = top + 'px';
+      w.style.bottom = fh + 'px';
+    });
   };
   function setTab(t, keep) {
     if (!TABS.some(x => x[0] === t)) t = 'logic';
@@ -124,6 +128,39 @@
     DI_ = e => only('dit-only', e);
   /* finds a toolbar element by its text */
   const byText = (root, tag, re) => [...root.querySelectorAll(tag)].find(e => re.test(e.textContent.trim()));
+  /* OPERATE: the values column is hidden when a screen has no values (the graphic gets the width), and on a phone the
+     system list is a drawer opened from the screen bar */
+  let plDone = false;
+  function plantUx() {
+    const ws = $('plantws'),
+      bar = ws && ws.querySelector('.plbar'),
+      vals = $('plvals'),
+      list = $('pllist');
+    if (plDone || !ws || !bar || !vals || !list) return;
+    plDone = true;
+    const upd = () => {
+      const empty = !vals.querySelector('.pltb');
+      ws.classList.toggle('noval', empty);
+      if (ws.style.display === 'grid') {
+        place();
+        dispatchEvent(new Event('resize'));
+      }
+    };
+    new MutationObserver(upd).observe(vals, { childList: true });
+    upd();
+    const sb = E('button', {
+      id: 'plsys',
+      cls: 'b',
+      txt: '☰ Systems',
+      title: 'List of plant systems',
+      on: e => {
+        e.stopPropagation();
+        ws.classList.toggle('lsopen');
+      }
+    });
+    bar.prepend(sb);
+    list.addEventListener('click', () => ws.classList.remove('lsopen'));
+  }
   function build() {
     const gs = $('gsbar'),
       an = $('anbar'),
@@ -198,6 +235,21 @@
       foot.append(clock);
     }
     foot.append(st, E('span', { cls: 'shint' }));
+    /* the app's messages (the old toast) show in the status bar for 7 s; a click hides them */
+    {
+      const sm = E('span', { cls: 'smsg', title: 'Message (click to hide)', on: () => document.body.classList.remove('hasmsg') });
+      foot.append(sm);
+      const t = $('toast');
+      if (t) {
+        const sync = () => {
+          const on = !t.hidden && !!t.textContent.trim();
+          if (on) sm.textContent = t.textContent;
+          document.body.classList.toggle('hasmsg', on);
+        };
+        new MutationObserver(sync).observe(t, { attributes: true, attributeFilter: ['hidden'], childList: true, characterData: true, subtree: true });
+        sync();
+      }
+    }
     /* --- top bar --- */
     const ansb = $('ansb'),
       gscope = $('gscope'),
@@ -241,6 +293,30 @@
     const gOp = E('div', { cls: 'tb g-op' }, [start.w]);
     const tbar = E('div', { cls: 'tbar' }, [gRun, gDitl, gView, gSheet, gOp]);
     const srch = E('div', { cls: 'gs-search' }, [ansb, gscope]);
+    /* narrow screens: the search is one icon; it opens as a full-width row under the bar */
+    const srchBtn = E('button', {
+      id: 'srchbtn',
+      cls: 'ico',
+      html: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.6"/><path d="M10.4 10.4 14 14"/></svg>',
+      title: 'Search a tag, description, address or memory (ABC + DITL)',
+      on: e => {
+        e.stopPropagation();
+        const o = !document.body.classList.contains('srchopen');
+        document.body.classList.toggle('srchopen', o);
+        if (o) setTimeout(() => ansb.focus(), 0);
+      }
+    });
+    document.addEventListener('click', e => {
+      if (!document.body.classList.contains('srchopen')) return;
+      if (e.target.closest && e.target.closest('.gs-search,#anfind,#infocard,#srchbtn')) return;
+      document.body.classList.remove('srchopen');
+    });
+    ansb.addEventListener('keydown', e => {
+      if (e.key === 'Escape') document.body.classList.remove('srchopen');
+    });
+    /* plain names for two tools */
+    if (ln) ln.textContent = 'F(X) tables';
+    if (second) second.textContent = 'Second sheet';
     /* ⚙: appearance, channel, update */
     const setBtn = E('button', { cls: 'ico', html: GEAR, title: 'Settings: font, colours, channel, update' });
     const set = dropdown(setBtn, 'gs-set');
@@ -275,7 +351,7 @@
       $('updbtn').textContent = 'Check for update';
       set.m.append($('updbtn'));
     }
-    gs.append(tabs, sub, tbar, srch, set.w);
+    gs.append(tabs, sub, tbar, srchBtn, srch, set.w);
     /* --- TOOLS page --- */
     toolsws = E('div', { id: 'toolsws' });
     const grid = E('div', { cls: 'tgrid' });
@@ -307,8 +383,9 @@
     /* --- things created later by other scripts: UAT / CHECK buttons, update button, one-world switch, theme select --- */
     let n = 0,
       wb = null;
-    const iv = setInterval(() => {
-      n++;
+    setInterval(() => {
+      /* after the first half minute the check runs every 2 s (late scripts: the update button comes after the page load) */
+      if (++n > 80 && n % 5) return;
       const u = $('uatb'),
         c = $('chkb'),
         up = $('updbtn'),
@@ -316,6 +393,9 @@
         w = document.querySelectorAll('.wbtn');
       if (u && u.parentNode !== cTest.querySelector('.row')) cTest.querySelector('.row').prepend(u);
       if (c && c.parentNode !== gOp) gOp.append(c);
+      const ib = gs.querySelector(':scope > .infob');
+      if (ib) srch.append(ib);
+      plantUx();
       if (up && up.parentNode !== set.m) {
         up.textContent = 'Check for update';
         set.m.append(up);
@@ -337,7 +417,6 @@
         });
       });
       cardsUpd();
-      if (n > 80) clearInterval(iv);
     }, 400);
     /* a card with nothing to show on this page (ABC / DITL) is hidden; the wrappers (.only) have no size of their own */
     function cardsUpd() {
@@ -358,6 +437,12 @@
     }, 300);
     addEventListener('resize', place);
     document.body.classList.add('app2');
+    try {
+      if (typeof TPMIN !== 'undefined' && !TPMIN) {
+        TPMIN = true;
+        if (typeof buildTP === 'function') buildTP();
+      }
+    } catch (e) {}
     gs.dataset.top = '1';
     /* first tab: the remembered one (OPERATE / LIBRARY need the plant and library scripts, which load after this one) */
     const t0 = ls.get('ls-tab') || 'logic';

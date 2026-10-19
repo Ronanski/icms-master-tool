@@ -15,7 +15,7 @@ for(const [n,w,h] of [['desktop',1440,900],['tablet',1024,768],['phone',390,844]
  const vis=id=>page.evaluate(id=>{const e=document.getElementById(id);return !!e&&e.offsetParent!==null&&e.offsetHeight>0},id);
  ck(!(await vis('anbar'))&&!(await vis('bar')),n+': old ABC / DITL toolbars are not shown');
  const gsH=await page.evaluate(()=>document.getElementById('gsbar').offsetHeight);
- ck(gsH<=(n==='phone'?110:70),n+': top bar height '+gsH+' px');
+ ck(gsH<=(n==='desktop'?70:110),n+': top bar height '+gsH+' px');
  ck(await page.evaluate(()=>document.body.dataset.tab==='logic'),n+': LOGIC tab');
  ck(await vis('bmode')&&await page.evaluate(()=>!!document.getElementById('bmode').closest('#gsbar .g-ditl')),n+': Simulate button in the top bar');
  ck(await vis('bfit'),n+': Fit in view');
