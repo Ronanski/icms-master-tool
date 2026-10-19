@@ -51,6 +51,7 @@ Utos ng user (2026-10-16): **"Analog muna. Ang DITL ay i-simulate / i-force na l
 - [F] **Tuning lab**: P / I / D sa plant model; ang parameter ay mula sa summary sa repo.
 - [F] **"Compare" ng dalawang bersyon ng sheet.**
 - [F] **UI / UX para sa tablet**: mas malaking button, iisang ibabang bar, buong-screen na faceplate at trend.
+- [F] **Plant model ng piping**: drain, vent, manual isolation valve at piping network; ang PV ay susunod sa koneksyon ng tubo at valve (user, 2026-10-19: "sa future ay ayusin natin ito").
 - [F] **Linis ng code**: `plant-window.js`, `links-canvas.js` (format at paghati lang).
 - [F] **DITL bilang buong plant state**: ang 344 na rule sa seksyon B, ang PLC logic, at ang DITL scenario.
 - Hindi inirerekomenda: overhaul ng buong app.

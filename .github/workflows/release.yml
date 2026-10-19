@@ -31,7 +31,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - { chan: stable, id: com.ronanski.logicsim, name: 'Logic Sim', url: 'https://ronanski.github.io/icms-master-tool/' }
+          - { chan: stable, id: com.ronanski.logicsim, name: 'DCS Logic Simulator', url: 'https://ronanski.github.io/icms-master-tool/' }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -49,6 +49,8 @@ jobs:
           npm install --no-audit --no-fund
           npx cap add android
           npx cap sync android
+          # app icon (delivery/icons): launcher icons of every density + adaptive icon background
+          cp -r ../icons/android/res/. android/app/src/main/res/
           sed -i "s/versionName \".*\"/versionName \"${{ needs.gate.outputs.version }}\"/" android/app/build.gradle
       - name: Build + sign
         working-directory: delivery/android/android
@@ -66,7 +68,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - { chan: stable, name: 'Logic Sim', url: 'https://ronanski.github.io/icms-master-tool/' }
+          - { chan: stable, name: 'DCS Logic Simulator', url: 'https://ronanski.github.io/icms-master-tool/' }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -77,6 +79,8 @@ jobs:
         run: |
           echo '{"name":"${{ matrix.name }}","url":"${{ matrix.url }}"}' > config.json
           node ../../tools/build/app-folder.js "../../dist/logic-sim-v${{ needs.gate.outputs.version }}.html" www
+          # app icon (delivery/icons): the exe file icon and the window icon
+          mkdir -p build && cp ../icons/icon.ico build/icon.ico && cp ../icons/png/icon-256.png icon.png
           npm install --no-audit --no-fund
           npx electron-builder --win portable -c.productName="${{ matrix.name }}" -c.extraMetadata.version=${{ needs.gate.outputs.version }}
           ls dist
@@ -96,19 +100,19 @@ jobs:
           V=${{ needs.gate.outputs.version }}
           T=${{ needs.gate.outputs.tag }}
           mkdir rel
-          find out -type f -name '*.apk' -print0 | while IFS= read -r -d '' f; do cp "$f" "rel/Logic-Sim-v$V.apk"; done
-          find out -type f -name '*.exe' -print0 | while IFS= read -r -d '' f; do cp "$f" "rel/Logic-Sim-v$V-portable.exe"; done
+          find out -type f -name '*.apk' -print0 | while IFS= read -r -d '' f; do cp "$f" "rel/DCS-Logic-Simulator-$V.apk"; done
+          find out -type f -name '*.exe' -print0 | while IFS= read -r -d '' f; do cp "$f" "rel/DCS-Logic-Simulator-$V-Windows.exe"; done
           # no Beta in the releases: remove beta assets and beta pre-releases of earlier uploads
           for r in $(gh release list --json tagName -q '.[].tagName'); do
             for n in $(gh release view "$r" --json assets -q '.assets[].name' | grep -i beta || true); do gh release delete-asset "$r" "$n" -y || true; done
           done
           for r in $(gh release list --json tagName,isPrerelease -q '.[] | select(.isPrerelease) | .tagName'); do gh release delete "$r" -y --cleanup-tag || true; done
-          cp "dist/logic-sim-v$V.html" rel/
-          cp "docs/versions/v$V/Release-Report-v$V.pdf" rel/
+          cp "dist/logic-sim-v$V.html" "rel/DCS-Logic-Simulator-$V.html"
+          cp "docs/versions/v$V/Release-Report-v$V.pdf" "rel/DCS-Logic-Simulator-$V-Report.pdf"
           ls rel
-          NOTES="Stable v$V. Files: logic-sim-v$V.html (the simulator), Logic-Sim-v$V.apk (Android), Logic-Sim-v$V-portable.exe (Windows, portable). The apps load the site and update by themselves; inside the app, the Channel box (top right) switches between Stable and Beta. Release-Report-v$V.pdf (what changed and what was checked)."
+          NOTES="DCS Logic Simulator $V (Stable). Files: DCS-Logic-Simulator-$V.apk (Android), DCS-Logic-Simulator-$V-Windows.exe (Windows, portable, no install), DCS-Logic-Simulator-$V.html (opens in a browser). The apps load the site and update by themselves; inside the app, the Channel box (top right) switches between Stable and Beta. DCS-Logic-Simulator-$V-Report.pdf (what changed and what was checked)."
           if gh release view "$T" >/dev/null 2>&1; then
             gh release upload "$T" rel/* --clobber
           else
-            gh release create "$T" rel/* --title "Logic Sim $T" --notes "$NOTES" --target "${{ github.sha }}"
+            gh release create "$T" rel/* --title "DCS Logic Simulator $T" --notes "$NOTES" --target "${{ github.sha }}"
           fi
