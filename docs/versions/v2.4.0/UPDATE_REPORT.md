@@ -4,6 +4,13 @@ Base: Stable v2.2.0 (`main` 9b0ae85). Bawat Beta ay push sa `claude/project-thre
 
 Utos ng user (2026-10-19): "magulo, walang direksyon, kalat" ang app. Full audit: `/mnt/project-files/app-status/FULL_AUDIT_2026-10-19.md`; disenyo: `NEW_SHELL_DESIGN.md` (parehong folder). Pinili ng user: bagong shell mula sa simula ("Scratch"). Pinayagan ng user na lumabag sa lumang UI rules basta hindi magalaw ang engine, simulation at plant model.
 
+## 2.4.0-beta.4 — Plant model ON / OFF switch
+- **Problem (user, 2026-10-19):** "paano i-enable/disable ang PLANT MODEL?"
+- **As Found:** Laging ON ang plant model mula v1.20.39 (`AN.plantOn`, naka-save sa `ls-plantmodel2`); ang button ng engine (`bPm`, main.js) ay hindi kailanman inilagay sa screen.
+- **Work Done (UI lang):** TOOLS > Simulation: button "Plant model: ON / OFF" na tumatawag sa switch ng engine (`AN.plantSwitch`). Kapag OFF, may dilaw na "PLANT MODEL OFF" sa status bar. Inalis ang lumang inline margin ng mga inilipat na button (pantay na ang pagitan ng Audit / Health).
+- **As Left (headless):** ON → OFF → ON: `AN.plantOn` true / false / true, dilaw na flag lumalabas lang kapag OFF, 0 page error.
+- **Hindi pa nasubok:** totoong device.
+
 ## 2.4.0-beta.3 — Icon ng app at bagong pangalan: DCS Logic Simulator
 - **Problem (user, 2026-10-19):** "wala pa rin icon ang app. pangit pa rin ang name pag nirerelease/download ko."
 - **As Found:** Ang apk ay ginagawa ng `npx cap add android` kaya default na Capacitor icon ang lumalabas; ang exe ay default na Electron icon; ang html ay walang favicon. Ang mga file sa Release: `Logic-Sim-v2.2.0.apk`, `Logic-Sim-v2.2.0-portable.exe`, `logic-sim-v2.2.0.html`, `Release-Report-v2.2.0.pdf`.
