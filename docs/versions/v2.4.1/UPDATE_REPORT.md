@@ -120,3 +120,13 @@ Pinili ng user (card): **UI ayos #5-8**. Itsura lang; walang binago sa engine, s
 - **Work Done:** ang **Panel** button ay nasa top bar na, katabi ng ⏱ (LOGIC tab, ABC at DITL), naka-ilaw kapag bukas ang panel. Sa drawing: Fit / Zoom / Values / Wire na lang.
 - **As Left (headless):** `tests/regress/layout.js` (PC at phone) pasado: nakikita ang Panel sa top bar at nagsasara / nagbubukas ng ABC at DITL panel. Nasilip din sa 1280×800, 800×1280, 1366×768, 1920×1080: nakikita at napipindot. sidetab, ditl_toolbar, lookonly: pasado.
 - **Hindi pa nasubok:** totoong exe / tablet.
+
+## 2.4.1-beta.10 — Buong check ng LOGIC page (user: "Buong check muna")
+- **Problem (user, 2026-10-19):** "DI MATATAPOS TO KAKAAYOS": paisa-isa ang ayos, ang user ang nakakakita ng susunod na mali.
+- **As Found (93 screenshot, headless: tablet 1280×800 at 800×1280, PC 1440×900, phone 390×844; ABC at DITL, VIEW at Run, bawat tab, ⏱ menu, sarado ang panel, Operator, PLANT VIEW / LIBRARY / TOOLS; may awtomatikong check ng overlap, labas sa screen, putol na text):**
+  1. Phone: ang ⏱ at Panel ay nasa labas ng screen (kailangang i-scroll ang top bar).
+  2. Phone: ang Operator panel ay halos buong screen sa kanan at natatakpan ng Fit / Zoom.
+  3. Tablet nakatayo (800 px): ang right panel ng ABC ay putol sa kalahati (lumang 42 vh na limit).
+- **Work Done:** phone: sariling hilera ang VIEW | Run, ▶▶, ⏱, Panel, ☰ Sheets (ang ◀ sheet ▶ ay sa ☰ Sheets na); Operator panel = bottom sheet gaya ng panel. Tablet nakatayo: buong taas ang panel.
+- **As Left:** ang parehong 93 screen ay walang mali sa awtomatikong check; nasilip ang mga larawan. layout, ditl_toolbar (phone top bar ≤ 150 px na, 3 hilera), sidetab, lookonly, abcbar, infocard, events, overview, plant_view, faceplate, manstation: pasado.
+- **Hindi pa nasubok:** totoong exe / tablet.

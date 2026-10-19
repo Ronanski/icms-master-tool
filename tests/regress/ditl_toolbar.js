@@ -16,7 +16,8 @@ for(const [n,w,h] of [['desktop',1440,900],['tablet',1024,768],['phone',390,844]
  const vis=id=>page.evaluate(id=>{const e=document.getElementById(id);return !!e&&e.offsetParent!==null&&e.offsetHeight>0},id);
  ck(!(await vis('anbar'))&&!(await vis('bar')),n+': old ABC / DITL toolbars are not shown');
  const gsH=await page.evaluate(()=>document.getElementById('gsbar').offsetHeight);
- ck(gsH<=(n==='desktop'?70:110),n+': top bar height '+gsH+' px');
+ ck(gsH<=(n==='desktop'?70:n==='phone'?150:110),n+': top bar height '+gsH+' px');
+ // 2.4.1-beta.10: on the phone the LOGIC tools (VIEW | Run, ▶▶, ⏱, Panel, ☰ Sheets) have their own row so none is off screen (3 rows)
  ck(await page.evaluate(()=>document.body.dataset.tab==='logic'),n+': LOGIC tab');
  const run=()=>page.evaluate(()=>{const b=document.querySelector('#gsbar .g-ditl .dui-run');return b&&b.offsetHeight>0?b.textContent.trim():null});
  ck(!!(await run()),n+': Run button in the top bar');
