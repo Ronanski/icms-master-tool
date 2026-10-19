@@ -1190,8 +1190,8 @@
         }
         /* SH spray (PR-OPE-5002 "SERVICE MS & RH FOR TEMPERATURE CONTROL": the MS desuperheater to AUTO with the SV of the start-up
            curve; "Set Steam Temp. Controls on AUTO at boiler load > 60 %"; HPBV desup: "change Set Value to PV Value" before AUTO): the
-           inner loops TICBR1130 / TICBR1150 A at their SV (394 / 418 C) once the spray outlet is within 5 C of it, the outer TICBR1140
-           (462) / TICMS1004 (541) A within 10 C of the SV, then the inner R (cascade). 4.PNG: #1 / #2 SPRAY TEMP CTL R, #2 OUTLET TEMP
+           inner loops TICBR1130 / TICBR1150 A at their SV (394 / 418 C) once the spray outlet is within 5 C of it, the inner R once the
+           outer TICBR1140 (462) / TICMS1004 (541) is within 10 C of its SV, then the outer A (cascade). 4.PNG: #1 / #2 SPRAY TEMP CTL R, #2 OUTLET TEMP
            CTL / MAIN STEAM TEMP CTL A. Without this the spray stays shut and the main steam temperature runs to the top of the range */
         {
           const svOf = (k, tg) => {
@@ -1208,13 +1208,16 @@
               h.autoSv(k, inn, svOf(k, inn));
               q.a = t;
             }
-            if (q.a != null && q.o == null && h.pv(k, outt) >= sv2 - 10) {
-              h.autoSv(k, outt, sv2);
-              q.o = t;
-            }
-            if (q.o != null && q.r == null && t >= q.o + 60) {
+            /* 2.5.0-beta.3: the inner R first, then the outer A a minute later. The drawing forces the outer loop MANUAL while the
+               inner is not REMOTE (ABC-011 M.0230 = TICBR1130.LOC, ABC-012 M.0240 = TICBR1150.LOC, drawing audit ABC-011-1 / 012-1),
+               so an A pressed on the outer before the inner R is refused (before: A outer, then R inner: TICBR1140 / TICMS1004 stayed M) */
+            if (q.a != null && q.r == null && h.pv(k, outt) >= sv2 - 10) {
               h.rem(k, inn);
               q.r = t;
+            }
+            if (q.r != null && q.o == null && t >= q.r + 60) {
+              h.autoSv(k, outt, sv2);
+              q.o = t;
             }
           }
         }
@@ -1434,7 +1437,7 @@
       hot: true,
       chain: ['roll', 'up'],
       title: 'M4 · 45 → 150 MW: coal master REMOTE, boiler master AUTO, DCS control mode ON, CCS',
-      how: 'Start hot, tapos ang hakbang 4 (roll → sync → 45 MW: isang summary row), tapos ang hakbang 5: HS-COAL M 33.1 % (COAL CALORIE CORR. 4150, 11.png); PA FLOW BIAS HIC-TADBS M 0 (ABC-002: ang −30 T/H ng 7.PNG ay trim sa 150 MW; sa minimum air ay pinuputol nito ang coal demand, LN40); FIC-CM M = FIC-CF; FIC-CF, FICFA1071, FICFA1081 R (REMOTE: hangin ayon sa air demand ng drawing, ABC-006, minimum 446 T/H); HIC-BM (M) inililipat hanggang SV ng FIC-CM = coal, tapos FIC-CM R + A (tinatanggap ng drawing: M.0130 = 0); TCS target 0.5 ~ 3 MW / min ayon sa MSP (3 sa ≥ 124, 1.5 sa ≥ 121, 0.5 sa ≥ 118, tigil sa ilalim), HIC-BM (M) dinadagdagan lang hanggang 123; SH spray: TICBR1130 / TICBR1150 A sa SV (394 / 418 °C) kapag 5 °C na lang ang layo ng PV, TICBR1140 (462) / TICMS1004 (541) A, tapos inner R (cascade, 4.PNG); sa MSF > 230 T/H at wala na ang BU-CMD (M.2013 = 0): PIC-COBM A SV 123, HS-COAL A, HIC-BM A (.MAN = 0); ang drawing ang nagpapadala ng DCS CONTROL MODE ON (O.0178 → TCS → I.0082); EIC-TM A (M.2016 = 0); HIC-ULD A TARGET 150 (HIC-MWRL 3 MW/min); O2 trim 50 % → A sa itaas ng 220 T/H; PICFG108 A sa MV ≥ 16 %. Tigil 15 min pagkatapos ng 150 MW (~2.5 h plant time, ~3 min real).',
+      how: 'Start hot, tapos ang hakbang 4 (roll → sync → 45 MW: isang summary row), tapos ang hakbang 5: HS-COAL M 33.1 % (COAL CALORIE CORR. 4150, 11.png); PA FLOW BIAS HIC-TADBS M 0 (ABC-002: ang −30 T/H ng 7.PNG ay trim sa 150 MW; sa minimum air ay pinuputol nito ang coal demand, LN40); FIC-CM M = FIC-CF; FIC-CF, FICFA1071, FICFA1081 R (REMOTE: hangin ayon sa air demand ng drawing, ABC-006, minimum 446 T/H); HIC-BM (M) inililipat hanggang SV ng FIC-CM = coal, tapos FIC-CM R + A (tinatanggap ng drawing: M.0130 = 0); TCS target 0.5 ~ 3 MW / min ayon sa MSP (3 sa ≥ 124, 1.5 sa ≥ 121, 0.5 sa ≥ 118, tigil sa ilalim), HIC-BM (M) dinadagdagan lang hanggang 123; SH spray: TICBR1130 / TICBR1150 A sa SV (394 / 418 °C) kapag 5 °C na lang ang layo ng PV, tapos inner R, tapos TICBR1140 (462) / TICMS1004 (541) A (cascade, 4.PNG; ang drawing ay nagfo-force manual sa outer habang hindi REMOTE ang inner); sa MSF > 230 T/H at wala na ang BU-CMD (M.2013 = 0): PIC-COBM A SV 123, HS-COAL A, HIC-BM A (.MAN = 0); ang drawing ang nagpapadala ng DCS CONTROL MODE ON (O.0178 → TCS → I.0082); EIC-TM A (M.2016 = 0); HIC-ULD A TARGET 150 (HIC-MWRL 3 MW/min); O2 trim 50 % → A sa itaas ng 220 T/H; PICFG108 A sa MV ≥ 16 %. Tigil 15 min pagkatapos ng 150 MW (~2.5 h plant time, ~3 min real).',
       want: 'Hakbang 4 11 / 11; coal master FIC-CM R + A (M.0130 = 0), HS-COAL A; HIC-BM A sa > 230 T/H, PIC-COBM A; I.0082 = 1 sa loob ng 20 s pagkatapos ng HIC-BM A (O.0178 ng drawing); EIC-TM A (M.2016 = 0); 150 MW sa 15 ~ 60 min mula HIC-ULD A; 150 MW: MW 150 ± 3 %, MSF 474 ± 5 %, MSP sa SV ± 3 %, coal 87 ± 10 %, MST / RHT 542 ± 5 %, RHP 34 ± 5 % (4.PNG / 03.png); SH spray R + A (MV ≈ 58 / 30 %); O2 trim A, O2 2.5 ~ 6.5 %; PICFG108 A; drum level ±150, 3-element; MSP 113 ~ 133 buong daan; walang trip; HP bypass sarado.',
       secs: 0,
       run() {},
