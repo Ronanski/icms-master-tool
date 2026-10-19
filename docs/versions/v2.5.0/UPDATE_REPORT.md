@@ -63,3 +63,26 @@
 - **Work Done:** merge ng `main` sa branch (walang rebase / force push). Bersyon 2.5.0-beta.1. Ang ayos ng UAT / CHECK sa status bar (dating beta.4) ay ibinalik sa ayos ng 2.4.0, dahil ang bagong shell na ang naglalagay sa kanila. Nanatili ang solid na trace (walang glow). Docs inilipat sa `docs/versions/v2.5.0/`.
 - **As Left:** sa 2.5.0-beta.1 html: audit230 19 / 19, audit230b 4 / 4, audit230c 5 / 5, tests.js 11 / 11, world 11 / 11, ditl150 9 / 9, hmi_op 34 / 34, unit_load 19 / 19, plant_view 18 / 18 (test ng 2.4.0), isolated PASS, check SAME.
 - **Status:** Pass.
+
+## 2.5.0-beta.2 ~ beta.4 — Pinagsama ang UI Beta at ang drawing audit; full audit ng engine (2026-10-19)
+
+- **Problem (user: "Pareho, sunod-sunod"):** isama ang drawing audit (PR #32, 2.5.0-beta.1) sa UI Beta (PR #34, 2.4.1-beta.10), tapos buong audit ng engine at simulation ng pinagsamang app.
+- **As Found:**
+  - **beta.2 (merge lang):** sira ang M4 cold start-up: 3 / 17 (coal transfer: feeder A at C hindi tumatakbo sa AUTO, bed 622 °C; hindi umabot sa 150 MW). M4 45 → 150 MW: 1 / 14. Galing sa PR #32 (pareho sa 2.5.0-beta.1 lang; ang 2.4.1-beta.10 ay 16 / 17 at 14 / 14).
+  - **Sanhi:** ang average select ng ABC-001C EIC-TM.PV (generator MW AI0419 / AI0774) ay humahawak ng huling value kapag 0 lahat ng input (zero = lost signal, rule ng user v1.20.34). Sa Start cold / warm / hot, hawak pa nito ang 151.5 MW ng 150 MW snapshot. Ang "MW" link sa ABC-013 ay nag-set ng M.025A (> 81.5 MW), at dahil nakakabit na ng audit ang turbine trip / 52G1 open (ABC-013-1), naging M.025B = 1 (house operation) habang start-up. Dahil dito, ABC-004A M.0141: lahat ng coal feeder ay force MANUAL, at ang FIC-CF ay back-up sa 0.
+  - **Sa scenario:** inner R bago outer A ang SH spray. Ayon sa drawing (ABC-011 M.0230 = TICBR1130.LOC, ABC-012 M.0240 = TICBR1150.LOC, audit ABC-011-1 / 012-1), MANUAL ang outer habang hindi REMOTE ang inner. Ang lumang hakbang (A sa outer bago R sa inner) ay hindi tinatanggap, kaya nanatiling M ang TICBR1140 / TICMS1004.
+  - **pid_am FIC-CM (ABC-004A):** ang test ang mali, hindi ang app. Ang manual leg ng AMT B / T ay M.0130 "COAL MASTER CONTROL FORCE MANUAL & TRACKING" (memory list 101): habang ON, back-up value ang output, hindi ang value ng operator (CLAUDE.md 10).
+- **Work Done:**
+  - `src/analog/engine/hmi-op.js` anPlantCold: walang hawak na MW ang average select ng generator MW (AI0419 / AI0774) sa cold plant. Ang ibang select (pressure, level) ay hindi ginalaw. Ang unang bersyon (lahat ng select) ay nagpabago sa Start hot (HP bypass 90 %, drum level −268 mm), kaya pinaliit ito.
+  - `src/ui/uat/check.js` M4 hakbang 5: inner R, tapos outer A pagkalipas ng 1 min. Pareho rin sa `docs/OPERATOR_GUIDE.md` 5.7.
+  - `tests/regress/pid_am.js`: kapag ON ang back-up ng drawing, ang inaasahang output ay ang back-up value.
+  - Walang binagong drawing, link, formula, range o parameter.
+- **As Left (headless, 2.5.0-beta.3 / beta.4 code):**
+  - **CHECK:** M3 lahat (tt 10, mft 7, bfwp 7, idf 7, paf 6, hh 3); M2 load 14 / 14; M5 load down 14 / 14, normal shutdown 7 / 7, bottle-up 15 / 15. M4 bawat hakbang: cold 10 / 10, coal 9 / 9, byp 8 / 8, roll 11 / 11, 45 → 150 MW 14 / 14.
+  - **M4 Cold start-up (buo):** 15 / 17. RH pressure 9.1 sa bypass stage (alam na mula v2.2.0). Drum level −153 mm sa roll stage ng chain (limit ±150; ang roll na mag-isa ay 11 / 11).
+  - **Full audit, 31 test:** isolated, audit230 / b / c, tests, world, closure, pid_am (56 PASS, 10 hindi masubok ayon sa disenyo), force_manual 68 / 0, controllers_table, panel_sync, faceplate, manstation, overview, events, infocard, abcbar, lookonly, plant_live, plant_view, ditl150, loaddown, unit_trip, hmi_op, reset, switches, stale_beta, unit_load: PASS. Ang values_layout at pv_reacts ay listahan ng diagnostic: pareho ang bilang sa 2.4.1-beta.10. refcheck: F(X) 89 table, 136 PID / MAN / SUMA row, 157 AI range: walang bagong pagkakaiba.
+  - UI: layout.js lahat PASS (walang binago sa UI mula 2.4.1-beta.10).
+- **Natuklasan pero hindi binago:**
+  - RH blow-off MV-HR1391 (flow diagram K1AU3-PD-012 rev D): 6" na branch, walang nakasulat na capacity. Ang `unit.js` rhb 0.1 ay IPINALAGAY pa rin; ang tantiya mula sa 6" RH safety valves ay ~0.13 (inference).
+  - LP bypass PCV-HR1010 (ang PICHR1003 ay pangalan ng controller): ang spray FT-CD1115 0 ~ 46 T/H ay tumutugma sa ~140 T/H na steam (lpb ~0.3); ang `unit.js` ay 0.8 (IPINALAGAY, beta.16). Ito ang malamang na sanhi ng RH 9.1. Hindi binago: apektado ang lahat ng scenario.
+- **Status:** Pass maliban sa M4 buong takbo 15 / 17. Ang PR #32 ay kasama na rito: puwede nang isara (desisyon ng user).
