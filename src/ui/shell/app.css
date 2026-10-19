@@ -117,13 +117,13 @@ body.app2 *::-webkit-scrollbar-thumb{background:#223040;border-radius:0}
 #sfoot #stchip{gap:4px}
 #sfoot #stchip span{font:600 11px var(--mf)!important;padding:1px 8px!important;border-radius:2px!important;letter-spacing:.08em}
 #sfoot .sclock{font:11px var(--mf)!important;color:#9fb0bd!important}
-#sfoot #st{flex:1 1 auto;min-width:0;border:0!important;background:transparent!important;font:11px var(--mf)!important;color:var(--c-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sfoot #st{flex:1 1 auto;min-width:0;border:0!important;background:transparent!important;font:11px var(--mf)!important;color:var(--c-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block!important;line-height:24px}
 #sfoot #evbtn{height:24px!important;border:0!important;border-radius:0!important;background:transparent!important;font:600 11px var(--mf)!important;color:var(--c-tx2)!important;cursor:pointer}
 #sfoot #evbtn.new{color:#ffd78a!important;box-shadow:inset 0 -2px 0 var(--c-man)}
-#sfoot .shint{flex:1 1 auto;min-width:0;font:11px var(--mf)!important;color:var(--c-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:none}
-body:not([data-tab=logic]) #sfoot #st{display:none}
-body:not([data-tab=logic]) #sfoot .shint{display:flex}
-body:not([data-tab=logic]) #sfoot #stchip span:nth-child(2){display:none}
+#sfoot .shint{flex:1 1 auto;min-width:0;font:11px var(--mf)!important;color:var(--c-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:none;line-height:24px}
+body:not([data-tab=logic]) #sfoot #st{display:none!important}
+body:not([data-tab=logic]) #sfoot .shint{display:block}
+#sfoot #stchip span:nth-child(2){display:none}
 /* the floating UAT / CHECK buttons of the test panels are docked (UAT in TOOLS, CHECK in OPERATE) */
 body.app2 #uatb,body.app2 #chkb{position:static!important;bottom:auto!important;left:auto!important;right:auto!important;z-index:auto!important;height:28px!important;padding:0 9px!important;font:600 12px var(--uf)!important;border-radius:3px!important}
 body.app2 #toolsws #uatb{height:34px!important}
@@ -185,3 +185,106 @@ body.app2 .plbtn,body.app2 .libbtn{display:none!important}
  #toolsws{padding:10px 10px 40px}
  #toolsws .tgrid{grid-template-columns:1fr}
 }
+/* ===== 2.4.0-beta.2: UI / UX pass (user 2026-10-19: industrial, flat, aligned, no overlap, nothing extra) ===== */
+:root{--h:28px;--r:2px}
+@media (max-width:1180px){:root{--h:32px}}
+@media (max-width:700px){:root{--h:34px}}
+/* one height and one corner for every control of the bar */
+#gsbar .tabs,#gsbar .sub,#gsbar .gs-search #gscope{border-radius:var(--r)}
+#gsbar .tabs button,#gsbar .sub button{height:calc(var(--h) + 2px)}
+#gsbar :is(.tbar,.gs-set,.gs-search) :is(button,select,label.b),#gsbar #srchbtn{height:var(--h)!important;min-height:var(--h)!important;border-radius:var(--r)!important;box-sizing:border-box}
+#gsbar .gs-search #ansb{height:var(--h)!important;border-radius:var(--r)!important}
+#gsbar .gs-search #gscope button{height:calc(var(--h) - 6px)!important;min-height:0!important}
+#gsbar .gs-search .infob{min-width:var(--h);padding:0!important;justify-content:center;background:var(--c-ctl);border:1px solid var(--c-line2);color:var(--c-tx2);cursor:pointer;display:inline-flex;align-items:center}
+#gsbar #srchbtn{display:none;flex:none;width:var(--h);padding:0!important;align-items:center;justify-content:center;background:var(--c-ctl);border:1px solid var(--c-line2);color:var(--c-tx2);cursor:pointer}
+#gsbar #srchbtn svg{width:15px;height:15px}
+body.srchopen #gsbar #srchbtn{background:var(--c-accbg);border-color:#2a6a98;color:#fff}
+#gsbar .tbar{flex:1 1 auto}
+#gsbar .tb{padding:0 8px 0 0;margin-right:4px;gap:4px}
+#gsbar .tbar select{max-width:72px}
+#gsbar .tbar :is(#anshbox,#shbox) select{max-width:170px}
+/* desktop: a compact search that opens wide over the bar while it is used (the tools never move) */
+#gsbar .gs-search{flex:0 0 220px;min-width:0;position:relative}
+#gsbar .gs-search :is(#gscope,.infob){display:none!important}
+#gsbar .gs-search:focus-within{position:absolute;right:46px;top:4px;width:min(620px,70vw);z-index:90;background:var(--c-strip);padding:0 0 0 6px;box-shadow:-12px 0 12px var(--c-strip)}
+#gsbar .gs-search:focus-within :is(#gscope,.infob){display:flex!important}
+/* the sheet list is open on the left: the sheet buttons of the bar repeat it */
+@media (min-width:1181px){body.app2:has(#side:not(.min)) #gsbar .g-sheet{display:none!important}}
+/* narrow desktop and tablet: the search is the magnifier icon and opens as a row under the bar */
+@media (max-width:1280px){
+ #gsbar #srchbtn{display:inline-flex}
+ #gsbar .gs-search,#gsbar .gs-search:focus-within{display:none;position:absolute;left:0;right:0;top:100%;width:auto;padding:6px 8px;background:var(--c-strip);border-bottom:1px solid var(--c-line);box-shadow:0 8px 16px #0008;z-index:90}
+ body.srchopen #gsbar .gs-search{display:flex!important}
+ body.srchopen #gsbar .gs-search :is(#gscope,.infob){display:flex!important}
+ body.app2 #gsbar .gs-search{order:0;flex:none}
+ body.app2 #gsbar .gs-set{order:0}
+}
+/* tablet: two rows, tabs on the first, the tools of the tab on the second; nothing scrolls out of view */
+@media (max-width:1180px) and (min-width:701px){
+ #gsbar .tabs{order:0}
+ #gsbar .sub{order:1}
+ #gsbar #srchbtn{order:2;margin-left:auto}
+ body.app2 #gsbar .gs-set{order:3}
+ #gsbar .tbar{order:4;flex:1 1 100%;border-top:1px solid var(--c-line);padding-top:4px;margin:0 -8px;padding-left:8px;padding-right:8px}
+ body:is([data-tab=library],[data-tab=tools]) #gsbar .tbar{display:none}
+}
+/* phone: tabs on the first row; ABC / DITL, the tools, search and ⚙ on the second */
+@media (max-width:700px){
+ #gsbar .tabs{order:0}
+ #gsbar .sub{order:1}
+ #gsbar .tbar{order:2;flex:1 1 0;min-width:0;mask-image:linear-gradient(90deg,#000 88%,transparent);-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent)}
+ #gsbar #srchbtn{order:3}
+ body.app2 #gsbar .gs-set{order:4}
+ body:is([data-tab=library],[data-tab=tools]) #gsbar #srchbtn{margin-left:auto}
+ body[data-tab=logic] #gsbar .gs-search{display:none}
+ body.srchopen[data-tab=logic] #gsbar .gs-search{display:flex!important}
+ #gsbar .tbar select{max-width:64px}
+}
+/* sheet title strip: one control height */
+body.app2 #anmeta :is(button,select){height:24px!important;min-height:24px!important;padding:0 8px!important;font-size:11.5px!important;border-radius:var(--r)!important}
+/* message line: a small note above the status bar, left, never over the middle of the drawing */
+body.app2 #toast{left:10px!important;right:auto!important;transform:none!important;bottom:calc(var(--footH,24px) + 8px)!important;max-width:min(460px,calc(100vw - 20px))!important;background:#0c131a!important;border:1px solid var(--c-line2)!important;border-left:3px solid var(--c-acc)!important;border-radius:var(--r)!important;padding:6px 10px!important;font:12px var(--uf)!important;color:var(--c-tx)!important;box-shadow:0 6px 18px #0009;z-index:80!important}
+/* test panels (UAT, CHECK): docked on the right between the bar and the status bar, never over the bar or the sheet list */
+body.app2 :is(#uatp,#chkp){top:var(--topH,40px)!important;bottom:var(--footH,24px)!important;left:auto!important;right:0!important;width:min(460px,100vw)!important;border-right:0!important;border-left:1px solid var(--c-line2)!important;background:var(--c-pane)!important;box-shadow:-10px 0 28px #000a;z-index:66!important;font-size:12.5px!important}
+body.app2 :is(#uatp,#chkp) :is(button,select){border-radius:var(--r)!important;background:var(--c-ctl)!important;border:1px solid var(--c-line2)!important;color:var(--c-tx2)!important}
+body.app2 :is(#uatp,#chkp) :is(button.go,button.on){background:var(--c-accbg)!important;border-color:#2a6a98!important;color:#d8eeff!important}
+body.app2 :is(#uatp,#chkp) h3{color:var(--c-tx)!important;font:600 12px var(--uf)!important;letter-spacing:.1em;text-transform:uppercase}
+body.app2 :is(#uatp,#chkp) :is(.card,.sc,details,section){border-radius:var(--r)!important}
+/* DITL side table (Timers / MOV / motor): folded by default, docked above the status bar */
+body.app2 #tp{right:10px!important;bottom:calc(var(--footH,24px) + 8px)!important;background:var(--c-pane)!important;border:1px solid var(--c-line2)!important;border-radius:var(--r)!important;box-shadow:0 6px 18px #0009;z-index:30!important}
+body.app2 #tp>div:first-child b{font:600 11px var(--uf);letter-spacing:.1em;text-transform:uppercase;color:var(--c-dim)}
+/* right pane headings: room above and below */
+body.app2 #anp h4{margin:12px 0 6px!important;padding-bottom:4px!important}
+/* ⚙ menu: every row the same width */
+.ddm .only{display:contents}
+.ddm .only>*{display:block!important;width:100%!important;margin:0 0 6px!important;box-sizing:border-box}
+.ddm>button,.ddm>select,.ddm .only>select{border-radius:var(--r)!important}
+/* OPERATE: a screen without values gives its width to the graphic; the list is plain names */
+#plantws.noval{grid-template-columns:240px 1fr 0!important}
+#plantws.noval #plvals,#plantws.noval .plbar .b:last-child{display:none!important}
+#pllist button:not(.novg) small{display:none}
+#pllist button{padding:7px 10px!important}
+#plantws .plbar .b{height:24px;border-radius:var(--r)}
+#plantws .pllive{white-space:nowrap}
+#plantws #plsys{display:none}
+@media (max-width:1180px){#plantws.noval{grid-template-columns:200px 1fr 0!important}}
+@media (max-width:700px){
+ #plantws,#plantws.noval{grid-template-columns:1fr!important;grid-template-rows:1fr!important}
+ #plantws #plsys{display:inline-flex;align-items:center;flex:none}
+ #plantws #plleft{position:absolute;left:0;top:0;bottom:0;width:min(300px,86vw);max-height:none;z-index:6;display:none;box-shadow:8px 0 24px #000a}
+ #plantws.lsopen #plleft{display:block}
+ #plantws .plbar{gap:6px}
+ #plantws .plbar b{min-width:0;flex:1 1 auto;font-size:12.5px}
+ #plantws .plbar .b{height:30px}
+}
+/* TOOLS cards: flat, aligned */
+#toolsws .tcard{border-radius:var(--r)}
+#toolsws .tcard :is(button,select,label.b){height:32px;min-height:32px;border-radius:var(--r)}
+body.app2 #toolsws #uatb{height:32px!important}
+/* flat corners everywhere in the frame */
+.ddm,body.app2 :is(#infocard,#evbox),#toolsws .tcard,body.app2 #opp .fp,body.app2 .fpov,body.app2 .fpov .ovc{border-radius:var(--r)!important}
+/* messages of the app go to the status bar (a message line, like a DCS), not over the drawing */
+body.app2 #toast{display:none!important}
+#sfoot .smsg{display:none;flex:1 1 auto;min-width:0;font:600 11px var(--mf)!important;color:#d8eeff;background:var(--c-accbg);box-shadow:inset 3px 0 0 var(--c-acc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:24px;cursor:pointer}
+body.hasmsg #sfoot .smsg{display:block}
+body.hasmsg #sfoot :is(#st,.shint){display:none!important}
