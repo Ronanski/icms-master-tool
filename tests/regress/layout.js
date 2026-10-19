@@ -1,4 +1,4 @@
-// 2.4.1-beta.7: LOGIC page layout. Top bar [VIEW | Run] ▶▶ ⏱ (step back / step size / speed / Reset in the ⏱ menu), drawing tools
+// 2.4.1-beta.7 / beta.8: LOGIC page layout. Top bar [VIEW | Run] ▶▶ ⏱ (step back / step size / speed / Reset in the ⏱ menu), drawing tools
 // (Fit / Zoom / Values / Wire) on the drawing, right panel with tabs on ABC and DITL, VIEW keeps the panel readable (no fading).
 // The same buttons as before (moved, same handlers): Run here = SIM. Usage: node tests/regress/layout.js [html]
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/node22/lib/node_modules/playwright');const fs=require('fs');
@@ -17,6 +17,11 @@ ck(await vis('#lotools .lo-an')&&!(await vis('#gsbar .g-view')),n+': Fit / Zoom 
 await p.evaluate(()=>[...document.querySelectorAll('#gsbar .lo-tm')].find(x=>x.offsetHeight).click());await p.waitForTimeout(200);
 const reset=await p.evaluate(()=>{const m=document.querySelector('.lo-pop.open');const r=m&&[...m.querySelectorAll('button')].find(x=>/^Reset$/.test(x.textContent.trim()));return !!r&&r.offsetHeight>0});
 ck(reset,n+': ⏱ opens and Reset is there');await p.mouse.click(5,h-60);
+// Panel button on the drawing closes and opens the ABC panel (2.4.1-beta.8)
+const anOpen=()=>p.evaluate(()=>{const a=document.getElementById('anp');return !!a&&!a.classList.contains('min')&&a.offsetWidth>0});
+const o0=await anOpen();await p.evaluate(()=>document.querySelector('#lotools .lo-pnl').click());await p.waitForTimeout(400);const o1=await anOpen();
+await p.evaluate(()=>document.querySelector('#lotools .lo-pnl').click());await p.waitForTimeout(400);const o2=await anOpen();
+ck(o0&&!o1&&o2&&await vis('#lotools .lo-pnl'),n+': Panel button on the drawing hides and shows the ABC panel');
 // VIEW: no fading, banner
 await p.evaluate(()=>{if(!AN.view)[...document.querySelectorAll('#gsbar .g-run .lo-seg button')][0].click()});await p.waitForTimeout(400);
 const vw=await p.evaluate(()=>{const a=document.getElementById('anp');const i=a&&[...a.querySelectorAll('input,select')].find(x=>x.offsetHeight);return {view:document.body.classList.contains('anview'),op:i?getComputedStyle(i).opacity:'none',ban:a?getComputedStyle(a,'::before').content:''}});
@@ -39,10 +44,15 @@ const dseg=await p.evaluate(()=>{const s=document.querySelector('#gsbar .g-ditl 
 ck(dseg&&/^VIEW$/.test(dseg[0]),n+': DITL top bar = [VIEW | Run] ('+dseg+')');
 ck(await vis('#lotools .lo-di #bfit')&&!(await vis('#lotools .lo-an')),n+': DITL Fit / Zoom on the drawing');
 if(!(await p.evaluate(()=>{const d=document.getElementById('dp');return !!d&&d.offsetHeight>0}))){await p.evaluate(()=>{const t=document.getElementById('dptab');t&&t.click()});await p.waitForTimeout(400)}
+const dOpen=()=>p.evaluate(()=>{const d=document.getElementById('dp');return !!d&&d.offsetWidth>0});
+const d0=await dOpen();await p.evaluate(()=>document.querySelector('#lotools .lo-pnl').click());await p.waitForTimeout(400);const d1=await dOpen();
+await p.evaluate(()=>document.querySelector('#lotools .lo-pnl').click());await p.waitForTimeout(400);const d2=await dOpen();
+ck(d0&&!d1&&d2,n+': Panel button on the drawing hides and shows the DITL panel');
 const dt=await p.evaluate(()=>[...document.querySelectorAll('#dp .lo-tabs button')].map(x=>x.textContent));
 ck(dt.join()==='Inputs,Timers,Valves,Outputs',n+': DITL panel tabs '+dt.join(' / '));
 const drows=async k=>{await p.evaluate(k=>LO.setDi(k),k);await p.waitForTimeout(250);return p.evaluate(()=>[...document.querySelectorAll('#dp .dp-r')].filter(d=>d.offsetHeight).map(d=>d.dataset.k))};
 const di=await drows('in');ck(di.every(k=>k==='in'),n+': DITL Inputs tab shows only inputs ('+di.length+' rows)');
 const dto=await drows('out');ck(dto.every(k=>k==='out'),n+': DITL Outputs tab shows only outputs ('+dto.length+' rows)');
+ck(await p.evaluate(()=>{const o=document.getElementById('opp');return !o||o.offsetWidth===0}),n+': operator faceplate panel not shown on DITL');
 ck(errs.length===0,n+': no page error'+(errs.length?' ('+errs[0]+')':''));await p.close()}
 await b.close();console.log(f?f+' FAIL':'ALL PASS');process.exit(f?1:0)})();

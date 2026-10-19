@@ -69,7 +69,18 @@
       panel = byTxt(gView, /^Panel$/),
       dfit = $('bfit');
     if (fit) fit.textContent = 'Fit';
-    tools.append(E('div', { cls: 'lo-an' }, [xback, fit, zoom, values, wire]), E('div', { cls: 'lo-di' }, [dfit, dz]));
+    /* Panel: shows / hides the right panel of the page in view (the old top bar Panel buttons, hidden, do the work) */
+    const pnl = E('button', {
+      cls: 'lo-pnl',
+      txt: 'Panel',
+      title: 'Show / hide the right panel',
+      on: () => {
+        const b = document.body.classList.contains('an') ? panel : dpn;
+        if (b) b.click();
+        setTimeout(place, 50);
+      }
+    });
+    tools.append(E('div', { cls: 'lo-an' }, [xback, fit, zoom, values, wire]), E('div', { cls: 'lo-di' }, [dfit, dz]), pnl);
     document.body.append(tools);
     [panel, dpn].forEach(x => x && x.classList.add('lo-gone'));
     gView.classList.add('lo-gone');
@@ -78,6 +89,14 @@
         r = cv && cv.getBoundingClientRect();
       if (!r || !r.width || document.body.dataset.tab !== 'logic') return (tools.style.display = 'none');
       tools.style.display = 'flex';
+      {
+        const an = document.body.classList.contains('an'),
+          a = $('anp'),
+          o = $('opp'),
+          d = $('dp'),
+          open = an ? (a && !a.classList.contains('min')) || (o && o.offsetWidth > 0) : !!(d && d.offsetWidth > 0);
+        pnl.classList.toggle('on', !!open);
+      }
       let right = r.right;
       for (const p of [$('anp'), $('opp'), $('dp')]) {
         const q = p && p.offsetParent && p.getBoundingClientRect();
