@@ -426,7 +426,33 @@
     });
     const gRun = E('div', { cls: 'tb g-run' }, [run, back, next, stepSel, speedSel, reset, view]);
     const gDitl = E('div', { cls: 'tb g-ditl' }, [mode, dfit]);
-    const gView = E('div', { cls: 'tb g-view' }, [fit, values, wire, panel, xback]);
+    /* Zoom (UI audit #8): at Fit the block text is ~4 px; Zoom makes it ~12 px, centred on the selected block (or the middle) */
+    const zoom = E('button', {
+      txt: 'Zoom',
+      cls: 'an-only',
+      title: 'Zoom to readable text (12 px) on the selected block; Fit shows the whole sheet again',
+      on: () => {
+        try {
+          const sh = AN.cs(),
+            v = sh && AN.av[sh.name],
+            svg = $('svg');
+          if (!v || !svg) return;
+          const th = ((sh.R && sh.R.tx) || []).map(t => t.h).filter(h => h > 0).sort((a, b) => a - b),
+            h = th[th.length >> 1] || 4.7,
+            r = svg.getBoundingClientRect();
+          if (!r.width) return;
+          const g = svg.querySelector('g.selg'),
+            bb = g && g.childNodes.length ? g.getBBox() : null,
+            cx = bb && bb.width ? bb.x + bb.width / 2 : v[0] + v[2] / 2,
+            cy = bb && bb.width ? bb.y + bb.height / 2 : v[1] + v[3] / 2,
+            w = Math.min(v[2], (r.width * h) / 12),
+            hh = (w * r.height) / r.width;
+          v.splice(0, 4, cx - w / 2, cy - hh / 2, w, hh);
+          svg.setAttribute('viewBox', v.join(' '));
+        } catch (e) {}
+      }
+    });
+    const gView = E('div', { cls: 'tb g-view' }, [fit, zoom, values, wire, panel, xback]);
     const gSheet = E('div', { cls: 'tb g-sheet' }, [sheetsBtn, AN_(shbox), DI_(dshbox)]);
     /* OPERATE: Start ▾ (starting state of the plant, TCS, field valves) and the CHECK scenarios */
     const startBtn = E('button', { txt: 'Start ▾', title: 'Starting state of the plant: 150 MW, cold, warm, hot; TCS panel; field valves' });

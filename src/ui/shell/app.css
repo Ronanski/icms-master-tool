@@ -296,3 +296,27 @@ body.hasmsg #sfoot :is(#st,.shint){display:none!important}
 body.pmoff #sfoot .spm{display:flex!important}
 /* engine buttons carry their old toolbar spacing inline: inside the bar and the cards the gap alone spaces them */
 body.app2 :is(#gsbar,#toolsws,.ddm) :is(button,select,label.b){margin-left:0!important;margin-right:0!important}
+/* ===== 2.4.1-beta.2: UI audit #5-#8 (state colour, touch size, small text) ===== */
+/* Run / Pause: green = "press to run"; while running the button reads Pause and is neutral (not green) */
+#gsbar .tbar :is(.tb-run,#bmode).on{background:var(--c-ctl)!important;border-color:#8a7a3a!important;color:#ffe1a0!important;box-shadow:inset 0 -2px 0 #d9b44a!important}
+/* WCAG 2.5.8: every control at least 24 px on PC */
+body.app2 #sidetg{min-width:28px!important;min-height:28px!important;height:auto!important}
+body.app2 #anp .ph button,body.app2 #anp .ir .l1 :is(button,input:not([type=checkbox]):not([type=range])){min-height:26px}
+body.app2 #anp .ph button{min-width:28px}
+body.app2 #anp input[type=checkbox]{width:18px;height:18px;margin:3px}
+body.app2 #anp input[type=range]{min-height:24px}
+/* touch screens (tablet / phone): 44 px controls (Apple 44 pt / Material 48 dp) */
+@media (pointer:coarse){
+ :root{--h:44px}
+ body.app2 #sidetg,body.app2 #anp .ph button{min-width:44px;min-height:44px}
+ body.app2 #anp .ir .l1 :is(button,input:not([type=checkbox]):not([type=range])){min-height:40px}
+ body.app2 #anp input[type=checkbox]{width:24px;height:24px}
+ body.app2 #anp input[type=range]{min-height:40px}
+ body.app2 #sidelist button{min-height:44px}
+ /* every other button / field: 44 px tall, 44 px wide (the vertical Panel tab is already 64 px tall) */
+ body.app2 :is(button,select,input:not([type=checkbox]):not([type=range]):not([type=radio]),label.b):not(#anptab){min-height:44px!important}
+ body.app2 :is(button,label.b):not(#anptab){min-width:44px!important}
+}
+/* small panel text -> 12 px */
+body.app2 #anlist>button>span.st,body.app2 #sidelist button .st,body.app2 #anp>small,body.app2 #anlists details.sec>div.sh,body.app2 #anp .ir .l1 small,body.app2 #anp .ir .ds{font-size:12px!important}
+#plantws .pllive,#plantws .pldraft{font-size:12px}
