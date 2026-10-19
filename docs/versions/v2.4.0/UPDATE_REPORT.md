@@ -15,6 +15,6 @@ Utos ng user (2026-10-19): "magulo, walang direksyon, kalat" ang app. Full audit
   - Test: `tests/regress/ditl_toolbar.js` isinulat muli para sa bagong shell (desktop / tablet / phone).
 - **As Left (headless, build 2.4.0-beta.1):**
   - Screenshot ng bawat tab at ng phone layout: malinis, isang hilera ang top bar sa 1280 / 1440 px (40 px), 87 px sa phone.
-  - Engine regression na pareho ng v2.2.0: `tests.js` T1 ~ T5 + S1 ~ S6 PASS (54 sheet, 165 timer, 105 ALM, 22 PID dMVH), faceplate 68 controller, overview, infocard, abcbar, lookonly, events, manstation, plant_live ALL PASS; `ditl_toolbar.js` ALL PASS (3 laki ng screen). Tingnan ang HANDOFF para sa natitira (world, check_panel, ditl150, stale_beta, inapp_update).
+  - Engine regression na pareho ng v2.2.0: `tests.js` T1 ~ T5 + S1 ~ S6 PASS (54 sheet, 165 timer, 105 ALM, 22 PID dMVH), faceplate 68 controller, overview, infocard, abcbar, lookonly, events, manstation, plant_live ALL PASS; `ditl_toolbar.js` ALL PASS (3 laki ng screen). world, ditl150, stale_beta, inapp_update ALL PASS. CHECK panel (plant scenarios): 18 / 19 PASADO; ang tanging mali ay ang kilalang M4 Cold start-up (buo) 16 / 17 (RH pressure 9.1, limit 9.0), pareho ng v2.2.0, hindi galing sa shell.
 - **Hindi pa nasubok:** totoong tablet / phone, apk / exe.
 - **Susunod na Beta (ayon sa disenyo):** DITL sa loob ng LOGIC na may parehong panel; alisin ang lumang Plant window; paikliin pa ang ⚙; linisin ang repo (package.json version, HANDOFF, lumang branch).
