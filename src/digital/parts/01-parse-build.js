@@ -9,6 +9,8 @@ let S = { sheets: [], cur: 0 },
   VB = {},
   SIM = false;
 const LEFT = ['F', 'L', 'T', 'S'];
+/* 2.4.1-beta.4 (user 2026-10-19): the DITL page works like the ABC page; the drawing edit tools are gone (the drawing is read from the DXF) */
+const NOEDIT = true;
 try {
   const j = localStorage.getItem('ditl.v1');
   if (j) S = JSON.parse(j);

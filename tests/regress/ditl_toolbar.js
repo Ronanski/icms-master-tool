@@ -1,5 +1,6 @@
-// New shell (2.4.0): on the LOGIC tab the DITL page shows Simulate / Fit in the top bar, the old ABC and DITL toolbars are hidden,
-// the editor tools live in the TOOLS tab, every button still works, and switching to ABC brings the ABC groups back. Desktop, tablet, phone.
+// 2.4.1-beta.4: the DITL page works like ABC. The top bar shows Run / Pause, View, Fit (no editor: Simulate / Edit, Delete sheet,
+// Clear cells are gone), the old ABC and DITL toolbars are hidden, Health still opens from TOOLS, and switching to ABC brings
+// the ABC groups back. Desktop, tablet, phone.
 // Usage: node tests/regress/ditl_toolbar.js [html]
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/node22/lib/node_modules/playwright');
 const fs=require('fs');
@@ -17,17 +18,20 @@ for(const [n,w,h] of [['desktop',1440,900],['tablet',1024,768],['phone',390,844]
  const gsH=await page.evaluate(()=>document.getElementById('gsbar').offsetHeight);
  ck(gsH<=(n==='desktop'?70:110),n+': top bar height '+gsH+' px');
  ck(await page.evaluate(()=>document.body.dataset.tab==='logic'),n+': LOGIC tab');
- ck(await vis('bmode')&&await page.evaluate(()=>!!document.getElementById('bmode').closest('#gsbar .g-ditl')),n+': Simulate button in the top bar');
+ const run=()=>page.evaluate(()=>{const b=document.querySelector('#gsbar .g-ditl .dui-run');return b&&b.offsetHeight>0?b.textContent.trim():null});
+ ck(!!(await run()),n+': Run button in the top bar');
  ck(await vis('bfit'),n+': Fit in view');
- ck(!(await vis('bdel'))&&!(await vis('bclr')),n+': Delete sheet / Clear cells not in the top bar (TOOLS tab)');
- // Simulate toggles the DITL mode
- const t0=await page.textContent('#bmode');await page.evaluate(()=>document.getElementById('bmode').click());const t1=await page.textContent('#bmode');
- const sim=await page.evaluate(()=>typeof SIM!=='undefined'&&SIM);
- ck(/Simulate/.test(t0)&&/Edit/.test(t1)&&sim===true,n+': '+t0.trim()+' -> '+t1.trim()+' (SIM='+sim+')');
- await page.evaluate(()=>document.getElementById('bmode').click());ck(await page.evaluate(()=>SIM===false),n+': back to Edit');
- // TOOLS tab shows the editor tools and Health works from it
+ ck(!(await vis('bmode'))&&!(await vis('bdel'))&&!(await vis('bclr')),n+': no Simulate / Edit, Delete sheet, Clear cells');
+ // Run -> Pause -> View
+ await page.evaluate(()=>document.querySelector('#gsbar .g-ditl .dui-run').click());
+ ck(await page.evaluate(()=>SIM===true&&DPAUSE===false),n+': Run starts the DITL simulation');
+ await page.evaluate(()=>document.querySelector('#gsbar .g-ditl .dui-run').click());
+ ck(await page.evaluate(()=>SIM===true&&DPAUSE===true),n+': Pause holds it');
+ await page.evaluate(()=>[...document.querySelectorAll('#gsbar .g-ditl button')].find(b=>b.textContent.trim()==='View').click());
+ ck(await page.evaluate(()=>SIM===false),n+': View stops it');
+ // TOOLS tab: Health works, no editor tools
  await page.evaluate(()=>[...document.querySelectorAll('#gsbar .tabs button')].find(b=>/TOOLS/i.test(b.textContent)).click());await page.waitForTimeout(600);
- ck(await vis('bhp')&&await vis('bdel'),n+': TOOLS tab shows Health and Delete sheet');
+ ck(await vis('bhp')&&!(await vis('bdel'))&&!(await vis('bmode')),n+': TOOLS tab shows Health, no editor tools');
  await page.evaluate(()=>document.getElementById('bhp').click());await page.waitForTimeout(300);
  ck(await page.evaluate(()=>!document.getElementById('hp').hidden&&/sheets/.test(document.getElementById('hp').textContent)),n+': Health panel opens ('+(await page.evaluate(()=>document.getElementById('hp').textContent.slice(0,60)))+')');
  await page.evaluate(()=>{const c=document.getElementById('hpc');if(c)c.click()});

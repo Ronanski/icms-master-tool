@@ -23,7 +23,7 @@ await page.evaluate(()=>window.lsLibrary(false));await runMode();await W(300);
 await showSearch(page);await page.fill('#ansb','M.0228');await page.press('#ansb','Enter');await W(1200);
 await page.evaluate(()=>[...document.querySelectorAll('#infocard button')].find(x=>x.textContent==='Show').click());await W(900);
 ok(await page.evaluate(()=>AN.view&&!AN.run),'global search Enter -> card -> Show: VIEW / TRACE');
-await page.evaluate(()=>{const c=document.getElementById('infocard');c&&c.remove();AN.setCat('dig')});await W(500);await page.click('#bmode');await W(300);
+await page.evaluate(()=>{const c=document.getElementById('infocard');c&&c.remove();AN.setCat('dig')});await W(500);await page.evaluate(()=>(document.querySelector('#gsbar .dui-run')||document.getElementById('bmode')).click());await W(300);
 await showSearch(page);await page.fill('#ansb','M.3302');await W(2500);
 await page.evaluate(()=>[...document.querySelectorAll('#anfind button')].find(x=>/^Open .*DITL/.test(x.title)).click());await W(900);
 ok(await page.evaluate(()=>!SIM),'DITL in Simulate, a DITL search result -> Simulate off');

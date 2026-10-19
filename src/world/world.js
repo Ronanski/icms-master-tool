@@ -538,7 +538,7 @@
       try {
         build();
       } catch (e) {}
-    const go = W.on && W.idx && ((AN.cat === 'an' && AN.run) || (AN.cat !== 'an' && SIM));
+    const go = W.on && W.idx && ((AN.cat === 'an' && AN.run) || (AN.cat !== 'an' && SIM && !DPAUSE));
     if (!go) {
       if (W.live) W.live = false;
       last = 0;

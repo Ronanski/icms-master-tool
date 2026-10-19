@@ -83,7 +83,7 @@
     ['operate', 'PLANT VIEW', 'Plant graphics with the faceplates (A / M / R, SV, MV) like the operator station; on a PC it opens in its own window'],
     ['logic', 'LOGIC', 'The ABC (analog) and DITL (digital) drawings: trace, run, force'],
     ['library', 'LIBRARY', 'I/O list, memory list, wiring, relay / SER, calculations'],
-    ['tools', 'TOOLS', 'Block tests, audit, health, project files, drawing edit']
+    ['tools', 'TOOLS', 'Block tests, audit, health, project files']
   ];
   let tab = null,
     tabBtns = {},
@@ -249,7 +249,7 @@
   const HINTS = {
     operate: 'PLANT VIEW: pick a system on the left · click a controller or valve = faceplate (A / M / R, SV, MV) · Start ▾ = starting state · CHECK = scenarios',
     library: 'LIBRARY: search an address, tag or description · Find = open the info card',
-    tools: 'TOOLS: block tests, audit, health, review marks, project files, drawing edit'
+    tools: 'TOOLS: block tests, audit, health, review marks, project files'
   };
   window.lsSetTab = setTab;
   function hint() {
@@ -425,7 +425,8 @@
       }
     });
     const gRun = E('div', { cls: 'tb g-run' }, [run, back, next, stepSel, speedSel, reset, view]);
-    const gDitl = E('div', { cls: 'tb g-ditl' }, [mode, dfit]);
+    /* 2.4.1-beta.4: the DITL page has the same tool bar as the ABC page (src/ui/shell/ditl.js); the old Simulate button stays hidden */
+    const gDitl = E('div', { cls: 'tb g-ditl' }, window.DUI ? DUI.bar(dfit) : [mode, dfit]);
     /* Zoom (UI audit #8): at Fit the block text is ~4 px; Zoom makes it ~12 px, centred on the selected block (or the middle) */
     const zoom = E('button', {
       txt: 'Zoom',
@@ -564,8 +565,7 @@
     /* 2.4.0-beta.5: the old Plant window is replaced by the PLANT VIEW (its own window on a PC) */
     if (plantwin) plantwin.remove();
     if (prj) prj.classList.add('lp');
-    const cPrj = card('Project files', 'Save or open the forced values, user values and the sheets you changed.', [AN_(save), AN_(saveas), AN_(openp), AN_(prj), AN_(importAbc), DI_(lab('fdxf')), DI_(lab('fjson')), DI_($('bsave'))]);
-    const cEdit = card('DITL drawing edit', 'Only on the DITL page: cells of the drawing, loose wires, a whole sheet.', [DI_($('bundo')), DI_($('bredo')), DI_($('bclr')), DI_($('bdel')), DI_($('bwire'))]);
+    const cPrj = card('Project files', 'Save or open the forced values and user values.', [AN_(save), AN_(saveas), AN_(openp), AN_(prj), AN_(importAbc)]);
     /* anything left in the old toolbars (future buttons) stays reachable here */
     const cOther = card('Other', '', []);
     document.body.append(toolsws);
