@@ -58,3 +58,23 @@ Pinili ng user (card): **UI ayos #5-8**. Itsura lang; walang binago sa engine, s
 - **As Left (headless):** DITL-56: View → Run = chip RUN; I.0218 REMOTE → 1 at umilaw ang output; PB pindot at hawak, tumakbo ang timer; Pause = PAUSED; ▶▶, Reset, Zoom, View gumagana; TOOLS walang Edit card; walang page error. In-update ang `ditl_toolbar` (Run / Pause / View, walang editor) at `lookonly` (Run button sa halip na Simulate). Regression pasado: ditl_toolbar, ditl150, lookonly, abcbar, infocard, world, events, overview, plant_view, faceplate, check_panel, tests (11).
 - **Kasama ring tinanggal:** Import DXF, Open project at Save project ng DITL (ito ay para sa pag-edit ng drawing). Ang TOOLS hint ay wala nang "drawing edit".
 - **Hindi pa nasubok:** totoong exe / tablet. Sa phone, ang top bar ay nag-i-scroll pakaliwa / pakanan (gaya ng ABC) para makita ang Reset / View / Fit / Zoom / Panel.
+
+## 2.4.1-beta.5 — Theme A / B / C, bagong TOOLS, info card naayos
+- **Problem (user, 2026-10-19):** "sa disenyo, gusto ko lahat, pwede bang theme nalang". Dagdag: ang TOOLS ay "panget tignan".
+- **As Found:** isa lang ang itsura ng app (madilim na asul). Ang TOOLS ay mga button na walang paliwanag. Nakita rin: mula v2.4.0 ang info card (ⓘ sa search, click sa row ng LIBRARY, Find) at ang "ALSO IN ABC" bar ng DITL ay walang style. Lumalabas ito bilang plain text sa ibaba ng screen, dahil nabura ang style nila kasama ng lumang shell.css (2.4.0-beta.1).
+- **Work Done:**
+  - ⚙ → **Theme**:
+    - **Standard:** ang dati.
+    - **A · Control Room:** purong itim, matutulis na kanto, cyan.
+    - **B · Workstation:** asul-abo, bilugang kanto, IBM Plex.
+    - **C · Light:** maliwanag na abo, madilim na text, Paper ang drawing.
+  - Ang theme ay pumipili rin ng font at ng kulay ng drawing; pareho itong mapapalitan pa sa ⚙. Ang guhit ng drawing (galing sa DXF) ay hindi binago, kulay lang.
+  - Ang pula = bukas / tumatakbo at ang kulay ng A / M sa faceplate ay tulad pa rin ng plant DCS. Ang PLANT VIEW graphic at ang faceplate ay nananatiling madilim sa lahat ng theme (DCS screen).
+  - TOOLS: isang tool bawat linya, may pangalan at maikling paliwanag (Tests / Check the drawing / Simulation).
+  - Naibalik ang style ng info card at ng "ALSO IN ABC" bar (pareho ng v2.2.0, sumusunod sa theme).
+- **As Left (headless):**
+  - Screenshot ng PLANT VIEW, LOGIC (ABC at DITL), LIBRARY, TOOLS at info card sa bawat theme, sa PC at phone.
+  - Contrast check: walang malabong text sa A, B at C.
+  - Ang info card ay lumalabas na bilang kahon sa gitna.
+  - Regression: tingnan ang commit.
+- **Hindi pa nasubok:** totoong exe / tablet.
