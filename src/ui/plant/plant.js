@@ -227,7 +227,7 @@
       }
       return null;
     }
-    if (it.t === 'pump' || it.t === 'fan') {
+    if (it.t === 'pump' || it.t === 'fan' || it.t === 'motor') {
       /* the run state: the memory bit the ABC sheets use (memory list "... RUNNING"), else the running DI of the I/O list (MIR-P1115A) */
       const words = String(it.tag).toUpperCase().split(/\s+/).filter(w => !/^[PF]-?\d{4}/.test(w)),
         full = words.join(' '),
@@ -409,11 +409,16 @@
           if (it.tag) txt(g, it.x + 14, it.y - 10, it.tag, { z: 11 });
           if (it.v != null) txt(g, it.x + 14, it.y + 6, it.v + ' ' + (it.u || '%'), { z: 12, mono: 1, c: '#5cd6ff' });
           if (it.m) txt(g, it.x - 14, it.y - 10, it.m, { z: 10, c: '#9ff0c4', a: 'end', b: 1 });
-        } else if (it.t === 'pump' || it.t === 'fan') {
+        } else if (it.t === 'pump' || it.t === 'fan' || it.t === 'motor') {
           const c = it.st === 'run' ? '#e05555' : '#3fbf6a';
           g.append(S_('circle', { cx: it.x, cy: it.y, r: 14, fill: 'none', stroke: c, 'stroke-width': 2.5 }));
           const ring = g.lastChild;
-          if (it.t === 'pump') g.append(S_('polygon', { points: `${it.x - 8},${it.y + 8} ${it.x + 8},${it.y} ${it.x - 8},${it.y - 8}`, fill: c }));
+          /* 2.5.0-beta.6: a motor of the HMI (the "M" of the coal feeders, 11.png) */
+          if (it.t === 'motor') {
+            const m = S_('text', { x: it.x, y: it.y + 6, 'text-anchor': 'middle', 'font-size': 17, 'font-weight': 700, fill: c });
+            m.textContent = 'M';
+            g.append(m);
+          } else if (it.t === 'pump') g.append(S_('polygon', { points: `${it.x - 8},${it.y + 8} ${it.x + 8},${it.y} ${it.x - 8},${it.y - 8}`, fill: c }));
           else g.append(S_('path', { d: `M${it.x - 9},${it.y} L${it.x + 9},${it.y} M${it.x},${it.y - 9} L${it.x},${it.y + 9}`, stroke: c, 'stroke-width': 2.5 }));
           {
             const sym = g.lastChild;
@@ -421,10 +426,10 @@
               const on = x && x.v != null ? x.v > 0.5 : it.st === 'run';
               const c2 = on ? '#e05555' : '#3fbf6a';
               ring.setAttribute('stroke', c2);
-              sym.setAttribute(it.t === 'pump' ? 'fill' : 'stroke', c2);
+              sym.setAttribute(it.t === 'fan' ? 'stroke' : 'fill', c2);
             }, ring);
           }
-          if (it.tag) txt(g, it.x, it.y + 30, it.tag, { z: 11, a: 'middle' });
+          if (it.tag && !it.nolab) txt(g, it.x, it.y + 30, it.tag, { z: 11, a: 'middle' });
           if (it.m) txt(g, it.x + 18, it.y - 12, it.m, { z: 10, c: '#9ff0c4', b: 1 });
         } else if (it.t === 'vessel') {
           const rx = it.shape === 'drum' || it.shape === 'tank' ? Math.min(it.w, it.h) / 2 : it.shape === 'turbine' ? 4 : 6;
@@ -458,6 +463,14 @@
               t.append(sp);
             });
           }
+        } else if (it.t === 'lamp') {
+          /* 2.5.0-beta.6: a lamp of the HMI (BURNER ON / OFF): lit when the value is above `gt` (`inv`: when not); snapshot colour when not linked */
+          const lt = txt(g, it.x, it.y, '●', { z: 30, c: it.c });
+          reg(it, x => {
+            if (!x || !isFinite(x.v)) return lt.setAttribute('fill', it.c);
+            const on = x.v > (it.gt != null ? it.gt : 0.5);
+            lt.setAttribute('fill', (it.inv ? !on : on) ? it.lit : '#1b2530');
+          }, lt);
         } else if (it.t === 'flag') {
           /* 2.2.0-beta.19: ☑ red = 1, ☒ green = 0 (HMI convention of the 033 screen); grey = not linked (snapshot) */
           const ft = txt(g, it.x, it.y, (it.on ? '☑ ' : '☒ ') + it.s, { z: it.z || 13, b: it.b, c: it.on ? '#e05555' : '#3fbf6a' });
