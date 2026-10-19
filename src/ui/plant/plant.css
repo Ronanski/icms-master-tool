@@ -76,3 +76,13 @@
 #libws .libg.on b{color:#9ff0c4}
 #libws .libr.vac .ds{color:#6f8191;font-style:italic}
 #libws .libr.vac .ad{color:#8fa3b5}
+/* 2.4.0-beta.5 PLANT VIEW: faceplate pop-up over the graphic (same faceplate as the Operator pane) */
+#plmid{position:relative}
+#plfp{position:absolute;top:38px;right:8px;width:360px;max-height:calc(100% - 46px);overflow:auto;z-index:6;background:#0d1319;border:1px solid #2f4a5a;border-radius:3px;box-shadow:0 8px 24px #000a;color:#d7e0e6;font:13px/1.4 var(--uf,system-ui)}
+#plfp .plfph{display:flex;align-items:center;gap:6px;padding:5px 8px;border-bottom:1px solid #1c2731;background:#0b1016;position:sticky;top:0;z-index:3}
+#plfp .plfph b{flex:1;min-width:0;font:600 14px var(--mf,monospace);color:#eef4f9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#plfp .plfph .b{height:24px;min-height:24px;padding:0 10px;border-radius:3px;background:#131b24;border:1px solid #273544;color:#a9b7c4;cursor:pointer}
+#plfp .body{padding:2px 8px 8px}
+#plfp .body>.hdr{display:none}
+#plfp .body>.fp{margin:6px 0 0}
+@media (max-width:700px){#plfp{left:0;right:0;top:auto;bottom:0;width:auto;max-height:72%;border-radius:0}}

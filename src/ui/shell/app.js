@@ -59,7 +59,7 @@
     };
   }
   const TABS = [
-    ['operate', 'OPERATE', 'Plant graphics, faceplates, start-up and shutdown scenarios'],
+    ['operate', 'PLANT VIEW', 'Plant graphics with the faceplates (A / M / R, SV, MV) like the operator station; on a PC it opens in its own window'],
     ['logic', 'LOGIC', 'The ABC (analog) and DITL (digital) drawings: trace, run, force'],
     ['library', 'LIBRARY', 'I/O list, memory list, wiring, relay / SER, calculations'],
     ['tools', 'TOOLS', 'Block tests, audit, health, project files, drawing edit']
@@ -83,8 +83,124 @@
       w.style.bottom = fh + 'px';
     });
   };
+  let pvPop = null,
+    pvW = null;
+  /* 2.4.0-beta.5 PLANT VIEW window (user 2026-10-19: "kapag PC, dapat another window bubukas"; Android: the tab). The same
+     workspace (graphic, faceplates) is MOVED into the window, so it runs on the same engine as the LOGIC tab; closing the window
+     or Dock brings it back. Phone / tablet / Android app, and an automated browser (the tests), keep the tab. */
+  const pvPc = () => {
+    if (window.LS_PVWIN != null) return !!window.LS_PVWIN;
+    try {
+      return !window.Capacitor && !navigator.webdriver && !matchMedia('(pointer:coarse)').matches && innerWidth >= 1000;
+    } catch (e) {
+      return false;
+    }
+  };
+  function pvWindow(startW, gOp, run, chip, clock) {
+    if (pvW && !pvW.closed) {
+      pvW.focus();
+      return true;
+    }
+    if (!pvPc() || !window.lsPlantWs || !window.lsPlantDoc) return false;
+    let w = null;
+    try {
+      w = window.open('', 'dcs_plantview', 'width=1400,height=880');
+    } catch (e) {}
+    if (!w || w.closed || !w.document) return false;
+    const d = w.document;
+    d.open();
+    d.write('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PLANT VIEW · DCS Logic Simulator</title></head><body></body></html>');
+    d.close();
+    document.querySelectorAll('style,link[rel=stylesheet],link[rel=icon]').forEach(x => d.head.append(x.cloneNode(true)));
+    for (const a of document.documentElement.attributes) d.documentElement.setAttribute(a.name, a.value);
+    d.head.append(
+      Object.assign(d.createElement('style'), {
+        textContent:
+          'html,body{margin:0;height:100%;overflow:hidden;background:var(--c-bg,#090d12)}' +
+          '#pvbar{position:fixed;left:0;right:0;top:0;height:40px;display:flex;align-items:center;gap:8px;padding:0 10px;box-sizing:border-box;background:var(--c-strip,#0b1016);border-bottom:1px solid var(--c-line,#1c2731);color:var(--c-tx,#d3dce5);font:12.5px var(--uf,system-ui);z-index:60}' +
+          '#pvbar .pvt{font:600 12px var(--uf,system-ui);letter-spacing:.14em;color:#eef4f9;margin-right:6px;white-space:nowrap}' +
+          '#pvbar .pvs{font:600 11px var(--mf,monospace);color:var(--c-dim,#6f8191);white-space:nowrap}' +
+          '#pvbar .pvs.on{color:#35e08a}' +
+          '#pvbar .pvg{flex:1}' +
+          '#pvbar>button,#pvbar .ddw>button{height:28px;padding:0 12px;border-radius:2px;background:#131b24;border:1px solid #273544;color:#c9d4de;font:600 12px var(--uf,system-ui);cursor:pointer;white-space:nowrap}' +
+          '#pvbar>button.on{background:#1d4a31;border-color:#3fae78;color:#fff}' +
+          'body.pvwin #plantws{display:grid!important;top:40px!important;bottom:0!important}'
+      })
+    );
+    d.body.className = document.body.className + ' pvwin';
+    d.body.dataset.tab = 'operate';
+    const mk = (t, a) => Object.assign(d.createElement(t), a || {});
+    const rb = mk('button', { title: 'Run / Pause the simulation (the same as the Run button of the LOGIC tab)', onclick: () => run && run.click() }),
+      st = mk('span', { className: 'pvs' }),
+      ck = mk('span', { className: 'pvs' }),
+      dock = mk('button', { textContent: 'Dock', title: 'Bring the PLANT VIEW back into the main window (tab)' }),
+      bar = mk('div', { id: 'pvbar' });
+    bar.append(mk('span', { className: 'pvt', textContent: 'PLANT VIEW' }), rb, startW, st, ck, mk('span', { className: 'pvg' }), dock);
+    const ws = window.lsPlantWs();
+    plantUx(); /* Systems button and the empty values column, before the workspace leaves this document */
+    d.body.append(bar, ws);
+    window.lsPlantDoc(d);
+    if (tab === 'operate') setTab('logic');
+    pvW = w;
+    document.body.classList.add('pvout');
+    const sync = () => {
+      if (!pvW) return;
+      if (pvW.closed) return back();
+      if (run) {
+        rb.textContent = run.textContent.trim() || 'Run';
+        rb.classList.toggle('on', /pause/i.test(run.textContent));
+      }
+      if (chip) {
+        const c0 = chip.querySelector('span') || chip;
+        st.textContent = c0.textContent.trim();
+        st.classList.toggle('on', /^run/i.test(st.textContent));
+      }
+      if (clock) ck.textContent = clock.textContent.trim();
+    };
+    const iv = setInterval(sync, 300);
+    sync();
+    d.addEventListener('click', e => {
+      if (!startW.contains(e.target)) startW.classList.remove('open');
+    });
+    w.addEventListener('resize', () => window.lsPlantFit && window.lsPlantFit());
+    let done = false;
+    function back(toTab) {
+      if (done) return;
+      done = true;
+      clearInterval(iv);
+      startW.classList.remove('open');
+      gOp.prepend(startW);
+      ws.style.display = 'none';
+      document.body.append(ws);
+      window.lsPlantDoc(document);
+      document.body.classList.remove('pvout');
+      const ww = pvW;
+      pvW = null;
+      try {
+        if (ww && !ww.closed) ww.close();
+      } catch (e) {}
+      if (toTab) setTab('operate');
+    }
+    dock.onclick = () => {
+      window.focus();
+      back(true);
+    };
+    w.addEventListener('pagehide', () => back());
+    addEventListener('pagehide', () => {
+      try {
+        w.close();
+      } catch (e) {}
+    });
+    setTimeout(() => window.lsPlantFit && window.lsPlantFit(), 60);
+    return true;
+  }
   function setTab(t, keep) {
     if (!TABS.some(x => x[0] === t)) t = 'logic';
+    /* the PLANT VIEW is in its own window: bring that window to the front */
+    if (t === 'operate' && pvW && !pvW.closed) {
+      pvW.focus();
+      return;
+    }
     tab = t;
     document.body.dataset.tab = t;
     if (!keep) ls.set('ls-tab', t);
@@ -110,10 +226,11 @@
     hint();
   }
   const HINTS = {
-    operate: 'OPERATE: pick a system on the left · click a tag = faceplate (R / A / M, SV, MV) · Start ▾ = starting state · CHECK = scenarios',
+    operate: 'PLANT VIEW: pick a system on the left · click a controller or valve = faceplate (A / M / R, SV, MV) · Start ▾ = starting state · CHECK = scenarios',
     library: 'LIBRARY: search an address, tag or description · Find = open the info card',
     tools: 'TOOLS: block tests, audit, health, review marks, project files, drawing edit'
   };
+  window.lsSetTab = setTab;
   function hint() {
     const h = foot && foot.querySelector('.shint');
     if (h) h.textContent = HINTS[tab] || '';
@@ -259,7 +376,7 @@
     });
     const tabs = E('div', { cls: 'tabs' });
     TABS.forEach(([k, l, t]) => {
-      const b = E('button', { txt: l, title: t, on: () => setTab(k) });
+      const b = E('button', { txt: l, title: t, on: () => (k === 'operate' && pvPop && pvPop()) || setTab(k) });
       tabBtns[k] = b;
       tabs.append(b);
     });
@@ -291,6 +408,7 @@
     const start = dropdown(startBtn, 'left');
     buildStart(start);
     const gOp = E('div', { cls: 'tb g-op' }, [start.w]);
+    pvPop = () => pvWindow(start.w, gOp, run, chip, clock);
     const tbar = E('div', { cls: 'tbar' }, [gRun, gDitl, gView, gSheet, gOp]);
     const srch = E('div', { cls: 'gs-search' }, [ansb, gscope]);
     /* narrow screens: the search is one icon; it opens as a full-width row under the bar */
@@ -391,7 +509,9 @@
       pmBtn.classList.toggle('on', on);
       document.body.classList.toggle('pmoff', !on);
     };
-    const cSim = card('Simulation', 'Plant model ON = the PV answers the valve (each PID loop and the boiler / turbine model); OFF = the PV is a free input, only the drawing logic runs. ABC+DITL ON = the 134 DITL sheets run with the ABC Run and pass signals both ways (one world).', [AN_(pmBtn), AN_(plantwin)]);
+    const cSim = card('Simulation', 'Plant model ON = the PV answers the valve (each PID loop and the boiler / turbine model); OFF = the PV is a free input, only the drawing logic runs. ABC+DITL ON = the 134 DITL sheets run with the ABC Run and pass signals both ways (one world).', [AN_(pmBtn)]);
+    /* 2.4.0-beta.5: the old Plant window is replaced by the PLANT VIEW (its own window on a PC) */
+    if (plantwin) plantwin.remove();
     if (prj) prj.classList.add('lp');
     const cPrj = card('Project files', 'Save or open the forced values, user values and the sheets you changed.', [AN_(save), AN_(saveas), AN_(openp), AN_(prj), AN_(importAbc), DI_(lab('fdxf')), DI_(lab('fjson')), DI_($('bsave'))]);
     const cEdit = card('DITL drawing edit', 'Only on the DITL page: cells of the drawing, loose wires, a whole sheet.', [DI_($('bundo')), DI_($('bredo')), DI_($('bclr')), DI_($('bdel')), DI_($('bwire'))]);

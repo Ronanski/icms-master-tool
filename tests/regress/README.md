@@ -27,6 +27,7 @@ Headless (Playwright + Chromium) checks of `dist/logic-sim-vX.Y.Z.html` (default
 | `node tests/regress/unit_load.js [html]` | M2 unit model: Start at 150 MW → TARGET 60 (3 MW/min) → 60 MW (02.png ±5 %) → balik 150; operator ng boiler master sa MANUAL (< 220 T/H); walang trip | ~10 min |
 | `node tests/regress/hmi_op.js [html]` | plant model vs HMI snapshot: sa MV ng snapshot, PV = PV ng snapshot (±2 % ng range) | ~3 min |
 | `node tests/regress/plant_live.js [html]` | PLANT LIVE: pagkatapos ng Start at 150 MW, ≥ 200 value / controller / valve ay nakakabit; FIQMS1031, TICBR1140, TIBR11401, TCVFW11101, DPIFG1081 sa tamang sheet; ang MV sa box = MV ng engine | ~1 min |
+| `node tests/regress/plant_view.js [html]` | PLANT VIEW: click sa controller sa graphic = faceplate; M / MV / A sa faceplate = engine; sa PC sariling window (Run, faceplate, Dock) | ~30 s |
 | `node tests/regress/world.js [html]` | iisang mundo ABC + DITL: OFF = dating gawi; ON = lahat ng reference may katapat, ABC input = DITL output, DITL row = ABC net, kadena DITL → ABC, bilis ng scan | ~1 min |
 | `node tests/regress/closure.js html out.json` | loop closure of every PID with its plant model (P-4), 900 s | ~1 min |
 | `node tests/regress/diff.js old.html ... new.html` | the same seeded inputs on every sheet for several builds; lists the sheets whose nets differ. `--neutral` zeroes dMVH / TF / CUT on the last build (isolates F-31); `--hold=SECONDS` adds a steady-state state | 1 ~ 6 min |
