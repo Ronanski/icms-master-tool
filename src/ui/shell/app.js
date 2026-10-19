@@ -83,7 +83,7 @@
     ['operate', 'PLANT VIEW', 'Plant graphics with the faceplates (A / M / R, SV, MV) like the operator station; on a PC it opens in its own window'],
     ['logic', 'LOGIC', 'The ABC (analog) and DITL (digital) drawings: trace, run, force'],
     ['library', 'LIBRARY', 'I/O list, memory list, wiring, relay / SER, calculations'],
-    ['tools', 'TOOLS', 'Block tests, audit, health, project files']
+    ['tools', 'TOOLS', 'Tests, drawing checks, simulation switches']
   ];
   let tab = null,
     tabBtns = {},
@@ -249,7 +249,7 @@
   const HINTS = {
     operate: 'PLANT VIEW: pick a system on the left · click a controller or valve = faceplate (A / M / R, SV, MV) · Start ▾ = starting state · CHECK = scenarios',
     library: 'LIBRARY: search an address, tag or description · Find = open the info card',
-    tools: 'TOOLS: block tests, audit, health, review marks, project files'
+    tools: 'TOOLS: tests, drawing checks, simulation switches'
   };
   window.lsSetTab = setTab;
   function hint() {
@@ -491,6 +491,40 @@
     const setBtn = E('button', { cls: 'ico', html: GEAR, title: 'Settings: font, colours, channel, update' });
     const set = dropdown(setBtn, 'gs-set');
     set.head('Appearance');
+    /* 2.4.1-beta.5 (user: "gusto ko lahat, theme nalang"): the three design proposals as themes. A theme sets the colours of
+       the app and picks its font and diagram colours (both can still be changed below). The drawing lines stay as read from the DXF. */
+    {
+      const TH = [
+          ['std', 'Theme: Standard', 'plexc', 'std'],
+          ['a', 'Theme: A · Control Room', 'plexc', 'std'],
+          ['b', 'Theme: B · Workstation', 'plex', 'std'],
+          ['c', 'Theme: C · Light', 'barlow', 'paper']
+        ],
+        th = E('select', { id: 'themesel', title: 'Theme of the app: colours, font, corners (the drawing is not changed)' });
+      TH.forEach(([v, t]) => th.append(E('option', { value: v, txt: t })));
+      const apply = v => {
+        if (!TH.some(x => x[0] === v)) v = 'std';
+        if (v === 'std') document.documentElement.removeAttribute('data-shell');
+        else document.documentElement.dataset.shell = v;
+        return v;
+      };
+      th.value = apply(ls.get('ls-shell') || 'std');
+      th.onchange = () => {
+        const t = TH.find(x => x[0] === apply(th.value));
+        ls.set('ls-shell', t[0]);
+        const f = $('fontsel'),
+          d = $('dgsel');
+        if (f && f.value !== t[2]) {
+          f.value = t[2];
+          f.dispatchEvent(new Event('change'));
+        }
+        if (d && d.value !== t[3]) {
+          d.value = t[3];
+          d.dispatchEvent(new Event('change'));
+        }
+      };
+      set.m.append(th);
+    }
     {
       const fs_ = E('select', { id: 'fontsel', title: 'App font (the drawing keeps its own)' });
       [
@@ -531,8 +565,8 @@
       grid.append(c);
       return c;
     };
-    const cTest = card('Block tests and controller test', 'Every block of a sheet is forced with known inputs and compared with its definition (UAT); the controller test runs the generic tester.', []);
-    const cAudit = card('Check the drawing', 'Audit, Health, Review marks, F(X) tables, assumed values, the DITL signals of a sheet and a second sheet side by side.', [
+    const cTest = card('Tests', '', []);
+    const cAudit = card('Check the drawing', '', [
       AN_(audit),
       AN_(health),
       AN_(review),
@@ -561,7 +595,7 @@
       pmBtn.classList.toggle('on', on);
       document.body.classList.toggle('pmoff', !on);
     };
-    const cSim = card('Simulation', 'Plant model ON = the PV answers the valve (each PID loop and the boiler / turbine model); OFF = the PV is a free input, only the drawing logic runs. ABC+DITL ON = the 134 DITL sheets run with the ABC Run and pass signals both ways (one world).', [AN_(pmBtn)]);
+    const cSim = card('Simulation', '', [AN_(pmBtn)]);
     /* 2.4.0-beta.5: the old Plant window is replaced by the PLANT VIEW (its own window on a PC) */
     if (plantwin) plantwin.remove();
     if (prj) prj.classList.add('lp');
@@ -611,8 +645,25 @@
       cardsUpd();
     }, 400);
     /* a card with nothing to show on this page (ABC / DITL) is hidden; the wrappers (.only) have no size of their own */
+    /* 2.4.1-beta.5 (user: TOOLS "panget tignan"): every tool shows what it does under its name, one tool per line */
+    const TDESC = [
+      [/^UAT/, 'Force each block of a sheet with known inputs and compare with its definition.'],
+      [/^Audit/, 'Blocks and links the reader could not resolve.'],
+      [/^Health/, 'Every sheet: OK, issue or failed.'],
+      [/^Review marks/, 'Orange boxes where a link is in doubt.'],
+      [/^F\(X\) tables/, 'Linear curves from the workbook.'],
+      [/^Assumed/, 'Inputs that start from an assumed value.'],
+      [/^DITL signals/, 'DITL addresses of the open sheet.'],
+      [/^Second sheet/, 'Open another sheet side by side.'],
+      [/^Plant model/, 'ON: the PV answers the valve (each PID loop and the boiler / turbine model). OFF: the PV is a free input.'],
+      [/^ABC\s*\+\s*DITL/, 'ON: the 134 DITL sheets run with the ABC Run and pass signals both ways (one world).']
+    ];
     function cardsUpd() {
       if (tab !== 'tools') return;
+      grid.querySelectorAll('.tcard .row :is(button,label.b)').forEach(b => {
+        const d = TDESC.find(x => x[0].test(b.textContent.trim()));
+        if (d && b.dataset.d !== d[1]) b.dataset.d = d[1];
+      });
       const w = e => e.getBoundingClientRect().width > 0;
       grid.querySelectorAll('.tcard').forEach(c => {
         c.style.display = '';
