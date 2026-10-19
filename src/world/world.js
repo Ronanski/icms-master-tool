@@ -397,7 +397,8 @@
        (CLAUDE.md rule 1: one address = one signal). The address may be written there as "M.025B ( TO S4 M.3101 )" (ABC-013).
        A row that the DITL compares (DITL-79 row 6 TICMS1022.MV > 2 % / < 1 %) takes the analog value; a .MAN of a controller is
        its MANUAL state (the faceplate) */
-    const fromAbc = [],
+    const WIRE_S1 = { 'M.311A': 'B.0646', 'M.311B': 'B.066E' },
+      fromAbc = [],
       abcMiss = [],
       abcOf = code => {
         const c = /^\d{2}[A-Z]?$/.test(code) ? '0' + code : code;
@@ -459,7 +460,11 @@
                   });
                 }
               }
-              if (n >= 0) src = { k: an ? 'v' : 'a', sh, n, ref: sh.name + ' ' + adr };
+              /* 2.5.0-beta.5: an address of the STN101 station wiring that the ABC sheet writes by its own name (memory list 101 / 103
+                 M.311A / M.311B "Plenum/upper diff. press.(A) / (B) sig. abnormal (FROM S1)" = the SIG.AB of AI0134 DPT-FG1081 / AI0262
+                 DPT-FG1082, I/O list STN101: B.0646 / B.066E on ABC-009A). DITL-21C row 19 / 20 */
+              if (n < 0 && WIRE_S1[adr]) n = SS.nets.findIndex((_, j) => nmOf(j) === WIRE_S1[adr] && drv(j));
+              if (n >= 0) src = { k: an ? 'v' : 'a', sh, n, ref: sh.name + ' ' + adr + (WIRE_S1[adr] && nmOf(n) === WIRE_S1[adr] ? ' = ' + WIRE_S1[adr] : '') };
             }
             if (!src && tag && /\.MAN$/.test(tag)) {
               const c = (AN.hmiCtrls ? AN.hmiCtrls(SS) : []).find(z => z.tag === tag.replace(/\.MAN$/, ''));
