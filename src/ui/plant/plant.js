@@ -344,7 +344,9 @@
       x,
       y,
       fill: o.c || '#d3dce5',
-      'font-size': (o.z || 13) + 2 /* 2.2.0-beta.19: +2 px on every screen; the HMI text is ~16 px at 1920 wide */,
+      /* 2.2.0-beta.19: +2 px on every screen. 2.4.1-beta.1: +3 px (UI audit 2026-10-19: the HMI snapshot text is ~16 px at
+         1920 wide, the graphic is drawn at that width); the header bar and the controller box keep their own size (o.k) */
+      'font-size': (o.z || 13) + (o.k != null ? o.k : 3),
       'font-family': o.mono ? 'var(--mf, monospace)' : 'var(--uf, sans-serif)',
       'font-weight': o.b ? 600 : 400,
       'text-anchor': o.a || 'start'
@@ -429,9 +431,33 @@
           if (it.shape === 'turbine')
             g.append(S_('polygon', { points: `${it.x},${it.y + it.h * 0.3} ${it.x + it.w},${it.y} ${it.x + it.w},${it.y + it.h} ${it.x},${it.y + it.h * 0.7}`, fill: '#1b2530', stroke: '#8b9aa8', 'stroke-width': 2 }));
           else g.append(S_('rect', { x: it.x, y: it.y, width: it.w, height: it.h, rx, fill: it.f || '#121a22', stroke: it.f ? '#a9b7c4' : '#8b9aa8', 'stroke-width': 2 })); /* beta.19: f = own fill (plenum, wall, APH) */
-          if (it.label) txt(g, it.x + it.w / 2, it.y + it.h / 2 + 5, it.label, { z: 13, a: 'middle', b: 1 });
+          if (it.label) {
+            const t = txt(g, it.x + it.w / 2, it.y + it.h / 2 + 5, it.label, { z: 13, a: 'middle', b: 1 });
+            /* 2.4.1-beta.1: a label wider than its box gets a smaller font (006 BURNER-A/B OIL FLOW ran into the next box) */
+            try {
+              const L = t.getComputedTextLength();
+              if (L > it.w - 8) t.setAttribute('font-size', Math.max(9, Math.floor((+t.getAttribute('font-size') * (it.w - 8)) / L)));
+            } catch (e) {}
+          }
         } else if (it.t === 'text') {
-          txt(g, it.x, it.y, it.s, { z: it.z || 13, b: it.b, c: it.c });
+          const t = txt(g, it.x, it.y, it.s, { z: it.z || 13, b: it.b, c: it.c });
+          /* 2.4.1-beta.1: wrap = width of the box the note belongs to; the note breaks into lines inside it (UI audit: the long
+             notes of the UNIT screen ran over the next column and off the screen) */
+          if (it.wrap) {
+            const fz = +t.getAttribute('font-size'),
+              per = Math.max(8, Math.floor(it.wrap / (fz * 0.5))),
+              lines = [];
+            for (const wd of String(it.s).split(' ')) {
+              if (lines.length && (lines[lines.length - 1] + ' ' + wd).length <= per) lines[lines.length - 1] += ' ' + wd;
+              else lines.push(wd);
+            }
+            t.textContent = '';
+            lines.forEach((l, i) => {
+              const sp = S_('tspan', { x: it.x, dy: i ? fz * 1.25 : 0 });
+              sp.textContent = l;
+              t.append(sp);
+            });
+          }
         } else if (it.t === 'flag') {
           /* 2.2.0-beta.19: ☑ red = 1, ☒ green = 0 (HMI convention of the 033 screen); grey = not linked (snapshot) */
           const ft = txt(g, it.x, it.y, (it.on ? '☑ ' : '☒ ') + it.s, { z: it.z || 13, b: it.b, c: it.on ? '#e05555' : '#3fbf6a' });
@@ -452,11 +478,11 @@
             bh = 70;
           const box = S_('rect', { x: it.x, y: it.y, width: bw, height: bh, rx: 3, fill: '#0d1319', stroke: '#2a6a98', 'stroke-width': 1.5 });
           g.append(box);
-          txt(g, it.x + 6, it.y + 15, (it.label || it.tag || '').slice(0, 28), { z: 11, c: '#a9b7c4' });
-          txt(g, it.x + 6, it.y + 31, it.tag || '', { z: 12, b: 1, mono: 1 });
-          const mt = txt(g, it.x + bw - 6, it.y + 31, it.m || '', { z: 12, b: 1, a: 'end', c: it.m === 'M' ? '#ffd27a' : '#9ff0c4' });
-          const t1 = txt(g, it.x + 6, it.y + 50, 'PV ' + (it.pv != null ? it.pv : '—') + '  SV ' + (it.sv != null ? it.sv : '—'), { z: 12, mono: 1, c: '#5cd6ff' });
-          const t2 = txt(g, it.x + 6, it.y + 66, 'MV ' + (it.mv != null ? it.mv + ' %' : '—') + (it.u ? '   ' + it.u : ''), { z: 12, mono: 1, c: '#9ff0c4' });
+          txt(g, it.x + 6, it.y + 15, (it.label || it.tag || '').slice(0, 28), { k: 2, z: 11, c: '#a9b7c4' });
+          txt(g, it.x + 6, it.y + 31, it.tag || '', { k: 2, z: 12, b: 1, mono: 1 });
+          const mt = txt(g, it.x + bw - 6, it.y + 31, it.m || '', { k: 2, z: 12, b: 1, a: 'end', c: it.m === 'M' ? '#ffd27a' : '#9ff0c4' });
+          const t1 = txt(g, it.x + 6, it.y + 50, 'PV ' + (it.pv != null ? it.pv : '—') + '  SV ' + (it.sv != null ? it.sv : '—'), { k: 2, z: 12, mono: 1, c: '#5cd6ff' });
+          const t2 = txt(g, it.x + 6, it.y + 66, 'MV ' + (it.mv != null ? it.mv + ' %' : '—') + (it.u ? '   ' + it.u : ''), { k: 2, z: 12, mono: 1, c: '#9ff0c4' });
           reg(it, x => {
             const m = x ? x.m : it.m || '';
             mt.textContent = m;
@@ -478,12 +504,12 @@
           g.append(S_('line', { x1: 0, y1: bh, x2: w, y2: bh, stroke: '#2a3a4a', 'stroke-width': 1 }));
           items.forEach(([k, v, u], i) => {
             const x0 = 20 + i * cw;
-            txt(g, x0, bh / 2 + 7, k, { z: 19, c: '#f0b0d8', b: 1 });
+            txt(g, x0, bh / 2 + 7, k, { k: 2, z: 19, c: '#f0b0d8', b: 1 });
             const lw = 10 + k.length * 12,
               bw = Math.max(86, (String(v).length + 1) * 13);
             g.append(S_('rect', { x: x0 + lw, y: 8, width: bw, height: bh - 16, rx: 3, fill: '#05080b', stroke: '#2a6a98', 'stroke-width': 1 }));
-            const t = txt(g, x0 + lw + bw / 2, bh / 2 + 8, v, { z: 22, mono: 1, c: '#5cd6ff', b: 1, a: 'middle' });
-            txt(g, x0 + lw + bw + 8, bh / 2 + 7, u || '', { z: 17, c: '#f0b0d8', b: 1 });
+            const t = txt(g, x0 + lw + bw / 2, bh / 2 + 8, v, { k: 2, z: 22, mono: 1, c: '#5cd6ff', b: 1, a: 'middle' });
+            txt(g, x0 + lw + bw + 8, bh / 2 + 7, u || '', { k: 2, z: 17, c: '#f0b0d8', b: 1 });
             /* the header bar of every screen (MSP, MST, MSF, RHP, RHT, COAL, PWR) reads the simulation: the same
                signals as the HMI header (ABC-001C AI0131 PT-MS1002, TICMS1004, SI0230 compensated main steam flow, AI0419 GCP-AI1001
                generator MW; ABC-052 PICHR1003 reheat pressure, ABC-019 TICHR1002 reheat temperature, ABC-002 coal master PV) */
@@ -582,8 +608,12 @@
     const r = svg.getBoundingClientRect(),
       w = vb[2],
       h = vb[3],
-      s = Math.max(w / Math.max(1, r.width), h / Math.max(1, r.height));
-    vb = [(w - r.width * s) / 2, (h - r.height * s) / 2, r.width * s, r.height * s];
+      /* 2.4.1-beta.1 (UI audit): the graphic starts at the top (before: centred, a black band above it); on a portrait screen
+         (phone) it fits the height and starts at the left, drag to see the right part (before: 4 px text and 2/3 of the
+         screen black) */
+      tall = r.height > r.width,
+      s = tall ? h / Math.max(1, r.height) : Math.max(w / Math.max(1, r.width), h / Math.max(1, r.height));
+    vb = [tall ? 0 : (w - r.width * s) / 2, 0, r.width * s, r.height * s];
     svg.setAttribute('viewBox', vb.join(' '));
   }
   function valsOf(src) {
@@ -626,8 +656,8 @@
       const g = S_('g', {});
       svg.append(g);
       vb = [0, 0, 960, 500];
-      txt(g, 480, 230, o.title, { z: 22, a: 'middle', b: 1 });
-      txt(g, 480, 262, 'Graphic not drawn yet: the snapshot values are in the list on the right.', { z: 14, a: 'middle', c: '#7f90a0' });
+      txt(g, 480, 230, o.title, { k: 2, z: 22, a: 'middle', b: 1 });
+      txt(g, 480, 262, 'Graphic not drawn yet: the snapshot values are in the list on the right.', { k: 2, z: 14, a: 'middle', c: '#7f90a0' });
       fit();
     }
     showVals(o.src);
@@ -668,7 +698,12 @@
         }
       }),
       E('button', { cls: 'b', txt: 'Fit', on: () => (cur && cur.g ? draw(cur.g) : fit()) }),
-      E('button', { cls: 'b', txt: 'Values', on: () => ws.classList.toggle(matchMedia('(max-width:1180px)').matches ? 'vals' : 'novals') })
+      E('button', { cls: 'b', txt: 'Values', on: e => {
+          /* 2.4.1-beta.1: the values slide out over the graphic on every screen (app.css) */
+          e.stopPropagation();
+          ws.classList.toggle('vals');
+          ws.classList.remove('lsopen');
+        } })
     ]);
     mid.append(bar, svg);
     right.id = 'plvals';
