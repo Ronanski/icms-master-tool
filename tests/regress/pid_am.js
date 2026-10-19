@@ -31,10 +31,13 @@ const r=await page.evaluate(()=>{const res=[];let total=0;
    if(station.man)S.rt.st[station.man.id].val=mvv;else S.rt.ext[station.net]=mvv;
    run(20);
    const st=S.rt.st[station.sw.id],swOut=S.rt.v[station.sw.o[0]],pidOut=S.rt.st[b.id].out;
-   const gain=(station.manLeg==='B'?station.sw.bg:station.sw.ag);const exp=mvv*(gain!=null?gain:1);
+   const gain=(station.manLeg==='B'?station.sw.bg:station.sw.ag);
+   // a back-up command of the drawing that is ON (B / T selector, e.g. ABC-004A M.0130 "COAL MASTER CONTROL FORCE MANUAL & TRACKING")
+   // takes the manual leg: the output follows the back-up value, not the operator value (CLAUDE.md rule 10)
+   const buOn=st.bu!=null&&station.sw.buCmd;const exp=buOn?st.bu*(station.sw.og!=null?station.sw.og:1):mvv*(gain!=null?gain:1);
    S.rt.st[station.sw.id].fm=station.pidLeg;AN.stepSet(sh,.25);const a1=S.rt.v[station.sw.o[0]];
    const okMan=Math.abs(swOut-exp)<=Math.max(.5,Math.abs(exp)*.02),okTrack=st.bu!=null||Math.abs(pidOut-mvv)<=Math.max(2,(hi-lo)*.03),okJump=st.bu!=null||Math.abs(a1-exp)<=Math.max(3,(hi-lo)*.05);
-   res.push({sh:sh.name,tag,status:(okMan&&okTrack&&okJump)?'PASS':'FAIL',okMan,okTrack,okJump,swOut:+swOut.toFixed(2),exp:+exp.toFixed(2),pidOut:+(+pidOut).toFixed(2),afterAuto:+a1.toFixed(2),bu:st.bu,chain:chain.map(c=>c.k+'#'+c.id).join('>'),manual:station.man?('MAN#'+station.man.id):'ext input'})}}
+   res.push({sh:sh.name,tag,status:(okMan&&okTrack&&okJump)?'PASS':'FAIL',okMan,okTrack,okJump,swOut:+swOut.toFixed(2),exp:+exp.toFixed(2),pidOut:+(+pidOut).toFixed(2),afterAuto:+a1.toFixed(2),bu:st.bu,chain:chain.map(c=>c.k+'#'+c.id).join('>'),manual:station.man?('MAN#'+station.man.id):'ext input',backup:buOn?((S.lab[station.sw.sel]&&S.lab[station.sw.sel].t)||'on'):undefined})}}
  return {total,res}});
 const c={};r.res.forEach(x=>{const k=x.status.startsWith('NOT')?x.status.split(' (')[0]:x.status;c[k]=(c[k]||0)+1});
 console.log((c.FAIL?'FAIL':'PASS')+' PID A/M through the real selector chain: '+r.total+' PID, '+JSON.stringify(c));
