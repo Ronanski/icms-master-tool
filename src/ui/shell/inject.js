@@ -45,10 +45,9 @@ const block =
   '<style id="fontcss">' +
   fontCss +
   '</style><style id="shellcss">' +
-  fs.readFileSync(__dirname + '/shell.css', 'utf8') +
-  fs.readFileSync(__dirname + '/console.css', 'utf8') +
+  fs.readFileSync(__dirname + '/app.css', 'utf8') +
   '</style><script id="shelljs">' +
-  fs.readFileSync(__dirname + '/shell.js', 'utf8') +
+  fs.readFileSync(__dirname + '/app.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/info.js', 'utf8') +
   '</script>' +
