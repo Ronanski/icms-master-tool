@@ -46,3 +46,15 @@ Pinili ng user (card): **UI ayos #5-8**. Itsura lang; walang binago sa engine, s
 - **Work Done:** Auto-hide OFF: ang click sa block ay nagbubukas ng panel at nananatili itong bukas; ✕ o Panel button lang ang nagsasara. Pag-alis ng check: bubukas ang panel. Auto-hide ON: walang binago (`interaction.js` panelFor, `plant-window.js`).
 - **As Left (headless):** Auto-hide OFF → ✕ → click sa block = bukas → click sa labas = bukas pa rin. Auto-hide ON → click sa block = bukas → click sa labas = sarado. Regression: ditl_toolbar, lookonly, plant_view, faceplate, panel_sync, overview, events, tests (11 PASS) pasado.
 - **Hindi pa nasubok:** totoong exe / tablet.
+
+## 2.4.1-beta.4 — DITL gaya ng ABC: walang Edit, may Run / Pause at right panel
+- **Problem (user, 2026-10-19):** "tanggalin ang Edit function sa DITL, ipareha na sa ABC", kasama ang mga function at side panel ng ABC.
+- **As Found:** ang DITL page ay may Simulate / Edit button, editor (undo / redo, Delete sheet, Clear cells, Wire, Save, Import DXF / JSON, cell editor), at walang Pause, Step, Speed, Zoom o right panel. Ang input ay pinipindot lang sa drawing.
+- **Work Done:**
+  - Wala nang Edit: hindi na mababago ang cell, wire o sheet (`NOEDIT`); nakatago ang mga button ng editor at ang Edit card sa TOOLS. Ang drawing ay galing pa rin sa DXF, walang binago sa basa.
+  - Top bar ng DITL (gaya ng ABC): **Run / Pause**, **▶▶** (isang hakbang), hakbang 1 / 5 / 10 / 60 s, bilis 1x / 10x / 60x / 300x, **Reset** (lahat ng input sa 0), **View**, **Fit**, **Zoom** (text ~14 px sa napiling cell), **Panel**.
+  - Right panel ng DITL: Inputs (tag, pinanggalingan o lokasyon, service; click = ON / OFF, PB = pindot at hawak, dashed = sumusunod sa kagamitan o ibang sheet), analog input, timers (bar, oras, Skip), valve at motor, outputs (1 / 0 at kung saan pupunta). Sa phone ay nasa ibaba (bottom sheet).
+  - Status chip: VIEW / RUN / PAUSED. Kapag naka-ON ang ABC + DITL (one world), humihinto rin ang world kapag Pause.
+- **As Left (headless):** DITL-56: View → Run = chip RUN; I.0218 REMOTE → 1 at umilaw ang output; PB pindot at hawak, tumakbo ang timer; Pause = PAUSED; ▶▶, Reset, Zoom, View gumagana; TOOLS walang Edit card; walang page error. In-update ang `ditl_toolbar` (Run / Pause / View, walang editor) at `lookonly` (Run button sa halip na Simulate). Regression pasado: ditl_toolbar, ditl150, lookonly, abcbar, infocard, world, events, overview, plant_view, faceplate, check_panel, tests (11).
+- **Kasama ring tinanggal:** Import DXF, Open project at Save project ng DITL (ito ay para sa pag-edit ng drawing). Ang TOOLS hint ay wala nang "drawing edit".
+- **Hindi pa nasubok:** totoong exe / tablet. Sa phone, ang top bar ay nag-i-scroll pakaliwa / pakanan (gaya ng ABC) para makita ang Reset / View / Fit / Zoom / Panel.

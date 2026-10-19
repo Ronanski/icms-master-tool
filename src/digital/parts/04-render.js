@@ -709,6 +709,7 @@ function closeEd() {
   $('ed').hidden = true;
 }
 function openEd(h, cx, cy) {
+  if (NOEDIT) return;
   const s = cur(),
     ed = $('ed');
   EDH = h;
@@ -761,7 +762,7 @@ $('eta').addEventListener('keydown', e => {
   e.stopPropagation();
 });
 function clearSel() {
-  if (!sel || SIM) return;
+  if (!sel || SIM || NOEDIT) return;
   push();
   const s = cur();
   delete s.cells[sel.k];

@@ -707,8 +707,8 @@ document.head.appendChild(
           am.style.color = '#ffd479';
         }
       } else {
-        m = SIM ? 'SIMULATE' : 'EDIT';
-        k = SIM ? 'run' : '';
+        m = SIM ? (DPAUSE ? 'PAUSED' : 'RUN') : window.WORLD && WORLD.live ? 'RUN (ABC)' : 'VIEW';
+        k = SIM && !DPAUSE ? 'run' : SIM ? '' : 'view';
       }
       c1.textContent = m;
       c1.className = k;

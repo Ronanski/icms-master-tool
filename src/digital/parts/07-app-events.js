@@ -1,18 +1,12 @@
 /* DITL (digital logic) - Timers, buttons, keyboard, loading of the built-in sheets. Part of ONE script (joined by src/digital/order.list, in this order). */
-setInterval(() => {
+/* 2.4.1-beta.4: one step of the open sheet's timers / MOV / motors (Run, and ▶▶ of the DITL tool bar) */
+function ditlStep(dt) {
   const s = cur();
-  if (window.WORLD && WORLD.live) return; /* the one world steps the timers / MOV / motors of EVERY sheet (src/world/world.js) */
-  if (!SIM || !s || !s.nl) {
-    tick.t = 0;
-    return;
-  }
+  if (!s || !s.nl) return;
   const T = tmList(),
     MV = s.nl.mv || [],
     MT = s.nl.mot || [];
   if (!T.length && !MV.length && !MT.length) return;
-  const now = performance.now(),
-    dt = Math.min((now - (tick.t || now)) / 1000, 1) * TSP;
-  tick.t = now;
   const v = simulate(s.nl, simIn(s));
   let ch = false;
   T.forEach(g => {
@@ -32,6 +26,20 @@ setInterval(() => {
     updateTP();
     mvUI(s);
   }
+}
+/* 2.4.1-beta.4: DPAUSE = Pause of the DITL tool bar (Run on, time stopped) */
+let DPAUSE = false;
+setInterval(() => {
+  const s = cur();
+  if (window.WORLD && WORLD.live) return; /* the one world steps the timers / MOV / motors of EVERY sheet (src/world/world.js) */
+  if (!SIM || !s || !s.nl || DPAUSE) {
+    tick.t = 0;
+    return;
+  }
+  const now = performance.now(),
+    dt = Math.min((now - (tick.t || now)) / 1000, 1) * TSP;
+  tick.t = now;
+  ditlStep(dt);
 }, 100);
 /* ---------- title banner ---------- */
 let MUI = { al: 'center', sz: 'M' };
@@ -236,7 +244,7 @@ svg.addEventListener('pointerup', e => {
       return;
     }
   }
-  if (!SIM && WT) {
+  if (!SIM && WT && !NOEDIT) {
     wireClick(e);
     return;
   }
@@ -311,13 +319,14 @@ addEventListener('keydown', e => {
     render();
     return;
   }
+  if (NOEDIT && e.ctrlKey && /^[zy]$/.test(e.key)) return;
   if (e.ctrlKey && e.key === 'z') {
     e.preventDefault();
     undo();
   } else if (e.ctrlKey && e.key === 'y') {
     e.preventDefault();
     redo();
-  } else if (e.key === 'Delete') clearSel();
+  } else if (e.key === 'Delete' && !NOEDIT) clearSel();
   else if (e.key === 'Escape') {
     sel = null;
     PEND = null;
@@ -352,7 +361,7 @@ $('bmode').onclick = () => {
   } catch (e) {}
   if (SIM && cur())
     msg(
-      'Simulate: click the SERVICE cell of an input row (switch icon) to turn it ON/OFF. PB rows are push buttons: press and hold.'
+      'Run: click an input (switch icon on the drawing, or in the panel) to turn it ON / OFF. PB rows are push buttons: press and hold.'
     );
   render();
 };
