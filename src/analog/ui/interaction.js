@@ -359,12 +359,8 @@ function panelFor(on) {
     showPanel(on);
     return;
   }
-  if (anp.classList.contains('min')) {
-    if (on) {
-      AN.tmp = true;
-      showPanel(true);
-    }
-  } else if (AN.tmp && !on) showPanel(false);
+  /* 2.4.1-beta.3 (user): Auto-hide OFF = the panel never minimizes by itself; a click on a block opens it and it stays */
+  if (on && anp.classList.contains('min')) showPanel(true);
 }
 function showPanel(on) {
   if (!on) AN.tmp = false;
