@@ -1030,7 +1030,10 @@ function anPlantWarm(o) {
       }
       if (c.amt && S.rt.st[c.amt.id]) S.rt.st[c.amt.id].fm = c.autoLeg;
       if (AN.latchMode) AN.latchMode(t, 'LOC');
-    };
+      const ps = S.rt.st[c.b.id];
+      if (ps) held.push([ps, c.b, +ps.out || 0]);
+    },
+    held = [];
   for (const l of ['M.3302', 'M.3303', 'M.3304']) setx(l, 1);
   man('ABC-007', 'FICFA1071', o.air);
   man('ABC-007', 'FICFA1081', o.air);
@@ -1059,6 +1062,10 @@ function anPlantWarm(o) {
     for (const sh of L) sh.S.rt.pm = {};
     hmiComp(ai => /^AI0(130|258|386)$/.test(ai));
     for (let k = 0; k < 2; k++) for (const sh of L) stepSet(sh, 0.5);
+    /* 2.5.0-beta.3: the loops put in AUTO above start from their output of the cold state (bumpless). Their PV comes alive in these
+       steps (the average select of the cold plant holds no 150 MW value any more, anPlantCold): ABC-050 PICMS1006 SI0150 0 -> 122
+       kg/cm2 wound the HP bypass PID up to 90 % at Start hot (MSP 123 -> 111, drum level -268 mm in the roll) */
+    for (const [ps, b, out] of held) hmiPidSet(ps, b, out);
     /* the running feeders in AUTO (the drawing forces MANUAL while a feeder is stopped) */
     if (o.coal > 0 && AN.latchMode) for (const t of ['FICCL1061A', 'FICCL1061B', 'FICCL1061C']) AN.latchMode(t, 'LOC');
   } catch (e) {}
@@ -1139,6 +1146,15 @@ function anPlantCold() {
   } catch (e) {}
   /* the lags and the rate limiters of the drawing at their (new) inputs, like anPlantLoad150 */
   try {
+    /* 2.5.0-beta.3: a cold plant has no "last good value" of the 150 MW snapshot. The average select holds its last value while every
+       input is 0 (zero = lost signal, user rule v1.20.34), so ABC-001C EIC-TM.PV (AI0419 / AI0774 at 0 MW) kept 151.5 MW and the "MW"
+       link set ABC-013 M.025A (> 81.5 MW); with the turbine trip / 52G1 open wired by the drawing audit (ABC-013-1) that gave house
+       operation M.025B = 1 during the cold start-up: coal feeders forced MANUAL (ABC-004A M.0141), FIC-CF back-up to 0 */
+    for (const sh of L)
+      for (const b of sh.S.blk) {
+        const st = sh.S.rt.st[b.id];
+        if (st && b.k === 'SEL') st.last = null;
+      }
     for (let it = 0; it < 4; it++) {
       for (const sh of L)
         for (const b of sh.S.blk) {
