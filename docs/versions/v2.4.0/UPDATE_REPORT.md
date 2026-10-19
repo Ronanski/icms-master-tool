@@ -4,6 +4,23 @@ Base: Stable v2.2.0 (`main` 9b0ae85). Bawat Beta ay push sa `claude/project-thre
 
 Utos ng user (2026-10-19): "magulo, walang direksyon, kalat" ang app. Full audit: `/mnt/project-files/app-status/FULL_AUDIT_2026-10-19.md`; disenyo: `NEW_SHELL_DESIGN.md` (parehong folder). Pinili ng user: bagong shell mula sa simula ("Scratch"). Pinayagan ng user na lumabag sa lumang UI rules basta hindi magalaw ang engine, simulation at plant model.
 
+## 2.4.0 Stable (GO STABLE ng user, 2026-10-19)
+- Ang 2.4.0-beta.1 ~ beta.5 bilang Stable. `src/version.txt` = 2.4.0, `dist/logic-sim-v2.4.0.html`, check SAME.
+- **HINDI kasama:** ang 2.3.0 drawing audit (PR #32, ibang branch). Ilalagay ito sa susunod na Stable pagkatapos i-rebase sa bagong `main`.
+- Release report: `Release-Report-v2.4.0.pdf`.
+- **Buong regression (headless, build v2.4.0, 2026-10-19):** plant_view, tests (T1 ~ T5, S1 ~ S6), faceplate (68 controller), manstation, overview, infocard, abcbar, lookonly, events, ditl_toolbar, inapp_update, stale_beta, plant_live, world, ditl150, pid_am, loaddown, reset (51 sheet, 0 differ), switches (438 switch, 0 mali), hmi_op, unit_load, engine isolated, scenarios: PASADO. CHECK: 18 / 19 (ang kilalang M4 Cold start-up buo 16 / 17, RH 9.1). values_layout at refcheck: kapareho ng v2.2.0 (walang bago).
+
+## 2.4.0-beta.5 — PLANT VIEW: faceplate sa graphic, sariling window sa PC
+- **Problem (user, 2026-10-19):** "sa PLANT VIEW WINDOW/WORKSPACE, nacocontrol mo ang valve dito … tulad ng tunay na DCS HMI control station"; "kapag PC, dapat another window bubukas"; sa Android ay tab lang; "plant view ang name".
+- **As Found:** Ang click sa controller ng plant graphic ay info card lang (walang A / M / R, SV, MV). May dalawang plant screen: ang OPERATE tab at ang lumang "Plant window" (iba at lumang graphic).
+- **Work Done (UI lang; walang binago sa engine, simulation, plant model):**
+  - Tab OPERATE → **PLANT VIEW**.
+  - Click sa controller, MAN station o valve sa graphic = faceplate sa ibabaw ng graphic (parehong faceplate ng Operator pane: A / M / R, SV, MV, trend, interlock, force manual). Pareho ang sinusulat sa engine. "Logic" = bubuksan ang sheet ng loop sa LOGIC tab. (`src/ui/hmi/hmi.js` `AN.fpBuild`, `src/ui/plant/plant.js`.)
+  - PC (mouse, ≥ 1000 px, hindi Android app): ang PLANT VIEW ay bumubukas sa sariling window na may Run / Pause, Start ▾, estado at oras; parehong engine ng main window. "Dock" o pagsara ng window = babalik sa tab. Android / phone / tablet: tab pa rin. (`src/ui/shell/app.js` `pvWindow`; exe: `delivery/desktop/main.js` window ng PLANT VIEW na may icon.)
+  - Inalis ang lumang "Plant window" button (TOOLS).
+- **As Left (headless):** `tests/regress/plant_view.js` ALL PASS: click sa TICBR1140 sa graphic → faceplate; M → MANUAL ng tunay na A/M station; MV 50 → engine MV 50.0; A → AUTO; PC window bumubukas, faceplate at M gumagana roon, Run tumatakbo, Dock → balik sa tab.
+- **Hindi pa nasubok:** totoong exe window at Android app (sa device).
+
 ## 2.4.0-beta.4 — Plant model ON / OFF switch
 - **Problem (user, 2026-10-19):** "paano i-enable/disable ang PLANT MODEL?"
 - **As Found:** Laging ON ang plant model mula v1.20.39 (`AN.plantOn`, naka-save sa `ls-plantmodel2`); ang button ng engine (`bPm`, main.js) ay hindi kailanman inilagay sa screen.

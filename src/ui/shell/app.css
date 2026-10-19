@@ -96,18 +96,18 @@ body.app2 #sidelist button.on .st{color:#9cc3df!important}
 body.app2 .hmitabs{gap:0!important;padding:0!important;background:var(--c-strip)!important;border-bottom:1px solid var(--c-line)}
 body.app2 .hmitabs button{height:30px!important;border:0!important;border-radius:0!important;background:transparent!important;color:var(--c-dim)!important;font:600 11px var(--uf)!important;letter-spacing:.12em;text-transform:uppercase}
 body.app2 .hmitabs button.on{color:#fff!important;box-shadow:inset 0 -2px 0 var(--c-acc)}
-body.app2 :is(#opp,#anp){background:var(--c-pane)!important;border-left:1px solid var(--c-line)!important;font-size:12.5px!important}
-body.app2 #opp h4{font:600 11px var(--uf)!important;letter-spacing:.12em!important;color:var(--c-dim)!important;border-bottom:1px solid var(--c-line);padding-bottom:3px}
-body.app2 #opp .hdr{font:600 14px var(--mf)!important}
-body.app2 #opp .fp{background:#0a0f14!important;border:1px solid var(--c-line2)!important;border-radius:3px!important}
-body.app2 #opp button.b{height:28px;border-radius:3px;font-size:12px}
+body.app2 :is(#opp,#plfp,#anp){background:var(--c-pane)!important;border-left:1px solid var(--c-line)!important;font-size:12.5px!important}
+body.app2 :is(#opp,#plfp) h4{font:600 11px var(--uf)!important;letter-spacing:.12em!important;color:var(--c-dim)!important;border-bottom:1px solid var(--c-line);padding-bottom:3px}
+body.app2 :is(#opp,#plfp) .hdr{font:600 14px var(--mf)!important}
+body.app2 :is(#opp,#plfp) .fp{background:#0a0f14!important;border:1px solid var(--c-line2)!important;border-radius:3px!important}
+body.app2 :is(#opp,#plfp) button.b{height:28px;border-radius:3px;font-size:12px}
 body.app2 #anp h4{font:600 11px var(--uf)!important;letter-spacing:.12em;text-transform:uppercase;color:var(--c-dim)!important;border-bottom:1px solid var(--c-line)!important}
 body.app2 .fpov{background:#0a0f14!important;border-color:var(--c-line2)!important;border-radius:3px!important}
 body.app2 .fpov .ovh{font-family:var(--uf)!important;letter-spacing:.12em}
 body.app2 .fpov .ovc{background:var(--c-ctl)!important;border-color:var(--c-line2)!important;border-radius:3px!important}
 body.app2 .fpov .ovc.on{border-color:var(--c-acc)!important;box-shadow:inset 0 0 0 1px var(--c-acc)!important}
 body.app2 #cv{background-color:#06090c!important;background-image:radial-gradient(#16212b 1px,transparent 1px)!important;background-size:24px 24px!important}
-body.app2 :is(#anp,#opp,#side,#infocard,#evbox) :is(button,select){border-radius:3px}
+body.app2 :is(#anp,#opp,#plfp,#side,#infocard,#evbox) :is(button,select){border-radius:3px}
 body.app2 #infocard,body.app2 #evbox{border-radius:4px!important;border-color:var(--c-line2)!important;background:#0b1016f7!important}
 body.app2 *::-webkit-scrollbar{width:8px;height:8px}
 body.app2 *::-webkit-scrollbar-thumb{background:#223040;border-radius:0}
@@ -175,7 +175,7 @@ body.app2 .plbtn,body.app2 .libbtn{display:none!important}
  body.app2 #anmeta>span:nth-of-type(1){max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
  #mid #anp{top:auto!important;left:0;right:0;bottom:0;width:100%!important;height:52%;border-radius:14px 14px 0 0;box-shadow:0 -8px 24px #000a}
  #mid #side{width:min(300px,86vw)!important}
- #anp button,#anp select,#anp input:not([type=checkbox]),#opp button,.fpop button{min-height:40px}
+ #anp button,#anp select,#anp input:not([type=checkbox]),:is(#opp,#plfp) button,.fpop button{min-height:40px}
  #sfoot #stchip span:nth-child(n+2){display:none}
  #sfoot .sclock{display:none}
  body.app2 #meta{padding:4px 8px!important;gap:6px}
@@ -282,7 +282,7 @@ body.app2 #anp h4{margin:12px 0 6px!important;padding-bottom:4px!important}
 #toolsws .tcard :is(button,select,label.b){height:32px;min-height:32px;border-radius:var(--r)}
 body.app2 #toolsws #uatb{height:32px!important}
 /* flat corners everywhere in the frame */
-.ddm,body.app2 :is(#infocard,#evbox),#toolsws .tcard,body.app2 #opp .fp,body.app2 .fpov,body.app2 .fpov .ovc{border-radius:var(--r)!important}
+.ddm,body.app2 :is(#infocard,#evbox),#toolsws .tcard,body.app2 :is(#opp,#plfp) .fp,body.app2 .fpov,body.app2 .fpov .ovc{border-radius:var(--r)!important}
 /* messages of the app go to the status bar (a message line, like a DCS), not over the drawing */
 body.app2 #toast{display:none!important}
 #sfoot .smsg{display:none;flex:1 1 auto;min-width:0;font:600 11px var(--mf)!important;color:#d8eeff;background:var(--c-accbg);box-shadow:inset 3px 0 0 var(--c-acc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:24px;cursor:pointer}
