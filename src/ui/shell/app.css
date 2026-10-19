@@ -490,6 +490,8 @@ body.lo.anview #anp::before{content:'VIEW · no simulation: inputs are locked';d
 /* sheet list: one line per sheet title */
 body.app2.lo #sidelist button{padding:4px 10px!important}
 body.app2.lo #sidelist button .st{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* 2.4.1-beta.8: Panel button on the drawing (user: "NASAN NA SIDE PANEL"); the operator faceplate panel belongs to the ABC page only */
-#lotools .lo-pnl{margin-left:4px}
+/* 2.4.1-beta.8 / beta.9: Panel button in the top bar (user: "NASAN NA SIDE PANEL"); the operator faceplate panel belongs to the ABC page only */
+body[data-tab=logic] #gsbar .lo-pg{display:flex}
+body.lo #gsbar .lo-pnl{font-weight:600}
+body.lo #gsbar .lo-pnl.on{background:var(--c-accbg)!important;color:var(--c-hi)!important;box-shadow:inset 0 -2px 0 var(--c-acc)!important}
 body:not(.an) #opp{display:none!important}

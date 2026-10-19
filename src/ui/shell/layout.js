@@ -80,7 +80,9 @@
         setTimeout(place, 50);
       }
     });
-    tools.append(E('div', { cls: 'lo-an' }, [xback, fit, zoom, values, wire]), E('div', { cls: 'lo-di' }, [dfit, dz]), pnl);
+    tools.append(E('div', { cls: 'lo-an' }, [xback, fit, zoom, values, wire]), E('div', { cls: 'lo-di' }, [dfit, dz]));
+    /* 2.4.1-beta.9 (user could not find it on the drawing): Panel is in the top bar, next to ⏱ */
+    gDitl.after(E('div', { cls: 'tb lo-pg' }, [pnl]));
     document.body.append(tools);
     [panel, dpn].forEach(x => x && x.classList.add('lo-gone'));
     gView.classList.add('lo-gone');
