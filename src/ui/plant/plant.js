@@ -3,7 +3,9 @@
    that snapshot on the right (src/ui/plant/values.js). LIVE (2.1.0-beta.5): values, controllers and valves read the simulation
    (read only); what is not linked keeps the snapshot value, grey. UI only. */
 (function () {
-  const $ = id => document.getElementById(id);
+  /* 2.4.0-beta.5: the PLANT VIEW may live in its own window (PC): D is the document that holds it */
+  let D = document;
+  const $ = id => D.getElementById(id);
   const NS = 'http://www.w3.org/2000/svg';
   const E = (t, a, kids) => {
     const e = document.createElement(t);
@@ -505,6 +507,9 @@
           o.hit.addEventListener('click', e => {
             e.stopPropagation();
             try {
+              if ((o.r.k === 'ctl' || o.r.k === 'man') && fpOpen(o.it.tag)) return;
+              if (o.r.k === 'mv' && fpOpen(o.r.c.tag)) return;
+              if (D !== document) return; /* the info card opens in the main window only */
               if (o.r.k === 'ctl' || o.r.k === 'man') window.lsInfo && window.lsInfo(o.it.tag);
               else if (o.r.k === 'mv') window.lsInfo && window.lsInfo(o.r.c.tag);
               else if (o.r.a) window.lsInfo && window.lsInfo(o.r.a, { stn: o.r.st });
@@ -516,6 +521,59 @@
       liveTick();
     });
   }
+  /* 2.4.0-beta.5 PLANT VIEW: click a controller, MAN station or valve = its faceplate (A / M / R, SV, MV, trend) over the
+     graphic, like the faceplate pop-up of a DCS operator station; it writes the same operator values as the LOGIC pane */
+  let fp = null,
+    fpLive = null;
+  function fpClose() {
+    if (fp) fp.remove();
+    fp = fpLive = null;
+  }
+  function fpOpen(tag) {
+    if (!window.AN || !AN.fpBuild) return false;
+    const box = E('div', { cls: 'body' });
+    let r = null;
+    try {
+      r = AN.fpBuild(tag, box);
+    } catch (e) {}
+    if (!r) return false;
+    fpClose();
+    const sh = r.sheet;
+    fp = E('div', { id: 'plfp', 'data-tag': tag }, [
+      E('div', { cls: 'plfph' }, [
+        E('b', { txt: tag }),
+        E('button', {
+          cls: 'b',
+          txt: 'Logic',
+          title: 'Open ' + sh + ' (the drawing of this loop) in the LOGIC tab',
+          on: () => {
+            try {
+              window.lsSetTab && window.lsSetTab('logic');
+              if (AN.cat !== 'an') AN.setCat('an');
+              const i = AN.sheets.findIndex(s => s.name === sh);
+              if (i >= 0) AN.go(i);
+              if (D !== document) window.focus();
+            } catch (e) {}
+          }
+        }),
+        E('button', { cls: 'b', txt: '✕', title: 'Close the faceplate', on: fpClose })
+      ]),
+      box
+    ]);
+    $('plmid').append(fp);
+    fpLive = r.live;
+    fpTick();
+    return true;
+  }
+  function fpTick() {
+    if (!fpLive || !ws || ws.style.display !== 'grid') return;
+    for (const f of fpLive)
+      try {
+        f();
+      } catch (e) {}
+  }
+  setInterval(fpTick, 250);
+  window.lsPlantFp = fpOpen; /* for the tests */
   function reg(it, set, hit) {
     LV.push({ it, set, hit, r: null });
   }
@@ -560,7 +618,7 @@
   }
   function select(o) {
     cur = o;
-    for (const b of document.querySelectorAll('#pllist button')) b.classList.toggle('on', b.dataset.id === o.id);
+    for (const b of D.querySelectorAll('#pllist button')) b.classList.toggle('on', b.dataset.id === o.id);
     $('pltitle').textContent = o.title;
     if (o.g) draw(o.g);
     else {
@@ -653,13 +711,14 @@
     select(all.find(o => o.id === last) || all[0]);
   }
   function place() {
-    if (!ws) return;
+    if (!ws || D !== document) return;
     const top = $('gsbar') ? $('gsbar').getBoundingClientRect().bottom : 40,
       foot = $('sfoot') ? $('sfoot').getBoundingClientRect().height : 0;
     ws.style.top = top + 'px';
     ws.style.bottom = foot + 'px';
   }
   function open(on) {
+    if (D !== document) return; /* the PLANT VIEW is in its own window: the tabs of the main window leave it alone */
     if (on && !ws) build();
     if (!ws) return;
     ws.style.display = on ? 'grid' : 'none';
@@ -676,6 +735,23 @@
     }
   }
   window.lsPlant = open;
+  /* 2.4.0-beta.5: the PLANT VIEW window (PC) moves the workspace into its own document and back */
+  window.lsPlantWs = () => {
+    if (!ws) build();
+    return ws;
+  };
+  window.lsPlantDoc = d => {
+    D = d || document;
+    if (D !== document) {
+      document.body.classList.remove('plant');
+      if (btn) btn.classList.remove('on');
+      ws.style.display = 'grid';
+      ws.style.top = ws.style.bottom = '';
+      if (!tmr) tmr = setInterval(liveTick, 1000);
+    }
+    setTimeout(() => (cur && cur.g ? draw(cur.g) : fit()), 30);
+  };
+  window.lsPlantFit = () => (cur && cur.g ? draw(cur.g) : fit());
   window.lsPlantLive = () => LV.map(o => ({ tag: o.it.tag, t: o.it.t, snap: o.it.t === 'ctl' ? o.it.pv + '/' + o.it.sv + '/' + o.it.mv + ' ' + o.it.m : o.it.v, how: o.r ? o.r.how || o.r.k : null, sh: o.r ? o.r.sh : null, live: o.r && o.r.k === 'mv' ? shOf(o.r.sh).S.rt.v[o.r.c.out] : o.r && o.r.cc ? (() => { const x = netVal(o.r), mv = shOf(o.r.cc.sh).S.rt.v[o.r.cc.c.out]; return Math.abs(x - (100 - mv)) < 0.5 && Math.abs(x - mv) > 1 ? 100 - x : x; })() : o.r && (o.r.k === 'net' || o.r.k === 'dig') ? netVal(o.r) : o.r && o.r.k === 'ctl' ? (() => { const S = shOf(o.r.sh).S, c = o.r.c; return [S.rt.v[c.q.pv], S.rt.v[c.q.sv], S.rt.v[c.out]].map(x => +(+x).toFixed(1)).join('/'); })() : o.r && o.r.k === 'man' ? +(+shOf(o.r.sh).S.rt.v[o.r.b.o[0]]).toFixed(1) : null })); /* for the tests */
   addEventListener('resize', () => {
     if (ws && ws.style.display === 'grid') {

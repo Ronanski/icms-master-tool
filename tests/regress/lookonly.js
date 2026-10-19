@@ -1,6 +1,6 @@
 // Search = look only (2.1.0-beta.8, user): a result of the global search / LIBRARY opens without force or simulate (ABC: VIEW / TRACE,
 // DITL: Simulate off) and the info card shows no live value. LIBRARY groups like the Excel files. Usage: node tests/regress/lookonly.js [html]
-const fs=require('fs');const {open}=require('./lib.js');
+const fs=require('fs');const {open,showSearch}=require('./lib.js');
 const html=process.argv[2]||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 (async()=>{const {browser,page,errs}=await open(html);let fail=0;const ok=(c,t)=>{console.log((c?'PASS ':'FAIL ')+t);if(!c)fail++};const W=ms=>page.waitForTimeout(ms);
 const runMode=()=>page.evaluate(()=>{AN.setCat('an');if(AN.view)[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='View').click()});
@@ -20,11 +20,11 @@ ok(!/^=|\s=\s/.test(c1),'LIBRARY info card: no live value ('+c1+')');
 await page.evaluate(()=>[...document.querySelectorAll('#infocard button')].find(x=>x.textContent==='Show').click());await W(900);
 ok(await page.evaluate(()=>AN.view&&!AN.run),'LIBRARY card Show -> VIEW / TRACE (no simulate)');
 await page.evaluate(()=>window.lsLibrary(false));await runMode();await W(300);
-await page.fill('#ansb','M.0228');await page.press('#ansb','Enter');await W(1200);
+await showSearch(page);await page.fill('#ansb','M.0228');await page.press('#ansb','Enter');await W(1200);
 await page.evaluate(()=>[...document.querySelectorAll('#infocard button')].find(x=>x.textContent==='Show').click());await W(900);
 ok(await page.evaluate(()=>AN.view&&!AN.run),'global search Enter -> card -> Show: VIEW / TRACE');
 await page.evaluate(()=>{const c=document.getElementById('infocard');c&&c.remove();AN.setCat('dig')});await W(500);await page.click('#bmode');await W(300);
-await page.fill('#ansb','M.3302');await W(2500);
+await showSearch(page);await page.fill('#ansb','M.3302');await W(2500);
 await page.evaluate(()=>[...document.querySelectorAll('#anfind button')].find(x=>/^Open .*DITL/.test(x.title)).click());await W(900);
 ok(await page.evaluate(()=>!SIM),'DITL in Simulate, a DITL search result -> Simulate off');
 ok(!errs.length,'no page error');
