@@ -86,3 +86,11 @@
   - RH blow-off MV-HR1391 (flow diagram K1AU3-PD-012 rev D): 6" na branch, walang nakasulat na capacity. Ang `unit.js` rhb 0.1 ay IPINALAGAY pa rin; ang tantiya mula sa 6" RH safety valves ay ~0.13 (inference).
   - LP bypass PCV-HR1010 (ang PICHR1003 ay pangalan ng controller): ang spray FT-CD1115 0 ~ 46 T/H ay tumutugma sa ~140 T/H na steam (lpb ~0.3); ang `unit.js` ay 0.8 (IPINALAGAY, beta.16). Ito ang malamang na sanhi ng RH 9.1. Hindi binago: apektado ang lahat ng scenario.
 - **Status:** Pass maliban sa M4 buong takbo 15 / 17. Ang PR #32 ay kasama na rito: puwede nang isara (desisyon ng user).
+
+### Kilalang isyu (desisyon ng user 2026-10-19: "Itala muna")
+
+- **M4 Cold start-up (buo) 15 / 17:**
+  - **RH pressure 9.0 ~ 9.1 sa bypass stage (limit 9.0).** Sanhi: ang MSP ay lumalampas sa 126.5 (SV 123) habang minimum ang coal (FIC-CF 10 %). Biglang kumukuha ang HP bypass ng 25 → 75 T/H, at humahabol ang LP bypass PID ng ABC-052 nang +3 % kada 30 s (parameter ng drawing).
+  - **Sinubok na walang epekto:** rhb 0.13 (tantiya mula sa 6" RH blow-off sa K1AU3-PD-012) = 9.0; buong bukas ng RH blow-off ng operator = 9.0. Hindi binago ang app.
+  - **Drum level −153 mm (±150) sa roll stage ng chain:** pasado ang roll kapag mag-isa (11 / 11).
+  - **Ayos sa hinaharap:** hakbang ng operator sa CHECK (mas mabagal na HP bypass SV / mas maliit na apoy sa pressure raise; feedwater sa roll).
