@@ -39,3 +39,10 @@ Pinili ng user (card): **UI ayos #5-8**. Itsura lang; walang binago sa engine, s
   - Regression: ditl_toolbar, lookonly, plant_view, faceplate (68 controller), manstation, check_panel share / tt / mft, tests (11 PASS) ALL PASS; values_layout kapareho ng beta.1 (2434 label); `npm run check` SAME. 0 page error.
 - **Hindi pa nasubok:** totoong tablet / phone / exe; DITL drawing zoom (ang Zoom ay ABC lang; ang DITL ay may sariling Fit at pinch).
 - Litrato: `/mnt/project-files/ui-audit-2026-10-19/beta2/`.
+
+## 2.4.1-beta.3 — Auto-hide OFF: hindi na kusang nagsasara ang right panel
+- **Problem (user, 2026-10-19):** dati, kapag naka-uncheck ang Auto-hide, hindi nagmi-minimize ang right panel; ngayon nagsasara pa rin.
+- **As Found:** kapag sarado ang panel (✕, o maliit na window sa simula), ang click sa block ay nagbubukas nito nang pansamantala lang (`AN.tmp`), at ang click sa labas ay isinasara ulit, kahit Auto-hide OFF. Kapag inalis ang check sa Auto-hide habang sarado ang panel, nanatili itong sarado.
+- **Work Done:** Auto-hide OFF: ang click sa block ay nagbubukas ng panel at nananatili itong bukas; ✕ o Panel button lang ang nagsasara. Pag-alis ng check: bubukas ang panel. Auto-hide ON: walang binago (`interaction.js` panelFor, `plant-window.js`).
+- **As Left (headless):** Auto-hide OFF → ✕ → click sa block = bukas → click sa labas = bukas pa rin. Auto-hide ON → click sa block = bukas → click sa labas = sarado. Regression: ditl_toolbar, lookonly, plant_view, faceplate, panel_sync, overview, events, tests (11 PASS) pasado.
+- **Hindi pa nasubok:** totoong exe / tablet.

@@ -856,7 +856,7 @@ function buildPanel() {
       try {
         localStorage.setItem('ditl.an.ah', AN.ah ? '1' : '0');
       } catch (e) {}
-      showPanel(!anp.classList.contains('min'));
+      showPanel(AN.ah ? !!AN.sel : true);
       setTimeout(() => dispatchEvent(new Event('resize')), 40);
     };
     anp.append(
