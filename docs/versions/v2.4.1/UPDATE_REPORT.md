@@ -78,3 +78,18 @@ Pinili ng user (card): **UI ayos #5-8**. Itsura lang; walang binago sa engine, s
   - Ang info card ay lumalabas na bilang kahon sa gitna.
   - Regression: tingnan ang commit.
 - **Hindi pa nasubok:** totoong exe / tablet.
+
+## 2.4.1-beta.6 — ◀ Panel side tab sa DITL, mas maayos na lipat ng ABC ↔ DITL
+- **Problem (user, 2026-10-19):** walang button sa gilid para ipakita ang panel ng DITL. Magulo ang right pane kapag lumilipat ng ABC at View ↔ Run ("hindi smooth").
+- **As Found:**
+  - Ang DITL ay walang side tab; Panel button lang sa itaas ang nagbubukas.
+  - Ang DITL panel ay sumusunod sa paglipat nang hanggang 0.3 s mamaya, kaya sandaling lumalapad ang drawing at saka kumikitid.
+  - Ang ◀ Panel ng ABC ay naiiwang nakikita sa DITL page, at minsan nawawala pagbalik sa ABC kahit sarado ang panel.
+- **Work Done:**
+  - Bagong ◀ Panel side tab sa DITL (gaya ng ABC).
+  - Ang panel ay sumusunod agad sa paglipat ng ABC ↔ DITL at ng tab.
+  - Ang side tab ng bawat page ay lumalabas lang sa sariling page, kapag sarado ang panel nito.
+  - Pareho na ang itsura ng dalawang tab (sumusunod sa theme).
+- **As Left (headless, `tests/regress/sidetab.js`):** sarado ang panel → may tab → click → bukas. Paglipat ng DITL: may panel na sa loob ng 0.1 s. Pagbalik sa ABC: ABC tab lang ang nakikita. Walang tab sa LIBRARY. Walang page error.
+- **Hindi pa naayos:** sa ABC, ang View ay nagpapalabo ng mga input sa panel (sadya: walang simulation sa View) at nagpapalit ng highlight ng napiling block; isasama ito sa overhaul ng layout.
+- **Hindi pa nasubok:** totoong exe / tablet.
