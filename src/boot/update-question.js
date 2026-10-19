@@ -83,7 +83,7 @@
         document.write('<plaintext style="display:none">');
         idb('readonly', CH)
           .then(function (h) {
-            if (!h || h.indexOf('<title>Logic Sim ' + want) < 0) throw new Error('no copy');
+            if (!h || (h.indexOf('<title>Logic Sim ' + want) < 0 && h.indexOf('<title>DCS Logic Simulator ' + want) < 0)) throw new Error('no copy');
             try {
               sessionStorage.setItem('ls-swapped', CH);
             } catch (e) {}
@@ -128,7 +128,7 @@
         return r.text();
       })
       .then(function (h) {
-        var m = h.match(/<title>Logic Sim (v\d+(\.\d+)+(-beta\.\d+)?)<\/title>/);
+        var m = h.match(/<title>(?:Logic Sim|DCS Logic Simulator) (v\d+(\.\d+)+(-beta\.\d+)?)<\/title>/);
         if (!m || h.length < 500000) throw new Error('incomplete download');
         return idb('readwrite', ch, h)
           .then(function () {

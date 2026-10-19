@@ -16,7 +16,7 @@ const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.messag
 const url='file://'+dir+'/www/index.html';await p.goto(url);await p.waitForFunction(()=>document.getElementById('chsel'),null,{timeout:30000});
 await p.evaluate(async([h,v])=>{await new Promise(ok=>{const r=indexedDB.open('logic-sim-app',1);r.onupgradeneeded=()=>r.result.createObjectStore('pages');r.onsuccess=()=>{const tx=r.result.transaction('pages','readwrite');tx.objectStore('pages').put(h,'beta');tx.oncomplete=ok}});localStorage.setItem('ls-store',JSON.stringify({beta:'v'+v}));localStorage.setItem('logic.channel','stable')},[as(OLDB),OLDB]);
 await p.reload();await p.waitForFunction(()=>document.getElementById('chsel'),null,{timeout:30000});
-ck((await p.title())==='Logic Sim v'+APP,'starts with the app copy v'+APP+' (old Beta v'+OLDB+' stored)');
+ck((await p.title()).replace(/^DCS Logic Simulator /,'Logic Sim ')==='Logic Sim v'+APP,'starts with the app copy v'+APP+' (old Beta v'+OLDB+' stored)');
 await p.evaluate(()=>{const c=document.getElementById('chsel');c.value='beta';c.dispatchEvent(new Event('change'))});
 await p.waitForFunction(v=>document.title.includes(v)||document.title.includes('9.0-beta.4'),NEWB,{timeout:30000});await p.waitForTimeout(1500);
 ck((await p.title()).includes(NEWB),'Beta chosen: runs the NEWEST Beta v'+NEWB+', not the old stored one: '+(await p.title()));

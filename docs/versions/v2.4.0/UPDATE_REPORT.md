@@ -4,6 +4,18 @@ Base: Stable v2.2.0 (`main` 9b0ae85). Bawat Beta ay push sa `claude/project-thre
 
 Utos ng user (2026-10-19): "magulo, walang direksyon, kalat" ang app. Full audit: `/mnt/project-files/app-status/FULL_AUDIT_2026-10-19.md`; disenyo: `NEW_SHELL_DESIGN.md` (parehong folder). Pinili ng user: bagong shell mula sa simula ("Scratch"). Pinayagan ng user na lumabag sa lumang UI rules basta hindi magalaw ang engine, simulation at plant model.
 
+## 2.4.0-beta.3 — Icon ng app at bagong pangalan: DCS Logic Simulator
+- **Problem (user, 2026-10-19):** "wala pa rin icon ang app. pangit pa rin ang name pag nirerelease/download ko."
+- **As Found:** Ang apk ay ginagawa ng `npx cap add android` kaya default na Capacitor icon ang lumalabas; ang exe ay default na Electron icon; ang html ay walang favicon. Ang mga file sa Release: `Logic-Sim-v2.2.0.apk`, `Logic-Sim-v2.2.0-portable.exe`, `logic-sim-v2.2.0.html`, `Release-Report-v2.2.0.pdf`.
+- **Desisyon ng user (card, 2026-10-19):** pangalan = **DCS Logic Simulator**.
+- **Work Done:**
+  - Bagong icon (`delivery/icons/icon.svg`): boiler drum na may tubig, risers at apoy, sa madilim na plate. Ginawa ang PNG (16 ~ 512), `icon.ico` (Windows), Android launcher icons ng bawat density + adaptive icon (`delivery/icons/android/res`).
+  - `release.yml`: kinokopya ang Android icons pagkatapos ng `cap sync`; ang exe ay may `build/icon.ico` at window icon. Pangalan ng app: DCS Logic Simulator (apk at exe). Mga file sa Release: `DCS-Logic-Simulator-<ver>.apk`, `DCS-Logic-Simulator-<ver>-Windows.exe`, `DCS-Logic-Simulator-<ver>.html`, `DCS-Logic-Simulator-<ver>-Report.pdf`.
+  - HTML: favicon at apple-touch icon; ang tab / window ay "DCS Logic Simulator v…". Ang `<title>` sa html file ay nananatiling "Logic Sim v…" para mahanap pa rin ng naka-install na lumang bersyon ang update; ang updater ay tumatanggap ng dalawang pangalan.
+  - PWA manifest at icon, offline page, release report: bagong pangalan. Exe: ang settings ay nananatili sa lumang folder ("Logic Sim") para walang mawala. Hindi binago ang app ID ng apk: update, hindi bagong install.
+- **As Left (headless, build 2.4.0-beta.3):** favicon at title "DCS Logic Simulator v2.4.0-beta.3" OK; `release.yml` valid YAML; `inapp_update` at `stale_beta` ALL PASS (pagkatapos ituro ang test sa bagong title).
+- **Hindi pa nasubok:** ang apk at exe mismo (ginagawa lang sa GO STABLE release); ang icon sa totoong phone at Windows.
+
 ## 2.4.0-beta.2 — UI / UX pass: industrial, flat, walang overlap
 - **Problem (user, 2026-10-19):** "dapat engineering, industrial ang look ... alignment, proper sizes, spaces, minimalist, flat ... avoid overlapping ... gamitin mo mismo ang app."
 - **As Found (ginamit ang app headless: LOGIC ABC / DITL, Run, Panel, search, OPERATE Start 150 MW, Events, CHECK, UAT, LIBRARY, TOOLS, ⚙; 1440 / 1024 / 390 px; 42 screenshot):**
