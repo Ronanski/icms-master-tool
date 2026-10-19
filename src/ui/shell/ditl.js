@@ -314,6 +314,7 @@
     });
   }
   /* ---------- state of the bar and the panel ---------- */
+  let tab = null;
   function upd() {
     const running = SIM && !DPAUSE;
     run.textContent = running ? '❚❚ Pause' : '▶ Run';
@@ -325,6 +326,13 @@
       was = dp.classList.contains('min');
     dp.classList.toggle('min', !open || !dit);
     if (dit && was !== dp.classList.contains('min')) setTimeout(() => dispatchEvent(new Event('resize')), 30);
+    if (tab) tab.style.display = dit && !open && document.body.dataset.tab === 'logic' ? 'block' : 'none';
+    {
+      /* ABC's own side tab only on the ABC page, and always there while the ABC panel is closed */
+      const at = $('anptab'),
+        ap = $('anp');
+      if (at && ap) at.style.display = !dit && ap.classList.contains('min') && document.body.dataset.tab === 'logic' ? 'block' : 'none';
+    }
     if (!dit || !open) return;
     const s = cur(),
       k = S.cur + '|' + (s && s.name) + '|' + !!(s && s.nl) + '|' + (s && s.nl && s.nl.v);
@@ -336,6 +344,17 @@
   }
   D.upd = upd;
   setInterval(upd, 300);
+  /* 2.4.1-beta.6 (user): a side tab brings the closed panel back, like ◀ Panel on ABC */
+  tab = E('button', { id: 'dptab', txt: '◀ Panel', title: 'Show the right panel' });
+  tab.onclick = () => {
+    open = true;
+    ls('ditl.dp', '1');
+    upd();
+  };
+  document.body.append(tab);
+  /* 2.4.1-beta.6 (user: "hindi smooth"): the panel follows a switch ABC <-> DITL or a tab change at once, not up to 0.3 s later
+     (the drawing used to take the full width for a moment and then shrink) */
+  new MutationObserver(() => upd()).observe(document.body, { attributes: true, attributeFilter: ['class', 'data-tab'] });
   /* the drawing title is not edited any more; the L / C / R and size of the title stay as they are */
   const noEdit = () => {
     document.querySelectorAll('#meta [contenteditable]').forEach(e => e.setAttribute('contenteditable', 'false'));

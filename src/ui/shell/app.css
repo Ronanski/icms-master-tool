@@ -446,3 +446,7 @@ html[data-shell=c] #libws :is(.libr .ty,.libr.vac .ad,.libg span){color:#3a4048}
 html[data-shell=c] #libws .libw{background:#e4e6e8}
 html[data-shell=c] #libws .libg{background:#c8cbcf;color:#1d2125}
 html[data-shell=c] #libws .libg.on b{color:#1f6b3a}
+/* 2.4.1-beta.6: side tab of the closed panel, same on ABC and DITL */
+body.app2 :is(#anptab,#dptab){position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:40;min-height:96px;padding:10px 7px;writing-mode:vertical-rl;border:1px solid var(--c-acc);border-right:0;border-radius:6px 0 0 6px;background:var(--c-pane);color:var(--c-acc);font:600 12px var(--uf);letter-spacing:.06em;cursor:pointer;box-shadow:-4px 0 12px #0006}
+#dptab{display:none}
+body.app2 :is(#anptab,#dptab):hover{background:var(--c-accbg)}
