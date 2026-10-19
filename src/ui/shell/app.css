@@ -172,6 +172,7 @@ body.app2 .plbtn,body.app2 .libbtn{display:none!important}
  body[data-tab=logic] #gsbar .gs-set{order:2}
  #gsbar :is(.tbar,.gs-set) :is(button,select,label.b){height:34px;min-height:34px}
  #gsbar .g-run .tb-step{display:none!important}
+ body.lo[data-tab=logic] #gsbar .g-run>.tb-step{display:inline-flex!important}
  #gsbar .tbar :is(#anshbox,#shbox) select{max-width:120px}
  body.app2 #anmeta{padding:3px 8px;gap:6px}
  body.app2 #anmeta .lg,body.app2 #anmeta small{display:none}
@@ -450,3 +451,42 @@ html[data-shell=c] #libws .libg.on b{color:#1f6b3a}
 body.app2 :is(#anptab,#dptab){position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:40;min-height:96px;padding:10px 7px;writing-mode:vertical-rl;border:1px solid var(--c-acc);border-right:0;border-radius:6px 0 0 6px;background:var(--c-pane);color:var(--c-acc);font:600 12px var(--uf);letter-spacing:.06em;cursor:pointer;box-shadow:-4px 0 12px #0006}
 #dptab{display:none}
 body.app2 :is(#anptab,#dptab):hover{background:var(--c-accbg)}
+/* ===== 2.4.1-beta.7 LOGIC page layout (src/ui/shell/layout.js): [VIEW | Run] ▶▶ ⏱, drawing tools on the drawing,
+   right panel with tabs, VIEW keeps the panel readable ===== */
+body.lo .lo-gone{display:none!important}
+body.lo #gsbar .lo-seg{display:inline-flex;border:1px solid var(--c-line2);border-radius:var(--r,4px);overflow:hidden;flex:none}
+body.lo #gsbar .lo-seg>*{border:0!important;border-radius:0!important;margin:0!important;min-width:64px!important;justify-content:center;font-weight:600!important}
+body.lo #gsbar .lo-seg>*+*{border-left:1px solid var(--c-line2)!important}
+body.lo #gsbar .lo-seg>.on:not(.tb-run){background:var(--c-accbg)!important;color:var(--c-hi)!important;box-shadow:inset 0 -2px 0 var(--c-acc)!important}
+.lo-pop{display:none;position:fixed;z-index:210;min-width:230px;padding:8px;background:var(--c-pop);border:1px solid var(--c-line2);border-radius:var(--r,4px);box-shadow:0 12px 30px #000a}
+.lo-pop.open{display:flex;flex-direction:column;gap:6px}
+.lo-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font:12px var(--uf);color:var(--c-tx2)}
+.lo-row>:last-child{height:30px;min-width:96px;background:var(--c-ctl);border:1px solid var(--c-line2);color:var(--c-tx);border-radius:3px;font:12px var(--uf)}
+#lotools{position:fixed;z-index:34;display:none;gap:4px;padding:4px;background:var(--c-pop);border:1px solid var(--c-line2);border-radius:var(--r,4px);box-shadow:0 4px 14px #0007}
+#lotools>div{display:flex;gap:4px}
+body.an #lotools .lo-di,body:not(.an) #lotools .lo-an{display:none!important}
+#lotools button{height:30px;padding:0 10px;border-radius:3px;font:500 12px var(--uf);background:var(--c-ctl);border:1px solid var(--c-line2);color:var(--c-tx2);cursor:pointer;display:inline-flex;align-items:center}
+#lotools button:hover{border-color:var(--c-hovbd);color:var(--c-tx)}
+#lotools button.on{background:var(--c-accbg);color:var(--c-hi);box-shadow:inset 0 -2px 0 var(--c-acc)}
+/* right panel tabs */
+.lo-tabs{display:flex;border-bottom:1px solid var(--c-line2);margin:0 0 8px;position:sticky;top:0;z-index:3;background:var(--c-pane)}
+.lo-tabs button{flex:1 1 auto;min-width:0;height:34px;padding:0 3px;border:0!important;border-radius:0!important;background:transparent!important;color:var(--c-tx2)!important;font:600 11px var(--uf)!important;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lo-tabs button:hover{color:var(--c-tx)!important}
+.lo-tabs button.on{color:var(--c-hi)!important;box-shadow:inset 0 -2px 0 var(--c-acc)!important}
+body.lo #anp>.hmitabs,body.lo #anp>small:first-of-type{display:none!important}
+#anp[data-pt]:not([data-pt=sel]) #ansel,#anp[data-pt]:not([data-pt=frc]) :is(#anfp,#ansrch){display:none!important}
+#anp[data-pt] #anlists>details{display:none}
+#anp[data-pt=in] #anlists>details[data-k=in],#anp[data-pt=tm] #anlists>details[data-k=tm],#anp[data-pt=pid] #anlists>details[data-k=pid],#anp[data-pt=frc] #anlists>details[data-k=frc]{display:block}
+#anp[data-pt=sel] #ansel:empty::before{content:'Click a block or a wire on the drawing to see its values here.';display:block;padding:14px 4px;color:var(--c-dim);font:12px var(--uf)}
+#dp[data-pt] [data-k]:not([data-k=note]){display:none}
+#dp[data-pt=in] .dp-r[data-k=in],#dp[data-pt=tm] .dp-r[data-k=tm],#dp[data-pt=mv] .dp-r[data-k=mv],#dp[data-pt=out] .dp-r[data-k=out]{display:flex!important}
+#dp[data-pt=in] p[data-k=in],#dp[data-pt=out] p[data-k=out]{display:block!important}
+#dp[data-pt] .dp-h[data-k]{display:none!important}
+body.lo #dp>.lo-tabs+.dp-note{display:none}
+/* VIEW: values stay readable; the inputs show they are locked instead of fading */
+body.lo.anview #anp :is(input,select,button:not(.keep)){opacity:1!important}
+body.lo.anview #anp :is(input,select){border-style:dashed!important}
+body.lo.anview #anp::before{content:'VIEW · no simulation: inputs are locked';display:block;margin:0 0 6px;padding:6px 10px;font:600 11px var(--uf);letter-spacing:.06em;color:var(--c-acctx);background:var(--c-accbg);border-left:3px solid var(--c-acc)}
+/* sheet list: one line per sheet title */
+body.app2.lo #sidelist button{padding:4px 10px!important}
+body.app2.lo #sidelist button .st{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
