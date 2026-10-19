@@ -94,3 +94,24 @@
   - **Sinubok na walang epekto:** rhb 0.13 (tantiya mula sa 6" RH blow-off sa K1AU3-PD-012) = 9.0; buong bukas ng RH blow-off ng operator = 9.0. Hindi binago ang app.
   - **Drum level −153 mm (±150) sa roll stage ng chain:** pasado ang roll kapag mag-isa (11 / 11).
   - **Ayos sa hinaharap:** hakbang ng operator sa CHECK (mas mabagal na HP bypass SV / mas maliit na apoy sa pressure raise; feedwater sa roll).
+
+## 2.5.0-beta.5 ~ beta.6 — Mga pending sa listahan (user: "tapusin na mga pending sa listahan", 2026-10-19)
+
+- **Problem:** tapusin ang mga bukas sa `docs/CHECKLIST.md` bago ang Stable: DITL-21C row 19 / 20, scenario ng force manual / interlock per cluster (#4), PLANT graphics na walang kulay ng takbo / hinto.
+- **As Found:**
+  - **DITL-21C row 19 / 20** (M.311A / B furnace DP signal abnormal): walang pinagmulan sa ABC-009A (beta.5, ebidensya sa `UNLINK_AUDIT.md`).
+  - **Interlock per cluster:** walang test na nagsisimula sa TRIP SIGNAL mismo (ang dating test ay pumipilit lang sa wire ng select).
+  - **PLANT 011 COAL FEEDER:** ang "M" (motor) ng feeder A / B / C ay naka-drawing bilang valve na walang tag, kaya laging bukas at hindi live. **012 ~ 015 START-UP BURNER:** ang BURNER ON / OFF lamp ay nakapirmi. Ang ibang screen na walang motor (UNIT, 004, 005, 018, 029, 033, 039) ay walang motor sa HMI snapshot din: tama na ito.
+  - **Bagong nakita:** sa "Start at 150 MW", MANUAL ang RH / SH gas bias damper (HICHR1002A / B) at TICHR1002A; sa 39.PNG ay A / A at R.
+- **Work Done:**
+  - beta.5: `src/world/world.js` station wiring M.311A / B = ABC-009A B.0646 / B.066E (memory list 101 / 103, I/O list AI0134 / AI0262).
+  - beta.6: `tests/regress/interlock.js` (bago): bawat A/M station, mula 150 MW, binabago isa-isa ang digital input ng drawing papunta sa MANUAL leg (pati pulse 0 → 1, timer hanggang 20 s, AND ng sabay na input). Dapat pumasok sa MANUAL at tumanggi sa A habang naka-trip.
+  - beta.6: `src/ui/plant/plant.js` + `systems.js`: bagong item na motor ("M"): pula = takbo, berde = hinto, mula sa memory bit ng drawing (coal feeder A / B / C = M.3400 / M.3401 / M.3402, "BC FROM S4"). Lamp: BURNER-A ~ D ON / OFF mula sa oil flow ng burner (PV ng FICDO1043A ~ D > 0.05 T/H; ang flame bit ng BMS ay wala sa ABC sheet).
+  - Walang binago sa engine, drawing, link, formula, range o parameter sa beta.6.
+- **As Left (headless):**
+  - interlock.js: 57 station na may force manual sa drawing, lahat PASS (cluster a 15, b 5, c 2, d 4, e 4, f 2, g 3, h 2, j 4, k 5, iba pa 5). 0 mali. 16 station ay walang digital input sa MANUAL leg (operator lang ang A / M, hal. ABC-031 ~ 039 heater drain, condensate). TICHR1012: ang force manual ay pulse ng pagsara ng LP bypass (M.071F) o parehong RH transmitter abnormal; naka-MANUAL na ito sa 150 MW (sarado ang LP bypass).
+  - plant_live: lahat PASS, kasama ang coal feeder A / C = M.3400 / M.3402 = 1 sa 150 MW. plant_view PASS. Screenshot: feeder B pinahinto = berdeng "M"; burner A may oil = ON pula.
+  - Buong UI self-check 93 screen (PC, tablet 1280×800 / 800×1280, phone): walang overlap o lumalampas.
+  - Engine ay pareho sa beta.4 / beta.5: hindi kailangang ulitin ang M2 ~ M5 (pareho ang resulta sa itaas).
+- **Sinubok pero hindi isinama (kilalang isyu):** RH / SH gas bias damper. Sanhi: sa unang scan pagkatapos ng Reset, ang pulse ng ABC-020 TPS (NOT HICHR1002B.MAN) ay nag-set ng M.017A ("1:B" = MANUAL ayon sa legend ABC-000), at sa M.0179 pati ang RH damper. Ang ayos (walang pulse sa steady na load + mode ng MAN station mula sa snapshot) ay nagpaayos ng damper at ng hmi_op, PERO bumaba ang M5 load down 10 / 14, bottle-up 12 / 15, M4 45 → 150 MW 11 / 14, M4 buo 13 / 17: ang mga scenario ay naka-tune sa damper na MANUAL. Ibinalik. Susunod: ayusin kasabay ng tuning ng scenario. Paalala: ang memory list 102 ay "M.017A ... FORCE AUTO", pero ang drawing ay "1:B" sa A/M switch na may COS (legend: B = manual); sinunod ang drawing.
+- **Status:** Pass. Natitira: damper sa itaas, M4 buong takbo 15 / 17 (RH 9.1, drum −153), pagsubok sa device.
