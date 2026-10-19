@@ -107,3 +107,10 @@ Pinili ng user (card): **UI ayos #5-8**. Itsura lang; walang binago sa engine, s
 - **As Left (headless):** bagong `tests/regress/layout.js` 29 / 29 (PC at phone). ditl_toolbar, lookonly (inayos ang paghanap ng "VIEW"), sidetab, abcbar, infocard, events, overview, plant_view, faceplate, manstation: pasado. pid_am: 1 mali sa ABC-004A FIC-CM, pareho sa beta.6 (hindi galing sa ayos na ito).
 - **Hindi binago:** ang status bar ay may mahabang tulong pa rin, kasi doon din lumalabas ang mensahe ng app.
 - **Hindi pa nasubok:** totoong exe / tablet.
+
+## 2.4.1-beta.8 — Panel button sa drawing
+- **Problem (user, 2026-10-19):** "NASAN NA SIDE PANEL" pagkatapos ng beta.7.
+- **As Found:** sa beta.7, tinanggal ang Panel button sa top bar; ang maliit na ◀ Panel tab sa gilid lang ang nagbubukas ng panel kapag sarado ito. Nakita rin: kapag naka-Operator ang ABC panel, lumalabas pa rin ito sa DITL page katabi ng DITL panel (dalawang panel).
+- **Work Done:** bagong **Panel** button sa kahon ng Fit / Zoom / Values / Wire (sa drawing, ABC at DITL); naka-ilaw kapag bukas ang panel. Ang Operator panel ay sa ABC page lang.
+- **As Left (headless):** `tests/regress/layout.js` (PC at phone): Panel button nagsasara at nagbubukas ng ABC at DITL panel; walang Operator panel sa DITL. sidetab, ditl_toolbar: pasado.
+- **Hindi pa nasubok:** totoong exe / tablet.
