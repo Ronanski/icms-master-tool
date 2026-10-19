@@ -22,7 +22,7 @@ Utos ng user (2026-10-16): **"Analog muna. Ang DITL ay i-simulate / i-force na l
    - (i) 015 + 016 + 057;
    - (j) 026 ~ 030, 033, 053 ~ 056;
    - (k) 031, 032, 034 ~ 039 (condenser, heater drain).
-5. [ ] **Audit ng bawat ABC sheet laban sa PDF** (function, cause-and-effect, AUTO / REMOTE / MANUAL), kasabay ng #4. **2.3.0-beta.1 (2026-10-19): na-audit ang 50 sheet + page linking ng DITL; 28 sheet walang mali, 30 mali sa 22 sheet, 4 uri ng maling link, 4 hindi mabasa (`docs/versions/v2.5.0/DRAWING_AUDIT.md`). User: "Ayusin lahat". beta.1: mga link (grupo A, LINK-1 ~ 4); beta.2: behavior (grupo B); beta.3: datos (grupo C). Natitira: DITL-21C row 19 / 20.**
+5. [x] **Audit ng bawat ABC sheet laban sa PDF** (function, cause-and-effect, AUTO / REMOTE / MANUAL), kasabay ng #4. **2.3.0-beta.1 (2026-10-19): na-audit ang 50 sheet + page linking ng DITL; 28 sheet walang mali, 30 mali sa 22 sheet, 4 uri ng maling link, 4 hindi mabasa (`docs/versions/v2.5.0/DRAWING_AUDIT.md`). User: "Ayusin lahat". beta.1: mga link (grupo A, LINK-1 ~ 4); beta.2: behavior (grupo B); beta.3: datos (grupo C). 2.5.0-beta.5: DITL-21C row 19 / 20 = B.0646 / B.066E ng ABC-009A (station wiring M.311A / B, `UNLINK_AUDIT.md`). TAPOS.**
 6. [x] **(2.2.0-beta.23: search nagsisimula sa planta naka-AUTO + budget 400 estado, ABC-004A 116 / 116 sa 17 min; 2.2.0-beta.8: generic tester 68 controller, 0 mali, 0 hindi nasubok; ang mahihirap ay sinubok sa planta na tumatakbo; RH spray + damper nagdadagdag) Controller na mahirap simulan**: PICFG108, AICFG112, HS-COAL, FICFW1007, PICAS1005.
 7. [x] **(2.2.0-beta.24: UAT block test 2547 item / 6998 case, 0 mali pagkatapos ng huling ayos; sakop 2517 / 3573 block; bagong SQRT (identity, V-18), I/P, T/P, HLLIM, PV < SV, conditional write, drop rate, DCMP, TPV) Tester ng halaga ng bawat block** (oracle ng AND, OR, ADD, SQRT, F(X), LAG, RATE, SEL…) sa bawat net ng 54 ABC sheet.
 8. [x] **(2.2.0-beta.24: latched select at operator-only A/M; 214 / 225 A/M at 155 / 159 T switch may test; 7 switch na output = isang leg ay susuriin sa PDF) Tester ng switching** (SW, AMT, T switch, selector) sa bawat leg; kasama ang #1.
@@ -37,7 +37,7 @@ Utos ng user (2026-10-16): **"Analog muna. Ang DITL ay i-simulate / i-force na l
 - [-] **Pangalan ng ~600 na input na walang tag** (DITL side).
 
 ## C. HINIHINTAY SA USER
-- [ ] **DITL right side pane** na tulad ng sa ABC: hinihintay ang "go side pane".
+- [x] **DITL right side pane** na tulad ng sa ABC (2.4.1-beta.6 ~ beta.10: DITL may panel at tab na gaya ng ABC).
 - [ ] **Pagsubok sa totoong tablet / apk / exe** ng 2.2.0-beta.1 ~ beta.6.
 - [x] **GO STABLE** ng 2.2.0 (2026-10-18: Stable v2.2.0).
 - [ ] **Branch cleanup**: 15 lumang branch (0 commit sa unahan ng `main`). Na-block ang pag-delete sa session; i-delete sa GitHub (Branches page) o sabihin ang "OK delete" para subukan ulit.

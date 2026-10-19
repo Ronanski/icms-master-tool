@@ -19,3 +19,14 @@ Walang link na tinanggal para lang gumana. Ang dalawang binago sa ibaba ay MALIN
    - Dati: ang input ng AND B74 (→ OR M.0204, force manual ng IDF inlet damper PICFG108A) ay B.0664, walang pinagmulan, laging 0.
    - Ebidensya: ang text sa tabi ng address ay "FURNACE PRESSURE (A) SIG.AB". Sa kaliwang kalahati ng parehong sheet, ang FURNACE PRESSURE (A) SIG.AB ay B.0644 (SIG.AB ng AI0132), at ang dalawa pang input ng parehong AND ay B.066C / B.068C, kapareho ng kaliwang AND (B.0644, B.066C, B.068C). Sa repo, ang B.0664 ay SIG.AB ng AI0196 = ZT-FA1055-B1 (FA blower-B inlet damper position, ABC-014): ibang equipment.
    - Ngayon: nakakabit sa B.0644. Kapag sira ang tatlong furnace pressure transmitter, napupunta sa MAN ang hydraulic coupling AT ang IDF inlet damper.
+
+## 2.5.0-beta.5 — DITL-21C row 19 / 20 (M.311A / M.311B)
+
+- **Drawing:** DITL-21C row 19 / 20 "FURNACE DIFF. PRESSURE (A) / (B) SIGNAL ABNORMAL" M.311A / M.311B, FROM ABC-009A. Walang "M.311A" na text sa ABC-009A.
+- **Ebidensya:**
+  - Memory list 101 (STN101 WM): M.311A "Plenum/upper diff. press.(A) sig. abnormal" at M.311B "(B)", STN101 STATION WIRING.
+  - Memory list 103: M.311A / M.311B "(FROM S1)".
+  - I/O list Station 101: AI0134 DPT-FG1081 "#1 Furnace plenum/upper layer diff. pressure (A)" SIG.AB **B.0646**; AI0262 DPT-FG1082 "(B)" SIG.AB **B.066E**.
+  - Sa ABC-009A: SIG.AB B.0646 / B.066E ng AI0134 / AI0262 (select circuit ng furnace DP).
+- **Ayos:** walang tinanggal na link. Ang DITL-21C row 19 / 20 ay kinukuha ang B.0646 / B.066E ng ABC-009A (`world.js` WIRE_S1).
+- **Test:** `tests/regress/audit230.js` (DITL-21C row 19 / 20, at walang DITL-21C row na walang pinagmulan).

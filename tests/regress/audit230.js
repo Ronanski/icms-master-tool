@@ -28,6 +28,8 @@ const r=await page.evaluate(async()=>{const sleep=ms=>new Promise(r=>setTimeout(
  const ds8=AN.dsIdx(g('ABC-008')),S8=g('ABC-008').S;const tm8={};ds8.to.forEach((refs,n)=>refs.forEach(r=>tm8[r]=AN.nm(S8,n)));ok(tm8['DITL 40-13']==='M.3107'&&tm8['DITL 40-14']==='M.3108','LINK-3 008: '+JSON.stringify(tm8));
  ok(W.digFix.length===0,'LINK-3: no "TO DITL" by an analog wire left: '+W.digFix.join('|'));
  ok((W.fromAbc||[]).length>=26,'LINK-4: '+(W.fromAbc||[]).length+' DITL rows linked by address / tag: '+(W.fromAbc||[]).join(' | '));
+ ok(['r19 <- ABC-009A M.311A = B.0646','r20 <- ABC-009A M.311B = B.066E'].every(x=>(W.fromAbc||[]).some(f=>/DITL-21C/.test(f)&&f.includes(x))),'2.5.0-beta.5 DITL-21C row 19 / 20 FURNACE DP (A) / (B) SIG. ABNORMAL M.311A / B = ABC-009A B.0646 / B.066E (station wiring, memory list 101 / 103, I/O list AI0134 / AI0262)');
+ ok(!(W.abcMiss||[]).some(x=>/DITL-21C/.test(x)),'DITL-21C: no row FROM ABC without a source: '+(W.abcMiss||[]).filter(x=>/DITL-21C/.test(x)).join(' | '));
  ok(W.lost.length===0,'lost: '+W.lost.join(' | '));R.push('INFO plc: '+(W.plc||[]).join(' | ')+' ; abcMiss: '+(W.abcMiss||[]).join(' | '));
  // run the world: analog and manual rows
  AN.go(AN.sheets.findIndex(s=>s.name==='ABC-051'));AN.run=true;await sleep(1500);
