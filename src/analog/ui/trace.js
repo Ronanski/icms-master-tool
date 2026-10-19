@@ -5,7 +5,7 @@
     'body.anview #anp input,body.anview #anp select,body.anview #anp button:not(.keep){pointer-events:none;opacity:.45}body.anview #anp .keep{opacity:1}#anp .tr{cursor:pointer}#anp .tr:hover{background:#14231b}#anp .why{background:#10181d;border-left:3px solid var(--acc);padding:4px 6px;margin:4px 0;color:var(--tx)}';
   document.head.append(st);
 }
-/* trace / flash = a GLOW around the wire; the wire keeps its own colour (state: 1 / 0 / analog / forced) */ const TUP =
+/* trace = the wire takes a solid colour (2.3.0: no glow): white = selected, blue = upstream, magenta = downstream */ const TUP =
     '#3aa0ff',
   TDN = '#ff2fd0',
   TST = '#ffffff',
@@ -332,13 +332,13 @@ function trList(d) {
   }
   const cap = 60;
   d.append(
-    h$('small', { txt: 'Driven by (upstream, blue glow): ' + T.upL.length, style: 'display:block;margin-top:6px' })
+    h$('small', { txt: 'Driven by (upstream, blue): ' + T.upL.length, style: 'display:block;margin-top:6px' })
   );
   T.upL.slice(0, cap).forEach(n => d.append(row(n), ...xr(n)));
   if (T.upL.length > cap)
     d.append(h$('small', { txt: '… +' + (T.upL.length - cap) + ' more', style: 'display:block;margin-top:6px' }));
   d.append(
-    h$('small', { txt: 'Feeds (downstream, magenta glow): ' + T.dnL.length, style: 'display:block;margin-top:6px' })
+    h$('small', { txt: 'Feeds (downstream, magenta): ' + T.dnL.length, style: 'display:block;margin-top:6px' })
   );
   T.dnL.slice(0, cap).forEach(n => d.append(row(n), ...xr(n)));
   if (T.dnL.length > cap)
@@ -647,6 +647,31 @@ function dsIdx(sh) {
     if (!isFrom && S.nets[pick.id] && !S.nets[pick.id].dig) {
       const dg = near.find(q => S.nets[q.id] && S.nets[q.id].dig && !S.ext.includes(q.id) && S.drv[q.id] && S.drv[q.id].length);
       if (dg) for (const r of refs) toDig.set(r + '@' + pick.id, dg.id);
+    }
+  }
+  /* 2.3.0-beta.1 (LINK-3): a "TO DITL" text written under its own comparator box belongs to the wire named in S.dsTo (ABC-001C
+     "TO DITL 40-06" = O.0177 > 134 kg/cm2, not M.3109 under it; DITL-40 rows 6 ~ 9, 13) */
+  if (S.dsTo) {
+    const key = r => {
+      const m = /([0-9]{2,3}[A-Z]?)\s*-\s*(\d+)/.exec(r);
+      return m ? m[1] + '-' + +m[2] : r;
+    };
+    for (const ref in S.dsTo) {
+      const n = S.lab.findIndex((l, i) => l && String(l.t).trim() === S.dsTo[ref] && S.drv[i] && S.drv[i].length);
+      if (n < 0) continue;
+      let full = null;
+      for (const [id, o] of [...to]) {
+        const j = o.findIndex(r => key(r) === ref);
+        if (j < 0) continue;
+        full = o[j];
+        o.splice(j, 1);
+        if (!o.length) to.delete(id);
+        toDig.delete(full + '@' + id);
+      }
+      if (!full) continue;
+      const o = to.get(n) || [];
+      if (!o.includes(full)) o.push(full);
+      to.set(n, o);
     }
   }
   return (sh._ds = { from, to, toDig, lost });

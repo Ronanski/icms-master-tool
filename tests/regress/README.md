@@ -30,6 +30,7 @@ Headless (Playwright + Chromium) checks of `dist/logic-sim-vX.Y.Z.html` (default
 | `node tests/regress/plant_view.js [html]` | PLANT VIEW: click sa controller sa graphic = faceplate; M / MV / A sa faceplate = engine; sa PC sariling window (Run, faceplate, Dock) | ~30 s |
 | `node tests/regress/layout.js [html]` | LOGIC page (2.4.1-beta.7): [VIEW \| Run] ▶▶ ⏱, Fit / Zoom / Values / Wire sa drawing, tabs ng right panel (ABC, DITL), VIEW hindi lumalabo; PC at phone | ~40 s |
 | `node tests/regress/world.js [html]` | iisang mundo ABC + DITL: OFF = dating gawi; ON = lahat ng reference may katapat, ABC input = DITL output, DITL row = ABC net, kadena DITL → ABC, bilis ng scan | ~1 min |
+| `node tests/regress/audit230.js [html]` | 2.3.0 drawing audit, mga link: force manual input ng ABC (M.2000, M.331D, SICL1060A ~ D.MAN, PIC-BASC.MAN, B & C IN MANUAL), mode alias (TICBR1130 / 1150 .LOC), station wiring ng ABC-013, TO DITL 40-xx, DITL row 21A, "3A-63", 80S = PLC, DITL row FROM ABC (address / tag / analog / MANUAL) | ~1 min |
 | `node tests/regress/closure.js html out.json` | loop closure of every PID with its plant model (P-4), 900 s | ~1 min |
 | `node tests/regress/diff.js old.html ... new.html` | the same seeded inputs on every sheet for several builds; lists the sheets whose nets differ. `--neutral` zeroes dMVH / TF / CUT on the last build (isolates F-31); `--hold=SECONDS` adds a steady-state state | 1 ~ 6 min |
 

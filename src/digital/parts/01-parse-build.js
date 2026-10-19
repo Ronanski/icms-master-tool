@@ -376,12 +376,23 @@ function build(E, name) {
     gr = gl && good.length > 1 && good[good.length - 1].x - gl.x > 200 ? good[good.length - 1] : null;
   let Ln = gl ? gl.m : tx.filter(t => isN(t) && t.ix < 100),
     Rn = gr ? gr.m : tx.filter(t => isN(t) && t.ix > 300 && t.ix < 400);
+  /* 2.3.0-beta.1 (LINK-2): a row number written with a letter (DITL-21A row "21A", COOLER A REMOTE MODE SELECTED, output 71) is
+     that row: a text "<number><letter>" in the number column, on the row pitch, whose number is missing */
+  if (Ln.length >= 5) {
+    const xs = Ln.reduce((s, t) => s + t.ix, 0) / Ln.length,
+      have = new Set(Ln.map(t => +t.t));
+    for (const t of tx)
+      if (/^\d+[A-Z]$/.test(t.t) && Math.abs(t.ix - xs) < 4 && !have.has(parseInt(t.t, 10))) {
+        have.add(parseInt(t.t, 10));
+        Ln = Ln.concat([t]);
+      }
+  }
   Ln = Ln.slice().sort((a, b) => b.iy - a.iy);
   if (!Ln.length) return null;
   const avg = a => a.reduce((s, t) => s + t.ix, 0) / a.length,
     x0 = avg(Ln),
     x1 = Rn.length ? avg(Rn) : x0 + 316.2;
-  const rows = Ln.map(t => ({ n: +t.t, y: t.iy })),
+  const rows = Ln.map(t => ({ n: parseInt(t.t, 10), y: t.iy })),
     skip = new Set([...Ln, ...Rn]);
   const yv = rows.map(r => r.y),
     span = Math.max(...yv) + 9 - Math.min(...yv),
@@ -543,7 +554,53 @@ function mdCount(nl, sh) {
   });
   return Object.values(d).filter(x => x.size > 1).length;
 }
+/* 2.3.0-beta.1 (LINK-2): the built-in and saved sheets were read before rows numbered with a letter were known (DITL-21A row "21A",
+   BOTTOM ASH SCREW COOLER A REMOTE MODE SELECTED, output 71 COOLER A REMOTE to 21A-6, 21B-3, 21C-01 ...): add the missing row, give it
+   the texts of its band, and move the cells of the rows below it by one (idempotent: nothing to do once the row is there) */
+function letterRows(sh) {
+  if (!sh || !sh.rows || !sh.rows.length || !sh.rng || !sh.rng.T || !Array.isArray(sh.tx)) return;
+  const x0 = sh.rng.T[0] + 1.7,
+    have = new Set(sh.rows.map(r => +r.n));
+  for (const t of sh.tx.slice()) {
+    if (!/^\d+[A-Z]$/.test(String(t.t).trim()) || Math.abs(t.ix - x0) > 4) continue;
+    const n = parseInt(t.t, 10);
+    if (have.has(n)) continue;
+    let at = sh.rows.findIndex(r => r.y < t.iy);
+    if (at < 0) at = sh.rows.length;
+    if ((at > 0 && +sh.rows[at - 1].n !== n - 1) || (at < sh.rows.length && +sh.rows[at].n !== n + 1)) continue;
+    have.add(n);
+    const sh1 = o => {
+      if (!o) return o;
+      const q = {};
+      for (const k in o) {
+        const m = /^(\d+):(.*)$/.exec(k);
+        q[m && +m[1] >= at ? +m[1] + 1 + ':' + m[2] : k] = o[k];
+      }
+      return q;
+    };
+    sh.cells = sh1(sh.cells);
+    sh.sig = sh1(sh.sig || {});
+    sh.rows.splice(at, 0, { n, y: t.iy });
+    if (Array.isArray(sh.rb)) sh.rb.splice(at, 0, [t.iy - 3.3, t.iy + 5.7]);
+    sh.tx = sh.tx.filter(z => z !== t);
+    for (const z of sh.tx.slice()) {
+      if (!(z.y >= t.iy - 3.3 && z.y < t.iy + 5.7) && !(z.iy >= t.iy - 3.3 && z.iy < t.iy + 5.7)) continue;
+      let col = null;
+      for (const k in sh.rng)
+        if (z.ix >= sh.rng[k][0] && z.ix < sh.rng[k][1]) {
+          col = k;
+          break;
+        }
+      if (!col) continue;
+      (sh.cells[at + ':' + col] = sh.cells[at + ':' + col] || []).push(z);
+      sh.tx = sh.tx.filter(q => q !== z);
+    }
+    for (const k in sh.cells) if (k.startsWith(at + ':')) sh.cells[k].sort((a, b) => b.y - a.y);
+    sh._alltx = undefined;
+  }
+}
 function netlist(sh) {
+  letterRows(sh);
   const a = netlistCore(sh, false),
     c = mdCount(a, sh);
   if (!c) return a;

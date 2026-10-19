@@ -131,6 +131,16 @@ function anDefaults(S) {
   }
   if (typeof AN_DEF === 'undefined') return;
   anFace(S);
+  /* 2.3.0-beta.3 (drawing audit, group C): the range written on the drawing wins over the parameter workbook (source order 1 > 6) */
+  for (const f of (typeof AN_AUDIT_FIX !== 'undefined' && AN_AUDIT_FIX[S.name]) || [])
+    if (f.op === 'range') {
+      const b = S.blk.find(z => z.id === f.blk && z.k === f.k);
+      if (!b) continue;
+      b.p.rlo = f.rlo;
+      b.p.rhi = f.rhi;
+      b.p.span = f.rhi - f.rlo;
+      b.note = f.why;
+    }
   /* real values: the DCS carries percent / counts (100 % = 10000), the simulator shows real values (T/H, %), so the scaling is done here as a user would. ABC-005 limestone chain; each change is applied only if the constant still has the drawing value */
   if (S.name === 'ABC-005') {
     const fx = (id, from, to, why) => {
@@ -1933,6 +1943,106 @@ function anCompile(S) {
         }
       }
   }
+  /* 2.3.0-beta.1 DRAWING AUDIT (docs/versions/v2.5.0/DRAWING_AUDIT.md, DRAWING_TRACE.md): links of the PDF that the reader missed.
+     Every entry names the block / net of THIS reading and what it must be; an entry whose block or net is not the expected one
+     (the reading changed) is skipped with a warning, never applied to another wire */
+  {
+    const A = AN_AUDIT_FIX[S.name];
+    if (A) {
+      const bad = m => (S.warn = S.warn || []).push('audit 2.3.0: ' + m);
+      const labT = n => (S.lab[n] && S.lab[n].t ? String(S.lab[n].t).trim() : '');
+      const free = n => n >= 0 && n < nets.length && !S.drv[n].length && !S.link.some(q => q[0] === n);
+      const mid = n => {
+        const g = S.seg[nets[n].segs[0]];
+        return g ? { x: (g.x1 + g.x2) / 2, y: (g.y1 + g.y2) / 2 } : { x: 0, y: 0 };
+      };
+      for (const f of A) {
+        const b = f.blk != null ? blk.find(z => z.id === f.blk) : null;
+        if (f.blk != null && (!b || b.k !== f.k)) {
+          bad(f.id + ': block B' + f.blk + ' is not ' + f.k);
+          continue;
+        }
+        if (f.was != null && labT(f.n) !== f.was) {
+          bad(f.id + ': net #' + f.n + ' is "' + labT(f.n) + '", expected "' + f.was + '"');
+          continue;
+        }
+        if (f.op === 'in') {
+          /* a missing input of a gate (the wire enters the gate on the drawing) */
+          if (!b.i.includes(f.n)) {
+            b.i.push(f.n);
+            S.cns[f.n].push(b);
+            (b.pins = b.pins || []).push({ role: 'in', side: 'L', n: f.n, aud: 1 });
+          }
+        } else if (f.op === 'lab') {
+          S.lab[f.n] = Object.assign({ t: f.t, d: 0, aud: 1 }, mid(f.n));
+        } else if (f.op === 'alias') {
+          /* a second name of the wire: the mode status .LOC / .MAN written beside an address-named wire (the M / A / R of that tag write it) */
+          ((S.alias = S.alias || {})[f.n] = S.alias[f.n] || []).push(f.t);
+        } else if (f.op === 'xtag') {
+          /* the cross-sheet source of an input, by the tag written on the drawing (the net keeps its own name) */
+          (S.xtag = S.xtag || {})[f.n] = f.t;
+        } else if (f.op === 'link') {
+          if (S.link.some(q => q[0] === f.n && q[1] === f.src)) continue;
+          if (free(f.n) && f.src >= 0 && f.src < nets.length) S.link.push([f.n, f.src]);
+          else bad(f.id + ': #' + f.n + ' <- #' + f.src + ' not free');
+        } else if (f.op === 'and') {
+          if (free(f.n)) S.drv[f.n].push({ k: 'LINK', id: -1, o: [f.n], i: f.src.slice(), and: 1 });
+          else bad(f.id + ': #' + f.n + ' not free');
+        } else if (f.op === 'split') {
+          /* one wire of a merged net is its own signal (a wire and a gate output on one input bar of an OR) */
+          const nn = nets[f.n],
+            sg = f.segs.filter(i => nn.segs.includes(i));
+          if (sg.length !== f.segs.length || sg.length === nn.segs.length) {
+            bad(f.id + ': segments of #' + f.n + ' differ');
+            continue;
+          }
+          const id = nets.length;
+          nets.push({ id, segs: sg, dig: nn.dig, ana: nn.ana, arrows: [], txt: [], aud: 1 });
+          nn.segs = nn.segs.filter(i => !sg.includes(i));
+          for (const i of sg) S.seg[i].net = id;
+          S.drv.push([]);
+          S.cns.push([]);
+          if (f.to != null) {
+            const g = blk.find(z => z.id === f.to);
+            g.i.push(id);
+            S.cns[id].push(g);
+            (g.pins = g.pins || []).push({ role: 'in', side: 'L', n: id, aud: 1 });
+          }
+          if (f.move) {
+            /* the name written on the split wire goes with it */
+            S.lab[id] = S.lab[f.n];
+            S.lab[f.n] = null;
+            for (const q of S.tagN || []) if (q.n === f.n && q.t === f.move) q.n = id;
+            for (const a of S.addr || []) if (a.eng === f.n && a.t === f.move) a.eng = id;
+          }
+        } else if (f.op === 'setCos') {
+          /* "IF M.035C = 1 SET SV = 49 T/H": the SET writes the controller SV = the operator SV (COS, LOCAL leg of the SV switch) and
+             it stays, as a SV the operator typed; the REMOTE leg keeps its own set */
+          const pr = S.pre[b.a],
+            cos = blk.some(z => z.k === 'COS' && z.vnet === b.b);
+          if (!pr || !cos) {
+            bad(f.id + ': no SET on B' + f.blk);
+            continue;
+          }
+          S.pre[b.b] = Object.assign({}, pr, { hold: 1, alt: undefined });
+        } else if (f.op === 'q4sig') {
+          if (!b.q4 || b.q4.cond.length !== f.sig.length) {
+            bad(f.id + ': B' + f.blk + ' is not a 4-leg switch');
+            continue;
+          }
+          b.q4.sig = b.q4.cond.map(c => f.sig.find(z => z.tag === c.tag) || null);
+        } else if (f.op === 'span') {
+          /* the range of a "% / sec" ramp, from the drawing (where the reader found none or the wrong one) */
+          b.spanFix = { sp: f.sp, t: f.why };
+        } else if (f.op === 'range') {
+          /* applied in anDefaults, after the parameter workbook (anFace) */
+        } else if (f.op === 'dsTo') {
+          /* the "TO DITL" text belongs to the wire named here (it is written under its own box) */
+          (S.dsTo = S.dsTo || {})[f.ref] = f.t;
+        }
+      }
+    }
+  }
   S.link.forEach(([dst, srcN]) => {
     /* make the destination net driven */ S.drv[dst].push({ k: 'LINK', id: -1, o: [dst], i: [srcN] });
   });
@@ -1951,12 +2061,12 @@ function anCompile(S) {
   for (const l of S.drv) for (const d of l) if (d.k === 'LINK') vis(d);
   S.ord = ord;
   /* nets with no driver but a consumer: external inputs (a slider / a switch for the user) */
-  S.multi = new Uint8Array(N);
-  for (let n = 0; n < N; n++)
+  S.multi = new Uint8Array(nets.length);
+  for (let n = 0; n < nets.length; n++)
     if (S.drv[n].filter(d => d.k !== 'LINK').length > 1)
       S.multi[n] = 1; /* wired-OR: several outputs joined on one wire */
   S.ext = [];
-  for (let n = 0; n < N; n++) if (!S.drv[n].length && S.cns[n].length) S.ext.push(n);
+  for (let n = 0; n < nets.length; n++) if (!S.drv[n].length && S.cns[n].length) S.ext.push(n);
   S.kn = {};
   for (const id of S.ext.slice()) {
     const net = nets[id];
@@ -2308,7 +2418,10 @@ function anInit(S) {
       }
       let pick = null,
         why = '';
-      if (D) {
+      if (b.spanFix) {
+        pick = b.spanFix;
+        why = 'drawing audit 2.3.0: ' + b.spanFix.t;
+      } else if (D) {
         pick = D;
         why =
           'downstream ' +
