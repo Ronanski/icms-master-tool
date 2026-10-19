@@ -114,3 +114,9 @@ Pinili ng user (card): **UI ayos #5-8**. Itsura lang; walang binago sa engine, s
 - **Work Done:** bagong **Panel** button sa kahon ng Fit / Zoom / Values / Wire (sa drawing, ABC at DITL); naka-ilaw kapag bukas ang panel. Ang Operator panel ay sa ABC page lang.
 - **As Left (headless):** `tests/regress/layout.js` (PC at phone): Panel button nagsasara at nagbubukas ng ABC at DITL panel; walang Operator panel sa DITL. sidetab, ditl_toolbar: pasado.
 - **Hindi pa nasubok:** totoong exe / tablet.
+
+## 2.4.1-beta.9 — Panel button sa top bar
+- **Problem (user, 2026-10-19):** "WALA, AYUSIN MO": hindi pa rin makita ang Panel button.
+- **Work Done:** ang **Panel** button ay nasa top bar na, katabi ng ⏱ (LOGIC tab, ABC at DITL), naka-ilaw kapag bukas ang panel. Sa drawing: Fit / Zoom / Values / Wire na lang.
+- **As Left (headless):** `tests/regress/layout.js` (PC at phone) pasado: nakikita ang Panel sa top bar at nagsasara / nagbubukas ng ABC at DITL panel. Nasilip din sa 1280×800, 800×1280, 1366×768, 1920×1080: nakikita at napipindot. sidetab, ditl_toolbar, lookonly: pasado.
+- **Hindi pa nasubok:** totoong exe / tablet.

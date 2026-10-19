@@ -19,9 +19,9 @@ const reset=await p.evaluate(()=>{const m=document.querySelector('.lo-pop.open')
 ck(reset,n+': ⏱ opens and Reset is there');await p.mouse.click(5,h-60);
 // Panel button on the drawing closes and opens the ABC panel (2.4.1-beta.8)
 const anOpen=()=>p.evaluate(()=>{const a=document.getElementById('anp');return !!a&&!a.classList.contains('min')&&a.offsetWidth>0});
-const o0=await anOpen();await p.evaluate(()=>document.querySelector('#lotools .lo-pnl').click());await p.waitForTimeout(400);const o1=await anOpen();
-await p.evaluate(()=>document.querySelector('#lotools .lo-pnl').click());await p.waitForTimeout(400);const o2=await anOpen();
-ck(o0&&!o1&&o2&&await vis('#lotools .lo-pnl'),n+': Panel button on the drawing hides and shows the ABC panel');
+const o0=await anOpen();await p.evaluate(()=>document.querySelector('#gsbar .lo-pnl').click());await p.waitForTimeout(400);const o1=await anOpen();
+await p.evaluate(()=>document.querySelector('#gsbar .lo-pnl').click());await p.waitForTimeout(400);const o2=await anOpen();
+ck(o0&&!o1&&o2&&await vis('#gsbar .lo-pnl'),n+': Panel button in the top bar hides and shows the ABC panel');
 // VIEW: no fading, banner
 await p.evaluate(()=>{if(!AN.view)[...document.querySelectorAll('#gsbar .g-run .lo-seg button')][0].click()});await p.waitForTimeout(400);
 const vw=await p.evaluate(()=>{const a=document.getElementById('anp');const i=a&&[...a.querySelectorAll('input,select')].find(x=>x.offsetHeight);return {view:document.body.classList.contains('anview'),op:i?getComputedStyle(i).opacity:'none',ban:a?getComputedStyle(a,'::before').content:''}});
@@ -45,9 +45,9 @@ ck(dseg&&/^VIEW$/.test(dseg[0]),n+': DITL top bar = [VIEW | Run] ('+dseg+')');
 ck(await vis('#lotools .lo-di #bfit')&&!(await vis('#lotools .lo-an')),n+': DITL Fit / Zoom on the drawing');
 if(!(await p.evaluate(()=>{const d=document.getElementById('dp');return !!d&&d.offsetHeight>0}))){await p.evaluate(()=>{const t=document.getElementById('dptab');t&&t.click()});await p.waitForTimeout(400)}
 const dOpen=()=>p.evaluate(()=>{const d=document.getElementById('dp');return !!d&&d.offsetWidth>0});
-const d0=await dOpen();await p.evaluate(()=>document.querySelector('#lotools .lo-pnl').click());await p.waitForTimeout(400);const d1=await dOpen();
-await p.evaluate(()=>document.querySelector('#lotools .lo-pnl').click());await p.waitForTimeout(400);const d2=await dOpen();
-ck(d0&&!d1&&d2,n+': Panel button on the drawing hides and shows the DITL panel');
+const d0=await dOpen();await p.evaluate(()=>document.querySelector('#gsbar .lo-pnl').click());await p.waitForTimeout(400);const d1=await dOpen();
+await p.evaluate(()=>document.querySelector('#gsbar .lo-pnl').click());await p.waitForTimeout(400);const d2=await dOpen();
+ck(d0&&!d1&&d2&&await vis('#gsbar .lo-pnl'),n+': Panel button in the top bar hides and shows the DITL panel');
 const dt=await p.evaluate(()=>[...document.querySelectorAll('#dp .lo-tabs button')].map(x=>x.textContent));
 ck(dt.join()==='Inputs,Timers,Valves,Outputs',n+': DITL panel tabs '+dt.join(' / '));
 const drows=async k=>{await p.evaluate(k=>LO.setDi(k),k);await p.waitForTimeout(250);return p.evaluate(()=>[...document.querySelectorAll('#dp .dp-r')].filter(d=>d.offsetHeight).map(d=>d.dataset.k))};
