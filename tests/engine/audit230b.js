@@ -1,4 +1,4 @@
-// 2.3.0-beta.2 drawing audit, behaviour (docs/versions/v2.3.0/DRAWING_TRACE.md beta.2): feeder MV high limit MHD, SET SV = 49 T/H on the
+// 2.3.0-beta.2 drawing audit, behaviour (docs/versions/v2.5.0/DRAWING_TRACE.md beta.2): feeder MV high limit MHD, SET SV = 49 T/H on the
 // operator SV, oil master 4-leg switch by the burner REMOTE, ramp spans of ABC-002 / 051. Engine in Node (no browser).
 // Usage: node tests/engine/audit230b.js
 const {loadEngine}=require('../../tools/engine/node-engine.js');

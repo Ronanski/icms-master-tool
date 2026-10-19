@@ -11,4 +11,6 @@ async function open(html){
   await page.waitForTimeout(500);
   return {browser,page,errs};
 }
-module.exports={open};
+/* 2.4.0-beta.2: on a screen up to 1280 px the global search is behind the magnifier icon: open it before typing */
+async function showSearch(page){await page.evaluate(()=>{const s=document.getElementById('ansb'),b=document.getElementById('srchbtn');if(s&&!s.offsetParent&&b&&b.offsetParent)b.click()});await page.waitForTimeout(100)}
+module.exports={open,showSearch};

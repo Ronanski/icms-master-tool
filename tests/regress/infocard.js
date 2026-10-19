@@ -1,10 +1,10 @@
 // Search info card (1.23.0): an address typed in the global search + Enter opens a card made from the netlist:
 // where it comes from, who reads it, what it reaches (force manual / trip / TO DITL / other sheets). Read only.
 // Usage: node tests/regress/infocard.js [html]
-const {open}=require('./lib.js');const fs=require('fs');
+const {open,showSearch}=require('./lib.js');const fs=require('fs');
 const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 (async()=>{const {browser,page,errs}=await open(html);let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
-const card=async q=>{await page.fill('#ansb',q);await page.press('#ansb','Enter');await page.waitForTimeout(1200);return page.evaluate(()=>{const c=document.getElementById('infocard');return c?c.innerText:''})};
+const card=async q=>{await showSearch(page);await page.fill('#ansb',q);await page.press('#ansb','Enter');await page.waitForTimeout(1200);return page.evaluate(()=>{const c=document.getElementById('infocard');return c?c.innerText:''})};
 let t=await card('M.0228');
 ck(/FEED WATER CONTROL FORCE MANUAL/.test(t),'M.0228: description from the memory list');
 ck(/computed here by OR/.test(t)&&/2 block/.test(t),'M.0228: computed by an OR, read by 2 blocks');
