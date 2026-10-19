@@ -692,14 +692,16 @@ function anPlantLoad150_() {
     for (const sh of AN.sheets) {
       if (/^ABC-000/.test(sh.name) || !sh.S) continue;
       const S = sh.S;
-      for (const n of S.ext) {
-        const nm = (AN.nm(S, n) || '').trim().toUpperCase(),
-          k = nm.startsWith(c.tag.toUpperCase() + '.') ? nm.slice(c.tag.length + 1) : null;
-        if (!k) continue;
-        if (MK.MAN.includes(k)) S.rt.ext[n] = m === 'M' ? 1 : 0;
-        else if (MK.REM.includes(k)) S.rt.ext[n] = m === 'R' ? 1 : 0;
-        else if (MK.LOC.includes(k)) S.rt.ext[n] = m === 'A' ? 1 : 0;
-      }
+      for (const n of S.ext)
+        for (const nm0 of [AN.nm(S, n)].concat((S.alias && S.alias[n]) || [])) {
+          /* 2.3.0-beta.1: also the mode status written beside an address-named wire (S.alias, ABC-011 TICBR1130.LOC = M.0230) */
+          const nm = (nm0 || '').trim().toUpperCase(),
+            k = nm.startsWith(c.tag.toUpperCase() + '.') ? nm.slice(c.tag.length + 1) : null;
+          if (!k) continue;
+          if (MK.MAN.includes(k)) S.rt.ext[n] = m === 'M' ? 1 : 0;
+          else if (MK.REM.includes(k)) S.rt.ext[n] = m === 'R' ? 1 : 0;
+          else if (MK.LOC.includes(k)) S.rt.ext[n] = m === 'A' ? 1 : 0;
+        }
     }
   /* 2.1.0-beta.6: the PV of every loop from the snapshot transmitters, with the plant model OFF for a moment (logic only); the
      plant model of the loop is anchored at that PV (plant.js pr.hopReq) at the end of the load, with the MV of the snapshot */
