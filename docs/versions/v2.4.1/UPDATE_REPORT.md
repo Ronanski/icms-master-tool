@@ -20,3 +20,22 @@ Batayan: UI / UX audit ng v2.4.0, 2026-10-19 (`/mnt/project-files/ui-audit-2026-
   - Start ▾ menu lumalabas at napipindot (PC, tablet, phone); CHECK mula sa menu sa phone ay nagbubukas ng CHECK panel; ⚙ menu OK.
   - Regression: plant_view, plant_live, ditl_toolbar, lookonly, faceplate (68 controller), tests (T1 ~ T5, S1 ~ S6), check_panel share / tt / mft ALL PASS; `npm run check` SAME.
 - **Hindi pa nasubok:** totoong tablet / phone / exe; ang PC window ng PLANT VIEW (sa headless, tab ang lumalabas); tablet landscape ay 9.1 px pa rin (ang graphic ay 1920 ang lapad; pinch zoom).
+
+## 2.4.1-beta.2 — UI audit #5 ~ #8: kulay ng estado, laki ng pindutan, maliit na text, Zoom sa LOGIC
+Pinili ng user (card): **UI ayos #5-8**. Itsura lang; walang binago sa engine, simulation at plant model. Ang kulay ng A / M sa faceplate ay hindi ginalaw (sumusunod sa DCS ng planta, v1.20.64).
+- **Problem (audit):** (5) ang Pause button ay berde habang tumatakbo (kapareho ng Run); (6) pindutan sa touch 32 ~ 34 px (pamantayan 44 px), sa PC 16 na kontrol < 24 px; (7) text sa panel at listahan ng sheet 10.4 ~ 10.5 px; (8) sa Fit ang text ng drawing ay 4 px, walang mabilis na zoom.
+- **As Found (bagong nakita):** pagkatapos pindutin ang Pause, ang label sa drawing ay "SIMULATION - RUNNING" pa rin habang ang footer ay "PAUSED" (dati na sa v2.4.0; ang label ay ina-update lang kapag nagre-redraw).
+- **Work Done:**
+  - Run / Pause: habang tumatakbo, ang button (❚❚ Pause) ay madilim na may dilaw na guhit, hindi na berde. Berde = "pindutin para tumakbo" lang. Pareho sa DITL Simulate (`app.css`).
+  - Label sa drawing: nagiging "SIMULATION - PAUSED" agad pag Pause (`category-search.js`, kasama ng update ng footer chip).
+  - PC: lahat ng kontrol ≥ 24 px (◀ ng sheet list, ✕, 0 · OFF, Skip, value box, slider, checkbox 18 px).
+  - Touch screen (tablet / phone, `pointer:coarse`): lahat ng pindutan at field ay 44 px ang taas (A / M ng faceplate, ▲ ▼, tool bar, listahan ng sheet, LIBRARY, TOOLS). Ang PC ay hindi nagbago ang laki.
+  - Maliit na text → 12 px: pangalawang linya ng sheet list, paliwanag sa panel, heading ng grupo, paliwanag ng input, LIVE · linked, DRAFT. (Ang maliit na linya sa header ng drawing ay hindi ginalaw: kapag lumaki, bumababa ang drawing ng 12 px.)
+  - LOGIC: bagong **Zoom** button sa tabi ng Fit: text ng drawing ~12 px, nakasentro sa napiling block (o sa gitna kung walang napili). Fit = buong sheet ulit (`app.js`; ang selection group ay may class `selg` sa `links-canvas.js`).
+- **As Left (headless Chromium, build 2.4.1-beta.2):**
+  - Kontrol < 24 px sa PC: 16 → 0 (ang Auto-hide checkbox ay 18 px pero ang buong label ay pindutan). Kontrol < 44 px sa tablet 1024 (LOGIC, PLANT VIEW, faceplate, LIBRARY, TOOLS): 17 / 7 / 17 / 11 / 14 → 0 (natira lang ang Panel tab na 30 × 64).
+  - Zoom: text ng drawing 4 px → 14 px (PC, tablet), 3 → 14 px (phone).
+  - Pause: button kulay abo / dilaw; label at footer parehong PAUSED.
+  - Regression: ditl_toolbar, lookonly, plant_view, faceplate (68 controller), manstation, check_panel share / tt / mft, tests (11 PASS) ALL PASS; values_layout kapareho ng beta.1 (2434 label); `npm run check` SAME. 0 page error.
+- **Hindi pa nasubok:** totoong tablet / phone / exe; DITL drawing zoom (ang Zoom ay ABC lang; ang DITL ay may sariling Fit at pinch).
+- Litrato: `/mnt/project-files/ui-audit-2026-10-19/beta2/`.

@@ -699,6 +699,13 @@ document.head.appendChild(
       if (an) {
         m = AN.view ? 'VIEW / TRACE' : AN.run ? 'RUN' : 'PAUSED';
         k = AN.view ? 'view' : AN.run ? 'run' : '';
+        /* 2.4.1-beta.2: the drawing label said RUNNING after Pause (it was only redrawn by paint) */
+        const am = document.getElementById('anmode');
+        if (am && am._t === 'SIMULATION - RUNNING' && !AN.run && !AN.view) {
+          am._t = am.textContent = 'SIMULATION - PAUSED';
+          am.style.background = '#3d3213';
+          am.style.color = '#ffd479';
+        }
       } else {
         m = SIM ? 'SIMULATE' : 'EDIT';
         k = SIM ? 'run' : '';
