@@ -93,3 +93,17 @@ Pinili ng user (card): **UI ayos #5-8**. Itsura lang; walang binago sa engine, s
 - **As Left (headless, `tests/regress/sidetab.js`):** sarado ang panel → may tab → click → bukas. Paglipat ng DITL: may panel na sa loob ng 0.1 s. Pagbalik sa ABC: ABC tab lang ang nakikita. Walang tab sa LIBRARY. Walang page error.
 - **Hindi pa naayos:** sa ABC, ang View ay nagpapalabo ng mga input sa panel (sadya: walang simulation sa View) at nagpapalit ng highlight ng napiling block; isasama ito sa overhaul ng layout.
 - **Hindi pa nasubok:** totoong exe / tablet.
+
+## 2.4.1-beta.7 — Bagong ayos ng LOGIC page (top bar, drawing tools, panel na may tabs)
+- **Problem (user, 2026-10-19):** "parang themes lang ang sinend mo"; magulo ang mga button at panel. Proposal muna: https://claude.ai/artifact/BEN322Tg1fDxz6wXpyg1sv. Pinili ng user ang "Lahat".
+- **As Found:** ~14 button sa top bar ng LOGIC; mahabang listahan sa right panel; sa VIEW lumalabo ang mga input sa panel kaya mukhang sira; sa phone hindi kasya ang top bar.
+- **Work Done (`src/ui/shell/layout.js`, CSS sa dulo ng `src/ui/shell/app.css`):**
+  - Top bar (ABC at DITL): [VIEW | Run] + ▶▶ + ⏱ menu (Step back, Step size, Speed, Start again = Reset).
+  - Fit / Zoom / Values / Wire / ↩ Back sa kanang itaas ng drawing. Ang "Panel" button ay tinanggal; ang ◀ Panel tab sa gilid ang nagbubukas.
+  - Right panel na may tabs. ABC: Selected / Inputs / Timers / Controllers / Forced / Operator. DITL: Inputs / Timers / Valves / Outputs. Click sa drawing → Selected. Naaalala ang huling tab.
+  - VIEW: hindi na lumalabo ang panel; may banner "inputs are locked" at dashed ang input.
+  - Sheet list: isang linya ang pamagat.
+  - Parehong mga button (inilipat lang), walang bagong handler. Walang binago sa engine, simulation, plant model at drawing.
+- **As Left (headless):** bagong `tests/regress/layout.js` 29 / 29 (PC at phone). ditl_toolbar, lookonly (inayos ang paghanap ng "VIEW"), sidetab, abcbar, infocard, events, overview, plant_view, faceplate, manstation: pasado. pid_am: 1 mali sa ABC-004A FIC-CM, pareho sa beta.6 (hindi galing sa ayos na ito).
+- **Hindi binago:** ang status bar ay may mahabang tulong pa rin, kasi doon din lumalabas ang mensahe ng app.
+- **Hindi pa nasubok:** totoong exe / tablet.

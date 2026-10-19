@@ -27,7 +27,7 @@ for(const [n,w,h] of [['desktop',1440,900],['tablet',1024,768],['phone',390,844]
  ck(await page.evaluate(()=>SIM===true&&DPAUSE===false),n+': Run starts the DITL simulation');
  await page.evaluate(()=>document.querySelector('#gsbar .g-ditl .dui-run').click());
  ck(await page.evaluate(()=>SIM===true&&DPAUSE===true),n+': Pause holds it');
- await page.evaluate(()=>[...document.querySelectorAll('#gsbar .g-ditl button')].find(b=>b.textContent.trim()==='View').click());
+ await page.evaluate(()=>[...document.querySelectorAll('#gsbar .g-ditl button')].find(b=>/^view$/i.test(b.textContent.trim())).click());
  ck(await page.evaluate(()=>SIM===false),n+': View stops it');
  // TOOLS tab: Health works, no editor tools
  await page.evaluate(()=>[...document.querySelectorAll('#gsbar .tabs button')].find(b=>/TOOLS/i.test(b.textContent)).click());await page.waitForTimeout(600);
@@ -39,8 +39,8 @@ for(const [n,w,h] of [['desktop',1440,900],['tablet',1024,768],['phone',390,844]
  await page.evaluate(()=>[...document.querySelectorAll('#gsbar .tabs button')].find(b=>/LOGIC/i.test(b.textContent)).click());await page.waitForTimeout(300);
  await page.evaluate(()=>[...document.querySelectorAll('#gsbar .sub button')].find(b=>b.textContent.trim()==='ABC').click());
  await page.waitForFunction(()=>document.body.classList.contains('an'),null,{timeout:20000});await page.waitForTimeout(600);
- const gv=await page.evaluate(()=>{const v=s=>{const e=document.querySelector(s);return !!e&&e.offsetHeight>0};return {run:v('#gsbar .g-run'),view:v('#gsbar .g-view'),ditl:v('#gsbar .g-ditl')}});
- ck(gv.run&&gv.view&&!gv.ditl&&!(await vis('anbar')),n+': ABC page shows Run / View groups, no DITL group, no old toolbar');
+ const gv=await page.evaluate(()=>{const v=s=>{const e=document.querySelector(s);return !!e&&e.offsetHeight>0};return {run:v('#gsbar .g-run'),view:v('#lotools .lo-an'),ditl:v('#gsbar .g-ditl')}});
+ ck(gv.run&&gv.view&&!gv.ditl&&!(await vis('anbar')),n+': ABC page shows Run group and drawing tools (2.4.1-beta.7: on the drawing), no DITL group, no old toolbar');
  ck(errs.length===0,n+': no page error'+(errs.length?' ('+errs[0]+')':''));
  await ctx.close();
 }
