@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- App icon (2.4.0): boiler drum with water level, risers and the firing, on a dark control-panel plate. -->
+  <defs>
+    <clipPath id="drum"><rect x="112" y="104" width="288" height="128" rx="64"/></clipPath>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="88" fill="#0f161d"/>
+  <rect x="16" y="16" width="480" height="480" rx="88" fill="none" stroke="#2c3d4d" stroke-width="8"/>
+  <!-- water in the drum -->
+  <rect x="112" y="172" width="288" height="60" fill="#38a8f0" clip-path="url(#drum)"/>
+  <line x1="112" y1="172" x2="400" y2="172" stroke="#9fd8ff" stroke-width="6" clip-path="url(#drum)"/>
+  <!-- drum shell -->
+  <rect x="112" y="104" width="288" height="128" rx="64" fill="none" stroke="#e3eaf0" stroke-width="20"/>
+  <!-- risers -->
+  <path d="M176 232V300M336 232V300M256 232V268" stroke="#e3eaf0" stroke-width="18" stroke-linecap="round"/>
+  <!-- flame -->
+  <path d="M256 292C298 338 322 362 322 394C322 424 292 438 256 438S190 424 190 394C190 362 214 338 256 292Z" fill="#f2a43a"/>
+  <path d="M256 352C274 372 286 384 286 402C286 418 272 426 256 426S226 418 226 402C226 384 238 372 256 352Z" fill="#ffd27a"/>
+  <!-- grate -->
+  <path d="M150 456H362" stroke="#5c6f80" stroke-width="12" stroke-linecap="round"/>
+</svg>

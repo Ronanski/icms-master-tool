@@ -437,6 +437,8 @@
     }, 300);
     addEventListener('resize', place);
     document.body.classList.add('app2');
+    /* the name of the app in the window and browser tab (the html keeps <title>Logic Sim v…>: installed older versions read it to find updates) */
+    document.title = document.title.replace(/^Logic Sim /, 'DCS Logic Simulator ');
     try {
       if (typeof TPMIN !== 'undefined' && !TPMIN) {
         TPMIN = true;
