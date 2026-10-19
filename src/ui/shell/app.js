@@ -42,9 +42,30 @@
       e.stopPropagation();
       document.querySelectorAll('.ddw.open').forEach(x => x !== w && x.classList.remove('open'));
       w.classList.toggle('open');
+      /* 2.4.1-beta.1: while open, the menu sits on the page itself (body), under its button and inside the screen. Inside
+         the tool bar, which scrolls sideways, it was cut off: Start ▾ showed nothing in the PLANT VIEW, and on a phone it
+         ran off the right edge */
+      if (w.classList.contains('open')) {
+        const d = btn.ownerDocument,
+          r = btn.getBoundingClientRect(),
+          vw = d.documentElement.clientWidth;
+        d.body.append(m);
+        m.classList.add('ddm-open');
+        Object.assign(m.style, { position: 'fixed', top: r.bottom + 6 + 'px', left: '0px', right: 'auto' });
+        const mw = m.offsetWidth,
+          x = w.classList.contains('left') ? r.left : r.right - mw;
+        m.style.left = Math.max(8, Math.min(x, vw - mw - 8)) + 'px';
+      }
     };
+    /* closing (from anywhere: Esc, outside click, tab change) puts the menu back in its place */
+    new MutationObserver(() => {
+      if (w.classList.contains('open') || m.parentNode === w) return;
+      m.classList.remove('ddm-open');
+      m.removeAttribute('style');
+      w.append(m);
+    }).observe(w, { attributes: true, attributeFilter: ['class'] });
     document.addEventListener('click', e => {
-      if (!w.contains(e.target)) w.classList.remove('open');
+      if (!w.contains(e.target) && !m.contains(e.target)) w.classList.remove('open');
     });
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') w.classList.remove('open');
@@ -273,10 +294,14 @@
       on: e => {
         e.stopPropagation();
         ws.classList.toggle('lsopen');
+        ws.classList.remove('vals');
       }
     });
     bar.prepend(sb);
     list.addEventListener('click', () => ws.classList.remove('lsopen'));
+    /* 2.4.1-beta.1: the list and the values slide out over the graphic on every screen; a click on the graphic closes them */
+    const mid = $('plmid');
+    if (mid) mid.addEventListener('pointerdown', e => !e.target.closest('#plfp,.plbar') && ws.classList.remove('lsopen', 'vals'));
   }
   function build() {
     const gs = $('gsbar'),
@@ -530,7 +555,10 @@
         dg = $('dgsel'),
         w = document.querySelectorAll('.wbtn');
       if (u && u.parentNode !== cTest.querySelector('.row')) cTest.querySelector('.row').prepend(u);
-      if (c && c.parentNode !== gOp) gOp.append(c);
+      /* 2.4.1-beta.1 (UI audit): on a phone the bar has no room for CHECK (it was cut to "CHE" under the 🔍): it goes to
+         the end of the Start ▾ menu there, and back to the bar on a wider screen */
+      const cTo = matchMedia('(max-width:700px)').matches ? start.m : gOp;
+      if (c && c.parentNode !== cTo) cTo.append(c);
       const ib = gs.querySelector(':scope > .infob');
       if (ib) srch.append(ib);
       plantUx();

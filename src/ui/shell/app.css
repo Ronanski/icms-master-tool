@@ -64,6 +64,7 @@ body[data-tab=operate] #gsbar .g-run :is(.tb-step,.tb-view){display:none!importa
 .ddm{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:95;min-width:250px;max-width:92vw;max-height:72vh;overflow:auto;background:#0c1117;border:1px solid var(--c-line2);border-radius:4px;padding:8px;box-shadow:0 14px 40px #000c}
 .ddw.left .ddm{left:0;right:auto}
 .ddw.open .ddm{display:block}
+.ddm.ddm-open{display:block;z-index:200;max-width:min(360px,calc(100vw - 16px))}
 .ddm>*{display:block;width:100%;margin:0 0 6px!important;text-align:left;box-sizing:border-box}
 .ddm>*:last-child{margin-bottom:0}
 .ddm>button,.ddm>select,.ddm>label.b{height:30px!important;min-height:30px!important;white-space:normal!important;line-height:1.2!important;padding:3px 9px!important}
@@ -259,22 +260,24 @@ body.app2 #anp h4{margin:12px 0 6px!important;padding-bottom:4px!important}
 .ddm .only{display:contents}
 .ddm .only>*{display:block!important;width:100%!important;margin:0 0 6px!important;box-sizing:border-box}
 .ddm>button,.ddm>select,.ddm .only>select{border-radius:var(--r)!important}
-/* OPERATE: a screen without values gives its width to the graphic; the list is plain names */
-#plantws.noval{grid-template-columns:240px 1fr 0!important}
-#plantws.noval #plvals,#plantws.noval .plbar .b:last-child{display:none!important}
+/* PLANT VIEW (2.4.1-beta.1, UI audit 2026-10-19): the graphic takes the whole width on every screen, like the control-room
+   HMI; the system list (☰ Systems) and the snapshot values (Values) slide out over it. Before: a 240 px list and a 300 px
+   values column left ~60 % of the width to the graphic and its text was 7 ~ 9 px */
+#plantws,#plantws.noval{grid-template-columns:1fr!important;grid-template-rows:1fr!important}
+#plantws #plleft,#plantws #plvals{position:absolute;top:0;bottom:0;max-height:none;z-index:6;display:none!important;box-shadow:0 0 24px #000a}
+#plantws #plleft{left:0;width:min(300px,86vw)}
+#plantws #plvals{right:0;width:min(340px,90vw)}
+#plantws.lsopen #plleft,#plantws.vals:not(.noval) #plvals{display:block!important}
+#plantws.noval .plbar .b:last-child{display:none!important}
 #pllist button:not(.novg) small{display:none}
 #pllist button{padding:7px 10px!important}
 #plantws .plbar .b{height:24px;border-radius:var(--r)}
 #plantws .pllive{white-space:nowrap}
-#plantws #plsys{display:none}
-@media (max-width:1180px){#plantws.noval{grid-template-columns:200px 1fr 0!important}}
+#plantws #plsys{display:inline-flex;align-items:center;flex:none}
+#plantws .plbar b{min-width:0;flex:1 1 auto}
 @media (max-width:700px){
- #plantws,#plantws.noval{grid-template-columns:1fr!important;grid-template-rows:1fr!important}
- #plantws #plsys{display:inline-flex;align-items:center;flex:none}
- #plantws #plleft{position:absolute;left:0;top:0;bottom:0;width:min(300px,86vw);max-height:none;z-index:6;display:none;box-shadow:8px 0 24px #000a}
- #plantws.lsopen #plleft{display:block}
  #plantws .plbar{gap:6px}
- #plantws .plbar b{min-width:0;flex:1 1 auto;font-size:12.5px}
+ #plantws .plbar b{font-size:12.5px}
  #plantws .plbar .b{height:30px}
 }
 /* TOOLS cards: flat, aligned */
