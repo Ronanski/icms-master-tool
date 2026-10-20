@@ -19,6 +19,8 @@ const reset=await p.evaluate(()=>{const m=document.querySelector('.lo-pop.open')
 ck(reset,n+': ⏱ opens and Reset is there');await p.mouse.click(5,h-60);
 // Panel button on the drawing closes and opens the ABC panel (2.4.1-beta.8)
 const anOpen=()=>p.evaluate(()=>{const a=document.getElementById('anp');return !!a&&!a.classList.contains('min')&&a.offsetWidth>0});
+// 2.5.0-beta.20: up to 1180 px the panel starts closed (opens on a click on the drawing): open it with ◀ Panel first
+if(!(await anOpen())){await p.evaluate(()=>{const t=document.getElementById('anptab');t&&t.click()});await p.waitForTimeout(400)}
 const o0=await anOpen();await p.evaluate(()=>document.querySelector('#gsbar .lo-pnl').click());await p.waitForTimeout(400);const o1=await anOpen();
 await p.evaluate(()=>document.querySelector('#gsbar .lo-pnl').click());await p.waitForTimeout(400);const o2=await anOpen();
 ck(o0&&!o1&&o2&&await vis('#gsbar .lo-pnl'),n+': Panel button in the top bar hides and shows the ABC panel');

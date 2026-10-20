@@ -467,8 +467,8 @@ const sTh = h$(
       'Drawing theme: Colour = symbols coloured by type · Engineering = white symbols and text, only the wires, live values and valves are coloured'
   },
   [
-    ['color', 'Theme: Colour'],
-    ['eng', 'Theme: Engineering']
+    ['color', 'Symbols: Colour'],
+    ['eng', 'Symbols: Engineering']
   ].map(([v, t]) => h$('option', { value: v, txt: t }))
 );
 sTh.onchange = () => setTheme(sTh.value);

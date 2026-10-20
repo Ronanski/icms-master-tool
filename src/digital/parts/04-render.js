@@ -509,6 +509,12 @@ function render() {
       if (lk) e.classList.add('plink');
     }
   }
+  /* 2.5.0-beta.20 (UI audit): the first view of a sheet is its frame (the lines), as Fit; the loose texts around the frame
+     (DITL-56: "STATION 102", "76") made the sheet small */
+  if (!VB[S.cur] && window.LOVIEW) {
+    const e = LOVIEW.dext(s);
+    if (e) VB[S.cur] = [e[0], e[1], e[2] - e[0], e[3] - e[1]];
+  }
   if (!VB[S.cur]) VB[S.cur] = [a[0] - 6, a[1] - 6, a[2] - a[0] + 12, a[3] - a[1] + 12];
   svg.setAttribute('viewBox', VB[S.cur].join(' '));
   const VR = s.vr || s.rng;

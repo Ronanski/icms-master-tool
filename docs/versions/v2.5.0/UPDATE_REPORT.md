@@ -309,3 +309,24 @@
   - Logic (ABC / DITL) hindi ginalaw.
 - **As Left:** `tests/regress/plant_bg.js` ALL PASS (27 screen may larawan, live text, 033 HIC-BM MV, 5 mode button, kulay ng valve, LIVE off, UNIT), `plant_view` at `plant_live` ALL PASS, `npm run check` SAME. Sinuri nang biswal ang 27 laban sa reference at sa PC 1440x900, tablet 1280x800 / 800x1280, phone 390x844.
 - **Status:** Pass sa headless. Kilalang limit: 71 value na hindi mahanap sa larawan (puti / abo na numero, level box) = snapshot ang makikita; mode letter sa tabi ng valve = snapshot; dilaw na oil pump ng 036 hindi kinukulayan. Mas malaki ang html (8.9 → 12.8 MB). Hindi nasubok: tablet / apk / exe ng user.
+
+## 2.5.0-beta.20 — UI/UX audit: mga mali na naayos (user: "full audit sa UI UX", "send proposal na", 2026-10-20)
+
+> Ang beta.19 (PR #35, HMI 1:1 + beta.18) ay isinama sa branch na ito; inalis ang ligaw na folder `undefined/` (8 screenshot ng test ng beta.17).
+
+- **Problem:** Hiningi ng user ang full UI/UX audit ng app.
+- **As Found:** Audit at proposal na may screenshot ng beta.19 (PC 1280 / 1920, tablet 800x1280, phone 390x844; lahat ng tab): https://claude.ai/artifact/SRtGY3tupKUE4Aw7fHCn1Z. Mga mali:
+  1. Hanggang 1180 px (tablet na nakatayo, phone): bukas ang walang-lamang panel sa simula at tinatakpan ang kalahati ng drawing (ABC at DITL).
+  2. (Hindi mali) PLANT VIEW sa screen na nakatayo: taas ang pinagkakasya, i-drag pakanan; sinadya noong 2.4.1-beta.1 para mabasa ang text. Hindi binago; mungkahi F (mini-map).
+  3. Ang mensahe ng LOGIC ("241 sheets loaded. Pick a page from the sheet list...", "Simulate: click an input...") ay lumalabas sa PLANT VIEW / LIBRARY / TOOLS.
+  4. ⚙ menu: hindi nagsasara sa Esc sa ABC page at kapag pinindot ang 🔍 (nananatili sa ibabaw ng search); dalawang "Theme:".
+  5. DITL: sa unang bukas ng sheet, kasama sa sukat ang ligaw na text sa labas ng frame (maliit ang sheet).
+  6. TOOLS / ⚙: "134 DITL sheets" (241 na).
+- **Work Done:** (UI lang; walang binago sa drawing, logic o engine)
+  1. `src/analog/ui/interaction.js`, `src/ui/shell/ditl.js`: hanggang 1180 px, sarado ang panel sa simula; ang pindot sa block / row / wire ang nagbubukas.
+  3. `src/ui/shell/app.js`: ang mensahe ay sa tab kung saan ito lumabas; ang paglipat ng tab ay nagtatago nito. `07-app-events.js`: ang "sheets loaded" ay sa LOGIC lang.
+  4. `app.js` dropdown: Esc at pindot sa labas ay binabasa sa window bago ang mga page. `src/analog/ui/main.js`: "Symbols: Colour / Engineering" (kulay ng simbolo ng ABC).
+  5. `src/digital/parts/04-render.js` + `view.js` `dext`: ang unang tingin ng DITL sheet = frame + text ng mga row (241 sheet: walang text ng row na naputol).
+  6. `app.js`: "all the DITL sheets".
+- **As Left:** Bagong test `tests/regress/ui_audit20.js` ALL PASS. Sinuri ulit ang bawat screen (screenshot) sa 4 na laki; sa phone at tablet na nakatayo, ang pindot sa block ay nagbubukas ng panel. Regression ALL PASS: view, layout (binago: binubuksan muna ang panel sa phone bago subukan ang Panel button), ditl_selected, sidetab, ditl_toolbar, ditl_pagelink, events, lookonly, plant_view, ditl_ls, ditl_sb, ditl_ba, ditl_pdf, ditl_sim.
+- **Status:** Pass sa headless. Hindi nasubok: tablet / apk / exe ng user. Ang bagong ayos ng LOGIC page (A ~ E ng proposal) ay hinihintay ang pili ng user.
