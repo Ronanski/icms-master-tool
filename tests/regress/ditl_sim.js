@@ -6,6 +6,7 @@
 //  - ABC+DITL ON: the DITL runs the one world from the DITL page; every ABC "FROM DITL" input equals its DITL output and every DITL
 //    row "FROM ABC / TO DITL" equals its ABC net (signal continuity both ways);
 //  - ABC+DITL OFF: no DITL row is driven by the ABC (FROM DITL / ABC are free inputs).
+//  - ABC+DITL ON: a FORCE on the ABC reaches the DITL row; a hand input on the DITL reaches the ABC input (both ways).
 // Desktop. Usage: node tests/regress/ditl_sim.js [html]
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/node22/lib/node_modules/playwright');
 const fs=require('fs');
@@ -45,6 +46,19 @@ for(const world of [false,true])for(const plant of ['off','on']){
    return {a,abad:abad.slice(0,6),t,tbad:tbad.slice(0,6)}});
   ck(!inv.abad.length,tag+'DITL -> ABC: '+inv.a+' ABC inputs equal their DITL output'+(inv.abad.length?': '+inv.abad.join(' | '):''));
   ck(!inv.tbad.length,tag+'ABC -> DITL: '+inv.t+' DITL rows equal their ABC net'+(inv.tbad.length?': '+inv.tbad.join(' | '):''));
+  // 2.5.0-beta.10 (user: "kapag from DITL nagforce ako, madedetect ito ng buong sheet DITL at ABC? vice versa?"):
+  // a FORCE on the ABC reaches the DITL row, and a hand input on the DITL reaches the ABC input that reads it
+  const fa=await page.evaluate(async()=>{const sleep=ms=>new Promise(r=>setTimeout(r,ms));const {din}=WORLD.idx;let hit=null;
+   for(const [s,m] of din){if(s._inst&&s._inst.k)continue;for(const [row,srcs] of m){if(srcs.length!==1||srcs[0].k!=='a'||!srcs[0].sh.S)continue;const q=srcs[0],A=q.sh.S;
+    const was=!!(s._win&&s._win.has(row)),nv=was?0:1;A.rt.force[q.n]=nv;await sleep(1200);const got=!!(s._win&&s._win.has(row));delete A.rt.force[q.n];await sleep(900);const back=!!(s._win&&s._win.has(row));
+    hit={abc:q.sh.name+' '+String(AN.nm(A,q.n)).trim(),ditl:s.name+' row '+s.rows[row].n,was,got,back};if(got!==was)return hit}}return hit});
+  ck(!!fa&&fa.got!==fa.was&&fa.back===fa.was,tag+'ABC FORCE -> DITL: '+(fa?fa.abc+' forced '+(fa.was?0:1)+' -> '+fa.ditl+' '+(fa.was?1:0)+'->'+(fa.got?1:0)+', force released -> '+(fa.back?1:0):'none'));
+  const fd=await page.evaluate(async()=>{const sleep=ms=>new Promise(r=>setTimeout(r,ms));const {ain,din}=WORLD.idx;
+   for(const q of ain){const d=q.d,A=q.sh.S;if(!A)continue;const l=A.xlk&&A.xlk[q.n];if(l&&!l.ditl)continue;const m=din.get(d)||new Map();
+    for(let i=0;i<d.rows.length;i++){if(m.has(i)||!d.cells[i+':S']||!d.nl.src.some(z=>z.row===i))continue;
+     const before=WORLD.out[d.name].has(q.row),e0=A.rt.ext[q.n];d.sig[i+':S']=!d.sig[i+':S'];await sleep(900);const after=WORLD.out[d.name].has(q.row),e1=A.rt.ext[q.n],v1=A.rt.v[q.n];d.sig[i+':S']=!d.sig[i+':S'];
+     if(after!==before){await sleep(900);return {sheet:d.name,row:+d.rows[i].n,txt:d.cells[i+':S'].map(x=>x.t).join(' ').slice(0,40),abc:q.sh.name+' '+String(AN.nm(A,q.n)).trim(),e0,e1,v1,before,after}}}}return null});
+  ck(!!fd&&fd.e0===(fd.before?1:0)&&fd.e1===(fd.after?1:0)&&fd.v1===fd.e1,tag+'DITL hand input -> ABC: '+(fd?fd.sheet+' row '+fd.row+' "'+fd.txt+'" -> '+fd.abc+' '+fd.e0+'->'+fd.e1+' (the ABC logic reads '+fd.v1+': the ABC runs with the DITL)':'none'));
  }else{
   const w=await page.evaluate(()=>S.sheets.filter(s=>s._win&&s._win.size).length);
   ck(w===0,tag+'no DITL row is driven by the ABC ('+w+' sheets)');

@@ -505,6 +505,8 @@
       lost,
       ms: Math.round(performance.now() - t0)
     };
+    /* 2.5.0-beta.10: the ABC sheets that READ the DITL too (FROM DITL): stepped with the world, so a DITL input reaches their logic */
+    for (const a of ain) wsh.add(a.sh.name);
     AN.worldSheets = [...wsh];
   }
   const XL = new WeakMap();
@@ -674,6 +676,16 @@
     } catch (e) {
       console.error(e);
     }
+    /* 2.5.0-beta.10 (user: "kapag from DITL nagforce ako, madedetect ito ng buong sheet DITL at ABC? vice versa?"): one world = one time.
+       While the DITL page simulates, the ABC sheets of the world run too (before, the ABC stood still until its own Run: a DITL input
+       reached the ABC input but not the ABC logic behind it, and an ABC FORCE did not reach the DITL) */
+    if (AN.cat !== 'an' && AN.sheets.length && AN.worldSheets && AN.worldSheets.length)
+      try {
+        const sh = AN.sheets[AN.i] && AN.sheets[AN.i].S ? AN.sheets[AN.i] : AN.sheets.find(s => s.name === AN.worldSheets[0]);
+        if (sh && sh.S) AN.stepSet(sh, dt);
+      } catch (e) {
+        console.error(e);
+      }
   }, 200);
   /* the button, in the TAKBO group of both toolbars */
   const btns = [];

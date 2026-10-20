@@ -193,3 +193,22 @@
     - Kapag OFF: walang DITL row na pinapatakbo ng ABC.
   - ditl_toolbar, layout, sidetab, ditl_pagelink, ditl150, world: PASS. Buong screen check: 96 screen, 0 problema.
 - **Status:** Pass.
+
+## 2.5.0-beta.10 — FORCE sa ABC ↔ DITL habang SIMULATE, at buong pagsubok ng ramp / preset (user: "--GO", 2026-10-20)
+
+- **Problem:**
+  - (1) User: "kapag from DITL nagforce ako, madedetect ito ng buong sheet DITL at ABC? vice versa?"
+  - (2) User "--GO": isama sa pagsubok ng bawat block ang 49 na block na may output na pinaghahatian o may preset.
+- **As Found:**
+  - (1) Kapag nasa DITL page at naka-SIMULATE (ABC+DITL ON), ang ABC ay nakatigil hanggang sariling Run. Ang DITL input ay umaabot sa ABC input pero hindi sa ABC logic sa likod nito, at ang FORCE sa ABC ay hindi umaabot sa DITL row.
+  - (2) Ang ramp ng ABC-050 (HP bypass) sa ilalim ng "IF M.0704 = 1 SET SV = 109 kg/cm2" ay sinubukan. Akala ko ay mali ang ramp (bug). Binasa ulit ang PDF ng ABC-050: ang SET ay nasa SV ng PICMS1006 station, hindi sa ramp. Sinubok ang pagbabago: sa turbine trip, 22 % lang ang HP bypass at umakyat ang MSP sa 144 (bagsak ang unit_trip). Kaya **walang mali sa ramp; ibinalik sa dati (walang binago sa engine).**
+- **Work Done:**
+  - `src/world/world.js`: habang naka-SIMULATE ang DITL page, tumatakbo rin ang mga ABC sheet ng iisang mundo, pati ang mga ABC sheet na bumabasa ng DITL (FROM DITL). Iisang oras ang ABC at DITL.
+  - `tests/regress/blocks_io.js`: ang ramp na may preset ay sinusubok mula sa sariling value ng ramp (ayon sa drawing).
+  - `tests/regress/ditl_sim.js`: dagdag na tseke: FORCE sa ABC → DITL row, at hand input sa DITL → ABC input at ABC logic.
+  - Bagong `tests/regress/ditl_export.js`: isinusulat ang basa ng app sa bawat DITL sheet (row at logic ng bawat output) para ibangga sa PDF.
+- **As Left (headless, 2.5.0-beta.10):**
+  - ditl_sim: lahat PASS, kasama ang FORCE ABC → DITL at DITL → ABC.
+  - blocks_io ABC-050: 0 mali, plant model OFF at ON. Ang 88 "laktaw" ay VLV block na walang output wire (sakop ng plant at scenario test).
+  - unit_trip, check_panel (lahat ng CHECK scenario, kasama ang M4 cold start-up at M5), world, ditl150, hmi_op, unit_load, switches, pid_am, faceplate, loaddown, ditl_toolbar, ditl_pagelink, layout: PASS. Buong screen check: 0 problema.
+- **Status:** Pass.
