@@ -53,3 +53,10 @@ Lahat ay binasa sa PDF (300 dpi, `/mnt/project-files/ditl-audit-2026-10-20/png/`
    - Dati: ang solenoid ay pinapatakbo ng wire ng row 27 (CONDENSER VACUUM, NOT → AND) na dumaraan sa ilalim ng assembly box.
    - PDF: row 23 OPEN COMMAND M.0563 → NOT → XV-CR1011 O.0126 → CLOSE COMMAND DC 24V → SV-CR1011 (gaya ng DITL-74).
    - Ngayon: SV-CR1011 = NOT(IN23).
+
+## 2.5.0-beta.12 — Sootblower (DITL-80 ~ 80T)
+
+Walang tinanggal na link para lang gumana.
+
+1. **80S row 17 (N-1011~38, AIR PREHEATER S/B ALL ON RETRACT POSITION)**: dati nabasang output din ng unang AND, dahil ang dulo ng AND ay nakapatong sa vertical na dumaraan sa labas ng kahon. PDF: ang vertical ay tuloy-tuloy na wire ng row 17 papunta sa close command; ang AND ay may sariling output pababa. Ngayon: ang dulo ng AND na nasa vertical na lumalampas sa kahon nang higit 2 unit ay hindi output (`02-netlist.js` aoA). Ang 134 dating sheet ay hindi nagbago.
+2. **80M wire na may "• • •"**: dalawang vertical na nasa iisang linya na may 3 o higit pang tuldok sa pagitan (puwang < 30) ay iisang net, gaya ng PDF (ang tuldok = "tuloy ang wire").

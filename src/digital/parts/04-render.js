@@ -153,7 +153,16 @@ function simulate(nl, act) {
           sp = g.spNet !== undefined ? val(g.spNet) : g.sp;
         o = g.cmp === '>' ? (g.eq ? v0 >= sp : v0 > sp) : g.eq ? v0 <= sp : v0 < sp;
       } else if (g.t === 'TMR') o = g.st.out;
-      else {
+      else if (g.t === 'CNT') {
+        /* 2.5.0-beta.12: sequence counter (sootblower DITL-80): RESET = N 0, the input 1 -> 0 = N + 1 (kept when the sheet settles) */
+        const c = I(g.ins);
+        g.Nn = I(g.r) ? 0 : g.pin && !c ? Math.min(g.N + 1, Math.max(...g.ks)) : g.N;
+        g.cin = c;
+        g.out.forEach((n, j) => {
+          if (g.ks[j] === g.Nn) w[n] = 1;
+        });
+        return;
+      } else {
         const s = I(g.s),
           r = I(g.r);
         if (g.spri) {
@@ -173,6 +182,12 @@ function simulate(nl, act) {
     if (pick !== undefined) d.filter(n => src.has(n)).forEach(n => (v[n] = w[n]));
     else v[d[0]] = w[d[0]];
   }
+  nl.gates.forEach(g => {
+    if (g.t === 'CNT' && g.Nn !== undefined) {
+      g.N = g.Nn;
+      g.pin = g.cin;
+    }
+  });
   nl._v = v;
   return v;
 }
@@ -188,7 +203,7 @@ function avOf(s) {
 function xconPeer(s, c) {
   if (c.pk !== undefined) return c.pk;
   const me = (/DITL-?\s*([0-9]{1,3}[A-Z]?)\s*$/i.exec(s.name) || [])[1],
-    sh = S.sheets.find(x => new RegExp('DITL-' + c.peer + '$', 'i').test(x.name));
+    sh = S.sheets[ditlIdx(c.peer, s)];
   let r = null;
   if (sh && me) {
     if (!sh.nl) sh.nl = netlist(sh);

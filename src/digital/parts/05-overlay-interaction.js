@@ -743,9 +743,11 @@ const DITL_CATS = [
   'WATER SYSTEMS (INDUSTRIAL / POTABLE / WASTE)',
   'DIESEL OIL',
   'AIR SYSTEM (DRYER / COMPRESSORS)',
-  'TURBINE INTERFACE'
+  'TURBINE INTERFACE',
+  'SOOTBLOWER'
 ];
 function ditlCat(x) {
+  if (isSB(x)) return 'SOOTBLOWER';
   const m = /DITL-(\d+)([A-Z]?)$/i.exec(x.name || '');
   if (!m) return /DITL-0[A-D]$/i.test(x.name || '') ? 'CONTENTS' : 'OTHER';
   const n = +m[1],

@@ -353,6 +353,7 @@ $('bmode').onclick = () => {
     }
     ((x.nl && x.nl.gates) || []).forEach(g => {
       if (g.t === 'FF') g.q = 0;
+      if (g.t === 'CNT') g.N = g.pin = 0;
       if (g.t === 'TMR') g.st = { acc: 0, out: 0, pre: 0, run: 0 };
     });
   });
@@ -657,7 +658,7 @@ $('fdxf').onchange = async e => {
     showHealth();
   }
 };
-window.PRE_N = 134;
+window.PRE_N = 151;
 render();
 {
   const n = S.sheets.filter(x => x.bv !== BV && !window.PRE_N).length;
