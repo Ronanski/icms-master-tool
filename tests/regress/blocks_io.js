@@ -30,7 +30,13 @@ for(const plant of PL==='both'?['off','on']:[PL]){
    const res={name,plant,tested:0,checks:0,bad:[],skip:{},byKind:{}};
    const skip=(k,why,b)=>{res.skip[why]=(res.skip[why]||0)+1;if(b&&why!=='own test'){res.skipL=res.skipL||[];res.skipL.push(why+': '+k+'#'+b.id+' '+(b.txt||[]).filter(Boolean).slice(0,2).join(' '))}};
    // the output nets that the function of the block alone decides (a net with 2 drivers = wired max; a preset overrides)
-   const outs=b=>(b.o||[]).filter(n=>n!=null&&n>=0&&!(S.multi&&S.multi[n])&&!(S.pre&&S.pre[n]));
+   const outs=b=>(b.o||[]).filter(n=>n!=null&&n>=0);
+   /* 2.5.0-beta.9b (user: "bakit hindi ayusin?"): an output wire that two blocks write (wired OR on the drawing = the higher value) and an
+      output with a PRESET of the drawing (a trip / interlock writes a fixed value or another signal while its condition is ON) are judged too:
+      preset ON = the preset value; otherwise one of 2 writers = at least the value of this block */
+   const preOf=n=>{const pr=S.pre&&S.pre[n];if(!pr)return null;for(const q of [pr].concat(pr.alt||[]))if(q.eq===0?v[q.c]<.5:v[q.c]>.5)return q;return null};
+   const judge=(n,e,tol)=>{const q=preOf(n);if(q){const pv=q.src!=null?v[q.src]:q.val;return {ok:near(v[n],pv,1e-6),e:pv,how:' (preset of the drawing ON)'}}
+    if(S.multi&&S.multi[n])return {ok:v[n]>=e-(tol==null?1e-6:tol),e,how:' (wire shared with another block: at least this value)'};return {ok:near(v[n],e,tol),e,how:''}};
    const clampAO=(n,x)=>S.aoN&&S.aoN.has(n)?Math.max(0,Math.min(100,x)):x;
    const COMB={ADD:1,SUM:1,DEV:1,SUB:1,MUL:1,DIV:1,HLLIM:1,ABS:1,SQRT:1,HS:1,LLIM:1,LS:1,HLIM:1,SEL:1,FX:1,HC:1,LC:1,HLC:1,CMPK:1,DCMP:1,PVSV:1,NOT:1,AND:1,OR:1,TP:1};
    const TIMED={FF:1,TON:1,TOF:1,TPS:1,TPV:1,LAG:1,RATE:1,RAMPB:1,CTK:1,ACT:1,VLV:1};
@@ -53,7 +59,7 @@ for(const plant of PL==='both'?['off','on']:[PL]){
     let put=false;for(const g of batches){if(g.some(x=>x.ins.some(n=>o.includes(n))||ins.some(n=>x.o.includes(n))||ins.some(n=>x.ins.includes(n))))continue;g.push({b,ins,o});put=true;break}
     if(!put)batches.push([{b,ins,o}])}
    const bad=(b,what,exp,got)=>res.bad.push({blk:b.k+'#'+b.id,tag:(b.txt||[]).filter(Boolean).slice(0,2).join(' '),what,exp:typeof exp==='number'?+exp.toFixed(4):exp,got:typeof got==='number'?+(+got).toFixed(4):got});
-   const chk=(b,o,exp,what,tol)=>{res.checks++;res.byKind[b.k]=(res.byKind[b.k]||0)+1;const n=o[0];const e=clampAO(n,exp),g=v[n];if(!(near(g,e,tol)))bad(b,what,e,g)};
+   const chk=(b,o,exp,what,tol)=>{res.checks++;res.byKind[b.k]=(res.byKind[b.k]||0)+1;const n=o[0];const j=judge(n,clampAO(n,exp),tol);if(preOf(n))res.pre=(res.pre||0)+1;else if(S.multi&&S.multi[n])res.multi=(res.multi||0)+1;if(!j.ok)bad(b,what+j.how,j.e,v[n])};
    const fx=(P,x)=>{const t=(AN.ln||{})[P.ln]||(P.tbl&&(P.tbl.p2||P.tbl.pts));if(!t||!t.length)return x;if(x<=t[0][0])return t[0][1];for(let i=1;i<t.length;i++)if(x<=t[i][0]){const a=t[i-1],c=t[i];return a[1]+(c[1]-a[1])*(x-a[0])/((c[0]-a[0])||1)}return t[t.length-1][1]};
    const forceOK=(b,ins,vals)=>{for(let i=0;i<ins.length;i++)if(!near(v[ins[i]],vals[i],1e-6)){skip(b.k,'input net cannot be forced',{id:b.id,txt:[(b.txt||[])[0],'net '+ins[i]+' '+String(AN.nm(S,ins[i])||'').trim()+' drv '+drvOf(ins[i]).map(d=>d.k).join('/')+' ext '+S.ext.includes(ins[i])]});return false}return true};
    // ---------- combinational blocks: vectors ----------
@@ -96,7 +102,7 @@ for(const plant of PL==='both'?['off','on']:[PL]){
     for(let j=0;j<8;j++){
      const vs=comb.map(x=>vecFor(x.b,x.ins,j));comb.forEach((x,i)=>x.ins.forEach((n,k)=>{if(KN(n)==null)F[n]=vs[i][k]}));step(2,0);
      comb.forEach((x,i)=>{if(!forceOK(x.b,x.ins,vs[i]))return;
-      if(x.b.k==='DCMP'){const y0=vs[i][0];x.b.dc.forEach(d=>{const y=d.neg?-y0:y0,e=(d.op==='>'?(d.inc?y>=d.sp:y>d.sp):(d.inc?y<=d.sp:y<d.sp))?1:0;res.checks++;res.byKind.DCMP=(res.byKind.DCMP||0)+1;if(v[d.n]!==e&&!(S.multi&&S.multi[d.n]))bad(x.b,'in '+y0+' '+d.op+(d.inc?'=':'')+' '+d.sp,e,v[d.n])});return}
+      if(x.b.k==='DCMP'){const y0=vs[i][0];x.b.dc.forEach(d=>{const y=d.neg?-y0:y0,e=(d.op==='>'?(d.inc?y>=d.sp:y>d.sp):(d.inc?y<=d.sp:y<d.sp))?1:0;res.checks++;res.byKind.DCMP=(res.byKind.DCMP||0)+1;if(!judge(d.n,e).ok)bad(x.b,'in '+y0+' '+d.op+(d.inc?'=':'')+' '+d.sp,e,v[d.n])});return}
       chk(x.b,x.o,expect(x.b,x.ins,vs[i]),'inputs '+vs[i].map(q=>+(+q).toFixed(3)).join(', '),Math.max(1e-6,Math.abs(expect(x.b,x.ins,vs[i]))*1e-6))});
      comb.forEach(x=>x.ins.forEach(n=>delete F[n]))}
     comb.forEach(x=>res.tested++)}
@@ -104,7 +110,7 @@ for(const plant of PL==='both'?['off','on']:[PL]){
    const timed=cand.filter(b=>TIMED[b.k]);
    for(const b of timed){const ins=insOf(b).filter(n=>n!=null&&n>=0),o=outs(b);if(!ins.length||ins.some(n=>o.includes(n)))continue;
     const P=b.p||{},set=(n,x)=>{if(n!=null&&n>=0)F[n]=x},clr=()=>ins.forEach(n=>delete F[n]);let ok=true;
-    const C=(e,what,tol)=>{res.checks++;res.byKind[b.k]=(res.byKind[b.k]||0)+1;const g=v[o[0]];if(!near(g,clampAO(o[0],e),tol==null?1e-6:tol)){bad(b,what,clampAO(o[0],e),g);ok=false}};
+    const C=(e,what,tol)=>{res.checks++;res.byKind[b.k]=(res.byKind[b.k]||0)+1;const j=judge(o[0],clampAO(o[0],e),tol==null?1e-6:tol);if(preOf(o[0]))res.pre=(res.pre||0)+1;else if(S.multi&&S.multi[o[0]])res.multi=(res.multi||0)+1;if(!j.ok){bad(b,what+j.how,j.e,v[o[0]]);ok=false}};
     if(b.k==='FF'){set(b.S,0);set(b.Rn,1);step(2);C(0,'R=1: Q=0');set(b.Rn,0);step(1);C(0,'S=0 R=0: holds 0');set(b.S,1);step(1);C(1,'S=1: Q=1');set(b.S,0);step(1);C(1,'S=0 R=0: holds 1');set(b.S,1);set(b.Rn,1);step(1);C(0,'S=1 R=1: reset wins')}
     else if(b.k==='TON'&&P.sec>0){const T=P.sec,d=Math.min(1,T/10);set(b.i[0],0);step(2,d);C(0,'input 0: out 0');set(b.i[0],1);step(Math.max(1,Math.floor(T/d)-1),d);C(0,'input 1 for less than '+T+' s: out 0');step(3,d);C(1,'input 1 for '+T+' s: out 1');set(b.i[0],0);step(1,d);C(0,'input back to 0: out 0 at once')}
     else if(b.k==='TOF'&&P.sec>0){const T=P.sec,d=Math.min(1,T/10);set(b.i[0],1);step(2,d);C(1,'input 1: out 1');set(b.i[0],0);step(Math.max(1,Math.floor(T/d)-1),d);C(1,'input 0 for less than '+T+' s: out stays 1');step(3,d);C(0,'input 0 for '+T+' s: out 0')}
@@ -116,7 +122,8 @@ for(const plant of PL==='both'?['off','on']:[PL]){
      if(b.tpar!==undefined&&b.tpar>=0){set(b.tpar,10);rate=b.span/(10*.036)}
      if(b.up!==undefined){set(b.up,.5);set(b.dn,.5);rate=.5}
      if(!(rate>0)){skip(b.k,'ramp rate 0 = no limit (drawing has no value)',b);clr();continue}
-     set(b.main,v[b.main]);step(2,d);const y0=v[o[0]];set(b.main,y0+rate*30);step(10,d);C(y0+rate*10,'ramp '+(+rate.toPrecision(3))+' /s ('+(P.rtxt||'')+'): +10 s',Math.max(1e-6,rate*.02));
+     set(b.main,v[b.main]);step(2,d);/* 2.5.0-beta.10: a SET of the drawing (ABC-050 "IF M.0704 = 1 SET SV = 109") writes the wire, not the ramp: the ramp keeps its own value
+        under the SET, so the start value is the ramp's own value */const st0=S.rt.st[b.id],y0=st0&&st0.y!=null&&preOf(o[0])?+st0.y:v[o[0]];set(b.main,y0+rate*30);step(10,d);C(y0+rate*10,'ramp '+(+rate.toPrecision(3))+' /s ('+(P.rtxt||'')+'): +10 s',Math.max(1e-6,rate*.02));
      set(b.main,y0-rate*30);step(5,d);C(y0+rate*5,'ramp down: -5 s',Math.max(1e-6,rate*.02));
      if(b.byp>=0){set(b.byp,1);step(2,d);C(y0-rate*30,'bypass (.LOC / bumpless) = 1: follows the input at once',Math.max(1e-6,rate*.02))}}
     else if((b.k==='RATE'||b.k==='RAMPB')&&b.main===undefined&&P.rate>0){const d=1;set(b.i[0],0);step(Math.ceil(200/P.rate)+5,d);const y0=v[o[0]];set(b.i[0],y0+P.rate*20);step(10,d);C(y0+P.rate*10,'ramp '+P.rate+' /s: after 10 s',Math.max(1e-3,P.rate*1e-3))}
@@ -133,7 +140,7 @@ for(const plant of PL==='both'?['off','on']:[PL]){
   for(const x of r.bad.slice(0,6))console.log('FAIL',plant,name,x.blk,x.tag,'|',x.what,'| expected',x.exp,'got',x.got);
   if(r.bad.length>6)console.log('FAIL',plant,name,'... '+(r.bad.length-6)+' more');
  }}
-const sum={};for(const r of all){if(r.err)continue;const k=r.plant;sum[k]=sum[k]||{sheets:0,blocks:0,checks:0,bad:0,skip:{},kinds:{}};const s=sum[k];s.sheets++;s.blocks+=r.tested;s.checks+=r.checks;s.bad+=r.bad.length;for(const q in r.skip)s.skip[q]=(s.skip[q]||0)+r.skip[q];for(const q in r.byKind)s.kinds[q]=(s.kinds[q]||0)+r.byKind[q]}
+const sum={};/* preset = checks made while a preset of the drawing was ON; shared = checks on a wire with 2 writers */for(const r of all){if(r.err)continue;const k=r.plant;sum[k]=sum[k]||{sheets:0,blocks:0,checks:0,bad:0,skip:{},kinds:{}};const s=sum[k];s.sheets++;s.preset=(s.preset||0)+(r.pre||0);s.shared=(s.shared||0)+(r.multi||0);s.blocks+=r.tested;s.checks+=r.checks;s.bad+=r.bad.length;for(const q in r.skip)s.skip[q]=(s.skip[q]||0)+r.skip[q];for(const q in r.byKind)s.kinds[q]=(s.kinds[q]||0)+r.byKind[q]}
 for(const k in sum)console.log('PLANT '+k.toUpperCase()+':',JSON.stringify(sum[k]));
 fs.writeFileSync(process.env.BLOCKS_OUT||'/tmp/blocks_io.json',JSON.stringify(all));
 console.log(errs.length?'page errors: '+errs.slice(0,3).join(' | '):'no page error');
