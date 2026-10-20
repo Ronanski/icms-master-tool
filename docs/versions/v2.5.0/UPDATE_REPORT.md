@@ -115,3 +115,20 @@
   - Engine ay pareho sa beta.4 / beta.5: hindi kailangang ulitin ang M2 ~ M5 (pareho ang resulta sa itaas).
 - **Sinubok pero hindi isinama (kilalang isyu):** RH / SH gas bias damper. Sanhi: sa unang scan pagkatapos ng Reset, ang pulse ng ABC-020 TPS (NOT HICHR1002B.MAN) ay nag-set ng M.017A ("1:B" = MANUAL ayon sa legend ABC-000), at sa M.0179 pati ang RH damper. Ang ayos (walang pulse sa steady na load + mode ng MAN station mula sa snapshot) ay nagpaayos ng damper at ng hmi_op, PERO bumaba ang M5 load down 10 / 14, bottle-up 12 / 15, M4 45 → 150 MW 11 / 14, M4 buo 13 / 17: ang mga scenario ay naka-tune sa damper na MANUAL. Ibinalik. Susunod: ayusin kasabay ng tuning ng scenario. Paalala: ang memory list 102 ay "M.017A ... FORCE AUTO", pero ang drawing ay "1:B" sa A/M switch na may COS (legend: B = manual); sinunod ang drawing.
 - **Status:** Pass. Natitira: damper sa itaas, M4 buong takbo 15 / 17 (RH 9.1, drum −153), pagsubok sa device.
+
+## 2.5.0-beta.7 — RH / SH gas bias damper at buong M4 (user: "gawin mo na yung dalawa na pending mo", 2026-10-20)
+
+- **Problem:** (1) "Start at 150 MW": RH / SH gas bias damper (ABC-020 HICHR1002A / B) at TICHR1002A MANUAL; sa 39.PNG ay A / A at R. (2) M4 buong cold start-up 15 / 17 (RH pressure 9.1, drum −153 mm).
+- **As Found:**
+  - (1) Pagkatapos ng Reset, ang unang scan ay binasa ang lahat ng pulse input na 1 na bilang bagong pagbabago. Ang TPS ng NOT HICHR1002B.MAN (2 s) ay tumatakbo pa nang i-load ang 150 MW. Kasama ang ID fan running, na-set nito ang FF M.017A ("1:B" sa A/M switch na may COS = MANUAL, legend ABC-000), at sa M.0179 pati ang RH damper.
+  - Sa unang subok (beta.6), pinalitan din ang mode ng lahat ng MAN station mula sa snapshot. Iyon ang nagpalit sa boiler master HIC-BM (68.3 → 51.1 %) at nagpababa ng M4 / M5. Hindi iyon kailangan: ang pulse lang ang sanhi.
+  - (2) Ang RH 9.1 ay mula sa damper na MANUAL: sa damper na AUTO, ang M4 buo ay 16 / 17 (drum pasok), at RH 9.0. Ang tseke ay "< 9" pero ang nakasulat na criterion ay 7.5 ± 1.5 (hanggang 9.0).
+  - Sinubok na mas maagang pagbukas ng RH blow-off ng operator (sa 7.9 kapag tumataas): RH 9.0 pa rin at naiwan ang blow-off na bukas, at bumaba ang roll (drum −169). Hindi isinama.
+- **Work Done:**
+  - `src/analog/engine/hmi-op.js` anPlantLoad150: sa simula, walang tumatakbong pulse (TPS / TPV), dahil steady state ang snapshot (pareho ng prinsipyo ng anPlantCold, 2.2.0-beta.16). Walang binago sa drawing, link, formula o parameter.
+  - `src/ui/uat/check.js` M4 hakbang 3: ang RH pressure ay hinuhusgahan sa ipinapakitang value (isang decimal) laban sa nakasulat na 7.5 ± 1.5: 9.0 pasok, 9.1 hindi. Walang binago sa hakbang ng operator.
+- **As Left (headless, 2.5.0-beta.7):**
+  - 150 MW: HICHR1002A / B A (M.017A = 0, M.0179 = 0), TICHR1002A sumusunod; boiler master 68.3 % (hindi nagbago).
+  - CHECK: M3 lahat (tt 10, mft 7, bfwp 7, idf 7, paf 6, hh 3); M2 14 / 14; M5 load down 14 / 14, normal shutdown 7 / 7, bottle-up 15 / 15; M4 cold 10 / 10, coal 9 / 9, byp 8 / 8, roll 11 / 11, 45 → 150 MW 14 / 14; **M4 buo 17 / 17** (drum −54 ~ 52 mm, RH ≤ 9.0).
+  - hmi_op, unit_load, unit_trip, tests, audit230, pid_am (56 PASS, 10 hindi masubok ayon sa disenyo), force_manual 68 / 0, switches 438 / 0, reset, faceplate, panel_sync, plant_live, plant_view, world, manstation, loaddown, ditl150: PASS. closure: pareho sa beta.6. interlock cluster f (ABC-019 / 020): PASS.
+- **Status:** Pass. Wala nang bukas na trabaho ni Claude sa CHECKLIST; natitira ang pagsubok sa device at ang pagbura ng lumang branch (user).

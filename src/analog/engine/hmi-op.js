@@ -553,6 +553,13 @@ function anPlantLoad150() {
 }
 function anPlantLoad150_() {
   let n = 0;
+  /* 2.5.0-beta.7: the snapshot is a steady state, so no pulse is running: the first scan after Reset took every pulse input that is
+     already 1 as a new edge (ABC-020 TPS of NOT HICHR1002B.MAN, 2 s): with the ID fan running of the load it set M.017A and the SH and
+     RH gas bias dampers stayed MANUAL at 150 MW (39.PNG: both A) */
+  for (const sh of AN.sheets)
+    if (sh.S && sh.S.rt)
+      for (const b of sh.S.blk)
+        if ((b.k === 'TPS' || b.k === 'TPV') && sh.S.rt.st[b.id]) Object.assign(sh.S.rt.st[b.id], { run: 0, out: 0, acc: 0 });
   for (const sh of AN.sheets) {
     if (/^ABC-000/.test(sh.name)) continue;
     let S;
