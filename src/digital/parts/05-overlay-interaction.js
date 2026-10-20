@@ -778,9 +778,11 @@ function ditlCat(x) {
 }
 let SIDEKEY = '',
   SIDEFL = '',
-  SIDEMIN = null;
+  SIDEMIN = null,
+  SIDESM = 'cat';
 try {
   SIDEMIN = localStorage.getItem('ditl.side');
+  if (localStorage.getItem('ditl.sm') === 'order') SIDESM = 'order';
 } catch (e) {}
 if (SIDEMIN === null) SIDEMIN = innerWidth < 820 ? '1' : '0';
 function drawSide() {
@@ -792,7 +794,32 @@ function drawSide() {
   const cn = S.sheets[S.cur] ? S.sheets[S.cur].name : '';
   $('sidect').textContent = 'Sheets (' + S.sheets.length + ')';
   $('sidevt').textContent = cn ? cn + '  ·  ' + (S.cur + 1) + '/' + S.sheets.length : 'Sheets';
-  const key = S.sheets.map(x => x.name + (x.bv !== BV ? '!' : '')).join('|') + '#' + SIDEFL;
+  /* 2.5.0-beta.13 (user: "sa left pane, wala ang option na by order/category"): By order / By category as the ABC sheet list */
+  let so = $('dsort');
+  if (!so) {
+    so = document.createElement('div');
+    so.id = 'dsort';
+    [
+      ['order', 'By order', 'One list in sheet order (DITL-0A, 01, 02, 03A ... then the sootblower set)'],
+      ['cat', 'By category', 'Grouped by system, each group in order']
+    ].forEach(([m, t, ti]) => {
+      const b = document.createElement('button');
+      b.dataset.m = m;
+      b.textContent = t;
+      b.title = ti;
+      b.onclick = () => {
+        SIDESM = m;
+        try {
+          localStorage.setItem('ditl.sm', m);
+        } catch (e) {}
+        drawSide();
+      };
+      so.appendChild(b);
+    });
+    $('sidebody').insertBefore(so, $('sidefl'));
+  }
+  so.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.m === SIDESM));
+  const key = S.sheets.map(x => x.name + (x.bv !== BV ? '!' : '')).join('|') + '#' + SIDEFL + '#' + SIDESM;
   if (key !== SIDEKEY) {
     SIDEKEY = key;
     list.innerHTML = '';
@@ -802,9 +829,10 @@ function drawSide() {
        the order of the contents sheets DITL-0A ~ 0D); the search still filters by name and title */
     S.sheets.forEach((x, i) => {
       if (f && (x.name + ' ' + (x.title || '') + ' ' + ditlCat(x)).toLowerCase().indexOf(f) < 0) return;
+      if (SIDESM === 'order') return sideBtn(x, i);
       (G[ditlCat(x)] = G[ditlCat(x)] || []).push(i);
     });
-    DITL_CATS.concat(Object.keys(G).filter(k => !DITL_CATS.includes(k))).forEach(c => {
+    if (SIDESM !== 'order') DITL_CATS.concat(Object.keys(G).filter(k => !DITL_CATS.includes(k))).forEach(c => {
       if (!G[c]) return;
       const h = document.createElement('div');
       h.className = 'fh';

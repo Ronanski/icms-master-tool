@@ -30,6 +30,7 @@ Pagkatapos ng M6: ang `[F]` sa CHECKLIST seksyon D ay dagdag lang, hindi kailang
 - [x] **2.5.0-beta.10 — FORCE sa ABC ↔ DITL habang SIMULATE:** tumatakbo ang ABC kasabay ng DITL page. Ramp / preset ng ABC-050 sinubok: tama ayon sa PDF.
 - [x] **2.5.0-beta.11 — Bawat DITL sheet laban sa PDF** (user: "KAPAREHA DAPAT NG SA APP"): 39 sheet na may mali, naayos lahat (17 uri, `docs/versions/v2.5.0/DITL_PDF_AUDIT.md`); sheet list ng DITL ayon sa kategorya (22 grupo).
 - [x] **2.5.0-beta.12 — Sootblower DITL pages:** 17 sheet (DITL-80 ~ 80T) sa kategoryang SOOTBLOWER, ibinangga sa PDF (`docs/versions/v2.5.0/DITL_SB_AUDIT.md`); COUNTER, SB PANEL output, valve ng MCC box.
+- [x] **2.5.0-beta.13 — DITL page gaya ng ABC:** [VIEW | ▶ Run], mode badge, By order / By category, Selected tab ("To make it 1"), naayos ang tab strip ng DITL panel.
 - [ ] **Susunod — Bagong DITL page:** bottom ash, sand, limestone.
 
 ## Nasaan tayo ngayon (2026-10-20, 2.5.0-beta.7, PR #34)
