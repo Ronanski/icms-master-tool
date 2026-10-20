@@ -1,5 +1,5 @@
 /* 2.4.1-beta.4 (user 2026-10-19): the DITL page works like the ABC page. The drawing is the one read from the DXF (no edit tools);
-   the tool bar has [VIEW | SIMULATE], Reset, ◀ Back, Fit, Zoom and Panel (2.5.0-beta.9), and a right panel lists the
+   the tool bar has [VIEW | ▶ Run] (2.5.0-beta.13, was SIMULATE), Reset, ◀ Back, Fit, Zoom and Panel (2.5.0-beta.9), and a right panel lists the
    inputs (switch / push button), analog inputs, timers, valves / motors and outputs of the open sheet.
    Uses the names of the DITL script (src/digital): S, SIM, DPAUSE, TSP, cur, render, simSheet, simOn, fbk, isPB, lockd, ... */
 (function () {
@@ -34,7 +34,8 @@
   /* 2.5.0-beta.9 (user: "need pa ba ang step simulate? wag na kaya? either VIEW at SIMULATE ON/OFF nalang"): the DITL bar is
      [VIEW | SIMULATE] + Reset. SIMULATE = the DITL logic runs in real time (timers, valves, motors), VIEW = simulation off. No step,
      no step size, no speed (the DITL time is the time of the clock, the same as the ABC at 1x). */
-  const run = E('button', { cls: 'tb-run dui-run', txt: 'SIMULATE', title: 'Simulation ON: the DITL logic runs (timers, valves, motors in real time); click an input to switch it. VIEW = simulation OFF' });
+  /* 2.5.0-beta.13 (user: "same function sa ABC ang DITL. so kung ano ang toolbar, ganun din ang DITL"): [VIEW | ▶ Run] as the ABC bar */
+  const run = E('button', { cls: 'tb-run dui-run', txt: '▶ Run', title: 'RUN: the DITL logic runs (timers, valves, motors in real time); click an input to switch it. VIEW = trace only, no simulation' });
   const reset = E('button', { txt: 'Reset', title: 'Start again: all inputs OFF, timers, latches, valves and motors back to the start' });
   const view = E('button', { cls: 'tb-view', txt: 'View', title: 'View the drawing without simulation' });
   const zoom = E('button', { txt: 'Zoom', title: 'Zoom to readable text (12 px) on the selected cell; Fit shows the whole sheet again' });
@@ -147,7 +148,10 @@
     back.style.display = hist.length ? '' : 'none';
   }
   let FL = null;
-  D.after = () => FL && Date.now() < FL.until && cur() === FL.s && flashRow(FL.s, FL.i, FL.side, 1);
+  D.after = () => {
+    if (FL && Date.now() < FL.until && cur() === FL.s) flashRow(FL.s, FL.i, FL.side, 1);
+    if (typeof hl === 'function') hl();
+  };
   function flashRow(s, i, side, again) {
     if (!again) FL = { s, i, side, until: Date.now() + 2400 };
     const svg = $('svg'),
@@ -313,6 +317,484 @@
   function sec(title, n) {
     return E('div', { cls: 'dp-h', txt: title + (n != null ? ' (' + n + ')' : '') });
   }
+  /* the switch of an input row (Inputs tab and Selected tab): hand switch, push button (press and hold) or auto (dashed) */
+  const auto = (s, i) => lockd(s, i) || !!(window.WORLD && WORLD.live && s._win && s._win.has(i));
+  function swBtn(s, i, b, UL) {
+    const k = i + ':S',
+      pb = isPB(s, i),
+      grpT = (s.nl.grp || []).some(g => g.master === i && g.toggle);
+    if (pb && !grpT) {
+      let t0 = 0;
+      const off = () => {
+        if (!t0) return;
+        const w = Math.max(0, 400 - (Date.now() - t0));
+        t0 = 0;
+        setTimeout(() => {
+          s.sig[k] = false;
+          render();
+        }, w);
+      };
+      b.onpointerdown = e => {
+        if (auto(s, i)) return;
+        e.preventDefault();
+        if (!SIM) enter();
+        t0 = Date.now();
+        s.sig[k] = true;
+        render();
+      };
+      b.onpointerup = b.onpointerleave = b.onpointercancel = off;
+    } else
+      b.onclick = () => {
+        if (auto(s, i)) {
+          msg('This input follows the equipment or another sheet, it is not switched by hand.');
+          return;
+        }
+        if (!SIM) {
+          enter();
+          DPAUSE = false;
+        }
+        s.sig[k] = !s.sig[k];
+        render();
+      };
+    UL.push(R => {
+      const on = R ? R.rowOn.has(i) : false,
+        a = auto(s, i);
+      b.textContent = pb && !grpT ? (on ? 'PRESSED' : 'PRESS') : on ? '1 · ON' : '0 · OFF';
+      b.className = 'dp-v' + (on ? ' on' : '') + (pb && !grpT ? ' pb' : '') + (a ? ' auto' : '');
+    });
+  }
+  /* ---------- Selected (2.5.0-beta.13, user: "sa right pane, kung ano ang selected cell, nakikita sa right pane. Use your common
+     sense ... Act as a professional elite DCS ENGINEER") ----------
+     A click on the drawing (VIEW or RUN) selects an input row, an output row, a gate (AND / OR / NOT / flip-flop / timer / comparator /
+     counter) or a wire. The Selected tab shows what it is, its value in RUN, what drives it (logic tree with live 1 / 0) and where it
+     goes, and in RUN what must change for it to become 1 (or 0): read from the netlist of the sheet, the logic is not changed.
+     A line of the panel selects that part (trace back / forward); the selection is drawn on the sheet in cyan. */
+  let pk = null,
+    SU = [];
+  const selBox = E('div', { cls: 'dp-sel' });
+  const RIGHT = ['RS', 'RL', 'RT'];
+  const MAPS = new WeakMap();
+  const maps = s => {
+    const nl = s.nl;
+    let m = MAPS.get(nl);
+    if (m) return m;
+    const drv = new Map(),
+      use = new Map(),
+      add = (M, n, x) => n >= 0 && (M.get(n) || M.set(n, []).get(n)).push(x);
+    nl.gates.forEach((g, gi) => {
+      (g.out || []).forEach(n => add(drv, n, { g: gi }));
+      (g.ins || []).forEach(n => add(use, n, { g: gi }));
+      (g.s || []).forEach(n => add(use, n, { g: gi, pin: 'S' }));
+      (g.r || []).forEach(n => add(use, n, { g: gi, pin: 'R' }));
+      if (g.spNet !== undefined) add(use, g.spNet, { g: gi, pin: 'SP' });
+    });
+    nl.src.forEach(z => add(drv, z.n, { row: z.row }));
+    (nl.ind || []).forEach(z => add(drv, z.n, { row: z.row }));
+    (nl.xcon || []).forEach(c => add(c.dir === 'in' ? drv : use, c.n, { x: c }));
+    (nl.one || []).forEach(n => add(drv, n, { one: 1 }));
+    (nl.usr || []).forEach(u => add(drv, u.n, { u }));
+    (nl.outs || []).forEach(o => add(use, o.n, { row: o.row, out: 1 }));
+    (nl.pout || []).forEach(o => add(use, o.n, { po: o }));
+    (nl.mir || []).forEach(o => add(use, o.n, { row: o.row, mir: 1 }));
+    m = { drv, use };
+    MAPS.set(nl, m);
+    return m;
+  };
+  const rowNo = (s, i) => s.rows[i].n || i + 1;
+  const inName = (s, i) => 'Input row ' + rowNo(s, i) + (tagOf(s, i) ? ' · ' + tagOf(s, i) : '') + (svcOf(s, i) ? ' · ' + svcOf(s, i) : '');
+  const outName = (s, i) => 'Output row ' + rowNo(s, i) + (txt(s, i, 'RS') ? ' · ' + txt(s, i, 'RS') : '') + (txt(s, i, 'RL') ? ' · ' + txt(s, i, 'RL') : '');
+  const gName = (s, g) =>
+    g.t === 'TMR'
+      ? 'TIMER ' + (g.tm.tag ? g.tm.tag + ' ' : '') + KN[g.k] + ' ' + fmt(tmSecs(g.tm))
+      : g.t === 'CMP'
+        ? 'COMPARATOR ' + cmpTxt(g)
+        : g.t === 'FF'
+          ? 'FLIP-FLOP (' + (g.spri ? 'SET' : 'RESET') + ' wins)'
+          : g.t === 'CNT'
+            ? 'COUNTER (N = ' + (g.N || 0) + ')'
+            : g.t;
+  /* a driver / user of a net: name and the part it selects */
+  const dName = (s, d) =>
+    d.g !== undefined
+      ? (d.pin && d.pin !== 'SP' ? d.pin + ' of ' : d.pin ? 'set point of ' : '') + gName(s, s.nl.gates[d.g])
+      : d.row !== undefined
+        ? d.out
+          ? outName(s, d.row)
+          : d.mir
+            ? inName(s, d.row) + ' (follows this wire)'
+            : inName(s, d.row)
+        : d.x
+          ? (d.x.dir === 'in' ? 'FROM ' : 'TO ') + d.x.peer + ' connector (' + d.x.num + ')'
+          : d.one
+            ? 'DEFAULT "1" (always 1)'
+            : d.u
+              ? 'switch on the drawing'
+              : d.po
+                ? d.po.adr + ' ' + (d.po.txt || '')
+                : '?';
+  const dPick = d => (d.g !== undefined ? { t: 'g', g: d.g } : d.row !== undefined ? { t: 'row', i: d.row, side: d.out ? 'R' : 'L' } : null);
+  const rowNets = (s, i, side) => (side === 'R' ? s.nl.outs : s.nl.src.concat(s.nl.ind || [])).filter(o => o.row === i).map(o => o.n);
+  const val = (R, n) => (R ? (R.v[n] ? 1 : 0) : null);
+  /* what must change for net n to be `want` (the values of RUN); the shortest way when one of several is enough */
+  function why(s, v, n, want, seen, d) {
+    if (!!v[n] === !!want) return [];
+    if (d > 16 || seen.has(n + ':' + want)) return [];
+    seen.add(n + ':' + want);
+    const D = maps(s).drv.get(n) || [];
+    if (!D.length) return [{ txt: 'a wire with no source on this sheet', n }];
+    let best = null;
+    for (const x of D) {
+      const r = whyD(s, v, x, want, seen, d + 1, n);
+      if (want) {
+        if (r.length && (!best || r.length < best.length)) best = r;
+      } else best = (best || []).concat(r);
+    }
+    return best || [];
+  }
+  const shortest = L => L.filter(r => r.length).sort((a, b) => a.length - b.length)[0] || [];
+  function whyD(s, v, x, want, seen, d, n0) {
+    const W = want ? '1' : '0';
+    if (x.row !== undefined) return [{ row: x.row, want, auto: auto(s, x.row) }];
+    if (x.one) return [{ txt: 'DEFAULT "1": always 1' }];
+    if (x.u) return [{ txt: 'the switch drawn on the sheet must be ' + W }];
+    if (x.x) return [{ txt: 'FROM ' + x.x.peer + ' connector (' + x.x.num + ') must be ' + W + ' (open ' + x.x.peer + ')' }];
+    const g = s.nl.gates[x.g],
+      on = n => !!v[n],
+      ins = g.ins || [],
+      one = x2 => [{ g: x.g, txt: x2 }];
+    switch (g.t) {
+      case 'AND':
+        return want ? ins.filter(n => !on(n)).flatMap(n => why(s, v, n, 1, seen, d)) : shortest(ins.map(n => why(s, v, n, 0, seen, d)));
+      case 'OR':
+        return want ? shortest(ins.map(n => why(s, v, n, 1, seen, d))) : ins.filter(on).flatMap(n => why(s, v, n, 0, seen, d));
+      case 'NOT':
+        return want ? ins.filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : shortest(ins.map(n => why(s, v, n, 1, seen, d)));
+      case 'FF': {
+        const S0 = (g.s || []).some(on),
+          R0 = (g.r || []).some(on);
+        if (want) {
+          const a = R0 && !g.spri ? (g.r || []).filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : [];
+          return a.concat(S0 ? [] : shortest((g.s || []).map(n => why(s, v, n, 1, seen, d))), S0 ? [] : one('then the flip-flop is SET (it stays 1 after S goes 0)'));
+        }
+        const a = S0 && g.spri ? (g.s || []).filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : [];
+        return a.concat(R0 ? [] : shortest((g.r || []).map(n => why(s, v, n, 1, seen, d))), R0 ? [] : one('then the flip-flop is RESET'));
+      }
+      case 'TMR': {
+        const I0 = ins.some(on),
+          P = fmt(tmSecs(g.tm)),
+          tag = g.tm.tag || 'timer';
+        if (g.k === 'on')
+          return want ? (I0 ? one(tag + ' is counting: ' + fmt(g.st.acc || 0) + ' / ' + P) : shortest(ins.map(n => why(s, v, n, 1, seen, d))).concat(one('then ' + tag + ' counts ' + P))) : shortest(ins.map(n => why(s, v, n, 0, seen, d)));
+        if (g.k === 'off') return want ? shortest(ins.map(n => why(s, v, n, 1, seen, d))) : I0 ? shortest(ins.map(n => why(s, v, n, 0, seen, d))).concat(one('then ' + tag + ' holds 1 for ' + P)) : one(tag + ' holds 1: ' + fmt(g.st.acc || 0) + ' / ' + P);
+        return want
+          ? (g.k === 'pulse' ? (I0 ? shortest(ins.map(n => why(s, v, n, 0, seen, d))) : []) : I0 ? [] : shortest(ins.map(n => why(s, v, n, 1, seen, d)))).concat(one(tag + ' gives a ' + P + ' pulse when its input goes ' + (g.k === 'pulse' ? '0 → 1' : '1 → 0')))
+          : one(tag + ' pulse ends after ' + P);
+      }
+      case 'CMP':
+        return one('the analog value must be ' + (want ? '' : 'NOT ') + cmpTxt(g) + ' (now ' + anValN(s, ins[0]) + ')');
+      case 'CNT':
+        return one('the COUNTER must ' + (want ? 'reach N = ' + g.ks[g.out.indexOf(n0)] : 'move on') + ' (now N = ' + (g.N || 0) + ')');
+    }
+    return one(gName(s, g) + ' must give ' + W);
+  }
+  /* the items of a why list, without repeats, at most 10 */
+  function whyBox(s, n, R) {
+    const box = E('div', { cls: 'dp-why' });
+    let last = '';
+    SU.push(R2 => {
+      if (!R2) {
+        if (last !== 'view') {
+          last = 'view';
+          box.textContent = '';
+          box.append(E('div', { cls: 'dp-d', txt: 'Press ▶ Run to see the values and what is missing.' }));
+        }
+        return;
+      }
+      const want = R2.v[n] ? 0 : 1,
+        L = why(s, R2.v, n, want, new Set(), 0).map(r => {
+          if (r.row !== undefined) r.key = 'r' + r.row + r.want;
+          else r.key = (r.g !== undefined ? 'g' + r.g : '') + r.txt;
+          return r;
+        }),
+        U2 = L.filter((r, i) => L.findIndex(q => q.key === r.key) === i).slice(0, 10),
+        sig = want + '|' + U2.map(r => r.key + (r.auto ? 'a' : '')).join('|');
+      if (sig === last) return;
+      last = sig;
+      box.textContent = '';
+      box.append(E('div', { cls: 'dp-h2', txt: want ? 'To make it 1' : 'It goes 0 when' }));
+      if (U2.length) box.append(E('div', { cls: 'dp-d', txt: 'What is missing now (the list updates after each change; an interlock can then ask for the next one).' }));
+      if (!U2.length) box.append(E('div', { cls: 'dp-d', txt: 'Nothing on this sheet (it follows its own state).' }));
+      U2.forEach(r => {
+        const t =
+          r.row !== undefined
+            ? inName(s, r.row) + (r.want ? ' → 1 (ON)' : ' → 0 (OFF)') + (r.auto ? '  · comes from the equipment / another sheet' : '')
+            : r.txt;
+        const p = r.row !== undefined ? { t: 'row', i: r.row, side: 'L' } : r.g !== undefined ? { t: 'g', g: r.g } : r.n !== undefined ? { t: 'n', n: r.n } : null;
+        box.append(E('button', { cls: 'dp-ln', txt: '• ' + t, title: 'Select it', on: () => p && setPick(p) }));
+      });
+    });
+    return box;
+  }
+  /* the logic that drives net n, 3 levels deep, with the live 1 / 0 */
+  function tree(s, n, depth, out, seen) {
+    if (out.length > 40) return;
+    (maps(s).drv.get(n) || []).forEach(d => {
+      const p = dPick(d),
+        b = E('button', { cls: 'dp-ln', style: 'padding-left:' + (4 + depth * 14) + 'px', title: p ? 'Select it' : '' }),
+        vv = E('b', { cls: 'dp-b' });
+      b.append(vv, document.createTextNode(' ' + dName(s, d)));
+      if (p) b.onclick = () => setPick(p);
+      out.push(b);
+      const nets = d.g !== undefined ? s.nl.gates[d.g].out : [n];
+      SU.push(R => {
+        const x = R ? (nets.some(m => R.v[m]) ? 1 : 0) : null;
+        vv.textContent = x === null ? '–' : x;
+        vv.className = 'dp-b' + (x ? ' on' : '');
+      });
+      if (d.g === undefined || depth >= 3 || seen.has(d.g)) return;
+      seen.add(d.g);
+      const g = s.nl.gates[d.g];
+      const pins = (g.ins || []).map(m => ['', m]).concat((g.s || []).map(m => ['S ', m]), (g.r || []).map(m => ['R ', m]));
+      pins.forEach(([pn, m]) => {
+        if (pn) out.push(E('div', { cls: 'dp-pin', style: 'padding-left:' + (4 + (depth + 1) * 14) + 'px', txt: pn === 'S ' ? 'SET' : 'RESET' }));
+        tree(s, m, depth + 1, out, seen);
+      });
+    });
+  }
+  /* where net(s) go: output rows (and gates on the way), a forward search */
+  function goesTo(s, nets) {
+    const M = maps(s),
+      seen = new Set(),
+      rows = new Map(),
+      q = nets.slice();
+    while (q.length && seen.size < 400) {
+      const n = q.shift();
+      if (seen.has(n)) continue;
+      seen.add(n);
+      (M.use.get(n) || []).forEach(d => {
+        if (d.out) rows.set('R' + d.row, d);
+        else if (d.po || d.x) rows.set((d.po ? 'P' + d.po.adr : 'X' + d.x.peer + d.x.num), d);
+        else if (d.g !== undefined) (s.nl.gates[d.g].out || []).forEach(m => q.push(m));
+      });
+    }
+    return [...rows.values()];
+  }
+  const kv = (k, v) => E('div', { cls: 'dp-kv' }, [E('span', { txt: k }), typeof v === 'string' ? E('span', { txt: v }) : v]);
+  const vSpan = (nets, R0) => {
+    const e = E('b', { cls: 'dp-b big' });
+    SU.push(R => {
+      const x = R ? (nets.some(m => R.v[m]) ? 1 : 0) : null;
+      e.textContent = x === null ? '– (VIEW)' : x ? '1 · ON' : '0 · OFF';
+      e.className = 'dp-b big' + (x ? ' on' : '');
+    });
+    return e;
+  };
+  const linkBtns = (t, el) => {
+    const L = refs(t);
+    if (!L.length) return t || '–';
+    const w = E('span', { cls: 'dp-lk' });
+    L.forEach(r => w.append(E('button', { txt: labelOf(r), title: 'Open the other end (◀ Back returns)', on: () => goRef(r) })));
+    return w;
+  };
+  function buildSel() {
+    const s = cur();
+    selBox.textContent = '';
+    SU = [];
+    if (!s || !s.nl || !pk) {
+      selBox.append(E('p', { cls: 'dp-note dp-empty', txt: 'Click an input row, an output row, a gate or a wire on the drawing to see it here: its value, the logic that drives it and, in RUN, what is missing for it to be 1.' }));
+      return;
+    }
+    const add = (...a) => a.forEach(x => x && selBox.append(x));
+    const list = (title, items) => {
+      if (!items.length) return;
+      add(E('div', { cls: 'dp-h2', txt: title }));
+      items.forEach(x => add(x));
+    };
+    const useLines = nets =>
+      goesTo(s, nets)
+        .slice(0, 14)
+        .map(d => {
+          const p = dPick(d),
+            vv = E('b', { cls: 'dp-b' }),
+            b = E('button', { cls: 'dp-ln', title: p ? 'Select it' : '' }, [vv, document.createTextNode(' ' + dName(s, d))]);
+          if (p) b.onclick = () => setPick(p);
+          const m = d.out ? rowNets(s, d.row, 'R') : d.po ? [d.po.n] : d.x ? [d.x.n] : [];
+          SU.push(R => {
+            const x = R ? (R.outOn && d.out ? (R.outOn.has(d.row) ? 1 : 0) : m.some(k => R.v[k]) ? 1 : 0) : null;
+            vv.textContent = x === null ? '–' : x;
+            vv.className = 'dp-b' + (x ? ' on' : '');
+          });
+          return b;
+        });
+    if (pk.t === 'row' && pk.side === 'L') {
+      const i = pk.i,
+        nets = rowNets(s, i, 'L');
+      add(E('div', { cls: 'dp-st', txt: 'INPUT · ROW ' + rowNo(s, i) }), E('div', { cls: 'dp-t', txt: tagOf(s, i) || svcOf(s, i) || 'Row ' + rowNo(s, i) }));
+      add(kv('Service', svcOf(s, i) || '–'), txt(s, i, 'L') ? kv('Location', txt(s, i, 'L')) : null, kv('From', linkBtns(txt(s, i, 'F'))));
+      if (isAn(s, i)) {
+        const a = (s.nl.an || []).find(x => x.row === i);
+        add(kv('Type', 'Analog value (Inputs tab: type the value)'), a ? kv('Limits', a.g.map(j => cmpTxt(s.nl.gates[j])).join('   ')) : null);
+      } else if (fbk(s, i, 'S')) {
+        const b = E('button', { cls: 'dp-v' }),
+          ty = auto(s, i) ? 'Auto: follows the equipment / another sheet' : isPB(s, i) ? 'Push button (press and hold)' : 'Hand switch';
+        swBtn(s, i, b, SU);
+        add(kv('Type', ty), kv('Value', E('span', { cls: 'dp-sw' }, [vSpan(nets), b])));
+      } else add(kv('Value', vSpan(nets)));
+      list('Goes to', useLines(nets));
+    } else if (pk.t === 'row') {
+      const i = pk.i,
+        nets = rowNets(s, i, 'R');
+      add(E('div', { cls: 'dp-st', txt: 'OUTPUT · ROW ' + rowNo(s, i) }), E('div', { cls: 'dp-t', txt: txt(s, i, 'RS') || txt(s, i, 'RL') || 'Row ' + rowNo(s, i) }));
+      add(txt(s, i, 'RL') ? kv('Location', txt(s, i, 'RL')) : null, kv('To', linkBtns(txt(s, i, 'RT'))));
+      const vb = E('b', { cls: 'dp-b big' });
+      SU.push(R => {
+        const x = R ? (R.outOn.has(i) ? 1 : 0) : null;
+        vb.textContent = x === null ? '– (VIEW)' : x ? '1 · ON' : '0 · OFF';
+        vb.className = 'dp-b big' + (x ? ' on' : '');
+      });
+      add(kv('Value', vb));
+      const T = [];
+      nets.forEach(n => tree(s, n, 0, T, new Set()));
+      list('Driven by', T);
+      let fbRow = false;
+      try {
+        fbRow = mvOut(s, simIn(s)).has(i);
+      } catch (e) {}
+      if (fbRow) {
+        /* the feedback rows of a valve / motor (OPENED, CLOSED, RUNNING ...) follow the valve / motor model (travel time) */
+        const e = E('span');
+        SU.push(R => (e.textContent = R ? ((s.nl.mv || []).length ? (s.nl.mv || []).map((b, j) => mvTxt(s, j)).join(' · ') : (s.nl.mot || []).length ? motTxt(s) : '') : 'VIEW: no simulation'));
+        add(E('div', { cls: 'dp-h2', txt: 'Valve / motor feedback' }), E('div', { cls: 'dp-d', txt: 'This output follows the valve / motor model (open / close command, travel time), see the Valves tab.' }), kv('Now', e));
+      } else if (nets.length) add(whyBox(s, nets[0]));
+    } else if (pk.t === 'g') {
+      const g = s.nl.gates[pk.g];
+      if (!g) return;
+      const nets = g.out || [];
+      add(E('div', { cls: 'dp-st', txt: g.t === 'TMR' ? 'TIMER' : g.t === 'FF' ? 'FLIP-FLOP' : g.t === 'CMP' ? 'COMPARATOR' : g.t === 'CNT' ? 'COUNTER' : 'GATE ' + g.t }), E('div', { cls: 'dp-t', txt: gName(s, g) }));
+      add(kv('Output', vSpan(nets)));
+      if (g.t === 'TMR') {
+        const v = E('span', { cls: 'dp-tv' }),
+          bar = E('span', { cls: 'dp-bar' }, [E('i')]);
+        add(kv('Time', E('span', { cls: 'dp-tr' }, [bar, v])));
+        SU.push(R => {
+          const P = tmSecs(g.tm),
+            acc = R ? g.st.acc : 0;
+          v.textContent = fmt(acc) + ' / ' + fmt(P);
+          bar.firstChild.style.width = Math.max(0, Math.min(100, (acc / Math.max(P, 1e-9)) * 100)) + '%';
+        });
+      }
+      const T = [];
+      const pins = (g.ins || []).map(m => ['IN', m]).concat((g.s || []).map(m => ['SET', m]), (g.r || []).map(m => ['RESET', m]));
+      pins.forEach(([pn, m]) => {
+        if (pn !== 'IN') T.push(E('div', { cls: 'dp-pin', txt: pn }));
+        tree(s, m, 0, T, new Set([pk.g]));
+      });
+      list('Inputs', T);
+      list('Goes to', useLines(nets));
+      if (nets.length) add(whyBox(s, nets[0]));
+    } else if (pk.t === 'n') {
+      add(E('div', { cls: 'dp-st', txt: 'WIRE' }), kv('Value', vSpan([pk.n])));
+      const T = [];
+      tree(s, pk.n, 0, T, new Set());
+      list('Driven by', T);
+      list('Goes to', useLines([pk.n]));
+      add(whyBox(s, pk.n));
+    }
+  }
+  let AH = ls('ditl.ah') === '1';
+  function setPick(p, fromDrawing) {
+    const s = cur();
+    pk = p && s ? Object.assign({ s }, p) : null;
+    buildSel();
+    if (pk || AH) {
+      if (window.LO && LO.setDi && pk) LO.setDi('sel');
+      const want = AH ? !!pk : open || !!pk;
+      if (want !== open) {
+        open = want;
+        if (!AH) ls('ditl.dp', open ? '1' : '0');
+      }
+    }
+    upd();
+    values();
+    hl();
+    dp.scrollTop = 0;
+    return fromDrawing;
+  }
+  /* the click on the drawing (07-app-events.js pointerup, View and Run): a row cell, else a gate box, else a wire */
+  D.pick = (s, h, e) => {
+    try {
+      if (h) {
+        h = ownCell(s, h);
+        return setPick({ t: 'row', i: h.i, side: RIGHT.includes(h.c) ? 'R' : 'L' }, 1);
+      }
+      const [x, y] = xy(e);
+      let gi = -1,
+        ar = 1e9;
+      s.nl.gates.forEach((g, j) => {
+        const b = g.box;
+        if (b && x >= b.x1 - 0.8 && x <= b.x2 + 0.8 && y >= b.y1 - 0.8 && y <= b.y2 + 0.8) {
+          const a = (b.x2 - b.x1) * (b.y2 - b.y1);
+          if (a < ar) (ar = a), (gi = j);
+        }
+      });
+      if (gi >= 0) return setPick({ t: 'g', g: gi }, 1);
+      const q = nearSeg(s.nl, x, y, 1.6);
+      setPick(q && q.n >= 0 ? { t: 'n', n: q.n } : null, 1);
+    } catch (x) {
+      console.error('DITL pick', x);
+    }
+  };
+  D.sel = () => pk && { t: pk.t, i: pk.i, side: pk.side, g: pk.g, n: pk.n };
+  D.why = (s, n, want) => why(s, simSheet(s).v, n, want, new Set(), 0);
+  D.rowNets = rowNets;
+  D.setPick = p => setPick(p);
+  addEventListener('keydown', e => e.key === 'Escape' && pk && !document.body.classList.contains('an') && setPick(null));
+  /* the selection on the sheet (drawn again after every render) */
+  function hl() {
+    const svg = $('svg'),
+      s = cur();
+    if (!svg) return;
+    svg.querySelectorAll('.dsel').forEach(x => x.remove());
+    if (!pk || !s || pk.s !== s || !s.nl || document.body.classList.contains('an')) return;
+    const G = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    G.setAttribute('class', 'dsel');
+    const add = (t, a) => {
+      const x = document.createElementNS('http://www.w3.org/2000/svg', t);
+      for (const k in a) x.setAttribute(k, a[k]);
+      G.append(x);
+    };
+    let nets = [];
+    if (pk.t === 'row') {
+      const r = s.rows[pk.i],
+        VR = s.vr || s.rng;
+      if (!r) return;
+      const RB = (s.rb && s.rb[pk.i]) || [r.y - 3.3, r.y + 5.7],
+        x1 = pk.side === 'R' ? VR.RS[0] : VR.F[0],
+        x2 = pk.side === 'R' ? VR.RT[1] : VR.S[1];
+      add('rect', { x: x1, y: -RB[1], width: x2 - x1, height: RB[1] - RB[0], class: 'dsel-box' });
+      nets = rowNets(s, pk.i, pk.side);
+    } else if (pk.t === 'g') {
+      const g = s.nl.gates[pk.g],
+        b = g && g.box;
+      if (!b) return;
+      add('rect', { x: b.x1 - 1, y: -b.y2 - 1, width: b.x2 - b.x1 + 2, height: b.y2 - b.y1 + 2, class: 'dsel-box' });
+      nets = g.out || [];
+    } else nets = [pk.n];
+    s.nl.segs.forEach(q => nets.includes(q.n) && add('line', { x1: q.x1, y1: -q.y1, x2: q.x2, y2: -q.y2, class: 'dsel-w' }));
+    svg.append(G);
+  }
+  /* Auto-hide (as the ABC panel): the panel opens when something is selected and closes when nothing is */
+  function ahBox() {
+    const ck = E('input', { type: 'checkbox' });
+    ck.checked = AH;
+    ck.onchange = () => {
+      AH = ck.checked;
+      ls('ditl.ah', AH ? '1' : '0');
+      open = AH ? !!pk : true;
+      upd();
+    };
+    return E('label', { cls: 'dp-ah', title: 'Hide this panel automatically when nothing is selected; it opens again when you click a row, a gate or a wire' }, [ck, document.createTextNode('Auto-hide')]);
+  }
   function build() {
     const s = cur();
     dp.innerHTML = '';
@@ -320,6 +802,7 @@
     if (!s || !s.nl) return;
     const hd = E('div', { cls: 'dp-top' }, [
       E('b', { txt: (s.meta && s.meta.dwg) || s.name }),
+      ahBox(),
       E('button', {
         txt: '✕',
         title: 'Hide panel (Panel button brings it back)',
@@ -330,7 +813,9 @@
         }
       })
     ]);
-    dp.append(hd, E('p', { cls: 'dp-note', txt: 'Run, then click an input to switch it. PB = press and hold. A dashed (auto) input follows the equipment or another sheet.' }));
+    dp.append(hd, E('p', { cls: 'dp-note', txt: 'Run, then click an input to switch it. PB = press and hold. A dashed (auto) input follows the equipment or another sheet.' }), selBox);
+    if (pk && pk.s !== s) pk = null;
+    buildSel();
     /* inputs */
     const ins = [];
     s.rows.forEach((r, i) => {
@@ -339,10 +824,7 @@
     if (ins.length) {
       dp.append(sec('Inputs', ins.length));
       ins.forEach(i => {
-        const k = i + ':S',
-          pb = isPB(s, i),
-          grpT = (s.nl.grp || []).some(g => g.master === i && g.toggle),
-          b = E('button', { cls: 'dp-v' });
+        const b = E('button', { cls: 'dp-v' });
         const row = E('div', { cls: 'dp-r' }, [
           E('div', { cls: 'dp-l' }, [
             E('div', { cls: 'dp-t', txt: (tagOf(s, i) || 'Row ' + (s.rows[i].n || i + 1)) + (txt(s, i, 'F') ? '  ← ' + txt(s, i, 'F') : txt(s, i, 'L') ? '  · ' + txt(s, i, 'L') : '') }),
@@ -350,46 +832,7 @@
           ]),
           b
         ]);
-        const auto = () => lockd(s, i) || !!(window.WORLD && WORLD.live && s._win && s._win.has(i));
-        if (pb && !grpT) {
-          let t0 = 0;
-          const off = () => {
-            if (!t0) return;
-            const w = Math.max(0, 400 - (Date.now() - t0));
-            t0 = 0;
-            setTimeout(() => {
-              s.sig[k] = false;
-              render();
-            }, w);
-          };
-          b.onpointerdown = e => {
-            if (auto()) return;
-            e.preventDefault();
-            if (!SIM) enter();
-            t0 = Date.now();
-            s.sig[k] = true;
-            render();
-          };
-          b.onpointerup = b.onpointerleave = b.onpointercancel = off;
-        } else
-          b.onclick = () => {
-            if (auto()) {
-              msg('This input follows the equipment or another sheet, it is not switched by hand.');
-              return;
-            }
-            if (!SIM) {
-              enter();
-              DPAUSE = false;
-            }
-            s.sig[k] = !s.sig[k];
-            render();
-          };
-        U.push(R => {
-          const on = R ? R.rowOn.has(i) : false,
-            a = auto();
-          b.textContent = pb && !grpT ? (on ? 'PRESSED' : 'PRESS') : on ? '1 · ON' : '0 · OFF';
-          b.className = 'dp-v' + (on ? ' on' : '') + (pb && !grpT ? ' pb' : '') + (a ? ' auto' : '');
-        });
+        swBtn(s, i, b, U);
         dp.append(row);
       });
     }
@@ -506,15 +949,56 @@
     try {
       if (simOn()) R = simSheet(s);
     } catch (e) {}
-    U.forEach(f => {
+    U.concat(SU).forEach(f => {
       try {
         f(R);
       } catch (e) {}
     });
   }
+  /* ---------- sheet header like the ABC (2.5.0-beta.13): drawing no., SHEET no · title, the mode badge, 1 / 0 legend, counts ---------- */
+  const dm = E('div', { id: 'dmeta' }),
+    dmode = E('span', { id: 'dmode' });
+  if (mid && mid.parentNode) {
+    mid.parentNode.insertBefore(dm, mid);
+    document.body.classList.add('dm');
+  }
+  let dmKey = '';
+  function head() {
+    const s = cur(),
+      k = s ? S.cur + '|' + s.name + '|' + !!s.nl : '';
+    if (k !== dmKey) {
+      dmKey = k;
+      dm.textContent = '';
+      dm.classList.toggle('has', !!s);
+      if (s) {
+        const m = s.meta || {},
+          nl = s.nl,
+          nIn = s.rows.filter((r, i) => fbk(s, i, 'S')).length,
+          nOut = nl ? new Set((nl.outs || []).map(o => o.row)).size : 0;
+        dm.append(
+          E('b', { txt: m.dwg || s.name }),
+          E('span', { cls: 'dm-t', txt: (m.no ? 'SHEET ' + m.no + ' · ' : '') + (m.title || s.title || '') }),
+          dmode,
+          E('span', { cls: 'sp' }),
+          E('span', { cls: 'dm-lg' }, [E('i', { cls: 'on' }), document.createTextNode(' 1 = ON  '), E('i'), document.createTextNode(' 0 = OFF')]),
+          E('small', { txt: nIn + ' inputs · ' + (nl ? nl.gates.length : 0) + ' gates / timers · ' + nOut + ' outputs · ' + ditlCat(s) })
+        );
+      }
+    }
+    const t = SIM ? 'SIMULATION - RUNNING' : 'VIEW / TRACE - NO SIMULATION';
+    if (dmode._t !== t) {
+      dmode._t = dmode.textContent = t;
+      dmode.className = SIM ? 'run' : 'view';
+      dmode.title = SIM
+        ? 'RUN: the DITL logic is computed with the inputs you set (red = 1, green = 0)'
+        : 'VIEW / TRACE: the drawing is shown and a row, gate or wire can be selected and traced, but nothing is simulated';
+    }
+  }
   /* ---------- state of the bar and the panel ---------- */
   let tab = null;
   function upd() {
+    head();
+    dp.classList.toggle('view', !SIM);
     run.classList.toggle('on', SIM);
     view.classList.toggle('on', !SIM);
     panel.classList.toggle('on', open);

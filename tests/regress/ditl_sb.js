@@ -11,7 +11,7 @@ await page.waitForFunction(()=>S.sheets.filter(s=>/^\(S\d+\)DITL-80/.test(s.name
 const L=await page.evaluate(()=>{const sb=S.sheets.filter(s=>/^\(S\d+\)DITL-80/.test(s.name));
  return {n:sb.length,cat:sb.every(s=>ditlCat(s)==='SOOTBLOWER'),cats:DITL_CATS.includes('SOOTBLOWER'),names:sb.map(s=>s.name.replace(/^\(S\d+\)DITL-/,'')).join(' ')}});
 ck(L.n===17&&L.cat&&L.cats,'17 sootblower sheets in the SOOTBLOWER category: '+L.names);
-const sim=async()=>page.evaluate(()=>{const b=[...document.querySelectorAll('#gsbar .g-ditl button')].find(b=>b.textContent.trim()==='SIMULATE');b.click()});
+const sim=async()=>page.evaluate(()=>{const b=[...document.querySelectorAll('#gsbar .g-ditl button')].find(b=>b.textContent.trim()==='▶ Run');b.click()});
 const go=async n=>{await page.evaluate(n=>{S.cur=S.sheets.findIndex(s=>new RegExp('^\\(S\\d+\\)DITL-'+n+'$').test(s.name));render()},n);await page.waitForTimeout(300)};
 // DITL-80 COUNTER: count input = AND(row 9, OR(PULSE row 17, ...), row 8); the input 1 -> 0 = N + 1
 await go('80');await sim();await page.waitForTimeout(600);

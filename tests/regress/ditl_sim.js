@@ -23,14 +23,14 @@ const wait=ms=>page.waitForTimeout(ms);
 await page.evaluate(()=>AN.setCat('dig'));await wait(500);
 const bar=await page.evaluate(()=>{const g=document.querySelector('#gsbar .g-ditl'),vis=e=>!!e&&e.offsetParent!==null&&e.offsetHeight>0;
  return {txt:[...g.querySelectorAll('button,select')].filter(vis).map(b=>b.textContent.trim()),step:[...document.querySelectorAll('#gsbar button,#gsbar select')].filter(vis).some(b=>/^▶▶$|⏱/.test(b.textContent.trim())&&b.closest('.g-ditl,.lo-pg'))}});
-ck(bar.txt.includes('VIEW')&&bar.txt.includes('SIMULATE')&&bar.txt.includes('Reset')&&!bar.txt.some(t=>/▶▶|⏱|^\d+x$|^\d+ s$/.test(t))&&!bar.step,'DITL bar: '+bar.txt.join(' | ')+' (no step, no step size, no speed)');
+ck(bar.txt.includes('VIEW')&&bar.txt.includes('▶ Run')&&bar.txt.includes('Reset')&&!bar.txt.some(t=>/▶▶|⏱|^\d+x$|^\d+ s$/.test(t))&&!bar.step,'DITL bar: '+bar.txt.join(' | ')+' (no step, no step size, no speed)');
 const click=sel=>page.evaluate(sel=>{const b=[...document.querySelectorAll('#gsbar .g-ditl button')].find(b=>b.textContent.trim()===sel);b.click()},sel);
 for(const world of [false,true])for(const plant of ['off','on']){
  const tag='ABC+DITL '+(world?'ON':'OFF')+', plant model '+plant.toUpperCase()+': ';
  await page.evaluate(([world,plant])=>{if(SIM)document.getElementById('bmode').click();AN.run=false;AN.reset();
   if(plant==='on')AN.plantLoad150();else for(const x of AN.sheets)if(x.S)for(const b of x.S.procs||[])b.proc.on=false;
   WORLD.set(world);AN.setCat('dig');S.cur=S.sheets.findIndex(s=>/DITL-03A$/.test(s.name));render()},[world,plant]);await wait(600);
- await click('SIMULATE');await wait(1500);
+ await click('▶ Run');await wait(1500);
  const st=await page.evaluate(()=>({SIM,DPAUSE,TSP,live:WORLD.live,won:WORLD.on,on:document.querySelector('#gsbar .g-ditl .dui-run').classList.contains('on')}));
  ck(st.SIM&&!st.DPAUSE&&st.TSP===1&&st.on&&st.live===st.won,tag+'SIMULATE runs the DITL in real time (SIM '+st.SIM+', 1x, one world running '+st.live+')');
  // a hand input -> a DITL output (DITL-03A: the push buttons and switches of the MFT)

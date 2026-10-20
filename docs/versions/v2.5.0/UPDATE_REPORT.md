@@ -236,3 +236,16 @@
   - Bawat isa sa 17 sheet ay ibinangga sa PDF: tugma lahat pagkatapos ng ayos.
 - **As Left:** Ang 134 dating DITL sheet: pareho ang basa (buong logic dump, walang pagbabago). ABC hindi ginalaw. Test `tests/regress/ditl_sb.js` ALL PASS. Regression: tingnan sa ibaba.
 - **Status:** Sootblower tapos. Susunod: bottom ash (PLC form, kailangan ng bagong reader), sand (PDF lang), limestone (xls).
+
+## 2.5.0-beta.13 — DITL page kapareho ng ABC (user: "same function sa ABC ang DITL ... Act as a professional elite DCS ENGINEER", 2026-10-20)
+
+- **Problem:** Iba ang DITL page sa ABC: SIMULATE ang tawag sa Run, walang mode badge sa header, walang By order / By category sa sheet list, at walang Selected sa right panel (ang pinindot na cell ay hindi lumalabas).
+- **As Found:** Bukod dito, ang tab strip ng DITL right panel (Inputs / Timers / Valves / Outputs) ay nakatago mula 2.4.1-beta.7: may `data-k` ang mga tab button, kaya tinago sila ng CSS na nagtatago ng ibang tab. Inputs lang ang nakikita; hindi maabot ang Timers, Valves at Outputs.
+- **Work Done:** (UI lang; ang DITL / ABC logic, netlist at simulation ay hindi binago)
+  - Toolbar: [VIEW | ▶ Run] + Reset (gaya ng ABC). Header ng sheet: drawing no., SHEET no · title, badge "VIEW / TRACE - NO SIMULATION" / "SIMULATION - RUNNING", 1 / 0 legend, bilang ng input / gate / output, kategorya.
+  - Sheet list: By order / By category (naaalala ang pinili).
+  - Right panel: tab na Selected (una), Inputs, Timers, Valves, Outputs; Auto-hide gaya ng ABC; naayos ang nakatagong tab strip.
+  - Selected: pindutin ang input row, output row, gate (AND / OR / NOT / flip-flop / timer / comparator / counter) o wire, sa VIEW o RUN. Makikita: pangalan, tag, location, FROM / TO (page link), value (RUN), switch ng input, "Driven by" (logic tree na may live 1 / 0, 3 antas), "Goes to" (mga output na naaapektuhan), at sa RUN: "To make it 1" / "It goes 0 when" (ang mga input na kulang, binasa mula sa netlist). Pindutin ang linya para lumipat doon (trace pabalik / pasulong). Ang napili ay naka-cyan sa drawing.
+  - Ang output na feedback ng valve / motor ay sinasabing sumusunod sa valve model (travel time).
+- **As Left:** `tests/regress/ditl_selected.js` ALL PASS: toolbar, badge, sheet list, 5 tab, pindot sa output row / flip-flop / wire, VIEW na walang value; "To make it 1" sa 47 sheet: 118 output ay naging 1 kapag sinunod ang listahan (gaya ng operator: basahin ulit pagkatapos ng bawat palit), 0 mali. Ang iba ay 1 na, o may timer / flip-flop / ibang sheet. Regression at screen check: tingnan sa HANDOFF.
+- **Status:** Pass sa headless. Hindi nasubok: tablet / apk / exe ng user.

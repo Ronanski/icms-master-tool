@@ -48,8 +48,9 @@ const dOpen=()=>p.evaluate(()=>{const d=document.getElementById('dp');return !!d
 const d0=await dOpen();await p.evaluate(()=>document.querySelector('#gsbar .lo-pnl').click());await p.waitForTimeout(400);const d1=await dOpen();
 await p.evaluate(()=>document.querySelector('#gsbar .lo-pnl').click());await p.waitForTimeout(400);const d2=await dOpen();
 ck(d0&&!d1&&d2&&await vis('#gsbar .lo-pnl'),n+': Panel button in the top bar hides and shows the DITL panel');
-const dt=await p.evaluate(()=>[...document.querySelectorAll('#dp .lo-tabs button')].map(x=>x.textContent));
-ck(dt.join()==='Inputs,Timers,Valves,Outputs',n+': DITL panel tabs '+dt.join(' / '));
+// 2.5.0-beta.13: Selected first, and the tabs must be on screen (they were hidden by CSS since 2.4.1-beta.7)
+const dt=await p.evaluate(()=>[...document.querySelectorAll('#dp .lo-tabs button')].filter(x=>x.offsetHeight>0).map(x=>x.textContent));
+ck(dt.join()==='Selected,Inputs,Timers,Valves,Outputs',n+': DITL panel tabs on screen '+dt.join(' / '));
 const drows=async k=>{await p.evaluate(k=>LO.setDi(k),k);await p.waitForTimeout(250);return p.evaluate(()=>[...document.querySelectorAll('#dp .dp-r')].filter(d=>d.offsetHeight).map(d=>d.dataset.k))};
 const di=await drows('in');ck(di.every(k=>k==='in'),n+': DITL Inputs tab shows only inputs ('+di.length+' rows)');
 const dto=await drows('out');ck(dto.every(k=>k==='out'),n+': DITL Outputs tab shows only outputs ('+dto.length+' rows)');

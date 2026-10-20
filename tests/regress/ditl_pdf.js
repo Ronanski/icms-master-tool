@@ -52,7 +52,7 @@ for(const [sh,out,txt,why] of WANT){const k=Object.keys(ex).find(n=>new RegExp(s
  ck(L.some(l=>l.includes(txt)),sh+' '+out+': '+why+(L.some(l=>l.includes(txt))?'':' | app: '+(L[0]||'none').slice(0,200)))}
 // SIMULATE: DITL-38 MCV OPEN OVERTIME (TON_ON 11 s of the MV-BD1001 column) and the OVERTIME FAIL: the valve is made slow (60 s
 // travel, a stuck valve) so it is not full opened when the 11 s run out
-const sim=async()=>page.evaluate(()=>{const b=[...document.querySelectorAll('#gsbar .g-ditl button')].find(b=>b.textContent.trim()==='SIMULATE');b.click()});
+const sim=async()=>page.evaluate(()=>{const b=[...document.querySelectorAll('#gsbar .g-ditl button')].find(b=>b.textContent.trim()==='▶ Run');b.click()});
 await page.evaluate(()=>{S.cur=S.sheets.findIndex(s=>/DITL-38$/.test(s.name));render()});await page.waitForTimeout(300);await sim();await page.waitForTimeout(800);
 const ot=await page.evaluate(async()=>{const sleep=ms=>new Promise(r=>setTimeout(r,ms));const s=cur();s.mvt={0:60};const ix=n=>s.rows.findIndex(r=>+r.n===n),o=()=>simSheet(s).outOn;
  s.sig[ix(2)+':S']=true;await sleep(300);s.sig[ix(5)+':S']=true;await sleep(600);s.sig[ix(5)+':S']=false;

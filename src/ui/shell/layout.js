@@ -1,6 +1,6 @@
 /* 2.4.1-beta.7 LOGIC page layout (user approved the proposal "Lahat", 2026-10-19): the same buttons, moved and grouped.
    Top bar = [VIEW | Run] ▶▶ ⏱ menu; Fit / Zoom / Values / Wire / Back on the corner of the drawing; right panel with tabs
-   (ABC: Selected / Inputs / Timers / Controllers / Forced / Operator, DITL: Inputs / Timers / Valves / Outputs).
+   (ABC: Selected / Inputs / Timers / Controllers / Forced / Operator, DITL: Selected / Inputs / Timers / Valves / Outputs, 2.5.0-beta.13).
    Only places elements and hides list sections; no handler, engine, simulation or drawing change. */
 (() => {
   const $ = id => document.getElementById(id),
@@ -121,6 +121,7 @@
       ['op', 'Operator']
     ],
     di: [
+      ['sel', 'Selected'],
       ['in', 'Inputs'],
       ['tm', 'Timers'],
       ['mv', 'Valves'],
@@ -183,7 +184,7 @@
     [...p.children].forEach(c => {
       if (c.classList.contains('dp-h')) k = kindDi(c.textContent.trim());
       if (c.classList.contains('dp-top') || c.classList.contains('lo-tabs')) return;
-      const v = c.classList.contains('dp-note') ? 'note' : k;
+      const v = c.classList.contains('dp-sel') ? 'sel' : c.classList.contains('dp-note') ? 'note' : k;
       if (c.dataset.k !== v) c.dataset.k = v;
     });
     if (p.dataset.pt !== curDi) p.dataset.pt = curDi;

@@ -236,6 +236,8 @@ svg.addEventListener('pointerup', e => {
   clearTimeout(tm);
   /* 2.5.0-beta.8: a page link (FROM / TO column) opens the other end, in View and Run (src/ui/shell/ditl.js) */
   if (h && window.DUI && DUI.link && DUI.link(s, h, e)) return;
+  /* 2.5.0-beta.13: the click also selects the row / gate / wire for the Selected tab of the right panel (View and Run) */
+  if (window.DUI && DUI.pick) DUI.pick(s, h, e);
   if (SIM) {
     const [ux, uy] = xy(e),
       u = (s.nl.usr || []).find(u => Math.abs(ux - u.x) < 3.2 && Math.abs(uy - u.y) < 2.4);
