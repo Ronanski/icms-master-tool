@@ -101,11 +101,20 @@
      input row there whose FROM names this sheet and NO.) */
   const BAF = /\bBA\s*-?\s*(\d{1,2})\s*-\s*(\d{1,2})\b/gi,
     BAT = /\bBA\s*-\s*(\d{1,2}(?:\s*\/\s*\d{1,2})*)(?!\s*-\s*\d)/gi;
-  const refs = (t, sh, ri) => {
+  /* 2.5.0-beta.15 limestone (Excel drawing): FROM "SHEET 214 - LINE21" = output LINE 21 of sheet LS-214; TO "SHEET 20 - LINE 3" =
+     input LINE 3 of LS-20 (the row there whose FROM names this sheet and line) */
+  const LSR = /\bSHEET\s*(\d{2,3})\s*-\s*LINE\s*(\d{1,2})\b/gi;
+  const refs = (t, sh, ri, col) => {
     const o = [],
       used = [];
     let s = String(t || ''),
       m;
+    const lme = sh && (/DITL-LS(\d{2,3})$/i.exec(sh.name) || [])[1];
+    s = s.replace(LSR, (x, a, b) => {
+      const to = col === 'RT' && lme && ri >= 0 && sh.rows[ri];
+      o.push(to ? { code: 'LS' + a, bk: 'SHEET' + lme + '-LINE' + sh.rows[ri].n } : { code: 'LS' + a, nn: +b });
+      return ' '.repeat(x.length);
+    });
     s = s.replace(BAF, (x, a, b) => {
       o.push({ code: 'BA' + a.padStart(2, '0'), nn: +b });
       return ' '.repeat(x.length);
@@ -167,7 +176,7 @@
       }
     return h;
   };
-  const linkCell = (s, h) => h && (h.c === 'F' || h.c === 'RT') && refs((s.cells[h.k] || []).map(t => t.t).join(' '), s, h.i);
+  const linkCell = (s, h) => h && (h.c === 'F' || h.c === 'RT') && refs((s.cells[h.k] || []).map(t => t.t).join(' '), s, h.i, h.c);
   function updBack() {
     back.style.display = hist.length ? '' : 'none';
   }
@@ -618,8 +627,8 @@
     });
     return e;
   };
-  const linkBtns = (t, sh, ri) => {
-    const L = refs(t, sh, ri);
+  const linkBtns = (t, sh, ri, col) => {
+    const L = refs(t, sh, ri, col);
     if (!L.length) return t || '–';
     const w = E('span', { cls: 'dp-lk' });
     L.forEach(r => w.append(E('button', { txt: labelOf(r), title: 'Open the other end (◀ Back returns)', on: () => goRef(r) })));
@@ -674,7 +683,7 @@
       const i = pk.i,
         nets = rowNets(s, i, 'R');
       add(E('div', { cls: 'dp-st', txt: 'OUTPUT · ROW ' + rowNo(s, i) }), E('div', { cls: 'dp-t', txt: txt(s, i, 'RS') || txt(s, i, 'RL') || 'Row ' + rowNo(s, i) }));
-      add(txt(s, i, 'RL') ? kv('Location', txt(s, i, 'RL')) : null, kv('To', linkBtns(txt(s, i, 'RT'), s, i)));
+      add(txt(s, i, 'RL') ? kv('Location', txt(s, i, 'RL')) : null, kv('To', linkBtns(txt(s, i, 'RT'), s, i, 'RT')));
       const vb = E('b', { cls: 'dp-b big' });
       SU.push(R => {
         const x = R ? (R.outOn.has(i) ? 1 : 0) : null;

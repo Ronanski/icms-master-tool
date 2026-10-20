@@ -14,9 +14,15 @@
   const RX = /\(?\s*([0-9]{2,3}[A-Z]?|[0-9][A-Z])\s*-\s*(\d{1,3})\s*\)?/gi;
   /* 2.5.0-beta.14: bottom ash FROM "BA01-11" = output NO. 11 of sheet BA-01 (sheet "(B1)DITL-BA01") */
   const BRX = /\bBA\s*-?\s*(\d{1,2})\s*-\s*(\d{1,2})\b/gi;
+  /* 2.5.0-beta.15: limestone FROM "SHEET 214 - LINE21" = output LINE 21 of sheet "(L214)DITL-LS214" */
+  const LSRX = /\bSHEET\s*(\d{2,3})\s*-\s*LINE\s*(\d{1,2})\b/gi;
   const refsOf = t => {
     const o = [];
     let m;
+    t = String(t || '').replace(LSRX, (x, a, b) => {
+      o.push({ code: 'LS' + a, nn: +b, other: false });
+      return ' ';
+    });
     t = String(t || '').replace(BRX, (x, a, b) => {
       o.push({ code: 'BA' + a.padStart(2, '0'), nn: +b, other: false });
       return ' ';
@@ -31,7 +37,7 @@
     return o;
   };
   const codeOf = name => {
-    const m = /DITL-([0-9]{2,3}[A-Z]?|BA\d{2})$/i.exec(name || '');
+    const m = /DITL-([0-9]{2,3}[A-Z]?|BA\d{2}|LS\d{2,3})$/i.exec(name || '');
     return m ? m[1].toUpperCase() : null;
   };
   function dSheet(code, from) {

@@ -1326,9 +1326,76 @@ function netlistCore(sh, strict) {
       box: { x1: c.cx - 3.2, x2: c.cx + 3.2, y1: c.cy - 2.6, y2: c.cy + 2.6 }
     });
   });
+  /* 2.5.0-beta.15 (limestone injection, ROTOFEED, LS-10 ~ LS-240): the drawing is an Excel sheet, its blocks (AND "&", OR "≥1",
+     time delay t1 / t2, PO pulse, compare X ≥ Y / X ≤ Y, SET / RESET, the negation circles) were read by tools/data/ls_xlsx.py
+     (sh.lsg: the block, the point where each wire meets it); here each point is given the net of the wire that ends there */
+  if (sh.ls && sh.lsg) {
+    const netAt = ([x, y]) => {
+      let b = null;
+      segs.forEach(q =>
+        [
+          [q.x1, q.y1],
+          [q.h ? q.x2 : q.x1, q.h ? q.y1 : q.y2]
+        ].forEach(([u, v]) => {
+          const d = Math.hypot(u - x, v - y);
+          if (d < 0.6 && (!b || d < b.d)) b = { d, n: q.n };
+        })
+      );
+      return b ? b.n : undefined;
+    };
+    /* a pin with a negation circle ([x, y, 1]): a NOT between the wire and the block (its own net, it has no wire) */
+    const neg = (p, isOut) => {
+      const w = netAt(p);
+      if (w === undefined) return undefined;
+      const v = n++,
+        r = 1.95;
+      gates.push({ t: 'NOT', ins: [isOut ? v : w], out: [isOut ? w : v], done: true, ev: 1, ls: 1, box: { x1: p[0] - (isOut ? 0 : 2 * r), x2: p[0] + (isOut ? 2 * r : 0), y1: p[1] - r, y2: p[1] + r } });
+      return v;
+    };
+    const ns = (P, isOut) => [...new Set((P || []).map(p => (p[2] ? neg(p, isOut) : netAt(p))).filter(n => n !== undefined))];
+    sh.lsg.forEach(L => {
+      const box = L.box,
+        ins = ns(L.ins).concat(ns(L.top)),
+        out = ns(L.out, 1);
+      if (!out.length) return;
+      if (L.t === 'AND' || L.t === 'OR' || L.t === 'NOT') gates.push({ t: L.t, ins, out, box, done: true, ev: 1, ls: 1 });
+      else if (L.t === 'TMR' || L.t === 'PO')
+        gates.push({
+          t: 'TMR',
+          k: L.t === 'PO' ? 'pulse' : 'on',
+          tm: {
+            lab: L.t === 'PO' ? 'PULSE' : 'ON DELAY',
+            key: (L.tag || 'T') + '@' + box.x1.toFixed(1) + ',' + box.y1.toFixed(1),
+            tag: L.tag,
+            ax: (box.x1 + box.x2) / 2,
+            ay: (box.y1 + box.y2) / 2,
+            rr: (box.y2 - box.y1) / 2,
+            bx1: box.x1,
+            bx2: box.x2,
+            nt: null,
+            ut: null,
+            fv: { v: L.v, u: 'SEC' }
+          },
+          ins,
+          out,
+          st: { acc: 0, out: 0, pre: 0, run: 0 },
+          box
+        });
+      else if (L.t === 'CMP') {
+        const p = ns(L.ins.slice(0, 1)),
+          q = ns(L.ins.slice(1, 2));
+        ins.length = 0;
+        if (p.length && q.length) gates.push({ t: 'CMP', cmp: L.cmp, eq: true, kind: 'ls', sp: 0, spNet: q[0], unit: '', ins: p, out, miss: [], pp: [], box });
+      } else if (L.t === 'FF') gates.push({ t: 'FF', s: ns(L.s), r: ns(L.r).concat(ns(L.top)), out, q: 0, box, rt: true });
+    });
+  }
   const row = y => sh.rows.findIndex(r => y >= r.y - 3.3 && y < r.y + 5.7),
     /* 2.5.0-beta.14: a bottom ash row with its output flag a little off the input flag (r.ry, baForm) */
-    rowR = y => sh.rows.findIndex(r => y >= (r.ry === undefined ? r.y : r.ry) - 3.3 && y < (r.ry === undefined ? r.y : r.ry) + 5.7),
+    rowR = y => {
+      /* 2.5.0-beta.15: a limestone output wire on the line between two rows (LS210 line 3) belongs to the row that names it (r.ry) */
+      const k = sh.ls ? sh.rows.findIndex(r => r.ry !== undefined && y >= r.ry - 3.3 && y < r.ry + 5.7) : -1;
+      return k >= 0 ? k : sh.rows.findIndex(r => y >= (r.ry === undefined ? r.y : r.ry) - 3.3 && y < (r.ry === undefined ? r.y : r.ry) + 5.7);
+    },
     src = [],
     outs = [];
   const gOut = new Set();
@@ -1765,15 +1832,30 @@ function netlistCore(sh, strict) {
     });
     NL.an = [];
     NL.anRows = new Set();
+    /* 2.5.0-beta.15: a limestone comparator limit is an INT. REGISTER row with its value written in the drawing (LS230: 2.5 / 0.5 kg/cm2) */
+    const reg = {};
+    if (sh.ls)
+      for (const n in by) {
+        const z = src.find(z => z.n === +n);
+        const m = z && /(-?\d+(?:\.\d+)?)\s*$/.exec((sh.cells[z.row + ':L'] || []).map(t => t.t).join(' '));
+        if (m && /REGISTER/i.test((sh.cells[z.row + ':L'] || []).map(t => t.t).join(' '))) reg[n] = +m[1];
+      }
+    if (sh.ls)
+      NL.gates.forEach(g => {
+        const z = g.t === 'CMP' && src.find(z => z.n === g.ins[0]);
+        if (z) g.unit = ((sh.cells[z.row + ':L'] || []).map(t => t.t).join(' ').match(/kg\/cm2|kPa|mA|%|°C/i) || [''])[0];
+      });
     for (const n in by) {
       const gs = by[n].map(i => NL.gates[i]),
         asIn = gs.filter(g => g.ins[0] === +n),
         asSp = gs.filter(g => g.spNet === +n),
-        num = asIn.filter(g => g.spNet === undefined),
-        hs = num.filter(g => g.cmp === '>').map(g => g.sp),
-        ls = num.filter(g => g.cmp === '<').map(g => g.sp);
+        spOf = g => (g.spNet !== undefined && reg[g.spNet] !== undefined ? reg[g.spNet] : g.sp),
+        num = asIn.filter(g => g.spNet === undefined || reg[g.spNet] !== undefined),
+        hs = num.filter(g => g.cmp === '>').map(spOf),
+        ls = num.filter(g => g.cmp === '<').map(spOf);
       let def;
-      if (asIn.length && !num.length) def = asIn.some(g => g.cmp === '>') ? 0 : 100;
+      if (reg[n] !== undefined) def = reg[n];
+      else if (asIn.length && !num.length) def = asIn.some(g => g.cmp === '>') ? 0 : 100;
       else if (!asIn.length)
         def = asSp.some(g => g.cmp === '>') ? 100 : 0; /* limit signals sit above (H) / below (L) the measured value */
       else if (hs.length && ls.length) def = (Math.min(...hs) + Math.max(...ls)) / 2;
@@ -1820,6 +1902,12 @@ function netlistCore(sh, strict) {
       });
       if (r0 !== undefined && rows.length === 1) NL.anRows.add(r0);
     }
+    /* 2.5.0-beta.15: the limit shown on a limestone comparator (panel, hover): the register value, else the row of its Y input */
+    NL.gates.forEach(g => {
+      if (g.kind !== 'ls' || g.spNet === undefined) return;
+      const a = NL.an.find(x => x.net === g.spNet);
+      g.spVar = reg[g.spNet] !== undefined ? reg[g.spNet] : a && a.row >= 0 ? 'r' + sh.rows[a.row].n : 'Y';
+    });
   }
   NL.mv = movModel(sh, NL);
   /* 2.5.0-beta.14 (bottom ash BA-20): the pulse box (TR353) and the COUNTER box (+1, =4, R) found by baForm (raw.bab) */
