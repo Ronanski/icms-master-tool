@@ -363,7 +363,7 @@ $('bmode').onclick = () => {
   } catch (e) {}
   if (SIM && cur())
     msg(
-      'Run: click an input (switch icon on the drawing, or in the panel) to turn it ON / OFF. PB rows are push buttons: press and hold.'
+      'Simulate: click an input (switch icon on the drawing, or in the panel) to turn it ON / OFF. PB rows are push buttons: press and hold.'
     );
   render();
 };

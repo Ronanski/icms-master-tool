@@ -161,3 +161,35 @@
     - 39 na AUTO: PASS. Hawak ang output kapag PV = SV. Kapag PV > SV, pababa ang ACT:R at pataas ang ACT:N, at kabaligtaran. Nasa loob ng MV limit. Ang PV filter (TF) at GAP ng parameter list ay sinusunod.
     - 29 na MANUAL sa 150 MW: sinusundan ng PID ang manual output. Ang MANUAL ay sakop ng pid_am at force_manual.
 - **Status:** Pass.
+
+## 2.5.0-beta.9 — DITL = VIEW / SIMULATE, at pagsubok ng bawat logic block ng ABC (user: "go lang", 2026-10-20)
+
+- **Problem:**
+  - (1) User: "need pa ba ang step simulate? wag na kaya? either VIEW at SIMULATE ON/OFF nalang", at dapat gumagana ito sa plant model ON / OFF at sa ABC+DITL ON / OFF.
+  - (2) User: hindi lang switch ang susubukan. Dapat tama ang output ng LAHAT ng logic block mula input hanggang output, pati ang forcing / simulation sa plant model ON / OFF.
+- **As Found:**
+  - (1) Ang DITL bar ay may ▶ Run / ❚❚ Pause, ▶▶ step, step size at speed (⏱ menu).
+  - (2) Ang mga dating test ay sumusubok sa switch / A-M, force manual, PID MAN at mga scenario. Walang test na bawat block ay pinipilit ang input at sinusuri ang output.
+- **Work Done:**
+  - `src/ui/shell/ditl.js`, `layout.js`: DITL bar = **[VIEW | SIMULATE] Reset ◀ Back**, at Fit / Zoom / Panel gaya ng dati. Ang SIMULATE ay real time (1x). Ang VIEW ay simulation OFF. Wala nang ▶▶, step size, speed at Pause. Ang status sa ibaba ay "SIMULATE".
+  - Walang binago sa DITL logic, ABC logic, drawing, link o parameter.
+  - Bagong test `tests/regress/blocks_io.js`: bawat block ng 51 ABC sheet ay sinusubok sa tunay na wiring.
+    - Pinipilit ang input gaya ng FORCE ng user at tumatakbo ang sheet gaya ng app.
+    - Ang output sa wire ay ikinukumpara sa function ng legend: ADD / SUB / DEV, MUL, DIV, ABS, SQRT, HS / LS, limiter, average select, F(X) curve, comparator, PV < SV, NOT / AND / OR (buong truth table), FF (reset wins), ON / OFF delay, one shot (TPS / TPV), lag (63 % sa T), ramp (rate, .LOC bypass), conditional write, at actuator stroke.
+    - Plant model OFF, at plant model ON sa 150 MW.
+    - Ang constant na nakasulat sa drawing (hal. X = 3 %) ay parameter, hindi pinipilit.
+  - Bagong test `tests/regress/ditl_sim.js`: DITL SIMULATE sa 4 na kaso (ABC+DITL OFF / ON × plant model OFF / ON).
+- **As Left (headless, 2.5.0-beta.9):**
+  - blocks_io:
+    - **Plant model OFF: 1,666 block, 12,006 tseke, 0 mali.**
+    - **Plant model ON (150 MW): 1,666 block, 12,006 tseke, 0 mali** (nananalo ang force laban sa plant).
+    - 49 block ang may output na pinaghahatian o may preset (VLV / RAMPB). Sakop sila ng plant at scenario test.
+    - Ang PID, MAN station, A/M at switch ay nasa sariling test (pid_auto, pid_am, manstation, switches, force_manual).
+    - Napatunayang nahuhuli ng test ang mali: sa sadyang maling AND / ABS, 86 mali ang lumabas.
+  - ditl_sim: lahat PASS.
+    - Gumagana ang SIMULATE at VIEW.
+    - Ang hand input ay nagbabago ng DITL output.
+    - Kapag ON ang ABC+DITL: 102 ABC input = DITL output, at 143 DITL row = ABC net (dalawang direksyon).
+    - Kapag OFF: walang DITL row na pinapatakbo ng ABC.
+  - ditl_toolbar, layout, sidetab, ditl_pagelink, ditl150, world: PASS. Buong screen check: 96 screen, 0 problema.
+- **Status:** Pass.

@@ -50,13 +50,11 @@
     const dz = byTxt(gDitl, /^Zoom$/),
       dpn = byTxt(gDitl, /^Panel$/);
     {
+      /* 2.5.0-beta.9: DITL = [VIEW | SIMULATE] Reset (no step, no ⏱ menu) */
       const run = gDitl.querySelector('.dui-run'),
-        view = byTxt(gDitl, /^View$/),
-        next = byTxt(gDitl, /^▶▶/),
-        sels = gDitl.querySelectorAll('select'),
-        reset = byTxt(gDitl, /^Reset$/);
+        view = byTxt(gDitl, /^View$/);
       if (view) view.textContent = 'VIEW';
-      gDitl.prepend(E('div', { cls: 'lo-seg' }, [view, run]), next, pop([['Step size', sels[0]], ['Speed', sels[1]], ['Start again', reset]], 'Step size, speed, start again'));
+      gDitl.prepend(E('div', { cls: 'lo-seg' }, [view, run]));
       gDitl.querySelectorAll('.dui-sep').forEach(x => x.remove());
     }
     /* drawing tools on the corner of the drawing */
