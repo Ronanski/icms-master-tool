@@ -801,7 +801,7 @@
               ' % (sarado)'
           ],
           [
-            o.rhMin > 6 && o.rhMax < 9 && h.isAuto('ABC-052', 'PICHR1003') && h.mv('ABC-054', 'PICHR1391') < 0.5,
+            /* 2.5.0-beta.7: 7.5 ± 1.5 as written (want), judged on the value shown (one decimal): 9.0 is in, 9.1 is out; before < 9 was stricter than the criterion */ +o.rhMin.toFixed(1) >= 6 && +o.rhMax.toFixed(1) <= 9 && h.isAuto('ABC-052', 'PICHR1003') && h.mv('ABC-054', 'PICHR1391') < 0.5,
             'RH pressure ' +
               f1(o.rhMin) +
               ' ~ ' +
