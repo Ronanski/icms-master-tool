@@ -355,6 +355,177 @@
     g.append(t);
     return t;
   }
+  /* ---- 2.5.0-beta.15: the 1:1 HMI picture (src/ui/plant/hmibg.js, made by tools/data/hmibg.py from the snapshot) ----
+     A LIVE number is drawn over the snapshot number (a box of the background colour + the number, right aligned like the
+     HMI field, same height and pitch); a symbol (valve, damper, pump, fan, motor, lamp, check box) gets its live colour through
+     the mask of its own pixels. Not linked = nothing drawn: the picture shows the snapshot. */
+  let defs = null,
+    box0 = [0, 0, 1920, 1000];
+  const HC = { red: '#ff2a2a', green: '#1ee01e', white: '#f2f2f2', off: '#3a3a3a' };
+  function bgNum(g, sp, ref) {
+    const b = sp.b,
+      h = Math.max(8, sp.h),
+      fz = h / 0.72,
+      n = Math.max(1, String(ref != null ? ref : '').trim().length),
+      pitch = Math.min(h * 0.75, Math.max(h * 0.45, (b[2] - 4) / n)),
+      bold = sp.fr >= 0.36,
+      sx = pitch / ((bold ? 0.556 : 0.6) * fz);
+    const r = S_('rect', { x: b[0], y: b[1], width: b[2], height: b[3], fill: sp.bg, visibility: 'hidden' }),
+      gg = S_('g', { transform: `translate(${b[0] + b[2] - 2},${b[1] + b[3] - 2}) scale(${sx.toFixed(3)},1)`, visibility: 'hidden' }),
+      t = S_('text', { 'data-it': itIx, x: 0, y: 0, 'text-anchor': 'end', 'font-size': fz.toFixed(1), 'font-family': bold ? 'Arial, Helvetica, sans-serif' : 'var(--mf, monospace)', 'font-weight': bold ? 700 : 400, fill: sp.c || '#00ffff' });
+    gg.append(t);
+    g.append(r, gg);
+    const f = s => {
+      if (s == null) {
+        r.setAttribute('visibility', 'hidden');
+        gg.setAttribute('visibility', 'hidden');
+        return;
+      }
+      t.textContent = s;
+      /* a live number longer than the snapshot one: the box grows to the left so no old digit shows */
+      const need = s.length * pitch + 4;
+      r.setAttribute('x', need > b[2] ? b[0] + b[2] - need : b[0]);
+      r.setAttribute('width', Math.max(b[2], need));
+      r.setAttribute('visibility', 'visible');
+      gg.setAttribute('visibility', 'visible');
+    };
+    f.t = t;
+    return f;
+  }
+  function bgSym(g, sp, id) {
+    const b = sp.b,
+      mk = S_('mask', { id, maskUnits: 'userSpaceOnUse', x: b[0], y: b[1], width: b[2], height: b[3] });
+    mk.append(S_('image', { href: sp.m, x: b[0], y: b[1], width: b[2], height: b[3], preserveAspectRatio: 'none', 'image-rendering': 'pixelated' }));
+    defs.append(mk);
+    const r = S_('rect', { x: b[0], y: b[1], width: b[2], height: b[3], fill: HC.red, mask: `url(#${id})`, visibility: 'hidden' });
+    g.append(r);
+    return c => {
+      if (!c) return r.setAttribute('visibility', 'hidden');
+      r.setAttribute('fill', c);
+      r.setAttribute('visibility', 'visible');
+    };
+  }
+  /* an invisible click area over the item (faceplate / info card, like the drawn screens) */
+  function bgHit(g, it, b) {
+    const r = S_('rect', { x: b[0], y: b[1], width: b[2], height: b[3], fill: '#000', 'fill-opacity': 0, 'data-tag': it.tag || it.s || '', 'data-it': itIx });
+    g.append(r);
+    return r;
+  }
+  const hull = L => {
+    const B = L.filter(Boolean);
+    if (!B.length) return null;
+    const x0 = Math.min(...B.map(b => b[0])),
+      y0 = Math.min(...B.map(b => b[1]));
+    return [x0, y0, Math.max(...B.map(b => b[0] + b[2])) - x0, Math.max(...B.map(b => b[1] + b[3])) - y0];
+  };
+  /* the HMI field shows the decimals of its snapshot number (TIFA1082 "31", O2 BIAS "0.00") */
+  const fmtH = (x, ref) => {
+    if (x == null || !isFinite(x)) return '—';
+    const d = String(ref == null ? '' : ref).trim().split('.')[1];
+    return ref == null || String(ref).trim() === '' ? fmtV(x, ref) : x.toFixed(d ? Math.min(3, d.length) : 0);
+  };
+  function bgItem(g, it, sp, sid) {
+    const t = it.t;
+    if (!/^(val|ctl|valve|damper|mov|pump|fan|motor|lamp|flag|header)$/.test(t)) return; /* the picture has it */
+    const id = 'plm' + String(sid).replace(/\W/g, '') + '_' + itIx;
+    if (t === 'header') {
+      if (!sp) return;
+      (it.items || []).forEach(([k, v], i) => {
+        const nb = sp.n[i];
+        if (!nb || !HDR[k]) return;
+        const f = bgNum(g, nb, v);
+        reg({ t: 'val', tag: k, ref: HDR[k], v }, y => f(y ? fmtH(y.v, v) : null), null);
+      });
+      return;
+    }
+    if (!sp) {
+      /* not found on the picture: still linked (value list, tests), click area at its place */
+      reg(it, () => {}, it.x != null ? bgHit(g, it, [it.x - 6, it.y - 16, 70, 22]) : null);
+      return;
+    }
+    if (t === 'val') {
+      const f = bgNum(g, sp, it.v);
+      reg(it, x => f(x ? fmtH(x.v, it.v) : null), bgHit(g, it, sp.b));
+    } else if (t === 'ctl') {
+      const fp = sp.pv ? bgNum(g, sp.pv, it.pv) : () => {},
+        fs = sp.sv ? bgNum(g, sp.sv, it.sv) : () => {},
+        fm = sp.mv ? bgNum(g, sp.mv, it.mv) : () => {};
+      /* 033 CCS: the A / M / R buttons of the faceplate light with the live mode (lit = yellow, like the HMI) */
+      const am = [];
+      for (const L in sp.am || {}) {
+        const b = sp.am[L],
+          gb = S_('g', { visibility: 'hidden' }),
+          r = S_('rect', { x: b[0], y: b[1], width: b[2], height: b[3], rx: 1 }),
+          tl = S_('text', { x: b[0] + b[2] / 2, y: b[1] + b[3] - 4, 'text-anchor': 'middle', 'font-size': 22, 'font-weight': 700, 'font-family': 'Arial, Helvetica, sans-serif', fill: '#050000' });
+        tl.textContent = L;
+        gb.append(r, tl);
+        g.append(gb);
+        am.push([L, gb, r]);
+      }
+      if (am.length && !defs.querySelector('#plgl')) {
+        const gr = (id, a, b) => {
+          const lg = S_('linearGradient', { id, x1: 0, y1: 0, x2: 0, y2: 1 });
+          lg.append(S_('stop', { offset: 0, 'stop-color': a }), S_('stop', { offset: 1, 'stop-color': b }));
+          defs.append(lg);
+        };
+        gr('plgl', '#fff200', '#d8c800');
+        gr('plgr', '#e9b950', '#f09000');
+        gr('plgu', '#fafafa', '#9c9c9c');
+      }
+      /* 033 CCS: the PV (cyan) and SV (yellow) bars of the faceplate, 0 .. the scale top printed on it */
+      const bars = [];
+      for (const k of ['bpv', 'bsv'])
+        if (sp[k]) {
+          const B = sp[k],
+            gb = S_('g', { visibility: 'hidden' }),
+            bar = S_('rect', { x: B.b[0], width: B.b[2], fill: B.c });
+          gb.append(S_('rect', { x: B.b[0], y: B.b[1], width: B.b[2], height: B.b[3], fill: B.bg }), bar);
+          g.append(gb);
+          bars.push([k === 'bpv' ? 'pv' : 'sv', B, gb, bar]);
+        }
+      const fml = sp.ml ? bgNum(g, sp.ml, 'A') : null;
+      reg(it, x => {
+        if (fml) {
+          fml(x ? x.m : null);
+          if (x) fml.t.setAttribute('fill', x.m === 'M' ? '#ffd200' : '#00ffff'); /* HMI: A / R cyan, M yellow */
+        }
+        for (const [k, B, gb, bar] of bars) {
+          gb.setAttribute('visibility', x && isFinite(x[k]) ? 'visible' : 'hidden');
+          if (x && isFinite(x[k])) {
+            const hh = Math.max(0, Math.min(1, x[k] / B.max)) * B.b[3];
+            bar.setAttribute('y', B.b[1] + B.b[3] - hh);
+            bar.setAttribute('height', hh);
+          }
+        }
+        for (const [L, gb, r] of am) {
+          gb.setAttribute('visibility', x ? 'visible' : 'hidden');
+          if (x) r.setAttribute('fill', x.m === L ? (L === 'R' ? 'url(#plgr)' : 'url(#plgl)') : 'url(#plgu)');
+        }
+        fp(x ? fmtH(x.pv, it.pv) : null);
+        fs(x ? fmtH(x.sv, it.sv) : null);
+        fm(x ? fmtH(x.mv, it.mv) : null);
+      }, bgHit(g, it, hull([sp.b, sp.pv && sp.pv.b, sp.sv && sp.sv.b, sp.mv && sp.mv.b])));
+    } else {
+      const fs = sp.sym ? bgSym(g, sp.sym, id) : () => {},
+        fn = sp.n ? bgNum(g, sp.n, it.v) : () => {};
+      reg(it, x => {
+        if (!x || x.v == null || !isFinite(x.v)) {
+          fs(null);
+          fn(null);
+          return;
+        }
+        let c = null;
+        if (t === 'valve' || t === 'damper') c = x.v < 3 ? HC.green : x.v > 97 ? HC.red : HC.white; /* HMI: closed green, open red, between white */
+        else if (t === 'mov') c = (x.r && x.r.open === 0 ? x.v < 0.5 : x.v > 0.5) ? HC.red : HC.green;
+        else if (t === 'lamp') {
+          const on = x.v > (it.gt != null ? it.gt : 0.5);
+          c = (it.inv ? !on : on) ? (/^#[0-7][89a-f]/i.test(it.lit || '') ? HC.green : HC.red) : '#050505'; /* lit = the HMI green / red, off = black */
+        } else c = x.v > 0.5 ? HC.red : HC.green; /* pump / fan / motor run = red; flag 1 = red check */
+        fs(c);
+        if (t === 'valve' || t === 'damper') fn(fmtH(x.v, it.v));
+      }, bgHit(g, it, hull([sp.sym && sp.sym.b, sp.n && sp.n.b]) || [it.x - 12, it.y - 12, 24, 24]));
+    }
+  }
   function draw(sys) {
     svg.innerHTML = '';
     LV = [];
@@ -364,9 +535,21 @@
     const w = sys.w || 1920,
       h = sys.h || 1000;
     g.append(S_('rect', { x: 0, y: 0, width: w, height: h, fill: '#06090c' }));
+    /* 2.5.0-beta.15 (user 2026-10-20: "kopyahin mo ang reference 1:1 ... pati lines, dashed lines"): a screen with its HMI
+       snapshot in hmibg.js IS that picture; only what moves is drawn on it (bgItem) */
+    const BG = (window.PLANT_BG || {})[sys.id],
+      bg = BG && BG.n === (sys.items || []).length ? BG : null;
+    if (bg) {
+      g.append(S_('image', { href: bg.img, x: bg.x, y: bg.y, width: bg.w, height: bg.h, preserveAspectRatio: 'none' }));
+      g.append((defs = S_('defs', {})));
+    }
     for (const it of sys.items || []) {
       itIx++;
       try {
+        if (bg) {
+          bgItem(g, it, bg.o[itIx], sys.id);
+          continue;
+        }
         if (it.t === 'duct') {
           /* 2.2.0-beta.19: a filled duct / vessel body like the HMI (yellow flue gas duct, green air duct, tan furnace): polygon
              with the colour of its kind (k) or its own colour (c), translucent fill */
@@ -536,7 +719,8 @@
         }
       } catch (e) {}
     }
-    vb = [0, 0, w, h];
+    vb = bg ? [bg.x, bg.y, bg.w, bg.h] : [0, 0, w, h];
+    box0 = vb.slice();
     fit();
     index().then(() => {
       for (const o of LV) o.r = resolve(o.it);
@@ -619,14 +803,14 @@
   function fit() {
     if (!vb || !svg) return;
     const r = svg.getBoundingClientRect(),
-      w = vb[2],
-      h = vb[3],
+      w = box0[2],
+      h = box0[3],
       /* 2.4.1-beta.1 (UI audit): the graphic starts at the top (before: centred, a black band above it); on a portrait screen
          (phone) it fits the height and starts at the left, drag to see the right part (before: 4 px text and 2/3 of the
          screen black) */
       tall = r.height > r.width,
       s = tall ? h / Math.max(1, r.height) : Math.max(w / Math.max(1, r.width), h / Math.max(1, r.height));
-    vb = [tall ? 0 : (w - r.width * s) / 2, 0, r.width * s, r.height * s];
+    vb = [box0[0] + (tall ? 0 : (w - r.width * s) / 2), box0[1], r.width * s, r.height * s];
     svg.setAttribute('viewBox', vb.join(' '));
   }
   function valsOf(src) {

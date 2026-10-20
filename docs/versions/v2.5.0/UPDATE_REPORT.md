@@ -283,3 +283,15 @@
 - **Work Done:** Ang pamagat ng grupo (DITL at ABC) ay pindutin para buksan / isara (▾ / ▸); naaalala ang pili. Sa unang bukas, ang grupo lang ng bukas na sheet ang nakabukas. Kapag may hinahanap, bukas ang lahat ng grupong may tugma. Kapag lumipat ng sheet (page link, search), bumubukas ang grupo nito. Walang binago sa logic.
 - **As Left:** Sinubok sa headless (1280x800): DITL at ABC na sarado / bukas / lipat sa LS-90; `ditl_selected`, `layout`, `ditl_toolbar`, `sidetab` ALL PASS.
 - **Status:** Pass sa headless. Hindi nasubok: tablet / apk / exe ng user.
+
+## 2.5.0-beta.17 — PLANT VIEW 1:1 sa HMI reference (user: "sa HMI, pwede bang kopyahin mo ang reference, 1:1? ... pati lines, dashed lines, as in lahat talaga", 2026-10-20)
+
+- **Problem:** Ang 27 plant screen ay iginuhit ng app (hugis, linya, label): kahawig lang ng HMI ng control room, hindi kapareho.
+- **As Found:** Ang reference ay screenshot ng HMI (`document-references/hmi-snapshot-sample.zip`); may TOOL WINDOW ang 03, 05, 09, 11, 28 at Windows taskbar ang 4, 8, 29, 30, 36, 37, 38.
+- **Work Done:**
+  - `tools/data/hmibg.py`: bawat screen = ang reference mismo (putol mula sa pink header, 256 kulay), at hinahanap sa larawan ang lugar ng bawat numero, valve, damper, pump, fan, lamp, controller at mode letter ng `systems.js`. Output `src/ui/plant/hmibg.js`.
+  - `src/ui/plant/plant.js`: ang larawan ang background; sa ibabaw ang live na value (kulay at decimal ng HMI; valve < 3 % berde, > 97 % pula; takbo = pula), PV / SV / MV, mode letter, header (MSP ~ PWR), 033 A / M / R at bar. Ang walang link sa logic ay hindi tinatakpan. LIVE off = purong snapshot. Pindot sa item = faceplate pa rin.
+  - Inalis ang TOOL WINDOW at taskbar sa larawan. UNIT: walang reference, dating graphic.
+  - Logic (ABC / DITL) hindi ginalaw.
+- **As Left:** `tests/regress/plant_bg.js` ALL PASS (27 screen may larawan, live text, 033 HIC-BM MV, 5 mode button, kulay ng valve, LIVE off, UNIT), `plant_view` at `plant_live` ALL PASS, `npm run check` SAME. Sinuri nang biswal ang 27 laban sa reference at sa PC 1440x900, tablet 1280x800 / 800x1280, phone 390x844.
+- **Status:** Pass sa headless. Kilalang limit: 71 value na hindi mahanap sa larawan (puti / abo na numero, level box) = snapshot ang makikita; mode letter sa tabi ng valve = snapshot; dilaw na oil pump ng 036 hindi kinukulayan. Mas malaki ang html (8.9 → 12.8 MB). Hindi nasubok: tablet / apk / exe ng user.
