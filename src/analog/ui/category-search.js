@@ -707,7 +707,7 @@ document.head.appendChild(
           am.style.color = '#ffd479';
         }
       } else {
-        m = SIM ? (DPAUSE ? 'PAUSED' : 'RUN') : window.WORLD && WORLD.live ? 'RUN (ABC)' : 'VIEW';
+        m = SIM ? (DPAUSE ? 'PAUSED' : 'SIMULATE') : window.WORLD && WORLD.live ? 'RUN (ABC)' : 'VIEW'; /* 2.5.0-beta.9: the DITL bar says SIMULATE */
         k = SIM && !DPAUSE ? 'run' : SIM ? '' : 'view';
       }
       c1.textContent = m;

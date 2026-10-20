@@ -1,0 +1,57 @@
+// 2.5.0-beta.9 (user: "either VIEW at SIMULATE ON/OFF nalang. dapat working ito either plant model on/off, DITL+ABC on off. pati mga
+// signal continuity at page linking two ways"): the DITL bar is [VIEW | SIMULATE] + Reset (no ▶▶ step, no step size, no speed).
+// For each of the 4 cases ABC+DITL (one world) OFF / ON x plant model OFF / ON (Start at 150 MW):
+//  - SIMULATE runs the DITL (real time, 1x), VIEW stops it;
+//  - a hand input changes a DITL output (DITL-03A BOILER EMERGENCY TRIP P.B. -> MFT) while SIMULATE is on;
+//  - ABC+DITL ON: the DITL runs the one world from the DITL page; every ABC "FROM DITL" input equals its DITL output and every DITL
+//    row "FROM ABC / TO DITL" equals its ABC net (signal continuity both ways);
+//  - ABC+DITL OFF: no DITL row is driven by the ABC (FROM DITL / ABC are free inputs).
+// Desktop. Usage: node tests/regress/ditl_sim.js [html]
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/node22/lib/node_modules/playwright');
+const fs=require('fs');
+const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
+(async()=>{
+const browser=await chromium.launch({executablePath:process.env.CHROMIUM||'/opt/pw-browsers/chromium'});let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
+const ctx=await browser.newContext({viewport:{width:1440,height:900}});const page=await ctx.newPage();const errs=[];page.on('pageerror',e=>errs.push(e.message));
+await page.addInitScript(()=>{try{localStorage.setItem('ditl.cat','an');localStorage.setItem('ls-tab','logic');localStorage.setItem('ls-world','0')}catch(e){}});
+await page.goto('file://'+require('path').resolve(html));
+await page.waitForFunction(()=>window.AN&&AN.sheets&&AN.sheets.length>=54&&window.DUI&&S.sheets.length>50&&document.querySelector('#gsbar .g-ditl .dui-run'),null,{timeout:60000});
+await page.waitForTimeout(800);
+const wait=ms=>page.waitForTimeout(ms);
+// the DITL bar
+await page.evaluate(()=>AN.setCat('dig'));await wait(500);
+const bar=await page.evaluate(()=>{const g=document.querySelector('#gsbar .g-ditl'),vis=e=>!!e&&e.offsetParent!==null&&e.offsetHeight>0;
+ return {txt:[...g.querySelectorAll('button,select')].filter(vis).map(b=>b.textContent.trim()),step:[...document.querySelectorAll('#gsbar button,#gsbar select')].filter(vis).some(b=>/^▶▶$|⏱/.test(b.textContent.trim())&&b.closest('.g-ditl,.lo-pg'))}});
+ck(bar.txt.includes('VIEW')&&bar.txt.includes('SIMULATE')&&bar.txt.includes('Reset')&&!bar.txt.some(t=>/▶▶|⏱|^\d+x$|^\d+ s$/.test(t))&&!bar.step,'DITL bar: '+bar.txt.join(' | ')+' (no step, no step size, no speed)');
+const click=sel=>page.evaluate(sel=>{const b=[...document.querySelectorAll('#gsbar .g-ditl button')].find(b=>b.textContent.trim()===sel);b.click()},sel);
+for(const world of [false,true])for(const plant of ['off','on']){
+ const tag='ABC+DITL '+(world?'ON':'OFF')+', plant model '+plant.toUpperCase()+': ';
+ await page.evaluate(([world,plant])=>{if(SIM)document.getElementById('bmode').click();AN.run=false;AN.reset();
+  if(plant==='on')AN.plantLoad150();else for(const x of AN.sheets)if(x.S)for(const b of x.S.procs||[])b.proc.on=false;
+  WORLD.set(world);AN.setCat('dig');S.cur=S.sheets.findIndex(s=>/DITL-03A$/.test(s.name));render()},[world,plant]);await wait(600);
+ await click('SIMULATE');await wait(1500);
+ const st=await page.evaluate(()=>({SIM,DPAUSE,TSP,live:WORLD.live,won:WORLD.on,on:document.querySelector('#gsbar .g-ditl .dui-run').classList.contains('on')}));
+ ck(st.SIM&&!st.DPAUSE&&st.TSP===1&&st.on&&st.live===st.won,tag+'SIMULATE runs the DITL in real time (SIM '+st.SIM+', 1x, one world running '+st.live+')');
+ // a hand input -> a DITL output (DITL-03A: the push buttons and switches of the MFT)
+ const hand=await page.evaluate(async()=>{const sleep=ms=>new Promise(r=>setTimeout(r,ms));const s=cur();const outs=()=>{const R=simSheet(s);return [...R.outOn].sort().join(',')};
+  for(let i=0;i<s.rows.length;i++){if(!fbk(s,i,'S')||lockd(s,i))continue;if(s._win&&s._win.has(i))continue;
+   const o0=outs(),was=!!s.sig[i+':S'];s.sig[i+':S']=!was;await sleep(500);const o1=outs();s.sig[i+':S']=was;await sleep(400);
+   if(o0!==o1)return {row:+s.rows[i].n,txt:(s.cells[i+':S']||[]).map(x=>x.t).join(' ').slice(0,50),o0,o1}}return null});
+ ck(!!hand,tag+(hand?'hand input row '+hand.row+' "'+hand.txt+'" changes the outputs ('+hand.o0+' -> '+hand.o1+')':'no hand input changed an output'));
+ if(world){
+  const inv=await page.evaluate(()=>{const {ain,din}=WORLD.idx;let a=0,abad=[];
+   for(const q of ain){const A=q.sh.S;if(!A)continue;const l=A.xlk&&A.xlk[q.n];if(l&&!l.ditl)continue;a++;const want=WORLD.out[q.d.name]&&WORLD.out[q.d.name].has(q.row)?1:0;if(A.rt.ext[q.n]!==want)abad.push(q.sh.name+' '+AN.nm(A,q.n)+' '+A.rt.ext[q.n]+' want '+want)}
+   let t=0,tbad=[];din.forEach((m,s)=>m.forEach((srcs,row)=>{if(srcs.length!==1||srcs[0].k!=='a')return;const q=srcs[0];if(!q.sh.S)return;t++;const want=q.sh.S.rt.v[q.n]>0.5,got=!!(s._win&&s._win.has(row));if(want!==got)tbad.push(s.name+' row '+(row+1))}));
+   return {a,abad:abad.slice(0,6),t,tbad:tbad.slice(0,6)}});
+  ck(!inv.abad.length,tag+'DITL -> ABC: '+inv.a+' ABC inputs equal their DITL output'+(inv.abad.length?': '+inv.abad.join(' | '):''));
+  ck(!inv.tbad.length,tag+'ABC -> DITL: '+inv.t+' DITL rows equal their ABC net'+(inv.tbad.length?': '+inv.tbad.join(' | '):''));
+ }else{
+  const w=await page.evaluate(()=>S.sheets.filter(s=>s._win&&s._win.size).length);
+  ck(w===0,tag+'no DITL row is driven by the ABC ('+w+' sheets)');
+ }
+ await click('VIEW');await wait(300);
+ ck(await page.evaluate(()=>!SIM&&!WORLD.live),tag+'VIEW stops the simulation');
+}
+await page.evaluate(()=>{WORLD.set(false);try{localStorage.setItem('ls-world','0')}catch(e){}});
+ck(!errs.length,'no page error'+(errs.length?' '+errs.slice(0,2).join(' | '):''));
+await browser.close();console.log(fail?'FAIL '+fail:'ALL PASS');process.exit(fail?1:0)})();

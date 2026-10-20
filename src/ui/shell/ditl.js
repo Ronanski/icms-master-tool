@@ -1,5 +1,5 @@
 /* 2.4.1-beta.4 (user 2026-10-19): the DITL page works like the ABC page. The drawing is the one read from the DXF (no edit tools);
-   the tool bar has Run / Pause, ▶▶ (one step), step, speed, Reset, View, Fit, Zoom and Panel, and a right panel lists the
+   the tool bar has [VIEW | SIMULATE], Reset, ◀ Back, Fit, Zoom and Panel (2.5.0-beta.9), and a right panel lists the
    inputs (switch / push button), analog inputs, timers, valves / motors and outputs of the open sheet.
    Uses the names of the DITL script (src/digital): S, SIM, DPAUSE, TSP, cur, render, simSheet, simOn, fbk, isPB, lockd, ... */
 (function () {
@@ -31,21 +31,18 @@
     if (!SIM) mode().click();
   };
   /* ---------- tool bar ---------- */
-  const run = E('button', { cls: 'tb-run dui-run', txt: '▶ Run', title: 'Run the DITL logic (timers, valves, motors); Pause stops the time' });
-  const next = E('button', { cls: 'tb-step', txt: '▶▶', title: 'One step forward (paused)' });
-  const stepSel = E('select', { cls: 'tb-step', title: 'Length of one step' });
-  [1, 5, 10, 60].forEach(v => stepSel.append(E('option', { value: v, txt: v + ' s' })));
-  const speed = E('select', { title: 'Speed of the time while running' });
-  [1, 10, 60, 300].forEach(v => speed.append(E('option', { value: v, txt: v + 'x' })));
-  const reset = E('button', { txt: 'Reset', title: 'All inputs OFF, timers, latches, valves and motors back to the start' });
+  /* 2.5.0-beta.9 (user: "need pa ba ang step simulate? wag na kaya? either VIEW at SIMULATE ON/OFF nalang"): the DITL bar is
+     [VIEW | SIMULATE] + Reset. SIMULATE = the DITL logic runs in real time (timers, valves, motors), VIEW = simulation off. No step,
+     no step size, no speed (the DITL time is the time of the clock, the same as the ABC at 1x). */
+  const run = E('button', { cls: 'tb-run dui-run', txt: 'SIMULATE', title: 'Simulation ON: the DITL logic runs (timers, valves, motors in real time); click an input to switch it. VIEW = simulation OFF' });
+  const reset = E('button', { txt: 'Reset', title: 'Start again: all inputs OFF, timers, latches, valves and motors back to the start' });
   const view = E('button', { cls: 'tb-view', txt: 'View', title: 'View the drawing without simulation' });
   const zoom = E('button', { txt: 'Zoom', title: 'Zoom to readable text (12 px) on the selected cell; Fit shows the whole sheet again' });
   const panel = E('button', { txt: 'Panel', title: 'Show / hide the right panel (inputs, timers, outputs)' });
   run.onclick = () => {
-    if (!SIM) {
-      enter();
-      DPAUSE = false;
-    } else DPAUSE = !DPAUSE;
+    if (!SIM) enter();
+    DPAUSE = false;
+    TSP = 1;
     upd();
     render();
   };
@@ -63,16 +60,6 @@
     DPAUSE = p;
     upd();
   };
-  next.onclick = () => {
-    if (!SIM) enter();
-    DPAUSE = true;
-    const dt = +stepSel.value || 1;
-    if (window.WORLD && WORLD.on && WORLD.idx) WORLD.tick(dt);
-    else ditlStep(dt);
-    render();
-    upd();
-  };
-  speed.onchange = () => (TSP = +speed.value || 1);
   zoom.onclick = () => {
     const s = cur(),
       v = VB[S.cur],
@@ -281,7 +268,7 @@
         svg.style.cursor = L && L.length ? 'pointer' : '';
       });
   }
-  D.bar = fit => [back, run, next, stepSel, speed, reset, view, E('span', { cls: 'dui-sep' }), fit, zoom, panel];
+  D.bar = fit => [run, view, reset, back, E('span', { cls: 'dui-sep' }), fit, zoom, panel];
   /* ---------- right panel ---------- */
   const dp = E('div', { id: 'dp' });
   const mid = $('mid');
@@ -495,12 +482,9 @@
   /* ---------- state of the bar and the panel ---------- */
   let tab = null;
   function upd() {
-    const running = SIM && !DPAUSE;
-    run.textContent = running ? '❚❚ Pause' : '▶ Run';
-    run.classList.toggle('on', running);
+    run.classList.toggle('on', SIM);
     view.classList.toggle('on', !SIM);
     panel.classList.toggle('on', open);
-    if (+speed.value !== TSP) speed.value = TSP;
     const dit = !document.body.classList.contains('an'),
       was = dp.classList.contains('min');
     dp.classList.toggle('min', !open || !dit);

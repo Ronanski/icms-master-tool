@@ -20,14 +20,14 @@ for(const [n,w,h] of [['desktop',1440,900],['tablet',1024,768],['phone',390,844]
  // 2.4.1-beta.10: on the phone the LOGIC tools (VIEW | Run, ▶▶, ⏱, Panel, ☰ Sheets) have their own row so none is off screen (3 rows)
  ck(await page.evaluate(()=>document.body.dataset.tab==='logic'),n+': LOGIC tab');
  const run=()=>page.evaluate(()=>{const b=document.querySelector('#gsbar .g-ditl .dui-run');return b&&b.offsetHeight>0?b.textContent.trim():null});
- ck(!!(await run()),n+': Run button in the top bar');
+ ck((await run())==='SIMULATE',n+': SIMULATE button in the top bar');
  ck(await vis('bfit'),n+': Fit in view');
  ck(!(await vis('bmode'))&&!(await vis('bdel'))&&!(await vis('bclr')),n+': no Simulate / Edit, Delete sheet, Clear cells');
- // Run -> Pause -> View
+ // 2.5.0-beta.9: SIMULATE -> VIEW (no Pause, no step: user "VIEW at SIMULATE ON/OFF nalang")
  await page.evaluate(()=>document.querySelector('#gsbar .g-ditl .dui-run').click());
- ck(await page.evaluate(()=>SIM===true&&DPAUSE===false),n+': Run starts the DITL simulation');
+ ck(await page.evaluate(()=>SIM===true&&DPAUSE===false),n+': SIMULATE starts the DITL simulation');
  await page.evaluate(()=>document.querySelector('#gsbar .g-ditl .dui-run').click());
- ck(await page.evaluate(()=>SIM===true&&DPAUSE===true),n+': Pause holds it');
+ ck(await page.evaluate(()=>SIM===true&&DPAUSE===false),n+': SIMULATE again keeps it running (no Pause)');
  await page.evaluate(()=>[...document.querySelectorAll('#gsbar .g-ditl button')].find(b=>/^view$/i.test(b.textContent.trim())).click());
  ck(await page.evaluate(()=>SIM===false),n+': View stops it');
  // TOOLS tab: Health works, no editor tools
