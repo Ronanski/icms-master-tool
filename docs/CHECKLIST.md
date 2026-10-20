@@ -47,7 +47,8 @@ Utos ng user (2026-10-16): **"Analog muna. Ang DITL ay i-simulate / i-force na l
 - [x] **(2.5.0-beta.12) Sootblower DITL pages**: 17 sheet, tugma sa PDF (`docs/versions/v2.5.0/DITL_SB_AUDIT.md`). `tests/regress/ditl_sb.js`.
 - [x] **(2.5.0-beta.13) DITL page gaya ng ABC**: toolbar, header badge, By order / By category, Selected tab. `tests/regress/ditl_selected.js`.
 - [x] **(2.5.0-beta.14) Bottom ash DITL pages**: 67 sheet, tugma sa PDF (`docs/versions/v2.5.0/DITL_BA_AUDIT.md`). `tests/regress/ditl_ba.js`.
-- [ ] **Bagong DITL page**: sand, limestone (user 2026-10-20).
+- [x] **(2.5.0-beta.15) Limestone DITL pages**: 23 sheet, tugma sa PDF (`docs/versions/v2.5.0/DITL_LS_AUDIT.md`). `tests/regress/ditl_ls.js`.
+- [ ] **Bagong DITL page**: sand (user 2026-10-20).
 - [ ] **Pagsubok sa totoong tablet / apk / exe** ng 2.2.0-beta.1 ~ beta.6.
 - [x] **GO STABLE** ng 2.2.0 (2026-10-18: Stable v2.2.0).
 - [ ] **Branch cleanup**: 15 lumang branch (0 commit sa unahan ng `main`). Na-block ang pag-delete sa session; i-delete sa GitHub (Branches page) o sabihin ang "OK delete" para subukan ulit.

@@ -262,3 +262,17 @@
   - Ang 151 dating DITL sheet: pareho ang logic (paghahambing ng buong dump bago / pagkatapos). ABC hindi ginalaw.
 - **As Left:** `tests/regress/ditl_ba.js` ALL PASS (67 sheet; BA-11 step SI0130; BA-52 flasher; BA-20 COUNTER 1 → 4 → AUTOMATIC STOP → 0; page link). Regression: tingnan sa HANDOFF.
 - **Status:** Pass sa headless. Hindi nasubok: tablet / apk / exe ng user. Susunod: sand (PDF lang), limestone (xls).
+
+## 2.5.0-beta.15 — Limestone DITL pages (user: "may mga DITL pages na wala pa. SAND LIMESTONE BOTTOM ASH SOOTBLOWER", 2026-10-20)
+
+- **Problem:** Wala sa app ang limestone injection logic (ROTOFEED, station 104). Excel ang drawing (`limestone_logic.xls`), hindi DXF: hindi ito mabasa ng DITL reader.
+- **As Found:** Sa xls, ang wire at kahon ng block ay border ng cell; ang NOT, tuldok, ≥1 at ilang wire ay drawing object; 23 logic sheet (10 ~ 110, 160 ~ 240) + Contents + Symbol Key.
+- **Work Done:**
+  - Bagong reader `tools/data/ls_xlsx.py` (xls → xlsx ng LibreOffice → sheet ng app) at `tools/data/ls_import.js` (sa `src/data/pre.txt`). Block: AND, OR, time delay (t1 on / t2 off), PO pulse, compare X ≥ Y / X ≤ Y, SET / RESET, NOT (bilog).
+  - 23 sheet inilagay (`(L10)DITL-LS10` ~ `(L240)DITL-LS240`), kategorya LIMESTONE INJECTION (ROTOFEED), pamagat mula sa Contents.
+  - INT. REGISTER ng compare = analog input na ang simula ay ang halaga sa drawing (LS-230: HIGH 2.5, LOW 0.5 kg/cm2); ang PV ay nagsisimula sa gitna (1.5).
+  - Page link: FROM "SHEET 30 - LINE 3" → output row 3 ng LS-30; TO "SHEET 40 - LINE 3" → input row 3 ng LS-40.
+  - Bawat sheet ibinangga sa PDF (screenshot sa tabi ng PDF): 23 tugma; mga naayos habang binabasa: LS-10 putol-putol na wire, LS-50 OR na "1 1 1 1", LS-210 input ng TR419 at output ng line 3, LS-214 tag ng TR421 (`DITL_LS_AUDIT.md`).
+  - Ang 218 dating DITL sheet: IDENTICAL ang netlist (bago laban sa HEAD). ABC hindi ginalaw.
+- **As Left:** `tests/regress/ditl_ls.js` ALL PASS (23 sheet; walang bukas na input; lahat ng timer; LS-90 step 7; LS-230 limit; LS-214 pulse; page link). Regression: tingnan sa HANDOFF.
+- **Status:** Pass sa headless. Hindi nasubok: tablet / apk / exe ng user. Susunod: sand (8 PDF na walang text, babasahin nang biswal).
