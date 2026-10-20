@@ -11,7 +11,7 @@
     W.on = localStorage.getItem('ls-world') === '1';
   } catch (e) {}
   /* 2.3.0-beta.1 (LINK-4): also a one-digit code with its letter, written without the 0 (DITL-15 row 10 MFT "3A-63" = 03A-63) */
-  const RX = /\(?\s*([0-9]{2,3}[A-Z]?|[0-9][A-Z])\s*-\s*(\d{1,2})\s*\)?/gi;
+  const RX = /\(?\s*([0-9]{2,3}[A-Z]?|[0-9][A-Z])\s*-\s*(\d{1,3})\s*\)?/gi;
   const refsOf = t => {
     const o = [];
     let m;
@@ -28,7 +28,12 @@
     const m = /DITL-([0-9]{2,3}[A-Z]?)$/i.exec(name || '');
     return m ? m[1].toUpperCase() : null;
   };
-  function dSheet(code) {
+  function dSheet(code, from) {
+    /* 2.5.0-beta.12: the sootblower set has its own DITL-80 (ditlIdx in 01-parse-build.js) */
+    if (from && isSB(from)) {
+      const i = ditlIdx(code, from);
+      return i >= 0 ? S.sheets[i] : null;
+    }
     const byCode = W._byCode;
     /* 2.3.0-beta.1 (LINK-1): "80S" is the sootblower PLC logic (ABC-017 "FROM DITL 80S-57 FOR S/B LOGIC"), not DITL-80: no fall back */
     if (/S$/.test(code)) return byCode[code] || null;
@@ -188,7 +193,7 @@
     W._byCode = {};
     for (const s of S.sheets) {
       const c = codeOf(s.name);
-      if (c && !W._byCode[c]) W._byCode[c] = s;
+      if (c && (!W._byCode[c] || (isSB(W._byCode[c]) && !isSB(s)))) W._byCode[c] = s;
     }
     /* the instances (kept when the world is built again: their state stays) */
     const old = new Map((W.inst || []).map(x => [x.name, x]));
@@ -228,11 +233,10 @@
       if (!m.has(row)) m.set(row, []);
       m.get(row).push(src);
     };
-    const outRow = (code, nn) => {
-      const d = dSheet(code);
-      if (!d || nn <= 50) return null;
-      const r = d.rows.findIndex(x => +x.n === nn - 50);
-      return r >= 0 ? { d, row: r } : null;
+    const outRow = (code, nn, from) => {
+      const d = dSheet(code, from);
+      const it = d && ditlItem(d, nn);
+      return it && it.side === 'R' ? { d, row: it.i } : null;
     };
     /* the instance (or sister sheet) that a row of machine-instance k of sheet sb gives for the output (d, orow) */
     const target = (sb, k, i, d, orow, other) => {
@@ -285,7 +289,7 @@
           const c = sb.cells[i + ':F'];
           if (!c) return;
           for (const f of refsOf(c.map(x => x.t).join(' '))) {
-            const o = outRow(f.code, f.nn);
+            const o = outRow(f.code, f.nn, sb);
             if (!o) continue;
             /* 2.2.0-beta.6: machine k of this row on a drawing made for one machine: the output whose TO column names this row
                in brackets is the one of the other machine (DITL-03B out 70 FAB A STOPPED TO 28A-29, out 71 FAB B STOPPED TO
@@ -364,9 +368,9 @@
         for (const r of refs)
           for (const f of refsOf(r)) {
             const d0 = dSheet(f.code);
-            if (!d0 || f.nn > 50) continue;
-            const row = d0.rows.findIndex(x => +x.n === f.nn);
-            if (row < 0) continue;
+            const it = d0 && ditlItem(d0, f.nn);
+            if (!it || it.side !== 'L') continue;
+            const row = it.i;
             /* 2.2.0-beta.4: a TO DITL by an analog wire, to a limit row: the comparator output next to it ("TO DITL 40-09"
                MAIN STEAM PRESSURE LOW LOW by AI0131 of ABC-001C = M.310D, AI0131 < 72.9 kg/cm2) */
             const net = sh.S.nets && sh.S.nets[n];

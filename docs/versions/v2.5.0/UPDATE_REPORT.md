@@ -224,3 +224,15 @@
   - Bagong test `tests/regress/ditl_pdf.js`.
 - **As Left (headless, 2.5.0-beta.11):** ditl_pdf ALL PASS (19 na basa ng PDF, overtime alarm ng DITL-38, connector 26B → 26A). ditl_pagelink ALL PASS (PC, tablet, phone). ditl_sim, world, ditl150, switches (438 / 0), blocks_io (0 mali, plant OFF at ON), unit_trip, unit_load, hmi_op, plant_live, loaddown, check_panel (lahat ng CHECK scenario M2 ~ M5), layout, ditl_toolbar: PASS. Buong screen check: 96 screen, 0 problema.
 - **Status:** Pass. Hindi nasubok: tablet / apk / exe ng user. Susunod: bagong DITL page (sootblower, bottom ash, sand, limestone).
+
+## 2.5.0-beta.12 — Sootblower DITL pages (user: "pre may mga DITL pages na wala pa. SAND LIMESTONE BOTTOM ASH SOOTBLOWER", 2026-10-20)
+
+- **Problem:** Wala sa app ang DITL page ng sootblower, sand, limestone at bottom ash (nasa repo lang ang DXF / PDF).
+- **As Found:** 23 DXF ng sootblower (`sand-sootblower-logic.zip`). Ang form nila ay iba sa boiler DITL: COUNTER block, output sa SB PANEL, makitid na form (FROM | NO. | SERVICE), kanang NO. na +300, row na "• • •", 4-digit na TR tag, nakatayong timer, MCC box na walang feedback label.
+- **Work Done:** (`DITL_SB_AUDIT.md`)
+  - 17 sheet inilagay sa app bilang kategoryang SOOTBLOWER (`(S3)DITL-80` ~ `(S23)DITL-80T`; `tools/data/ditl_import.js`). Hindi ginawang page: 80X0 / 80X1 (talaan), 80H / 80I / 80J ("as 80G block"), 80L (panel box lang).
+  - DITL reader: COUNTER, SB PANEL output, makitid na form, "• • •" row, maliit na pulse, nakatayong timer, valve ng MCC box (80S), pulse sa gilid ng cell (80T TR697).
+  - Page link sa loob ng sootblower set (80K → 80A) at papunta sa boiler DITL (80K row 14 ← DITL-43).
+  - Bawat isa sa 17 sheet ay ibinangga sa PDF: tugma lahat pagkatapos ng ayos.
+- **As Left:** Ang 134 dating DITL sheet: pareho ang basa (buong logic dump, walang pagbabago). ABC hindi ginalaw. Test `tests/regress/ditl_sb.js` ALL PASS. Regression: tingnan sa ibaba.
+- **Status:** Sootblower tapos. Susunod: bottom ash (PLC form, kailangan ng bagong reader), sand (PDF lang), limestone (xls).

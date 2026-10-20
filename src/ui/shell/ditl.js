@@ -111,7 +111,7 @@
       });
       used.push([m.index, m.index + m[0].length]);
     }
-    const RD = /\(?\s*([0-9]{1,3}[A-Z]?)\s*-\s*(\d{1,2})\s*\)?/gi;
+    const RD = /\(?\s*([0-9]{1,3}[A-Z]?)\s*-\s*(\d{1,3})\s*\)?/gi;
     while ((m = RD.exec(s))) {
       if (used.some(u => m.index >= u[0] && m.index < u[1])) continue;
       const code = (/^\d[A-Z]?$/i.test(m[1]) ? '0' : '') + m[1].toUpperCase();
@@ -120,14 +120,14 @@
     return o.filter((r, i) => o.findIndex(q => q.abc === r.abc && q.code === r.code && q.nn === r.nn) === i);
   };
   const sheetOf = code => {
-    let i = S.sheets.findIndex(x => new RegExp('DITL-' + code + '$', 'i').test(x.name));
-    if (i < 0 && /[A-Z]$/.test(code)) i = S.sheets.findIndex(x => new RegExp('DITL-' + code.replace(/[A-Z]$/, '') + '$', 'i').test(x.name));
-    return i;
+    return ditlIdx(code, cur());
   };
   const labelOf = r => {
     if (r.abc) return r.abc + ' (analog)';
     const i = sheetOf(r.code);
-    return (i >= 0 ? S.sheets[i].name : 'DITL-' + r.code) + ' item ' + r.nn + (r.nn > 50 ? ' (output row ' + (r.nn - 50) + ')' : ' (input row ' + r.nn + ')');
+    const it = i >= 0 ? ditlItem(S.sheets[i], r.nn) : null,
+      out = it ? it.side === 'R' : r.nn > 50;
+    return (i >= 0 ? S.sheets[i].name : 'DITL-' + r.code) + ' item ' + r.nn + (out ? ' (output row ' + (it ? +S.sheets[i].rows[it.i].n : r.nn - 50) + ')' : ' (input row ' + r.nn + ')');
   };
   /* 2.5.0-beta.11: a text that the drawing writes over the band of the row above / below (rowFix, DITL PDF audit) belongs to its
      own row; a click on the text where it is drawn opens it too */
@@ -173,8 +173,9 @@
     sel = null;
     render();
     const s = cur(),
-      side = nn > 50 ? 'R' : 'L',
-      ri = s.rows.findIndex(r => +r.n === (nn > 50 ? nn - 50 : nn)),
+      it = ditlItem(s, nn),
+      side = it ? it.side : 'L',
+      ri = it ? it.i : -1,
       v = VB[S.cur];
     if (ri < 0 || !v) {
       msg(s.name + ': item ' + nn + ' is not on this sheet (the sheet is open).');
@@ -482,7 +483,21 @@
         });
       });
     }
-    if (!ins.length && !AI.length && !T.length && !MV.length && !outs.length) dp.append(E('p', { cls: 'dp-note', txt: 'This sheet has no inputs or outputs (contents / table sheet).' }));
+    /* 2.5.0-beta.12: outputs drawn to the SB PANEL (sootblower DITL-80G / 80K) */
+    const PO = s.nl.pout || [];
+    if (PO.length) {
+      dp.append(sec('Outputs to SB PANEL', PO.length));
+      PO.forEach(o => {
+        const v = E('span', { cls: 'dp-o' });
+        dp.append(E('div', { cls: 'dp-r' }, [E('div', { cls: 'dp-l' }, [E('div', { cls: 'dp-t', txt: o.adr }), E('div', { cls: 'dp-d', txt: o.txt })]), v]));
+        U.push(R => {
+          const on = R ? !!(R.v && R.v[o.n]) : false;
+          v.textContent = R ? (on ? '1' : '0') : '–';
+          v.className = 'dp-o' + (on ? ' on' : '');
+        });
+      });
+    }
+    if (!ins.length && !AI.length && !T.length && !MV.length && !outs.length && !PO.length) dp.append(E('p', { cls: 'dp-note', txt: 'This sheet has no inputs or outputs (contents / table sheet).' }));
   }
   function values() {
     const s = cur();

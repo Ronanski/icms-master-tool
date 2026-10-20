@@ -394,6 +394,16 @@ function build(E, name) {
     x1 = Rn.length ? avg(Rn) : x0 + 316.2;
   const rows = Ln.map(t => ({ n: parseInt(t.t, 10), y: t.iy })),
     skip = new Set([...Ln, ...Rn]);
+  /* 2.5.0-beta.12 (sootblower DITL-80N): the right NO. column is numbered on its own (left 1, "• • •", 29, 30 ... / right 73, 74,
+     75 ...): each row keeps its right number (rn); a right number beside a "• • •" band of the left side is a row of its own */
+  if (gr && gl && Rn.some(t => !rows.some(r => Math.abs(r.y - t.iy) < 1) || rows.some(r => Math.abs(r.y - t.iy) < 1 && +t.t - r.n !== 50))) {
+    for (const t of Rn) {
+      const r = rows.find(q => Math.abs(q.y - t.iy) < 1);
+      if (r) r.rn = +t.t;
+      else if (!rows.some(q => Math.abs(q.y - t.iy) < 4.5) && !rows.some(q => q.n === +t.t)) rows.push({ n: +t.t, y: t.iy, rn: +t.t });
+    }
+    rows.sort((a, b) => b.y - a.y);
+  }
   const yv = rows.map(r => r.y),
     span = Math.max(...yv) + 9 - Math.min(...yv),
     fx = [];
@@ -436,6 +446,26 @@ function build(E, name) {
   };
   const LC = [-35.9, -15.2, -1.7, 7.3, 29.8, 74.8].map(d => sn(x0 + d)),
     RC = [-43.4, -2.9, 6.1, 19.6, 37.9].map(d => sn(x1 + d));
+  /* 2.5.0-beta.12 (sootblower DITL-80G / 80K): the narrow form FROM | NO. | SERVICE (no LOCATION / TAG NO. column, the address is
+     written at the end of the SERVICE cell) and no output column: the outputs go to the SB PANEL (O.07xx) below the logic */
+  {
+    const svc = tx.find(t => t.t === 'SERVICE' && t.x > x0 && t.x - x0 < 35);
+    if (svc && !tx.some(t => /^(TAG NO\.|LOCATION)$/.test(t.t))) {
+      const lv = fv.filter(f => f < x0).sort((a, b) => b - a),
+        rv = fv.filter(f => f > x0).sort((a, b) => a - b),
+        L0 = lv.length ? lv[0] : x0 - 5,
+        L1 = rv.length ? rv[0] : x0 + 4,
+        L2 = rv.find(f => f > svc.x) || svc.x + 25,
+        Fl = lv.length > 1 ? lv[1] : L0 - 15,
+        xm =
+          Math.max(
+            ...raw.ln.filter(q => q[4] === 'CON').flatMap(q => [q[0], q[2]]),
+            ...raw.pl.filter(q => q[2] === 'CON').flatMap(q => q[0].map(p => p[0]))
+          ) + 20;
+      LC.splice(0, 6, Fl, L0, L0, L0, L1, L2);
+      RC.splice(0, 5, xm, xm + 40, xm + 41, xm + 60, xm + 80);
+    }
+  }
   const LV = LC.map(snv),
     RV = RC.map(snv),
     vr = {
@@ -607,7 +637,7 @@ function trCells(sh) {
   sh._trc = 1;
   for (const k in sh.cells) {
     if (!LEFT.includes(k.split(':')[1])) continue;
-    const keep = sh.cells[k].filter(t => !/^TR\s?\d{1,3}(\s*[/,]\s*\d{1,3})*\/?$/.test(String(t.t).trim()));
+    const keep = sh.cells[k].filter(t => !/^TR\s?\d{1,4}(\s*[/,]\s*\d{1,4})*\/?$/.test(String(t.t).trim()));
     if (keep.length === sh.cells[k].length) continue;
     sh.cells[k].filter(t => !keep.includes(t)).forEach(t => sh.tx.push(t));
     if (keep.length) sh.cells[k] = keep;
@@ -628,10 +658,53 @@ const ROWFIX = [
   ['111', '120-13', 9, 8], ['111', '(120-14)', 9, 8],
   ['73', '*', 28, 27], ['73', '*', 29, 27], ['73', '107-03,108-02', 0, 27], ['73', '109-03,110-03', 0, 27]
 ];
+/* 2.5.0-beta.12 (user: "may mga DITL pages na wala pa ... SOOTBLOWER"): the sootblower logic (station 102, drawing set
+   "SOOTBLOWER CONTROL LOGIC DIAGRAM", sheets "(S3)DITL-80" ~ "(S23)DITL-80T") has its own DITL-80, not the HRH drain DITL-80.
+   A reference "80-12" / "80K-14" goes to the sootblower sheet when it is written on a sootblower sheet, or when only the
+   sootblower set has that code (DITL-43 "80K-14 (FOR S/B LOGIC)") */
+const isSB = x => /^\(S\d+\)/.test((x && x.name) || '');
+function ditlIdx(code, from) {
+  const re = new RegExp('DITL-' + code + '$', 'i'),
+    sb = isSB(from);
+  let i = S.sheets.findIndex(x => re.test(x.name) && isSB(x) === sb);
+  if (i < 0) i = S.sheets.findIndex(x => re.test(x.name));
+  if (i < 0 && /[A-Z]$/.test(code)) {
+    const r2 = new RegExp('DITL-' + code.replace(/[A-Z]$/, '') + '$', 'i');
+    i = S.sheets.findIndex(x => r2.test(x.name) && !isSB(x) && !sb);
+  }
+  return i;
+}
+/* 2.5.0-beta.12: the item number of an output row = its row number + the offset of the right NO. column: 50 on the DITL form
+   (row 1 = item 51), 300 on sootblower DITL-80M (rows 1 ~ 148, outputs 301 ~ 448) */
+function rOff(sh) {
+  if (sh._roff) return sh._roff;
+  let o = 50;
+  const r0 = sh.rows && sh.rows[0];
+  if (r0 && sh.rng && sh.rng.RS && sh.rng.RL) {
+    const t = (sh.tx || []).find(
+      q => /^\d{2,3}$/.test(q.t) && Math.abs(q.iy - r0.y) < 1 && q.ix > sh.rng.RS[1] - 2 && q.ix < sh.rng.RL[1] + 2 && +q.t > r0.n
+    );
+    if (t) o = +t.t - r0.n;
+  }
+  return (sh._roff = o);
+}
+/* item nn of a sheet (FROM / TO "80M-302"): {i: row index, side: 'L' input / 'R' output} or null */
+function ditlItem(sh, nn) {
+  if (sh.rows.some(r => r.rn)) {
+    const j = sh.rows.findIndex(r => r.rn === nn);
+    if (j >= 0) return { i: j, side: 'R' };
+    const k = sh.rows.findIndex(r => +r.n === nn && r.rn !== +r.n);
+    return k < 0 ? null : { i: k, side: 'L' };
+  }
+  const o = rOff(sh),
+    out = nn > o,
+    i = sh.rows.findIndex(r => +r.n === (out ? nn - o : nn));
+  return i < 0 ? null : { i, side: out ? 'R' : 'L' };
+}
 function rowFix(sh) {
   if (!sh || !sh.cells || !sh.rows || sh._rfx) return;
   sh._rfx = 1;
-  const me = (/DITL-(\w+)$/.exec(sh.name) || [])[1],
+  const me = !isSB(sh) && (/DITL-(\w+)$/.exec(sh.name) || [])[1],
     ix = n => sh.rows.findIndex(r => +r.n === n);
   for (const [nm, tx, a, b] of ROWFIX) {
     if (nm !== me) continue;

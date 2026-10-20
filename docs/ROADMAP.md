@@ -29,7 +29,8 @@ Pagkatapos ng M6: ang `[F]` sa CHECKLIST seksyon D ay dagdag lang, hindi kailang
 
 - [x] **2.5.0-beta.10 — FORCE sa ABC ↔ DITL habang SIMULATE:** tumatakbo ang ABC kasabay ng DITL page. Ramp / preset ng ABC-050 sinubok: tama ayon sa PDF.
 - [x] **2.5.0-beta.11 — Bawat DITL sheet laban sa PDF** (user: "KAPAREHA DAPAT NG SA APP"): 39 sheet na may mali, naayos lahat (17 uri, `docs/versions/v2.5.0/DITL_PDF_AUDIT.md`); sheet list ng DITL ayon sa kategorya (22 grupo).
-- [ ] **Susunod — Bagong DITL page:** sootblower, bottom ash, sand, limestone.
+- [x] **2.5.0-beta.12 — Sootblower DITL pages:** 17 sheet (DITL-80 ~ 80T) sa kategoryang SOOTBLOWER, ibinangga sa PDF (`docs/versions/v2.5.0/DITL_SB_AUDIT.md`); COUNTER, SB PANEL output, valve ng MCC box.
+- [ ] **Susunod — Bagong DITL page:** bottom ash, sand, limestone.
 
 ## Nasaan tayo ngayon (2026-10-20, 2.5.0-beta.7, PR #34)
 - **M1 ~ M5 sa app: PASADO.** CHECK: M2 14 / 14; M3 lahat (turbine trip 10, MFT 7, BFWP 7, IDF 7, PAF 6, HH 3); M4 bawat hakbang (10 / 9 / 8 / 11 / 14) at **M4 buong cold start-up 17 / 17** (dati 16 / 17); M5 load down 14 / 14, normal shutdown 7 / 7, bottle-up 15 / 15.

@@ -44,7 +44,8 @@ Utos ng user (2026-10-16): **"Analog muna. Ang DITL ay i-simulate / i-force na l
 - [x] **(2.5.0-beta.11) Bawat DITL sheet laban sa PDF** (user: "KAPAREHA DAPAT NG SA APP"): 39 sheet na may mali, naayos (`docs/versions/v2.5.0/DITL_PDF_AUDIT.md`); sheet list ng DITL ayon sa kategorya. `tests/regress/ditl_pdf.js`.
 - [x] **(2.5.0-beta.10) FORCE ABC ↔ DITL habang SIMULATE**: iisang oras ang ABC at DITL (`ditl_sim.js` PASS).
 - [ ] **(2.5.0-beta.11) DITL laban sa PDF**: 39 sheet na may mali (comparator, LOCAL STOP N.C., FF set priority, wire junction, off-sheet connector, row na DEFAULT 1, maling TO). Sheet list ng DITL ayon sa kategorya.
-- [ ] **Bagong DITL page**: sootblower, bottom ash, sand, limestone (user 2026-10-20).
+- [x] **(2.5.0-beta.12) Sootblower DITL pages**: 17 sheet, tugma sa PDF (`docs/versions/v2.5.0/DITL_SB_AUDIT.md`). `tests/regress/ditl_sb.js`.
+- [ ] **Bagong DITL page**: bottom ash, sand, limestone (user 2026-10-20).
 - [ ] **Pagsubok sa totoong tablet / apk / exe** ng 2.2.0-beta.1 ~ beta.6.
 - [x] **GO STABLE** ng 2.2.0 (2026-10-18: Stable v2.2.0).
 - [ ] **Branch cleanup**: 15 lumang branch (0 commit sa unahan ng `main`). Na-block ang pag-delete sa session; i-delete sa GitHub (Branches page) o sabihin ang "OK delete" para subukan ulit.

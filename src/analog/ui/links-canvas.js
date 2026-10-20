@@ -128,8 +128,7 @@ function dsGoRef(r) {
   }
   const code = m[1].toUpperCase(),
     nn = m[2];
-  let i = S.sheets.findIndex(x => new RegExp('DITL-' + code + '$', 'i').test(x.name));
-  if (i < 0) i = S.sheets.findIndex(x => new RegExp('DITL-' + code.replace(/[A-Z]$/, '') + '$', 'i').test(x.name));
+  const i = ditlIdx(code, null);
   if (i < 0) {
     msg('DITL sheet ' + code + ' (' + r + ') is not in the DITL page');
     return false;
