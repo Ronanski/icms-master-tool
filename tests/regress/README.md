@@ -28,15 +28,5 @@ Headless (Playwright + Chromium) checks of `dist/logic-sim-vX.Y.Z.html` (default
 | `node tests/regress/hmi_op.js [html]` | plant model vs HMI snapshot: sa MV ng snapshot, PV = PV ng snapshot (±2 % ng range) | ~3 min |
 | `node tests/regress/plant_live.js [html]` | PLANT LIVE: pagkatapos ng Start at 150 MW, ≥ 200 value / controller / valve ay nakakabit; FIQMS1031, TICBR1140, TIBR11401, TCVFW11101, DPIFG1081 sa tamang sheet; motor ng coal feeder A / C = M.3400 / M.3402 (2.5.0-beta.6); ang MV sa box = MV ng engine | ~1 min |
 | `node tests/regress/interlock.js [html] [--sheets=ABC-010,...]` | CHECKLIST #4 (2.5.0-beta.6): bawat A/M station ng ABC, mula sa 150 MW: ang digital input ng drawing papunta sa MANUAL leg ay pinapalitan isa-isa (pati 0 → 1 na pulse, timer hanggang 20 s, AND ng sabay na input); ang input na nagpa-MANUAL = trip ng station, at dapat tumanggi ang A habang naka-trip. Output per cluster a ~ k | ~40 min |
-| `node tests/regress/plant_view.js [html]` | PLANT VIEW: click sa controller sa graphic = faceplate; M / MV / A sa faceplate = engine; sa PC sariling window (Run, faceplate, Dock) | ~30 s |
-| `node tests/regress/layout.js [html]` | LOGIC page (2.4.1-beta.7): [VIEW \| Run] ▶▶ ⏱, Fit / Zoom / Values / Wire sa drawing, tabs ng right panel (ABC, DITL), VIEW hindi lumalabo; PC at phone | ~40 s |
-| `node tests/regress/world.js [html]` | iisang mundo ABC + DITL: OFF = dating gawi; ON = lahat ng reference may katapat, ABC input = DITL output, DITL row = ABC net, kadena DITL → ABC, bilis ng scan | ~1 min |
-| `node tests/regress/audit230.js [html]` | 2.3.0 drawing audit, mga link: force manual input ng ABC (M.2000, M.331D, SICL1060A ~ D.MAN, PIC-BASC.MAN, B & C IN MANUAL), mode alias (TICBR1130 / 1150 .LOC), station wiring ng ABC-013, TO DITL 40-xx, DITL row 21A, "3A-63", 80S = PLC, DITL row FROM ABC (address / tag / analog / MANUAL) | ~1 min |
-| `node tests/regress/closure.js html out.json` | loop closure of every PID with its plant model (P-4), 900 s | ~1 min |
-| `node tests/regress/diff.js old.html ... new.html` | the same seeded inputs on every sheet for several builds; lists the sheets whose nets differ. `--neutral` zeroes dMVH / TF / CUT on the last build (isolates F-31); `--hold=SECONDS` adds a steady-state state | 1 ~ 6 min |
-
-Old builds for `diff.js`: `git show <commit>:logic-sim-v1.20.21.html > old.html`.
-Needs `playwright` (module path in `PLAYWRIGHT_MODULE`), Chromium (`CHROMIUM`), `xlrd` and `openpyxl`.
-
-## Scenario tests (tests/scenarios, `npm run scenarios`)
-Mula input hanggang output ng mismong engine; ang inaasahang sagot ay isinulat mula sa PDF (hindi kinuwenta ng engine). Operator actions = pindot sa tunay na panel. Madaling basahing talaan para sa user: `docs/scenarios/<sheet>.md` (`node tests/scenarios/report.js`).
+| `node tests/regress/ditl_pagelink.js [html]` | 2.5.0-beta.8: ang FROM / TO column ng DITL row ay page link: sa View at Run, PC / tablet / phone, ang pindot ay nagbubukas ng kabilang dulo (DITL sheet + row na kumikislap, o ABC sheet), may pagpipilian kapag maraming page, ◀ Back bumabalik; ang ABC "FROM / TO DITL" ay nagbubukas din ng DITL item | ~1 min |
+| `node tests/regress/pid_auto.js [html]` | 2.5.0-beta.8: bawat PID / PIDV, mula sa 150 MW tapos plant model OFF, AUTO: PV = SV hawak ang output; PV pinilit 10 % sa itaas / ibaba ng SV: ang output ay gumagalaw ayon sa ACT ng drawing (R pababa, N pataas); nasa loob ng MV limit | ~10 min |

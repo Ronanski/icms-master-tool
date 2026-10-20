@@ -21,6 +21,12 @@ Bawat milestone ay may **pasado kung**: ang masusukat na resulta na nagsasabing 
 
 Pagkatapos ng M6: ang `[F]` sa CHECKLIST seksyon D ay dagdag lang, hindi kailangan para matapos ang project. Kasama rito ang "Bakit?", permissive checklist, tuning lab, compare, at buong DITL plant state.
 
+## Ginagawa ngayon (2026-10-20, user: "go lang dito, update the roadmap also")
+- [x] **2.5.0-beta.8 — Page link sa DITL:** ang FROM / TO reference ng row ay mapipindot sa VIEW at SIMULATE. Bubukas ang kabilang dulo (DITL row na kumikislap, o ABC sheet), may pagpipilian kapag marami, at ◀ Back. Ang ABC "FROM / TO DITL" ay nagbubukas ng mismong DITL row (dalawang direksyon).
+- [x] **2.5.0-beta.8 — PID sa AUTO, plant model OFF:** 68 PID / PIDV. 39 na AUTO ang tama ang galaw ayon sa ACT ng drawing; 29 na MANUAL sa 150 MW ang sumusunod sa manual output.
+- [ ] **2.5.0-beta.9 — DITL bar = VIEW | SIMULATE + Reset** (wala nang ▶▶, step size, speed). Gumagana sa plant model ON / OFF at ABC+DITL ON / OFF.
+- [ ] **2.5.0-beta.9 — Bawat logic block ng ABC (input → output)**, plant model OFF at ON: ADD / SUB, MUL, DIV, ABS, SQRT, HS / LS, limiter, average select, F(X), comparator, PV < SV, NOT / AND / OR, FF, ON / OFF delay, one shot, lag, rate, conditional write, actuator. Pinipilit ang input gaya ng user, binabasa ang output sa wire.
+
 ## Nasaan tayo ngayon (2026-10-20, 2.5.0-beta.7, PR #34)
 - **M1 ~ M5 sa app: PASADO.** CHECK: M2 14 / 14; M3 lahat (turbine trip 10, MFT 7, BFWP 7, IDF 7, PAF 6, HH 3); M4 bawat hakbang (10 / 9 / 8 / 11 / 14) at **M4 buong cold start-up 17 / 17** (dati 16 / 17); M5 load down 14 / 14, normal shutdown 7 / 7, bottle-up 15 / 15.
 - **ABC sheets laban sa drawing PDF:** 50 / 50 sheet na-audit (2.5.0-beta.1, `docs/versions/v2.5.0/DRAWING_AUDIT.md`); lahat ng nakitang mali (link, behavior, datos) naayos sa 2.5.0-beta.1 ~ beta.5. Hindi mabasa sa PDF (app value ang gamit): ramp rate ng AUTO-MV ng ABC-004A ~ C at ramp X %/s ng ABC-052.

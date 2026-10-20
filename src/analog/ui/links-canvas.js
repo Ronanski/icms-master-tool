@@ -134,6 +134,8 @@ function dsGoRef(r) {
     msg('DITL sheet ' + code + ' (' + r + ') is not in the DITL page');
     return false;
   }
+  /* 2.5.0-beta.8: open the item itself (the row blinks); ◀ Back on the DITL bar returns to this ABC sheet */
+  if (window.DUI && DUI.goItem) return DUI.goItem(i, +nn, { cat: 'an', i: AN.i });
   setCat('dig');
   S.cur = i;
   sel = null;
