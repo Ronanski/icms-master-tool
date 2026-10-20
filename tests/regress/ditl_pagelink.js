@@ -35,11 +35,14 @@ for(const [n,w,h] of [['desktop',1440,900],['tablet',1280,800],['phone',390,844]
   ck(r.sim===(mode==='Run'),`${n} ${mode}: the mode stays ${mode}`);
   await page.click('.dui-back');await page.waitForTimeout(300);r=await st();ck(/DITL-01$/.test(r.sh)&&!r.back,`${n} ${mode}: ◀ Back returns to DITL-01 (${r.sh})`);
   // TO with several pages -> chooser (DITL-03A row with "15-10,20-11 32-10,33-10")
-  const to=await page.evaluate(()=>{const s=S.sheets.find(x=>/DITL-03A$/.test(x.name));const i=s.rows.findIndex((r,i)=>/15-10,20-11/.test((s.cells[i+':RT']||[]).map(t=>t.t).join(' ')));return i>=0?+s.rows[i].n:null});
+  // (2.5.0-beta.11: the text belongs to row 13 on the PDF but is drawn over the band of row 11; tap it where it is drawn)
+  const to=await page.evaluate(()=>{const s=S.sheets.find(x=>/DITL-03A$/.test(x.name));s.nl=netlist(s);const k=Object.keys(s.cells).find(k=>/:RT$/.test(k)&&/15-10,20-11/.test(s.cells[k].map(t=>t.t).join(' ')));const t=s.cells[k].find(t=>/15-10/.test(t.t));const i=s.rows.findIndex(r=>t.y>=r.y-3.3&&t.y<r.y+5.7);return i>=0?+s.rows[i].n:null});
   await tap(await openAt('DITL-03A',to,'RT'));r=await st();
   const items=await page.$$eval('#plpick button',b=>b.map(x=>x.textContent));
-  ck(r.pick&&items.length===4&&/DITL-15 item 10/.test(items[0]),`${n} ${mode}: DITL-03A row ${to} TO cell with 4 pages opens a chooser (${items.join(' | ')})`);
-  await page.click('#plpick button >> nth=3');await page.waitForTimeout(300);r=await st();
+  // (2.5.0-beta.11: rows 10 / 11 / 12 of the TO column are one long list of row 13 on the PDF: one chooser with every page)
+  const i33=items.findIndex(t=>/DITL-33 item 10/.test(t));
+  ck(r.pick&&items.length>4&&items.some(t=>/DITL-15 item 10/.test(t))&&i33>=0,`${n} ${mode}: DITL-03A TO list drawn at row ${to} (row 13 on the PDF) opens a chooser (${items.length} pages)`);
+  await page.click('#plpick button >> nth='+Math.max(0,i33));await page.waitForTimeout(300);r=await st();
   ck(/DITL-33$/.test(r.sh)&&r.row===10&&r.side==='L'&&!r.pick,`${n} ${mode}: chooser 33-10 opens DITL-33 input row 10 (${r.sh} row ${r.row} ${r.side})`);
   await page.click('.dui-back');await page.waitForTimeout(300);
   // FROM ABC-006 -> ABC page, Back -> DITL

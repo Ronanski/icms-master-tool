@@ -71,7 +71,7 @@ function fieldInModel(sh, nl, exist) {
     const tg = all
       .filter(
         q =>
-          /^[A-Z]{1,4}\d?-[A-Z0-9]{2,}[A-Z0-9-]*$/.test(q.t.trim()) &&
+          /^[A-Z]{1,4}\d{0,2}-[A-Z0-9]{2,}[A-Z0-9-]*$/.test(q.t.trim()) && /* 2.5.0-beta.11: BI10-DO1043-A (DITL-18 row 78) */
           q.x > e[0] - 62 &&
           q.x < e[0] + 10 &&
           q.y >= e[1] - 5 &&
@@ -123,13 +123,14 @@ function simulate(nl, act) {
   for (let it = 0; it < 4 * N + 60; it++) {
     const w = new Array(N).fill(0);
     (nl.fx || []).forEach(n => (w[n] = 1));
+    (nl.one || []).forEach(n => (w[n] = 1)); /* 2.5.0-beta.11: DEFAULT "1" */
     (nl.ufx || []).forEach(n => (w[n] = 1));
     const MR = nl.mir || [];
     nl.src.forEach(s => {
       if (act.has(s.row) && !MR.some(m => m.row === s.row)) w[s.n] = 1;
     });
     MR.forEach(m => {
-      if (v[m.n])
+      if (m.neg ? !v[m.n] : v[m.n])
         nl.src.forEach(z => {
           if (z.row === m.row) w[z.n] = 1;
         });
@@ -155,7 +156,10 @@ function simulate(nl, act) {
       else {
         const s = I(g.s),
           r = I(g.r);
-        if (r) g.q = 0;
+        if (g.spri) {
+          if (s) g.q = 1;
+          else if (r) g.q = 0;
+        } else if (r) g.q = 0;
         else if (s) g.q = 1;
         o = g.q;
       }
@@ -181,8 +185,28 @@ function avOf(s) {
   if (s.avw) return { ...(s.av150 || {}), ...(s.av || {}), ...s.avw };
   return s.av150 ? { ...s.av150, ...(s.av || {}) } : s.av || null;
 }
+function xconPeer(s, c) {
+  if (c.pk !== undefined) return c.pk;
+  const me = (/DITL-?\s*([0-9]{1,3}[A-Z]?)\s*$/i.exec(s.name) || [])[1],
+    sh = S.sheets.find(x => new RegExp('DITL-' + c.peer + '$', 'i').test(x.name));
+  let r = null;
+  if (sh && me) {
+    if (!sh.nl) sh.nl = netlist(sh);
+    const pc = ((sh.nl && sh.nl.xcon) || []).find(o => o.dir === 'out' && o.num === c.num && o.peer === me.toUpperCase());
+    if (pc) r = { sh, c: pc };
+  }
+  return (c.pk = r);
+}
 function simSheet(s) {
   s.nl.ufx = (s.nl.usr || []).filter(u => s.usw && s.usw[u.key]).map(u => u.n);
+  /* 2.5.0-beta.11 (DITL PDF audit): off-sheet connector "(n) FROM DITL-xx" = the net of connector (n) "TO DITL-<this>" on that sheet
+     (its last computed value; the one world runs every sheet, alone the other sheet keeps its last state) */
+  for (const c of s.nl.xcon || []) {
+    if (c.dir !== 'in') continue;
+    const P = xconPeer(s, c),
+      v = P && P.sh.nl && P.sh.nl._v;
+    if (v && v[P.c.n]) s.nl.ufx.push(c.n);
+  }
   /* 2.2.0-beta.3: the falling-edge mark on a NORMALLY CLOSED contact (DITL-03F rows 25 / 26 BOILER EMERGENCY TRIP P.B.(1) / (2)
      (N.C.) -> OR -> NOT -> BOILER EMERGENCY TRIP P.B. ON (OPC)) is the contact itself (closed = 1 while nobody presses it):
      read as a 2 s pulse, the trip was ON at rest and the MFT could never be reset. As a level, the trip is ON when both
@@ -192,6 +216,14 @@ function simSheet(s) {
     for (const g of s.nl.gates)
       if (g.t === 'TMR' && g.k === 'npulse')
         g.nc = s.nl.src.some(z => g.ins.includes(z.n) && /N\.\s*C\./i.test((s.cells[z.row + ':S'] || []).map(x => x.t).join(' ')));
+    /* 2.5.0-beta.11 (DITL PDF audit, DITL-22 / 24 / 30 / 31 / 111 / 112): the LOCAL STOP P.B. mark that feeds the MCC seal-in
+       (stop -> AND(NOT remote) -> AND(start OR running) = motor run) is the normally closed contact of the button: 1 at rest, 0 while
+       pressed, so the local start holds until stop is pressed. As a 2 s falling pulse it was 0 at rest and the pump could never run in
+       LOCAL. Where the same mark goes to the RESET of a flip-flop (DITL-61A / 76 / 77) it stays a falling pulse */
+    const into = n => s.nl.gates.filter(h => h.t === 'AND' && (h.ins || []).includes(n));
+    for (const g of s.nl.gates)
+      if (g.t === 'TMR' && g.k === 'npulse' && !g.nc)
+        g.ncp = g.out.some(n => into(n).some(a => a.out.some(m => into(m).length)));
   }
   const rowOn = simIn(s),
     v = simulate(s.nl, rowOn),
@@ -271,7 +303,7 @@ function render() {
     rowOn = R.rowOn;
     SV = R.v;
     outOn = R.outOn;
-    (s.nl.mir || []).forEach(m => FRC.set(m.row, !!SV[m.n]));
+    (s.nl.mir || []).forEach(m => FRC.set(m.row, m.neg ? !SV[m.n] : !!SV[m.n]));
     grpState(s).forEach((v, i) => FRC.set(i, v));
     /* one world: an input row fed by another sheet shows its value (dashed = it comes from elsewhere, not from a click) */
     const WD = window.WORLD && WORLD.live && WORLD.idx && WORLD.idx.din.get(s);

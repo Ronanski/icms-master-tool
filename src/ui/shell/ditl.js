@@ -129,6 +129,19 @@
     const i = sheetOf(r.code);
     return (i >= 0 ? S.sheets[i].name : 'DITL-' + r.code) + ' item ' + r.nn + (r.nn > 50 ? ' (output row ' + (r.nn - 50) + ')' : ' (input row ' + r.nn + ')');
   };
+  /* 2.5.0-beta.11: a text that the drawing writes over the band of the row above / below (rowFix, DITL PDF audit) belongs to its
+     own row; a click on the text where it is drawn opens it too */
+  const ownCell = (s, h) => {
+    if (!h || (s.cells[h.k] || []).length) return h;
+    const r = s.rows[h.i],
+      RB = (s.rb && s.rb[h.i]) || [r.y - 3.3, r.y + 5.7];
+    for (const k in s.cells)
+      if (k.split(':')[1] === h.c && s.cells[k].some(t => t.y >= RB[0] && t.y < RB[1])) {
+        const i = +k.split(':')[0];
+        return { i, c: h.c, k };
+      }
+    return h;
+  };
   const linkCell = (s, h) => h && (h.c === 'F' || h.c === 'RT') && refs((s.cells[h.k] || []).map(t => t.t).join(' '));
   function updBack() {
     back.style.display = hist.length ? '' : 'none';
@@ -214,6 +227,7 @@
   addEventListener('pointerdown', e => !pick.hidden && !pick.contains(e.target) && closePick(), true);
   D.refs = refs;
   D.link = (s, h, e) => {
+    h = ownCell(s, h);
     const L = linkCell(s, h);
     if (!L || !L.length) return false;
     if (L.length === 1) return goRef(L[0]);
@@ -224,6 +238,9 @@
         E('button', {
           txt: labelOf(r),
           on: () => {
+            /* a touch tap sends its click after the chooser opened: a long chooser (clamped up into the screen) can sit
+               under the finger and take that click (2.5.0-beta.11, DITL-03A TO list of 27 pages on a tablet) */
+            if (Date.now() - pick.t0 < 400) return;
             closePick();
             goRef(r);
           }
@@ -231,6 +248,7 @@
       )
     );
     pick.hidden = false;
+    pick.t0 = Date.now();
     const w = pick.offsetWidth,
       hh = pick.offsetHeight;
     pick.style.left = Math.max(8, Math.min(innerWidth - w - 8, e.clientX - w / 2)) + 'px';

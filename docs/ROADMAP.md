@@ -28,7 +28,7 @@ Pagkatapos ng M6: ang `[F]` sa CHECKLIST seksyon D ay dagdag lang, hindi kailang
 - [x] **2.5.0-beta.9 — Bawat logic block ng ABC (input → output)**, plant model OFF at ON (`blocks_io.js`: 1,666 block, 12,006 tseke bawat isa, 0 mali): ADD / SUB, MUL, DIV, ABS, SQRT, HS / LS, limiter, average select, F(X), comparator, PV < SV, NOT / AND / OR, FF, ON / OFF delay, one shot, lag, rate, conditional write, actuator. Pinipilit ang input gaya ng user, binabasa ang output sa wire.
 
 - [x] **2.5.0-beta.10 — FORCE sa ABC ↔ DITL habang SIMULATE:** tumatakbo ang ABC kasabay ng DITL page. Ramp / preset ng ABC-050 sinubok: tama ayon sa PDF.
-- [ ] **2.5.0-beta.11 — Bawat DITL sheet laban sa PDF** (user: "KAPAREHA DAPAT NG SA APP"): 39 sheet na may mali, aayusin lahat; sheet list ayon sa kategorya.
+- [x] **2.5.0-beta.11 — Bawat DITL sheet laban sa PDF** (user: "KAPAREHA DAPAT NG SA APP"): 39 sheet na may mali, naayos lahat (17 uri, `docs/versions/v2.5.0/DITL_PDF_AUDIT.md`); sheet list ng DITL ayon sa kategorya (22 grupo).
 - [ ] **Susunod — Bagong DITL page:** sootblower, bottom ash, sand, limestone.
 
 ## Nasaan tayo ngayon (2026-10-20, 2.5.0-beta.7, PR #34)

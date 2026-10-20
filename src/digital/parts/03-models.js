@@ -177,6 +177,7 @@ function svModel(sh, nl) {
        the contact of SV-CL1061-A) is the command; before, only wires that stop at the box edge were looked at, and the wire of the
        latch reset (MFT / CLOSE P.B.) was taken: the valve opened on MFT and was shut in service */
     const into = q => q.x1 < bx.x1 - 1 && q.x2 > bx.x1 - 1 && q.x2 <= bx.x2;
+    const gIn = q => (nl.gates.some(g => [...(g.ins || []), ...(g.s || []), ...(g.r || [])].includes(q.n)) ? 1 : 0);
     const sg = nl.segs
       .filter(
         q =>
@@ -187,7 +188,16 @@ function svModel(sh, nl) {
           q.y1 <= bx.y2 + 4 &&
           Math.abs(q.y1 - t.y) < 28
       )
-      .sort((a, b) => into(b) - into(a) || b.x2 - a.x2 || Math.abs(a.y1 - t.y) - Math.abs(b.y1 - t.y))[0];
+      /* 2.5.0-beta.11 (DITL PDF audit, DITL-73 SV-CR1011): a wire that ends in the input of a gate is not the command to the box;
+         the free DCS output wire comes first (the row 27 condenser vacuum NOT -> AND wire was taken instead of the row 23 OPEN COMMAND
+         -> NOT -> XV-CR1011 O.0126) */
+      .sort(
+        (a, b) =>
+          into(b) - into(a) ||
+          gIn(a) - gIn(b) ||
+          b.x2 - a.x2 ||
+          Math.abs(a.y1 - t.y) - Math.abs(b.y1 - t.y)
+      )[0];
     if (!sg) continue;
     seen.add(suf + '@' + bx.x1.toFixed(0) + bx.y1.toFixed(0));
     const ct = all
@@ -376,6 +386,17 @@ function motModel(sh, nl) {
       )
       .map(q => AB(q.t))
       .filter(a => L[a]);
+    /* 2.5.0-beta.11 (DITL PDF audit, DITL-21A rows 57 / 62 MIT / LIS3): the address is written UNDER the field label (MIT-xxx,
+       LIS-xxx), in the band of the next row; the label is on this row */
+    if (!ad.length) {
+      const lb = all.filter(q => /^(MI[TLRAF]|LIS\d?|LS\d?|ZS[OC]|TS)-/.test(q.t) && q.x > S1 + 60 && q.x < R0 && Math.abs(q.y - cy) < 4.5);
+      for (const l of lb) {
+        const q = all
+          .filter(q => /^[IM]\.[0-9A-F]{4}/.test(q.t) && q.x > l.x && q.x - l.x < 50 && q.y < l.y && l.y - q.y < 12)
+          .sort((p, r) => Math.hypot(p.x - l.x, p.y - l.y) - Math.hypot(r.x - l.x, r.y - l.y))[0];
+        if (q && L[AB(q.t)] && !lb.some(o => o !== l && Math.hypot(q.x - o.x, q.y - o.y) < Math.hypot(q.x - l.x, q.y - l.y))) ad.push(AB(q.t));
+      }
+    }
     const a = ad[0];
     if (!a) continue;
     used.add(o.n);
