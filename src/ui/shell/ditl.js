@@ -97,11 +97,25 @@
   const back = E('button', { cls: 'dui-back', txt: '◀ Back', title: 'Back to the sheet before the last page link' });
   back.style.display = 'none';
   const hist = [];
-  const refs = t => {
+  /* 2.5.0-beta.14 bottom ash: FROM "BA01-11" = output NO. 11 of BA-01; TO "BA-56/46/11" = the sheets that read this output (the
+     input row there whose FROM names this sheet and NO.) */
+  const BAF = /\bBA\s*-?\s*(\d{1,2})\s*-\s*(\d{1,2})\b/gi,
+    BAT = /\bBA\s*-\s*(\d{1,2}(?:\s*\/\s*\d{1,2})*)(?!\s*-\s*\d)/gi;
+  const refs = (t, sh, ri) => {
     const o = [],
-      s = String(t || ''),
       used = [];
-    let m;
+    let s = String(t || ''),
+      m;
+    s = s.replace(BAF, (x, a, b) => {
+      o.push({ code: 'BA' + a.padStart(2, '0'), nn: +b });
+      return ' '.repeat(x.length);
+    });
+    const me = sh && (/DITL-(BA\d{2})$/i.exec(sh.name) || [])[1],
+      rn = me && ri >= 0 && sh.rows[ri] && sh.rows[ri].rn;
+    s = s.replace(BAT, (x, L) => {
+      L.split('/').forEach(c => o.push({ code: 'BA' + c.trim().padStart(2, '0'), bk: rn ? me.toUpperCase() + '-' + String(rn).padStart(2, '0') : '' }));
+      return ' '.repeat(x.length);
+    });
     const RA = /ABC\s*-\s*(\d{3}[A-Z]?)((?:\s*[,\/]\s*\d{1,3}[A-Z]?(?![\dA-Z]|\s*-))*)/gi;
     while ((m = RA.exec(s))) {
       const b = m[1].toUpperCase();
@@ -123,8 +137,18 @@
   const sheetOf = code => {
     return ditlIdx(code, cur());
   };
+  /* the input row of sheet j whose FROM is bk ("BA11-01") */
+  const bkRow = (j, bk) => {
+    const d = S.sheets[j];
+    return d ? d.rows.findIndex((_, k) => (d.cells[k + ':F'] || []).some(t => t.t.replace(/\s/g, '') === bk)) : -1;
+  };
   const labelOf = r => {
     if (r.abc) return r.abc + ' (analog)';
+    if (r.nn === undefined) {
+      const i = sheetOf(r.code),
+        k = i >= 0 && r.bk ? bkRow(i, r.bk) : -1;
+      return (i >= 0 ? S.sheets[i].name : 'DITL-' + r.code) + (k >= 0 ? ' (input row ' + S.sheets[i].rows[k].n + ')' : '');
+    }
     const i = sheetOf(r.code);
     const it = i >= 0 ? ditlItem(S.sheets[i], r.nn) : null,
       out = it ? it.side === 'R' : r.nn > 50;
@@ -143,7 +167,7 @@
       }
     return h;
   };
-  const linkCell = (s, h) => h && (h.c === 'F' || h.c === 'RT') && refs((s.cells[h.k] || []).map(t => t.t).join(' '));
+  const linkCell = (s, h) => h && (h.c === 'F' || h.c === 'RT') && refs((s.cells[h.k] || []).map(t => t.t).join(' '), s, h.i);
   function updBack() {
     back.style.display = hist.length ? '' : 'none';
   }
@@ -167,7 +191,7 @@
     setTimeout(() => f.remove(), Math.max(0, FL.until - Date.now()));
   }
   /* open DITL sheet i at row n (item nn), keeping the zoom you had */
-  function goItem(i, nn, from) {
+  function goItem(i, nn, from, itx) {
     const s0 = cur(),
       v0 = (VB[S.cur] || []).slice();
     hist.push(from || { cat: 'dig', i: S.cur, vb: v0 });
@@ -177,12 +201,12 @@
     sel = null;
     render();
     const s = cur(),
-      it = ditlItem(s, nn),
+      it = itx || ditlItem(s, nn),
       side = it ? it.side : 'L',
       ri = it ? it.i : -1,
       v = VB[S.cur];
     if (ri < 0 || !v) {
-      msg(s.name + ': item ' + nn + ' is not on this sheet (the sheet is open).');
+      msg(s.name + (nn === undefined ? ' is open.' : ': item ' + nn + ' is not on this sheet (the sheet is open).'));
       return true;
     }
     const VR = s.vr || s.rng,
@@ -196,7 +220,7 @@
     $('svg').setAttribute('viewBox', v.join(' '));
     /* from the ABC the page switch draws the sheet once more: blink after it */
     flashRow(s, ri, side);
-    msg(s.name + ' item ' + nn + (side === 'R' ? ' (output row ' : ' (input row ') + s.rows[ri].n + '). ◀ Back returns.');
+    msg(s.name + (nn === undefined ? '' : ' item ' + nn) + (side === 'R' ? ' (output row ' : ' (input row ') + s.rows[ri].n + '). ◀ Back returns.');
     return true;
   }
   function goRef(r) {
@@ -220,6 +244,10 @@
     if (i < 0) {
       msg('DITL-' + r.code + ' is not in the DITL page (' + r.code + '-' + r.nn + ').');
       return true;
+    }
+    if (r.nn === undefined) {
+      const k = r.bk ? bkRow(i, r.bk) : -1;
+      return goItem(i, undefined, null, k >= 0 ? { i: k, side: 'L' } : { i: -1, side: 'L' });
     }
     return goItem(i, r.nn);
   }
@@ -485,6 +513,7 @@
           tag = g.tm.tag || 'timer';
         if (g.k === 'on')
           return want ? (I0 ? one(tag + ' is counting: ' + fmt(g.st.acc || 0) + ' / ' + P) : shortest(ins.map(n => why(s, v, n, 1, seen, d))).concat(one('then ' + tag + ' counts ' + P))) : shortest(ins.map(n => why(s, v, n, 0, seen, d)));
+        if (g.k === 'flash') return want ? shortest(ins.map(n => why(s, v, n, 1, seen, d))).concat(one('then the flasher blinks ON ' + fmt(g.fl[0]) + ' / OFF ' + fmt(g.fl[1]))) : shortest(ins.map(n => why(s, v, n, 0, seen, d)));
         if (g.k === 'off') return want ? shortest(ins.map(n => why(s, v, n, 1, seen, d))) : I0 ? shortest(ins.map(n => why(s, v, n, 0, seen, d))).concat(one('then ' + tag + ' holds 1 for ' + P)) : one(tag + ' holds 1: ' + fmt(g.st.acc || 0) + ' / ' + P);
         return want
           ? (g.k === 'pulse' ? (I0 ? shortest(ins.map(n => why(s, v, n, 0, seen, d))) : []) : I0 ? [] : shortest(ins.map(n => why(s, v, n, 1, seen, d)))).concat(one(tag + ' gives a ' + P + ' pulse when its input goes ' + (g.k === 'pulse' ? '0 → 1' : '1 → 0')))
@@ -589,8 +618,8 @@
     });
     return e;
   };
-  const linkBtns = (t, el) => {
-    const L = refs(t);
+  const linkBtns = (t, sh, ri) => {
+    const L = refs(t, sh, ri);
     if (!L.length) return t || '–';
     const w = E('span', { cls: 'dp-lk' });
     L.forEach(r => w.append(E('button', { txt: labelOf(r), title: 'Open the other end (◀ Back returns)', on: () => goRef(r) })));
@@ -630,7 +659,7 @@
       const i = pk.i,
         nets = rowNets(s, i, 'L');
       add(E('div', { cls: 'dp-st', txt: 'INPUT · ROW ' + rowNo(s, i) }), E('div', { cls: 'dp-t', txt: tagOf(s, i) || svcOf(s, i) || 'Row ' + rowNo(s, i) }));
-      add(kv('Service', svcOf(s, i) || '–'), txt(s, i, 'L') ? kv('Location', txt(s, i, 'L')) : null, kv('From', linkBtns(txt(s, i, 'F'))));
+      add(kv('Service', svcOf(s, i) || '–'), txt(s, i, 'L') ? kv('Location', txt(s, i, 'L')) : null, kv('From', linkBtns(txt(s, i, 'F'), s, i)));
       if (isAn(s, i)) {
         const a = (s.nl.an || []).find(x => x.row === i);
         add(kv('Type', 'Analog value (Inputs tab: type the value)'), a ? kv('Limits', a.g.map(j => cmpTxt(s.nl.gates[j])).join('   ')) : null);
@@ -645,7 +674,7 @@
       const i = pk.i,
         nets = rowNets(s, i, 'R');
       add(E('div', { cls: 'dp-st', txt: 'OUTPUT · ROW ' + rowNo(s, i) }), E('div', { cls: 'dp-t', txt: txt(s, i, 'RS') || txt(s, i, 'RL') || 'Row ' + rowNo(s, i) }));
-      add(txt(s, i, 'RL') ? kv('Location', txt(s, i, 'RL')) : null, kv('To', linkBtns(txt(s, i, 'RT'))));
+      add(txt(s, i, 'RL') ? kv('Location', txt(s, i, 'RL')) : null, kv('To', linkBtns(txt(s, i, 'RT'), s, i)));
       const vb = E('b', { cls: 'dp-b big' });
       SU.push(R => {
         const x = R ? (R.outOn.has(i) ? 1 : 0) : null;
@@ -747,6 +776,8 @@
   D.sel = () => pk && { t: pk.t, i: pk.i, side: pk.side, g: pk.g, n: pk.n };
   D.why = (s, n, want) => why(s, simSheet(s).v, n, want, new Set(), 0);
   D.rowNets = rowNets;
+  D.labelOf = labelOf;
+  D.goRef = goRef;
   D.setPick = p => setPick(p);
   addEventListener('keydown', e => e.key === 'Escape' && pk && !document.body.classList.contains('an') && setPick(null));
   /* the selection on the sheet (drawn again after every render) */

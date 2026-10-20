@@ -249,3 +249,16 @@
   - Ang output na feedback ng valve / motor ay sinasabing sumusunod sa valve model (travel time).
 - **As Left:** `tests/regress/ditl_selected.js` ALL PASS: toolbar, badge, sheet list, 5 tab, pindot sa output row / flip-flop / wire, VIEW na walang value; "To make it 1" sa 47 sheet: 118 output ay naging 1 kapag sinunod ang listahan (gaya ng operator: basahin ulit pagkatapos ng bawat palit), 0 mali. Ang iba ay 1 na, o may timer / flip-flop / ibang sheet. Regression at screen check: tingnan sa HANDOFF.
 - **Status:** Pass sa headless. Hindi nasubok: tablet / apk / exe ng user.
+
+## 2.5.0-beta.14 — Bottom ash DITL pages (user: "may mga DITL pages na wala pa. SAND LIMESTONE BOTTOM ASH SOOTBLOWER", 2026-10-20)
+
+- **Problem:** Wala sa app ang bottom ash logic (HD600 BA-01 ~ 58, conveyors BA-59 ~ 74). Iba ang form nito sa DITL (walang numero ang row; FROM "BA01" + NO.).
+- **As Found:** Ang DITL reader ay hindi nakakabasa ng BA form: walang row, maling page link, at 9 sheet na may maling basa kahit nabasa na (`DITL_BA_AUDIT.md`).
+- **Work Done:**
+  - Bagong basa para sa BA form lang (`01-parse-build.js`, `02-netlist.js`): row mula sa dulo ng flag, LEADER na wire, hop sa tawiran, bus na iisang bar, pulse glyph / pulse box, COUNTER (+1, =N), FLASHER (ON / OFF ng sheet), step register SI0130 ("STEP=8" → "STEP≧8"), lamp ng HMI, ekstrang guhit na hindi input.
+  - 67 sheet inilagay (`(B1)DITL-BA01` ~ `(B74)DITL-BA74`; blangko sa PDF ang BA-30/31/32/35/57/58/70), kategorya BOTTOM ASH HD600 / CONVEYORS.
+  - Page link: FROM "BA01-11" → output NO. 11 ng BA-01; TO "BA-56/46/11" → ang input row ng BA-56 / 46 / 11 na bumabasa nito (sa page at sa iisang mundo).
+  - Bawat sheet ibinangga sa PDF; naayos ang 9 (BA-02 pulse, BA-11, BA-20 COUNTER at M.1305, BA-21 / 46 / 48 / 67 hating row, BA-56 lamp, BA-72 ~ 74 NO. 02).
+  - Ang 151 dating DITL sheet: pareho ang logic (paghahambing ng buong dump bago / pagkatapos). ABC hindi ginalaw.
+- **As Left:** `tests/regress/ditl_ba.js` ALL PASS (67 sheet; BA-11 step SI0130; BA-52 flasher; BA-20 COUNTER 1 → 4 → AUTOMATIC STOP → 0; page link). Regression: tingnan sa HANDOFF.
+- **Status:** Pass sa headless. Hindi nasubok: tablet / apk / exe ng user. Susunod: sand (PDF lang), limestone (xls).

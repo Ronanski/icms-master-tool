@@ -1,6 +1,7 @@
 // Adds DITL drawings (DXF) to the built-in DITL sheets (src/data/pre.txt): each DXF is read with the app's own reader (parse + build,
 // the same code as the "Import DXF" of the DITL page) and written as one line of pre.txt. A sheet with the same name is replaced.
-// Usage: node tools/data/ditl_import.js <prefix> <file.dxf>...   (the sheet name = "(<prefix><n>)DITL-<code>", from "(n)Ditl<code>.dxf")
+// Usage: node tools/data/ditl_import.js <prefix> <file.dxf>...   (the sheet name = "(<prefix><n>)DITL-<code>", from "(n)Ditl<code>.dxf";
+// bottom ash "130225C-BA-05.dxf" with prefix B = "(B5)DITL-BA05")
 const fs=require('fs'),path=require('path'),zlib=require('zlib'),vm=require('vm');
 const {loadEngine}=require('../engine/node-engine.js');
 const PRE=path.join(__dirname,'..','..','src','data','pre.txt');
@@ -8,7 +9,8 @@ const PRE=path.join(__dirname,'..','..','src','data','pre.txt');
  const {win}=await loadEngine();
  const lines=zlib.gunzipSync(Buffer.from(fs.readFileSync(PRE,'utf8').trim(),'base64')).toString().split('\n').filter(Boolean);
  const byName=new Map(lines.map((l,i)=>[JSON.parse(l).name,i]));
- for(const f of files){const m=/^\((\d+)\)\s*Ditl\s*-?\s*(\w+)\.dxf$/i.exec(path.basename(f));if(!m){console.log('SKIP (name)',f);continue}
+ for(const f of files){const ba=/^130225C-BA-(\d{2})\.dxf$/i.exec(path.basename(f));
+  const m=ba?[0,String(+ba[1]),'BA'+ba[1]]:/^\((\d+)\)\s*Ditl\s*-?\s*(\w+)\.dxf$/i.exec(path.basename(f));if(!m){console.log('SKIP (name)',f);continue}
   const name='('+prefix+m[1]+')DITL-'+m[2].toUpperCase();
   win.__t=fs.readFileSync(f,'latin1');win.__n=name;
   let o;try{o=vm.runInContext('(()=>{const s=build(parse(__t),__n);if(!s)return null;s.name=__n;delete s.nl;return JSON.stringify(s)})()',win)}catch(e){o=null;console.log('FAIL',name,e.message)}

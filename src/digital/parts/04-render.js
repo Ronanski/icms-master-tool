@@ -115,6 +115,8 @@ function usrModel(sh, nl) {
   }
   return res;
 }
+/* 2.5.0-beta.14: DCS registers shared by the sheets (bottom ash step SI0130); Simulate on / off and Reset clear them */
+let DREG = {};
 function simulate(nl, act) {
   /* v10: keeps the last state (seal-in / latch memory) and applies one net change per step, so cross interlocks (NOT of the other command) settle instead of flipping */
   const N = nl.n;
@@ -138,6 +140,19 @@ function simulate(nl, act) {
     (nl.ind || []).forEach(m => {
       if (act.has(m.row)) w[m.n] = 1;
     });
+    /* 2.5.0-beta.14 bottom ash step register (SI0130): "STEP=n" outputs write it, "STEP≥n" inputs read it */
+    if (nl.stepW) {
+      nl.stepW.forEach(o => {
+        if (v[o.n]) DREG[o.reg] = o.val;
+      });
+      nl.stepR.forEach(r => {
+        const x = DREG[r.reg] || 0;
+        if (r.op === '≥' ? x >= r.val : r.op === '≤' ? x <= r.val : x === r.val)
+          nl.src.forEach(z => {
+            if (z.row === r.row) w[z.n] = 1;
+          });
+      });
+    }
     nl.gates.forEach((g, gi) => {
       const I = a => a.some(n => v[n]);
       let o = 0;
@@ -156,7 +171,10 @@ function simulate(nl, act) {
       else if (g.t === 'CNT') {
         /* 2.5.0-beta.12: sequence counter (sootblower DITL-80): RESET = N 0, the input 1 -> 0 = N + 1 (kept when the sheet settles) */
         const c = I(g.ins);
-        g.Nn = I(g.r) ? 0 : g.pin && !c ? Math.min(g.N + 1, Math.max(...g.ks)) : g.N;
+        /* 2.5.0-beta.14: the bottom ash COUNTER (+1, =4) counts on the input 0 -> 1 (g.up); its RESET acts on the next scan (BA-20:
+           the count 4 = LAST CYCLE OVER -> AUTOMATIC STOP -> RESET; the same scan would cancel the 4 before anyone sees it) */
+        g.rq = I(g.r);
+        g.Nn = (g.up ? g.rp : g.rq) ? 0 : (g.up ? !g.pin && c : g.pin && !c) ? Math.min(g.N + 1, Math.max(...g.ks)) : g.N;
         g.cin = c;
         g.out.forEach((n, j) => {
           if (g.ks[j] === g.Nn) w[n] = 1;
@@ -186,6 +204,7 @@ function simulate(nl, act) {
     if (g.t === 'CNT' && g.Nn !== undefined) {
       g.N = g.Nn;
       g.pin = g.cin;
+      g.rp = g.rq;
     }
   });
   nl._v = v;
@@ -254,7 +273,7 @@ function simSheet(s) {
       });
     } else outOn.delete(row);
   });
-  if (!s.nl.gates.length) rowOn.forEach(i => outOn.add(i));
+  if (!s.nl.gates.length && !s.ba) rowOn.forEach(i => outOn.add(i)); /* 2.5.0-beta.14: not a bottom ash indicator sheet (BA-72) */
   return { rowOn, v, outOn };
 }
 /* ---------- render ---------- */
@@ -376,7 +395,8 @@ function render() {
   };
   const SPL = {};
   (s.nl.split || []).forEach(p => (SPL[p.k] = p));
-  s.raw.ln.forEach(([x1, y1, x2, y2, l], k) => {
+  s.raw.ln.forEach(([x1, y1, x2, y2, l, hop], k) => {
+    if (hop === 'hop') return; /* 2.5.0-beta.14: the straight wire under a hop half circle (bottom ash) is not drawn */
     ext(x1, y1);
     ext(x2, y2);
     const sp = SPL[k];

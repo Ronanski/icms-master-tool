@@ -31,7 +31,8 @@ Pagkatapos ng M6: ang `[F]` sa CHECKLIST seksyon D ay dagdag lang, hindi kailang
 - [x] **2.5.0-beta.11 — Bawat DITL sheet laban sa PDF** (user: "KAPAREHA DAPAT NG SA APP"): 39 sheet na may mali, naayos lahat (17 uri, `docs/versions/v2.5.0/DITL_PDF_AUDIT.md`); sheet list ng DITL ayon sa kategorya (22 grupo).
 - [x] **2.5.0-beta.12 — Sootblower DITL pages:** 17 sheet (DITL-80 ~ 80T) sa kategoryang SOOTBLOWER, ibinangga sa PDF (`docs/versions/v2.5.0/DITL_SB_AUDIT.md`); COUNTER, SB PANEL output, valve ng MCC box.
 - [x] **2.5.0-beta.13 — DITL page gaya ng ABC:** [VIEW | ▶ Run], mode badge, By order / By category, Selected tab ("To make it 1"), naayos ang tab strip ng DITL panel.
-- [ ] **Susunod — Bagong DITL page:** bottom ash, sand, limestone.
+- [x] **2.5.0-beta.14 — Bottom ash DITL pages:** 67 sheet (HD600 BA-01 ~ 58, conveyors BA-59 ~ 74) sa kategoryang BOTTOM ASH HD600 / CONVEYORS, ibinangga sa PDF (`docs/versions/v2.5.0/DITL_BA_AUDIT.md`); step SI0130, COUNTER, FLASHER, lamp, page link BA01-11.
+- [ ] **Susunod — Bagong DITL page:** sand, limestone.
 
 ## Nasaan tayo ngayon (2026-10-20, 2.5.0-beta.7, PR #34)
 - **M1 ~ M5 sa app: PASADO.** CHECK: M2 14 / 14; M3 lahat (turbine trip 10, MFT 7, BFWP 7, IDF 7, PAF 6, HH 3); M4 bawat hakbang (10 / 9 / 8 / 11 / 14) at **M4 buong cold start-up 17 / 17** (dati 16 / 17); M5 load down 14 / 14, normal shutdown 7 / 7, bottle-up 15 / 15.

@@ -12,9 +12,15 @@
   } catch (e) {}
   /* 2.3.0-beta.1 (LINK-4): also a one-digit code with its letter, written without the 0 (DITL-15 row 10 MFT "3A-63" = 03A-63) */
   const RX = /\(?\s*([0-9]{2,3}[A-Z]?|[0-9][A-Z])\s*-\s*(\d{1,3})\s*\)?/gi;
+  /* 2.5.0-beta.14: bottom ash FROM "BA01-11" = output NO. 11 of sheet BA-01 (sheet "(B1)DITL-BA01") */
+  const BRX = /\bBA\s*-?\s*(\d{1,2})\s*-\s*(\d{1,2})\b/gi;
   const refsOf = t => {
     const o = [];
     let m;
+    t = String(t || '').replace(BRX, (x, a, b) => {
+      o.push({ code: 'BA' + a.padStart(2, '0'), nn: +b, other: false });
+      return ' ';
+    });
     RX.lastIndex = 0;
     while ((m = RX.exec(String(t || ''))))
       o.push({
@@ -25,7 +31,7 @@
     return o;
   };
   const codeOf = name => {
-    const m = /DITL-([0-9]{2,3}[A-Z]?)$/i.exec(name || '');
+    const m = /DITL-([0-9]{2,3}[A-Z]?|BA\d{2})$/i.exec(name || '');
     return m ? m[1].toUpperCase() : null;
   };
   function dSheet(code, from) {
