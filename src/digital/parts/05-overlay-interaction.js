@@ -798,6 +798,56 @@ try {
   if (localStorage.getItem('ditl.sm') === 'order') SIDESM = 'order';
 } catch (e) {}
 if (SIDEMIN === null) SIDEMIN = innerWidth < 820 ? '1' : '0';
+/* 2.5.0-beta.16 (user: "dapat pg by category, collapsible ang group title"): a category title of the sheet list (DITL and ABC) opens /
+   closes its group; the choice is kept (localStorage `key`). First time: only the group of the open sheet is open. While searching
+   every group with a hit is open. */
+function sideGrp(list, key, name, n, isCur, filt) {
+  let st = null;
+  try {
+    st = JSON.parse(localStorage.getItem(key) || 'null');
+  } catch (e) {}
+  const col = filt ? false : st ? !!st[name] : !isCur,
+    h = document.createElement('div'),
+    body = document.createElement('div');
+  h.className = 'fh fhc';
+  h.dataset.g = name;
+  h.title = 'Click to open / close this group';
+  const paint = c => (h.textContent = (c ? '▸ ' : '▾ ') + name + ' (' + n + ')');
+  paint(col);
+  body.className = 'grp';
+  body.style.display = col ? 'none' : '';
+  h.onclick = () => {
+    let o = null;
+    try {
+      o = JSON.parse(localStorage.getItem(key) || 'null');
+    } catch (e) {}
+    if (!o) {
+      o = {};
+      list.querySelectorAll('.fhc').forEach(x => {
+        if (x.nextSibling && x.nextSibling.style.display === 'none') o[x.dataset.g] = 1;
+      });
+    }
+    const c = body.style.display !== 'none';
+    if (c) o[name] = 1;
+    else delete o[name];
+    body.style.display = c ? 'none' : '';
+    paint(c);
+    try {
+      localStorage.setItem(key, JSON.stringify(o));
+    } catch (e) {}
+  };
+  list.appendChild(h);
+  list.appendChild(body);
+  return body;
+}
+/* the group of the sheet just opened (page link, search, ◀ ▶) is shown, without changing the kept choice */
+function sideShow(b) {
+  const g = b && b.parentNode;
+  if (!g || !g.classList.contains('grp') || g.style.display !== 'none') return;
+  g.style.display = '';
+  const h = g.previousSibling;
+  if (h && h.classList.contains('fhc')) h.textContent = '▾' + h.textContent.slice(1);
+}
 function drawSide() {
   const sd = $('side'),
     list = $('sidelist');
@@ -842,18 +892,15 @@ function drawSide() {
        the order of the contents sheets DITL-0A ~ 0D); the search still filters by name and title */
     S.sheets.forEach((x, i) => {
       if (f && (x.name + ' ' + (x.title || '') + ' ' + ditlCat(x)).toLowerCase().indexOf(f) < 0) return;
-      if (SIDESM === 'order') return sideBtn(x, i);
+      if (SIDESM === 'order') return sideBtn(x, i, list);
       (G[ditlCat(x)] = G[ditlCat(x)] || []).push(i);
     });
     if (SIDESM !== 'order') DITL_CATS.concat(Object.keys(G).filter(k => !DITL_CATS.includes(k))).forEach(c => {
       if (!G[c]) return;
-      const h = document.createElement('div');
-      h.className = 'fh';
-      h.textContent = c + ' (' + G[c].length + ')';
-      list.appendChild(h);
-      G[c].forEach(i => sideBtn(S.sheets[i], i));
+      const body = sideGrp(list, 'ditl.cc', c, G[c].length, G[c].includes(S.cur), !!f);
+      G[c].forEach(i => sideBtn(S.sheets[i], i, body));
     });
-    function sideBtn(x, i) {
+    function sideBtn(x, i, box) {
       const b = document.createElement('button');
       b.dataset.i = i;
       const l1 = document.createElement('span');
@@ -881,7 +928,7 @@ function drawSide() {
         }
         render();
       };
-      list.appendChild(b);
+      box.appendChild(b);
     }
   }
   let on = null;
@@ -890,6 +937,7 @@ function drawSide() {
     if (o !== b.classList.contains('on')) b.classList.toggle('on', o);
     if (o) on = b;
   });
+  if (on && drawSide.last !== S.cur) sideShow(on);
   if (on && SIDEMIN !== '1' && drawSide.last !== S.cur) {
     on.scrollIntoView({ block: 'nearest' });
   }

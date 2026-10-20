@@ -749,7 +749,7 @@ function anSide() {
     });
     (AN.sm === 'order' ? ['ALL'] : FAMS.concat(Object.keys(G).filter(k => !FAMS.includes(k)))).forEach(fm => {
       if (!G[fm]) return;
-      if (AN.sm !== 'order') anlist.append(h$('div', { cls: 'fh', txt: fm + ' (' + G[fm].length + ')' }));
+      const box = AN.sm !== 'order' ? sideGrp(anlist, 'an.cc', fm, G[fm].length, G[fm].includes(AN.i), !!f) : anlist; /* 2.5.0-beta.16 */
       G[fm].forEach(i => {
         const s = AN.sheets[i],
           b = h$('button', { 'data-i': i, title: s.name + (s.title ? ' - ' + s.title : '') }, [
@@ -765,7 +765,7 @@ function anSide() {
             } catch (e) {}
           }
         };
-        anlist.append(b);
+        box.append(b);
       });
     });
   }
@@ -775,6 +775,7 @@ function anSide() {
     b.classList.toggle('on', o);
     if (o) on = b;
   });
+  if (on && anSide.last !== AN.i) sideShow(on);
   if (on && SIDEMIN !== '1' && anSide.last !== AN.i) on.scrollIntoView({ block: 'nearest' });
   anSide.last = AN.i;
 }
