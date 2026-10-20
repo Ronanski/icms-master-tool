@@ -599,8 +599,68 @@ function letterRows(sh) {
     sh._alltx = undefined;
   }
 }
+/* 2.5.0-beta.11 (DITL PDF audit, DITL-73 / 74 / 75 / 78 / 80 / 81 / 83 and more): the timer tag of a pulse drawn at the end of the input
+   cell ("TR360") was read as the text of an input row (row 18 became an input "TR360"). It is a label of the logic: move it out of the
+   row cells (idempotent) */
+function trCells(sh) {
+  if (!sh || !sh.cells || !Array.isArray(sh.tx) || sh._trc) return;
+  sh._trc = 1;
+  for (const k in sh.cells) {
+    if (!LEFT.includes(k.split(':')[1])) continue;
+    const keep = sh.cells[k].filter(t => !/^TR\s?\d{1,3}(\s*[/,]\s*\d{1,3})*\/?$/.test(String(t.t).trim()));
+    if (keep.length === sh.cells[k].length) continue;
+    sh.cells[k].filter(t => !keep.includes(t)).forEach(t => sh.tx.push(t));
+    if (keep.length) sh.cells[k] = keep;
+    else delete sh.cells[k];
+  }
+}
+/* 2.5.0-beta.11 (DITL PDF audit, "References wrong"): texts of an output row that overflow into the band of the row above / below
+   (a long TO list, the address written under the lamp). Each entry was read on the drawing PDF: [sheet, text, from row, to row]
+   (row = NO. 1-50 of the app line; '*' = every text of that row's right cells; from row 0 = a loose text of the sheet) */
+const ROWFIX = [
+  ['03A', '*', 10, 13], ['03A', '*', 11, 13], ['03A', '*', 12, 13],
+  ['21C', '21D-09', 5, 4], ['21C', '21D-13', 7, 6],
+  ['21D', '21E-6,21E-20', 3, 2],
+  ['29A', 'I.032A/526/81A', 4, 5], ['29A', '(29A-9)', 4, 5], ['29A', '(29A-13)', 4, 5],
+  ['29A', '39-2,ABC-052', 6, 5], ['29A', '(39-3)', 6, 5], ['29A', '(39-4)', 6, 5], ['29A', 'I.032D/529/81D', 6, 7],
+  ['29A', '(29A-12)', 18, 17], ['29A', 'I.032B/527/81B', 18, 17], ['29A', 'I.032C/528/81C', 13, 12],
+  ['29B', '(29A-15)', 19, 18], ['29B', '*', 6, 5], ['29B', '*', 11, 10], ['29B', '*', 13, 12],
+  ['111', '120-13', 9, 8], ['111', '(120-14)', 9, 8],
+  ['73', '*', 28, 27], ['73', '*', 29, 27], ['73', '107-03,108-02', 0, 27], ['73', '109-03,110-03', 0, 27]
+];
+function rowFix(sh) {
+  if (!sh || !sh.cells || !sh.rows || sh._rfx) return;
+  sh._rfx = 1;
+  const me = (/DITL-(\w+)$/.exec(sh.name) || [])[1],
+    ix = n => sh.rows.findIndex(r => +r.n === n);
+  for (const [nm, tx, a, b] of ROWFIX) {
+    if (nm !== me) continue;
+    const j = ix(b);
+    if (j < 0) continue;
+    if (!a) {
+      const t = sh.tx.find(q => q.t === tx);
+      if (!t) continue;
+      sh.tx.splice(sh.tx.indexOf(t), 1);
+      (sh.cells[j + ':RL'] = sh.cells[j + ':RL'] || []).push(t);
+      continue;
+    }
+    const i = ix(a);
+    if (i < 0) continue;
+    for (const c of ['RS', 'RL', 'RT']) {
+      const k = i + ':' + c,
+        mv = (sh.cells[k] || []).filter(t => tx === '*' || t.t === tx);
+      if (!mv.length) continue;
+      sh.cells[k] = sh.cells[k].filter(t => !mv.includes(t));
+      if (!sh.cells[k].length) delete sh.cells[k];
+      (sh.cells[j + ':' + c] = sh.cells[j + ':' + c] || []).push(...mv);
+      sh.cells[j + ':' + c].sort((p, q) => q.y - p.y);
+    }
+  }
+}
 function netlist(sh) {
   letterRows(sh);
+  trCells(sh);
+  rowFix(sh);
   const a = netlistCore(sh, false),
     c = mdCount(a, sh);
   if (!c) return a;

@@ -40,11 +40,17 @@ for(const world of [false,true])for(const plant of ['off','on']){
    if(o0!==o1)return {row:+s.rows[i].n,txt:(s.cells[i+':S']||[]).map(x=>x.t).join(' ').slice(0,50),o0,o1}}return null});
  ck(!!hand,tag+(hand?'hand input row '+hand.row+' "'+hand.txt+'" changes the outputs ('+hand.o0+' -> '+hand.o1+')':'no hand input changed an output'));
  if(world){
+  // (2.5.0-beta.11) the DITL copy of an ABC bit is taken at the world tick: a bit that changes between the tick and the read (plant
+  // model ON, the furnace pressure of the 150 MW load settling, DITL-40 row 14) is one tick late. Read twice: only a row that differs
+  // both times is wrong
+  const inv1=await page.evaluate(()=>{const {din}=WORLD.idx;const b=[];din.forEach((m,s)=>m.forEach((srcs,row)=>{if(srcs.length!==1||srcs[0].k!=='a')return;const q=srcs[0];if(!q.sh.S)return;if((q.sh.S.rt.v[q.n]>0.5)!==!!(s._win&&s._win.has(row)))b.push(s.name+' row '+(row+1))}));return b});
+  await wait(600);
   const inv=await page.evaluate(()=>{const {ain,din}=WORLD.idx;let a=0,abad=[];
    for(const q of ain){const A=q.sh.S;if(!A)continue;const l=A.xlk&&A.xlk[q.n];if(l&&!l.ditl)continue;a++;const want=WORLD.out[q.d.name]&&WORLD.out[q.d.name].has(q.row)?1:0;if(A.rt.ext[q.n]!==want)abad.push(q.sh.name+' '+AN.nm(A,q.n)+' '+A.rt.ext[q.n]+' want '+want)}
    let t=0,tbad=[];din.forEach((m,s)=>m.forEach((srcs,row)=>{if(srcs.length!==1||srcs[0].k!=='a')return;const q=srcs[0];if(!q.sh.S)return;t++;const want=q.sh.S.rt.v[q.n]>0.5,got=!!(s._win&&s._win.has(row));if(want!==got)tbad.push(s.name+' row '+(row+1))}));
    return {a,abad:abad.slice(0,6),t,tbad:tbad.slice(0,6)}});
   ck(!inv.abad.length,tag+'DITL -> ABC: '+inv.a+' ABC inputs equal their DITL output'+(inv.abad.length?': '+inv.abad.join(' | '):''));
+  inv.tbad=inv.tbad.filter(x=>inv1.includes(x));
   ck(!inv.tbad.length,tag+'ABC -> DITL: '+inv.t+' DITL rows equal their ABC net'+(inv.tbad.length?': '+inv.tbad.join(' | '):''));
   // 2.5.0-beta.10 (user: "kapag from DITL nagforce ako, madedetect ito ng buong sheet DITL at ABC? vice versa?"):
   // a FORCE on the ABC reaches the DITL row, and a hand input on the DITL reaches the ABC input that reads it

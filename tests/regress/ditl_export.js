@@ -15,13 +15,13 @@ const all=await page.evaluate(()=>{const res=[];
   const srcOf=new Map();nl.src.forEach(z=>{if(!srcOf.has(z.n))srcOf.set(z.n,[]);srcOf.get(z.n).push(z.row)});
   (nl.mir||[]).forEach(m=>{if(!srcOf.has(m.n))srcOf.set(m.n,[]);});
   const drv=new Map();nl.gates.forEach((g,gi)=>(g.out||[]).forEach(n=>{if(!drv.has(n))drv.set(n,[]);drv.get(n).push(gi)}));
-  const fx=new Set([...(nl.fx||[])]);const used=new Map();
+  const fx=new Set([...(nl.fx||[]),...(nl.one||[])]);const used=new Map();
   const rlab=i=>'IN'+s.rows[i].n;
   const gname=g=>{if(g.t==='TMR'){const t=g.tm||{},fv=t.fv;const k=g.k==='on'?'ON-DELAY':g.k==='off'?'OFF-DELAY':g.k==='pulse'?'PULSE':g.k==='npulse'?(g.nc?'N.C.CONTACT':'FALL-PULSE'):g.k;let sec='';try{sec=' '+tmSecs(t)+' s'}catch(e){}return k+sec}
    if(g.t==='CMP')return 'CMP('+g.cmp+(g.eq?'=':'')+' '+(g.sptxt||g.sp)+(g.unit?' '+g.unit:'')+')';return g.t};
   const ex=(n,d,seen)=>{if(fx.has(n))return '1';const r=srcOf.get(n);const G=drv.get(n)||[];const parts=[];
-   if(r&&r.length)parts.push(r.map(rlab).join('|'));
-   (nl.mir||[]).filter(m=>m.n===n).forEach(m=>parts.push('MIRROR'+s.rows[m.row].n));
+   if(r&&r.length)parts.push(r.map(i=>{const m=(nl.mir||[]).find(m=>m.row===i&&m.neg);return m?'NOT-OF-'+rlab(nl.src.find(z=>z.n===m.n).row):rlab(i)}).join('|'));
+   (nl.mir||[]).filter(m=>m.n===n&&!m.neg).forEach(m=>parts.push('MIRROR'+s.rows[m.row].n));(nl.ind||[]).filter(m=>m.n===n).forEach(m=>parts.push('SAME-ADDRESS-AS-IN'+s.rows[m.row].n));(nl.xcon||[]).filter(c=>c.n===n&&c.dir==='in').forEach(c=>parts.push('FROM-DITL-'+c.peer+'('+c.num+')'));
    if(seen.has(n))return '↺n'+n;if(d>14)return '…n'+n;const sn=new Set(seen);sn.add(n);
    for(const gi of G){const g=nl.gates[gi];
     if(g.t==='FF')parts.push('FF[S:'+(g.s.map(x=>ex(x,d+1,sn)).join(' OR ')||'-')+' ; R:'+(g.r.map(x=>ex(x,d+1,sn)).join(' OR ')||'-')+']');

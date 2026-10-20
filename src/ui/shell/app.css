@@ -514,3 +514,5 @@ body:not(.an) #opp{display:none!important}
 #plpick .plhd{font:600 12px var(--uf,sans-serif);color:var(--c-dim,#9aa7b2);padding:2px 4px 6px}
 #plpick button{display:block;width:100%;text-align:left;margin:2px 0;padding:8px 10px;min-height:36px;background:transparent;color:var(--c-tx,#e6edf3);border:1px solid var(--c-line2,#2a3540);border-radius:4px;font:13px var(--uf,sans-serif);cursor:pointer}
 #plpick button:hover{border-color:var(--c-acc,#4fd18b)}
+/* 2.5.0-beta.11: DITL sheet list by category (same header as the ABC list) */
+#sidelist .fh{padding:5px 10px;font-size:10.5px;font-weight:700;color:var(--c-acc,var(--acc,#4fd18b));background:var(--c-bg2,#10181d);letter-spacing:.06em;position:sticky;top:0;z-index:1;border-bottom:1px solid var(--c-row,#243447)}

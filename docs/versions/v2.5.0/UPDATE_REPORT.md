@@ -212,3 +212,15 @@
   - blocks_io ABC-050: 0 mali, plant model OFF at ON. Ang 88 "laktaw" ay VLV block na walang output wire (sakop ng plant at scenario test).
   - unit_trip, check_panel (lahat ng CHECK scenario, kasama ang M4 cold start-up at M5), world, ditl150, hmi_op, unit_load, switches, pid_am, faceplate, loaddown, ditl_toolbar, ditl_pagelink, layout: PASS. Buong screen check: 0 problema.
 - **Status:** Pass.
+
+## 2.5.0-beta.11 — Bawat DITL sheet laban sa PDF, at sheet list ayon sa kategorya (user: "KAPAREHA DAPAT NG SA APP", "DAPAT BY CATEGORY DIN ANG SHEET LIST SA DITL", 2026-10-20)
+
+- **Problem:** Hiningi ng user na ang bawat DITL sheet ng app ay kapareho ng drawing PDF, at na ang listahan ng DITL sheet ay naka-grupo ayon sa sistema.
+- **As Found:** 39 na DITL sheet ang may mali kumpara sa PDF (detalye: `DITL_PDF_AUDIT.md`). Halimbawa: hindi nabasa ang comparator sa wire (analog limit), ang LOCAL STOP ng MCC ay nabasang pulse (hindi makatakbo ang pump sa LOCAL), hindi nakakabit ang connector papunta sa ibang sheet (25A, 26A, 76 / 77), may wire na tumatawid na nadugtong, walang laman ang overtime alarm ng valve (DITL-38), at may TO reference na nasa maling row. Ang listahan ng sheet ay isang mahabang listahan lang.
+- **Work Done:**
+  - DITL reader (`src/digital/parts/01 ~ 05`): 17 uri ng ayos, bawat isa binasa sa PDF (talaan sa `DITL_PDF_AUDIT.md`; ang mga wire na hiniwalay ay may ebidensya sa `UNLINK_AUDIT.md`). **Nagbago ang DITL logic** sa mga sheet na ito, para tumugma sa PDF. Ang ABC ay hindi ginalaw.
+  - Sheet list ng DITL ayon sa kategorya (22 grupo: MFT / purge, boiler, fans, coal, condensate, feedwater, at iba pa).
+  - Page link: ang TO text na nakasulat sa ibabaw ng ibang row (hal. DITL-03A row 13, mahabang listahan) ay bumubukas pa rin kapag pinindot kung saan ito nakasulat. Sa tablet / phone, ang mahabang pagpipilian ay hindi na kusang pumipili ng page sa ilalim ng daliri.
+  - Bagong test `tests/regress/ditl_pdf.js`.
+- **As Left (headless, 2.5.0-beta.11):** ditl_pdf ALL PASS (19 na basa ng PDF, overtime alarm ng DITL-38, connector 26B → 26A). ditl_pagelink ALL PASS (PC, tablet, phone). ditl_sim, world, ditl150, switches (438 / 0), blocks_io (0 mali, plant OFF at ON), unit_trip, unit_load, hmi_op, plant_live, loaddown, check_panel (lahat ng CHECK scenario M2 ~ M5), layout, ditl_toolbar: PASS. Buong screen check: 96 screen, 0 problema.
+- **Status:** Pass. Hindi nasubok: tablet / apk / exe ng user. Susunod: bagong DITL page (sootblower, bottom ash, sand, limestone).
