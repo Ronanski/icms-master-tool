@@ -54,6 +54,8 @@ const block =
   fs.readFileSync(__dirname + '/info.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/layout.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/view.js', 'utf8') +
   '</script>' +
   B;
 const k = s.lastIndexOf('</body>');
