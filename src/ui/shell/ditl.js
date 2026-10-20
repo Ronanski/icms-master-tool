@@ -102,7 +102,186 @@
     ls('ditl.dp', open ? '1' : '0');
     upd();
   };
-  D.bar = fit => [run, next, stepSel, speed, reset, view, E('span', { cls: 'dui-sep' }), fit, zoom, panel];
+  /* ---------- page links (2.5.0-beta.8, user: "YUNG MGA PAGE LINK SA DITL, DI GUMAGANA DI MAPINDOT") ----------
+     The FROM column (left) and the TO column (right) of a row name the other end of the signal: "28A-77" = item 77 of DITL-28A
+     (item 1 ~ 50 = input row, 51 ~ 79 = output row 1 ~ 29), "ABC-003A" or "ABC-003A,3B" = the ABC sheet(s). Click the text: the
+     page goes there and the row blinks; ◀ Back returns. Works in View and Run (in Run the input switch is the S column / panel). */
+  const back = E('button', { cls: 'dui-back', txt: '◀ Back', title: 'Back to the sheet before the last page link' });
+  back.style.display = 'none';
+  const hist = [];
+  const refs = t => {
+    const o = [],
+      s = String(t || ''),
+      used = [];
+    let m;
+    const RA = /ABC\s*-\s*(\d{3}[A-Z]?)((?:\s*[,\/]\s*\d{1,3}[A-Z]?(?![\dA-Z]|\s*-))*)/gi;
+    while ((m = RA.exec(s))) {
+      const b = m[1].toUpperCase();
+      o.push({ abc: 'ABC-' + b });
+      (m[2].match(/\d{1,3}[A-Z]?/gi) || []).forEach(x => {
+        const d = /^\d+/.exec(x)[0];
+        o.push({ abc: 'ABC-' + b.slice(0, Math.max(0, 3 - d.length)) + x.toUpperCase() });
+      });
+      used.push([m.index, m.index + m[0].length]);
+    }
+    const RD = /\(?\s*([0-9]{1,3}[A-Z]?)\s*-\s*(\d{1,2})\s*\)?/gi;
+    while ((m = RD.exec(s))) {
+      if (used.some(u => m.index >= u[0] && m.index < u[1])) continue;
+      const code = (/^\d[A-Z]?$/i.test(m[1]) ? '0' : '') + m[1].toUpperCase();
+      o.push({ code, nn: +m[2] });
+    }
+    return o.filter((r, i) => o.findIndex(q => q.abc === r.abc && q.code === r.code && q.nn === r.nn) === i);
+  };
+  const sheetOf = code => {
+    let i = S.sheets.findIndex(x => new RegExp('DITL-' + code + '$', 'i').test(x.name));
+    if (i < 0 && /[A-Z]$/.test(code)) i = S.sheets.findIndex(x => new RegExp('DITL-' + code.replace(/[A-Z]$/, '') + '$', 'i').test(x.name));
+    return i;
+  };
+  const labelOf = r => {
+    if (r.abc) return r.abc + ' (analog)';
+    const i = sheetOf(r.code);
+    return (i >= 0 ? S.sheets[i].name : 'DITL-' + r.code) + ' item ' + r.nn + (r.nn > 50 ? ' (output row ' + (r.nn - 50) + ')' : ' (input row ' + r.nn + ')');
+  };
+  const linkCell = (s, h) => h && (h.c === 'F' || h.c === 'RT') && refs((s.cells[h.k] || []).map(t => t.t).join(' '));
+  function updBack() {
+    back.style.display = hist.length ? '' : 'none';
+  }
+  let FL = null;
+  D.after = () => FL && Date.now() < FL.until && cur() === FL.s && flashRow(FL.s, FL.i, FL.side, 1);
+  function flashRow(s, i, side, again) {
+    if (!again) FL = { s, i, side, until: Date.now() + 2400 };
+    const svg = $('svg'),
+      r = s.rows[i],
+      VR = s.vr || s.rng;
+    if (!svg || !r) return;
+    const RB = (s.rb && s.rb[i]) || [r.y - 3.3, r.y + 5.7],
+      x1 = side === 'R' ? VR.RS[0] : VR.F[0],
+      x2 = side === 'R' ? VR.RT[1] : VR.S[1],
+      f = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    Object.entries({ x: x1, y: -RB[1], width: x2 - x1, height: RB[1] - RB[0], class: 'plflash' }).forEach(([k, v]) => f.setAttribute(k, v));
+    svg.append(f);
+    setTimeout(() => f.remove(), Math.max(0, FL.until - Date.now()));
+  }
+  /* open DITL sheet i at row n (item nn), keeping the zoom you had */
+  function goItem(i, nn, from) {
+    const s0 = cur(),
+      v0 = (VB[S.cur] || []).slice();
+    hist.push(from || { cat: 'dig', i: S.cur, vb: v0 });
+    updBack();
+    if (from && window.AN && AN.cat === 'an') AN.setCat('dig');
+    S.cur = i;
+    sel = null;
+    render();
+    const s = cur(),
+      side = nn > 50 ? 'R' : 'L',
+      ri = s.rows.findIndex(r => +r.n === (nn > 50 ? nn - 50 : nn)),
+      v = VB[S.cur];
+    if (ri < 0 || !v) {
+      msg(s.name + ': item ' + nn + ' is not on this sheet (the sheet is open).');
+      return true;
+    }
+    const VR = s.vr || s.rng,
+      cx = side === 'R' ? (VR.RS[0] + VR.RT[1]) / 2 : (VR.F[0] + VR.S[1]) / 2;
+    if (s0 !== s && v0.length) {
+      v[2] = v0[2];
+      v[3] = v0[3];
+    }
+    v[0] = cx - v[2] / 2;
+    v[1] = -s.rows[ri].y - v[3] / 2;
+    $('svg').setAttribute('viewBox', v.join(' '));
+    /* from the ABC the page switch draws the sheet once more: blink after it */
+    flashRow(s, ri, side);
+    msg(s.name + ' item ' + nn + (side === 'R' ? ' (output row ' : ' (input row ') + s.rows[ri].n + '). ◀ Back returns.');
+    return true;
+  }
+  function goRef(r) {
+    if (r.abc) {
+      if (!window.AN) return false;
+      hist.push({ cat: 'dig', i: S.cur, vb: (VB[S.cur] || []).slice() });
+      updBack();
+      AN.setCat('an');
+      let n = 0;
+      const t = setInterval(() => {
+        const j = (AN.sheets || []).findIndex(x => x.name === r.abc);
+        if (j >= 0 || ++n > 50) {
+          clearInterval(t);
+          if (j >= 0) AN.go(j);
+          msg(j >= 0 ? r.abc + ' opened. DITL ◀ Back returns to the DITL sheet.' : r.abc + ' is not in the ABC page.');
+        }
+      }, 120);
+      return true;
+    }
+    const i = sheetOf(r.code);
+    if (i < 0) {
+      msg('DITL-' + r.code + ' is not in the DITL page (' + r.code + '-' + r.nn + ').');
+      return true;
+    }
+    return goItem(i, r.nn);
+  }
+  /* the chooser when one cell names several ends ("15-10,20-11", "ABC-007,011") */
+  const pick = E('div', { id: 'plpick' });
+  pick.hidden = true;
+  document.body.append(pick);
+  const closePick = () => (pick.hidden = true);
+  addEventListener('keydown', e => e.key === 'Escape' && closePick());
+  addEventListener('pointerdown', e => !pick.hidden && !pick.contains(e.target) && closePick(), true);
+  D.refs = refs;
+  D.link = (s, h, e) => {
+    const L = linkCell(s, h);
+    if (!L || !L.length) return false;
+    if (L.length === 1) return goRef(L[0]);
+    pick.textContent = '';
+    pick.append(E('div', { cls: 'plhd', txt: 'Row ' + s.rows[h.i].n + (h.c === 'F' ? ' FROM' : ' TO') + ': pick the page' }));
+    L.forEach(r =>
+      pick.append(
+        E('button', {
+          txt: labelOf(r),
+          on: () => {
+            closePick();
+            goRef(r);
+          }
+        })
+      )
+    );
+    pick.hidden = false;
+    const w = pick.offsetWidth,
+      hh = pick.offsetHeight;
+    pick.style.left = Math.max(8, Math.min(innerWidth - w - 8, e.clientX - w / 2)) + 'px';
+    pick.style.top = Math.max(8, Math.min(innerHeight - hh - 8, e.clientY + 12)) + 'px';
+    return true;
+  };
+  D.goItem = goItem;
+  back.onclick = () => {
+    const h = hist.pop();
+    updBack();
+    if (!h) return;
+    if (h.cat === 'an') {
+      if (window.AN) {
+        AN.setCat('an');
+        if (h.i >= 0) AN.go(h.i);
+      }
+      return;
+    }
+    if (window.AN && AN.cat === 'an') AN.setCat('dig');
+    S.cur = h.i;
+    sel = null;
+    if (h.vb && h.vb.length) VB[S.cur] = h.vb;
+    render();
+  };
+  {
+    const svg = $('svg');
+    if (svg)
+      svg.addEventListener('pointermove', e => {
+        if (document.body.classList.contains('an')) return;
+        const s = cur();
+        let L = null;
+        try {
+          L = s && linkCell(s, hit(e));
+        } catch (x) {}
+        svg.style.cursor = L && L.length ? 'pointer' : '';
+      });
+  }
+  D.bar = fit => [back, run, next, stepSel, speed, reset, view, E('span', { cls: 'dui-sep' }), fit, zoom, panel];
   /* ---------- right panel ---------- */
   const dp = E('div', { id: 'dp' });
   const mid = $('mid');

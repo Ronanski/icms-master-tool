@@ -132,3 +132,32 @@
   - CHECK: M3 lahat (tt 10, mft 7, bfwp 7, idf 7, paf 6, hh 3); M2 14 / 14; M5 load down 14 / 14, normal shutdown 7 / 7, bottle-up 15 / 15; M4 cold 10 / 10, coal 9 / 9, byp 8 / 8, roll 11 / 11, 45 → 150 MW 14 / 14; **M4 buo 17 / 17** (drum −54 ~ 52 mm, RH ≤ 9.0).
   - hmi_op, unit_load, unit_trip, tests, audit230, pid_am (56 PASS, 10 hindi masubok ayon sa disenyo), force_manual 68 / 0, switches 438 / 0, reset, faceplate, panel_sync, plant_live, plant_view, world, manstation, loaddown, ditl150: PASS. closure: pareho sa beta.6. interlock cluster f (ABC-019 / 020): PASS.
 - **Status:** Pass. Wala nang bukas na trabaho ni Claude sa CHECKLIST; natitira ang pagsubok sa device at ang pagbura ng lumang branch (user).
+
+## 2.5.0-beta.8 — Page link sa DITL at PID sa plant model OFF (user: "YUNG MGA PAGE LINK SA DITL, DI GUMAGANA DI MAPINDOT", 2026-10-20)
+
+- **Problem:** (1) Sa DITL, ang reference sa FROM column (kaliwa) at TO column (kanan) ng row, hal. "28A-77", "ABC-006", "15-10,20-11", ay hindi mapindot. (2) Tanong ng user: tama ba ang tugon ng ABC logic kapag ang user ang nag-force / nag-simulate, kahit OFF ang plant model?
+- **As Found:**
+  - (1) Walang code sa DITL para lumipat ng page mula sa reference. Mayroon lang sa ABC (bilog na connector at "FROM / TO DITL"). Ang ABC → DITL ay nagbubukas lang ng sheet, hindi ng row.
+  - (2) Nasubok na ang MANUAL (pid_am), force manual (68), at bawat switch (438), lahat plant model OFF. Ang hindi pa nasubok: ang direksyon ng PID sa AUTO kapag pinilit ng user ang PV o SV.
+- **Work Done:**
+  - `src/ui/shell/ditl.js`: binabasa ang reference ng FROM / TO cell gaya ng nakasulat sa drawing. Ang item 1 ~ 50 ay input row, ang 51 ~ 79 ay output row 1 ~ 29 (gaya ng `src/world/world.js`). Ang "ABC-003A,3B" ay ABC-003A at ABC-003B. Ang "3A-63" ay DITL-03A.
+    - Asul at may guhit ang link.
+    - Kapag pinindot, bubukas ang sheet sa row na iyon at kikislap ang row. Pareho ang zoom.
+    - Kapag maraming page sa isang cell, may lalabas na pagpipilian.
+    - May **◀ Back** sa DITL top bar.
+    - Gumagana sa View at Run. Sa Run, ang input switch ay nasa S column at sa panel pa rin.
+  - `src/digital/parts/07-app-events.js`, `04-render.js`: ang pindot sa link cell, ang kulay ng link, at ang kislap na hindi nawawala habang tumatakbo ang Run.
+  - `src/analog/ui/links-canvas.js` dsGoRef: ang ABC "FROM / TO DITL 26A-55" ay nagbubukas na ng mismong row. Ang ◀ Back ay bumabalik sa ABC sheet.
+  - Bagong test: `tests/regress/ditl_pagelink.js` at `tests/regress/pid_auto.js`.
+  - Walang binago sa logic, drawing, link ng signal o parameter.
+- **As Left (headless, 2.5.0-beta.8):**
+  - ditl_pagelink: lahat PASS sa PC 1440 × 900, tablet 1280 × 800 at phone 390 × 844, sa View at Run.
+    - DITL-01 row 3 "28A-77" → DITL-28A output row 27.
+    - DITL-03A row 11 TO "15-10,20-11 32-10,33-10" → pagpipilian na may 4 → DITL-33 input row 10.
+    - DITL-01 row 13 "ABC-006" → ABC-006.
+    - ABC-020 "26A-55" → DITL-26A row 5.
+    - ◀ Back sa lahat.
+  - pid_auto (plant model OFF, mula sa 150 MW), 68 PID / PIDV:
+    - 39 na AUTO: PASS. Hawak ang output kapag PV = SV. Kapag PV > SV, pababa ang ACT:R at pataas ang ACT:N, at kabaligtaran. Nasa loob ng MV limit. Ang PV filter (TF) at GAP ng parameter list ay sinusunod.
+    - 29 na MANUAL sa 150 MW: sinusundan ng PID ang manual output. Ang MANUAL ay sakop ng pid_am at force_manual.
+- **Status:** Pass.

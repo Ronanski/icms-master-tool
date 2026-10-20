@@ -506,3 +506,11 @@ body:not(.an) #opp{display:none!important}
 @media (min-width:701px) and (max-width:1180px){
  body.app2 #mid #anp{max-height:none!important}
 }
+/* 2.5.0-beta.8: DITL page links (FROM / TO column): link color, the row that a link opened blinks, chooser when a cell names several pages */
+#svg text.plink{fill:#6cb8ff;text-decoration:underline}
+#svg rect.plflash{fill:rgba(255,196,0,.22);stroke:#ffc400;stroke-width:.6;pointer-events:none;animation:plf .5s ease-in-out 4 alternate}
+@keyframes plf{from{fill-opacity:1}to{fill-opacity:.15}}
+#plpick{position:fixed;z-index:60;min-width:220px;max-width:min(420px,calc(100vw - 16px));max-height:60vh;overflow:auto;padding:6px;background:var(--c-pane,#151c22);border:1px solid var(--c-acc,#4fd18b);border-radius:6px;box-shadow:0 6px 18px #0008}
+#plpick .plhd{font:600 12px var(--uf,sans-serif);color:var(--c-dim,#9aa7b2);padding:2px 4px 6px}
+#plpick button{display:block;width:100%;text-align:left;margin:2px 0;padding:8px 10px;min-height:36px;background:transparent;color:var(--c-tx,#e6edf3);border:1px solid var(--c-line2,#2a3540);border-radius:4px;font:13px var(--uf,sans-serif);cursor:pointer}
+#plpick button:hover{border-color:var(--c-acc,#4fd18b)}

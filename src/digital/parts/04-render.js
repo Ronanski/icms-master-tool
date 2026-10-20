@@ -245,6 +245,7 @@ function tx(t, p) {
   if (t.r) e.setAttribute('transform', `rotate(${-t.r} ${t.x} ${-t.y})`);
   e.style.fontFamily = "Consolas,'Cascadia Mono',monospace";
   e.textContent = t.t;
+  return e;
 }
 const SIDE = { L: ['F', 'L', 'T', 'S'], R: ['RS', 'RL', 'RT'] };
 function render() {
@@ -432,11 +433,15 @@ function render() {
     ext(t.x, t.y);
     tx(t, g);
   }
-  for (const k in s.cells)
+  for (const k in s.cells) {
+    /* 2.5.0-beta.8: a page link (FROM / TO column) is drawn as a link */
+    const lk = /:(F|RT)$/.test(k) && window.DUI && DUI.refs && DUI.refs(s.cells[k].map(t => t.t).join(' ')).length;
     for (const t of s.cells[k]) {
       ext(t.x, t.y);
-      tx(t, g);
+      const e = tx(t, g);
+      if (lk) e.classList.add('plink');
     }
+  }
   if (!VB[S.cur]) VB[S.cur] = [a[0] - 6, a[1] - 6, a[2] - a[0] + 12, a[3] - a[1] + 12];
   svg.setAttribute('viewBox', VB[S.cur].join(' '));
   const VR = s.vr || s.rng;
@@ -653,6 +658,7 @@ function render() {
     });
   el('g', { id: 'ov', 'pointer-events': 'none' }, svg);
   drawOv();
+  if (window.DUI && DUI.after) DUI.after(); /* 2.5.0-beta.8: the row a page link opened keeps blinking through a redraw (Run) */
   updatePanel();
   buildTP();
   renderMeta();

@@ -234,6 +234,8 @@ svg.addEventListener('pointerup', e => {
     s = cur();
   if (!s) return;
   clearTimeout(tm);
+  /* 2.5.0-beta.8: a page link (FROM / TO column) opens the other end, in View and Run (src/ui/shell/ditl.js) */
+  if (h && window.DUI && DUI.link && DUI.link(s, h, e)) return;
   if (SIM) {
     const [ux, uy] = xy(e),
       u = (s.nl.usr || []).find(u => Math.abs(ux - u.x) < 3.2 && Math.abs(uy - u.y) < 2.4);
