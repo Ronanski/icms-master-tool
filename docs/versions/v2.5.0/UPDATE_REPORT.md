@@ -283,3 +283,17 @@
 - **Work Done:** Ang pamagat ng grupo (DITL at ABC) ay pindutin para buksan / isara (▾ / ▸); naaalala ang pili. Sa unang bukas, ang grupo lang ng bukas na sheet ang nakabukas. Kapag may hinahanap, bukas ang lahat ng grupong may tugma. Kapag lumipat ng sheet (page link, search), bumubukas ang grupo nito. Walang binago sa logic.
 - **As Left:** Sinubok sa headless (1280x800): DITL at ABC na sarado / bukas / lipat sa LS-90; `ditl_selected`, `layout`, `ditl_toolbar`, `sidetab` ALL PASS.
 - **Status:** Pass sa headless. Hindi nasubok: tablet / apk / exe ng user.
+
+## 2.5.0-beta.18 — Mabasa ang ABC at DITL diagram: Focus, mini-map, Width (user: "gsto ko sana maview lahat kaso ang liliit", pumili ng A + B + C, 2026-10-20)
+
+> Ang beta.17 ay nasa ibang thread (PR #35, HMI graphics 1:1). Ang beta.18 ay sa branch na ito (PR #34).
+
+- **Problem:** Maliit ang diagram: sa 1280 px, ang sheet list at ang panel ay kumakain ng lapad, at ang Fit ng DITL ay kasama ang ligaw na text sa labas ng frame (DITL-56: "STATION 102", "76").
+- **As Found:** Proposal https://claude.ai/artifact/4w4iXJew9BB8Tav3SQDL7p (screenshot ng tunay na app). Pinili ng user: A + B + C.
+- **Work Done:** (`src/ui/shell/view.js`, CSS sa `app.css`) Paano IPINAPAKITA lang; ang gate, wire at layout ng DXF / xls ay hindi ginalaw. Walang binago sa logic o engine.
+  - **A ⛶ Focus** (button sa sulok ng drawing, o Shift+F sa PC): ang drawing ang buong lapad; ang ☰ Sheets at Panel ay lumulutang sa ibabaw. Paglabas, bumabalik ang panel kung bukas ito bago. Ang F lang ay Fit pa rin sa ABC (dati na).
+  - **B mini-map**: maliit na mapa ng buong sheet sa kaliwang ibaba; lumalabas sa Focus o kapag naka-zoom. Pindot = zoom 2× doon (o lipat kapag naka-zoom na), drag = lipat. Ang kahon = kung nasaan ka.
+  - **C Width**: punô ang lapad, simula sa itaas; i-drag / scroll pababa.
+  - Ang Fit ng DITL ay sa frame na lang ng sheet (hindi kasama ang ligaw na text).
+- **As Left:** Sinuri ang bawat screen (screenshot): PC 1280x800 at 1920x1080, tablet 800x1280, phone 390x844; ABC-010 at DITL-56; VIEW at Run; panel bukas / sarado. Bagong test `tests/regress/view.js` ALL PASS (Focus, Fit sa buong sheet, mapa = 2×, Width, Panel sa Focus, balik sa dati). `layout`, `ditl_selected`, `sidetab`, `ditl_toolbar`, `ditl_ls`: ALL PASS.
+- **Status:** Pass sa headless. Hindi nasubok: tablet / apk / exe ng user.
