@@ -571,3 +571,20 @@ html[data-shell=c] #dp .dp-b{color:#2e7d32}
 /* the tab buttons carry data-k too: the rule that hides the other tabs' rows hid the DITL tab strip itself */
 #dp>.lo-tabs>button[data-k]{display:block!important}
 #sidelist button{scroll-margin-top:34px}
+
+/* ===== 2.5.0-beta.18: readable drawing (src/ui/shell/view.js) ===== */
+/* A Focus: the drawing takes the whole page; the sheet list and the panels are drawers over it */
+body.lo-focus #tbsheets{display:inline-flex!important}
+body.lo-focus #mid{position:relative}
+body.lo-focus #mid #side{position:absolute;z-index:40;left:0;top:0;bottom:0;width:min(320px,88vw)!important;display:none!important;box-shadow:8px 0 24px #0009}
+body.lo-focus #mid #side.uiopen{display:flex!important}
+body.lo-focus #mid #cv{flex:1 1 auto;width:100%}
+body.lo-focus #mid #anp,body.lo-focus #mid #opp{position:absolute;z-index:35;right:0;top:0;bottom:0;width:min(400px,94vw)!important;box-shadow:-8px 0 24px #0009}
+body.lo-focus #mid #dp{position:absolute;z-index:35;right:0;top:0;bottom:0;width:min(380px,94vw);box-shadow:-8px 0 24px #0009}
+body.lo-focus #dptab{display:none!important}
+@media (max-width:700px){body.lo-focus #mid :is(#anp,#opp,#dp){top:auto!important;left:0;width:100%!important;height:52%;border-radius:14px 14px 0 0}}
+#lotools .lo-vw{display:flex;gap:4px;padding-left:4px;border-left:1px solid var(--c-line2)}
+/* B mini-map */
+#lomap{position:fixed;z-index:30;display:none;width:200px;background:var(--c-pop,#141c22);border:1px solid var(--c-line2,#2c3c47);border-radius:4px;box-shadow:0 4px 14px #0008;cursor:crosshair;touch-action:none;overflow:hidden}
+#lomap canvas{display:block;width:100%;opacity:.9}
+#lomap .lomap-win{position:absolute;border:2px solid var(--c-acc,#4fd18b);background:color-mix(in srgb,var(--c-acc,#4fd18b) 14%,transparent);border-radius:2px;pointer-events:none;box-sizing:border-box}
