@@ -276,3 +276,10 @@
   - Ang 218 dating DITL sheet: IDENTICAL ang netlist (bago laban sa HEAD). ABC hindi ginalaw.
 - **As Left:** `tests/regress/ditl_ls.js` ALL PASS (23 sheet; walang bukas na input; lahat ng timer; LS-90 step 7; LS-230 limit; LS-214 pulse; page link). Regression: tingnan sa HANDOFF.
 - **Status:** Pass sa headless. Hindi nasubok: tablet / apk / exe ng user. Susunod: sand (8 PDF na walang text, babasahin nang biswal).
+
+## 2.5.0-beta.16 — Collapsible na category sa sheet list (user: "dapat pg by category, collapsible ang group title", 2026-10-20)
+
+- **Problem:** Sa By category, laging bukas ang lahat ng grupo (241 DITL sheet): mahaba ang listahan.
+- **Work Done:** Ang pamagat ng grupo (DITL at ABC) ay pindutin para buksan / isara (▾ / ▸); naaalala ang pili. Sa unang bukas, ang grupo lang ng bukas na sheet ang nakabukas. Kapag may hinahanap, bukas ang lahat ng grupong may tugma. Kapag lumipat ng sheet (page link, search), bumubukas ang grupo nito. Walang binago sa logic.
+- **As Left:** Sinubok sa headless (1280x800): DITL at ABC na sarado / bukas / lipat sa LS-90; `ditl_selected`, `layout`, `ditl_toolbar`, `sidetab` ALL PASS.
+- **Status:** Pass sa headless. Hindi nasubok: tablet / apk / exe ng user.
