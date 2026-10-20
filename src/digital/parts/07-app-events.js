@@ -728,7 +728,8 @@ addEventListener('load', async () => {
     hist = [];
     fut = [];
     render();
-    msg(out.length + ' sheets loaded. Pick a page from the sheet list on the left (the arrow button hides it).');
+    /* 2.5.0-beta.20 (UI audit): only on the LOGIC page (the PLANT VIEW has no sheet list) */
+    if (document.body.dataset.tab === 'logic') msg(out.length + ' sheets loaded. Pick a page from the sheet list on the left (the arrow button hides it).');
   } catch (e) {
     msg('Could not load the built-in sheets: ' + e.message);
   }

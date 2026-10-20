@@ -64,12 +64,23 @@
       m.removeAttribute('style');
       w.append(m);
     }).observe(w, { attributes: true, attributeFilter: ['class'] });
-    document.addEventListener('click', e => {
-      if (!w.contains(e.target) && !m.contains(e.target)) w.classList.remove('open');
-    });
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') w.classList.remove('open');
-    });
+    /* 2.5.0-beta.20 (UI audit): on the window, before the pages: the ABC page stops the keys and the 🔍 button its click,
+       so Esc and 🔍 left the ⚙ menu open over the search */
+    const win = btn.ownerDocument.defaultView || window;
+    win.addEventListener(
+      'click',
+      e => {
+        if (!w.contains(e.target) && !m.contains(e.target)) w.classList.remove('open');
+      },
+      true
+    );
+    win.addEventListener(
+      'keydown',
+      e => {
+        if (e.key === 'Escape') w.classList.remove('open');
+      },
+      true
+    );
     m.addEventListener('click', e => {
       if (e.target.tagName === 'BUTTON') setTimeout(() => w.classList.remove('open'), 50);
     });
@@ -383,13 +394,20 @@
       foot.append(sm);
       const t = $('toast');
       if (t) {
-        const sync = () => {
+        /* 2.5.0-beta.20 (UI audit): a message belongs to the tab it was shown on; a tab change hides it (a DITL message
+           showed on LIBRARY / TOOLS) */
+        let mtab = null;
+        const sync = posted => {
           const on = !t.hidden && !!t.textContent.trim();
-          if (on) sm.textContent = t.textContent;
-          document.body.classList.toggle('hasmsg', on);
+          if (on && posted) {
+            sm.textContent = t.textContent;
+            mtab = document.body.dataset.tab;
+          }
+          document.body.classList.toggle('hasmsg', on && mtab === document.body.dataset.tab);
         };
-        new MutationObserver(sync).observe(t, { attributes: true, attributeFilter: ['hidden'], childList: true, characterData: true, subtree: true });
-        sync();
+        new MutationObserver(() => sync(false)).observe(document.body, { attributes: true, attributeFilter: ['data-tab'] });
+        new MutationObserver(() => sync(true)).observe(t, { attributes: true, attributeFilter: ['hidden'], childList: true, characterData: true, subtree: true });
+        sync(true);
       }
     }
     /* --- top bar --- */
@@ -408,7 +426,7 @@
     const sub = E('div', { cls: 'sub' });
     [
       ['an', 'ABC', 'Analog logic (boiler control): 54 sheets'],
-      ['dig', 'DITL', 'Digital interlock logic: 134 sheets']
+      ['dig', 'DITL', 'Digital interlock logic: all the DITL sheets']
     ].forEach(([k, l, t]) => {
       const b = E('button', { txt: l, title: t, on: () => setSub(k) });
       subBtns[k] = b;
@@ -656,7 +674,7 @@
       [/^DITL signals/, 'DITL addresses of the open sheet.'],
       [/^Second sheet/, 'Open another sheet side by side.'],
       [/^Plant model/, 'ON: the PV answers the valve (each PID loop and the boiler / turbine model). OFF: the PV is a free input.'],
-      [/^ABC\s*\+\s*DITL/, 'ON: the 134 DITL sheets run with the ABC Run and pass signals both ways (one world).']
+      [/^ABC\s*\+\s*DITL/, 'ON: all the DITL sheets run with the ABC Run and pass signals both ways (one world).']
     ];
     function cardsUpd() {
       if (tab !== 'tools') return;

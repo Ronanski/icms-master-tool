@@ -45,7 +45,14 @@
         const b = sh.bb || (sh.bb = bbox(sh.R));
         return [b[0] - 10, -b[3] - 10, b[2] + 10, -b[1] + 10];
       }
-      const s = S.sheets[S.cur];
+      return dext(S.sheets[S.cur]);
+    } catch (e) {
+      return null;
+    }
+  };
+  /* the frame of a DITL sheet (also the first view of the sheet, 04-render.js) */
+  function dext(s) {
+    try {
       if (!s) return null;
       if (s._ext && s._ext.k === s.raw) return s._ext.e;
       let x0 = 1e9,
@@ -58,13 +65,22 @@
         y0 = Math.min(y0, -q[1], -q[3]);
         y1 = Math.max(y1, -q[1], -q[3]);
       });
+      /* the texts of the rows (FROM / TO, tag, service) belong to the sheet even where one runs past the frame (DITL-19 row 6 TO) */
+      if (x1 > x0)
+        for (const k in s.cells || {})
+          for (const t of s.cells[k]) {
+            x0 = Math.min(x0, t.x);
+            x1 = Math.max(x1, t.x + (t.t || '').length * (t.h || 2) * 0.6);
+            y0 = Math.min(y0, -t.y - (t.h || 2));
+            y1 = Math.max(y1, -t.y);
+          }
       const e = x1 > x0 ? [x0 - 4, y0 - 4, x1 + 4, y1 + 4] : null;
       s._ext = { k: s.raw, e };
       return e;
     } catch (e) {
       return null;
     }
-  };
+  }
   const box = () => {
     const svg = $('svg'),
       r = svg && svg.getBoundingClientRect();
@@ -285,5 +301,5 @@
   addEventListener('resize', placeMap);
   if (focus) setFocus(true);
   else paint();
-  window.LOVIEW = { setFocus, fitAll, fitWidth, ext, view, map: () => map };
+  window.LOVIEW = { setFocus, fitAll, fitWidth, ext, dext, view, map: () => map };
 })();

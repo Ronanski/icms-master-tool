@@ -388,6 +388,9 @@ bPn.onclick = () => {
   AN.tmp = false;
   showPanel(anp.classList.contains('min'));
 };
+/* 2.5.0-beta.20 (UI audit): up to 1180 px the panel is a drawer OVER the drawing: closed at the start, a click on a block or a
+   wire opens it (an empty panel covered half of the sheet on a tablet standing up and on a phone) */
+if (matchMedia('(max-width:1180px)').matches) showPanel(false);
 setInterval(() => {
   if (!live() || !AN.run) return;
   const sh = cs();

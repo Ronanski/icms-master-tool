@@ -84,7 +84,9 @@
     v.splice(0, 4, cx - w / 2, cy - hh / 2, w, hh);
     svg.setAttribute('viewBox', v.join(' '));
   };
-  let open = ls('ditl.dp') !== '0';
+  /* 2.5.0-beta.20 (UI audit): up to 1180 px the panel is a drawer OVER the drawing: closed at the start (an empty panel covered
+     half of the sheet on a tablet standing up and on a phone); a click on a row, a gate or a wire opens it */
+  let open = ls('ditl.dp') !== '0' && !matchMedia('(max-width:1180px)').matches;
   panel.onclick = () => {
     open = !open;
     ls('ditl.dp', open ? '1' : '0');
