@@ -236,14 +236,15 @@ function netlistCore(sh, strict) {
       }
     for (const h of H) {
       const L = h.x2 - h.x1;
-      if (L < 0.8 || L > 2.6 || gk.has(h.k)) continue;
+      /* 2.5.0-beta.14 (PDF audit BA-02 TR410 ~ TR413): the bottom ash pulse glyph is a little bigger (3.0 wide, 3.6 high) */
+      if (L < 0.8 || L > (sh.ba ? 3.2 : 2.6) || gk.has(h.k)) continue;
       const vv = x =>
           V.find(
             v =>
               !gk.has(v.k) &&
               Math.abs(v.x - x) < 0.06 &&
               v.y2 - v.y1 >= 1.0 &&
-              v.y2 - v.y1 <= 3.6 &&
+              v.y2 - v.y1 <= (sh.ba ? 3.8 : 3.6) &&
               (Math.abs(v.y1 - h.y) < 0.06 || Math.abs(v.y2 - h.y) < 0.06)
           ),
         a = vv(h.x1),
@@ -313,7 +314,15 @@ function netlistCore(sh, strict) {
           : nm
             ? { v: +nm.t, u: 'SEC' }
             : null; /* duration written beside the glyph, e.g. DITL-69 TR23 "3 SEC." */
+      /* 2.5.0-beta.14 (bottom ash BA-52 M.133F, BA-69 M.135F "FLASHER(ON/OFF)"): the square-wave glyph on the flasher row is a
+         flasher (ON / OFF times written on the sheet, e.g. "ON:1S" "OFF:0.5S"), not a pulse */
+      const flR = sh.ba && allTx.some(t => /FLASHER/i.test(t.t) && Math.abs(t.y - host2.y) < 6),
+        flT = ['ON', 'OFF'].map(k => allTx.map(t => new RegExp('^' + k + '\\s*:\\s*([\\d.]+)\\s*(MS|S)', 'i').exec(t.t)).find(Boolean));
+      /* a flasher input from another sheet (BA-46 M.133F FROM BA52, no ON / OFF times here): the glyph only says what it is */
+      if (flR && !flT[0]) continue;
+      const fl = flR ? flT.map(m => (m ? +m[1] / (/MS/i.test(m[2]) ? 1000 : 1) : 0.5)) : null;
       PG.push({
+        fl,
         inl: host2 !== host,
         cx,
         wy: host2.y,
@@ -619,8 +628,8 @@ function netlistCore(sh, strict) {
   G.filter(g => g.t === 'AND').forEach(g => {
     const q = g.q,
       pr = barPieces(q.L - 1.3, q.L + 1.3, q.T - q.B + 1, q.B, q.T);
-    if (pr.length < 2 && !pr.some(v => v.bar))
-      return; /* v20: the bar can sit up to 1.2 inside the box edge (DITL-83) and a thick bar alone is already a bus */
+    if (pr.length < 2 && !pr.some(v => v.bar) && !(sh.ba && pr.length === 1))
+      return; /* 2.5.0-beta.14: the bottom ash form draws the AND input bus as one thin line longer than the box (BA-04 M.1310) */ /* v20: the bar can sit up to 1.2 inside the box edge (DITL-83) and a thick bar alone is already a bus */
     g.bus = {
       x1: Math.min(...pr.map(v => v.x)),
       x2: Math.max(...pr.map(v => v.x)),
@@ -1271,9 +1280,10 @@ function netlistCore(sh, strict) {
       const pd = sh.pdur && sh.pdur[p.key];
       gates.push({
         t: 'TMR',
-        k: p.pos ? 'pulse' : 'npulse',
+        k: p.fl ? 'flash' : p.pos ? 'pulse' : 'npulse',
+        fl: p.fl,
         tm: {
-          lab: 'PULSE',
+          lab: p.fl ? 'FLASHER' : 'PULSE',
           pg: 1,
           key: p.key,
           tag: p.tag,
@@ -1284,7 +1294,7 @@ function netlistCore(sh, strict) {
           bx2: p.cx + 1.5,
           nt: null,
           ut: null,
-          fv: pd || p.dur || { v: 2, u: 'SEC' }
+          fv: p.fl ? { v: p.fl[0], u: 'SEC' } : pd || p.dur || { v: 2, u: 'SEC' }
         },
         ins: [sn[p.A]],
         out: [sn[p.B]],
@@ -1317,6 +1327,8 @@ function netlistCore(sh, strict) {
     });
   });
   const row = y => sh.rows.findIndex(r => y >= r.y - 3.3 && y < r.y + 5.7),
+    /* 2.5.0-beta.14: a bottom ash row with its output flag a little off the input flag (r.ry, baForm) */
+    rowR = y => sh.rows.findIndex(r => y >= (r.ry === undefined ? r.y : r.ry) - 3.3 && y < (r.ry === undefined ? r.y : r.ry) + 5.7),
     src = [],
     outs = [];
   const gOut = new Set();
@@ -1330,7 +1342,7 @@ function netlistCore(sh, strict) {
     maxX[q.n] = Math.max(maxX[q.n] === undefined ? -1e9 : maxX[q.n], q.x2);
   });
   for (const e of ends) {
-    const i = row(e.y);
+    const i = e.x >= R0 - 4 ? rowR(e.y) : row(e.y);
     if (i < 0 || e.cut) continue;
     /* v20: a wire START is a free end, or the left-most point of its net (a bend near the cell edge has more wire to its left: DITL-99 row 1 / row 3) */
     if (e.x <= S1 + 2.2) {
@@ -1810,6 +1822,28 @@ function netlistCore(sh, strict) {
     }
   }
   NL.mv = movModel(sh, NL);
+  /* 2.5.0-beta.14 (bottom ash BA-20): the pulse box (TR353) and the COUNTER box (+1, =4, R) found by baForm (raw.bab) */
+  if (sh.ba && r.bab)
+    r.bab.forEach(b => {
+      const ym = (b.y1 + b.y2) / 2,
+        inn = segs.filter(q => q.h && Math.abs(q.x2 - b.x1) < 1.5 && q.y1 > b.y1 && q.y1 < b.y2).sort((p, q) => Math.abs(p.y1 - ym) - Math.abs(q.y1 - ym))[0],
+        out = segs.filter(q => q.h && Math.abs(q.x1 - b.x2) < 1.5 && q.y1 > b.y1 && q.y1 < b.y2).sort((p, q) => Math.abs(p.y1 - ym) - Math.abs(q.y1 - ym))[0];
+      if (!inn || !out) return;
+      if (b.k === 'pulse')
+        gates.push({
+          t: 'TMR',
+          k: 'pulse',
+          tm: { lab: 'PULSE', key: b.tag + '@box', tag: b.tag, ax: (b.x1 + b.x2) / 2, ay: ym, rr: (b.y2 - b.y1) / 2, bx1: b.x1, bx2: b.x2, nt: null, ut: null, fv: (sh.pdur && sh.pdur[b.tag + '@box']) || { v: 2, u: 'SEC' } },
+          ins: [inn.n],
+          out: [out.n],
+          st: { acc: 0, out: 0, pre: 0, run: 0 },
+          box: { x1: b.x1, x2: b.x2, y1: b.y1, y2: b.y2 }
+        });
+      else {
+        const rr = segs.find(q => !q.h && q.x1 > b.x1 && q.x1 < b.x2 && Math.abs(q.y2 - b.y1) < 1.5);
+        gates.push({ t: 'CNT', up: 1, ins: [inn.n], r: rr ? [rr.n] : [], out: [out.n], ks: [b.pre], N: 0, pin: 0, box: { x1: b.x1, x2: b.x2, y1: b.y1, y2: b.y2 }, pp: [], miss: [] });
+      }
+    });
   NL.mir = mirModel(sh, NL);
   /* 2.5.0-beta.11 (DITL PDF audit, DITL-35 rows 6 / 9 "M.0172" / "-M.0172"): an address written on the start of an input wire is that
      signal; the same address with a leading minus on another input wire is the same bit inverted (row 9 = NOT row 6) */
@@ -1997,6 +2031,63 @@ function netlistCore(sh, strict) {
         !cmd.has(kn[d.k]) &&
         !NL.usr.some(u => d.x >= u.pent[0] && d.x <= u.pent[1] && d.y >= u.pent[2] && d.y <= u.pent[3])
     );
+  }
+  /* 2.5.0-beta.14 (bottom ash sequence, BA-04 ~ BA-18): the step register. An output cell "STEP=8" with "IF M.1333 ON THEN 8 -->
+     SI0130" writes 8 into SI0130 while its wire is 1; an input row "STEP≥8" is 1 while SI0130 ≥ 8 (src/digital/parts/04-render.js) */
+  if (sh.ba) {
+    const ctx = c => (sh.cells[c] || []).map(t => t.t).join(' ');
+    const all = [...sh.tx, ...Object.values(sh.cells).flat()].map(t => t.t).join(' ');
+    const rg = (/THEN\s*\d+\s*-+>\s*(SI\s*[0-9A-F]+)/i.exec(all) || [])[1];
+    const reg = (rg || 'SI0130').replace(/\s/g, '');
+    NL.stepW = [];
+    NL.outs.forEach(o => {
+      const m = /STEP\s*=\s*(\d+)/i.exec(ctx(o.row + ':RS'));
+      if (m && !NL.stepW.some(w => w.n === o.n)) NL.stepW.push({ n: o.n, row: o.row, reg, val: +m[1] });
+    });
+    NL.stepR = [];
+    NL.src.forEach(z => {
+      const m = /STEP\s*([≥≤=])\s*(\d+)/.exec(ctx(z.row + ':S'));
+      if (m && !NL.stepR.some(r => r.row === z.row)) NL.stepR.push({ row: z.row, reg, op: m[1], val: +m[2] });
+    });
+  }
+  /* 2.5.0-beta.14 (bottom ash BA-55 / 56 / 72 ~ 74, the HMI indicator sheets: "0:BLUE 1:RED", "1:RED&YELLOW FLASH"): an input
+     wire that goes into no gate and to no output row ends at the indicator symbol; the dot at its end lights with it (the name of
+     the indicator is the text above it). Before, no output: the sheet showed nothing in Run */
+  if (sh.ba) {
+    const used = new Set(NL.outs.map(o => o.n));
+    gates.forEach(g => [...(g.ins || []), ...(g.s || []), ...(g.r || [])].forEach(n => used.add(n)));
+    const allT = [...sh.tx, ...Object.values(sh.cells).flat()];
+    NL.term = [];
+    /* the lamp may also be driven by a gate (BA-56 EMERGENCY STOP = OR, READY FOR START M.1373 = AND) */
+    [...new Set([...NL.src.map(z => z.n), ...gates.flatMap(g => (g.t === 'AND' || g.t === 'OR' || g.t === 'NOT' ? g.out || [] : []))])].forEach(n => {
+      if (used.has(n)) return;
+      const P = [];
+      segs.filter(q => q.n === n).forEach(q => P.push([q.x1, q.y1], [q.x2, q.y2]));
+      if (!P.length) return;
+      const e = P.reduce((a, p) => (p[0] > a[0] + 0.5 || (Math.abs(p[0] - a[0]) <= 0.5 && p[1] > a[1]) ? p : a), P[0]);
+      if (e[0] <= S1 + 6) return;
+      const lab = allT
+        .filter(t => Math.abs(t.x - e[0]) < 14 && t.y > e[1] && t.y - e[1] < 14 && /[A-Z]{3}/.test(t.t) && !/^\d\s*:/.test(t.t))
+        .sort((a, b) => b.y - a.y)
+        .map(t => t.t)
+        .join(' ');
+      NL.term.push({ n, x: e[0], y: e[1], lab, lamp: null });
+    });
+  }
+  /* 2.5.0-beta.14 (bottom ash BA-11 M.1331): a spare line into an AND / OR that starts on an empty row (no tag, no service, no
+     gate) is not an input; before, it was a 0 that kept the AND off forever */
+  if (sh.ba) {
+    const drv = new Set([...NL.src.map(z => z.n), ...NL.one, ...(NL.mir || []).map(m => m.n), ...NL.ind.map(m => m.n)]);
+    gates.forEach(g => (g.out || []).forEach(n => drv.add(n)));
+    (NL.xcon || []).forEach(c => c.dir === 'in' && drv.add(c.n));
+    NL.usr.forEach(u => drv.add(u.n));
+    NL.mot.forEach(m => [m.mor, m.mos, m.mir].forEach(n => n >= 0 && drv.add(n)));
+    NL.mv.forEach(b => b.fb.forEach(f => f.n >= 0 && drv.add(f.n)));
+    gates.forEach(g => {
+      if ((g.t !== 'AND' && g.t !== 'OR') || !g.ins) return;
+      const k = g.ins.filter(n => drv.has(n));
+      if (k.length && k.length < g.ins.length) g.ins = k;
+    });
   }
   return NL;
 }

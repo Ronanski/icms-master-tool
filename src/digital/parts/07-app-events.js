@@ -339,6 +339,7 @@ addEventListener('keydown', e => {
 });
 $('bmode').onclick = () => {
   SIM = !SIM;
+  DREG = {};
   MST = {};
   MS = {};
   sel = null;
@@ -355,7 +356,7 @@ $('bmode').onclick = () => {
     }
     ((x.nl && x.nl.gates) || []).forEach(g => {
       if (g.t === 'FF') g.q = 0;
-      if (g.t === 'CNT') g.N = g.pin = 0;
+      if (g.t === 'CNT') g.N = g.pin = g.rp = 0;
       if (g.t === 'TMR') g.st = { acc: 0, out: 0, pre: 0, run: 0 };
     });
   });

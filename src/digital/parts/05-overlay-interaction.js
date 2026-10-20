@@ -380,6 +380,15 @@ function tmStep(g, inp, dt) {
         st.acc = 0;
       }
     }
+  } else if (g.k === 'flash') {
+    /* 2.5.0-beta.14 bottom ash flasher: ON / OFF while the input is 1 */
+    if (inp) {
+      st.acc = (st.acc + dt) % (g.fl[0] + g.fl[1]);
+      st.out = st.acc < g.fl[0] ? 1 : 0;
+    } else {
+      st.acc = 0;
+      st.out = 0;
+    }
   } else if (g.nc) {
     st.out = inp ? 1 : 0;
   } else if (g.ncp) {
@@ -661,7 +670,7 @@ function mvUI(s) {
     }
   });
 }
-const KN = { on: 'ON DELAY', off: 'OFF DELAY', pulse: 'PULSE', npulse: 'PULSE (falling)' };
+const KN = { on: 'ON DELAY', off: 'OFF DELAY', pulse: 'PULSE', npulse: 'PULSE (falling)', flash: 'FLASHER' };
 function tmList() {
   const s = cur();
   return s && s.nl ? s.nl.gates.filter(g => g.t === 'TMR') : [];
@@ -744,10 +753,12 @@ const DITL_CATS = [
   'DIESEL OIL',
   'AIR SYSTEM (DRYER / COMPRESSORS)',
   'TURBINE INTERFACE',
-  'SOOTBLOWER'
+  'SOOTBLOWER',
+  'BOTTOM ASH HD600 / CONVEYORS'
 ];
 function ditlCat(x) {
   if (isSB(x)) return 'SOOTBLOWER';
+  if (/^\(B\d+\)/.test(x.name || '')) return 'BOTTOM ASH HD600 / CONVEYORS'; /* 2.5.0-beta.14 */
   const m = /DITL-(\d+)([A-Z]?)$/i.exec(x.name || '');
   if (!m) return /DITL-0[A-D]$/i.test(x.name || '') ? 'CONTENTS' : 'OTHER';
   const n = +m[1],

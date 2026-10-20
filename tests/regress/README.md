@@ -35,4 +35,5 @@ Headless (Playwright + Chromium) checks of `dist/logic-sim-vX.Y.Z.html` (default
 | `node tests/regress/ditl_export.js <outdir> [html]` | 2.5.0-beta.10: isinusulat ang basa ng app sa bawat DITL sheet (row, FROM / TO, at logic ng bawat output hanggang input row) para ibangga sa PDF | ~1 min |
 | `node tests/regress/ditl_sb.js [html]` | 2.5.0-beta.12: 17 sootblower sheet sa kategorya; COUNTER ng DITL-80; SB PANEL output ng 80K; valve feedback ng 80S; page link 80K ↔ DITL-43 | ~1 min |
 | `node tests/regress/ditl_selected.js [html]` | 2.5.0-beta.13: DITL bar [VIEW / ▶ Run], header badge, By order / By category, 5 tab, Selected (output row, flip-flop, wire), "To make it 1" laban sa simulation sa 47 sheet | ~4 min |
+| `node tests/regress/ditl_ba.js [html]` | 2.5.0-beta.14: 67 bottom ash sheet sa kategorya; BA-11 step SI0130; BA-52 flasher; BA-20 COUNTER (=4) at AUTOMATIC STOP; page link BA01-11 / BA-56/46/11 | ~1 min |
 | `node tests/regress/ditl_pdf.js [html]` | 2.5.0-beta.11: ang logic na binasa sa DITL PDF (bawat ayos ng `DITL_PDF_AUDIT.md`) ay hawak ng app; SIMULATE: overtime alarm ng DITL-38, connector DITL-26B (A) → 26A | ~1 min |
