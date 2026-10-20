@@ -359,12 +359,8 @@ function panelFor(on) {
     showPanel(on);
     return;
   }
-  if (anp.classList.contains('min')) {
-    if (on) {
-      AN.tmp = true;
-      showPanel(true);
-    }
-  } else if (AN.tmp && !on) showPanel(false);
+  /* 2.4.1-beta.3 (user): Auto-hide OFF = the panel never minimizes by itself; a click on a block opens it and it stays */
+  if (on && anp.classList.contains('min')) showPanel(true);
 }
 function showPanel(on) {
   if (!on) AN.tmp = false;
@@ -392,6 +388,9 @@ bPn.onclick = () => {
   AN.tmp = false;
   showPanel(anp.classList.contains('min'));
 };
+/* 2.5.0-beta.20 (UI audit): up to 1180 px the panel is a drawer OVER the drawing: closed at the start, a click on a block or a
+   wire opens it (an empty panel covered half of the sheet on a tablet standing up and on a phone) */
+if (matchMedia('(max-width:1180px)').matches) showPanel(false);
 setInterval(() => {
   if (!live() || !AN.run) return;
   const sh = cs();

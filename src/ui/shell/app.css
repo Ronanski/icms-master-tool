@@ -3,7 +3,9 @@
 :root{--uf:'IBM Plex Sans Condensed','IBM Plex Sans',system-ui,sans-serif;--mf:'JetBrains Mono',ui-monospace,monospace;
  --c-bg:#090d12;--c-pane:#0d1319;--c-strip:#0b1016;--c-ctl:#131b24;--c-ctlh:#18222d;
  --c-line:#1c2731;--c-line2:#273544;--c-tx:#d3dce5;--c-tx2:#a9b7c4;--c-dim:#6f8191;
- --c-acc:#38a8f0;--c-accbg:#0e2536;--c-run:#2fbf71;--c-runbg:#0f3322;--c-man:#e0a526;--c-alm:#e5484d}
+ --c-acc:#38a8f0;--c-accbg:#0e2536;--c-run:#2fbf71;--c-runbg:#0f3322;--c-man:#e0a526;--c-alm:#e5484d;
+ --c-hi:#fff;--c-acctx:#d8eeff;--c-acctx2:#9cc3df;--c-accbd:#2a6a98;--c-hovbd:#3a5068;--c-in:#070a0e;--c-pop:#0c1117;
+ --c-row:#141c24;--c-hov:#111922;--c-fp:#0a0f14;--c-cv:#06090c;--c-dot:#16212b;--c-selg:linear-gradient(90deg,#0f2a3d,#0d1319)}
 html[data-font=plexc]{--uf:'IBM Plex Sans Condensed','IBM Plex Sans',system-ui,sans-serif;--mf:'JetBrains Mono',ui-monospace,monospace}
 html[data-font=barlow]{--uf:'Barlow Semi Condensed',system-ui,sans-serif;--mf:'JetBrains Mono',ui-monospace,monospace}
 html[data-font=inter]{--uf:'Inter',system-ui,sans-serif;--mf:'JetBrains Mono',ui-monospace,monospace}
@@ -26,22 +28,22 @@ body.app2 #gsbar{display:flex!important;flex-wrap:wrap;align-items:center;gap:6p
 #gsbar .tabs{display:flex;border:1px solid var(--c-line2);border-radius:4px;overflow:hidden;flex:none}
 #gsbar .tabs button{height:30px;min-width:68px;padding:0 12px;border:0;border-right:1px solid var(--c-line2);border-radius:0;background:transparent;color:var(--c-tx2);font:600 12px var(--uf);letter-spacing:.08em;cursor:pointer}
 #gsbar .tabs button:last-child{border-right:0}
-#gsbar .tabs button.on{background:var(--c-accbg);color:#fff;box-shadow:inset 0 -2px 0 var(--c-acc)}
+#gsbar .tabs button.on{background:var(--c-accbg);color:var(--c-hi);box-shadow:inset 0 -2px 0 var(--c-acc)}
 #gsbar .sub{display:none;border:1px solid var(--c-line2);border-radius:4px;overflow:hidden;flex:none}
 body[data-tab=logic] #gsbar .sub{display:flex}
 #gsbar .sub button{height:30px;min-width:48px;padding:0 10px;border:0;border-right:1px solid var(--c-line2);border-radius:0;background:transparent;color:var(--c-tx2);font:600 12px var(--uf);cursor:pointer}
 #gsbar .sub button:last-child{border-right:0}
-#gsbar .sub button.on{background:var(--c-accbg);color:#fff;box-shadow:inset 0 -2px 0 var(--c-acc)}
+#gsbar .sub button.on{background:var(--c-accbg);color:var(--c-hi);box-shadow:inset 0 -2px 0 var(--c-acc)}
 #gsbar .tbar{display:flex;align-items:center;gap:4px;flex:1 1 0;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
 #gsbar .tbar::-webkit-scrollbar{display:none}
 #gsbar .tb{display:none;align-items:center;gap:3px;padding:0 6px 0 2px;border-right:1px solid var(--c-line);flex:none}
 #gsbar .tb:last-child{border-right:0}
 #gsbar .tb>*{flex:none}
 #gsbar :is(.tbar,.gs-set) :is(button,select,label.b){height:28px;min-height:28px;padding:0 9px;border-radius:3px;font-size:12px;line-height:26px;background:var(--c-ctl);border:1px solid var(--c-line2);color:var(--c-tx2);font-weight:500;cursor:pointer;display:inline-flex;align-items:center;white-space:nowrap}
-#gsbar :is(.tbar,.gs-set) :is(button,label.b):hover{background:var(--c-ctlh);border-color:#3a5068;color:var(--c-tx)}
-#gsbar :is(.tbar,.gs-set) :is(button,label.b).on{background:var(--c-accbg);border-color:#2a6a98;color:#d8eeff;box-shadow:inset 0 -2px 0 var(--c-acc)}
+#gsbar :is(.tbar,.gs-set) :is(button,label.b):hover{background:var(--c-ctlh);border-color:var(--c-hovbd);color:var(--c-tx)}
+#gsbar :is(.tbar,.gs-set) :is(button,label.b).on{background:var(--c-accbg);border-color:var(--c-accbd);color:var(--c-acctx);box-shadow:inset 0 -2px 0 var(--c-acc)}
 #gsbar .tbar :is(.tb-run,#bmode){background:var(--c-runbg)!important;border-color:#2b8a57!important;color:#c9f5dc!important;font-weight:600;min-width:72px}
-#gsbar .tbar :is(.tb-run,#bmode).on{background:#1b5e3c!important;color:#fff!important;box-shadow:inset 0 -2px 0 var(--c-run)!important}
+#gsbar .tbar :is(.tb-run,#bmode).on{background:#1b5e3c!important;color:var(--c-hi)!important;box-shadow:inset 0 -2px 0 var(--c-run)!important}
 #gsbar .tbar select{width:auto;padding:0 4px}
 #gsbar .tbar #anshbox,#gsbar .tbar #shbox{display:inline-flex;gap:2px;margin:0}
 #gsbar .tbar :is(#anshbox,#shbox) select{max-width:210px}
@@ -52,18 +54,19 @@ body[data-tab=logic]:not(.an) #gsbar :is(.g-ditl,.g-sheet){display:flex}
 body[data-tab=operate] #gsbar :is(.g-run,.g-op){display:flex}
 body[data-tab=operate] #gsbar .g-run :is(.tb-step,.tb-view){display:none!important}
 #gsbar .gs-search{flex:1 1 180px;display:flex;align-items:center;gap:4px;min-width:140px}
-#gsbar .gs-search #ansb{flex:1;height:28px;min-width:80px;font:12px var(--mf)!important;padding:0 8px;border-radius:3px;background:#070a0e!important;border:1px solid var(--c-line2)!important;color:var(--c-tx)!important;max-width:none}
+#gsbar .gs-search #ansb{flex:1;height:28px;min-width:80px;font:12px var(--mf)!important;padding:0 8px;border-radius:3px;background:var(--c-in)!important;border:1px solid var(--c-line2)!important;color:var(--c-tx)!important;max-width:none}
 #gsbar .gs-search #ansb:focus{border-color:var(--c-acc)!important;box-shadow:0 0 0 2px #38a8f033;outline:0}
-#gsbar .gs-search #gscope{display:flex;gap:0;padding:1px;background:#070a0e;border:1px solid var(--c-line2);border-radius:3px}
+#gsbar .gs-search #gscope{display:flex;gap:0;padding:1px;background:var(--c-in);border:1px solid var(--c-line2);border-radius:3px}
 #gsbar .gs-search #gscope button{height:22px!important;min-height:22px!important;padding:0 6px!important;font-size:11px!important;border:0!important;background:transparent!important;border-radius:2px;color:var(--c-tx2)}
-#gsbar .gs-search #gscope button.on{background:var(--c-accbg)!important;color:#d8eeff!important;box-shadow:inset 0 -2px 0 var(--c-acc)}
+#gsbar .gs-search #gscope button.on{background:var(--c-accbg)!important;color:var(--c-acctx)!important;box-shadow:inset 0 -2px 0 var(--c-acc)}
 /* drop-down menus (⚙ and Start) */
 .ddw{position:relative;flex:none}
 .ddw>button.ico{min-width:30px!important;padding:0 6px!important;display:inline-flex!important;align-items:center;justify-content:center}
 .ddw>button.ico svg{width:15px;height:15px;display:block}
-.ddm{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:95;min-width:250px;max-width:92vw;max-height:72vh;overflow:auto;background:#0c1117;border:1px solid var(--c-line2);border-radius:4px;padding:8px;box-shadow:0 14px 40px #000c}
+.ddm{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:95;min-width:250px;max-width:92vw;max-height:72vh;overflow:auto;background:var(--c-pop);border:1px solid var(--c-line2);border-radius:4px;padding:8px;box-shadow:0 14px 40px #000c}
 .ddw.left .ddm{left:0;right:auto}
 .ddw.open .ddm{display:block}
+.ddm.ddm-open{display:block;z-index:200;max-width:min(360px,calc(100vw - 16px))}
 .ddm>*{display:block;width:100%;margin:0 0 6px!important;text-align:left;box-sizing:border-box}
 .ddm>*:last-child{margin-bottom:0}
 .ddm>button,.ddm>select,.ddm>label.b{height:30px!important;min-height:30px!important;white-space:normal!important;line-height:1.2!important;padding:3px 9px!important}
@@ -71,7 +74,7 @@ body[data-tab=operate] #gsbar .g-run :is(.tb-step,.tb-view){display:none!importa
 .ddm .mh:first-child{margin-top:0!important}
 /* ---- sheet title strips ---- */
 body.app2 #anmeta{min-height:28px;padding:2px 10px!important;background:var(--c-pane)!important;border-bottom:1px solid var(--c-line)!important}
-body.app2 #anmeta b{font:600 14px var(--mf)!important;color:#eef4f9;letter-spacing:.02em}
+body.app2 #anmeta b{font:600 14px var(--mf)!important;color:var(--c-hi);letter-spacing:.02em}
 body.app2 #meta{padding:3px 12px!important;min-height:34px;align-items:center;background:var(--c-pane)!important;border-bottom:1px solid var(--c-line)!important}
 body.app2 #meta #m_title{font-size:14px!important;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body.app2 #meta #m_sub{font-size:11px;margin-top:0}
@@ -83,40 +86,40 @@ body.app2 #sidehd b{font:600 11px var(--uf)!important;letter-spacing:.12em!impor
 body.app2 #sidehd button{height:22px;min-height:22px;padding:0 6px;border-radius:3px;background:var(--c-ctl);border:1px solid var(--c-line2)}
 body.app2 #sidesort{gap:0!important;margin:6px 8px!important;border:1px solid var(--c-line2);border-radius:3px;overflow:hidden}
 body.app2 #sidesort button{height:24px;border:0!important;border-radius:0!important;background:var(--c-ctl)!important;color:var(--c-tx2)!important;font-size:12px!important}
-body.app2 #sidesort button.on{background:var(--c-accbg)!important;color:#d8eeff!important;box-shadow:inset 0 -2px 0 var(--c-acc)}
-body.app2 #sidefl{height:28px;margin:0 8px 6px!important;width:calc(100% - 16px)!important;background:#070a0e!important;border:1px solid var(--c-line2)!important;border-radius:3px!important;font:12px var(--mf)!important;box-sizing:border-box}
-body.app2 #sidelist button{padding:5px 10px!important;border-left:2px solid transparent!important;border-bottom:1px solid #141c24!important;background:transparent!important}
-body.app2 #sidelist button:hover{background:#111922!important}
-body.app2 #sidelist button .sn{font:600 12.5px var(--mf)!important;color:#e6edf3!important}
+body.app2 #sidesort button.on{background:var(--c-accbg)!important;color:var(--c-acctx)!important;box-shadow:inset 0 -2px 0 var(--c-acc)}
+body.app2 #sidefl{height:28px;margin:0 8px 6px!important;width:calc(100% - 16px)!important;background:var(--c-in)!important;border:1px solid var(--c-line2)!important;border-radius:3px!important;font:12px var(--mf)!important;box-sizing:border-box}
+body.app2 #sidelist button{padding:5px 10px!important;border-left:2px solid transparent!important;border-bottom:1px solid var(--c-row)!important;background:transparent!important}
+body.app2 #sidelist button:hover{background:var(--c-hov)!important}
+body.app2 #sidelist button .sn{font:600 12.5px var(--mf)!important;color:var(--c-hi)!important}
 body.app2 #sidelist button .st{font-size:11px!important;line-height:1.3!important;letter-spacing:.02em;color:var(--c-dim)!important}
-body.app2 #sidelist button.on{background:linear-gradient(90deg,#0f2a3d,#0d1319)!important;border-left-color:var(--c-acc)!important}
-body.app2 #sidelist button.on .sn{color:#fff!important}
-body.app2 #sidelist button.on .st{color:#9cc3df!important}
+body.app2 #sidelist button.on{background:var(--c-selg)!important;border-left-color:var(--c-acc)!important}
+body.app2 #sidelist button.on .sn{color:var(--c-hi)!important}
+body.app2 #sidelist button.on .st{color:var(--c-acctx2)!important}
 /* ---- right pane ---- */
 body.app2 .hmitabs{gap:0!important;padding:0!important;background:var(--c-strip)!important;border-bottom:1px solid var(--c-line)}
 body.app2 .hmitabs button{height:30px!important;border:0!important;border-radius:0!important;background:transparent!important;color:var(--c-dim)!important;font:600 11px var(--uf)!important;letter-spacing:.12em;text-transform:uppercase}
-body.app2 .hmitabs button.on{color:#fff!important;box-shadow:inset 0 -2px 0 var(--c-acc)}
+body.app2 .hmitabs button.on{color:var(--c-hi)!important;box-shadow:inset 0 -2px 0 var(--c-acc)}
 body.app2 :is(#opp,#plfp,#anp){background:var(--c-pane)!important;border-left:1px solid var(--c-line)!important;font-size:12.5px!important}
 body.app2 :is(#opp,#plfp) h4{font:600 11px var(--uf)!important;letter-spacing:.12em!important;color:var(--c-dim)!important;border-bottom:1px solid var(--c-line);padding-bottom:3px}
 body.app2 :is(#opp,#plfp) .hdr{font:600 14px var(--mf)!important}
-body.app2 :is(#opp,#plfp) .fp{background:#0a0f14!important;border:1px solid var(--c-line2)!important;border-radius:3px!important}
+body.app2 :is(#opp,#plfp) .fp{background:var(--c-fp)!important;border:1px solid var(--c-line2)!important;border-radius:3px!important}
 body.app2 :is(#opp,#plfp) button.b{height:28px;border-radius:3px;font-size:12px}
 body.app2 #anp h4{font:600 11px var(--uf)!important;letter-spacing:.12em;text-transform:uppercase;color:var(--c-dim)!important;border-bottom:1px solid var(--c-line)!important}
-body.app2 .fpov{background:#0a0f14!important;border-color:var(--c-line2)!important;border-radius:3px!important}
+body.app2 .fpov{background:var(--c-fp)!important;border-color:var(--c-line2)!important;border-radius:3px!important}
 body.app2 .fpov .ovh{font-family:var(--uf)!important;letter-spacing:.12em}
 body.app2 .fpov .ovc{background:var(--c-ctl)!important;border-color:var(--c-line2)!important;border-radius:3px!important}
 body.app2 .fpov .ovc.on{border-color:var(--c-acc)!important;box-shadow:inset 0 0 0 1px var(--c-acc)!important}
-body.app2 #cv{background-color:#06090c!important;background-image:radial-gradient(#16212b 1px,transparent 1px)!important;background-size:24px 24px!important}
+body.app2 #cv{background-color:var(--c-cv)!important;background-image:radial-gradient(var(--c-dot) 1px,transparent 1px)!important;background-size:24px 24px!important}
 body.app2 :is(#anp,#opp,#plfp,#side,#infocard,#evbox) :is(button,select){border-radius:3px}
-body.app2 #infocard,body.app2 #evbox{border-radius:4px!important;border-color:var(--c-line2)!important;background:#0b1016f7!important}
+body.app2 #infocard,body.app2 #evbox{border-radius:4px!important;border-color:var(--c-line2)!important;background:var(--c-pop)!important}
 body.app2 *::-webkit-scrollbar{width:8px;height:8px}
-body.app2 *::-webkit-scrollbar-thumb{background:#223040;border-radius:0}
+body.app2 *::-webkit-scrollbar-thumb{background:var(--c-line2);border-radius:0}
 /* ---- status bar ---- */
 #sfoot{display:flex;align-items:center;gap:0;background:var(--c-strip)!important;border-top:1px solid var(--c-line)!important;min-height:24px;padding:0;flex:none;position:relative;z-index:70}
 #sfoot>*{border-right:1px solid var(--c-line);padding:0 8px!important;height:24px;display:flex;align-items:center;flex:none}
 #sfoot #stchip{gap:4px}
 #sfoot #stchip span{font:600 11px var(--mf)!important;padding:1px 8px!important;border-radius:2px!important;letter-spacing:.08em}
-#sfoot .sclock{font:11px var(--mf)!important;color:#9fb0bd!important}
+#sfoot .sclock{font:11px var(--mf)!important;color:var(--c-tx2)!important}
 #sfoot #st{flex:1 1 auto;min-width:0;border:0!important;background:transparent!important;font:11px var(--mf)!important;color:var(--c-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block!important;line-height:24px}
 #sfoot #evbtn{height:24px!important;border:0!important;border-radius:0!important;background:transparent!important;font:600 11px var(--mf)!important;color:var(--c-tx2)!important;cursor:pointer}
 #sfoot #evbtn.new{color:#ffd78a!important;box-shadow:inset 0 -2px 0 var(--c-man)}
@@ -136,8 +139,8 @@ body[data-tab=tools] #toolsws{display:block}
 #toolsws .tcard p{margin:0 0 8px;font-size:12px;color:var(--c-tx2);line-height:1.35}
 #toolsws .tcard .row{display:flex;flex-wrap:wrap;gap:6px}
 #toolsws .tcard :is(button,select,label.b){height:34px;min-height:34px;padding:0 12px;border-radius:3px;font-size:12.5px;background:var(--c-ctl);border:1px solid var(--c-line2);color:var(--c-tx2);cursor:pointer;display:inline-flex;align-items:center;white-space:nowrap;font-weight:500}
-#toolsws .tcard :is(button,label.b):hover{background:var(--c-ctlh);border-color:#3a5068;color:var(--c-tx)}
-#toolsws .tcard :is(button,label.b).on{background:var(--c-accbg);border-color:#2a6a98;color:#d8eeff;box-shadow:inset 0 -2px 0 var(--c-acc)}
+#toolsws .tcard :is(button,label.b):hover{background:var(--c-ctlh);border-color:var(--c-hovbd);color:var(--c-tx)}
+#toolsws .tcard :is(button,label.b).on{background:var(--c-accbg);border-color:var(--c-accbd);color:var(--c-acctx);box-shadow:inset 0 -2px 0 var(--c-acc)}
 #toolsws .tcard span.lp{font:12px var(--mf);color:var(--c-dim);align-self:center}
 /* the PLANT / LIBRARY buttons that older scripts add to the hidden category boxes are never needed */
 body.app2 .plbtn,body.app2 .libbtn{display:none!important}
@@ -169,6 +172,7 @@ body.app2 .plbtn,body.app2 .libbtn{display:none!important}
  body[data-tab=logic] #gsbar .gs-set{order:2}
  #gsbar :is(.tbar,.gs-set) :is(button,select,label.b){height:34px;min-height:34px}
  #gsbar .g-run .tb-step{display:none!important}
+ body.lo[data-tab=logic] #gsbar .g-run>.tb-step{display:inline-flex!important}
  #gsbar .tbar :is(#anshbox,#shbox) select{max-width:120px}
  body.app2 #anmeta{padding:3px 8px;gap:6px}
  body.app2 #anmeta .lg,body.app2 #anmeta small{display:none}
@@ -198,7 +202,7 @@ body.app2 .plbtn,body.app2 .libbtn{display:none!important}
 #gsbar .gs-search .infob{min-width:var(--h);padding:0!important;justify-content:center;background:var(--c-ctl);border:1px solid var(--c-line2);color:var(--c-tx2);cursor:pointer;display:inline-flex;align-items:center}
 #gsbar #srchbtn{display:none;flex:none;width:var(--h);padding:0!important;align-items:center;justify-content:center;background:var(--c-ctl);border:1px solid var(--c-line2);color:var(--c-tx2);cursor:pointer}
 #gsbar #srchbtn svg{width:15px;height:15px}
-body.srchopen #gsbar #srchbtn{background:var(--c-accbg);border-color:#2a6a98;color:#fff}
+body.srchopen #gsbar #srchbtn{background:var(--c-accbg);border-color:var(--c-accbd);color:var(--c-hi)}
 #gsbar .tbar{flex:1 1 auto}
 #gsbar .tb{padding:0 8px 0 0;margin-right:4px;gap:4px}
 #gsbar .tbar select{max-width:72px}
@@ -243,11 +247,11 @@ body.srchopen #gsbar #srchbtn{background:var(--c-accbg);border-color:#2a6a98;col
 /* sheet title strip: one control height */
 body.app2 #anmeta :is(button,select){height:24px!important;min-height:24px!important;padding:0 8px!important;font-size:11.5px!important;border-radius:var(--r)!important}
 /* message line: a small note above the status bar, left, never over the middle of the drawing */
-body.app2 #toast{left:10px!important;right:auto!important;transform:none!important;bottom:calc(var(--footH,24px) + 8px)!important;max-width:min(460px,calc(100vw - 20px))!important;background:#0c131a!important;border:1px solid var(--c-line2)!important;border-left:3px solid var(--c-acc)!important;border-radius:var(--r)!important;padding:6px 10px!important;font:12px var(--uf)!important;color:var(--c-tx)!important;box-shadow:0 6px 18px #0009;z-index:80!important}
+body.app2 #toast{left:10px!important;right:auto!important;transform:none!important;bottom:calc(var(--footH,24px) + 8px)!important;max-width:min(460px,calc(100vw - 20px))!important;background:var(--c-pop)!important;border:1px solid var(--c-line2)!important;border-left:3px solid var(--c-acc)!important;border-radius:var(--r)!important;padding:6px 10px!important;font:12px var(--uf)!important;color:var(--c-tx)!important;box-shadow:0 6px 18px #0009;z-index:80!important}
 /* test panels (UAT, CHECK): docked on the right between the bar and the status bar, never over the bar or the sheet list */
 body.app2 :is(#uatp,#chkp){top:var(--topH,40px)!important;bottom:var(--footH,24px)!important;left:auto!important;right:0!important;width:min(460px,100vw)!important;border-right:0!important;border-left:1px solid var(--c-line2)!important;background:var(--c-pane)!important;box-shadow:-10px 0 28px #000a;z-index:66!important;font-size:12.5px!important}
 body.app2 :is(#uatp,#chkp) :is(button,select){border-radius:var(--r)!important;background:var(--c-ctl)!important;border:1px solid var(--c-line2)!important;color:var(--c-tx2)!important}
-body.app2 :is(#uatp,#chkp) :is(button.go,button.on){background:var(--c-accbg)!important;border-color:#2a6a98!important;color:#d8eeff!important}
+body.app2 :is(#uatp,#chkp) :is(button.go,button.on){background:var(--c-accbg)!important;border-color:var(--c-accbd)!important;color:var(--c-acctx)!important}
 body.app2 :is(#uatp,#chkp) h3{color:var(--c-tx)!important;font:600 12px var(--uf)!important;letter-spacing:.1em;text-transform:uppercase}
 body.app2 :is(#uatp,#chkp) :is(.card,.sc,details,section){border-radius:var(--r)!important}
 /* DITL side table (Timers / MOV / motor): folded by default, docked above the status bar */
@@ -259,22 +263,24 @@ body.app2 #anp h4{margin:12px 0 6px!important;padding-bottom:4px!important}
 .ddm .only{display:contents}
 .ddm .only>*{display:block!important;width:100%!important;margin:0 0 6px!important;box-sizing:border-box}
 .ddm>button,.ddm>select,.ddm .only>select{border-radius:var(--r)!important}
-/* OPERATE: a screen without values gives its width to the graphic; the list is plain names */
-#plantws.noval{grid-template-columns:240px 1fr 0!important}
-#plantws.noval #plvals,#plantws.noval .plbar .b:last-child{display:none!important}
+/* PLANT VIEW (2.4.1-beta.1, UI audit 2026-10-19): the graphic takes the whole width on every screen, like the control-room
+   HMI; the system list (☰ Systems) and the snapshot values (Values) slide out over it. Before: a 240 px list and a 300 px
+   values column left ~60 % of the width to the graphic and its text was 7 ~ 9 px */
+#plantws,#plantws.noval{grid-template-columns:1fr!important;grid-template-rows:1fr!important}
+#plantws #plleft,#plantws #plvals{position:absolute;top:0;bottom:0;max-height:none;z-index:6;display:none!important;box-shadow:0 0 24px #000a}
+#plantws #plleft{left:0;width:min(300px,86vw)}
+#plantws #plvals{right:0;width:min(340px,90vw)}
+#plantws.lsopen #plleft,#plantws.vals:not(.noval) #plvals{display:block!important}
+#plantws.noval .plbar .b:last-child{display:none!important}
 #pllist button:not(.novg) small{display:none}
 #pllist button{padding:7px 10px!important}
 #plantws .plbar .b{height:24px;border-radius:var(--r)}
 #plantws .pllive{white-space:nowrap}
-#plantws #plsys{display:none}
-@media (max-width:1180px){#plantws.noval{grid-template-columns:200px 1fr 0!important}}
+#plantws #plsys{display:inline-flex;align-items:center;flex:none}
+#plantws .plbar b{min-width:0;flex:1 1 auto}
 @media (max-width:700px){
- #plantws,#plantws.noval{grid-template-columns:1fr!important;grid-template-rows:1fr!important}
- #plantws #plsys{display:inline-flex;align-items:center;flex:none}
- #plantws #plleft{position:absolute;left:0;top:0;bottom:0;width:min(300px,86vw);max-height:none;z-index:6;display:none;box-shadow:8px 0 24px #000a}
- #plantws.lsopen #plleft{display:block}
  #plantws .plbar{gap:6px}
- #plantws .plbar b{min-width:0;flex:1 1 auto;font-size:12.5px}
+ #plantws .plbar b{font-size:12.5px}
  #plantws .plbar .b{height:30px}
 }
 /* TOOLS cards: flat, aligned */
@@ -285,7 +291,7 @@ body.app2 #toolsws #uatb{height:32px!important}
 .ddm,body.app2 :is(#infocard,#evbox),#toolsws .tcard,body.app2 :is(#opp,#plfp) .fp,body.app2 .fpov,body.app2 .fpov .ovc{border-radius:var(--r)!important}
 /* messages of the app go to the status bar (a message line, like a DCS), not over the drawing */
 body.app2 #toast{display:none!important}
-#sfoot .smsg{display:none;flex:1 1 auto;min-width:0;font:600 11px var(--mf)!important;color:#d8eeff;background:var(--c-accbg);box-shadow:inset 3px 0 0 var(--c-acc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:24px;cursor:pointer}
+#sfoot .smsg{display:none;flex:1 1 auto;min-width:0;font:600 11px var(--mf)!important;color:var(--c-acctx);background:var(--c-accbg);box-shadow:inset 3px 0 0 var(--c-acc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:24px;cursor:pointer}
 body.hasmsg #sfoot .smsg{display:block}
 body.hasmsg #sfoot :is(#st,.shint){display:none!important}
 /* plant model OFF: a flag in the status bar, so a forgotten OFF is seen */
@@ -293,3 +299,292 @@ body.hasmsg #sfoot :is(#st,.shint){display:none!important}
 body.pmoff #sfoot .spm{display:flex!important}
 /* engine buttons carry their old toolbar spacing inline: inside the bar and the cards the gap alone spaces them */
 body.app2 :is(#gsbar,#toolsws,.ddm) :is(button,select,label.b){margin-left:0!important;margin-right:0!important}
+/* ===== 2.4.1-beta.2: UI audit #5-#8 (state colour, touch size, small text) ===== */
+/* Run / Pause: green = "press to run"; while running the button reads Pause and is neutral (not green) */
+#gsbar .tbar :is(.tb-run,#bmode).on{background:var(--c-ctl)!important;border-color:#8a7a3a!important;color:#ffe1a0!important;box-shadow:inset 0 -2px 0 #d9b44a!important}
+/* WCAG 2.5.8: every control at least 24 px on PC */
+body.app2 #sidetg{min-width:28px!important;min-height:28px!important;height:auto!important}
+body.app2 #anp .ph button,body.app2 #anp .ir .l1 :is(button,input:not([type=checkbox]):not([type=range])){min-height:26px}
+body.app2 #anp .ph button{min-width:28px}
+body.app2 #anp input[type=checkbox]{width:18px;height:18px;margin:3px}
+body.app2 #anp input[type=range]{min-height:24px}
+/* touch screens (tablet / phone): 44 px controls (Apple 44 pt / Material 48 dp) */
+@media (pointer:coarse){
+ :root{--h:44px}
+ body.app2 #sidetg,body.app2 #anp .ph button{min-width:44px;min-height:44px}
+ body.app2 #anp .ir .l1 :is(button,input:not([type=checkbox]):not([type=range])){min-height:40px}
+ body.app2 #anp input[type=checkbox]{width:24px;height:24px}
+ body.app2 #anp input[type=range]{min-height:40px}
+ body.app2 #sidelist button{min-height:44px}
+ /* every other button / field: 44 px tall, 44 px wide (the vertical Panel tab is already 64 px tall) */
+ body.app2 :is(button,select,input:not([type=checkbox]):not([type=range]):not([type=radio]),label.b):not(#anptab){min-height:44px!important}
+ body.app2 :is(button,label.b):not(#anptab){min-width:44px!important}
+}
+/* small panel text -> 12 px */
+body.app2 #anlist>button>span.st,body.app2 #sidelist button .st,body.app2 #anp>small,body.app2 #anlists details.sec>div.sh,body.app2 #anp .ir .l1 small,body.app2 #anp .ir .ds{font-size:12px!important}
+#plantws .pllive,#plantws .pldraft{font-size:12px}
+/* ===== 2.4.1-beta.4: DITL page like the ABC page (tool bar + right panel, src/ui/shell/ditl.js) ===== */
+#gsbar .g-ditl .dui-sep{width:1px;align-self:stretch;margin:4px 4px;background:var(--c-line2)}
+body.app2 #tp{display:none!important}
+#dp{flex:none;width:380px;overflow-y:auto;box-sizing:border-box;padding:8px 10px 24px;background:var(--c-pane);border-left:1px solid var(--c-line);font:12.5px var(--uf);color:var(--c-tx)}
+@media (max-width:1180px){#mid{position:relative}#mid #dp{position:absolute;z-index:35;right:0;top:0;bottom:0;width:min(380px,94vw);box-shadow:-8px 0 24px #0009}}
+#dp.min,body.an #dp{display:none}
+#dp .dp-top{display:flex;align-items:center;gap:8px;padding:2px 0 6px;border-bottom:1px solid var(--c-line)}
+#dp .dp-top b{flex:1;font:600 13px var(--mf);color:var(--c-hi)}
+#dp .dp-top button{min-width:30px;min-height:28px}
+#dp .dp-note{margin:6px 0;color:var(--c-dim);font-size:12px;line-height:1.4}
+#dp .dp-h{margin:12px 0 4px;padding-bottom:4px;border-bottom:1px solid var(--c-line);font:600 11.5px var(--uf);letter-spacing:.12em;text-transform:uppercase;color:var(--c-run)}
+#dp .dp-r{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--c-row)}
+#dp .dp-l{flex:1;min-width:0}
+#dp .dp-t{font:600 12px var(--mf)!important;color:var(--c-hi);overflow-wrap:anywhere}
+#dp .dp-r .dp-d{font-family:var(--uf)!important}
+#dp .dp-d{font-size:12px;color:var(--c-tx2);line-height:1.3;overflow-wrap:anywhere}
+#dp button,#dp input{height:28px;border-radius:3px;background:var(--c-ctl);border:1px solid var(--c-line2);color:var(--c-tx2);font:12px var(--mf);cursor:pointer}
+#dp .dp-v{min-width:74px;flex:none}
+#dp .dp-v.on{background:#3a0f0c;border-color:#ff5a4f;color:#ffc2bc}
+#dp .dp-v.pb{border-color:var(--c-accbd);color:#9fd2ff}
+#dp .dp-v.pb.on{background:#0e2536;color:var(--c-hi)}
+#dp .dp-v.auto{border-style:dashed;cursor:default}
+#dp .dp-n{width:84px;padding:0 6px;color:#9fd2ff;cursor:text}
+#dp .dp-u{min-width:30px;color:var(--c-dim);font-size:12px}
+#dp .dp-tr{display:flex;align-items:center;gap:8px;margin-top:3px}
+#dp .dp-bar{flex:1;height:4px;background:var(--c-line2);position:relative}
+#dp .dp-bar i{position:absolute;left:0;top:0;bottom:0;background:var(--c-acc)}
+#dp .dp-tv{font:12px var(--mf);color:var(--c-tx2);white-space:nowrap}
+#dp .dp-tv.on{color:#ffc2bc}
+#dp .dp-sk:disabled{opacity:.4;cursor:default}
+#dp .dp-o{min-width:30px;text-align:center;padding:2px 6px;border:1px solid var(--c-line2);font:600 12px var(--mf);color:var(--c-dim)}
+#dp .dp-o.on{border-color:#ff5a4f;color:#ffc2bc}
+@media (max-width:700px){#mid #dp{top:auto;left:0;right:0;bottom:0;width:100%;height:52%;border-radius:14px 14px 0 0;box-shadow:0 -8px 24px #000a}}
+@media (pointer:coarse){#dp button,#dp input{height:40px}#dp .dp-top button{min-width:44px;min-height:44px}}
+/* 2.4.1-beta.5: TOOLS = one tool per line, its name and what it does (proposal C) */
+#toolsws .tcard{padding:0;overflow:hidden}
+#toolsws .tcard h3{margin:0;padding:10px 14px;font-size:12px;color:var(--c-tx2);background:var(--c-strip);border-bottom:1px solid var(--c-line)}
+#toolsws .tcard .row{flex-direction:column;align-items:stretch;gap:0}
+body.app2 #toolsws .tcard .row :is(button,label.b)[data-d]{height:auto!important;min-height:56px!important;padding:9px 14px!important;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:left;white-space:normal;border:0;border-bottom:1px solid var(--c-line);border-radius:0!important;background:transparent;color:var(--c-hi);font-weight:600;font-size:13.5px;box-shadow:none}
+#toolsws .tcard .row :is(button,label.b)[data-d]::after{content:attr(data-d);display:block;font-weight:400;font-size:12px;color:var(--c-tx2);margin-top:3px;line-height:1.35}
+#toolsws .tcard .row :is(button,label.b)[data-d]:hover{background:var(--c-ctlh)}
+#toolsws .tcard .row :is(button,label.b)[data-d].on{background:var(--c-accbg);box-shadow:inset 3px 0 0 var(--c-acc)}
+#toolsws .tcard .row>:last-child:is(button,label.b)[data-d]{border-bottom:0}
+body.app2 #toolsws #uatb[data-d]{height:auto!important;padding:9px 14px!important;font:600 13.5px var(--uf)!important;border-radius:0!important}
+/* 2.4.1-beta.5: the info card (search ⓘ, LIBRARY row, Find) and the DITL "ALSO IN ABC" bar lost their style when the old shell.css
+   was removed in 2.4.0-beta.1 (the card opened as plain text at the bottom of the page). Same rules as v2.2.0, with the theme colours. */
+#infocard{position:fixed;top:48px;left:50%;transform:translateX(-50%);z-index:120;width:min(460px,96vw);max-height:78vh;overflow:auto;background:var(--c-pop);color:var(--c-tx);border:1px solid var(--c-line2);border-radius:var(--r);box-shadow:0 12px 36px #0009;font-size:12px}
+#infocard .ich{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--c-line);position:sticky;top:0;background:var(--c-pane)}
+#infocard .ich b{font:700 15px var(--mf);color:var(--c-hi)}#infocard .icn{color:var(--c-dim);font-size:11px;margin-left:auto}
+#infocard .icd{padding:6px 10px;border-bottom:1px solid var(--c-line);color:var(--c-tx2)}
+#infocard .ics{padding:6px 10px;border-bottom:1px solid var(--c-line)}
+#infocard .ict{display:flex;align-items:center;gap:8px;margin-bottom:4px}#infocard .ict b{font:700 12.5px var(--mf);color:var(--c-hi)}
+#infocard .icv{font:700 12px var(--mf);color:#e8b04a;margin-right:auto}
+#infocard .icl{margin:3px 0}#infocard .icl .k{display:inline-block;width:86px;color:var(--c-dim)}
+#infocard .icu{margin:2px 0 4px 18px;padding:0;font:11px var(--mf)}#infocard .icu li{margin:1px 0}
+#infocard .f-fm,#infocard .f-ilk{color:#ffd78a}#infocard .f-trip{color:#ffb3b3}#infocard .f-ditl,#infocard .f-sw{color:#9fd0ff}
+#infocard .tg{display:inline-block;padding:1px 6px;border-radius:3px;font-weight:700;font-size:10.5px;margin-right:4px}
+#infocard .t-trip{background:#4a1d1d;color:#ffb3b3}#infocard .t-ok{background:#123a26;color:#9ff0c4}
+#infocard .t-ilk{background:#4a3a12;color:#ffd78a}#infocard .t-fm{background:#3a2a10;color:#ffcf8a}#infocard .t-sw{background:#123048;color:#9fd0ff}
+#infocard .b{height:24px;padding:0 8px;font-size:11px}
+#infocard.wide{width:min(900px,96vw)}
+#infocard .icw{display:flex;flex-direction:row;flex-wrap:wrap;align-items:stretch;gap:6px 0;margin:4px 0 2px}
+#infocard .icwb{flex:0 0 132px;border:1px solid var(--c-line2);border-radius:4px;background:var(--c-fp);padding:5px 7px;display:flex;flex-direction:column;gap:2px}
+#infocard .icwb small{font:600 9px var(--uf);letter-spacing:.08em;color:var(--c-dim);text-transform:uppercase}
+#infocard .icwb b{font:600 11.5px var(--mf);color:var(--c-hi);word-break:break-all;line-height:1.25}
+#infocard .icwb span{font:10.5px var(--mf);color:#5cd6ff;line-height:1.25}
+#infocard .icwb.ad{border-color:var(--c-accbd);background:var(--c-accbg)}
+#infocard .icwb.fd{border-color:#5a4a20;background:#1a160b}#infocard .icwb.fd b{color:#ffd78a}
+#infocard .icwa{flex:0 0 18px;align-self:center;text-align:center;color:var(--c-acc);font-size:15px;font-weight:700}
+#infocard .icl .k.k2{width:150px;font-size:10.5px}#libws .libw .ics{border:0;padding:0}
+#abcbar{position:fixed;left:50%;transform:translateX(-50%);bottom:34px;z-index:60;display:none;max-width:min(760px,96vw);background:var(--c-pane);border:1px solid var(--c-line2);border-radius:var(--r);padding:4px 8px;font:12px var(--uf);color:var(--c-tx);box-shadow:0 6px 18px #0009}
+#abcbar .abr{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:2px 0}
+#abcbar .abr b{font-size:10.5px;letter-spacing:.08em;color:#9ff0c4}
+#abcbar .abq{font-family:var(--mf,monospace);color:#ffd27a}
+html[data-shell=c] #infocard :is(.icv,.f-fm,.f-ilk,.icwb.fd b,#abcbar .abq){color:#7a5200}html[data-shell=c] #infocard .f-trip{color:#b3261e}
+html[data-shell=c] #infocard :is(.f-ditl,.f-sw,.icwb span){color:#0b4f8a}html[data-shell=c] #infocard .icwb.fd{background:#fff3d6;border-color:#9a6a00}
+html[data-shell=c] #abcbar .abr b{color:#1f6b3a}html[data-shell=c] #abcbar .abq{color:#7a5200}
+/* ===== 2.4.1-beta.5 THEMES (user: "gusto ko lahat, theme nalang"): ⚙ Theme = Standard / A Control Room / B Workstation / C Light.
+   Colours, fonts and corners of the app chrome only. The drawing (read from the DXF) is not changed; theme C uses the Paper
+   diagram colours. Red = open / running and the A / M colours of the faceplate stay as the plant DCS. ===== */
+/* A · Control Room: pure black, square corners, cyan accent */
+html[data-shell=a]:root{--bg:#000;--panel:#050505;--line:#262626;--tx:#d9d9d9;--dim:#8c8c8c;--panel2:#0b0b0b;--in:#000;--bd:#333;--hv:#161616;--hv2:#1c1c1c;--rowl:#141414;--sel2:#00799c;--sbg:#000;
+ --c-bg:#000;--c-pane:#050505;--c-strip:#000;--c-ctl:#0b0b0b;--c-ctlh:#161616;--c-line:#262626;--c-line2:#333;
+ --c-tx:#d9d9d9;--c-tx2:#b3b3b3;--c-dim:#8c8c8c;--c-acc:#00b4e6;--c-accbg:#00222c;--c-hi:#fff;--c-acctx:#bff0ff;--c-acctx2:#7fcfe6;
+ --c-accbd:#00799c;--c-hovbd:#4d4d4d;--c-in:#000;--c-pop:#080808;--c-row:#141414;--c-hov:#111;--c-fp:#050505;--c-cv:#000;--c-dot:#141414;
+ --c-selg:linear-gradient(90deg,#00222c,#050505);--r:0px}
+html[data-shell=a] body.app2 :is(button,select,input,label.b,.ddm,#infocard,#evbox,#toast,.fp,.fpov,#dp .dp-v){border-radius:0!important}
+/* B · Workstation: blue-grey panels, rounded corners, IBM Plex */
+html[data-shell=b]:root{--bg:#0b1016;--panel:#0d131a;--line:#1e2a36;--tx:#dbe4ee;--dim:#8a9bb0;--panel2:#151e28;--in:#0a0f15;--bd:#2a3a4a;--hv:#1b2734;--hv2:#22303f;--rowl:#17212b;--sel2:#2f6aa8;--sbg:#0f161e;
+ --c-bg:#0b1016;--c-pane:#0d131a;--c-strip:#0f161e;--c-ctl:#151e28;--c-ctlh:#1b2734;--c-line:#1e2a36;--c-line2:#2a3a4a;
+ --c-tx:#dbe4ee;--c-tx2:#9fb0c3;--c-dim:#8a9bb0;--c-acc:#4ea1ff;--c-accbg:#132438;--c-hi:#fff;--c-acctx:#cfe4ff;--c-acctx2:#8cc2ff;
+ --c-accbd:#2f6aa8;--c-hovbd:#3b5675;--c-in:#0a0f15;--c-pop:#121a23;--c-row:#17212b;--c-hov:#131c26;--c-fp:#0f161e;--c-cv:#081018;--c-dot:#15202b;
+ --c-selg:linear-gradient(90deg,#1b3a5c,#0d131a);--r:8px}
+html[data-shell=b] body.app2 #gsbar :is(.tabs,.sub){border-radius:8px}
+html[data-shell=b] body.app2 #gsbar :is(.tbar,.gs-set) :is(button,select,label.b),html[data-shell=b] #toolsws .tcard :is(button,label.b){border-radius:6px}
+html[data-shell=b] body.app2 :is(.ddm,#infocard,#evbox,#toast,#toolsws .tcard){border-radius:10px!important}
+/* C · Light (ISA-101 style): grey background, dark text, colour only for state */
+html[data-shell=c]:root{--bg:#d9dbde;--panel:#eceef0;--line:#c8cbcf;--tx:#1d2125;--dim:#4a525a;--panel2:#fff;--in:#fff;--bd:#8a9199;--hv:#e2e5e8;--hv2:#d8dbde;--rowl:#d8dbde;--sel2:#0b4f8a;--sbg:#e4e6e8;--acc:#1f6b3a;--sel:#0b4f8a;
+ --c-bg:#d9dbde;--c-pane:#eceef0;--c-strip:#e4e6e8;--c-ctl:#fff;--c-ctlh:#f3f5f7;--c-line:#c8cbcf;--c-line2:#8a9199;
+ --c-tx:#1d2125;--c-tx2:#3a4048;--c-dim:#4a525a;--c-acc:#0b4f8a;--c-accbg:#dce8f3;--c-run:#1f6b3a;--c-runbg:#e3f1e8;--c-man:#9a6a00;--c-alm:#b3261e;
+ --c-hi:#1d2125;--c-acctx:#0b4f8a;--c-acctx2:#0b4f8a;--c-accbd:#0b4f8a;--c-hovbd:#5a636c;--c-in:#fff;--c-pop:#f4f5f6;--c-row:#d8dbde;--c-hov:#e2e5e8;
+ --c-fp:#f4f5f6;--c-cv:#f7f7f4;--c-dot:#dcdcd6;--c-selg:linear-gradient(90deg,#dce8f3,#eceef0);--r:2px}
+/* C: the parts of the older panels that carry their own dark-theme text colours */
+html[data-shell=c] body.app2 #gsbar .tbar :is(.tb-run,#bmode){background:#1f6b3a!important;border-color:#1f6b3a!important;color:#fff!important}
+html[data-shell=c] body.app2 #gsbar .tbar :is(.tb-run,#bmode).on{background:#fff3d6!important;border-color:#9a6a00!important;color:#6b4a00!important;box-shadow:inset 0 -2px 0 #9a6a00!important}
+html[data-shell=c] body.app2 :is(#sidelist,#anlist) button.on,html[data-shell=c] .cat button.on{background:#dce8f3!important;color:#0b4f8a!important}
+html[data-shell=c] body.app2 :is(#sidelist,#anlist) button.on :is(.sn,.st){color:#0b4f8a!important}
+html[data-shell=c] body.app2 :is(#sidelist,#anlist) button:hover,html[data-shell=c] #anp .tr:hover{background:#e2e5e8!important}
+html[data-shell=c] #anp .sh,html[data-shell=c] #anlg b{color:#4a525a}
+html[data-shell=c] #anp .ir .tg,html[data-shell=c] #m_title,html[data-shell=c] #pvbar .pvt,html[data-shell=c] #pllist button b,html[data-shell=c] #plantws .plbar b,
+html[data-shell=c] #libws :is(.libr .ad,.libr .tg,.libempty b),html[data-shell=c] #plfp .plfph b{color:#1d2125!important}
+html[data-shell=c] #anp .why{background:#e4e6e8}
+html[data-shell=c] #anp :is(input[type=text],input[type=search],input[type=number],input:not([type])){background:#fff!important;color:#1d2125!important;border-color:#8a9199!important}
+html[data-shell=c] #dp .dp-v.pb,html[data-shell=c] #dp .dp-n{color:#0b4f8a}
+html[data-shell=c] #dp .dp-v.pb.on{background:#dce8f3;color:#0b4f8a}
+html[data-shell=c] #dp :is(.dp-v.on,.dp-o.on){background:#fde3e0;border-color:#b3261e;color:#b3261e}
+html[data-shell=c] #dp .dp-tv.on{color:#b3261e}
+html[data-shell=c] #libws :is(.libr .tg,.libcalc b){color:#7a5200}
+html[data-shell=c] #libws :is(.libr .ds,.libw,.libdrum .dr){color:#1d2125}
+html[data-shell=c] #libws :is(.libr .rx,.libcalc .m,.libr.hasw .ds::before){color:#0b4f8a}
+html[data-shell=c] #libws :is(.libr .ty,.libr.vac .ad,.libg span){color:#3a4048}
+html[data-shell=c] #libws .libw{background:#e4e6e8}
+html[data-shell=c] #libws .libg{background:#c8cbcf;color:#1d2125}
+html[data-shell=c] #libws .libg.on b{color:#1f6b3a}
+/* 2.4.1-beta.6: side tab of the closed panel, same on ABC and DITL */
+body.app2 :is(#anptab,#dptab){position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:40;min-height:96px;padding:10px 7px;writing-mode:vertical-rl;border:1px solid var(--c-acc);border-right:0;border-radius:6px 0 0 6px;background:var(--c-pane);color:var(--c-acc);font:600 12px var(--uf);letter-spacing:.06em;cursor:pointer;box-shadow:-4px 0 12px #0006}
+#dptab{display:none}
+body.app2 :is(#anptab,#dptab):hover{background:var(--c-accbg)}
+/* ===== 2.4.1-beta.7 LOGIC page layout (src/ui/shell/layout.js): [VIEW | Run] ▶▶ ⏱, drawing tools on the drawing,
+   right panel with tabs, VIEW keeps the panel readable ===== */
+body.lo .lo-gone{display:none!important}
+body.lo #gsbar .lo-seg{display:inline-flex;border:1px solid var(--c-line2);border-radius:var(--r,4px);overflow:hidden;flex:none}
+body.lo #gsbar .lo-seg>*{border:0!important;border-radius:0!important;margin:0!important;min-width:64px!important;justify-content:center;font-weight:600!important}
+body.lo #gsbar .lo-seg>*+*{border-left:1px solid var(--c-line2)!important}
+body.lo #gsbar .lo-seg>.on:not(.tb-run){background:var(--c-accbg)!important;color:var(--c-hi)!important;box-shadow:inset 0 -2px 0 var(--c-acc)!important}
+.lo-pop{display:none;position:fixed;z-index:210;min-width:230px;padding:8px;background:var(--c-pop);border:1px solid var(--c-line2);border-radius:var(--r,4px);box-shadow:0 12px 30px #000a}
+.lo-pop.open{display:flex;flex-direction:column;gap:6px}
+.lo-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font:12px var(--uf);color:var(--c-tx2)}
+.lo-row>:last-child{height:30px;min-width:96px;background:var(--c-ctl);border:1px solid var(--c-line2);color:var(--c-tx);border-radius:3px;font:12px var(--uf)}
+#lotools{position:fixed;z-index:34;display:none;gap:4px;padding:4px;background:var(--c-pop);border:1px solid var(--c-line2);border-radius:var(--r,4px);box-shadow:0 4px 14px #0007}
+#lotools>div{display:flex;gap:4px}
+body.an #lotools .lo-di,body:not(.an) #lotools .lo-an{display:none!important}
+#lotools button{height:30px;padding:0 10px;border-radius:3px;font:500 12px var(--uf);background:var(--c-ctl);border:1px solid var(--c-line2);color:var(--c-tx2);cursor:pointer;display:inline-flex;align-items:center}
+#lotools button:hover{border-color:var(--c-hovbd);color:var(--c-tx)}
+#lotools button.on{background:var(--c-accbg);color:var(--c-hi);box-shadow:inset 0 -2px 0 var(--c-acc)}
+/* right panel tabs */
+.lo-tabs{display:flex;border-bottom:1px solid var(--c-line2);margin:0 0 8px;position:sticky;top:0;z-index:3;background:var(--c-pane)}
+.lo-tabs button{flex:1 1 auto;min-width:0;height:34px;padding:0 3px;border:0!important;border-radius:0!important;background:transparent!important;color:var(--c-tx2)!important;font:600 11px var(--uf)!important;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lo-tabs button:hover{color:var(--c-tx)!important}
+.lo-tabs button.on{color:var(--c-hi)!important;box-shadow:inset 0 -2px 0 var(--c-acc)!important}
+body.lo #anp>.hmitabs,body.lo #anp>small:first-of-type{display:none!important}
+#anp[data-pt]:not([data-pt=sel]) #ansel,#anp[data-pt]:not([data-pt=frc]) :is(#anfp,#ansrch){display:none!important}
+#anp[data-pt] #anlists>details{display:none}
+#anp[data-pt=in] #anlists>details[data-k=in],#anp[data-pt=tm] #anlists>details[data-k=tm],#anp[data-pt=pid] #anlists>details[data-k=pid],#anp[data-pt=frc] #anlists>details[data-k=frc]{display:block}
+#anp[data-pt=sel] #ansel:empty::before{content:'Click a block or a wire on the drawing to see its values here.';display:block;padding:14px 4px;color:var(--c-dim);font:12px var(--uf)}
+#dp[data-pt] [data-k]:not([data-k=note]){display:none}
+#dp[data-pt=in] .dp-r[data-k=in],#dp[data-pt=tm] .dp-r[data-k=tm],#dp[data-pt=mv] .dp-r[data-k=mv],#dp[data-pt=out] .dp-r[data-k=out]{display:flex!important}
+#dp[data-pt=in] p[data-k=in],#dp[data-pt=out] p[data-k=out]{display:block!important}
+#dp[data-pt] .dp-h[data-k]{display:none!important}
+body.lo #dp>.lo-tabs+.dp-note{display:none}
+/* VIEW: values stay readable; the inputs show they are locked instead of fading */
+body.lo.anview #anp :is(input,select,button:not(.keep)){opacity:1!important}
+body.lo.anview #anp :is(input,select){border-style:dashed!important}
+body.lo.anview #anp::before{content:'VIEW · no simulation: inputs are locked';display:block;margin:0 0 6px;padding:6px 10px;font:600 11px var(--uf);letter-spacing:.06em;color:var(--c-acctx);background:var(--c-accbg);border-left:3px solid var(--c-acc)}
+/* sheet list: one line per sheet title */
+body.app2.lo #sidelist button{padding:4px 10px!important}
+body.app2.lo #sidelist button .st{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 2.4.1-beta.8 / beta.9: Panel button in the top bar (user: "NASAN NA SIDE PANEL"); the operator faceplate panel belongs to the ABC page only */
+body[data-tab=logic] #gsbar .lo-pg{display:flex}
+body.lo #gsbar .lo-pnl{font-weight:600}
+body.lo #gsbar .lo-pnl.on{background:var(--c-accbg)!important;color:var(--c-hi)!important;box-shadow:inset 0 -2px 0 var(--c-acc)!important}
+body:not(.an) #opp{display:none!important}
+/* 2.4.1-beta.10 (full check, user "Buong check muna"):
+   phone: the LOGIC tools get their own row so ⏱ and Panel are on screen; sheets via ☰ Sheets; operator panel is a bottom sheet like the panel;
+   tablet portrait (701-820 px): the old 42 vh limit cut the right panel in half */
+@media (max-width:700px){
+ body.lo[data-tab=logic] #gsbar .tbar{order:5;flex:1 1 100%}
+ body.lo[data-tab=logic] #gsbar .tbar :is(#anshbox,#shbox){display:none!important}
+ body.app2 #mid #opp{position:absolute;z-index:35;top:auto!important;left:0;right:0;bottom:0;width:100%!important;height:52%;border-left:0!important;border-top:1px solid var(--c-line2)!important;border-radius:14px 14px 0 0;box-shadow:0 -8px 24px #000a}
+}
+@media (min-width:701px) and (max-width:1180px){
+ body.app2 #mid #anp{max-height:none!important}
+}
+/* 2.5.0-beta.8: DITL page links (FROM / TO column): link color, the row that a link opened blinks, chooser when a cell names several pages */
+#svg text.plink{fill:#6cb8ff;text-decoration:underline}
+#svg rect.plflash{fill:rgba(255,196,0,.22);stroke:#ffc400;stroke-width:.6;pointer-events:none;animation:plf .5s ease-in-out 4 alternate}
+@keyframes plf{from{fill-opacity:1}to{fill-opacity:.15}}
+#plpick{position:fixed;z-index:60;min-width:220px;max-width:min(420px,calc(100vw - 16px));max-height:60vh;overflow:auto;padding:6px;background:var(--c-pane,#151c22);border:1px solid var(--c-acc,#4fd18b);border-radius:6px;box-shadow:0 6px 18px #0008}
+#plpick .plhd{font:600 12px var(--uf,sans-serif);color:var(--c-dim,#9aa7b2);padding:2px 4px 6px}
+#plpick button{display:block;width:100%;text-align:left;margin:2px 0;padding:8px 10px;min-height:36px;background:transparent;color:var(--c-tx,#e6edf3);border:1px solid var(--c-line2,#2a3540);border-radius:4px;font:13px var(--uf,sans-serif);cursor:pointer}
+#plpick button:hover{border-color:var(--c-acc,#4fd18b)}
+/* 2.5.0-beta.11: DITL sheet list by category (same header as the ABC list) */
+#sidelist .fhc,#anlist .fhc{cursor:pointer;user-select:none}#sidelist .fhc:hover,#anlist .fhc:hover{filter:brightness(1.3)}
+#sidelist .fh{padding:5px 10px;font-size:10.5px;font-weight:700;color:var(--c-acc,var(--acc,#4fd18b));background:var(--c-bg2,#10181d);letter-spacing:.06em;position:sticky;top:0;z-index:1;border-bottom:1px solid var(--c-row,#243447)}
+/* 2.5.0-beta.13 (user: "same function sa ABC ang DITL"): DITL sheet header, By order / By category, Selected tab (src/ui/shell/ditl.js) */
+body.dm #meta{display:none!important}
+#dmeta{display:none}
+body:not(.an) #dmeta.has{display:flex;align-items:center;gap:14px;min-height:28px;padding:2px 10px;background:var(--c-pane,var(--panel));border-bottom:1px solid var(--c-line,var(--line));font:12.5px var(--uf,sans-serif);color:var(--c-tx2,#cfd8dc);white-space:nowrap;overflow:hidden}
+#dmeta b{font:600 14px var(--mf,monospace);color:var(--c-hi,#fff);letter-spacing:.02em}
+#dmeta .dm-t{overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+#dmeta .sp{flex:1}
+#dmeta small{color:var(--c-dim,#8a99a6)}
+#dmode{margin-left:12px;padding:2px 8px;border-radius:4px;font:700 12px sans-serif;flex:none}
+#dmode.view{background:#16324a;color:#8fd3ff}
+#dmode.run{background:#12391f;color:#7dffb0}
+#dmeta .dm-lg{display:inline-flex;align-items:center;gap:4px;font-size:11.5px}
+#dmeta .dm-lg i{display:inline-block;width:16px;height:3px;background:#2b5f46;margin-left:6px}
+#dmeta .dm-lg i.on{background:#ff4d4d}
+@media (max-width:1100px){#dmeta small{display:none}}
+@media (max-width:700px){body:not(.an) #dmeta.has{padding:3px 8px;gap:6px}#dmeta .dm-lg{display:none}#dmeta .dm-t{max-width:40vw}#dmode{margin-left:0;font-size:11px}}
+#dsort{display:flex;gap:4px;margin:4px 0}
+body.an #dsort{display:none!important}
+#dsort button{flex:1;padding:3px 4px}
+#dsort button.on{background:var(--acc,#2a6fdb);color:#fff}
+body.app2 #dsort{gap:0!important;margin:6px 8px!important;border:1px solid var(--c-line2);border-radius:3px;overflow:hidden}
+body.app2 #dsort button{height:24px;border:0!important;border-radius:0!important;background:var(--c-ctl)!important;color:var(--c-tx2)!important;font-size:12px!important}
+body.app2 #dsort button.on{background:var(--c-accbg)!important;color:var(--c-acctx)!important;box-shadow:inset 0 -2px 0 var(--c-acc)}
+#dp .dp-ah{display:inline-flex;align-items:center;gap:4px;font:12px var(--uf);color:var(--c-tx2);cursor:pointer;white-space:nowrap}
+#dp .dp-ah input{height:auto;margin:0}
+#dp.view::before{content:'VIEW / TRACE · no simulation: press ▶ Run to see 1 / 0';display:block;margin:6px 0;padding:6px 10px;font:600 11px var(--uf);letter-spacing:.04em;color:var(--c-acctx,#8fd3ff);background:var(--c-accbg,#0e2536);border-left:3px solid var(--c-acc,#38a8f0)}
+#dp[data-pt=sel] .dp-sel{display:block!important}
+#dp .dp-sel .dp-note{display:block!important}
+#dp .dp-st{margin:6px 0 2px;font:600 11px var(--uf);letter-spacing:.12em;color:var(--c-run)}
+#dp .dp-sel>.dp-t{font-size:13px!important;margin-bottom:6px}
+#dp .dp-kv{display:flex;gap:10px;align-items:flex-start;padding:4px 0;border-bottom:1px solid var(--c-row)}
+#dp .dp-kv>span:first-child{flex:0 0 72px;color:var(--c-dim);font-size:12px}
+#dp .dp-kv>:last-child{flex:1;min-width:0;overflow-wrap:anywhere}
+#dp .dp-sw{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#dp .dp-lk{display:flex;flex-wrap:wrap;gap:4px}
+#dp .dp-lk button{height:auto;min-height:26px;padding:2px 8px;text-align:left;color:var(--c-acctx,#9fd2ff)}
+#dp .dp-h2{margin:12px 0 4px;padding-bottom:3px;border-bottom:1px solid var(--c-line);font:600 11px var(--uf);letter-spacing:.1em;text-transform:uppercase;color:var(--c-run)}
+#dp .dp-ln{display:block;width:100%;height:auto!important;min-height:26px;padding:3px 4px;text-align:left;background:transparent!important;border:0!important;border-bottom:1px solid var(--c-row)!important;border-radius:0!important;color:var(--c-tx)!important;font:12px var(--uf)!important;line-height:1.35;white-space:normal;overflow-wrap:anywhere}
+#dp .dp-ln:hover{background:var(--c-ctl)!important}
+#dp .dp-pin{padding:2px 4px;font:600 10.5px var(--uf);letter-spacing:.08em;color:var(--c-dim)}
+#dp .dp-b{display:inline-block;min-width:16px;text-align:center;font:700 12px var(--mf);color:#5fae86}
+#dp .dp-b.on{color:#ff6b62}
+#dp .dp-b.big{min-width:74px;padding:3px 8px;border:1px solid var(--c-line2);border-radius:3px}
+#dp .dp-b.big.on{background:#3a0f0c;border-color:#ff5a4f;color:#ffc2bc}
+#dp .dp-why .dp-ln{color:var(--c-hi)!important}
+#svg .dsel{pointer-events:none}
+#svg .dsel-box{fill:rgba(79,227,255,.10);stroke:#4fe3ff;stroke-width:.6;stroke-dasharray:1.6 .8}
+#svg .dsel-w{stroke:#4fe3ff;stroke-width:1.3;stroke-linecap:round;opacity:.55}
+html[data-shell=c] #dp .dp-b.big.on{background:#fde3e0;border-color:#b3261e;color:#b3261e}
+html[data-shell=c] #dp .dp-b.on{color:#b3261e}
+html[data-shell=c] #dp .dp-b{color:#2e7d32}
+/* the tab buttons carry data-k too: the rule that hides the other tabs' rows hid the DITL tab strip itself */
+#dp>.lo-tabs>button[data-k]{display:block!important}
+#sidelist button{scroll-margin-top:34px}
+
+/* ===== 2.5.0-beta.18: readable drawing (src/ui/shell/view.js) ===== */
+/* A Focus: the drawing takes the whole page; the sheet list and the panels are drawers over it */
+body.lo-focus #tbsheets{display:inline-flex!important}
+body.lo-focus #mid{position:relative}
+body.lo-focus #mid #side{position:absolute;z-index:40;left:0;top:0;bottom:0;width:min(320px,88vw)!important;display:none!important;box-shadow:8px 0 24px #0009}
+body.lo-focus #mid #side.uiopen{display:flex!important}
+body.lo-focus #mid #cv{flex:1 1 auto;width:100%}
+body.lo-focus #mid #anp,body.lo-focus #mid #opp{position:absolute;z-index:35;right:0;top:0;bottom:0;width:min(400px,94vw)!important;box-shadow:-8px 0 24px #0009}
+body.lo-focus #mid #dp{position:absolute;z-index:35;right:0;top:0;bottom:0;width:min(380px,94vw);box-shadow:-8px 0 24px #0009}
+body.lo-focus #dptab{display:none!important}
+@media (max-width:700px){body.lo-focus #mid :is(#anp,#opp,#dp){top:auto!important;left:0;width:100%!important;height:52%;border-radius:14px 14px 0 0}}
+#lotools .lo-vw{display:flex;gap:4px;padding-left:4px;border-left:1px solid var(--c-line2)}
+/* B mini-map */
+#lomap{position:fixed;z-index:30;display:none;width:200px;background:var(--c-pop,#141c22);border:1px solid var(--c-line2,#2c3c47);border-radius:4px;box-shadow:0 4px 14px #0008;cursor:crosshair;touch-action:none;overflow:hidden}
+#lomap canvas{display:block;width:100%;opacity:.9}
+#lomap .lomap-win{position:absolute;border:2px solid var(--c-acc,#4fd18b);background:color-mix(in srgb,var(--c-acc,#4fd18b) 14%,transparent);border-radius:2px;pointer-events:none;box-sizing:border-box}

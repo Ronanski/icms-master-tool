@@ -47,9 +47,15 @@ const block =
   '</style><style id="shellcss">' +
   fs.readFileSync(__dirname + '/app.css', 'utf8') +
   '</style><script id="shelljs">' +
+  fs.readFileSync(__dirname + '/ditl.js', 'utf8') +
+  '\n' +
   fs.readFileSync(__dirname + '/app.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/info.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/layout.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/view.js', 'utf8') +
   '</script>' +
   B;
 const k = s.lastIndexOf('</body>');

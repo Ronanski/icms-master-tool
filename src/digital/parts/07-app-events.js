@@ -1,18 +1,12 @@
 /* DITL (digital logic) - Timers, buttons, keyboard, loading of the built-in sheets. Part of ONE script (joined by src/digital/order.list, in this order). */
-setInterval(() => {
+/* 2.4.1-beta.4: one step of the open sheet's timers / MOV / motors (Run, and ▶▶ of the DITL tool bar) */
+function ditlStep(dt) {
   const s = cur();
-  if (window.WORLD && WORLD.live) return; /* the one world steps the timers / MOV / motors of EVERY sheet (src/world/world.js) */
-  if (!SIM || !s || !s.nl) {
-    tick.t = 0;
-    return;
-  }
+  if (!s || !s.nl) return;
   const T = tmList(),
     MV = s.nl.mv || [],
     MT = s.nl.mot || [];
   if (!T.length && !MV.length && !MT.length) return;
-  const now = performance.now(),
-    dt = Math.min((now - (tick.t || now)) / 1000, 1) * TSP;
-  tick.t = now;
   const v = simulate(s.nl, simIn(s));
   let ch = false;
   T.forEach(g => {
@@ -32,6 +26,20 @@ setInterval(() => {
     updateTP();
     mvUI(s);
   }
+}
+/* 2.4.1-beta.4: DPAUSE = Pause of the DITL tool bar (Run on, time stopped) */
+let DPAUSE = false;
+setInterval(() => {
+  const s = cur();
+  if (window.WORLD && WORLD.live) return; /* the one world steps the timers / MOV / motors of EVERY sheet (src/world/world.js) */
+  if (!SIM || !s || !s.nl || DPAUSE) {
+    tick.t = 0;
+    return;
+  }
+  const now = performance.now(),
+    dt = Math.min((now - (tick.t || now)) / 1000, 1) * TSP;
+  tick.t = now;
+  ditlStep(dt);
 }, 100);
 /* ---------- title banner ---------- */
 let MUI = { al: 'center', sz: 'M' };
@@ -226,6 +234,10 @@ svg.addEventListener('pointerup', e => {
     s = cur();
   if (!s) return;
   clearTimeout(tm);
+  /* 2.5.0-beta.8: a page link (FROM / TO column) opens the other end, in View and Run (src/ui/shell/ditl.js) */
+  if (h && window.DUI && DUI.link && DUI.link(s, h, e)) return;
+  /* 2.5.0-beta.13: the click also selects the row / gate / wire for the Selected tab of the right panel (View and Run) */
+  if (window.DUI && DUI.pick) DUI.pick(s, h, e);
   if (SIM) {
     const [ux, uy] = xy(e),
       u = (s.nl.usr || []).find(u => Math.abs(ux - u.x) < 3.2 && Math.abs(uy - u.y) < 2.4);
@@ -236,7 +248,7 @@ svg.addEventListener('pointerup', e => {
       return;
     }
   }
-  if (!SIM && WT) {
+  if (!SIM && WT && !NOEDIT) {
     wireClick(e);
     return;
   }
@@ -311,13 +323,14 @@ addEventListener('keydown', e => {
     render();
     return;
   }
+  if (NOEDIT && e.ctrlKey && /^[zy]$/.test(e.key)) return;
   if (e.ctrlKey && e.key === 'z') {
     e.preventDefault();
     undo();
   } else if (e.ctrlKey && e.key === 'y') {
     e.preventDefault();
     redo();
-  } else if (e.key === 'Delete') clearSel();
+  } else if (e.key === 'Delete' && !NOEDIT) clearSel();
   else if (e.key === 'Escape') {
     sel = null;
     PEND = null;
@@ -326,6 +339,7 @@ addEventListener('keydown', e => {
 });
 $('bmode').onclick = () => {
   SIM = !SIM;
+  DREG = {};
   MST = {};
   MS = {};
   sel = null;
@@ -342,6 +356,7 @@ $('bmode').onclick = () => {
     }
     ((x.nl && x.nl.gates) || []).forEach(g => {
       if (g.t === 'FF') g.q = 0;
+      if (g.t === 'CNT') g.N = g.pin = g.rp = 0;
       if (g.t === 'TMR') g.st = { acc: 0, out: 0, pre: 0, run: 0 };
     });
   });
@@ -352,7 +367,7 @@ $('bmode').onclick = () => {
   } catch (e) {}
   if (SIM && cur())
     msg(
-      'Simulate: click the SERVICE cell of an input row (switch icon) to turn it ON/OFF. PB rows are push buttons: press and hold.'
+      'Simulate: click an input (switch icon on the drawing, or in the panel) to turn it ON / OFF. PB rows are push buttons: press and hold.'
     );
   render();
 };
@@ -646,7 +661,7 @@ $('fdxf').onchange = async e => {
     showHealth();
   }
 };
-window.PRE_N = 134;
+window.PRE_N = 151;
 render();
 {
   const n = S.sheets.filter(x => x.bv !== BV && !window.PRE_N).length;
@@ -713,7 +728,8 @@ addEventListener('load', async () => {
     hist = [];
     fut = [];
     render();
-    msg(out.length + ' sheets loaded. Pick a page from the sheet list on the left (the arrow button hides it).');
+    /* 2.5.0-beta.20 (UI audit): only on the LOGIC page (the PLANT VIEW has no sheet list) */
+    if (document.body.dataset.tab === 'logic') msg(out.length + ' sheets loaded. Pick a page from the sheet list on the left (the arrow button hides it).');
   } catch (e) {
     msg('Could not load the built-in sheets: ' + e.message);
   }

@@ -128,12 +128,13 @@ function dsGoRef(r) {
   }
   const code = m[1].toUpperCase(),
     nn = m[2];
-  let i = S.sheets.findIndex(x => new RegExp('DITL-' + code + '$', 'i').test(x.name));
-  if (i < 0) i = S.sheets.findIndex(x => new RegExp('DITL-' + code.replace(/[A-Z]$/, '') + '$', 'i').test(x.name));
+  const i = ditlIdx(code, null);
   if (i < 0) {
     msg('DITL sheet ' + code + ' (' + r + ') is not in the DITL page');
     return false;
   }
+  /* 2.5.0-beta.8: open the item itself (the row blinks); ◀ Back on the DITL bar returns to this ABC sheet */
+  if (window.DUI && DUI.goItem) return DUI.goItem(i, +nn, { cat: 'an', i: AN.i });
   setCat('dig');
   S.cur = i;
   sel = null;
@@ -1167,7 +1168,7 @@ function drawSheet(sh) {
       );
     });
   }
-  L.selg = el('g', { 'pointer-events': 'none' }, svg);
+  L.selg = el('g', { class: 'selg', 'pointer-events': 'none' }, svg);
   /* value badges */
   const th = R.tx.map(t => t.h).sort((a, b) => a - b),
     bs = Math.max(1.8, Math.min(3.2, (th[th.length >> 1] || 3) * 0.8)) * (+AN.ws.vs || 1);

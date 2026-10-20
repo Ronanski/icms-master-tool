@@ -553,6 +553,13 @@ function anPlantLoad150() {
 }
 function anPlantLoad150_() {
   let n = 0;
+  /* 2.5.0-beta.7: the snapshot is a steady state, so no pulse is running: the first scan after Reset took every pulse input that is
+     already 1 as a new edge (ABC-020 TPS of NOT HICHR1002B.MAN, 2 s): with the ID fan running of the load it set M.017A and the SH and
+     RH gas bias dampers stayed MANUAL at 150 MW (39.PNG: both A) */
+  for (const sh of AN.sheets)
+    if (sh.S && sh.S.rt)
+      for (const b of sh.S.blk)
+        if ((b.k === 'TPS' || b.k === 'TPV') && sh.S.rt.st[b.id]) Object.assign(sh.S.rt.st[b.id], { run: 0, out: 0, acc: 0 });
   for (const sh of AN.sheets) {
     if (/^ABC-000/.test(sh.name)) continue;
     let S;
@@ -692,14 +699,16 @@ function anPlantLoad150_() {
     for (const sh of AN.sheets) {
       if (/^ABC-000/.test(sh.name) || !sh.S) continue;
       const S = sh.S;
-      for (const n of S.ext) {
-        const nm = (AN.nm(S, n) || '').trim().toUpperCase(),
-          k = nm.startsWith(c.tag.toUpperCase() + '.') ? nm.slice(c.tag.length + 1) : null;
-        if (!k) continue;
-        if (MK.MAN.includes(k)) S.rt.ext[n] = m === 'M' ? 1 : 0;
-        else if (MK.REM.includes(k)) S.rt.ext[n] = m === 'R' ? 1 : 0;
-        else if (MK.LOC.includes(k)) S.rt.ext[n] = m === 'A' ? 1 : 0;
-      }
+      for (const n of S.ext)
+        for (const nm0 of [AN.nm(S, n)].concat((S.alias && S.alias[n]) || [])) {
+          /* 2.3.0-beta.1: also the mode status written beside an address-named wire (S.alias, ABC-011 TICBR1130.LOC = M.0230) */
+          const nm = (nm0 || '').trim().toUpperCase(),
+            k = nm.startsWith(c.tag.toUpperCase() + '.') ? nm.slice(c.tag.length + 1) : null;
+          if (!k) continue;
+          if (MK.MAN.includes(k)) S.rt.ext[n] = m === 'M' ? 1 : 0;
+          else if (MK.REM.includes(k)) S.rt.ext[n] = m === 'R' ? 1 : 0;
+          else if (MK.LOC.includes(k)) S.rt.ext[n] = m === 'A' ? 1 : 0;
+        }
     }
   /* 2.1.0-beta.6: the PV of every loop from the snapshot transmitters, with the plant model OFF for a moment (logic only); the
      plant model of the loop is anchored at that PV (plant.js pr.hopReq) at the end of the load, with the MV of the snapshot */
@@ -1137,6 +1146,17 @@ function anPlantCold() {
   } catch (e) {}
   /* the lags and the rate limiters of the drawing at their (new) inputs, like anPlantLoad150 */
   try {
+    /* 2.5.0-beta.3: a cold plant has no generator load of the 150 MW snapshot. The average select holds its last value while every
+       input is 0 (zero = lost signal, user rule v1.20.34), so ABC-001C EIC-TM.PV (generator MW AI0419 / AI0774 at 0 MW) kept 151.5 MW
+       and the "MW" link set ABC-013 M.025A (> 81.5 MW); with the turbine trip / 52G1 open wired by the drawing audit (ABC-013-1) that
+       gave house operation M.025B = 1 during the cold start-up: coal feeders forced MANUAL (ABC-004A M.0141), FIC-CF back-up to 0.
+       Only the MW select: the pressure and level selects keep their hold, the warm / hot start states are tuned on it */
+    for (const sh of L)
+      for (const b of sh.S.blk) {
+        const st = sh.S.rt.st[b.id];
+        if (st && b.k === 'SEL' && (b.i || []).some(n => n >= 0 && /^AI0(419|774)$/.test(String((sh.S.lab[n] && sh.S.lab[n].t) || '').trim())))
+          st.last = null;
+      }
     for (let it = 0; it < 4; it++) {
       for (const sh of L)
         for (const b of sh.S.blk) {

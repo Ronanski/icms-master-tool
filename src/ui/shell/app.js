@@ -42,13 +42,45 @@
       e.stopPropagation();
       document.querySelectorAll('.ddw.open').forEach(x => x !== w && x.classList.remove('open'));
       w.classList.toggle('open');
+      /* 2.4.1-beta.1: while open, the menu sits on the page itself (body), under its button and inside the screen. Inside
+         the tool bar, which scrolls sideways, it was cut off: Start ▾ showed nothing in the PLANT VIEW, and on a phone it
+         ran off the right edge */
+      if (w.classList.contains('open')) {
+        const d = btn.ownerDocument,
+          r = btn.getBoundingClientRect(),
+          vw = d.documentElement.clientWidth;
+        d.body.append(m);
+        m.classList.add('ddm-open');
+        Object.assign(m.style, { position: 'fixed', top: r.bottom + 6 + 'px', left: '0px', right: 'auto' });
+        const mw = m.offsetWidth,
+          x = w.classList.contains('left') ? r.left : r.right - mw;
+        m.style.left = Math.max(8, Math.min(x, vw - mw - 8)) + 'px';
+      }
     };
-    document.addEventListener('click', e => {
-      if (!w.contains(e.target)) w.classList.remove('open');
-    });
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') w.classList.remove('open');
-    });
+    /* closing (from anywhere: Esc, outside click, tab change) puts the menu back in its place */
+    new MutationObserver(() => {
+      if (w.classList.contains('open') || m.parentNode === w) return;
+      m.classList.remove('ddm-open');
+      m.removeAttribute('style');
+      w.append(m);
+    }).observe(w, { attributes: true, attributeFilter: ['class'] });
+    /* 2.5.0-beta.20 (UI audit): on the window, before the pages: the ABC page stops the keys and the 🔍 button its click,
+       so Esc and 🔍 left the ⚙ menu open over the search */
+    const win = btn.ownerDocument.defaultView || window;
+    win.addEventListener(
+      'click',
+      e => {
+        if (!w.contains(e.target) && !m.contains(e.target)) w.classList.remove('open');
+      },
+      true
+    );
+    win.addEventListener(
+      'keydown',
+      e => {
+        if (e.key === 'Escape') w.classList.remove('open');
+      },
+      true
+    );
     m.addEventListener('click', e => {
       if (e.target.tagName === 'BUTTON') setTimeout(() => w.classList.remove('open'), 50);
     });
@@ -62,7 +94,7 @@
     ['operate', 'PLANT VIEW', 'Plant graphics with the faceplates (A / M / R, SV, MV) like the operator station; on a PC it opens in its own window'],
     ['logic', 'LOGIC', 'The ABC (analog) and DITL (digital) drawings: trace, run, force'],
     ['library', 'LIBRARY', 'I/O list, memory list, wiring, relay / SER, calculations'],
-    ['tools', 'TOOLS', 'Block tests, audit, health, project files, drawing edit']
+    ['tools', 'TOOLS', 'Tests, drawing checks, simulation switches']
   ];
   let tab = null,
     tabBtns = {},
@@ -228,7 +260,7 @@
   const HINTS = {
     operate: 'PLANT VIEW: pick a system on the left · click a controller or valve = faceplate (A / M / R, SV, MV) · Start ▾ = starting state · CHECK = scenarios',
     library: 'LIBRARY: search an address, tag or description · Find = open the info card',
-    tools: 'TOOLS: block tests, audit, health, review marks, project files, drawing edit'
+    tools: 'TOOLS: tests, drawing checks, simulation switches'
   };
   window.lsSetTab = setTab;
   function hint() {
@@ -273,10 +305,14 @@
       on: e => {
         e.stopPropagation();
         ws.classList.toggle('lsopen');
+        ws.classList.remove('vals');
       }
     });
     bar.prepend(sb);
     list.addEventListener('click', () => ws.classList.remove('lsopen'));
+    /* 2.4.1-beta.1: the list and the values slide out over the graphic on every screen; a click on the graphic closes them */
+    const mid = $('plmid');
+    if (mid) mid.addEventListener('pointerdown', e => !e.target.closest('#plfp,.plbar') && ws.classList.remove('lsopen', 'vals'));
   }
   function build() {
     const gs = $('gsbar'),
@@ -358,13 +394,20 @@
       foot.append(sm);
       const t = $('toast');
       if (t) {
-        const sync = () => {
+        /* 2.5.0-beta.20 (UI audit): a message belongs to the tab it was shown on; a tab change hides it (a DITL message
+           showed on LIBRARY / TOOLS) */
+        let mtab = null;
+        const sync = posted => {
           const on = !t.hidden && !!t.textContent.trim();
-          if (on) sm.textContent = t.textContent;
-          document.body.classList.toggle('hasmsg', on);
+          if (on && posted) {
+            sm.textContent = t.textContent;
+            mtab = document.body.dataset.tab;
+          }
+          document.body.classList.toggle('hasmsg', on && mtab === document.body.dataset.tab);
         };
-        new MutationObserver(sync).observe(t, { attributes: true, attributeFilter: ['hidden'], childList: true, characterData: true, subtree: true });
-        sync();
+        new MutationObserver(() => sync(false)).observe(document.body, { attributes: true, attributeFilter: ['data-tab'] });
+        new MutationObserver(() => sync(true)).observe(t, { attributes: true, attributeFilter: ['hidden'], childList: true, characterData: true, subtree: true });
+        sync(true);
       }
     }
     /* --- top bar --- */
@@ -383,7 +426,7 @@
     const sub = E('div', { cls: 'sub' });
     [
       ['an', 'ABC', 'Analog logic (boiler control): 54 sheets'],
-      ['dig', 'DITL', 'Digital interlock logic: 134 sheets']
+      ['dig', 'DITL', 'Digital interlock logic: all the DITL sheets']
     ].forEach(([k, l, t]) => {
       const b = E('button', { txt: l, title: t, on: () => setSub(k) });
       subBtns[k] = b;
@@ -400,8 +443,35 @@
       }
     });
     const gRun = E('div', { cls: 'tb g-run' }, [run, back, next, stepSel, speedSel, reset, view]);
-    const gDitl = E('div', { cls: 'tb g-ditl' }, [mode, dfit]);
-    const gView = E('div', { cls: 'tb g-view' }, [fit, values, wire, panel, xback]);
+    /* 2.4.1-beta.4: the DITL page has the same tool bar as the ABC page (src/ui/shell/ditl.js); the old Simulate button stays hidden */
+    const gDitl = E('div', { cls: 'tb g-ditl' }, window.DUI ? DUI.bar(dfit) : [mode, dfit]);
+    /* Zoom (UI audit #8): at Fit the block text is ~4 px; Zoom makes it ~12 px, centred on the selected block (or the middle) */
+    const zoom = E('button', {
+      txt: 'Zoom',
+      cls: 'an-only',
+      title: 'Zoom to readable text (12 px) on the selected block; Fit shows the whole sheet again',
+      on: () => {
+        try {
+          const sh = AN.cs(),
+            v = sh && AN.av[sh.name],
+            svg = $('svg');
+          if (!v || !svg) return;
+          const th = ((sh.R && sh.R.tx) || []).map(t => t.h).filter(h => h > 0).sort((a, b) => a - b),
+            h = th[th.length >> 1] || 4.7,
+            r = svg.getBoundingClientRect();
+          if (!r.width) return;
+          const g = svg.querySelector('g.selg'),
+            bb = g && g.childNodes.length ? g.getBBox() : null,
+            cx = bb && bb.width ? bb.x + bb.width / 2 : v[0] + v[2] / 2,
+            cy = bb && bb.width ? bb.y + bb.height / 2 : v[1] + v[3] / 2,
+            w = Math.min(v[2], (r.width * h) / 12),
+            hh = (w * r.height) / r.width;
+          v.splice(0, 4, cx - w / 2, cy - hh / 2, w, hh);
+          svg.setAttribute('viewBox', v.join(' '));
+        } catch (e) {}
+      }
+    });
+    const gView = E('div', { cls: 'tb g-view' }, [fit, zoom, values, wire, panel, xback]);
     const gSheet = E('div', { cls: 'tb g-sheet' }, [sheetsBtn, AN_(shbox), DI_(dshbox)]);
     /* OPERATE: Start ▾ (starting state of the plant, TCS, field valves) and the CHECK scenarios */
     const startBtn = E('button', { txt: 'Start ▾', title: 'Starting state of the plant: 150 MW, cold, warm, hot; TCS panel; field valves' });
@@ -439,6 +509,40 @@
     const setBtn = E('button', { cls: 'ico', html: GEAR, title: 'Settings: font, colours, channel, update' });
     const set = dropdown(setBtn, 'gs-set');
     set.head('Appearance');
+    /* 2.4.1-beta.5 (user: "gusto ko lahat, theme nalang"): the three design proposals as themes. A theme sets the colours of
+       the app and picks its font and diagram colours (both can still be changed below). The drawing lines stay as read from the DXF. */
+    {
+      const TH = [
+          ['std', 'Theme: Standard', 'plexc', 'std'],
+          ['a', 'Theme: A · Control Room', 'plexc', 'std'],
+          ['b', 'Theme: B · Workstation', 'plex', 'std'],
+          ['c', 'Theme: C · Light', 'barlow', 'paper']
+        ],
+        th = E('select', { id: 'themesel', title: 'Theme of the app: colours, font, corners (the drawing is not changed)' });
+      TH.forEach(([v, t]) => th.append(E('option', { value: v, txt: t })));
+      const apply = v => {
+        if (!TH.some(x => x[0] === v)) v = 'std';
+        if (v === 'std') document.documentElement.removeAttribute('data-shell');
+        else document.documentElement.dataset.shell = v;
+        return v;
+      };
+      th.value = apply(ls.get('ls-shell') || 'std');
+      th.onchange = () => {
+        const t = TH.find(x => x[0] === apply(th.value));
+        ls.set('ls-shell', t[0]);
+        const f = $('fontsel'),
+          d = $('dgsel');
+        if (f && f.value !== t[2]) {
+          f.value = t[2];
+          f.dispatchEvent(new Event('change'));
+        }
+        if (d && d.value !== t[3]) {
+          d.value = t[3];
+          d.dispatchEvent(new Event('change'));
+        }
+      };
+      set.m.append(th);
+    }
     {
       const fs_ = E('select', { id: 'fontsel', title: 'App font (the drawing keeps its own)' });
       [
@@ -479,8 +583,8 @@
       grid.append(c);
       return c;
     };
-    const cTest = card('Block tests and controller test', 'Every block of a sheet is forced with known inputs and compared with its definition (UAT); the controller test runs the generic tester.', []);
-    const cAudit = card('Check the drawing', 'Audit, Health, Review marks, F(X) tables, assumed values, the DITL signals of a sheet and a second sheet side by side.', [
+    const cTest = card('Tests', '', []);
+    const cAudit = card('Check the drawing', '', [
       AN_(audit),
       AN_(health),
       AN_(review),
@@ -509,12 +613,11 @@
       pmBtn.classList.toggle('on', on);
       document.body.classList.toggle('pmoff', !on);
     };
-    const cSim = card('Simulation', 'Plant model ON = the PV answers the valve (each PID loop and the boiler / turbine model); OFF = the PV is a free input, only the drawing logic runs. ABC+DITL ON = the 134 DITL sheets run with the ABC Run and pass signals both ways (one world).', [AN_(pmBtn)]);
+    const cSim = card('Simulation', '', [AN_(pmBtn)]);
     /* 2.4.0-beta.5: the old Plant window is replaced by the PLANT VIEW (its own window on a PC) */
     if (plantwin) plantwin.remove();
     if (prj) prj.classList.add('lp');
-    const cPrj = card('Project files', 'Save or open the forced values, user values and the sheets you changed.', [AN_(save), AN_(saveas), AN_(openp), AN_(prj), AN_(importAbc), DI_(lab('fdxf')), DI_(lab('fjson')), DI_($('bsave'))]);
-    const cEdit = card('DITL drawing edit', 'Only on the DITL page: cells of the drawing, loose wires, a whole sheet.', [DI_($('bundo')), DI_($('bredo')), DI_($('bclr')), DI_($('bdel')), DI_($('bwire'))]);
+    const cPrj = card('Project files', 'Save or open the forced values and user values.', [AN_(save), AN_(saveas), AN_(openp), AN_(prj), AN_(importAbc)]);
     /* anything left in the old toolbars (future buttons) stays reachable here */
     const cOther = card('Other', '', []);
     document.body.append(toolsws);
@@ -530,7 +633,10 @@
         dg = $('dgsel'),
         w = document.querySelectorAll('.wbtn');
       if (u && u.parentNode !== cTest.querySelector('.row')) cTest.querySelector('.row').prepend(u);
-      if (c && c.parentNode !== gOp) gOp.append(c);
+      /* 2.4.1-beta.1 (UI audit): on a phone the bar has no room for CHECK (it was cut to "CHE" under the 🔍): it goes to
+         the end of the Start ▾ menu there, and back to the bar on a wider screen */
+      const cTo = matchMedia('(max-width:700px)').matches ? start.m : gOp;
+      if (c && c.parentNode !== cTo) cTo.append(c);
       const ib = gs.querySelector(':scope > .infob');
       if (ib) srch.append(ib);
       plantUx();
@@ -557,8 +663,25 @@
       cardsUpd();
     }, 400);
     /* a card with nothing to show on this page (ABC / DITL) is hidden; the wrappers (.only) have no size of their own */
+    /* 2.4.1-beta.5 (user: TOOLS "panget tignan"): every tool shows what it does under its name, one tool per line */
+    const TDESC = [
+      [/^UAT/, 'Force each block of a sheet with known inputs and compare with its definition.'],
+      [/^Audit/, 'Blocks and links the reader could not resolve.'],
+      [/^Health/, 'Every sheet: OK, issue or failed.'],
+      [/^Review marks/, 'Orange boxes where a link is in doubt.'],
+      [/^F\(X\) tables/, 'Linear curves from the workbook.'],
+      [/^Assumed/, 'Inputs that start from an assumed value.'],
+      [/^DITL signals/, 'DITL addresses of the open sheet.'],
+      [/^Second sheet/, 'Open another sheet side by side.'],
+      [/^Plant model/, 'ON: the PV answers the valve (each PID loop and the boiler / turbine model). OFF: the PV is a free input.'],
+      [/^ABC\s*\+\s*DITL/, 'ON: all the DITL sheets run with the ABC Run and pass signals both ways (one world).']
+    ];
     function cardsUpd() {
       if (tab !== 'tools') return;
+      grid.querySelectorAll('.tcard .row :is(button,label.b)').forEach(b => {
+        const d = TDESC.find(x => x[0].test(b.textContent.trim()));
+        if (d && b.dataset.d !== d[1]) b.dataset.d = d[1];
+      });
       const w = e => e.getBoundingClientRect().width > 0;
       grid.querySelectorAll('.tcard').forEach(c => {
         c.style.display = '';

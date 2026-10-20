@@ -699,9 +699,16 @@ document.head.appendChild(
       if (an) {
         m = AN.view ? 'VIEW / TRACE' : AN.run ? 'RUN' : 'PAUSED';
         k = AN.view ? 'view' : AN.run ? 'run' : '';
+        /* 2.4.1-beta.2: the drawing label said RUNNING after Pause (it was only redrawn by paint) */
+        const am = document.getElementById('anmode');
+        if (am && am._t === 'SIMULATION - RUNNING' && !AN.run && !AN.view) {
+          am._t = am.textContent = 'SIMULATION - PAUSED';
+          am.style.background = '#3d3213';
+          am.style.color = '#ffd479';
+        }
       } else {
-        m = SIM ? 'SIMULATE' : 'EDIT';
-        k = SIM ? 'run' : '';
+        m = SIM ? (DPAUSE ? 'PAUSED' : 'RUN') : window.WORLD && WORLD.live ? 'RUN (ABC)' : 'VIEW / TRACE'; /* 2.5.0-beta.13: the DITL bar is VIEW | ▶ Run as the ABC */
+        k = SIM && !DPAUSE ? 'run' : SIM ? '' : 'view';
       }
       c1.textContent = m;
       c1.className = k;
@@ -742,7 +749,7 @@ function anSide() {
     });
     (AN.sm === 'order' ? ['ALL'] : FAMS.concat(Object.keys(G).filter(k => !FAMS.includes(k)))).forEach(fm => {
       if (!G[fm]) return;
-      if (AN.sm !== 'order') anlist.append(h$('div', { cls: 'fh', txt: fm + ' (' + G[fm].length + ')' }));
+      const box = AN.sm !== 'order' ? sideGrp(anlist, 'an.cc', fm, G[fm].length, G[fm].includes(AN.i), !!f) : anlist; /* 2.5.0-beta.16 */
       G[fm].forEach(i => {
         const s = AN.sheets[i],
           b = h$('button', { 'data-i': i, title: s.name + (s.title ? ' - ' + s.title : '') }, [
@@ -758,7 +765,7 @@ function anSide() {
             } catch (e) {}
           }
         };
-        anlist.append(b);
+        box.append(b);
       });
     });
   }
@@ -768,6 +775,7 @@ function anSide() {
     b.classList.toggle('on', o);
     if (o) on = b;
   });
+  if (on && anSide.last !== AN.i) sideShow(on);
   if (on && SIDEMIN !== '1' && anSide.last !== AN.i) on.scrollIntoView({ block: 'nearest' });
   anSide.last = AN.i;
 }

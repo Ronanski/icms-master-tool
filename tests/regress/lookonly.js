@@ -3,7 +3,7 @@
 const fs=require('fs');const {open,showSearch}=require('./lib.js');
 const html=process.argv[2]||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 (async()=>{const {browser,page,errs}=await open(html);let fail=0;const ok=(c,t)=>{console.log((c?'PASS ':'FAIL ')+t);if(!c)fail++};const W=ms=>page.waitForTimeout(ms);
-const runMode=()=>page.evaluate(()=>{AN.setCat('an');if(AN.view)[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='View').click()});
+const runMode=()=>page.evaluate(()=>{AN.setCat('an');if(AN.view)[...document.querySelectorAll('button')].find(b=>/^view$/i.test(b.textContent.trim())).click()});
 await page.evaluate(()=>window.lsLibrary(true));await W(2500);
 const io=await page.evaluate(()=>[...document.querySelectorAll('#libtb .libg')].map(e=>e.innerText));
 ok(io.length>50&&/STN101 · NODE 0 · I\/O UNIT 0 · DI/.test(io[0]),'I/O LIST groups by station / node / I/O unit ('+io.length+' groups, first: '+(io[0]||'').replace(/\n/g,' ')+')');
@@ -23,7 +23,7 @@ await page.evaluate(()=>window.lsLibrary(false));await runMode();await W(300);
 await showSearch(page);await page.fill('#ansb','M.0228');await page.press('#ansb','Enter');await W(1200);
 await page.evaluate(()=>[...document.querySelectorAll('#infocard button')].find(x=>x.textContent==='Show').click());await W(900);
 ok(await page.evaluate(()=>AN.view&&!AN.run),'global search Enter -> card -> Show: VIEW / TRACE');
-await page.evaluate(()=>{const c=document.getElementById('infocard');c&&c.remove();AN.setCat('dig')});await W(500);await page.click('#bmode');await W(300);
+await page.evaluate(()=>{const c=document.getElementById('infocard');c&&c.remove();AN.setCat('dig')});await W(500);await page.evaluate(()=>(document.querySelector('#gsbar .dui-run')||document.getElementById('bmode')).click());await W(300);
 await showSearch(page);await page.fill('#ansb','M.3302');await W(2500);
 await page.evaluate(()=>[...document.querySelectorAll('#anfind button')].find(x=>/^Open .*DITL/.test(x.title)).click());await W(900);
 ok(await page.evaluate(()=>!SIM),'DITL in Simulate, a DITL search result -> Simulate off');
