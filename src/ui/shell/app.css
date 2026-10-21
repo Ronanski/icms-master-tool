@@ -458,3 +458,70 @@ html[data-dg=paper] #anlg span[style*="#8dffb8"]{color:#0a6b3a!important}html[da
 /* tablet: the ribbon buttons with an icon show the icon only (the name is in the tooltip); phone: the tabs too */
 @media (max-width:1180px){#gsbar .tbar .tb [data-ic][data-ic]{gap:0;font-size:0!important;min-width:var(--h);padding:0!important;justify-content:center}#gsbar .tbar [data-ic]::before{width:18px;height:18px}}
 @media (max-width:700px){#gsbar .tabs [data-ic][data-ic]{gap:0;font-size:0!important;min-width:40px;padding:0!important;justify-content:center}#gsbar .tabs [data-ic]::before{width:19px;height:19px}}
+/* ===== 3.0.0-beta.5 OVERHAUL (user 2026-10-21: "overhaul nga"): the layout of the Style 2 + CAD mockup ===== */
+#gsbar [data-ic=curve]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2020h18M3%2020V4%22/%3E%3Cpath%20d%3D%22M5%2017c4%200%205-9%209-9s4%204%206%204%22/%3E%3C/svg%3E")}
+#gsbar [data-ic=legend]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%223%22%20y%3D%224%22%20width%3D%226%22%20height%3D%225%22%20rx%3D%221%22/%3E%3Cpath%20d%3D%22M12%206.5h9M12%2016.5h9%22/%3E%3Crect%20x%3D%223%22%20y%3D%2214%22%20width%3D%226%22%20height%3D%225%22%20rx%3D%221%22/%3E%3C/svg%3E")}
+#gsbar [data-ic=zin]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2210.5%22%20cy%3D%2210.5%22%20r%3D%226.5%22/%3E%3Cpath%20d%3D%22M15.5%2015.5%2021%2021M10.5%207.5v6M7.5%2010.5h6%22/%3E%3C/svg%3E")}
+#gsbar [data-ic=zout]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2210.5%22%20cy%3D%2210.5%22%20r%3D%226.5%22/%3E%3Cpath%20d%3D%22M15.5%2015.5%2021%2021M7.5%2010.5h6%22/%3E%3C/svg%3E")}
+#gsbar [data-ic=back]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M9%2014%204%209l5-5%22/%3E%3Cpath%20d%3D%22M4%209h10a6%206%200%200%201%200%2012h-3%22/%3E%3C/svg%3E")}
+/* top bar: the sheet name (the title strips of ABC and DITL moved here) and the VIEW | RUN switch */
+#gsbar .crumb{display:flex;align-items:center;flex:1 1 0;min-width:0;overflow:hidden;padding:0 6px;border-left:1px solid var(--c-line);margin-left:4px;height:30px}
+#gsbar .crumb #anmeta,#gsbar .crumb #meta{background:transparent!important;border:0!important;padding:0!important;margin:0;min-height:0!important;gap:10px;flex:1 1 0;min-width:0;box-shadow:none}
+#gsbar .crumb #anmeta b{display:inline!important;font:700 15px var(--mf)!important;color:var(--c-tx)!important;flex:none;letter-spacing:0}
+#gsbar .crumb #anmeta > span:not(.lg):not(#anmode):not(.sp){font:500 13.5px var(--uf);color:var(--c-tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#gsbar .crumb #anmeta :is(.sp,small,.lg,#anmode){display:none!important}
+#gsbar .crumb #meta #mtx{text-align:left!important;min-width:0;display:flex;align-items:baseline;gap:10px}
+#gsbar .crumb #meta #m_title{font:600 14px var(--uf)!important;color:var(--c-tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#gsbar .crumb #meta #m_sub b{display:inline!important;color:var(--c-tx)!important;font-weight:600}
+#gsbar .crumb #meta #m_title{flex:0 1 auto}
+#gsbar .crumb #meta #m_sub{font-size:11.5px!important;justify-content:flex-start!important;color:var(--c-dim);white-space:nowrap;flex:none;gap:10px}
+#gsbar .crumb #meta #mctl{display:none}
+#gsbar .gs-search{margin-left:0}
+#gsbar .seg{display:flex;flex:none;border:1px solid var(--c-line2);border-radius:var(--r);overflow:hidden}
+#gsbar .seg button{height:34px;min-width:66px;padding:0 14px;border:0;border-radius:0;background:var(--c-ctl);color:var(--c-tx2);font:700 12.5px var(--uf);letter-spacing:.08em;cursor:pointer}
+#gsbar .seg button+button{border-left:1px solid var(--c-line2)}
+#gsbar .seg button:first-child.on{background:var(--c-acc);color:#ffffff}
+#gsbar .seg button:last-child.on{background:var(--c-runbg);color:#ffffff}
+/* the ribbon: one mode switch (top bar); View / Run / Stop are not repeated in the ribbon */
+#gsbar .tb-view,#gsbar .g-ditl{display:none!important}
+body:not(.simmode) #gsbar .g-run{display:none!important}
+body.simmode #gsbar .g-ref{display:none!important}
+body:not([data-tab=logic]) #gsbar .g-ref{display:none!important}
+#gsbar .g-ref{display:flex}
+/* VIEW: CAD ribbon, large icon buttons, the group name under the group */
+body:not(.simmode)[data-tab=logic] #gsbar .tbar{min-height:80px}
+body:not(.simmode)[data-tab=logic] #gsbar .tbar .tb:is(.g-zoom,.g-ref),body:not(.simmode)[data-tab=logic].an #gsbar .tbar .tb:is(.g-view,.g-nav){display:grid}
+body:not(.simmode) #gsbar .tbar .tb{grid-auto-flow:column;grid-template-rows:auto 13px;align-items:center;justify-items:center;column-gap:2px;row-gap:3px;height:auto!important;padding:6px 10px 5px!important}
+body:not(.simmode) #gsbar .tbar .tb > *,body:not(.simmode) #gsbar .tbar .tb .only > *{grid-row:1}
+body:not(.simmode) #gsbar .tbar .tb[data-label]::before{grid-row:2;grid-column:1/-1;margin:0;font-size:10px;letter-spacing:.1em}
+body:not(.simmode) #gsbar .tbar .tb [data-ic][data-ic]{flex-direction:column;justify-content:center;height:52px!important;min-height:52px!important;min-width:62px;padding:3px 8px!important;gap:4px;font-size:12px!important;border-color:transparent;background:transparent}
+body:not(.simmode) #gsbar .tbar .tb [data-ic][data-ic]:hover{background:var(--c-ctlh);border-color:var(--c-line)}
+body:not(.simmode) #gsbar .tbar .tb [data-ic][data-ic].on{background:var(--c-accbg);border-color:var(--c-accbd)}
+body:not(.simmode) #gsbar .tbar .tb [data-ic]::before{width:22px;height:22px}
+@media (max-width:1180px){body:not(.simmode) #gsbar .tbar .tb [data-ic][data-ic]{font-size:11px!important;min-width:54px;padding:3px 4px!important}}
+/* RUN: one compact row (the ribbon of 3.0.0-beta.3) */
+body.simmode #gsbar .tbar .tb [data-ic]::before{width:16px;height:16px}
+/* left: Sheets | Inputs */
+#sidetabs,#inlist{display:none}
+body.an #sidetabs{display:flex;gap:2px;margin:6px 8px 4px;padding:2px;background:var(--c-well);border:1px solid var(--c-line);border-radius:var(--r);flex:none}
+body.an #sidetabs button{flex:1;height:30px;border:0;border-radius:4px;background:transparent;color:var(--c-tx2);font:600 13px var(--uf);cursor:pointer}
+body.an #sidetabs button.on{background:var(--c-pane);color:var(--c-acctx);box-shadow:0 0 0 1px var(--c-line)}
+body.an #side.inp > :not(#sidehd):not(#sidetabs):not(#inlist){display:none!important}
+body.an #side.inp #inlist{display:block;flex:1 1 0;min-height:0;overflow:auto;padding:0 8px 10px}
+#inlist .inh{font:700 10.5px var(--uf);letter-spacing:.1em;color:var(--c-dim);padding:10px 2px 4px;border-bottom:1px solid var(--c-line)}
+#inlist .ini{display:flex;align-items:center;gap:8px;padding:6px 2px;border-bottom:1px solid var(--c-line)}
+#inlist .inn{flex:1;min-width:0;cursor:pointer}
+#inlist .inn b{display:block;font:600 13px var(--mf);color:var(--c-tx)}
+#inlist .inn small{display:block;font-size:11.5px;color:var(--c-dim);line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#inlist .inn:hover b{color:var(--c-acctx)}
+#inlist .inb{flex:none;min-width:64px;height:30px;padding:0 8px;border-radius:var(--r);border:1px solid var(--c-line);background:var(--c-ctl);color:var(--c-tx2);font:600 12px var(--mf);cursor:pointer}
+#inlist .inb.one{background:var(--c-runsoft);border-color:var(--c-run);color:var(--c-runtx2)}
+#inlist .inb.fo{border-color:var(--c-man);box-shadow:inset 0 -2px 0 var(--c-man)}
+#inlist .inb:disabled{opacity:.55;cursor:default}
+#inlist .inv{flex:none;font:600 13px var(--mf);color:var(--c-acctx)}
+/* status line: blocks / inputs of the sheet (was in the title strip) */
+#sfoot .sinfo{margin-left:auto;flex:none;padding:0 12px;color:var(--c-statusdim)!important;font-size:12px;line-height:28px;white-space:nowrap}
+@media (max-width:1180px){#gsbar .crumb #meta #m_sub{display:none}#sfoot .sinfo{display:none}}
+@media (max-width:700px){#gsbar .crumb{order:15;flex:1 1 100%;border-left:0;margin:0;height:28px}#gsbar .seg button{min-width:52px;padding:0 8px}}
+/* the Faceplate pane belongs to the ABC page (the DITL page has no controllers) */
+body:not(.an) #opp{display:none!important}
