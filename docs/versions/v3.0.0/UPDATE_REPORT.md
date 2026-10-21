@@ -5,6 +5,31 @@ Base: Stable v2.4.0 (`main`). Bawat Beta ay push sa `claude/design-system-extrac
 ## 3.0.0-beta.1 — BINAWI
 - Ginawa at na-push nang hindi pa pumipili ang user. Ibinalik ang branch sa `main` at isinara ang PR #36 (utos ng user: "Oo ibalik mo"). Walang bahagi nito ang natira.
 
+## 3.0.0-beta.6 — Detalye ng bawat screen (design pass)
+- **Problem (user, 2026-10-21):** "Hanggang kaibuturan pre ayusin mo. Act as an elite web designer."
+- **As Found:** Sinuri ang 19 screen (Logic VIEW / RUN, Inputs, Legend, search, info card, Events, ⚙, Library, Plant view, Tools, Health, Audit, F(X), UAT; Light at Dark). Mga nakita:
+  - Lumalabas ang pangalan ng sheet, VIEW | RUN at block info kahit sa Tools / Library.
+  - Dalawang berde sa RUN: ang switch at ang Pause.
+  - Tinatakpan ng ribbon ang taas ng search results, at walang ayos ang mga group header nito.
+  - Ang Legend ay lumalabas sa gitna ng panel, hindi sa ilalim ng button.
+  - Ang Health / Audit / F(X) ay tinatakpan ang ribbon at may sariling lumang itsura.
+  - Hindi napupuno ng Tools cards ang lapad.
+  - Kulay alarm (berde) ang "◀ Inspector" tab.
+- **Work Done (itsura lang):**
+  - Sa Logic tab lang ang pangalan ng sheet, ang VIEW | RUN (wala sa Library / Tools) at ang block info.
+  - **Isang berde:** ang RUN switch. Ang Pause ay neutral; berde lang ang Run kapag naka-pause. Ang switch ay nagiging dilaw na "PAUSED".
+  - **Search results:** card na may group header (maliit, uppercase), at mga row na umiilaw sa hover. Nasa ibabaw na ng ribbon.
+  - **Legend:** popover sa ilalim mismo ng Legend button.
+  - **Health / Audit / F(X) / DITL Health:** nasa ilalim ng ribbon, iisang card look, sticky table header, row hover, at pare-parehong button at input.
+  - **Tools:** pinupuno ng mga card ang lapad, pantay ang taas, nasa ibaba ang mga button.
+  - "◀ Inspector" tab: neutral. Pareho na ang UAT button sa ibang button.
+- **As Left (headless, 2026-10-21):**
+  - `npm test` 11 PASS.
+  - PASS ang 10 UI test: ditl_toolbar 36, plant_view 18, manstation 12, panel_sync 12, overview 9, infocard 9, lookonly 8, events 5, abcbar 4, faceplate.
+  - RUN sa 4× mabagal na CPU: 58.9 fps (v2.4.0: 59.7).
+  - Screenshot ng 19 screen sa Light at Dark: 0 page error.
+- **Hindi pa nasubok:** sa tablet / exe / apk ng user.
+
 ## 3.0.0-beta.5 — Tunay na overhaul ng ayos (layout ng Style 2 + CAD mockup)
 - **Problem (user, 2026-10-21):** "Bkit di mo inoverhaul? Nagbago k lng itsura ng mga buttons at konting organize." Tama: hanggang beta.4, kulay, icons at button lang ang nabago; ang ayos ng screen ay galing pa sa v2.4.0.
 - **As Found:**
@@ -21,7 +46,7 @@ Base: Stable v2.4.0 (`main`). Bawat Beta ay push sa `claude/design-system-extrac
   - Legend & style: nasa LAYERS. Ang "blocks · external inputs" ng sheet ay nasa status line.
   - DITL title alignment / size (L C R, Medium): nasa Tools > DITL drawing edit.
   - Ang Faceplate pane ay sa ABC page lang (dati ay lumalabas din sa DITL kapag RUN).
-- **As Left (headless):** tingnan ang seksyon ng mga test sa ibaba.
+- **As Left (headless):** `npm run check` SAME; `npm test` 11 PASS; 10 UI test PASS (ditl_toolbar at lookonly in-update sa VIEW | RUN switch).
 - **Hindi pa nasubok:** sa tablet / phone / exe / apk ng user.
 
 ## 3.0.0-beta.4 — Bug: nasisira ang drawing sa Android na naka-dark mode
