@@ -1880,7 +1880,7 @@ function auDraw() {
       )
     );
     for (const r of rows) {
-      const col = r.status === 'PASS' ? '#35e08a' : r.status === 'FAIL' ? '#ff6b6b' : '#ffb04d';
+      const col = r.status === 'PASS' ? 'var(--c-runtx2,#35e08a)' : r.status === 'FAIL' ? 'var(--c-almtx,#ff6b6b)' : 'var(--c-mantx2,#ffb04d)';
       const lnk = h$('a', {
         txt: r.sheet + ' · ' + r.block,
         href: '#',
@@ -1999,9 +1999,9 @@ function selUpd0_(d) {
       h$('small', { txt: 'Audit:', style: 'color:var(--c-tx2)' })
     ]);
     for (const [t, c] of [
-      ['PASS', '#35e08a'],
-      ['FAIL', '#ff6b6b'],
-      ['NEEDS REVIEW', '#ffb04d']
+      ['PASS', 'var(--c-runtx2,#35e08a)'],
+      ['FAIL', 'var(--c-almtx,#ff6b6b)'],
+      ['NEEDS REVIEW', 'var(--c-mantx2,#ffb04d)']
     ]) {
       const b = h$('button', {
         txt: t,

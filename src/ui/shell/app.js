@@ -898,7 +898,7 @@
           if (fp)
             card.append(
               E('button', {
-                cls: 'scb',
+                cls: 'scb keep',
                 txt: 'Open faceplate',
                 on: () => {
                   const f = [...document.querySelectorAll('.hmitabs button')].find(x => x.textContent.trim() === 'Faceplate');

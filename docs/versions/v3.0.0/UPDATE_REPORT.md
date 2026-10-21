@@ -5,6 +5,31 @@ Base: Stable v2.4.0 (`main`). Bawat Beta ay push sa `claude/design-system-extrac
 ## 3.0.0-beta.1 — BINAWI
 - Ginawa at na-push nang hindi pa pumipili ang user. Ibinalik ang branch sa `main` at isinara ang PR #36 (utos ng user: "Oo ibalik mo"). Walang bahagi nito ang natira.
 
+## 3.0.0-beta.8 — Bagong paraan ng pag-check: awtomatikong UI audit
+- **Problem (user, 2026-10-21):** "dami p rin mali pre. paano k b mgcheck?" Mababaw ang check: ilang screenshot lang sa 1366 px, tinitingnan nang mabilis; ang mga test ay para sa function, hindi sa itsura.
+- **Bagong check:** `tools/ui-audit/audit.mjs`
+  - Binubuksan ang 27 screen sa laki ng tablet ng user (1333 × 833, touch): DITL VIEW / RUN, ABC VIEW, napiling block, Legend, Inputs, RUN, Inspector, zoom, search, info card, Events, ⚙, 5 tab ng Library, Plant view at faceplate, Tools, Audit, Health, F(X), Assumed, DITL signals, UAT.
+  - Sa bawat screen, hinahanap nito: (1) sulat na mahina ang contrast (WCAG 4.5 : 1), (2) sulat na naputol, (3) button na nagpapatong, (4) button na maliit sa 26 px para sa daliri, (5) lumampas sa screen.
+  - Light, Dark, at Android auto-dark.
+- **As Found:** 673 finding (Light), 624 (Dark).
+  - Mga label ng faceplate (PV, SV, MV, mm, %, range) na halos puti sa puti.
+  - PASS / FAIL / NEEDS REVIEW na neon sa puti.
+  - Mga button sa Inspector, Event log, Library, Legend at sheet list na 19 ~ 24 px ang taas (mahirap pindutin sa tablet).
+  - Sa Dark, puting sulat sa maliwanag na asul / berde (ABC, VIEW, RUN).
+  - Ang "Selected: …" ng status line ay lumalabas din sa Plant view / Tools.
+  - Sa VIEW, masyadong malabo ang naka-lock na mga control (opacity .45).
+- **Work Done (itsura lang):** inayos ang lahat ng nasa itaas:
+  - kulay ng theme sa faceplate label at sa audit buttons;
+  - pinakamaliit na 30 px ang button, at 34 px ang status line sa touch;
+  - mas madilim na asul / berde sa Dark;
+  - "Selected" / FORCED sa Logic tab lang;
+  - naka-lock na control: opacity .6.
+- **As Left (audit, 2026-10-21):**
+  - Light: 673 → 3 finding; Dark: 624 → 3.
+  - Ang natitira: "1" na berde sa DITL signals (live value); ang "12.3" sample sa Legend (Dark); at overlap na hindi totoo (bukas na ⚙ menu sa ibabaw ng tab, Event log drawer sa ibabaw ng drawing: sinadya).
+  - `npm run check` SAME; `npm test` 11 PASS; 10 UI test PASS.
+- **Hindi pa nasubok:** sa tablet / exe / apk ng user.
+
 ## 3.0.0-beta.7 — Ang mga detalye ng Style 2 + CAD mockup
 - **Problem (user, 2026-10-21):** "hnd ganyan ang inaasahan ko sa style 2 plus cad. impress me."
 - **As Found (app laban sa Style 2 at sa dalawang Style 2 + CAD mockup):**
