@@ -201,7 +201,7 @@
     if (!svg || !v || it.cx == null) return;
     const anp = document.getElementById('anp');
     if (!anp || anp.getBoundingClientRect().width < 5) {
-      const pb = [...document.querySelectorAll('button')].find(x => x.textContent.trim() === 'Panel');
+      const pb = [...document.querySelectorAll('button')].find(x => /^(Panel|Inspector)$/.test(x.textContent.trim()) && !x.closest('.hmitabs'));
       if (pb) pb.click();
     }
     const r = svg.getBoundingClientRect(),

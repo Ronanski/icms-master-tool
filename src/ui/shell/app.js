@@ -59,10 +59,10 @@
     };
   }
   const TABS = [
-    ['operate', 'PLANT VIEW', 'Plant graphics with the faceplates (A / M / R, SV, MV) like the operator station; on a PC it opens in its own window'],
-    ['logic', 'LOGIC', 'The ABC (analog) and DITL (digital) drawings: trace, run, force'],
-    ['library', 'LIBRARY', 'I/O list, memory list, wiring, relay / SER, calculations'],
-    ['tools', 'TOOLS', 'Block tests, audit, health, project files, drawing edit']
+    ['operate', 'Plant view', 'Plant graphics with the faceplates (A / M / R, SV, MV) like the operator station; on a PC it opens in its own window'],
+    ['logic', 'Logic', 'The ABC (analog) and DITL (digital) drawings: trace, run, force'],
+    ['library', 'Library', 'I/O list, memory list, wiring, relay / SER, calculations'],
+    ['tools', 'Tools', 'Block tests, audit, health, project files, drawing edit']
   ];
   let tab = null,
     tabBtns = {},
@@ -340,7 +340,9 @@
     /* short labels (the handlers do not read these texts) */
     if (back) back.textContent = '◀◀';
     if (next) next.textContent = '▶▶';
-    if (wire) wire.textContent = 'Wire';
+    if (wire) wire.textContent = 'Wire values';
+    /* 3.0.0: the right panel is the Inspector (block details) / Faceplate */
+    if (panel) panel.textContent = 'Inspector';
     [back, next, stepSel].forEach(e => e && e.classList.add('tb-step'));
     view.classList.add('tb-view');
     /* --- status bar --- */
@@ -372,7 +374,7 @@
       gscope = $('gscope'),
       uisel = $('uisel');
     [...gs.children].forEach(c => {
-      if (c !== ansb && c !== gscope && c !== uisel && c.id !== 'updbtn' && c.id !== 'chsel' && c.id !== 'dgsel') c.remove();
+      if (c !== ansb && c !== gscope && c !== uisel && c.id !== 'updbtn' && c.id !== 'chsel' && c.id !== 'dgsel' && c.id !== 'dgtsel') c.remove();
     });
     const tabs = E('div', { cls: 'tabs' });
     TABS.forEach(([k, l, t]) => {
@@ -399,9 +401,22 @@
         if (s) s.classList.toggle('uiopen');
       }
     });
-    const gRun = E('div', { cls: 'tb g-run' }, [run, back, next, stepSel, speedSel, reset, view]);
-    const gDitl = E('div', { cls: 'tb g-ditl' }, [mode, dfit]);
-    const gView = E('div', { cls: 'tb g-view' }, [fit, values, wire, panel, xback]);
+    /* 3.0.0 (Style 2 + CAD): the tools are a ribbon under the top bar, in named groups (SIM / VIEW / LAYERS / TRACE).
+       The same elements and handlers; Fit of ABC and of DITL sit in one VIEW group with zoom − / + (one mouse-wheel step each). */
+    const zoomBy = dy => {
+      const s = $('svg');
+      if (!s) return;
+      const r = s.getBoundingClientRect();
+      for (let i = 0; i < 2; i++)
+        s.dispatchEvent(new WheelEvent('wheel', { deltaY: dy, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, bubbles: true, cancelable: true }));
+    };
+    const zOut = E('button', { txt: '−', title: 'Zoom out', 'aria-label': 'Zoom out', on: () => zoomBy(100) }),
+      zIn = E('button', { txt: '+', title: 'Zoom in (read the small text)', 'aria-label': 'Zoom in', on: () => zoomBy(-100) });
+    const gRun = E('div', { cls: 'tb g-run', 'data-label': 'SIM' }, [run, view, reset, speedSel, back, next, stepSel]);
+    const gDitl = E('div', { cls: 'tb g-ditl', 'data-label': 'SIM' }, [mode]);
+    const gZoom = E('div', { cls: 'tb g-zoom', 'data-label': 'VIEW' }, [AN_(fit), DI_(dfit), zOut, zIn]);
+    const gView = E('div', { cls: 'tb g-view', 'data-label': 'LAYERS' }, [values, wire, panel]);
+    const gNav = E('div', { cls: 'tb g-nav', 'data-label': 'TRACE' }, [AN_(xback)]);
     const gSheet = E('div', { cls: 'tb g-sheet' }, [sheetsBtn, AN_(shbox), DI_(dshbox)]);
     /* OPERATE: Start ▾ (starting state of the plant, TCS, field valves) and the CHECK scenarios */
     const startBtn = E('button', { txt: 'Start ▾', title: 'Starting state of the plant: 150 MW, cold, warm, hot; TCS panel; field valves' });
@@ -409,7 +424,7 @@
     buildStart(start);
     const gOp = E('div', { cls: 'tb g-op' }, [start.w]);
     pvPop = () => pvWindow(start.w, gOp, run, chip, clock);
-    const tbar = E('div', { cls: 'tbar' }, [gRun, gDitl, gView, gSheet, gOp]);
+    const tbar = E('div', { cls: 'tbar' }, [gRun, gDitl, gZoom, gView, gNav, gSheet, gOp]);
     const srch = E('div', { cls: 'gs-search' }, [ansb, gscope]);
     /* narrow screens: the search is one icon; it opens as a full-width row under the bar */
     const srchBtn = E('button', {
@@ -436,40 +451,44 @@
     if (ln) ln.textContent = 'F(X) tables';
     if (second) second.textContent = 'Second sheet';
     /* ⚙: appearance, channel, update */
-    const setBtn = E('button', { cls: 'ico', html: GEAR, title: 'Settings: font, colours, channel, update' });
+    const setBtn = E('button', { cls: 'ico', html: GEAR, title: 'Settings: theme, drawing, channel, update' });
     const set = dropdown(setBtn, 'gs-set');
     set.head('Appearance');
+    /* 3.0.0: one app font; the older look selectors (font, UI skin, live colour, symbol theme) keep their defaults and are not shown */
+    document.documentElement.dataset.font = 'plexc';
     {
-      const fs_ = E('select', { id: 'fontsel', title: 'App font (the drawing keeps its own)' });
+      const th = E('select', { id: 'thsel', title: 'Light or dark app (the drawing has its own setting below)' });
       [
-        ['plexc', 'Font: IBM Plex Sans Condensed'],
-        ['barlow', 'Font: Barlow Semi Condensed'],
-        ['inter', 'Font: Inter + JetBrains Mono'],
-        ['plex', 'Font: IBM Plex Sans + Mono'],
-        ['roboto', 'Font: Roboto + Roboto Mono'],
-        ['device', 'Font: Device default']
-      ].forEach(([v, t]) => fs_.append(E('option', { value: v, txt: t })));
-      const f0 = ls.get('ls-font') || 'plexc';
-      fs_.value = f0;
-      document.documentElement.dataset.font = f0;
-      fs_.onchange = () => {
-        document.documentElement.dataset.font = fs_.value;
-        ls.set('ls-font', fs_.value);
+        ['light', 'Theme: Light'],
+        ['dark', 'Theme: Dark']
+      ].forEach(([v, t]) => th.append(E('option', { value: v, txt: t })));
+      const t0 = ls.get('ls-theme3') === 'dark' ? 'dark' : 'light';
+      th.value = t0;
+      document.documentElement.dataset.theme = t0;
+      th.onchange = () => {
+        document.documentElement.dataset.theme = th.value;
+        ls.set('ls-theme3', th.value);
       };
-      set.m.append(fs_);
+      set.m.append(th);
     }
-    if (uisel) set.m.append(uisel);
     if ($('dgsel')) set.m.append($('dgsel'));
-    if (live) set.m.append(AN_(live));
-    if (theme) set.m.append(AN_(theme));
-    if (slive) set.m.append(DI_(slive));
+    if ($('dgtsel')) set.m.append($('dgtsel'));
+    {
+      const hold = E('div', { hidden: '' }, [uisel, live && AN_(live), theme && AN_(theme), slive && DI_(slive)]);
+      document.body.append(hold);
+    }
     set.head('Channel and update');
     if ($('chsel')) set.m.append($('chsel'));
     if ($('updbtn')) {
       $('updbtn').textContent = 'Check for update';
       set.m.append($('updbtn'));
     }
-    gs.append(tabs, sub, tbar, srchBtn, srch, set.w);
+    const brand = E('div', {
+      cls: 'brand',
+      title: 'DCS Logic Simulator',
+      html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="5" width="16" height="7" rx="3.5"/><path d="M8 12v6M16 12v6"/></svg>'
+    });
+    gs.append(brand, tabs, sub, srchBtn, srch, set.w, tbar);
     /* --- TOOLS page --- */
     toolsws = E('div', { id: 'toolsws' });
     const grid = E('div', { cls: 'tgrid' });
@@ -539,7 +558,8 @@
         set.m.append(up);
       }
       if ($('chsel') && $('chsel').parentNode !== set.m) set.m.insertBefore($('chsel'), up && up.parentNode === set.m ? up : null);
-      if (dg && dg.parentNode !== set.m) uisel ? uisel.after(dg) : set.m.append(dg);
+      if (dg && dg.parentNode !== set.m) $('thsel') ? $('thsel').after(dg) : set.m.append(dg);
+      if ($('dgtsel') && $('dgtsel').parentNode !== set.m) dg ? dg.after($('dgtsel')) : set.m.append($('dgtsel'));
       if (w.length) {
         if (!wb) wb = w[0];
         if (wb.parentNode !== cSim.querySelector('.row')) cSim.querySelector('.row').prepend(wb);

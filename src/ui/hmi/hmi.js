@@ -1176,7 +1176,7 @@
   function tick() {
     try {
       if (!opp) return;
-      const pb = [...document.querySelectorAll('button')].find(x => x.textContent.trim() === 'Panel');
+      const pb = [...document.querySelectorAll('button')].find(x => /^(Panel|Inspector)$/.test(x.textContent.trim()) && !x.closest('.hmitabs'));
       const on = !!(pb && pb.classList.contains('on'));
       const op = document.body.classList.contains('ophmi');
       opp.style.display = on && op ? 'flex' : 'none';
@@ -1189,8 +1189,8 @@
   }
   function tabs(active) {
     const w = E('div', { cls: 'hmitabs' }, [
-      E('button', { cls: active === 'd' ? 'on' : '', txt: 'Details', on: () => mode(false) }),
-      E('button', { cls: active === 'o' ? 'on' : '', txt: 'Operator', on: () => mode(true) })
+      E('button', { cls: active === 'd' ? 'on' : '', txt: 'Inspector', on: () => mode(false) }),
+      E('button', { cls: active === 'o' ? 'on' : '', txt: 'Faceplate', on: () => mode(true) })
     ]);
     w.dataset.hmi = '1';
     return w;

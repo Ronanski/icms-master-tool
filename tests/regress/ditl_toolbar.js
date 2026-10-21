@@ -15,7 +15,7 @@ for(const [n,w,h] of [['desktop',1440,900],['tablet',1024,768],['phone',390,844]
  const vis=id=>page.evaluate(id=>{const e=document.getElementById(id);return !!e&&e.offsetParent!==null&&e.offsetHeight>0},id);
  ck(!(await vis('anbar'))&&!(await vis('bar')),n+': old ABC / DITL toolbars are not shown');
  const gsH=await page.evaluate(()=>document.getElementById('gsbar').offsetHeight);
- ck(gsH<=(n==='desktop'?70:110),n+': top bar height '+gsH+' px');
+ ck(gsH<=(n==='phone'?150:110),n+': top bar + ribbon height '+gsH+' px');
  ck(await page.evaluate(()=>document.body.dataset.tab==='logic'),n+': LOGIC tab');
  ck(await vis('bmode')&&await page.evaluate(()=>!!document.getElementById('bmode').closest('#gsbar .g-ditl')),n+': Simulate button in the top bar');
  ck(await vis('bfit'),n+': Fit in view');
@@ -23,7 +23,7 @@ for(const [n,w,h] of [['desktop',1440,900],['tablet',1024,768],['phone',390,844]
  // Simulate toggles the DITL mode
  const t0=await page.textContent('#bmode');await page.evaluate(()=>document.getElementById('bmode').click());const t1=await page.textContent('#bmode');
  const sim=await page.evaluate(()=>typeof SIM!=='undefined'&&SIM);
- ck(/Simulate/.test(t0)&&/Edit/.test(t1)&&sim===true,n+': '+t0.trim()+' -> '+t1.trim()+' (SIM='+sim+')');
+ ck(/Run/.test(t0)&&/Stop/.test(t1)&&sim===true,n+': '+t0.trim()+' -> '+t1.trim()+' (SIM='+sim+')');
  await page.evaluate(()=>document.getElementById('bmode').click());ck(await page.evaluate(()=>SIM===false),n+': back to Edit');
  // TOOLS tab shows the editor tools and Health works from it
  await page.evaluate(()=>[...document.querySelectorAll('#gsbar .tabs button')].find(b=>/TOOLS/i.test(b.textContent)).click());await page.waitForTimeout(600);
