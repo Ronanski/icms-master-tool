@@ -5,6 +5,13 @@ Base: Stable v2.4.0 (`main`). Bawat Beta ay push sa `claude/design-system-extrac
 ## 3.0.0-beta.1 — BINAWI
 - Ginawa at na-push nang hindi pa pumipili ang user. Ibinalik ang branch sa `main` at isinara ang PR #36 (utos ng user: "Oo ibalik mo"). Walang bahagi nito ang natira.
 
+## 3.0.0-beta.4 — Bug: nasisira ang drawing sa Android na naka-dark mode
+- **Problem (user, 2026-10-21, screenshot ng tablet):** madilim ang buong sheet, puti ang mga block ("sinalaula").
+- **As Found:** Naka-dark mode ang Android ng user. Ang Chrome / WebView ay pilit na dinidilim ang page na light (auto dark). Dahil Light ang default mula 3.0.0-beta.2, dinilim ng system ang papel ng drawing pero hindi ang mga block, kaya puti ang mga block sa itim na background at nagiging blotch ang mga sulat. Na-reproduce sa Chromium na naka-force dark.
+- **Work Done:** `color-scheme: only light` (Light) at `only dark` (Dark) sa `src/ui/shell/app.css`. Sinasabi nito sa system na huwag nang dimilim ang page; ang Dark ng ⚙ ang tanging dark.
+- **As Left:** Chromium na naka-force dark: malinis na ang ABC-001B (Light at Dark). Pasado ang `npm run check`, ditl_toolbar at plant_view.
+- **Hindi pa nasubok:** sa mismong tablet ng user.
+
 ## 3.0.0-beta.3 — Overhaul ng lahat ng panel, popup at button
 - **Problem (user, 2026-10-21):** "sabi ko ayusin lahat e. pati buttons. overhaul nga ni" — kulang ang beta.2: ilang panel ay madilim pa at lumang itsura.
 - **As Found (tinignan ang 24 screen, luma vs bago):**
