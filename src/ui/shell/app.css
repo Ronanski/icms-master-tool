@@ -1,5 +1,9 @@
 /* ===== APP SHELL 2 (2.4.0): one top bar, four tabs (OPERATE / LOGIC / LIBRARY / TOOLS), one status bar.
    Looks and arrangement only: every button is the same element with the same handler; the engine is not touched. ===== */
+/* 3.0.0-beta.4: Android / Chrome in system dark mode darkens a light page by itself (auto dark): white blocks on a black
+   sheet, smeared text. "only light" turns that off; the Dark theme of ⚙ is the app's own dark. */
+:root{color-scheme:only light}
+html[data-theme=dark]{color-scheme:only dark}
 :root{--uf:'IBM Plex Sans Condensed','IBM Plex Sans',system-ui,sans-serif;--mf:'JetBrains Mono',ui-monospace,monospace;
  --c-bg:#eceef1;--c-pane:#ffffff;--c-strip:#ffffff;--c-ribbon:#f7f8fa;--c-ctl:#ffffff;--c-ctlh:#eef1f4;--c-well:#f3f4f6;--c-plate:#ffffff;
  --c-line:#d6dadf;--c-line2:#8f989f;--c-lineh:#5b646c;--c-tx:#1a1f24;--c-tx2:#3d454c;--c-dim:#5b646c;--c-white:#ffffff;--c-shadow:rgba(20,25,29,.14);
