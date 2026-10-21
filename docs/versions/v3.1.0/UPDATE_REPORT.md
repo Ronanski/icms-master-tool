@@ -2,6 +2,36 @@
 
 Base: 3.0.0-beta.8 (branch `claude/design-system-extraction-4dogzg`). UI lang: walang binago sa engine, logic, simulation, kulay ng drawing at sa DCS faceplate box.
 
+## 3.1.0-beta.3 — Mga button: iisang propesyonal na itsura
+- **Problem (user, 2026-10-21):** "Yung buttons. Paki ayos! Gandahan mo professional!"
+- **As Found (close-up ng tool bar, Inspector, sheet list, status line):**
+  - Mga simbolo bilang icon (◀ ▶ ◀◀ ▶▶ ✕ ✓ ⤢ ❚❚ ▾) na magkakaiba ang laki at kapal.
+  - Ang Pause ay mukhang napiling tab.
+  - Ang 1x / 1 s ay mukhang text lang.
+  - Ang PASS / FAIL / NEEDS REVIEW ay matingkad na kulay na naka-outline.
+  - Mabigat ang border at anino.
+  - Itim na ◀ sa kahon sa sheet list.
+  - Sa status line, minsan dalawang mensahe ang sabay.
+  - Sa DITL RUN, bakante ang tool bar.
+- **Work Done (itsura lang; walang binagong text o handler ng button):**
+  - **Iisang icon set:** ang simbolo sa bawat button ng buong app ay iginuguhit bilang line icon (✕ ✓ chevron, step, play / pause, info, expand, menu, pin, folder, save). Ang text ng button ay hindi binago, kaya pareho pa rin ang binabasa ng code at ng mga test.
+  - **Antas ng button:**
+    - Secondary ang karaniwan (puti, manipis na border).
+    - Primary (asul) ang pangunahing aksyon: Open faceplate, Test this sheet, Run ALL, UAT.
+    - Berde ang Run; ang Pause ay karaniwang button.
+    - Ang toggle (Values, Wire values, Inspector) ay may asul na tint at gilid.
+  - Ang mga select (1x, 1 s, 1 min) ay may border at arrow.
+  - PASS / FAIL / NEEDS REVIEW: neutral na button na may kulay na tuldok.
+  - Parisukat ang icon-only button (✓ ✕ ‹ ›).
+  - Tahimik na chevron ang collapse ng sheet list.
+  - Isang mensahe lang sa status line.
+  - Sa DITL RUN, nananatili ang I/O list sa tool bar.
+- **As Left (headless, 2026-10-21):**
+  - UI audit 1333 × 833: Light 19, Dark 18 finding.
+  - `npm run check` SAME; `npm test` 11 PASS; 10 UI test PASS.
+  - RUN 59.8 fps sa 4× mabagal na CPU.
+- **Hindi pa nasubok:** sa tablet / exe / apk ng user.
+
 ## 3.1.0-beta.2 — Ayos ng mga natirang screen
 - **Problem:** pagkatapos ng beta.1, sinuri ang 27 screen (Light / Dark, 1333 × 833). May mga detalyeng mali pa:
   - Plant view: monospace ang listahan ng system at putol ang mga pangalan.

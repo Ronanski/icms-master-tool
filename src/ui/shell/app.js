@@ -941,6 +941,44 @@
         if (cp) cp.textContent = isAn() ? 'ABC analog ›' : 'DITL digital ›';
       }, 300);
     }
+    /* 3.1.0-beta.3: the text symbols on the buttons of every panel (✕ ✓ ◀ ▶ ◀◀ ▶▶ ▲ ▼ ⓘ ⤢ ❚❚ …) are drawn as one set of
+       line icons. The text of the button does not change (handlers and tests read it): a whole-symbol button gets
+       data-g, a symbol before / after a word is wrapped in <span class="gi" data-g> and the stylesheet draws the icon. */
+    {
+      const G = { '✕': 'x', '×': 'x', '✖': 'x', '✓': 'check', '✔': 'check', '◀': 'cl', '‹': 'cl', '◄': 'cl', '▶': 'cr', '›': 'cr', '►': 'cr', '◀◀': 'skipb', '▶▶': 'skipf', '▲': 'cu', '▼': 'cd', '▾': 'cd', 'ⓘ': 'info', '⤢': 'expand', '−': 'minus', '+': 'plus', '❚❚': 'pause', '↩': 'back', '☰': 'menu', '📍': 'pin', '🎲': 'dice', '📂': 'folder', '💾': 'save' };
+      const LEAD = { '▶': 'play', '❚❚': 'pause' };
+      const skip = b => b.closest('.fp,.fpop,svg,#sidelist,#anlist,#pllist,.libg,#anfind');
+      const tag = () => {
+        for (const b of document.querySelectorAll('button')) {
+          const t = b.textContent;
+          if (b._gt === t) continue;
+          b._gt = t;
+          if (skip(b)) continue;
+          const s = t.trim();
+          b.removeAttribute('data-g');
+          if (G[s]) {
+            b.dataset.g = G[s];
+            if (!b.getAttribute('aria-label')) b.setAttribute('aria-label', b.title || s);
+            continue;
+          }
+          if (b.querySelector('.gi')) continue;
+          const n = b.firstChild;
+          if (!n || n.nodeType !== 3 || b.childNodes.length !== 1) continue;
+          const m = s.match(/^(❚❚|◀◀|▶▶|[▶◀✕✓↩☰📍🎲📂💾⤢▾▼▲])\s+(.+)$/u) || s.match(/^(.+?)\s+(⤢|▾|▼|▲|▶|◀)$/u);
+          if (!m) continue;
+          const lead = /^(❚❚|◀◀|▶▶|[▶◀✕✓↩☰📍🎲📂💾⤢▾▼▲])$/u.test(m[1]),
+            g = lead ? m[1] : m[2],
+            word = lead ? m[2] : m[1],
+            gi = E('span', { cls: 'gi', 'data-g': (lead && LEAD[g]) || G[g], txt: g, 'aria-hidden': 'true' });
+          b.textContent = '';
+          if (lead) b.append(gi, ' ' + word);
+          else b.append(word + ' ', gi);
+          b._gt = b.textContent;
+        }
+      };
+      setInterval(tag, 600);
+      tag();
+    }
     /* --- TOOLS page --- */
     toolsws = E('div', { id: 'toolsws' });
     const grid = E('div', { cls: 'tgrid' });
