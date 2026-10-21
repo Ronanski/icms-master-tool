@@ -29,19 +29,19 @@
   };
   document.head.append(
     E('style', {
-      txt: `#uatb{position:fixed;left:8px;bottom:36px;z-index:50;background:#1d3a2b;color:#bfe3cc;border:1px solid #6fbf8f;padding:8px 14px;border-radius:8px;font:600 14px system-ui;cursor:pointer}
-#uatp{position:fixed;left:0;top:0;bottom:0;width:min(440px,100vw);z-index:60;background:#10151a;color:#dbe5ec;border-right:1px solid #2a3743;overflow:auto;font:14px/1.4 system-ui;padding:10px 12px 40px;display:none}
-#uatp h3{margin:0;font-size:16px;color:#6aaee0;flex:1}#uatp .sub{color:#8a9aa6;font-size:12px;margin:4px 0}
-#uatp button,#uatp select{background:#18212a;color:#dbe5ec;border:1px solid #2a3743;padding:7px 11px;border-radius:6px;font:inherit;cursor:pointer}
-#uatp button.go{background:#16324a;border-color:#6aaee0}#uatp button.on{background:#1d3a2b;border-color:#6fbf8f;color:#6fbf8f}
-#uatp details{background:#18212a;border:1px solid #2a3743;border-radius:8px;margin:8px 0}#uatp summary{padding:9px 10px;cursor:pointer;font-weight:600;display:flex;gap:8px}
+      txt: `#uatb{position:fixed;left:8px;bottom:36px;z-index:50;background:var(--c-runsoft);color:var(--c-runtx2);border:1px solid var(--c-run);padding:8px 14px;border-radius:8px;font:600 14px system-ui;cursor:pointer}
+#uatp{position:fixed;left:0;top:0;bottom:0;width:min(440px,100vw);z-index:60;background:var(--c-pane);color:var(--c-tx);border-right:1px solid var(--c-line);overflow:auto;font:14px/1.4 system-ui;padding:10px 12px 40px;display:none}
+#uatp h3{margin:0;font-size:16px;color:var(--c-acctx);flex:1}#uatp .sub{color:var(--c-dim);font-size:12px;margin:4px 0}
+#uatp button,#uatp select{background:var(--c-pane);color:var(--c-tx);border:1px solid var(--c-line);padding:7px 11px;border-radius:6px;font:inherit;cursor:pointer}
+#uatp button.go{background:var(--c-accbg);border-color:var(--c-acc)}#uatp button.on{background:var(--c-runsoft);border-color:var(--c-run);color:var(--c-runtx2)}
+#uatp details{background:var(--c-pane);border:1px solid var(--c-line);border-radius:8px;margin:8px 0}#uatp summary{padding:9px 10px;cursor:pointer;font-weight:600;display:flex;gap:8px}
 #uatp summary span.c{margin-left:auto;font-weight:400;font-size:13px}
-#uatp .it{border-top:1px solid #2a3743;padding:7px 10px}#uatp .it .h{display:flex;gap:6px;align-items:center}#uatp .it .h b{flex:1;font-size:13px;word-break:break-word}
+#uatp .it{border-top:1px solid var(--c-line);padding:7px 10px}#uatp .it .h{display:flex;gap:6px;align-items:center}#uatp .it .h b{flex:1;font-size:13px;word-break:break-word}
 #uatp .it .h button{padding:4px 8px}
-#uatp table{width:100%;border-collapse:collapse;margin:6px 0;font-size:12px}#uatp td{padding:3px 4px;border-top:1px solid #2a3743;vertical-align:top}#uatp td.v{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-#uatp .y{color:#6fbf8f}#uatp .n{color:#d9786f}#uatp .w{color:#d8b860}#uatp .row{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0;align-items:center}
-#uatp .bar{height:8px;background:#2a3743;border-radius:4px;overflow:hidden;margin:6px 0}#uatp .bar i{display:block;height:100%;background:#6fbf8f}
-#uatp pre{white-space:pre-wrap;background:#0d1217;padding:8px;border-radius:6px;font-size:12px}`
+#uatp table{width:100%;border-collapse:collapse;margin:6px 0;font-size:12px}#uatp td{padding:3px 4px;border-top:1px solid var(--c-line);vertical-align:top}#uatp td.v{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+#uatp .y{color:var(--c-runtx2)}#uatp .n{color:var(--c-almtx)}#uatp .w{color:var(--c-mantx2)}#uatp .row{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0;align-items:center}
+#uatp .bar{height:8px;background:var(--c-ctlh);border-radius:4px;overflow:hidden;margin:6px 0}#uatp .bar i{display:block;height:100%;background:#6fbf8f}
+#uatp pre{white-space:pre-wrap;background:var(--c-well);padding:8px;border-radius:6px;font-size:12px}`
     })
   );
   const P = E('div', { id: 'uatp' }),
@@ -167,7 +167,7 @@
     };
     return E(
       'div',
-      { cls: 'it', style: 'background:#1d2a1d;border:1px solid #6fbf8f;border-radius:8px;margin:8px 0' },
+      { cls: 'it', style: 'background:var(--c-runsoft);border:1px solid var(--c-run);border-radius:8px;margin:8px 0' },
       [
         E('b', { txt: 'YOUR OWN CHECK: ' + m.n }),
         E('div', {
@@ -354,7 +354,7 @@
     if (!sp) return null;
     const box = E('div', {
       cls: 'it',
-      style: 'background:#18212a;border:1px solid #6aaee0;border-radius:8px;margin:8px 0'
+      style: 'background:var(--c-pane);border:1px solid var(--c-acc);border-radius:8px;margin:8px 0'
     });
     const all = sp.scenarios.map(x => SRES[sh.name + '|' + x.id]).filter(x => x && !x.running),
       tp = all.reduce((a, x) => a + x.pass, 0),
@@ -476,7 +476,7 @@
     if (!tags.length) return null;
     const box = E('div', {
       cls: 'it',
-      style: 'background:#18212a;border:1px solid #6fbf8f;border-radius:8px;margin:8px 0'
+      style: 'background:var(--c-pane);border:1px solid var(--c-run);border-radius:8px;margin:8px 0'
     });
     const done = tags.map(t => GRES[sh.name + '|' + t]).filter(x => x && !x.running),
       nf = done.reduce((a, x) => a + x.res.reduce((b, y) => b + y.r.fail, 0), 0),
@@ -551,7 +551,7 @@
     build();
   }
   function spotBox(sh) {
-    const box = E('div', { cls: 'it', style: 'border-color:#3a5670' }, [
+    const box = E('div', { cls: 'it', style: 'border-color:var(--c-line2)' }, [
       E('div', { cls: 'h' }, [
         E('b', { txt: 'Spot check · ' + SPOT.res.filter(r => r.ok).length + ' / ' + SPOT.res.length + ' correct' }),
         E('button', { txt: '✕', on: () => ((SPOT = null), build()) })
@@ -560,7 +560,7 @@
     ]);
     for (const r of SPOT.res)
       box.append(
-        E('div', { style: 'border-top:1px solid #26313c;padding:6px 0' }, [
+        E('div', { style: 'border-top:1px solid var(--c-line);padding:6px 0' }, [
           E('div', { cls: 'h' }, [
             E('span', { txt: r.ok ? '✔' : '✖', style: 'color:' + (r.ok ? '#6fe3a0' : '#ff7a7a') + ';font-weight:700' }),
             E('b', { txt: r.it.n }),
@@ -723,7 +723,7 @@
     });
     const col = R[rkey(sh.name, '_colour')] || {};
     P.append(
-      E('div', { cls: 'it', style: 'background:#18212a;border:1px solid #2a3743;border-radius:8px;margin:8px 0' }, [
+      E('div', { cls: 'it', style: 'background:var(--c-pane);border:1px solid var(--c-line);border-radius:8px;margin:8px 0' }, [
         E('b', { txt: 'Line colours (visual check, only you can do this)' }),
         E('div', {
           cls: 'sub',

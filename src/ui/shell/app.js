@@ -116,14 +116,14 @@
     d.head.append(
       Object.assign(d.createElement('style'), {
         textContent:
-          'html,body{margin:0;height:100%;overflow:hidden;background:var(--c-bg,#090d12)}' +
-          '#pvbar{position:fixed;left:0;right:0;top:0;height:40px;display:flex;align-items:center;gap:8px;padding:0 10px;box-sizing:border-box;background:var(--c-strip,#0b1016);border-bottom:1px solid var(--c-line,#1c2731);color:var(--c-tx,#d3dce5);font:12.5px var(--uf,system-ui);z-index:60}' +
-          '#pvbar .pvt{font:600 12px var(--uf,system-ui);letter-spacing:.14em;color:#eef4f9;margin-right:6px;white-space:nowrap}' +
-          '#pvbar .pvs{font:600 11px var(--mf,monospace);color:var(--c-dim,#6f8191);white-space:nowrap}' +
-          '#pvbar .pvs.on{color:#35e08a}' +
+          'html,body{margin:0;height:100%;overflow:hidden;background:var(--c-bg,var(--c-well))}' +
+          '#pvbar{position:fixed;left:0;right:0;top:0;height:40px;display:flex;align-items:center;gap:8px;padding:0 10px;box-sizing:border-box;background:var(--c-strip,var(--c-well));border-bottom:1px solid var(--c-line);color:var(--c-tx);font:12.5px var(--uf,system-ui);z-index:60}' +
+          '#pvbar .pvt{font:600 12px var(--uf,system-ui);letter-spacing:.14em;color:var(--c-tx);margin-right:6px;white-space:nowrap}' +
+          '#pvbar .pvs{font:600 11px var(--mf,monospace);color:var(--c-dim);white-space:nowrap}' +
+          '#pvbar .pvs.on{color:var(--c-runtx2)}' +
           '#pvbar .pvg{flex:1}' +
-          '#pvbar>button,#pvbar .ddw>button{height:28px;padding:0 12px;border-radius:2px;background:#131b24;border:1px solid #273544;color:#c9d4de;font:600 12px var(--uf,system-ui);cursor:pointer;white-space:nowrap}' +
-          '#pvbar>button.on{background:#1d4a31;border-color:#3fae78;color:#fff}' +
+          '#pvbar>button,#pvbar .ddw>button{height:28px;padding:0 12px;border-radius:2px;background:var(--c-pane);border:1px solid var(--c-line);color:var(--c-tx);font:600 12px var(--uf,system-ui);cursor:pointer;white-space:nowrap}' +
+          '#pvbar>button.on{background:var(--c-runsoft);border-color:var(--c-run);color:#fff}' +
           'body.pvwin #plantws{display:grid!important;top:40px!important;bottom:0!important}'
       })
     );
@@ -415,7 +415,25 @@
     const gRun = E('div', { cls: 'tb g-run', 'data-label': 'SIM' }, [run, view, reset, speedSel, back, next, stepSel]);
     const gDitl = E('div', { cls: 'tb g-ditl', 'data-label': 'SIM' }, [mode]);
     const gZoom = E('div', { cls: 'tb g-zoom', 'data-label': 'VIEW' }, [AN_(fit), DI_(dfit), zOut, zIn]);
-    const gView = E('div', { cls: 'tb g-view', 'data-label': 'LAYERS' }, [values, wire, panel]);
+    /* 3.0.0: Inputs layer = rings on the drawing at what the operator can set or force (AN.markInputs, plant-window.js) */
+    const inputs = E('button', {
+      txt: 'Inputs',
+      title: 'Amber rings on the drawing = the digital / analog inputs you can switch or force (listed in the Inspector)',
+      on: () => {
+        AN.inMark = !AN.inMark;
+        inputs.classList.toggle('on', AN.inMark);
+        if (AN.markInputs) AN.markInputs();
+      }
+    });
+    /* 3.0.0: pressing Run shows the Faceplate (controllers, trend, input buttons); the Inspector tab is one click away */
+    run.addEventListener('click', () =>
+      setTimeout(() => {
+        if (!AN.run || document.body.classList.contains('ophmi') || !document.body.classList.contains('an')) return;
+        const f = [...document.querySelectorAll('.hmitabs button')].find(b => b.textContent.trim() === 'Faceplate');
+        if (f) f.click();
+      }, 0)
+    );
+    const gView = E('div', { cls: 'tb g-view', 'data-label': 'LAYERS' }, [values, wire, inputs, panel]);
     const gNav = E('div', { cls: 'tb g-nav', 'data-label': 'TRACE' }, [AN_(xback)]);
     const gSheet = E('div', { cls: 'tb g-sheet' }, [sheetsBtn, AN_(shbox), DI_(dshbox)]);
     /* OPERATE: Start ▾ (starting state of the plant, TCS, field valves) and the CHECK scenarios */
@@ -489,6 +507,23 @@
       html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="5" width="16" height="7" rx="3.5"/><path d="M8 12v6M16 12v6"/></svg>'
     });
     gs.append(brand, tabs, sub, srchBtn, srch, set.w, tbar);
+    /* 3.0.0: CAD icons on the ribbon and the tabs (CSS masks in app.css); the labels stay, no handler reads them */
+    [[view, 'eye'], [reset, 'reset'], [fit, 'fit'], [dfit, 'fit'], [values, 'hash'], [wire, 'wave'], [inputs, 'target'], [panel, 'side']].forEach(
+      ([b, k]) => {
+        if (!b) return;
+        b.dataset.ic = k;
+        if (!b.getAttribute('aria-label')) b.setAttribute('aria-label', b.textContent.trim());
+        if (!b.title) b.title = b.textContent.trim();
+      }
+    );
+    const TIC = { 'Plant view': 'plant', Logic: 'logic', Library: 'book', Tools: 'tool' };
+    tabs.querySelectorAll('button').forEach(b => {
+      const k = TIC[b.textContent.trim()];
+      if (k) {
+        b.dataset.ic = k;
+        b.setAttribute('aria-label', b.textContent.trim());
+      }
+    });
     /* --- TOOLS page --- */
     toolsws = E('div', { id: 'toolsws' });
     const grid = E('div', { cls: 'tgrid' });
