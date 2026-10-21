@@ -2,6 +2,26 @@
 
 Base: 3.0.0-beta.8 (branch `claude/design-system-extraction-4dogzg`). UI lang: walang binago sa engine, logic, simulation, kulay ng drawing at sa DCS faceplate box.
 
+## 3.1.0-beta.4 — Side panels: walang doble, malinaw na cards
+- **Problem (user, 2026-10-21):** "Tama ba mga ginawa mo sa buttons? Sa side panels, tama na ba lahat?" Hindi.
+- **As Found:**
+  - Ang listahan ng inputs ay nasa kaliwa (Inputs) at nasa Inspector din, na may tatlong magkaibang itsura ng parehong switch: OFF | ON, "0 · OFF", "Bad Signal: OFF".
+  - Ang pangalan ng sheet ay inuulit sa Inspector at sa Faceplate (nasa top bar na).
+  - Dalawang heading para sa controllers.
+  - Ang controller cards ay may itim na bar at putol na value ("0.00 · 0…").
+  - Isang mahabang how-to na talata ang nasa Inspector.
+  - Ang "Sanhi?" ay itim na DCS button sa puting faceplate.
+  - Ang By order / By category ay kasing-lakas ng Sheets / Inputs.
+- **Work Done (itsura lang):**
+  - Inspector: wala na ang sheet name, ang how-to at ang inputs list (nasa kaliwang Inputs tab na). Kapag walang napili, isang linya: "Click a block or a wire on the drawing to inspect it." Nananatili ang forced signals.
+  - Faceplate pane: wala na ang dobleng sheet name at heading.
+  - Controller cards: buo ang value, magaan na bar, at mode badge (A berde, M dilaw, R asul).
+  - Ang mga karaniwang button sa loob ng faceplate (Why?, MV steps) ay sumusunod sa button ng app. Ang A / M / R ay DCS pa rin.
+  - "Sanhi?" → "Why?".
+  - Mas tahimik ang By order / By category.
+- **As Left:** `npm run check` SAME; `npm test` 11 PASS; 10 UI test PASS.
+- **Hindi pa nasubok:** sa tablet / exe / apk ng user.
+
 ## 3.1.0-beta.3 — Mga button: iisang propesyonal na itsura
 - **Problem (user, 2026-10-21):** "Yung buttons. Paki ayos! Gandahan mo professional!"
 - **As Found (close-up ng tool bar, Inspector, sheet list, status line):**

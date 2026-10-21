@@ -586,7 +586,7 @@
         cutTx = E('span'),
         cutWhy = E('button', {
           cls: 'b',
-          txt: 'Sanhi?',
+          txt: 'Why?',
           title: 'Find the drawing inputs that clear this interlock when changed',
           style: 'margin-left:6px',
           on: () => whyCut()
