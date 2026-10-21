@@ -513,3 +513,13 @@ body.app2:not(.an) #anptab{display:none!important}
 #sfoot #evbtn{display:flex!important;align-items:center;padding:0 .75rem!important;line-height:1!important}
 #gsbar :is(.sub,.seg) button,body.an #sidetabs button,body.app2 #sidesort button,#gsbar #gscope button{min-height:2rem!important;height:2rem}
 html[data-theme=dark]{--c-runbg:#17733d;--c-runon:#135f33}
+/* plant system list: plain names in the UI font */
+body.app2 #pllist button b{font:500 .8125rem var(--uf)!important;color:inherit!important;white-space:normal}
+body.app2 #plantws .plf{font:400 .8125rem var(--uf)!important}
+body.app2 #plantws{grid-template-columns:var(--lw) 1fr clamp(16rem,22vw,20rem)}
+@media (max-width:1100px){body.app2 #plantws{grid-template-columns:var(--lw) 1fr 0}}
+/* status line: one message cell at a time, text on the centre line */
+body.hasmsg #sfoot .shint,body.hasmsg #sfoot #st{display:none!important}
+#sfoot #evbtn{height:var(--foot)!important;line-height:var(--foot)!important;display:block!important;padding:0 .75rem!important}
+#sfoot :is(.ssel,.sforce):empty{display:none!important}
+body:not(.hasmsg) #sfoot .smsg{display:none!important}
