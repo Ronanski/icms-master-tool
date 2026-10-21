@@ -592,3 +592,36 @@ body[data-tab=logic] #sfoot .shint:not(#x){display:none!important}
 body[data-tab=logic]:not(.an) #gsbar .g-ref{display:flex}
 #gsbar .crumb #meta #m_title{min-width:6rem;flex:1 1 auto}
 #gsbar .crumb #meta #m_sub{flex:0 1 auto;min-width:0;overflow:hidden}
+/* ---------- 15. SIDE PANELS 3.1.0-beta.4 (user: "sa side panels, tama na ba lahat?") ----------
+   nothing said twice: the sheet name is in the top bar, the inputs are in the left Inputs tab */
+/* Inspector: the sheet name, the how-to paragraph and the inputs list (the left Inputs tab has them) are not repeated */
+body.app2 #anp .ph{justify-content:flex-end}
+body.app2 #anp .ph > :is(b,span:first-child){display:none}
+body.app2 #anp > small:first-of-type{display:none!important}
+body.app2 #anp :is(#anlists,#ansrch){display:none!important}
+/* nothing selected: one quiet line says what to do */
+body.app2 #anp:not(.hassel) #ansel:empty::before{content:"Click a block or a wire on the drawing to inspect it.";display:block;padding:1.25rem 1rem;margin:0 0 1rem;border:1px dashed var(--c-line2);border-radius:var(--r-l);color:var(--c-dim);font-size:.875rem;text-align:center}
+/* Faceplate pane: no repeated sheet name, one heading for the controllers */
+body.app2 #opp .body > .hdr:first-child,body.app2 #opp .body > .hdr:first-child + .sub,body.app2 #opp .body > h4:has(+ .fpov){display:none!important}
+/* controller cards: readable values, light bars */
+body.app2 .fpov{padding:.75rem!important;margin:0 0 1rem!important}
+body.app2 .fpov .ovh{display:flex;align-items:center;justify-content:space-between;margin:0 0 .625rem!important}
+body.app2 .fpov > div:has(> .ovc){display:grid!important;grid-template-columns:repeat(auto-fill,minmax(7.25rem,1fr))!important;gap:.5rem!important}
+body.app2 .fpov .ovc{padding:.5rem .5rem .4375rem!important;gap:.375rem!important}
+body.app2 .fpov .tt{font:600 .75rem var(--mf)!important;color:var(--c-tx)}
+body.app2 .fpov .ovb{height:1.75rem!important;background:var(--c-well)!important;border:1px solid var(--c-line)!important;border-radius:.25rem;overflow:hidden}
+body.app2 .fpov .ft{display:flex;flex-direction:column;align-items:flex-start;gap:.125rem;font:500 .6875rem var(--mf)!important;color:var(--c-tx2)}
+body.app2 .fpov .ft > *{white-space:nowrap}
+body.app2 .fpov .md{font-weight:700;padding:0 .3125rem;border-radius:.1875rem}
+body.app2 .fpov .m-A{background:var(--c-runsoft);color:var(--c-runtx2)!important}
+body.app2 .fpov .m-M{background:var(--c-mansoft);color:var(--c-mantx2)!important}
+body.app2 .fpov .m-R{background:var(--c-accbg);color:var(--c-acctx)!important}
+/* the plain buttons inside a faceplate (Why?, MV steps, Engineering) follow the app buttons; A / M / R keep the DCS look */
+body.app2 :is(#opp,#plfp) .fp button.b:not(.ra):not(.on):not(.fon){background:var(--c-ctl)!important;color:var(--c-tx)!important;border:1px solid var(--c-btnbd)!important;border-radius:.4375rem!important;box-shadow:0 1px 0 var(--c-shadow2)!important;font:500 .8125rem var(--uf)!important}
+body.app2 :is(#opp,#plfp) .fp button.b:not(.ra):not(.on):not(.fon):hover{background:var(--c-btnhv)!important}
+body.app2 :is(#opp,#plfp) .fp .sub{font-size:.8125rem!important;line-height:1.4}
+/* left pane: the sort switch is quieter than the Sheets | Inputs switch */
+body.app2 #sidesort{background:transparent!important;border:0!important;padding:0!important;gap:.375rem!important}
+body.app2 #sidesort button{border:1px solid transparent!important;color:var(--c-dim)!important;font-size:.75rem!important;min-height:1.75rem!important;height:1.75rem}
+body.app2 #sidesort button.on{background:var(--c-well)!important;border-color:var(--c-line)!important;color:var(--c-tx)!important;box-shadow:none!important}
+body.app2 #sidehd b{flex:1}
