@@ -525,3 +525,43 @@ body.an #side.inp #inlist{display:block;flex:1 1 0;min-height:0;overflow:auto;pa
 @media (max-width:700px){#gsbar .crumb{order:15;flex:1 1 100%;border-left:0;margin:0;height:28px}#gsbar .seg button{min-width:52px;padding:0 8px}}
 /* the Faceplate pane belongs to the ABC page (the DITL page has no controllers) */
 body:not(.an) #opp{display:none!important}
+/* ===== 3.0.0-beta.6 DETAIL PASS (user: "hanggang kaibuturan"): every surface checked like a designer ===== */
+/* the sheet name, the VIEW | RUN switch and the sheet facts belong to the Logic tab */
+body:not([data-tab=logic]) #gsbar .crumb,body:not([data-tab=logic]) #sfoot .sinfo{visibility:hidden}
+body:is([data-tab=library],[data-tab=tools]) #gsbar .seg{display:none}
+/* one green: the RUN switch says the plant is running; the ribbon button is the plain Pause / Run beside it */
+body.simmode #gsbar .tbar :is(.tb-run,#bmode).tb-run.on{background:var(--c-ctl)!important;border-color:var(--c-line2)!important;color:var(--c-tx)!important}
+body.simmode #gsbar .tbar :is(.tb-run,#bmode).tb-run:not(.on){background:var(--c-runbg)!important;border-color:var(--c-runbd)!important;color:#ffffff!important}
+#gsbar .seg button:last-child.on.paused{background:var(--c-man);color:var(--c-mantx)}
+/* search results: a card with group headers, rows that light up under the pointer */
+#anfind{z-index:90!important;border:1px solid var(--c-line)!important;border-radius:var(--r)!important;padding:6px!important;box-shadow:0 14px 36px var(--c-shadow)!important;font-size:13px}
+#anfind > div:not([class]),#anfind > :not(button):not(.sn){font:700 10.5px var(--uf);letter-spacing:.08em;text-transform:uppercase;color:var(--c-dim);padding:8px 8px 4px}
+#anfind button{border:0!important;border-radius:4px!important;background:transparent!important;color:var(--c-tx)!important;padding:7px 10px!important;margin:0!important;min-height:0!important;display:flex!important;align-items:baseline;gap:10px;text-align:left}
+#anfind button:hover,#anfind button:focus-visible{background:var(--c-accbg)!important;color:var(--c-acctx)!important}
+#anfind .sn{font:700 13px var(--mf);margin-right:0!important;flex:none}
+#anfind .st{opacity:1!important;color:var(--c-tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* floating panels (Health, Audit, F(X), DITL Health): under the ribbon, one card look */
+body.app2 :is(#anhp,#anau,#anln,#hp){top:calc(var(--topH,48px) + 8px)!important;right:12px!important;max-height:calc(100vh - var(--topH,48px) - var(--footH,28px) - 20px)!important;border:1px solid var(--c-line)!important;border-radius:var(--r)!important;box-shadow:0 14px 36px var(--c-shadow)!important;padding:12px 14px!important;background:var(--c-pane)!important;color:var(--c-tx)!important;font:13px/1.4 var(--uf)!important}
+body.app2 :is(#anhp,#anau,#anln,#hp) table{border-collapse:collapse}
+body.app2 :is(#anhp,#anau,#anln,#hp) :is(th,td){padding:4px 8px;border-bottom:1px solid var(--c-line)}
+body.app2 :is(#anhp,#anau,#anln,#hp) th{position:sticky;top:-12px;background:var(--c-pane);font:700 11px var(--uf);letter-spacing:.06em;text-transform:uppercase;color:var(--c-dim);text-align:left}
+body.app2 :is(#anhp,#anau,#anln,#hp) tr:hover td{background:var(--c-ctlh)}
+body.app2 :is(#anhp,#anau,#anln,#hp) :is(button,select){height:30px;padding:0 10px;border-radius:var(--r);background:var(--c-ctl);color:var(--c-tx);border:1px solid var(--c-line)}
+body.app2 :is(#anhp,#anau,#anln,#hp) :is(input,textarea){background:var(--c-well)!important;color:var(--c-tx)!important;border:1px solid var(--c-line)!important;border-radius:4px}
+/* TOOLS: the cards fill the page, the same height in a row */
+#toolsws .tgrid{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))!important;gap:14px!important;align-items:stretch;max-width:1400px}
+#toolsws .tcard{display:flex;flex-direction:column;padding:16px 18px!important;gap:6px}
+#toolsws .tcard h3{font:700 11.5px var(--uf)!important;letter-spacing:.1em;margin:0!important}
+#toolsws .tcard p{margin:0 0 6px!important;line-height:1.45}
+#toolsws .tcard .row{margin-top:auto;display:flex;flex-wrap:wrap;gap:8px}
+/* the Inspector side tab (panel hidden): plain, not an alarm colour */
+body.app2 #anptab{background:var(--c-pane)!important;border:1px solid var(--c-line2)!important;border-right:0!important;color:var(--c-tx2)!important;border-radius:6px 0 0 6px!important;font:600 12px var(--uf)!important;box-shadow:-4px 0 14px var(--c-shadow)}
+/* status line: the version is a quiet label */
+#sfoot #stchip span:not(.run):not(.view){font-weight:600}
+#sfoot .sver,#sfoot [title*=version]{opacity:.75}
+/* Legend: a popover under its ribbon button */
+#anlg{border-radius:var(--r)!important;box-shadow:0 14px 36px var(--c-shadow)!important;border-color:var(--c-line)!important}
+/* left pane: one compact header */
+body.app2 #sidehd{min-height:36px;padding:4px 8px!important}
+body.an #sidetabs{margin-top:2px}
+#toolsws #uatb{font:500 13.5px var(--uf)!important;height:36px;padding:0 14px!important}

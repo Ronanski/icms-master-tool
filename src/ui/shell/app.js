@@ -570,7 +570,20 @@
     {
       const lg = () => crumb.querySelector('#anmeta .lg > button');
       /* Legend & style sits with the layers (its button is rebuilt with each sheet: the ribbon button presses it) */
-      const lgBtn = E('button', { txt: 'Legend', title: 'Colour code of the symbols, valves and wires; wire style', on: () => lg() && lg().click() });
+      const lgBtn = E('button', {
+        txt: 'Legend',
+        title: 'Colour code of the symbols, valves and wires; wire style',
+        on: () => {
+          if (lg()) lg().click();
+          const p = $('anlg'),
+            r = lgBtn.getBoundingClientRect();
+          if (p && r.width) {
+            p.style.top = r.bottom + 6 + 'px';
+            p.style.right = 'auto';
+            p.style.left = Math.max(8, Math.min(innerWidth - p.offsetWidth - 8, r.left)) + 'px';
+          }
+        }
+      });
       gView.append(AN_(lgBtn));
       [[ioBtn, 'book'], [fxBtn, 'curve'], [lgBtn, 'legend'], [zIn, 'zin'], [zOut, 'zout'], [xback, 'back']].forEach(([b, k]) => b && (b.dataset.ic = k));
       zIn.textContent = 'Zoom in';
@@ -656,7 +669,9 @@
       document.body.classList.toggle('simmode', sim);
       segV.classList.toggle('on', !sim);
       segR.classList.toggle('on', sim);
-      segR.textContent = an_ && sim && !AN.run ? 'PAUSED' : 'RUN';
+      const paused = an_ && sim && !AN.run;
+      segR.textContent = paused ? 'PAUSED' : 'RUN';
+      segR.classList.toggle('paused', paused);
       if (!an_ && side && side.classList.contains('inp')) sideMode(false);
       const inf = crumb.querySelector('#anmeta small');
       if (foot) {
