@@ -27,6 +27,7 @@ Base: Stable v2.4.0 (`main`). Bawat Beta ay push sa `claude/design-system-extrac
   - `npm test` 11 PASS.
   - PASS ang 10 UI test: ditl_toolbar 36, plant_view 18, manstation 12, panel_sync 12, overview 9, infocard 9, lookonly 8, events 5, abcbar 4, faceplate.
   - RUN sa 4× mabagal na CPU: 58.9 fps (v2.4.0: 59.7).
+  - Plant tests (tumakbo habang napalitan ang build mula beta.5 → beta.6): plant_live 12, world 11, inapp_update 12, stale_beta 4, switches, force_manual PASS. check_panel 19/20 at pid_am FIC-CM 1 fail: pareho sa v2.4.0 (kilalang isyu, hindi galing sa itsura).
   - Screenshot ng 19 screen sa Light at Dark: 0 page error.
 - **Hindi pa nasubok:** sa tablet / exe / apk ng user.
 
