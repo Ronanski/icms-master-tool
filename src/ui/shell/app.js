@@ -504,8 +504,13 @@
     const brand = E('div', {
       cls: 'brand',
       title: 'DCS Logic Simulator',
-      html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="5" width="16" height="7" rx="3.5"/><path d="M8 12v6M16 12v6"/></svg>'
+      html: '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="5" width="16" height="7" rx="3.5"/><path d="M8 12v6M16 12v6"/></svg></i><span>DCS Logic Simulator</span>'
     });
+    /* 3.1.0: the old dark ABC skin (category-search.js) is replaced by the shell stylesheet */
+    {
+      const sk = $('skin');
+      if (sk) sk.remove();
+    }
     gs.append(brand, tabs, sub, srchBtn, srch, set.w, tbar);
     /* 3.0.0: CAD icons on the ribbon and the tabs (CSS masks in app.css); the labels stay, no handler reads them */
     [[view, 'eye'], [reset, 'reset'], [fit, 'fit'], [dfit, 'fit'], [values, 'hash'], [wire, 'wave'], [inputs, 'target'], [panel, 'side']].forEach(
