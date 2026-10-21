@@ -5,6 +5,25 @@ Base: Stable v2.4.0 (`main`). Bawat Beta ay push sa `claude/design-system-extrac
 ## 3.0.0-beta.1 — BINAWI
 - Ginawa at na-push nang hindi pa pumipili ang user. Ibinalik ang branch sa `main` at isinara ang PR #36 (utos ng user: "Oo ibalik mo"). Walang bahagi nito ang natira.
 
+## 3.0.0-beta.5 — Tunay na overhaul ng ayos (layout ng Style 2 + CAD mockup)
+- **Problem (user, 2026-10-21):** "Bkit di mo inoverhaul? Nagbago k lng itsura ng mga buttons at konting organize." Tama: hanggang beta.4, kulay, icons at button lang ang nabago; ang ayos ng screen ay galing pa sa v2.4.0.
+- **As Found:**
+  - May hiwalay na hilera para sa pangalan ng sheet. Kumakain ito ng taas ng drawing at inuulit ang mode.
+  - Ang Run / View / Stop ay nasa ribbon at sa title strip.
+  - Pare-pareho ang ribbon sa VIEW at RUN.
+  - Ang mga input na pwedeng i-force ay nasa Inspector lang (kanan), halo sa iba.
+- **Work Done (UI lang; walang binago sa engine, simulation at logic):**
+  - **Top bar = isang hilera**: logo, tabs, ABC | DITL, **pangalan ng sheet** (ang mismong title strip ng ABC / DITL ay inilipat dito; ang DITL title ay pwede pa ring i-type), search, **VIEW | RUN** switch, ⚙. Wala na ang hiwalay na title row: mas mataas ang drawing.
+  - **VIEW | RUN** ang iisang mode switch. ABC: VIEW = View / Trace, RUN = Run (PAUSED kapag naka-pause). DITL: RUN = Simulate, VIEW = Edit. Inalis sa ribbon ang View button at ang Run / Stop ng DITL.
+  - **CAD ribbon sa VIEW:** malalaking icon na may label, pangalan ng grupo sa ilalim: VIEW (Fit, Zoom out, Zoom in), LAYERS (Values, Wire values, Inputs, Inspector, Legend), NAVIGATE (↩ Back, kapag may babalikan), REFERENCE (I/O list, F(X)).
+  - **Ribbon sa RUN:** isang maliit na hilera: SIM (Pause / Run, Reset, bilis, step), VIEW, LAYERS.
+  - **Kaliwa: Sheets | Inputs** (ABC). Ang Inputs ay lahat ng digital / analog input ng sheet: pangalan, paliwanag, at 0 / 1 (parehong button ng Inspector). Click sa pangalan = ipakita sa drawing. Naka-lock sa VIEW. Hal. ABC-010: Inputs 34.
+  - Legend & style: nasa LAYERS. Ang "blocks · external inputs" ng sheet ay nasa status line.
+  - DITL title alignment / size (L C R, Medium): nasa Tools > DITL drawing edit.
+  - Ang Faceplate pane ay sa ABC page lang (dati ay lumalabas din sa DITL kapag RUN).
+- **As Left (headless):** tingnan ang seksyon ng mga test sa ibaba.
+- **Hindi pa nasubok:** sa tablet / phone / exe / apk ng user.
+
 ## 3.0.0-beta.4 — Bug: nasisira ang drawing sa Android na naka-dark mode
 - **Problem (user, 2026-10-21, screenshot ng tablet):** madilim ang buong sheet, puti ang mga block ("sinalaula").
 - **As Found:** Naka-dark mode ang Android ng user. Ang Chrome / WebView ay pilit na dinidilim ang page na light (auto dark). Dahil Light ang default mula 3.0.0-beta.2, dinilim ng system ang papel ng drawing pero hindi ang mga block, kaya puti ang mga block sa itim na background at nagiging blotch ang mga sulat. Na-reproduce sa Chromium na naka-force dark.

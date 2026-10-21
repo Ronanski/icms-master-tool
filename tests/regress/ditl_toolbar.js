@@ -15,9 +15,9 @@ for(const [n,w,h] of [['desktop',1440,900],['tablet',1024,768],['phone',390,844]
  const vis=id=>page.evaluate(id=>{const e=document.getElementById(id);return !!e&&e.offsetParent!==null&&e.offsetHeight>0},id);
  ck(!(await vis('anbar'))&&!(await vis('bar')),n+': old ABC / DITL toolbars are not shown');
  const gsH=await page.evaluate(()=>document.getElementById('gsbar').offsetHeight);
- ck(gsH<=(n==='phone'?150:110),n+': top bar + ribbon height '+gsH+' px');
+ ck(gsH<=(n==='phone'?220:150),n+': top bar + ribbon height '+gsH+' px');
  ck(await page.evaluate(()=>document.body.dataset.tab==='logic'),n+': LOGIC tab');
- ck(await vis('bmode')&&await page.evaluate(()=>!!document.getElementById('bmode').closest('#gsbar .g-ditl')),n+': Simulate button in the top bar');
+ ck(await page.evaluate(()=>{const s=[...document.querySelectorAll('#gsbar .seg button')];return s.length===2&&s.every(b=>b.offsetHeight>0)&&!!document.getElementById('bmode').closest('#gsbar')}),n+': VIEW | RUN switch in the top bar (3.0.0-beta.5; Run / Stop is the switch)');
  ck(await vis('bfit'),n+': Fit in view');
  ck(!(await vis('bdel'))&&!(await vis('bclr')),n+': Delete sheet / Clear cells not in the top bar (TOOLS tab)');
  // Simulate toggles the DITL mode
@@ -36,7 +36,7 @@ for(const [n,w,h] of [['desktop',1440,900],['tablet',1024,768],['phone',390,844]
  await page.evaluate(()=>[...document.querySelectorAll('#gsbar .sub button')].find(b=>b.textContent.trim()==='ABC').click());
  await page.waitForFunction(()=>document.body.classList.contains('an'),null,{timeout:20000});await page.waitForTimeout(600);
  const gv=await page.evaluate(()=>{const v=s=>{const e=document.querySelector(s);return !!e&&e.offsetHeight>0};return {run:v('#gsbar .g-run'),view:v('#gsbar .g-view'),ditl:v('#gsbar .g-ditl')}});
- ck(gv.run&&gv.view&&!gv.ditl&&!(await vis('anbar')),n+': ABC page shows Run / View groups, no DITL group, no old toolbar');
+ ck(!gv.run&&gv.view&&!gv.ditl&&!(await vis('anbar')),n+': ABC page in VIEW: Layers group, no SIM group (RUN only), no DITL group, no old toolbar');
  ck(errs.length===0,n+': no page error'+(errs.length?' ('+errs[0]+')':''));
  await ctx.close();
 }

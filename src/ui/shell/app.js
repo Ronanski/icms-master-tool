@@ -524,6 +524,147 @@
         b.setAttribute('aria-label', b.textContent.trim());
       }
     });
+    /* ===== 3.0.0-beta.5 OVERHAUL (the Style 2 + CAD mockup): one top bar with the sheet name and the VIEW | RUN switch,
+       a CAD ribbon (large icon buttons with the group name under them in VIEW, one compact row in RUN), Sheets | Inputs on
+       the left. The elements are the app's own (same handlers); only where they sit and how they look changes. ===== */
+    const isAn = () => document.body.classList.contains('an');
+    const ditlSim = () => {
+      try {
+        return !!SIM;
+      } catch (e) {
+        return false;
+      }
+    };
+    /* the sheet name moves into the top bar: the ABC and DITL title strips themselves (their scripts keep filling them) */
+    const crumb = E('div', { cls: 'crumb' });
+    if ($('anmeta')) crumb.append($('anmeta'));
+    if ($('meta')) crumb.append($('meta'));
+    sub.after(crumb);
+    /* VIEW | RUN: the one mode switch (ABC: View / Run; DITL: Run / Stop) */
+    const segV = E('button', {
+        txt: 'VIEW',
+        title: 'VIEW: look and trace; nothing runs, the inputs are locked',
+        on: () => {
+          if (isAn()) {
+            if (!AN.view) view.click();
+          } else if (ditlSim()) mode.click();
+        }
+      }),
+      segR = E('button', {
+        txt: 'RUN',
+        title: 'RUN: the logic runs; switch and force the inputs',
+        on: () => {
+          if (isAn()) {
+            if (AN.view || !AN.run) run.click();
+          } else if (!ditlSim()) mode.click();
+        }
+      }),
+      seg = E('div', { cls: 'seg' }, [segV, segR]);
+    srch.after(seg);
+    /* VIEW ribbon: Navigate / View / Layers / Reference (the group name is under the buttons) */
+    const ioBtn = E('button', { txt: 'I/O list', title: 'LIBRARY: I/O list and memory lists', on: () => setTab('library') }),
+      fxBtn = E('button', { txt: 'F(X)', title: 'F(X) tables (linear curves)', on: () => ln && ln.click() }),
+      gRef = E('div', { cls: 'tb g-ref', 'data-label': 'REFERENCE' }, [ioBtn, AN_(fxBtn)]);
+    gNav.dataset.label = 'NAVIGATE';
+    gView.after(gRef);
+    {
+      const lg = () => crumb.querySelector('#anmeta .lg > button');
+      /* Legend & style sits with the layers (its button is rebuilt with each sheet: the ribbon button presses it) */
+      const lgBtn = E('button', { txt: 'Legend', title: 'Colour code of the symbols, valves and wires; wire style', on: () => lg() && lg().click() });
+      gView.append(AN_(lgBtn));
+      [[ioBtn, 'book'], [fxBtn, 'curve'], [lgBtn, 'legend'], [zIn, 'zin'], [zOut, 'zout'], [xback, 'back']].forEach(([b, k]) => b && (b.dataset.ic = k));
+      zIn.textContent = 'Zoom in';
+      zOut.textContent = 'Zoom out';
+      if (xback) xback.title = xback.title || 'Back to where the trace jumped from';
+    }
+    /* left: Sheets | Inputs (ABC). Inputs = the digital / analog inputs of this sheet (the Inspector rows), each with its own
+       control: a 0 / 1 press goes to the same button in the Inspector, a click on the name shows it on the drawing. */
+    const side = $('side'),
+      sideTabs = E('div', { id: 'sidetabs' }),
+      inl = E('div', { id: 'inlist' });
+    const stS = E('button', { cls: 'on', txt: 'Sheets', on: () => sideMode(false) }),
+      stI = E('button', { txt: 'Inputs', on: () => sideMode(true) });
+    sideTabs.append(stS, stI);
+    const sideMode = on => {
+      side.classList.toggle('inp', on);
+      stS.classList.toggle('on', !on);
+      stI.classList.toggle('on', on);
+      if (on) inBuild(true);
+    };
+    if (side) {
+      const hd = $('sidehd');
+      hd ? hd.after(sideTabs) : side.prepend(sideTabs);
+      sideTabs.after(inl);
+    }
+    let inRows = null;
+    const inBuild = force => {
+      const rows = window.AN && AN.rows;
+      if (!rows || (!force && rows === inRows)) return;
+      inRows = rows;
+      inl.textContent = '';
+      const secs = {};
+      for (const k in rows) {
+        const r = rows[k];
+        if (!/inputs/i.test(r._sec || '')) continue;
+        (secs[r._sec] = secs[r._sec] || []).push(r);
+      }
+      let n = 0;
+      for (const s of Object.keys(secs).sort((a, b) => /digital/i.test(b) - /digital/i.test(a))) {
+        inl.append(E('div', { cls: 'inh', txt: s.replace(/ inputs/i, '').toUpperCase() + ' · ' + secs[s].length }));
+        for (const r of secs[s]) {
+          n++;
+          const tg = r.querySelector('.tg'),
+            ds = r.querySelector('.ds'),
+            ctl = r.querySelector('.l1 button'),
+            num = r.querySelector('.l1 input[type=number]'),
+            nm = E('div', { cls: 'inn' }, [E('b', { txt: tg ? tg.textContent : '' }), ds ? E('small', { txt: ds.textContent }) : null]);
+          nm.onclick = () => tg && tg.click();
+          const it = E('div', { cls: 'ini' }, [nm]);
+          if (ctl) {
+            const p = E('button', {
+              cls: 'inb',
+              on: () => {
+                if (!AN.view) ctl.click();
+              }
+            });
+            it.append(p);
+            it._u = () => {
+              p.textContent = ctl.textContent;
+              p.className = 'inb' + (/1|ON/.test(ctl.textContent) && !/^0/.test(ctl.textContent.trim()) ? ' one' : '') + (ctl.classList.contains('fo') ? ' fo' : '');
+              p.disabled = !!AN.view;
+            };
+          } else if (num) {
+            const v = E('span', { cls: 'inv' });
+            it.append(v);
+            it._u = () => (v.textContent = num.value);
+          }
+          inl.append(it);
+        }
+      }
+      if (!n) inl.append(E('div', { cls: 'inh', txt: 'No inputs on this sheet' }));
+      stI.textContent = 'Inputs ' + n;
+    };
+    setInterval(() => {
+      if (!isAn() || tab !== 'logic') return;
+      inBuild(false);
+      if (side && side.classList.contains('inp')) inl.querySelectorAll('.ini').forEach(i => i._u && i._u());
+    }, 400);
+    /* modes: VIEW (large ribbon) or RUN (one compact row); the switch and the status line follow */
+    setInterval(() => {
+      const an_ = isAn(),
+        sim = an_ ? !(window.AN && AN.view) : ditlSim();
+      document.body.classList.toggle('simmode', sim);
+      segV.classList.toggle('on', !sim);
+      segR.classList.toggle('on', sim);
+      segR.textContent = an_ && sim && !AN.run ? 'PAUSED' : 'RUN';
+      if (!an_ && side && side.classList.contains('inp')) sideMode(false);
+      const inf = crumb.querySelector('#anmeta small');
+      if (foot) {
+        let si = foot.querySelector('.sinfo');
+        if (!si) foot.append((si = E('span', { cls: 'sinfo' })));
+        si.textContent = an_ && inf ? inf.textContent : '';
+      }
+    }, 300);
     /* --- TOOLS page --- */
     toolsws = E('div', { id: 'toolsws' });
     const grid = E('div', { cls: 'tgrid' });
@@ -568,7 +709,7 @@
     if (plantwin) plantwin.remove();
     if (prj) prj.classList.add('lp');
     const cPrj = card('Project files', 'Save or open the forced values, user values and the sheets you changed.', [AN_(save), AN_(saveas), AN_(openp), AN_(prj), AN_(importAbc), DI_(lab('fdxf')), DI_(lab('fjson')), DI_($('bsave'))]);
-    const cEdit = card('DITL drawing edit', 'Only on the DITL page: cells of the drawing, loose wires, a whole sheet.', [DI_($('bundo')), DI_($('bredo')), DI_($('bclr')), DI_($('bdel')), DI_($('bwire'))]);
+    const cEdit = card('DITL drawing edit', 'Only on the DITL page: cells of the drawing, loose wires, a whole sheet; the sheet title alignment and size (the title is typed in the top bar).', [DI_($('bundo')), DI_($('bredo')), DI_($('bclr')), DI_($('bdel')), DI_($('bwire')), DI_($('mctl'))]);
     /* anything left in the old toolbars (future buttons) stays reachable here */
     const cOther = card('Other', '', []);
     document.body.append(toolsws);
