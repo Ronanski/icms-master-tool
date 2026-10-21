@@ -5,6 +5,30 @@ Base: Stable v2.4.0 (`main`). Bawat Beta ay push sa `claude/design-system-extrac
 ## 3.0.0-beta.1 — BINAWI
 - Ginawa at na-push nang hindi pa pumipili ang user. Ibinalik ang branch sa `main` at isinara ang PR #36 (utos ng user: "Oo ibalik mo"). Walang bahagi nito ang natira.
 
+## 3.0.0-beta.3 — Overhaul ng lahat ng panel, popup at button
+- **Problem (user, 2026-10-21):** "sabi ko ayusin lahat e. pati buttons. overhaul nga ni" — kulang ang beta.2: ilang panel ay madilim pa at lumang itsura.
+- **As Found (tinignan ang 24 screen, luma vs bago):**
+  - Madilim pa at lumang kulay: Legend & style, Event log, Health, Audit (form), F(X) tables, Assumed values, block popups, Library (buong tab), listahan at header ng Plant view, faceplate overview cards at force list.
+  - **Bug (mula 2.4.0-beta.1):** walang style ang info card ng search (Enter / ⓘ). Lumalabas ito sa ilalim ng page na parang sirang teksto. Nawala ang CSS nito noong ginawa ang bagong shell.
+  - Walang madaling paraan para makita sa drawing kung alin ang pwedeng i-force.
+  - Sa RUN, kailangan pang pindutin ang Faceplate.
+- **Work Done (itsura lang; walang binago sa engine, simulation at logic):**
+  - **Iisang sistema ng kulay:** mga 330 lumang nakasulat na kulay (hex) sa CSS ng 16 file ay pinalitan ng theme token. Light at Dark ay sumusunod na sa lahat ng panel, popup, dialog, table at button. Bagong token: run / man / alm "soft" at "text".
+  - **Hindi binago (sinadya):** ang graphic ng Plant view at ang faceplate box (madilim na DCS faceplate, gaya ng HMI ng control room), ang kulay ng drawing (theme.css), at ang PDF report.
+  - **Info card:** ibinalik at bagong itsura (card sa ilalim ng search).
+  - **Legend:** sa Light paper, ang kulay ng legend ay kapareho na ng drawing.
+  - **Icons (CAD):** View, Reset, Fit, Values, Wire values, Inputs, Inspector, at ang 4 tab. Sa tablet ay icon lang ang ribbon (may tooltip); sa phone ay icon lang ang tabs.
+  - **Bagong layer na Inputs** (LAYERS): dilaw na bilog sa drawing sa bawat digital / analog input na pwedeng i-switch o i-force (ang mga input ng Inspector). Hal. ABC-010: 133 row sa Inspector, inputs lang ang may bilog.
+  - **RUN:** ang pagpindot ng Run (ABC) ay kusang nagbubukas ng Faceplate (controllers, trend, input buttons). Isang click lang pabalik sa Inspector.
+  - Pangalan: "◀ Panel" → "◀ Inspector".
+- **As Left (headless, 2026-10-21):**
+  - `npm run check` SAME; `npm test` PASS lahat.
+  - PASS: ditl_toolbar 36, plant_view 18, check_panel 17/18, manstation 12, panel_sync 12, inapp_update 12, plant_live 12, world 11, infocard 9, overview 9, lookonly 8, events 5, abcbar 4, stale_beta 4, faceplate, force_manual, switches.
+  - Hindi pasado pero pareho sa v2.4.0 (hindi galing sa itsura): check_panel M4 cold start-up 16/17 (kilalang isyu); pid_am FIC-CM (ABC-004A) 1 fail.
+  - Bilis sa RUN, CPU 4× mabagal: v2.4.0 59.7 fps, beta.3 59.7 fps.
+  - Screenshot: Light at Dark 1366, tablet 1024, phone 390. Inputs layer sa ABC-010 ay may bilog; Run → Faceplate. 0 page error.
+- **Hindi pa nasubok:** tunay na tablet / phone / exe / apk.
+
 ## 3.0.0-beta.2 — Style 2 (Workbench) + kaunting CAD
 - **Problem (user, 2026-10-21):** "mahirap gamitin, mahirap basahin"; ang overall visual ang problema, hindi ang laman. Pinili: **Style 2 + kaunting CAD**. Hindi dapat ma-kompromiso ang view ng diagram; sa RUN dapat kita ang logic, faceplate at trend; alisin ang redundant, palitan ang pangalan kung kailangan; smooth sa low-end device.
 - **As Found:** madilim at siksik ang lahat ng bahagi; isang hilera lang ang toolbar na halo-halo ang mga button; dalawang beses ipinapakita ang mode (title strip at status); ang mga button ay "Panel", "Wire", "Operator", "Details", "▶ Simulate / Edit"; may font selector na walang silbi sa trabaho; walang Zoom button (gulong / pinch lang).

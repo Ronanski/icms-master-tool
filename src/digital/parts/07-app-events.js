@@ -553,7 +553,7 @@ function showHealth(only) {
       )
       .join('\n');
   p.hidden = false;
-  p.innerHTML = `<b>Health</b> — ${rows.length} sheets · <span style="color:#4fd18b">${ok} OK</span> · <span style="color:#ffb84a">${bad.length} issues</span> · <span style="color:#ff6b6b">${FAILS.length} failed</span>${LSF ? ' · <span style="color:#ff6b6b">AUTOSAVE FULL, use Save project</span>' : ''} <label><input type="checkbox" id="hpo" ${only === false ? '' : 'checked'}> problems only</label> <button id="hpc">Close</button><br>`;
+  p.innerHTML = `<b>Health</b> — ${rows.length} sheets · <span style="color:var(--c-runtx2)">${ok} OK</span> · <span style="color:var(--c-mantx2)">${bad.length} issues</span> · <span style="color:var(--c-almtx)">${FAILS.length} failed</span>${LSF ? ' · <span style="color:var(--c-almtx)">AUTOSAVE FULL, use Save project</span>' : ''} <label><input type="checkbox" id="hpo" ${only === false ? '' : 'checked'}> problems only</label> <button id="hpc">Close</button><br>`;
   const L = document.createElement('div');
   p.appendChild(L);
   FAILS.forEach(f => {
@@ -570,7 +570,7 @@ function showHealth(only) {
       .forEach(r => {
         const d = document.createElement('div');
         d.className = 'hr';
-        d.style.cssText = 'cursor:pointer;padding:2px 0;border-top:1px solid #1f3340';
+        d.style.cssText = 'cursor:pointer;padding:2px 0;border-top:1px solid var(--c-line)';
         d.innerHTML = `<b style="color:${r.d.sev === 2 ? '#ff6b6b' : r.d.sev ? '#ffb84a' : '#4fd18b'}">${r.s.name}</b> ${r.d.is.join(' · ') || 'OK'}`;
         d.onclick = () => {
           S.cur = r.i;

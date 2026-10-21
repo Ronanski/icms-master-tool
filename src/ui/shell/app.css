@@ -4,11 +4,13 @@
  --c-bg:#eceef1;--c-pane:#ffffff;--c-strip:#ffffff;--c-ribbon:#f7f8fa;--c-ctl:#ffffff;--c-ctlh:#eef1f4;--c-well:#f3f4f6;--c-plate:#ffffff;
  --c-line:#d6dadf;--c-line2:#8f989f;--c-lineh:#5b646c;--c-tx:#1a1f24;--c-tx2:#3d454c;--c-dim:#5b646c;--c-white:#ffffff;--c-shadow:rgba(20,25,29,.14);
  --c-acc:#1f6fbf;--c-accbg:#e3eefa;--c-accbd:#1f6fbf;--c-acctx:#174f8a;--c-run:#1e7d45;--c-runbg:#1e7d45;--c-runbd:#1e7d45;--c-runtx:#ffffff;--c-runon:#155c33;
- --c-man:#e8a317;--c-mantx:#1a1200;--c-alm:#c62828;--c-status:#2b3036;--c-statustx:#e9ecef;--c-statusdim:#b8c0c8}
+ --c-man:#e8a317;--c-mantx:#1a1200;--c-alm:#c62828;--c-status:#2b3036;--c-statustx:#e9ecef;--c-statusdim:#b8c0c8;
+ --c-runsoft:#e6f4ec;--c-runtx2:#17663a;--c-mansoft:#fff4dc;--c-mantx2:#8a5a00;--c-almsoft:#fde8e8;--c-almtx:#b3261e}
 html[data-theme=dark]{--c-bg:#121417;--c-pane:#1a1d21;--c-strip:#1a1d21;--c-ribbon:#16191d;--c-ctl:#22262c;--c-ctlh:#2a2f36;--c-well:#121417;--c-plate:#1a1d21;
  --c-line:#30353c;--c-line2:#5d6670;--c-lineh:#8a939c;--c-tx:#eceff2;--c-tx2:#c3c9d0;--c-dim:#a3abb4;--c-white:#ffffff;--c-shadow:rgba(0,0,0,.5);
  --c-acc:#5aa9ff;--c-accbg:#1d3550;--c-accbd:#5aa9ff;--c-acctx:#cfe5ff;--c-run:#3fbf6a;--c-runbg:#2f9e5b;--c-runbd:#3fbf6a;--c-runtx:#ffffff;--c-runon:#1f7a44;
- --c-alm:#ff6b6b;--c-status:#0d0f12;--c-statustx:#d6dbe0;--c-statusdim:#9aa3ad}
+ --c-alm:#ff6b6b;--c-status:#0d0f12;--c-statustx:#d6dbe0;--c-statusdim:#9aa3ad;
+ --c-runsoft:#16271d;--c-runtx2:#6fe3a0;--c-mansoft:#2e2410;--c-mantx2:#ffd27a;--c-almsoft:#3a1616;--c-almtx:#ff8a8a}
 html[data-font=plexc]{--uf:'IBM Plex Sans Condensed','IBM Plex Sans',system-ui,sans-serif;--mf:'JetBrains Mono',ui-monospace,monospace}
 html[data-font=barlow]{--uf:'Barlow Semi Condensed',system-ui,sans-serif;--mf:'JetBrains Mono',ui-monospace,monospace}
 html[data-font=inter]{--uf:'Inter',system-ui,sans-serif;--mf:'JetBrains Mono',ui-monospace,monospace}
@@ -402,3 +404,53 @@ body.app2 #anlist button.on{background:var(--c-accbg)!important;color:var(--c-ac
 body.app2 #sidelist button.on .st{color:var(--c-tx2)!important}
 body.app2 #stchip span{background:transparent!important;border-color:rgba(255,255,255,.25)!important;color:var(--c-statustx)!important}
 body.app2 #stchip span.run{background:var(--c-runon)!important;border-color:var(--c-runon)!important;color:#ffffff!important}
+/* ===== 3.0.0-beta.3 OVERHAUL: every panel, popup and button on the same tokens ===== */
+/* search info card (its style was lost in 2.4.0-beta.1: the card fell under the page) */
+#infocard{position:fixed;top:52px;left:50%;transform:translateX(-50%);z-index:120;width:min(520px,96vw);max-height:78vh;overflow:auto;background:var(--c-pane);border:1px solid var(--c-line);border-radius:var(--r);box-shadow:0 12px 36px var(--c-shadow);font-size:13px;color:var(--c-tx)}
+#infocard.wide{width:min(900px,96vw)}
+#infocard .ich{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--c-line);position:sticky;top:0;background:var(--c-pane);z-index:1}
+#infocard .ich b{font:700 16px var(--mf)}#infocard .icn{color:var(--c-dim);font-size:12px;margin-left:auto}
+#infocard .icd{padding:8px 12px;border-bottom:1px solid var(--c-line);color:var(--c-tx2)}
+#infocard .ics{padding:8px 12px;border-bottom:1px solid var(--c-line)}
+#infocard .ict{display:flex;align-items:center;gap:8px;margin-bottom:4px}#infocard .ict b{font:700 12px var(--uf);letter-spacing:.06em;color:var(--c-dim)}
+#infocard .icv{font:700 13px var(--mf);color:var(--c-acctx);margin-right:auto}
+#infocard .icl{margin:3px 0}#infocard .icl .k{display:inline-block;width:92px;color:var(--c-dim)}#infocard .icl .k.k2{width:150px;font-size:11px}
+#infocard .icu{margin:2px 0 4px 18px;padding:0;font:12px var(--mf)}#infocard .icu li{margin:2px 0}
+#infocard .f-fm,#infocard .f-ilk{color:var(--c-mantx2)}#infocard .f-trip{color:var(--c-almtx)}#infocard .f-ditl,#infocard .f-sw{color:var(--c-acctx)}
+#infocard .tg{display:inline-block;padding:1px 6px;margin-right:4px;border-radius:3px;font-weight:700;font-size:11px}
+#infocard .t-trip{background:var(--c-almsoft);color:var(--c-almtx)}#infocard .t-ok{background:var(--c-runsoft);color:var(--c-runtx2)}
+#infocard .t-ilk,#infocard .t-fm{background:var(--c-mansoft);color:var(--c-mantx2)}#infocard .t-sw{background:var(--c-accbg);color:var(--c-acctx)}
+#infocard .b{height:28px;padding:0 10px;font-size:12px;border-radius:var(--r);background:var(--c-ctl);color:var(--c-tx);border:1px solid var(--c-line)}
+#infocard .icw{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px 0;margin:4px 0 2px}
+#infocard .icwb{flex:0 0 132px;border:1px solid var(--c-line);border-radius:4px;background:var(--c-well);padding:5px 7px;display:flex;flex-direction:column;gap:2px}
+#infocard .icwb small{font:600 9.5px var(--uf);letter-spacing:.08em;color:var(--c-dim);text-transform:uppercase}
+#infocard .icwb b{font:600 12px var(--mf);color:var(--c-tx);word-break:break-all;line-height:1.25}
+#infocard .icwb span{font:11px var(--mf);color:var(--c-acctx);line-height:1.25}
+#infocard .icwb.ad{border-color:var(--c-acc);background:var(--c-accbg)}
+#infocard .icwb.fd{border-color:var(--c-man);background:var(--c-mansoft)}#infocard .icwb.fd b{color:var(--c-mantx2)}
+#infocard .icwa{flex:0 0 18px;align-self:center;text-align:center;color:var(--c-acc);font-size:15px;font-weight:700}
+#libws .libw .ics{border:0;padding:0}
+/* faceplate box: stays a dark DCS faceplate in both themes (as on the control room HMI) */
+:is(#opp,#plfp) .fp .sub{color:#8fa0ab}
+/* Legend & style: on the light paper drawing the legend shows the paper colours (same mapping as theme.css) */
+html[data-dg=paper] #anlg .sw[style*="#35d6c8"]{border-color:#0b7a72!important;background:#ffffff!important}html[data-dg=paper] #anlg .sw[style*="#b48cff"]{border-color:#6440b4!important;background:#ffffff!important}html[data-dg=paper] #anlg .sw[style*="#b4e04a"]{border-color:#587a10!important;background:#ffffff!important}html[data-dg=paper] #anlg .sw[style*="#ff7ad9"]{border-color:#a82e86!important;background:#ffffff!important}html[data-dg=paper] #anlg .sw[style*="#4be08a"]{border-color:#157a46!important;background:#ffffff!important}html[data-dg=paper] #anlg .sw[style*="#e8c9a0"]{border-color:#8a5a1c!important;background:#ffffff!important}html[data-dg=paper] #anlg .sw[style*="#ff4d4d"]{border-color:#c62828!important;background:#ffffff!important}html[data-dg=paper] #anlg .sw[style*="#5aa9ff"]{border-color:#1f5fae!important;background:#ffffff!important}html[data-dg=paper] #anlg .sw[style*="#c9d3dc"]{border-color:#44525e!important;background:#ffffff!important}html[data-dg=paper] #anlg .sw[style*="#aeb9c3"]{border-color:#5b6874!important;background:#ffffff!important}
+html[data-dg=paper] #anlg .dt[style*="#35e08a"]{background:#157a46!important}html[data-dg=paper] #anlg .dt[style*="#ff4d4d"]{background:#c62828!important}html[data-dg=paper] #anlg .dt[style*="#4da3ff"]{background:#1f6fbf!important}#anlg .dt[style*="#ffffff"]{box-shadow:inset 0 0 0 1.5px var(--c-line2)}
+html[data-dg=paper] #anlg span[style*="#8dffb8"]{color:#0a6b3a!important}html[data-dg=paper] #anlg span[style*="#6ad7ff"]{color:#0b5f8a!important}html[data-dg=paper] #anlg span[style*="#ffb24a"]{color:#a85d00!important}
+/* CAD icons (3.0.0): a 16 px mask in the text colour before the label */
+#gsbar [data-ic]{display:inline-flex;align-items:center;gap:6px}
+#gsbar [data-ic]::before{content:"";width:16px;height:16px;flex:none;background:currentColor;-webkit-mask:var(--ic) center/contain no-repeat;mask:var(--ic) center/contain no-repeat}
+#gsbar [data-ic=eye]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M2%2012s3.5-7%2010-7%2010%207%2010%207-3.5%207-10%207S2%2012%202%2012z%22/%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%223%22/%3E%3C/svg%3E")}
+#gsbar [data-ic=reset]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2012a9%209%200%201%200%202.6-6.4L3%208%22/%3E%3Cpath%20d%3D%22M3%203v5h5%22/%3E%3C/svg%3E")}
+#gsbar [data-ic=fit]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M4%209V4h5M20%209V4h-5M4%2015v5h5M20%2015v5h-5%22/%3E%3C/svg%3E")}
+#gsbar [data-ic=hash]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M5%209h14M5%2015h14M10%204L8%2020M16%204l-2%2016%22/%3E%3C/svg%3E")}
+#gsbar [data-ic=wave]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M2%2012h5l3-7%204%2014%203-7h5%22/%3E%3C/svg%3E")}
+#gsbar [data-ic=target]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%228%22/%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%223%22/%3E%3C/svg%3E")}
+#gsbar [data-ic=side]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%223%22%20y%3D%224%22%20width%3D%2218%22%20height%3D%2216%22%20rx%3D%222%22/%3E%3Cpath%20d%3D%22M15%204v16%22/%3E%3C/svg%3E")}
+#gsbar [data-ic=plant]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2021V10l6%204v-4l6%204V5h6v16z%22/%3E%3Cpath%20d%3D%22M3%2021h18%22/%3E%3C/svg%3E")}
+#gsbar [data-ic=logic]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%206h5a6%206%200%200%201%200%2012H6z%22/%3E%3Cpath%20d%3D%22M2%209h4M2%2015h4M17%2012h5%22/%3E%3C/svg%3E")}
+#gsbar [data-ic=book]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%205h6a3%203%200%200%201%203%203v12a2%202%200%200%200-2-2H3z%22/%3E%3Cpath%20d%3D%22M21%205h-6a3%203%200%200%200-3%203v12a2%202%200%200%201%202-2h7z%22/%3E%3C/svg%3E")}
+#gsbar [data-ic=tool]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M14.7%206.3a4%204%200%200%200-5.4%205.4L3%2018l3%203%206.3-6.3a4%204%200%200%200%205.4-5.4l-2.5%202.5-2.4-.6-.6-2.4z%22/%3E%3C/svg%3E")}
+#gsbar .tabs button{white-space:nowrap}
+/* tablet: the ribbon buttons with an icon show the icon only (the name is in the tooltip); phone: the tabs too */
+@media (max-width:1180px){#gsbar .tbar .tb [data-ic][data-ic]{gap:0;font-size:0!important;min-width:var(--h);padding:0!important;justify-content:center}#gsbar .tbar [data-ic]::before{width:18px;height:18px}}
+@media (max-width:700px){#gsbar .tabs [data-ic][data-ic]{gap:0;font-size:0!important;min-width:40px;padding:0!important;justify-content:center}#gsbar .tabs [data-ic]::before{width:19px;height:19px}}
