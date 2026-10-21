@@ -976,7 +976,16 @@
           b._gt = b.textContent;
         }
       };
-      setInterval(tag, 600);
+      /* panels that rebuild their buttons (UAT, CHECK, Inspector) get the icons at once: tag after each change, once per frame */
+      let tq = false;
+      new MutationObserver(() => {
+        if (tq) return;
+        tq = true;
+        requestAnimationFrame(() => {
+          tq = false;
+          tag();
+        });
+      }).observe(document.body, { childList: true, subtree: true });
       tag();
     }
     /* --- TOOLS page --- */

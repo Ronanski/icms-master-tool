@@ -1996,7 +1996,7 @@ function selUpd0_(d) {
   d.append(h$('h4', { txt: s.blk ? 'Selected: ' + s.blk.k + (s.blk.tag ? ' ' + s.blk.tag : '') : 'Selected wire' }));
   try {
     const row = h$('div', { style: 'display:flex;gap:6px;align-items:center;margin:2px 0 6px' }, [
-      h$('small', { txt: 'Audit:', style: 'color:var(--c-tx2)' })
+      h$('small', { txt: 'Record check:', style: 'color:var(--c-tx2)' })
     ]);
     for (const [t, c] of [
       ['PASS', 'var(--c-runtx2,#35e08a)'],

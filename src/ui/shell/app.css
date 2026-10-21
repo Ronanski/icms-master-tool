@@ -640,3 +640,70 @@ body.app2 :is(#sidelist,#anlist) button .st{font-size:.6875rem!important}
 #inlist .ini{padding:.375rem .25rem}
 /* the desk margin around the paper is thinner */
 body.app2 #cv{padding:.5rem!important}
+/* ---------- 17. CONTROLLER GROUP 3.1.0-beta.6: mini DCS faceplates side by side (more fit, like a group display) ---------- */
+body.app2 .fpov{background:var(--c-pane)!important;padding:.625rem!important}
+body.app2 .fpov .ovg,body.app2 .fpov > div:has(> .ovc){display:grid!important;grid-template-columns:repeat(auto-fill,minmax(4.75rem,1fr))!important;gap:.375rem!important}
+body.app2 .fpov .ovc{display:flex!important;flex-direction:column;gap:0!important;padding:0!important;overflow:hidden;background:#0d1318!important;border:1px solid #2c3a45!important;border-radius:.375rem!important;cursor:pointer}
+body.app2 .fpov .ovc:hover{border-color:#5b7385!important}
+body.app2 .fpov .ovc.on{border-color:var(--c-acc)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--c-acc) 45%,transparent)!important}
+body.app2 .fpov .tt{order:0;padding:.25rem .3125rem;background:#c9d4dc;color:#111a20!important;font:700 .6875rem var(--mf)!important;text-align:center}
+body.app2 .fpov .bars{order:1;display:flex;justify-content:center;gap:.25rem;height:5.5rem!important;padding:.375rem .375rem .25rem;align-items:stretch}
+body.app2 .fpov .ovb{flex:0 0 .625rem!important;height:auto!important;background:#1a242b!important;border:1px solid #2c3d49!important;border-radius:0!important}
+body.app2 .fpov .ovb:last-child{flex-basis:.3125rem!important}
+body.app2 .fpov i.pv{background:#38c8d8!important}body.app2 .fpov i.sv{background:#ffd84a!important}body.app2 .fpov i.mv{background:#4be36a!important}
+body.app2 .fpov .ft{order:2;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between;gap:.25rem;padding:.125rem .3125rem;color:#dbe5ec}
+body.app2 .fpov .ft .nm{font:600 .75rem var(--mf)!important;color:#38c8d8!important;overflow:hidden;text-overflow:ellipsis}
+body.app2 .fpov .md{flex:none;min-width:1rem;text-align:center;font:700 .6875rem var(--mf)!important;padding:0 .1875rem;border-radius:.1875rem;background:#2a3640!important;color:#dbe5ec!important}
+body.app2 .fpov .md.m-A{background:#f1d21a!important;color:#111!important}
+body.app2 .fpov .md.m-M{background:#3fdc4a!important;color:#06210f!important}
+body.app2 .fpov .md.m-R{background:#d9dfe4!important;color:#111!important}
+body.app2 .fpov .mvn{order:3;display:block;padding:0 .3125rem .3125rem;font:500 .625rem var(--mf);color:#9fb0bb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* ---------- 18. ONE BUTTON SYSTEM 3.1.0-beta.6 (inventory: 43 different looks → 4 sizes, 4 kinds) ----------
+   sizes:  md 2.125rem (every button, select, field)   sm 1.875rem (segmented, inside rows)   list rows   icon = md square
+   kinds:  secondary (white, border)   primary (blue, one per panel)   run (green)   ghost (tool bar, menus)
+   text:   .875rem medium, sentence case; segmented .8125rem semibold */
+:root{--b-md:2.125rem;--b-sm:1.875rem}
+@media (pointer:coarse){:root{--b-md:2.5rem;--b-sm:2.25rem}}
+body.app2 :is(button,label.b,select):not(.fp *):not(.fpop *):not(#zbar *):not(svg *):not(#sidelist *):not(#anlist *):not(#pllist *):not(#anfind *):not(#sfoot *){
+ min-height:var(--b-md)!important;font-weight:500;line-height:1;letter-spacing:0}
+body.app2 :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select):not(.fp *):not(.fpop *):not(#sfoot *){min-height:var(--b-md)!important;font-size:.875rem!important}
+body.app2 button[data-g]:not(#zbar *):not(.fp *){width:var(--b-md)!important;min-width:var(--b-md)!important}
+/* segmented controls: one size everywhere (top bar, left pane, library, search scope, inputs) */
+body.app2 :is(#gsbar .sub,#gsbar .seg,#sidetabs,#sidesort,#libws .libtabs,#gscope) button{min-height:var(--b-sm)!important;height:var(--b-sm)!important;font-size:.8125rem!important;font-weight:600!important;letter-spacing:.01em!important;text-transform:none!important}
+#gsbar .seg button{letter-spacing:.06em!important}
+body.app2 #sidesort button{font-weight:500!important}
+/* tool bar and its groups: the same height as everything else */
+#gsbar .tbar :is(button,select,label.b){min-height:var(--b-md)!important;height:var(--b-md)!important}
+/* tabs of the top bar and of the right pane */
+#gsbar .tabs button,body.app2 .hmitabs button{min-height:var(--b-md)!important;height:var(--b-md)!important;font-size:.875rem!important}
+/* primary: blue; the one main action */
+body.app2 :is(#selcard .scb,button.go,#toolsws #uatb):not(.fp *){min-height:var(--b-md)!important}
+/* force editor: value field + Force (✓, blue) + Release (✕, quiet) as one group */
+body.app2 #anp .fc{display:inline-flex;gap:0!important;align-items:stretch}
+body.app2 #anp .fc > input{border-radius:.4375rem 0 0 .4375rem!important;width:6rem!important}
+body.app2 #anp .fc > button{border-radius:0!important;margin-left:-1px!important}
+body.app2 #anp .fc > button:last-child{border-radius:0 .4375rem .4375rem 0!important}
+body.app2 #anp .fc > button[data-g=check]{background:var(--c-accbg)!important;color:var(--c-acctx)!important;border-color:var(--c-accbd)!important}
+/* the left pane collapse, Timers toggle, panel close: icon buttons with the same size and look */
+body.app2 #sidetg{width:var(--b-sm)!important;min-width:var(--b-sm)!important;min-height:var(--b-sm)!important}
+/* events in the status line: a real button in the dark bar */
+#sfoot #evbtn{font:500 .75rem var(--uf)!important;letter-spacing:.02em}
+/* Plant model ON / OFF: reads as a switch state, not a selected tab */
+body.app2 #pmbtn.on{background:var(--c-runsoft)!important;border-color:var(--c-run)!important;color:var(--c-runtx2)!important}
+#gsbar :is(#srchbtn,.gs-set > button){width:var(--b-md)!important;min-width:var(--b-md)!important;height:var(--b-md)!important;min-height:var(--b-md)!important}
+body.app2 #pllist button{padding:.5rem .875rem!important;line-height:1.3}
+/* icon-only buttons draw the icon only (the general text size above must not show the symbol text) */
+body.app2 button[data-g][data-g]:not(#zbar *):not(.fp *){font-size:0!important;padding:0!important;gap:0!important;justify-content:center}
+body.app2 #zbar button[data-g][data-g]{font-size:0!important}
+/* the "Record check:" row wraps as a whole; its label stays on one line */
+body.app2 #ansel > div:has(> small:first-child){flex-wrap:wrap!important;row-gap:.375rem}
+body.app2 #ansel > div:has(> small:first-child) > small{flex:none;white-space:nowrap!important}
+/* force editor sits on the row of its value */
+body.app2 #anp .r{flex-wrap:wrap}
+body.app2 #anp .r > .fc{margin-left:auto}
+body.app2 :is(button:not([data-g]),label.b,select):not(.fp *):not(.fpop *):not(#zbar *):not(svg *):not(#sidelist *):not(#anlist *):not(#pllist *):not(#anfind *):not(#sfoot *){font-size:.875rem!important}
+/* panel text breaks between words, not inside them */
+body.app2 #anp,body.app2 #anp *{word-break:normal!important;overflow-wrap:break-word!important}
+body.app2 #anp .fc > input{width:7rem!important}
+/* DITL title: the drawing / sheet numbers give way to the title on narrower screens */
+@media (max-width:1500px){#gsbar .crumb #meta #m_sub{display:none!important}}

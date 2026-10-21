@@ -2,6 +2,37 @@
 
 Base: 3.0.0-beta.8 (branch `claude/design-system-extraction-4dogzg`). UI lang: walang binago sa engine, logic, simulation, kulay ng drawing at sa DCS faceplate box.
 
+## 3.1.0-beta.6 — Group display ng controllers at iisang button system
+- **Problem (user, 2026-10-21):** "Yung controller list, kahit ganun lang kalaki ang faceplate, edi mas madami nagkasya. Ito lang ba inayos mo? Dami ko pa nakikita sa mga buttons na hindi professional, ang basic, nakakalito."
+- **As Found:**
+  - **Inventory ng lahat ng button sa 24 screen:** 43 magkakaibang itsura (taas 25 ~ 34 px, sulat 10.6 ~ 13.2 px, may border at wala).
+  - Malalaking card ang controller list, kaya 2 lang ang kasya bawat hilera.
+  - Doble ang icon sa ilang button (simbolo at icon na sabay).
+  - Ang "Audit:" ay naputol nang patayo.
+  - Ang force field ay "value" lang, at hindi malinaw ang ✓ / ✕.
+  - Naka-uppercase ang Library tabs (I/O LIST…) habang ang iba ay hindi.
+  - Napuputol ang salita sa gitna ("sug gested").
+  - Ang UAT buttons ay may lumang ◀ ▶ 🎲.
+- **Work Done (itsura lang):**
+  - **Controller group display:** maliliit na DCS faceplate na magkakatabi (tag strip, PV / SV bar at MV bar, mode box A dilaw / M berde / R puti, PV value, MV %). Mga 4 bawat hilera sa kanang panel.
+  - **Isang button system:**
+    - Dalawang laki: md 2.125 rem para sa lahat ng button, select at field; sm 1.875 rem para sa segmented control.
+    - Isang laki ng sulat: .875 rem.
+    - Apat na uri: secondary, primary (asul), run (berde), ghost (tool bar).
+  - Sa tablet, 2.5 rem ang taas para sa daliri.
+  - **Icons:** walang doble. Kusang nilalagyan ng icon ang bagong button kahit sa mga panel na paulit-ulit na binubuo (UAT, CHECK, Inspector).
+  - **Force editor:** "Force to…" na field, kasama ang asul na ✓ (force) at ✕ (release) bilang iisang grupo.
+  - "Audit:" → "Record check:" (hindi naputol).
+  - Library tabs: I/O list, Memory list, Wiring, Relay / SER, Calculations.
+  - Plant model ON ay berdeng estado.
+  - Ang salita ay nababali sa pagitan ng mga salita lang.
+  - Ang DITL drawing / sheet no. ay nakatago sa screen na mas makitid sa 1500 px (para buo ang title).
+- **As Left (headless, 2026-10-21):**
+  - Button inventory: 35 itsura (kasama ang mga list row, DCS faceplate at zoom bar, na sinadyang iba).
+  - `npm run check` SAME; `npm test` 11 PASS; 10 UI test PASS.
+  - RUN 60 fps sa 4× mabagal na CPU.
+- **Hindi pa nasubok:** sa tablet / exe / apk ng user.
+
 ## 3.1.0-beta.5 — Mas malaki ang drawing, mas maliit ang faceplate
 - **Problem (user, 2026-10-21):** "Anlaki naman ng faceplate. Liit na nga ng drawing, sobrang laki pa ng faceplate."
 - **As Found (1333 × 833):** ang drawing ay 713 px lang ang lapad. Ang kanang panel ay 360 px, at ang bawat faceplate ay mga 520 px ang taas (bar graph 250 px).
