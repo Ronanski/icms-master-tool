@@ -2,6 +2,25 @@
 
 Base: 3.0.0-beta.8 (branch `claude/design-system-extraction-4dogzg`). UI lang: walang binago sa engine, logic, simulation, kulay ng drawing at sa DCS faceplate box.
 
+## 3.1.0-beta.2 — Ayos ng mga natirang screen
+- **Problem:** pagkatapos ng beta.1, sinuri ang 27 screen (Light / Dark, 1333 × 833). May mga detalyeng mali pa:
+  - Plant view: monospace ang listahan ng system at putol ang mga pangalan.
+  - Status line: may bakanteng cell, at minsan dalawang mensahe ang sabay na lumalabas.
+  - Ang "Events" ay hindi nakagitna.
+  - Sa Dark, kulay papel ang mga sample ng Legend.
+  - Sa phone, nawawala ang Fit.
+  - Sa DITL, lumalabas ang "◀ Inspector" tab.
+- **Work Done:**
+  - Plant list sa UI font, buong pangalan.
+  - Plant view columns ay sumusunod sa lapad.
+  - Isang mensahe lang sa status line, walang bakanteng cell, at nakagitna ang Events.
+  - Legend: kulay papel sa Light lang.
+  - Fit nakikita sa phone.
+  - Walang Inspector tab sa DITL.
+- **As Left:**
+  - UI audit Dark 1333: 19 finding (beta.1: 88).
+  - `npm run check` SAME; `npm test` 11 PASS; 10 UI test PASS.
+
 ## 3.1.0-beta.1 — Bagong shell (GO ng user, 2026-10-21)
 - **Problem (user):** "parang walang nangyari, hindi professional tingnan at gamitin"; "dapat auto adjust kahit anong screen size"; "lahat, buong app".
 - **As Found:**
