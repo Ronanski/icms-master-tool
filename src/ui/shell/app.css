@@ -625,3 +625,18 @@ body.app2 #sidesort{background:transparent!important;border:0!important;padding:
 body.app2 #sidesort button{border:1px solid transparent!important;color:var(--c-dim)!important;font-size:.75rem!important;min-height:1.75rem!important;height:1.75rem}
 body.app2 #sidesort button.on{background:var(--c-well)!important;border-color:var(--c-line)!important;color:var(--c-tx)!important;box-shadow:none!important}
 body.app2 #sidehd b{flex:1}
+/* ---------- 16. DRAWING FIRST 3.1.0-beta.5 (user: "liit na ng drawing, sobrang laki pa ng faceplate") ----------
+   narrower side panes, a compact faceplate (the same DCS faceplate, smaller), shorter bar graph */
+:root{--lw:clamp(12.5rem,15vw,16.5rem);--rw:clamp(16.5rem,21vw,21rem)}
+body.app2 #opp .fp{zoom:.8}
+body.app2 #opp .fpg{min-height:10rem!important}
+body.app2 #opp .fp .fpe{margin-top:.25rem}
+body.app2 #opp .fp + .fp{margin-top:.5rem}
+body.app2 .fpov .ovb{height:1.25rem!important}
+body.app2 .fpov > div:has(> .ovc){grid-template-columns:repeat(auto-fill,minmax(6.5rem,1fr))!important;gap:.375rem!important}
+/* the left pane: smaller rows so more sheets / inputs fit */
+body.app2 :is(#sidelist,#anlist) button{padding:.375rem .625rem .375rem .75rem!important}
+body.app2 :is(#sidelist,#anlist) button .st{font-size:.6875rem!important}
+#inlist .ini{padding:.375rem .25rem}
+/* the desk margin around the paper is thinner */
+body.app2 #cv{padding:.5rem!important}

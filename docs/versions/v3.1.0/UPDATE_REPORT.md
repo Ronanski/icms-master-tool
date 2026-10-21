@@ -2,6 +2,18 @@
 
 Base: 3.0.0-beta.8 (branch `claude/design-system-extraction-4dogzg`). UI lang: walang binago sa engine, logic, simulation, kulay ng drawing at sa DCS faceplate box.
 
+## 3.1.0-beta.5 — Mas malaki ang drawing, mas maliit ang faceplate
+- **Problem (user, 2026-10-21):** "Anlaki naman ng faceplate. Liit na nga ng drawing, sobrang laki pa ng faceplate."
+- **As Found (1333 × 833):** ang drawing ay 713 px lang ang lapad. Ang kanang panel ay 360 px, at ang bawat faceplate ay mga 520 px ang taas (bar graph 250 px).
+- **Work Done (itsura lang):**
+  - Mas makitid ang kaliwang panel (15 % ng lapad, 200 ~ 264 px) at ang kanang panel (21 %, 264 ~ 336 px).
+  - Ang faceplate ay 80 % ng dating laki (parehong DCS faceplate), at mas maikli ang bar graph.
+  - Mas maliit ang controller cards.
+  - Mas siksik ang mga row ng sheet list at Inputs.
+  - Mas manipis ang gilid ng mesa sa paligid ng papel.
+- **As Left:** ang drawing ay mga 850 px na ang lapad sa 1333 × 833 (dati 713). `npm run check` SAME; 10 UI test PASS.
+- **Hindi pa nasubok:** sa tablet / exe / apk ng user.
+
 ## 3.1.0-beta.4 — Side panels: walang doble, malinaw na cards
 - **Problem (user, 2026-10-21):** "Tama ba mga ginawa mo sa buttons? Sa side panels, tama na ba lahat?" Hindi.
 - **As Found:**
