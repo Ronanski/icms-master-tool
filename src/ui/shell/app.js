@@ -634,16 +634,23 @@
           nm.onclick = () => tg && tg.click();
           const it = E('div', { cls: 'ini' }, [nm]);
           if (ctl) {
-            const p = E('button', {
-              cls: 'inb',
-              on: () => {
-                if (!AN.view) ctl.click();
-              }
-            });
-            it.append(p);
+            /* a 0 | 1 switch (OFF | ON for a bad-signal flag); F = forced by you */
+            const word = /signal/i.test(ctl.textContent),
+              p = E('button', {
+                cls: 'inb',
+                title: ctl.title || 'Switch this input',
+                html: '<i>' + (word ? 'OFF' : '0') + '</i><i>' + (word ? 'ON' : '1') + '</i>',
+                on: () => {
+                  if (!AN.view) ctl.click();
+                }
+              }),
+              fb = E('span', { cls: 'inf', txt: 'F', title: 'Forced' });
+            it.append(fb, p);
             it._u = () => {
-              p.textContent = ctl.textContent;
-              p.className = 'inb' + (/1|ON/.test(ctl.textContent) && !/^0/.test(ctl.textContent.trim()) ? ' one' : '') + (ctl.classList.contains('fo') ? ' fo' : '');
+              const t = ctl.textContent.trim();
+              p.classList.toggle('one', /^1\b|\bON\b/.test(t) && !/^0\b/.test(t));
+              const fo = ctl.classList.contains('fo') || !!r.querySelector('.fo');
+              it.classList.toggle('fo', fo);
               p.disabled = !!AN.view;
             };
           } else if (num) {
@@ -661,6 +668,12 @@
       if (!isAn() || tab !== 'logic') return;
       inBuild(false);
       if (side && side.classList.contains('inp')) inl.querySelectorAll('.ini').forEach(i => i._u && i._u());
+      const mk = $('inmk');
+      if (mk && AN.rows)
+        mk.querySelectorAll('circle').forEach(c => {
+          const r = AN.rows[c.dataset.k];
+          c.classList.toggle('fo', !!(r && r.querySelector('.fo')));
+        });
     }, 400);
     /* modes: VIEW (large ribbon) or RUN (one compact row); the switch and the status line follow */
     setInterval(() => {
@@ -680,6 +693,249 @@
         si.textContent = an_ && inf ? inf.textContent : '';
       }
     }, 300);
+    /* ===== 3.0.0-beta.7 STYLE 2 + CAD, the details of the mockups: the drawing is a sheet of paper on a desk with CAD
+       rulers, a dark zoom bar floats over it (sheet ‹ ›, − zoom % +, Fit), a "selected block" card heads the Inspector,
+       the status line counts the forced signals and names the selection, "/" opens the search. ===== */
+    {
+      const cv = $('cv'),
+        svgE = $('svg');
+      /* floating zoom bar: the ribbon VIEW group moves into it (the same Fit buttons) */
+      const sheetBtn = (dir, title) =>
+        E('button', {
+          cls: 'zb',
+          txt: dir < 0 ? '‹' : '›',
+          title,
+          on: () => {
+            const box = isAn() ? $('anshbox') : $('shbox'),
+              bs = box ? [...box.querySelectorAll('button')] : [];
+            const b = dir < 0 ? bs[0] : bs[bs.length - 1];
+            if (b) b.click();
+          }
+        });
+      const zPct = E('span', { cls: 'zpct', txt: '100%', title: '100% = the whole sheet (Fit)' });
+      const zo = E('button', { cls: 'zb', txt: '−', title: 'Zoom out', 'aria-label': 'Zoom out', on: () => zoomBy(100) }),
+        zi = E('button', { cls: 'zb', txt: '+', title: 'Zoom in', 'aria-label': 'Zoom in', on: () => zoomBy(-100) });
+      const fitW = [...gZoom.children].filter(x => x.querySelector && x.querySelector('#bfit, button'));
+      const zbar = E('div', { id: 'zbar' }, [sheetBtn(-1, 'Previous sheet'), sheetBtn(1, 'Next sheet'), E('i', { cls: 'zsep' }), zo, zPct, zi, E('i', { cls: 'zsep' })]);
+      fitW.forEach(w => zbar.append(w));
+      [fit, dfit].forEach(b => b && b.addEventListener('click', () => setTimeout(() => (zRef = null), 60)));
+      document.body.append(zbar);
+      zIn.remove();
+      zOut.remove();
+      gZoom.style.display = 'none';
+      /* CAD rulers along the top and left edge of the drawing, in drawing units, following pan and zoom */
+      const rT = E('canvas', { id: 'rulert' }),
+        rL = E('canvas', { id: 'rulerl' }),
+        rC = E('div', { id: 'rulerc' });
+      document.body.append(rT, rL, rC);
+      let zRef = null,
+        zSheet = '',
+        last = '',
+        ink = null;
+      const nice = v => {
+        const p = Math.pow(10, Math.floor(Math.log10(v))),
+          m = v / p;
+        return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p;
+      };
+      const drawRuler = (c, len, horiz, v0, perPx, flip) => {
+        const dpr = Math.min(2, devicePixelRatio || 1),
+          T = 18;
+        c.width = (horiz ? len : T) * dpr;
+        c.height = (horiz ? T : len) * dpr;
+        const g = c.getContext('2d');
+        g.scale(dpr, dpr);
+        g.fillStyle = ink.bg;
+        g.fillRect(0, 0, horiz ? len : T, horiz ? T : len);
+        g.strokeStyle = ink.line;
+        g.fillStyle = ink.tx;
+        g.font = '9.5px ' + ink.font;
+        g.lineWidth = 1;
+        const step = nice(80 * perPx),
+          minor = step / 5,
+          a = v0,
+          b = v0 + len * perPx;
+        g.beginPath();
+        for (let u = Math.ceil(a / minor) * minor; u <= b; u += minor) {
+          const px = Math.round((u - a) / perPx) + 0.5,
+            major = Math.abs(u / step - Math.round(u / step)) < 1e-6,
+            h = major ? 9 : 4;
+          if (horiz) {
+            g.moveTo(px, T);
+            g.lineTo(px, T - h);
+          } else {
+            g.moveTo(T, px);
+            g.lineTo(T - h, px);
+          }
+          if (major) {
+            const lab = String(Math.round((flip ? -u : u) * 100) / 100);
+            if (horiz) g.fillText(lab, px + 3, 9);
+            else {
+              g.save();
+              g.translate(9, px - 3);
+              g.rotate(-Math.PI / 2);
+              g.fillText(lab, 0, 0);
+              g.restore();
+            }
+          }
+        }
+        g.stroke();
+        g.beginPath();
+        if (horiz) {
+          g.moveTo(0, T - 0.5);
+          g.lineTo(len, T - 0.5);
+        } else {
+          g.moveTo(T - 0.5, 0);
+          g.lineTo(T - 0.5, len);
+        }
+        g.strokeStyle = ink.edge;
+        g.stroke();
+      };
+      const tick = () => {
+        const show = tab === 'logic' && cv && svgE && cv.offsetParent !== null;
+        document.body.classList.toggle('rulers', !!show);
+        if (!show) return;
+        const r = svgE.getBoundingClientRect(),
+          vb = (svgE.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number),
+          name = (isAn() ? 'a' : 'd') + (crumb.textContent || ''),
+          theme = document.documentElement.dataset.theme + (document.documentElement.dataset.dg || '');
+        if (vb.length !== 4 || !(vb[2] > 0) || !r.width) return;
+        if (name !== zSheet) {
+          zSheet = name;
+          zRef = null;
+        }
+        if (!zRef) zRef = vb[2];
+        const key = [r.left, r.top, r.width, r.height, vb.join(','), theme].join('|');
+        if (key === last) return;
+        last = key;
+        if (!ink || ink.k !== theme) {
+          const cs = getComputedStyle(document.documentElement),
+            v = n => cs.getPropertyValue(n).trim();
+          ink = { k: theme, bg: v('--c-ribbon') || '#f7f8fa', line: v('--c-line2') || '#8f989f', tx: v('--c-dim') || '#5b646c', edge: v('--c-line') || '#d6dadf', font: v('--mf') || 'monospace' };
+        }
+        /* the svg keeps the aspect (meet): the visible drawing area is the view box widened on one axis */
+        const s = Math.min(r.width / vb[2], r.height / vb[3]),
+          x0 = vb[0] - (r.width / s - vb[2]) / 2,
+          y0 = vb[1] - (r.height / s - vb[3]) / 2;
+        rT.style.cssText = `left:${r.left + 18}px;top:${r.top}px;width:${r.width - 18}px`;
+        rL.style.cssText = `left:${r.left}px;top:${r.top + 18}px;height:${r.height - 18}px`;
+        rC.style.cssText = `left:${r.left}px;top:${r.top}px`;
+        drawRuler(rT, r.width - 18, true, x0 + 18 / s, 1 / s, false);
+        drawRuler(rL, r.height - 18, false, y0 + 18 / s, 1 / s, isAn());
+        zPct.textContent = Math.round((zRef / vb[2]) * 100) + '%';
+        /* centred on the part of the drawing that is not under an overlay panel (tablet) */
+        let right = r.right;
+        [$('anp'), $('opp')].forEach(pn => {
+          if (!pn || pn.offsetParent === null) return;
+          const q = pn.getBoundingClientRect();
+          if (q.width && q.left > r.left + 100 && q.left < right) right = q.left;
+        });
+        zbar.style.left = r.left + (right - r.left) / 2 + 'px';
+        zbar.style.top = r.bottom - 52 + 'px';
+      };
+      setInterval(tick, 120);
+      /* "/" or Ctrl+K: the search */
+      addEventListener('keydown', e => {
+        const t = e.target;
+        if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+        if (e.key === '/' || ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K'))) {
+          e.preventDefault();
+          if (getComputedStyle(srchBtn).display !== 'none') srchBtn.click();
+          ansb.focus();
+          ansb.select();
+        }
+      });
+      ansb.placeholder = 'Search tag, address, description';
+      srch.append(E('kbd', { cls: 'skbd', txt: '/', title: 'Press / (or Ctrl+K) to search' }));
+      /* breadcrumb: Logic › ABC analog › */
+      crumb.prepend(E('span', { cls: 'cpath' }));
+      /* selected block card (ABC): name, kind, the values in and out, Open faceplate */
+      const card = E('div', { id: 'selcard' });
+      let cardKey = '';
+      const fmt = x => (x == null || !isFinite(x) ? '—' : Math.abs(x) >= 100 ? x.toFixed(1) : x.toFixed(2));
+      const cardUpd = () => {
+        const anp = $('anp'),
+          sel = $('ansel');
+        if (!anp || !sel || !isAn() || !window.AN) return;
+        if (card.parentNode !== anp || card.nextSibling !== sel) sel.before(card);
+        const sh = AN.sheets && AN.sheets[AN.i],
+          S = sh && sh.S,
+          s = AN.sel,
+          b = s && s.blk;
+        anp.classList.toggle('hassel', !!(s && (b || s.net != null)));
+        if (!S || !s || (!b && s.net == null)) {
+          if (cardKey) {
+            card.textContent = '';
+            cardKey = '';
+          }
+          return;
+        }
+        const nmf = n => (typeof nm === 'function' ? nm(S, n) : 'net ' + n),
+          isD = n => S.nets[n] && S.nets[n].dig,
+          val = n => (isD(n) ? (S.rt.v[n] > 0.5 ? '1' : '0') : fmt(S.rt.v[n])),
+          key = (b ? 'b' + b.id : 'n' + s.net) + '|' + sh.name;
+        if (key !== cardKey) {
+          cardKey = key;
+          card.textContent = '';
+          const name = b ? b.tag || (b.txt || []).filter(Boolean)[1] || b.k + ' #' + b.id : nmf(s.net),
+            kind = b ? b.k : 'WIRE',
+            fp = b && b.tag && /^(PID|PIDV|MAN)/.test(b.k);
+          card.append(
+            E('div', { cls: 'sch' }, [E('small', { txt: b ? 'SELECTED BLOCK' : 'SELECTED WIRE' }), E('span', { cls: 'chip', txt: kind })]),
+            E('b', { cls: 'scn', txt: name }),
+            b && b.txt ? E('div', { cls: 'scd', txt: b.txt.filter(Boolean).join(' · ') }) : null
+          );
+          const grid = E('div', { cls: 'scv' });
+          const cell = (lab, n) => {
+            const v = E('b', { txt: val(n) });
+            v._n = n;
+            grid.append(E('div', { title: nmf(n) }, [E('small', { txt: lab }), v]));
+          };
+          if (b) {
+            (b.i || []).slice(0, 3).forEach((n, k) => cell('IN' + ((b.i || []).length > 1 ? ' ' + (k + 1) : ''), n));
+            (b.o || []).slice(0, 3).forEach((n, k) => cell('OUT' + ((b.o || []).length > 1 ? ' ' + (k + 1) : ''), n));
+          } else cell('VALUE', s.net);
+          card.append(grid);
+          if (fp)
+            card.append(
+              E('button', {
+                cls: 'scb',
+                txt: 'Open faceplate',
+                on: () => {
+                  const f = [...document.querySelectorAll('.hmitabs button')].find(x => x.textContent.trim() === 'Faceplate');
+                  if (f) f.click();
+                  setTimeout(() => {
+                    const c = [...document.querySelectorAll('.fpov .ovc')].find(x => x.dataset.t === b.tag);
+                    if (c) c.click();
+                  }, 120);
+                }
+              })
+            );
+        }
+        card.querySelectorAll('.scv b').forEach(e => (e.textContent = val(e._n)));
+      };
+      /* status line: forced signals and the selection */
+      const sForce = E('span', { cls: 'sforce', title: 'Signals forced by you (Inspector > Forced signals)' }),
+        sSel = E('span', { cls: 'ssel' });
+      const sinfoPut = () => {
+        const si = foot && foot.querySelector('.sinfo');
+        if (si && sForce.parentNode !== foot) si.before(sSel, sForce);
+      };
+      setInterval(() => {
+        try {
+          cardUpd();
+        } catch (e) {}
+        sinfoPut();
+        const h = [...document.querySelectorAll('#anp h4')].find(x => /FORCED SIGNALS/i.test(x.textContent)),
+          n = isAn() && h ? +((h.textContent.match(/\((\d+)\)/) || [])[1] || 0) : 0;
+        sForce.textContent = n ? 'FORCED ' + n : '';
+        sForce.classList.toggle('on', n > 0);
+        const s = isAn() && window.AN && AN.sel,
+          sh = s && AN.sheets[AN.i];
+        sSel.textContent = s && s.blk ? 'Selected: ' + s.blk.k + ' ' + (s.blk.tag || '#' + s.blk.id) : s && s.net != null && sh && sh.S && typeof nm === 'function' ? 'Selected: ' + nm(sh.S, s.net) : '';
+        const cp = crumb.querySelector('.cpath');
+        if (cp) cp.textContent = isAn() ? 'ABC analog ›' : 'DITL digital ›';
+      }, 300);
+    }
     /* --- TOOLS page --- */
     toolsws = E('div', { id: 'toolsws' });
     const grid = E('div', { cls: 'tgrid' });

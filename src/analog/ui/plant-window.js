@@ -1463,7 +1463,8 @@ AN.markInputs = function () {
     const r = AN.rows[k],
       p = r._pos;
     if (!p || !isFinite(p.x) || !isFinite(p.y) || !/inputs/i.test(r._sec || '')) continue;
-    el('circle', { cx: p.x, cy: -p.y, r: R0, fill: '#e8a317', 'fill-opacity': 0.18, stroke: '#e8a317', 'stroke-width': sw }, g);
+    /* dashed = can be forced; the shell draws a forced one solid (class fo, app.js) */
+    el('circle', { cx: p.x, cy: -p.y, r: R0, fill: '#e8a317', 'fill-opacity': 0.14, stroke: '#e8a317', 'stroke-width': sw, 'stroke-dasharray': R0 * 0.42 + ' ' + R0 * 0.28, 'data-k': k }, g);
   }
 };
 function panelUpd(sel) {

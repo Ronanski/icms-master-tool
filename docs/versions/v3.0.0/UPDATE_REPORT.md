@@ -5,6 +5,31 @@ Base: Stable v2.4.0 (`main`). Bawat Beta ay push sa `claude/design-system-extrac
 ## 3.0.0-beta.1 — BINAWI
 - Ginawa at na-push nang hindi pa pumipili ang user. Ibinalik ang branch sa `main` at isinara ang PR #36 (utos ng user: "Oo ibalik mo"). Walang bahagi nito ang natira.
 
+## 3.0.0-beta.7 — Ang mga detalye ng Style 2 + CAD mockup
+- **Problem (user, 2026-10-21):** "hnd ganyan ang inaasahan ko sa style 2 plus cad. impress me."
+- **As Found (app laban sa Style 2 at sa dalawang Style 2 + CAD mockup):**
+  - Walang papel-sa-mesa: puno ng drawing ang buong lugar, walang gilid at walang anino.
+  - Walang CAD ruler at walang zoom %.
+  - Walang floating na zoom bar, walang "selected block" card, at walang FORCED counter sa status line.
+  - Walang breadcrumb path at walang shortcut sa search.
+  - Ang Inputs ay text button lang, walang palatandaan kapag naka-force.
+- **Work Done (UI lang):**
+  - **Papel sa mesa:** ang drawing ay card na may gilid, bilog na kanto at anino sa ibabaw ng mas madilim na mesa (Light at Dark).
+  - **CAD rulers** sa itaas at kaliwa ng drawing, sa unit ng drawing. Sumusunod sa pan at zoom.
+  - **Floating na zoom bar** (madilim na pill) sa ibaba ng drawing: ‹ › (nakaraan / susunod na sheet), − **zoom %** +, Fit. Nasa gitna ng nakikitang drawing kahit may panel sa tablet. Inalis sa ribbon ang zoom (iisa na lang).
+  - **Selected block card** sa itaas ng Inspector: SELECTED BLOCK, chip ng uri (PID, AND…), malaking pangalan, ang text ng block, malalaking IN / OUT value (live), at **Open faceplate** para sa PID / MAN (bubukas ang Faceplate sa loop na iyon). Nakatago ang mahabang paliwanag at ang lumang "Selected:" heading habang may napili.
+  - **Status line:** "Selected: PID LICBR1001" at **FORCED n** (dilaw) kapag may naka-force.
+  - **Search:** "/" o Ctrl+K para mag-search. May "/" na tanda sa search box.
+  - **Breadcrumb:** "ABC analog › ABC-010 SHEET 23 · …" / "DITL digital › …".
+  - **Inputs:** 0 | 1 (o OFF | ON) na switch; dilaw na row at "F" kapag naka-force. Sa drawing: putol-putol na dilaw na bilog = pwedeng i-force, buo = naka-force.
+  - **DITL:** maliit ang ribbon (isang hilera), dahil Reference lang ang laman nito.
+- **As Left (headless, 2026-10-21):**
+  - `npm run check` SAME; `npm test` 11 PASS.
+  - PASS ang 10 UI test (ditl_toolbar 36, plant_view 18, manstation 12, panel_sync 12, overview 9, infocard 9, lookonly 8, events 5, abcbar 4, faceplate).
+  - RUN sa 4× mabagal na CPU: 58.3 fps (v2.4.0: 59.7; ang rulers ay iginuguhit lang kapag nagbago ang view).
+  - Screenshot: Light, Dark, tablet 1024. 0 page error.
+- **Hindi pa nasubok:** sa tablet / exe / apk ng user.
+
 ## 3.0.0-beta.6 — Detalye ng bawat screen (design pass)
 - **Problem (user, 2026-10-21):** "Hanggang kaibuturan pre ayusin mo. Act as an elite web designer."
 - **As Found:** Sinuri ang 19 screen (Logic VIEW / RUN, Inputs, Legend, search, info card, Events, ⚙, Library, Plant view, Tools, Health, Audit, F(X), UAT; Light at Dark). Mga nakita:

@@ -443,27 +443,27 @@ html[data-dg=paper] #anlg span[style*="#8dffb8"]{color:#0a6b3a!important}html[da
 /* CAD icons (3.0.0): a 16 px mask in the text colour before the label */
 #gsbar [data-ic]{display:inline-flex;align-items:center;gap:6px}
 #gsbar [data-ic]::before{content:"";width:16px;height:16px;flex:none;background:currentColor;-webkit-mask:var(--ic) center/contain no-repeat;mask:var(--ic) center/contain no-repeat}
-#gsbar [data-ic=eye]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M2%2012s3.5-7%2010-7%2010%207%2010%207-3.5%207-10%207S2%2012%202%2012z%22/%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%223%22/%3E%3C/svg%3E")}
-#gsbar [data-ic=reset]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2012a9%209%200%201%200%202.6-6.4L3%208%22/%3E%3Cpath%20d%3D%22M3%203v5h5%22/%3E%3C/svg%3E")}
-#gsbar [data-ic=fit]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M4%209V4h5M20%209V4h-5M4%2015v5h5M20%2015v5h-5%22/%3E%3C/svg%3E")}
-#gsbar [data-ic=hash]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M5%209h14M5%2015h14M10%204L8%2020M16%204l-2%2016%22/%3E%3C/svg%3E")}
-#gsbar [data-ic=wave]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M2%2012h5l3-7%204%2014%203-7h5%22/%3E%3C/svg%3E")}
-#gsbar [data-ic=target]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%228%22/%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%223%22/%3E%3C/svg%3E")}
-#gsbar [data-ic=side]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%223%22%20y%3D%224%22%20width%3D%2218%22%20height%3D%2216%22%20rx%3D%222%22/%3E%3Cpath%20d%3D%22M15%204v16%22/%3E%3C/svg%3E")}
-#gsbar [data-ic=plant]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2021V10l6%204v-4l6%204V5h6v16z%22/%3E%3Cpath%20d%3D%22M3%2021h18%22/%3E%3C/svg%3E")}
-#gsbar [data-ic=logic]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%206h5a6%206%200%200%201%200%2012H6z%22/%3E%3Cpath%20d%3D%22M2%209h4M2%2015h4M17%2012h5%22/%3E%3C/svg%3E")}
-#gsbar [data-ic=book]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%205h6a3%203%200%200%201%203%203v12a2%202%200%200%200-2-2H3z%22/%3E%3Cpath%20d%3D%22M21%205h-6a3%203%200%200%200-3%203v12a2%202%200%200%201%202-2h7z%22/%3E%3C/svg%3E")}
-#gsbar [data-ic=tool]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M14.7%206.3a4%204%200%200%200-5.4%205.4L3%2018l3%203%206.3-6.3a4%204%200%200%200%205.4-5.4l-2.5%202.5-2.4-.6-.6-2.4z%22/%3E%3C/svg%3E")}
+[data-ic=eye]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M2%2012s3.5-7%2010-7%2010%207%2010%207-3.5%207-10%207S2%2012%202%2012z%22/%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%223%22/%3E%3C/svg%3E")}
+[data-ic=reset]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2012a9%209%200%201%200%202.6-6.4L3%208%22/%3E%3Cpath%20d%3D%22M3%203v5h5%22/%3E%3C/svg%3E")}
+[data-ic=fit]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M4%209V4h5M20%209V4h-5M4%2015v5h5M20%2015v5h-5%22/%3E%3C/svg%3E")}
+[data-ic=hash]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M5%209h14M5%2015h14M10%204L8%2020M16%204l-2%2016%22/%3E%3C/svg%3E")}
+[data-ic=wave]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M2%2012h5l3-7%204%2014%203-7h5%22/%3E%3C/svg%3E")}
+[data-ic=target]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%228%22/%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%223%22/%3E%3C/svg%3E")}
+[data-ic=side]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%223%22%20y%3D%224%22%20width%3D%2218%22%20height%3D%2216%22%20rx%3D%222%22/%3E%3Cpath%20d%3D%22M15%204v16%22/%3E%3C/svg%3E")}
+[data-ic=plant]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2021V10l6%204v-4l6%204V5h6v16z%22/%3E%3Cpath%20d%3D%22M3%2021h18%22/%3E%3C/svg%3E")}
+[data-ic=logic]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%206h5a6%206%200%200%201%200%2012H6z%22/%3E%3Cpath%20d%3D%22M2%209h4M2%2015h4M17%2012h5%22/%3E%3C/svg%3E")}
+[data-ic=book]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%205h6a3%203%200%200%201%203%203v12a2%202%200%200%200-2-2H3z%22/%3E%3Cpath%20d%3D%22M21%205h-6a3%203%200%200%200-3%203v12a2%202%200%200%201%202-2h7z%22/%3E%3C/svg%3E")}
+[data-ic=tool]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M14.7%206.3a4%204%200%200%200-5.4%205.4L3%2018l3%203%206.3-6.3a4%204%200%200%200%205.4-5.4l-2.5%202.5-2.4-.6-.6-2.4z%22/%3E%3C/svg%3E")}
 #gsbar .tabs button{white-space:nowrap}
 /* tablet: the ribbon buttons with an icon show the icon only (the name is in the tooltip); phone: the tabs too */
 @media (max-width:1180px){#gsbar .tbar .tb [data-ic][data-ic]{gap:0;font-size:0!important;min-width:var(--h);padding:0!important;justify-content:center}#gsbar .tbar [data-ic]::before{width:18px;height:18px}}
 @media (max-width:700px){#gsbar .tabs [data-ic][data-ic]{gap:0;font-size:0!important;min-width:40px;padding:0!important;justify-content:center}#gsbar .tabs [data-ic]::before{width:19px;height:19px}}
 /* ===== 3.0.0-beta.5 OVERHAUL (user 2026-10-21: "overhaul nga"): the layout of the Style 2 + CAD mockup ===== */
-#gsbar [data-ic=curve]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2020h18M3%2020V4%22/%3E%3Cpath%20d%3D%22M5%2017c4%200%205-9%209-9s4%204%206%204%22/%3E%3C/svg%3E")}
-#gsbar [data-ic=legend]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%223%22%20y%3D%224%22%20width%3D%226%22%20height%3D%225%22%20rx%3D%221%22/%3E%3Cpath%20d%3D%22M12%206.5h9M12%2016.5h9%22/%3E%3Crect%20x%3D%223%22%20y%3D%2214%22%20width%3D%226%22%20height%3D%225%22%20rx%3D%221%22/%3E%3C/svg%3E")}
-#gsbar [data-ic=zin]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2210.5%22%20cy%3D%2210.5%22%20r%3D%226.5%22/%3E%3Cpath%20d%3D%22M15.5%2015.5%2021%2021M10.5%207.5v6M7.5%2010.5h6%22/%3E%3C/svg%3E")}
-#gsbar [data-ic=zout]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2210.5%22%20cy%3D%2210.5%22%20r%3D%226.5%22/%3E%3Cpath%20d%3D%22M15.5%2015.5%2021%2021M7.5%2010.5h6%22/%3E%3C/svg%3E")}
-#gsbar [data-ic=back]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M9%2014%204%209l5-5%22/%3E%3Cpath%20d%3D%22M4%209h10a6%206%200%200%201%200%2012h-3%22/%3E%3C/svg%3E")}
+[data-ic=curve]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2020h18M3%2020V4%22/%3E%3Cpath%20d%3D%22M5%2017c4%200%205-9%209-9s4%204%206%204%22/%3E%3C/svg%3E")}
+[data-ic=legend]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%223%22%20y%3D%224%22%20width%3D%226%22%20height%3D%225%22%20rx%3D%221%22/%3E%3Cpath%20d%3D%22M12%206.5h9M12%2016.5h9%22/%3E%3Crect%20x%3D%223%22%20y%3D%2214%22%20width%3D%226%22%20height%3D%225%22%20rx%3D%221%22/%3E%3C/svg%3E")}
+[data-ic=zin]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2210.5%22%20cy%3D%2210.5%22%20r%3D%226.5%22/%3E%3Cpath%20d%3D%22M15.5%2015.5%2021%2021M10.5%207.5v6M7.5%2010.5h6%22/%3E%3C/svg%3E")}
+[data-ic=zout]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2210.5%22%20cy%3D%2210.5%22%20r%3D%226.5%22/%3E%3Cpath%20d%3D%22M15.5%2015.5%2021%2021M7.5%2010.5h6%22/%3E%3C/svg%3E")}
+[data-ic=back]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M9%2014%204%209l5-5%22/%3E%3Cpath%20d%3D%22M4%209h10a6%206%200%200%201%200%2012h-3%22/%3E%3C/svg%3E")}
 /* top bar: the sheet name (the title strips of ABC and DITL moved here) and the VIEW | RUN switch */
 #gsbar .crumb{display:flex;align-items:center;flex:1 1 0;min-width:0;overflow:hidden;padding:0 6px;border-left:1px solid var(--c-line);margin-left:4px;height:30px}
 #gsbar .crumb #anmeta,#gsbar .crumb #meta{background:transparent!important;border:0!important;padding:0!important;margin:0;min-height:0!important;gap:10px;flex:1 1 0;min-width:0;box-shadow:none}
@@ -489,16 +489,16 @@ body.simmode #gsbar .g-ref{display:none!important}
 body:not([data-tab=logic]) #gsbar .g-ref{display:none!important}
 #gsbar .g-ref{display:flex}
 /* VIEW: CAD ribbon, large icon buttons, the group name under the group */
-body:not(.simmode)[data-tab=logic] #gsbar .tbar{min-height:80px}
-body:not(.simmode)[data-tab=logic] #gsbar .tbar .tb:is(.g-zoom,.g-ref),body:not(.simmode)[data-tab=logic].an #gsbar .tbar .tb:is(.g-view,.g-nav){display:grid}
-body:not(.simmode) #gsbar .tbar .tb{grid-auto-flow:column;grid-template-rows:auto 13px;align-items:center;justify-items:center;column-gap:2px;row-gap:3px;height:auto!important;padding:6px 10px 5px!important}
-body:not(.simmode) #gsbar .tbar .tb > *,body:not(.simmode) #gsbar .tbar .tb .only > *{grid-row:1}
-body:not(.simmode) #gsbar .tbar .tb[data-label]::before{grid-row:2;grid-column:1/-1;margin:0;font-size:10px;letter-spacing:.1em}
-body:not(.simmode) #gsbar .tbar .tb [data-ic][data-ic]{flex-direction:column;justify-content:center;height:52px!important;min-height:52px!important;min-width:62px;padding:3px 8px!important;gap:4px;font-size:12px!important;border-color:transparent;background:transparent}
-body:not(.simmode) #gsbar .tbar .tb [data-ic][data-ic]:hover{background:var(--c-ctlh);border-color:var(--c-line)}
-body:not(.simmode) #gsbar .tbar .tb [data-ic][data-ic].on{background:var(--c-accbg);border-color:var(--c-accbd)}
-body:not(.simmode) #gsbar .tbar .tb [data-ic]::before{width:22px;height:22px}
-@media (max-width:1180px){body:not(.simmode) #gsbar .tbar .tb [data-ic][data-ic]{font-size:11px!important;min-width:54px;padding:3px 4px!important}}
+body.an:not(.simmode)[data-tab=logic] #gsbar .tbar{min-height:80px}
+body.an:not(.simmode)[data-tab=logic] #gsbar .tbar .tb:is(.g-zoom,.g-ref,.g-view,.g-nav){display:grid}
+body.an:not(.simmode) #gsbar .tbar .tb{grid-auto-flow:column;grid-template-rows:auto 13px;align-items:center;justify-items:center;column-gap:2px;row-gap:3px;height:auto!important;padding:6px 10px 5px!important}
+body.an:not(.simmode) #gsbar .tbar .tb > *,body.an:not(.simmode) #gsbar .tbar .tb .only > *{grid-row:1}
+body.an:not(.simmode) #gsbar .tbar .tb[data-label]::before{grid-row:2;grid-column:1/-1;margin:0;font-size:10px;letter-spacing:.1em}
+body.an:not(.simmode) #gsbar .tbar .tb [data-ic][data-ic]{flex-direction:column;justify-content:center;height:52px!important;min-height:52px!important;min-width:62px;padding:3px 8px!important;gap:4px;font-size:12px!important;border-color:transparent;background:transparent}
+body.an:not(.simmode) #gsbar .tbar .tb [data-ic][data-ic]:hover{background:var(--c-ctlh);border-color:var(--c-line)}
+body.an:not(.simmode) #gsbar .tbar .tb [data-ic][data-ic].on{background:var(--c-accbg);border-color:var(--c-accbd)}
+body.an:not(.simmode) #gsbar .tbar .tb [data-ic]::before{width:22px;height:22px}
+@media (max-width:1180px){body.an:not(.simmode) #gsbar .tbar .tb [data-ic][data-ic]{font-size:11px!important;min-width:54px;padding:3px 4px!important}}
 /* RUN: one compact row (the ribbon of 3.0.0-beta.3) */
 body.simmode #gsbar .tbar .tb [data-ic]::before{width:16px;height:16px}
 /* left: Sheets | Inputs */
@@ -565,3 +565,65 @@ body.app2 #anptab{background:var(--c-pane)!important;border:1px solid var(--c-li
 body.app2 #sidehd{min-height:36px;padding:4px 8px!important}
 body.an #sidetabs{margin-top:2px}
 #toolsws #uatb{font:500 13.5px var(--uf)!important;height:36px;padding:0 14px!important}
+/* ===== 3.0.0-beta.7 STYLE 2 + CAD: paper on a desk, rulers, floating zoom bar, selected block card ===== */
+/* the desk and the sheet of paper (Style 2 workbench) */
+html:not([data-theme=dark]) body.app2 #cv{background-color:#e3e6ea!important}
+body.app2 #cv{padding:10px!important;box-sizing:border-box}
+body.app2 #cv > #svg{border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,.08),0 10px 28px rgba(20,25,29,.14)}
+html[data-theme=dark] body.app2 #cv > #svg{box-shadow:0 0 0 1px #2a2f36,0 12px 30px rgba(0,0,0,.5)}
+/* CAD rulers (canvas, drawing units) */
+#rulert,#rulerl,#rulerc{display:none;position:fixed;z-index:6;pointer-events:none}
+body.rulers #rulert,body.rulers #rulerl,body.rulers #rulerc{display:block}
+#rulert{height:18px;border-top-right-radius:6px}#rulerl{width:18px;border-bottom-left-radius:6px}
+#rulerc{width:18px;height:18px;background:var(--c-ribbon);border-right:1px solid var(--c-line);border-bottom:1px solid var(--c-line);border-top-left-radius:6px}
+/* floating zoom bar (dark pill, Style 2) */
+#zbar{display:none;position:fixed;z-index:25;transform:translateX(-50%);align-items:center;gap:2px;padding:4px;border-radius:12px;background:#1f2429;box-shadow:0 8px 24px rgba(0,0,0,.28);color:#fff}
+body.rulers[data-tab=logic] #zbar{display:flex}
+#zbar .zb,#zbar button{height:34px;min-width:34px;padding:0 10px;border:0!important;border-radius:8px!important;background:transparent!important;color:#ffffff!important;font:600 15px var(--uf)!important;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+#zbar .zb:hover,#zbar button:hover{background:#343b42!important}
+#zbar :is(#bfit,.only > button){font-size:13px!important;background:#343b42!important}
+#zbar [data-ic]::before{content:"";width:16px;height:16px;background:currentColor;-webkit-mask:var(--ic) center/contain no-repeat;mask:var(--ic) center/contain no-repeat}
+#zbar .zpct{min-width:52px;text-align:center;font:600 13px var(--mf);color:#e9ecef}
+#zbar .zsep{width:1px;height:20px;background:#3d444b;margin:0 4px}
+@media (max-width:700px){#zbar .zsep:first-of-type,#zbar .zb:first-child,#zbar .zb:nth-child(2){display:none}}
+/* top bar: search with its key, breadcrumb path */
+#gsbar .gs-search{position:relative}
+#gsbar .skbd{position:absolute;right:10px;top:50%;transform:translateY(-50%);font:600 11px var(--mf);padding:1px 6px;border:1px solid var(--c-line2);border-radius:4px;color:var(--c-dim);background:var(--c-pane);pointer-events:none}
+#gsbar .gs-search:focus-within .skbd{display:none}
+#gsbar .crumb .cpath{flex:none;font:500 12.5px var(--uf);color:var(--c-dim);margin-right:8px;white-space:nowrap}
+@media (max-width:1180px){#gsbar .crumb .cpath{display:none}}
+/* Inspector: the selected block card leads; the long how-to line hides while something is selected */
+#selcard:empty{display:none}
+#selcard{margin:6px 0 12px;padding:12px 14px;border:1px solid var(--c-line);border-radius:10px;background:var(--c-pane);box-shadow:0 1px 2px rgba(0,0,0,.04),0 6px 18px var(--c-shadow)}
+#selcard .sch{display:flex;align-items:center;justify-content:space-between}
+#selcard .sch small{font:700 10.5px var(--uf);letter-spacing:.1em;color:var(--c-dim)}
+#selcard .chip{padding:2px 10px;border-radius:999px;background:var(--c-accbg);color:var(--c-acctx);font:700 11.5px var(--uf);letter-spacing:.04em}
+#selcard .scn{display:block;margin-top:6px;font:700 19px var(--mf);color:var(--c-tx);word-break:break-all}
+#selcard .scd{margin-top:2px;color:var(--c-tx2);font-size:12.5px}
+#selcard .scv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+#selcard .scv > div{padding:6px 8px;border-radius:8px;background:var(--c-well);border:1px solid var(--c-line);min-width:0}
+#selcard .scv small{display:block;font:700 10px var(--uf);letter-spacing:.08em;color:var(--c-dim)}
+#selcard .scv b{display:block;font:600 18px var(--mf);color:var(--c-tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#selcard .scb{width:100%;height:36px;margin-top:10px;border-radius:8px!important;border:1px solid var(--c-line2)!important;background:var(--c-ctl)!important;color:var(--c-tx)!important;font:600 13.5px var(--uf)!important}
+#selcard .scb:hover{background:var(--c-accbg)!important;color:var(--c-acctx)!important;border-color:var(--c-accbd)!important}
+/* status line: forced count and the selection */
+#sfoot .sforce:empty,#sfoot .ssel:empty{display:none}
+#sfoot .sforce{margin-left:auto;padding:0 10px;background:var(--c-man);color:#1a1200;font:700 11.5px var(--mf);line-height:28px;letter-spacing:.04em}
+#sfoot .ssel{margin-left:auto;padding:0 12px;color:var(--c-statustx)!important;font:12px var(--mf);line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px}
+#sfoot .ssel + .sforce{margin-left:0}
+#sfoot .ssel:not(:empty) ~ .sinfo,#sfoot .sforce.on ~ .sinfo{margin-left:0}
+/* Inputs: a 0 | 1 switch, F when forced */
+#inlist .inb{display:inline-flex;min-width:0;padding:0!important;overflow:hidden;height:28px}
+#inlist .inb i{font-style:normal;min-width:30px;padding:0 6px;display:flex;align-items:center;justify-content:center;color:var(--c-dim)}
+#inlist .inb i + i{border-left:1px solid var(--c-line)}
+#inlist .inb:not(.one) i:first-child{background:var(--c-tx2);color:var(--c-pane)}
+#inlist .inb.one i:last-child{background:var(--c-run);color:#ffffff}
+#inlist .inb.one{background:var(--c-ctl);border-color:var(--c-line);color:inherit}
+#inlist .inf{display:none;flex:none;width:18px;height:18px;border-radius:4px;background:var(--c-man);color:#1a1200;font:700 11px var(--mf);align-items:center;justify-content:center}
+#inlist .ini.fo .inf{display:inline-flex}
+#inlist .ini.fo{background:var(--c-mansoft)}
+/* drawing: dashed ring = can be forced, solid = forced */
+#inmk circle.fo{stroke-dasharray:none!important;fill-opacity:.32}
+#gsbar .gs-search #ansb{padding-right:34px!important}
+#anp.hassel > small:first-of-type,#anp.hassel #ansel > h4:first-child,#anp.hassel #ansel > small:nth-child(3){display:none}
+#selcard .scv{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
