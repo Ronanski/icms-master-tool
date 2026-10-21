@@ -435,7 +435,7 @@ body.app2 #stchip span.run{background:var(--c-runon)!important;border-color:var(
 #infocard .icwa{flex:0 0 18px;align-self:center;text-align:center;color:var(--c-acc);font-size:15px;font-weight:700}
 #libws .libw .ics{border:0;padding:0}
 /* faceplate box: stays a dark DCS faceplate in both themes (as on the control room HMI) */
-:is(#opp,#plfp) .fp .sub{color:#8fa0ab}
+:is(#opp,#plfp) .fp .sub{color:var(--c-dim)}
 /* Legend & style: on the light paper drawing the legend shows the paper colours (same mapping as theme.css) */
 html[data-dg=paper] #anlg .sw[style*="#35d6c8"]{border-color:#0b7a72!important;background:#ffffff!important}html[data-dg=paper] #anlg .sw[style*="#b48cff"]{border-color:#6440b4!important;background:#ffffff!important}html[data-dg=paper] #anlg .sw[style*="#b4e04a"]{border-color:#587a10!important;background:#ffffff!important}html[data-dg=paper] #anlg .sw[style*="#ff7ad9"]{border-color:#a82e86!important;background:#ffffff!important}html[data-dg=paper] #anlg .sw[style*="#4be08a"]{border-color:#157a46!important;background:#ffffff!important}html[data-dg=paper] #anlg .sw[style*="#e8c9a0"]{border-color:#8a5a1c!important;background:#ffffff!important}html[data-dg=paper] #anlg .sw[style*="#ff4d4d"]{border-color:#c62828!important;background:#ffffff!important}html[data-dg=paper] #anlg .sw[style*="#5aa9ff"]{border-color:#1f5fae!important;background:#ffffff!important}html[data-dg=paper] #anlg .sw[style*="#c9d3dc"]{border-color:#44525e!important;background:#ffffff!important}html[data-dg=paper] #anlg .sw[style*="#aeb9c3"]{border-color:#5b6874!important;background:#ffffff!important}
 html[data-dg=paper] #anlg .dt[style*="#35e08a"]{background:#157a46!important}html[data-dg=paper] #anlg .dt[style*="#ff4d4d"]{background:#c62828!important}html[data-dg=paper] #anlg .dt[style*="#4da3ff"]{background:#1f6fbf!important}#anlg .dt[style*="#ffffff"]{box-shadow:inset 0 0 0 1.5px var(--c-line2)}
@@ -527,7 +527,7 @@ body.an #side.inp #inlist{display:block;flex:1 1 0;min-height:0;overflow:auto;pa
 body:not(.an) #opp{display:none!important}
 /* ===== 3.0.0-beta.6 DETAIL PASS (user: "hanggang kaibuturan"): every surface checked like a designer ===== */
 /* the sheet name, the VIEW | RUN switch and the sheet facts belong to the Logic tab */
-body:not([data-tab=logic]) #gsbar .crumb,body:not([data-tab=logic]) #sfoot .sinfo{visibility:hidden}
+body:not([data-tab=logic]) #gsbar .crumb,body:not([data-tab=logic]) #sfoot :is(.sinfo,.ssel,.sforce){visibility:hidden}
 body:is([data-tab=library],[data-tab=tools]) #gsbar .seg{display:none}
 /* one green: the RUN switch says the plant is running; the ribbon button is the plain Pause / Run beside it */
 body.simmode #gsbar .tbar :is(.tb-run,#bmode).tb-run.on{background:var(--c-ctl)!important;border-color:var(--c-line2)!important;color:var(--c-tx)!important}
@@ -627,3 +627,30 @@ body.rulers[data-tab=logic] #zbar{display:flex}
 #gsbar .gs-search #ansb{padding-right:34px!important}
 #anp.hassel > small:first-of-type,#anp.hassel #ansel > h4:first-child,#anp.hassel #ansel > small:nth-child(3){display:none}
 #selcard .scv{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
+/* ===== 3.0.0-beta.8 AUDIT PASS (tablet 1333 x 833, touch): contrast, touch targets ===== */
+/* faceplate on the light plate: its labels were light grey on white */
+body.app2 :is(#opp,#plfp) .fp :is(.fpb .fl,.fpman .fl,.dg small,.lg,.fpe summary){color:var(--c-dim)!important}
+body.app2 :is(#opp,#plfp) .fp:not(.fpx) .tg span{color:var(--c-dim)!important}
+body.app2 :is(#opp,#plfp) .fp .tg b{color:var(--c-tx)}
+body.app2 :is(#opp,#plfp) .fp.fpx .tg b,body.app2 :is(#opp,#plfp) .fpx .tg b{color:#06210f}
+body.app2 :is(#opp,#plfp) .fp .mvb{color:var(--c-dim);border-color:var(--c-line2)}
+/* VIEW lock: the locked controls stay readable */
+body.anview #anp :is(input,select,button):not(.keep){opacity:.6!important}
+/* touch targets: nothing under 30 px */
+body.app2 #anp :is(button,select,input[type=number],input[type=text],input:not([type])){min-height:30px}
+body.app2 #anp .wr:is(button){min-width:30px}
+body.app2 #anp .ph button{min-width:30px}
+body.app2 #sidetg{min-width:32px;min-height:32px}
+body.app2 #sidesort button{min-height:30px}
+body.app2 #libws :is(.b,button,select){min-height:30px}
+body.app2 #plantws :is(.b,button){min-height:30px}
+#anlg select,#anlg button{min-height:30px}
+#gsbar #gscope button{min-height:28px;min-width:34px}
+body.app2 #evbox .b{min-height:30px}
+@media (pointer:coarse){#sfoot{min-height:34px}#sfoot>*{height:34px}#sfoot :is(#st,.shint,.smsg,.ssel,.sinfo,.sforce){line-height:34px!important}#sfoot #evbtn{min-height:34px}}
+body.app2 :is(#opp,#plfp) .fpx .tg span{color:#0b3a1b!important}
+body.app2 #sidetg{min-height:32px!important;height:32px}
+body.app2 #tp :is(button,.b){min-height:30px;min-width:30px}
+/* dark theme: filled accent / run buttons dark enough for white text */
+html[data-theme=dark] #gsbar :is(.sub button.on,.seg button:first-child.on){background:#2563a8!important}
+html[data-theme=dark] #gsbar .seg button:last-child.on:not(.paused){background:#1f7a44!important}
