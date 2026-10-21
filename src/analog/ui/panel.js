@@ -1082,7 +1082,7 @@ function forceCtl(S, sh, n) {
     u._s = 1;
     PU.push(u);
   } else {
-    const i = anEdit(h$('input', { type: 'number', step: 'any', placeholder: 'value' }));
+    const i = anEdit(h$('input', { type: 'number', step: 'any', placeholder: 'Force to…' }));
     i.style.width = '74px';
     const ok = h$('button', { txt: '✓', title: 'Accept: force this value (Enter)' }),
       x = h$('button', { txt: '✕', title: 'Release force (back to automatic)' });
