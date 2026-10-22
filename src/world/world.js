@@ -589,6 +589,25 @@
         W._ck = k;
       }
     }
+    /* 3.2.0-beta.6 FIRST-OUT: a TRIP / MFT / STOP output that goes 1 in this scan: its cause is read now (DUI.cause), before
+       the other conditions follow, and written to the Event log */
+    W.tk = (W.tk || 0) + 1;
+    if (window.lsEventAdd && window.DUI && DUI.cause && W.tk > 25)
+      for (const s of S.sheets) {
+        const a = prev[s.name],
+          b = out[s.name];
+        if (!a || !b) continue;
+        for (const row of b) {
+          if (a.has(row)) continue;
+          let c = null;
+          try {
+            c = DUI.cause(s, row);
+          } catch (e) {}
+          /* trips only (MFT, boiler / fan / pump / turbine TRIP, RUN BACK): the shutdown and stop sequences of burners and
+             igniters follow from them and are not alarms */
+          if (c && /\bTRIP|\bMFT\b|RUN\s*BACK/i.test(c.name) && !/\bNO\s+(\w+\s+)?TRIP|TRIP\s+RESET/i.test(c.name)) lsEventAdd(s.name, 'TRIP', c.name + ' = 1', c.lines);
+        }
+      }
     W.out = out;
     /* 3. DITL -> ABC (not while the one world is OFF: then the DITL 150 MW state is computed for the DITL only) */
     for (const a of opt && opt.noAbc ? [] : ain) {

@@ -370,7 +370,25 @@
           look ? null : E('span', { cls: 'icv', txt: '= ' + val(o.S, o.n) }),
           E('button', { cls: 'b', txt: 'Show', title: 'Open the sheet and select the wire', on: () => show(o) })
         ]),
-        E('div', { cls: 'icl' }, [E('span', { cls: 'k', txt: 'Source' }), src.txt]),
+        E('div', { cls: 'icl' }, [
+          E('span', { cls: 'k', txt: 'Source' }),
+          src.txt,
+          /* 3.2.0-beta.6 "BAKIT?": the live cause of this value, back to its root (src/ui/shell/why.js) */
+          look || !AN.why
+            ? null
+            : E('button', {
+                cls: 'b icwhy',
+                txt: 'Why = ' + val(o.S, o.n) + '?',
+                title: 'Why it has this value now: the logic back to the root signal (live values)',
+                on: e => {
+                  const sec = e.target.closest('.ics'),
+                    old = sec.querySelector('.icwl');
+                  if (old) return old.remove();
+                  const L = AN.why(o.sh, o.n).lines;
+                  sec.append(E('div', { cls: 'icwl' }, L.map(l => E('div', { cls: 'icwr k-' + l.k, style: 'padding-left:' + (0.25 + l.d * 0.75) + 'rem', txt: l.txt + (l.sh && l.sh !== o.sh.name ? '  [' + l.sh + ']' : '') }))));
+                }
+              })
+        ]),
         src.ins.length
           ? E(
               'ul',

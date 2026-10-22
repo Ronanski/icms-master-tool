@@ -108,7 +108,9 @@ function viewSet(on) {
   msg(
     on
       ? 'View mode: grey drawing, nothing is simulated. Click a block or wire to trace it; click an empty place to clear.'
-      : 'Simulation mode: Run, or Pause + Next / Back.'
+      : 'Simulation mode: Run, or Pause + Next / Back.' +
+          /* 3.2.0-beta.6 (audit M4): until a starting state is picked the plant is at the drawings' defaults (0 MW) */
+          (AN.startState ? '' : ' No starting state yet (0 MW): pick Start ▾ in the PLANT VIEW (At 150 MW, Cold, Warm, Hot).')
   );
 }
 bVw.onclick = () => viewSet(!AN.view);
@@ -885,7 +887,7 @@ function trDraw(cv, sh, m, o) {
   o.geo = null;
   if (n < 2 || !m) {
     ctx.fillStyle = '#8a9';
-    ctx.fillText('No data yet: press ▶ Run (or Next ▶). The history starts when the block is selected.', pl, H / 2);
+    ctx.fillText('No data yet: press RUN (or Next ▶). The history starts when the block is selected.', pl, H / 2);
     return;
   }
   const win = o.win > 0 ? o.win : T[n - 1] - T[0],

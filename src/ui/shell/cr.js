@@ -83,8 +83,19 @@
       aTx = E('span', 'cratx'),
       aSp = E('span', 'crsp2'),
       fChip = E('span', 'crchip frc');
-    fChip.title = 'Signals you forced (FORCE in the Inspector): they stay until you release them';
-    alarm.append(aChip, aT, aTx, aSp, fChip);
+    fChip.title = 'Signals you forced (FORCE in the Inspector), on every ABC sheet: they stay until you release them. Click for the list';
+    /* 3.2.0-beta.6 (engineering audit, signals): the chip opens ONE list of the user's forces on all ABC sheets (the Inspector
+       lists only the sheet on screen), with Go to the sheet and Release. Plant-owned values (plant model) are not user forces. */
+    const fList = E('div');
+    fList.id = 'crflist';
+    fChip.setAttribute('role', 'button');
+    fChip.tabIndex = 0;
+    const fOpen = () => {
+      if (fList.classList.toggle('open')) fFill();
+    };
+    fChip.onclick = fOpen;
+    fChip.onkeydown = e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), fOpen());
+    alarm.append(aChip, aT, aTx, aSp, fChip, fList);
     const ev = $('evbtn'),
       evMark = mark(ev);
     P = { rail, band, alarm, moved, ev, evMark, gs, tabs, brand, set, setM, setB, sub, crumb, srchBtn, srch, seg, tbar, unit, kpis, K, aChip, aT, aTx, fChip, sp };
@@ -111,7 +122,9 @@
       document.body.prepend(P.rail);
       P.rail.prepend(P.brand, P.tabs);
       P.rail.append(P.sp, P.set);
-      P.gs.prepend(P.band, P.alarm);
+      /* 3.2.0-beta.6 (Operator station): the alarm line is IN the unit band (one bar less above the graphic and the drawing) */
+      P.gs.prepend(P.band);
+      P.band.querySelector('.crgrow').replaceWith(P.alarm);
       if (P.srchBtn) P.band.append(P.srchBtn);
       P.band.append(P.srch, P.seg);
       const where = P.tbar.querySelector('.crwhere') || E('div', 'crwhere');
@@ -123,7 +136,7 @@
       P.evMark[1].before(P.ev);
       P.rail.remove();
       P.band.remove();
-      P.alarm.remove();
+      P.alarm.replaceWith(E('div', 'crgrow'));
       const w = P.tbar.querySelector('.crwhere');
       if (w) w.remove();
     }
@@ -226,11 +239,89 @@
     P.aT.textContent = last ? last.t : '';
     P.aTx.textContent = last ? last.text + ' · ' + last.sh : 'No active alarm or trip';
     P.aTx.title = 'From the Event log (simulation time). Alarms and trips of the ABC sheet on screen while the simulation runs.';
-    let f = 0;
-    for (const s of AN.sheets) if (s.S && s.S.rt && s.S.rt.force) f += Object.keys(s.S.rt.force).length;
+    const f = userForces().length;
+    if (f !== P.fN && P.alarm.querySelector('#crflist.open')) fFill();
+    P.fN = f;
     P.fChip.textContent = f + ' FORCED';
     P.fChip.style.display = f ? '' : 'none';
   }
+  /* the user's forces: S.rt.force minus what the plant model owns (S.rt.pf), the same rule as the Inspector list */
+  function userForces() {
+    const r = [];
+    for (const sh of (window.AN && AN.sheets) || []) {
+      const S = sh.S;
+      if (!S || !S.rt || !S.rt.force) continue;
+      for (const k in S.rt.force) if (!(S.rt.pf && S.rt.pf[k])) r.push({ sh, S, n: +k });
+    }
+    return r;
+  }
+  function fFill() {
+    const d = $('crflist');
+    if (!d) return;
+    const L = userForces();
+    d.textContent = '';
+    const h = E('div', 'crfh', 'Forced signals (' + L.length + ')');
+    const x = E('button', 'crfx', '✕');
+    x.title = 'Close';
+    x.onclick = () => d.classList.remove('open');
+    h.append(x);
+    d.append(h);
+    if (!L.length) d.append(E('div', 'crfe', 'No forced signal.'));
+    for (const q of L) {
+      const r = E('div', 'crfr'),
+        v = q.S.rt.force[q.n],
+        nmx = (AN.nm && AN.nm(q.S, q.n)) || 'net ' + q.n;
+      r.append(E('span', 'crfs', q.sh.name), E('span', 'crfn', nmx), E('span', 'crfv', q.S.nets[q.n] && q.S.nets[q.n].dig ? (v > 0.5 ? 'FORCE 1' : 'FORCE 0') : String(v)));
+      const go = E('button', '', 'Go');
+      go.title = 'Open ' + q.sh.name;
+      go.onclick = () => AN.go(AN.sheets.indexOf(q.sh));
+      const rel = E('button', '', 'Release');
+      rel.onclick = () => (AN.setForce(q.sh, q.n, undefined), fFill());
+      r.append(go, rel);
+      d.append(r);
+    }
+    if (L.length > 1) {
+      const all = E('button', 'crfall', 'Release all');
+      all.onclick = () => (userForces().forEach(q => AN.setForce(q.sh, q.n, undefined)), fFill());
+      d.append(all);
+    }
+  }
+  /* 3.2.0-beta.6 (Operator station): in the PLANT VIEW the ribbon held only Start ▾ / CHECK (and Pause / speed in RUN): one row
+     of the screen for 2 ~ 5 buttons. On a wide screen these groups move to the start of the plant bar (the same buttons, the same
+     handlers) and the ribbon row is hidden; on the other pages and on narrow screens they go back. */
+  let opMk = null;
+  function opBar() {
+    const bar = document.querySelector('#plantws .plbar'),
+      tb = document.querySelector('#gsbar .tbar'),
+      gOp = tb && tb.querySelector('.g-op'),
+      gRun = (tb && tb.querySelector('.g-run')) || (bar && bar.querySelector('.g-run'));
+    const op = gOp || (bar && bar.querySelector('.g-op'));
+    if (!bar || !op || !gRun) return;
+    const on = document.body.dataset.tab === 'operate' && WIDE.matches;
+    if (on && op.parentNode !== bar) {
+      opMk = opMk || [mark(op)[1], mark(gRun)[1]];
+      const g = E('div', 'crop');
+      g.append(op, gRun);
+      bar.prepend(g);
+    } else if (!on && opMk && op.parentNode !== opMk[0].parentNode) {
+      const g = op.parentNode;
+      opMk[0].before(op);
+      opMk[1].before(gRun);
+      if (g && g.classList.contains('crop')) g.remove();
+    }
+    document.body.classList.toggle('crop', on);
+  }
+  new MutationObserver(() => {
+    try {
+      opBar();
+    } catch (e) {}
+  }).observe(document.body, { attributes: true, attributeFilter: ['data-tab'] });
+  WIDE.addEventListener ? WIDE.addEventListener('change', () => setTimeout(opBar, 0)) : WIDE.addListener(() => setTimeout(opBar, 0));
+  setTimeout(() => {
+    try {
+      opBar();
+    } catch (e) {}
+  }, 1500);
   const iv = setInterval(() => {
     try {
       if (mount()) clearInterval(iv);

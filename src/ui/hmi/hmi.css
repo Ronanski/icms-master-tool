@@ -100,3 +100,22 @@ body.ophmi #anp{display:none!important}
 :is(#opp,#plfp) .fp.fpx{max-width:380px;margin-left:auto;margin-right:auto}
 :is(#opp,#plfp) .fpg{width:60px}
 :is(#opp,#plfp) .fpx .fpt{white-space:normal;line-height:1.25}
+/* 3.2.0-beta.6 "Why?" of a loop held in MANUAL */
+.whyx{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.whyx .whyb{height:24px;padding:0 10px;font-weight:700}
+.whyl{flex:1 1 100%;display:grid;gap:2px;margin-top:2px}
+.whyl:empty{display:none}
+.whyr{display:flex;align-items:center;gap:6px;font:12px/1.35 var(--mf,monospace);color:#cdd6de;border-left:2px solid #3a4652;padding:2px 4px}
+.whyr span{flex:1;min-width:0;overflow-wrap:anywhere}
+.whyr.k-input,.whyr.k-bad,.whyr.k-force,.whyr.k-cmp,.whyr.k-meas{color:#ffd27a;border-left-color:#ffb020;font-weight:700}
+.whyr.k-force{color:#ff9b9b;border-left-color:#f05252}
+.whyr .b{height:22px;padding:0 8px;flex:none}
+/* 3.2.0-beta.6 first-out: the cause of a TRIP / FORCE MANUAL, captured when it happened */
+#evbox .evr.hasw{cursor:pointer}
+#evbox .evwhy{color:#ffb020;font-weight:700;white-space:nowrap}
+#evbox .evw{padding:2px 10px 6px 190px;border-bottom:1px solid var(--c-line);display:grid;gap:1px}
+#evbox .evwr{color:var(--c-tx2);border-left:2px solid var(--c-line2);padding:1px 4px;overflow-wrap:anywhere}
+#evbox .evwr:is(.k-input,.k-bad,.k-force,.k-cmp,.k-meas,.k-ditl){color:#ffd27a;border-left-color:#ffb020;font-weight:700}
+@media (max-width:700px){#evbox .evw{padding-left:14px}}
+#evbox .evn{color:#ffb020}
+#evbox .evw[hidden]{display:none}

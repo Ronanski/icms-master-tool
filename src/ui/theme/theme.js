@@ -26,8 +26,9 @@
     else root.setAttribute('data-dg', v);
     return v;
   }
-  /* 3.0.0: light paper is the new default (a new key, so the old dark choice does not carry over once) */
-  let dg = applyDg(get('ditl.dg3') || 'paper');
+  /* 3.2.0-beta.6 (user 2026-10-22 "AYAW KO NG PUTI"): the dark drawing is the default again (a new key, so the 3.0.0 light
+     paper default does not carry over once) */
+  let dg = applyDg(get('ditl.dg4') || 'std');
   /* text of the drawing: 100 / 125 / 150 % (each label grows from its own anchor; positions, wires and blocks do not move) */
   const DT = ['100', '125', '150'];
   const applyDt = v => {
@@ -62,7 +63,7 @@
     sel.value = dg;
     sel.onchange = () => {
       dg = applyDg(sel.value);
-      set('ditl.dg3', dg);
+      set('ditl.dg4', dg);
     };
     ui.after(sel);
     const ts = document.createElement('select');

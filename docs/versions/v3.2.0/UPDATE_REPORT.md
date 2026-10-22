@@ -108,3 +108,86 @@ Base: pinagsama ang **2.5.0-beta.20** (PR #34 / #35, logic at data) at ang **3.1
 - **As Left (ebidensya):** 29 test, 0 FAIL (`p3_screens`, `shell_cr` 13 / 13 kasama ang phone, `layout`, `view`, `ditl_toolbar`, `ditl_selected`, `ditl_sim`, `lookonly`, `plant_click`, `plant_view`, `plant_live`, `plant_bg`, `events`, `faceplate`, `hmi_op`, `panel_sync`, `sidetab`, `abcbar`, `infocard`, `overview`, `stale_beta`, `inapp_update`, `reset`, `manstation`, `ditl_pagelink`, `controllers_table`, `ditl_ba`, `ditl_ls`, `audit230`). `npm run check`: SAME. UI audit 390 × 844, 800 × 1280, 1280 × 800, 1920 dark: 0 page error (natitirang offscreen: ribbon at Plant bar na naka-scroll, sinadya). axe-core WCAG 2 A / AA: 0 violation sa DITL, Plant view, ABC, Library, Tools. Engine: walang binagong file ng engine, logic o data.
 - **Hindi pa nasubok:** phone / tablet / exe / apk ng user.
 - **Status:** P4 tapos; tapos ang P0 ~ P4 ng Control Room redesign. Susunod: device check ng user; Stable sa GO STABLE lang.
+
+## 3.2.0-beta.6 — Re-audit ng 20 UI findings at mga bug fix (itsura lang)
+- **Problem:** tanong ng user (7:07 PM): "tapos ka na ba sa mahabang prompt ko?". Wala pang pagsukat ulit ng 20 finding ng audit (3.1.0-beta.7) laban sa "pasado kapag" ng bawat isa.
+- **As Found (sinukat sa 3.2.0-beta.5, headless 1280 × 800):**
+  - Plant view sa VIEW: may pangalawang "▶ Run" sa bar (M1).
+  - Controller cards ng Faceplate: "-0.00" (L2, ibang formatter kaysa sa naayos sa beta.1).
+  - RUN nang walang Start ▾: walang paalala, 0 MW (M4).
+  - Pamagat ng sheet at paglalarawan sa Inputs list: putol, walang tooltip (L1).
+  - OFF / ON ng Inputs: 24 px kahit sa touch (L4).
+  - "press ▶ Run" sa DITL panel, pero wala nang ganoong button doon.
+- **Work Done:**
+  - Isang RUN lang: sa VIEW, ang bar ng Plant view ay may Start ▾ at CHECK lang. Sa RUN, ❚❚ Pause / Reset / bilis.
+  - Walang minus sa zero sa lahat ng formatter ng faceplate at Inspector.
+  - Paalala sa status line kapag RUN na walang starting state: "pick Start ▾ in the PLANT VIEW (At 150 MW, Cold, Warm, Hot)".
+  - Tooltip na may buong pamagat at buong pangalan ng input.
+  - 32 px na OFF / ON sa touch screen.
+  - "press RUN (top right)".
+  - Engine, logic, data at drawing: walang binago.
+- **Re-audit ng 20 finding (3.2.0-beta.6):**
+
+| ID | Lagay | Ebidensya |
+|---|---|---|
+| C1 Plant view click | SARADO | `plant_click`: bawat item, mouse at touch |
+| C2 Plant view patay kung una | SARADO | `plant_click`, `plant_live`: 51 / 51 kahit Plant muna |
+| C3 dalawang Beta line | SARADO | iisang branch (PR #38) mula beta.1 |
+| H1 maliit na text sa Plant view | BAHAGYA | graphic 96 % ng lapad (dati 57 %); median na text 11 px, p10 10 px sa 1280 (target ≥ 12 px) |
+| H2 Inputs list magkakamukha | SARADO | buong address bawat row (SIG.AB B.066A, B.0642 …), may tooltip |
+| H3 phone lumalampas | SARADO | beta.5 bottom tab bar; audit 390 px 0 page error |
+| H4 DITL pindutin maliit | SARADO (sa panel) | Inputs tab ng DITL panel: PRESS / 0 · OFF ≈ 32 px bawat input; ang simbolo sa drawing ay maliit pa rin sa Fit |
+| M1 dalawang Run | SARADO | sa VIEW: 0 Run sa bar; RUN: ❚❚ Pause lang |
+| M2 DITL "EDIT", TIMERS card | SARADO | "VIEW / TRACE"; walang "EDIT"; TIMERS nakatago habang bukas ang panel (beta.4) |
+| M3 hindi tapos na Inspector text | SARADO | beta.1 |
+| M4 RUN nang walang Start | SARADO | paalala sa status line |
+| M5 MV unit | SARADO | beta.1 |
+| M6 portrait / talaan | SARADO | beta.5 (Library Calculations naka-scroll; Plant view fit) |
+| M7 halo ang wika | PASYA MO | hindi ginalaw |
+| M8 accessibility | SARADO | axe-core WCAG 2 A / AA: 0 violation (beta.5) |
+| L1 putol na pamagat | SARADO | tooltip ng buong pamagat at pangalan |
+| L2 "-0.000" | SARADO | 0 na "-0" sa screen ng ABC-010 RUN |
+| L3 O2 A / B magkalayo | TAMA ANG APP | ang HMI snapshot mismo: AIFG1122 6.4 %, AIFG1123 2.2 % (`docs/hmi/OPERATING_POINTS.md`) |
+| L4 maliit na pindutan sa touch | SARADO | 32 px sa touch (pointer: coarse) |
+| L5 bigat ng file | BUKAS | 12.9 MB; ang HMI PNG ay naka-optimize na |
+
+- **Status:** ipinush bilang Beta. Hindi pa nasubok sa tablet / exe / apk ng user.
+
+## 3.2.0-beta.6 (dagdag, 2026-10-22 gabi) — "Bakit?", first-out ng trip, madilim, mas kaunting bar
+
+**Problem (user, 7:40 ~ 8:00 PM PHT):** "BAKIT BA PURO PUTI", "AYAW KO NG PUTI", "walang out of the box thinking", "ano ang gagawin mo sa app". Ang hinihingi: ang app ay hindi lang viewer; dapat nitong sabihin kung BAKIT.
+
+**As Found:**
+- Puti (light) ang default ng app at ng drawing mula 3.0.0. Desisyon iyon ng naunang session, hindi ng user.
+- Sa Plant view, 4 na hilera ng bar ang nasa itaas ng graphic: unit band, alarm, ribbon na may Start / CHECK lang, at plant bar.
+- May "FORCE MANUAL (M.0226 = 1): AUTO not allowed" sa faceplate, pero hindi sinasabi kung saan galing ang M.0226.
+- Ang Event log ay naglilista ng TRIP, pero walang sanhi. Sa ABC, walang net na may pangalang TRIP, kaya ang DITL trip (MFT) ay hindi kailanman napapasok sa log.
+- Ang FORCED chip ay nagbibilang ng force sa lahat ng sheet, pero ang listahan (Inspector) ay sa sheet lang na nakabukas. Walang paraan para makita ang force na nasa ibang sheet.
+
+**Work Done (itsura at pagbasa lang; walang binago sa logic, engine, plant model at drawing):**
+- **Madilim ang default** ng app at ng drawing. Bagong key ito (`ls-theme4`, `ditl.dg4`), kaya magiging madilim din ang lumang install. Puwede pa ring piliin ang Light sa ⚙.
+- **Mas kaunting bar:**
+  - Ang alarm line ay nasa unit band na (`cr.js`).
+  - Sa Plant view, PC at tablet (900 px pataas), ang Start ▾ / CHECK at, kapag RUN, ang Pause / Reset / bilis ay nasa simula ng plant bar. Wala na ang hilerang may ilang button lang.
+  - Mas malaki nang 2 hilera (mga 74 px) ang graphic.
+- **"Why?" sa faceplate** (`src/ui/shell/why.js`, `hmi.js`): kapag naka-FORCE MANUAL ang loop, binabaybay ng pindot pabalik ang logic gamit ang live na value:
+  - dumadaan sa OR (ang input na 1), AND (ang input na 0), NOT, flip-flop, timer, comparator at link sa ibang ABC sheet;
+  - humihinto sa ugat: input ng operator / HMI, transmitter, bad signal, force ng user, o DITL;
+  - may pindot na "→ 1 / → 0" sa input para baguhin ito.
+- **"Why = ?" sa info card** ng bawat tag: pareho ang pagbaybay.
+- **First-out ng trip** (`world.js`, `ditl.js` `DUI.cause`, `events.js`):
+  - Kapag ang DITL output na TRIP / MFT / RUN BACK ay naging 1, sa mismong scan na iyon kinukuha ang input na 1. Iyon ang first-out, at isinusulat ito sa Event log ("cause ▸").
+  - Hindi isinasama ang "NO TRIP PRESENT" at ang shutdown sequence ng burner at igniter.
+  - Gumagana kapag ON ang One world; may paalala sa Event log kapag OFF ito.
+- **FORCED chip = listahan** ng lahat ng force ng user sa bawat ABC sheet, may Go at Release. Hindi kasama ang value ng plant model.
+
+**As Left (sinubok sa built html, headless Chrome):**
+
+| Test | Ano ang nakita |
+|---|---|
+| `why.js` | LICBR1001B (ABC-010) sa 150 MW: "FORCE MANUAL (M.0226 = 1)". Ang Why? ay nagpapakita ng M.0226 = 1 ← OR ← NOT ← FICFW1007.MAN = 0 at LICBR1001A.MAN = 0, may 2 pindot na "→ 1". |
+| `why.js` | Pinindot ang BOILER EMERGENCY TRIP P.B. (DITL-03A row 14): ang Event log ay may "MASTER FUEL TRIP (MFT) = 1", cause "Input row 14 · BOILER EMERGENCY TRIP P.B. ON (CRT) = 1". Walang "NO TRIP PRESENT" sa log. |
+| `forcelist.js` | Plant model ON, 150 MW: walang FORCED chip. Force ng M.0228 sa ABC-010, tapos binuksan ang ABC-001C: "1 FORCED" pa rin. Ang listahan ay may ABC-010 M.0228 FORCE 1; Go → ABC-010; Release → walang force. |
+| Screen walk | PC 1440 × 900, tablet 1280 × 800 / 800 × 1280, phone 390 × 844. 9 screen bawat sukat, 0 page error. Sa 150 MW: "NO ALARM". |
+
+**Status:** nasa branch, hindi pa naka-push. Hinihintay ang pasya ng user.

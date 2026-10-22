@@ -3,7 +3,21 @@
 > Single current handoff. Palitan ang lumang status kapag nagbago ang trabaho; huwag mag-append ng chat transcript.
 
 ## SIMULAN DITO (next session, 2026-10-22)
-- **Kasalukuyang Beta:** `3.2.0-beta.5`. Branch: `claude/project-thread-8t4984`. Stable pa rin ang **v2.4.0** sa `main`. Walang merge sa main at walang release nang walang GO STABLE.
+- **Kasalukuyang Beta:** `3.2.0-beta.6` (beta.5 ang huling na-push hanggang aprubahan ng user ang beta.6).
+- **3.2.0-beta.6 (2026-10-22 gabi):**
+  - **Direksyon ng produkto (user, 7:56 PM PHT: "anong gagawin mo sa app, maging competitive"):** ang app ay **digital twin ng logic ng LMYP #1 na nagsasabi kung BAKIT**.
+  - **Ginawa:**
+    - "Why?" sa faceplate at sa info card (`src/ui/shell/why.js`: `AN.why`, `AN.whyMan`).
+    - First-out ng DITL trip sa Event log (`world.js` + `DUI.cause` + `lsEventAdd`; kailangang ON ang One world).
+    - FORCED chip = listahan ng lahat ng force (`cr.js`).
+    - Madilim ang default (`ls-theme4`, `ditl.dg4`).
+    - Alarm line nasa unit band; Start / CHECK / Pause nasa plant bar (`cr.js` `opBar`).
+  - **Tests:** `why.js`, `forcelist.js`, `engine_units.js`, `shell_cr.js` (in-update).
+  - **Susunod (ayon sa sagot ng user sa card):**
+    - sundan ang first-out sa ibang DITL sheet hanggang sa motor;
+    - Training (PR-OPE-5002 checklist + instructor malfunction);
+    - What-if / tuning + auto cause-and-effect matrix.
+  - **Galit ang user sa:** puting default, generic na sagot, paglagay ng lahat ng design sa iisang artifact, "PASS" na walang sinasabing ano. Isang design = isang artifact. Ang report ay nagsasabi kung ano ang NAKIKITA ng operator. Branch: `claude/project-thread-8t4984`. Stable pa rin ang **v2.4.0** sa `main`. Walang merge sa main at walang release nang walang GO STABLE.
 - **Ano ang 3.2.0:** iisang linya na ulit. Pinagsama ang dalawang Beta line na naghiwalay mula sa v2.4.0:
   - **2.5.0-beta.20** (PR #34 / #35, branch `claude/project-thread-yezgyg`): drawing audit fixes, DITL pages (sootblower, bottom ash, limestone; 241 sheet), HMI 1:1 ng Plant view, Focus / mini-map / Width, DITL panel na gaya ng ABC. **Lahat ng engine, logic at data ay galing dito** (walang ibang binago).
   - **3.1.0-beta.7** (PR #37, branch `claude/design-system-extraction-4dogzg`): bagong itsura (Style 2 + CAD shell, VIEW | RUN, ribbon, Inspector, controller group display). **Itsura lang.**
