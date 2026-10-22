@@ -335,8 +335,28 @@
   const dp = E('div', { id: 'dp' });
   const mid = $('mid');
   if (mid) mid.append(dp);
+  /* 3.2.0 P3: on (S22)DITL-80S the 3-line output labels sit ON the wire (one line above, one on, one below: PDF (22)Ditl80S.pdf,
+     output 57 = "S/B STEAM SUPPLY MOTOR VALVE TORQUE"), so the cell grouping (text up to 5.7 above a wire = that row) gave each
+     output the first line of the next label down. For the text shown in the panel only, a sheet whose output texts sit like
+     that (5 or more lines nearer to another wire) takes each line of the RS column from its nearest wire. The drawing, the
+     links and the valve model (03-models.js reads the label of the wire itself) do not use this. */
+  const rsNear = s => {
+    if (s._rsN !== undefined) return s._rsN;
+    const M = {};
+    let mv = 0;
+    s.rows.forEach((r, i) =>
+      (s.cells[i + ':RS'] || []).forEach(t => {
+        let j = i;
+        s.rows.forEach((q, k) => Math.abs(q.y - t.y) < Math.abs(s.rows[j].y - t.y) && (j = k));
+        if (j !== i) mv++;
+        (M[j] = M[j] || []).push(t);
+      })
+    );
+    for (const k in M) M[k].sort((a, b) => b.y - a.y);
+    return (s._rsN = mv >= 5 ? M : null);
+  };
   const txt = (s, i, c) =>
-    (s.cells[i + ':' + c] || [])
+    ((c === 'RS' && rsNear(s) ? rsNear(s)[i] : s.cells[i + ':' + c]) || [])
       .map(t => t.t)
       .join(' ')
       .replace(/\s+/g, ' ')
@@ -909,7 +929,27 @@
     /* timers */
     const T = tmList();
     if (T.length) {
-      dp.append(sec('Timers', T.length));
+      /* 3.2.0 P3 (audit M2): the floating timer card (#tp) no longer covers the drawing / this panel while the panel is open;
+         its preset editor opens from here, beside the panel */
+      const th = sec('Timers', T.length),
+        te = E('button', {
+          cls: 'dp-tpe',
+          txt: document.body.classList.contains('tpon') ? 'Hide presets' : 'Edit presets',
+          title: 'The timer presets (time and unit) of this sheet, in a card beside the panel',
+          on: () => {
+            const on = document.body.classList.toggle('tpon');
+            te.textContent = on ? 'Hide presets' : 'Edit presets';
+            const tp = $('tp');
+            if (on && tp) {
+              tp.style.setProperty('right', dp.getBoundingClientRect().width + 12 + 'px', 'important');
+              try {
+                TPMIN = false;
+                buildTP();
+              } catch (e) {}
+            }
+          }
+        });
+      dp.append(th, E('div', { cls: 'dp-r dp-tpr' }, [E('div', { cls: 'dp-l' }, [E('div', { cls: 'dp-d', txt: 'Presets as drawn; change them for a test' })]), te]));
       T.forEach(g => {
         const v = E('span', { cls: 'dp-tv' }),
           bar = E('span', { cls: 'dp-bar' }, [E('i')]),

@@ -77,3 +77,20 @@ Base: pinagsama ang **2.5.0-beta.20** (PR #34 / #35, logic at data) at ang **3.1
   - Engine: walang binagong file ng engine, logic o data.
 - **Hindi pa nasubok:** tablet / exe / apk ng user.
 - **Status:** P2 tapos, ipinush bilang Beta. Susunod: P3 (bawat screen).
+
+## 3.2.0-beta.4 — P3: bawat screen (itsura lang)
+- **Problem:** ayon sa plano (mockups after-plant, after-ditl, after-logic): sa Plant view ang listahan ng system ay laging nakabukas at maliit ang graphic; ang faceplate ay pop-up na tumatakip sa graphic; sa DITL ang TIMERS card ay nakatakip (audit M2) at ang mga pamagat ng grupo sa listahan ng sheet ay nagpapatong-patong; sa (S22)DITL-80S ang text ng output ay galing sa label ng row sa ibaba (P1 finding); ang Inspector ay walang "saan galing / saan papunta".
+- **As Found:** Plant view 1333 px: listahan 240 px + values 300 px, graphic ~790 px. DITL: ang `#tp` card ay nasa ibabang kanan, nakapatong sa panel / drawing. Ang mga pamagat ng grupo (`.fhc`) ay `position: sticky` lahat sa iisang listahan kaya nagpapatong kapag nag-scroll. 80S: ang 3-linya na label ay nasa GITNA ng wire (isang linya sa itaas, isa sa wire, isa sa ibaba), pero ang pag-grupo ng cell ay kumukuha ng text hanggang 5.7 sa itaas ng wire, kaya ang unang linya ng label sa ibaba ay napupunta sa row sa itaas.
+- **Work Done:**
+  - **Plant view** (`src/ui/plant/plant.js`, dulo ng `app.css`): kapag ≥ 836 px ang workspace, buong lapad ang graphic; ☰ Systems = drawer; bagong screen picker sa bar: ◀ / listahan ng 30 screen / ▶ at chips (UNIT, 003 Water, 004 Extraction, 007 Air, 011 Coal, 033 CCS; ang hindi kasya ay nakatago); ⛶ full screen; Values = slide-out sa kanan; ang faceplate ay panel na naka-dock sa kanan, buong taas, at ang graphic ay hindi nag-iiba ng zoom (pareho ang lugar ng bawat item). Mas makitid: ang dating frame.
+  - **DITL** (`src/ui/shell/ditl.js`): sa sheet na ang label ay nasa gitna ng wire (5 o higit pang linya ang mas malapit sa ibang wire: (S22)DITL-80S lang sa 241 sheet), ang text ng output sa panel ay kinukuha sa pinakamalapit na wire. Text lang ng panel: ang drawing, mga link at valve model ay hindi gumagamit nito. Ang TIMERS card ay nakatago habang bukas ang panel; sa Timers tab may "Edit presets" na nagbubukas nito sa tabi ng panel. Ang mga pamagat ng grupo ng listahan ay sumasama sa scroll.
+  - **Inspector ABC** (`src/ui/shell/app.js`): sa card ng napiling block, COMES FROM (block na nagbibigay ng bawat input) at GOES TO (block na tumatanggap ng bawat output), may live value. Binabasa lang sa netlist ng drawing.
+  - Bagong test: `tests/regress/p3_screens.js`.
+- **Hindi ginawa (sa susunod):** trend strip sa ilalim ng Plant view (bagong feature, hindi ayos); filter chips ng sheet list (Forced / In alarm / MAN); "WHY IS IT 1?" ng DITL output; ang dobleng title row ng DITL (#meta) ay nanatili dahil may badge at bilang na wala sa ribbon.
+  - Search sa ≤ 1280 px: ang row ng search ay nasa ilalim na ng buong top area (dati tinatakpan ang alarm banner at kalahati ng ribbon; nakita sa UI audit).
+- **As Left (ebidensya):**
+  - `p3_screens` 18 / 18. Pasado: `layout`, `view`, `ditl_toolbar`, `ditl_selected`, `ditl_sim`, `lookonly`, `plant_click` (bawat item, mouse at touch), `plant_view`, `plant_live`, `plant_bg`, `events`, `faceplate`, `hmi_op`, `panel_sync`, `sidetab`, `abcbar`, `infocard`, `overview`, `stale_beta`, `inapp_update`, `reset` (51 sheet, 0 iba), `manstation`, `ditl_pagelink`, `controllers_table`, `shell_cr`, `ditl_ba`, `ditl_ls`, `audit230`. `npm run check`: SAME.
+  - UI audit (27 screen) sa 900, 1024, 1280 light at 1920 dark: 0 page error. Natitira (P4): Library Calculations lumalampas sa 900 px.
+  - Engine: walang binagong file ng engine, logic o data.
+- **Hindi pa nasubok:** tablet / exe / apk ng user.
+- **Status:** P3 tapos, ipinush bilang Beta. Susunod: P4.
