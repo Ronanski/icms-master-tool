@@ -2,12 +2,36 @@
 
 > Single current handoff. Palitan ang lumang status kapag nagbago ang trabaho; huwag mag-append ng chat transcript.
 
+## SIMULAN DITO (next session, 2026-10-22)
+- **Kasalukuyang Beta:** `3.1.0-beta.7`. Branch: `claude/design-system-extraction-4dogzg`. PR: #37 (bukas, walang merge). Stable pa rin ang **v2.4.0** sa `main`.
+- **Ginawa sa session na ito (UI lang, walang binago sa engine o logic):**
+  - Bagong itsura **Style 2 + CAD**.
+  - Ang `src/ui/shell/app.css` ay isinulat muli bilang iisang design system: fluid, kusang umaangkop sa kahit anong screen, Light / Dark.
+  - VIEW | RUN switch, CAD ribbon, Sheets | Inputs, papel sa mesa na may rulers at zoom bar, selected block card.
+  - Controller group display (maliliit na DCS faceplate).
+  - Iisang button system (2 laki, 4 uri, line icons).
+  - Mas malaki ang drawing, at faceplate na 80 %.
+  - Report bawat Beta: `docs/versions/v3.0.0/UPDATE_REPORT.md` at `docs/versions/v3.1.0/UPDATE_REPORT.md`.
+- **Ebidensya na hindi nagalaw ang logic:** `tests/regress/diff.js` laban sa v2.4.0 → 54 sheet identical. Buong regression sa beta.7: lahat pasado, maliban sa mga dati nang bagsak sa v2.4.0 (M4 cold start-up 16 / 17, pid_am FIC-CM ABC-004A, pv_reacts 18 MV STUCK, refcheck HICHR1002A ML wb 19 / sim 10).
+- **Paano i-check ang UI bago mag-push:**
+  - `node tools/ui-audit/audit.mjs <html> <outdir> light|dark <W> <H> [fd]`: 27 screen; contrast, naputol, overlap, maliit na button.
+  - `tools/ui-audit/inventory.mjs`: lahat ng itsura ng button.
+  - Gamitin sa 390, 768, 1333 × 833 (tablet ng user) at 1920, Light at Dark.
+- **Mga aral (galit ang user kapag nilabag):**
+  - Huwag pumili para sa user.
+  - Overhaul = ayos at itsura ng buong app, hindi lang kulay.
+  - Tingnan nang malapitan bawat screen bago sabihing "tapos".
+  - Huwag ulitin ang impormasyon (sheet name, inputs).
+  - Drawing ang pinakamahalaga.
+- **SUSUNOD:** maghintay ng **listahan ng user** ng mga ipapaayos niya (sinusuri niya ang beta.7 sa tablet). Iyon ang trabaho ng susunod na session. Walang merge o release nang walang GO STABLE.
+
 ## Project
 DCS Logic Simulator sa `Ronanski/icms-master-tool`. Basahin muna ang `CLAUDE.md` at `PROJECT_RULES.md`. Dito lang sa repository na ito gagawa (PROJECT_RULES 5b).
 
 - **Bagong references (user, 2026-10-17):** boiler design / operation manual (design data + curves laban sa load + start-up curves), fan instruction manual (S.A. / P.A. / I.D. fan curves), flow diagrams K1AU3-A1-0-001 (RA + RB). Gagamitin sa M2 (reheat, temperatura, hangin / O2) at M4 (start-up curves). Audit ng `document-references/` (2026-10-17): walang binura; ang 2 legend PDF ay kapareho ng ABC-000 / DITL-00 sa zip; ang 8 sand PDF ay kapareho ng Combined; ang original wiring xls ang kasalukuyan.
 - **Bagong references (user, 2026-10-16, idinagdag sa `document-references/`):** start-up / normal shutdown / shutdown to bottle-up procedure (PR-OPE-5002 / 5003 / 5004), sand + sootblower PLC logic, bottom ash HD600 + conveyors + limestone logic. Gagamitin para sa plant scenario (start-up, shutdown) at sa mga DITL row na galing sa PLC.
 - Dati: **STABLE: v2.2.0** (2026-10-18, GO STABLE ng user): PR #31 merged sa `main`, release.yml `GO v2.2.0` (html, apk, portable exe, `docs/versions/v2.2.0/Release-Report-v2.2.0.pdf`). ROADMAP M1 ~ M6 tapos (kilalang isyu: M4 buong takbo 16 / 17, RH 9.1). Susunod: pipiliin ng user mula sa CHECKLIST D; ang susunod na Beta ay 2.3.0-beta.1 (bagong branch mula sa `main`).
+- **Beta: 3.1.0-beta.7 — buong audit** (UI audit 4 laki + Light / Dark; buong regression: diff vs v2.4.0 = 54 sheet identical; ang natitirang fail ay pareho sa v2.4.0: M4 16/17, pid_am FIC-CM, pv_reacts 18, HICHR1002A ML). Bago nito, **3.1.0-beta.6 — controller group display at iisang button system** (2 laki, 4 uri, walang dobleng icon). Bago nito, **3.1.0-beta.5 — drawing muna** (mas makitid na side panels, faceplate 80 %). Bago nito, **3.1.0-beta.4 — side panels** (walang dobleng inputs / sheet name / heading, malinaw na controller cards, empty state sa Inspector). Bago nito, **3.1.0-beta.3 — mga button** (iisang line-icon set para sa lahat ng simbolo, primary / secondary / toggle, select na may border, PASS / FAIL na may tuldok). Bago nito, **3.1.0-beta.2** (ayos ng Plant list, status line, Legend sa Dark, Fit sa phone). Bago nito, **3.1.0-beta.1 — bagong shell mula sa simula** (GO ng user): `src/ui/shell/app.css` isinulat muli bilang iisang design system (fluid rem / clamp, kusang umaangkop sa kahit anong screen, isang set ng control, Inter + JetBrains Mono, Light / Dark); inalis ang lumang `#skin`. Report: `docs/versions/v3.1.0/UPDATE_REPORT.md`. Bago nito, **3.0.0-beta.8 — UI audit** (`tools/ui-audit/audit.mjs`: 27 screen sa 1333 × 833 touch, contrast / naputol / nagpapatong / maliit na button; 673 → 3 finding). Gamitin ito bago mag-push ng UI change. Bago nito, **3.0.0-beta.7 — Style 2 + CAD na detalye** (papel sa mesa, CAD rulers, floating zoom bar na may %, selected block card, FORCED counter, "/" search, 0|1 Inputs at forced marker). Bago nito, **3.0.0-beta.6 — design pass ng bawat screen** (isang berde sa RUN, search / Legend / dialogs / Tools inayos). Bago nito, **3.0.0-beta.5 — tunay na overhaul ng ayos** (top bar na may pangalan ng sheet at VIEW | RUN, CAD ribbon na malaki sa VIEW / maliit sa RUN, kaliwa Sheets | Inputs, wala na ang title row). Bago nito, **3.0.0-beta.4** (bug: auto dark ng Android ay sumisira sa light na drawing → `color-scheme: only light`). Bago nito, **3.0.0-beta.3 — overhaul ng itsura Style 2 + CAD** (2026-10-21, branch `claude/design-system-extraction-4dogzg`, PR #37): Light default / Dark sa ⚙, CAD ribbon na may icons (SIM / VIEW / LAYERS / TRACE), lahat ng panel / popup / dialog / Library sa theme token, ibinalik ang style ng info card (nawala sa 2.4.0-beta.1), bagong LAYERS > Inputs (dilaw na bilog = pwedeng i-force), Run = kusang Faceplate. Faceplate box at Plant view graphic ay madilim pa rin (HMI). UI lang. Ang 3.0.0-beta.1 ay binawi. Report: `docs/versions/v3.0.0/UPDATE_REPORT.md`.
 - **STABLE: v2.4.0** (2026-10-19, GO STABLE ng user): 2.4.0-beta.1 ~ beta.5 (bagong shell 4 tab, UI pass, icon at pangalang DCS Logic Simulator, plant model switch, PLANT VIEW). PR #33 merged sa `main`, release.yml `GO v2.4.0`. HINDI kasama ang 2.3.0 drawing audit (PR #32): i-rebase sa bagong `main` bago ituloy. Report: `docs/versions/v2.4.0/`.
 - **2.4.0-beta.5 — PLANT VIEW**: tab OPERATE → PLANT VIEW; click sa controller / MAN station / valve = faceplate sa graphic (A / M / R, SV, MV); sa PC sariling window (`pvWindow`, app.js), sa Android tab; inalis ang lumang Plant window button. Test: `tests/regress/plant_view.js`. Susunod (user, future): plant model ng piping, drain, vent, isolation valve (CHECKLIST D).
 - **Beta: 2.4.0-beta.4 — plant model switch**: TOOLS > Simulation "Plant model: ON / OFF" (`AN.plantSwitch`); dilaw na "PLANT MODEL OFF" sa status bar.

@@ -888,7 +888,7 @@ function buildPanel() {
   /* ---- search + categories: every row shows the tag, a description read from the drawing, the live value and its control ---- */
   const q = h$('input', { type: 'search', placeholder: 'Search tag or description…', id: 'ansrch' });
   q.style.cssText =
-    'width:100%;box-sizing:border-box;margin:6px 0;background:#0b1013;color:var(--tx);border:1px solid var(--line);padding:4px 6px;font:inherit';
+    'width:100%;box-sizing:border-box;margin:6px 0;background:var(--c-well);color:var(--tx);border:1px solid var(--line);padding:4px 6px;font:inherit';
   anp.append(q);
   const rows = [];
   AN.rows = {};
@@ -922,6 +922,8 @@ function buildPanel() {
     };
     if (descTxt) r.lastChild.onclick = tg.onclick;
     r._t = (tag + ' ' + (descTxt || '')).toLowerCase();
+    r._pos = pos;
+    r._sec = g.sec;
     AN.rows[key] = r;
     g.rows.push({ r, y: pos ? pos.y : 0, x: pos ? pos.x : 0 });
     return r;
@@ -1068,7 +1070,7 @@ function buildPanel() {
           rg.disabled = true;
           row.append(
             h$('small', {
-              style: 'color:#ffb04d',
+              style: 'color:var(--c-mantx2)',
               txt:
                 'Simulated by the plant model of ' +
                 ((pb.txt || [])[1] || pb.k) +
@@ -1175,7 +1177,7 @@ function buildPanel() {
         row.querySelectorAll('input,button').forEach(e => (e.disabled = true));
         row.append(
           h$('small', {
-            style: 'color:#ffb04d',
+            style: 'color:var(--c-mantx2)',
             txt:
               'PV of ' +
               ((lk_.txt || [])[1] || lk_.k) +
@@ -1442,7 +1444,29 @@ function buildPanel() {
   };
   selD._u = () => selUpd(selD);
   PU.push(() => {});
+  AN.markInputs();
 }
+/* 3.0.0: INPUTS layer (LAYERS > Inputs): an amber ring on the drawing at every digital / analog input of the Inspector,
+   so the operator sees at once what can be switched or forced on this sheet (set points and timers stay in the Inspector). */
+AN.inMark = false;
+AN.markInputs = function () {
+  const old = document.getElementById('inmk');
+  if (old) old.remove();
+  if (!AN.inMark || !L || !L.selg || !L.selg.parentNode || !AN.rows) return;
+  const sh = cs(),
+    v = AN.av[sh.name],
+    W = v ? v[2] : 100,
+    R0 = W * 0.011,
+    sw = Math.max(0.5, W * 0.0028),
+    g = el('g', { id: 'inmk', 'pointer-events': 'none' }, L.selg.parentNode);
+  for (const k in AN.rows) {
+    const r = AN.rows[k],
+      p = r._pos;
+    if (!p || !isFinite(p.x) || !isFinite(p.y) || !/inputs/i.test(r._sec || '')) continue;
+    /* dashed = can be forced; the shell draws a forced one solid (class fo, app.js) */
+    el('circle', { cx: p.x, cy: -p.y, r: R0, fill: '#e8a317', 'fill-opacity': 0.14, stroke: '#e8a317', 'stroke-width': sw, 'stroke-dasharray': R0 * 0.42 + ' ' + R0 * 0.28, 'data-k': k }, g);
+  }
+};
 function panelUpd(sel) {
   const sh = cs();
   if (!sh || !sh.S) return;
@@ -1470,7 +1494,7 @@ function panelUpd(sel) {
 }
 function lookRow(d, sh, S, n) {
   const cur = (S.look && S.look[n]) || {},
-    st_ = 'background:#0b1013;color:var(--tx);border:1px solid var(--line);padding:2px 4px;width:104px',
+    st_ = 'background:var(--c-well);color:var(--tx);border:1px solid var(--line);padding:2px 4px;width:104px',
     mk = (opts, val, f) => {
       const s = h$(
         'select',
@@ -1661,15 +1685,15 @@ function auDraw() {
     x,
     h$('b', { txt: 'Simulation Audit' }),
     h$('small', {
-      style: 'display:block;margin:2px 0 6px;color:#9ab',
+      style: 'display:block;margin:2px 0 6px;color:var(--c-tx2)',
       txt: 'Your own test results. Kept in this browser. FAIL = the simulation does not do what the drawing says. Separate from Health (structure).'
     })
   );
   c.append(
     h$('div', { style: 'margin:4px 0' }, [
-      h$('span', { txt: 'PASS ' + cnt.PASS, style: 'color:#35e08a;margin-right:10px' }),
-      h$('span', { txt: 'FAIL ' + cnt.FAIL, style: 'color:#ff6b6b;margin-right:10px' }),
-      h$('span', { txt: 'NEEDS REVIEW ' + cnt['NEEDS REVIEW'], style: 'color:#ffb04d;margin-right:10px' }),
+      h$('span', { txt: 'PASS ' + cnt.PASS, style: 'color:var(--c-runtx2);margin-right:10px' }),
+      h$('span', { txt: 'FAIL ' + cnt.FAIL, style: 'color:var(--c-almtx);margin-right:10px' }),
+      h$('span', { txt: 'NEEDS REVIEW ' + cnt['NEEDS REVIEW'], style: 'color:var(--c-mantx2);margin-right:10px' }),
       h$('span', { txt: 'total ' + AU.list.length })
     ])
   );
@@ -1764,13 +1788,13 @@ function auDraw() {
       fi = (lab, key, ta) => {
         const i = h$(ta ? 'textarea' : 'input', {});
         i.style.cssText =
-          'width:100%;background:#0b1013;color:#d7e0e6;border:1px solid #2a3640;padding:3px;' +
+          'width:100%;background:var(--c-well);color:var(--c-tx);border:1px solid var(--c-line);padding:3px;' +
           (ta ? 'height:46px' : '');
         i.value = f[key] || '';
         i.oninput = () => {
           f[key] = i.value;
         };
-        return h$('div', { style: 'margin:3px 0' }, [h$('small', { txt: lab, style: 'display:block;color:#9ab' }), i]);
+        return h$('div', { style: 'margin:3px 0' }, [h$('small', { txt: lab, style: 'display:block;color:var(--c-tx2)' }), i]);
       };
     const st = h$(
       'select',
@@ -1781,7 +1805,7 @@ function auDraw() {
     st.onchange = () => {
       f.status = st.value;
     };
-    const form = h$('div', { style: 'border:1px solid #2b4a5a;padding:6px;margin:6px 0;background:#0b141b' });
+    const form = h$('div', { style: 'border:1px solid var(--c-line);padding:6px;margin:6px 0;background:var(--c-well)' });
     form.append(
       h$('b', {
         txt: 'Entry for ' + (f.sheet || '?') + ' · ' + (f.block || '(no block selected)') + (f.tag ? ' · ' + f.tag : '')
@@ -1790,9 +1814,9 @@ function auDraw() {
       fi('Expected (what the drawing says)', 'expected'),
       fi('Actual (what the simulation did)', 'actual'),
       fi('Note', 'note', 1),
-      h$('div', { style: 'margin:3px 0' }, [h$('small', { txt: 'Result ', style: 'color:#9ab' }), st]),
+      h$('div', { style: 'margin:3px 0' }, [h$('small', { txt: 'Result ', style: 'color:var(--c-tx2)' }), st]),
       h$('small', {
-        style: 'display:block;color:#9ab;white-space:pre-wrap',
+        style: 'display:block;color:var(--c-tx2);white-space:pre-wrap',
         txt: 'Evidence taken automatically:\n' + (f.evidence || '-')
       })
     );
@@ -1856,7 +1880,7 @@ function auDraw() {
       )
     );
     for (const r of rows) {
-      const col = r.status === 'PASS' ? '#35e08a' : r.status === 'FAIL' ? '#ff6b6b' : '#ffb04d';
+      const col = r.status === 'PASS' ? 'var(--c-runtx2,#35e08a)' : r.status === 'FAIL' ? 'var(--c-almtx,#ff6b6b)' : 'var(--c-mantx2,#ffb04d)';
       const lnk = h$('a', {
         txt: r.sheet + ' · ' + r.block,
         href: '#',
@@ -1898,7 +1922,7 @@ function auDraw() {
           h$('td', {}, [
             lnk,
             h$('small', {
-              style: 'display:block;color:#9ab',
+              style: 'display:block;color:var(--c-tx2)',
               txt: (r.tag ? r.tag + ' · ' : '') + (r.test || '') + (r.note ? ' · ' + r.note : '') + ' (' + r.time + ')'
             })
           ]),
@@ -1972,12 +1996,12 @@ function selUpd0_(d) {
   d.append(h$('h4', { txt: s.blk ? 'Selected: ' + s.blk.k + (s.blk.tag ? ' ' + s.blk.tag : '') : 'Selected wire' }));
   try {
     const row = h$('div', { style: 'display:flex;gap:6px;align-items:center;margin:2px 0 6px' }, [
-      h$('small', { txt: 'Audit:', style: 'color:#9ab' })
+      h$('small', { txt: 'Record check:', style: 'color:var(--c-tx2)' })
     ]);
     for (const [t, c] of [
-      ['PASS', '#35e08a'],
-      ['FAIL', '#ff6b6b'],
-      ['NEEDS REVIEW', '#ffb04d']
+      ['PASS', 'var(--c-runtx2,#35e08a)'],
+      ['FAIL', 'var(--c-almtx,#ff6b6b)'],
+      ['NEEDS REVIEW', 'var(--c-mantx2,#ffb04d)']
     ]) {
       const b = h$('button', {
         txt: t,
@@ -2588,7 +2612,7 @@ function selUpd0_(d) {
                     ? 'the table was chosen with a warning (see above)'
                     : '';
       if (why)
-        d.append(h$('div', { style: 'color:#ff6b6b;font-weight:bold;margin:3px 0', txt: 'NEEDS REVIEW: ' + why }));
+        d.append(h$('div', { style: 'color:var(--c-almtx);font-weight:bold;margin:3px 0', txt: 'NEEDS REVIEW: ' + why }));
     }
     if (tb && !man && tb.xr && tb.yr && tb.o0) {
       const key = tb.key,
@@ -2623,7 +2647,7 @@ function selUpd0_(d) {
           n = c.lx.length,
           xs = [],
           ys = [],
-          warn = h$('small', { style: 'color:#ff7a7a' });
+          warn = h$('small', { style: 'color:var(--c-almtx)' });
         const upd = () => {
           for (let i = 0; i < n; i++) {
             xs[i].textContent = f2(tb.xr[0] + (c.lx[i] * (tb.xr[1] - tb.xr[0])) / 100);

@@ -77,7 +77,7 @@ window.UATS = (function () {
     AN.go(idx);
     AN.reset();
     AN.go(idx);
-    [...document.querySelectorAll('button')].filter(b => b.textContent.trim() === 'Operator').forEach(b => b.click());
+    [...document.querySelectorAll('button')].filter(b => /^(Operator|Faceplate)$/.test(b.textContent.trim())).forEach(b => b.click());
     AN.run = false;
     await sleep(1200);
     let skipRest = false;
