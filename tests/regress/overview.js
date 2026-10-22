@@ -4,7 +4,7 @@
 const {open}=require('./lib.js');const fs=require('fs');
 const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 (async()=>{const {browser,page,errs}=await open(html);let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
-await page.evaluate(()=>{AN.go(AN.sheets.findIndex(s=>s.name==='ABC-010'));[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Operator').forEach(b=>b.click());AN.run=true});
+await page.evaluate(()=>{AN.go(AN.sheets.findIndex(s=>s.name==='ABC-010'));[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Faceplate').forEach(b=>b.click());AN.run=true});
 await page.waitForSelector('.fpov .ovc',{timeout:20000});
 const n=await page.evaluate(()=>document.querySelectorAll('.fpov .ovc').length);ck(n===4,'ABC-010: '+n+' controller cards');
 await page.evaluate(()=>[...document.querySelectorAll('.fpov .ovc')].find(x=>x.dataset.t==='FICFW1007').click());await page.waitForTimeout(800);

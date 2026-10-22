@@ -7,7 +7,7 @@ const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist
 const args=process.argv.filter(a=>!/\.html$/.test(a)).slice(2),sheet=args[0]||'ABC-007',tag=args[1]||'FICFA1081';
 (async()=>{const {browser,page,errs}=await open(html);let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
 await page.evaluate(s=>AN.go(AN.sheets.findIndex(x=>x.name===s)),sheet);
-await page.evaluate(()=>{[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Operator').forEach(b=>b.click());AN.run=true});await page.waitForTimeout(1500);
+await page.evaluate(()=>{[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Faceplate').forEach(b=>b.click());AN.run=true});await page.waitForTimeout(1500);
 const stepN=k=>page.evaluate(k=>{const sh=AN.sheets[AN.i];for(let j=0;j<k;j++)AN.stepSet(sh,.5)},k);
 const card=()=>page.evaluate(t=>{const fp=[...document.querySelectorAll('#opp .fp')].find(x=>x.querySelector('.tg b')&&x.querySelector('.tg b').textContent===t);if(!fp)return null;const bs=[...fp.querySelectorAll('button')];const g=n=>bs.find(e=>e.textContent===n);return{auto:(g('A')&&g('A').classList.contains('on'))||(g('R')&&g('R').classList.contains('on')),man:g('M')&&g('M').classList.contains('on'),autoOff:g('A')&&g('A').disabled,chips:[...fp.querySelectorAll('.sg')].map(e=>e.textContent),modes:bs.filter(e=>/^\.(MAN|LOC|REM|AUTO)/.test(e.textContent)).map(e=>e.textContent)}},tag);
 await stepN(8);await page.waitForTimeout(600);let c=await card();ck(!!c,'faceplate '+tag+' is on the panel');if(!c){await browser.close();process.exit(1)}

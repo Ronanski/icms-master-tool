@@ -128,12 +128,13 @@ function dsGoRef(r) {
   }
   const code = m[1].toUpperCase(),
     nn = m[2];
-  let i = S.sheets.findIndex(x => new RegExp('DITL-' + code + '$', 'i').test(x.name));
-  if (i < 0) i = S.sheets.findIndex(x => new RegExp('DITL-' + code.replace(/[A-Z]$/, '') + '$', 'i').test(x.name));
+  const i = ditlIdx(code, null);
   if (i < 0) {
     msg('DITL sheet ' + code + ' (' + r + ') is not in the DITL page');
     return false;
   }
+  /* 2.5.0-beta.8: open the item itself (the row blinks); ◀ Back on the DITL bar returns to this ABC sheet */
+  if (window.DUI && DUI.goItem) return DUI.goItem(i, +nn, { cat: 'an', i: AN.i });
   setCat('dig');
   S.cur = i;
   sel = null;
@@ -327,7 +328,7 @@ function anRender() {
   meta.innerHTML = '';
   meta.append(
     h$('b', { txt: sh.name }),
-    h$('span', { txt: (sh.no ? 'SHEET ' + sh.no + ' · ' : '') + (sh.title || '') }),
+    h$('span', { txt: (sh.no ? 'SHEET ' + sh.no + ' · ' : '') + (sh.title || ''), title: (sh.no ? 'SHEET ' + sh.no + ' · ' : '') + (sh.title || '') }), /* 3.2.0-beta.6 (audit L1): full title on hover when cut */
     h$('span', { id: 'anmode', style: 'margin-left:12px;padding:2px 8px;border-radius:4px;font:700 12px sans-serif' }),
     h$('span', { cls: 'sp' }),
     lgd(),
@@ -1167,7 +1168,7 @@ function drawSheet(sh) {
       );
     });
   }
-  L.selg = el('g', { 'pointer-events': 'none' }, svg);
+  L.selg = el('g', { class: 'selg', 'pointer-events': 'none' }, svg);
   /* value badges */
   const th = R.tx.map(t => t.h).sort((a, b) => a - b),
     bs = Math.max(1.8, Math.min(3.2, (th[th.length >> 1] || 3) * 0.8)) * (+AN.ws.vs || 1);

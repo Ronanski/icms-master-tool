@@ -236,6 +236,11 @@ function linksOf(sh) {
     for (const n of S.ext) {
       if (done.has(n)) continue;
       let lb = S.lab[n];
+      /* 2.3.0-beta.1: the source tag written beside the input on the drawing (ABC-054 "HRP / 052  S2 SI0180" on STN102017) */
+      if (S.xtag && S.xtag[n]) {
+        const sg = S.seg[S.nets[n].segs[0]];
+        lb = { t: S.xtag[n], x: sg ? sg.x1 : 0, y: sg ? sg.y1 : 0 };
+      }
       /* v1.9.0: tag a bit further from the wire, and the "( FROM ABC-xxx )" text next to it, are used too */
       const near = (rx, mx) => {
         let b = null,

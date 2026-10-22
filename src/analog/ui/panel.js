@@ -8,9 +8,9 @@ function trStrip(box, sh, m) {
   const row = n => {
     const nmx = nm(S, n),
       ds = trDescOf(S, sh, n);
-    return h$('div', { style: 'margin:5px 0;padding:3px 0;border-bottom:1px solid #1d2a31' }, [
+    return h$('div', { style: 'margin:5px 0;padding:3px 0;border-bottom:1px solid var(--c-line)' }, [
       h$('div', { style: 'font-weight:bold', txt: nmx }),
-      ds ? h$('div', { style: 'font-size:10px;color:#8a9', txt: ds }) : document.createTextNode(''),
+      ds ? h$('div', { style: 'font-size:10px;color:var(--c-dim)', txt: ds }) : document.createTextNode(''),
       ctl(S, sh, n)
     ]);
   };
@@ -76,7 +76,7 @@ function trStrip(box, sh, m) {
       h$('div', { style: 'margin:5px 0' }, [
         h$('div', { style: 'font-weight:bold', txt: 'MAN value ▸ ' + (b.tag || (b.txt || [])[0] || '') }),
         h$('div', {
-          style: 'font-size:10px;color:#8a9',
+          style: 'font-size:10px;color:var(--c-dim)',
           txt: (m.desc || '') + ' · range ' + fmt(P.lo) + ' ~ ' + fmt(P.hi) + ' ' + (P.u || '')
         }),
         h$('div', { cls: 'r' }, [i, h$('span', { txt: P.u || '' })]),
@@ -88,7 +88,7 @@ function trStrip(box, sh, m) {
   if (ups.length) {
     box.append(
       h$('div', {
-        style: 'color:#9ab;font-size:11px',
+        style: 'color:var(--c-tx2);font-size:11px',
         txt: 'Inputs that feed this block (manual values / set points):'
       })
     );
@@ -135,24 +135,24 @@ function trZoom(sh, o0) {
   const ov = h$('div', {
       id: 'trbig',
       style:
-        'position:fixed;left:6vw;top:6vh;width:86vw;height:84vh;background:#0b1013;border:1px solid var(--acc,#3a6);z-index:99999;display:flex;flex-direction:column;box-shadow:0 8px 40px #000d;resize:both;overflow:hidden;min-width:520px;min-height:300px'
+        'position:fixed;left:6vw;top:6vh;width:86vw;height:84vh;background:var(--c-well);border:1px solid var(--acc,var(--c-run));z-index:99999;display:flex;flex-direction:column;box-shadow:0 8px 40px #000d;resize:both;overflow:hidden;min-width:520px;min-height:300px'
     }),
     hd = h$('div', {
       style:
-        'display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 8px;background:#10181d;border-bottom:1px solid #223;cursor:move'
+        'display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 8px;background:var(--c-pane);border-bottom:1px solid var(--c-line);cursor:move'
     }),
     body = h$('div', { style: 'flex:1;display:flex;min-height:0' }),
     left = h$('div', { style: 'flex:1;display:flex;flex-direction:column;min-width:0;padding:6px' }),
     right = h$('div', {
-      style: 'width:340px;overflow:auto;padding:6px 8px;border-left:1px solid #223;background:#0f1519;font-size:12px'
+      style: 'width:340px;overflow:auto;padding:6px 8px;border-left:1px solid var(--c-line);background:var(--c-well);font-size:12px'
     }),
-    cv = h$('canvas', { width: 1200, height: 620, style: 'width:100%;flex:1;min-height:0;background:#0b1013' }),
+    cv = h$('canvas', { width: 1200, height: 620, style: 'width:100%;flex:1;min-height:0;background:var(--c-well)' }),
     leg = h$('div', { style: 'font-size:12px;margin-top:6px;max-height:34%;overflow:auto' }),
     xyc = m0.xy
       ? h$('canvas', {
           width: 520,
           height: 240,
-          style: 'width:260px;height:120px;background:#0b1013;margin-top:4px;align-self:flex-end'
+          style: 'width:260px;height:120px;background:var(--c-well);margin-top:4px;align-self:flex-end'
         })
       : null;
   const ws = h$(
@@ -197,15 +197,15 @@ function trZoom(sh, o0) {
     });
   hd.append(
     h$('b', { txt: sh.name + ' · ' + m0.title, style: 'color:var(--acc)' }),
-    h$('span', { txt: m0.desc || '', style: 'color:#9ab;font-size:11px;flex:1 1 200px' }),
+    h$('span', { txt: m0.desc || '', style: 'color:var(--c-tx2);font-size:11px;flex:1 1 200px' }),
     ws,
     fol,
-    h$('span', { txt: 'opaque', style: 'color:#8a9;font-size:10px' }),
+    h$('span', { txt: 'opaque', style: 'color:var(--c-dim);font-size:10px' }),
     op,
     cl,
     h$('small', {
       txt: 'wheel = time zoom · drag = move in time · hover = values · click a name = hide / show · drag this bar = move the window · corner = resize',
-      style: 'flex-basis:100%;color:#8a9'
+      style: 'flex-basis:100%;color:var(--c-dim)'
     })
   );
   left.append(cv, ...(xyc ? [xyc] : []), leg);
@@ -518,9 +518,7 @@ function whyTxt(S, b) {
         (lst(ins) || '-') +
         '  →  output ' +
         o +
-        '. (A detailed explanation for ' +
-        b.k +
-        ' is not written yet.)'
+        '.' /* 3.2.0-beta.1 (audit M3): the line "A detailed explanation ... is not written yet" is not shown to the operator */
       );
   }
 }
@@ -849,7 +847,7 @@ function cosCtl(S, sh, n, e) {
   if (e.dig) {
     const bx = h$('span', { cls: 'fc', style: 'flex-wrap:wrap' }),
       bt = h$('button', {}),
-      wy = h$('small', { style: 'flex-basis:100%;color:#9ab' });
+      wy = h$('small', { style: 'flex-basis:100%;color:var(--c-tx2)' });
     bt.onclick = () => {
       if (!cosOn(S, e).on) return;
       const v = S.rt.ext[n] > 0.5 ? 0 : 1;
@@ -858,7 +856,7 @@ function cosCtl(S, sh, n, e) {
       anSave();
       settle();
     };
-    bx.append(h$('small', { txt: ds, style: 'flex-basis:100%;color:#9ab' }), bt, wy);
+    bx.append(h$('small', { txt: ds, style: 'flex-basis:100%;color:var(--c-tx2)' }), bt, wy);
     const u0 = () => {
       const o = cosOn(S, e),
         on = S.rt.ext[n] > 0.5;
@@ -880,7 +878,7 @@ function cosCtl(S, sh, n, e) {
     rg = h$('input', { type: 'range', min: r.lo, max: r.hi, step: (r.hi - r.lo) / 1000 }),
     ok = h$('button', { txt: '✓', title: 'Accept this value (Enter)' }),
     st = h$('small', { style: 'flex-basis:100%' }),
-    why = h$('small', { style: 'flex-basis:100%;color:#9ab' });
+    why = h$('small', { style: 'flex-basis:100%;color:var(--c-tx2)' });
   i.style.width = '74px';
   rg.style.width = '100%';
   const set = v => {
@@ -908,7 +906,7 @@ function cosCtl(S, sh, n, e) {
   box.append(
     h$('small', {
       txt: 'range ' + fmt(r.lo) + ' ~ ' + fmt(r.hi) + ' ' + r.u + (ds ? ' · ' + ds : ''),
-      style: 'flex-basis:100%;color:#9ab'
+      style: 'flex-basis:100%;color:var(--c-tx2)'
     }),
     i,
     ok,
@@ -947,7 +945,7 @@ function cosStatus(S, sh, e) {
   box.append(
     h$('small', {
       txt: (ds ? ds + ' · ' : '') + 'A / M change-over by the switching logic (not a manual value)',
-      style: 'flex-basis:100%;color:#9ab'
+      style: 'flex-basis:100%;color:var(--c-tx2)'
     }),
     w
   );
@@ -1082,7 +1080,7 @@ function forceCtl(S, sh, n) {
     u._s = 1;
     PU.push(u);
   } else {
-    const i = anEdit(h$('input', { type: 'number', step: 'any', placeholder: 'value' }));
+    const i = anEdit(h$('input', { type: 'number', step: 'any', placeholder: 'Force to…' }));
     i.style.width = '74px';
     const ok = h$('button', { txt: '✓', title: 'Accept: force this value (Enter)' }),
       x = h$('button', { txt: '✕', title: 'Release force (back to automatic)' });
@@ -1227,7 +1225,7 @@ const ctl0 = (S, sh, n) => {
     const lb = procLock(S, n);
     if (lb)
       return h$('small', {
-        style: 'color:#ffb04d',
+        style: 'color:var(--c-mantx2)',
         txt:
           'PV of ' +
           ((lb.txt || [])[1] || lb.k) +

@@ -7,15 +7,15 @@ const html=process.argv[2]||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v
 const T='TICBR1140',SH='ABC-011';
 const eng=()=>page.evaluate(([T,SH])=>{const sh=AN.sheets.find(s=>s.name===SH),S=sh.S,c=AN.hmiCtrls(S).find(x=>x.tag===T);const pk=c.amt&&S.rt.st[c.amt.id]?S.rt.st[c.amt.id].pk:c.autoLeg;return{man:pk!==c.autoLeg,mv:S.rt.v[c.out]}},[T,SH]);
 await page.evaluate(()=>{AN.reset();AN.plantLoad150();AN.settle()});
-const tabTxt=await page.evaluate(()=>[...document.querySelectorAll('#gsbar .tabs button')].map(b=>b.textContent).join(','));
-ok(/PLANT VIEW/.test(tabTxt)&&!/OPERATE/.test(tabTxt),'tab name: '+tabTxt);
+const tabTxt=await page.evaluate(()=>[...document.querySelectorAll(':is(#gsbar,#crrail,#crnav) .tabs button')].map(b=>b.textContent).join(','));
+ok(/Plant view/i.test(tabTxt)&&!/OPERATE/.test(tabTxt),'tab name: '+tabTxt);
 ok(await page.evaluate(()=>![...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Plant window')),'old Plant window button removed');
 /* 1. tab mode (phone / tablet / Android, and this automated browser) */
-await page.evaluate(()=>[...document.querySelectorAll('#gsbar .tabs button')].find(b=>/PLANT VIEW/.test(b.textContent)).click());await page.waitForTimeout(600);
+await page.evaluate(()=>[...document.querySelectorAll(':is(#gsbar,#crrail,#crnav) .tabs button')].find(b=>/Plant view/i.test(b.textContent)).click());await page.waitForTimeout(600);
 ok(await page.evaluate(()=>{const w=document.getElementById('plantws');return !!w&&w.style.display==='grid'}),'tab mode: PLANT VIEW shows in the main window');
 await page.evaluate(()=>[...document.querySelectorAll('#pllist button')].find(x=>x.dataset.id==='03').click());await page.waitForTimeout(1500);
 /* a real click on the controller box of the graphic */
-const clicked=await page.evaluate(T=>{const t=[...document.querySelectorAll('#plsvg text')].find(e=>e.textContent.trim()===T);if(!t)return 'no text';let g=t;while(g&&g.id!=='plsvg'){const h=[...(g.parentNode?g.parentNode.children:[])].find(x=>x.style&&x.style.cursor==='pointer'&&x.contains(t))||(g.style&&g.style.cursor==='pointer'?g:null);if(h){h.dispatchEvent(new MouseEvent('click',{bubbles:true}));return 'ok'}g=g.parentNode}const p=[...document.querySelectorAll('#plsvg *')].filter(x=>x.style&&x.style.cursor==='pointer');const r=t.getBoundingClientRect();const h=p.find(x=>{const b=x.getBoundingClientRect();return r.left>=b.left-2&&r.right<=b.right+2&&r.top>=b.top-2&&r.bottom<=b.bottom+2});if(h){h.dispatchEvent(new MouseEvent('click',{bubbles:true}));return 'ok'}return 'no hit'},T);
+const clicked=await page.evaluate(T=>{/* 2.5.0-beta.17: the 1:1 HMI picture has a click area per item (data-tag) */const hb=document.querySelector('#plsvg [data-tag="'+T+'"]');if(hb&&hb.style.cursor==='pointer'){hb.dispatchEvent(new MouseEvent('click',{bubbles:true}));return 'ok'}const t=[...document.querySelectorAll('#plsvg text')].find(e=>e.textContent.trim()===T);if(!t)return 'no text';let g=t;while(g&&g.id!=='plsvg'){const h=[...(g.parentNode?g.parentNode.children:[])].find(x=>x.style&&x.style.cursor==='pointer'&&x.contains(t))||(g.style&&g.style.cursor==='pointer'?g:null);if(h){h.dispatchEvent(new MouseEvent('click',{bubbles:true}));return 'ok'}g=g.parentNode}const p=[...document.querySelectorAll('#plsvg *')].filter(x=>x.style&&x.style.cursor==='pointer');const r=t.getBoundingClientRect();const h=p.find(x=>{const b=x.getBoundingClientRect();return r.left>=b.left-2&&r.right<=b.right+2&&r.top>=b.top-2&&r.bottom<=b.bottom+2});if(h){h.dispatchEvent(new MouseEvent('click',{bubbles:true}));return 'ok'}return 'no hit'},T);
 await page.waitForTimeout(400);
 let fpTag=await page.evaluate(()=>{const f=document.getElementById('plfp');return f&&f.dataset.tag});
 ok(fpTag===T,'click on '+T+' on the graphic opens its faceplate ('+clicked+', faceplate: '+fpTag+')');
@@ -33,7 +33,7 @@ await page.evaluate(()=>[...document.querySelectorAll('#plfp .plfph button')].fi
 ok(await page.evaluate(()=>!document.getElementById('plfp')),'✕ closes the faceplate');
 /* 2. PC mode: its own window */
 await page.evaluate(()=>{window.LS_PVWIN=true;window.lsSetTab('logic')});
-const [pop]=await Promise.all([page.waitForEvent('popup',{timeout:8000}),page.evaluate(()=>[...document.querySelectorAll('#gsbar .tabs button')].find(b=>/PLANT VIEW/.test(b.textContent)).click())]);
+const [pop]=await Promise.all([page.waitForEvent('popup',{timeout:8000}),page.evaluate(()=>[...document.querySelectorAll(':is(#gsbar,#crrail,#crnav) .tabs button')].find(b=>/Plant view/i.test(b.textContent)).click())]);
 await pop.waitForTimeout(800);
 ok(await pop.evaluate(()=>{const w=document.getElementById('plantws');return !!w&&getComputedStyle(w).display==='grid'&&w.getBoundingClientRect().height>300}),'PC: PLANT VIEW opens in its own window');
 ok(await page.evaluate(()=>!document.getElementById('plantws')&&document.body.dataset.tab!=='operate'),'PC: the main window keeps its own tab (LOGIC)');

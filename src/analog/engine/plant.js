@@ -850,13 +850,20 @@ function anStep(S, dt) {
       for (const q of [pr].concat(pr.alt || []))
         if (q.eq === 0 ? v[q.c] < 0.5 : v[q.c] > 0.5) {
           v[+k] = q.src != null ? v[q.src] : q.val;
-          if (q.src != null) rt.ext[+k] = v[+k];
+          /* 2.3.0-beta.2: a SET on the operator SV (COS) holds after the pulse, as the operator's own SV (ABC-003A "SET SV = 49 T/H") */
+          if (q.src != null || q.hold) rt.ext[+k] = v[+k];
         }
   }
   const rd = n => (n >= 0 ? v[n] : 0);
   for (const b of S.ord) {
     if (b.k === 'LINK') {
-      v[b.o[0]] = F[b.o[0]] !== undefined ? F[b.o[0]] : v[b.i[0]] * (b.gain == null ? 1 : b.gain);
+      /* 2.3.0-beta.1: an AND link (ABC-004A "COAL FEEDER B & C ALL IN MANUAL" = FICCL1061B.MAN and FICCL1061C.MAN) */
+      v[b.o[0]] =
+        F[b.o[0]] !== undefined
+          ? F[b.o[0]]
+          : b.and
+            ? +b.i.every(n => v[n] > 0.5)
+            : v[b.i[0]] * (b.gain == null ? 1 : b.gain);
       continue;
     }
     const s = rt.st[b.id],
@@ -965,7 +972,12 @@ function anStep(S, dt) {
           }
         }
         if (s.trk != null) s.val = s.trk;
-        s.val = Math.max(P.lo, Math.min(P.hi, s.val));
+        /* 2.3.0-beta.2 (ABC-004A-1 ~ 004C-1): the MV high limit written on the drawing as an input "<tag>.MHD" (% of the station range:
+           FICCL1061A.MHD = 83.3 % when M.3405 A / B / C ALL IN REMOTE AND RUNNING, else 100 %) limits the station output */
+        if (b._mhd === undefined) b._mhd = (b.i || []).find(n => n >= 0 && S.lab[n] && String(S.lab[n].t).trim() === b.tag + '.MHD') ?? -1;
+        const mhd = b._mhd >= 0 ? +v[b._mhd] : NaN,
+          hiD = mhd > 0 && P.rhi > P.rlo ? Math.min(P.hi, P.rlo + (mhd / 100) * (P.rhi - P.rlo)) : P.hi;
+        s.val = Math.max(P.lo, Math.min(hiD, s.val));
         out(s.val);
         break;
       }
@@ -1043,11 +1055,21 @@ function anStep(S, dt) {
         if (b.q4) {
           const q = b.q4;
           let k = -1;
-          for (let i = 0; i < q.cond.length; i++)
-            if (P['c' + (i + 1)] > 0.5) {
+          for (let i = 0; i < q.cond.length; i++) {
+            /* 2.3.0-beta.2 (ABC-003E-1): the condition is a signal of the drawing (M.009A ~ D = REMOTE of FICDO1043A ~ D = its SV
+               switch on the oil master leg), not a setting of the user */
+            const sg = q.sig && q.sig[i];
+            let on = P['c' + (i + 1)] > 0.5;
+            if (sg) {
+              const sh = AN.sheets.find(z => z.name === sg.sh),
+                st = sh && sh.S && sh.S.rt && sh.S.rt.st[sg.blk];
+              on = !!st && st.pk === sg.leg;
+            }
+            if (on) {
               k = i;
               break;
             }
+          }
           if (k >= 0) s.q4k = k;
           const lg = q.cond[s.q4k == null ? 0 : s.q4k].leg;
           s.pk = lg.toUpperCase();

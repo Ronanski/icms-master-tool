@@ -2,10 +2,10 @@
 {
   const st = document.createElement('style');
   st.textContent =
-    'body.anview #anp input,body.anview #anp select,body.anview #anp button:not(.keep){pointer-events:none;opacity:.45}body.anview #anp .keep{opacity:1}#anp .tr{cursor:pointer}#anp .tr:hover{background:#14231b}#anp .why{background:#10181d;border-left:3px solid var(--acc);padding:4px 6px;margin:4px 0;color:var(--tx)}';
+    'body.anview #anp input,body.anview #anp select,body.anview #anp button:not(.keep){pointer-events:none;opacity:.45}body.anview #anp .keep{opacity:1}#anp .tr{cursor:pointer}#anp .tr:hover{background:var(--c-runsoft)}#anp .why{background:var(--c-pane);border-left:3px solid var(--acc);padding:4px 6px;margin:4px 0;color:var(--tx)}';
   document.head.append(st);
 }
-/* trace / flash = a GLOW around the wire; the wire keeps its own colour (state: 1 / 0 / analog / forced) */ const TUP =
+/* trace = the wire takes a solid colour (2.3.0: no glow): white = selected, blue = upstream, magenta = downstream */ const TUP =
     '#3aa0ff',
   TDN = '#ff2fd0',
   TST = '#ffffff',
@@ -108,7 +108,9 @@ function viewSet(on) {
   msg(
     on
       ? 'View mode: grey drawing, nothing is simulated. Click a block or wire to trace it; click an empty place to clear.'
-      : 'Simulation mode: Run, or Pause + Next / Back.'
+      : 'Simulation mode: Run, or Pause + Next / Back.' +
+          /* 3.2.0-beta.6 (audit M4): until a starting state is picked the plant is at the drawings' defaults (0 MW) */
+          (AN.startState ? '' : ' No starting state yet (0 MW): pick Start ▾ in the PLANT VIEW (At 150 MW, Cold, Warm, Hot).')
   );
 }
 bVw.onclick = () => viewSet(!AN.view);
@@ -284,7 +286,7 @@ function trList(d) {
       const ix = dsIdx(sh);
       if (ix.to.has(n))
         rs.push(
-          h$('div', { cls: 'r', style: 'color:#9aa' }, [
+          h$('div', { cls: 'r', style: 'color:var(--c-dim)' }, [
             h$('span', {
               cls: 'n',
               txt: '   → to ' + ix.to.get(n).join(', ') + ' (leaves to the DITL page: not simulated here)'
@@ -293,7 +295,7 @@ function trList(d) {
         );
       if (ix.from.has(n))
         rs.push(
-          h$('div', { cls: 'r', style: 'color:#9aa' }, [
+          h$('div', { cls: 'r', style: 'color:var(--c-dim)' }, [
             h$('span', {
               cls: 'n',
               txt:
@@ -332,13 +334,13 @@ function trList(d) {
   }
   const cap = 60;
   d.append(
-    h$('small', { txt: 'Driven by (upstream, blue glow): ' + T.upL.length, style: 'display:block;margin-top:6px' })
+    h$('small', { txt: 'Driven by (upstream, blue): ' + T.upL.length, style: 'display:block;margin-top:6px' })
   );
   T.upL.slice(0, cap).forEach(n => d.append(row(n), ...xr(n)));
   if (T.upL.length > cap)
     d.append(h$('small', { txt: '… +' + (T.upL.length - cap) + ' more', style: 'display:block;margin-top:6px' }));
   d.append(
-    h$('small', { txt: 'Feeds (downstream, magenta glow): ' + T.dnL.length, style: 'display:block;margin-top:6px' })
+    h$('small', { txt: 'Feeds (downstream, magenta): ' + T.dnL.length, style: 'display:block;margin-top:6px' })
   );
   T.dnL.slice(0, cap).forEach(n => d.append(row(n), ...xr(n)));
   if (T.dnL.length > cap)
@@ -578,7 +580,7 @@ function trMapUi(d, sh) {
       const r = h$('div', { cls: 'r tr', style: 'padding-left:' + (6 + x.depth * 14) + 'px' }, [
         h$('span', {
           cls: 'n',
-          style: x.again ? 'color:#9aa' : '',
+          style: x.again ? 'color:var(--c-dim)' : '',
           txt:
             (x.again ? '↺ back to ' : x.depth ? '▶ ' : '● ') +
             x.sh.name +
@@ -647,6 +649,31 @@ function dsIdx(sh) {
     if (!isFrom && S.nets[pick.id] && !S.nets[pick.id].dig) {
       const dg = near.find(q => S.nets[q.id] && S.nets[q.id].dig && !S.ext.includes(q.id) && S.drv[q.id] && S.drv[q.id].length);
       if (dg) for (const r of refs) toDig.set(r + '@' + pick.id, dg.id);
+    }
+  }
+  /* 2.3.0-beta.1 (LINK-3): a "TO DITL" text written under its own comparator box belongs to the wire named in S.dsTo (ABC-001C
+     "TO DITL 40-06" = O.0177 > 134 kg/cm2, not M.3109 under it; DITL-40 rows 6 ~ 9, 13) */
+  if (S.dsTo) {
+    const key = r => {
+      const m = /([0-9]{2,3}[A-Z]?)\s*-\s*(\d+)/.exec(r);
+      return m ? m[1] + '-' + +m[2] : r;
+    };
+    for (const ref in S.dsTo) {
+      const n = S.lab.findIndex((l, i) => l && String(l.t).trim() === S.dsTo[ref] && S.drv[i] && S.drv[i].length);
+      if (n < 0) continue;
+      let full = null;
+      for (const [id, o] of [...to]) {
+        const j = o.findIndex(r => key(r) === ref);
+        if (j < 0) continue;
+        full = o[j];
+        o.splice(j, 1);
+        if (!o.length) to.delete(id);
+        toDig.delete(full + '@' + id);
+      }
+      if (!full) continue;
+      const o = to.get(n) || [];
+      if (!o.includes(full)) o.push(full);
+      to.set(n, o);
     }
   }
   return (sh._ds = { from, to, toDig, lost });
@@ -860,7 +887,7 @@ function trDraw(cv, sh, m, o) {
   o.geo = null;
   if (n < 2 || !m) {
     ctx.fillStyle = '#8a9';
-    ctx.fillText('No data yet: press ▶ Run (or Next ▶). The history starts when the block is selected.', pl, H / 2);
+    ctx.fillText('No data yet: press RUN (or Next ▶). The history starts when the block is selected.', pl, H / 2);
     return;
   }
   const win = o.win > 0 ? o.win : T[n - 1] - T[0],
@@ -1077,7 +1104,7 @@ function trLegend(leg, S, m, o, sh) {
         h$('b', { txt: q.name }),
         document.createTextNode(' = ' + txt + (hk != null ? '  @ ' + fmtT(Math.max(0, h.t[hk])) : '')),
         (o.big || o.desc) && q.desc
-          ? h$('div', { txt: q.desc, style: 'font-size:10px;color:#8a9;margin-left:14px' })
+          ? h$('div', { txt: q.desc, style: 'font-size:10px;color:var(--c-dim);margin-left:14px' })
           : document.createTextNode('')
       ]);
     sp.onclick = () => {
@@ -1099,7 +1126,7 @@ function trendUi(d) {
     cv = h$('canvas', {
       width: 420,
       height: hgt * 1.4,
-      style: 'width:100%;height:' + hgt + 'px;background:#0b1013;border:1px solid var(--line);margin-top:4px'
+      style: 'width:100%;height:' + hgt + 'px;background:var(--c-well);border:1px solid var(--line);margin-top:4px'
     }),
     leg = h$('div', { style: 'font-size:11px;margin-top:2px' }),
     wsel = h$(
@@ -1134,12 +1161,12 @@ function trendUi(d) {
     ? h$('canvas', {
         width: 420,
         height: 200,
-        style: 'width:100%;height:140px;background:#0b1013;border:1px solid var(--line);margin-top:4px'
+        style: 'width:100%;height:140px;background:var(--c-well);border:1px solid var(--line);margin-top:4px'
       })
     : null;
   d.append(
     h$('h4', { txt: 'Trend · ' + m0.title }),
-    m0.desc ? h$('small', { txt: m0.desc, style: 'display:block;color:#9ab' }) : document.createTextNode(''),
+    m0.desc ? h$('small', { txt: m0.desc, style: 'display:block;color:var(--c-tx2)' }) : document.createTextNode(''),
     h$('div', { cls: 'r' }, [wsel, bz, bc]),
     cv,
     ...(xyc ? [xyc] : []),

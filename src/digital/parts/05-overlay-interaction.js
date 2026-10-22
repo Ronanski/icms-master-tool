@@ -380,8 +380,19 @@ function tmStep(g, inp, dt) {
         st.acc = 0;
       }
     }
+  } else if (g.k === 'flash') {
+    /* 2.5.0-beta.14 bottom ash flasher: ON / OFF while the input is 1 */
+    if (inp) {
+      st.acc = (st.acc + dt) % (g.fl[0] + g.fl[1]);
+      st.out = st.acc < g.fl[0] ? 1 : 0;
+    } else {
+      st.acc = 0;
+      st.out = 0;
+    }
   } else if (g.nc) {
     st.out = inp ? 1 : 0;
+  } else if (g.ncp) {
+    st.out = inp ? 0 : 1; /* 2.5.0-beta.11: N.C. stop button of an MCC seal-in: open (0) only while pressed */
   } else {
     const trg = g.k === 'npulse' ? !inp && st.pre : inp && !st.pre;
     if (trg && !st.run) {
@@ -659,7 +670,7 @@ function mvUI(s) {
     }
   });
 }
-const KN = { on: 'ON DELAY', off: 'OFF DELAY', pulse: 'PULSE', npulse: 'PULSE (falling)' };
+const KN = { on: 'ON DELAY', off: 'OFF DELAY', pulse: 'PULSE', npulse: 'PULSE (falling)', flash: 'FLASHER' };
 function tmList() {
   const s = cur();
   return s && s.nl ? s.nl.gates.filter(g => g.t === 'TMR') : [];
@@ -718,13 +729,125 @@ function uvSave() {
     } catch (e) {}
   }
 }
+/* 2.5.0-beta.11: the system of a DITL sheet, from its number (contents sheets DITL-0A ~ 0D and the sheet titles) */
+const DITL_CATS = [
+  'CONTENTS',
+  'FURNACE PURGE / MFT / BOILER TRIP',
+  'BURNER / IGNITER',
+  'COAL FEEDER',
+  'FANS (IDF / PAF / SAF / FAB)',
+  'BOILER FEED WATER PUMP',
+  'SPRAY WATER VALVES',
+  'BOTTOM ASH SCREW COOLER',
+  'AIR PREHEATER',
+  'ALARM / ANNUNCIATOR',
+  'MOTOR VALVE / OVERTIME',
+  'MAIN / REHEAT STEAM DRAINS',
+  'AUXILIARY STEAM',
+  'EXTRACTION STEAM',
+  'CONDENSATE',
+  'VENT AND DRAIN',
+  'AUX. COOLING WATER',
+  'SEAWATER / CONDENSER CLEANING',
+  'WATER SYSTEMS (INDUSTRIAL / POTABLE / WASTE)',
+  'DIESEL OIL',
+  'AIR SYSTEM (DRYER / COMPRESSORS)',
+  'TURBINE INTERFACE',
+  'SOOTBLOWER',
+  'BOTTOM ASH HD600 / CONVEYORS',
+  'LIMESTONE INJECTION (ROTOFEED)'
+];
+function ditlCat(x) {
+  if (isSB(x)) return 'SOOTBLOWER';
+  if (/^\(B\d+\)/.test(x.name || '')) return 'BOTTOM ASH HD600 / CONVEYORS'; /* 2.5.0-beta.14 */
+  if (/^\(L\d+\)/.test(x.name || '')) return 'LIMESTONE INJECTION (ROTOFEED)'; /* 2.5.0-beta.15 */
+  const m = /DITL-(\d+)([A-Z]?)$/i.exec(x.name || '');
+  if (!m) return /DITL-0[A-D]$/i.test(x.name || '') ? 'CONTENTS' : 'OTHER';
+  const n = +m[1],
+    c = DITL_CATS;
+  if (/DITL-0[A-D]$/i.test(x.name)) return c[0];
+  if (n <= 6) return c[1];
+  if (n <= 18) return c[2];
+  if (n <= 20) return c[3];
+  if (n === 21 || n === 117 || n === 118) return c[7];
+  if (n === 22 || n === 23) return c[5];
+  if (n >= 24 && n <= 28) return c[4];
+  if (n === 29 || n === 30 || n === 39 || n === 119) return c[17];
+  if (n === 31) return c[19];
+  if ((n >= 32 && n <= 35) || n === 79) return c[6];
+  if (n === 36 || n === 37 || (n >= 40 && n <= 42)) return c[9];
+  if (n === 38 || n === 50) return c[10];
+  if (n === 43 || n === 44) return c[8];
+  if (n === 45 || n === 113 || n === 114) return c[20];
+  if ((n >= 51 && n <= 55) || n === 116) return c[12];
+  if (n === 56 || n === 57) return c[15];
+  if (n >= 60 && n <= 72) return c[14];
+  if ((n >= 73 && n <= 75) || (n >= 79 && n <= 83) || n === 88 || n === 89 || n === 121) return c[11];
+  if (n >= 76 && n <= 78) return c[16];
+  if (n >= 94 && n <= 110) return c[13];
+  if (n === 86 || n === 87 || n === 92 || n === 93 || n === 111 || n === 112 || n === 120) return c[18];
+  if (n === 115) return c[21];
+  return 'OTHER';
+}
 let SIDEKEY = '',
   SIDEFL = '',
-  SIDEMIN = null;
+  SIDEMIN = null,
+  SIDESM = 'cat';
 try {
   SIDEMIN = localStorage.getItem('ditl.side');
+  if (localStorage.getItem('ditl.sm') === 'order') SIDESM = 'order';
 } catch (e) {}
 if (SIDEMIN === null) SIDEMIN = innerWidth < 820 ? '1' : '0';
+/* 2.5.0-beta.16 (user: "dapat pg by category, collapsible ang group title"): a category title of the sheet list (DITL and ABC) opens /
+   closes its group; the choice is kept (localStorage `key`). First time: only the group of the open sheet is open. While searching
+   every group with a hit is open. */
+function sideGrp(list, key, name, n, isCur, filt) {
+  let st = null;
+  try {
+    st = JSON.parse(localStorage.getItem(key) || 'null');
+  } catch (e) {}
+  const col = filt ? false : st ? !!st[name] : !isCur,
+    h = document.createElement('div'),
+    body = document.createElement('div');
+  h.className = 'fh fhc';
+  h.dataset.g = name;
+  h.title = 'Click to open / close this group';
+  const paint = c => (h.textContent = (c ? '▸ ' : '▾ ') + name + ' (' + n + ')');
+  paint(col);
+  body.className = 'grp';
+  body.style.display = col ? 'none' : '';
+  h.onclick = () => {
+    let o = null;
+    try {
+      o = JSON.parse(localStorage.getItem(key) || 'null');
+    } catch (e) {}
+    if (!o) {
+      o = {};
+      list.querySelectorAll('.fhc').forEach(x => {
+        if (x.nextSibling && x.nextSibling.style.display === 'none') o[x.dataset.g] = 1;
+      });
+    }
+    const c = body.style.display !== 'none';
+    if (c) o[name] = 1;
+    else delete o[name];
+    body.style.display = c ? 'none' : '';
+    paint(c);
+    try {
+      localStorage.setItem(key, JSON.stringify(o));
+    } catch (e) {}
+  };
+  list.appendChild(h);
+  list.appendChild(body);
+  return body;
+}
+/* the group of the sheet just opened (page link, search, ◀ ▶) is shown, without changing the kept choice */
+function sideShow(b) {
+  const g = b && b.parentNode;
+  if (!g || !g.classList.contains('grp') || g.style.display !== 'none') return;
+  g.style.display = '';
+  const h = g.previousSibling;
+  if (h && h.classList.contains('fhc')) h.textContent = '▾' + h.textContent.slice(1);
+}
 function drawSide() {
   const sd = $('side'),
     list = $('sidelist');
@@ -734,13 +857,50 @@ function drawSide() {
   const cn = S.sheets[S.cur] ? S.sheets[S.cur].name : '';
   $('sidect').textContent = 'Sheets (' + S.sheets.length + ')';
   $('sidevt').textContent = cn ? cn + '  ·  ' + (S.cur + 1) + '/' + S.sheets.length : 'Sheets';
-  const key = S.sheets.map(x => x.name + (x.bv !== BV ? '!' : '')).join('|') + '#' + SIDEFL;
+  /* 2.5.0-beta.13 (user: "sa left pane, wala ang option na by order/category"): By order / By category as the ABC sheet list */
+  let so = $('dsort');
+  if (!so) {
+    so = document.createElement('div');
+    so.id = 'dsort';
+    [
+      ['order', 'By order', 'One list in sheet order (DITL-0A, 01, 02, 03A ... then the sootblower set)'],
+      ['cat', 'By category', 'Grouped by system, each group in order']
+    ].forEach(([m, t, ti]) => {
+      const b = document.createElement('button');
+      b.dataset.m = m;
+      b.textContent = t;
+      b.title = ti;
+      b.onclick = () => {
+        SIDESM = m;
+        try {
+          localStorage.setItem('ditl.sm', m);
+        } catch (e) {}
+        drawSide();
+      };
+      so.appendChild(b);
+    });
+    $('sidebody').insertBefore(so, $('sidefl'));
+  }
+  so.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.m === SIDESM));
+  const key = S.sheets.map(x => x.name + (x.bv !== BV ? '!' : '')).join('|') + '#' + SIDEFL + '#' + SIDESM;
   if (key !== SIDEKEY) {
     SIDEKEY = key;
     list.innerHTML = '';
-    const f = SIDEFL.trim().toLowerCase();
+    const f = SIDEFL.trim().toLowerCase(),
+      G = {};
+    /* 2.5.0-beta.11 (user: "DAPAT BY CATEGORY DIN ANG SHEET LIST SA DITL"): grouped by system, as the ABC list (category headers in
+       the order of the contents sheets DITL-0A ~ 0D); the search still filters by name and title */
     S.sheets.forEach((x, i) => {
-      if (f && (x.name + ' ' + (x.title || '')).toLowerCase().indexOf(f) < 0) return;
+      if (f && (x.name + ' ' + (x.title || '') + ' ' + ditlCat(x)).toLowerCase().indexOf(f) < 0) return;
+      if (SIDESM === 'order') return sideBtn(x, i, list);
+      (G[ditlCat(x)] = G[ditlCat(x)] || []).push(i);
+    });
+    if (SIDESM !== 'order') DITL_CATS.concat(Object.keys(G).filter(k => !DITL_CATS.includes(k))).forEach(c => {
+      if (!G[c]) return;
+      const body = sideGrp(list, 'ditl.cc', c, G[c].length, G[c].includes(S.cur), !!f);
+      G[c].forEach(i => sideBtn(S.sheets[i], i, body));
+    });
+    function sideBtn(x, i, box) {
       const b = document.createElement('button');
       b.dataset.i = i;
       const l1 = document.createElement('span');
@@ -768,8 +928,8 @@ function drawSide() {
         }
         render();
       };
-      list.appendChild(b);
-    });
+      box.appendChild(b);
+    }
   }
   let on = null;
   list.querySelectorAll('button').forEach(b => {
@@ -777,6 +937,7 @@ function drawSide() {
     if (o !== b.classList.contains('on')) b.classList.toggle('on', o);
     if (o) on = b;
   });
+  if (on && drawSide.last !== S.cur) sideShow(on);
   if (on && SIDEMIN !== '1' && drawSide.last !== S.cur) {
     on.scrollIntoView({ block: 'nearest' });
   }

@@ -10,21 +10,45 @@
   try {
     W.on = localStorage.getItem('ls-world') === '1';
   } catch (e) {}
-  const RX = /\(?\s*([0-9]{2,3}[A-Z]?)\s*-\s*(\d{1,2})\s*\)?/gi;
+  /* 2.3.0-beta.1 (LINK-4): also a one-digit code with its letter, written without the 0 (DITL-15 row 10 MFT "3A-63" = 03A-63) */
+  const RX = /\(?\s*([0-9]{2,3}[A-Z]?|[0-9][A-Z])\s*-\s*(\d{1,3})\s*\)?/gi;
+  /* 2.5.0-beta.14: bottom ash FROM "BA01-11" = output NO. 11 of sheet BA-01 (sheet "(B1)DITL-BA01") */
+  const BRX = /\bBA\s*-?\s*(\d{1,2})\s*-\s*(\d{1,2})\b/gi;
+  /* 2.5.0-beta.15: limestone FROM "SHEET 214 - LINE21" = output LINE 21 of sheet "(L214)DITL-LS214" */
+  const LSRX = /\bSHEET\s*(\d{2,3})\s*-\s*LINE\s*(\d{1,2})\b/gi;
   const refsOf = t => {
     const o = [];
     let m;
+    t = String(t || '').replace(LSRX, (x, a, b) => {
+      o.push({ code: 'LS' + a, nn: +b, other: false });
+      return ' ';
+    });
+    t = String(t || '').replace(BRX, (x, a, b) => {
+      o.push({ code: 'BA' + a.padStart(2, '0'), nn: +b, other: false });
+      return ' ';
+    });
     RX.lastIndex = 0;
     while ((m = RX.exec(String(t || ''))))
-      o.push({ code: m[1].toUpperCase(), nn: +m[2], other: /^\(/.test(m[0]) && /\)$/.test(m[0]) });
+      o.push({
+        code: (/^[0-9][A-Z]$/i.test(m[1]) ? '0' : '') + m[1].toUpperCase(),
+        nn: +m[2],
+        other: /^\(/.test(m[0]) && /\)$/.test(m[0])
+      });
     return o;
   };
   const codeOf = name => {
-    const m = /DITL-([0-9]{2,3}[A-Z]?)$/i.exec(name || '');
+    const m = /DITL-([0-9]{2,3}[A-Z]?|BA\d{2}|LS\d{2,3})$/i.exec(name || '');
     return m ? m[1].toUpperCase() : null;
   };
-  function dSheet(code) {
+  function dSheet(code, from) {
+    /* 2.5.0-beta.12: the sootblower set has its own DITL-80 (ditlIdx in 01-parse-build.js) */
+    if (from && isSB(from)) {
+      const i = ditlIdx(code, from);
+      return i >= 0 ? S.sheets[i] : null;
+    }
     const byCode = W._byCode;
+    /* 2.3.0-beta.1 (LINK-1): "80S" is the sootblower PLC logic (ABC-017 "FROM DITL 80S-57 FOR S/B LOGIC"), not DITL-80: no fall back */
+    if (/S$/.test(code)) return byCode[code] || null;
     return byCode[code] || byCode[code.replace(/[A-Z]$/, '')] || null;
   }
   function nlOf(s) {
@@ -181,7 +205,7 @@
     W._byCode = {};
     for (const s of S.sheets) {
       const c = codeOf(s.name);
-      if (c && !W._byCode[c]) W._byCode[c] = s;
+      if (c && (!W._byCode[c] || (isSB(W._byCode[c]) && !isSB(s)))) W._byCode[c] = s;
     }
     /* the instances (kept when the world is built again: their state stays) */
     const old = new Map((W.inst || []).map(x => [x.name, x]));
@@ -209,6 +233,7 @@
       logic = [], // FROM DITL text on a net that the ABC logic computes
       lost = [],
       digFix = [] /* TO DITL by an analog wire: the comparator output next to it */,
+      plc = [],
       byAddr = [],
       byLetter = [],
       bySister = [],
@@ -220,11 +245,10 @@
       if (!m.has(row)) m.set(row, []);
       m.get(row).push(src);
     };
-    const outRow = (code, nn) => {
-      const d = dSheet(code);
-      if (!d || nn <= 50) return null;
-      const r = d.rows.findIndex(x => +x.n === nn - 50);
-      return r >= 0 ? { d, row: r } : null;
+    const outRow = (code, nn, from) => {
+      const d = dSheet(code, from);
+      const it = d && ditlItem(d, nn);
+      return it && it.side === 'R' ? { d, row: it.i } : null;
     };
     /* the instance (or sister sheet) that a row of machine-instance k of sheet sb gives for the output (d, orow) */
     const target = (sb, k, i, d, orow, other) => {
@@ -277,7 +301,7 @@
           const c = sb.cells[i + ':F'];
           if (!c) return;
           for (const f of refsOf(c.map(x => x.t).join(' '))) {
-            const o = outRow(f.code, f.nn);
+            const o = outRow(f.code, f.nn, sb);
             if (!o) continue;
             /* 2.2.0-beta.6: machine k of this row on a drawing made for one machine: the output whose TO column names this row
                in brackets is the one of the other machine (DITL-03B out 70 FAB A STOPPED TO 28A-29, out 71 FAB B STOPPED TO
@@ -346,6 +370,9 @@
           ain.push({ sh, n, d: ok.d, row: ok.row, ref: ok.ref });
           fa++;
         } else if (ok) logic.push(sh.name + ' ' + AN.nm(sh.S, n) + ' (' + ok.ref + ')');
+        else if (refs.some(r => refsOf(r).some(f => /S$/.test(f.code) && !dSheet(f.code))))
+          /* 2.3.0-beta.1 (LINK-1): a PLC logic reference ("FROM DITL 80S-57 FOR S/B LOGIC"): that PLC is not in the app, set by hand */
+          plc.push(sh.name + ' ' + AN.nm(sh.S, n) + ' FROM ' + refs.join('/'));
         else lost.push(sh.name + ' FROM ' + refs.join('/'));
       }
       for (const [n, refs] of ix.to) {
@@ -353,9 +380,9 @@
         for (const r of refs)
           for (const f of refsOf(r)) {
             const d0 = dSheet(f.code);
-            if (!d0 || f.nn > 50) continue;
-            const row = d0.rows.findIndex(x => +x.n === f.nn);
-            if (row < 0) continue;
+            const it = d0 && ditlItem(d0, f.nn);
+            if (!it || it.side !== 'L') continue;
+            const row = it.i;
             /* 2.2.0-beta.4: a TO DITL by an analog wire, to a limit row: the comparator output next to it ("TO DITL 40-09"
                MAIN STEAM PRESSURE LOW LOW by AI0131 of ABC-001C = M.310D, AI0131 < 72.9 kg/cm2) */
             const net = sh.S.nets && sh.S.nets[n];
@@ -381,6 +408,99 @@
         } else lost.push(sh.name + ' TO ' + refs.join('/'));
       }
     }
+    /* 2.3.0-beta.1 (LINK-4): a DITL input row "FROM ABC-xxx" whose ABC drawing has no "TO DITL" text for it: the address or tag of
+       the row (TAG NO. column, or the tag written on the row wire: DITL-115 row 17 "PICMS1006.MAN") is a signal of that ABC sheet
+       (CLAUDE.md rule 1: one address = one signal). The address may be written there as "M.025B ( TO S4 M.3101 )" (ABC-013).
+       A row that the DITL compares (DITL-79 row 6 TICMS1022.MV > 2 % / < 1 %) takes the analog value; a .MAN of a controller is
+       its MANUAL state (the faceplate) */
+    const WIRE_S1 = { 'M.311A': 'B.0646', 'M.311B': 'B.066E' },
+      fromAbc = [],
+      abcMiss = [],
+      abcOf = code => {
+        const c = /^\d{2}[A-Z]?$/.test(code) ? '0' + code : code;
+        return AN.sheets.filter(p => p.name === 'ABC-' + c || (/^\d{3}$/.test(c) && new RegExp('^ABC-' + c + '[A-Z]$').test(p.name)));
+      };
+    for (const sb of S.sheets)
+      W.instOf.get(sb).forEach((s, k) =>
+        sb.rows.forEach((r, i) => {
+          const F = cellTxt(sb, i, 'F'),
+            fm = /ABC[-\s]?(\d{2,3}[A-Z]?)\b/i.exec(F);
+          if (!fm) return;
+          const have = din.get(s) && din.get(s).get(i);
+          if (have && have.some(q => q.k === 'a' || q.k === 'v' || q.k === 'm')) return;
+          const sheets = abcOf(fm[1].toUpperCase());
+          if (!sheets.length) return;
+          const T = cellTxt(sb, i, 'T') + ' ' + cellTxt(sb, i, 'S'),
+            la = addrList(cellTxt(sb, i, 'T') || cellTxt(sb, i, 'S'));
+          /* machine B / C / D of a shared drawing: only its own address (the address of machine A is not its signal) */
+          if (k > 0 && !la[k]) return;
+          const adr = la[k] || null,
+            wt = (sb.tx || []).filter(x => x && x.t && Math.abs((x.iy != null ? x.iy : x.y) - r.y) < 5 && /^[A-Z0-9-]{4,}\.(MAN|MV|PV|SV)$/.test(String(x.t).trim())),
+            tm = /\b([A-Z]{2,}[A-Z0-9-]*\d[A-Z0-9-]*\.(?:MAN|MV|PV|SV))\b/.exec(T),
+            tag = tm ? tm[1] : wt.length ? String(wt[0].t).trim() : null,
+            an = s.nl && (s.nl.an || []).find(a => a.row === i);
+          let src = null;
+          for (const sh of sheets) {
+            let SS;
+            try {
+              SS = AN.ensure(sh);
+            } catch (e) {
+              continue;
+            }
+            const nmOf = n => String(AN.nm(SS, n) || '').replace(/^S\d\s*/, '').trim(),
+              drv = n => SS.drv[n] && SS.drv[n].some(d => d.k !== 'LINK');
+            if (adr) {
+              let n = SS.nets.findIndex((_, j) => nmOf(j) === adr && drv(j));
+              if (n < 0) {
+                const re = new RegExp('([IMB]\\.[0-9A-F]{4})\\s*\\(?\\s*TO\\s+S\\d\\s+' + adr.replace('.', '\\.') + '\\b'),
+                  tx = (SS.tx || []).find(x => re.test(x.t)),
+                  t = tx && re.exec(tx.t);
+                if (t) n = SS.nets.findIndex((_, j) => nmOf(j) === t[1] && drv(j));
+                if (t && n < 0) {
+                  /* the address text names the wire it is written on (ABC-013 "M.025B ( TO S4 M.3101 )"): the nearest digital wire of the logic */
+                  let bd = 20;
+                  SS.nets.forEach((nn, j) => {
+                    if (!nn.dig || !drv(j)) return;
+                    for (const i of nn.segs) {
+                      const g = SS.seg[i],
+                        dx = g.x2 - g.x1,
+                        dy = g.y2 - g.y1,
+                        L2 = dx * dx + dy * dy,
+                        u = L2 > 0 ? Math.max(0, Math.min(1, ((tx.x - g.x1) * dx + (tx.y - g.y1) * dy) / L2)) : 0,
+                        d = Math.hypot(tx.x - (g.x1 + u * dx), tx.y - (g.y1 + u * dy));
+                      if (d < bd) {
+                        bd = d;
+                        n = j;
+                      }
+                    }
+                  });
+                }
+              }
+              /* 2.5.0-beta.5: an address of the STN101 station wiring that the ABC sheet writes by its own name (memory list 101 / 103
+                 M.311A / M.311B "Plenum/upper diff. press.(A) / (B) sig. abnormal (FROM S1)" = the SIG.AB of AI0134 DPT-FG1081 / AI0262
+                 DPT-FG1082, I/O list STN101: B.0646 / B.066E on ABC-009A). DITL-21C row 19 / 20 */
+              if (n < 0 && WIRE_S1[adr]) n = SS.nets.findIndex((_, j) => nmOf(j) === WIRE_S1[adr] && drv(j));
+              if (n >= 0) src = { k: an ? 'v' : 'a', sh, n, ref: sh.name + ' ' + adr + (WIRE_S1[adr] && nmOf(n) === WIRE_S1[adr] ? ' = ' + WIRE_S1[adr] : '') };
+            }
+            if (!src && tag && /\.MAN$/.test(tag)) {
+              const c = (AN.hmiCtrls ? AN.hmiCtrls(SS) : []).find(z => z.tag === tag.replace(/\.MAN$/, ''));
+              if (c && c.amt) src = { k: 'm', sh, c, ref: sh.name + ' ' + tag };
+            }
+            if (!src && tag && /\.(MV|PV|SV)$/.test(tag)) {
+              const c = (AN.hmiCtrls ? AN.hmiCtrls(SS) : []).find(z => z.tag === tag.replace(/\.\w+$/, ''));
+              let n = SS.nets.findIndex((_, j) => nmOf(j) === tag && drv(j));
+              if (n < 0 && c && /\.MV$/.test(tag)) n = c.out;
+              if (n >= 0) src = { k: an ? 'v' : 'a', sh, n, key: an ? an.key : null, ref: sh.name + ' ' + tag };
+            }
+            if (src) break;
+          }
+          if (src) {
+            if (src.k === 'v') src.key = an.key;
+            addIn(s, i, src);
+            fromAbc.push(s.name + ' r' + r.n + ' <- ' + src.ref);
+          } else abcMiss.push(s.name + ' r' + r.n + ' FROM ' + F + ' (no ' + (adr || tag || 'address') + ' on the ABC sheet)');
+        })
+      );
     W.idx = { din, ain };
     W._nA = AN.sheets.length;
     W.stat = {
@@ -393,11 +513,16 @@
       noMach,
       digFix,
       fromDitl: fa,
+      fromAbc,
+      abcMiss,
+      plc,
       toDitl: ta,
       logic,
       lost,
       ms: Math.round(performance.now() - t0)
     };
+    /* 2.5.0-beta.10: the ABC sheets that READ the DITL too (FROM DITL): stepped with the world, so a DITL input reaches their logic */
+    for (const a of ain) wsh.add(a.sh.name);
     AN.worldSheets = [...wsh];
   }
   const XL = new WeakMap();
@@ -422,10 +547,21 @@
       const on = new Set();
       m.forEach((srcs, row) => {
         for (const q of srcs) {
+          /* 2.3.0-beta.1: an analog ABC value into a DITL comparator row, and the MANUAL state of an ABC controller */
+          if (q.k === 'v') {
+            const x = q.sh.S && q.sh.S.rt ? +q.sh.S.rt.v[q.n] : NaN;
+            if (isFinite(x)) (s.avw = s.avw || {})[q.key] = x;
+            continue;
+          }
           const v =
             q.k === 'd'
               ? !!(prev[q.d.name] && prev[q.d.name].has(q.row))
-              : !!(q.sh.S && q.sh.S.rt && q.sh.S.rt.v[q.n] > 0.5);
+              : q.k === 'm'
+                ? (() => {
+                    const st = q.sh.S && q.sh.S.rt && q.sh.S.rt.st[q.c.amt.id];
+                    return !!st && st.pk !== q.c.autoLeg;
+                  })()
+                : !!(q.sh.S && q.sh.S.rt && q.sh.S.rt.v[q.n] > 0.5);
           if (v) {
             on.add(row);
             break;
@@ -453,6 +589,37 @@
         W._ck = k;
       }
     }
+    /* 3.2.0-beta.6 FIRST-OUT: a TRIP / MFT / STOP output that goes 1 in this scan: its cause is read now (DUI.cause), before
+       the other conditions follow, and written to the Event log */
+    W.tk = (W.tk || 0) + 1;
+    W._o = out;
+    if (window.lsEventAdd && window.DUI && DUI.cause && W.tk > 25)
+      for (const s of S.sheets) {
+        const a = prev[s.name],
+          b = out[s.name];
+        if (!a || !b) continue;
+        /* the outputs of one sheet that go 1 in the same scan for the same cause (MFT · SER, MFT 1 · TCS, MFT · IRP ...) are ONE
+           event: named by the MASTER FUEL TRIP output when there is one, "+N outputs" for the rest */
+        const grp = new Map();
+        for (const row of b) {
+          if (a.has(row)) continue;
+          let c = null;
+          try {
+            c = DUI.cause(s, row);
+          } catch (e) {}
+          /* trips only (MFT, boiler / fan / pump / turbine TRIP, RUN BACK): the shutdown and stop sequences of burners and
+             igniters follow from them and are not alarms */
+          if (!c || !/\bTRIP|\bMFT\b|RUN\s*BACK/i.test(c.name) || /\bNO\s+(\w+\s+)?TRIP|TRIP\s+RESET/i.test(c.name)) continue;
+          const k = c.lines.map(l => l.txt).join('|'),
+            g = grp.get(k);
+          if (!g) grp.set(k, { c, n: 1 });
+          else {
+            g.n++;
+            if (/MASTER FUEL TRIP/i.test(c.name) && !/MASTER FUEL TRIP/i.test(g.c.name)) g.c = c;
+          }
+        }
+        grp.forEach(({ c, n }) => lsEventAdd(s.name, 'TRIP', c.name + ' = 1' + (n > 1 ? ' (+' + (n - 1) + ' outputs)' : ''), deeper(s, c.lines, 1)));
+      }
     W.out = out;
     /* 3. DITL -> ABC (not while the one world is OFF: then the DITL 150 MW state is computed for the DITL only) */
     for (const a of opt && opt.noAbc ? [] : ain) {
@@ -473,9 +640,62 @@
     }
     W.ms = W.ms * 0.8 + (performance.now() - t0) * 0.2;
   }
+  /* 3.2.0-beta.6 FIRST-OUT across sheets: an input row that is 1 because of another sheet is followed to that sheet's output
+     (FROM column, the same map the one world uses) and its cause, up to 4 sheets deep: "IDF STOPPED" on DITL-03A -> the row
+     on DITL-03B that made it 1 -> the motor / ABC signal */
+  function deeper(s, lines, d) {
+    const out = [];
+    for (const l of lines) {
+      out.push(Object.assign({}, l, { d }));
+      if (l.row === undefined || d >= 5 || out.length > 30) continue;
+      const m = W.idx && W.idx.din.get(s),
+        srcs = m && m.get(l.row);
+      for (const q of srcs || []) {
+        /* only a source that IS 1 now made the row 1 (else the operator pressed the row on this sheet) */
+        if (q.k === 'd' && !(W._o && W._o[q.d.name] && W._o[q.d.name].has(q.row))) continue;
+        if (q.k !== 'd' && q.k !== 'm' && q.k !== 'v' && !(q.sh && q.sh.S && q.sh.S.rt && q.sh.S.rt.v[q.n] > 0.5)) continue;
+        if (q.k === 'd') {
+          let c = null;
+          try {
+            c = DUI.cause(q.d, q.row);
+          } catch (e) {}
+          if (c) {
+            out.push({ d: d + 1, k: 'link', txt: 'from ' + q.d.name + ': ' + c.name + ' = 1', sh: q.d.name });
+            out.push(...deeper(q.d, c.lines, d + 2));
+          }
+          break;
+        }
+        if (q.k === 'm') {
+          const st = q.sh.S && q.sh.S.rt && q.sh.S.rt.st[q.c.amt.id];
+          if (!(st && st.pk !== q.c.autoLeg)) continue;
+          out.push({ d: d + 1, k: 'input', txt: 'from ABC: ' + q.c.tag + ' is in MANUAL', sh: q.sh.name });
+          break;
+        }
+        if (q.k !== 'v' && q.sh && q.sh.S) {
+          let nm = '';
+          try {
+            nm = AN.nm(q.sh.S, q.n) || '';
+          } catch (e) {}
+          /* and on the ABC sheet, the same "Why?" walk (src/ui/shell/why.js), a few lines; its first line names the net and its
+             reason (FORCED by you, transmitter, comparator ...) */
+          let L2 = [];
+          try {
+            if (AN.why) L2 = AN.why(q.sh, q.n).lines.slice(0, 9);
+          } catch (e) {}
+          out.push({ d: d + 1, k: L2[0] && L2[0].k === 'force' ? 'force' : 'link', txt: 'from ABC ' + q.sh.name + ': ' + (L2[0] ? L2[0].txt : (nm || 'signal') + ' = 1'), sh: q.sh.name });
+          for (const l2 of L2.slice(1)) out.push(Object.assign({}, l2, { d: d + 1 + l2.d }));
+          break;
+        }
+      }
+    }
+    return out;
+  }
   function off() {
     W.live = false;
-    for (const s of S.sheets.concat(W.inst || [])) s._win = null;
+    for (const s of S.sheets.concat(W.inst || [])) {
+      s._win = null;
+      s.avw = null;
+    }
     if (W.idx)
       for (const a of W.idx.ain) {
         const AS = a.sh.S;
@@ -538,7 +758,7 @@
       try {
         build();
       } catch (e) {}
-    const go = W.on && W.idx && ((AN.cat === 'an' && AN.run) || (AN.cat !== 'an' && SIM));
+    const go = W.on && W.idx && ((AN.cat === 'an' && AN.run) || (AN.cat !== 'an' && SIM && !DPAUSE));
     if (!go) {
       if (W.live) W.live = false;
       last = 0;
@@ -553,6 +773,16 @@
     } catch (e) {
       console.error(e);
     }
+    /* 2.5.0-beta.10 (user: "kapag from DITL nagforce ako, madedetect ito ng buong sheet DITL at ABC? vice versa?"): one world = one time.
+       While the DITL page simulates, the ABC sheets of the world run too (before, the ABC stood still until its own Run: a DITL input
+       reached the ABC input but not the ABC logic behind it, and an ABC FORCE did not reach the DITL) */
+    if (AN.cat !== 'an' && AN.sheets.length && AN.worldSheets && AN.worldSheets.length)
+      try {
+        const sh = AN.sheets[AN.i] && AN.sheets[AN.i].S ? AN.sheets[AN.i] : AN.sheets.find(s => s.name === AN.worldSheets[0]);
+        if (sh && sh.S) AN.stepSet(sh, dt);
+      } catch (e) {
+        console.error(e);
+      }
   }, 200);
   /* the button, in the TAKBO group of both toolbars */
   const btns = [];
