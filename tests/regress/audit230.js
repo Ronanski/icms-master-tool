@@ -19,8 +19,13 @@ const r=await page.evaluate(async()=>{const sleep=ms=>new Promise(r=>setTimeout(
  {const P=g('ABC-050').S,T=g('ABC-013').S,i4=lab(P,'I.0400');P.rt.ext[i4]=1;st(['ABC-050','ABC-013','ABC-001C'],6);const a=T.rt.v[19],o=T.rt.v[27];P.rt.ext[i4]=0;st(['ABC-050','ABC-013','ABC-001C'],6);ok(a===1&&o===1,'013: turbine trip I.0400 (S2) -> 013 M.3200 '+a+', house operation OR '+o+', after reset '+T.rt.v[19]+' (unit model '+(window.AN_UNIT?AN_UNIT.on:'?')+')')}
  // world
  WORLD.set(true);const W=WORLD.stat;
- ok(!WORLD.idx.ain.some(q=>q.sh.name==='ABC-017'&&/80S/.test(q.ref)),'LINK-1: ABC-017 "FROM DITL 80S-57" not tied to DITL-80');
- const a17=WORLD.idx.ain.find(q=>q.sh.name==='ABC-017'&&/80/.test(q.ref));ok(!a17,'LINK-1 detail: '+(a17?a17.ref:'none'));
+ // 3.2.0-beta.3: since 2.5.0-beta.12 the sootblower PLC logic is in the app ((S22)DITL-80S, DITL_SB_AUDIT.md: output 57 = VALVE TORQUE,
+ // input row 12 I.024E): "FROM DITL 80S-57" is tied to THAT sheet (CLAUDE.md rule 1), never to the boiler DITL-80 (HRH drain pot)
+ const a17=WORLD.idx.ain.filter(q=>q.sh.name==='ABC-017'&&/80/.test(q.ref));
+ ok(a17.length===1&&a17[0].ref==='80S-57'&&/DITL-80S$/.test(String(a17[0].d&&a17[0].d.name||a17[0].d)),'LINK-1: ABC-017 "FROM DITL 80S-57" tied to the sootblower sheet, not DITL-80: '+a17.map(q=>q.ref+' -> '+(q.d&&q.d.name||q.d)).join(', '));
+ // the PDF ((22)Ditl80S.pdf): output 57 "S/B STEAM SUPPLY MOTOR VALVE TORQUE", TO 80S-12 / 80S-27 / ABC-017
+ const d17=a17[0]&&a17[0].d,o17=d17&&d17.rows[a17[0].row],t17=d17?(d17.cells[a17[0].row+':RT']||[]).map(x=>x.t).join(' '):'';
+ ok(o17&&50+ +o17.n===57&&/ABC-017/.test(t17),'LINK-1 detail: output '+(o17?50+ +o17.n:'?')+' of 80S, TO '+t17);
  const d21=S.sheets.find(s=>/DITL-21A$/.test(s.name));ok(d21.rows.some(r=>r.n===21),'LINK-2: DITL-21A has row 21: '+d21.rows.map(r=>r.n).join(','));
  const din=WORLD.idx.din;let users=[];din.forEach((m,s)=>m.forEach((srcs,row)=>{for(const q of srcs)if(q.k==='d'&&(q.d===d21||(q.d._inst&&q.d._inst.base===d21))&&+d21.rows[q.row].n===21)users.push(s.name+' r'+s.rows[row].n+' <- '+q.d.name)}));ok(users.length>=6,'LINK-2: output 71 COOLER A REMOTE feeds '+users.length+': '+users.join(', '));
  const d15=S.sheets.find(s=>/DITL-15$/.test(s.name));const r10=d15.rows.findIndex(r=>r.n===10);const s15=(din.get(d15)||new Map()).get(r10)||[];ok(s15.some(q=>q.k==='d'&&/03A/.test(q.d.name)),'LINK-4: DITL-15 row 10 MFT "3A-63" <- '+s15.map(q=>q.d?q.d.name+' out '+(50+ +q.d.rows[q.row].n):q.k).join(','));
