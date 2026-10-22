@@ -67,6 +67,13 @@
     if (IX) return IX;
     const A = window.AN;
     if (!A || !A.sheets) return null;
+    /* 3.2.0-beta.1 (audit C2): the ABC sheets load in the background (loader.js loadData = AN.data). When the PLANT VIEW was
+       opened before the ABC page the links were read from an empty sheet list (LIVE 6 / 51) and never read again: wait for it */
+    for (let i = 0; i < 100 && !A.data && !A.sheets.length; i++) await new Promise(r => setTimeout(r, 100));
+    try {
+      if (A.data) await A.data;
+    } catch (e) {}
+    if (!A.sheets.length) return null;
     try {
       await A.ades();
     } catch (e) {}
@@ -265,7 +272,7 @@
     if (x == null || !isFinite(x)) return '—';
     const d = String(ref || '').split('.')[1];
     const n = d ? Math.min(3, d.length) : Math.abs(x) >= 100 ? 0 : 1;
-    return x.toFixed(n);
+    return x.toFixed(n).replace(/^-(0(?:\.0+)?)$/, '$1'); /* not -0.0 */
   };
   function netVal(r) {
     const sh = shOf(r.sh);
@@ -319,6 +326,10 @@
       } catch (e) {}
     }
   }
+  const lvOf = it => {
+    const o = LV.find(q => q.it === it);
+    return o ? o.r : null;
+  };
   function liveCount() {
     const n = LV.filter(o => o.r).length;
     const el = $('pllive');
@@ -422,7 +433,7 @@
   const fmtH = (x, ref) => {
     if (x == null || !isFinite(x)) return '—';
     const d = String(ref == null ? '' : ref).trim().split('.')[1];
-    return ref == null || String(ref).trim() === '' ? fmtV(x, ref) : x.toFixed(d ? Math.min(3, d.length) : 0);
+    return ref == null || String(ref).trim() === '' ? fmtV(x, ref) : x.toFixed(d ? Math.min(3, d.length) : 0).replace(/^-(0(?:\.0+)?)$/, '$1');
   };
   function bgItem(g, it, sp, sid) {
     const t = it.t;
@@ -684,8 +695,11 @@
             mt.textContent = m;
             mt.setAttribute('fill', m === 'M' ? '#ffd27a' : '#9ff0c4');
             t1.textContent = 'PV ' + (x ? fmtV(x.pv, it.pv) : it.pv != null ? it.pv : '—') + '  SV ' + (x ? fmtV(x.sv, it.sv) : it.sv != null ? it.sv : '—');
-            /* 2.2.0-beta.19: the unit of the MV once (a MAN station in MW, a PID in %); before "68.3 % %" */
-            t2.textContent = 'MV ' + (x ? fmtV(x.mv, it.mv) : it.mv != null ? it.mv : '—') + (it.u && it.u !== '%' ? ' ' + it.u : ' %');
+            /* 3.2.0-beta.1 (audit M5): the unit of the MV is the one of the faceplate: a PID output is % (before, the PV unit of
+               the screen: "MV 56.0 mm" for LICBR1001 whose faceplate says 3.00 %); a MAN station has its own unit (hmi.js P.u) */
+            const r = lvOf(it),
+              mu = r && r.k === 'man' ? (r.b.p && r.b.p.u) || '' : r && r.k === 'ctl' ? '%' : it.u && it.u !== '%' ? it.u : '%';
+            t2.textContent = 'MV ' + (x ? fmtV(x.mv, it.mv) : it.mv != null ? it.mv : '—') + (mu ? ' ' + mu : '');
             t1.setAttribute('fill', x ? '#5cd6ff' : '#7f90a0');
             t2.setAttribute('fill', x ? '#9ff0c4' : '#7f90a0');
           }, box);
@@ -724,22 +738,40 @@
     fit();
     index().then(() => {
       for (const o of LV) o.r = resolve(o.it);
-      for (const o of LV)
-        if (o.r && o.hit) {
+      for (const o of LV) {
+        if (o.r && o.hit && o.r.k === 'unit' && !o.hit.dataset.lk) {
+          /* a value of the plant model with no DCS tag (oil flow, bed temperature): nothing to open, it says what it is */
+          o.hit.dataset.lk = '1';
+          const t = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+          t.textContent = 'Plant model value (no DCS tag, no faceplate)';
+          o.hit.append(t);
+        }
+        if (o.r && o.hit && o.r.k !== 'unit' && !o.hit.dataset.lk) {
+          /* 3.2.0-beta.1: one listener per item (the screen is linked again after the ABC sheets load) */
+          o.hit.dataset.lk = '1';
           o.hit.style.cursor = 'pointer';
+          o.hit.style.pointerEvents = 'auto';
           o.hit.addEventListener('click', e => {
             e.stopPropagation();
             try {
               if ((o.r.k === 'ctl' || o.r.k === 'man') && fpOpen(o.it.tag)) return;
               if (o.r.k === 'mv' && fpOpen(o.r.c.tag)) return;
-              if (D !== document) return; /* the info card opens in the main window only */
-              if (o.r.k === 'ctl' || o.r.k === 'man') window.lsInfo && window.lsInfo(o.it.tag);
-              else if (o.r.k === 'mv') window.lsInfo && window.lsInfo(o.r.c.tag);
-              else if (o.r.a) window.lsInfo && window.lsInfo(o.r.a, { stn: o.r.st });
-              else window.lsInfo && window.lsInfo(o.it.tag + '.PV');
+              if (D !== document || !window.lsInfo) return; /* the info card opens in the main window only */
+              if (o.r.k === 'ctl' || o.r.k === 'man') window.lsInfo(o.it.tag);
+              else if (o.r.k === 'mv') window.lsInfo(o.r.c.tag);
+              else if (o.r.a) window.lsInfo(o.r.a, { stn: o.r.st });
+              else {
+                /* 3.2.0-beta.1 (audit): the label of the linked wire as written on the sheet (MIF-CL1061-A on the screen, the
+                   sheet writes it its own way); before, "<tag>.PV" found nothing for 31 of the 51 UNIT items and the click did nothing */
+                const sh = o.r.sh && shOf(o.r.sh),
+                  l = sh && sh.S && o.r.n != null ? sh.S.lab[o.r.n] : null,
+                  nm = (l && l.t && String(l.t).trim()) || (sh && sh.S && o.r.n != null && window.AN && AN.nm ? AN.nm(sh.S, o.r.n) : '');
+                if (!(nm && window.lsInfo(nm)) && !window.lsInfo(o.it.tag + '.PV')) window.lsInfo(o.it.tag);
+              }
             } catch (x) {}
           });
         }
+      }
       liveCount();
       liveTick();
     });
@@ -908,19 +940,42 @@
     document.body.append(ws);
     fillList();
     /* pan (drag) and zoom (wheel / pinch) */
-    let drag = null;
+    /* 3.2.0-beta.1 (audit C1): the pointer is captured only once it has moved (a drag). Capturing it on pointerdown sent the
+       click to the svg itself, so a tap on a controller or valve never opened its faceplate (mouse and touch) */
+    let drag = null,
+      dragged = false;
     svg.addEventListener('pointerdown', e => {
-      drag = { x: e.clientX, y: e.clientY, v: vb.slice() };
-      svg.setPointerCapture(e.pointerId);
+      if (!vb) return;
+      drag = { x: e.clientX, y: e.clientY, v: vb.slice(), id: e.pointerId, moved: false };
+      dragged = false;
     });
     svg.addEventListener('pointermove', e => {
       if (!drag || !vb) return;
+      if (!drag.moved) {
+        if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 6) return;
+        drag.moved = dragged = true;
+        try {
+          svg.setPointerCapture(drag.id);
+        } catch (x) {}
+      }
       const r = svg.getBoundingClientRect(),
         s = vb[2] / r.width;
       vb = [drag.v[0] - (e.clientX - drag.x) * s, drag.v[1] - (e.clientY - drag.y) * s, vb[2], vb[3]];
       svg.setAttribute('viewBox', vb.join(' '));
     });
     svg.addEventListener('pointerup', () => (drag = null));
+    svg.addEventListener('pointercancel', () => (drag = null));
+    /* the click that ends a drag does not open a faceplate */
+    svg.addEventListener(
+      'click',
+      e => {
+        if (dragged) {
+          dragged = false;
+          e.stopPropagation();
+        }
+      },
+      true
+    );
     svg.addEventListener(
       'wheel',
       e => {

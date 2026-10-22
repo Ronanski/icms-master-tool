@@ -307,7 +307,8 @@ const aci = c => {
 const fmt = v => {
   if (v == null || !isFinite(v)) return '--';
   const a = Math.abs(v);
-  return a >= 1000 ? v.toFixed(0) : a >= 100 ? v.toFixed(1) : v.toFixed(2);
+  /* 3.2.0-beta.1 (audit L2): a tiny negative value reads 0.00, not -0.00 */
+  return (a >= 1000 ? v.toFixed(0) : a >= 100 ? v.toFixed(1) : v.toFixed(2)).replace(/^-(0(?:\.0+)?)$/, '$1');
 };
 /* ---------- CSS + DOM ---------- */
 document.head.appendChild(

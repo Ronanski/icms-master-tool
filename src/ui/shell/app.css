@@ -901,3 +901,8 @@ body[data-tab=logic]:not(.an) #gsbar .g-ditl :is(.dui-run,.tb-view,.dui-sep){dis
 body.anview #anp :is(input,select,button:not(.keep)){opacity:1!important}
 body.anview #anp :is(input,select){border-style:dashed!important}
 body.anview #anp::before{content:'VIEW · no simulation: inputs are locked';display:block;margin:0 0 6px;padding:6px 10px;font:600 11px var(--uf);letter-spacing:.06em;color:var(--c-acctx);background:var(--c-accbg);border-left:3px solid var(--c-acc)}
+/* 2.5.0-beta.11 / 13 (kept by the merge): DITL sheet list by category, the same group header as the ABC list (3.1 look) */
+body.app2 #sidelist .fh{padding:.75rem .875rem .375rem;font:600 .6875rem var(--uf);letter-spacing:.1em;text-transform:uppercase;color:var(--c-dim);background:var(--c-pane);position:sticky;top:0;z-index:1;border-bottom:1px solid var(--c-line)}
+#sidelist button{scroll-margin-top:34px}
+body.dm #meta{display:none!important}
+#dp .dp-b.big.on{background:var(--c-almsoft);border-color:var(--c-alm);color:var(--c-almtx)}

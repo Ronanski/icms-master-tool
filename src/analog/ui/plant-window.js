@@ -1276,11 +1276,7 @@ function buildPanel() {
               b.p.ti +
               ' s · Td ' +
               b.p.td +
-              ' s (default for a ' +
-              (b.p.lt || 'general') +
-              ' loop, edit in the block panel) · suggested speed ' +
-              (b.p.sp || 1) +
-              'x' +
+              ' s' +
               (b.p.rlo != null ? ' · range ' + b.p.rlo + ' ~ ' + b.p.rhi + ' ' + (b.p.unit || '') : '')
             : ''),
         ce,
@@ -1994,7 +1990,12 @@ function selUpd0_(d) {
     return e;
   };
   d.append(h$('h4', { txt: s.blk ? 'Selected: ' + s.blk.k + (s.blk.tag ? ' ' + s.blk.tag : '') : 'Selected wire' }));
-  try {
+  /* 3.2.0-beta.1 (audit M3): the tester buttons (PASS / FAIL / NEEDS REVIEW) show only while TOOLS · UAT is open */
+  const uatOpen = () => {
+    const u = document.getElementById('uatp');
+    return !!(u && getComputedStyle(u).display !== 'none');
+  };
+  if (uatOpen()) try {
     const row = h$('div', { style: 'display:flex;gap:6px;align-items:center;margin:2px 0 6px' }, [
       h$('small', { txt: 'Record check:', style: 'color:var(--c-tx2)' })
     ]);
@@ -2109,7 +2110,9 @@ function selUpd0_(d) {
       if (P[k] == null) return;
       d.append(h$('div', { cls: 'r' }, [h$('span', { cls: 'n', txt: l }), num(P[k], x => pSet(sh, b, k, x), st)]));
     };
-  if (b.k === 'PID' || b.k === 'PIDV') {
+  /* 3.2.0-beta.1 (audit M3): "suggested speed" is a tester aid: shown only while TOOLS · UAT is open */
+  const u0 = document.getElementById('uatp');
+  if ((b.k === 'PID' || b.k === 'PIDV') && u0 && getComputedStyle(u0).display !== 'none') {
     d.append(
       h$('div', { cls: 'r' }, [
         h$('span', {
