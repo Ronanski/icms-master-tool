@@ -518,9 +518,7 @@ function whyTxt(S, b) {
         (lst(ins) || '-') +
         '  →  output ' +
         o +
-        '. (A detailed explanation for ' +
-        b.k +
-        ' is not written yet.)'
+        '.' /* 3.2.0-beta.1 (audit M3): the line "A detailed explanation ... is not written yet" is not shown to the operator */
       );
   }
 }

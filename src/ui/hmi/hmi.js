@@ -23,7 +23,7 @@
           ? x.toFixed(1)
           : Math.abs(x) >= 10
             ? x.toFixed(2)
-            : x.toFixed(3);
+            : x.toFixed(3).replace(/^-(0\.000)$/, '$1'); /* 3.2.0-beta.1 (audit L2): not -0.000 */
   const sheet = () => AN.sheets && AN.sheets[AN.i];
   /* 2.0.0: touch screens (tablet / phone) */
   const TOUCH = (() => {
