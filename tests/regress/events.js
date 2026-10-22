@@ -5,7 +5,7 @@ const {open}=require('./lib.js');const fs=require('fs');
 const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 (async()=>{const {browser,page,errs}=await open(html);let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
 await page.waitForSelector('#evbtn',{timeout:20000});ck(true,'Events button in the status bar');
-await page.evaluate(()=>{AN.go(AN.sheets.findIndex(s=>s.name==='ABC-010'));[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Operator').forEach(b=>b.click());AN.run=true});await page.waitForSelector('#opp .fp',{timeout:20000});await page.waitForTimeout(1500);
+await page.evaluate(()=>{AN.go(AN.sheets.findIndex(s=>s.name==='ABC-010'));[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Faceplate').forEach(b=>b.click());AN.run=true});await page.waitForSelector('#opp .fp',{timeout:20000});await page.waitForTimeout(1500);
 await page.evaluate(()=>{const S=AN.sheets[AN.i].S;const n=S.nets.findIndex((x,k)=>AN.nm(S,k)==='M.0228');S.rt.force[n]=0;AN.settle&&AN.settle()});
 await page.waitForTimeout(2000);
 let L=await page.evaluate(()=>lsEvents.map(e=>e.kind+' '+e.text));

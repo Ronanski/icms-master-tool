@@ -91,10 +91,10 @@
     };
   }
   const TABS = [
-    ['operate', 'PLANT VIEW', 'Plant graphics with the faceplates (A / M / R, SV, MV) like the operator station; on a PC it opens in its own window'],
-    ['logic', 'LOGIC', 'The ABC (analog) and DITL (digital) drawings: trace, run, force'],
-    ['library', 'LIBRARY', 'I/O list, memory list, wiring, relay / SER, calculations'],
-    ['tools', 'TOOLS', 'Tests, drawing checks, simulation switches']
+    ['operate', 'Plant view', 'Plant graphics with the faceplates (A / M / R, SV, MV) like the operator station; on a PC it opens in its own window'],
+    ['logic', 'Logic', 'The ABC (analog) and DITL (digital) drawings: trace, run, force'],
+    ['library', 'Library', 'I/O list, memory list, wiring, relay / SER, calculations'],
+    ['tools', 'Tools', 'Block tests, audit, health, project files, drawing edit']
   ];
   let tab = null,
     tabBtns = {},
@@ -148,14 +148,14 @@
     d.head.append(
       Object.assign(d.createElement('style'), {
         textContent:
-          'html,body{margin:0;height:100%;overflow:hidden;background:var(--c-bg,#090d12)}' +
-          '#pvbar{position:fixed;left:0;right:0;top:0;height:40px;display:flex;align-items:center;gap:8px;padding:0 10px;box-sizing:border-box;background:var(--c-strip,#0b1016);border-bottom:1px solid var(--c-line,#1c2731);color:var(--c-tx,#d3dce5);font:12.5px var(--uf,system-ui);z-index:60}' +
-          '#pvbar .pvt{font:600 12px var(--uf,system-ui);letter-spacing:.14em;color:#eef4f9;margin-right:6px;white-space:nowrap}' +
-          '#pvbar .pvs{font:600 11px var(--mf,monospace);color:var(--c-dim,#6f8191);white-space:nowrap}' +
-          '#pvbar .pvs.on{color:#35e08a}' +
+          'html,body{margin:0;height:100%;overflow:hidden;background:var(--c-bg,var(--c-well))}' +
+          '#pvbar{position:fixed;left:0;right:0;top:0;height:40px;display:flex;align-items:center;gap:8px;padding:0 10px;box-sizing:border-box;background:var(--c-strip,var(--c-well));border-bottom:1px solid var(--c-line);color:var(--c-tx);font:12.5px var(--uf,system-ui);z-index:60}' +
+          '#pvbar .pvt{font:600 12px var(--uf,system-ui);letter-spacing:.14em;color:var(--c-tx);margin-right:6px;white-space:nowrap}' +
+          '#pvbar .pvs{font:600 11px var(--mf,monospace);color:var(--c-dim);white-space:nowrap}' +
+          '#pvbar .pvs.on{color:var(--c-runtx2)}' +
           '#pvbar .pvg{flex:1}' +
-          '#pvbar>button,#pvbar .ddw>button{height:28px;padding:0 12px;border-radius:2px;background:#131b24;border:1px solid #273544;color:#c9d4de;font:600 12px var(--uf,system-ui);cursor:pointer;white-space:nowrap}' +
-          '#pvbar>button.on{background:#1d4a31;border-color:#3fae78;color:#fff}' +
+          '#pvbar>button,#pvbar .ddw>button{height:28px;padding:0 12px;border-radius:2px;background:var(--c-pane);border:1px solid var(--c-line);color:var(--c-tx);font:600 12px var(--uf,system-ui);cursor:pointer;white-space:nowrap}' +
+          '#pvbar>button.on{background:var(--c-runsoft);border-color:var(--c-run);color:#fff}' +
           'body.pvwin #plantws{display:grid!important;top:40px!important;bottom:0!important}'
       })
     );
@@ -376,7 +376,9 @@
     /* short labels (the handlers do not read these texts) */
     if (back) back.textContent = '◀◀';
     if (next) next.textContent = '▶▶';
-    if (wire) wire.textContent = 'Wire';
+    if (wire) wire.textContent = 'Wire values';
+    /* 3.0.0: the right panel is the Inspector (block details) / Faceplate */
+    if (panel) panel.textContent = 'Inspector';
     [back, next, stepSel].forEach(e => e && e.classList.add('tb-step'));
     view.classList.add('tb-view');
     /* --- status bar --- */
@@ -415,7 +417,7 @@
       gscope = $('gscope'),
       uisel = $('uisel');
     [...gs.children].forEach(c => {
-      if (c !== ansb && c !== gscope && c !== uisel && c.id !== 'updbtn' && c.id !== 'chsel' && c.id !== 'dgsel') c.remove();
+      if (c !== ansb && c !== gscope && c !== uisel && c.id !== 'updbtn' && c.id !== 'chsel' && c.id !== 'dgsel' && c.id !== 'dgtsel') c.remove();
     });
     const tabs = E('div', { cls: 'tabs' });
     TABS.forEach(([k, l, t]) => {
@@ -442,36 +444,41 @@
         if (s) s.classList.toggle('uiopen');
       }
     });
-    const gRun = E('div', { cls: 'tb g-run' }, [run, back, next, stepSel, speedSel, reset, view]);
-    /* 2.4.1-beta.4: the DITL page has the same tool bar as the ABC page (src/ui/shell/ditl.js); the old Simulate button stays hidden */
-    const gDitl = E('div', { cls: 'tb g-ditl' }, window.DUI ? DUI.bar(dfit) : [mode, dfit]);
-    /* Zoom (UI audit #8): at Fit the block text is ~4 px; Zoom makes it ~12 px, centred on the selected block (or the middle) */
-    const zoom = E('button', {
-      txt: 'Zoom',
-      cls: 'an-only',
-      title: 'Zoom to readable text (12 px) on the selected block; Fit shows the whole sheet again',
+    /* 3.0.0 (Style 2 + CAD): the tools are a ribbon under the top bar, in named groups (SIM / VIEW / LAYERS / TRACE).
+       The same elements and handlers; Fit of ABC and of DITL sit in one VIEW group with zoom − / + (one mouse-wheel step each). */
+    const zoomBy = dy => {
+      const s = $('svg');
+      if (!s) return;
+      const r = s.getBoundingClientRect();
+      for (let i = 0; i < 2; i++)
+        s.dispatchEvent(new WheelEvent('wheel', { deltaY: dy, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, bubbles: true, cancelable: true }));
+    };
+    const zOut = E('button', { txt: '−', title: 'Zoom out', 'aria-label': 'Zoom out', on: () => zoomBy(100) }),
+      zIn = E('button', { txt: '+', title: 'Zoom in (read the small text)', 'aria-label': 'Zoom in', on: () => zoomBy(-100) });
+    const gRun = E('div', { cls: 'tb g-run', 'data-label': 'SIM' }, [run, view, reset, speedSel, back, next, stepSel]);
+    /* 2.5.0-beta.9/13 (user): the DITL bar = [VIEW | ▶ Run] + Reset + Back + Zoom + Panel (src/ui/shell/ditl.js); its Fit stays in the VIEW group */
+    const gDitl = E('div', { cls: 'tb g-ditl', 'data-label': 'SIM' }, window.DUI ? DUI.bar(null) : [mode]);
+    const gZoom = E('div', { cls: 'tb g-zoom', 'data-label': 'VIEW' }, [AN_(fit), DI_(dfit), zOut, zIn]);
+    /* 3.0.0: Inputs layer = rings on the drawing at what the operator can set or force (AN.markInputs, plant-window.js) */
+    const inputs = E('button', {
+      txt: 'Inputs',
+      title: 'Amber rings on the drawing = the digital / analog inputs you can switch or force (listed in the Inspector)',
       on: () => {
-        try {
-          const sh = AN.cs(),
-            v = sh && AN.av[sh.name],
-            svg = $('svg');
-          if (!v || !svg) return;
-          const th = ((sh.R && sh.R.tx) || []).map(t => t.h).filter(h => h > 0).sort((a, b) => a - b),
-            h = th[th.length >> 1] || 4.7,
-            r = svg.getBoundingClientRect();
-          if (!r.width) return;
-          const g = svg.querySelector('g.selg'),
-            bb = g && g.childNodes.length ? g.getBBox() : null,
-            cx = bb && bb.width ? bb.x + bb.width / 2 : v[0] + v[2] / 2,
-            cy = bb && bb.width ? bb.y + bb.height / 2 : v[1] + v[3] / 2,
-            w = Math.min(v[2], (r.width * h) / 12),
-            hh = (w * r.height) / r.width;
-          v.splice(0, 4, cx - w / 2, cy - hh / 2, w, hh);
-          svg.setAttribute('viewBox', v.join(' '));
-        } catch (e) {}
+        AN.inMark = !AN.inMark;
+        inputs.classList.toggle('on', AN.inMark);
+        if (AN.markInputs) AN.markInputs();
       }
     });
-    const gView = E('div', { cls: 'tb g-view' }, [fit, zoom, values, wire, panel, xback]);
+    /* 3.0.0: pressing Run shows the Faceplate (controllers, trend, input buttons); the Inspector tab is one click away */
+    run.addEventListener('click', () =>
+      setTimeout(() => {
+        if (!AN.run || document.body.classList.contains('ophmi') || !document.body.classList.contains('an')) return;
+        const f = [...document.querySelectorAll('.hmitabs button')].find(b => b.textContent.trim() === 'Faceplate');
+        if (f) f.click();
+      }, 0)
+    );
+    const gView = E('div', { cls: 'tb g-view', 'data-label': 'LAYERS' }, [values, wire, inputs, panel]);
+    const gNav = E('div', { cls: 'tb g-nav', 'data-label': 'TRACE' }, [AN_(xback)]);
     const gSheet = E('div', { cls: 'tb g-sheet' }, [sheetsBtn, AN_(shbox), DI_(dshbox)]);
     /* OPERATE: Start ▾ (starting state of the plant, TCS, field valves) and the CHECK scenarios */
     const startBtn = E('button', { txt: 'Start ▾', title: 'Starting state of the plant: 150 MW, cold, warm, hot; TCS panel; field valves' });
@@ -479,7 +486,7 @@
     buildStart(start);
     const gOp = E('div', { cls: 'tb g-op' }, [start.w]);
     pvPop = () => pvWindow(start.w, gOp, run, chip, clock);
-    const tbar = E('div', { cls: 'tbar' }, [gRun, gDitl, gView, gSheet, gOp]);
+    const tbar = E('div', { cls: 'tbar' }, [gRun, gDitl, gZoom, gView, gNav, gSheet, gOp]);
     const srch = E('div', { cls: 'gs-search' }, [ansb, gscope]);
     /* narrow screens: the search is one icon; it opens as a full-width row under the bar */
     const srchBtn = E('button', {
@@ -506,74 +513,529 @@
     if (ln) ln.textContent = 'F(X) tables';
     if (second) second.textContent = 'Second sheet';
     /* ⚙: appearance, channel, update */
-    const setBtn = E('button', { cls: 'ico', html: GEAR, title: 'Settings: font, colours, channel, update' });
+    const setBtn = E('button', { cls: 'ico', html: GEAR, title: 'Settings: theme, drawing, channel, update' });
     const set = dropdown(setBtn, 'gs-set');
     set.head('Appearance');
-    /* 2.4.1-beta.5 (user: "gusto ko lahat, theme nalang"): the three design proposals as themes. A theme sets the colours of
-       the app and picks its font and diagram colours (both can still be changed below). The drawing lines stay as read from the DXF. */
+    /* 3.0.0: one app font; the older look selectors (font, UI skin, live colour, symbol theme) keep their defaults and are not shown */
+    document.documentElement.dataset.font = 'plexc';
     {
-      const TH = [
-          ['std', 'Theme: Standard', 'plexc', 'std'],
-          ['a', 'Theme: A · Control Room', 'plexc', 'std'],
-          ['b', 'Theme: B · Workstation', 'plex', 'std'],
-          ['c', 'Theme: C · Light', 'barlow', 'paper']
-        ],
-        th = E('select', { id: 'themesel', title: 'Theme of the app: colours, font, corners (the drawing is not changed)' });
-      TH.forEach(([v, t]) => th.append(E('option', { value: v, txt: t })));
-      const apply = v => {
-        if (!TH.some(x => x[0] === v)) v = 'std';
-        if (v === 'std') document.documentElement.removeAttribute('data-shell');
-        else document.documentElement.dataset.shell = v;
-        return v;
-      };
-      th.value = apply(ls.get('ls-shell') || 'std');
+      const th = E('select', { id: 'thsel', title: 'Light or dark app (the drawing has its own setting below)' });
+      [
+        ['light', 'Theme: Light'],
+        ['dark', 'Theme: Dark']
+      ].forEach(([v, t]) => th.append(E('option', { value: v, txt: t })));
+      const t0 = ls.get('ls-theme3') === 'dark' ? 'dark' : 'light';
+      th.value = t0;
+      document.documentElement.dataset.theme = t0;
       th.onchange = () => {
-        const t = TH.find(x => x[0] === apply(th.value));
-        ls.set('ls-shell', t[0]);
-        const f = $('fontsel'),
-          d = $('dgsel');
-        if (f && f.value !== t[2]) {
-          f.value = t[2];
-          f.dispatchEvent(new Event('change'));
-        }
-        if (d && d.value !== t[3]) {
-          d.value = t[3];
-          d.dispatchEvent(new Event('change'));
-        }
+        document.documentElement.dataset.theme = th.value;
+        ls.set('ls-theme3', th.value);
       };
       set.m.append(th);
     }
-    {
-      const fs_ = E('select', { id: 'fontsel', title: 'App font (the drawing keeps its own)' });
-      [
-        ['plexc', 'Font: IBM Plex Sans Condensed'],
-        ['barlow', 'Font: Barlow Semi Condensed'],
-        ['inter', 'Font: Inter + JetBrains Mono'],
-        ['plex', 'Font: IBM Plex Sans + Mono'],
-        ['roboto', 'Font: Roboto + Roboto Mono'],
-        ['device', 'Font: Device default']
-      ].forEach(([v, t]) => fs_.append(E('option', { value: v, txt: t })));
-      const f0 = ls.get('ls-font') || 'plexc';
-      fs_.value = f0;
-      document.documentElement.dataset.font = f0;
-      fs_.onchange = () => {
-        document.documentElement.dataset.font = fs_.value;
-        ls.set('ls-font', fs_.value);
-      };
-      set.m.append(fs_);
-    }
-    if (uisel) set.m.append(uisel);
     if ($('dgsel')) set.m.append($('dgsel'));
-    if (live) set.m.append(AN_(live));
-    if (theme) set.m.append(AN_(theme));
-    if (slive) set.m.append(DI_(slive));
+    if ($('dgtsel')) set.m.append($('dgtsel'));
+    {
+      const hold = E('div', { hidden: '' }, [uisel, live && AN_(live), theme && AN_(theme), slive && DI_(slive)]);
+      document.body.append(hold);
+    }
     set.head('Channel and update');
     if ($('chsel')) set.m.append($('chsel'));
     if ($('updbtn')) {
       $('updbtn').textContent = 'Check for update';
       set.m.append($('updbtn'));
     }
-    gs.append(tabs, sub, tbar, srchBtn, srch, set.w);
+    const brand = E('div', {
+      cls: 'brand',
+      title: 'DCS Logic Simulator',
+      html: '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="5" width="16" height="7" rx="3.5"/><path d="M8 12v6M16 12v6"/></svg></i><span>DCS Logic Simulator</span>'
+    });
+    /* 3.1.0: the old dark ABC skin (category-search.js) is replaced by the shell stylesheet */
+    {
+      const sk = $('skin');
+      if (sk) sk.remove();
+    }
+    gs.append(brand, tabs, sub, srchBtn, srch, set.w, tbar);
+    /* 3.0.0: CAD icons on the ribbon and the tabs (CSS masks in app.css); the labels stay, no handler reads them */
+    [[view, 'eye'], [reset, 'reset'], [fit, 'fit'], [dfit, 'fit'], [values, 'hash'], [wire, 'wave'], [inputs, 'target'], [panel, 'side']].forEach(
+      ([b, k]) => {
+        if (!b) return;
+        b.dataset.ic = k;
+        if (!b.getAttribute('aria-label')) b.setAttribute('aria-label', b.textContent.trim());
+        if (!b.title) b.title = b.textContent.trim();
+      }
+    );
+    const TIC = { 'Plant view': 'plant', Logic: 'logic', Library: 'book', Tools: 'tool' };
+    tabs.querySelectorAll('button').forEach(b => {
+      const k = TIC[b.textContent.trim()];
+      if (k) {
+        b.dataset.ic = k;
+        b.setAttribute('aria-label', b.textContent.trim());
+      }
+    });
+    /* ===== 3.0.0-beta.5 OVERHAUL (the Style 2 + CAD mockup): one top bar with the sheet name and the VIEW | RUN switch,
+       a CAD ribbon (large icon buttons with the group name under them in VIEW, one compact row in RUN), Sheets | Inputs on
+       the left. The elements are the app's own (same handlers); only where they sit and how they look changes. ===== */
+    const isAn = () => document.body.classList.contains('an');
+    const ditlSim = () => {
+      try {
+        return !!SIM;
+      } catch (e) {
+        return false;
+      }
+    };
+    /* a button of the DITL bar (src/ui/shell/ditl.js), hidden in the ribbon: VIEW / RUN of the top bar press it */
+    const dui = c => document.querySelector('#gsbar .g-ditl ' + c);
+    /* the sheet name moves into the top bar: the ABC and DITL title strips themselves (their scripts keep filling them) */
+    const crumb = E('div', { cls: 'crumb' });
+    if ($('anmeta')) crumb.append($('anmeta'));
+    if ($('meta')) crumb.append($('meta'));
+    sub.after(crumb);
+    /* VIEW | RUN: the one mode switch (ABC: View / Run; DITL: Run / Stop) */
+    const segV = E('button', {
+        txt: 'VIEW',
+        title: 'VIEW: look and trace; nothing runs, the inputs are locked',
+        on: () => {
+          if (isAn()) {
+            if (!AN.view) view.click();
+          } else if (dui('.tb-view')) dui('.tb-view').click();
+          else if (ditlSim()) mode.click();
+        }
+      }),
+      segR = E('button', {
+        txt: 'RUN',
+        title: 'RUN: the logic runs; switch and force the inputs',
+        on: () => {
+          if (isAn()) {
+            if (AN.view || !AN.run) run.click();
+          } else if (dui('.dui-run')) dui('.dui-run').click(); /* the DITL Run of ditl.js: SIM on, not paused, 1x (2.5.0-beta.9) */
+          else if (!ditlSim()) mode.click();
+        }
+      }),
+      seg = E('div', { cls: 'seg' }, [segV, segR]);
+    srch.after(seg);
+    /* VIEW ribbon: Navigate / View / Layers / Reference (the group name is under the buttons) */
+    const ioBtn = E('button', { txt: 'I/O list', title: 'LIBRARY: I/O list and memory lists', on: () => setTab('library') }),
+      fxBtn = E('button', { txt: 'F(X)', title: 'F(X) tables (linear curves)', on: () => ln && ln.click() }),
+      gRef = E('div', { cls: 'tb g-ref', 'data-label': 'REFERENCE' }, [ioBtn, AN_(fxBtn)]);
+    gNav.dataset.label = 'NAVIGATE';
+    gView.after(gRef);
+    {
+      const lg = () => crumb.querySelector('#anmeta .lg > button');
+      /* Legend & style sits with the layers (its button is rebuilt with each sheet: the ribbon button presses it) */
+      const lgBtn = E('button', {
+        txt: 'Legend',
+        title: 'Colour code of the symbols, valves and wires; wire style',
+        on: () => {
+          if (lg()) lg().click();
+          const p = $('anlg'),
+            r = lgBtn.getBoundingClientRect();
+          if (p && r.width) {
+            p.style.top = r.bottom + 6 + 'px';
+            p.style.right = 'auto';
+            p.style.left = Math.max(8, Math.min(innerWidth - p.offsetWidth - 8, r.left)) + 'px';
+          }
+        }
+      });
+      gView.append(AN_(lgBtn));
+      [[ioBtn, 'book'], [fxBtn, 'curve'], [lgBtn, 'legend'], [zIn, 'zin'], [zOut, 'zout'], [xback, 'back']].forEach(([b, k]) => b && (b.dataset.ic = k));
+      zIn.textContent = 'Zoom in';
+      zOut.textContent = 'Zoom out';
+      if (xback) xback.title = xback.title || 'Back to where the trace jumped from';
+    }
+    /* left: Sheets | Inputs (ABC). Inputs = the digital / analog inputs of this sheet (the Inspector rows), each with its own
+       control: a 0 / 1 press goes to the same button in the Inspector, a click on the name shows it on the drawing. */
+    const side = $('side'),
+      sideTabs = E('div', { id: 'sidetabs' }),
+      inl = E('div', { id: 'inlist' });
+    const stS = E('button', { cls: 'on', txt: 'Sheets', on: () => sideMode(false) }),
+      stI = E('button', { txt: 'Inputs', on: () => sideMode(true) });
+    sideTabs.append(stS, stI);
+    const sideMode = on => {
+      side.classList.toggle('inp', on);
+      stS.classList.toggle('on', !on);
+      stI.classList.toggle('on', on);
+      if (on) inBuild(true);
+    };
+    if (side) {
+      const hd = $('sidehd');
+      hd ? hd.after(sideTabs) : side.prepend(sideTabs);
+      sideTabs.after(inl);
+    }
+    let inRows = null;
+    const inBuild = force => {
+      const rows = window.AN && AN.rows;
+      if (!rows || (!force && rows === inRows)) return;
+      inRows = rows;
+      inl.textContent = '';
+      const secs = {};
+      for (const k in rows) {
+        const r = rows[k];
+        if (!/inputs/i.test(r._sec || '')) continue;
+        (secs[r._sec] = secs[r._sec] || []).push(r);
+      }
+      let n = 0;
+      for (const s of Object.keys(secs).sort((a, b) => /digital/i.test(b) - /digital/i.test(a))) {
+        inl.append(E('div', { cls: 'inh', txt: s.replace(/ inputs/i, '').toUpperCase() + ' · ' + secs[s].length }));
+        for (const r of secs[s]) {
+          n++;
+          const tg = r.querySelector('.tg'),
+            ds = r.querySelector('.ds'),
+            ctl = r.querySelector('.l1 button'),
+            num = r.querySelector('.l1 input[type=number]'),
+            nm = E('div', { cls: 'inn' }, [E('b', { txt: tg ? tg.textContent : '' }), ds ? E('small', { txt: ds.textContent }) : null]);
+          nm.onclick = () => tg && tg.click();
+          const it = E('div', { cls: 'ini' }, [nm]);
+          if (ctl) {
+            /* a 0 | 1 switch (OFF | ON for a bad-signal flag); F = forced by you */
+            const word = /signal/i.test(ctl.textContent),
+              p = E('button', {
+                cls: 'inb',
+                title: ctl.title || 'Switch this input',
+                html: '<i>' + (word ? 'OFF' : '0') + '</i><i>' + (word ? 'ON' : '1') + '</i>',
+                on: () => {
+                  if (!AN.view) ctl.click();
+                }
+              }),
+              fb = E('span', { cls: 'inf', txt: 'F', title: 'Forced' });
+            it.append(fb, p);
+            it._u = () => {
+              const t = ctl.textContent.trim();
+              p.classList.toggle('one', /^1\b|\bON\b/.test(t) && !/^0\b/.test(t));
+              const fo = ctl.classList.contains('fo') || !!r.querySelector('.fo');
+              it.classList.toggle('fo', fo);
+              p.disabled = !!AN.view;
+            };
+          } else if (num) {
+            const v = E('span', { cls: 'inv' });
+            it.append(v);
+            it._u = () => (v.textContent = num.value);
+          }
+          inl.append(it);
+        }
+      }
+      if (!n) inl.append(E('div', { cls: 'inh', txt: 'No inputs on this sheet' }));
+      stI.textContent = 'Inputs ' + n;
+    };
+    setInterval(() => {
+      if (!isAn() || tab !== 'logic') return;
+      inBuild(false);
+      if (side && side.classList.contains('inp')) inl.querySelectorAll('.ini').forEach(i => i._u && i._u());
+      const mk = $('inmk');
+      if (mk && AN.rows)
+        mk.querySelectorAll('circle').forEach(c => {
+          const r = AN.rows[c.dataset.k];
+          c.classList.toggle('fo', !!(r && r.querySelector('.fo')));
+        });
+    }, 400);
+    /* modes: VIEW (large ribbon) or RUN (one compact row); the switch and the status line follow */
+    setInterval(() => {
+      const an_ = isAn(),
+        sim = an_ ? !(window.AN && AN.view) : ditlSim();
+      document.body.classList.toggle('simmode', sim);
+      segV.classList.toggle('on', !sim);
+      segR.classList.toggle('on', sim);
+      const paused = an_ && sim && !AN.run;
+      segR.textContent = paused ? 'PAUSED' : 'RUN';
+      segR.classList.toggle('paused', paused);
+      if (!an_ && side && side.classList.contains('inp')) sideMode(false);
+      const inf = crumb.querySelector('#anmeta small');
+      if (foot) {
+        let si = foot.querySelector('.sinfo');
+        if (!si) foot.append((si = E('span', { cls: 'sinfo' })));
+        si.textContent = an_ && inf ? inf.textContent : '';
+      }
+    }, 300);
+    /* ===== 3.0.0-beta.7 STYLE 2 + CAD, the details of the mockups: the drawing is a sheet of paper on a desk with CAD
+       rulers, a dark zoom bar floats over it (sheet ‹ ›, − zoom % +, Fit), a "selected block" card heads the Inspector,
+       the status line counts the forced signals and names the selection, "/" opens the search. ===== */
+    {
+      const cv = $('cv'),
+        svgE = $('svg');
+      /* floating zoom bar: the ribbon VIEW group moves into it (the same Fit buttons) */
+      const sheetBtn = (dir, title) =>
+        E('button', {
+          cls: 'zb',
+          txt: dir < 0 ? '‹' : '›',
+          title,
+          on: () => {
+            const box = isAn() ? $('anshbox') : $('shbox'),
+              bs = box ? [...box.querySelectorAll('button')] : [];
+            const b = dir < 0 ? bs[0] : bs[bs.length - 1];
+            if (b) b.click();
+          }
+        });
+      const zPct = E('span', { cls: 'zpct', txt: '100%', title: '100% = the whole sheet (Fit)' });
+      const zo = E('button', { cls: 'zb', txt: '−', title: 'Zoom out', 'aria-label': 'Zoom out', on: () => zoomBy(100) }),
+        zi = E('button', { cls: 'zb', txt: '+', title: 'Zoom in', 'aria-label': 'Zoom in', on: () => zoomBy(-100) });
+      const fitW = [...gZoom.children].filter(x => x.querySelector && x.querySelector('#bfit, button'));
+      const zbar = E('div', { id: 'zbar' }, [sheetBtn(-1, 'Previous sheet'), sheetBtn(1, 'Next sheet'), E('i', { cls: 'zsep' }), zo, zPct, zi, E('i', { cls: 'zsep' })]);
+      fitW.forEach(w => zbar.append(w));
+      [fit, dfit].forEach(b => b && b.addEventListener('click', () => setTimeout(() => (zRef = null), 60)));
+      document.body.append(zbar);
+      zIn.remove();
+      zOut.remove();
+      gZoom.style.display = 'none';
+      /* CAD rulers along the top and left edge of the drawing, in drawing units, following pan and zoom */
+      const rT = E('canvas', { id: 'rulert' }),
+        rL = E('canvas', { id: 'rulerl' }),
+        rC = E('div', { id: 'rulerc' });
+      document.body.append(rT, rL, rC);
+      let zRef = null,
+        zSheet = '',
+        last = '',
+        ink = null;
+      const nice = v => {
+        const p = Math.pow(10, Math.floor(Math.log10(v))),
+          m = v / p;
+        return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p;
+      };
+      const drawRuler = (c, len, horiz, v0, perPx, flip) => {
+        const dpr = Math.min(2, devicePixelRatio || 1),
+          T = 18;
+        c.width = (horiz ? len : T) * dpr;
+        c.height = (horiz ? T : len) * dpr;
+        const g = c.getContext('2d');
+        g.scale(dpr, dpr);
+        g.fillStyle = ink.bg;
+        g.fillRect(0, 0, horiz ? len : T, horiz ? T : len);
+        g.strokeStyle = ink.line;
+        g.fillStyle = ink.tx;
+        g.font = '9.5px ' + ink.font;
+        g.lineWidth = 1;
+        const step = nice(80 * perPx),
+          minor = step / 5,
+          a = v0,
+          b = v0 + len * perPx;
+        g.beginPath();
+        for (let u = Math.ceil(a / minor) * minor; u <= b; u += minor) {
+          const px = Math.round((u - a) / perPx) + 0.5,
+            major = Math.abs(u / step - Math.round(u / step)) < 1e-6,
+            h = major ? 9 : 4;
+          if (horiz) {
+            g.moveTo(px, T);
+            g.lineTo(px, T - h);
+          } else {
+            g.moveTo(T, px);
+            g.lineTo(T - h, px);
+          }
+          if (major) {
+            const lab = String(Math.round((flip ? -u : u) * 100) / 100);
+            if (horiz) g.fillText(lab, px + 3, 9);
+            else {
+              g.save();
+              g.translate(9, px - 3);
+              g.rotate(-Math.PI / 2);
+              g.fillText(lab, 0, 0);
+              g.restore();
+            }
+          }
+        }
+        g.stroke();
+        g.beginPath();
+        if (horiz) {
+          g.moveTo(0, T - 0.5);
+          g.lineTo(len, T - 0.5);
+        } else {
+          g.moveTo(T - 0.5, 0);
+          g.lineTo(T - 0.5, len);
+        }
+        g.strokeStyle = ink.edge;
+        g.stroke();
+      };
+      const tick = () => {
+        const show = tab === 'logic' && cv && svgE && cv.offsetParent !== null;
+        document.body.classList.toggle('rulers', !!show);
+        if (!show) return;
+        const r = svgE.getBoundingClientRect(),
+          vb = (svgE.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number),
+          name = (isAn() ? 'a' : 'd') + (crumb.textContent || ''),
+          theme = document.documentElement.dataset.theme + (document.documentElement.dataset.dg || '');
+        if (vb.length !== 4 || !(vb[2] > 0) || !r.width) return;
+        if (name !== zSheet) {
+          zSheet = name;
+          zRef = null;
+        }
+        if (!zRef) zRef = vb[2];
+        const key = [r.left, r.top, r.width, r.height, vb.join(','), theme].join('|');
+        if (key === last) return;
+        last = key;
+        if (!ink || ink.k !== theme) {
+          const cs = getComputedStyle(document.documentElement),
+            v = n => cs.getPropertyValue(n).trim();
+          ink = { k: theme, bg: v('--c-ribbon') || '#f7f8fa', line: v('--c-line2') || '#8f989f', tx: v('--c-dim') || '#5b646c', edge: v('--c-line') || '#d6dadf', font: v('--mf') || 'monospace' };
+        }
+        /* the svg keeps the aspect (meet): the visible drawing area is the view box widened on one axis */
+        const s = Math.min(r.width / vb[2], r.height / vb[3]),
+          x0 = vb[0] - (r.width / s - vb[2]) / 2,
+          y0 = vb[1] - (r.height / s - vb[3]) / 2;
+        rT.style.cssText = `left:${r.left + 18}px;top:${r.top}px;width:${r.width - 18}px`;
+        rL.style.cssText = `left:${r.left}px;top:${r.top + 18}px;height:${r.height - 18}px`;
+        rC.style.cssText = `left:${r.left}px;top:${r.top}px`;
+        drawRuler(rT, r.width - 18, true, x0 + 18 / s, 1 / s, false);
+        drawRuler(rL, r.height - 18, false, y0 + 18 / s, 1 / s, isAn());
+        zPct.textContent = Math.round((zRef / vb[2]) * 100) + '%';
+        /* centred on the part of the drawing that is not under an overlay panel (tablet) */
+        let right = r.right;
+        [$('anp'), $('opp')].forEach(pn => {
+          if (!pn || pn.offsetParent === null) return;
+          const q = pn.getBoundingClientRect();
+          if (q.width && q.left > r.left + 100 && q.left < right) right = q.left;
+        });
+        zbar.style.left = r.left + (right - r.left) / 2 + 'px';
+        zbar.style.top = r.bottom - 52 + 'px';
+      };
+      setInterval(tick, 120);
+      /* "/" or Ctrl+K: the search */
+      addEventListener('keydown', e => {
+        const t = e.target;
+        if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+        if (e.key === '/' || ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K'))) {
+          e.preventDefault();
+          if (getComputedStyle(srchBtn).display !== 'none') srchBtn.click();
+          ansb.focus();
+          ansb.select();
+        }
+      });
+      ansb.placeholder = 'Search tag, address, description';
+      srch.append(E('kbd', { cls: 'skbd', txt: '/', title: 'Press / (or Ctrl+K) to search' }));
+      /* breadcrumb: Logic › ABC analog › */
+      crumb.prepend(E('span', { cls: 'cpath' }));
+      /* selected block card (ABC): name, kind, the values in and out, Open faceplate */
+      const card = E('div', { id: 'selcard' });
+      let cardKey = '';
+      const fmt = x => (x == null || !isFinite(x) ? '—' : Math.abs(x) >= 100 ? x.toFixed(1) : x.toFixed(2));
+      const cardUpd = () => {
+        const anp = $('anp'),
+          sel = $('ansel');
+        if (!anp || !sel || !isAn() || !window.AN) return;
+        if (card.parentNode !== anp || card.nextSibling !== sel) sel.before(card);
+        const sh = AN.sheets && AN.sheets[AN.i],
+          S = sh && sh.S,
+          s = AN.sel,
+          b = s && s.blk;
+        anp.classList.toggle('hassel', !!(s && (b || s.net != null)));
+        if (!S || !s || (!b && s.net == null)) {
+          if (cardKey) {
+            card.textContent = '';
+            cardKey = '';
+          }
+          return;
+        }
+        const nmf = n => (typeof nm === 'function' ? nm(S, n) : 'net ' + n),
+          isD = n => S.nets[n] && S.nets[n].dig,
+          val = n => (isD(n) ? (S.rt.v[n] > 0.5 ? '1' : '0') : fmt(S.rt.v[n])),
+          key = (b ? 'b' + b.id : 'n' + s.net) + '|' + sh.name;
+        if (key !== cardKey) {
+          cardKey = key;
+          card.textContent = '';
+          const name = b ? b.tag || (b.txt || []).filter(Boolean)[1] || b.k + ' #' + b.id : nmf(s.net),
+            kind = b ? b.k : 'WIRE',
+            fp = b && b.tag && /^(PID|PIDV|MAN)/.test(b.k);
+          card.append(
+            E('div', { cls: 'sch' }, [E('small', { txt: b ? 'SELECTED BLOCK' : 'SELECTED WIRE' }), E('span', { cls: 'chip', txt: kind })]),
+            E('b', { cls: 'scn', txt: name }),
+            b && b.txt ? E('div', { cls: 'scd', txt: b.txt.filter(Boolean).join(' · ') }) : null
+          );
+          const grid = E('div', { cls: 'scv' });
+          const cell = (lab, n) => {
+            const v = E('b', { txt: val(n) });
+            v._n = n;
+            grid.append(E('div', { title: nmf(n) }, [E('small', { txt: lab }), v]));
+          };
+          if (b) {
+            (b.i || []).slice(0, 3).forEach((n, k) => cell('IN' + ((b.i || []).length > 1 ? ' ' + (k + 1) : ''), n));
+            (b.o || []).slice(0, 3).forEach((n, k) => cell('OUT' + ((b.o || []).length > 1 ? ' ' + (k + 1) : ''), n));
+          } else cell('VALUE', s.net);
+          card.append(grid);
+          if (fp)
+            card.append(
+              E('button', {
+                cls: 'scb keep',
+                txt: 'Open faceplate',
+                on: () => {
+                  const f = [...document.querySelectorAll('.hmitabs button')].find(x => x.textContent.trim() === 'Faceplate');
+                  if (f) f.click();
+                  setTimeout(() => {
+                    const c = [...document.querySelectorAll('.fpov .ovc')].find(x => x.dataset.t === b.tag);
+                    if (c) c.click();
+                  }, 120);
+                }
+              })
+            );
+        }
+        card.querySelectorAll('.scv b').forEach(e => (e.textContent = val(e._n)));
+      };
+      /* status line: forced signals and the selection */
+      const sForce = E('span', { cls: 'sforce', title: 'Signals forced by you (Inspector > Forced signals)' }),
+        sSel = E('span', { cls: 'ssel' });
+      const sinfoPut = () => {
+        const si = foot && foot.querySelector('.sinfo');
+        if (si && sForce.parentNode !== foot) si.before(sSel, sForce);
+      };
+      setInterval(() => {
+        try {
+          cardUpd();
+        } catch (e) {}
+        sinfoPut();
+        const h = [...document.querySelectorAll('#anp h4')].find(x => /FORCED SIGNALS/i.test(x.textContent)),
+          n = isAn() && h ? +((h.textContent.match(/\((\d+)\)/) || [])[1] || 0) : 0;
+        sForce.textContent = n ? 'FORCED ' + n : '';
+        sForce.classList.toggle('on', n > 0);
+        const s = isAn() && window.AN && AN.sel,
+          sh = s && AN.sheets[AN.i];
+        sSel.textContent = s && s.blk ? 'Selected: ' + s.blk.k + ' ' + (s.blk.tag || '#' + s.blk.id) : s && s.net != null && sh && sh.S && typeof nm === 'function' ? 'Selected: ' + nm(sh.S, s.net) : '';
+        const cp = crumb.querySelector('.cpath');
+        if (cp) cp.textContent = isAn() ? 'ABC analog ›' : 'DITL digital ›';
+      }, 300);
+    }
+    /* 3.1.0-beta.3: the text symbols on the buttons of every panel (✕ ✓ ◀ ▶ ◀◀ ▶▶ ▲ ▼ ⓘ ⤢ ❚❚ …) are drawn as one set of
+       line icons. The text of the button does not change (handlers and tests read it): a whole-symbol button gets
+       data-g, a symbol before / after a word is wrapped in <span class="gi" data-g> and the stylesheet draws the icon. */
+    {
+      const G = { '✕': 'x', '×': 'x', '✖': 'x', '✓': 'check', '✔': 'check', '◀': 'cl', '‹': 'cl', '◄': 'cl', '▶': 'cr', '›': 'cr', '►': 'cr', '◀◀': 'skipb', '▶▶': 'skipf', '▲': 'cu', '▼': 'cd', '▾': 'cd', 'ⓘ': 'info', '⤢': 'expand', '−': 'minus', '+': 'plus', '❚❚': 'pause', '↩': 'back', '☰': 'menu', '📍': 'pin', '🎲': 'dice', '📂': 'folder', '💾': 'save' };
+      const LEAD = { '▶': 'play', '❚❚': 'pause' };
+      const skip = b => b.closest('.fp,.fpop,svg,#sidelist,#anlist,#pllist,.libg,#anfind');
+      const tag = () => {
+        for (const b of document.querySelectorAll('button')) {
+          const t = b.textContent;
+          if (b._gt === t) continue;
+          b._gt = t;
+          if (skip(b)) continue;
+          const s = t.trim();
+          b.removeAttribute('data-g');
+          if (G[s]) {
+            b.dataset.g = G[s];
+            if (!b.getAttribute('aria-label')) b.setAttribute('aria-label', b.title || s);
+            continue;
+          }
+          if (b.querySelector('.gi')) continue;
+          const n = b.firstChild;
+          if (!n || n.nodeType !== 3 || b.childNodes.length !== 1) continue;
+          const m = s.match(/^(❚❚|◀◀|▶▶|[▶◀✕✓↩☰📍🎲📂💾⤢▾▼▲])\s+(.+)$/u) || s.match(/^(.+?)\s+(⤢|▾|▼|▲|▶|◀)$/u);
+          if (!m) continue;
+          const lead = /^(❚❚|◀◀|▶▶|[▶◀✕✓↩☰📍🎲📂💾⤢▾▼▲])$/u.test(m[1]),
+            g = lead ? m[1] : m[2],
+            word = lead ? m[2] : m[1],
+            gi = E('span', { cls: 'gi', 'data-g': (lead && LEAD[g]) || G[g], txt: g, 'aria-hidden': 'true' });
+          b.textContent = '';
+          if (lead) b.append(gi, ' ' + word);
+          else b.append(word + ' ', gi);
+          b._gt = b.textContent;
+        }
+      };
+      /* panels that rebuild their buttons (UAT, CHECK, Inspector) get the icons at once: tag after each change, once per frame */
+      let tq = false;
+      new MutationObserver(() => {
+        if (tq) return;
+        tq = true;
+        requestAnimationFrame(() => {
+          tq = false;
+          tag();
+        });
+      }).observe(document.body, { childList: true, subtree: true });
+      tag();
+    }
     /* --- TOOLS page --- */
     toolsws = E('div', { id: 'toolsws' });
     const grid = E('div', { cls: 'tgrid' });
@@ -645,7 +1107,8 @@
         set.m.append(up);
       }
       if ($('chsel') && $('chsel').parentNode !== set.m) set.m.insertBefore($('chsel'), up && up.parentNode === set.m ? up : null);
-      if (dg && dg.parentNode !== set.m) uisel ? uisel.after(dg) : set.m.append(dg);
+      if (dg && dg.parentNode !== set.m) $('thsel') ? $('thsel').after(dg) : set.m.append(dg);
+      if ($('dgtsel') && $('dgtsel').parentNode !== set.m) dg ? dg.after($('dgtsel')) : set.m.append($('dgtsel'));
       if (w.length) {
         if (!wb) wb = w[0];
         if (wb.parentNode !== cSim.querySelector('.row')) cSim.querySelector('.row').prepend(wb);

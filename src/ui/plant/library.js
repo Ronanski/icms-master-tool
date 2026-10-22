@@ -296,7 +296,7 @@
     if (!n && words.length) {
       const ot = tab === 'io' ? 'mem' : 'io',
         m = rows[ot].filter(r => (!stn || r.st === stn) && words.every(w => r.h.includes(w))).length;
-      if (m) other = ' · ' + m + ' in the ' + (ot === 'io' ? 'I/O LIST' : 'MEMORY LIST') + ' tab';
+      if (m) other = ' · ' + m + ' in the ' + (ot === 'io' ? 'I/O list' : 'Memory list') + ' tab';
     }
     cnt.textContent = n + (n === 1 ? ' row · ' : ' rows · ') + ng + (ng === 1 ? ' group' : ' groups') + (shown > MAX ? ' · ' + MAX + ' of ' + shown + ' shown (type more to narrow)' : '') + other;
   }
@@ -314,7 +314,7 @@
             render();
           }
         });
-    tabs.append(mk('io', 'I/O LIST'), mk('mem', 'MEMORY LIST'), mk('wire', 'WIRING'), mk('relay', 'RELAY / SER'), mk('calc', 'CALC'));
+    tabs.append(mk('io', 'I/O list'), mk('mem', 'Memory list'), mk('wire', 'Wiring'), mk('relay', 'Relay / SER'), mk('calc', 'Calculations'));
     const ss = E('select', { cls: 'libst' });
     [['', 'All stations'], ['1', 'STN101'], ['2', 'STN102'], ['3', 'STN103'], ['4', 'STN104'], ['5', 'STN105']].forEach(([v, t]) => {
       const o = E('option', { txt: t });

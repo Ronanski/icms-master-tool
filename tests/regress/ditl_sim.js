@@ -21,10 +21,11 @@ await page.waitForTimeout(800);
 const wait=ms=>page.waitForTimeout(ms);
 // the DITL bar
 await page.evaluate(()=>AN.setCat('dig'));await wait(500);
+// 3.2.0-beta.1: VIEW | RUN is the switch of the top bar (.seg), Reset / Back / Zoom / Panel in the ribbon (.g-ditl)
 const bar=await page.evaluate(()=>{const g=document.querySelector('#gsbar .g-ditl'),vis=e=>!!e&&e.offsetParent!==null&&e.offsetHeight>0;
- return {txt:[...g.querySelectorAll('button,select')].filter(vis).map(b=>b.textContent.trim()),step:[...document.querySelectorAll('#gsbar button,#gsbar select')].filter(vis).some(b=>/^▶▶$|⏱/.test(b.textContent.trim())&&b.closest('.g-ditl,.lo-pg'))}});
-ck(bar.txt.includes('VIEW')&&bar.txt.includes('▶ Run')&&bar.txt.includes('Reset')&&!bar.txt.some(t=>/▶▶|⏱|^\d+x$|^\d+ s$/.test(t))&&!bar.step,'DITL bar: '+bar.txt.join(' | ')+' (no step, no step size, no speed)');
-const click=sel=>page.evaluate(sel=>{const b=[...document.querySelectorAll('#gsbar .g-ditl button')].find(b=>b.textContent.trim()===sel);b.click()},sel);
+ return {txt:[...document.querySelectorAll('#gsbar .seg button')].concat([...g.querySelectorAll('button,select')]).filter(vis).map(b=>b.textContent.trim()),step:[...document.querySelectorAll('#gsbar button,#gsbar select')].filter(vis).some(b=>/^▶▶$|⏱/.test(b.textContent.trim())&&b.closest('.g-ditl,.lo-pg'))}});
+ck(bar.txt.includes('VIEW')&&bar.txt.includes('RUN')&&bar.txt.includes('Reset')&&!bar.txt.some(t=>/▶▶|⏱|^\d+x$|^\d+ s$/.test(t))&&!bar.step,'DITL bar: '+bar.txt.join(' | ')+' (no step, no step size, no speed)');
+const click=sel=>page.evaluate(sel=>{const b=sel==='▶ Run'?document.querySelector('#gsbar .seg button:last-child'):sel==='VIEW'?document.querySelector('#gsbar .seg button:first-child'):[...document.querySelectorAll('#gsbar .g-ditl button')].find(b=>b.textContent.trim()===sel);b.click()},sel);
 for(const world of [false,true])for(const plant of ['off','on']){
  const tag='ABC+DITL '+(world?'ON':'OFF')+', plant model '+plant.toUpperCase()+': ';
  await page.evaluate(([world,plant])=>{if(SIM)document.getElementById('bmode').click();AN.run=false;AN.reset();

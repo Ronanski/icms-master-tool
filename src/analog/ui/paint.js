@@ -246,14 +246,14 @@ function lgd() {
     dt('#ff4d4d', 'open') +
     dt('#ffffff', 'moving') +
     dt('#4da3ff', 'stopped half open') +
-    '<b>Numbers</b><div class="it"><span style="color:#8dffb8;font-weight:700">12.3</span>&nbsp;computed by the logic</div><div class="it"><span style="color:#6ad7ff;font-weight:700">12.3</span>&nbsp;simulated input (typed or slider)</div><div class="it"><span style="color:#ffb04d;font-weight:700">12.3</span>&nbsp;FORCED value</div><b>Wires</b><div class="it"><svg width="24" height="13"><line x1="0" y1="6" x2="24" y2="6" stroke="var(--live)" stroke-width="1.6"/></svg>digital: Live colour = 1, grey = 0</div><div class="it"><svg width="24" height="13"><line x1="0" y1="6" x2="24" y2="6" stroke="var(--alive,#ffb020)" stroke-width="5"/><line x1="0" y1="6" x2="24" y2="6" stroke="#0f1418" stroke-width="2"/></svg>analog: always coloured (a value is flowing)</div><div class="it"><svg width="24" height="13"><line x1="0" y1="6" x2="24" y2="6" stroke="#35414a" stroke-width="2" opacity=".6"/></svg>grey / faint = INACTIVE: nobody follows it (T input not selected, selector leg not chosen). In VIEW / TRACE mode every wire is grey because nothing is simulated. An orange dashed box = UNRESOLVED (Review marks)</div><div class="it"><svg width="24" height="13"><line x1="0" y1="6" x2="24" y2="6" stroke="var(--pnc,#5cc8ff)" stroke-width="2.2"/></svg>pneumatic (air) line and actuator head: blink while the valve travels</div><div class="it"><svg width="24" height="13"><text x="3" y="11" font-size="12" font-weight="800" fill="var(--alive,#ffb020)">B</text></svg>T: the letter (A or B) of the input in use is coloured and bold</div>';
+    '<b>Numbers</b><div class="it"><span style="color:#8dffb8;font-weight:700">12.3</span>&nbsp;computed by the logic</div><div class="it"><span style="color:#6ad7ff;font-weight:700">12.3</span>&nbsp;simulated input (typed or slider)</div><div class="it"><span style="color:var(--c-mantx2);font-weight:700">12.3</span>&nbsp;FORCED value</div><b>Wires</b><div class="it"><svg width="24" height="13"><line x1="0" y1="6" x2="24" y2="6" stroke="var(--live)" stroke-width="1.6"/></svg>digital: Live colour = 1, grey = 0</div><div class="it"><svg width="24" height="13"><line x1="0" y1="6" x2="24" y2="6" stroke="var(--alive,#ffb020)" stroke-width="5"/><line x1="0" y1="6" x2="24" y2="6" stroke="#0f1418" stroke-width="2"/></svg>analog: always coloured (a value is flowing)</div><div class="it"><svg width="24" height="13"><line x1="0" y1="6" x2="24" y2="6" stroke="#35414a" stroke-width="2" opacity=".6"/></svg>grey / faint = INACTIVE: nobody follows it (T input not selected, selector leg not chosen). In VIEW / TRACE mode every wire is grey because nothing is simulated. An orange dashed box = UNRESOLVED (Review marks)</div><div class="it"><svg width="24" height="13"><line x1="0" y1="6" x2="24" y2="6" stroke="var(--pnc,#5cc8ff)" stroke-width="2.2"/></svg>pneumatic (air) line and actuator head: blink while the valve travels</div><div class="it"><svg width="24" height="13"><text x="3" y="11" font-size="12" font-weight="800" fill="var(--alive,#ffb020)">B</text></svg>T: the letter (A or B) of the input in use is coloured and bold</div>';
   document.body.append(d);
   const REDRAW = { vs: 1, vf: 1, vw: 1 },
     sel = (label, key, opts) => {
       const w = h$('div', { cls: 'it' }),
         s = h$(
           'select',
-          { style: 'background:#0b1013;color:#d7e0e6;border:1px solid #2a3640;padding:2px 4px' },
+          { style: 'background:var(--c-well);color:var(--c-tx);border:1px solid var(--c-line);padding:2px 4px' },
           opts.map(([v, t]) => h$('option', { value: v, txt: t }))
         );
       s.value = String(AN.ws[key]);
@@ -386,7 +386,7 @@ function lgd() {
       ['600', 'Semi-bold'],
       ['800', 'Bold']
     ]),
-    h$('div', { cls: 'it', style: 'color:#7d8e9a', txt: 'Click a wire to change the look of that one wire only.' })
+    h$('div', { cls: 'it', style: 'color:var(--c-dim)', txt: 'Click a wire to change the look of that one wire only.' })
   );
   {
     const out = h$('div', { style: 'margin-top:4px;line-height:1.5' }),
@@ -436,7 +436,7 @@ function lgd() {
         onclick: () => {
           const t = h$('textarea', {
             style:
-              'width:100%;height:150px;background:#0b1013;color:#d7e0e6;border:1px solid #2a3640;font:11px Consolas,monospace'
+              'width:100%;height:150px;background:var(--c-well);color:var(--c-tx);border:1px solid var(--c-line);font:11px Consolas,monospace'
           });
           t.value = anDiag();
           out.append(t);
@@ -1319,7 +1319,7 @@ function cosPop() {
   if (!e) return;
   const o = h$('div', { id: 'cospop' });
   o.style.cssText =
-    'position:fixed;z-index:60;background:#0c1216;border:1px solid #ff7ad9;border-radius:6px;padding:8px 10px;width:260px;box-shadow:0 4px 18px #000a;font-size:12px;color:#dde';
+    'position:fixed;z-index:60;background:var(--c-well);border:1px solid #ff7ad9;border-radius:6px;padding:8px 10px;width:260px;box-shadow:0 4px 18px #000a;font-size:12px;color:var(--c-tx)';
   const x = h$('button', { txt: '✕', title: 'Close (Esc)' });
   x.style.cssText = 'float:right;padding:0 6px';
   x.onclick = () => {
@@ -1331,7 +1331,7 @@ function cosPop() {
   o.append(
     x,
     h$('b', { txt: 'COS manual value', style: 'color:#ff7ad9' }),
-    h$('div', { txt: cosDesc(S, sh, e) || nm(S, n) || '', style: 'color:#9ab;margin:2px 0 4px' })
+    h$('div', { txt: cosDesc(S, sh, e) || nm(S, n) || '', style: 'color:var(--c-tx2);margin:2px 0 4px' })
   );
   {
     /* the operator change-over of the T switch next to this COS: Auto / Force A / Force B */ const tg = S.blk

@@ -12,11 +12,12 @@ const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist
 (async()=>{const {browser,page,errs}=await open(html);let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
 await page.setViewportSize({width:1600,height:900});
 await page.evaluate(()=>{try{WORLD.set(false)}catch(e){}AN.setCat('dig')});await page.waitForTimeout(800);
-const bar=()=>page.evaluate(()=>[...document.querySelectorAll('#gsbar .g-ditl button')].filter(b=>b.offsetParent).map(b=>b.textContent.trim()));
-const click=t=>page.evaluate(t=>[...document.querySelectorAll('#gsbar .g-ditl button')].find(b=>b.textContent.trim()===t).click(),t);
+// 3.2.0-beta.1: VIEW | RUN is the one switch of the top bar (3.1 shell); Reset, Back, Zoom, Panel are in the ribbon (.g-ditl)
+const bar=()=>page.evaluate(()=>[...document.querySelectorAll('#gsbar .seg button,#gsbar .g-ditl button')].filter(b=>b.offsetParent).map(b=>b.textContent.trim()));
+const click=t=>page.evaluate(t=>(t==='VIEW'?document.querySelector('#gsbar .seg button:first-child'):t==='▶ Run'?document.querySelector('#gsbar .seg button:last-child'):[...document.querySelectorAll('#gsbar .g-ditl button')].find(b=>b.textContent.trim()===t)).click(),t);
 const go=async n=>{await page.evaluate(n=>{S.cur=S.sheets.findIndex(s=>new RegExp('^\\(\\d+\\)DITL-'+n+'$').test(s.name));render()},n);await page.waitForTimeout(400)};
 await go('03A');
-const b=await bar();ck(b.includes('VIEW')&&b.includes('▶ Run')&&b.includes('Reset')&&!b.includes('SIMULATE'),'DITL bar: '+b.join(' | '));
+const b=await bar();ck(b.includes('VIEW')&&b.includes('RUN')&&b.includes('Reset')&&!b.includes('SIMULATE'),'DITL bar: '+b.join(' | '));
 const badge=()=>page.evaluate(()=>{const m=document.getElementById('dmode');return m&&m.offsetParent?m.textContent:''});
 await click('VIEW');await page.waitForTimeout(400);const b1=await badge();
 await click('▶ Run');await page.waitForTimeout(500);const b2=await badge();
