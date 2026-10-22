@@ -94,3 +94,17 @@ Base: pinagsama ang **2.5.0-beta.20** (PR #34 / #35, logic at data) at ang **3.1
   - Engine: walang binagong file ng engine, logic o data.
 - **Hindi pa nasubok:** tablet / exe / apk ng user.
 - **Status:** P3 tapos, ipinush bilang Beta. Susunod: P4.
+
+## 3.2.0-beta.5 — P4: phone, tablet, accessibility (itsura lang)
+- **Problem:** sa phone (390 px) ang Plant view / Logic / Library / Tools ay nasa itaas kasama ng iba pang button, kaya ang ⚙ ay napupunta sa ikalawang hilera at may bakanteng hilera sa Plant view at Library; ang bar ng Plant view ay lumalampas sa screen (LIVE putol); ang status bar ay may mahabang hint text.
+- **As Found:** UI audit 390 × 844 at 800 × 1280 ng 3.2.0-beta.4 (27 screen bawat isa): 0 page error; offscreen: ribbon (sinadya: naka-scroll na may fade), Plant bar LIVE, Library Calculations (sinadya: naka-scroll ang table). axe-core (WCAG 2 A / AA) sa DITL, Plant view, ABC, Library, Tools: 2 mali, parehong sa Library (station select na walang pangalan, listahan na hindi ma-focus ng keyboard).
+- **Work Done:**
+  - Phone (≤ 640 px, `src/ui/shell/cr.js` `phone()` + dulo ng `app.css`): ang 4 na page ay tab bar sa ibaba (icon + pangalan, 47 px ang taas, para sa daliri); ang top bar ay isang hilera (ABC | DITL, search, VIEW | RUN, ⚙); walang bakanteng hilera sa Plant view / Library / Tools; ang hint text ng status bar ay nakatago sa phone. Mas malapad: walang nagbago.
+  - Plant view sa phone: ang bar ay naka-scroll pakanan (dati lumalampas).
+  - Faceplate ng Plant view sa phone: bottom sheet mula sa ibaba (dati, mula beta.4, buong taas mula sa itaas). TIMERS card sa phone: nakatago (nakatakip sa zoom bar); nasa Panel > Timers, at "Edit presets" ang nagpapakita nito.
+  - Library: pangalan ng station select ("Station") at ang listahan ay ma-focus na ng keyboard (axe).
+  - Test `shell_cr`: dagdag na 3 check (tab bar sa phone, Library mula sa tab bar, balik sa malapad). Tests na naghahanap ng tabs: kasama ang `#crnav`.
+- **Hindi ginawa:** bigat ng file (12.9 MB; target ≤ 9 MB): ang 391 HMI background ay naka-optimize na PNG (walang matitipid nang lossless), at ang drawing data ay kailangan. Mananatili. Ang KPI strip sa phone (mockup) ay hindi ginawa: ang top bar ay masikip na.
+- **As Left (ebidensya):** 29 test, 0 FAIL (`p3_screens`, `shell_cr` 13 / 13 kasama ang phone, `layout`, `view`, `ditl_toolbar`, `ditl_selected`, `ditl_sim`, `lookonly`, `plant_click`, `plant_view`, `plant_live`, `plant_bg`, `events`, `faceplate`, `hmi_op`, `panel_sync`, `sidetab`, `abcbar`, `infocard`, `overview`, `stale_beta`, `inapp_update`, `reset`, `manstation`, `ditl_pagelink`, `controllers_table`, `ditl_ba`, `ditl_ls`, `audit230`). `npm run check`: SAME. UI audit 390 × 844, 800 × 1280, 1280 × 800, 1920 dark: 0 page error (natitirang offscreen: ribbon at Plant bar na naka-scroll, sinadya). axe-core WCAG 2 A / AA: 0 violation sa DITL, Plant view, ABC, Library, Tools. Engine: walang binagong file ng engine, logic o data.
+- **Hindi pa nasubok:** phone / tablet / exe / apk ng user.
+- **Status:** P4 tapos; tapos ang P0 ~ P4 ng Control Room redesign. Susunod: device check ng user; Stable sa GO STABLE lang.
