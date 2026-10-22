@@ -783,7 +783,24 @@
   function fpClose() {
     if (fp) fp.remove();
     fp = fpLive = null;
+    lay();
   }
+  /* 3.2.0 P3: on a wide screen the faceplate is a panel docked at the right (the graphic gets narrower, same zoom); narrow =
+     the pop-up over the graphic as before */
+  function lay() {
+    if (!ws) return;
+    ws.classList.toggle('crw', ws.getBoundingClientRect().width >= 836);
+    /* the chips that do not fit wrap to a hidden second line; no half chip when even the first does not fit */
+    const ch = ws.querySelector('.plchips');
+    if (ch && ch.firstChild) {
+      ch.style.visibility = '';
+      ch.style.visibility = ch.clientWidth + 1 < ch.firstChild.offsetWidth ? 'hidden' : '';
+    }
+    const host = ws.classList.contains('crw') ? ws : $('plmid');
+    if (fp && host && fp.parentNode !== host) host.append(fp);
+    keepZoom();
+  }
+
   function fpOpen(tag) {
     if (!window.AN || !AN.fpBuild) return false;
     const box = E('div', { cls: 'body' });
@@ -815,7 +832,9 @@
       ]),
       box
     ]);
-    $('plmid').append(fp);
+    lay();
+    (ws.classList.contains('crw') ? ws : $('plmid')).append(fp);
+    lay();
     fpLive = r.live;
     fpTick();
     return true;
@@ -844,7 +863,19 @@
       s = tall ? h / Math.max(1, r.height) : Math.max(w / Math.max(1, r.width), h / Math.max(1, r.height));
     vb = [box0[0] + (tall ? 0 : (w - r.width * s) / 2), box0[1], r.width * s, r.height * s];
     svg.setAttribute('viewBox', vb.join(' '));
+    svSz = [r.width, r.height];
   }
+  /* 3.2.0 P3: when the graphic gets narrower or wider without a new fit (the docked faceplate opens or closes, a slide-out),
+     the zoom stays: the same part of the graphic stays at the same place, more or less of it is shown */
+  let svSz = null;
+  const keepZoom = () => {
+    if (!svg || !vb || !svSz) return;
+    const r = svg.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1 || (Math.abs(r.width - svSz[0]) < 1 && Math.abs(r.height - svSz[1]) < 1)) return;
+    vb = [vb[0], vb[1], (vb[2] * r.width) / svSz[0], (vb[3] * r.height) / svSz[1]];
+    svSz = [r.width, r.height];
+    svg.setAttribute('viewBox', vb.join(' '));
+  };
   function valsOf(src) {
     return VALS().find(v => v.src === src);
   }
@@ -877,8 +908,16 @@
   }
   function select(o) {
     cur = o;
-    for (const b of D.querySelectorAll('#pllist button')) b.classList.toggle('on', b.dataset.id === o.id);
+    for (const b of D.querySelectorAll('#pllist button,#plantws .plchip')) b.classList.toggle('on', b.dataset.id === o.id);
     $('pltitle').textContent = o.title;
+    const pk = ws && ws.querySelector('.plpick');
+    if (pk) {
+      if (pk.options.length !== list().length) {
+        pk.innerHTML = '';
+        for (const x of list()) pk.append(E('option', { value: x.id, txt: x.title }));
+      }
+      pk.value = o.id;
+    }
     if (o.g) draw(o.g);
     else {
       svg.innerHTML = '';
@@ -912,7 +951,7 @@
     };
     fl.oninput = fillList;
     left.append(E('div', { cls: 'plh' }, [E('b', { txt: 'PLANT HMI · systems' })]), fl, ul);
-    svg = S_('svg', { id: 'plsvg' });
+    svg = S_('svg', { id: 'plsvg', preserveAspectRatio: 'xMinYMin meet' }); /* 3.2.0 P3: the graphic stays put at the left when the panel at the right opens or closes */
     const bar = E('div', { cls: 'plbar' }, [
       E('b', { id: 'pltitle', txt: '' }),
       E('button', {
@@ -927,14 +966,62 @@
         }
       }),
       E('button', { cls: 'b', txt: 'Fit', on: () => (cur && cur.g ? draw(cur.g) : fit()) }),
-      E('button', { cls: 'b', txt: 'Values', on: e => {
+      E('button', { cls: 'b plvb', txt: 'Values', on: e => {
           /* 2.4.1-beta.1: the values slide out over the graphic on every screen (app.css) */
           e.stopPropagation();
           ws.classList.toggle('vals');
           ws.classList.remove('lsopen');
         } })
     ]);
+    /* 3.2.0 P3 (Control Room, after-plant mockup): the screen picker in the bar: ◀ / the list of screens / ▶, the main
+       screens as chips, full screen. Same select() as the system list; the list stays (☰ Systems drawer). */
+    const pick = E('select', { cls: 'plpick', title: 'Plant screen', 'aria-label': 'Plant screen' }),
+      step = d => {
+        const L = list(),
+          i = L.findIndex(o => cur && o.id === cur.id);
+        select(L[(i + d + L.length) % L.length]);
+      };
+    pick.onchange = () => {
+      const o = list().find(x => x.id === pick.value);
+      if (o) select(o);
+    };
+    const chips = E('div', { cls: 'plchips' });
+    for (const [id, t] of [['UNIT', 'UNIT'], ['03', '003 Water'], ['04', '004 Extraction'], ['07', '007 Air'], ['11', '011 Coal'], ['33', '033 CCS']])
+      chips.append(
+        E('button', {
+          cls: 'plchip',
+          'data-id': id,
+          txt: t,
+          on: () => {
+            const o = list().find(x => x.id === id);
+            if (o) select(o);
+          }
+        })
+      );
+    const nav = E('div', { cls: 'plnav' }, [
+      E('button', { cls: 'b plstep', txt: '◀', title: 'Previous screen', 'aria-label': 'Previous screen', on: () => step(-1) }),
+      pick,
+      E('button', { cls: 'b plstep', txt: '▶', title: 'Next screen', 'aria-label': 'Next screen', on: () => step(1) })
+    ]);
+    const full = E('button', {
+      cls: 'b plfull',
+      txt: '⛶',
+      title: 'Full screen (Esc to leave)',
+      'aria-label': 'Full screen',
+      on: () => {
+        try {
+          if (D.fullscreenElement) D.exitFullscreen();
+          else ws.requestFullscreen();
+        } catch (e) {}
+      }
+    });
+    bar.insertBefore(nav, bar.firstChild.nextSibling);
+    nav.after(chips);
+    bar.append(full);
     mid.append(bar, svg);
+    try {
+      new ResizeObserver(keepZoom).observe(svg);
+    } catch (e) {}
     right.id = 'plvals';
     ws.append(left, mid, right);
     document.body.append(ws);
@@ -1017,6 +1104,7 @@
         window.lsLibrary && window.lsLibrary(false);
       } catch (e) {}
       place();
+      lay();
       setTimeout(() => (cur && cur.g ? draw(cur.g) : fit()), 30);
       if (!tmr) tmr = setInterval(liveTick, 1000);
     }
@@ -1036,13 +1124,17 @@
       ws.style.top = ws.style.bottom = '';
       if (!tmr) tmr = setInterval(liveTick, 1000);
     }
-    setTimeout(() => (cur && cur.g ? draw(cur.g) : fit()), 30);
+    setTimeout(() => {
+      lay();
+      cur && cur.g ? draw(cur.g) : fit();
+    }, 30);
   };
   window.lsPlantFit = () => (cur && cur.g ? draw(cur.g) : fit());
   window.lsPlantLive = () => LV.map(o => ({ tag: o.it.tag, t: o.it.t, snap: o.it.t === 'ctl' ? o.it.pv + '/' + o.it.sv + '/' + o.it.mv + ' ' + o.it.m : o.it.v, how: o.r ? o.r.how || o.r.k : null, sh: o.r ? o.r.sh : null, live: o.r && o.r.k === 'mv' ? shOf(o.r.sh).S.rt.v[o.r.c.out] : o.r && o.r.cc ? (() => { const x = netVal(o.r), mv = shOf(o.r.cc.sh).S.rt.v[o.r.cc.c.out]; return Math.abs(x - (100 - mv)) < 0.5 && Math.abs(x - mv) > 1 ? 100 - x : x; })() : o.r && (o.r.k === 'net' || o.r.k === 'dig') ? netVal(o.r) : o.r && o.r.k === 'ctl' ? (() => { const S = shOf(o.r.sh).S, c = o.r.c; return [S.rt.v[c.q.pv], S.rt.v[c.q.sv], S.rt.v[c.out]].map(x => +(+x).toFixed(1)).join('/'); })() : o.r && o.r.k === 'man' ? +(+shOf(o.r.sh).S.rt.v[o.r.b.o[0]]).toFixed(1) : null })); /* for the tests */
   addEventListener('resize', () => {
     if (ws && ws.style.display === 'grid') {
       place();
+      lay();
       fit();
     }
   });

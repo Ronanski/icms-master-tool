@@ -948,6 +948,38 @@
             (b.o || []).slice(0, 3).forEach((n, k) => cell('OUT' + ((b.o || []).length > 1 ? ' ' + (k + 1) : ''), n));
           } else cell('VALUE', s.net);
           card.append(grid);
+          /* 3.2.0 P3 (Inspector, after-logic mockup): where the signals of the block come from and go to on this sheet (read
+             from the netlist of the drawing; nothing is changed) */
+          if (b) {
+            const who = x => x.k + ' ' + (x.tag || (x.txt || []).filter(Boolean)[1] || '#' + x.id),
+              wn = n => (/^net \d+$/.test(nmf(n)) ? '' : nmf(n)),
+              lst = (title, rows) => {
+                if (!rows.length) return;
+                const box = E('div', { cls: 'scl' }, [E('small', { txt: title })]);
+                rows.slice(0, 6).forEach(([n, t]) => {
+                  const v = E('b', { txt: val(n) });
+                  v._n = n;
+                  box.append(E('div', { title: [t, wn(n)].filter(Boolean).join(' · ') }, [E('span', { cls: 'scn2', txt: t }), E('span', { cls: 'scw', txt: wn(n) }), v]));
+                });
+                if (rows.length > 6) box.append(E('div', { cls: 'scm', txt: '+ ' + (rows.length - 6) + ' more' }));
+                card.append(box);
+              };
+            lst(
+              'COMES FROM',
+              (b.i || []).filter(n => n != null && n >= 0).map(n => {
+                const d = S.blk.find(x => x !== b && (x.o || []).includes(n));
+                return [n, d ? who(d) : 'input of the sheet'];
+              })
+            );
+            const go = [];
+            (b.o || []).forEach(n => {
+              if (n == null || n < 0) return;
+              const L = S.blk.filter(x => x !== b && (x.i || []).includes(n));
+              if (!L.length) go.push([n, 'output of the sheet']);
+              L.forEach(x => go.push([n, who(x)]));
+            });
+            lst('GOES TO', go);
+          }
           if (fp)
             card.append(
               E('button', {
@@ -964,7 +996,7 @@
               })
             );
         }
-        card.querySelectorAll('.scv b').forEach(e => (e.textContent = val(e._n)));
+        card.querySelectorAll('.scv b,.scl b').forEach(e => (e.textContent = val(e._n)));
       };
       /* status line: forced signals and the selection */
       const sForce = E('span', { cls: 'sforce', title: 'Signals forced by you (Inspector > Forced signals)' }),
