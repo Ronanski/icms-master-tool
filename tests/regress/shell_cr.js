@@ -35,7 +35,15 @@ ck(await p.evaluate(()=>AN.sheets[AN.i].name==='ABC-010'),'FW FLOW opens ABC-010
 await p.setViewportSize({width:820,height:1000});await p.waitForTimeout(700);
 const nw=await p.evaluate(()=>({cr:document.body.classList.contains('cr'),rail:!!document.getElementById('crrail'),tabs:!!document.querySelector('#gsbar > .tabs'),set:!!document.querySelector('#gsbar > .gs-set'),sub:!!document.querySelector('#gsbar > .sub'),ev:!!document.querySelector('#sfoot #evbtn'),band:!!document.getElementById('crband')}));
 ck(!nw.cr&&!nw.rail&&nw.tabs&&nw.set&&nw.sub&&nw.ev&&!nw.band,'820 px: the old top bar, every element back in its place '+JSON.stringify(nw));
+// 3.2.0-beta.5 (P4): phone = the pages are a tab bar at the bottom, under the status bar; the top bar is one row
+await p.setViewportSize({width:390,height:844});await p.waitForTimeout(800);
+const ph=await p.evaluate(()=>{const n=document.getElementById('crnav'),f=document.getElementById('sfoot');if(!n)return null;const r=n.getBoundingClientRect(),g=document.getElementById('gsbar');return {tabs:[...n.querySelectorAll('.tabs button')].map(x=>x.textContent.trim()).join(),bottom:Math.round(r.bottom),h:Math.round(r.height),inFoot:n.parentNode===f,set:!!g.querySelector(':scope > .gs-set'),seg:!!g.querySelector(':scope > .seg'),top:Math.round(g.querySelector(':scope > .seg').getBoundingClientRect().top)}});
+ck(ph&&ph.tabs==='Plant view,Logic,Library,Tools'&&ph.inFoot&&ph.bottom>=843&&ph.h>=44&&ph.set&&ph.seg&&ph.top<8,'390 px: tab bar at the bottom, ⚙ and VIEW | RUN in the top row '+JSON.stringify(ph));
+await p.evaluate(()=>[...document.querySelectorAll('#crnav .tabs button')].find(x=>/Library/.test(x.textContent)).click());await p.waitForTimeout(800);
+ck(await p.evaluate(()=>document.body.dataset.tab==='library'&&getComputedStyle(document.getElementById('libws')).display!=='none'&&document.getElementById('libws').getBoundingClientRect().bottom<=document.getElementById('sfoot').getBoundingClientRect().top+1),'the tab bar opens the Library, the page ends above the status bar');
+await p.evaluate(()=>[...document.querySelectorAll('#crnav .tabs button')].find(x=>/Logic/.test(x.textContent)).click());await p.waitForTimeout(500);
 await p.setViewportSize({width:1333,height:833});await p.waitForTimeout(700);
+ck(await p.evaluate(()=>!document.getElementById('crnav')||!document.getElementById('crnav').isConnected),'back to wide: no tab bar');
 ck(await p.evaluate(()=>document.body.classList.contains('cr')&&!!document.querySelector('#crrail .tabs')&&!!document.querySelector('#cralarm #evbtn')),'back to 1333 px: Control Room again');
 ck(errs.length===0,'no page error'+(errs.length?' ('+errs[0]+')':''));
 await b.close();console.log(f?f+' FAIL':'ALL PASS');process.exit(f?1:0)})();

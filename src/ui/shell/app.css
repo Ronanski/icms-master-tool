@@ -998,7 +998,8 @@ body:not([data-tab=logic]) #gsbar .tbar .crwhere{display:none}
 #plantws.crw #plmid{grid-column:1;grid-row:1}
 #plantws.crw #plfp{position:relative;top:auto;right:auto;left:auto;bottom:auto;width:auto;max-height:none;min-height:0;grid-row:1;grid-column:2;border:0;border-left:1px solid var(--c-line);border-radius:0;box-shadow:none;background:var(--c-pane)}
 #plantws.crw #plfp .plfph{min-height:3rem;box-sizing:border-box;padding:.5rem .75rem;background:var(--c-pane)}
-#plmid > #plfp{top:3.5rem}
+@media (min-width:701px){#plmid > #plfp{top:3.5rem}}
+@media (max-width:700px){#plmid > #plfp{border-radius:.75rem .75rem 0 0;box-shadow:0 -.75rem 2rem var(--c-shadow)}}
 /* 3.2.0 P3 DITL (audit M2): the timer card does not cover the drawing or the panel while the panel is open ("Edit presets" in the
    Timers list shows it beside the panel); the sheet list headers of the category view no longer pile up */
 body.app2:has(#dp:not(.min)):not(.tpon) #tp{display:none!important}
@@ -1016,3 +1017,28 @@ body.app2 #sidelist .fh.fhc:hover{background:var(--c-ctlh,var(--c-pane));color:v
 #selcard .scl .scm{display:block;color:var(--c-dim);font-size:.75rem}
 /* 3.2.0 P3: below 1280 px the search opens as a row UNDER the whole top area (it covered the alarm banner and half the ribbon) */
 @media (max-width:1280px){body.cr.srchopen #gsbar .gs-search{position:fixed!important;top:var(--topH,8rem)!important;left:var(--railW)!important;right:0!important;z-index:95}}
+/* ---------- 3.2.0 P4: phone (640 px and narrower) ---------- */
+#crnav{display:none}
+body.crph #sfoot{flex-wrap:wrap}
+body.crph #crnav{display:flex;order:99;flex:1 1 100%;background:var(--c-pane);border-top:1px solid var(--c-line);padding-bottom:env(safe-area-inset-bottom,0)}
+body.crph #crnav .tabs{display:flex;width:100%;gap:0;height:auto;padding:0;border:0;background:transparent}
+body.crph #crnav .tabs button{flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.1875rem;min-height:3.5rem!important;height:3.5rem;padding:.25rem 0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--c-dim)!important;font:500 .6875rem/1.1 var(--uf)!important;letter-spacing:.01em}
+body.crph #crnav .tabs button.on{color:var(--c-acctx)!important;box-shadow:inset 0 2px 0 var(--c-acc)!important;font-weight:600!important}
+body.crph #crnav .tabs [data-ic]::before{width:1.25rem;height:1.25rem;opacity:1}
+/* the top bar on one row: ABC | DITL, search, VIEW | RUN, ⚙ */
+body.crph #gsbar > .gs-set{margin-left:0}
+body.crph #gsbar > .sub{flex:0 1 auto}
+/* the PLANT VIEW bar scrolls sideways instead of running off the screen */
+@media (max-width:640px){
+ #plantws .plbar{overflow-x:auto;scrollbar-width:none}
+ #plantws .plbar::-webkit-scrollbar{display:none}
+ #plantws .plbar > *{flex:none}
+ #plantws .plpick{width:11rem}
+}
+body.crph #sfoot #crnav{height:auto!important;min-height:3.5rem;max-height:none!important;padding:0 0 env(safe-area-inset-bottom,0)!important;border-right:0}
+body.crph #sfoot:not(#x) :is(.smsg,.shint,#st){display:none!important}
+body.crph #sfoot:not(#x) #evbtn{margin-left:auto}
+body.crph #gsbar #srchbtn{margin-left:auto!important}
+body.crph:not([data-tab=logic]) #gsbar .crumb{display:none!important}
+/* phone: the timer card covered the zoom bar; the timers are in the panel (Panel > Timers, "Edit presets" shows the card) */
+body.crph:not(.tpon) #tp{display:none!important}

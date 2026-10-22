@@ -13,7 +13,8 @@
     if (txt != null) e.textContent = txt;
     return e;
   };
-  const WIDE = matchMedia('(min-width:900px)');
+  const WIDE = matchMedia('(min-width:900px)'),
+    PHONE = matchMedia('(max-width:640px)');
   let P = null;
   /* every moved element goes back before its marker when the window gets narrow */
   const mark = el => {
@@ -96,6 +97,7 @@
       setM.style.top = Math.max(8, Math.min(r.top, innerHeight - setM.offsetHeight - 8)) + 'px';
     });
     WIDE.addEventListener ? WIDE.addEventListener('change', apply) : WIDE.addListener(apply);
+    PHONE.addEventListener ? PHONE.addEventListener('change', apply) : PHONE.addListener(apply);
     apply();
     setInterval(tick, 1000);
     tick();
@@ -104,7 +106,7 @@
   function apply() {
     const on = WIDE.matches,
       b = document.body;
-    if (on === b.classList.contains('cr')) return;
+    if (on === b.classList.contains('cr')) return phone();
     if (on) {
       document.body.prepend(P.rail);
       P.rail.prepend(P.brand, P.tabs);
@@ -126,7 +128,31 @@
       if (w) w.remove();
     }
     b.classList.toggle('cr', on);
-    /* the shell measures the top bar (workspaces, info card) on resize */
+    phone();
+  }
+  /* 3.2.0 P4 (after-phones mockup): on a phone (640 px and narrower) the pages (Plant view / Logic / Library / Tools) are a tab
+     bar at the bottom, under the status bar; the top bar keeps ABC | DITL, search, VIEW | RUN and ⚙ */
+  function phone() {
+    const ph = PHONE.matches && !WIDE.matches,
+      f = $('sfoot'),
+      b = document.body;
+    if (ph && f) {
+      if (!P.nav) {
+        P.nav = E('nav');
+        P.nav.id = 'crnav';
+        P.nav.setAttribute('aria-label', 'Pages');
+      }
+      if (P.tabs.parentNode !== P.nav) P.nav.append(P.tabs);
+      if (P.nav.parentNode !== f) f.append(P.nav);
+    } else if (P.nav) {
+      if (P.tabs.parentNode === P.nav) {
+        const mk = P.moved.find(([el]) => el === P.tabs);
+        if (mk) mk[1].before(P.tabs);
+      }
+      P.nav.remove();
+    }
+    b.classList.toggle('crph', !!(ph && f));
+    /* the shell measures the top bar and the status bar (workspaces, info card) on resize */
     setTimeout(() => dispatchEvent(new Event('resize')), 0);
   }
   /* --- values (read only) --- */

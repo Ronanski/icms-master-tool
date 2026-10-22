@@ -315,7 +315,7 @@
           }
         });
     tabs.append(mk('io', 'I/O list'), mk('mem', 'Memory list'), mk('wire', 'Wiring'), mk('relay', 'Relay / SER'), mk('calc', 'Calculations'));
-    const ss = E('select', { cls: 'libst' });
+    const ss = E('select', { cls: 'libst', 'aria-label': 'Station' });
     [['', 'All stations'], ['1', 'STN101'], ['2', 'STN102'], ['3', 'STN103'], ['4', 'STN104'], ['5', 'STN105']].forEach(([v, t]) => {
       const o = E('option', { txt: t });
       o.value = v;
@@ -337,7 +337,7 @@
     ws.append(
       E('div', { cls: 'libbar' }, [tabs, ss, fi, E('span', { id: 'libcnt' })]),
       E('div', { cls: 'libhd' }, ['Station', 'Address', 'Tag', 'Description', 'Range / remark', 'Type · SIG.AB', ''].map(t => E('span', { txt: t }))),
-      E('div', { id: 'libtb' })
+      E('div', { id: 'libtb', tabindex: '0', 'aria-label': 'List' })
     );
     document.body.append(ws);
     load().then(() => {
