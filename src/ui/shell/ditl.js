@@ -566,7 +566,7 @@
         if (last !== 'view') {
           last = 'view';
           box.textContent = '';
-          box.append(E('div', { cls: 'dp-d', txt: 'Press ▶ Run to see the values and what is missing.' }));
+          box.append(E('div', { cls: 'dp-d', txt: 'Press RUN (top right) to see the values and what is missing.' }));
         }
         return;
       }
@@ -806,6 +806,30 @@
   };
   D.sel = () => pk && { t: pk.t, i: pk.i, side: pk.side, g: pk.g, n: pk.n };
   D.why = (s, n, want) => why(s, simSheet(s).v, n, want, new Set(), 0);
+  /* 3.2.0-beta.6 FIRST-OUT: why output row `row` of sheet s is 1 now (the inputs that are 1 and keep it 1), as text lines for the
+     Event log: called by the one world (src/world/world.js) at the scan where a TRIP / MFT output goes 1 */
+  D.cause = (s, row) => {
+    const o = s.nl && s.nl.outs.find(x => x.row === row);
+    if (!o) return null;
+    const L = D.why(s, o.n, 0),
+      seen = new Set(),
+      lines = [];
+    for (const r of L) {
+      /* only what IS 1 now: the "then ..." and pulse lines of the To-make-it list are what would happen next, not the cause */
+      if (r.row === undefined && (/^then /.test(r.txt || '') || / gives a .* pulse /.test(r.txt || ''))) continue;
+      /* a row that must go 0 IS 1 now: a cause; a row that must go 1 is the reset of a memory (flip-flop): it holds the output */
+      const t =
+        r.row !== undefined
+          ? r.want
+            ? 'memory (flip-flop): stays 1 until ' + inName(s, r.row) + ' = 1'
+            : inName(s, r.row) + ' = 1' + (r.auto ? ' · from the equipment / another sheet' : '')
+          : String(r.txt || '').replace(/^the analog value must be NOT /, 'the analog value is ');
+      if (!t || seen.has(t)) continue;
+      seen.add(t);
+      lines.push({ d: 1, k: r.row !== undefined && !r.want ? 'input' : 'gate', txt: t, sh: s.name });
+    }
+    return { name: outName(s, row), lines: lines.slice(0, 12) };
+  };
   D.rowNets = rowNets;
   D.labelOf = labelOf;
   D.goRef = goRef;
@@ -1059,7 +1083,7 @@
           nOut = nl ? new Set((nl.outs || []).map(o => o.row)).size : 0;
         dm.append(
           E('b', { txt: m.dwg || s.name }),
-          E('span', { cls: 'dm-t', txt: (m.no ? 'SHEET ' + m.no + ' · ' : '') + (m.title || s.title || '') }),
+          E('span', { cls: 'dm-t', txt: (m.no ? 'SHEET ' + m.no + ' · ' : '') + (m.title || s.title || ''), title: (m.no ? 'SHEET ' + m.no + ' · ' : '') + (m.title || s.title || '') }),
           dmode,
           E('span', { cls: 'sp' }),
           E('span', { cls: 'dm-lg' }, [E('i', { cls: 'on' }), document.createTextNode(' 1 = ON  '), E('i'), document.createTextNode(' 0 = OFF')]),

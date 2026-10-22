@@ -43,7 +43,7 @@ await clickAt(...P.o);let r=await st();
 ck(r.sel&&r.sel.t==='row'&&r.sel.side==='R'&&r.pt==='sel'&&/OUTPUT · ROW 16 MFT 2/.test(r.t)&&/DRIVEN BY/.test(r.t)&&/TO MAKE IT 1/.test(r.t)&&r.hl>=2,'click output row 16 (RUN): Selected tab "'+r.t.slice(0,110)+'..."');
 await clickAt(...P.g);r=await st();ck(r.sel&&r.sel.t==='g'&&/FLIP-FLOP/.test(r.t)&&/SET/.test(r.t)&&/RESET/.test(r.t),'click the flip-flop: "'+r.t.slice(0,90)+'..."');
 await clickAt(...P.w);r=await st();ck(r.sel&&r.sel.t==='n'&&/WIRE/.test(r.t)&&/GOES TO/.test(r.t),'click a wire: "'+r.t.slice(0,90)+'..."');
-await click('VIEW');await page.waitForTimeout(400);await clickAt(...P.o);r=await st();ck(/– \(VIEW\)/.test(r.t)&&/Press ▶ Run/.test(r.t),'VIEW: the selection shows the logic without values');
+await click('VIEW');await page.waitForTimeout(400);await clickAt(...P.o);r=await st();ck(/– \(VIEW\)/.test(r.t)&&/Press RUN/.test(r.t),'VIEW: the selection shows the logic without values');
 // "To make it 1" against the simulation, many sheets
 await click('▶ Run');await page.waitForTimeout(400);
 const W=await page.evaluate(async()=>{const sl=ms=>new Promise(r=>setTimeout(r,ms));let ok=0,bad=[],skip=0,sheets=0;

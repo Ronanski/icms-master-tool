@@ -524,12 +524,13 @@
         ['light', 'Theme: Light'],
         ['dark', 'Theme: Dark']
       ].forEach(([v, t]) => th.append(E('option', { value: v, txt: t })));
-      const t0 = ls.get('ls-theme3') === 'dark' ? 'dark' : 'light';
+      /* 3.2.0-beta.6 (user 2026-10-22 "AYAW KO NG PUTI"): dark is the default; a new key so the old light default does not carry over */
+      const t0 = ls.get('ls-theme4') === 'light' ? 'light' : 'dark';
       th.value = t0;
       document.documentElement.dataset.theme = t0;
       th.onchange = () => {
         document.documentElement.dataset.theme = th.value;
-        ls.set('ls-theme3', th.value);
+        ls.set('ls-theme4', th.value);
       };
       set.m.append(th);
     }
@@ -683,7 +684,7 @@
             ds = r.querySelector('.ds'),
             ctl = r.querySelector('.l1 button'),
             num = r.querySelector('.l1 input[type=number]'),
-            nm = E('div', { cls: 'inn' }, [E('b', { txt: tg ? tg.textContent : '' }), ds ? E('small', { txt: ds.textContent }) : null]);
+            nm = E('div', { cls: 'inn', title: (tg ? tg.textContent : '') + (ds ? '\n' + ds.textContent : '') }, [E('b', { txt: tg ? tg.textContent : '' }), ds ? E('small', { txt: ds.textContent }) : null]); /* 3.2.0-beta.6 (audit L1): full name on hover */
           nm.onclick = () => tg && tg.click();
           const it = E('div', { cls: 'ini' }, [nm]);
           if (ctl) {
@@ -904,7 +905,7 @@
       /* selected block card (ABC): name, kind, the values in and out, Open faceplate */
       const card = E('div', { id: 'selcard' });
       let cardKey = '';
-      const fmt = x => (x == null || !isFinite(x) ? '—' : Math.abs(x) >= 100 ? x.toFixed(1) : x.toFixed(2));
+      const fmt = x => (x == null || !isFinite(x) ? '—' : (Math.abs(x) >= 100 ? x.toFixed(1) : x.toFixed(2)).replace(/^-(0(?:\.0+)?)$/, '$1'));
       const cardUpd = () => {
         const anp = $('anp'),
           sel = $('ansel');
@@ -1231,6 +1232,7 @@
       try {
         AN.reset();
         const n = AN.plantLoad150();
+        AN.startState = 'plantLoad150';
         AN.settle();
         AN.paint();
         msg('Plant at 150 MW: ' + n + ' transmitters set from the HMI snapshots. Press Run.');
@@ -1249,6 +1251,7 @@
       try {
         AN.reset();
         const n = AN.plantCold();
+        AN.startState = 'plantCold';
         AN.paint();
         msg('Plant cold: drum 0 kg/cm2, water 30 C, no fire. Press Run, then start the fans (Buttons M.3302 / 3303 / 3304), purge, open the oil valves (M.3410 / 3411 = 0) and fire the burners (FICDO1043A / B). ' + n + ' anchors.');
       } catch (e) {
@@ -1259,6 +1262,7 @@
       try {
         AN.reset();
         const n = AN.plantWarm();
+        AN.startState = 'plantWarm';
         AN.paint();
         msg('Plant warm: drum 30 kg/cm2, bed 480 C, 4 start-up burners lit. Press Run; coal transfer: CHECK panel has the steps. ' + n + ' anchors.');
       } catch (e) {
@@ -1269,6 +1273,7 @@
       try {
         AN.reset();
         const n = AN.plantHot();
+        AN.startState = 'plantHot';
         AN.paint();
         msg('Plant hot: 123 kg/cm2 on the HP bypass, bed 750 C, 3 feeders. Press Run, then Turbine ROLL (30 min to 3600 rpm), SYNC, LOAD UP. ' + n + ' anchors.');
       } catch (e) {

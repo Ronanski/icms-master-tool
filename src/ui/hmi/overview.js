@@ -19,7 +19,8 @@
   const fmt = x => {
     if (x == null || !isFinite(x)) return '—';
     const a = Math.abs(x);
-    return a >= 1000 ? x.toFixed(0) : a >= 100 ? x.toFixed(1) : a >= 10 ? x.toFixed(2) : x.toFixed(2);
+    /* 3.2.0-beta.6 (audit L2): a value that rounds to zero is shown without the minus sign */
+    return (a >= 1000 ? x.toFixed(0) : a >= 100 ? x.toFixed(1) : x.toFixed(2)).replace(/^-(0(?:\.0+)?)$/, '$1');
   };
   let sel = null;
   const cur = () => {

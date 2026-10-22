@@ -17,13 +17,14 @@
   const fmt = x =>
     x == null || !isFinite(x)
       ? '—'
-      : Math.abs(x) >= 1000
-        ? x.toFixed(0)
-        : Math.abs(x) >= 100
-          ? x.toFixed(1)
-          : Math.abs(x) >= 10
-            ? x.toFixed(2)
-            : x.toFixed(3).replace(/^-(0\.000)$/, '$1'); /* 3.2.0-beta.1 (audit L2): not -0.000 */
+      : (Math.abs(x) >= 1000
+          ? x.toFixed(0)
+          : Math.abs(x) >= 100
+            ? x.toFixed(1)
+            : Math.abs(x) >= 10
+              ? x.toFixed(2)
+              : x.toFixed(3)
+        ).replace(/^-(0(?:\.0+)?)$/, '$1'); /* 3.2.0-beta.1 (audit L2): not -0.000 */
   const sheet = () => AN.sheets && AN.sheets[AN.i];
   /* 2.0.0: touch screens (tablet / phone) */
   const TOUCH = (() => {
@@ -584,6 +585,15 @@
         ),
         mvRow = E('div', { cls: 'row' }, [E('span', { txt: 'MV (MAN)' })].concat(mvB)),
         fmEl = E('span', { cls: 'sub', style: 'color:#ff7a7a;font-weight:700' }),
+        /* 3.2.0-beta.6 "BAKIT?": why the loop is held in MANUAL, walked to the root signal (src/ui/shell/why.js) */
+        fmList = E('div', { cls: 'whyl' }),
+        fmWhy = E('button', {
+          cls: 'b whyb',
+          txt: 'Why?',
+          title: 'Show the signal that holds this loop in MANUAL, back to its source (drawing logic, live values)',
+          on: () => (fmList.childNodes.length ? (fmList.textContent = '') : whyMan())
+        }),
+        fmBox = E('div', { cls: 'whyx' }, [fmEl, fmWhy, fmList]),
         cutEl = E('div', { cls: 'sub', style: 'color:#ffb454;font-weight:700;margin:2px 0' }),
         cutTx = E('span'),
         cutWhy = E('button', {
@@ -676,7 +686,7 @@
           graph,
           E('div', { cls: 'fpc' }, [pvBox, svBox, E('div', { cls: 'fps' }, [raCol, mvBr]), mvBox])
         ]),
-        fmEl,
+        fmBox,
         cutEl,
         E('div', { cls: 'tg' }, [
           E('b', { txt: c.tag }),
@@ -777,6 +787,24 @@
         openPop('MV', mvBox);
       });
       live.push(popRefresh);
+      const whyMan = () => {
+        fmList.textContent = '';
+        let W = [];
+        try {
+          W = AN.whyMan(sh, c);
+        } catch (e) {}
+        if (!W.length) return fmList.append(E('div', { cls: 'sub', txt: 'Held by the A/M station itself (back-up command): press A when the condition is gone.' }));
+        for (const w of W)
+          for (const l of w.lines) {
+            const row = E('div', { cls: 'whyr k-' + l.k, style: 'padding-left:' + (0.25 + l.d * 0.75) + 'rem' }, [E('span', { txt: l.txt + (l.sh && l.sh !== sh.name ? '  [' + l.sh + ']' : '') })]);
+            const s2 = AN.sheets.find(x => x.name === l.sh);
+            if (l.k === 'input' && s2 && s2.S) {
+              const to = s2.S.rt.v[l.n] > 0.5 ? 0 : 1;
+              row.append(E('button', { cls: 'b', txt: '→ ' + to, title: 'Set this input to ' + to + ' (the same as the switch / PB on the drawing)', on: () => (setIn(s2.S, l.n, to), setTimeout(whyMan, 300)) }));
+            }
+            fmList.append(row);
+          }
+      };
       const whyCut = () => {
         const cg = (c.dn || []).find(d => {
           const t = S.rt.st[d.id];
@@ -908,6 +936,8 @@
           if (!cg) cutList.textContent = '';
         }
         fmEl.textContent = fm_ ? 'FORCE MANUAL (' + (fsg ? fsg.name + ' = 1' : 'logic') + '): AUTO not allowed' : '';
+        fmWhy.style.display = fm_ ? '' : 'none';
+        if (!fm_ && fmList.childNodes.length) fmList.textContent = '';
         bAuto.disabled = !!fm_;
         /* MV is only for MANUAL: in AUTO the operator changes the SV, not the MV */ if (mvOk) {
           mvIn.disabled = (isAuto || rem) && !!c.amt;

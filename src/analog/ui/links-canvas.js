@@ -328,7 +328,7 @@ function anRender() {
   meta.innerHTML = '';
   meta.append(
     h$('b', { txt: sh.name }),
-    h$('span', { txt: (sh.no ? 'SHEET ' + sh.no + ' · ' : '') + (sh.title || '') }),
+    h$('span', { txt: (sh.no ? 'SHEET ' + sh.no + ' · ' : '') + (sh.title || ''), title: (sh.no ? 'SHEET ' + sh.no + ' · ' : '') + (sh.title || '') }), /* 3.2.0-beta.6 (audit L1): full title on hover when cut */
     h$('span', { id: 'anmode', style: 'margin-left:12px;padding:2px 8px;border-radius:4px;font:700 12px sans-serif' }),
     h$('span', { cls: 'sp' }),
     lgd(),

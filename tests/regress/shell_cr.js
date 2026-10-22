@@ -24,10 +24,14 @@ ck(gm&&gm.w>100&&gm.h>100&&gm.l>=gm.rr&&gm.t>=0&&gm.b<=833&&gm.n>=3,'⚙ menu op
 await p.keyboard.press('Escape');await p.waitForTimeout(200);
 // Start ▾ in the PLANT VIEW
 await p.evaluate(()=>lsSetTab('operate'));await p.waitForTimeout(2500);
-await p.evaluate(()=>[...document.querySelectorAll('#gsbar .tbar button')].find(x=>/^Start/.test(x.textContent.trim())).click());await p.waitForTimeout(400);
+/* 3.2.0-beta.6: on a wide screen Start ▾ / CHECK sit in the plant bar and the ribbon row is hidden in the PLANT VIEW */
+const op=await p.evaluate(()=>({inBar:!!document.querySelector('#plantws .plbar .crop .g-op'),ribbon:getComputedStyle(document.querySelector('#gsbar .tbar')).display,alarmInBand:!!document.querySelector('#crband > #cralarm')}));
+ck(op.inBar&&op.ribbon==='none'&&op.alarmInBand,'PLANT VIEW: Start ▾ / CHECK in the plant bar, ribbon row hidden, alarm line in the unit band '+JSON.stringify(op));
+await p.evaluate(()=>[...document.querySelectorAll('#plantws .plbar .crop button')].find(x=>/^Start/.test(x.textContent.trim())).click());await p.waitForTimeout(400);
 const sm=await p.evaluate(()=>{const m=document.querySelector('.ddm.ddm-open');if(!m)return null;const r=m.getBoundingClientRect();return {w:r.width,h:r.height,b:r.bottom,n:[...m.querySelectorAll('button')].filter(x=>/150 MW/.test(x.textContent)).length}});
 ck(sm&&sm.w>100&&sm.h>100&&sm.b<=833&&sm.n>=1,'Start ▾ opens its menu on screen with Start at 150 MW ('+(sm?Math.round(sm.w)+'x'+Math.round(sm.h):'none')+')');
 await p.keyboard.press('Escape');await p.evaluate(()=>lsSetTab('logic'));await p.waitForTimeout(500);
+ck(await p.evaluate(()=>!!document.querySelector('#gsbar .tbar .g-op')&&getComputedStyle(document.querySelector('#gsbar .tbar')).display!=='none'),'LOGIC: the ribbon is back and Start ▾ / CHECK went back to it (hidden there)');
 // a KPI opens its sheet
 await p.evaluate(()=>{AN.go(AN.sheets.findIndex(s=>s.name==='ABC-013'));[...document.querySelectorAll('#crband .crkpi')].find(k=>/FW FLOW/.test(k.textContent)).click()});await p.waitForTimeout(800);
 ck(await p.evaluate(()=>AN.sheets[AN.i].name==='ABC-010'),'FW FLOW opens ABC-010');
