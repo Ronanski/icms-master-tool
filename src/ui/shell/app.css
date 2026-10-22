@@ -162,6 +162,8 @@ body.srchopen #gsbar #srchbtn{background:var(--c-accbg)!important;border-color:v
  padding:.5rem;background:var(--c-pane);border:1px solid var(--c-line);border-radius:var(--r-l);box-shadow:0 1rem 2.5rem var(--c-shadow)}
 .ddw.left .ddm{left:0;right:auto}
 .ddw.open .ddm{display:block}
+/* 3.2.0-beta.3: lost in the merge (2.4.1-beta.1 rule): an open menu sits on the page (body), so the ⚙ menu and Start ▾ showed nothing */
+.ddm.ddm-open{display:block;z-index:200;max-width:min(360px,calc(100vw - 16px))}
 .ddm > *,.ddm .only > *{display:flex!important;width:100%!important;margin:0 0 .375rem!important;box-sizing:border-box;justify-content:flex-start!important;text-align:left;white-space:normal!important}
 .ddm > :last-child{margin-bottom:0!important}
 .ddm .only{display:contents}
@@ -906,3 +908,67 @@ body.app2 #sidelist .fh{padding:.75rem .875rem .375rem;font:600 .6875rem var(--u
 #sidelist button{scroll-margin-top:34px}
 body.dm #meta{display:none!important}
 #dp .dp-b.big.on{background:var(--c-almsoft);border-color:var(--c-alm);color:var(--c-almtx)}
+
+/* ===== 3.2.0 P2: CONTROL ROOM SHELL (src/ui/shell/cr.js), 900 px and wider: rail · unit band · alarm banner · ribbon with ABC | DITL
+   and the sheet. ISA-101 idea: neutral chrome, colour only for state (alarm red, forced purple, simulation green). ===== */
+:root{--railW:4rem;--c-rail:#1a1f23;--c-railtx:#e3e8eb;--c-raildim:#9aa6ae;--c-railon:#2b3238;--c-frc:#8e3fc8;--c-frcsoft:#f3e9fb;--c-frctx:#5d2a85}
+html[data-theme=dark]{--c-rail:#0b0e11;--c-railon:#22282d;--c-frc:#c77dff;--c-frcsoft:#2a1c36;--c-frctx:#e3c4ff}
+#crrail{display:none}
+body.cr:not(.pvwin){padding-left:var(--railW)!important}
+body.cr #crrail{display:flex;flex-direction:column;align-items:center;gap:.25rem;position:fixed;left:0;top:0;bottom:0;width:var(--railW);z-index:90;padding:.625rem 0;background:var(--c-rail);border-right:1px solid var(--c-rail);box-sizing:border-box}
+body.cr #crrail .brand{display:flex;margin-bottom:.625rem;color:var(--c-railtx)}
+body.cr #crrail .brand span{display:none}
+body.cr #crrail .brand i{width:2.25rem;height:2.25rem;border-radius:.5rem;background:linear-gradient(135deg,#2f6f9f,#1d3f5a);color:#fff;display:flex;align-items:center;justify-content:center;font-style:normal}
+body.cr #crrail .brand i svg{width:1.25rem;height:1.25rem}
+body.cr #crrail .tabs{display:flex;flex-direction:column;gap:.25rem}
+body.cr #crrail .tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.1875rem;width:3.5rem;min-height:3.5rem!important;height:auto;padding:.375rem 0!important;border:0!important;border-radius:.5rem!important;background:transparent!important;box-shadow:none!important;color:var(--c-raildim)!important;font:500 .6875rem/1.1 var(--uf)!important;letter-spacing:.01em;text-align:center;white-space:normal;cursor:pointer}
+body.cr #crrail .tabs button:hover{background:var(--c-railon)!important;color:var(--c-railtx)!important}
+body.cr #crrail .tabs button.on{background:var(--c-railon)!important;color:var(--c-railtx)!important;box-shadow:inset 3px 0 0 var(--c-acc)!important;font-weight:600!important}
+body.cr #crrail .tabs [data-ic]::before{width:1.25rem;height:1.25rem;opacity:1}
+body.cr #crrail .crsp{flex:1}
+body.cr #crrail .gs-set > button{width:2.5rem;height:2.5rem;min-height:2.5rem!important;padding:0!important;border:0!important;border-radius:.5rem!important;background:transparent!important;box-shadow:none!important;color:var(--c-raildim)!important;display:flex;align-items:center;justify-content:center}
+body.cr #crrail .gs-set > button:hover,body.cr #crrail .gs-set.open > button{background:var(--c-railon)!important;color:var(--c-railtx)!important}
+body.cr #crrail .gs-set > button svg{width:1.25rem;height:1.25rem}
+/* the workspaces of the other pages and the event log start right of the rail */
+body.cr:not(.pvwin) :is(#plantws,#libws,#toolsws){left:var(--railW)!important}
+/* unit band */
+body.cr #gsbar{padding:0!important;gap:0;column-gap:0}
+body.cr #gsbar > #crband{flex:1 1 100%;height:var(--top);display:flex;align-items:center;gap:.875rem;padding:0 .875rem;min-width:0;background:var(--c-strip);border-bottom:1px solid var(--c-line)}
+#crband .crunit{display:flex;flex-direction:column;line-height:1.15;min-width:0;flex:none}
+#crband .crunit b{display:block!important;font:600 .9375rem var(--uf);color:var(--c-tx);white-space:nowrap}
+#crband .crunit span{font:400 .75rem var(--uf);color:var(--c-dim);white-space:nowrap}
+#crband .crkpis{display:flex;min-width:0;overflow:hidden;flex:0 1 auto}
+#crband .crkpi{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:.0625rem;height:2.5rem;min-height:0!important;padding:0 .75rem!important;border:0!important;border-left:1px solid var(--c-line)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--c-tx)!important;cursor:pointer;line-height:1.1;flex:none}
+#crband .crkpi:hover{background:var(--c-ctlh)!important}
+#crband .crkpi i{font:600 .625rem var(--uf);font-style:normal;letter-spacing:.08em;color:var(--c-dim)}
+#crband .crkpi b{display:inline!important;font:600 1rem var(--mf);font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--c-tx)}
+#crband .crkpi small{font:400 .6875rem var(--uf);color:var(--c-dim);margin-left:.25rem}
+#crband .crkpi.na b{color:var(--c-dim)}
+#crband .crkpi{flex-direction:row;flex-wrap:wrap;align-content:center;align-items:baseline;max-width:9rem;text-align:left}
+#crband .crkpi i{flex:1 1 100%}
+#crband .crgrow{flex:1}
+#crband :is(.gs-search,.seg,#srchbtn){flex:none}
+@media (max-width:1040px){#crband .crunit span{display:none}}
+/* alarm banner: always on screen (DCS standard), red while an alarm or a trip is active */
+body.cr #gsbar > #cralarm{flex:1 1 100%;display:flex;align-items:center;gap:.625rem;height:2.25rem;padding:0 .875rem;min-width:0;background:var(--c-ribbon);border-bottom:1px solid var(--c-line);font:400 .8125rem var(--uf);color:var(--c-tx2)}
+body.cr #gsbar > #cralarm.on{background:var(--c-almsoft);border-bottom-color:var(--c-alm)}
+#cralarm .crchip{display:inline-flex;align-items:center;gap:.3125rem;height:1.25rem;padding:0 .5rem;border-radius:.625rem;font:600 .6875rem var(--uf);letter-spacing:.05em;white-space:nowrap;flex:none}
+#cralarm .crchip.alm{background:var(--c-alm);color:#fff}
+#cralarm .crchip.mut{background:var(--c-ctlh);color:var(--c-dim)}
+#cralarm .crchip.frc{background:var(--c-frcsoft);color:var(--c-frctx)}
+#cralarm .crat{font:400 .8125rem var(--mf);color:var(--c-dim);flex:none}
+#cralarm .cratx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#cralarm.on .cratx{color:var(--c-almtx);font-weight:600}
+#cralarm .crsp2{flex:1}
+#cralarm #evbtn{height:1.875rem!important;min-height:0!important;padding:0 .75rem!important;border:1px solid var(--c-line2)!important;border-radius:var(--r)!important;background:var(--c-pane)!important;color:var(--c-tx)!important;font:600 .75rem var(--uf)!important;box-shadow:none!important;flex:none;display:inline-flex!important;align-items:center}
+#cralarm #evbtn.new{border-color:var(--c-man)!important;color:var(--c-mantx2)!important}
+/* the Event log opens under the alarm banner, right of the rail */
+body.app2.cr #evbox{top:calc(var(--topH,8rem) + .25rem)!important;bottom:auto!important;left:calc(var(--railW) + .75rem)!important;height:auto!important;max-height:50vh}
+/* the ribbon: ABC | DITL and the sheet first */
+body.cr #gsbar .tbar{margin:0!important}
+#gsbar .tbar .crwhere{display:flex;align-items:center;gap:.625rem;flex:0 1 auto;min-width:12rem;max-width:42%;height:100%;padding:0 .75rem 0 .25rem;border-right:1px solid var(--c-line)}
+#gsbar .tbar .crwhere .sub{height:auto;flex:none}
+#gsbar .tbar .crwhere .crumb .cpath{display:none!important}
+#gsbar .tbar .crwhere .crumb{height:100%;display:flex;align-items:center;border-left:0;padding-left:0;flex:1 1 auto;min-width:0}
+#gsbar .tbar .crwhere :is(.sub,.seg) button{min-height:1.875rem!important;height:1.875rem!important}
+body:not([data-tab=logic]) #gsbar .tbar .crwhere{display:none}

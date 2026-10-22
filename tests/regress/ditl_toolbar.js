@@ -32,13 +32,13 @@ for(const [n,w,h] of [['desktop',1440,900],['tablet',1024,768],['phone',390,844]
  await seg(0);
  ck(await page.evaluate(()=>SIM===false),n+': VIEW stops it');
  // TOOLS tab: Health works, no editor tools
- await page.evaluate(()=>[...document.querySelectorAll('#gsbar .tabs button')].find(b=>/^tools$/i.test(b.textContent.trim())).click());await page.waitForTimeout(600);
+ await page.evaluate(()=>[...document.querySelectorAll(':is(#gsbar,#crrail) .tabs button')].find(b=>/^tools$/i.test(b.textContent.trim())).click());await page.waitForTimeout(600);
  ck(await vis('bhp')&&!(await vis('bdel'))&&!(await vis('bmode')),n+': TOOLS tab shows Health, no editor tools');
  await page.evaluate(()=>document.getElementById('bhp').click());await page.waitForTimeout(300);
  ck(await page.evaluate(()=>!document.getElementById('hp').hidden&&/sheets/.test(document.getElementById('hp').textContent)),n+': Health panel opens ('+(await page.evaluate(()=>document.getElementById('hp').textContent.slice(0,60)))+')');
  await page.evaluate(()=>{const c=document.getElementById('hpc');if(c)c.click()});
  // back to LOGIC, switch to ABC: the ABC groups come back, the DITL group goes
- await page.evaluate(()=>[...document.querySelectorAll('#gsbar .tabs button')].find(b=>/^logic$/i.test(b.textContent.trim())).click());await page.waitForTimeout(300);
+ await page.evaluate(()=>[...document.querySelectorAll(':is(#gsbar,#crrail) .tabs button')].find(b=>/^logic$/i.test(b.textContent.trim())).click());await page.waitForTimeout(300);
  await page.evaluate(()=>[...document.querySelectorAll('#gsbar .sub button')].find(b=>b.textContent.trim()==='ABC').click());
  await page.waitForFunction(()=>document.body.classList.contains('an'),null,{timeout:20000});await page.waitForTimeout(600);
  const gv=await page.evaluate(()=>{const v=s=>{const e=document.querySelector(s);return !!e&&e.offsetHeight>0};return {run:v('#gsbar .g-run'),view:v('#gsbar .g-view'),ditl:v('#gsbar .g-ditl')}});

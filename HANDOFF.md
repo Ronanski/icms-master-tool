@@ -3,7 +3,7 @@
 > Single current handoff. Palitan ang lumang status kapag nagbago ang trabaho; huwag mag-append ng chat transcript.
 
 ## SIMULAN DITO (next session, 2026-10-22)
-- **Kasalukuyang Beta:** `3.2.0-beta.2`. Branch: `claude/project-thread-8t4984`. Stable pa rin ang **v2.4.0** sa `main`. Walang merge sa main at walang release nang walang GO STABLE.
+- **Kasalukuyang Beta:** `3.2.0-beta.3`. Branch: `claude/project-thread-8t4984`. Stable pa rin ang **v2.4.0** sa `main`. Walang merge sa main at walang release nang walang GO STABLE.
 - **Ano ang 3.2.0:** iisang linya na ulit. Pinagsama ang dalawang Beta line na naghiwalay mula sa v2.4.0:
   - **2.5.0-beta.20** (PR #34 / #35, branch `claude/project-thread-yezgyg`): drawing audit fixes, DITL pages (sootblower, bottom ash, limestone; 241 sheet), HMI 1:1 ng Plant view, Focus / mini-map / Width, DITL panel na gaya ng ABC. **Lahat ng engine, logic at data ay galing dito** (walang ibang binago).
   - **3.1.0-beta.7** (PR #37, branch `claude/design-system-extraction-4dogzg`): bagong itsura (Style 2 + CAD shell, VIEW | RUN, ribbon, Inspector, controller group display). **Itsura lang.**
@@ -11,12 +11,13 @@
 - **Audit at plano (user-approved 2026-10-22):**
   - Audit report: https://claude.ai/artifact/3RbWZ8V96QbzL1y6ZMAH18 (kopya: `/mnt/project-files/app-audit-2026-10-22/`).
   - Redesign proposal "Control Room": https://claude.ai/artifact/Qk9hqE5yBjy4EYXrXXFmPR (mockups at sources: `/mnt/project-files/app-audit-2026-10-22/redesign/`). **Inaprubahan ng user ang lahat ng phase** (card, 2026-10-22 12:55 PM PHT).
-  - Phases: **P0** merge + bug fixes (3.2.0-beta.1, tapos) → **P1** engine at import check → **P2** shell at design system → **P3** bawat screen (Plant, Logic ABC, DITL, faceplate) → **P4** phone / tablet, accessibility, bilis. Isang Beta bawat phase, may screenshot ng bawat screen (PC, tablet 1333 × 833 / 800 × 1280, phone 390) bago mag-push.
+  - Phases: **P0** merge + bug fixes (3.2.0-beta.1 / 2, tapos) → **P1** engine at import check (tapos, walang mali) → **P2** shell at design system (3.2.0-beta.3) → **P3** bawat screen (Plant, Logic ABC, DITL, faceplate) → **P4** phone / tablet, accessibility, bilis. Isang Beta bawat phase, may screenshot ng bawat screen (PC, tablet 1333 × 833 / 800 × 1280, phone 390) bago mag-push.
 - **3.2.0-beta.1 ayos (detalye: `docs/versions/v3.2.0/UPDATE_REPORT.md`):** Plant view pindot (pointer capture), Plant view na unang binuksan ay live na, MV unit = sa faceplate, walang "-0.000", walang "not written yet" / tester buttons sa Inspector (lalabas lang kapag bukas ang UAT).
 - **3.2.0-beta.2 ayos:** sa ABC RUN, ang LAYERS · Inspector ay nagtatago / nagpapakita na rin ng Faceplate; ang Focus ay nagsasara ng panel sa ABC. Sanhi: ang Panel ng DITL bar ay nasa ribbon din (nakatago sa ABC) at iyon ang nahahanap. Buong regression laban sa 2.5.0-beta.20: walang bagong mali.
+- **3.2.0-beta.3 (P2):** Control Room shell (`src/ui/shell/cr.js` + dulo ng `app.css`), 900 px pataas: rail sa kaliwa (Plant view / Logic / Library / Tools / ⚙), unit band (LOAD, MSP, DRUM LVL, FW FLOW: BINABASA lang mula sa sheet na tumatakbo, walang kino-compile), alarm banner (alarm / trip mula sa Event log, bilang ng FORCED, Events), ABC | DITL at pangalan ng sheet sa simula ng ribbon. Mas makitid sa 900 px: ang dating top bar (P4 ang phone). Ayos din: ang ⚙ menu at Start ▾ ay walang laman mula beta.1 (nawala sa merge ang `.ddm.ddm-open`). Test: `shell_cr.js`.
 - **Paano i-check ang UI bago mag-push:** `node tools/ui-audit/audit.mjs <html> <outdir> light|dark <W> <H> [fd]` (27 screen). Real-click test ng Plant view: `/mnt/project-files/app-audit-2026-10-22/tools/` (p0.mjs: mouse at touch, bawat item).
 - **Mga aral (galit ang user kapag nilabag):** huwag pumili para sa user; overhaul = ayos at itsura ng buong app, hindi lang kulay; tingnan nang malapitan bawat screen bago sabihing "tapos"; huwag ulitin ang impormasyon; drawing ang pinakamahalaga; isang Beta na may isang report, hindi sunod-sunod na maliliit na ayos.
-- **SUSUNOD:** P1 (engine at import check: regression ng bawat block, laban sa 2.5.0-beta.20) tapos P2 (Control Room shell).
+- **SUSUNOD:** P3 (bawat screen: Plant view frame + trend, faceplate, Inspector, DITL panel kasama ang label ng output ng DITL-80S na naka-usog ng isang row, sheet tree), tapos P4 (phone tab bar, bottom sheet, 44 px touch, bigat ng file).
 
 ## Project
 DCS Logic Simulator sa `Ronanski/icms-master-tool`. Basahin muna ang `CLAUDE.md` at `PROJECT_RULES.md`. Dito lang sa repository na ito gagawa (PROJECT_RULES 5b).
