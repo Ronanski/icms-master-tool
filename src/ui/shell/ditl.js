@@ -495,6 +495,7 @@
   const rowNets = (s, i, side) => (side === 'R' ? s.nl.outs : s.nl.src.concat(s.nl.ind || [])).filter(o => o.row === i).map(o => o.n);
   const val = (R, n) => (R ? (R.v[n] ? 1 : 0) : null);
   /* what must change for net n to be `want` (the values of RUN); the shortest way when one of several is enough */
+  let ALL = false;
   function why(s, v, n, want, seen, d) {
     if (!!v[n] === !!want) return [];
     if (d > 16 || seen.has(n + ':' + want)) return [];
@@ -523,7 +524,8 @@
       one = x2 => [{ g: x.g, txt: x2 }];
     switch (g.t) {
       case 'AND':
-        return want ? ins.filter(n => !on(n)).flatMap(n => why(s, v, n, 1, seen, d)) : shortest(ins.map(n => why(s, v, n, 0, seen, d)));
+        /* FIRST-OUT (ALL): an AND at 1 is held by ALL its inputs (e.g. two of three drum level channels), not the shortest one */
+        return want ? ins.filter(n => !on(n)).flatMap(n => why(s, v, n, 1, seen, d)) : ALL ? ins.flatMap(n => why(s, v, n, 0, seen, d)) : shortest(ins.map(n => why(s, v, n, 0, seen, d)));
       case 'OR':
         return want ? shortest(ins.map(n => why(s, v, n, 1, seen, d))) : ins.filter(on).flatMap(n => why(s, v, n, 0, seen, d));
       case 'NOT':
@@ -811,8 +813,14 @@
   D.cause = (s, row) => {
     const o = s.nl && s.nl.outs.find(x => x.row === row);
     if (!o) return null;
-    const L = D.why(s, o.n, 0),
-      seen = new Set(),
+    ALL = true;
+    let L;
+    try {
+      L = D.why(s, o.n, 0);
+    } finally {
+      ALL = false;
+    }
+    const seen = new Set(),
       lines = [];
     for (const r of L) {
       /* only what IS 1 now: the "then ..." and pulse lines of the To-make-it list are what would happen next, not the cause */
@@ -826,7 +834,7 @@
           : String(r.txt || '').replace(/^the analog value must be NOT /, 'the analog value is ');
       if (!t || seen.has(t)) continue;
       seen.add(t);
-      lines.push({ d: 1, k: r.row !== undefined && !r.want ? 'input' : 'gate', txt: t, sh: s.name });
+      lines.push({ d: 1, k: r.row !== undefined && !r.want ? 'input' : 'gate', txt: t, sh: s.name, row: r.row !== undefined && !r.want ? r.row : undefined });
     }
     return { name: outName(s, row), lines: lines.slice(0, 12) };
   };

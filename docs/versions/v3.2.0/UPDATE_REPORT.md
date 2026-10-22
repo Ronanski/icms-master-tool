@@ -179,6 +179,8 @@ Base: pinagsama ang **2.5.0-beta.20** (PR #34 / #35, logic at data) at ang **3.1
   - Kapag ang DITL output na TRIP / MFT / RUN BACK ay naging 1, sa mismong scan na iyon kinukuha ang input na 1. Iyon ang first-out, at isinusulat ito sa Event log ("cause ▸").
   - Hindi isinasama ang "NO TRIP PRESENT" at ang shutdown sequence ng burner at igniter.
   - Gumagana kapag ON ang One world; may paalala sa Event log kapag OFF ito.
+  - Sinusundan ang sanhi sa ibang sheet: input row ng DITL-03A → output ng DITL-03E → input nito → signal ng ABC-010 (at "FORCED by you" kapag force). Ang AND ay nagpapakita ng LAHAT ng input na 1 (hal. 2 sa 3 drum level channel). Sinusundan lang ang source na talagang 1.
+  - Ang mga output ng iisang sheet na sabay naging 1 sa iisang sanhi (MFT · SER, MFT 1 · TCS, MFT · IRP ...) ay ISANG event na: "MASTER FUEL TRIP (MFT) = 1 (+5 outputs)".
 - **FORCED chip = listahan** ng lahat ng force ng user sa bawat ABC sheet, may Go at Release. Hindi kasama ang value ng plant model.
 
 **As Left (sinubok sa built html, headless Chrome):**
@@ -187,6 +189,7 @@ Base: pinagsama ang **2.5.0-beta.20** (PR #34 / #35, logic at data) at ang **3.1
 |---|---|
 | `why.js` | LICBR1001B (ABC-010) sa 150 MW: "FORCE MANUAL (M.0226 = 1)". Ang Why? ay nagpapakita ng M.0226 = 1 ← OR ← NOT ← FICFW1007.MAN = 0 at LICBR1001A.MAN = 0, may 2 pindot na "→ 1". |
 | `why.js` | Pinindot ang BOILER EMERGENCY TRIP P.B. (DITL-03A row 14): ang Event log ay may "MASTER FUEL TRIP (MFT) = 1", cause "Input row 14 · BOILER EMERGENCY TRIP P.B. ON (CRT) = 1". Walang "NO TRIP PRESENT" sa log. |
+| `why.js` | Force ng ABC-010 M.0170 at M.0172 (drum level L.L. channel 1 at 3): pagkalipas ng 5 s timer ng DITL-03E, ISANG event "MASTER FUEL TRIP (MFT) · SER = 1 (+5 outputs)", cause: DITL-03A input row 10 DRUM LEVEL L.L. ← DITL-03E output row 21 ← input row 19 (M.0172) at row 18 (M.0170) ← ABC-010 M.0172 / M.0170 = 1 · FORCED by you. Kapag isa lang na channel ang naka-force: walang MFT (tama sa drawing: AND ng dalawang channel). |
 | `forcelist.js` | Plant model ON, 150 MW: walang FORCED chip. Force ng M.0228 sa ABC-010, tapos binuksan ang ABC-001C: "1 FORCED" pa rin. Ang listahan ay may ABC-010 M.0228 FORCE 1; Go → ABC-010; Release → walang force. |
 | Screen walk | PC 1440 × 900, tablet 1280 × 800 / 800 × 1280, phone 390 × 844. 9 screen bawat sukat, 0 page error. Sa 150 MW: "NO ALARM". |
 
