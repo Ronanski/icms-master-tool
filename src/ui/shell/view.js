@@ -115,7 +115,7 @@
       d = $('dp');
     return isAn() ? !!(a && a.offsetWidth > 0 && !a.classList.contains('min')) : !!(d && d.offsetWidth > 0);
   };
-  const panelBtn = () => document.querySelector('.lo-pnl');
+  const panelBtn = () => document.querySelector('.lo-pnl') || [...document.querySelectorAll('#gsbar .tbar button')].find(b => /^Panel$/.test(b.textContent.trim()));
   let wasOpen = false;
   const setFocus = on => {
     const was = focus;
@@ -267,6 +267,12 @@
     bF.textContent = focus ? '⛶ Exit focus' : '⛶ Focus';
   }
   const mount = () => {
+    /* 3.2.0-beta.1: the 3.1 shell has no #lotools; Width and Focus go on the floating zoom bar (#zbar) of the drawing */
+    const z = $('zbar');
+    if (z) {
+      z.append(bW, bF);
+      return true;
+    }
     const t = $('lotools');
     if (!t) return false;
     t.append(Object.assign(document.createElement('div'), { className: 'lo-vw' }));

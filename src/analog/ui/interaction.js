@@ -347,7 +347,7 @@ bWv.onclick = () => {
   AN.wireVals = v !== '0';
   bWv.classList.toggle('on', AN.wireVals);
 }
-const ptab = h$('button', { id: 'anptab', txt: '◀ Panel', title: 'Show the right panel' });
+const ptab = h$('button', { id: 'anptab', txt: '◀ Inspector', title: 'Show the Inspector / Faceplate' });
 document.body.append(ptab);
 ptab.onclick = () => {
   AN.tmp = false;

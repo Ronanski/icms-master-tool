@@ -6,7 +6,7 @@ const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist
 for(const touch of [false,true]){
  const ctx=await b.newContext({viewport:{width:1280,height:900},isMobile:touch,hasTouch:touch});const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));
  await p.goto('file://'+path.resolve(html));await p.waitForTimeout(1500);await p.evaluate(()=>AN.setCat('an'));await p.waitForFunction(()=>AN.sheets&&AN.sheets.length>=54,null,{timeout:60000});
- await p.evaluate(()=>{AN.go(AN.sheets.findIndex(s=>s.name==='ABC-015'));[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Operator').forEach(b=>b.click());AN.run=true});
+ await p.evaluate(()=>{AN.go(AN.sheets.findIndex(s=>s.name==='ABC-015'));[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Faceplate').forEach(b=>b.click());AN.run=true});
  await p.waitForSelector('#opp .fpman',{timeout:20000});await p.waitForTimeout(800);const W=touch?'touch: ':'desktop: ';
  const tags=await p.evaluate(()=>[...document.querySelectorAll('#opp .fpman .tg b')].map(x=>x.textContent));
  ck(tags.length>=12&&!tags.includes('MAN')&&tags.includes('HICFA1005'),W+tags.length+' manual stations, tags: '+tags.slice(0,4).join(', ')+' ...');

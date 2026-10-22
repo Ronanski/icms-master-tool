@@ -2,7 +2,7 @@
 {
   const st = document.createElement('style');
   st.textContent =
-    'body.anview #anp input,body.anview #anp select,body.anview #anp button:not(.keep){pointer-events:none;opacity:.45}body.anview #anp .keep{opacity:1}#anp .tr{cursor:pointer}#anp .tr:hover{background:#14231b}#anp .why{background:#10181d;border-left:3px solid var(--acc);padding:4px 6px;margin:4px 0;color:var(--tx)}';
+    'body.anview #anp input,body.anview #anp select,body.anview #anp button:not(.keep){pointer-events:none;opacity:.45}body.anview #anp .keep{opacity:1}#anp .tr{cursor:pointer}#anp .tr:hover{background:var(--c-runsoft)}#anp .why{background:var(--c-pane);border-left:3px solid var(--acc);padding:4px 6px;margin:4px 0;color:var(--tx)}';
   document.head.append(st);
 }
 /* trace = the wire takes a solid colour (2.3.0: no glow): white = selected, blue = upstream, magenta = downstream */ const TUP =
@@ -284,7 +284,7 @@ function trList(d) {
       const ix = dsIdx(sh);
       if (ix.to.has(n))
         rs.push(
-          h$('div', { cls: 'r', style: 'color:#9aa' }, [
+          h$('div', { cls: 'r', style: 'color:var(--c-dim)' }, [
             h$('span', {
               cls: 'n',
               txt: '   → to ' + ix.to.get(n).join(', ') + ' (leaves to the DITL page: not simulated here)'
@@ -293,7 +293,7 @@ function trList(d) {
         );
       if (ix.from.has(n))
         rs.push(
-          h$('div', { cls: 'r', style: 'color:#9aa' }, [
+          h$('div', { cls: 'r', style: 'color:var(--c-dim)' }, [
             h$('span', {
               cls: 'n',
               txt:
@@ -578,7 +578,7 @@ function trMapUi(d, sh) {
       const r = h$('div', { cls: 'r tr', style: 'padding-left:' + (6 + x.depth * 14) + 'px' }, [
         h$('span', {
           cls: 'n',
-          style: x.again ? 'color:#9aa' : '',
+          style: x.again ? 'color:var(--c-dim)' : '',
           txt:
             (x.again ? '↺ back to ' : x.depth ? '▶ ' : '● ') +
             x.sh.name +
@@ -1102,7 +1102,7 @@ function trLegend(leg, S, m, o, sh) {
         h$('b', { txt: q.name }),
         document.createTextNode(' = ' + txt + (hk != null ? '  @ ' + fmtT(Math.max(0, h.t[hk])) : '')),
         (o.big || o.desc) && q.desc
-          ? h$('div', { txt: q.desc, style: 'font-size:10px;color:#8a9;margin-left:14px' })
+          ? h$('div', { txt: q.desc, style: 'font-size:10px;color:var(--c-dim);margin-left:14px' })
           : document.createTextNode('')
       ]);
     sp.onclick = () => {
@@ -1124,7 +1124,7 @@ function trendUi(d) {
     cv = h$('canvas', {
       width: 420,
       height: hgt * 1.4,
-      style: 'width:100%;height:' + hgt + 'px;background:#0b1013;border:1px solid var(--line);margin-top:4px'
+      style: 'width:100%;height:' + hgt + 'px;background:var(--c-well);border:1px solid var(--line);margin-top:4px'
     }),
     leg = h$('div', { style: 'font-size:11px;margin-top:2px' }),
     wsel = h$(
@@ -1159,12 +1159,12 @@ function trendUi(d) {
     ? h$('canvas', {
         width: 420,
         height: 200,
-        style: 'width:100%;height:140px;background:#0b1013;border:1px solid var(--line);margin-top:4px'
+        style: 'width:100%;height:140px;background:var(--c-well);border:1px solid var(--line);margin-top:4px'
       })
     : null;
   d.append(
     h$('h4', { txt: 'Trend · ' + m0.title }),
-    m0.desc ? h$('small', { txt: m0.desc, style: 'display:block;color:#9ab' }) : document.createTextNode(''),
+    m0.desc ? h$('small', { txt: m0.desc, style: 'display:block;color:var(--c-tx2)' }) : document.createTextNode(''),
     h$('div', { cls: 'r' }, [wsel, bz, bc]),
     cv,
     ...(xyc ? [xyc] : []),
