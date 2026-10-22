@@ -2,6 +2,30 @@
 
 Base: 3.0.0-beta.8 (branch `claude/design-system-extraction-4dogzg`). UI lang: walang binago sa engine, logic, simulation, kulay ng drawing at sa DCS faceplate box.
 
+## 3.1.0-beta.7 — Buong audit (user: "Walang bugs? Run full audit")
+- **UI audit** (27 screen; Light, Dark, Android auto-dark; 390, 768, 1333, 1920 px).
+  - **Mga bug na nakita at inayos:**
+    - Sa tablet patayo at phone, may text pa ang tabs at tool bar (nasira ng button rule ng beta.6). Icon lang na ulit.
+    - Ang ⚙ menu ay lumalampas sa kaliwa ng phone.
+    - Ang ☰ Sheets ay nakatago sa dulo ng tool bar sa 768 px.
+    - Naputol ang huling column ng Calculations table sa 768 px.
+    - Halos hindi mabasa ang berdeng "1" sa DITL signals.
+    - Mahina ang contrast ng signal notes sa faceplate.
+  - **Natira (hindi bug):**
+    - Overlap ng bukas na menu o lumulutang na panel (sinadya).
+    - Ang force field at ✓ ay magkadikit bilang iisang grupo.
+    - Mga row ng listahan na naka-scroll sa ilalim ng header.
+- **Buong regression sa beta.7** (naka-freeze na kopya, 2026-10-22):
+  - PASS: npm test 11, engine isolated, reset (51 sheet, 0 differ), unit_load 19, unit_trip tt 16 / mft 10 / bfwp 9 / idf 8 / paf 7 / hh 4, ditl150 9, loaddown 5, hmi_op 34, plant_live 12, world 11, switches, force_manual (68), inapp_update 12, stale_beta 4, at ang 10 UI test.
+  - **diff laban sa v2.4.0: 54 sheet identical, 0 differ.** Ebidensya ito na walang nagbago sa engine at logic.
+  - Hindi pasado pero **kapareho ng v2.4.0** (sinubok din ang v2.4.0 ngayon):
+    - check_panel M4 cold start-up 16 / 17;
+    - pid_am FIC-CM ABC-004A;
+    - pv_reacts 18 "MV STUCK" (pareho ang bilang);
+    - refcheck: 1 parameter diff, HICHR1002A ML (workbook 19, sim 10).
+  - values_layout: 11 text, 0 value, 15 block, 16 wire na tinatakpan (sa v2.4.0: 13 / 4 / 65 / 101).
+- **Hindi pa nasubok:** sa tablet / exe / apk ng user.
+
 ## 3.1.0-beta.6 — Group display ng controllers at iisang button system
 - **Problem (user, 2026-10-21):** "Yung controller list, kahit ganun lang kalaki ang faceplate, edi mas madami nagkasya. Ito lang ba inayos mo? Dami ko pa nakikita sa mga buttons na hindi professional, ang basic, nakakalito."
 - **As Found:**
