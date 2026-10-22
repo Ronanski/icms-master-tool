@@ -2,6 +2,29 @@
 
 > Single current handoff. Palitan ang lumang status kapag nagbago ang trabaho; huwag mag-append ng chat transcript.
 
+## SIMULAN DITO (next session, 2026-10-22)
+- **Kasalukuyang Beta:** `3.1.0-beta.7`. Branch: `claude/design-system-extraction-4dogzg`. PR: #37 (bukas, walang merge). Stable pa rin ang **v2.4.0** sa `main`.
+- **Ginawa sa session na ito (UI lang, walang binago sa engine o logic):**
+  - Bagong itsura **Style 2 + CAD**.
+  - Ang `src/ui/shell/app.css` ay isinulat muli bilang iisang design system: fluid, kusang umaangkop sa kahit anong screen, Light / Dark.
+  - VIEW | RUN switch, CAD ribbon, Sheets | Inputs, papel sa mesa na may rulers at zoom bar, selected block card.
+  - Controller group display (maliliit na DCS faceplate).
+  - Iisang button system (2 laki, 4 uri, line icons).
+  - Mas malaki ang drawing, at faceplate na 80 %.
+  - Report bawat Beta: `docs/versions/v3.0.0/UPDATE_REPORT.md` at `docs/versions/v3.1.0/UPDATE_REPORT.md`.
+- **Ebidensya na hindi nagalaw ang logic:** `tests/regress/diff.js` laban sa v2.4.0 → 54 sheet identical. Buong regression sa beta.7: lahat pasado, maliban sa mga dati nang bagsak sa v2.4.0 (M4 cold start-up 16 / 17, pid_am FIC-CM ABC-004A, pv_reacts 18 MV STUCK, refcheck HICHR1002A ML wb 19 / sim 10).
+- **Paano i-check ang UI bago mag-push:**
+  - `node tools/ui-audit/audit.mjs <html> <outdir> light|dark <W> <H> [fd]`: 27 screen; contrast, naputol, overlap, maliit na button.
+  - `tools/ui-audit/inventory.mjs`: lahat ng itsura ng button.
+  - Gamitin sa 390, 768, 1333 × 833 (tablet ng user) at 1920, Light at Dark.
+- **Mga aral (galit ang user kapag nilabag):**
+  - Huwag pumili para sa user.
+  - Overhaul = ayos at itsura ng buong app, hindi lang kulay.
+  - Tingnan nang malapitan bawat screen bago sabihing "tapos".
+  - Huwag ulitin ang impormasyon (sheet name, inputs).
+  - Drawing ang pinakamahalaga.
+- **SUSUNOD:** maghintay ng **listahan ng user** ng mga ipapaayos niya (sinusuri niya ang beta.7 sa tablet). Iyon ang trabaho ng susunod na session. Walang merge o release nang walang GO STABLE.
+
 ## Project
 DCS Logic Simulator sa `Ronanski/icms-master-tool`. Basahin muna ang `CLAUDE.md` at `PROJECT_RULES.md`. Dito lang sa repository na ito gagawa (PROJECT_RULES 5b).
 
