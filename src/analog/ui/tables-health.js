@@ -399,7 +399,7 @@ function dsOpen() {
       const upd = () => {
         const x = S.rt.v[n];
         vc.textContent = dig ? (x > 0.5 ? '1' : '0') : fmt(x);
-        vc.style.color = dig && x > 0.5 ? '#6f6' : '';
+        vc.style.color = dig && x > 0.5 ? 'var(--c-runtx2,#6f6)' : '';
       };
       upd();
       live.push(upd);

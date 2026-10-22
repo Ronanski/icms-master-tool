@@ -664,7 +664,7 @@ body.app2 .fpov .mvn{order:3;display:block;padding:0 .3125rem .3125rem;font:500 
    text:   .875rem medium, sentence case; segmented .8125rem semibold */
 :root{--b-md:2.125rem;--b-sm:1.875rem}
 @media (pointer:coarse){:root{--b-md:2.5rem;--b-sm:2.25rem}}
-body.app2 :is(button,label.b,select):not(.fp *):not(.fpop *):not(#zbar *):not(svg *):not(#sidelist *):not(#anlist *):not(#pllist *):not(#anfind *):not(#sfoot *){
+body.app2 :where(button,label.b,select):where(:not(.fp *,.fpop *,#zbar *,svg *,#sidelist *,#anlist *,#pllist *,#anfind *,#sfoot *)){
  min-height:var(--b-md)!important;font-weight:500;line-height:1;letter-spacing:0}
 body.app2 :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select):not(.fp *):not(.fpop *):not(#sfoot *){min-height:var(--b-md)!important;font-size:.875rem!important}
 body.app2 button[data-g]:not(#zbar *):not(.fp *){width:var(--b-md)!important;min-width:var(--b-md)!important}
@@ -701,9 +701,26 @@ body.app2 #ansel > div:has(> small:first-child) > small{flex:none;white-space:no
 /* force editor sits on the row of its value */
 body.app2 #anp .r{flex-wrap:wrap}
 body.app2 #anp .r > .fc{margin-left:auto}
-body.app2 :is(button:not([data-g]),label.b,select):not(.fp *):not(.fpop *):not(#zbar *):not(svg *):not(#sidelist *):not(#anlist *):not(#pllist *):not(#anfind *):not(#sfoot *){font-size:.875rem!important}
+body.app2 :where(button:not([data-g]):not([data-ic]),label.b,select):where(:not(.fp *,.fpop *,#zbar *,svg *,#sidelist *,#anlist *,#pllist *,#anfind *,#sfoot *)){font-size:.875rem!important}
+body.app2 :where(button[data-ic]):where(:not(#gsbar .tabs *,#gsbar .tbar *)){font-size:.875rem!important}
 /* panel text breaks between words, not inside them */
 body.app2 #anp,body.app2 #anp *{word-break:normal!important;overflow-wrap:break-word!important}
 body.app2 #anp .fc > input{width:7rem!important}
 /* DITL title: the drawing / sheet numbers give way to the title on narrower screens */
 @media (max-width:1500px){#gsbar .crumb #meta #m_sub{display:none!important}}
+/* ---------- 19. FULL AUDIT FIXES 3.1.0-beta.7 ---------- */
+/* phone / tablet: the menus stay on the screen */
+@media (max-width:640px){.ddm{position:fixed!important;left:.5rem!important;right:.5rem!important;top:calc(var(--topH,96px) + .25rem)!important;min-width:0!important}}
+/* narrow screens: the sheet navigator comes first in the tool bar (it was scrolled out of view) */
+@media (max-width:900px){#gsbar .tbar .g-sheet{order:-1}#gsbar .tbar{justify-content:flex-start}}
+/* the tool bar scrolls sideways on a phone: a fade at the edge says there is more */
+@media (max-width:640px){#gsbar .tbar{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 2rem),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 2rem),transparent)}}
+/* wide tables (library calculations, assumed values) scroll inside their panel */
+body.app2 :is(#libws .libcalc,#anln) table{display:block;max-width:100%;overflow-x:auto}
+/* force editor: the field takes the room that is left */
+body.app2 #anp .fc{max-width:100%}
+body.app2 #anp .fc > input{flex:1 1 5rem!important;width:auto!important;min-width:4rem}
+body.app2 :is(#opp,#plfp) .sg{color:var(--c-dim)!important}
+body.app2 #libws table{display:block;max-width:100%;overflow-x:auto}
+body.app2 #anptab{min-width:2rem!important}
+body.app2 .sg{color:var(--c-dim)!important}
