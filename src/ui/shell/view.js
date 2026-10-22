@@ -115,7 +115,9 @@
       d = $('dp');
     return isAn() ? !!(a && a.offsetWidth > 0 && !a.classList.contains('min')) : !!(d && d.offsetWidth > 0);
   };
-  const panelBtn = () => document.querySelector('.lo-pnl') || [...document.querySelectorAll('#gsbar .tbar button')].find(b => /^Panel$/.test(b.textContent.trim()));
+  /* 3.2.0-beta.1: the ribbon button of the page on screen (ABC: LAYERS · Inspector, DITL: Panel) */
+  const panelBtn = () =>
+    document.querySelector('.lo-pnl') || [...document.querySelectorAll(isAn() ? '#gsbar .g-view button' : '#gsbar .g-ditl button')].find(b => /^(Panel|Inspector)$/.test(b.textContent.trim()));
   let wasOpen = false;
   const setFocus = on => {
     const was = focus;
