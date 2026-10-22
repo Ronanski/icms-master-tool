@@ -18,12 +18,12 @@ ck(segT.join()==='VIEW,RUN',n+': ABC top bar switch = [VIEW | RUN] ('+segT.join(
 await seg(1);await p.waitForTimeout(800);
 const sim=await p.evaluate(()=>[...document.querySelectorAll('#gsbar .g-run button,#gsbar .g-run select')].filter(x=>x.offsetHeight).map(x=>x.textContent.trim().slice(0,12)));
 ck(await p.evaluate(()=>!AN.view&&AN.run)&&sim.some(t=>/^Reset$/.test(t))&&sim.length>=3,n+': RUN starts the simulation and shows the SIM group ('+sim.join(' | ')+')');
-// Panel in the ribbon hides and shows the ABC panel
+// LAYERS · Inspector in the ribbon hides and shows the ABC panel
 const anOpen=()=>p.evaluate(()=>{const a=document.getElementById('anp'),o=document.getElementById('opp');return (!!a&&!a.classList.contains('min')&&a.offsetWidth>0)||(!!o&&o.offsetWidth>0)});
-const pnl=()=>p.evaluate(()=>[...document.querySelectorAll('#gsbar .tbar button')].find(x=>/^Panel$/.test(x.textContent.trim())).click());
+const pnl=()=>p.evaluate(()=>[...document.querySelectorAll('#gsbar .g-view button')].find(x=>/^Inspector$/.test(x.textContent.trim())).click());
 if(!(await anOpen())){await pnl();await p.waitForTimeout(400)}
 const o0=await anOpen();await pnl();await p.waitForTimeout(400);const o1=await anOpen();await pnl();await p.waitForTimeout(400);const o2=await anOpen();
-ck(o0&&!o1&&o2,n+': Panel hides and shows the ABC panel');
+ck(o0&&!o1&&o2,n+': LAYERS · Inspector hides and shows the ABC panel');
 // right panel tabs Inspector / Faceplate
 const tabs=await p.evaluate(()=>[...document.querySelectorAll('.hmitabs button')].filter(x=>x.offsetHeight).map(x=>x.textContent.trim()));
 ck(tabs.join()==='Inspector,Faceplate',n+': ABC panel tabs '+tabs.join(' / '));

@@ -1178,7 +1178,8 @@
   function tick() {
     try {
       if (!opp) return;
-      const pb = [...document.querySelectorAll('button')].find(x => /^(Panel|Inspector)$/.test(x.textContent.trim()) && !x.closest('.hmitabs'));
+      /* 3.2.0-beta.1: not the Panel button of the DITL bar (it is in the ribbon too, hidden on ABC) */
+      const pb = [...document.querySelectorAll('button')].find(x => /^(Panel|Inspector)$/.test(x.textContent.trim()) && !x.closest('.hmitabs,.g-ditl,#dp'));
       const on = !!(pb && pb.classList.contains('on'));
       const op = document.body.classList.contains('ophmi');
       opp.style.display = on && op ? 'flex' : 'none';
