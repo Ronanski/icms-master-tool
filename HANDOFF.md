@@ -2,6 +2,11 @@
 
 > Single current handoff. Palitan ang lumang status kapag nagbago ang trabaho; huwag mag-append ng chat transcript.
 
+## KASALUKUYAN (2026-10-22) — basahin ito muna
+- **Stable:** v2.4.0 (`main` 65cfb47). **Dalawang bukas na Beta line na naghihiwalay:** PR #34 `claude/project-thread-yezgyg` = 2.5.0-beta.20 (UI + drawing audit #32 + engine audit fixes) at PR #37 `claude/design-system-extraction-4dogzg` = 3.1.0-beta.7 (bagong itsura, WALANG #34). Ang `/beta/` page = huling na-push na branch. Hinihintay: piliin ng user ang base, tapos pagsasamahin.
+- **Full audit ng v2.4.0 (2026-10-22):** `docs/versions/v2.4.0/FULL_AUDIT_2026-10-22.md`. Engine at logic: matibay (lahat ng regression PASS; pid_am FIC-CM = mali ng test, BU-CMD). **MATAAS na UI bug U-1:** ang Start ▾ menu ay natatakpan ng `.tbar overflow-y:hidden` (`src/ui/shell/app.css` 35) sa tablet / phone / naka-tab na PC: 0 / 10 item ang mapipindot; pareho sa 3.1.0-beta.7. Action list: seksyon 6 ng audit.
+- Ang commit ng audit ay `[skip ci]` para hindi mapalitan ang `/beta/` page (P-2). Ang ibaba ng file na ito ay kasaysayan pa (lilinisin, P-3).
+
 ## Project
 DCS Logic Simulator sa `Ronanski/icms-master-tool`. Basahin muna ang `CLAUDE.md` at `PROJECT_RULES.md`. Dito lang sa repository na ito gagawa (PROJECT_RULES 5b).
 
