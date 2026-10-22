@@ -8,7 +8,7 @@
   - **Direksyon ng produkto (user, 7:56 PM PHT: "anong gagawin mo sa app, maging competitive"):** ang app ay **digital twin ng logic ng LMYP #1 na nagsasabi kung BAKIT**.
   - **Ginawa:**
     - "Why?" sa faceplate at sa info card (`src/ui/shell/why.js`: `AN.why`, `AN.whyMan`).
-    - First-out ng DITL trip sa Event log (`world.js` + `DUI.cause` + `lsEventAdd`; kailangang ON ang One world).
+    - First-out ng DITL trip sa Event log (`world.js` + `DUI.cause` + `lsEventAdd`; kailangang ON ang One world). Sinusundan sa ibang sheet hanggang ABC (`deeper()` sa `world.js`); isang event bawat sheet at sanhi.
     - FORCED chip = listahan ng lahat ng force (`cr.js`).
     - Madilim ang default (`ls-theme4`, `ditl.dg4`).
     - Alarm line nasa unit band; Start / CHECK / Pause nasa plant bar (`cr.js` `opBar`).

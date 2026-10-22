@@ -592,11 +592,15 @@
     /* 3.2.0-beta.6 FIRST-OUT: a TRIP / MFT / STOP output that goes 1 in this scan: its cause is read now (DUI.cause), before
        the other conditions follow, and written to the Event log */
     W.tk = (W.tk || 0) + 1;
+    W._o = out;
     if (window.lsEventAdd && window.DUI && DUI.cause && W.tk > 25)
       for (const s of S.sheets) {
         const a = prev[s.name],
           b = out[s.name];
         if (!a || !b) continue;
+        /* the outputs of one sheet that go 1 in the same scan for the same cause (MFT · SER, MFT 1 · TCS, MFT · IRP ...) are ONE
+           event: named by the MASTER FUEL TRIP output when there is one, "+N outputs" for the rest */
+        const grp = new Map();
         for (const row of b) {
           if (a.has(row)) continue;
           let c = null;
@@ -605,8 +609,16 @@
           } catch (e) {}
           /* trips only (MFT, boiler / fan / pump / turbine TRIP, RUN BACK): the shutdown and stop sequences of burners and
              igniters follow from them and are not alarms */
-          if (c && /\bTRIP|\bMFT\b|RUN\s*BACK/i.test(c.name) && !/\bNO\s+(\w+\s+)?TRIP|TRIP\s+RESET/i.test(c.name)) lsEventAdd(s.name, 'TRIP', c.name + ' = 1', c.lines);
+          if (!c || !/\bTRIP|\bMFT\b|RUN\s*BACK/i.test(c.name) || /\bNO\s+(\w+\s+)?TRIP|TRIP\s+RESET/i.test(c.name)) continue;
+          const k = c.lines.map(l => l.txt).join('|'),
+            g = grp.get(k);
+          if (!g) grp.set(k, { c, n: 1 });
+          else {
+            g.n++;
+            if (/MASTER FUEL TRIP/i.test(c.name) && !/MASTER FUEL TRIP/i.test(g.c.name)) g.c = c;
+          }
         }
+        grp.forEach(({ c, n }) => lsEventAdd(s.name, 'TRIP', c.name + ' = 1' + (n > 1 ? ' (+' + (n - 1) + ' outputs)' : ''), deeper(s, c.lines, 1)));
       }
     W.out = out;
     /* 3. DITL -> ABC (not while the one world is OFF: then the DITL 150 MW state is computed for the DITL only) */
@@ -627,6 +639,56 @@
         } catch (e) {}
     }
     W.ms = W.ms * 0.8 + (performance.now() - t0) * 0.2;
+  }
+  /* 3.2.0-beta.6 FIRST-OUT across sheets: an input row that is 1 because of another sheet is followed to that sheet's output
+     (FROM column, the same map the one world uses) and its cause, up to 4 sheets deep: "IDF STOPPED" on DITL-03A -> the row
+     on DITL-03B that made it 1 -> the motor / ABC signal */
+  function deeper(s, lines, d) {
+    const out = [];
+    for (const l of lines) {
+      out.push(Object.assign({}, l, { d }));
+      if (l.row === undefined || d >= 5 || out.length > 30) continue;
+      const m = W.idx && W.idx.din.get(s),
+        srcs = m && m.get(l.row);
+      for (const q of srcs || []) {
+        /* only a source that IS 1 now made the row 1 (else the operator pressed the row on this sheet) */
+        if (q.k === 'd' && !(W._o && W._o[q.d.name] && W._o[q.d.name].has(q.row))) continue;
+        if (q.k !== 'd' && q.k !== 'm' && q.k !== 'v' && !(q.sh && q.sh.S && q.sh.S.rt && q.sh.S.rt.v[q.n] > 0.5)) continue;
+        if (q.k === 'd') {
+          let c = null;
+          try {
+            c = DUI.cause(q.d, q.row);
+          } catch (e) {}
+          if (c) {
+            out.push({ d: d + 1, k: 'link', txt: 'from ' + q.d.name + ': ' + c.name + ' = 1', sh: q.d.name });
+            out.push(...deeper(q.d, c.lines, d + 2));
+          }
+          break;
+        }
+        if (q.k === 'm') {
+          const st = q.sh.S && q.sh.S.rt && q.sh.S.rt.st[q.c.amt.id];
+          if (!(st && st.pk !== q.c.autoLeg)) continue;
+          out.push({ d: d + 1, k: 'input', txt: 'from ABC: ' + q.c.tag + ' is in MANUAL', sh: q.sh.name });
+          break;
+        }
+        if (q.k !== 'v' && q.sh && q.sh.S) {
+          let nm = '';
+          try {
+            nm = AN.nm(q.sh.S, q.n) || '';
+          } catch (e) {}
+          /* and on the ABC sheet, the same "Why?" walk (src/ui/shell/why.js), a few lines; its first line names the net and its
+             reason (FORCED by you, transmitter, comparator ...) */
+          let L2 = [];
+          try {
+            if (AN.why) L2 = AN.why(q.sh, q.n).lines.slice(0, 9);
+          } catch (e) {}
+          out.push({ d: d + 1, k: L2[0] && L2[0].k === 'force' ? 'force' : 'link', txt: 'from ABC ' + q.sh.name + ': ' + (L2[0] ? L2[0].txt : (nm || 'signal') + ' = 1'), sh: q.sh.name });
+          for (const l2 of L2.slice(1)) out.push(Object.assign({}, l2, { d: d + 1 + l2.d }));
+          break;
+        }
+      }
+    }
+    return out;
   }
   function off() {
     W.live = false;
