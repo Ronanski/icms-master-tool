@@ -228,3 +228,34 @@ Base: pinagsama ang **2.5.0-beta.20** (PR #34 / #35, logic at data) at ang **3.1
 
 - **Hindi nasubok:** tablet / exe / apk ng user. Ang ibang UI regression (DITL, Events, faceplate ...) ay tumatakbo pa; iuulat kapag tapos.
 - **Status:** ipinush bilang Beta.
+
+## 3.2.0-beta.8 — Guided Workbench: Home, Training, 4 na theme, mga ayos ng UI review
+- **Problem (user, pinili sa card 2026-10-23 12:28 PM PHT "B + C · Guided Workbench"):** "bakit light lang, bakit dark lang, hindi pwedeng baguhin ang mga kulay?" at nahati ang isip sa B (gabay para sa nag-aaral) at C (workbench ng engineer). Mula sa UI review: walang panimulang page, hindi alam ng bagong user kung saan magsisimula; ang PR-OPE-5002 ay nasa docx lang; maliit ang text sa mga bar (9 ~ 10.5 px), maliit ang pindutan sa touch, 8 field na walang pangalan, dev tools nasa rail.
+- **As Found:**
+  - Dalawang theme lang (Light / Dark).
+  - Ang app ay bumubukas sa huling page (Logic kadalasan), walang "saan ako magsisimula".
+  - Ang Start ▾ (150 MW / Cold / Warm / Hot) ay nasa Plant view lang.
+  - Pagkatapos ng Start, kapag tumatakbo ang orasan habang VIEW ang page, VIEW pa rin ang nakasindi sa switch, at walang epekto ang pindot sa VIEW.
+  - Plant view: minsan nawawala ang graphic (viewBox NaN) kapag binago ang laki ng window habang nakatago ang page.
+- **Work Done (walang binago sa logic, engine at drawing):**
+  - **4 na theme** sa ⚙: Light, Dark (default pa rin), Control room grey, High contrast (`app.css`).
+  - **Home** (bagong unang page, `src/ui/shell/home.js` + `home.css`): "What do you want to do?" (Continue, Operate the plant, Learn the start-up, Find a signal · Why?, Read the logic, F(X) curves, I/O and memory lists), Starting state (parehong Start ▾ buttons, tapos bubukas ang Plant view), at Sheets / Faceplates you opened.
+  - **Training** (bagong page): ang 44 section at 663 hakbang ng PR-OPE-5002 Rev 03, kinuha ng `tools/training/extract.py` mula sa docx (`src/ui/training/pr-ope-5002.js`). Checkbox bawat hakbang (naka-save sa browser), progress bar, Tick all, Practise: Cold start. Tag ng controller / MAN station = faceplate sa Plant view; ibang DCS tag = info card; local valve / gauge = "field item".
+  - **Tools** ay wala na sa rail: ⚙ > **Engineering tools**.
+  - Ayos: VIEW | RUN ay RUN habang tumatakbo ang orasan; VIEW ang pumapatay (`app.js`). Plant view zoom: walang NaN (`plant.js` `keepZoom`).
+  - Accessibility: pangalan ng sheet pickers, UAT at audit fields; text ng rail, tab bar, ABC | DITL, VIEW | RUN at status bar ay 12 px pataas; sa touch 44 px ang taas ng mga pindutan ng top bar at ⚙ menu.
+- **As Left (sinubok sa built html, headless Chrome):**
+
+| Test | Ano ang nakita |
+|---|---|
+| `home_training.js` | Bumubukas sa HOME; rail = Home / Plant view / Logic / Library / Training; ⚙ > Engineering tools = Tools page. |
+| `home_training.js` | HOME At 150 MW: starting state plantLoad150, bumukas ang Plant view, VIEW ang switch. |
+| `home_training.js` | Tumatakbo ang orasan habang VIEW: RUN ang nakasindi; pindot sa VIEW: tumigil, VIEW. |
+| `home_training.js` | Sheets you opened: ABC-001C, ABC-010; pindot sa ABC-010 = bukas ang sheet. |
+| `home_training.js` | Training: 44 section, 663 hakbang; tick ng hakbang 1 = "1 of 663", nananatili pagka-reload; Tick all = 6 / 6; FICFA1071 = faceplate; V-SW1002 = field item; phone = dropdown, 5 tab sa ibaba. |
+| `fx_page.js` | Pasado pa rin (beta.7 F(X) page). |
+| `npm test` | Pasado. |
+| Screenshots | Home, Plant view, Logic ABC / DITL, Library, Training, ⚙, Tools sa 1440 × 900, 1280 × 800 (touch), 800 × 1280 (touch), 390 × 844 (touch); 4 na theme; 0 page error, walang lumalampas sa screen. |
+
+- **Hindi nasubok:** tablet / exe / apk ng user.
+- **Status:** ipinush bilang Beta.

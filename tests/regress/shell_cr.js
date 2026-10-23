@@ -11,7 +11,7 @@ await p.goto('file://'+html);await p.waitForTimeout(2000);await p.evaluate(()=>A
 await p.waitForFunction(()=>window.AN&&AN.sheets&&AN.sheets.length>=54&&document.body.classList.contains('cr'),null,{timeout:90000});
 await p.evaluate(()=>{lsSetTab('logic');AN.go(AN.sheets.findIndex(s=>s.name==='ABC-010'))});await p.waitForTimeout(1500);
 const rail=await p.evaluate(()=>{const r=document.getElementById('crrail');return r?{w:r.getBoundingClientRect().width,tabs:[...r.querySelectorAll('.tabs button')].map(x=>x.textContent.trim()),gear:!!r.querySelector('.gs-set > button')}:null});
-ck(rail&&rail.tabs.join()==='Plant view,Logic,Library,Tools'&&rail.gear,'rail: '+(rail?rail.tabs.join(' / ')+' + ⚙':'none'));
+ck(rail&&rail.tabs.join()==='Home,Plant view,Logic,Library,Training'&&rail.gear,'rail: '+(rail?rail.tabs.join(' / ')+' + ⚙':'none'));
 const band=await p.evaluate(()=>[...document.querySelectorAll('#crband .crkpi')].map(k=>k.querySelector('i').textContent+' '+k.querySelector('b').textContent));
 ck(band.length===4&&/^LOAD/.test(band[0])&&/^DRUM LVL -?\d/.test(band[2])&&/^FW FLOW -?\d/.test(band[3]),'unit band: '+band.join(' | ')+' (ABC-010 runs: drum level and feedwater flow are numbers)');
 ck(await p.evaluate(()=>!!document.querySelector('#cralarm .crchip')&&!!document.querySelector('#cralarm #evbtn')&&!!document.querySelector('#crband .seg')&&!!document.querySelector('#gsbar .tbar .crwhere .sub')),'alarm banner with Events; VIEW | RUN in the band; ABC | DITL in the ribbon');
@@ -42,7 +42,7 @@ ck(!nw.cr&&!nw.rail&&nw.tabs&&nw.set&&nw.sub&&nw.ev&&!nw.band,'820 px: the old t
 // 3.2.0-beta.5 (P4): phone = the pages are a tab bar at the bottom, under the status bar; the top bar is one row
 await p.setViewportSize({width:390,height:844});await p.waitForTimeout(800);
 const ph=await p.evaluate(()=>{const n=document.getElementById('crnav'),f=document.getElementById('sfoot');if(!n)return null;const r=n.getBoundingClientRect(),g=document.getElementById('gsbar');return {tabs:[...n.querySelectorAll('.tabs button')].map(x=>x.textContent.trim()).join(),bottom:Math.round(r.bottom),h:Math.round(r.height),inFoot:n.parentNode===f,set:!!g.querySelector(':scope > .gs-set'),seg:!!g.querySelector(':scope > .seg'),top:Math.round(g.querySelector(':scope > .seg').getBoundingClientRect().top)}});
-ck(ph&&ph.tabs==='Plant view,Logic,Library,Tools'&&ph.inFoot&&ph.bottom>=843&&ph.h>=44&&ph.set&&ph.seg&&ph.top<8,'390 px: tab bar at the bottom, ⚙ and VIEW | RUN in the top row '+JSON.stringify(ph));
+ck(ph&&ph.tabs==='Home,Plant view,Logic,Library,Training'&&ph.inFoot&&ph.bottom>=843&&ph.h>=44&&ph.set&&ph.seg&&ph.top<8,'390 px: tab bar at the bottom, ⚙ and VIEW | RUN in the top row '+JSON.stringify(ph));
 await p.evaluate(()=>[...document.querySelectorAll('#crnav .tabs button')].find(x=>/Library/.test(x.textContent)).click());await p.waitForTimeout(800);
 ck(await p.evaluate(()=>document.body.dataset.tab==='library'&&getComputedStyle(document.getElementById('libws')).display!=='none'&&document.getElementById('libws').getBoundingClientRect().bottom<=document.getElementById('sfoot').getBoundingClientRect().top+1),'the tab bar opens the Library, the page ends above the status bar');
 await p.evaluate(()=>[...document.querySelectorAll('#crnav .tabs button')].find(x=>/Logic/.test(x.textContent)).click());await p.waitForTimeout(500);

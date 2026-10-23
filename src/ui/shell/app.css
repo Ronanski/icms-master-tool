@@ -10,10 +10,11 @@
 /* ---------- 1. tokens ---------- */
 /* the page is light or dark by the app's own choice (⚙ Theme); Android / Chrome auto dark must not repaint it */
 :root{color-scheme:only light}
-html[data-theme=dark]{color-scheme:only dark}
+html:is([data-theme=dark],[data-theme=hc]){color-scheme:only dark}
 :root{
- --uf:'Inter','IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
- --mf:'JetBrains Mono',ui-monospace,Consolas,monospace;
+ /* 3.2.0-beta.7 (Guided Workbench, user pick 2026-10-23): Roboto + Roboto Mono, the fonts of the B + C design */
+ --uf:'Roboto','Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+ --mf:'Roboto Mono','JetBrains Mono',ui-monospace,Consolas,monospace;
  /* sizes: the root follows the window, everything else is in rem */
  --ctl:2.25rem;            /* control height */
  --ctl-s:1.875rem;         /* small control */
@@ -504,10 +505,12 @@ body.app2 #libws .libr:hover{background:var(--c-ctlh)!important}
 [data-ic=zin]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2210.5%22%20cy%3D%2210.5%22%20r%3D%226.5%22/%3E%3Cpath%20d%3D%22M15.5%2015.5%2021%2021M10.5%207.5v6M7.5%2010.5h6%22/%3E%3C/svg%3E")}
 [data-ic=zout]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2210.5%22%20cy%3D%2210.5%22%20r%3D%226.5%22/%3E%3Cpath%20d%3D%22M15.5%2015.5%2021%2021M7.5%2010.5h6%22/%3E%3C/svg%3E")}
 [data-ic=back]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M9%2014%204%209l5-5%22/%3E%3Cpath%20d%3D%22M4%209h10a6%206%200%200%201%200%2012h-3%22/%3E%3C/svg%3E")}
+[data-ic=home]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2011l9-7%209%207%22/%3E%3Cpath%20d%3D%22M5%2010v10h14V10%22/%3E%3Cpath%20d%3D%22M10%2020v-6h4v6%22/%3E%3C/svg%3E")}
+[data-ic=learn]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M2%209l10-5%2010%205-10%205z%22/%3E%3Cpath%20d%3D%22M6%2011v5c3%202%209%202%2012%200v-5%22/%3E%3C/svg%3E")}
 /* Legend on the light paper drawing: the paper colours (same mapping as theme.css) */
-html:not([data-theme=dark])[data-dg=paper] #anlg .sw[style*="#35d6c8"]{border-color:#0b7a72!important;background:#ffffff!important}html:not([data-theme=dark])[data-dg=paper] #anlg .sw[style*="#b48cff"]{border-color:#6440b4!important;background:#ffffff!important}html:not([data-theme=dark])[data-dg=paper] #anlg .sw[style*="#b4e04a"]{border-color:#587a10!important;background:#ffffff!important}html:not([data-theme=dark])[data-dg=paper] #anlg .sw[style*="#ff7ad9"]{border-color:#a82e86!important;background:#ffffff!important}html:not([data-theme=dark])[data-dg=paper] #anlg .sw[style*="#4be08a"]{border-color:#157a46!important;background:#ffffff!important}html:not([data-theme=dark])[data-dg=paper] #anlg .sw[style*="#e8c9a0"]{border-color:#8a5a1c!important;background:#ffffff!important}html:not([data-theme=dark])[data-dg=paper] #anlg .sw[style*="#ff4d4d"]{border-color:#c62828!important;background:#ffffff!important}html:not([data-theme=dark])[data-dg=paper] #anlg .sw[style*="#5aa9ff"]{border-color:#1f5fae!important;background:#ffffff!important}html:not([data-theme=dark])[data-dg=paper] #anlg .sw[style*="#c9d3dc"]{border-color:#44525e!important;background:#ffffff!important}html:not([data-theme=dark])[data-dg=paper] #anlg .sw[style*="#aeb9c3"]{border-color:#5b6874!important;background:#ffffff!important}
-html:not([data-theme=dark])[data-dg=paper] #anlg .dt[style*="#35e08a"]{background:#157a46!important}html:not([data-theme=dark])[data-dg=paper] #anlg .dt[style*="#ff4d4d"]{background:#c62828!important}html:not([data-theme=dark])[data-dg=paper] #anlg .dt[style*="#4da3ff"]{background:#1f6fbf!important}#anlg .dt[style*="#ffffff"]{box-shadow:inset 0 0 0 1.5px var(--c-line2)}
-html:not([data-theme=dark])[data-dg=paper] #anlg span[style*="#8dffb8"]{color:#0a6b3a!important}html:not([data-theme=dark])[data-dg=paper] #anlg span[style*="#6ad7ff"]{color:#0b5f8a!important}html:not([data-theme=dark])[data-dg=paper] #anlg span[style*="#ffb24a"]{color:#a85d00!important}
+html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#35d6c8"]{border-color:#0b7a72!important;background:#ffffff!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#b48cff"]{border-color:#6440b4!important;background:#ffffff!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#b4e04a"]{border-color:#587a10!important;background:#ffffff!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#ff7ad9"]{border-color:#a82e86!important;background:#ffffff!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#4be08a"]{border-color:#157a46!important;background:#ffffff!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#e8c9a0"]{border-color:#8a5a1c!important;background:#ffffff!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#ff4d4d"]{border-color:#c62828!important;background:#ffffff!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#5aa9ff"]{border-color:#1f5fae!important;background:#ffffff!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#c9d3dc"]{border-color:#44525e!important;background:#ffffff!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#aeb9c3"]{border-color:#5b6874!important;background:#ffffff!important}
+html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .dt[style*="#35e08a"]{background:#157a46!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .dt[style*="#ff4d4d"]{background:#c62828!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .dt[style*="#4da3ff"]{background:#1f6fbf!important}#anlg .dt[style*="#ffffff"]{box-shadow:inset 0 0 0 1.5px var(--c-line2)}
+html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg span[style*="#8dffb8"]{color:#0a6b3a!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg span[style*="#6ad7ff"]{color:#0b5f8a!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg span[style*="#ffb24a"]{color:#a85d00!important}
 /* each page shows its own title in the bar */
 body.an #gsbar .crumb #meta,body:not(.an) #gsbar .crumb #anmeta{display:none!important}
 #gsbar .tbar select{border:1px solid var(--c-line2)!important;background-color:var(--c-pane)!important;color:var(--c-tx)!important}
@@ -516,7 +519,7 @@ body.app2:not(.an) #anptab{display:none!important}
 /* status line buttons sit on the line's centre; segmented controls keep a finger-size height */
 #sfoot #evbtn{display:flex!important;align-items:center;padding:0 .75rem!important;line-height:1!important}
 #gsbar :is(.sub,.seg) button,body.an #sidetabs button,body.app2 #sidesort button,#gsbar #gscope button{min-height:2rem!important;height:2rem}
-html[data-theme=dark]{--c-runbg:#17733d;--c-runon:#135f33}
+html:is([data-theme=dark],[data-theme=hc]){--c-runbg:#17733d;--c-runon:#135f33}
 /* plant system list: plain names in the UI font */
 body.app2 #pllist button b{font:500 .8125rem var(--uf)!important;color:inherit!important;white-space:normal}
 body.app2 #plantws .plf{font:400 .8125rem var(--uf)!important}
@@ -531,7 +534,7 @@ body:not(.hasmsg) #sfoot .smsg{display:none!important}
 /* ---------- 14. BUTTONS 3.1.0-beta.3 (user: "yung buttons, gandahan mo, professional") ----------
    one look: quiet secondary buttons, one filled primary per place, toggles that read as "on", line icons instead of text symbols */
 :root{--c-btnbd:#d0d5dc;--c-btnhv:#f5f7f9;--c-btnac:#eceff3}
-html[data-theme=dark]{--c-btnbd:#363e49;--c-btnhv:#232932;--c-btnac:#2a313b}
+html:is([data-theme=dark],[data-theme=hc]){--c-btnbd:#363e49;--c-btnhv:#232932;--c-btnac:#2a313b}
 body.app2 :is(button,label.b,select):not(.fp *):not(.fpop *):not(#zbar *):not(svg *){border-color:var(--c-btnbd);border-radius:.4375rem;box-shadow:0 1px 0 var(--c-shadow2);min-height:2rem;font-weight:500;letter-spacing:0}
 body.app2 :is(button,label.b):not(.fp *):not(.fpop *):not(#zbar *):hover{background-color:var(--c-btnhv);border-color:var(--c-line2)}
 body.app2 :is(button,label.b):not(.fp *):not(.fpop *):not(#zbar *):active{background-color:var(--c-btnac);box-shadow:none}
@@ -734,7 +737,7 @@ body.app2 .sg{color:var(--c-dim)!important}
    3.1 stylesheet did not have: DITL right panel (ditl.js), DITL links and header, info card, LOGIC layout (layout.js),
    Focus / mini-map / Width (view.js). Their 2.5.0 colour names map to the 3.1 tokens here.
    =================================================================================================================== */
-:root,html[data-theme=dark]{--c-bg2:var(--c-well);--c-fp:var(--c-plate);--c-hi:var(--c-tx);--c-hovbd:var(--c-lineh);--c-pop:var(--c-pane);--c-row:var(--c-line)}
+:root,html:is([data-theme=dark],[data-theme=hc],[data-theme=grey]){--c-bg2:var(--c-well);--c-fp:var(--c-plate);--c-hi:var(--c-tx);--c-hovbd:var(--c-lineh);--c-pop:var(--c-pane);--c-row:var(--c-line)}
 /* ===== 2.4.1-beta.2: UI audit #5-#8 (state colour, touch size, small text) ===== */
 /* Run / Pause: green = "press to run"; while running the button reads Pause and is neutral (not green) */
 /* WCAG 2.5.8: every control at least 24 px on PC */
@@ -914,7 +917,7 @@ body.dm #meta{display:none!important}
 /* ===== 3.2.0 P2: CONTROL ROOM SHELL (src/ui/shell/cr.js), 900 px and wider: rail · unit band · alarm banner · ribbon with ABC | DITL
    and the sheet. ISA-101 idea: neutral chrome, colour only for state (alarm red, forced purple, simulation green). ===== */
 :root{--railW:4rem;--c-rail:#1a1f23;--c-railtx:#e3e8eb;--c-raildim:#9aa6ae;--c-railon:#2b3238;--c-frc:#8e3fc8;--c-frcsoft:#f3e9fb;--c-frctx:#5d2a85}
-html[data-theme=dark]{--c-rail:#0b0e11;--c-railon:#22282d;--c-frc:#c77dff;--c-frcsoft:#2a1c36;--c-frctx:#e3c4ff}
+html:is([data-theme=dark],[data-theme=hc]){--c-rail:#0b0e11;--c-railon:#22282d;--c-frc:#c77dff;--c-frcsoft:#2a1c36;--c-frctx:#e3c4ff}
 #crrail{display:none}
 body.cr:not(.pvwin){padding-left:var(--railW)!important}
 body.cr #crrail{display:flex;flex-direction:column;align-items:center;gap:.25rem;position:fixed;left:0;top:0;bottom:0;width:var(--railW);z-index:90;padding:.625rem 0;background:var(--c-rail);border-right:1px solid var(--c-rail);box-sizing:border-box}
@@ -1075,3 +1078,38 @@ body.simmode #plantws .plbar .crop .g-run{display:flex}
 .icwr:is(.k-input,.k-bad,.k-force,.k-cmp,.k-meas,.k-ditl){color:var(--c-mantx2);border-left-color:var(--c-man);font-weight:600}
 .icwr.k-force{color:var(--c-almtx);border-left-color:var(--c-alm)}
 #crband .crkpis{flex:none}
+
+/* ===================================================================================================================
+   3.2.0-beta.8 GUIDED WORKBENCH (user pick 2026-10-23, "B + C"): four switchable themes (⚙ Theme), Home, Training,
+   one type scale (12 / 13 / 15 / 18 / 22 / 28 px), 44 px touch targets on the rail and the tab bar.
+   Alarm, trip and forced keep the same shape and words in every theme; the drawing colours (theme.css) and the
+   1:1 HMI screens are not touched.
+   =================================================================================================================== */
+/* Control room grey: ISA-101 style, grey surfaces, colour only for state */
+html[data-theme=grey]{
+ --c-bg:#c3c7cb;--c-pane:#d9dcdf;--c-strip:#d2d5d8;--c-ribbon:#d5d8db;--c-ctl:#e4e6e8;--c-ctlh:#eceef0;--c-well:#cdd0d3;--c-plate:#dfe1e3;
+ --c-line:#b0b5ba;--c-line2:#8f969c;--c-lineh:#3f464c;--c-tx:#111518;--c-tx2:#262c31;--c-dim:#3f4950;
+ --c-shadow:rgba(0,0,0,.18);--c-shadow2:rgba(0,0,0,.08);
+ --c-acc:#1d4f80;--c-accbg:#c6d5e4;--c-accbd:#6f8fb0;--c-acctx:#173f66;--c-accon:#1d4f80;
+ --c-run:#1b6a3b;--c-runbg:#1b6a3b;--c-runbd:#1b6a3b;--c-runtx:#ffffff;--c-runon:#155630;
+ --c-man:#a85c00;--c-mantx:#1a1200;--c-alm:#b8141a;
+ --c-runsoft:#c9ddd0;--c-runtx2:#134d2a;--c-mansoft:#ecd9b6;--c-mantx2:#5e3300;--c-almsoft:#efc6c6;--c-almtx:#8a0e13;
+ --c-status:#30363b;--c-statustx:#eef0f2;--c-statusdim:#c0c6cb;
+ --c-desk:#b9bdc1;--c-btnbd:#8f969c;--c-btnhv:#eceef0;--c-btnac:#d0d4d8;
+ --c-rail:#30363b;--c-railtx:#eef0f2;--c-raildim:#c0c6cb;--c-railon:#454c52;--c-frc:#6a2a9a;--c-frcsoft:#ddcceb;--c-frctx:#45186b
+}
+/* High contrast: black, white text, white lines, yellow focus */
+html[data-theme=hc]{
+ --c-bg:#000;--c-pane:#000;--c-strip:#000;--c-ribbon:#0a0a0a;--c-ctl:#000;--c-ctlh:#262626;--c-well:#000;--c-plate:#000;
+ --c-line:#8c8c8c;--c-line2:#ffffff;--c-lineh:#ffd400;--c-tx:#ffffff;--c-tx2:#ffffff;--c-dim:#dedede;
+ --c-shadow:rgba(0,0,0,.6);--c-shadow2:rgba(0,0,0,.4);
+ --c-acc:#7cc4ff;--c-accbg:#0b2a4a;--c-accbd:#7cc4ff;--c-acctx:#bfe2ff;--c-accon:#1450c8;
+ --c-run:#3dff8a;--c-runbg:#006b2e;--c-runbd:#3dff8a;--c-runtx:#ffffff;--c-runon:#00561f;
+ --c-man:#ffb000;--c-mantx:#000000;--c-alm:#ff4d4d;
+ --c-runsoft:#002a12;--c-runtx2:#7dffb0;--c-mansoft:#332400;--c-mantx2:#ffd27a;--c-almsoft:#3a0000;--c-almtx:#ff9a9a;
+ --c-status:#000;--c-statustx:#ffffff;--c-statusdim:#e0e0e0;
+ --c-desk:#000;--c-btnbd:#ffffff;--c-btnhv:#262626;--c-btnac:#333333;
+ --c-rail:#000;--c-railtx:#ffffff;--c-raildim:#e0e0e0;--c-railon:#333333;--c-frc:#e0a8ff;--c-frcsoft:#2a1236;--c-frctx:#f0d4ff
+}
+html[data-theme=hc] :focus-visible{outline:3px solid #ffd400!important;outline-offset:1px}
+html[data-theme=hc] body.app2 :is(button,select,input){border-color:#fff}
