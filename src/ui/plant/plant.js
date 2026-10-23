@@ -871,6 +871,11 @@
   const keepZoom = () => {
     if (!svg || !vb || !svSz) return;
     const r = svg.getBoundingClientRect();
+    /* 3.2.0-beta.8: a fit while the page was hidden leaves a size of 0: start again from the size now (no NaN viewBox) */
+    if (!(svSz[0] >= 1 && svSz[1] >= 1) || !vb.every(isFinite)) {
+      if (r.width >= 1 && r.height >= 1) svSz = [r.width, r.height];
+      return;
+    }
     if (r.width < 1 || r.height < 1 || (Math.abs(r.width - svSz[0]) < 1 && Math.abs(r.height - svSz[1]) < 1)) return;
     vb = [vb[0], vb[1], (vb[2] * r.width) / svSz[0], (vb[3] * r.height) / svSz[1]];
     svSz = [r.width, r.height];

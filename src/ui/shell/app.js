@@ -90,11 +90,15 @@
       head: t => m.append(E('div', { cls: 'mh', txt: t }))
     };
   }
+  /* 3.2.0-beta.8 (Guided Workbench, user pick 2026-10-23 "B + C"): HOME (what do you want to do) and TRAINING (PR-OPE-5002 step
+     by step) are pages of their own (src/ui/shell/home.js); TOOLS has no rail button any more: ⚙ > Engineering tools */
   const TABS = [
+    ['home', 'Home', 'Start here: what do you want to do, starting state of the plant, recent sheets'],
     ['operate', 'Plant view', 'Plant graphics with the faceplates (A / M / R, SV, MV) like the operator station; on a PC it opens in its own window'],
     ['logic', 'Logic', 'The ABC (analog) and DITL (digital) drawings: trace, run, force'],
     ['library', 'Library', 'I/O list, memory list, wiring, relay / SER, calculations'],
-    ['tools', 'Tools', 'Block tests, audit, health, project files, drawing edit']
+    ['training', 'Training', 'The start-up procedure PR-OPE-5002 step by step, with a check box for every step'],
+    ['tools', 'Tools', 'Block tests, audit, health, project files, drawing edit', 1]
   ];
   let tab = null,
     tabBtns = {},
@@ -235,7 +239,7 @@
     }
     tab = t;
     document.body.dataset.tab = t;
-    if (!keep) ls.set('ls-tab', t);
+    if (!keep && t !== 'home') ls.set('ls-tab', t);
     for (const k in tabBtns) tabBtns[k].classList.toggle('on', k === t);
     const plant = window.lsPlant,
       lib = window.lsLibrary;
@@ -260,7 +264,9 @@
   const HINTS = {
     operate: 'PLANT VIEW: pick a system on the left · click a controller or valve = faceplate (A / M / R, SV, MV) · Start ▾ = starting state · CHECK = scenarios',
     library: 'LIBRARY: search an address, tag or description · Find = open the info card',
-    tools: 'TOOLS: tests, drawing checks, simulation switches'
+    tools: 'TOOLS: tests, drawing checks, simulation switches',
+    home: 'HOME: pick what you want to do · "/" or Ctrl+K = search a tag',
+    training: 'TRAINING: tick each step as you do it · a tag = its info card · Start ▾ Cold in the PLANT VIEW to practise'
   };
   window.lsSetTab = setTab;
   function hint() {
@@ -420,7 +426,8 @@
       if (c !== ansb && c !== gscope && c !== uisel && c.id !== 'updbtn' && c.id !== 'chsel' && c.id !== 'dgsel' && c.id !== 'dgtsel') c.remove();
     });
     const tabs = E('div', { cls: 'tabs' });
-    TABS.forEach(([k, l, t]) => {
+    TABS.forEach(([k, l, t, hid]) => {
+      if (hid) return;
       const b = E('button', { txt: l, title: t, on: () => (k === 'operate' && pvPop && pvPop()) || setTab(k) });
       tabBtns[k] = b;
       tabs.append(b);
@@ -519,13 +526,17 @@
     /* 3.0.0: one app font; the older look selectors (font, UI skin, live colour, symbol theme) keep their defaults and are not shown */
     document.documentElement.dataset.font = 'plexc';
     {
-      const th = E('select', { id: 'thsel', title: 'Light or dark app (the drawing has its own setting below)' });
+      const th = E('select', { id: 'thsel', title: 'Colours of the app (the drawing has its own setting below)', 'aria-label': 'App theme' });
+      /* 3.2.0-beta.8 (user 2026-10-23 "bakit light lang, bakit dark lang, hindi pwedeng baguhin ang mga kulay?"): four themes */
       [
         ['light', 'Theme: Light'],
-        ['dark', 'Theme: Dark']
+        ['dark', 'Theme: Dark'],
+        ['grey', 'Theme: Control room grey'],
+        ['hc', 'Theme: High contrast']
       ].forEach(([v, t]) => th.append(E('option', { value: v, txt: t })));
       /* 3.2.0-beta.6 (user 2026-10-22 "AYAW KO NG PUTI"): dark is the default; a new key so the old light default does not carry over */
-      const t0 = ls.get('ls-theme4') === 'light' ? 'light' : 'dark';
+      const tv = ls.get('ls-theme4'),
+        t0 = ['light', 'grey', 'hc'].includes(tv) ? tv : 'dark';
       th.value = t0;
       document.documentElement.dataset.theme = t0;
       th.onchange = () => {
@@ -540,6 +551,8 @@
       const hold = E('div', { hidden: '' }, [uisel, live && AN_(live), theme && AN_(theme), slive && DI_(slive)]);
       document.body.append(hold);
     }
+    set.head('Engineering');
+    set.m.append(E('button', { id: 'engtools', txt: 'Engineering tools', title: 'Block tests, audit, health, project files, drawing edit, simulation switches', on: () => setTab('tools') }));
     set.head('Channel and update');
     if ($('chsel')) set.m.append($('chsel'));
     if ($('updbtn')) {
@@ -566,7 +579,7 @@
         if (!b.title) b.title = b.textContent.trim();
       }
     );
-    const TIC = { 'Plant view': 'plant', Logic: 'logic', Library: 'book', Tools: 'tool' };
+    const TIC = { Home: 'home', 'Plant view': 'plant', Logic: 'logic', Library: 'book', Training: 'learn', Tools: 'tool' };
     tabs.querySelectorAll('button').forEach(b => {
       const k = TIC[b.textContent.trim()];
       if (k) {
@@ -599,6 +612,11 @@
         on: () => {
           if (isAn()) {
             if (!AN.view) view.click();
+            else if (AN.run) {
+              /* 3.2.0-beta.8: the clock runs while the page is in VIEW (Start ▾): the View button twice = RUN off, then VIEW (stops the clock) */
+              view.click();
+              view.click();
+            }
           } else if (dui('.tb-view')) dui('.tb-view').click();
           else if (ditlSim()) mode.click();
         }
@@ -732,7 +750,7 @@
     /* modes: VIEW (large ribbon) or RUN (one compact row); the switch and the status line follow */
     setInterval(() => {
       const an_ = isAn(),
-        sim = an_ ? !(window.AN && AN.view) : ditlSim();
+        sim = an_ ? !!(window.AN && (!AN.view || AN.run)) : ditlSim(); /* 3.2.0-beta.8: Start ▾ runs the clock while the page was in VIEW: show RUN */
       document.body.classList.toggle('simmode', sim);
       segV.classList.toggle('on', !sim);
       segR.classList.toggle('on', sim);
@@ -1205,12 +1223,15 @@
     } catch (e) {}
     gs.dataset.top = '1';
     /* first tab: the remembered one (OPERATE / LIBRARY need the plant and library scripts, which load after this one) */
-    const t0 = ls.get('ls-tab') || 'logic';
+    /* 3.2.0-beta.8: the app opens on HOME (Continue there goes back to the remembered page); an automated browser (the tests)
+       keeps the remembered page, window.LS_HOME = true / false overrides */
+    const home0 = window.LS_HOME != null ? !!window.LS_HOME : !navigator.webdriver;
+    const t0 = home0 ? 'home' : ls.get('ls-tab') || 'logic';
     setTab('logic', true);
     if (t0 !== 'logic') {
       let k = 0;
       const iv2 = setInterval(() => {
-        if ((t0 === 'tools' || (t0 === 'operate' && window.lsPlant) || (t0 === 'library' && window.lsLibrary)) || ++k > 40) {
+        if ((t0 === 'tools' || ((t0 === 'home' || t0 === 'training') && window.lsHome) || (t0 === 'operate' && window.lsPlant) || (t0 === 'library' && window.lsLibrary)) || ++k > 40) {
           clearInterval(iv2);
           setTab(t0, true);
         }
