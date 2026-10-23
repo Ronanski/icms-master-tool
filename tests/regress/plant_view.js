@@ -7,6 +7,8 @@ const html=process.argv[2]||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v
 const T='TICBR1140',SH='ABC-011';
 const eng=()=>page.evaluate(([T,SH])=>{const sh=AN.sheets.find(s=>s.name===SH),S=sh.S,c=AN.hmiCtrls(S).find(x=>x.tag===T);const pk=c.amt&&S.rt.st[c.amt.id]?S.rt.st[c.amt.id].pk:c.autoLeg;return{man:pk!==c.autoLeg,mv:S.rt.v[c.out]}},[T,SH]);
 await page.evaluate(()=>{AN.reset();AN.plantLoad150();AN.settle()});
+/* 3.2.0-beta.9: faceplate controls work in RUN only (VIEW = look and trace) */
+await page.evaluate(()=>AN.viewSet(false));
 const tabTxt=await page.evaluate(()=>[...document.querySelectorAll(':is(#gsbar,#crrail,#crnav) .tabs button')].map(b=>b.textContent).join(','));
 ok(/Plant view/i.test(tabTxt)&&!/OPERATE/.test(tabTxt),'tab name: '+tabTxt);
 ok(await page.evaluate(()=>![...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Plant window')),'old Plant window button removed');
@@ -40,6 +42,10 @@ ok(await page.evaluate(()=>!document.getElementById('plantws')&&document.body.da
 ok(await pop.evaluate(()=>document.querySelectorAll('#plsvg text').length>20),'PC window: the graphic is drawn');
 await page.evaluate(T=>window.lsPlantFp(T),T);await pop.waitForTimeout(300);
 ok(await pop.evaluate(T=>{const f=document.getElementById('plfp');return !!f&&f.dataset.tag===T},T),'PC window: faceplate opens in the window');
+await page.evaluate(()=>AN.viewSet(true));await pop.waitForTimeout(600);
+await pop.click('#plfp button.ra.man',{force:true});await pop.waitForTimeout(400);
+ok(!(await eng()).man&&await pop.evaluate(()=>document.body.classList.contains('lsview')),'PC window in VIEW: M is locked (look and trace only)');
+await page.evaluate(()=>AN.viewSet(false));await pop.waitForTimeout(600);
 await pop.click('#plfp button.ra.man');await pop.waitForTimeout(400);
 ok((await eng()).man,'PC window: M drives the same engine');
 await pop.click('#plfp button.ra:not(.man)');await pop.waitForTimeout(300);

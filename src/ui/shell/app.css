@@ -1113,3 +1113,36 @@ html[data-theme=hc]{
 }
 html[data-theme=hc] :focus-visible{outline:3px solid #ffd400!important;outline-offset:1px}
 html[data-theme=hc] body.app2 :is(button,select,input){border-color:#fff}
+/* ===== 3.2.0-beta.9 VIEW | RUN (src/ui/shell/viewlock.js): in VIEW only what changes the plant is locked (dashed, dim); the tabs,
+   ✕, Edit table, F(X) page, trend range and wire look of the Inspector work. The I/O list and F(X) buttons are in RUN too. ===== */
+body.anview #anp :is(input,select,button){pointer-events:auto!important;opacity:1!important}
+body.anview #anp :is(input,select):not([data-vlock]){border-style:solid!important}
+body.anview #anp::before{content:'VIEW · controls locked: look and trace only. Press RUN to force, switch or set values'!important}
+body.lsview [data-vlock]{opacity:1!important;filter:grayscale(.8);color:var(--c-dim)!important;cursor:not-allowed!important;border-style:dashed!important}
+#lsvtoast{position:fixed;left:50%;bottom:calc(var(--footH,30px) + 1rem);transform:translateX(-50%);z-index:90;max-width:min(32rem,calc(100vw - 2rem));padding:.625rem 1rem;border-radius:var(--r-l);background:var(--c-accon);color:#fff;font:500 .875rem/1.4 var(--uf);box-shadow:0 4px 16px var(--c-shadow);opacity:0;pointer-events:none;transition:opacity .15s}
+#lsvtoast.on{opacity:1}
+body[data-tab=logic].an #gsbar .g-ref{display:flex}
+#plantws .plchips{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+#inlist .inset{flex:none;width:5.5rem;min-height:2rem;padding:0 .375rem;border:1px solid var(--c-line2);border-radius:var(--r);background:var(--c-well);color:var(--c-acctx);font:600 .8125rem var(--mf);text-align:right}
+#inlist .inu{flex:none;min-width:2.25rem;color:var(--c-dim);font:400 .75rem var(--uf)}
+/* 3.2.0-beta.9: all the groups of the Inputs list (the Inspector rows themselves for setpoints, timers, COS, signals to force,
+   from other sheets), folding group titles and a filter */
+#inlist .inq{display:block;width:calc(100% - .5rem);margin:.375rem .25rem .25rem;min-height:2.25rem;padding:0 .625rem;border:1px solid var(--c-line2);border-radius:var(--r);background:var(--c-well);color:var(--c-tx);font:400 .8125rem var(--uf);box-sizing:border-box}
+body.app2 #inlist button.ingh{display:flex!important;width:100%;justify-content:space-between!important;align-items:center;min-height:2.25rem!important;padding:.5rem .25rem!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--c-dim)!important;font:600 max(12px,.6875rem)/1.3 var(--uf)!important;letter-spacing:.1em;text-align:left;white-space:normal!important;gap:.5rem}
+body.app2 #inlist button.ingh::after{content:'▾';font-size:.75rem;transition:transform .15s}
+body.app2 #inlist button.ingh.shut::after{transform:rotate(-90deg)}
+#inlist .inrow{display:block}
+#inlist .inrow .ir{width:100%}
+#inlist .inrow .l1{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .375rem}
+#inlist .inrow .tg{flex:1 1 7rem;min-width:0;font:600 .8125rem var(--mf);color:var(--c-tx);cursor:pointer;overflow-wrap:anywhere}
+#inlist .inrow .v{font:600 .8125rem var(--mf);color:var(--c-acctx)}
+#inlist .inrow .ds{margin-top:.125rem;font:400 max(12px,.75rem)/1.3 var(--uf);color:var(--c-dim);overflow-wrap:anywhere}
+#inlist .inrow .fc{display:inline-flex;flex-wrap:wrap;align-items:center;gap:.25rem}
+#inlist .inrow .fc small{font:500 max(12px,.6875rem) var(--uf);color:var(--c-dim)}
+#inlist .inrow :is(input[type=number],input:not([type])){width:5rem;min-height:1.875rem;padding:0 .375rem;border:1px solid var(--c-line2);border-radius:var(--r);background:var(--c-well);color:var(--c-tx);font:600 .8125rem var(--mf);text-align:right}
+#inlist .inrow input[type=range]{width:100%}
+body.app2 #inlist .inrow button{min-height:1.875rem;padding:0 .5rem;font-size:max(12px,.75rem)}
+body.app2 #inlist .inrow select{min-height:1.875rem;max-width:100%;font-size:max(12px,.75rem)}
+/* 3.2.0-beta.9: in VIEW the locked switches read as locked too (the values stay readable), and the Inputs list says why */
+body.lsview button[data-vlock]{opacity:.55!important}
+body.lsview #inlist::before{content:'VIEW · values only. Press RUN to force or change them.';display:block;margin:0 0 .375rem;padding:.375rem .625rem;border-left:3px solid var(--c-acc);background:var(--c-accbg);color:var(--c-acctx);font:500 .8125rem/1.35 var(--uf)}

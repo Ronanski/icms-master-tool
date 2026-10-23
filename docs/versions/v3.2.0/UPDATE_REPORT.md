@@ -260,3 +260,30 @@ Base: pinagsama ang **2.5.0-beta.20** (PR #34 / #35, logic at data) at ang **3.1
 
 - **Hindi nasubok:** tablet / exe / apk ng user.
 - **Status:** ipinush bilang Beta.
+
+## 3.2.0-beta.9 — Force ulit mula sa Inputs list, malinaw na VIEW | RUN, paliwanag ng LN para sa operasyon
+- **Problem (user, 2026-10-23 2:10 ~ 2:15 PM PHT):** "dami ko na rin hindi nafoforce pero sa lumang version na-foforce ko naman sila"; "may mga features na sa RUN lang gumagana at sa VIEW hindi ... sa VIEW nagagawa mo lahat maliban lang sa simulate / force / control, malinaw dapat ang hiwalay na function ng dalawa"; paliwanag ng LN / F(X): walang fixed na scenario (150 MW), kailan at paano nagbabago, AUTO at MANUAL. Training: huwag galawin.
+- **As Found:**
+  - Engine force: pareho ang v2.4.0 at 3.2.0 (sinubok ang bawat force row ng bawat sheet sa dalawa; parehong resulta). Ang sanhi ay itsura: sa 3.x hindi na ipinapakita ang mga row ng Inspector (Digital / Analog inputs, Setpoints, Timers, COS · manual values, Signals to force, From other sheets); 2 grupo lang ang nasa side Inputs list, at ang analog input ay walang field na matatype-an.
+  - VIEW: naka-lock ang BUONG Inspector (pati tabs, ✕, Edit table, F(X) page), pero HINDI naka-lock ang faceplate (A / M / R, SV / MV) sa panel, sa Plant view at sa hiwalay na Plant view window ng PC.
+  - I/O list at F(X) button: nasa VIEW lang, nawawala sa RUN.
+  - F(X) paliwanag: may "150 MW snapshot" sa S1-LN3 at S1-LN5; walang sinasabi kung kailan nagbabago ang input at ano ang epekto ng AUTO / MANUAL.
+- **Work Done (walang binago sa logic, engine at drawing; Training hindi ginalaw):**
+  - **Side Inputs list** (`app.js` `inBuild`): lahat ng grupo ng 2.4.0 Inspector ulit (Digital, Analog, COS · manual values, Setpoints, Timers, Signals to force, From other sheets), may filter at nakatiklop na pamagat; ang analog input ay may number field ulit. Ang FORCE / Release ay ang mismong row ng Inspector (parehong engine path).
+  - **Iisang patakaran ng VIEW | RUN** (`src/ui/shell/viewlock.js`, bago): VIEW = tingin, trace, search, info card, Why?, tabs, F(X) page, I/O list, trend range; naka-lock ang FORCE, switches, values, A / M / R, SV / MV, Engineering buttons, Bad signal. Pindot sa naka-lock = mensahe "Press RUN". Kasama ang Plant view window ng PC. Itsura: dashed / malabo ang naka-lock (nababasa pa rin ang value), may note sa itaas ng Inputs list at banner ng panel.
+  - I/O list at F(X) button nasa RUN din (`app.css`); Plant view chips naka-scroll sa isang hilera.
+  - **F(X)** (`src/ui/fx/fx-ops.js`, bago; `fx.js`): bawat isa sa 91 table ay may **In operation** (start-up, load up / down, shutdown, trip: ano ang ginagawa ng input at output), **AUTO / MANUAL** (AUTO, MANUAL, force manual, BU-CMD, tracking) at **Reading the curve** (awtomatikong basa ng hugis mula sa mga point: patag na bahagi, tumataas / bumababa, gaano kalakas bawat unit; sumusunod sa edit). Tinanggal ang fixed na 150 MW sa S1-LN3 / S1-LN5.
+- **As Left (sinubok sa built html, headless Chrome):**
+
+| Test | Ano ang nakita |
+|---|---|
+| Force harness (luma vs bago) | Pareho ang resulta ng bawat force sa v2.4.0 at beta.9. |
+| `view_run.js` (bago) | VIEW: tabs, F(X) page gumagana; FORCE at A/M naka-lock na may mensahe. RUN: A/M gumagana, type 333 sa AI0258 = 333, ABC-007 may 7 grupo, FORCE 1 sa M.3131 = 1, Release gumagana, I/O list / F(X) nakikita. Balik VIEW: naka-lock ulit. |
+| `plant_view.js` | Plant view window ng PC sa VIEW: M naka-lock; sa RUN: M / MV / A gumagana (in-update ang test: RUN muna). |
+| `fx_page.js` | Pasado; 91 / 91 table may In operation at AUTO / MANUAL; walang "150 MW" sa general text. |
+| `layout.js` | Pasado (banner "controls locked", nababasa ang value). |
+| `npm test`, `home_training.js`, UI regression | Pasado. `values_layout` pareho ng beta.8 (19 sheet, lumang isyu ng puwesto ng value label, hindi galing sa beta.9). |
+| Screenshots | ABC-007 VIEW / RUN, Inputs list, mensahe, faceplate, F(X) About sa 1440 × 900, 1280 × 800, 800 × 1280, 390 × 844; walang lumalampas, 0 page error. Search, info card, Library, DITL sa VIEW: gumagana. |
+
+- **Hindi nasubok:** tablet / exe / apk ng user; ang DITL page ay may sariling VIEW | RUN (hindi binago).
+- **Status:** ipinush bilang Beta.

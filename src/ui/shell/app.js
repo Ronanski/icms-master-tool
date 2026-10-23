@@ -176,6 +176,8 @@
     plantUx(); /* Systems button and the empty values column, before the workspace leaves this document */
     d.body.append(bar, ws);
     window.lsPlantDoc(d);
+    /* 3.2.0-beta.9: the VIEW lock guards the window too */
+    if (window.lsViewLock) lsViewLock.attach(d);
     if (tab === 'operate') setTab('logic');
     pvW = w;
     document.body.classList.add('pvout');
@@ -687,17 +689,58 @@
       if (!rows || (!force && rows === inRows)) return;
       inRows = rows;
       inl.textContent = '';
+      /* 3.2.0-beta.9 (user: "dami ko na indi nafoforce, sa lumang version na-foforce ko"): every group of the 2.4.0 Inspector list
+         is here again (setpoints, timers, COS manual values and change-overs, signals to force, from other sheets), not only the
+         digital and analog inputs; the long groups start folded; a filter on top */
       const secs = {};
       for (const k in rows) {
         const r = rows[k];
-        if (!/inputs/i.test(r._sec || '')) continue;
+        if (!r._sec || /^controllers$/i.test(r._sec)) continue;
         (secs[r._sec] = secs[r._sec] || []).push(r);
       }
+      const ORD = [/digital/i, /analog/i, /^COS/i, /setpoints/i, /timers/i, /signals to force/i, /other sheets/i];
+      const rank = x => {
+        const i = ORD.findIndex(re => re.test(x));
+        return i < 0 ? 99 : i;
+      };
+      const flt = E('input', { cls: 'inq', type: 'search', placeholder: 'Filter: tag, address, description', 'aria-label': 'Filter the inputs of this sheet' });
+      flt.value = inQ;
+      flt.oninput = () => {
+        inQ = flt.value;
+        inFilter();
+      };
+      inl.append(flt);
       let n = 0;
-      for (const s of Object.keys(secs).sort((a, b) => /digital/i.test(b) - /digital/i.test(a))) {
-        inl.append(E('div', { cls: 'inh', txt: s.replace(/ inputs/i, '').toUpperCase() + ' · ' + secs[s].length }));
+      for (const s of Object.keys(secs).sort((a, b) => rank(a) - rank(b))) {
+        const io = /inputs/i.test(s);
+        if (!(s in inShut)) inShut[s] = /signals to force|other sheets/i.test(s);
+        const h = E('button', {
+          cls: 'inh ingh' + (inShut[s] ? ' shut' : ''),
+          txt: s.replace(/ inputs/i, '').toUpperCase() + ' · ' + secs[s].length,
+          'aria-expanded': String(!inShut[s]),
+          on: () => {
+            inShut[s] = !inShut[s];
+            h.classList.toggle('shut', inShut[s]);
+            h.setAttribute('aria-expanded', String(!inShut[s]));
+            inFilter();
+          }
+        });
+        h.dataset.s = s;
+        inl.append(h);
         for (const r of secs[s]) {
           n++;
+          if (!io) {
+            /* the row of the Inspector itself, with its own control (FORCE 1 / 0, value + ✓, Auto / Force A / B, Skip, ↗ sheet) */
+            const tg = r.querySelector('.tg');
+            if (tg && !tg.dataset.in) {
+              tg.dataset.in = '1';
+              tg.title = 'Show it on the drawing';
+            }
+            const it = E('div', { cls: 'ini inrow' }, [r]);
+            it.dataset.s = s;
+            inl.append(it);
+            continue;
+          }
           const tg = r.querySelector('.tg'),
             ds = r.querySelector('.ds'),
             ctl = r.querySelector('.l1 button'),
@@ -705,6 +748,7 @@
             nm = E('div', { cls: 'inn', title: (tg ? tg.textContent : '') + (ds ? '\n' + ds.textContent : '') }, [E('b', { txt: tg ? tg.textContent : '' }), ds ? E('small', { txt: ds.textContent }) : null]); /* 3.2.0-beta.6 (audit L1): full name on hover */
           nm.onclick = () => tg && tg.click();
           const it = E('div', { cls: 'ini' }, [nm]);
+          it.dataset.s = s;
           if (ctl) {
             /* a 0 | 1 switch (OFF | ON for a bad-signal flag); F = forced by you */
             const word = /signal/i.test(ctl.textContent),
@@ -726,15 +770,51 @@
               p.disabled = !!AN.view;
             };
           } else if (num) {
-            const v = E('span', { cls: 'inv' });
+            /* 3.2.0-beta.9 (user: "dami ko na indi nafoforce, sa lumang version na-foforce ko"): an analog input (transmitter, COS
+               manual SV / MV) is typed here again, as in the 2.4.0 Inspector list: the value goes to the same field of the row */
+            const unit = r.querySelector('.l1 small'),
+              v = E('input', { cls: 'inset', type: 'number', step: 'any', 'aria-label': 'Value of ' + (tg ? tg.textContent : 'input'), title: 'Type a value, Enter = set (RUN)' });
+            const put = () => {
+              const x = parseFloat(v.value);
+              if (!isFinite(x)) return;
+              num.value = x;
+              num.dispatchEvent(new Event('change'));
+              v.blur();
+            };
+            v.onkeydown = e => {
+              if (e.key === 'Enter') put();
+              if (e.key === 'Escape') {
+                v.value = num.value;
+                v.blur();
+              }
+            };
+            v.onchange = put;
             it.append(v);
-            it._u = () => (v.textContent = num.value);
+            if (unit && unit.textContent.trim()) it.append(E('small', { cls: 'inu', txt: unit.textContent.trim() }));
+            it._u = () => {
+              if (document.activeElement !== v) v.value = num.value;
+            };
           }
           inl.append(it);
         }
       }
       if (!n) inl.append(E('div', { cls: 'inh', txt: 'No inputs on this sheet' }));
       stI.textContent = 'Inputs ' + n;
+      inFilter();
+    };
+    let inQ = '';
+    const inShut = {};
+    /* the filter shows the matching rows of every group (open or folded); without a filter a folded group shows its title only */
+    const inFilter = () => {
+      const q = inQ.trim().toLowerCase();
+      const cnt = {};
+      inl.querySelectorAll('.ini').forEach(it => {
+        const hit = !q || it.textContent.toLowerCase().includes(q);
+        const show = hit && (q ? true : !inShut[it.dataset.s]);
+        it.style.display = show ? '' : 'none';
+        if (hit) cnt[it.dataset.s] = (cnt[it.dataset.s] || 0) + 1;
+      });
+      inl.querySelectorAll('.ingh').forEach(h => (h.style.display = !q || cnt[h.dataset.s] ? '' : 'none'));
     };
     setInterval(() => {
       if (!isAn() || tab !== 'logic') return;
