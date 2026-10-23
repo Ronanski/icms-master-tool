@@ -373,3 +373,12 @@ Base: pinagsama ang **2.5.0-beta.20** (PR #34 / #35, logic at data) at ang **3.1
 - **Regression:** training_practice, live_training, home_training (in-update: 48 section / 692 hakbang), loaddown, view_run: lahat PASS. Ebidensya ng laki ng LP bypass (para sa natitirang RH 9.3): flow diagram K1AU3-PD-012 LP bypass line HR-1-006 18" (mula 24" hot reheat) → mga 85 T/H sa 7.6 kg/cm2 sa ~60 m/s: tugma sa model (lpb 0.8 = 84 T/H); ang sobra ay galing sa ~80 T/H na steam ng FIC-CF 10 % (minimum ng script) sa bypass stage.
 - **Hindi nasubok:** tablet / exe / apk ng user. Ang 2 mintis ng CHECK start-up chain (RH 9.3 > 9.0 sa bypass stage, drum level −150 sa sync) ay hindi pa naayos.
 - **Status:** ipinush bilang Beta.
+
+## 3.2.0-beta.17 — CHECK start-up: ang 3 mintis ng operator script
+- **Problem:** sa CHECK (ang awtomatikong operator ng app), mintis ang 2 tseke ng buong cold start-up (luma, mintis na rin sa beta.13): RH pressure 6.8 ~ 9.3 kg/cm2 (7.5 ± 1.5) sa bypass stage, drum level −150 mm sa load up 4.5 → 45 MW. Nakita rin sa buong CHECK panel (hindi ko ito pinatakbo sa beta.15 / 16, mali ko): ang hiwalay na "Bypass system" scenario ay 7 / 8, saturation 114 °C/h (> 110 ng Fig 1), dahil mas matarik ang tunay na steam table sa 30 ~ 60 kg/cm2 kaysa sa lumang fit.
+- **As Found:** (1) ang HP bypass SV ay sumusunod agad sa MSP hanggang 123, kaya halos sarado ang HP bypass habang tumataas ang pressure, tapos biglang ~70 T/H pagdating sa 123 → hindi nahabol ng LP bypass (18" line, ~85 T/H sa 7.6 kg/cm2) → RH 9.3. (2) LICBR1001A SV 0 sa load up: ang steam 23 → 157 T/H sa 5 min, nahuhuli ang feedwater → −150 mm. (3) ang operator ay nagbabawas ng apoy sa 100 °C/h lang.
+- **Work Done (operator script ng CHECK lang, `src/ui/uat/check.js`; walang binago sa logic, engine at plant model):** (1) sa itaas ng 110 kg/cm2, ang HP bypass SV ay +1 bawat 90 s lang (PR-OPE-5002 "+1 / min"); (2) LICBR1001A SV +50 mm habang load up, balik sa 3-element; (3) bawas apoy sa > 90 °C/h, dagdag sa < 80.
+- **As Left:** buong cold → 150 MW sa CHECK: lahat ✓ (cold 10 / 10, coal 9 / 9, bypass 8 / 8 sa 101 min, roll 11 / 11, 150 MW 14 / 14). `check_panel.js byp` PASADO 8 / 8.
+- **Regression:** check_panel (lahat ng 17 CHECK scenario + share), live_training, training_practice, home_training, loop_source, plant_utilities, hmi_op, plant_live, unit_trip, reset (0 / 51), view_run, force_manual 68 / 68, loaddown, tests: lahat PASS.
+- **Hindi nasubok:** tablet / exe / apk ng user.
+- **Status:** ipinush bilang Beta.
