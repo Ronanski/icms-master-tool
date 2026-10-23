@@ -677,10 +677,13 @@
             fire = o.coalFire ? o.cf : o.ab,
             fmin = o.coalFire ? 10 : 20,
             fmax = o.coalFire ? 40 : 80,
-            dn = r > 100 || (o.svc != null && (msf > 65 || h.MSP() > o.hpSv + (o.coalFire ? 0.5 : 2) || (o.hpSv >= 120 && fire > fmin + 5))),
+            /* 3.2.0-beta.17: with the IF97 steam table (beta.15) the saturation temperature rises faster per kg/cm2 between 30 and
+               60 kg/cm2 (1.8 C instead of 1.5 at 30): the operator cuts the fire at 90 C/h (was 100) and adds it under 80 (was 90),
+               to stay under the 110 C/h of Fig 1 */
+            dn = r > 90 || (o.svc != null && (msf > 65 || h.MSP() > o.hpSv + (o.coalFire ? 0.5 : 2) || (o.hpSv >= 120 && fire > fmin + 5))),
             up =
-              (o.svc == null && t % 120 === 0 && r < 90 && fire < fmax) ||
-              (o.svc != null && t % 300 === 0 && r < 90 && fire < fmax && h.MSP() < o.hpSv - 1);
+              (o.svc == null && t % 120 === 0 && r < 80 && fire < fmax) ||
+              (o.svc != null && t % 300 === 0 && r < 80 && fire < fmax && h.MSP() < o.hpSv - 1);
           if (o.coalFire) {
             /* 2.2.0-beta.20 (chain): the coal master is MANUAL (M.0130 until REMOTE), FIC-CF 1 % a step (about 1.2 T/H on 3 feeders);
                2 % when the pressure is already over the HP bypass SV (the HP bypass then opens wide and the reheat pressure runs over 9) */
@@ -738,7 +741,11 @@
             o.svcF = h.MSF();
           }
           if (o.svc != null) {
-            if (o.hpSv < 123 && h.MSP() >= o.hpSv - 1) {
+            /* 3.2.0-beta.17: over 110 kg/cm2 the SV goes up 1 in 90 s at most (slower than the pressure rises, about 0.85 kg/cm2 a
+               minute on the minimum coal): the pressure rides a little over the SV and the HP bypass takes the steam little by little,
+               not ~70 T/H at once at 123 (reheat pressure 9.3 kg/cm2 over the 7.5 ± 1.5 of PR-OPE-5002) */
+            if (o.hpSv < 123 && h.MSP() >= o.hpSv - 1 && (o.hpSv < 110 || t - (o.hpT == null ? -1e9 : o.hpT) >= 90)) {
+              o.hpT = t;
               o.hpSv = Math.min(123, o.hpSv + 1);
               h.autoSv('ABC-050', 'PICMS1006', o.hpSv);
             }
@@ -970,7 +977,9 @@
             if (o.load != null || h.MSF() > 60 || h.mv('ABC-010', 'LICBR1001B') > 30) {
               o.suv = h.mv('ABC-010', 'LICBR1001B');
               h.man('ABC-010', 'LICBR1001B', o.suv);
-              h.autoSv('ABC-010', 'LICBR1001A', 0);
+              /* 3.2.0-beta.17: SV +50 mm through the load up (the steam goes 23 -> 157 T/H in 5 min and the feedwater follows late: the
+                 level fell to -150 mm with SV 0); back to 0 at the 3-element (LICBR1001 A SV 0 below) */
+              h.autoSv('ABC-010', 'LICBR1001A', 50);
               /* the level master LICBR1001 (3-element: FICFW1007 SV = steam flow + LICBR1001.MV) to M 0 % now, so that its A at the
                  transfer starts from 0 (in the chain it had wound up to 100 % while the level was low for hours: SV 156 + 100 ->
                  FW 252 T/H, drum level +237 mm) */
