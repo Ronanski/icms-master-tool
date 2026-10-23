@@ -317,3 +317,11 @@ Base: pinagsama ang **2.5.0-beta.20** (PR #34 / #35, logic at data) at ang **3.1
 - **As Left (sinubok sa built html):** `fx_page.js` pasado (91 / 91 may bagong rows; S1-LN3 sa 30 % = 0.92, "speeds the feeders up"); `view_run`, `layout`, `home_training`, `npm test` pasado. Screenshots ng S1-LN3 at S2-LN3 sa 1440 × 900, 1280 × 800, 800 × 1280, 390 × 844: walang lumalampas, 0 page error.
 - **Hindi nasubok:** tablet / exe / apk ng user.
 - **Status:** ipinush bilang Beta.
+
+## 3.2.0-beta.12 — RUN na walang Start ▾ = boiler patay (cold), hindi na MSP 75
+- **Problem (user, 2026-10-23 4:46 PM at 8:10 PM PHT):** "bakit pag pindot ko ng RUN may value ang MSP"; "patay pa naman ang boiler mo, di mo pa iniistart diba?"
+- **As Found:** kapag RUN nang walang napiling Start ▾, tumatakbo ang planta sa default ng drawing: ang transmitter na walang nagpapatakbo ay nasa gitna ng range (plant.js, para sa flow compensation). MSP = 75 kg/cm2 = gitna ng PT-MS1002 0 ~ 150; drum level −566 mm. Hindi ito estado ng planta.
+- **Work Done (walang binago sa logic, engine at drawing):** `src/analog/ui/trace.js`: ang pindot ng RUN (top bar o ribbon) nang walang starting state ay naglo-load ng **Cold** (pareho ng Start ▾ Cold: drum 0 kg/cm2, walang apoy, fans patay, controllers LOCAL + MANUAL). May mensahe sa status bar. Ang API na `AN.viewSet` (gamit ng mga test) ay hindi binago.
+- **As Left (sinubok sa built html):** bukas ang app → RUN: start state `plantCold`, MSP 0.0 kg/cm2, load 0.0 MW, drum level 8 mm, FW 0.2 T/H, 0 page error. Regression pasado: `view_run`, `why`, `forcelist`, `lookonly`, `layout`, `home_training`, `ditl_selected`, `ditl_sim`, `ditl_toolbar`, `plant_view`, `live_training` (in-update: ang HICDO1012 / FCV-DO1012 ay FIELD dahil walang .MAN at A / M switch sa drawing).
+- **Hindi nasubok:** tablet / exe / apk ng user.
+- **Status:** ipinush bilang Beta.

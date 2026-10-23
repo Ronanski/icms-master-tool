@@ -110,18 +110,37 @@ function viewSet(on) {
       ? 'View mode: grey drawing, nothing is simulated. Click a block or wire to trace it; click an empty place to clear.'
       : 'Simulation mode: Run, or Pause + Next / Back.' +
           /* 3.2.0-beta.6 (audit M4): until a starting state is picked the plant is at the drawings' defaults (0 MW) */
-          (AN.startState ? '' : ' No starting state yet (0 MW): pick Start ▾ in the PLANT VIEW (At 150 MW, Cold, Warm, Hot).')
+          (AN.startState ? '' : ' No starting state yet: Run starts the plant cold (boiler off), or pick Start ▾ in the PLANT VIEW (At 150 MW, Cold, Warm, Hot).')
   );
 }
 bVw.onclick = () => viewSet(!AN.view);
 stepUi();
+/* 3.2.0-beta.12 (user 2026-10-23: "patay pa naman ang boiler mo, di mo pa iniistart diba? bkt may value na si MSP?"): RUN with no starting
+   state picked starts the plant COLD (boiler off: drum 0 kg/cm2, no fire, fans stopped), as Start > Cold. Before, the plant ran at the
+   drawings' defaults: an undriven transmitter sits at the middle of its range (MSP 75 kg/cm2 = middle of PT-MS1002 0 ~ 150). Only the
+   operator's RUN press does this; AN.viewSet (the tests) is unchanged. */
+function coldIfNone() {
+  if (AN.startState || AN.cat !== 'an' || !AN.plantCold) return false;
+  try {
+    AN.reset();
+    AN.plantCold();
+    AN.startState = 'plantCold';
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+const COLD_MSG = 'No starting state was picked: the plant starts COLD (boiler off, drum 0 kg/cm2, no fire, fans stopped). Pick Start ▾ in the PLANT VIEW for At 150 MW, Warm or Hot.';
 bRun.onclick = () => {
+  const c = !AN.run && coldIfNone();
   if (AN.view) {
     viewSet(false);
     setRun(true);
+    if (c) msg(COLD_MSG);
     return;
   }
   setRun(!AN.run);
+  if (c) msg(COLD_MSG);
 };
 function wsIn(o) {
   if (o && typeof o === 'object' && o.wv !== 2) o = Object.assign({}, o, { as: 'solid', wv: 2 });
