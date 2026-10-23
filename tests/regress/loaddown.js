@@ -1,10 +1,11 @@
+// 3.2.0-beta.15: RUN first (AN.viewSet(false)): since 3.2.0-beta.8 VIEW locks the faceplate controls, so the ▼▼ did nothing (test only)
 // Load down from "Start at 150 MW" (2.2.0-beta.2): ABC-001A HIC-ULD faceplate in AUTO, ▼▼ x 6 = TARGET MW 120; after 10 min the MW demand
 // (SI0226) is 120 (change rate HIC-MWRL 3 MW/min), the coal demand and the feeders go down. Usage: node tests/regress/loaddown.js [html]
 const {open}=require('./lib.js');const fs=require('fs');
 const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 (async()=>{const {browser,page,errs}=await open(html);let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
 await page.setViewportSize({width:1400,height:900});
-await page.evaluate(()=>{AN.reset();AN.plantLoad150();AN.settle();AN.go(AN.sheets.findIndex(s=>s.name==='ABC-001A'));[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Faceplate').forEach(b=>b.click())});
+await page.evaluate(()=>{AN.reset();AN.plantLoad150();AN.viewSet(false);AN.settle();AN.go(AN.sheets.findIndex(s=>s.name==='ABC-001A'));[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Faceplate').forEach(b=>b.click())});
 await page.waitForSelector('#opp .fpman',{timeout:20000});await page.waitForTimeout(800);
 const st=()=>page.evaluate(()=>{const g=(n,l)=>{const S=AN.sheets.find(s=>s.name===n).S;const i=S.lab.findIndex(x=>x&&x.t===l);return +S.rt.v[i]};return {mv:g('ABC-001A','HIC-ULD.MV'),dem:g('ABC-001A','SI0226'),coal:g('ABC-002','SI0010'),fa:g('ABC-004A','AI0480')}});
 /* 2.2.0-beta.9: like the app, ONE stepSet per 0.5 s (the 36 linked sheets of ABC-001C step once each); before, every sheet stepped

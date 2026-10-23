@@ -458,7 +458,7 @@
     pick.onchange = () => show(+pick.value);
     train.append(
       E('div', { cls: 'trhead' }, [
-        E('div', { cls: 'trtitle' }, [E('b', { txt: 'Start-up procedure' }), E('span', { txt: 'PR-OPE-5002 Rev 03 + sync and load up to 150 MW · ' + P().length + ' sections' })]),
+        E('div', { cls: 'trtitle' }, [E('b', { txt: 'Start-up procedure' }), E('span', { txt: 'PR-OPE-5002 Rev 03 + sync, load up to 150 MW and load change practice · ' + P().length + ' sections' })]),
         E('div', { cls: 'trprog' }, [E('div', { cls: 'trbar', role: 'presentation' }, [E('i')]), E('span', { cls: 'trpct' })]),
         E('button', {
           cls: 'trbtn go',
@@ -473,6 +473,22 @@
             if (b) b.click();
             if (LV()) LV().reset();
             goPlant();
+          }
+        }),
+        E('button', {
+          cls: 'trbtn',
+          type: 'button',
+          txt: 'Practise: 150 MW load change',
+          title: 'Sets the plant at 150 MW (Start ▾ At 150 MW), clears the ticks of the two PRACTICE sections and opens the AUTO (CCS) practice: press RUN and change the load there',
+          on: () => {
+            try {
+              if (AN.cat !== 'an') AN.setCat('an');
+            } catch (e) {}
+            const b = $('load150');
+            if (b) b.click();
+            const L = LV();
+            if (L) L.reset(L.practice);
+            if (L) show(L.practice);
           }
         }),
         E('button', {
