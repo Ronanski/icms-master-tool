@@ -90,6 +90,8 @@
   function commit(t, lx, ly) {
     AN.lne[t.key] = { lx: lx.slice(), ly: ly.slice() };
     save();
+    const rd = $('fxread');
+    if (rd) rd.textContent = readCurve(t);
   }
   function save() {
     try {
@@ -405,6 +407,40 @@
     for (let i = 1; i < lx.length; i++) if (lx[i] < lx[i - 1] - 1e-9) bad = true;
     w.textContent = bad ? '⚠ X must not go down from one row to the next: the DCS reads the points in order.' : '';
   }
+  /* ---------- the curve in words: flat parts, rising / falling parts, the ends held (no operating point) ---------- */
+  function readCurve(t) {
+    const { lx, ly } = lxly(t),
+      ux = unit(t.xu),
+      uy = yU(t);
+    const pts = lx.map((v, i) => [toX(t, v), toY(t, ly[i])]);
+    const vx = v => f2(v) + (ux ? ' ' + ux : ''),
+      vy = v => f2(v) + (uy ? ' ' + uy : '');
+    const eps = Math.abs(t.yr[1] - t.yr[0]) * 1e-4;
+    const dir = (a, b) => (b[0] - a[0] < 1e-9 ? 'j' : Math.abs(b[1] - a[1]) <= eps ? 'f' : b[1] > a[1] ? 'u' : 'd');
+    /* runs of segments with the same direction */
+    const runs = [];
+    for (let i = 1; i < pts.length; i++) {
+      const d = dir(pts[i - 1], pts[i]);
+      if (d === 'j') continue;
+      const r = runs[runs.length - 1];
+      if (r && r.d === d && Math.abs(r.b[1] - pts[i - 1][1]) <= eps) r.b = pts[i];
+      else runs.push({ d, a: pts[i - 1], b: pts[i] });
+    }
+    const L = runs
+      .filter(r => r.b[0] - r.a[0] > 1e-9)
+      .map(r =>
+        r.d === 'f'
+          ? 'From ' + vx(r.a[0]) + ' to ' + vx(r.b[0]) + ' the output stays at ' + vy(r.a[1]) + ': a change of the input there does nothing.'
+          : 'From ' + vx(r.a[0]) + ' to ' + vx(r.b[0]) + ' the output ' + (r.d === 'u' ? 'rises' : 'falls') + ' from ' + vy(r.a[1]) + ' to ' + vy(r.b[1]) +
+            ' (about ' + f2(Math.abs((r.b[1] - r.a[1]) / (r.b[0] - r.a[0]))) + (uy || ux ? ' ' + (uy || '') + ' per ' + (ux || 'unit') : ' per unit') + ').'
+      );
+    if (!L.length) return 'All points give the same output: the table is a constant.';
+    const p0 = pts[0],
+      pn = pts[pts.length - 1];
+    if (p0[0] > t.xr[0] + 1e-9) L.unshift('Below ' + vx(p0[0]) + ' the output holds ' + vy(p0[1]) + '.');
+    if (pn[0] < t.xr[1] - 1e-9) L.push('Above ' + vx(pn[0]) + ' the output holds ' + vy(pn[1]) + '.');
+    return L.join(' ');
+  }
   /* ---------- about this curve ---------- */
   function about(t) {
     const inf = info(t.key),
@@ -418,8 +454,12 @@
       row('Input comes from', inf.from);
       row('Output goes to', inf.to);
       row('Why it is there', inf.why);
+      row('In operation', inf.ops);
+      row('AUTO / MANUAL', inf.am);
       row('If you change it', inf.change);
     } else row('What it does', 'No explanation written for this table yet.');
+    /* 3.2.0-beta.9: the shape of the curve in words, read from the points (follows the edits) */
+    sec.append(E('div', { cls: 'fxrow' }, [E('h4', { txt: 'Reading the curve' }), E('p', { id: 'fxread', txt: readCurve(t) })]));
     /* the sheets that use it: open the drawing */
     const shs = [...new Set([...us.map(u => u.sh.name), ...(p.sh || [])])];
     if (shs.length) {

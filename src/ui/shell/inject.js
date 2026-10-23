@@ -66,6 +66,9 @@ const block =
   /* 3.2.0-beta.7: F(X) curves page */
   fs.readFileSync(__dirname + '/../fx/fx-info.js', 'utf8') +
   '\n' +
+  /* 3.2.0-beta.9: In operation and AUTO / MANUAL for each table */
+  fs.readFileSync(__dirname + '/../fx/fx-ops.js', 'utf8') +
+  '\n' +
   fs.readFileSync(__dirname + '/../fx/fx-paths.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/../fx/fx.js', 'utf8') +
@@ -74,6 +77,9 @@ const block =
   fs.readFileSync(__dirname + '/../training/pr-ope-5002.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/home.js', 'utf8') +
+  '\n' +
+  /* 3.2.0-beta.9: one VIEW | RUN rule (VIEW locks only force / switches / operation) */
+  fs.readFileSync(__dirname + '/viewlock.js', 'utf8') +
   '</script>' +
   B;
 const k = s.lastIndexOf('</body>');
