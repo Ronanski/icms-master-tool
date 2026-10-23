@@ -175,7 +175,7 @@
     };
     const SA = () => val('ABC-006', 'FIFA1081.PV'),
       FA = () => val('ABC-006', 'FIFA1055.PV'),
-      tsat = P => 100 + 47.1 * Math.log(Math.max(0, P) + 1);
+      tsat = P => AN.tsat(P); /* 3.2.0-beta.15: the steam table of the unit model (steam.js) */
     /* the DITL MFT, forced (CLAUDE.md 7): I.000F MFT FROM IRP on every station, M.0341 MFT TPs (2 s), coal feeders stopped */
     const mft = o => {
       setx(null, 'I.000F', 1);

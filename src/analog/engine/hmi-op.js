@@ -1071,7 +1071,7 @@ function anPlantWarm(o) {
     auto('ABC-052', 'PICHR1003', 7.6);
     man('ABC-054', 'PICHR1391', 0);
   }
-  Object.assign(U, { Pd: o.P, Tw: 100 + 47.1 * Math.log(o.P + 1), Tb: o.Tb });
+  Object.assign(U, { Pd: o.P, Tw: steamTsat(o.P), Tb: o.Tb, vac: 1 /* 3.2.0-beta.15: a warm / hot plant has its condenser vacuum */ });
   if (o.rh > 0 && U.rhp && U.rhp.length && U.rhp[0].a0 && U.rhp[0].a0[0] > 0) U.rr = o.rh / U.rhp[0].a0[0];
   AN.steady = true; /* 2.2.0-beta.16: a steady state, no pulse from the inputs it sets (see anPlantCold) */
   try {

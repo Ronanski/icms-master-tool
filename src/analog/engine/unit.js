@@ -123,7 +123,7 @@ const AN_UNIT = {
        30 % of the anchor coal so that a small fire makes a small steam flow and the anchored behaviour above stays the same.
      - WATER HEAT-UP: below the saturation temperature of the drum pressure the firing heats the water (no steam): Cw (T/H) x s of
        steam-equivalent per C of the boiler water (ASSUMED 200 t of water: 200 t x 4.19 MJ/t/C / 2000 MJ/t x 3600 = 1508); at
-       saturation the pressure rises against C + Cw x dTsat/dP (dTsat/dP = 47.1 / (P + 1) of the Tsat fit), so the saturation
+       saturation the pressure rises against C + Cw x dTsat/dP (dTsat/dP of the steam table, steam.js; 3.2.0-beta.15), so the saturation
        temperature rises at firing / Cw: 2 burners about 45 T/H steam-equivalent = 107 C/h, the limit of Fig 1 (110 C/h) is the
        operator's duty (firing), as on the plant.
      - BED TEMPERATURE (no DCS transmitter: the bed thermocouples are on the DITL / local; model state U.Tb): first order (tauB) to
@@ -141,7 +141,14 @@ const AN_UNIT = {
   kcool: 60 /* 2.2.0-beta.21: cooling of the unfired boiler by the air, T/H steam-equivalent at the anchor air and 300 C (ASSUMED, Fig. 5) */,
   kamb: 1 /* 2.2.0-beta.21: bottled boiler loss to the ambient, T/H steam-equivalent at 300 C (ASSUMED) */,
   tauB: 900,
-  Tb0: 850
+  Tb0: 850,
+  /* 3.2.0-beta.15 (phase B, utilities): CONDENSER VACUUM. The turbine exhausts to the condenser, cooled by the seawater pumps (SWP-A ~ C
+     M.3353 ~ M.3355) with the condensate pumps (CP-A / B M.3350 / M.3351) taking the water out (PR-OPE-5002: SWP, CEP and VACUUM UP
+     before the turbine is rolled). The vacuum (share 0 ~ 1) rises in vacUp s once a SWP and a CEP run (ASSUMED 15 min with the
+     vacuum pumps, a field step) and is lost in vacDn s when they stop (ASSUMED 1 min). The turbine cannot be rolled below 90 %; a
+     turning or loaded turbine is tripped by the TCS below 60 % (LOW VACUUM TRIP -> ABC-050 I.0400 TURBINE TRIP) */
+  vacUp: 900,
+  vacDn: 60
 };
 /* the AI blocks of one address on every sheet (station | address, like "Start at 150 MW") */
 function anUnitAIs(key) {
@@ -291,7 +298,7 @@ function anUnitStart() {
     turb: true,
     tb: { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN },
     Tb: U.Tb0,
-    Tw: 100 + 47.1 * Math.log(Pd0 + 1),
+    Tw: steamTsat(Pd0),
     oilF: 0,
     /* 3.2.0-beta.14: the sources of the loops at the anchor (source.js), before the first step */
     Pms: P0,
@@ -415,6 +422,8 @@ function anUnitStart() {
     .filter(([a, b]) => a && a.S.ext.includes(a.n))
     .map(([a, b]) => [a, b.filter(x => x && x.S.ext.includes(x.n))]);
   U.trip = [labOf('ABC-050', 'I.0400'), labOf('ABC-001C', 'M.3200')].filter(Boolean);
+  U.vtrip = labOf('ABC-050', 'I.0400');
+  U.vac = 1; /* 3.2.0-beta.15: a plant in service has its condenser vacuum (Cold puts it to 0) */
   /* 2.2.0-beta.17: the TCS inputs of the I/O list this black box writes in a start-up (ABC-050 STN102: GCB 52G1 on / off, ICV -> CV
      transfer complete; ABC-001C STN101: DCS control mode permissive / on feedback), the DCS mode commands it reads (O.0178 / O.0179),
      and the turbine speed TCSAI1004 (ABC-053 AI0534, lag -> SI0261 -> ABC-010 SI0246 while the GCB is open) */
@@ -471,6 +480,7 @@ function anUnitCold() {
     cold: true,
     turb: false,
     tb: { st: 'off', rpm: 0, icv: 0, xfer: false, tgt: 0, aim: 0 },
+    vac: 0,
     Pd: 0,
     Qs: 0,
     ms: 0,
@@ -504,7 +514,7 @@ function anUnitLive() {
   U.cold = true;
   U.turb = true;
   U.tb = { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN, perm: true };
-  U.Tw = 100 + 47.1 * Math.log(Math.max(0, U.Pd) + 1);
+  U.Tw = steamTsat(U.Pd);
   return true;
 }
 /* 2.2.0-beta.17 (M4 step 4): the operator on the TCS panel (outside the DCS): 'roll' (open the stop valves, IP start mode, rpm up
@@ -516,6 +526,7 @@ function anTurbine(cmd, arg) {
   const tb = U.tb;
   if (cmd === 'roll') {
     if (tb.st !== 'off') return 'umiikot na ang turbine (' + tb.st + ')';
+    if (!(U.vac >= 0.9)) return 'walang vacuum ang condenser (' + Math.round(100 * (U.vac || 0)) + ' %): i-start muna ang seawater pump (SWP) at condensate pump (CEP), hintayin ang VACUUM UP';
     Object.assign(tb, { st: 'roll', xfer: false, tgt: 0, aim: 0 });
     return '';
   }
@@ -577,7 +588,7 @@ function anUnitStep(dt) {
       rpm: 3600,
       Tb: U.Tb0
     });
-    U.Tw = 100 + 47.1 * Math.log(U.Pd + 1);
+    U.Tw = steamTsat(U.Pd);
     U.tb = Object.assign(U.tb || {}, { st: 'load', rpm: 3600, icv: 1, xfer: true });
     anUnitWrite(U.msp, f.Pms);
     for (const l of U.tin) anUnitWrite(l, Math.max(0, f.Pms - U.kln * f.ms * f.ms));
@@ -612,6 +623,18 @@ function anUnitStep(dt) {
   for (const [a, t] of U.alink || []) {
     const x = +a.S.rt.v[a.n];
     if (isFinite(x) && t.S.rt.force[t.n] === undefined) t.S.rt.ext[t.n] = x;
+  }
+  /* 3.2.0-beta.15: condenser vacuum (see AN_UNIT vacUp): with no seawater or condensate pump the TCS trips the turbine on LOW VACUUM */
+  {
+    const cw = srcBit(['M.3353', 'M.3354', 'M.3355']) && srcBit(['M.3350', 'M.3351']) ? 1 : 0;
+    if (!isFinite(U.vac)) U.vac = 1;
+    /* raised by the vacuum pumps at a steady rate, lost first order */
+    U.vac = Math.max(0, Math.min(1, cw > U.vac ? U.vac + dt / U.vacUp : U.vac + ((cw - U.vac) * dt) / U.vacDn));
+    const tb0 = U.tb,
+      l = U.vtrip;
+    if (tb0 && tb0.st !== 'off' && U.vac < 0.6 && l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== 1) {
+      l.S.rt.ext[l.n] = 1;
+    }
   }
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
   /* ---- 2.2.0-beta.17 (M4 step 4): the turbine black box (see AN_UNIT rollRate ...) ---- */
@@ -695,7 +718,7 @@ function anUnitStep(dt) {
   }
   /* drum: stored energy. 2.2.0-beta.14 (cold start): the firing heats the water first (U.Tw), then the pressure rises against the
      storage of the steam AND of the saturated water (C + Cw x dTsat/dP) */
-  const tsatOf = P => 100 + 47.1 * Math.log(Math.max(0, P) + 1);
+  const tsatOf = steamTsat; /* 3.2.0-beta.15: IF97 steam table (steam.js), was the fit 100 + 47.1 x ln(P + 1) */
   /* air share (total air over the anchor), used by the cooling below and by the bed temperature */
   const taf = U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0),
     as = U.taf0 > 0 ? Math.max(0.05, taf / U.taf0) : 1;
@@ -716,7 +739,7 @@ function anUnitStep(dt) {
       U.Tw = Math.max(U.Tamb, Math.min(ts, U.Tw + ((U.Qs - Qloss) * dt) / U.Cw));
       U.Pd = Math.max(0, U.Pd - ((U.ms + U.mb) * dt) / U.C);
     } else {
-      U.Pd = Math.max(0, U.Pd + ((U.Qs - Qloss - U.ms - U.mb) * dt) / (U.C + (U.Cw * 47.1) / (U.Pd + 1)));
+      U.Pd = Math.max(0, U.Pd + ((U.Qs - Qloss - U.ms - U.mb) * dt) / (U.C + U.Cw * steamDTsat(U.Pd)));
       U.Tw = tsatOf(U.Pd);
     }
   } else {
@@ -818,8 +841,8 @@ function anUnitStep(dt) {
       }
   const below = Math.max(0, cv[0][0] - xl),
     /* 2.2.0-beta.12 (M3): firing ratio = steam made / steam leaving (1 in steady state; 0 after an MFT while the stored steam still flows):
-       the superheat goes with the firing, the temperature falls to the saturation temperature of the drum pressure (fit Tsat = 100 +
-       47.1 x ln(P + 1), P in kg/cm2: 331 C at 134 kg/cm2, 100 C at 0; ASSUMED within 20 C of the steam table) */
+       the superheat goes with the firing, the temperature falls to the saturation temperature of the drum pressure (3.2.0-beta.15: the
+       IF97 steam table of steam.js) */
     fr = Math.max(0, Math.min(1, U.Qs / Math.max(1, mso))),
     tsat = tsatOf(U.Pd);
   for (const e of U.ld) {

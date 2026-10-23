@@ -1354,7 +1354,7 @@
         const n = AN.plantCold();
         AN.startState = 'plantCold';
         AN.paint();
-        msg('Plant cold: drum 0 kg/cm2, water 30 C, no fire. Press Run, then start the fans (Buttons M.3302 / 3303 / 3304), purge, open the oil valves (M.3410 / 3411 = 0) and fire the burners (FICDO1043A / B). ' + n + ' anchors.');
+        msg('Plant cold: drum 0 kg/cm2, water 30 C, no fire. Press Run, then start the utilities (seawater pump M.3354 and condensate pump M.3350 on ABC-052, FA blower M.3308, diesel oil pump in Field equipment), the fans (Buttons M.3302 / 3303 / 3304), purge, open the oil valves (M.3410 / 3411 = 0) and fire the burners (FICDO1043A / B). ' + n + ' anchors.');
       } catch (e) {
         msg('Could not load the cold state: ' + e.message);
       }

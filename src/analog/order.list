@@ -10,6 +10,7 @@ engine/audit-fix.js
 engine/compile-step.js
 engine/ranges-fx.js
 engine/plant.js
+engine/steam.js
 engine/unit.js
 engine/source.js
 engine/hmi-op.js
