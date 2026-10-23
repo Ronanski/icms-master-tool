@@ -1381,6 +1381,21 @@
         msg('Could not load the hot state: ' + e.message);
       }
     });
+    /* 3.2.0-beta.14 (plan phase A, user: "per loop mode ... pipili ka kung anong load (MW)"): the boiler stands at the chosen load, every
+       loop has the medium (steam, oil, water, air) of that load (source.js). Cold = no medium, At 150 MW = the snapshot */
+    d.head('Loop study (plant held at a load)');
+    for (const mw of [45, 60, 90, 120])
+      btn('loop' + mw, 'Loop study at ' + mw + ' MW', 'Reset, the 150 MW anchors, then the boiler and the turbine stand at ' + mw + ' MW (main steam pressure, steam flow, reheat pressure and MW held). Each loop answers its own MV with the steam / water / air of that load. For one loop at a time; a full start-up is Cold.', () => {
+        try {
+          AN.reset();
+          const n = AN.plantLoop(mw);
+          AN.startState = 'plantLoop';
+          AN.paint();
+          msg('Loop study at ' + mw + ' MW: the boiler is held at this load; each loop answers its own MV with the steam / water / air of ' + mw + ' MW. Press Run. ' + n + ' anchors.');
+        } catch (e) {
+          msg('Could not load the loop study: ' + e.message);
+        }
+      });
     d.head('TCS panel (turbine)');
     const tcs = (id, label, title, cmd, arg, ok) =>
       btn(id, label, title, () => {
@@ -1404,6 +1419,14 @@
         msg('TCS: ' + e.message);
       }
     });
+    d.head('Field equipment (no DCS signal)');
+    for (const [id, txt, on, ok] of [
+      ['dopstart', 'Diesel oil pump START', true, 'Diesel oil pump tumatakbo: may oil pressure na sa header (ABC-028).'],
+      ['dopstop', 'Diesel oil pump STOP', false, 'Diesel oil pump nakahinto: walang oil pressure, walang oil sa burners.']
+    ])
+      btn(id, txt, 'Diesel oil pump P-0005 (DITL-31, field start; no running signal on the ABC sheets). Without it the start-up burner oil header (ABC-028 PICDO0005) has no pressure.', () =>
+        msg(AN.field && AN.field('dop', on) ? ok : 'Diesel oil pump: walang plant model.')
+      );
     d.head('Field valves');
     for (const [id, txt, open, ok] of [
       ['bdclose', 'Drum BLOWDOWN valve CLOSE', false, 'Blowdown sarado: walang tubig na lumalabas sa drum maliban sa steam.'],
