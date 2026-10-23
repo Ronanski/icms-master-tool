@@ -441,6 +441,51 @@
     if (pn[0] < t.xr[1] - 1e-9) L.push('Above ' + vx(pn[0]) + ' the output holds ' + vy(pn[1]) + '.');
     return L.join(' ');
   }
+  /* ---------- Try it: a slider on the input, the output and one sentence of the effect in the plant ---------- */
+  function tryIt(t, inf) {
+    const ux = unit(t.xu),
+      uy = yU(t),
+      lo = t.xr[0],
+      hi = t.xr[1],
+      span = hi - lo || 1;
+    const p = t.p2;
+    const x0 = (p[0][0] + p[p.length - 1][0]) / 2;
+    const sl = E('input', { type: 'range', id: 'fxslide', min: String(lo), max: String(hi), step: String(span / 200), 'aria-label': 'Input of ' + t.key });
+    sl.value = String(Math.max(lo, Math.min(hi, x0)));
+    const val = E('b', { cls: 'fxtv' }),
+      say = E('p', { cls: 'fxsay', 'aria-live': 'polite' });
+    const vx = v => f2(v) + (ux ? ' ' + ux : ''),
+      vy = v => f2(v) + (uy ? ' ' + uy : '');
+    const draw = () => {
+      const x = +sl.value,
+        y = interp(t.p2, x),
+        d = span / 100,
+        up = interp(t.p2, Math.min(hi, x + d)) - y,
+        dn = y - interp(t.p2, Math.max(lo, x - d)),
+        eps = Math.abs(t.yr[1] - t.yr[0]) * 1e-5;
+      val.textContent = vx(x) + '  →  ' + vy(y);
+      const eff = g => (g > eps ? (inf && inf.rise) || 'the output rises' : g < -eps ? (inf && inf.fall) || 'the output falls' : 'nothing changes, the curve is flat on that side');
+      let txt = 'At ' + vx(x) + ' the table gives ' + vy(y) + '. ';
+      if (Math.abs(up) <= eps && Math.abs(dn) <= eps) txt += 'The curve is flat here: a small change of the input does nothing in the plant.';
+      else txt += 'If the input goes up from here: ' + eff(up) + '. If it goes down: ' + eff(-dn) + '.';
+      say.textContent = txt;
+      const tx = $('fxtry');
+      if (tx) {
+        tx.value = f2(x);
+        const ty = $('fxtryy');
+        if (ty) ty.textContent = vy(y);
+      }
+      mark(t, x);
+    };
+    sl.oninput = draw;
+    setTimeout(draw, 0);
+    return E('div', { cls: 'fxrow fxtryit' }, [
+      E('h4', { txt: 'Try it' }),
+      E('div', { cls: 'fxslrow' }, [E('span', { txt: vx(lo) }), sl, E('span', { txt: vx(hi) })]),
+      val,
+      say
+    ]);
+  }
   /* ---------- about this curve ---------- */
   function about(t) {
     const inf = info(t.key),
@@ -454,10 +499,14 @@
       row('Input comes from', inf.from);
       row('Output goes to', inf.to);
       row('Why it is there', inf.why);
+      row('On the HMI', inf.hmi);
       row('In operation', inf.ops);
       row('AUTO / MANUAL', inf.am);
+      row('If it is wrong or the input fails', inf.bad);
       row('If you change it', inf.change);
     } else row('What it does', 'No explanation written for this table yet.');
+    /* 3.2.0-beta.11 (user: "operations effect or function"): move the input, read the output and what the plant does */
+    if (t.p2 && t.p2.length) sec.append(tryIt(t, inf));
     /* 3.2.0-beta.9: the shape of the curve in words, read from the points (follows the edits) */
     sec.append(E('div', { cls: 'fxrow' }, [E('h4', { txt: 'Reading the curve' }), E('p', { id: 'fxread', txt: readCurve(t) })]));
     /* the sheets that use it: open the drawing */

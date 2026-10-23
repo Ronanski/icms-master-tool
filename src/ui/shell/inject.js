@@ -69,6 +69,9 @@ const block =
   /* 3.2.0-beta.9: In operation and AUTO / MANUAL for each table */
   fs.readFileSync(__dirname + '/../fx/fx-ops.js', 'utf8') +
   '\n' +
+  /* 3.2.0-beta.11: On the HMI, If it is wrong, and the rise / fall effect of the Try it slider */
+  fs.readFileSync(__dirname + '/../fx/fx-hmi.js', 'utf8') +
+  '\n' +
   fs.readFileSync(__dirname + '/../fx/fx-paths.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/../fx/fx.js', 'utf8') +
