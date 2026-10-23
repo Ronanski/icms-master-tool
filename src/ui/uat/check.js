@@ -294,6 +294,10 @@
         const t = o.t,
           U = h.U;
         if (t === 10) {
+          /* 3.2.0-beta.14: Cold now has the utilities stopped (no medium, no PV). PR-OPE-5002 starts them before the fans:
+             SWP (M.3354 / M.3355), CEP (M.3350), FA blower (M.3308), diesel oil pump (field equipment, no DCS signal) */
+          for (const l of ['M.3354', 'M.3355', 'M.3350', 'M.3308']) h.setx(null, l, 1);
+          AN.field('dop', true);
           for (const l of ['M.3302', 'M.3303', 'M.3304']) h.setx(null, l, 1);
           h.man('ABC-007', 'FICFA1071', 35);
           h.man('ABC-007', 'FICFA1081', 35);

@@ -479,8 +479,14 @@
           cls: 'trbtn',
           type: 'button',
           txt: 'Assume field steps done',
-          title: 'Ticks every FIELD and TCS step (local valves, gauges, turbine panel) so that only the DCS steps are left',
-          on: () => tickHand(P().map((x, si) => si), true)
+          title: 'Ticks every FIELD and TCS step (local valves, gauges, turbine panel) so that only the DCS steps are left. Also starts the field equipment that has no DCS signal (diesel oil pump).',
+          on: () => {
+            tickHand(P().map((x, si) => si), true);
+            /* 3.2.0-beta.14: the field steps include the diesel oil pump start (no running signal on the ABC sheets, source.js) */
+            try {
+              if (window.AN && AN.field) AN.field('dop', true);
+            } catch (e) {}
+          }
         }),
         E('button', {
           cls: 'trbtn',

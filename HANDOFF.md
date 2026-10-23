@@ -3,7 +3,8 @@
 > Single current handoff. Palitan ang lumang status kapag nagbago ang trabaho; huwag mag-append ng chat transcript.
 
 ## SIMULAN DITO (next session, 2026-10-23)
-- **Kasalukuyang Beta:** `3.2.0-beta.13`, branch `claude/project-thread-vhcfv9` (PR #39; kasama ang PR #38). Stable pa rin ang v2.4.0 sa `main`.
+- **Kasalukuyang Beta:** `3.2.0-beta.14`, branch `claude/project-thread-vhcfv9` (PR #39; kasama ang PR #38). Stable pa rin ang v2.4.0 sa `main`.
+- **3.2.0-beta.14 (2026-10-23, Yugto A ng plano ng plant model):** source ng bawat loop (`src/analog/engine/source.js`): walang steam / tubig / oil / hangin = walang PV (hal. ABC-017 sa Cold = 0 kahit MV 100 %). Loop study 45 / 60 / 90 / 120 MW at Diesel oil pump START / STOP sa Start ▾. Test `loop_source.js`. Plano: https://claude.ai/artifact/8dGKf8dcXkhxERHSYcNnzZ, mapa ng 16 loop: https://claude.ai/artifact/T85z4EWPPAUFsbtSAtLRmG. **Susunod:** Yugto B (unit model cold → 150 MW: steam table, drum mass / energy balance, utilities na may trip), tapos C (Training AUTO / MANUAL), D (pagsubok laban sa snapshot at FHI curves). Pagkatapos ng buong update: VIEW / TRACE mode (user 2026-10-23).
 - **3.2.0-beta.13 (2026-10-23):** Reset button = wala nang starting state (RUN pagkatapos = Cold). Tamang sanhi ng MSP 75: per-loop model (PV = gitna ng range sa MV 50 %). Naghihintay ng pili ng user: mas makatotohanang plant physics (steam tables, mass / energy balance) — card "plano muna" ang rekomendado.
 - **3.2.0-beta.12 (2026-10-23):** RUN na walang Start ▾ = Cold (boiler patay, MSP 0); dati MSP 75 = PV ng per-loop model ng PIC-COBM (`src/analog/ui/trace.js` `coldIfNone`, sa pindot lang ng RUN; `AN.viewSet` hindi binago).
 - **3.2.0-beta.11 (2026-10-23):** F(X) operational effect (user: "operations effect or function"): `src/ui/fx/fx-hmi.js` = On the HMI, If it is wrong or the input fails, rise / fall ng 91 table; `fx.js` Try it slider + pangungusap ng epekto. Test: `fx_page.js`.

@@ -937,6 +937,16 @@ const AN_HMI_DI_COLD = {
   'M.3302': 0,
   'M.3303': 0,
   'M.3304': 0 /* PAF / SAF / IDF stopped: the operator starts them for the purge */,
+  /* 3.2.0-beta.14 (source.js): a cold plant has every machine stopped: FA blowers A / B, condensate pumps A / B, seawater pumps A / B / C
+     (memory list BC FROM S3; PR-OPE-5002 starts them in the pre-start). Before they stayed running from the 150 MW snapshot, so the
+     condensate flow FICCD1120 read 380 T/H in a cold plant and the Live Training ticked those steps by itself */
+  'M.3308': 0,
+  'M.3309': 0,
+  'M.3350': 0,
+  'M.3351': 0,
+  'M.3353': 0,
+  'M.3354': 0,
+  'M.3355': 0,
   'M.3410': 1,
   'M.3411': 1,
   'M.3416': 1,
@@ -1005,6 +1015,8 @@ function anPlantWarm(o) {
   o = Object.assign({ P: 30, Tb: 480, burners: 4, mv: 30, air: 10, coal: 0, rh: 0, hot: false }, o || {});
   const n = anPlantCold();
   if (!AN_UNIT.on) return 0;
+  /* 3.2.0-beta.14: warm / hot = burners lit or fired before: the diesel oil pump is in service (source.js field equipment) */
+  AN_SRC.field.dop = true;
   const U = AN_UNIT,
     L = AN.sheets.filter(sh => sh.S && !/^ABC-000/.test(sh.name)),
     setx = (l, x) => {
@@ -1039,6 +1051,8 @@ function anPlantWarm(o) {
       if (AN.latchMode) AN.latchMode(t, 'LOC');
     };
   for (const l of ['M.3302', 'M.3303', 'M.3304']) setx(l, 1);
+  /* 3.2.0-beta.14: the pre-start machines of a fired plant: FA blower A, condensate pump A, seawater pumps B / C (as the snapshots) */
+  for (const l of ['M.3308', 'M.3350', 'M.3354', 'M.3355']) setx(l, 1);
   man('ABC-007', 'FICFA1071', o.air);
   man('ABC-007', 'FICFA1081', o.air);
   AN_BURNER.slice(0, Math.max(0, Math.min(4, o.burners))).forEach(([k, t, vc, ins]) => {
@@ -1140,6 +1154,9 @@ function anPlantCold() {
     /* every loop model starts again at the steady state of its (new) command: no feedwater flow decaying from 499 T/H into the
        drum of a cold boiler (an integrating level keeps its PV) */
     for (const sh of L) sh.S.rt.pm = {};
+    /* 3.2.0-beta.14: and not from the PV of the 150 MW snapshot (pr.y0 of anPlantLoad150, still set on a sheet that was not stepped
+       yet): ABC-034 gland steam temperature began at 185 C in a cold plant and took minutes to reach the ambient */
+    for (const sh of L) for (const b of sh.S.procs || []) if (b.proc) b.proc.y0 = 0;
     /* the drum level transmitters: the raw value that gives the snapshot level at the cold drum pressure (the density
        compensation LN38 / LN39 of the drawing changes with the pressure) */
     hmiComp(ai => /^AI0(130|258|386)$/.test(ai));

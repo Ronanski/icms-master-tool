@@ -191,6 +191,8 @@ function anUnitAnchor(list) {
 /* the unit model stops (Reset = cold boiler): the load disturbance of the spray loops goes too */
 function anUnitStop() {
   const U = AN_UNIT;
+  AN_SRC.t = -1; /* 3.2.0-beta.14: a new plant state, the source of the loops again (source.js) */
+  AN_SRC.fixed = null;
   for (const e of U.ld || [])
     if (e.pr) {
       e.pr.ld = 0;
@@ -290,7 +292,14 @@ function anUnitStart() {
     tb: { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN },
     Tb: U.Tb0,
     Tw: 100 + 47.1 * Math.log(Pd0 + 1),
-    oilF: 0
+    oilF: 0,
+    /* 3.2.0-beta.14: the sources of the loops at the anchor (source.js), before the first step */
+    Pms: P0,
+    Fc: F0,
+    unb: 0,
+    rpm: 3600,
+    mhp: 0,
+    qlp: 0
   });
   /* 2.2.0-beta.11 (M2 steps 1 ~ 3, see AN_UNIT): reheat, SH / RH temperatures, O2 */
   const shOf = k => AN.sheets.find(y => y.name === k),
@@ -322,6 +331,7 @@ function anUnitStart() {
   U.lpv = ctlOut('ABC-052', 'PICHR1003');
   U.rr = 1;
   U.mhp = 0;
+  U.Prh = U.rhp.length && U.rhp[0].a0 && U.rhp[0].a0[0] > 0 ? U.rhp[0].a0[0] : 34;
   /* 2.2.0-beta.16 (M4 step 3): the RH blow-off PICHR1391 (ABC-054) takes steam out of the hot reheat while the turbine is shut. Its PV
      is the hot reheat pressure of ABC-052 (drawing ABC-054: "HOT REHEAT STEAM PRESSURE HRP 052 S2 SI0180" -> STN102017), a link
      between stations that the reader leaves as an input of the sheet: written here every step, like the station wiring (one address =
@@ -342,6 +352,10 @@ function anUnitStart() {
       AN.unitSheets = ['ABC-054'];
     }
   }
+  /* 3.2.0-beta.14 (bug, fixed): the headers that are the SOURCE of other loops (source.js: ABC-028 diesel oil header after the pump
+     for the burners ABC-003A ~ D, ABC-030 aux steam header) have no drawn link to the set of ABC-001C either: unstepped, their PV
+     stayed at the Cold value (0) after the diesel oil pump was started and the burners got no oil (CHECK cold start: drum 0 kg/cm2) */
+  AN.unitSheets = [...new Set((AN.unitSheets || []).concat(['ABC-028', 'ABC-030']))];
   /* the spray loops and the fall of the temperature below 60 % MCR (C per unit of load share) */
   U.ld = [
     [procOf('ABC-011', 'TICBR1130'), 0],
@@ -444,6 +458,8 @@ function anUnitStart() {
   for (const l of lists) for (const [S2, b] of l) own.add(S2.rt.st[b.id]);
   U.own = own;
   U.on = true;
+  /* 3.2.0-beta.14: the snapshot plant has its diesel oil pump in service (source.js field equipment) */
+  AN_SRC.field.dop = true;
   AN.unit = U;
 }
 /* 2.2.0-beta.14 (M4 step 1): the plant cold, with the anchors of "Start at 150 MW" kept (called by hmi-op.js anPlantCold after
@@ -473,6 +489,9 @@ function anUnitCold() {
   });
   U.o2v = 21;
   for (const h of U.sh) h.x = U.Tamb;
+  /* 3.2.0-beta.14: cold = the field equipment stopped too (diesel oil pump, source.js) */
+  AN_SRC.field.dop = false;
+  AN_SRC.t = -1;
   return true;
 }
 /* 2.2.0-beta.21 (M5 shutdown): the plant at 150 MW WITH the start-up / shutdown physics on (U.cold: the water heat storage of the
@@ -535,6 +554,43 @@ function anUnitStep(dt) {
   if (!U.on || !(dt > 0)) return;
   const S = U.S,
     v = S.rt.v;
+  /* 3.2.0-beta.14 (plan phase A, user 2026-10-23: "per loop mode, pipili ka kung anong load (MW)"): LOOP STUDY at a fixed load. The
+     boiler and the turbine stand at the chosen load (AN_SRC.fixed, source.js srcLoad): drum and main steam pressure, steam flow, MW and
+     reheat pressure are written as constants, so every loop is studied with the medium of that load (its source); the loops that make
+     these boiler variables (PIC-COBM, the turbine) do not move them in this mode */
+  if (AN_SRC.fixed) {
+    const f = AN_SRC.fixed,
+      Prh0 = U.rhp.length && U.rhp[0].a0.length && U.rhp[0].a0[0] > 0 ? U.rhp[0].a0[0] : 34;
+    Object.assign(U, {
+      Pms: f.Pms,
+      Pd: f.Pms + U.kdp * f.ms * f.ms,
+      ms: f.ms,
+      Qs: f.ms,
+      mb: 0,
+      mhp: 0,
+      qlp: 0,
+      MW: f.mw,
+      Prh: f.Prh,
+      rr: f.Prh / Prh0,
+      Fc: f.coal,
+      unb: 0,
+      rpm: 3600,
+      Tb: U.Tb0
+    });
+    U.Tw = 100 + 47.1 * Math.log(U.Pd + 1);
+    U.tb = Object.assign(U.tb || {}, { st: 'load', rpm: 3600, icv: 1, xfer: true });
+    anUnitWrite(U.msp, f.Pms);
+    for (const l of U.tin) anUnitWrite(l, Math.max(0, f.Pms - U.kln * f.ms * f.ms));
+    anUnitWrite(U.drum, U.Pd);
+    for (const l of U.mw) anUnitWrite(l, f.mw);
+    const raw = anUnitVal(U.msf),
+      cmp = +v[U.cn];
+    anUnitWrite(U.msf, isFinite(raw) && raw > 0 && isFinite(cmp) && cmp > 1 ? (f.ms * raw) / cmp : f.ms);
+    for (const L of U.rhp) anUnitWrite(L, i => L.a0[i] * U.rr);
+    for (const L of U.pist) anUnitWrite(L, i => L.a0[i] * Math.max(1e-3, f.ms / U.m0));
+    U.t += dt;
+    return;
+  }
   /* coal of the three feeders (T/H) -> steam made in the drum (T/H), first order */
   /* 2.2.0-beta.14: + the oil of the start-up burners (ao x coal); the offset of the firing line fades out below 30 % of the anchor coal */
   const F = U.fuel.reduce((a, l) => a + (anUnitVal(l) || 0), 0),
@@ -545,6 +601,7 @@ function anUnitStep(dt) {
   U.oilF = oil;
   U.burn = bf;
   U.unb = F * (1 - bf);
+  U.Fc = F; /* 3.2.0-beta.14: coal of the feeders (source.js: SOx) */
   U.Qs += ((Qss - U.Qs) * dt) / U.tauF;
   /* ---- 2.2.0-beta.12 (M3): station wiring S2 -> S1, turbine trip ---- */
   for (const [a, tg] of U.bcast || []) {
@@ -676,6 +733,7 @@ function anUnitStep(dt) {
     U.Tb += ((Math.max(U.Tamb, Tbss) - U.Tb) * dt) / U.tauB;
   }
   const Pms = Math.max(0, U.Pd - U.kdp * U.ms * U.ms);
+  U.Pms = Pms; /* 3.2.0-beta.14: source of the reducing stations (source.js) */
   /* generator. 2.2.0-beta.17: HP steam (1 - cIP) + IP / LP steam cIP (qip = the reheat pressure x the ICV opening, = the HP steam
      when the bypass is shut and the ICV full open: the same line MW0 + c x (ms - m0) as before) less the anchor losses; 0 off the grid */
   const qip = U.m0 * U.rr * tb.icv,
@@ -733,6 +791,12 @@ function anUnitStep(dt) {
     U.rr += ((rrs - U.rr) * dt) / U.tauRH;
   }
   for (const L of U.rhp) scaled(L, U.rr);
+  /* 3.2.0-beta.14 (source.js): hot reheat pressure and LP bypass flow, the source of the LP bypass desuperheater */
+  {
+    const Prh0 = U.rhp.length && U.rhp[0].a0.length && U.rhp[0].a0[0] > 0 ? U.rhp[0].a0[0] : 34;
+    U.Prh = U.rr * Prh0;
+    U.qlp = (U.m0 * U.rr * U.lpb * olp) / 100;
+  }
   /* 2.2.0-beta.17: not exactly 0 while the HP valves are shut: the SELECT CIRCUIT of ABC-052 (SI0181) reads 0 as a lost transmitter
      (SIG.AB) and would hold the 150 MW value, so the LP bypass REMOTE set point (LN12 of the first stage + 5.1) would stay at 30.9 */
   for (const L of U.pist) scaled(L, Math.max(1e-3, U.ms / U.m0));

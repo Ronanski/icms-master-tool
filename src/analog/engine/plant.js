@@ -296,6 +296,8 @@ function anProcStep(S, dt) {
       delete pm[b.id];
       continue;
     }
+    /* 3.2.0-beta.14 (source.js): the medium of this loop (steam, oil, water, air) is there or not */
+    anSrcSet(b, pr, S);
     let q = pm[b.id];
     if (!pr.on) {
       if (q) delete pm[b.id];
@@ -499,6 +501,12 @@ function anProcStep(S, dt) {
         /* 2.2.0-beta.14 (M4 cold start): pr.tcap = the gas temperature (bed) of the unit model: a superheater cannot give more than the
            gas, and the steam is never below saturation */
         if (pr.tcap != null) y = Math.max(pr.tsat != null ? pr.tsat : -1e9, Math.min(y, pr.tcap));
+        /* 3.2.0-beta.14 (source.js): no medium = the bottom of the range (or the ambient); never above the pressure of the source */
+        if (pr.smul != null) y = pr.smul * y + (1 - pr.smul) * (pr.sbase != null ? pr.sbase : lo);
+        if (pr.scap != null) y = Math.min(y, Math.max(lo, pr.scap));
+        /* not exactly the bottom: the SELECT CIRCUIT of the drawing reads 0 as a lost transmitter and holds its last value (user rule
+           v1.20.34; ABC-030 aux steam stayed 10.1 kg/cm2 in a cold plant), as the unit model does for the first stage pressure */
+        if (pr.src) y = Math.max(y, lo + 1e-3 * span);
         return pr.mul == null ? y : pr.mul * y + (1 - pr.mul) * lo;
       };
     if (pr.integ === undefined) {
@@ -607,6 +615,8 @@ function anProcStep(S, dt) {
         }
       }
       q.h.length = 0;
+    } else if (dt > 0 && pr.shold) {
+      q.h.length = 0; /* 3.2.0-beta.14 (source.js): the pump that moves the water is stopped: the tank level stays */
     } else if (dt > 0 && pr.mul === 0) {
       q.y =
         lo; /* 2.2.0-beta.12: the machine that makes the flow stopped (no BFWP, fan stopped): the flow is gone at once, not with the lag of the valve */
@@ -724,7 +734,10 @@ function anProcStep(S, dt) {
         const hit = w < rl || w > rh;
         w = Math.max(rl, Math.min(rh, w));
         const p = tv[tpin];
-        q.bad = hit && !pinF && !aiF && !gate && Math.abs(y - p) > 0.05 * span ? (q.bad || 0) + 1 : 0;
+        /* 3.2.0-beta.14: not while the source of the loop holds it at the bottom (source.js: no steam / water / oil): that is the plant,
+           not a model that cannot reach its transmitter (before: ABC-030 aux steam fell to the "pin" mode in a cold plant and never
+           came back to its 150 MW anchor, 4.5 instead of 10.2 kg/cm2) */
+        q.bad = hit && !pinF && !aiF && !gate && !pr.src && Math.abs(y - p) > 0.05 * span ? (q.bad || 0) + 1 : 0;
         if (q.bad >= 30) {
           pr.mode = 'pin';
           pr.fell = 1;
