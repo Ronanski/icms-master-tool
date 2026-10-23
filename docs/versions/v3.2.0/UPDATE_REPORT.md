@@ -255,6 +255,7 @@ Base: pinagsama ang **2.5.0-beta.20** (PR #34 / #35, logic at data) at ang **3.1
 | `home_training.js` | Training: 44 section, 663 hakbang; tick ng hakbang 1 = "1 of 663", nananatili pagka-reload; Tick all = 6 / 6; FICFA1071 = faceplate; V-SW1002 = field item; phone = dropdown, 5 tab sa ibaba. |
 | `fx_page.js` | Pasado pa rin (beta.7 F(X) page). |
 | `npm test` | Pasado. |
+| UI regression (21 test) | Pareho ng beta.7: shell_cr 15, plant_view 18, p3_screens 18, why 6, view 49, sidetab 10, layout 26, ditl_toolbar 42 (binago lang ang test: ⚙ > Engineering tools sa halip na Tools sa rail), infocard 9, events 5, forcelist 7, ui_audit20 15, abcbar 4, lookonly 8, panel_sync 12, plant_click 10, faceplate 1, ditl_pagelink 61, ditl_sim 24. Ang values_layout at check_panel ay pareho pa rin ng dati (sira / mabagal na mula pa beta.6). |
 | Screenshots | Home, Plant view, Logic ABC / DITL, Library, Training, ⚙, Tools sa 1440 × 900, 1280 × 800 (touch), 800 × 1280 (touch), 390 × 844 (touch); 4 na theme; 0 page error, walang lumalampas sa screen. |
 
 - **Hindi nasubok:** tablet / exe / apk ng user.

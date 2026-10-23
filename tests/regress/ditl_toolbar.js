@@ -31,8 +31,8 @@ for(const [n,w,h] of [['desktop',1440,900],['tablet',1024,768],['phone',390,844]
  ck(await page.evaluate(()=>SIM===true&&DPAUSE===false),n+': RUN again keeps it running (no Pause)');
  await seg(0);
  ck(await page.evaluate(()=>SIM===false),n+': VIEW stops it');
- // TOOLS tab: Health works, no editor tools
- await page.evaluate(()=>[...document.querySelectorAll(':is(#gsbar,#crrail,#crnav) .tabs button')].find(b=>/^tools$/i.test(b.textContent.trim())).click());await page.waitForTimeout(600);
+ // TOOLS tab (3.2.0-beta.8: ⚙ > Engineering tools): Health works, no editor tools
+ await page.evaluate(()=>document.getElementById('engtools').click());await page.waitForTimeout(600);
  ck(await vis('bhp')&&!(await vis('bdel'))&&!(await vis('bmode')),n+': TOOLS tab shows Health, no editor tools');
  await page.evaluate(()=>document.getElementById('bhp').click());await page.waitForTimeout(300);
  ck(await page.evaluate(()=>!document.getElementById('hp').hidden&&/sheets/.test(document.getElementById('hp').textContent)),n+': Health panel opens ('+(await page.evaluate(()=>document.getElementById('hp').textContent.slice(0,60)))+')');
