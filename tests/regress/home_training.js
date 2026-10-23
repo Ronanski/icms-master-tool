@@ -4,7 +4,7 @@
 // 2. HOME "At 150 MW" = the Start ▾ button of the PLANT VIEW (AN.startState plantLoad150) and the PLANT VIEW opens.
 // 3. VIEW | RUN shows RUN while the clock runs (AN.run) even when the page is in VIEW; VIEW then stops the clock.
 // 4. A sheet opened in Logic is listed on HOME under "Sheets you opened"; its button opens it again.
-// 5. TRAINING: PR-OPE-5002 = 44 sections, 663 steps; a tick is kept (localStorage ls-train) after a reload; Tick all; the tag of
+// 5. TRAINING: PR-OPE-5002 = 44 sections + 2 of the app (3.2.0-beta.10: sync and initial load, load up to 150 MW) = 46, 681 steps; a tick is kept (localStorage ls-train) after a reload; Tick field steps; the tag of
 //    a DCS controller (FICFA1071) opens its faceplate in the PLANT VIEW, a field valve (V-SW1002) says it is a field item.
 // 6. Phone (390 px): the section list is a select; the 5 pages are the bottom tab bar. No page error.
 // Usage: node tests/regress/home_training.js [html]
@@ -43,14 +43,14 @@ ck(/^ABC-001C,ABC-010/.test(r4)&&r4b.tab==='logic'&&r4b.sh==='ABC-010','sheets y
 // 5
 await p.evaluate(()=>lsSetTab('training'));await p.waitForTimeout(400);
 const r5=await p.evaluate(()=>({n:LS_PROC5002.length,m:LS_PROC5002.reduce((a,s)=>a+s.s.length,0),list:document.querySelectorAll('#trainws .trsec').length,vis:getComputedStyle(document.getElementById('trainws')).display}));
-ck(r5.n===44&&r5.m===663&&r5.list===44&&r5.vis==='flex','TRAINING: '+r5.n+' sections, '+r5.m+' steps, '+r5.list+' in the list');
+ck(r5.n===46&&r5.m===681&&r5.list===46&&r5.vis==='flex','TRAINING: '+r5.n+' sections, '+r5.m+' steps, '+r5.list+' in the list');
 await p.evaluate(()=>lsHome.show(0));await p.click('#trc0_0');await p.waitForTimeout(200);
 const r5b=await p.evaluate(()=>({pct:document.querySelector('#trainws .trpct').textContent,ls:localStorage.getItem('ls-train')}));
 await load();await p.evaluate(()=>lsSetTab('training'));await p.waitForTimeout(400);await p.evaluate(()=>lsHome.show(0));
 const r5c=await p.evaluate(()=>({c:document.getElementById('trc0_0').checked,pct:document.querySelector('#trainws .trpct').textContent}));
-ck(/^1 of 663/.test(r5b.pct)&&r5b.ls==='{"0.0":1}'&&r5c.c&&/^1 of 663/.test(r5c.pct),'tick step 1: "'+r5b.pct+'", kept after a reload: '+r5c.c);
-await p.evaluate(()=>[...document.querySelectorAll('#trainws .trbtn')].find(x=>x.textContent==='Tick all').click());await p.waitForTimeout(200);
-ck(await p.evaluate(()=>/^6 \/ 6 done$/.test(document.querySelector('#trainws .trcount').textContent)&&/6\/6/.test(document.querySelector('#trainws .trsec.on').textContent)),'Tick all: section 1 = 6 / 6');
+ck(/^1 of 681/.test(r5b.pct)&&r5b.ls==='{"0.0":1}'&&r5c.c&&/^1 of 681/.test(r5c.pct),'tick step 1: "'+r5b.pct+'", kept after a reload: '+r5c.c);
+await p.evaluate(()=>[...document.querySelectorAll('#trainws .trbtn')].find(x=>x.textContent==='Tick field steps').click());await p.waitForTimeout(200);
+ck(await p.evaluate(()=>/^6 \/ 6 done$/.test(document.querySelector('#trainws .trcount').textContent)&&/6\/6/.test(document.querySelector('#trainws .trsec.on').textContent)),'Tick field steps: section 1 = 6 / 6');
 const si=await p.evaluate(()=>LS_PROC5002.findIndex(s=>s.s.some(x=>x.g.includes('FICFA1071'))));
 await p.evaluate(i=>lsHome.show(i),si);await p.waitForTimeout(200);
 await p.evaluate(()=>[...document.querySelectorAll('#trainws .trtag')].find(x=>x.textContent==='FICFA1071').click());await p.waitForTimeout(1500);

@@ -287,3 +287,23 @@ Base: pinagsama ang **2.5.0-beta.20** (PR #34 / #35, logic at data) at ang **3.1
 
 - **Hindi nasubok:** tablet / exe / apk ng user; ang DITL page ay may sariling VIEW | RUN (hindi binago).
 - **Status:** ipinush bilang Beta.
+
+## 3.2.0-beta.10 — Live Training: kusang natse-tsek ang start-up checklist mula sa logic, cold → sync 4.5 MW → 150 MW
+- **Problem (user, 2026-10-23 4:08 PM PHT):** "since may check list sa cold startup, auto check sya if nagawa mo na sa logic lahat ... hanggang sa sync 4.5 MW initial load, to load up to 150 MW". Proposal https://claude.ai/artifact/D7vFKoog3SF3AYaaVXyvCs, pinili: "Oo, gawin buong takbo".
+- **As Found:** ang tsek sa Training ay naka-save lang sa browser; walang kinalaman sa logic. Natapos ang PR-OPE-5002 sa Solid firing (walang sync at load up). Bug na nakita habang ginagawa: ang listahan ng faceplate (`AN.fpFind`, `src/ui/hmi/hmi.js`) ay ginagawa nang isang beses lang; kapag tinawag habang DITL ang nasa screen, nagiging walang laman at hindi na bumabalik (walang faceplate na mahahanap hanggang reload).
+- **Work Done (walang binago sa logic, engine at drawing; binabasa lang ang logic):**
+  - `src/ui/training/live.js` (bago, `window.LS_LIVE`): bawat hakbang ay may uri. **AUTO** = may DCS signal (running memory M.3302 / 3303 / 3304 / 3343 / 3350 / 3353 / 3400 / 3412, mode / SV / MV ng faceplate, PV sa target, purge, MFT reset, 52G1). **FIELD** = walang DCS signal (local valve, gauge). **TCS** = turbine panel. Ang AUTO ay kusang natse-tsek habang RUN at nananatiling tsek (sequence) hanggang Practise: Cold start o Clear all ticks. Sa VIEW walang natse-tsek. Ang procedure tag (LCV-MU1110, FCV-FW1130-2) ay hinahanap sa valve → controller table ng plant graphics (`valvectl.js`). Ang MAN station na walang .MAN address (HIC-BM) ay binabasa sa A / M switch ng set input nito.
+  - Dalawang bagong section pagkatapos ng Solid firing: **Synchronization and initial load (app)** (8 hakbang: 3600 rpm, 52G1, 4.5 MW, PICHR1003 REMOTE, ICV → CV, 3-element, bypass sarado, hold 45 MW) at **Load up to 150 MW (app)** (10 hakbang: air REMOTE, FIC-CM REMOTE, HIC-BM AUTO, AICFG112 AUTO, 60 / 90 / 120 / 150 MW, EIC-TM AUTO, SH spray AUTO, hold 150 MW). Target: M4 chain ng CHECK, PR-OPE-5002 sec 44, FHI design data.
+  - Training screen (`home.js`, `home.css`): chip bawat hakbang (AUTO ✓ / AUTO · waiting / FIELD / TCS); hindi matse-tsek ng kamay ang AUTO; linya na "Now: ..." sa ilalim ng AUTO na hindi pa tapos; live na panel (kanan sa PC, sa ilalim ng hakbang sa tablet / phone): target, value ngayon, Why? (force manual ng drawing), button Faceplate / Sheet; "Assume field steps done"; "Tick field steps" bawat section; note sa VIEW.
+  - `hmi.js` `AN.fpFind`: ginagawa ulit ang listahan kapag nagbago ang sheet list; hindi itinatago ang walang laman.
+- **As Left (sinubok sa built html, headless Chrome):**
+
+| Test | Ano ang nakita |
+|---|---|
+| `live_training.js` (bago) | 681 hakbang: 88 AUTO, 540 FIELD, 53 TCS; lahat ng signal ng AUTO ay nahanap. VIEW sa 150 MW: 0 natse-tsek. Buong takbo ng CHECK "full" (cold → coal → bypass → sync → 150 MW, ~3 min): 67 AUTO kusang natse-tsek; Sync 8 / 8, Load up 10 / 10. Ang hindi natse-tsek ay mga hakbang na hindi ginagawa ng CHECK chain (hal. biasing damper 100 %, fan damper 0 %, 4 burner; ang chain ay 2 burner) at nakalista sa test. Live panel, disabled AUTO box, "Assume field steps done" (FIELD / TCS lang). |
+| `home_training.js` | Pasado (46 section, 681 hakbang, "Tick field steps"). |
+| `view_run`, `fx_page`, `plant_view`, `layout`, `hmi_op`, `why`, `faceplate`, `force_manual` (68 / 0), `npm test`, `npm run check` | Pasado / SAME. |
+| Screenshots | Training (section 19 / 45 / 46, live panel, VIEW) sa 1440 × 900, 1280 × 800, 800 × 1280, 390 × 844: walang lumalampas, 0 page error. |
+
+- **Hindi nasubok:** tablet / exe / apk ng user; ang pagtsek ng bawat AUTO hakbang na hindi dinadaanan ng CHECK chain ay sa mismong pindot ng operator (parehong signal, hindi pa sinubok isa-isa).
+- **Status:** ipinush bilang Beta.

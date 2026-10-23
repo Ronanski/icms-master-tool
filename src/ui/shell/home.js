@@ -154,25 +154,66 @@
     fillHome();
   }
 
-  /* ---------- TRAINING ---------- */
+  /* ---------- TRAINING ----------
+     3.2.0-beta.10 LIVE TRAINING (src/ui/training/live.js): an AUTO step ticks itself when the logic shows it done (RUN only), a FIELD
+     step is ticked by the operator, a TCS step is on the turbine control panel (ticked by the operator). The live panel shows the
+     signals of the selected step: the target, the value now, why a controller is held in MANUAL, and where to do it. */
   const P = () => window.LS_PROC5002 || [];
+  const LV = () => window.LS_LIVE || null;
   const done = () => ls.get('ls-train', {});
   const key = (si, i) => si + '.' + i;
   let cur = ls.get('ls-train-sec', 0);
+  let sel = null; /* the selected step: [section, step] */
+  const kindOf = (si, i) => {
+    const L = LV();
+    try {
+      return L ? L.kind(si, i) : { k: 'field' };
+    } catch (e) {
+      return { k: 'field' };
+    }
+  };
+  const isDone = (si, i, d, A) => (kindOf(si, i).k === 'auto' ? !!A[key(si, i)] : !!d[key(si, i)]);
+  const autoDone = () => (LV() ? LV().done() : {});
   function counts(si) {
     const d = done(),
+      A = autoDone(),
       s = P()[si];
     let n = 0;
-    s.s.forEach((x, i) => d[key(si, i)] && n++);
+    s.s.forEach((x, i) => isDone(si, i, d, A) && n++);
     return [n, s.s.length];
   }
   function total() {
-    const d = done();
+    const d = done(),
+      A = autoDone();
     let n = 0,
       m = 0;
-    P().forEach((s, si) => s.s.forEach((x, i) => (m++, d[key(si, i)] && n++)));
+    P().forEach((s, si) => s.s.forEach((x, i) => (m++, isDone(si, i, d, A) && n++)));
     return [n, m];
   }
+  /* field and TCS steps of one section (or all): ticked by the operator */
+  function tickHand(sis, on) {
+    const dd = done();
+    sis.forEach(si => P()[si].s.forEach((x, i) => kindOf(si, i).k !== 'auto' && (on ? (dd[key(si, i)] = 1) : delete dd[key(si, i)])));
+    ls.set('ls-train', dd);
+    fillTrain();
+  }
+  const openFp = t => {
+    goPlant();
+    setTimeout(() => window.lsPlantFp && lsPlantFp(t), 400);
+  };
+  /* a running memory or an input bit: its sheet, with the Inputs list filtered on the address (forced there in RUN) */
+  const openAddr = a => {
+    const sh = LV() && LV().sheetOf(a);
+    if (!sh) return;
+    goSheet(sh);
+    setTimeout(() => {
+      const f = document.querySelector('#inlist .inq');
+      if (f) {
+        f.value = a;
+        f.dispatchEvent(new Event('input'));
+      }
+    }, 500);
+  };
   function tagChip(t) {
     return E('button', {
       cls: 'trtag',
@@ -190,11 +231,7 @@
             return false;
           }
         });
-        if (fpT && window.lsPlantFp) {
-          goPlant();
-          setTimeout(() => lsPlantFp(fpT), 400);
-          return;
-        }
+        if (fpT && window.lsPlantFp) return openFp(fpT);
         const ok = window.lsInfo && ts.some(x => lsInfo(x, { look: 1 }));
         if (!ok) {
           const b = e.currentTarget;
@@ -205,6 +242,73 @@
         }
       }
     });
+  }
+  const KTXT = { auto: 'AUTO', field: 'FIELD', tcs: 'TCS' };
+  const KTIP = {
+    auto: 'Ticks itself when the logic shows it done (RUN)',
+    field: 'No DCS signal (local valve, gauge, panel): tick it yourself',
+    tcs: 'Turbine control panel, outside the DCS drawings: tick it yourself'
+  };
+  function chip(si, i, q, A) {
+    const dn = q.k === 'auto' && A[key(si, i)];
+    const c = E('span', { cls: 'trk ' + q.k + (dn ? ' ok' : ''), title: KTIP[q.k] });
+    c.textContent = q.k === 'auto' ? (dn ? 'AUTO ✓' : 'AUTO · waiting') : KTXT[q.k];
+    return c;
+  }
+  /* the live line of an AUTO step: the value now (the target is in the panel) */
+  function liveLine(si, i) {
+    const L = LV();
+    if (!L) return '';
+    const s = L.state(si, i);
+    if (s.q.k !== 'auto') return '';
+    if (s.done) return 'Done in the logic' + (s.now ? ' · ' + s.now : '');
+    let t = 'Now: ' + (s.now || '—');
+    if (s.hold && s.hold[0] != null && L.live()) t += ' · holding ' + Math.floor(s.hold[0]) + ' of ' + s.hold[1] + ' s';
+    return t;
+  }
+  function detail() {
+    const box = E('div', { cls: 'trdet', 'aria-live': 'polite' });
+    fillDetail(box);
+    return box;
+  }
+  function fillDetail(box) {
+    box.textContent = '';
+    const L = LV(),
+      s = sel && P()[sel[0]] && P()[sel[0]].s[sel[1]];
+    if (!s) {
+      box.append(E('p', { cls: 'trdim', txt: 'Select a step to see its signals live: the target, the value now, and where to do it.' }));
+      return;
+    }
+    const [si, i] = sel,
+      q = kindOf(si, i),
+      A = autoDone();
+    box.append(E('div', { cls: 'trdh' }, [chip(si, i, q, A), E('small', { txt: 'Section ' + (si + 1) + ' · step ' + (i + 1) })]), E('p', { cls: 'trdt', txt: s.t }));
+    if (q.k !== 'auto') {
+      box.append(E('p', { cls: 'trdim', txt: KTIP[q.k] + '.' }));
+      return;
+    }
+    const st = L.state(si, i);
+    const ul = E('ul', { cls: 'trsig' });
+    L.rows(si, i).forEach(r => {
+      const go = Object.assign({}, r.go || {});
+      /* a value such as FIFA1055.PV has no faceplate: its sheet */
+      if (go.tag && !L.fp(go.tag)) delete go.tag;
+      const btn = go.tag
+        ? E('button', { cls: 'trbtn sm', type: 'button', txt: 'Faceplate', title: 'Open the faceplate of ' + go.tag + ' in the Plant view', on: () => openFp((L.fp(go.tag) || {}).t || go.tag) })
+        : go.addr
+          ? E('button', { cls: 'trbtn sm', type: 'button', txt: 'Sheet', title: 'Open the sheet of ' + go.addr + ' with the Inputs list on it', on: () => openAddr(go.addr) })
+          : go.sh
+            ? E('button', { cls: 'trbtn sm', type: 'button', txt: 'Sheet', title: 'Open ' + go.sh, on: () => goSheet(go.sh) })
+            : E('button', { cls: 'trbtn sm', type: 'button', txt: 'Plant view', on: goPlant });
+      ul.append(E('li', { cls: r.ok ? 'ok' : '' }, [E('i', { 'aria-hidden': 'true', txt: r.ok ? '✓' : '○' }), E('div', {}, [E('b', { txt: r.want }), E('span', { txt: 'Now: ' + (r.now || '—') })]), btn]));
+    });
+    box.append(E('p', { cls: 'trlbl', txt: st.done ? 'Done in the logic' : 'Waiting for' }), ul);
+    if (st.hold) box.append(E('p', { cls: 'trdim', txt: 'Must hold ' + st.hold[1] + ' s of simulation' + (st.hold[0] != null && !st.done ? ': ' + Math.floor(st.hold[0]) + ' s so far' : '') + '.' }));
+    if (!st.done) {
+      const w = L.why(si, i);
+      box.append(E('p', { cls: 'trlbl', txt: 'Why?' }), w.length ? E('ul', { cls: 'trwhy' }, w.map(x => E('li', { txt: x }))) : E('p', { cls: 'trdim', txt: 'No force-manual signal holds these controllers. Do the step on the faceplate or in the Inputs list (RUN).' }));
+    }
+    if (L && !L.live()) box.append(E('p', { cls: 'trview', txt: 'VIEW: the steps tick only while the simulation runs. Press RUN.' }));
   }
   function fillTrain() {
     if (!train) return;
@@ -228,14 +332,26 @@
     pick.value = cur;
     const s = L[cur],
       d = done(),
+      A = autoDone(),
       [n, m] = counts(cur);
+    if (sel && sel[0] !== cur) sel = null;
     const main = train.querySelector('.trmain');
     main.textContent = '';
     const ul = E('ol', { cls: 'trsteps' });
+    let na = 0,
+      nh = 0,
+      nhd = 0;
     s.s.forEach((x, i) => {
-      const id = 'trc' + cur + '_' + i;
+      const id = 'trc' + cur + '_' + i,
+        q = kindOf(cur, i),
+        au = q.k === 'auto';
+      au ? na++ : (nh++, d[key(cur, i)] && nhd++);
       const cb = E('input', { type: 'checkbox', id });
-      cb.checked = !!d[key(cur, i)];
+      cb.checked = isDone(cur, i, d, A);
+      if (au) {
+        cb.disabled = true;
+        cb.title = 'Ticks itself when the logic shows it done';
+      }
       cb.onchange = () => {
         const dd = done();
         if (cb.checked) dd[key(cur, i)] = 1;
@@ -243,42 +359,92 @@
         ls.set('ls-train', dd);
         fillTrain();
         const nx = $('trc' + cur + '_' + (i + 1));
-        if (cb.checked && nx) nx.focus();
+        if (cb.checked && nx && !nx.disabled) nx.focus();
         else if ($(id)) $(id).focus();
       };
-      ul.append(E('li', { cls: cb.checked ? 'dn' : '' }, [E('div', { cls: 'trrow' }, [cb, E('label', { for: id, txt: x.t })]), x.g.length ? E('div', { cls: 'trtags' }, x.g.map(tagChip)) : null]));
+      const on = sel && sel[1] === i;
+      const li = E('li', { cls: (cb.checked ? 'dn' : '') + (on ? ' sel' : '') + ' k' + q.k }, [
+        E('div', { cls: 'trrow' }, [
+          cb,
+          E('label', { for: id, txt: x.t }),
+          E('button', {
+            cls: 'trsee',
+            type: 'button',
+            'aria-expanded': String(!!on),
+            title: 'Signals of this step, live',
+            on: () => {
+              sel = on ? null : [cur, i];
+              fillTrain();
+              const b = train.querySelector('li.sel .trsee');
+              if (b) b.focus();
+            }
+          }, [chip(cur, i, q, A)])
+        ]),
+        au && !cb.checked ? E('div', { cls: 'trlive', 'data-k': key(cur, i), txt: liveLine(cur, i) }) : null,
+        x.g.length ? E('div', { cls: 'trtags' }, x.g.map(tagChip)) : null
+      ]);
+      ul.append(li);
+      if (on && !wide()) li.append(detail());
     });
     [
       E('div', { cls: 'trshead' }, [
         E('div', {}, [E('small', { txt: 'Section ' + (cur + 1) + ' of ' + L.length }), E('h3', { txt: cap(s.t) })]),
-        E('span', { cls: 'trcount', txt: n + ' / ' + m + ' done' }),
-        E('button', {
-          cls: 'trbtn',
-          type: 'button',
-          txt: n === m ? 'Clear this section' : 'Tick all',
-          on: () => {
-            const dd = done();
-            s.s.forEach((x, i) => (n === m ? delete dd[key(cur, i)] : (dd[key(cur, i)] = 1)));
-            ls.set('ls-train', dd);
-            fillTrain();
-          }
-        })
+        E('span', { cls: 'trcount', txt: n + ' / ' + m + ' done' + (na ? ' · ' + na + ' auto' : '') }),
+        nh
+          ? E('button', {
+              cls: 'trbtn',
+              type: 'button',
+              txt: nhd === nh ? 'Clear field steps' : 'Tick field steps',
+              title: 'The FIELD and TCS steps of this section (AUTO steps tick from the logic)',
+              on: () => tickHand([cur], nhd !== nh)
+            })
+          : null
       ]),
       s.note ? E('p', { cls: 'trnote', txt: s.note }) : null,
+      na && LV() && !LV().live() ? E('p', { cls: 'trview', txt: 'VIEW: AUTO steps tick only while the simulation runs. Press RUN, then do the steps in the Plant view or the Inputs list.' }) : null,
       ul,
       E('div', { cls: 'trnext' }, [
         cur > 0 ? E('button', { cls: 'trbtn', type: 'button', txt: '‹ ' + cap(L[cur - 1].t), on: () => show(cur - 1) }) : E('span'),
         cur < L.length - 1 ? E('button', { cls: 'trbtn go', type: 'button', txt: cap(L[cur + 1].t) + ' ›', on: () => show(cur + 1) }) : E('span')
       ])
     ].forEach(x => x && main.append(x));
+    const side = train.querySelector('.trside');
+    if (side) fillDetail(side);
   }
+  /* the live panel: a column on a wide screen, under the selected step on a tablet or phone */
+  const wide = () => window.matchMedia && matchMedia('(min-width: 1200px)').matches;
+  /* every second: latch the AUTO steps (live.js scan, RUN only) and refresh what is on the screen */
+  function tick() {
+    const L = LV();
+    if (!L) return;
+    let ch = [];
+    try {
+      ch = L.scan();
+    } catch (e) {}
+    if (!train || document.body.dataset.tab !== 'training') return;
+    if (ch.length) {
+      const f = document.activeElement,
+        fid = f && f.closest && f.closest('#trainws') ? f.id : '';
+      fillTrain();
+      if (fid && $(fid)) $(fid).focus();
+      return;
+    }
+    train.querySelectorAll('.trlive').forEach(e => {
+      const [si, i] = e.dataset.k.split('.').map(Number);
+      e.textContent = liveLine(si, i);
+    });
+    const det = train.querySelector('.trdet, .trside');
+    if (det && sel && !det.contains(document.activeElement)) fillDetail(det);
+  }
+  setInterval(tick, 1000);
   /* the procedure writes its titles in capitals: shown as a sentence, the tag-like words stay as written */
   const cap = t => {
-    const s = String(t).toLowerCase().replace(/\b(esp|swp|idf|fab|saf|paf|hp|lp|ats|dcs|mcc|ep|plc)\b/g, w => w.toUpperCase());
+    const s = String(t).toLowerCase().replace(/\b(esp|swp|idf|fab|saf|paf|hp|lp|ats|dcs|mcc|ep|plc|mw|tcs)\b/g, w => w.toUpperCase());
     return s.charAt(0).toUpperCase() + s.slice(1);
   };
   function show(si) {
     cur = si;
+    sel = null;
     ls.set('ls-train-sec', si);
     fillTrain();
     const m = train.querySelector('.trmain');
@@ -292,38 +458,49 @@
     pick.onchange = () => show(+pick.value);
     train.append(
       E('div', { cls: 'trhead' }, [
-        E('div', { cls: 'trtitle' }, [E('b', { txt: 'Start-up procedure' }), E('span', { txt: 'PR-OPE-5002 Rev 03 · ' + P().length + ' sections' })]),
+        E('div', { cls: 'trtitle' }, [E('b', { txt: 'Start-up procedure' }), E('span', { txt: 'PR-OPE-5002 Rev 03 + sync and load up to 150 MW · ' + P().length + ' sections' })]),
         E('div', { cls: 'trprog' }, [E('div', { cls: 'trbar', role: 'presentation' }, [E('i')]), E('span', { cls: 'trpct' })]),
         E('button', {
-          cls: 'trbtn',
+          cls: 'trbtn go',
           type: 'button',
           txt: 'Practise: Cold start',
-          title: 'Sets the plant cold (Start ▾ Cold) and opens the Plant view; the CHECK panel there has the steps of the app',
+          title: 'Sets the plant cold (Start ▾ Cold), clears the AUTO ticks and opens the Plant view: do the steps there, they tick here',
           on: () => {
             try {
               if (AN.cat !== 'an') AN.setCat('an');
             } catch (e) {}
             const b = $('loadcold');
             if (b) b.click();
+            if (LV()) LV().reset();
             goPlant();
           }
         }),
         E('button', {
           cls: 'trbtn',
           type: 'button',
+          txt: 'Assume field steps done',
+          title: 'Ticks every FIELD and TCS step (local valves, gauges, turbine panel) so that only the DCS steps are left',
+          on: () => tickHand(P().map((x, si) => si), true)
+        }),
+        E('button', {
+          cls: 'trbtn',
+          type: 'button',
           txt: 'Clear all ticks',
           on: () => {
-            if (!confirm('Clear the ticks of all ' + total()[1] + ' steps?')) return;
+            if (!confirm('Clear the ticks of all ' + total()[1] + ' steps (the AUTO steps tick again when the logic shows them done)?')) return;
             ls.set('ls-train', {});
+            if (LV()) LV().reset();
             fillTrain();
           }
         })
       ]),
       pick,
-      E('div', { cls: 'trbody' }, [E('nav', { cls: 'trlist', 'aria-label': 'Sections' }), E('div', { cls: 'trmain' })]),
-      E('p', { cls: 'trsrc', txt: 'From document-references/procedure-start-up-PR-OPE-5002-02.docx. A tag opens its info card when it is on the DCS drawings or lists; local valves and gauges are field items.' })
+      E('div', { cls: 'trbody' }, [E('nav', { cls: 'trlist', 'aria-label': 'Sections' }), E('div', { cls: 'trmain' }), E('aside', { cls: 'trside trdet', 'aria-label': 'Live signals of the selected step', 'aria-live': 'polite' })]),
+      E('p', { cls: 'trsrc', txt: 'From document-references/procedure-start-up-PR-OPE-5002-02.docx. AUTO = ticks itself from the logic (RUN), FIELD = local valve, gauge or panel, TCS = turbine control panel: tick these yourself.' })
     );
     document.body.append(train);
+    let wasWide = wide();
+    window.addEventListener('resize', () => wide() !== wasWide && ((wasWide = wide()), fillTrain()));
     fillTrain();
   }
 
