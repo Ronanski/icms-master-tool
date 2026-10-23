@@ -354,12 +354,15 @@
   }
   /* 2.4.0-beta.5 PLANT VIEW: the sheet that holds the controller (PID / PIDV) or MAN station of a tag; the same faceplate as the
      Operator pane, built for that one tag (A / M / R, SV, MV, trend, interlock); the engine is not changed */
-  let fpIx = null;
+  let fpIx = null,
+    fpOf = null;
   AN.fpFind = tag => {
     const T = String(tag || '').trim().toUpperCase();
     if (!T) return null;
-    if (!fpIx) {
+    /* 3.2.0-beta.10: built again when the sheet list changes; an index made while the page shows DITL (no ABC sheet) is not kept */
+    if (!fpIx || fpOf !== AN.sheets) {
       fpIx = {};
+      fpOf = AN.sheets;
       for (const sh of AN.sheets || []) {
         if (!/^ABC-/.test(sh.name) || /^ABC-000/.test(sh.name)) continue;
         let S;
@@ -378,8 +381,9 @@
             if (t !== 'MAN' && !fpIx[t]) fpIx[t] = sh.name;
           }
       }
+      if (!Object.keys(fpIx).length) fpIx = null;
     }
-    return fpIx[T] || null;
+    return (fpIx && fpIx[T]) || null;
   };
   AN.fpBuild = (tag, box) => {
     const nm = AN.fpFind(tag),
