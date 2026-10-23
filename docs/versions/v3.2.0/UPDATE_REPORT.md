@@ -361,3 +361,15 @@ Base: pinagsama ang **2.5.0-beta.20** (PR #34 / #35, logic at data) at ang **3.1
 - **Regression (huling build):** tests, loop_source, plant_utilities, hmi_op, plant_live, live_training, home_training, reset (0 / 51), unit_trip, view_run, force_manual 68 / 68: lahat PASS.
 - **Hindi nasubok:** tablet / exe / apk ng user. Instrument air: walang DCS signal at walang fail position ng bawat valve sa repo: hindi ginawang kondisyon.
 - **Status:** ipinush bilang Beta.
+
+## 3.2.0-beta.16 — Yugto C: Training, pagsasanay sa load change (AUTO at MANUAL)
+- **Problem (user 2026-10-23):** "paano automatic na na adjust ng mga parameters para maihold ang demand load at ... para malaman ng user ang tamang paggamit ng manual controls to attain the target load".
+- **As Found:** ang Training ay hanggang "Load up to 150 MW" lang; walang pagsasanay sa pagbabago ng load. Sa Training, ang EIC-TM ay "AUTO" ang sabi habang MANUAL ito dahil sa back-up command M.2016 (lahat ng 5 mode net = 1, pero ang hanap sa pangalang EIC-TM.MAN ay 0). Ang `loaddown.js` ay FAIL mula beta.8: hindi pumipindot ng RUN, at ang VIEW ang nagla-lock ng faceplate.
+- **Work Done (walang binago sa ABC / DITL logic at sa engine):**
+  - `src/ui/training/live.js`: dalawang section: "PRACTICE: LOAD CHANGE IN AUTO" (6 hakbang: CCS AUTO → HIC-ULD ▼▼ 120 MW → MW at coal bumababa nang kusa → MSP 118 ~ 128 hawak ng PIC-COBM → ▲▲ 150 MW → hold 5 min) at "PRACTICE: LOAD CHANGE BY HAND (MANUAL)" (5 hakbang: HIC-BM M, sumusunod ang EIC-TM → EIC-TM 120 MW at tumataas ang MSP → ibaba ang HIC-BM MV hanggang MSP 118 ~ 128 → itaas muna ang boiler master, saka ang turbine sa 150 MW → AUTO ulit). Ang bawat hakbang ay tumi-tick lang pagkatapos ng nauna. Ang mode ng MAN station ay mula sa mode nets (`AN.modeNets`).
+  - `src/ui/shell/home.js`: button "Practise: 150 MW load change" (Start at 150 MW, linis ng practice ticks lang, bukas ang AUTO practice).
+  - `tests/regress/loaddown.js`: RUN muna (test lang).
+- **As Left (sinubok sa built html, headless Chrome):** `training_practice.js` (bago): AUTO 100000 → ▼▼ 110000 → 20 min 111100 (MW 120.1, MSP 121.7, coal 73.3) → ▲▲ + 20 min 111111; MANUAL 10000 → EIC-TM 120 MW 11000 (MSP tumaas sa 140.7) → HIC-BM × 0.8 11100 (MSP 120.0) → 150 MW 11110 → AUTO 11111; button: naiwan 1 tick (hakbang 1, tama dahil 150 MW CCS agad). `loaddown.js` ALL PASS (TARGET 120, 138 sa 4 min, 120 sa 10 min, coal 85.2 → 71.8). Screenshot ng Training 1440 at 390 px: maayos.
+- **Regression:** training_practice, live_training, home_training (in-update: 48 section / 692 hakbang), loaddown, view_run: lahat PASS. Ebidensya ng laki ng LP bypass (para sa natitirang RH 9.3): flow diagram K1AU3-PD-012 LP bypass line HR-1-006 18" (mula 24" hot reheat) → mga 85 T/H sa 7.6 kg/cm2 sa ~60 m/s: tugma sa model (lpb 0.8 = 84 T/H); ang sobra ay galing sa ~80 T/H na steam ng FIC-CF 10 % (minimum ng script) sa bypass stage.
+- **Hindi nasubok:** tablet / exe / apk ng user. Ang 2 mintis ng CHECK start-up chain (RH 9.3 > 9.0 sa bypass stage, drum level −150 sa sync) ay hindi pa naayos.
+- **Status:** ipinush bilang Beta.

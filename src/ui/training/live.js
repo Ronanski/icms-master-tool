@@ -120,6 +120,13 @@ window.LS_LIVE = (function () {
       if (c.remote && c.svSw && S.rt.st[c.svSw.id] && S.rt.st[c.svSw.id].pk === 'A') return 'REM';
       return 'AUTO';
     }
+    /* 3.2.0-beta.16 (bug, fixed): the MODE NETS of the station (AN.modeNets: "TURBINE MASTER IN MANUAL" on ABC-001A ~ C, the nets the
+       engine and the faceplate write) first; the lookup of the name EIC-TM.MAN read 0 while the turbine master was MANUAL by its
+       back-up command M.2016 (all five mode nets 1), so the step said AUTO */
+    try {
+      const L = AN.modeNets ? AN.modeNets(f.t) || [] : [];
+      if (L.length) return L.some(([S2, n]) => +S2.rt.v[n] > 0.5) ? 'MAN' : 'AUTO';
+    } catch (e) {}
     const m = val(f.t + '.MAN');
     if (isFinite(m)) return m > 0.5 ? 'MAN' : 'AUTO';
     /* no .MAN address on the sheets (HIC-BM): the A / M switch of its set input, leg A = AUTO (hmi.js MAN station, check.js bmA) */
@@ -426,9 +433,41 @@ window.LS_LIVE = (function () {
     ['Load 150 MW.', VAL('MW', 148, null)],
     ['Hold 150 MW: MSP 118 ~ 128 kg/cm2, MST ≤ 545 °C, drum level ±150 mm, O2 3 ~ 6 %.', HOLD(300, ALL(VAL('MW', 147, 153), VAL('MSP', 118, 128), VAL('MST', null, 545), VAL('lvl', -150, 150), VAL('O2', 3, 6)))]
   ];
+  /* 3.2.0-beta.16 (plan phase C, user 2026-10-23: "paano automatic na na adjust ng mga parameters para maihold ang demand load at ... ang
+     tamang paggamit ng manual controls to attain the target load"): two PRACTICE sections at 150 MW. Each step ticks only after the
+     one before it (a practice is done in order). Targets: the load down of the app (tests/regress/loaddown.js: HIC-ULD 150 -> 120 MW at
+     HIC-MWRL 3 MW/min, coal 85 -> 72 T/H) and a manual run of the plant model (boiler master MANUAL: turbine master to 120 MW with the
+     boiler still at 150 MW = MSP 123 -> 141 kg/cm2 in 5 min; boiler master x 0.8 = MSP back to 122.6) */
+  const OUT = (t, lo, hi, u) =>
+    Object.assign(MV(t, lo, hi), {
+      now: () => {
+        const f = fp(t);
+        return (f ? f.t : t) + ' output ' + (f ? f1(mvOf(f)) : '—') + ' ' + u;
+      },
+      want: t + ' output ' + wr(lo, hi, u)
+    });
+  const SEQ = (si, L) => L.map((x, i) => (i ? [x[0], AFTER(si + '.' + (i - 1), x[1], 'step ' + i)] : x));
+  const X3 = SEQ(BASE_N + 2, [
+    ['Start at 150 MW with the coordinated control (CCS) in AUTO: boiler master HIC-BM and turbine master EIC-TM in AUTO, DCS control mode ON (I.0082 = 1).', ALL(MODE('HIC-BM', 'AUTO'), MODE('EIC-TM', 'AUTO'), BIT('I.0082', 1, 'DCS control mode ON'))],
+    ['Lower the unit load demand on HIC-ULD (▼▼) to 120 MW.', OUT('HIC-ULD', null, 121, 'MW')],
+    ['Watch the CCS: the MW comes down at 3 MW/min (HIC-MWRL) and the boiler master lowers the coal by itself (about 72 T/H at 120 MW).', HOLD(60, ALL(VAL('MW', 117, 123), VAL('coal', null, 78)))],
+    ['The main steam pressure stays at its set point by itself (PIC-COBM 123 kg/cm2): MSP 118 ~ 128, drum level ±150 mm.', HOLD(120, ALL(VAL('MW', 117, 123), VAL('MSP', 118, 128), VAL('lvl', -150, 150)))],
+    ['Raise the unit load demand on HIC-ULD (▲▲) back to 150 MW.', OUT('HIC-ULD', 149, null, 'MW')],
+    ['Hold 150 MW: MSP 118 ~ 128 kg/cm2, drum level ±150 mm, O2 3 ~ 6 %.', HOLD(300, ALL(VAL('MW', 147, 153), VAL('MSP', 118, 128), VAL('lvl', -150, 150), VAL('O2', 3, 6)))]
+  ]);
+  const X4 = SEQ(BASE_N + 3, [
+    ['At 150 MW put the boiler master HIC-BM to MANUAL (M). The turbine master EIC-TM goes to MANUAL with it (back-up command M.2016 of the drawing).', ALL(MODE('HIC-BM', 'MAN'), MODE('EIC-TM', 'MAN'))],
+    ['Lower the turbine master EIC-TM (▼) to 120 MW. Watch the main steam pressure RISE: the boiler still fires for 150 MW.', ALL(OUT('EIC-TM', null, 121, 'MW'), VAL('MW', null, 125))],
+    ['Lower the boiler master HIC-BM MV (about 54 % for 120 MW) until the coal and the pressure settle: MSP 118 ~ 128 kg/cm2 at 120 MW.', HOLD(120, ALL(VAL('MW', 117, 123), VAL('MSP', 118, 128)))],
+    ['Raise the boiler master first (about 67 % for 150 MW), then the turbine master to 150 MW; keep MSP 118 ~ 128 kg/cm2.', HOLD(120, ALL(VAL('MW', 147, 153), VAL('MSP', 118, 128)))],
+    ['Put HIC-BM back to AUTO once its back-up command is gone (M.2013 = 0), then EIC-TM to AUTO.', ALL(MODE('HIC-BM', 'AUTO'), MODE('EIC-TM', 'AUTO'))]
+  ]);
+  const XS = [X1, X2, X3, X4];
   if (!PROC.some(s => s.x)) {
     PROC.push({ t: 'SYNCHRONIZATION AND INITIAL LOAD (APP)', x: 1, note: 'Added by the app: PR-OPE-5002 ends at Solid firing. Targets from the M4 cold start of the app (CHECK) and the FHI design data.', s: X1.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'LOAD UP TO 150 MW (APP)', x: 1, note: 'Added by the app. PR-OPE-5002 sec 44: boiler follow until 90 MW; then coordinated control to 150 MW (FHI MCR 460 T/H).', s: X2.map(x => ({ t: x[0], g: [] })) });
+    PROC.push({ t: 'PRACTICE: LOAD CHANGE IN AUTO (APP)', x: 1, note: 'Added by the app. Start ▾ > Start at 150 MW (or after Load up), RUN. See how the coordinated control holds the demand: you only move the target MW.', s: X3.map(x => ({ t: x[0], g: [] })) });
+    PROC.push({ t: 'PRACTICE: LOAD CHANGE BY HAND (MANUAL) (APP)', x: 1, note: 'Added by the app. Start ▾ > Start at 150 MW, RUN. You are the CCS: the turbine master sets the MW, the boiler master sets the fire; keep the pressure.', s: X4.map(x => ({ t: x[0], g: [] })) });
   }
 
   /* ---------- the general rules (step text + its tags), after the table ---------- */
@@ -459,7 +498,7 @@ window.LS_LIVE = (function () {
       st = sec && sec.s[i];
     if (!st) return { k: 'field' };
     let c = null;
-    if (sec.x) c = (si === BASE_N ? X1 : X2)[i][1];
+    if (sec.x) c = XS[si - BASE_N][i][1];
     else {
       const r = R.find(x => x[0] === si + 1 && x[1].test(st.t));
       c = r ? r[2] : general(st); /* a null in the table: a field step on purpose */
@@ -533,9 +572,11 @@ window.LS_LIVE = (function () {
     const hs = q.c.hold && since[key] != null ? Math.max(0, simT() - since[key]) : null;
     return { q, done: !!LAT[key], ok, now, hold: q.c.hold ? [hs, q.c.hold] : null };
   }
-  function reset() {
-    LAT = {};
-    for (const k in since) delete since[k];
+  /* from: only the ticks of the sections from this one on (3.2.0-beta.16: a practice is done again without clearing the start-up) */
+  function reset(from) {
+    if (from == null) LAT = {};
+    else for (const k in LAT) if (+k.split('.')[0] >= from) delete LAT[k];
+    for (const k in since) if (from == null || +k.split('.')[0] >= from) delete since[k];
     wrt(LAT);
   }
   /* why a controller step waits: the force-manual signals of the drawing (why.js) */
@@ -586,5 +627,5 @@ window.LS_LIVE = (function () {
     const r = lx()[l];
     return r && r[0] ? r[0].sh : null;
   };
-  return { kind, state, rows, scan, reset, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N };
+  return { kind, state, rows, scan, reset, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2 };
 })();
