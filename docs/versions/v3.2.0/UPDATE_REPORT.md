@@ -307,3 +307,13 @@ Base: pinagsama ang **2.5.0-beta.20** (PR #34 / #35, logic at data) at ang **3.1
 
 - **Hindi nasubok:** tablet / exe / apk ng user; ang pagtsek ng bawat AUTO hakbang na hindi dinadaanan ng CHECK chain ay sa mismong pindot ng operator (parehong signal, hindi pa sinubok isa-isa).
 - **Status:** ipinush bilang Beta.
+
+## 3.2.0-beta.11 — F(X): operational effect (Sa HMI, Kapag mali / sira, Try it)
+- **Problem (user, 2026-10-23 4:28 ~ 4:46 PM PHT):** "assume na may power plant basic knowledge kami ... paano sya ipapaliwanag sa hindi DCS engineer"; "ok ung existing, pero parang may kulang pa"; "more on operations effect or function". Card: "Lahat ng tatlo".
+- **As Found:** ang About ng bawat table ay may What / From / To / Why / In operation / AUTO-MANUAL / If you change it / Reading the curve, pero walang sinasabi kung ano ang makikita sa HMI, ano ang mapapansin kapag mali o sira ang input, at walang paraan para subukan at basahin ang epekto sa planta.
+- **Work Done (walang binago sa logic, engine, drawing at mga curve):**
+  - `src/ui/fx/fx-hmi.js` (bago): sa 91 table, **On the HMI** (aling value sa graphics / faceplate ang gumagalaw), **If it is wrong or the input fails** (sintomas sa planta, para sa troubleshooting), at ang epekto kapag tumaas / bumaba ang output.
+  - `fx.js` **Try it**: slider sa input; ipinapakita ang output at isang pangungusap: "At 30 % the table gives 0.92. If the input goes up from here: ... If it goes down: ...". Sumusunod ito sa edit ng table; kapag patag ang curve, sinasabing walang epekto. Kasabay na gumagalaw ang tuldok sa chart at ang "Try an input" box.
+- **As Left (sinubok sa built html):** `fx_page.js` pasado (91 / 91 may bagong rows; S1-LN3 sa 30 % = 0.92, "speeds the feeders up"); `view_run`, `layout`, `home_training`, `npm test` pasado. Screenshots ng S1-LN3 at S2-LN3 sa 1440 × 900, 1280 × 800, 800 × 1280, 390 × 844: walang lumalampas, 0 page error.
+- **Hindi nasubok:** tablet / exe / apk ng user.
+- **Status:** ipinush bilang Beta.

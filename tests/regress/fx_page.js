@@ -56,5 +56,11 @@ await p.setViewportSize({width:390,height:844});await p.waitForTimeout(800);awai
 const ph=await p.evaluate(()=>{const s=document.getElementById('fxpick');const lv=getComputedStyle(document.querySelector('#fxws .fxleft')).display;s.value='S2-LN12';s.dispatchEvent(new Event('change'));
  return {sel:getComputedStyle(s).display,lv,hd:[...document.querySelectorAll('#fxpaper .fxst')].map(x=>x.textContent).join('|'),ow:document.documentElement.scrollWidth}});
 ck(ph.sel!=='none'&&ph.lv==='none'&&/^STN102 LINEARIZE\|S2-LN-?12$/.test(ph.hd)&&ph.ow<=390,'phone: select instead of the list, S2-LN12 picked -> '+ph.hd+', page width '+ph.ow);
+// 3.2.0-beta.11: every table has On the HMI, If it is wrong, and the rise / fall effect; Try it on S1-LN3 at 30 % = 0.92, feeders up
+const tr=await p.evaluate(async()=>{const miss=Object.entries(LS_FXINFO).filter(([k,v])=>!(v.hmi&&v.bad&&v.rise&&v.fall)).map(x=>x[0]);lsFx('S1-LN3');await new Promise(r=>setTimeout(r,500));
+ const s=document.getElementById('fxslide');s.value='30';s.dispatchEvent(new Event('input'));const h4=[...document.querySelectorAll('#fxws .fxabout h4')].map(x=>x.textContent);
+ return {miss,n:Object.keys(LS_FXINFO).length,v:document.querySelector('#fxws .fxtv').textContent,say:document.querySelector('#fxws .fxsay').textContent,h4,tryv:document.getElementById('fxtry').value}});
+ck(!tr.miss.length&&tr.n===91&&tr.h4.includes('On the HMI')&&tr.h4.includes('If it is wrong or the input fails'),'91 tables with On the HMI / If it is wrong / effect: missing '+(tr.miss.join(',')||'none'));
+ck(/30 %\s+→\s+0\.92/.test(tr.v)&&/speeds the feeders up/.test(tr.say)&&tr.tryv==='30','Try it S1-LN3 at 30 %: "'+tr.v+'", '+tr.say.slice(0,120));
 ck(!errs.length,'no page error'+(errs.length?': '+errs.slice(0,3).join(' | '):''));
 console.log(f?'FAILED '+f:'ALL PASS');await b.close();process.exit(f?1:0)})();

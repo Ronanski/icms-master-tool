@@ -104,3 +104,10 @@ body.app2 #fxws button.fxchip{border-radius:1.125rem!important;border-color:var(
  #fxws .fxhead .fxgrow{display:none}
  #fxws .fxpaper{min-width:36rem}
 }
+/* 3.2.0-beta.11 Try it: a slider on the input, the output and the effect in the plant */
+#fxws .fxtryit{padding:.75rem .875rem;border:1px solid var(--c-accbd);border-radius:var(--r);background:var(--c-accbg)}
+#fxws .fxslrow{display:flex;align-items:center;gap:.625rem;font:400 .8125rem var(--mf);color:var(--c-dim)}
+#fxws .fxslrow input{flex:1;min-width:0;accent-color:var(--c-acc);min-height:2rem}
+#fxws .fxtv{display:block;margin:.25rem 0;font:600 1rem var(--mf);font-variant-numeric:tabular-nums}
+#fxws .fxtryit p.fxsay{font-size:.9375rem;line-height:1.5}
+@media (pointer:coarse){#fxws .fxslrow input{min-height:2.75rem}}
