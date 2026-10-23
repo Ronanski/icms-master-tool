@@ -16,7 +16,8 @@ await p.goto('file://'+require('path').resolve(html));await p.waitForTimeout(250
 await p.waitForFunction(()=>AN.sheets&&AN.sheets.length>=54&&window.LS_LIVE&&window.CHECK,null,{timeout:90000});await p.waitForTimeout(1500);
 // 1
 const a=await p.evaluate(()=>{const o=LS_LIVE.audit();return {auto:o.auto,field:o.field,tcs:o.tcs,miss:o.miss.map(x=>x.join('|'))}});
-ck(a.auto>=80&&a.tcs>=40&&!a.miss.length,'kinds: auto '+a.auto+', field '+a.field+', tcs '+a.tcs+'; signals not found: '+(a.miss.join(' ; ')||'none'));
+/* FCV-DO1012 = HICDO1012, a MAN station with no .MAN address and no A / M switch on the drawing: its mode cannot be read, a FIELD step */
+ck(a.auto>=80&&a.tcs>=40&&a.miss.every(x=>/FCV-DO1012/.test(x)),'kinds: auto '+a.auto+', field '+a.field+', tcs '+a.tcs+'; signals not found: '+(a.miss.join(' ; ')||'none'));
 // 2
 const v=await p.evaluate(async()=>{AN.reset();AN.plantLoad150();AN.viewSet(true);await new Promise(r=>setTimeout(r,2500));return {n:Object.keys(LS_LIVE.done()).length,live:LS_LIVE.live()}});
 ck(v.n===0&&!v.live,'VIEW at 150 MW: '+v.n+' AUTO steps ticked (live '+v.live+')');
