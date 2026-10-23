@@ -98,6 +98,7 @@ function viewSet(on) {
   AN.view = on;
   bVw.classList.toggle('on', on);
   document.body.classList.toggle('anview', on);
+  if (AN.cat === 'an') stE.textContent = on ? stView : stAn;
   if (on) setRun(false);
   else stepUi();
   const sh = cs();
@@ -129,6 +130,23 @@ function coldIfNone() {
   } catch (e) {
     return false;
   }
+}
+/* 3.2.0-beta.18 (VIEW/TRACE audit, user 2026-10-23: "patay pa naman ang boiler mo ... bkt may value na si MSP?"): the ABC page
+   opened by the operator, before any starting state is picked, showed the drawings' defaults in VIEW too (MSP 75 kg/cm2, drum level
+   -566.6 mm, drum pressure 125 kg/cm2, LICBR1001 out 25 %): numbers of no plant. Now the page opens with the plant COLD (boiler off), as
+   RUN and Start > Cold do. Only when the operator opened it (a click / key on the page, or the ABC page restored from the last visit)
+   and nothing of a past session is saved (no force, input or switch kept): a saved session is left as it was. The tests that drive
+   AN.setCat by script keep the drawings' defaults. */
+function coldShow() {
+  if (AN.startState || AN.cat !== 'an' || AN._cold0) return;
+  const ua = navigator.userActivation;
+  if (!AN._uiCold && !(ua && ua.hasBeenActive)) return;
+  AN._cold0 = 1;
+  const kept = Object.values(AN.sv || {}).some(o => o && ['force', 'ext', 'ai', 'sw', 'man', 'p'].some(k => o[k] && Object.keys(o[k]).length));
+  if (kept || !coldIfNone()) return;
+  settle();
+  paint();
+  panelUpd(true);
 }
 const COLD_MSG = 'No starting state was picked: the plant starts COLD (boiler off, drum 0 kg/cm2, no fire, fans stopped). Pick Start ▾ in the PLANT VIEW for At 150 MW, Warm or Hot.';
 bRun.onclick = () => {
@@ -370,6 +388,12 @@ function trList(d) {
     })
   );
 }
+/* 3.2.0-beta.18 (VIEW/TRACE audit): ↩ Back after a trace jump came back to the sheet with nothing selected (the trace was lost):
+   the jump keeps the selection, goBack (links-canvas.js) puts it back */
+function selKeep() {
+  const s = AN.sel;
+  return s ? { net: s.net != null ? s.net : null, nets: s.nets, blk: s.blk ? s.blk.id : null } : null;
+}
 function trJump(tsh, net) {
   const nets = Array.isArray(net) ? net.slice() : [net];
   net = nets[0];
@@ -390,7 +414,7 @@ function trJump(tsh, net) {
   if (k >= 0) P.length = k;
   P.push({ name: tsh.name, net, nets, blk: null });
   if (tsh !== c0) {
-    AN.hist.push({ name: c0.name, view: (AN.av[c0.name] || []).slice() });
+    AN.hist.push({ name: c0.name, view: (AN.av[c0.name] || []).slice(), sel: selKeep() });
     updBack();
   }
   go(i);
@@ -410,7 +434,7 @@ function trGoCrumb(k) {
   if (i < 0) return;
   if (AN.sheets[i] !== cs()) {
     const c0 = cs();
-    AN.hist.push({ name: c0.name, view: (AN.av[c0.name] || []).slice() });
+    AN.hist.push({ name: c0.name, view: (AN.av[c0.name] || []).slice(), sel: selKeep() });
     updBack();
   }
   go(i);

@@ -37,7 +37,7 @@ function setCat(c) {
   document.body.classList.toggle('an', c === 'an');
   ptab.style.display = c === 'an' && anp.classList.contains('min') ? 'block' : 'none';
   if (c === 'an' && $('slive')) sLv.value = $('slive').value;
-  stE.textContent = c === 'an' ? stAn : stOld;
+  stE.textContent = c === 'an' ? (AN.view ? stView : stAn) : stOld;
   catB.forEach(x => x._u());
   if (c === 'an') {
     simSaved = SIM;
@@ -61,6 +61,7 @@ function setCat(c) {
         AN.key = null;
         AN.lkey = null;
         render();
+        coldShow();
       })
       .catch(e => {
         AN.lkey = null;
@@ -79,6 +80,9 @@ const stE = $('st'),
   stOld = stE.textContent,
   stAn =
     'Analog mode: click a block = inspect · click a digital input (tag or wire) = 1 / 0 · Drag = pan · Wheel / pinch = zoom · Space = run / pause · PageUp / PageDown = previous / next sheet · F = fit · Inputs and tuning are in the right panel (saved in this browser)';
+/* 3.2.0-beta.18 (VIEW/TRACE audit): in VIEW the status bar said "click a digital input = 1 / 0", which VIEW does not do */
+const stView =
+  'VIEW / TRACE: click a block or a wire = inspect and trace (blue = comes from, magenta = goes to) · click a ◀ / ▶ row in the panel = follow it to the other sheet, ↩ Back returns · Drag = pan · Wheel / pinch = zoom · F = fit · Press RUN to simulate, force or operate';
 /* ---------- wrapped render / drawSide ---------- */
 const _render = render,
   _drawSide = drawSide;

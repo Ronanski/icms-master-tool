@@ -382,3 +382,31 @@ Base: pinagsama ang **2.5.0-beta.20** (PR #34 / #35, logic at data) at ang **3.1
 - **Regression:** check_panel (lahat ng 17 CHECK scenario + share), live_training, training_practice, home_training, loop_source, plant_utilities, hmi_op, plant_live, unit_trip, reset (0 / 51), view_run, force_manual 68 / 68, loaddown, tests: lahat PASS.
 - **Hindi nasubok:** tablet / exe / apk ng user.
 - **Status:** ipinush bilang Beta.
+
+## 3.2.0-beta.18 — VIEW / TRACE audit (bahagi 1)
+
+**Problem:** Sinuri ko ang VIEW / TRACE mode sa app gamit ang tunay na click, kasama ang screenshot (ABC-010 → ABC-011 at pabalik, Plant view, DITL-56).
+
+**As Found (mga bug):**
+1. Bago pumili ng Start, ang ABC page sa VIEW ay nagpapakita ng default ng drawing: MSP 75, drum level −566.6 mm, drum pressure 125, LICBR1001 out 25 %. Walang plantang ganito.
+2. Kapag pinindot ang ↩ Back pagkatapos sumunod sa trace sa ibang sheet, nawawala ang napiling block at ang trace.
+3. Sa card ng napiling wire, may linyang "null", at ang pangalan ay "net 39" lang.
+4. Mali ang hint sa status bar habang VIEW: "click a digital input = 1 / 0" at "Paused: ... press Run", na hindi ginagawa ng VIEW.
+
+**Work Done:**
+1. Pagbukas ng operator sa ABC page, o kapag Reset, COLD na agad ang planta (boiler patay: MSP 0, FW 0), gaya ng RUN at Start > Cold. Iniiwan ang session na may naka-save na force o input.
+2. Ibinabalik ng ↩ Back ang napili at ang trace.
+3. Ang wire na walang sariling tag ay pinapangalanan ayon sa block na nagpapatakbo nito ("F(X) out") o sa pinanggalingan nito ("from ABC-010 (circle DP)").
+4. May sariling VIEW hint na sa status bar. Hindi na lumalabas ang Paused hint habang VIEW.
+
+Engine at logic: walang binago.
+
+**As Left:**
+- VIEW bago Start: LOAD 0.0, MSP 0.0, DRUM 8.2, FW 0.2.
+- Back: bumabalik sa ABC-010 na napili pa rin ang LICBR1001.
+- Ang wire card ay nagpapakita ng "from ABC-010 (circle DP)".
+
+**Status:** Nakita pero hindi pa naaayos (susunod na bahagi):
+- Sa Cold, ang furnace pressure ay ~200 mmH2O kahit patay ang fans. Dapat ~0.
+- Ang PV ng HP bypass PICMS1006 ay nananatiling 122 habang 0 ang PT-MS1006.
+- Sa VIEW, nakatago ang mga value sa drawing kahit naka-ON ang Values / Wire values (para sa proposal).
