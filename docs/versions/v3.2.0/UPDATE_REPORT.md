@@ -410,3 +410,20 @@ Engine at logic: walang binago.
 - Sa Cold, ang furnace pressure ay ~200 mmH2O kahit patay ang fans. Dapat ~0.
 - Ang PV ng HP bypass PICMS1006 ay nananatiling 122 habang 0 ang PT-MS1006.
 - Sa VIEW, nakatago ang mga value sa drawing kahit naka-ON ang Values / Wire values (para sa proposal).
+
+## 3.2.0-beta.19 — Furnace pressure sa Cold; pagbukas na Cold para sa operator lang
+
+**Problem:**
+1. Sa Cold (patay ang lahat ng fan), ~200 mmH2O ang furnace pressure (PT-FG1085) sa Plant view.
+2. Sa beta.18, ang "Cold sa pagbukas ng ABC page" ay umaandar din sa mga test na script ang nagpapatakbo. Dahil dito, nagbago ang panimula ng mga test, at bumagsak ang isang timer test: ABC-013 #31 TPS, 298 imbes na 300 s.
+
+**Work Done:**
+1. `unit.js`: kapag walang ID fan at walang hangin, bukas ang furnace sa stack, kaya 0 mmH2O. Mabilis itong bumababa (5 s) at hindi na sumusunod sa 65 s ng draft loop. Kapag tumatakbo ang ID fan, walang binago sa model.
+2. Ang Cold sa pagbukas ay umaandar lang kapag may tunay na click o key ng operator, o kapag naibalik ang ABC page mula sa huling pagbisita.
+
+**Sinubok:**
+- Cold: furnace pressure 0.0.
+- CHECK: IDF trip 7/7, cold 10/10, coal 9/9, bypass 8/8, roll 11/11, 45 → 150 MW 14/14.
+- Tunay na click: pagbukas at Reset = MSP 0.
+
+**Hindi isinama:** ang PV ng HP bypass PICMS1006 sa Cold ay nananatiling 122. Ang dahilan ay ang SELECT CIRCUIT ng drawing: binabasa nito ang 0 bilang nawalang transmitter at hinahawakan ang huling value (user rule v1.20.34). Sinubukan kong bigyan ng 0.1 % ang transmitter, pero bumagsak ang roll at ang 45 → 150 MW (MSP 111, drum −289). Kaya ibinalik ko ito. Kailangan itong suriin kasama ang operator script.
