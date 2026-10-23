@@ -62,7 +62,7 @@ function centerOn(x, y) {
 function jumpTo(sh2, c2) {
   const cur_ = cs(),
     pv = (AN.av[cur_.name] || []).slice();
-  AN.hist.push({ name: cur_.name, view: pv });
+  AN.hist.push({ name: cur_.name, view: pv, sel: selKeep() });
   updBack();
   if (sh2 !== cur_) {
     go(AN.sheets.indexOf(sh2));
@@ -90,6 +90,19 @@ function goBack() {
   if (h.view.length) {
     AN.av[h.name] = h.view;
     $('svg').setAttribute('viewBox', h.view.join(' '));
+  }
+  /* 3.2.0-beta.18: the selection (and the trace) of that sheet comes back too */
+  const S = cs().S,
+    q = h.sel;
+  if (q && S) {
+    const blk = q.blk != null ? S.blk.find(x => x.id === q.blk) : null;
+    AN.sel = blk ? { blk } : q.net != null ? { net: q.net, nets: q.nets } : null;
+    const P = AN.trPath || [],
+      k = P.findIndex(x => x.name === h.name);
+    if (k >= 0) P.length = k + 1;
+    selBox();
+    paint();
+    panelUpd(true);
   }
 }
 AN.cj = {};
@@ -240,7 +253,7 @@ function connClick(c) {
         );
         return;
       }
-      AN.hist.push({ name: sh.name, view: (AN.av[sh.name] || []).slice() });
+      AN.hist.push({ name: sh.name, view: (AN.av[sh.name] || []).slice(), sel: selKeep() });
       updBack();
       go(AN.sheets.indexOf(cand[0]));
       msg('Opened ' + cand[0].name + ' (circle ' + c.num + ' was not found there, check by eye).');

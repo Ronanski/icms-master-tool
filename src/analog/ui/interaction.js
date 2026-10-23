@@ -313,6 +313,12 @@ sSpd.onchange = () => {
 bRst.onclick = () => {
   AN.startState = null;
   reset();
+  /* 3.2.0-beta.18: and the plant is COLD at once (VIEW shows boiler off, not the drawings' defaults MSP 75) */
+  if (coldIfNone()) {
+    settle();
+    paint();
+    panelUpd(true);
+  }
 };
 bFit.onclick = fitView;
 bVal.onclick = () => {

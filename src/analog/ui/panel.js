@@ -550,7 +550,7 @@ const num = (v, f, st) => {
   return i;
 };
 function pauseHint(sh) {
-  if (AN.run || !sh || !sh.S || Date.now() - (pauseHint.t || 0) < 15000) return;
+  if (AN.run || AN.view || !sh || !sh.S || Date.now() - (pauseHint.t || 0) < 15000) return;
   if (sh.S.blk.some(b => ['VLV', 'ACT', 'TON', 'TOF', 'TPS', 'TPV', 'RATE', 'RAMPB', 'LAG'].includes(b.k))) {
     pauseHint.t = Date.now();
     msg('Paused: the value is applied, but valves, timers and ramps only move after you press ▶ Run or Next ▶.');

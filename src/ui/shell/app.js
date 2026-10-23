@@ -1028,13 +1028,23 @@
         if (key !== cardKey) {
           cardKey = key;
           card.textContent = '';
-          const name = b ? b.tag || (b.txt || []).filter(Boolean)[1] || b.k + ' #' + b.id : nmf(s.net),
+          /* 3.2.0-beta.18 (VIEW/TRACE audit): a wire with no tag of its own showed "net 39" and a line "null" (no block text):
+             now the name of the block that drives it, as the trace rows ("F(X) out"), and no empty line */
+          const drv = !b && /^net \d+$/.test(nmf(s.net)) ? S.blk.find(x => (x.o || []).includes(s.net)) : null,
+            lk = !b && !drv && S.xlk ? S.xlk[s.net] : null,
+            name = b
+              ? b.tag || (b.txt || []).filter(Boolean)[1] || b.k + ' #' + b.id
+              : drv
+                ? (drv.tag || drv.k) + ' out'
+                : lk && lk.from
+                  ? 'from ' + lk.from.name + (lk.num != null ? ' (' + (lk.tag ? 'tag ' : 'circle ') + lk.num + ')' : '')
+                  : nmf(s.net),
             kind = b ? b.k : 'WIRE',
             fp = b && b.tag && /^(PID|PIDV|MAN)/.test(b.k);
           card.append(
             E('div', { cls: 'sch' }, [E('small', { txt: b ? 'SELECTED BLOCK' : 'SELECTED WIRE' }), E('span', { cls: 'chip', txt: kind })]),
             E('b', { cls: 'scn', txt: name }),
-            b && b.txt ? E('div', { cls: 'scd', txt: b.txt.filter(Boolean).join(' · ') }) : null
+            ...(b && b.txt ? [E('div', { cls: 'scd', txt: b.txt.filter(Boolean).join(' · ') })] : [])
           );
           const grid = E('div', { cls: 'scv' });
           const cell = (lab, n) => {
