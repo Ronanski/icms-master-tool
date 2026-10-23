@@ -118,6 +118,9 @@ function lnOpen() {
   );
 }
 bLn.onclick = () => {
+  /* 3.2.0-beta.7: the F(X) curves page (src/ui/fx/fx.js: sheet like the LINEAR CURVE workbook, editable table, explanation);
+     this panel (import / export of whole tables) opens from that page */
+  if (window.lsFx && window.lsFx()) return;
   if (anln.style.display === 'block') {
     anln.style.display = 'none';
     anln.hidden = true;

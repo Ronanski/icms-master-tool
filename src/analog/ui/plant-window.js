@@ -2721,7 +2721,10 @@ function selUpd0_(d) {
           box.style.display = 'block';
         } else box.style.display = 'none';
       };
-      d.append(h$('div', { cls: 'r' }, [btn]), box);
+      /* 3.2.0-beta.7: the whole sheet of this table (workbook look, explanation, live point) */
+      const pg = h$('button', { txt: 'F(X) page', title: 'Open the F(X) curves page on ' + key + ': the sheet as in the LINEAR CURVE workbook, what it does, where it goes' });
+      pg.onclick = () => window.lsFx && window.lsFx(key);
+      d.append(h$('div', { cls: 'r' }, [btn, pg]), box);
     }
     if (pts && pts.length > 1) {
       const NS = 'http://www.w3.org/2000/svg',

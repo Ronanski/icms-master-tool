@@ -617,7 +617,7 @@
     srch.after(seg);
     /* VIEW ribbon: Navigate / View / Layers / Reference (the group name is under the buttons) */
     const ioBtn = E('button', { txt: 'I/O list', title: 'LIBRARY: I/O list and memory lists', on: () => setTab('library') }),
-      fxBtn = E('button', { txt: 'F(X)', title: 'F(X) tables (linear curves)', on: () => ln && ln.click() }),
+      fxBtn = E('button', { txt: 'F(X)', title: 'F(X) curves: the linear tables as in the workbook, editable, with what each one does', on: () => ln && ln.click() }),
       gRef = E('div', { cls: 'tb g-ref', 'data-label': 'REFERENCE' }, [ioBtn, AN_(fxBtn)]);
     gNav.dataset.label = 'NAVIGATE';
     gView.after(gRef);
@@ -1165,7 +1165,7 @@
       [/^Audit/, 'Blocks and links the reader could not resolve.'],
       [/^Health/, 'Every sheet: OK, issue or failed.'],
       [/^Review marks/, 'Orange boxes where a link is in doubt.'],
-      [/^F\(X\) tables/, 'Linear curves from the workbook.'],
+      [/^F\(X\) tables/, 'Each linear curve as in the LINEAR CURVE workbook: edit the table, see what it does and where it goes.'],
       [/^Assumed/, 'Inputs that start from an assumed value.'],
       [/^DITL signals/, 'DITL addresses of the open sheet.'],
       [/^Second sheet/, 'Open another sheet side by side.'],

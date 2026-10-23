@@ -194,3 +194,37 @@ Base: pinagsama ang **2.5.0-beta.20** (PR #34 / #35, logic at data) at ang **3.1
 | Screen walk | PC 1440 × 900, tablet 1280 × 800 / 800 × 1280, phone 390 × 844. 9 screen bawat sukat, 0 page error. Sa 150 MW: "NO ALARM". |
 
 **Status:** nasa branch, hindi pa naka-push. Hinihintay ang pasya ng user.
+
+## 3.2.0-beta.7 — F(X) curves page: sheet na gaya ng workbook, table na pwedeng i-edit, paliwanag ng bawat LN
+- **Problem (user, 2026-10-23 12:33 PM PHT):** "gusto ko magkaroon ng option na makikita mo ang table tulad ng sa excel nya, at doon ka rin makakapag-edit ng values para malaro mo response ng planta" (ang itsura ay ang `document-references/linear-curves-fx.xls`), at "explanation ang bawat linear ... saan ito nanggaling hanggang sa huling pupuntahan, purpose, function, effect, causes".
+- **As Found:**
+  - Ang F(X) tables button ay nagbubukas lang ng kahon para mag-paste ng CSV / JSON at listahan ng bilang ng table. Walang kurba, walang table na gaya ng workbook, walang paliwanag.
+  - Ang pag-edit ng LX / LY ay nasa Inspector lang (kapag pinili ang FX block sa drawing), maliit na listahan, walang kurba ng buong sheet.
+  - 91 table ang nasa app (S1 44, S2 23, S3 24); 89 ang sheet sa workbook (ang S1-LN38 / LN39 ay galing sa drum level calculation file).
+- **Work Done (walang binago sa logic, engine at drawing; ang table data ay pareho):**
+  - Bagong page **F(X) curves** (`src/ui/fx/fx.js`, `fx.css`): binubuksan ng "F(X) tables" (Tools), ng "F(X)" sa ribbon ng ABC, at ng bagong "F(X) page" sa tabi ng "Edit table" sa Inspector ng FX block.
+    - Kaliwa: listahan ng 91 table ayon sa station (STN101 / 102 / 103), may search (LN, title, tag). Sa phone: dropdown.
+    - Ang sheet ay kopya ng workbook: STN10x LINEARIZE, Ptrn No., kurba (abong plot, putol-putol na grid, asul na linya, pangalan ng axis mula mismo sa chart ng workbook: hal. HS-COAL.MV / COAL CORR. CONSTANT), table X - INPUT | RANGE | Y - OUTPUT | RANGE | NO. | LX | LY, at title block (JOB NAME, TITLE, Ptrn No., DWG No.). Puting papel kahit madilim ang app.
+    - Bawat X, Y, LX at LY ay pwedeng i-edit (pindot o Enter, Esc = cancel, arrow = lipat). Ito ang PAREHONG edit ng Inspector (`AN.lne`): naka-save, kasama sa project file, hindi nabubura ng Reset ng simulation. Dilaw ang row na iba sa workbook; "edited" sa listahan. May "Reset this table" at "Reset all edits".
+    - Ang tumatakbong sheet ay gumagamit agad ng bagong value. Pulang tuldok sa kurba = live na input / output kapag tumatakbo ang sheet na gumagamit nito; "Try an input" = isulat ang X, makikita ang Y.
+    - **About this curve:** What it does · Input comes from · Output goes to · Why it is there · If you change it · Used on (pindot = bubuksan ang sheet) · mga signal bago at pagkatapos (galing sa drawing sa app, pindot = info card).
+  - Paliwanag ng 91 table (`src/ui/fx/fx-info.js`): isinulat mula sa title ng drawing, axis ng workbook chart, signal path sa app, I/O at memory list, PR-OPE-5002 at FHI design data.
+  - Signal path at axis names (`src/ui/fx/fx-paths.js`) ay ginawa ng `tools/fx/trace.js` (binabasa ang bawat F(X) block sa built app: 111 block) + `tools/fx/axis.py` (text box ng chart sa workbook) + `tools/fx/paths.py`.
+  - Engine: inilabas lang ang mga dating function (`AN.lnTables`, `lnApplyEdits`, `lneSave`, `lnResolve`, `lnOpen`) sa `boot.js`; ang dating paste panel ay bukas pa rin mula sa "Import / export".
+- **As Left (sinubok sa built html, headless Chrome):**
+
+| Test | Ano ang nakita |
+|---|---|
+| `fx_page.js` | Ang "F(X) tables" ay nagbubukas ng page (sarado ang lumang paste panel): 91 / 91 table, STN101 / 102 / 103. |
+| `fx_page.js` | S1-LN3: 16 row; row 14 = X 50 / Y 1 / LX 50 % / LY 100 %, row 15 = X 100 / Y 1.2; title block S1-LN-03 / ABC-004A; axis HS-COAL.MV / COAL CORR. CONSTANT (gaya ng workbook). |
+| `fx_page.js` | Lahat ng 91 table ay may What / From / To / Why / Change; "Used on" ABC-004A. |
+| `fx_page.js` | 150 MW: LN3 block ng ABC-004A: input 33.1 % → 0.932 (gaya ng HMI snapshot). Binago sa page ang Y ng row 14 sa 1.1 → ang block mismo ay naging 0.9986 (inaasahan 0.8 + 0.3 × 33.1 / 50), dilaw ang row, naka-save. Reset this table → 0.932 ulit. |
+| `fx_page.js` | Phone 390 px: dropdown sa halip na listahan, walang page na lumalampas sa screen; 0 page error. |
+| axe-core | F(X) page sa 1440 × 900 at 390 × 844: 0 violation (WCAG 2 A / AA). |
+| `refcheck.py` | Pareho ang table data sa workbook gaya ng dati: 89 compared, 4 kilalang exception (LN15, LN21, LN38, LN39). |
+| `npm test` | 11 / 11 pasado. |
+| UI regression | `shell_cr` 15, `plant_view` 18, `p3_screens` 18, `why` 6, `view` 49, `sidetab` 10, `layout` 26: pasado (pareho ng beta.6). |
+| Screenshots | 1440 × 900, 1280 × 800, 800 × 1280, 390 × 844: 0 page error. |
+
+- **Hindi nasubok:** tablet / exe / apk ng user. Ang ibang UI regression (DITL, Events, faceplate ...) ay tumatakbo pa; iuulat kapag tapos.
+- **Status:** ipinush bilang Beta.

@@ -2,9 +2,11 @@
 
 > Single current handoff. Palitan ang lumang status kapag nagbago ang trabaho; huwag mag-append ng chat transcript.
 
-## SIMULAN DITO (next session, 2026-10-22)
-- **Kasalukuyang Beta:** `3.2.0-beta.6` (beta.5 ang huling na-push hanggang aprubahan ng user ang beta.6).
-- **3.2.0-beta.6 (2026-10-22 gabi):**
+## SIMULAN DITO (next session, 2026-10-23)
+- **Kasalukuyang Beta:** `3.2.0-beta.7`, branch `claude/project-thread-vhcfv9` (mula sa PR #38 branch `claude/project-thread-8t4984`). Stable pa rin ang v2.4.0 sa `main`.
+- **3.2.0-beta.7 (2026-10-23):** **F(X) curves page** (`src/ui/fx/`): ang bawat linear table ay ipinapakita gaya ng sheet ng `linear-curves-fx.xls` (kurba, table, title block), bawat X / Y / LX / LY ay pwedeng i-edit (parehong `AN.lne` ng Inspector; ginagamit agad ng sheet na tumatakbo), live na tuldok, "Try an input", at paliwanag ng 91 table (`fx-info.js`: what / from / to / why / change) + signal path mula sa drawing (`fx-paths.js`, ginawa ng `tools/fx/`). Test: `tests/regress/fx_page.js`. Detalye: `docs/versions/v3.2.0/UPDATE_REPORT.md`.
+- **SUSUNOD (pinili ng user sa card 2026-10-23 12:28 PM PHT): "B + C · Guided Workbench"** bilang 3.2.0-beta.8: 4 na theme na mapapalitan (Light, Dark = default pa rin, Control room grey ISA-101, High contrast), Home ("What do you want to do?", starting state, Recent), Training (mga hakbang ng PR-OPE-5002 mula sa docx), Logic workbench (status bar na may mode, Ctrl K), Top 10 fixes ng UI review (Plant view viewBox NaN sa phone, 8 select na walang label, font min 12 px, 44 px sa touch, dev tools sa Engineering). Design: https://claude.ai/artifact/K6ZGL1j9U8kYN5ZTJQPphc · Review: https://claude.ai/artifact/Fus3bHxckM4915b2W58naA . Nasimulan ang theme CSS: `git stash` "workbench-themes-wip" (kung nasa parehong container pa).
+- **3.2.0-beta.6 (2026-10-22 gabi, PR #38):**
   - **Direksyon ng produkto (user, 7:56 PM PHT: "anong gagawin mo sa app, maging competitive"):** ang app ay **digital twin ng logic ng LMYP #1 na nagsasabi kung BAKIT**.
   - **Ginawa:**
     - "Why?" sa faceplate at sa info card (`src/ui/shell/why.js`: `AN.why`, `AN.whyMan`).

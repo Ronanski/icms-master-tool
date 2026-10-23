@@ -46,6 +46,7 @@ const block =
   fontCss +
   '</style><style id="shellcss">' +
   fs.readFileSync(__dirname + '/app.css', 'utf8') +
+  fs.readFileSync(__dirname + '/../fx/fx.css', 'utf8') +
   '</style><script id="shelljs">' +
   fs.readFileSync(__dirname + '/ditl.js', 'utf8') +
   '\n' +
@@ -60,6 +61,13 @@ const block =
   fs.readFileSync(__dirname + '/cr.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/why.js', 'utf8') +
+  '\n' +
+  /* 3.2.0-beta.7: F(X) curves page */
+  fs.readFileSync(__dirname + '/../fx/fx-info.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/../fx/fx-paths.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/../fx/fx.js', 'utf8') +
   '</script>' +
   B;
 const k = s.lastIndexOf('</body>');
