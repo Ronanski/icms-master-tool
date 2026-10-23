@@ -1,0 +1,106 @@
+/* ===== 3.2.0-beta.7 F(X) CURVES page (src/ui/fx/fx.js). The sheet itself is white paper with black grid lines, like the LINEAR
+   CURVE workbook, in every app theme; the frame around it follows the app theme. ===== */
+#fxws{position:fixed;left:0;right:0;top:var(--topH,52px);bottom:var(--footH,30px);z-index:47;display:none;flex-direction:column;background:var(--c-bg);color:var(--c-tx);font:400 .9375rem/1.45 var(--uf)}
+#fxws.open{display:flex}
+body.cr:not(.pvwin) #fxws{left:var(--railW)}
+#fxws .fxhead{display:flex;align-items:center;gap:.75rem;padding:.625rem 1rem;background:var(--c-pane);border-bottom:1px solid var(--c-line);flex-wrap:wrap}
+#fxws .fxhead > b{font:600 1.125rem var(--uf)}
+#fxws .fxsub{color:var(--c-dim);font-size:.875rem;min-width:0}
+#fxws .fxgrow{flex:1}
+#fxws .fxbtn{min-height:2.25rem;padding:0 .875rem;border-radius:var(--r);border:1px solid var(--c-line2);background:var(--c-ctl);color:var(--c-tx);font:500 .875rem var(--uf);cursor:pointer;white-space:nowrap}
+#fxws .fxbtn:hover{background:var(--c-ctlh)}
+#fxws .fxbtn:focus-visible,#fxws .fxi:focus-visible,#fxws td.fxe:focus-visible,#fxws .fxchip:focus-visible,#fxws .fxtag:focus-visible{outline:2px solid var(--c-acc);outline-offset:1px}
+#fxws .fxbody{flex:1;min-height:0;display:grid;grid-template-columns:clamp(14rem,20vw,19rem) minmax(0,1fr)}
+#fxws .fxleft{display:flex;flex-direction:column;min-height:0;background:var(--c-pane);border-right:1px solid var(--c-line)}
+#fxws #fxq{margin:.625rem;min-height:2.25rem;padding:0 .75rem;border-radius:var(--r);border:1px solid var(--c-line2);background:var(--c-well);color:var(--c-tx);font:400 .875rem var(--uf)}
+#fxws #fxlist{flex:1;overflow:auto;padding:0 .375rem .75rem}
+#fxws .fxg{position:sticky;top:0;background:var(--c-pane);padding:.5rem .5rem .25rem;font:600 .75rem var(--uf);letter-spacing:.08em;color:var(--c-dim)}
+#fxws .fxi{display:grid;grid-template-columns:3.25rem minmax(0,1fr) auto;gap:.5rem;align-items:baseline;width:100%;min-height:2.5rem;padding:.375rem .5rem;border:0;border-radius:var(--r);background:transparent;color:var(--c-tx);text-align:left;cursor:pointer;font:400 .8125rem/1.3 var(--uf)}
+#fxws .fxi b{font:600 .875rem var(--mf)}
+#fxws .fxi span{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;color:var(--c-tx2)}
+#fxws .fxi i{font:600 .75rem var(--uf);font-style:normal;color:var(--c-mantx2);background:var(--c-mansoft);border-radius:.25rem;padding:0 .3rem}
+#fxws .fxi:hover{background:var(--c-ctlh)}
+#fxws .fxi.on{background:var(--c-accbg);box-shadow:inset 3px 0 0 var(--c-acc)}
+#fxws .fxnone{padding:1rem;color:var(--c-dim)}
+#fxws .fxright{display:flex;flex-direction:column;min-width:0;min-height:0}
+#fxws #fxpick{display:none}
+#fxws .fxmain{flex:1;overflow:auto;padding:1rem;display:grid;grid-template-columns:minmax(0,46rem) minmax(18rem,1fr);gap:1rem;align-items:start}
+#fxws .fxcard{background:var(--c-pane);border:1px solid var(--c-line);border-radius:var(--r-l);min-width:0}
+#fxws .fxsbar{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;padding:.5rem .75rem;border-bottom:1px solid var(--c-line);font-size:.875rem}
+#fxws .fxed{color:var(--c-dim)}
+#fxws .fxwarn{color:var(--c-almtx);font-weight:500}
+#fxws .fxscroll{overflow-x:auto;padding:.75rem}
+/* the paper */
+#fxws .fxpaper{min-width:40rem;background:#fff;color:#000;border:1px solid #9a9a9a;padding:.75rem .875rem 1rem;font:400 .8125rem/1.25 Arial,Helvetica,var(--uf)}
+#fxws .fxst{font:400 1rem Arial,Helvetica,var(--uf)}
+#fxws .fxchart{margin:.5rem 0 .25rem}
+#fxws .fxsvg{display:block;width:100%;height:auto}
+#fxws .fxsvg .fxplot{fill:#c0c0c0;stroke:#808080;stroke-width:1}
+#fxws .fxsvg .fxgrid{stroke:#000;stroke-width:.8;stroke-dasharray:3 3}
+#fxws .fxsvg .fxaxis{stroke:#000;stroke-width:1}
+#fxws .fxsvg .fxtick{font:700 10px Arial,Helvetica,sans-serif;fill:#000}
+#fxws .fxsvg .fxaxt{font:400 12px 'Times New Roman',serif;fill:#000}
+#fxws .fxsvg .fxline{fill:none;stroke:#000080;stroke-width:1.6}
+#fxws .fxsvg .fxpt{fill:#000080}
+#fxws .fxsvg .fxmkl{stroke:#c00000;stroke-width:1.2;stroke-dasharray:4 3}
+#fxws .fxsvg .fxmkc{fill:#ff2020;stroke:#fff;stroke-width:1.5}
+#fxws .fxtryrow{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:.25rem 0 .75rem;font:400 .875rem var(--uf)}
+#fxws .fxtryrow input{width:7rem;min-height:2rem;padding:0 .5rem;border:1px solid #808080;border-radius:.25rem;background:#fff;color:#000;font:400 .875rem var(--mf)}
+#fxws .fxtryrow b{font:600 .875rem var(--mf);min-width:5rem}
+#fxws .fxlive{color:#555;font-size:.8125rem}
+#fxws .fxlive.on{color:#a00000;font-weight:500}
+#fxws table.fxtb{border-collapse:collapse;width:100%;margin-top:.5rem}
+#fxws table.fxtb :is(th,td){border:1px solid #000;padding:.125rem .375rem;font:400 .8125rem Arial,Helvetica,var(--uf);color:#000;white-space:nowrap}
+#fxws table.fxdata th{font-weight:700;text-align:center;background:#fff}
+#fxws table.fxdata thead tr:first-child th{font-size:.9375rem;border-top-width:2px}
+#fxws table.fxdata td{text-align:right;height:1.625rem}
+#fxws table.fxdata td.fxn{text-align:center}
+#fxws table.fxdata td.fxr{color:#333}
+#fxws table.fxdata td.fxe{cursor:text;background:#fff}
+#fxws table.fxdata td.fxe:hover{background:#eef4ff}
+#fxws table.fxdata tr.chg td.fxe{background:#fff2a8}
+#fxws table.fxdata td.fxe input{width:100%;min-width:4.5rem;box-sizing:border-box;border:0;outline:2px solid #1a5fd0;background:#fff;color:#000;font:400 .8125rem var(--mf);text-align:right;padding:0 .125rem}
+#fxws table.fxdata td:nth-child(3),#fxws table.fxdata td:nth-child(6),#fxws table.fxdata td:nth-child(9){border-right-width:2px}
+#fxws table.fxtb td.fxco{width:30%;vertical-align:top}
+#fxws table.fxtb td.fxco b{display:block;font:700 .8125rem Arial,Helvetica,var(--uf)}
+#fxws table.fxtb td.fxco span{font:700 .875rem 'Times New Roman',serif}
+#fxws table.fxtb td.fxlb{font-weight:700;font-size:.75rem;width:4.5rem}
+#fxws table.fxtb td.fxjv{font-weight:700;white-space:normal}
+/* about */
+#fxws .fxabout{padding:1rem 1.125rem}
+#fxws .fxabout h3{margin:0;font:600 1.125rem var(--uf)}
+#fxws .fxabout .fxtitle{margin:.125rem 0 .75rem;color:var(--c-dim);font-size:.875rem}
+#fxws .fxrow{margin:0 0 .875rem}
+#fxws .fxrow h4{margin:0 0 .125rem;font:600 .75rem var(--uf);letter-spacing:.06em;text-transform:uppercase;color:var(--c-dim)}
+#fxws .fxrow p{margin:0;font-size:.9375rem;line-height:1.5}
+#fxws .fxchips{display:flex;flex-wrap:wrap;gap:.375rem}
+#fxws .fxchip{min-height:2.25rem;padding:0 .75rem;border-radius:1.125rem;border:1px solid var(--c-accbd);background:var(--c-accbg);color:var(--c-acctx);font:500 .875rem var(--mf);cursor:pointer}
+#fxws ul.fxpath{margin:0;padding:0;list-style:none;font-size:.875rem;line-height:1.4}
+#fxws ul.fxpath li{padding:.1875rem 0;border-bottom:1px dashed var(--c-line)}
+#fxws ul.fxpath span{color:var(--c-tx2)}
+#fxws .fxtag{border:0;background:none;padding:0;color:var(--c-acctx);font:600 .875rem var(--mf);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+#fxws .fxnote{margin:.75rem 0 0;font-size:.8125rem;color:var(--c-dim)}
+@media (max-width:1180px){#fxws .fxmain{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:760px){
+ #fxws .fxbody{grid-template-columns:minmax(0,1fr)}
+ #fxws .fxleft{display:none}
+ #fxws #fxpick{display:block;margin:.5rem .75rem 0;min-height:2.75rem;padding:0 .5rem;border-radius:var(--r);border:1px solid var(--c-line2);background:var(--c-ctl);color:var(--c-tx);font:500 .9375rem var(--uf)}
+ #fxws .fxmain{padding:.75rem}
+ #fxws .fxsub{display:none}
+ #fxws .fxhead{padding:.5rem .75rem;gap:.5rem}
+ #fxws .fxbtn{min-height:2.75rem}
+}
+@media (pointer:coarse){#fxws :is(.fxbtn,.fxchip){min-height:2.75rem}#fxws .fxi{min-height:2.75rem}}
+/* the app's common button look must not reach the list rows and the tag links */
+body.app2 #fxws button.fxi{display:grid!important;justify-content:stretch!important;border:0!important;box-shadow:none!important;background-color:transparent;white-space:normal!important;padding:.375rem .5rem!important;font:400 .8125rem/1.3 var(--uf)!important}
+body.app2 #fxws button.fxi:hover{background-color:var(--c-ctlh)!important}
+body.app2 #fxws button.fxi.on{background-color:var(--c-accbg)!important}
+body.app2 #fxws button.fxtag{display:inline!important;border:0!important;background:none!important;box-shadow:none!important;min-height:0!important;padding:0!important;font:600 .875rem var(--mf)!important;color:var(--c-acctx)!important}
+body.app2 #fxws button.fxchip{border-radius:1.125rem!important;border-color:var(--c-accbd)!important;background-color:var(--c-accbg)!important;color:var(--c-acctx)!important;font:500 .875rem var(--mf)!important}
+@media (max-width:760px){
+ #fxws .fxhead > b{flex:1}
+ #fxws .fxhead .fxx{order:1}
+ #fxws .fxhead .fxbtn:not(.fxx){order:2}
+ #fxws .fxhead .fxgrow{display:none}
+ #fxws .fxpaper{min-width:36rem}
+}
