@@ -212,6 +212,7 @@ function anUnitStop() {
   for (const p of U.fp || []) {
     p.pr.uf = undefined;
     p.pr.ld = 0;
+    if (!p.pr.src) p.pr.smul = p.pr.sbase = undefined;
   }
   U.on = false;
 }
@@ -906,9 +907,20 @@ function anUnitStep(dt) {
     const idf = !U.idf || +U.idf.S.rt.v[U.idf.n] > 0.5,
       taf = U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0),
       ld = U.taf0 > 0 ? (U.kfpA > 0 ? U.kfpA : U.kfp) * (taf / U.taf0 - 1) : 0;
+    /* 3.2.0-beta.19 (VIEW / TRACE audit, Cold): no ID fan and no air = the furnace open to the stack, 0 mmH2O. Before, a cold plant
+       read about +200 mmH2O (the loop model with the ID fan taking nothing out and the air term). With air and no ID fan the
+       pressure still rises (as before); with the ID fan running the model is unchanged. */
+    const nair = !idf && U.taf0 > 0 ? Math.min(1, taf / (0.1 * U.taf0)) : null;
     for (const p of U.fp) {
       p.pr.uf = idf ? 1 : 0;
       p.pr.ld = ld;
+      if (!p.pr.src) {
+        p.pr.smul = nair == null ? undefined : nair;
+        p.pr.sbase = nair == null ? undefined : 0;
+      }
+      /* the open furnace empties in seconds, not with the time constant of the draft loop (65 s) */
+      const q = nair != null && nair < 1 && U.idf && U.idf.S.rt.pm ? U.idf.S.rt.pm[p.b.id] : null;
+      if (q && isFinite(q.y)) q.y -= (1 - nair) * q.y * (1 - Math.exp(-dt / 5));
     }
   }
 }

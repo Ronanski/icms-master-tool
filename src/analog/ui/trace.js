@@ -134,13 +134,12 @@ function coldIfNone() {
 /* 3.2.0-beta.18 (VIEW/TRACE audit, user 2026-10-23: "patay pa naman ang boiler mo ... bkt may value na si MSP?"): the ABC page
    opened by the operator, before any starting state is picked, showed the drawings' defaults in VIEW too (MSP 75 kg/cm2, drum level
    -566.6 mm, drum pressure 125 kg/cm2, LICBR1001 out 25 %): numbers of no plant. Now the page opens with the plant COLD (boiler off), as
-   RUN and Start > Cold do. Only when the operator opened it (a click / key on the page, or the ABC page restored from the last visit)
+   RUN and Start > Cold do. Only when the operator opened it (a real click / key on the page, or the ABC page restored from the last visit)
    and nothing of a past session is saved (no force, input or switch kept): a saved session is left as it was. The tests that drive
    AN.setCat by script keep the drawings' defaults. */
 function coldShow() {
   if (AN.startState || AN.cat !== 'an' || AN._cold0) return;
-  const ua = navigator.userActivation;
-  if (!AN._uiCold && !(ua && ua.hasBeenActive)) return;
+  if (!AN._uiCold) return;
   AN._cold0 = 1;
   const kept = Object.values(AN.sv || {}).some(o => o && ['force', 'ext', 'ai', 'sw', 'man', 'p'].some(k => o[k] && Object.keys(o[k]).length));
   if (kept || !coldIfNone()) return;
@@ -148,6 +147,16 @@ function coldShow() {
   paint();
   panelUpd(true);
 }
+/* the operator's own click / key (a script driving the page, the tests, sends no trusted event) */
+['pointerdown', 'keydown'].forEach(t =>
+  addEventListener(
+    t,
+    e => {
+      if (e.isTrusted) AN._uiCold = 1;
+    },
+    { capture: true, passive: true }
+  )
+);
 const COLD_MSG = 'No starting state was picked: the plant starts COLD (boiler off, drum 0 kg/cm2, no fire, fans stopped). Pick Start ▾ in the PLANT VIEW for At 150 MW, Warm or Hot.';
 bRun.onclick = () => {
   const c = !AN.run && coldIfNone();
