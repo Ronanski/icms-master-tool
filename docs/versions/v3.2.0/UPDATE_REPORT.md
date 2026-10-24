@@ -570,6 +570,6 @@ Engine at logic: walang binago.
 - `training_drum.js` (bagong test, tunay na pindot): drained −400 / −400 / −400 mm → Field operator + START BFWP-A = tumatakbo → faceplate ▲▲ ×4 = MV 20 %, FW 22.7 T/H, sabay tumataas ang LT-1/2/3 → sa −174 mm susunod na hakbang → ▼▼ = MV 0, level −149 mm, tapos ang hakbang. ALL PASS. Sa beta.24, sa parehong pindot: hindi umandar ang BFWP at nanatili sa 8 mm ang drum.
 - Buong gabay Cold → 150 MW (`guide_fullrun.js`, iisang mundo ON, ×300): **2 sa 2 run** umabot sa 150 MW at sa Practice. Walang MFT at walang hinto. Run 1: dahil sa ×300, umabot sa +91 mm ang level pagkatapos ng pagpuno (sobra sa −150), at bumalik sa ±20 mm sa load.
 - Lahat ng hakbang sa 4 na laki ng screen (1440×900, 1280×800, 800×1280, 390×844): walang lumalampas na button, walang sideways scroll, walang page error. Sheet bawat hakbang: burner → DITL-12/12A/12B, purge → DITL-02, BFWP → DITL-23A, drum filling → ABC-010.
-- PASADO: training_dock, training_start, training_practice, home_training, live_training. `npm run check` SAME.
+- PASADO: training_dock, training_start, training_practice, home_training, live_training. `tests.js`: 11 PASS, 0 FAIL (T1 54/54 sheet). `npm run check` SAME.
 
 **Status:** Beta. Hindi pa nasubok sa tablet / EXE ng user.
