@@ -525,8 +525,7 @@
     lastCur = -1,
     fpLive = [],
     fpKey = '',
-    follow = ls.get('ls-gdock-follow', true),
-    worldWas = null;
+    follow = ls.get('ls-gdock-follow', true);
   const mode = () => (innerWidth >= 900 && innerWidth >= innerHeight * 1.05 ? 'side' : 'bottom');
   const isMin = () => !!ls.get('ls-gdock-min', false);
   function layout() {
@@ -637,10 +636,8 @@
   /* ---------- open / close ---------- */
   function open() {
     build();
-    if (worldWas == null && window.WORLD) {
-      worldWas = !!WORLD.on;
-      if (!WORLD.on) WORLD.set(true);
-    }
+    /* 3.2.0-beta.25: the one world is always ON (no switch); turned on again only if a test turned it off */
+    if (window.WORLD && !WORLD.on) WORLD.set(true);
     ls.set('ls-gdock-min', false);
     lastCur = -1;
     layout();
@@ -650,8 +647,6 @@
     try {
       GD().stop();
     } catch (e) {}
-    if (window.WORLD && worldWas === false) WORLD.set(false);
-    worldWas = null;
     fpLive = [];
     fpKey = '';
     layout();

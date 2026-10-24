@@ -330,7 +330,10 @@
         svg.style.cursor = L && L.length ? 'pointer' : '';
       });
   }
-  D.bar = fit => [run, view, reset, back, E('span', { cls: 'dui-sep' }), fit, zoom, panel];
+  /* 3.2.0-beta.25: the ladder of the open sheet, made from its logic (src/ui/ladder/ladder.js, preview) */
+  const lad = E('button', { cls: 'dui-lad', txt: 'Ladder', title: 'Ladder view (preview): this sheet as a ladder, made by the app from the logic of the drawing, live beside it' });
+  lad.onclick = () => window.LADDER && LADDER.toggle();
+  D.bar = fit => [run, view, reset, back, E('span', { cls: 'dui-sep' }), fit, zoom, panel, lad];
   /* ---------- right panel ---------- */
   const dp = E('div', { id: 'dp' });
   const mid = $('mid');
