@@ -82,6 +82,9 @@ const block =
   /* 3.2.0-beta.10: Live Training (auto / field / TCS steps, the sync and load-up sections) */
   fs.readFileSync(__dirname + '/../training/live.js', 'utf8') +
   '\n' +
+  /* 3.2.0-beta.21: guided Training (one step at a time, actions on the card, the coach) */
+  fs.readFileSync(__dirname + '/../training/guide.js', 'utf8') +
+  '\n' +
   fs.readFileSync(__dirname + '/home.js', 'utf8') +
   '\n' +
   /* 3.2.0-beta.9: one VIEW | RUN rule (VIEW locks only force / switches / operation) */

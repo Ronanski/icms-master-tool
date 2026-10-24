@@ -627,5 +627,7 @@ window.LS_LIVE = (function () {
     const r = lx()[l];
     return r && r[0] ? r[0].sh : null;
   };
-  return { kind, state, rows, scan, reset, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2 };
+  /* 3.2.0-beta.21: the condition makers, for the guided Training (guide.js) */
+  const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4 };
+  return { kind, state, rows, scan, reset, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2, B, H, modeOf, mvOf, pvOf, svOf, getV, NAMES, f1 };
 })();

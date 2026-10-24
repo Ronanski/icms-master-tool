@@ -58,6 +58,9 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
     );
   /* 1. Cold */
   await state('plantCold');
+  /* 3.2.0-beta.22: Cold has the BFWP stopped now (it stayed running from the snapshot); the HP bypass spray TICMS1022 takes its water
+     from the BFWP (ABC-050 M.0702 ALL BFWP STOPPED shuts it): start BFWP-A so the MV can open and the "no medium" check means steam */
+  await page.evaluate(() => CHECK.H().setx(null, 'M.3343', 1));
   for (const [shn, tag, top] of [
     ['ABC-017', 'PICSB1052', 0.5],
     ['ABC-028', 'PICDO0005', 0.5],

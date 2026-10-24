@@ -414,6 +414,11 @@ setInterval(() => {
   for (let i = 0; i < n; i++) {
     if (K > 1) stepTier(sh, dt / n, K);
     else stepSet(sh, dt / n);
+    /* 3.2.0-beta.21: the Training coach (src/ui/training/guide.js) acts after each step, at the time of the plant */
+    if (AN.onStep)
+      try {
+        AN.onStep(dt / n);
+      } catch (e) {}
   }
   paint();
   panelUpd();

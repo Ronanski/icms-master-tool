@@ -686,6 +686,7 @@ function anProcStep(S, dt) {
         if (vs.every(isFinite)) {
           const m = vs.reduce((a, b) => a + b, 0) / vs.length;
           q.off = {};
+          q.offm = m;
           tai.forEach((id, i) => (q.off[id] = vs[i] - m));
         }
       }
@@ -755,8 +756,15 @@ function anProcStep(S, dt) {
       if (!a || !s) continue;
       const on_ = a.pins.filter(p => p.role === 'out').map(p => p.n);
       if (on_.some(n => tF[n] !== undefined)) continue;
+      /* 3.2.0-beta.21 (bug, user 2026-10-24 "cold na, may value pa rin ... drum lvl at fw flow"): the offset of a transmitter fades to 0 at
+         the bottom of its range (below the mean of the first write it shrinks in proportion; a range from 0 only: flow, pressure,
+         not the drum level that integrates around its normal water level). Before it stayed whole: in a cold plant
+         FT-FW1007-2 kept +0.15 T/H of the 150 MW snapshot (499.2 against 499.0), the feedwater PV read 0.155 T/H with the BFWP
+         stopped and the integrating drum level rose 2 mm every 10 minutes */
+      const lo0 = a.rng ? a.rng.lo : 0,
+        kf = !pr.integ && q.offm != null && lo0 >= 0 && q.offm - lo0 > 1e-9 ? Math.max(0, Math.min(1, (w - lo0) / (q.offm - lo0))) : 1;
       const r = a.rng,
-        w1 = w + ((q.off && q.off[id]) || 0),
+        w1 = w + ((q.off && q.off[id]) || 0) * kf,
         x = r ? Math.max(r.lo, Math.min(r.hi, w1)) : w1;
       s.val = x;
       s.act = x;
