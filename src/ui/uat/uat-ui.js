@@ -53,7 +53,9 @@
         build();
       }
     });
-  document.body.append(btn, P);
+  /* 3.2.0-beta.20 (user 2026-10-24: "remove uat test completely sa app mismo"): no UAT button or panel in the app. The runner stays
+     for the automated tests only (an automated browser, navigator.webdriver) */
+  if (navigator.webdriver) document.body.append(btn, P);
   const sheet = () => AN.sheets[AN.i];
   const SPEC = {},
     RES = {};

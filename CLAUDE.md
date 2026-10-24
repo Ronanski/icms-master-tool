@@ -67,7 +67,7 @@ The DCS uses five controller/station groups: STN101, STN102, STN103, STN104, and
 
 - Follow the existing version format and versioning tools in the repository. Inspect the current app and handoff before choosing a version; do not guess a version from memory or filename alone.
 - Follow the existing release workflow. When a Stable release is authorized, the expected deliverables are HTML, portable EXE, APK, and release report. Stable/Beta update selection behavior must follow the existing design.
-- The in-app UAT stays inside the app and is provided to the owner in chat when requested; do not add a separate UAT file to GitHub Releases.
+- (user 2026-10-24) The UAT test and the CHECK panel are REMOVED from the app ("remove uat test completely sa app mismo saka yung check sa tools ... meron naman training"). Their runners stay only as automated tests (navigator.webdriver). The check guide goes to the owner in chat; no UAT file in GitHub Releases.
 - Beta work is delivered through a pushed branch/Beta page as specified by the repository rules. Do not call Beta a Stable release.
 - The owner has already downloaded the current app and normally wants a patch/update to install. Make the smallest reliable change that addresses the approved task; do not replace the whole application unnecessarily.
 - Keep the GitHub repository organized and professional. Do not create duplicate versions, unnecessary files, or unrelated changes.

@@ -1146,3 +1146,27 @@ body.app2 #inlist .inrow select{min-height:1.875rem;max-width:100%;font-size:max
 /* 3.2.0-beta.9: in VIEW the locked switches read as locked too (the values stay readable), and the Inputs list says why */
 body.lsview button[data-vlock]{opacity:.55!important}
 body.lsview #inlist::before{content:'VIEW · values only. Press RUN to force or change them.';display:block;margin:0 0 .375rem;padding:.375rem .625rem;border-left:3px solid var(--c-acc);background:var(--c-accbg);color:var(--c-acctx);font:500 .8125rem/1.35 var(--uf)}
+/* 3.2.0-beta.20: Plant chip beside VIEW | RUN (plant model, starting state, MW) */
+.lsmoved{display:none!important}
+.plchip{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 11px;margin-right:8px;border:1px solid var(--line,#2c4256);border-radius:8px;background:var(--c-well,#13263a);color:inherit;font:600 13px inherit;white-space:nowrap;cursor:pointer}
+.plchip i{width:8px;height:8px;border-radius:50%;background:#35e08a;flex:none}
+.plchip[data-m=off] i{background:#7f8d99}
+.plchip[data-m=loop] i{background:#4da3ff}
+.plchip b{font-weight:600;opacity:.7}
+.plchip span{display:flex;flex-direction:column;align-items:flex-start;line-height:1.05}
+.plchip small{font-size:9px;letter-spacing:.08em;color:var(--c-dim,#7f97a8);font-weight:600}
+.plchip em{font-style:normal}
+.plpop{position:fixed;z-index:9000;width:340px;max-width:calc(100vw - 16px);box-sizing:border-box;padding:14px 16px;border:1px solid var(--line,#2c4256);border-radius:12px;background:var(--c-panel,#0f1a24);color:var(--c-text,#dfe9f1);box-shadow:0 14px 40px #0009;font-size:13px}
+.plpop h5{margin:12px 0 6px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--c-dim,#7f97a8)}
+.plpop h5:first-child{margin-top:0}
+.plpop .plseg{display:flex;border:1px solid var(--line,#2c4256);border-radius:7px;overflow:hidden}
+.plpop .plseg button{flex:1;padding:7px 0;border:0;border-right:1px solid var(--line,#2c4256);background:transparent;color:inherit;font-weight:600;cursor:pointer}
+.plpop .plseg button:last-child{border-right:0}
+.plpop .plseg button.on{background:#2563eb!important;color:#fff!important;border-color:#2563eb}
+.plpop .plrow{display:flex;align-items:center;gap:8px}
+.plpop input{width:84px;padding:6px 8px;border:1px solid var(--line,#2c4256);border-radius:6px;background:var(--c-well,#081118);color:inherit;font:600 14px var(--mono,monospace);text-align:right}
+.plpop .plgo{padding:6px 14px;border:0;border-radius:7px;background:#16a34a;color:#fff;font-weight:600;cursor:pointer}
+.plpop .plh{color:var(--c-dim,#7f97a8)}
+.plpop small{display:block;margin-top:8px;line-height:1.4;color:var(--c-dim,#7f97a8)}
+.plpop .plnote{margin:10px 0 0;color:#ffd479}
+@media (max-width:700px){.plchip{padding:0 8px;font-size:12px}.plchip em{max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
