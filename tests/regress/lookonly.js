@@ -26,6 +26,7 @@ ok(await page.evaluate(()=>AN.view&&!AN.run),'global search Enter -> card -> Sho
 await page.evaluate(()=>{const c=document.getElementById('infocard');c&&c.remove();AN.setCat('dig')});await W(500);await page.click('#gsbar .seg button:last-child');await W(300);
 await showSearch(page);await page.fill('#ansb','M.3302');await W(2500);
 await page.evaluate(()=>[...document.querySelectorAll('#anfind button')].find(x=>/^Open .*DITL/.test(x.title)).click());await W(900);
-ok(await page.evaluate(()=>!SIM),'DITL in Simulate, a DITL search result -> Simulate off');
+/* 3.2.0-beta.23 (user 2026-10-24, one RUN for the app, like the ABC since beta.21): a look while the DITL simulates keeps it simulating */
+ok(await page.evaluate(()=>!!SIM),'DITL in Simulate, a DITL search result -> still Simulate (one RUN, beta.23)');
 ok(!errs.length,'no page error');
 console.log(fail?'FAIL':'ALL PASS');await browser.close();process.exit(fail?1:0)})();

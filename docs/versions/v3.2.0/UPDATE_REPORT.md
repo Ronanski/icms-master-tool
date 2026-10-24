@@ -489,3 +489,36 @@ Engine at logic: walang binago.
 **As Left (ebidensya):** Cold pagkalipas ng 10 min: FW 0.0 T/H, drum level 4.6 → 8 mm (steady), steam temp 30 °C. CHECK 17 / 17 scenario PASADO (Cold → 150 MW buo 17 / 17, trips, load, shutdown, bottle-up). ALL PASS: live_training, loop_source, reset, training_start, unit_trip, training_practice, home_training, tests.js.
 
 **Status:** Beta. Hindi pa nasubok sa tablet / EXE ng user. Hinihintay ang pili ng user sa Training workspace mockup (https://claude.ai/artifact/M9TD6DVtS8XmfwrBpo4UVX).
+
+## 3.2.0-beta.23 — Training dock: ang gabay na start-up katabi ng logic, dumadaan sa tunay na DITL interlock
+
+**Problem (user 2026-10-24):** "sa training, ang hirap ng palipat lipat na screen, ang hirap din imonitor ng actual logic"; "si training, another workspace sya na connected pa rin sa current status ng mga logics (DITL & ABC)"; "di ba may interlock yan s kada equipment? na-icoconsider ba ito sa start-up training?". Pinili ang mockup (https://claude.ai/artifact/M9TD6DVtS8XmfwrBpo4UVX), tapos "Ituloy hanggang 150 MW sa DITL" (card).
+
+**As Found:**
+- Ang gabay (Cold → 150 MW) ay nasa sariling screen. Kapag lumipat sa Logic, nawawala ang gabay; kapag lumipat sa DITL, humihinto ang RUN.
+- Ang mga motor sa gabay ay sinisimulan sa pag-force ng running memory. Hindi dumadaan sa DITL interlock (permissive, trip, MFT).
+- Kapag ON ang iisang mundo (ABC + DITL), hindi umaabot ang start-up sa coal: hindi ma-reset ang MFT, hindi sumisindi ang burner, nag-MFT pagkapatay ng huling burner, at iba pa (listahan sa Work Done).
+
+**Work Done:**
+- **Training dock** (`src/ui/training/dock.js`, `dock.css`): ang gabay ay panel sa kanan (PC / tablet landscape) o sa ibaba (tablet portrait), may main values, lamp ng kagamitan, step card, interlock ng motor mula sa DITL drawing, faceplate ng hakbang at values na babantayan. Ang app ay gumagana sa tabi nito at tuloy ang RUN (ABC ↔ DITL hindi na humihinto: iisang RUN).
+- **Gabay sa tunay na DITL** (iisang mundo ON habang nasa dock): ang START / STOP ng motor, ang purge, ang BURNER ON / OFF, ang discharge valve ng feeder ay pindot sa DITL drawing. Ang pindot ay binibilang sa scan ng simulation (hindi sa millisecond), kaya gumagana kahit ×300.
+- **Mga mali na nakita habang pinapatakbo ang buong start-up sa DITL, at inayos** (ebidensya sa `UNLINK_AUDIT.md`):
+  1. MFT hindi ma-reset: ang BOILER EMERGENCY TRIP P.B. (N.C.) ng DITL-03F ay 0 kapag hindi pinipindot. Ngayon: N.C. = 1 kapag hindi pinipindot (kasama ang "NOT OFF P.B." ng DITL-09 at DITL-21A).
+  2. Kusang natapos ang purge sa malamig na boiler: ang furnace thermocouple ay naiwan sa 933 °C (150 MW). Ngayon sumusunod sa bed temperature.
+  3. Hindi sumisindi ang burner: walang model ang oil valve limit switch at flame detector (DITL-16 / 18). Ngayon may field device model (valve gumagalaw ilang segundo, flame kapag bukas ang dalawang valve at may igniter). Ang ABC-004A M.3410 ~ M.3417 (oil valve closed) ay nakakabit na sa DITL-16.
+  4. Feeder B at C nag-trip pagkapatay ng huling burner: wala silang furnace temperature permissive (M.2504 / M.2505). Nakakabit na (iisang furnace para sa A / B / C).
+  5. MFT "PRIMARY AIR FLOW L.L." (PA < 200 T/H) kapag coal na lang: ibinaba ng gabay ang PA damper sa 10 % (~100 T/H). Ngayon: PA damper ang humahawak ng 280 T/H (PR-OPE-5002 "280 T/H = With Bed"), SA damper para sa O₂; ang huling burner ay papatayin lang kapag PA ≥ 220 T/H; ang coal sumusunod para manatiling > 700 °C ang bed.
+  6. Steam pressure 140 ~ 172 kg/cm² bago ang bypass: ang blow-off lang (~13 T/H) ang naglalabas ng steam habang nagko-coal. Ngayon ang "Bypass sa serbisyo" ay BAGO ang coal (PR-OPE-5002: bypass servicing bago ang solid fuel firing): hawak ng HP bypass ang 50 kg/cm².
+  7. Feeder C ayaw umandar: ang pindot ng START ay binitawan at pinindot ulit nang walang scan na nakakita ng bitaw, kaya walang bagong pulse. Ngayon may isang scan na bitaw bago ang bagong pindot.
+  8. MFT "FURNACE TEMP. INADEQUATE FOR COAL FIRING": binabawasan ng bypass coach ang coal kahit lumalamig ang bed. Ngayon hindi binabawasan sa ilalim ng 730 °C, dinadagdagan sa ilalim ng 720 °C.
+  9. Main steam 600 °C sa 150 MW: sarado ang spray water shut-off valve (DITL-32 / 33 / 35). Ngayon inilalagay ng gabay sa AUTO MODE (PR-OPE-5002 "servicing MS and RH desuperheater"), hinihintay na bumukas, at inuulit ang A → R ng spray controller kapag ibinalik ng drawing sa MANUAL.
+- Field I/O sheet na walang gate (DITL-16 / 18) ay hindi na pass-through (ang OPEN command ay hindi na nagpapasindi ng CLOSED).
+- DITL-43 row 12 ay hindi na nakakabit sa sarili niyang output (dati hindi kailanman makaka-start ang IDF).
+- Gabay na WORLD OFF (Training page, walang dock): huminto sa "Furnace pressure PICFG108 sa AUTO" dahil binabasa ang lumang kopya ng M.0205 sa ibang sheet. Ngayon binabasa ang ABC-008 M.0205 mismo (ang sheet ng PICFG108).
+- Batch firing: kapag lumalamig ang bed (dahil bukas na ang bypass) at bumaba sa 600 °C, hindi na natatapos ang hakbang. Ngayon tapos ang hakbang sa bed ≥ 600 °C o pagkatapos ng 3 batch (gaya ng CHECK script M4).
+- Phone (390 px, dock sa ibaba): nagpapatong ang mga value. Ngayon 4 na column at mas maliit na font.
+- Test `lookonly`: in-update sa iisang RUN (ang search habang Simulate ay hindi na humihinto sa Simulate, gaya ng ABC mula beta.21).
+
+**As Left (ebidensya):** buong gabay Cold → 150 MW na ON ang iisang mundo, ×300, 5 sa huling 7 na buong run ay umabot sa 150 MW (MSP 123, main steam 541 °C, drum level ±30 mm) at sa Practice nang walang MFT. PASADO: ditl_sim, ditl150, interlock, lookonly, training_dock, training_start, home_training, training_practice, at ang check panel M1 ~ M5 (buong start-up at shutdown ng CHECK script, hindi binago).
+
+**Status:** Beta. Ang gabay na WORLD OFF (Training page) ay umabot din sa 150 MW at Practice. Bukas pa: 2 sa 7 na run ay huminto sa CCS handover (~80 MW: bumabalik sa MANUAL ang boiler master at turbine master pagkatapos ilagay sa AUTO). Hindi pa nasubok sa tablet / EXE ng user.

@@ -357,10 +357,14 @@ const tmSecs = m => {
   const p = tmGet(m);
   return p.v * UN[p.u];
 };
+/* 3.2.0-beta.23: a short timer counting, a valve / device moving or a motor changing in this scan: the one world takes small steps of
+   time while it lasts (src/world/world.js), so a sequence of seconds (burner light-off) is not jumped over at x300 */
+let TMBUSY = false;
 function tmStep(g, inp, dt) {
   const st = g.st,
     P = tmSecs(g.tm),
     was = st.out;
+  if (P > 0 && P <= 30 && ((g.k === 'on' && inp && st.acc < P) || (g.k === 'off' && !inp && st.out) || st.run)) TMBUSY = true;
   if (g.k === 'on') {
     if (inp) {
       st.acc = Math.min(st.acc + dt, P);
@@ -395,11 +399,14 @@ function tmStep(g, inp, dt) {
     st.out = inp ? 0 : 1; /* 2.5.0-beta.11: N.C. stop button of an MCC seal-in: open (0) only while pressed */
   } else {
     const trg = g.k === 'npulse' ? !inp && st.pre : inp && !st.pre;
-    if (trg && !st.run) {
+    /* 3.2.0-beta.23: a pulse is 1 for at least the scan that starts it (a fast simulation steps 60 s in one scan: a 2 s pulse began
+       and ended inside it and the start command never came, Training at x300) */
+    const now = trg && !st.run;
+    if (now) {
       st.run = 1;
       st.acc = 0;
     }
-    if (st.run) {
+    if (st.run && !now) {
       st.acc += dt;
       if (st.acc >= P) {
         st.run = 0;
@@ -467,6 +474,73 @@ function motStep(s, v, dt) {
   s.nl.fx = mt.filter((m, j) => r[j].run).map(m => m.mir);
   return ch;
 }
+/* 3.2.0-beta.23 FIELD DEVICES of the burner I/O sheets: the limit switches and flame scanner contacts drawn there as field contacts
+   (the small circles, s.usw) follow the DCS command like the real device. DITL-16: burner gun double solenoid SVR / SVE-DO1043-A5
+   (row 2 RETRACT, row 4 INSERT -> ZSR / ZSE-A5), igniter single solenoid SVR-DO1043-A4 (row 6 INSERT -> ZSE / ZSR-A4), oil valve (2)
+   SV-DO1043-A2 (row 23 -> ZSO / ZSC-A2; valve (1) is the SV block of the sheet). DITL-18: igniter transformer O.0090 (row 24) ->
+   BI8 IGNITER IN OPERATION; BI9 FLAME DETECTOR ON = oil flows (both oil valves OPENED, DITL-16 of the same burner) and the igniter
+   sparks or the flame is already on; BI10 FLAME DETECTOR READY at rest. Burner B / C / D = the machine instances of the one world.
+   A contact is written only when the device moves, so a contact the operator toggles by hand stays until the next command */
+const FD = {
+  'DITL-16': [
+    { on: 3, off: 1, e: 'FIZSE-DO1043-A5', r: 'FIZSR-DO1043-A5', t: 10 },
+    { hold: 5, e: 'FIZSE-DO1043-A4', r: 'FIZSR-DO1043-A4', t: 5 },
+    { hold: 22, e: 'FIZSO-DO1043-A2', r: 'FIZSC-DO1043-A2', t: 3 }
+  ],
+  'DITL-18': [{ hold: 23, e: 'FIBI8-DO1043-A', t: 1 }, { flame: 1, e: 'FIBI9-DO1043-A', t: 2 }, { rest: 1, e: 'FIBI10-DO1043-A' }]
+};
+function fdSheet(s, code) {
+  const k = (s._inst && s._inst.k) || 0;
+  const t = S.sheets.find(x => new RegExp('\\)' + code + '$').test(x.name));
+  if (!t || k === 0 || !window.WORLD || !WORLD.instOf) return t;
+  const L = WORLD.instOf.get(t);
+  return (L && L[k]) || null;
+}
+function fdStep(s, dt) {
+  const b = (s._inst && s._inst.base) || s,
+    m = /(DITL-\d+[A-Z]?)$/.exec(b.name),
+    L = m && FD[m[1]];
+  if (!L) return false;
+  s.usw = s.usw || {};
+  const act = simIn(s),
+    st = (s._fd = s._fd || {});
+  let ch = false;
+  L.forEach((d, j) => {
+    const x = (st[j] = st[j] || { pos: d.rest ? 1 : 0, init: 0 });
+    let want = x.pos;
+    if (d.on != null) {
+      if (act.has(d.on) && !act.has(d.off)) want = 1;
+      else if (act.has(d.off) && !act.has(d.on)) want = 0;
+    } else if (d.hold != null) want = act.has(d.hold) ? 1 : 0;
+    else if (d.flame) {
+      const v16 = fdSheet(s, 'DITL-16'),
+        o = v16 && window.WORLD && WORLD.out && WORLD.out[v16.name],
+        oil = !!(o && o.has(21) && o.has(23)),
+        ign = !!(st[0] && st[0].pos >= 1);
+      want = oil && (ign || x.pos >= 1) ? 1 : 0;
+    }
+    if (d.rest) want = 1;
+    const tgt = want ? 1 : 0;
+    if (tgt !== x.pos) {
+      TMBUSY = true;
+      x.acc = (x.acc || 0) + dt;
+      if (x.acc >= (d.t || 0) || !x.init) {
+        x.pos = tgt;
+        x.acc = 0;
+      }
+    } else x.acc = 0;
+    const se = x.pos >= 1,
+      sr = x.pos <= 0;
+    if (!x.init || x.se !== se) {
+      s.usw[d.e] = se;
+      if (d.r) s.usw[d.r] = sr;
+      x.se = se;
+      ch = true;
+    }
+    x.init = 1;
+  });
+  return ch;
+}
 function motTxt(s) {
   const mt = s.nl.mot || [],
     r = motRT(s);
@@ -531,6 +605,18 @@ function simIn(s) {
     GR = sim ? grpState(s) : new Map();
   /* one world: input rows driven by another DITL sheet (FROM column, e.g. 28A-77) or by the ABC (TO DITL) */
   if (sim && s._win) s._win.forEach(i => on.add(i));
+  /* 3.2.0-beta.23: a normally closed push button (DITL-03F rows 25 / 26 BOILER EMERGENCY TRIP P.B.(1) / (2) (N.C.); the LCP contacts
+     "NOT OFF P.B." / "NOT LOCAL STOP P.B." of DITL-09 rows 18 / 22 and DITL-21A row 25) is closed (1) while nobody presses it: a cold
+     start had it 0 = pressed, the trip / OFF was ON for ever (the MFT could never be reset, a burner never lit). A press (or the
+     operator's hand value) sets it 0 */
+  if (!s._ncRows) {
+    s._ncRows = [];
+    for (let i = 0; i < (s.rows || []).length; i++) {
+      const t = (s.cells[i + ':S'] || []).map(x => x.t).join(' ');
+      if ((/N\.\s*C\./i.test(t) || /\bNOT\b.*\b(OFF|STOP)\b/i.test(t)) && /P\.\s*B|PUSH/i.test(t)) s._ncRows.push(i);
+    }
+  }
+  for (const i of s._ncRows) if (s.sig[i + ':S'] === undefined) s.sig[i + ':S'] = true;
   for (const k in s.sig)
     if (s.sig[k] && k.split(':')[1] === 'S') {
       const i = +k.split(':')[0];
@@ -609,6 +695,7 @@ function mvStep(s, v, dt) {
       else if (o && r.pos < 100) r.run = 1;
       else if (c && r.pos > 0) r.run = -1;
     }
+    if (r.run) TMBUSY = true;
     r.pos = Math.max(0, Math.min(100, r.pos + (r.run * dt * 100) / mvTr(s, j)));
     if ((r.run > 0 && r.pos >= 100) || (r.run < 0 && r.pos <= 0)) r.run = 0;
     const tq0 = r.tq;

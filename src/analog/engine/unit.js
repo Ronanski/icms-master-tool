@@ -462,9 +462,14 @@ function anUnitStart() {
   U.idf = labOf('ABC-008', 'M.3304');
   U.kfpA =
     null; /* the pressure rise when the ID fan takes nothing out, from the loop model (so that no air and no ID fan = the anchor) */
+  /* 3.2.0-beta.23: the furnace / cyclone thermocouples (the bed temperature, see the step) */
+  U.tbed = Object.keys(AN_HMI_AI)
+    .filter(k => /^TIFG(1090|1091|1095|1096|1009)[A-Z]?$/.test(AN_HMI_AI[k][1]))
+    .map(k => anUnitAnchor(anUnitAIs(k)))
+    .filter(l => l.length);
   /* the transmitters this model writes: the plant model of a loop on them stops writing (ABC-001C PIC-COBM: main steam pressure) */
   const own = new Set();
-  const lists = [U.msp, U.drum, U.msf, U.spd || []].concat(U.mw, U.tin, U.rhp, U.pist, U.o2, [U.pa]).concat(...U.sh.map(h => h.L));
+  const lists = [U.msp, U.drum, U.msf, U.spd || []].concat(U.mw, U.tin, U.rhp, U.pist, U.o2, [U.pa], U.tbed).concat(...U.sh.map(h => h.L));
   for (const l of lists) for (const [S2, b] of l) own.add(S2.rt.st[b.id]);
   U.own = own;
   U.on = true;
@@ -500,6 +505,7 @@ function anUnitCold() {
   });
   U.o2v = 21;
   for (const h of U.sh) h.x = U.Tamb;
+  for (const L of U.tbed || []) anUnitWrite(L, U.Tamb);
   /* 3.2.0-beta.14: cold = the field equipment stopped too (diesel oil pump, source.js) */
   AN_SRC.field.dop = false;
   AN_SRC.t = -1;
@@ -755,6 +761,14 @@ function anUnitStep(dt) {
          made a small fire too cold) */
       Tbss = U.Tamb + (U.Tb0 - U.Tamb) * Math.pow(Math.min(3, Fe / Math.max(1, U.F0) / as), 0.45);
     U.Tb += ((Math.max(U.Tamb, Tbss) - U.Tb) * dt) / U.tauB;
+  }
+  /* 3.2.0-beta.23: the furnace and cyclone thermocouples (TIFG1090 / 1091 lower layer under / above, TIFG1095 / 1096 cyclone,
+     TIFG1009 furnace) follow the bed: ambient + (snapshot - ambient) x bed rise / anchor bed rise. Before, they kept the 150 MW
+     snapshot (933 C) in Cold: ABC-027 SI0122 > 700 C = M.2504 "ADEQUATE FOR COAL FIRING (PURGE BY-PASS)" was 1 on a cold boiler,
+     DITL-02 completed the purge by itself and reset the MFT before the operator could press FURNACE PURGE START */
+  if (U.tbed && U.tbed.length) {
+    const k = Math.max(0, (U.Tb - U.Tamb) / Math.max(1, U.Tb0 - U.Tamb));
+    for (const L of U.tbed) anUnitWrite(L, i => U.Tamb + (L.a0[i] - U.Tamb) * k);
   }
   const Pms = Math.max(0, U.Pd - U.kdp * U.ms * U.ms);
   U.Pms = Pms; /* 3.2.0-beta.14: source of the reducing stations (source.js) */

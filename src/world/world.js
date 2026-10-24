@@ -400,6 +400,14 @@
             }
             const d = pick(d0, machAbc(src), String(AN.nm(sh.S, src) || '').trim(), row, true);
             addIn(d, row, { k: 'a', sh, n: src, ref: sh.name });
+            /* 3.2.0-beta.23: a signal of no machine (ABC-027 M.2504 FURNACE LOWER LAYER TEMP > 700 C) to a row of a machine drawing
+               that names no machine of the family and has one address (DITL-19 row 16 for coal feeders A, B, C): every instance
+               reads it (CLAUDE.md rule 1, one address = one signal). Before, feeders B and C had no furnace temperature permissive */
+            if (d === d0 && machinesOf(d0) > 1 && !machAbc(src)) {
+              const rt = cellTxt(d0, row, 'T') + ' ' + cellTxt(d0, row, 'S');
+              if (addrList(cellTxt(d0, row, 'T') || cellTxt(d0, row, 'S')).length <= 1 && !relative(d0, rt))
+                W.instOf.get(d0).forEach((x, k) => k && addIn(x, row, { k: 'a', sh, n: src, ref: sh.name }));
+            }
             hit = true;
           }
         if (hit) {
@@ -433,8 +441,12 @@
           const T = cellTxt(sb, i, 'T') + ' ' + cellTxt(sb, i, 'S'),
             la = addrList(cellTxt(sb, i, 'T') || cellTxt(sb, i, 'S'));
           /* machine B / C / D of a shared drawing: only its own address (the address of machine A is not its signal) */
-          if (k > 0 && !la[k]) return;
-          const adr = la[k] || null,
+          /* 3.2.0-beta.23: one address and a row that names no machine of this family (DITL-19 row 16 "FURNACE LOWER LAYER UNDER
+             TEMP. > 700 C" M.3330 is ONE furnace for feeders A, B, C) is the same signal for every instance (CLAUDE.md rule 1);
+             before, feeders B and C had no furnace temperature and tripped when the last start-up burner was put out */
+          const common = k > 0 && !la[k] && la.length === 1 && !relative(sb, T);
+          if (k > 0 && !la[k] && !common) return;
+          const adr = la[k] || (common ? la[0] : null),
             wt = (sb.tx || []).filter(x => x && x.t && Math.abs((x.iy != null ? x.iy : x.y) - r.y) < 5 && /^[A-Z0-9-]{4,}\.(MAN|MV|PV|SV)$/.test(String(x.t).trim())),
             tm = /\b([A-Z]{2,}[A-Z0-9-]*\d[A-Z0-9-]*\.(?:MAN|MV|PV|SV))\b/.exec(T),
             tag = tm ? tm[1] : wt.length ? String(wt[0].t).trim() : null,
@@ -501,6 +513,67 @@
           } else abcMiss.push(s.name + ' r' + r.n + ' FROM ' + F + ' (no ' + (adr || tag || 'address') + ' on the ABC sheet)');
         })
       );
+    /* 3.2.0-beta.23 (Training dock, IDF interlock): an input row whose FROM column names an output of the SAME sheet that is
+       only a copy of that very row (a wire or a NOT) is not its own source. DITL-43 row 12 AIR PREHEATER SPEED NOT LOW I.0653 has "43-56" in the FROM
+       column (the station channel of the contact, like rows 4 / 5 / 10 / 13: 43-54 / 55 / 53 / 57), and out 56 is the same signal to
+       the CRT: linked, the row read its own output, stayed 0 for ever and the IDF (DITL-25A <- 25B row 27) could never start.
+       The link is left out; the row stays the field contact (docs/versions/v3.2.0/UNLINK_AUDIT.md) */
+    let selfL = 0;
+    const selfDep = (s, orow, irow) => {
+      try {
+        if (!s.nl) s.nl = netlist(s);
+        const ins = new Set((window.DUI && DUI.rowNets ? DUI.rowNets(s, irow, 'L') : []) || []);
+        if (!ins.size) return false;
+        const drv = new Map();
+        for (const g of s.nl.gates || []) for (const n of [].concat(g.out == null ? [] : g.out)) drv.set(n, g);
+        const seen = new Set(),
+          st = (s.nl.outs || []).filter(o => o.row === orow).map(o => o.n);
+        while (st.length) {
+          const n = st.pop();
+          if (ins.has(n)) return true;
+          if (seen.has(n)) continue;
+          seen.add(n);
+          const g = drv.get(n);
+          /* only a copy of the row (a wire or a NOT): an output computed by logic from the row and other inputs (a motor command
+             sealed in by its RUNNING feedback, DITL-24 row 2 <- out 58) is a real loop through the plant and stays linked */
+          if (g && g.t === 'NOT') for (const m of g.ins || []) st.push(m);
+        }
+      } catch (e) {}
+      return false;
+    };
+    din.forEach((m, s) =>
+      m.forEach((srcs, row) => {
+        const keep = srcs.filter(q => !(q.k === 'd' && q.d === s && selfDep(s, q.row, row)));
+        if (keep.length === srcs.length) return;
+        selfL += srcs.length - keep.length;
+        if (keep.length) m.set(row, keep);
+        else m.delete(row);
+      })
+    );
+    W.selfLinks = selfL;
+    /* 3.2.0-beta.23 (CLAUDE.md rule 1): ABC-004A M.3410 / 3411 / 3416 / 3417 = AND of "A-BNR SUPPLY OIL VALVE(1) CLOSE" and "VALVE(2)
+       CLOSE" (B / C / D-BNR), the limit switches of the station wiring: the same contacts as DITL-16 out 21 / 23 BURNER A OIL SUPPLY LINE
+       VALVE(1) / (2) CLOSED (machine instances #B ~ #D). Unlinked, they kept the Cold value (closed) and the plant burnt no oil while the
+       DITL burner was IN SERVICE with both valves open */
+    {
+      const b16 = S.sheets.find(x => /\)DITL-16$/.test(x.name)),
+        a4 = AN.sheets.find(x => x.name === 'ABC-004A'),
+        T = a4 && a4.S;
+      if (b16 && T)
+        ['M.3410', 'M.3411', 'M.3416', 'M.3417'].forEach((adr, k) => {
+          const d = inst(b16, k);
+          if (!d) return;
+          for (let n = 0; n < T.lab.length; n++) {
+            if (!T.lab[n] || String(T.lab[n].t).trim() !== adr || T.ext.includes(n)) continue;
+            for (const g of T.drv[n] || [])
+              if (g.k === 'AND')
+                (g.i || [])
+                  .filter(i => T.ext.includes(i))
+                  .slice(0, 2)
+                  .forEach((i, j) => ain.push({ sh: a4, n: i, d, row: j ? 22 : 20, ref: d.name + ' out ' + (j ? 23 : 21) + ' VALVE(' + (j + 1) + ') CLOSED' }));
+          }
+        });
+    }
     W.idx = { din, ain };
     W._nA = AN.sheets.length;
     W.stat = {
@@ -581,8 +654,14 @@
       for (const g of s.nl.gates) if (g.t === 'TMR' && tmStep(g, g.ins.some(n => R.v[n]), dt)) ch = true;
       if (mvStep(s, R.v, dt)) ch = true;
       if (motStep(s, R.v, dt)) ch = true;
+      if (fdStep(s, dt)) ch = true;
       if (ch) R = simSheet(s);
       out[s.name] = R.outOn;
+      /* 3.2.0-beta.23: an output that changed in this scan (a push button seen, a step of a sequence): the next scans are short (W.busy) */
+      if (!TMBUSY) {
+        const a = prev[s.name];
+        if (a && (a.size !== R.outOn.size || [...R.outOn].some(x => !a.has(x)))) TMBUSY = true;
+      }
       if (s === c) {
         const k = [...R.outOn].join(',') + '|' + [...R.rowOn].join(',');
         if (ch || k !== W._ck) chCur = true;
@@ -638,6 +717,11 @@
           mvUI(c);
         } catch (e) {}
     }
+    /* 3.2.0-beta.23: after each scan (the Training dock releases its push buttons after two scans) */
+    if (W.onTick)
+      try {
+        W.onTick(dt);
+      } catch (e) {}
     W.ms = W.ms * 0.8 + (performance.now() - t0) * 0.2;
   }
   /* 3.2.0-beta.6 FIRST-OUT across sheets: an input row that is 1 because of another sheet is followed to that sheet's output
@@ -765,11 +849,29 @@
       return;
     }
     W.live = true;
-    const now = performance.now(),
-      dt = Math.min((now - (last || now)) / 1000, 1) * (AN.cat === 'an' ? AN.spd || 1 : TSP);
+    const now = performance.now();
+    let dt = Math.min((now - (last || now)) / 1000, 1) * (AN.cat === 'an' ? AN.spd || 1 : TSP);
     last = now;
     try {
-      tick(dt);
+      /* 3.2.0-beta.23: while a short timer counts, a device moves or an output changed (W.busy, set by the scan: tmStep / mvStep / fdStep /
+         tick), scans of 2 s,
+         at most 12 a frame: at x300 a frame is 60 s and a burner light-off of a few seconds (igniter insert, trial for ignition) was
+         jumped over in one scan and failed; the time of that frame is what the scans took (the plant follows the same time) */
+      if (!W.busy || dt <= 2) {
+        TMBUSY = false;
+        tick(dt);
+        W.busy = TMBUSY;
+      } else {
+        let used = 0;
+        for (let n = 0; n < 12 && used < dt - 1e-6; n++) {
+          const h = W.busy ? Math.min(2, dt - used) : dt - used;
+          TMBUSY = false;
+          tick(h);
+          W.busy = TMBUSY;
+          used += h;
+        }
+        dt = used;
+      }
     } catch (e) {
       console.error(e);
     }
@@ -779,7 +881,18 @@
     if (AN.cat !== 'an' && AN.sheets.length && AN.worldSheets && AN.worldSheets.length)
       try {
         const sh = AN.sheets[AN.i] && AN.sheets[AN.i].S ? AN.sheets[AN.i] : AN.sheets.find(s => s.name === AN.worldSheets[0]);
-        if (sh && sh.S) AN.stepSet(sh, dt);
+        /* 3.2.0-beta.23: in steps of 0.5 s and with the Training coach after each, like the ABC Run (src/analog/ui/interaction.js):
+           the plant model goes on the same while the DITL page is on the screen (one RUN for the app) */
+        if (sh && sh.S) {
+          const k = Math.max(1, Math.min(240, Math.ceil(dt / 0.5)));
+          for (let i = 0; i < k; i++) {
+            AN.stepSet(sh, dt / k);
+            if (AN.onStep)
+              try {
+                AN.onStep(dt / k);
+              } catch (e) {}
+          }
+        }
       } catch (e) {
         console.error(e);
       }

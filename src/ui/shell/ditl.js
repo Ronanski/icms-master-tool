@@ -808,6 +808,52 @@
   };
   D.sel = () => pk && { t: pk.t, i: pk.i, side: pk.side, g: pk.g, n: pk.n };
   D.why = (s, n, want) => why(s, simSheet(s).v, n, want, new Set(), 0);
+  /* 3.2.0-beta.23 TRAINING INTERLOCK (user 2026-10-24: "di ba may interlock yan s kada equipment? na-icoconsider ba ito sa start-up
+     training?"): what output row `row` of DITL sheet s needs to become 1 now, read from the netlist (the "To make it 1" of the
+     Selected tab), with the names of the input rows; [] = it is 1. D.outs lists the output rows of a sheet with their names */
+  D.need = (s, row) => {
+    try {
+      if (!s.nl) s.nl = netlist(s);
+      const o = s.nl.outs.find(x => x.row === row);
+      if (!o) return null;
+      const v = simSheet(s).v;
+      if (v[o.n]) return [];
+      const L = why(s, v, o.n, 1, new Set(), 0),
+        out = [];
+      for (const r of L) {
+        const it =
+          r.row !== undefined
+            ? { row: r.row, no: rowNo(s, r.row), tag: tagOf(s, r.row) || '', svc: svcOf(s, r.row) || '', want: r.want ? 1 : 0, auto: !!r.auto }
+            : { txt: r.txt };
+        const k = r.row !== undefined ? 'r' + r.row + it.want : it.txt;
+        if (!out.some(q => (q.row !== undefined ? 'r' + q.row + q.want : q.txt) === k)) out.push(it);
+      }
+      return out.slice(0, 12);
+    } catch (e) {
+      return null;
+    }
+  };
+  D.rowInfo = (s, row) => ({ tag: tagOf(s, row) || '', svc: svcOf(s, row) || '' });
+  D.rowVal = (s, row) => {
+    try {
+      const v = simSheet(s).v;
+      return rowNets(s, row, 'L').some(n => v[n]) ? 1 : 0;
+    } catch (e) {
+      return null;
+    }
+  };
+  D.outs = s => {
+    if (!s.nl) s.nl = netlist(s);
+    return [...new Set(s.nl.outs.map(o => o.row))].map(r => ({ row: r, name: outName(s, r) }));
+  };
+  D.outVal = (s, row) => {
+    try {
+      const o = s.nl && s.nl.outs.find(x => x.row === row);
+      return o ? (simSheet(s).v[o.n] ? 1 : 0) : null;
+    } catch (e) {
+      return null;
+    }
+  };
   /* 3.2.0-beta.6 FIRST-OUT: why output row `row` of sheet s is 1 now (the inputs that are 1 and keep it 1), as text lines for the
      Event log: called by the one world (src/world/world.js) at the scan where a TRIP / MFT output goes 1 */
   D.cause = (s, row) => {

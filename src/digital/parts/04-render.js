@@ -273,7 +273,10 @@ function simSheet(s) {
       });
     } else outOn.delete(row);
   });
-  if (!s.nl.gates.length && !s.ba) rowOn.forEach(i => outOn.add(i)); /* 2.5.0-beta.14: not a bottom ash indicator sheet (BA-72) */
+  /* 2.5.0-beta.14: not a bottom ash indicator sheet (BA-72). 3.2.0-beta.23: not a field I/O sheet either (DITL-16 / 17: the input
+     rows are the DCS commands to the solenoids, the output rows the limit switches of the device; row 21 OPEN BURNER A OIL VALVE (1)
+     lit output row 21 VALVE (1) CLOSED, so the oil valves read closed while open and the burner had no oil) */
+  if (!s.nl.gates.length && !s.ba && !(s.nl.usr || []).length && !(s.nl.mv || []).length) rowOn.forEach(i => outOn.add(i));
   return { rowOn, v, outOn };
 }
 /* ---------- render ---------- */
