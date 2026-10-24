@@ -545,3 +545,24 @@ Engine at logic: walang binago.
 **As Left (ebidensya, WORLD ON ×300, buong gabay):** pagkatapos ng ayos 1 ~ 5: **6 sa 6 na buong run** umabot sa 150 MW at sa Practice, walang MFT, walang hinto sa HIC-BM / EIC-TM (MSP 123.0, PICMS1002 sarado, M.0255 = 0). Bago ang ayos (beta.23): 1 sa 2 run huminto sa HIC-BM (M.0255 = 1, blow-off MV 76 %); sa gitnang bersyon (ayos 2 ~ 5 lang) 1 sa 6 huminto pa rin dahil sa SV 123 ng blow-off, kaya idinagdag ang ayos 1. PASADO: training_dock, training_start, training_practice, home_training, live_training, tests.js (0 FAIL), `npm run check` SAME.
 
 **Status:** Beta. Hindi pa nasubok sa tablet / EXE ng user.
+
+## 3.2.0-beta.25 — Isang utak (ABC + DITL laging iisang mundo) at ladder view (preview)
+
+**Problem (user 2026-10-24):** "si DITL at ABC ay dapat interconnected ... most of the permissives ay nasa DITL"; "tanggalin mo na rin ang button na ABC plus DITL ON, mula ngayon isang utak na yan"; "ladder sample" para makapagdesisyon kung gagawing ladder ang DITL (sa actual DCS nila, naka-ladder lahat).
+
+**As Found:**
+- Ang iisang mundo (`src/world/world.js`) ay OFF bilang default (CLAUDE.md rule 7 ng 2026-10-15) at may button na "ABC+DITL ON / OFF". Sa OFF, ang "FROM DITL" ng ABC ay manual input, kaya hindi nararamdaman ng ABC ang mga permissive at trip ng DITL. Ang Training dock lang ang nagbubukas nito.
+- Walang ladder view. Ang DITL logic ay nasa netlist ng app (gate, input row, output row, FF, timer).
+
+**Work Done:**
+1. `src/world/world.js`: laging ON; wala na ang button (at ang `ls-world` na naka-save). Ang `WORLD.set(false)` ay para na lang sa test na sumusubok ng isang DITL sheet nang mag-isa. `dock.js`: hindi na nagbubukas / nagsasara ng mundo. Event log: bagong paliwanag. CLAUDE.md rule 7 pinalitan.
+2. `src/ui/ladder/` (bago): ladder ng nakabukas na DITL sheet, gawa ng app mula sa parehong logic (hindi iginuhit): bawat output row = rung na may coil; AND = sunod-sunod na contact, OR = parallel, NOT = N.C. contact; FF / timer / counter / net na ginagamit sa maraming lugar = internal relay (FF1, T1, R1) na may sariling rung. Live katabi ng drawing (berde = energized). Button "Ladder" sa DITL ribbon.
+3. Test `tests/regress/ladder.js` (bago): ang power flow ng bawat rung ay ibinabangga sa value ng engine sa parehong net. `tests/regress/world.js`: "default ON, walang button".
+
+**As Left (ebidensya):**
+- Ladder: 241 / 241 DITL sheet naisalin, bawat output row may rung; 1,928 random na estado ng input (8 bawat sheet), 20,552 rung: **0 hindi tugma** sa engine. DITL-29A SEAWATER PUMP A (1): 14 rung, 8 internal relay, live habang ▶ Run.
+- Nakita sa ladder: DITL-29A rung "OUTPUT row 17 SEAWATER PUMP A TRIP" ay may contact na walang pinagmulan sa drawing ("net 2", OR ng M.1153/1163). Susuriin sa CHECKLIST 0.4 (A/B/C/D).
+- Bilis sa PC (ABC RUN, 150 MW): parehong 60 fps (frame 17 ms) ON at OFF; 95 % ng frame ≤ 25 ms (OFF 22 ms); ikot ng mundo ~9 ms bawat 0.2 s.
+- PASADO: ladder, world, ditl_sim, training_dock, ditl150, why, events, lookonly; abcbar, audit230, blocks_io; interlock: tumatakbo pa sa oras ng push (isusulat ang resulta).
+
+**Status:** Beta. Ang ladder ay preview: hinihintay ang desisyon ng user kung gagawin sa lahat (CHECKLIST 0.3). Hindi pa nasubok sa tablet / EXE ng user (bilis ng iisang mundo sa tablet).
