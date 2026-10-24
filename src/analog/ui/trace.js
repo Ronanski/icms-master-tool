@@ -169,6 +169,10 @@ bRun.onclick = () => {
   setRun(!AN.run);
   if (c) msg(COLD_MSG);
 };
+/* 3.2.0-beta.21 (Training, user 2026-10-24: "irrun mo ba"): the simulation on from a script of the page (the Training start), as the Run button */
+AN.runOn = () => {
+  if (AN.view || !AN.run) bRun.onclick();
+};
 function wsIn(o) {
   if (o && typeof o === 'object' && o.wv !== 2) o = Object.assign({}, o, { as: 'solid', wv: 2 });
   Object['assign'](AN.ws, o);

@@ -464,10 +464,10 @@ window.LS_LIVE = (function () {
   ]);
   const XS = [X1, X2, X3, X4];
   if (!PROC.some(s => s.x)) {
-    PROC.push({ t: 'SYNCHRONIZATION AND INITIAL LOAD (APP)', x: 1, note: 'Added by the app: PR-OPE-5002 ends at Solid firing. Targets from the M4 cold start of the app (CHECK) and the FHI design data.', s: X1.map(x => ({ t: x[0], g: [] })) });
+    PROC.push({ t: 'SYNCHRONIZATION AND INITIAL LOAD (APP)', x: 1, note: 'Added by the app: PR-OPE-5002 ends at Solid firing. Targets from the cold start scenario of the app (it reaches 150 MW) and the FHI design data.', s: X1.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'LOAD UP TO 150 MW (APP)', x: 1, note: 'Added by the app. PR-OPE-5002 sec 44: boiler follow until 90 MW; then coordinated control to 150 MW (FHI MCR 460 T/H).', s: X2.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'PRACTICE: LOAD CHANGE IN AUTO (APP)', x: 1, note: 'Added by the app. Start ▾ > Start at 150 MW (or after Load up), RUN. See how the coordinated control holds the demand: you only move the target MW.', s: X3.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'PRACTICE: LOAD CHANGE BY HAND (MANUAL) (APP)', x: 1, note: 'Added by the app. Start ▾ > Start at 150 MW, RUN. You are the CCS: the turbine master sets the MW, the boiler master sets the fire; keep the pressure.', s: X4.map(x => ({ t: x[0], g: [] })) });
+    PROC.push({ t: 'PRACTICE: LOAD CHANGE IN AUTO (APP)', x: 1, note: 'Added by the app. Press "Practise: 150 MW load change" (or continue after Load up). See how the coordinated control holds the demand: you only move the target MW.', s: X3.map(x => ({ t: x[0], g: [] })) });
+    PROC.push({ t: 'PRACTICE: LOAD CHANGE BY HAND (MANUAL) (APP)', x: 1, note: 'Added by the app. Press "Practise: 150 MW load change". You are the CCS: the turbine master sets the MW, the boiler master sets the fire; keep the pressure.', s: X4.map(x => ({ t: x[0], g: [] })) });
   }
 
   /* ---------- the general rules (step text + its tags), after the table ---------- */
