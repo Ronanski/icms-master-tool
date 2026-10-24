@@ -427,3 +427,27 @@ Engine at logic: walang binago.
 - Tunay na click: pagbukas at Reset = MSP 0.
 
 **Hindi isinama:** ang PV ng HP bypass PICMS1006 sa Cold ay nananatiling 122. Ang dahilan ay ang SELECT CIRCUIT ng drawing: binabasa nito ang 0 bilang nawalang transmitter at hinahawakan ang huling value (user rule v1.20.34). Sinubukan kong bigyan ng 0.1 % ang transmitter, pero bumagsak ang roll at ang 45 → 150 MW (MSP 111, drum −289). Kaya ibinalik ko ito. Kailangan itong suriin kasama ang operator script.
+
+## 3.2.0-beta.20 — Plant chip (pili B); inalis ang UAT at CHECK sa app
+
+**Problem (user 2026-10-24):**
+- "dpt common tools yn s simulate": ang pagpili ng plant model at MW ay nakatago sa Start ▾ ng Plant view. Pinili ng user ang B: isang chip katabi ng VIEW | RUN.
+- "remove uat test completely sa app mismo saka yung check sa tools".
+
+**Work Done:**
+- **Plant chip** (`app.js` buildPlantChip, `app.css`): katabi ng VIEW | RUN sa lahat ng page. Nakasulat dito ang estado (PLANT, Unit · Cold / Per-loop · 75 MW / OFF). Kapag pinindot, may panel ng pagpipilian:
+  - Plant model OFF / Per-loop / Unit.
+  - Per-loop: kahit anong MW mula 45 hanggang 150, tapos Set. Dati, 45 / 60 / 90 / 120 lang.
+  - Unit: Start Cold / Warm / Hot / 150 MW, at Target load (TCS target).
+  - Sa VIEW, naka-lock ito (ABC VIEW, o DITL na hindi nagsi-simulate).
+  - Mula sa DITL page, ini-load muna ang ABC engine, tapos bumabalik sa DITL.
+- **Start ▾ → TCS / Field ▾**: natira rito ang TCS panel at ang field equipment / valves. Ang mga dating button ng starting state ay nasa page pa rin pero nakatago, kaya walang nasira sa mga gumagamit nito (Home, mga test).
+- **UAT at CHECK**: wala nang button o panel sa app. Ang mga runner ay nananatili para sa automated test lang (`navigator.webdriver`): check_panel, live_training, scenario tests.
+- Mga hint at mensahe: "Plant ▾ (top right)" na ang nakasulat, hindi na "Start ▾ in the PLANT VIEW". Hindi ginalaw ang mga tala sa Training (user: huwag munang galawin ang Training).
+
+**Sinubok:**
+- Tunay na click sa 1440 × 900, 1280 × 800, 800 × 1280 at 390 × 844: Per-loop 75 MW (MW 75), Unit Cold (MW 0), 150 MW (151.5), OFF, at bumalik sa ON.
+- Naka-lock ang panel sa VIEW.
+- Walang page error.
+
+**Tala:** sa 1280 × 800, ang alarm line sa top band ay pinaiikli ("No activ…") dahil sa chip. Buo pa rin ang NO ALARM pill.

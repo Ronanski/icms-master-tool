@@ -63,7 +63,7 @@
       const v = E('b', '', '—');
       b.append(E('i', '', k), v);
       v.after(E('small', '', u));
-      b.title = t + '. Shown once that sheet runs (open it, or Start ▾ in the PLANT VIEW). Click: open ' + sh + '.';
+      b.title = t + '. Shown once that sheet runs (open it, or Plant ▾ beside VIEW | RUN). Click: open ' + sh + '.';
       b.onclick = () => {
         try {
           if (window.lsSetTab) lsSetTab('logic');

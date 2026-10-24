@@ -264,11 +264,11 @@
     hint();
   }
   const HINTS = {
-    operate: 'PLANT VIEW: pick a system on the left · click a controller or valve = faceplate (A / M / R, SV, MV) · Start ▾ = starting state · CHECK = scenarios',
+    operate: 'PLANT VIEW: pick a system on the left · click a controller or valve = faceplate (A / M / R, SV, MV) · Plant ▾ (top right) = plant model and starting state',
     library: 'LIBRARY: search an address, tag or description · Find = open the info card',
     tools: 'TOOLS: tests, drawing checks, simulation switches',
     home: 'HOME: pick what you want to do · "/" or Ctrl+K = search a tag',
-    training: 'TRAINING: tick each step as you do it · a tag = its info card · Start ▾ Cold in the PLANT VIEW to practise'
+    training: 'TRAINING: tick each step as you do it · a tag = its info card · Plant ▾ (top right) > Unit > Cold to practise'
   };
   window.lsSetTab = setTab;
   function hint() {
@@ -490,9 +490,12 @@
     const gNav = E('div', { cls: 'tb g-nav', 'data-label': 'TRACE' }, [AN_(xback)]);
     const gSheet = E('div', { cls: 'tb g-sheet' }, [sheetsBtn, AN_(shbox), DI_(dshbox)]);
     /* OPERATE: Start ▾ (starting state of the plant, TCS, field valves) and the CHECK scenarios */
-    const startBtn = E('button', { txt: 'Start ▾', title: 'Starting state of the plant: 150 MW, cold, warm, hot; TCS panel; field valves' });
+    /* 3.2.0-beta.20: the starting state and the plant model moved to the Plant chip beside VIEW | RUN (user pick B); this menu keeps
+       the TCS panel and the field equipment / valves */
+    const startBtn = E('button', { txt: 'TCS / Field ▾', title: 'TCS panel (turbine roll, sync, load up, target MW) and the field equipment and valves without a DCS signal. The starting state and the plant model: the Plant chip beside VIEW | RUN.' });
     const start = dropdown(startBtn, 'left');
     buildStart(start);
+    buildPlantChip(start);
     const gOp = E('div', { cls: 'tb g-op' }, [start.w]);
     pvPop = () => pvWindow(start.w, gOp, run, chip, clock);
     const tbar = E('div', { cls: 'tbar' }, [gRun, gDitl, gZoom, gView, gNav, gSheet, gOp]);
@@ -1358,7 +1361,7 @@
         msg('Could not load the 150 MW state: ' + e.message);
       }
     });
-    btn('loadcold', 'Cold (start-up from zero)', 'Reset, the 150 MW anchors, then the plant cold: drum 0 kg/cm2, water and bed 30 C, feeders and fans stopped, oil valves closed, every controller LOCAL + MANUAL 0 %. The CHECK panel has the procedure.', () => {
+    btn('loadcold', 'Cold (start-up from zero)', 'Reset, the 150 MW anchors, then the plant cold: drum 0 kg/cm2, water and bed 30 C, feeders and fans stopped, oil valves closed, every controller LOCAL + MANUAL 0 %. Training has the procedure.', () => {
       try {
         AN.reset();
         const n = AN.plantCold();
@@ -1375,7 +1378,7 @@
         const n = AN.plantWarm();
         AN.startState = 'plantWarm';
         AN.paint();
-        msg('Plant warm: drum 30 kg/cm2, bed 480 C, 4 start-up burners lit. Press Run; coal transfer: CHECK panel has the steps. ' + n + ' anchors.');
+        msg('Plant warm: drum 30 kg/cm2, bed 480 C, 4 start-up burners lit. Press Run; coal transfer: see Training (PR-OPE-5002). ' + n + ' anchors.');
       } catch (e) {
         msg('Could not load the warm state: ' + e.message);
       }
@@ -1445,6 +1448,239 @@
       btn(id, txt, 'Field hand valve of the drum blowdown (not a DCS station). PR-OPE-5003: "Before stopping BFP, set the drum level near HH (blow down valve must be close)".', () =>
         msg(AN.blowdown && AN.blowdown(open) ? ok : 'Blowdown: walang drum level loop.')
       );
+  }
+  /* 3.2.0-beta.20 (user 2026-10-24 "dpt common tools yn s simulate", pick B of https://claude.ai/artifact/ShJf2VmTtFDsMGFCMD5zeT):
+     the PLANT chip beside VIEW | RUN, on every page (ABC, DITL, Plant view). It tells the plant model and the starting state at a
+     glance and opens a small panel: Plant model OFF / Per-loop / Unit, the starting state of the unit (Cold, Warm, Hot, 150 MW), the
+     load of the per-loop model (any MW 45 ~ 150, before 45 / 60 / 90 / 120 only) and the target MW of the unit. The handlers are
+     the ones of the old Start ▾ menu (its buttons stay in the page, hidden, so nothing that clicks them changes) and the engine's
+     own AN.plantSwitch / AN.plantLoop / AN.turbine. VIEW: the panel shows the state, the choices wait for RUN. */
+  function buildPlantChip(start) {
+    const MOVED = ['load150', 'loadcold', 'loadwarm', 'loadhot', 'loop45', 'loop60', 'loop90', 'loop120'];
+    for (const id of MOVED) {
+      const b = start.m.querySelector('#' + id);
+      if (b) b.classList.add('lsmoved');
+    }
+    for (const h of start.m.querySelectorAll('.mh'))
+      if (/^(Starting state|Loop study)/.test(h.textContent)) h.classList.add('lsmoved');
+    const NAMES = { plantCold: 'Cold', plantWarm: 'Warm', plantHot: 'Hot', plantLoad150: '150 MW' };
+    const model = () => (!(window.AN && AN.plantOn) ? 'off' : AN.startState === 'plantLoop' ? 'loop' : 'unit');
+    let pick = null;
+    const txt = () => {
+      const m = model();
+      if (m === 'off') return 'OFF';
+      if (m === 'loop') return 'Per-loop · ' + (AN.loopMW || '—') + ' MW';
+      return 'Unit · ' + (NAMES[AN.startState] || 'not started');
+    };
+    const chip = E('button', { id: 'plchip', cls: 'plchip', title: 'Plant model and starting state: OFF, Per-loop (one MW), Unit (Cold to 150 MW)' }, [
+      E('i', { 'aria-hidden': 'true' }),
+      E('span', {}, [E('small', { txt: 'PLANT' }), E('em', {})]),
+      E('b', { txt: '▾', 'aria-hidden': 'true' })
+    ]);
+    const pop = E('div', { id: 'plpop', cls: 'plpop', role: 'dialog', 'aria-label': 'Plant model' });
+    pop.hidden = true;
+    document.body.append(pop);
+    const loaded = () => !!(window.AN && AN.sheets && AN.sheets.length >= 54 && AN.plantCold);
+    /* the choices need the ABC engine: from the DITL page it is loaded first, then the page comes back */
+    const withAN = fn => {
+      /* the operator chose: no automatic Cold of a first ABC page on top of it (trace.js coldShow) */
+      if (window.AN) AN._cold0 = 1;
+      if (loaded() && AN.cat === 'an') return fn();
+      const back = window.AN && AN.cat;
+      try {
+        AN.setCat('an');
+      } catch (e) {}
+      let k = 0;
+      const iv = setInterval(() => {
+        if (loaded() || ++k > 120) {
+          clearInterval(iv);
+          if (loaded()) fn();
+          if (back && back !== 'an')
+            try {
+              AN.setCat(back);
+            } catch (e) {}
+          upd();
+        }
+      }, 250);
+    };
+    const say = t => {
+      try {
+        if (typeof msg === 'function') msg(t);
+        else if (window.AN && AN.msg) AN.msg(t);
+      } catch (e) {}
+    };
+    /* VIEW of the page (top bar VIEW | RUN): the ABC page's VIEW, or the DITL page while it does not simulate */
+    const locked = () => {
+      if (document.body.classList.contains('an')) return !!(window.AN && AN.view && !AN.run);
+      try {
+        return !SIM;
+      } catch (e) {
+        return false;
+      }
+    };
+    const guard = fn => () => {
+      if (locked()) {
+        say('VIEW: look and trace only. Press RUN (top right) to pick the plant model or the starting state.');
+        return;
+      }
+      fn();
+      upd();
+      if (!pop.hidden) render();
+    };
+    const seg = (items, on) => E('div', { cls: 'plseg' }, items.map(([k, label, fn]) => E('button', { cls: k === on ? 'on' : '', txt: label, on: guard(fn) })));
+    const mwBox = (id, val) => E('input', { id, type: 'number', min: '45', max: '150', step: '0.5', value: String(val), inputmode: 'decimal', 'aria-label': 'MW' });
+    const plantOn = on => {
+      if (!!AN.plantOn !== on) AN.plantSwitch(on, true);
+    };
+    function render() {
+      const m = pick || model();
+      pop.textContent = '';
+      pop.append(
+        E('h5', { txt: 'Plant model' }),
+        seg(
+          [
+            ['off', 'OFF', () => withAN(() => (pick = null, plantOn(false), say('Plant model OFF: the transmitters are free inputs, only the drawn logic runs (simulate and force).')))],
+            ['loop', 'Per-loop', () => (pick = 'loop')],
+            ['unit', 'Unit', () => (pick = 'unit')]
+          ],
+          m
+        ),
+        E('small', {
+          txt:
+            m === 'off'
+              ? 'OFF: simulate and force only. No plant answers the valves.'
+              : m === 'loop'
+                ? 'Per-loop: the boiler stands at one load; each loop answers its own MV with the steam, water and air of that load.'
+                : 'Unit: the whole boiler and turbine, from Cold to 150 MW (mass and energy balance, steam table).'
+        })
+      );
+      if (m === 'loop') {
+        const i = mwBox('plmw', AN.loopMW || 90);
+        pop.append(
+          E('h5', { txt: 'Load' }),
+          E('div', { cls: 'plrow' }, [
+            i,
+            E('span', { txt: 'MW' }),
+            E('button', {
+              cls: 'plgo',
+              txt: 'Set',
+              on: guard(() => {
+                const mw = Math.max(45, Math.min(150, +i.value || 90));
+                withAN(() => {
+                  try {
+                    plantOn(true);
+                    AN.reset();
+                    const n = AN.plantLoop(mw);
+                    AN.startState = 'plantLoop';
+                    AN.loopMW = mw;
+                    pick = null;
+                    AN.settle();
+                    AN.paint();
+                    say('Per-loop at ' + mw + ' MW: the boiler is held at this load; each loop answers its own MV. Press Run. ' + n + ' anchors.');
+                  } catch (e) {
+                    say('Could not set the per-loop load: ' + e.message);
+                  }
+                  upd();
+                });
+              })
+            }),
+            E('span', { cls: 'plh', txt: '45 ~ 150' })
+          ])
+        );
+      }
+      if (m === 'unit') {
+        const st = AN.startState && NAMES[AN.startState] ? AN.startState : null,
+          click = id => () =>
+            withAN(() => {
+              plantOn(true);
+              pick = null;
+              const b = $(id);
+              if (b) b.click();
+              upd();
+            });
+        const t = mwBox('pltgt', Math.round(+(AN.unit && AN.unit.MW) || 0) >= 45 ? Math.round(+AN.unit.MW) : 150);
+        t.min = '4.5';
+        pop.append(
+          E('h5', { txt: 'Start' }),
+          seg(
+            [
+              ['plantCold', 'Cold', click('loadcold')],
+              ['plantWarm', 'Warm', click('loadwarm')],
+              ['plantHot', 'Hot', click('loadhot')],
+              ['plantLoad150', '150 MW', click('load150')]
+            ],
+            st
+          ),
+          E('h5', { txt: 'Target load' }),
+          E('div', { cls: 'plrow' }, [
+            t,
+            E('span', { txt: 'MW' }),
+            E('button', {
+              cls: 'plgo',
+              txt: 'Set',
+              on: guard(() =>
+                withAN(() => {
+                  const mw = Math.max(4.5, Math.min(150, +t.value || 150));
+                  try {
+                    const r = AN.turbine('loadup', mw);
+                    say(r ? 'TCS: ' + r : 'Target ' + mw + ' MW at 7.5 MW/min (TCS). In CCS (DCS control mode ON) the load is set on HIC-ULD (ABC-001A).');
+                  } catch (e) {
+                    say('TCS: ' + e.message);
+                  }
+                })
+              )
+            })
+          ]),
+          E('small', { txt: 'Target load = the TCS target while the DCS control mode is OFF. In CCS, change HIC-ULD (ABC-001A faceplate).' })
+        );
+      }
+      if (locked()) pop.append(E('p', { cls: 'plnote', txt: 'VIEW: press RUN to change these.' }));
+    }
+    function place() {
+      const r = chip.getBoundingClientRect(),
+        vw = document.documentElement.clientWidth,
+        w = pop.offsetWidth || 340;
+      pop.style.top = r.bottom + 6 + 'px';
+      pop.style.left = Math.max(8, Math.min(r.right - w, vw - w - 8)) + 'px';
+    }
+    chip.onclick = e => {
+      e.stopPropagation();
+      pop.hidden = !pop.hidden;
+      if (!pop.hidden) {
+        pick = null;
+        render();
+        place();
+      }
+    };
+    document.addEventListener(
+      'click',
+      e => {
+        if (e.isTrusted && !pop.hidden && !pop.contains(e.target) && !chip.contains(e.target)) pop.hidden = true;
+      },
+      true
+    );
+    addEventListener('keydown', e => {
+      if (e.key === 'Escape') pop.hidden = true;
+    });
+    addEventListener('resize', () => !pop.hidden && place());
+    let last = '';
+    function upd() {
+      const m = model(),
+        k = txt() + '|' + m + '|' + locked();
+      if (k !== last) {
+        last = k;
+        chip.querySelector('em').textContent = txt();
+        chip.setAttribute('aria-label', 'Plant model: ' + txt());
+        chip.dataset.m = m;
+        if (!pop.hidden) render();
+      }
+    }
+    /* beside VIEW | RUN, wherever the bar puts them (the unit band moves the segment) */
+    setInterval(() => {
+      const sg = [...document.querySelectorAll('.seg')].find(x => /VIEW/.test(x.textContent) && /RUN/.test(x.textContent));
+      if (sg && chip.nextSibling !== sg) sg.before(chip);
+      upd();
+    }, 400);
   }
   let tries = 0;
   const iv = setInterval(() => {

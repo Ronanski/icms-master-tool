@@ -27,9 +27,14 @@ await p.evaluate(()=>lsSetTab('operate'));await p.waitForTimeout(2500);
 /* 3.2.0-beta.6: on a wide screen Start ▾ / CHECK sit in the plant bar and the ribbon row is hidden in the PLANT VIEW */
 const op=await p.evaluate(()=>({inBar:!!document.querySelector('#plantws .plbar .crop .g-op'),ribbon:getComputedStyle(document.querySelector('#gsbar .tbar')).display,alarmInBand:!!document.querySelector('#crband > #cralarm')}));
 ck(op.inBar&&op.ribbon==='none'&&op.alarmInBand,'PLANT VIEW: Start ▾ / CHECK in the plant bar, ribbon row hidden, alarm line in the unit band '+JSON.stringify(op));
-await p.evaluate(()=>[...document.querySelectorAll('#plantws .plbar .crop button')].find(x=>/^Start/.test(x.textContent.trim())).click());await p.waitForTimeout(400);
-const sm=await p.evaluate(()=>{const m=document.querySelector('.ddm.ddm-open');if(!m)return null;const r=m.getBoundingClientRect();return {w:r.width,h:r.height,b:r.bottom,n:[...m.querySelectorAll('button')].filter(x=>/150 MW/.test(x.textContent)).length}});
-ck(sm&&sm.w>100&&sm.h>100&&sm.b<=833&&sm.n>=1,'Start ▾ opens its menu on screen with Start at 150 MW ('+(sm?Math.round(sm.w)+'x'+Math.round(sm.h):'none')+')');
+await p.evaluate(()=>[...document.querySelectorAll('#plantws .plbar .crop button')].find(x=>/^TCS/.test(x.textContent.trim())).click());await p.waitForTimeout(400);
+/* 3.2.0-beta.20: the menu is TCS / Field ▾ (TCS panel, field equipment); the starting states moved to the Plant chip */
+const sm=await p.evaluate(()=>{const m=document.querySelector('.ddm.ddm-open');if(!m)return null;const r=m.getBoundingClientRect();const vis=[...m.querySelectorAll('button')].filter(x=>getComputedStyle(x).display!=='none');return {w:r.width,h:r.height,b:r.bottom,n:vis.filter(x=>/Turbine ROLL/.test(x.textContent)).length,st:vis.filter(x=>/150 MW \(HMI|^Cold/.test(x.textContent)).length}});
+ck(sm&&sm.w>100&&sm.h>100&&sm.b<=833&&sm.n>=1&&sm.st===0,'TCS / Field ▾ opens its menu on screen with Turbine ROLL, no starting state in it ('+(sm?Math.round(sm.w)+'x'+Math.round(sm.h):'none')+')');
+await p.keyboard.press('Escape');await p.waitForTimeout(200);
+await p.click('#plchip');await p.waitForTimeout(400);
+const pc=await p.evaluate(()=>{const c=document.getElementById('plchip'),q=document.getElementById('plpop'),sg=c.nextElementSibling,r=q.getBoundingClientRect();return {next:!!sg&&/VIEW/.test(sg.textContent),open:!q.hidden,w:r.width,b:r.bottom,r:r.right,vw:innerWidth,models:[...q.querySelectorAll('.plseg')[0].children].map(b=>b.textContent).join('/')}});
+ck(pc.next&&pc.open&&pc.w>200&&pc.b<=833&&pc.r<=pc.vw&&pc.models==='OFF/Per-loop/Unit','Plant chip beside VIEW | RUN opens its panel on screen ('+JSON.stringify(pc)+')');
 await p.keyboard.press('Escape');await p.evaluate(()=>lsSetTab('logic'));await p.waitForTimeout(500);
 ck(await p.evaluate(()=>!!document.querySelector('#gsbar .tbar .g-op')&&getComputedStyle(document.querySelector('#gsbar .tbar')).display!=='none'),'LOGIC: the ribbon is back and Start ▾ / CHECK went back to it (hidden there)');
 // a KPI opens its sheet

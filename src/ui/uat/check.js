@@ -41,7 +41,9 @@
         if (!P.childNodes.length) build();
       }
     });
-  document.body.append(btn, P);
+  /* 3.2.0-beta.20 (user 2026-10-24: "yung check sa tools" remove, "di ba meron naman training"): no CHECK button or panel in the
+     app; the scenarios stay as the automated proof of the plant model (tests/regress/check_panel.js, an automated browser) */
+  if (navigator.webdriver) document.body.append(btn, P);
   let busy = false;
   /* ---- helpers on the running plant (same as the tests) ---- */
   const H = () => {
