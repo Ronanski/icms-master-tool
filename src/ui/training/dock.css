@@ -15,7 +15,7 @@ html.gd-bottom .gd-grip:after{content:"";position:absolute;left:50%;top:8px;widt
 .gd-hd{display:flex;align-items:center;gap:8px;padding:8px 10px 6px 12px;border-bottom:1px solid var(--c-line)}
 .gd-hd b{font-size:14px}
 .gd-sp{flex:1}
-.gd-pill{font-size:11px;font-weight:600;border-radius:20px;padding:1px 8px;border:1px solid var(--c-line2)}
+.gd-pill{white-space:nowrap;font-size:11px;font-weight:600;border-radius:20px;padding:1px 8px;border:1px solid var(--c-line2)}
 .gd-pill.on{border-color:var(--c-run);color:var(--c-runtx2);background:var(--c-runsoft)}
 .gd-pill.off{border-color:var(--c-man);color:var(--c-mantx2);background:var(--c-mansoft)}
 .gd-seg{display:flex;border:1px solid var(--c-line2);border-radius:7px;overflow:hidden}
@@ -104,3 +104,5 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
 #gdock button:focus-visible{outline:2px solid var(--c-acc);outline-offset:1px}
 /* phone (bottom dock under 640 px): 4 values a row and one column of cards (8 values a row ran into each other) */
 @media (max-width:640px){html.gd-bottom .gd-kvs{grid-template-columns:repeat(4,minmax(0,1fr))}html.gd-bottom .gd-body{display:flex;flex-direction:column}.gd-kv b{font-size:14px}}
+/* 3.2.0-beta.25: the ▲ ▼ box of the faceplate opens in the flow of the card (absolute, it was cut by the frame of the faceplate) */
+#gdock .gd-fp .fpop{position:static;margin:8px 0 2px;box-shadow:none}

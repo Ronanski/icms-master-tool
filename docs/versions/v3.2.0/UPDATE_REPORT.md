@@ -545,3 +545,31 @@ Engine at logic: walang binago.
 **As Left (ebidensya, WORLD ON ×300, buong gabay):** pagkatapos ng ayos 1 ~ 5: **6 sa 6 na buong run** umabot sa 150 MW at sa Practice, walang MFT, walang hinto sa HIC-BM / EIC-TM (MSP 123.0, PICMS1002 sarado, M.0255 = 0). Bago ang ayos (beta.23): 1 sa 2 run huminto sa HIC-BM (M.0255 = 1, blow-off MV 76 %); sa gitnang bersyon (ayos 2 ~ 5 lang) 1 sa 6 huminto pa rin dahil sa SV 123 ng blow-off, kaya idinagdag ang ayos 1. PASADO: training_dock, training_start, training_practice, home_training, live_training, tests.js (0 FAIL), `npm run check` SAME.
 
 **Status:** Beta. Hindi pa nasubok sa tablet / EXE ng user.
+
+## 3.2.0-beta.25 — Start-up Training: tunay na drum filling, gumaganang faceplate sa dock, tamang sheet
+
+**Problem (user 2026-10-24, beta.24):** "di ako dinadala sa tamang sheet kapag mga equipment", "drum level 8 mm pa rin pero sa logic sheet iba ang sinasabi ng transmitter", "di makapag drum filling kahit anong adjust ko sa faceplate na tinuturo sa akin", "pasado sa'yo, saken hindi?".
+
+**As Found (inulit gaya ng tao: pindot sa card at faceplate ng dock, Playwright, hindi script shortcut):**
+1. **Faceplate sa dock: hilaw, walang ▲▼.** Ang CSS ng faceplate (`hmi.css`, `app.css`) ay para lang sa `#opp` at `#plfp`; sa dock ay plain text ang bar graph, PV / SV / MV, at ang MV box ay readonly na walang lumalabas na ▲▲ ▲ ▼ ▼▼. Hindi talaga mababago ng operator ang MV.
+2. **Hindi umaandar ang BFWP mula sa card.** Sa interlock ng DITL-23A, ang row 12 PT-FW1115-A SUCTION PRESSURE ay analog (comparator > 1.5 kg/cm²). Binasa ito ng dock bilang digital row (laging 0), kaya ✕ pa rin pagkatapos ng "Field operator" at naka-block ang START. Ang script ng beta.24 ay tumatawag nang direkta sa motor (hindi dumadaan sa naka-block na button): iyon ang "pasado sa'yo".
+3. **Nawawala ang pindot sa interlock box.** Binubuo ulit ang box (Field operator, Simulan pa rin, DITL ↗) 2 beses bawat segundo, kaya nawawala ang tap na tumama habang pinapalitan ito.
+4. **Walang tunay na drum filling.** Puno na ang drum ng Cold (+8 mm) at MANUAL 0 % na ang LICBR1001B, kaya kusang natatapos ang hakbang pagbukas nito.
+5. **LT-2 hindi gumagalaw.** Ang PV ng LICBR1001 (SI0256) ay ang SELECT ng LIBR10011 at LIBR10013 lang (ABC-010 drawing), kaya ang model ng drum level ay sumusulat lang sa AI0130 at AI0386. Ang LT-2 (AI0258, LIBR10012) ay nakatigil kahit napupuno o nauubos ang drum. Ang 8 mm sa Training ay ang average ng LT-1 at LT-3 (tama ayon sa drawing).
+6. **Sheet ng hakbang:** ang burner ay pumupunta sa ABC-003x (oil flow) imbes na sa burner drawing. Ang purge, ang paghihintay sa pressure at temperatura, ang diesel oil pump, at ang bed / turbine steps ay naiiwan sa sheet ng naunang hakbang.
+
+**Work Done:**
+- `src/ui/hmi/hmi.css`, `src/ui/shell/app.css`: ang faceplate style ay para na rin sa `#gdock .gd-fp`. `dock.css`: ang ▲▼ box ay nasa loob na ng card (hindi naputol), at hindi na nahahati sa 2 linya ang RUN pill.
+- `src/ui/training/dock.js`: (a) ang analog row ng interlock ay binabasa na sa comparator; (b) pinapalitan lang ang interlock box kapag may nagbago; (c) ang faceplate ay hindi na binubuo ulit kapag pareho sa susunod na hakbang; (d) `goStep` sumusunod sa `s.sh`.
+- `src/analog/engine/plant.js`: kasama na ang LT-2 (AI0258) sa mga transmitter na sinusulatan ng drum level model (iisang drum, tatlong transmitter). Hindi binago ang drawing at ang PV select.
+- `src/analog/engine/hmi-op.js` + `boot.js`: `AN.drumSet(mm)`: ang tatlong LT sa isang level, dumadaan sa pressure compensation ng drawing (gaya ng `hmiComp`).
+- `src/ui/training/guide.js`: (a) ang Cold ng gabay ay **drained drum, −400 mm** (PR-OPE-5002 #19 STEAM DRUM FILLING); (b) dalawang hakbang na: "FCV-FW1130-2 M, buksan (MV 20 %)" hanggang −180 mm, tapos "isara (MV 0 %)" sa −150 mm (hawak −200 ~ +100 mm, 10 s), may "blowdown (field)" kapag sobra sa +100 mm; (c) `WHERE`: burner A / B / C-D → DITL-12 / 12A / 12B, purge → DITL-02, pag-init / drum pressure / turbine → ABC-001C, bed / batch → ABC-004A, bypass / MSP → ABC-050, diesel oil pump → ABC-028.
+- Bagong test `tests/regress/training_drum.js` (tunay na pindot lang).
+
+**As Left (ebidensya):** 
+- `training_drum.js` (bagong test, tunay na pindot): drained −400 / −400 / −400 mm → Field operator + START BFWP-A = tumatakbo → faceplate ▲▲ ×4 = MV 20 %, FW 22.7 T/H, sabay tumataas ang LT-1/2/3 → sa −174 mm susunod na hakbang → ▼▼ = MV 0, level −149 mm, tapos ang hakbang. ALL PASS. Sa beta.24, sa parehong pindot: hindi umandar ang BFWP at nanatili sa 8 mm ang drum.
+- Buong gabay Cold → 150 MW (`guide_fullrun.js`, iisang mundo ON, ×300): **2 sa 2 run** umabot sa 150 MW at sa Practice. Walang MFT at walang hinto. Run 1: dahil sa ×300, umabot sa +91 mm ang level pagkatapos ng pagpuno (sobra sa −150), at bumalik sa ±20 mm sa load.
+- Lahat ng hakbang sa 4 na laki ng screen (1440×900, 1280×800, 800×1280, 390×844): walang lumalampas na button, walang sideways scroll, walang page error. Sheet bawat hakbang: burner → DITL-12/12A/12B, purge → DITL-02, BFWP → DITL-23A, drum filling → ABC-010.
+- PASADO: training_dock, training_start, training_practice, home_training, live_training. `npm run check` SAME.
+
+**Status:** Beta. Hindi pa nasubok sa tablet / EXE ng user.

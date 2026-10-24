@@ -222,7 +222,7 @@
     }
     if (g.t === 'CMP') {
       const r = C.rowOf.get(g.ins[0]);
-      if (val !== want && r !== undefined) add({ s, row: r, want: 1, cmp: (want ? '' : 'NOT ') + (g.sptxt || g.cmp + ' ' + g.sp) });
+      if (val !== want && r !== undefined) add({ s, row: r, want: 1, cmp: (want ? '' : 'NOT ') + (g.sptxt || g.cmp + ' ' + g.sp), cn: n, cw: want });
       return out;
     }
     const pth = st ? g.ins.find(m => P.onSt(m)) : undefined;
@@ -318,10 +318,24 @@
         k = rs.name + ':' + r.row + ':' + r.want;
       if (!P.has(k)) P.set(k, { ...r, s: rs });
     }
+    /* 3.2.0-beta.25 (bug: the BFWP never started from the card): an analog row (a transmitter into a comparator, DITL-23A row 12
+       PT-FW1115-A SUCTION PRESSURE > 1.5 kg/cm2) is met when the COMPARATOR gives what the start needs. Before, it was read as a
+       digital row (always 0): it stayed ✕ after the field operator set the pressure, so the START button stayed blocked while the
+       drawing itself allowed the start */
+    const VV = new Map(),
+      vOf = x => {
+        if (!VV.has(x)) VV.set(x, simSheet(x).v);
+        return VV.get(x);
+      };
     const rows = [...P.values()].map(r => {
-      const info = rowInfo(r.s, r.row),
-        v = DUI.rowVal(r.s, r.row);
-      return { ...info, s: r.s, other: r.s !== s ? dName(r.s) : '', cmp: r.cmp || '', want: r.want, ok: v === r.want, start: r.s === s && /\bSTART\b/.test(info.svc) && !/PERMI/.test(info.svc) };
+      const info = rowInfo(r.s, r.row);
+      let ok;
+      try {
+        ok = r.cn != null ? (vOf(r.s)[r.cn] ? 1 : 0) === r.cw : DUI.rowVal(r.s, r.row) === r.want;
+      } catch (e) {
+        ok = false;
+      }
+      return { ...info, s: r.s, other: r.s !== s ? dName(r.s) : '', cmp: r.cmp || '', want: r.want, cw: r.cw, ok, start: r.s === s && /\bSTART\b/.test(info.svc) && !/PERMI/.test(info.svc) };
     });
     const miss = rows.filter(r => !r.ok && !r.start);
     return { sheet: nm, rows: rows.filter(r => !r.start), miss, pb: pb || rows.some(r => r.start), live };
@@ -380,7 +394,7 @@
     for (const r of I.miss) {
       const o = { field: [], abc: [] };
       try {
-        leaves(r.s || s, r.row, r.want, 0, new Set(), o);
+        leaves(r.s || s, r.row, r.cw != null ? r.cw : r.want, 0, new Set(), o);
       } catch (e) {}
       out.by[(r.s || s).name + ':' + r.row] = o;
       for (const f of o.field) if (!out.field.some(x => x.s === f.s && x.row === f.row)) out.field.push(f);
@@ -685,6 +699,13 @@
   function goStep(s) {
     if (!follow || !s) return;
     try {
+      /* 3.2.0-beta.25: the sheet named by the step (guide.js WHERE: the burner drawing, the purge, the sheet of the value to wait for) */
+      if (s.sh) {
+        window.lsSetTab && lsSetTab('logic');
+        if (/^DITL-/.test(s.sh)) AN.xrefGo({ d: s.sh });
+        else AN.xrefGo({ a: s.sh });
+        return;
+      }
       const mot = (s.a || []).map(a => (a.stop ? motAddr(a) : null)).find(a => a && MOTOR[a]);
       if (mot) {
         window.lsSetTab && lsSetTab('logic');
@@ -797,7 +818,8 @@
     col1.append(card);
     /* the faceplates of the step */
     const key = (s.fps || []).join(',');
-    if (key !== fpKey || first) {
+    /* 3.2.0-beta.25: the next step on the same faceplate (drum filling: open, then shut FCV-FW1130-2) keeps it, with its ▲ ▼ box open */
+    if (key !== fpKey || (first && !(prev && (prev.fps || []).join(',') === key && els.fps))) {
       fpKey = key;
       fpLive = [];
       els.fps = E('div', { cls: 'gd-fps' });
@@ -883,9 +905,13 @@
     } else if (els.cond) els.cond.textContent = s.need ? 'Pindutin ang "Tapos na ito sa field" kapag nagawa na.' : '';
     /* the interlock */
     const blocked = {};
-    for (const it of els.il || []) {
+    /* 3.2.0-beta.25 (bug, user 2026-10-24 "kahit anong adjust ko"): the box is built aside and put in place only when it changed. Before, it
+       was emptied and built again every half second, so its buttons (Field operator, Simulan pa rin, DITL ↗) were new elements
+       twice a second: a tap that began on the old button ended on the new one and was lost */
+    for (const it0 of els.il || []) {
+      const it = { ad: it0.ad, box: E('div', { cls: 'gd-il' }), real: it0 };
+      it0.next = it.box;
       const I = interlock(it.ad);
-      it.box.textContent = '';
       if (!I) continue;
       const head = E('div', { cls: 'gd-ilh' }, [E('span', { txt: 'INTERLOCK · START PERMISSION' }), E('button', { type: 'button', cls: 'gd-lk', txt: I.sheet + ' ↗', title: 'Buksan ang ' + I.sheet, on: () => (window.lsSetTab && lsSetTab('logic'), AN.xrefGo({ d: I.sheet.replace(/\s*#\w+$/, '') })) })]);
       it.box.append(head);
@@ -933,10 +959,10 @@
     }
     /* the override of a blocked start: a field fault the simulator cannot clear stays a training choice */
     for (const it of els.il || [])
-      if (blocked[it.ad] && !it.box.querySelector('.gd-ov')) {
+      if (blocked[it.ad] && it.next) {
         const B = (els.btns || []).find(x => x.ad === it.ad);
         if (B)
-          it.box.append(
+          it.next.append(
             E('button', {
               type: 'button',
               cls: 'gd-ov',
@@ -950,6 +976,11 @@
             })
           );
       }
+    for (const it of els.il || []) {
+      const nx = it.next;
+      it.next = null;
+      if (nx && nx.innerHTML !== it.box.innerHTML) it.box.replaceChildren(...nx.childNodes);
+    }
     /* out of order: a motor of a later step already running */
     const ea = call(() => g.early(), []);
     if (els.early) {

@@ -503,8 +503,9 @@ const AN_HMI_DI = {
    written as the raw one: drum level 393 / 146 / 393 mm at the end of the load (DRUM LEVEL H.H. > 254 mm, M.0173 / M.0175 ->
    MFT on the DITL), steam flow 461 instead of 474.1 T/H. The raw value is found so that the compensated one is the snapshot
    (secant, 4 steps); the drum level plant model (integrating) starts again from there */
-function hmiComp(only) {
-  for (const [shn, ai, pv, want] of AN_HMI_COMP) {
+function hmiComp(only, to) {
+  for (const [shn, ai, pv, want0] of AN_HMI_COMP) {
+    const want = to != null ? to : want0;
     if (only && !only(ai)) continue;
     try {
       const sh = AN.sheets.find(x => x.name === shn),
@@ -1204,6 +1205,13 @@ function anPlantCold() {
   AN.steady = false;
   AN.cold = true;
   return n;
+}
+/* 3.2.0-beta.25 (user 2026-10-24 "di makapag drum filling"): the drum of a cold boiler DRAINED (PR-OPE-5002 #19 STEAM DRUM FILLING:
+   the BFWP and the start-up valve FCV-FW1130-2 fill it to -150 mm). The three transmitters LT-BR1001-1 / 2 / 3 at mm (their raw
+   value found through the pressure compensation of the drawing, like hmiComp) and the drum level model starts again from there */
+function anDrumSet(mm) {
+  hmiComp(ai => /^AI0(130|258|386)$/.test(ai), mm);
+  return anDrumLvlState() ? +mm : null;
 }
 /* the drum level model of ABC-010 (plant.js pr.integ, LICBR1001): its state and the level it holds now */
 function anDrumLvlState() {

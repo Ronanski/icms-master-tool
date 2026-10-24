@@ -530,6 +530,17 @@ function anProcStep(S, dt) {
               ks: 10,
               tauS: 60
             }; /* about 0.36 mm/s for 20 T/H of imbalance (drum about 22 m2 of water surface) */
+          /* 3.2.0-beta.25 (bug, user 2026-10-24 "drum level 8 mm pero sa logic sheet iba ang sinasabi ng transmitter"): ONE drum, three
+             transmitters LT-BR1001-1 / 2 / 3 (AI0130 / AI0258 / AI0386). The PV SI0256 is the select of LIBR10011 and LIBR10013 only, so
+             the probe of the model found AI0130 and AI0386 and the level LIBR10012 (AI0258) never moved: it read 2.6 mm while the drum
+             filled or emptied. It is written with the other two (the same raw level, its own offset) */
+          if (pr.integ && pr.mode === 'transmitter') {
+            const a2 = S.blk.find(z => z.k === 'AI' && z.o && S.lab[z.o[0]] && String(S.lab[z.o[0]].t).trim() === 'AI0258');
+            if (a2 && !pr.ai.includes(a2.id)) {
+              pr.ai.push(a2.id);
+              pr.aiOut = pr.aiOut.concat(a2.pins.filter(p => p.role === 'out').map(p => p.n));
+            }
+          }
         }
       } catch (e) {}
     }
