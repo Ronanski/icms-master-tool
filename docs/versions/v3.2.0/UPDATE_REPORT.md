@@ -563,6 +563,6 @@ Engine at logic: walang binago.
 - Ladder: 241 / 241 DITL sheet naisalin, bawat output row may rung; 1,928 random na estado ng input (8 bawat sheet), 20,552 rung: **0 hindi tugma** sa engine. DITL-29A SEAWATER PUMP A (1): 14 rung, 8 internal relay, live habang ▶ Run.
 - Nakita sa ladder: DITL-29A rung "OUTPUT row 17 SEAWATER PUMP A TRIP" ay may contact na walang pinagmulan sa drawing ("net 2", OR ng M.1153/1163). Susuriin sa CHECKLIST 0.4 (A/B/C/D).
 - Bilis sa PC (ABC RUN, 150 MW): parehong 60 fps (frame 17 ms) ON at OFF; 95 % ng frame ≤ 25 ms (OFF 22 ms); ikot ng mundo ~9 ms bawat 0.2 s.
-- PASADO: ladder, world, ditl_sim, training_dock, ditl150, why, events, lookonly; abcbar, audit230, blocks_io; interlock: tumatakbo pa sa oras ng push (isusulat ang resulta).
+- PASADO: ladder, world, ditl_sim, training_dock, ditl150, why, events, lookonly; abcbar, audit230, blocks_io; interlock ALL PASS (54 min, mag-isa; ang unang subok ay nag-crash ang browser dahil sabay-sabay ang mga test sa iisang makina, hindi dahil sa beta.25: ABC-010 ay 162 s sa beta.24 at 170 s sa beta.25, parehong pasado).
 
 **Status:** Beta. Ang ladder ay preview: hinihintay ang desisyon ng user kung gagawin sa lahat (CHECKLIST 0.3). Hindi pa nasubok sa tablet / EXE ng user (bilis ng iisang mundo sa tablet).
