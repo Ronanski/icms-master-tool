@@ -469,3 +469,23 @@ Engine at logic: walang binago.
 **As Left (ebidensya):** bagong test `tests/regress/training_start.js` ALL PASS (DITL → Practise: drum 0, bed 30 °C, turbine off, MSP 0, RUN; tag HICHR1002A habang RUN = RUN pa rin). Pasado rin: lookonly, view, home_training, view_run, shell_cr.
 
 **Status:** Beta. Ang bagong isang-screen na Training (proposal https://claude.ai/artifact/FnjLxFZYXnFqc9fjvRdHWJ) ay hinihintay ang pili ng user.
+
+## 3.2.0-beta.22 — Cold: drum level, FW flow at steam temp na natira mula sa 150 MW
+
+**Problem (user 2026-10-24, may screenshot ng ABC-010 sa Cold):** "na-reset ko na, cold na, may value pa rin? ... drum lvl at fw flow. baka sa iba ganyan din."
+
+**As Found:**
+- FW flow 0.2 T/H sa Cold kahit sarado ang lahat. Ang BFWP A / B (ABC-010 M.3343 / M.3344) ay naiwang tumatakbo mula sa 150 MW snapshot. May naiwan ding +0.15 T/H na offset ang FT-FW1007-2.
+- Drum level gumagapang (8 → 10 mm sa 10 min). Habang nagse-settle ang Cold, ang feedwater PV ay 153 T/H pa (snapshot) at nadagdag ito sa tubig ng drum.
+- SH / RH steam temp (TICBR1130 / 1140 / 1150, TICMS1004, TICHR1002 / 1002A) ay 99.97 °C sa Cold, sa halip na 30 °C. Ito ang saturation ng 0 kg/cm2, pero 30 °C pa ang tubig.
+- Tama at sinadya: mga flow na 0.1 % ng range (hal. FICFA1043 0.07 T/H, FICCD1120 0.4 T/H). Ang 0 ay binabasa ng SELECT CIRCUIT bilang lost signal (user rule v1.20.34). Ang tank level (deaerator, hotwell) ay tubig na naiwan, tama.
+
+**Work Done:**
+- `hmi-op.js`: BFWP M.3343 / M.3344 = 0 sa Cold. Ang drum level model at ang mga transmitter nito ay ibinabalik kung saan sila pagkatapos ng compensation, kaya hindi na nadadagdagan ng tubig habang nagse-settle (hindi ito oras ng planta). Sa Warm / Hot, BFWP-A tumatakbo.
+- `plant.js`: ang offset ng transmitter ay unti-unting nawawala papunta sa ibaba ng range (flow, pressure; hindi ang drum level).
+- `unit.js`: ang steam temp ay hindi lalampas sa temperatura ng tubig sa drum (kapag kumukulo na, saturation pa rin).
+- CHECK chain at `loop_source` test: ang operator ang nagsi-start ng BFWP-A bago punuin ang drum (PR-OPE-5002). Dati, umaasa sila sa BFWP na naiwang tumatakbo. Sa `loop_source`, ang HP bypass spray TICMS1022 ay kumukuha ng tubig sa BFWP (ABC-050 M.0702 ALL BFWP STOPPED).
+
+**As Left (ebidensya):** Cold pagkalipas ng 10 min: FW 0.0 T/H, drum level 4.6 → 8 mm (steady), steam temp 30 °C. CHECK 17 / 17 scenario PASADO (Cold → 150 MW buo 17 / 17, trips, load, shutdown, bottle-up). ALL PASS: live_training, loop_source, reset, training_start, unit_trip, training_practice, home_training, tests.js.
+
+**Status:** Beta. Hindi pa nasubok sa tablet / EXE ng user. Hinihintay ang pili ng user sa Training workspace mockup (https://claude.ai/artifact/M9TD6DVtS8XmfwrBpo4UVX).

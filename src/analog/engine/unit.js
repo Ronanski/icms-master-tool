@@ -845,7 +845,10 @@ function anUnitStep(dt) {
        the superheat goes with the firing, the temperature falls to the saturation temperature of the drum pressure (3.2.0-beta.15: the
        IF97 steam table of steam.js) */
     fr = Math.max(0, Math.min(1, U.Qs / Math.max(1, mso))),
-    tsat = tsatOf(U.Pd);
+    /* 3.2.0-beta.22 (bug, user 2026-10-24 "cold na, may value pa rin ... baka sa iba ganyan din"): not above the water of the drum. In a
+       cold boiler (water 30 C, no steam) the saturation temperature of 0 kg/cm2 is 99.97 C: the SH / RH steam temperatures
+       (TICBR1130 / 1140 / 1150, TICMS1004, TICHR1002) read 99.97 C instead of the ambient. Once the water boils Tw = saturation */
+    tsat = Math.min(tsatOf(U.Pd), isFinite(U.Tw) ? U.Tw : 1e9);
   for (const e of U.ld) {
     const pr = e.pr,
       p = e.b.p || {};

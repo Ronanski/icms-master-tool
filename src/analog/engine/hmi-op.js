@@ -947,6 +947,11 @@ const AN_HMI_DI_COLD = {
   'M.3353': 0,
   'M.3354': 0,
   'M.3355': 0,
+  /* 3.2.0-beta.21 (bug, user 2026-10-24: "na-reset ko na, cold na, may value pa rin? ... drum lvl at fw flow"): the boiler feedwater
+     pumps A / B (ABC-010 M.3343 / M.3344, memory list BC FROM S3) stayed running from the 150 MW snapshot: the feedwater flow read
+     0.2 T/H with every valve shut and the drum level crept up 2 mm every 10 minutes in a cold plant */
+  'M.3343': 0,
+  'M.3344': 0,
   'M.3410': 1,
   'M.3411': 1,
   'M.3416': 1,
@@ -1053,6 +1058,8 @@ function anPlantWarm(o) {
   for (const l of ['M.3302', 'M.3303', 'M.3304']) setx(l, 1);
   /* 3.2.0-beta.14: the pre-start machines of a fired plant: FA blower A, condensate pump A, seawater pumps B / C (as the snapshots) */
   for (const l of ['M.3308', 'M.3350', 'M.3354', 'M.3355']) setx(l, 1);
+  /* 3.2.0-beta.22: and the boiler feedwater pump A (M.3343): Cold stops it now, a fired plant feeds its drum */
+  setx('M.3343', 1);
   man('ABC-007', 'FICFA1071', o.air);
   man('ABC-007', 'FICFA1081', o.air);
   AN_BURNER.slice(0, Math.max(0, Math.min(4, o.burners))).forEach(([k, t, vc, ins]) => {
@@ -1161,6 +1168,8 @@ function anPlantCold() {
        compensation LN38 / LN39 of the drawing changes with the pressure) */
     hmiComp(ai => /^AI0(130|258|386)$/.test(ai));
   } catch (e) {}
+  /* 3.2.0-beta.22: the drum level of the model after the compensation above, kept through the settling steps below */
+  const lvl0 = anDrumLvlState();
   /* the lags and the rate limiters of the drawing at their (new) inputs, like anPlantLoad150 */
   try {
     /* 2.5.0-beta.3: a cold plant has no generator load of the 150 MW snapshot. The average select holds its last value while every
@@ -1186,10 +1195,39 @@ function anPlantCold() {
       for (const sh of L) stepSet(sh, 0);
     }
     for (let k = 0; k < 2; k++) for (const sh of L) stepSet(sh, 0.5);
+    /* 3.2.0-beta.22 (bug, user 2026-10-24 "na-reset ko na, cold na, may value pa rin? ... drum lvl"): during these settling steps the
+       feedwater PV of the 3-element loop still read the flow of the snapshot (153 T/H) before its model reached 0, and the drum level
+       model added that water: the cold level began at 55 mm instead of the normal water level (0 / 2 / 8 mm of the three
+       transmitters). The settling steps are not plant time: the level model and its transmitters go back to where they were */
+    if (lvl0) lvl0.put();
   } catch (e) {}
   AN.steady = false;
   AN.cold = true;
   return n;
+}
+/* the drum level model of ABC-010 (plant.js pr.integ, LICBR1001): its state and the level it holds now */
+function anDrumLvlState() {
+  try {
+    const sh = AN.sheets.find(x => x.name === 'ABC-010'),
+      S = sh && sh.S;
+    for (const b of (S && S.procs) || [])
+      if (b.proc && b.proc.integ) {
+        if (!S.rt.pm[b.id]) stepSet(sh, 0);
+        const q = S.rt.pm[b.id],
+          ai = S.blk.filter(a => a.k === 'AI' && a.o && /^AI0(130|258|386)$/.test((AN.nm(S, a.o[0]) || '').trim())).map(a => [S.rt.st[a.id], S.rt.st[a.id].val]);
+        if (q && isFinite(q.y))
+          return {
+            q,
+            put() {
+              Object.assign(q, this.q0);
+              for (const [st, x] of ai) st.val = st.act = x;
+              stepSet(sh, 0);
+            },
+            q0: { y: q.y, u: q.u, up: q.up, pp: q.pp }
+          };
+      }
+  } catch (e) {}
+  return null;
 }
 /* the output of a PID (plant.js PID: u = kp * es + I): the output and the integral, so it stays there when PV = SV */
 function hmiPidSet(ps, b, mv) {
