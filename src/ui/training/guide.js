@@ -308,7 +308,10 @@ window.LS_GUIDE = (function () {
         o.cf = o.cf == null ? mv('FIC-CF') : o.cf;
         if (loading && msp < 125) o.cf += msp < 118 ? 3 : 2;
         else if (msp < 121 || (tb.st === 'load' && bit('I.0418') < 0.5 && mv('PICMS1006') < 15)) o.cf += 1;
-        else if (msp > 125) o.cf -= 1;
+        else if (msp > 125 && U().Tb >= 730) o.cf -= 1;
+        /* 3.2.0-beta.24: the bed first, as in the bypass coach: under 700 C with no burner the feeders trip (DITL-19 row 16, ABC-027
+           M.2504) and the boiler with them; at 45 MW the bed fell 690 -> 617 C while the coal followed the pressure only */
+        if (U().Tb < 720) o.cf += 1;
         o.cf = Math.max(10, Math.min(60, o.cf));
         A.man('FIC-CF', o.cf);
       }
@@ -377,7 +380,13 @@ window.LS_GUIDE = (function () {
             AN.turbine('loadup', o.aim);
           }
         }
-        if (s) s.T.rt.st[s.b.id].val = Math.max(5, Math.min(100, +s.T.rt.st[s.b.id].val + Math.max(0, Math.min(0.5, 0.02 * (123 - P) - 0.3 * dP + (o.aim < 80 ? 0.04 : 0)))));
+        /* 3.2.0-beta.24: down too above 125 kg/cm2. Raised only, the pressure climbed past the MS blow-off SV 128 (PICMS1002, 4.PNG)
+           once the TCS target stopped at 80 MW; the blow-off opened > 5 % (ABC-013 M.0255) and that BU-CMD (ABC-001C M.2013) held the
+           boiler master MANUAL for good: the CCS handover never came */
+        /* the bed first (bypass coach): no firing down under 730 C, +0.5 % under 720 C */
+        const bed = U().Tb,
+          d = bed < 720 ? 0.5 : Math.max(P > 125 && bed >= 730 ? -0.5 : 0, Math.min(0.5, 0.02 * (123 - P) - 0.3 * dP + (o.aim < 80 ? 0.04 : 0)));
+        if (s) s.T.rt.st[s.b.id].val = Math.max(5, Math.min(100, +s.T.rt.st[s.b.id].val + d));
       }
     },
     /* the SH spray (check.js up, PR-OPE-5002 "SERVICE MS & RH FOR TEMPERATURE CONTROL"): the inner loops A at their SV when the outlet is
@@ -652,7 +661,10 @@ window.LS_GUIDE = (function () {
         readyTxt: () => 'Hintayin: feedwater ' + f0(h().FW()) + ' T/H (> 110) at M.0228 = ' + f0(bit('M.0228')) + ' (0)',
         a: [btn('FICFW1007 R', () => A.rem('FICFW1007')), btn('LICBR1001 A, SV 0', () => A.auto('LICBR1001', 0)), btn('3-ELEMENT', () => A.push('M.054E'))]
       },
-      { st: 8, sec: 42, t: 'HP bypass sa REMOTE, sarado ang HP at LP bypass sa 45 MW', d: 'Pagkatapos ng transfer, ilagay ang SV ng HP bypass sa R (SV = PV + 2): magsasara ito at ang turbine na ang kumukuha ng lahat ng steam.', c: b.ALL(b.VAL('MW', 44, null), b.MODE('PICMS1006', 'REM'), b.BIT('M.0709', 0, 'HP bypass open')), fps: ['PICMS1006'], a: [btn('HP bypass R', () => A.rem('PICMS1006'), () => md('PICMS1006') === 'REM')] },
+      /* 3.2.0-beta.24: the MS blow-off to its load SV 128 (4.PNG 148.8 MW: BLOW-OFF A, SV 128, MV 0). The bypass coach left it at the
+         HP bypass SV + 5 of the moment its step ended (118 + 5 = 123 in some runs): at 80 MW it opened > 5 % at MSP 123, and its
+         M.0255 (ABC-013 -> ABC-001C M.2013 BU-CMD) put the boiler and turbine master back to MANUAL at the CCS handover */
+      { st: 8, sec: 42, t: 'HP bypass sa REMOTE, sarado ang HP at LP bypass at ang MS blow-off sa 45 MW', d: 'Pagkatapos ng transfer, ilagay ang SV ng HP bypass sa R (SV = PV + 2): magsasara ito at ang turbine na ang kumukuha ng lahat ng steam. Ang MS blow-off PICMS1002 ay AUTO SV 128 (sarado; ang bukas na blow-off > 5 %, M.0255, ay back-up command ng boiler master).', c: b.ALL(b.VAL('MW', 44, null), b.MODE('PICMS1006', 'REM'), b.BIT('M.0709', 0, 'HP bypass open'), b.BIT('M.0255', 0, 'MS blow-off open')), fps: ['PICMS1006', 'PICMS1002'], a: [btn('HP bypass R', () => A.rem('PICMS1006'), () => md('PICMS1006') === 'REM'), btn('PICMS1002 A, SV 128', () => A.auto('PICMS1002', 128))] },
       { st: 8, sec: 42, t: 'Hawakan ang 45 MW: MSP 115 ~ 131, drum level ±150 mm', d: 'NORMAL OPERATION sa TCS.', c: b.HOLD(120, b.ALL(b.VAL('MW', 44, null), b.VAL('MSP', 115, 131), b.VAL('lvl', -150, 150))), wait: 1 },
       /* ---- 9 load up ---- */
       {
@@ -688,12 +700,15 @@ window.LS_GUIDE = (function () {
       {
         st: 9,
         sec: 44,
+        id: 'bm',
         t: 'Boiler master HIC-BM sa AUTO (boiler follow)',
-        d: 'Kapag steam flow > 230 T/H at wala na ang back-up command (M.2013 = 0): PIC-COBM A SV 123, HS-COAL R, tapos HIC-BM A.',
+        d: 'Kapag steam flow > 230 T/H at wala na ang back-up command (M.2013 = 0): PIC-COBM A SV 123, HS-COAL R, tapos HIC-BM A. Ang M.2013 ay 1 din habang bukas > 5 % ang MS blow-off PICMS1002 (M.0255) o ang HP bypass (M.0709): ibaba ang HIC-BM hanggang bumaba ang pressure sa ilalim ng 128.',
         c: b.MODE('HIC-BM', 'AUTO'),
-        fps: ['PIC-COBM', 'HIC-BM'],
+        fps: ['PIC-COBM', 'HIC-BM', 'PICMS1002'],
+        coach: ['bf'],
         ready: () => h().MSF() > 230 && bit('M.2013') < 0.5,
-        readyTxt: () => 'Hintayin: steam flow ' + f0(h().MSF()) + ' T/H (> 230), M.2013 = ' + f0(bit('M.2013')) + ' (0)',
+        readyTxt: () =>
+          'Hintayin: steam flow ' + f0(h().MSF()) + ' T/H (> 230), M.2013 = ' + f0(bit('M.2013')) + ' (0)' + (h().bit('ABC-001C', 'M.0255') > 0.5 ? ': bukas ang blow-off PICMS1002 (M.0255 = 1, MSP ' + f1(h().MSP()) + ')' : '') + (bit('M.0709') > 0.5 ? ': bukas ang HP bypass (M.0709 = 1)' : ''),
         a: [btn('PIC-COBM A, SV 123', () => A.auto('PIC-COBM', 123)), btn('HS-COAL R', () => A.rem('HS-COAL')), btn('HIC-BM A', () => A.auto('HIC-BM'))]
       },
       {
@@ -720,6 +735,8 @@ window.LS_GUIDE = (function () {
       {
         st: 9,
         sec: 44,
+        id: 'tm',
+        req: ['bm'],
         t: 'Turbine master EIC-TM sa AUTO (coordinated control, CCS)',
         d: 'DCS CONTROL MODE ON ay kusang lumalabas (I.0082). Pindutin ang A kapag ang AUTO value (SI0236) ≈ TCS target, para walang talon.',
         c: b.MODE('EIC-TM', 'AUTO'),
@@ -731,6 +748,7 @@ window.LS_GUIDE = (function () {
       {
         st: 9,
         sec: 44,
+        req: ['bm', 'tm'],
         t: 'Unit load demand HIC-ULD sa AUTO, TARGET 150 MW',
         d: 'Ang CCS na ang magkakarga sa 3 MW bawat minuto (HIC-MWRL).',
         c: b.ALL(b.MODE('HIC-ULD', 'AUTO'), b.VAL('MW', 148, null)),
@@ -747,6 +765,7 @@ window.LS_GUIDE = (function () {
       {
         st: 9,
         sec: 44,
+        req: ['bm', 'tm'],
         t: 'Furnace pressure PICFG108 sa AUTO, SV −15',
         d: 'Payag kapag MV ≥ 16 % at wala na ang force manual (M.0205 = 0).',
         c: b.MODE('PICFG108', 'AUTO'),
@@ -758,7 +777,7 @@ window.LS_GUIDE = (function () {
         a: [btn('PICFG108 A, SV −15', () => A.auto('PICFG108', -15))],
         coachOff: ['fp']
       },
-      { st: 9, sec: 44, t: 'Hawakan ang 150 MW: MSP 118 ~ 128, MST ≤ 545 °C, drum level ±150 mm, O₂ 3 ~ 6 %', d: 'Tapos ang start-up. Ang CCS na ang humahawak.', c: b.X2[9][1], wait: 1 },
+      { st: 9, sec: 44, req: ['bm', 'tm'], t: 'Hawakan ang 150 MW: MSP 118 ~ 128, MST ≤ 545 °C, drum level ±150 mm, O₂ 3 ~ 6 %', d: 'Tapos ang start-up. Ang CCS na ang humahawak.', c: b.X2[9][1], wait: 1 },
       /* ---- 10 practice ---- */
       { st: 10, t: 'Practice: ibaba ang HIC-ULD sa 120 MW (▼▼)', d: 'Sa AUTO, target MW lang ang gagalawin mo. Ang CCS ang magbabawas ng coal at hangin.', c: b.OUT('HIC-ULD', null, 121, 'MW'), fps: ['HIC-ULD'] },
       { st: 10, t: 'Panoorin: 120 MW, coal mga 72 T/H, MSP hawak', d: 'Bumababa ang MW ng 3 MW bawat minuto at hawak ng PIC-COBM ang 123 kg/cm².', c: b.HOLD(120, b.ALL(b.VAL('MW', 117, 123), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150))), wait: 1 },
@@ -866,6 +885,15 @@ window.LS_GUIDE = (function () {
     const L0 = steps(),
       s = L0[G.cur];
     if (!s) return false;
+    /* 3.2.0-beta.24: a station that a BU-CMD of the drawing put back to MANUAL after its step (HIC-BM / EIC-TM: M.2013 / M.2016,
+       CLAUDE.md 10) stays MANUAL until the operator presses A: the guide goes back to that step, so its card says why and what to do */
+    for (const r of s.req || []) {
+      const j = L0.findIndex(x => x.id === r);
+      if (j >= 0 && j < G.cur && !stepOk(L0[j])) {
+        open(j);
+        return true;
+      }
+    }
     if (stepOk(s)) {
       open(G.cur + 1);
       return true;
