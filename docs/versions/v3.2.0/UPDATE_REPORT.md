@@ -451,3 +451,21 @@ Engine at logic: walang binago.
 - Walang page error.
 
 **Tala:** sa 1280 × 800, ang alarm line sa top band ay pinaiikli ("No activ…") dahil sa chip. Buo pa rin ang NO ALARM pill.
+
+## 3.2.0-beta.21 — Training: tunay na Cold, RUN agad, hindi na nagiging VIEW
+
+**Problem (user 2026-10-24):** "nagtest ako ng TRAINING. ang hirap nya paganahin. nag-bbug sya ... irrun mo ba. pag bumalik ka ng logic magiging VIEW. tapos iRRUN mo."
+
+**As Found (sinubok ko bilang baguhan, tunay na click):**
+- Kapag DITL ang bukas na page, ang "Practise: Cold start" ay pumipindot ng Cold bago pa na-load ang ABC. Walang nangyari: MSP 75, drum level −567, bed 850 °C, turbine 3600 rpm.
+- Pagkatapos ng Practise, naiiwan sa VIEW. Ikaw pa ang hahanap ng RUN.
+- Ang tag ng isang hakbang (info card) at ang search ay naglalagay sa VIEW kahit tumatakbo ang simulation (2.1.0-beta.8 "a search is a LOOK"). Kaya humihinto ito tuwing sumisilip ka.
+
+**Work Done:**
+- `home.js`: hinihintay muna ng Practise buttons na ma-load ang ABC, saka nagse-set ng Cold o 150 MW, at agad nagra-RUN (`AN.runOn`, `trace.js`).
+- `boot.js` lookOnly: kapag TUMATAKBO ang simulation, nananatili itong tumatakbo kapag sumilip ka (tag, search, info card). Kapag hindi tumatakbo, VIEW pa rin gaya ng dati.
+- Tala sa Training: wala nang "Start ▾" at "CHECK".
+
+**As Left (ebidensya):** bagong test `tests/regress/training_start.js` ALL PASS (DITL → Practise: drum 0, bed 30 °C, turbine off, MSP 0, RUN; tag HICHR1002A habang RUN = RUN pa rin). Pasado rin: lookonly, view, home_training, view_run, shell_cr.
+
+**Status:** Beta. Ang bagong isang-screen na Training (proposal https://claude.ai/artifact/FnjLxFZYXnFqc9fjvRdHWJ) ay hinihintay ang pili ng user.

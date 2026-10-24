@@ -3,7 +3,8 @@
 > Single current handoff. Palitan ang lumang status kapag nagbago ang trabaho; huwag mag-append ng chat transcript.
 
 ## SIMULAN DITO (next session, 2026-10-23)
-- **Kasalukuyang Beta:** `3.2.0-beta.20`, branch `claude/project-thread-vhcfv9` (PR #39; kasama ang PR #38). Stable pa rin ang v2.4.0 sa `main`.
+- **Kasalukuyang Beta:** `3.2.0-beta.21`, branch `claude/project-thread-vhcfv9` (PR #39; kasama ang PR #38). Stable pa rin ang v2.4.0 sa `main`.
+- **3.2.0-beta.21 (2026-10-24):** Training bugs: Practise = tunay na Cold / 150 MW kahit galing DITL, RUN agad; ang pagsilip (tag, search) habang RUN ay hindi na nagiging VIEW. Hinihintay: pili ng user sa bagong isang-screen na Training (https://claude.ai/artifact/FnjLxFZYXnFqc9fjvRdHWJ: isa-isang hakbang, START ng pump at faceplate sa card, bawal lumaktaw).
 - **3.2.0-beta.20 (2026-10-24):** Plant chip katabi ng VIEW | RUN (pili B ng user): OFF / Per-loop (45 ~ 150 MW) / Unit (Cold, Warm, Hot, 150 MW, Target MW). Start ▾ → TCS / Field ▾. UAT at CHECK inalis sa app (automated test na lang). Bukas: HP bypass PV 122 sa Cold.
 - **3.2.0-beta.19 (2026-10-24):** furnace pressure 0 sa Cold (walang fan at hangin); ang Cold sa pagbukas ay para lang sa tunay na click ng operator (hindi sa test script). Bukas pa: HP bypass PV 122 sa Cold (SELECT hold), pili ng user sa A / B (plant model at MW bilang common SIMULATE tool: https://claude.ai/artifact/Fwwq5Gtbj4bjYWgoFhg4jL / https://claude.ai/artifact/ShJf2VmTtFDsMGFCMD5zeT).
 - **3.2.0-beta.18 (2026-10-24):** VIEW / TRACE audit bahagi 1 (UI lang): COLD agad ang ABC page pagbukas at pag-Reset (wala nang MSP 75), Back ibinabalik ang trace, pangalan ng wire, VIEW hint. Susunod: furnace pressure at HP bypass PV sa Cold, DITL / tablet / phone VIEW, proposal (Values sa VIEW). Detalye: `docs/versions/v3.2.0/UPDATE_REPORT.md` beta.18.

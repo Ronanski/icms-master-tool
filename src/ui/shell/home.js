@@ -49,6 +49,22 @@
       if (i >= 0) AN.go(i);
     } catch (e) {}
   };
+  /* 3.2.0-beta.21 (bug, user 2026-10-24 "ang hirap nya paganahin"): a Practise button pressed while the page was on DITL set the plant
+     before the ABC engine was loaded: Start cold did nothing (MSP 75, bed 850 C, turbine 3600 rpm). The ABC sheets are loaded first. */
+  const abcReady = fn => {
+    try {
+      AN._cold0 = 1;
+      if (AN.cat !== 'an') AN.setCat('an');
+    } catch (e) {}
+    let k = 0;
+    const iv = setInterval(() => {
+      const ok = window.AN && AN.cat === 'an' && AN.sheets && AN.sheets.length >= 54 && AN.plantCold;
+      if (ok || ++k > 120) {
+        clearInterval(iv);
+        if (ok) fn();
+      }
+    }, 250);
+  };
   const search = () => {
     tab('logic');
     setTimeout(() => {
@@ -464,32 +480,31 @@
           cls: 'trbtn go',
           type: 'button',
           txt: 'Practise: Cold start',
-          title: 'Sets the plant cold (Start ▾ Cold), clears the AUTO ticks and opens the Plant view: do the steps there, they tick here',
-          on: () => {
-            try {
-              if (AN.cat !== 'an') AN.setCat('an');
-            } catch (e) {}
-            const b = $('loadcold');
-            if (b) b.click();
-            if (LV()) LV().reset();
-            goPlant();
-          }
+          title: 'Sets the plant cold, clears the AUTO ticks, starts the simulation (RUN) and opens the Plant view: do the steps there, they tick here',
+          on: () =>
+            abcReady(() => {
+              const b = $('loadcold');
+              if (b) b.click();
+              if (LV()) LV().reset();
+              /* 3.2.0-beta.21: the simulation runs at once (before: the page stayed in VIEW, the operator had to find RUN) */
+              if (AN.runOn) AN.runOn();
+              goPlant();
+            })
         }),
         E('button', {
           cls: 'trbtn',
           type: 'button',
           txt: 'Practise: 150 MW load change',
-          title: 'Sets the plant at 150 MW (Start ▾ At 150 MW), clears the ticks of the two PRACTICE sections and opens the AUTO (CCS) practice: press RUN and change the load there',
-          on: () => {
-            try {
-              if (AN.cat !== 'an') AN.setCat('an');
-            } catch (e) {}
-            const b = $('load150');
-            if (b) b.click();
-            const L = LV();
-            if (L) L.reset(L.practice);
-            if (L) show(L.practice);
-          }
+          title: 'Sets the plant at 150 MW, clears the ticks of the two PRACTICE sections, starts the simulation (RUN) and opens the AUTO (CCS) practice: change the load there',
+          on: () =>
+            abcReady(() => {
+              const b = $('load150');
+              if (b) b.click();
+              const L = LV();
+              if (L) L.reset(L.practice);
+              if (AN.runOn) AN.runOn();
+              if (L) show(L.practice);
+            })
         }),
         E('button', {
           cls: 'trbtn',
