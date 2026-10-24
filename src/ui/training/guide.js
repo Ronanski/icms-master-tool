@@ -521,7 +521,34 @@ window.LS_GUIDE = (function () {
       { st: 1, sec: 18, t: 'FCV-CD1120 sa AUTO, SV 150 T/H', d: 'Ang recirculation na ang hahawak ng minimum flow ng CEP.', c: b.ALL(b.MODE('FCV-CD1120', 'AUTO'), b.SV('FCV-CD1120', 140, 160, 'T/H')), fps: ['FCV-CD1120'], a: [btn('A, SV 150 T/H', () => A.auto('FCV-CD1120', 150))] },
       { st: 1, sec: 19, t: 'Deaerator level LCV-CD1104 sa AUTO, SV 0 mm', d: 'Pupunuin ang deaerator hanggang normal level at hahawakan ito ng valve.', c: b.ALL(b.MODE('LCV-CD1104', 'AUTO'), b.SV('LCV-CD1104', -20, 20, 'mm')), fps: ['LCV-CD1104'], a: [btn('A, SV 0 mm', () => A.auto('LCV-CD1104', 0))], field: [18] },
       { st: 1, sec: 20, t: 'Simulan ang boiler feedwater pump (BFWP)', d: 'Ang BFWP ang magpupuno ng steam drum. Kailangan munang may tubig ang deaerator.', c: R.BFP, a: [mot('M.3343', 'BFWP-A'), mot('M.3344', 'BFWP-B')] },
-      { st: 1, sec: 20, t: 'Steam drum filling: start-up valve FCV-FW1130-2 sa MANUAL, level −150 mm', d: 'Bubuksan nang dahan-dahan ang start-up valve para mapuno ang drum hanggang −150 mm, tapos isasara (MV 0 %) para hindi umapaw. Sa Cold ng app ay puno na ang drum (mga 0 mm), kaya M at MV 0 % na agad.', c: b.ALL(b.MODE('FCV-FW1130-2', 'MAN'), b.MV('FCV-FW1130-2', null, 2), b.HOLD(10, b.VAL('lvl', -200, 100))), fps: ['FCV-FW1130-2'], a: [btn('M, MV 0 % (puno na)', () => A.man('FCV-FW1130-2', 0))], field: [19] },
+      /* 3.2.0-beta.25 (bug, user 2026-10-24 "di makapag drum filling ... kahit anong adjust ko sa faceplate"): the Cold of the guide has a
+         DRAINED drum (start(): AN.drumSet), so the filling is real: the BFWP running, the start-up valve FCV-FW1130-2 (LICBR1001B,
+         ABC-010) opened by hand, the level of LT-1 / 2 / 3 rising to -150 mm (PR-OPE-5002 #19), then the valve shut. Before, the drum of
+         the Cold was full (about +8 mm) and Cold has LICBR1001B MANUAL 0 %: the step was done by itself the moment it opened */
+      {
+        st: 1,
+        sec: 20,
+        t: 'Steam drum filling: FCV-FW1130-2 sa MANUAL, buksan nang dahan-dahan (MV 20 %)',
+        d: 'Walang laman ang drum (drained). Ang BFWP ang nagtutulak ng tubig sa start-up valve FCV-FW1130-2 (controller LICBR1001B sa ABC-010). Buksan ito sa MANUAL: tataas ang FW flow at ang drum level. Ang drum level ay ang tatlong transmitter LT-1 / LT-2 / LT-3 (LIBR10011 / 12 / 13 sa ABC-010); ang PV ng LICBR1001 at ang nasa itaas ng Training ay ang average ng LT-1 at LT-3 (ayon sa drawing). Tapos ang hakbang sa −180 mm.',
+        c: b.ALL(R.BFP, b.MODE('FCV-FW1130-2', 'MAN'), b.VAL('lvl', -180, null)),
+        fps: ['FCV-FW1130-2'],
+        a: [btn('M, MV 20 %', () => A.man('FCV-FW1130-2', 20))],
+        field: [19]
+      },
+      {
+        st: 1,
+        sec: 20,
+        t: 'Drum level −150 mm: isara ang FCV-FW1130-2 (MV 0 %)',
+        d: 'Sa −150 mm (PR-OPE-5002), isara ang start-up valve para hindi umapaw ang drum. Ang level ay dapat manatili sa −200 ~ +100 mm.',
+        c: b.ALL(b.MODE('FCV-FW1130-2', 'MAN'), b.MV('FCV-FW1130-2', null, 2), b.HOLD(10, b.VAL('lvl', -200, 100))),
+        fps: ['FCV-FW1130-2'],
+        a: [
+          btn('MV 0 % (isara)', () => A.man('FCV-FW1130-2', 0)),
+          /* an overfilled drum (the valve shut late, or a fast speed): the drum blowdown (field hand valve, AN.blowdown) drains it back
+             to -150 mm and is shut again by onStep */
+          btn('Sobra (> +100 mm): blowdown (field) bukas hanggang −150 mm', () => (AN.blowdown && AN.blowdown(true) ? (G.bd = 1) : 0), () => !!G.bd || !(h().lvl() > 100))
+        ]
+      },
       /* ---- 2 fans ---- */
       { st: 2, sec: 21, t: 'Diesel oil pump at oil circulation (field)', d: 'Ang diesel oil pump ay nasa field (walang DCS signal). Kailangan ito ng mga start-up burner.', c: C('Diesel oil pump running (field)', () => !!(AN.fieldState && AN.fieldState().dop), () => 'Diesel oil pump ' + (AN.fieldState && AN.fieldState().dop ? 'ON' : 'OFF')), a: [btn('START diesel oil pump (field)', () => A.field('dop', true), () => !!(AN.fieldState && AN.fieldState().dop))], field: [20] },
       { st: 2, sec: 22, t: 'Ihanda ang IDF: PICFG108 sa MANUAL, MV 0 %, biasing damper RH at SH bukas', d: 'Sarado ang hydraulic coupling ng IDF bago ito simulan (mababang starting current). Ang interlock ng IDF (DITL-25A row 1) ay humihingi ng bukas na flue gas bias damper (HICHR1002A / B) para may daanan ang hangin.', c: b.ALL(b.MODE('PICFG108', 'MAN'), b.MV('PICFG108', null, 2), b.MV('HICHR1002A', 30, null), b.MV('HICHR1002B', 60, null)), fps: ['PICFG108', 'HICHR1002A', 'HICHR1002B'], a: [btn('M, MV 0 %', () => A.man('PICFG108', 0)), btn('Biasing damper RH at SH 100 %', () => (A.man('HICHR1002A', 100), A.man('HICHR1002B', 100)))], field: [21] },
@@ -785,6 +812,23 @@ window.LS_GUIDE = (function () {
       { st: 10, t: 'Hawakan ang 150 MW', d: 'MSP 118 ~ 128, drum level ±150 mm, O₂ 3 ~ 6 %.', c: b.HOLD(300, b.ALL(b.VAL('MW', 147, 153), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150), b.VAL('O2', 3, 6))), wait: 1 }
     ];
     ST.forEach((s, i) => (s.i = i));
+    /* 3.2.0-beta.25 (bug, user 2026-10-24 "di ako dinadala sa tamang sheet kapag mga equipment"): the sheet the centre shows for a step
+       (dock.js goStep): a start-up burner is its burner drawing (DITL-12 / 12A / 12B / 12C, READY and IN SERVICE), the purge is DITL-02
+       (START P.B., 5 min), a wait on a plant value is the sheet of that value. Before, a burner step opened the oil flow sheet ABC-003x
+       and a step with no faceplate and no motor kept the sheet of the step before (the diesel oil pump on ABC-010) */
+    const WHERE = [
+      [/^Sindihan ang burner A/, 'DITL-12'],
+      [/^Sindihan ang burner B/, 'DITL-12A'],
+      [/burner C at D/, 'DITL-12B'],
+      [/^Purge permissives|^Furnace purge/, 'DITL-02'],
+      [/^Pag-init|^Drum pressure|^Warming up/, 'ABC-001C'],
+      [/^Bed temperature|^Batch firing/, 'ABC-004A'],
+      [/patayin ang mga burner/, 'DITL-12'],
+      [/^Bypass servicing|^Main steam pressure 123/, 'ABC-050'],
+      [/^Turbine preparation|^ROLL|^Initial load|^LOAD UP|^Hawakan ang 45 MW/, 'ABC-001C'],
+      [/^Diesel oil pump/, 'ABC-028']
+    ];
+    for (const s of ST) if (!s.sh) for (const [re, sh] of WHERE) if (re.test(s.t)) s.sh = sh;
     return ST;
   }
 
@@ -856,6 +900,11 @@ window.LS_GUIDE = (function () {
   let acc = {};
   const onStep = dt => {
     if (!G.on || !live()) return;
+    /* 3.2.0-beta.25: the blowdown opened by the drum filling step is shut at -150 mm */
+    if (G.bd && h().lvl() <= -150) {
+      if (AN.blowdown) AN.blowdown(false);
+      G.bd = 0;
+    }
     for (const a in PUSH)
       if (simT() >= PUSH[a]) {
         h().setx(null, a, 0);
@@ -914,6 +963,8 @@ window.LS_GUIDE = (function () {
         }
     return out;
   }
+  /* the drum level of the drained cold drum (mm, the three transmitters): near the bottom of LT-BR1001 (-422 mm) */
+  const DRAINED = -400;
   /* start: the plant cold, RUN, step 1 */
   function start(done) {
     const go = () => {
@@ -922,6 +973,8 @@ window.LS_GUIDE = (function () {
         AN.plantCold();
         AN.startState = 'plantCold';
         AN.settle();
+        /* 3.2.0-beta.25: the drum drained (the guide fills it: PR-OPE-5002 #19) */
+        if (AN.drumSet) AN.drumSet(DRAINED);
         AN.paint();
       } catch (e) {}
       for (const k in CO) delete CO[k];
@@ -931,6 +984,7 @@ window.LS_GUIDE = (function () {
       G.on = true;
       G.mine = {};
       G.cur = 0;
+      G.bd = 0;
       HH = null;
       /* the sheets the steps operate that may not be linked to the sheet on the screen: stepped too (links.js actSet) */
       AN.checkSheets = ['ABC-001C', 'ABC-002', 'ABC-003A', 'ABC-003B', 'ABC-003C', 'ABC-003D', 'ABC-004A', 'ABC-005', 'ABC-007', 'ABC-008', 'ABC-010', 'ABC-011', 'ABC-012', 'ABC-013', 'ABC-020', 'ABC-028', 'ABC-031', 'ABC-032', 'ABC-050', 'ABC-052', 'ABC-054']
