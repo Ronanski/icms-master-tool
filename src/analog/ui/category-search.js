@@ -24,6 +24,13 @@ AN.xrefGo = tg => {
 };
 function setCat(c) {
   if (AN.cat === c) return;
+  /* 3.2.0-beta.23 (user 2026-10-24: "dapat kasi pag RUN tapos kung anong mode ang pinili ni user, iyun na yun"): one RUN for the
+     app. A switch ABC <-> DITL keeps the simulation the user chose: ABC RUN -> DITL Simulate (with "ABC+DITL ON" the plant and the
+     ABC sheets go on running from the DITL page, world.js), DITL Simulate -> ABC RUN. Before, every switch stopped it (VIEW) */
+  let runWas = false;
+  try {
+    runWas = AN.cat === 'an' ? !!AN.run && !AN.view : typeof SIM !== 'undefined' && !!SIM;
+  } catch (e) {}
   if (c !== 'an') {
     const f = $('sidefl');
     if (f && AN._ph !== undefined) f.placeholder = AN._ph;
@@ -62,6 +69,7 @@ function setCat(c) {
         AN.lkey = null;
         render();
         coldShow();
+        if (runWas && AN.runOn) AN.runOn();
       })
       .catch(e => {
         AN.lkey = null;
@@ -69,7 +77,8 @@ function setCat(c) {
         msg('Analog sheets could not be loaded: ' + e.message);
       });
   } else {
-    SIM = simSaved;
+    SIM = runWas;
+    if (runWas) TSP = AN.spd || 1;
     SIDEKEY = null;
     AN.run = false;
     render();

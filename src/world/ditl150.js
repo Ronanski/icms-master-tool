@@ -188,6 +188,7 @@
       }
       s.sig = {};
       s.usw = {};
+      s._fd = null;
       s.av150 = null;
       for (const a of s.nl.an || []) {
         const src = s.nl.src.find(z => z.n === a.net),
@@ -221,6 +222,7 @@
     for (const x of ALL()) {
       x.sig = {};
       x.usw = {};
+      x._fd = null;
       x.av150 = null;
       if (x.nl) {
         x.nl._v = null;

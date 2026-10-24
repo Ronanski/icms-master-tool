@@ -332,6 +332,8 @@
     if (!L.length) return;
     cur = Math.max(0, Math.min(L.length - 1, +cur || 0));
     const [tn, tm] = total();
+    const rb = train.querySelector('.trresume');
+    if (rb) rb.hidden = !(window.LS_GUIDE && LS_GUIDE.on && !(window.LS_DOCK && LS_DOCK.el && !LS_DOCK.el.hidden));
     train.querySelector('.trbar i').style.width = (tm ? (100 * tn) / tm : 0) + '%';
     train.querySelector('.trpct').textContent = tn + ' of ' + tm + ' steps done (' + (tm ? Math.round((100 * tn) / tm) : 0) + ' %)';
     const nav = train.querySelector('.trlist');
@@ -476,8 +478,24 @@
       E('div', { cls: 'trhead' }, [
         E('div', { cls: 'trtitle' }, [E('b', { txt: 'Start-up procedure' }), E('span', { txt: 'PR-OPE-5002 Rev 03 + sync, load up to 150 MW and load change practice · ' + P().length + ' sections' })]),
         E('div', { cls: 'trprog' }, [E('div', { cls: 'trbar', role: 'presentation' }, [E('i')]), E('span', { cls: 'trpct' })]),
+        /* 3.2.0-beta.23: the guided start-up in the Training dock beside the logic (src/ui/training/dock.js): one step at a time, Cold -> 150 MW */
         E('button', {
           cls: 'trbtn go',
+          type: 'button',
+          txt: 'Gabay: Cold → 150 MW',
+          title: 'Guided start-up beside the logic: the plant cold, RUN, one step at a time with the interlock of each motor, the faceplates and the values to watch',
+          on: () => abcReady(() => window.LS_DOCK && LS_DOCK.start())
+        }),
+        E('button', {
+          cls: 'trbtn trresume',
+          type: 'button',
+          txt: 'Ituloy ang gabay',
+          hidden: true,
+          title: 'Go on with the guided start-up where it stopped',
+          on: () => abcReady(() => window.LS_DOCK && LS_DOCK.resume())
+        }),
+        E('button', {
+          cls: 'trbtn',
           type: 'button',
           txt: 'Practise: Cold start',
           title: 'Sets the plant cold, clears the AUTO ticks, starts the simulation (RUN) and opens the Plant view: do the steps there, they tick here',

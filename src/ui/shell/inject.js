@@ -48,6 +48,7 @@ const block =
   fs.readFileSync(__dirname + '/app.css', 'utf8') +
   fs.readFileSync(__dirname + '/../fx/fx.css', 'utf8') +
   fs.readFileSync(__dirname + '/home.css', 'utf8') +
+  fs.readFileSync(__dirname + '/../training/dock.css', 'utf8') +
   '</style><script id="shelljs">' +
   fs.readFileSync(__dirname + '/ditl.js', 'utf8') +
   '\n' +
@@ -84,6 +85,9 @@ const block =
   '\n' +
   /* 3.2.0-beta.21: guided Training (one step at a time, actions on the card, the coach) */
   fs.readFileSync(__dirname + '/../training/guide.js', 'utf8') +
+  '\n' +
+  /* 3.2.0-beta.23: the Training dock (guided start-up beside the app) */
+  fs.readFileSync(__dirname + '/../training/dock.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/home.js', 'utf8') +
   '\n' +

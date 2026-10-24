@@ -2,8 +2,10 @@
 
 > Single current handoff. Palitan ang lumang status kapag nagbago ang trabaho; huwag mag-append ng chat transcript.
 
-## SIMULAN DITO (next session, 2026-10-23)
-- **Kasalukuyang Beta:** `3.2.0-beta.22`, branch `claude/project-thread-vhcfv9` (PR #39; kasama ang PR #38). Stable pa rin ang v2.4.0 sa `main`.
+## SIMULAN DITO (next session, 2026-10-24)
+- **Kasalukuyang Beta:** `3.2.0-beta.23`, branch `claude/project-thread-vhcfv9` (PR #39). Stable pa rin ang v2.4.0 sa `main`.
+- **3.2.0-beta.23 (2026-10-24):** Training dock (mockup na pinili ng user): ang gabay Cold → 150 MW ay panel katabi ng ABC / DITL, iisang RUN, at ang START / STOP / purge / burner / feeder ay pindot sa tunay na DITL drawing (iisang mundo ON habang nasa dock). 9 na mali ng link / model na nakita at inayos, ebidensya sa `docs/versions/v3.2.0/UNLINK_AUDIT.md`; detalye sa `UPDATE_REPORT.md` beta.23. **Bukas:** 2 sa 7 na buong run (WORLD ON, ×300) ay huminto sa CCS handover (~80 MW, bumabalik sa MANUAL ang HIC-BM at EIC-TM pagkatapos ng A); hindi pa nahanap ang sanhi (susunod: i-trace ang M.2013 / M.2016 sa run na huminto). Hindi pa nasubok ng user sa tablet / EXE.
+- **Luma — beta.22:** `3.2.0-beta.22`, branch `claude/project-thread-vhcfv9` (PR #39; kasama ang PR #38). Stable pa rin ang v2.4.0 sa `main`.
 - **3.2.0-beta.22 (2026-10-24):** Cold na malinis: BFWP stop, FW 0, drum level steady 5~8 mm, steam temp 30 °C. Ang operator (at ang CHECK chain) ang nagsi-start ng BFWP-A. Hinihintay: pili ng user sa Training workspace mockup https://claude.ai/artifact/M9TD6DVtS8XmfwrBpo4UVX (dock + strip + interlock mula sa DITL + faceplate sa card). Ang `src/ui/training/guide.js` (66 hakbang, coach) ay nasa build pero wala pang UI.
 - **3.2.0-beta.21 (2026-10-24):** Training bugs: Practise = tunay na Cold / 150 MW kahit galing DITL, RUN agad; ang pagsilip (tag, search) habang RUN ay hindi na nagiging VIEW. Hinihintay: pili ng user sa bagong isang-screen na Training (https://claude.ai/artifact/FnjLxFZYXnFqc9fjvRdHWJ: isa-isang hakbang, START ng pump at faceplate sa card, bawal lumaktaw).
 - **3.2.0-beta.20 (2026-10-24):** Plant chip katabi ng VIEW | RUN (pili B ng user): OFF / Per-loop (45 ~ 150 MW) / Unit (Cold, Warm, Hot, 150 MW, Target MW). Start ▾ → TCS / Field ▾. UAT at CHECK inalis sa app (automated test na lang). Bukas: HP bypass PV 122 sa Cold.
