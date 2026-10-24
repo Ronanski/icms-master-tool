@@ -6,9 +6,12 @@
    Kapag ON at tumatakbo (ABC Run, o DITL Simulate), bawat 0.2 s: kinukuwenta ang LAHAT ng DITL sheet (timers, MOV, motor din),
    tapos ipinapasa ang mga value. OFF = dating gawi (ang FROM DITL ay manual na input). Walang binago sa logic ng mga sheet. */
 (function () {
-  const W = (window.WORLD = { on: false, live: false, idx: null, out: {}, stat: null, ms: 0 });
+  /* 3.2.0-beta.25 (user 2026-10-24: "tanggalin mo na rin ang button na ABC plus DITL ON, mula ngayon isang utak na yan"): the one
+     world is ALWAYS ON, there is no switch any more (CLAUDE.md rule 7 changed). W.set stays for the tests that check one DITL sheet
+     by itself; the app never turns it off */
+  const W = (window.WORLD = { on: true, live: false, idx: null, out: {}, stat: null, ms: 0 });
   try {
-    W.on = localStorage.getItem('ls-world') === '1';
+    localStorage.removeItem('ls-world');
   } catch (e) {}
   /* 2.3.0-beta.1 (LINK-4): also a one-digit code with its letter, written without the 0 (DITL-15 row 10 MFT "3A-63" = 03A-63) */
   const RX = /\(?\s*([0-9]{2,3}[A-Z]?|[0-9][A-Z])\s*-\s*(\d{1,3})\s*\)?/gi;
@@ -801,9 +804,6 @@
   W.build = () => build();
   W.set = on => {
     W.on = !!on;
-    try {
-      localStorage.setItem('ls-world', W.on ? '1' : '0');
-    } catch (e) {}
     if (W.on) {
       /* the memory list descriptions (machine A / B of a shared drawing) come with the ABC data: build again when they are in */
       try {
@@ -833,7 +833,6 @@
       off();
       msg('One world OFF: FROM DITL signals are manual inputs again');
     }
-    upd();
   };
   let last = 0;
   setInterval(() => {
@@ -897,33 +896,11 @@
         console.error(e);
       }
   }, 200);
-  /* the button, in the TAKBO group of both toolbars */
-  const btns = [];
-  function upd() {
-    btns.forEach(b => {
-      b.textContent = 'ABC+DITL ' + (W.on ? 'ON' : 'OFF');
-      b.classList.toggle('on', W.on);
-    });
-  }
-  function mk() {
-    const b = document.createElement('button');
-    b.className = 'wbtn';
-    b.title =
-      'One world: ON = the DITL runs together with the ABC and signals pass along the drawing references (FROM DITL 26A-55, TO DITL, the DITL FROM column). OFF = FROM DITL signals are manual inputs.';
-    b.onclick = e => {
-      e.stopPropagation();
-      W.set(!W.on);
-    };
-    btns.push(b);
-    return b;
-  }
+  /* the world is built once both pages are there (the ABC sheets are linked again when they load, the interval above) */
   let n = 0;
   const iv = setInterval(() => {
     const a = document.querySelector('#anbar .tbg-run'),
       d = document.querySelector('#bar .tbg-run');
-    if (a && !a.querySelector('.wbtn')) a.append(mk());
-    if (d && !d.querySelector('.wbtn')) d.append(mk());
-    upd();
     if ((a && d) || ++n > 60) {
       clearInterval(iv);
       if (W.on) setTimeout(() => W.set(true), 0);

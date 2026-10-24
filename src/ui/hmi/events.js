@@ -113,7 +113,7 @@
     if (!(window.WORLD && WORLD.on)) {
       const n = document.createElement('div');
       n.className = 'evr evn';
-      n.textContent = 'DITL trips (MFT, fan / pump trips) and their first-out are logged when the One world is ON (Tools → One world).';
+      n.textContent = 'DITL trips (MFT, fan / pump trips) and their first-out are logged while the ABC and DITL run as one.';
       box.append(n);
     }
     if (!LOG.length) {
