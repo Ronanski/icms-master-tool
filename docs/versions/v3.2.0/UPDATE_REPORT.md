@@ -519,6 +519,6 @@ Engine at logic: walang binago.
 - Phone (390 px, dock sa ibaba): nagpapatong ang mga value. Ngayon 4 na column at mas maliit na font.
 - Test `lookonly`: in-update sa iisang RUN (ang search habang Simulate ay hindi na humihinto sa Simulate, gaya ng ABC mula beta.21).
 
-**As Left (ebidensya):** buong gabay Cold → 150 MW na ON ang iisang mundo, ×300, 5 sa huling 7 na buong run ay umabot sa 150 MW (MSP 123, main steam 541 °C, drum level ±30 mm) at sa Practice nang walang MFT. PASADO: ditl_sim, ditl150, interlock, lookonly, training_dock, training_start, home_training, training_practice, at ang check panel M1 ~ M5 (buong start-up at shutdown ng CHECK script, hindi binago).
+**As Left (ebidensya):** buong gabay Cold → 150 MW na ON ang iisang mundo, ×300, 6 sa huling 8 na buong run ay umabot sa 150 MW (MSP 123, main steam 541 °C, drum level ±30 mm) at sa Practice nang walang MFT. PASADO: ditl_sim, ditl150, interlock, lookonly, training_dock, training_start, home_training, training_practice, at ang check panel M1 ~ M5 (buong start-up at shutdown ng CHECK script, hindi binago).
 
-**Status:** Beta. Ang gabay na WORLD OFF (Training page) ay umabot din sa 150 MW at Practice. Bukas pa: 2 sa 7 na run ay huminto sa CCS handover (~80 MW: bumabalik sa MANUAL ang boiler master at turbine master pagkatapos ilagay sa AUTO). Hindi pa nasubok sa tablet / EXE ng user.
+**Status:** Beta. Ang gabay na WORLD OFF (Training page) ay umabot din sa 150 MW at Practice. Bukas pa: 2 sa 8 na run ay huminto sa CCS handover (~80 MW: bumabalik sa MANUAL ang boiler master at turbine master pagkatapos ilagay sa AUTO). Hindi pa nasubok sa tablet / EXE ng user.
