@@ -3,9 +3,12 @@
 > Single current handoff. Palitan ang lumang status kapag nagbago ang trabaho; huwag mag-append ng chat transcript.
 
 ## SIMULAN DITO (next session, 2026-10-24)
-- **Kasalukuyang Beta:** `3.2.0-beta.24`, branch `claude/project-thread-vhcfv9` (PR #39). Stable pa rin ang v2.4.0 sa `main`.
+- **Kasalukuyang Beta:** `3.2.0-beta.25`, branch `claude/project-thread-vhcfv9` (PR #39). Stable pa rin ang v2.4.0 sa `main`.
+- **PLANO NG USER (2026-10-24): `docs/CHECKLIST.md` seksyon 0** (isang utak → ladder sample → desisyon sa ladder / `.CFD` `.HFD` → DITL A/B/C/D na tunay na sheet → MCC / final element → tag map → audit ng engine → audit ng plant model → Training isang screen). May ETA bawat item; i-update kada matapos.
+- **3.2.0-beta.25 (2026-10-24):** isang utak: ABC + DITL laging iisang mundo, walang button (CLAUDE.md rule 7 pinalitan); ladder view (preview) ng DITL sheet, button "Ladder" sa DITL ribbon, ladder = engine sa 241 sheet (`tests/regress/ladder.js`). Detalye: `UPDATE_REPORT.md` beta.25.
+- **SUSUNOD NA GAGAWIN:** hintayin ang desisyon ng user sa ladder at ang `.CFD` / `.HFD` sample (CHECKLIST 0.3); habang naghihintay, simulan ang 0.4 (DITL A/B/C/D: sheet na iisa ang A ~ D, hal. DITL-29A SWP na may address na "M.1150/1160"). Walang merge sa main at walang release nang walang GO STABLE.
 - **3.2.0-beta.24 (2026-10-24):** naayos ang hinto sa CCS handover (~80 MW). Sanhi: bukas ang MS blow-off PICMS1002 > 5 % (ABC-013 M.0255 → ABC-001C M.2013 BU-CMD → HIC-BM MAN → EIC-TM MAN, tama ang drawing). Naiiwan ang blow-off SV sa 117 ~ 123 mula sa bypass coach, at ang boiler-follow coach ay pataas lang. Ayos sa `src/ui/training/guide.js` lang: blow-off A SV 128 sa hakbang na "HP bypass sa REMOTE … 45 MW" (4.PNG), `bf` coach bumababa rin kapag MSP > 125, bantay sa bed (< 720 °C) sa `bf` at `load`, at bumabalik ang gabay sa hakbang ng HIC-BM / EIC-TM kapag naibalik sila ng drawing sa MANUAL (`req`). Ebidensya: 6 / 6 buong run (WORLD ON ×300) umabot sa 150 MW at Practice. Detalye: `docs/versions/v3.2.0/UPDATE_REPORT.md` beta.24.
-- **SUSUNOD NA GAGAWIN:**
+- **Luma, beta.24, susunod noon:**
   1. Hintayin ang subok ng user sa beta.24 (Training → Practise: Cold start → sundan ang step card hanggang 150 MW; inaasahan: walang MFT, HIC-BM at EIC-TM nananatiling AUTO pagkatapos ng HIC-ULD A).
   2. Ang probe `tools/training/guide_fullrun.js` ay humihinto sa Practice (#64) dahil hindi nito pinipindot ang ▼▼; normal iyon.
   3. Walang merge sa main at walang release nang walang GO STABLE.

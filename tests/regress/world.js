@@ -7,7 +7,9 @@ const {open}=require('./lib.js');const fs=require('fs');
 const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 (async()=>{const {browser,page,errs}=await open(html);let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
 const wait=ms=>page.waitForTimeout(ms);
-ck(await page.evaluate(()=>!WORLD.on&&!WORLD.live),'default OFF');
+/* 3.2.0-beta.25 (user 2026-10-24 "isang utak"): the one world is ON by default and has no switch; OFF is only for the tests (WORLD.set) */
+ck(await page.evaluate(()=>WORLD.on&&!document.querySelector('.wbtn')),'default ON, no ABC+DITL ON / OFF button');
+await page.evaluate(()=>WORLD.set(false));
 const free0=await page.evaluate(()=>{let n=0,x=0;for(const sh of AN.sheets){if(/ABC-000/.test(sh.name))continue;const A=AN.ensure(sh);for(const [k] of AN.dsIdx(sh).from){n++;if(A.xlk&&A.xlk[k]&&A.xlk[k].ditl)x++}}return {n,x}});
 ck(free0.x===0,'OFF: '+free0.n+' FROM DITL inputs, none is driven by the DITL');
 const st=await page.evaluate(()=>{WORLD.set(true);return Object.assign({},WORLD.stat,{lost:WORLD.stat.lost.slice(0,20)})});
