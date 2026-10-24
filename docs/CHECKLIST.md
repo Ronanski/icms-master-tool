@@ -6,6 +6,22 @@ Ang mga milestone hanggang matapos ang project (M0 ~ M6, may "pasado kung") ay n
 
 Utos ng user (2026-10-16): **"Analog muna. Ang DITL ay i-simulate / i-force na lang."** Ang DITL signal na binabasa ng ABC ay puwedeng i-force sa ABC: ang input na "FROM DITL" ay manual input kapag OFF ang ABC + DITL, at FORCE kapag ON. Hindi na gagastos ng oras sa pagbasa ng bawat DITL row.
 
+## 0. PLANO NGAYON (user 2026-10-24): isang utak, ladder, A/B/C/D, MCC, tag map, Training isang screen
+
+Napagkasunduan sa chat noong 2026-10-24. Sunod-sunod; ina-update kada may matapos. ETA = tantiya ng oras ng trabaho ko mula pagsimula, hindi kasama ang paghihintay sa sagot o subok ng user. Ang `[~]` = sinisimulan na.
+
+1. [ ] **Isang utak: iisang mundo (ABC + DITL) laging ON, default.** Alisin ang button na "ABC+DITL ON / OFF" (Tools); palitan ang CLAUDE.md rule 7. Pasado kung: bukas ang app = magkadugtong ang ABC at DITL; hindi bumagal ang RUN; pasado ang dating tests (ABC, DITL, Training, CHECK). Beta: `3.2.0-beta.25`. **ETA: 3 ~ 4 oras.**
+2. [ ] **Ladder sample: isang DITL sheet bilang ladder**, gawa ng app mula sa parehong logic (hindi iginuhit ng kamay), katabi ng DITL drawing, parehong live (energized contact / coil). Para makapagdesisyon ang user kung gagawin sa lahat. **ETA: 4 ~ 6 oras.**
+3. [ ] **Desisyon ng user sa ladder** (gagawin sa lahat ng DITL? sa ABC?). Kung mai-upload ng user ang isang folder na `.CFD` / `.HFD` mula sa engineering station (VMware), susuriin ko kung nababasa ito at kung puwedeng ibangga ang ladder ng app sa ladder ng planta. **ETA ng pagsuri: 2 ~ 3 oras pagkatanggap.**
+4. [ ] **DITL A/B/C/D: tunay na hiwalay na sheet** (SWP, CEP, at iba pang equipment na iisang sheet ang A ~ D), bawat isa may sariling address mula sa I/O list at memory list; gawa ng tool mula sa sheet ng A. Ang hindi tugma ay sa `UNLINK_AUDIT.md`. **ETA: 1 ~ 2 araw.**
+5. [ ] **MCC at final element: iisang model sa ABC at DITL.** Command → MCC / positioner → valve / damper / motor → feedback (running, ZSO / ZSC, % open). Ayusin ang ABC "MCC PANEL / INVERTER" na humihinto ang MV (`src/analog/reader/blocks.js` FIELD). **ETA: 1 araw.**
+6. [ ] **Tag map at navigation (Library):** bawat tag = saan kinokontrol (faceplate / pushbutton), saan ang logic (sheet, row), ano ang final element, ano ang instrument (PV). Ang link ay dadalhin ka sa pinagmulan at sa dulo ng signal. **ETA: 1 ~ 2 araw.**
+7. [ ] **Audit ng engine (gaano katotoo):** bawat uri ng block laban sa legend at textbook, bawat link laban sa I/O at memory list, piling loop mula sa drawing. Report sa `docs/versions/v3.2.0/ENGINEERING_AUDIT.md`. **ETA: 1 ~ 2 araw.**
+8. [ ] **Audit ng plant model:** 45 / 60 / 90 / 120 / 150 MW laban sa HMI snapshot at FHI curves (pressure, flow, level, temperatura, MW, air, coal) at ang bilis ng sagot. Kasama: bakit 130 ang SV ng blow-off sa 150 MW (dapat 128). Ayos sa model, hindi sa coach. **ETA: 2 araw.**
+9. [ ] **Training isang screen: Cold start → sync → 150 MW**, nakakabit sa tunay na logic (1 ~ 6): ang kokontrolin at babantayan ay mula sa tag map, interlock mula sa DITL. Pasado kung: 10 / 10 buong run umabot sa 150 MW nang walang trip, at bawat hakbang may batayan sa PR-OPE-5002 o sa drawing. **ETA: 2 ~ 3 araw.**
+
+Saka na (user): ibang UI, DITL page polish, F(X) page, phone.
+
 ## A. GAGAWIN NGAYON (ABC / analog), sunod-sunod
 1. [x] **(2.2.0-beta.7: 0 / 438; luma ang test, sinusunod na ang force manual rule) Switches test: 40 sa 438 kaso** ng ABC switch / AMT ay hindi bumabalik sa dating leg pagkatapos ng force at release (`tests/regress/switches.js`). Bug ng ABC, mayroon na bago pa ang 2.2.0-beta.6.
 2. [x] **(2.2.0-beta.7: 27 → 11, bawat isa may paliwanag; `docs/versions/v2.2.0/UPDATE_REPORT.md`) Hindi tugma ng ABC sa 150 MW snapshot**: 33 tag sa 2.1.0-beta.11 (`docs/versions/v2.1.0/PLANT_LIVE_VS_SNAPSHOT.md`). Ang 2.2.0-beta.1 ay nag-ayos ng coal at oil (hal. FIQDO1043A ~ D: 3.5 → 0). Bibilangin muli at aayusin ang natitira.
