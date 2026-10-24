@@ -522,3 +522,26 @@ Engine at logic: walang binago.
 **As Left (ebidensya):** buong gabay Cold → 150 MW na ON ang iisang mundo, ×300, 6 sa huling 8 na buong run ay umabot sa 150 MW (MSP 123, main steam 541 °C, drum level ±30 mm) at sa Practice nang walang MFT. PASADO: ditl_sim, ditl150, interlock, lookonly, training_dock, training_start, home_training, training_practice, at ang check panel M1 ~ M5 (buong start-up at shutdown ng CHECK script, hindi binago).
 
 **Status:** Beta. Ang gabay na WORLD OFF (Training page) ay umabot din sa 150 MW at Practice. Bukas pa: 2 sa 8 na run ay huminto sa CCS handover (~80 MW: bumabalik sa MANUAL ang boiler master at turbine master pagkatapos ilagay sa AUTO). Hindi pa nasubok sa tablet / EXE ng user.
+
+## 3.2.0-beta.24 — CCS handover (~80 MW): bumabalik sa MANUAL ang HIC-BM at EIC-TM
+
+**Problem (bukas mula beta.23):** sa gabay Cold → 150 MW (Training dock, iisang mundo ON), 2 sa 8 run ay huminto sa ~80 MW: ang boiler master HIC-BM at turbine master EIC-TM ay bumabalik o nananatili sa MANUAL, walang FM event sa log.
+
+**As Found (ulit gamit ang `tools/training/guide_fullrun.js`, trace ng ABC-001C M.2013):**
+- Ang M.2013 (BU-CMD ng HIC-BM) ay 1 kahit steam flow 297 ~ 313 T/H (> 230). Ang input na 1 ay **M.0255 = "PICMS1002 MV > 5 %"** (MS blow-off valve PCV-MS1001, ABC-013 → ABC-001C). Tama ang drawing: bukas na blow-off = back-up command, MANUAL ang boiler master (CLAUDE.md 10), at kasunod ang EIC-TM (M.2016 = NOT boiler master AUTO).
+- Bakit bukas ang blow-off sa load: ang SV nito ay "HP bypass SV + 5" lang habang nasa bypass stage. Kapag natapos ang hakbang "Main steam pressure 123" bago umabot sa 123 ang HP bypass SV, naiiwan ang blow-off sa SV 117 ~ 123. Sa 80 MW (MSP 123) bukas ito nang 67 ~ 76 % (nakita: SV 123, PV 122.4, MV 76.4).
+- Ang ibang run: SV 128, pero umakyat ang MSP sa 128 ~ 135 sa 45 ~ 80 MW dahil ang boiler-follow coach ay **pataas lang** ang HIC-BM (walang pagbaba kapag mataas ang pressure); bumukas ang blow-off at hindi na nagsara.
+- Habang inuulit: 1 run nag-MFT sa 45 MW (bed 690 → 617 °C, huminto ang 3 feeder: DITL-19 row 16 / ABC-027 M.2504 < 700 °C). Ang load coach ay sumusunod sa pressure lang, walang bantay sa bed (ang bypass coach ay mayroon mula beta.23).
+- Ang gabay ay hindi bumabalik sa naunang hakbang: kapag bumalik sa MANUAL ang HIC-BM / EIC-TM pagkatapos ng hakbang nila, nakatayo ang card sa "HIC-ULD sa AUTO" na walang paliwanag.
+
+**Work Done (`src/ui/training/guide.js`, gabay lang; engine at drawing hindi binago):**
+1. Hakbang "HP bypass sa REMOTE … sa 45 MW": dagdag ang **PICMS1002 A, SV 128** (4.PNG 148.8 MW: BLOW-OFF A, SV 128, MV 0), at tapos lang ang hakbang kapag sarado ang blow-off (M.0255 = 0).
+2. Boiler-follow coach (`bf`): ibinababa na rin ang HIC-BM kapag MSP > 125 (hanggang −0.5 % bawat 10 s), pero hindi kapag bed < 730 °C; +0.5 % kapag bed < 720 °C.
+3. Load coach (`load`): coal +1 kapag bed < 720 °C, hindi binabawasan sa ilalim ng 730 °C (gaya ng bypass coach).
+4. Hakbang "HIC-BM sa AUTO": sinasabi na ng card kung bukas ang blow-off (M.0255) o ang HP bypass (M.0709), at tumatakbo ulit ang `bf` coach.
+5. Ang mga hakbang EIC-TM, HIC-ULD, PICFG108 at "Hawakan ang 150 MW" ay may `req`: kapag ang HIC-BM o EIC-TM ay naibalik sa MANUAL ng drawing, bumabalik ang gabay sa hakbang na iyon (pindot ulit ng A kapag M.2013 / M.2016 = 0, CLAUDE.md 10).
+6. `tools/training/guide_fullrun.js`: nagpi-print din ng PV / SV / MV / mode ng PICMS1002 at PICMS1006 kapag huminto.
+
+**As Left (ebidensya, WORLD ON ×300, buong gabay):** pagkatapos ng ayos 1 ~ 5: **6 sa 6 na buong run** umabot sa 150 MW at sa Practice, walang MFT, walang hinto sa HIC-BM / EIC-TM (MSP 123.0, PICMS1002 sarado, M.0255 = 0). Bago ang ayos (beta.23): 1 sa 2 run huminto sa HIC-BM (M.0255 = 1, blow-off MV 76 %); sa gitnang bersyon (ayos 2 ~ 5 lang) 1 sa 6 huminto pa rin dahil sa SV 123 ng blow-off, kaya idinagdag ang ayos 1. PASADO: training_dock, training_start, training_practice, home_training, live_training, tests.js (0 FAIL), `npm run check` SAME.
+
+**Status:** Beta. Hindi pa nasubok sa tablet / EXE ng user.
