@@ -6,11 +6,27 @@ Ang mga milestone hanggang matapos ang project (M0 ~ M6, may "pasado kung") ay n
 
 Utos ng user (2026-10-16): **"Analog muna. Ang DITL ay i-simulate / i-force na lang."** Ang DITL signal na binabasa ng ABC ay puwedeng i-force sa ABC: ang input na "FROM DITL" ay manual input kapag OFF ang ABC + DITL, at FORCE kapag ON. Hindi na gagastos ng oras sa pagbasa ng bawat DITL row.
 
+## 0. PLANO NGAYON (user 2026-10-24): isang utak, ladder, A/B/C/D, MCC, tag map, Training isang screen
+
+Napagkasunduan sa chat noong 2026-10-24. Sunod-sunod; ina-update kada may matapos. ETA = tantiya ng oras ng trabaho ko mula pagsimula, hindi kasama ang paghihintay sa sagot o subok ng user. Ang `[~]` = sinisimulan na.
+
+1. [x] **(3.2.0-beta.25: TAPOS; laging ON, walang button, rule 7 pinalitan, 60 fps sa PC) Isang utak: iisang mundo (ABC + DITL) laging ON, default.** Alisin ang button na "ABC+DITL ON / OFF" (Tools); palitan ang CLAUDE.md rule 7. Pasado kung: bukas ang app = magkadugtong ang ABC at DITL; hindi bumagal ang RUN; pasado ang dating tests (ABC, DITL, Training, CHECK). Beta: `3.2.0-beta.25`. **ETA: 3 ~ 4 oras.**
+2. [x] **(3.2.0-beta.25: TAPOS; DITL-29A SWP A, button "Ladder" sa DITL ribbon; 241 sheet, 20,552 rung, 0 hindi tugma sa engine) Ladder sample: isang DITL sheet bilang ladder**, gawa ng app mula sa parehong logic (hindi iginuhit ng kamay), katabi ng DITL drawing, parehong live (energized contact / coil). Para makapagdesisyon ang user kung gagawin sa lahat. **ETA: 4 ~ 6 oras.**
+3. [~] **(hinihintay ang user) Desisyon ng user sa ladder** (gagawin sa lahat ng DITL? sa ABC?). Kung mai-upload ng user ang isang folder na `.CFD` / `.HFD` mula sa engineering station (VMware), susuriin ko kung nababasa ito at kung puwedeng ibangga ang ladder ng app sa ladder ng planta. **ETA ng pagsuri: 2 ~ 3 oras pagkatanggap.**
+4. [ ] **DITL A/B/C/D: tunay na hiwalay na sheet** (SWP, CEP, at iba pang equipment na iisang sheet ang A ~ D), bawat isa may sariling address mula sa I/O list at memory list; gawa ng tool mula sa sheet ng A. Ang hindi tugma ay sa `UNLINK_AUDIT.md`. **ETA: 1 ~ 2 araw.**
+5. [ ] **MCC at final element: iisang model sa ABC at DITL.** Command → MCC / positioner → valve / damper / motor → feedback (running, ZSO / ZSC, % open). Ayusin ang ABC "MCC PANEL / INVERTER" na humihinto ang MV (`src/analog/reader/blocks.js` FIELD). **ETA: 1 araw.**
+6. [ ] **Tag map at navigation (Library):** bawat tag = saan kinokontrol (faceplate / pushbutton), saan ang logic (sheet, row), ano ang final element, ano ang instrument (PV). Ang link ay dadalhin ka sa pinagmulan at sa dulo ng signal. **ETA: 1 ~ 2 araw.**
+7. [ ] **Audit ng engine (gaano katotoo):** bawat uri ng block laban sa legend at textbook, bawat link laban sa I/O at memory list, piling loop mula sa drawing. Report sa `docs/versions/v3.2.0/ENGINEERING_AUDIT.md`. **ETA: 1 ~ 2 araw.**
+8. [ ] **Audit ng plant model:** 45 / 60 / 90 / 120 / 150 MW laban sa HMI snapshot at FHI curves (pressure, flow, level, temperatura, MW, air, coal) at ang bilis ng sagot. Kasama: bakit 130 ang SV ng blow-off sa 150 MW (dapat 128). Ayos sa model, hindi sa coach. **ETA: 2 araw.**
+9. [ ] **Training isang screen: Cold start → sync → 150 MW**, nakakabit sa tunay na logic (1 ~ 6): ang kokontrolin at babantayan ay mula sa tag map, interlock mula sa DITL. Pasado kung: 10 / 10 buong run umabot sa 150 MW nang walang trip, at bawat hakbang may batayan sa PR-OPE-5002 o sa drawing. **ETA: 2 ~ 3 araw.**
+
+Saka na (user): ibang UI, DITL page polish, F(X) page, phone.
+
 ## A. GAGAWIN NGAYON (ABC / analog), sunod-sunod
 1. [x] **(2.2.0-beta.7: 0 / 438; luma ang test, sinusunod na ang force manual rule) Switches test: 40 sa 438 kaso** ng ABC switch / AMT ay hindi bumabalik sa dating leg pagkatapos ng force at release (`tests/regress/switches.js`). Bug ng ABC, mayroon na bago pa ang 2.2.0-beta.6.
 2. [x] **(2.2.0-beta.7: 27 → 11, bawat isa may paliwanag; `docs/versions/v2.2.0/UPDATE_REPORT.md`) Hindi tugma ng ABC sa 150 MW snapshot**: 33 tag sa 2.1.0-beta.11 (`docs/versions/v2.1.0/PLANT_LIVE_VS_SNAPSHOT.md`). Ang 2.2.0-beta.1 ay nag-ayos ng coal at oil (hal. FIQDO1043A ~ D: 3.5 → 0). Bibilangin muli at aayusin ang natitira.
 3. [x] **(2.2.0-beta.9 unit model; 2.2.0-beta.11: temperatura SH / RH, reheat pressure at O2 ayon sa load, UNIT screen; M2 pass criterion pasado sa `unit_load.js`, hatol ng user ang natitira) Boiler / turbine physics (analog plant model)**: fuel → init → steam → pressure → MW. Ngayon, kapag nag-load down, ang demand lang ang sumusunod (MW demand, boiler master, coal, air), hindi ang main steam flow, pressure at aktwal na MW. Batayan: start-up / shutdown procedure (PR-OPE-5002 / 5003 / 5004) at HMI snapshots.
-4. [ ] **(2.2.0-beta.12: trip scenario ng bawat cluster na may trip sa `tests/regress/unit_trip.js`: (a) PAF / SA, (c) turbine trip + MFT, (d) BFWP + drum level LL / HH, (g) bypass sa turbine trip, 008 IDF; ang truth table / SV path / mode ng bawat cluster ay nasa generic tester na) Scenario ng mga loop ng operator, per cluster ng ABC sheet**: force manual / interlock truth table, SV path, AUTO / MAN / REMOTE, trip at pagbalik. Mga cluster:
+4. [x] **(2.5.0-beta.6: `tests/regress/interlock.js`: 57 A/M station na may force manual sa drawing, lahat pumapasok sa MANUAL at tumatanggi sa A habang naka-trip, 0 mali; 16 station ay walang force manual sa drawing (operator lang ang A / M); TICHR1012 = pulse ng pagsara ng LP bypass. Detalye: `docs/versions/v2.5.0/UPDATE_REPORT.md`) (2.2.0-beta.12: trip scenario ng bawat cluster na may trip sa `tests/regress/unit_trip.js`: (a) PAF / SA, (c) turbine trip + MFT, (d) BFWP + drum level LL / HH, (g) bypass sa turbine trip, 008 IDF; ang truth table / SV path / mode ng bawat cluster ay nasa generic tester na) Scenario ng mga loop ng operator, per cluster ng ABC sheet**: force manual / interlock truth table, SV path, AUTO / MAN / REMOTE, trip at pagbalik. Mga cluster:
    - (a) 003A ~ E + 007 + 006 (burner oil at hangin) — TAPOS ang 007;
    - (b) 004A ~ C + 005 + 002 (coal feeder, limestone);
    - (c) 001A ~ D + 002 + 013 + 001C (load, main steam pressure);
@@ -22,7 +38,7 @@ Utos ng user (2026-10-16): **"Analog muna. Ang DITL ay i-simulate / i-force na l
    - (i) 015 + 016 + 057;
    - (j) 026 ~ 030, 033, 053 ~ 056;
    - (k) 031, 032, 034 ~ 039 (condenser, heater drain).
-5. [ ] **Audit ng bawat ABC sheet laban sa PDF** (function, cause-and-effect, AUTO / REMOTE / MANUAL), kasabay ng #4. Tapos ang ABC-007; 53 pa.
+5. [x] **Audit ng bawat ABC sheet laban sa PDF** (function, cause-and-effect, AUTO / REMOTE / MANUAL), kasabay ng #4. **2.3.0-beta.1 (2026-10-19): na-audit ang 50 sheet + page linking ng DITL; 28 sheet walang mali, 30 mali sa 22 sheet, 4 uri ng maling link, 4 hindi mabasa (`docs/versions/v2.5.0/DRAWING_AUDIT.md`). User: "Ayusin lahat". beta.1: mga link (grupo A, LINK-1 ~ 4); beta.2: behavior (grupo B); beta.3: datos (grupo C). 2.5.0-beta.5: DITL-21C row 19 / 20 = B.0646 / B.066E ng ABC-009A (station wiring M.311A / B, `UNLINK_AUDIT.md`). TAPOS.**
 6. [x] **(2.2.0-beta.23: search nagsisimula sa planta naka-AUTO + budget 400 estado, ABC-004A 116 / 116 sa 17 min; 2.2.0-beta.8: generic tester 68 controller, 0 mali, 0 hindi nasubok; ang mahihirap ay sinubok sa planta na tumatakbo; RH spray + damper nagdadagdag) Controller na mahirap simulan**: PICFG108, AICFG112, HS-COAL, FICFW1007, PICAS1005.
 7. [x] **(2.2.0-beta.24: UAT block test 2547 item / 6998 case, 0 mali pagkatapos ng huling ayos; sakop 2517 / 3573 block; bagong SQRT (identity, V-18), I/P, T/P, HLLIM, PV < SV, conditional write, drop rate, DCMP, TPV) Tester ng halaga ng bawat block** (oracle ng AND, OR, ADD, SQRT, F(X), LAG, RATE, SEL…) sa bawat net ng 54 ABC sheet.
 8. [x] **(2.2.0-beta.24: latched select at operator-only A/M; 214 / 225 A/M at 155 / 159 T switch may test; 7 switch na output = isang leg ay susuriin sa PDF) Tester ng switching** (SW, AMT, T switch, selector) sa bawat leg; kasama ang #1.
@@ -37,7 +53,18 @@ Utos ng user (2026-10-16): **"Analog muna. Ang DITL ay i-simulate / i-force na l
 - [-] **Pangalan ng ~600 na input na walang tag** (DITL side).
 
 ## C. HINIHINTAY SA USER
-- [ ] **DITL right side pane** na tulad ng sa ABC: hinihintay ang "go side pane".
+- [x] **DITL right side pane** na tulad ng sa ABC (2.4.1-beta.6 ~ beta.10: DITL may panel at tab na gaya ng ABC).
+- [x] **(2.5.0-beta.7: AYOS. Walang pulse sa simula ng "Start at 150 MW" (steady state); ang mode ng MAN station ay hindi na pinapalitan (iyon ang nagpabago sa boiler master sa unang subok). M2 ~ M5 at bawat hakbang ng M4 pasado; M4 buo, tingnan ang UPDATE_REPORT) (2.5.0-beta.6, nakita) RH / SH gas bias damper MANUAL sa "Start at 150 MW"** (HICHR1002A / B; 39.PNG: parehong A, TICHR1002A R). Sanhi: sa unang scan pagkatapos ng Reset, ang pulse ng ABC-020 (TPS ng NOT HICHR1002B.MAN) ay nag-set ng M.017A (1:B = MANUAL), at sa M.0179 pati ang RH. Sinubok ang ayos (walang pulse sa steady load + mode ng MAN station mula sa snapshot): tama ang damper pero bumaba ang M4 / M5 (load down 10 / 14, bottle-up 12 / 15, 45 → 150 MW 11 / 14) dahil ang mga scenario ay naka-tune sa damper na MANUAL. Ibinalik; kailangan ng pag-tune ng scenario kasabay ng ayos.
+- [x] **(2.5.0-beta.8) Page link sa DITL** (user: "di mapindot"): FROM / TO reference ng row ay nagbubukas ng kabilang dulo (DITL row o ABC sheet), View at Run, ◀ Back. `tests/regress/ditl_pagelink.js`. Kasabay: PID sa AUTO na plant model OFF (`tests/regress/pid_auto.js`).
+- [x] **(2.5.0-beta.9) DITL = VIEW / SIMULATE + bawat logic block ng ABC**: DITL bar walang step / speed; `blocks_io.js` 1,666 block 0 mali (plant OFF at ON); `ditl_sim.js` ABC+DITL OFF / ON × plant OFF / ON PASS.
+- [x] **(2.5.0-beta.11) Bawat DITL sheet laban sa PDF** (user: "KAPAREHA DAPAT NG SA APP"): 39 sheet na may mali, naayos (`docs/versions/v2.5.0/DITL_PDF_AUDIT.md`); sheet list ng DITL ayon sa kategorya. `tests/regress/ditl_pdf.js`.
+- [x] **(2.5.0-beta.10) FORCE ABC ↔ DITL habang SIMULATE**: iisang oras ang ABC at DITL (`ditl_sim.js` PASS).
+- [ ] **(2.5.0-beta.11) DITL laban sa PDF**: 39 sheet na may mali (comparator, LOCAL STOP N.C., FF set priority, wire junction, off-sheet connector, row na DEFAULT 1, maling TO). Sheet list ng DITL ayon sa kategorya.
+- [x] **(2.5.0-beta.12) Sootblower DITL pages**: 17 sheet, tugma sa PDF (`docs/versions/v2.5.0/DITL_SB_AUDIT.md`). `tests/regress/ditl_sb.js`.
+- [x] **(2.5.0-beta.13) DITL page gaya ng ABC**: toolbar, header badge, By order / By category, Selected tab. `tests/regress/ditl_selected.js`.
+- [x] **(2.5.0-beta.14) Bottom ash DITL pages**: 67 sheet, tugma sa PDF (`docs/versions/v2.5.0/DITL_BA_AUDIT.md`). `tests/regress/ditl_ba.js`.
+- [x] **(2.5.0-beta.15) Limestone DITL pages**: 23 sheet, tugma sa PDF (`docs/versions/v2.5.0/DITL_LS_AUDIT.md`). `tests/regress/ditl_ls.js`.
+- [ ] **Bagong DITL page**: sand (user 2026-10-20).
 - [ ] **Pagsubok sa totoong tablet / apk / exe** ng 2.2.0-beta.1 ~ beta.6.
 - [x] **GO STABLE** ng 2.2.0 (2026-10-18: Stable v2.2.0).
 - [ ] **Branch cleanup**: 15 lumang branch (0 commit sa unahan ng `main`). Na-block ang pag-delete sa session; i-delete sa GitHub (Branches page) o sabihin ang "OK delete" para subukan ulit.

@@ -2,10 +2,10 @@
 {
   const st = document.createElement('style');
   st.textContent =
-    'body.anview #anp input,body.anview #anp select,body.anview #anp button:not(.keep){pointer-events:none;opacity:.45}body.anview #anp .keep{opacity:1}#anp .tr{cursor:pointer}#anp .tr:hover{background:#14231b}#anp .why{background:#10181d;border-left:3px solid var(--acc);padding:4px 6px;margin:4px 0;color:var(--tx)}';
+    'body.anview #anp input,body.anview #anp select,body.anview #anp button:not(.keep){pointer-events:none;opacity:.45}body.anview #anp .keep{opacity:1}#anp .tr{cursor:pointer}#anp .tr:hover{background:var(--c-runsoft)}#anp .why{background:var(--c-pane);border-left:3px solid var(--acc);padding:4px 6px;margin:4px 0;color:var(--tx)}';
   document.head.append(st);
 }
-/* trace / flash = a GLOW around the wire; the wire keeps its own colour (state: 1 / 0 / analog / forced) */ const TUP =
+/* trace = the wire takes a solid colour (2.3.0: no glow): white = selected, blue = upstream, magenta = downstream */ const TUP =
     '#3aa0ff',
   TDN = '#ff2fd0',
   TST = '#ffffff',
@@ -98,6 +98,7 @@ function viewSet(on) {
   AN.view = on;
   bVw.classList.toggle('on', on);
   document.body.classList.toggle('anview', on);
+  if (AN.cat === 'an') stE.textContent = on ? stView : stAn;
   if (on) setRun(false);
   else stepUi();
   const sh = cs();
@@ -108,18 +109,69 @@ function viewSet(on) {
   msg(
     on
       ? 'View mode: grey drawing, nothing is simulated. Click a block or wire to trace it; click an empty place to clear.'
-      : 'Simulation mode: Run, or Pause + Next / Back.'
+      : 'Simulation mode: Run, or Pause + Next / Back.' +
+          /* 3.2.0-beta.6 (audit M4): until a starting state is picked the plant is at the drawings' defaults (0 MW) */
+          (AN.startState ? '' : ' No starting state yet: Run starts the plant cold (boiler off), or pick Plant ▾ (top right) > Unit (Cold, Warm, Hot, 150 MW).')
   );
 }
 bVw.onclick = () => viewSet(!AN.view);
 stepUi();
+/* 3.2.0-beta.12 (user 2026-10-23: "patay pa naman ang boiler mo, di mo pa iniistart diba? bkt may value na si MSP?"): RUN with no starting
+   state picked starts the plant COLD (boiler off: drum 0 kg/cm2, no fire, fans stopped), as Start > Cold. Before, the plant ran at the
+   drawings' defaults: an undriven transmitter sits at the middle of its range (MSP 75 kg/cm2 = middle of PT-MS1002 0 ~ 150). Only the
+   operator's RUN press does this; AN.viewSet (the tests) is unchanged. */
+function coldIfNone() {
+  if (AN.startState || AN.cat !== 'an' || !AN.plantCold) return false;
+  try {
+    AN.reset();
+    AN.plantCold();
+    AN.startState = 'plantCold';
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+/* 3.2.0-beta.18 (VIEW/TRACE audit, user 2026-10-23: "patay pa naman ang boiler mo ... bkt may value na si MSP?"): the ABC page
+   opened by the operator, before any starting state is picked, showed the drawings' defaults in VIEW too (MSP 75 kg/cm2, drum level
+   -566.6 mm, drum pressure 125 kg/cm2, LICBR1001 out 25 %): numbers of no plant. Now the page opens with the plant COLD (boiler off), as
+   RUN and Start > Cold do. Only when the operator opened it (a real click / key on the page, or the ABC page restored from the last visit)
+   and nothing of a past session is saved (no force, input or switch kept): a saved session is left as it was. The tests that drive
+   AN.setCat by script keep the drawings' defaults. */
+function coldShow() {
+  if (AN.startState || AN.cat !== 'an' || AN._cold0) return;
+  if (!AN._uiCold) return;
+  AN._cold0 = 1;
+  const kept = Object.values(AN.sv || {}).some(o => o && ['force', 'ext', 'ai', 'sw', 'man', 'p'].some(k => o[k] && Object.keys(o[k]).length));
+  if (kept || !coldIfNone()) return;
+  settle();
+  paint();
+  panelUpd(true);
+}
+/* the operator's own click / key (a script driving the page, the tests, sends no trusted event) */
+['pointerdown', 'keydown'].forEach(t =>
+  addEventListener(
+    t,
+    e => {
+      if (e.isTrusted) AN._uiCold = 1;
+    },
+    { capture: true, passive: true }
+  )
+);
+const COLD_MSG = 'No starting state was picked: the plant starts COLD (boiler off, drum 0 kg/cm2, no fire, fans stopped). Pick Plant ▾ (top right) > Unit for 150 MW, Warm or Hot.';
 bRun.onclick = () => {
+  const c = !AN.run && coldIfNone();
   if (AN.view) {
     viewSet(false);
     setRun(true);
+    if (c) msg(COLD_MSG);
     return;
   }
   setRun(!AN.run);
+  if (c) msg(COLD_MSG);
+};
+/* 3.2.0-beta.21 (Training, user 2026-10-24: "irrun mo ba"): the simulation on from a script of the page (the Training start), as the Run button */
+AN.runOn = () => {
+  if (AN.view || !AN.run) bRun.onclick();
 };
 function wsIn(o) {
   if (o && typeof o === 'object' && o.wv !== 2) o = Object.assign({}, o, { as: 'solid', wv: 2 });
@@ -284,7 +336,7 @@ function trList(d) {
       const ix = dsIdx(sh);
       if (ix.to.has(n))
         rs.push(
-          h$('div', { cls: 'r', style: 'color:#9aa' }, [
+          h$('div', { cls: 'r', style: 'color:var(--c-dim)' }, [
             h$('span', {
               cls: 'n',
               txt: '   → to ' + ix.to.get(n).join(', ') + ' (leaves to the DITL page: not simulated here)'
@@ -293,7 +345,7 @@ function trList(d) {
         );
       if (ix.from.has(n))
         rs.push(
-          h$('div', { cls: 'r', style: 'color:#9aa' }, [
+          h$('div', { cls: 'r', style: 'color:var(--c-dim)' }, [
             h$('span', {
               cls: 'n',
               txt:
@@ -332,13 +384,13 @@ function trList(d) {
   }
   const cap = 60;
   d.append(
-    h$('small', { txt: 'Driven by (upstream, blue glow): ' + T.upL.length, style: 'display:block;margin-top:6px' })
+    h$('small', { txt: 'Driven by (upstream, blue): ' + T.upL.length, style: 'display:block;margin-top:6px' })
   );
   T.upL.slice(0, cap).forEach(n => d.append(row(n), ...xr(n)));
   if (T.upL.length > cap)
     d.append(h$('small', { txt: '… +' + (T.upL.length - cap) + ' more', style: 'display:block;margin-top:6px' }));
   d.append(
-    h$('small', { txt: 'Feeds (downstream, magenta glow): ' + T.dnL.length, style: 'display:block;margin-top:6px' })
+    h$('small', { txt: 'Feeds (downstream, magenta): ' + T.dnL.length, style: 'display:block;margin-top:6px' })
   );
   T.dnL.slice(0, cap).forEach(n => d.append(row(n), ...xr(n)));
   if (T.dnL.length > cap)
@@ -348,6 +400,12 @@ function trList(d) {
       txt: '◀ row = the input comes from another sheet, ▶ row = the signal goes on in another sheet: click it to follow the trace there (↩ Back returns).'
     })
   );
+}
+/* 3.2.0-beta.18 (VIEW/TRACE audit): ↩ Back after a trace jump came back to the sheet with nothing selected (the trace was lost):
+   the jump keeps the selection, goBack (links-canvas.js) puts it back */
+function selKeep() {
+  const s = AN.sel;
+  return s ? { net: s.net != null ? s.net : null, nets: s.nets, blk: s.blk ? s.blk.id : null } : null;
 }
 function trJump(tsh, net) {
   const nets = Array.isArray(net) ? net.slice() : [net];
@@ -369,7 +427,7 @@ function trJump(tsh, net) {
   if (k >= 0) P.length = k;
   P.push({ name: tsh.name, net, nets, blk: null });
   if (tsh !== c0) {
-    AN.hist.push({ name: c0.name, view: (AN.av[c0.name] || []).slice() });
+    AN.hist.push({ name: c0.name, view: (AN.av[c0.name] || []).slice(), sel: selKeep() });
     updBack();
   }
   go(i);
@@ -389,7 +447,7 @@ function trGoCrumb(k) {
   if (i < 0) return;
   if (AN.sheets[i] !== cs()) {
     const c0 = cs();
-    AN.hist.push({ name: c0.name, view: (AN.av[c0.name] || []).slice() });
+    AN.hist.push({ name: c0.name, view: (AN.av[c0.name] || []).slice(), sel: selKeep() });
     updBack();
   }
   go(i);
@@ -578,7 +636,7 @@ function trMapUi(d, sh) {
       const r = h$('div', { cls: 'r tr', style: 'padding-left:' + (6 + x.depth * 14) + 'px' }, [
         h$('span', {
           cls: 'n',
-          style: x.again ? 'color:#9aa' : '',
+          style: x.again ? 'color:var(--c-dim)' : '',
           txt:
             (x.again ? '↺ back to ' : x.depth ? '▶ ' : '● ') +
             x.sh.name +
@@ -647,6 +705,31 @@ function dsIdx(sh) {
     if (!isFrom && S.nets[pick.id] && !S.nets[pick.id].dig) {
       const dg = near.find(q => S.nets[q.id] && S.nets[q.id].dig && !S.ext.includes(q.id) && S.drv[q.id] && S.drv[q.id].length);
       if (dg) for (const r of refs) toDig.set(r + '@' + pick.id, dg.id);
+    }
+  }
+  /* 2.3.0-beta.1 (LINK-3): a "TO DITL" text written under its own comparator box belongs to the wire named in S.dsTo (ABC-001C
+     "TO DITL 40-06" = O.0177 > 134 kg/cm2, not M.3109 under it; DITL-40 rows 6 ~ 9, 13) */
+  if (S.dsTo) {
+    const key = r => {
+      const m = /([0-9]{2,3}[A-Z]?)\s*-\s*(\d+)/.exec(r);
+      return m ? m[1] + '-' + +m[2] : r;
+    };
+    for (const ref in S.dsTo) {
+      const n = S.lab.findIndex((l, i) => l && String(l.t).trim() === S.dsTo[ref] && S.drv[i] && S.drv[i].length);
+      if (n < 0) continue;
+      let full = null;
+      for (const [id, o] of [...to]) {
+        const j = o.findIndex(r => key(r) === ref);
+        if (j < 0) continue;
+        full = o[j];
+        o.splice(j, 1);
+        if (!o.length) to.delete(id);
+        toDig.delete(full + '@' + id);
+      }
+      if (!full) continue;
+      const o = to.get(n) || [];
+      if (!o.includes(full)) o.push(full);
+      to.set(n, o);
     }
   }
   return (sh._ds = { from, to, toDig, lost });
@@ -860,7 +943,7 @@ function trDraw(cv, sh, m, o) {
   o.geo = null;
   if (n < 2 || !m) {
     ctx.fillStyle = '#8a9';
-    ctx.fillText('No data yet: press ▶ Run (or Next ▶). The history starts when the block is selected.', pl, H / 2);
+    ctx.fillText('No data yet: press RUN (or Next ▶). The history starts when the block is selected.', pl, H / 2);
     return;
   }
   const win = o.win > 0 ? o.win : T[n - 1] - T[0],
@@ -1077,7 +1160,7 @@ function trLegend(leg, S, m, o, sh) {
         h$('b', { txt: q.name }),
         document.createTextNode(' = ' + txt + (hk != null ? '  @ ' + fmtT(Math.max(0, h.t[hk])) : '')),
         (o.big || o.desc) && q.desc
-          ? h$('div', { txt: q.desc, style: 'font-size:10px;color:#8a9;margin-left:14px' })
+          ? h$('div', { txt: q.desc, style: 'font-size:10px;color:var(--c-dim);margin-left:14px' })
           : document.createTextNode('')
       ]);
     sp.onclick = () => {
@@ -1099,7 +1182,7 @@ function trendUi(d) {
     cv = h$('canvas', {
       width: 420,
       height: hgt * 1.4,
-      style: 'width:100%;height:' + hgt + 'px;background:#0b1013;border:1px solid var(--line);margin-top:4px'
+      style: 'width:100%;height:' + hgt + 'px;background:var(--c-well);border:1px solid var(--line);margin-top:4px'
     }),
     leg = h$('div', { style: 'font-size:11px;margin-top:2px' }),
     wsel = h$(
@@ -1134,12 +1217,12 @@ function trendUi(d) {
     ? h$('canvas', {
         width: 420,
         height: 200,
-        style: 'width:100%;height:140px;background:#0b1013;border:1px solid var(--line);margin-top:4px'
+        style: 'width:100%;height:140px;background:var(--c-well);border:1px solid var(--line);margin-top:4px'
       })
     : null;
   d.append(
     h$('h4', { txt: 'Trend · ' + m0.title }),
-    m0.desc ? h$('small', { txt: m0.desc, style: 'display:block;color:#9ab' }) : document.createTextNode(''),
+    m0.desc ? h$('small', { txt: m0.desc, style: 'display:block;color:var(--c-tx2)' }) : document.createTextNode(''),
     h$('div', { cls: 'r' }, [wsel, bz, bc]),
     cv,
     ...(xyc ? [xyc] : []),

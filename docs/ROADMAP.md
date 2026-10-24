@@ -21,7 +21,29 @@ Bawat milestone ay may **pasado kung**: ang masusukat na resulta na nagsasabing 
 
 Pagkatapos ng M6: ang `[F]` sa CHECKLIST seksyon D ay dagdag lang, hindi kailangan para matapos ang project. Kasama rito ang "Bakit?", permissive checklist, tuning lab, compare, at buong DITL plant state.
 
-## Nasaan tayo ngayon (2026-10-18, beta.20)
+## Ginagawa ngayon (2026-10-20, user: "go lang dito, update the roadmap also")
+- [x] **2.5.0-beta.8 — Page link sa DITL:** ang FROM / TO reference ng row ay mapipindot sa VIEW at SIMULATE. Bubukas ang kabilang dulo (DITL row na kumikislap, o ABC sheet), may pagpipilian kapag marami, at ◀ Back. Ang ABC "FROM / TO DITL" ay nagbubukas ng mismong DITL row (dalawang direksyon).
+- [x] **2.5.0-beta.8 — PID sa AUTO, plant model OFF:** 68 PID / PIDV. 39 na AUTO ang tama ang galaw ayon sa ACT ng drawing; 29 na MANUAL sa 150 MW ang sumusunod sa manual output.
+- [x] **2.5.0-beta.9 — DITL bar = VIEW | SIMULATE + Reset** (wala nang ▶▶, step size, speed). Gumagana sa plant model ON / OFF at ABC+DITL ON / OFF (`ditl_sim.js`: 4 na kaso PASS; 102 ABC input at 143 DITL row tugma).
+- [x] **2.5.0-beta.9 — Bawat logic block ng ABC (input → output)**, plant model OFF at ON (`blocks_io.js`: 1,666 block, 12,006 tseke bawat isa, 0 mali): ADD / SUB, MUL, DIV, ABS, SQRT, HS / LS, limiter, average select, F(X), comparator, PV < SV, NOT / AND / OR, FF, ON / OFF delay, one shot, lag, rate, conditional write, actuator. Pinipilit ang input gaya ng user, binabasa ang output sa wire.
+
+- [x] **2.5.0-beta.10 — FORCE sa ABC ↔ DITL habang SIMULATE:** tumatakbo ang ABC kasabay ng DITL page. Ramp / preset ng ABC-050 sinubok: tama ayon sa PDF.
+- [x] **2.5.0-beta.11 — Bawat DITL sheet laban sa PDF** (user: "KAPAREHA DAPAT NG SA APP"): 39 sheet na may mali, naayos lahat (17 uri, `docs/versions/v2.5.0/DITL_PDF_AUDIT.md`); sheet list ng DITL ayon sa kategorya (22 grupo).
+- [x] **2.5.0-beta.12 — Sootblower DITL pages:** 17 sheet (DITL-80 ~ 80T) sa kategoryang SOOTBLOWER, ibinangga sa PDF (`docs/versions/v2.5.0/DITL_SB_AUDIT.md`); COUNTER, SB PANEL output, valve ng MCC box.
+- [x] **2.5.0-beta.13 — DITL page gaya ng ABC:** [VIEW | ▶ Run], mode badge, By order / By category, Selected tab ("To make it 1"), naayos ang tab strip ng DITL panel.
+- [x] **2.5.0-beta.14 — Bottom ash DITL pages:** 67 sheet (HD600 BA-01 ~ 58, conveyors BA-59 ~ 74) sa kategoryang BOTTOM ASH HD600 / CONVEYORS, ibinangga sa PDF (`docs/versions/v2.5.0/DITL_BA_AUDIT.md`); step SI0130, COUNTER, FLASHER, lamp, page link BA01-11.
+- [x] **2.5.0-beta.15 — Limestone DITL pages:** 23 sheet (LS-10 ~ LS-240, ROTOFEED) sa kategoryang LIMESTONE INJECTION (ROTOFEED), mula sa Excel drawing (`tools/data/ls_xlsx.py`), ibinangga sa PDF (`docs/versions/v2.5.0/DITL_LS_AUDIT.md`); timer, pulse, compare na may INT. REGISTER, SET / RESET, page link.
+- [ ] **Susunod — Bagong DITL page:** sand.
+
+## Nasaan tayo ngayon (2026-10-20, 2.5.0-beta.7, PR #34)
+- **M1 ~ M5 sa app: PASADO.** CHECK: M2 14 / 14; M3 lahat (turbine trip 10, MFT 7, BFWP 7, IDF 7, PAF 6, HH 3); M4 bawat hakbang (10 / 9 / 8 / 11 / 14) at **M4 buong cold start-up 17 / 17** (dati 16 / 17); M5 load down 14 / 14, normal shutdown 7 / 7, bottle-up 15 / 15.
+- **ABC sheets laban sa drawing PDF:** 50 / 50 sheet na-audit (2.5.0-beta.1, `docs/versions/v2.5.0/DRAWING_AUDIT.md`); lahat ng nakitang mali (link, behavior, datos) naayos sa 2.5.0-beta.1 ~ beta.5. Hindi mabasa sa PDF (app value ang gamit): ramp rate ng AUTO-MV ng ABC-004A ~ C at ramp X %/s ng ABC-052.
+- **Page linking / signal continuity:** 1,658 link ng iisang mundo (ABC ↔ DITL) na-audit; LINK-1 ~ 4 at DITL-21C row 19 / 20 naayos. Test: world, audit230 / b / c, closure: PASS.
+- **Switching at A / M:** switches 0 / 438 mali; force_manual 68 / 0; pid_am 56 PASS (10 hindi masubok ayon sa disenyo); faceplate 58 / 0 maling switch; interlock bawat cluster 57 station / 0 mali (CHECKLIST #4, 2.5.0-beta.6).
+- **PLANT graphics:** 28 screen, 560 / 1,330 item LIVE (dati 316 / 1,122); coal feeder motor at burner ON / OFF lamp live (beta.6). Ang natitirang item ay walang signal sa ABC sheet (PLC / electrical / DITL lang), kaya snapshot value ang ipinapakita.
+- **Natitira para sa M6 = TAPOS ANG PROJECT:** pagsubok sa tablet / apk / exe at GO STABLE (user). Hindi kailangan para matapos: `[F]` sa CHECKLIST D (11 dagdag), loob ng DITL row (forced, CLAUDE.md 7), pili ng style (UI, naka-park).
+
+## Dating tala (2026-10-18, beta.20)
 - **M0:** nilaktawan muna (user 2026-10-16: "no need n m0").
 - **M1:** 2.2.0-beta.7: switches 0 / 438 (pasado). 150 MW snapshot 27 → 11 (ang hangganan ay ≤ 5: hindi pa pasado sa bilang; bawat isa sa 11 ay may paliwanag mula sa drawing / physics, 4 dito ay ang snapshot na hindi steady o magkasalungat na screen). A6 (2.2.0-beta.8): TAPOS. Generic tester: 68 controller, 0 mali, 0 hindi nasubok (ang mahihirap ay nasa planta na tumatakbo; RH spray + damper nagdadagdag). Natitira sa M1: ang hangganan na ≤ 5 sa snapshot (11 pa; user 2026-10-16: huwag umasa nang buo sa HMI snapshot, sundin ang plant physics). Ang hatol kung pasado ang M1 ay sa user.
 - **M2 (2.2.0-beta.11, 2026-10-17): PASADO ang pass criterion ng app** (150 → 60 → 150 MW: sa 60 MW MW / MSF / coal / MST / RHT / RHP nasa ±5 % ng 02.png, MSP sa SV; sa 150 MW nasa ±2 % ng 4.PNG; walang trip; `tests/regress/unit_load.js` ALL PASS). Regression ng beta.11: switches 0 / 438, reset 51 / 0, force_manual 68 / 0, isolated 54 sheets, scenarios 244 / 0, generic 68 controller 2145 tama / 0 mali / 0 hindi nasubok. Ang hatol kung pasado ang M2 ay sa user. Natitira sa hangin: furnace pressure vs air (M3). Dating tala (beta.9): unit model (boiler + turbine). Pasado: 150 → 60 → 150 MW, ang MW, MSP, MSF, FW, drum level ay sumusunod; sa 60 MW ang MW / MSF / coal ay nasa ±4 % ng 02.png; sa 150 MW nasa ±1 % ng 4.PNG; walang trip (`tests/regress/unit_load.js`); regression: generic 68 / 0 mali, scenarios 244 / 0, switches 0 / 438, reset 51 / 0. Natitira sa M2: temperatura (MST / RHT) ayon sa load (02.png 517 / 499 °C), RH pressure.

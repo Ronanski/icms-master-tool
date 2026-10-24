@@ -24,6 +24,13 @@ AN.xrefGo = tg => {
 };
 function setCat(c) {
   if (AN.cat === c) return;
+  /* 3.2.0-beta.23 (user 2026-10-24: "dapat kasi pag RUN tapos kung anong mode ang pinili ni user, iyun na yun"): one RUN for the
+     app. A switch ABC <-> DITL keeps the simulation the user chose: ABC RUN -> DITL Simulate (with "ABC+DITL ON" the plant and the
+     ABC sheets go on running from the DITL page, world.js), DITL Simulate -> ABC RUN. Before, every switch stopped it (VIEW) */
+  let runWas = false;
+  try {
+    runWas = AN.cat === 'an' ? !!AN.run && !AN.view : typeof SIM !== 'undefined' && !!SIM;
+  } catch (e) {}
   if (c !== 'an') {
     const f = $('sidefl');
     if (f && AN._ph !== undefined) f.placeholder = AN._ph;
@@ -37,7 +44,7 @@ function setCat(c) {
   document.body.classList.toggle('an', c === 'an');
   ptab.style.display = c === 'an' && anp.classList.contains('min') ? 'block' : 'none';
   if (c === 'an' && $('slive')) sLv.value = $('slive').value;
-  stE.textContent = c === 'an' ? stAn : stOld;
+  stE.textContent = c === 'an' ? (AN.view ? stView : stAn) : stOld;
   catB.forEach(x => x._u());
   if (c === 'an') {
     simSaved = SIM;
@@ -61,6 +68,8 @@ function setCat(c) {
         AN.key = null;
         AN.lkey = null;
         render();
+        coldShow();
+        if (runWas && AN.runOn) AN.runOn();
       })
       .catch(e => {
         AN.lkey = null;
@@ -68,7 +77,8 @@ function setCat(c) {
         msg('Analog sheets could not be loaded: ' + e.message);
       });
   } else {
-    SIM = simSaved;
+    SIM = runWas;
+    if (runWas) TSP = AN.spd || 1;
     SIDEKEY = null;
     AN.run = false;
     render();
@@ -79,6 +89,9 @@ const stE = $('st'),
   stOld = stE.textContent,
   stAn =
     'Analog mode: click a block = inspect · click a digital input (tag or wire) = 1 / 0 · Drag = pan · Wheel / pinch = zoom · Space = run / pause · PageUp / PageDown = previous / next sheet · F = fit · Inputs and tuning are in the right panel (saved in this browser)';
+/* 3.2.0-beta.18 (VIEW/TRACE audit): in VIEW the status bar said "click a digital input = 1 / 0", which VIEW does not do */
+const stView =
+  'VIEW / TRACE: click a block or a wire = inspect and trace (blue = comes from, magenta = goes to) · click a ◀ / ▶ row in the panel = follow it to the other sheet, ↩ Back returns · Drag = pan · Wheel / pinch = zoom · F = fit · Press RUN to simulate, force or operate';
 /* ---------- wrapped render / drawSide ---------- */
 const _render = render,
   _drawSide = drawSide;
@@ -246,7 +259,7 @@ function anSortUi() {
 /* v1.20.17 search bar in the toolbar: tag / description / address / memory over all sheets */
 document.head.appendChild(
   h$('style', {
-    txt: '#sidesort{display:none;gap:4px;margin:4px 0}body.an #sidesort{display:flex}#gsbar{display:flex;gap:8px;align-items:center;padding:4px 10px;background:var(--panel);border-bottom:1px solid var(--line)}#gsbar b{opacity:.8}#ansb{flex:1;max-width:560px;width:auto}#gscope{display:flex;gap:3px}#gscope button{padding:2px 8px}#gscope button.on{background:var(--acc,#2a6fdb);color:#fff}#sidesort button{flex:1;padding:3px 4px}#sidesort button.on{background:var(--acc,#2a6fdb);color:#fff}#ansb{background:#0b1013;color:var(--tx);border:1px solid var(--line);padding:3px 6px;font:inherit}#anfind{position:fixed;z-index:60;display:none;width:min(560px,96vw);max-height:62vh;overflow:auto;background:var(--panel);border:1px solid var(--line);box-shadow:0 6px 24px #000a;padding:4px}#anfind button{display:block;width:100%;text-align:left;margin:1px 0;padding:3px 6px}#anfind .sn{font-weight:700;margin-right:8px}#anfind .st{opacity:.8}'
+    txt: '#sidesort{display:none;gap:4px;margin:4px 0}body.an #sidesort{display:flex}#gsbar{display:flex;gap:8px;align-items:center;padding:4px 10px;background:var(--panel);border-bottom:1px solid var(--line)}#gsbar b{opacity:.8}#ansb{flex:1;max-width:560px;width:auto}#gscope{display:flex;gap:3px}#gscope button{padding:2px 8px}#gscope button.on{background:var(--acc,var(--c-acc));color:#fff}#sidesort button{flex:1;padding:3px 4px}#sidesort button.on{background:var(--acc,var(--c-acc));color:#fff}#ansb{background:var(--c-well);color:var(--tx);border:1px solid var(--line);padding:3px 6px;font:inherit}#anfind{position:fixed;z-index:60;display:none;width:min(560px,96vw);max-height:62vh;overflow:auto;background:var(--panel);border:1px solid var(--line);box-shadow:0 6px 24px #000a;padding:4px}#anfind button{display:block;width:100%;text-align:left;margin:1px 0;padding:3px 6px}#anfind .sn{font-weight:700;margin-right:8px}#anfind .st{opacity:.8}'
   })
 );
 const ansb = h$('input', {
@@ -577,7 +590,7 @@ document.head.appendChild(
   Object.assign(document.createElement('style'), {
     id: 'skin',
     textContent:
-      "\n:root{--panel:#111b27;--line:#243447;--tx:#dbe6f0;--dim:#8398ab;--r:8px;--panel2:#16232f;--in:#0b1320;--bd:#2b4259;--hv:#17283a;--hv2:#1c2e40;--rowl:#162230;--sel2:#1f6fb2;--sbg:linear-gradient(#142131,#111b27)}\nhtml[data-ui=graphite]{--panel:#1a1c1f;--line:#33373c;--tx:#e4e6e8;--dim:#9096a0;--panel2:#23262a;--in:#121416;--bd:#3d4247;--hv:#262a2e;--hv2:#2d3237;--rowl:#202326;--sel2:#4a5a6a;--sbg:linear-gradient(#202326,#1a1c1f)}\nhtml[data-ui=contrast]{--panel:#000;--line:#fff;--tx:#fff;--dim:#e0e0e0;--panel2:#000;--in:#000;--bd:#fff;--hv:#222;--hv2:#333;--rowl:#555;--sel2:#0050ff;--sbg:#000}\nhtml[data-ui=contrast] button,html[data-ui=contrast] select,html[data-ui=contrast] label.b{border-width:2px}\n#uisel{margin-left:auto}#stchip{display:flex;gap:6px;align-items:center}#stchip span{padding:3px 10px;border-radius:12px;font-size:11.5px;font-weight:600;background:var(--panel2);border:1px solid var(--bd);color:var(--dim);white-space:nowrap}#stchip span.run{background:rgba(79,209,139,.15);border-color:var(--acc);color:var(--acc)}#stchip span.view{background:rgba(56,201,255,.12);border-color:var(--sel);color:var(--sel)}\n\nhtml,body{font:13px/1.35 Inter,'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;-webkit-font-smoothing:antialiased}\n#gsbar{background:var(--sbg)!important;border-bottom:1px solid var(--line)!important;padding:7px 12px!important;gap:10px!important}\n#gsbar b{font-weight:700;letter-spacing:.02em;opacity:1!important;color:#fff}\n#ansb{border-radius:var(--r)!important;background:var(--in)!important;border:1px solid var(--bd)!important;padding:7px 12px!important;transition:border-color .15s,box-shadow .15s}\n#ansb:focus{outline:0;border-color:var(--sel)!important;box-shadow:0 0 0 3px rgba(56,201,255,.18)}\n#gscope{background:var(--in);border:1px solid var(--bd);border-radius:var(--r);padding:2px;gap:2px!important}\n#gscope button{border:0!important;background:transparent!important;border-radius:6px;padding:4px 12px!important;color:var(--dim)}\n#gscope button.on{background:var(--sel2)!important;color:#fff!important}\n#bar{background:var(--panel)!important;padding:8px 12px!important;gap:8px!important;border-bottom:1px solid var(--line)!important}\nbutton,label.b{background:var(--panel2);border:1px solid var(--bd);border-radius:var(--r);padding:6px 12px;transition:background .12s,border-color .12s,transform .05s}\nbutton:hover,label.b:hover{background:var(--hv2);border-color:#4a7aa5}\nbutton:active,label.b:active{transform:translateY(1px)}\nbutton.on{background:rgba(79,209,139,.12);border-color:var(--acc);color:var(--acc)}\nbutton:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--sel);outline-offset:1px}\nselect{background:var(--panel2);color:var(--tx);border:1px solid var(--bd);border-radius:var(--r);padding:5px 8px;font:inherit}\n#meta{background:var(--panel)!important;border-bottom:1px solid var(--line)!important;padding:10px 18px!important}\n#m_title{font-size:17px;letter-spacing:.05em}\n#side{background:var(--panel)!important;border-right:1px solid var(--line)!important}\n#sidehd{padding:9px 10px!important;border-bottom:1px solid var(--line)!important}\n#sidehd b{font-size:12px!important;text-transform:uppercase;letter-spacing:.08em;color:var(--dim)!important}\n#sidelist button{border-radius:0;border-bottom:1px solid var(--rowl)!important;padding:8px 12px!important}\n#sidelist button:hover{background:var(--hv)!important}\n#sidelist button.on{background:linear-gradient(90deg,rgba(31,111,178,.35),rgba(31,111,178,.08))!important;color:#fff!important;border-left-color:var(--sel)!important}\n#sidelist button.on .st{color:#a9c9e4!important}\n#sidelist button .sn{font-weight:650}\n#sidelist{scrollbar-width:thin;scrollbar-color:var(--bd) transparent}\n#sidesort button.on,#sidefl{border-radius:var(--r)}\n#st{background:var(--panel)!important;border-top:1px solid var(--line)!important;padding:6px 14px!important;font:12px Inter,'Segoe UI',system-ui,sans-serif!important}\n#ed,#wp,#tp,#hp,#toast,#anfind{border-radius:12px!important;box-shadow:0 12px 36px rgba(0,0,0,.55)!important;background:var(--panel)!important;border-color:var(--bd)!important}\n#anfind button:hover{background:var(--hv)}\n*::-webkit-scrollbar{width:9px;height:9px}*::-webkit-scrollbar-thumb{background:var(--bd);border-radius:6px}*::-webkit-scrollbar-track{background:transparent}\n"
+      "\n:root{--panel:#111b27;--line:#243447;--tx:#dbe6f0;--dim:#8398ab;--r:8px;--panel2:#16232f;--in:#0b1320;--bd:#2b4259;--hv:#17283a;--hv2:#1c2e40;--rowl:#162230;--sel2:#1f6fb2;--sbg:linear-gradient(#142131,#111b27)}\nhtml[data-ui=graphite]{--panel:#1a1c1f;--line:#33373c;--tx:#e4e6e8;--dim:#9096a0;--panel2:#23262a;--in:#121416;--bd:#3d4247;--hv:#262a2e;--hv2:#2d3237;--rowl:#202326;--sel2:#4a5a6a;--sbg:linear-gradient(#202326,#1a1c1f)}\nhtml[data-ui=contrast]{--panel:#000;--line:#fff;--tx:#fff;--dim:#e0e0e0;--panel2:#000;--in:#000;--bd:#fff;--hv:#222;--hv2:#333;--rowl:#555;--sel2:#0050ff;--sbg:#000}\nhtml[data-ui=contrast] button,html[data-ui=contrast] select,html[data-ui=contrast] label.b{border-width:2px}\n#uisel{margin-left:auto}#stchip{display:flex;gap:6px;align-items:center}#stchip span{padding:3px 10px;border-radius:12px;font-size:11.5px;font-weight:600;background:var(--panel2);border:1px solid var(--bd);color:var(--dim);white-space:nowrap}#stchip span.run{background:rgba(79,209,139,.15);border-color:var(--acc);color:var(--acc)}#stchip span.view{background:rgba(56,201,255,.12);border-color:var(--sel);color:var(--sel)}\n\nhtml,body{font:13px/1.35 Inter,'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;-webkit-font-smoothing:antialiased}\n#gsbar{background:var(--sbg)!important;border-bottom:1px solid var(--line)!important;padding:7px 12px!important;gap:10px!important}\n#gsbar b{font-weight:700;letter-spacing:.02em;opacity:1!important;color:#fff}\n#ansb{border-radius:var(--r)!important;background:var(--in)!important;border:1px solid var(--bd)!important;padding:7px 12px!important;transition:border-color .15s,box-shadow .15s}\n#ansb:focus{outline:0;border-color:var(--sel)!important;box-shadow:0 0 0 3px rgba(56,201,255,.18)}\n#gscope{background:var(--in);border:1px solid var(--bd);border-radius:var(--r);padding:2px;gap:2px!important}\n#gscope button{border:0!important;background:transparent!important;border-radius:6px;padding:4px 12px!important;color:var(--dim)}\n#gscope button.on{background:var(--sel2)!important;color:#fff!important}\n#bar{background:var(--panel)!important;padding:8px 12px!important;gap:8px!important;border-bottom:1px solid var(--line)!important}\nbutton,label.b{background:var(--panel2);border:1px solid var(--bd);border-radius:var(--r);padding:6px 12px;transition:background .12s,border-color .12s,transform .05s}\nbutton:hover,label.b:hover{background:var(--hv2);border-color:var(--c-line2)}\nbutton:active,label.b:active{transform:translateY(1px)}\nbutton.on{background:rgba(79,209,139,.12);border-color:var(--acc);color:var(--acc)}\nbutton:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--sel);outline-offset:1px}\nselect{background:var(--panel2);color:var(--tx);border:1px solid var(--bd);border-radius:var(--r);padding:5px 8px;font:inherit}\n#meta{background:var(--panel)!important;border-bottom:1px solid var(--line)!important;padding:10px 18px!important}\n#m_title{font-size:17px;letter-spacing:.05em}\n#side{background:var(--panel)!important;border-right:1px solid var(--line)!important}\n#sidehd{padding:9px 10px!important;border-bottom:1px solid var(--line)!important}\n#sidehd b{font-size:12px!important;text-transform:uppercase;letter-spacing:.08em;color:var(--dim)!important}\n#sidelist button{border-radius:0;border-bottom:1px solid var(--rowl)!important;padding:8px 12px!important}\n#sidelist button:hover{background:var(--hv)!important}\n#sidelist button.on{background:linear-gradient(90deg,rgba(31,111,178,.35),rgba(31,111,178,.08))!important;color:#fff!important;border-left-color:var(--sel)!important}\n#sidelist button.on .st{color:var(--c-tx2)!important}\n#sidelist button .sn{font-weight:650}\n#sidelist{scrollbar-width:thin;scrollbar-color:var(--bd) transparent}\n#sidesort button.on,#sidefl{border-radius:var(--r)}\n#st{background:var(--panel)!important;border-top:1px solid var(--line)!important;padding:6px 14px!important;font:12px Inter,'Segoe UI',system-ui,sans-serif!important}\n#ed,#wp,#tp,#hp,#toast,#anfind{border-radius:12px!important;box-shadow:0 12px 36px rgba(0,0,0,.55)!important;background:var(--panel)!important;border-color:var(--bd)!important}\n#anfind button:hover{background:var(--hv)}\n*::-webkit-scrollbar{width:9px;height:9px}*::-webkit-scrollbar-thumb{background:var(--bd);border-radius:6px}*::-webkit-scrollbar-track{background:transparent}\n"
   })
 );
 
@@ -699,9 +712,16 @@ document.head.appendChild(
       if (an) {
         m = AN.view ? 'VIEW / TRACE' : AN.run ? 'RUN' : 'PAUSED';
         k = AN.view ? 'view' : AN.run ? 'run' : '';
+        /* 2.4.1-beta.2: the drawing label said RUNNING after Pause (it was only redrawn by paint) */
+        const am = document.getElementById('anmode');
+        if (am && am._t === 'SIMULATION - RUNNING' && !AN.run && !AN.view) {
+          am._t = am.textContent = 'SIMULATION - PAUSED';
+          am.style.background = '#3d3213';
+          am.style.color = '#ffd479';
+        }
       } else {
-        m = SIM ? 'SIMULATE' : 'EDIT';
-        k = SIM ? 'run' : '';
+        m = SIM ? (DPAUSE ? 'PAUSED' : 'RUN') : window.WORLD && WORLD.live ? 'RUN (ABC)' : 'VIEW / TRACE'; /* 2.5.0-beta.13: the DITL bar is VIEW | ▶ Run as the ABC */
+        k = SIM && !DPAUSE ? 'run' : SIM ? '' : 'view';
       }
       c1.textContent = m;
       c1.className = k;
@@ -742,7 +762,7 @@ function anSide() {
     });
     (AN.sm === 'order' ? ['ALL'] : FAMS.concat(Object.keys(G).filter(k => !FAMS.includes(k)))).forEach(fm => {
       if (!G[fm]) return;
-      if (AN.sm !== 'order') anlist.append(h$('div', { cls: 'fh', txt: fm + ' (' + G[fm].length + ')' }));
+      const box = AN.sm !== 'order' ? sideGrp(anlist, 'an.cc', fm, G[fm].length, G[fm].includes(AN.i), !!f) : anlist; /* 2.5.0-beta.16 */
       G[fm].forEach(i => {
         const s = AN.sheets[i],
           b = h$('button', { 'data-i': i, title: s.name + (s.title ? ' - ' + s.title : '') }, [
@@ -758,7 +778,7 @@ function anSide() {
             } catch (e) {}
           }
         };
-        anlist.append(b);
+        box.append(b);
       });
     });
   }
@@ -768,6 +788,7 @@ function anSide() {
     b.classList.toggle('on', o);
     if (o) on = b;
   });
+  if (on && anSide.last !== AN.i) sideShow(on);
   if (on && SIDEMIN !== '1' && anSide.last !== AN.i) on.scrollIntoView({ block: 'nearest' });
   anSide.last = AN.i;
 }

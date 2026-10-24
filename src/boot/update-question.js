@@ -168,7 +168,7 @@
       d = document.createElement('div');
       d.id = 'updtoast';
       d.style.cssText =
-        'position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:99998;background:#18212a;color:#dbe5ec;border:1px solid #6aaee0;border-radius:8px;padding:8px 14px;font:14px system-ui;max-width:90vw';
+        'position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:99998;background:var(--c-pane);color:var(--c-tx);border:1px solid var(--c-acc);border-radius:8px;padding:8px 14px;font:14px system-ui;max-width:90vw';
       document.body.append(d);
     }
     d.textContent = t;
@@ -184,7 +184,7 @@
     d = document.createElement('div');
     d.id = 'updask';
     d.style.cssText =
-      'position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:99997;background:#16324a;color:#fff;border:1px solid #6aaee0;border-radius:10px;padding:12px 16px;font:15px/1.4 system-ui;max-width:92vw;box-shadow:0 4px 20px #0008';
+      'position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:99997;background:var(--c-accbg);color:#fff;border:1px solid var(--c-acc);border-radius:10px;padding:12px 16px;font:15px/1.4 system-ui;max-width:92vw;box-shadow:0 4px 20px #0008';
     d.innerHTML =
       '<b>New version available: ' +
       v +
@@ -197,7 +197,7 @@
       var b = document.createElement('button');
       b.textContent = t;
       b.style.cssText =
-        'padding:8px 14px;border-radius:6px;border:1px solid #6aaee0;background:' +
+        'padding:8px 14px;border-radius:6px;border:1px solid var(--c-acc);background:' +
         c +
         ';color:#fff;font:600 14px system-ui;cursor:pointer';
       b.onclick = f;

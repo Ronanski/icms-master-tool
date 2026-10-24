@@ -16,8 +16,22 @@
       s = t % 60;
     return (h ? h + ':' : '') + String(m).padStart(h ? 2 : 1, '0') + ':' + String(s).padStart(2, '0');
   };
-  function add(S, sh, kind, text) {
-    LOG.unshift({ t: tfmt(S.rt.t), sh: sh.name, kind, text });
+  /* 3.2.0-beta.6 FIRST-OUT: at the moment a TRIP or a FORCE MANUAL appears, the cause is read at once (AN.why, src/ui/shell/why.js),
+     before the plant moves on and other conditions also go 1: the inputs that are 1 at that scan are the first-out */
+  const netOf = (S, name) => {
+    for (let n = 0; n < S.nets.length; n++) if ((AN.nm(S, n) || '').trim() === name) return n;
+    return -1;
+  };
+  const cause = (sh, name) => {
+    try {
+      const n = netOf(sh.S, name);
+      return n >= 0 && AN.why ? AN.why(sh, n).lines.filter(l => l.d > 0) : null;
+    } catch (e) {
+      return null;
+    }
+  };
+  function add(S, sh, kind, text, why) {
+    LOG.unshift({ t: tfmt(S.rt.t), sh: sh.name, kind, text, why });
     if (LOG.length > MAX) LOG.length = MAX;
     unseen++;
     draw();
@@ -65,12 +79,12 @@
       if (a === undefined || a === b) continue;
       const [kind, ...rest] = k.split(':');
       if (kind === 'm') add(S, sh, 'MODE', rest[0] + ' → ' + b);
-      else if (kind === 'f') add(S, sh, 'FM', rest[0] + (b ? ' FORCE MANUAL ← ' : ' force manual cleared ← ') + rest[1] + ' = ' + b);
+      else if (kind === 'f') add(S, sh, 'FM', rest[0] + (b ? ' FORCE MANUAL ← ' : ' force manual cleared ← ') + rest[1] + ' = ' + b, b ? cause(sh, rest[1]) : null);
       else if (kind === 'a') {
         const blk = S.blk.find(z => z.id === +rest[0]),
           nm = (blk && blk.i && AN.nm(S, blk.i[0])) || 'ALM #' + rest[0];
         add(S, sh, b === 'normal' ? 'RTN' : 'ALM', nm + ' ' + (b === 'normal' ? 'back to normal' : b));
-      } else if (kind === 't') add(S, sh, b ? 'TRIP' : 'RST', rest.join(':') + ' = ' + b);
+      } else if (kind === 't') add(S, sh, b ? 'TRIP' : 'RST', rest.join(':') + ' = ' + b, b ? cause(sh, rest.join(':')) : null);
     }
     prev = now;
   }
@@ -96,6 +110,12 @@
     };
     hd.append(clr);
     box.append(hd);
+    if (!(window.WORLD && WORLD.on)) {
+      const n = document.createElement('div');
+      n.className = 'evr evn';
+      n.textContent = 'DITL trips (MFT, fan / pump trips) and their first-out are logged while the ABC and DITL run as one.';
+      box.append(n);
+    }
     if (!LOG.length) {
       const d = document.createElement('div');
       d.className = 'evr';
@@ -111,6 +131,29 @@
       d.children[2].textContent = e.sh;
       d.children[3].textContent = e.text;
       box.append(d);
+      if (e.why && e.why.length) {
+        /* the cause, captured when it happened (first-out); click the row to show / hide it */
+        const w = document.createElement('div');
+        w.className = 'evw';
+        w.hidden = !e.open;
+        for (const l of e.why) {
+          const r = document.createElement('div');
+          r.className = 'evwr k-' + l.k;
+          r.style.paddingLeft = 0.25 + (l.d - 1) * 0.75 + 'rem';
+          r.textContent = l.txt + (l.sh && l.sh !== e.sh ? '  [' + l.sh + ']' : '');
+          w.append(r);
+        }
+        const tg = document.createElement('span');
+        tg.className = 'evwhy';
+        tg.textContent = e.open ? 'cause ▾' : 'cause ▸';
+        d.children[3].append(' ', tg);
+        d.classList.add('hasw');
+        d.onclick = () => {
+          e.open = !e.open;
+          draw();
+        };
+        box.append(w);
+      }
     }
   }
   function mount() {
@@ -145,4 +188,9 @@
     } catch (e) {}
   }, 500);
   window.lsEvents = LOG;
+  /* 3.2.0-beta.6: an event from outside the ABC sheet on screen (the DITL first-out of the one world) */
+  window.lsEventAdd = (shName, kind, text, why) => {
+    const cs = window.AN && AN.sheets && AN.sheets[AN.i];
+    add(cs && cs.S && cs.S.rt ? cs.S : { rt: { t: 0 } }, { name: shName }, kind, text, why);
+  };
 })();

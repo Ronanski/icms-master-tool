@@ -308,7 +308,18 @@ bRun.onclick = () => {
 sSpd.onchange = () => {
   AN.spd = +sSpd.value;
 };
-bRst.onclick = reset;
+/* 3.2.0-beta.13: the Reset button ends the starting state too (the plant is no longer at 150 MW / Cold / Warm / Hot): the next RUN
+   starts the plant cold (trace.js coldIfNone), so after a Reset MSP is 0 again, not the loop model's middle of the range */
+bRst.onclick = () => {
+  AN.startState = null;
+  reset();
+  /* 3.2.0-beta.18: and the plant is COLD at once (VIEW shows boiler off, not the drawings' defaults MSP 75) */
+  if (coldIfNone()) {
+    settle();
+    paint();
+    panelUpd(true);
+  }
+};
 bFit.onclick = fitView;
 bVal.onclick = () => {
   AN.vals = !AN.vals;
@@ -347,7 +358,7 @@ bWv.onclick = () => {
   AN.wireVals = v !== '0';
   bWv.classList.toggle('on', AN.wireVals);
 }
-const ptab = h$('button', { id: 'anptab', txt: '◀ Panel', title: 'Show the right panel' });
+const ptab = h$('button', { id: 'anptab', txt: '◀ Inspector', title: 'Show the Inspector / Faceplate' });
 document.body.append(ptab);
 ptab.onclick = () => {
   AN.tmp = false;
@@ -359,12 +370,8 @@ function panelFor(on) {
     showPanel(on);
     return;
   }
-  if (anp.classList.contains('min')) {
-    if (on) {
-      AN.tmp = true;
-      showPanel(true);
-    }
-  } else if (AN.tmp && !on) showPanel(false);
+  /* 2.4.1-beta.3 (user): Auto-hide OFF = the panel never minimizes by itself; a click on a block opens it and it stays */
+  if (on && anp.classList.contains('min')) showPanel(true);
 }
 function showPanel(on) {
   if (!on) AN.tmp = false;
@@ -392,6 +399,9 @@ bPn.onclick = () => {
   AN.tmp = false;
   showPanel(anp.classList.contains('min'));
 };
+/* 2.5.0-beta.20 (UI audit): up to 1180 px the panel is a drawer OVER the drawing: closed at the start, a click on a block or a
+   wire opens it (an empty panel covered half of the sheet on a tablet standing up and on a phone) */
+if (matchMedia('(max-width:1180px)').matches) showPanel(false);
 setInterval(() => {
   if (!live() || !AN.run) return;
   const sh = cs();
@@ -404,6 +414,11 @@ setInterval(() => {
   for (let i = 0; i < n; i++) {
     if (K > 1) stepTier(sh, dt / n, K);
     else stepSet(sh, dt / n);
+    /* 3.2.0-beta.21: the Training coach (src/ui/training/guide.js) acts after each step, at the time of the plant */
+    if (AN.onStep)
+      try {
+        AN.onStep(dt / n);
+      } catch (e) {}
   }
   paint();
   panelUpd();

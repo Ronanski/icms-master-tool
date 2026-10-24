@@ -118,6 +118,9 @@ function lnOpen() {
   );
 }
 bLn.onclick = () => {
+  /* 3.2.0-beta.7: the F(X) curves page (src/ui/fx/fx.js: sheet like the LINEAR CURVE workbook, editable table, explanation);
+     this panel (import / export of whole tables) opens from that page */
+  if (window.lsFx && window.lsFx()) return;
   if (anln.style.display === 'block') {
     anln.style.display = 'none';
     anln.hidden = true;
@@ -134,7 +137,7 @@ function asOpen() {
     },
     cell = (t, w) =>
       h$('td', {
-        style: 'padding:2px 6px;border-bottom:1px solid var(--line,#334);' + (w || ''),
+        style: 'padding:2px 6px;border-bottom:1px solid var(--line,var(--c-line));' + (w || ''),
         txt: String(t == null ? '-' : t)
       });
   const tab = (head, rows) => {
@@ -153,7 +156,7 @@ function asOpen() {
           {},
           r.map((c, i) =>
             i === 0
-              ? h$('td', { style: 'padding:2px 6px;border-bottom:1px solid var(--line,#334)' }, [
+              ? h$('td', { style: 'padding:2px 6px;border-bottom:1px solid var(--line,var(--c-line))' }, [
                   h$('a', {
                     href: '#',
                     txt: c,
@@ -214,7 +217,7 @@ function impOpen() {
   const imps = AN.sheets.filter(s => s.imp),
     cell = (t, w) =>
       h$('td', {
-        style: 'padding:2px 6px;border-bottom:1px solid var(--line,#334);' + (w || ''),
+        style: 'padding:2px 6px;border-bottom:1px solid var(--line,var(--c-line));' + (w || ''),
         txt: String(t == null ? '-' : t)
       }),
     tab = (head, rows) => {
@@ -331,7 +334,7 @@ function dsOpen() {
   anln.innerHTML = '';
   const cell = (t, w) =>
       h$('td', {
-        style: 'padding:2px 6px;border-bottom:1px solid var(--line,#334);vertical-align:middle;' + (w || ''),
+        style: 'padding:2px 6px;border-bottom:1px solid var(--line,var(--c-line));vertical-align:middle;' + (w || ''),
         txt: String(t == null ? '' : t)
       }),
     live = [];
@@ -395,11 +398,11 @@ function dsOpen() {
         ad = adesFind(sh, name),
         ds = ad ? adesText(ad.rec) : '',
         dig = S.nets[n].dig,
-        vc = h$('td', { style: 'padding:2px 6px;border-bottom:1px solid var(--line,#334);min-width:46px' });
+        vc = h$('td', { style: 'padding:2px 6px;border-bottom:1px solid var(--line,var(--c-line));min-width:46px' });
       const upd = () => {
         const x = S.rt.v[n];
         vc.textContent = dig ? (x > 0.5 ? '1' : '0') : fmt(x);
-        vc.style.color = dig && x > 0.5 ? '#6f6' : '';
+        vc.style.color = dig && x > 0.5 ? 'var(--c-runtx2,#6f6)' : '';
       };
       upd();
       live.push(upd);
@@ -437,7 +440,7 @@ function dsOpen() {
         cell(dir === 'FROM' ? '◀ FROM' : '→ TO'),
         h$(
           'td',
-          { style: 'padding:2px 6px;border-bottom:1px solid var(--line,#334)' },
+          { style: 'padding:2px 6px;border-bottom:1px solid var(--line,var(--c-line))' },
           refs.map(r =>
             h$('a', {
               href: '#',
@@ -453,7 +456,7 @@ function dsOpen() {
         ),
         cell(name + (ds ? ' · ' + ds : '')),
         vc,
-        h$('td', { style: 'padding:2px 6px;border-bottom:1px solid var(--line,#334)' }, [ctlEl])
+        h$('td', { style: 'padding:2px 6px;border-bottom:1px solid var(--line,var(--c-line))' }, [ctlEl])
       ]);
       t.append(r);
       dir === 'FROM' ? nF++ : nT++;

@@ -296,6 +296,8 @@ function anProcStep(S, dt) {
       delete pm[b.id];
       continue;
     }
+    /* 3.2.0-beta.14 (source.js): the medium of this loop (steam, oil, water, air) is there or not */
+    anSrcSet(b, pr, S);
     let q = pm[b.id];
     if (!pr.on) {
       if (q) delete pm[b.id];
@@ -499,6 +501,12 @@ function anProcStep(S, dt) {
         /* 2.2.0-beta.14 (M4 cold start): pr.tcap = the gas temperature (bed) of the unit model: a superheater cannot give more than the
            gas, and the steam is never below saturation */
         if (pr.tcap != null) y = Math.max(pr.tsat != null ? pr.tsat : -1e9, Math.min(y, pr.tcap));
+        /* 3.2.0-beta.14 (source.js): no medium = the bottom of the range (or the ambient); never above the pressure of the source */
+        if (pr.smul != null) y = pr.smul * y + (1 - pr.smul) * (pr.sbase != null ? pr.sbase : lo);
+        if (pr.scap != null) y = Math.min(y, Math.max(lo, pr.scap));
+        /* not exactly the bottom: the SELECT CIRCUIT of the drawing reads 0 as a lost transmitter and holds its last value (user rule
+           v1.20.34; ABC-030 aux steam stayed 10.1 kg/cm2 in a cold plant), as the unit model does for the first stage pressure */
+        if (pr.src) y = Math.max(y, lo + 1e-3 * span);
         return pr.mul == null ? y : pr.mul * y + (1 - pr.mul) * lo;
       };
     if (pr.integ === undefined) {
@@ -607,6 +615,8 @@ function anProcStep(S, dt) {
         }
       }
       q.h.length = 0;
+    } else if (dt > 0 && pr.shold) {
+      q.h.length = 0; /* 3.2.0-beta.14 (source.js): the pump that moves the water is stopped: the tank level stays */
     } else if (dt > 0 && pr.mul === 0) {
       q.y =
         lo; /* 2.2.0-beta.12: the machine that makes the flow stopped (no BFWP, fan stopped): the flow is gone at once, not with the lag of the valve */
@@ -676,6 +686,7 @@ function anProcStep(S, dt) {
         if (vs.every(isFinite)) {
           const m = vs.reduce((a, b) => a + b, 0) / vs.length;
           q.off = {};
+          q.offm = m;
           tai.forEach((id, i) => (q.off[id] = vs[i] - m));
         }
       }
@@ -724,7 +735,10 @@ function anProcStep(S, dt) {
         const hit = w < rl || w > rh;
         w = Math.max(rl, Math.min(rh, w));
         const p = tv[tpin];
-        q.bad = hit && !pinF && !aiF && !gate && Math.abs(y - p) > 0.05 * span ? (q.bad || 0) + 1 : 0;
+        /* 3.2.0-beta.14: not while the source of the loop holds it at the bottom (source.js: no steam / water / oil): that is the plant,
+           not a model that cannot reach its transmitter (before: ABC-030 aux steam fell to the "pin" mode in a cold plant and never
+           came back to its 150 MW anchor, 4.5 instead of 10.2 kg/cm2) */
+        q.bad = hit && !pinF && !aiF && !gate && !pr.src && Math.abs(y - p) > 0.05 * span ? (q.bad || 0) + 1 : 0;
         if (q.bad >= 30) {
           pr.mode = 'pin';
           pr.fell = 1;
@@ -742,8 +756,15 @@ function anProcStep(S, dt) {
       if (!a || !s) continue;
       const on_ = a.pins.filter(p => p.role === 'out').map(p => p.n);
       if (on_.some(n => tF[n] !== undefined)) continue;
+      /* 3.2.0-beta.21 (bug, user 2026-10-24 "cold na, may value pa rin ... drum lvl at fw flow"): the offset of a transmitter fades to 0 at
+         the bottom of its range (below the mean of the first write it shrinks in proportion; a range from 0 only: flow, pressure,
+         not the drum level that integrates around its normal water level). Before it stayed whole: in a cold plant
+         FT-FW1007-2 kept +0.15 T/H of the 150 MW snapshot (499.2 against 499.0), the feedwater PV read 0.155 T/H with the BFWP
+         stopped and the integrating drum level rose 2 mm every 10 minutes */
+      const lo0 = a.rng ? a.rng.lo : 0,
+        kf = !pr.integ && q.offm != null && lo0 >= 0 && q.offm - lo0 > 1e-9 ? Math.max(0, Math.min(1, (w - lo0) / (q.offm - lo0))) : 1;
       const r = a.rng,
-        w1 = w + ((q.off && q.off[id]) || 0),
+        w1 = w + ((q.off && q.off[id]) || 0) * kf,
         x = r ? Math.max(r.lo, Math.min(r.hi, w1)) : w1;
       s.val = x;
       s.act = x;
@@ -850,13 +871,20 @@ function anStep(S, dt) {
       for (const q of [pr].concat(pr.alt || []))
         if (q.eq === 0 ? v[q.c] < 0.5 : v[q.c] > 0.5) {
           v[+k] = q.src != null ? v[q.src] : q.val;
-          if (q.src != null) rt.ext[+k] = v[+k];
+          /* 2.3.0-beta.2: a SET on the operator SV (COS) holds after the pulse, as the operator's own SV (ABC-003A "SET SV = 49 T/H") */
+          if (q.src != null || q.hold) rt.ext[+k] = v[+k];
         }
   }
   const rd = n => (n >= 0 ? v[n] : 0);
   for (const b of S.ord) {
     if (b.k === 'LINK') {
-      v[b.o[0]] = F[b.o[0]] !== undefined ? F[b.o[0]] : v[b.i[0]] * (b.gain == null ? 1 : b.gain);
+      /* 2.3.0-beta.1: an AND link (ABC-004A "COAL FEEDER B & C ALL IN MANUAL" = FICCL1061B.MAN and FICCL1061C.MAN) */
+      v[b.o[0]] =
+        F[b.o[0]] !== undefined
+          ? F[b.o[0]]
+          : b.and
+            ? +b.i.every(n => v[n] > 0.5)
+            : v[b.i[0]] * (b.gain == null ? 1 : b.gain);
       continue;
     }
     const s = rt.st[b.id],
@@ -965,7 +993,12 @@ function anStep(S, dt) {
           }
         }
         if (s.trk != null) s.val = s.trk;
-        s.val = Math.max(P.lo, Math.min(P.hi, s.val));
+        /* 2.3.0-beta.2 (ABC-004A-1 ~ 004C-1): the MV high limit written on the drawing as an input "<tag>.MHD" (% of the station range:
+           FICCL1061A.MHD = 83.3 % when M.3405 A / B / C ALL IN REMOTE AND RUNNING, else 100 %) limits the station output */
+        if (b._mhd === undefined) b._mhd = (b.i || []).find(n => n >= 0 && S.lab[n] && String(S.lab[n].t).trim() === b.tag + '.MHD') ?? -1;
+        const mhd = b._mhd >= 0 ? +v[b._mhd] : NaN,
+          hiD = mhd > 0 && P.rhi > P.rlo ? Math.min(P.hi, P.rlo + (mhd / 100) * (P.rhi - P.rlo)) : P.hi;
+        s.val = Math.max(P.lo, Math.min(hiD, s.val));
         out(s.val);
         break;
       }
@@ -1043,11 +1076,21 @@ function anStep(S, dt) {
         if (b.q4) {
           const q = b.q4;
           let k = -1;
-          for (let i = 0; i < q.cond.length; i++)
-            if (P['c' + (i + 1)] > 0.5) {
+          for (let i = 0; i < q.cond.length; i++) {
+            /* 2.3.0-beta.2 (ABC-003E-1): the condition is a signal of the drawing (M.009A ~ D = REMOTE of FICDO1043A ~ D = its SV
+               switch on the oil master leg), not a setting of the user */
+            const sg = q.sig && q.sig[i];
+            let on = P['c' + (i + 1)] > 0.5;
+            if (sg) {
+              const sh = AN.sheets.find(z => z.name === sg.sh),
+                st = sh && sh.S && sh.S.rt && sh.S.rt.st[sg.blk];
+              on = !!st && st.pk === sg.leg;
+            }
+            if (on) {
               k = i;
               break;
             }
+          }
           if (k >= 0) s.q4k = k;
           const lg = q.cond[s.q4k == null ? 0 : s.q4k].leg;
           s.pk = lg.toUpperCase();

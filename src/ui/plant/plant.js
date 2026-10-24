@@ -67,6 +67,13 @@
     if (IX) return IX;
     const A = window.AN;
     if (!A || !A.sheets) return null;
+    /* 3.2.0-beta.1 (audit C2): the ABC sheets load in the background (loader.js loadData = AN.data). When the PLANT VIEW was
+       opened before the ABC page the links were read from an empty sheet list (LIVE 6 / 51) and never read again: wait for it */
+    for (let i = 0; i < 100 && !A.data && !A.sheets.length; i++) await new Promise(r => setTimeout(r, 100));
+    try {
+      if (A.data) await A.data;
+    } catch (e) {}
+    if (!A.sheets.length) return null;
     try {
       await A.ades();
     } catch (e) {}
@@ -227,7 +234,7 @@
       }
       return null;
     }
-    if (it.t === 'pump' || it.t === 'fan') {
+    if (it.t === 'pump' || it.t === 'fan' || it.t === 'motor') {
       /* the run state: the memory bit the ABC sheets use (memory list "... RUNNING"), else the running DI of the I/O list (MIR-P1115A) */
       const words = String(it.tag).toUpperCase().split(/\s+/).filter(w => !/^[PF]-?\d{4}/.test(w)),
         full = words.join(' '),
@@ -265,7 +272,7 @@
     if (x == null || !isFinite(x)) return '—';
     const d = String(ref || '').split('.')[1];
     const n = d ? Math.min(3, d.length) : Math.abs(x) >= 100 ? 0 : 1;
-    return x.toFixed(n);
+    return x.toFixed(n).replace(/^-(0(?:\.0+)?)$/, '$1'); /* not -0.0 */
   };
   function netVal(r) {
     const sh = shOf(r.sh);
@@ -319,6 +326,10 @@
       } catch (e) {}
     }
   }
+  const lvOf = it => {
+    const o = LV.find(q => q.it === it);
+    return o ? o.r : null;
+  };
   function liveCount() {
     const n = LV.filter(o => o.r).length;
     const el = $('pllive');
@@ -344,7 +355,9 @@
       x,
       y,
       fill: o.c || '#d3dce5',
-      'font-size': (o.z || 13) + 2 /* 2.2.0-beta.19: +2 px on every screen; the HMI text is ~16 px at 1920 wide */,
+      /* 2.2.0-beta.19: +2 px on every screen. 2.4.1-beta.1: +3 px (UI audit 2026-10-19: the HMI snapshot text is ~16 px at
+         1920 wide, the graphic is drawn at that width); the header bar and the controller box keep their own size (o.k) */
+      'font-size': (o.z || 13) + (o.k != null ? o.k : 3),
       'font-family': o.mono ? 'var(--mf, monospace)' : 'var(--uf, sans-serif)',
       'font-weight': o.b ? 600 : 400,
       'text-anchor': o.a || 'start'
@@ -352,6 +365,177 @@
     t.textContent = s;
     g.append(t);
     return t;
+  }
+  /* ---- 2.5.0-beta.15: the 1:1 HMI picture (src/ui/plant/hmibg.js, made by tools/data/hmibg.py from the snapshot) ----
+     A LIVE number is drawn over the snapshot number (a box of the background colour + the number, right aligned like the
+     HMI field, same height and pitch); a symbol (valve, damper, pump, fan, motor, lamp, check box) gets its live colour through
+     the mask of its own pixels. Not linked = nothing drawn: the picture shows the snapshot. */
+  let defs = null,
+    box0 = [0, 0, 1920, 1000];
+  const HC = { red: '#ff2a2a', green: '#1ee01e', white: '#f2f2f2', off: '#3a3a3a' };
+  function bgNum(g, sp, ref) {
+    const b = sp.b,
+      h = Math.max(8, sp.h),
+      fz = h / 0.72,
+      n = Math.max(1, String(ref != null ? ref : '').trim().length),
+      pitch = Math.min(h * 0.75, Math.max(h * 0.45, (b[2] - 4) / n)),
+      bold = sp.fr >= 0.36,
+      sx = pitch / ((bold ? 0.556 : 0.6) * fz);
+    const r = S_('rect', { x: b[0], y: b[1], width: b[2], height: b[3], fill: sp.bg, visibility: 'hidden' }),
+      gg = S_('g', { transform: `translate(${b[0] + b[2] - 2},${b[1] + b[3] - 2}) scale(${sx.toFixed(3)},1)`, visibility: 'hidden' }),
+      t = S_('text', { 'data-it': itIx, x: 0, y: 0, 'text-anchor': 'end', 'font-size': fz.toFixed(1), 'font-family': bold ? 'Arial, Helvetica, sans-serif' : 'var(--mf, monospace)', 'font-weight': bold ? 700 : 400, fill: sp.c || '#00ffff' });
+    gg.append(t);
+    g.append(r, gg);
+    const f = s => {
+      if (s == null) {
+        r.setAttribute('visibility', 'hidden');
+        gg.setAttribute('visibility', 'hidden');
+        return;
+      }
+      t.textContent = s;
+      /* a live number longer than the snapshot one: the box grows to the left so no old digit shows */
+      const need = s.length * pitch + 4;
+      r.setAttribute('x', need > b[2] ? b[0] + b[2] - need : b[0]);
+      r.setAttribute('width', Math.max(b[2], need));
+      r.setAttribute('visibility', 'visible');
+      gg.setAttribute('visibility', 'visible');
+    };
+    f.t = t;
+    return f;
+  }
+  function bgSym(g, sp, id) {
+    const b = sp.b,
+      mk = S_('mask', { id, maskUnits: 'userSpaceOnUse', x: b[0], y: b[1], width: b[2], height: b[3] });
+    mk.append(S_('image', { href: sp.m, x: b[0], y: b[1], width: b[2], height: b[3], preserveAspectRatio: 'none', 'image-rendering': 'pixelated' }));
+    defs.append(mk);
+    const r = S_('rect', { x: b[0], y: b[1], width: b[2], height: b[3], fill: HC.red, mask: `url(#${id})`, visibility: 'hidden' });
+    g.append(r);
+    return c => {
+      if (!c) return r.setAttribute('visibility', 'hidden');
+      r.setAttribute('fill', c);
+      r.setAttribute('visibility', 'visible');
+    };
+  }
+  /* an invisible click area over the item (faceplate / info card, like the drawn screens) */
+  function bgHit(g, it, b) {
+    const r = S_('rect', { x: b[0], y: b[1], width: b[2], height: b[3], fill: '#000', 'fill-opacity': 0, 'data-tag': it.tag || it.s || '', 'data-it': itIx });
+    g.append(r);
+    return r;
+  }
+  const hull = L => {
+    const B = L.filter(Boolean);
+    if (!B.length) return null;
+    const x0 = Math.min(...B.map(b => b[0])),
+      y0 = Math.min(...B.map(b => b[1]));
+    return [x0, y0, Math.max(...B.map(b => b[0] + b[2])) - x0, Math.max(...B.map(b => b[1] + b[3])) - y0];
+  };
+  /* the HMI field shows the decimals of its snapshot number (TIFA1082 "31", O2 BIAS "0.00") */
+  const fmtH = (x, ref) => {
+    if (x == null || !isFinite(x)) return '—';
+    const d = String(ref == null ? '' : ref).trim().split('.')[1];
+    return ref == null || String(ref).trim() === '' ? fmtV(x, ref) : x.toFixed(d ? Math.min(3, d.length) : 0).replace(/^-(0(?:\.0+)?)$/, '$1');
+  };
+  function bgItem(g, it, sp, sid) {
+    const t = it.t;
+    if (!/^(val|ctl|valve|damper|mov|pump|fan|motor|lamp|flag|header)$/.test(t)) return; /* the picture has it */
+    const id = 'plm' + String(sid).replace(/\W/g, '') + '_' + itIx;
+    if (t === 'header') {
+      if (!sp) return;
+      (it.items || []).forEach(([k, v], i) => {
+        const nb = sp.n[i];
+        if (!nb || !HDR[k]) return;
+        const f = bgNum(g, nb, v);
+        reg({ t: 'val', tag: k, ref: HDR[k], v }, y => f(y ? fmtH(y.v, v) : null), null);
+      });
+      return;
+    }
+    if (!sp) {
+      /* not found on the picture: still linked (value list, tests), click area at its place */
+      reg(it, () => {}, it.x != null ? bgHit(g, it, [it.x - 6, it.y - 16, 70, 22]) : null);
+      return;
+    }
+    if (t === 'val') {
+      const f = bgNum(g, sp, it.v);
+      reg(it, x => f(x ? fmtH(x.v, it.v) : null), bgHit(g, it, sp.b));
+    } else if (t === 'ctl') {
+      const fp = sp.pv ? bgNum(g, sp.pv, it.pv) : () => {},
+        fs = sp.sv ? bgNum(g, sp.sv, it.sv) : () => {},
+        fm = sp.mv ? bgNum(g, sp.mv, it.mv) : () => {};
+      /* 033 CCS: the A / M / R buttons of the faceplate light with the live mode (lit = yellow, like the HMI) */
+      const am = [];
+      for (const L in sp.am || {}) {
+        const b = sp.am[L],
+          gb = S_('g', { visibility: 'hidden' }),
+          r = S_('rect', { x: b[0], y: b[1], width: b[2], height: b[3], rx: 1 }),
+          tl = S_('text', { x: b[0] + b[2] / 2, y: b[1] + b[3] - 4, 'text-anchor': 'middle', 'font-size': 22, 'font-weight': 700, 'font-family': 'Arial, Helvetica, sans-serif', fill: '#050000' });
+        tl.textContent = L;
+        gb.append(r, tl);
+        g.append(gb);
+        am.push([L, gb, r]);
+      }
+      if (am.length && !defs.querySelector('#plgl')) {
+        const gr = (id, a, b) => {
+          const lg = S_('linearGradient', { id, x1: 0, y1: 0, x2: 0, y2: 1 });
+          lg.append(S_('stop', { offset: 0, 'stop-color': a }), S_('stop', { offset: 1, 'stop-color': b }));
+          defs.append(lg);
+        };
+        gr('plgl', '#fff200', '#d8c800');
+        gr('plgr', '#e9b950', '#f09000');
+        gr('plgu', '#fafafa', '#9c9c9c');
+      }
+      /* 033 CCS: the PV (cyan) and SV (yellow) bars of the faceplate, 0 .. the scale top printed on it */
+      const bars = [];
+      for (const k of ['bpv', 'bsv'])
+        if (sp[k]) {
+          const B = sp[k],
+            gb = S_('g', { visibility: 'hidden' }),
+            bar = S_('rect', { x: B.b[0], width: B.b[2], fill: B.c });
+          gb.append(S_('rect', { x: B.b[0], y: B.b[1], width: B.b[2], height: B.b[3], fill: B.bg }), bar);
+          g.append(gb);
+          bars.push([k === 'bpv' ? 'pv' : 'sv', B, gb, bar]);
+        }
+      const fml = sp.ml ? bgNum(g, sp.ml, 'A') : null;
+      reg(it, x => {
+        if (fml) {
+          fml(x ? x.m : null);
+          if (x) fml.t.setAttribute('fill', x.m === 'M' ? '#ffd200' : '#00ffff'); /* HMI: A / R cyan, M yellow */
+        }
+        for (const [k, B, gb, bar] of bars) {
+          gb.setAttribute('visibility', x && isFinite(x[k]) ? 'visible' : 'hidden');
+          if (x && isFinite(x[k])) {
+            const hh = Math.max(0, Math.min(1, x[k] / B.max)) * B.b[3];
+            bar.setAttribute('y', B.b[1] + B.b[3] - hh);
+            bar.setAttribute('height', hh);
+          }
+        }
+        for (const [L, gb, r] of am) {
+          gb.setAttribute('visibility', x ? 'visible' : 'hidden');
+          if (x) r.setAttribute('fill', x.m === L ? (L === 'R' ? 'url(#plgr)' : 'url(#plgl)') : 'url(#plgu)');
+        }
+        fp(x ? fmtH(x.pv, it.pv) : null);
+        fs(x ? fmtH(x.sv, it.sv) : null);
+        fm(x ? fmtH(x.mv, it.mv) : null);
+      }, bgHit(g, it, hull([sp.b, sp.pv && sp.pv.b, sp.sv && sp.sv.b, sp.mv && sp.mv.b])));
+    } else {
+      const fs = sp.sym ? bgSym(g, sp.sym, id) : () => {},
+        fn = sp.n ? bgNum(g, sp.n, it.v) : () => {};
+      reg(it, x => {
+        if (!x || x.v == null || !isFinite(x.v)) {
+          fs(null);
+          fn(null);
+          return;
+        }
+        let c = null;
+        if (t === 'valve' || t === 'damper') c = x.v < 3 ? HC.green : x.v > 97 ? HC.red : HC.white; /* HMI: closed green, open red, between white */
+        else if (t === 'mov') c = (x.r && x.r.open === 0 ? x.v < 0.5 : x.v > 0.5) ? HC.red : HC.green;
+        else if (t === 'lamp') {
+          const on = x.v > (it.gt != null ? it.gt : 0.5);
+          c = (it.inv ? !on : on) ? (/^#[0-7][89a-f]/i.test(it.lit || '') ? HC.green : HC.red) : '#050505'; /* lit = the HMI green / red, off = black */
+        } else c = x.v > 0.5 ? HC.red : HC.green; /* pump / fan / motor run = red; flag 1 = red check */
+        fs(c);
+        if (t === 'valve' || t === 'damper') fn(fmtH(x.v, it.v));
+      }, bgHit(g, it, hull([sp.sym && sp.sym.b, sp.n && sp.n.b]) || [it.x - 12, it.y - 12, 24, 24]));
+    }
   }
   function draw(sys) {
     svg.innerHTML = '';
@@ -362,9 +546,21 @@
     const w = sys.w || 1920,
       h = sys.h || 1000;
     g.append(S_('rect', { x: 0, y: 0, width: w, height: h, fill: '#06090c' }));
+    /* 2.5.0-beta.15 (user 2026-10-20: "kopyahin mo ang reference 1:1 ... pati lines, dashed lines"): a screen with its HMI
+       snapshot in hmibg.js IS that picture; only what moves is drawn on it (bgItem) */
+    const BG = (window.PLANT_BG || {})[sys.id],
+      bg = BG && BG.n === (sys.items || []).length ? BG : null;
+    if (bg) {
+      g.append(S_('image', { href: bg.img, x: bg.x, y: bg.y, width: bg.w, height: bg.h, preserveAspectRatio: 'none' }));
+      g.append((defs = S_('defs', {})));
+    }
     for (const it of sys.items || []) {
       itIx++;
       try {
+        if (bg) {
+          bgItem(g, it, bg.o[itIx], sys.id);
+          continue;
+        }
         if (it.t === 'duct') {
           /* 2.2.0-beta.19: a filled duct / vessel body like the HMI (yellow flue gas duct, green air duct, tan furnace): polygon
              with the colour of its kind (k) or its own colour (c), translucent fill */
@@ -407,11 +603,16 @@
           if (it.tag) txt(g, it.x + 14, it.y - 10, it.tag, { z: 11 });
           if (it.v != null) txt(g, it.x + 14, it.y + 6, it.v + ' ' + (it.u || '%'), { z: 12, mono: 1, c: '#5cd6ff' });
           if (it.m) txt(g, it.x - 14, it.y - 10, it.m, { z: 10, c: '#9ff0c4', a: 'end', b: 1 });
-        } else if (it.t === 'pump' || it.t === 'fan') {
+        } else if (it.t === 'pump' || it.t === 'fan' || it.t === 'motor') {
           const c = it.st === 'run' ? '#e05555' : '#3fbf6a';
           g.append(S_('circle', { cx: it.x, cy: it.y, r: 14, fill: 'none', stroke: c, 'stroke-width': 2.5 }));
           const ring = g.lastChild;
-          if (it.t === 'pump') g.append(S_('polygon', { points: `${it.x - 8},${it.y + 8} ${it.x + 8},${it.y} ${it.x - 8},${it.y - 8}`, fill: c }));
+          /* 2.5.0-beta.6: a motor of the HMI (the "M" of the coal feeders, 11.png) */
+          if (it.t === 'motor') {
+            const m = S_('text', { x: it.x, y: it.y + 6, 'text-anchor': 'middle', 'font-size': 17, 'font-weight': 700, fill: c });
+            m.textContent = 'M';
+            g.append(m);
+          } else if (it.t === 'pump') g.append(S_('polygon', { points: `${it.x - 8},${it.y + 8} ${it.x + 8},${it.y} ${it.x - 8},${it.y - 8}`, fill: c }));
           else g.append(S_('path', { d: `M${it.x - 9},${it.y} L${it.x + 9},${it.y} M${it.x},${it.y - 9} L${it.x},${it.y + 9}`, stroke: c, 'stroke-width': 2.5 }));
           {
             const sym = g.lastChild;
@@ -419,19 +620,51 @@
               const on = x && x.v != null ? x.v > 0.5 : it.st === 'run';
               const c2 = on ? '#e05555' : '#3fbf6a';
               ring.setAttribute('stroke', c2);
-              sym.setAttribute(it.t === 'pump' ? 'fill' : 'stroke', c2);
+              sym.setAttribute(it.t === 'fan' ? 'stroke' : 'fill', c2);
             }, ring);
           }
-          if (it.tag) txt(g, it.x, it.y + 30, it.tag, { z: 11, a: 'middle' });
+          if (it.tag && !it.nolab) txt(g, it.x, it.y + 30, it.tag, { z: 11, a: 'middle' });
           if (it.m) txt(g, it.x + 18, it.y - 12, it.m, { z: 10, c: '#9ff0c4', b: 1 });
         } else if (it.t === 'vessel') {
           const rx = it.shape === 'drum' || it.shape === 'tank' ? Math.min(it.w, it.h) / 2 : it.shape === 'turbine' ? 4 : 6;
           if (it.shape === 'turbine')
             g.append(S_('polygon', { points: `${it.x},${it.y + it.h * 0.3} ${it.x + it.w},${it.y} ${it.x + it.w},${it.y + it.h} ${it.x},${it.y + it.h * 0.7}`, fill: '#1b2530', stroke: '#8b9aa8', 'stroke-width': 2 }));
           else g.append(S_('rect', { x: it.x, y: it.y, width: it.w, height: it.h, rx, fill: it.f || '#121a22', stroke: it.f ? '#a9b7c4' : '#8b9aa8', 'stroke-width': 2 })); /* beta.19: f = own fill (plenum, wall, APH) */
-          if (it.label) txt(g, it.x + it.w / 2, it.y + it.h / 2 + 5, it.label, { z: 13, a: 'middle', b: 1 });
+          if (it.label) {
+            const t = txt(g, it.x + it.w / 2, it.y + it.h / 2 + 5, it.label, { z: 13, a: 'middle', b: 1 });
+            /* 2.4.1-beta.1: a label wider than its box gets a smaller font (006 BURNER-A/B OIL FLOW ran into the next box) */
+            try {
+              const L = t.getComputedTextLength();
+              if (L > it.w - 8) t.setAttribute('font-size', Math.max(9, Math.floor((+t.getAttribute('font-size') * (it.w - 8)) / L)));
+            } catch (e) {}
+          }
         } else if (it.t === 'text') {
-          txt(g, it.x, it.y, it.s, { z: it.z || 13, b: it.b, c: it.c });
+          const t = txt(g, it.x, it.y, it.s, { z: it.z || 13, b: it.b, c: it.c });
+          /* 2.4.1-beta.1: wrap = width of the box the note belongs to; the note breaks into lines inside it (UI audit: the long
+             notes of the UNIT screen ran over the next column and off the screen) */
+          if (it.wrap) {
+            const fz = +t.getAttribute('font-size'),
+              per = Math.max(8, Math.floor(it.wrap / (fz * 0.5))),
+              lines = [];
+            for (const wd of String(it.s).split(' ')) {
+              if (lines.length && (lines[lines.length - 1] + ' ' + wd).length <= per) lines[lines.length - 1] += ' ' + wd;
+              else lines.push(wd);
+            }
+            t.textContent = '';
+            lines.forEach((l, i) => {
+              const sp = S_('tspan', { x: it.x, dy: i ? fz * 1.25 : 0 });
+              sp.textContent = l;
+              t.append(sp);
+            });
+          }
+        } else if (it.t === 'lamp') {
+          /* 2.5.0-beta.6: a lamp of the HMI (BURNER ON / OFF): lit when the value is above `gt` (`inv`: when not); snapshot colour when not linked */
+          const lt = txt(g, it.x, it.y, '●', { z: 30, c: it.c });
+          reg(it, x => {
+            if (!x || !isFinite(x.v)) return lt.setAttribute('fill', it.c);
+            const on = x.v > (it.gt != null ? it.gt : 0.5);
+            lt.setAttribute('fill', (it.inv ? !on : on) ? it.lit : '#1b2530');
+          }, lt);
         } else if (it.t === 'flag') {
           /* 2.2.0-beta.19: ☑ red = 1, ☒ green = 0 (HMI convention of the 033 screen); grey = not linked (snapshot) */
           const ft = txt(g, it.x, it.y, (it.on ? '☑ ' : '☒ ') + it.s, { z: it.z || 13, b: it.b, c: it.on ? '#e05555' : '#3fbf6a' });
@@ -452,18 +685,21 @@
             bh = 70;
           const box = S_('rect', { x: it.x, y: it.y, width: bw, height: bh, rx: 3, fill: '#0d1319', stroke: '#2a6a98', 'stroke-width': 1.5 });
           g.append(box);
-          txt(g, it.x + 6, it.y + 15, (it.label || it.tag || '').slice(0, 28), { z: 11, c: '#a9b7c4' });
-          txt(g, it.x + 6, it.y + 31, it.tag || '', { z: 12, b: 1, mono: 1 });
-          const mt = txt(g, it.x + bw - 6, it.y + 31, it.m || '', { z: 12, b: 1, a: 'end', c: it.m === 'M' ? '#ffd27a' : '#9ff0c4' });
-          const t1 = txt(g, it.x + 6, it.y + 50, 'PV ' + (it.pv != null ? it.pv : '—') + '  SV ' + (it.sv != null ? it.sv : '—'), { z: 12, mono: 1, c: '#5cd6ff' });
-          const t2 = txt(g, it.x + 6, it.y + 66, 'MV ' + (it.mv != null ? it.mv + ' %' : '—') + (it.u ? '   ' + it.u : ''), { z: 12, mono: 1, c: '#9ff0c4' });
+          txt(g, it.x + 6, it.y + 15, (it.label || it.tag || '').slice(0, 28), { k: 2, z: 11, c: '#a9b7c4' });
+          txt(g, it.x + 6, it.y + 31, it.tag || '', { k: 2, z: 12, b: 1, mono: 1 });
+          const mt = txt(g, it.x + bw - 6, it.y + 31, it.m || '', { k: 2, z: 12, b: 1, a: 'end', c: it.m === 'M' ? '#ffd27a' : '#9ff0c4' });
+          const t1 = txt(g, it.x + 6, it.y + 50, 'PV ' + (it.pv != null ? it.pv : '—') + '  SV ' + (it.sv != null ? it.sv : '—'), { k: 2, z: 12, mono: 1, c: '#5cd6ff' });
+          const t2 = txt(g, it.x + 6, it.y + 66, 'MV ' + (it.mv != null ? it.mv + ' %' : '—') + (it.u ? '   ' + it.u : ''), { k: 2, z: 12, mono: 1, c: '#9ff0c4' });
           reg(it, x => {
             const m = x ? x.m : it.m || '';
             mt.textContent = m;
             mt.setAttribute('fill', m === 'M' ? '#ffd27a' : '#9ff0c4');
             t1.textContent = 'PV ' + (x ? fmtV(x.pv, it.pv) : it.pv != null ? it.pv : '—') + '  SV ' + (x ? fmtV(x.sv, it.sv) : it.sv != null ? it.sv : '—');
-            /* 2.2.0-beta.19: the unit of the MV once (a MAN station in MW, a PID in %); before "68.3 % %" */
-            t2.textContent = 'MV ' + (x ? fmtV(x.mv, it.mv) : it.mv != null ? it.mv : '—') + (it.u && it.u !== '%' ? ' ' + it.u : ' %');
+            /* 3.2.0-beta.1 (audit M5): the unit of the MV is the one of the faceplate: a PID output is % (before, the PV unit of
+               the screen: "MV 56.0 mm" for LICBR1001 whose faceplate says 3.00 %); a MAN station has its own unit (hmi.js P.u) */
+            const r = lvOf(it),
+              mu = r && r.k === 'man' ? (r.b.p && r.b.p.u) || '' : r && r.k === 'ctl' ? '%' : it.u && it.u !== '%' ? it.u : '%';
+            t2.textContent = 'MV ' + (x ? fmtV(x.mv, it.mv) : it.mv != null ? it.mv : '—') + (mu ? ' ' + mu : '');
             t1.setAttribute('fill', x ? '#5cd6ff' : '#7f90a0');
             t2.setAttribute('fill', x ? '#9ff0c4' : '#7f90a0');
           }, box);
@@ -478,12 +714,12 @@
           g.append(S_('line', { x1: 0, y1: bh, x2: w, y2: bh, stroke: '#2a3a4a', 'stroke-width': 1 }));
           items.forEach(([k, v, u], i) => {
             const x0 = 20 + i * cw;
-            txt(g, x0, bh / 2 + 7, k, { z: 19, c: '#f0b0d8', b: 1 });
+            txt(g, x0, bh / 2 + 7, k, { k: 2, z: 19, c: '#f0b0d8', b: 1 });
             const lw = 10 + k.length * 12,
               bw = Math.max(86, (String(v).length + 1) * 13);
             g.append(S_('rect', { x: x0 + lw, y: 8, width: bw, height: bh - 16, rx: 3, fill: '#05080b', stroke: '#2a6a98', 'stroke-width': 1 }));
-            const t = txt(g, x0 + lw + bw / 2, bh / 2 + 8, v, { z: 22, mono: 1, c: '#5cd6ff', b: 1, a: 'middle' });
-            txt(g, x0 + lw + bw + 8, bh / 2 + 7, u || '', { z: 17, c: '#f0b0d8', b: 1 });
+            const t = txt(g, x0 + lw + bw / 2, bh / 2 + 8, v, { k: 2, z: 22, mono: 1, c: '#5cd6ff', b: 1, a: 'middle' });
+            txt(g, x0 + lw + bw + 8, bh / 2 + 7, u || '', { k: 2, z: 17, c: '#f0b0d8', b: 1 });
             /* the header bar of every screen (MSP, MST, MSF, RHP, RHT, COAL, PWR) reads the simulation: the same
                signals as the HMI header (ABC-001C AI0131 PT-MS1002, TICMS1004, SI0230 compensated main steam flow, AI0419 GCP-AI1001
                generator MW; ABC-052 PICHR1003 reheat pressure, ABC-019 TICHR1002 reheat temperature, ABC-002 coal master PV) */
@@ -497,26 +733,45 @@
         }
       } catch (e) {}
     }
-    vb = [0, 0, w, h];
+    vb = bg ? [bg.x, bg.y, bg.w, bg.h] : [0, 0, w, h];
+    box0 = vb.slice();
     fit();
     index().then(() => {
       for (const o of LV) o.r = resolve(o.it);
-      for (const o of LV)
-        if (o.r && o.hit) {
+      for (const o of LV) {
+        if (o.r && o.hit && o.r.k === 'unit' && !o.hit.dataset.lk) {
+          /* a value of the plant model with no DCS tag (oil flow, bed temperature): nothing to open, it says what it is */
+          o.hit.dataset.lk = '1';
+          const t = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+          t.textContent = 'Plant model value (no DCS tag, no faceplate)';
+          o.hit.append(t);
+        }
+        if (o.r && o.hit && o.r.k !== 'unit' && !o.hit.dataset.lk) {
+          /* 3.2.0-beta.1: one listener per item (the screen is linked again after the ABC sheets load) */
+          o.hit.dataset.lk = '1';
           o.hit.style.cursor = 'pointer';
+          o.hit.style.pointerEvents = 'auto';
           o.hit.addEventListener('click', e => {
             e.stopPropagation();
             try {
               if ((o.r.k === 'ctl' || o.r.k === 'man') && fpOpen(o.it.tag)) return;
               if (o.r.k === 'mv' && fpOpen(o.r.c.tag)) return;
-              if (D !== document) return; /* the info card opens in the main window only */
-              if (o.r.k === 'ctl' || o.r.k === 'man') window.lsInfo && window.lsInfo(o.it.tag);
-              else if (o.r.k === 'mv') window.lsInfo && window.lsInfo(o.r.c.tag);
-              else if (o.r.a) window.lsInfo && window.lsInfo(o.r.a, { stn: o.r.st });
-              else window.lsInfo && window.lsInfo(o.it.tag + '.PV');
+              if (D !== document || !window.lsInfo) return; /* the info card opens in the main window only */
+              if (o.r.k === 'ctl' || o.r.k === 'man') window.lsInfo(o.it.tag);
+              else if (o.r.k === 'mv') window.lsInfo(o.r.c.tag);
+              else if (o.r.a) window.lsInfo(o.r.a, { stn: o.r.st });
+              else {
+                /* 3.2.0-beta.1 (audit): the label of the linked wire as written on the sheet (MIF-CL1061-A on the screen, the
+                   sheet writes it its own way); before, "<tag>.PV" found nothing for 31 of the 51 UNIT items and the click did nothing */
+                const sh = o.r.sh && shOf(o.r.sh),
+                  l = sh && sh.S && o.r.n != null ? sh.S.lab[o.r.n] : null,
+                  nm = (l && l.t && String(l.t).trim()) || (sh && sh.S && o.r.n != null && window.AN && AN.nm ? AN.nm(sh.S, o.r.n) : '');
+                if (!(nm && window.lsInfo(nm)) && !window.lsInfo(o.it.tag + '.PV')) window.lsInfo(o.it.tag);
+              }
             } catch (x) {}
           });
         }
+      }
       liveCount();
       liveTick();
     });
@@ -528,7 +783,24 @@
   function fpClose() {
     if (fp) fp.remove();
     fp = fpLive = null;
+    lay();
   }
+  /* 3.2.0 P3: on a wide screen the faceplate is a panel docked at the right (the graphic gets narrower, same zoom); narrow =
+     the pop-up over the graphic as before */
+  function lay() {
+    if (!ws) return;
+    ws.classList.toggle('crw', ws.getBoundingClientRect().width >= 836);
+    /* the chips that do not fit wrap to a hidden second line; no half chip when even the first does not fit */
+    const ch = ws.querySelector('.plchips');
+    if (ch && ch.firstChild) {
+      ch.style.visibility = '';
+      ch.style.visibility = ch.clientWidth + 1 < ch.firstChild.offsetWidth ? 'hidden' : '';
+    }
+    const host = ws.classList.contains('crw') ? ws : $('plmid');
+    if (fp && host && fp.parentNode !== host) host.append(fp);
+    keepZoom();
+  }
+
   function fpOpen(tag) {
     if (!window.AN || !AN.fpBuild) return false;
     const box = E('div', { cls: 'body' });
@@ -560,7 +832,9 @@
       ]),
       box
     ]);
-    $('plmid').append(fp);
+    lay();
+    (ws.classList.contains('crw') ? ws : $('plmid')).append(fp);
+    lay();
     fpLive = r.live;
     fpTick();
     return true;
@@ -580,12 +854,33 @@
   function fit() {
     if (!vb || !svg) return;
     const r = svg.getBoundingClientRect(),
-      w = vb[2],
-      h = vb[3],
-      s = Math.max(w / Math.max(1, r.width), h / Math.max(1, r.height));
-    vb = [(w - r.width * s) / 2, (h - r.height * s) / 2, r.width * s, r.height * s];
+      w = box0[2],
+      h = box0[3],
+      /* 2.4.1-beta.1 (UI audit): the graphic starts at the top (before: centred, a black band above it); on a portrait screen
+         (phone) it fits the height and starts at the left, drag to see the right part (before: 4 px text and 2/3 of the
+         screen black) */
+      tall = r.height > r.width,
+      s = tall ? h / Math.max(1, r.height) : Math.max(w / Math.max(1, r.width), h / Math.max(1, r.height));
+    vb = [box0[0] + (tall ? 0 : (w - r.width * s) / 2), box0[1], r.width * s, r.height * s];
     svg.setAttribute('viewBox', vb.join(' '));
+    svSz = [r.width, r.height];
   }
+  /* 3.2.0 P3: when the graphic gets narrower or wider without a new fit (the docked faceplate opens or closes, a slide-out),
+     the zoom stays: the same part of the graphic stays at the same place, more or less of it is shown */
+  let svSz = null;
+  const keepZoom = () => {
+    if (!svg || !vb || !svSz) return;
+    const r = svg.getBoundingClientRect();
+    /* 3.2.0-beta.8: a fit while the page was hidden leaves a size of 0: start again from the size now (no NaN viewBox) */
+    if (!(svSz[0] >= 1 && svSz[1] >= 1) || !vb.every(isFinite)) {
+      if (r.width >= 1 && r.height >= 1) svSz = [r.width, r.height];
+      return;
+    }
+    if (r.width < 1 || r.height < 1 || (Math.abs(r.width - svSz[0]) < 1 && Math.abs(r.height - svSz[1]) < 1)) return;
+    vb = [vb[0], vb[1], (vb[2] * r.width) / svSz[0], (vb[3] * r.height) / svSz[1]];
+    svSz = [r.width, r.height];
+    svg.setAttribute('viewBox', vb.join(' '));
+  };
   function valsOf(src) {
     return VALS().find(v => v.src === src);
   }
@@ -618,16 +913,24 @@
   }
   function select(o) {
     cur = o;
-    for (const b of D.querySelectorAll('#pllist button')) b.classList.toggle('on', b.dataset.id === o.id);
+    for (const b of D.querySelectorAll('#pllist button,#plantws .plchip')) b.classList.toggle('on', b.dataset.id === o.id);
     $('pltitle').textContent = o.title;
+    const pk = ws && ws.querySelector('.plpick');
+    if (pk) {
+      if (pk.options.length !== list().length) {
+        pk.innerHTML = '';
+        for (const x of list()) pk.append(E('option', { value: x.id, txt: x.title }));
+      }
+      pk.value = o.id;
+    }
     if (o.g) draw(o.g);
     else {
       svg.innerHTML = '';
       const g = S_('g', {});
       svg.append(g);
       vb = [0, 0, 960, 500];
-      txt(g, 480, 230, o.title, { z: 22, a: 'middle', b: 1 });
-      txt(g, 480, 262, 'Graphic not drawn yet: the snapshot values are in the list on the right.', { z: 14, a: 'middle', c: '#7f90a0' });
+      txt(g, 480, 230, o.title, { k: 2, z: 22, a: 'middle', b: 1 });
+      txt(g, 480, 262, 'Graphic not drawn yet: the snapshot values are in the list on the right.', { k: 2, z: 14, a: 'middle', c: '#7f90a0' });
       fit();
     }
     showVals(o.src);
@@ -653,7 +956,7 @@
     };
     fl.oninput = fillList;
     left.append(E('div', { cls: 'plh' }, [E('b', { txt: 'PLANT HMI · systems' })]), fl, ul);
-    svg = S_('svg', { id: 'plsvg' });
+    svg = S_('svg', { id: 'plsvg', preserveAspectRatio: 'xMinYMin meet' }); /* 3.2.0 P3: the graphic stays put at the left when the panel at the right opens or closes */
     const bar = E('div', { cls: 'plbar' }, [
       E('b', { id: 'pltitle', txt: '' }),
       E('button', {
@@ -668,27 +971,103 @@
         }
       }),
       E('button', { cls: 'b', txt: 'Fit', on: () => (cur && cur.g ? draw(cur.g) : fit()) }),
-      E('button', { cls: 'b', txt: 'Values', on: () => ws.classList.toggle(matchMedia('(max-width:1180px)').matches ? 'vals' : 'novals') })
+      E('button', { cls: 'b plvb', txt: 'Values', on: e => {
+          /* 2.4.1-beta.1: the values slide out over the graphic on every screen (app.css) */
+          e.stopPropagation();
+          ws.classList.toggle('vals');
+          ws.classList.remove('lsopen');
+        } })
     ]);
+    /* 3.2.0 P3 (Control Room, after-plant mockup): the screen picker in the bar: ◀ / the list of screens / ▶, the main
+       screens as chips, full screen. Same select() as the system list; the list stays (☰ Systems drawer). */
+    const pick = E('select', { cls: 'plpick', title: 'Plant screen', 'aria-label': 'Plant screen' }),
+      step = d => {
+        const L = list(),
+          i = L.findIndex(o => cur && o.id === cur.id);
+        select(L[(i + d + L.length) % L.length]);
+      };
+    pick.onchange = () => {
+      const o = list().find(x => x.id === pick.value);
+      if (o) select(o);
+    };
+    const chips = E('div', { cls: 'plchips' });
+    for (const [id, t] of [['UNIT', 'UNIT'], ['03', '003 Water'], ['04', '004 Extraction'], ['07', '007 Air'], ['11', '011 Coal'], ['33', '033 CCS']])
+      chips.append(
+        E('button', {
+          cls: 'plchip',
+          'data-id': id,
+          txt: t,
+          on: () => {
+            const o = list().find(x => x.id === id);
+            if (o) select(o);
+          }
+        })
+      );
+    const nav = E('div', { cls: 'plnav' }, [
+      E('button', { cls: 'b plstep', txt: '◀', title: 'Previous screen', 'aria-label': 'Previous screen', on: () => step(-1) }),
+      pick,
+      E('button', { cls: 'b plstep', txt: '▶', title: 'Next screen', 'aria-label': 'Next screen', on: () => step(1) })
+    ]);
+    const full = E('button', {
+      cls: 'b plfull',
+      txt: '⛶',
+      title: 'Full screen (Esc to leave)',
+      'aria-label': 'Full screen',
+      on: () => {
+        try {
+          if (D.fullscreenElement) D.exitFullscreen();
+          else ws.requestFullscreen();
+        } catch (e) {}
+      }
+    });
+    bar.insertBefore(nav, bar.firstChild.nextSibling);
+    nav.after(chips);
+    bar.append(full);
     mid.append(bar, svg);
+    try {
+      new ResizeObserver(keepZoom).observe(svg);
+    } catch (e) {}
     right.id = 'plvals';
     ws.append(left, mid, right);
     document.body.append(ws);
     fillList();
     /* pan (drag) and zoom (wheel / pinch) */
-    let drag = null;
+    /* 3.2.0-beta.1 (audit C1): the pointer is captured only once it has moved (a drag). Capturing it on pointerdown sent the
+       click to the svg itself, so a tap on a controller or valve never opened its faceplate (mouse and touch) */
+    let drag = null,
+      dragged = false;
     svg.addEventListener('pointerdown', e => {
-      drag = { x: e.clientX, y: e.clientY, v: vb.slice() };
-      svg.setPointerCapture(e.pointerId);
+      if (!vb) return;
+      drag = { x: e.clientX, y: e.clientY, v: vb.slice(), id: e.pointerId, moved: false };
+      dragged = false;
     });
     svg.addEventListener('pointermove', e => {
       if (!drag || !vb) return;
+      if (!drag.moved) {
+        if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 6) return;
+        drag.moved = dragged = true;
+        try {
+          svg.setPointerCapture(drag.id);
+        } catch (x) {}
+      }
       const r = svg.getBoundingClientRect(),
         s = vb[2] / r.width;
       vb = [drag.v[0] - (e.clientX - drag.x) * s, drag.v[1] - (e.clientY - drag.y) * s, vb[2], vb[3]];
       svg.setAttribute('viewBox', vb.join(' '));
     });
     svg.addEventListener('pointerup', () => (drag = null));
+    svg.addEventListener('pointercancel', () => (drag = null));
+    /* the click that ends a drag does not open a faceplate */
+    svg.addEventListener(
+      'click',
+      e => {
+        if (dragged) {
+          dragged = false;
+          e.stopPropagation();
+        }
+      },
+      true
+    );
     svg.addEventListener(
       'wheel',
       e => {
@@ -730,6 +1109,7 @@
         window.lsLibrary && window.lsLibrary(false);
       } catch (e) {}
       place();
+      lay();
       setTimeout(() => (cur && cur.g ? draw(cur.g) : fit()), 30);
       if (!tmr) tmr = setInterval(liveTick, 1000);
     }
@@ -749,13 +1129,17 @@
       ws.style.top = ws.style.bottom = '';
       if (!tmr) tmr = setInterval(liveTick, 1000);
     }
-    setTimeout(() => (cur && cur.g ? draw(cur.g) : fit()), 30);
+    setTimeout(() => {
+      lay();
+      cur && cur.g ? draw(cur.g) : fit();
+    }, 30);
   };
   window.lsPlantFit = () => (cur && cur.g ? draw(cur.g) : fit());
   window.lsPlantLive = () => LV.map(o => ({ tag: o.it.tag, t: o.it.t, snap: o.it.t === 'ctl' ? o.it.pv + '/' + o.it.sv + '/' + o.it.mv + ' ' + o.it.m : o.it.v, how: o.r ? o.r.how || o.r.k : null, sh: o.r ? o.r.sh : null, live: o.r && o.r.k === 'mv' ? shOf(o.r.sh).S.rt.v[o.r.c.out] : o.r && o.r.cc ? (() => { const x = netVal(o.r), mv = shOf(o.r.cc.sh).S.rt.v[o.r.cc.c.out]; return Math.abs(x - (100 - mv)) < 0.5 && Math.abs(x - mv) > 1 ? 100 - x : x; })() : o.r && (o.r.k === 'net' || o.r.k === 'dig') ? netVal(o.r) : o.r && o.r.k === 'ctl' ? (() => { const S = shOf(o.r.sh).S, c = o.r.c; return [S.rt.v[c.q.pv], S.rt.v[c.q.sv], S.rt.v[c.out]].map(x => +(+x).toFixed(1)).join('/'); })() : o.r && o.r.k === 'man' ? +(+shOf(o.r.sh).S.rt.v[o.r.b.o[0]]).toFixed(1) : null })); /* for the tests */
   addEventListener('resize', () => {
     if (ws && ws.style.display === 'grid') {
       place();
+      lay();
       fit();
     }
   });
