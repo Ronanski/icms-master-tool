@@ -839,8 +839,18 @@
   D.rowInfo = (s, row) => ({ tag: tagOf(s, row) || '', svc: svcOf(s, row) || '' });
   D.rowVal = (s, row) => {
     try {
-      const v = simSheet(s).v;
-      return rowNets(s, row, 'L').some(n => v[n]) ? 1 : 0;
+      const v = simSheet(s).v,
+        an = s.nl.an || [];
+      /* 3.2.0-beta.28 (human run of the Training: BFWP-A START stayed locked): an ANALOG input row (DITL-23A row 12 PT-FW1115-A BFWP
+         A SUCTION PRESSURE > 1.5 kg/cm2) is met when the comparator of the drawing that reads it says 1; its own net is the analog value
+         (0 / 1 meaningless). Before, the interlock read the analog net: always 0, the START of the Training was locked */
+      return rowNets(s, row, 'L').some(n => {
+        if (!an.some(a => a.net === n)) return v[n];
+        const g = s.nl.gates.filter(x => x.t === 'CMP' && x.ins[0] === n);
+        return g.length ? g.some(x => x.out.some(o => v[o])) : v[n];
+      })
+        ? 1
+        : 0;
     } catch (e) {
       return null;
     }
