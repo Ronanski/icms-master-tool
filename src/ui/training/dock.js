@@ -91,19 +91,19 @@
   ];
   /* ---------- the values to watch, by stage of the start-up (targets from PR-OPE-5002 and the boiler manual, as in guide.js) ---------- */
   let rate = { t: null, x: null, r: 0 };
-  const lvl = ['Drum level', () => H().lvl(), 'mm', sgn, 'normal 0 · HH +254'];
+  const lvl = ['Drum level', () => H().lvl(), 'mm', sgn, 'normal 0 · HH +254', 'LICBR1001'];
   const WATCH = [
     [['Seawater pumps running', () => ['M.3353', 'M.3354', 'M.3355'].filter(bit).length, '', f0, '2 bago ang vacuum']],
-    [lvl, ['FW flow', () => H().FW(), 'T/H', f1, ''], ['Deaerator level', () => pv('LCV-CD1104'), 'mm', sgn, 'SV 0']],
-    [['Furnace pressure', () => H().FP(), 'mmH₂O', f0, 'target −15'], ['Total air', () => H().PA() + H().SA(), 'T/H', f0, 'purge > 115'], ['IDF coupling MV', () => mv('PICFG108'), '%', f0, '']],
-    [['Furnace pressure', () => H().FP(), 'mmH₂O', f0, 'target −15'], ['Total air', () => H().PA() + H().SA(), 'T/H', f0, 'purge > 115']],
+    [['Hotwell level', () => pv('LICCD1110A'), 'mm', sgn, '', 'LICCD1110A'], ['Condensate flow', () => pv('FICCD1120'), 'T/H', f1, '', 'FICCD1120'], ['Deaerator level', () => pv('LCV-CD1104'), 'mm', sgn, 'SV 0', 'LICCD1104'], lvl, ['FW flow', () => H().FW(), 'T/H', f1, '', 'FICFW1007']],
+    [['Furnace pressure', () => H().FP(), 'mmH₂O', f0, 'target −15', 'PICFG108'], ['Total air', () => H().PA() + H().SA(), 'T/H', f0, 'purge > 115'], ['IDF coupling MV', () => mv('PICFG108'), '%', f0, '', 'PICFG108']],
+    [['Furnace pressure', () => H().FP(), 'mmH₂O', f0, 'target −15', 'PICFG108'], ['Total air', () => H().PA() + H().SA(), 'T/H', f0, 'purge > 115']],
     [['Water temp', () => U().Tw, '°C', f0, 'kumukulo sa 100'], ['Drum pressure', () => U().Pd, 'kg/cm²', f1, ''], ['Bilis ng pag-init', () => rate.r, '°C/h', f0, 'Fig 1 ≤ 110'], ['Bed temp', () => U().Tb, '°C', f0, '']],
     [['Condenser vacuum', () => 100 * (+U().vac || 0), '%', f0, '≥ 90'], ['Drum pressure', () => U().Pd, 'kg/cm²', f1, '']],
-    [['Bed temp', () => U().Tb, '°C', f0, 'coal ≥ 400 · retract > 700'], ['Coal flow', () => H().coal(), 'T/H', f1, ''], ['O₂', () => H().O2(), '%', f1, '3.5 ~ 8'], ['Bilis ng pag-init', () => rate.r, '°C/h', f0, 'Fig 1 ≤ 110']],
+    [['Bed temp', () => U().Tb, '°C', f0, 'coal ≥ 400 · retract > 700'], ['Coal flow', () => H().coal(), 'T/H', f1, '', 'FIC-CM'], ['O₂', () => H().O2(), '%', f1, '3.5 ~ 8', 'AICFG112'], ['Bilis ng pag-init', () => rate.r, '°C/h', f0, 'Fig 1 ≤ 110']],
     [['Main steam press', () => H().MSP(), 'kg/cm²', f1, 'target 123'], ['Steam flow', () => H().MSF(), 'T/H', f0, '40 ~ 55'], ['RH pressure', () => H().RHP(), 'kg/cm²', f1, '≤ 9'], lvl],
     [['Turbine', () => (U().tb ? +U().tb.rpm : NaN), 'rpm', f0, '3000 sa sync'], ['Load', () => H().MW(), 'MW', f1, '45 pagkatapos ng sync'], ['Main steam temp', () => H().MST(), '°C', f0, '≥ 345'], ['Main steam press', () => H().MSP(), 'kg/cm²', f1, '123']],
-    [['Load', () => H().MW(), 'MW', f1, 'target 150'], ['Main steam press', () => H().MSP(), 'kg/cm²', f1, '123 ± 10'], ['Coal flow', () => H().coal(), 'T/H', f1, ''], ['O₂', () => H().O2(), '%', f1, ''], lvl],
-    [['Load', () => H().MW(), 'MW', f1, ''], ['Main steam press', () => H().MSP(), 'kg/cm²', f1, '123 ± 10'], lvl]
+    [['Load', () => H().MW(), 'MW', f1, 'target 150'], ['Main steam press', () => H().MSP(), 'kg/cm²', f1, '123 ± 10', 'PIC-COBM'], ['Coal flow', () => H().coal(), 'T/H', f1, '', 'FIC-CM'], ['O₂', () => H().O2(), '%', f1, '', 'AICFG112'], lvl],
+    [['Load', () => H().MW(), 'MW', f1, ''], ['Main steam press', () => H().MSP(), 'kg/cm²', f1, '123 ± 10', 'PIC-COBM'], lvl]
   ];
   /* ---------- the interlock of a motor: its DITL drawing (machine A of a shared drawing) ---------- */
   /* the DITL drawing (or machine B / C of a shared drawing) whose output is the running memory of the ABC sheets: the one world link
@@ -822,22 +822,45 @@
         els.fps.append(E('div', { cls: 'gd-fp' }, [E('div', { cls: 'gd-fph' }, [E('b', { txt: t }), E('span', { txt: r.sheet })]), box]));
       }
     }
-    if (els.fps && els.fps.children.length) col2.append(els.fps);
     /* the values to watch */
     /* 3.2.0-beta.26 (user 2026-10-25: "hindi recognized kung ano ang dapat i-monitor"): first the PV of what this step controls (the
        tags of its faceplates) and the motors it starts, then the values of the stage (was: the stage only: the condensate step showed the
        drum level and the FW flow) */
-    const own = (s.fps || []).slice(0, 3).map(t0 => {
+    /* 3.2.0-beta.33 (CHECKLIST 0.4): the row says WHAT it is (the description of the controller), its tag and its unit (from the range
+       of its faceplate, "[0.0 ~ 400.0 T/H]"); a hand station shows its output (MV %); a value the stage list already shows (furnace
+       pressure = PICFG108, drum level, FW flow, coal, O2 ...) is not repeated (was "LICCD1110A PV" with no name and no unit) */
+    const stage = WATCH[s.st] || [],
+      have = new Set(stage.map(x => x[5]).filter(Boolean));
+    /* "DRUM LEVEL CONTROL (FEED WATER FLOW CONTROL)" -> "Feed water flow"; "COND. DUMPING ... / DEAERATOR LEVEL CONTROL" -> "Deaerator level" */
+    const nice = d0 => {
+      let d = String(d0 || '').replace(/^#\d\s*/, '');
+      const m = /\(([^)]*?)\s*CONTROL(?:LER)?\)/i.exec(d);
+      if (m) d = m[1];
+      else if (d.includes('/')) d = d.split('/').pop();
+      d = d.replace(/\s*\bCONTROL(?:LER)?\b.*$/i, '').replace(/\s+/g, ' ').trim().toLowerCase();
+      if (d.length > 36) d = d.slice(0, 36).replace(/\s+\S*$/, '') + '…';
+      return d.replace(/^./, c => c.toUpperCase());
+    };
+    const own = [];
+    for (const t0 of (s.fps || []).slice(0, 3)) {
       const t = call(() => LV().ctlTag(t0), null) || t0;
-      return [t + ' PV', () => call(() => LV().pvOf(LV().fp(t)), NaN), '', f1, call(() => 'SV ' + f1(LV().svOf(LV().fp(t))), '')];
-    });
+      if (have.has(t)) continue;
+      const f = call(() => LV().fp(t), null),
+        fpBox = els.fps && [...els.fps.children].find(x => (x.querySelector('.gd-fph b') || {}).textContent === t),
+        u = ((/\[\s*-?[\d.]+\s*~\s*-?[\d.]+\s*([^\]\d][^\]]*)\]/.exec((fpBox && fpBox.textContent) || '') || [])[1] || '').trim();
+      if (f && f.kind === 'man') own.push([t + ' output (MV)', () => call(() => LV().mvOf(LV().fp(t)), NaN), '%', f1, '']);
+      else own.push([(nice(f && f.c && f.c.desc) || t) + ' · ' + t, () => call(() => LV().pvOf(LV().fp(t)), NaN), u, f1, call(() => 'SV ' + f1(LV().svOf(LV().fp(t))), '')]);
+    }
     const ms = (s.a || []).filter(a => a.stop && a.on);
     if (ms.length) own.push(['Running', () => ms.filter(a => call(() => a.on(), false)).length + ' / ' + ms.length, '', x => x, ms.map(a => a.l.replace(/^START /, '')).join(', ')]);
-    els.watch = own.concat(WATCH[s.st] || []).map(([k, f, u, fm, hint]) => {
+    els.watch = own.concat(stage).map(([k, f, u, fm, hint]) => {
       const v = E('b', { txt: '—' });
       return { r: E('div', { cls: 'gd-wr' }, [E('span', { txt: k }), E('span', {}, [v, E('em', { txt: u }), hint ? E('small', { txt: hint }) : null])]), v, f, fm };
     });
     if (els.watch.length) col2.append(E('div', { cls: 'gd-watch' }, [E('div', { cls: 'gd-h', txt: 'BANTAYAN SA HAKBANG NA ITO' })].concat(els.watch.map(x => x.r))));
+    /* 3.2.0-beta.33: the faceplates under the values to watch (the values are what the operator reads all the time; two faceplates pushed them
+       under the screen) */
+    if (els.fps && els.fps.children.length) col2.append(els.fps);
     /* the coach */
     const co = Object.keys(g.CO);
     if (co.length)
