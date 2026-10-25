@@ -709,3 +709,15 @@ Engine at logic: walang binago.
 **As Left:** DITL-29A B: header, drawing ("SEAWATER PUMP B START P.B.", M.1160) at panel tama; pagkatapos ma-START ang SWP-A sa Training, bumubukas ang page ng SWP-B. Ang pamagat sa ribbon (itaas) ay sa makina na rin (hal. "SEAWATER PUMP B"). Tests: world, ditl_sim, ditl_selected, training_dock, ditl_pagelink pasado. Takbo ng tao (`tools/training/human_run.js`, mouse click lang, ×300): Cold → 150 MW → Practice (hakbang 65), walang trip, 0 page error; ang hinto ng beta.34 sa hakbang 33 (burner C / D) ay hindi naulit.
 
 **Status:** Beta.
+
+## 3.2.0-beta.36 (2026-10-25) — CHECKLIST 0.3: ang MV ay umaabot na sa valve sa likod ng MCC PANEL
+
+**Problem:** (user) "may block na MCC na pinutol ang MV at di na nakarating sa VALVE".
+
+**As Found:** ABC-054 (RH blow-off PICHR1391) at ABC-055: PO → MCC PANEL → M (motor operator) → valve. Hinahati ng bilog na "M" ang wire, kaya walang pinanggagalingan ang valve: laging 0, madilim ang wire mula M hanggang valve. Sa 81 valve / actuator ng ABC, ito lang ang dalawang walang driver. Ang INVERTER (coal feeder, screw cooler) ay dulo ng drawing (walang valve sa likod) at ang plant model ay kumukuha ng MV sa station, kaya hindi putol ang physics.
+
+**Work Done:** `src/analog/engine/compile-step.js`: ang valve na nasa ilalim ng MCC PANEL / INVERTER box at walang driver ay sumusunod sa output ng box (LINK; ang galaw ay sa stroke ng valve). Bagong test `tests/regress/mcc_valve.js`.
+
+**As Left:** lahat ng valve / actuator ng ABC ay may driver. ABC-054 RUN: PICHR1391 MANUAL 40 % → MCC 40 → valve 40 %; MV 0 → sumasara ang valve (20 % pagkalipas ng 4 s). Walang binago sa plant model. Tests: mcc_valve, `npm test`, world, plant_live, ditl150, loaddown pasado.
+
+**Status:** Beta. Susunod sa 0.3: DITL START command → MCC → running feedback.
