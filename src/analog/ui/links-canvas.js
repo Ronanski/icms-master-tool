@@ -59,6 +59,38 @@ function centerOn(x, y) {
   v[1] = -y - v[3] / 2;
   svg.setAttribute('viewBox', v.join(' '));
 }
+/* 3.2.0-beta.26 (user 2026-10-25, Training page link: "hindi ka dinadala kung saan ka talaga magko-control"): open the ABC sheet of a
+   tag AND show its block: zoomed to a readable width, centred, selected (Inspector) and flashed. Returns the sheet name or null */
+AN.showTag = (tag, sheetName) => {
+  const nm = sheetName || (AN.fpFind && AN.fpFind(tag));
+  const i = nm ? AN.sheets.findIndex(z => z.name === nm) : -1;
+  if (i < 0) return null;
+  if (AN.cat !== 'an') setCat('an');
+  if (i !== AN.i) go(i);
+  const sh = cs(),
+    S = sh && sh.S;
+  if (!S) return nm;
+  const K = { PID: 3, PIDV: 3, MAN: 3, AMT: 1 },
+    hit = S.blk
+      .filter(b => b.tag === tag || (b.txt || []).some(t => String(t).trim() === tag))
+      .sort((a, b) => (K[b.k] || 0) - (K[a.k] || 0))[0];
+  if (!hit || hit.cx == null) return nm;
+  const v = AN.av[sh.name],
+    r = $('svg').getBoundingClientRect();
+  if (v && r.width) {
+    v[2] = 240;
+    v[3] = (240 * r.height) / r.width;
+  }
+  centerOn(hit.cx, hit.cy);
+  AN.sel = { blk: hit };
+  try {
+    selBox();
+    paint();
+    AN.panelUpd && AN.panelUpd(true);
+  } catch (e) {}
+  flash(hit.cx, hit.cy, 6);
+  return nm;
+};
 function jumpTo(sh2, c2) {
   const cur_ = cs(),
     pv = (AN.av[cur_.name] || []).slice();
