@@ -723,3 +723,15 @@ Engine at logic: walang binago.
 **DITL (bahagi rin ng 0.3):** sa DITL, ang MCC ay nakaguhit sa mismong sheet (hal. DITL-30: MOR-P1503A START → seal-in sa MCC box → MIR-P1503A RUNNING, out row 58 → input row 1, link "30-58"); ang ibang sheet ay may motor / MOV / SV model (`src/digital/parts/03-models.js`). Sinubok: DITL-30 na naka-ON ang SWP A at REMOTE, pindot START → RUNNING 1, STOPPED 0 (`tests/regress/mcc_valve.js`). Walang binago sa DITL.
 
 **Status:** Beta. CHECKLIST 0.3 TAPOS.
+
+## CHECKLIST 0.5 (sinimulan 2026-10-25, walang binago sa code) — mga nakita
+
+**Problem:** audit ng engine at plant model para sa start-up (bukas mula sa takbo ng tao: steam 160 T/H sa bypass, O₂ 9.3 % sa 80 MW, MST 553 °C sa 150 MW, blow-off SV 130).
+
+**As Found (trace ng beta.36 Cold → Practice; PR-OPE-5002; FHI SECT_7 Tab_4 Fig. 2 / 6 / 7):**
+- Steam 155 ~ 189 T/H sa bypass stage: ang Training ay nagko-coal (hakbang 40 ~ 44) at nagtataas sa 123 kg/cm2 BAGO ang roll. Ang procedure at Fig. 2: roll sa MS 61.2 kg/cm2 / 400 °C / > 40 T/H, coal pagkatapos ng sync at initial load. Pagkakasunod ng Training ang mali, hindi ang engine.
+- O₂ 9.3 % sa 80 MW: tama ayon sa drawing (minimum air LN5 446 T/H) at sa start-up table ng procedure (TAF 441 ~ 474 T/H).
+- MST 565 °C sa 120 MW habang CCS load up (SV 541), 544 sa 150 MW; ang `unit_load.js` (3 MW/min) ay 541 lang. Susuriin ang spray loops habang load up.
+- Blow-off SV: 128 sa Training, tugma sa 4.PNG (SV 128.0).
+
+**Status:** bukas; itutuloy sa susunod na session (HANDOFF "SUSUNOD" #4). Ang pag-ayos ng pagkakasunod ng Training ay itatanong muna sa user.
