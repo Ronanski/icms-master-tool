@@ -631,3 +631,17 @@ Engine at logic: walang binago.
 **As Left (pindot gaya ng tao: Field operator → ignition → BURNER A ON isang beses):** burner A in service (DITL-12 out 19 = 1, M.3412 = 1), oil 0.87 T/H, tumuloy ang gabay. PASADO: training_dock.
 
 **Status:** Beta. Itutuloy ang buong takbo ng "tao" sa beta.30.
+
+## 3.2.0-beta.31 — Coal sa coal stage: bumababa na kapag mainit na ang bed
+
+**Problem (takbo ng "tao" sa Training, beta.30):** sa hakbang 44 (patayin ang mga burner), drum pressure 141.2 kg/cm2 sa 0 MW, steam flow 219 T/H, coal 36 T/H (FIC-CF 30 %), bago pa ang bypass servicing.
+
+**As Found:** ang `o2` coach ay nagtataas ng coal hanggang 30 % habang bed < 730 °C at tumatakbo ang 3 feeder; walang nagbabawas mula hakbang 40 hanggang 44 (ang bypass coach ay mula hakbang 45 pa).
+
+**Work Done:** `src/ui/training/guide.js` (`o2` coach): coal −1 % bawat minuto (hanggang 15 %) kapag bed > 760 °C at steam > 65 T/H (PR-OPE-5002: 40 ~ 55 T/H sa yugtong ito).
+
+**As Left:** takbo hanggang hakbang 47: pinakamataas na drum pressure 124.0 kg/cm2 (dati 141.2). PASADO: training_start.
+
+**Bukas (para sa audit ng plant model, CHECKLIST 0.5):** sa bypass stage ay 157 ~ 160 T/H ang steam sa 123 kg/cm2 bago ang turbine (procedure: 40 ~ 55 T/H), dahil kailangan ng coal na mapanatili ang bed > 700 °C habang PA 280 T/H. Susuriin sa model (bed heat balance), hindi sa coach.
+
+**Status:** Beta.
