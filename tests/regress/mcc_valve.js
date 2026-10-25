@@ -13,5 +13,12 @@ const r=await page.evaluate(async()=>{const sleep=ms=>new Promise(r=>setTimeout(
  AN.run=true;set(40);await sleep(4000);const a={mcc:S.rt.v[f.o[0]],vin:S.rt.v[v.i[0]],pos:S.rt.st[v.id].pos};set(0);await sleep(4000);const b={mcc:S.rt.v[f.o[0]],vin:S.rt.v[v.i[0]],pos:S.rt.st[v.id].pos};AN.run=false;return {a,b}});
 console.log('INFO ABC-054 MV 40: MCC '+r.a.mcc.toFixed(1)+' valve in '+r.a.vin.toFixed(1)+' pos '+(r.a.pos||0).toFixed(1)+' | MV 0: MCC '+r.b.mcc.toFixed(1)+' pos '+(r.b.pos||0).toFixed(1));
 ck(r.a.vin===r.a.mcc&&r.a.mcc>1&&r.a.pos>r.b.pos,'ABC-054: the valve follows the MCC PANEL (MV -> PO -> MCC -> valve)');
+/* DITL: the MCC is drawn on the sheet (DITL-30: MOR-P1503A START -> MCC seal-in -> MIR-P1503A RUNNING, out row 58 -> input row 1).
+   SWP A running (row 17) and REMOTE (row 22, LOP) on, START P.B. (row 2) pressed: the pump runs and stays running */
+const d=await page.evaluate(async()=>{const sleep=ms=>new Promise(r=>setTimeout(r,ms));const s=S.sheets.find(x=>/\)DITL-30$/.test(x.name));
+ AN.run=true;s.sig['16:S']=true;s.sig['21:S']=true;await sleep(1500);const ok=LS_DOCK.dpress('DITL-30',1);await sleep(6000);
+ const o=DUI.outs(s),val=re=>{const x=o.find(q=>re.test(q.name));return x?DUI.outVal(s,x.row):null};
+ const r={ok,run:DUI.rowVal(s,0),runOut:val(/PUMP A R/),stopOut:val(/PUMP A( STOPPED)?$|STOPPED/)};AN.run=false;return r});
+ck(d.ok&&d.run===1&&d.runOut===1&&d.stopOut===0,'DITL-30: START -> MCC -> RUNNING feedback (input row 1 = '+d.run+', RUNNING out '+d.runOut+', STOPPED out '+d.stopOut+')');
 ck(errs.length===0,'no page errors'+(errs.length?': '+errs.slice(0,3).join(' | '):''));
 await browser.close();console.log(fail?'FAILED '+fail:'ALL PASS');process.exit(fail?1:0)})();
