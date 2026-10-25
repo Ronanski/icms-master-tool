@@ -587,3 +587,15 @@ Engine at logic: walang binago.
 **As Left:** `AN.showTag` sinubok sa 7 tag (FICCD1120 ABC-032, LICCD1110A, PICFG108, HIC-BM MAN, FICDO1043A, PICMS1006, LICBR1001B): bawat isa nasa tamang sheet, naka-select ang block (PID / MAN), naka-zoom. PASADO: training_dock, training_start, home_training; `npm run check` SAME.
 
 **Status:** Beta. Bukas: (b) hanggang maging tunay na sheet ang A/B/C/D (CHECKLIST 0.2). Ang takbo ng "tao" (mouse click lang sa Training) ay tumatakbo pa; ang resulta ay isusulat dito.
+
+## 3.2.0-beta.27 — Interlock box: ang susunod na motor lang ang buo
+
+**Problem (takbo ng "tao" sa Training, mouse click lang):** sa hakbang "Simulan ang unang seawater pump", tatlong buong interlock box (SWP-A, B, C) ang lumalabas; humahaba ang card at ang huling "Field operator" button ay nasa ilalim ng screen.
+
+**Work Done:** `src/ui/training/dock.js`: ang buong interlock (mga row, "Field operator", "Simulan pa rin") ay para lang sa unang motor ng hakbang na hindi pa tumatakbo; ang tumatakbo na ay isang linya "✓ TUMATAKBO NA", ang iba ay isang linya "SUSUNOD".
+
+**As Left:** hakbang 2: SWP-A buo (3 row), SWP-B at C isang linya ("SUSUNOD"). PASADO: training_dock, training_start.
+
+**Nakita rin (para sa CHECKLIST 0.2):** ang interlock ng SWP-B (`DITL-29A #B`) ay nagsasabing "SEAWATER PUMP **A** REMOTE MODE SELECTED" at iisang address sa A: ang pag-ayos ng REMOTE ng A ay nagpa-✓ din sa B. Ang B / C ay hindi pa tunay na hiwalay na sheet.
+
+**Status:** Beta.
