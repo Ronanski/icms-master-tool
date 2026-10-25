@@ -678,4 +678,6 @@ Engine at logic: walang binago.
 
 **As Left:** audit ulit: lahat ng Bantayan may pangalan / tag / unit (hal. "Primary air flow · FICFA1071 [T/H]", "Feed water flow · FICFW1007 [T/H]", "Hotwell level [mm]"). PASADO: training_dock, training_start, home_training.
 
-**Status:** Beta. Ang takbo ng "tao" (`human_run.js`) sa beta.33 ay susunod (isusulat dito).
+**Patunay (takbo ng "tao", `human_run.js`, mouse click lang, beta.33):** Cold → 150 MW → Practice (hakbang 65), pasado ang hold sa 150 MW, walang trip, walang page error.
+
+**Status:** Beta.
