@@ -652,8 +652,8 @@ window.LS_GUIDE = (function () {
         retract: 1
       },
       /* ---- 7 bypass ---- */
-      { st: 7, sec: 30, t: 'Bypass servicing: MSP ≥ 48 kg/cm² at steam flow ≥ 40 T/H', d: 'Ang coach ang nagdadagdag ng coal at nagtataas ng SV ng HP bypass ng 1 kg/cm² bawat minuto.', c: b.ALL(b.VAL('MSP', 48, null), b.VAL('MSF', 40, null)), wait: 1, coachOff: ['oildown'], coach: ['byp'] },
-      { st: 7, sec: 30, t: 'Main steam pressure 123 kg/cm²', d: 'Hintayin ang 123 kg/cm² (SV ng HP bypass) at ang reheat ≤ 9 kg/cm².', c: b.HOLD(120, b.ALL(b.VAL('MSP', 121, null))), wait: 1 },
+      { st: 7, sec: 30, t: 'Bypass servicing: MSP ≥ 48 kg/cm² at steam flow ≥ 40 T/H', d: 'Ang coach ang nagdadagdag ng coal at nagtataas ng SV ng HP bypass ng 1 kg/cm² bawat minuto.', c: b.ALL(b.VAL('MSP', 48, null), b.VAL('MSF', 40, null)), fps: ['PICMS1006'], wait: 1, coachOff: ['oildown'], coach: ['byp'] },
+      { st: 7, sec: 30, t: 'Main steam pressure 123 kg/cm²', d: 'Hintayin ang 123 kg/cm² (SV ng HP bypass) at ang reheat ≤ 9 kg/cm².', c: b.HOLD(120, b.ALL(b.VAL('MSP', 121, null))), fps: ['PICMS1006', 'PICHR1003'], wait: 1 },
       /* ---- 8 turbine ---- */
       FIELD(8, 'Turbine preparation, ATS, chest warming, rub check (TCS / field)', [36, 37, 38, 39], { coachOff: ['byp'], coach: ['load'] }),
       { st: 8, sec: 41, t: 'ROLL ng turbine hanggang 3600 rpm (TCS)', d: 'Sa TCS panel: ROLL. 120 rpm bawat minuto, mga 30 minuto.', c: b.HOLD(10, b.VAL('rpm', 3550, null)), a: [btn('ROLL (TCS)', () => A.tcs('roll'), () => U().tb && U().tb.st !== 'off')] },

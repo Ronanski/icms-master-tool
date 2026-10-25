@@ -101,9 +101,9 @@
     [['Condenser vacuum', () => 100 * (+U().vac || 0), '%', f0, '≥ 90'], ['Drum pressure', () => U().Pd, 'kg/cm²', f1, '']],
     [['Bed temp', () => U().Tb, '°C', f0, 'coal ≥ 400 · retract > 700'], ['Coal flow', () => H().coal(), 'T/H', f1, ''], ['O₂', () => H().O2(), '%', f1, '3.5 ~ 8'], ['Bilis ng pag-init', () => rate.r, '°C/h', f0, 'Fig 1 ≤ 110']],
     [['Main steam press', () => H().MSP(), 'kg/cm²', f1, 'target 123'], ['Steam flow', () => H().MSF(), 'T/H', f0, '40 ~ 55'], ['RH pressure', () => H().RHP(), 'kg/cm²', f1, '≤ 9'], lvl],
-    [['Turbine', () => (U().tb ? +U().tb.rpm : NaN), 'rpm', f0, '3000 sa sync'], ['Load', () => H().MW(), 'MW', f1, '45 pagkatapos ng sync'], ['Main steam temp', () => H().MST(), '°C', f0, '≥ 345'], ['Main steam press', () => H().MSP(), 'kg/cm²', f1, '123']],
-    [['Load', () => H().MW(), 'MW', f1, 'target 150'], ['Main steam press', () => H().MSP(), 'kg/cm²', f1, '123 ± 10'], ['Coal flow', () => H().coal(), 'T/H', f1, ''], ['O₂', () => H().O2(), '%', f1, ''], lvl],
-    [['Load', () => H().MW(), 'MW', f1, ''], ['Main steam press', () => H().MSP(), 'kg/cm²', f1, '123 ± 10'], lvl]
+    [['Turbine', () => (U().tb ? +U().tb.rpm : NaN), 'rpm', f0, '3000 sa sync'], ['Load', () => H().MW(), 'MW', f1, '45 pagkatapos ng sync'], ['Main steam temp', () => H().MST(), '°C', f0, '≥ 345'], ['Main steam press', () => H().MSP(), 'kg/cm²', f1, '123'], lvl],
+    [['Load', () => H().MW(), 'MW', f1, 'target 150'], ['Main steam press', () => H().MSP(), 'kg/cm²', f1, '123 ± 10'], ['Main steam temp', () => H().MST(), '°C', f0, '≤ 545'], ['Coal flow', () => H().coal(), 'T/H', f1, ''], ['O₂', () => H().O2(), '%', f1, '3 ~ 6'], lvl],
+    [['Load', () => H().MW(), 'MW', f1, ''], ['Main steam press', () => H().MSP(), 'kg/cm²', f1, '123 ± 10'], ['Coal flow', () => H().coal(), 'T/H', f1, '120 MW ≈ 72'], lvl]
   ];
   /* ---------- the interlock of a motor: its DITL drawing (machine A of a shared drawing) ---------- */
   /* the DITL drawing (or machine B / C of a shared drawing) whose output is the running memory of the ABC sheets: the one world link
@@ -836,15 +836,22 @@
     /* 3.2.0-beta.26 (user 2026-10-25: "hindi recognized kung ano ang dapat i-monitor"): first the PV of what this step controls (the
        tags of its faceplates) and the motors it starts, then the values of the stage (was: the stage only: the condensate step showed the
        drum level and the FW flow) */
+    /* 3.2.0-beta.35 (CHECKLIST 0.4): a hand station (HICHR1002A / B, HIC-BM, EIC-TM, HIC-ULD) has no PV: its MV is watched (was
+       "PV —"); the SV / MV beside a controller PV follow the plant (were written once, when the card opened) */
     const own = (s.fps || []).slice(0, 3).map(t0 => {
-      const t = call(() => LV().ctlTag(t0), null) || t0;
-      return [t + ' PV', () => call(() => LV().pvOf(LV().fp(t)), NaN), '', f1, call(() => 'SV ' + f1(LV().svOf(LV().fp(t))), '')];
+      const t = call(() => LV().ctlTag(t0), null) || t0,
+        f = () => call(() => LV().fp(t), null),
+        man = (f() || {}).kind === 'man';
+      return man
+        ? [t + ' MV', () => call(() => LV().mvOf(f()), NaN), '%', f1, () => call(() => LV().modeOf(f()), '')]
+        : [t + ' PV', () => call(() => LV().pvOf(f()), NaN), '', f1, () => call(() => 'SV ' + f1(LV().svOf(f())) + ' · MV ' + f1(LV().mvOf(f())) + ' %', '')];
     });
     const ms = (s.a || []).filter(a => a.stop && a.on);
     if (ms.length) own.push(['Running', () => ms.filter(a => call(() => a.on(), false)).length + ' / ' + ms.length, '', x => x, ms.map(a => a.l.replace(/^START /, '')).join(', ')]);
     els.watch = own.concat(WATCH[s.st] || []).map(([k, f, u, fm, hint]) => {
-      const v = E('b', { txt: '—' });
-      return { r: E('div', { cls: 'gd-wr' }, [E('span', { txt: k }), E('span', {}, [v, E('em', { txt: u }), hint ? E('small', { txt: hint }) : null])]), v, f, fm };
+      const v = E('b', { txt: '—' }),
+        hn = hint ? E('small', { txt: typeof hint === 'function' ? '' : hint }) : null;
+      return { r: E('div', { cls: 'gd-wr' }, [E('span', { txt: k }), E('span', {}, [v, E('em', { txt: u }), hn])]), v, f, fm, hn, hf: typeof hint === 'function' ? hint : null };
     });
     if (els.watch.length) col2.append(E('div', { cls: 'gd-watch' }, [E('div', { cls: 'gd-h', txt: 'BANTAYAN SA HAKBANG NA ITO' })].concat(els.watch.map(x => x.r))));
     /* the coach */
@@ -895,7 +902,10 @@
       rate.x = x;
     }
     if (!s) return;
-    (els.watch || []).forEach(w => (w.v.textContent = w.fm(call(w.f, NaN))));
+    (els.watch || []).forEach(w => {
+      w.v.textContent = w.fm(call(w.f, NaN));
+      if (w.hf) w.hn.textContent = call(w.hf, '');
+    });
     /* the condition of the step */
     if (els.cond && s.c) {
       let ok = false,

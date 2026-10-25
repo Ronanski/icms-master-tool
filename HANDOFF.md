@@ -2,9 +2,9 @@
 
 > Single current handoff. Palitan ang lumang status kapag nagbago ang trabaho; huwag mag-append ng chat transcript.
 
-## SIMULAN DITO (2026-10-25 ~3:30 PM PHT, pagkatapos ng 3.2.0-beta.34)
+## SIMULAN DITO (2026-10-25 ~3:25 PM PHT, lipat ng session ayon sa user, pagkatapos ng 3.2.0-beta.35)
 
-**Kasalukuyang Beta:** `3.2.0-beta.34`, branch `claude/project-thread-1mcs5i` (PR #41: beta.33 + beta.34, nakapatong sa `claude/project-thread-vhcfv9` / PR #39 = beta.32). Stable pa rin ang v2.4.0 sa `main`. Walang merge sa main at walang release nang walang GO STABLE.
+**Kasalukuyang Beta:** `3.2.0-beta.35`, branch `claude/project-thread-1mcs5i` (PR #41: beta.33 + 34 + 35, nakapatong sa `claude/project-thread-vhcfv9` / PR #39 = beta.32). Stable pa rin ang v2.4.0 sa `main`. Walang merge sa main at walang release nang walang GO STABLE.
 
 **Utos ng user na susundin (2026-10-24 / 25, galit kapag nilabag):**
 - Ang plano ay `docs/CHECKLIST.md` **seksyon 0**; ito lang muna ang gagawin, pulidohin at gawing perfect. I-update ang checklist kada may matapos.
@@ -22,8 +22,9 @@
 **SUSUNOD NA GAGAWIN (sunod-sunod):**
 1. ~~CHECKLIST 0.2~~ **TAPOS sa beta.33**: bawat kopya ng shared DITL drawing (B / C / D, DITL-22 = 4 LOP) ay page sa sheet list na may sariling letra, address at tag. Pinagmulan ng address: `src/world/inst-addr.js` (gawa ng `node tools/world/inst_addr.js`; patakbuhin ulit kapag binago ang DITL import o ang I/O / memory list), talaan `docs/versions/v3.2.0/INST_ADDR.md`. Code: `src/world/world.js` (`W.addrsOf`, `W.cellTexts`, `W.instTag`, `W.instLabel`, PAIRS ng DITL-22), DITL UI `goInst(i,k)` / `S.ik`. Test: `tests/regress/ditl_inst.js`.
 2. ~~CHECKLIST 0.3~~ **TAPOS sa beta.34**: ang motor valve ng ABC-054 / 055 ay may command na (PO → MCC PANEL → "M" → valve, `compile-step.js`), ang PO ay naglalabas ng posisyon ng pulse (`plant.js`), ang unit model ay bumabasa ng posisyon ng motor valve (`unit.js` `finalOf` / `U.open`; ang I/P valve ay command pa rin). Ang DITL field device (`fdStep`) ay hindi binago.
-3. **CHECKLIST 0.4 — Training isang screen**: tamang valve, instrument at tag na kokontrolin at babantayan bawat hakbang (ETA 3 ~ 4 oras).
-4. **CHECKLIST 0.5 — audit ng engine at plant model para sa start-up** (ETA 3 ~ 4 oras). Bukas na nakita sa takbo ng tao: steam 157 ~ 160 T/H sa bypass stage sa 123 kg/cm2 bago ang turbine (procedure 40 ~ 55 T/H; dahil sa coal na kailangan para sa bed > 700 °C habang PA 280 T/H); O₂ 9.3 % sa 80 MW (sobra ang hangin, air demand ng drawing sa REMOTE); main steam 553 °C sa pagdating sa 150 MW (nag-settle ≤ 545 sa loob ng hold); SV ng blow-off ay 130 sa 150 MW (4.PNG: 128).
+3. **UNA SA BAGONG SESSION:** patakbuhin ang takbo ng tao sa beta.35: `node tools/training/human_run.js <outdir> <absolute path ng dist/logic-sim-v3.2.0-beta.35.html>` (~20 min). Inaasahan: umabot sa hakbang 65 (Practice), 0 page error, gaya ng beta.33 / 34. Kapag may STUCK, ayusin (ang beta.35 ay UI lang ng Training: `dock.js` watch, `guide.js` fps ng hakbang 45 / 46). Isang beses (beta.33) huminto sa hakbang 33 (burner C / D patay sa 14 kg/cm2), hindi naulit sa 4 na takbo. Ingat: huwag patayin ang proseso gamit ang `pkill -f` na may pattern na nasa sariling command (namamatay ang shell); gamitin ang `pgrep -f "^node tools/..."`.
+4. **CHECKLIST 0.4 — Training isang screen (bahagi 2)**: bahagi 1 tapos sa beta.35 (Bantayan, hand station MV, live SV / MV, bypass faceplate). Kulang: tingnan ang screenshot ng bawat card ng takbo ng tao (`<outdir>/stNN.png`) at itama ang maling valve / tag / page link na makita (ETA 2 ~ 3 oras).
+5. **CHECKLIST 0.5 — audit ng engine at plant model para sa start-up** (ETA 3 ~ 4 oras). Bukas na nakita sa takbo ng tao: steam 157 ~ 160 T/H sa bypass stage sa 123 kg/cm2 bago ang turbine (procedure 40 ~ 55 T/H; dahil sa coal na kailangan para sa bed > 700 °C habang PA 280 T/H); O₂ 9.3 % sa 80 MW (sobra ang hangin, air demand ng drawing sa REMOTE); main steam 553 °C sa pagdating sa 150 MW (nag-settle ≤ 545 sa loob ng hold); SV ng blow-off ay 130 sa 150 MW (4.PNG: 128).
 
 **Hindi pa nasubok:** PC / tablet / EXE ng user; Practice (load change) sa takbo ng tao; bilis ×1 / ×10.
 

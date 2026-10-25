@@ -692,3 +692,15 @@ Engine at logic: walang binago.
 **As Left (sinubok sa build na ito):** ABC-054: MV ng PICHR1391 sa 60 % → valve 25.7 % sa 5 s, 50.7 % sa 20 s, 60 % sa ~40 s (sumusunod sa pulse); ABC-055 pareho (0 → 60 % sa ~40 s). Takbo ng "tao" Cold → 150 MW: pasado ang hold ng 150 MW (149.9 MW, MSP 123) at umabot sa Practice, 0 page error. Pasado: `unit_trip.js` (HP bypass agad bumubukas sa turbine trip), `unit_load.js`, `plant_utilities.js`, `loop_source.js`, `pid_am.js`, `audit230.js`, `check_panel.js` (M1 ~ M5). `engine_units.js`: 3 DITL PULSE FAIL na luma na (pareho sa beta.32 at beta.33, hindi galing sa ayos na ito). **Hindi sinubok:** device ng user.
 
 **Status:** Beta.
+
+## 3.2.0-beta.35 — Training: tamang babantayan bawat hakbang (CHECKLIST 0.4, bahagi 1)
+
+**Problem:** sa card ng Training, ang "Bantayan" ay hindi laging tugma sa hakbang (CHECKLIST 0.4).
+
+**As Found (68 hakbang sinuri):** ang hand station (biasing damper HICHR1002A / B, HIC-BM, EIC-TM, HIC-ULD) ay "PV —" (walang PV ang station); ang SV sa tabi ng PV ay naka-freeze sa halaga noong nagbukas ang card; ang hold ng 45 MW (drum level ±150) at ang 3-element step ay walang drum level sa Bantayan; ang hold ng 150 MW (MST ≤ 545) ay walang main steam temp; ang Practice (coal ~72 T/H) ay walang coal; ang bypass steps (MSP 48 → 123, RH ≤ 9) ay walang HP / LP bypass faceplate.
+
+**Work Done:** `src/ui/training/dock.js`: hand station = MV % at mode; SV at MV ng controller live; idinagdag ang drum level (stage 8), main steam temp at O₂ 3 ~ 6 (stage 9), coal (Practice). `src/ui/training/guide.js`: PICMS1006 / PICHR1003 sa card ng bypass steps. UI lang; walang binago sa logic, engine o plant model.
+
+**As Left:** pasado ang `training_dock.js`. **Hindi pa tapos nang mag-push:** ang takbo ng "tao" Cold → 150 MW sa beta.35 (sinimulan, hindi pa natapos nang lumipat ng session; dapat itong patakbuhin muna ng susunod na session).
+
+**Status:** Beta.
