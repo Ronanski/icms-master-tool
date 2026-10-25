@@ -645,3 +645,17 @@ Engine at logic: walang binago.
 **Bukas (para sa audit ng plant model, CHECKLIST 0.5):** sa bypass stage ay 157 ~ 160 T/H ang steam sa 123 kg/cm2 bago ang turbine (procedure: 40 ~ 55 T/H), dahil kailangan ng coal na mapanatili ang bed > 700 °C habang PA 280 T/H. Susuriin sa model (bed heat balance), hindi sa coach.
 
 **Status:** Beta.
+
+## 3.2.0-beta.32 — CCS handover: ang firing ay puwedeng ibaba hanggang bed 712 °C
+
+**Problem (takbo ng "tao" sa Training, beta.31; hakbang 1 ~ 58 pasado):** hakbang 59 "Boiler master HIC-BM sa AUTO": HIC-BM A pinindot 6 na beses, nanatiling MAN. 80 MW, main steam 129.9 kg/cm2, bed 728 °C, O₂ 9.3 %.
+
+**As Found:** main steam > 128 (SV ng MS blow-off) → bukas ang blow-off → M.0255 → M.2013 BU-CMD → HIC-BM MANUAL (tama ang drawing). Hindi ibinaba ng boiler-follow coach ang HIC-BM dahil ang patakaran ng beta.24 ay "walang pagbaba ng firing sa ilalim ng 730 °C"; ang coal trip ng drawing ay 700 °C.
+
+**Work Done:** `src/ui/training/guide.js` (`bf` coach): pagbaba ng firing pinapayagan mula bed 712 °C; dagdag na +0.5 % kapag bed < 708 °C.
+
+**As Left:** PASADO: training_start. Ang patunay ay ang susunod na takbo ng "tao" (isusulat dito).
+
+**Bukas (audit ng plant model, CHECKLIST 0.5):** O₂ 9.3 % sa 80 MW (sobra ang hangin; air demand ng drawing sa REMOTE) ang nagpapalamig sa bed.
+
+**Status:** Beta.
