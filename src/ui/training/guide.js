@@ -120,6 +120,7 @@ window.LS_GUIDE = (function () {
     } catch (e) {}
     return NaN;
   };
+  const SETmin = (t, lo) => C(t + ' M, ≥ ' + lo + ' %', () => md(t) === 'MAN' && setOf(t) >= lo, () => t + ' ' + md(t) + ' ' + f0(setOf(t)) + ' %');
   const SET = (t, lo, hi) => C(t + ' M, ' + lo + ' ~ ' + hi + ' %', () => md(t) === 'MAN' && setOf(t) >= lo && setOf(t) <= hi, () => t + ' ' + md(t) + ' ' + f0(setOf(t)) + ' %');
   const f0 = x => (isFinite(x) ? Math.round(x).toString() : '—');
   const f1 = x => (L() ? L().f1(x) : String(x));
@@ -151,9 +152,11 @@ window.LS_GUIDE = (function () {
           r = o.tsP != null ? (u.Tw - o.tsP) * 60 : 0;
         o.tsP = u.Tw;
         o.ab = o.ab == null ? mv('FICDO1043A') || 60 : o.ab;
-        const lit = k => bit({ C: 'M.3418', D: 'M.3419' }[k]) > 0.5;
-        o.cd = o.cd == null ? (lit('C') ? mv('FICDO1043C') || 20 : 0) : o.cd;
-        if (!o.cd && lit('C') && lit('D')) o.cd = 20;
+        /* 3.2.0-beta.37 (PR-OPE-5002 BURNER START UP: "IF SUB A START, next to start is SUB D. SUB B/C may start after 30 minutes"):
+           the first pair is A + D (diagonal), the second B + C (o.cd keeps its name) */
+        const lit = k => bit({ B: 'M.3413', C: 'M.3418' }[k]) > 0.5;
+        o.cd = o.cd == null ? (lit('B') ? mv('FICDO1043B') || 20 : 0) : o.cd;
+        if (!o.cd && lit('B') && lit('C')) o.cd = 20;
         /* the oil fire raises the drum to 30 ~ 35 kg/cm2 only (PR-OPE-5002: the coal does the rest): above 40 it comes down */
         if (r > 100 || u.Pd > 40) {
           o.ab = Math.max(30, o.ab - 5);
@@ -163,10 +166,10 @@ window.LS_GUIDE = (function () {
           else if (o.cd) o.cd = Math.min(100, o.cd + 5);
         }
         A.man('FICDO1043A', o.ab);
-        A.man('FICDO1043B', o.ab);
+        A.man('FICDO1043D', o.ab);
         if (o.cd) {
+          A.man('FICDO1043B', o.cd);
           A.man('FICDO1043C', o.cd);
-          A.man('FICDO1043D', o.cd);
         }
       }
     },
@@ -217,14 +220,14 @@ window.LS_GUIDE = (function () {
           else if (f > 300) o.p = Math.max(10, o.p - 1);
           A.man('FICFA1071', o.p);
           /* the coal follows the air: with the three feeders running and the bed under 730 C, the coal demand + 1 % a minute (to 30 %) */
-          if (tb < 730 && !CO.byp && md('FIC-CF') !== 'REM' && ['M.3400', 'M.3401', 'M.3402'].every(a => bit(a) > 0.5)) {
+          if (tb < 730 && !CO.byp && !CO.load && !CO.swap && md('FIC-CF') !== 'REM' && ['M.3400', 'M.3401', 'M.3402'].every(a => bit(a) > 0.5)) {
             const c = setOf('FIC-CF');
             if (isFinite(c) && c < 30) A.man('FIC-CF', c + 1);
           }
           /* 3.2.0-beta.31 (human run of the Training: drum pressure 141 kg/cm2 at 0 MW, steam 219 T/H on coal 36 T/H before the bypass
              stage): the coal back down 1 % a minute (to 15 %) once the bed is hot (> 760 C) and the steam is over the 40 ~ 55 T/H of the
              procedure (PR-OPE-5002, the bypass coach takes over at the servicing step) */
-          if (tb > 760 && !CO.byp && md('FIC-CF') !== 'REM' && h().MSF() > 65) {
+          if (tb > 760 && !CO.byp && !CO.load && !CO.swap && md('FIC-CF') !== 'REM' && h().MSF() > 65) {
             const c = setOf('FIC-CF');
             if (isFinite(c) && c > 15) A.man('FIC-CF', c - 1);
           }
@@ -279,6 +282,100 @@ window.LS_GUIDE = (function () {
         A.man('PICHR1391', o.rb);
       }
     },
+    /* 3.2.0-beta.37 (CHECKLIST 0.5, PR-OPE-5002 "BYPASS SYSTEM SERVICING" -> "TURBINE ROLLING" -> "SYNCH. & INITIAL LOAD" -> "LOAD
+       UP" -> solid fuel; FHI SECT_7 Fig. 2 COLD STARTUP: roll at 60 kg/cm2, coal after the initial load): the OIL fire of the four
+       start-up burners carries the bypass, the roll and the load to 45 MW. Before the roll: the HP bypass SV up 1 kg/cm2 a minute to 61
+       (PR-OPE-5002 roll condition MS 61.2 kg/cm2), the oil holds the steam flow 40 ~ 55 T/H (the blow-off 5 above, the RH blow-off as
+       the bypass coach). On the grid: the oil holds the pressure; while the HP bypass is in AUTO at 61 the turbine takes its steam (it
+       closes by itself, "load up until the HP & LP bypass valve is fully closed or 20 MW"); once it is REMOTE the pressure slides with
+       the load as Fig. 2 (60 kg/cm2 at 15 % load, 125 at 40 %). The saturation rise stays under 110 C/h (Fig. 1) */
+    ofire: {
+      t: 'Oil firing: SV ng HP bypass +1 kada minuto hanggang 61, steam 40 ~ 55 T/H; pagkatapos ng sync, pressure sumusunod sa load (Fig. 2)',
+      run(o) {
+        const H = h(),
+          t = simT(),
+          msp = H.MSP(),
+          msf = H.MSF(),
+          tb = U().tb || {},
+          grid = tb.st === 'sync' || tb.st === 'load';
+        const ts = AN.tsat(U().Pd);
+        o.tsH = o.tsH || [];
+        o.tsH.push(ts);
+        if (o.tsH.length > 6) o.tsH.shift();
+        const r = o.tsH.length === 6 ? (ts - o.tsH[0]) * 12 : 0;
+        o.hp = o.hp == null ? Math.max(50, Math.min(61, Math.round(+H.sh('ABC-050').rt.v[H.ctl('ABC-050', 'PICMS1006').q.sv]) || 50)) : o.hp;
+        if (o.svc == null && msp >= 48 && msf >= 40) o.svc = t;
+        const lit = k => bit({ A: 'M.3412', B: 'M.3413', C: 'M.3418', D: 'M.3419' }[k]) > 0.5;
+        o.ab = o.ab == null ? mv('FICDO1043A') || 60 : o.ab;
+        o.cd = o.cd == null ? (lit('B') ? mv('FICDO1043B') || 20 : 20) : o.cd;
+        /* the pressure the oil holds: the HP bypass SV before the roll and while the bypass is in AUTO, then Fig. 2 */
+        const slide = grid && md('PICMS1006') === 'REM',
+          Pt = slide ? Math.max(61, Math.min(123, 61 + ((H.MW() - 22.5) * (123 - 61)) / (60 - 22.5))) : o.hp;
+        let d = 0;
+        if (!grid) {
+          if (r > 90 || (o.svc != null && ((msf > 65 && msp >= o.hp - 3) || msp > o.hp + 0.5))) d = -5;
+          else if (r < 80 && (o.svc == null || msp < o.hp - 1 || msf < 40) && (o.n = (o.n || 0) + 1) % 2 === 0) d = 5;
+        } else if (r > 100 || msp > Pt + 1.5) d = -5;
+        /* the load up of the TCS (7.5 MW a minute) takes the steam faster than the oil follows: the fire goes ahead of it (10 % a
+           minute while the turbine is loading or the pressure is 3 under) so that the pressure does not fall far under 61 */
+        else if ((tb.st === 'load' && H.MW() < (+tb.aim || 0) - 1 && msp < Pt + 5) || msp < Pt - 3) d = 10;
+        else if (r < 90 && msp < Pt - 1) d = 5;
+        if (d > 0) {
+          if (o.ab < 100) o.ab = Math.min(100, o.ab + d);
+          else o.cd = Math.min(100, o.cd + d);
+        } else if (d < 0) {
+          if (o.cd > 20) o.cd = Math.max(20, o.cd + d);
+          else o.ab = Math.max(30, o.ab + d);
+        }
+        ['A', 'D'].forEach(k => lit(k) && A.man('FICDO1043' + k, o.ab));
+        ['B', 'C'].forEach(k => lit(k) && A.man('FICDO1043' + k, o.cd));
+        if (o.svc != null && !grid) {
+          if (o.hp < 61 && msp >= o.hp - 1) {
+            o.hp += 1;
+            A.auto('PICMS1006', o.hp);
+          }
+          A.auto('PICMS1002', o.hp + 5);
+        }
+        /* while the HP bypass is AUTO on the grid the blow-off stays 5 above it; REMOTE: the blow-off is the operator's (SV 128) */
+        if (grid && !slide && md('PICMS1002') === 'AUTO') A.auto('PICMS1002', o.hp + 5);
+        const rp = H.RHP();
+        o.rb = o.rb == null ? mv('PICHR1391') || 0 : o.rb;
+        if (rp > 8.5) o.rb = Math.min(60, o.rb + 10);
+        else if (rp > 8.2) o.rb = Math.min(60, o.rb + 5);
+        else if ((o.svc != null && rp < 8.2 && o.rb > 0) || grid) o.rb = Math.max(0, o.rb - 5);
+        A.man('PICHR1391', o.rb);
+      }
+    },
+    /* 3.2.0-beta.37 (coal after the sync, CHECKLIST 0.5): the fuel swap at 45 MW (PR-OPE-5002 solid firing: "START reducing Fuel Oil
+       flow. Approximately: 2.55TPH coal = 1TPH diesel ... CONTINUE to reduce Fuel Oil flow until it equal the Solid Fuel heat input").
+       The operator matches the fuel to the steam the turbine takes: coal-equivalent needed = the firing line of the unit model for the
+       steam flow + a pressure term toward 123 kg/cm2 (raised 1 kg/cm2 a minute); coal + 2.55 x oil is brought to it, the oil 5 % a
+       minute down to 20 % while the coal burns (bed >= 600 C). A coal demand on the pressure alone overshot: the bed lags 15 min
+       (tauB), the coal went 20 -> 72 T/H, 150 kg/cm2, then down to 22 T/H and the bed under 700 C tripped the boiler (DITL-03F) */
+    swap: {
+      t: 'Palit ng apoy sa 45 MW: coal para sa steam ng turbine, bawas oil 5 % kada minuto, pressure pataas sa 123',
+      run(o) {
+        if (md('FIC-CF') === 'REM') return;
+        const H = h(),
+          u = U(),
+          msp = H.MSP();
+        o.pt = o.pt == null ? Math.max(90, Math.min(123, msp)) : Math.min(123, o.pt + 1);
+        const ao = +u.ao || 2.55,
+          need = Math.max(0, (H.MSF() - u.m0 + u.a * u.F0) / u.a) + 0.4 * (o.pt - msp),
+          have = (+u.Fc || 0) + ao * (+u.oilF || 0);
+        const lit = ['M.3412', 'M.3413', 'M.3418', 'M.3419'].map(a => bit(a) > 0.5);
+        o.ab = o.ab == null ? Math.max(20, mv('FICDO1043A') || 20) : o.ab;
+        if (u.Tb >= 600 && o.ab > 20 && have > need - 3) o.ab = Math.max(20, o.ab - 5);
+        ['A', 'B', 'C', 'D'].forEach((k, i) => lit[i] && A.man('FICDO1043' + k, o.ab));
+        const c = setOf('FIC-CF'),
+          k = c > 1 && u.Fc > 1 ? u.Fc / c : 1.5;
+        if (!isFinite(c)) return;
+        let d = Math.max(-1.5, Math.min(1.5, (need - have) / k));
+        /* the bed first: under 700 C with no burner the DITL trips the boiler (DITL-03F, ABC-027 M.2504) */
+        if (u.Tb < 705 && d < 0.5 && msp < 128) d = 0.5;
+        A.man('FIC-CF', Math.max(10, Math.min(60, c + d)));
+      }
+    },
     /* drum level on the start-up valve (check.js byp): LICBR1001B opened by hand +5 % a minute while the level falls under -60 mm, back
        to AUTO SV 0 once it stops falling or is over -50 mm */
     lvl: {
@@ -314,11 +411,13 @@ window.LS_GUIDE = (function () {
           loading = tb.st === 'load' && H.MW() < 44.5;
         o.cf = o.cf == null ? mv('FIC-CF') : o.cf;
         if (loading && msp < 125) o.cf += msp < 118 ? 3 : 2;
-        else if (msp < 121 || (tb.st === 'load' && bit('I.0418') < 0.5 && mv('PICMS1006') < 15)) o.cf += 1;
+        else if (msp > 128 && U().Tb >= 705) o.cf -= 2;
         else if (msp > 125 && U().Tb >= 730) o.cf -= 1;
         /* 3.2.0-beta.24: the bed first, as in the bypass coach: under 700 C with no burner the feeders trip (DITL-19 row 16, ABC-027
-           M.2504) and the boiler with them; at 45 MW the bed fell 690 -> 617 C while the coal followed the pressure only */
-        if (U().Tb < 720) o.cf += 1;
+           M.2504) and the boiler with them; at 45 MW the bed fell 690 -> 617 C while the coal followed the pressure only.
+           3.2.0-beta.37 (coal after the sync, CHECKLIST 0.5): one step a minute and not while the pressure is over 125. Added together
+           (pressure + bed + load) the coal went to 71 T/H at 45 MW while the oil came out and the bed lagged: 150 kg/cm2, blow-off 100 % */
+        else if (msp < 121 || (tb.st === 'load' && bit('I.0418') < 0.5 && mv('PICMS1006') < 15) || (U().Tb < 720 && msp < 125)) o.cf += 1;
         o.cf = Math.max(10, Math.min(60, o.cf));
         A.man('FIC-CF', o.cf);
       }
@@ -419,11 +518,29 @@ window.LS_GUIDE = (function () {
           const q = o[inn] || (o[inn] = {}),
             c = H.ctl(k, inn),
             sv = c && c.q.sv != null ? +H.sh(k).rt.v[c.q.sv] : NaN;
-          if (q.a == null && H.pv(k, inn) >= sv - 5) {
+          /* 3.2.0-beta.37 (CHECKLIST 0.5c, MST 565 C at 120 MW in the load up): the inner loop in AUTO at once at its own
+             set point. Before, it waited for its PV within 5 C of its SV: TICBR1150 stayed MANUAL with the spray shut (PV 415 C)
+             while the main steam was already 534 ~ 551 C at 80 MW, and the cascade came in only at about 120 MW. A controller at
+             its SV with the PV under it keeps the spray shut, so nothing moves until the steam needs it */
+          if (q.a == null) {
             H.autoSv(k, inn, sv);
             q.a = 1;
           }
-          if (q.a != null && q.r == null && H.pv(k, out) >= sv2 - 10) {
+          /* 3.2.0-beta.37: until the cascade, the operator holds the outlet by the inner set point: SV = spray outlet now + (outlet SV -
+             outlet now), once a minute (the pickup of the next superheater is the gap between the two headers). The cascade (inner R,
+             outer A a minute later) comes near full steam (>= 85 % of the anchor flow) with the outlet within 5 C. Put on earlier, the
+             outer PI (TICMS1004 I 1371 s, parameter summary) integrated up below 60 % MCR (Fig. 6 / 10: the temperature is under its set
+             point there by design) and the spray stayed shut while the load came up: 574 C at 103 MW, 559 C at 99 MW */
+          const pvi = H.pv(k, inn),
+            pvo = H.pv(k, out);
+          if (q.a != null && q.r == null && isFinite(pvi) && isFinite(pvo)) {
+            const want = Math.max(300, Math.min(sv2, pvi + (sv2 - pvo)));
+            if (q.sv == null || Math.abs(want - q.sv) >= 1) {
+              H.autoSv(k, inn, Math.round(want));
+              q.sv = Math.round(want);
+            }
+          }
+          if (q.a != null && q.r == null && H.MSF() >= 0.85 * (+U().m0 || 474) && Math.abs(pvo - sv2) <= 5) {
             H.rem(k, inn);
             q.r = simT();
           }
@@ -450,7 +567,7 @@ window.LS_GUIDE = (function () {
   };
 
   /* ---------- the steps ---------- */
-  const STAGES = ['Utilities', 'Tubig: hotwell, deaerator, drum', 'Fans at draft', 'Furnace purge', 'Burner at pag-init', 'Vacuum at seals', 'Coal', 'Bypass at 123 kg/cm²', 'Turbine: roll, sync, 45 MW', 'Load up sa 150 MW', 'Practice: load change'];
+  const STAGES = ['Utilities', 'Tubig: hotwell, deaerator, drum', 'Fans at draft', 'Furnace purge', 'Burner at pag-init', 'Vacuum at seals', 'Bypass at 61 kg/cm²', 'Turbine: roll, sync, 45 MW', 'Coal sa 45 MW', 'Load up sa 150 MW', 'Practice: load change'];
   const B = () => L().B;
   /* a motor button: START / STOP of its running memory (memory list), the same address the Inputs list forces */
   const mot = (a, l) => ({ ad: a, l: 'START ' + l, f: () => A.motor(a, 1), on: () => bit(a) > 0.5, stop: { l: 'STOP ' + l, f: () => A.motor(a, 0) } });
@@ -582,29 +699,33 @@ window.LS_GUIDE = (function () {
       { st: 4, sec: 28, t: 'Sindihan ang burner A', d: 'SA damper at oil FCV sa ignition, tapos BURNER ON (DITL-09): ang DITL ang magpapasok ng igniter, magbubukas ng dalawang supply oil valve at magsisindi (DITL-10 / 13). Kapag may apoy na, ang oil flow FICDO1043A sa 60 %.', c: b.ALL(b.BIT('M.3412', 1, 'burner A in service'), b.VAL('oilF', 0.3, null)), fps: ['FICDO1043A'], get a() {
           return WL() ? [bIgn('A'), bOn('A'), bOil('A', 60)] : [btn('Buksan oil valve A', () => A.oil('M.3410', true)), btn('BURNER A ON', () => A.motor('M.3412', 1), () => bit('M.3412') > 0.5), btn('FICDO1043A M 60 %', () => A.man('FICDO1043A', 60))];
         }, field: [27] },
-      { st: 4, sec: 28, t: 'Sindihan ang burner B', d: 'Pareho ng burner A: SA damper at oil FCV sa ignition, BURNER ON (ang DITL ang magbubukas ng oil valve), tapos FICDO1043B 60 %.', c: b.ALL(b.BIT('M.3413', 1, 'burner B in service'), b.MV('FICDO1043B', 50, null)), fps: ['FICDO1043B'], get a() {
-          return WL() ? [bIgn('B'), bOn('B'), bOil('B', 60)] : [btn('Buksan oil valve B', () => A.oil('M.3411', true)), btn('BURNER B ON', () => A.motor('M.3413', 1), () => bit('M.3413') > 0.5), btn('FICDO1043B M 60 %', () => A.man('FICDO1043B', 60))];
+      { st: 4, sec: 28, t: 'Sindihan ang burner D (diagonal ng A)', d: 'PR-OPE-5002: pagkatapos ng A, ang kasunod ay ang D (diagonal). Pareho ng burner A: SA damper at oil FCV sa ignition, BURNER ON (ang DITL ang magbubukas ng oil valve), tapos FICDO1043D 60 %.', c: b.ALL(b.BIT('M.3419', 1, 'burner D in service'), b.MV('FICDO1043D', 50, null)), fps: ['FICDO1043D'], get a() {
+          return WL() ? [bIgn('D'), bOn('D'), bOil('D', 60)] : [btn('Buksan oil valve D', () => A.oil('M.3417', true)), btn('BURNER D ON', () => A.motor('M.3419', 1), () => bit('M.3419') > 0.5), btn('FICDO1043D M 60 %', () => A.man('FICDO1043D', 60))];
         } },
       { st: 4, sec: 28, t: 'Hangin sa minimum: PA at SA damper 10 %', d: 'Bawasan ang hangin pagkatapos magsindi para hindi lumamig ang furnace.', c: b.ALL(b.MV('FICFA1071', null, 12), b.MV('FICFA1081', null, 12)), fps: ['FICFA1071', 'FICFA1081'], a: [btn('PA at SA MV 10 %', () => (A.man('FICFA1071', 10), A.man('FICFA1081', 10)))], coach: ['fire'] },
       { st: 4, sec: 28, t: 'Pag-init: hintayin kumulo ang tubig (100 °C)', d: 'Habang umiinit, ang coach ang humahawak ng apoy para ang pagtaas ng temperatura ay ≤ 110 °C bawat oras (Fig 1). Pabilisin ang simulation kung gusto mo.', c: b.VAL('Tw', 100, null), wait: 1 },
       { st: 4, sec: 28, t: 'Drum pressure 2 kg/cm²: isara ang vents at drains (field)', d: 'Kapag may pressure na, isinasara ng field operator ang mga vent at drain ng steam side.', c: b.VAL('Pd', 2, null), wait: 1, field: [] },
-      { st: 4, sec: 28, t: 'Drum pressure 15 kg/cm²: sindihan ang burner C at D', d: 'Sa 15 kg/cm² idinadagdag ang dalawa pang burner: SA damper at oil FCV sa ignition, BURNER ON (ang DITL ang magbubukas ng oil valve), tapos FICDO1043C / D 20 %.', c: b.ALL(b.VAL('Pd', 15, null), b.BURN4), fps: ['FICDO1043C', 'FICDO1043D'], get a() {
-          return WL() ? [bIgn('C'), bIgn('D'), bOn('C'), bOn('D'), bOil('C', 20), bOil('D', 20)] : [btn('Buksan oil valve C at D', () => (A.oil('M.3416', true), A.oil('M.3417', true))), btn('BURNER C at D ON', () => (A.motor('M.3418', 1), A.motor('M.3419', 1)), () => bit('M.3418') > 0.5 && bit('M.3419') > 0.5), btn('FICDO1043C / D M 20 %', () => (A.man('FICDO1043C', 20), A.man('FICDO1043D', 20)))];
+      { st: 4, sec: 28, t: 'Drum pressure 15 kg/cm²: sindihan ang burner B at C', d: 'Sa 15 kg/cm² idinadagdag ang dalawa pang burner: SA damper at oil FCV sa ignition, BURNER ON (ang DITL ang magbubukas ng oil valve), tapos FICDO1043B / C 20 % (PR-OPE-5002: B / C pagkatapos ng 30 minuto).', c: b.ALL(b.VAL('Pd', 15, null), b.BURN4), fps: ['FICDO1043B', 'FICDO1043C'], get a() {
+          return WL() ? [bIgn('B'), bIgn('C'), bOn('B'), bOn('C'), bOil('B', 20), bOil('C', 20)] : [btn('Buksan oil valve B at C', () => (A.oil('M.3411', true), A.oil('M.3416', true))), btn('BURNER B at C ON', () => (A.motor('M.3413', 1), A.motor('M.3418', 1)), () => bit('M.3413') > 0.5 && bit('M.3418') > 0.5), btn('FICDO1043B / C M 20 %', () => (A.man('FICDO1043B', 20), A.man('FICDO1043C', 20)))];
         } },
       { st: 4, sec: 28, t: 'Drum pressure 30 kg/cm²', d: 'Hintayin ang 30 kg/cm². Ang coach pa rin ang humahawak ng bilis ng pag-init.', c: b.VAL('Pd', 30, null), wait: 1 },
       /* ---- 5 vacuum and seals ---- */
-      FIELD(5, 'Warming up, deaerator, fly ash, gland sealing, condensate polisher, vacuum up, bed material (field)', [28, 29, 30, 31, 32, 33, 34, 35], { c: C('Condenser vacuum ≥ 90 %', () => +U().vac >= 0.9, () => 'Vacuum ' + f0(100 * (+U().vac || 0)) + ' %') }),
-      /* ---- 6 coal ---- */
+      /* 3.2.0-beta.37 (user 2026-10-25): the aux steam (from the main steam > 12 kg/cm2), the turning gear, the gland sealing and the
+         ejectors before the vacuum up (PR-OPE-5002 5708, 6118, 6512); the unit model raises the vacuum only with the aux steam */
+      FIELD(5, 'Aux steam (MV-AS1391, MS > 12 kg/cm²), deaerator warming, turning gear, gland sealing, condensate polisher, vacuum up (ejectors), bed material (field)', [28, 29, 30, 31, 32, 33, 34, 35], { d: 'Field at TCS: ang aux steam ay galing sa main steam (MS > 12 kg/cm², aux 10 kg/cm², 200 ~ 350 °C). Gland sealing: tumatakbo ang turning gear, aux > 7 kg/cm², gland steam 220 °C. Vacuum up: aux > 10 kg/cm², tapos ang gland sealing, sarado ang vacuum breaker, 1st at 2nd ejector. Kumpirmahin kapag tapos na.', c: C('Aux steam (main steam > 12 kg/cm²) at condenser vacuum ≥ 90 %', () => +U().Pd > 12 && +U().vac >= 0.9, () => 'Drum ' + f1(+U().Pd) + ' kg/cm², vacuum ' + f0(100 * (+U().vac || 0)) + ' %') }),
+      /* ---- 6 bypass at 61 kg/cm2, oil only (3.2.0-beta.37, CHECKLIST 0.5: PR-OPE-5002 BYPASS SYSTEM SERVICING -> TURBINE ROLLING ->
+         SYNCH. & INITIAL LOAD -> LOAD UP -> solid fuel; FHI SECT_7 Fig. 2 COLD STARTUP: roll at 60 kg/cm2 6 h, coal 8.6 h. Before, the
+         coal and 123 kg/cm2 came before the roll and the bypass dumped 155 ~ 189 T/H) ---- */
       {
         st: 6,
-        sec: 44,
-        t: 'Ihanda ang coal: start-up level LICBR1001B AUTO SV 0, blow-off PICMS1002 AUTO SV 35',
-        d: 'Ang start-up valve na ang hahawak ng drum level at ang main steam blow-off ang hahawak ng pressure. Ang coal demand FIC-CF ay hawak ng drawing sa 0 hangga\'t walang feeder na tumatakbo.',
+        sec: 30,
+        t: 'Ihanda ang bypass: start-up level LICBR1001B AUTO SV 0, blow-off PICMS1002 AUTO SV 35',
+        d: 'Ang start-up valve na ang hahawak ng drum level at ang main steam blow-off ang hahawak ng pressure. Coal ay pagkatapos pa ng sync (PR-OPE-5002, FHI Fig. 2): oil burner lang hanggang 45 MW.',
         c: b.ALL(b.MODE('LICBR1001B', 'AUTO'), b.MODE('PICMS1002', 'AUTO')),
         fps: ['LICBR1001B', 'PICMS1002'],
         a: [btn('LICBR1001B A, SV 0', () => A.auto('LICBR1001B', 0)), btn('PICMS1002 A, SV 35', () => A.auto('PICMS1002', 35))]
       },
-      /* 3.2.0-beta.23: the bypass goes in service BEFORE the coal (PR-OPE-5002: BYPASS SYSTEM SERVICING comes before the solid fuel
+      /* 3.2.0-beta.37: before the roll, on oil (CHECKLIST 0.5). 3.2.0-beta.23: the bypass goes in service BEFORE the coal (PR-OPE-5002: BYPASS SYSTEM SERVICING comes before the solid fuel
          firing). Before, it came after the burners were out: the blow-off alone (about 13 T/H at 35 kg/cm2) could not take the steam of
          the coal and the pressure went over 140 kg/cm2 (172 with the primary air at 280 T/H and the coal that follows it) */
       {
@@ -615,7 +736,7 @@ window.LS_GUIDE = (function () {
         c: b.ALL(b.MODE('PICMS1006', 'AUTO'), b.MODE('PICHR1003', 'AUTO')),
         fps: ['PICMS1006', 'PICHR1003', 'PICHR1391'],
         a: [btn('Ilagay lahat', () => {
-          const p = Math.max(50, Math.min(123, Math.ceil(h().MSP())));
+          const p = Math.max(50, Math.min(61, Math.ceil(h().MSP())));
           A.auto('PICMS1002', p > 50 ? p + 5 : 50);
           A.auto('PICMS1006', p);
           A.auto('PICHR1003', 7.6);
@@ -626,42 +747,16 @@ window.LS_GUIDE = (function () {
         coach: ['lvl'],
         field: [29]
       },
-      { st: 6, sec: 44, t: 'Bed temperature ≥ 400 °C: handa ang coal feeder', d: 'Ang coal ay nasusunog lang sa mainit na bed.', c: b.VAL('Tb', 400, null), wait: 1 },
-      { st: 6, sec: 44, t: 'Batch firing ng feeder A hanggang bed 600 °C', d: 'Ang feeder A ay 10 segundo ON, 60 segundo OFF. Ang coach ang gagawa nito kapag pinindot mo ang button.', c: C('Bed ≥ 600 °C, o 3 batch na', () => U().Tb >= 600 || (CO.batch && CO.batch.n >= 3), () => f0(U().Tb) + ' °C, batch ' + ((CO.batch && CO.batch.n) || 0)), a: [fDis('A'), btn('Simulan ang batch firing', () => coachOn('batch'), () => !!CO.batch)] },
-      { st: 6, sec: 44, t: 'Feeder A tuloy-tuloy, FICCL1061A sa AUTO, coal demand FIC-CF 10 %', d: 'Pagkatapos ng 600 °C, tuloy-tuloy na ang feeder A. Kapag tumatakbo na, ilagay sa AUTO (force manual ito ng drawing habang nakatigil).', c: b.ALL(b.BIT('M.3400', 1, 'feeder A running'), b.MODE('FICCL1061A', 'AUTO'), SET('FIC-CF', 8, 12)), fps: ['FICCL1061A', 'FIC-CF'], a: [fDis('A'), mot('M.3400', 'feeder A'), btn('FICCL1061A A', () => A.loc('FICCL1061A')), btn('FIC-CF M 10 %', () => A.man('FIC-CF', 10))], coachOff: ['batch', 'fire'], coach: ['oildown', 'o2'] },
-      { st: 6, sec: 44, t: 'Feeder B, tapos FICCL1061B sa AUTO', d: 'Ang ikalawang feeder.', c: b.ALL(b.BIT('M.3401', 1, 'feeder B running'), b.MODE('FICCL1061B', 'AUTO')), fps: ['FICCL1061B'], a: [fDis('B'), mot('M.3401', 'feeder B'), btn('FICCL1061B A', () => A.loc('FICCL1061B'))] },
-      { st: 6, sec: 44, t: 'Bed ≥ 650 °C: feeder C, tapos FICCL1061C sa AUTO', d: 'Ang ikatlong feeder kapag sapat na ang init ng bed.', c: b.ALL(b.VAL('Tb', 650, null), b.BIT('M.3402', 1, 'feeder C running'), b.MODE('FICCL1061C', 'AUTO')), fps: ['FICCL1061C'], a: [fDis('C'), WLm('M.3402', 'feeder C', () => (A.motor('M.3402', 1), A.motor('M.3405', 1))), btn('FICCL1061C A', () => A.loc('FICCL1061C'))] },
-      { st: 6, sec: 44, t: 'Coal demand FIC-CF 15 %', d: 'Itaas ang coal sa 15 % (mga 6 T/H bawat feeder).', c: SET('FIC-CF', 13, 17), fps: ['FIC-CF'], a: [btn('FIC-CF M 15 %', () => A.man('FIC-CF', 15))] },
+      { st: 6, sec: 30, t: 'Bypass servicing: MSP ≥ 48 kg/cm² at steam flow ≥ 40 T/H', d: 'Ang coach ang nagdadagdag ng oil fire, humahawak ng hangin (O₂ 3.5 ~ 8 % sa SA damper, PA 280 T/H kapag mainit na ang bed) at nagtataas ng SV ng HP bypass ng 1 kg/cm² bawat minuto hanggang 61.', c: b.ALL(b.VAL('MSP', 48, null), b.VAL('MSF', 40, null)), wait: 1, coachOff: ['fire'], coach: ['ofire', 'o2'] },
+      { st: 6, sec: 30, t: 'Main steam pressure 61 kg/cm²: handa ang roll', d: 'PR-OPE-5002 (cold start): MS 61.2 kg/cm², steam flow > 40 T/H, reheat ≤ 8.5 kg/cm². Hawak ng HP bypass ang 61 at ng LP bypass ang reheat.', c: b.HOLD(120, b.ALL(b.VAL('MSP', 59, null), b.VAL('MSF', 40, null), b.VAL('RHP', null, 9))), wait: 1 },
+      /* ---- 7 turbine on oil ---- */
+      FIELD(7, 'Turbine preparation, ATS, chest warming, rub check (TCS / field)', [36, 37, 38, 39]),
+      { st: 7, sec: 41, t: 'ROLL ng turbine hanggang 3600 rpm (TCS)', d: 'Sa TCS panel: ROLL. 120 rpm bawat minuto, mga 30 minuto.', c: b.HOLD(10, b.VAL('rpm', 3550, null)), a: [btn('ROLL (TCS)', () => A.tcs('roll'), () => U().tb && U().tb.st !== 'off')] },
+      { st: 7, sec: 42, t: 'SYNC: sarado ang GCB 52G1, LP bypass sa REMOTE', d: 'Sa TCS panel: SYNC. Pagkasara ng generator breaker, ilagay ang LP bypass sa R (SV = first stage + 5.1).', c: b.ALL(b.BIT('I.0931', 1, 'GCB 52G1 on'), b.MODE('PICHR1003', 'REM')), fps: ['PICHR1003'], a: [btn('SYNC (TCS)', () => A.tcs('sync'), () => bit('I.0931') > 0.5), btn('LP bypass R', () => A.rem('PICHR1003'))] },
+      { st: 7, sec: 42, t: 'Initial load 4.5 MW: hawakan nang 45 minuto', d: 'Ang TCS ang kumukuha ng initial load. PR-OPE-5002 INITIAL LOAD (cold 1 / cold 2 / ambient cold): 4.5 MW, 45 minutong hold, hanggang ang LP turbine exhaust hood ay < 52 °C (wala pang LP exhaust temp sa app: TCS model, docs/tcs/ATS_CRITERIA.md).', c: b.HOLD(2700, b.VAL('MW', 3.5, null)), wait: 1 },
+      { st: 7, sec: 42, t: 'LOAD UP sa 45 MW (TCS), ICV → CV transfer', d: 'Sa TCS panel: LOAD UP 45 MW (7.5 MW bawat minuto). Ang transfer ay sa 15 ~ 22 MW. Ang coach ang naglilipat ng feedwater sa main valve at nagsasara ng LP bypass.', c: b.ALL(b.BIT('I.0418', 1, 'ICV to CV transfer complete'), b.VAL('MW', 15, null)), a: [btn('LOAD UP 45 MW (TCS)', () => A.tcs('loadup', 45), () => U().tb && U().tb.st === 'load')], coach: ['lpclose', 'fw'] },
       {
-        st: 6,
-        sec: 44,
-        t: 'Bed > 700 °C at PA flow ≥ 220 T/H: patayin ang mga burner isa-isa (A, D, B, C)',
-        d: 'Kapag kaya na ng coal, isara ang oil valve at patayin ang burner, may pagitan na ilang minuto. Bago patayin ang huling burner, ang PA flow ay dapat higit sa 200 T/H: kapag coal na lang, nagti-trip ang boiler sa PRIMARY AIR FLOW L.L. (ABC-007, DITL-03F). Target ng procedure: 280 T/H.',
-        c: b.ALL(b.NOBIT(['M.3412', 'M.3413', 'M.3418', 'M.3419'], 'start-up burners out'), b.VAL('Tb', 700, null), C('PA flow ≥ 220 T/H (FIFA1071)', () => pv('FICFA1071') >= 220, () => (pv('FICFA1071') || 0).toFixed(0) + ' T/H')),
-        ready: () => pv('FICFA1071') >= 220,
-        get a() {
-          return WL()
-            ? [bOff('A'), bOff('D'), bOff('B'), bOff('C')]
-            : [
-                btn('Patayin burner A', () => (A.oil('M.3410', false), A.motor('M.3412', 0)), () => bit('M.3412') < 0.5),
-                btn('Patayin burner D', () => (A.oil('M.3417', false), A.motor('M.3419', 0)), () => bit('M.3419') < 0.5),
-                btn('Patayin burner B', () => (A.oil('M.3411', false), A.motor('M.3413', 0)), () => bit('M.3413') < 0.5),
-                btn('Patayin burner C', () => (A.oil('M.3416', false), A.motor('M.3418', 0)), () => bit('M.3418') < 0.5)
-              ];
-        },
-        retract: 1
-      },
-      /* ---- 7 bypass ---- */
-      { st: 7, sec: 30, t: 'Bypass servicing: MSP ≥ 48 kg/cm² at steam flow ≥ 40 T/H', d: 'Ang coach ang nagdadagdag ng coal at nagtataas ng SV ng HP bypass ng 1 kg/cm² bawat minuto.', c: b.ALL(b.VAL('MSP', 48, null), b.VAL('MSF', 40, null)), wait: 1, coachOff: ['oildown'], coach: ['byp'] },
-      { st: 7, sec: 30, t: 'Main steam pressure 123 kg/cm²', d: 'Hintayin ang 123 kg/cm² (SV ng HP bypass) at ang reheat ≤ 9 kg/cm².', c: b.HOLD(120, b.ALL(b.VAL('MSP', 121, null))), wait: 1 },
-      /* ---- 8 turbine ---- */
-      FIELD(8, 'Turbine preparation, ATS, chest warming, rub check (TCS / field)', [36, 37, 38, 39], { coachOff: ['byp'], coach: ['load'] }),
-      { st: 8, sec: 41, t: 'ROLL ng turbine hanggang 3600 rpm (TCS)', d: 'Sa TCS panel: ROLL. 120 rpm bawat minuto, mga 30 minuto.', c: b.HOLD(10, b.VAL('rpm', 3550, null)), a: [btn('ROLL (TCS)', () => A.tcs('roll'), () => U().tb && U().tb.st !== 'off')] },
-      { st: 8, sec: 42, t: 'SYNC: sarado ang GCB 52G1, LP bypass sa REMOTE', d: 'Sa TCS panel: SYNC. Pagkasara ng generator breaker, ilagay ang LP bypass sa R (SV = first stage + 5.1).', c: b.ALL(b.BIT('I.0931', 1, 'GCB 52G1 on'), b.MODE('PICHR1003', 'REM')), fps: ['PICHR1003'], a: [btn('SYNC (TCS)', () => A.tcs('sync'), () => bit('I.0931') > 0.5), btn('LP bypass R', () => A.rem('PICHR1003'))] },
-      { st: 8, sec: 42, t: 'Initial load 4.5 MW: hawakan nang 5 minuto', d: 'Ang TCS ang kumukuha ng initial load.', c: b.HOLD(300, b.VAL('MW', 3.5, null)), wait: 1 },
-      { st: 8, sec: 42, t: 'LOAD UP sa 45 MW (TCS), ICV → CV transfer', d: 'Sa TCS panel: LOAD UP 45 MW (7.5 MW bawat minuto). Ang transfer ay sa 15 ~ 22 MW. Ang coach ang naglilipat ng feedwater sa main valve at nagsasara ng LP bypass.', c: b.ALL(b.BIT('I.0418', 1, 'ICV to CV transfer complete'), b.VAL('MW', 15, null)), a: [btn('LOAD UP 45 MW (TCS)', () => A.tcs('loadup', 45), () => U().tb && U().tb.st === 'load')], coach: ['lpclose', 'fw'] },
-      {
-        st: 8,
+        st: 7,
         sec: 42,
         t: 'Feedwater 3-ELEMENT: FICFW1007 R, LICBR1001 A, pindutin ang 3-ELEMENT',
         d: 'Kapag feedwater > 110 T/H at wala na ang force manual (M.0228 = 0), ilipat sa 3-element: ang feedwater ay sumusunod sa steam flow at drum level.',
@@ -674,8 +769,15 @@ window.LS_GUIDE = (function () {
       /* 3.2.0-beta.24: the MS blow-off to its load SV 128 (4.PNG 148.8 MW: BLOW-OFF A, SV 128, MV 0). The bypass coach left it at the
          HP bypass SV + 5 of the moment its step ended (118 + 5 = 123 in some runs): at 80 MW it opened > 5 % at MSP 123, and its
          M.0255 (ABC-013 -> ABC-001C M.2013 BU-CMD) put the boiler and turbine master back to MANUAL at the CCS handover */
-      { st: 8, sec: 42, t: 'HP bypass sa REMOTE, sarado ang HP at LP bypass at ang MS blow-off sa 45 MW', d: 'Pagkatapos ng transfer, ilagay ang SV ng HP bypass sa R (SV = PV + 2): magsasara ito at ang turbine na ang kumukuha ng lahat ng steam. Ang MS blow-off PICMS1002 ay AUTO SV 128 (sarado; ang bukas na blow-off > 5 %, M.0255, ay back-up command ng boiler master).', c: b.ALL(b.VAL('MW', 44, null), b.MODE('PICMS1006', 'REM'), b.BIT('M.0709', 0, 'HP bypass open'), b.BIT('M.0255', 0, 'MS blow-off open')), fps: ['PICMS1006', 'PICMS1002'], a: [btn('HP bypass R', () => A.rem('PICMS1006'), () => md('PICMS1006') === 'REM'), btn('PICMS1002 A, SV 128', () => A.auto('PICMS1002', 128))] },
-      { st: 8, sec: 42, t: 'Hawakan ang 45 MW: MSP 115 ~ 131, drum level ±150 mm', d: 'NORMAL OPERATION sa TCS.', c: b.HOLD(120, b.ALL(b.VAL('MW', 44, null), b.VAL('MSP', 115, 131), b.VAL('lvl', -150, 150))), wait: 1 },
+      { st: 7, sec: 42, t: 'HP bypass sa REMOTE, sarado ang HP at LP bypass at ang MS blow-off sa 45 MW', d: 'Pagkatapos ng transfer, ilagay ang SV ng HP bypass sa R (SV = PV + 2): magsasara ito at ang turbine na ang kumukuha ng lahat ng steam. Mula rito, ang pressure ay tumataas kasabay ng load (FHI Fig. 2: 61 kg/cm² sa 15 % load, 123 sa 40 %). Ang MS blow-off PICMS1002 ay AUTO SV 128 (sarado; ang bukas na blow-off > 5 %, M.0255, ay back-up command ng boiler master).', c: b.ALL(b.VAL('MW', 44, null), b.MODE('PICMS1006', 'REM'), b.BIT('M.0709', 0, 'HP bypass open'), b.BIT('M.0255', 0, 'MS blow-off open')), fps: ['PICMS1006', 'PICMS1002'], a: [btn('HP bypass R', () => A.rem('PICMS1006'), () => md('PICMS1006') === 'REM'), btn('PICMS1002 A, SV 128', () => A.auto('PICMS1002', 128))] },
+      { st: 7, sec: 42, t: 'Hawakan ang 45 MW: MSP ≥ 90 kg/cm², drum level ±150 mm', d: 'NORMAL OPERATION sa TCS. Oil pa lang ang apoy; ang coach ang nagtataas ng oil habang tumataas ang pressure (Fig. 2: mga 98 kg/cm² sa 45 MW).', c: b.HOLD(120, b.ALL(b.VAL('MW', 44, null), b.VAL('MSP', 90, 131), b.VAL('lvl', -150, 150))), wait: 1 },
+      /* ---- 8 coal at 45 MW (PR-OPE-5002 solid fuel firing) ---- */
+      { st: 8, sec: 44, t: 'Bed temperature ≥ 400 °C: handa ang coal feeder', d: 'Ang coal ay nasusunog lang sa mainit na bed.', c: b.VAL('Tb', 400, null), wait: 1 },
+      { st: 8, sec: 44, t: 'Batch firing ng feeder A hanggang bed 600 °C', d: 'Ang feeder A ay 10 segundo ON, 60 segundo OFF. Ang coach ang gagawa nito kapag pinindot mo ang button.', c: C('Bed ≥ 600 °C, o 3 batch na', () => U().Tb >= 600 || (CO.batch && CO.batch.n >= 3), () => f0(U().Tb) + ' °C, batch ' + ((CO.batch && CO.batch.n) || 0)), a: [fDis('A'), btn('Simulan ang batch firing', () => coachOn('batch'), () => !!CO.batch)] },
+      { st: 8, sec: 44, t: 'Feeder A tuloy-tuloy, FICCL1061A sa AUTO, coal demand FIC-CF 10 %', d: 'Pagkatapos ng 600 °C, tuloy-tuloy na ang feeder A. Kapag tumatakbo na, ilagay sa AUTO (force manual ito ng drawing habang nakatigil). Mula rito, ang coach ang nagpapalit ng apoy: coal para sa steam ng turbine, bawas oil, pressure pataas sa 123 kg/cm² (hawak ng TCS ang 45 MW).', c: b.ALL(b.BIT('M.3400', 1, 'feeder A running'), b.MODE('FICCL1061A', 'AUTO'), SETmin('FIC-CF', 8)), fps: ['FICCL1061A', 'FIC-CF'], a: [fDis('A'), mot('M.3400', 'feeder A'), btn('FICCL1061A A', () => A.loc('FICCL1061A')), btn('FIC-CF M 10 %', () => A.man('FIC-CF', 10))], coachOff: ['batch', 'ofire'], coach: ['o2', 'swap'] },
+      { st: 8, sec: 44, t: 'Feeder B, tapos FICCL1061B sa AUTO', d: 'Ang ikalawang feeder.', c: b.ALL(b.BIT('M.3401', 1, 'feeder B running'), b.MODE('FICCL1061B', 'AUTO')), fps: ['FICCL1061B'], a: [fDis('B'), mot('M.3401', 'feeder B'), btn('FICCL1061B A', () => A.loc('FICCL1061B'))] },
+      { st: 8, sec: 44, t: 'Bed ≥ 650 °C: feeder C, tapos FICCL1061C sa AUTO', d: 'Ang ikatlong feeder kapag sapat na ang init ng bed.', c: b.ALL(b.VAL('Tb', 650, null), b.BIT('M.3402', 1, 'feeder C running'), b.MODE('FICCL1061C', 'AUTO')), fps: ['FICCL1061C'], a: [fDis('C'), WLm('M.3402', 'feeder C', () => (A.motor('M.3402', 1), A.motor('M.3405', 1))), btn('FICCL1061C A', () => A.loc('FICCL1061C'))] },
+      { st: 8, sec: 44, t: 'Main steam pressure 123 kg/cm² sa 45 MW', d: 'Coal na ang pangunahing apoy; ang mga oil burner ay nasa 20 % hanggang mga 60 % load (FHI Fig. 2). Hintayin ang 123 kg/cm² (SV ng PIC-COBM sa CCS).', c: b.HOLD(120, b.ALL(b.VAL('MW', 44, null), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150))), wait: 1 },
       /* ---- 9 load up ---- */
       {
         st: 9,
@@ -704,7 +806,7 @@ window.LS_GUIDE = (function () {
         ready: () => bit('M.0130') < 0.5 && Math.abs(h().val('ABC-004A', 'SI0141') - pv('FIC-CM')) < 1.5,
         readyTxt: () => 'Hintayin: M.0130 = ' + f0(bit('M.0130')) + ', fuel demand ' + f1(h().val('ABC-004A', 'SI0141')) + ' ≈ coal ' + f1(pv('FIC-CM')) + ' T/H',
         a: [btn('FIC-CM R', () => A.rem('FIC-CM'))],
-        coachOff: ['load'],
+        coachOff: ['load', 'swap'],
         coach: ['bf', 'spray']
       },
       {
@@ -761,7 +863,7 @@ window.LS_GUIDE = (function () {
         req: ['bm', 'tm'],
         t: 'Unit load demand HIC-ULD sa AUTO, TARGET 150 MW',
         d: 'Ang CCS na ang magkakarga sa 3 MW bawat minuto (HIC-MWRL).',
-        c: b.ALL(b.MODE('HIC-ULD', 'AUTO'), b.VAL('MW', 148, null)),
+        c: b.ALL(b.MODE('HIC-ULD', 'AUTO'), b.VAL('MW', 90, null)),
         fps: ['HIC-ULD'],
         a: [btn('HIC-ULD A, TARGET 150', () => {
           A.loc('HIC-ULD');
@@ -771,6 +873,27 @@ window.LS_GUIDE = (function () {
           return '';
         })],
         coachOff: ['bf']
+      },
+      {
+        st: 9,
+        req: ['bm', 'tm'],
+        sec: 44,
+        t: 'Load ≥ 90 MW, bed > 700 °C at PA flow ≥ 220 T/H: patayin ang mga burner isa-isa (A, D, B, C)',
+        d: 'FHI Fig. 2: pinapatay ang startup burners sa mga 60 % load; PR-OPE-5002: simulan sa furnace > 700 °C, tapusin sa > 750 °C. Kapag kaya na ng coal, isara ang oil valve at patayin ang burner, may pagitan na ilang minuto. Bago patayin ang huling burner, ang PA flow ay dapat higit sa 200 T/H: kapag coal na lang, nagti-trip ang boiler sa PRIMARY AIR FLOW L.L. (ABC-007, DITL-03F). Target ng procedure: 280 T/H.',
+        c: b.ALL(b.NOBIT(['M.3412', 'M.3413', 'M.3418', 'M.3419'], 'start-up burners out'), b.VAL('Tb', 700, null), C('PA flow ≥ 220 T/H (FIFA1071)', () => pv('FICFA1071') >= 220, () => (pv('FICFA1071') || 0).toFixed(0) + ' T/H')),
+        ready: () => pv('FICFA1071') >= 220 && h().MW() >= 90,
+        readyTxt: () => 'Hintayin: load ' + f0(h().MW()) + ' MW (≥ 90), PA ' + f0(pv('FICFA1071')) + ' T/H (≥ 220)',
+        get a() {
+          return WL()
+            ? [bOff('A'), bOff('D'), bOff('B'), bOff('C')]
+            : [
+                btn('Patayin burner A', () => (A.oil('M.3410', false), A.motor('M.3412', 0)), () => bit('M.3412') < 0.5),
+                btn('Patayin burner D', () => (A.oil('M.3417', false), A.motor('M.3419', 0)), () => bit('M.3419') < 0.5),
+                btn('Patayin burner B', () => (A.oil('M.3411', false), A.motor('M.3413', 0)), () => bit('M.3413') < 0.5),
+                btn('Patayin burner C', () => (A.oil('M.3416', false), A.motor('M.3418', 0)), () => bit('M.3418') < 0.5)
+              ];
+        },
+        retract: 1
       },
       {
         st: 9,

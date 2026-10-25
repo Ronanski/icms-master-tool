@@ -50,11 +50,15 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
     await __run(60);
     const r1 = AN.turbine('roll');
     await __run(1200);
+    const vNoAux = AN.unit.vac;
+    /* 3.2.0-beta.37: the vacuum up needs the aux steam (main steam > 12 kg/cm2, PR-OPE-5002) */
+    AN.unit.Pd = 20;
+    await __run(1200);
     const r2 = AN.turbine('roll');
-    return { r0, r1, r2, st: AN.unit.tb.st, vac: AN.unit.vac };
+    return { r0, r1, r2, st: AN.unit.tb.st, vac: AN.unit.vac, vNoAux };
   });
-  ck(/vacuum/.test(a.r0) && /vacuum/.test(a.r1) && a.r2 === '' && a.st === 'roll',
-    'Cold: roll with no SWP / CEP refused ("' + a.r0.slice(0, 60) + '"), 1 min after SWP + CEP start still refused, after 20 min accepted (turbine ' + a.st + ', vacuum ' + Math.round(100 * a.vac) + ' %)');
+  ck(/vacuum/.test(a.r0) && /vacuum/.test(a.r1) && a.vNoAux < 0.1 && a.r2 === '' && a.st === 'roll',
+    'Cold: roll with no SWP / CEP refused ("' + a.r0.slice(0, 60) + '"), SWP + CEP with no aux steam: vacuum ' + Math.round(100 * a.vNoAux) + ' % after 20 min, with aux steam (drum 20 kg/cm2) after 20 min accepted (turbine ' + a.st + ', vacuum ' + Math.round(100 * a.vac) + ' %)');
   const b = await page.evaluate(async () => {
     AN.reset();
     AN.plantLoad150();
