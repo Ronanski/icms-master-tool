@@ -4,7 +4,7 @@
 
 ## SIMULAN DITO (next session, 2026-10-25 12:30 PM PHT, wrap-up ng user: "emergency, ilipat sa new session")
 
-**Kasalukuyang Beta:** `3.2.0-beta.33` (Training isang screen: Bantayan may pangalan / tag / unit, CHECKLIST 0.4), branch `claude/project-thread-vhcfv9` (PR #39), huling commit `839ed09`. Stable pa rin ang v2.4.0 sa `main`. Walang merge sa main at walang release nang walang GO STABLE.
+**Kasalukuyang Beta:** `3.2.0-beta.34` (A/B/C/D: tamang address ng B / C / D, CHECKLIST 0.2 hakbang 1; 0.4 Training isang screen TAPOS sa beta.33), branch `claude/project-thread-vhcfv9` (PR #39), huling commit `839ed09`. Stable pa rin ang v2.4.0 sa `main`. Walang merge sa main at walang release nang walang GO STABLE.
 
 **Utos ng user na susundin (2026-10-24 / 25, galit kapag nilabag):**
 - Ang plano ay `docs/CHECKLIST.md` **seksyon 0**; ito lang muna ang gagawin, pulidohin at gawing perfect. I-update ang checklist kada may matapos.

@@ -77,20 +77,49 @@
   };
   /* "I.0056/376" -> [I.0056, I.0376]; "M.0122/222/1622/1722" -> [M.0122, M.0222, M.1622, M.1722]; "M.0470/480/ M.0490" -> 3 */
   const LRX = /\b([IMOB])\.([0-9A-F]{4})((?:\s*\/\s*(?:[IMOB]\.)?[0-9A-F]{3,4})+)/i;
-  const addrList = t => {
-    const m = LRX.exec(String(t || ''));
-    if (!m) {
-      const one = /\b([IMOB])\.([0-9A-F]{4})\b/i.exec(String(t || ''));
-      return one ? [one[1].toUpperCase() + '.' + one[2].toUpperCase()] : [];
+  /* 3.2.0-beta.34 (CHECKLIST 0.2): EVERY address group of the cell, in order. A drawing for machines A ~ D writes them as two groups,
+     "O.0088/408 O.0728/1048" = burner A / B / C / D (I/O list STN104: SVR-DO1043-A5 / B5 / C5 / D5), "M.1150/1160 M.1170" = SWP A / B / C
+     (memory list STN103). Before, only the first group was read: machine C / D took the address of machine A */
+  /* a short end of 2 ~ 4 digits: "I.0085/88/8B" = I.0085 / I.0088 / I.008B (DITL-45 dryer A / B / C) */
+  const LRXG = /\b([IMOB])\.([0-9A-F]{4})((?:\s*\/\s*(?:[IMOB]\.)?[0-9A-F]{2,4}(?![0-9A-F]))*)/gi;
+  const addrList = t => complete(addrList0(t));
+  /* a list written short on one row (DITL-13 row 28 "M.0143/243 BURNER A SHUTDOWN COMMAND") and in full on another (DITL-10 row 20
+     "M.0143/243 M.1643/1743" for the same signal): the full one, from the drawings themselves (the longest list that starts the same) */
+  let FULL = null;
+  function complete(la) {
+    if (la.length < 2) return la;
+    if (!FULL) {
+      FULL = new Map();
+      for (const sh of S.sheets || [])
+        for (const k in sh.cells || {}) {
+          const L = addrList0(cellTxt(sh, +k.split(':')[0], k.split(':')[1]));
+          if (L.length >= 2 && (!FULL.has(L[0]) || FULL.get(L[0]).length < L.length)) FULL.set(L[0], L);
+        }
     }
-    const p = m[1].toUpperCase() + '.',
-      b = m[2].toUpperCase(),
-      o = [p + b];
-    for (const q of m[3].split('/').map(x => x.replace(/[IMOB]\./i, '').trim().toUpperCase()).filter(Boolean))
-      o.push(p + (q.length >= 4 ? q : b.slice(0, 4 - q.length) + q));
+    const f = FULL.get(la[0]);
+    return f && f.length > la.length && la.every((a, i) => f[i] === a) ? f : la;
+  }
+  const addrList0 = t => {
+    const o = [];
+    for (const m of String(t || '').matchAll(LRXG)) {
+      const p = m[1].toUpperCase() + '.',
+        b = m[2].toUpperCase();
+      if (!o.includes(p + b)) o.push(p + b);
+      for (const q of (m[3] || '').split('/').map(x => x.replace(/[IMOB]\./i, '').trim().toUpperCase()).filter(Boolean)) {
+        const a = p + (q.length >= 4 ? q : b.slice(0, 4 - q.length) + q);
+        if (!o.includes(a)) o.push(a);
+      }
+    }
     return o;
   };
   const cellTxt = (s, i, k) => (s.cells[i + ':' + k] || []).map(x => x.t).join(' ');
+  /* 3.2.0-beta.34: the addresses of an input row: the TAG NO. column, or the service column when it lists more (DITL-45 row 6 TAG
+     "I.0084", service "I.0084/87/8A PLANT AIR DRYER-A ALARM" = dryer A / B / C) */
+  const rowList = (s, i) => {
+    const a = addrList(cellTxt(s, i, 'T')),
+      b = addrList(cellTxt(s, i, 'S'));
+    return !a.length || (b.length > a.length && b[0] === a[0]) ? b : a;
+  };
   /* the machines of a sheet: the note of the drawing, and the longest address list */
   function machinesOf(s) {
     if (s._mach !== undefined) return s._mach;
@@ -102,8 +131,14 @@
       if (nt) for (const m of nt[1].matchAll(/\b([B-D])\b/g)) lets.add(m[1]);
       n = Math.max(n, 1 + lets.size);
       let mx = 1;
-      for (const k in s.cells) mx = Math.max(mx, addrList(cellTxt(s, +k.split(':')[0], k.split(':')[1])).length);
-      for (const x of (s.tx || []).map ? s.tx : []) mx = Math.max(mx, addrList(x.t).length);
+      /* the number of machines: the FIRST address group only (as before 3.2.0-beta.34); the second group of a cell is not always another
+         machine (DITL-28A FAB A / B went to 3 machines with all groups counted) */
+      const one = t => {
+        const m = LRX.exec(String(t || ''));
+        return m ? 1 + m[3].split('/').filter(x => x.trim()).length : 0;
+      };
+      for (const k in s.cells) mx = Math.max(mx, one(cellTxt(s, +k.split(':')[0], k.split(':')[1])));
+      for (const x of (s.tx || []).map ? s.tx : []) mx = Math.max(mx, one(x.t));
       n = Math.max(n, Math.min(4, mx));
     }
     return (s._mach = n);
@@ -199,7 +234,17 @@
   W.addrK = (s, i) => {
     const I = s && s._inst,
       b = I ? I.base : s,
-      la = addrList(cellTxt(b, i, 'T') || cellTxt(b, i, 'S'));
+      la = rowList(b, i);
+    if (I && I.k && la.length < 2) {
+      /* 3.2.0-beta.34: one address and a text that turns into ANOTHER row of the same drawing (DITL-24 PAF LOP A: row 25 "LOP A STOPPED"
+         I.005C and row 26 "LOP B STOPPED" I.037C; for LOP B the two swap): the address of that row */
+      const me = W.remap(s, cellTxt(b, i, 'S')).replace(/\s+/g, ' ').trim();
+      for (const r in b.rows || [])
+        if (+r !== i && cellTxt(b, +r, 'S').replace(/\s+/g, ' ').trim() === me) {
+          const o = rowList(b, +r);
+          if (o.length === 1) return o[0];
+        }
+    }
     return la[I ? I.k : 0] || la[0] || null;
   };
   /* index of every link, built once when the world is turned on */
@@ -260,7 +305,7 @@
         n = machinesOf(sb);
       if (nd > 1) {
         /* 1. the address of this machine on the row = the address of one machine on the output */
-        const la = addrList(cellTxt(sb, i, 'T') || cellTxt(sb, i, 'S'));
+        const la = rowList(sb, i);
         if (la.length > 1 && la[k]) {
           const lo = addrList(cellTxt(d, orow, 'RS') + ' ' + cellTxt(d, orow, 'RT'));
           const j = lo.indexOf(la[k]);
@@ -408,7 +453,7 @@
                reads it (CLAUDE.md rule 1, one address = one signal). Before, feeders B and C had no furnace temperature permissive */
             if (d === d0 && machinesOf(d0) > 1 && !machAbc(src)) {
               const rt = cellTxt(d0, row, 'T') + ' ' + cellTxt(d0, row, 'S');
-              if (addrList(cellTxt(d0, row, 'T') || cellTxt(d0, row, 'S')).length <= 1 && !relative(d0, rt))
+              if (rowList(d0, row).length <= 1 && !relative(d0, rt))
                 W.instOf.get(d0).forEach((x, k) => k && addIn(x, row, { k: 'a', sh, n: src, ref: sh.name }));
             }
             hit = true;
@@ -442,7 +487,7 @@
           const sheets = abcOf(fm[1].toUpperCase());
           if (!sheets.length) return;
           const T = cellTxt(sb, i, 'T') + ' ' + cellTxt(sb, i, 'S'),
-            la = addrList(cellTxt(sb, i, 'T') || cellTxt(sb, i, 'S'));
+            la = rowList(sb, i);
           /* machine B / C / D of a shared drawing: only its own address (the address of machine A is not its signal) */
           /* 3.2.0-beta.23: one address and a row that names no machine of this family (DITL-19 row 16 "FURNACE LOWER LAYER UNDER
              TEMP. > 700 C" M.3330 is ONE furnace for feeders A, B, C) is the same signal for every instance (CLAUDE.md rule 1);
