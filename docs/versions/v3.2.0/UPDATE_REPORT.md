@@ -611,3 +611,11 @@ Engine at logic: walang binago.
 **As Left:** pagkatapos ng Field operator: row 12 = 1, kulang sa interlock ng BFWP-A = wala; START BFWP-A hindi na naka-lock. PASADO: ditl_selected, ditl_sim, training_dock.
 
 **Status:** Beta. Itutuloy ang takbo ng "tao" mula sa simula sa beta.28.
+
+## 3.2.0-beta.29 — Burner card: tamang paliwanag ngayong laging magkadugtong ang ABC at DITL
+
+**Problem (takbo ng "tao" sa Training):** ang card ng burner A / B / C / D ay nagsasabing "Buksan ang dalawang supply oil valve", pero walang ganoong button: sa iisang mundo, ang DITL light-off sequence (DITL-10 / 13) ang nagbubukas ng oil valve pagkatapos ng BURNER ON.
+
+**Work Done:** `src/ui/training/guide.js`: text ng 3 card ng burner: SA damper at oil FCV sa ignition → BURNER ON (DITL-09) → ang DITL ang magpapasok ng igniter, magbubukas ng oil valve at magsisindi → oil flow.
+
+**As Left:** PASADO: training_start. **Status:** Beta.
