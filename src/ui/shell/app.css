@@ -833,6 +833,8 @@ body[data-tab=logic] #gsbar .lo-pg{display:flex}
 #dmeta{display:none}
 body:not(.an) #dmeta.has{display:flex;align-items:center;gap:14px;min-height:28px;padding:2px 10px;background:var(--c-pane,var(--panel));border-bottom:1px solid var(--c-line,var(--line));font:12.5px var(--uf,sans-serif);color:var(--c-tx2,#cfd8dc);white-space:nowrap;overflow:hidden}
 #dmeta b{font:600 14px var(--mf,monospace);color:var(--c-hi,#fff);letter-spacing:.02em}
+/* 3.2.0-beta.35: machine A / B / C / D of a shared DITL drawing */
+#dmeta .dm-mach{display:inline-flex;gap:4px;flex:none}#dmeta .dm-m{min-width:30px;min-height:24px;padding:0 6px;border:1px solid var(--c-line,#445);border-radius:6px;background:transparent;color:var(--c-tx,#dde);font:600 12px var(--mf,monospace);cursor:pointer}#dmeta .dm-m.on{background:var(--c-acc,#2e7d5b);border-color:var(--c-acc,#2e7d5b);color:#fff}
 #dmeta .dm-t{overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
 #dmeta .sp{flex:1}
 #dmeta small{color:var(--c-dim,#8a99a6)}

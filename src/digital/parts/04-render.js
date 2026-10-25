@@ -313,13 +313,16 @@ function tx(t, p) {
   );
   if (t.r) e.setAttribute('transform', `rotate(${-t.r} ${t.x} ${-t.y})`);
   e.style.fontFamily = "Consolas,'Cascadia Mono',monospace";
-  e.textContent = t.t;
+  /* 3.2.0-beta.35: machine B / C / D of a shared drawing: its letter and its own address (WORLD.showText) */
+  e.textContent = TXMAP ? TXMAP(t.t) : t.t;
   return e;
 }
 const SIDE = { L: ['F', 'L', 'T', 'S'], R: ['RS', 'RL', 'RT'] };
+let TXMAP = null;
 function render() {
   const svg = $('svg'),
     s = cur();
+  TXMAP = s && s._inst && s._inst.k && typeof WORLD !== 'undefined' && WORLD.showText ? x => WORLD.showText(s, x) : null;
   svg.innerHTML = '';
   $('meta').hidden = !s;
   if (s && (!s.nl || s.nl.v !== 10)) {

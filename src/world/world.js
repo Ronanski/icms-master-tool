@@ -231,6 +231,19 @@
       return m.replace(/([A-D])(\)?)$/i, to + '$2');
     });
   };
+  /* 3.2.0-beta.35: a text of the drawing as it reads for machine instance k: the machine letter (W.remap) and, for an address list,
+     the address of that machine only ("M.1150/1160 M.1170 SEAWATER PUMP A START P.B." -> "M.1160 SEAWATER PUMP B START P.B.") */
+  W.showText = (s, t) => {
+    const I = s && s._inst;
+    if (!I || !I.k || !t) return t;
+    let x = W.remap(s, t);
+    const la = addrList(t);
+    if (la.length > 1 && la[I.k]) {
+      let first = true;
+      x = x.replace(LRXG, () => (first ? ((first = false), la[I.k]) : '')).replace(/\s{2,}/g, ' ');
+    }
+    return x;
+  };
   W.addrK = (s, i) => {
     const I = s && s._inst,
       b = I ? I.base : s,

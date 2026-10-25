@@ -682,17 +682,19 @@
     try {
       /* 3.2.0-beta.26: a push button of a DITL drawing (BURNER ON of DITL-09, a discharge valve of DITL-20): that sheet, its row selected
          (a motor START goes first; was: the ABC sheet of the step's faceplate). Machine B ~ D open the drawing of A until they are sheets of their own (CHECKLIST 0.2) */
-      const mot = (s.a || []).map(a => (a.stop ? motAddr(a) : null)).find(a => a && MOTOR[a]);
+      /* the first motor of the step that is not running yet (the second SWP step opens SWP-B, not the running SWP-A) */
+      const ms = (s.a || []).filter(a => a.stop && motAddr(a) && MOTOR[motAddr(a)]),
+        nx = ms.find(a => !call(() => a.on && a.on(), false)) || ms[0],
+        mot = nx ? motAddr(nx) : null;
       if (mot) {
         window.lsSetTab && lsSetTab('logic');
-        AN.xrefGo({ d: MOTOR[mot].replace(/\s*#\w+$/, '') });
+        openD(MOTOR[mot]);
         return;
       }
       const dg = (s.a || []).map(a => a.dg).find(Boolean);
       if (dg) {
         window.lsSetTab && lsSetTab('logic');
-        AN.xrefGo({ d: String(dg[0]).replace(/\s*#\w+$/, '') });
-        if (window.DUI && DUI.goItem) setTimeout(() => DUI.goItem(S.cur, undefined, null, { side: 'L', i: dg[1] }), 80);
+        openD(dg[0], dg[1]);
         return;
       }
       const t = (s.fps || [])[0];
@@ -711,6 +713,18 @@
         }
       }
     } catch (e) {}
+  }
+  /* 3.2.0-beta.35 (CHECKLIST 0.2): open a DITL drawing by name, machine B ~ D on its own page ("DITL-29A #B" = SWP-B, the B chip of the
+     sheet header); before, the drawing of machine A was opened for B ~ D */
+  function openD(nm, row) {
+    const m = /\s*#([B-D])$/.exec(String(nm));
+    AN.xrefGo({ d: String(nm).replace(/\s*#\w+$/, '') });
+    setTimeout(() => {
+      try {
+        if (window.DUI && DUI.setMach) DUI.setMach(m ? 'ABCD'.indexOf(m[1]) : 0);
+        if (row != null && DUI.goItem) DUI.goItem(S.cur, undefined, null, { side: 'L', i: row });
+      } catch (e) {}
+    }, 80);
   }
   /* the running memory of a motor button (guide.js mot) */
   const motAddr = a => a.ad || null;
@@ -938,7 +952,7 @@
         continue;
       }
       if (I.live) shown = 1;
-      const head = E('div', { cls: 'gd-ilh' }, [E('span', { txt: 'INTERLOCK · START PERMISSION' }), E('button', { type: 'button', cls: 'gd-lk', txt: I.sheet + ' ↗', title: 'Buksan ang ' + I.sheet, on: () => (window.lsSetTab && lsSetTab('logic'), AN.xrefGo({ d: I.sheet.replace(/\s*#\w+$/, '') })) })]);
+      const head = E('div', { cls: 'gd-ilh' }, [E('span', { txt: 'INTERLOCK · START PERMISSION' }), E('button', { type: 'button', cls: 'gd-lk', txt: I.sheet + ' ↗', title: 'Buksan ang ' + I.sheet, on: () => (window.lsSetTab && lsSetTab('logic'), openD(I.sheet)) })]);
       it.box.append(head);
       if (!I.live) {
         it.box.append(E('div', { cls: 'gd-ild', txt: 'Lalabas ang interlock kapag tumatakbo ang simulation (RUN).' }));

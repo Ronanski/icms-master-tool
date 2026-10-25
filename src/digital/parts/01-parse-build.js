@@ -22,7 +22,18 @@ const dec = s =>
     .replace(/%%[cC]/g, 'Ø')
     .replace(/%%[dD]/g, '°')
     .replace(/%%[pP]/g, '±');
-const cur = () => S.sheets[S.cur];
+/* 3.2.0-beta.35 (CHECKLIST 0.2, user 2026-10-24: "iduplicate, ireconstruct sa kapareha para hindi sama-sama ang mga address"): a drawing
+   that is the same for machines A ~ D shows the machine picked on its header (S.mach[sheet index] = 1 / 2 / 3 = B / C / D): its own
+   inputs, values and addresses (the machine instance of the one world, src/world/world.js) */
+const cur = () => {
+  const s = S.sheets[S.cur],
+    k = S.mach && S.mach[S.cur];
+  if (k && s && typeof WORLD !== 'undefined' && WORLD.instOf) {
+    const L = WORLD.instOf.get(s);
+    if (L && L[k]) return L[k];
+  }
+  return s;
+};
 /* ---------- DXF parse ---------- */
 const SYM = {
     LAMP1: 'lamp',
