@@ -2,25 +2,26 @@
 
 > Single current handoff. Palitan ang lumang status kapag nagbago ang trabaho; huwag mag-append ng chat transcript.
 
-## SIMULAN DITO (2026-10-25 ~11:15 PM PHT)
+## SIMULAN DITO (2026-10-26 ~12:30 AM PHT)
 
-**Kasalukuyang Beta:** `3.2.0-beta.37`, branch `claude/project-thread-2d6g10` (PR papunta sa `claude/project-thread-vhcfv9` = PR #39 line). Stable pa rin ang v2.4.0 sa `main`. Walang merge sa main at walang release nang walang GO STABLE.
+**Kasalukuyang Beta:** `3.2.0-beta.38`, branch `claude/project-thread-2d6g10` (PR #42 papunta sa `claude/project-thread-vhcfv9`). Stable pa rin ang v2.4.0 sa `main`. Walang merge sa main at walang release nang walang GO STABLE.
 
 **Utos ng user na susundin (2026-10-24 / 25, galit kapag nilabag):**
 - Ang plano ay `docs/CHECKLIST.md` **seksyon 0**; ito lang muna. I-update ang checklist kada may matapos.
 - **ETA sa ORAS** (PHT). **Update bawat 30 minuto** (`send_later`). **Sumagot muna sa user** bago magpatuloy.
-- **TEST = BATAY SA REFERENCE, HINDI SA COACH (user 2026-10-25: "hindi genuine ang test mo").** Ang trace / human run ay pinatatakbo ng sariling coach ng Training, kaya pumapasa ito kahit kulang ang SOP. Ang patunay ay: (1) `tests/regress/sop_bawal.js`: bawat aksyon ng operator ay sinusubukan nang maaga, dapat tumanggi ang app (PR-OPE-5002, DITL, ATS criteria); (2) paghambing sa FHI Fig. 2 at sa HMI snapshot; (3) talaan ng SOP section laban sa app: ang wala = FAIL, HINDI "field lang". Ang human run (`tools/training/human_run.js`) ay pang-UI lang (walang hinto ang mga card).
-- **Huwag gawing "field step" ang kulang na model.** Ang vacuum, aux steam, gland, turning gear ay bahagi ng TCS / turbine: model ang kailangan.
-- Golden reference ng start-up at operation (Claude Doc): https://claude.ai/artifact/D2EXiHjLsiJf12RBPniT39 (may section-by-section audit ng PR-OPE-5002 laban sa app).
+- **TEST = BATAY SA REFERENCE, HINDI SA COACH (user 2026-10-25: "hindi genuine ang test mo").** Patunay: (1) `tests/regress/sop_bawal.js` (bawat aksyon nang maaga, dapat tumanggi ang app; PR-OPE-5002, DITL, ATS criteria); (2) paghambing sa FHI Fig. 2 / 3 / 4 at sa HMI snapshot; (3) talaan ng SOP section laban sa app: ang wala = FAIL, HINDI "field lang".
+- **Huwag gawing "field step" ang kulang na model.**
+- Golden reference ng start-up at operation (Claude Doc): https://claude.ai/artifact/D2EXiHjLsiJf12RBPniT39
+
+**Bago sa beta.38:** turbine + TCS model (`src/analog/engine/tcs.js`): auxiliaries (lube / EH oil, vapour extractor, turning gear, aux steam, gland, vacuum, hood spray) at ATS step 0 ~ 7 na may criteria A / B (HOLD). Talaan ng criteria: `docs/tcs/ATS_CRITERIA.md`. Ang start-up steam ay sumusunod sa FHI Fig. 2 / 3 / 4 (`unit.js` suCurve). `sop_bawal.js` 19 / 19 PASS.
 
 **SUSUNOD NA GAGAWIN:**
-1. **CHECKLIST 0.6 — Turbine + TCS model** (desisyon ng user 2026-10-25: push muna beta.37, tapos TCS). Batayan: `document-references/tcs-references/310SC90-775 (ATS Sequence).pdf` (31 page, vector, nababasa sa `pdftoppm -r 110`) at `310SC90-776 (ATS Criteria).pdf` (page 3 = criteria table, page 5 ~ 16 = criteria list, page 21 = Fig. 2 / 3 mismatch). Basahin muna ang set point ng bawat criteria at ang sequence page 13 ~ 28. Model: step 0 ~ 7 (A / B / D), turning gear, lube / control oil, gland seal + aux steam header, vacuum (ejector), CV chest warming, rub check, acceleration (critical zone 1372 ~ 1723 rpm, PR-OPE-5002 8561), excitation, sync, initial load (hold hanggang LP exhaust < 52 °C), load up, LP exhaust hood temp, metal temp. Training steps sa TCS panel. Patunay: lahat ng FAIL ng `sop_bawal.js` ay PASS. Talaan: `docs/tcs/ATS_CRITERIA.md`.
-2. **Bukas sa boiler side:** MST 555 °C pinakamataas habang CCS load up 90 → 150 MW: FAIL, lampas sa H alarm 548, abot sa HH (HH 555, alarm list 20160912 TE-MS1004-1). Ayusin ang spray (TICBR1150 / TICMS1004) habang load up.
-3. **Kulang pa (hindi model, FAIL sa audit ng golden reference):** aux cooling water, instrument air (fixed 7.0 kg/cm2 sa `src/world/ditl150.js`), APH sootblower, ESP. Ang `src/ui/training/pr-ope-5002.js` extraction ay walang BYPASS SYSTEM SERVICING, TURBINE INLET WARMING, LOAD UP, EXTRACTION STEAM.
+1. **MST 555 °C** habang CCS load up 90 → 150 MW (H alarm 548, HH 555, alarm list TE-MS1004-1): ayusin ang spray (TICBR1150 / TICMS1004).
+2. **Direksyon ng RH biasing damper sa model:** sa probe (Start hot), HICHR1002A 10 → 60 % ay nagpababa ng RHT 482 → 434 °C (dapat tumaas: mas maraming gas sa RH). Suriin ang ABC-020 at ang `plant.js` xsh (sign ng TICHR1002A). Ang coach `rhbias` ay natututo ng direksyon kaya gagana pa rin pagkatapos ng ayos.
+3. Takbo ng tao sa bagong TCS cards (stage 5 at 7) at screenshot audit ng mga card.
+4. Kulang pa (FAIL sa golden reference): aux cooling water, instrument air, APH sootblower, ESP.
 
-**Estado ng Training (beta.37, trace Cold → Practice, kasama ang 45-min initial load):** walang trip; 150 MW MSP 122.8, MSF 471, O₂ 3.7 %, bed 833 °C; MST pinakamataas 555 °C. Detalye: `docs/versions/v3.2.0/UPDATE_REPORT.md` beta.37.
-
-**Hindi pa nasubok:** PC / tablet / EXE ng user; Practice (load change) sa takbo ng tao; bilis ×1 / ×10.
+**Hindi pa nasubok:** PC / tablet / EXE ng user; warm start (Fig. 3); Practice sa takbo ng tao.
 
 - **3.2.0-beta.24 (2026-10-24):** naayos ang hinto sa CCS handover (~80 MW). Sanhi: bukas ang MS blow-off PICMS1002 > 5 % (ABC-013 M.0255 → ABC-001C M.2013 BU-CMD → HIC-BM MAN → EIC-TM MAN, tama ang drawing). Naiiwan ang blow-off SV sa 117 ~ 123 mula sa bypass coach, at ang boiler-follow coach ay pataas lang. Ayos sa `src/ui/training/guide.js` lang: blow-off A SV 128 sa hakbang na "HP bypass sa REMOTE … 45 MW" (4.PNG), `bf` coach bumababa rin kapag MSP > 125, bantay sa bed (< 720 °C) sa `bf` at `load`, at bumabalik ang gabay sa hakbang ng HIC-BM / EIC-TM kapag naibalik sila ng drawing sa MANUAL (`req`). Ebidensya: 6 / 6 buong run (WORLD ON ×300) umabot sa 150 MW at Practice. Detalye: `docs/versions/v3.2.0/UPDATE_REPORT.md` beta.24.
 - **Luma, beta.24, susunod noon:**

@@ -1077,8 +1077,15 @@ function anPlantWarm(o) {
     auto('ABC-050', 'PICMS1006', o.P);
     auto('ABC-052', 'PICHR1003', 7.6);
     man('ABC-054', 'PICHR1391', 0);
+    /* 3.2.0-beta.38: the RH spray out of service before the turbine is on its CV (DITL-35: the RH spray SOV opens only after the ICV
+       TO CV TRANSFER COMPLETE I.0418; PR-OPE-5002 "RH DESUP => 69 MSF"). It kept the 150 MW spray (79 %) and the reheat stayed at
+       450 C, under the 485 C the ATS HOT mode asks for the roll */
+    man('ABC-019', 'TICHR1002', 0);
   }
   Object.assign(U, { Pd: o.P, Tw: steamTsat(o.P), Tb: o.Tb, vac: 1 /* 3.2.0-beta.15: a warm / hot plant has its condenser vacuum */ });
+  /* 3.2.0-beta.38: the turbine of a fired plant: auxiliaries in service, on the turning gear (tcs.js); Start hot = HOT start-up mode */
+  tcsInit(U, o.hot ? 'hot' : 'aux');
+  if (U.tb) U.tb.rpm = 3;
   if (o.rh > 0 && U.rhp && U.rhp.length && U.rhp[0].a0 && U.rhp[0].a0[0] > 0) U.rr = o.rh / U.rhp[0].a0[0];
   AN.steady = true; /* 2.2.0-beta.16: a steady state, no pulse from the inputs it sets (see anPlantCold) */
   try {

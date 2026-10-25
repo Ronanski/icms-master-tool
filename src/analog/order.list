@@ -12,6 +12,7 @@ engine/ranges-fx.js
 engine/plant.js
 engine/steam.js
 engine/unit.js
+engine/tcs.js
 engine/source.js
 engine/hmi-op.js
 engine/sheets.js
