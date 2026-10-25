@@ -659,3 +659,23 @@ Engine at logic: walang binago.
 **Bukas (audit ng plant model, CHECKLIST 0.5):** O₂ 9.3 % sa 80 MW (sobra ang hangin; air demand ng drawing sa REMOTE) ang nagpapalamig sa bed.
 
 **Status:** Beta.
+
+## 3.2.0-beta.33 — Training isang screen: tamang tag na kokontrolin at babantayan bawat hakbang (CHECKLIST 0.4)
+
+**Problem (user 2026-10-24: "hindi recognized kung ano ang dapat i-monitor at controllin, hindi recognized ang tamang valve, instrument, tags"):** ang "Bantayan sa hakbang na ito" ay walang pangalan at unit ("LICCD1110A PV"), may doble, at sa ilang yugto ay hindi ang tamang sukat; ang Bantayan ay natatakpan ng mga faceplate.
+
+**As Found (audit ng 68 hakbang ng dock: tag sa text, faceplate na ipinapakita, Bantayan):**
+- 5 hakbang na may binanggit na tag na hindi ipinapakita (FIC-CF sa #36 / #58, HS-COAL sa #59, HIC-MWRL sa #62, PIC-COBM sa #66): mga tag na binanggit lang bilang paliwanag; ang kokontrolin ng hakbang ay nasa card. Walang binago.
+- Bantayan: "<tag> PV" lang, walang pangalan at unit; doble (PICFG108 PV + Furnace pressure, PICMS1006 PV + Main steam press, FICFA1071 PV + Total air); yugto ng tubig (hakbang 6 ~ 11): walang hotwell level at condensate flow; hakbang 14 (diesel oil pump): furnace pressure at hangin ang ipinapakita.
+- Ang Bantayan ay nasa ilalim ng 2 ~ 3 faceplate (kailangang mag-scroll).
+
+**Work Done (`src/ui/training/dock.js`, `guide.js`; hindi binago ang engine):**
+- Bantayan: pangalan mula sa controller (hal. FICFW1007 "DRUM LEVEL CONTROL (FEED WATER FLOW CONTROL)" → "Feed water flow"), tag, unit mula sa range ng faceplate, at SV; MAN station = output (MV %).
+- Hindi na inuulit ang sukat na nasa listahan ng yugto (furnace pressure, drum level, FW flow, deaerator level, coal, O₂, main steam press).
+- Yugto ng tubig: hotwell level (LICCD1110A) at condensate flow (FICCD1120) idinagdag.
+- Hakbang 14: faceplate at Bantayan PICDO0005 (diesel oil pump outlet pressure).
+- Ang Bantayan ay nasa itaas ng mga faceplate (nakikita agad kasama ang card).
+
+**As Left:** audit ulit: lahat ng Bantayan may pangalan / tag / unit (hal. "Primary air flow · FICFA1071 [T/H]", "Feed water flow · FICFW1007 [T/H]", "Hotwell level [mm]"). PASADO: training_dock, training_start, home_training.
+
+**Status:** Beta. Ang takbo ng "tao" (`human_run.js`) sa beta.33 ay susunod (isusulat dito).
