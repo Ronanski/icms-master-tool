@@ -680,20 +680,34 @@
   function goStep(s) {
     if (!follow || !s) return;
     try {
+      /* 3.2.0-beta.26: a push button of a DITL drawing (BURNER ON of DITL-09, a discharge valve of DITL-20): that sheet, its row selected
+         (a motor START goes first; was: the ABC sheet of the step's faceplate). Machine B ~ D open the drawing of A until they are sheets of their own (CHECKLIST 0.2) */
       const mot = (s.a || []).map(a => (a.stop ? motAddr(a) : null)).find(a => a && MOTOR[a]);
       if (mot) {
         window.lsSetTab && lsSetTab('logic');
         AN.xrefGo({ d: MOTOR[mot].replace(/\s*#\w+$/, '') });
         return;
       }
+      const dg = (s.a || []).map(a => a.dg).find(Boolean);
+      if (dg) {
+        window.lsSetTab && lsSetTab('logic');
+        AN.xrefGo({ d: String(dg[0]).replace(/\s*#\w+$/, '') });
+        if (window.DUI && DUI.goItem) setTimeout(() => DUI.goItem(S.cur, undefined, null, { side: 'L', i: dg[1] }), 80);
+        return;
+      }
       const t = (s.fps || [])[0];
       if (t) {
-        const nm = AN.fpFind(LV().ctlTag(t) || t);
+        const tg = LV().ctlTag(t) || t,
+          nm = AN.fpFind(tg);
         if (nm) {
           window.lsSetTab && lsSetTab('logic');
           if (AN.cat !== 'an') AN.setCat('an');
-          const i = AN.sheets.findIndex(x => x.name === nm);
-          if (i >= 0 && i !== AN.i) AN.go(i);
+          /* 3.2.0-beta.26: the block of the tag, zoomed and selected (was: the whole sheet at Fit) */
+          if (AN.showTag) setTimeout(() => AN.showTag(tg, nm), 60);
+          else {
+            const i = AN.sheets.findIndex(x => x.name === nm);
+            if (i >= 0 && i !== AN.i) AN.go(i);
+          }
         }
       }
     } catch (e) {}
@@ -810,7 +824,16 @@
     }
     if (els.fps && els.fps.children.length) col2.append(els.fps);
     /* the values to watch */
-    els.watch = (WATCH[s.st] || []).map(([k, f, u, fm, hint]) => {
+    /* 3.2.0-beta.26 (user 2026-10-25: "hindi recognized kung ano ang dapat i-monitor"): first the PV of what this step controls (the
+       tags of its faceplates) and the motors it starts, then the values of the stage (was: the stage only: the condensate step showed the
+       drum level and the FW flow) */
+    const own = (s.fps || []).slice(0, 3).map(t0 => {
+      const t = call(() => LV().ctlTag(t0), null) || t0;
+      return [t + ' PV', () => call(() => LV().pvOf(LV().fp(t)), NaN), '', f1, call(() => 'SV ' + f1(LV().svOf(LV().fp(t))), '')];
+    });
+    const ms = (s.a || []).filter(a => a.stop && a.on);
+    if (ms.length) own.push(['Running', () => ms.filter(a => call(() => a.on(), false)).length + ' / ' + ms.length, '', x => x, ms.map(a => a.l.replace(/^START /, '')).join(', ')]);
+    els.watch = own.concat(WATCH[s.st] || []).map(([k, f, u, fm, hint]) => {
       const v = E('b', { txt: '—' });
       return { r: E('div', { cls: 'gd-wr' }, [E('span', { txt: k }), E('span', {}, [v, E('em', { txt: u }), hint ? E('small', { txt: hint }) : null])]), v, f, fm };
     });

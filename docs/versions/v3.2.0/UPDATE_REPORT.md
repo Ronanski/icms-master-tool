@@ -566,3 +566,24 @@ Engine at logic: walang binago.
 - PASADO: ladder, world, ditl_sim, training_dock, ditl150, why, events, lookonly; abcbar, audit230, blocks_io; interlock ALL PASS (54 min, mag-isa; ang unang subok ay nag-crash ang browser dahil sabay-sabay ang mga test sa iisang makina, hindi dahil sa beta.25: ABC-010 ay 162 s sa beta.24 at 170 s sa beta.25, parehong pasado).
 
 **Status:** Beta. Ang ladder ay preview: hinihintay ang desisyon ng user kung gagawin sa lahat (CHECKLIST 0.3). Hindi pa nasubok sa tablet / EXE ng user (bilis ng iisang mundo sa tablet).
+
+## 3.2.0-beta.26 — Page link ng Training: dinadala ka sa mismong kokontrolin
+
+**Problem (user 2026-10-25):** "ang page link (sa start-up training) ay hindi ka dinadala kung saan ka talaga magko-control"; "hindi recognized kung ano ang dapat i-monitor at kontrolin".
+
+**As Found (takbo ng Cold → 150 MW sa Training dock, 64 hakbang):**
+- (a) Ang hakbang na may faceplate ay nagbubukas ng buong ABC sheet sa Fit: hindi naka-zoom, hindi naka-select ang block, blangko ang Inspector (hal. hakbang 8 FICCD1120, ABC-032).
+- (b) Ang equipment B / C (SWP-B, CEP-B, BFWP-B, FAB-B) ay binubuksan sa DITL sheet ng A: ang B / C ay nakatagong kopya pa ng sheet ng A.
+- (c) Mukhang nahuhuli ang link ng feeder; sinuri: tama ang mapa ng app (M.3402 → DITL-19 #C), ang pagbasa ng probe ang maaga. Hindi mali ng app.
+- (d) Burner: ang BURNER ON ay pinipindot sa DITL-09 row 8, pero ang binubuksan ay ang ABC-003A (oil flow).
+- (e) Hakbang na pang-field o paghihintay lang: hindi lumilipat ang gitna. Tama: walang kokontrolin sa DCS.
+- (f) "Bantayan sa hakbang na ito" ay iisang listahan bawat yugto: sa condensate recirculation ay drum level / FW flow ang ipinapakita.
+
+**Work Done:**
+- `src/analog/ui/links-canvas.js`: `AN.showTag(tag)` = buksan ang ABC sheet ng tag, i-zoom (240 unit), i-center, i-select ang block (Inspector) at i-flash.
+- `src/ui/training/dock.js` `goStep`: motor START → DITL sheet nito; pindot sa DITL (BURNER ON DITL-09 row 8, discharge valve DITL-20 row 5) → ang sheet na iyon, naka-select ang row; faceplate → `AN.showTag`. "Bantayan": una ang PV / SV ng mga tag ng hakbang at ang bilang ng tumatakbong motor ng hakbang, tapos ang mga value ng yugto.
+- `src/ui/training/guide.js`: ang BURNER ON at ang feeder discharge valve ay may `dg` (sheet at row ng pindot).
+
+**As Left:** `AN.showTag` sinubok sa 7 tag (FICCD1120 ABC-032, LICCD1110A, PICFG108, HIC-BM MAN, FICDO1043A, PICMS1006, LICBR1001B): bawat isa nasa tamang sheet, naka-select ang block (PID / MAN), naka-zoom. PASADO: training_dock, training_start, home_training; `npm run check` SAME.
+
+**Status:** Beta. Bukas: (b) hanggang maging tunay na sheet ang A/B/C/D (CHECKLIST 0.2). Ang takbo ng "tao" (mouse click lang sa Training) ay tumatakbo pa; ang resulta ay isusulat dito.

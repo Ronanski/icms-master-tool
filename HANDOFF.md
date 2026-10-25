@@ -3,7 +3,7 @@
 > Single current handoff. Palitan ang lumang status kapag nagbago ang trabaho; huwag mag-append ng chat transcript.
 
 ## SIMULAN DITO (next session, 2026-10-24)
-- **Kasalukuyang Beta:** `3.2.0-beta.25`, branch `claude/project-thread-vhcfv9` (PR #39). Stable pa rin ang v2.4.0 sa `main`.
+- **Kasalukuyang Beta:** `3.2.0-beta.26` (page link ng Training: block na naka-zoom at naka-select, BURNER ON sa DITL-09, Bantayan bawat hakbang), branch `claude/project-thread-vhcfv9` (PR #39). Stable pa rin ang v2.4.0 sa `main`.
 - **PLANO NG USER (2026-10-24): `docs/CHECKLIST.md` seksyon 0** (isang utak → ladder sample → desisyon sa ladder / `.CFD` `.HFD` → DITL A/B/C/D na tunay na sheet → MCC / final element → tag map → audit ng engine → audit ng plant model → Training isang screen). May ETA bawat item; i-update kada matapos.
 - **3.2.0-beta.25 (2026-10-24):** isang utak: ABC + DITL laging iisang mundo, walang button (CLAUDE.md rule 7 pinalitan); ladder view (preview) ng DITL sheet, button "Ladder" sa DITL ribbon, ladder = engine sa 241 sheet (`tests/regress/ladder.js`). Detalye: `UPDATE_REPORT.md` beta.25.
 - **SUSUNOD NA GAGAWIN (user 2026-10-25):** CHECKLIST 0.1 page link ng Training (6 na mali na nakita sa takbo ng Cold → 150 MW), tapos 0.2 A/B/C/D, 0.3 MCC, 0.4 Training isang screen, 0.5 audit. ETA sa ORAS, hindi araw. Ladder at `.CFD` / `.HFD`: saka na. Sumagot muna sa user bago magpatuloy sa trabaho. Walang merge sa main at walang release nang walang GO STABLE.
