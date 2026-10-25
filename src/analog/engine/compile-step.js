@@ -1827,6 +1827,17 @@ function anCompile(S) {
         const ip = b.pins[0] && S.drv[b.pins[0].n].find(d => d.k === 'IP');
         b.pnl = ip ? [...new Set(ip.pins.map(p => p.n).filter(n => nets[n].pn))] : [];
       }
+    /* 3.2.0-beta.34 (CHECKLIST 0.3): the position transmitter of a valve named on the drawing (ABC-054 "MV-HR1391" and the indicator
+       ZIHR1391 on S2 AI0737 = ZT-HR1391 "#1 Hot reheat steam blow-off motor valve position", I/O list): the AI reads that valve */
+    for (const v of blk.filter(z => z.k === 'VLV' || z.k === 'ACT')) {
+      const nm = TX.filter(t => Math.abs(t.x - v.cx) < 30 && Math.abs(t.y - v.cy) < 40)
+        .map(t => /^(?:MV|CV|FCV|PCV|TCV|LCV)-?([A-Z]{2}\d{4}[A-Z]?)$/.exec(t.t.trim()))
+        .find(Boolean);
+      if (!nm) continue;
+      const zi = blk.find(z => z !== v && (z.txt || []).some(q => q.trim() === 'ZI' + nm[1] || q.trim() === 'ZT' + nm[1]));
+      const ai = zi && zi.i.length ? S.drv[zi.i[0]].find(d => d.k === 'AI') : null;
+      if (ai && !ai.fb) ai.fb = v;
+    }
     S._tr = {};
     for (const b of blk) {
       if (b.k === 'AI' && b.fb)
@@ -1941,6 +1952,22 @@ function anCompile(S) {
             y = v === 230 ? lb('FIFA1071.PV') : v === 245 ? lb('FIFA1081.PV') : -1;
           if (y >= 0 && y !== o) S.link.push([o, y]);
         }
+      }
+  }
+  /* 3.2.0-beta.34 (CHECKLIST 0.3): the motor operator of a motor valve, a circle with "M" (ABC-054 MV-HR1391, ABC-055): the
+     reader keeps no block for the circle, so the wire MCC PANEL -> (M) and the wire (M) -> valve were two nets and the valve got
+     no command. The PDF draws one line PO -> MCC PANEL -> M -> valve: the valve side is driven by the MCC side */
+  {
+    const ends = n => (nets[n].segs || []).flatMap(i => (S.seg[i] ? [[S.seg[i].x1, S.seg[i].y1], [S.seg[i].x2, S.seg[i].y2]] : [])),
+      near = (n, t) => ends(n).some(([x, y]) => Math.hypot(x - t.x, y - t.y) < 10);
+    for (const t of TX)
+      if (t.t.trim() === 'M') {
+        const f = blk.find(z => z.k === 'FIELD' && z.o.length && z.o.some(n => !S.cns[n].length && near(n, t))),
+          v = blk.find(z => (z.k === 'VLV' || z.k === 'ACT') && z.i.length && !S.drv[z.i[0]].length && near(z.i[0], t));
+        if (!f || !v) continue;
+        const src = f.o.find(n => !S.cns[n].length && near(n, t)),
+          dst = v.i[0];
+        if (src !== dst && !S.link.some(q => q[0] === dst)) S.link.push([dst, src]);
       }
   }
   /* 2.3.0-beta.1 DRAWING AUDIT (docs/versions/v2.5.0/DRAWING_AUDIT.md, DRAWING_TRACE.md): links of the PDF that the reader missed.

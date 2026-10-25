@@ -245,11 +245,34 @@ function anUnitStart() {
   /* the turbine inlet pressure (ABC-050 PT-MS1006-1 / -2, the PV of the HP bypass): the same steam, after the main steam line */
   const s50 = AN.sheets.find(x => x.name === 'ABC-050');
   U.tin = s50 && s50.S ? [anUnitAIs(shStn(s50) + '|AI0416'), anUnitAIs(shStn(s50) + '|AI0512')] : [];
+  /* 3.2.0-beta.34 (CHECKLIST 0.3, final element): a MOTOR valve (controller -> PO raise / lower pulses -> MCC PANEL -> M -> valve,
+     ABC-054 RH blow-off MV-HR1391) stands where the pulses moved it, a full stroke in about 60 s: the unit model reads the position
+     of that valve. A valve on an I/P positioner (AO -> I/P -> valve) follows its command within seconds: the command is read, as
+     before (the HP bypass opens at once on a turbine trip: unit_trip) */
+  const finalOf = (S, n0) => {
+    const seen = new Set([n0]),
+      q = [[n0, false]];
+    for (let g = 0; q.length && g < 40; g++) {
+      const [n, po] = q.shift();
+      for (const b of S.cns[n] || []) {
+        if (b.k === 'VLV' || b.k === 'ACT') return po ? b : null;
+        if (b.i && (b.i.length === 1 || b.k === 'AMT' || b.k === 'SW' || (/LIM$/.test(b.k) && b.i[0] === n)))
+          for (const m of b.o || []) if (!seen.has(m) && !(S.nets[m] && S.nets[m].dig)) seen.add(m), q.push([m, po || b.k === 'PO']);
+      }
+      for (const [d, sN] of S.link || []) if (sN === n && !seen.has(d)) seen.add(d), q.push([d, po]);
+    }
+    return null;
+  };
+  U.open = x => {
+    const st = x.v && x.S.rt.st[x.v.id],
+      o = st && st.pos != null ? st.pos : +x.S.rt.v[x.n] || 0;
+    return Math.max(0, Math.min(100, o));
+  };
   /* the valve commands of the other outlets (output of their A / M station after the interlocks) */
   const ctlOut = (k, t) => {
     const x = AN.sheets.find(y => y.name === k),
       c = x && x.S && AN.hmiCtrls ? (AN.hmiCtrls(x.S) || []).find(q => q.tag === t) : null;
-    return c && c.out != null ? { S: x.S, n: c.out, c } : null;
+    return c && c.out != null ? { S: x.S, n: c.out, c, v: finalOf(x.S, c.out) } : null;
   };
   U.vlv = [
     ['ABC-050', 'PICMS1006', U.hpb, 1 /* to the cold reheat */],
@@ -257,7 +280,7 @@ function anUnitStart() {
   ]
     .map(([k, t, f, rh]) => {
       const o = ctlOut(k, t);
-      return o ? { S: o.S, n: o.n, f, rh } : null;
+      return o ? { S: o.S, n: o.n, v: o.v, f, rh } : null;
     })
     .filter(Boolean);
   /* 2.2.0-beta.14: the oil flow of the four start-up burners (PV of FICDO1043A ~ D after the gate of the drawing) */
@@ -718,7 +741,7 @@ function anUnitStep(dt) {
   U.mb = 0;
   U.mhp = 0;
   for (const x of U.vlv) {
-    const o = Math.max(0, Math.min(100, +x.S.rt.v[x.n] || 0)),
+    const o = U.open(x),
       q = (((x.f * U.m0 * o) / 100) * P1) / U.P0;
     U.mb += q;
     if (x.rh) U.mhp += q;
@@ -815,13 +838,13 @@ function anUnitStep(dt) {
     shifted = (L, d) => anUnitWrite(L, i => L.a0[i] + d);
   /* reheat pressure: proportional to the steam through the IP / LP turbine = turbine steam + HP bypass, less what the LP bypass
      takes (its size lpb x the anchor flow at the anchor pressure); first stage pressure: proportional to the turbine steam */
-  const olp = U.lpv ? Math.max(0, Math.min(100, +U.lpv.S.rt.v[U.lpv.n] || 0)) : 0;
+  const olp = U.lpv ? U.open(U.lpv) : 0;
   if (!tb.xfer) {
     /* 2.2.0-beta.16 (M4 step 3): turbine shut (no IP / LP turbine flow): the hot reheat pressure is the steam stored in the
        reheater: in = HP bypass (U.mhp), out = LP bypass + RH blow-off, each = size x anchor flow x opening x pressure / anchor
        pressure (as the outlets of the main steam line). 2.2.0-beta.17: + the ICV flow (roll steam, initial load) until the transfer */
     const Prh0 = U.rhp.length && U.rhp[0].a0.length && U.rhp[0].a0[0] > 0 ? U.rhp[0].a0[0] : 34,
-      orb = U.rhbv ? Math.max(0, Math.min(100, +U.rhbv.S.rt.v[U.rhbv.n] || 0)) : 0,
+      orb = U.rhbv ? U.open(U.rhbv) : 0,
       qout = (U.m0 * U.rr * (U.lpb * olp + U.rhb * orb)) / 100 + qip;
     U.rr = Math.max(0, U.rr + ((U.mhp + U.ms - qout) * dt) / (U.Crh * Prh0));
   } else {

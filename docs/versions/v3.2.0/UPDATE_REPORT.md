@@ -676,3 +676,19 @@ Engine at logic: walang binago.
 **As Left (sinubok sa build na ito):** ang takbo ng "tao" (mouse click lang sa Training, ×300) Cold → 150 MW: umabot sa hakbang 64 at pasado ang hold (150.0 MW, MSP 123 kg/cm2) at sa Practice (hakbang 65), walang page error. Isang naunang takbo ay huminto sa hakbang 33 (burner C / D, lahat ng burner patay sa 14 kg/cm2); inulit sa parehong build at sa final build: parehong pasado, kaya hindi ito naulit (hindi natukoy ang sanhi ng isang beses na hinto). Pasado: `ditl_inst.js` (bago), `world.js`, `ditl_sim.js`, `ditl_pagelink.js`, `ditl_selected.js`, `ditl_toolbar.js`, `ditl150.js`, `training_dock.js`. Screenshot: PC 1440, tablet 1280 × 800 / 800 × 1280, phone 390 (walang sideways scroll). **Hindi sinubok:** PC / tablet / EXE ng user; Practice (load change) mismo.
 
 **Status:** Beta.
+
+## 3.2.0-beta.34 — MCC at final element: gumagalaw na ang motor valve (CHECKLIST 0.3)
+
+**Problem:** ang command ng controller ay humihinto sa "MCC PANEL" bago umabot sa valve (HANDOFF 0.3).
+
+**As Found:** sa 81 valve / damper ng ABC, 79 ang may command. Ang 2 na wala: ABC-054 MV-HR1391 (RH blow-off motor valve) at ABC-055 MV-BR1391 (SH outlet header to reheater motor valve). Sanhi: ang bilog na "M" (motor) sa drawing ay walang block, kaya naputol ang wire MCC PANEL → valve; laging 0 % ang valve. Ang ZT-HR1391 (S2 AI0737, posisyon ng valve) ay hindi sumusunod sa valve. Ang PO ay nagpapadala ng command, hindi ng posisyon na naabot ng pulse. Ang 7 INVERTER (coal feeder, limestone, ash cooler) ay tama: bilis ng motor ang huling elemento, walang simbolo pagkatapos sa drawing.
+
+**Work Done:**
+- `src/analog/engine/compile-step.js`: "M" sa pagitan ng MCC PANEL at valve = iisang wire (gaya ng PDF); ang AI ng position transmitter na nakapangalan sa drawing (ZIHR1391 ↔ MV-HR1391) ay binabasa ang valve.
+- `src/analog/engine/plant.js`: ang PO ay naglalabas ng posisyong naabot ng raise / lower pulse.
+- `src/analog/engine/unit.js`: ang steam ng RH blow-off ay sumusunod sa posisyon ng motor valve.
+- Ebidensya: `UNLINK_AUDIT.md` beta.34.
+
+**As Left (sinubok sa build na ito):** ABC-054: MV ng PICHR1391 sa 60 % → valve 25.7 % sa 5 s, 50.7 % sa 20 s, 60 % sa ~40 s (sumusunod sa pulse); ABC-055 pareho (0 → 60 % sa ~40 s). Takbo ng "tao" Cold → 150 MW: pasado ang hold ng 150 MW (149.9 MW, MSP 123) at umabot sa Practice, 0 page error. Pasado: `unit_trip.js` (HP bypass agad bumubukas sa turbine trip), `unit_load.js`, `plant_utilities.js`, `loop_source.js`, `pid_am.js`, `audit230.js`, `check_panel.js` (M1 ~ M5). `engine_units.js`: 3 DITL PULSE FAIL na luma na (pareho sa beta.32 at beta.33, hindi galing sa ayos na ito). **Hindi sinubok:** device ng user.
+
+**Status:** Beta.

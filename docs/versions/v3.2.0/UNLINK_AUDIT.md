@@ -44,3 +44,15 @@ Walang link na tinanggal. Ang buong talaan ng bawat binagong address (296, sheet
 5. **DITL-28A M.3437** — common sa lahat ng blower. Ebidensya: memory list "FA BLOWER STOP COMMAND", walang letra ng makina.
 6. **DITL-22 (aux. lube oil pump ng BFWP)** — 4 na kopya na: BFWP A · LOP A / BFWP A · LOP B / BFWP B · LOP A / BFWP B · LOP B (dati 2). Ang LOP row ay sumusunod sa letra ng LOP, ang BFWP row (hal. L6 "LUB. OIL PRESS. LOW" I.0090 / I.0410) sa letra ng BFWP. Ang link ng standby (row 8 "OTHER LOP RUNNING") ay sa kabilang LOP ng parehong BFWP (#B → #C ay dating mali, ngayon #A ↔ #B, #C ↔ #D).
 7. **Mga row na iisa ang address at walang letra ng makina (78)** — common, binabasa ng lahat ng kopya (hal. MFT). Hindi binago ang drawing: ang loose text sa loob ng logic (hal. "M.1050/1053") ay ipinapakita gaya ng drawing.
+
+## 3.2.0-beta.34 — MCC at final element (CHECKLIST 0.3)
+
+1. **ABC-054 MV-HR1391 (RH blow-off motor valve) at ABC-055 MV-BR1391 (No.1 S/H outlet header to reheater motor valve)** — bagong link: MCC PANEL → valve.
+   - Dati: walang command ang valve. Ang bilog na "M" (motor) sa pagitan ng MCC PANEL at ng valve ay walang block sa reader, kaya naging dalawang wire ang linya. Laging 0 % ang valve kahit gumagalaw ang PO.
+   - Ebidensya: sa PDF (51)ABC-054 ay iisang linya: PO (PO1 S1 AO0708 / PO2 S1 AO0709) → MCC PANEL → M → "HOT REHEAT STEAM BLOW-OFF MOTOR VALVE MV-HR1391". Ganoon din sa (52)ABC-055: PO (PO1 AO0704 / PO2 AO0705) → MCC PANEL → M → MV-BR1391.
+   - Ngayon: tuntunin sa `src/analog/engine/compile-step.js`: ang text na "M" sa dulo ng wire ng MCC PANEL / INVERTER at sa simula ng wire ng valve na walang pinagmulan ay iisang wire. 2 lang sa 81 valve / damper ang tinamaan (ang 79 ay may command na).
+2. **S2 AI0737 sa ABC-054** — binabasa na ang posisyon ng MV-HR1391.
+   - Ebidensya: I/O list S2 AI0737 = ZT-HR1391 "#1 Hot reheat steam blow-off motor valve position"; sa drawing, ang AI na ito ang pumapasok sa indicator ZIHR1391 at sa PIDV.
+   - Dati: walang nagsusulat ng AI na ito (hindi sumusunod sa valve).
+3. **INVERTER (ABC-004A ~ C coal feeder, ABC-005 limestone, ABC-009A / B ash cooler)** — tama, walang binago: ang inverter ang huling elemento (bilis ng motor). Sa drawing ay walang simbolo pagkatapos nito.
+4. **Plant model (unit model) ng RH blow-off** — ang steam na lumalabas ay sumusunod na sa POSISYON ng MV-HR1391 (pulse ng PO, ~60 s full stroke), hindi sa command. Ang mga valve na may I/P positioner (HP bypass, MS blow-off, LP bypass) ay sumusunod sa command sa loob ng ilang segundo, kaya command pa rin ang binabasa (nasubok: sa turbine trip ay agad bumubukas ang HP bypass, walang M.2001).

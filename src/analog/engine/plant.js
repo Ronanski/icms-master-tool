@@ -1379,7 +1379,9 @@ function anStep(S, dt) {
         s.up = on && s.pd > 0;
         s.dn = on && s.pd < 0;
         if (on) s.pos += s.pd * ups * dt;
-        if (b.o.length) out(x);
+        /* 3.2.0-beta.34 (CHECKLIST 0.3): what reaches the MCC panel and the motor valve is the train of open / close pulses, so the
+           valve stands where the pulses moved it (s.pos), not at the command (ABC-054 MV-HR1391, ABC-055) */
+        if (b.o.length) out(s.pos);
         break;
       }
       case 'TP': {
