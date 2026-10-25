@@ -4,7 +4,7 @@
 
 ## SIMULAN DITO (next session, 2026-10-25 12:30 PM PHT, wrap-up ng user: "emergency, ilipat sa new session")
 
-**Kasalukuyang Beta:** `3.2.0-beta.35` (CHECKLIST 0.2 A/B/C/D TAPOS: bawat makina B / C / D may sariling page, mga button A | B | C | D sa header, sariling text at address; 0.4 TAPOS sa beta.33), branch `claude/project-thread-vhcfv9` (PR #39), huling commit `f57844b`. Stable pa rin ang v2.4.0 sa `main`. Walang merge sa main at walang release nang walang GO STABLE.
+**Kasalukuyang Beta:** `3.2.0-beta.36` (CHECKLIST 0.3 TAPOS: ang MV ng RH blow-off ABC-054 / 055 ay umaabot na sa valve sa likod ng MCC PANEL; CHECKLIST 0.2 A/B/C/D TAPOS: bawat makina B / C / D may sariling page, mga button A | B | C | D sa header, sariling text at address; 0.4 TAPOS sa beta.33), branch `claude/project-thread-vhcfv9` (PR #39), huling commit `f57844b`. Stable pa rin ang v2.4.0 sa `main`. Walang merge sa main at walang release nang walang GO STABLE.
 
 **Utos ng user na susundin (2026-10-24 / 25, galit kapag nilabag):**
 - Ang plano ay `docs/CHECKLIST.md` **seksyon 0**; ito lang muna ang gagawin, pulidohin at gawing perfect. I-update ang checklist kada may matapos.
@@ -21,7 +21,7 @@
 
 **SUSUNOD NA GAGAWIN (sunod-sunod):**
 1. **CHECKLIST 0.2 — TAPOS (beta.35).** Takbo ng tao (mouse click lang) sa beta.35: Cold → 150 MW → Practice (hakbang 65), walang trip, 0 page error. (Ang hinto ng beta.34 sa hakbang 33 ay hindi na naulit.)
-2. **CHECKLIST 0.3 — MCC at final element** (ETA 2 ~ 3 oras): ang ABC block na "MCC PANEL / INVERTER" ay tinatrato ng reader na FIELD kaya humihinto ang MV bago umabot sa valve (`src/analog/reader/blocks.js:171`); iisang model ng command → MCC / positioner → equipment → feedback para sa ABC at DITL.
+2. **CHECKLIST 0.3 — TAPOS (beta.36).** ABC: 81 / 81 valve at actuator may driver (ABC-054 / 055 dati walang). DITL: ang MCC ay nakaguhit sa sheet (DITL-30 START → RUNNING sinubok). Test: `tests/regress/mcc_valve.js`. Susunod: CHECKLIST 0.5.
 3. **CHECKLIST 0.4 — TAPOS (beta.33).**
 4. **CHECKLIST 0.5 — audit ng engine at plant model para sa start-up** (ETA 3 ~ 4 oras). Bukas na nakita sa takbo ng tao: steam 157 ~ 160 T/H sa bypass stage sa 123 kg/cm2 bago ang turbine (procedure 40 ~ 55 T/H; dahil sa coal na kailangan para sa bed > 700 °C habang PA 280 T/H); O₂ 9.3 % sa 80 MW (sobra ang hangin, air demand ng drawing sa REMOTE); main steam 553 °C sa pagdating sa 150 MW (nag-settle ≤ 545 sa loob ng hold); SV ng blow-off ay 130 sa 150 MW (4.PNG: 128).
 

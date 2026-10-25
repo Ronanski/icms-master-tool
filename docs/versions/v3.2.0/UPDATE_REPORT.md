@@ -720,4 +720,6 @@ Engine at logic: walang binago.
 
 **As Left:** lahat ng valve / actuator ng ABC ay may driver. ABC-054 RUN: PICHR1391 MANUAL 40 % → MCC 40 → valve 40 %; MV 0 → sumasara ang valve (20 % pagkalipas ng 4 s). Walang binago sa plant model. Tests: mcc_valve, `npm test`, world, plant_live, ditl150, loaddown pasado.
 
-**Status:** Beta. Susunod sa 0.3: DITL START command → MCC → running feedback.
+**DITL (bahagi rin ng 0.3):** sa DITL, ang MCC ay nakaguhit sa mismong sheet (hal. DITL-30: MOR-P1503A START → seal-in sa MCC box → MIR-P1503A RUNNING, out row 58 → input row 1, link "30-58"); ang ibang sheet ay may motor / MOV / SV model (`src/digital/parts/03-models.js`). Sinubok: DITL-30 na naka-ON ang SWP A at REMOTE, pindot START → RUNNING 1, STOPPED 0 (`tests/regress/mcc_valve.js`). Walang binago sa DITL.
+
+**Status:** Beta. CHECKLIST 0.3 TAPOS.
