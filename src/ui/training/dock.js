@@ -901,10 +901,20 @@
     } else if (els.cond) els.cond.textContent = s.need ? 'Pindutin ang "Tapos na ito sa field" kapag nagawa na.' : '';
     /* the interlock */
     const blocked = {};
+    /* 3.2.0-beta.26 (human run of the Training: the first SWP step showed three full interlock boxes, SWP-A / B / C, and the last
+       button was under the screen): the full interlock only for the first motor of the step that is not running yet; a running one is
+       one line, the others wait (one line) */
+    let shown = 0;
     for (const it of els.il || []) {
       const I = interlock(it.ad);
       it.box.textContent = '';
       if (!I) continue;
+      const run0 = I.live && (atRow(it.ad) != null ? dout(it.ad, atRow(it.ad)) === 1 : /^DITL-/.test(it.ad) ? runOut(it.ad) === 1 : bit(it.ad));
+      if (I.live && (run0 || shown)) {
+        it.box.append(E('div', { cls: 'gd-ilh' }, [E('span', { txt: run0 ? '✓ TUMATAKBO NA' : 'SUSUNOD' }), E('span', { cls: 'gd-ilm', txt: I.sheet })]));
+        continue;
+      }
+      if (I.live) shown = 1;
       const head = E('div', { cls: 'gd-ilh' }, [E('span', { txt: 'INTERLOCK · START PERMISSION' }), E('button', { type: 'button', cls: 'gd-lk', txt: I.sheet + ' ↗', title: 'Buksan ang ' + I.sheet, on: () => (window.lsSetTab && lsSetTab('logic'), AN.xrefGo({ d: I.sheet.replace(/\s*#\w+$/, '') })) })]);
       it.box.append(head);
       if (!I.live) {
