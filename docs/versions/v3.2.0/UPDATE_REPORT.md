@@ -752,3 +752,27 @@ Engine at logic: walang binago.
 - Pasado: `tests.js`, `training_dock.js`, `unit_load.js`, `plant_utilities.js`.
 
 **Status:** Beta. CHECKLIST 0.5: boiler side TAPOS; turbine side BUKAS → turbine + TCS model mula sa ATS Sequence / Criteria (desisyon ng user 2026-10-25: push muna beta.37, tapos TCS).
+
+## 3.2.0-beta.38 (2026-10-26) — CHECKLIST 0.6: turbine at TCS model (ATS step 0 ~ 7)
+
+**Problem:** user 2026-10-25: "Paano naging field step ang vacuum at auxiliary ... wala ka pang turbine model at TCS", "hindi genuine ang test mo".
+
+**As Found (beta.37):** ang turbine ay isang pindot lang (ROLL → 3600 rpm sa 30 min, walang criteria). Sa ATS criteria (310SC90-776 page 3) 5 lang ang nasa app. Ang `sop_bawal.js` ay 7 FAIL. Sa Cold run: ang steam sa roll ay MS 462 °C at RH 474 °C (ATS: MS 400 ~ 420, RH 415 ~ 425 sa malamig na metal), kaya hindi talaga makaka-roll ayon sa ATS.
+
+**Work Done:**
+- Bagong TCS model (`src/analog/engine/tcs.js`): lube oil, EH oil, vapour extractor, turning gear (3 rpm), aux steam MV-AS1391 (MS > 12), gland sealing (aux > 7, umiikot, bukas ang vacuum breaker), vacuum up (aux > 10, gland, sarado ang breaker, ejector), LP exhaust hood spray FVCD1904. ATS step 0 HP warming, 1 preparation (CV chest warming 60 min), 2 rub check (200 rpm), 3 acceleration (heat soak sa 1800 / 3600 rpm ayon sa start-up mode), 4 excitation, 5 sync at initial load (3 % / hot 5 %, hold 40 / 15 / 0 min), 6 load up, 7 normal operation. Bawat step ay may step-in (A) at bantay (B, HOLD) mula sa criteria table; ang sagot ng TCS ay ang eksaktong criteria na kulang.
+- Steam sa start-up: ang SH / RH outlet ay sumusunod sa FHI SECT_7 Fig. 2 / 3 / 4 (cold 418 °C, warm 430, hot 500 mula roll hanggang transfer; 505 sa 30 %; 541 mula 60 %). Ang SH / RH spray ay hindi puwede doon ayon sa DITL-33 / 35.
+- Training: 5 bagong hakbang ng TCS auxiliaries (stage 5) at 8 ATS step (stage 7) kapalit ng isang ROLL; ang coach ng RH biasing damper (reheat 415 ~ 425 °C bago ang roll, PR-OPE-5002 8042); NORMAL OPERATION button sa 45 MW.
+- Naayos: (1) MFT sa drum level (−300 mm) nang ilagay ang bypass sa 85 kg/cm² na may SV 61: ang SV ay ang pressure ngayon na, pababa 1 kada minuto hanggang 61; ang oil ay bumababa sa 20 % kapag > 50 kg/cm² bago ang bypass. (2) Load hold ng TCS na nagiging bagong target (huminto sa 18.7 MW). (3) Start hot: RH spray off bago ang transfer (DITL-35).
+- Mga test: `sop_bawal.js` (roll / turning gear / aux / gland / vacuum / rub / accel nang maaga, cold boiler, LP hood 95 °C), `plant_utilities.js` (buong pagkakasunod ng auxiliaries), CHECK "M4 roll" (Start hot: ATS HOT mode, initial load 7.5 MW, oras ng acceleration bukod ang HOLD).
+
+**As Left (ebidensya):**
+- `sop_bawal.js`: 19 / 19 PASS (dati 10 PASS / 7 FAIL).
+- CHECK M4 hot roll → 45 MW: 11 / 11 (may ATS HOLD sa reheat habang acceleration, nakatala).
+- PASADO: `plant_utilities.js`, `training_dock.js`, `unit_load.js`, `unit_trip.js`, `training_start.js`, `home_training.js`, `tests.js` (walang FAIL).
+- Cold trace (Training, Cold → 150 MW, coach ang pumipindot): walang trip. Roll sa MS 417 °C / RH 423 °C, rub check, 1800 / 3600 rpm heat soak, sync, initial load 4.4 MW hanggang LP hood < 52 °C, load up (may ATS HOLD habang naka-MANUAL ang LP bypass sa pagsara), NORMAL OPERATION sa 45 MW, 150 MW: MSP 122.8, MSF 471, O₂ 3.8 %, bed 833 °C. **MST pinakamataas 555 °C habang CCS load up: FAIL pa rin laban sa H alarm 548 (bukas).**
+
+**Hindi nasubok:** PC / tablet / EXE ng user; takbo ng tao sa bagong TCS step cards; warm start (Fig. 3).
+
+**Status:** Beta. CHECKLIST 0.6: TCS model TAPOS; bukas pa: MST 555 °C sa CCS load up (H alarm 548), direksyon ng RH biasing damper sa model (pagbukas ng RH damper ay nagpapababa ng RHT: susuriin laban sa ABC-020).
+

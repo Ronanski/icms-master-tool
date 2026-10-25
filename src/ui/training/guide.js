@@ -25,6 +25,8 @@ window.LS_GUIDE = (function () {
     return HH;
   };
   const U = () => AN.unit || {};
+  /* 3.2.0-beta.38: the TCS / ATS model (src/analog/engine/tcs.js) */
+  const TC = () => (AN.tcs && AN.tcs()) || { aux: {}, crit: {}, step: -1, cur: -1 };
   const shOf = t => {
     try {
       return AN.fpFind(t);
@@ -159,7 +161,11 @@ window.LS_GUIDE = (function () {
         if (!o.cd && lit('B') && lit('C')) o.cd = 20;
         /* the oil fire raises the drum to 30 ~ 35 kg/cm2 only (PR-OPE-5002: the coal does the rest): above 40 it comes down */
         if (r > 100 || u.Pd > 40) {
-          o.ab = Math.max(30, o.ab - 5);
+          /* 3.2.0-beta.38: the turbine auxiliaries (lube oil ... vacuum up) come before the bypass (the LP bypass needs the condenser):
+             a closed boiler at 30 % oil went on to 85 kg/cm2 and the HP bypass opened at 61 took the level to -300 mm (MFT). Above 50
+             kg/cm2 the oil goes to its minimum (20 %), FHI Fig. 2: 61 kg/cm2 at the roll */
+          const lo = u.Pd > 50 ? 20 : 30;
+          o.ab = Math.max(lo, o.ab - 5);
           if (o.cd) o.cd = Math.max(20, o.cd - 5);
         } else if (r < 85 && u.Pd >= 5 && u.Pd < 35) {
           if (o.ab < 100) o.ab = Math.min(100, o.ab + 5);
@@ -303,7 +309,10 @@ window.LS_GUIDE = (function () {
         o.tsH.push(ts);
         if (o.tsH.length > 6) o.tsH.shift();
         const r = o.tsH.length === 6 ? (ts - o.tsH[0]) * 12 : 0;
-        o.hp = o.hp == null ? Math.max(50, Math.min(61, Math.round(+H.sh('ABC-050').rt.v[H.ctl('ABC-050', 'PICMS1006').q.sv]) || 50)) : o.hp;
+        /* 3.2.0-beta.38: from the SV the bypass was put in service at (the pressure of that moment, up to 85 kg/cm2), down 1 kg/cm2 a
+           minute to 61. Before, the SV was taken as 61 while the bypass held 74: the oil went down for the 61 and the reheat steam
+           (the HP bypass flow) fell under 7 kg/cm2 during the roll (ATS hold 1.5) */
+        o.hp = o.hp == null ? Math.max(50, Math.round(+H.sh('ABC-050').rt.v[H.ctl('ABC-050', 'PICMS1006').q.sv]) || 50) : o.hp;
         if (o.svc == null && msp >= 48 && msf >= 40) o.svc = t;
         const lit = k => bit({ A: 'M.3412', B: 'M.3413', C: 'M.3418', D: 'M.3419' }[k]) > 0.5;
         o.ab = o.ab == null ? mv('FICDO1043A') || 60 : o.ab;
@@ -314,7 +323,7 @@ window.LS_GUIDE = (function () {
         let d = 0;
         if (!grid) {
           if (r > 90 || (o.svc != null && ((msf > 65 && msp >= o.hp - 3) || msp > o.hp + 0.5))) d = -5;
-          else if (r < 80 && (o.svc == null || msp < o.hp - 1 || msf < 40) && (o.n = (o.n || 0) + 1) % 2 === 0) d = 5;
+          else if (r < 80 && (o.svc == null || msp < o.hp - 1 || msf < 40 || (TC().cur >= 2 && H.RHP() < 7.4)) && (o.n = (o.n || 0) + 1) % 2 === 0) d = 5;
         } else if (r > 100 || msp > Pt + 1.5) d = -5;
         /* the load up of the TCS (7.5 MW a minute) takes the steam faster than the oil follows: the fire goes ahead of it (10 % a
            minute while the turbine is loading or the pressure is 3 under) so that the pressure does not fall far under 61 */
@@ -332,6 +341,9 @@ window.LS_GUIDE = (function () {
         if (o.svc != null && !grid) {
           if (o.hp < 61 && msp >= o.hp - 1) {
             o.hp += 1;
+            A.auto('PICMS1006', o.hp);
+          } else if (o.hp > 61 && msp <= o.hp + 1) {
+            o.hp -= 1;
             A.auto('PICMS1006', o.hp);
           }
           A.auto('PICMS1002', o.hp + 5);
@@ -510,7 +522,9 @@ window.LS_GUIDE = (function () {
         for (const [k, inn, out, sv2] of [
           ['ABC-011', 'TICBR1130', 'TICBR1140', 462],
           ['ABC-012', 'TICBR1150', 'TICMS1004', 541]
-        ]) {
+        ].map(r => (r[0] === 'ABC-012' && TC().step >= -1 && TC().step < 6 && !(U().tb && U().tb.st === 'load') ? [r[0], r[1], r[2], 410] : r))) {
+          /* 3.2.0-beta.38: until the LOAD UP the main steam is held at 410 C for the turbine (PR-OPE-5002 8254 MS 400 C; ATS Fig. 2 at a
+             cold HP metal: MSV inlet 305 ~ 420 C; FHI Fig. 2: 415 C from the roll to the transfer) */
           /* 3.2.0-beta.23: with the one world the spray waits for its shut-off valve (DITL-32 / 33 out 73 SOV CLOSED = 0); a station that
              the drawing put back to MANUAL (force manual while the valve was still shut, CLAUDE.md rule 10) is taken again from the start */
           if (WL() && dOut(k === 'ABC-011' ? 'DITL-32' : 'DITL-33', 22) === 1) continue;
@@ -549,6 +563,34 @@ window.LS_GUIDE = (function () {
             q.o = 1;
           }
         }
+      }
+    },
+    /* 3.2.0-beta.38 (PR-OPE-5002 8042 "Set biasing damper and RH to Remote-Auto when RHT-PV is almost equal to R-SV"; ATS 1.6 / 1.72:
+       reheat 415 ~ 425 C at a cold reheat bowl): before the transfer the RH spray cannot open (DITL-35), the reheat outlet is held by
+       the RH flue gas biasing damper HICHR1002A (MAN, >= 10 %), 5 % a minute. The step that the damper moves is learned from the answer
+       of the reheat (one minute later), not assumed */
+    rhbias: {
+      t: 'Reheat 415 ~ 425 °C sa biasing damper HICHR1002A (RH)',
+      run(o) {
+        const T = TC().crit && TC().crit['1.6'] ? +TC().crit['1.6'].val : NaN;
+        if (!isFinite(T) || TC().step >= 5) return; /* on the grid the reheat follows the load (Fig. 2) */
+        if (o.T0 != null && o.dx) {
+          const d = T - o.T0;
+          if (Math.abs(d) > 0.5) o.sg = Math.sign(d) * Math.sign(o.dx); /* +1: more damper = hotter */
+        }
+        o.sg = o.sg || 1;
+        const want = T > 423 ? -1 : T < 417 ? 1 : 0,
+          x = setOf('HICHR1002A');
+        o.dx = 0;
+        if (want && isFinite(x)) {
+          const nx = Math.max(10, Math.min(100, x + 5 * want * o.sg));
+          if (nx !== x) {
+            o.dx = nx - x;
+            A.man('HICHR1002A', nx);
+            A.man('HICHR1002B', 100 - nx);
+          }
+        }
+        o.T0 = T;
       }
     },
     /* the O2 trim AICFG112 is forced MANUAL under 220 T/H (M.0102): held at 50 % (neutral, LN15) by hand, 1 % a step */
@@ -712,7 +754,14 @@ window.LS_GUIDE = (function () {
       /* ---- 5 vacuum and seals ---- */
       /* 3.2.0-beta.37 (user 2026-10-25): the aux steam (from the main steam > 12 kg/cm2), the turning gear, the gland sealing and the
          ejectors before the vacuum up (PR-OPE-5002 5708, 6118, 6512); the unit model raises the vacuum only with the aux steam */
-      FIELD(5, 'Aux steam (MV-AS1391, MS > 12 kg/cm²), deaerator warming, turning gear, gland sealing, condensate polisher, vacuum up (ejectors), bed material (field)', [28, 29, 30, 31, 32, 33, 34, 35], { d: 'Field at TCS: ang aux steam ay galing sa main steam (MS > 12 kg/cm², aux 10 kg/cm², 200 ~ 350 °C). Gland sealing: tumatakbo ang turning gear, aux > 7 kg/cm², gland steam 220 °C. Vacuum up: aux > 10 kg/cm², tapos ang gland sealing, sarado ang vacuum breaker, 1st at 2nd ejector. Kumpirmahin kapag tapos na.', c: C('Aux steam (main steam > 12 kg/cm²) at condenser vacuum ≥ 90 %', () => +U().Pd > 12 && +U().vac >= 0.9, () => 'Drum ' + f1(+U().Pd) + ' kg/cm², vacuum ' + f0(100 * (+U().vac || 0)) + ' %') }),
+      FIELD(5, 'Deaerator warming, condensate polisher, bed material (field)', [28, 29, 30, 31, 32, 33, 34, 35], { d: 'Mga gawain ng field operator na walang DCS / TCS signal. Ang aux steam, turning gear, gland sealing at vacuum up ay nasa TCS panel (mga susunod na hakbang).' }),
+      /* 3.2.0-beta.38 (CHECKLIST 0.6): the turbine auxiliaries on the TCS model (tcs.js): ATS criteria 1.14 ~ 1.19, PR-OPE-5002 5708 / 6118
+         / 6512. Before (beta.37) one "field" confirm */
+      { st: 5, sec: 31, t: 'TCS: lube oil pump, EH oil pump, MOT vapour extractor START', d: 'Kailangan ng bearing oil (ATS 1.15 / 1.16), control oil (1.14) at vapour extractor (1.18) bago ang turning gear at ang lahat ng ATS step.', c: C('Lube oil, EH oil, vapour extractor tumatakbo', () => TC().aux.lop && TC().aux.eh && TC().aux.vex, () => ['lop', 'eh', 'vex'].filter(k => !TC().aux[k]).join(', ') || 'OK'), a: [btn('LUBE OIL PUMP START', () => A.tcs('lop', 1), () => TC().aux.lop), btn('EH OIL PUMP START', () => A.tcs('eh', 1), () => TC().aux.eh), btn('VAPOUR EXTRACTOR START', () => A.tcs('vex', 1), () => TC().aux.vex)] },
+      { st: 5, sec: 31, t: 'Turning gear ON (mga 3 rpm)', d: 'Umiikot nang dahan-dahan ang rotor para hindi ito bumaluktot habang umiinit (ATS 1.19 TURBINE TURNING). Kailangan ng bearing oil.', c: C('Turbine turning (≥ 1 rpm)', () => TC().aux.tg && TC().rpm >= 1, () => f1(+TC().rpm || 0) + ' rpm'), a: [btn('TURNING GEAR ON', () => A.tcs('tg', 1), () => TC().aux.tg)] },
+      { st: 5, sec: 31, t: 'Aux steam: buksan ang MV-AS1391 (main steam > 12 kg/cm²)', d: 'Ang aux steam header (10 kg/cm²) ay galing sa main steam (PR-OPE-5002 5727 REQUIREMENT: MS > 12 kg/cm²). Ito ang steam ng gland seal at ng ejector.', c: C('Aux steam header > 10 kg/cm²', () => TC().Pa > 10, () => f1(+TC().Pa || 0) + ' kg/cm²'), a: [btn('MV-AS1391 OPEN', () => A.tcs('aux', 1), () => TC().aux.asv)], wait: 1 },
+      { st: 5, sec: 31, t: 'Gland sealing (aux > 7 kg/cm², turning gear, vacuum breaker bukas)', d: 'PR-OPE-5002 6118: MS > 12, aux > 7 kg/cm², gland steam 220 °C, tumatakbo ang turning gear, bukas ang vacuum breaker MV-AV1391 (ATS 1.10).', c: C('Gland steam seal header normal', () => TC().aux.gland, () => (TC().aux.gland ? 'in service' : 'off')), a: [btn('GLAND STEAM IN SERVICE', () => A.tcs('gland', 1), () => TC().aux.gland)] },
+      { st: 5, sec: 31, t: 'Vacuum up: isara ang vacuum breaker, ejectors (aux > 10 kg/cm²)', d: 'PR-OPE-5002 6512: tapos ang gland sealing, aux > 10 kg/cm², sarado ang vacuum breaker MV-AV1391, 1st at 2nd ejector. Mga 15 minuto hanggang ≥ 90 % (ATS 1.11).', c: b.ALL(C('Condenser vacuum ≥ 90 %', () => +U().vac >= 0.9, () => f0(100 * (+U().vac || 0)) + ' %'), C('LP exhaust hood spray FVCD1904 AUTO (PR-OPE-5002 6307)', () => !!TC().aux.hsp, () => (TC().aux.hsp ? 'AUTO' : 'OFF'))), a: [btn('VACUUM UP (ejectors)', () => A.tcs('vacuum', 1), () => TC().aux.ej), btn('Hood spray FVCD1904 AUTO', () => A.tcs('hood', 1), () => !!TC().aux.hsp)], wait: 1 },
       /* ---- 6 bypass at 61 kg/cm2, oil only (3.2.0-beta.37, CHECKLIST 0.5: PR-OPE-5002 BYPASS SYSTEM SERVICING -> TURBINE ROLLING ->
          SYNCH. & INITIAL LOAD -> LOAD UP -> solid fuel; FHI SECT_7 Fig. 2 COLD STARTUP: roll at 60 kg/cm2 6 h, coal 8.6 h. Before, the
          coal and 123 kg/cm2 came before the roll and the bypass dumped 155 ~ 189 T/H) ---- */
@@ -736,7 +785,9 @@ window.LS_GUIDE = (function () {
         c: b.ALL(b.MODE('PICMS1006', 'AUTO'), b.MODE('PICHR1003', 'AUTO')),
         fps: ['PICMS1006', 'PICHR1003', 'PICHR1391'],
         a: [btn('Ilagay lahat', () => {
-          const p = Math.max(50, Math.min(61, Math.ceil(h().MSP())));
+          /* 3.2.0-beta.38: the SV at the pressure of now (the step text), not 61 under it: at 85 kg/cm2 the bypass opened full and the
+             drum level went to -300 mm (MFT, Cold run) */
+          const p = Math.max(50, Math.ceil(h().MSP()));
           A.auto('PICMS1002', p > 50 ? p + 5 : 50);
           A.auto('PICMS1006', p);
           A.auto('PICHR1003', 7.6);
@@ -750,10 +801,17 @@ window.LS_GUIDE = (function () {
       { st: 6, sec: 30, t: 'Bypass servicing: MSP ≥ 48 kg/cm² at steam flow ≥ 40 T/H', d: 'Ang coach ang nagdadagdag ng oil fire, humahawak ng hangin (O₂ 3.5 ~ 8 % sa SA damper, PA 280 T/H kapag mainit na ang bed) at nagtataas ng SV ng HP bypass ng 1 kg/cm² bawat minuto hanggang 61.', c: b.ALL(b.VAL('MSP', 48, null), b.VAL('MSF', 40, null)), wait: 1, coachOff: ['fire'], coach: ['ofire', 'o2'] },
       { st: 6, sec: 30, t: 'Main steam pressure 61 kg/cm²: handa ang roll', d: 'PR-OPE-5002 (cold start): MS 61.2 kg/cm², steam flow > 40 T/H, reheat ≤ 8.5 kg/cm². Hawak ng HP bypass ang 61 at ng LP bypass ang reheat.', c: b.HOLD(120, b.ALL(b.VAL('MSP', 59, null), b.VAL('MSF', 40, null), b.VAL('RHP', null, 9))), wait: 1 },
       /* ---- 7 turbine on oil ---- */
-      FIELD(7, 'Turbine preparation, ATS, chest warming, rub check (TCS / field)', [36, 37, 38, 39]),
-      { st: 7, sec: 41, t: 'ROLL ng turbine hanggang 3600 rpm (TCS)', d: 'Sa TCS panel: ROLL. 120 rpm bawat minuto, mga 30 minuto.', c: b.HOLD(10, b.VAL('rpm', 3550, null)), a: [btn('ROLL (TCS)', () => A.tcs('roll'), () => U().tb && U().tb.st !== 'off')] },
-      { st: 7, sec: 42, t: 'SYNC: sarado ang GCB 52G1, LP bypass sa REMOTE', d: 'Sa TCS panel: SYNC. Pagkasara ng generator breaker, ilagay ang LP bypass sa R (SV = first stage + 5.1).', c: b.ALL(b.BIT('I.0931', 1, 'GCB 52G1 on'), b.MODE('PICHR1003', 'REM')), fps: ['PICHR1003'], a: [btn('SYNC (TCS)', () => A.tcs('sync'), () => bit('I.0931') > 0.5), btn('LP bypass R', () => A.rem('PICHR1003'))] },
-      { st: 7, sec: 42, t: 'Initial load 4.5 MW: hawakan nang 45 minuto', d: 'Ang TCS ang kumukuha ng initial load. PR-OPE-5002 INITIAL LOAD (cold 1 / cold 2 / ambient cold): 4.5 MW, 45 minutong hold, hanggang ang LP turbine exhaust hood ay < 52 °C (wala pang LP exhaust temp sa app: TCS model, docs/tcs/ATS_CRITERIA.md).', c: b.HOLD(2700, b.VAL('MW', 3.5, null)), wait: 1 },
+      FIELD(7, 'Field checks bago ang roll: drains, TCS lamps, turbine area (field)', [36, 37, 38, 39], { d: 'Mga gawain ng field operator. Ang ATS steps ay nasa TCS panel (mga susunod na hakbang).' }),
+      /* 3.2.0-beta.38 (CHECKLIST 0.6): the ATS steps of the TCS model (tcs.js; ATS Sequence 310SC90-775, Criteria 310SC90-776). Before
+         (beta.37) one ROLL button: 0 -> 3600 rpm in 30 min with no criteria */
+      { st: 7, sec: 41, t: 'ATS step 0: HP TURBINE WARMING', d: 'ATS page 13: kapag ≤ 150 °C ang HP first stage metal, pinapainit ito ng steam sa CV (B) hanggang > 150 °C. Kailangan: gland seal, vacuum, bearing oil, turning gear (CRITERIA A0).', c: C('HP turbine warming tapos (HP metal > 150 °C)', () => TC().step >= 0, () => 'HP metal ' + f0(+TC().Thp || 0) + ' °C' + (TC().cur === 0 ? ', warming' : '')), a: [btn('HP TURBINE WARMING', () => A.tcs('warm'), () => TC().cur === 0 || TC().step >= 0)], wait: 1 },
+      { st: 7, sec: 41, t: 'ATS step 1: TURBINE PREPARATION (CV chest warming, reset, MSV open)', d: 'ATS page 14 ~ 16: kapag ≤ 150 °C ang CV chest, CV chest warming nang 60 minuto (o diff < 50 °C at outer > 180 °C), tapos TURBINE RESET, MSV OPEN, LOAD LIMITER UPPER.', c: C('Turbine preparation tapos', () => TC().step >= 1, () => 'CV chest ' + f0(+TC().Tcvi || 0) + ' / ' + f0(+TC().Tcvo || 0) + ' °C' + (TC().cur === 1 ? ', ' + TC().ph + ' ' + f0(+TC().tmMin || 0) + ' min' : '')), a: [btn('TURBINE PREPARATION', () => A.tcs('prep'), () => TC().cur === 1 || TC().step >= 1)], wait: 1 },
+      { st: 7, sec: 41, t: 'Steam para sa roll: MS 60 kg/cm² / 400 ~ 420 °C, RH 7.5 kg/cm² / 415 ~ 425 °C', d: 'PR-OPE-5002 8254 COLD START-UP: MS 60 kg/cm², 400 °C; RH 7.5 kg/cm², 415 °C. ATS Fig. 2 / 3: sa malamig na metal, ang MSV inlet ≤ 420 °C at ang reheat ≤ 425 °C. Ang coach ang humahawak ng spray (TICBR1150) para sa main steam.', c: C('CRITERIA A2 (rub check) handa', () => TC().cur < 0 && !TC().next, () => TC().next || 'OK'), coach: ['spray', 'rhbias'], wait: 1 },
+      { st: 7, sec: 41, t: 'ATS step 2: TURBINE RUB CHECK (200 rpm, coast < 100 rpm)', d: 'ATS page 17 ~ 18: 200 rpm, sarado ang CV / ICV, hinahayaang bumagal; tapos kapag < 100 rpm. Nakikinig ang field operator kung may kiskis.', c: C('Rub check tapos', () => TC().step >= 2, () => f0(+TC().rpm || 0) + ' rpm' + (TC().hold ? ' HOLD: ' + TC().hold : '')), a: [btn('RUB CHECK', () => A.tcs('rub'), () => TC().cur === 2 || TC().step >= 2)], wait: 1 },
+      { st: 7, sec: 41, t: 'ATS step 3: ACCELERATION: 1800 rpm heat soak, tapos 3600 rpm heat soak', d: 'ATS page 19 ~ 22: 120 rpm/min. Ambient cold: 88 minuto sa 1800 rpm, tapos HP metal > 170 °C at shell expansion > 3 mm, tapos 3600 rpm nang 86 minuto. Walang hold sa critical zone 1372 ~ 1723 rpm.', c: C('Acceleration tapos (3600 rpm, heat soak)', () => TC().step >= 3, () => f0(+TC().rpm || 0) + ' rpm' + (TC().cur === 3 ? ', ' + TC().ph + ' ' + f0(+TC().tmMin || 0) + ' / ' + f0(+TC().soakMin || 0) + ' min' : '') + (TC().hold ? ' HOLD: ' + TC().hold : '')), a: [btn('ACCELERATION', () => A.tcs('accel'), () => TC().cur === 3 || TC().step >= 3)], wait: 1 },
+      { st: 7, sec: 42, t: 'ATS step 4: EXCITATION', d: 'ATS page 23: AVR EXCITATION START, generator voltage OK.', c: C('Excitation tapos', () => TC().step >= 4, () => (TC().cur === 4 ? 'excitation' : '—')), a: [btn('EXCITATION', () => A.tcs('excite'), () => TC().cur === 4 || TC().step >= 4)], wait: 1 },
+      { st: 7, sec: 42, t: 'ATS step 5: SYNCH. & INITIAL LOAD (52G), LP bypass sa REMOTE', d: 'ATS page 24 ~ 25: ASD START, sarado ang 52G, initial load 3 % (4.5 MW), hold 40 minuto (Fig. 3). Ilagay ang LP bypass sa R (SV = first stage + 5.1).', c: b.ALL(b.BIT('I.0931', 1, 'GCB 52G1 on'), b.MODE('PICHR1003', 'REM')), fps: ['PICHR1003'], a: [btn('SYNCH. & INITIAL LOAD', () => A.tcs('sync'), () => bit('I.0931') > 0.5), btn('LP bypass R', () => A.rem('PICHR1003'))] },
+      { st: 7, sec: 42, t: 'Initial load hold: 40 minuto, LP exhaust hood < 52 °C', d: 'ATS page 25 Fig. 3: 40 minuto (metal < 230 °C). PR-OPE-5002 9123: hawakan ang initial load hanggang ang LP turbine exhaust hood ay < 52 °C.', c: C('Initial load hold tapos at LP exhaust < 52 °C', () => TC().step >= 5 && TC().Tx < 52, () => (TC().cur === 5 ? f0(+TC().tmMin || 0) + ' / ' + (TC().holdMin || 40) + ' min, ' : '') + 'LP exhaust ' + f0(+TC().Tx || 0) + ' °C'), wait: 1 },
       { st: 7, sec: 42, t: 'LOAD UP sa 45 MW (TCS), ICV → CV transfer', d: 'Sa TCS panel: LOAD UP 45 MW (7.5 MW bawat minuto). Ang transfer ay sa 15 ~ 22 MW. Ang coach ang naglilipat ng feedwater sa main valve at nagsasara ng LP bypass.', c: b.ALL(b.BIT('I.0418', 1, 'ICV to CV transfer complete'), b.VAL('MW', 15, null)), a: [btn('LOAD UP 45 MW (TCS)', () => A.tcs('loadup', 45), () => U().tb && U().tb.st === 'load')], coach: ['lpclose', 'fw'] },
       {
         st: 7,
@@ -770,7 +828,7 @@ window.LS_GUIDE = (function () {
          HP bypass SV + 5 of the moment its step ended (118 + 5 = 123 in some runs): at 80 MW it opened > 5 % at MSP 123, and its
          M.0255 (ABC-013 -> ABC-001C M.2013 BU-CMD) put the boiler and turbine master back to MANUAL at the CCS handover */
       { st: 7, sec: 42, t: 'HP bypass sa REMOTE, sarado ang HP at LP bypass at ang MS blow-off sa 45 MW', d: 'Pagkatapos ng transfer, ilagay ang SV ng HP bypass sa R (SV = PV + 2): magsasara ito at ang turbine na ang kumukuha ng lahat ng steam. Mula rito, ang pressure ay tumataas kasabay ng load (FHI Fig. 2: 61 kg/cm² sa 15 % load, 123 sa 40 %). Ang MS blow-off PICMS1002 ay AUTO SV 128 (sarado; ang bukas na blow-off > 5 %, M.0255, ay back-up command ng boiler master).', c: b.ALL(b.VAL('MW', 44, null), b.MODE('PICMS1006', 'REM'), b.BIT('M.0709', 0, 'HP bypass open'), b.BIT('M.0255', 0, 'MS blow-off open')), fps: ['PICMS1006', 'PICMS1002'], a: [btn('HP bypass R', () => A.rem('PICMS1006'), () => md('PICMS1006') === 'REM'), btn('PICMS1002 A, SV 128', () => A.auto('PICMS1002', 128))] },
-      { st: 7, sec: 42, t: 'Hawakan ang 45 MW: MSP ≥ 90 kg/cm², drum level ±150 mm', d: 'NORMAL OPERATION sa TCS. Oil pa lang ang apoy; ang coach ang nagtataas ng oil habang tumataas ang pressure (Fig. 2: mga 98 kg/cm² sa 45 MW).', c: b.HOLD(120, b.ALL(b.VAL('MW', 44, null), b.VAL('MSP', 90, 131), b.VAL('lvl', -150, 150))), wait: 1 },
+      { st: 7, sec: 42, t: 'Hawakan ang 45 MW: MSP ≥ 90 kg/cm², drum level ±150 mm', d: 'NORMAL OPERATION sa TCS. Oil pa lang ang apoy; ang coach ang nagtataas ng oil habang tumataas ang pressure (Fig. 2: mga 98 kg/cm² sa 45 MW).', c: b.ALL(C('TCS NORMAL OPERATION (ATS step 7)', () => TC().step >= 7, () => (TC().step >= 7 ? 'OK' : TC().next || 'pindutin ang NORMAL OPERATION')), b.HOLD(120, b.ALL(b.VAL('MW', 44, null), b.VAL('MSP', 90, 131), b.VAL('lvl', -150, 150)))), a: [btn('NORMAL OPERATION (TCS)', () => A.tcs('normal'), () => TC().step >= 7)], wait: 1 },
       /* ---- 8 coal at 45 MW (PR-OPE-5002 solid fuel firing) ---- */
       { st: 8, sec: 44, t: 'Bed temperature ≥ 400 °C: handa ang coal feeder', d: 'Ang coal ay nasusunog lang sa mainit na bed.', c: b.VAL('Tb', 400, null), wait: 1 },
       { st: 8, sec: 44, t: 'Batch firing ng feeder A hanggang bed 600 °C', d: 'Ang feeder A ay 10 segundo ON, 60 segundo OFF. Ang coach ang gagawa nito kapag pinindot mo ang button.', c: C('Bed ≥ 600 °C, o 3 batch na', () => U().Tb >= 600 || (CO.batch && CO.batch.n >= 3), () => f0(U().Tb) + ' °C, batch ' + ((CO.batch && CO.batch.n) || 0)), a: [fDis('A'), btn('Simulan ang batch firing', () => coachOn('batch'), () => !!CO.batch)] },

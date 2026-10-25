@@ -91,6 +91,19 @@ const AN_UNIT = {
   /* temperature fall below 60 % MCR, C per unit of load share (02.png: MST 541 -> 517 and RHT 541 -> 499 at 0.443 MCR) */
   slopeSH: (541 - 517) / (0.6 - 203.7 / 460),
   slopeRH: (541 - 499) / (0.6 - 203.7 / 460),
+  /* 3.2.0-beta.38 (CHECKLIST 0.6, ATS 1.4 / 1.6 / 1.71 / 1.72 at the roll): the SH / RH outlet in a start-up versus the boiler load,
+     FHI SECT_7 Fig. 2 COLD STARTUP (one curve "SH / RH Out. Temp."): about 415 C from the roll to the IP / HP transfer (15 % load),
+     505 C at 30 % (start coal), 541 C from 60 %. Read off the chart (+-5 C); 418 at the roll keeps the steam inside the ATS window
+     (MS 400 ~ 420, RH 415 ~ 425 C). The slope of the snapshots (slopeSH) extrapolated to 12 % load gave 468 C: no roll possible.
+     The plateau from the roll to the transfer goes with the start-up mode of the turbine (tcs.js): Fig. 3 WARM STARTUP 430 C; Fig. 4
+     HOT STARTUP reads 455 ~ 475 C, the ATS HOT mode asks MS >= 455 and RH >= 485 C (PR-OPE-5002 8407): 500 (the reheat reads about 10 C under
+     the curve with the start-up biasing damper), the turbine wins */
+  suCurve: [
+    [0.15, 418],
+    [0.3, 505],
+    [0.6, 541]
+  ],
+  suRoll: { warm: 430, hot: 500 },
   /* 2.2.0-beta.12 (M3, trips). The DCS drawings give the LOGIC of a trip (force manual, BU-CMD, interlock); the plant answers:
      - TURBINE TRIP (STN102 I.0400 TCS-DI1003 "#1 Turbine trip", FROM ARP; memory list STN101 M.3200 "T/B TRIP (BC FROM S2)" and
        M.3220 "52G1 OPENED (BC FROM S2)" <- I.0932 "GCB 52G1 off"): the station wiring broadcasts the S2 inputs to S1 (bcast below,
@@ -473,6 +486,7 @@ function anUnitStart() {
   for (const l of lists) for (const [S2, b] of l) own.add(S2.rt.st[b.id]);
   U.own = own;
   U.on = true;
+  U.tc = null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
   /* 3.2.0-beta.14: the snapshot plant has its diesel oil pump in service (source.js field equipment) */
   AN_SRC.field.dop = true;
   AN.unit = U;
@@ -509,6 +523,7 @@ function anUnitCold() {
   /* 3.2.0-beta.14: cold = the field equipment stopped too (diesel oil pump, source.js) */
   AN_SRC.field.dop = false;
   AN_SRC.t = -1;
+  tcsInit(U, 'cold');
   return true;
 }
 /* 2.2.0-beta.21 (M5 shutdown): the plant at 150 MW WITH the start-up / shutdown physics on (U.cold: the water heat storage of the
@@ -522,6 +537,7 @@ function anUnitLive() {
   U.turb = true;
   U.tb = { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN, perm: true };
   U.Tw = steamTsat(U.Pd);
+  tcsInit(U, 'load');
   return true;
 }
 /* 2.2.0-beta.17 (M4 step 4): the operator on the TCS panel (outside the DCS): 'roll' (open the stop valves, IP start mode, rpm up
@@ -531,6 +547,39 @@ function anTurbine(cmd, arg) {
   const U = AN_UNIT;
   if (!U.on || !U.tb) return 'walang unit model (Start cold / warm muna)';
   const tb = U.tb;
+  /* 3.2.0-beta.38 (CHECKLIST 0.6): the TCS / ATS model (tcs.js): the auxiliaries and the ATS step push buttons. 'roll' = ATS AUTO
+     from the next step up to ACCELERATION (3600 rpm), 'sync' = EXCITATION + SYNCH. & INITIAL LOAD, 'loadup' = LOAD UP to the target */
+  if (U.tc) {
+    const c = U.tc;
+    if (cmd === 'roll') {
+      if (tb.st === 'sync' || tb.st === 'load') return 'naka-sync na';
+      if (c.step >= 3) return 'umiikot na ang turbine (3600 rpm)';
+      let nx = c.cur >= 0 ? c.cur : c.step + 1;
+      if (nx === 0 && c.Thp > 150) nx = 1;
+      if (nx === 2 && !(c.mode === 'amb' || c.mode === 'c1')) nx = 3;
+      const r = c.cur >= 0 ? '' : tcsStepIn(U, nx);
+      if (r) return r;
+      c.auto = true;
+      c.autoTo = 3;
+      return '';
+    }
+    if (cmd === 'sync') {
+      if (tb.st === 'sync' || tb.st === 'load') return 'naka-sync na';
+      if (c.step < 3) return c.step < 1 ? 'i-roll muna ang turbine' : 'hindi pa 3600 rpm / tapos ang ACCELERATION (' + tb.rpm.toFixed(0) + ' rpm)';
+      const r = c.cur >= 0 ? '' : tcsStepIn(U, c.step + 1);
+      if (r) return r;
+      c.auto = true;
+      c.autoTo = 5;
+      return '';
+    }
+    if (cmd === 'loadup') {
+      if (tb.st !== 'sync' && tb.st !== 'load') return 'i-sync muna ang generator';
+      if (c.step < 5) return 'hinihintay ang initial load hold (SYNCH. & INITIAL LOAD, ' + (c.tm / 60).toFixed(0) + ' / ' + (c.holdMin || 0) + ' min)';
+      return tcsStepIn(U, 6, arg);
+    }
+    const r = tcsCmd(U, cmd, arg);
+    return r == null ? 'hindi kilalang utos: ' + cmd : r;
+  }
   if (cmd === 'roll') {
     if (tb.st !== 'off') return 'umiikot na ang turbine (' + tb.st + ')';
     if (!(U.vac >= 0.9)) return 'walang vacuum ang condenser (' + Math.round(100 * (U.vac || 0)) + ' %): i-start muna ang seawater pump (SWP) at condensate pump (CEP); ang VACUUM UP (ejector, gland sealing) ay kailangan ng aux steam: main steam > 12 kg/cm2';
@@ -639,12 +688,16 @@ function anUnitStep(dt) {
        vacuum up at gland steam at auxiliary steam"): PR-OPE-5002 VACUUM UP needs the steam ejectors and the gland sealing, both on
        the auxiliary steam ("Auxiliary steam pressure is > 10 Kg/cm2"), and the aux steam is taken from the main steam ("AUXILLIARY
        WARMING UP, REQUIREMENT: MS Pressure > 12 Kg/cm2", MV-AS1391). No aux steam: the vacuum does not rise (it is held, not lost) */
-    const aux = U.Pd > 12;
+    /* 3.2.0-beta.38: with the TCS model (tcs.js) the ejectors raise the vacuum: aux steam > 10, gland sealing in service, vacuum breaker
+       MV-AV1391 closed (PR-OPE-5002 6545); an open vacuum breaker breaks it */
+    const tcx = U.tc,
+      aux = tcx ? tcx.ej && !tcx.vb && tcx.Pa > 10 && tcx.gland : U.Pd > 12,
+      cw2 = tcx && tcx.vb ? 0 : cw;
     U.aux = aux ? 1 : 0;
-    U.vac = Math.max(0, Math.min(1, cw > U.vac ? (aux ? U.vac + dt / U.vacUp : U.vac) : U.vac + ((cw - U.vac) * dt) / U.vacDn));
+    U.vac = Math.max(0, Math.min(1, cw2 > U.vac ? (aux ? U.vac + dt / U.vacUp : U.vac) : U.vac + ((cw2 - U.vac) * dt) / U.vacDn));
     const tb0 = U.tb,
       l = U.vtrip;
-    if (tb0 && tb0.st !== 'off' && U.vac < 0.6 && l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== 1) {
+    if (tb0 && (tb0.st !== 'off' || (U.tc && U.tc.trip)) && (U.vac < 0.6 || (U.tc && U.tc.trip)) && l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== 1) {
       l.S.rt.ext[l.n] = 1;
     }
   }
@@ -654,12 +707,15 @@ function anUnitStep(dt) {
     dirt = (l, x) => {
       if (l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== x) l.S.rt.ext[l.n] = x;
     };
+  /* 3.2.0-beta.38: the turbine auxiliaries and the ATS program (tcs.js) */
+  if (U.tc && !trip) tcsStep(U, dt);
   if (trip && tb.st !== 'off') {
     /* the TCS closes the ICV too (the HP valves below); in a start-up the machine is lost: stop valves shut, GCB open (I.0932, the
        generator protection), no transfer, no DCS mode */
     tb.icv = Math.max(0, tb.icv - dt / U.tauTrip);
     if (U.cold) {
       Object.assign(tb, { st: 'off', xfer: false, tgt: 0, aim: 0 });
+      tcsTrip(U);
       dirt(U.di.gcbOn, 0);
       dirt(U.di.gcbOff, 1);
       dirt(U.di.xfer, 0);
@@ -669,7 +725,10 @@ function anUnitStep(dt) {
   }
   U.turb = tb.st !== 'off';
   const onGrid = tb.st === 'sync' || tb.st === 'load';
-  if (tb.st === 'roll') {
+  if (U.tc) {
+    /* the ATS sets the speed and the ICV (tcs.js); a stopped machine coasts down to the turning gear */
+    if (!U.turb && tb.rpm > 4) tb.rpm = Math.max(0, tb.rpm - (3600 * dt) / 600);
+  } else if (tb.st === 'roll') {
     tb.rpm = Math.min(3600, tb.rpm + (U.rollRate * dt) / 60);
     tb.icv = Math.min(U.icvRoll, tb.icv + (U.icvRoll * dt) / 60);
   } else if (!U.turb) tb.rpm = Math.max(0, tb.rpm - (3600 * dt) / 600);
@@ -883,7 +942,25 @@ function anUnitStep(dt) {
       A =
         (pr.Ka * Math.max(0, pr.hop.mv - plo) * span) /
         100; /* authority of the spray of the snapshot, units of the PV */
-    pr.ld = (pr.sg || -1) * (A * (1 - gx) + e.s * below);
+    /* 3.2.0-beta.38 (CHECKLIST 0.6, the ATS criteria 1.4 / 1.6 / 1.71 / 1.72 at the roll): in a start-up / shutdown (U.cold, or a turbine
+       start-up not yet in NORMAL OPERATION: Start warm / hot) the SH and RH outlet follow the FHI Fig. 2 curve (suCurve). The slopes of the load test extrapolated to 12 % load gave MS 468 C (RH 388
+       C with slopeRH): outside the ATS window, no roll. The spray drawings agree that no spray can help there: DITL-33 opens the SH
+       spray SOV only with the finishing SH inlet >= 350 C and steam > 46 T/H, DITL-35 the RH spray only after the ICV to CV transfer */
+    let dn = e.s * below;
+    if ((U.cold || (U.tc && U.tc.step < 7)) && e.s > 0) {
+      const p0 = (U.tc && U.suRoll[U.tc.mode]) || U.suCurve[0][1],
+        c = U.suCurve.map(([a, b]) => [a, Math.max(b, p0)]),
+        x = Math.max(c[0][0], xl);
+      let T = c[c.length - 1][1];
+      for (let i = 1; i < c.length; i++)
+        if (x <= c[i][0]) {
+          T = c[i - 1][1] + ((c[i][1] - c[i - 1][1]) * (x - c[i - 1][0])) / (c[i][0] - c[i - 1][0]);
+          break;
+        }
+      dn = Math.max(0, 541 - T);
+    }
+    pr.dn = dn;
+    pr.ld = (pr.sg || -1) * (A * (1 - gx) + dn);
   }
   /* the headers after the spray: spray outlet + the pickup of the next superheater at the anchor, metal lag */
   for (const h of U.sh) {

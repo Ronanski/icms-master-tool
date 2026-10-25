@@ -875,8 +875,8 @@
       id: 'roll',
       hot: true,
       title: 'M4 · Turbine roll, sync, load up to 45 MW',
-      how: 'Start hot (dulo ng hakbang 3: 123 kg/cm2 sa HP bypass AUTO, LP bypass AUTO 7.6, bed 750 °C, 3 feeder sa FIC-CF 12 %, burners out). Operator sa TCS panel (labas ng DCS drawing): ROLL sa t = 1 min (120 rpm/min, IP start mode: roll steam mula sa reheat sa ICV); sa 3600 rpm SYNC (GCB 52G1 sarado: ABC-050 I.0931 = 1 / I.0932 = 0, initial load 4.5 MW), LP bypass R (REMOTE: SV = first stage + 5.1); 5 min hold; LOAD UP 45 MW (5 %/min = 7.5 MW/min). Sa 20 MW o ICV full open: ICV → CV transfer (I.0418 = 1; ang drawing ang nagpapa-REMOTE ng HP bypass SV = PV + 2 sa sync pulse M.070D, kaya sumasara). Coal: FIC-CF +2 ~ 3 % kada minuto habang paakyat (+3 kapag MSP < 118), ±1 pagkatapos para hawak ang 123; O2 3.5 ~ 8 (PA / SA); furnace −15 sa PICFG108 M. Feedwater ayon sa interlock ng ABC-010: kapag LICBR1001B > 30 %: LICBR1001B M (hawak), LICBR1001A A SV 0 (single-element sa main valve; M.0227: isa lang ang level controller), LICBR1001B pasara 5 % kada minuto; kapag FW > 100 T/H at wala na ang force manual (M.0228 = 0: M.022C → TON 60 s): FICFW1007 R (SV = steam flow + level master), LICBR1001 A SV 0, pindot ng 3-ELEMENT pushbutton M.054E (FF M.0222). Tigil 10 min pagkatapos umabot sa 45 MW.',
-      want: '0 → 3600 rpm sa 30 min; GCB sarado (I.0931 = 1, M.3220 = 0 sa ABC-010); initial load 4.5 ± 1 MW; 4.5 → 45 MW sa loob ng 5 ~ 12 min; transfer sa 15 ~ 22 MW (I.0418); HP at LP bypass sarado sa 45 MW (M.0709 = 0), HP bypass REMOTE (LP bypass: preset 33 % ng drawing sa transfer, isinasara ng operator sa M tapos R + A); MSP 123 ± 8 kg/cm2 habang nakakarga, HIC-BM MANUAL (M.2013 BU-CMD: MSF < 220); 3-element feedwater: FICFW1007 R + A, LICBR1001 A, M.0228 = 0, M.0222 = 0, LICBR1001B sarado; MST 345 ~ 535 °C; drum level ±150 mm; MW ≥ 44.5 at I.0081 = 1 (NORMAL OPERATION); walang trip, furnace −55 ~ +25.',
+      how: 'Start hot (dulo ng hakbang 3: 123 kg/cm2 sa HP bypass AUTO, LP bypass AUTO 7.6, bed 750 °C, 3 feeder sa FIC-CF 12 %, burners out). Operator sa TCS panel (labas ng DCS drawing): ROLL sa t = 1 min (ATS AUTO, HOT mode: 360 rpm/min, 3 min heat soak sa 3600 rpm, IP start mode: roll steam mula sa reheat sa ICV); pagkatapos ng ACCELERATION: SYNC (EXCITATION, GCB 52G1 sarado: ABC-050 I.0931 = 1 / I.0932 = 0, initial load 5 % = 7.5 MW), LP bypass R (REMOTE: SV = first stage + 5.1); 5 min hold; LOAD UP 45 MW (5 %/min = 7.5 MW/min). Sa 20 MW o ICV full open: ICV → CV transfer (I.0418 = 1; ang drawing ang nagpapa-REMOTE ng HP bypass SV = PV + 2 sa sync pulse M.070D, kaya sumasara). Coal: FIC-CF +2 ~ 3 % kada minuto habang paakyat (+3 kapag MSP < 118), ±1 pagkatapos para hawak ang 123; O2 3.5 ~ 8 (PA / SA); furnace −15 sa PICFG108 M. Feedwater ayon sa interlock ng ABC-010: kapag LICBR1001B > 30 %: LICBR1001B M (hawak), LICBR1001A A SV 0 (single-element sa main valve; M.0227: isa lang ang level controller), LICBR1001B pasara 5 % kada minuto; kapag FW > 100 T/H at wala na ang force manual (M.0228 = 0: M.022C → TON 60 s): FICFW1007 R (SV = steam flow + level master), LICBR1001 A SV 0, pindot ng 3-ELEMENT pushbutton M.054E (FF M.0222). Tigil 10 min pagkatapos umabot sa 45 MW.',
+      want: '0 → 3600 rpm + soak sa 12 ~ 16 min; GCB sarado (I.0931 = 1, M.3220 = 0 sa ABC-010); initial load 7.5 ± 1 MW; 7.5 → 45 MW sa loob ng 5 ~ 12 min; transfer sa 15 ~ 22 MW (I.0418); HP at LP bypass sarado sa 45 MW (M.0709 = 0), HP bypass REMOTE (LP bypass: preset 33 % ng drawing sa transfer, isinasara ng operator sa M tapos R + A); MSP 123 ± 8 kg/cm2 habang nakakarga, HIC-BM MANUAL (M.2013 BU-CMD: MSF < 220); 3-element feedwater: FICFW1007 R + A, LICBR1001 A, M.0228 = 0, M.0222 = 0, LICBR1001B sarado; MST 345 ~ 535 °C; drum level ±150 mm; MW ≥ 44.5 at I.0081 = 1 (NORMAL OPERATION); walang trip, furnace −55 ~ +25.',
       secs: 6000,
       run(h, o) {
         o.cf = o.chain ? h.mv('ABC-004A', 'FIC-CF') : 12; /* 2.2.0-beta.20: in the chain, the coal of the stage before */
@@ -901,19 +901,40 @@
           U = h.U,
           tb = U.tb;
         if (t === 40) for (const tg of ['FICCL1061A', 'FICCL1061B', 'FICCL1061C']) h.mode(tg, 'LOC');
-        if (t === 60) {
-          AN.turbine('roll');
-          o.roll = t;
+        /* 3.2.0-beta.38: the start-up biasing damper RH 10 % / SH 90 % (the Training step, PR-OPE-5002 after the purge): Start hot kept
+           the 150 MW damper and the reheat stayed at 432 C, under the 485 C of the ATS HOT mode (1.6) */
+        if (t === 20 && window.LS_GUIDE && LS_GUIDE.A) {
+          LS_GUIDE.A.man('HICHR1002A', 10);
+          LS_GUIDE.A.man('HICHR1002B', 90);
         }
-        if (o.sync == null && tb.st === 'roll' && tb.rpm >= 3600) {
+        /* 3.2.0-beta.38: the ATS refuses the roll until its step-in condition is met (tcs.js): the operator tries again every 30 s */
+        if (o.roll == null && t >= 60 && t % 30 === 0) {
+          const r = AN.turbine('roll');
+          if (r) o.rr = r;
+          else o.roll = t;
+        }
+        /* 3.2.0-beta.38: the ATS (tcs.js) ends ACCELERATION after the heat soak at 3600 rpm (HOT mode 3 min); SYNC starts EXCITATION */
+        const ts = AN.tcs && AN.tcs();
+        if (o.sync == null && tb.st === 'roll' && (ts ? ts.step >= 3 : tb.rpm >= 3600)) {
           AN.turbine('sync');
           o.sync = t;
           h.rem('ABC-052', 'PICHR1003');
         }
-        if (o.sync != null && o.load == null && t >= o.sync + 300) {
-          o.mwInit = h.MW();
-          AN.turbine('loadup', 45);
-          o.load = t;
+        /* 3.2.0-beta.38: the ATS start of ACCELERATION (the speed timing is from here; before it the ATS waits for its criteria) */
+        if (o.acc == null && ts && ts.cur === 3) o.acc = t;
+        if (ts && ts.hold && ts.cur === 3 && o.tH != null) o.holdT = (o.holdT || 0) + (t - o.tH);
+        o.tH = t;
+        if (ts && ts.hold) {
+          o.holds = o.holds || {};
+          const k = ts.hold.replace(/\[[^\]]*\]/g, '').slice(0, 90);
+          if (!o.holds[k]) o.holds[k] = 'step ' + ts.cur + ' t ' + Math.round(t / 60) + ' min';
+        }
+        /* LOAD UP once SYNCH. & INITIAL LOAD is complete (ATS step 5); the TCS refuses it before, the operator tries every 30 s */
+        if (o.sync != null && o.load == null && t >= o.sync + 300 && t % 30 === 0) {
+          if (!isFinite(o.mwInit)) o.mwInit = h.MW();
+          const r = AN.turbine('loadup', 45);
+          if (r) o.lr = r;
+          else o.load = t;
         }
         if (o.xfer == null && h.bit('ABC-050', 'I.0418') > 0.5) {
           o.xfer = t;
@@ -1033,17 +1054,17 @@
           mins = (a, b) => (a != null && b != null ? f0((a - b) / 60) : '—');
         return [
           [
-            o.sync != null && tb.rpm >= 3599 && o.sync - o.roll >= 29 * 60 && o.sync - o.roll <= 31 * 60,
-            'roll 0 → 3600 rpm sa ' + mins(o.sync, o.roll) + ' min (120 rpm/min, PR-OPE-5002 cold); ngayon ' + f0(tb.rpm) + ' rpm, estado ' + tb.st
+            o.sync != null && o.acc != null && tb.rpm >= 3599 && o.sync - o.acc - (o.holdT || 0) >= 12 * 60 && o.sync - o.acc - (o.holdT || 0) <= 16 * 60,
+            'ACCELERATION 0 → 3600 rpm + heat soak sa ' + mins(o.sync, o.acc) + ' min, ' + Math.round((o.holdT || 0) / 60) + ' min dito ay ATS HOLD (ATS HOT mode: 360 rpm/min, 3 min soak sa 3600; 12 ~ 16 min wala ang hold; ROLL hanggang ACCELERATION ' + mins(o.acc, o.roll) + ' min, hinihintay ang criteria)' + (o.holds ? '; ATS HOLD: ' + Object.entries(o.holds).map(([k, v]) => k + ' (' + v + ')').join(' | ') : '') + '; ngayon ' + f0(tb.rpm) + ' rpm, estado ' + tb.st + (o.roll == null && o.rr ? ', ROLL tinanggihan: ' + o.rr : o.roll != null ? ', roll sa t = ' + o.roll + ' s' : '')
           ],
           [
             h.bit('ABC-050', 'I.0931') > 0.5 && h.bit('ABC-050', 'I.0932') < 0.5 && h.bit('ABC-010', 'M.3220') < 0.5,
             'GCB 52G1 sarado: ABC-050 I.0931 ' + f0(h.bit('ABC-050', 'I.0931')) + ', I.0932 ' + f0(h.bit('ABC-050', 'I.0932')) + ', ABC-010 M.3220 (52G1 OPENED) ' + f0(h.bit('ABC-010', 'M.3220'))
           ],
-          [isFinite(o.mwInit) && Math.abs(o.mwInit - 4.5) <= 1, 'initial load ' + f1(o.mwInit) + ' MW pagkatapos ng 5 min (PR-OPE-5002: 4.5 MW)'],
+          [isFinite(o.mwInit) && Math.abs(o.mwInit - 7.5) <= 1, 'initial load ' + f1(o.mwInit) + ' MW pagkatapos ng 5 min (ATS page 25: HOT mode 5 % = 7.5 MW)'],
           [
-            o.p45 != null && o.p45 - o.load >= 5 * 60 && o.p45 - o.load <= 12 * 60,
-            'LOAD UP 4.5 → 45 MW sa ' + mins(o.p45, o.load) + ' min (5 %/min = 7.5 MW/min; TCS target ' + f1(U.tcsT) + ', MW ' + f1(h.MW()) + ')'
+            o.p45 != null && o.p45 - o.load >= 4.5 * 60 && o.p45 - o.load <= 12 * 60,
+            'LOAD UP 7.5 → 45 MW sa ' + mins(o.p45, o.load) + ' min (5 %/min = 7.5 MW/min; TCS target ' + f1(U.tcsT) + ', MW ' + f1(h.MW()) + ')' + (o.load == null && o.lr ? ', LOAD UP tinanggihan: ' + o.lr : '')
           ],
           [
             o.xfer != null && o.xferMW >= 8 && o.xferMW <= 22 && h.bit('ABC-050', 'I.0418') > 0.5,
@@ -1085,7 +1106,7 @@
           ],
           [
             h.MW() >= 44.5 && h.bit('ABC-001C', 'I.0081') > 0.5 && h.bit('ABC-001C', 'M.3200') < 0.5 && h.FP() > -55 && h.FP() < 25,
-            'MW ' + f1(h.MW()) + ' (NORMAL OPERATION 45 MW), I.0081 DCS control mode permissive ' + f0(h.bit('ABC-001C', 'I.0081')) + '; walang trip; furnace ' + f0(h.FP()) + ' mmH2O; O2 ' + f1(h.O2()) + ' %'
+            'MW ' + f1(h.MW()) + ' (NORMAL OPERATION 45 MW), I.0081 DCS control mode permissive ' + f0(h.bit('ABC-001C', 'I.0081')) + '; walang trip; furnace ' + f0(h.FP()) + ' mmH2O; O2 ' + f1(h.O2()) + ' %' + (AN.tcs && AN.tcs() ? '; ATS step ' + AN.tcs().step + (AN.tcs().hold ? ', HOLD: ' + AN.tcs().hold : '') : '')
           ]
         ];
       }

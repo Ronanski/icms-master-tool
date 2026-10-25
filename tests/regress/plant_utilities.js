@@ -52,13 +52,18 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
     await __run(1200);
     const vNoAux = AN.unit.vac;
     /* 3.2.0-beta.37: the vacuum up needs the aux steam (main steam > 12 kg/cm2, PR-OPE-5002) */
+    /* 3.2.0-beta.38: the turbine auxiliaries of the TCS (tcs.js) in the PR-OPE-5002 order: lube oil, EH oil, vapour extractor,
+       turning gear, aux steam MV-AS1391, gland sealing, vacuum up (vacuum breaker closed, ejectors) */
     AN.unit.Pd = 20;
+    const rr = ['lop', 'eh', 'vex', 'tg', 'aux'].map(c => AN.turbine(c));
+    await __run(600); /* aux header 10.5 kg/cm2, 2 min time constant: > 10 after about 6 min */
+    rr.push(AN.turbine('gland'), AN.turbine('vacuum'));
     await __run(1200);
     const r2 = AN.turbine('roll');
-    return { r0, r1, r2, st: AN.unit.tb.st, vac: AN.unit.vac, vNoAux };
+    return { r0, r1, r2, rr: rr.filter(Boolean), cur: AN.tcs().cur, vac: AN.unit.vac, vNoAux };
   });
-  ck(/vacuum/.test(a.r0) && /vacuum/.test(a.r1) && a.vNoAux < 0.1 && a.r2 === '' && a.st === 'roll',
-    'Cold: roll with no SWP / CEP refused ("' + a.r0.slice(0, 60) + '"), SWP + CEP with no aux steam: vacuum ' + Math.round(100 * a.vNoAux) + ' % after 20 min, with aux steam (drum 20 kg/cm2) after 20 min accepted (turbine ' + a.st + ', vacuum ' + Math.round(100 * a.vac) + ' %)');
+  ck(/VACUUM/i.test(a.r0) && /VACUUM/i.test(a.r1) && a.vNoAux < 0.1 && !a.rr.length && a.r2 === '' && a.cur === 0,
+    'Cold: roll with no SWP / CEP refused ("' + a.r0.slice(0, 60) + '"), SWP + CEP with no aux steam: vacuum ' + Math.round(100 * a.vNoAux) + ' % after 20 min; with aux steam (drum 20 kg/cm2), lube oil, turning gear, gland and vacuum up' + (a.rr.length ? ' (REFUSED: ' + a.rr.join(' | ') + ')' : '') + ': vacuum ' + Math.round(100 * a.vac) + ' %, roll "' + (a.r2 || 'accepted') + '", ATS step ' + a.cur + ' (0 = HP TURBINE WARMING)');
   const b = await page.evaluate(async () => {
     AN.reset();
     AN.plantLoad150();
