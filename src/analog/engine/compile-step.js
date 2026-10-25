@@ -2043,6 +2043,14 @@ function anCompile(S) {
       }
     }
   }
+  /* 3.2.0-beta.36 (CHECKLIST 0.3, user 2026-10-25 "may block na MCC na pinutol ang MV at di na nakarating sa VALVE"): ABC-054 / 055
+     PO -> MCC PANEL -> M (motor operator) -> valve: the motor circle splits the wire, so the valve had no driver and stayed 0. The
+     valve drawn under the MCC PANEL / INVERTER box follows the box output (the motor operator moves it, VLV stroke) */
+  for (const v of blk)
+    if ((v.k === 'VLV' || v.k === 'ACT') && v.i.length && !S.drv[v.i[0]].length && !S.link.some(q => q[0] === v.i[0])) {
+      const f = blk.find(b => b.k === 'FIELD' && b.o.length && Math.abs(b.cx - v.cx) < 8 && b.cy > v.cy && b.cy - v.cy < 120);
+      if (f) S.link.push([v.i[0], f.o[0]]);
+    }
   S.link.forEach(([dst, srcN]) => {
     /* make the destination net driven */ S.drv[dst].push({ k: 'LINK', id: -1, o: [dst], i: [srcN] });
   });
