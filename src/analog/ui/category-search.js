@@ -9,8 +9,11 @@ AN.xrefGo = tg => {
     }
     return;
   }
+  /* 3.2.0-beta.33: "DITL-29A #B" = machine B of a shared drawing, its own page (CHECKLIST 0.2) */
+  const im = /^(.*?)\s*#([B-D])$/.exec(String(tg.d || '')),
+    dn = im ? im[1] : tg.d;
   const o = [...document.querySelectorAll('#shsel option')].find(x =>
-    new RegExp('\\)' + tg.d + '$').test(x.textContent)
+    new RegExp('\\)' + dn + '$').test(x.textContent)
   );
   if (!o) {
     msg('Digital page ' + tg.d + ' was not found');
@@ -20,6 +23,10 @@ AN.xrefGo = tg => {
   const ss = document.getElementById('shsel');
   ss.value = o.value;
   ss.dispatchEvent(new Event('change'));
+  if (im && typeof goInst === 'function') {
+    goInst(+String(o.value).split(':')[0], 'ABCD'.indexOf(im[2]));
+    render();
+  }
   msg('Opened ' + tg.d + ' - use the "ABC" button to come back');
 };
 function setCat(c) {

@@ -659,3 +659,20 @@ Engine at logic: walang binago.
 **Bukas (audit ng plant model, CHECKLIST 0.5):** O₂ 9.3 % sa 80 MW (sobra ang hangin; air demand ng drawing sa REMOTE) ang nagpapalamig sa bed.
 
 **Status:** Beta.
+
+## 3.2.0-beta.33 — DITL A / B / C / D: bawat makina may sariling page at sariling address (CHECKLIST 0.2)
+
+**Problem:** 36 na DITL drawing ang ginagamit ng ilang makina (hal. DITL-09 / 10 / 16 = burner A ~ D, DITL-29A = SWP A / B, DITL-19 = feeder A ~ C). Ang kopya ng B / C / D ay nakatago: sa sheet list ay A lang, ang Training link ng SWP-B / burner C ay bumubukas sa sheet ng A, at ang address ng ilang kopya ay hula.
+
+**As Found:** 1155 row × makina ang nasuri. Ang C / D ay kumukuha ng address ng A kapag dalawang address lang ang unang grupo sa drawing (hal. IGNITER C RETRACT I.0013 sa halip na I.0653). Ang DITL-29A #B ay "SEAWATER PUMP A REMOTE". Ang DITL-22 (aux. lube oil pump) ay 2 kopya lang, pero 4 ang pump (2 bawat BFWP).
+
+**Work Done:**
+- Talaan ng address bawat kopya mula sa drawing (lahat ng address group), at kapag kulang, mula sa I/O list at memory list (`docs/versions/v3.2.0/INST_ADDR.md`: 296 binago, 0 mali ang letra sa 762 na nasuring address). Ebidensya ng bawat uri ng pagbabago: `UNLINK_AUDIT.md` beta.33.
+- Sheet list: sa ilalim ng bawat shared drawing ay may "↳ DITL-16 · C" (at "BFWP A · LOP B" sa DITL-22). Sa page ng kopya: tamang letra, tamang address at tamang field tag sa drawing (hal. DITL-16 · C: BURNER C, O.0727, DO1043-C1), sariling estado (1 / 0) ng makinang iyon, at sariling right panel.
+- Page link: ang row ng kopya ay pumupunta sa kopya ng parehong makina (hal. DITL-29A · B row 8 → DITL-29A · C, gaya ng address sa drawing; DITL-22 standby LOP ↔ kabilang LOP ng parehong BFWP).
+- Training: burner B / C / D, SWP-B, feeder B / C, at ang "DITL-xx · B ↗" sa interlock box ay bumubukas sa sariling page ng makina. Ang START sa Training ay pumipili ng unang makina na hindi pa tumatakbo.
+- Ang drawing mismo (gate, wire, ayos) ay hindi binago; text lang ng kopya ang pinapalitan ng letra at address.
+
+**As Left (sinubok sa build na ito):** ang takbo ng "tao" (mouse click lang sa Training, ×300) Cold → 150 MW: umabot sa hakbang 64 at pasado ang hold (150.0 MW, MSP 123 kg/cm2) at sa Practice (hakbang 65), walang page error. Isang naunang takbo ay huminto sa hakbang 33 (burner C / D, lahat ng burner patay sa 14 kg/cm2); inulit sa parehong build at sa final build: parehong pasado, kaya hindi ito naulit (hindi natukoy ang sanhi ng isang beses na hinto). Pasado: `ditl_inst.js` (bago), `world.js`, `ditl_sim.js`, `ditl_pagelink.js`, `ditl_selected.js`, `ditl_toolbar.js`, `ditl150.js`, `training_dock.js`. Screenshot: PC 1440, tablet 1280 × 800 / 800 × 1280, phone 390 (walang sideways scroll). **Hindi sinubok:** PC / tablet / EXE ng user; Practice (load change) mismo.
+
+**Status:** Beta.

@@ -22,7 +22,22 @@ const dec = s =>
     .replace(/%%[cC]/g, 'Ø')
     .replace(/%%[dD]/g, '°')
     .replace(/%%[pP]/g, '±');
-const cur = () => S.sheets[S.cur];
+/* 3.2.0-beta.33 (CHECKLIST 0.2): machine B / C / D of a shared drawing is a page of its own (src/world/world.js instances). S.ik = the
+   machine (0 = A) of sheet S.ikFor; any other S.cur is machine A, so a page link or ◀ ▶ opens drawing A as before */
+const cur = () => {
+  const b = S.sheets[S.cur];
+  if (b && S.ik && S.ikFor === S.cur && window.WORLD && WORLD.instOf) {
+    const L = WORLD.instOf.get(b);
+    if (L && L[S.ik]) return L[S.ik];
+  }
+  return b;
+};
+/* open machine k of sheet i (k = 0: the drawing itself) */
+function goInst(i, k) {
+  S.cur = i;
+  S.ik = k || 0;
+  S.ikFor = i;
+}
 /* ---------- DXF parse ---------- */
 const SYM = {
     LAMP1: 'lamp',

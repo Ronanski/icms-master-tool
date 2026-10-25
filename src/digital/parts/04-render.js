@@ -376,8 +376,20 @@ function render() {
         const o = document.createElement('option');
         o.value = i;
         o.textContent = (x.bv !== BV ? '⚠ ' : '') + x.name;
-        if (i === S.cur) o.selected = true;
+        const ik = S.ikFor === S.cur ? S.ik || 0 : 0;
+        if (i === S.cur && !ik) o.selected = true;
         ss.appendChild(o);
+        /* 3.2.0-beta.33: the pages of machine B / C / D (phone and tablet portrait pick the sheet here) */
+        const L = window.WORLD && WORLD.instOf && WORLD.instOf.get(x);
+        if (L && L.length > 1)
+          L.forEach((y, k) => {
+            if (!k) return;
+            const q = document.createElement('option');
+            q.value = i + ':' + k;
+            q.textContent = '  ↳ ' + x.name.replace(/^\(\w+\)/, '') + ' · ' + WORLD.instLabel(y);
+            if (i === S.cur && ik === k) q.selected = true;
+            ss.appendChild(q);
+          });
       });
     }
   }
@@ -499,18 +511,22 @@ function render() {
       },
       g
     );
+  /* 3.2.0-beta.33: machine B / C / D of a shared drawing reads with its own letters and addresses (WORLD.cellTexts) */
+  const mk = s._inst && s._inst.k && window.WORLD && WORLD.cellTexts;
   for (const t of s.tx) {
     ext(t.x, t.y);
-    tx(t, g);
+    tx(mk ? Object.assign({}, t, { t: WORLD.remap(s, WORLD.instTag(s, t.t)) }) : t, g);
   }
   for (const k in s.cells) {
     /* 2.5.0-beta.8: a page link (FROM / TO column) is drawn as a link */
-    const lk = /:(F|RT)$/.test(k) && window.DUI && DUI.refs && DUI.refs(s.cells[k].map(t => t.t).join(' ')).length;
-    for (const t of s.cells[k]) {
+    const lk = /:(F|RT)$/.test(k) && window.DUI && DUI.refs && DUI.refs(s.cells[k].map(t => t.t).join(' ')).length,
+      tt = mk ? WORLD.cellTexts(s, k, s.cells[k].map(t => t.t)) : null;
+    s.cells[k].forEach((t, j) => {
       ext(t.x, t.y);
-      const e = tx(t, g);
+      const e = tx(tt ? Object.assign({}, t, { t: tt[j] }) : t, g);
       if (lk) e.classList.add('plink');
-    }
+      if (tt && tt[j] !== t.t) e.classList.add('instx');
+    });
   }
   /* 2.5.0-beta.20 (UI audit): the first view of a sheet is its frame (the lines), as Fit; the loose texts around the frame
      (DITL-56: "STATION 102", "76") made the sheet small */

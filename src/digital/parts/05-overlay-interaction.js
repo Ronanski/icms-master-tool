@@ -941,7 +941,7 @@ function drawSide() {
   if (!sd) return;
   sd.classList.toggle('min', SIDEMIN === '1');
   $('sidetg').textContent = SIDEMIN === '1' ? '▶' : '◀';
-  const cn = S.sheets[S.cur] ? S.sheets[S.cur].name : '';
+  const cn = cur() ? cur().name : '';
   $('sidect').textContent = 'Sheets (' + S.sheets.length + ')';
   $('sidevt').textContent = cn ? cn + '  ·  ' + (S.cur + 1) + '/' + S.sheets.length : 'Sheets';
   /* 2.5.0-beta.13 (user: "sa left pane, wala ang option na by order/category"): By order / By category as the ABC sheet list */
@@ -969,7 +969,8 @@ function drawSide() {
     $('sidebody').insertBefore(so, $('sidefl'));
   }
   so.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.m === SIDESM));
-  const key = S.sheets.map(x => x.name + (x.bv !== BV ? '!' : '')).join('|') + '#' + SIDEFL + '#' + SIDESM;
+  const IO = (window.WORLD && WORLD.instOf) || null,
+    key = S.sheets.map(x => x.name + (x.bv !== BV ? '!' : '')).join('|') + '#' + SIDEFL + '#' + SIDESM + '#' + ((window.WORLD && WORLD.inst) || []).length;
   if (key !== SIDEKEY) {
     SIDEKEY = key;
     list.innerHTML = '';
@@ -977,8 +978,9 @@ function drawSide() {
       G = {};
     /* 2.5.0-beta.11 (user: "DAPAT BY CATEGORY DIN ANG SHEET LIST SA DITL"): grouped by system, as the ABC list (category headers in
        the order of the contents sheets DITL-0A ~ 0D); the search still filters by name and title */
+    const instTxt = x => ((IO && IO.get(x)) || []).map(y => y.title || '').join(' ');
     S.sheets.forEach((x, i) => {
-      if (f && (x.name + ' ' + (x.title || '') + ' ' + ditlCat(x)).toLowerCase().indexOf(f) < 0) return;
+      if (f && (x.name + ' ' + (x.title || '') + ' ' + ditlCat(x) + ' ' + instTxt(x)).toLowerCase().indexOf(f) < 0) return;
       if (SIDESM === 'order') return sideBtn(x, i, list);
       (G[ditlCat(x)] = G[ditlCat(x)] || []).push(i);
     });
@@ -1004,8 +1006,8 @@ function drawSide() {
         x.bv !== BV
           ? 'Imported with an older version: import this DXF again (same name replaces it)'
           : x.name + (x.title ? ' - ' + x.title : '');
-      b.onclick = () => {
-        S.cur = i;
+      const open = k => {
+        goInst(i, k);
         sel = null;
         if (innerWidth < 820) {
           SIDEMIN = '1';
@@ -1015,20 +1017,45 @@ function drawSide() {
         }
         render();
       };
+      b.onclick = () => open(0);
       box.appendChild(b);
+      /* 3.2.0-beta.33 (CHECKLIST 0.2): machine B / C / D of a shared drawing ("THE DIAGRAM IS THE SAME FOR BURNER B,C,D") is a page of
+         its own under drawing A: its own letters, addresses and state */
+      const L = IO && IO.get(x);
+      if (L && L.length > 1)
+        L.forEach((y, k) => {
+          if (!k) return;
+          const c = document.createElement('button');
+          c.dataset.i = i;
+          c.dataset.k = k;
+          c.className = 'dinst';
+          const n1 = document.createElement('span');
+          n1.className = 'sn';
+          n1.textContent = '↳ ' + x.name.replace(/^\(\w+\)/, '') + ' · ' + WORLD.instLabel(y);
+          c.appendChild(n1);
+          const n2 = document.createElement('span');
+          n2.className = 'st';
+          n2.textContent = y.title || '';
+          c.appendChild(n2);
+          c.title = 'Machine ' + WORLD.instLabel(y) + ' of ' + x.name + ' (same drawing, own addresses and state)';
+          c.onclick = () => open(k);
+          box.appendChild(c);
+        });
     }
   }
   let on = null;
+  const ik = S.ikFor === S.cur ? S.ik || 0 : 0;
   list.querySelectorAll('button').forEach(b => {
-    const o = +b.dataset.i === S.cur;
+    const o = +b.dataset.i === S.cur && (+b.dataset.k || 0) === ik;
     if (o !== b.classList.contains('on')) b.classList.toggle('on', o);
     if (o) on = b;
   });
-  if (on && drawSide.last !== S.cur) sideShow(on);
-  if (on && SIDEMIN !== '1' && drawSide.last !== S.cur) {
+  const lk = S.cur + ':' + ik;
+  if (on && drawSide.last !== lk) sideShow(on);
+  if (on && SIDEMIN !== '1' && drawSide.last !== lk) {
     on.scrollIntoView({ block: 'nearest' });
   }
-  drawSide.last = S.cur;
+  drawSide.last = lk;
 }
 {
   const tg = document.getElementById('sidetg');

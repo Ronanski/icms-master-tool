@@ -681,18 +681,27 @@
     if (!follow || !s) return;
     try {
       /* 3.2.0-beta.26: a push button of a DITL drawing (BURNER ON of DITL-09, a discharge valve of DITL-20): that sheet, its row selected
-         (a motor START goes first; was: the ABC sheet of the step's faceplate). Machine B ~ D open the drawing of A until they are sheets of their own (CHECKLIST 0.2) */
-      const mot = (s.a || []).map(a => (a.stop ? motAddr(a) : null)).find(a => a && MOTOR[a]);
+         (a motor START goes first; was: the ABC sheet of the step's faceplate). 3.2.0-beta.33: machine B ~ D open their own page (CHECKLIST 0.2) */
+      /* 3.2.0-beta.33: the first motor of the step that is not running yet (the one of the interlock box): the second SWP = SWP-B, its own page */
+      const mots = (s.a || []).map(a => (a.stop ? motAddr(a) : null)).filter(a => a && MOTOR[a]),
+        isRun = ad => {
+          try {
+            return atRow(ad) != null ? dout(ad, atRow(ad)) === 1 : /^DITL-/.test(ad) ? runOut(ad) === 1 : !!bit(ad);
+          } catch (e) {
+            return false;
+          }
+        },
+        mot = mots.find(a => !isRun(a)) || mots[0];
       if (mot) {
         window.lsSetTab && lsSetTab('logic');
-        AN.xrefGo({ d: MOTOR[mot].replace(/\s*#\w+$/, '') });
+        AN.xrefGo({ d: MOTOR[mot] });
         return;
       }
       const dg = (s.a || []).map(a => a.dg).find(Boolean);
       if (dg) {
         window.lsSetTab && lsSetTab('logic');
-        AN.xrefGo({ d: String(dg[0]).replace(/\s*#\w+$/, '') });
-        if (window.DUI && DUI.goItem) setTimeout(() => DUI.goItem(S.cur, undefined, null, { side: 'L', i: dg[1] }), 80);
+        AN.xrefGo({ d: String(dg[0]) });
+        if (window.DUI && DUI.goItem) setTimeout(() => DUI.goItem(S.cur, undefined, null, { side: 'L', i: dg[1], k: S.ikFor === S.cur ? S.ik || 0 : 0 }), 80);
         return;
       }
       const t = (s.fps || [])[0];
@@ -915,7 +924,7 @@
         continue;
       }
       if (I.live) shown = 1;
-      const head = E('div', { cls: 'gd-ilh' }, [E('span', { txt: 'INTERLOCK · START PERMISSION' }), E('button', { type: 'button', cls: 'gd-lk', txt: I.sheet + ' ↗', title: 'Buksan ang ' + I.sheet, on: () => (window.lsSetTab && lsSetTab('logic'), AN.xrefGo({ d: I.sheet.replace(/\s*#\w+$/, '') })) })]);
+      const head = E('div', { cls: 'gd-ilh' }, [E('span', { txt: 'INTERLOCK · START PERMISSION' }), E('button', { type: 'button', cls: 'gd-lk', txt: I.sheet.replace(' #', ' · ') + ' ↗', title: 'Buksan ang ' + I.sheet.replace(' #', ' · '), on: () => (window.lsSetTab && lsSetTab('logic'), AN.xrefGo({ d: I.sheet })) })]);
       it.box.append(head);
       if (!I.live) {
         it.box.append(E('div', { cls: 'gd-ild', txt: 'Lalabas ang interlock kapag tumatakbo ang simulation (RUN).' }));

@@ -374,7 +374,9 @@ $('bmode').onclick = () => {
   render();
 };
 $('shsel').onchange = e => {
-  S.cur = +e.target.value;
+  /* "i:k" = machine k of sheet i (3.2.0-beta.33) */
+  const v = String(e.target.value).split(':');
+  goInst(+v[0], +v[1] || 0);
   sel = null;
   render();
 };

@@ -205,10 +205,13 @@
   function goItem(i, nn, from, itx) {
     const s0 = cur(),
       v0 = (VB[S.cur] || []).slice();
-    hist.push(from || { cat: 'dig', i: S.cur, vb: v0 });
+    hist.push(from || { cat: 'dig', i: S.cur, k: S.ikFor === S.cur ? S.ik || 0 : 0, vb: v0 });
     updBack();
     if (from && window.AN && AN.cat === 'an') AN.setCat('dig');
     S.cur = i;
+    /* 3.2.0-beta.33: machine B / C / D of a shared drawing (itx.k); no k = machine A */
+    S.ik = (itx && itx.k) || 0;
+    S.ikFor = i;
     sel = null;
     render();
     const s = cur(),
@@ -234,10 +237,40 @@
     msg(s.name + (nn === undefined ? '' : ' item ' + nn) + (side === 'R' ? ' (output row ' : ' (input row ') + s.rows[ri].n + '). ◀ Back returns.');
     return true;
   }
-  function goRef(r) {
+  /* 3.2.0-beta.33 (CHECKLIST 0.2): the other end of a page link as the one world joins it (src/world/world.js W.idx.din): on machine
+     B / C / D of a shared drawing, or to one, the link opens that machine's own page (before: always drawing A) */
+  function worldEnd(r, ctx) {
+    const W = window.WORLD;
+    if (!W || !W.idx || !ctx || !ctx.s || !ctx.h || !r.code || r.nn === undefined) return null;
+    const { s, h } = ctx,
+      din = W.idx.din,
+      base = x => (x._inst && x._inst.base) || x,
+      codeOf = x => (/DITL-([0-9]{2,3}[A-Z]?)$/i.exec(base(x).name) || [])[1];
+    let e = null;
+    if (h.c === 'F') {
+      const m = din.get(s),
+        q = m && (m.get(h.i) || []).find(q => q.k === 'd' && q.ref === r.code + '-' + r.nn);
+      if (q) e = { d: q.d, row: q.row, side: 'R' };
+    } else if (h.c === 'RT')
+      for (const [x, m] of din) {
+        if (e) break;
+        if (codeOf(x) !== r.code) continue;
+        for (const [j, L] of m)
+          if (L.some(q => q.k === 'd' && q.d === s && q.row === h.i)) {
+            e = { d: x, row: j, side: 'L' };
+            break;
+          }
+      }
+    if (!e || (!(e.d._inst && e.d._inst.k) && !(s._inst && s._inst.k))) return null;
+    const i = S.sheets.indexOf(base(e.d));
+    return i < 0 ? null : { i, k: e.d._inst ? e.d._inst.k : 0, row: e.row, side: e.side };
+  }
+  function goRef(r, ctx) {
+    const we = worldEnd(r, ctx);
+    if (we) return goItem(we.i, undefined, null, { i: we.row, side: we.side, k: we.k });
     if (r.abc) {
       if (!window.AN) return false;
-      hist.push({ cat: 'dig', i: S.cur, vb: (VB[S.cur] || []).slice() });
+      hist.push({ cat: 'dig', i: S.cur, k: S.ikFor === S.cur ? S.ik || 0 : 0, vb: (VB[S.cur] || []).slice() });
       updBack();
       AN.setCat('an');
       let n = 0;
@@ -274,7 +307,8 @@
     h = ownCell(s, h);
     const L = linkCell(s, h);
     if (!L || !L.length) return false;
-    if (L.length === 1) return goRef(L[0]);
+    const ctx = { s, h };
+    if (L.length === 1) return goRef(L[0], ctx);
     pick.textContent = '';
     pick.append(E('div', { cls: 'plhd', txt: 'Row ' + s.rows[h.i].n + (h.c === 'F' ? ' FROM' : ' TO') + ': pick the page' }));
     L.forEach(r =>
@@ -286,7 +320,7 @@
                under the finger and take that click (2.5.0-beta.11, DITL-03A TO list of 27 pages on a tablet) */
             if (Date.now() - pick.t0 < 400) return;
             closePick();
-            goRef(r);
+            goRef(r, ctx);
           }
         })
       )
@@ -312,7 +346,7 @@
       return;
     }
     if (window.AN && AN.cat === 'an') AN.setCat('dig');
-    S.cur = h.i;
+    goInst(h.i, h.k || 0);
     sel = null;
     if (h.vb && h.vb.length) VB[S.cur] = h.vb;
     render();
@@ -358,19 +392,20 @@
     for (const k in M) M[k].sort((a, b) => b.y - a.y);
     return (s._rsN = mv >= 5 ? M : null);
   };
+  /* 3.2.0-beta.33: the texts of a cell as machine B / C / D of a shared drawing reads them (own letters and addresses) */
+  const instT = (s, i, c, arr) => (s && s._inst && s._inst.k && window.WORLD && WORLD.cellTexts ? WORLD.cellTexts(s, i + ':' + c, arr) : arr);
   const txt = (s, i, c) =>
-    ((c === 'RS' && rsNear(s) ? rsNear(s)[i] : s.cells[i + ':' + c]) || [])
-      .map(t => t.t)
+    instT(s, i, c, ((c === 'RS' && rsNear(s) ? rsNear(s)[i] : s.cells[i + ':' + c]) || []).map(t => t.t))
       .join(' ')
       .replace(/\s+/g, ' ')
       .trim();
   /* the TAG NO. column holds the address (I.0406, M.0378) and, on many sheets, the service text too */
   const ADR = /^[A-Z]{1,3}\.[0-9A-F]{3,5}[A-Z]?$/;
-  const tagOf = (s, i) => (s.cells[i + ':T'] || []).map(t => t.t.trim()).filter(t => ADR.test(t)).join(' ');
+  const tagOf = (s, i) => instT(s, i, 'T', (s.cells[i + ':T'] || []).map(t => t.t)).map(t => t.trim()).filter(t => ADR.test(t)).join(' ');
   const svcOf = (s, i) =>
-    (s.cells[i + ':T'] || [])
-      .concat(s.cells[i + ':S'] || [])
-      .map(t => t.t.trim())
+    instT(s, i, 'T', (s.cells[i + ':T'] || []).map(t => t.t))
+      .concat(instT(s, i, 'S', (s.cells[i + ':S'] || []).map(t => t.t)))
+      .map(t => t.trim())
       .filter(t => t && !ADR.test(t))
       .join(' ');
   const fmt = x => (x >= 60 ? (x / 60).toFixed(1) + ' min' : x.toFixed(1) + ' s');
@@ -1076,7 +1111,7 @@
       dp.append(sec(MV[0].sv ? 'Solenoid valves' : 'Valves (MOV)', MV.length));
       MV.forEach((b, j) => {
         const v = E('div', { cls: 'dp-d' });
-        dp.append(E('div', { cls: 'dp-r' }, [E('div', { cls: 'dp-l' }, [E('div', { cls: 'dp-t', txt: (b.sv ? 'SV ' : 'MOV ') + (b.tag || j + 1) }), v])]));
+        dp.append(E('div', { cls: 'dp-r' }, [E('div', { cls: 'dp-l' }, [E('div', { cls: 'dp-t', txt: (b.sv ? 'SV ' : 'MOV ') + (b.tag ? (window.WORLD && WORLD.instTag ? WORLD.instTag(s, b.tag) : b.tag) : j + 1) }), v])]));
         U.push(() => (v.textContent = simOn() ? mvTxt(s, j) : 'View: no simulation'));
       });
     }

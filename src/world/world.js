@@ -94,6 +94,10 @@
   /* the machines of a sheet: the note of the drawing, and the longest address list */
   function machinesOf(s) {
     if (s._mach !== undefined) return s._mach;
+    /* 3.2.0-beta.33: the machines counted from the address table (src/world/inst-addr.js, from the drawing, the I/O list and the memory
+       lists): DITL-22 is written for the 4 aux. lube oil pumps (LOP A / B of BFWP A, LOP A / B of BFWP B: "I.0050/370 I.0053/373") */
+    const T = IA(s);
+    if (T && T.n) return (s._mach = T.n);
     const t = txtOf(s);
     let n = 1;
     if (/DIAGRAM IS (?:THE )?SAME|SAME\s+FOR\b|^\s*FOR\s+.*\b[B-D]\b/im.test(t)) {
@@ -110,7 +114,7 @@
   }
   /* the machine letter of a text: the LAST machine named ("BFWP A AUX. LOP B TRIP" = B) */
   const MRX =
-    /\b(?:BFWP|FAB|BURNER|BNR|FEEDER|PUMP|BLOWER|COOLER|IGNITER|COMPRESSOR|DRYER|IWP|MWP|DOP|SWBP|SWP|LOP|CWP|CP|VALVE|SILO)\s*-?\(?([A-D])\)?(?![A-Z0-9])/gi;
+    /\b(?:BFWP|FAB|BURNER|BNR|FEEDER|PUMP|BLOWER|COOLER|COLLER|IGNITER|COMPRESSOR|DRYER|IWP|MWP|DOP|SWBP|SWP|LOP|CWP|CP|VALVE|SILO)\s*-?\(?([A-D])\)?(?![A-Z0-9])/gi;
   const machOfDitl = t => {
     const all = [...String(t || '').matchAll(MRX)];
     return all.length ? all[all.length - 1][1].toUpperCase() : null;
@@ -170,6 +174,8 @@
   }
   /* instance k of a base sheet (k = 0 is the sheet itself) */
   function makeInst(base, k) {
+    famOf(base);
+    machinesOf(base);
     const o = Object.assign(Object.create(Object.getPrototypeOf(base)), base, {
       name: base.name + ' #' + LET[k],
       sig: {},
@@ -182,26 +188,129 @@
       _inst: { base, k, n: machinesOf(base) }
     });
     o.nl = netlist(o);
+    /* 3.2.0-beta.33: the title as it reads for this machine ("SEAWATER PUMP A (1)" -> "SEAWATER PUMP B (1)"), shown in the sheet list */
+    o.title = W.remap(o, base.title || '') + (pairOf(base) ? ' (LOP ' + pairOf(base).LOP(k) + ')' : '');
+    o.meta = Object.assign({}, base.meta || {}, {
+      dwg: ((base.meta && base.meta.dwg) || base.name.replace(/^\(\w+\)/, '')) + ' · ' + W.instLabel(o),
+      title: o.title
+    });
     return o;
   }
+  /* the address table of a shared drawing (tools/world/inst_addr.js -> src/world/inst-addr.js) */
+  const IA = s => {
+    const T = window.INST_ADDR;
+    return T && s ? T[(s._inst && s._inst.base ? s._inst.base : s).name] || null : null;
+  };
+  /* 3.2.0-beta.33: a drawing for the machines of two letters (DITL-22: LOP A / B of BFWP A / B). Instance k = BFWP LET[k >> 1], LOP
+     LET[k & 1]; the drawing is written for BFWP A LOP A, "LOP B" there is the other LOP of the same BFWP */
+  const PAIRS = { 'DITL-22': { BFWP: k => LET[k >> 1], LOP: k => LET[k & 1] } };
+  const pairOf = s => {
+    const m = /DITL-[0-9A-Z]+$/.exec((s && s.name) || '');
+    return m ? PAIRS[m[0]] || null : null;
+  };
   /* the text of a row as it reads for machine instance k (the drawing is written for machine A: "BFWP A RUNNING" is "BFWP B
      RUNNING" in instance B, "BFWP B" the other pump is A); the k-th address of the row */
   W.remap = (s, t) => {
     const I = s && s._inst;
     if (!I || !I.k) return t;
+    const P = pairOf(I.base);
     return String(t || '').replace(MRX, (m, L) => {
       if (!relative(I.base, m)) return m;
+      if (P) {
+        const w = m.replace(/\s*-?\(?[A-D]\)?$/i, '').trim().toUpperCase(),
+          f = P[w];
+        if (!f) return m;
+        const me = f(I.k),
+          to = L.toUpperCase() === 'A' ? me : me === 'A' ? 'B' : 'A';
+        return m.replace(/([A-D])(\)?)$/i, to + '$2');
+      }
       const u = L.toUpperCase(),
         to = LET[(LET.indexOf(u) + I.k) % Math.max(I.n, LET.indexOf(u) + 1)];
       return m.replace(/([A-D])(\)?)$/i, to + '$2');
     });
   };
-  W.addrK = (s, i) => {
+  /* 3.2.0-beta.33: the addresses of row i (side 'L' input, 'R' output) for this machine, from the address table (the drawing writes
+     "O.0080/400 O.0720/1040" = burner A / B / C / D; before, only the first group was read and burner C / D took the address of A).
+     null = the drawing names no address on that row */
+  W.addrsOf = (s, i, side) => {
     const I = s && s._inst,
-      b = I ? I.base : s,
-      la = addrList(cellTxt(b, i, 'T') || cellTxt(b, i, 'S'));
-    return la[I ? I.k : 0] || la[0] || null;
+      k = I ? I.k : 0,
+      T = IA(s),
+      e = T && T.r && T.r[(side || 'L') + i];
+    if (e) return e[k] || null;
+    const b = I ? I.base : s,
+      la = addrList(side === 'R' ? cellTxt(b, i, 'RS') + ' ' + cellTxt(b, i, 'RT') : cellTxt(b, i, 'T') || cellTxt(b, i, 'S'));
+    return la.length ? [la[k] || la[0]] : null;
   };
+  W.addrK = (s, i) => {
+    const a = W.addrsOf(s, i, 'L');
+    return a ? a[0] : null;
+  };
+  /* the row has an address of its own for each machine (not one common address) */
+  const varies = (d, row, side) => {
+    const L = W.instOf && W.instOf.get(d);
+    if (!L || L.length < 2) return false;
+    const a = W.addrsOf(L[0], row, side),
+      b = W.addrsOf(L[1], row, side);
+    return !!(a && b && a[0] !== b[0]);
+  };
+  /* the instance of a shared drawing whose row (side) carries the address adr */
+  const instByAddr = (d, row, side, adr) => {
+    const L = W.instOf && W.instOf.get(d);
+    if (!L || !adr) return null;
+    for (const x of L) {
+      const a = W.addrsOf(x, row, side);
+      if (a && a.includes(adr)) return x;
+    }
+    return null;
+  };
+  /* the field tags of machine k on the drawing (I/O list: "DO1043-A1" of burner A = "DO1043-C1" of burner C) */
+  W.instTag = (s, t) => {
+    const I = s && s._inst,
+      T = I && I.k ? IA(s) : null,
+      m = T && T.tags && T.tags[I.k];
+    if (!m || !t) return t;
+    if (!m._re) {
+      const ks = Object.keys(m).sort((a, b) => b.length - a.length);
+      Object.defineProperty(m, '_re', { value: new RegExp('(?<![A-Z0-9])(' + ks.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')(?![A-Z0-9])', 'g') });
+    }
+    return String(t).replace(m._re, x => m[x] || x);
+  };
+  /* the texts of a cell of a machine instance as the operator reads them (one string per text of the cell): letters of this machine,
+     its own addresses in place of the address list of the drawing */
+  W.cellTexts = (s, key, arr) => {
+    const I = s && s._inst;
+    if (!I || !I.k) return arr;
+    const [i, c] = String(key).split(':'),
+      side = c === 'RS' || c === 'RT' ? 'R' : c === 'T' || c === 'S' ? 'L' : null,
+      T = IA(s),
+      e = side && T && T.r && T.r[side + i],
+      /* the address cell of the row: T (or S when T is empty) for an input, RS / RT for an output */
+      adrCell = e && !(side === 'L' && c === 'S' && cellTxt(I.base, +i, 'T')),
+      mine = e ? e[I.k] : null;
+    let first = true;
+    return arr.map(t => {
+      let o = W.remap(s, W.instTag(s, t));
+      if (adrCell)
+        o = o.replace(ARX, (m, st) => {
+          if (st) return m;
+          if (!first) return '';
+          first = false;
+          return mine && mine.length ? mine.join(' ') : '(no address)';
+        });
+      return o.replace(/\s{2,}/g, ' ').trim();
+    });
+  };
+  /* an address group on a drawing: "I.0013/333", "M.1150/1160", "I.0085/88/8B"; "S4 O.1330" names another station (kept) */
+  const ARX = /(S\d\s*)?\b[IMOB]\.[0-9A-F]{4}(?:\s*\/\s*(?:[IMOB]\.)?[0-9A-F]{1,4})*/gi;
+  /* the name of the machine of an instance: "B", or "BFWP A · LOP B" on a drawing of two letters (DITL-22) */
+  W.instLabel = s => {
+    const I = s && s._inst,
+      k = I ? I.k : 0,
+      P = I && pairOf(I.base);
+    return P ? Object.keys(P).map(w => w + ' ' + P[w](k)).join(' · ') : LET[k];
+  };
+  W._h = { addrList, cellTxt, relative, machOfDitl, famOf, LET, MRX };
   /* index of every link, built once when the world is turned on */
   function build() {
     const t0 = performance.now();
@@ -258,15 +367,29 @@
       const nd = machinesOf(d),
         rowT = cellTxt(sb, i, 'S') + ' ' + cellTxt(sb, i, 'T'),
         n = machinesOf(sb);
+      /* 3.2.0-beta.33: a drawing of two letters (DITL-22, LOP A / B of BFWP A / B): the machine named on the row as this instance reads it
+         ("BFWP A AUX. LOP B TRIP" on LOP B of BFWP A = LOP A of BFWP A); another drawing (DITL-23B BFWP) = the BFWP of this LOP */
+      const P = pairOf(sb);
+      if (P) {
+        const rt = W.remap(inst(sb, k) || sb, rowT.replace(/\(\s*[0-9]{2,3}[A-Z]?\s*-\s*\d{1,2}\s*\)/g, ' ')),
+          Lw = {};
+        for (const m of rt.matchAll(MRX)) {
+          const w = m[0].replace(/\s*-?\(?[A-D]\)?$/i, '').trim().toUpperCase();
+          if (P[w]) Lw[w] = m[1].toUpperCase();
+        }
+        const ws = Object.keys(P);
+        if (d === sb) {
+          for (let j = 0; j < nd; j++) if (ws.every(w => !Lw[w] || P[w](j) === Lw[w]) && inst(d, j)) return inst(d, j);
+        } else if (nd > 1 && Lw[ws[0]] && inst(d, LET.indexOf(Lw[ws[0]]))) return inst(d, LET.indexOf(Lw[ws[0]]));
+      }
       if (nd > 1) {
-        /* 1. the address of this machine on the row = the address of one machine on the output */
-        const la = addrList(cellTxt(sb, i, 'T') || cellTxt(sb, i, 'S'));
-        if (la.length > 1 && la[k]) {
-          const lo = addrList(cellTxt(d, orow, 'RS') + ' ' + cellTxt(d, orow, 'RT'));
-          const j = lo.indexOf(la[k]);
-          if (j >= 0 && inst(d, j)) {
+        /* 1. the address of this machine on the row = the address of one machine on the output (3.2.0-beta.33: the address table) */
+        const me = W.addrsOf(inst(sb, k), i, 'L');
+        if (me && me.length && varies(sb, i, 'L')) {
+          const x = instByAddr(d, orow, 'R', me[0]);
+          if (x) {
             byAddr.push(1);
-            return inst(d, j);
+            return x;
           }
         }
         /* 2. the machine named on the row (the drawing is written from machine A: in instance k the names turn by k) */
@@ -347,12 +470,9 @@
         if (nd > 1) {
           /* the address of the ABC signal is one of the machine addresses of the row (ABC-003B M.3125 -> DITL-07 row 4
              "M.3124/3125/3144/3145" = burner B; ABC-011 I.0091 -> DITL-32 73 "I.0011/91" = valve (2)) */
-          if (adr) {
-            const la = addrList(
-              isTo ? cellTxt(d, row, 'T') || cellTxt(d, row, 'S') : cellTxt(d, row, 'RS') + ' ' + cellTxt(d, row, 'RT')
-            );
-            const j = la.indexOf(adr);
-            if (j >= 0 && inst(d, j)) return inst(d, j);
+          if (adr && varies(d, row, isTo ? 'L' : 'R')) {
+            const x = instByAddr(d, row, isTo ? 'L' : 'R', adr);
+            if (x) return x;
           }
           if (L && inst(d, LET.indexOf(L))) return inst(d, LET.indexOf(L));
           return d;
@@ -408,7 +528,7 @@
                reads it (CLAUDE.md rule 1, one address = one signal). Before, feeders B and C had no furnace temperature permissive */
             if (d === d0 && machinesOf(d0) > 1 && !machAbc(src)) {
               const rt = cellTxt(d0, row, 'T') + ' ' + cellTxt(d0, row, 'S');
-              if (addrList(cellTxt(d0, row, 'T') || cellTxt(d0, row, 'S')).length <= 1 && !relative(d0, rt))
+              if (!varies(d0, row, 'L') && !relative(d0, rt))
                 W.instOf.get(d0).forEach((x, k) => k && addIn(x, row, { k: 'a', sh, n: src, ref: sh.name }));
             }
             hit = true;
@@ -441,15 +561,15 @@
           if (have && have.some(q => q.k === 'a' || q.k === 'v' || q.k === 'm')) return;
           const sheets = abcOf(fm[1].toUpperCase());
           if (!sheets.length) return;
-          const T = cellTxt(sb, i, 'T') + ' ' + cellTxt(sb, i, 'S'),
-            la = addrList(cellTxt(sb, i, 'T') || cellTxt(sb, i, 'S'));
+          const T = cellTxt(sb, i, 'T') + ' ' + cellTxt(sb, i, 'S');
           /* machine B / C / D of a shared drawing: only its own address (the address of machine A is not its signal) */
           /* 3.2.0-beta.23: one address and a row that names no machine of this family (DITL-19 row 16 "FURNACE LOWER LAYER UNDER
              TEMP. > 700 C" M.3330 is ONE furnace for feeders A, B, C) is the same signal for every instance (CLAUDE.md rule 1);
-             before, feeders B and C had no furnace temperature and tripped when the last start-up burner was put out */
-          const common = k > 0 && !la[k] && la.length === 1 && !relative(sb, T);
-          if (k > 0 && !la[k] && !common) return;
-          const adr = la[k] || (common ? la[0] : null),
+             before, feeders B and C had no furnace temperature and tripped when the last start-up burner was put out.
+             3.2.0-beta.33: the address of each machine comes from the address table (drawing + I/O list + memory lists) */
+          const mine = W.addrsOf(s, i, 'L');
+          if (k > 0 && !(mine && mine.length)) return;
+          const adr = mine && mine.length ? mine[0] : null,
             wt = (sb.tx || []).filter(x => x && x.t && Math.abs((x.iy != null ? x.iy : x.y) - r.y) < 5 && /^[A-Z0-9-]{4,}\.(MAN|MV|PV|SV)$/.test(String(x.t).trim())),
             tm = /\b([A-Z]{2,}[A-Z0-9-]*\d[A-Z0-9-]*\.(?:MAN|MV|PV|SV))\b/.exec(T),
             tag = tm ? tm[1] : wt.length ? String(wt[0].t).trim() : null,
@@ -597,6 +717,10 @@
       lost,
       ms: Math.round(performance.now() - t0)
     };
+    /* 3.2.0-beta.33: the sheet list shows the machine pages (B / C / D) once they exist */
+    try {
+      if (typeof drawSide === 'function') drawSide();
+    } catch (e) {}
     /* 2.5.0-beta.10: the ABC sheets that READ the DITL too (FROM DITL): stepped with the world, so a DITL input reaches their logic */
     for (const a of ain) wsh.add(a.sh.name);
     AN.worldSheets = [...wsh];
