@@ -390,9 +390,11 @@ window.LS_GUIDE = (function () {
         /* 3.2.0-beta.24: down too above 125 kg/cm2. Raised only, the pressure climbed past the MS blow-off SV 128 (PICMS1002, 4.PNG)
            once the TCS target stopped at 80 MW; the blow-off opened > 5 % (ABC-013 M.0255) and that BU-CMD (ABC-001C M.2013) held the
            boiler master MANUAL for good: the CCS handover never came */
-        /* the bed first (bypass coach): no firing down under 730 C, +0.5 % under 720 C */
+        /* the bed first: +0.5 % under 708 C; down allowed from 712 C (3.2.0-beta.32, human run of the Training: at 80 MW, bed 728 C,
+           the 730 C limit of beta.24 kept the firing up, the main steam reached 129.9 > the blow-off SV 128 and its BU-CMD (M.0255 ->
+           M.2013) held HIC-BM in MANUAL; the coal trip of the drawing is at 700 C) */
         const bed = U().Tb,
-          d = bed < 720 ? 0.5 : Math.max(P > 125 && bed >= 730 ? -0.5 : 0, Math.min(0.5, 0.02 * (123 - P) - 0.3 * dP + (o.aim < 80 ? 0.04 : 0)));
+          d = bed < 708 ? 0.5 : Math.max(P > 125 && bed >= 712 ? -0.5 : 0, Math.min(0.5, 0.02 * (123 - P) - 0.3 * dP + (o.aim < 80 ? 0.04 : 0)));
         if (s) s.T.rt.st[s.b.id].val = Math.max(5, Math.min(100, +s.T.rt.st[s.b.id].val + d));
       }
     },
