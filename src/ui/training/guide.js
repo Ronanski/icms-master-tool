@@ -221,6 +221,13 @@ window.LS_GUIDE = (function () {
             const c = setOf('FIC-CF');
             if (isFinite(c) && c < 30) A.man('FIC-CF', c + 1);
           }
+          /* 3.2.0-beta.31 (human run of the Training: drum pressure 141 kg/cm2 at 0 MW, steam 219 T/H on coal 36 T/H before the bypass
+             stage): the coal back down 1 % a minute (to 15 %) once the bed is hot (> 760 C) and the steam is over the 40 ~ 55 T/H of the
+             procedure (PR-OPE-5002, the bypass coach takes over at the servicing step) */
+          if (tb > 760 && !CO.byp && md('FIC-CF') !== 'REM' && h().MSF() > 65) {
+            const c = setOf('FIC-CF');
+            if (isFinite(c) && c > 15) A.man('FIC-CF', c - 1);
+          }
         }
         if (md('FICFA1081') === 'REM') return;
         const x = h().O2();
