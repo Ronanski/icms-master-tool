@@ -269,7 +269,8 @@ window.LS_LIVE = (function () {
     Tb: ['Bed temperature', '°C', '', ''],
     Tw: ['Boiler water temperature', '°C', '', ''],
     oilF: ['Burner oil, total', 'T/H', 'ABC-003A', ''],
-    rpm: ['Turbine speed', 'rpm', 'ABC-050', '']
+    rpm: ['Turbine speed', 'rpm', 'ABC-050', ''],
+    RHP: ['Reheat pressure', 'kg/cm2', 'ABC-052', 'PICHR1003']
   };
   const getV = k => {
     if (k === 'AIR') return hv('PA') + hv('SA') + hv('FA');

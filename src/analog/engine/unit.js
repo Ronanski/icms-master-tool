@@ -533,7 +533,7 @@ function anTurbine(cmd, arg) {
   const tb = U.tb;
   if (cmd === 'roll') {
     if (tb.st !== 'off') return 'umiikot na ang turbine (' + tb.st + ')';
-    if (!(U.vac >= 0.9)) return 'walang vacuum ang condenser (' + Math.round(100 * (U.vac || 0)) + ' %): i-start muna ang seawater pump (SWP) at condensate pump (CEP), hintayin ang VACUUM UP';
+    if (!(U.vac >= 0.9)) return 'walang vacuum ang condenser (' + Math.round(100 * (U.vac || 0)) + ' %): i-start muna ang seawater pump (SWP) at condensate pump (CEP); ang VACUUM UP (ejector, gland sealing) ay kailangan ng aux steam: main steam > 12 kg/cm2';
     Object.assign(tb, { st: 'roll', xfer: false, tgt: 0, aim: 0 });
     return '';
   }
@@ -635,8 +635,13 @@ function anUnitStep(dt) {
   {
     const cw = srcBit(['M.3353', 'M.3354', 'M.3355']) && srcBit(['M.3350', 'M.3351']) ? 1 : 0;
     if (!isFinite(U.vac)) U.vac = 1;
-    /* raised by the vacuum pumps at a steady rate, lost first order */
-    U.vac = Math.max(0, Math.min(1, cw > U.vac ? U.vac + dt / U.vacUp : U.vac + ((cw - U.vac) * dt) / U.vacDn));
+    /* raised by the vacuum pumps at a steady rate, lost first order. 3.2.0-beta.37 (CHECKLIST 0.5, user 2026-10-25 "bakit wala ang
+       vacuum up at gland steam at auxiliary steam"): PR-OPE-5002 VACUUM UP needs the steam ejectors and the gland sealing, both on
+       the auxiliary steam ("Auxiliary steam pressure is > 10 Kg/cm2"), and the aux steam is taken from the main steam ("AUXILLIARY
+       WARMING UP, REQUIREMENT: MS Pressure > 12 Kg/cm2", MV-AS1391). No aux steam: the vacuum does not rise (it is held, not lost) */
+    const aux = U.Pd > 12;
+    U.aux = aux ? 1 : 0;
+    U.vac = Math.max(0, Math.min(1, cw > U.vac ? (aux ? U.vac + dt / U.vacUp : U.vac) : U.vac + ((cw - U.vac) * dt) / U.vacDn));
     const tb0 = U.tb,
       l = U.vtrip;
     if (tb0 && tb0.st !== 'off' && U.vac < 0.6 && l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== 1) {

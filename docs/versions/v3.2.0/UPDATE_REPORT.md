@@ -724,14 +724,31 @@ Engine at logic: walang binago.
 
 **Status:** Beta. CHECKLIST 0.3 TAPOS.
 
-## CHECKLIST 0.5 (sinimulan 2026-10-25, walang binago sa code) — mga nakita
+## 3.2.0-beta.37 (2026-10-25) — CHECKLIST 0.5: Training sunod sa PR-OPE-5002 at FHI Fig. 2; bagong "bawal" test; TCS kulang pa
 
-**Problem:** audit ng engine at plant model para sa start-up (bukas mula sa takbo ng tao: steam 160 T/H sa bypass, O₂ 9.3 % sa 80 MW, MST 553 °C sa 150 MW, blow-off SV 130).
+**Problem:** audit ng engine at plant model para sa start-up (steam 160 T/H sa bypass, MST 565 °C sa 120 MW). User: "bakit wala ang vacuum up, gland steam, auxiliary steam, turning gear", "hindi genuine ang test mo", "wala ka pang turbine model at TCS".
 
-**As Found (trace ng beta.36 Cold → Practice; PR-OPE-5002; FHI SECT_7 Tab_4 Fig. 2 / 6 / 7):**
-- Steam 155 ~ 189 T/H sa bypass stage: ang Training ay nagko-coal (hakbang 40 ~ 44) at nagtataas sa 123 kg/cm2 BAGO ang roll. Ang procedure at Fig. 2: roll sa MS 61.2 kg/cm2 / 400 °C / > 40 T/H, coal pagkatapos ng sync at initial load. Pagkakasunod ng Training ang mali, hindi ang engine.
-- O₂ 9.3 % sa 80 MW: tama ayon sa drawing (minimum air LN5 446 T/H) at sa start-up table ng procedure (TAF 441 ~ 474 T/H).
-- MST 565 °C sa 120 MW habang CCS load up (SV 541), 544 sa 150 MW; ang `unit_load.js` (3 MW/min) ay 541 lang. Susuriin ang spray loops habang load up.
-- Blow-off SV: 128 sa Training, tugma sa 4.PNG (SV 128.0).
+**As Found (beta.36):**
+- Coal at 123 kg/cm2 BAGO ang roll. Ang PR-OPE-5002 (8437, 10003 ~ 10021) at FHI Fig. 2 COLD STARTUP: roll 6 h sa 61 kg/cm2, sync 7 h, coal 8.6 h, burners off ~60 % load 11 h.
+- Burner order A → B: ang procedure (5471, 5660) ay A → D (diagonal), tapos B at C pagkatapos ng 30 min.
+- Vacuum tumataas kahit walang aux steam: ang procedure ay VACUUM UP (6512) pagkatapos ng aux steam (5708, MS > 12 kg/cm2) at gland sealing (6118).
+- MST 565 °C sa 120 MW: TICBR1150 (inner) MANUAL hanggang CCS dahil hindi naabot ang PV ≥ SV − 5; ang outer TICMS1004 (I 1371 s) ay nag-windup nang i-cascade nang maaga.
+- Initial load 5 minuto lang: ang procedure (9080 ~ 9123) ay 45 minuto sa cold, hanggang LP exhaust hood < 52 °C.
+- Ang test (trace at takbo ng tao) ay pinatatakbo ng sariling coach ng Training: umaabot sa 150 MW kahit kulang sa SOP. Hindi nito nahuli ang vacuum / aux steam.
+- Turbine = black box (off → roll → sync → load). Sa ATS criteria (310SC90-776 page 3) 5 lang sa ~40 criteria ang nasa app (`docs/tcs/ATS_CRITERIA.md`).
 
-**Status:** bukas; itutuloy sa susunod na session (HANDOFF "SUSUNOD" #4). Ang pag-ayos ng pagkakasunod ng Training ay itatanong muna sa user.
+**Desisyon (hindi itinanong, batay sa reference):** pagkakasunod ng Training = PR-OPE-5002 at FHI Fig. 2: oil (A → D, tapos B / C sa 15 kg/cm2) → aux steam / gland / vacuum → bypass servicing → MS 61 kg/cm2 → roll → sync → initial load 45 min → 45 MW → coal (batch 400 ~ 450, feeder A 600, C 650) → 123 kg/cm2 → CCS → burners off sa ≥ 90 MW, bed > 700 → 150 MW.
+
+**Work Done:**
+- `src/ui/training/guide.js`: bagong pagkakasunod (68 hakbang; Practice = #65), coach `ofire` (oil fire sa bypass, sliding pressure pagkatapos ng sync), coach `swap` (palit oil → coal sa 45 MW, feedforward sa steam), `load` coach isang hakbang kada minuto, spray: inner SV sinusundan ng operator hanggang steam ≥ 85 % at outlet ±5 °C bago ang cascade, initial load 45 min.
+- `src/analog/engine/unit.js`: ang vacuum ay tumataas lang kapag may aux steam (drum > 12 kg/cm2).
+- `tests/regress/plant_utilities.js`: SWP + CEP walang aux steam → walang vacuum; may aux → roll tinanggap.
+- Bagong `tests/regress/sop_bawal.js`: bawat aksyon ng operator ay sinusubukan nang MAAGA (kulang ang kondisyon), ang app ay dapat tumanggi; ang batayan ay PR-OPE-5002, DITL at ATS criteria, hindi ang coach.
+- Bagong `docs/tcs/ATS_CRITERIA.md`: talaan ng ATS criteria laban sa app.
+
+**As Left:**
+- Trace Cold → Practice (beta.37, kasama ang 45-min initial load): walang trip, 150 MW MSP 122.8, MSF 471, O₂ 3.7 %, bed 833 °C; MST pinakamataas 555 °C habang load up (dati 565 ~ 575; SV 541). **FAIL laban sa alarm list** (`alarm-list.zip` 20160912, TE-MS1004-1: H 548, HH 555): lampas sa H alarm, bukas pa.
+- `sop_bawal.js`: 10 PASS (BFWP walang deaerator level, SAF bago IDF, PAF walang lube oil, feeder habang MFT, burner walang purge, roll walang vacuum, sync bago roll, load up bago sync), **7 FAIL**: roll tinanggap kahit malamig ang boiler (ATS 1.3 / 1.4), at walang model ang turning gear (1.19), bearing oil (1.15), gland seal (1.10), LP exhaust hood (1.12), CV chest warming (1.33 / 2.81), rub check (2.3).
+- Pasado: `tests.js`, `training_dock.js`, `unit_load.js`, `plant_utilities.js`.
+
+**Status:** Beta. CHECKLIST 0.5: boiler side TAPOS; turbine side BUKAS → turbine + TCS model mula sa ATS Sequence / Criteria (desisyon ng user 2026-10-25: push muna beta.37, tapos TCS).
