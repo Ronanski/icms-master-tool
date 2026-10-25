@@ -4,7 +4,7 @@
 
 ## SIMULAN DITO (next session, 2026-10-25 12:30 PM PHT, wrap-up ng user: "emergency, ilipat sa new session")
 
-**Kasalukuyang Beta:** `3.2.0-beta.34` (A/B/C/D: tamang address ng B / C / D, CHECKLIST 0.2 hakbang 1; 0.4 Training isang screen TAPOS sa beta.33), branch `claude/project-thread-vhcfv9` (PR #39), huling commit `839ed09`. Stable pa rin ang v2.4.0 sa `main`. Walang merge sa main at walang release nang walang GO STABLE.
+**Kasalukuyang Beta:** `3.2.0-beta.35` (CHECKLIST 0.2 A/B/C/D TAPOS: bawat makina B / C / D may sariling page, mga button A | B | C | D sa header, sariling text at address; 0.4 TAPOS sa beta.33), branch `claude/project-thread-vhcfv9` (PR #39), huling commit `f57844b`. Stable pa rin ang v2.4.0 sa `main`. Walang merge sa main at walang release nang walang GO STABLE.
 
 **Utos ng user na susundin (2026-10-24 / 25, galit kapag nilabag):**
 - Ang plano ay `docs/CHECKLIST.md` **seksyon 0**; ito lang muna ang gagawin, pulidohin at gawing perfect. I-update ang checklist kada may matapos.
@@ -20,9 +20,9 @@
 **Mga ayos ngayong araw (beta.26 ~ 32, detalye sa `docs/versions/v3.2.0/UPDATE_REPORT.md`):** page link ng Training sa mismong block / row (`AN.showTag`); interlock box para sa susunod na motor lang; analog interlock row = sagot ng comparator (`DUI.rowVal`, BFWP suction pressure); BURNER ON may interlock box at Field operator; coal bumababa kapag mainit ang bed (drum 141 → 124); bf coach puwedeng magbaba ng firing hanggang bed 712 °C (CCS handover, blow-off BU-CMD M.0255 → M.2013).
 
 **SUSUNOD NA GAGAWIN (sunod-sunod):**
-1. **CHECKLIST 0.2 — DITL A/B/C/D bilang tunay na hiwalay na sheet** (ETA 4 ~ 6 oras). Ngayon ay nakatagong kopya lang (`src/world/world.js` `makeInst`, "#B / #C / #D", address hinuhulaan ng `W.addrK` / `W.remap`). Nakita: 36 shared sheet (listahan: `WORLD.instOf` na may > 1), 820 address na nabasa (lahat nasa I/O / memory list), 164 na masusuri ang letra: **46 mali** (hal. DITL-10 / 16 burner C / D → address ng burner A O.0080 / 0081 / 0087 / 0088 / 0089, dahil kulang ang address na nakasulat at `la[k] || la[0]`). Nakita rin: ang interlock ng SWP-B (`DITL-29A #B`) ay "SEAWATER PUMP **A** REMOTE MODE SELECTED", iisang address sa A. Gawin: (a) talaan ng tamang address bawat kopya mula sa I/O list at memory list (hindi hula); (b) bawat kopya ay page sa sheet list (hal. "DITL-29A (SWP B)") na may tamang letra at address sa drawing; (c) ang link ng Training para sa B / C / D ay bubukas sa sarili nilang sheet (ngayon: sheet ng A; `dock.js` `goStep` at ang "DITL-xx #B ↗" sa interlock box ay nagtatanggal ng `#B`); (d) ebidensya ng bawat binagong address sa `docs/versions/v3.2.0/UNLINK_AUDIT.md`; (e) test: `tests/regress/world.js`, `ditl_sim.js`, `training_dock.js`, at `human_run.js` hanggang 150 MW.
+1. **CHECKLIST 0.2 — TAPOS (beta.35).** Takbo ng tao (mouse click lang) sa beta.35: Cold → 150 MW → Practice (hakbang 65), walang trip, 0 page error. (Ang hinto ng beta.34 sa hakbang 33 ay hindi na naulit.)
 2. **CHECKLIST 0.3 — MCC at final element** (ETA 2 ~ 3 oras): ang ABC block na "MCC PANEL / INVERTER" ay tinatrato ng reader na FIELD kaya humihinto ang MV bago umabot sa valve (`src/analog/reader/blocks.js:171`); iisang model ng command → MCC / positioner → equipment → feedback para sa ABC at DITL.
-3. **CHECKLIST 0.4 — Training isang screen**: tamang valve, instrument at tag na kokontrolin at babantayan bawat hakbang (ETA 3 ~ 4 oras).
+3. **CHECKLIST 0.4 — TAPOS (beta.33).**
 4. **CHECKLIST 0.5 — audit ng engine at plant model para sa start-up** (ETA 3 ~ 4 oras). Bukas na nakita sa takbo ng tao: steam 157 ~ 160 T/H sa bypass stage sa 123 kg/cm2 bago ang turbine (procedure 40 ~ 55 T/H; dahil sa coal na kailangan para sa bed > 700 °C habang PA 280 T/H); O₂ 9.3 % sa 80 MW (sobra ang hangin, air demand ng drawing sa REMOTE); main steam 553 °C sa pagdating sa 150 MW (nag-settle ≤ 545 sa loob ng hold); SV ng blow-off ay 130 sa 150 MW (4.PNG: 128).
 
 **Hindi pa nasubok:** PC / tablet / EXE ng user; Practice (load change) sa takbo ng tao; bilis ×1 / ×10.

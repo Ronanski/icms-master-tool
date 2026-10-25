@@ -706,6 +706,6 @@ Engine at logic: walang binago.
 - Text ng drawing at ng Inputs / Outputs panel sa kopya: tamang letra at sariling address (`WORLD.showText`: "M.1150/1160 M.1170 SEAWATER PUMP A START P.B." → "M.1160 SEAWATER PUMP B START P.B.").
 - Training dock: ang START ng motor, ang BURNER ON at ang "DITL-xx #B ↗" ay bumubukas sa page ng makinang iyon; sa hakbang na may ilang motor, ang susunod na hindi pa tumatakbo (pangalawang SWP → SWP-B).
 
-**As Left:** DITL-29A B: header, drawing ("SEAWATER PUMP B START P.B.", M.1160) at panel tama; pagkatapos ma-START ang SWP-A sa Training, bumubukas ang page ng SWP-B. Ang pamagat sa ribbon (itaas) ay sa makina na rin (hal. "SEAWATER PUMP B"). Tests: world, ditl_sim, ditl_selected, training_dock, ditl_pagelink pasado.
+**As Left:** DITL-29A B: header, drawing ("SEAWATER PUMP B START P.B.", M.1160) at panel tama; pagkatapos ma-START ang SWP-A sa Training, bumubukas ang page ng SWP-B. Ang pamagat sa ribbon (itaas) ay sa makina na rin (hal. "SEAWATER PUMP B"). Tests: world, ditl_sim, ditl_selected, training_dock, ditl_pagelink pasado. Takbo ng tao (`tools/training/human_run.js`, mouse click lang, ×300): Cold → 150 MW → Practice (hakbang 65), walang trip, 0 page error; ang hinto ng beta.34 sa hakbang 33 (burner C / D) ay hindi naulit.
 
 **Status:** Beta.
