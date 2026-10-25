@@ -654,7 +654,7 @@ Engine at logic: walang binago.
 
 **Work Done:** `src/ui/training/guide.js` (`bf` coach): pagbaba ng firing pinapayagan mula bed 712 °C; dagdag na +0.5 % kapag bed < 708 °C.
 
-**As Left (takbo ng "tao", mouse click lang sa Training, beta.32):** UNANG BUONG TAKBO na umabot sa 150 MW: hakbang 1 ~ 63 pasado, nasa hakbang 64 "Hawakan ang 150 MW": load 149.7 MW, main steam 122.8 kg/cm2, steam 471 T/H (4.PNG 472.7), coal 86.8 T/H, drum level +19 mm, O₂ 3.7 %, walang page error. Bukas: main steam temperature 553 °C (> 545 ng hakbang; alarm AI0433 HIGH), kaya hindi pa tapos ang hold ng hakbang 64. PASADO: training_start.
+**As Left (takbo ng "tao", mouse click lang sa Training, beta.32):** UNANG BUONG TAKBO na umabot sa 150 MW: hakbang 1 ~ 63 pasado, nasa hakbang 64 "Hawakan ang 150 MW": load 149.7 MW, main steam 122.8 kg/cm2, steam 471 T/H (4.PNG 472.7), coal 86.8 T/H, drum level +19 mm, O₂ 3.7 %, walang page error. Sa unang takbo ay 553 °C ang main steam pagdating sa hakbang 64 (alarm AI0433 HIGH). **Ikalawang takbo (beta.32, mouse click lang): TAPOS ANG START-UP**: pasado ang hakbang 64 (5 minutong hold: 147 ~ 153 MW, MSP 118 ~ 128, MST ≤ 545 °C, drum ±150 mm, O₂ 3 ~ 6 %), umabot sa Practice (hakbang 65), walang trip, walang page error; nag-settle ang main steam sa loob ng limit. Video ng takbo naibigay sa user sa chat. PASADO: training_start.
 
 **Bukas (audit ng plant model, CHECKLIST 0.5):** O₂ 9.3 % sa 80 MW (sobra ang hangin; air demand ng drawing sa REMOTE) ang nagpapalamig sa bed.
 
