@@ -701,6 +701,6 @@ Engine at logic: walang binago.
 
 **Work Done:** `src/ui/training/dock.js`: hand station = MV % at mode; SV at MV ng controller live; idinagdag ang drum level (stage 8), main steam temp at O₂ 3 ~ 6 (stage 9), coal (Practice). `src/ui/training/guide.js`: PICMS1006 / PICHR1003 sa card ng bypass steps. UI lang; walang binago sa logic, engine o plant model.
 
-**As Left:** pasado ang `training_dock.js`. **Hindi pa tapos nang mag-push:** ang takbo ng "tao" Cold → 150 MW sa beta.35 (sinimulan, hindi pa natapos nang lumipat ng session; dapat itong patakbuhin muna ng susunod na session).
+**As Left:** pasado ang `training_dock.js`. Takbo ng "tao" Cold → 150 MW sa beta.35: umabot sa hold ng 150 MW at sa Practice (hakbang 65), 0 page error.
 
 **Status:** Beta.
