@@ -32,3 +32,16 @@ Walang link na tinanggal para lang gumana. Ang lahat ng nasa ibaba ay lumabas ha
    - Dati: ang feeder A lang ang may link. Ang feeder B at C ay walang furnace temperature permissive, kaya ang natitirang permissive nila ay "may burner na IN SERVICE". Pagkapatay ng huling start-up burner, sabay na nag-trip ang feeder B at C.
    - Ebidensya: iisa ang furnace ng tatlong feeder. Ang row ay may iisang address (M.3330 sa TAG NO.) at walang pangalan ng feeder sa service text ("FURNACE LOWER LAYER ..."). Ang ABC-027 ay may "TO DITL 19-16 / 19-17" para sa M.2504 / M.2505.
    - Ngayon: tuntunin sa `src/world/world.js`: ang signal ng ABC na walang makina (walang A / B / C sa memory list description) papunta sa row ng drawing ng makina na iisa ang address at walang pangalan ng makina ng pamilya ay binabasa ng LAHAT ng instance.
+
+## 3.2.0-beta.34 — Address ng machine B / C / D ng mga DITL sheet na iisa para sa A ~ D (CHECKLIST 0.2, hakbang 1)
+
+Walang inalis na link. Ang binago ay ang BASA ng address ng kopya B / C / D (`src/world/world.js` `addrList`, `rowList`, `W.addrK`). Ebidensya: I/O list at memory list ng STN101 ~ 105 (`AN.ades()`), at ang drawing mismo.
+
+1. **Lahat ng grupo ng address sa cell.** Ang drawing ay sumusulat ng apat na address bilang dalawang grupo: DITL-10 / 16 "O.0088/408 O.0728/1048" = burner A / B / C / D (I/O list STN104: SVR-DO1043-A5 / B5 / C5 / D5 "start up burner-A ~ D oil gun cylinder retract"); "M.0136/236 M.1636/1736" = A ~ D-IGNITER RETRACT (memory list STN104); DITL-29A "M.1150/1160 M.1170" = SWP A / B / C START PB (STN103). Dati unang grupo lang: ang C / D ay kumuha ng address ng A.
+2. **Maikling dulo ng address (2 titik).** DITL-45 "I.0085/88/8B" = I.0085 / I.0088 / I.008B (plant air dryer A / B / C REMOTE).
+3. **Listahang kulang sa isang row, kumpleto sa iba.** DITL-13 row 28 "M.0143/243 BURNER A SHUTDOWN COMMAND" = DITL-10 row 20 "M.0143/243 M.1643/1743" (parehong signal): ang kumpletong listahan ang ginagamit.
+4. **TAG NO. vs service column.** Kapag mas kumpleto ang listahan sa service column (parehong unang address), iyon ang ginagamit.
+5. **Isang address, nagpapalit na row.** DITL-24 PAF LOP A: row 25 "LOP A STOPPED" I.005C, row 26 "LOP B STOPPED" I.037C; sa kopya B ang dalawang row ay nagpapalit ng text, kaya nagpapalit din ng address.
+6. **Bilang ng makina hindi binago:** unang grupo lang ang binibilang (dati ring paraan); 36 shared sheet, parehong bilang ng kopya gaya ng beta.33 (napatunayan).
+
+**Resulta (talaan ng 544 row na may address sa kopya B / C / D):** tama ayon sa I/O / memory list (may station na ang description ay may letra ng kopya): beta.33 = 313 / 543, beta.34 = 544 / 544 (ang 58 na mukhang mali sa unang check ay tama ang address; ang TEXT lang ng drawing ang hindi pa napapalitan sa DITL-117 / 118 "COOLER A", at ang DITL-22 kopya B = LOP B ng BFWP-A, aayusin ang text sa hakbang 2: page ng bawat kopya).

@@ -681,3 +681,15 @@ Engine at logic: walang binago.
 **Patunay (takbo ng "tao", `human_run.js`, mouse click lang, beta.33):** Cold → 150 MW → Practice (hakbang 65), pasado ang hold sa 150 MW, walang trip, walang page error.
 
 **Status:** Beta.
+
+## 3.2.0-beta.34 — DITL A/B/C/D: tamang address ng machine B / C / D (CHECKLIST 0.2, hakbang 1)
+
+**Problem (user 2026-10-24):** ang mga DITL sheet na iisa para sa A ~ D (SWP, CEP, BFWP, burner, feeder ...) ay nagsasama-sama ng address; ang B / C / D ay nakatagong kopya ng sheet ng A at ang address nila ay hinuhulaan.
+
+**As Found:** 36 shared sheet. Sa talaan ng 543 row na may address sa kopya B / C / D, 313 lang ang tugma sa I/O list / memory list. Sanhi: unang grupo lang ng address ang binabasa ("O.0088/408 O.0728/1048" → burner C / D = address ng A), hindi binabasa ang 2-titik na dulo ("I.0085/88/8B"), at ang listahang kulang sa isang row ay hindi kinukumpleto mula sa ibang row.
+
+**Work Done:** `src/world/world.js`: lahat ng grupo ng address; 2 ~ 4 na titik ng dulo; kumpletong listahan mula sa drawing; mas mahabang listahan ng TAG / service column; ang nagpapalit na row (PAF LOP A / B). Bilang ng makina: hindi binago. Ebidensya: `UNLINK_AUDIT.md` beta.34.
+
+**As Left:** 544 / 544 address ng B / C / D tugma sa I/O list / memory list. PASADO: world, ditl_sim, ditl150, ditl_selected.
+
+**Status:** Beta. Susunod (hakbang 2): bawat kopya bilang sariling page na may tamang letra sa drawing; link ng Training para sa B / C / D.
