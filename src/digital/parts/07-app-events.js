@@ -58,6 +58,10 @@ function renderMeta() {
     m = $('meta');
   m.hidden = !s;
   if (!s) return;
+  /* 3.2.0-beta.35: machine B ~ D of a shared drawing has its own title (SEAWATER PUMP B (1)); its meta was the object of machine A */
+  const I = s._inst;
+  if (I && I.k && (!s.meta || s.meta === I.base.meta) && typeof WORLD !== 'undefined' && WORLD.showText)
+    s.meta = { ...mpar(I.base.name), title: WORLD.showText(s, I.base.title || '') };
   if (!s.meta) s.meta = { ...mpar(s.name), title: s.title || '' };
   if (!s.meta.title && s.title) s.meta.title = s.title;
   const z = MSZ[MUI.sz] || MSZ.M,

@@ -358,21 +358,30 @@
     for (const k in M) M[k].sort((a, b) => b.y - a.y);
     return (s._rsN = mv >= 5 ? M : null);
   };
-  const txt = (s, i, c) =>
-    ((c === 'RS' && rsNear(s) ? rsNear(s)[i] : s.cells[i + ':' + c]) || [])
+  /* 3.2.0-beta.35: machine B / C / D of a shared drawing reads its own letter and address (WORLD.showText / addrK) */
+  const isK = s => !!(s && s._inst && s._inst.k && window.WORLD && WORLD.showText);
+  const txt = (s, i, c) => {
+    const r = ((c === 'RS' && rsNear(s) ? rsNear(s)[i] : s.cells[i + ':' + c]) || [])
       .map(t => t.t)
       .join(' ')
       .replace(/\s+/g, ' ')
       .trim();
+    return isK(s) ? WORLD.showText(s, r) : r;
+  };
   /* the TAG NO. column holds the address (I.0406, M.0378) and, on many sheets, the service text too */
   const ADR = /^[A-Z]{1,3}\.[0-9A-F]{3,5}[A-Z]?$/;
-  const tagOf = (s, i) => (s.cells[i + ':T'] || []).map(t => t.t.trim()).filter(t => ADR.test(t)).join(' ');
-  const svcOf = (s, i) =>
-    (s.cells[i + ':T'] || [])
+  const tagOf = (s, i) => {
+    const t = (s.cells[i + ':T'] || []).map(t => t.t.trim()).filter(t => ADR.test(t)).join(' ');
+    return t && isK(s) ? WORLD.addrK(s, i) || t : t;
+  };
+  const svcOf = (s, i) => {
+    const r = (s.cells[i + ':T'] || [])
       .concat(s.cells[i + ':S'] || [])
       .map(t => t.t.trim())
       .filter(t => t && !ADR.test(t))
       .join(' ');
+    return isK(s) ? WORLD.showText(s, r) : r;
+  };
   const fmt = x => (x >= 60 ? (x / 60).toFixed(1) + ' min' : x.toFixed(1) + ' s');
   let key = '',
     U = []; /* value updaters of the built panel */
@@ -1136,6 +1145,33 @@
     document.body.classList.add('dm');
   }
   let dmKey = '';
+  /* 3.2.0-beta.35: the machines of a drawing that is the same for A ~ D: one chip each; the picked one is the sheet shown (cur()) */
+  const LETTERS = 'ABCD';
+  const machChips = () => {
+    const b = S.sheets[S.cur],
+      L = b && window.WORLD && WORLD.instOf ? WORLD.instOf.get(b) : null;
+    if (!L || L.length < 2) return null;
+    const k = (S.mach && S.mach[S.cur]) || 0,
+      fam = String(b.title || '').replace(/\s*\(\d\)\s*$/, '');
+    return E(
+      'span',
+      { cls: 'dm-mach', title: 'The drawing is the same for these machines: each one has its own inputs, values and addresses' },
+      L.map((x, i) => {
+        const nm = i ? WORLD.showText(x, fam) : fam;
+        const c = E('button', { type: 'button', cls: 'dm-m' + (i === k ? ' on' : ''), txt: LETTERS[i], title: nm });
+        c.onclick = () => D.setMach(i);
+        return c;
+      })
+    );
+  };
+  D.setMach = k => {
+    S.mach = S.mach || {};
+    S.mach[S.cur] = k || 0;
+    dmKey = '';
+    sel = null;
+    render();
+    upd();
+  };
   function head() {
     const s = cur(),
       k = s ? S.cur + '|' + s.name + '|' + !!s.nl : '';
@@ -1148,9 +1184,11 @@
           nl = s.nl,
           nIn = s.rows.filter((r, i) => fbk(s, i, 'S')).length,
           nOut = nl ? new Set((nl.outs || []).map(o => o.row)).size : 0;
+        const ttl = isK(s) ? WORLD.showText(s, s._inst.base.title || '') : m.title || s.title || '';
         dm.append(
-          E('b', { txt: m.dwg || s.name }),
-          E('span', { cls: 'dm-t', txt: (m.no ? 'SHEET ' + m.no + ' · ' : '') + (m.title || s.title || ''), title: (m.no ? 'SHEET ' + m.no + ' · ' : '') + (m.title || s.title || '') }),
+          E('b', { txt: (m.dwg || s.name).replace(/\s*#[B-D]$/, '') + (isK(s) ? ' · ' + LETTERS[s._inst.k] : '') }),
+          E('span', { cls: 'dm-t', txt: (m.no ? 'SHEET ' + m.no + ' · ' : '') + ttl, title: (m.no ? 'SHEET ' + m.no + ' · ' : '') + ttl }),
+          machChips(),
           dmode,
           E('span', { cls: 'sp' }),
           E('span', { cls: 'dm-lg' }, [E('i', { cls: 'on' }), document.createTextNode(' 1 = ON  '), E('i'), document.createTextNode(' 0 = OFF')]),

@@ -693,3 +693,19 @@ Engine at logic: walang binago.
 **As Left:** 544 / 544 address ng B / C / D tugma sa I/O list / memory list. PASADO: world, ditl_sim, ditl150, ditl_selected.
 
 **Status:** Beta. Susunod (hakbang 2): bawat kopya bilang sariling page na may tamang letra sa drawing; link ng Training para sa B / C / D.
+
+## 3.2.0-beta.35 — DITL A/B/C/D: bawat makina ay sariling page (CHECKLIST 0.2, hakbang 2 ~ 3)
+
+**Problem (user 2026-10-24):** "iduplicate nalang, ireconstruct sa kapareha para hindi sama-sama ang mga address sa iisang logic sheet"; sa Training, ang SWP-B / CEP-B / BFWP-B ay binubuksan sa sheet ng A.
+
+**As Found:** ang machine B / C / D ng 36 shared sheet ay nakatagong kopya lang (`WORLD.inst`), walang page; ang drawing at ang Inputs panel ay laging nagpapakita ng A ("SEAWATER PUMP A", "M.1150/1160 M.1170"); ang link ng Training ay nagtatanggal ng "#B".
+
+**Work Done:**
+- `src/digital/parts/01-parse-build.js` `cur()`: ang piniling makina ng sheet (`S.mach`) ang ipinapakitang sheet: sariling input, value at address.
+- Header ng DITL sheet (`src/ui/shell/ditl.js`): mga button **A | B | C | D** para sa sheet na iisa para sa A ~ D; pamagat "DITL-29A · B · SEAWATER PUMP B (1)".
+- Text ng drawing at ng Inputs / Outputs panel sa kopya: tamang letra at sariling address (`WORLD.showText`: "M.1150/1160 M.1170 SEAWATER PUMP A START P.B." → "M.1160 SEAWATER PUMP B START P.B.").
+- Training dock: ang START ng motor, ang BURNER ON at ang "DITL-xx #B ↗" ay bumubukas sa page ng makinang iyon; sa hakbang na may ilang motor, ang susunod na hindi pa tumatakbo (pangalawang SWP → SWP-B).
+
+**As Left:** DITL-29A B: header, drawing ("SEAWATER PUMP B START P.B.", M.1160) at panel tama; pagkatapos ma-START ang SWP-A sa Training, bumubukas ang page ng SWP-B. Ang pamagat sa ribbon (itaas) ay sa makina na rin (hal. "SEAWATER PUMP B"). Tests: world, ditl_sim, ditl_selected, training_dock, ditl_pagelink pasado.
+
+**Status:** Beta.
