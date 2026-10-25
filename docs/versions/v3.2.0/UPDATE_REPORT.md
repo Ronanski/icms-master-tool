@@ -599,3 +599,15 @@ Engine at logic: walang binago.
 **Nakita rin (para sa CHECKLIST 0.2):** ang interlock ng SWP-B (`DITL-29A #B`) ay nagsasabing "SEAWATER PUMP **A** REMOTE MODE SELECTED" at iisang address sa A: ang pag-ayos ng REMOTE ng A ay nagpa-✓ din sa B. Ang B / C ay hindi pa tunay na hiwalay na sheet.
 
 **Status:** Beta.
+
+## 3.2.0-beta.28 — BFWP-A START naka-lock sa Training (analog na interlock row)
+
+**Problem (takbo ng "tao" sa Training, mouse click lang, beta.27):** hakbang 1 ~ 11 pasado; hakbang 12 "Simulan ang BFWP": ang START BFWP-A ay naka-lock kahit pinindot ang "Field operator: ayusin ang 1 contact". Ang takbong "via code" ay dumaan dito dahil diretsong tinatawag ng script ang START (hindi dumaraan sa lock ng button).
+
+**As Found:** DITL-23A row 12 "PT-FW1115-A BFWP A SUCTION PRESSURE > 1.5 kg/cm2" ay ANALOG na input (comparator ng drawing). Pagkatapos ng Field operator: value 2.25 kg/cm2, comparator out = 1 (OK sa logic). Pero ang `DUI.rowVal` (basa ng interlock box at ng lock ng START) ay bumabasa ng analog net mismo (laging 0), kaya ✕ at naka-lock.
+
+**Work Done:** `src/ui/shell/ditl.js` `D.rowVal`: ang analog na input row ay "1" kapag 1 ang comparator ng drawing na bumabasa nito. Hindi binago ang engine (`simulate`).
+
+**As Left:** pagkatapos ng Field operator: row 12 = 1, kulang sa interlock ng BFWP-A = wala; START BFWP-A hindi na naka-lock. PASADO: ditl_selected, ditl_sim, training_dock.
+
+**Status:** Beta. Itutuloy ang takbo ng "tao" mula sa simula sa beta.28.
