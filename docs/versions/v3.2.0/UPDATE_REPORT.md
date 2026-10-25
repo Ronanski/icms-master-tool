@@ -619,3 +619,15 @@ Engine at logic: walang binago.
 **Work Done:** `src/ui/training/guide.js`: text ng 3 card ng burner: SA damper at oil FCV sa ignition → BURNER ON (DITL-09) → ang DITL ang magpapasok ng igniter, magbubukas ng oil valve at magsisindi → oil flow.
 
 **As Left:** PASADO: training_start. **Status:** Beta.
+
+## 3.2.0-beta.30 — BURNER ON: may interlock box at "Field operator" na rin
+
+**Problem (takbo ng "tao" sa Training):** hakbang 28 "Sindihan ang burner A": ang BURNER A ON ay pinindot pero hindi sumisindi. Walang interlock box ang BURNER ON sa card, kaya hindi makita ng tao kung bakit. Ang takbong "via code" ay pumasa dahil sinet ng script ang mga field contact nang direkta.
+
+**As Found:** DITL-12 (burner A light off) kulang: row 4 PERMISSION TO START BURNER A ← DITL-07 out 10 = 0 (field: PSL-PA1043-A1 ATOMIZING AIR PRESS. NOT LOW, PSH-DO1043-A1 DIESEL OIL SUPPLY PRESS. NOT HIGH); row 6 IGNITER A IN INSERT POSITION ← DITL-10 out 14 (sumusunod sa permission).
+
+**Work Done:** `src/ui/training/dock.js`: ang action na may DITL na pindot (`dg`, hal. BURNER ON) ay may interlock box rin (DITL-12 out 7 BURNER READY) na may "Field operator: ayusin ang … contact", at naka-lock ang button habang may ✕ (gaya ng START ng motor).
+
+**As Left (pindot gaya ng tao: Field operator → ignition → BURNER A ON isang beses):** burner A in service (DITL-12 out 19 = 1, M.3412 = 1), oil 0.87 T/H, tumuloy ang gabay. PASADO: training_dock.
+
+**Status:** Beta. Itutuloy ang buong takbo ng "tao" sa beta.30.

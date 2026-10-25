@@ -762,7 +762,7 @@
     /* the interlock of the motors of the step */
     els.il = [];
     for (const a of s.a || []) {
-      const ad = a.stop ? motAddr(a) : null;
+      const ad = a.stop || a.dg ? motAddr(a) : null; /* 3.2.0-beta.30: a BURNER ON (dg) has its interlock too (DITL-12 out 7) */
       if (ad && MOTOR[ad] && !els.il.some(x => x.ad === ad)) {
         const box = E('div', { cls: 'gd-il' });
         els.il.push({ ad, box });
@@ -773,7 +773,7 @@
     els.btns = [];
     const bs = E('div', { cls: 'gd-btns' });
     for (const a of s.a || []) {
-      const ad = a.stop ? motAddr(a) : null;
+      const ad = a.stop || a.dg ? motAddr(a) : null; /* 3.2.0-beta.30: a BURNER ON (dg) has its interlock too (DITL-12 out 7) */
       const bt = E('button', { type: 'button', cls: 'gd-btn' + (a.stop ? ' go' : ''), txt: a.l });
       bt.onclick = () => {
         if (bt.dataset.block === '1') return;
