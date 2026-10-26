@@ -6,15 +6,14 @@ Ginawa 2026-10-26 (HMI sample, branch claude/project-thread-1h2161; numero ng Be
 
 | Bagay | Desisyon | Bakit |
 |---|---|---|
-| Daloy | Kaliwa → kanan, baba → taas; bawat duct may maliit na arrow | Mabilis basahin kung saan galing at saan papunta |
-| Background at linya | Gray na neutral (ISA-101 high-performance HMI, gaya ng Ovation / 800xA / Yokogawa); manipis na orthogonal na linya | Ang kulay ay para lang sa abnormal at estado, hindi dekorasyon |
-| Duct | Doble-linya na channel na may mahinang tint: cold air asul-gray, hot air beige, flue gas kayumanggi-gray. **Walang daloy = puti ang loob, walang arrow** | Kita agad ang patay na linya |
-| Kulay ng estado | Kumbensyon ng planta: **pula = running / open**, **berde = stop / closed**, puti = nasa gitna. Status box: RUN / STOP, NORMAL / TRIP | Ito ang nakasanayan ng operator (SCSHOT, 7.PNG) |
-| Equipment | ISA 5.1 / ISO 10628: fan = bilog na may impeller at motor box "M", damper = blade + pivot (umiikot ayon sa %) + actuator "M", APH, ESP (3 field + hopper), stack, tube bank (serpentine) | Standard na simbolo ng P&ID / DCS |
-| Numero | Tag sa itaas, puting value box (mono font), unit sa labas. Galing sa simulation (TAG.PV, AI ng I/O list, PV / SV / MV ng faceplate). **Walang signal sa logic = "-----"**, hindi snapshot value | Hindi nanloloko ang screen |
-| Control loop | Column ng faceplate sa kanan: tag bar (madilim), mode box (M dilaw, R asul, A puti), PV, SV, unit, MV bar. Click = buong faceplate (A / M / R, SV, MV) | Lahat ng loop ng system sa isang tingin |
-| Damper / valve | Click = faceplate ng controller nito | Diretso sa operasyon |
-| Header | MSP, MST, MSF, RHP, RHT, COAL, PWR sa bawat screen | Pareho ng control room |
+| Frame ng screen | Title bar (numero ng screen + pangalan + process header MSP ~ PWR), alarm banner, process mimic, navigation bar sa ibaba papunta sa kaugnay na screen | Gaya ng operator station ng tunay na DCS |
+| Background | Madilim na slate (control room), hindi itim at hindi puti | Malinaw ang cyan na value at ang kulay ng estado |
+| Equipment | Iginuhit bilang equipment na may shading (steel): furnace cut-away (water wall, refractory, bed na umiilaw ayon sa live bed temp), drum, cyclone (vortex finder, dip leg, loop seal), backpass (tube banks, louvre damper), tubular air heater (SA / PA section), ESP (T/R set, hoppers), fan na may volute + motor (+ HC ng IDF), stack na may CEMS | Mukhang planta, hindi block diagram |
+| Duct | May shading; kulay ng medium: cold air asul, hot air amber, flue gas gray-brown; may gumagalaw na flow marks habang may daloy; walang daloy = madilim at walang galaw; may tulay (bridge) kapag nagkrus | Kita agad kung saan may daloy |
+| Instrumento | ISA 5.1 bubble (PT, TT, FT, AT, DPT, LT, TE) sa mismong linya + itim na value box na cyan ang numero at may unit, nasa tabi ng instrumento. Walang signal sa logic = "-----" | Ang value ay nasa sinusukat, hindi sa listahan |
+| Control loop | Maliit na faceplate tag sa tabi ng damper na pinapaandar nito: tag, mode (A puti, M dilaw, R asul), SV, MV bar. Click = buong faceplate | Diretso sa operasyon |
+| Estado | Kumbensyon ng planta: motor pula = running, berde = stop; umiikot ang impeller habang tumatakbo; damper pivot pula = bukas, berde = sarado | Ito ang nakasanayan ng operator |
+| Trend | Live trend (5 min): furnace pressure, O2, total air, coal, bed DP | Kita ang galaw, hindi lang numero |
 | Laki | SVG lang (walang larawan). Ang lumang 1:1 HMI ay may 3.7 MB na larawan (`hmibg.js`) | Magaan sa phone at tablet |
 
 ## 2. Mga system ng bagong HMI (iminumungkahing set)
