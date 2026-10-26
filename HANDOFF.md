@@ -5,7 +5,7 @@
 ## SIMULAN DITO (2026-10-26 PHT)
 
 - **Stable:** v2.4.0 sa `main`.
-- **Beta:** `3.2.0-beta.40`, branch `claude/project-thread-f93qh9` (nakapatong sa beta.39 `claude/project-thread-0amxbo` / PR #45 → PR #43 → PR #42). Roadmap step 1 TAPOS; step 2: 4 / 5 tapos, MST bukas.
+- **Beta:** `3.2.0-beta.39` (dev; walang sariling numero ang parallel thread, ang coordinator ang magbibigay), branch `claude/project-thread-f93qh9`, PR #47 (nakapatong sa `claude/project-thread-0amxbo` / PR #45 → PR #43 → PR #42). Roadmap step 1 TAPOS; step 2: stall, RH damper, null, Cold header, hakbang 57, air side ng Cold TAPOS; bukas: MST 550 ~ 557 °C at reheat 593 °C sa 150 MW.
 - **Ang gusto ng user:** `docs/SPEC.md` (S1 ~ S9). Plano = seksyon 3 ng file na iyon. Wala nang ROADMAP / CHECKLIST.
 - **Pag-check ng user:** `docs/USER_CHECK.md`.
 - **Rules:** `CLAUDE.md`, `PROJECT_RULES.md` (test policy = seksyon 5).
@@ -17,16 +17,17 @@
 - Huwag magpush ng paisa-isang UI fix: lakarin muna ang bawat screen (PC, tablet, phone) bago ang Beta.
 - Per-loop, Warm at Hot: TINANGGAL na sa app (beta.39). Huwag ibalik hangga't hindi sinasabi ng user.
 
-## Estado ng app (beta.40)
+## Estado ng app (beta.39 dev, PR #47)
 - Turbine + TCS model (`src/analog/engine/tcs.js`, `docs/tcs/ATS_CRITERIA.md`), start-up steam ayon sa FHI Fig. 2 / 3 / 4 (`unit.js`).
 - `tests/regress/sop_bawal.js`: 19 / 19 (lahat ng maagang aksyon ay tinatanggihan).
 - Training: Cold → 150 MW sa isang screen (dock), sunod sa PR-OPE-5002. beta.40: ang MS blow-off at start-up valve ay sa serbisyo na bago ang vacuum stage (dati: stall sa hakbang 43, MFT sa low-low drum level).
 - RH biasing damper: ang model ay bumabasa ng HICHR1002A.MV (`plant.js` `AN_XACT`); tama ang direksyon (mas bukas = mas mainit na reheat, ABC-020).
+- SH temperature (`unit.js` `U.sh` / `U.ld`): iisang kadena spray 1 → SH no.2 → spray 2 → finishing SH; lakas ng spray 2 mula sa snapshot (`plant.js` `AN_KUP`); firing ratio na may lag at deadband 0.75 (`U.frDb`).
 - Plant chip: OFF | Unit lang; starting state: Cold o 150 MW lang. Plant model ON na walang starting state: header "—", ang ABC page ay bumubukas na Cold.
 
 ## Susunod na gagawin (roadmap sa `docs/SPEC.md` seksyon 3)
-1. MST > 548 °C (H alarm, TE-MS1004-1) sa load up 80 → 130 MW: ugat sa `unit.js` `U.sh` / `U.ld`: ang finishing SH inlet (TICBR1150 PV) ay 389 °C sa 45 MW habang ang SH no.2 outlet (TICBR1140) ay 458 °C kahit sarado ang spray, kaya ang DITL-33 SOV (bubukas sa inlet > 440 °C) ay sarado hanggang ~80 MW. Ayusin: inlet = SH no.2 outlet − spray 2; pickup ng finishing SH ayon sa load. Ang 2 subok sa coach (cascade nang maaga) ay nagpalala (558 / 565): huwag ulitin.
-2. Mouse Cold run (beta.40) huminto sa hakbang 57 "Hawakan ang 45 MW: MSP ≥ 90": MSP 66 ~ 67 pagkalipas ng 6 min real (oil lang, coach `ofire`). Suriin ang bilis ng pressure raise laban sa FHI Fig. 2.
+1. Reheat 593 °C sa 150 MW (mouse Cold run): walang hakbang na naglalagay ng reheat sa AUTO. Hadlang: (a) ang RH spray TICHR1002 ay force manual habang sarado ang SOV ng DITL-35 (suriin bakit sarado sa Training: AUTO MODE M.0642, M.0172, I.0418); (b) ABC-020: HICHR1002B.MAN ay nasa force manual M.0179 ng HICHR1002A; ang A / M switch ng station (AMT sa harap ng MAN block) ay naka-latch na fman, at ang `HICHR1002A.MAN` ay nananatiling 1 kahit `latchMode(LOC)` (sinubok sa probe, 150 MW). Ayusin ito bago ang hakbang na "Reheat temperature sa AUTO" (PR-OPE-5002 "Set biasing damper and RH to Remote-Auto").
+2. MST lampas sa H 548: 557 °C sa 80 MW (mouse run, mabilis na 45 → 80 MW pagpasok ng CCS) at 550 °C sa 95 ~ 115 MW (code trace): ang outer TICMS1004 (I 1371 s) ay mabagal, at bago ang 60 % MCR ay hawak pa ng operator (inner SV). Suriin ang feedforward ng ABC-012 (PIC-COBM.MV → LN63 → SI0383 sa inner SV) sa model.
 3. Ang iba: `docs/SPEC.md` seksyon 3.
 
 ## Hindi pa nasubok

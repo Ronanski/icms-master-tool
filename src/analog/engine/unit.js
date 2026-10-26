@@ -79,6 +79,10 @@ const AN_UNIT = {
   MWinit: 4.5 /* PR-OPE-5002: initial load 4.5 MW */,
   rateUp: 7.5 /* MW/min = 5 % / min (PR-OPE-5002 LOAD UP), AI0421 max load-up rate 0 ~ 5 %/min */,
   tauT: 120,
+  /* 3.2.0-beta.39 (roadmap 2): share of the low-load / start-up fall of the SH temperature (dn) at the spray 1 outlet, the SH no.2 pickup and the
+     finishing SH pickup (ASSUMED: superheat of each stage at the anchor, 61 / 68 / 80 C of the 209 C over saturation) */
+  fsh: [0.3, 0.3, 0.4],
+  frDb: 0.75,
   tauO2: 20,
   mcr: 460 /* T/H, boiler MCR (SECT_7) */,
   /* SH spray versus load (Fig 10), as a share of the spray at MCR: [load share of MCR, spray share] */
@@ -377,25 +381,33 @@ function anUnitStart() {
      stayed at the Cold value (0) after the diesel oil pump was started and the burners got no oil (CHECK cold start: drum 0 kg/cm2) */
   AN.unitSheets = [...new Set((AN.unitSheets || []).concat(['ABC-028', 'ABC-030']))];
   /* the spray loops and the fall of the temperature below 60 % MCR (C per unit of load share) */
+  /* 3.2.0-beta.39 (roadmap 2) (roadmap 2, MST 555 C > H alarm 548): the SH is one chain, spray 1 outlet (TICBR1130) + SH no.2 pickup = SH no.2
+     outlet (TICBR1140) - spray 2 = finishing SH inlet (TICBR1150) + finishing SH pickup = main steam (TICMS1004). Before, the fall of
+     the temperature at low load was all on TICBR1150 while TICBR1140 stayed at its anchor: 389 C after a SHUT spray 2 with 458 C
+     before it, so DITL-33 (finishing SH inlet > 440 C, M.2543 of ABC-012 SI0381) opened the spray 2 shut-off valve only near 80 MW
+     and the main steam overshot. Now TICBR1150 with its spray shut reads TICBR1140 (up: the shift of the SH no.2 outlet), the fall
+     dn is shared along the chain (fsh, ASSUMED by the superheat of each stage at the anchor: 394 / 462 / 542 C over 333 C saturation
+     at 129 kg/cm2), and the spray 2 need of the load (Fig 10) is the finishing SH pickup growing with the load (122 C at the anchor,
+     less the spray 2 authority at <= 60 % MCR): the main steam with the sprays shut is the same as before */
   U.ld = [
-    [procOf('ABC-011', 'TICBR1130'), 0],
-    [procOf('ABC-012', 'TICBR1150'), U.slopeSH],
+    [procOf('ABC-011', 'TICBR1130'), U.slopeSH, 'sh1'],
+    [procOf('ABC-012', 'TICBR1150'), U.slopeSH, 'up'],
     [procOf('ABC-019', 'TICHR1002'), U.slopeRH]
   ]
     .filter(([p]) => p)
-    .map(([p, s]) => Object.assign({ s }, p));
+    .map(([p, s, r]) => Object.assign({ s, r }, p));
   /* the headers after the spray: SH no.2 outlet TT-BR1140-1 / -2 (PV of TICBR1140) = spray 1 outlet (PV of TICBR1130) + pickup;
      finishing SH outlet TT-MS1004-1 / -2 (PV of TICMS1004) = spray 2 outlet (PV of TICBR1150) + pickup */
   U.sh = [
-    ['ABC-011', 'TICBR1130', ['AI0610', 'AI0642']],
-    ['ABC-012', 'TICBR1150', ['AI0612', 'AI0644']]
+    ['ABC-011', 'TICBR1130', ['AI0610', 'AI0642'], 'sh2'],
+    ['ABC-012', 'TICBR1150', ['AI0612', 'AI0644'], 'fsh']
   ]
-    .map(([k, t, aa]) => {
+    .map(([k, t, aa, r]) => {
       const o = ctlOut(k, t);
       if (!o || !o.c.q || o.c.q.pv == null) return null;
       const pv0 = +o.S.rt.v[o.c.q.pv],
         L = aa.map(a => ais(k, a)).filter(l => l.length);
-      return isFinite(pv0) && L.length ? { S: o.S, n: o.c.q.pv, L, pv0, x: pv0 } : null;
+      return isFinite(pv0) && L.length ? { S: o.S, n: o.c.q.pv, L, pv0, x: pv0, r, pk0: L[0].a0[0] - pv0 } : null;
     })
     .filter(Boolean);
   /* O2: total air of ABC-006 (PA + SA + FA flow), the two analyzers of ABC-002, PA to the furnace FT-FA1079 */
@@ -479,12 +491,30 @@ function anUnitStart() {
     .filter(k => /^TIFG(1090|1091|1095|1096|1009)[A-Z]?$/.test(AN_HMI_AI[k][1]))
     .map(k => anUnitAnchor(anUnitAIs(k)))
     .filter(l => l.length);
+  /* 3.2.0-beta.39 (roadmap 2, HMI thread: in Cold, all fans stopped, the air preheater outlet kept the 150 MW snapshot): the air
+     preheater outlet air temperatures TT-FA1086 / 1087 (SA, ABC-003A) and TT-FA1076 / 1077 (PA, ABC-006) follow the hot gas like
+     the bed thermocouples; the SA pressures PT-FA1085 (SAF outlet, ABC-057) and PT-FA1088 (hot SA, ABC-003A) go with the square
+     of the SA flow FT-FA1081 (fan law). The ID fan speed ST-LO1756 (ABC-008 AI0481, no value in the snapshots) is the hydraulic
+     coupling PICFG108 over the speed range of the fan manual (I.D. fan 350 ~ 1140 rpm, linear ASSUMED), 0 with the fan stopped */
+  const aiList = re =>
+    Object.keys(AN_HMI_AI)
+      .filter(k => re.test(AN_HMI_AI[k][1]))
+      .map(k => anUnitAnchor(anUnitAIs(k)))
+      .filter(l => l.length);
+  U.aphT = aiList(/^TIFA(1086|1087|1076|1077)$/);
+  U.saP = aiList(/^PIFA(1085|1088)$/);
+  U.saN = U.tafS ? netOf(U.tafS, 'FIFA1081.PV') : -1;
+  U.sa0 = U.saN >= 0 ? +U.tafS.rt.v[U.saN] : NaN;
+  U.idfS = ais('ABC-008', 'AI0481');
+  U.idfV = ctlOut('ABC-008', 'PICFG108');
+  U.idfRpm = [350, 1140];
   /* the transmitters this model writes: the plant model of a loop on them stops writing (ABC-001C PIC-COBM: main steam pressure) */
   const own = new Set();
-  const lists = [U.msp, U.drum, U.msf, U.spd || []].concat(U.mw, U.tin, U.rhp, U.pist, U.o2, [U.pa], U.tbed).concat(...U.sh.map(h => h.L));
+  const lists = [U.msp, U.drum, U.msf, U.spd || []].concat(U.mw, U.tin, U.rhp, U.pist, U.o2, [U.pa], U.tbed, U.aphT, U.saP, U.idfS.length ? [U.idfS] : []).concat(...U.sh.map(h => h.L));
   for (const l of lists) for (const [S2, b] of l) own.add(S2.rt.st[b.id]);
   U.own = own;
   U.on = true;
+  U.frT = undefined;
   U.tc = null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
   /* 3.2.0-beta.14: the snapshot plant has its diesel oil pump in service (source.js field equipment) */
   AN_SRC.field.dop = true;
@@ -517,6 +547,7 @@ function anUnitCold() {
     t: 0
   });
   U.o2v = 21;
+  U.frT = undefined;
   for (const h of U.sh) h.x = U.Tamb;
   for (const L of U.tbed || []) anUnitWrite(L, U.Tamb);
   /* 3.2.0-beta.14: cold = the field equipment stopped too (diesel oil pump, source.js) */
@@ -795,6 +826,16 @@ function anUnitStep(dt) {
   if (U.tbed && U.tbed.length) {
     const k = Math.max(0, (U.Tb - U.Tamb) / Math.max(1, U.Tb0 - U.Tamb));
     for (const L of U.tbed) anUnitWrite(L, i => U.Tamb + (L.a0[i] - U.Tamb) * k);
+    for (const L of U.aphT || []) anUnitWrite(L, i => U.Tamb + (L.a0[i] - U.Tamb) * k);
+  }
+  if (U.saP && U.saP.length && U.sa0 > 0) {
+    const r = Math.max(0, +U.tafS.rt.v[U.saN] || 0) / U.sa0;
+    for (const L of U.saP) anUnitWrite(L, i => L.a0[i] * r * r);
+  }
+  if (U.idfS && U.idfS.length) {
+    const on = !U.idf || +U.idf.S.rt.v[U.idf.n] > 0.5,
+      m = U.idfV ? Math.max(0, Math.min(100, +U.idfV.S.rt.v[U.idfV.n] || 0)) : 0;
+    anUnitWrite(U.idfS, () => (on ? U.idfRpm[0] + ((U.idfRpm[1] - U.idfRpm[0]) * m) / 100 : 0));
   }
   const Pms = Math.max(0, U.Pd - U.kdp * U.ms * U.ms);
   U.Pms = Pms; /* 3.2.0-beta.14: source of the reducing stations (source.js) */
@@ -884,7 +925,16 @@ function anUnitStep(dt) {
     /* 2.2.0-beta.12 (M3): firing ratio = steam made / steam leaving (1 in steady state; 0 after an MFT while the stored steam still flows):
        the superheat goes with the firing, the temperature falls to the saturation temperature of the drum pressure (3.2.0-beta.15: the
        IF97 steam table of steam.js) */
-    fr = Math.max(0, Math.min(1, U.Qs / Math.max(1, mso))),
+    fr0 = Math.max(0, Math.min(1, U.Qs / Math.max(1, mso))),
+    /* 3.2.0-beta.39 (roadmap 2) (roadmap 2, mouse Cold run: ATS HOLD in the 1800 rpm heat soak, MS 384 ~ 417 C and RH 360 ~ 413 C in a minute while
+       the oil coach trimmed the fire): the steam temperatures followed the firing ratio at once. The tubes and the gas path store heat:
+       the ratio the temperatures see is lagged by the metal lag tauT (after an MFT the superheat is still lost: 120 s to 37 %) */
+    /* 3.2.0-beta.39 (roadmap 2, mouse Cold run 3: the sync at 3600 rpm missed ATS 1.4 / 1.6 for 6 minutes, MS 389 ~ 416 C and RH 388 ~
+       412 C while the HP bypass swung 59 ~ 84 % on the pressure): a CFB superheater takes its heat from the bed, the refractory and
+       the circulating solids, which carry it through a swing of the steam flow; only a real loss of the fire (MFT, fuel cut) takes
+       the superheat. The ratio counts below frDb of the steam leaving (ASSUMED 0.75) */
+    frE = Math.min(1, fr0 / U.frDb),
+    fr = (U.frT = U.frT == null ? frE : U.frT + ((frE - U.frT) * dt) / U.tauT),
     /* 3.2.0-beta.22 (bug, user 2026-10-24 "cold na, may value pa rin ... baka sa iba ganyan din"): not above the water of the drum. In a
        cold boiler (water 30 C, no steam) the saturation temperature of 0 kg/cm2 is 99.97 C: the SH / RH steam temperatures
        (TICBR1130 / 1140 / 1150, TICMS1004, TICHR1002) read 99.97 C instead of the ambient. Once the water boils Tw = saturation */
@@ -922,18 +972,33 @@ function anUnitStep(dt) {
       dn = Math.max(0, 541 - T);
     }
     pr.dn = dn;
-    pr.ld = (pr.sg || -1) * (A * (1 - gx) + dn);
+    /* 3.2.0-beta.39 (roadmap 2): the SH chain (see U.ld): the share of the fall at the spray 1 outlet; the finishing SH inlet follows the SH no.2
+       outlet (its superheat came through the chain: no second firing ratio on it) */
+    if (e.r === 'sh1') {
+      U.shDn = dn;
+      pr.ld = (pr.sg || -1) * (A * (1 - gx) + U.fsh[0] * dn);
+    } else if (e.r === 'up') {
+      U.shA2 = A;
+      pr.fr = 1;
+      const h0 = U.sh.find(h => h.r === 'sh2');
+      pr.ld = h0 ? h0.x - h0.pv0 + (h0.d || 0) : (pr.sg || -1) * (A * (1 - gx) + dn);
+    } else pr.ld = (pr.sg || -1) * (A * (1 - gx) + dn);
   }
-  /* the headers after the spray: spray outlet + the pickup of the next superheater at the anchor, metal lag */
+  /* the headers after the spray: spray outlet + the pickup of the next superheater, metal lag. 3.2.0-beta.39 (roadmap 2): the pickup falls with its
+     share of dn, the finishing SH pickup is short of the spray 2 authority below the spray of Fig 10, and without firing (fr) the pickup
+     is lost as the superheat of the spray outlet is (plant.js pr.fr) */
   for (const h of U.sh) {
     const pv = +h.S.rt.v[h.n];
     if (!isFinite(pv)) continue;
     h.x += ((pv - h.x) * dt) / U.tauT;
+    const dn = U.shDn || 0,
+      pk = h.pk0 - (h.r === 'sh2' ? U.fsh[1] * dn : U.fsh[2] * dn + (U.shA2 || 0) * (1 - gx));
+    h.d = pk * fr - h.pk0;
     /* 2.2.0-beta.14 (cold): the header after the spray cannot be above the gas (bed) nor below saturation either */
     if (U.cold) {
       const cap = Math.max(tsat, U.Tb);
-      for (const L of h.L) anUnitWrite(L, i => Math.max(tsat, Math.min(cap, L.a0[i] + h.x - h.pv0)));
-    } else for (const L of h.L) shifted(L, h.x - h.pv0);
+      for (const L of h.L) anUnitWrite(L, i => Math.max(tsat, Math.min(cap, L.a0[i] + h.x - h.pv0 + h.d)));
+    } else for (const L of h.L) shifted(L, h.x - h.pv0 + h.d);
   }
   /* O2 of the flue gas: 21 x (1 - stoichiometric air / total air), analyzer lag; each analyzer keeps its offset of the snapshot */
   if (U.afs > 0) {
