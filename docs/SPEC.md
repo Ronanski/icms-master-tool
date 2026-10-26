@@ -23,14 +23,14 @@ Ito ang gusto ng user, sa sarili niyang salita. Ito ang sukatan ng bawat gawa. K
 
 | # | Meron na sa app | Kulang / bukas |
 |---|---|---|
-| S1 | Laging iisang mundo ang ABC + DITL (mula beta.25, walang button). Page link ABC ↔ DITL, dalawang direksyon. | — |
+| S1 | Laging iisang mundo ang ABC + DITL (mula beta.25, walang button). Page link ABC ↔ DITL, dalawang direksyon. Sinuri sa app 2026-10-26 (beta.38, headless): 181 ABC → DITL na reference, 180 ang bumubukas sa tamang DITL row at kumikislap, 181 ang bumabalik sa ABC sa ◀ Back. 187 DITL → ABC na reference, lahat ay may kaukulang ABC sheet; ang `ditl_pagelink.js` ay ALL PASS (desktop, tablet, phone, View at Run). | (a) Sa drawing ng ABC, 10 lang sa 230 na label na "FROM / TO DITL xx-nn" ang may bilog na pipindutin papunta sa DITL; ang 220 ay text lang at **walang nangyayari kapag pinindot** (hal. ABC-010 "TO DITL 03E-12", ABC-006, ABC-020, ABC-009A). Ang daan lang ay ang info card (Search → "Show" sa DITL) o ang Links table sa TOOLS. (b) Ang "Show" ng DITL sa info card ay walang ◀ Back papunta sa ABC. (c) ABC-001C → DITL-80 item 89: bumubukas pero hindi kumikislap ang row. |
 | S2 | VIEW mode: click sa wire = trace, Search, info card ("Why?"), page link, Back. | Bahagi 2 ng VIEW audit: DITL, tablet at phone sa VIEW. |
 | S3 | Plant chip katabi ng VIEW / RUN → **OFF**. Inputs list, force ng bawat input, A / M / R, SV, MV. | — |
 | S4 | Plant chip → **Unit**: steam table IAPWS-IF97, mass / energy balance ng boiler, turbine + TCS (ATS step 0 ~ 7), vacuum, utilities na may trip. | (a) MST umaabot 555 °C sa CCS load up 90 → 150 MW (H alarm 548). (b) RH biasing damper: baligtad ang direksyon sa model. (c) Wala pang model: aux cooling water, instrument air, APH sootblower, ESP. |
 | S5 | Home → **At 150 MW** (galing sa HMI snapshot 4.PNG). Load up / down sa HIC-ULD, CCS, boiler / turbine master, coal master. | Kasama sa S4 (a). |
 | S6 | Home → **Cold**: walang apoy, patay ang fans at pumps, MSP 0, FW 0. RUN na walang pinili = Cold. | — |
 | S7 | Training → **Gabay: Cold → 150 MW** at **Practise: Cold start** / **150 MW load change**. Sunod sa PR-OPE-5002 + FHI Fig. 2. | Hindi pa nasubok ng user. |
-| S8 | Library: **I/O list**, **Memory list**, **Wiring**, **Relay / SER**, **Calculations** (= compensations at drum level). **F(X) curves** page (= linears). | **Loop diagram**, **instrument list**, **dictionary**: wala pa. Walang hiwalay na file sa `document-references/`; gagawin mula sa ABC sheet + I/O list + wiring (loop), I/O list + ranges (instrument), textbook + legends (dictionary). |
+| S8 | Sinuri sa app 2026-10-26 (beta.38). Library tabs: **I/O list** (3816 row, 219 group; tag, description, range, type, SIG.AB; Find → info card), **Memory list** (63775 row, 32 group), **Wiring** (3816 row, 15 group, field → FCS), **Relay / SER** (290 row: ARP-1, IRP-1, SER-1), **Calculations** (8 flow compensation + drum level). **F(X) curves** (91 table, may paliwanag at "Try it") = linears. 0 page error. | **Loop diagram**: wala (ang wiring chain ay nasa info card ng I/O row, hindi hiwalay na loop sheet). **Instrument list**: wala (ang I/O list ay may tag, description at range pero walang hiwalay na tab, instrument type o filter). **Dictionary**: wala (walang laman ang search sa "dictionary", "legend", "SUMA", "PHM"). **F(X) curves** ay wala sa Library: nasa Home card at F(X) button ng Logic bar (dapat nasa Library din). Walang hiwalay na file sa `document-references/` para sa tatlo; gagawin mula sa ABC sheet + I/O list + wiring (loop), I/O list + ranges (instrument), textbook + legends (dictionary). |
 | S9 | Plant view: 28 screen na kopya ng HMI (UNIT, steam, air, coal, burners A ~ D, ash, sootblower, limestone, sand, condensate, seawater, turbine oil, generator…), faceplate sa bawat controller. | 560 / 1330 item lang ang live (ang iba ay walang signal sa ABC: snapshot value). Walang hiwalay na **plant overview** at **permissives** screen (bukod sa burner 012 ~ 015). |
 
 **Nasa app pero wala sa spec** (para gawing simple, kailangan ng OK ng user bago tanggalin o itago): Plant chip **Per-loop** mode, starting state **Warm** at **Hot**.
@@ -41,7 +41,8 @@ Ito ang gusto ng user, sa sarili niyang salita. Ito ang sukatan ng bawat gawa. K
 2. [ ] S4 (b) direksyon ng RH biasing damper (ABC-020, `plant.js`).
 3. [ ] S7 subok ng user sa Training (gabay: `docs/USER_CHECK.md`).
 4. [ ] S2 VIEW audit bahagi 2 (DITL, tablet, phone).
-5. [ ] S8 loop diagram, instrument list, dictionary sa Library.
+4a. [ ] S1: gawing pipindutin ang lahat ng 230 na "FROM / TO DITL" label sa ABC (papunta sa DITL row, may ◀ Back); lagyan ng ◀ Back ang "Show" ng info card.
+5. [ ] S8 loop diagram, instrument list, dictionary sa Library; ilagay ang F(X) curves bilang tab sa Library.
 6. [ ] S9 plant overview at permissives screen.
 7. [ ] S4 (c) aux cooling water, instrument air, APH sootblower, ESP.
 8. [ ] Desisyon ng user: itago ba ang Per-loop, Warm, Hot.
