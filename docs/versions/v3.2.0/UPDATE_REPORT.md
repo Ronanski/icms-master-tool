@@ -797,6 +797,8 @@ Engine at logic: walang binago.
 
 ## 3.2.0-beta.40 (2026-10-26) — Roadmap 2: plant model (stall sa bypass, RH biasing damper, header ng Cold, MST)
 
+> Tala (2026-10-27): ang numerong beta.40 ay ibinalik sa 3.2.0-beta.39 sa branch na ito (utos ng coordinator: walang sariling beta number ang mga parallel na thread; ang opisyal na numero ay ibibigay kapag pinagsama na). Ang `-dev` na suffix ay hindi tinatanggap ng build tools (regex X.Y.Z(-beta.N) sa `tools/build/*.js` at `src/ui/*/inject.js`).
+
 **Problem:** (1) huminto ang Cold run sa hakbang 43 "Bypass servicing" (steam flow 0); (2) RH biasing damper: "baligtad ang direksyon" (HANDOFF); (3) "null" sa header ng DITL sheet; (4) header na MSP 75 / drum level -566 habang "Unit · not started"; (5) MST 547 ~ 555 °C sa CCS load up (H alarm 548, TE-MS1004-1).
 
 **As Found:**
@@ -822,3 +824,27 @@ Engine at logic: walang binago.
 **Plano para sa MST (susunod):** gawing tugma sa physics at sa DITL-33 ang SH temperature: finishing SH inlet (pagkatapos ng spray 2) = SH no.2 outlet − paglamig ng spray 2; pickup ng finishing SH na nagbabago sa load (FHI Fig. 2 / Fig. 6, 4.PNG, 02.png); saka ang cascade ayon sa PR-OPE-5002.
 
 **Status:** Beta. Roadmap hakbang 2: 4 / 5 tapos; bukas: MST at ang pressure raise sa 45 MW (hakbang 57).
+
+
+## 3.2.0-beta.39 (dev, roadmap 2 ikalawang batch, 2026-10-27) — MST, hakbang 57, air side ng Cold
+
+**Problem:** (1) MST 547 ~ 555 °C sa load up (H alarm 548, TE-MS1004-1); (2) mouse Cold run huminto sa hakbang 57 "Hawakan ang 45 MW: MSP ≥ 90" (MSP 66); (3) HMI thread: sa Cold (patay lahat ng fan) ang PIFA1085 / 1088 at TIFA1076 / 1077 / 1086 / 1087 ay 150 MW value pa rin; IDF speed AI0481 0 rpm sa 150 MW.
+
+**As Found:**
+- (1) `unit.js`: ang pagbaba ng SH temperature sa mababang load ay nasa TICBR1150 lang, habang ang TICBR1140 (SH no.2 outlet) ay nasa anchor: 389 °C pagkatapos ng sarado na spray 2 habang 458 °C bago ito. Kaya ang DITL-33 SOV (finishing SH inlet > 440 °C, ABC-012 SI0381 M.2543) ay bumubukas lang sa ~80 MW. Ang lakas ng spray 2 sa model ay 162 °C sa MV 30 % (limit ng range, `plant.js` Ka), hindi 42 °C ng snapshot (03.png: 462 → 420 °C). Ang outer TICMS1004 (I 1371 s) ay mabagal sa load up na 3 MW/min.
+- (2) Ang hakbang 56 ay pumasa sa M.0255 = 0 bago napindot ang "PICMS1002 A, SV 128": ang MS blow-off ay naiwan sa SV 66 (HP bypass SV + 5), naglalabas ng ~20 T/H, kaya MSP 66.
+- Function test 1 (mouse): ATS HOLD sa 1800 rpm heat soak at sa sync: MS 384 ~ 417 °C at RH 360 ~ 413 °C, umuuga kasabay ng HP bypass (59 ~ 84 %). Sanhi: ang superheat ay sumusunod agad sa firing ratio (steam made / steam leaving).
+- Function test 4 (mouse): reheat 593 °C sa 150 MW. Sanhi: walang hakbang na naglalagay ng reheat control sa AUTO; ang RH spray TICHR1002 ay force manual habang sarado ang SOV (DITL-35); ang dalawang biasing damper (HICHR1002A / B) ay nagkakandado (ABC-020: HICHR1002B.MAN ay nasa force manual M.0179 ng HICHR1002A). Lumabas ito dahil sa beta.40 binabasa na ng model ang tunay na posisyon ng damper.
+
+**Work Done:**
+- (1) `unit.js`: iisang kadena ang SH: spray 1 outlet + SH no.2 pickup = TICBR1140, − spray 2 = TICBR1150 (sarado ang spray = TICBR1140), + finishing SH pickup = TICMS1004. Ang pagbaba sa mababang load ay hinati 0.3 / 0.3 / 0.4 (ASSUMED, superheat ng bawat stage sa anchor). Ang pangangailangan ng spray 2 sa load (Fig 10) ay nasa pickup ng finishing SH; pareho ang MST na sarado ang spray gaya ng dati. `plant.js` `AN_KUP`: lakas ng spray 2 = TICBR1140 − TICBR1150 ng snapshot (42 °C sa MV 30.2 %). Firing ratio: may lag (tauT) at nawawala lang ang superheat kapag < 75 % (ASSUMED: ang bed, refractory at circulating solids ng CFB ang nagdadala ng init sa pag-uga ng steam flow).
+- (1) `guide.js` spray coach: cascade sa 60 % MCR (276 T/H, Fig 10) at outlet ±5 °C (dati 85 % ng anchor, ~130 MW); habang cascade, ibinababa ng operator ang outer SV ng 8 °C kapag outlet > SV + 4, ibinabalik kapag ≤ SV.
+- (2) `guide.js` hakbang 56: dagdag na kondisyon "MS blow-off PICMS1002 AUTO, SV ≥ 125".
+- (3) `unit.js`: TT-FA1086 / 1087 / 1076 / 1077 sumusunod sa bed (gaya ng furnace thermocouples); PT-FA1085 / 1088 ∝ (SA flow / anchor)²; IDF speed = 350 + 790 × hydraulic coupling MV / 100 rpm (fan manual 350 ~ 1140 rpm, linear ASSUMED), 0 kapag patay ang IDF.
+- Hindi isinama: hakbang na "Reheat temperature sa AUTO" (sinubok; nakabara ang Training sa hakbang na iyon dahil sa force manual sa itaas).
+
+**As Left (ebidensya):** probe 150 MW: TICBR1130 / 1140 / 1150 / MST 395 / 459 / 421 / 540 (snapshot 394 / 462 / 420 / 542), lakas ng spray 2 = 42 °C. Probe Cold: air preheater outlet 30 °C, SA pressure 0, IDF 0 rpm; 150 MW: 282 ~ 289 °C, 1270 / 1423 mmH2O, IDF 712 rpm. `unit_trip.js`, `unit_load.js` (60 MW MST 516, 02.png 517), `sop_bawal.js` 19 / 19: ALL PASS. Code trace Cold → 150 MW: MST pinakamataas 550 °C sa 104 MW (dati 553 ~ 555). Mouse Cold run 2: lumampas ang hakbang 57 sa loob ng 1 minuto; mouse Cold run 4: TAPOS hanggang Practice, walang trip, walang page error. **Huling mouse Cold run (build na ito, 2026-10-27 4:15 ~ 4:41 AM PHT):** TAPOS mula Cold hanggang Practice sa 26 minuto, walang STUCK, walang trip, walang page error; MST pinakamataas **557 °C sa 80 MW** (mabilis na pag-akyat 45 → 80 MW pagpasok ng CCS, bago ang cascade sa 60 % MCR).
+
+**Hindi nasubok / bukas:** MST lampas pa sa H 548: 550 °C sa code trace (95 ~ 115 MW), 557 °C sa mouse run (80 MW, pag-akyat 45 → 80 MW). Reheat 593 °C sa 150 MW (RH spray SOV DITL-35 at force manual ng biasing damper). PC / tablet / EXE / APK ng user.
+
+**Status:** Beta (dev). Roadmap hakbang 2: hakbang 57 at air side TAPOS; MST lampas pa rin (550 ~ 557 °C); bago at bukas ang reheat sa 150 MW.

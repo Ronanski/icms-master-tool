@@ -250,6 +250,8 @@ function anProcList(S) {
 const AN_SERIES = { PICFG108: 1, PICFG108A: 1 };
 /* 3.2.0-beta.40: controller -> the hand station whose output is the real actuator of the process (ABC-020, see xman below) */
 const AN_XACT = { TICHR1002A: 'HICHR1002A' };
+/* 3.2.0-beta.39 (roadmap 2): spray outlet controller -> the controller of the header before the spray (its PV is the steam the spray cools, see Ka) */
+const AN_KUP = { TICBR1150: 'TICBR1140' };
 const AN_HMI_OP = {
   TICBR1140: { mv: 65.6, pv: 462.0, src: '03.png' },
   TICBR1130: { mv: 57.6, pv: 394.0, src: '03.png' },
@@ -505,6 +507,12 @@ function anProcStep(S, dt) {
            adds to the flow of the snapshot (offset, gain K), instead of a flow proportional to a 0.1 % opening */
         pr.Ka =
           b.p.lt === 'flow' ? (pr.hop.mv < 2 ? pr.K : Math.max(0.02, kdn)) : Math.max(0.02, Math.min(pr.K, 0.9 * kdn));
+        /* 3.2.0-beta.39 (roadmap 2) (roadmap 2, MST): a desuperheater cools the steam from the header before it: its authority is that header less its
+           outlet at the snapshot (03.png: SH no.2 outlet TICBR1140 462 C, spray 2 outlet TICBR1150 420 C at MV 30.2 %: 42 C, about 139 C at
+           100 %, linear in the valve ASSUMED). The range limit above gave 162 C at 30.2 %: a shut spray 2 put the finishing SH inlet at
+           582 C, 120 C above the steam that comes to it */
+        const hu = AN_HMI_OP[AN_KUP[(b.txt || [])[1]]];
+        if (hu && pr.hop.mv - plo > 1 && hu.pv > pr.hop.pv) pr.Ka = ((hu.pv - pr.hop.pv) * 100) / ((pr.hop.mv - plo) * span);
       }
     }
     const ss0 = (c, an) => lo + span * (0.5 + eff(c, an)),

@@ -122,6 +122,18 @@ window.LS_GUIDE = (function () {
     } catch (e) {}
     return NaN;
   };
+  /* 3.2.0-beta.39 (roadmap 2) (roadmap 2, mouse Cold run stuck at "Hawakan ang 45 MW", MSP 66): the set point of a controller now. The step of the
+     45 MW handover passed on M.0255 = 0 (blow-off < 5 % open) before the operator pressed "PICMS1002 A, SV 128": the blow-off stayed at
+     the SV of the bypass stage (HP bypass SV + 5 = 66), vented about 20 T/H and held the main steam at 66 kg/cm2 */
+  const svOf = t => {
+    try {
+      const k = shOf(t),
+        c = k && h().ctl(k, t);
+      return c && c.q.sv != null ? +AN.sheets.find(s => s.name === k).S.rt.v[c.q.sv] : NaN;
+    } catch (e) {
+      return NaN;
+    }
+  };
   const SETmin = (t, lo) => C(t + ' M, ≥ ' + lo + ' %', () => md(t) === 'MAN' && setOf(t) >= lo, () => t + ' ' + md(t) + ' ' + f0(setOf(t)) + ' %');
   const SET = (t, lo, hi) => C(t + ' M, ' + lo + ' ~ ' + hi + ' %', () => md(t) === 'MAN' && setOf(t) >= lo && setOf(t) <= hi, () => t + ' ' + md(t) + ' ' + f0(setOf(t)) + ' %');
   const f0 = x => (isFinite(x) ? Math.round(x).toString() : '—');
@@ -554,13 +566,28 @@ window.LS_GUIDE = (function () {
               q.sv = Math.round(want);
             }
           }
-          if (q.a != null && q.r == null && H.MSF() >= 0.85 * (+U().m0 || 474) && Math.abs(pvo - sv2) <= 5) {
+          /* 3.2.0-beta.39 (roadmap 2): the cascade at 60 % MCR (276 T/H), where the spray starts to be needed (boiler manual Fig 10), with
+             the outlet within 5 C. With the SH chain of unit.js the main steam came to 553 C at 96 MW in the code trace while the
+             operator still held it by the inner set point (cascade only at 85 % of the anchor flow, about 130 MW) */
+          if (q.a != null && q.r == null && H.MSF() >= 0.6 * (+U().mcr || 460) && Math.abs(pvo - sv2) <= 5) {
             H.rem(k, inn);
             q.r = simT();
           }
           if (q.r != null && q.o == null && simT() >= q.r + 60) {
             H.autoSv(k, out, sv2);
             q.o = 1;
+          }
+          /* 3.2.0-beta.39 (roadmap 2, code trace: main steam 552 ~ 554 C from 115 to 150 MW in the CCS load up, H alarm 548): the outer PI
+             (TICMS1004 I 1371 s, parameter summary) unwinds slower than the load up (3 MW a minute). The operator lowers the outer set
+             point while the outlet is 4 C over it and puts it back once it is at the set point again */
+          if (q.o != null) {
+            if (!q.lo && isFinite(pvo) && pvo > sv2 + 4) {
+              H.autoSv(k, out, sv2 - 8);
+              q.lo = 1;
+            } else if (q.lo && isFinite(pvo) && pvo <= sv2) {
+              H.autoSv(k, out, sv2);
+              q.lo = 0;
+            }
           }
         }
       }
@@ -831,7 +858,7 @@ window.LS_GUIDE = (function () {
       /* 3.2.0-beta.24: the MS blow-off to its load SV 128 (4.PNG 148.8 MW: BLOW-OFF A, SV 128, MV 0). The bypass coach left it at the
          HP bypass SV + 5 of the moment its step ended (118 + 5 = 123 in some runs): at 80 MW it opened > 5 % at MSP 123, and its
          M.0255 (ABC-013 -> ABC-001C M.2013 BU-CMD) put the boiler and turbine master back to MANUAL at the CCS handover */
-      { st: 7, sec: 42, t: 'HP bypass sa REMOTE, sarado ang HP at LP bypass at ang MS blow-off sa 45 MW', d: 'Pagkatapos ng transfer, ilagay ang SV ng HP bypass sa R (SV = PV + 2): magsasara ito at ang turbine na ang kumukuha ng lahat ng steam. Mula rito, ang pressure ay tumataas kasabay ng load (FHI Fig. 2: 61 kg/cm² sa 15 % load, 123 sa 40 %). Ang MS blow-off PICMS1002 ay AUTO SV 128 (sarado; ang bukas na blow-off > 5 %, M.0255, ay back-up command ng boiler master).', c: b.ALL(b.VAL('MW', 44, null), b.MODE('PICMS1006', 'REM'), b.BIT('M.0709', 0, 'HP bypass open'), b.BIT('M.0255', 0, 'MS blow-off open')), fps: ['PICMS1006', 'PICMS1002'], a: [btn('HP bypass R', () => A.rem('PICMS1006'), () => md('PICMS1006') === 'REM'), btn('PICMS1002 A, SV 128', () => A.auto('PICMS1002', 128))] },
+      { st: 7, sec: 42, t: 'HP bypass sa REMOTE, sarado ang HP at LP bypass at ang MS blow-off sa 45 MW', d: 'Pagkatapos ng transfer, ilagay ang SV ng HP bypass sa R (SV = PV + 2): magsasara ito at ang turbine na ang kumukuha ng lahat ng steam. Mula rito, ang pressure ay tumataas kasabay ng load (FHI Fig. 2: 61 kg/cm² sa 15 % load, 123 sa 40 %). Ang MS blow-off PICMS1002 ay AUTO SV 128 (sarado; ang bukas na blow-off > 5 %, M.0255, ay back-up command ng boiler master).', c: b.ALL(b.VAL('MW', 44, null), b.MODE('PICMS1006', 'REM'), b.BIT('M.0709', 0, 'HP bypass open'), b.BIT('M.0255', 0, 'MS blow-off open'), C('MS blow-off PICMS1002 AUTO, SV ≥ 125 kg/cm²', () => md('PICMS1002') === 'AUTO' && svOf('PICMS1002') >= 125, () => 'PICMS1002 ' + md('PICMS1002') + ' SV ' + f0(svOf('PICMS1002')))), fps: ['PICMS1006', 'PICMS1002'], a: [btn('HP bypass R', () => A.rem('PICMS1006'), () => md('PICMS1006') === 'REM'), btn('PICMS1002 A, SV 128', () => A.auto('PICMS1002', 128))] },
       { st: 7, sec: 42, t: 'Hawakan ang 45 MW: MSP ≥ 90 kg/cm², drum level ±150 mm', d: 'NORMAL OPERATION sa TCS. Oil pa lang ang apoy; ang coach ang nagtataas ng oil habang tumataas ang pressure (Fig. 2: mga 98 kg/cm² sa 45 MW).', c: b.ALL(C('TCS NORMAL OPERATION (ATS step 7)', () => TC().step >= 7, () => (TC().step >= 7 ? 'OK' : TC().next || 'pindutin ang NORMAL OPERATION')), b.HOLD(120, b.ALL(b.VAL('MW', 44, null), b.VAL('MSP', 90, 131), b.VAL('lvl', -150, 150)))), a: [btn('NORMAL OPERATION (TCS)', () => A.tcs('normal'), () => TC().step >= 7)], wait: 1 },
       /* ---- 8 coal at 45 MW (PR-OPE-5002 solid fuel firing) ---- */
       { st: 8, sec: 44, t: 'Bed temperature ≥ 400 °C: handa ang coal feeder', d: 'Ang coal ay nasusunog lang sa mainit na bed.', c: b.VAL('Tb', 400, null), wait: 1 },

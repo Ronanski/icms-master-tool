@@ -26,7 +26,7 @@ Ito ang gusto ng user, sa sarili niyang salita. Ito ang sukatan ng bawat gawa. K
 | S1 | Laging iisang mundo ang ABC + DITL (mula beta.25, walang button). Page link ABC ↔ DITL, dalawang direksyon. | — |
 | S2 | VIEW mode: click sa wire = trace, Search, info card ("Why?"), page link, Back. | Bahagi 2 ng VIEW audit: DITL, tablet at phone sa VIEW. |
 | S3 | Plant chip katabi ng VIEW / RUN → **OFF**. Inputs list, force ng bawat input, A / M / R, SV, MV. | — |
-| S4 | Plant chip → **Unit**: steam table IAPWS-IF97, mass / energy balance ng boiler, turbine + TCS (ATS step 0 ~ 7), vacuum, utilities na may trip. | (a) MST umaabot 550 ~ 555 °C sa CCS load up 80 → 130 MW (H alarm 548): ugat = model ng SH temperature laban sa DITL-33 (beta.40 As Found). (b) RH biasing damper: TAPOS sa beta.40 (tama ang direksyon; binabasa na ang damper). (c) Wala pang model: aux cooling water, instrument air, APH sootblower, ESP. |
+| S4 | Plant chip → **Unit**: steam table IAPWS-IF97, mass / energy balance ng boiler, turbine + TCS (ATS step 0 ~ 7), vacuum, utilities na may trip. | (a) MST 550 ~ 557 °C sa CCS load up 80 ~ 115 MW (H alarm 548; dati 555): SH model inayos (iisang kadena), bukas pa ang bilis ng outer PI. (a2) Reheat 593 °C sa 150 MW sa Training (walang reheat AUTO; RH spray SOV at force manual ng damper). (b) RH biasing damper: TAPOS sa beta.40 (tama ang direksyon; binabasa na ang damper). (c) Wala pang model: aux cooling water, instrument air, APH sootblower, ESP. |
 | S5 | Home → **At 150 MW** (galing sa HMI snapshot 4.PNG). Load up / down sa HIC-ULD, CCS, boiler / turbine master, coal master. | Kasama sa S4 (a). |
 | S6 | Home → **Cold**: walang apoy, patay ang fans at pumps, MSP 0, FW 0. RUN na walang pinili = Cold. | — |
 | S7 | Training → **Gabay: Cold → 150 MW** at **Practise: Cold start** / **150 MW load change**. Sunod sa PR-OPE-5002 + FHI Fig. 2. | Hindi pa nasubok ng user. |
@@ -40,7 +40,7 @@ Ito ang gusto ng user, sa sarili niyang salita. Ito ang sukatan ng bawat gawa. K
 Ang user ay susubok lang sa DULO ng buong plano (gabay: `docs/USER_CHECK.md`).
 
 1. [x] **Tinanggal ang Per-loop, Warm at Hot** (3.2.0-beta.39, 2026-10-26): plant chip = OFF | Unit lang; starting state = Cold at 150 MW lang (chip, Home, Start menu); wala na ang engine ng loop study at ng warm / hot start. Ang mga CHECK stage (coal, byp, roll) ay sa loob na lang ng buong chain.
-2. [~] Plant model (3.2.0-beta.40): TAPOS: stall sa bypass (hakbang 43, dati na), RH biasing damper (ABC-020), "null" sa DITL header, header ng Cold ("—" bago pumili). BUKAS: MST > 548 °C sa load up (model ng SH temperature laban sa DITL-33; plano sa UPDATE_REPORT beta.40).
+2. [~] Plant model (3.2.0-beta.40): TAPOS: stall sa bypass (hakbang 43, dati na), RH biasing damper (ABC-020), "null" sa DITL header, header ng Cold ("—" bago pumili). TAPOS din (ikalawang batch): hakbang 57 (MS blow-off SV), SH temperature chain, air side ng Cold. BUKAS: MST 550 ~ 557 °C sa load up, reheat 593 °C sa 150 MW (UPDATE_REPORT, seksyon beta.39 dev).
 3. [ ] Starting points: Cold at 150 MW para sa plant model ON lang; kapag OFF, walang starting point (ang user ang naglalagay ng value). Suriin sa app na ang pagpili ng starting point ay nag-o-ON ng plant model.
 4. [ ] Training Cold → 150 MW laban sa SOP (PR-OPE-5002), kasama ang negative test (`sop_bawal.js`).
 5. [ ] Viewer (VIEW audit bahagi 2: DITL, tablet, phone) at Simulate na plant model OFF.
