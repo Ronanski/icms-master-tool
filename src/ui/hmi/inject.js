@@ -29,7 +29,7 @@ const block =
   '</style><script id="plantjs">' +
   (fs.existsSync(__dirname + '/../plant/systems.js') ? fs.readFileSync(__dirname + '/../plant/systems.js', 'utf8') : '') +
   '\n' +
-  /* 3.2.0-beta.41: the NEW HMI screens (own vector graphics, roadmap step 6) */
+  /* 2026-10-26: the NEW HMI screens (own vector graphics, roadmap step 6) */
   fs.readFileSync(__dirname + '/../plant/hmi2.js', 'utf8') +
   '\n' +
   /* 2.5.0-beta.15: the 1:1 HMI pictures of the plant screens (tools/data/hmibg.py) */
