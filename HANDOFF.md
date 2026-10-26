@@ -5,7 +5,7 @@
 ## SIMULAN DITO (2026-10-26 PHT)
 
 - **Stable:** v2.4.0 sa `main`.
-- **Beta:** `3.2.0-beta.38`, branch `claude/project-thread-2d6g10` (PR #42 → `claude/project-thread-vhcfv9`). Ang docs na ito ay nasa `claude/project-thread-6t8nxq` (nakapatong sa beta.38, docs lang, walang bagong app version).
+- **Beta:** `3.2.0-beta.39`, branch `claude/project-thread-0amxbo` (nakapatong sa docs branch `claude/project-thread-6t8nxq` / PR #43, na nakapatong sa beta.38 / PR #42). Roadmap step 1 TAPOS.
 - **Ang gusto ng user:** `docs/SPEC.md` (S1 ~ S9). Plano = seksyon 3 ng file na iyon. Wala nang ROADMAP / CHECKLIST.
 - **Pag-check ng user:** `docs/USER_CHECK.md`.
 - **Rules:** `CLAUDE.md`, `PROJECT_RULES.md` (test policy = seksyon 5).
@@ -15,14 +15,15 @@
 - Update sa user bawat ~30 minuto habang may mahabang trabaho, may ETA sa oras (PHT). Sumagot muna bago magpatuloy.
 - Test batay sa reference (PR-OPE-5002, DITL, ATS criteria, FHI Fig. 2, HMI snapshot), hindi sa coach ng Training. Ang kulang na model ay FAIL, hindi "field step".
 - Huwag magpush ng paisa-isang UI fix: lakarin muna ang bawat screen (PC, tablet, phone) bago ang Beta.
-- Warm at hot start: HINDI muna (user 2026-10-26).
+- Per-loop, Warm at Hot: TINANGGAL na sa app (beta.39). Huwag ibalik hangga't hindi sinasabi ng user.
 
-## Estado ng app (beta.38)
+## Estado ng app (beta.39)
 - Turbine + TCS model (`src/analog/engine/tcs.js`, `docs/tcs/ATS_CRITERIA.md`), start-up steam ayon sa FHI Fig. 2 / 3 / 4 (`unit.js`).
 - `tests/regress/sop_bawal.js`: 19 / 19 (lahat ng maagang aksyon ay tinatanggihan).
 - Training: Cold → 150 MW sa isang screen (dock), sunod sa PR-OPE-5002.
+- Plant chip: OFF | Unit lang; starting state: Cold o 150 MW lang (chip at Home). Ang CHECK scenario na coal / byp / roll ay stage na lang sa loob ng "full" chain.
 
-## Susunod na gagawin
+## Susunod na gagawin (roadmap sa `docs/SPEC.md` seksyon 3)
 1. MST 555 °C habang CCS load up 90 → 150 MW (H 548, HH 555, TE-MS1004-1): spray TICBR1150 / TICMS1004.
 2. RH biasing damper: sa probe, HICHR1002A 10 → 60 % ay nagpababa ng RHT 482 → 434 °C (dapat tumaas). Suriin ang ABC-020 at `plant.js` xsh.
 3. Ang iba: `docs/SPEC.md` seksyon 3.

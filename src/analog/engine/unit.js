@@ -212,7 +212,6 @@ function anUnitAnchor(list) {
 function anUnitStop() {
   const U = AN_UNIT;
   AN_SRC.t = -1; /* 3.2.0-beta.14: a new plant state, the source of the loops again (source.js) */
-  AN_SRC.fixed = null;
   for (const e of U.ld || [])
     if (e.pr) {
       e.pr.ld = 0;
@@ -545,7 +544,7 @@ function anUnitLive() {
    OPERATION). Returns the state or a reason ('' = done) */
 function anTurbine(cmd, arg) {
   const U = AN_UNIT;
-  if (!U.on || !U.tb) return 'walang unit model (Start cold / warm muna)';
+  if (!U.on || !U.tb) return 'walang unit model (Start cold muna)';
   const tb = U.tb;
   /* 3.2.0-beta.38 (CHECKLIST 0.6): the TCS / ATS model (tcs.js): the auxiliaries and the ATS step push buttons. 'roll' = ATS AUTO
      from the next step up to ACCELERATION (3600 rpm), 'sync' = EXCITATION + SYNCH. & INITIAL LOAD, 'loadup' = LOAD UP to the target */
@@ -621,43 +620,6 @@ function anUnitStep(dt) {
   if (!U.on || !(dt > 0)) return;
   const S = U.S,
     v = S.rt.v;
-  /* 3.2.0-beta.14 (plan phase A, user 2026-10-23: "per loop mode, pipili ka kung anong load (MW)"): LOOP STUDY at a fixed load. The
-     boiler and the turbine stand at the chosen load (AN_SRC.fixed, source.js srcLoad): drum and main steam pressure, steam flow, MW and
-     reheat pressure are written as constants, so every loop is studied with the medium of that load (its source); the loops that make
-     these boiler variables (PIC-COBM, the turbine) do not move them in this mode */
-  if (AN_SRC.fixed) {
-    const f = AN_SRC.fixed,
-      Prh0 = U.rhp.length && U.rhp[0].a0.length && U.rhp[0].a0[0] > 0 ? U.rhp[0].a0[0] : 34;
-    Object.assign(U, {
-      Pms: f.Pms,
-      Pd: f.Pms + U.kdp * f.ms * f.ms,
-      ms: f.ms,
-      Qs: f.ms,
-      mb: 0,
-      mhp: 0,
-      qlp: 0,
-      MW: f.mw,
-      Prh: f.Prh,
-      rr: f.Prh / Prh0,
-      Fc: f.coal,
-      unb: 0,
-      rpm: 3600,
-      Tb: U.Tb0
-    });
-    U.Tw = steamTsat(U.Pd);
-    U.tb = Object.assign(U.tb || {}, { st: 'load', rpm: 3600, icv: 1, xfer: true });
-    anUnitWrite(U.msp, f.Pms);
-    for (const l of U.tin) anUnitWrite(l, Math.max(0, f.Pms - U.kln * f.ms * f.ms));
-    anUnitWrite(U.drum, U.Pd);
-    for (const l of U.mw) anUnitWrite(l, f.mw);
-    const raw = anUnitVal(U.msf),
-      cmp = +v[U.cn];
-    anUnitWrite(U.msf, isFinite(raw) && raw > 0 && isFinite(cmp) && cmp > 1 ? (f.ms * raw) / cmp : f.ms);
-    for (const L of U.rhp) anUnitWrite(L, i => L.a0[i] * U.rr);
-    for (const L of U.pist) anUnitWrite(L, i => L.a0[i] * Math.max(1e-3, f.ms / U.m0));
-    U.t += dt;
-    return;
-  }
   /* coal of the three feeders (T/H) -> steam made in the drum (T/H), first order */
   /* 2.2.0-beta.14: + the oil of the start-up burners (ao x coal); the offset of the firing line fades out below 30 % of the anchor coal */
   const F = U.fuel.reduce((a, l) => a + (anUnitVal(l) || 0), 0),

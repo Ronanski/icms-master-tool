@@ -19,7 +19,7 @@ Ito ang gusto ng user, sa sarili niyang salita. Ito ang sukatan ng bawat gawa. K
 | S8 | **Library** | 1 I/O list · 2 wiring diagram · 3 loop diagram · 4 linears · 5 compensations · 6 memory list · 7 instrument list · 8 dictionary |
 | S9 | **DCS graphics / HMI** | Plant overview, bawat system, equipment, permissives, atbp. |
 
-## 2. Meron na at kulang (3.2.0-beta.38, 2026-10-26)
+## 2. Meron na at kulang (3.2.0-beta.39, 2026-10-26)
 
 | # | Meron na sa app | Kulang / bukas |
 |---|---|---|
@@ -33,18 +33,20 @@ Ito ang gusto ng user, sa sarili niyang salita. Ito ang sukatan ng bawat gawa. K
 | S8 | Library: **I/O list**, **Memory list**, **Wiring**, **Relay / SER**, **Calculations** (= compensations at drum level). **F(X) curves** page (= linears). | **Loop diagram**, **instrument list**, **dictionary**: wala pa. Walang hiwalay na file sa `document-references/`; gagawin mula sa ABC sheet + I/O list + wiring (loop), I/O list + ranges (instrument), textbook + legends (dictionary). |
 | S9 | Plant view: 28 screen na kopya ng HMI (UNIT, steam, air, coal, burners A ~ D, ash, sootblower, limestone, sand, condensate, seawater, turbine oil, generator…), faceplate sa bawat controller. | 560 / 1330 item lang ang live (ang iba ay walang signal sa ABC: snapshot value). Walang hiwalay na **plant overview** at **permissives** screen (bukod sa burner 012 ~ 015). |
 
-**Nasa app pero wala sa spec** (para gawing simple, kailangan ng OK ng user bago tanggalin o itago): Plant chip **Per-loop** mode, starting state **Warm** at **Hot**.
+**Tinanggal na (beta.39):** Plant chip **Per-loop** mode, starting state **Warm** at **Hot** (hindi sa spec; sabi ng user: pampahaba ng code at pampagulo).
 
-## 3. Plano (sunod-sunod; i-update kapag may natapos)
+## 3. Plano (sunod-sunod, inaprubahan ng user 2026-10-26; Library ang huli; i-update kapag may natapos)
 
-1. [ ] S4 (a) MST 555 °C sa load up: spray TICBR1150 / TICMS1004.
-2. [ ] S4 (b) direksyon ng RH biasing damper (ABC-020, `plant.js`).
-3. [ ] S7 subok ng user sa Training (gabay: `docs/USER_CHECK.md`).
-4. [ ] S2 VIEW audit bahagi 2 (DITL, tablet, phone).
-5. [ ] S8 loop diagram, instrument list, dictionary sa Library.
-6. [ ] S9 plant overview at permissives screen.
-7. [ ] S4 (c) aux cooling water, instrument air, APH sootblower, ESP.
-8. [ ] Desisyon ng user: itago ba ang Per-loop, Warm, Hot.
-9. [ ] Suriin sa app: ang pagpili ng starting point (Home / plant chip) ay dapat mag-ON ng plant model; kapag OFF, walang starting point na pipiliin.
+Ang user ay susubok lang sa DULO ng buong plano (gabay: `docs/USER_CHECK.md`).
 
-Sa hinaharap lang (hindi gagawin nang walang utos): warm / hot start Training, shutdown Training, tuning lab, cause-and-effect matrix, piping / drain model, sand DITL page.
+1. [x] **Tinanggal ang Per-loop, Warm at Hot** (3.2.0-beta.39, 2026-10-26): plant chip = OFF | Unit lang; starting state = Cold at 150 MW lang (chip, Home, Start menu); wala na ang engine ng loop study at ng warm / hot start. Ang mga CHECK stage (coal, byp, roll) ay sa loob na lang ng buong chain.
+2. [ ] Plant model: MST 555 °C sa CCS load up 90 → 150 MW (H alarm 548; spray TICBR1150 / TICMS1004) at ang direksyon ng RH biasing damper (ABC-020, `plant.js`).
+3. [ ] Starting points: Cold at 150 MW para sa plant model ON lang; kapag OFF, walang starting point (ang user ang naglalagay ng value). Suriin sa app na ang pagpili ng starting point ay nag-o-ON ng plant model.
+4. [ ] Training Cold → 150 MW laban sa SOP (PR-OPE-5002), kasama ang negative test (`sop_bawal.js`).
+5. [ ] Viewer (VIEW audit bahagi 2: DITL, tablet, phone) at Simulate na plant model OFF.
+6. [ ] HMI: live items (560 / 1330 lang ang live), plant overview at permissives screen.
+7. [ ] Sand silo DITL (8 drawing, `sand-sootblower-logic.zip`).
+8. [ ] Library: loop diagram, instrument list, dictionary.
+9. [ ] Merge ng mga nakabinbing PR at Stable release: LANG kapag nag-GO STABLE ang user.
+
+Sa hinaharap lang (hindi gagawin nang walang utos): warm / hot start (Training at starting state), shutdown Training, tuning lab, cause-and-effect matrix, piping / drain model, aux cooling water / instrument air / APH sootblower / ESP model.
