@@ -116,7 +116,7 @@ function goBack() {
   const h = AN.hist.pop();
   updBack();
   if (!h) return;
-  /* 3.2.0-beta.40: the jump came from a DITL row (FROM / TO ABC-xxx): back to that DITL sheet */
+  /* 3.2.0-beta.39: the jump came from a DITL row (FROM / TO ABC-xxx): back to that DITL sheet */
   if (h.dig) {
     if (window.DUI && DUI.back) DUI.back();
     return;
@@ -170,7 +170,7 @@ function endsOf(sh, c) {
   if (lk) addE(lk.peer.sh, lk.peer.c);
   return ends;
 }
-/* 3.2.0-beta.40 (S2 / roadmap 5): EVERY "FROM / TO DITL xx-nn" text of an ABC drawing is a page link, not only the ones beside a circle
+/* 3.2.0-beta.39 (S2 / roadmap 5): EVERY "FROM / TO DITL xx-nn" text of an ABC drawing is a page link, not only the ones beside a circle
    (before: 10 of 233). A text with a list ("TO DITL 96-18, DITL 97-18") opens a chooser. */
 const DS_ANY = /(?<!\d)(\d{2,3}[A-Z]?)\s*-\s*(\d+)/gi;
 function dsRefsIn(txt) {
@@ -1934,7 +1934,7 @@ function drawSheet(sh) {
   }
   const gx = el('g', { class: 'xref' }, svg);
   {
-    /* 3.2.0-beta.40: only ABC-xxx here; the DITL references are page links of their own (dsTextAt, DITL item + Back) */
+    /* 3.2.0-beta.39: only ABC-xxx here; the DITL references are page links of their own (dsTextAt, DITL item + Back) */
     const RX = /(ABC-\d{3}[A-Z]?)/g;
     let nx = 0;
     for (const t of S.tx) {

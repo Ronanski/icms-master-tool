@@ -193,7 +193,7 @@ function pick(e) {
   const [x, y] = xy(e),
     k = $('svg').getScreenCTM().a,
     tol = Math.max(0.9, 7 / k);
-  /* 3.2.0-beta.40: a "FROM / TO DITL xx-nn" text is a page link; a click ON the text wins over a circle under it, a click just beside it does not */
+  /* 3.2.0-beta.39: a "FROM / TO DITL xx-nn" text is a page link; a click ON the text wins over a circle under it, a click just beside it does not */
   {
     const dt = dsTextAt(e, true);
     if (dt && dsTextClick(dt, e)) return;

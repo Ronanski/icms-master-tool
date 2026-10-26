@@ -23,8 +23,8 @@ Ito ang gusto ng user, sa sarili niyang salita. Ito ang sukatan ng bawat gawa. K
 
 | # | Meron na sa app | Kulang / bukas |
 |---|---|---|
-| S1 | Laging iisang mundo ang ABC + DITL (mula beta.25, walang button). Page link ABC ↔ DITL, dalawang direksyon: ang BAWAT "FROM / TO DITL" sa ABC (233, beta.40) at ang FROM / TO column ng DITL; ↩ Back sa magkabilang panig. | — |
-| S2 | VIEW mode: click sa wire = trace, Search, info card ("Why?"), page link, Back. | Lakad ng VIEW sa DITL, tablet, phone (beta.40: screenshot walang sira; ang user pa ang hindi nakakasubok). |
+| S1 | Laging iisang mundo ang ABC + DITL (mula beta.25, walang button). Page link ABC ↔ DITL, dalawang direksyon: ang BAWAT "FROM / TO DITL" sa ABC (233, links ABC ↔ DITL) at ang FROM / TO column ng DITL; ↩ Back sa magkabilang panig. | — |
+| S2 | VIEW mode: click sa wire = trace, Search, info card ("Why?"), page link, Back. | Lakad ng VIEW sa DITL, tablet, phone (links ABC ↔ DITL: screenshot walang sira; ang user pa ang hindi nakakasubok). |
 | S3 | Plant chip katabi ng VIEW / RUN → **OFF**. Inputs list, force ng bawat input, A / M / R, SV, MV. | — |
 | S4 | Plant chip → **Unit**: steam table IAPWS-IF97, mass / energy balance ng boiler, turbine + TCS (ATS step 0 ~ 7), vacuum, utilities na may trip. | (a) MST umaabot 555 °C sa CCS load up 90 → 150 MW (H alarm 548). (b) RH biasing damper: baligtad ang direksyon sa model. (c) Wala pang model: aux cooling water, instrument air, APH sootblower, ESP. |
 | S5 | Home → **At 150 MW** (galing sa HMI snapshot 4.PNG). Load up / down sa HIC-ULD, CCS, boiler / turbine master, coal master. | Kasama sa S4 (a). |
@@ -43,7 +43,7 @@ Ang user ay susubok lang sa DULO ng buong plano (gabay: `docs/USER_CHECK.md`).
 2. [ ] Plant model: MST 555 °C sa CCS load up 90 → 150 MW (H alarm 548; spray TICBR1150 / TICMS1004) at ang direksyon ng RH biasing damper (ABC-020, `plant.js`).
 3. [ ] Starting points: Cold at 150 MW para sa plant model ON lang; kapag OFF, walang starting point (ang user ang naglalagay ng value). Suriin sa app na ang pagpili ng starting point ay nag-o-ON ng plant model.
 4. [ ] Training Cold → 150 MW laban sa SOP (PR-OPE-5002), kasama ang negative test (`sop_bawal.js`).
-5. [x] Viewer at Simulate OFF (3.2.0-beta.40, 2026-10-26): lahat ng "FROM / TO DITL" sa ABC ay page link na may Back; nilakad ang VIEW / RUN sa PC, tablet (dalawang direksyon) at phone; Simulate OFF: `ditl_sim.js` walang FAIL (hand input → output, ABC ↔ DITL tugma, force).
+5. [x] Viewer at Simulate OFF (3.2.0-beta.39, 2026-10-26): lahat ng "FROM / TO DITL" sa ABC ay page link na may Back; nilakad ang VIEW / RUN sa PC, tablet (dalawang direksyon) at phone; Simulate OFF: `ditl_sim.js` walang FAIL (hand input → output, ABC ↔ DITL tugma, force).
 6. [ ] HMI: BAGONG HMI na sariling graphics (user 2026-10-26; snapshot = gabay lang). Listahan ng system: `docs/hmi/HMI_SYSTEMS.md`. Sample Air & Flue Gas (PR #49) (89 / 89 live), naghihintay ng pag-apruba ng style; saka ang 13 pang screen, tapos tanggalin ang lumang Plant HMI.
 7. [ ] Sand silo DITL (8 drawing, `sand-sootblower-logic.zip`).
 8. [ ] Library: loop diagram, instrument list, dictionary.

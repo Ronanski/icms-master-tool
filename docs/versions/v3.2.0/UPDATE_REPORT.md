@@ -796,7 +796,7 @@ Engine at logic: walang binago.
 **Status:** Beta. Roadmap hakbang 1 TAPOS.
 
 
-## 3.2.0-beta.40 (2026-10-26) — Roadmap 5: ang bawat "FROM / TO DITL" sa ABC ay page link, may Back
+## 3.2.0-beta.39 (2026-10-26) — Roadmap 5: ang bawat "FROM / TO DITL" sa ABC ay page link, may Back
 
 **Problem:** sa ABC, 10 lang sa 233 na sulat na "FROM / TO DITL xx-nn" ang napipindot (yung malapit sa bilog na connector). Ang 223 ay sulat lang. Ang lumang xref layer ay sira sa DITL: hindi nito binabasa ang 3-digit na code (DITL-100 ~ 110) at binubuksan nito ang lumang sheet list, hindi ang item.
 
@@ -816,7 +816,7 @@ Engine at logic: walang binago.
 **Status:** Beta. Roadmap hakbang 5 (links at Back) TAPOS.
 
 
-## HMI sample (PR #49, walang sariling numero; nakapatong sa beta.40) — Bagong HMI: sample na Air & Flue Gas (roadmap step 6)
+## HMI sample (PR #49, walang sariling numero; nakapatong sa base 3.2.0-beta.39) — Bagong HMI: sample na Air & Flue Gas (roadmap step 6)
 - **Problem (user 2026-10-26):** pangit ang kasalukuyang Plant HMI (kopya ng larawan ng control room, 49 / 121 lang ang live sa 007). Gusto ng user ng bagong HMI na sariling graphics; ang snapshot ay gabay lang sa system, flow at linya, at dapat may improvement.
 - **As Found:** ang 007 ay larawan (`hmibg.js` 3.7 MB) na may numerong pinapatungan; ang item na walang signal ay nagpapakita ng snapshot value kahit Cold. Maraming instrumento ng 007 ay nasa I/O list lang, walang ABC / DITL logic (backpass gas temps, cyclone, ESP pressures, fan currents, CEMS).
 - **Work Done:**

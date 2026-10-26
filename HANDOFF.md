@@ -5,8 +5,8 @@
 ## SIMULAN DITO (2026-10-26 PHT)
 
 - **Stable:** v2.4.0 sa `main`.
-- **Beta (HMI sample):** branch `claude/project-thread-1h2161` (PR #49, version 3.2.0-beta.40 pa rin; numero sa pagsasama) (nakapatong sa beta.40). Bagong HMI sample Air & Flue Gas; naghihintay ng pag-apruba ng style ng user (`docs/hmi/HMI_SYSTEMS.md`).
-- **Beta:** `3.2.0-beta.40`, branch `claude/project-thread-mzyrtg` (nakapatong sa beta.39 / PR #45 `claude/project-thread-0amxbo`, na nakapatong sa docs PR #43 at beta.38 / PR #42). Roadmap step 1 TAPOS; step 5 (ABC ↔ DITL links) TAPOS; may ibang thread na gumagawa ng step 2 (plant model) at Sand DITL.
+- **Beta (HMI sample):** branch `claude/project-thread-1h2161` (PR #49, nakapatong sa #46; version 3.2.0-beta.39, ang numero ay ibibigay sa pagsasama). Bagong HMI sample Air & Flue Gas; naghihintay ng pag-apruba ng style ng user (`docs/hmi/HMI_SYSTEMS.md`).
+- **Beta:** `3.2.0-beta.39`, branch `claude/project-thread-mzyrtg` (nakapatong sa beta.39 / PR #45 `claude/project-thread-0amxbo`, na nakapatong sa docs PR #43 at beta.38 / PR #42). Roadmap step 1 TAPOS; step 5 (ABC ↔ DITL links) TAPOS; may ibang thread na gumagawa ng step 2 (plant model) at Sand DITL.
 - **Ang gusto ng user:** `docs/SPEC.md` (S1 ~ S9). Plano = seksyon 3 ng file na iyon. Wala nang ROADMAP / CHECKLIST.
 - **Pag-check ng user:** `docs/USER_CHECK.md`.
 - **Rules:** `CLAUDE.md`, `PROJECT_RULES.md` (test policy = seksyon 5).
@@ -23,7 +23,7 @@
 - `src/ui/plant/hmi2.js`: library ng simbolo + screen `AFG` (Air & Flue Gas). `plant.js` draw: `sys.v2` → `PLANT_V2.draw` (parehong live link / faceplate).
 - Huwag pa tanggalin ang lumang Plant HMI hangga't wala pang kapalit ang lahat ng system (14 screen sa `docs/hmi/HMI_SYSTEMS.md`).
 
-## Estado ng app (beta.40)
+## Estado ng app (links ABC ↔ DITL)
 - ABC ↔ DITL: ang BAWAT "FROM / TO DITL xx-nn" sa ABC (233) ay page link (`dsTextAt` / `dsTextClick` sa `links-canvas.js`, pick sa `interaction.js`); listahan = pagpipilian; DITL → ABC ay may ↩ Back sa ABC (`AN.hist` marker `{dig:true}`). Test: `tests/regress/abc_ditl_links.js`.
 - Turbine + TCS model (`src/analog/engine/tcs.js`, `docs/tcs/ATS_CRITERIA.md`), start-up steam ayon sa FHI Fig. 2 / 3 / 4 (`unit.js`).
 - `tests/regress/sop_bawal.js`: 19 / 19 (lahat ng maagang aksyon ay tinatanggihan).
