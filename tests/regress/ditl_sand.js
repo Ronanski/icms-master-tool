@@ -1,4 +1,4 @@
-// 3.2.0-beta.40 (user: "pre may mga DITL pages na wala pa. SAND LIMESTONE BOTTOM ASH SOOTBLOWER"): the 7 sand injection sheets
+// 3.2.0-beta.39 (+ sand) (user: "pre may mga DITL pages na wala pa. SAND LIMESTONE BOTTOM ASH SOOTBLOWER"): the 7 sand injection sheets
 // (D71)DITL-771 ~ (D77)DITL-777 (SAND INJECTION SYSTEM CONTROL LOGIC (1) ~ (7), station 103 FM0007), read from the vector PDF
 // E10210-3-771 ~ 777 (tools/data/sand_sheet.py, audit docs/versions/v3.2.0/DITL_SAND_AUDIT.md).
 // In Run: 771 START -> SYSTEM ON seal-in -> STOP; 773 fluidizing air valves 3 s one after the other; 775 limit switch -> lamp; the FROM / TO page links.

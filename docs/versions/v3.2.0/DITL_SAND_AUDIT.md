@@ -1,4 +1,4 @@
-# DITL Sand injection system (E10210-3-770 ~ 777) laban sa drawing — 3.2.0-beta.40
+# DITL Sand injection system (E10210-3-770 ~ 777) laban sa drawing — 3.2.0-beta.39 (+ sand)
 
 Roadmap step 7. Ito ang ikaapat na bahagi ng "SAND, LIMESTONE, BOTTOM ASH, SOOTBLOWER" (ang tatlo pa ay `docs/versions/v2.5.0/DITL_SB_AUDIT.md`, `DITL_BA_AUDIT.md`, `DITL_LS_AUDIT.md`).
 

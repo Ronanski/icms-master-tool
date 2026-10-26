@@ -796,7 +796,7 @@ Engine at logic: walang binago.
 **Status:** Beta. Roadmap hakbang 1 TAPOS.
 
 
-## 3.2.0-beta.40 (2026-10-26) — Roadmap 7: Sand injection DITL (771 ~ 777)
+## 3.2.0-beta.39 (+ sand) (2026-10-26) — Roadmap 7: Sand injection DITL (771 ~ 777)
 
 **Problem:** walang DITL page ang SAND INJECTION SYSTEM CONTROL LOGIC (E10210-3-771 ~ 777, station 103). Ang sootblower, bottom ash at limestone ay nandoon na.
 
