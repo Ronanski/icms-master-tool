@@ -8,9 +8,10 @@ Ang simulator (ABC analog + DITL digital) ay binubuo mula sa `src/` papunta sa I
 
 ## Start here
 
-1. Read [PROJECT_RULES.md](PROJECT_RULES.md) before modifying the project.
-2. Read [HANDOFF.md](HANDOFF.md) for the current project status and next actions.
-3. Mga ulat ayon sa bersyon: `docs/versions/`. ABC audit: [ABC-AUDIT.md](docs/abc-audit/ABC-AUDIT.md). Lumang files: `archive/`.
+1. Ang gusto ng user (spec, meron / kulang, plano): [docs/SPEC.md](docs/SPEC.md). Pag-check ng user: [docs/USER_CHECK.md](docs/USER_CHECK.md).
+2. Read [PROJECT_RULES.md](PROJECT_RULES.md) before modifying the project.
+3. Read [HANDOFF.md](HANDOFF.md) for the current project status and next actions.
+4. Mga ulat ayon sa bersyon: `docs/versions/`. ABC audit: [ABC-AUDIT.md](docs/abc-audit/ABC-AUDIT.md). Lumang files: `archive/`.
 
 ## Mapa ng repo (OPLAN-L1PAT)
 
