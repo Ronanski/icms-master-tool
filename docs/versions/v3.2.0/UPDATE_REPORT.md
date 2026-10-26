@@ -794,3 +794,24 @@ Engine at logic: walang binago.
 **Hindi nasubok:** buong Cold run (`human_run.js`): huminto ang unang takbo sa hakbang 43 (bypass, MSP 35.7, steam flow 0). Itinigil ang paghahambing sa beta.38 sa utos ng user, kaya HINDI pa alam kung dati na ito. PC / tablet / EXE / APK ng user.
 
 **Status:** Beta. Roadmap hakbang 1 TAPOS.
+
+
+## 3.2.0-beta.40 (2026-10-26) — Roadmap 7: Sand injection DITL (771 ~ 777)
+
+**Problem:** walang DITL page ang SAND INJECTION SYSTEM CONTROL LOGIC (E10210-3-771 ~ 777, station 103). Ang sootblower, bottom ash at limestone ay nandoon na.
+
+**As Found:** vector PDF lang ang drawing (walang DXF), at walang row table: ang row ay dulo ng wire.
+
+**Work Done:**
+- Binasa ang 7 sheet mula sa PDF (`tools/data/sand_*.py`) at inilagay sa `src/data/pre.txt`: `(D71)DITL-771` ~ `(D77)DITL-777`, kategorya SAND INJECTION (SD1300). 60 FROM / TO flag, bawat FROM ay may TO.
+- App: `src/digital/parts/02b-sand.js` (netlist ng sheet na ito); ang hit area ng toggle ay per-row (`04-render.js`); bagong kategorya (`05-overlay-interaction.js`). Ang ibang DITL sheet ay walang binago.
+- Walang inalis na link. Mga ayos na gawa-kamay at ang dalawang hindi tugmang flag sa mismong drawing: `DITL_SAND_AUDIT.md`.
+
+**As Left (ebidensya):**
+- `tests/regress/ditl_sand.js`: ALL PASS (8 check: kategorya, walang bukas na block input, oras ng timer, FROM / TO, 771 START / hold / STOP / MFT, 773 fluidizing air valve, 775 limit switch, walang page error).
+- `tests/regress/world.js`: pasado (ang ABC ↔ DITL link ng mga dating sheet ay hindi nagbago). Pasado rin: `ditl_ls`, `ditl_ba`, `ditl_sb`, `ditl_selected`, `ditl_pagelink`, `ditl_toolbar`. `ditl_sim.js` ay bumabagsak sa Node error sa beta.39 pa lang (pareho ang resulta bago at pagkatapos ng pagbabagong ito), hindi ko inayos dito.
+- Screenshot ng 771 ~ 777 sa PC 1500x900; 774 sa tablet 1280x800; 777 sa 800x1280: walang page error.
+
+**Hindi nasubok:** PC / tablet / EXE / APK ng user. Ang halaga ng AI0387 / AI0432 (analog) ay hindi sinisimulate: ON / OFF lang. Ang bawat output ng 7 sheet ay hindi isa-isang sinubok; ibinangga ang bawat sheet sa PDF gamit ang overlay at screenshot.
+
+**Status:** Beta. Roadmap hakbang 7 TAPOS.
