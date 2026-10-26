@@ -116,6 +116,11 @@ function goBack() {
   const h = AN.hist.pop();
   updBack();
   if (!h) return;
+  /* 3.2.0-beta.40: the jump came from a DITL row (FROM / TO ABC-xxx): back to that DITL sheet */
+  if (h.dig) {
+    if (window.DUI && DUI.back) DUI.back();
+    return;
+  }
   const i = AN.sheets.findIndex(s => s.name === h.name);
   if (i < 0) return;
   if (AN.sheets[i] !== cs()) go(i);
@@ -165,15 +170,30 @@ function endsOf(sh, c) {
   if (lk) addE(lk.peer.sh, lk.peer.c);
   return ends;
 }
-function dsGoRef(r) {
-  const m = /(?:DITL\s*)?([0-9]{2}[A-Z]?)\s*-\s*(\d+)/i.exec(String(r));
+/* 3.2.0-beta.40 (S2 / roadmap 5): EVERY "FROM / TO DITL xx-nn" text of an ABC drawing is a page link, not only the ones beside a circle
+   (before: 10 of 233). A text with a list ("TO DITL 96-18, DITL 97-18") opens a chooser. */
+const DS_ANY = /(?<!\d)(\d{2,3}[A-Z]?)\s*-\s*(\d+)/gi;
+function dsRefsIn(txt) {
+  if (!/DITL/i.test(txt)) return [];
+  const out = [];
+  let m;
+  DS_ANY.lastIndex = 0;
+  while ((m = DS_ANY.exec(txt))) {
+    const r = m[1].toUpperCase() + '-' + +m[2];
+    if (!out.includes(r)) out.push(r);
+  }
+  return out;
+}
+function dsGoRef(r, sb) {
+  const m = /(?<!\d)([0-9]{2,3}[A-Z]?)\s*-\s*(\d+)/i.exec(String(r));
   if (!m) {
     msg('DITL reference not understood: ' + r);
     return false;
   }
   const code = m[1].toUpperCase(),
     nn = m[2];
-  const i = ditlIdx(code, null);
+  /* "FOR S/B LOGIC" (ABC-001C, ABC-017): the sootblower set of drawings has its own DITL-80 */
+  const i = ditlIdx(code, sb ? { name: '(S0)' } : null);
   if (i < 0) {
     msg('DITL sheet ' + code + ' (' + r + ') is not in the DITL page');
     return false;
@@ -185,6 +205,59 @@ function dsGoRef(r) {
   sel = null;
   render();
   msg('DITL page: ' + S.sheets[i].name + ' (reference ' + r + ', item ' + nn + ')');
+  return true;
+}
+/* the DITL text under a click or tap (the screen box of the text, a little wider for a finger), nearest centre wins */
+function dsTextAt(e, exact) {
+  const sh = cs(),
+    S2 = sh && sh.S;
+  if (!S2 || !L || !L.txe) return null;
+  const pad = exact ? 0 : e.pointerType === 'touch' ? 10 : 4;
+  let best = null,
+    bd = 1e9;
+  for (const t of S2.tx) {
+    if (!/DITL/i.test(t.t)) continue;
+    const el = L.txe.get(t);
+    if (!el) continue;
+    const b = el.getBoundingClientRect();
+    if (!b.width || e.clientX < b.left - pad || e.clientX > b.right + pad || e.clientY < b.top - pad || e.clientY > b.bottom + pad) continue;
+    const d = Math.hypot(e.clientX - (b.left + b.right) / 2, e.clientY - (b.top + b.bottom) / 2);
+    if (d < bd) {
+      bd = d;
+      best = t;
+    }
+  }
+  return best;
+}
+function dsTextClick(t, e) {
+  const refs = dsRefsIn(t.t);
+  if (!refs.length) return false;
+  const sb = /S\/B/i.test(t.t);
+  if (refs.length === 1) return dsGoRef(refs[0], sb);
+  const pk = document.getElementById('plpick');
+  if (!pk) return dsGoRef(refs[0], sb);
+  pk.textContent = '';
+  pk.append(h$('div', { cls: 'plhd', txt: (/FROM/i.test(t.t) ? 'FROM' : 'TO') + ' DITL: pick the page' }));
+  refs.forEach(r => {
+    const m = /^(\d{2,3}[A-Z]?)-(\d+)$/.exec(r),
+      i = m ? ditlIdx(m[1], sb ? { name: '(S0)' } : null) : -1;
+    pk.append(
+      h$('button', {
+        txt: i >= 0 ? S.sheets[i].name + ' · item ' + m[2] : 'DITL ' + r + ' (not in the app)',
+        onclick: () => {
+          if (Date.now() - pk.t0 < 400) return;
+          pk.hidden = true;
+          dsGoRef(r, sb);
+        }
+      })
+    );
+  });
+  pk.hidden = false;
+  pk.t0 = Date.now();
+  const w = pk.offsetWidth,
+    hh = pk.offsetHeight;
+  pk.style.left = Math.max(8, Math.min(innerWidth - w - 8, e.clientX - w / 2)) + 'px';
+  pk.style.top = Math.max(8, Math.min(innerHeight - hh - 8, e.clientY + 12)) + 'px';
   return true;
 }
 function connClick(c) {
@@ -921,6 +994,11 @@ function drawSheet(sh) {
     if (t.r) e.setAttribute('transform', `rotate(${-t.r} ${t.x} ${-t.y})`);
     e.style.fontFamily = "Consolas,'Cascadia Mono',monospace";
     e.textContent = t.t;
+    if (/DITL/i.test(t.t) && dsRefsIn(t.t).length) {
+      e.style.textDecoration = 'underline dotted #5aa9ff 0.12em';
+      e.style.textUnderlineOffset = '0.25em';
+      e.style.cursor = 'pointer';
+    }
     TXE.set(t, e);
   });
   L.txe = TXE;
@@ -1856,7 +1934,8 @@ function drawSheet(sh) {
   }
   const gx = el('g', { class: 'xref' }, svg);
   {
-    const RX = /(ABC-\d{3}[A-Z]?)|DITL[ -]?(\d{1,2}[A-H]?)-\d{1,3}/g;
+    /* 3.2.0-beta.40: only ABC-xxx here; the DITL references are page links of their own (dsTextAt, DITL item + Back) */
+    const RX = /(ABC-\d{3}[A-Z]?)/g;
     let nx = 0;
     for (const t of S.tx) {
       const str = String(t.t),
@@ -1866,15 +1945,11 @@ function drawSheet(sh) {
       RX.lastIndex = 0;
       while ((m = RX.exec(str))) {
         const ab = m[1],
-          dp = m[2],
           tok = m[0];
         let tgt = null;
         if (ab) {
           if (ab === sh.name) continue;
           if (AN.sheets.some(z => z.name === ab)) tgt = { a: ab };
-        } else if (dp) {
-          const pg = 'DITL-' + (/^\d[A-H]?$/.test(dp) ? '0' + dp : dp);
-          tgt = { d: pg };
         }
         if (!tgt) continue;
         nx++;
@@ -1908,7 +1983,7 @@ function drawSheet(sh) {
             gx
           );
         const ti = el('title', {}, r);
-        ti.textContent = 'Go to ' + (tgt.a || tgt.d);
+        ti.textContent = 'Go to ' + tgt.a;
         r._xr = tgt;
         r.addEventListener('mouseenter', () => u.setAttribute('opacity', 1));
         r.addEventListener('mouseleave', () => u.setAttribute('opacity', 0.8));
