@@ -45,5 +45,6 @@ Ito ang gusto ng user, sa sarili niyang salita. Ito ang sukatan ng bawat gawa. K
 6. [ ] S9 plant overview at permissives screen.
 7. [ ] S4 (c) aux cooling water, instrument air, APH sootblower, ESP.
 8. [ ] Desisyon ng user: itago ba ang Per-loop, Warm, Hot.
+9. [ ] Suriin sa app: ang pagpili ng starting point (Home / plant chip) ay dapat mag-ON ng plant model; kapag OFF, walang starting point na pipiliin.
 
 Sa hinaharap lang (hindi gagawin nang walang utos): warm / hot start Training, shutdown Training, tuning lab, cause-and-effect matrix, piping / drain model, sand DITL page.
