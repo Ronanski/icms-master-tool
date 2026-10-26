@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 710" width="1180" height="710"><defs>
+<linearGradient id="hsSteelX" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4a545e"/><stop offset="0.3" stop-color="#8d99a5"/><stop offset="0.62" stop-color="#6c7783"/><stop offset="1" stop-color="#3b444d"/></linearGradient>
+<linearGradient id="hsSteelY" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a545e"/><stop offset="0.3" stop-color="#8d99a5"/><stop offset="0.62" stop-color="#6c7783"/><stop offset="1" stop-color="#3b444d"/></linearGradient>
+<linearGradient id="hsCase" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a646e"/><stop offset="1" stop-color="#424b54"/></linearGradient>
+<linearGradient id="hsCaseX" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4e5862"/><stop offset="0.5" stop-color="#5d6771"/><stop offset="1" stop-color="#434c55"/></linearGradient>
+<linearGradient id="hsConc" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#585e64"/><stop offset="0.35" stop-color="#7b8187"/><stop offset="1" stop-color="#4c5157"/></linearGradient>
+<linearGradient id="hsAirY" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3c566e"/><stop offset="0.35" stop-color="#6a88a2"/><stop offset="0.7" stop-color="#4d6a84"/><stop offset="1" stop-color="#334a5f"/></linearGradient>
+<linearGradient id="hsAirX" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3c566e"/><stop offset="0.35" stop-color="#6a88a2"/><stop offset="0.7" stop-color="#4d6a84"/><stop offset="1" stop-color="#334a5f"/></linearGradient>
+<linearGradient id="hsHotY" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6a5136"/><stop offset="0.35" stop-color="#a0805a"/><stop offset="0.7" stop-color="#806446"/><stop offset="1" stop-color="#5a442e"/></linearGradient>
+<linearGradient id="hsHotX" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6a5136"/><stop offset="0.35" stop-color="#a0805a"/><stop offset="0.7" stop-color="#806446"/><stop offset="1" stop-color="#5a442e"/></linearGradient>
+<linearGradient id="hsGasY" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#55514d"/><stop offset="0.35" stop-color="#7f7973"/><stop offset="0.7" stop-color="#655f5a"/><stop offset="1" stop-color="#4a4642"/></linearGradient>
+<linearGradient id="hsGasX" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#55514d"/><stop offset="0.35" stop-color="#7f7973"/><stop offset="0.7" stop-color="#655f5a"/><stop offset="1" stop-color="#4a4642"/></linearGradient>
+<linearGradient id="hsBed" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6e5d47"/><stop offset="1" stop-color="#4f4233"/></linearGradient>
+<pattern id="hsWW" width="4" height="8" patternUnits="userSpaceOnUse"><rect width="4" height="8" fill="#363e46"/><rect x="1.5" width="1" height="8" fill="#46505a"/></pattern>
+<pattern id="hsElem" width="6" height="3" patternUnits="userSpaceOnUse"><rect width="6" height="3" fill="#3b444c"/><rect y="1" width="6" height=".6" fill="#4b555e"/></pattern>
+<pattern id="hsTube" width="5" height="6" patternUnits="userSpaceOnUse"><rect width="5" height="6" fill="#343c44"/><rect x="2" width="1" height="6" fill="#4a545e"/></pattern>
+</defs><symbol id="hs-fan" viewBox="0 0 84 84" overflow="visible">
+<path d="M40 6H80V22H62A31 31 0 0 1 71 46A33 33 0 0 1 40 79A35 35 0 0 1 5 45A38 38 0 0 1 40 6Z" fill="url(#hsSteelY)" stroke="#0c1014" stroke-width="1"/>
+<path d="M62 22A31 31 0 0 1 71 46" fill="none" stroke="#9aa6b2" stroke-opacity=".35" stroke-width="1"/>
+<rect x="78" y="6" width="3" height="16" fill="#3b444d" stroke="#0c1014" stroke-width=".8"/>
+<circle cx="40" cy="45" r="15" fill="#2a3138" stroke="#0c1014" stroke-width="1"/>
+<circle cx="40" cy="45" r="15" fill="none" stroke="#8d99a5" stroke-opacity=".25" stroke-width="2"/>
+<g stroke="#7d8996" stroke-width="1" fill="none" stroke-linecap="round">
+<path d="M40 39Q43.5 36 44.5 32" transform="rotate(0 40 45)"/><path d="M40 39Q43.5 36 44.5 32" transform="rotate(45 40 45)"/><path d="M40 39Q43.5 36 44.5 32" transform="rotate(90 40 45)"/><path d="M40 39Q43.5 36 44.5 32" transform="rotate(135 40 45)"/><path d="M40 39Q43.5 36 44.5 32" transform="rotate(180 40 45)"/><path d="M40 39Q43.5 36 44.5 32" transform="rotate(225 40 45)"/><path d="M40 39Q43.5 36 44.5 32" transform="rotate(270 40 45)"/><path d="M40 39Q43.5 36 44.5 32" transform="rotate(315 40 45)"/>
+</g>
+<circle cx="40" cy="45" r="4.2" fill="#6c7783" stroke="#0c1014" stroke-width=".8"/>
+</symbol><symbol id="hs-motor" viewBox="0 0 44 26" overflow="visible">
+<line x1="0" y1="13" x2="6" y2="13" stroke="#8d99a5" stroke-width="2.4"/>
+<rect x="6" y="3" width="30" height="20" rx="2" fill="url(#hsSteelY)" stroke="#0c1014" stroke-width="1"/>
+<g stroke="#0c1014" stroke-opacity=".45" stroke-width=".8"><line x1="11" y1="5" x2="11" y2="21"/><line x1="15" y1="5" x2="15" y2="21"/><line x1="19" y1="5" x2="19" y2="21"/><line x1="23" y1="5" x2="23" y2="21"/><line x1="27" y1="5" x2="27" y2="21"/></g>
+<rect x="36" y="6" width="5" height="14" rx="1.5" fill="#4a545e" stroke="#0c1014" stroke-width=".8"/>
+<rect class="hs-st" x="8" y="24.5" width="26" height="3" rx="1" fill="#59636d"/>
+</symbol><symbol id="hs-damper" viewBox="0 -16 36 46" overflow="visible">
+<rect x="2" y="0" width="32" height="14" fill="none" stroke="#b9c3cc" stroke-width="1"/>
+<line x1="2" y1="-2" x2="2" y2="16" stroke="#b9c3cc" stroke-width="1.6"/>
+<line x1="34" y1="-2" x2="34" y2="16" stroke="#b9c3cc" stroke-width="1.6"/>
+<line x1="18" y1="0" x2="18" y2="-6" stroke="#8d99a5" stroke-width="1"/>
+<rect x="11" y="-16" width="14" height="10" rx="1" fill="#4a545e" stroke="#0c1014" stroke-width=".8"/>
+<text x="18" y="-8.2" text-anchor="middle" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:7.5px;font-weight:600" fill="#dfe6ec">M</text>
+</symbol><symbol id="hs-cv" viewBox="0 0 28 30" overflow="visible">
+<line x1="14" y1="20" x2="14" y2="8" stroke="#aab4be" stroke-width="1"/>
+<path d="M5 8A9 6.5 0 0 1 23 8Z" fill="#59636d" stroke="#aab4be" stroke-width="1"/>
+<path class="hs-vb" d="M2 14L14 20L2 26ZM26 14L14 20L26 26Z" fill="#c3ccd5" stroke="#aab4be" stroke-width="1" stroke-linejoin="round"/>
+</symbol><symbol id="hs-mov" viewBox="0 0 28 30" overflow="visible">
+<line x1="14" y1="20" x2="14" y2="11" stroke="#aab4be" stroke-width="1"/>
+<rect x="7" y="1" width="14" height="10" rx="1" fill="#4a545e" stroke="#aab4be" stroke-width="1"/>
+<text x="14" y="8.8" text-anchor="middle" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:7.5px;font-weight:600" fill="#dfe6ec">M</text>
+<path class="hs-vb" d="M2 14L14 20L2 26ZM26 14L14 20L26 26Z" fill="#c3ccd5" stroke="#aab4be" stroke-width="1" stroke-linejoin="round"/>
+</symbol><symbol id="hs-inst" viewBox="0 0 20 20" overflow="visible">
+<circle cx="10" cy="10" r="9" fill="#1b2128" stroke="#8794a1" stroke-width="1"/>
+</symbol><symbol id="hs-intake" viewBox="0 0 30 40" overflow="visible">
+<rect x="1" y="1" width="28" height="38" rx="1" fill="url(#hsCase)" stroke="#0c1014" stroke-width="1"/>
+<g stroke="#2c333a" stroke-width="2"><line x1="5" y1="12" x2="25" y2="8"/><line x1="5" y1="19" x2="25" y2="15"/><line x1="5" y1="26" x2="25" y2="22"/><line x1="5" y1="33" x2="25" y2="29"/></g>
+<g stroke="#8d99a5" stroke-opacity=".5" stroke-width=".8"><line x1="5" y1="10.8" x2="25" y2="6.8"/><line x1="5" y1="17.8" x2="25" y2="13.8"/><line x1="5" y1="24.8" x2="25" y2="20.8"/><line x1="5" y1="31.8" x2="25" y2="27.8"/></g>
+</symbol><symbol id="hs-aph" viewBox="0 0 160 210" overflow="visible">
+<path d="M14 18H146L138 34H22Z" fill="url(#hsCase)" stroke="#0c1014"/>
+<path d="M22 176H138L146 192H14Z" fill="url(#hsCase)" stroke="#0c1014"/>
+<rect x="18" y="34" width="124" height="142" fill="url(#hsCaseX)" stroke="#0c1014"/>
+<rect x="26" y="44" width="108" height="56" fill="url(#hsElem)" stroke="#2a3138"/>
+<rect x="26" y="110" width="108" height="56" fill="url(#hsElem)" stroke="#2a3138"/>
+<line x1="80" y1="34" x2="80" y2="176" stroke="#2a3138" stroke-width="3"/>
+<line x1="80" y1="34" x2="80" y2="176" stroke="#8d99a5" stroke-opacity=".3" stroke-width="1"/>
+<line x1="18" y1="105" x2="80" y2="105" stroke="#2a3138" stroke-width="2"/>
+<rect x="72" y="2" width="16" height="16" fill="url(#hsSteelX)" stroke="#0c1014"/>
+<rect x="72" y="192" width="16" height="12" fill="url(#hsSteelX)" stroke="#0c1014"/>
+</symbol><symbol id="hs-esp" viewBox="0 0 230 160" overflow="visible">
+<path d="M0 38L30 24V98L0 84Z" fill="url(#hsCase)" stroke="#0c1014"/>
+<path d="M230 38L200 24V98L230 84Z" fill="url(#hsCase)" stroke="#0c1014"/>
+<rect x="30" y="20" width="170" height="82" fill="url(#hsCase)" stroke="#0c1014"/>
+<rect x="30" y="20" width="170" height="3" fill="#8d99a5" fill-opacity=".35"/>
+<rect x="34" y="27" width="51" height="70" fill="url(#hsTube)" opacity=".7"/>
+<rect x="50" y="6" width="19" height="14" rx="1" fill="#4a545e" stroke="#0c1014" stroke-width=".8"/>
+<line x1="59.5" y1="2" x2="59.5" y2="6" stroke="#aab4be" stroke-width="1.6"/>
+<path d="M36 102H83L67 146H52Z" fill="url(#hsCaseX)" stroke="#0c1014"/>
+<rect x="56" y="146" width="7" height="8" fill="#3b444d" stroke="#0c1014" stroke-width=".8"/><rect x="89.3" y="27" width="51" height="70" fill="url(#hsTube)" opacity=".7"/>
+<rect x="105.3" y="6" width="19" height="14" rx="1" fill="#4a545e" stroke="#0c1014" stroke-width=".8"/>
+<line x1="114.8" y1="2" x2="114.8" y2="6" stroke="#aab4be" stroke-width="1.6"/>
+<path d="M91.3 102H138.3L122.3 146H107.3Z" fill="url(#hsCaseX)" stroke="#0c1014"/>
+<rect x="111.3" y="146" width="7" height="8" fill="#3b444d" stroke="#0c1014" stroke-width=".8"/><rect x="144.6" y="27" width="51" height="70" fill="url(#hsTube)" opacity=".7"/>
+<rect x="160.6" y="6" width="19" height="14" rx="1" fill="#4a545e" stroke="#0c1014" stroke-width=".8"/>
+<line x1="170.1" y1="2" x2="170.1" y2="6" stroke="#aab4be" stroke-width="1.6"/>
+<path d="M146.6 102H193.6L177.6 146H162.6Z" fill="url(#hsCaseX)" stroke="#0c1014"/>
+<rect x="166.6" y="146" width="7" height="8" fill="#3b444d" stroke="#0c1014" stroke-width=".8"/>
+<line x1="85.3" y1="20" x2="85.3" y2="102" stroke="#0c1014"/><line x1="140.6" y1="20" x2="140.6" y2="102" stroke="#0c1014"/>
+</symbol><symbol id="hs-furnace" viewBox="0 0 170 430" overflow="visible">
+<rect x="10" y="0" width="150" height="292" fill="url(#hsWW)" stroke="#0c1014"/>
+<rect x="10" y="0" width="6" height="292" fill="url(#hsSteelX)"/><rect x="154" y="0" width="6" height="292" fill="url(#hsSteelX)"/>
+<rect x="10" y="0" width="150" height="6" fill="url(#hsSteelY)"/>
+<path d="M10 292H160L134 372H36Z" fill="#3e3b39" stroke="#0c1014"/>
+<path d="M16 292H154" stroke="#2a2725" stroke-width="2"/>
+<rect x="38" y="356" width="94" height="14" fill="url(#hsBed)"/>
+<line x1="36" y1="372" x2="134" y2="372" stroke="#aab4be" stroke-width="1.4" stroke-dasharray="3 2"/>
+<rect x="34" y="374" width="102" height="40" rx="2" fill="url(#hsCase)" stroke="#0c1014"/>
+</symbol><symbol id="hs-cyclone" viewBox="0 0 100 270" overflow="visible">
+<rect x="36" y="0" width="28" height="34" fill="url(#hsSteelX)" stroke="#0c1014"/>
+<rect x="14" y="30" width="72" height="92" fill="url(#hsSteelX)" stroke="#0c1014"/>
+<path d="M14 122H86L56 210H44Z" fill="url(#hsSteelX)" stroke="#0c1014"/>
+<rect x="44" y="210" width="12" height="54" fill="url(#hsSteelX)" stroke="#0c1014"/>
+<rect x="0" y="40" width="14" height="34" fill="url(#hsSteelX)" stroke="#0c1014"/>
+</symbol><symbol id="hs-stack" viewBox="0 0 60 400" overflow="visible">
+<path d="M15 6H45L56 400H4Z" fill="url(#hsConc)" stroke="#0c1014"/>
+<rect x="13" y="0" width="34" height="8" rx="1" fill="#3f4449" stroke="#0c1014"/>
+</symbol><symbol id="hs-drum" viewBox="0 0 180 36" overflow="visible">
+<rect x="1" y="1" width="178" height="34" rx="17" fill="url(#hsSteelY)" stroke="#0c1014"/>
+<line x1="20" y1="18" x2="160" y2="18" stroke="#2a3138" stroke-opacity=".5"/>
+</symbol><symbol id="hs-bank" viewBox="0 0 100 60" overflow="visible">
+<rect x="0" y="0" width="100" height="60" fill="#2c333a" stroke="#4a545e"/>
+<g fill="none" stroke="#56616c" stroke-width="1.2"><path d="M8 6V54"/><path d="M20 6V54"/><path d="M32 6V54"/><path d="M44 6V54"/><path d="M56 6V54"/><path d="M68 6V54"/><path d="M80 6V54"/><path d="M92 6V54"/></g>
+<g fill="none" stroke="#56616c" stroke-width="1.2"><path d="M8 54Q14 60 20 54M20 6Q26 0 32 6"/><path d="M32 54Q38 60 44 54M44 6Q50 0 56 6"/><path d="M56 54Q62 60 68 54M68 6Q74 0 80 6"/><path d="M80 54Q86 60 92 54M92 6Q98 0 104 6"/></g>
+</symbol><rect width="100%" height="100%" fill="#1b2128"/><text x="24" y="28" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:13px;font-weight:600;" fill="#dfe6ec">HMI SYMBOL LIBRARY · plant graphics (ISA-101 dark, ISA 5.1 / ISO 10628 shapes)</text><use href="#hs-fan" x="24" y="50" width="84" height="84" /><text x="24" y="152" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:10px;font-weight:400;" fill="#aeb9c4">Fan (SAF / PAF / IDF)</text><use href="#hs-motor" x="174" y="50" width="44" height="26" /><text x="174" y="94" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:10px;font-weight:400;" fill="#aeb9c4">Motor + status band</text><g transform="translate(324 66)"><use href="#hs-damper" x="0" y="-16" width="36" height="46" />
+<g stroke="#e3e8ec" stroke-width="1.6" stroke-linecap="round"><line x1="6.5" y1="7" x2="13.5" y2="7" transform="rotate(-36 10 7)"/><line x1="14.5" y1="7" x2="21.5" y2="7" transform="rotate(-36 18 7)"/><line x1="22.5" y1="7" x2="29.5" y2="7" transform="rotate(-36 26 7)"/></g></g><text x="324" y="114" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:10px;font-weight:400;" fill="#aeb9c4">Louvre damper</text><use href="#hs-cv" x="474" y="50" width="28" height="30" /><text x="474" y="98" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:10px;font-weight:400;" fill="#aeb9c4">Control valve</text><use href="#hs-mov" x="624" y="50" width="28" height="30" /><text x="624" y="98" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:10px;font-weight:400;" fill="#aeb9c4">MOV on/off</text><use href="#hs-intake" x="774" y="50" width="30" height="40" /><text x="774" y="108" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:10px;font-weight:400;" fill="#aeb9c4">Air intake</text><use href="#hs-drum" x="924" y="50" width="180" height="36" /><text x="924" y="104" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:10px;font-weight:400;" fill="#aeb9c4">Steam drum</text><use href="#hs-bank" x="24" y="180" width="100" height="60" /><text x="24" y="258" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:10px;font-weight:400;" fill="#aeb9c4">Tube bank</text><use href="#hs-aph" x="174" y="180" width="160" height="210" /><text x="174" y="408" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:10px;font-weight:400;" fill="#aeb9c4">Air preheater</text><use href="#hs-esp" x="364" y="180" width="230" height="160" /><text x="364" y="358" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:10px;font-weight:400;" fill="#aeb9c4">ESP (3 fields)</text><use href="#hs-cyclone" x="624" y="180" width="100" height="270" /><text x="624" y="468" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:10px;font-weight:400;" fill="#aeb9c4">Cyclone</text><use href="#hs-furnace" x="774" y="180" width="170" height="430" /><text x="774" y="628" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:10px;font-weight:400;" fill="#aeb9c4">CFB furnace</text><use href="#hs-stack" x="974" y="180" width="60" height="400" /><text x="974" y="598" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:10px;font-weight:400;" fill="#aeb9c4">Stack</text><text x="24" y="646" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:9px;font-weight:400;" fill="#7f8b97">FIFA1081</text><rect x="24" y="650" width="58" height="17" rx="1.5" fill="#0d1116" stroke="#3a4550" stroke-width="1"/><text x="77" y="662.8" text-anchor="end" style="font-family:'JetBrains Mono','Consolas','Roboto Mono',monospace;font-size:12.5px;font-weight:400;" fill="#e8eef3">213.0</text><text x="86" y="662.5" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:9px;font-weight:400;" fill="#8b97a3">T/H</text><text x="150" y="646" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:9px;font-weight:400;" fill="#7f8b97">PIFA1088 (alarm)</text><rect x="150" y="650" width="58" height="17" rx="1.5" fill="#0d1116" stroke="#e5484d" stroke-width="1.5"/><text x="203" y="662.8" text-anchor="end" style="font-family:'JetBrains Mono','Consolas','Roboto Mono',monospace;font-size:12.5px;font-weight:400;" fill="#e5484d">1273</text><text x="212" y="662.5" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:9px;font-weight:400;" fill="#8b97a3">mmH2O</text><g><rect x="300" y="630" width="132" height="58" rx="2" fill="#20272f" stroke="#46525e"/>
+<text x="307" y="643" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:10px;font-weight:600;" fill="#dfe6ec">FICFA1081</text>
+<rect x="396" y="634" width="30" height="12" rx="2" fill="#10202e" stroke="#6cb4ff" stroke-width="1"/><text x="411" y="643" text-anchor="middle" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:8px;font-weight:600;" fill="#6cb4ff">CAS</text>
+<text x="307" y="658" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:8.5px;font-weight:400;" fill="#7f8b97">PV</text><text x="392" y="658" text-anchor="end" style="font-family:'JetBrains Mono','Consolas','Roboto Mono',monospace;font-size:11px;font-weight:400;" fill="#e8eef3">213.0</text><text x="396" y="658" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:8px;font-weight:400;" fill="#8b97a3">T/H</text>
+<text x="307" y="670" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:8.5px;font-weight:400;" fill="#7f8b97">SV</text><text x="392" y="670" text-anchor="end" style="font-family:'JetBrains Mono','Consolas','Roboto Mono',monospace;font-size:11px;font-weight:400;" fill="#b8c7d6">203.4</text><text x="396" y="670" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:8px;font-weight:400;" fill="#8b97a3">T/H</text>
+<text x="307" y="682" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:8.5px;font-weight:400;" fill="#7f8b97">MV</text><rect x="324" y="677" width="52" height="5" fill="#0d1116" stroke="#3a4550" stroke-width=".6"/><rect x="324" y="677" width="19.292" height="5" fill="#8fa4b8"/>
+<text x="418" y="682" text-anchor="end" style="font-family:'JetBrains Mono','Consolas','Roboto Mono',monospace;font-size:11px;font-weight:400;" fill="#e8eef3">37.1</text><text x="420" y="682" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:8px;font-weight:400;" fill="#8b97a3">%</text></g><g><rect x="450" y="630" width="132" height="58" rx="2" fill="#20272f" stroke="#46525e"/>
+<text x="457" y="643" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:10px;font-weight:600;" fill="#dfe6ec">PICFG108A</text>
+<rect x="546" y="634" width="30" height="12" rx="2" fill="#2a2110" stroke="#f5a524" stroke-width="1"/><text x="561" y="643" text-anchor="middle" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:8px;font-weight:600;" fill="#f5a524">MAN</text>
+<text x="457" y="658" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:8.5px;font-weight:400;" fill="#7f8b97">PV</text><text x="542" y="658" text-anchor="end" style="font-family:'JetBrains Mono','Consolas','Roboto Mono',monospace;font-size:11px;font-weight:400;" fill="#e8eef3">-16.8</text><text x="546" y="658" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:8px;font-weight:400;" fill="#8b97a3">mmH2O</text>
+<text x="457" y="670" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:8.5px;font-weight:400;" fill="#7f8b97">SV</text><text x="542" y="670" text-anchor="end" style="font-family:'JetBrains Mono','Consolas','Roboto Mono',monospace;font-size:11px;font-weight:400;" fill="#b8c7d6">0.0</text><text x="546" y="670" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:8px;font-weight:400;" fill="#8b97a3">mmH2O</text>
+<text x="457" y="682" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:8.5px;font-weight:400;" fill="#7f8b97">MV</text><rect x="474" y="677" width="52" height="5" fill="#0d1116" stroke="#3a4550" stroke-width=".6"/><rect x="474" y="677" width="52" height="5" fill="#8fa4b8"/>
+<text x="568" y="682" text-anchor="end" style="font-family:'JetBrains Mono','Consolas','Roboto Mono',monospace;font-size:11px;font-weight:400;" fill="#e8eef3">100.0</text><text x="570" y="682" text-anchor="start" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:8px;font-weight:400;" fill="#8b97a3">%</text></g><use href="#hs-inst" x="610" y="650" width="20" height="20" /><text x="620" y="662.8" text-anchor="middle" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:7.5px;font-weight:600;" fill="#c3ccd5">FT</text><use href="#hs-inst" x="640" y="650" width="20" height="20" /><text x="650" y="662.8" text-anchor="middle" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:7.5px;font-weight:600;" fill="#c3ccd5">PT</text><use href="#hs-inst" x="670" y="650" width="20" height="20" /><text x="680" y="662.8" text-anchor="middle" style="font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;font-size:6.5px;font-weight:600;" fill="#c3ccd5">DPT</text></svg>
