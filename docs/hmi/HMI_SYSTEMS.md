@@ -6,13 +6,13 @@ Ginawa 2026-10-26 (HMI sample, branch claude/project-thread-1h2161; numero ng Be
 
 | Bagay | Desisyon | Bakit |
 |---|---|---|
-| Daloy | Kaliwa → kanan, baba → taas; bawat duct / pipe may arrow | Mabilis basahin kung saan galing at saan papunta |
-| Kulay ng linya | Isang kulay bawat medium: cold air asul, hot air orange, flue gas kayumanggi, solids gray na putol-putol (steam pula, water asul, oil dilaw sa ibang screen) | Pareho sa lahat ng screen |
-| Duct na walang daloy | Lumalabo (dim) kapag hindi tumatakbo ang fan na nagtutulak dito | Kita agad ang patay na linya |
-| Kulay ng estado | Kumbensyon ng planta: **pula = running / open**, **berde = stop / closed**, puti = nasa gitna, gray = walang signal | Ito ang nakasanayan ng operator (SCSHOT, 7.PNG) |
-| Equipment | Gray na hugis (ISA style): fan, damper (umiikot ang blade ayon sa %), APH, ESP, stack | Ang kulay ay para lang sa gumagalaw |
-| Numero | Data tag: tag + value + unit, galing sa simulation (TAG.PV, AI ng I/O list, PV / SV / MV ng faceplate). **Walang signal sa logic = "—"**, hindi snapshot value | Hindi nanloloko ang screen |
-| Control loop | Column ng faceplate chip sa kanan: tag, mode (M dilaw, A berde, R asul), PV, SV, MV bar. Click = buong faceplate (A / M / R, SV, MV) | Lahat ng loop ng system sa isang tingin |
+| Daloy | Kaliwa → kanan, baba → taas; bawat duct may maliit na arrow | Mabilis basahin kung saan galing at saan papunta |
+| Background at linya | Gray na neutral (ISA-101 high-performance HMI, gaya ng Ovation / 800xA / Yokogawa); manipis na orthogonal na linya | Ang kulay ay para lang sa abnormal at estado, hindi dekorasyon |
+| Duct | Doble-linya na channel na may mahinang tint: cold air asul-gray, hot air beige, flue gas kayumanggi-gray. **Walang daloy = puti ang loob, walang arrow** | Kita agad ang patay na linya |
+| Kulay ng estado | Kumbensyon ng planta: **pula = running / open**, **berde = stop / closed**, puti = nasa gitna. Status box: RUN / STOP, NORMAL / TRIP | Ito ang nakasanayan ng operator (SCSHOT, 7.PNG) |
+| Equipment | ISA 5.1 / ISO 10628: fan = bilog na may impeller at motor box "M", damper = blade + pivot (umiikot ayon sa %) + actuator "M", APH, ESP (3 field + hopper), stack, tube bank (serpentine) | Standard na simbolo ng P&ID / DCS |
+| Numero | Tag sa itaas, puting value box (mono font), unit sa labas. Galing sa simulation (TAG.PV, AI ng I/O list, PV / SV / MV ng faceplate). **Walang signal sa logic = "-----"**, hindi snapshot value | Hindi nanloloko ang screen |
+| Control loop | Column ng faceplate sa kanan: tag bar (madilim), mode box (M dilaw, R asul, A puti), PV, SV, unit, MV bar. Click = buong faceplate (A / M / R, SV, MV) | Lahat ng loop ng system sa isang tingin |
 | Damper / valve | Click = faceplate ng controller nito | Diretso sa operasyon |
 | Header | MSP, MST, MSF, RHP, RHT, COAL, PWR sa bawat screen | Pareho ng control room |
 | Laki | SVG lang (walang larawan). Ang lumang 1:1 HMI ay may 3.7 MB na larawan (`hmibg.js`) | Magaan sa phone at tablet |
