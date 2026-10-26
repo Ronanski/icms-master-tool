@@ -849,7 +849,7 @@ function ditlCat(x) {
   if (isSB(x)) return 'SOOTBLOWER';
   if (/^\(B\d+\)/.test(x.name || '')) return 'BOTTOM ASH HD600 / CONVEYORS'; /* 2.5.0-beta.14 */
   if (/^\(L\d+\)/.test(x.name || '')) return 'LIMESTONE INJECTION (ROTOFEED)'; /* 2.5.0-beta.15 */
-  if (/^\(D\d+\)/.test(x.name || '')) return 'SAND INJECTION (SD1300)'; /* 3.2.0-beta.40 */
+  if (/^\(D\d+\)/.test(x.name || '')) return 'SAND INJECTION (SD1300)'; /* 3.2.0-beta.39 (+ sand) */
   const m = /DITL-(\d+)([A-Z]?)$/i.exec(x.name || '');
   if (!m) return /DITL-0[A-D]$/i.test(x.name || '') ? 'CONTENTS' : 'OTHER';
   const n = +m[1],

@@ -777,7 +777,7 @@ function hit(e) {
   if (!s) return null;
   const [x, y] = xy(e),
     VR = s.vr || s.rng;
-  /* 3.2.0-beta.40: a sand injection row (sh.sd) has its own area (r.vx: the flag / switch / lamp on the drawing) and its own height (s.rb) */
+  /* 3.2.0-beta.39 (+ sand): a sand injection row (sh.sd) has its own area (r.vx: the flag / switch / lamp on the drawing) and its own height (s.rb) */
   for (let i = 0; i < s.rows.length; i++) {
     const r = s.rows[i];
     if (r.vx) {
