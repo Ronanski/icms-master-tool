@@ -213,9 +213,12 @@
     if (!P || !document.body.classList.contains('cr') || !window.AN || !AN.sheets) return;
     for (const k of P.K) {
       let x = NaN;
-      try {
-        x = k.how === 'ai' ? aiVal(k) : pvVal(k);
-      } catch (e) {}
+      /* 3.2.0-beta.40: plant model ON and no starting state yet = no plant: no number (before, the drawings' defaults MSP 75 kg/cm2,
+         drum level -566 mm showed with "Unit · not started") */
+      if (!(AN.plantOn && !AN.startState))
+        try {
+          x = k.how === 'ai' ? aiVal(k) : pvVal(k);
+        } catch (e) {}
       const t = fmt(x);
       if (k.v.textContent !== t) k.v.textContent = t;
       k.b.classList.toggle('na', !isFinite(x));

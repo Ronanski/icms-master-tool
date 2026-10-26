@@ -794,3 +794,29 @@ Engine at logic: walang binago.
 **Hindi nasubok:** buong Cold run (`human_run.js`): huminto ang unang takbo sa hakbang 43 (bypass, MSP 35.7, steam flow 0). Itinigil ang paghahambing sa beta.38 sa utos ng user, kaya HINDI pa alam kung dati na ito. PC / tablet / EXE / APK ng user.
 
 **Status:** Beta. Roadmap hakbang 1 TAPOS.
+
+## 3.2.0-beta.40 (2026-10-26) — Roadmap 2: plant model (stall sa bypass, RH biasing damper, header ng Cold, MST)
+
+**Problem:** (1) huminto ang Cold run sa hakbang 43 "Bypass servicing" (steam flow 0); (2) RH biasing damper: "baligtad ang direksyon" (HANDOFF); (3) "null" sa header ng DITL sheet; (4) header na MSP 75 / drum level -566 habang "Unit · not started"; (5) MST 547 ~ 555 °C sa CCS load up (H alarm 548, TE-MS1004-1).
+
+**As Found:**
+- (1) DATI NA, hindi dala ng beta.39: ang beta.38 at beta.39 ay parehong huminto sa hakbang 43 (sabay na mouse run, 2026-10-26). Sanhi: ang hakbang "blow-off PICMS1002 AUTO SV 35, start-up level LICBR1001B AUTO" ay pagkatapos pa ng TCS auxiliaries at vacuum. Sarado ang boiler sa 4 oil burner: drum 30 → 131 kg/cm², drum level -422 mm (walang feed), low-low level → trip ng oil (MFT), bed 30 °C, kaya walang steam para sa bypass. PR-OPE-5002 STEAM DRUM FILLING: "Ensure MS BLOW OFF VALVE (BOV) > 10 % OPEN"; BYPASS SERVICING: "Gradually close MS Blow off valve".
+- (2) ABC-020 (PDF): TICHR1002A PID ACT R → LN7 (-50 ~ +50, tumataas) + SI0121 (LN3 ng load) → MAN HICHR1002A (RH pass flue gas biasing damper); HICHR1002B = LN5 (SH pass). Mas bukas na RH damper = mas maraming gas sa RH = mas mainit na reheat. Probe ng model: sa 150 MW, damper 10 / 60 / 90 % → RHT 539 / 567 / 580 °C; sa Cold bypass stage 10 / 60 / 10 / 90 % → 427 / 469 / 432 / 469 °C. TAMA ang direksyon. Ang tunay na mali: ang model ay bumabasa ng output ng PID (hindi ng damper), kaya nawawala ang SI0121 at walang epekto ang damper mula ~60 hanggang 100 % (60 % at 90 % = parehong 469 °C). Ang coach ng Training ("Reheat 415 ~ 425") ay nanghuhula ng direksyon mula sa sagot ng reheat isang minuto pagkatapos; ang kusang galaw ng reheat ay puwedeng magturo ng maling direksyon.
+- (3) `src/ui/shell/ditl.js` head(): `machChips()` ay `null` sa sheet na iisa ang makina; ang `append(null)` ay sumusulat ng "null".
+- (4) Lumalabas kapag bukas ang ABC page na may naka-save na session (force / input) o binuksan ng script: ang drawing defaults (MSP 75 = gitna ng 0 ~ 150, drum level -566.6) habang plant model ON at walang starting state.
+- (5) Trace ng Training (code run): ang MS spray (TICBR1150) ay MANUAL 0 % mula 45 hanggang mga 80 MW dahil sarado ang SOV ayon sa DITL-33 (bubukas lang kapag finishing SH inlet > 440 °C, IN6); sa model ang inlet ay 389 °C sa 45 MW habang ang SH no.2 outlet (bago ang spray, TICBR1140) ay 458 °C, kahit sarado ang spray. Hindi ito puwede sa physics (sarado ang spray = halos pareho ang dalawang temperatura). Ugat: ang model ng SH temperature (unit.js `U.sh`, pickup ng finishing SH na pare-pareho, ASSUMED) ay hindi tugma sa DITL-33.
+
+**Work Done:**
+- (1) `guide.js`: ang hakbang "Pressure at level: LICBR1001B AUTO SV 0, MS blow-off PICMS1002 AUTO SV 35" ay inilipat kasunod ng "Drum pressure 30 kg/cm²" (bago ang vacuum stage), kasama ang drum level coach. 78 hakbang pa rin.
+- (2) `plant.js`: `AN_XACT = { TICHR1002A: 'HICHR1002A' }`: ang epekto ng RH damper sa reheat outlet ay galing sa tunay na posisyon ng damper (HICHR1002A.MV, 0 ~ 100 %), anchor 11 % sa 39.PNG. `guide.js` rhbias coach: direksyon = +1 mula sa drawing (hindi na hinuhulaan).
+- (3) `ditl.js`: `machChips() || ''`.
+- (4) `trace.js` coldShow: kapag plant model ON, ang page ay nagbubukas na Cold kahit may naka-save na session (ang RUN ay nagre-reset din naman sa Cold). `cr.js`: ang header ay "—" habang plant model ON at walang starting state.
+- (5) Dalawang subok sa Training coach (cascade nang maaga ayon sa PR-OPE-5002 "MS DESUP ≥ 46 MSF", SV sa start-up curve) ay nagpalala (558 at 565 °C): IBINALIK sa beta.39. Walang binago sa MST.
+
+**As Left (ebidensya):** build + check SAME; `sop_bawal.js` 19 / 19; probe ng RH damper (150 MW: 10 / 60 / 90 % → 540 / 556 / 573 °C; Cold bypass: 10 / 60 / 10 / 90 % → 417 / 446 / 419 / 463 °C, ngayon iba na ang 60 at 90 %); screenshot ng DITL-56 header: wala nang "null"; header bago pumili ng starting point: "—". Code trace ng Training (beta.40 bago ang MST subok): lumampas sa bypass, roll, sync, 45 MW hanggang 150 MW, walang trip. Mouse Cold run: tingnan ang "Function test" sa ibaba.
+
+**Hindi nasubok / bukas:** MST > 548 °C sa load up (bukas, plano sa ibaba). PC / tablet / EXE / APK ng user.
+
+**Plano para sa MST (susunod):** gawing tugma sa physics at sa DITL-33 ang SH temperature: finishing SH inlet (pagkatapos ng spray 2) = SH no.2 outlet − paglamig ng spray 2; pickup ng finishing SH na nagbabago sa load (FHI Fig. 2 / Fig. 6, 4.PNG, 02.png); saka ang cascade ayon sa PR-OPE-5002.
+
+**Status:** Beta. Roadmap hakbang 2: 4 / 5 tapos; MST bukas.

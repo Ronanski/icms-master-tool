@@ -8,8 +8,9 @@ Para sa bawat bahagi ng spec (`docs/SPEC.md`): ano ang pipindutin, at ano ang da
 | S2 viewer | Naka-**VIEW**. Pindutin ang isang wire sa ABC-010. | Naka-highlight ang buong signal hanggang sa dulo; sa kanan: saan galing, saan papunta. Walang value na nagbabago. |
 | S3 plant OFF | Plant chip (katabi ng VIEW / RUN) → **OFF** → **RUN**. Buksan ang ABC-010 (drum level). Sa Inputs list, baguhin ang isang drum level input. | Tumutugon agad ang logic: nagbabago ang output ng drum level PID; ang ibang value ay hindi gumagalaw nang kusa (walang physics). |
 | S4 plant ON | Home → **At 150 MW** → **RUN**. Buksan ang faceplate ng feedwater (FICFW1007), **M**, ibaba ang MV ng 10 %. | Bumababa ang FW flow, sumusunod pababa ang drum level. Pindot **A**: bumabalik sa normal. |
+| S4 RH damper | Home → **At 150 MW** → RUN. ABC-020 faceplate **HICHR1002A** (RH biasing damper) → **M**, MV 25 → 60 %. | Tumataas ang reheat temperature (TICHR1002, ABC-019) at bumubukas ang RH spray para pigilan ito. Ibaba sa 10 %: bumababa ang reheat. |
 | S5 full load | Home → **At 150 MW** → RUN. HIC-ULD (load demand) ▼▼ hanggang 120 MW. | Bumababa ang MW nang ~3 MW / min; boiler master, turbine master, coal ay sumusunod sa AUTO. Walang trip. |
-| S6 cold | Home → **Cold** → RUN. | MSP 0, FW flow 0, MW 0, patay ang fans at pumps. |
+| S6 cold | Home → **Cold** → RUN. | MSP 0, FW flow 0, MW 0, patay ang fans at pumps. Bago pumili ng starting point: ang header (LOAD / MSP / DRUM LVL / FW FLOW) ay "—", hindi MSP 75 / drum -566. |
 | S7 training | Training → **Gabay: Cold → 150 MW**. Sundan ang card, hakbang-hakbang. | Ang card ang nagsasabi ng gagawin at ng value na babantayan; hindi ka makakalaktaw (hal. hindi ma-roll ang turbine nang walang vacuum). Dulo: 150 MW, walang trip. |
 | S8 library | Home → **I/O and memory lists**. Tabs: I/O list, Memory list, Wiring, Relay / SER, Calculations. Home → **F(X) curves**. | Bawat tab may laman; search ng tag (hal. FICFW1007) ay nakakahanap. Wala pa: loop diagram, instrument list, dictionary. |
 | S9 HMI | Home → **Operate the plant**. ☰ Systems → pumili ng screen. | Kapareho ng HMI ng control room; pindot sa controller = faceplate. |

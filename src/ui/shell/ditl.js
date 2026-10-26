@@ -1188,7 +1188,8 @@
         dm.append(
           E('b', { txt: (m.dwg || s.name).replace(/\s*#[B-D]$/, '') + (isK(s) ? ' · ' + LETTERS[s._inst.k] : '') }),
           E('span', { cls: 'dm-t', txt: (m.no ? 'SHEET ' + m.no + ' · ' : '') + ttl, title: (m.no ? 'SHEET ' + m.no + ' · ' : '') + ttl }),
-          machChips(),
+          /* 3.2.0-beta.40 (bug): a sheet of one machine has no chips; append(null) wrote the text "null" in the header */
+          machChips() || '',
           dmode,
           E('span', { cls: 'sp' }),
           E('span', { cls: 'dm-lg' }, [E('i', { cls: 'on' }), document.createTextNode(' 1 = ON  '), E('i'), document.createTextNode(' 0 = OFF')]),

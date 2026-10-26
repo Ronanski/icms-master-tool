@@ -142,7 +142,10 @@ function coldShow() {
   if (!AN._uiCold) return;
   AN._cold0 = 1;
   const kept = Object.values(AN.sv || {}).some(o => o && ['force', 'ext', 'ai', 'sw', 'man', 'p'].some(k => o[k] && Object.keys(o[k]).length));
-  if (kept || !coldIfNone()) return;
+  /* 3.2.0-beta.40 (roadmap 2, user 2026-10-26: "cold start = true physical state of a cold plant"): with the plant model ON a kept
+     session no longer leaves the drawings' defaults (header MSP 75 kg/cm2, drum level -566 mm with "Unit · not started"): RUN starts
+     the plant cold from a Reset anyway (coldIfNone), so the page shows that cold plant at once. Plant model OFF: kept as it was */
+  if ((kept && !AN.plantOn) || !coldIfNone()) return;
   settle();
   paint();
   panelUpd(true);

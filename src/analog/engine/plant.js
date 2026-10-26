@@ -248,6 +248,8 @@ function anProcList(S) {
    masters, parallel valves and measurements shared by two controllers are not anchored (their PV is made by other loops). */
 /* actuators in series on one fan (see u below): tag -> 1 */
 const AN_SERIES = { PICFG108: 1, PICFG108A: 1 };
+/* 3.2.0-beta.40: controller -> the hand station whose output is the real actuator of the process (ABC-020, see xman below) */
+const AN_XACT = { TICHR1002A: 'HICHR1002A' };
 const AN_HMI_OP = {
   TICBR1140: { mv: 65.6, pv: 462.0, src: '03.png' },
   TICBR1130: { mv: 57.6, pv: 394.0, src: '03.png' },
@@ -390,13 +392,35 @@ function anProcStep(S, dt) {
        moment, so a damper move was cancelled by the anchor in the steady state. Now the anchor is the snapshot command of every
        actuator (xa: AN_HMI_OP mv of the other controller, else its command now) */
     const xsl = (pr.xsh || []).filter(x => x.b.proc && x.b.proc.on && x.S.rt),
+      /* 3.2.0-beta.40 (roadmap 2, ABC-020): the actuator of a controller whose output is not the opening of the actuator. TICHR1002A
+         (PID, ACT R) -> LN7 (-50 ~ +50) + SI0121 (LN3 of the unit load) -> MAN HICHR1002A = the RH pass flue gas biasing damper.
+         The flue gas through the RH pass is the opening of the DAMPER (HICHR1002A.MV), not the PID output: before, the model read
+         the PID output, so the load bias SI0121 was lost and the PID output was at its top (100 %) for any damper above about 60 %
+         in a cold start-up (LN8 of HICHR1002A.MV - SI0121): moving the damper 60 -> 100 % did nothing to the reheat temperature */
+      xman = x => {
+        if (x._xm === undefined) {
+          const at = AN_XACT[(x.b.txt || [])[1]];
+          x._xm = at ? { tag: at, b: x.S.blk.find(z => z.k === 'MAN' && (z.tag === at || (z.txt || []).includes(at))) } : null;
+          if (x._xm && !(x._xm.b && x._xm.b.o && x._xm.b.o[0] >= 0)) x._xm = null;
+        }
+        return x._xm;
+      },
+      xcmd = x => {
+        const m = xman(x);
+        return m ? +x.S.rt.v[m.b.o[0]] || 0 : uOfS(x.S, x.b);
+      },
+      xhop = x => {
+        const m = xman(x);
+        return AN_HMI_OP[m ? m.tag : (x.b.txt || [])[1]];
+      },
       xg = x => {
         const xp = x.b.proc,
-          xlo = x.b.p.lo == null ? 0 : x.b.p.lo,
-          xhi = x.b.p.hi == null ? 100 : x.b.p.hi,
+          m = xman(x),
+          xlo = m ? 0 : x.b.p.lo == null ? 0 : x.b.p.lo,
+          xhi = m ? 100 : x.b.p.hi == null ? 100 : x.b.p.hi,
           xum = (xlo + xhi) / 2,
           xs = x.b.p.act < 0 ? 1 : -1,
-          h = pr.hop && AN_HMI_OP[(x.b.txt || [])[1]];
+          h = pr.hop && xhop(x);
         let k = xp.K || 1;
         /* anchored measurement: the other actuator, from its snapshot command to either end (0 or 100 %), keeps the PV inside the
            range of the instrument, like the gain of the owner (Ka below). Before (K = 1): the RH / SH damper from 36 to 50 %
@@ -412,10 +436,10 @@ function anProcStep(S, dt) {
         }
         return c => (xs * k * (c - xum)) / 100;
       },
-      xe = xsl.map(x => xg(x)(uOfS(x.S, x.b))),
+      xe = xsl.map(x => xg(x)(xcmd(x))),
       xa = xsl.map(x => {
-        const h = AN_HMI_OP[(x.b.txt || [])[1]];
-        return xg(x)(h ? h.mv : uOfS(x.S, x.b));
+        const h = xhop(x);
+        return xg(x)(h ? h.mv : xcmd(x));
       }),
       eff = (c, an) => (pr.sg * (pr.Ka || pr.K) * (c - um)) / 100 + (an ? xa : xe).reduce((a, x) => a + x, 0);
     /* 2.1.0-beta.6: "Start at 150 MW" (hmi-op.js) gave the PV of the snapshot transmitters (pr.hopReq): a loop without a static
