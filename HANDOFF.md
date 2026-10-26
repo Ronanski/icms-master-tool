@@ -26,7 +26,8 @@
 
 ## Susunod na gagawin (roadmap sa `docs/SPEC.md` seksyon 3)
 1. MST > 548 °C (H alarm, TE-MS1004-1) sa load up 80 → 130 MW: ugat sa `unit.js` `U.sh` / `U.ld`: ang finishing SH inlet (TICBR1150 PV) ay 389 °C sa 45 MW habang ang SH no.2 outlet (TICBR1140) ay 458 °C kahit sarado ang spray, kaya ang DITL-33 SOV (bubukas sa inlet > 440 °C) ay sarado hanggang ~80 MW. Ayusin: inlet = SH no.2 outlet − spray 2; pickup ng finishing SH ayon sa load. Ang 2 subok sa coach (cascade nang maaga) ay nagpalala (558 / 565): huwag ulitin.
-2. Ang iba: `docs/SPEC.md` seksyon 3.
+2. Mouse Cold run (beta.40) huminto sa hakbang 57 "Hawakan ang 45 MW: MSP ≥ 90": MSP 66 ~ 67 pagkalipas ng 6 min real (oil lang, coach `ofire`). Suriin ang bilis ng pressure raise laban sa FHI Fig. 2.
+3. Ang iba: `docs/SPEC.md` seksyon 3.
 
 ## Hindi pa nasubok
 PC / tablet / EXE / APK ng user sa beta.25 pataas; ang `docs/USER_CHECK.md` ay hindi pa nilalakad ng user.

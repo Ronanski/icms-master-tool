@@ -815,8 +815,10 @@ Engine at logic: walang binago.
 
 **As Left (ebidensya):** build + check SAME; `sop_bawal.js` 19 / 19; probe ng RH damper (150 MW: 10 / 60 / 90 % → 540 / 556 / 573 °C; Cold bypass: 10 / 60 / 10 / 90 % → 417 / 446 / 419 / 463 °C, ngayon iba na ang 60 at 90 %); screenshot ng DITL-56 header: wala nang "null"; header bago pumili ng starting point: "—". Code trace ng Training (beta.40 bago ang MST subok): lumampas sa bypass, roll, sync, 45 MW hanggang 150 MW, walang trip. Mouse Cold run: tingnan ang "Function test" sa ibaba.
 
-**Hindi nasubok / bukas:** MST > 548 °C sa load up (bukas, plano sa ibaba). PC / tablet / EXE / APK ng user.
+**Function test (mouse Cold run, `human_run.js`, beta.40, 2026-10-26 11:06 ~ 11:34 PM PHT):** lumampas sa hakbang 43 (bypass servicing), roll (rub check, 1800 / 3600 rpm heat soak), excitation, sync, initial load, load up 45 MW, ICV → CV transfer, 3-element, HP bypass REMOTE. HUMINTO sa hakbang 57 "Hawakan ang 45 MW: MSP ≥ 90 kg/cm²": MSP 66 ~ 67 kg/cm² pagkalipas ng 6 minuto (dahan-dahang tumataas sa oil lang), walang trip, walang page error. Hindi pa alam kung dati na (ang beta.38 / 39 ay hindi umabot dito). Ang code trace ng Training ay umabot sa 90 kg/cm² at 150 MW.
+
+**Hindi nasubok / bukas:** MST > 548 °C sa load up (bukas, plano sa ibaba). Mouse Cold run lampas sa hakbang 57 (pressure raise sa 45 MW sa oil). PC / tablet / EXE / APK ng user.
 
 **Plano para sa MST (susunod):** gawing tugma sa physics at sa DITL-33 ang SH temperature: finishing SH inlet (pagkatapos ng spray 2) = SH no.2 outlet − paglamig ng spray 2; pickup ng finishing SH na nagbabago sa load (FHI Fig. 2 / Fig. 6, 4.PNG, 02.png); saka ang cascade ayon sa PR-OPE-5002.
 
-**Status:** Beta. Roadmap hakbang 2: 4 / 5 tapos; MST bukas.
+**Status:** Beta. Roadmap hakbang 2: 4 / 5 tapos; bukas: MST at ang pressure raise sa 45 MW (hakbang 57).
