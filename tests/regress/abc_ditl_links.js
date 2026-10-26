@@ -1,4 +1,4 @@
-// 3.2.0-beta.40 (roadmap 5): every "FROM / TO DITL xx-nn" text of every ABC sheet is a page link (before: 10 of 233).
+// 3.2.0-beta.39 (roadmap 5): every "FROM / TO DITL xx-nn" text of every ABC sheet is a page link (before: 10 of 233).
 // Real mouse click (desktop) / tap (tablet, phone) on the text -> the DITL page + item row opens (list of pages = chooser),
 // ABC ↩ Back returns to the same ABC sheet; DITL "FROM / TO ABC-xxx" opens the ABC sheet and ABC ↩ Back returns to the DITL sheet.
 // Usage: node tests/regress/abc_ditl_links.js [html] [--quick]
