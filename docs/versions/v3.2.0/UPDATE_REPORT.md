@@ -829,4 +829,5 @@ Engine at logic: walang binago.
   - Cold: fans berde (STOP), ducts dim, flows 0, bed temp 30 °C. 150 MW: fans pula (RUN), TAF 594 T/H, O2 4.3 %, furnace −17 mmH2O.
   - `plant_view.js` ALL PASS. Screenshots: PC / tablet landscape 1280 × 800, tablet portrait 800 × 1280, phone 390 × 844.
   - Nakita (plant model, hindi HMI): sa Cold, PIFA1088, PIFA1085, TIFA1086 / 1087 / 1076 / 1077 ay nananatili sa 150 MW na value.
+- **Restyle (user: "Ang pangit. Parang gawang bata."):** iginuhit muli ang buong screen sa ISA-101 high-performance style (gaya ng Ovation / 800xA / Yokogawa): gray na background, manipis na orthogonal na linya, doble-linya na duct na may mahinang tint, ISA 5.1 / ISO 10628 na fan / damper / APH / ESP / tube bank, tag sa itaas at puting value box na may unit, faceplate column na may mode box. Naayos din: walang laman ang PV ng faceplate (natakpan ng SV box). Sinubok muli: LIVE 89 / 89, click test (6 faceplate + mode M), `plant_view.js` ALL PASS, screenshots 150 MW at Cold (PC), tablet portrait, phone.
 - **Status:** sample para sa pag-apruba ng style ng user. Hindi pa ginagawa ang ibang screen; hindi pa tinatanggal ang lumang Plant HMI.
