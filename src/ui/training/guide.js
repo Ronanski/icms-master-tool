@@ -574,18 +574,16 @@ window.LS_GUIDE = (function () {
       run(o) {
         const T = TC().crit && TC().crit['1.6'] ? +TC().crit['1.6'].val : NaN;
         if (!isFinite(T) || TC().step >= 5) return; /* on the grid the reheat follows the load (Fig. 2) */
-        if (o.T0 != null && o.dx) {
-          const d = T - o.T0;
-          if (Math.abs(d) > 0.5) o.sg = Math.sign(d) * Math.sign(o.dx); /* +1: more damper = hotter */
-        }
-        o.sg = o.sg || 1;
+        /* 3.2.0-beta.40 (roadmap 2, ABC-020): more RH damper = more flue gas through the RH pass = hotter reheat (TICHR1002A ACT R, LN7
+           and LN8 rising; plant.js reads the damper opening HICHR1002A.MV). Before, the sign was learned from the reheat one minute later:
+           the reheat drifts by itself with the firing and the bypass, so a drift could teach the wrong sign and drive the damper the wrong
+           way (mouse Cold run: RHT 390 ~ 414 C, ATS 1.6 short, before the roll) */
+        o.sg = 1;
         const want = T > 423 ? -1 : T < 417 ? 1 : 0,
           x = setOf('HICHR1002A');
-        o.dx = 0;
         if (want && isFinite(x)) {
           const nx = Math.max(10, Math.min(100, x + 5 * want * o.sg));
           if (nx !== x) {
-            o.dx = nx - x;
             A.man('HICHR1002A', nx);
             A.man('HICHR1002B', 100 - nx);
           }
@@ -751,6 +749,21 @@ window.LS_GUIDE = (function () {
           return WL() ? [bIgn('B'), bIgn('C'), bOn('B'), bOn('C'), bOil('B', 20), bOil('C', 20)] : [btn('Buksan oil valve B at C', () => (A.oil('M.3411', true), A.oil('M.3416', true))), btn('BURNER B at C ON', () => (A.motor('M.3413', 1), A.motor('M.3418', 1)), () => bit('M.3413') > 0.5 && bit('M.3418') > 0.5), btn('FICDO1043B / C M 20 %', () => (A.man('FICDO1043B', 20), A.man('FICDO1043C', 20)))];
         } },
       { st: 4, sec: 28, t: 'Drum pressure 30 kg/cm²', d: 'Hintayin ang 30 kg/cm². Ang coach pa rin ang humahawak ng bilis ng pag-init.', c: b.VAL('Pd', 30, null), wait: 1 },
+      /* 3.2.0-beta.40 (roadmap 2, Cold run stall at "Bypass servicing"): PR-OPE-5002 STEAM DRUM FILLING "Ensure MS BLOW OFF VALVE (BOV)
+         >10 % OPEN" and BYPASS SYSTEM SERVICING "Gradually close MS Blow off valve ... transfer steam flow to RH": the MS blow-off is
+         open through the warm-up and the turbine auxiliaries, and the start-up valve keeps the drum level. Before (beta.37 ~ 39) this
+         step came after the vacuum up: a closed boiler on 4 oil burners went 30 -> 131 kg/cm2 while the TCS auxiliaries were done, the
+         drum level fell to -422 mm (no feed), the low-low level tripped the oil (MFT) and the bypass step waited forever (steam 0) */
+      {
+        st: 4,
+        sec: 28,
+        t: 'Pressure at level: start-up level LICBR1001B AUTO SV 0, MS blow-off PICMS1002 AUTO SV 35',
+        d: 'PR-OPE-5002: bukas (≥ 10 %) ang MS blow-off valve habang umiinit. Ang blow-off (PICMS1002) ang hahawak ng main steam pressure sa 35 kg/cm² habang ginagawa ang TCS auxiliaries at vacuum, at ang start-up valve (LICBR1001B) ang hahawak ng drum level. Coal ay pagkatapos pa ng sync (FHI Fig. 2): oil burner lang hanggang 45 MW.',
+        c: b.ALL(b.MODE('LICBR1001B', 'AUTO'), b.MODE('PICMS1002', 'AUTO')),
+        fps: ['LICBR1001B', 'PICMS1002'],
+        a: [btn('LICBR1001B A, SV 0', () => A.auto('LICBR1001B', 0)), btn('PICMS1002 A, SV 35', () => A.auto('PICMS1002', 35))],
+        coach: ['lvl']
+      },
       /* ---- 5 vacuum and seals ---- */
       /* 3.2.0-beta.37 (user 2026-10-25): the aux steam (from the main steam > 12 kg/cm2), the turning gear, the gland sealing and the
          ejectors before the vacuum up (PR-OPE-5002 5708, 6118, 6512); the unit model raises the vacuum only with the aux steam */
@@ -765,15 +778,6 @@ window.LS_GUIDE = (function () {
       /* ---- 6 bypass at 61 kg/cm2, oil only (3.2.0-beta.37, CHECKLIST 0.5: PR-OPE-5002 BYPASS SYSTEM SERVICING -> TURBINE ROLLING ->
          SYNCH. & INITIAL LOAD -> LOAD UP -> solid fuel; FHI SECT_7 Fig. 2 COLD STARTUP: roll at 60 kg/cm2 6 h, coal 8.6 h. Before, the
          coal and 123 kg/cm2 came before the roll and the bypass dumped 155 ~ 189 T/H) ---- */
-      {
-        st: 6,
-        sec: 30,
-        t: 'Ihanda ang bypass: start-up level LICBR1001B AUTO SV 0, blow-off PICMS1002 AUTO SV 35',
-        d: 'Ang start-up valve na ang hahawak ng drum level at ang main steam blow-off ang hahawak ng pressure. Coal ay pagkatapos pa ng sync (PR-OPE-5002, FHI Fig. 2): oil burner lang hanggang 45 MW.',
-        c: b.ALL(b.MODE('LICBR1001B', 'AUTO'), b.MODE('PICMS1002', 'AUTO')),
-        fps: ['LICBR1001B', 'PICMS1002'],
-        a: [btn('LICBR1001B A, SV 0', () => A.auto('LICBR1001B', 0)), btn('PICMS1002 A, SV 35', () => A.auto('PICMS1002', 35))]
-      },
       /* 3.2.0-beta.37: before the roll, on oil (CHECKLIST 0.5). 3.2.0-beta.23: the bypass goes in service BEFORE the coal (PR-OPE-5002: BYPASS SYSTEM SERVICING comes before the solid fuel
          firing). Before, it came after the burners were out: the blow-off alone (about 13 T/H at 35 kg/cm2) could not take the steam of
          the coal and the pressure went over 140 kg/cm2 (172 with the primary air at 280 T/H and the coal that follows it) */
