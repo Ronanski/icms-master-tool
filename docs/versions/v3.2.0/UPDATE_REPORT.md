@@ -816,7 +816,7 @@ Engine at logic: walang binago.
 **Status:** Beta. Roadmap hakbang 5 (links at Back) TAPOS.
 
 
-## 3.2.0-beta.41 — Bagong HMI: sample na Air & Flue Gas (roadmap step 6)
+## HMI sample (PR #49, walang sariling numero; nakapatong sa beta.40) — Bagong HMI: sample na Air & Flue Gas (roadmap step 6)
 - **Problem (user 2026-10-26):** pangit ang kasalukuyang Plant HMI (kopya ng larawan ng control room, 49 / 121 lang ang live sa 007). Gusto ng user ng bagong HMI na sariling graphics; ang snapshot ay gabay lang sa system, flow at linya, at dapat may improvement.
 - **As Found:** ang 007 ay larawan (`hmibg.js` 3.7 MB) na may numerong pinapatungan; ang item na walang signal ay nagpapakita ng snapshot value kahit Cold. Maraming instrumento ng 007 ay nasa I/O list lang, walang ABC / DITL logic (backpass gas temps, cyclone, ESP pressures, fan currents, CEMS).
 - **Work Done:**

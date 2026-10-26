@@ -1,6 +1,6 @@
 # Bagong HMI: listahan ng system at flow (roadmap step 6)
 
-Ginawa 2026-10-26 (3.2.0-beta.41). Batayan: 35 snapshot ng control room (`document-references/hmi-snapshot-sample.zip`, buod sa `OPERATING_POINTS.md`), ang ABC sheets at ang I/O list. Ang snapshot ay **gabay lang** (anong equipment, saan dumadaloy, anong instrumento). Ang bagong HMI ay sariling drawing (vector, magaan), hindi kopya ng larawan.
+Ginawa 2026-10-26 (HMI sample, branch claude/project-thread-1h2161; numero ng Beta ibibigay sa pagsasama). Batayan: 35 snapshot ng control room (`document-references/hmi-snapshot-sample.zip`, buod sa `OPERATING_POINTS.md`), ang ABC sheets at ang I/O list. Ang snapshot ay **gabay lang** (anong equipment, saan dumadaloy, anong instrumento). Ang bagong HMI ay sariling drawing (vector, magaan), hindi kopya ng larawan.
 
 ## 1. Mga desisyon sa disenyo (para sa lahat ng screen)
 

@@ -44,7 +44,7 @@ Ang user ay susubok lang sa DULO ng buong plano (gabay: `docs/USER_CHECK.md`).
 3. [ ] Starting points: Cold at 150 MW para sa plant model ON lang; kapag OFF, walang starting point (ang user ang naglalagay ng value). Suriin sa app na ang pagpili ng starting point ay nag-o-ON ng plant model.
 4. [ ] Training Cold → 150 MW laban sa SOP (PR-OPE-5002), kasama ang negative test (`sop_bawal.js`).
 5. [x] Viewer at Simulate OFF (3.2.0-beta.40, 2026-10-26): lahat ng "FROM / TO DITL" sa ABC ay page link na may Back; nilakad ang VIEW / RUN sa PC, tablet (dalawang direksyon) at phone; Simulate OFF: `ditl_sim.js` walang FAIL (hand input → output, ABC ↔ DITL tugma, force).
-6. [ ] HMI: BAGONG HMI na sariling graphics (user 2026-10-26; snapshot = gabay lang). Listahan ng system: `docs/hmi/HMI_SYSTEMS.md`. Sample Air & Flue Gas = 3.2.0-beta.41 (89 / 89 live), naghihintay ng pag-apruba ng style; saka ang 13 pang screen, tapos tanggalin ang lumang Plant HMI.
+6. [ ] HMI: BAGONG HMI na sariling graphics (user 2026-10-26; snapshot = gabay lang). Listahan ng system: `docs/hmi/HMI_SYSTEMS.md`. Sample Air & Flue Gas (PR #49) (89 / 89 live), naghihintay ng pag-apruba ng style; saka ang 13 pang screen, tapos tanggalin ang lumang Plant HMI.
 7. [ ] Sand silo DITL (8 drawing, `sand-sootblower-logic.zip`).
 8. [ ] Library: loop diagram, instrument list, dictionary.
 9. [ ] Merge ng mga nakabinbing PR at Stable release: LANG kapag nag-GO STABLE ang user.

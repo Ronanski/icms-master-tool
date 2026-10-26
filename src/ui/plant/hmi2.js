@@ -1,4 +1,4 @@
-/* NEW PLANT HMI (3.2.0-beta.41, roadmap step 6, sample): the plant screens REDRAWN with our own vector graphics (user 2026-10-26:
+/* NEW PLANT HMI (2026-10-26, roadmap step 6, sample): the plant screens REDRAWN with our own vector graphics (user 2026-10-26:
    "new HMI using your own graphics, guide lang ang snapshots"). The control-room snapshots (document-references/hmi-snapshot-
    sample.zip) are only the guide for the system: equipment, flow paths, instruments. Drawn here as light SVG (no pictures), one
    style for every screen:
