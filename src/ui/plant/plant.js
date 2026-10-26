@@ -557,7 +557,7 @@
     /* HMI sample (2026-10-26): a screen of the NEW HMI (hmi2.js, own vector graphics) draws itself with the same live link and faceplate */
     if (sys.v2 && window.PLANT_V2)
       try {
-        PLANT_V2.draw(g, sys, { reg, fp: fpOpen, HDR });
+        PLANT_V2.draw(g, sys, { reg, fp: fpOpen, HDR, go: id => { const o = list().find(x => x.id === id); if (o) select(o); } });
       } catch (e) {
         console.error(e);
       }
