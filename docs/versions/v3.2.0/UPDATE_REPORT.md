@@ -815,3 +815,18 @@ Engine at logic: walang binago.
 
 **Status:** Beta. Roadmap hakbang 5 (links at Back) TAPOS.
 
+
+## 3.2.0-beta.41 — Bagong HMI: sample na Air & Flue Gas (roadmap step 6)
+- **Problem (user 2026-10-26):** pangit ang kasalukuyang Plant HMI (kopya ng larawan ng control room, 49 / 121 lang ang live sa 007). Gusto ng user ng bagong HMI na sariling graphics; ang snapshot ay gabay lang sa system, flow at linya, at dapat may improvement.
+- **As Found:** ang 007 ay larawan (`hmibg.js` 3.7 MB) na may numerong pinapatungan; ang item na walang signal ay nagpapakita ng snapshot value kahit Cold. Maraming instrumento ng 007 ay nasa I/O list lang, walang ABC / DITL logic (backpass gas temps, cyclone, ESP pressures, fan currents, CEMS).
+- **Work Done:**
+  - `src/ui/plant/hmi2.js` (bago): library ng simbolo (duct na may arrow at dim kapag walang daloy, fan na may run state, damper na umiikot ang blade ayon sa %, data tag, faceplate chip, status lamp, header) at ang screen **AIR & FLUE GAS (new HMI)**. Lahat SVG, walang larawan.
+  - `plant.js`: ang screen na may `v2` ay iginuguhit ng `PLANT_V2.draw` gamit ang parehong live link, faceplate at Values list; chip na "Air & Gas · new". Ang lumang 28 screen ay hindi ginalaw.
+  - `docs/hmi/HMI_SYSTEMS.md`: listahan ng system at flow ng bagong HMI (14 screen) at mga desisyon sa disenyo.
+- **As Left (ebidensya):**
+  - LIVE **89 / 89** linked sa bagong screen; walang page error.
+  - Click: loop chip PICFG108 / FICFA1071 / HICHR1002A / B = faceplate ng loop; damper MCVFA10531 = FICFA1071, PCDFG10561 = PICFG108A. M sa faceplate (AICFG112) = chip nagiging M.
+  - Cold: fans berde (STOP), ducts dim, flows 0, bed temp 30 °C. 150 MW: fans pula (RUN), TAF 594 T/H, O2 4.3 %, furnace −17 mmH2O.
+  - `plant_view.js` ALL PASS. Screenshots: PC / tablet landscape 1280 × 800, tablet portrait 800 × 1280, phone 390 × 844.
+  - Nakita (plant model, hindi HMI): sa Cold, PIFA1088, PIFA1085, TIFA1086 / 1087 / 1076 / 1077 ay nananatili sa 150 MW na value.
+- **Status:** sample para sa pag-apruba ng style ng user. Hindi pa ginagawa ang ibang screen; hindi pa tinatanggal ang lumang Plant HMI.

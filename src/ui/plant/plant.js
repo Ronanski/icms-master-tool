@@ -554,7 +554,14 @@
       g.append(S_('image', { href: bg.img, x: bg.x, y: bg.y, width: bg.w, height: bg.h, preserveAspectRatio: 'none' }));
       g.append((defs = S_('defs', {})));
     }
-    for (const it of sys.items || []) {
+    /* 3.2.0-beta.41: a screen of the NEW HMI (hmi2.js, own vector graphics) draws itself with the same live link and faceplate */
+    if (sys.v2 && window.PLANT_V2)
+      try {
+        PLANT_V2.draw(g, sys, { reg, fp: fpOpen, HDR });
+      } catch (e) {
+        console.error(e);
+      }
+    for (const it of sys.v2 ? [] : sys.items || []) {
       itIx++;
       try {
         if (bg) {
@@ -991,7 +998,7 @@
       if (o) select(o);
     };
     const chips = E('div', { cls: 'plchips' });
-    for (const [id, t] of [['UNIT', 'UNIT'], ['03', '003 Water'], ['04', '004 Extraction'], ['07', '007 Air'], ['11', '011 Coal'], ['33', '033 CCS']])
+    for (const [id, t] of [['AFG', 'Air & Gas · new'], ['UNIT', 'UNIT'], ['03', '003 Water'], ['04', '004 Extraction'], ['07', '007 Air'], ['11', '011 Coal'], ['33', '033 CCS']])
       chips.append(
         E('button', {
           cls: 'plchip',
