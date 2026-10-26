@@ -12,9 +12,10 @@ Ito ang gusto ng user, sa sarili niyang salita. Ito ang sukatan ng bawat gawa. K
 | S2 | **Viewer** | Madali ang pag-trace ng signal (VIEW: walang simulate / force / control, pero lahat ng tingin at trace ay gumagana). |
 | S3 | **Simulate, plant model OFF** | Ang user ang naglalagay ng lahat ng value. Malayang mag-energize ng signal. Makikita ang response ng logic: ang output ayon sa input. |
 | S4 | **Simulate, plant model ON** | May physics at steam table. Tunay na response sa bawat galaw sa controller, sa forcing at sa sinisimulate na value. |
-| S5 | **Starting point 1: full load** | 150 MW. Load down / up, CCS, boiler master, turbine master at coal master: AUTO / MANUAL ayon sa logic. |
-| S6 | **Starting point 2: 0 load, cold start** | Walang value lahat: zero o ang zero ng range nila. |
+| S5 | **Starting point 1: full load** (plant model ON lang) | 150 MW. Load down / up, CCS, boiler master, turbine master at coal master: AUTO / MANUAL ayon sa logic. |
+| S6 | **Starting point 2: 0 load, cold start** (plant model ON lang) | Walang value lahat: zero o ang zero ng range nila. |
 | S7 | **Training** | Cold start hanggang full load LANG muna. (Warm at hot start: HINDI muna kasama.) |
+| — | **Paalala (user 2026-10-26)** | Ang dalawang starting point ay para lang sa SIMULATE na plant model ON. Kapag OFF, walang starting point: ang user ang nagtatakda ng lahat ng value. |
 | S8 | **Library** | 1 I/O list · 2 wiring diagram · 3 loop diagram · 4 linears · 5 compensations · 6 memory list · 7 instrument list · 8 dictionary |
 | S9 | **DCS graphics / HMI** | Plant overview, bawat system, equipment, permissives, atbp. |
 
