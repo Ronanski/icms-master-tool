@@ -239,7 +239,7 @@
       if (!window.AN) return false;
       hist.push({ cat: 'dig', i: S.cur, vb: (VB[S.cur] || []).slice() });
       updBack();
-      /* 3.2.0-beta.40: the ABC ↩ Back returns to this DITL sheet */
+      /* 3.2.0-beta.39: the ABC ↩ Back returns to this DITL sheet */
       if (AN.hist && AN.updBack) {
         AN.hist.push({ dig: true });
         AN.updBack();
