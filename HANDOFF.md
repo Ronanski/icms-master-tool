@@ -35,6 +35,7 @@ PC / tablet / EXE / APK ng user sa beta.25 pataas; ang `docs/USER_CHECK.md` ay h
 - References: `document-references/` (listahan: `CLAUDE.md` rule 4).
 - Source: `src/` (`src/README.md`); build `npm run build`, `npm run check`; html sa `dist/`.
 - Tests: `tests/regress/` (README sa loob), `tools/training/human_run.js`, `tools/ui-audit/audit.mjs`.
+- Instrument / control valve / shutoff valve list laban sa plant model + fix queue (2026-10-27): `docs/versions/v3.2.0/INSTRUMENT_VALVE_COVERAGE.md`, data `instrument-coverage.csv`; source `document-references/over-all-instrument-list.xlsx`, script `tools/data/instrument_coverage.js`.
 - Reports: `docs/versions/v3.2.0/UPDATE_REPORT.md`; link audit `UNLINK_AUDIT.md`; ABC audit `docs/abc-audit/ABC-AUDIT.md`; HMI operating points `docs/hmi/`.
 - Workflows: `.github/workflows/` (checks bawat push; site, release, clean = GO STABLE lang).
 
