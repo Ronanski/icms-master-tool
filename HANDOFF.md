@@ -5,7 +5,7 @@
 ## SIMULAN DITO (2026-10-26 PHT)
 
 - **Stable:** v2.4.0 sa `main`.
-- **Beta:** `3.2.0-beta.39`, branch `claude/project-thread-0amxbo` (nakapatong sa docs branch `claude/project-thread-6t8nxq` / PR #43, na nakapatong sa beta.38 / PR #42). Roadmap step 1 TAPOS.
+- **Beta:** `3.2.0-beta.40`, branch `claude/project-thread-cp7ia7` (nakapatong sa beta.39 / PR #45). Roadmap step 1 at step 7 (Sand DITL) TAPOS. Ang step 2 (plant model) ay ginagawa ng ibang thread.
 - **Ang gusto ng user:** `docs/SPEC.md` (S1 ~ S9). Plano = seksyon 3 ng file na iyon. Wala nang ROADMAP / CHECKLIST.
 - **Pag-check ng user:** `docs/USER_CHECK.md`.
 - **Rules:** `CLAUDE.md`, `PROJECT_RULES.md` (test policy = seksyon 5).
@@ -17,7 +17,8 @@
 - Huwag magpush ng paisa-isang UI fix: lakarin muna ang bawat screen (PC, tablet, phone) bago ang Beta.
 - Per-loop, Warm at Hot: TINANGGAL na sa app (beta.39). Huwag ibalik hangga't hindi sinasabi ng user.
 
-## Estado ng app (beta.39)
+## Estado ng app (beta.40)
+- Sand injection DITL 771 ~ 777 (`(D71)DITL-771` ~ `(D77)DITL-777`) galing sa PDF: `docs/versions/v3.2.0/DITL_SAND_AUDIT.md`, test `tests/regress/ditl_sand.js`. Analog ng LT / PT ay ON / OFF lang.
 - Turbine + TCS model (`src/analog/engine/tcs.js`, `docs/tcs/ATS_CRITERIA.md`), start-up steam ayon sa FHI Fig. 2 / 3 / 4 (`unit.js`).
 - `tests/regress/sop_bawal.js`: 19 / 19 (lahat ng maagang aksyon ay tinatanggihan).
 - Training: Cold → 150 MW sa isang screen (dock), sunod sa PR-OPE-5002.
