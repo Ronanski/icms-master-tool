@@ -308,7 +308,7 @@ bRun.onclick = () => {
 sSpd.onchange = () => {
   AN.spd = +sSpd.value;
 };
-/* 3.2.0-beta.13: the Reset button ends the starting state too (the plant is no longer at 150 MW / Cold / Warm / Hot): the next RUN
+/* 3.2.0-beta.13: the Reset button ends the starting state too (the plant is no longer at 150 MW / Cold): the next RUN
    starts the plant cold (trace.js coldIfNone), so after a Reset MSP is 0 again, not the loop model's middle of the range */
 bRst.onclick = () => {
   AN.startState = null;

@@ -57,13 +57,12 @@ const tcsLin = (pts, x) => {
     }
   return pts[pts.length - 1][1];
 };
-/* the turbine state: cold (Start cold: everything stopped, metal at the ambient) or in service (Start at 150 MW, warm / hot plant) */
+/* the turbine state: cold (Start cold: everything stopped, metal at the ambient) or in service (Start at 150 MW) */
 function tcsInit(U, how) {
   const T = U.Tamb || 30;
   const svc = how !== 'cold';
-  /* 'cold': all stopped, metal at the ambient; 'aux': a fired boiler (Start warm), the auxiliaries in service, the turbine on the turning
-     gear, metal cold; 'hot': the same with the metal hot (HOT mode); 'load': on the grid */
-  const hot = how === 'hot' ? 450 : how === 'load' ? 480 : T;
+  /* 'cold': all stopped, metal at the ambient; 'load': on the grid */
+  const hot = how === 'load' ? 480 : T;
   U.tc = {
     lop: svc, /* AC lube oil pump: bearing oil pressure (1.15), bearing oil temp. (1.16), main oil tank level (1.17) */
     eh: svc, /* EH (control) oil pump: control oil pressure (1.14) */

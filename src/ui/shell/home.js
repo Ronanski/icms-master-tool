@@ -158,9 +158,7 @@
         E('p', { cls: 'hmnote', txt: 'Sets the plant, then opens the Plant view. Press RUN there to let it run.' }),
         E('div', { cls: 'hmstarts' }, [
           startBtn('load150', 'At 150 MW', 'The control-room HMI snapshot'),
-          startBtn('loadcold', 'Cold', 'Start-up from zero: no fire, fans stopped'),
-          startBtn('loadwarm', 'Warm', '30 kg/cm², bed 480 °C, burners lit'),
-          startBtn('loadhot', 'Hot', '123 kg/cm² on the HP bypass, coal feeders in')
+          startBtn('loadcold', 'Cold', 'Start-up from zero: no fire, fans stopped')
         ])
       ]),
       E('section', { cls: 'hmsec hmrecent' })

@@ -111,7 +111,7 @@ function viewSet(on) {
       ? 'View mode: grey drawing, nothing is simulated. Click a block or wire to trace it; click an empty place to clear.'
       : 'Simulation mode: Run, or Pause + Next / Back.' +
           /* 3.2.0-beta.6 (audit M4): until a starting state is picked the plant is at the drawings' defaults (0 MW) */
-          (AN.startState ? '' : ' No starting state yet: Run starts the plant cold (boiler off), or pick Plant ▾ (top right) > Unit (Cold, Warm, Hot, 150 MW).')
+          (AN.startState ? '' : ' No starting state yet: Run starts the plant cold (boiler off), or pick Plant ▾ (top right) > Unit (Cold, 150 MW).')
   );
 }
 bVw.onclick = () => viewSet(!AN.view);
@@ -157,7 +157,7 @@ function coldShow() {
     { capture: true, passive: true }
   )
 );
-const COLD_MSG = 'No starting state was picked: the plant starts COLD (boiler off, drum 0 kg/cm2, no fire, fans stopped). Pick Plant ▾ (top right) > Unit for 150 MW, Warm or Hot.';
+const COLD_MSG = 'No starting state was picked: the plant starts COLD (boiler off, drum 0 kg/cm2, no fire, fans stopped). Pick Plant ▾ (top right) > Unit for 150 MW.';
 bRun.onclick = () => {
   const c = !AN.run && coldIfNone();
   if (AN.view) {

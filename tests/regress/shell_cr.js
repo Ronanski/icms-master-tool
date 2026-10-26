@@ -34,7 +34,7 @@ ck(sm&&sm.w>100&&sm.h>100&&sm.b<=833&&sm.n>=1&&sm.st===0,'TCS / Field ▾ opens 
 await p.keyboard.press('Escape');await p.waitForTimeout(200);
 await p.click('#plchip');await p.waitForTimeout(400);
 const pc=await p.evaluate(()=>{const c=document.getElementById('plchip'),q=document.getElementById('plpop'),sg=c.nextElementSibling,r=q.getBoundingClientRect();return {next:!!sg&&/VIEW/.test(sg.textContent),open:!q.hidden,w:r.width,b:r.bottom,r:r.right,vw:innerWidth,models:[...q.querySelectorAll('.plseg')[0].children].map(b=>b.textContent).join('/')}});
-ck(pc.next&&pc.open&&pc.w>200&&pc.b<=833&&pc.r<=pc.vw&&pc.models==='OFF/Per-loop/Unit','Plant chip beside VIEW | RUN opens its panel on screen ('+JSON.stringify(pc)+')');
+ck(pc.next&&pc.open&&pc.w>200&&pc.b<=833&&pc.r<=pc.vw&&pc.models==='OFF/Unit','Plant chip beside VIEW | RUN opens its panel on screen ('+JSON.stringify(pc)+')');
 await p.keyboard.press('Escape');await p.evaluate(()=>lsSetTab('logic'));await p.waitForTimeout(500);
 ck(await p.evaluate(()=>!!document.querySelector('#gsbar .tbar .g-op')&&getComputedStyle(document.querySelector('#gsbar .tbar')).display!=='none'),'LOGIC: the ribbon is back and Start ▾ / CHECK went back to it (hidden there)');
 // a KPI opens its sheet

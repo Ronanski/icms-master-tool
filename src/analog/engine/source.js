@@ -14,7 +14,6 @@
    Numbers marked ASSUMED are not in the repository. */
 const AN_SRC = {
   field: { dop: true },
-  fixed: null,
   Tamb: 30,
   st: null,
   t: -1,
@@ -157,44 +156,4 @@ function anField(k, on) {
   AN_SRC.field[k] = !!on;
   AN_SRC.t = -1;
   return true;
-}
-/* LOOP STUDY: the plant at a fixed load (MW), from the two loads of the HMI snapshots and the lines of the unit model:
-   steam flow = 203.7 + (MW - 60.3) / c (02.png 60.3 MW 203.7 T/H, 03.png 150.5 MW 474.1 T/H; c = 0.334 MW per T/H), main steam
-   pressure on the line of 02.png (89.9 kg/cm2 at 60.3 MW) and 4.PNG (122.9 at 148.8 MW), reheat pressure proportional to the steam
-   (34.0 kg/cm2 at 474 T/H), coal = 41.8 + (steam - 203.7) / a (a = 5.78 T/H of steam per T/H of coal) */
-function srcLoad(mw) {
-  mw = Math.max(20, Math.min(150, +mw || 0));
-  const ms = Math.max(0, 203.7 + ((mw - 60.3) * (474.1 - 203.7)) / (150.5 - 60.3));
-  return {
-    mw,
-    ms,
-    Pms: 89.9 + ((mw - 60.3) * (122.9 - 89.9)) / (148.8 - 60.3),
-    Prh: (34.0 * ms) / 474.1,
-    coal: Math.max(0, 41.8 + ((ms - 203.7) * (88.6 - 41.8)) / (474.1 - 203.7))
-  };
-}
-/* Start ▾ > Loop study: "At 150 MW" (anchors, machines running), then the boiler stands at the chosen load; the unit load demand
-   (ABC-001A HIC-ULD) is set to it so that the coal and air demands of the drawing follow that load */
-function anPlantLoop(mw) {
-  const n = anPlantLoad150();
-  if (!AN_UNIT.on) return 0;
-  const f = srcLoad(mw);
-  AN_SRC.fixed = f;
-  AN_SRC.t = -1;
-  try {
-    /* the station and its set input in AUTO (TARGET MW, as anPlantLoad150 writes it) */
-    for (const sh of AN.sheets) {
-      const S = sh.S;
-      if (!S || !S.blk) continue;
-      for (const b of S.blk) {
-        if (b.k !== 'MAN' || b.tag !== 'HIC-ULD' || !S.rt.st[b.id]) continue;
-        S.rt.st[b.id].val = f.mw;
-        const si = b.svI >= 0 ? b.i[b.svI] : null,
-          dr = si != null ? (S.drv[si] || []).find(z => z.k === 'AMT') : null;
-        if (dr && dr.a != null && S.ext.includes(dr.a) && !(S.xlk && S.xlk[dr.a])) S.rt.ext[dr.a] = f.mw;
-      }
-    }
-    for (let k = 0; k < 4; k++) for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0.5);
-  } catch (e) {}
-  return n;
 }

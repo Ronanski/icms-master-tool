@@ -416,7 +416,7 @@
     },
     {
       id: 'coal',
-      warm: { P: 30, Tb: 480, burners: 4, mv: 30, air: 10 },
+      stage: true,
       title: 'M4 · Coal transfer: batch → feeders → retract ng burners',
       how: 'Start warm (dulo ng cold start: 30 kg/cm2, bed 480 °C, 4 burner 30 %). LICBR1001B (start-up drum level) A sa SV 0 (pinapayagan ng drawing dahil FICFW1007 at LICBR1001A ay M); blow-off PICMS1002 A sa SV 35. FIC-CF M 10 % (= 4 T/H, minimum ng feeder). Bed 400 ~ 450+: batch ng feeder A (M.3400 10 s ON, 60 s OFF, PR-OPE-5002); bed > 600: feeder A tuluy-tuloy at A (AUTO) pagkatapos tumakbo (ang drawing ay nagpo-force manual habang nakatigil), bawas ng oil 5 % kada minuto; feeder B; bed > 650: feeder C; FIC-CF paakyat sa 15 % (6 T/H kada feeder; hawak ang saturation ≤ 110 °C/h, Fig 1: wala pang turbine na kumukuha ng steam, Fig 2 ay coal pagkatapos ng roll); bed > 700: retract ng burner A, D, B, C isa-isa hanggang > 750. O2 hawak sa 3.5 ~ 5.5 % (PA / SA). Dulo: FIC-CM L + A sa kasalukuyang coal (ang drawing ang sasagot).',
       want: 'Coal nasusunog lang sa mainit na bed (burnt share); bed ≥ 750 °C; 3 feeder tumatakbo sa AUTO (~18 T/H); oil 0 (lahat ng valve sarado, burners out); O2 3 ~ 10 %; MSP tumataas pero < 125 kg/cm2 at saturation ≤ 110 °C/h (Fig 1); drum level hawak ng LICBR1001B (±150 mm); coal master FIC-CM: ang A ay hindi tinatanggap ng drawing (M.0130: FIC-CF / PA / SA hindi pa REMOTE, hakbang 4), SV = coal; MW 0; walang trip.',
@@ -630,7 +630,7 @@
     },
     {
       id: 'byp',
-      warm: { P: 30, Tb: 480, burners: 4, mv: 30, air: 10 },
+      stage: true,
       title: 'M4 · Bypass system at pressure raise: blow-off → HP / LP bypass → 123 kg/cm2',
       how: 'Start warm (30 kg/cm2, 4 burner). LICBR1001B A SV 0 (start-up level control). MS blow-off PICMS1002 A SV 50 (hawak ang 50 ksc hanggang nasa serbisyo ang bypass, PR-OPE-5002). HP bypass PICMS1006 A SV 50 (LOCAL), LP bypass PICHR1003 A SV 7.6 (procedure: 7.5 ksc), RH blow-off PICHR1391 M 20 % (bukas sa warming). Oil 5 % kada 2 min habang ≤ 90 °C/h (Fig 1), bawas kapag > 100 °C/h; pagkatapos ng servicing hawak ang oil (bawas kapag > 65 T/H, 2 sa itaas ng SV, o papalapit na ang SV sa 123; dagdag kada 5 min kapag hindi nakakasunod ang pressure); O2 3.5 ~ 8 % sa PA / SA; furnace −15 mmH2O sa PICFG108 M (PR-OPE-5002: hydraulic coupling mano-mano). Sa MSP ≥ 48 at MSF ≥ 40 T/H (bypass servicing): SV ng HP bypass +1 kg/cm2 kada minuto hanggang 123 (habang nakakasunod ang pressure), blow-off SV = HP bypass SV + 5 (sasara), RH blow-off −5 % kada minuto hanggang sarado. Tigil 10 min pagkatapos umabot sa 123.',
       want: 'Bypass servicing sa ~50 ksc / > 40 T/H; MSP 123 kg/cm2 (SV ng HP bypass) na may saturation ≤ 110 °C/h; HP bypass ang kumukuha ng steam, MS blow-off sarado; RH pressure 7.5 ± 1.5 kg/cm2 hawak ng LP bypass sa AUTO, RH blow-off sarado; MST ≥ 345 °C (procedure, admission) at ≤ 535 (TAB_9); drum level ±150 mm hawak ng LICBR1001B, FICFW1007 force manual ayon sa drawing (M.0228: FW < 100 T/H, M.022C; 3-element sa hakbang 4); MW 0, walang trip, furnace −55 ~ +25 mmH2O; 50 → 123 sa loob ng 2 h.',
@@ -873,7 +873,7 @@
     },
     {
       id: 'roll',
-      hot: true,
+      stage: true,
       title: 'M4 · Turbine roll, sync, load up to 45 MW',
       how: 'Start hot (dulo ng hakbang 3: 123 kg/cm2 sa HP bypass AUTO, LP bypass AUTO 7.6, bed 750 °C, 3 feeder sa FIC-CF 12 %, burners out). Operator sa TCS panel (labas ng DCS drawing): ROLL sa t = 1 min (ATS AUTO, HOT mode: 360 rpm/min, 3 min heat soak sa 3600 rpm, IP start mode: roll steam mula sa reheat sa ICV); pagkatapos ng ACCELERATION: SYNC (EXCITATION, GCB 52G1 sarado: ABC-050 I.0931 = 1 / I.0932 = 0, initial load 5 % = 7.5 MW), LP bypass R (REMOTE: SV = first stage + 5.1); 5 min hold; LOAD UP 45 MW (5 %/min = 7.5 MW/min). Sa 20 MW o ICV full open: ICV → CV transfer (I.0418 = 1; ang drawing ang nagpapa-REMOTE ng HP bypass SV = PV + 2 sa sync pulse M.070D, kaya sumasara). Coal: FIC-CF +2 ~ 3 % kada minuto habang paakyat (+3 kapag MSP < 118), ±1 pagkatapos para hawak ang 123; O2 3.5 ~ 8 (PA / SA); furnace −15 sa PICFG108 M. Feedwater ayon sa interlock ng ABC-010: kapag LICBR1001B > 30 %: LICBR1001B M (hawak), LICBR1001A A SV 0 (single-element sa main valve; M.0227: isa lang ang level controller), LICBR1001B pasara 5 % kada minuto; kapag FW > 100 T/H at wala na ang force manual (M.0228 = 0: M.022C → TON 60 s): FICFW1007 R (SV = steam flow + level master), LICBR1001 A SV 0, pindot ng 3-ELEMENT pushbutton M.054E (FF M.0222). Tigil 10 min pagkatapos umabot sa 45 MW.',
       want: '0 → 3600 rpm + soak sa 12 ~ 16 min; GCB sarado (I.0931 = 1, M.3220 = 0 sa ABC-010); initial load 7.5 ± 1 MW; 7.5 → 45 MW sa loob ng 5 ~ 12 min; transfer sa 15 ~ 22 MW (I.0418); HP at LP bypass sarado sa 45 MW (M.0709 = 0), HP bypass REMOTE (LP bypass: preset 33 % ng drawing sa transfer, isinasara ng operator sa M tapos R + A); MSP 123 ± 8 kg/cm2 habang nakakarga, HIC-BM MANUAL (M.2013 BU-CMD: MSF < 220); 3-element feedwater: FICFW1007 R + A, LICBR1001 A, M.0228 = 0, M.0222 = 0, LICBR1001B sarado; MST 345 ~ 535 °C; drum level ±150 mm; MW ≥ 44.5 at I.0081 = 1 (NORMAL OPERATION); walang trip, furnace −55 ~ +25.',
@@ -1469,20 +1469,6 @@
             'MSP ' + f1(o.mspMin) + ' ~ ' + f1(o.mspMax) + ' kg/cm2 sa buong 45 → 150 MW (123 ± 10); walang trip (M.3200 = 0, LL M.310D = 0); HP bypass ' + f0(h.mv('ABC-050', 'PICMS1006')) + ' %'
           ]
         ];
-      }
-    },
-    {
-      id: 'load150',
-      hot: true,
-      chain: ['roll', 'up'],
-      title: 'M4 · 45 → 150 MW: coal master REMOTE, boiler master AUTO, DCS control mode ON, CCS',
-      how: 'Start hot, tapos ang hakbang 4 (roll → sync → 45 MW: isang summary row), tapos ang hakbang 5: HS-COAL M 33.1 % (COAL CALORIE CORR. 4150, 11.png); PA FLOW BIAS HIC-TADBS M 0 (ABC-002: ang −30 T/H ng 7.PNG ay trim sa 150 MW; sa minimum air ay pinuputol nito ang coal demand, LN40); FIC-CM M = FIC-CF; FIC-CF, FICFA1071, FICFA1081 R (REMOTE: hangin ayon sa air demand ng drawing, ABC-006, minimum 446 T/H); HIC-BM (M) inililipat hanggang SV ng FIC-CM = coal, tapos FIC-CM R + A (tinatanggap ng drawing: M.0130 = 0); TCS target 0.5 ~ 3 MW / min ayon sa MSP (3 sa ≥ 124, 1.5 sa ≥ 121, 0.5 sa ≥ 118, tigil sa ilalim), HIC-BM (M) dinadagdagan lang hanggang 123; SH spray: TICBR1130 / TICBR1150 A sa SV (394 / 418 °C) kapag 5 °C na lang ang layo ng PV, tapos inner R, tapos TICBR1140 (462) / TICMS1004 (541) A (cascade, 4.PNG; ang drawing ay nagfo-force manual sa outer habang hindi REMOTE ang inner); sa MSF > 230 T/H at wala na ang BU-CMD (M.2013 = 0): PIC-COBM A SV 123, HS-COAL A, HIC-BM A (.MAN = 0); ang drawing ang nagpapadala ng DCS CONTROL MODE ON (O.0178 → TCS → I.0082); EIC-TM A (M.2016 = 0); HIC-ULD A TARGET 150 (HIC-MWRL 3 MW/min); O2 trim 50 % → A sa itaas ng 220 T/H; PICFG108 A sa MV ≥ 16 %. Tigil 15 min pagkatapos ng 150 MW (~2.5 h plant time, ~3 min real).',
-      want: 'Hakbang 4 11 / 11; coal master FIC-CM R + A (M.0130 = 0), HS-COAL A; HIC-BM A sa > 230 T/H, PIC-COBM A; I.0082 = 1 sa loob ng 20 s pagkatapos ng HIC-BM A (O.0178 ng drawing); EIC-TM A (M.2016 = 0); 150 MW sa 15 ~ 60 min mula HIC-ULD A; 150 MW: MW 150 ± 3 %, MSF 474 ± 5 %, MSP sa SV ± 3 %, coal 87 ± 10 %, MST / RHT 542 ± 5 %, RHP 34 ± 5 % (4.PNG / 03.png); SH spray R + A (MV ≈ 58 / 30 %); O2 trim A, O2 2.5 ~ 6.5 %; PICFG108 A; drum level ±150, 3-element; MSP 113 ~ 133 buong daan; walang trip; HP bypass sarado.',
-      secs: 0,
-      run() {},
-      each() {},
-      checks() {
-        return [];
       }
     },
     {
@@ -2963,8 +2949,6 @@
       AN.run = false;
       AN.reset();
       if (sc.cold) AN.plantCold();
-      else if (sc.hot) AN.plantHot();
-      else if (sc.warm) AN.plantWarm(sc.warm);
       else if (sc.live) AN.plantLive(); /* 2.2.0-beta.21 (M5): 150 MW with the shutdown physics on */
       else AN.plantLoad150();
       const h = H();

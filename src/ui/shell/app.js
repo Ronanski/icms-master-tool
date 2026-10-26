@@ -1332,7 +1332,7 @@
     }
     return true;
   }
-  /* Start ▾: the starting state of the plant (2.0.0 150 MW, 2.2.0 M4 cold / warm / hot), the TCS panel (black box, outside the
+  /* Start ▾: the starting state of the plant (150 MW, Cold), the TCS panel (black box, outside the
      drawings) and the drum blowdown field valve. The handlers are the same as before (they call the engine's AN.* functions). */
   function buildStart(d) {
     const btn = (id, label, title, fn) => {
@@ -1372,43 +1372,6 @@
         msg('Could not load the cold state: ' + e.message);
       }
     });
-    btn('loadwarm', 'Warm (30 kg/cm2, burners lit)', 'Start cold, then the plant as at the end of the cold start: drum 30 kg/cm2, bed 480 C, fans running, 4 start-up burners at 30 %. For the coal transfer and the next steps of PR-OPE-5002.', () => {
-      try {
-        AN.reset();
-        const n = AN.plantWarm();
-        AN.startState = 'plantWarm';
-        AN.paint();
-        msg('Plant warm: drum 30 kg/cm2, bed 480 C, 4 start-up burners lit. Press Run; coal transfer: see Training (PR-OPE-5002). ' + n + ' anchors.');
-      } catch (e) {
-        msg('Could not load the warm state: ' + e.message);
-      }
-    });
-    btn('loadhot', 'Hot (123 kg/cm2 on bypass, coal)', 'Start cold, then the plant as at the end of M4 step 3: drum 123 kg/cm2 on the HP bypass (AUTO), LP bypass AUTO 7.6, bed 750 C, three coal feeders at 12 %, burners out. Ready for the turbine roll.', () => {
-      try {
-        AN.reset();
-        const n = AN.plantHot();
-        AN.startState = 'plantHot';
-        AN.paint();
-        msg('Plant hot: 123 kg/cm2 on the HP bypass, bed 750 C, 3 feeders. Press Run, then Turbine ROLL (30 min to 3600 rpm), SYNC, LOAD UP. ' + n + ' anchors.');
-      } catch (e) {
-        msg('Could not load the hot state: ' + e.message);
-      }
-    });
-    /* 3.2.0-beta.14 (plan phase A, user: "per loop mode ... pipili ka kung anong load (MW)"): the boiler stands at the chosen load, every
-       loop has the medium (steam, oil, water, air) of that load (source.js). Cold = no medium, At 150 MW = the snapshot */
-    d.head('Loop study (plant held at a load)');
-    for (const mw of [45, 60, 90, 120])
-      btn('loop' + mw, 'Loop study at ' + mw + ' MW', 'Reset, the 150 MW anchors, then the boiler and the turbine stand at ' + mw + ' MW (main steam pressure, steam flow, reheat pressure and MW held). Each loop answers its own MV with the steam / water / air of that load. For one loop at a time; a full start-up is Cold.', () => {
-        try {
-          AN.reset();
-          const n = AN.plantLoop(mw);
-          AN.startState = 'plantLoop';
-          AN.paint();
-          msg('Loop study at ' + mw + ' MW: the boiler is held at this load; each loop answers its own MV with the steam / water / air of ' + mw + ' MW. Press Run. ' + n + ' anchors.');
-        } catch (e) {
-          msg('Could not load the loop study: ' + e.message);
-        }
-      });
     d.head('TCS panel (turbine)');
     const tcs = (id, label, title, cmd, arg, ok) =>
       btn(id, label, title, () => {
@@ -1419,7 +1382,7 @@
           msg('TCS: ' + e.message);
         }
       });
-    tcs('tcsroll', 'Turbine ROLL', 'TCS panel: open the stop valves, IP start mode, 120 rpm/min to 3600 rpm (PR-OPE-5002 4.4). Needs Start cold / warm / hot and the plant running.', 'roll', null, 'TCS: turbine rolling, 120 rpm/min to 3600 (OPERATE > UNIT shows the speed).');
+    tcs('tcsroll', 'Turbine ROLL', 'TCS panel: open the stop valves, IP start mode, 120 rpm/min to 3600 rpm (PR-OPE-5002 4.4). Needs Start cold and the plant running.', 'roll', null, 'TCS: turbine rolling, 120 rpm/min to 3600 (OPERATE > UNIT shows the speed).');
     tcs('tcssync', 'SYNC + initial load 4.5 MW', 'TCS panel at 3600 rpm: GCB 52G1 closed (ABC-050 I.0931 = 1, I.0932 = 0), initial load 4.5 MW on the ICV (PR-OPE-5002 4.5).', 'sync', null, 'TCS: generator synchronised, initial load 4.5 MW.');
     tcs('tcsload', 'LOAD UP to 45 MW', 'TCS panel: target 45 MW at 5 %/min (7.5 MW/min). ICV -> CV transfer at 20 MW (I.0418 = 1), DCS control mode permissive I.0081 at 45 MW (PR-OPE-5002 4.6).', 'loadup', 45, 'TCS: load up to 45 MW at 7.5 MW/min.');
     btn('tcstarget', 'TARGET MW…', 'TCS panel: a target MW of your own (reached at 7.5 MW/min) while the DCS control mode is OFF. Once I.0082 = 1 (boiler master and PIC-COBM in AUTO above 230 T/H) the TCS follows the turbine master EIC-TM of the DCS instead.', () => {
@@ -1451,28 +1414,26 @@
   }
   /* 3.2.0-beta.20 (user 2026-10-24 "dpt common tools yn s simulate", pick B of https://claude.ai/artifact/ShJf2VmTtFDsMGFCMD5zeT):
      the PLANT chip beside VIEW | RUN, on every page (ABC, DITL, Plant view). It tells the plant model and the starting state at a
-     glance and opens a small panel: Plant model OFF / Per-loop / Unit, the starting state of the unit (Cold, Warm, Hot, 150 MW), the
-     load of the per-loop model (any MW 45 ~ 150, before 45 / 60 / 90 / 120 only) and the target MW of the unit. The handlers are
+     glance and opens a small panel: Plant model OFF / Unit, the starting state of the unit (Cold, 150 MW) and the target MW of the unit. The handlers are
      the ones of the old Start ▾ menu (its buttons stay in the page, hidden, so nothing that clicks them changes) and the engine's
-     own AN.plantSwitch / AN.plantLoop / AN.turbine. VIEW: the panel shows the state, the choices wait for RUN. */
+     own AN.plantSwitch / AN.turbine. VIEW: the panel shows the state, the choices wait for RUN. */
   function buildPlantChip(start) {
-    const MOVED = ['load150', 'loadcold', 'loadwarm', 'loadhot', 'loop45', 'loop60', 'loop90', 'loop120'];
+    const MOVED = ['load150', 'loadcold'];
     for (const id of MOVED) {
       const b = start.m.querySelector('#' + id);
       if (b) b.classList.add('lsmoved');
     }
     for (const h of start.m.querySelectorAll('.mh'))
-      if (/^(Starting state|Loop study)/.test(h.textContent)) h.classList.add('lsmoved');
-    const NAMES = { plantCold: 'Cold', plantWarm: 'Warm', plantHot: 'Hot', plantLoad150: '150 MW' };
-    const model = () => (!(window.AN && AN.plantOn) ? 'off' : AN.startState === 'plantLoop' ? 'loop' : 'unit');
+      if (/^Starting state/.test(h.textContent)) h.classList.add('lsmoved');
+    const NAMES = { plantCold: 'Cold', plantLoad150: '150 MW' };
+    const model = () => (!(window.AN && AN.plantOn) ? 'off' : 'unit');
     let pick = null;
     const txt = () => {
       const m = model();
       if (m === 'off') return 'OFF';
-      if (m === 'loop') return 'Per-loop · ' + (AN.loopMW || '—') + ' MW';
       return 'Unit · ' + (NAMES[AN.startState] || 'not started');
     };
-    const chip = E('button', { id: 'plchip', cls: 'plchip', title: 'Plant model and starting state: OFF, Per-loop (one MW), Unit (Cold to 150 MW)' }, [
+    const chip = E('button', { id: 'plchip', cls: 'plchip', title: 'Plant model and starting state: OFF, Unit (Cold to 150 MW)' }, [
       E('i', { 'aria-hidden': 'true' }),
       E('span', {}, [E('small', { txt: 'PLANT' }), E('em', {})]),
       E('b', { txt: '▾', 'aria-hidden': 'true' })
@@ -1540,7 +1501,6 @@
         seg(
           [
             ['off', 'OFF', () => withAN(() => (pick = null, plantOn(false), say('Plant model OFF: the transmitters are free inputs, only the drawn logic runs (simulate and force).')))],
-            ['loop', 'Per-loop', () => (pick = 'loop')],
             ['unit', 'Unit', () => (pick = 'unit')]
           ],
           m
@@ -1549,45 +1509,9 @@
           txt:
             m === 'off'
               ? 'OFF: simulate and force only. No plant answers the valves.'
-              : m === 'loop'
-                ? 'Per-loop: the boiler stands at one load; each loop answers its own MV with the steam, water and air of that load.'
-                : 'Unit: the whole boiler and turbine, from Cold to 150 MW (mass and energy balance, steam table).'
+              : 'Unit: the whole boiler and turbine, from Cold to 150 MW (mass and energy balance, steam table).'
         })
       );
-      if (m === 'loop') {
-        const i = mwBox('plmw', AN.loopMW || 90);
-        pop.append(
-          E('h5', { txt: 'Load' }),
-          E('div', { cls: 'plrow' }, [
-            i,
-            E('span', { txt: 'MW' }),
-            E('button', {
-              cls: 'plgo',
-              txt: 'Set',
-              on: guard(() => {
-                const mw = Math.max(45, Math.min(150, +i.value || 90));
-                withAN(() => {
-                  try {
-                    plantOn(true);
-                    AN.reset();
-                    const n = AN.plantLoop(mw);
-                    AN.startState = 'plantLoop';
-                    AN.loopMW = mw;
-                    pick = null;
-                    AN.settle();
-                    AN.paint();
-                    say('Per-loop at ' + mw + ' MW: the boiler is held at this load; each loop answers its own MV. Press Run. ' + n + ' anchors.');
-                  } catch (e) {
-                    say('Could not set the per-loop load: ' + e.message);
-                  }
-                  upd();
-                });
-              })
-            }),
-            E('span', { cls: 'plh', txt: '45 ~ 150' })
-          ])
-        );
-      }
       if (m === 'unit') {
         const st = AN.startState && NAMES[AN.startState] ? AN.startState : null,
           click = id => () =>
@@ -1605,8 +1529,6 @@
           seg(
             [
               ['plantCold', 'Cold', click('loadcold')],
-              ['plantWarm', 'Warm', click('loadwarm')],
-              ['plantHot', 'Hot', click('loadhot')],
               ['plantLoad150', '150 MW', click('load150')]
             ],
             st

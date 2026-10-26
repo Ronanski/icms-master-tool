@@ -776,3 +776,21 @@ Engine at logic: walang binago.
 
 **Status:** Beta. CHECKLIST 0.6: TCS model TAPOS; bukas pa: MST 555 °C sa CCS load up (H alarm 548), direksyon ng RH biasing damper sa model (pagbukas ng RH damper ay nagpapababa ng RHT: susuriin laban sa ABC-020).
 
+
+## 3.2.0-beta.39 (2026-10-26) — Roadmap 1: tinanggal ang Per-loop, Warm at Hot
+
+**Problem:** sabi ng user: ang Per-loop, Warm at Hot ay "pampahaba ng code, pampagulo" at wala sa spec (`docs/SPEC.md`).
+
+**As Found:** plant chip = OFF | Per-loop | Unit; starting state = Cold | Warm | Hot | 150 MW (chip at Home); Start menu may Loop study 45 / 60 / 90 / 120 MW; may engine ng loop study (`source.js`, `unit.js`) at ng warm / hot start (`hmi-op.js`).
+
+**Work Done:**
+- App: plant chip = OFF | Unit; starting state = Cold | 150 MW lang (chip at Home); tinanggal ang Warm, Hot at Loop study buttons.
+- Engine: tinanggal ang `anPlantLoop`, `srcLoad`, ang fixed-load branch ng `unit.js`, `anPlantWarm`, `anPlantHot`, at ang 'hot' / 'aux' na start ng `tcsInit`. Walang binago sa turbine / TCS na Cold start, sa logic drawings, o sa ATS mode select (physics ng metal temperature iyon).
+- CHECK panel: tinanggal ang "M4 · 45 → 150 MW" (nagsisimula sa Hot); ang coal / byp / roll ay stage na lang sa loob ng buong cold start-up.
+- Tests: `loop_source.js` (tinanggal ang Hot at Loop study), `shell_cr.js` (OFF/Unit), `check_panel.js` (listahan).
+
+**As Left (ebidensya):** build + check SAME; `sop_bawal.js` 19 / 19; `shell_cr.js` ALL PASS; `loop_source.js` ALL PASS; screenshot ng Home at plant chip sa PC 1333x833, tablet 1280x800 at 800x1280, phone 390x844 (walang sira, 2 starting state na lang); CHECK panel bumubukas, 12 scenario, walang page error.
+
+**Hindi nasubok:** buong Cold run (`human_run.js`): huminto ang unang takbo sa hakbang 43 (bypass, MSP 35.7, steam flow 0). Itinigil ang paghahambing sa beta.38 sa utos ng user, kaya HINDI pa alam kung dati na ito. PC / tablet / EXE / APK ng user.
+
+**Status:** Beta. Roadmap hakbang 1 TAPOS.
