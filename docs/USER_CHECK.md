@@ -4,7 +4,7 @@ Para sa bawat bahagi ng spec (`docs/SPEC.md`): ano ang pipindutin, at ano ang da
 
 | # | Pindutin | Dapat makita |
 |---|---|---|
-| S1 one world | Logic → DITL → buksan ang **DITL-01** → pindutin ang sulat na **ABC-006** sa row. | Bumubukas ang ABC-006. **◀ Back** = balik sa DITL-01 (gumagana rin pabalik: FROM / TO DITL sa ABC). |
+| S1 one world | Logic → DITL → buksan ang **DITL-01** → pindutin ang sulat na **ABC-006** sa row. Pagkatapos: ABC → buksan ang **ABC-027** → mag-zoom sa sulat na **TO DITL 02-25, DITL 03F-16 …** (may tuldok na guhit) → pindutin. | Bumubukas ang ABC-006; **↩ Back** (unang button sa tool row) = balik sa DITL-01. Sa ABC-027: lumalabas ang listahan ng page; pumili ng isa = bubukas ang DITL sheet at kumikislap ang item row; **◀ Back** = balik sa ABC-027. Lahat ng "FROM / TO DITL" sa ABC ay ganito. |
 | S2 viewer | Naka-**VIEW**. Pindutin ang isang wire sa ABC-010. | Naka-highlight ang buong signal hanggang sa dulo; sa kanan: saan galing, saan papunta. Walang value na nagbabago. |
 | S3 plant OFF | Plant chip (katabi ng VIEW / RUN) → **OFF** → **RUN**. Buksan ang ABC-010 (drum level). Sa Inputs list, baguhin ang isang drum level input. | Tumutugon agad ang logic: nagbabago ang output ng drum level PID; ang ibang value ay hindi gumagalaw nang kusa (walang physics). |
 | S4 plant ON | Home → **At 150 MW** → **RUN**. Buksan ang faceplate ng feedwater (FICFW1007), **M**, ibaba ang MV ng 10 %. | Bumababa ang FW flow, sumusunod pababa ang drum level. Pindot **A**: bumabalik sa normal. |

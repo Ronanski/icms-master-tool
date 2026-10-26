@@ -794,3 +794,24 @@ Engine at logic: walang binago.
 **Hindi nasubok:** buong Cold run (`human_run.js`): huminto ang unang takbo sa hakbang 43 (bypass, MSP 35.7, steam flow 0). Itinigil ang paghahambing sa beta.38 sa utos ng user, kaya HINDI pa alam kung dati na ito. PC / tablet / EXE / APK ng user.
 
 **Status:** Beta. Roadmap hakbang 1 TAPOS.
+
+
+## 3.2.0-beta.40 (2026-10-26) — Roadmap 5: ang bawat "FROM / TO DITL" sa ABC ay page link, may Back
+
+**Problem:** sa ABC, 10 lang sa 233 na sulat na "FROM / TO DITL xx-nn" ang napipindot (yung malapit sa bilog na connector). Ang 223 ay sulat lang. Ang lumang xref layer ay sira sa DITL: hindi nito binabasa ang 3-digit na code (DITL-100 ~ 110) at binubuksan nito ang lumang sheet list, hindi ang item.
+
+**As Found:** `connClick` (bilog lang) at `xref` rect (`links-canvas.js`, regex `DITL[ -]?\d{1,2}`). `dsGoRef` ay nagbabasa ng "100-04" bilang "00-04" (mali). Ang DITL → ABC (FROM / TO ABC-xxx) ay gumagana na (`ditl_pagelink.js`), pero ang ABC ay walang Back pabalik sa DITL (kailangang lumipat sa DITL button).
+
+**Work Done:**
+- Ang BAWAT "FROM / TO DITL" na sulat ng 54 ABC sheet (233) ay link: bubukas ang DITL sheet at ang item row (kumikislap). Ang pindot na nasa mismong sulat ay panalo kahit may bilog sa ilalim; ang pindot sa tabi nito ay bilog pa rin. May tuldok na guhit sa ilalim ng sulat para halata.
+- Ang sulat na may listahan ("TO DITL 96-18, DITL 97-18, DITL 98-18") ay nagbubukas ng pagpipilian ng page (tulad ng DITL-03A). "FOR S/B LOGIC" = sootblower DITL-80.
+- `dsGoRef` ay nagbabasa na ng 3-digit na code. Ang lumang xref ay ABC-xxx na lang (inalis ang DITL na sira).
+- DITL → ABC: ang ABC ay may ↩ Back na bumabalik sa DITL sheet (dati wala). Sa phone / tablet na nakatayo, ang Back ay una sa tool row (hindi na nawawala sa kanan).
+- Walang binago sa engine, plant model o DITL data.
+
+**As Left (ebidensya):** `tests/regress/abc_ditl_links.js` (bago): desktop = click sa 233 / 233 na sulat (bubukas ang tamang DITL sheet o ang pagpipilian; Back bumabalik sa parehong ABC sheet); tablet at phone = tap sa 80 / 233 (bawat ika-4 at lahat ng listahan); DITL-01 FROM ABC-006 → ABC-006 → ↩ Back → DITL-01. ALL PASS. `ditl_pagelink.js` (lumang link test) ALL PASS; `ditl_sim.js` (Simulate OFF / ON, ABC ↔ DITL) walang FAIL. Screenshot: PC 1440x900, tablet 1280x800 at 800x1280, phone 390x844 (sulat na may guhit, chooser, DITL pagkatapos ng link, Back).
+
+**Hindi nasubok:** PC / tablet / EXE / APK ng user. Hindi pinatakbo ang Cold run (hindi plant model). Ang "null" sa DITL header at ang MSP 75 / drum −566 sa "not started" ay bukas pa (roadmap 2, ibang thread).
+
+**Status:** Beta. Roadmap hakbang 5 (links at Back) TAPOS.
+

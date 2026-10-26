@@ -239,6 +239,11 @@
       if (!window.AN) return false;
       hist.push({ cat: 'dig', i: S.cur, vb: (VB[S.cur] || []).slice() });
       updBack();
+      /* 3.2.0-beta.40: the ABC ↩ Back returns to this DITL sheet */
+      if (AN.hist && AN.updBack) {
+        AN.hist.push({ dig: true });
+        AN.updBack();
+      }
       AN.setCat('an');
       let n = 0;
       const t = setInterval(() => {
@@ -246,7 +251,7 @@
         if (j >= 0 || ++n > 50) {
           clearInterval(t);
           if (j >= 0) AN.go(j);
-          msg(j >= 0 ? r.abc + ' opened. DITL ◀ Back returns to the DITL sheet.' : r.abc + ' is not in the ABC page.');
+          msg(j >= 0 ? r.abc + ' opened. ↩ Back (top left of the tool row) returns to the DITL sheet.' : r.abc + ' is not in the ABC page.');
         }
       }, 120);
       return true;
@@ -300,6 +305,7 @@
     return true;
   };
   D.goItem = goItem;
+  D.back = () => back.onclick();
   back.onclick = () => {
     const h = hist.pop();
     updBack();
