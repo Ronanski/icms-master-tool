@@ -55002,10 +55002,10 @@ window.LS_GUIDE = (function () {
       run(o) {
         if (md('PICFG108') !== 'MAN') return;
         const fp = h().FP();
-        o.mv = o.mv == null ? mv('PICFG108') : o.mv;
-        if (fp < -25) o.mv = Math.max(0, o.mv - 1);
-        else if (fp > -5) o.mv = Math.min(80, o.mv + 1);
-        A.man('PICFG108', o.mv);
+        /* 3.2.0 P1 #2: the furnace pressure switches PSLL / PSHH trip the MFT now (-267 / +267 mmH2O), so the trim is proportional
+           (about 12 mmH2O per % of the coupling with the ID fan at start-up) and starts from the MV of now (a step may move it) */
+        const m0 = +mv('PICFG108') || 0;
+        if (fp < -25 || fp > -5) A.man('PICFG108', Math.max(0, Math.min(80, m0 + Math.max(-8, Math.min(8, (fp + 15) / 20)))));
       }
     },
     /* warm-up firing (check.js cold): the saturation temperature rise <= 110 C/h (Fig 1): +5 % oil when < 85 C/h and the drum > 5
@@ -55690,7 +55690,7 @@ window.LS_GUIDE = (function () {
       { st: 4, sec: 28, t: 'Sindihan ang burner D (diagonal ng A)', d: 'PR-OPE-5002: pagkatapos ng A, ang kasunod ay ang D (diagonal). Pareho ng burner A: SA damper at oil FCV sa ignition, BURNER ON (ang DITL ang magbubukas ng oil valve), tapos FICDO1043D 60 %.', c: b.ALL(b.BIT('M.3419', 1, 'burner D in service'), b.MV('FICDO1043D', 50, null)), fps: ['FICDO1043D'], get a() {
           return WL() ? [bIgn('D'), bOn('D'), bOil('D', 60)] : [btn('Buksan oil valve D', () => A.oil('M.3417', true)), btn('BURNER D ON', () => A.motor('M.3419', 1), () => bit('M.3419') > 0.5), btn('FICDO1043D M 60 %', () => A.man('FICDO1043D', 60))];
         } },
-      { st: 4, sec: 28, t: 'Hangin sa minimum: PA at SA damper 10 %', d: 'Bawasan ang hangin pagkatapos magsindi para hindi lumamig ang furnace.', c: b.ALL(b.MV('FICFA1071', null, 12), b.MV('FICFA1081', null, 12)), fps: ['FICFA1071', 'FICFA1081'], a: [btn('PA at SA MV 10 %', () => (A.man('FICFA1071', 10), A.man('FICFA1081', 10)))], coach: ['fire'] },
+      { st: 4, sec: 28, t: 'Hangin sa minimum: PA at SA damper 10 %', d: 'Bawasan ang hangin pagkatapos magsindi para hindi lumamig ang furnace (nananatili ang total air > 25 % MCR, PR-OPE-5002 5240). Kasabay, ibaba ang IDF coupling para hindi bumagsak ang furnace pressure sa PSLL −267 mmH₂O (MFT).', c: b.ALL(b.MV('FICFA1071', null, 12), b.MV('FICFA1081', null, 12)), fps: ['FICFA1071', 'FICFA1081'], a: [btn('PA at SA MV 10 %, IDF coupling PICFG108 MV 18 %', () => (A.man('FICFA1071', 10), A.man('FICFA1081', 10), md('PICFG108') === 'MAN' && A.man('PICFG108', 18)))], coach: ['fire'] },
       { st: 4, sec: 28, t: 'Pag-init: hintayin kumulo ang tubig (100 °C)', d: 'Habang umiinit, ang coach ang humahawak ng apoy para ang pagtaas ng temperatura ay ≤ 110 °C bawat oras (Fig 1). Pabilisin ang simulation kung gusto mo.', c: b.VAL('Tw', 100, null), wait: 1 },
       { st: 4, sec: 28, t: 'Drum pressure 2 kg/cm²: isara ang vents at drains (field)', d: 'Kapag may pressure na, isinasara ng field operator ang mga vent at drain ng steam side.', c: b.VAL('Pd', 2, null), wait: 1, field: [] },
       { st: 4, sec: 28, t: 'Drum pressure 15 kg/cm²: sindihan ang burner B at C', d: 'Sa 15 kg/cm² idinadagdag ang dalawa pang burner: SA damper at oil FCV sa ignition, BURNER ON (ang DITL ang magbubukas ng oil valve), tapos FICDO1043B / C 20 % (PR-OPE-5002: B / C pagkatapos ng 30 minuto).', c: b.ALL(b.VAL('Pd', 15, null), b.BURN4), fps: ['FICDO1043B', 'FICDO1043C'], get a() {
