@@ -1344,6 +1344,8 @@
     d.head('Starting state of the plant');
     btn('load150', 'At 150 MW (HMI snapshot)', 'Reset, then every transmitter that is on the control-room HMI snapshots takes its snapshot value (docs/hmi)', () => {
       try {
+        /* roadmap 3 (SPEC S5 / S6): a starting state is for the plant model ON only: picking one turns the model ON */
+        if (!AN.plantOn && AN.plantSwitch) AN.plantSwitch(true, true);
         AN.reset();
         const n = AN.plantLoad150();
         AN.startState = 'plantLoad150';
@@ -1363,6 +1365,7 @@
     });
     btn('loadcold', 'Cold (start-up from zero)', 'Reset, the 150 MW anchors, then the plant cold: drum 0 kg/cm2, water and bed 30 C, feeders and fans stopped, oil valves closed, every controller LOCAL + MANUAL 0 %. Training has the procedure.', () => {
       try {
+        if (!AN.plantOn && AN.plantSwitch) AN.plantSwitch(true, true);
         AN.reset();
         const n = AN.plantCold();
         AN.startState = 'plantCold';

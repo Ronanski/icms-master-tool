@@ -1059,6 +1059,11 @@ function anPlantCold() {
     /* 3.2.0-beta.14: and not from the PV of the 150 MW snapshot (pr.y0 of anPlantLoad150, still set on a sheet that was not stepped
        yet): ABC-034 gland steam temperature began at 185 C in a cold plant and took minutes to reach the ambient */
     for (const sh of L) for (const b of sh.S.procs || []) if (b.proc) b.proc.y0 = 0;
+    /* 3.2.0 roadmap 3: a TANK LEVEL keeps its water in a cold plant (no pump runs, nothing flows in or out): the model starts from the
+       level read now (deaerator LT-CD1104 71 mm, hotwell LT-CD1110 4 mm, at their normal level), not from the steady state of its
+       closed valve (the heater shells stay drained). Before, the cold level depended on whether the sheet had been stepped: a second Start cold read the deaerator at
+       -529 mm and the hotwell at -122 mm */
+    for (const sh of L) for (const b of sh.S.procs || []) if (b.proc && /^LICCD11(04|10A)$/.test((b.txt || [])[1] || '')) b.proc.y0 = 1;
     /* the drum level transmitters: the raw value that gives the snapshot level at the cold drum pressure (the density
        compensation LN38 / LN39 of the drawing changes with the pressure) */
     hmiComp(ai => /^AI0(130|258|386)$/.test(ai));
@@ -1096,6 +1101,12 @@ function anPlantCold() {
        transmitters). The settling steps are not plant time: the level model and its transmitters go back to where they were */
     if (lvl0) lvl0.put();
   } catch (e) {}
+  /* 3.2.0 roadmap 3: nor are they plant time for the slow temperatures of the unit model (unit.js anUnitStepX: feedwater, aux steam,
+     FA blowers): they start again at the value of the cold plant (TT-FW1160 kept 99 C, TT-AS1003 209 C) */
+  if (AN_UNIT.xt) {
+    const t = AN_UNIT.Tamb;
+    AN_UNIT.xt.T = { cr: t, aux: t, fw: t, fab0: t, fab1: t };
+  }
   AN.steady = false;
   AN.cold = true;
   return n;

@@ -224,6 +224,7 @@ function anUnitStop() {
   U.cold = false;
   U.turb = true;
   for (const m of U.mul || []) for (const p of m.pr) p.mul = undefined;
+  for (const z of U.spr || []) z.pr.uf = undefined;
   if (U.fwp && U.fwp.pr) U.fwp.pr.op = undefined;
   for (const p of U.fp || []) {
     p.pr.uf = undefined;
@@ -508,9 +509,119 @@ function anUnitStart() {
   U.idfS = ais('ABC-008', 'AI0481');
   U.idfV = ctlOut('ABC-008', 'PICFG108');
   U.idfRpm = [350, 1140];
+  /* ---- 3.2.0 roadmap 3 (starting points: Cold = a cold plant, not the 150 MW snapshot) and the P1 fix queue of
+     docs/versions/v3.2.0/INSTRUMENT_VALVE_COVERAGE.md ---- */
+  /* P2 #14: the second drum pressure transmitter PT-BR1001-2 (ABC-010 AI0385) reads the drum too (it kept 134.1 kg/cm2 in a cold plant) */
+  U.drum = U.drum.concat(anUnitAIs(s1 + '|AI0385'));
+  /* the cold reheat pressure PT-CR1003 and the HP bypass outlet pressure PT-MS1021 (ABC-051) are the reheater inlet: the same steam as
+     PT-CR1006, scaled with it (35.3 / 35.0 kg/cm2 at the anchor; they kept 35 kg/cm2 in a cold plant) */
+  U.rhp = U.rhp.concat([ais('ABC-051', 'AI0528'), ais('ABC-051', 'AI0566')].filter(l => l.length));
+  /* the first stage pressure of the turbine is not the only pressure that goes with the turbine steam: extraction no.4 PT-TS1022 (ABC-056,
+     deaerator heating steam) too */
+  U.pist = U.pist.concat([ais('ABC-056', 'AI0562')].filter(l => l.length));
+  /* temperatures that kept the 150 MW snapshot in a cold plant (roadmap 3), each written from the model with the metal lag:
+     - TT-CR1004 cold reheat (ABC-051): the HP turbine exhaust (the anchor 370 C moves with the main steam) and the HP bypass outlet
+       TT-MS1022 (after its spray), mixed by their steam; no steam = it cools to the ambient
+     - TT-CR1005-1 / -2 (ABC-019, after the RH spray): the cold reheat less the cooling of the RH spray (39 C at the anchor spray)
+     - TT-HR1004 hot reheat (ABC-052): the reheater outlet, PV of TICHR1002 (TT-HR1002), with its own offset of the snapshot
+     - TT-AS1003 aux steam header (ABC-034): 236 C with the header in service (PT-AS1004 source of ABC-030), ambient without it
+     - TT-FW1160 economizer inlet (ABC-010): the deaerator water (saturation of PT-CD1104, ambient while it is not heated) plus the HP
+       heaters, whose extraction steam goes with the turbine load (244 C at the anchor)
+     - TT-FA1055-A / -B FA blower outlet (ABC-006): the heat of compression while the blowers run (81 / 76 C at the anchor) */
+  U.xt = {
+    cr: ais('ABC-051', 'AI0900'),
+    byo: ais('ABC-051', 'AI0865'),
+    rhi: [ais('ABC-019', 'AI0866'), ais('ABC-019', 'AI0898')].filter(l => l.length),
+    hr: ais('ABC-052', 'AI0868'),
+    rhPv: ctlOut('ABC-019', 'TICHR1002'),
+    mst: ctlOut('ABC-012', 'TICMS1004'),
+    aux: ais('ABC-034', 'AI0642'),
+    auxP: ais('ABC-030', 'AI0514'),
+    fw: ais('ABC-010', 'AI0592'),
+    dea: ais('ABC-056', 'AI0417'),
+    fab: [ais('ABC-006', 'AI0579'), ais('ABC-006', 'AI0627')].filter(l => l.length),
+    faF: ais('ABC-006', 'AI0545')
+  };
+  {
+    const X = U.xt,
+      a = L => (L && L.a0 && isFinite(L.a0[0]) ? L.a0[0] : NaN);
+    X.cr0 = a(X.cr);
+    X.rhi0 = X.rhi.map(L => a(L));
+    X.rhv0 = X.rhPv && X.rhPv.c.q ? +X.rhPv.S.rt.v[X.rhPv.n] : NaN; /* RH spray MV at the anchor */
+    X.hrOff = X.rhPv && X.rhPv.c.q && X.rhPv.c.q.pv != null ? a(X.hr) - +X.rhPv.S.rt.v[X.rhPv.c.q.pv] : 0;
+    X.fw0 = a(X.fw);
+    X.dea0 = a(X.dea);
+    X.faF0 = a(X.faF);
+    X.MST0 = 541;
+    X.T = {};
+  }
+  /* P1 #1: VALVE POSITION = VALVE COMMAND. The position transmitter (ZT) of a damper / control valve follows the command of its station
+     (actuator lag tauZT, ASSUMED 3 s); before, it kept the snapshot (ZT-FA1053-1 35 % with the damper shut in a cold plant) */
+  U.tauZT = 3;
+  const manOut = (k, t) => {
+    const x = shOf(k),
+      b = x && x.S ? x.S.blk.find(z => z.k === 'MAN' && (z.tag === t || (z.txt || []).includes(t))) : null;
+    return b && b.o && b.o[0] != null && b.o[0] >= 0 ? { S: x.S, n: b.o[0] } : null;
+  };
+  const ztMap = [
+    ['ABC-003A', 'FICFA1043A', 'AI0291'],
+    ['ABC-003B', 'FICFA1043B', 'AI0437'],
+    ['ABC-003C', 'FICFA1043C', 'AI0582'],
+    ['ABC-003D', 'FICFA1043D', 'AI0629'],
+    ['ABC-007', 'FICFA1071', 'AI0192'],
+    ['ABC-007', 'FICFA1081', 'AI0193'],
+    ['ABC-008', 'PICFG108A', 'AI0194'],
+    ['ABC-008', 'PICFG108', 'AI0482'],
+    ['ABC-014', 'FICFA1055A', 'AI0176'],
+    ['ABC-014', 'FICFA1055B', 'AI0196']
+  ];
+  for (let i = 5; i <= 26; i++) {
+    const t = 'HICFA10' + String(i).padStart(2, '0');
+    ztMap.push([i <= 16 ? 'ABC-015' : 'ABC-016', t, null]);
+  }
+  ztMap.push(['ABC-020', 'HICHR1002A', 'S4 AI0368'], ['ABC-020', 'HICHR1002A', 'S4 AI0369'], ['ABC-020', 'HICHR1002A', 'S4 AI0370'], ['ABC-020', 'HICHR1002A', 'S4 AI0371']);
+  ztMap.push(['ABC-020', 'HICHR1002B', 'S4 AI0372'], ['ABC-020', 'HICHR1002B', 'S4 AI0373'], ['ABC-020', 'HICHR1002B', 'S4 AI0374'], ['ABC-020', 'HICHR1002B', 'S4 AI0375']);
+  U.zt = [];
+  for (const [k, t, ai] of ztMap) {
+    const x = shOf(k);
+    if (!x || !x.S) continue;
+    const S2 = x.S,
+      src = ctlOut(k, t) || manOut(k, t);
+    if (!src) continue;
+    /* the AI block of the ZT on that sheet: by its address, or (furnace wall dampers) the ZT whose tag number is the station's */
+    const L = [];
+    for (const b of S2.blk) {
+      if (b.k !== 'AI' || !b.o || b.o[0] == null) continue;
+      const nm = (AN.nm(S2, b.o[0]) || '').trim();
+      if (ai ? nm === ai : (AN.descOf ? AN.descOf(x, nm) || '' : '').startsWith('ZT-FA' + t.slice(5) + ' ')) L.push([S2, b]);
+    }
+    if (L.length) U.zt.push({ src, L, y: NaN });
+  }
+  /* P1 #5 SPRAY BLOCK VALVES (DITL shut-off valves; positions of the DITL valve model while the one world runs): no spray water with
+     the block valve shut, whatever the control valve (plant.js pr.uf = the share of the command that reaches the process).
+     ABC-011 TICBR1130 <- XV-FW1111-1 / -2 (DITL-32, #B), ABC-012 TICBR1150 <- XV-FW1121-1 / -2 (DITL-33, #B), ABC-019 TICHR1002 <-
+     XV-FW1151 (DITL-35), ABC-051 TICMS1022 <- XV-FW1061 (DITL-79, HP bypass), ABC-052 TICHR1012 <- XV-CD1114 (DITL-66, LP bypass) */
+  U.spr = [
+    ['ABC-011', 'TICBR1130', ['DITL-32', 'DITL-32 #B']],
+    ['ABC-012', 'TICBR1150', ['DITL-33', 'DITL-33 #B']],
+    ['ABC-019', 'TICHR1002', ['DITL-35']],
+    ['ABC-051', 'TICMS1022', ['DITL-79']],
+    ['ABC-052', 'TICHR1012', ['DITL-66']]
+  ]
+    .map(([k, t, v]) => {
+      const p = procOf(k, t);
+      return p ? { pr: p.pr, v } : null;
+    })
+    .filter(Boolean);
+  /* P1 #6 COAL FEEDER OUTLET DISCHARGE VALVE (DITL-20, #B, #C = feeder A / B / C: M.0478 / 0488 / 0498 OPEN P.B. of the memory list
+     STN104): the coal of a feeder reaches the furnace only through its open outlet valve */
+  U.cfo = ['DITL-20', 'DITL-20 #B', 'DITL-20 #C'];
   /* the transmitters this model writes: the plant model of a loop on them stops writing (ABC-001C PIC-COBM: main steam pressure) */
   const own = new Set();
-  const lists = [U.msp, U.drum, U.msf, U.spd || []].concat(U.mw, U.tin, U.rhp, U.pist, U.o2, [U.pa], U.tbed, U.aphT, U.saP, U.idfS.length ? [U.idfS] : []).concat(...U.sh.map(h => h.L));
+  const lists = [U.msp, U.drum, U.msf, U.spd || []]
+    .concat(U.mw, U.tin, U.rhp, U.pist, U.o2, [U.pa], U.tbed, U.aphT, U.saP, U.idfS.length ? [U.idfS] : [])
+    .concat(...U.sh.map(h => h.L))
+    .concat([U.xt.cr, U.xt.hr, U.xt.aux, U.xt.fw], U.xt.rhi, U.xt.fab, U.zt.map(z => z.L));
   for (const l of lists) for (const [S2, b] of l) own.add(S2.rt.st[b.id]);
   U.own = own;
   U.on = true;
@@ -548,6 +659,9 @@ function anUnitCold() {
   });
   U.o2v = 21;
   U.frT = undefined;
+  /* 3.2.0 roadmap 3: the temperatures of anUnitStepX start at their cold value (no lag from the 150 MW anchor) */
+  if (U.xt) U.xt.T = {};
+  for (const z of U.zt || []) z.y = NaN;
   for (const h of U.sh) h.x = U.Tamb;
   for (const L of U.tbed || []) anUnitWrite(L, U.Tamb);
   /* 3.2.0-beta.14: cold = the field equipment stopped too (diesel oil pump, source.js) */
@@ -635,6 +749,25 @@ function anTurbine(cmd, arg) {
   }
   return 'hindi kilalang utos: ' + cmd;
 }
+/* 3.2.0 roadmap 3: the position (0 ~ 100 %) of a valve of the DITL valve model (MOV / solenoid) by sheet ("DITL-32", an instance "DITL-32 #B",
+   a template valve "DITL-38 MV-MS1391"), while the one world runs; null without it (the engine alone, the DITL state is the operator's) */
+function anDitlPos(name, j) {
+  try {
+    if (typeof S === 'undefined' || !window.WORLD || !WORLD.live || typeof MST === 'undefined') return null;
+    const C = AN_UNIT._dv || (AN_UNIT._dv = {});
+    let s = C[name];
+    if (s === undefined) {
+      const re = new RegExp('\\)' + name.replace(/[.*+?^${}()|[\]\\#]/g, '\\$&') + '$');
+      s = C[name] = S.sheets.concat(WORLD.inst || []).find(x => re.test(x.name)) || null;
+    }
+    if (!s || !s.nl || !(s.nl.mv || []).length) return null;
+    const r = MST[s.name];
+    if (!r || !r[j || 0]) return s.nl.mv[j || 0].sv && s.nl.mv[j || 0].dir === 'close' ? 100 : 0;
+    return Math.max(0, Math.min(100, +r[j || 0].pos || 0));
+  } catch (e) {
+    return null;
+  }
+}
 function anUnitOwns(T, ids) {
   const U = AN_UNIT;
   return U.on && ids && ids.length && ids.some(id => U.own.has(T.rt.st[id]));
@@ -653,7 +786,11 @@ function anUnitStep(dt) {
     v = S.rt.v;
   /* coal of the three feeders (T/H) -> steam made in the drum (T/H), first order */
   /* 2.2.0-beta.14: + the oil of the start-up burners (ao x coal); the offset of the firing line fades out below 30 % of the anchor coal */
-  const F = U.fuel.reduce((a, l) => a + (anUnitVal(l) || 0), 0),
+  /* 3.2.0 P1 #6: the coal of a feeder through its outlet discharge valve (DITL-20) */
+  const F = U.fuel.reduce((a, l, i) => {
+      const o = U.cfo ? anDitlPos(U.cfo[i], 0) : null;
+      return a + (anUnitVal(l) || 0) * (o == null ? 1 : o / 100);
+    }, 0),
     oil = (U.oilN || []).reduce((a, x) => a + Math.max(0, +x.S.rt.v[x.n] || 0), 0),
     bf = Math.max(0, Math.min(1, (U.Tb - U.Tburn0) / (U.Tburn1 - U.Tburn0))),
     Fe = bf * F + U.ao * oil,
@@ -1005,7 +1142,10 @@ function anUnitStep(dt) {
     const taf = U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0),
       o2s = Math.max(0, Math.min(21, 21 * (1 - (Fe * U.afs) / Math.max(1, taf))));
     U.o2v += ((o2s - U.o2v) * dt) / U.tauO2;
-    for (const L of U.o2) shifted(L, U.o2v - U.O20);
+    /* 3.2.0 roadmap 3: each analyzer keeps its offset of the snapshot only in the flue gas: in air (no fire, 21 %) both read 21 (Cold
+       read 23.1 / 18.9 %) */
+    const ko = Math.max(0, Math.min(1, (21 - U.o2v) / Math.max(0.5, 21 - U.O20)));
+    for (const L of U.o2) anUnitWrite(L, i => Math.max(0, Math.min(21, U.o2v + (L.a0[i] - U.O20) * ko)));
   }
   /* PA to the furnace follows the PAF flow */
   if (U.paN >= 0 && U.pa0 > 0 && U.pa.length) scaled(U.pa, Math.max(0, +U.tafS.rt.v[U.paN]) / U.pa0);
@@ -1048,5 +1188,69 @@ function anUnitStep(dt) {
       const q = nair != null && nair < 1 && U.idf && U.idf.S.rt.pm ? U.idf.S.rt.pm[p.b.id] : null;
       if (q && isFinite(q.y)) q.y -= (1 - nair) * q.y * (1 - Math.exp(-dt / 5));
     }
+  }
+  anUnitStepX(dt, mso);
+}
+/* 3.2.0 roadmap 3 / P1: the transmitters of the cold plant, valve positions, spray block valves (see anUnitStart) */
+function anUnitStepX(dt, mso) {
+  const U = AN_UNIT,
+    X = U.xt,
+    lag = (k, x, tau) => {
+      const T = X.T;
+      if (!isFinite(x)) return T[k];
+      T[k] = !isFinite(T[k]) ? x : T[k] + ((x - T[k]) * Math.min(dt, tau)) / tau;
+      return T[k];
+    },
+    val = L => anUnitVal(L || []),
+    pvOf = o => (o && o.c && o.c.q && o.c.q.pv != null ? +o.S.rt.v[o.c.q.pv] : NaN);
+  if (X) {
+    /* cold reheat: the HP turbine exhaust and the HP bypass outlet, mixed by their steam */
+    const mst = pvOf(X.mst),
+      thx = isFinite(X.cr0) ? X.cr0 + (isFinite(mst) ? mst - X.MST0 : 0) : NaN,
+      tby = val(X.byo),
+      w = (U.ms || 0) + (U.mhp || 0);
+    const tcr = lag('cr', w > 1 ? ((U.ms || 0) * Math.max(U.Tamb, thx) + (U.mhp || 0) * (isFinite(tby) ? tby : U.Tamb)) / w : (X.T.cr != null ? X.T.cr + ((U.Tamb - X.T.cr) * dt) / (20 * U.tauT) : U.Tamb), U.tauT);
+    if (isFinite(tcr)) {
+      anUnitWrite(X.cr, tcr);
+      /* after the RH spray: the cooling of the anchor spray, in the share of the spray MV that reaches the water (block valve) */
+      const mv = X.rhPv ? Math.max(0, +X.rhPv.S.rt.v[X.rhPv.n] || 0) : 0,
+        sp = U.spr && U.spr.find(z => z.v[0] === 'DITL-35'),
+        uf = sp && sp.pr.uf != null ? sp.pr.uf : 1,
+        k = X.rhv0 > 1 ? Math.min(2, (mv * uf) / X.rhv0) : 0;
+      X.rhi.forEach((L, i) => anUnitWrite(L, Math.max(U.Tamb, tcr - (isFinite(X.rhi0[i]) && isFinite(X.cr0) ? (X.cr0 - X.rhi0[i]) * k * (w > 1 ? 1 : 0) : 0))));
+    }
+    /* hot reheat temperature: the reheater outlet */
+    const rht = pvOf(X.rhPv);
+    if (isFinite(rht)) anUnitWrite(X.hr, rht + X.hrOff * Math.max(0, Math.min(1, (rht - U.Tamb) / 300)));
+    /* aux steam header: in service with its pressure */
+    const pa = val(X.auxP);
+    if (X.aux && X.aux.length) {
+      const a0 = X.aux.a0[0];
+      anUnitWrite(X.aux, lag('aux', U.Tamb + (a0 - U.Tamb) * Math.max(0, Math.min(1, (pa || 0) / 10.2)), 300));
+    }
+    /* feedwater to the economizer: deaerator water + HP heaters (with the turbine load) */
+    if (X.fw && X.fw.length && isFinite(X.fw0)) {
+      const pd = val(X.dea),
+        tdea = isFinite(pd) && pd > 0.05 ? steamTsat(pd) : U.Tamb,
+        tdea0 = isFinite(X.dea0) && X.dea0 > 0.05 ? steamTsat(X.dea0) : 120,
+        ld = U.MW0 > 0 ? Math.max(0, Math.min(1.1, (U.MW || 0) / U.MW0)) : 0;
+      anUnitWrite(X.fw, lag('fw', tdea + Math.max(0, X.fw0 - tdea0) * ld, 600));
+    }
+    /* FA blowers: heat of compression while the air flows */
+    if (X.fab.length && X.faF0 > 0) {
+      const r = Math.max(0, Math.min(1.2, (val(X.faF) || 0) / X.faF0));
+      X.fab.forEach((L, i) => anUnitWrite(L, lag('fab' + i, U.Tamb + (L.a0[0] - U.Tamb) * r, 120)));
+    }
+  }
+  /* valve position = valve command */
+  for (const z of U.zt || []) {
+    const c = Math.max(0, Math.min(100, +z.src.S.rt.v[z.src.n] || 0));
+    z.y = !isFinite(z.y) ? c : z.y + ((c - z.y) * Math.min(dt, U.tauZT)) / U.tauZT;
+    anUnitWrite(z.L, z.y);
+  }
+  /* spray block valves: the share of the spray command that reaches the water */
+  for (const z of U.spr || []) {
+    const ps = z.v.map(n => anDitlPos(n, 0));
+    z.pr.uf = ps.some(x => x == null) ? undefined : ps.reduce((a, x) => a + x, 0) / (100 * ps.length);
   }
 }
