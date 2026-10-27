@@ -57,6 +57,12 @@ const tcsLin = (pts, x) => {
     }
   return pts[pts.length - 1][1];
 };
+/* P2 #13: a push button row of a DITL MOV pressed from the TCS panel (row of the drawing, 1-based; no one world: nothing) */
+function tcsDitl(L) {
+  try {
+    if (window.LS_DOCK && LS_DOCK.dpress) for (const [nm, r] of L) LS_DOCK.dpress(nm, r - 1);
+  } catch (e) {}
+}
 /* the turbine state: cold (Start cold: everything stopped, metal at the ambient) or in service (Start at 150 MW) */
 function tcsInit(U, how) {
   const T = U.Tamb || 30;
@@ -256,12 +262,15 @@ function tcsCmd(U, cmd, arg) {
       if (!on) {
         c.ej = false;
         c.vb = true;
+        tcsDitl([['DITL-55', 14], ['DITL-54', 14], ['DITL-56', 4]]);
         return '';
       }
       if (!(c.Pa > 10)) return 'vacuum up: aux steam > 10 kg/cm2 (PR-OPE-5002 6545), ngayon ' + c.Pa.toFixed(1);
       if (!c.gland) return 'vacuum up: gland sealing muna (PR-OPE-5002 6545)';
       c.vb = false;
       c.ej = true;
+      /* P2 #13: the vacuum breaker MOV CLOSE, then the ejector steam MOVs OPEN (DITL-56 / 55 / 54 push buttons, rows of the drawing) */
+      tcsDitl([['DITL-56', 14], ['DITL-55', 5], ['DITL-54', 5]]);
       return '';
     case 'hood' /* LP exhaust hood spray FVCD1904 AUTO (PR-OPE-5002 6307, with the vacuum up) */:
       c.hsp = on;

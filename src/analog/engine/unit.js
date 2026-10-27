@@ -829,8 +829,20 @@ function anUnitStep(dt) {
        WARMING UP, REQUIREMENT: MS Pressure > 12 Kg/cm2", MV-AS1391). No aux steam: the vacuum does not rise (it is held, not lost) */
     /* 3.2.0-beta.38: with the TCS model (tcs.js) the ejectors raise the vacuum: aux steam > 10, gland sealing in service, vacuum breaker
        MV-AV1391 closed (PR-OPE-5002 6545); an open vacuum breaker breaks it */
-    const tcx = U.tc,
-      aux = tcx ? tcx.ej && !tcx.vb && tcx.Pa > 10 && tcx.gland : U.Pd > 12,
+    const tcx = U.tc;
+    /* P2 #13 (INSTRUMENT_VALVE_COVERAGE.md): with the one world the ejectors and the vacuum breaker are the DITL MOVs, not a separate
+       panel state: start-up ejector MV-AS1395 (DITL-54), steam jet air ejector MV-AS1396 (DITL-55), vacuum breaker MV-AV1391 (DITL-56).
+       The TCS VACUUM UP command presses them (tcs.js tcsDitl); a breaker opened on the DITL breaks the vacuum */
+    if (tcx) {
+      const p54 = anDitlPos('DITL-54', 0),
+        p55 = anDitlPos('DITL-55', 0),
+        p56 = anDitlPos('DITL-56', 0);
+      if (p54 != null && p55 != null && p56 != null) {
+        tcx.vb = p56 > 5;
+        tcx.ej = p54 > 50 || p55 > 50;
+      }
+    }
+    const aux = tcx ? tcx.ej && !tcx.vb && tcx.Pa > 10 && tcx.gland : U.Pd > 12,
       cw2 = tcx && tcx.vb ? 0 : cw;
     U.aux = aux ? 1 : 0;
     U.vac = Math.max(0, Math.min(1, cw2 > U.vac ? (aux ? U.vac + dt / U.vacUp : U.vac) : U.vac + ((cw2 - U.vac) * dt) / U.vacDn));
