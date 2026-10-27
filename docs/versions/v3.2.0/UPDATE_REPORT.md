@@ -982,7 +982,7 @@ Code lang at `npm run build` / `npm run check`. WALANG run, probe o test (user 2
 | 13 | ABC-057 sa likod ng Training | Sa simula ng Gabay, ang logic sa likod ay ang drawing ng unang DCS step (DITL-29A SWP); nananatili sa Training page | dock.js `start` | ayos, hindi nasubok |
 | 15, 16 | verify | Binasa ang code: "Nilo-load ang Cold…" at field confirm habang PAUSED, nandoon pa | home.js, dock.js | code-read lang |
 | 23 | "Update?" nakatakip sa Home heading | Ang button ay diretso sa ⚙ menu ("Check for update") pagkagawa nito | update-question.js, app.js `lsUpdHome` | ayos, hindi nasubok |
-| 24 | Walang build id | Status bar: "v3.2.0-beta.39 · build xxxxxxx" (7 hex ng sha256 ng page; parehong source = parehong id). Hindi binago ang version | build.js, category-search.js | ayos (build 0aefc5d bago ang docs) |
+| 24 | Walang build id | Status bar: "v3.2.0-beta.39 · build xxxxxxx" (7 hex ng sha256 ng page; parehong source = parehong id). Hindi binago ang version | build.js, category-search.js | ayos (build 83070d1) |
 | 25 | Kulay ng lamp | RUN = pula, STOP = berde, TRIP = amber na kumikislap hanggang ACK | dock.css `.gd-lamp`; Plant view pump / fan / motor (RUN pula na dati) | ayos, hindi nasubok |
 | 26 | Tick sa dock ≠ Training list | Iisang tick (`ls-train`): ang dock ay nag-a-update ng list agad, at ang dock ay muling gumuguhit kapag nag-tick sa list | dock.js `fill` / `live` | ayos, hindi nasubok |
 | 27 | Hiwalay ang bago / pagkatapos i-START | "BAGO I-START" at "PAGKATAPOS I-START": ang pangalawa ay naka-lock hanggang tumatakbo ang equipment. Hati sa unang SOP item na "START / Initiate ON / RUN" | dock.js; lahat ng hakbang na may START | ayos, hindi nasubok |

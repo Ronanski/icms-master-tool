@@ -727,7 +727,8 @@ document.head.appendChild(
       c1.className = k;
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
-      c3.textContent = 'v@@VERSION@@ · build @@BUILD@@'; /* 3.2.0 retest #24 */
+      c3.textContent = 'v@@VERSION@@';
+      c3.textContent += ' · build @@BUILD@@'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
