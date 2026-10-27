@@ -300,7 +300,9 @@
         b.onclick = function () {
           check(true);
         };
-        g.append(b);
+        /* 3.2.0 retest #23: into the settings menu of the shell at once (not over the Home heading) */
+        if (window.lsUpdHome) window.lsUpdHome(b);
+        else g.append(b);
       }
       check(false);
     }, 1500);

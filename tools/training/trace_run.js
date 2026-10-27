@@ -11,7 +11,7 @@ await p.evaluate(()=>{const b=[...document.querySelectorAll('#gdock .gd-seg butt
 await p.evaluate(()=>{const b=document.querySelector('#gdock .gd-pill');if(b&&/PAUSED/.test(b.textContent))b.click()});await p.waitForTimeout(500);
 let last=-1,lt=0;const t0=Date.now();
 const f=(x,d)=>x==null||!isFinite(x)?'-':(+x).toFixed(d||0);
-while(Date.now()-t0<25*60e3){const r=await p.evaluate(()=>{const s0=LS_GUIDE.steps()[LS_GUIDE.cur];for(const a of (s0&&s0.a)||[])if(a.ad)try{LS_DOCK.fieldSet(LS_DOCK.fieldOf(a.ad).field)}catch(e){}LS_GUIDE.doIt();LS_GUIDE.scan();const H=LS_GUIDE.h(),U=AN.unit||{};
+while(Date.now()-t0<25*60e3){const r=await p.evaluate(()=>{const s0=LS_GUIDE.steps()[LS_GUIDE.cur];for(const a of (s0&&s0.a)||[])if(a.ad)try{LS_DOCK.fieldSet(LS_DOCK.fieldOf(a.ad).field)}catch(e){}LS_GUIDE.autoNext=true;LS_GUIDE.doIt();LS_GUIDE.scan();const H=LS_GUIDE.h(),U=AN.unit||{};
  const g=k=>{try{return H[k]()}catch(e){return null}};
  return {cur:LS_GUIDE.cur,t:s0&&s0.t,simt:AN.sheets[0].S?AN.sheets[0].S.rt.t:0,MW:g('MW'),MSF:g('MSF'),MSP:g('MSP'),MST:g('MST'),O2:g('O2'),PA:g('PA'),lvl:g('lvl'),FW:g('FW'),RHP:g('RHP'),Tb:U.Tb,Fc:U.Fc,blo:H.mv?H.mv('ABC-013','PICMS1002'):null,hpb:H.mv?H.mv('ABC-050','PICMS1006'):null}});
  const line=()=>'t'+f(r.simt/60,1)+'m MW '+f(r.MW,1)+' MSF '+f(r.MSF)+' MSP '+f(r.MSP,1)+' MST '+f(r.MST)+' O2 '+f(r.O2,1)+' PA '+f(r.PA)+' bed '+f(r.Tb)+' coal '+f(r.Fc,1)+' lvl '+f(r.lvl)+' FW '+f(r.FW)+' RHP '+f(r.RHP,1)+' blo '+f(r.blo)+' hpb '+f(r.hpb);

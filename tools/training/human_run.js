@@ -29,7 +29,7 @@ while(Date.now()-T0<55*60e3){
  if(/^HAKBANG 64/.test(c.eb)&&Date.now()-since>60e3&&!global.__v64||(/^HAKBANG 64/.test(c.eb)&&Date.now()-(global.__v64||0)>60e3)){global.__v64=Date.now();L('   hold:',c.cond.slice(0,260))}
  const band=await p.evaluate(()=>((document.querySelector('#crband')||document.body).textContent||'').slice(0,4000));if(/\bMFT\b/.test(band)&&/TRIP/.test(band)){L('TRIP on screen');await p.screenshot({path:OUT+'/trip.png'});break}
  const B=await see();let acted=false;
- for(const x of B.filter(x=>x.fld||/^Tapos na ito sa field/.test(x.t))){if(await press(x.t)){L('   click:',x.t);acted=true;break}}
+ for(const x of B.filter(x=>x.fld||/^(Tapos na ito sa field|Susunod)/.test(x.t))){if(await press(x.t)){L('   click:',x.t);acted=true;break}}
  if(!acted)for(const x of B){if(x.fld||x.ov||x.lk||x.pre||x.did||/^STOP|^Tapos na ito/.test(x.t))continue;
    if(/^START/.test(x.t)){if(started.has(x.t))continue;if(x.dis){if(!done.has('w'+x.t)){L('   waiting, START locked by interlock:',x.t);done.add('w'+x.t)}break}if(await press(x.t)){started.add(x.t);L('   click:',x.t);acted=true}break}
    if(done.has(x.t)&&Date.now()-(lastPress[x.t]||0)<60e3)continue;if(x.dis)continue;if(await press(x.t)){done.add(x.t);lastPress[x.t]=Date.now();L('   click:',x.t);acted=true;break}}

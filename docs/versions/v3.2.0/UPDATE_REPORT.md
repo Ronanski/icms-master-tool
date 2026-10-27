@@ -969,3 +969,29 @@ Tools: ang checkpoint / human / fullrun / trace runs ay pumipindot ng RUN pagkat
 Nasubok (maikling probe, hindi buong run): bukas ang app nang walang error; Cold = PAUSED ×1, t = 0, drum −296 mm, header 1 ALARM, 6 field items, Hakbang 2 = Section 2 / 48 na may 35 items, SWP-A / B / C lahat naka-block, FIELD button → SWP-A START bukas at Events "FIELD". `npm run check` SAME.
 Hindi nasubok: buong Cold → 150 MW (hinihintay ang utos ng user).
 Maikling checkpoint run mula Cold hanggang Hakbang 16 (`--until 16`, mga 2.5 min): walang page error; ang drum ay −296 mm hanggang buksan ang start-up valve sa Hakbang 14, at pumasa ang Hakbang 14 (level ≥ −200 mm at valve sarado, 10 s).
+
+## 3.2.0-beta.39 (dev, retest fixes, 2026-10-28) — 18 findings ng retest (live Training test ng user)
+
+Code lang at `npm run build` / `npm run check`. WALANG run, probe o test (user 2026-10-28: "walang quick run ... Ang test ay tanging live testing lamang"). Lahat ng nasa ibaba ay HINDI pa nasubok; susubukin ng user nang live, isang hakbang bawat G.
+
+| # | Finding | Ayos | Saan inilapat | Estado |
+|---|---|---|---|---|
+| 5 | "Simulan ang 6 h purge" habang PAUSED, tumalon agad | Habang PAUSED, ang field card ay lilipat lang kapag tapos na ang 6 h (oras ng planta) | guide.js `scan` | ayos, hindi nasubok |
+| 9 | AUTO tick | Binasa ang code: latch lang kapag nakitang 0 → 1 mula reset o may tick ang naunang section | live.js | code-read lang |
+| 12 | Walang confirmation / Undo sa Clear | Tinanggal ang browser pop-up (sinasara ng ibang browser); ang resulta at Undo ay nasa page. Pareho sa Gabay: "Bagong Gabay mula Cold: nabura ang n tick" + Undo | home.js `clearNote` | ayos, hindi nasubok |
+| 13 | ABC-057 sa likod ng Training | Sa simula ng Gabay, ang logic sa likod ay ang drawing ng unang DCS step (DITL-29A SWP); nananatili sa Training page | dock.js `start` | ayos, hindi nasubok |
+| 15, 16 | verify | Binasa ang code: "Nilo-load ang Cold…" at field confirm habang PAUSED, nandoon pa | home.js, dock.js | code-read lang |
+| 23 | "Update?" nakatakip sa Home heading | Ang button ay diretso sa ⚙ menu ("Check for update") pagkagawa nito | update-question.js, app.js `lsUpdHome` | ayos, hindi nasubok |
+| 24 | Walang build id | Status bar: "v3.2.0-beta.39 · build xxxxxxx" (7 hex ng sha256 ng page; parehong source = parehong id). Hindi binago ang version | build.js, category-search.js | ayos (build 0aefc5d bago ang docs) |
+| 25 | Kulay ng lamp | RUN = pula, STOP = berde, TRIP = amber na kumikislap hanggang ACK | dock.css `.gd-lamp`; Plant view pump / fan / motor (RUN pula na dati) | ayos, hindi nasubok |
+| 26 | Tick sa dock ≠ Training list | Iisang tick (`ls-train`): ang dock ay nag-a-update ng list agad, at ang dock ay muling gumuguhit kapag nag-tick sa list | dock.js `fill` / `live` | ayos, hindi nasubok |
+| 27 | Hiwalay ang bago / pagkatapos i-START | "BAGO I-START" at "PAGKATAPOS I-START": ang pangalawa ay naka-lock hanggang tumatakbo ang equipment. Hati sa unang SOP item na "START / Initiate ON / RUN" | dock.js; lahat ng hakbang na may START | ayos, hindi nasubok |
+| 28 | Interlock / FIELD habang PAUSED | Ipinapakita ang huling estado ng one world habang PAUSED; ang FIELD button ay gumagana at gumagawa ng isang scan (dt 0, walang timer) | dock.js `wlOn`, `pscan`, `interlock`, `dout` | ayos, hindi nasubok |
+| 29 | START / STOP walang feedback | START pula kapag RUNNING, STOP berde kapag STOPPED, may label RUNNING / STOPPED / TRIP (pindutin para ACK) | dock.js; LAHAT ng motor button ng Gabay (dmot / mot), dryer, debris filter, compressor (local) | ayos, hindi nasubok |
+| 30 | Kusang lumilipat ang Gabay | "✓ TAPOS: <resulta>" at "Susunod ›"; ang field card ay lumilipat sa sariling "Tapos na ito sa field" ng trainee. Test tools: `autoNext` / pindot ng Susunod | guide.js `done` / `next`, dock.js, tools/training | ayos, hindi nasubok |
+| 31 | LOW-LOW nawala sa RUN, walang ACK / RTN | ISANG alarm list ng buong DCS (lahat ng ABC sheet, PAUSED o RUN): ALM → ACK → RTN sa Events; ang header ay bilang ng buong DCS, kumikislap ang hindi pa na-ACK, pindot = listahan na may ACK / ACK ALL. Ang alarm na nakatayo sa simula = isang event | events.js `lsAlarms`, cr.js, app.css, hmi.css | ayos, hindi nasubok |
+| 32 | Hakbang 4 = 135 item ng sec 3–13 | Isang hakbang bawat SOP section | guide.js `FIELD` (pati sec 28–35, 36–39) | ayos, hindi nasubok |
+| 33 | Equipment sec 3–12 tick lang | Hypo pump (FIELD start), debris filters (DITL-39 AUTO START), SWBP (DITL-30 A/B/C), MWP (DITL-112), ACW (DITL-76/77), IA / PA dryer (DITL-45), IA / PA compressor (local start DITL-113 / 114), RAH (DITL-43): may button, lamp, interlock | guide.js, source.js / unit.js (`hypo`) | ayos, hindi nasubok |
+| 34 | Walang TRIP | Ang TRIP output ng bawat motor drawing ("… TRIP · CRT (ANN)") ay nasa alarm list (kumikislap hanggang ACK), header, Events, dock lamp / label at Plant view (amber na kumikislap) | events.js, dock.js, plant.js | ayos, hindi nasubok |
+
+Labas ng Training na binago rin (parehong uri ng mali): header alarm at Events para sa buong app; Plant view TRIP; Update button sa lahat ng page; build id sa status bar.

@@ -333,7 +333,9 @@
         b.onclick = function () {
           check(true);
         };
-        g.append(b);
+        /* 3.2.0 retest #23: into the settings menu of the shell at once (not over the Home heading) */
+        if (window.lsUpdHome) window.lsUpdHome(b);
+        else g.append(b);
       }
       check(false);
     }, 1500);
@@ -21184,6 +21186,7 @@ function anUnitStart() {
   U.tc = null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
   /* 3.2.0-beta.14: the snapshot plant has its diesel oil pump in service (source.js field equipment) */
   AN_SRC.field.dop = true;
+  AN_SRC.field.hypo = true;
   AN.unit = U;
 }
 /* 2.2.0-beta.14 (M4 step 1): the plant cold, with the anchors of "Start at 150 MW" kept (called by hmi-op.js anPlantCold after
@@ -21222,6 +21225,7 @@ function anUnitCold() {
   for (const L of U.tbed || []) anUnitWrite(L, U.Tamb);
   /* 3.2.0-beta.14: cold = the field equipment stopped too (diesel oil pump, source.js) */
   AN_SRC.field.dop = false;
+  AN_SRC.field.hypo = false;
   AN_SRC.t = -1;
   tcsInit(U, 'cold');
   return true;
@@ -22418,7 +22422,7 @@ function tcsState() {
    The machines that have no DCS signal (diesel oil pump P-0005, DITL-31) are FIELD equipment: AN.field (Start ▾ > Field equipment).
    Numbers marked ASSUMED are not in the repository. */
 const AN_SRC = {
-  field: { dop: true },
+  field: { dop: true, hypo: true } /* 3.2.0 retest #33: hypochlorite pump (no DCS signal) */,
   Tamb: 30,
   st: null,
   t: -1,
@@ -28893,7 +28897,7 @@ document.head.appendChild(
       c1.className = k;
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
-      c3.textContent = 'v3.2.0-beta.39';
+      c3.textContent = 'v3.2.0-beta.39 · build 0aefc5d'; /* 3.2.0 retest #24 */
     } catch (e) {}
   };
   upd();
@@ -47490,21 +47494,25 @@ body.cr #gsbar > #crband{flex:1 1 100%;height:var(--top);display:flex;align-item
 body.cr #crband > #cralarm{flex:1 1 0;display:flex;align-items:center;gap:.625rem;height:2.25rem;padding:0 .375rem 0 .75rem;min-width:8rem;background:var(--c-ribbon);border:1px solid var(--c-line);border-radius:var(--r);font:400 .8125rem var(--uf);color:var(--c-tx2)}
 body.cr #crband > #cralarm.on{background:var(--c-almsoft);border-color:var(--c-alm)}
 #cralarm .crchip{display:inline-flex;align-items:center;gap:.3125rem;height:1.25rem;padding:0 .5rem;border-radius:.625rem;font:600 .6875rem var(--uf);letter-spacing:.05em;white-space:nowrap;flex:none}
-#cralarm .crchip.alm{background:var(--c-alm);color:#fff}
+#cralarm .crchip.alm{background:var(--c-alm);color:#fff;cursor:pointer}
+#cralarm .crchip.alm.unack{animation:crblink 1s steps(2,start) infinite}
+@keyframes crblink{50%{background:#f59e0b;color:#1a1200}}
+#cralist .crfr.unack .crfn{font-weight:700;color:var(--c-almtx)}#cralist .crfr.rtn .crfn{color:var(--c-dim)}#cralist .crfr.trip.unack{animation:crblink 1s steps(2,start) infinite}
+#cralist .crfr.crfr{grid-template-columns:auto minmax(0,1fr) auto auto}
 #cralarm .crchip.mut{background:var(--c-ctlh);color:var(--c-dim)}
 #cralarm .crchip.frc{background:var(--c-frcsoft);color:var(--c-frctx)}
 /* 3.2.0-beta.6: the FORCED chip opens one list of the user's forces on all ABC sheets */
 #cralarm .crchip.frc{cursor:pointer}
 body.cr #crband > #cralarm{position:relative}
-#crflist{display:none;position:absolute;right:0;top:calc(100% + .25rem);z-index:60;width:min(30rem,calc(100vw - 2rem));max-height:60vh;overflow:auto;background:var(--c-pane);color:var(--c-tx);border:1px solid var(--c-line2);border-radius:var(--r);box-shadow:0 .5rem 1.5rem rgba(0,0,0,.25);padding:.5rem;font:400 .8125rem var(--uf)}
-#crflist.open{display:grid;gap:.25rem}
-#crflist .crfh{display:flex;justify-content:space-between;align-items:center;font-weight:600;padding:0 .25rem .25rem}
-#crflist .crfr{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;gap:.5rem;align-items:center;padding:.25rem;border-top:1px solid var(--c-line)}
-#crflist .crfs{font:600 .75rem var(--mf);color:var(--c-dim)}
-#crflist .crfn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#crflist .crfv{font:600 .75rem var(--mf);color:var(--c-frctx)}
-#crflist .crfe{color:var(--c-dim);padding:.25rem}
-#crflist button{min-height:1.75rem;padding:0 .5rem}
+#crflist,#cralist{display:none;position:absolute;right:0;top:calc(100% + .25rem);z-index:60;width:min(30rem,calc(100vw - 2rem));max-height:60vh;overflow:auto;background:var(--c-pane);color:var(--c-tx);border:1px solid var(--c-line2);border-radius:var(--r);box-shadow:0 .5rem 1.5rem rgba(0,0,0,.25);padding:.5rem;font:400 .8125rem var(--uf)}
+#crflist.open,#cralist.open{display:grid;gap:.25rem}
+#crflist .crfh,#cralist .crfh{display:flex;justify-content:space-between;align-items:center;font-weight:600;padding:0 .25rem .25rem}
+#crflist .crfr,#cralist .crfr{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;gap:.5rem;align-items:center;padding:.25rem;border-top:1px solid var(--c-line)}
+#crflist .crfs,#cralist .crfs{font:600 .75rem var(--mf);color:var(--c-dim)}
+#crflist .crfn,#cralist .crfn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#crflist .crfv,#cralist .crfv{font:600 .75rem var(--mf);color:var(--c-frctx)}
+#crflist .crfe,#cralist .crfe{color:var(--c-dim);padding:.25rem}
+#crflist button,#cralist button{min-height:1.75rem;padding:0 .5rem}
 #cralarm .crat{font:400 .8125rem var(--mf);color:var(--c-dim);flex:none}
 #cralarm .cratx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 #cralarm.on .cratx{color:var(--c-almtx);font-weight:600}
@@ -47978,8 +47986,27 @@ html.gd-bottom .gd-kvs{grid-template-columns:repeat(8,minmax(0,1fr))}
 .gd-kv em{font-style:normal;font-size:11.5px;color:var(--c-dim)}
 .gd-lamps{display:flex;flex-wrap:wrap;gap:3px 10px;margin-top:5px}
 .gd-lamp{font:600 12.5px var(--uf);color:var(--c-tx2);white-space:nowrap}
-.gd-lamp:before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:-1px;background:var(--c-alm)}
-.gd-lamp.on:before{background:var(--c-run)}
+/* 3.2.0 retest #25: equipment status in the power plant convention: RUN = red, STOP = green; TRIP = amber, flashing until ACK (#34) */
+.gd-lamp:before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:-1px;background:#22a052}
+.gd-lamp.on:before{background:#dc2626}
+.gd-lamp.trip:before{background:#f59e0b}
+.gd-lamp.blink:before{animation:gdblink 1s steps(2,start) infinite}
+@keyframes gdblink{50%{background:#dc2626;opacity:.35}}
+.gd-btn.lit-run{background:#dc2626;border-color:#dc2626;color:#fff}
+.gd-btn.lit-stop{background:#22a052;border-color:#22a052;color:#fff}
+.gd-btn.lit-run small,.gd-btn.lit-stop small{color:#fff;opacity:.85}
+.gd-mst{border:1px solid var(--c-line2);background:var(--c-well);color:var(--c-tx2);border-radius:6px;padding:4px 10px;font:700 13px var(--mf);letter-spacing:.04em;min-height:36px;cursor:default}
+.gd-mst.run{color:#fff;background:#dc2626;border-color:#dc2626}
+.gd-mst.stop{color:#fff;background:#22a052;border-color:#22a052}
+.gd-mst.trip{color:#1a1200;background:#f59e0b;border-color:#f59e0b}
+.gd-mst.blink{cursor:pointer;animation:gdblink2 1s steps(2,start) infinite}
+@keyframes gdblink2{50%{background:#dc2626;color:#fff}}
+.gd-brk{flex-basis:100%;height:0}
+.gd-okb{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0;padding:8px 10px;border:1px solid var(--c-run);border-radius:7px;background:var(--c-runsoft);font:600 14px var(--uf);color:var(--c-runtx2)}
+.gd-okb[hidden]{display:none}
+.gd-flg{margin:8px 0 2px;font:700 12px var(--uf);letter-spacing:.06em;color:var(--c-tx2)}
+.gd-fle{font:400 13px var(--uf);color:var(--c-dim)}
+.gd-fl li.lk{opacity:.55}
 .gd-prog{padding:7px 12px 3px}
 .gd-bar{height:5px;border-radius:3px;background:var(--c-line)}
 .gd-bar i{display:block;height:100%;border-radius:3px;background:var(--c-run);transition:width .3s}
@@ -50027,6 +50054,12 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
       $('updbtn').textContent = 'Check for update';
       set.m.append($('updbtn'));
     }
+    /* 3.2.0 retest #23: the update button made after the page load goes straight into this menu (it sat over the Home heading until the
+       next check of the 2 s interval below) */
+    window.lsUpdHome = b => {
+      b.textContent = 'Check for update';
+      set.m.append(b);
+    };
     const brand = E('div', {
       cls: 'brand',
       title: 'DCS Logic Simulator',
@@ -52132,10 +52165,21 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
     };
     fChip.onclick = fOpen;
     fChip.onkeydown = e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), fOpen());
-    alarm.append(aChip, aT, aTx, aSp, fChip, fList);
+    /* 3.2.0 retest #31: the alarm list (the alarm summary of the DCS) with ACK */
+    const aList = E('div');
+    aList.id = 'cralist';
+    aChip.setAttribute('role', 'button');
+    aChip.tabIndex = 0;
+    aChip.title = 'Alarm list of the whole DCS: ACK';
+    const aOpen = () => {
+      if (aList.classList.toggle('open')) aFill();
+    };
+    aChip.onclick = aOpen;
+    aChip.onkeydown = e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), aOpen());
+    alarm.append(aChip, aT, aTx, aSp, fChip, fList, aList);
     const ev = $('evbtn'),
       evMark = mark(ev);
-    P = { rail, band, alarm, moved, ev, evMark, gs, tabs, brand, set, setM, setB, sub, crumb, srchBtn, srch, seg, tbar, unit, kpis, K, aChip, aT, aTx, fChip, sp };
+    P = { rail, band, alarm, moved, ev, evMark, gs, tabs, brand, set, setM, setB, sub, crumb, srchBtn, srch, seg, tbar, unit, kpis, K, aChip, aT, aTx, fChip, sp, aList };
     band.append(unit, kpis, E('div', 'crgrow'));
     /* ⚙ in the rail: its menu opens beside the rail, above the bottom of the screen */
     setB.addEventListener('click', () => {
@@ -52260,38 +52304,33 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
       if (k.v.textContent !== t) k.v.textContent = t;
       k.b.classList.toggle('na', !isFinite(x));
     }
-    /* active alarms and trips from the Event log (ALM until back to normal, TRIP until reset) */
+    /* active alarms and trips. 3.2.0 retest #31 #34: the alarm table of the whole DCS (events.js lsAlarms: every ABC sheet, PAUSED or
+       RUN, and the motor TRIPs of the DITL), with ACK; the TRIP nets of the ABC sheet on screen from the Event log (TRIP until reset).
+       Before: the sheet on screen only (the LOW-LOW of ABC-057 went away when the screen moved to a DITL sheet) */
     const L = window.lsEvents || [],
       act = new Map();
     for (let i = L.length - 1; i >= 0; i--) {
       const e = L[i];
       let m;
-      if (e.kind === 'ALM' && (m = /^(.*) \S+$/.exec(e.text))) act.set(e.sh + '|' + m[1], e);
-      else if (e.kind === 'RTN' && (m = /^(.*) back to normal$/.exec(e.text))) act.delete(e.sh + '|' + m[1]);
-      else if (e.kind === 'TRIP' && (m = /^(.*) = 1$/.exec(e.text))) act.set(e.sh + '|' + m[1], e);
+      if (e.kind === 'TRIP' && (m = /^(.*) = 1$/.exec(e.text))) act.set(e.sh + '|' + m[1], e);
       else if (e.kind === 'RST' && (m = /^(.*) = 0$/.exec(e.text))) act.delete(e.sh + '|' + m[1]);
     }
-    /* 3.2.0 walkthrough #8: an alarm that stands since the start (no change, so no event: ABC-057 furnace temperature LOW-LOW in a
-       cold plant) is counted too: the header says what the red / orange ALM block of the sheet on screen says */
-    try {
-      const sh = AN.cat === 'an' && AN.sheets && AN.sheets[AN.i];
-      if (sh && sh.S && sh.S.rt && !(AN.plantOn && !AN.startState))
-        for (const b of sh.S.blk)
-          if (b.k === 'ALM' && b.i && b.i[0] >= 0) {
-            const lv = AN.almLv(b, sh.S.rt.v[b.i[0]]);
-            if (lv === 'normal') continue;
-            const nm = AN.nm(sh.S, b.i[0]) || 'ALM #' + b.id;
-            if (!act.has(sh.name + '|' + nm)) act.set(sh.name + '|' + nm, { t: '', text: nm + ' ' + lv, sh: sh.name });
-          }
-    } catch (e) {}
+    const AL = window.lsAlarms ? lsAlarms.list() : [];
+    for (const a of AL) if (!a.rtn) act.set(a.k, { t: a.t, text: a.nm + ' ' + a.lv, sh: a.sh, kind: a.kind, ack: a.ack });
     const n = act.size,
-      last = [...act.values()].sort((a, b) => L.indexOf(a) - L.indexOf(b))[0];
+      un = AL.filter(a => !a.ack).length,
+      /* the newest unacknowledged first (a TRIP before an alarm), else the newest */
+      vals = [...act.values()],
+      last = vals.filter(a => a.ack === false && a.kind === 'TRIP').pop() || vals.filter(a => a.ack === false).pop() || vals.pop();
     P.alarm.classList.toggle('on', n > 0);
-    P.aChip.className = 'crchip ' + (n ? 'alm' : 'mut');
-    P.aChip.textContent = n ? n + (n === 1 ? ' ALARM' : ' ALARMS') : 'NO ALARM';
+    P.aChip.className = 'crchip ' + (n ? 'alm' : 'mut') + (un ? ' unack' : '');
+    P.aChip.textContent = n ? n + (n === 1 ? ' ALARM' : ' ALARMS') + (un ? ' · ' + un + ' NEW' : '') : 'NO ALARM';
     P.aT.textContent = last ? last.t : '';
     P.aTx.textContent = last ? last.text + ' · ' + last.sh : 'No active alarm or trip';
-    P.aTx.title = 'From the Event log (simulation time). Alarms and trips of the ABC sheet on screen while the simulation runs.';
+    P.aTx.title = 'Alarm list of the whole DCS (every ABC sheet and the motor trips of the DITL), simulation time. Click the ALARM chip for the list and ACK.';
+    if (P.aList.classList.contains('open') && (n !== P.aN || un !== P.aU)) aFill();
+    P.aN = n;
+    P.aU = un;
     const f = userForces().length;
     if (f !== P.fN && P.alarm.querySelector('#crflist.open')) fFill();
     P.fN = f;
@@ -52307,6 +52346,33 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
       for (const k in S.rt.force) if (!(S.rt.pf && S.rt.pf[k])) r.push({ sh, S, n: +k });
     }
     return r;
+  }
+  function aFill() {
+    const d = $('cralist');
+    if (!d || !window.lsAlarms) return;
+    const L = lsAlarms.list().reverse();
+    d.textContent = '';
+    const h = E('div', 'crfh', 'Alarm list (' + L.length + ') · ' + lsAlarms.unacked() + ' not acknowledged');
+    const x = E('button', 'crfx', '✕');
+    x.title = 'Close';
+    x.onclick = () => d.classList.remove('open');
+    h.append(x);
+    d.append(h);
+    if (!L.length) d.append(E('div', 'crfe', 'No alarm.'));
+    for (const a of L.slice(0, 200)) {
+      const r = E('div', 'crfr' + (a.ack ? '' : ' unack') + (a.rtn ? ' rtn' : '') + (a.kind === 'TRIP' ? ' trip' : ''));
+      r.append(E('span', 'crfs', a.t + ' ' + a.sh), E('span', 'crfn', a.nm), E('span', 'crfv', a.rtn ? 'RTN' : a.lv));
+      const ab = E('button', '', a.ack ? 'ACK ✓' : 'ACK');
+      ab.disabled = !!a.ack;
+      ab.onclick = () => (lsAlarms.ack(a.k), aFill());
+      r.append(ab);
+      d.append(r);
+    }
+    if (lsAlarms.unacked()) {
+      const all = E('button', 'crfall', 'ACK ALL');
+      all.onclick = () => (lsAlarms.ack(), aFill());
+      d.append(all);
+    }
   }
   function fFill() {
     const d = $('crflist');
@@ -55695,7 +55761,29 @@ window.LS_GUIDE = (function () {
     if (ST) return ST;
     const b = B(),
       R = b.RUN;
-    const FIELD = (st, title, secs, extra) => Object.assign({ st, field: secs, need: 1, t: title, d: 'Ang mga ito ay ginagawa ng field operator (lokal na valve, gauge, panel). Walang DCS signal ang mga ito, kaya kumpirmahin lang kapag tapos na.' }, extra || {});
+    const FIELD1 = (st, title, secs, extra) => Object.assign({ st, field: secs, need: 1, t: title, d: 'Ang mga ito ay ginagawa ng field operator (lokal na valve, gauge, panel). Walang DCS signal ang mga ito, kaya kumpirmahin lang kapag tapos na.' }, extra || {});
+    /* 3.2.0 retest #32: one SOP section = one step (Hakbang 4 had 135 items of sections 3 ~ 13): a field card of several sections is
+       one card per section, titled as the procedure */
+    const secT = si => {
+      const s = String((PROC()[si] || {}).t || '').toLowerCase();
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    };
+    const FIELD = (st, title, secs, extra) => (secs.length > 1 ? secs.map(si => FIELD1(st, secT(si) + ' (field)', [si], extra)) : FIELD1(st, title, secs, extra));
+    /* 3.2.0 retest #33: the equipment of the utility sections that the DCS starts (its DITL drawing: START P.B., RUNNING, TRIP), a local
+       machine (compressor: its RUNNING contact on the DITL, set by the field operator), a machine with no DCS signal (hypochlorite pump:
+       field equipment of the plant model, source.js) */
+    const runC = (want, L) => C(want, () => !WL() || L.some(nm => dRun(nm) === 1), () => (WL() ? L.map(nm => nm.replace(/^DITL-\S+\s*#?/, '') + ' ' + (dRun(nm) === 1 ? 'RUNNING' : 'STOPPED')).join(', ') : '— (one world OFF)'));
+    const outC = (want, nm, row, on, off) => C(want, () => !WL() || dOut(nm, row) === 1, dTxt(nm, row, on, off));
+    const pbB = (l, nm, row, ad, on) => Object.assign(btn(l, () => (WL() ? dPress(nm, row) : ''), on), { dg: [nm, row], ad, mot: 1 });
+    const locRun = (nm, row) => {
+      const s = window.LS_DOCK && LS_DOCK.dOf(nm);
+      try {
+        return s ? DUI.rowVal(s, row) : null;
+      } catch (e) {
+        return null;
+      }
+    };
+    const locB = (l, nm, row) => Object.assign(btn('FIELD: START ' + l + ' (local)', () => window.LS_DOCK && LS_DOCK.fieldRow(nm, row, 1, 'START ' + l + ' (local panel)'), () => locRun(nm, row) === 1), { loc: 1 });
     ST = [
       /* ---- 0 utilities ---- */
       /* 3.2.0 walkthrough #5: PR-OPE-5002 ESP "purge air heater and fan ... 6 hours prior to start-up": confirmed when already 6 h in service,
@@ -55703,8 +55791,19 @@ window.LS_GUIDE = (function () {
       FIELD(0, 'ESP purge air heater at fan (field), 6 oras bago ang start-up', [0], { pre: 21600, d: 'SOP: pinapaandar ng field operator ang ESP purge air heater at fan 6 ORAS BAGO ang start-up. Kung 6 h na itong tumatakbo, pindutin ang "Tapos na ito sa field". Kung ngayon pa lang sinimulan, pindutin ang "Simulan ang 6 h purge" at patakbuhin ang oras (RUN, ×300 = mga 72 segundo).' }),
       { st: 0, sec: 2, t: 'Simulan ang unang seawater pump (SWP)', d: 'Ang seawater ang nagpapalamig sa condenser at sa cooling water ng planta. Ito ang unang tumatakbo sa start-up.', c: R.SWP1, a: [mot('M.3353', 'SWP-A'), mot('M.3354', 'SWP-B'), mot('M.3355', 'SWP-C')], field: [1] },
       { st: 0, sec: 2, t: 'Simulan ang pangalawang SWP', d: 'Dalawang SWP ang kailangan para sa condenser bago ang vacuum at ang turbine.', c: b.SWP2, a: [mot('M.3353', 'SWP-A'), mot('M.3354', 'SWP-B'), mot('M.3355', 'SWP-C')] },
-      FIELD(0, 'Hypochlorite, debris filter, booster pump, make-up water, cooling water, instrument at plant air (field)', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]),
-      FIELD(0, 'Pre-start check, turbine oil pumps, oil purifier, control oil, rotary air pre-heater (field / TCS)', [12, 13, 14, 15, 16]),
+      /* 3.2.0 retest #32 #33: one step per SOP section 3 ~ 17, the machines started from the DCS or locally (were: two field cards, 135 items) */
+      { st: 0, sec: 3, t: 'Simulan ang hypochlorite pump (field)', d: 'Walang DCS signal ang hypochlorite pump: sinisimulan ito ng field operator sa local panel.', c: C('Hypochlorite pump running (field)', () => !!(AN.fieldState && AN.fieldState().hypo), () => 'Hypochlorite pump ' + (AN.fieldState && AN.fieldState().hypo ? 'RUNNING' : 'STOPPED')), a: [btn('FIELD: START hypochlorite pump', () => A.field('hypo', true), () => !!(AN.fieldState && AN.fieldState().hypo))], field: [2] },
+      { st: 0, sec: 4, t: 'Simulan ang SWP outlet debris filter (DITL-39)', d: 'REMOTE AUTO START ng debris filter system 1 sa DCS (DITL-39 row 8). Tumatakbo lang kapag may SWP na tumatakbo.', c: outC('SWP outlet debris filter IN OPERATION (DITL-39)', 'DITL-39', 3, 'IN OPERATION', 'stopped'), a: [pbB('Debris filter 1 AUTO START (DITL-39)', 'DITL-39', 7, null, () => dOut('DITL-39', 3) === 1)], field: [3] },
+      { st: 0, sec: 5, t: 'Simulan ang seawater booster pump (SWBP)', d: 'Ang SWBP ay nasa DCS (DITL-30). Kailangan ang REMOTE sa field at tumatakbong SWP.', c: runC('A seawater booster pump running (DITL-30)', ['DITL-30', 'DITL-30 #B', 'DITL-30 #C']), a: [dmot('DITL-30', 'SWBP-A'), dmot('DITL-30 #B', 'SWBP-B'), dmot('DITL-30 #C', 'SWBP-C')], field: [4] },
+      { st: 0, sec: 6, t: 'Simulan ang SWBP outlet debris filter (DITL-39)', d: 'REMOTE AUTO START ng debris filter system 2 sa DCS (DITL-39 row 19).', c: outC('SWBP outlet debris filter IN OPERATION (DITL-39)', 'DITL-39', 14, 'IN OPERATION', 'stopped'), a: [pbB('Debris filter 2 AUTO START (DITL-39)', 'DITL-39', 18, null, () => dOut('DITL-39', 14) === 1)], field: [5] },
+      { st: 0, sec: 7, t: 'Simulan ang make-up water pump (MWP)', d: 'Ang MWP ay nasa DCS (DITL-112). Pinupuno nito ang expansion tank at ang condenser.', c: runC('A make-up water pump running (DITL-112)', ['DITL-112', 'DITL-112 #B', 'DITL-112 #C']), a: [dmot('DITL-112', 'MWP-A'), dmot('DITL-112 #B', 'MWP-B'), dmot('DITL-112 #C', 'MWP-C')], field: [6] },
+      { st: 0, sec: 8, t: 'Simulan ang auxiliary cooling water pump (ACW)', d: 'Ang ACW pump ay nasa DCS (DITL-76 A, DITL-77 B).', c: runC('An aux. cooling water pump running (DITL-76 / 77)', ['DITL-76', 'DITL-77']), a: [dmot('DITL-76', 'ACW pump A'), dmot('DITL-77', 'ACW pump B')], field: [7] },
+      { st: 0, sec: 9, t: 'Simulan ang instrument air dryer (DITL-45)', d: 'START ng instrument air dryer A sa DCS (DITL-45 row 15).', c: outC('Instrument air dryer A RUNNING (DITL-45)', 'DITL-45', 14, 'RUNNING', 'STOPPED'), a: [pbB('START instrument air dryer A (DITL-45)', 'DITL-45', 14, 'DITL-45@14', () => dOut('DITL-45', 14) === 1)], field: [8] },
+      { st: 0, sec: 10, t: 'Simulan ang instrument air compressor (local)', d: 'Sa local panel sinisimulan ang compressor; nakikita sa DCS ang RUNNING (DITL-113 row 6).', c: C('Instrument air compressor A running (DITL-113)', () => !WL() || locRun('DITL-113', 5) === 1, () => 'IA compressor A ' + (locRun('DITL-113', 5) === 1 ? 'RUNNING' : 'STOPPED')), a: [locB('instrument air compressor A', 'DITL-113', 5)], field: [9] },
+      { st: 0, sec: 11, t: 'Simulan ang plant air dryer (DITL-45)', d: 'START ng plant air dryer A sa DCS (DITL-45 row 4).', c: outC('Plant air dryer A RUNNING (DITL-45)', 'DITL-45', 3, 'RUNNING', 'STOPPED'), a: [pbB('START plant air dryer A (DITL-45)', 'DITL-45', 3, 'DITL-45@3', () => dOut('DITL-45', 3) === 1)], field: [10] },
+      { st: 0, sec: 12, t: 'Simulan ang plant air compressor (local)', d: 'Sa local panel sinisimulan ang compressor; nakikita sa DCS ang RUNNING (DITL-114 row 6).', c: C('Plant air compressor A running (DITL-114)', () => !WL() || locRun('DITL-114', 5) === 1, () => 'PA compressor A ' + (locRun('DITL-114', 5) === 1 ? 'RUNNING' : 'STOPPED')), a: [locB('plant air compressor A', 'DITL-114', 5)], field: [11] },
+      FIELD(0, 'Pre-start check, turbine oil pumps, oil purifier, control oil (field / TCS)', [12, 13, 14, 15]),
+      { st: 0, sec: 17, t: 'Simulan ang rotary air pre-heater (DITL-43)', d: 'START ng air preheater sa DCS (DITL-43 row 3). Kailangan ang NOT TRIP at hindi LOCAL sa field.', c: runC('Air preheater running (DITL-43)', ['DITL-43']), a: [dmot('DITL-43', 'air preheater')], field: [16] },
       /* ---- 1 water ---- */
       FIELD(1, 'Hotwell filling line-up (field)', [17]),
       { st: 1, sec: 18, t: 'Hotwell level control LCV-MU1110 sa AUTO', d: 'Ang make-up valve na ang hahawak ng level ng hotwell ng condenser.', c: b.MODE('LCV-MU1110', 'AUTO'), fps: ['LCV-MU1110'], a: [btn('A (AUTO)', () => A.auto('LCV-MU1110'))] },
@@ -56050,6 +56149,7 @@ window.LS_GUIDE = (function () {
       { st: 10, t: 'Ibalik ang HIC-ULD sa 150 MW (▲▲)', d: 'Itaas ulit ang target.', c: b.OUT('HIC-ULD', 149, null, 'MW'), fps: ['HIC-ULD'] },
       { st: 10, t: 'Hawakan ang 150 MW', d: 'MSP 118 ~ 128, drum level ±150 mm, O₂ 3 ~ 6 %.', c: b.HOLD(300, b.ALL(b.VAL('MW', 147, 153), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150), b.VAL('O2', 3, 6))), wait: 1 }
     ];
+    ST = ST.flat();
     ST.forEach((s, i) => (s.i = i));
     return ST;
   }
@@ -56124,6 +56224,7 @@ window.LS_GUIDE = (function () {
     (s.coachOff || []).forEach(coachOff);
     (s.coach || []).forEach(coachOn);
     G.cur = i;
+    G.ok = null;
     save();
   }
   /* every step of the plant (AN.onStep): the coach, the pushbutton release; every second: the latch */
@@ -56159,12 +56260,10 @@ window.LS_GUIDE = (function () {
     const L0 = steps(),
       s = L0[G.cur];
     if (!s) return false;
-    /* 3.2.0 walkthrough #16: a field card (no DCS condition) is confirmed by the operator: it moves on while PAUSED too */
+    /* 3.2.0 walkthrough #16: a field card (no DCS condition) is confirmed by the operator: it moves on while PAUSED too (retest #5: not
+       while its 6 h purge is still counting) */
     if (!live()) {
-      if (s.need && !s.c && G.mine[s.i]) {
-        open(G.cur + 1);
-        return true;
-      }
+      if (s.need && !s.c && stepOk(s)) return done(s);
       return false;
     }
     /* 3.2.0-beta.24: a station that a BU-CMD of the drawing put back to MANUAL after its step (HIC-BM / EIC-TM: M.2013 / M.2016,
@@ -56176,11 +56275,24 @@ window.LS_GUIDE = (function () {
         return true;
       }
     }
-    if (stepOk(s)) {
+    if (stepOk(s)) return done(s);
+    if (G.ok === G.cur) G.ok = null;
+    return false;
+  }
+  /* 3.2.0 retest #30: a step that is done waits for the trainee ("✓ Tapos" and its result, then "Susunod ›"); a test tool sets autoNext */
+  function done(s) {
+    if (API.autoNext) {
       open(G.cur + 1);
       return true;
     }
+    G.ok = G.cur;
     return false;
+  }
+  function next() {
+    if (G.ok !== G.cur) return false;
+    G.ok = null;
+    open(G.cur + 1);
+    return true;
   }
   /* out of order: a motor of a later step already running (the operator started it in the Plant view or the Logic) */
   function early() {
@@ -56264,6 +56376,7 @@ window.LS_GUIDE = (function () {
   /* the field confirmation of a step */
   function confirm(i) {
     G.mine[i] = 1;
+    G.ok = null;
     if (G.pw) delete G.pw[i];
     save();
   }
@@ -56290,7 +56403,10 @@ window.LS_GUIDE = (function () {
     G.did = s.i;
     G.didT = simT();
   }
-  return {
+  const API = {
+    autoNext: false,
+    next,
+    ready: () => G.ok === G.cur,
     steps,
     STAGES,
     coach,
@@ -56320,6 +56436,7 @@ window.LS_GUIDE = (function () {
     },
     mine: () => G.mine
   };
+  return API;
 })();
 
 /* ===== 3.2.0-beta.23 TRAINING DOCK (user 2026-10-24, mockup https://claude.ai/artifact/M9TD6DVtS8XmfwrBpo4UVX chosen "Oo, gawin ayon sa
@@ -56439,6 +56556,35 @@ window.LS_GUIDE = (function () {
     typeof S !== 'undefined' && S.sheets ? S.sheets.concat((window.WORLD && WORLD.inst) || []).find(x => x.name.endsWith(String(nm).split('@')[0])) : null;
   const atRow = a => (/@(\d+)$/.test(String(a)) ? +/@(\d+)$/.exec(a)[1] : null);
   const DOF = {};
+  /* 3.2.0 retest #28: the one world is built (its last scan is shown while PAUSED: the interlock, the field contacts, the lamps) */
+  const wlOn = () => !!(window.WORLD && WORLD.on && WORLD.idx);
+  /* one scan of the one world while PAUSED (dt 0: no timer runs), so a field contact set by the field operator shows at once */
+  const pscan = () => {
+    if (isRun() || !wlOn() || !WORLD.tick) return;
+    for (let k = 0; k < 3; k++)
+      try {
+        WORLD.tick(0);
+      } catch (e) {}
+  };
+  /* 3.2.0 retest #25 #29 #34: the state of a motor: 'RUN' / 'STOP' / 'TRIP' (its drawing: RUNNING and "... TRIP · CRT (ANN)" outputs,
+     events.js lsAlarms); a drawing of two machines named with its output row ("DITL-45@14" = INSTRUMENT AIR DRYER-A RUNNING) */
+  function mst(ad) {
+    if (!ad || !wlOn()) return null;
+    if (atRow(ad) != null) {
+      const v = dout(ad, atRow(ad));
+      return v == null ? null : v === 1 ? 'RUN' : 'STOP';
+    }
+    return call(() => (window.lsAlarms ? lsAlarms.motState(dOf(ad)) : null), null);
+  }
+  /* a TRIP not acknowledged yet (the alarm list of events.js) */
+  const tripNew = ad => call(() => {
+    const s = dOf(ad);
+    return !!(s && window.lsAlarms && lsAlarms.list().some(x => x.k === 'D|' + s.name && !x.ack));
+  }, false);
+  const tripAck = ad => call(() => {
+    const s = dOf(ad);
+    if (s && window.lsAlarms) lsAlarms.ack('D|' + s.name);
+  }, null);
   function dOf(addr) {
     if (!addr) return null;
     /* a drawing named by the step (a pump with no running memory on the ABC sheets: DITL-24 PAF lube oil pump) */
@@ -56616,7 +56762,7 @@ window.LS_GUIDE = (function () {
     const s = dOf(addr),
       nm = dName(s);
     if (!s || !window.DUI || !DUI.need) return null;
-    const live = !!(window.WORLD && WORLD.on && WORLD.live);
+    const live = wlOn(); /* 3.2.0 retest #28: PAUSED too (the last scan) */
     let L = null;
     try {
       if (!s.nl) s.nl = netlist(s);
@@ -56784,7 +56930,7 @@ window.LS_GUIDE = (function () {
   }
   function dout(nm, row) {
     const s = dSheet(nm);
-    if (!s || !(window.WORLD && WORLD.on && WORLD.live)) return null;
+    if (!s || !wlOn()) return null;
     try {
       if (!s.nl) s.nl = netlist(s);
       return DUI.outVal(s, row);
@@ -56835,9 +56981,24 @@ window.LS_GUIDE = (function () {
           if (r !== f.row && (v === tw || v === tw.replace('OPENED', 'OPEN'))) f.s.sig[r + ':S'] = !f.want;
         }
     }
+    pscan();
     try {
       render();
     } catch (e) {}
+  }
+  /* 3.2.0 retest #33: a field action on one input row of a drawing (a compressor started at its local panel: DITL-113 row 5 RUNNING),
+     logged in the Event log; PAUSED too */
+  function fieldRow(nm, row, on, txt) {
+    const s = dSheet(nm);
+    if (!s) return false;
+    s.sig[row + ':S'] = !!on;
+    if (WORLD.live) WORLD.busy = true;
+    pscan();
+    try {
+      if (window.lsEventAdd) lsEventAdd(dName(s), 'FIELD', 'Field operator: ' + (txt || rowInfo(s, row).svc) + ' (row ' + (row + 1) + ')');
+    } catch (e) {}
+    setTimeout(() => fill(true), 200);
+    return true;
   }
   const rowInfo = (s, row) => {
     let tag = '',
@@ -57026,6 +57187,16 @@ window.LS_GUIDE = (function () {
     g.start(() => {
       open();
       setSpeed(1);
+      /* 3.2.0 retest #13: the logic behind the Training page is the drawing of the first DCS step (DITL-29A SWP), not the sheet that
+         was open before (ABC-057); the page stays on Training */
+      try {
+        const f = g.steps().find(x => (x.a || []).some(a => a.stop && motAddr(a) && MOTOR[motAddr(a)]));
+        const a0 = f && f.a.find(a => a.stop && motAddr(a) && MOTOR[motAddr(a)]);
+        if (a0) {
+          openD(MOTOR[motAddr(a0)]);
+          setTimeout(() => window.lsSetTab && lsSetTab('training'), 200);
+        }
+      } catch (e) {}
       if (done) done();
     });
   }
@@ -57202,15 +57373,39 @@ window.LS_GUIDE = (function () {
     card.append(E('div', { cls: 'gd-eb', txt: 'HAKBANG ' + (i + 1) + ' · ' + (g.STAGES[s.st] || '').toUpperCase() }), E('h3', { txt: s.t }), E('p', { txt: s.d || '' }));
     els.cond = E('div', { cls: 'gd-cond' });
     card.append(els.cond);
+    /* 3.2.0 retest #30: a done step waits for the trainee: "✓ TAPOS" with its result, then "Susunod ›" (was: the next step at once) */
+    els.okt = E('span');
+    els.okb = E('div', { cls: 'gd-okb', hidden: '' }, [
+      els.okt,
+      E('button', { type: 'button', cls: 'gd-btn go', txt: 'Susunod ›', on: () => (g.next() ? fill(true) : null) })
+    ]);
+    card.append(els.okb);
     /* the field items of a field card / a DCS step. 3.2.0 walkthrough #4 #17: every step of the SOP section (the same list and the same
        ticks as the Training list, ls-train), open, with a check box; an AUTO step ticks from the logic (was: the field items only, folded) */
+    els.trKey = null;
+    els.after = [];
     const fli = s.field && s.field.length ? fieldList(s.field) : [];
     if (fli.length) {
       const A = call(() => LV().done(), {}),
         dd0 = ls.get('ls-train', {});
       card.append(E('div', { cls: 'gd-flh', txt: 'SOP SECTION ' + s.field.map(x => x + 1).join(', ') + ' · ' + fli.length + ' ITEM' + (fli.length > 1 ? 'S' : '') }));
-      const ul = E('ul', { cls: 'gd-fl' });
-      for (const f of fli) {
+      /* 3.2.0 retest #27: a step that starts equipment: the items before the START (line-up, permissives) and the items from the START
+         on (monitor, adjust, standby to AUTO), these locked until the equipment runs */
+      const hasM = (s.a || []).some(a => a.stop || /START|ON\b/.test(a.l)),
+        cut = hasM ? fli.findIndex(f => /\bstart\b(?![\s-]*up)|\binitiate[ds]?\s+(on|run)\b/i.test(f.t)) : -1;
+      els.after = [];
+      els.trKey = JSON.stringify(dd0);
+      let ul = E('ul', { cls: 'gd-fl' });
+      if (cut >= 0) {
+        card.append(E('div', { cls: 'gd-flg', txt: 'BAGO I-START' }));
+        if (!cut) card.append(E('div', { cls: 'gd-fle', txt: '(walang item bago ang START sa SOP)' }));
+      }
+      fli.forEach((f, fi) => {
+        if (fi === cut) {
+          card.append(ul);
+          ul = E('ul', { cls: 'gd-fl' });
+          card.append(E('div', { cls: 'gd-flg', txt: 'PAGKATAPOS I-START (bukas kapag tumatakbo na)' }));
+        }
         const id = 'gdf' + f.si + '_' + f.i,
           k = f.si + '.' + f.i,
           au = f.k === 'auto',
@@ -57226,10 +57421,16 @@ window.LS_GUIDE = (function () {
           if (cb.checked) dd[k] = 1;
           else delete dd[k];
           ls.set('ls-train', dd);
+          els.trKey = JSON.stringify(dd);
           li.classList.toggle('dn', cb.checked);
+          /* 3.2.0 retest #26: the Training list shows the same tick at once */
+          try {
+            window.lsHome && lsHome.train && lsHome.train();
+          } catch (e) {}
         };
+        if (cut >= 0 && fi >= cut && !au) els.after.push({ cb, li });
         ul.append(li);
-      }
+      });
       card.append(ul);
     }
     /* the interlock of the motors of the step */
@@ -57250,7 +57451,7 @@ window.LS_GUIDE = (function () {
       /* 3.2.0 walkthrough #21: the push button of the drawing under the label (sheet, row, tag of the CRT P.B.); pressed, the row is
          shown on the sheet when the centre follows the step */
       const pb = pbOf(a, 1);
-      const bt = E('button', { type: 'button', cls: 'gd-btn' + (a.stop ? ' go' : '') }, [a.l, pb ? E('small', { txt: pb.txt }) : null]);
+      const bt = E('button', { type: 'button', cls: 'gd-btn' + (a.stop ? ' go gd-st' : '') }, [a.l, pb ? E('small', { txt: pb.txt }) : null]);
       bt.onclick = () => {
         if (bt.dataset.block === '1') return;
         if (pausedWarn(a)) return;
@@ -57261,10 +57462,12 @@ window.LS_GUIDE = (function () {
         setTimeout(() => fill(), 300);
       };
       bs.append(bt);
-      els.btns.push({ a, bt, ad });
+      const B = { a, bt, ad };
+      els.btns.push(B);
       if (a.stop) {
         const pb0 = pbOf(a, 0);
-        const sb = E('button', { type: 'button', cls: 'gd-btn' }, [a.stop.l, pb0 ? E('small', { txt: pb0.txt }) : null]);
+        const sb = E('button', { type: 'button', cls: 'gd-btn gd-sp0' }, [a.stop.l, pb0 ? E('small', { txt: pb0.txt }) : null]);
+        B.sb = sb;
         sb.onclick = () => {
           if (pausedWarn(a)) return;
           try {
@@ -57275,6 +57478,12 @@ window.LS_GUIDE = (function () {
         };
         bs.append(sb);
       }
+      /* 3.2.0 retest #29 #34: the state of the equipment from its feedback: RUNNING (red), STOPPED (green), TRIP (amber, flashing until
+         ACK: press it to acknowledge) */
+      if (a.stop || a.loc || a.mot) {
+        B.lab = E('button', { type: 'button', cls: 'gd-mst', txt: '—', title: 'Feedback ng equipment (RUNNING / STOPPED / TRIP)', on: () => B.ad && tripAck(B.ad) });
+        bs.append(B.lab, E('span', { cls: 'gd-brk' }));
+      }
     }
     if (s.need) {
       const cb = E('button', { type: 'button', cls: 'gd-btn go', txt: s.pre ? 'Tapos na ito sa field (6 h na)' : 'Tapos na ito sa field' });
@@ -57283,8 +57492,13 @@ window.LS_GUIDE = (function () {
         const dd = ls.get('ls-train', {});
         for (const f of fli) if (f.k !== 'auto') dd[f.si + '.' + f.i] = 1;
         ls.set('ls-train', dd);
+        try {
+          window.lsHome && lsHome.train && lsHome.train();
+        } catch (e) {}
         g.confirm(s.i);
         g.scan();
+        /* 3.2.0 retest #30: the trainee's own confirmation of a field card is the "Susunod" (a DCS step waits for its ✓ TAPOS) */
+        if (s.need && !s.c && g.ready()) g.next();
         fill(true);
       };
       bs.append(cb);
@@ -57405,7 +57619,13 @@ window.LS_GUIDE = (function () {
     if (!dock || !g || !g.on || isMin()) return;
     const s = g.steps()[g.cur];
     VALS.forEach(([k, u, f, fm], j) => (els.vals[j].b.textContent = fm(call(f, NaN))));
-    LAMPS.forEach(([k, A], j) => els.lamps[j].classList.toggle('on', any(A)));
+    /* 3.2.0 retest #25 #34: RUN = red, STOP = green (power plant convention), TRIP = amber, flashing until ACK */
+    LAMPS.forEach(([k, A], j) => {
+      const tr = A.filter(a => mst(a) === 'TRIP');
+      els.lamps[j].classList.toggle('on', any(A));
+      els.lamps[j].classList.toggle('trip', tr.length > 0);
+      els.lamps[j].classList.toggle('blink', tr.some(tripNew));
+    });
     /* the rate of the water temperature (Fig 1), over the last minute of the plant */
     const t = +U().t || 0,
       x = +U().Tw;
@@ -57416,7 +57636,21 @@ window.LS_GUIDE = (function () {
       rate.x = x;
     }
     if (!s) return;
+    /* 3.2.0 retest #26: a tick made in the Training list shows here (the list and the panel are the same ticks, ls-train) */
+    if (els.trKey != null && JSON.stringify(ls.get('ls-train', {})) !== els.trKey) return fill(true);
     (els.watch || []).forEach(w => (w.v.textContent = w.fm(call(w.f, NaN))));
+    const rd = call(() => g.ready(), false);
+    if (els.okb) {
+      els.okb.hidden = !rd;
+      if (rd) els.okt.textContent = '✓ TAPOS' + (s.c && s.c.now ? ': ' + call(() => s.c.now(), '') : s.need ? ': nakumpirma sa field' : '');
+    }
+    /* 3.2.0 retest #27: the items after the START open when the equipment runs */
+    const runs = (s.a || []).some(a => a.on && call(() => a.on(), false)) || (!!s.c && call(() => s.c.ok(), false));
+    for (const x of els.after || []) {
+      x.cb.disabled = !runs;
+      x.li.classList.toggle('lk', !runs);
+      x.cb.title = runs ? '' : 'Bukas kapag tumatakbo na ang equipment (START muna)';
+    }
     /* the condition of the step */
     if (els.cond && s.c) {
       let ok = false,
@@ -57466,7 +57700,7 @@ window.LS_GUIDE = (function () {
       const head = E('div', { cls: 'gd-ilh' }, [E('span', { txt: 'INTERLOCK · START PERMISSION' }), E('button', { type: 'button', cls: 'gd-lk', txt: I.sheet + ' ↗', title: 'Buksan ang ' + I.sheet, on: () => (window.lsSetTab && lsSetTab('logic'), openD(I.sheet)) })]);
       it.box.append(head);
       if (!I.live) {
-        it.box.append(E('div', { cls: 'gd-ild', txt: 'Lalabas ang interlock kapag tumatakbo ang simulation (▶ RUN).' }));
+        it.box.append(E('div', { cls: 'gd-ild', txt: 'Lalabas ang interlock kapag na-load na ang planta (one world).' }));
         continue;
       }
       const run = atRow(it.ad) != null ? dout(it.ad, atRow(it.ad)) === 1 : /^DITL-/.test(it.ad) ? runOut(it.ad) === 1 : bit(it.ad);
@@ -57557,7 +57791,18 @@ window.LS_GUIDE = (function () {
       B.bt.classList.toggle('dis', !!bl);
       B.bt.title = bl ? 'Kulang ang interlock sa ' + MOTOR[B.ad] + ' (tingnan ang may ✕)' : '';
       const on = B.a.on ? call(() => B.a.on(), false) : false;
-      B.bt.classList.toggle('did', !!on);
+      if (!B.lab) {
+        B.bt.classList.toggle('did', !!on);
+        continue;
+      }
+      /* 3.2.0 retest #29: START lit red while the equipment runs, STOP lit green while it is stopped (was: a ✓ on START only) */
+      const st = (B.ad && mst(B.ad)) || (on ? 'RUN' : B.a.on ? 'STOP' : null),
+        tn = st === 'TRIP' && tripNew(B.ad);
+      B.bt.classList.toggle('lit-run', st === 'RUN');
+      if (B.sb) B.sb.classList.toggle('lit-stop', st === 'STOP' || st === 'TRIP');
+      B.lab.textContent = st === 'RUN' ? 'RUNNING' : st === 'STOP' ? 'STOPPED' : st === 'TRIP' ? (tn ? 'TRIP · ACK' : 'TRIP') : '—';
+      B.lab.className = 'gd-mst' + (st ? ' ' + st.toLowerCase() : '') + (tn ? ' blink' : '');
+      B.lab.disabled = !tn;
     }
     /* 3.2.0 walkthrough #19: no "start anyway" of a blocked motor (was "Simulan pa rin (training lang)"): the missing contact is set by its
        FIELD button or on its row in the logic (the Inputs list of the DITL page) */
@@ -57593,7 +57838,7 @@ window.LS_GUIDE = (function () {
   setInterval(() => {
     if (dock && GD() && GD().on && window.AN) ls.set('ls-gdock-spd', +AN.spd || 1);
   }, 5000);
-  window.LS_DOCK = { start, resume, open, stop, layout, fill, interlock, fieldOf, fieldSet, dmotor, dOf, needNet, leaves, permOf, dpress, dset, dout, runOut, get el() {
+  window.LS_DOCK = { start, resume, open, stop, layout, fill, interlock, fieldOf, fieldSet, fieldRow, mst, dmotor, dOf, needNet, leaves, permOf, dpress, dset, dout, runOut, get el() {
       return dock;
     } };
 })();
@@ -58069,12 +58314,13 @@ window.LS_GUIDE = (function () {
     if (b && b.scrollIntoView) b.scrollIntoView({ block: 'nearest' });
   }
   /* the line under the Training head after Clear all ticks: what is left, and Undo */
-  function clearNote(was) {
+  /* 3.2.0 retest #12: no browser pop-up (a pop-up that a browser blocks or closes said nothing); the result and Undo show on the page */
+  function clearNote(was, pre) {
     const old = train.querySelector('.trclr');
     if (old) old.remove();
     const [tn, tm] = total();
     const n = E('p', { cls: 'trclr', role: 'status' }, [
-      'Cleared: ' + tn + ' / ' + tm + ' steps ticked. ',
+      (pre || 'Cleared') + ': ' + tn + ' / ' + tm + ' steps ticked. ',
       E('button', {
         cls: 'trbtn',
         type: 'button',
@@ -58109,11 +58355,13 @@ window.LS_GUIDE = (function () {
              button says it is loading until the cold plant is in */
           on: e => {
             const b = e && e.currentTarget,
-              [tn] = total();
-            if (tn > 0 && !confirm('Magsisimula ang Gabay sa Cold. Mabubura ang ' + tn + ' tick ng Training list (bagong start-up = malinis na checklist). Ituloy?')) return;
+              [tn] = total(),
+              was = { hand: ls.get('ls-train', {}), auto: LV() ? Object.assign({}, LV().done()) : {} };
             ls.set('ls-train', {});
             if (LV()) LV().reset();
             fillTrain();
+            /* 3.2.0 retest #12: the ticks of the earlier run are cleared without a pop-up; the page says so, with Undo */
+            if (tn > 0) clearNote(was, 'Bagong Gabay mula Cold: nabura ang ' + tn + ' tick');
             const t0 = b ? b.textContent : '';
             const back = () => {
               if (b) {
@@ -58185,7 +58433,6 @@ window.LS_GUIDE = (function () {
           type: 'button',
           txt: 'Clear all ticks',
           on: () => {
-            if (!confirm('Clear the ticks of all ' + total()[1] + ' steps (the AUTO steps tick again when the logic shows them done)?')) return;
             /* 3.2.0 walkthrough #12: the result is shown ("Cleared: 0 / 692") with an Undo */
             const was = { hand: ls.get('ls-train', {}), auto: LV() ? Object.assign({}, LV().done()) : {} };
             ls.set('ls-train', {});
@@ -58813,7 +59060,7 @@ body.ophmi #anp{display:none!important}
 #evbox .evh span{color:var(--c-dim);margin-right:auto}#evbox .evh .b{height:22px;padding:0 8px;font-size:11px}
 #evbox .evr{display:flex;gap:10px;padding:3px 10px;border-bottom:1px solid var(--c-line)}
 #evbox .tm{color:var(--c-dim);width:56px;flex:none}#evbox .kd{width:44px;flex:none;font-weight:700}#evbox .sh{width:70px;flex:none;color:var(--c-tx2)}
-#evbox .k-MODE .kd{color:var(--c-runtx2)}#evbox .k-FM .kd{color:var(--c-mantx2)}#evbox .k-ALM .kd,#evbox .k-TRIP .kd{color:var(--c-almtx)}#evbox .k-RTN .kd,#evbox .k-RST .kd{color:var(--c-tx2)}
+#evbox .k-MODE .kd{color:var(--c-runtx2)}#evbox .k-FM .kd{color:var(--c-mantx2)}#evbox .k-ALM .kd,#evbox .k-TRIP .kd{color:var(--c-almtx)}#evbox .k-RTN .kd,#evbox .k-RST .kd{color:var(--c-tx2)}#evbox .k-ACK .kd,#evbox .k-FIELD .kd{color:var(--c-acc)}
 /* 2.0.0: manual station faceplate (manual loader) and step buttons */
 :is(#opp,#plfp) .fpman .mlr{display:flex;gap:10px;align-items:stretch}
 :is(#opp,#plfp) .fpman .mlb{width:22px;min-height:110px;background:#0b1217;border:1px solid #243642;position:relative;flex:none}
@@ -60319,7 +60566,7 @@ body.ophmi #anp{display:none!important}
 (function () {
   const $ = id => document.getElementById(id);
   const LOG = [],
-    MAX = 200,
+    MAX = 400,
     TRIP = /TRIP|MFT|SHUT\s*DOWN|\bSTOP\b|ESD|EMERG|RUN\s*BACK/i;
   let prev = {},
     sheetK = '',
@@ -60365,12 +60612,7 @@ body.ophmi #anp{display:none!important}
         for (const z of c.sigs || []) if (z.role === 'MAN') o['f:' + c.tag + ':' + z.name] = rt.v[z.n] > 0.5 ? 1 : 0;
       }
     } catch (e) {}
-    for (const b of S.blk)
-      if (b.k === 'ALM' && b.i && b.i[0] >= 0) {
-        try {
-          o['a:' + b.id] = AN.almLv(b, rt.v[b.i[0]]);
-        } catch (e) {}
-      }
+    /* 3.2.0 retest #31: the ALM blocks are in the alarm table of the whole DCS (below), not of the sheet on screen */
     S.nets.forEach((x, n) => {
       if (!x.dig) return;
       const nm = AN.nm(S, n);
@@ -60395,14 +60637,138 @@ body.ophmi #anp{display:none!important}
       const [kind, ...rest] = k.split(':');
       if (kind === 'm') add(S, sh, 'MODE', rest[0] + ' → ' + b);
       else if (kind === 'f') add(S, sh, 'FM', rest[0] + (b ? ' FORCE MANUAL ← ' : ' force manual cleared ← ') + rest[1] + ' = ' + b, b ? cause(sh, rest[1]) : null);
-      else if (kind === 'a') {
-        const blk = S.blk.find(z => z.id === +rest[0]),
-          nm = (blk && blk.i && AN.nm(S, blk.i[0])) || 'ALM #' + rest[0];
-        add(S, sh, b === 'normal' ? 'RTN' : 'ALM', nm + ' ' + (b === 'normal' ? 'back to normal' : b));
-      } else if (kind === 't') add(S, sh, b ? 'TRIP' : 'RST', rest.join(':') + ' = ' + b, b ? cause(sh, rest.join(':')) : null);
+      else if (kind === 't') add(S, sh, b ? 'TRIP' : 'RST', rest.join(':') + ' = ' + b, b ? cause(sh, rest.join(':')) : null);
     }
     prev = now;
   }
+  /* ---------- 3.2.0 retest #31 #34: ONE alarm table of the whole DCS (every ABC sheet, PAUSED or RUN, and the TRIP output of every
+     motor drawing of the DITL), as the alarm summary of a DCS: an alarm comes (ALM, flashing until ACK), is acknowledged (ACK) and
+     returns (RTN); it leaves the table when it is back to normal AND acknowledged. Before, the header and the Event log read only
+     the ABC sheet on screen: the furnace temperature LOW-LOW of ABC-057 "cleared" at RUN because the screen moved to a DITL sheet,
+     and no ACK / RTN was ever logged. A plant loaded again (Cold, 150 MW: the plant time goes back) starts a new table; the alarms
+     standing at that moment are one event (the list holds each of them). ---------- */
+  const AT = new Map();
+  let base = null,
+    lastT = -1;
+  const TRO = new WeakMap();
+  /* the TRIP output of a motor drawing ("SEAWATER PUMP A TRIP · CRT (ANN)"; not "TRIP COMMAND", not "TRIP INTERLOCK CONDITION",
+     not "NOT TRIP"), and its RUNNING output */
+  function motOuts(s) {
+    let o = TRO.get(s);
+    if (o && o.nl === s.nl) return o;
+    o = { nl: s.nl, trip: null, run: null };
+    try {
+      for (const x of DUI.outs(s) || []) {
+        const n = String(x.name || '');
+        if (o.trip == null && /\bTRIP\b/.test(n) && !/COMMAND|INTERLOCK|NOT TRIP|\bCMD\b|RESET/.test(n)) o.trip = { row: x.row, name: n.replace(/^Output row \d+ · /, '').replace(/\s+[IO]\.\S+/g, '').replace(/\s*·.*$/, '').trim() };
+        if (o.run == null && /RUNNING/.test(n) && !/NOT RUNNING|STOP|\bANY\b|LOCAL/.test(n)) o.run = { row: x.row };
+      }
+    } catch (e) {}
+    TRO.set(s, o);
+    return o;
+  }
+  const dSheets = () => (typeof S !== 'undefined' && S.sheets ? S.sheets.concat((window.WORLD && WORLD.inst) || []) : []);
+  const dnm = s => String((s && s.name) || '').replace(/^\(\d+\)/, '');
+  /* the state of a motor drawing: 'TRIP' / 'RUN' / 'STOP' (null: no motor drawing, or the one world not built). The last state is
+     kept while PAUSED (the drawing holds its values) */
+  function motState(s) {
+    if (!s || !window.DUI || !(window.WORLD && WORLD.on && WORLD.idx)) return null;
+    try {
+      if (!s.nl) s.nl = netlist(s);
+      const o = motOuts(s);
+      if (!o.trip && !o.run) return null;
+      if (o.trip && DUI.outVal(s, o.trip.row) === 1) return 'TRIP';
+      return o.run && DUI.outVal(s, o.run.row) === 1 ? 'RUN' : 'STOP';
+    } catch (e) {
+      return null;
+    }
+  }
+  function almScan() {
+    const A = window.AN;
+    if (!A || !A.sheets || (A.plantOn && !A.startState)) return;
+    const cs = A.sheets[A.i] || A.sheets[0],
+      t = cs && cs.S && cs.S.rt ? cs.S.rt.t : 0;
+    /* a plant loaded again: a new table */
+    if (A.startState !== base || t + 1 < lastT) {
+      base = A.startState;
+      AT.clear();
+      almScan.first = true;
+    }
+    lastT = t;
+    const now = new Map();
+    for (const sh of A.sheets) {
+      const S = sh.S;
+      if (!S || !S.rt) continue;
+      for (const b of S.blk)
+        if (b.k === 'ALM' && b.i && b.i[0] >= 0) {
+          let lv = 'normal';
+          try {
+            lv = A.almLv(b, S.rt.v[b.i[0]]);
+          } catch (e) {}
+          if (lv !== 'normal') now.set(sh.name + '|' + b.id, { sh: sh.name, kind: 'ALM', nm: A.nm(S, b.i[0]) || 'ALM #' + b.id, lv });
+        }
+    }
+    if (window.WORLD && WORLD.on && WORLD.idx)
+      for (const s of dSheets()) {
+        if (!s.nl) continue;
+        const o = motOuts(s);
+        if (!o.trip) continue;
+        let v = 0;
+        try {
+          v = DUI.outVal(s, o.trip.row);
+        } catch (e) {}
+        if (v === 1) now.set('D|' + s.name, { sh: dnm(s), kind: 'TRIP', nm: o.trip.name, lv: 'TRIP' });
+      }
+    const first = !!almScan.first;
+    almScan.first = false;
+    let nNew = 0;
+    for (const [k, x] of now) {
+      const e = AT.get(k);
+      if (!e || e.rtn || e.lv !== x.lv) {
+        AT.set(k, { ...x, t: tfmt(t), ack: false, rtn: false });
+        if (first) nNew++;
+        else add({ rt: { t } }, { name: x.sh }, x.kind, x.nm + ' ' + x.lv);
+      }
+    }
+    for (const [k, e] of AT)
+      if (!now.has(k) && !e.rtn) {
+        add({ rt: { t } }, { name: e.sh }, 'RTN', e.nm + ' ' + (e.kind === 'TRIP' ? 'TRIP reset' : 'back to normal'));
+        if (e.ack) AT.delete(k);
+        else e.rtn = true;
+      }
+    if (first && nNew) add({ rt: { t } }, { name: 'DCS' }, 'ALM', nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing at the start (alarm list: header ALARM chip)');
+  }
+  function ack(k) {
+    const L = k ? [k] : [...AT.keys()];
+    let n = 0;
+    const cs = window.AN && AN.sheets && AN.sheets[AN.i],
+      t = cs && cs.S && cs.S.rt ? cs.S.rt.t : 0;
+    for (const j of L) {
+      const e = AT.get(j);
+      if (!e || e.ack) continue;
+      e.ack = true;
+      n++;
+      if (k) add({ rt: { t } }, { name: e.sh }, 'ACK', e.nm + ' ' + e.lv);
+      if (e.rtn) AT.delete(j);
+    }
+    if (!k && n) add({ rt: { t } }, { name: 'DCS' }, 'ACK', n + ' alarm' + (n > 1 ? 's' : '') + ' acknowledged (ACK ALL)');
+    return n;
+  }
+  window.lsAlarms = {
+    list: () => [...AT.entries()].map(([k, e]) => ({ k, ...e })),
+    ack,
+    unacked: () => [...AT.values()].filter(e => !e.ack).length,
+    motState,
+    /* the state of the motor of a memory address of the ABC sheets (M.3353) or of a DITL drawing name */
+    motOf: a => {
+      try {
+        const s = window.LS_DOCK && LS_DOCK.dOf(a);
+        return s ? motState(s) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+  };
   let btn = null,
     box = null;
   function draw() {
@@ -60500,6 +60866,9 @@ body.ophmi #anp{display:none!important}
   setInterval(() => {
     try {
       tick();
+    } catch (e) {}
+    try {
+      almScan();
     } catch (e) {}
   }, 500);
   window.lsEvents = LOG;
@@ -64669,7 +65038,11 @@ window.PLANT_VALS = [{"src":"02.png","title":"002 FEED WATER PREHEATING","time":
           const mv = shOf(r.cc.sh).S.rt.v[r.cc.c.out];
           if (isFinite(x) && isFinite(mv) && Math.abs(x - (100 - mv)) < 0.5 && Math.abs(x - mv) > 1) x = 100 - x; /* fail-open valve */
           o.set({ v: x, r });
-        } else o.set({ v: netVal(r), r });
+        } else {
+          /* 3.2.0 retest #34: a pump / fan / motor whose drawing is in TRIP (its "... TRIP · CRT (ANN)" output) flashes */
+          const mt = r.a && /^(pump|fan|motor)$/.test(o.it.t) && window.lsAlarms ? lsAlarms.motOf(r.a) : null;
+          o.set({ v: netVal(r), r, tr: mt === 'TRIP' });
+        }
       } catch (e) {}
     }
   }
@@ -64878,7 +65251,7 @@ window.PLANT_VALS = [{"src":"02.png","title":"002 FEED WATER PREHEATING","time":
         else if (t === 'lamp') {
           const on = x.v > (it.gt != null ? it.gt : 0.5);
           c = (it.inv ? !on : on) ? (/^#[0-7][89a-f]/i.test(it.lit || '') ? HC.green : HC.red) : '#050505'; /* lit = the HMI green / red, off = black */
-        } else c = x.v > 0.5 ? HC.red : HC.green; /* pump / fan / motor run = red; flag 1 = red check */
+        } else c = x.tr ? (Math.floor(Date.now() / 1000) % 2 ? '#f59e0b' : HC.red) : x.v > 0.5 ? HC.red : HC.green; /* pump / fan / motor run = red; flag 1 = red check; TRIP flashes amber (retest #34) */
         fs(c);
         if (t === 'valve' || t === 'damper') fn(fmtH(x.v, it.v));
       }, bgHit(g, it, hull([sp.sym && sp.sym.b, sp.n && sp.n.b]) || [it.x - 12, it.y - 12, 24, 24]));
@@ -64965,7 +65338,7 @@ window.PLANT_VALS = [{"src":"02.png","title":"002 FEED WATER PREHEATING","time":
             const sym = g.lastChild;
             reg(it, x => {
               const on = x && x.v != null ? x.v > 0.5 : it.st === 'run';
-              const c2 = on ? '#e05555' : '#3fbf6a';
+              const c2 = x && x.tr ? (Math.floor(Date.now() / 1000) % 2 ? '#f59e0b' : '#e05555') : on ? '#e05555' : '#3fbf6a'; /* TRIP flashes (retest #34) */
               ring.setAttribute('stroke', c2);
               sym.setAttribute(it.t === 'fan' ? 'stroke' : 'fill', c2);
             }, ring);

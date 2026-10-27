@@ -778,7 +778,29 @@ window.LS_GUIDE = (function () {
     if (ST) return ST;
     const b = B(),
       R = b.RUN;
-    const FIELD = (st, title, secs, extra) => Object.assign({ st, field: secs, need: 1, t: title, d: 'Ang mga ito ay ginagawa ng field operator (lokal na valve, gauge, panel). Walang DCS signal ang mga ito, kaya kumpirmahin lang kapag tapos na.' }, extra || {});
+    const FIELD1 = (st, title, secs, extra) => Object.assign({ st, field: secs, need: 1, t: title, d: 'Ang mga ito ay ginagawa ng field operator (lokal na valve, gauge, panel). Walang DCS signal ang mga ito, kaya kumpirmahin lang kapag tapos na.' }, extra || {});
+    /* 3.2.0 retest #32: one SOP section = one step (Hakbang 4 had 135 items of sections 3 ~ 13): a field card of several sections is
+       one card per section, titled as the procedure */
+    const secT = si => {
+      const s = String((PROC()[si] || {}).t || '').toLowerCase();
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    };
+    const FIELD = (st, title, secs, extra) => (secs.length > 1 ? secs.map(si => FIELD1(st, secT(si) + ' (field)', [si], extra)) : FIELD1(st, title, secs, extra));
+    /* 3.2.0 retest #33: the equipment of the utility sections that the DCS starts (its DITL drawing: START P.B., RUNNING, TRIP), a local
+       machine (compressor: its RUNNING contact on the DITL, set by the field operator), a machine with no DCS signal (hypochlorite pump:
+       field equipment of the plant model, source.js) */
+    const runC = (want, L) => C(want, () => !WL() || L.some(nm => dRun(nm) === 1), () => (WL() ? L.map(nm => nm.replace(/^DITL-\S+\s*#?/, '') + ' ' + (dRun(nm) === 1 ? 'RUNNING' : 'STOPPED')).join(', ') : '— (one world OFF)'));
+    const outC = (want, nm, row, on, off) => C(want, () => !WL() || dOut(nm, row) === 1, dTxt(nm, row, on, off));
+    const pbB = (l, nm, row, ad, on) => Object.assign(btn(l, () => (WL() ? dPress(nm, row) : ''), on), { dg: [nm, row], ad, mot: 1 });
+    const locRun = (nm, row) => {
+      const s = window.LS_DOCK && LS_DOCK.dOf(nm);
+      try {
+        return s ? DUI.rowVal(s, row) : null;
+      } catch (e) {
+        return null;
+      }
+    };
+    const locB = (l, nm, row) => Object.assign(btn('FIELD: START ' + l + ' (local)', () => window.LS_DOCK && LS_DOCK.fieldRow(nm, row, 1, 'START ' + l + ' (local panel)'), () => locRun(nm, row) === 1), { loc: 1 });
     ST = [
       /* ---- 0 utilities ---- */
       /* 3.2.0 walkthrough #5: PR-OPE-5002 ESP "purge air heater and fan ... 6 hours prior to start-up": confirmed when already 6 h in service,
@@ -786,8 +808,19 @@ window.LS_GUIDE = (function () {
       FIELD(0, 'ESP purge air heater at fan (field), 6 oras bago ang start-up', [0], { pre: 21600, d: 'SOP: pinapaandar ng field operator ang ESP purge air heater at fan 6 ORAS BAGO ang start-up. Kung 6 h na itong tumatakbo, pindutin ang "Tapos na ito sa field". Kung ngayon pa lang sinimulan, pindutin ang "Simulan ang 6 h purge" at patakbuhin ang oras (RUN, ×300 = mga 72 segundo).' }),
       { st: 0, sec: 2, t: 'Simulan ang unang seawater pump (SWP)', d: 'Ang seawater ang nagpapalamig sa condenser at sa cooling water ng planta. Ito ang unang tumatakbo sa start-up.', c: R.SWP1, a: [mot('M.3353', 'SWP-A'), mot('M.3354', 'SWP-B'), mot('M.3355', 'SWP-C')], field: [1] },
       { st: 0, sec: 2, t: 'Simulan ang pangalawang SWP', d: 'Dalawang SWP ang kailangan para sa condenser bago ang vacuum at ang turbine.', c: b.SWP2, a: [mot('M.3353', 'SWP-A'), mot('M.3354', 'SWP-B'), mot('M.3355', 'SWP-C')] },
-      FIELD(0, 'Hypochlorite, debris filter, booster pump, make-up water, cooling water, instrument at plant air (field)', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]),
-      FIELD(0, 'Pre-start check, turbine oil pumps, oil purifier, control oil, rotary air pre-heater (field / TCS)', [12, 13, 14, 15, 16]),
+      /* 3.2.0 retest #32 #33: one step per SOP section 3 ~ 17, the machines started from the DCS or locally (were: two field cards, 135 items) */
+      { st: 0, sec: 3, t: 'Simulan ang hypochlorite pump (field)', d: 'Walang DCS signal ang hypochlorite pump: sinisimulan ito ng field operator sa local panel.', c: C('Hypochlorite pump running (field)', () => !!(AN.fieldState && AN.fieldState().hypo), () => 'Hypochlorite pump ' + (AN.fieldState && AN.fieldState().hypo ? 'RUNNING' : 'STOPPED')), a: [btn('FIELD: START hypochlorite pump', () => A.field('hypo', true), () => !!(AN.fieldState && AN.fieldState().hypo))], field: [2] },
+      { st: 0, sec: 4, t: 'Simulan ang SWP outlet debris filter (DITL-39)', d: 'REMOTE AUTO START ng debris filter system 1 sa DCS (DITL-39 row 8). Tumatakbo lang kapag may SWP na tumatakbo.', c: outC('SWP outlet debris filter IN OPERATION (DITL-39)', 'DITL-39', 3, 'IN OPERATION', 'stopped'), a: [pbB('Debris filter 1 AUTO START (DITL-39)', 'DITL-39', 7, null, () => dOut('DITL-39', 3) === 1)], field: [3] },
+      { st: 0, sec: 5, t: 'Simulan ang seawater booster pump (SWBP)', d: 'Ang SWBP ay nasa DCS (DITL-30). Kailangan ang REMOTE sa field at tumatakbong SWP.', c: runC('A seawater booster pump running (DITL-30)', ['DITL-30', 'DITL-30 #B', 'DITL-30 #C']), a: [dmot('DITL-30', 'SWBP-A'), dmot('DITL-30 #B', 'SWBP-B'), dmot('DITL-30 #C', 'SWBP-C')], field: [4] },
+      { st: 0, sec: 6, t: 'Simulan ang SWBP outlet debris filter (DITL-39)', d: 'REMOTE AUTO START ng debris filter system 2 sa DCS (DITL-39 row 19).', c: outC('SWBP outlet debris filter IN OPERATION (DITL-39)', 'DITL-39', 14, 'IN OPERATION', 'stopped'), a: [pbB('Debris filter 2 AUTO START (DITL-39)', 'DITL-39', 18, null, () => dOut('DITL-39', 14) === 1)], field: [5] },
+      { st: 0, sec: 7, t: 'Simulan ang make-up water pump (MWP)', d: 'Ang MWP ay nasa DCS (DITL-112). Pinupuno nito ang expansion tank at ang condenser.', c: runC('A make-up water pump running (DITL-112)', ['DITL-112', 'DITL-112 #B', 'DITL-112 #C']), a: [dmot('DITL-112', 'MWP-A'), dmot('DITL-112 #B', 'MWP-B'), dmot('DITL-112 #C', 'MWP-C')], field: [6] },
+      { st: 0, sec: 8, t: 'Simulan ang auxiliary cooling water pump (ACW)', d: 'Ang ACW pump ay nasa DCS (DITL-76 A, DITL-77 B).', c: runC('An aux. cooling water pump running (DITL-76 / 77)', ['DITL-76', 'DITL-77']), a: [dmot('DITL-76', 'ACW pump A'), dmot('DITL-77', 'ACW pump B')], field: [7] },
+      { st: 0, sec: 9, t: 'Simulan ang instrument air dryer (DITL-45)', d: 'START ng instrument air dryer A sa DCS (DITL-45 row 15).', c: outC('Instrument air dryer A RUNNING (DITL-45)', 'DITL-45', 14, 'RUNNING', 'STOPPED'), a: [pbB('START instrument air dryer A (DITL-45)', 'DITL-45', 14, 'DITL-45@14', () => dOut('DITL-45', 14) === 1)], field: [8] },
+      { st: 0, sec: 10, t: 'Simulan ang instrument air compressor (local)', d: 'Sa local panel sinisimulan ang compressor; nakikita sa DCS ang RUNNING (DITL-113 row 6).', c: C('Instrument air compressor A running (DITL-113)', () => !WL() || locRun('DITL-113', 5) === 1, () => 'IA compressor A ' + (locRun('DITL-113', 5) === 1 ? 'RUNNING' : 'STOPPED')), a: [locB('instrument air compressor A', 'DITL-113', 5)], field: [9] },
+      { st: 0, sec: 11, t: 'Simulan ang plant air dryer (DITL-45)', d: 'START ng plant air dryer A sa DCS (DITL-45 row 4).', c: outC('Plant air dryer A RUNNING (DITL-45)', 'DITL-45', 3, 'RUNNING', 'STOPPED'), a: [pbB('START plant air dryer A (DITL-45)', 'DITL-45', 3, 'DITL-45@3', () => dOut('DITL-45', 3) === 1)], field: [10] },
+      { st: 0, sec: 12, t: 'Simulan ang plant air compressor (local)', d: 'Sa local panel sinisimulan ang compressor; nakikita sa DCS ang RUNNING (DITL-114 row 6).', c: C('Plant air compressor A running (DITL-114)', () => !WL() || locRun('DITL-114', 5) === 1, () => 'PA compressor A ' + (locRun('DITL-114', 5) === 1 ? 'RUNNING' : 'STOPPED')), a: [locB('plant air compressor A', 'DITL-114', 5)], field: [11] },
+      FIELD(0, 'Pre-start check, turbine oil pumps, oil purifier, control oil (field / TCS)', [12, 13, 14, 15]),
+      { st: 0, sec: 17, t: 'Simulan ang rotary air pre-heater (DITL-43)', d: 'START ng air preheater sa DCS (DITL-43 row 3). Kailangan ang NOT TRIP at hindi LOCAL sa field.', c: runC('Air preheater running (DITL-43)', ['DITL-43']), a: [dmot('DITL-43', 'air preheater')], field: [16] },
       /* ---- 1 water ---- */
       FIELD(1, 'Hotwell filling line-up (field)', [17]),
       { st: 1, sec: 18, t: 'Hotwell level control LCV-MU1110 sa AUTO', d: 'Ang make-up valve na ang hahawak ng level ng hotwell ng condenser.', c: b.MODE('LCV-MU1110', 'AUTO'), fps: ['LCV-MU1110'], a: [btn('A (AUTO)', () => A.auto('LCV-MU1110'))] },
@@ -1133,6 +1166,7 @@ window.LS_GUIDE = (function () {
       { st: 10, t: 'Ibalik ang HIC-ULD sa 150 MW (▲▲)', d: 'Itaas ulit ang target.', c: b.OUT('HIC-ULD', 149, null, 'MW'), fps: ['HIC-ULD'] },
       { st: 10, t: 'Hawakan ang 150 MW', d: 'MSP 118 ~ 128, drum level ±150 mm, O₂ 3 ~ 6 %.', c: b.HOLD(300, b.ALL(b.VAL('MW', 147, 153), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150), b.VAL('O2', 3, 6))), wait: 1 }
     ];
+    ST = ST.flat();
     ST.forEach((s, i) => (s.i = i));
     return ST;
   }
@@ -1207,6 +1241,7 @@ window.LS_GUIDE = (function () {
     (s.coachOff || []).forEach(coachOff);
     (s.coach || []).forEach(coachOn);
     G.cur = i;
+    G.ok = null;
     save();
   }
   /* every step of the plant (AN.onStep): the coach, the pushbutton release; every second: the latch */
@@ -1242,12 +1277,10 @@ window.LS_GUIDE = (function () {
     const L0 = steps(),
       s = L0[G.cur];
     if (!s) return false;
-    /* 3.2.0 walkthrough #16: a field card (no DCS condition) is confirmed by the operator: it moves on while PAUSED too */
+    /* 3.2.0 walkthrough #16: a field card (no DCS condition) is confirmed by the operator: it moves on while PAUSED too (retest #5: not
+       while its 6 h purge is still counting) */
     if (!live()) {
-      if (s.need && !s.c && G.mine[s.i]) {
-        open(G.cur + 1);
-        return true;
-      }
+      if (s.need && !s.c && stepOk(s)) return done(s);
       return false;
     }
     /* 3.2.0-beta.24: a station that a BU-CMD of the drawing put back to MANUAL after its step (HIC-BM / EIC-TM: M.2013 / M.2016,
@@ -1259,11 +1292,24 @@ window.LS_GUIDE = (function () {
         return true;
       }
     }
-    if (stepOk(s)) {
+    if (stepOk(s)) return done(s);
+    if (G.ok === G.cur) G.ok = null;
+    return false;
+  }
+  /* 3.2.0 retest #30: a step that is done waits for the trainee ("✓ Tapos" and its result, then "Susunod ›"); a test tool sets autoNext */
+  function done(s) {
+    if (API.autoNext) {
       open(G.cur + 1);
       return true;
     }
+    G.ok = G.cur;
     return false;
+  }
+  function next() {
+    if (G.ok !== G.cur) return false;
+    G.ok = null;
+    open(G.cur + 1);
+    return true;
   }
   /* out of order: a motor of a later step already running (the operator started it in the Plant view or the Logic) */
   function early() {
@@ -1347,6 +1393,7 @@ window.LS_GUIDE = (function () {
   /* the field confirmation of a step */
   function confirm(i) {
     G.mine[i] = 1;
+    G.ok = null;
     if (G.pw) delete G.pw[i];
     save();
   }
@@ -1373,7 +1420,10 @@ window.LS_GUIDE = (function () {
     G.did = s.i;
     G.didT = simT();
   }
-  return {
+  const API = {
+    autoNext: false,
+    next,
+    ready: () => G.ok === G.cur,
     steps,
     STAGES,
     coach,
@@ -1403,4 +1453,5 @@ window.LS_GUIDE = (function () {
     },
     mine: () => G.mine
   };
+  return API;
 })();

@@ -31,8 +31,27 @@ html.gd-bottom .gd-kvs{grid-template-columns:repeat(8,minmax(0,1fr))}
 .gd-kv em{font-style:normal;font-size:11.5px;color:var(--c-dim)}
 .gd-lamps{display:flex;flex-wrap:wrap;gap:3px 10px;margin-top:5px}
 .gd-lamp{font:600 12.5px var(--uf);color:var(--c-tx2);white-space:nowrap}
-.gd-lamp:before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:-1px;background:var(--c-alm)}
-.gd-lamp.on:before{background:var(--c-run)}
+/* 3.2.0 retest #25: equipment status in the power plant convention: RUN = red, STOP = green; TRIP = amber, flashing until ACK (#34) */
+.gd-lamp:before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:-1px;background:#22a052}
+.gd-lamp.on:before{background:#dc2626}
+.gd-lamp.trip:before{background:#f59e0b}
+.gd-lamp.blink:before{animation:gdblink 1s steps(2,start) infinite}
+@keyframes gdblink{50%{background:#dc2626;opacity:.35}}
+.gd-btn.lit-run{background:#dc2626;border-color:#dc2626;color:#fff}
+.gd-btn.lit-stop{background:#22a052;border-color:#22a052;color:#fff}
+.gd-btn.lit-run small,.gd-btn.lit-stop small{color:#fff;opacity:.85}
+.gd-mst{border:1px solid var(--c-line2);background:var(--c-well);color:var(--c-tx2);border-radius:6px;padding:4px 10px;font:700 13px var(--mf);letter-spacing:.04em;min-height:36px;cursor:default}
+.gd-mst.run{color:#fff;background:#dc2626;border-color:#dc2626}
+.gd-mst.stop{color:#fff;background:#22a052;border-color:#22a052}
+.gd-mst.trip{color:#1a1200;background:#f59e0b;border-color:#f59e0b}
+.gd-mst.blink{cursor:pointer;animation:gdblink2 1s steps(2,start) infinite}
+@keyframes gdblink2{50%{background:#dc2626;color:#fff}}
+.gd-brk{flex-basis:100%;height:0}
+.gd-okb{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0;padding:8px 10px;border:1px solid var(--c-run);border-radius:7px;background:var(--c-runsoft);font:600 14px var(--uf);color:var(--c-runtx2)}
+.gd-okb[hidden]{display:none}
+.gd-flg{margin:8px 0 2px;font:700 12px var(--uf);letter-spacing:.06em;color:var(--c-tx2)}
+.gd-fle{font:400 13px var(--uf);color:var(--c-dim)}
+.gd-fl li.lk{opacity:.55}
 .gd-prog{padding:7px 12px 3px}
 .gd-bar{height:5px;border-radius:3px;background:var(--c-line)}
 .gd-bar i{display:block;height:100%;border-radius:3px;background:var(--c-run);transition:width .3s}

@@ -564,6 +564,12 @@
       $('updbtn').textContent = 'Check for update';
       set.m.append($('updbtn'));
     }
+    /* 3.2.0 retest #23: the update button made after the page load goes straight into this menu (it sat over the Home heading until the
+       next check of the 2 s interval below) */
+    window.lsUpdHome = b => {
+      b.textContent = 'Check for update';
+      set.m.append(b);
+    };
     const brand = E('div', {
       cls: 'brand',
       title: 'DCS Logic Simulator',

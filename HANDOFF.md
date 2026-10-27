@@ -26,9 +26,10 @@
 - Plant chip: OFF | Unit lang; starting state: Cold o 150 MW lang. Plant model ON na walang starting state: header "—", ang ABC page ay bumubukas na Cold.
 
 ## Susunod na gagawin (roadmap sa `docs/SPEC.md` seksyon 3)
+0. 2026-10-28 ~4:20 AM PHT: inayos (code lang) ang 18 findings ng retest (table "retest fixes" sa UPDATE_REPORT). HINDI nasubok: bawal ang anumang run / probe / headless test (user 2026-10-28); ang tanging test ay live, pinapanood ng user, isang hakbang bawat G niya.
 0. 2026-10-28 (PHT): inayos ang 22 findings ng live Training test ng user (table sa `docs/versions/v3.2.0/UPDATE_REPORT.md`, "walkthrough fixes"). Ang Training ay nagsisimula na naka-PAUSE ×1; ang test tools ay pumipindot ng RUN. Ang Cold drum ay −300 mm na at pinupuno sa hakbang na STEAM DRUM FILLING. Susunod: test ulit mula Step 1, sa approval lang ng user.
 1. Roadmap 3 TAPOS, 4 bahagi (2026-10-27, branch `claude/project-thread-5nq9pa`, nakapatong sa PR #47): starting points, P1 fix queue, P2 #13 / #14, Training MOV steps. Itinigil ng user ang mahahabang test: ang buong Cold → 150 MW ay HINDI pa nasubok sa build na ito. Ang user ang dadaan sa Training sa sariling PC.
-2. Kapag pinayagan ng user: isang `tools/training/checkpoint/run.js --nostop` run (itinatala ang lahat ng hinto at switch trip, hindi humihinto), ayusin lahat, isang final run. Huwag ulit-ulitin ang buong run (user 2026-10-27).
+2. (LUMA, napalitan ng utos 2026-10-28: walang run ni Claude) Dati: isang `tools/training/checkpoint/run.js --nostop` run (itinatala ang lahat ng hinto at switch trip, hindi humihinto), ayusin lahat, isang final run. Huwag ulit-ulitin ang buong run (user 2026-10-27).
 3. Natitira: P2 #7 ~ #12; HP bypass na hindi pa sinasara ng sarado na MV-MS1391.
 
 ## Hindi pa nasubok
