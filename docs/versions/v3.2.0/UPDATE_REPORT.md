@@ -934,3 +934,38 @@ Engine at logic: walang binago.
 - Screen walk: nilaktawan (user, 2026-10-27).
 
 **Status:** dev (walang Beta number, walang merge).
+
+## 3.2.0-beta.39 (dev, walkthrough fixes, 2026-10-28) — 22 findings ng live Training test (Step 1 ~ 4)
+
+Galing sa artifact "Start-up Test Findings" (live na test ng user, huminto sa Gabay Hakbang 2/81). Code at mabilis na check lang; walang buong Cold run (user 2026-10-28: "Aayusin mo lng ang mga findings, tapos test ulit na may approval ko").
+
+| # | Finding | Ayos | File |
+|---|---|---|---|
+| 1 | Gabay: RUN ×10 agad, t = 11:29 | Nagsisimula na naka-PAUSE, ×1, t = 0 (ang orasan ng sheets ay binibilang ang settling ng Cold). RUN / PAUSE sa pill ng panel at sa "▶ RUN" bar | guide.js `start`, trace.js `AN.pauseOn`, dock.js |
+| 2 | ABC-057 sa gitna sa field step | Ang field card ay nagbubukas ng SOP section nito sa Training list; ang logic ay sheet lang ng sariling hakbang | dock.js `goStep` |
+| 3 | Maliit ang text | Dock 15 px base, card / interlock / button 14 px, mas maluwag; mas malapad na default | dock.css |
+| 4 | "Field: 6 items" nakatiklop | Bukas na listahan na may checkbox; iisang tick sa Training list (`ls-train`) | dock.js `fieldList` |
+| 5 | Walang 6 h purge | Card ng ESP: "Tapos na (6 h na)" o "Simulan ang 6 h purge" (oras ng planta, ×300 ≈ 72 s), may orasan | guide.js `pre`, dock.js |
+| 6 | Bantayan = SWP sa ESP step | Walang stage values sa field card | dock.js |
+| 7 | Drum +8 mm sa Cold | Cold drum level −300 mm (ASSUMED, sa ilalim ng −150 mm ng SOP); ang STEAM DRUM FILLING ay totoong pagpuno: FCV-FW1130-2 M 20 %, coach "fill" nagsasara sa −150 mm | hmi-op.js `AN_COLD_DRUM`, guide.js |
+| 8 | Pulang block, "NO ALARM" | Binibilang na rin ng header ang ALM block na nasa alarm mula pa sa simula (sheet na nasa screen) | cr.js |
+| 9 | 13 auto-tick sa Cold | AUTO tick lang kapag nakitang HINDI pa tapos mula sa Clear / start, o naabot na ang section (may tick ang naunang section); furnace purge: kailangan ang IDF, SAF, PAF, FAB tumatakbo | live.js `scan` |
+| 10 | Restart ng Gabay hindi nire-reset ang ticks | Gabay = bagong checklist (kumpirmasyon kung may tick) | home.js |
+| 11 | 81 hakbang vs 48 sections | "Hakbang x / 81 · Section y / 48 ↗" sa panel | dock.js |
+| 12 | Walang kumpirmasyon ng Clear | "Cleared: 0 / 692" + Undo (30 s) | home.js, live.js `load` |
+| 13 | Lumang DITL-56 sa likod | Ang field step ay nasa Training list (#2); ang logic ay bumubukas lang sa sheet ng hakbang | dock.js |
+| 14 | Nawawala ang section list | "Section y / 48 ↗": isang pindot pabalik sa section sa Training list; hindi na umaalis ang start sa Training page | dock.js `toList` |
+| 15 | 3 s walang feedback | "Nilo-load ang Cold…", naka-disable hanggang handa | home.js |
+| 16 | "Tapos na sa field" walang nangyari habang PAUSED | Gumagana na habang PAUSED; ang DITL button habang PAUSED ay nagsasabing "pindutin muna ang ▶ RUN" | guide.js `scan`, dock.js |
+| 17 | 33 vs 35 items | Lahat ng hakbang ng SOP section (AUTO / TCS may tanda) mula sa iisang source (LS_PROC5002) | dock.js |
+| 18 | REMOTE 3 beses | Isang linya bawat signal: "row 5, 18" (ang row 22 ay parehong signal na walang address prefix: pinagsama rin) | dock.js `svcN` |
+| 19 | "Simulan pa rin" bypass | Tinanggal; bawat ✕ row may ↗ papunta sa row sa logic | dock.js |
+| 20 | Walang field operator button bawat contact | "FIELD: set ..." bawat kulang na contact, sine-set ang lahat ng row ng signal, may Events log (FIELD) | dock.js |
+| 21 | Walang PB tag sa START / STOP | Sa ilalim ng label: sheet, row at tag ng CRT P.B. (hal. DITL-29A row 2 · M.1170); pinipili ang row sa sheet kapag naka-"Sundan" | dock.js `pbOf` |
+| 22 | SWP-A naka-block, B / C hindi | Hindi Cold state: parehong kulang ang REMOTE ng tatlo (probe). Bug ng panel: ang B / C (SUSUNOD) ay hindi binibilang na blocked. Ngayon blocked din | dock.js |
+
+Tools: ang checkpoint / human / fullrun / trace runs ay pumipindot ng RUN pagkatapos ng start (PAUSED na ang simula).
+
+Nasubok (maikling probe, hindi buong run): bukas ang app nang walang error; Cold = PAUSED ×1, t = 0, drum −296 mm, header 1 ALARM, 6 field items, Hakbang 2 = Section 2 / 48 na may 35 items, SWP-A / B / C lahat naka-block, FIELD button → SWP-A START bukas at Events "FIELD". `npm run check` SAME.
+Hindi nasubok: buong Cold → 150 MW (hinihintay ang utos ng user).
+Maikling checkpoint run mula Cold hanggang Hakbang 16 (`--until 16`, mga 2.5 min): walang page error; ang drum ay −296 mm hanggang buksan ang start-up valve sa Hakbang 14, at pumasa ang Hakbang 14 (level ≥ −200 mm at valve sarado, 10 s).

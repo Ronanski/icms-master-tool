@@ -545,7 +545,7 @@
     R.classList.toggle('gd-min', on && min);
     if (dock) dock.hidden = !on || min;
     if (tabB) tabB.hidden = !on || !min;
-    const w = Math.max(320, Math.min(560, ls.get('ls-gdock-w', innerWidth >= 1300 ? 400 : 350), innerWidth - 480)),
+    const w = Math.max(340, Math.min(600, ls.get('ls-gdock-w', innerWidth >= 1300 ? 440 : 380), innerWidth - 480)),
       h = Math.max(240, Math.min(innerHeight * 0.7, ls.get('ls-gdock-h', Math.round(innerHeight * 0.42))));
     R.style.setProperty('--gdw', w + 'px');
     R.style.setProperty('--gdh', h + 'px');
@@ -588,12 +588,42 @@
     const v = +((window.AN && AN.spd) || 1);
     (els.spd || []).forEach(b => b.classList.toggle('on', +b.dataset.v === v));
   }
+  /* 3.2.0 walkthrough #1 #16: the Training starts PAUSED; RUN / PAUSE from the panel (the ABC page or the DITL page, whichever is open) */
+  const isRun = () =>
+    !!(window.AN && ((AN.cat === 'an' && AN.run && !AN.view) || (AN.cat !== 'an' && typeof SIM !== 'undefined' && SIM && !(typeof DPAUSE !== 'undefined' && DPAUSE))));
+  function runNow() {
+    try {
+      if (AN.cat === 'an') AN.runOn();
+      else {
+        const b = document.querySelector('.dui-run');
+        if (b) b.click();
+      }
+    } catch (e) {}
+    setTimeout(() => fill(true), 250);
+  }
+  function pauseNow() {
+    try {
+      if (AN.cat === 'an') AN.pauseOn();
+      else if (typeof SIM !== 'undefined' && SIM) DPAUSE = true;
+    } catch (e) {}
+    setTimeout(() => fill(true), 250);
+  }
+  /* the SOP section of a step (1-based, as the Training list numbers it) */
+  const secOf = s => (s ? s.sec || (s.field && s.field.length ? s.field[0] + 1 : null) : null);
+  const nSec = () => (window.LS_PROC5002 || []).length;
+  /* 3.2.0 walkthrough #14: one press back to the section in the Training list (the panel stays) */
+  const toList = s => {
+    try {
+      const k = secOf(s);
+      if (window.lsHome && lsHome.show) lsHome.show(k ? k - 1 : 0);
+    } catch (e) {}
+  };
   function build() {
     if (dock) return;
     dock = E('aside', { id: 'gdock', role: 'complementary', 'aria-label': 'Training' });
     const g = E('div', { cls: 'gd-grip', title: 'I-drag para palakihin o paliitin', 'aria-hidden': 'true' });
     grip(g);
-    els.run = E('span', { cls: 'gd-pill' });
+    els.run = E('button', { type: 'button', cls: 'gd-pill', on: () => (isRun() ? pauseNow() : runNow()) });
     els.spd = [1, 10, 60, 300].map(v => E('button', { type: 'button', 'data-v': v, txt: '×' + v, title: 'Bilis ng simulation ×' + v, on: () => setSpeed(v) }));
     const hd = E('div', { cls: 'gd-hd' }, [
       E('b', { txt: 'Training' }),
@@ -613,7 +643,8 @@
     els.bar = E('i');
     els.stp = E('span');
     els.stg = E('span');
-    const prog = E('div', { cls: 'gd-prog' }, [E('div', { cls: 'gd-bar' }, [els.bar]), E('div', { cls: 'gd-pl' }, [els.stp, els.stg])]);
+    els.secb = E('button', { type: 'button', cls: 'gd-secb', title: 'Buksan ang section na ito sa Training list (PR-OPE-5002)', on: () => toList(GD() && GD().steps()[GD().cur]) });
+    const prog = E('div', { cls: 'gd-prog' }, [E('div', { cls: 'gd-bar' }, [els.bar]), E('div', { cls: 'gd-pl' }, [els.stp, els.secb, els.stg])]);
     els.body = E('div', { cls: 'gd-body' });
     dock.append(g, hd, strip, prog, els.body);
     document.documentElement.append(dock);
@@ -662,16 +693,16 @@
     } catch (e) {}
   }
   /* the guided start from Cold; resume = go on with the plant that runs */
-  function start() {
+  /* 3.2.0 walkthrough #1 #2: the start stays on the Training page (the first steps are field steps), PAUSED at 1x; done() when the cold
+     plant is in (the page shows "Nilo-load ..." until then, #15) */
+  function start(done) {
     const g = GD();
     if (!g) return;
     for (const k in PERM) delete PERM[k];
-    try {
-      window.lsSetTab && lsSetTab('logic');
-    } catch (e) {}
     g.start(() => {
       open();
-      setSpeed(+ls.get('ls-gdock-spd', 10) || 10);
+      setSpeed(1);
+      if (done) done();
     });
   }
   function resume() {
@@ -686,6 +717,9 @@
   /* ---------- the main area follows the step: the DITL of a motor, the ABC sheet of a faceplate ---------- */
   function goStep(s) {
     if (!follow || !s) return;
+    /* 3.2.0 walkthrough #2: a field card (no DCS button, no faceplate) shows its SOP section in the Training list, not the sheet that
+       happened to be open (ABC-057 at the ESP step) */
+    if (s.need && !(s.a || []).length && !(s.fps || []).length) return toList(s);
     try {
       /* 3.2.0-beta.26: a push button of a DITL drawing (BURNER ON of DITL-09, a discharge valve of DITL-20): that sheet, its row selected
          (a motor START goes first; was: the ABC sheet of the step's faceplate). Machine B ~ D open the drawing of A until they are sheets of their own (CHECKLIST 0.2) */
@@ -735,6 +769,63 @@
   }
   /* the running memory of a motor button (guide.js mot) */
   const motAddr = a => a.ad || null;
+  /* the steps of SOP sections (0-based) with their kind (live.js: auto / field / tcs) */
+  function fieldList(secs) {
+    const P = window.LS_PROC5002 || [],
+      out = [];
+    for (const si of secs)
+      (P[si] ? P[si].s : []).forEach((x, i) => {
+        let k = 'field';
+        try {
+          k = LV().kind(si, i).k;
+        } catch (e) {}
+        out.push({ si, i, t: x.t, k });
+      });
+    return out;
+  }
+  /* the CRT push button row of a step button: a DITL push button (dg) or the START / STOP P.B. of a motor drawing */
+  function pbOf(a, on) {
+    return call(() => {
+      if (a.dg) {
+        if (!on) return null;
+        const ds = dSheet(a.dg[0]);
+        if (!ds) return null;
+        const r = a.dg[1],
+          tg = rowInfo(ds, r).tag;
+        return { sh: a.dg[0], row: r, txt: String(a.dg[0]) + ' row ' + (r + 1) + (tg ? ' · ' + tg : '') };
+      }
+      const ad = a.stop ? motAddr(a) : null,
+        ds = ad && dOf(ad);
+      if (!ds) return null;
+      if (!ds.nl) ds.nl = netlist(ds);
+      const r = pbRow(ds, on ? /\bSTART\b|\bST$/ : /\bSTOP\b/);
+      if (r < 0) return null;
+      const nm = dName(ds),
+        b0 = /#[B-D]$/.test(nm) ? dSheet(nm.replace(/\s*#\w+$/, '')) : null;
+      let tg = rowInfo(ds, r).tag;
+      /* a machine B / C row whose text is still the one of machine A (no memory of its own read): no tag rather than the tag of A */
+      if (b0 && b0 !== ds && tg && tg === rowInfo(b0, r).tag) tg = '';
+      return { sh: nm, row: r, txt: nm + ' row ' + (r + 1) + (tg ? ' · ' + tg : '') };
+    }, null);
+  }
+  /* the service text of a row without its address prefix ("I.032C/528/81C SEAWATER PUMP A REMOTE MODE SELECTED" = row 22 "SEAWATER PUMP A
+     REMOTE MODE SELECTED": one signal, walkthrough #18) */
+  const svcN = x =>
+    String(x || '')
+      .replace(/^\(FROM STATION WIRING\)\s*/, '')
+      .replace(/^[\w./]*\d\S*\s+/, '')
+      .trim();
+  /* a DITL button (motor, valve, push button) pressed while PAUSED: nothing would move; the card says why */
+  function pausedWarn(a) {
+    if (isRun() || !(a.stop || a.dg || a.ad)) return false;
+    if (els.pw) {
+      els.pw.hidden = false;
+      els.pw.textContent = '❚❚ Naka-PAUSE: pindutin muna ang ▶ RUN (hinto ang oras, walang aandar).';
+      clearTimeout(pausedWarn.t);
+      pausedWarn.t = setTimeout(() => els.pw && (els.pw.hidden = true), 5000);
+    }
+    return true;
+  }
   /* ---------- the content ---------- */
   function fill(force) {
     const g = GD();
@@ -742,15 +833,20 @@
     const L = g.steps(),
       i = g.cur,
       s = L[i];
-    const R = !!(window.AN && ((AN.cat === 'an' && AN.run && !AN.view) || (AN.cat !== 'an' && typeof SIM !== 'undefined' && SIM)));
-    els.run.textContent = R ? '● RUN' : '■ VIEW';
+    const R = isRun();
+    els.run.textContent = R ? '● RUN · ❚❚' : '❚❚ PAUSED · ▶';
     els.run.className = 'gd-pill' + (R ? ' on' : ' off');
-    els.run.title = R ? 'Tumatakbo ang simulation' : 'Nakahinto (VIEW): pindutin ang RUN sa itaas';
+    els.run.title = R ? 'Tumatakbo ang simulation: pindutin para i-PAUSE' : 'Naka-PAUSE (hinto ang oras): pindutin para RUN';
     paintSpeed();
     els.bar.style.width = Math.round((100 * Math.min(i, L.length)) / L.length) + '%';
     els.stp.textContent = s ? 'Hakbang ' + (i + 1) + ' / ' + L.length : 'Tapos: ' + L.length + ' / ' + L.length;
+    /* 3.2.0 walkthrough #11: the SOP section of the step (the Training list numbers) */
+    const sk = secOf(s);
+    els.secb.textContent = sk ? 'Section ' + sk + ' / ' + nSec() + ' ↗' : '';
+    els.secb.hidden = !sk;
     els.stg.textContent = s ? g.STAGES[s.st] || '' : '150 MW';
-    if (!force && i === lastCur) return live();
+    if (!force && i === lastCur && R === els.wasR) return live();
+    els.wasR = R;
     const first = i !== lastCur;
     lastCur = i;
     const b = els.body;
@@ -769,17 +865,49 @@
       col2 = E('div', { cls: 'gd-c2' });
     const prev = L[i - 1];
     if (prev) col1.append(E('div', { cls: 'gd-done', txt: i + ' · ' + prev.t }));
+    /* 3.2.0 walkthrough #1 #16: PAUSED = the time stopped; a field step is confirmed anyway, a DCS step needs RUN */
+    if (!R)
+      col1.append(
+        E('div', { cls: 'gd-pause' }, [
+          E('span', { txt: s.need && !s.c ? '❚❚ Naka-PAUSE ang oras. Puwede mong kumpirmahin ang field step; pindutin ang ▶ RUN bago ang DCS step.' : '❚❚ Naka-PAUSE ang oras: walang aandar (START / OPEN) hangga’t hindi RUN.' }),
+          E('button', { type: 'button', cls: 'gd-btn go', txt: '▶ RUN', on: runNow })
+        ])
+      );
     /* the card */
     const card = E('div', { cls: 'gd-card' });
     card.append(E('div', { cls: 'gd-eb', txt: 'HAKBANG ' + (i + 1) + ' · ' + (g.STAGES[s.st] || '').toUpperCase() }), E('h3', { txt: s.t }), E('p', { txt: s.d || '' }));
     els.cond = E('div', { cls: 'gd-cond' });
     card.append(els.cond);
-    /* the field items of a field card / a DCS step */
-    const fi = s.field && s.field.length ? call(() => g.fieldOf(s.field), []) : [];
-    if (fi.length)
-      card.append(
-        E('details', { cls: 'gd-field' }, [E('summary', { txt: 'Field: ' + fi.length + ' item' + (fi.length > 1 ? 's' : '') + ' ng field operator' }), E('ul', {}, fi.slice(0, 30).map(t => E('li', { txt: t })))])
-      );
+    /* the field items of a field card / a DCS step. 3.2.0 walkthrough #4 #17: every step of the SOP section (the same list and the same
+       ticks as the Training list, ls-train), open, with a check box; an AUTO step ticks from the logic (was: the field items only, folded) */
+    const fli = s.field && s.field.length ? fieldList(s.field) : [];
+    if (fli.length) {
+      const A = call(() => LV().done(), {}),
+        dd0 = ls.get('ls-train', {});
+      card.append(E('div', { cls: 'gd-flh', txt: 'SOP SECTION ' + s.field.map(x => x + 1).join(', ') + ' · ' + fli.length + ' ITEM' + (fli.length > 1 ? 'S' : '') }));
+      const ul = E('ul', { cls: 'gd-fl' });
+      for (const f of fli) {
+        const id = 'gdf' + f.si + '_' + f.i,
+          k = f.si + '.' + f.i,
+          au = f.k === 'auto',
+          cb = E('input', { type: 'checkbox', id });
+        cb.checked = au ? !!A[k] : !!dd0[k];
+        const li = E('li', { cls: cb.checked ? 'dn' : '' }, [cb, E('label', { for: id }, [f.t, au ? E('em', { txt: 'AUTO' }) : f.k === 'tcs' ? E('em', { txt: 'TCS' }) : null])]);
+        if (au) {
+          cb.disabled = true;
+          cb.title = 'AUTO: kusang nati-tick kapag ipinakita ng logic na tapos (RUN)';
+        }
+        cb.onchange = () => {
+          const dd = ls.get('ls-train', {});
+          if (cb.checked) dd[k] = 1;
+          else delete dd[k];
+          ls.set('ls-train', dd);
+          li.classList.toggle('dn', cb.checked);
+        };
+        ul.append(li);
+      }
+      card.append(ul);
+    }
     /* the interlock of the motors of the step */
     els.il = [];
     for (const a of s.a || []) {
@@ -795,35 +923,68 @@
     const bs = E('div', { cls: 'gd-btns' });
     for (const a of s.a || []) {
       const ad = a.stop || a.dg ? motAddr(a) : null; /* 3.2.0-beta.30: a BURNER ON (dg) has its interlock too (DITL-12 out 7) */
-      const bt = E('button', { type: 'button', cls: 'gd-btn' + (a.stop ? ' go' : ''), txt: a.l });
+      /* 3.2.0 walkthrough #21: the push button of the drawing under the label (sheet, row, tag of the CRT P.B.); pressed, the row is
+         shown on the sheet when the centre follows the step */
+      const pb = pbOf(a, 1);
+      const bt = E('button', { type: 'button', cls: 'gd-btn' + (a.stop ? ' go' : '') }, [a.l, pb ? E('small', { txt: pb.txt }) : null]);
       bt.onclick = () => {
         if (bt.dataset.block === '1') return;
+        if (pausedWarn(a)) return;
         try {
           a.f();
         } catch (e) {}
+        if (pb && follow) openD(pb.sh, pb.row);
         setTimeout(() => fill(), 300);
       };
       bs.append(bt);
       els.btns.push({ a, bt, ad });
       if (a.stop) {
-        const sb = E('button', { type: 'button', cls: 'gd-btn', txt: a.stop.l });
+        const pb0 = pbOf(a, 0);
+        const sb = E('button', { type: 'button', cls: 'gd-btn' }, [a.stop.l, pb0 ? E('small', { txt: pb0.txt }) : null]);
         sb.onclick = () => {
+          if (pausedWarn(a)) return;
           try {
             a.stop.f();
           } catch (e) {}
+          if (pb0 && follow) openD(pb0.sh, pb0.row);
           setTimeout(() => fill(), 300);
         };
         bs.append(sb);
       }
     }
     if (s.need) {
-      const cb = E('button', { type: 'button', cls: 'gd-btn go', txt: 'Tapos na ito sa field' });
-      cb.onclick = () => (g.confirm(s.i), g.scan(), fill(true));
+      const cb = E('button', { type: 'button', cls: 'gd-btn go', txt: s.pre ? 'Tapos na ito sa field (6 h na)' : 'Tapos na ito sa field' });
+      /* 3.2.0 walkthrough #16: works PAUSED too; #4: the field items of the section are ticked in the Training list as well */
+      cb.onclick = () => {
+        const dd = ls.get('ls-train', {});
+        for (const f of fli) if (f.k !== 'auto') dd[f.si + '.' + f.i] = 1;
+        ls.set('ls-train', dd);
+        g.confirm(s.i);
+        g.scan();
+        fill(true);
+      };
       bs.append(cb);
+      /* 3.2.0 walkthrough #5: the 6 h of the ESP purge held in plant time (RUN, x300 = about 72 s) */
+      if (s.pre)
+        bs.append(
+          E('button', {
+            type: 'button',
+            cls: 'gd-btn',
+            txt: 'Simulan ang ' + Math.round(s.pre / 3600) + ' h purge (oras ng planta)',
+            on: () => {
+              const dd = ls.get('ls-train', {});
+              for (const f of fli) if (f.k !== 'auto') dd[f.si + '.' + f.i] = 1;
+              ls.set('ls-train', dd);
+              g.preStart(s.i);
+              fill(true);
+            }
+          })
+        );
     }
     if (bs.children.length) card.append(bs);
     els.early = E('div', { cls: 'gd-warn', hidden: '' });
-    card.append(els.early);
+    els.pw = E('div', { cls: 'gd-warn', hidden: '' });
+    card.append(els.pw, els.early);
     col1.append(card);
     /* the faceplates of the step */
     const key = (s.fps || []).join(',');
@@ -850,7 +1011,8 @@
     /* 3.2.0-beta.33 (CHECKLIST 0.4): the row says WHAT it is (the description of the controller), its tag and its unit (from the range
        of its faceplate, "[0.0 ~ 400.0 T/H]"); a hand station shows its output (MV %); a value the stage list already shows (furnace
        pressure = PICFG108, drum level, FW flow, coal, O2 ...) is not repeated (was "LICCD1110A PV" with no name and no unit) */
-    const stage = WATCH[s.st] || [],
+    /* 3.2.0 walkthrough #6: a field card has no values of the stage to watch (the ESP step showed the seawater pumps of the next step) */
+    const stage = s.need && !s.c ? [] : WATCH[s.st] || [],
       have = new Set(stage.map(x => x[5]).filter(Boolean));
     /* "DRUM LEVEL CONTROL (FEED WATER FLOW CONTROL)" -> "Feed water flow"; "COND. DUMPING ... / DEAERATOR LEVEL CONTROL" -> "Deaerator level" */
     const nice = d0 => {
@@ -942,7 +1104,16 @@
       const hd = call(() => g.holdOf(s), null);
       els.cond.className = 'gd-cond' + (ok ? ' ok' : '');
       els.cond.textContent = (ok ? '✓ ' : '◌ ') + (s.c.want ? 'Kailangan: ' + s.c.want : 'Kailangan') + (now ? '  ·  Ngayon: ' + now : '') + (hd ? '  ·  hawak ' + f0(hd[0]) + ' / ' + f0(hd[1]) + ' s' : '');
-    } else if (els.cond) els.cond.textContent = s.need ? 'Pindutin ang "Tapos na ito sa field" kapag nagawa na.' : '';
+    } else if (els.cond) {
+      /* 3.2.0 walkthrough #5: the 6 h of the ESP purge, in plant time */
+      const hd = call(() => g.holdOf(s), null),
+        hm = x => Math.floor(x / 3600) + ':' + String(Math.floor((x % 3600) / 60)).padStart(2, '0');
+      els.cond.textContent = hd
+        ? '⏱ Purge: ' + hm(hd[0]) + ' / ' + hm(hd[1]) + ' h (oras ng planta' + (isRun() ? '' : ', naka-PAUSE: pindutin ang ▶ RUN') + ')'
+        : s.need
+          ? 'Pindutin ang "Tapos na ito sa field" kapag nagawa na.'
+          : '';
+    }
     /* the interlock */
     const blocked = {};
     /* 3.2.0-beta.26 (human run of the Training: the first SWP step showed three full interlock boxes, SWP-A / B / C, and the last
@@ -959,44 +1130,101 @@
         mov = !!(ds && ds.nl && (ds.nl.mv || []).length && runOut(it.ad) == null),
         run0 = I.live && (mov ? !I.miss.length : atRow(it.ad) != null ? dout(it.ad, atRow(it.ad)) === 1 : /^DITL-/.test(it.ad) ? runOut(it.ad) === 1 : bit(it.ad));
       if (I.live && (run0 || shown)) {
-        it.box.append(E('div', { cls: 'gd-ilh' }, [E('span', { txt: run0 ? (mov ? '✓ REMOTE, HANDA' : '✓ TUMATAKBO NA') : 'SUSUNOD' }), E('span', { cls: 'gd-ilm', txt: I.sheet })]));
+        /* 3.2.0 walkthrough #22: a motor whose box waits (SUSUNOD) is blocked by its own interlock too (SWP-B / C started while SWP-A
+           was blocked by the same missing REMOTE contact) */
+        if (!run0 && I.miss.length) blocked[it.ad] = 1;
+        it.box.append(
+          E('div', { cls: 'gd-ilh' }, [E('span', { txt: run0 ? (mov ? '✓ REMOTE, HANDA' : '✓ TUMATAKBO NA') : 'SUSUNOD' + (I.miss.length ? ' · kulang ang interlock' : '') }), E('span', { cls: 'gd-ilm', txt: I.sheet })])
+        );
         continue;
       }
       if (I.live) shown = 1;
       const head = E('div', { cls: 'gd-ilh' }, [E('span', { txt: 'INTERLOCK · START PERMISSION' }), E('button', { type: 'button', cls: 'gd-lk', txt: I.sheet + ' ↗', title: 'Buksan ang ' + I.sheet, on: () => (window.lsSetTab && lsSetTab('logic'), openD(I.sheet)) })]);
       it.box.append(head);
       if (!I.live) {
-        it.box.append(E('div', { cls: 'gd-ild', txt: 'Lalabas ang interlock kapag tumatakbo ang simulation (RUN).' }));
+        it.box.append(E('div', { cls: 'gd-ild', txt: 'Lalabas ang interlock kapag tumatakbo ang simulation (▶ RUN).' }));
         continue;
       }
       const run = atRow(it.ad) != null ? dout(it.ad, atRow(it.ad)) === 1 : /^DITL-/.test(it.ad) ? runOut(it.ad) === 1 : bit(it.ad);
       if (run) it.box.append(E('div', { cls: 'gd-ild ok', txt: '✓ Tumatakbo na.' }));
       const F = run ? { field: [], abc: [], by: {} } : fieldOf(it.ad);
-      for (const r of I.rows.slice(0, 8)) {
-        it.box.append(E('div', { cls: 'gd-ilr' + (r.ok ? '' : ' x') }, [E('span', { txt: (r.ok ? '✓ ' : '✕ ') + (r.svc || '') + (r.cmp ? ' ' + r.cmp : '') + (r.want ? '' : ' (dapat OFF)') }), E('code', { txt: r.tag || (r.other ? r.other + ' r' + r.no : 'row ' + r.no) })]));
-        const o = !r.ok && r.s && F.by[r.s.name + ':' + r.row];
-        if (o && (o.field.length || o.abc.length))
+      /* 3.2.0 walkthrough #18: one line per signal (SEAWATER PUMP A REMOTE MODE SELECTED feeds rows 5, 18 and 22 of DITL-29A) */
+      const grp = [];
+      for (const r of I.rows) {
+        const k = r.s.name + '|' + svcN(r.svc) + '|' + r.want,
+          q = grp.find(x => x.k === k);
+        if (q) {
+          q.rs.push(r);
+          q.ok = q.ok && r.ok;
+          if (!q.tag && r.tag) q.tag = r.tag;
+        } else grp.push({ k, r, rs: [r], ok: r.ok, tag: r.tag });
+      }
+      for (const G of grp.slice(0, 8)) {
+        const r = G.r,
+          rows = G.rs.map(x => x.no).join(', ');
+        it.box.append(
+          E('div', { cls: 'gd-ilr' + (G.ok ? '' : ' x') }, [
+            E('span', { txt: (G.ok ? '✓ ' : '✕ ') + (svcN(r.svc) || r.svc || '') + (r.cmp ? ' ' + r.cmp : '') + (r.want ? '' : ' (dapat OFF)') }),
+            /* 3.2.0 walkthrough #19: the row on its sheet, one press (to see it, to set it or FORCE it there in the Inputs list) */
+            E('span', {}, [
+              E('code', { txt: (G.tag ? G.tag + ' · ' : '') + (r.other ? r.other + ' ' : '') + 'row ' + rows }),
+              E('button', { type: 'button', cls: 'gd-rowl', txt: '↗', title: 'Buksan ang ' + dName(r.s) + ' row ' + rows, on: () => (window.lsSetTab && lsSetTab('logic'), openD(dName(r.s), r.row)) })
+            ])
+          ])
+        );
+        const seen = new Set(),
+          fs = [],
+          ab = [];
+        for (const x of G.rs) {
+          const o = !x.ok && x.s && F.by[x.s.name + ':' + x.row];
+          if (!o) continue;
+          for (const f of o.field) {
+            const fk = f.s.name + '|' + svcN(f.svc);
+            if (!seen.has(fk)) (seen.add(fk), fs.push(f));
+          }
+          for (const a of o.abc) if (!ab.includes(a)) ab.push(a);
+        }
+        if (fs.length || ab.length)
           it.box.append(
             E('div', {
               cls: 'gd-ilw',
-              txt: '↳ ' + o.field.map(f => 'field: ' + (f.tag ? f.tag + ' ' : '') + f.svc.replace(/^\(FROM STATION WIRING\)\s*/, '') + (f.av ? ' ' + f.av.txt : '')).concat(o.abc.map(a => 'galing sa ' + a.replace(/^.*?(ABC-)/, '$1') + ' (operator sa DCS)')).join(' · ')
+              txt: '↳ ' + fs.map(f => 'field: ' + (f.tag ? f.tag + ' ' : '') + f.svc.replace(/^\(FROM STATION WIRING\)\s*/, '') + (f.av ? ' ' + f.av.txt : '')).concat(ab.map(a => 'galing sa ' + a.replace(/^.*?(ABC-)/, '$1') + ' (operator sa DCS)')).join(' · ')
             })
           );
       }
-      if (F.field.length)
+      /* 3.2.0 walkthrough #20: one FIELD button per missing field contact (the field operator sets the LOCAL / REMOTE selector, the limit
+         switch ...): it sets that input row of the drawing (every row of the same signal) and writes the Event log */
+      const fg = [];
+      for (const f of F.field) {
+        const k = f.s.name + '|' + svcN(f.svc),
+          q = fg.find(x => x.k === k);
+        if (q) q.L.push(f);
+        else fg.push({ k, f, L: [f] });
+      }
+      for (const q of fg) {
+        const f = q.f,
+          nm = svcN(f.svc),
+          rows = q.L.map(x => x.no).join(', ');
         it.box.append(
           E('button', {
             type: 'button',
-            cls: 'gd-btn gd-fld',
-            txt: 'Field operator: ayusin ang ' + F.field.length + ' contact',
-            title: F.field.map(f => f.s.name.replace(/^\(\d+\)/, '') + ' row ' + f.no + ': ' + f.svc + ' = ' + f.want).join('\n'),
-            on: () => (fieldSet(F.field), setTimeout(() => fill(true), 400))
+            cls: 'gd-btn gd-fld gd-fone',
+            txt: 'FIELD: ' + (f.av ? nm + ' ' + f.av.txt : 'set ' + nm + (f.want ? '' : ' = OFF')),
+            title: 'Field operator: ' + dName(f.s) + ' row ' + rows + ' (' + nm + ') = ' + (f.av ? f.av.x : f.want ? 1 : 0),
+            on: () => {
+              fieldSet(q.L);
+              try {
+                if (window.lsEventAdd) lsEventAdd(dName(f.s), 'FIELD', 'Field operator: ' + nm + ' = ' + (f.av ? f.av.x : f.want ? 1 : 0) + ' (row ' + rows + ')');
+              } catch (e) {}
+              setTimeout(() => fill(true), 400);
+            }
           })
         );
+      }
       if (!run && !I.miss.length) it.box.append(E('div', { cls: 'gd-ild ok', txt: '✓ Kumpleto ang interlock: puwede nang pindutin ang START.' }));
       if (!run && I.miss.length) {
         blocked[it.ad] = 1;
-        it.box.append(E('div', { cls: 'gd-ild x', txt: 'Hindi pa aandar ang motor (ayon sa ' + I.sheet + '): ayusin muna ang may ✕.' }));
+        it.box.append(E('div', { cls: 'gd-ild x', txt: 'Hindi pa aandar ang motor (ayon sa ' + I.sheet + '): ayusin muna ang may ✕ (FIELD button, o ↗ para buksan ang row sa logic).' }));
       }
     }
     for (const B of els.btns || []) {
@@ -1007,25 +1235,8 @@
       const on = B.a.on ? call(() => B.a.on(), false) : false;
       B.bt.classList.toggle('did', !!on);
     }
-    /* the override of a blocked start: a field fault the simulator cannot clear stays a training choice */
-    for (const it of els.il || [])
-      if (blocked[it.ad] && !it.box.querySelector('.gd-ov')) {
-        const B = (els.btns || []).find(x => x.ad === it.ad);
-        if (B)
-          it.box.append(
-            E('button', {
-              type: 'button',
-              cls: 'gd-ov',
-              txt: 'Simulan pa rin (training lang)',
-              title: 'Sa totoong planta hindi ito aandar. Sa training, puwede mong ituloy para makita ang susunod.',
-              on: () => {
-                try {
-                  B.a.f();
-                } catch (e) {}
-              }
-            })
-          );
-      }
+    /* 3.2.0 walkthrough #19: no "start anyway" of a blocked motor (was "Simulan pa rin (training lang)"): the missing contact is set by its
+       FIELD button or on its row in the logic (the Inputs list of the DITL page) */
     /* out of order: a motor of a later step already running */
     const ea = call(() => g.early(), []);
     if (els.early) {

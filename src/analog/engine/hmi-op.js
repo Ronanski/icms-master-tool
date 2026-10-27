@@ -503,9 +503,10 @@ const AN_HMI_DI = {
    written as the raw one: drum level 393 / 146 / 393 mm at the end of the load (DRUM LEVEL H.H. > 254 mm, M.0173 / M.0175 ->
    MFT on the DITL), steam flow 461 instead of 474.1 T/H. The raw value is found so that the compensated one is the snapshot
    (secant, 4 steps); the drum level plant model (integrating) starts again from there */
-function hmiComp(only) {
-  for (const [shn, ai, pv, want] of AN_HMI_COMP) {
+function hmiComp(only, wantOf) {
+  for (const [shn, ai, pv, want0] of AN_HMI_COMP) {
     if (only && !only(ai)) continue;
+    const want = wantOf ? wantOf(ai, want0) : want0;
     try {
       const sh = AN.sheets.find(x => x.name === shn),
         S = sh && sh.S;
@@ -1066,7 +1067,10 @@ function anPlantCold() {
     for (const sh of L) for (const b of sh.S.procs || []) if (b.proc && /^LICCD11(04|10A)$/.test((b.txt || [])[1] || '')) b.proc.y0 = 1;
     /* the drum level transmitters: the raw value that gives the snapshot level at the cold drum pressure (the density
        compensation LN38 / LN39 of the drawing changes with the pressure) */
-    hmiComp(ai => /^AI0(130|258|386)$/.test(ai));
+    /* 3.2.0 walkthrough #7 (PR-OPE-5002 STEAM DRUM FILLING: the BFP fills the drum through FCV-FW1130-2 to -150 mm): the drum of a cold
+       plant is not filled yet; its level starts at AN_COLD_DRUM (below the -150 mm of the procedure), the three transmitters 0 / 2 / 8 mm
+       apart as in the snapshot. Before: the normal water level (0 / 2 / 8 mm) */
+    hmiComp(ai => /^AI0(130|258|386)$/.test(ai), (ai, w) => AN_COLD_DRUM + w);
   } catch (e) {}
   /* 3.2.0-beta.22: the drum level of the model after the compensation above, kept through the settling steps below */
   const lvl0 = anDrumLvlState();
@@ -1119,6 +1123,8 @@ function anPlantCold() {
   AN.cold = true;
   return n;
 }
+/* the drum level of a cold plant before the STEAM DRUM FILLING of PR-OPE-5002 (mm, ASSUMED: low, under the -150 mm fill target) */
+const AN_COLD_DRUM = -300;
 /* the drum level model of ABC-010 (plant.js pr.integ, LICBR1001): its state and the level it holds now */
 function anDrumLvlState() {
   try {

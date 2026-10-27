@@ -23067,9 +23067,10 @@ const AN_HMI_DI = {
    written as the raw one: drum level 393 / 146 / 393 mm at the end of the load (DRUM LEVEL H.H. > 254 mm, M.0173 / M.0175 ->
    MFT on the DITL), steam flow 461 instead of 474.1 T/H. The raw value is found so that the compensated one is the snapshot
    (secant, 4 steps); the drum level plant model (integrating) starts again from there */
-function hmiComp(only) {
-  for (const [shn, ai, pv, want] of AN_HMI_COMP) {
+function hmiComp(only, wantOf) {
+  for (const [shn, ai, pv, want0] of AN_HMI_COMP) {
     if (only && !only(ai)) continue;
+    const want = wantOf ? wantOf(ai, want0) : want0;
     try {
       const sh = AN.sheets.find(x => x.name === shn),
         S = sh && sh.S;
@@ -23630,7 +23631,10 @@ function anPlantCold() {
     for (const sh of L) for (const b of sh.S.procs || []) if (b.proc && /^LICCD11(04|10A)$/.test((b.txt || [])[1] || '')) b.proc.y0 = 1;
     /* the drum level transmitters: the raw value that gives the snapshot level at the cold drum pressure (the density
        compensation LN38 / LN39 of the drawing changes with the pressure) */
-    hmiComp(ai => /^AI0(130|258|386)$/.test(ai));
+    /* 3.2.0 walkthrough #7 (PR-OPE-5002 STEAM DRUM FILLING: the BFP fills the drum through FCV-FW1130-2 to -150 mm): the drum of a cold
+       plant is not filled yet; its level starts at AN_COLD_DRUM (below the -150 mm of the procedure), the three transmitters 0 / 2 / 8 mm
+       apart as in the snapshot. Before: the normal water level (0 / 2 / 8 mm) */
+    hmiComp(ai => /^AI0(130|258|386)$/.test(ai), (ai, w) => AN_COLD_DRUM + w);
   } catch (e) {}
   /* 3.2.0-beta.22: the drum level of the model after the compensation above, kept through the settling steps below */
   const lvl0 = anDrumLvlState();
@@ -23683,6 +23687,8 @@ function anPlantCold() {
   AN.cold = true;
   return n;
 }
+/* the drum level of a cold plant before the STEAM DRUM FILLING of PR-OPE-5002 (mm, ASSUMED: low, under the -150 mm fill target) */
+const AN_COLD_DRUM = -300;
 /* the drum level model of ABC-010 (plant.js pr.integ, LICBR1001): its state and the level it holds now */
 function anDrumLvlState() {
   try {
@@ -33027,6 +33033,11 @@ bRun.onclick = () => {
 /* 3.2.0-beta.21 (Training, user 2026-10-24: "irrun mo ba"): the simulation on from a script of the page (the Training start), as the Run button */
 AN.runOn = () => {
   if (AN.view || !AN.run) bRun.onclick();
+};
+/* 3.2.0 walkthrough #1: the Training start stays PAUSED (simulation on, time stopped): the trainee presses RUN */
+AN.pauseOn = () => {
+  if (AN.view) viewSet(false);
+  if (AN.run) setRun(false);
 };
 function wsIn(o) {
   if (o && typeof o === 'object' && o.wv !== 2) o = Object.assign({}, o, { as: 'solid', wv: 2 });
@@ -47940,7 +47951,7 @@ html.gd-side,html.gd-bottom{overflow:hidden}
 html.gd-side body{width:calc(100vw - var(--gdw,380px))!important;min-height:100vh;transform:translateZ(0)}
 html.gd-side body.cr #crband .crkpis{display:none!important}
 html.gd-bottom body{height:calc(100vh - var(--gdh,42vh))!important;min-height:0!important;transform:translateZ(0);overflow:hidden}
-#gdock{position:fixed;z-index:400;display:flex;flex-direction:column;background:var(--c-pane);color:var(--c-tx);font:400 13px/1.4 var(--uf);box-sizing:border-box;box-shadow:0 0 18px var(--c-shadow)}
+#gdock{position:fixed;z-index:400;display:flex;flex-direction:column;background:var(--c-pane);color:var(--c-tx);font:400 15px/1.5 var(--uf);box-sizing:border-box;box-shadow:0 0 18px var(--c-shadow)}
 #gdock[hidden],#gdtab[hidden]{display:none!important}
 html.gd-side #gdock{top:0;right:0;bottom:0;width:var(--gdw,380px);border-left:1px solid var(--c-line2)}
 html.gd-bottom #gdock{left:0;right:0;bottom:0;height:var(--gdh,42vh);border-top:1px solid var(--c-line2)}
@@ -47949,97 +47960,109 @@ html.gd-side .gd-grip{left:-4px;top:0;bottom:0;width:8px;cursor:ew-resize}
 html.gd-bottom .gd-grip{left:0;right:0;top:-6px;height:14px;cursor:ns-resize}
 html.gd-bottom .gd-grip:after{content:"";position:absolute;left:50%;top:8px;width:44px;height:4px;margin-left:-22px;border-radius:3px;background:var(--c-line2)}
 .gd-hd{display:flex;align-items:center;gap:8px;padding:8px 10px 6px 12px;border-bottom:1px solid var(--c-line)}
-.gd-hd b{font-size:14px}
+.gd-hd b{font-size:16px}
 .gd-sp{flex:1}
-.gd-pill{font-size:11px;font-weight:600;border-radius:20px;padding:1px 8px;border:1px solid var(--c-line2)}
+.gd-pill{font-size:12.5px;font-weight:600;border-radius:20px;padding:1px 8px;border:1px solid var(--c-line2)}
 .gd-pill.on{border-color:var(--c-run);color:var(--c-runtx2);background:var(--c-runsoft)}
 .gd-pill.off{border-color:var(--c-man);color:var(--c-mantx2);background:var(--c-mansoft)}
 .gd-seg{display:flex;border:1px solid var(--c-line2);border-radius:7px;overflow:hidden}
-.gd-seg button{border:0;background:var(--c-ctl);color:var(--c-tx2);font:600 11px var(--mf);padding:4px 7px;cursor:pointer}
+.gd-seg button{border:0;background:var(--c-ctl);color:var(--c-tx2);font:600 12.5px var(--mf);padding:5px 8px;cursor:pointer}
 .gd-seg button.on{background:var(--c-acc);color:#fff}
 .gd-ic{border:1px solid var(--c-line2);background:var(--c-ctl);color:var(--c-tx2);border-radius:6px;width:28px;height:26px;cursor:pointer;font-size:12px}
 .gd-strip{padding:6px 12px 7px;border-bottom:1px solid var(--c-line);background:var(--c-well)}
 .gd-kvs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 10px}
 html.gd-bottom .gd-kvs{grid-template-columns:repeat(8,minmax(0,1fr))}
 .gd-kv{min-width:0;display:grid;grid-template-columns:auto 1fr;align-items:baseline;column-gap:3px}
-.gd-kv small{grid-column:1/-1;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--c-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gd-kv b{font:600 15px var(--mf);color:var(--c-acctx);font-variant-numeric:tabular-nums}
-.gd-kv em{font-style:normal;font-size:10px;color:var(--c-dim)}
+.gd-kv small{grid-column:1/-1;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--c-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gd-kv b{font:600 16.5px var(--mf);color:var(--c-acctx);font-variant-numeric:tabular-nums}
+.gd-kv em{font-style:normal;font-size:11.5px;color:var(--c-dim)}
 .gd-lamps{display:flex;flex-wrap:wrap;gap:3px 10px;margin-top:5px}
-.gd-lamp{font:600 11px var(--uf);color:var(--c-tx2);white-space:nowrap}
+.gd-lamp{font:600 12.5px var(--uf);color:var(--c-tx2);white-space:nowrap}
 .gd-lamp:before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:-1px;background:var(--c-alm)}
 .gd-lamp.on:before{background:var(--c-run)}
 .gd-prog{padding:7px 12px 3px}
 .gd-bar{height:5px;border-radius:3px;background:var(--c-line)}
 .gd-bar i{display:block;height:100%;border-radius:3px;background:var(--c-run);transition:width .3s}
-.gd-pl{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--c-dim);margin-top:3px}
+.gd-pl{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--c-dim);margin-top:3px}
 .gd-body{flex:1;min-height:0;overflow:auto;padding:4px 12px 14px;display:flex;flex-direction:column;gap:8px}
 html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:start;gap:10px}
 .gd-c1,.gd-c2{display:flex;flex-direction:column;gap:8px;min-width:0}
-.gd-done{font-size:12px;color:var(--c-dim)}
+.gd-done{font-size:13.5px;color:var(--c-dim)}
 .gd-done:before{content:"✓ ";color:var(--c-run);font-weight:700}
 .gd-card{border:1px solid var(--c-accbd);background:var(--c-accbg);border-radius:10px;padding:10px 12px}
 .gd-card.done{border-color:var(--c-run);background:var(--c-runsoft)}
-.gd-eb{font-size:10.5px;letter-spacing:.09em;font-weight:700;color:var(--c-acctx)}
-.gd-card h3{margin:2px 0 4px;font-size:15.5px;line-height:1.3;text-wrap:balance}
-.gd-card p{margin:0 0 7px;color:var(--c-tx2);font-size:12.5px}
-.gd-cond{font-size:12px;color:var(--c-mantx2);background:var(--c-mansoft);border-radius:6px;padding:4px 7px;margin-bottom:6px}
+.gd-eb{font-size:12px;letter-spacing:.09em;font-weight:700;color:var(--c-acctx)}
+.gd-card h3{margin:4px 0 6px;font-size:17px;line-height:1.3;text-wrap:balance}
+.gd-card p{margin:0 0 9px;color:var(--c-tx2);font-size:14px;line-height:1.5}
+.gd-cond{font-size:14px;color:var(--c-mantx2);background:var(--c-mansoft);border-radius:6px;padding:4px 7px;margin-bottom:6px}
 .gd-cond.ok{color:var(--c-runtx2);background:var(--c-runsoft)}
 .gd-cond:empty{display:none}
-.gd-field{font-size:12px;margin:4px 0 6px}
+.gd-field{font-size:14px;margin:4px 0 6px}
 .gd-field summary{cursor:pointer;color:var(--c-acctx)}
 .gd-field ul{margin:4px 0 0;padding-left:18px;color:var(--c-tx2)}
 .gd-il{border:1px solid var(--c-line2);border-radius:8px;padding:6px 9px;background:var(--c-pane);margin:6px 0}
 .gd-il:empty{display:none}
-.gd-ilh{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;letter-spacing:.06em;color:var(--c-dim);margin-bottom:2px}
-.gd-lk{border:0;background:none;color:var(--c-acctx);font:600 11.5px var(--uf);cursor:pointer;padding:0}
-.gd-ilr{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:1.5px 0}
+.gd-ilh{display:flex;justify-content:space-between;align-items:center;font-size:12px;letter-spacing:.06em;color:var(--c-dim);margin-bottom:2px}
+.gd-lk{border:0;background:none;color:var(--c-acctx);font:600 13px var(--uf);cursor:pointer;padding:0}
+.gd-ilr{display:flex;justify-content:space-between;gap:8px;font-size:14px;padding:3px 0}
 .gd-ilr span:first-child{color:var(--c-runtx2)}
 .gd-ilr.x span:first-child{color:var(--c-almtx)}
-.gd-ilr code{font:11px var(--mf);color:var(--c-dim);white-space:nowrap}
-.gd-ilw{font-size:11px;color:var(--c-dim);padding:0 0 2px 14px}
-.gd-fld{margin-top:5px;min-height:28px;padding:4px 9px;font-size:12px}
-.gd-ild{font-size:12px;color:var(--c-dim);margin-top:3px}
+.gd-ilr code{font:12.5px var(--mf);color:var(--c-dim);white-space:nowrap}
+.gd-ilw{font-size:12.5px;color:var(--c-dim);padding:0 0 2px 14px}
+.gd-fld{margin-top:5px;min-height:28px;padding:5px 10px;font-size:13.5px}
+.gd-ild{font-size:14px;color:var(--c-dim);margin-top:3px}
 .gd-ild.ok{color:var(--c-runtx2)}
 .gd-ild.x{color:var(--c-almtx)}
-.gd-ov{margin-top:5px;border:0;background:none;color:var(--c-dim);text-decoration:underline;font:11.5px var(--uf);cursor:pointer;padding:0}
 .gd-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.gd-btn{border:1px solid var(--c-line2);background:var(--c-ctl);color:var(--c-tx);border-radius:7px;padding:6px 11px;font:600 12.5px var(--uf);cursor:pointer;min-height:32px}
+.gd-btn{border:1px solid var(--c-line2);background:var(--c-ctl);color:var(--c-tx);border-radius:7px;padding:7px 12px;font:600 14px var(--uf);cursor:pointer;min-height:36px}
 .gd-btn:hover{border-color:var(--c-lineh)}
 .gd-btn.go{border-color:var(--c-run);color:var(--c-runtx2)}
 .gd-btn.did{background:var(--c-runsoft)}
 .gd-btn.did:after{content:" ✓"}
 .gd-btn.dis{opacity:.45;cursor:not-allowed}
 .gd-btn.bad{border-color:var(--c-alm);color:var(--c-almtx)}
-.gd-warn{font-size:12px;color:var(--c-mantx2);background:var(--c-mansoft);border-radius:6px;padding:5px 8px;margin-top:6px}
+.gd-warn{font-size:14px;color:var(--c-mantx2);background:var(--c-mansoft);border-radius:6px;padding:5px 8px;margin-top:6px}
 .gd-ask{border:1px solid var(--c-alm);background:var(--c-almsoft);border-radius:8px;padding:8px 10px}
 .gd-ask p{margin:0 0 4px}
 .gd-fps{display:flex;flex-direction:column;gap:8px}
 .gd-fp{border:1px solid var(--c-line2);border-radius:8px;background:var(--c-plate);overflow:hidden}
-.gd-fph{display:flex;justify-content:space-between;gap:6px;padding:4px 8px;border-bottom:1px solid var(--c-line);font-size:11.5px}
+.gd-fph{display:flex;justify-content:space-between;gap:6px;padding:4px 8px;border-bottom:1px solid var(--c-line);font-size:13px}
 .gd-fph b{font-family:var(--mf)}
 .gd-fph span{color:var(--c-dim)}
 .gd-fp .body{padding:4px 6px;overflow-x:auto}
 .gd-watch,.gd-coach{border:1px solid var(--c-line2);border-radius:8px;padding:6px 9px}
-.gd-h{font-size:10.5px;letter-spacing:.06em;color:var(--c-dim);margin-bottom:2px}
-.gd-wr{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12.5px;padding:2px 0;border-bottom:1px dashed var(--c-line)}
+.gd-h{font-size:12px;letter-spacing:.06em;color:var(--c-dim);margin-bottom:2px}
+.gd-wr{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px;padding:4px 0;border-bottom:1px dashed var(--c-line)}
 .gd-wr:last-child{border-bottom:0}
-.gd-wr b{font:600 13px var(--mf);color:var(--c-acctx);font-variant-numeric:tabular-nums}
-.gd-wr em{font-style:normal;font-size:10.5px;color:var(--c-dim);margin-left:3px}
-.gd-wr small{display:block;text-align:right;font-size:10.5px;color:var(--c-dim)}
-.gd-cr{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;padding:3px 0}
+.gd-wr b{font:600 14.5px var(--mf);color:var(--c-acctx);font-variant-numeric:tabular-nums}
+.gd-wr em{font-style:normal;font-size:12px;color:var(--c-dim);margin-left:3px}
+.gd-wr small{display:block;text-align:right;font-size:12px;color:var(--c-dim)}
+.gd-cr{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13.5px;padding:4px 0}
 .gd-tg{flex:none;width:32px;height:18px;border-radius:10px;border:0;background:var(--c-line2);position:relative;cursor:pointer}
 .gd-tg.on{background:var(--c-run)}
 .gd-tg:after{content:"";position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:#fff;transition:left .15s}
 .gd-tg.on:after{left:17px}
-.gd-follow{font-size:12px;color:var(--c-tx2);display:flex;gap:6px;align-items:center}
-.gd-next div{font-size:12px;color:var(--c-dim);padding:3px 8px;border:1px solid var(--c-line);border-radius:6px;margin-top:4px}
+.gd-follow{font-size:13.5px;color:var(--c-tx2);display:flex;gap:6px;align-items:center}
+.gd-next div{font-size:13.5px;color:var(--c-dim);padding:3px 8px;border:1px solid var(--c-line);border-radius:6px;margin-top:4px}
 .gd-next div:before{content:"🔒 ";filter:grayscale(1)}
 #gdtab{position:fixed;z-index:400;right:0;top:50%;transform:translateY(-50%);writing-mode:vertical-rl;padding:12px 7px;border:1px solid var(--c-acc);border-right:0;border-radius:8px 0 0 8px;background:var(--c-pane);color:var(--c-acctx);font:600 12px var(--uf);cursor:pointer;box-shadow:-4px 0 12px var(--c-shadow)}
 @media (orientation:portrait),(max-width:899px){#gdtab{top:auto;bottom:calc(var(--footH,30px) + 8px);right:8px;transform:none;writing-mode:horizontal-tb;border-right:1px solid var(--c-acc);border-radius:8px;padding:8px 12px}}
 #gdock button:focus-visible{outline:2px solid var(--c-acc);outline-offset:1px}
 /* phone (bottom dock under 640 px): 4 values a row and one column of cards (8 values a row ran into each other) */
 @media (max-width:640px){html.gd-bottom .gd-kvs{grid-template-columns:repeat(4,minmax(0,1fr))}html.gd-bottom .gd-body{display:flex;flex-direction:column}.gd-kv b{font-size:14px}}
+/* 3.2.0 walkthrough #3 #4 #18 #20: larger text above; the field items open with check boxes, one FIELD button per contact, the PAUSED bar */
+.gd-fl{list-style:none;margin:6px 0 8px;padding:0;display:grid;gap:4px}
+.gd-fl li{display:flex;gap:8px;align-items:flex-start;font-size:14px;line-height:1.4}
+.gd-fl input{margin-top:3px;width:17px;height:17px;flex:none}
+.gd-fl em{font-style:normal;font:600 11px var(--mf);color:var(--c-acctx);border:1px solid var(--c-line2);border-radius:4px;padding:0 4px;margin-left:4px}
+.gd-fl li.dn label{color:var(--c-dim)}
+.gd-flh{font-size:12px;letter-spacing:.06em;color:var(--c-dim);margin-top:6px}
+.gd-pause{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14px;background:var(--c-mansoft);color:var(--c-mantx2);border-radius:7px;padding:7px 10px;margin:0 0 8px}
+.gd-pill{cursor:pointer}
+.gd-secb{border:0;background:none;color:var(--c-acctx);font:600 12.5px var(--uf);cursor:pointer;padding:0;text-decoration:underline}
+.gd-fone{display:block;margin-top:4px;min-height:30px;padding:4px 10px;font-size:13px}
+.gd-rowl{border:0;background:none;color:var(--c-acctx);font:600 12.5px var(--mf);cursor:pointer;padding:0 0 0 4px}
+.gd-btn small{display:block;font:500 11.5px var(--mf);opacity:.8}
 /* 3.2.0-beta.25 ladder view (src/ui/ladder/ladder.js): a panel on the right half of the DITL page */
 #ladder {
   position: fixed;
@@ -52248,6 +52271,19 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
       else if (e.kind === 'TRIP' && (m = /^(.*) = 1$/.exec(e.text))) act.set(e.sh + '|' + m[1], e);
       else if (e.kind === 'RST' && (m = /^(.*) = 0$/.exec(e.text))) act.delete(e.sh + '|' + m[1]);
     }
+    /* 3.2.0 walkthrough #8: an alarm that stands since the start (no change, so no event: ABC-057 furnace temperature LOW-LOW in a
+       cold plant) is counted too: the header says what the red / orange ALM block of the sheet on screen says */
+    try {
+      const sh = AN.cat === 'an' && AN.sheets && AN.sheets[AN.i];
+      if (sh && sh.S && sh.S.rt && !(AN.plantOn && !AN.startState))
+        for (const b of sh.S.blk)
+          if (b.k === 'ALM' && b.i && b.i[0] >= 0) {
+            const lv = AN.almLv(b, sh.S.rt.v[b.i[0]]);
+            if (lv === 'normal') continue;
+            const nm = AN.nm(sh.S, b.i[0]) || 'ALM #' + b.id;
+            if (!act.has(sh.name + '|' + nm)) act.set(sh.name + '|' + nm, { t: '', text: nm + ' ' + lv, sh: sh.name });
+          }
+    } catch (e) {}
     const n = act.size,
       last = [...act.values()].sort((a, b) => L.indexOf(a) - L.indexOf(b))[0];
     P.alarm.classList.toggle('on', n > 0);
@@ -54743,11 +54779,35 @@ window.LS_LIVE = (function () {
   const since = {};
   const simT = () => +U().t || 0;
   const live = () => !!(typeof AN !== 'undefined' && AN.sheets && AN.cat === 'an' && !(window.lsViewLock && lsViewLock.inView()) && !AN.view);
+  /* 3.2.0 walkthrough #9: an AUTO step ticks on a real change after the Clear / the start: its condition was seen NOT done since then,
+     or the trainee has reached its section (a step of the section before is ticked). Before: every condition already true at Cold
+     ticked itself (no coal, no flame ...). The furnace purge steps also need the four fans running (IDF, SAF, PAF, FAB) */
+  const off = {};
+  const PURGE = PROC.findIndex(s => /FURNACE PURGE/i.test(s.t));
+  const fansOn = () => {
+    try {
+      return RUN.IDF.ok() && RUN.SAF.ok() && RUN.PAF.ok() && RUN.FAB.ok();
+    } catch (e) {
+      return false;
+    }
+  };
   /* one pass over every auto step; returns the keys that changed */
   function scan() {
     const ch = [];
     if (!live() || !PROC.length) return ch;
     const t = simT();
+    let hand = {};
+    try {
+      hand = JSON.parse(localStorage.getItem('ls-train') || '{}') || {};
+    } catch (e) {}
+    const reached = si => {
+      if (si <= 0) return false;
+      const p = si - 1 + '.';
+      for (const k in LAT) if (k.startsWith(p)) return true;
+      for (const k in hand) if (k.startsWith(p)) return true;
+      return false;
+    };
+    const fans = PURGE >= 0 ? fansOn() : true;
     PROC.forEach((sec, si) =>
       sec.s.forEach((st, i) => {
         const key = si + '.' + i;
@@ -54760,8 +54820,11 @@ window.LS_LIVE = (function () {
         } catch (e) {}
         if (!ok) {
           delete since[key];
+          off[key] = 1;
           return;
         }
+        if (!off[key] && !reached(si)) return;
+        if (si === PURGE && !fans) return;
         if (q.c.hold) {
           if (since[key] == null) since[key] = t;
           if (t - since[key] < q.c.hold) return;
@@ -54791,6 +54854,12 @@ window.LS_LIVE = (function () {
     if (from == null) LAT = {};
     else for (const k in LAT) if (+k.split('.')[0] >= from) delete LAT[k];
     for (const k in since) if (from == null || +k.split('.')[0] >= from) delete since[k];
+    for (const k in off) if (from == null || +k.split('.')[0] >= from) delete off[k];
+    wrt(LAT);
+  }
+  /* the AUTO ticks back (Undo of Clear all ticks) */
+  function load(o) {
+    LAT = Object.assign({}, o || {});
     wrt(LAT);
   }
   /* why a controller step waits: the force-manual signals of the drawing (why.js) */
@@ -54843,7 +54912,7 @@ window.LS_LIVE = (function () {
   };
   /* 3.2.0-beta.21: the condition makers, for the guided Training (guide.js) */
   const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4 };
-  return { kind, state, rows, scan, reset, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2, B, H, modeOf, mvOf, pvOf, svOf, getV, NAMES, f1 };
+  return { kind, state, rows, scan, reset, load, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2, B, H, modeOf, mvOf, pvOf, svOf, getV, NAMES, f1 };
 })();
 
 /* ===== 3.2.0-beta.21 GUIDED TRAINING (user pick 2026-10-24, proposal https://claude.ai/artifact/FnjLxFZYXnFqc9fjvRdHWJ, "Oo, gawin ayon
@@ -55269,6 +55338,14 @@ window.LS_GUIDE = (function () {
         A.man('FIC-CF', Math.max(10, Math.min(60, c + d)));
       }
     },
+    /* 3.2.0 walkthrough #7: STEAM DRUM FILLING, the start-up valve FCV-FW1130-2 closed (MV 0 %) when the drum reaches -150 mm */
+    fill: {
+      t: 'Drum filling: isara ang FCV-FW1130-2 sa −150 mm',
+      sec: true,
+      run() {
+        if (h().lvl() >= -155 && mv('FCV-FW1130-2') > 2) A.man('FCV-FW1130-2', 0);
+      }
+    },
     /* drum level on the start-up valve (check.js byp): LICBR1001B opened by hand +5 % a minute while the level falls under -60 mm, back
        to AUTO SV 0 once it stops falling or is over -50 mm */
     lvl: {
@@ -55621,7 +55698,9 @@ window.LS_GUIDE = (function () {
     const FIELD = (st, title, secs, extra) => Object.assign({ st, field: secs, need: 1, t: title, d: 'Ang mga ito ay ginagawa ng field operator (lokal na valve, gauge, panel). Walang DCS signal ang mga ito, kaya kumpirmahin lang kapag tapos na.' }, extra || {});
     ST = [
       /* ---- 0 utilities ---- */
-      FIELD(0, 'ESP purge air heater at fan (field)', [0]),
+      /* 3.2.0 walkthrough #5: PR-OPE-5002 ESP "purge air heater and fan ... 6 hours prior to start-up": confirmed when already 6 h in service,
+         or held 6 h of plant time from the card (pre) */
+      FIELD(0, 'ESP purge air heater at fan (field), 6 oras bago ang start-up', [0], { pre: 21600, d: 'SOP: pinapaandar ng field operator ang ESP purge air heater at fan 6 ORAS BAGO ang start-up. Kung 6 h na itong tumatakbo, pindutin ang "Tapos na ito sa field". Kung ngayon pa lang sinimulan, pindutin ang "Simulan ang 6 h purge" at patakbuhin ang oras (RUN, ×300 = mga 72 segundo).' }),
       { st: 0, sec: 2, t: 'Simulan ang unang seawater pump (SWP)', d: 'Ang seawater ang nagpapalamig sa condenser at sa cooling water ng planta. Ito ang unang tumatakbo sa start-up.', c: R.SWP1, a: [mot('M.3353', 'SWP-A'), mot('M.3354', 'SWP-B'), mot('M.3355', 'SWP-C')], field: [1] },
       { st: 0, sec: 2, t: 'Simulan ang pangalawang SWP', d: 'Dalawang SWP ang kailangan para sa condenser bago ang vacuum at ang turbine.', c: b.SWP2, a: [mot('M.3353', 'SWP-A'), mot('M.3354', 'SWP-B'), mot('M.3355', 'SWP-C')] },
       FIELD(0, 'Hypochlorite, debris filter, booster pump, make-up water, cooling water, instrument at plant air (field)', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]),
@@ -55643,9 +55722,11 @@ window.LS_GUIDE = (function () {
         c: mcvC('Main discharge MOV open, equalizing MOV closed', () => (mcvPos('MV-FW1001') >= 100 && mcvPos('MV-FW1391') <= 0) || (mcvPos('MV-FW1002') >= 100 && mcvPos('MV-FW1392') <= 0)),
         a: [mcvB('MV-FW1391', 1), mcvB('MV-FW1001', 1), mcvB('MV-FW1391', 0)]
       },
-      { st: 1, sec: 20, t: 'Steam drum filling: start-up valve FCV-FW1130-2 sa MANUAL, level −150 mm', d: 'Bubuksan nang dahan-dahan ang start-up valve para mapuno ang drum hanggang −150 mm, tapos isasara (MV 0 %) para hindi umapaw. Sa Cold ng app ay puno na ang drum (mga 0 mm), kaya M at MV 0 % na agad.', c: b.ALL(b.MODE('FCV-FW1130-2', 'MAN'), b.MV('FCV-FW1130-2', null, 2), b.HOLD(10, b.VAL('lvl', -200, 100))), fps: ['FCV-FW1130-2'], a: [btn('M, MV 0 % (puno na)', () => A.man('FCV-FW1130-2', 0))], field: [19] },
+      /* 3.2.0 walkthrough #7: the cold drum is not filled (hmi-op.js AN_COLD_DRUM); PR-OPE-5002 STEAM DRUM FILLING: FCV-FW1130-2 MANUAL, opened
+         gradually, drum level -150 mm. The coach "fill" closes the valve at -150 mm (the trainee may switch it off) */
+      { st: 1, sec: 20, t: 'Steam drum filling: start-up valve FCV-FW1130-2 sa MANUAL, punuin hanggang −150 mm', d: 'Wala pang tubig ang drum ng cold plant (mga −300 mm). Habang tumatakbo ang BFWP, buksan nang dahan-dahan ang start-up valve (MANUAL, MV 20 %). Kapag −150 mm na, isara (MV 0 %) para hindi umapaw. Ang coach ang nagsasara sa −150 mm (puwede mong patayin at ikaw ang magsara).', c: b.ALL(b.MODE('FCV-FW1130-2', 'MAN'), b.MV('FCV-FW1130-2', null, 2), b.HOLD(10, b.VAL('lvl', -200, 100))), fps: ['FCV-FW1130-2'], coach: ['fill'], a: [btn('M, MV 20 % (punuin)', () => (h().lvl() < -170 ? A.man('FCV-FW1130-2', 20) : ''), () => h().lvl() >= -170 || mv('FCV-FW1130-2') >= 15), btn('MV 0 % (sa −150 mm)', () => (h().lvl() >= -170 ? A.man('FCV-FW1130-2', 0) : ''), () => h().lvl() >= -170 && mv('FCV-FW1130-2') <= 2)], field: [19] },
       /* ---- 2 fans ---- */
-      { st: 2, sec: 21, t: 'Diesel oil pump at oil circulation (field)', d: 'Ang diesel oil pump ay nasa field (walang DCS signal). Kailangan ito ng mga start-up burner. Bantayan ang outlet oil pressure (PICDO0005).', fps: ['PICDO0005'], c: C('Diesel oil pump running (field)', () => !!(AN.fieldState && AN.fieldState().dop), () => 'Diesel oil pump ' + (AN.fieldState && AN.fieldState().dop ? 'ON' : 'OFF')), a: [btn('START diesel oil pump (field)', () => A.field('dop', true), () => !!(AN.fieldState && AN.fieldState().dop))], field: [20] },
+      { st: 2, sec: 21, coachOff: ['fill'], t: 'Diesel oil pump at oil circulation (field)', d: 'Ang diesel oil pump ay nasa field (walang DCS signal). Kailangan ito ng mga start-up burner. Bantayan ang outlet oil pressure (PICDO0005).', fps: ['PICDO0005'], c: C('Diesel oil pump running (field)', () => !!(AN.fieldState && AN.fieldState().dop), () => 'Diesel oil pump ' + (AN.fieldState && AN.fieldState().dop ? 'ON' : 'OFF')), a: [btn('START diesel oil pump (field)', () => A.field('dop', true), () => !!(AN.fieldState && AN.fieldState().dop))], field: [20] },
       { st: 2, sec: 22, t: 'Ihanda ang IDF: PICFG108 sa MANUAL, MV 0 %, biasing damper RH at SH bukas', d: 'Sarado ang hydraulic coupling ng IDF bago ito simulan (mababang starting current). Ang interlock ng IDF (DITL-25A row 1) ay humihingi ng bukas na flue gas bias damper (HICHR1002A / B) para may daanan ang hangin.', c: b.ALL(b.MODE('PICFG108', 'MAN'), b.MV('PICFG108', null, 2), b.MV('HICHR1002A', 30, null), b.MV('HICHR1002B', 60, null)), fps: ['PICFG108', 'HICHR1002A', 'HICHR1002B'], a: [btn('M, MV 0 %', () => A.man('PICFG108', 0)), btn('Biasing damper RH at SH 100 %', () => (A.man('HICHR1002A', 100), A.man('HICHR1002B', 100)))], field: [21] },
       { st: 2, sec: 22, t: 'Simulan ang ID fan (IDF)', d: 'Ang IDF ang humihigop ng flue gas palabas ng furnace. Ito ang unang fan na tumatakbo.', c: R.IDF, a: [mot('M.3304', 'IDF')] },
       { st: 2, sec: 22, t: 'IDF hydraulic coupling: PICFG108 MV 13 %', d: 'Buksan ang coupling sa 13 %. Negatibo ang furnace pressure (hinihigop palabas).', c: b.ALL(R.IDF, b.MV('PICFG108', 10, 16)), fps: ['PICFG108'], a: [btn('MV 13 %', () => A.man('PICFG108', 13))] },
@@ -55984,7 +56065,7 @@ window.LS_GUIDE = (function () {
   };
   const save = () => {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ cur: G.cur, coach: Object.keys(CO), hold: G.hold, mine: G.mine, on: G.on }));
+      localStorage.setItem(KEY, JSON.stringify({ cur: G.cur, coach: Object.keys(CO), hold: G.hold, mine: G.mine, pw: G.pw, on: G.on }));
     } catch (e) {}
   };
   const G = Object.assign({ cur: 0, on: false, mine: {}, hold: {} }, rd() || {});
@@ -56012,7 +56093,7 @@ window.LS_GUIDE = (function () {
   function stepOk(s) {
     /* a FIELD card needs the operator's confirmation; the field items shown on a DCS step are for reading only */
     if (s.need && !G.mine[s.i]) return false;
-    if (!s.c) return !!G.mine[s.i];
+    if (!s.c) return !!G.mine[s.i] && preOk(s);
     let ok = false;
     try {
       ok = s.c.ok();
@@ -56027,7 +56108,15 @@ window.LS_GUIDE = (function () {
     }
     return true;
   }
-  const holdOf = s => (s.c && s.c.hold && since[s.i] != null ? [Math.max(0, simT() - since[s.i]), s.c.hold] : null);
+  /* the 6 h before the start-up of a field card (pre), counted in plant time from "Simulan ang 6 h purge" */
+  const preOk = s => !s.pre || !G.pw || G.pw[s.i] == null || simT() - G.pw[s.i] >= s.pre;
+  function preStart(i) {
+    G.pw = G.pw || {};
+    G.pw[i] = simT();
+    G.mine[i] = 1;
+    save();
+  }
+  const holdOf = s => (s.pre && G.pw && G.pw[s.i] != null ? [Math.max(0, simT() - G.pw[s.i]), s.pre] : null) || (s.c && s.c.hold && since[s.i] != null ? [Math.max(0, simT() - since[s.i]), s.c.hold] : null);
   /* the steps opened: a step's coach starts when it opens */
   function open(i) {
     const s = steps()[i];
@@ -56066,10 +56155,18 @@ window.LS_GUIDE = (function () {
   hook();
   /* check the open step; returns true when it moved on */
   function scan() {
-    if (!G.on || !live()) return false;
+    if (!G.on) return false;
     const L0 = steps(),
       s = L0[G.cur];
     if (!s) return false;
+    /* 3.2.0 walkthrough #16: a field card (no DCS condition) is confirmed by the operator: it moves on while PAUSED too */
+    if (!live()) {
+      if (s.need && !s.c && G.mine[s.i]) {
+        open(G.cur + 1);
+        return true;
+      }
+      return false;
+    }
     /* 3.2.0-beta.24: a station that a BU-CMD of the drawing put back to MANUAL after its step (HIC-BM / EIC-TM: M.2013 / M.2016,
        CLAUDE.md 10) stays MANUAL until the operator presses A: the guide goes back to that step, so its card says why and what to do */
     for (const r of s.req || []) {
@@ -56116,14 +56213,27 @@ window.LS_GUIDE = (function () {
       hook();
       G.on = true;
       G.mine = {};
+      G.pw = {};
       G.cur = 0;
       HH = null;
       /* the sheets the steps operate that may not be linked to the sheet on the screen: stepped too (links.js actSet) */
       AN.checkSheets = ['ABC-001C', 'ABC-002', 'ABC-003A', 'ABC-003B', 'ABC-003C', 'ABC-003D', 'ABC-004A', 'ABC-005', 'ABC-007', 'ABC-008', 'ABC-010', 'ABC-011', 'ABC-012', 'ABC-013', 'ABC-020', 'ABC-028', 'ABC-031', 'ABC-032', 'ABC-050', 'ABC-052', 'ABC-054']
         .concat(steps().flatMap(s => (s.fps || []).map(t => shOf(L().ctlTag(t) || t)).filter(Boolean)))
         .filter((x, i, a) => a.indexOf(x) === i);
+      /* 3.2.0 walkthrough #1: the start-up begins at t = 0 (the clock of the sheets counted the settling of the cold state: t = 11:29) and
+         PAUSED (simulation on, time stopped, 1x): the field steps come first and the trainee presses RUN. Before: RUN at once, x10 */
+      try {
+        for (const sh of AN.sheets)
+          if (sh.S && sh.S.rt) {
+            const rt = sh.S.rt;
+            rt.t = 0;
+            sh._hs = [];
+            for (const k in rt.pm || {}) if (rt.pm[k] && Array.isArray(rt.pm[k].h)) rt.pm[k].h = [];
+            for (const k in rt.st || {}) if (rt.st[k] && Array.isArray(rt.st[k].h)) rt.st[k].h = [];
+          }
+      } catch (e) {}
       open(0);
-      if (AN.runOn) AN.runOn();
+      if (AN.pauseOn) AN.pauseOn();
       if (done) done();
     };
     try {
@@ -56154,6 +56264,7 @@ window.LS_GUIDE = (function () {
   /* the field confirmation of a step */
   function confirm(i) {
     G.mine[i] = 1;
+    if (G.pw) delete G.pw[i];
     save();
   }
   /* every action of the open step (the "Do it for me" of a newbie, and the test) */
@@ -56193,6 +56304,7 @@ window.LS_GUIDE = (function () {
     stepOk,
     holdOf,
     confirm,
+    preStart,
     doIt,
     early,
     fieldOf,
@@ -56757,7 +56869,7 @@ window.LS_GUIDE = (function () {
     R.classList.toggle('gd-min', on && min);
     if (dock) dock.hidden = !on || min;
     if (tabB) tabB.hidden = !on || !min;
-    const w = Math.max(320, Math.min(560, ls.get('ls-gdock-w', innerWidth >= 1300 ? 400 : 350), innerWidth - 480)),
+    const w = Math.max(340, Math.min(600, ls.get('ls-gdock-w', innerWidth >= 1300 ? 440 : 380), innerWidth - 480)),
       h = Math.max(240, Math.min(innerHeight * 0.7, ls.get('ls-gdock-h', Math.round(innerHeight * 0.42))));
     R.style.setProperty('--gdw', w + 'px');
     R.style.setProperty('--gdh', h + 'px');
@@ -56800,12 +56912,42 @@ window.LS_GUIDE = (function () {
     const v = +((window.AN && AN.spd) || 1);
     (els.spd || []).forEach(b => b.classList.toggle('on', +b.dataset.v === v));
   }
+  /* 3.2.0 walkthrough #1 #16: the Training starts PAUSED; RUN / PAUSE from the panel (the ABC page or the DITL page, whichever is open) */
+  const isRun = () =>
+    !!(window.AN && ((AN.cat === 'an' && AN.run && !AN.view) || (AN.cat !== 'an' && typeof SIM !== 'undefined' && SIM && !(typeof DPAUSE !== 'undefined' && DPAUSE))));
+  function runNow() {
+    try {
+      if (AN.cat === 'an') AN.runOn();
+      else {
+        const b = document.querySelector('.dui-run');
+        if (b) b.click();
+      }
+    } catch (e) {}
+    setTimeout(() => fill(true), 250);
+  }
+  function pauseNow() {
+    try {
+      if (AN.cat === 'an') AN.pauseOn();
+      else if (typeof SIM !== 'undefined' && SIM) DPAUSE = true;
+    } catch (e) {}
+    setTimeout(() => fill(true), 250);
+  }
+  /* the SOP section of a step (1-based, as the Training list numbers it) */
+  const secOf = s => (s ? s.sec || (s.field && s.field.length ? s.field[0] + 1 : null) : null);
+  const nSec = () => (window.LS_PROC5002 || []).length;
+  /* 3.2.0 walkthrough #14: one press back to the section in the Training list (the panel stays) */
+  const toList = s => {
+    try {
+      const k = secOf(s);
+      if (window.lsHome && lsHome.show) lsHome.show(k ? k - 1 : 0);
+    } catch (e) {}
+  };
   function build() {
     if (dock) return;
     dock = E('aside', { id: 'gdock', role: 'complementary', 'aria-label': 'Training' });
     const g = E('div', { cls: 'gd-grip', title: 'I-drag para palakihin o paliitin', 'aria-hidden': 'true' });
     grip(g);
-    els.run = E('span', { cls: 'gd-pill' });
+    els.run = E('button', { type: 'button', cls: 'gd-pill', on: () => (isRun() ? pauseNow() : runNow()) });
     els.spd = [1, 10, 60, 300].map(v => E('button', { type: 'button', 'data-v': v, txt: '×' + v, title: 'Bilis ng simulation ×' + v, on: () => setSpeed(v) }));
     const hd = E('div', { cls: 'gd-hd' }, [
       E('b', { txt: 'Training' }),
@@ -56825,7 +56967,8 @@ window.LS_GUIDE = (function () {
     els.bar = E('i');
     els.stp = E('span');
     els.stg = E('span');
-    const prog = E('div', { cls: 'gd-prog' }, [E('div', { cls: 'gd-bar' }, [els.bar]), E('div', { cls: 'gd-pl' }, [els.stp, els.stg])]);
+    els.secb = E('button', { type: 'button', cls: 'gd-secb', title: 'Buksan ang section na ito sa Training list (PR-OPE-5002)', on: () => toList(GD() && GD().steps()[GD().cur]) });
+    const prog = E('div', { cls: 'gd-prog' }, [E('div', { cls: 'gd-bar' }, [els.bar]), E('div', { cls: 'gd-pl' }, [els.stp, els.secb, els.stg])]);
     els.body = E('div', { cls: 'gd-body' });
     dock.append(g, hd, strip, prog, els.body);
     document.documentElement.append(dock);
@@ -56874,16 +57017,16 @@ window.LS_GUIDE = (function () {
     } catch (e) {}
   }
   /* the guided start from Cold; resume = go on with the plant that runs */
-  function start() {
+  /* 3.2.0 walkthrough #1 #2: the start stays on the Training page (the first steps are field steps), PAUSED at 1x; done() when the cold
+     plant is in (the page shows "Nilo-load ..." until then, #15) */
+  function start(done) {
     const g = GD();
     if (!g) return;
     for (const k in PERM) delete PERM[k];
-    try {
-      window.lsSetTab && lsSetTab('logic');
-    } catch (e) {}
     g.start(() => {
       open();
-      setSpeed(+ls.get('ls-gdock-spd', 10) || 10);
+      setSpeed(1);
+      if (done) done();
     });
   }
   function resume() {
@@ -56898,6 +57041,9 @@ window.LS_GUIDE = (function () {
   /* ---------- the main area follows the step: the DITL of a motor, the ABC sheet of a faceplate ---------- */
   function goStep(s) {
     if (!follow || !s) return;
+    /* 3.2.0 walkthrough #2: a field card (no DCS button, no faceplate) shows its SOP section in the Training list, not the sheet that
+       happened to be open (ABC-057 at the ESP step) */
+    if (s.need && !(s.a || []).length && !(s.fps || []).length) return toList(s);
     try {
       /* 3.2.0-beta.26: a push button of a DITL drawing (BURNER ON of DITL-09, a discharge valve of DITL-20): that sheet, its row selected
          (a motor START goes first; was: the ABC sheet of the step's faceplate). Machine B ~ D open the drawing of A until they are sheets of their own (CHECKLIST 0.2) */
@@ -56947,6 +57093,63 @@ window.LS_GUIDE = (function () {
   }
   /* the running memory of a motor button (guide.js mot) */
   const motAddr = a => a.ad || null;
+  /* the steps of SOP sections (0-based) with their kind (live.js: auto / field / tcs) */
+  function fieldList(secs) {
+    const P = window.LS_PROC5002 || [],
+      out = [];
+    for (const si of secs)
+      (P[si] ? P[si].s : []).forEach((x, i) => {
+        let k = 'field';
+        try {
+          k = LV().kind(si, i).k;
+        } catch (e) {}
+        out.push({ si, i, t: x.t, k });
+      });
+    return out;
+  }
+  /* the CRT push button row of a step button: a DITL push button (dg) or the START / STOP P.B. of a motor drawing */
+  function pbOf(a, on) {
+    return call(() => {
+      if (a.dg) {
+        if (!on) return null;
+        const ds = dSheet(a.dg[0]);
+        if (!ds) return null;
+        const r = a.dg[1],
+          tg = rowInfo(ds, r).tag;
+        return { sh: a.dg[0], row: r, txt: String(a.dg[0]) + ' row ' + (r + 1) + (tg ? ' · ' + tg : '') };
+      }
+      const ad = a.stop ? motAddr(a) : null,
+        ds = ad && dOf(ad);
+      if (!ds) return null;
+      if (!ds.nl) ds.nl = netlist(ds);
+      const r = pbRow(ds, on ? /\bSTART\b|\bST$/ : /\bSTOP\b/);
+      if (r < 0) return null;
+      const nm = dName(ds),
+        b0 = /#[B-D]$/.test(nm) ? dSheet(nm.replace(/\s*#\w+$/, '')) : null;
+      let tg = rowInfo(ds, r).tag;
+      /* a machine B / C row whose text is still the one of machine A (no memory of its own read): no tag rather than the tag of A */
+      if (b0 && b0 !== ds && tg && tg === rowInfo(b0, r).tag) tg = '';
+      return { sh: nm, row: r, txt: nm + ' row ' + (r + 1) + (tg ? ' · ' + tg : '') };
+    }, null);
+  }
+  /* the service text of a row without its address prefix ("I.032C/528/81C SEAWATER PUMP A REMOTE MODE SELECTED" = row 22 "SEAWATER PUMP A
+     REMOTE MODE SELECTED": one signal, walkthrough #18) */
+  const svcN = x =>
+    String(x || '')
+      .replace(/^\(FROM STATION WIRING\)\s*/, '')
+      .replace(/^[\w./]*\d\S*\s+/, '')
+      .trim();
+  /* a DITL button (motor, valve, push button) pressed while PAUSED: nothing would move; the card says why */
+  function pausedWarn(a) {
+    if (isRun() || !(a.stop || a.dg || a.ad)) return false;
+    if (els.pw) {
+      els.pw.hidden = false;
+      els.pw.textContent = '❚❚ Naka-PAUSE: pindutin muna ang ▶ RUN (hinto ang oras, walang aandar).';
+      clearTimeout(pausedWarn.t);
+      pausedWarn.t = setTimeout(() => els.pw && (els.pw.hidden = true), 5000);
+    }
+    return true;
+  }
   /* ---------- the content ---------- */
   function fill(force) {
     const g = GD();
@@ -56954,15 +57157,20 @@ window.LS_GUIDE = (function () {
     const L = g.steps(),
       i = g.cur,
       s = L[i];
-    const R = !!(window.AN && ((AN.cat === 'an' && AN.run && !AN.view) || (AN.cat !== 'an' && typeof SIM !== 'undefined' && SIM)));
-    els.run.textContent = R ? '● RUN' : '■ VIEW';
+    const R = isRun();
+    els.run.textContent = R ? '● RUN · ❚❚' : '❚❚ PAUSED · ▶';
     els.run.className = 'gd-pill' + (R ? ' on' : ' off');
-    els.run.title = R ? 'Tumatakbo ang simulation' : 'Nakahinto (VIEW): pindutin ang RUN sa itaas';
+    els.run.title = R ? 'Tumatakbo ang simulation: pindutin para i-PAUSE' : 'Naka-PAUSE (hinto ang oras): pindutin para RUN';
     paintSpeed();
     els.bar.style.width = Math.round((100 * Math.min(i, L.length)) / L.length) + '%';
     els.stp.textContent = s ? 'Hakbang ' + (i + 1) + ' / ' + L.length : 'Tapos: ' + L.length + ' / ' + L.length;
+    /* 3.2.0 walkthrough #11: the SOP section of the step (the Training list numbers) */
+    const sk = secOf(s);
+    els.secb.textContent = sk ? 'Section ' + sk + ' / ' + nSec() + ' ↗' : '';
+    els.secb.hidden = !sk;
     els.stg.textContent = s ? g.STAGES[s.st] || '' : '150 MW';
-    if (!force && i === lastCur) return live();
+    if (!force && i === lastCur && R === els.wasR) return live();
+    els.wasR = R;
     const first = i !== lastCur;
     lastCur = i;
     const b = els.body;
@@ -56981,17 +57189,49 @@ window.LS_GUIDE = (function () {
       col2 = E('div', { cls: 'gd-c2' });
     const prev = L[i - 1];
     if (prev) col1.append(E('div', { cls: 'gd-done', txt: i + ' · ' + prev.t }));
+    /* 3.2.0 walkthrough #1 #16: PAUSED = the time stopped; a field step is confirmed anyway, a DCS step needs RUN */
+    if (!R)
+      col1.append(
+        E('div', { cls: 'gd-pause' }, [
+          E('span', { txt: s.need && !s.c ? '❚❚ Naka-PAUSE ang oras. Puwede mong kumpirmahin ang field step; pindutin ang ▶ RUN bago ang DCS step.' : '❚❚ Naka-PAUSE ang oras: walang aandar (START / OPEN) hangga’t hindi RUN.' }),
+          E('button', { type: 'button', cls: 'gd-btn go', txt: '▶ RUN', on: runNow })
+        ])
+      );
     /* the card */
     const card = E('div', { cls: 'gd-card' });
     card.append(E('div', { cls: 'gd-eb', txt: 'HAKBANG ' + (i + 1) + ' · ' + (g.STAGES[s.st] || '').toUpperCase() }), E('h3', { txt: s.t }), E('p', { txt: s.d || '' }));
     els.cond = E('div', { cls: 'gd-cond' });
     card.append(els.cond);
-    /* the field items of a field card / a DCS step */
-    const fi = s.field && s.field.length ? call(() => g.fieldOf(s.field), []) : [];
-    if (fi.length)
-      card.append(
-        E('details', { cls: 'gd-field' }, [E('summary', { txt: 'Field: ' + fi.length + ' item' + (fi.length > 1 ? 's' : '') + ' ng field operator' }), E('ul', {}, fi.slice(0, 30).map(t => E('li', { txt: t })))])
-      );
+    /* the field items of a field card / a DCS step. 3.2.0 walkthrough #4 #17: every step of the SOP section (the same list and the same
+       ticks as the Training list, ls-train), open, with a check box; an AUTO step ticks from the logic (was: the field items only, folded) */
+    const fli = s.field && s.field.length ? fieldList(s.field) : [];
+    if (fli.length) {
+      const A = call(() => LV().done(), {}),
+        dd0 = ls.get('ls-train', {});
+      card.append(E('div', { cls: 'gd-flh', txt: 'SOP SECTION ' + s.field.map(x => x + 1).join(', ') + ' · ' + fli.length + ' ITEM' + (fli.length > 1 ? 'S' : '') }));
+      const ul = E('ul', { cls: 'gd-fl' });
+      for (const f of fli) {
+        const id = 'gdf' + f.si + '_' + f.i,
+          k = f.si + '.' + f.i,
+          au = f.k === 'auto',
+          cb = E('input', { type: 'checkbox', id });
+        cb.checked = au ? !!A[k] : !!dd0[k];
+        const li = E('li', { cls: cb.checked ? 'dn' : '' }, [cb, E('label', { for: id }, [f.t, au ? E('em', { txt: 'AUTO' }) : f.k === 'tcs' ? E('em', { txt: 'TCS' }) : null])]);
+        if (au) {
+          cb.disabled = true;
+          cb.title = 'AUTO: kusang nati-tick kapag ipinakita ng logic na tapos (RUN)';
+        }
+        cb.onchange = () => {
+          const dd = ls.get('ls-train', {});
+          if (cb.checked) dd[k] = 1;
+          else delete dd[k];
+          ls.set('ls-train', dd);
+          li.classList.toggle('dn', cb.checked);
+        };
+        ul.append(li);
+      }
+      card.append(ul);
+    }
     /* the interlock of the motors of the step */
     els.il = [];
     for (const a of s.a || []) {
@@ -57007,35 +57247,68 @@ window.LS_GUIDE = (function () {
     const bs = E('div', { cls: 'gd-btns' });
     for (const a of s.a || []) {
       const ad = a.stop || a.dg ? motAddr(a) : null; /* 3.2.0-beta.30: a BURNER ON (dg) has its interlock too (DITL-12 out 7) */
-      const bt = E('button', { type: 'button', cls: 'gd-btn' + (a.stop ? ' go' : ''), txt: a.l });
+      /* 3.2.0 walkthrough #21: the push button of the drawing under the label (sheet, row, tag of the CRT P.B.); pressed, the row is
+         shown on the sheet when the centre follows the step */
+      const pb = pbOf(a, 1);
+      const bt = E('button', { type: 'button', cls: 'gd-btn' + (a.stop ? ' go' : '') }, [a.l, pb ? E('small', { txt: pb.txt }) : null]);
       bt.onclick = () => {
         if (bt.dataset.block === '1') return;
+        if (pausedWarn(a)) return;
         try {
           a.f();
         } catch (e) {}
+        if (pb && follow) openD(pb.sh, pb.row);
         setTimeout(() => fill(), 300);
       };
       bs.append(bt);
       els.btns.push({ a, bt, ad });
       if (a.stop) {
-        const sb = E('button', { type: 'button', cls: 'gd-btn', txt: a.stop.l });
+        const pb0 = pbOf(a, 0);
+        const sb = E('button', { type: 'button', cls: 'gd-btn' }, [a.stop.l, pb0 ? E('small', { txt: pb0.txt }) : null]);
         sb.onclick = () => {
+          if (pausedWarn(a)) return;
           try {
             a.stop.f();
           } catch (e) {}
+          if (pb0 && follow) openD(pb0.sh, pb0.row);
           setTimeout(() => fill(), 300);
         };
         bs.append(sb);
       }
     }
     if (s.need) {
-      const cb = E('button', { type: 'button', cls: 'gd-btn go', txt: 'Tapos na ito sa field' });
-      cb.onclick = () => (g.confirm(s.i), g.scan(), fill(true));
+      const cb = E('button', { type: 'button', cls: 'gd-btn go', txt: s.pre ? 'Tapos na ito sa field (6 h na)' : 'Tapos na ito sa field' });
+      /* 3.2.0 walkthrough #16: works PAUSED too; #4: the field items of the section are ticked in the Training list as well */
+      cb.onclick = () => {
+        const dd = ls.get('ls-train', {});
+        for (const f of fli) if (f.k !== 'auto') dd[f.si + '.' + f.i] = 1;
+        ls.set('ls-train', dd);
+        g.confirm(s.i);
+        g.scan();
+        fill(true);
+      };
       bs.append(cb);
+      /* 3.2.0 walkthrough #5: the 6 h of the ESP purge held in plant time (RUN, x300 = about 72 s) */
+      if (s.pre)
+        bs.append(
+          E('button', {
+            type: 'button',
+            cls: 'gd-btn',
+            txt: 'Simulan ang ' + Math.round(s.pre / 3600) + ' h purge (oras ng planta)',
+            on: () => {
+              const dd = ls.get('ls-train', {});
+              for (const f of fli) if (f.k !== 'auto') dd[f.si + '.' + f.i] = 1;
+              ls.set('ls-train', dd);
+              g.preStart(s.i);
+              fill(true);
+            }
+          })
+        );
     }
     if (bs.children.length) card.append(bs);
     els.early = E('div', { cls: 'gd-warn', hidden: '' });
-    card.append(els.early);
+    els.pw = E('div', { cls: 'gd-warn', hidden: '' });
+    card.append(els.pw, els.early);
     col1.append(card);
     /* the faceplates of the step */
     const key = (s.fps || []).join(',');
@@ -57062,7 +57335,8 @@ window.LS_GUIDE = (function () {
     /* 3.2.0-beta.33 (CHECKLIST 0.4): the row says WHAT it is (the description of the controller), its tag and its unit (from the range
        of its faceplate, "[0.0 ~ 400.0 T/H]"); a hand station shows its output (MV %); a value the stage list already shows (furnace
        pressure = PICFG108, drum level, FW flow, coal, O2 ...) is not repeated (was "LICCD1110A PV" with no name and no unit) */
-    const stage = WATCH[s.st] || [],
+    /* 3.2.0 walkthrough #6: a field card has no values of the stage to watch (the ESP step showed the seawater pumps of the next step) */
+    const stage = s.need && !s.c ? [] : WATCH[s.st] || [],
       have = new Set(stage.map(x => x[5]).filter(Boolean));
     /* "DRUM LEVEL CONTROL (FEED WATER FLOW CONTROL)" -> "Feed water flow"; "COND. DUMPING ... / DEAERATOR LEVEL CONTROL" -> "Deaerator level" */
     const nice = d0 => {
@@ -57154,7 +57428,16 @@ window.LS_GUIDE = (function () {
       const hd = call(() => g.holdOf(s), null);
       els.cond.className = 'gd-cond' + (ok ? ' ok' : '');
       els.cond.textContent = (ok ? '✓ ' : '◌ ') + (s.c.want ? 'Kailangan: ' + s.c.want : 'Kailangan') + (now ? '  ·  Ngayon: ' + now : '') + (hd ? '  ·  hawak ' + f0(hd[0]) + ' / ' + f0(hd[1]) + ' s' : '');
-    } else if (els.cond) els.cond.textContent = s.need ? 'Pindutin ang "Tapos na ito sa field" kapag nagawa na.' : '';
+    } else if (els.cond) {
+      /* 3.2.0 walkthrough #5: the 6 h of the ESP purge, in plant time */
+      const hd = call(() => g.holdOf(s), null),
+        hm = x => Math.floor(x / 3600) + ':' + String(Math.floor((x % 3600) / 60)).padStart(2, '0');
+      els.cond.textContent = hd
+        ? '⏱ Purge: ' + hm(hd[0]) + ' / ' + hm(hd[1]) + ' h (oras ng planta' + (isRun() ? '' : ', naka-PAUSE: pindutin ang ▶ RUN') + ')'
+        : s.need
+          ? 'Pindutin ang "Tapos na ito sa field" kapag nagawa na.'
+          : '';
+    }
     /* the interlock */
     const blocked = {};
     /* 3.2.0-beta.26 (human run of the Training: the first SWP step showed three full interlock boxes, SWP-A / B / C, and the last
@@ -57171,44 +57454,101 @@ window.LS_GUIDE = (function () {
         mov = !!(ds && ds.nl && (ds.nl.mv || []).length && runOut(it.ad) == null),
         run0 = I.live && (mov ? !I.miss.length : atRow(it.ad) != null ? dout(it.ad, atRow(it.ad)) === 1 : /^DITL-/.test(it.ad) ? runOut(it.ad) === 1 : bit(it.ad));
       if (I.live && (run0 || shown)) {
-        it.box.append(E('div', { cls: 'gd-ilh' }, [E('span', { txt: run0 ? (mov ? '✓ REMOTE, HANDA' : '✓ TUMATAKBO NA') : 'SUSUNOD' }), E('span', { cls: 'gd-ilm', txt: I.sheet })]));
+        /* 3.2.0 walkthrough #22: a motor whose box waits (SUSUNOD) is blocked by its own interlock too (SWP-B / C started while SWP-A
+           was blocked by the same missing REMOTE contact) */
+        if (!run0 && I.miss.length) blocked[it.ad] = 1;
+        it.box.append(
+          E('div', { cls: 'gd-ilh' }, [E('span', { txt: run0 ? (mov ? '✓ REMOTE, HANDA' : '✓ TUMATAKBO NA') : 'SUSUNOD' + (I.miss.length ? ' · kulang ang interlock' : '') }), E('span', { cls: 'gd-ilm', txt: I.sheet })])
+        );
         continue;
       }
       if (I.live) shown = 1;
       const head = E('div', { cls: 'gd-ilh' }, [E('span', { txt: 'INTERLOCK · START PERMISSION' }), E('button', { type: 'button', cls: 'gd-lk', txt: I.sheet + ' ↗', title: 'Buksan ang ' + I.sheet, on: () => (window.lsSetTab && lsSetTab('logic'), openD(I.sheet)) })]);
       it.box.append(head);
       if (!I.live) {
-        it.box.append(E('div', { cls: 'gd-ild', txt: 'Lalabas ang interlock kapag tumatakbo ang simulation (RUN).' }));
+        it.box.append(E('div', { cls: 'gd-ild', txt: 'Lalabas ang interlock kapag tumatakbo ang simulation (▶ RUN).' }));
         continue;
       }
       const run = atRow(it.ad) != null ? dout(it.ad, atRow(it.ad)) === 1 : /^DITL-/.test(it.ad) ? runOut(it.ad) === 1 : bit(it.ad);
       if (run) it.box.append(E('div', { cls: 'gd-ild ok', txt: '✓ Tumatakbo na.' }));
       const F = run ? { field: [], abc: [], by: {} } : fieldOf(it.ad);
-      for (const r of I.rows.slice(0, 8)) {
-        it.box.append(E('div', { cls: 'gd-ilr' + (r.ok ? '' : ' x') }, [E('span', { txt: (r.ok ? '✓ ' : '✕ ') + (r.svc || '') + (r.cmp ? ' ' + r.cmp : '') + (r.want ? '' : ' (dapat OFF)') }), E('code', { txt: r.tag || (r.other ? r.other + ' r' + r.no : 'row ' + r.no) })]));
-        const o = !r.ok && r.s && F.by[r.s.name + ':' + r.row];
-        if (o && (o.field.length || o.abc.length))
+      /* 3.2.0 walkthrough #18: one line per signal (SEAWATER PUMP A REMOTE MODE SELECTED feeds rows 5, 18 and 22 of DITL-29A) */
+      const grp = [];
+      for (const r of I.rows) {
+        const k = r.s.name + '|' + svcN(r.svc) + '|' + r.want,
+          q = grp.find(x => x.k === k);
+        if (q) {
+          q.rs.push(r);
+          q.ok = q.ok && r.ok;
+          if (!q.tag && r.tag) q.tag = r.tag;
+        } else grp.push({ k, r, rs: [r], ok: r.ok, tag: r.tag });
+      }
+      for (const G of grp.slice(0, 8)) {
+        const r = G.r,
+          rows = G.rs.map(x => x.no).join(', ');
+        it.box.append(
+          E('div', { cls: 'gd-ilr' + (G.ok ? '' : ' x') }, [
+            E('span', { txt: (G.ok ? '✓ ' : '✕ ') + (svcN(r.svc) || r.svc || '') + (r.cmp ? ' ' + r.cmp : '') + (r.want ? '' : ' (dapat OFF)') }),
+            /* 3.2.0 walkthrough #19: the row on its sheet, one press (to see it, to set it or FORCE it there in the Inputs list) */
+            E('span', {}, [
+              E('code', { txt: (G.tag ? G.tag + ' · ' : '') + (r.other ? r.other + ' ' : '') + 'row ' + rows }),
+              E('button', { type: 'button', cls: 'gd-rowl', txt: '↗', title: 'Buksan ang ' + dName(r.s) + ' row ' + rows, on: () => (window.lsSetTab && lsSetTab('logic'), openD(dName(r.s), r.row)) })
+            ])
+          ])
+        );
+        const seen = new Set(),
+          fs = [],
+          ab = [];
+        for (const x of G.rs) {
+          const o = !x.ok && x.s && F.by[x.s.name + ':' + x.row];
+          if (!o) continue;
+          for (const f of o.field) {
+            const fk = f.s.name + '|' + svcN(f.svc);
+            if (!seen.has(fk)) (seen.add(fk), fs.push(f));
+          }
+          for (const a of o.abc) if (!ab.includes(a)) ab.push(a);
+        }
+        if (fs.length || ab.length)
           it.box.append(
             E('div', {
               cls: 'gd-ilw',
-              txt: '↳ ' + o.field.map(f => 'field: ' + (f.tag ? f.tag + ' ' : '') + f.svc.replace(/^\(FROM STATION WIRING\)\s*/, '') + (f.av ? ' ' + f.av.txt : '')).concat(o.abc.map(a => 'galing sa ' + a.replace(/^.*?(ABC-)/, '$1') + ' (operator sa DCS)')).join(' · ')
+              txt: '↳ ' + fs.map(f => 'field: ' + (f.tag ? f.tag + ' ' : '') + f.svc.replace(/^\(FROM STATION WIRING\)\s*/, '') + (f.av ? ' ' + f.av.txt : '')).concat(ab.map(a => 'galing sa ' + a.replace(/^.*?(ABC-)/, '$1') + ' (operator sa DCS)')).join(' · ')
             })
           );
       }
-      if (F.field.length)
+      /* 3.2.0 walkthrough #20: one FIELD button per missing field contact (the field operator sets the LOCAL / REMOTE selector, the limit
+         switch ...): it sets that input row of the drawing (every row of the same signal) and writes the Event log */
+      const fg = [];
+      for (const f of F.field) {
+        const k = f.s.name + '|' + svcN(f.svc),
+          q = fg.find(x => x.k === k);
+        if (q) q.L.push(f);
+        else fg.push({ k, f, L: [f] });
+      }
+      for (const q of fg) {
+        const f = q.f,
+          nm = svcN(f.svc),
+          rows = q.L.map(x => x.no).join(', ');
         it.box.append(
           E('button', {
             type: 'button',
-            cls: 'gd-btn gd-fld',
-            txt: 'Field operator: ayusin ang ' + F.field.length + ' contact',
-            title: F.field.map(f => f.s.name.replace(/^\(\d+\)/, '') + ' row ' + f.no + ': ' + f.svc + ' = ' + f.want).join('\n'),
-            on: () => (fieldSet(F.field), setTimeout(() => fill(true), 400))
+            cls: 'gd-btn gd-fld gd-fone',
+            txt: 'FIELD: ' + (f.av ? nm + ' ' + f.av.txt : 'set ' + nm + (f.want ? '' : ' = OFF')),
+            title: 'Field operator: ' + dName(f.s) + ' row ' + rows + ' (' + nm + ') = ' + (f.av ? f.av.x : f.want ? 1 : 0),
+            on: () => {
+              fieldSet(q.L);
+              try {
+                if (window.lsEventAdd) lsEventAdd(dName(f.s), 'FIELD', 'Field operator: ' + nm + ' = ' + (f.av ? f.av.x : f.want ? 1 : 0) + ' (row ' + rows + ')');
+              } catch (e) {}
+              setTimeout(() => fill(true), 400);
+            }
           })
         );
+      }
       if (!run && !I.miss.length) it.box.append(E('div', { cls: 'gd-ild ok', txt: '✓ Kumpleto ang interlock: puwede nang pindutin ang START.' }));
       if (!run && I.miss.length) {
         blocked[it.ad] = 1;
-        it.box.append(E('div', { cls: 'gd-ild x', txt: 'Hindi pa aandar ang motor (ayon sa ' + I.sheet + '): ayusin muna ang may ✕.' }));
+        it.box.append(E('div', { cls: 'gd-ild x', txt: 'Hindi pa aandar ang motor (ayon sa ' + I.sheet + '): ayusin muna ang may ✕ (FIELD button, o ↗ para buksan ang row sa logic).' }));
       }
     }
     for (const B of els.btns || []) {
@@ -57219,25 +57559,8 @@ window.LS_GUIDE = (function () {
       const on = B.a.on ? call(() => B.a.on(), false) : false;
       B.bt.classList.toggle('did', !!on);
     }
-    /* the override of a blocked start: a field fault the simulator cannot clear stays a training choice */
-    for (const it of els.il || [])
-      if (blocked[it.ad] && !it.box.querySelector('.gd-ov')) {
-        const B = (els.btns || []).find(x => x.ad === it.ad);
-        if (B)
-          it.box.append(
-            E('button', {
-              type: 'button',
-              cls: 'gd-ov',
-              txt: 'Simulan pa rin (training lang)',
-              title: 'Sa totoong planta hindi ito aandar. Sa training, puwede mong ituloy para makita ang susunod.',
-              on: () => {
-                try {
-                  B.a.f();
-                } catch (e) {}
-              }
-            })
-          );
-      }
+    /* 3.2.0 walkthrough #19: no "start anyway" of a blocked motor (was "Simulan pa rin (training lang)"): the missing contact is set by its
+       FIELD button or on its row in the logic (the Inputs list of the DITL page) */
     /* out of order: a motor of a later step already running */
     const ea = call(() => g.early(), []);
     if (els.early) {
@@ -57745,6 +58068,29 @@ window.LS_GUIDE = (function () {
     const b = train.querySelector('.trsec.on');
     if (b && b.scrollIntoView) b.scrollIntoView({ block: 'nearest' });
   }
+  /* the line under the Training head after Clear all ticks: what is left, and Undo */
+  function clearNote(was) {
+    const old = train.querySelector('.trclr');
+    if (old) old.remove();
+    const [tn, tm] = total();
+    const n = E('p', { cls: 'trclr', role: 'status' }, [
+      'Cleared: ' + tn + ' / ' + tm + ' steps ticked. ',
+      E('button', {
+        cls: 'trbtn',
+        type: 'button',
+        txt: 'Undo',
+        on: () => {
+          ls.set('ls-train', was.hand);
+          if (LV() && LV().load) LV().load(was.auto);
+          n.remove();
+          fillTrain();
+        }
+      })
+    ]);
+    const h = train.querySelector('.trhead');
+    if (h) h.after(n);
+    setTimeout(() => n.remove(), 30000);
+  }
   function buildTrain() {
     train = E('div', { id: 'trainws', role: 'region', 'aria-label': 'Training' });
     const pick = E('select', { id: 'trpick', 'aria-label': 'Section of the procedure' });
@@ -57759,7 +58105,29 @@ window.LS_GUIDE = (function () {
           type: 'button',
           txt: 'Gabay: Cold → 150 MW',
           title: 'Guided start-up beside the logic: the plant cold, RUN, one step at a time with the interlock of each motor, the faceplates and the values to watch',
-          on: () => abcReady(() => window.LS_DOCK && LS_DOCK.start())
+          /* 3.2.0 walkthrough #10: a new Cold start-up = a clean checklist (the ticks of an earlier run stayed: 13 ticked at Cold); #15: the
+             button says it is loading until the cold plant is in */
+          on: e => {
+            const b = e && e.currentTarget,
+              [tn] = total();
+            if (tn > 0 && !confirm('Magsisimula ang Gabay sa Cold. Mabubura ang ' + tn + ' tick ng Training list (bagong start-up = malinis na checklist). Ituloy?')) return;
+            ls.set('ls-train', {});
+            if (LV()) LV().reset();
+            fillTrain();
+            const t0 = b ? b.textContent : '';
+            const back = () => {
+              if (b) {
+                b.disabled = false;
+                b.textContent = t0;
+              }
+            };
+            if (b) {
+              b.disabled = true;
+              b.textContent = 'Nilo-load ang Cold…';
+            }
+            setTimeout(back, 60000);
+            abcReady(() => (window.LS_DOCK ? LS_DOCK.start(() => (back(), fillTrain())) : back()));
+          }
         }),
         E('button', {
           cls: 'trbtn trresume',
@@ -57818,9 +58186,12 @@ window.LS_GUIDE = (function () {
           txt: 'Clear all ticks',
           on: () => {
             if (!confirm('Clear the ticks of all ' + total()[1] + ' steps (the AUTO steps tick again when the logic shows them done)?')) return;
+            /* 3.2.0 walkthrough #12: the result is shown ("Cleared: 0 / 692") with an Undo */
+            const was = { hand: ls.get('ls-train', {}), auto: LV() ? Object.assign({}, LV().done()) : {} };
             ls.set('ls-train', {});
             if (LV()) LV().reset();
             fillTrain();
+            clearNote(was);
           }
         })
       ]),

@@ -176,6 +176,11 @@ bRun.onclick = () => {
 AN.runOn = () => {
   if (AN.view || !AN.run) bRun.onclick();
 };
+/* 3.2.0 walkthrough #1: the Training start stays PAUSED (simulation on, time stopped): the trainee presses RUN */
+AN.pauseOn = () => {
+  if (AN.view) viewSet(false);
+  if (AN.run) setRun(false);
+};
 function wsIn(o) {
   if (o && typeof o === 'object' && o.wv !== 2) o = Object.assign({}, o, { as: 'solid', wv: 2 });
   Object['assign'](AN.ws, o);

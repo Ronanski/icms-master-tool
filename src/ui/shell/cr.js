@@ -234,6 +234,19 @@
       else if (e.kind === 'TRIP' && (m = /^(.*) = 1$/.exec(e.text))) act.set(e.sh + '|' + m[1], e);
       else if (e.kind === 'RST' && (m = /^(.*) = 0$/.exec(e.text))) act.delete(e.sh + '|' + m[1]);
     }
+    /* 3.2.0 walkthrough #8: an alarm that stands since the start (no change, so no event: ABC-057 furnace temperature LOW-LOW in a
+       cold plant) is counted too: the header says what the red / orange ALM block of the sheet on screen says */
+    try {
+      const sh = AN.cat === 'an' && AN.sheets && AN.sheets[AN.i];
+      if (sh && sh.S && sh.S.rt && !(AN.plantOn && !AN.startState))
+        for (const b of sh.S.blk)
+          if (b.k === 'ALM' && b.i && b.i[0] >= 0) {
+            const lv = AN.almLv(b, sh.S.rt.v[b.i[0]]);
+            if (lv === 'normal') continue;
+            const nm = AN.nm(sh.S, b.i[0]) || 'ALM #' + b.id;
+            if (!act.has(sh.name + '|' + nm)) act.set(sh.name + '|' + nm, { t: '', text: nm + ' ' + lv, sh: sh.name });
+          }
+    } catch (e) {}
     const n = act.size,
       last = [...act.values()].sort((a, b) => L.indexOf(a) - L.indexOf(b))[0];
     P.alarm.classList.toggle('on', n > 0);
