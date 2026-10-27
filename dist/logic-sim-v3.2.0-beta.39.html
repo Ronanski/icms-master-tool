@@ -55342,7 +55342,9 @@ window.LS_GUIDE = (function () {
         /* 3.2.0-beta.23 (PR-OPE-5002 "Control MST and RHT by servicing MS and RH Desuperheater"): the spray water shut-off valves in AUTO
            MODE (row 5, CRT M.1012 / M.1022): the DITL opens them above 380 C at the SH no. 2 inlet. Shut, ABC-011 / 012 I.0011 / I.0013
            SOV CLOSED keeps the spray valve closed and the main steam went to 600 C at 150 MW */
-        if (WL() && !o.sov) o.sov = ['DITL-32', 'DITL-33', 'DITL-35'].map(n => window.LS_DOCK && LS_DOCK.dset && LS_DOCK.dset(n, 4, 1)).every(Boolean);
+        /* 3.2.0 P1 #5: the second valve of each SH spray (XV-FW1111-2 / XV-FW1121-2, machine instances #B) too: the plant gives spray water
+           only through the open shut-off valves (unit.js U.spr) */
+        if (WL() && !o.sov) o.sov = ['DITL-32', 'DITL-32 #B', 'DITL-33', 'DITL-33 #B', 'DITL-35'].map(n => window.LS_DOCK && LS_DOCK.dset && LS_DOCK.dset(n, 4, 1)).every(Boolean);
         for (const [k, inn, out, sv2] of [
           ['ABC-011', 'TICBR1130', 'TICBR1140', 462],
           ['ABC-012', 'TICBR1150', 'TICMS1004', 541]
@@ -55509,6 +55511,23 @@ window.LS_GUIDE = (function () {
     const nm = 'DITL-20' + (L === 'A' ? '' : ' #' + L);
     return Object.assign(btn('Feeder ' + L + ' discharge valve OPEN (DITL-20)', () => (WL() ? dPress(nm, 5) : ''), () => !WL() || dOut(nm, 5) === 1), { dg: [nm, 5] });
   };
+  /* 3.2.0 P1 #3 / #4: the MOVs of the DITL-38 table (one machine each, src/world/world.js W.MCV): row 5 OPEN P.B., row 11 CLOSE P.B.; the
+     position of the DITL valve model. Without the one world nothing to do (the plant then takes the valve as open) */
+  const mcvS = tag => (typeof S !== 'undefined' ? S.sheets.concat((window.WORLD && WORLD.inst) || []).find(x => x._inst && x._inst.lbl === tag) : null);
+  const mcvPos = tag => {
+    const x = mcvS(tag);
+    return x && typeof MST !== 'undefined' && MST[x.name] && MST[x.name][0] ? +MST[x.name][0].pos : 0;
+  };
+  const mcvB = (tag, open) => {
+    const x = mcvS(tag),
+      nm = x ? 'DITL-38 #' + tag : '';
+    return Object.assign(
+      btn(tag + (open ? ' OPEN' : ' CLOSE') + ' (DITL-38)', () => (WL() && x ? dPress(x._inst.k ? nm : 'DITL-38', open ? 4 : 10) : ''), () => !WL() || (open ? mcvPos(tag) >= 100 : mcvPos(tag) <= 0)),
+      { dg: [x && x._inst.k ? nm : 'DITL-38', open ? 4 : 10] }
+    );
+  };
+  const mcvC = (want, f) => C(want, () => !WL() || f(), () => (WL() ? W_MCV().map(t => t.replace('MV-', '') + ' ' + mcvPos(t).toFixed(0) + '%').join(', ') : '— (one world OFF)'));
+  const W_MCV = () => ['MV-FW1001', 'MV-FW1391', 'MV-FW1002', 'MV-FW1392', 'MV-MS1391', 'MV-MS1392'];
   const dTxt = (nm, row, on, off) => () => (dOut(nm, row) === 1 ? on : dOut(nm, row) === 0 ? off : '— (one world OFF)');
   /* a motor of a DITL drawing with no running memory on the ABC sheets: START / STOP from its drawing, its interlock in the card */
   const dmot = (nm, l) => ({ ad: nm, l: 'START ' + l, f: () => LS_DOCK && LS_DOCK.dmotor(nm, 1), on: () => dRun(nm) === 1, stop: { l: 'STOP ' + l, f: () => LS_DOCK && LS_DOCK.dmotor(nm, 0) } });
@@ -55546,6 +55565,15 @@ window.LS_GUIDE = (function () {
       { st: 1, sec: 18, t: 'FCV-CD1120 sa AUTO, SV 150 T/H', d: 'Ang recirculation na ang hahawak ng minimum flow ng CEP.', c: b.ALL(b.MODE('FCV-CD1120', 'AUTO'), b.SV('FCV-CD1120', 140, 160, 'T/H')), fps: ['FCV-CD1120'], a: [btn('A, SV 150 T/H', () => A.auto('FCV-CD1120', 150))] },
       { st: 1, sec: 19, t: 'Deaerator level LCV-CD1104 sa AUTO, SV 0 mm', d: 'Pupunuin ang deaerator hanggang normal level at hahawakan ito ng valve.', c: b.ALL(b.MODE('LCV-CD1104', 'AUTO'), b.SV('LCV-CD1104', -20, 20, 'mm')), fps: ['LCV-CD1104'], a: [btn('A, SV 0 mm', () => A.auto('LCV-CD1104', 0))], field: [18] },
       { st: 1, sec: 20, t: 'Simulan ang boiler feedwater pump (BFWP)', d: 'Ang BFWP ang magpupuno ng steam drum. Kailangan munang may tubig ang deaerator.', c: R.BFP, a: [mot('M.3343', 'BFWP-A'), mot('M.3344', 'BFWP-B')] },
+      /* 3.2.0 P1 #4 (PR-OPE-5002 BFP start-up 4165 / 4176): the feedwater reaches the drum only through the discharge MOV of the pump */
+      {
+        st: 1,
+        sec: 20,
+        t: 'BFWP discharge: equalizing MOV MV-FW1391 OPEN, tapos main discharge MOV MV-FW1001 OPEN',
+        d: 'PR-OPE-5002: dahan-dahang buksan ang equalizing MOV ng napiling BFP (MV-FW1391 / MV-FW1392) para pumantay ang pressure. Kapag discharge pressure > 200 kg/cm², buksan ang main discharge MOV (MV-FW1001 / MV-FW1002) nang 100 %, tapos isara ang equalizing MOV. Sarado ang dalawa: walang feedwater na makakarating sa drum.',
+        c: mcvC('Main discharge MOV open, equalizing MOV closed', () => (mcvPos('MV-FW1001') >= 100 && mcvPos('MV-FW1391') <= 0) || (mcvPos('MV-FW1002') >= 100 && mcvPos('MV-FW1392') <= 0)),
+        a: [mcvB('MV-FW1391', 1), mcvB('MV-FW1001', 1), mcvB('MV-FW1391', 0)]
+      },
       { st: 1, sec: 20, t: 'Steam drum filling: start-up valve FCV-FW1130-2 sa MANUAL, level −150 mm', d: 'Bubuksan nang dahan-dahan ang start-up valve para mapuno ang drum hanggang −150 mm, tapos isasara (MV 0 %) para hindi umapaw. Sa Cold ng app ay puno na ang drum (mga 0 mm), kaya M at MV 0 % na agad.', c: b.ALL(b.MODE('FCV-FW1130-2', 'MAN'), b.MV('FCV-FW1130-2', null, 2), b.HOLD(10, b.VAL('lvl', -200, 100))), fps: ['FCV-FW1130-2'], a: [btn('M, MV 0 % (puno na)', () => A.man('FCV-FW1130-2', 0))], field: [19] },
       /* ---- 2 fans ---- */
       { st: 2, sec: 21, t: 'Diesel oil pump at oil circulation (field)', d: 'Ang diesel oil pump ay nasa field (walang DCS signal). Kailangan ito ng mga start-up burner. Bantayan ang outlet oil pressure (PICDO0005).', fps: ['PICDO0005'], c: C('Diesel oil pump running (field)', () => !!(AN.fieldState && AN.fieldState().dop), () => 'Diesel oil pump ' + (AN.fieldState && AN.fieldState().dop ? 'ON' : 'OFF')), a: [btn('START diesel oil pump (field)', () => A.field('dop', true), () => !!(AN.fieldState && AN.fieldState().dop))], field: [20] },
@@ -55606,6 +55634,16 @@ window.LS_GUIDE = (function () {
       { st: 4, sec: 28, t: 'Drum pressure 15 kg/cm²: sindihan ang burner B at C', d: 'Sa 15 kg/cm² idinadagdag ang dalawa pang burner: SA damper at oil FCV sa ignition, BURNER ON (ang DITL ang magbubukas ng oil valve), tapos FICDO1043B / C 20 % (PR-OPE-5002: B / C pagkatapos ng 30 minuto).', c: b.ALL(b.VAL('Pd', 15, null), b.BURN4), fps: ['FICDO1043B', 'FICDO1043C'], get a() {
           return WL() ? [bIgn('B'), bIgn('C'), bOn('B'), bOn('C'), bOil('B', 20), bOil('C', 20)] : [btn('Buksan oil valve B at C', () => (A.oil('M.3411', true), A.oil('M.3416', true))), btn('BURNER B at C ON', () => (A.motor('M.3413', 1), A.motor('M.3418', 1)), () => bit('M.3413') > 0.5 && bit('M.3418') > 0.5), btn('FICDO1043B / C M 20 %', () => (A.man('FICDO1043B', 20), A.man('FICDO1043C', 20)))];
         } },
+      /* 3.2.0 P1 #3 (PR-OPE-5002 7259: "Turbine Main Steam Motorized isolation valve (MVMS1391) is necessary to be Equalized and OPENED during
+         boiler pressurization at around 20~30 ksc"): no steam reaches the MSV (ATS 1.3) and the turbine with it shut */
+      {
+        st: 4,
+        sec: 28,
+        t: 'Main steam MOV: equalizing MV-MS1392 OPEN, tapos MV-MS1391 OPEN (20 ~ 30 kg/cm²)',
+        d: 'PR-OPE-5002: sa 20 ~ 30 kg/cm² ng main steam, dahan-dahang buksan ang turbine inlet equalizing MOV MV-MS1392 (5 ~ 10 minuto para pumantay ang pressure at temperatura; bantayan ang drum level), tapos buksan ang main steam MOV MV-MS1391. Kapag sarado ito, walang steam sa MSV at sa turbine.',
+        c: b.ALL(b.VAL('Pd', 20, null), mcvC('MV-MS1391 open', () => mcvPos('MV-MS1391') >= 100)),
+        a: [mcvB('MV-MS1392', 1), mcvB('MV-MS1391', 1)]
+      },
       { st: 4, sec: 28, t: 'Drum pressure 30 kg/cm²', d: 'Hintayin ang 30 kg/cm². Ang coach pa rin ang humahawak ng bilis ng pag-init.', c: b.VAL('Pd', 30, null), wait: 1 },
       /* 3.2.0-beta.40 (roadmap 2, Cold run stall at "Bypass servicing"): PR-OPE-5002 STEAM DRUM FILLING "Ensure MS BLOW OFF VALVE (BOV)
          >10 % OPEN" and BYPASS SYSTEM SERVICING "Gradually close MS Blow off valve ... transfer steam flow to RH": the MS blow-off is
@@ -55655,6 +55693,9 @@ window.LS_GUIDE = (function () {
           A.auto('PICHR1003', 7.6);
           A.man('PICHR1391', 20);
           A.auto('LICBR1001B', 0);
+          /* 3.2.0 P1 #5: the spray water block valves of the HP / LP bypass desuperheaters in AUTO MODE (DITL-79 XV-FW1061 M.0582, DITL-66
+             XV-CD1114 M.0522): the DITL opens them on the demand of TICMS1022 / TICHR1012; shut, no spray water reaches the bypass steam */
+          if (WL()) ['DITL-79', 'DITL-66'].forEach(n => window.LS_DOCK && LS_DOCK.dset && LS_DOCK.dset(n, 4, 1));
           return '';
         })],
         coach: ['lvl'],
