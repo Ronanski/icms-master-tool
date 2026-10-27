@@ -84,7 +84,7 @@ body.ophmi #anp{display:none!important}
 #evbox .evh span{color:var(--c-dim);margin-right:auto}#evbox .evh .b{height:22px;padding:0 8px;font-size:11px}
 #evbox .evr{display:flex;gap:10px;padding:3px 10px;border-bottom:1px solid var(--c-line)}
 #evbox .tm{color:var(--c-dim);width:56px;flex:none}#evbox .kd{width:44px;flex:none;font-weight:700}#evbox .sh{width:70px;flex:none;color:var(--c-tx2)}
-#evbox .k-MODE .kd{color:var(--c-runtx2)}#evbox .k-FM .kd{color:var(--c-mantx2)}#evbox .k-ALM .kd,#evbox .k-TRIP .kd{color:var(--c-almtx)}#evbox .k-RTN .kd,#evbox .k-RST .kd{color:var(--c-tx2)}
+#evbox .k-MODE .kd{color:var(--c-runtx2)}#evbox .k-FM .kd{color:var(--c-mantx2)}#evbox .k-ALM .kd,#evbox .k-TRIP .kd{color:var(--c-almtx)}#evbox .k-RTN .kd,#evbox .k-RST .kd{color:var(--c-tx2)}#evbox .k-ACK .kd,#evbox .k-FIELD .kd{color:var(--c-acc)}
 /* 2.0.0: manual station faceplate (manual loader) and step buttons */
 :is(#opp,#plfp) .fpman .mlr{display:flex;gap:10px;align-items:stretch}
 :is(#opp,#plfp) .fpman .mlb{width:22px;min-height:110px;background:#0b1217;border:1px solid #243642;position:relative;flex:none}

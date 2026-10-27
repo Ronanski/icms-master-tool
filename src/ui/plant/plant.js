@@ -322,7 +322,11 @@
           const mv = shOf(r.cc.sh).S.rt.v[r.cc.c.out];
           if (isFinite(x) && isFinite(mv) && Math.abs(x - (100 - mv)) < 0.5 && Math.abs(x - mv) > 1) x = 100 - x; /* fail-open valve */
           o.set({ v: x, r });
-        } else o.set({ v: netVal(r), r });
+        } else {
+          /* 3.2.0 retest #34: a pump / fan / motor whose drawing is in TRIP (its "... TRIP · CRT (ANN)" output) flashes */
+          const mt = r.a && /^(pump|fan|motor)$/.test(o.it.t) && window.lsAlarms ? lsAlarms.motOf(r.a) : null;
+          o.set({ v: netVal(r), r, tr: mt === 'TRIP' });
+        }
       } catch (e) {}
     }
   }
@@ -531,7 +535,7 @@
         else if (t === 'lamp') {
           const on = x.v > (it.gt != null ? it.gt : 0.5);
           c = (it.inv ? !on : on) ? (/^#[0-7][89a-f]/i.test(it.lit || '') ? HC.green : HC.red) : '#050505'; /* lit = the HMI green / red, off = black */
-        } else c = x.v > 0.5 ? HC.red : HC.green; /* pump / fan / motor run = red; flag 1 = red check */
+        } else c = x.tr ? (Math.floor(Date.now() / 1000) % 2 ? '#f59e0b' : HC.red) : x.v > 0.5 ? HC.red : HC.green; /* pump / fan / motor run = red; flag 1 = red check; TRIP flashes amber (retest #34) */
         fs(c);
         if (t === 'valve' || t === 'damper') fn(fmtH(x.v, it.v));
       }, bgHit(g, it, hull([sp.sym && sp.sym.b, sp.n && sp.n.b]) || [it.x - 12, it.y - 12, 24, 24]));
@@ -618,7 +622,7 @@
             const sym = g.lastChild;
             reg(it, x => {
               const on = x && x.v != null ? x.v > 0.5 : it.st === 'run';
-              const c2 = on ? '#e05555' : '#3fbf6a';
+              const c2 = x && x.tr ? (Math.floor(Date.now() / 1000) % 2 ? '#f59e0b' : '#e05555') : on ? '#e05555' : '#3fbf6a'; /* TRIP flashes (retest #34) */
               ring.setAttribute('stroke', c2);
               sym.setAttribute(it.t === 'fan' ? 'stroke' : 'fill', c2);
             }, ring);

@@ -469,12 +469,13 @@
     if (b && b.scrollIntoView) b.scrollIntoView({ block: 'nearest' });
   }
   /* the line under the Training head after Clear all ticks: what is left, and Undo */
-  function clearNote(was) {
+  /* 3.2.0 retest #12: no browser pop-up (a pop-up that a browser blocks or closes said nothing); the result and Undo show on the page */
+  function clearNote(was, pre) {
     const old = train.querySelector('.trclr');
     if (old) old.remove();
     const [tn, tm] = total();
     const n = E('p', { cls: 'trclr', role: 'status' }, [
-      'Cleared: ' + tn + ' / ' + tm + ' steps ticked. ',
+      (pre || 'Cleared') + ': ' + tn + ' / ' + tm + ' steps ticked. ',
       E('button', {
         cls: 'trbtn',
         type: 'button',
@@ -509,11 +510,13 @@
              button says it is loading until the cold plant is in */
           on: e => {
             const b = e && e.currentTarget,
-              [tn] = total();
-            if (tn > 0 && !confirm('Magsisimula ang Gabay sa Cold. Mabubura ang ' + tn + ' tick ng Training list (bagong start-up = malinis na checklist). Ituloy?')) return;
+              [tn] = total(),
+              was = { hand: ls.get('ls-train', {}), auto: LV() ? Object.assign({}, LV().done()) : {} };
             ls.set('ls-train', {});
             if (LV()) LV().reset();
             fillTrain();
+            /* 3.2.0 retest #12: the ticks of the earlier run are cleared without a pop-up; the page says so, with Undo */
+            if (tn > 0) clearNote(was, 'Bagong Gabay mula Cold: nabura ang ' + tn + ' tick');
             const t0 = b ? b.textContent : '';
             const back = () => {
               if (b) {
@@ -585,7 +588,6 @@
           type: 'button',
           txt: 'Clear all ticks',
           on: () => {
-            if (!confirm('Clear the ticks of all ' + total()[1] + ' steps (the AUTO steps tick again when the logic shows them done)?')) return;
             /* 3.2.0 walkthrough #12: the result is shown ("Cleared: 0 / 692") with an Undo */
             const was = { hand: ls.get('ls-train', {}), auto: LV() ? Object.assign({}, LV().done()) : {} };
             ls.set('ls-train', {});

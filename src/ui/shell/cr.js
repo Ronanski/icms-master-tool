@@ -95,10 +95,21 @@
     };
     fChip.onclick = fOpen;
     fChip.onkeydown = e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), fOpen());
-    alarm.append(aChip, aT, aTx, aSp, fChip, fList);
+    /* 3.2.0 retest #31: the alarm list (the alarm summary of the DCS) with ACK */
+    const aList = E('div');
+    aList.id = 'cralist';
+    aChip.setAttribute('role', 'button');
+    aChip.tabIndex = 0;
+    aChip.title = 'Alarm list of the whole DCS: ACK';
+    const aOpen = () => {
+      if (aList.classList.toggle('open')) aFill();
+    };
+    aChip.onclick = aOpen;
+    aChip.onkeydown = e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), aOpen());
+    alarm.append(aChip, aT, aTx, aSp, fChip, fList, aList);
     const ev = $('evbtn'),
       evMark = mark(ev);
-    P = { rail, band, alarm, moved, ev, evMark, gs, tabs, brand, set, setM, setB, sub, crumb, srchBtn, srch, seg, tbar, unit, kpis, K, aChip, aT, aTx, fChip, sp };
+    P = { rail, band, alarm, moved, ev, evMark, gs, tabs, brand, set, setM, setB, sub, crumb, srchBtn, srch, seg, tbar, unit, kpis, K, aChip, aT, aTx, fChip, sp, aList };
     band.append(unit, kpis, E('div', 'crgrow'));
     /* ⚙ in the rail: its menu opens beside the rail, above the bottom of the screen */
     setB.addEventListener('click', () => {
@@ -223,38 +234,33 @@
       if (k.v.textContent !== t) k.v.textContent = t;
       k.b.classList.toggle('na', !isFinite(x));
     }
-    /* active alarms and trips from the Event log (ALM until back to normal, TRIP until reset) */
+    /* active alarms and trips. 3.2.0 retest #31 #34: the alarm table of the whole DCS (events.js lsAlarms: every ABC sheet, PAUSED or
+       RUN, and the motor TRIPs of the DITL), with ACK; the TRIP nets of the ABC sheet on screen from the Event log (TRIP until reset).
+       Before: the sheet on screen only (the LOW-LOW of ABC-057 went away when the screen moved to a DITL sheet) */
     const L = window.lsEvents || [],
       act = new Map();
     for (let i = L.length - 1; i >= 0; i--) {
       const e = L[i];
       let m;
-      if (e.kind === 'ALM' && (m = /^(.*) \S+$/.exec(e.text))) act.set(e.sh + '|' + m[1], e);
-      else if (e.kind === 'RTN' && (m = /^(.*) back to normal$/.exec(e.text))) act.delete(e.sh + '|' + m[1]);
-      else if (e.kind === 'TRIP' && (m = /^(.*) = 1$/.exec(e.text))) act.set(e.sh + '|' + m[1], e);
+      if (e.kind === 'TRIP' && (m = /^(.*) = 1$/.exec(e.text))) act.set(e.sh + '|' + m[1], e);
       else if (e.kind === 'RST' && (m = /^(.*) = 0$/.exec(e.text))) act.delete(e.sh + '|' + m[1]);
     }
-    /* 3.2.0 walkthrough #8: an alarm that stands since the start (no change, so no event: ABC-057 furnace temperature LOW-LOW in a
-       cold plant) is counted too: the header says what the red / orange ALM block of the sheet on screen says */
-    try {
-      const sh = AN.cat === 'an' && AN.sheets && AN.sheets[AN.i];
-      if (sh && sh.S && sh.S.rt && !(AN.plantOn && !AN.startState))
-        for (const b of sh.S.blk)
-          if (b.k === 'ALM' && b.i && b.i[0] >= 0) {
-            const lv = AN.almLv(b, sh.S.rt.v[b.i[0]]);
-            if (lv === 'normal') continue;
-            const nm = AN.nm(sh.S, b.i[0]) || 'ALM #' + b.id;
-            if (!act.has(sh.name + '|' + nm)) act.set(sh.name + '|' + nm, { t: '', text: nm + ' ' + lv, sh: sh.name });
-          }
-    } catch (e) {}
+    const AL = window.lsAlarms ? lsAlarms.list() : [];
+    for (const a of AL) if (!a.rtn) act.set(a.k, { t: a.t, text: a.nm + ' ' + a.lv, sh: a.sh, kind: a.kind, ack: a.ack });
     const n = act.size,
-      last = [...act.values()].sort((a, b) => L.indexOf(a) - L.indexOf(b))[0];
+      un = AL.filter(a => !a.ack).length,
+      /* the newest unacknowledged first (a TRIP before an alarm), else the newest */
+      vals = [...act.values()],
+      last = vals.filter(a => a.ack === false && a.kind === 'TRIP').pop() || vals.filter(a => a.ack === false).pop() || vals.pop();
     P.alarm.classList.toggle('on', n > 0);
-    P.aChip.className = 'crchip ' + (n ? 'alm' : 'mut');
-    P.aChip.textContent = n ? n + (n === 1 ? ' ALARM' : ' ALARMS') : 'NO ALARM';
+    P.aChip.className = 'crchip ' + (n ? 'alm' : 'mut') + (un ? ' unack' : '');
+    P.aChip.textContent = n ? n + (n === 1 ? ' ALARM' : ' ALARMS') + (un ? ' · ' + un + ' NEW' : '') : 'NO ALARM';
     P.aT.textContent = last ? last.t : '';
     P.aTx.textContent = last ? last.text + ' · ' + last.sh : 'No active alarm or trip';
-    P.aTx.title = 'From the Event log (simulation time). Alarms and trips of the ABC sheet on screen while the simulation runs.';
+    P.aTx.title = 'Alarm list of the whole DCS (every ABC sheet and the motor trips of the DITL), simulation time. Click the ALARM chip for the list and ACK.';
+    if (P.aList.classList.contains('open') && (n !== P.aN || un !== P.aU)) aFill();
+    P.aN = n;
+    P.aU = un;
     const f = userForces().length;
     if (f !== P.fN && P.alarm.querySelector('#crflist.open')) fFill();
     P.fN = f;
@@ -270,6 +276,33 @@
       for (const k in S.rt.force) if (!(S.rt.pf && S.rt.pf[k])) r.push({ sh, S, n: +k });
     }
     return r;
+  }
+  function aFill() {
+    const d = $('cralist');
+    if (!d || !window.lsAlarms) return;
+    const L = lsAlarms.list().reverse();
+    d.textContent = '';
+    const h = E('div', 'crfh', 'Alarm list (' + L.length + ') · ' + lsAlarms.unacked() + ' not acknowledged');
+    const x = E('button', 'crfx', '✕');
+    x.title = 'Close';
+    x.onclick = () => d.classList.remove('open');
+    h.append(x);
+    d.append(h);
+    if (!L.length) d.append(E('div', 'crfe', 'No alarm.'));
+    for (const a of L.slice(0, 200)) {
+      const r = E('div', 'crfr' + (a.ack ? '' : ' unack') + (a.rtn ? ' rtn' : '') + (a.kind === 'TRIP' ? ' trip' : ''));
+      r.append(E('span', 'crfs', a.t + ' ' + a.sh), E('span', 'crfn', a.nm), E('span', 'crfv', a.rtn ? 'RTN' : a.lv));
+      const ab = E('button', '', a.ack ? 'ACK ✓' : 'ACK');
+      ab.disabled = !!a.ack;
+      ab.onclick = () => (lsAlarms.ack(a.k), aFill());
+      r.append(ab);
+      d.append(r);
+    }
+    if (lsAlarms.unacked()) {
+      const all = E('button', 'crfall', 'ACK ALL');
+      all.onclick = () => (lsAlarms.ack(), aFill());
+      d.append(all);
+    }
   }
   function fFill() {
     const d = $('crflist');
