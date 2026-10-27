@@ -55573,7 +55573,7 @@ window.LS_GUIDE = (function () {
       nm = x ? 'DITL-38 #' + tag : '';
     return Object.assign(
       btn(tag + (open ? ' OPEN' : ' CLOSE') + ' (DITL-38)', () => (WL() && x ? dPress(x._inst.k ? nm : 'DITL-38', open ? 4 : 10) : ''), () => !WL() || (open ? mcvPos(tag) >= 100 : mcvPos(tag) <= 0)),
-      { dg: [x && x._inst.k ? nm : 'DITL-38', open ? 4 : 10] }
+      { dg: [x && x._inst.k ? nm : 'DITL-38', open ? 4 : 10], ad: x && x._inst.k ? nm : 'DITL-38' }
     );
   };
   /* P2 #13: a single-valve MOV drawing (DITL-54 start-up ejector MV-AS1395, DITL-55 steam jet air ejector MV-AS1396, DITL-56 vacuum
@@ -55586,7 +55586,7 @@ window.LS_GUIDE = (function () {
   const movB = (nm, tag, open, ro, rc) =>
     Object.assign(
       btn(tag + (open ? ' OPEN' : ' CLOSE') + ' (' + nm + ')', () => (WL() ? dPress(nm, open ? ro : rc) : ''), () => !WL() || (open ? movPos(nm) >= 100 : movPos(nm) <= 0)),
-      { dg: [nm, open ? ro : rc] }
+      { dg: [nm, open ? ro : rc], ad: nm }
     );
   const mcvC = (want, f) => C(want, () => !WL() || f(), () => (WL() ? W_MCV().map(t => t.replace('MV-', '') + ' ' + mcvPos(t).toFixed(0) + '%').join(', ') : '— (one world OFF)'));
   const W_MCV = () => ['MV-FW1001', 'MV-FW1391', 'MV-FW1002', 'MV-FW1392', 'MV-MS1391', 'MV-MS1392'];
@@ -56540,6 +56540,13 @@ window.LS_GUIDE = (function () {
     seen.add(k);
     const m = window.WORLD && WORLD.idx && WORLD.idx.din.get(s),
       srcs = m && m.get(row);
+    /* 3.2.0 P1: the REMOTE selector of a MOV at its MCC (DITL-38 row 2, DITL-54 row 12): the valve model mirrors the row into its REMOTE
+       output and the output feeds the row back; the row itself is the field contact */
+    const mir = ((s.nl && s.nl.mv) || []).some(b => (b.fb || []).some(f => f.ty === 'MIL' && f.mir === row));
+    if (mir) {
+      if (!out.field.some(x => x.s === s && x.row === row)) out.field.push({ s, row, want, av: null, ...rowInfo(s, row) });
+      return;
+    }
     if (!srcs || !srcs.length) {
       /* a push button (START / STOP P.B.) is an operator action of another step, not a field contact */
       if (/P\.\s*B\.?|\bPB\b|PUSH/.test(rowInfo(s, row).svc)) return;
@@ -57151,9 +57158,13 @@ window.LS_GUIDE = (function () {
       const I = interlock(it.ad);
       it.box.textContent = '';
       if (!I) continue;
-      const run0 = I.live && (atRow(it.ad) != null ? dout(it.ad, atRow(it.ad)) === 1 : /^DITL-/.test(it.ad) ? runOut(it.ad) === 1 : bit(it.ad));
+      /* 3.2.0 P1: a motor operated valve (a valve model, no RUNNING output: DITL-38 MCV, DITL-54 ~ 56) is ready when its interlock is
+         complete (REMOTE at the MCC); the next valve of the step then shows its own interlock */
+      const ds = /^DITL-/.test(it.ad) && atRow(it.ad) == null ? dSheet(it.ad) : null,
+        mov = !!(ds && ds.nl && (ds.nl.mv || []).length && runOut(it.ad) == null),
+        run0 = I.live && (mov ? !I.miss.length : atRow(it.ad) != null ? dout(it.ad, atRow(it.ad)) === 1 : /^DITL-/.test(it.ad) ? runOut(it.ad) === 1 : bit(it.ad));
       if (I.live && (run0 || shown)) {
-        it.box.append(E('div', { cls: 'gd-ilh' }, [E('span', { txt: run0 ? '✓ TUMATAKBO NA' : 'SUSUNOD' }), E('span', { cls: 'gd-ilm', txt: I.sheet })]));
+        it.box.append(E('div', { cls: 'gd-ilh' }, [E('span', { txt: run0 ? (mov ? '✓ REMOTE, HANDA' : '✓ TUMATAKBO NA') : 'SUSUNOD' }), E('span', { cls: 'gd-ilm', txt: I.sheet })]));
         continue;
       }
       if (I.live) shown = 1;

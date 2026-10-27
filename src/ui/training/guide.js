@@ -732,7 +732,7 @@ window.LS_GUIDE = (function () {
       nm = x ? 'DITL-38 #' + tag : '';
     return Object.assign(
       btn(tag + (open ? ' OPEN' : ' CLOSE') + ' (DITL-38)', () => (WL() && x ? dPress(x._inst.k ? nm : 'DITL-38', open ? 4 : 10) : ''), () => !WL() || (open ? mcvPos(tag) >= 100 : mcvPos(tag) <= 0)),
-      { dg: [x && x._inst.k ? nm : 'DITL-38', open ? 4 : 10] }
+      { dg: [x && x._inst.k ? nm : 'DITL-38', open ? 4 : 10], ad: x && x._inst.k ? nm : 'DITL-38' }
     );
   };
   /* P2 #13: a single-valve MOV drawing (DITL-54 start-up ejector MV-AS1395, DITL-55 steam jet air ejector MV-AS1396, DITL-56 vacuum
@@ -745,7 +745,7 @@ window.LS_GUIDE = (function () {
   const movB = (nm, tag, open, ro, rc) =>
     Object.assign(
       btn(tag + (open ? ' OPEN' : ' CLOSE') + ' (' + nm + ')', () => (WL() ? dPress(nm, open ? ro : rc) : ''), () => !WL() || (open ? movPos(nm) >= 100 : movPos(nm) <= 0)),
-      { dg: [nm, open ? ro : rc] }
+      { dg: [nm, open ? ro : rc], ad: nm }
     );
   const mcvC = (want, f) => C(want, () => !WL() || f(), () => (WL() ? W_MCV().map(t => t.replace('MV-', '') + ' ' + mcvPos(t).toFixed(0) + '%').join(', ') : '— (one world OFF)'));
   const W_MCV = () => ['MV-FW1001', 'MV-FW1391', 'MV-FW1002', 'MV-FW1392', 'MV-MS1391', 'MV-MS1392'];
