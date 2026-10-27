@@ -1107,6 +1107,14 @@ function anPlantCold() {
     const t = AN_UNIT.Tamb;
     AN_UNIT.xt.T = { cr: t, aux: t, fw: t, fab0: t, fab1: t };
   }
+  /* P2 #13: a cold plant has no vacuum: the condenser vacuum breaker MOV MV-AV1391 (DITL-56) is open, the ejector steam MOVs
+     MV-AS1395 / MV-AS1396 (DITL-54 / DITL-55) are shut (PR-OPE-5002 6197: the breaker is open until the vacuum up) */
+  try {
+    if (typeof MST !== 'undefined' && typeof S !== 'undefined') {
+      const s = S.sheets.find(x => /\)DITL-56$/.test(x.name));
+      if (s) MST[s.name] = [{ pos: 100, run: 0, lr: 1, tq: 0 }];
+    }
+  } catch (e) {}
   AN.steady = false;
   AN.cold = true;
   return n;
