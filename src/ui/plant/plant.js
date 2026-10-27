@@ -171,8 +171,11 @@
   }
   /* the transmitter tag of an indicator tag: TIBR11302 -> TTBR11302 / TEBR11302; FIQMS1031 -> FTMS1031 */
   const tx = k => {
-    const m = /^(D?P|T|F|L|A|S|E|Z|W|H|J)I(?:Q|C)?(.*)$/.exec(k);
-    return m ? [m[1] + 'T' + m[2], m[1] + 'E' + m[2]] : [];
+    const m = /^(D?P|T|F|L|A|S|E|Z|W|H|J)I(?:Q|C)?(.*)$/.exec(k),
+      /* 3.2.0 (HMI 007, 2026-10-27): an area code that starts with C (PICR1006 = PT-CR1006, TICD1101) is not the C of a
+         controller: also try with the C kept (before, PICR1006 found nothing) */
+      n = /^(D?P|T|F|L|A|S|E|Z|W|H|J)I(C.*)$/.exec(k);
+    return (m ? [m[1] + 'T' + m[2], m[1] + 'E' + m[2]] : []).concat(n ? [n[1] + 'T' + n[2], n[1] + 'E' + n[2]] : []);
   };
   /* 2.2.0-beta.19: a reference written on the item (systems.js `ref`): 'SHEET|LABEL' = the net of that sheet with that label
      (AI0419, SI0230, M.201F, I.0082) or that name ('MAN HIC-BM out'); 'pv:TAG' / 'mv:TAG' = the PV / MV of a faceplate (PID or MAN).
