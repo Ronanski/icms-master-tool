@@ -250,6 +250,22 @@ function anProcList(S) {
 const AN_SERIES = { PICFG108: 1, PICFG108A: 1 };
 /* 3.2.0-beta.40: controller -> the hand station whose output is the real actuator of the process (ABC-020, see xman below) */
 const AN_XACT = { TICHR1002A: 'HICHR1002A' };
+/* the select of an A/M switch comes from the .MAN status of the station that the switch feeds (through gates, timers, flip-flops) */
+function anSelSelf(S, b) {
+  const man = (b.o || []).flatMap(n => S.cns[n] || []).find(x => x.k === 'MAN' && x.tag);
+  if (!man) return false;
+  const want = (man.tag + '.MAN').toUpperCase(),
+    seen = new Set(),
+    q = [b.sel];
+  while (q.length) {
+    const n = q.pop();
+    if (n == null || n < 0 || seen.has(n)) continue;
+    seen.add(n);
+    if ((AN.nm(S, n) || '').trim().toUpperCase() === want) return true;
+    for (const d of S.drv[n] || []) if (['AND', 'OR', 'NOT', 'FF', 'TPS', 'TON', 'TOF', 'LINK'].includes(d.k)) (d.i || []).forEach(x => q.push(x));
+  }
+  return false;
+}
 /* 3.2.0-beta.39 (roadmap 2): spray outlet controller -> the controller of the header before the spray (its PV is the steam the spray cools, see Ka) */
 const AN_KUP = { TICBR1150: 'TICBR1140' };
 const AN_HMI_OP = {
@@ -1146,7 +1162,13 @@ function anStep(S, dt) {
             s.lb = s.flb;
           }
         }
-        const sel = b.sel >= 0 ? B(rd(b.sel)) : 0;
+        /* 3.2.0-beta.39 (roadmap 2, ABC-020, user decision 2026-10-27 07:46 PHT: follow the SOP): an A/M select set by the station's OWN mode leaving MANUAL
+           (M.017A = FF set by TPS TR420 of NOT HICHR1002B.MAN, reset by ID fan stopped / CRT SELECT MAINTENANCE) does not force that
+           station back to MANUAL. Read as a force it locked the SH biasing damper in MANUAL after every AUTO with the ID fan running,
+           and with it the RH damper (M.0179 has HICHR1002B.MAN), against PR-OPE-5002 ("Put SH biasing damper to AUTO" after the purge,
+           "Set biasing damper and RH to Remote-Auto") and 39.PNG (both A at 150 MW). The signal is still computed and shown */
+        if (b._self === undefined) b._self = b.sel >= 0 && anSelSelf(S, b);
+        const sel = b.sel >= 0 && !b._self ? B(rd(b.sel)) : 0;
         let pickB = P.selA ? !sel : !!sel;
         if (b.latch) {
           if (pickB) s.lb = 1;

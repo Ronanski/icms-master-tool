@@ -574,6 +574,37 @@
           } else abcMiss.push(s.name + ' r' + r.n + ' FROM ' + F + ' (no ' + (adr || tag || 'address') + ' on the ABC sheet)');
         })
       );
+    /* 3.2.0-beta.39 (roadmap 2, CLAUDE.md rule 1): an input row from the turbine control or the generator breaker (LOCATION TCS / GMCB,
+       no FROM sheet: DITL-35 row 11 ICV TO CV TRANSFER COMPLETE I.0418, DITL-51 / 94 ~ 108 TURBINE TRIP I.0400, DITL-80 ~ 89 GCB 52G1 ON
+       I.0931) is the same address as the ABC input that the turbine model writes (unit.js / tcs.js: ABC-050 I.0418 ...). Unlinked it read
+       0 for ever: DITL-35 held the RH spray shut-off valve shut (NOT I.0418 resets it) and the reheat went to 593 C at 150 MW */
+    const tcsIn = [];
+    for (const sb of S.sheets)
+      W.instOf.get(sb).forEach((s, k) =>
+        sb.rows.forEach((r, i) => {
+          if (!/^(TCS|GMCB)$/.test(cellTxt(sb, i, 'L').trim()) || cellTxt(sb, i, 'F').trim()) return;
+          const have = din.get(s) && din.get(s).get(i);
+          if (have && have.length) return;
+          const la = rowList(sb, i),
+            adr = la[k] || (la.length === 1 ? la[0] : null);
+          if (!adr || !/^I\.[0-9A-F]{4}$/.test(adr)) return;
+          for (const sh of AN.sheets) {
+            if (/^ABC-000/.test(sh.name)) continue;
+            let SS;
+            try {
+              SS = AN.ensure(sh);
+            } catch (e) {
+              continue;
+            }
+            const n = SS && SS.ext ? SS.ext.find(j => String(AN.nm(SS, j) || '').replace(/^S\d\s*/, '').trim() === adr) : undefined;
+            if (n == null) continue;
+            addIn(s, i, { k: 'a', sh, n, ref: sh.name + ' ' + adr });
+            tcsIn.push(s.name + ' r' + r.n + ' <- ' + sh.name + ' ' + adr);
+            wsh.add(sh.name);
+            break;
+          }
+        })
+      );
     /* 3.2.0-beta.23 (Training dock, IDF interlock): an input row whose FROM column names an output of the SAME sheet that is
        only a copy of that very row (a wire or a NOT) is not its own source. DITL-43 row 12 AIR PREHEATER SPEED NOT LOW I.0653 has "43-56" in the FROM
        column (the station channel of the contact, like rows 4 / 5 / 10 / 13: 43-54 / 55 / 53 / 57), and out 56 is the same signal to
@@ -583,6 +614,10 @@
     const selfDep = (s, orow, irow) => {
       try {
         if (!s.nl) s.nl = netlist(s);
+        /* roadmap 2 batch 3: a limit switch of a valve of the drawing (ZSO / ZSC, the solenoid / MOV model) is the field, not a copy of
+           the row. DITL-35 row 2 SOV CLOSED I.088F <- 35-73: the row and the switch wire touch on the sheet (one row of nets), the link
+           was left out, the logic read the row 0 for ever and the RH spray shut-off valve never opened (reheat 593 C at 150 MW) */
+        if ((s.nl.mv || []).some(m => (m.fb || []).some(f => f.row === orow))) return false;
         const ins = new Set((window.DUI && DUI.rowNets ? DUI.rowNets(s, irow, 'L') : []) || []);
         if (!ins.size) return false;
         const drv = new Map();
@@ -648,6 +683,7 @@
       digFix,
       fromDitl: fa,
       fromAbc,
+      tcsIn,
       abcMiss,
       plc,
       toDitl: ta,
