@@ -96,6 +96,13 @@
       if (!isFinite(x)) continue;
       /* the state of the switch: tripped (level low / pressure high) with its dead band */
       const tr = m.on == null ? (dir === 'lo' ? x < sp : x > sp) : m.on ? (dir === 'lo' ? x < sp + DB : x > sp - DB) : dir === 'lo' ? x < sp : x > sp;
+      /* test tool only (tools/training/checkpoint/run.js --nostop): the switch is logged, not acted on, so one run lists every trip */
+      if (W.swTest) {
+        if (tr && !m.on) (W.swLog || (W.swLog = [])).push({ tag: m.d[0], sheet: m.s.name, x: Math.round(x * 10) / 10, tmin: window.AN && AN.unit ? Math.round(AN.unit.t / 60) : null });
+        m.on = tr;
+        if (nc) (m.s._win || (m.s._win = new Set())).add(m.row);
+        continue;
+      }
       m.on = tr;
       if (nc ? !tr : tr) (m.s._win || (m.s._win = new Set())).add(m.row);
     }

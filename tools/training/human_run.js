@@ -23,7 +23,7 @@ const started=new Set();let last='',since=Date.now(),done=new Set(),n=0;const la
 while(Date.now()-T0<55*60e3){
  const c=await card();const key=c.eb+'|'+c.h;
  if(key!==last){last=key;since=Date.now();done=new Set();n++;L('STEP',c.eb,'«'+c.h+'»');L('   values:',(await p.evaluate(()=>((document.querySelector('#gdock .gd-kv')||document.querySelector('#gdock')).innerText||'').replace(/\s+/g,' ').slice(0,200))));await p.screenshot({path:OUT+'/st'+String(n).padStart(2,'0')+'.png'})}
- if(/TAPOS/.test(c.eb)||/^HAKBANG 6[5-9]/.test(c.eb)){L('REACHED',c.eb,c.h);break}
+ if(/TAPOS|PRACTICE/i.test(c.eb)){L('REACHED',c.eb,c.h);break}
  if(/^HAKBANG 64/.test(c.eb)&&Date.now()-since>60e3&&!global.__v64||(/^HAKBANG 64/.test(c.eb)&&Date.now()-(global.__v64||0)>60e3)){global.__v64=Date.now();L('   hold:',c.cond.slice(0,260))}
  const band=await p.evaluate(()=>((document.querySelector('#crband')||document.body).textContent||'').slice(0,4000));if(/\bMFT\b/.test(band)&&/TRIP/.test(band)){L('TRIP on screen');await p.screenshot({path:OUT+'/trip.png'});break}
  const B=await see();let acted=false;

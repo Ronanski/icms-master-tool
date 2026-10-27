@@ -41,8 +41,8 @@ Ang user ay susubok lang sa DULO ng buong plano (gabay: `docs/USER_CHECK.md`).
 
 1. [x] **Tinanggal ang Per-loop, Warm at Hot** (3.2.0-beta.39, 2026-10-26): plant chip = OFF | Unit lang; starting state = Cold at 150 MW lang (chip, Home, Start menu); wala na ang engine ng loop study at ng warm / hot start. Ang mga CHECK stage (coal, byp, roll) ay sa loob na lang ng buong chain.
 2. [x] Plant model (3.2.0-beta.40): TAPOS: stall sa bypass (hakbang 43, dati na), RH biasing damper (ABC-020), "null" sa DITL header, header ng Cold ("—" bago pumili). TAPOS din (ikalawang batch): hakbang 57 (MS blow-off SV), SH temperature chain, air side ng Cold. TAPOS din (ikatlong batch, 2026-10-27): reheat sa AUTO (541 °C sa 150 MW), MST pinakamataas 547.7 °C (alarm 548), hinto sa 3600 rpm heat soak; mouse Cold run TAPOS hanggang Practice (UPDATE_REPORT, seksyon ikatlong batch).
-3. [ ] Starting points: Cold at 150 MW para sa plant model ON lang; kapag OFF, walang starting point (ang user ang naglalagay ng value). Suriin sa app na ang pagpili ng starting point ay nag-o-ON ng plant model.
-4. [ ] Training Cold → 150 MW laban sa SOP (PR-OPE-5002), kasama ang negative test (`sop_bawal.js`).
+3. [x] Starting points (2026-10-27, branch `claude/project-thread-5nq9pa`): Cold = tunay na malamig na planta; 150 MW = tumatakbo nang walang trip; ang pagpili ng starting point ay nag-o-ON ng plant model. Kasama ang P1 fix queue (ZT, protection switches, DITL-38 MOV, spray block, coal outlet valve).
+4. [ ] Training Cold → 150 MW laban sa SOP (PR-OPE-5002), kasama ang negative test (`sop_bawal.js`). Bahagi (2026-10-27): static audit at mga ayos (UPDATE_REPORT, seksyon roadmap 3 + 4), `sop_bawal.js` 19 / 19; ang buong Cold run ay hindi pa nasubok. Natitirang P2: #7 ~ #12.
 5. [ ] Viewer (VIEW audit bahagi 2: DITL, tablet, phone) at Simulate na plant model OFF.
 6. [ ] HMI: live items (560 / 1330 lang ang live), plant overview at permissives screen.
 7. [ ] Sand silo DITL (8 drawing, `sand-sootblower-logic.zip`).
