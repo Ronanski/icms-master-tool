@@ -530,11 +530,35 @@ window.LS_LIVE = (function () {
   const since = {};
   const simT = () => +U().t || 0;
   const live = () => !!(typeof AN !== 'undefined' && AN.sheets && AN.cat === 'an' && !(window.lsViewLock && lsViewLock.inView()) && !AN.view);
+  /* 3.2.0 walkthrough #9: an AUTO step ticks on a real change after the Clear / the start: its condition was seen NOT done since then,
+     or the trainee has reached its section (a step of the section before is ticked). Before: every condition already true at Cold
+     ticked itself (no coal, no flame ...). The furnace purge steps also need the four fans running (IDF, SAF, PAF, FAB) */
+  const off = {};
+  const PURGE = PROC.findIndex(s => /FURNACE PURGE/i.test(s.t));
+  const fansOn = () => {
+    try {
+      return RUN.IDF.ok() && RUN.SAF.ok() && RUN.PAF.ok() && RUN.FAB.ok();
+    } catch (e) {
+      return false;
+    }
+  };
   /* one pass over every auto step; returns the keys that changed */
   function scan() {
     const ch = [];
     if (!live() || !PROC.length) return ch;
     const t = simT();
+    let hand = {};
+    try {
+      hand = JSON.parse(localStorage.getItem('ls-train') || '{}') || {};
+    } catch (e) {}
+    const reached = si => {
+      if (si <= 0) return false;
+      const p = si - 1 + '.';
+      for (const k in LAT) if (k.startsWith(p)) return true;
+      for (const k in hand) if (k.startsWith(p)) return true;
+      return false;
+    };
+    const fans = PURGE >= 0 ? fansOn() : true;
     PROC.forEach((sec, si) =>
       sec.s.forEach((st, i) => {
         const key = si + '.' + i;
@@ -547,8 +571,11 @@ window.LS_LIVE = (function () {
         } catch (e) {}
         if (!ok) {
           delete since[key];
+          off[key] = 1;
           return;
         }
+        if (!off[key] && !reached(si)) return;
+        if (si === PURGE && !fans) return;
         if (q.c.hold) {
           if (since[key] == null) since[key] = t;
           if (t - since[key] < q.c.hold) return;
@@ -578,6 +605,12 @@ window.LS_LIVE = (function () {
     if (from == null) LAT = {};
     else for (const k in LAT) if (+k.split('.')[0] >= from) delete LAT[k];
     for (const k in since) if (from == null || +k.split('.')[0] >= from) delete since[k];
+    for (const k in off) if (from == null || +k.split('.')[0] >= from) delete off[k];
+    wrt(LAT);
+  }
+  /* the AUTO ticks back (Undo of Clear all ticks) */
+  function load(o) {
+    LAT = Object.assign({}, o || {});
     wrt(LAT);
   }
   /* why a controller step waits: the force-manual signals of the drawing (why.js) */
@@ -630,5 +663,5 @@ window.LS_LIVE = (function () {
   };
   /* 3.2.0-beta.21: the condition makers, for the guided Training (guide.js) */
   const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4 };
-  return { kind, state, rows, scan, reset, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2, B, H, modeOf, mvOf, pvOf, svOf, getV, NAMES, f1 };
+  return { kind, state, rows, scan, reset, load, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2, B, H, modeOf, mvOf, pvOf, svOf, getV, NAMES, f1 };
 })();

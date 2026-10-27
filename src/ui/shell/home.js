@@ -468,6 +468,29 @@
     const b = train.querySelector('.trsec.on');
     if (b && b.scrollIntoView) b.scrollIntoView({ block: 'nearest' });
   }
+  /* the line under the Training head after Clear all ticks: what is left, and Undo */
+  function clearNote(was) {
+    const old = train.querySelector('.trclr');
+    if (old) old.remove();
+    const [tn, tm] = total();
+    const n = E('p', { cls: 'trclr', role: 'status' }, [
+      'Cleared: ' + tn + ' / ' + tm + ' steps ticked. ',
+      E('button', {
+        cls: 'trbtn',
+        type: 'button',
+        txt: 'Undo',
+        on: () => {
+          ls.set('ls-train', was.hand);
+          if (LV() && LV().load) LV().load(was.auto);
+          n.remove();
+          fillTrain();
+        }
+      })
+    ]);
+    const h = train.querySelector('.trhead');
+    if (h) h.after(n);
+    setTimeout(() => n.remove(), 30000);
+  }
   function buildTrain() {
     train = E('div', { id: 'trainws', role: 'region', 'aria-label': 'Training' });
     const pick = E('select', { id: 'trpick', 'aria-label': 'Section of the procedure' });
@@ -482,7 +505,29 @@
           type: 'button',
           txt: 'Gabay: Cold → 150 MW',
           title: 'Guided start-up beside the logic: the plant cold, RUN, one step at a time with the interlock of each motor, the faceplates and the values to watch',
-          on: () => abcReady(() => window.LS_DOCK && LS_DOCK.start())
+          /* 3.2.0 walkthrough #10: a new Cold start-up = a clean checklist (the ticks of an earlier run stayed: 13 ticked at Cold); #15: the
+             button says it is loading until the cold plant is in */
+          on: e => {
+            const b = e && e.currentTarget,
+              [tn] = total();
+            if (tn > 0 && !confirm('Magsisimula ang Gabay sa Cold. Mabubura ang ' + tn + ' tick ng Training list (bagong start-up = malinis na checklist). Ituloy?')) return;
+            ls.set('ls-train', {});
+            if (LV()) LV().reset();
+            fillTrain();
+            const t0 = b ? b.textContent : '';
+            const back = () => {
+              if (b) {
+                b.disabled = false;
+                b.textContent = t0;
+              }
+            };
+            if (b) {
+              b.disabled = true;
+              b.textContent = 'Nilo-load ang Cold…';
+            }
+            setTimeout(back, 60000);
+            abcReady(() => (window.LS_DOCK ? LS_DOCK.start(() => (back(), fillTrain())) : back()));
+          }
         }),
         E('button', {
           cls: 'trbtn trresume',
@@ -541,9 +586,12 @@
           txt: 'Clear all ticks',
           on: () => {
             if (!confirm('Clear the ticks of all ' + total()[1] + ' steps (the AUTO steps tick again when the logic shows them done)?')) return;
+            /* 3.2.0 walkthrough #12: the result is shown ("Cleared: 0 / 692") with an Undo */
+            const was = { hand: ls.get('ls-train', {}), auto: LV() ? Object.assign({}, LV().done()) : {} };
             ls.set('ls-train', {});
             if (LV()) LV().reset();
             fillTrain();
+            clearNote(was);
           }
         })
       ]),

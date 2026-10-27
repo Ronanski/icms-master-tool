@@ -7,6 +7,8 @@ await p.addInitScript(()=>{window.LS_PVWIN=false;window.open=()=>null;try{localS
 await p.goto('file://'+process.argv[2]);await p.waitForTimeout(4000);
 await p.evaluate(()=>new Promise(r=>{LS_DOCK.start();setTimeout(r,6000)}));
 await p.evaluate(()=>{const b=[...document.querySelectorAll('#gdock .gd-seg button')].find(x=>x.textContent==='×300');b.click()});
+/* 3.2.0 walkthrough #1: the Training starts PAUSED; the trainee presses RUN (the pill of the panel) */
+await p.evaluate(()=>{const b=document.querySelector('#gdock .gd-pill');if(b&&/PAUSED/.test(b.textContent))b.click()});await p.waitForTimeout(500);
 let last=-1,lt=0;const t0=Date.now();
 const f=(x,d)=>x==null||!isFinite(x)?'-':(+x).toFixed(d||0);
 while(Date.now()-t0<25*60e3){const r=await p.evaluate(()=>{const s0=LS_GUIDE.steps()[LS_GUIDE.cur];for(const a of (s0&&s0.a)||[])if(a.ad)try{LS_DOCK.fieldSet(LS_DOCK.fieldOf(a.ad).field)}catch(e){}LS_GUIDE.doIt();LS_GUIDE.scan();const H=LS_GUIDE.h(),U=AN.unit||{};

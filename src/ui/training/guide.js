@@ -421,6 +421,14 @@ window.LS_GUIDE = (function () {
         A.man('FIC-CF', Math.max(10, Math.min(60, c + d)));
       }
     },
+    /* 3.2.0 walkthrough #7: STEAM DRUM FILLING, the start-up valve FCV-FW1130-2 closed (MV 0 %) when the drum reaches -150 mm */
+    fill: {
+      t: 'Drum filling: isara ang FCV-FW1130-2 sa −150 mm',
+      sec: true,
+      run() {
+        if (h().lvl() >= -155 && mv('FCV-FW1130-2') > 2) A.man('FCV-FW1130-2', 0);
+      }
+    },
     /* drum level on the start-up valve (check.js byp): LICBR1001B opened by hand +5 % a minute while the level falls under -60 mm, back
        to AUTO SV 0 once it stops falling or is over -50 mm */
     lvl: {
@@ -773,7 +781,9 @@ window.LS_GUIDE = (function () {
     const FIELD = (st, title, secs, extra) => Object.assign({ st, field: secs, need: 1, t: title, d: 'Ang mga ito ay ginagawa ng field operator (lokal na valve, gauge, panel). Walang DCS signal ang mga ito, kaya kumpirmahin lang kapag tapos na.' }, extra || {});
     ST = [
       /* ---- 0 utilities ---- */
-      FIELD(0, 'ESP purge air heater at fan (field)', [0]),
+      /* 3.2.0 walkthrough #5: PR-OPE-5002 ESP "purge air heater and fan ... 6 hours prior to start-up": confirmed when already 6 h in service,
+         or held 6 h of plant time from the card (pre) */
+      FIELD(0, 'ESP purge air heater at fan (field), 6 oras bago ang start-up', [0], { pre: 21600, d: 'SOP: pinapaandar ng field operator ang ESP purge air heater at fan 6 ORAS BAGO ang start-up. Kung 6 h na itong tumatakbo, pindutin ang "Tapos na ito sa field". Kung ngayon pa lang sinimulan, pindutin ang "Simulan ang 6 h purge" at patakbuhin ang oras (RUN, ×300 = mga 72 segundo).' }),
       { st: 0, sec: 2, t: 'Simulan ang unang seawater pump (SWP)', d: 'Ang seawater ang nagpapalamig sa condenser at sa cooling water ng planta. Ito ang unang tumatakbo sa start-up.', c: R.SWP1, a: [mot('M.3353', 'SWP-A'), mot('M.3354', 'SWP-B'), mot('M.3355', 'SWP-C')], field: [1] },
       { st: 0, sec: 2, t: 'Simulan ang pangalawang SWP', d: 'Dalawang SWP ang kailangan para sa condenser bago ang vacuum at ang turbine.', c: b.SWP2, a: [mot('M.3353', 'SWP-A'), mot('M.3354', 'SWP-B'), mot('M.3355', 'SWP-C')] },
       FIELD(0, 'Hypochlorite, debris filter, booster pump, make-up water, cooling water, instrument at plant air (field)', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]),
@@ -795,9 +805,11 @@ window.LS_GUIDE = (function () {
         c: mcvC('Main discharge MOV open, equalizing MOV closed', () => (mcvPos('MV-FW1001') >= 100 && mcvPos('MV-FW1391') <= 0) || (mcvPos('MV-FW1002') >= 100 && mcvPos('MV-FW1392') <= 0)),
         a: [mcvB('MV-FW1391', 1), mcvB('MV-FW1001', 1), mcvB('MV-FW1391', 0)]
       },
-      { st: 1, sec: 20, t: 'Steam drum filling: start-up valve FCV-FW1130-2 sa MANUAL, level −150 mm', d: 'Bubuksan nang dahan-dahan ang start-up valve para mapuno ang drum hanggang −150 mm, tapos isasara (MV 0 %) para hindi umapaw. Sa Cold ng app ay puno na ang drum (mga 0 mm), kaya M at MV 0 % na agad.', c: b.ALL(b.MODE('FCV-FW1130-2', 'MAN'), b.MV('FCV-FW1130-2', null, 2), b.HOLD(10, b.VAL('lvl', -200, 100))), fps: ['FCV-FW1130-2'], a: [btn('M, MV 0 % (puno na)', () => A.man('FCV-FW1130-2', 0))], field: [19] },
+      /* 3.2.0 walkthrough #7: the cold drum is not filled (hmi-op.js AN_COLD_DRUM); PR-OPE-5002 STEAM DRUM FILLING: FCV-FW1130-2 MANUAL, opened
+         gradually, drum level -150 mm. The coach "fill" closes the valve at -150 mm (the trainee may switch it off) */
+      { st: 1, sec: 20, t: 'Steam drum filling: start-up valve FCV-FW1130-2 sa MANUAL, punuin hanggang −150 mm', d: 'Wala pang tubig ang drum ng cold plant (mga −300 mm). Habang tumatakbo ang BFWP, buksan nang dahan-dahan ang start-up valve (MANUAL, MV 20 %). Kapag −150 mm na, isara (MV 0 %) para hindi umapaw. Ang coach ang nagsasara sa −150 mm (puwede mong patayin at ikaw ang magsara).', c: b.ALL(b.MODE('FCV-FW1130-2', 'MAN'), b.MV('FCV-FW1130-2', null, 2), b.HOLD(10, b.VAL('lvl', -200, 100))), fps: ['FCV-FW1130-2'], coach: ['fill'], a: [btn('M, MV 20 % (punuin)', () => (h().lvl() < -170 ? A.man('FCV-FW1130-2', 20) : ''), () => h().lvl() >= -170 || mv('FCV-FW1130-2') >= 15), btn('MV 0 % (sa −150 mm)', () => (h().lvl() >= -170 ? A.man('FCV-FW1130-2', 0) : ''), () => h().lvl() >= -170 && mv('FCV-FW1130-2') <= 2)], field: [19] },
       /* ---- 2 fans ---- */
-      { st: 2, sec: 21, t: 'Diesel oil pump at oil circulation (field)', d: 'Ang diesel oil pump ay nasa field (walang DCS signal). Kailangan ito ng mga start-up burner. Bantayan ang outlet oil pressure (PICDO0005).', fps: ['PICDO0005'], c: C('Diesel oil pump running (field)', () => !!(AN.fieldState && AN.fieldState().dop), () => 'Diesel oil pump ' + (AN.fieldState && AN.fieldState().dop ? 'ON' : 'OFF')), a: [btn('START diesel oil pump (field)', () => A.field('dop', true), () => !!(AN.fieldState && AN.fieldState().dop))], field: [20] },
+      { st: 2, sec: 21, coachOff: ['fill'], t: 'Diesel oil pump at oil circulation (field)', d: 'Ang diesel oil pump ay nasa field (walang DCS signal). Kailangan ito ng mga start-up burner. Bantayan ang outlet oil pressure (PICDO0005).', fps: ['PICDO0005'], c: C('Diesel oil pump running (field)', () => !!(AN.fieldState && AN.fieldState().dop), () => 'Diesel oil pump ' + (AN.fieldState && AN.fieldState().dop ? 'ON' : 'OFF')), a: [btn('START diesel oil pump (field)', () => A.field('dop', true), () => !!(AN.fieldState && AN.fieldState().dop))], field: [20] },
       { st: 2, sec: 22, t: 'Ihanda ang IDF: PICFG108 sa MANUAL, MV 0 %, biasing damper RH at SH bukas', d: 'Sarado ang hydraulic coupling ng IDF bago ito simulan (mababang starting current). Ang interlock ng IDF (DITL-25A row 1) ay humihingi ng bukas na flue gas bias damper (HICHR1002A / B) para may daanan ang hangin.', c: b.ALL(b.MODE('PICFG108', 'MAN'), b.MV('PICFG108', null, 2), b.MV('HICHR1002A', 30, null), b.MV('HICHR1002B', 60, null)), fps: ['PICFG108', 'HICHR1002A', 'HICHR1002B'], a: [btn('M, MV 0 %', () => A.man('PICFG108', 0)), btn('Biasing damper RH at SH 100 %', () => (A.man('HICHR1002A', 100), A.man('HICHR1002B', 100)))], field: [21] },
       { st: 2, sec: 22, t: 'Simulan ang ID fan (IDF)', d: 'Ang IDF ang humihigop ng flue gas palabas ng furnace. Ito ang unang fan na tumatakbo.', c: R.IDF, a: [mot('M.3304', 'IDF')] },
       { st: 2, sec: 22, t: 'IDF hydraulic coupling: PICFG108 MV 13 %', d: 'Buksan ang coupling sa 13 %. Negatibo ang furnace pressure (hinihigop palabas).', c: b.ALL(R.IDF, b.MV('PICFG108', 10, 16)), fps: ['PICFG108'], a: [btn('MV 13 %', () => A.man('PICFG108', 13))] },
@@ -1136,7 +1148,7 @@ window.LS_GUIDE = (function () {
   };
   const save = () => {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ cur: G.cur, coach: Object.keys(CO), hold: G.hold, mine: G.mine, on: G.on }));
+      localStorage.setItem(KEY, JSON.stringify({ cur: G.cur, coach: Object.keys(CO), hold: G.hold, mine: G.mine, pw: G.pw, on: G.on }));
     } catch (e) {}
   };
   const G = Object.assign({ cur: 0, on: false, mine: {}, hold: {} }, rd() || {});
@@ -1164,7 +1176,7 @@ window.LS_GUIDE = (function () {
   function stepOk(s) {
     /* a FIELD card needs the operator's confirmation; the field items shown on a DCS step are for reading only */
     if (s.need && !G.mine[s.i]) return false;
-    if (!s.c) return !!G.mine[s.i];
+    if (!s.c) return !!G.mine[s.i] && preOk(s);
     let ok = false;
     try {
       ok = s.c.ok();
@@ -1179,7 +1191,15 @@ window.LS_GUIDE = (function () {
     }
     return true;
   }
-  const holdOf = s => (s.c && s.c.hold && since[s.i] != null ? [Math.max(0, simT() - since[s.i]), s.c.hold] : null);
+  /* the 6 h before the start-up of a field card (pre), counted in plant time from "Simulan ang 6 h purge" */
+  const preOk = s => !s.pre || !G.pw || G.pw[s.i] == null || simT() - G.pw[s.i] >= s.pre;
+  function preStart(i) {
+    G.pw = G.pw || {};
+    G.pw[i] = simT();
+    G.mine[i] = 1;
+    save();
+  }
+  const holdOf = s => (s.pre && G.pw && G.pw[s.i] != null ? [Math.max(0, simT() - G.pw[s.i]), s.pre] : null) || (s.c && s.c.hold && since[s.i] != null ? [Math.max(0, simT() - since[s.i]), s.c.hold] : null);
   /* the steps opened: a step's coach starts when it opens */
   function open(i) {
     const s = steps()[i];
@@ -1218,10 +1238,18 @@ window.LS_GUIDE = (function () {
   hook();
   /* check the open step; returns true when it moved on */
   function scan() {
-    if (!G.on || !live()) return false;
+    if (!G.on) return false;
     const L0 = steps(),
       s = L0[G.cur];
     if (!s) return false;
+    /* 3.2.0 walkthrough #16: a field card (no DCS condition) is confirmed by the operator: it moves on while PAUSED too */
+    if (!live()) {
+      if (s.need && !s.c && G.mine[s.i]) {
+        open(G.cur + 1);
+        return true;
+      }
+      return false;
+    }
     /* 3.2.0-beta.24: a station that a BU-CMD of the drawing put back to MANUAL after its step (HIC-BM / EIC-TM: M.2013 / M.2016,
        CLAUDE.md 10) stays MANUAL until the operator presses A: the guide goes back to that step, so its card says why and what to do */
     for (const r of s.req || []) {
@@ -1268,14 +1296,27 @@ window.LS_GUIDE = (function () {
       hook();
       G.on = true;
       G.mine = {};
+      G.pw = {};
       G.cur = 0;
       HH = null;
       /* the sheets the steps operate that may not be linked to the sheet on the screen: stepped too (links.js actSet) */
       AN.checkSheets = ['ABC-001C', 'ABC-002', 'ABC-003A', 'ABC-003B', 'ABC-003C', 'ABC-003D', 'ABC-004A', 'ABC-005', 'ABC-007', 'ABC-008', 'ABC-010', 'ABC-011', 'ABC-012', 'ABC-013', 'ABC-020', 'ABC-028', 'ABC-031', 'ABC-032', 'ABC-050', 'ABC-052', 'ABC-054']
         .concat(steps().flatMap(s => (s.fps || []).map(t => shOf(L().ctlTag(t) || t)).filter(Boolean)))
         .filter((x, i, a) => a.indexOf(x) === i);
+      /* 3.2.0 walkthrough #1: the start-up begins at t = 0 (the clock of the sheets counted the settling of the cold state: t = 11:29) and
+         PAUSED (simulation on, time stopped, 1x): the field steps come first and the trainee presses RUN. Before: RUN at once, x10 */
+      try {
+        for (const sh of AN.sheets)
+          if (sh.S && sh.S.rt) {
+            const rt = sh.S.rt;
+            rt.t = 0;
+            sh._hs = [];
+            for (const k in rt.pm || {}) if (rt.pm[k] && Array.isArray(rt.pm[k].h)) rt.pm[k].h = [];
+            for (const k in rt.st || {}) if (rt.st[k] && Array.isArray(rt.st[k].h)) rt.st[k].h = [];
+          }
+      } catch (e) {}
       open(0);
-      if (AN.runOn) AN.runOn();
+      if (AN.pauseOn) AN.pauseOn();
       if (done) done();
     };
     try {
@@ -1306,6 +1347,7 @@ window.LS_GUIDE = (function () {
   /* the field confirmation of a step */
   function confirm(i) {
     G.mine[i] = 1;
+    if (G.pw) delete G.pw[i];
     save();
   }
   /* every action of the open step (the "Do it for me" of a newbie, and the test) */
@@ -1345,6 +1387,7 @@ window.LS_GUIDE = (function () {
     stepOk,
     holdOf,
     confirm,
+    preStart,
     doIt,
     early,
     fieldOf,
