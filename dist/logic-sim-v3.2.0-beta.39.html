@@ -45930,6 +45930,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
      WATER LSLL-CD1110 LEVEL LOW LOW") */
   function build(ALL) {
     map = [];
+    ana.length = 0;
     for (const s of ALL) {
       const b = s._inst ? s._inst.base : s;
       for (let i = 0; i < ((b && b.rows) || []).length; i++) {
@@ -45943,8 +45944,26 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
         const d = L.find(x => words.slice(0, 3).includes(x[0]));
         if (d) map.push({ s, row: i, d, on: null });
       }
+      /* P2 #13: the DITL comparator rows on the condenser pressure transmitter (DITL-55 row 6, DITL-73 row 26 PT-CD1110) */
+      for (const a of (s.nl && s.nl.an) || []) {
+        const z = (s.nl.src || []).find(q => q.n === a.net);
+        let t = '';
+        try {
+          const I = (z && window.DUI && DUI.rowInfo(s, z.row)) || {};
+          t = ((I.tag || '') + ' ' + W.showText(s, I.svc || '')).toUpperCase();
+        } catch (e) {}
+        if (/PT-CD1110\b/.test(t)) ana.push({ s, key: a.key });
+      }
     }
   }
+  /* P2 #13 (INSTRUMENT_VALVE_COVERAGE.md): the condenser pressure follows the vacuum of the unit model (unit.js U.vac, 0 = no vacuum,
+     1 = in service): 1.033 kg/cm2A (atmosphere) to 0.057 kg/cm2A (4.PNG PICD1110 at 150 MW) */
+  const ana = [];
+  W.condP = () => {
+    const U = (window.AN && AN.unit) || {},
+      v = isFinite(U.vac) ? Math.max(0, Math.min(1, U.vac)) : NaN;
+    return isFinite(v) ? Math.round((1.033 - (1.033 - 0.057) * v) * 1000) / 1000 : NaN;
+  };
   const SRC = {};
   function val(src) {
     const [k, net, ai] = src,
@@ -45970,6 +45989,8 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   W.plantIn = ALL => {
     if (!(window.AN && AN.plantOn === true)) return;
     if (!map) build(ALL);
+    const pc = W.condP();
+    if (isFinite(pc)) for (const a of ana) (a.s.avw = a.s.avw || {})[a.key] = pc;
     for (const m of map) {
       const [, src, sp, dir, nc] = m.d,
         x = val(src);
