@@ -28897,7 +28897,8 @@ document.head.appendChild(
       c1.className = k;
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
-      c3.textContent = 'v3.2.0-beta.39 · build 0aefc5d'; /* 3.2.0 retest #24 */
+      c3.textContent = 'v3.2.0-beta.39';
+      c3.textContent += ' · build 83070d1'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
