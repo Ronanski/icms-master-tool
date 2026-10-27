@@ -335,6 +335,13 @@
     seen.add(k);
     const m = window.WORLD && WORLD.idx && WORLD.idx.din.get(s),
       srcs = m && m.get(row);
+    /* 3.2.0 P1: the REMOTE selector of a MOV at its MCC (DITL-38 row 2, DITL-54 row 12): the valve model mirrors the row into its REMOTE
+       output and the output feeds the row back; the row itself is the field contact */
+    const mir = ((s.nl && s.nl.mv) || []).some(b => (b.fb || []).some(f => f.ty === 'MIL' && f.mir === row));
+    if (mir) {
+      if (!out.field.some(x => x.s === s && x.row === row)) out.field.push({ s, row, want, av: null, ...rowInfo(s, row) });
+      return;
+    }
     if (!srcs || !srcs.length) {
       /* a push button (START / STOP P.B.) is an operator action of another step, not a field contact */
       if (/P\.\s*B\.?|\bPB\b|PUSH/.test(rowInfo(s, row).svc)) return;
@@ -946,9 +953,13 @@
       const I = interlock(it.ad);
       it.box.textContent = '';
       if (!I) continue;
-      const run0 = I.live && (atRow(it.ad) != null ? dout(it.ad, atRow(it.ad)) === 1 : /^DITL-/.test(it.ad) ? runOut(it.ad) === 1 : bit(it.ad));
+      /* 3.2.0 P1: a motor operated valve (a valve model, no RUNNING output: DITL-38 MCV, DITL-54 ~ 56) is ready when its interlock is
+         complete (REMOTE at the MCC); the next valve of the step then shows its own interlock */
+      const ds = /^DITL-/.test(it.ad) && atRow(it.ad) == null ? dSheet(it.ad) : null,
+        mov = !!(ds && ds.nl && (ds.nl.mv || []).length && runOut(it.ad) == null),
+        run0 = I.live && (mov ? !I.miss.length : atRow(it.ad) != null ? dout(it.ad, atRow(it.ad)) === 1 : /^DITL-/.test(it.ad) ? runOut(it.ad) === 1 : bit(it.ad));
       if (I.live && (run0 || shown)) {
-        it.box.append(E('div', { cls: 'gd-ilh' }, [E('span', { txt: run0 ? '✓ TUMATAKBO NA' : 'SUSUNOD' }), E('span', { cls: 'gd-ilm', txt: I.sheet })]));
+        it.box.append(E('div', { cls: 'gd-ilh' }, [E('span', { txt: run0 ? (mov ? '✓ REMOTE, HANDA' : '✓ TUMATAKBO NA') : 'SUSUNOD' }), E('span', { cls: 'gd-ilm', txt: I.sheet })]));
         continue;
       }
       if (I.live) shown = 1;
