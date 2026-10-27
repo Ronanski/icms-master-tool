@@ -740,6 +740,11 @@
       });
       s._win = on;
     }
+    /* 3.2.0 P1 #2 (src/world/plantsw.js): the protection switches of the field follow the PV while the plant model is ON */
+    if (W.plantIn)
+      try {
+        W.plantIn(ALL);
+      } catch (e) {}
     /* 2. every DITL sheet: logic, timers, MOV, motors */
     const c = cur();
     let chCur = false;
