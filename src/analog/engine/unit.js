@@ -540,7 +540,12 @@ function anUnitStart() {
     fw: ais('ABC-010', 'AI0592'),
     dea: ais('ABC-056', 'AI0417'),
     fab: [ais('ABC-006', 'AI0579'), ais('ABC-006', 'AI0627')].filter(l => l.length),
-    faF: ais('ABC-006', 'AI0545')
+    faF: ais('ABC-006', 'AI0545'),
+    /* P2 #14: the drum level transmitter LT-BR1001-2 (ABC-010 AI0258) is not one the level model writes (the PV of LICBR1001 does not
+       move with it: plant.js anProbe), so it kept its value while the drum filled or emptied, and its level switches never acted.
+       It reads the same water: the mean of LT-BR1001-1 / -3 with its own offset of the snapshot (2 mm against 0 / 8 mm) */
+    lt2: ais('ABC-010', 'AI0258'),
+    lt13: [ais('ABC-010', 'AI0130'), ais('ABC-010', 'AI0386')].filter(l => l.length)
   };
   {
     const X = U.xt,
@@ -553,6 +558,7 @@ function anUnitStart() {
     X.dea0 = a(X.dea);
     X.faF0 = a(X.faF);
     X.MST0 = 541;
+    X.lt2Off = X.lt13.length ? a(X.lt2) - X.lt13.reduce((s, L) => s + a(L), 0) / X.lt13.length : NaN;
     X.T = {};
   }
   /* P1 #1: VALVE POSITION = VALVE COMMAND. The position transmitter (ZT) of a damper / control valve follows the command of its station
@@ -621,7 +627,7 @@ function anUnitStart() {
   const lists = [U.msp, U.drum, U.msf, U.spd || []]
     .concat(U.mw, U.tin, U.rhp, U.pist, U.o2, [U.pa], U.tbed, U.aphT, U.saP, U.idfS.length ? [U.idfS] : [])
     .concat(...U.sh.map(h => h.L))
-    .concat([U.xt.cr, U.xt.hr, U.xt.aux, U.xt.fw], U.xt.rhi, U.xt.fab, U.zt.map(z => z.L));
+    .concat([U.xt.cr, U.xt.hr, U.xt.aux, U.xt.fw, U.xt.lt2], U.xt.rhi, U.xt.fab, U.zt.map(z => z.L));
   for (const l of lists) for (const [S2, b] of l) own.add(S2.rt.st[b.id]);
   U.own = own;
   U.on = true;
@@ -1235,6 +1241,11 @@ function anUnitStepX(dt, mso) {
         tdea0 = isFinite(X.dea0) && X.dea0 > 0.05 ? steamTsat(X.dea0) : 120,
         ld = U.MW0 > 0 ? Math.max(0, Math.min(1.1, (U.MW || 0) / U.MW0)) : 0;
       anUnitWrite(X.fw, lag('fw', tdea + Math.max(0, X.fw0 - tdea0) * ld, 600));
+    }
+    /* the second drum level transmitter: the same water as the other two */
+    if (isFinite(X.lt2Off) && X.lt2.length) {
+      const m = X.lt13.map(L => val(L)).filter(isFinite);
+      if (m.length) anUnitWrite(X.lt2, m.reduce((s, x) => s + x, 0) / m.length + X.lt2Off);
     }
     /* FA blowers: heat of compression while the air flows */
     if (X.fab.length && X.faF0 > 0) {
