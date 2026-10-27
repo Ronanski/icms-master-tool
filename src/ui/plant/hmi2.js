@@ -30,7 +30,9 @@
 
   /* ---------- geometry of the Air & Flue Gas screen (process area, drawn 24 px under the title and alarm bar) ---------- */
   const OY = 24;
-  /* ducts: medium (air cold air, hot hot air, gas / gasm / gasc flue gas hot / after the economizer / after the APH, sol solids)
+  /* cold SA enters the upper (SA) section of the air heater, cold PA the lower (PA) section: the two never cross
+     (user 2026-10-27: "bakit common na ang pipe papasok ng air heater?").
+     ducts: medium (air cold air, hot hot air, gas / gasm / gasc flue gas hot / after the economizer / after the APH, sol solids)
      and the flow signal that moves them (G IDF, S SAF, P PAF, F FA air) */
   const DUCTS = [
     { m: 'gas', w: 18, f: 'G', pts: [[280, 150], [334, 150]] },
@@ -44,8 +46,8 @@
     { m: 'air', w: 5, f: 'F', pts: [[374, 456], [374, 444]] },
     { m: 'air', w: 12, f: 'S', pts: [[60, 760], [238, 760]] },
     { m: 'air', w: 12, f: 'P', pts: [[60, 840], [238, 840]] },
-    { m: 'air', w: 12, f: 'S', pts: [[278, 742], [800, 742], [800, 640], [840, 640]] },
-    { m: 'air', w: 12, f: 'P', pts: [[278, 822], [816, 822], [816, 616], [840, 616]] },
+    { m: 'air', w: 12, f: 'S', pts: [[278, 742], [796, 742], [796, 600], [840, 600]] },
+    { m: 'air', w: 12, f: 'P', pts: [[278, 822], [820, 822], [820, 636], [840, 636]] },
     { m: 'hot', w: 11, f: 'S', pts: [[840, 526], [281, 526]] },
     { m: 'hot', w: 11, f: 'P', pts: [[840, 552], [312, 552], [312, 670], [256, 670]] }
   ];
