@@ -35,8 +35,8 @@
       for (let i = 0; i < ((b && b.rows) || []).length; i++) {
         let t = '';
         try {
-          const I = (window.DUI && DUI.rowInfo(s, i)) || {};
-          t = ((I.tag || '') + ' ' + W.showText(s, I.svc || '')).trim().toUpperCase();
+          const I = (window.DUI && DUI.rowInfo(s, i)) || {}; /* rowInfo is the text of the instance already (W.showText) */
+          t = ((I.tag || '') + ' ' + (I.svc || '')).trim().toUpperCase();
         } catch (e) {}
         if (!t) continue;
         const words = t.split(/\s+/);
@@ -49,7 +49,7 @@
         let t = '';
         try {
           const I = (z && window.DUI && DUI.rowInfo(s, z.row)) || {};
-          t = ((I.tag || '') + ' ' + W.showText(s, I.svc || '')).toUpperCase();
+          t = ((I.tag || '') + ' ' + (I.svc || '')).toUpperCase();
         } catch (e) {}
         if (/PT-CD1110\b/.test(t)) ana.push({ s, key: a.key });
       }
