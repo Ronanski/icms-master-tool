@@ -125,6 +125,16 @@ window.LS_GUIDE = (function () {
   /* 3.2.0-beta.39 (roadmap 2) (roadmap 2, mouse Cold run stuck at "Hawakan ang 45 MW", MSP 66): the set point of a controller now. The step of the
      45 MW handover passed on M.0255 = 0 (blow-off < 5 % open) before the operator pressed "PICMS1002 A, SV 128": the blow-off stayed at
      the SV of the bypass stage (HP bypass SV + 5 = 66), vented about 20 T/H and held the main steam at 66 kg/cm2 */
+  /* the SV switch of a controller on its logic leg (A: cascade / schedule SV; the faceplate "SV: LOGIC" where the drawing has no .REM) */
+  const svLogic = (k, t) => {
+    try {
+      const c = h().ctl(k, t),
+        st = c && c.svSw && h().sh(k).rt.st[c.svSw.id];
+      return !!st && st.pk === 'A';
+    } catch (e) {
+      return false;
+    }
+  };
   const svOf = t => {
     try {
       const k = shOf(t),
@@ -334,8 +344,19 @@ window.LS_GUIDE = (function () {
           Pt = slide ? Math.max(61, Math.min(123, 61 + ((H.MW() - 22.5) * (123 - 61)) / (60 - 22.5))) : o.hp;
         let d = 0;
         if (!grid) {
-          if (r > 90 || (o.svc != null && ((msf > 65 && msp >= o.hp - 3) || msp > o.hp + 0.5))) d = -5;
-          else if (r < 80 && (o.svc == null || msp < o.hp - 1 || msf < 40 || (TC().cur >= 2 && H.RHP() < 7.4)) && (o.n = (o.n || 0) + 1) % 2 === 0) d = 5;
+          /* roadmap 2 batch 3 (mouse Cold run: ATS HOLD at the 3600 rpm heat soak, MSP 59.3 < 60, reheat 6.5 < 7; from a checkpoint: the
+             oil swung 30 <-> 90 % every 30 ~ 40 min and the steam flow 0 <-> 34 T/H). With the HP bypass in AUTO the bypass holds the
+             pressure at its SV; the oil only sets how much steam is made (PR-OPE-5002: steam 40 ~ 55 T/H). The oil was cut 5 % a minute for
+             a pressure 0.5 over the SV: the bypass shut, the reheat (the bypass steam) fell under 7 and the pressure under 60. Now, once the
+             bypass is in service: 2 % a minute, cut only for a steam flow over 58 T/H or a pressure 3 over the SV, raised for a flow under
+             45, a pressure 1 under the SV or (turbine rolling) a reheat under 7.4 */
+          const roll = tb.st === 'roll' || TC().cur >= 2;
+          if (o.svc == null) {
+            if (r > 90) d = -5;
+            else if (r < 80 && (o.n = (o.n || 0) + 1) % 2 === 0) d = 5;
+          } else if (r > 90) d = -5;
+          else if ((msf > 58 && msp >= o.hp - 0.5) || msp > o.hp + 3) d = -2;
+          else if (r < 80 && (msp < o.hp - 1 || msf < 45 || (roll && H.RHP() < 7.4))) d = 2;
         } else if (r > 100 || msp > Pt + 1.5) d = -5;
         /* the load up of the TCS (7.5 MW a minute) takes the steam faster than the oil follows: the fire goes ahead of it (10 % a
            minute while the turbine is loading or the pressure is 3 under) so that the pressure does not fall far under 61 */
@@ -560,7 +581,14 @@ window.LS_GUIDE = (function () {
           const pvi = H.pv(k, inn),
             pvo = H.pv(k, out);
           if (q.a != null && q.r == null && isFinite(pvi) && isFinite(pvo)) {
-            const want = Math.max(300, Math.min(sv2, pvi + (sv2 - pvo)));
+            /* roadmap 2 batch 3: while the load comes up the operator aims 6 C under the set point (the pickup of the next superheater grows
+               before the spray answers: 550 C at 79 MW in the code trace) */
+            /* final mouse Cold run of batch 3: 550.2 C at 79.7 MW in the boiler follow ramp 45 -> 80 MW (H alarm 548): the operator aims
+               a further 2 C under per MW a minute of load rise (at most 8 C more) */
+            const mwN = +H.MW() || 0,
+              rise = q.mwP != null ? Math.max(0, mwN - q.mwP) : 0;
+            q.mwP = mwN;
+            const want = Math.max(300, Math.min(sv2, pvi + (sv2 - (U().tb && U().tb.st === 'load' ? 6 + Math.min(8, 2 * rise) : 0) - pvo)));
             if (q.sv == null || Math.abs(want - q.sv) >= 1) {
               H.autoSv(k, inn, Math.round(want));
               q.sv = Math.round(want);
@@ -569,7 +597,11 @@ window.LS_GUIDE = (function () {
           /* 3.2.0-beta.39 (roadmap 2): the cascade at 60 % MCR (276 T/H), where the spray starts to be needed (boiler manual Fig 10), with
              the outlet within 5 C. With the SH chain of unit.js the main steam came to 553 C at 96 MW in the code trace while the
              operator still held it by the inner set point (cascade only at 85 % of the anchor flow, about 130 MW) */
-          if (q.a != null && q.r == null && H.MSF() >= 0.6 * (+U().mcr || 460) && Math.abs(pvo - sv2) <= 5) {
+          if (q.a != null && q.r == null && H.MSF() >= 0.6 * (+U().mcr || 460) && Math.abs(pvo - sv2) <= 8) {
+            /* roadmap 2 batch 3 (mouse Cold run: 549.7 C at 80 MW right at the cascade): bumpless, the outer station is first set by hand
+               to the inner set point now (outer MV 0 ~ 100 % = inner SV 0 ~ 600 C: ABC-011 / 012 MV 65.6 / 69.7 % = 393.6 / 418.2 C) */
+            const isv = q.sv != null ? q.sv : sv;
+            if (isFinite(isv)) H.man(k, out, Math.round((isv / 6) * 10) / 10);
             H.rem(k, inn);
             q.r = simT();
           }
@@ -580,13 +612,21 @@ window.LS_GUIDE = (function () {
           /* 3.2.0-beta.39 (roadmap 2, code trace: main steam 552 ~ 554 C from 115 to 150 MW in the CCS load up, H alarm 548): the outer PI
              (TICMS1004 I 1371 s, parameter summary) unwinds slower than the load up (3 MW a minute). The operator lowers the outer set
              point while the outlet is 4 C over it and puts it back once it is at the set point again */
+          /* roadmap 2 batch 3 (code trace: 549 ~ 553 C from 97 to 145 MW with the set point at 533): the finishing superheater pickup grows
+             with the load faster than the outer integral, so the operator lowers the set point by three times the excess (at most 30 C) */
           if (q.o != null) {
-            if (!q.lo && isFinite(pvo) && pvo > sv2 + 4) {
-              H.autoSv(k, out, sv2 - 8);
-              q.lo = 1;
-            } else if (q.lo && isFinite(pvo) && pvo <= sv2) {
-              H.autoSv(k, out, sv2);
-              q.lo = 0;
+            const lo = isFinite(pvo) && pvo > sv2 + 3 ? Math.round(Math.max(sv2 - 30, sv2 - 3 * (pvo - sv2))) : null;
+            if (lo != null && (!q.lo || lo < q.lo - 1)) {
+              H.autoSv(k, out, lo);
+              q.lo = lo;
+              q.loT = simT();
+            } else if (q.lo && isFinite(pvo) && pvo <= sv2 && simT() - (q.loT || 0) >= 60) {
+              /* back to the set point 2 C a minute: put back at once, the proportional kick of the outer PI shut the spray and the
+                 outlet swung 540 ~ 553 C at 150 MW */
+              const nx = Math.min(sv2, q.lo + 2);
+              H.autoSv(k, out, nx);
+              q.lo = nx >= sv2 ? 0 : nx;
+              q.loT = simT();
             }
           }
         }
@@ -945,6 +985,28 @@ window.LS_GUIDE = (function () {
         ready: () => bit('I.0082') > 0.5 && bit('M.2016') < 0.5 && Math.abs(h().val('ABC-001C', 'SI0236') - (+U().tcsT || 0)) < 1,
         readyTxt: () => 'Hintayin: DCS control mode I.0082 = ' + f0(bit('I.0082')) + ', SI0236 ' + f1(h().val('ABC-001C', 'SI0236')) + ' ≈ TCS target ' + f1(+U().tcsT),
         a: [btn('EIC-TM A', () => A.auto('EIC-TM'))]
+      },
+      /* roadmap 2 (PR-OPE-5002 8043 "Set biasing damper and RH to Remote-Auto when RHT-PV is almost equal to R-SV"; 39.PNG at 150 MW:
+         HICHR1002A / B A, TICHR1002A R, TICHR1002 A SV 541). ABC-020: the RH damper is forced MANUAL while the SH damper is MANUAL and under
+         15 % MCR (M.0179), so the SH damper first. ABC-019: the RH spray is forced MANUAL while its shut-off valve is shut (M.0173, I.088F;
+         DITL-35 opens it in AUTO MODE above saturation + 11 C after the ICV -> CV transfer). Without this step the reheat went to 593 C */
+      {
+        st: 9,
+        sec: 44,
+        req: ['bm', 'tm'],
+        t: 'Reheat temperature sa AUTO: biasing damper SH at RH A, TICHR1002A A (SV: LOGIC), RH spray TICHR1002 A SV 541',
+        d: 'PR-OPE-5002: "Set biasing damper and RH to Remote-Auto when RHT-PV is almost equal to R-SV". Ang "Remote" ng TICHR1002A ay ang SV: LOGIC (SV mula sa MW, LN6, may bumpless ramp 1 %/min). Unahin ang SH damper (HICHR1002B): habang MANUAL ito, naka-force MANUAL ang RH damper (ABC-020 M.0179, kasama ang steam flow < 15 % MCR). Ang RH spray ay payag sa AUTO kapag bukas na ang shut-off valve (DITL-35).',
+        c: b.ALL(b.MODE('HICHR1002B', 'AUTO'), b.MODE('HICHR1002A', 'AUTO'), C('TICHR1002A AUTO, SV: LOGIC (LN6, MW → reheat SV)', () => md('TICHR1002A') === 'AUTO' && svLogic('ABC-020', 'TICHR1002A'), () => md('TICHR1002A') + (svLogic('ABC-020', 'TICHR1002A') ? ', SV: LOGIC' : ', SV: OPERATOR')), b.MODE('TICHR1002', 'AUTO')),
+        fps: ['HICHR1002B', 'HICHR1002A', 'TICHR1002A', 'TICHR1002'],
+        ready: () => bit('I.0418') > 0.5 && h().MSF() >= 69 && !(h().bit('ABC-019', 'I.088F') > 0.5),
+        readyTxt: () => 'Hintayin: ICV → CV transfer I.0418 = ' + f0(bit('I.0418')) + ', steam ' + f0(h().MSF()) + ' T/H (≥ 69), RH spray shut-off valve ' + (h().bit('ABC-019', 'I.088F') > 0.5 ? 'sarado' : 'bukas'),
+        a: [
+          btn('SH damper HICHR1002B A', () => A.auto('HICHR1002B'), () => md('HICHR1002B') === 'AUTO'),
+          btn('RH damper HICHR1002A A', () => A.auto('HICHR1002A'), () => md('HICHR1002A') === 'AUTO'),
+          btn('TICHR1002A A, SV: LOGIC', () => A.rem('TICHR1002A'), () => md('TICHR1002A') === 'AUTO' && svLogic('ABC-020', 'TICHR1002A')),
+          btn('TICHR1002 A, SV 541', () => A.auto('TICHR1002', 541), () => md('TICHR1002') === 'AUTO')
+        ],
+        coachOff: ['rhbias']
       },
       {
         st: 9,

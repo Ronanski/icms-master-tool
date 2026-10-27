@@ -121,7 +121,11 @@ function tcsPV(tag) {
 function tcsSteam(U) {
   const mst = tcsPV('TICMS1004'),
     rht = tcsPV('TICHR1002'),
-    Prh = U.rhp && U.rhp.length ? anUnitVal(U.rhp[0]) : NaN;
+    /* roadmap 2 batch 3 (checkpoint retest of the 3600 rpm heat soak: ATS HOLD 1.5 at 7.0 while the operator saw 7.6 on PICHR1003): the
+       reheat pressure is the corrected one of ABC-052 (PV = AI0421 / AI0513 + 0.6, SEL), the value the LP bypass holds at 7.5 ~ 7.6
+       (PR-OPE-5002 "RH pressure 7.5 ksc"); the raw AI0421 sat 0.6 lower, under the ATS limit 7 with the SOP pressure */
+    Pv = tcsPV('PICHR1003'),
+    Prh = isFinite(Pv) ? Pv : U.rhp && U.rhp.length ? anUnitVal(U.rhp[0]) : NaN;
   return { msp: U.Pms, mst: isFinite(mst) ? mst : U.Tw, rhp: isFinite(Prh) ? Prh : 0, rht: isFinite(rht) ? rht : U.Tw };
 }
 /* the criteria (page 3 / 5 ~ 14) that the model has: true = satisfied. txt = the name on the ATS criteria display */

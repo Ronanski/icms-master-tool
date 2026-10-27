@@ -848,3 +848,43 @@ Engine at logic: walang binago.
 **Hindi nasubok / bukas:** MST lampas pa sa H 548: 550 °C sa code trace (95 ~ 115 MW), 557 °C sa mouse run (80 MW, pag-akyat 45 → 80 MW). Reheat 593 °C sa 150 MW (RH spray SOV DITL-35 at force manual ng biasing damper). PC / tablet / EXE / APK ng user.
 
 **Status:** Beta (dev). Roadmap hakbang 2: hakbang 57 at air side TAPOS; MST lampas pa rin (550 ~ 557 °C); bago at bukas ang reheat sa 150 MW.
+
+## 3.2.0-beta.39 (dev, roadmap 2 ikatlong batch, 2026-10-27) — Reheat sa AUTO, MST, hinto sa heat soak
+
+**Problem:** (1) reheat 593 °C sa 150 MW (walang hakbang na naglalagay ng reheat control sa AUTO); (2) MST 557 °C sa 80 MW (H alarm 548); (3) mouse Cold run: paminsan-minsang ATS HOLD sa 3600 rpm heat soak (MSP 59.3 < 60, reheat 6.5 < 7).
+
+**As Found:**
+- (1a) Ang DITL TCS / GMCB input row (I.0418 ICV TO CV TRANSFER COMPLETE, I.0400, I.0931, I.0932) ay walang source: laging 0. Ang reset ng SOV OPEN COMMAND ng DITL-35 ay OR ng NOT I.0418, kaya sarado ang RH spray shut-off valve, at naka-force MANUAL ang TICHR1002 (ABC-019 M.0173).
+- (1b) Ang DITL-35 row 1 "SOV CLOSED" ← 35-73 (limit switch ng valve) ay inalis ng tuntunin ng beta.23 bilang "kopya ng sariling row".
+- (1c) ABC-020 M.017A: ang literal na basa ng drawing ay ibinabalik sa MANUAL ang SH biasing damper (HICHR1002B) pagka-AUTO, kaya hindi ma-AUTO ang RH damper. Salungat ito sa PR-OPE-5002.
+- (1d) Ang TICHR1002A ay walang .REM; ang "remote" nito ay ang SV switch (SI0206 = LN6 ng MW).
+- (2) Pagpasok sa cascade, may talon ang outer station; pagbalik ng SV pagkatapos ng trim, kumakaway ang MST 540 ~ 553 sa 150 MW.
+- (3) Gamit ang bagong checkpoint: ang oil firing ng coach ay umuuga 30 ↔ 90 % (binabawasan ng 5 % bawat minuto kapag ang pressure ay 0.5 lang sa itaas ng SV ng HP bypass). Nagsasara ang HP bypass, kaya bumababa ang MSP at ang reheat. Bukod dito, ang TCS ay bumabasa ng raw AI0421, 0.6 kg/cm2 na mas mababa sa PV ng PICHR1003 (ABC-052: PV = AI0421 / AI0513 + 0.6, SEL).
+
+**Work Done:**
+- (1a) `world.js` `tcsIn`: link ng 32 TCS / GMCB input row sa parehong address ng ABC (walang inalis).
+- (1b) `world.js` `selfDep`: ang feedback ng valve model (ZSO / ZSC) ay hindi kopya; 70 link ang ibinalik (selfLinks 132 → 62).
+- (1c) `plant.js` `anSelSelf`: pasya ng user (2026-10-27 07:46 PHT, "Sundin ang SOP"). Ang select ng A/M switch na galing sa .MAN ng sariling station ay hindi nagfo-force MANUAL (ABC-020 AMT id45 lang).
+- (1d) `guide.js`: bagong hakbang "Reheat temperature sa AUTO": HICHR1002B A, HICHR1002A A, TICHR1002A A (SV: LOGIC), TICHR1002 A SV 541.
+- (2) `guide.js` spray coach:
+  - Bumpless na cascade: ang outer MV ay inilalagay muna sa inner SV / 6.
+  - Ang trim ay bumabalik nang 2 °C bawat minuto.
+  - Bago ang cascade, habang tumataas ang load, ang aim ay 6 °C sa ilalim ng SV, dagdag na 2 °C bawat MW/min ng pagtaas (hanggang 8).
+- (3a) `guide.js` ofire coach: kapag nasa serbisyo na ang bypass, ang oil ay 2 % bawat minuto. Binabawasan lang kapag ang steam ay > 58 T/H o ang pressure ay 3 sa itaas ng SV. Dinadagdagan kapag ang steam ay < 45, ang pressure ay 1 sa ilalim, o ang reheat ay < 7.4.
+- (3b) `tcs.js` `tcsSteam`: ang reheat pressure ng ATS ay ang PV ng PICHR1003, ang hawak ng LP bypass sa 7.5 ~ 7.6 (PR-OPE-5002).
+- Test tool (wala sa app, `tools/training/checkpoint/run.js`): checkpoint, i-save at i-restore ang buong estado sa isang hakbang (1 ~ 2 s, ~3 MB). Retest mula hakbang 49 sa ~5 minuto, sa halip na ~18 minuto mula Cold.
+
+**As Left (ebidensya):**
+- Checkpoint retest mula hakbang 49: lumampas sa 1800 / 3600 rpm heat soak, sync at initial load hanggang hakbang 54, walang HOLD, walang page error.
+- `sop_bawal.js` 19 / 19, `unit_trip.js`, `unit_load.js`: ALL PASS.
+- Final mouse Cold run 1 (2026-10-27 2:08 ~ 2:45 PM PHT, bago ang huling ayos ng spray): TAPOS Cold → Practice sa 36 minuto, walang STUCK, walang trip, walang page error; MST pinakamataas 550.2 °C sa 79.7 MW.
+- Final mouse Cold run 2 (pagkatapos ng ayos ng spray): walang ATS HOLD; huminto lang ang test sa hakbang 50 dahil sa 6 minutong wall-clock limit (bumabagal ang page pagkalipas ng ~30 minuto). Inayos ang test: oras ng planta ang binibilang.
+- **Final mouse Cold run 3 (2026-10-27 3:21 ~ 3:56 PM PHT, build na ito):** TAPOS Cold → Practice sa 35 minuto, walang STUCK, walang trip, walang page error; **MST pinakamataas 547.7 °C sa 79.7 MW** (H alarm 548: pasok, maliit ang margin); 540.7 °C sa 150 MW.
+
+**Hindi nasubok / bukas:**
+- Checkpoint mula hakbang 64 (coal / CCS): hindi tapat ang restore (bumabagsak ang planta pagkatapos ng HS-COAL R). Ang hakbang 40 ~ 52 ay nasubok na tapat.
+- Reheat sa 150 MW: 541 °C sa code trace; hindi naitala sa mouse run 3. RH spray ~92 % sa 150 MW (snapshot 79.4 %).
+- MST margin sa 80 MW: 0.3 °C lang sa ilalim ng alarm.
+- PC / tablet / EXE / APK ng user.
+
+**Status:** Beta (dev). Roadmap hakbang 2: TAPOS (reheat sa AUTO, MST ≤ 548, hinto sa heat soak).

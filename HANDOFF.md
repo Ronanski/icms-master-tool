@@ -21,13 +21,13 @@
 - Turbine + TCS model (`src/analog/engine/tcs.js`, `docs/tcs/ATS_CRITERIA.md`), start-up steam ayon sa FHI Fig. 2 / 3 / 4 (`unit.js`).
 - `tests/regress/sop_bawal.js`: 19 / 19 (lahat ng maagang aksyon ay tinatanggihan).
 - Training: Cold → 150 MW sa isang screen (dock), sunod sa PR-OPE-5002. beta.40: ang MS blow-off at start-up valve ay sa serbisyo na bago ang vacuum stage (dati: stall sa hakbang 43, MFT sa low-low drum level).
-- RH biasing damper: ang model ay bumabasa ng HICHR1002A.MV (`plant.js` `AN_XACT`); tama ang direksyon (mas bukas = mas mainit na reheat, ABC-020).
+- RH biasing damper: ang model ay bumabasa ng HICHR1002A.MV (`plant.js` `AN_XACT`); tama ang direksyon (mas bukas = mas mainit na reheat, ABC-020). Ang SH biasing damper ay nananatiling AUTO (pasya ng user, `anSelSelf`). Ang TCS / GMCB input row ng DITL ay naka-link na (`world.js` `tcsIn`).
 - SH temperature (`unit.js` `U.sh` / `U.ld`): iisang kadena spray 1 → SH no.2 → spray 2 → finishing SH; lakas ng spray 2 mula sa snapshot (`plant.js` `AN_KUP`); firing ratio na may lag at deadband 0.75 (`U.frDb`).
 - Plant chip: OFF | Unit lang; starting state: Cold o 150 MW lang. Plant model ON na walang starting state: header "—", ang ABC page ay bumubukas na Cold.
 
 ## Susunod na gagawin (roadmap sa `docs/SPEC.md` seksyon 3)
-1. Reheat 593 °C sa 150 MW (mouse Cold run): walang hakbang na naglalagay ng reheat sa AUTO. Hadlang: (a) ang RH spray TICHR1002 ay force manual habang sarado ang SOV ng DITL-35 (suriin bakit sarado sa Training: AUTO MODE M.0642, M.0172, I.0418); (b) ABC-020: HICHR1002B.MAN ay nasa force manual M.0179 ng HICHR1002A; ang A / M switch ng station (AMT sa harap ng MAN block) ay naka-latch na fman, at ang `HICHR1002A.MAN` ay nananatiling 1 kahit `latchMode(LOC)` (sinubok sa probe, 150 MW). Ayusin ito bago ang hakbang na "Reheat temperature sa AUTO" (PR-OPE-5002 "Set biasing damper and RH to Remote-Auto").
-2. MST lampas sa H 548: 557 °C sa 80 MW (mouse run, mabilis na 45 → 80 MW pagpasok ng CCS) at 550 °C sa 95 ~ 115 MW (code trace): ang outer TICMS1004 (I 1371 s) ay mabagal, at bago ang 60 % MCR ay hawak pa ng operator (inner SV). Suriin ang feedforward ng ABC-012 (PIC-COBM.MV → LN63 → SI0383 sa inner SV) sa model.
+1. Roadmap hakbang 2 TAPOS (2026-10-27): reheat sa AUTO (541 °C sa 150 MW), MST pinakamataas 547.7 °C sa 80 MW (alarm 548, maliit ang margin), hinto sa heat soak naayos. Mouse Cold run: TAPOS hanggang Practice, walang error.
+2. Susunod: roadmap hakbang 3 (starting points) at 4 (Training laban sa SOP). Test tool: checkpoint (save / restore ng buong estado) sa scratch ng session lang; tapat mula hakbang 40 ~ 52, hindi pa tapat mula hakbang 64 (coal / CCS).
 3. Ang iba: `docs/SPEC.md` seksyon 3.
 
 ## Hindi pa nasubok
