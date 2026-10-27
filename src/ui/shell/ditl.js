@@ -1158,7 +1158,7 @@
       { cls: 'dm-mach', title: 'The drawing is the same for these machines: each one has its own inputs, values and addresses' },
       L.map((x, i) => {
         const nm = i ? WORLD.showText(x, fam) : fam;
-        const c = E('button', { type: 'button', cls: 'dm-m' + (i === k ? ' on' : ''), txt: LETTERS[i], title: nm });
+        const c = E('button', { type: 'button', cls: 'dm-m' + (i === k ? ' on' : ''), txt: (x._inst && x._inst.lbl) || LETTERS[i], title: (x._inst && x._inst.lbl) || nm });
         c.onclick = () => D.setMach(i);
         return c;
       })
@@ -1186,7 +1186,7 @@
           nOut = nl ? new Set((nl.outs || []).map(o => o.row)).size : 0;
         const ttl = isK(s) ? WORLD.showText(s, s._inst.base.title || '') : m.title || s.title || '';
         dm.append(
-          E('b', { txt: (m.dwg || s.name).replace(/\s*#[B-D]$/, '') + (isK(s) ? ' · ' + LETTERS[s._inst.k] : '') }),
+          E('b', { txt: (m.dwg || s.name).replace(/\s*#[B-D]$|\s*#MV-\S+$/, '') + (isK(s) || (s._inst && s._inst.lbl) ? ' · ' + (s._inst.lbl || LETTERS[s._inst.k]) : '') }),
           E('span', { cls: 'dm-t', txt: (m.no ? 'SHEET ' + m.no + ' · ' : '') + ttl, title: (m.no ? 'SHEET ' + m.no + ' · ' : '') + ttl }),
           /* 3.2.0-beta.40 (bug): a sheet of one machine has no chips; append(null) wrote the text "null" in the header */
           machChips() || '',

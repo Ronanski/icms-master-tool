@@ -21023,6 +21023,7 @@ function anUnitStart() {
     { pr: procsOf('ABC-007', ['FICFA1071']).map(p => p.pr), run: [labOf('ABC-007', 'M.3302')] },
     { pr: procsOf('ABC-007', ['FICFA1081']).map(p => p.pr), run: [labOf('ABC-007', 'M.3303')] }
   ].map(m => Object.assign(m, { run: m.run.filter(Boolean) }));
+  U.mul[0].dis = U.mul[0].run.length === 2 ? [['DITL-38 #MV-FW1001', 'DITL-38 #MV-FW1391'], ['DITL-38 #MV-FW1002', 'DITL-38 #MV-FW1392']] : null;
   /* 2.2.0-beta.15 (M4 step 2): the start-up feedwater valve (ABC-010 LICBR1001B, single-element drum level control for the start-up,
      FCV-FW1060) is a second line into the drum beside the main valve of FICFW1007: its flow is added to the feedwater flow
      transmitter (plant.js pr.op of the FICFW1007 loop), ksu = 30 % of the anchor feedwater at 100 % open (ASSUMED: the size of a
@@ -21215,6 +21216,7 @@ function anUnitCold() {
   U.frT = undefined;
   /* 3.2.0 roadmap 3: the temperatures of anUnitStepX start at their cold value (no lag from the 150 MW anchor) */
   if (U.xt) U.xt.T = {};
+  U.Pmsv = 0; /* the main steam pipe after the stop MOV: no pressure in a cold plant */
   for (const z of U.zt || []) z.y = NaN;
   for (const h of U.sh) h.x = U.Tamb;
   for (const L of U.tbed || []) anUnitWrite(L, U.Tamb);
@@ -21310,9 +21312,10 @@ function anDitlPos(name, j) {
     if (typeof S === 'undefined' || !window.WORLD || !WORLD.live || typeof MST === 'undefined') return null;
     const C = AN_UNIT._dv || (AN_UNIT._dv = {});
     let s = C[name];
-    if (s === undefined) {
+    if (!s) {
       const re = new RegExp('\\)' + name.replace(/[.*+?^${}()|[\]\\#]/g, '\\$&') + '$');
-      s = C[name] = S.sheets.concat(WORLD.inst || []).find(x => re.test(x.name)) || null;
+      s = S.sheets.concat(WORLD.inst || []).find(x => re.test(x.name)) || null;
+      if (s) C[name] = s; /* not kept while the world has not made its machine instances yet */
     }
     if (!s || !s.nl || !(s.nl.mv || []).length) return null;
     const r = MST[s.name];
@@ -21457,7 +21460,8 @@ function anUnitStep(dt) {
     U.gv = Math.max(0.02, Math.min(1.4, U.gv + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
   }
   /* steam flow through the valves: m = Kt x gv x MSP, MSP = drum - kdp x m^2 */
-  const k = U.Kt * U.gv,
+  /* 3.2.0 P1 #3: the steam reaches the turbine through the main steam stop MOV MV-MS1391 (or its warming bypass, anUnitStepX) */
+  const k = U.Kt * U.gv * (U.msG == null ? 1 : U.msG),
     a2 = U.kdp * k,
     ms = a2 > 0 ? (-1 + Math.sqrt(1 + 4 * a2 * k * Math.max(0, U.Pd))) / (2 * a2) : k * U.Pd;
   U.ms = Math.max(0, ms);
@@ -21711,8 +21715,22 @@ function anUnitStep(dt) {
   }
   /* ---- 2.2.0-beta.12 (M3): machines stopped, furnace pressure ---- */
   for (const m of U.mul || []) {
-    const run = !m.run.length || m.run.some(r => +r.S.rt.v[r.n] > 0.5);
-    for (const p of m.pr) p.mul = run ? 1 : 0;
+    /* 3.2.0 P1 #4: a feedwater pump gives water only through its discharge MOV (MV-FW1001 / 1002) or the bypass MOV of it
+       (MV-FW1391 / 1392, the filling line: ASSUMED 30 % of the flow), positions of the DITL-38 valves while the one world runs */
+    const run = !m.run.length
+      ? 1
+      : Math.min(
+          1,
+          m.run.reduce((a, r, i) => {
+            if (!(+r.S.rt.v[r.n] > 0.5)) return a;
+            const d = m.dis && m.dis[i];
+            if (!d) return a + 1;
+            const pm = anDitlPos(d[0], 0),
+              pb = anDitlPos(d[1], 0);
+            return a + (pm == null || pb == null ? 1 : Math.min(1, pm / 100 + (0.3 * pb) / 100));
+          }, 0)
+        );
+    for (const p of m.pr) p.mul = run;
   }
   if (U.fp && U.fp.length) {
     if (U.kfpA == null)
@@ -21799,6 +21817,24 @@ function anUnitStepX(dt, mso) {
     if (X.fab.length && X.faF0 > 0) {
       const r = Math.max(0, Math.min(1.2, (val(X.faF) || 0) / X.faF0));
       X.fab.forEach((L, i) => anUnitWrite(L, lag('fab' + i, U.Tamb + (L.a0[0] - U.Tamb) * r, 120)));
+    }
+  }
+  /* P1 #3 MAIN STEAM STOP MOV MV-MS1391 and its warming bypass MV-MS1392 (DITL-38): the share of the turbine steam that passes
+     (bypass ASSUMED 10 %), and the pressure at the MSV inlet that the ATS reads (tcs.js tcsSteam): it follows the main steam
+     pressure through the open MOV (30 s), slowly through the bypass alone (the warming of the pipe, 600 s), and falls with both shut
+     (the steam in the pipe condenses, 1800 s). The HP bypass takes its steam before the MOV (PD-011) */
+  {
+    const pm = anDitlPos('DITL-38 #MV-MS1391', 0),
+      pb = anDitlPos('DITL-38 #MV-MS1392', 0);
+    if (pm == null || pb == null) {
+      U.msG = undefined;
+      U.Pmsv = undefined;
+    } else {
+      U.msG = Math.min(1, pm / 100 + (0.1 * pb) / 100);
+      const P = isFinite(U.Pms) ? U.Pms : 0,
+        tau = pm > 5 ? 30 : pb > 5 ? 600 : 1800,
+        x = pm > 5 || pb > 5 ? P : 0;
+      U.Pmsv = !isFinite(U.Pmsv) ? x : U.Pmsv + ((x - U.Pmsv) * Math.min(dt, tau)) / tau;
     }
   }
   /* valve position = valve command */
@@ -21941,7 +21977,8 @@ function tcsSteam(U) {
        (PR-OPE-5002 "RH pressure 7.5 ksc"); the raw AI0421 sat 0.6 lower, under the ATS limit 7 with the SOP pressure */
     Pv = tcsPV('PICHR1003'),
     Prh = isFinite(Pv) ? Pv : U.rhp && U.rhp.length ? anUnitVal(U.rhp[0]) : NaN;
-  return { msp: U.Pms, mst: isFinite(mst) ? mst : U.Tw, rhp: isFinite(Prh) ? Prh : 0, rht: isFinite(rht) ? rht : U.Tw };
+  /* 3.2.0 P1 #3: the MSV inlet is after the main steam stop MOV MV-MS1391 (unit.js U.Pmsv, while the one world runs) */
+  return { msp: isFinite(U.Pmsv) ? U.Pmsv : U.Pms, mst: isFinite(mst) ? mst : U.Tw, rhp: isFinite(Prh) ? Prh : 0, rht: isFinite(rht) ? rht : U.Tw };
 }
 /* the criteria (page 3 / 5 ~ 14) that the model has: true = satisfied. txt = the name on the ATS criteria display */
 function tcsCrit(U) {
@@ -44902,6 +44939,8 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
      Machine A is the sheet itself; B / C / D are INSTANCES of it (same logic, own latches, timers, motors, valves). Every
      reference is connected to the instance of the machine it belongs to (beta.3 ~ 5 left 79 + 48 of them unconnected). */
   const LET = ['A', 'B', 'C', 'D'];
+  /* the valves of the DITL-38 table (STN101 MV-BD1001 / 1002, STN102 the rest) */
+  W.MCV = ['MV-BD1001', 'MV-BD1002', 'MV-FW1001', 'MV-FW1391', 'MV-FW1002', 'MV-FW1392', 'MV-MS1391', 'MV-MS1392'];
   const txtOf = s => {
     if (s._alltx === undefined)
       s._alltx = Object.values(s.cells || {})
@@ -45040,9 +45079,9 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     return S.sheets.find(x => String(x.title || '').toUpperCase() === want) || null;
   }
   /* instance k of a base sheet (k = 0 is the sheet itself) */
-  function makeInst(base, k) {
+  function makeInst(base, k, lbl) {
     const o = Object.assign(Object.create(Object.getPrototypeOf(base)), base, {
-      name: base.name + ' #' + LET[k],
+      name: base.name + ' #' + (lbl || LET[k]),
       sig: {},
       usw: {},
       av: null,
@@ -45050,7 +45089,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       _win: null,
       nl: null,
       uvDone: true,
-      _inst: { base, k, n: machinesOf(base) }
+      _inst: lbl ? { base, k, n: 1, lbl } : { base, k, n: machinesOf(base) }
     });
     o.nl = netlist(o);
     return o;
@@ -45121,6 +45160,22 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       }
       W.instOf.set(s, L);
     }
+    /* 3.2.0 P1 #3 / #4 (docs/versions/v3.2.0/INSTRUMENT_VALVE_COVERAGE.md): DITL-38 MOTOR CONTROL VALVE is ONE drawing for the eight
+       MOVs of its table (the drawing itself is MV-BD1001): one machine each, named by its tag, with its own open / close / stop push
+       buttons, timers and position. The plant reads the main steam stop MOV and the BFP discharge MOVs (unit.js) */
+    {
+      const mcv = S.sheets.find(x => /\)DITL-38$/.test(x.name)),
+        L = mcv && W.instOf.get(mcv);
+      if (L && L.length === 1) {
+        mcv._inst.lbl = W.MCV[0];
+        W.MCV.slice(1).forEach((tag, j) => {
+          const nm = mcv.name + ' #' + tag,
+            x = old.get(nm) || makeInst(mcv, j + 1, tag);
+          W.inst.push(x);
+          L.push(x);
+        });
+      }
+    }
     const inst = (base, k) => {
       const L = W.instOf.get(base);
       return L ? L[k] || null : null;
@@ -45149,6 +45204,8 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     };
     /* the instance (or sister sheet) that a row of machine-instance k of sheet sb gives for the output (d, orow) */
     const target = (sb, k, i, d, orow, other) => {
+      /* 3.2.0: a DITL-38 valve reads its own outputs (open / closed feedback), not those of the first valve of the table */
+      if (d === sb && d._inst && d._inst.lbl && inst(d, k)) return inst(d, k);
       const nd = machinesOf(d),
         rowT = cellTxt(sb, i, 'S') + ' ' + cellTxt(sb, i, 'T'),
         n = machinesOf(sb);
@@ -45955,6 +46012,10 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     [/SEAWATER BOOSTER PUMP\s*C\b|\bSWBP\s*-?C\b/, 1, 0, 'SWBP-C 87.2 A, R M'],
     [/SEAWATER PUMP\s*A\b|\bSWP\s*-?A\b/, 0, 0, 'SWP-A stopped, R M'],
     [/SEAWATER PUMP\s*[BC]\b|\bSWP\s*-?[BC]\b|ANY SEAWATER PUMP/, 1, 0, 'SWP-B 242.5 A, SWP-C 207.6 A'],
+    /* 3.2.0 roadmap 3: the condensate pumps had no rule: at 150 MW with Run both read stopped, the condenser lost its vacuum
+       (unit.js: no condensate pump) and the turbine tripped on LOW VACUUM after ~30 s */
+    [/CONDENSATE PUMP\s*-?A\b/, 1, 0, '28.png CP-A (P-1116A) 28.1 A, R M (full load)'],
+    [/CONDENSATE PUMP\s*-?B\b/, 0, 1, '28.png CP-B (P-1116B) standby, R A'],
     [/\bDOP\s*A\b|DIESEL OIL PUMP\s*A\b/, 1, 0, 'P-0702A DIESEL OIL PUMP 25.4 A, R M'],
     [/\bDOP\s*B\b|DIESEL OIL PUMP\s*B\b/, 0, 1, 'P-0702B standby, R A'],
     [/\bMWP\s*[AC]\b/, 1, 0, 'MWP-A 20.5 A, MWP-C 20.8 A'],
@@ -46343,6 +46404,22 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
         rep.flips += f;
         D.scan(15, 1);
         if (!f && k > 1) break;
+      }
+      /* 3.2.0 P1 #3 / #4: the eight valves of DITL-38 (one drawing, src/world/world.js W.MCV). On load the turbine takes its steam
+         through the main steam stop MOV MV-MS1391 (4.PNG) and the feedwater flows through the discharge MOVs of the pumps (03.png
+         BFWP-A in service, BFWP-B standby in AUTO: its discharge open so that the auto start feeds at once); the warming bypass
+         MV-MS1392, the filling bypasses MV-FW1391 / 1392 and the mass blowdown MV-BD1001 are shut; the continuous blowdown MV-BD1002
+         in service (the 25 T/H of drum water that does not leave as main steam, plant.js integLoss; ASSUMED) */
+      {
+        const OPEN = { 'MV-MS1391': 1, 'MV-FW1001': 1, 'MV-FW1002': 1, 'MV-BD1002': 1 };
+        for (const s of ALL()) {
+          const lbl = s._inst && s._inst.lbl;
+          if (!lbl || !s.nl || !(s.nl.mv || []).length) continue;
+          const r = mvRT(s);
+          r[0].pos = OPEN[lbl] ? 100 : 0;
+          r[0].run = 0;
+        }
+        D.scan(3, 1);
       }
       /* the operator acknowledges what the start-up left latched (RESET FIRST OUT ...): the RESET push buttons of the CRT */
       const rs = [];
@@ -49195,7 +49272,7 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
       { cls: 'dm-mach', title: 'The drawing is the same for these machines: each one has its own inputs, values and addresses' },
       L.map((x, i) => {
         const nm = i ? WORLD.showText(x, fam) : fam;
-        const c = E('button', { type: 'button', cls: 'dm-m' + (i === k ? ' on' : ''), txt: LETTERS[i], title: nm });
+        const c = E('button', { type: 'button', cls: 'dm-m' + (i === k ? ' on' : ''), txt: (x._inst && x._inst.lbl) || LETTERS[i], title: (x._inst && x._inst.lbl) || nm });
         c.onclick = () => D.setMach(i);
         return c;
       })
@@ -49223,7 +49300,7 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
           nOut = nl ? new Set((nl.outs || []).map(o => o.row)).size : 0;
         const ttl = isK(s) ? WORLD.showText(s, s._inst.base.title || '') : m.title || s.title || '';
         dm.append(
-          E('b', { txt: (m.dwg || s.name).replace(/\s*#[B-D]$/, '') + (isK(s) ? ' · ' + LETTERS[s._inst.k] : '') }),
+          E('b', { txt: (m.dwg || s.name).replace(/\s*#[B-D]$|\s*#MV-\S+$/, '') + (isK(s) || (s._inst && s._inst.lbl) ? ' · ' + (s._inst.lbl || LETTERS[s._inst.k]) : '') }),
           E('span', { cls: 'dm-t', txt: (m.no ? 'SHEET ' + m.no + ' · ' : '') + ttl, title: (m.no ? 'SHEET ' + m.no + ' · ' : '') + ttl }),
           /* 3.2.0-beta.40 (bug): a sheet of one machine has no chips; append(null) wrote the text "null" in the header */
           machChips() || '',
