@@ -1202,6 +1202,7 @@ window.LS_GUIDE = (function () {
   function start(done) {
     const go = () => {
       try {
+        if (!AN.plantOn && AN.plantSwitch) AN.plantSwitch(true, true);
         AN.reset();
         AN.plantCold();
         AN.startState = 'plantCold';
