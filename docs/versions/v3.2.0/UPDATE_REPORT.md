@@ -888,3 +888,49 @@ Engine at logic: walang binago.
 - PC / tablet / EXE / APK ng user.
 
 **Status:** Beta (dev). Roadmap hakbang 2: TAPOS (reheat sa AUTO, MST ≤ 548, hinto sa heat soak).
+
+## 3.2.0-beta.39 (dev, roadmap 3 + 4, 2026-10-27) — Starting points, P1 fix queue, bahagi ng P2, Training ayon sa SOP
+
+**Problem:**
+- (Roadmap 3) Ang Cold ay may mga transmitter na nanatili sa 150 MW value.
+- (Roadmap 3) Ang 150 MW + Run ay nagti-trip ng turbine sa ~30 s (low vacuum, walang condensate pump).
+- (P1, INSTRUMENT_VALVE_COVERAGE.md) Ang mga ZT, protection switch, MOV at block valve ay hindi kumikilos sa planta.
+
+**As Found:**
+- Cold: deaerator / hotwell level −529 / −122, RHT umaakyat (maling MST source), mga lag na nagsisimula sa snapshot value, LT-BR1001-2 hindi gumagalaw.
+- Ang DITL-38 ay iisang valve para sa 8 tag; ang instance ay bumabasa ng feedback ng base sheet.
+- Ang protection switch row (LSL / LSLL drum, PSLL / PSHH furnace, deaerator / hotwell LL) ay itinatakda lang ng kamay.
+- Walang condensate pump na tumatakbo sa DITL sa 150 MW.
+
+**Work Done:**
+- Cold = tunay na malamig na planta (pressure 0, 30 °C, O2 21 %, level normal); ang pagpili ng starting point ay nag-o-ON ng plant model.
+- ZT sumusunod sa MV (lag 3 s). Protection switches sumusunod sa PV (`src/world/plantsw.js`, set point mula sa alarm list).
+- DITL-38 = 8 MOV. Ang MV-MS1391 / 1392 ay kumokontrol sa steam sa turbine; ang MV-FW1001 / 1002 at 1391 / 1392 sa feedwater. Ang spray block valve (DITL-32 / 33 / 35 / 79 / 66) at coal feeder outlet valve (DITL-20) ay kumokontrol sa daloy.
+- P2: PT-CD1110 ← condenser vacuum; LT / PT-BR1001-2 ← drum; ejector MV-AS1395 / 1396 at vacuum breaker MV-AV1391 = DITL-54 / 55 / 56 (bukas ang breaker sa Cold).
+- Training: bagong hakbang na BFWP discharge MOV at main steam MOV; ang card ng MOV ay may "Field operator" button para sa REMOTE sa MCC; ang hakbang na "Hangin sa minimum" ay ibinababa rin ang IDF coupling; ang furnace pressure coach ay proportional.
+- Test tool (wala sa app): `checkpoint/run.js --nostop` (itinatala ang hinto at ang switch trip, nagpapatuloy).
+
+**Static audit (walang run) — SOP PR-OPE-5002 vs Training vs bagong interlock:**
+
+| SOP / hakbang | Dapat | App ngayon | Resulta | Ebidensya |
+|---|---|---|---|---|
+| BFP discharge (3949 ~, hakbang 13) | Equalizing MV-FW1391 OPEN, main MV-FW1001 OPEN, tapos isara ang equalizing | Bumubukas pagkatapos ng "Field operator: REMOTE" | PASS | checkpoint probe, 10:25 UTC: tapos ang hakbang 13 sa ~10 s |
+| Purge air > 25 % MCR, staging damper 10 % (5240 ~ 5246, hakbang 31) | Furnace pressure hawak (−25 ~ −5) | Dati: bumagsak sa PSLL −267 → MFT. Ngayon: IDF coupling 18 % kasabay ng hangin, FP −8 | PASS (naayos) | probe mula hakbang 30: burner D nanatiling ON, FP −8 |
+| Gland sealing (6118 ~ 6197) | Bukas ang vacuum breaker MV-AV1391 | DITL-56 bukas (100 %) sa Cold | PASS | static check sa Training Cold |
+| Vacuum up (6512 ~ 6545) | Sarado ang breaker, bukas ang ejector | DITL-56 CLOSE, DITL-55 OPEN sa ~24 s; ang DITL-54 ay naghihintay na ganap na sarado ang breaker (DITL-54 row 6) | PASS | probe ej2 |
+| Main steam MOV (hakbang bago ang 30 kg/cm2) | MV-MS1392 tapos MV-MS1391 OPEN | Card ng MOV na may REMOTE button | PASS (static) | parehong code ng hakbang 13 |
+| SH / RH spray (SOP 4.6, load up) | Bumubukas ang spray block valve kapag kailangan | DITL-32 / 33 AUTO: bukas kapag SH2 inlet > 380 °C / finishing SH inlet > 440 °C at steam flow ≥ 46 T/H; DITL-35 sa ICV → CV transfer | PASS (b, ayon sa drawing) | lahat ng input row ay naka-link sa ABC-011 / 012 / 019 / 001C |
+| Coal feeder outlet (10021 ~) | Bukas bago ang coal | Solenoid valve, walang LOCAL / REMOTE; may OPEN na button | PASS (static) | static check |
+| Drum level (LSLL −178) | Walang trip sa normal na start-up | Ang fill ay −150 mm (SOP); 28 mm lang ang margin sa LSLL | Hindi pa nasubok sa buong run | — |
+
+**As Left (ebidensya):**
+- `sop_bawal.js` 19 / 19, `unit_load.js` at `unit_trip.js` ALL PASS; `npm run check` SAME.
+- Mouse Cold run: umabot sa hakbang 32 (bago ang ayos sa hakbang 31). Ang buong Cold → 150 MW ay HINDI pa nasubok sa build na ito (itinigil ng user ang mahahabang test).
+
+**Hindi nasubok / bukas:**
+- Buong Cold → 150 MW run.
+- Ang HP bypass ay hindi pa sinasara ng model kapag sarado ang MV-MS1391 (pinapangunahan ng Training ang pagbukas ng MV-MS1391 bago ang bypass, ayon sa SOP).
+- P2 na hindi pa ginawa: water cycle (#7), heaters (#8), drains / warming (#9), bed inventory (#10), FAB B (#11), MV-BR1391 (#12), condenser temperature TT-CD1110.
+- Screen walk: nilaktawan (user, 2026-10-27).
+
+**Status:** dev (walang Beta number, walang merge).

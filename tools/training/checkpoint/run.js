@@ -27,6 +27,9 @@ await p.addScriptTag({content:CKJS});
 if(FROM){const t0=Date.now();const r=await p.evaluate(t=>{const r=__CK.load(t);r.back=__CK.save();return r},fs.readFileSync(FROM,'utf8'));
 const A=JSON.parse(fs.readFileSync(FROM,'utf8')),Bk=JSON.parse(r.back);delete r.back;const df=[];const cmp=(a,b,pa)=>{if(df.length>60)return;if(a&&typeof a==='object'&&b&&typeof b==='object'){if(a.$r||b.$r)return;for(const k of new Set([...Object.keys(a),...Object.keys(b)]))if(k!=='at')cmp(a[k],b[k],pa+'.'+k);return}if(JSON.stringify(a)!==JSON.stringify(b))df.push(pa+' '+JSON.stringify(a)+' -> '+JSON.stringify(b))};cmp(A,Bk,'');L('restore check: '+df.length+' differences');df.slice(0,40).forEach(x=>L('   diff '+x.slice(0,200)));L('RESTORED','MST',await p.evaluate(()=>{try{return CHECK.H().MST().toFixed(1)}catch(e){return e.message}}),FROM,JSON.stringify(r),'in',((Date.now()-t0)/1000).toFixed(1),'s');await p.waitForTimeout(1500)}
 await p.locator('#gdock .gd-seg button',{hasText:'×300'}).first().click();L('speed ×300 clicked');
+/* --nostop (2026-10-27, user: "ipunin lahat ng mali sabay"): one run lists every problem. A stuck step is logged and the guide is moved to the
+ next step (a test-side bypass, written SKIPPED); the protection switches of the plant (src/world/plantsw.js) are logged, not acted on (WORLD.swTest) */
+const NS=process.argv.includes('--nostop'),SKIP=[];if(NS)await p.evaluate(()=>{WORLD.swTest=true;WORLD.swLog=[]});
 const started=new Set();let last='',since=Date.now(),done=new Set(),n=0;const lastPress={};const T0=Date.now();
 while(Date.now()-T0<(+opt('mins')||55)*60e3){
  const c=await card();const key=c.eb+'|'+c.h;
@@ -45,8 +48,10 @@ while(Date.now()-T0<(+opt('mins')||55)*60e3){
    if(/^START/.test(x.t)){if(started.has(x.t))continue;if(x.dis){if(!done.has('w'+x.t)){L('   waiting, START locked by interlock:',x.t);done.add('w'+x.t)}break}if(await press(x.t)){started.add(x.t);L('   click:',x.t);acted=true}break}
    if(done.has(x.t)&&Date.now()-(lastPress[x.t]||0)<60e3)continue;if(x.dis)continue;if(await press(x.t)){done.add(x.t);lastPress[x.t]=Date.now();await p.waitForTimeout(300);L('   click:',x.t,'| miss:',await p.evaluate(()=>{try{const T=AN.tcs();return 'step '+T.step+' cur '+T.cur+' rpm '+(AN.unit.tb&&AN.unit.tb.rpm|0)+' '+Object.values(T.crit||{}).filter(x=>x&&!x.ok).map(x=>x.no+'='+(x.val!=null&&isFinite(x.val)?(+x.val).toFixed(1):'')).join(' ')}catch(e){return e.message}}));acted=true;break}}
  const simNow=await p.evaluate(()=>+(AN.unit&&AN.unit.t)||0);if(key!==global.__sk){global.__sk=key;global.__st0=simNow}
+ if(NS&&Date.now()-since>3*60e3&&(simNow-global.__st0>600*60||Date.now()-since>10*60e3)){L('   sim minutes on this step: '+((simNow-global.__st0)/60).toFixed(0));L('SKIPPED (test bypass) stuck on',c.eb,'«'+c.h+'» need:',c.cond.slice(0,300));SKIP.push(c.eb+' «'+c.h+'» '+c.cond.slice(0,200));await p.screenshot({path:OUT+'/skip'+SKIP.length+'.png'});await p.evaluate(()=>LS_GUIDE.open(LS_GUIDE.cur+1));since=Date.now();continue}
  if(Date.now()-since>6*60e3&&(simNow-global.__st0>1800*60||Date.now()-since>20*60e3)){L('   sim minutes on this step: '+((simNow-global.__st0)/60).toFixed(0));L('STUCK 6 min on',c.eb,'«'+c.h+'» need:',c.cond.slice(0,300));await p.screenshot({path:OUT+'/stuck.png'});break}
  await p.waitForTimeout(acted?800:1500);
 }
+if(NS){L('SKIPPED steps: '+SKIP.length);SKIP.forEach(x=>L('  - '+x));L('SWITCH TRIPS (logged, not acted on): '+JSON.stringify(await p.evaluate(()=>WORLD.swLog||[])))}
 fs.writeFileSync(OUT+'/log.txt',log.join('\n'));L('page errors',errs.length,errs.slice(0,3).join(' | '));
 await ctx.close();await b.close()})();
