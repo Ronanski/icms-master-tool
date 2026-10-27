@@ -475,6 +475,7 @@ function anUnitStart() {
     { pr: procsOf('ABC-007', ['FICFA1071']).map(p => p.pr), run: [labOf('ABC-007', 'M.3302')] },
     { pr: procsOf('ABC-007', ['FICFA1081']).map(p => p.pr), run: [labOf('ABC-007', 'M.3303')] }
   ].map(m => Object.assign(m, { run: m.run.filter(Boolean) }));
+  U.mul[0].dis = U.mul[0].run.length === 2 ? [['DITL-38 #MV-FW1001', 'DITL-38 #MV-FW1391'], ['DITL-38 #MV-FW1002', 'DITL-38 #MV-FW1392']] : null;
   /* 2.2.0-beta.15 (M4 step 2): the start-up feedwater valve (ABC-010 LICBR1001B, single-element drum level control for the start-up,
      FCV-FW1060) is a second line into the drum beside the main valve of FICFW1007: its flow is added to the feedwater flow
      transmitter (plant.js pr.op of the FICFW1007 loop), ksu = 30 % of the anchor feedwater at 100 % open (ASSUMED: the size of a
@@ -667,6 +668,7 @@ function anUnitCold() {
   U.frT = undefined;
   /* 3.2.0 roadmap 3: the temperatures of anUnitStepX start at their cold value (no lag from the 150 MW anchor) */
   if (U.xt) U.xt.T = {};
+  U.Pmsv = 0; /* the main steam pipe after the stop MOV: no pressure in a cold plant */
   for (const z of U.zt || []) z.y = NaN;
   for (const h of U.sh) h.x = U.Tamb;
   for (const L of U.tbed || []) anUnitWrite(L, U.Tamb);
@@ -762,9 +764,10 @@ function anDitlPos(name, j) {
     if (typeof S === 'undefined' || !window.WORLD || !WORLD.live || typeof MST === 'undefined') return null;
     const C = AN_UNIT._dv || (AN_UNIT._dv = {});
     let s = C[name];
-    if (s === undefined) {
+    if (!s) {
       const re = new RegExp('\\)' + name.replace(/[.*+?^${}()|[\]\\#]/g, '\\$&') + '$');
-      s = C[name] = S.sheets.concat(WORLD.inst || []).find(x => re.test(x.name)) || null;
+      s = S.sheets.concat(WORLD.inst || []).find(x => re.test(x.name)) || null;
+      if (s) C[name] = s; /* not kept while the world has not made its machine instances yet */
     }
     if (!s || !s.nl || !(s.nl.mv || []).length) return null;
     const r = MST[s.name];
@@ -909,7 +912,8 @@ function anUnitStep(dt) {
     U.gv = Math.max(0.02, Math.min(1.4, U.gv + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
   }
   /* steam flow through the valves: m = Kt x gv x MSP, MSP = drum - kdp x m^2 */
-  const k = U.Kt * U.gv,
+  /* 3.2.0 P1 #3: the steam reaches the turbine through the main steam stop MOV MV-MS1391 (or its warming bypass, anUnitStepX) */
+  const k = U.Kt * U.gv * (U.msG == null ? 1 : U.msG),
     a2 = U.kdp * k,
     ms = a2 > 0 ? (-1 + Math.sqrt(1 + 4 * a2 * k * Math.max(0, U.Pd))) / (2 * a2) : k * U.Pd;
   U.ms = Math.max(0, ms);
@@ -1163,8 +1167,22 @@ function anUnitStep(dt) {
   }
   /* ---- 2.2.0-beta.12 (M3): machines stopped, furnace pressure ---- */
   for (const m of U.mul || []) {
-    const run = !m.run.length || m.run.some(r => +r.S.rt.v[r.n] > 0.5);
-    for (const p of m.pr) p.mul = run ? 1 : 0;
+    /* 3.2.0 P1 #4: a feedwater pump gives water only through its discharge MOV (MV-FW1001 / 1002) or the bypass MOV of it
+       (MV-FW1391 / 1392, the filling line: ASSUMED 30 % of the flow), positions of the DITL-38 valves while the one world runs */
+    const run = !m.run.length
+      ? 1
+      : Math.min(
+          1,
+          m.run.reduce((a, r, i) => {
+            if (!(+r.S.rt.v[r.n] > 0.5)) return a;
+            const d = m.dis && m.dis[i];
+            if (!d) return a + 1;
+            const pm = anDitlPos(d[0], 0),
+              pb = anDitlPos(d[1], 0);
+            return a + (pm == null || pb == null ? 1 : Math.min(1, pm / 100 + (0.3 * pb) / 100));
+          }, 0)
+        );
+    for (const p of m.pr) p.mul = run;
   }
   if (U.fp && U.fp.length) {
     if (U.kfpA == null)
@@ -1251,6 +1269,24 @@ function anUnitStepX(dt, mso) {
     if (X.fab.length && X.faF0 > 0) {
       const r = Math.max(0, Math.min(1.2, (val(X.faF) || 0) / X.faF0));
       X.fab.forEach((L, i) => anUnitWrite(L, lag('fab' + i, U.Tamb + (L.a0[0] - U.Tamb) * r, 120)));
+    }
+  }
+  /* P1 #3 MAIN STEAM STOP MOV MV-MS1391 and its warming bypass MV-MS1392 (DITL-38): the share of the turbine steam that passes
+     (bypass ASSUMED 10 %), and the pressure at the MSV inlet that the ATS reads (tcs.js tcsSteam): it follows the main steam
+     pressure through the open MOV (30 s), slowly through the bypass alone (the warming of the pipe, 600 s), and falls with both shut
+     (the steam in the pipe condenses, 1800 s). The HP bypass takes its steam before the MOV (PD-011) */
+  {
+    const pm = anDitlPos('DITL-38 #MV-MS1391', 0),
+      pb = anDitlPos('DITL-38 #MV-MS1392', 0);
+    if (pm == null || pb == null) {
+      U.msG = undefined;
+      U.Pmsv = undefined;
+    } else {
+      U.msG = Math.min(1, pm / 100 + (0.1 * pb) / 100);
+      const P = isFinite(U.Pms) ? U.Pms : 0,
+        tau = pm > 5 ? 30 : pb > 5 ? 600 : 1800,
+        x = pm > 5 || pb > 5 ? P : 0;
+      U.Pmsv = !isFinite(U.Pmsv) ? x : U.Pmsv + ((x - U.Pmsv) * Math.min(dt, tau)) / tau;
     }
   }
   /* valve position = valve command */

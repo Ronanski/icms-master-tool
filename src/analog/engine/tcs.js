@@ -126,7 +126,8 @@ function tcsSteam(U) {
        (PR-OPE-5002 "RH pressure 7.5 ksc"); the raw AI0421 sat 0.6 lower, under the ATS limit 7 with the SOP pressure */
     Pv = tcsPV('PICHR1003'),
     Prh = isFinite(Pv) ? Pv : U.rhp && U.rhp.length ? anUnitVal(U.rhp[0]) : NaN;
-  return { msp: U.Pms, mst: isFinite(mst) ? mst : U.Tw, rhp: isFinite(Prh) ? Prh : 0, rht: isFinite(rht) ? rht : U.Tw };
+  /* 3.2.0 P1 #3: the MSV inlet is after the main steam stop MOV MV-MS1391 (unit.js U.Pmsv, while the one world runs) */
+  return { msp: isFinite(U.Pmsv) ? U.Pmsv : U.Pms, mst: isFinite(mst) ? mst : U.Tw, rhp: isFinite(Prh) ? Prh : 0, rht: isFinite(rht) ? rht : U.Tw };
 }
 /* the criteria (page 3 / 5 ~ 14) that the model has: true = satisfied. txt = the name on the ATS criteria display */
 function tcsCrit(U) {

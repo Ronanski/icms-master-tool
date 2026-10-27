@@ -66,6 +66,8 @@
      Machine A is the sheet itself; B / C / D are INSTANCES of it (same logic, own latches, timers, motors, valves). Every
      reference is connected to the instance of the machine it belongs to (beta.3 ~ 5 left 79 + 48 of them unconnected). */
   const LET = ['A', 'B', 'C', 'D'];
+  /* the valves of the DITL-38 table (STN101 MV-BD1001 / 1002, STN102 the rest) */
+  W.MCV = ['MV-BD1001', 'MV-BD1002', 'MV-FW1001', 'MV-FW1391', 'MV-FW1002', 'MV-FW1392', 'MV-MS1391', 'MV-MS1392'];
   const txtOf = s => {
     if (s._alltx === undefined)
       s._alltx = Object.values(s.cells || {})
@@ -204,9 +206,9 @@
     return S.sheets.find(x => String(x.title || '').toUpperCase() === want) || null;
   }
   /* instance k of a base sheet (k = 0 is the sheet itself) */
-  function makeInst(base, k) {
+  function makeInst(base, k, lbl) {
     const o = Object.assign(Object.create(Object.getPrototypeOf(base)), base, {
-      name: base.name + ' #' + LET[k],
+      name: base.name + ' #' + (lbl || LET[k]),
       sig: {},
       usw: {},
       av: null,
@@ -214,7 +216,7 @@
       _win: null,
       nl: null,
       uvDone: true,
-      _inst: { base, k, n: machinesOf(base) }
+      _inst: lbl ? { base, k, n: 1, lbl } : { base, k, n: machinesOf(base) }
     });
     o.nl = netlist(o);
     return o;
@@ -285,6 +287,22 @@
       }
       W.instOf.set(s, L);
     }
+    /* 3.2.0 P1 #3 / #4 (docs/versions/v3.2.0/INSTRUMENT_VALVE_COVERAGE.md): DITL-38 MOTOR CONTROL VALVE is ONE drawing for the eight
+       MOVs of its table (the drawing itself is MV-BD1001): one machine each, named by its tag, with its own open / close / stop push
+       buttons, timers and position. The plant reads the main steam stop MOV and the BFP discharge MOVs (unit.js) */
+    {
+      const mcv = S.sheets.find(x => /\)DITL-38$/.test(x.name)),
+        L = mcv && W.instOf.get(mcv);
+      if (L && L.length === 1) {
+        mcv._inst.lbl = W.MCV[0];
+        W.MCV.slice(1).forEach((tag, j) => {
+          const nm = mcv.name + ' #' + tag,
+            x = old.get(nm) || makeInst(mcv, j + 1, tag);
+          W.inst.push(x);
+          L.push(x);
+        });
+      }
+    }
     const inst = (base, k) => {
       const L = W.instOf.get(base);
       return L ? L[k] || null : null;
@@ -313,6 +331,8 @@
     };
     /* the instance (or sister sheet) that a row of machine-instance k of sheet sb gives for the output (d, orow) */
     const target = (sb, k, i, d, orow, other) => {
+      /* 3.2.0: a DITL-38 valve reads its own outputs (open / closed feedback), not those of the first valve of the table */
+      if (d === sb && d._inst && d._inst.lbl && inst(d, k)) return inst(d, k);
       const nd = machinesOf(d),
         rowT = cellTxt(sb, i, 'S') + ' ' + cellTxt(sb, i, 'T'),
         n = machinesOf(sb);
