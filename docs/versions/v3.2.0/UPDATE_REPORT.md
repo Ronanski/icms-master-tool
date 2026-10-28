@@ -1043,7 +1043,7 @@ Beta na ito (GO BETA ng user). Build at check lang ang pinatakbo, kaya **hindi n
 
 Ang ibang bukas sa table (#5, #15, #16, #28, #31, #33, #34, #39–#41, #45–#53) ay nasa beta.40 na at hinihintay ang retest.
 
-## dev pagkatapos ng 3.2.0-beta.41 (2026-10-28, hinihintay ang GO BETA) — retest 5
+## 3.2.0-beta.42 (Beta, 2026-10-28) — retest 5
 
 Build at check lang; **hindi nasubok**.
 
