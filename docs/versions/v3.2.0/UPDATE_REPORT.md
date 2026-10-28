@@ -1053,3 +1053,7 @@ Build at check lang; **hindi nasubok**.
 | 42 | Putol: "No active alarm (shutdown alarms…" at "Cold to practi…" | Header: "No active alarm" lang (ang bilang ng suppressed ay nasa chip at tooltip). Mas maikli ang hint ng bawat page | cr.js, app.js |
 | 13 | ABC-057 / DITL-29A nakatago sa likod ng Training | Sa Home at Training, hindi ipinapakita, hindi binabasa at hindi mapipindot ang logic sheet sa likod. Ang Gabay ang nagbubukas ng sheet ng hakbang | app.js, app.css, dock.js |
 | 54 | 9 % sa 2 min (browser na hindi nasa harap) | Ang susunod na bahagi ng load ay tinatawag ng message, hindi timer (ang timer ay minsan bawat segundo lang kapag hindi nasa harap ang page) | hmi-op.js |
+
+## 3.2.0-beta.43 (Beta, 2026-10-28) — #13 ulit
+
+Sanhi: tinatandaan ng app ang huling bukas na sheet (DITL-29A ng huling Gabay, ABC-057 na default ng ABC) at iginuguhit ito sa Logic page kahit nasa Home o Training. Ang ayos sa beta.42 ay nagtago lang ng sheet, pero nasa page pa rin ang drawing. Ngayon, binubura ang drawing sa Home / Training kapag walang Gabay na tumatakbo (pati ang guhit na dumarating habang nandoon), at iginuguhit ulit ang parehong sheet pagbukas ng Logic page. Ang Gabay ang nagbubukas ng sheet ng hakbang. Build at check lang; **hindi nasubok**. (app.js, app.css)

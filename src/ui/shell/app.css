@@ -1201,3 +1201,4 @@ body.lsview #inlist::before{content:'VIEW · values only. Press RUN to force or 
 #cralarm #evbtn:not(#x){flex:none!important;white-space:nowrap!important;min-width:max-content!important;overflow:visible!important;text-overflow:clip!important}
 /* retest #13: no logic sheet behind HOME / TRAINING (app.js setTab: inert, aria-hidden) */
 body:is([data-tab=home],[data-tab=training]) :is(#cv,#side,#anp,#tabs,#anptab){visibility:hidden!important}
+body:is([data-tab=home],[data-tab=training]) :is(#meta,#anmeta){visibility:hidden!important}

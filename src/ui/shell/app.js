@@ -375,7 +375,7 @@
        workspace is not shown, not read and not focusable (inert, aria-hidden; CSS visibility in app.css); the guided start opens the
        sheet of its step when it goes to the Logic page */
     const away = t === 'home' || t === 'training';
-    for (const id of ['cv', 'side', 'anp', 'tabs', 'anptab'])
+    for (const id of ['cv', 'side', 'anp', 'tabs', 'anptab', 'meta', 'anmeta'])
       try {
         const x = $(id);
         if (!x) continue;
@@ -383,6 +383,37 @@
         if (away) x.setAttribute('aria-hidden', 'true');
         else x.removeAttribute('aria-hidden');
       } catch (e) {}
+    /* retest #13 (R6, beta.42: "DITL-29A and ABC-057 still loaded behind, even after a reload"): hiding was not enough, the drawing
+       of the last sheet (remembered from the last visit) stayed in the page. Now the drawing itself is emptied on HOME / TRAINING
+       when no guided start runs, and drawn again (the same sheet) when the Logic page opens */
+    blankLogic(away && !(window.LS_GUIDE && LS_GUIDE.on));
+  }
+  function blankLogic(on) {
+    const B = document.body;
+    const sv = $('svg');
+    if (sv && !sv._blankObs)
+      try {
+        /* a sheet drawn while the page is blank (the ABC sheets arriving, a DITL scan) is emptied again */
+        sv._blankObs = new MutationObserver(() => {
+          if (B.classList.contains('lsblank') && sv.firstChild) sv.textContent = '';
+        });
+        sv._blankObs.observe(sv, { childList: true });
+      } catch (e) {}
+    if (on) {
+      if (B.classList.contains('lsblank')) return;
+      B.classList.add('lsblank');
+      if (sv) sv.textContent = '';
+      return;
+    }
+    if (!B.classList.contains('lsblank')) return;
+    B.classList.remove('lsblank');
+    try {
+      if (window.AN && AN.cat === 'an' && AN.sheets && AN.sheets.length && AN.go) AN.go(AN.i || 0);
+      else {
+        const ss = $('shsel');
+        if (ss) ss.dispatchEvent(new Event('change'));
+      }
+    } catch (e) {}
   }
   const HINTS = {
     /* retest #42: short enough for the status bar; the whole text is in the tooltip */
