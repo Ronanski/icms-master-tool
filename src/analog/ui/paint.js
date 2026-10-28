@@ -253,7 +253,7 @@ function lgd() {
     const x = h$('button', { txt: '×', title: 'Close the legend', style: 'position:sticky;top:0;float:right;margin:-4px -8px 0 8px;background:none;border:0;color:var(--c-tx);font:700 18px sans-serif;cursor:pointer;line-height:1' });
     x.onclick = () => (d.style.display = 'none');
     d.prepend(x);
-    addEventListener('keydown', e => e.key === 'Escape' && d.style.display === 'block' && (d.style.display = 'none'));
+    addEventListener('keydown', e => e.key === 'Escape' && d.style.display === 'block' && (d.style.display = 'none'), true);
     addEventListener(
       'pointerdown',
       e => {

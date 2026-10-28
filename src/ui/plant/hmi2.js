@@ -680,7 +680,7 @@
     /* main drive motor */
     s += `<rect x="${x + w - 2}" y="${y + 40}" width="12" height="26" rx="2" fill="${S.C.none}" stroke="${k.shellOl}" stroke-width="1" data-aphm="1"/>` + T(x + w + 4, y + 56, 'M', { z: 7, b: 700, c: k.dark ? '#e6ebef' : '#26303a', a: 'middle' });
     /* R9 #87: the run state of the main drive (DITL-43), as the fans: red RUNNING, green STOPPED */
-    s += T(1012, 754, '-----', { z: 8.5, b: 700, c: S.C.none, a: 'end', ls: 0.4, k: 'aphst' });
+    s += T(x + w - 8, y + 9.5, '-----', { z: 7.5, b: 700, c: S.C.none, a: 'end', ls: 0.4, k: 'aphst' }); /* in the hot end strip (left of the box: the PAF faceplate) */
     return s + NAME(1012, 730, 'AIR PREHEATER  H-1052', 'end') + T(1012, 741, 'Ljungstrom rotary: PA / SA / gas', { z: 7.5, c: S.C.dim, a: 'end' });
   }
   function esp(S) {

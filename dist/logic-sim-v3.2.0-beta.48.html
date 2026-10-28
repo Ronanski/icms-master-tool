@@ -29223,7 +29223,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.48';
-      c3.textContent += ' · build 1014bea'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 78198fd'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -31648,7 +31648,7 @@ function lgd() {
     const x = h$('button', { txt: '×', title: 'Close the legend', style: 'position:sticky;top:0;float:right;margin:-4px -8px 0 8px;background:none;border:0;color:var(--c-tx);font:700 18px sans-serif;cursor:pointer;line-height:1' });
     x.onclick = () => (d.style.display = 'none');
     d.prepend(x);
-    addEventListener('keydown', e => e.key === 'Escape' && d.style.display === 'block' && (d.style.display = 'none'));
+    addEventListener('keydown', e => e.key === 'Escape' && d.style.display === 'block' && (d.style.display = 'none'), true);
     addEventListener(
       'pointerdown',
       e => {
@@ -62303,6 +62303,9 @@ body.ophmi #anp{display:none!important}
     TRO.set(s, o);
     return o;
   }
+  /* R9 (beta.48 check): the DITL sheets already scanned since the load. A sheet built later (the sand DITL-777 SYSTEM TRIP = 1 on a cold
+     plant: MFT / BOILER STOP and NOT REMOTE CONTROL, E10210-3-777) brings its standing trip as a shutdown alarm, not a NEW one */
+  const DSEEN = new Set();
   const NTS = new Set(),
     NTO = new WeakMap();
   function ntOut(s) {
@@ -62383,6 +62386,7 @@ body.ophmi #anp{display:none!important}
       base = A.startState;
       AT.clear();
       NTS.clear();
+      DSEEN.clear();
       for (const g in grpT) delete grpT[g];
       almScan.first = true;
     }
@@ -62403,6 +62407,8 @@ body.ophmi #anp{display:none!important}
     if (window.WORLD && WORLD.on && WORLD.idx)
       for (const s of dSheets()) {
         if (!s.nl) continue;
+        const fresh = !DSEEN.has(s.name);
+        DSEEN.add(s.name);
         const o = motOuts(s);
         if (!o.trip && !s._ftrip) continue;
         if (motState(s) === 'TRIP')
@@ -62410,7 +62416,8 @@ body.ophmi #anp{display:none!important}
             sh: dnm(s),
             kind: 'TRIP',
             nm: o.trip ? o.trip.name.replace(/\s+TRIP$/, '') : dnm(s),
-            lv: 'TRIP'
+            lv: 'TRIP',
+            fresh
           });
       }
     /* R9 #80: a "NOT TRIP" output (DITL-43 row 5 AIR PREHEATER NOT TRIP, 1 = healthy) is an alarm when it falls to 0 after it was
@@ -62442,6 +62449,7 @@ body.ophmi #anp{display:none!important}
            later or changes level; a HIGH alarm or a TRIP always comes through */
         const sd =
           first ||
+          !!x.fresh ||
           (x.kind === 'ALM' &&
             /LOW/.test(x.lv) &&
             (A.startState === 'plantCold' || !!(e && e.sd && !e.rtn)) &&
@@ -62455,7 +62463,7 @@ body.ophmi #anp{display:none!important}
        alarms now (NEW, logged), as a DCS releases the alarm suppression of a group after the start of its equipment */
     if (A.startState === 'plantCold')
       for (const [k, e] of AT)
-        if (e.sd && !e.rtn && grpRel(e.sh, t)) {
+        if (e.sd && !e.rtn && /^ABC-/.test(e.sh) && grpRel(e.sh, t)) { /* a DITL standing trip stays suppressed until it resets */
           e.sd = false;
           e.ack = false;
           add({ rt: { t } }, { name: e.sh }, e.kind, e.nm + ' ' + e.lv + ' (suppression released: equipment running)');
@@ -67129,7 +67137,7 @@ window.PLANT_SYS = [
     /* main drive motor */
     s += `<rect x="${x + w - 2}" y="${y + 40}" width="12" height="26" rx="2" fill="${S.C.none}" stroke="${k.shellOl}" stroke-width="1" data-aphm="1"/>` + T(x + w + 4, y + 56, 'M', { z: 7, b: 700, c: k.dark ? '#e6ebef' : '#26303a', a: 'middle' });
     /* R9 #87: the run state of the main drive (DITL-43), as the fans: red RUNNING, green STOPPED */
-    s += T(1012, 754, '-----', { z: 8.5, b: 700, c: S.C.none, a: 'end', ls: 0.4, k: 'aphst' });
+    s += T(x + w - 8, y + 9.5, '-----', { z: 7.5, b: 700, c: S.C.none, a: 'end', ls: 0.4, k: 'aphst' }); /* in the hot end strip (left of the box: the PAF faceplate) */
     return s + NAME(1012, 730, 'AIR PREHEATER  H-1052', 'end') + T(1012, 741, 'Ljungstrom rotary: PA / SA / gas', { z: 7.5, c: S.C.dim, a: 'end' });
   }
   function esp(S) {
