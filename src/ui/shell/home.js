@@ -524,6 +524,12 @@
               was = { hand: ls.get('ls-train', {}), auto: LV() ? Object.assign({}, LV().done()) : {} };
             ls.set('ls-train', {});
             if (LV()) LV().reset();
+            /* retest #13: the last opened sheets are forgotten; the Gabay opens the sheet of its first DCS step */
+            try {
+              localStorage.removeItem('ditl.curname');
+              localStorage.removeItem('ditl.an.cur');
+              if (window.AN) AN._cur = null;
+            } catch (e) {}
             fillTrain();
             /* 3.2.0 retest #12: the ticks of the earlier run are cleared without a pop-up; the page says so, with Undo */
             if (tn > 0) clearNote(was, 'Bagong Gabay mula Cold: nabura ang ' + tn + ' tick');
@@ -610,6 +616,13 @@
             const was = { hand: ls.get('ls-train', {}), auto: LV() ? Object.assign({}, LV().done()) : {} };
             ls.set('ls-train', {});
             if (LV()) LV().reset();
+            /* retest #13 (user OK 2026-10-28): a clean start forgets the last opened sheets (DITL and ABC); the Logic page opens the
+               first sheet again, the Gabay the sheet of its step */
+            try {
+              localStorage.removeItem('ditl.curname');
+              localStorage.removeItem('ditl.an.cur');
+              if (window.AN) AN._cur = null;
+            } catch (e) {}
             fillTrain();
             clearNote(was);
           }
