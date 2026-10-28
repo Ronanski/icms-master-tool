@@ -405,6 +405,10 @@
     if (t === 'logic' && from !== 'logic' && window.LS_GUIDE && LS_GUIDE.on && window.LS_DOCK && LS_DOCK.follow)
       LS_DOCK.follow();
   }
+  /* retest #13: Clear all ticks forgets the category the Logic page had (home.js) */
+  window.lsLogicForget = () => {
+    logicCat = null;
+  };
   function blankLogic(on) {
     const B = document.body;
     const sv = $('svg');

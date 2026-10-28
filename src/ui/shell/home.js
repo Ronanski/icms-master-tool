@@ -530,6 +530,19 @@
               localStorage.removeItem('ditl.an.cur');
               if (window.AN) AN._cur = null;
             } catch (e) {}
+            /* retest #13 (R8: after Clear the Logic page still opened DITL-56 / DITL-29A·B of the run before): the sheets held in the page
+               are forgotten too, not only the stored names: the first ABC and the first DITL sheet */
+            try {
+              /* the ABC sheet through AN.go (drawn with its own layers; AN.i alone left the layers of the old sheet: the Reset of the
+                 next load painted ABC-000A with them and stopped, unit model OFF) */
+              if (window.AN && AN.sheets && AN.sheets.length && AN.go) AN.go(0);
+              if (typeof S !== 'undefined' && S.sheets && S.sheets.length) {
+                S.cur = 0;
+                const ss = document.getElementById('shsel');
+                if (ss) ss.value = '0';
+              }
+              if (window.lsLogicForget) lsLogicForget();
+            } catch (e) {}
             fillTrain();
             /* 3.2.0 retest #12: the ticks of the earlier run are cleared without a pop-up; the page says so, with Undo */
             if (tn > 0) clearNote(was, 'Bagong Gabay mula Cold: nabura ang ' + tn + ' tick');
@@ -612,6 +625,15 @@
           type: 'button',
           txt: 'Clear all ticks',
           on: () => {
+            /* retest #67 (R8: Clear during the Gabay at Hakbang 2 left the dock at Hakbang 2 / Section 2, the list at Section 1): one
+               current step. A Clear while the Gabay runs stops the Gabay too (asked first); "Gabay: Cold" starts it again at Hakbang 1 */
+            const G = window.LS_GUIDE;
+            if (G && G.on) {
+              if (!window.confirm('Naka-Gabay ka (Hakbang ' + (G.cur + 1) + '). Ang Clear all ticks ay ihihinto rin ang Gabay. Pindutin ulit ang "Gabay: Cold → 150 MW" para magsimula sa Hakbang 1. Ituloy?')) return;
+              try {
+                window.LS_DOCK && LS_DOCK.stop();
+              } catch (e) {}
+            }
             /* 3.2.0 walkthrough #12: the result is shown ("Cleared: 0 / 692") with an Undo */
             const was = { hand: ls.get('ls-train', {}), auto: LV() ? Object.assign({}, LV().done()) : {} };
             ls.set('ls-train', {});
@@ -622,6 +644,19 @@
               localStorage.removeItem('ditl.curname');
               localStorage.removeItem('ditl.an.cur');
               if (window.AN) AN._cur = null;
+            } catch (e) {}
+            /* retest #13 (R8: after Clear the Logic page still opened DITL-56 / DITL-29A·B of the run before): the sheets held in the page
+               are forgotten too, not only the stored names: the first ABC and the first DITL sheet */
+            try {
+              /* the ABC sheet through AN.go (drawn with its own layers; AN.i alone left the layers of the old sheet: the Reset of the
+                 next load painted ABC-000A with them and stopped, unit model OFF) */
+              if (window.AN && AN.sheets && AN.sheets.length && AN.go) AN.go(0);
+              if (typeof S !== 'undefined' && S.sheets && S.sheets.length) {
+                S.cur = 0;
+                const ss = document.getElementById('shsel');
+                if (ss) ss.value = '0';
+              }
+              if (window.lsLogicForget) lsLogicForget();
             } catch (e) {}
             fillTrain();
             clearNote(was);

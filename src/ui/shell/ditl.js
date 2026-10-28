@@ -197,9 +197,16 @@
       const RB = (MK.s.rb && MK.s.rb[i]) || [r.y - 3.3, r.y + 5.7],
         f = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       Object.entries({ x: VR.F[0], y: -RB[1], width: VR.S[1] - VR.F[0], height: RB[1] - RB[0], class: 'plmiss' }).forEach(([k, v]) => f.setAttribute(k, v));
+      /* retest #40 (R8: red but not flashing): the sheet is drawn again many times a second while it runs and every new outline started
+         its flash again (a CSS animation never got past its start); the flash is timed by the clock: every 0.5 s on / off */
+      if (Math.floor(Date.now() / 500) % 2) f.classList.add('off');
       svg.append(f);
     }
   }
+  setInterval(() => {
+    const off = Math.floor(Date.now() / 500) % 2;
+    document.querySelectorAll('#svg rect.plmiss').forEach(x => x.classList.toggle('off', !!off));
+  }, 250);
   D.mark = (s, rows) => {
     const k = s && rows && rows.length ? s.name + ':' + rows.join(',') : '';
     if (k === (MK ? MK.k : '')) return;

@@ -923,7 +923,10 @@ function* anPlantLoad150G() {
   /* 2.2.0-beta.9 (M2): the boiler and the turbine run as one plant from here (unit.js) */
   try {
     anUnitStart();
-  } catch (e) {}
+    AN._unitErr = null;
+  } catch (e) {
+    AN._unitErr = e; /* kept for the checks: the unit model did not start */
+  }
   AN.load150 = { ai: n, ctl: nc, di: nd, sv: nsv, man: nm_, unit: AN_UNIT.on };
   AN.hmiDI = AN_HMI_DI;
   AN.hmiComp = hmiComp;
@@ -1208,10 +1211,31 @@ function anLoadStart(kind, on) {
     B = window.lsBusy,
     est = (cold ? 46 : 40) * Math.max(1, AN.sheets.length - 1);
   if (B) B.show(cold ? 'Nilo-load ang Cold plant…' : 'Nilo-load ang 150 MW…');
+  /* retest #69 (R8 second pass: Hakbang 2 never showed ✓ TAPOS with 2 SWP running): a sheet is built only when something opens it
+     (ensure). A starting state loaded before ABC-001C was built left the unit model OFF (anUnitStart needs that sheet) and the other
+     unbuilt sheets out of the load: the Gabay conditions never came true. Every sheet is built first, one per slice (no freeze) */
+  const build = () =>
+    anGenAsync(
+      (function* () {
+        for (const sh of AN.sheets.filter(x => !x.S)) {
+          try {
+            ensure(sh);
+          } catch (e) {}
+          yield;
+        }
+      })()
+    );
   const p = new Promise(r => setTimeout(r, 40))
+    .then(build)
     .then(() => {
       if (on && !AN.plantOn && AN.plantSwitch) AN.plantSwitch(true, true);
-      AN.reset();
+      /* beta.46 check (a second "Gabay: Cold" left the unit model OFF): an error while the Reset paints the sheet on the screen does
+         not stop the load (the model part of the Reset is done before the paint) */
+      try {
+        AN.reset();
+      } catch (e) {
+        AN._resetErr = e;
+      }
       return (cold ? anPlantColdAsync : anPlantLoad150Async)(k => B && B.prog(k / est));
     })
     .then(n => {
@@ -1219,6 +1243,7 @@ function anLoadStart(kind, on) {
       return n;
     });
   AN._loadP = p;
+  p.catch(e => (AN._loadErr = e)); /* kept for the checks: a load that failed */
   const end = () => {
     AN._loadP = null;
     if (B) B.hide();

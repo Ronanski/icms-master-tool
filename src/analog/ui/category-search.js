@@ -9,17 +9,24 @@ AN.xrefGo = tg => {
     }
     return;
   }
-  const o = [...document.querySelectorAll('#shsel option')].find(x =>
-    new RegExp('\\)' + tg.d + '$').test(x.textContent)
-  );
-  if (!o) {
+  /* retest #2 (beta.46 check, second pass: a session opened on an ABC sheet; the Gabay "Susunod" left ABC-000A in the centre): the
+     sheet picker is filled when a DITL sheet is first drawn, so it was still empty and the DITL sheet "was not found". The sheet is
+     looked up in the DITL sheet list itself */
+  const re = new RegExp('\\)' + tg.d + '$'),
+    i = typeof S !== 'undefined' && S.sheets ? S.sheets.findIndex(x => re.test(x.name)) : -1;
+  if (i < 0) {
     msg('Digital page ' + tg.d + ' was not found');
     return;
   }
   setCat('dig');
   const ss = document.getElementById('shsel');
-  ss.value = o.value;
-  ss.dispatchEvent(new Event('change'));
+  if (ss && [...ss.options].some(x => +x.value === i)) {
+    ss.value = String(i);
+    ss.dispatchEvent(new Event('change'));
+  } else {
+    S.cur = i;
+    render();
+  }
   msg('Opened ' + tg.d + ' - use the "ABC" button to come back');
 };
 function setCat(c) {

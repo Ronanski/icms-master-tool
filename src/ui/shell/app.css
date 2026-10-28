@@ -822,8 +822,8 @@ body[data-tab=logic] #gsbar .lo-pg{display:flex}
 
 /* 2.5.0-beta.8: DITL page links (FROM / TO column): link color, the row that a link opened blinks, chooser when a cell names several pages */
 #svg text.plink{fill:var(--c-acc);text-decoration:underline}
-#svg rect.plmiss{fill:rgba(220,38,38,.16);stroke:#ef4444;stroke-width:.9;pointer-events:none;animation:plmiss 1s steps(2,start) infinite}
-@keyframes plmiss{50%{stroke-opacity:.25;fill-opacity:.04}}
+#svg rect.plmiss{fill:rgba(220,38,38,.22);stroke:#ef4444;stroke-width:1.4;pointer-events:none}
+#svg rect.plmiss.off{stroke-opacity:.1;fill-opacity:0}
 #svg rect.plflash{fill:rgba(255,196,0,.22);stroke:#ffc400;stroke-width:.6;pointer-events:none;animation:plf .5s ease-in-out 4 alternate}
 #plpick{position:fixed;z-index:60;min-width:220px;max-width:min(420px,calc(100vw - 16px));max-height:60vh;overflow:auto;padding:6px;background:var(--c-pane,#151c22);border:1px solid var(--c-acc,#4fd18b);border-radius:6px;box-shadow:0 6px 18px #0008}
 #plpick .plhd{font:600 12px var(--uf,sans-serif);color:var(--c-dim,#9aa7b2);padding:2px 4px 6px}

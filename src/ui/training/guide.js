@@ -829,7 +829,7 @@ window.LS_GUIDE = (function () {
        ksc, condenser dP 0.4), shown while the pump runs (0 when stopped) */
     const ifRun = (on, x) => (on ? x : 0);
     const SWPW = [
-      ['SWP running', () => swpN() + ' / 3', '', x => x, '2 tumatakbo, 1 standby AUTO'],
+      ['SWP running', () => swpN() + ' / 3', '', x => x, 'kailangan 2 (ang ikatlo: standby AUTO)'],
       ...SWPL.map((l, j) => [l + ' current', () => ifRun(bit(SWPM[j]) > 0.5, j === 0 ? 225 : j === 1 ? 242 : 208), 'A', null, 'HMI 030: 207 ~ 243 A']),
       ['SWP discharge press', () => ifRun(swpN() > 0, 2.3), 'kg/cm²', null, 'SOP 2.2 ~ 2.4'],
       ['Condenser SW inlet press', () => ifRun(swpN() > 0, swpN() > 1 ? 1.0 : 0.7), 'kg/cm²', null, 'PISW1110A1'],

@@ -220,6 +220,8 @@
     for (let k = 0; k < n; k++) WORLD.tick(dt, { noAbc: !WORLD.on });
   };
   /* back to the cold DITL (what the Simulate button and Reset do) */
+  /* retest #68 (R8: after Clear all ticks + Gabay Cold, SWP-A still RUNNING and in REMOTE from the run before): the cold DITL is clean,
+     every motor stopped, every field contact (REMOTE, AUTO MODE, limit switch) at its default, no field trip */
   D.clear = () => {
     MST = {};
     MS = {};
@@ -227,6 +229,7 @@
       x.sig = {};
       x.usw = {};
       x._fd = null;
+      x._ftrip = false;
       x.av150 = null;
       if (x.nl) {
         x.nl._v = null;
@@ -234,6 +237,7 @@
         x.nl.ufx = [];
         for (const g of x.nl.gates) {
           if (g.t === 'FF') g.q = 0;
+          if (g.t === 'CNT') g.N = g.pin = g.rp = 0;
           if (g.t === 'TMR') g.st = { acc: 0, out: 0, pre: 0, run: 0 };
         }
       }
