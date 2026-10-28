@@ -1023,9 +1023,9 @@ Ang lumang "3.2.0-beta.40 (2026-10-26)" sa itaas ay ibinalik noon at hindi nagin
 
 Labas ng Training: alarm chip / list at TRIP sa buong app; pulang marka sa DITL viewer.
 
-## dev pagkatapos ng 3.2.0-beta.40 (2026-10-28, hindi pa Beta; hinihintay ang GO BETA ng user) — retest 4
+## 3.2.0-beta.41 (Beta, GO BETA ng user 2026-10-28 12:41 PM PHT) — retest 4
 
-Hindi pa ito Beta: hindi ito ipinush (habang tinetest pa ng user ang beta.40). Build at check lang ang pinatakbo, kaya **hindi nasubok** ang lahat ng ayos sa ibaba.
+Beta na ito (GO BETA ng user). Build at check lang ang pinatakbo, kaya **hindi nasubok** ang lahat ng ayos sa ibaba.
 
 | # | Finding | Ayos | Saan |
 |---|---|---|---|
