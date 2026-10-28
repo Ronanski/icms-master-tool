@@ -995,3 +995,30 @@ Code lang at `npm run build` / `npm run check`. WALANG run, probe o test (user 2
 | 34 | Walang TRIP | Ang TRIP output ng bawat motor drawing ("… TRIP · CRT (ANN)") ay nasa alarm list (kumikislap hanggang ACK), header, Events, dock lamp / label at Plant view (amber na kumikislap) | events.js, dock.js, plant.js | ayos, hindi nasubok |
 
 Labas ng Training na binago rin (parehong uri ng mali): header alarm at Events para sa buong app; Plant view TRIP; Update button sa lahat ng page; build id sa status bar.
+
+## 3.2.0-beta.40 (Beta, retest 3 fixes, 2026-10-28) — 29 findings ng live test
+
+Ang lumang "3.2.0-beta.40 (2026-10-26)" sa itaas ay ibinalik noon at hindi naging Beta; ang numerong ito na ang opisyal na Beta. Walang run / probe / headless test (user 2026-10-28): build at check lang. Lahat ay **hindi nasubok** hanggang sa live test ng user.
+
+| # | Finding | Ayos | Saan |
+|---|---|---|---|
+| 5 | Purge 6 h, mabagal | Kusang ×300 habang nagbibilang ang purge sa RUN, balik ×1 sa dulo | dock.js |
+| 9, 15, 16, 31, 34 | Mga naunang ayos | Nasuri sa code; nananatili | guide.js, dock.js, events.js |
+| 13, 38 | Lumang sheet / lumang mensahe sa gitna | Sa simula ng Gabay, binubuksan ang sheet ng unang motor; inaalis ang lumang mensahe | dock.js |
+| 23 | Update? button | Nasa ⚙ "Check for update" na lang | app.js |
+| 28 | ✓ sa naka-pause na hakbang | Ang ✓ ay batay sa mundo na buo, hindi sa RUN | guide.js |
+| 33, 45, 47, 50 | Equipment sec 3–17 | AUTO rule bawat SOP item (standby SWP, Hypo, debris filter, SWBP, MWP, ACW, dryer, compressor, RAH); AUTO checkbox live | live.js, dock.js |
+| 35 | Alarm ng shutdown state | Naka-ACK na sa simula, may tala sa Events | events.js |
+| 36 | Alarm chip hindi mabasa | Puting text, kislap na pula | app.css |
+| 37 | "NO TRIP PRESENT" basang TRIP | Inalis sa trip; TRIP lang sa motor drawing na may RUNNING | events.js |
+| 39, 49 | SWP 2 of 3 | Kahit alin 2 ang START; ang ikatlo ay STANDBY sa AUTO (bawal START) | guide.js, dock.js |
+| 40 | Hindi alam ang kulang na contact | Pulang kumikislap na kahon sa kulang na interlock row | ditl.js, dock.js |
+| 41 | Laki ng dock / Training list | ⇔ button (3 laki); 2 column kapag walang napili | dock.js, home.js |
+| 42, 43 | Oras at text ng alarm | "at hh:mm:ss", buong text sa tooltip, 2 linya | cr.js, app.css |
+| 44 | Mahabang paliwanag | "Gawin:" na linya + "Bakit?" na nakatago | dock.js |
+| 46, 51 | Walang watch value | Bawat hakbang sec 3–17 may watch (SWP A, presyon, condenser ΔP, atbp.) | guide.js |
+| 48 | Sheet hindi sumusunod | Sinusundan ang susunod na motor na hindi pa tumatakbo, zoom sa row | dock.js, ditl.js |
+| 52 | Local START walang STOP | START ↔ STOP toggle, may Events log | guide.js |
+| 53 | Debris filter hindi tumatakbo | Field model: DOR-DF1001/1002 → DIR feedback (DITL-39, kapag may SWP na tumatakbo) | 05-overlay-interaction.js |
+
+Labas ng Training: alarm chip / list at TRIP sa buong app; pulang marka sa DITL viewer.

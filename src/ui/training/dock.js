@@ -57,7 +57,14 @@
     }
   };
   const bit = a => call(() => LV().val(a), 0) > 0.5;
-  const any = L => L.some(bit);
+  /* a lamp address: M.xxxx (ABC memory), DITL-xx[@out row] (a drawing of the one world), F:key (a field state), L:DITL-xx@row (a local input) */
+  const lampOn = a => {
+    if (/^F:/.test(a)) return call(() => !!AN.fieldState()[a.slice(2)], false);
+    if (/^L:/.test(a)) return call(() => DUI.rowVal(dOf(a.slice(2)), atRow(a)) === 1, false);
+    if (/^DITL-/.test(a)) return call(() => (atRow(a) != null ? dout(a, atRow(a)) === 1 : runOut(a) === 1), false);
+    return bit(a);
+  };
+  const any = L => L.some(lampOn);
   const mv = t => call(() => {
     const f = LV().fp(t);
     return f ? LV().mvOf(f) : NaN;
@@ -87,7 +94,15 @@
     ['SAF', ['M.3303'], 'Secondary air fan'],
     ['PAF', ['M.3302'], 'Primary air fan'],
     ['OIL', ['M.3412', 'M.3413', 'M.3418', 'M.3419'], 'Start-up burners A / B / C / D in service'],
-    ['COAL', ['M.3400', 'M.3401', 'M.3402'], 'Coal feeders A / B / C']
+    ['COAL', ['M.3400', 'M.3401', 'M.3402'], 'Coal feeders A / B / C'],
+    /* retest #33 #51: the equipment of the utilities (sections 3 ~ 17): a DITL drawing, an output row of one, or a local field state */
+    ['HYPO', ['F:hypo'], 'Hypochlorite pump (local)'],
+    ['DF', ['DITL-39@3', 'DITL-39@14'], 'Debris filters SWP / SWBP outlet in operation'],
+    ['SWBP', ['DITL-30', 'DITL-30 #B', 'DITL-30 #C'], 'Seawater booster pumps A / B / C'],
+    ['MWP', ['DITL-112', 'DITL-112 #B', 'DITL-112 #C'], 'Make-up water pumps A / B / C'],
+    ['ACW', ['DITL-76', 'DITL-77'], 'Aux. cooling water pumps A / B'],
+    ['AIR', ['DITL-45@14', 'DITL-45@3', 'L:DITL-113@5', 'L:DITL-114@5'], 'IA / PA dryers and compressors'],
+    ['RAH', ['DITL-43'], 'Rotary air preheater']
   ];
   /* ---------- the values to watch, by stage of the start-up (targets from PR-OPE-5002 and the boiler manual, as in guide.js) ---------- */
   let rate = { t: null, x: null, r: 0 };
@@ -545,6 +560,19 @@
       render();
     } catch (e) {}
   }
+  /* retest #47: a maintained CRT selection of a DITL input row (SEAWATER PUMP x AUTO MODE SELECTED, DITL-29A row 4), logged; PAUSED too */
+  function dsel(nm, row, v, txt) {
+    const s = dSheet(nm);
+    if (!s) return false;
+    s.sig[row + ':S'] = !!v;
+    if (WORLD.live) WORLD.busy = true;
+    pscan();
+    try {
+      if (window.lsEventAdd) lsEventAdd(dName(s), 'DCS', 'Operator: ' + (txt || rowInfo(s, row).svc) + ' = ' + (v ? 1 : 0) + ' (row ' + (row + 1) + ')');
+    } catch (e) {}
+    setTimeout(() => fill(true), 200);
+    return true;
+  }
   /* 3.2.0 retest #33: a field action on one input row of a drawing (a compressor started at its local panel: DITL-113 row 5 RUNNING),
      logged in the Event log; PAUSED too */
   function fieldRow(nm, row, on, txt) {
@@ -674,6 +702,25 @@
       els.run,
       E('span', { cls: 'gd-sp' }),
       E('div', { cls: 'gd-seg', role: 'group', 'aria-label': 'Bilis' }, els.spd),
+      /* retest #41: the width (or height) of the panel in three sizes, one press each (the edge can be dragged too) */
+      E('button', {
+        type: 'button',
+        cls: 'gd-ic',
+        txt: '⇔',
+        title: 'Laki ng panel: makitid / katamtaman / malapad (o i-drag ang gilid)',
+        on: () => {
+          if (mode() === 'side') {
+            const L = [340, 420, 540],
+              w = ls.get('ls-gdock-w', 400);
+            ls.set('ls-gdock-w', L[(L.findIndex(x => x >= w - 10) + 1) % L.length] || L[0]);
+          } else {
+            const L = [0.28, 0.42, 0.6].map(x => Math.round(innerHeight * x)),
+              h = ls.get('ls-gdock-h', L[1]);
+            ls.set('ls-gdock-h', L[(L.findIndex(x => x >= h - 10) + 1) % L.length] || L[0]);
+          }
+          layout();
+        }
+      }),
       E('button', { type: 'button', cls: 'gd-ic', txt: '▁', title: 'Itago ang Training (tuloy ang simulation)', on: () => (ls.set('ls-gdock-min', true), layout()) }),
       E('button', { type: 'button', cls: 'gd-ic', txt: '✕', title: 'Itigil ang Training', on: stopAsk })
     ]);
@@ -729,6 +776,9 @@
     try {
       GD().stop();
     } catch (e) {}
+    try {
+      if (window.DUI && DUI.mark) DUI.mark(null);
+    } catch (e) {}
     fpLive = [];
     fpKey = '';
     layout();
@@ -752,8 +802,13 @@
         const f = g.steps().find(x => (x.a || []).some(a => a.stop && motAddr(a) && MOTOR[motAddr(a)]));
         const a0 = f && f.a.find(a => a.stop && motAddr(a) && MOTOR[motAddr(a)]);
         if (a0) {
-          openD(MOTOR[motAddr(a0)]);
-          setTimeout(() => window.lsSetTab && lsSetTab('training'), 200);
+          /* retest #13 #38: on the Logic page (its message stays there), back to Training */
+          window.lsSetTab && lsSetTab('logic');
+          openD(MOTOR[motAddr(a0)], null, 230);
+          setTimeout(() => {
+            window.lsSetTab && lsSetTab('training');
+            document.body.classList.remove('hasmsg');
+          }, 300);
         }
       } catch (e) {}
       if (done) done();
@@ -783,13 +838,19 @@
         mot = nx ? motAddr(nx) : null;
       if (mot) {
         window.lsSetTab && lsSetTab('logic');
-        openD(MOTOR[mot]);
+        /* retest #39: the first missing contact of its interlock on that sheet (the REMOTE row of the SWP), else its START P.B. row */
+        const I = call(() => interlock(mot), null),
+          ds = dOf(mot),
+          r0 = I && I.miss.find(x => !x.other),
+          pb = pbOf(nx, 1);
+        openD(MOTOR[mot], r0 ? r0.row : pb && pb.sh === dName(ds) ? pb.row : null, 230);
+        els.goKey = mot;
         return;
       }
-      const dg = (s.a || []).map(a => a.dg).find(Boolean);
+      const dg = (s.a || []).filter(a => !(a.hide && call(() => a.hide(), false))).map(a => a.dg).find(Boolean);
       if (dg) {
         window.lsSetTab && lsSetTab('logic');
-        openD(dg[0], dg[1]);
+        openD(dg[0], dg[1], 230);
         return;
       }
       const t = (s.fps || [])[0];
@@ -811,13 +872,14 @@
   }
   /* 3.2.0-beta.35 (CHECKLIST 0.2): open a DITL drawing by name, machine B ~ D on its own page ("DITL-29A #B" = SWP-B, the B chip of the
      sheet header); before, the drawing of machine A was opened for B ~ D */
-  function openD(nm, row) {
+  function openD(nm, row, zoom) {
     const m = /\s*#([B-D])$/.exec(String(nm));
     AN.xrefGo({ d: String(nm).replace(/\s*#\w+$/, '') });
     setTimeout(() => {
       try {
         if (window.DUI && DUI.setMach) DUI.setMach(m ? 'ABCD'.indexOf(m[1]) : 0);
-        if (row != null && DUI.goItem) DUI.goItem(S.cur, undefined, null, { side: 'L', i: row });
+        /* retest #39: from the Training, the row of the step zoomed in (row 0 = the top of the sheet when no row is named) */
+        if ((row != null || zoom) && DUI.goItem) DUI.goItem(S.cur, undefined, null, { side: 'L', i: row != null ? row : 0, zoom: zoom || 0 });
       } catch (e) {}
     }, 80);
   }
@@ -929,7 +991,16 @@
       );
     /* the card */
     const card = E('div', { cls: 'gd-card' });
-    card.append(E('div', { cls: 'gd-eb', txt: 'HAKBANG ' + (i + 1) + ' · ' + (g.STAGES[s.st] || '').toUpperCase() }), E('h3', { txt: s.t }), E('p', { txt: s.d || '' }));
+    card.append(E('div', { cls: 'gd-eb', txt: 'HAKBANG ' + (i + 1) + ' · ' + (g.STAGES[s.st] || '').toUpperCase() }), E('h3', { txt: s.t }));
+    /* retest #44: one line to do on top; a longer explanation folded under "Bakit?" */
+    {
+      const d = String(s.d || ''),
+        m = /^(Gawin:[^.]*\.?)\s*(.*)$/.exec(d);
+      if (m) card.append(E('p', { cls: 'gd-do', txt: m[1] }));
+      const rest = m ? m[2] : d;
+      if (rest.length > 110) card.append(E('details', { cls: 'gd-why' }, [E('summary', { txt: 'Bakit?' }), E('p', { txt: rest })]));
+      else if (rest) card.append(E('p', { txt: rest }));
+    }
     els.cond = E('div', { cls: 'gd-cond' });
     card.append(els.cond);
     /* 3.2.0 retest #30: a done step waits for the trainee: "✓ TAPOS" with its result, then "Susunod ›" (was: the next step at once) */
@@ -943,6 +1014,7 @@
        ticks as the Training list, ls-train), open, with a check box; an AUTO step ticks from the logic (was: the field items only, folded) */
     els.trKey = null;
     els.after = [];
+    els.auIt = [];
     const fli = s.field && s.field.length ? fieldList(s.field) : [];
     if (fli.length) {
       const A = call(() => LV().done(), {}),
@@ -950,14 +1022,20 @@
       card.append(E('div', { cls: 'gd-flh', txt: 'SOP SECTION ' + s.field.map(x => x + 1).join(', ') + ' · ' + fli.length + ' ITEM' + (fli.length > 1 ? 'S' : '') }));
       /* 3.2.0 retest #27: a step that starts equipment: the items before the START (line-up, permissives) and the items from the START
          on (monitor, adjust, standby to AUTO), these locked until the equipment runs */
-      const hasM = (s.a || []).some(a => a.stop || /START|ON\b/.test(a.l)),
-        cut = hasM ? fli.findIndex(f => /\bstart\b(?![\s-]*up)|\binitiate[ds]?\s+(on|run)\b/i.test(f.t)) : -1;
+      /* retest #50 #45: the START item itself is the last item BEFORE the start (it ticks AUTO when the equipment runs); an AUTO item of the
+         logic first ("Initiate RUN" of a compressor, not the "START Auxiliary Oil Pump" before it) */
+      const hasM = (s.a || []).some(a => a.stop || a.loc || a.mot || a.sel || /START|ON\b/.test(a.l)),
+        stRe = /\bstart\b(?![\s-]*up)|\binitiate[ds]?\s+(on|run)\b/i,
+        c0 = fli.findIndex(f => stRe.test(f.t) && f.k === 'auto'),
+        c1 = c0 >= 0 ? c0 : fli.findIndex(f => stRe.test(f.t)),
+        cut = hasM && c1 >= 0 ? c1 + 1 : -1;
+      els.auIt = [];
       els.after = [];
       els.trKey = JSON.stringify(dd0);
       let ul = E('ul', { cls: 'gd-fl' });
       if (cut >= 0) {
         card.append(E('div', { cls: 'gd-flg', txt: 'BAGO I-START' }));
-        if (!cut) card.append(E('div', { cls: 'gd-fle', txt: '(walang item bago ang START sa SOP)' }));
+
       }
       fli.forEach((f, fi) => {
         if (fi === cut) {
@@ -988,6 +1066,7 @@
           } catch (e) {}
         };
         if (cut >= 0 && fi >= cut && !au) els.after.push({ cb, li });
+        if (au) els.auIt.push({ k, cb, li });
         ul.append(li);
       });
       card.append(ul);
@@ -1109,7 +1188,8 @@
        of its faceplate, "[0.0 ~ 400.0 T/H]"); a hand station shows its output (MV %); a value the stage list already shows (furnace
        pressure = PICFG108, drum level, FW flow, coal, O2 ...) is not repeated (was "LICCD1110A PV" with no name and no unit) */
     /* 3.2.0 walkthrough #6: a field card has no values of the stage to watch (the ESP step showed the seawater pumps of the next step) */
-    const stage = s.need && !s.c ? [] : WATCH[s.st] || [],
+    /* retest #51 #46: a step with its own values (s.w: the equipment of the step); the utilities (stage 0) show no values of another step */
+    const stage = s.w ? s.w.map(x => [x[0], x[1], x[2], x[3] || (v => (typeof v === 'number' ? f1(v) : v == null ? '—' : String(v))), x[4]]) : (s.need && !s.c) || s.st === 0 ? [] : WATCH[s.st] || [],
       have = new Set(stage.map(x => x[5]).filter(Boolean));
     /* "DRUM LEVEL CONTROL (FEED WATER FLOW CONTROL)" -> "Feed water flow"; "COND. DUMPING ... / DEAERATOR LEVEL CONTROL" -> "Deaerator level" */
     const nice = d0 => {
@@ -1169,7 +1249,12 @@
     const nx = L.slice(i + 1, i + 3);
     if (nx.length) col2.append(E('div', { cls: 'gd-next' }, nx.map((x, k) => E('div', { txt: i + 2 + k + ' · ' + x.t }))));
     b.append(col1, col2);
-    if (first) goStep(s);
+    if (first) {
+      els.goKey = null;
+      /* retest #38: a message of the sheet opened before (the status bar "Opened DITL-29A ...") does not stay on a new step */
+      document.body.classList.remove('hasmsg');
+      goStep(s);
+    }
     live();
   }
   /* the live part, 4 times a second */
@@ -1204,7 +1289,16 @@
       if (rd) els.okt.textContent = '✓ TAPOS' + (s.c && s.c.now ? ': ' + call(() => s.c.now(), '') : s.need ? ': nakumpirma sa field' : '');
     }
     /* 3.2.0 retest #27: the items after the START open when the equipment runs */
-    const runs = (s.a || []).some(a => a.on && call(() => a.on(), false)) || (!!s.c && call(() => s.c.ok(), false));
+    /* retest #45: the AUTO items tick here as soon as the logic latches them (was: only when the step was drawn again) */
+    const AD = call(() => LV().done(), {});
+    for (const x of els.auIt || []) {
+      const v = !!AD[x.k];
+      if (x.cb.checked !== v) {
+        x.cb.checked = v;
+        x.li.classList.toggle('dn', v);
+      }
+    }
+    const runs = s.runN ? call(() => s.runN(), 0) > 0 : (s.a || []).some(a => (a.stop || a.loc || a.mot) && a.on && call(() => a.on(), false)) || (!!s.c && call(() => s.c.ok(), false));
     for (const x of els.after || []) {
       x.cb.disabled = !runs;
       x.li.classList.toggle('lk', !runs);
@@ -1224,19 +1318,37 @@
     } else if (els.cond) {
       /* 3.2.0 walkthrough #5: the 6 h of the ESP purge, in plant time */
       const hd = call(() => g.holdOf(s), null),
-        hm = x => Math.floor(x / 3600) + ':' + String(Math.floor((x % 3600) / 60)).padStart(2, '0');
+        /* retest #5: ×300 by itself while the purge counts (RUN), back to ×1 at 6:00 */
+        sp = +((window.AN && AN.spd) || 1);
+      if (hd && isRun() && hd[0] < hd[1] && sp !== 300 && els.fast !== s.i) {
+        els.fast = s.i;
+        setSpeed(300);
+      } else if (els.fast === s.i && hd && hd[0] >= hd[1]) {
+        els.fast = null;
+        setSpeed(1);
+      }
+      {
+        const hm = x => Math.floor(x / 3600) + ':' + String(Math.floor((x % 3600) / 60)).padStart(2, '0');
       els.cond.textContent = hd
         ? '⏱ Purge: ' + hm(hd[0]) + ' / ' + hm(hd[1]) + ' h (oras ng planta' + (isRun() ? '' : ', naka-PAUSE: pindutin ang ▶ RUN') + ')'
         : s.need
           ? 'Pindutin ang "Tapos na ito sa field" kapag nagawa na.'
           : '';
+      }
+    }
+    /* retest #48: the centre follows the machine of the step (SWP-A running -> the SWP-B sheet, tab B) */
+    if (follow && els.goKey) {
+      const ms = (s.a || []).filter(a => a.stop && motAddr(a) && MOTOR[motAddr(a)]),
+        nx = ms.find(a => !call(() => a.on && a.on(), false));
+      if (nx && motAddr(nx) !== els.goKey && document.body.dataset.tab === 'logic') goStep(s);
     }
     /* the interlock */
     const blocked = {};
     /* 3.2.0-beta.26 (human run of the Training: the first SWP step showed three full interlock boxes, SWP-A / B / C, and the last
        button was under the screen): the full interlock only for the first motor of the step that is not running yet; a running one is
        one line, the others wait (one line) */
-    let shown = 0;
+    let shown = 0,
+      mk = null;
     for (const it of els.il || []) {
       const I = interlock(it.ad);
       it.box.textContent = '';
@@ -1339,12 +1451,40 @@
         );
       }
       if (!run && !I.miss.length) it.box.append(E('div', { cls: 'gd-ild ok', txt: '✓ Kumpleto ang interlock: puwede nang pindutin ang START.' }));
+      /* retest #40: the missing rows outlined on the sheet in the centre */
+      {
+        const ms0 = dOf(it.ad);
+        mk = { s: ms0, rows: run ? [] : I.miss.filter(r => (r.s || ms0) === ms0).map(r => r.row) };
+      }
       if (!run && I.miss.length) {
         blocked[it.ad] = 1;
         it.box.append(E('div', { cls: 'gd-ild x', txt: 'Hindi pa aandar ang motor (ayon sa ' + I.sheet + '): ayusin muna ang may ✕ (FIELD button, o ↗ para buksan ang row sa logic).' }));
       }
     }
+    /* retest #49: a step with a number of machines to run (2 of the 3 SWP): the others are the standby, their START is closed */
+    const nOn = s.max ? (s.a || []).filter(a => a.stop && call(() => a.on(), false)).length : 0;
+    try {
+      if (window.DUI && DUI.mark) DUI.mark(mk && mk.s, mk ? mk.rows : []);
+    } catch (e) {}
     for (const B of els.btns || []) {
+      const on0 = B.a.on ? call(() => B.a.on(), false) : false;
+      /* a button of a machine that is not for this step (the standby AUTO of a running SWP) */
+      const hd = !!(B.a.hide && call(() => B.a.hide(), false));
+      B.bt.hidden = hd;
+      if (B.sb) B.sb.hidden = hd;
+      if (B.lab) B.lab.hidden = hd;
+      /* retest #52: a field start is a toggle */
+      if (B.a.tog && B.bt.firstChild) B.bt.firstChild.textContent = on0 ? B.a.l.replace('START', 'STOP') : B.a.l;
+      if (s.max && nOn >= s.max && B.a.stop && !on0) {
+        B.bt.dataset.block = '1';
+        B.bt.classList.add('dis');
+        B.bt.title = 'Sapat na: ' + nOn + ' ang tumatakbo. Ito ang standby (AUTO sa susunod na hakbang).';
+        if (B.lab) {
+          B.lab.textContent = 'STANDBY';
+          B.lab.className = 'gd-mst';
+        }
+        continue;
+      }
       const bl = B.ad && blocked[B.ad];
       B.bt.dataset.block = bl ? '1' : '';
       B.bt.classList.toggle('dis', !!bl);
@@ -1397,7 +1537,7 @@
   setInterval(() => {
     if (dock && GD() && GD().on && window.AN) ls.set('ls-gdock-spd', +AN.spd || 1);
   }, 5000);
-  window.LS_DOCK = { start, resume, open, stop, layout, fill, interlock, fieldOf, fieldSet, fieldRow, mst, dmotor, dOf, needNet, leaves, permOf, dpress, dset, dout, runOut, get el() {
+  window.LS_DOCK = { start, resume, open, stop, layout, fill, interlock, fieldOf, fieldSet, fieldRow, dsel, mst, dmotor, dOf, needNet, leaves, permOf, dpress, dset, dout, runOut, get el() {
       return dock;
     } };
 })();

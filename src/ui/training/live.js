@@ -331,10 +331,54 @@ window.LS_LIVE = (function () {
   const PURGE_AIR = VAL('AIR', 115, null); /* > 25 % MCR of the total air (25 % of 460 T/H) */
   const MFT = BIT('I.000F', 0, 'no MFT');
 
+  /* 3.2.0 retest #45 #47 #33: the equipment of sections 2 ~ 17 that runs on a DITL drawing or at a local panel (dock.js reads the drawing
+     of the one world: RUNNING output, input row, field state) */
+  const DK = () => window.LS_DOCK;
+  const DC = (want, ok, now) => ({ sig: [], res: () => true, ok: () => !!(DK() && ok()), now: () => (DK() ? now() : '—'), want, go: {} });
+  const dRun = nm => DK().runOut(nm) === 1;
+  const dOut = (nm, r) => DK().dout(nm, r) === 1;
+  const dIn = (nm, r) => {
+    const s = DK().dOf(nm);
+    try {
+      return !!s && DUI.rowVal(s, r) === 1;
+    } catch (e) {
+      return false;
+    }
+  };
+  const nRun = L => L.filter(dRun).length;
+  const SWPA = ['M.3353', 'M.3354', 'M.3355'],
+    SWPD = ['DITL-29A', 'DITL-29A #B', 'DITL-29A #C'];
+  const SWP_STBY = DC(
+    'two seawater pumps running and the standby in AUTO (DITL-29A row 4 AUTO MODE SELECTED)',
+    () => SWPA.filter(a => val(a) > 0.5).length >= 2 && SWPA.some((a, j) => !(val(a) > 0.5) && dIn(SWPD[j], 3)),
+    () => SWPA.map((a, j) => 'SWP-' + 'ABC'[j] + (val(a) > 0.5 ? ' RUN' : dIn(SWPD[j], 3) ? ' AUTO' : ' MAN')).join(', ')
+  );
+  const FIELD = (k, l) => DC(l + ' running (local)', () => !!(AN.fieldState && AN.fieldState()[k]), () => l + ' ' + (AN.fieldState && AN.fieldState()[k] ? 'RUNNING' : 'STOPPED'));
+  const OUTC = (nm, r, l) => DC(l + ' (' + nm + ' out ' + (r + 1) + ')', () => dOut(nm, r), () => l + ' ' + (dOut(nm, r) ? 'ON' : 'OFF'));
+  const INC = (nm, r, l) => DC(l + ' (' + nm + ' row ' + (r + 1) + ')', () => dIn(nm, r), () => l + ' ' + (dIn(nm, r) ? 'ON' : 'OFF'));
+  const RUNN = (L, n, l) => DC(n + ' ' + l + ' running', () => nRun(L) >= n, () => L.map(nm => nm.replace(/^DITL-\S+\s*#?/, '') + (dRun(nm) ? ' RUN' : ' STOP')).join(', '));
+  const SWBP = ['DITL-30', 'DITL-30 #B', 'DITL-30 #C'],
+    MWP = ['DITL-112', 'DITL-112 #B', 'DITL-112 #C'],
+    ACW = ['DITL-76', 'DITL-77'];
+
   /* ---------- the steps: [section number, regex on the step text, condition] (first match wins); the rest by the general rules ---------- */
   const R = [
     [2, /initiate selected 1st SWP START/i, RUN.SWP1],
     [2, /START 2nd Selected SWP/i, SWP2],
+    [2, /Set the standby SWP to AUTO/i, SWP_STBY],
+    [3, /Initiated START Hypo/i, FIELD('hypo', 'Hypochlorite pump')],
+    [3, /pump is running at local/i, FIELD('hypo', 'Hypochlorite pump')],
+    [4, /Set debris filter to auto start/i, OUTC('DITL-39', 3, 'SWP outlet debris filter IN OPERATION')],
+    [5, /START to 1st selected Sea Water Booster/i, RUNN(SWBP, 1, 'SWBP')],
+    [5, /START to 2nd selected Sea Water Booster/i, RUNN(SWBP, 2, 'SWBP')],
+    [6, /Set debris filter to auto start/i, OUTC('DITL-39', 14, 'SWBP outlet debris filter IN OPERATION')],
+    [7, /Initiate START to selected MWP/i, RUNN(MWP, 1, 'MWP')],
+    [8, /Initiate START of the selected AWCP/i, RUNN(ACW, 1, 'ACW pump')],
+    [9, /Initiate ON to selected dryer/i, OUTC('DITL-45', 14, 'Instrument air dryer A RUNNING')],
+    [10, /^Initiate RUN with proper coordination/i, INC('DITL-113', 5, 'IA compressor A RUNNING')],
+    [11, /Initiate ON to selected dryer/i, OUTC('DITL-45', 3, 'Plant air dryer A RUNNING')],
+    [12, /^Initiate RUN with proper coordination/i, INC('DITL-114', 5, 'PA compressor A RUNNING')],
+    [17, /Initiate START air pre-heater drive motor/i, RUNN(['DITL-43'], 1, 'air preheater')],
     [18, /initiate START to selected CEP/i, RUN.CEP],
     [18, /FCV-CD1120 to MANUAL and ADJUST to 60/i, ALL(MODE('FCV-CD1120', 'MAN'), MV('FCV-CD1120', 55, 65))],
     [18, /set the standby CEP to REMOTE/i, RUN.CEP],

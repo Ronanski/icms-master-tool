@@ -822,6 +822,8 @@ body[data-tab=logic] #gsbar .lo-pg{display:flex}
 
 /* 2.5.0-beta.8: DITL page links (FROM / TO column): link color, the row that a link opened blinks, chooser when a cell names several pages */
 #svg text.plink{fill:var(--c-acc);text-decoration:underline}
+#svg rect.plmiss{fill:rgba(220,38,38,.16);stroke:#ef4444;stroke-width:.9;pointer-events:none;animation:plmiss 1s steps(2,start) infinite}
+@keyframes plmiss{50%{stroke-opacity:.25;fill-opacity:.04}}
 #svg rect.plflash{fill:rgba(255,196,0,.22);stroke:#ffc400;stroke-width:.6;pointer-events:none;animation:plf .5s ease-in-out 4 alternate}
 #plpick{position:fixed;z-index:60;min-width:220px;max-width:min(420px,calc(100vw - 16px));max-height:60vh;overflow:auto;padding:6px;background:var(--c-pane,#151c22);border:1px solid var(--c-acc,#4fd18b);border-radius:6px;box-shadow:0 6px 18px #0008}
 #plpick .plhd{font:600 12px var(--uf,sans-serif);color:var(--c-dim,#9aa7b2);padding:2px 4px 6px}
@@ -961,8 +963,9 @@ body.cr #crband > #cralarm{flex:1 1 0;display:flex;align-items:center;gap:.625re
 body.cr #crband > #cralarm.on{background:var(--c-almsoft);border-color:var(--c-alm)}
 #cralarm .crchip{display:inline-flex;align-items:center;gap:.3125rem;height:1.25rem;padding:0 .5rem;border-radius:.625rem;font:600 .6875rem var(--uf);letter-spacing:.05em;white-space:nowrap;flex:none}
 #cralarm .crchip.alm{background:var(--c-alm);color:#fff;cursor:pointer}
-#cralarm .crchip.alm.unack{animation:crblink 1s steps(2,start) infinite}
-@keyframes crblink{50%{background:#f59e0b;color:#1a1200}}
+#cralarm .crchip.alm.unack{animation:crblink 1s steps(2,start) infinite;color:#fff}
+#cralarm .cratx.cratx{white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.15;min-width:0;font-size:.75rem}
+@keyframes crblink{50%{background:#7f1d1d;color:#fff}}
 #cralist .crfr.unack .crfn{font-weight:700;color:var(--c-almtx)}#cralist .crfr.rtn .crfn{color:var(--c-dim)}#cralist .crfr.trip.unack{animation:crblink 1s steps(2,start) infinite}
 #cralist .crfr.crfr{grid-template-columns:auto minmax(0,1fr) auto auto}
 #cralarm .crchip.mut{background:var(--c-ctlh);color:var(--c-dim)}

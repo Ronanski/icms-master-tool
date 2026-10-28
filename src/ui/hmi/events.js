@@ -98,10 +98,13 @@
     try {
       for (const x of DUI.outs(s) || []) {
         const n = String(x.name || '');
-        if (o.trip == null && /\bTRIP\b/.test(n) && !/COMMAND|INTERLOCK|NOT TRIP|\bCMD\b|RESET/.test(n)) o.trip = { row: x.row, name: n.replace(/^Output row \d+ · /, '').replace(/\s+[IO]\.\S+/g, '').replace(/\s*·.*$/, '').trim() };
+        /* retest #37: not "NO TRIP PRESENT" (DITL-05: 1 when there is NO trip) */
+        if (o.trip == null && /\bTRIP\b/.test(n) && !/COMMAND|INTERLOCK|NOT TRIP|NO TRIP|\bNO\b|\bCMD\b|RESET/.test(n)) o.trip = { row: x.row, name: n.replace(/^Output row \d+ · /, '').replace(/\s+[IO]\.\S+/g, '').replace(/\s*·.*$/, '').trim() };
         if (o.run == null && /RUNNING/.test(n) && !/NOT RUNNING|STOP|\bANY\b|LOCAL/.test(n)) o.run = { row: x.row };
       }
     } catch (e) {}
+    /* a motor drawing only (a RUNNING output too): the MFT sheets have their own trip lines */
+    if (!o.run) o.trip = null;
     TRO.set(s, o);
     return o;
   }
@@ -163,7 +166,9 @@
     for (const [k, x] of now) {
       const e = AT.get(k);
       if (!e || e.rtn || e.lv !== x.lv) {
-        AT.set(k, { ...x, t: tfmt(t), ack: false, rtn: false });
+        /* retest #35: the alarms standing when the plant is loaded (a cold unit: no flow, no pressure, the equipment stopped) come
+           acknowledged (shutdown state), as on the DCS after a shutdown: only a NEW alarm flashes */
+        AT.set(k, { ...x, t: tfmt(t), ack: first, rtn: false, sd: first });
         if (first) nNew++;
         else add({ rt: { t } }, { name: x.sh }, x.kind, x.nm + ' ' + x.lv);
       }
@@ -174,7 +179,7 @@
         if (e.ack) AT.delete(k);
         else e.rtn = true;
       }
-    if (first && nNew) add({ rt: { t } }, { name: 'DCS' }, 'ALM', nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing at the start (alarm list: header ALARM chip)');
+    if (first && nNew) add({ rt: { t } }, { name: 'DCS' }, 'ALM', nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing at the start, acknowledged (shutdown state; alarm list: header ALARM chip)');
   }
   function ack(k) {
     const L = k ? [k] : [...AT.keys()];

@@ -487,7 +487,16 @@ const FD = {
     { hold: 5, e: 'FIZSE-DO1043-A4', r: 'FIZSR-DO1043-A4', t: 5 },
     { hold: 22, e: 'FIZSO-DO1043-A2', r: 'FIZSC-DO1043-A2', t: 3 }
   ],
-  'DITL-18': [{ hold: 23, e: 'FIBI8-DO1043-A', t: 1 }, { flame: 1, e: 'FIBI9-DO1043-A', t: 2 }, { rest: 1, e: 'FIBI10-DO1043-A' }]
+  'DITL-18': [{ hold: 23, e: 'FIBI8-DO1043-A', t: 1 }, { flame: 1, e: 'FIBI9-DO1043-A', t: 2 }, { rest: 1, e: 'FIBI10-DO1043-A' }],
+  /* 3.2.0 retest #53: the debris filter panels (LCP) of DITL-39. REMOTE AUTO START P.B. M.0790 (row 8, pulse TR390 -> O.0281 DOR-DF1001)
+     starts the SWP outlet filter system 1 at its panel; REMOTE AUTO STOP P.B. M.0791 (row 10) stops it; the panel answers I.0095
+     DIR-DF1001 "SWP OUTLET DEBRIS FILTER IN OPERATION". It runs only with a seawater pump running (output row 1 ANY SEAWATER PUMP
+     RUNNING M.079C, the COOLING WATER ON FEEDBACK O.0280 to the panel). System 2 (SWBP outlet): M.0792 row 19 / M.0793 row 21 ->
+     I.0415 DIR-DF1002. Before: nothing answered the command, the filter stayed STOPPED */
+  'DITL-39': [
+    { on: 7, off: 9, req: 0, e: 'FIDIR-DF1001', t: 0 },
+    { on: 18, off: 20, e: 'FIDIR-DF1002', t: 0 }
+  ]
 };
 function fdSheet(s, code) {
   const k = (s._inst && s._inst.k) || 0;
@@ -511,6 +520,11 @@ function fdStep(s, dt) {
     if (d.on != null) {
       if (act.has(d.on) && !act.has(d.off)) want = 1;
       else if (act.has(d.off) && !act.has(d.on)) want = 0;
+      /* a permissive output row of this sheet (DITL-39 row 1 ANY SEAWATER PUMP RUNNING) */
+      if (d.req != null) {
+        const o = window.WORLD && WORLD.out && WORLD.out[s.name];
+        if (!(o && o.has(d.req))) want = 0;
+      }
     } else if (d.hold != null) want = act.has(d.hold) ? 1 : 0;
     else if (d.flame) {
       const v16 = fdSheet(s, 'DITL-16'),
