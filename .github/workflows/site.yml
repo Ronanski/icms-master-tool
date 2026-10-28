@@ -1,5 +1,6 @@
 name: Site (Stable + Beta)
-# Stable = html of main at /, Beta = html of the branch that was just pushed at /beta/. The apk / exe load these pages, so they update by themselves.
+# Stable = html of the latest Stable tag (vX.Y.Z, made only on GO STABLE) at /, Beta = html of the branch that was just pushed at /beta/.
+# (2026-10-28: main carries the Beta under test, so the Stable page no longer follows main.) The apk / exe load these pages, so they update by themselves.
 on:
   workflow_run: { workflows: [Checks], types: [completed] }
   workflow_dispatch:
@@ -14,7 +15,12 @@ jobs:
     environment: { name: github-pages, url: '${{ steps.d.outputs.page_url }}' }
     steps:
       - uses: actions/checkout@v4
-        with: { ref: main, path: stable }
+        with: { ref: main, path: stable, fetch-depth: 0 }
+      - name: Stable = the latest Stable tag
+        run: |
+          cd stable
+          T=$(git tag -l 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          test -n "$T" && git checkout -q "$T" && echo "Stable page: $T"
       - uses: actions/checkout@v4
         with: { ref: '${{ github.event.workflow_run.head_sha || inputs.beta_ref || ''main'' }}', path: beta }
       - name: Assemble
