@@ -69,7 +69,8 @@ function setCat(c) {
         AN.lkey = null;
         render();
         coldShow();
-        if (runWas && AN.runOn) AN.runOn();
+        /* retest #57: a plant not started does not run by itself (the operator picks the starting state first) */
+        if (runWas && AN.runOn && (AN.startState || !AN.plantOn)) AN.runOn();
       })
       .catch(e => {
         AN.lkey = null;

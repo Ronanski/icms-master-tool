@@ -6,6 +6,55 @@
   const $ = id => document.getElementById(id);
   /* 3.2.0 retest #54 (user 2026-10-28: the page froze over 1 min with no loading sign): a progress bar over the page while a starting
      state loads (hmi-op.js anLoadStart) or the logic of the first page is read; show(text), prog(0 ~ 1), hide() */
+  /* 3.2.0 retest #57 (R4: the Plant view, "Unit · not started", loaded the Cold by itself, froze and ran the time): with the plant model
+     ON and no starting state picked, the operator picks one here (Cold / 150 MW); nothing loads or runs by itself. after() goes on
+     once the picked state is in (RUN pressed with no state) */
+  window.lsAskStart = after => {
+    let d = document.getElementById('lsask');
+    if (d) {
+      d._after = after || d._after;
+      return;
+    }
+    d = document.createElement('div');
+    d.id = 'lsask';
+    d.setAttribute('role', 'dialog');
+    d.setAttribute('aria-label', 'Starting state');
+    d._after = after;
+    d.innerHTML =
+      '<div class=lsbz><b>No starting state picked</b><p>The plant model is ON but the plant is not started. Pick the starting state; it loads with a progress bar.</p><div class=lsaskb></div></div>';
+    const bs = d.querySelector('.lsaskb'),
+      close = () => d.remove(),
+      pick = id => {
+        const go = d._after;
+        close();
+        let k = 0;
+        const iv = setInterval(() => {
+          const ok = window.AN && AN.sheets && AN.sheets.length >= 54 && AN.loadStart;
+          if (!ok && ++k < 240) return;
+          clearInterval(iv);
+          if (!ok) return;
+          const b = document.getElementById(id);
+          if (b) b.click();
+          (AN._startP || Promise.resolve()).then(() => go && go(), () => {});
+        }, 250);
+      };
+    [
+      ['Cold (start-up from zero)', () => pick('loadcold'), 'go'],
+      ['150 MW (HMI snapshot)', () => pick('load150'), ''],
+      ['Not now', close, '']
+    ].forEach(([t, f, c]) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = t;
+      b.className = 'lsaskbtn ' + c;
+      b.onclick = f;
+      bs.append(b);
+    });
+    document.body.append(d);
+    try {
+      bs.firstChild.focus();
+    } catch (e) {}
+  };
   window.lsBusy = (() => {
     let el = null,
       t0 = 0,
@@ -294,6 +343,8 @@
         if (window.AN && AN.cat !== 'an' && AN.setCat) AN.setCat('an');
         lib && lib(false);
         plant && plant(true);
+        /* retest #57: the Plant view of a plant not started asks for the starting state (no load by itself) */
+        if (window.AN && AN.plantOn && !AN.startState && !AN._loadP) window.lsAskStart();
       } else if (t === 'library') {
         plant && plant(false);
         lib && lib(true);
@@ -312,16 +363,17 @@
       } catch (e) {}
   }
   const HINTS = {
-    operate: 'PLANT VIEW: pick a system on the left · click a controller or valve = faceplate (A / M / R, SV, MV) · Plant ▾ (top right) = plant model and starting state',
-    library: 'LIBRARY: search an address, tag or description · Find = open the info card',
+    /* retest #42: short enough for the status bar; the whole text is in the tooltip */
+    operate: 'PLANT VIEW: system on the left · controller / valve = faceplate · Plant ▾ = model, start',
+    library: 'LIBRARY: search an address, tag or description · Find = info card',
     tools: 'TOOLS: tests, drawing checks, simulation switches',
-    home: 'HOME: pick what you want to do · "/" or Ctrl+K = search a tag',
-    training: 'TRAINING: tick each step as you do it · a tag = its info card · Plant ▾ (top right) > Unit > Cold to practise'
+    home: 'HOME: pick what to do · "/" or Ctrl+K = search a tag',
+    training: 'TRAINING: tick each step · a tag = info card · Plant ▾ > Unit > Cold to practise'
   };
   window.lsSetTab = setTab;
   function hint() {
     const h = foot && foot.querySelector('.shint');
-    if (h) h.textContent = HINTS[tab] || '';
+    if (h) h.textContent = h.title = HINTS[tab] || '';
   }
   function setSub(c) {
     if (window.AN && AN.setCat && AN.cat !== c) AN.setCat(c);
@@ -459,6 +511,8 @@
           const on = !t.hidden && !!t.textContent.trim();
           if (on && posted) {
             sm.textContent = t.textContent;
+            /* retest #42: the whole message in the tooltip (a long one is cut in the status bar) */
+            sm.title = t.textContent + ' (click to hide)';
             mtab = document.body.dataset.tab;
           }
           document.body.classList.toggle('hasmsg', on && mtab === document.body.dataset.tab);

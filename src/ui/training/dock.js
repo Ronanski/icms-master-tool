@@ -898,6 +898,9 @@
         /* retest #39: from the Training, the row of the step zoomed in (row 0 = the top of the sheet when no row is named) */
         if ((row != null || zoom) && DUI.goItem) DUI.goItem(S.cur, undefined, null, { side: 'L', i: row != null ? row : 0, zoom: zoom || 0 });
       } catch (e) {}
+      /* retest #38: the sheet the guide opens leaves no "Opened DITL-xx - use the ABC button ..." in the status bar (the dock says
+         which sheet and row) */
+      document.body.classList.remove('hasmsg');
     }, 80);
   }
   /* the running memory of a motor button (guide.js mot) */
@@ -1141,9 +1144,16 @@
       }
     }
     if (s.need) {
-      const cb = E('button', { type: 'button', cls: 'gd-btn go', txt: s.pre ? 'Tapos na ito sa field (6 h na)' : 'Tapos na ito sa field' });
+      const cb = E('button', { type: 'button', cls: 'gd-btn go', txt: s.pre ? 'Tapos na ang ' + Math.round(s.pre / 3600) + ' h purge' : 'Tapos na ito sa field' });
+      /* retest #55: a card with a field time (the 6 h ESP purge): "Tapos na" only when the time is over (dock live: els.preCb); the
+         purge not started yet can be skipped only as a training shortcut, asked and logged */
+      if (s.pre) els.preCb = { b: cb, i: s.i };
       /* 3.2.0 walkthrough #16: works PAUSED too; #4: the field items of the section are ticked in the Training list as well */
       cb.onclick = () => {
+        if (s.pre) {
+          const hd = call(() => g.holdOf(s), null);
+          if (!hd || hd[0] < hd[1]) return;
+        }
         const dd = ls.get('ls-train', {});
         for (const f of fli) if (f.k !== 'auto') dd[f.si + '.' + f.i] = 1;
         ls.set('ls-train', dd);
@@ -1171,7 +1181,27 @@
               g.preStart(s.i);
               fill(true);
             }
-          })
+          }),
+          (els.preSkip = E('button', {
+            type: 'button',
+            cls: 'gd-btn',
+            txt: 'Laktawan ang ' + Math.round(s.pre / 3600) + ' h (training shortcut)',
+            title: 'Para lang kung tapos na ang purge sa field: kailangan ng kumpirmasyon at naka-log sa Events',
+            on: () => {
+              if (!confirm('Laktawan ang ' + Math.round(s.pre / 3600) + ' h ESP purge? Training shortcut ito: ituturing na tapos na ang purge sa field. Naka-log ito sa Events.')) return;
+              if (window.lsEventAdd) lsEventAdd('ESP', 'FIELD', 'Training shortcut: ' + Math.round(s.pre / 3600) + ' h ESP purge skipped (taken as done in the field)');
+              const dd = ls.get('ls-train', {});
+              for (const f of fli) if (f.k !== 'auto') dd[f.si + '.' + f.i] = 1;
+              ls.set('ls-train', dd);
+              try {
+                window.lsHome && lsHome.train && lsHome.train();
+              } catch (e) {}
+              g.confirm(s.i);
+              g.scan();
+              if (!s.c && g.ready()) g.next();
+              fill(true);
+            }
+          }))
         );
     }
     if (bs.children.length) card.append(bs);
@@ -1337,6 +1367,13 @@
       const hd = call(() => g.holdOf(s), null),
         /* retest #5: ×300 by itself while the purge counts (RUN), back to ×1 at 6:00 */
         sp = +((window.AN && AN.spd) || 1);
+      /* retest #55: "Tapos na" of the purge only at the end of the time; the shortcut only before the purge starts */
+      if (els.preCb && els.preCb.i === s.i) {
+        const left = !hd || hd[0] < hd[1];
+        els.preCb.b.disabled = left;
+        els.preCb.b.title = left ? (hd ? 'Hintayin ang ' + Math.round(hd[1] / 3600) + ':00 h ng purge' : 'Simulan muna ang purge (o laktawan bilang training shortcut)') : '';
+        if (els.preSkip) els.preSkip.hidden = !!hd;
+      }
       if (hd && isRun() && hd[0] < hd[1] && sp !== 300 && els.fast !== s.i) {
         els.fast = s.i;
         setSpeed(300);
@@ -1349,7 +1386,9 @@
       els.cond.textContent = hd
         ? '⏱ Purge: ' + hm(hd[0]) + ' / ' + hm(hd[1]) + ' h (oras ng planta' + (isRun() ? '' : ', naka-PAUSE: pindutin ang ▶ RUN') + ')'
         : s.need
-          ? 'Pindutin ang "Tapos na ito sa field" kapag nagawa na.'
+          ? s.pre
+            ? 'Pindutin ang "Simulan ang ' + Math.round(s.pre / 3600) + ' h purge", saka ▶ RUN.'
+            : 'Pindutin ang "Tapos na ito sa field" kapag nagawa na.'
           : '';
       }
     }

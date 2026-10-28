@@ -589,7 +589,8 @@ window.LS_LIVE = (function () {
   /* one pass over every auto step; returns the keys that changed */
   function scan() {
     const ch = [];
-    if (!live() || !PROC.length) return ch;
+    /* retest #9 #54: nothing ticks while a starting state loads in slices (the plant is half loaded) */
+    if (!live() || !PROC.length || (window.AN && AN._loading)) return ch;
     const t = simT();
     let hand = {};
     try {

@@ -64,7 +64,9 @@ body.app2:not(#_) #trainws button.trsec.on{background:var(--c-accbg);box-shadow:
 #trainws .trrow input{flex:none;width:1.375rem;height:1.375rem;margin:.0625rem 0 0;accent-color:var(--c-run);cursor:pointer}
 #trainws .trrow label{flex:1;cursor:pointer;font-size:.9375rem;line-height:1.45}
 #trainws .trrow label::before{content:counter(st) ". ";color:var(--c-dim);font:500 .875rem var(--mf)}
-#trainws li.dn .trrow label{color:var(--c-dim);text-decoration:line-through;text-decoration-color:var(--c-line2)}
+/* retest #56: a done step stays readable (no strike-through): a slightly dimmer text, the ✓ and the time of the tick */
+#trainws li.dn .trrow label{color:var(--c-tx2)}
+#trainws .trwhen{color:var(--c-acc);font-size:.75rem;white-space:nowrap}
 #trainws .trtags{display:flex;flex-wrap:wrap;gap:.375rem;margin:.375rem 0 0 2.125rem}
 body.app2:not(#_) #trainws button.trtag{min-height:2rem;padding:0 .625rem;border-radius:1rem;border:1px solid var(--c-accbd);background:var(--c-accbg);color:var(--c-acctx);font:500 .8125rem var(--mf)}
 body.app2:not(#_) #trainws button.trtag.nf{border-style:dashed;border-color:var(--c-line2);background:transparent;color:var(--c-dim)}

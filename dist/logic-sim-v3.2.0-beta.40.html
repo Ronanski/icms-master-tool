@@ -28351,7 +28351,8 @@ function setCat(c) {
         AN.lkey = null;
         render();
         coldShow();
-        if (runWas && AN.runOn) AN.runOn();
+        /* retest #57: a plant not started does not run by itself (the operator picks the starting state first) */
+        if (runWas && AN.runOn && (AN.startState || !AN.plantOn)) AN.runOn();
       })
       .catch(e => {
         AN.lkey = null;
@@ -29010,7 +29011,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.40';
-      c3.textContent += ' · build 45a4c69'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 1f49554'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -32856,14 +32857,12 @@ bRst.onclick = () => {
   AN.startState = null;
   reset();
   /* 3.2.0-beta.18: and the plant is COLD at once (VIEW shows boiler off, not the drawings' defaults MSP 75) */
-  const p = coldIfNone();
-  if (p)
-    p.then(ok => {
-      if (!ok) return;
-      settle();
-      paint();
-      panelUpd(true);
-    });
+  /* retest #57: then the operator picks the starting state (no Cold by itself) */
+  coldIfNone(() => {
+    settle();
+    paint();
+    panelUpd(true);
+  });
 };
 bFit.onclick = fitView;
 bVal.onclick = () => {
@@ -33089,7 +33088,7 @@ function viewSet(on) {
       ? 'View mode: grey drawing, nothing is simulated. Click a block or wire to trace it; click an empty place to clear.'
       : 'Simulation mode: Run, or Pause + Next / Back.' +
           /* 3.2.0-beta.6 (audit M4): until a starting state is picked the plant is at the drawings' defaults (0 MW) */
-          (AN.startState ? '' : ' No starting state yet: Run starts the plant cold (boiler off), or pick Plant ▾ (top right) > Unit (Cold, 150 MW).')
+          (AN.startState ? '' : ' No starting state yet: Run asks for it (Cold or 150 MW), or pick Plant ▾ (top right) > Unit.')
   );
 }
 bVw.onclick = () => viewSet(!AN.view);
@@ -33098,13 +33097,12 @@ stepUi();
    state picked starts the plant COLD (boiler off: drum 0 kg/cm2, no fire, fans stopped), as Start > Cold. Before, the plant ran at the
    drawings' defaults: an undriven transmitter sits at the middle of its range (MSP 75 kg/cm2 = middle of PT-MS1002 0 ~ 150). Only the
    operator's RUN press does this; AN.viewSet (the tests) is unchanged. */
-function coldIfNone() {
-  /* 3.2.0 retest #54: loaded in slices with a progress bar (hmi-op.js anLoadStart); before, the page froze for about a minute */
-  if (AN.startState || AN.cat !== 'an' || !AN.loadStart) return null;
-  return AN.loadStart('cold').then(
-    () => true,
-    () => false
-  );
+function coldIfNone(after) {
+  /* 3.2.0 retest #57 (user 2026-10-28): no Cold loaded by itself any more: with the plant model ON and no starting state the operator
+     PICKS it (app.js lsAskStart: Cold / 150 MW); after() goes on once it is in. Returns true when it asked */
+  if (AN.startState || AN.cat !== 'an' || !AN.plantOn || !window.lsAskStart) return false;
+  lsAskStart(after);
+  return true;
 }
 /* 3.2.0-beta.18 (VIEW/TRACE audit, user 2026-10-23: "patay pa naman ang boiler mo ... bkt may value na si MSP?"): the ABC page
    opened by the operator, before any starting state is picked, showed the drawings' defaults in VIEW too (MSP 75 kg/cm2, drum level
@@ -33116,18 +33114,8 @@ function coldShow() {
   if (AN.startState || AN.cat !== 'an' || AN._cold0) return;
   if (!AN._uiCold) return;
   AN._cold0 = 1;
-  const kept = Object.values(AN.sv || {}).some(o => o && ['force', 'ext', 'ai', 'sw', 'man', 'p'].some(k => o[k] && Object.keys(o[k]).length));
-  /* 3.2.0-beta.40 (roadmap 2, user 2026-10-26: "cold start = true physical state of a cold plant"): with the plant model ON a kept
-     session no longer leaves the drawings' defaults (header MSP 75 kg/cm2, drum level -566 mm with "Unit · not started"): RUN starts
-     the plant cold from a Reset anyway (coldIfNone), so the page shows that cold plant at once. Plant model OFF: kept as it was */
-  const p = kept && !AN.plantOn ? null : coldIfNone();
-  if (p)
-    p.then(ok => {
-      if (!ok) return;
-      settle();
-      paint();
-      panelUpd(true);
-    });
+  /* retest #57: the page asks for the starting state (plant model ON); nothing loads or runs by itself */
+  coldIfNone();
 }
 /* the operator's own click / key (a script driving the page, the tests, sends no trusted event) */
 ['pointerdown', 'keydown'].forEach(t =>
@@ -33139,19 +33127,17 @@ function coldShow() {
     { capture: true, passive: true }
   )
 );
-const COLD_MSG = 'No starting state was picked: the plant starts COLD (boiler off, drum 0 kg/cm2, no fire, fans stopped). Pick Plant ▾ (top right) > Unit for 150 MW.';
-const runGo = c => {
+const runGo = () => {
   if (AN.view) {
     viewSet(false);
     setRun(true);
   } else setRun(!AN.run);
-  if (c) msg(COLD_MSG);
 };
 bRun.onclick = () => {
   if (AN._loadP) return;
-  const p = !AN.run && coldIfNone();
-  if (p) p.then(runGo);
-  else runGo(false);
+  /* retest #57: RUN with no starting state asks for it, then runs */
+  if (!AN.run && coldIfNone(runGo)) return;
+  runGo();
 };
 /* 3.2.0-beta.21 (Training, user 2026-10-24: "irrun mo ba"): the simulation on from a script of the page (the Training start), as the Run button */
 AN.runOn = () => {
@@ -47842,6 +47828,16 @@ body.lsview #inlist::before{content:'VIEW · values only. Press RUN to force or 
 #lsbusy .lsbzbar i.ind{width:35%!important;animation:lsbz 1.2s linear infinite}
 @keyframes lsbz{0%{transform:translateX(-100%)}100%{transform:translateX(290%)}}
 #lsbusy small{display:block;margin-top:.5rem;opacity:.8}
+/* 3.2.0 retest #57: the starting state is picked by the operator (app.js lsAskStart) */
+#lsask{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35)}
+#lsask .lsbz{max-width:min(28rem,calc(100vw - 2rem));padding:1rem 1.25rem;border-radius:.5rem;background:var(--c-bg,#1e293b);color:var(--c-tx,#e2e8f0);border:1px solid var(--c-line,#475569);box-shadow:0 8px 30px rgba(0,0,0,.4);font:400 .875rem var(--uf,system-ui)}
+#lsask b{display:block;font-size:1rem;font-weight:600}
+#lsask p{margin:.5rem 0 .875rem;color:var(--c-tx2,inherit)}
+#lsask .lsaskb{display:flex;flex-wrap:wrap;gap:.5rem}
+#lsask .lsaskbtn{min-height:2.25rem;padding:0 .875rem;border-radius:.375rem;border:1px solid var(--c-btnbd,#475569);background:var(--c-ribbon,transparent);color:inherit;font:600 .8125rem var(--uf,system-ui);cursor:pointer}
+#lsask .lsaskbtn.go{border-color:var(--c-acc);background:var(--c-accbg);color:var(--c-acctx,#fff)}
+/* retest #42 (R4: "Even…" in the Plant view header): the Events button keeps its whole label */
+#cralarm #evbtn:not(#x){flex:none!important;white-space:nowrap!important;min-width:max-content!important;overflow:visible!important;text-overflow:clip!important}
 /* ===== 3.2.0-beta.7 F(X) CURVES page (src/ui/fx/fx.js). The sheet itself is white paper with black grid lines, like the LINEAR
    CURVE workbook, in every app theme; the frame around it follows the app theme. ===== */
 #fxws{position:fixed;left:0;right:0;top:var(--topH,52px);bottom:var(--footH,30px);z-index:47;display:none;flex-direction:column;background:var(--c-bg);color:var(--c-tx);font:400 .9375rem/1.45 var(--uf)}
@@ -48021,7 +48017,9 @@ body.app2:not(#_) #trainws button.trsec.on{background:var(--c-accbg);box-shadow:
 #trainws .trrow input{flex:none;width:1.375rem;height:1.375rem;margin:.0625rem 0 0;accent-color:var(--c-run);cursor:pointer}
 #trainws .trrow label{flex:1;cursor:pointer;font-size:.9375rem;line-height:1.45}
 #trainws .trrow label::before{content:counter(st) ". ";color:var(--c-dim);font:500 .875rem var(--mf)}
-#trainws li.dn .trrow label{color:var(--c-dim);text-decoration:line-through;text-decoration-color:var(--c-line2)}
+/* retest #56: a done step stays readable (no strike-through): a slightly dimmer text, the ✓ and the time of the tick */
+#trainws li.dn .trrow label{color:var(--c-tx2)}
+#trainws .trwhen{color:var(--c-acc);font-size:.75rem;white-space:nowrap}
 #trainws .trtags{display:flex;flex-wrap:wrap;gap:.375rem;margin:.375rem 0 0 2.125rem}
 body.app2:not(#_) #trainws button.trtag{min-height:2rem;padding:0 .625rem;border-radius:1rem;border:1px solid var(--c-accbd);background:var(--c-accbg);color:var(--c-acctx);font:500 .8125rem var(--mf)}
 body.app2:not(#_) #trainws button.trtag.nf{border-style:dashed;border-color:var(--c-line2);background:transparent;color:var(--c-dim)}
@@ -49669,6 +49667,55 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
   const $ = id => document.getElementById(id);
   /* 3.2.0 retest #54 (user 2026-10-28: the page froze over 1 min with no loading sign): a progress bar over the page while a starting
      state loads (hmi-op.js anLoadStart) or the logic of the first page is read; show(text), prog(0 ~ 1), hide() */
+  /* 3.2.0 retest #57 (R4: the Plant view, "Unit · not started", loaded the Cold by itself, froze and ran the time): with the plant model
+     ON and no starting state picked, the operator picks one here (Cold / 150 MW); nothing loads or runs by itself. after() goes on
+     once the picked state is in (RUN pressed with no state) */
+  window.lsAskStart = after => {
+    let d = document.getElementById('lsask');
+    if (d) {
+      d._after = after || d._after;
+      return;
+    }
+    d = document.createElement('div');
+    d.id = 'lsask';
+    d.setAttribute('role', 'dialog');
+    d.setAttribute('aria-label', 'Starting state');
+    d._after = after;
+    d.innerHTML =
+      '<div class=lsbz><b>No starting state picked</b><p>The plant model is ON but the plant is not started. Pick the starting state; it loads with a progress bar.</p><div class=lsaskb></div></div>';
+    const bs = d.querySelector('.lsaskb'),
+      close = () => d.remove(),
+      pick = id => {
+        const go = d._after;
+        close();
+        let k = 0;
+        const iv = setInterval(() => {
+          const ok = window.AN && AN.sheets && AN.sheets.length >= 54 && AN.loadStart;
+          if (!ok && ++k < 240) return;
+          clearInterval(iv);
+          if (!ok) return;
+          const b = document.getElementById(id);
+          if (b) b.click();
+          (AN._startP || Promise.resolve()).then(() => go && go(), () => {});
+        }, 250);
+      };
+    [
+      ['Cold (start-up from zero)', () => pick('loadcold'), 'go'],
+      ['150 MW (HMI snapshot)', () => pick('load150'), ''],
+      ['Not now', close, '']
+    ].forEach(([t, f, c]) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = t;
+      b.className = 'lsaskbtn ' + c;
+      b.onclick = f;
+      bs.append(b);
+    });
+    document.body.append(d);
+    try {
+      bs.firstChild.focus();
+    } catch (e) {}
+  };
   window.lsBusy = (() => {
     let el = null,
       t0 = 0,
@@ -49957,6 +50004,8 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
         if (window.AN && AN.cat !== 'an' && AN.setCat) AN.setCat('an');
         lib && lib(false);
         plant && plant(true);
+        /* retest #57: the Plant view of a plant not started asks for the starting state (no load by itself) */
+        if (window.AN && AN.plantOn && !AN.startState && !AN._loadP) window.lsAskStart();
       } else if (t === 'library') {
         plant && plant(false);
         lib && lib(true);
@@ -49975,16 +50024,17 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
       } catch (e) {}
   }
   const HINTS = {
-    operate: 'PLANT VIEW: pick a system on the left · click a controller or valve = faceplate (A / M / R, SV, MV) · Plant ▾ (top right) = plant model and starting state',
-    library: 'LIBRARY: search an address, tag or description · Find = open the info card',
+    /* retest #42: short enough for the status bar; the whole text is in the tooltip */
+    operate: 'PLANT VIEW: system on the left · controller / valve = faceplate · Plant ▾ = model, start',
+    library: 'LIBRARY: search an address, tag or description · Find = info card',
     tools: 'TOOLS: tests, drawing checks, simulation switches',
-    home: 'HOME: pick what you want to do · "/" or Ctrl+K = search a tag',
-    training: 'TRAINING: tick each step as you do it · a tag = its info card · Plant ▾ (top right) > Unit > Cold to practise'
+    home: 'HOME: pick what to do · "/" or Ctrl+K = search a tag',
+    training: 'TRAINING: tick each step · a tag = info card · Plant ▾ > Unit > Cold to practise'
   };
   window.lsSetTab = setTab;
   function hint() {
     const h = foot && foot.querySelector('.shint');
-    if (h) h.textContent = HINTS[tab] || '';
+    if (h) h.textContent = h.title = HINTS[tab] || '';
   }
   function setSub(c) {
     if (window.AN && AN.setCat && AN.cat !== c) AN.setCat(c);
@@ -50122,6 +50172,8 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
           const on = !t.hidden && !!t.textContent.trim();
           if (on && posted) {
             sm.textContent = t.textContent;
+            /* retest #42: the whole message in the tooltip (a long one is cut in the status bar) */
+            sm.title = t.textContent + ' (click to hide)';
             mtab = document.body.dataset.tab;
           }
           document.body.classList.toggle('hasmsg', on && mtab === document.body.dataset.tab);
@@ -55151,7 +55203,8 @@ window.LS_LIVE = (function () {
   /* one pass over every auto step; returns the keys that changed */
   function scan() {
     const ch = [];
-    if (!live() || !PROC.length) return ch;
+    /* retest #9 #54: nothing ticks while a starting state loads in slices (the plant is half loaded) */
+    if (!live() || !PROC.length || (window.AN && AN._loading)) return ch;
     const t = simT();
     let hand = {};
     try {
@@ -56115,7 +56168,7 @@ window.LS_GUIDE = (function () {
       /* ---- 0 utilities ---- */
       /* 3.2.0 walkthrough #5: PR-OPE-5002 ESP "purge air heater and fan ... 6 hours prior to start-up": confirmed when already 6 h in service,
          or held 6 h of plant time from the card (pre) */
-      FIELD(0, 'ESP purge air heater at fan (field), 6 oras bago ang start-up', [0], { pre: 21600, d: 'Gawin: "Simulan ang 6 h purge", saka ▶ RUN (kusa ang ×300, balik ×1 sa 6:00). SOP: pinapaandar ng field operator ang ESP purge air heater at fan 6 ORAS BAGO ang start-up. Kung 6 h na itong tumatakbo, pindutin na lang ang "Tapos na ito sa field".' }),
+      FIELD(0, 'ESP purge air heater at fan (field), 6 oras bago ang start-up', [0], { pre: 21600, d: 'Gawin: "Simulan ang 6 h purge", saka ▶ RUN (kusa ang ×300, balik ×1 sa 6:00). SOP: pinapaandar ng field operator ang ESP purge air heater at fan 6 ORAS BAGO ang start-up. Bukas ang "Tapos na ang 6 h purge" pagka-6:00; kung 6 h na itong tumatakbo sa field, "Laktawan ang 6 h (training shortcut)" (may kumpirmasyon at log sa Events).' }),
       /* 3.2.0 retest #49: any two of the three SWP (was: a first and a second SWP step, the second showed the third pump to start) */
       { st: 0, sec: 2, t: 'Simulan ang 2 seawater pump (SWP), kahit alin', d: 'Gawin: REMOTE sa field, saka START ng dalawang SWP. Ang ikatlo ay standby.', c: b.SWP2, max: 2, a: [mot('M.3353', 'SWP-A'), mot('M.3354', 'SWP-B'), mot('M.3355', 'SWP-C')], field: [1], w: SWPW },
       {
@@ -56665,6 +56718,10 @@ window.LS_GUIDE = (function () {
       try {
         AN.settle();
         AN.paint();
+      } catch (e) {}
+      /* retest #9: the AUTO ticks start clean from the cold plant (none from the plant of before the load) */
+      try {
+        if (L() && L().reset) L().reset();
       } catch (e) {}
       for (const k in CO) delete CO[k];
       for (const k in since) delete since[k];
@@ -57686,6 +57743,9 @@ window.LS_GUIDE = (function () {
         /* retest #39: from the Training, the row of the step zoomed in (row 0 = the top of the sheet when no row is named) */
         if ((row != null || zoom) && DUI.goItem) DUI.goItem(S.cur, undefined, null, { side: 'L', i: row != null ? row : 0, zoom: zoom || 0 });
       } catch (e) {}
+      /* retest #38: the sheet the guide opens leaves no "Opened DITL-xx - use the ABC button ..." in the status bar (the dock says
+         which sheet and row) */
+      document.body.classList.remove('hasmsg');
     }, 80);
   }
   /* the running memory of a motor button (guide.js mot) */
@@ -57929,9 +57989,16 @@ window.LS_GUIDE = (function () {
       }
     }
     if (s.need) {
-      const cb = E('button', { type: 'button', cls: 'gd-btn go', txt: s.pre ? 'Tapos na ito sa field (6 h na)' : 'Tapos na ito sa field' });
+      const cb = E('button', { type: 'button', cls: 'gd-btn go', txt: s.pre ? 'Tapos na ang ' + Math.round(s.pre / 3600) + ' h purge' : 'Tapos na ito sa field' });
+      /* retest #55: a card with a field time (the 6 h ESP purge): "Tapos na" only when the time is over (dock live: els.preCb); the
+         purge not started yet can be skipped only as a training shortcut, asked and logged */
+      if (s.pre) els.preCb = { b: cb, i: s.i };
       /* 3.2.0 walkthrough #16: works PAUSED too; #4: the field items of the section are ticked in the Training list as well */
       cb.onclick = () => {
+        if (s.pre) {
+          const hd = call(() => g.holdOf(s), null);
+          if (!hd || hd[0] < hd[1]) return;
+        }
         const dd = ls.get('ls-train', {});
         for (const f of fli) if (f.k !== 'auto') dd[f.si + '.' + f.i] = 1;
         ls.set('ls-train', dd);
@@ -57959,7 +58026,27 @@ window.LS_GUIDE = (function () {
               g.preStart(s.i);
               fill(true);
             }
-          })
+          }),
+          (els.preSkip = E('button', {
+            type: 'button',
+            cls: 'gd-btn',
+            txt: 'Laktawan ang ' + Math.round(s.pre / 3600) + ' h (training shortcut)',
+            title: 'Para lang kung tapos na ang purge sa field: kailangan ng kumpirmasyon at naka-log sa Events',
+            on: () => {
+              if (!confirm('Laktawan ang ' + Math.round(s.pre / 3600) + ' h ESP purge? Training shortcut ito: ituturing na tapos na ang purge sa field. Naka-log ito sa Events.')) return;
+              if (window.lsEventAdd) lsEventAdd('ESP', 'FIELD', 'Training shortcut: ' + Math.round(s.pre / 3600) + ' h ESP purge skipped (taken as done in the field)');
+              const dd = ls.get('ls-train', {});
+              for (const f of fli) if (f.k !== 'auto') dd[f.si + '.' + f.i] = 1;
+              ls.set('ls-train', dd);
+              try {
+                window.lsHome && lsHome.train && lsHome.train();
+              } catch (e) {}
+              g.confirm(s.i);
+              g.scan();
+              if (!s.c && g.ready()) g.next();
+              fill(true);
+            }
+          }))
         );
     }
     if (bs.children.length) card.append(bs);
@@ -58125,6 +58212,13 @@ window.LS_GUIDE = (function () {
       const hd = call(() => g.holdOf(s), null),
         /* retest #5: ×300 by itself while the purge counts (RUN), back to ×1 at 6:00 */
         sp = +((window.AN && AN.spd) || 1);
+      /* retest #55: "Tapos na" of the purge only at the end of the time; the shortcut only before the purge starts */
+      if (els.preCb && els.preCb.i === s.i) {
+        const left = !hd || hd[0] < hd[1];
+        els.preCb.b.disabled = left;
+        els.preCb.b.title = left ? (hd ? 'Hintayin ang ' + Math.round(hd[1] / 3600) + ':00 h ng purge' : 'Simulan muna ang purge (o laktawan bilang training shortcut)') : '';
+        if (els.preSkip) els.preSkip.hidden = !!hd;
+      }
       if (hd && isRun() && hd[0] < hd[1] && sp !== 300 && els.fast !== s.i) {
         els.fast = s.i;
         setSpeed(300);
@@ -58137,7 +58231,9 @@ window.LS_GUIDE = (function () {
       els.cond.textContent = hd
         ? '⏱ Purge: ' + hm(hd[0]) + ' / ' + hm(hd[1]) + ' h (oras ng planta' + (isRun() ? '' : ', naka-PAUSE: pindutin ang ▶ RUN') + ')'
         : s.need
-          ? 'Pindutin ang "Tapos na ito sa field" kapag nagawa na.'
+          ? s.pre
+            ? 'Pindutin ang "Simulan ang ' + Math.round(s.pre / 3600) + ' h purge", saka ▶ RUN.'
+            : 'Pindutin ang "Tapos na ito sa field" kapag nagawa na.'
           : '';
       }
     }
@@ -58721,7 +58817,8 @@ window.LS_GUIDE = (function () {
       }
       cb.onchange = () => {
         const dd = done();
-        if (cb.checked) dd[key(cur, i)] = 1;
+        /* retest #56: the clock time of the tick, shown beside the step */
+        if (cb.checked) dd[key(cur, i)] = new Date().toTimeString().slice(0, 5);
         else delete dd[key(cur, i)];
         ls.set('ls-train', dd);
         fillTrain();
@@ -58733,7 +58830,7 @@ window.LS_GUIDE = (function () {
       const li = E('li', { cls: (cb.checked ? 'dn' : '') + (on ? ' sel' : '') + ' k' + q.k }, [
         E('div', { cls: 'trrow' }, [
           cb,
-          E('label', { for: id, txt: x.t }),
+          E('label', { for: id, txt: x.t }, typeof d[key(cur, i)] === 'string' && cb.checked ? [E('small', { cls: 'trwhen', txt: ' ✓ ' + d[key(cur, i)] })] : null),
           E('button', {
             cls: 'trsee',
             type: 'button',
@@ -61502,7 +61599,7 @@ window.PLANT_SYS = [
      load moves on one screen. Not a control-room snapshot: drawn for the simulator. Static values = 150 MW (4.PNG / 03.png / 11.png);
      LIVE = the simulation (I/O list transmitter tags and controller faceplates, like the other screens) */
   { id: 'UNIT', title: 'UNIT: BOILER + TURBINE (plant model)', src: 'UNIT', w: 1920, h: 980, items: [
-    { t: 'text', x: 40, y: 40, s: 'UNIT: coal -> firing -> drum -> superheaters -> turbine -> MW. Start at 150 MW, then change TARGET MW (HIC-ULD) or the turbine master; the plant model answers.', z: 14, c: '#a9b7c4' },
+    { t: 'text', x: 40, y: 40, s: 'UNIT: coal -> firing -> drum -> superheaters -> turbine -> MW. From Cold: start-up by the Training procedure (PR-OPE-5002). At 150 MW: change TARGET MW (HIC-ULD) or the turbine master; the plant model answers.', z: 14, c: '#a9b7c4' },
     // columns
     { t: 'vessel', x: 40, y: 70, w: 560, h: 880, label: '', shape: 'box' },
     { t: 'vessel', x: 640, y: 70, w: 620, h: 790, label: '', shape: 'box' },

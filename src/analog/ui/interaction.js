@@ -314,14 +314,12 @@ bRst.onclick = () => {
   AN.startState = null;
   reset();
   /* 3.2.0-beta.18: and the plant is COLD at once (VIEW shows boiler off, not the drawings' defaults MSP 75) */
-  const p = coldIfNone();
-  if (p)
-    p.then(ok => {
-      if (!ok) return;
-      settle();
-      paint();
-      panelUpd(true);
-    });
+  /* retest #57: then the operator picks the starting state (no Cold by itself) */
+  coldIfNone(() => {
+    settle();
+    paint();
+    panelUpd(true);
+  });
 };
 bFit.onclick = fitView;
 bVal.onclick = () => {

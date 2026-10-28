@@ -841,7 +841,7 @@ window.LS_GUIDE = (function () {
       /* ---- 0 utilities ---- */
       /* 3.2.0 walkthrough #5: PR-OPE-5002 ESP "purge air heater and fan ... 6 hours prior to start-up": confirmed when already 6 h in service,
          or held 6 h of plant time from the card (pre) */
-      FIELD(0, 'ESP purge air heater at fan (field), 6 oras bago ang start-up', [0], { pre: 21600, d: 'Gawin: "Simulan ang 6 h purge", saka ▶ RUN (kusa ang ×300, balik ×1 sa 6:00). SOP: pinapaandar ng field operator ang ESP purge air heater at fan 6 ORAS BAGO ang start-up. Kung 6 h na itong tumatakbo, pindutin na lang ang "Tapos na ito sa field".' }),
+      FIELD(0, 'ESP purge air heater at fan (field), 6 oras bago ang start-up', [0], { pre: 21600, d: 'Gawin: "Simulan ang 6 h purge", saka ▶ RUN (kusa ang ×300, balik ×1 sa 6:00). SOP: pinapaandar ng field operator ang ESP purge air heater at fan 6 ORAS BAGO ang start-up. Bukas ang "Tapos na ang 6 h purge" pagka-6:00; kung 6 h na itong tumatakbo sa field, "Laktawan ang 6 h (training shortcut)" (may kumpirmasyon at log sa Events).' }),
       /* 3.2.0 retest #49: any two of the three SWP (was: a first and a second SWP step, the second showed the third pump to start) */
       { st: 0, sec: 2, t: 'Simulan ang 2 seawater pump (SWP), kahit alin', d: 'Gawin: REMOTE sa field, saka START ng dalawang SWP. Ang ikatlo ay standby.', c: b.SWP2, max: 2, a: [mot('M.3353', 'SWP-A'), mot('M.3354', 'SWP-B'), mot('M.3355', 'SWP-C')], field: [1], w: SWPW },
       {
@@ -1391,6 +1391,10 @@ window.LS_GUIDE = (function () {
       try {
         AN.settle();
         AN.paint();
+      } catch (e) {}
+      /* retest #9: the AUTO ticks start clean from the cold plant (none from the plant of before the load) */
+      try {
+        if (L() && L().reset) L().reset();
       } catch (e) {}
       for (const k in CO) delete CO[k];
       for (const k in since) delete since[k];

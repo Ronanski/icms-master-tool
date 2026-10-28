@@ -372,7 +372,8 @@
       }
       cb.onchange = () => {
         const dd = done();
-        if (cb.checked) dd[key(cur, i)] = 1;
+        /* retest #56: the clock time of the tick, shown beside the step */
+        if (cb.checked) dd[key(cur, i)] = new Date().toTimeString().slice(0, 5);
         else delete dd[key(cur, i)];
         ls.set('ls-train', dd);
         fillTrain();
@@ -384,7 +385,7 @@
       const li = E('li', { cls: (cb.checked ? 'dn' : '') + (on ? ' sel' : '') + ' k' + q.k }, [
         E('div', { cls: 'trrow' }, [
           cb,
-          E('label', { for: id, txt: x.t }),
+          E('label', { for: id, txt: x.t }, typeof d[key(cur, i)] === 'string' && cb.checked ? [E('small', { cls: 'trwhen', txt: ' ✓ ' + d[key(cur, i)] })] : null),
           E('button', {
             cls: 'trsee',
             type: 'button',
