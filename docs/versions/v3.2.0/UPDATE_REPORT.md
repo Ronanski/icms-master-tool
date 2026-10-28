@@ -1033,3 +1033,12 @@ Hindi pa ito Beta: hindi ito ipinush (habang tinetest pa ng user ang beta.40). B
 | 35 | 93 ALARMS pa rin sa Cold | Ang mga alarm na nakatayo na pagka-load ng planta (shutdown state) ay naka-ACK at SUPPRESSED: hindi na binibilang sa header ("NO ALARM · 93 SUPPRESSED"), at nasa hiwalay na nakatiklop na listahan. Kapag bumalik ito sa normal (umandar ang equipment) at umulit, bagong alarm na ito. Wala nang alarm scan habang naglo-load | events.js, cr.js |
 | 13 | Nakatago pa ang DITL-56 sa likod ng Training | Pagbukas ng Training (walang Gabay na tumatakbo), ang DITL sheet sa likod ay ang sa unang DCS step (DITL-29A SWP) | dock.js, app.js |
 | 23 | Walang malinaw na paalala ng bagong Beta | Isang banner sa buong itaas ng page: "New Beta available … · installed … · Update now / Later"; sinusuri ulit bawat 10 minuto habang bukas ang app | update-question.js |
+| 57 | Plant view ("Unit · not started") kusang nag-load ng Cold, nag-freeze at tumakbo ang oras | Wala nang kusang Cold. Kapag naka-ON ang plant model at walang starting state, may tanong: "No starting state picked" · Cold / 150 MW / Not now. Pareho sa Plant view, sa unang bukas ng ABC page, sa RUN (tatakbo pagkatapos pumili) at sa Reset. Hindi na rin kusang nag-RUN ang plant na hindi pa nagsisimula kapag nagpalit ng page | app.js, trace.js, interaction.js, category-search.js |
+| 55 | Puwedeng laktawan ang 6 h purge sa "Tapos na" | "Tapos na ang 6 h purge" ay bukas lang pagka-6:00 ng timer. Bago simulan ang purge, "Laktawan ang 6 h (training shortcut)" na may kumpirmasyon at log sa Events | dock.js, guide.js |
+| 56 | Strikethrough sa natapos na item | Walang strikethrough; mas madilim lang nang kaunti, may ✓ at oras ng tick | home.js, home.css |
+| 58 | Unit page: "Start at 150 MW…" kahit Cold | "From Cold: start-up by the Training procedure (PR-OPE-5002). At 150 MW: change TARGET MW…" | systems.js |
+| 42 | Putol na hint at "Even…" | Mas maikli ang hint ng bawat page, buong text sa tooltip (pati status message); buo ang Events button sa Plant view | app.js, app.css |
+| 38 | "Opened DITL-29A…" sa status bar | Ang sheet na binubuksan ng Gabay ay walang ganitong mensahe | dock.js |
+| 9 | AUTO ticks sa Cold | Walang tick habang naglo-load; nire-reset ang AUTO ticks pagkatapos ma-load ang Cold ng Gabay | live.js, guide.js |
+
+Ang ibang bukas sa table (#5, #15, #16, #28, #31, #33, #34, #39–#41, #45–#53) ay nasa beta.40 na at hinihintay ang retest.

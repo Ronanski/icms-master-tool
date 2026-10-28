@@ -4,7 +4,7 @@ window.PLANT_SYS = [
      load moves on one screen. Not a control-room snapshot: drawn for the simulator. Static values = 150 MW (4.PNG / 03.png / 11.png);
      LIVE = the simulation (I/O list transmitter tags and controller faceplates, like the other screens) */
   { id: 'UNIT', title: 'UNIT: BOILER + TURBINE (plant model)', src: 'UNIT', w: 1920, h: 980, items: [
-    { t: 'text', x: 40, y: 40, s: 'UNIT: coal -> firing -> drum -> superheaters -> turbine -> MW. Start at 150 MW, then change TARGET MW (HIC-ULD) or the turbine master; the plant model answers.', z: 14, c: '#a9b7c4' },
+    { t: 'text', x: 40, y: 40, s: 'UNIT: coal -> firing -> drum -> superheaters -> turbine -> MW. From Cold: start-up by the Training procedure (PR-OPE-5002). At 150 MW: change TARGET MW (HIC-ULD) or the turbine master; the plant model answers.', z: 14, c: '#a9b7c4' },
     // columns
     { t: 'vessel', x: 40, y: 70, w: 560, h: 880, label: '', shape: 'box' },
     { t: 'vessel', x: 640, y: 70, w: 620, h: 790, label: '', shape: 'box' },

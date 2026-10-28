@@ -1189,3 +1189,13 @@ body.lsview #inlist::before{content:'VIEW · values only. Press RUN to force or 
 #lsbusy .lsbzbar i.ind{width:35%!important;animation:lsbz 1.2s linear infinite}
 @keyframes lsbz{0%{transform:translateX(-100%)}100%{transform:translateX(290%)}}
 #lsbusy small{display:block;margin-top:.5rem;opacity:.8}
+/* 3.2.0 retest #57: the starting state is picked by the operator (app.js lsAskStart) */
+#lsask{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35)}
+#lsask .lsbz{max-width:min(28rem,calc(100vw - 2rem));padding:1rem 1.25rem;border-radius:.5rem;background:var(--c-bg,#1e293b);color:var(--c-tx,#e2e8f0);border:1px solid var(--c-line,#475569);box-shadow:0 8px 30px rgba(0,0,0,.4);font:400 .875rem var(--uf,system-ui)}
+#lsask b{display:block;font-size:1rem;font-weight:600}
+#lsask p{margin:.5rem 0 .875rem;color:var(--c-tx2,inherit)}
+#lsask .lsaskb{display:flex;flex-wrap:wrap;gap:.5rem}
+#lsask .lsaskbtn{min-height:2.25rem;padding:0 .875rem;border-radius:.375rem;border:1px solid var(--c-btnbd,#475569);background:var(--c-ribbon,transparent);color:inherit;font:600 .8125rem var(--uf,system-ui);cursor:pointer}
+#lsask .lsaskbtn.go{border-color:var(--c-acc);background:var(--c-accbg);color:var(--c-acctx,#fff)}
+/* retest #42 (R4: "Even…" in the Plant view header): the Events button keeps its whole label */
+#cralarm #evbtn:not(#x){flex:none!important;white-space:nowrap!important;min-width:max-content!important;overflow:visible!important;text-overflow:clip!important}

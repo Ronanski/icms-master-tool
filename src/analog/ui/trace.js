@@ -111,7 +111,7 @@ function viewSet(on) {
       ? 'View mode: grey drawing, nothing is simulated. Click a block or wire to trace it; click an empty place to clear.'
       : 'Simulation mode: Run, or Pause + Next / Back.' +
           /* 3.2.0-beta.6 (audit M4): until a starting state is picked the plant is at the drawings' defaults (0 MW) */
-          (AN.startState ? '' : ' No starting state yet: Run starts the plant cold (boiler off), or pick Plant ▾ (top right) > Unit (Cold, 150 MW).')
+          (AN.startState ? '' : ' No starting state yet: Run asks for it (Cold or 150 MW), or pick Plant ▾ (top right) > Unit.')
   );
 }
 bVw.onclick = () => viewSet(!AN.view);
@@ -120,13 +120,12 @@ stepUi();
    state picked starts the plant COLD (boiler off: drum 0 kg/cm2, no fire, fans stopped), as Start > Cold. Before, the plant ran at the
    drawings' defaults: an undriven transmitter sits at the middle of its range (MSP 75 kg/cm2 = middle of PT-MS1002 0 ~ 150). Only the
    operator's RUN press does this; AN.viewSet (the tests) is unchanged. */
-function coldIfNone() {
-  /* 3.2.0 retest #54: loaded in slices with a progress bar (hmi-op.js anLoadStart); before, the page froze for about a minute */
-  if (AN.startState || AN.cat !== 'an' || !AN.loadStart) return null;
-  return AN.loadStart('cold').then(
-    () => true,
-    () => false
-  );
+function coldIfNone(after) {
+  /* 3.2.0 retest #57 (user 2026-10-28): no Cold loaded by itself any more: with the plant model ON and no starting state the operator
+     PICKS it (app.js lsAskStart: Cold / 150 MW); after() goes on once it is in. Returns true when it asked */
+  if (AN.startState || AN.cat !== 'an' || !AN.plantOn || !window.lsAskStart) return false;
+  lsAskStart(after);
+  return true;
 }
 /* 3.2.0-beta.18 (VIEW/TRACE audit, user 2026-10-23: "patay pa naman ang boiler mo ... bkt may value na si MSP?"): the ABC page
    opened by the operator, before any starting state is picked, showed the drawings' defaults in VIEW too (MSP 75 kg/cm2, drum level
@@ -138,18 +137,8 @@ function coldShow() {
   if (AN.startState || AN.cat !== 'an' || AN._cold0) return;
   if (!AN._uiCold) return;
   AN._cold0 = 1;
-  const kept = Object.values(AN.sv || {}).some(o => o && ['force', 'ext', 'ai', 'sw', 'man', 'p'].some(k => o[k] && Object.keys(o[k]).length));
-  /* 3.2.0-beta.40 (roadmap 2, user 2026-10-26: "cold start = true physical state of a cold plant"): with the plant model ON a kept
-     session no longer leaves the drawings' defaults (header MSP 75 kg/cm2, drum level -566 mm with "Unit · not started"): RUN starts
-     the plant cold from a Reset anyway (coldIfNone), so the page shows that cold plant at once. Plant model OFF: kept as it was */
-  const p = kept && !AN.plantOn ? null : coldIfNone();
-  if (p)
-    p.then(ok => {
-      if (!ok) return;
-      settle();
-      paint();
-      panelUpd(true);
-    });
+  /* retest #57: the page asks for the starting state (plant model ON); nothing loads or runs by itself */
+  coldIfNone();
 }
 /* the operator's own click / key (a script driving the page, the tests, sends no trusted event) */
 ['pointerdown', 'keydown'].forEach(t =>
@@ -161,19 +150,17 @@ function coldShow() {
     { capture: true, passive: true }
   )
 );
-const COLD_MSG = 'No starting state was picked: the plant starts COLD (boiler off, drum 0 kg/cm2, no fire, fans stopped). Pick Plant ▾ (top right) > Unit for 150 MW.';
-const runGo = c => {
+const runGo = () => {
   if (AN.view) {
     viewSet(false);
     setRun(true);
   } else setRun(!AN.run);
-  if (c) msg(COLD_MSG);
 };
 bRun.onclick = () => {
   if (AN._loadP) return;
-  const p = !AN.run && coldIfNone();
-  if (p) p.then(runGo);
-  else runGo(false);
+  /* retest #57: RUN with no starting state asks for it, then runs */
+  if (!AN.run && coldIfNone(runGo)) return;
+  runGo();
 };
 /* 3.2.0-beta.21 (Training, user 2026-10-24: "irrun mo ba"): the simulation on from a script of the page (the Training start), as the Run button */
 AN.runOn = () => {
