@@ -5,7 +5,7 @@
 ## SIMULAN DITO (2026-10-26 PHT)
 
 - **Stable:** v2.4.0 (huling Stable).
-- **Beta:** `3.2.0-beta.48` sa `main` (2026-10-28: iisang linya; ang tine-test ay laging nasa main, Stable lang ang may GO STABLE). Kasama ang bagong HMI Air & Flue Gas, sand DITL, page links.
+- **Beta:** `3.2.0-beta.49` sa `main` (2026-10-28: iisang linya; ang tine-test ay laging nasa main, Stable lang ang may GO STABLE). Kasama ang bagong HMI Air & Flue Gas, sand DITL, page links.
 - **Ang gusto ng user:** `docs/SPEC.md` (S1 ~ S9). Plano = seksyon 3 ng file na iyon. Wala nang ROADMAP / CHECKLIST.
 - **Pag-check ng user:** `docs/USER_CHECK.md`.
 - **Rules:** `CLAUDE.md`, `PROJECT_RULES.md` (test policy = seksyon 5).
@@ -36,6 +36,7 @@
 - Plant chip: OFF | Unit lang; starting state: Cold o 150 MW lang. Plant model ON na walang starting state: header "—", ang ABC page ay bumubukas na Cold.
 
 ## Susunod na gagawin (roadmap sa `docs/SPEC.md` seksyon 3)
+0. 2026-10-28 ~10:45 PM PHT: **Beta 3.2.0-beta.49** sa main = Plant view dalawang page lang (007 Air & Flue Gas bago, UNIT · controllers); tinanggal ang 27 lumang screen at mga larawan nito. Rule ng user: hanggang 3 branch lang bukod sa main.
 0. 2026-10-28 ~10:10 PM PHT: **Beta 3.2.0-beta.48** sa main = bagong HMI (PR #49) + sand DITL (PR #48) + docs PR #44 / #50 / #51 + R9 #86 ~ #90 + maling SYSTEM TRIP alarm ng DITL-777 sa Cold. Check: totoong pindot Hakbang 1 → 20, 7 bahagi. Hindi isinama (luma / napalitan): PR #40, #41, `adoring-carson`, `feat/persistent-context-retrieval`, `ccr-8a6a202c` (listahan sa user bago burahin).
 0. 2026-10-28 ~9:05 PM PHT: **Beta 3.2.0-beta.47** = 19 findings ng retest 9 (air preheater START, NOT TRIP alarm, TCS oil, SOP limits / tag / NOTE sa dock, Hakbang 14 ~ 17 hiwalay, gitna sumusunod nang tama, ‹ Nakaraan, header). Check: totoong pindot Hakbang 1 → 20 (hindi buong start-up). #23 hindi nasubok; #60 bahagi (61 / 121).
 0. 2026-10-28 ~6:30 PM PHT: **Beta 3.2.0-beta.46** = retest 8 (R8) sa ugat: isang equipment block (START / STOP, FIELD, MAN / AUTO, TRIP, lamp, values) at isang step engine (✓ TAPOS + Susunod, stable na buttons, Cold reset ng DITL). Check = totoong pindot, 2 pasada nang hindi nililinis ang storage. #60: 70 item ng 007 walang plant model (flue gas path), "—".
