@@ -1309,13 +1309,7 @@
   }
   const NAV = [
     ['UNIT', 'UNIT'],
-    ['AFG', '007 AIR & FLUE GAS'],
-    ['08', '008 PA / SA'],
-    ['09', '009 FLUIDIZING AIR'],
-    ['39', '039 RH / SH BIASING'],
-    ['38', '038 AIR PREHEATER'],
-    ['11', '011 COAL FEEDER'],
-    ['33', '033 CCS']
+    ['AFG', '007 AIR & FLUE GAS']
   ];
   window.PLANT_V2 = {
     C,
@@ -1342,5 +1336,5 @@
   };
   /* the new screens come first in the list of the Plant view; the old ones stay until the new set replaces them */
   window.PLANT_SYS = window.PLANT_SYS || [];
-  window.PLANT_SYS.unshift({ id: 'AFG', title: 'AIR & FLUE GAS (new HMI)', num: '007', name: 'AIR & FLUE GAS SYSTEM', src: '7.PNG', w: 1920, h: 1080, v2: true, screen: 'AFG', items: [] });
+  window.PLANT_SYS.unshift({ id: 'AFG', title: '007 AIR & FLUE GAS', num: '007', name: 'AIR & FLUE GAS SYSTEM', src: '7.PNG', w: 1920, h: 1080, v2: true, screen: 'AFG', items: [] });
 })();

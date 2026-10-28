@@ -1105,7 +1105,7 @@
       if (o) select(o);
     };
     const chips = E('div', { cls: 'plchips' });
-    for (const [id, t] of [['AFG', 'Air & Gas · new'], ['UNIT', 'UNIT'], ['03', '003 Water'], ['04', '004 Extraction'], ['07', '007 Air'], ['11', '011 Coal'], ['33', '033 CCS']])
+    for (const [id, t] of [['AFG', '007 Air & Flue Gas'], ['UNIT', 'UNIT · controllers']])
       chips.append(
         E('button', {
           cls: 'plchip',
