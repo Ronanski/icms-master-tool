@@ -1061,3 +1061,20 @@ Sanhi: tinatandaan ng app ang huling bukas na sheet (DITL-29A ng huling Gabay, A
 ## 3.2.0-beta.44 (Beta, 2026-10-28) — #13, rekomendasyon na inaprubahan ng user
 
 "Clear all ticks" at "Gabay: Cold → 150 MW" ay kinakalimutan na ang huling bukas na sheet (DITL at ABC). Ang Logic page ay magbubukas ng unang sheet; ang Gabay ay ang sheet ng unang DCS step nito. Kasama ang beta.43 (walang drawing sa likod ng Home / Training). Build at check lang; **hindi nasubok**. (home.js)
+
+## 3.2.0-beta.45 (Beta, 2026-10-28) — lahat ng bukas na findings ng retest 7, sa ugat
+
+Bakit hindi tumama ang dating ayos (simpleng paliwanag):
+
+- **#2 / #48 (ABC-057 sa gitna kahit DITL-29A ang sabi ng status bar):** inayos dati ang pagbukas ng tamang sheet kapag nagpalit ang hakbang. Pero ang Plant view ay naglilipat ng Logic page sa ABC sheets (doon tumatakbo ang graphics nito). Pagbalik sa Logic page, ABC-057 (ang default na ABC sheet) ang lumalabas. Ngayon: tinatandaan ng Logic page ang sarili nitong sheet, at tuwing bubuksan ang Logic page habang may Gabay, binubuksan ulit ang sheet ng hakbang (app.js setTab, dock.js follow).
+- **#13:** ang beta.43 / 44 ay nagtago at nagbura ng lumang sheet, pero ang Gabay mismo ay sinadyang nagbukas ng DITL-29A sa likod. Ngayon: walang drawing sa likod ng Home / Training kahit may Gabay; sa field step (Hakbang 1 ESP), ang Logic page ay walang sheet at may paliwanag na field step ito.
+- **#62:** ang suppression ay para lang sa alarm na nakatayo sa sandali ng pag-load. Ang AI0579 / AI0627 (air temperature) ay lumamig papuntang 30 °C ambient at tumawid sa LOW 40 °C makalipas ang ~6 min ng planta: bagong alarm. Ngayon: suppression ayon sa equipment group ng sheet (fans / BFWP / coal); LOW at LOW-LOW lang ang naka-suppress (laging lumalabas ang HIGH at TRIP); inilalabas ang group 10 min matapos tumakbo ang equipment nito. Para sa Cold lang; walang pagbabago sa 150 MW.
+- **#42:** iisang linya lang ang header at status bar; kapag bukas ang Training panel, maliit ang lugar. Ngayon: kapag may alarm, ang bilang ng suppressed ay nasa tooltip at listahan (hindi sa chip); ang pangalan ng unit at oras ang unang nawawala kapag makitid; ang mahabang status text ay nagiging dalawang linya sa parehong bar.
+- **#41:** laging bukas ang Inspector column. Ngayon: AUTO-HIDE habang bukas ang Training panel (lumalabas kapag may pinindot na block / row), bumabalik ang sariling setting pagsara ng Training.
+- **Bagong nakita sa check (naayos):** ang FIELD action habang PAUSED (hal. SWP-A REMOTE) ay nabubura sa unang RUN dahil ang pagpasok sa DITL simulation ay nagre-reset ng lahat ng input. Ngayon: nananatili ang input pagpasok sa RUN; ang paglabas sa RUN (VIEW, Reset) lang ang nagbubura.
+
+**#9 (bagong nakita sa check):** ang SAF / PAF damper steps (section 24 / 25) ay kusang na-tick 50 s matapos ang RUN sa Cold; ang pag-settle ng model ay itinuring na "pagbabago". Ngayon: ang AUTO tick ay sa section lang na naabot na ng start-up (may tick ang naunang section, o ang section ng kasalukuyang Gabay step) (live.js).
+
+Iba pang ayos: #39 (nasa view ang lahat ng kulang na row: 5, 18, 22), #49 (walang START / FIELD ng standby SWP kapag 2 na ang tumatakbo), #34 (FIELD: TRIP / RESET TRIP ng tumatakbong motor: humihinto ang motor, TRIP na kumikislap hanggang ACK, alarm sa header, ALM / ACK / RTN sa Events), #63 (naka-log ang DCS START / STOP / AUTO ng dock at ang PRESS / switch sa DITL panel, may row at tag), #60 (sa LIVE: abo ang HMI picture, "—" ang walang link, kulay lang ang galing sa simulation), #61 (pinupuno ng graphic ang taas ng lugar; drag para sa gilid).
+
+Sinubok: maikling automated check ng mismong bahagi lang (Chromium, 1280 × 720, walang buong start-up): table ng pasado / bagsak sa ulat ng thread. Hindi sinubok: buong Cold → 150 MW.

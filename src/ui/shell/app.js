@@ -208,6 +208,7 @@
     ['tools', 'Tools', 'Block tests, audit, health, project files, drawing edit', 1]
   ];
   let tab = null,
+    logicCat = null,
     tabBtns = {},
     subBtns = {},
     toolsws = null,
@@ -346,6 +347,11 @@
       pvW.focus();
       return;
     }
+    /* retest #2 #48 (R7: ABC-057 in the centre at the SWP step while the status bar named DITL-29A #B): the Plant view switches the
+       logic engine to the ABC sheets (its graphics run on them) and the Logic page came back on an ABC sheet, not on the drawing the
+       Training had opened. The Logic page keeps its own sheet: the category it had is set again when it opens */
+    const from = tab;
+    if (from === 'logic' && t !== 'logic' && window.AN) logicCat = AN.cat;
     tab = t;
     document.body.dataset.tab = t;
     if (!keep && t !== 'home') ls.set('ls-tab', t);
@@ -368,6 +374,10 @@
         lib && lib(false);
       }
     } catch (e) {}
+    try {
+      if (t === 'logic' && from !== 'logic' && window.AN && logicCat && AN.cat !== logicCat && AN.setCat)
+        AN.setCat(logicCat);
+    } catch (e) {}
     document.querySelectorAll('.ddw.open').forEach(x => x.classList.remove('open'));
     place();
     hint();
@@ -386,7 +396,14 @@
     /* retest #13 (R6, beta.42: "DITL-29A and ABC-057 still loaded behind, even after a reload"): hiding was not enough, the drawing
        of the last sheet (remembered from the last visit) stayed in the page. Now the drawing itself is emptied on HOME / TRAINING
        when no guided start runs, and drawn again (the same sheet) when the Logic page opens */
-    blankLogic(away && !(window.LS_GUIDE && LS_GUIDE.on));
+    /* retest #13 (R7: after Clear / Gabay the hidden Logic page still held DITL-29A, opened by the Gabay on purpose): HOME and
+       TRAINING never hold a drawing, with or without the Gabay; the Gabay opens the sheet of its step when the Logic page opens */
+    blankLogic(away);
+    if (t !== 'logic') document.body.classList.remove('lsfield');
+    /* retest #2 #48: the Logic page opened while the Gabay runs (rail button, back from the Plant view): the centre shows the sheet of
+       the step ("Sundan ng gitna"), or says that the step is a field step */
+    if (t === 'logic' && from !== 'logic' && window.LS_GUIDE && LS_GUIDE.on && window.LS_DOCK && LS_DOCK.follow)
+      LS_DOCK.follow();
   }
   function blankLogic(on) {
     const B = document.body;
@@ -574,6 +591,23 @@
         new MutationObserver(() => sync(true)).observe(t, { attributes: true, attributeFilter: ['hidden'], childList: true, characterData: true, subtree: true });
         sync(true);
       }
+      /* retest #42 (R7: "…as yo…" in the status bar at 1280 px with the Training panel open): a text longer than its cell goes on two
+         smaller lines in the same bar (class sf2, app.css) instead of being cut; the whole text stays in the tooltip */
+      const fit2 = () =>
+        foot.querySelectorAll('#st,.shint,.smsg').forEach(x => {
+          x.classList.remove('sf2');
+          if (x.offsetParent && x.scrollWidth > x.clientWidth + 1) x.classList.add('sf2');
+        });
+      new MutationObserver(() => requestAnimationFrame(fit2)).observe(foot, {
+        childList: true,
+        characterData: true,
+        subtree: true
+      });
+      new MutationObserver(() => requestAnimationFrame(fit2)).observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'data-tab']
+      });
+      addEventListener('resize', () => requestAnimationFrame(fit2));
     }
     /* --- top bar --- */
     const ansb = $('ansb'),

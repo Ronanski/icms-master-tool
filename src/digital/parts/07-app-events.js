@@ -352,7 +352,10 @@ $('bmode').onclick = () => {
   PEND = null;
   closeEd();
   S.sheets.forEach(x => {
-    x.sig = {};
+    /* 3.2.0 retest #28 #16 (beta.45 check: the field action "SWP-A REMOTE" done while the Training was PAUSED was lost at the first
+       RUN, START SWP-A stayed blocked): entering RUN keeps the inputs set before it (the field contacts of the Training); leaving RUN
+       (VIEW, and the Reset button = leave + enter) clears them as before */
+    if (!SIM) x.sig = {};
     x.usw = {};
     x._fd = null;
     if (x.nl) {

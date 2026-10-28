@@ -604,6 +604,18 @@ window.LS_LIVE = (function () {
       return false;
     };
     const fans = PURGE >= 0 ? fansOn() : true;
+    let gsec = -1;
+    try {
+      const G = window.LS_GUIDE;
+      if (G && G.on) {
+        const L = G.steps();
+        for (let j = 0; j <= Math.min(G.cur, L.length - 1); j++) {
+          const x = L[j],
+            k = x.sec ? x.sec - 1 : x.field && x.field.length ? x.field[0] : -1;
+          if (k > gsec) gsec = k;
+        }
+      }
+    } catch (e) {}
     PROC.forEach((sec, si) =>
       sec.s.forEach((st, i) => {
         const key = si + '.' + i;
@@ -619,7 +631,10 @@ window.LS_LIVE = (function () {
           off[key] = 1;
           return;
         }
-        if (!off[key] && !reached(si)) return;
+        /* retest #9 (beta.45 check: SAF / PAF damper steps of sections 24 / 25 ticked at a cold plant 50 s after RUN, the model settling
+           after the load is a change too): an AUTO step ticks only in a section the start-up has reached (a tick in the section
+           before it, or the section of the Gabay step now), never ahead of the trainee */
+        if (!reached(si) && !(gsec >= 0 && si <= gsec)) return;
         if (si === PURGE && !fans) return;
         if (q.c.hold) {
           if (since[key] == null) since[key] = t;
