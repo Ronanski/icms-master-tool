@@ -103,6 +103,8 @@ body.app2:not(#_) #trainws button.trbtn.sm{min-height:2rem;padding:0 .625rem;fon
 @media (min-width:1200px){
  #trainws .trbody{grid-template-columns:clamp(15rem,20vw,19rem) minmax(0,1fr) clamp(18rem,24vw,24rem)}
  #trainws .trside{display:flex;overflow:auto;padding:1rem;background:var(--c-pane);border-left:1px solid var(--c-line)}
+ #trainws.trnosel .trbody{grid-template-columns:clamp(15rem,20vw,19rem) minmax(0,1fr)}
+ #trainws.trnosel .trside{display:none}
 }
 @media (max-width:760px){
  #trainws .trbody{grid-template-columns:minmax(0,1fr)}

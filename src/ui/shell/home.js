@@ -289,6 +289,8 @@
     box.textContent = '';
     const L = LV(),
       s = sel && P()[sel[0]] && P()[sel[0]].s[sel[1]];
+    /* retest #41: the side column only when a step is selected (an empty column took a third of the width) */
+    if (train) train.classList.toggle('trnosel', !s);
     if (!s) {
       box.append(E('p', { cls: 'trdim', txt: 'Select a step to see its signals live: the target, the value now, and where to do it.' }));
       return;

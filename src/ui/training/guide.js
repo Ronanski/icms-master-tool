@@ -696,7 +696,8 @@ window.LS_GUIDE = (function () {
   const dOut = (nm, row) => (window.LS_DOCK && LS_DOCK.dout ? LS_DOCK.dout(nm, row) : null);
   const dRun = nm => (window.LS_DOCK && LS_DOCK.runOut ? LS_DOCK.runOut(nm) : null);
   /* 3.2.0-beta.23: a condition read on the DITL while the one world runs (w), else the ABC / plant condition (o) */
-  const WL = () => !!(window.WORLD && WORLD.on && WORLD.live);
+  /* retest #28: the one world is built (its last scan while PAUSED: a condition of a DITL step is not shown ✓ just because the time stands still) */
+  const WL = () => !!(window.WORLD && WORLD.on && WORLD.idx);
   const DW = (w, o) => ({
     get sig() {
       return (WL() ? w : o).sig;
@@ -800,27 +801,73 @@ window.LS_GUIDE = (function () {
         return null;
       }
     };
-    const locB = (l, nm, row) => Object.assign(btn('FIELD: START ' + l + ' (local)', () => window.LS_DOCK && LS_DOCK.fieldRow(nm, row, 1, 'START ' + l + ' (local panel)'), () => locRun(nm, row) === 1), { loc: 1 });
+    /* 3.2.0 retest #52: a field start is a toggle (FIELD: START <-> FIELD: STOP), logged in the Event log */
+    const locB = (l, nm, row) =>
+      Object.assign(btn('FIELD: START ' + l + ' (local)', () => window.LS_DOCK && LS_DOCK.fieldRow(nm, row, locRun(nm, row) === 1 ? 0 : 1, (locRun(nm, row) === 1 ? 'STOP ' : 'START ') + l + ' (local panel)'), () => locRun(nm, row) === 1), { loc: 1, tog: 1 });
+    const fstate = k => !!(AN.fieldState && AN.fieldState()[k]);
+    const fldB = (k, l) =>
+      Object.assign(
+        btn('FIELD: START ' + l, () => {
+          const on = fstate(k);
+          A.field(k, !on);
+          try {
+            window.lsEventAdd && lsEventAdd('FIELD', 'FIELD', 'Field operator: ' + (on ? 'STOP ' : 'START ') + l + ' (local panel)');
+          } catch (e) {}
+        }, () => fstate(k)),
+        { loc: 1, tog: 1 }
+      );
+    /* 3.2.0 retest #49 #47: the seawater pumps: 2 of the 3 run (any two), the third is the standby in AUTO (DITL-29A row 4 SEAWATER PUMP x
+       AUTO MODE SELECTED, a CRT selection M.1152 / 1162 / 1172; machine B / C = the instances #B / #C of the one world) */
+    const SWPM = ['M.3353', 'M.3354', 'M.3355'],
+      SWPD = ['DITL-29A', 'DITL-29A #B', 'DITL-29A #C'],
+      SWPL = ['SWP-A', 'SWP-B', 'SWP-C'],
+      swpN = () => SWPM.filter(a => bit(a) > 0.5).length,
+      swpAuto = j => locRun(SWPD[j], 3) === 1,
+      swpStby = () => SWPM.findIndex(a => !(bit(a) > 0.5));
+    /* 3.2.0 retest #46 #33: the values of the equipment the operator reads on the HMI (no transmitter on the ABC sheets): from the HMI snapshot
+       030 SEAWATER SYSTEM (SWP 207 ~ 243 A, SWBP 87 A, condenser inlet 1.0 / outlet 0.4 ~ 0.5 kg/cm2) and the SOP (SWP discharge 2.2 ~ 2.4
+       ksc, condenser dP 0.4), shown while the pump runs (0 when stopped) */
+    const ifRun = (on, x) => (on ? x : 0);
+    const SWPW = [
+      ['SWP running', () => swpN() + ' / 3', '', x => x, '2 tumatakbo, 1 standby AUTO'],
+      ...SWPL.map((l, j) => [l + ' current', () => ifRun(bit(SWPM[j]) > 0.5, j === 0 ? 225 : j === 1 ? 242 : 208), 'A', null, 'HMI 030: 207 ~ 243 A']),
+      ['SWP discharge press', () => ifRun(swpN() > 0, 2.3), 'kg/cm²', null, 'SOP 2.2 ~ 2.4'],
+      ['Condenser SW inlet press', () => ifRun(swpN() > 0, swpN() > 1 ? 1.0 : 0.7), 'kg/cm²', null, 'PISW1110A1'],
+      ['Condenser SW outlet press', () => ifRun(swpN() > 0, swpN() > 1 ? 0.5 : 0.35), 'kg/cm²', null, 'PISW1110A2'],
+      ['Condenser SW ΔP', () => ifRun(swpN() > 0, swpN() > 1 ? 0.5 : 0.35), 'kg/cm²', null, 'SOP ≥ 0.4']
+    ];
+    const runW = (l, L, cur, unit, hint) => [[l + ' running', () => L.filter(f => f()).length + ' / ' + L.length, '', x => x, hint || ''], [l + ' ' + (unit === 'A' ? 'current' : 'discharge press'), () => ifRun(L.some(f => f()), cur), unit, null, '']];
     ST = [
       /* ---- 0 utilities ---- */
       /* 3.2.0 walkthrough #5: PR-OPE-5002 ESP "purge air heater and fan ... 6 hours prior to start-up": confirmed when already 6 h in service,
          or held 6 h of plant time from the card (pre) */
-      FIELD(0, 'ESP purge air heater at fan (field), 6 oras bago ang start-up', [0], { pre: 21600, d: 'SOP: pinapaandar ng field operator ang ESP purge air heater at fan 6 ORAS BAGO ang start-up. Kung 6 h na itong tumatakbo, pindutin ang "Tapos na ito sa field". Kung ngayon pa lang sinimulan, pindutin ang "Simulan ang 6 h purge" at patakbuhin ang oras (RUN, ×300 = mga 72 segundo).' }),
-      { st: 0, sec: 2, t: 'Simulan ang unang seawater pump (SWP)', d: 'Ang seawater ang nagpapalamig sa condenser at sa cooling water ng planta. Ito ang unang tumatakbo sa start-up.', c: R.SWP1, a: [mot('M.3353', 'SWP-A'), mot('M.3354', 'SWP-B'), mot('M.3355', 'SWP-C')], field: [1] },
-      { st: 0, sec: 2, t: 'Simulan ang pangalawang SWP', d: 'Dalawang SWP ang kailangan para sa condenser bago ang vacuum at ang turbine.', c: b.SWP2, a: [mot('M.3353', 'SWP-A'), mot('M.3354', 'SWP-B'), mot('M.3355', 'SWP-C')] },
+      FIELD(0, 'ESP purge air heater at fan (field), 6 oras bago ang start-up', [0], { pre: 21600, d: 'Gawin: "Simulan ang 6 h purge", saka ▶ RUN (kusa ang ×300, balik ×1 sa 6:00). SOP: pinapaandar ng field operator ang ESP purge air heater at fan 6 ORAS BAGO ang start-up. Kung 6 h na itong tumatakbo, pindutin na lang ang "Tapos na ito sa field".' }),
+      /* 3.2.0 retest #49: any two of the three SWP (was: a first and a second SWP step, the second showed the third pump to start) */
+      { st: 0, sec: 2, t: 'Simulan ang 2 seawater pump (SWP), kahit alin', d: 'Gawin: REMOTE sa field, saka START ng dalawang SWP. Ang ikatlo ay standby.', c: b.SWP2, max: 2, a: [mot('M.3353', 'SWP-A'), mot('M.3354', 'SWP-B'), mot('M.3355', 'SWP-C')], field: [1], w: SWPW },
+      {
+        st: 0,
+        sec: 2,
+        t: 'Ilagay ang standby SWP sa AUTO',
+        d: 'Gawin: AUTO ng hindi tumatakbong SWP (DITL-29A row 4, AUTO MODE SELECTED). Ito ang aandar kapag nag-trip ang isa.',
+        c: C('2 SWP running at standby SWP sa AUTO', () => !WL() || (swpN() >= 2 && swpStby() >= 0 && swpAuto(swpStby())), () => swpN() + ' running · standby ' + (swpStby() >= 0 ? SWPL[swpStby()] + (swpAuto(swpStby()) ? ' AUTO' : ' MAN') : '—')),
+        a: SWPD.map((nm, j) => Object.assign(btn('AUTO ' + SWPL[j] + ' (standby)', () => window.LS_DOCK && LS_DOCK.dsel(nm, 3, 1, SWPL[j] + ' AUTO MODE SELECTED'), () => swpAuto(j)), { dg: [nm, 3], sel: 1, auto: 1, hide: () => bit(SWPM[j]) > 0.5 })),
+        runN: swpN,
+        field: [1],
+        w: SWPW
+      },
       /* 3.2.0 retest #32 #33: one step per SOP section 3 ~ 17, the machines started from the DCS or locally (were: two field cards, 135 items) */
-      { st: 0, sec: 3, t: 'Simulan ang hypochlorite pump (field)', d: 'Walang DCS signal ang hypochlorite pump: sinisimulan ito ng field operator sa local panel.', c: C('Hypochlorite pump running (field)', () => !!(AN.fieldState && AN.fieldState().hypo), () => 'Hypochlorite pump ' + (AN.fieldState && AN.fieldState().hypo ? 'RUNNING' : 'STOPPED')), a: [btn('FIELD: START hypochlorite pump', () => A.field('hypo', true), () => !!(AN.fieldState && AN.fieldState().hypo))], field: [2] },
-      { st: 0, sec: 4, t: 'Simulan ang SWP outlet debris filter (DITL-39)', d: 'REMOTE AUTO START ng debris filter system 1 sa DCS (DITL-39 row 8). Tumatakbo lang kapag may SWP na tumatakbo.', c: outC('SWP outlet debris filter IN OPERATION (DITL-39)', 'DITL-39', 3, 'IN OPERATION', 'stopped'), a: [pbB('Debris filter 1 AUTO START (DITL-39)', 'DITL-39', 7, null, () => dOut('DITL-39', 3) === 1)], field: [3] },
-      { st: 0, sec: 5, t: 'Simulan ang seawater booster pump (SWBP)', d: 'Ang SWBP ay nasa DCS (DITL-30). Kailangan ang REMOTE sa field at tumatakbong SWP.', c: runC('A seawater booster pump running (DITL-30)', ['DITL-30', 'DITL-30 #B', 'DITL-30 #C']), a: [dmot('DITL-30', 'SWBP-A'), dmot('DITL-30 #B', 'SWBP-B'), dmot('DITL-30 #C', 'SWBP-C')], field: [4] },
-      { st: 0, sec: 6, t: 'Simulan ang SWBP outlet debris filter (DITL-39)', d: 'REMOTE AUTO START ng debris filter system 2 sa DCS (DITL-39 row 19).', c: outC('SWBP outlet debris filter IN OPERATION (DITL-39)', 'DITL-39', 14, 'IN OPERATION', 'stopped'), a: [pbB('Debris filter 2 AUTO START (DITL-39)', 'DITL-39', 18, null, () => dOut('DITL-39', 14) === 1)], field: [5] },
-      { st: 0, sec: 7, t: 'Simulan ang make-up water pump (MWP)', d: 'Ang MWP ay nasa DCS (DITL-112). Pinupuno nito ang expansion tank at ang condenser.', c: runC('A make-up water pump running (DITL-112)', ['DITL-112', 'DITL-112 #B', 'DITL-112 #C']), a: [dmot('DITL-112', 'MWP-A'), dmot('DITL-112 #B', 'MWP-B'), dmot('DITL-112 #C', 'MWP-C')], field: [6] },
-      { st: 0, sec: 8, t: 'Simulan ang auxiliary cooling water pump (ACW)', d: 'Ang ACW pump ay nasa DCS (DITL-76 A, DITL-77 B).', c: runC('An aux. cooling water pump running (DITL-76 / 77)', ['DITL-76', 'DITL-77']), a: [dmot('DITL-76', 'ACW pump A'), dmot('DITL-77', 'ACW pump B')], field: [7] },
-      { st: 0, sec: 9, t: 'Simulan ang instrument air dryer (DITL-45)', d: 'START ng instrument air dryer A sa DCS (DITL-45 row 15).', c: outC('Instrument air dryer A RUNNING (DITL-45)', 'DITL-45', 14, 'RUNNING', 'STOPPED'), a: [pbB('START instrument air dryer A (DITL-45)', 'DITL-45', 14, 'DITL-45@14', () => dOut('DITL-45', 14) === 1)], field: [8] },
-      { st: 0, sec: 10, t: 'Simulan ang instrument air compressor (local)', d: 'Sa local panel sinisimulan ang compressor; nakikita sa DCS ang RUNNING (DITL-113 row 6).', c: C('Instrument air compressor A running (DITL-113)', () => !WL() || locRun('DITL-113', 5) === 1, () => 'IA compressor A ' + (locRun('DITL-113', 5) === 1 ? 'RUNNING' : 'STOPPED')), a: [locB('instrument air compressor A', 'DITL-113', 5)], field: [9] },
-      { st: 0, sec: 11, t: 'Simulan ang plant air dryer (DITL-45)', d: 'START ng plant air dryer A sa DCS (DITL-45 row 4).', c: outC('Plant air dryer A RUNNING (DITL-45)', 'DITL-45', 3, 'RUNNING', 'STOPPED'), a: [pbB('START plant air dryer A (DITL-45)', 'DITL-45', 3, 'DITL-45@3', () => dOut('DITL-45', 3) === 1)], field: [10] },
-      { st: 0, sec: 12, t: 'Simulan ang plant air compressor (local)', d: 'Sa local panel sinisimulan ang compressor; nakikita sa DCS ang RUNNING (DITL-114 row 6).', c: C('Plant air compressor A running (DITL-114)', () => !WL() || locRun('DITL-114', 5) === 1, () => 'PA compressor A ' + (locRun('DITL-114', 5) === 1 ? 'RUNNING' : 'STOPPED')), a: [locB('plant air compressor A', 'DITL-114', 5)], field: [11] },
+      { st: 0, sec: 3, t: 'Simulan ang hypochlorite pump (field)', d: 'Walang DCS signal ang hypochlorite pump: sinisimulan ito ng field operator sa local panel.', c: C('Hypochlorite pump running (field)', () => !!(AN.fieldState && AN.fieldState().hypo), () => 'Hypochlorite pump ' + (AN.fieldState && AN.fieldState().hypo ? 'RUNNING' : 'STOPPED')), a: [fldB('hypo', 'hypochlorite pump')], field: [2], w: [['Hypochlorite pump', () => (fstate('hypo') ? 'RUNNING' : 'STOPPED'), '', x => x, 'local panel']] },
+      { st: 0, sec: 4, t: 'Simulan ang SWP outlet debris filter (DITL-39)', d: 'REMOTE AUTO START ng debris filter system 1 sa DCS (DITL-39 row 8). Tumatakbo lang kapag may SWP na tumatakbo.', c: outC('SWP outlet debris filter IN OPERATION (DITL-39)', 'DITL-39', 3, 'IN OPERATION', 'stopped'), a: [pbB('Debris filter 1 AUTO START (DITL-39)', 'DITL-39', 7, null, () => dOut('DITL-39', 3) === 1)], field: [3], w: [['SWP outlet debris filter', () => (dOut('DITL-39', 3) === 1 ? 'IN OPERATION' : 'STOPPED'), '', x => x, 'DITL-39 out 4'], ['SWP running', () => swpN() + ' / 3', '', x => x, 'kailangan ≥ 1']] },
+      { st: 0, sec: 5, t: 'Simulan ang seawater booster pump (SWBP)', d: 'Ang SWBP ay nasa DCS (DITL-30). Kailangan ang REMOTE sa field at tumatakbong SWP.', c: runC('A seawater booster pump running (DITL-30)', ['DITL-30', 'DITL-30 #B', 'DITL-30 #C']), a: [dmot('DITL-30', 'SWBP-A'), dmot('DITL-30 #B', 'SWBP-B'), dmot('DITL-30 #C', 'SWBP-C')], field: [4], w: runW('SWBP', ['DITL-30', 'DITL-30 #B', 'DITL-30 #C'].map(nm => () => dRun(nm) === 1), 87, 'A', 'HMI 030: 87 A') },
+      { st: 0, sec: 6, t: 'Simulan ang SWBP outlet debris filter (DITL-39)', d: 'REMOTE AUTO START ng debris filter system 2 sa DCS (DITL-39 row 19).', c: outC('SWBP outlet debris filter IN OPERATION (DITL-39)', 'DITL-39', 14, 'IN OPERATION', 'stopped'), a: [pbB('Debris filter 2 AUTO START (DITL-39)', 'DITL-39', 18, null, () => dOut('DITL-39', 14) === 1)], field: [5], w: [['SWBP outlet debris filter', () => (dOut('DITL-39', 14) === 1 ? 'IN OPERATION' : 'STOPPED'), '', x => x, 'DITL-39 out 15']] },
+      { st: 0, sec: 7, t: 'Simulan ang make-up water pump (MWP)', d: 'Ang MWP ay nasa DCS (DITL-112). Pinupuno nito ang expansion tank at ang condenser.', c: runC('A make-up water pump running (DITL-112)', ['DITL-112', 'DITL-112 #B', 'DITL-112 #C']), a: [dmot('DITL-112', 'MWP-A'), dmot('DITL-112 #B', 'MWP-B'), dmot('DITL-112 #C', 'MWP-C')], field: [6], w: [runW('MWP', ['DITL-112', 'DITL-112 #B', 'DITL-112 #C'].map(nm => () => dRun(nm) === 1), 0, '')[0]] },
+      { st: 0, sec: 8, t: 'Simulan ang auxiliary cooling water pump (ACW)', d: 'Ang ACW pump ay nasa DCS (DITL-76 A, DITL-77 B).', c: runC('An aux. cooling water pump running (DITL-76 / 77)', ['DITL-76', 'DITL-77']), a: [dmot('DITL-76', 'ACW pump A'), dmot('DITL-77', 'ACW pump B')], field: [7], w: runW('ACW pump', ['DITL-76', 'DITL-77'].map(nm => () => dRun(nm) === 1), 6.4, 'kg/cm²', 'PICW1152 HMI 6.4') },
+      { st: 0, sec: 9, t: 'Simulan ang instrument air dryer (DITL-45)', d: 'START ng instrument air dryer A sa DCS (DITL-45 row 15).', c: outC('Instrument air dryer A RUNNING (DITL-45)', 'DITL-45', 14, 'RUNNING', 'STOPPED'), a: [pbB('START instrument air dryer A (DITL-45)', 'DITL-45', 14, 'DITL-45@14', () => dOut('DITL-45', 14) === 1)], field: [8], w: [['IA dryer A', () => (dOut('DITL-45', 14) === 1 ? 'RUNNING' : 'STOPPED'), '', x => x, 'DITL-45 out 15']] },
+      { st: 0, sec: 10, t: 'Simulan ang instrument air compressor (local)', d: 'Sa local panel sinisimulan ang compressor; nakikita sa DCS ang RUNNING (DITL-113 row 6).', c: C('Instrument air compressor A running (DITL-113)', () => !WL() || locRun('DITL-113', 5) === 1, () => 'IA compressor A ' + (locRun('DITL-113', 5) === 1 ? 'RUNNING' : 'STOPPED')), a: [locB('instrument air compressor A', 'DITL-113', 5)], field: [9], w: [['IA compressor A', () => (locRun('DITL-113', 5) === 1 ? 'RUNNING' : 'STOPPED'), '', x => x, 'DITL-113 row 6']] },
+      { st: 0, sec: 11, t: 'Simulan ang plant air dryer (DITL-45)', d: 'START ng plant air dryer A sa DCS (DITL-45 row 4).', c: outC('Plant air dryer A RUNNING (DITL-45)', 'DITL-45', 3, 'RUNNING', 'STOPPED'), a: [pbB('START plant air dryer A (DITL-45)', 'DITL-45', 3, 'DITL-45@3', () => dOut('DITL-45', 3) === 1)], field: [10], w: [['PA dryer A', () => (dOut('DITL-45', 3) === 1 ? 'RUNNING' : 'STOPPED'), '', x => x, 'DITL-45 out 4']] },
+      { st: 0, sec: 12, t: 'Simulan ang plant air compressor (local)', d: 'Sa local panel sinisimulan ang compressor; nakikita sa DCS ang RUNNING (DITL-114 row 6).', c: C('Plant air compressor A running (DITL-114)', () => !WL() || locRun('DITL-114', 5) === 1, () => 'PA compressor A ' + (locRun('DITL-114', 5) === 1 ? 'RUNNING' : 'STOPPED')), a: [locB('plant air compressor A', 'DITL-114', 5)], field: [11], w: [['PA compressor A', () => (locRun('DITL-114', 5) === 1 ? 'RUNNING' : 'STOPPED'), '', x => x, 'DITL-114 row 6']] },
       FIELD(0, 'Pre-start check, turbine oil pumps, oil purifier, control oil (field / TCS)', [12, 13, 14, 15]),
-      { st: 0, sec: 17, t: 'Simulan ang rotary air pre-heater (DITL-43)', d: 'START ng air preheater sa DCS (DITL-43 row 3). Kailangan ang NOT TRIP at hindi LOCAL sa field.', c: runC('Air preheater running (DITL-43)', ['DITL-43']), a: [dmot('DITL-43', 'air preheater')], field: [16] },
+      { st: 0, sec: 17, t: 'Simulan ang rotary air pre-heater (DITL-43)', d: 'START ng air preheater sa DCS (DITL-43 row 3). Kailangan ang NOT TRIP at hindi LOCAL sa field.', c: runC('Air preheater running (DITL-43)', ['DITL-43']), a: [dmot('DITL-43', 'air preheater')], field: [16], w: [['Air preheater', () => (dRun('DITL-43') === 1 ? 'RUNNING' : 'STOPPED'), '', x => x, 'DITL-43 out 3']] },
       /* ---- 1 water ---- */
       FIELD(1, 'Hotwell filling line-up (field)', [17]),
       { st: 1, sec: 18, t: 'Hotwell level control LCV-MU1110 sa AUTO', d: 'Ang make-up valve na ang hahawak ng level ng hotwell ng condenser.', c: b.MODE('LCV-MU1110', 'AUTO'), fps: ['LCV-MU1110'], a: [btn('A (AUTO)', () => A.auto('LCV-MU1110'))] },
@@ -842,7 +889,7 @@ window.LS_GUIDE = (function () {
          gradually, drum level -150 mm. The coach "fill" closes the valve at -150 mm (the trainee may switch it off) */
       { st: 1, sec: 20, t: 'Steam drum filling: start-up valve FCV-FW1130-2 sa MANUAL, punuin hanggang −150 mm', d: 'Wala pang tubig ang drum ng cold plant (mga −300 mm). Habang tumatakbo ang BFWP, buksan nang dahan-dahan ang start-up valve (MANUAL, MV 20 %). Kapag −150 mm na, isara (MV 0 %) para hindi umapaw. Ang coach ang nagsasara sa −150 mm (puwede mong patayin at ikaw ang magsara).', c: b.ALL(b.MODE('FCV-FW1130-2', 'MAN'), b.MV('FCV-FW1130-2', null, 2), b.HOLD(10, b.VAL('lvl', -200, 100))), fps: ['FCV-FW1130-2'], coach: ['fill'], a: [btn('M, MV 20 % (punuin)', () => (h().lvl() < -170 ? A.man('FCV-FW1130-2', 20) : ''), () => h().lvl() >= -170 || mv('FCV-FW1130-2') >= 15), btn('MV 0 % (sa −150 mm)', () => (h().lvl() >= -170 ? A.man('FCV-FW1130-2', 0) : ''), () => h().lvl() >= -170 && mv('FCV-FW1130-2') <= 2)], field: [19] },
       /* ---- 2 fans ---- */
-      { st: 2, sec: 21, coachOff: ['fill'], t: 'Diesel oil pump at oil circulation (field)', d: 'Ang diesel oil pump ay nasa field (walang DCS signal). Kailangan ito ng mga start-up burner. Bantayan ang outlet oil pressure (PICDO0005).', fps: ['PICDO0005'], c: C('Diesel oil pump running (field)', () => !!(AN.fieldState && AN.fieldState().dop), () => 'Diesel oil pump ' + (AN.fieldState && AN.fieldState().dop ? 'ON' : 'OFF')), a: [btn('START diesel oil pump (field)', () => A.field('dop', true), () => !!(AN.fieldState && AN.fieldState().dop))], field: [20] },
+      { st: 2, sec: 21, coachOff: ['fill'], t: 'Diesel oil pump at oil circulation (field)', d: 'Ang diesel oil pump ay nasa field (walang DCS signal). Kailangan ito ng mga start-up burner. Bantayan ang outlet oil pressure (PICDO0005).', fps: ['PICDO0005'], c: C('Diesel oil pump running (field)', () => !!(AN.fieldState && AN.fieldState().dop), () => 'Diesel oil pump ' + (AN.fieldState && AN.fieldState().dop ? 'ON' : 'OFF')), a: [fldB('dop', 'diesel oil pump')], field: [20] },
       { st: 2, sec: 22, t: 'Ihanda ang IDF: PICFG108 sa MANUAL, MV 0 %, biasing damper RH at SH bukas', d: 'Sarado ang hydraulic coupling ng IDF bago ito simulan (mababang starting current). Ang interlock ng IDF (DITL-25A row 1) ay humihingi ng bukas na flue gas bias damper (HICHR1002A / B) para may daanan ang hangin.', c: b.ALL(b.MODE('PICFG108', 'MAN'), b.MV('PICFG108', null, 2), b.MV('HICHR1002A', 30, null), b.MV('HICHR1002B', 60, null)), fps: ['PICFG108', 'HICHR1002A', 'HICHR1002B'], a: [btn('M, MV 0 %', () => A.man('PICFG108', 0)), btn('Biasing damper RH at SH 100 %', () => (A.man('HICHR1002A', 100), A.man('HICHR1002B', 100)))], field: [21] },
       { st: 2, sec: 22, t: 'Simulan ang ID fan (IDF)', d: 'Ang IDF ang humihigop ng flue gas palabas ng furnace. Ito ang unang fan na tumatakbo.', c: R.IDF, a: [mot('M.3304', 'IDF')] },
       { st: 2, sec: 22, t: 'IDF hydraulic coupling: PICFG108 MV 13 %', d: 'Buksan ang coupling sa 13 %. Negatibo ang furnace pressure (hinihigop palabas).', c: b.ALL(R.IDF, b.MV('PICFG108', 10, 16)), fps: ['PICFG108'], a: [btn('MV 13 %', () => A.man('PICFG108', 13))] },

@@ -183,7 +183,31 @@
     back.style.display = hist.length ? '' : 'none';
   }
   let FL = null;
+  /* 3.2.0 retest #40: the input rows that the Training interlock still misses (the ✕ of the panel) stay outlined in red on the sheet */
+  let MK = null;
+  function drawMk() {
+    const svg = $('svg');
+    if (!svg) return;
+    svg.querySelectorAll('rect.plmiss').forEach(x => x.remove());
+    if (!MK || cur() !== MK.s) return;
+    const VR = MK.s.vr || MK.s.rng;
+    for (const i of MK.rows) {
+      const r = MK.s.rows[i];
+      if (!r) continue;
+      const RB = (MK.s.rb && MK.s.rb[i]) || [r.y - 3.3, r.y + 5.7],
+        f = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      Object.entries({ x: VR.F[0], y: -RB[1], width: VR.S[1] - VR.F[0], height: RB[1] - RB[0], class: 'plmiss' }).forEach(([k, v]) => f.setAttribute(k, v));
+      svg.append(f);
+    }
+  }
+  D.mark = (s, rows) => {
+    const k = s && rows && rows.length ? s.name + ':' + rows.join(',') : '';
+    if (k === (MK ? MK.k : '')) return;
+    MK = k ? { s, rows, k } : null;
+    drawMk();
+  };
   D.after = () => {
+    drawMk();
     if (FL && Date.now() < FL.until && cur() === FL.s) flashRow(FL.s, FL.i, FL.side, 1);
     if (typeof hl === 'function') hl();
   };
@@ -227,6 +251,15 @@
       v[3] = v0[3];
     }
     v[0] = cx - v[2] / 2;
+    /* 3.2.0 retest #39 #48: the Training opens a row zoomed in (about half the sheet wide, the text readable beside the panel) and starts
+       at the left edge of the sheet (the input rows), no empty band at the left */
+    if (itx && itx.zoom) {
+      const bb = $('svg').getBoundingClientRect(),
+        w = Math.min(itx.zoom, VR.RT[1] - VR.F[0] + 10);
+      v[2] = w;
+      v[3] = (w * Math.max(1, bb.height)) / Math.max(1, bb.width);
+      v[0] = side === 'R' ? VR.RT[1] + 4 - w : VR.F[0] - 4;
+    }
     v[1] = -s.rows[ri].y - v[3] / 2;
     $('svg').setAttribute('viewBox', v.join(' '));
     /* from the ABC the page switch draws the sheet once more: blink after it */

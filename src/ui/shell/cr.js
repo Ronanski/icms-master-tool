@@ -255,9 +255,11 @@
     P.alarm.classList.toggle('on', n > 0);
     P.aChip.className = 'crchip ' + (n ? 'alm' : 'mut') + (un ? ' unack' : '');
     P.aChip.textContent = n ? n + (n === 1 ? ' ALARM' : ' ALARMS') + (un ? ' · ' + un + ' NEW' : '') : 'NO ALARM';
-    P.aT.textContent = last ? last.t : '';
+    /* retest #43 #42: the time says what it is; the full text in the tooltip */
+    P.aT.textContent = last && last.t ? 'at ' + last.t : '';
+    P.aT.title = 'Simulation time of this alarm';
     P.aTx.textContent = last ? last.text + ' · ' + last.sh : 'No active alarm or trip';
-    P.aTx.title = 'Alarm list of the whole DCS (every ABC sheet and the motor trips of the DITL), simulation time. Click the ALARM chip for the list and ACK.';
+    P.aTx.title = (last ? last.text + ' · ' + last.sh + '\n' : '') + 'Alarm list of the whole DCS (every ABC sheet and the motor trips of the DITL), simulation time. Click the ALARM chip for the list and ACK.';
     if (P.aList.classList.contains('open') && (n !== P.aN || un !== P.aU)) aFill();
     P.aN = n;
     P.aU = un;
