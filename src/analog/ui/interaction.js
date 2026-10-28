@@ -314,11 +314,14 @@ bRst.onclick = () => {
   AN.startState = null;
   reset();
   /* 3.2.0-beta.18: and the plant is COLD at once (VIEW shows boiler off, not the drawings' defaults MSP 75) */
-  if (coldIfNone()) {
-    settle();
-    paint();
-    panelUpd(true);
-  }
+  const p = coldIfNone();
+  if (p)
+    p.then(ok => {
+      if (!ok) return;
+      settle();
+      paint();
+      panelUpd(true);
+    });
 };
 bFit.onclick = fitView;
 bVal.onclick = () => {
@@ -403,7 +406,7 @@ bPn.onclick = () => {
    wire opens it (an empty panel covered half of the sheet on a tablet standing up and on a phone) */
 if (matchMedia('(max-width:1180px)').matches) showPanel(false);
 setInterval(() => {
-  if (!live() || !AN.run) return;
+  if (!live() || !AN.run || AN._loading) return;
   const sh = cs();
   if (!sh || !sh.S) return;
   const dt = 0.1 * AN.spd,

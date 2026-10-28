@@ -1022,3 +1022,14 @@ Ang lumang "3.2.0-beta.40 (2026-10-26)" sa itaas ay ibinalik noon at hindi nagin
 | 53 | Debris filter hindi tumatakbo | Field model: DOR-DF1001/1002 → DIR feedback (DITL-39, kapag may SWP na tumatakbo) | 05-overlay-interaction.js |
 
 Labas ng Training: alarm chip / list at TRIP sa buong app; pulang marka sa DITL viewer.
+
+## dev pagkatapos ng 3.2.0-beta.40 (2026-10-28, hindi pa Beta; hinihintay ang GO BETA ng user) — retest 4
+
+Hindi pa ito Beta: hindi ito ipinush (habang tinetest pa ng user ang beta.40). Build at check lang ang pinatakbo, kaya **hindi nasubok** ang lahat ng ayos sa ibaba.
+
+| # | Finding | Ayos | Saan |
+|---|---|---|---|
+| 54 | Mahigit 1 minutong freeze sa "Gabay: Cold → 150 MW", walang loading sign | Sanhi: ang Cold ay ~2,500 sunod-sunod na scan ng lahat ng sheet (bawat scan ay buong grupo ng magkakabit na sheet), sa iisang takbo na walang pahinga. Ngayon ay hinati ito sa maliliit na bahagi (40 ms), kaya gumagalaw ang page at may progress bar (%, segundo). Pareho ang plant state na lalabas (pareho ang pagkakasunod ng mga scan). Ang grupo ng sheet ay kinukuwenta nang isang beses lang bawat load. Pareho rin ang ayos sa Start ▸ Cold / 150 MW, sa PLANT chip, sa Practise, sa RUN na walang starting state, sa Reset at sa unang pagbukas ng ABC page | hmi-op.js, links.js, trace.js, interaction.js, app.js, home.js, guide.js, world.js |
+| 35 | 93 ALARMS pa rin sa Cold | Ang mga alarm na nakatayo na pagka-load ng planta (shutdown state) ay naka-ACK at SUPPRESSED: hindi na binibilang sa header ("NO ALARM · 93 SUPPRESSED"), at nasa hiwalay na nakatiklop na listahan. Kapag bumalik ito sa normal (umandar ang equipment) at umulit, bagong alarm na ito. Wala nang alarm scan habang naglo-load | events.js, cr.js |
+| 13 | Nakatago pa ang DITL-56 sa likod ng Training | Pagbukas ng Training (walang Gabay na tumatakbo), ang DITL sheet sa likod ay ang sa unang DCS step (DITL-29A SWP) | dock.js, app.js |
+| 23 | Walang malinaw na paalala ng bagong Beta | Isang banner sa buong itaas ng page: "New Beta available … · installed … · Update now / Later"; sinusuri ulit bawat 10 minuto habang bukas ang app | update-question.js |

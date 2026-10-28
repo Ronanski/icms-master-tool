@@ -814,6 +814,23 @@
       if (done) done();
     });
   }
+  /* retest #13 (R4: the DITL-56 vacuum breaker of an earlier visit stayed loaded behind the Training page): opening the Training with
+     no guided start running puts the DITL sheet of the first DCS step (DITL-29A SWP) behind it, quietly (no page switch, no message) */
+  function home() {
+    const g = GD();
+    if (!g || !g.steps || g.on) return;
+    try {
+      const f = g.steps().find(x => (x.a || []).some(a => a.stop && motAddr(a) && MOTOR[motAddr(a)]));
+      const a0 = f && f.a.find(a => a.stop && motAddr(a) && MOTOR[motAddr(a)]);
+      if (!a0) return;
+      const d = String(MOTOR[motAddr(a0)]).replace(/\s*#\w+$/, ''),
+        ss = document.getElementById('shsel'),
+        o = ss && [...ss.options].find(x => new RegExp('\\)' + d + '$').test(x.textContent));
+      if (!o || ss.value === o.value) return;
+      ss.value = o.value;
+      ss.dispatchEvent(new Event('change'));
+    } catch (e) {}
+  }
   function resume() {
     const g = GD();
     if (!g) return;
@@ -1537,7 +1554,7 @@
   setInterval(() => {
     if (dock && GD() && GD().on && window.AN) ls.set('ls-gdock-spd', +AN.spd || 1);
   }, 5000);
-  window.LS_DOCK = { start, resume, open, stop, layout, fill, interlock, fieldOf, fieldSet, fieldRow, dsel, mst, dmotor, dOf, needNet, leaves, permOf, dpress, dset, dout, runOut, get el() {
+  window.LS_DOCK = { start, resume, home, open, stop, layout, fill, interlock, fieldOf, fieldSet, fieldRow, dsel, mst, dmotor, dOf, needNet, leaves, permOf, dpress, dset, dout, runOut, get el() {
       return dock;
     } };
 })();
