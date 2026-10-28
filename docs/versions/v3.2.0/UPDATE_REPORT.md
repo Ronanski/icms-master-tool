@@ -1198,3 +1198,16 @@ Pinagsama sa linyang tine-test (utos ng user 2026-10-28: ang tine-test ay nasa m
 | bago (check) | Pagkatapos isama ang sand DITL: "SYSTEM TRIP" ng DITL-777 bilang NEW alarm sa Cold (tama ang logic: MFT / BOILER STOP at hindi REMOTE, E10210-3-777) | Ang trip na nakatayo na pagbukas ng sheet = shutdown alarm (suppressed) hanggang mag-reset | events.js |
 
 Check: totoong pindot, Hakbang 1 → 20 (hindi buong start-up), 7 bahagi: Training list, dock, header, logic sheet, bagong HMI (Cutaway at Steel), status bar, events.
+
+## 3.2.0-beta.49 (Beta, 2026-10-28) — Plant view: dalawang HMI page lang
+
+Utos ng user (2026-10-28 10:10 PM PHT): ang Plant view ay may dalawang page na lang: ang bagong HMI **007 Air & Flue Gas** (Cutaway / Steel / Thermal) at ang **UNIT · controllers** (sariling drawing, 20 PID / MAN faceplate).
+
+| Tinanggal | Kapalit |
+|---|---|
+| 27 lumang snapshot screen (003, 004, 007 luma, 008, 009, 039, 002, 005, 011, 012 ~ 016, 018 ~ 021, 027 ~ 030, 033, 036 ~ 038, 006) sa `systems.js` | 007 Air & Flue Gas (bago) at UNIT · controllers. Ang faceplate ng bawat controller ay bumubukas pa rin mula sa Training, Home at Logic (`lsPlantFp`) |
+| Mga larawan ng snapshot (`hmibg.js`, 3.7 MB) at mga value page (`values.js`) | — (ang app ay 13.9 → 9.8 MB) |
+| Chips na 003 / 004 / 007 / 011 / 033 at nav button na 008 / 009 / 039 / 038 / 011 / 033 sa bagong HMI | Chips at nav: 007 Air & Flue Gas, UNIT |
+| Tests ng lumang screen: `plant_bg.js`, `plant_view.js`, `plant_live.js`, `p3_screens.js`; tool `tools/data/hmibg.py` | — |
+
+Check (totoong pindot): Plant view = 2 page lang; 007 Steel: APH STOPPED berde, 110 / 110 linked; UNIT: 51 / 51 linked, 20 faceplate; header NO ALARM; status bar "v3.2.0-beta.49 · build …"; events naka-log.
