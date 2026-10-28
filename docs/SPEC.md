@@ -23,8 +23,8 @@ Ito ang gusto ng user, sa sarili niyang salita. Ito ang sukatan ng bawat gawa. K
 
 | # | Meron na sa app | Kulang / bukas |
 |---|---|---|
-| S1 | Laging iisang mundo ang ABC + DITL (mula beta.25, walang button). Page link ABC ↔ DITL, dalawang direksyon. | — |
-| S2 | VIEW mode: click sa wire = trace, Search, info card ("Why?"), page link, Back. | Bahagi 2 ng VIEW audit: DITL, tablet at phone sa VIEW. |
+| S1 | Laging iisang mundo ang ABC + DITL (mula beta.25, walang button). Page link ABC ↔ DITL, dalawang direksyon: ang BAWAT "FROM / TO DITL" sa ABC (233, links ABC ↔ DITL) at ang FROM / TO column ng DITL; ↩ Back sa magkabilang panig. | — |
+| S2 | VIEW mode: click sa wire = trace, Search, info card ("Why?"), page link, Back. | Lakad ng VIEW sa DITL, tablet, phone (links ABC ↔ DITL: screenshot walang sira; ang user pa ang hindi nakakasubok). |
 | S3 | Plant chip katabi ng VIEW / RUN → **OFF**. Inputs list, force ng bawat input, A / M / R, SV, MV. | — |
 | S4 | Plant chip → **Unit**: steam table IAPWS-IF97, mass / energy balance ng boiler, turbine + TCS (ATS step 0 ~ 7), vacuum, utilities na may trip. | (a) MST: TAPOS (pinakamataas 547.7 °C sa 80 MW, alarm 548). (a2) Reheat: TAPOS (541 °C sa 150 MW, reheat control sa AUTO). (b) RH biasing damper: TAPOS sa beta.40 (tama ang direksyon; binabasa na ang damper). (c) Wala pang model: aux cooling water, instrument air, APH sootblower, ESP. |
 | S5 | Home → **At 150 MW** (galing sa HMI snapshot 4.PNG). Load up / down sa HIC-ULD, CCS, boiler / turbine master, coal master. | Kasama sa S4 (a). |
@@ -43,8 +43,8 @@ Ang user ay susubok lang sa DULO ng buong plano (gabay: `docs/USER_CHECK.md`).
 2. [x] Plant model (3.2.0-beta.40): TAPOS: stall sa bypass (hakbang 43, dati na), RH biasing damper (ABC-020), "null" sa DITL header, header ng Cold ("—" bago pumili). TAPOS din (ikalawang batch): hakbang 57 (MS blow-off SV), SH temperature chain, air side ng Cold. TAPOS din (ikatlong batch, 2026-10-27): reheat sa AUTO (541 °C sa 150 MW), MST pinakamataas 547.7 °C (alarm 548), hinto sa 3600 rpm heat soak; mouse Cold run TAPOS hanggang Practice (UPDATE_REPORT, seksyon ikatlong batch).
 3. [x] Starting points (2026-10-27, branch `claude/project-thread-5nq9pa`): Cold = tunay na malamig na planta; 150 MW = tumatakbo nang walang trip; ang pagpili ng starting point ay nag-o-ON ng plant model. Kasama ang P1 fix queue (ZT, protection switches, DITL-38 MOV, spray block, coal outlet valve).
 4. [ ] Training Cold → 150 MW laban sa SOP (PR-OPE-5002), kasama ang negative test (`sop_bawal.js`). Bahagi (2026-10-27): static audit at mga ayos (UPDATE_REPORT, seksyon roadmap 3 + 4), `sop_bawal.js` 19 / 19; ang buong Cold run ay hindi pa nasubok. Natitirang P2: #7 ~ #12.
-5. [ ] Viewer (VIEW audit bahagi 2: DITL, tablet, phone) at Simulate na plant model OFF.
-6. [ ] HMI: live items (560 / 1330 lang ang live), plant overview at permissives screen.
+5. [x] Viewer at Simulate OFF (3.2.0-beta.39, 2026-10-26): lahat ng "FROM / TO DITL" sa ABC ay page link na may Back; nilakad ang VIEW / RUN sa PC, tablet (dalawang direksyon) at phone; Simulate OFF: `ditl_sim.js` walang FAIL (hand input → output, ABC ↔ DITL tugma, force).
+6. [ ] HMI: BAGONG HMI na sariling graphics (user 2026-10-26; snapshot = gabay lang). Listahan ng system: `docs/hmi/HMI_SYSTEMS.md`. Sample Air & Flue Gas (PR #49) (89 / 89 live), naghihintay ng pag-apruba ng style; saka ang 13 pang screen, tapos tanggalin ang lumang Plant HMI.
 7. [ ] Sand silo DITL (8 drawing, `sand-sootblower-logic.zip`).
 8. [ ] Library: loop diagram, instrument list, dictionary.
 9. [ ] Merge ng mga nakabinbing PR at Stable release: LANG kapag nag-GO STABLE ang user.

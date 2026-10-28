@@ -6,6 +6,7 @@
 
 - **Stable:** v2.4.0 sa `main`.
 - **Beta:** `3.2.0-beta.39` (dev; walang sariling numero ang parallel thread, ang coordinator ang magbibigay), branch `claude/project-thread-f93qh9`, PR #47; roadmap 3 + 4 sa `claude/project-thread-5nq9pa` (nakapatong sa #47) (nakapatong sa `claude/project-thread-0amxbo` / PR #45 → PR #43 → PR #42). Roadmap step 1 TAPOS; step 2: stall, RH damper, null, Cold header, hakbang 57, air side ng Cold TAPOS; bukas: MST 550 ~ 557 °C at reheat 593 °C sa 150 MW.
+- **Beta (HMI sample):** branch `claude/project-thread-1h2161` (PR #49, nakapatong sa #46; version 3.2.0-beta.39, ang numero ay ibibigay sa pagsasama). Bagong HMI sample Air & Flue Gas; naghihintay ng pag-apruba ng style ng user (`docs/hmi/HMI_SYSTEMS.md`).
 - **Ang gusto ng user:** `docs/SPEC.md` (S1 ~ S9). Plano = seksyon 3 ng file na iyon. Wala nang ROADMAP / CHECKLIST.
 - **Pag-check ng user:** `docs/USER_CHECK.md`.
 - **Rules:** `CLAUDE.md`, `PROJECT_RULES.md` (test policy = seksyon 5).
@@ -16,6 +17,14 @@
 - Test batay sa reference (PR-OPE-5002, DITL, ATS criteria, FHI Fig. 2, HMI snapshot), hindi sa coach ng Training. Ang kulang na model ay FAIL, hindi "field step".
 - Huwag magpush ng paisa-isang UI fix: lakarin muna ang bawat screen (PC, tablet, phone) bago ang Beta.
 - Per-loop, Warm at Hot: TINANGGAL na sa app (beta.39). Huwag ibalik hangga't hindi sinasabi ng user.
+
+## Bagong HMI (PR #49, roadmap step 6)
+- Desisyon ng user 2026-10-26: ang HMI ay GUGUHITIN MULI (sariling vector graphics); ang snapshot ay gabay lang. Pinalitan nito ang lumang "kopyahin 1:1".
+- `src/ui/plant/hmi2.js`: library ng simbolo + screen `AFG` (Air & Flue Gas). `plant.js` draw: `sys.v2` → `PLANT_V2.draw` (parehong live link / faceplate).
+- Huwag pa tanggalin ang lumang Plant HMI hangga't wala pang kapalit ang lahat ng system (14 screen sa `docs/hmi/HMI_SYSTEMS.md`).
+
+## Estado ng app (links ABC ↔ DITL)
+- ABC ↔ DITL: ang BAWAT "FROM / TO DITL xx-nn" sa ABC (233) ay page link (`dsTextAt` / `dsTextClick` sa `links-canvas.js`, pick sa `interaction.js`); listahan = pagpipilian; DITL → ABC ay may ↩ Back sa ABC (`AN.hist` marker `{dig:true}`). Test: `tests/regress/abc_ditl_links.js`.
 
 ## Estado ng app (beta.39 dev, PR #47)
 - Turbine + TCS model (`src/analog/engine/tcs.js`, `docs/tcs/ATS_CRITERIA.md`), start-up steam ayon sa FHI Fig. 2 / 3 / 4 (`unit.js`).

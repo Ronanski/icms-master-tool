@@ -133,3 +133,5 @@ body.cr #crrail .tabs button,body.crph #crnav .tabs button{font-size:max(12px,.7
  #gsbar :is(.sub,.seg) button,#gsbar .gs-set > button,#srchbtn,#sfoot #evbtn{min-height:44px!important}
  #gsbar .gs-set .ddm :is(button,select){min-height:44px!important}
 }
+/* R9 #88: a line of a SOP NOTE in the Training list: plain text, no checkbox */
+#trainws ol.trsteps li.trnote{counter-increment:none;font-style:italic;color:var(--c-dim);border-left:3px solid var(--c-line2);padding-left:.6rem}

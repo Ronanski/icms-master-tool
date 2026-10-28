@@ -719,7 +719,7 @@ body.app2 #anp .fc > input{width:7rem!important}
 /* phone / tablet: the menus stay on the screen */
 @media (max-width:640px){.ddm{position:fixed!important;left:.5rem!important;right:.5rem!important;top:calc(var(--topH,96px) + .25rem)!important;min-width:0!important}}
 /* narrow screens: the sheet navigator comes first in the tool bar (it was scrolled out of view) */
-@media (max-width:900px){#gsbar .tbar .g-sheet{order:-1}#gsbar .tbar{justify-content:flex-start}}
+@media (max-width:900px){#gsbar .tbar .g-sheet{order:-1}#gsbar .tbar .g-nav{order:-2}/* 3.2.0-beta.39: the ↩ Back after a page link is the first button, never scrolled out of the row */#gsbar .tbar{justify-content:flex-start}}
 /* the tool bar scrolls sideways on a phone: a fade at the edge says there is more */
 @media (max-width:640px){#gsbar .tbar{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 2rem),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 2rem),transparent)}}
 /* wide tables (library calculations, assumed values) scroll inside their panel */

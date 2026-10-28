@@ -930,7 +930,7 @@ window.LS_GUIDE = (function () {
           ['Lube oil pressure', () => (TC().oil || {}).lube, 'kg/cm²g', f1, 'P-n922 · 5.6 ~ 6.6']
         ]
       },
-      { st: 0, sec: 17, t: 'Simulan ang rotary air pre-heater (DITL-43)', d: 'START ng air preheater sa DCS (DITL-43 row 3). Kailangan ang NOT TRIP at hindi LOCAL sa field.', c: runC('Air preheater running (DITL-43)', ['DITL-43']), a: [dmot('DITL-43', 'air preheater')], field: [16], w: [['Air preheater', () => (dRun('DITL-43') === 1 ? 'RUNNING' : 'STOPPED'), '', x => x, 'DITL-43 out 3']] },
+      { st: 0, sec: 17, t: 'Simulan ang rotary air pre-heater (DITL-43)', d: 'Gawin: FIELD NOT TRIP kapag may ✕ sa interlock, saka START ng air preheater (DITL-43). Ang air preheater ay umiikot na rotor (Ljungstrom) na nagpapainit ng PA at SA gamit ang flue gas. Pinapaandar ito bago ang mga fan para pantay ang init ng rotor at hindi ito mabaluktot. Hindi ito aandar kapag walang AIR PREHEATER NOT TRIP (I.0651, DITL-43 row 5) o kapag LOCAL ang switch sa field.', c: runC('Air preheater running (DITL-43)', ['DITL-43']), a: [dmot('DITL-43', 'air preheater')], field: [16], w: [['Air preheater', () => (dRun('DITL-43') === 1 ? 'RUNNING' : 'STOPPED'), '', x => x, 'DITL-43 out 3']] },
       /* ---- 1 water ---- */
       FIELD(1, 'Hotwell filling line-up (field)', [17]),
       { st: 1, sec: 18, t: 'Hotwell level control LCV-MU1110 sa AUTO', d: 'Ang make-up valve na ang hahawak ng level ng hotwell ng condenser.', c: b.MODE('LCV-MU1110', 'AUTO'), fps: ['LCV-MU1110'], a: [btn('A (AUTO)', () => A.auto('LCV-MU1110'))] },

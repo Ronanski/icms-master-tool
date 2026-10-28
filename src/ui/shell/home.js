@@ -195,20 +195,23 @@
   };
   const isDone = (si, i, d, A) => (kindOf(si, i).k === 'auto' ? !!A[key(si, i)] : !!d[key(si, i)]);
   const autoDone = () => (LV() ? LV().done() : {});
+  /* R9 #88: a line of a SOP NOTE (pr-ope-5002-lim.js note = 1) is read, not ticked: no checkbox, not in the counts */
+  const isNote = (si, i) => !!((window.LS_PROC5002_LIM || {})[si + '.' + i] || {}).note;
   function counts(si) {
     const d = done(),
       A = autoDone(),
       s = P()[si];
     let n = 0;
-    s.s.forEach((x, i) => isDone(si, i, d, A) && n++);
-    return [n, s.s.length];
+    let m = 0;
+    s.s.forEach((x, i) => isNote(si, i) || (m++, isDone(si, i, d, A) && n++));
+    return [n, m];
   }
   function total() {
     const d = done(),
       A = autoDone();
     let n = 0,
       m = 0;
-    P().forEach((s, si) => s.s.forEach((x, i) => (m++, isDone(si, i, d, A) && n++)));
+    P().forEach((s, si) => s.s.forEach((x, i) => isNote(si, i) || (m++, isDone(si, i, d, A) && n++)));
     return [n, m];
   }
   /* field and TCS steps of one section (or all): ticked by the operator */
@@ -367,6 +370,10 @@
       nh = 0,
       nhd = 0;
     s.s.forEach((x, i) => {
+      if (isNote(cur, i)) {
+        ul.append(E('li', { cls: 'trnote' }, [E('div', { cls: 'trrow' }, [E('span', { txt: x.t })])]));
+        return;
+      }
       const id = 'trc' + cur + '_' + i,
         q = kindOf(cur, i),
         au = q.k === 'auto';

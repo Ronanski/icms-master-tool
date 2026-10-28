@@ -171,8 +171,11 @@
   }
   /* the transmitter tag of an indicator tag: TIBR11302 -> TTBR11302 / TEBR11302; FIQMS1031 -> FTMS1031 */
   const tx = k => {
-    const m = /^(D?P|T|F|L|A|S|E|Z|W|H|J|I)I(?:Q|C)?(.*)$/.exec(k); /* R9 #60: IIF1056 -> ITF1056 (IT-F1056, AI0453 IDF current) */
-    return m ? [m[1] + 'T' + m[2], m[1] + 'E' + m[2]] : [];
+    const m = /^(D?P|T|F|L|A|S|E|Z|W|H|J|I)I(?:Q|C)?(.*)$/.exec(k), /* R9 #60: IIF1056 -> ITF1056 (IT-F1056, AI0453 IDF current) */
+      /* 3.2.0 (HMI 007, 2026-10-27): an area code that starts with C (PICR1006 = PT-CR1006, TICD1101) is not the C of a
+         controller: also try with the C kept (before, PICR1006 found nothing) */
+      n = /^(D?P|T|F|L|A|S|E|Z|W|H|J)I(C.*)$/.exec(k);
+    return (m ? [m[1] + 'T' + m[2], m[1] + 'E' + m[2]] : []).concat(n ? [n[1] + 'T' + n[2], n[1] + 'E' + n[2]] : []);
   };
   /* 2.2.0-beta.19: a reference written on the item (systems.js `ref`): 'SHEET|LABEL' = the net of that sheet with that label
      (AI0419, SI0230, M.201F, I.0082) or that name ('MAN HIC-BM out'); 'pv:TAG' / 'mv:TAG' = the PV / MV of a faceplate (PID or MAN).
@@ -180,6 +183,9 @@
   function byRef(ref) {
     if (!ref || !IX) return null;
     /* R9 #60: 'unit:Tb' = a state of the unit model (the furnace temperature averages of 007 = the bed temperature of the model) */
+    /* R9 #87: 'ditl:SHEET' = the run state of the motor drawing of that DITL sheet (DITL-43 air preheater: its inverter panel, no
+       memory bit or running DI in the lists) */
+    if (/^ditl:DITL-\w+$/.test(ref)) return { k: 'ditl', d: ref.slice(5), how: 'run state of ' + ref.slice(5) };
     if (/^unit:\w+$/.test(ref)) return { k: 'unit', f: ref.slice(5), how: 'plant model (unit.js ' + ref.slice(5) + ')' };
     let m = /^(pv|mv|sv):(.+)$/.exec(ref);
     if (m) {
@@ -327,6 +333,10 @@
         } else if (r.k === 'flag') {
           const bits = r.L.map(x => netVal(x) > 0.5);
           o.set({ v: r.op === 'nor' ? (bits.every(b => !b) ? 1 : 0) : r.op === 'and' ? (bits.every(b => b) ? 1 : 0) : bits.some(b => b) ? 1 : 0, r });
+        } else if (r.k === 'ditl') {
+          const ds = window.LS_DOCK && LS_DOCK.dOf ? LS_DOCK.dOf(r.d) : null,
+            m = ds && window.lsAlarms ? lsAlarms.motState(ds) : null;
+          o.set(m ? { v: m === 'RUN' ? 1 : 0, r, tr: m === 'TRIP' || (m !== 'RUN' && !!(lsAlarms.ntTrip && lsAlarms.ntTrip(ds))) } : null);
         } else if (r.k === 'unit') {
           const U = window.AN && AN.unit;
           o.set(U && U.on && isFinite(U[r.f]) ? { v: +U[r.f], r } : null);
@@ -601,7 +611,14 @@
       );
       g.append((defs = S_('defs', {})));
     }
-    for (const it of sys.items || []) {
+    /* HMI sample (2026-10-26): a screen of the NEW HMI (hmi2.js, own vector graphics) draws itself with the same live link and faceplate */
+    if (sys.v2 && window.PLANT_V2)
+      try {
+        PLANT_V2.draw(g, sys, { reg, fp: fpOpen, HDR, go: id => { const o = list().find(x => x.id === id); if (o) select(o); } });
+      } catch (e) {
+        console.error(e);
+      }
+    for (const it of sys.v2 ? [] : sys.items || []) {
       itIx++;
       try {
         if (bg) {
@@ -1088,7 +1105,7 @@
       if (o) select(o);
     };
     const chips = E('div', { cls: 'plchips' });
-    for (const [id, t] of [['UNIT', 'UNIT'], ['03', '003 Water'], ['04', '004 Extraction'], ['07', '007 Air'], ['11', '011 Coal'], ['33', '033 CCS']])
+    for (const [id, t] of [['AFG', 'Air & Gas · new'], ['UNIT', 'UNIT'], ['03', '003 Water'], ['04', '004 Extraction'], ['07', '007 Air'], ['11', '011 Coal'], ['33', '033 CCS']])
       chips.append(
         E('button', {
           cls: 'plchip',

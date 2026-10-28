@@ -850,9 +850,10 @@
         txt: 'Legend',
         title: 'Colour code of the symbols, valves and wires; wire style',
         on: () => {
-          if (lg()) lg().click();
           const p = $('anlg'),
             r = lgBtn.getBoundingClientRect();
+          /* R9 #90: toggles the popup itself (the sheet's own Legend button is not there on every page) */
+          if (p) p.style.display = p.style.display === 'block' ? 'none' : 'block';
           if (p && r.width) {
             p.style.top = r.bottom + 6 + 'px';
             p.style.right = 'auto';
