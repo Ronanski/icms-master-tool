@@ -22,6 +22,7 @@ function ditlStep(dt) {
   if (mvStep(s, v, dt)) ch = true;
   if (motStep(s, v, dt)) ch = true;
   if (fdStep(s, dt)) ch = true;
+  if (invStep(s, v, dt)) ch = true;
   if (ch) render();
   else {
     updateTP();

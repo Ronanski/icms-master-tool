@@ -57,9 +57,15 @@
     }
   };
   const bit = a => call(() => LV().val(a), 0) > 0.5;
-  /* a lamp address: M.xxxx (ABC memory), DITL-xx[@out row] (a drawing of the one world), F:key (a field state), L:DITL-xx@row (a local input) */
+  /* a lamp address: M.xxxx (ABC memory), DITL-xx[@out row] (a drawing of the one world), F:key (a field state), L:DITL-xx@row (a local input),
+     T:key (an auxiliary of the TCS panel: lop = MOP, eh = COP) */
   const lampOn = a => {
     if (/^F:/.test(a)) return call(() => !!AN.fieldState()[a.slice(2)], false);
+    if (/^T:/.test(a))
+      return call(() => {
+        const x = AN.tcs();
+        return x ? !!x.aux[a.slice(2)] : !!(AN.unit && AN.unit.on); /* no TCS model = the 150 MW snapshot: the oil pumps run */
+      }, false);
     if (/^L:/.test(a)) return call(() => DUI.rowVal(dOf(a.slice(2)), atRow(a)) === 1, false);
     if (/^DITL-/.test(a)) return call(() => (atRow(a) != null ? dout(a, atRow(a)) === 1 : runOut(a) === 1), false);
     return bit(a);
@@ -93,7 +99,8 @@
     ['FAB', ['M.3308', 'M.3309'], 'Fluidizing air blowers A / B'],
     ['SAF', ['M.3303'], 'Secondary air fan'],
     ['PAF', ['M.3302'], 'Primary air fan'],
-    ['OIL', ['M.3412', 'M.3413', 'M.3418', 'M.3419'], 'Start-up burners A / B / C / D in service'],
+    /* R9 #77: OIL = the turbine oil pumps (MOP lube oil, COP control oil, TCS); the start-up burners (diesel oil) are BRNR */
+    ['BRNR', ['M.3412', 'M.3413', 'M.3418', 'M.3419'], 'Start-up burners (diesel oil) A / B / C / D in service'],
     ['COAL', ['M.3400', 'M.3401', 'M.3402'], 'Coal feeders A / B / C'],
     /* retest #33 #51: the equipment of the utilities (sections 3 ~ 17): a DITL drawing, an output row of one, or a local field state */
     ['HYPO', ['F:hypo'], 'Hypochlorite pump (local)'],
@@ -102,6 +109,7 @@
     ['MWP', ['DITL-112', 'DITL-112 #B', 'DITL-112 #C'], 'Make-up water pumps A / B / C'],
     ['ACW', ['DITL-76', 'DITL-77'], 'Aux. cooling water pumps A / B'],
     ['AIR', ['DITL-45@14', 'DITL-45@3', 'L:DITL-113@5', 'L:DITL-114@5'], 'IA / PA dryers and compressors'],
+    ['OIL', ['T:lop', 'T:eh'], 'Turbine oil pumps (TCS): main oil pump MOP (lube oil), control oil pump COP'],
     ['RAH', ['DITL-43'], 'Rotary air preheater']
   ];
   /* ---------- the values to watch, by stage of the start-up (targets from PR-OPE-5002 and the boiler manual, as in guide.js) ---------- */
@@ -350,7 +358,19 @@
     }
     /* the LOCAL / REMOTE selector of the motor: REMOTE for a start from the DCS (a start through a pulse timer and a flip-flop does
        not list it) */
-    for (let r = 0; r < 40; r++) if (REM.test(rowInfo(s, r).svc) && !L.some(x => (x.s || s) === s && x.row === r)) L.push({ s, row: r, want: 1 });
+    /* R9 #76: an output row of a drawing with two machines (DITL-45 PLANT / INSTRUMENT AIR DRYER-A): only the selector of that machine
+       (the IA dryer asked for the PA dryer REMOTE too, its START was blocked) */
+    let eq0 = '';
+    try {
+      const ar = atRow(addr),
+        o = ar != null ? (DUI.outs(s) || []).find(q => q.row === ar) : null;
+      eq0 = o ? eqW(o.name) : '';
+      /* no REMOTE row of that machine (BURNER A READY): every REMOTE row, as before */
+      let any = false;
+      for (let r = 0; r < 40; r++) if (REM.test(rowInfo(s, r).svc) && eqW(rowInfo(s, r).svc) === eq0) any = true;
+      if (!any) eq0 = '';
+    } catch (e) {}
+    for (let r = 0; r < 40; r++) if (REM.test(rowInfo(s, r).svc) && (!eq0 || eqW(rowInfo(s, r).svc) === eq0) && !L.some(x => (x.s || s) === s && x.row === r)) L.push({ s, row: r, want: 1 });
     const P = PERM[addr] || (PERM[addr] = new Map());
     let pb = false;
     for (const r of L) {
@@ -368,7 +388,7 @@
       return { ...info, s: r.s, other: r.s !== s ? dName(r.s) : '', cmp: r.cmp || '', want: r.want, ok: v === r.want, start: r.s === s && /\bSTART\b/.test(info.svc) && !/PERMI/.test(info.svc) };
     });
     const miss = rows.filter(r => !r.ok && !r.start);
-    return { sheet: nm, rows: rows.filter(r => !r.start), miss, pb: pb || rows.some(r => r.start), live };
+    return { sheet: nm, rows: rows.filter(r => !r.start), miss, pb: pb || rows.some(r => r.start), live, eq: eq0 };
   }
   /* where a missing row comes from (the one world links, src/world/world.js W.idx.din): the output of another DITL sheet is followed
      to what that output needs, down to a row with no source = a field contact (limit switch ZSO / ZSC, LOCAL / REMOTE selector) that
@@ -421,7 +441,7 @@
     /* the LOCAL / REMOTE selector of the motor at the switchgear: REMOTE for a start from the DCS (a drawing that starts the motor
        through a pulse timer and a flip-flop does not list it in its interlock) */
     for (let r = 0; r < 40; r++)
-      if (REM.test(rowInfo(s, r).svc) && DUI.rowVal(s, r) !== 1) {
+      if (REM.test(rowInfo(s, r).svc) && (!I.eq || eqW(rowInfo(s, r).svc) === I.eq) && DUI.rowVal(s, r) !== 1) {
         const o = { field: [], abc: [] };
         try {
           leaves(s, r, 1, 0, new Set(), o);
@@ -547,6 +567,12 @@
         continue;
       }
       f.s.sig[f.row + ':S'] = !!f.want;
+      /* R9 #76: one address = one signal (CLAUDE.md 1): DITL-45 rows 5 and 9 are both I.0085 PLANT AIR DRYER-A REMOTE (the START and
+         the STOP gate); setting one row left the other 0, shown red as missing */
+      {
+        const sv = rowInfo(f.s, f.row).svc;
+        if (/\b[IM]\.[0-9A-F]{4}/.test(sv)) for (let r = 0; r < 40; r++) if (r !== f.row && rowInfo(f.s, r).svc === sv) f.s.sig[r + ':S'] = !!f.want;
+      }
       /* the other limit switch of the same vane / damper: OPENED <-> CLOSED */
       const tw = f.svc.replace(/\bOPENED\b|\bOPEN\b|\bCLOSED\b/, w => (w === 'CLOSED' ? 'OPENED' : 'CLOSED'));
       if (tw !== f.svc)
@@ -579,6 +605,10 @@
     const s = dSheet(nm);
     if (!s) return false;
     s.sig[row + ':S'] = !!on;
+    {
+      const sv = rowInfo(s, row).svc; /* R9 #76: the other rows of the same address */
+      if (/\b[IM]\.[0-9A-F]{4}/.test(sv)) for (let r = 0; r < 40; r++) if (r !== row && rowInfo(s, r).svc === sv) s.sig[r + ':S'] = !!on;
+    }
     if (WORLD.live) WORLD.busy = true;
     pscan();
     try {
@@ -843,7 +873,10 @@
          (a motor START goes first; was: the ABC sheet of the step's faceplate). Machine B ~ D open the drawing of A until they are sheets of their own (CHECKLIST 0.2) */
       /* the first motor of the step that is not running yet (the second SWP step opens SWP-B, not the running SWP-A) */
       const ms = (s.a || []).filter(a => a.stop && motAddr(a) && MOTOR[motAddr(a)]),
-        nx = ms.find(a => !call(() => a.on && a.on(), false)) || ms[0],
+        /* R9 #73: a step already done (SWBP-A started, one is enough) stays on the running machine until Susunod (was: the B sheet,
+           its REMOTE row red) */
+        on1 = ms.find(a => call(() => a.on && a.on(), false)),
+        nx = (on1 && (!s.max || call(() => GD().ready(), false)) ? on1 : null) || ms.find(a => !call(() => a.on && a.on(), false)) || ms[0],
         mot = nx ? motAddr(nx) : null;
       if (mot) {
         window.lsSetTab && lsSetTab('logic');
@@ -940,7 +973,9 @@
         try {
           k = LV().kind(si, i).k;
         } catch (e) {}
-        out.push({ si, i, t: x.t, k });
+        /* R9 #81 #82: the Tag no. and Operating Limits of the SOP table; a line of a NOTE is shown as the note, not a tick */
+        const lim = (window.LS_PROC5002_LIM || {})[si + '.' + i] || {};
+        out.push({ si, i, t: x.t, k, lim, g: lim.g || (x.g || []).join(', ') });
       });
     return out;
   }
@@ -976,6 +1011,11 @@
   }
   /* the service text of a row without its address prefix ("I.032C/528/81C SEAWATER PUMP A REMOTE MODE SELECTED" = row 22 "SEAWATER PUMP A
      REMOTE MODE SELECTED": one signal, walkthrough #18) */
+  /* R9 #76: the machine of a row / an output ("INSTRUMENT AIR DRYER-A" of "... REMOTE" / "... RUNNING · CRT") */
+  const eqW = x =>
+    svcN(String(x || '').replace(/^Output row \d+ · /, '').replace(/\s*·.*$/, ''))
+      .replace(/\b(REMOTE|RUNNING|LOCAL)\b.*$/, '')
+      .trim();
   const svcN = x =>
     String(x || '')
       .replace(/^\(FROM STATION WIRING\)\s*/, '')
@@ -983,7 +1023,7 @@
       .trim();
   /* a DITL button (motor, valve, push button) pressed while PAUSED: nothing would move; the card says why */
   function pausedWarn(a) {
-    if (isRun() || !(a.stop || a.dg || a.ad)) return false;
+    if (isRun() || a.loc || !(a.stop || a.dg || a.ad)) return false; /* a field action (local panel) is done while PAUSED too */
     if (els.pw) {
       els.pw.hidden = false;
       els.pw.textContent = '❚❚ Naka-PAUSE: pindutin muna ang ▶ RUN (hinto ang oras, walang aandar).';
@@ -1030,7 +1070,14 @@
     const col1 = E('div', { cls: 'gd-c1' }),
       col2 = E('div', { cls: 'gd-c2' });
     const prev = L[i - 1];
-    if (prev) col1.append(E('div', { cls: 'gd-done', txt: i + ' · ' + prev.t }));
+    /* R9 #72: back to the step before ("‹ Nakaraan"): it opens again, done or not (its ✓ TAPOS and Susunod come back from the plant) */
+    if (prev)
+      col1.append(
+        E('div', { cls: 'gd-done' }, [
+          E('button', { type: 'button', cls: 'gd-btn gd-prev', txt: '‹ Nakaraan', title: 'Bumalik sa Hakbang ' + i, on: () => (g.open(i - 1), fill(true), followNow()) }),
+          E('span', { txt: i + ' · ' + prev.t })
+        ])
+      );
     /* 3.2.0 walkthrough #1 #16: PAUSED = the time stopped; a field step is confirmed anyway, a DCS step needs RUN */
     if (!R)
       col1.append(
@@ -1088,7 +1135,16 @@
         card.append(E('div', { cls: 'gd-flg', txt: 'BAGO I-START' }));
 
       }
+      const notes = new Set();
       fli.forEach((f, fi) => {
+        if (f.lim.note) {
+          /* R9 #82: the NOTE of the SOP (auto-start conditions MOP / COP / EOP, bearing oil temperatures): read once, not ticked */
+          if (!notes.has(f.lim.x)) {
+            notes.add(f.lim.x);
+            ul.append(E('li', { cls: 'gd-note' }, [E('span', { txt: f.lim.x })]));
+          }
+          return;
+        }
         if (fi === cut) {
           card.append(ul);
           ul = E('ul', { cls: 'gd-fl' });
@@ -1099,7 +1155,18 @@
           au = f.k === 'auto',
           cb = E('input', { type: 'checkbox', id });
         cb.checked = au ? !!A[k] : !!dd0[k];
-        const li = E('li', { cls: cb.checked ? 'dn' : '' }, [cb, E('label', { for: id }, [f.t, au ? E('em', { txt: 'AUTO' }) : f.k === 'tcs' ? E('em', { txt: 'TCS' }) : null])]);
+        /* R9 #81: the tag and the operating limit of the item (SOP table: Normal / Alarm / Trip; a NOTE under the step) */
+        const L0 = f.lim,
+          lm = [L0.n ? 'Normal ' + L0.n : '', L0.a ? 'Alarm ' + L0.a : '', L0.tr ? 'Trip ' + L0.tr : ''].filter(Boolean).join(' · '),
+          xn = L0.x && !fli.some(q => q.lim.note && q.lim.x === L0.x) ? L0.x : '';
+        const li = E('li', { cls: cb.checked ? 'dn' : '' }, [
+          cb,
+          E('label', { for: id }, [
+            f.t,
+            au ? E('em', { txt: 'AUTO' }) : f.k === 'tcs' ? E('em', { txt: 'TCS' }) : null,
+            f.g || lm || xn ? E('small', { cls: 'gd-lim' }, [f.g ? E('b', { cls: 'gd-tg', txt: f.g }) : null, lm ? ' ' + lm : '', xn ? ' ' + xn : '']) : null
+          ])
+        ]);
         if (au) {
           cb.disabled = true;
           cb.title = 'AUTO: kusang nati-tick kapag ipinakita ng logic na tapos (RUN)';
@@ -1370,7 +1437,18 @@
     }
     const ms = (s.a || []).filter(a => a.stop && a.on);
     if (ms.length) own.push(['Running', () => ms.filter(a => call(() => a.on(), false)).length + ' / ' + ms.length, '', x => x, ms.map(a => a.l.replace(/^START /, '')).join(', ')]);
-    els.watch = own.concat(stage).map(([k, f, u, fm, hint]) => {
+    /* R9 #74: the operating limits of the SOP table of this step's sections (field gauges: ACW strainer DP, dryer T1 ~ T7, oil
+       pressures), each with its range: what the field operator reads and reports */
+    const sop = [];
+    for (const f of fli || []) {
+      if (f.lim.note) continue;
+      const rg = /\(([^()]*\d[^()]*~[^()]*)\)/.exec(f.t),
+        lm = [f.lim.n ? f.lim.n : rg ? rg[1] : '', f.lim.a ? 'Alarm ' + f.lim.a : '', f.lim.tr ? 'Trip ' + f.lim.tr : ''].filter(Boolean);
+      if (!lm.length) continue;
+      const nm = f.t.replace(/\s*\([^()]*\d[^()]*~[^()]*\)/, '').replace(/^(Check|Verify|Ensure)\s+(that\s+)?(the\s+)?/i, '');
+      sop.push(['SOP · ' + (nm.length > 34 ? nm.slice(0, 34).replace(/\s+\S*$/, '') + '…' : nm), () => lm[0], '', x => x, [f.g, lm.slice(1).join(' · ')].filter(Boolean).join(' · ')]);
+    }
+    els.watch = own.concat(stage, sop.slice(0, 8)).map(([k, f, u, fm, hint]) => {
       const v = E('b', { txt: '—' });
       return { r: E('div', { cls: 'gd-wr' }, [E('span', { txt: k }), E('span', {}, [v, E('em', { txt: u }), hint ? E('small', { txt: hint }) : null])]), v, f, fm };
     });
@@ -1440,6 +1518,13 @@
     /* 3.2.0 retest #26: a tick made in the Training list shows here (the list and the panel are the same ticks, ls-train) */
     if (els.trKey != null && JSON.stringify(ls.get('ls-train', {})) !== els.trKey) return fill(true);
     (els.watch || []).forEach(w => (w.v.textContent = w.fm(call(w.f, NaN))));
+    /* R9 #70: the "⚠ 0 / n BAGO I-START" warning goes away once the items are ticked or the machine runs (it stayed on) */
+    if (els.ovw && !els.ovw.hidden) {
+      const nb = (els.before || []).length,
+        nd = (els.before || []).filter(c => c.checked).length;
+      if (nd >= nb || (s.a || []).some(a => a.stop && call(() => a.on(), false))) els.ovw.hidden = true;
+      else els.ovw.textContent = els.ovw.textContent.replace(/^⚠ \d+ \/ \d+/, '⚠ ' + nd + ' / ' + nb);
+    }
     const rd = call(() => g.ready(), false);
     if (els.okb) {
       els.okb.hidden = !rd;
@@ -1505,8 +1590,15 @@
     /* retest #48: the centre follows the machine of the step (SWP-A running -> the SWP-B sheet, tab B) */
     if (follow && els.goKey) {
       const ms = (s.a || []).filter(a => a.stop && motAddr(a) && MOTOR[motAddr(a)]),
-        nx = ms.find(a => !call(() => a.on && a.on(), false));
-      if (nx && motAddr(nx) !== els.goKey && document.body.dataset.tab === 'logic') goStep(s);
+        nx = ms.find(a => !call(() => a.on && a.on(), false)),
+        on1 = ms.find(a => call(() => a.on && a.on(), false)),
+        rd0 = call(() => g.ready(), false);
+      /* R9 #73: to the next machine only while the step needs more than one (2 SWP, 2 SWBP); a step done goes back to its first
+         running machine (2 SWBP running: pump A, as the 1-pump steps) */
+      if (document.body.dataset.tab === 'logic') {
+        if (nx && on1 && s.max && !rd0 && motAddr(nx) !== els.goKey) goStep(s);
+        else if (rd0 && on1 && motAddr(on1) !== els.goKey) goStep(s);
+      }
     }
     /* the interlock */
     const blocked = {};

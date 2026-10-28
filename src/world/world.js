@@ -777,6 +777,7 @@
       if (mvStep(s, R.v, dt)) ch = true;
       if (motStep(s, R.v, dt)) ch = true;
       if (fdStep(s, dt)) ch = true;
+      if (invStep(s, R.v, dt)) ch = true;
       if (ch) R = simSheet(s);
       out[s.name] = R.outOn;
       /* 3.2.0-beta.23: an output that changed in this scan (a push button seen, a step of a sequence): the next scans are short (W.busy) */
@@ -810,7 +811,8 @@
           } catch (e) {}
           /* trips only (MFT, boiler / fan / pump / turbine TRIP, RUN BACK): the shutdown and stop sequences of burners and
              igniters follow from them and are not alarms */
-          if (!c || !/\bTRIP|\bMFT\b|RUN\s*BACK/i.test(c.name) || /\bNO\s+(\w+\s+)?TRIP|TRIP\s+RESET/i.test(c.name)) continue;
+          /* R9 #80: not a "NOT TRIP" output (DITL-43 row 5 AIR PREHEATER NOT TRIP = 1 is the healthy state; its fall is the trip, below) */
+          if (!c || !/\bTRIP|\bMFT\b|RUN\s*BACK/i.test(c.name) || /\bNOT?\s+(\w+\s+)?TRIP|TRIP\s+RESET/i.test(c.name)) continue;
           const k = c.lines.map(l => l.txt).join('|'),
             g = grp.get(k);
           if (!g) grp.set(k, { c, n: 1 });
@@ -820,6 +822,15 @@
           }
         }
         grp.forEach(({ c, n }) => lsEventAdd(s.name, 'TRIP', c.name + ' = 1' + (n > 1 ? ' (+' + (n - 1) + ' outputs)' : ''), deeper(s, c.lines, 1)));
+        /* R9 #80: a NOT TRIP output that falls (1 -> 0) is the trip of the machine: "AIR PREHEATER TRIP" */
+        for (const row of a) {
+          if (b.has(row)) continue;
+          let nm = '';
+          try {
+            nm = String((DUI.outs(s).find(o => o.row === row) || {}).name || '');
+          } catch (e) {}
+          if (/\bNOT\s+TRIP\b/.test(nm)) lsEventAdd(s.name, 'TRIP', nm.replace(/^Output row \d+ · /, '').replace(/\s*·.*$/, '').replace(/\bNOT\s+TRIP\b/, 'TRIP') + ' (NOT TRIP = 0)');
+        }
       }
     W.out = out;
     /* 3. DITL -> ABC (not while the one world is OFF: then the DITL 150 MW state is computed for the DITL only) */

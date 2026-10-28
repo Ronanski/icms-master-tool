@@ -81,6 +81,9 @@ const block =
   /* 3.2.0-beta.8: HOME and TRAINING pages (Guided Workbench) */
   fs.readFileSync(__dirname + '/../training/pr-ope-5002.js', 'utf8') +
   '\n' +
+  /* 3.2.0 R9 #81: the Tag no. / Operating Limits / NOTE of each step (tools/training/extract_limits.py) */
+  fs.readFileSync(__dirname + '/../training/pr-ope-5002-lim.js', 'utf8') +
+  '\n' +
   /* 3.2.0-beta.10: Live Training (auto / field / TCS steps, the sync and load-up sections) */
   fs.readFileSync(__dirname + '/../training/live.js', 'utf8') +
   '\n' +

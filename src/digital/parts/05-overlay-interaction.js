@@ -565,6 +565,58 @@ function fdStep(s, dt) {
   });
   return ch;
 }
+/* 3.2.0 R9 #79: the INVERTER PANEL of a drive drawn as a box on the sheet (DITL-43 AIR PREHEATER INVERTER PANEL): the DCS sends
+   CSC-FA1052M1-1 START COMMAND (net into the box, AND of the START P.B. pulse, NOT TRIP and NOT LOCAL) and CSO-FA1052M1-1 STOP
+   COMMAND (STOP P.B., or running with the speed LOW and LOW LOW after the delays); the panel answers YS-FA1052M1 I.0650 RUNNING
+   (input row 10) and the speed switches SAL / SALL-FA1052 I.0653 / I.0654 SPEED NOT LOW / NOT L.L. (rows 12, 13). The panel holds the
+   drive running until a STOP COMMAND or a trip (I.0651 NOT TRIP = 0, a field trip). Before: nothing answered the START COMMAND (no
+   MOR / MIR label on this sheet), the air preheater stayed STOPPED */
+const INV = { 'DITL-43': { st: 'START COMMAND', sp: 'STOP COMMAND', run: 9, spd: [11, 12], ok: 4, t: 2 } };
+function invNets(s) {
+  if (s.nl._inv) return s.nl._inv;
+  const all = [...s.tx, ...Object.values(s.cells).flat()],
+    net = w => {
+      const t = all.find(q => q.t === w);
+      if (!t) return -1;
+      const g = s.nl.segs
+        .filter(q => q.h && q.x2 >= t.x - 2 && q.x2 <= t.x + 12 && q.y1 > t.y && q.y1 - t.y <= 8)
+        .sort((a, b) => a.y1 - b.y1)[0];
+      return g ? g.n : -1;
+    };
+  const b = (s._inst && s._inst.base) || s,
+    d = INV[/(DITL-\d+[A-Z]?)$/.exec(b.name)[1]];
+  return (s.nl._inv = { st: net(d.st), sp: net(d.sp) });
+}
+function invStep(s, v, dt) {
+  const b = (s._inst && s._inst.base) || s,
+    m = /(DITL-\d+[A-Z]?)$/.exec(b.name),
+    d = m && INV[m[1]];
+  if (!d || !s.nl) return false;
+  const N = invNets(s);
+  if (N.st < 0) return false;
+  s.sig = s.sig || {};
+  const F = (s._fd = s._fd || {}),
+    x = (F.inv = F.inv || { run: s.sig[d.run + ':S'] ? 1 : 0, acc: 0 });
+  let tgt = x.tgt == null ? x.run : x.tgt;
+  if (v[N.st] && !(N.sp >= 0 && v[N.sp])) tgt = 1;
+  if (N.sp >= 0 && v[N.sp]) tgt = 0;
+  const trip = s._ftrip || !s.sig[d.ok + ':S'];
+  if (trip) tgt = 0;
+  x.tgt = tgt;
+  let ch = false;
+  if (tgt !== x.run) {
+    TMBUSY = true;
+    x.acc += dt;
+    if (x.acc >= d.t || trip) {
+      x.run = tgt;
+      x.acc = 0;
+      s.sig[d.run + ':S'] = !!tgt;
+      d.spd.forEach(r => (s.sig[r + ':S'] = !!tgt));
+      ch = true;
+    }
+  } else x.acc = 0;
+  return ch;
+}
 function motTxt(s) {
   const mt = s.nl.mot || [],
     r = motRT(s);
