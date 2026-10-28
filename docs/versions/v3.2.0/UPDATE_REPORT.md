@@ -1057,3 +1057,7 @@ Build at check lang; **hindi nasubok**.
 ## 3.2.0-beta.43 (Beta, 2026-10-28) — #13 ulit
 
 Sanhi: tinatandaan ng app ang huling bukas na sheet (DITL-29A ng huling Gabay, ABC-057 na default ng ABC) at iginuguhit ito sa Logic page kahit nasa Home o Training. Ang ayos sa beta.42 ay nagtago lang ng sheet, pero nasa page pa rin ang drawing. Ngayon, binubura ang drawing sa Home / Training kapag walang Gabay na tumatakbo (pati ang guhit na dumarating habang nandoon), at iginuguhit ulit ang parehong sheet pagbukas ng Logic page. Ang Gabay ang nagbubukas ng sheet ng hakbang. Build at check lang; **hindi nasubok**. (app.js, app.css)
+
+## 3.2.0-beta.44 (Beta, 2026-10-28) — #13, rekomendasyon na inaprubahan ng user
+
+"Clear all ticks" at "Gabay: Cold → 150 MW" ay kinakalimutan na ang huling bukas na sheet (DITL at ABC). Ang Logic page ay magbubukas ng unang sheet; ang Gabay ay ang sheet ng unang DCS step nito. Kasama ang beta.43 (walang drawing sa likod ng Home / Training). Build at check lang; **hindi nasubok**. (home.js)
