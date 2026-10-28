@@ -48,4 +48,4 @@ Pinagsama ang ilang lumang screen para mas kaunti ang lipat-lipat. Ang "logic" a
 
 1. Aprubahan ng user ang style ng sample.
 2. Gawin ang screen 1 ~ 14 sa parehong library (`src/ui/plant/hmi2.js`).
-3. Kapag kumpleto, tanggalin ang lumang Plant HMI (`systems.js`, `hmibg.js` 3.7 MB) sa iisang update.
+3. TAPOS 2026-10-28 (beta.49, utos ng user: dalawang HMI page lang, UNIT at 007): Kapag kumpleto, tanggalin ang lumang Plant HMI (`systems.js`, `hmibg.js` 3.7 MB) sa iisang update.
