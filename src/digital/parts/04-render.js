@@ -525,10 +525,10 @@ function render() {
   svg.setAttribute('viewBox', VB[S.cur].join(' '));
   const VR = s.vr || s.rng;
   s.rows.forEach((r, i) => {
-    for (const c in s.rng) {
+    for (const c in r.vx || s.rng) {
       const k = i + ':' + c,
         pop = SIM ? (LEFT.includes(c) ? fbk(s, i, c) : c === 'RS' && outOn.has(i)) : !!s.cells[k] || fbk(s, i, c),
-        [x1, x2] = VR[c],
+        [x1, x2] = (r.vx && r.vx[c]) || VR[c],
         sl = sel && sel.k === k;
       const RB = (s.rb && s.rb[i]) || [r.y - 3.3, r.y + 5.7];
       el(
@@ -551,10 +551,10 @@ function render() {
     }
   });
   if (SIM) {
-    const xr = VR.S[1];
     s.rows.forEach((r, i) => {
       if (!fbk(s, i, 'S')) return;
-      const cy = -(r.y + 1.2),
+      const xr = r.vx && r.vx.S ? r.vx.S[1] : VR.S[1],
+        cy = -(r.y + 1.2),
         on = FRC.has(i) ? FRC.get(i) : !!s.sig[i + ':S'],
         L = LIVES[LIVE];
       if (FRC.has(i)) return;
@@ -776,9 +776,18 @@ function hit(e) {
   const s = cur();
   if (!s) return null;
   const [x, y] = xy(e),
-    i = s.rows.findIndex(r => y >= r.y - 3.3 && y < r.y + 5.7);
+    VR = s.vr || s.rng;
+  /* 3.2.0-beta.39 (+ sand): a sand injection row (sh.sd) has its own area (r.vx: the flag / switch / lamp on the drawing) and its own height (s.rb) */
+  for (let i = 0; i < s.rows.length; i++) {
+    const r = s.rows[i];
+    if (r.vx) {
+      const RB = s.rb[i];
+      if (y < RB[0] || y >= RB[1]) continue;
+      for (const c in r.vx) if (x >= r.vx[c][0] && x < r.vx[c][1]) return { i, c, k: i + ':' + c };
+    }
+  }
+  const i = s.rows.findIndex(r => !r.vx && y >= r.y - 3.3 && y < r.y + 5.7);
   if (i < 0) return null;
-  const VR = s.vr || s.rng;
   for (const c in VR) if (x >= VR[c][0] && x < VR[c][1]) return { i, c, k: i + ':' + c };
   return null;
 }

@@ -7,6 +7,7 @@
 - **Stable:** v2.4.0 sa `main`.
 - **Beta:** `3.2.0-beta.39` (dev; walang sariling numero ang parallel thread, ang coordinator ang magbibigay), branch `claude/project-thread-f93qh9`, PR #47; roadmap 3 + 4 sa `claude/project-thread-5nq9pa` (nakapatong sa #47) (nakapatong sa `claude/project-thread-0amxbo` / PR #45 → PR #43 → PR #42). Roadmap step 1 TAPOS; step 2: stall, RH damper, null, Cold header, hakbang 57, air side ng Cold TAPOS; bukas: MST 550 ~ 557 °C at reheat 593 °C sa 150 MW.
 - **Beta (HMI sample):** branch `claude/project-thread-1h2161` (PR #49, nakapatong sa #46; version 3.2.0-beta.39, ang numero ay ibibigay sa pagsasama). Bagong HMI sample Air & Flue Gas; naghihintay ng pag-apruba ng style ng user (`docs/hmi/HMI_SYSTEMS.md`).
+- **Beta:** `3.2.0-beta.39 (+ sand)`, branch `claude/project-thread-cp7ia7` (nakapatong sa beta.39 / PR #45; walang sariling beta number, ibibigay ng coordinator sa pagsasama). Roadmap step 1 at step 7 (Sand DITL) TAPOS. Ang step 2 (plant model) ay ginagawa ng ibang thread.
 - **Ang gusto ng user:** `docs/SPEC.md` (S1 ~ S9). Plano = seksyon 3 ng file na iyon. Wala nang ROADMAP / CHECKLIST.
 - **Pag-check ng user:** `docs/USER_CHECK.md`.
 - **Rules:** `CLAUDE.md`, `PROJECT_RULES.md` (test policy = seksyon 5).
@@ -27,6 +28,8 @@
 - ABC ↔ DITL: ang BAWAT "FROM / TO DITL xx-nn" sa ABC (233) ay page link (`dsTextAt` / `dsTextClick` sa `links-canvas.js`, pick sa `interaction.js`); listahan = pagpipilian; DITL → ABC ay may ↩ Back sa ABC (`AN.hist` marker `{dig:true}`). Test: `tests/regress/abc_ditl_links.js`.
 
 ## Estado ng app (beta.39 dev, PR #47)
+## Estado ng app (beta.39 (+ sand))
+- Sand injection DITL 771 ~ 777 (`(D71)DITL-771` ~ `(D77)DITL-777`) galing sa PDF: `docs/versions/v3.2.0/DITL_SAND_AUDIT.md`, test `tests/regress/ditl_sand.js`. Analog ng LT / PT ay ON / OFF lang.
 - Turbine + TCS model (`src/analog/engine/tcs.js`, `docs/tcs/ATS_CRITERIA.md`), start-up steam ayon sa FHI Fig. 2 / 3 / 4 (`unit.js`).
 - `tests/regress/sop_bawal.js`: 19 / 19 (lahat ng maagang aksyon ay tinatanggihan).
 - Training: Cold → 150 MW sa isang screen (dock), sunod sa PR-OPE-5002. beta.40: ang MS blow-off at start-up valve ay sa serbisyo na bago ang vacuum stage (dati: stall sa hakbang 43, MFT sa low-low drum level).

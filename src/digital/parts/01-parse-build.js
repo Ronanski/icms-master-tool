@@ -1007,6 +1007,7 @@ function rowFix(sh) {
   }
 }
 function netlist(sh) {
+  if (sh.sd) return sdNL(sh); /* 3.2.0-beta.39 (+ sand): sand injection (PDF drawing, no row table): the netlist comes from sh.sd (02b-sand.js) */
   letterRows(sh);
   trCells(sh);
   rowFix(sh);

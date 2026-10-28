@@ -1163,3 +1163,23 @@ Check: totoong pindot (persistent profile, "Gabay: Cold" 2 beses), Hakbang 1 →
 - **3 style + bagong pipe (user: "gawin rin ang steel at thermal as option ng HMI... ayusin ang pag kakagawa ng pipes, parang pinagpatong na rectangle"):** STYLE na pindutan sa ibaba ng screen (CUTAWAY / STEEL / THERMAL, naaalala). Ang mga duct ay tuloy-tuloy na path na may bilugang liko at malinis na tee sa lahat ng style. Sa Cold, abo / madilim ang mga duct at kumukupas ang init ng furnace, cyclone, backpass at APH ayon sa bed temperature.
 - **Kumpletong tag at piping (user: "Ang daming kulang na tags, walang descriptions... di kita ang mga internals at externals pipes... flue gas, water, steam... temperature, pressure, flow, level, analyticals, pati ung hydraulic coupling, esp"):** muling iginuhit ang screen ayon sa P&ID PD-051 ~ 054. 109 tag, bawat isa may paglalarawan (lahat naka-link: logic, I/O list, o plant estimate na may tuldok); bed temperature table (18 TC, avg / max / min / rate); bed DP, furnace pressure, drum level at pressure, start-up burner hot SA; cyclone at seal pot; backpass gas temps (RH / SH pass); Ljungstrom APH (PA / SA / GAS sector) na may inlet / outlet T, P, O2; ESP; IDF na may hydraulic coupling (scoop, speed, current); stack CEMS; fan currents; tubo ng tubig at steam at legend ng kulay ng medium (malamig / mainit). Bug na naayos: `PICR1006` (reheat inlet pressure) ay "-----" dahil kinakain ng tag reader ang C ng area code (plant.js `tx`). Nakita (plant model, hindi HMI): walang 150 MW preset ang AI0481 (IDF speed ST-LO1756) kaya 0 sa logic sheet; estimate ang ipinapakita sa HMI.
 - **Status:** sample para sa pag-apruba ng style ng user. Hindi pa ginagawa ang ibang screen; hindi pa tinatanggal ang lumang Plant HMI.
+
+## 3.2.0-beta.39 (+ sand) (2026-10-26) — Roadmap 7: Sand injection DITL (771 ~ 777)
+
+**Problem:** walang DITL page ang SAND INJECTION SYSTEM CONTROL LOGIC (E10210-3-771 ~ 777, station 103). Ang sootblower, bottom ash at limestone ay nandoon na.
+
+**As Found:** vector PDF lang ang drawing (walang DXF), at walang row table: ang row ay dulo ng wire.
+
+**Work Done:**
+- Binasa ang 7 sheet mula sa PDF (`tools/data/sand_*.py`) at inilagay sa `src/data/pre.txt`: `(D71)DITL-771` ~ `(D77)DITL-777`, kategorya SAND INJECTION (SD1300). 60 FROM / TO flag, bawat FROM ay may TO.
+- App: `src/digital/parts/02b-sand.js` (netlist ng sheet na ito); ang hit area ng toggle ay per-row (`04-render.js`); bagong kategorya (`05-overlay-interaction.js`). Ang ibang DITL sheet ay walang binago.
+- Walang inalis na link. Mga ayos na gawa-kamay at ang dalawang hindi tugmang flag sa mismong drawing: `DITL_SAND_AUDIT.md`.
+
+**As Left (ebidensya):**
+- `tests/regress/ditl_sand.js`: ALL PASS (8 check: kategorya, walang bukas na block input, oras ng timer, FROM / TO, 771 START / hold / STOP / MFT, 773 fluidizing air valve, 775 limit switch, walang page error).
+- `tests/regress/world.js`: pasado (ang ABC ↔ DITL link ng mga dating sheet ay hindi nagbago). Pasado rin: `ditl_ls`, `ditl_ba`, `ditl_sb`, `ditl_selected`, `ditl_pagelink`, `ditl_toolbar`. `ditl_sim.js` ay bumabagsak sa Node error sa beta.39 pa lang (pareho ang resulta bago at pagkatapos ng pagbabagong ito), hindi ko inayos dito.
+- Screenshot ng 771 ~ 777 sa PC 1500x900; 774 sa tablet 1280x800; 777 sa 800x1280: walang page error.
+
+**Hindi nasubok:** PC / tablet / EXE / APK ng user. Ang halaga ng AI0387 / AI0432 (analog) ay hindi sinisimulate: ON / OFF lang. Ang bawat output ng 7 sheet ay hindi isa-isang sinubok; ibinangga ang bawat sheet sa PDF gamit ang overlay at screenshot.
+
+**Status:** Beta. Roadmap hakbang 7 TAPOS.
