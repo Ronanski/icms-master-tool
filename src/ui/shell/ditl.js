@@ -261,6 +261,20 @@
       v[0] = side === 'R' ? VR.RT[1] + 4 - w : VR.F[0] - 4;
     }
     v[1] = -s.rows[ri].y - v[3] / 2;
+    /* retest #39 (R7: only row 5 of the three REMOTE rows 5, 18, 22 was in view): all the rows the Training names are in view, the
+       zoom kept as close as they allow */
+    const rr = itx && itx.rows ? itx.rows.map(j => s.rows[j]).filter(Boolean) : [];
+    if (rr.length > 1) {
+      const ys = rr.map(r => -r.y),
+        y0 = Math.min(...ys) - 8,
+        y1 = Math.max(...ys) + 8;
+      if (y1 - y0 > v[3]) {
+        const k = (y1 - y0) / v[3];
+        v[2] *= k;
+        v[3] *= k;
+      }
+      v[1] = (y0 + y1) / 2 - v[3] / 2;
+    }
     $('svg').setAttribute('viewBox', v.join(' '));
     /* from the ABC the page switch draws the sheet once more: blink after it */
     flashRow(s, ri, side);
@@ -423,6 +437,25 @@
   }
   /* the switch of an input row (Inputs tab and Selected tab): hand switch, push button (press and hold) or auto (dashed) */
   const auto = (s, i) => lockd(s, i) || !!(window.WORLD && WORLD.live && s._win && s._win.has(i));
+  /* retest #63: an operator command on the drawing (a CRT push button, a hand switch) goes to the Event log with its row and tag */
+  const opLog = (s, i, what) => {
+    try {
+      const I = D.rowInfo(s, i);
+      if (window.lsEventAdd)
+        lsEventAdd(
+          s.name,
+          'DCS',
+          'Operator: ' +
+            (I.svc || 'input row ' + (i + 1)) +
+            ' ' +
+            what +
+            ' (row ' +
+            (i + 1) +
+            (I.tag ? ' · ' + I.tag : '') +
+            ')'
+        );
+    } catch (e) {}
+  };
   function swBtn(s, i, b, UL) {
     const k = i + ':S',
       pb = isPB(s, i),
@@ -444,6 +477,7 @@
         if (!SIM) enter();
         t0 = Date.now();
         s.sig[k] = true;
+        opLog(s, i, 'PRESSED');
         render();
       };
       b.onpointerup = b.onpointerleave = b.onpointercancel = off;
@@ -458,6 +492,7 @@
           DPAUSE = false;
         }
         s.sig[k] = !s.sig[k];
+        opLog(s, i, '= ' + (s.sig[k] ? 1 : 0));
         render();
       };
     UL.push(R => {
@@ -808,7 +843,21 @@
       add(whyBox(s, pk.n));
     }
   }
-  let AH = ls('ditl.ah') === '1';
+  let AH = ls('ditl.ah') === '1',
+    ahWas = null;
+  /* retest #41: AUTO-HIDE while the Training panel is open (interaction.js AN.inspAuto); the user's setting comes back after */
+  D.inspAuto = on => {
+    if (on) {
+      if (ahWas != null) return;
+      ahWas = { AH, open };
+      AH = true;
+      if (!pk) open = false;
+    } else if (ahWas != null) {
+      ({ AH, open } = ahWas);
+      ahWas = null;
+    }
+    upd();
+  };
   function setPick(p, fromDrawing) {
     const s = cur();
     pk = p && s ? Object.assign({ s }, p) : null;

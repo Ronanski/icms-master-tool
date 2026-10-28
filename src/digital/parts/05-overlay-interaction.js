@@ -439,6 +439,16 @@ function motStep(s, v, dt) {
     md = mtDelay(s);
   let ch = false;
   mt.forEach((m, j) => {
+    /* 3.2.0 retest #34: a field trip of the motor (the protection relay, a Training fault from the dock: s._ftrip) stops it at once and
+       holds it stopped until the field resets the relay; a new START is needed after that */
+    if (s._ftrip) {
+      if (r[j].run) ch = true;
+      r[j].run = 0;
+      r[j].tgt = 0;
+      r[j].acc = 0;
+      r[j].pm = !!v[m.mor];
+      return;
+    }
     const t = !!v[m.mor],
       sp = m.mos >= 0 && !!v[m.mos],
       x = r[j];

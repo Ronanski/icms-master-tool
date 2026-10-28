@@ -621,6 +621,9 @@
       h = Math.max(240, Math.min(innerHeight * 0.7, ls.get('ls-gdock-h', Math.round(innerHeight * 0.42))));
     R.style.setProperty('--gdw', w + 'px');
     R.style.setProperty('--gdh', h + 'px');
+    /* retest #41: no empty Inspector column beside the Training panel */
+    call(() => AN.inspAuto && AN.inspAuto(on && !min));
+    call(() => DUI.inspAuto && DUI.inspAuto(on && !min));
     try {
       dispatchEvent(new Event('resize'));
     } catch (e) {}
@@ -796,21 +799,9 @@
     g.start(() => {
       open();
       setSpeed(1);
-      /* 3.2.0 retest #13: the logic behind the Training page is the drawing of the first DCS step (DITL-29A SWP), not the sheet that
-         was open before (ABC-057); the page stays on Training */
-      try {
-        const f = g.steps().find(x => (x.a || []).some(a => a.stop && motAddr(a) && MOTOR[motAddr(a)]));
-        const a0 = f && f.a.find(a => a.stop && motAddr(a) && MOTOR[motAddr(a)]);
-        if (a0) {
-          /* retest #13 #38: on the Logic page (its message stays there), back to Training */
-          window.lsSetTab && lsSetTab('logic');
-          openD(MOTOR[motAddr(a0)], null, 230);
-          setTimeout(() => {
-            window.lsSetTab && lsSetTab('training');
-            document.body.classList.remove('hasmsg');
-          }, 300);
-        }
-      } catch (e) {}
+      /* retest #13 (R7): no drawing is opened behind the Training page (beta.43 opened DITL-29A there on purpose); the Logic page
+         shows the sheet of the step when it opens (app.js setTab -> follow) */
+      document.body.classList.remove('hasmsg');
       if (done) done();
     });
   }
@@ -824,11 +815,18 @@
     open();
   }
   /* ---------- the main area follows the step: the DITL of a motor, the ABC sheet of a faceplate ---------- */
-  function goStep(s) {
-    if (!follow || !s) return;
+  function goStep(s, enter) {
+    if (!follow || !s || goStep.busy) return;
     /* 3.2.0 walkthrough #2: a field card (no DCS button, no faceplate) shows its SOP section in the Training list, not the sheet that
-       happened to be open (ABC-057 at the ESP step) */
-    if (s.need && !(s.a || []).length && !(s.fps || []).length) return toList(s);
+       happened to be open (ABC-057 at the ESP step). Retest #2 #13: the Logic page opened on a field card shows no sheet of another
+       step, it says so (body.lsfield, app.css) until a sheet is picked */
+    if (s.need && !(s.a || []).length && !(s.fps || []).length) {
+      if (!enter) return toList(s);
+      fieldNote(s);
+      return;
+    }
+    document.body.classList.remove('lsfield');
+    goStep.busy = 1;
     try {
       /* 3.2.0-beta.26: a push button of a DITL drawing (BURNER ON of DITL-09, a discharge valve of DITL-20): that sheet, its row selected
          (a motor START goes first; was: the ABC sheet of the step's faceplate). Machine B ~ D open the drawing of A until they are sheets of their own (CHECKLIST 0.2) */
@@ -843,7 +841,12 @@
           ds = dOf(mot),
           r0 = I && I.miss.find(x => !x.other),
           pb = pbOf(nx, 1);
-        openD(MOTOR[mot], r0 ? r0.row : pb && pb.sh === dName(ds) ? pb.row : null, 230);
+        openD(
+          MOTOR[mot],
+          r0 ? r0.row : pb && pb.sh === dName(ds) ? pb.row : null,
+          230,
+          r0 ? I.miss.filter(x => !x.other && svcN(x.svc) === svcN(r0.svc)).map(x => x.row) : null
+        );
         els.goKey = mot;
         return;
       }
@@ -868,18 +871,46 @@
           }
         }
       }
-    } catch (e) {}
+    } catch (e) {
+    } finally {
+      goStep.busy = 0;
+    }
+  }
+  function fieldNote(s) {
+    const B = document.body,
+      cv = document.getElementById('cv');
+    let n = document.getElementById('lsfieldnote');
+    if (!n && cv) {
+      n = E('div', { id: 'lsfieldnote', role: 'note' });
+      cv.append(n);
+      /* a sheet picked from the list (or the ABC / DITL switch) shows that sheet */
+      const off = () => B.classList.remove('lsfield');
+      for (const id of ['side', 'shsel', 'tabs']) {
+        const x = document.getElementById(id);
+        if (x) x.addEventListener('click', off, true);
+      }
+    }
+    if (n)
+      n.textContent =
+        'Hakbang ' +
+        (GD().cur + 1) +
+        ' ay field step (' +
+        s.t +
+        '): walang DCS sheet. Pumili ng sheet sa listahan, o pindutin ang "Susunod" sa Training.';
+    B.classList.add('lsfield');
   }
   /* 3.2.0-beta.35 (CHECKLIST 0.2): open a DITL drawing by name, machine B ~ D on its own page ("DITL-29A #B" = SWP-B, the B chip of the
      sheet header); before, the drawing of machine A was opened for B ~ D */
-  function openD(nm, row, zoom) {
+  function openD(nm, row, zoom, rows) {
     const m = /\s*#([B-D])$/.exec(String(nm));
+    document.body.classList.remove('lsfield');
     AN.xrefGo({ d: String(nm).replace(/\s*#\w+$/, '') });
     setTimeout(() => {
       try {
         if (window.DUI && DUI.setMach) DUI.setMach(m ? 'ABCD'.indexOf(m[1]) : 0);
         /* retest #39: from the Training, the row of the step zoomed in (row 0 = the top of the sheet when no row is named) */
-        if ((row != null || zoom) && DUI.goItem) DUI.goItem(S.cur, undefined, null, { side: 'L', i: row != null ? row : 0, zoom: zoom || 0 });
+        if ((row != null || zoom) && DUI.goItem)
+          DUI.goItem(S.cur, undefined, null, { side: 'L', i: row != null ? row : 0, zoom: zoom || 0, rows });
       } catch (e) {}
       /* retest #38: the sheet the guide opens leaves no "Opened DITL-xx - use the ABC button ..." in the status bar (the dock says
          which sheet and row) */
@@ -902,6 +933,11 @@
       });
     return out;
   }
+  const opLog = (l, pb) => {
+    try {
+      if (window.lsEventAdd) lsEventAdd(pb ? pb.sh : 'DCS', 'DCS', 'Operator: ' + l + (pb ? ' · ' + pb.txt : ''));
+    } catch (e) {}
+  };
   /* the CRT push button row of a step button: a DITL push button (dg) or the START / STOP P.B. of a motor drawing */
   function pbOf(a, on) {
     return call(() => {
@@ -1099,6 +1135,8 @@
         try {
           a.f();
         } catch (e) {}
+        /* retest #63: the DCS command in the Event log (sheet, row and tag of its CRT push button) */
+        if (!a.loc) opLog(a.l, pb); /* a field button logs itself (FIELD) */
         if (pb && follow) openD(pb.sh, pb.row);
         setTimeout(() => fill(), 300);
       };
@@ -1114,6 +1152,7 @@
           try {
             a.stop.f();
           } catch (e) {}
+          opLog(a.stop.l, pb0);
           if (pb0 && follow) openD(pb0.sh, pb0.row);
           setTimeout(() => fill(), 300);
         };
@@ -1122,8 +1161,44 @@
       /* 3.2.0 retest #29 #34: the state of the equipment from its feedback: RUNNING (red), STOPPED (green), TRIP (amber, flashing until
          ACK: press it to acknowledge) */
       if (a.stop || a.loc || a.mot) {
-        B.lab = E('button', { type: 'button', cls: 'gd-mst', txt: '—', title: 'Feedback ng equipment (RUNNING / STOPPED / TRIP)', on: () => B.ad && tripAck(B.ad) });
-        bs.append(B.lab, E('span', { cls: 'gd-brk' }));
+        B.lab = E('button', {
+          type: 'button',
+          cls: 'gd-mst',
+          txt: '—',
+          title: 'Feedback ng equipment (RUNNING / STOPPED / TRIP)',
+          on: () => B.ad && tripAck(B.ad)
+        });
+        bs.append(B.lab);
+        /* retest #34: a Training fault, the motor protection relay trips in the field (the motor stops, TRIP flashes until ACK, alarm,
+           Event log); the field resets the relay, then the operator starts again */
+        if (a.stop && B.ad) {
+          B.ft = E('button', {
+            type: 'button',
+            cls: 'gd-btn gd-ft',
+            txt: 'FIELD: TRIP',
+            hidden: true,
+            title: 'Training fault: nag-trip ang protection relay ng motor sa field',
+            on: () => {
+              const ds = dOf(B.ad);
+              if (!ds) return;
+              ds._ftrip = !ds._ftrip;
+              if (WORLD.live) WORLD.busy = true;
+              call(() =>
+                lsEventAdd(
+                  dName(ds),
+                  'FIELD',
+                  'Field: ' +
+                    (ds._ftrip ? 'protection relay TRIP of ' : 'protection relay RESET of ') +
+                    a.l.replace(/^START\s+/, '') +
+                    (ds._ftrip ? ' (Training fault)' : '')
+                )
+              );
+              setTimeout(() => fill(true), 300);
+            }
+          });
+          bs.append(B.ft);
+        }
+        bs.append(E('span', { cls: 'gd-brk' }));
       }
     }
     if (s.need) {
@@ -1388,6 +1463,7 @@
        one line, the others wait (one line) */
     let shown = 0,
       mk = null;
+    const nOn0 = s.max ? (s.a || []).filter(a => a.stop && call(() => a.on(), false)).length : 0;
     for (const it of els.il || []) {
       const I = interlock(it.ad);
       it.box.textContent = '';
@@ -1396,7 +1472,26 @@
          complete (REMOTE at the MCC); the next valve of the step then shows its own interlock */
       const ds = /^DITL-/.test(it.ad) && atRow(it.ad) == null ? dSheet(it.ad) : null,
         mov = !!(ds && ds.nl && (ds.nl.mv || []).length && runOut(it.ad) == null),
-        run0 = I.live && (mov ? !I.miss.length : atRow(it.ad) != null ? dout(it.ad, atRow(it.ad)) === 1 : /^DITL-/.test(it.ad) ? runOut(it.ad) === 1 : bit(it.ad));
+        run0 =
+          I.live &&
+          (mov
+            ? !I.miss.length
+            : atRow(it.ad) != null
+              ? dout(it.ad, atRow(it.ad)) === 1
+              : /^DITL-/.test(it.ad)
+                ? runOut(it.ad) === 1
+                : bit(it.ad));
+      /* retest #49 (beta.45 check: with 2 SWP running the third still showed its REMOTE field button and interlock): the standby
+         machine of a step with a number to run shows one line, no field button, no START */
+      if (I.live && !run0 && s.max && nOn0 >= s.max) {
+        it.box.append(
+          E('div', { cls: 'gd-ilh' }, [
+            E('span', { txt: 'STANDBY · AUTO sa susunod na hakbang' }),
+            E('span', { cls: 'gd-ilm', txt: I.sheet })
+          ])
+        );
+        continue;
+      }
       if (I.live && (run0 || shown)) {
         /* 3.2.0 walkthrough #22: a motor whose box waits (SUSUNOD) is blocked by its own interlock too (SWP-B / C started while SWP-A
            was blocked by the same missing REMOTE contact) */
@@ -1517,6 +1612,8 @@
       if (s.max && nOn >= s.max && B.a.stop && !on0) {
         B.bt.dataset.block = '1';
         B.bt.classList.add('dis');
+        B.bt.hidden = true;
+        if (B.sb) B.sb.hidden = true;
         B.bt.title = 'Sapat na: ' + nOn + ' ang tumatakbo. Ito ang standby (AUTO sa susunod na hakbang).';
         if (B.lab) {
           B.lab.textContent = 'STANDBY';
@@ -1540,6 +1637,11 @@
       if (B.sb) B.sb.classList.toggle('lit-stop', st === 'STOP' || st === 'TRIP');
       B.lab.textContent = st === 'RUN' ? 'RUNNING' : st === 'STOP' ? 'STOPPED' : st === 'TRIP' ? (tn ? 'TRIP · ACK' : 'TRIP') : '—';
       B.lab.className = 'gd-mst' + (st ? ' ' + st.toLowerCase() : '') + (tn ? ' blink' : '');
+      if (B.ft) {
+        const ftr = !!call(() => dOf(B.ad)._ftrip, false);
+        B.ft.hidden = !(st === 'RUN' || ftr);
+        B.ft.textContent = ftr ? 'FIELD: RESET TRIP' : 'FIELD: TRIP';
+      }
       B.lab.disabled = !tn;
     }
     /* 3.2.0 walkthrough #19: no "start anyway" of a blocked motor (was "Simulan pa rin (training lang)"): the missing contact is set by its
@@ -1576,7 +1678,41 @@
   setInterval(() => {
     if (dock && GD() && GD().on && window.AN) ls.set('ls-gdock-spd', +AN.spd || 1);
   }, 5000);
-  window.LS_DOCK = { start, resume, open, stop, layout, fill, interlock, fieldOf, fieldSet, fieldRow, dsel, mst, dmotor, dOf, needNet, leaves, permOf, dpress, dset, dout, runOut, get el() {
+  /* retest #62: one lamp group of the strip running (all of its machines for the fans: events.js shutdown alarm suppression) */
+  const grpOn = k => {
+    const L = LAMPS.find(x => x[0] === k);
+    return !!L && any(L[1]);
+  };
+  /* the centre follows the step when the Logic page opens (app.js setTab) */
+  const followNow = () => {
+    const g = GD();
+    if (g && g.on) goStep(g.steps()[g.cur], true);
+  };
+  window.LS_DOCK = {
+    grpOn,
+    follow: followNow,
+    start,
+    resume,
+    open,
+    stop,
+    layout,
+    fill,
+    interlock,
+    fieldOf,
+    fieldSet,
+    fieldRow,
+    dsel,
+    mst,
+    dmotor,
+    dOf,
+    needNet,
+    leaves,
+    permOf,
+    dpress,
+    dset,
+    dout,
+    runOut,
+    get el() {
       return dock;
     } };
 })();

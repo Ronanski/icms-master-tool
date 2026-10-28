@@ -278,13 +278,19 @@
     const sh = shOf(r.sh);
     return sh && sh.S && sh.S.rt ? (r.inv ? 100 - sh.S.rt.v[r.n] : sh.S.rt.v[r.n]) : null;
   }
+  let noLink = false;
+  const snap = v => (noLink ? '—' : v);
   function liveTick() {
     if (!ws || ws.style.display !== 'grid') return;
     for (const o of LV) {
       const r = o.r;
       try {
         if (!liveOn || !r) {
+          /* retest #60 (R7: "LIVE · 49 / 121 linked", the other 72 numbers were the 150 MW snapshot on a cold plant): in LIVE an item
+             with no link to the model shows "—" (a symbol grey), not a number that looks real */
+          noLink = !!liveOn;
           o.set(null);
+          noLink = false;
           continue;
         }
         if (r.k === 'ctl') {
@@ -338,8 +344,20 @@
     const n = LV.filter(o => o.r).length;
     const el = $('pllive');
     if (el) {
-      el.textContent = liveOn ? 'LIVE · ' + n + ' / ' + LV.length + ' linked' : 'SNAPSHOT';
+      el.textContent = liveOn
+        ? 'LIVE · ' + n + ' / ' + LV.length + ' linked' + (n < LV.length ? ' · — = no model' : '')
+        : 'SNAPSHOT';
+      el.title = liveOn
+        ? n +
+          ' values read the simulation; ' +
+          (LV.length - n) +
+          ' have no link to the plant model or the logic yet and show "—" (grey symbol)'
+        : '';
       el.classList.toggle('on', liveOn);
+      /* retest #60: in LIVE the HMI picture itself (its numbers and symbols are the 150 MW snapshot) is grey; only what reads the
+         simulation is drawn over it in colour */
+      if (svg)
+        svg.querySelectorAll('.plbgimg').forEach(x => (x.style.filter = liveOn ? 'grayscale(1) brightness(0.62)' : ''));
     }
   }
   function valve(g, it, c) {
@@ -391,6 +409,7 @@
     gg.append(t);
     g.append(r, gg);
     const f = s => {
+      if (s == null && noLink) s = '—';
       if (s == null) {
         r.setAttribute('visibility', 'hidden');
         gg.setAttribute('visibility', 'hidden');
@@ -415,6 +434,7 @@
     const r = S_('rect', { x: b[0], y: b[1], width: b[2], height: b[3], fill: HC.red, mask: `url(#${id})`, visibility: 'hidden' });
     g.append(r);
     return c => {
+      if (!c && noLink) c = '#5b6570';
       if (!c) return r.setAttribute('visibility', 'hidden');
       r.setAttribute('fill', c);
       r.setAttribute('visibility', 'visible');
@@ -555,7 +575,17 @@
     const BG = (window.PLANT_BG || {})[sys.id],
       bg = BG && BG.n === (sys.items || []).length ? BG : null;
     if (bg) {
-      g.append(S_('image', { href: bg.img, x: bg.x, y: bg.y, width: bg.w, height: bg.h, preserveAspectRatio: 'none' }));
+      g.append(
+        S_('image', {
+          class: 'plbgimg',
+          href: bg.img,
+          x: bg.x,
+          y: bg.y,
+          width: bg.w,
+          height: bg.h,
+          preserveAspectRatio: 'none'
+        })
+      );
       g.append((defs = S_('defs', {})));
     }
     for (const it of sys.items || []) {
@@ -591,7 +621,9 @@
           const vt = txt(g, it.x + 14, it.y + 6, (it.v != null ? it.v : '—') + ' ' + (it.u || '%'), { z: 13, mono: 1, c: '#5cd6ff' });
           if (it.m) txt(g, it.x - 14, it.y + 6, it.m, { z: 11, c: it.m === 'M' ? '#ffd27a' : '#9ff0c4', a: 'end', b: 1 }); /* beta.19: on the value line, clear of the tag of the damper beside it (008) */
           reg(it, x => {
-            vt.textContent = x ? fmtV(x.v, it.v) + ' ' + (it.u || '%') : (it.v != null ? it.v : '—') + ' ' + (it.u || '%');
+            vt.textContent = x
+              ? fmtV(x.v, it.v) + ' ' + (it.u || '%')
+              : snap(it.v != null ? it.v : '—') + ' ' + (it.u || '%');
             vt.setAttribute('fill', x ? '#5cd6ff' : '#7f90a0');
           });
         } else if (it.t === 'mov') {
@@ -679,11 +711,19 @@
           }, ft);
         } else if (it.t === 'val') {
           if (it.tag) txt(g, it.x, it.y - 15, it.tag, { z: 11, c: '#a9b7c4' });
-          const vt = txt(g, it.x, it.y, (it.v != null ? it.v : '—') + (it.u ? ' ' + it.u : ''), { z: 14, mono: 1, c: '#5cd6ff' });
-          reg(it, x => {
-            vt.textContent = (x ? fmtV(x.v, it.v) : it.v != null ? it.v : '—') + (it.u ? ' ' + it.u : '');
-            vt.setAttribute('fill', x ? '#5cd6ff' : '#7f90a0');
-          }, vt);
+          const vt = txt(g, it.x, it.y, (it.v != null ? it.v : '—') + (it.u ? ' ' + it.u : ''), {
+            z: 14,
+            mono: 1,
+            c: '#5cd6ff'
+          });
+          reg(
+            it,
+            x => {
+              vt.textContent = (x ? fmtV(x.v, it.v) : snap(it.v != null ? it.v : '—')) + (it.u ? ' ' + it.u : '');
+              vt.setAttribute('fill', x ? '#5cd6ff' : '#7f90a0');
+            },
+            vt
+          );
         } else if (it.t === 'ctl') {
           const bw = 168,
             bh = 70;
@@ -691,22 +731,56 @@
           g.append(box);
           txt(g, it.x + 6, it.y + 15, (it.label || it.tag || '').slice(0, 28), { k: 2, z: 11, c: '#a9b7c4' });
           txt(g, it.x + 6, it.y + 31, it.tag || '', { k: 2, z: 12, b: 1, mono: 1 });
-          const mt = txt(g, it.x + bw - 6, it.y + 31, it.m || '', { k: 2, z: 12, b: 1, a: 'end', c: it.m === 'M' ? '#ffd27a' : '#9ff0c4' });
-          const t1 = txt(g, it.x + 6, it.y + 50, 'PV ' + (it.pv != null ? it.pv : '—') + '  SV ' + (it.sv != null ? it.sv : '—'), { k: 2, z: 12, mono: 1, c: '#5cd6ff' });
-          const t2 = txt(g, it.x + 6, it.y + 66, 'MV ' + (it.mv != null ? it.mv + ' %' : '—') + (it.u ? '   ' + it.u : ''), { k: 2, z: 12, mono: 1, c: '#9ff0c4' });
-          reg(it, x => {
-            const m = x ? x.m : it.m || '';
-            mt.textContent = m;
-            mt.setAttribute('fill', m === 'M' ? '#ffd27a' : '#9ff0c4');
-            t1.textContent = 'PV ' + (x ? fmtV(x.pv, it.pv) : it.pv != null ? it.pv : '—') + '  SV ' + (x ? fmtV(x.sv, it.sv) : it.sv != null ? it.sv : '—');
-            /* 3.2.0-beta.1 (audit M5): the unit of the MV is the one of the faceplate: a PID output is % (before, the PV unit of
+          const mt = txt(g, it.x + bw - 6, it.y + 31, it.m || '', {
+            k: 2,
+            z: 12,
+            b: 1,
+            a: 'end',
+            c: it.m === 'M' ? '#ffd27a' : '#9ff0c4'
+          });
+          const t1 = txt(
+            g,
+            it.x + 6,
+            it.y + 50,
+            'PV ' + (it.pv != null ? it.pv : '—') + '  SV ' + (it.sv != null ? it.sv : '—'),
+            { k: 2, z: 12, mono: 1, c: '#5cd6ff' }
+          );
+          const t2 = txt(
+            g,
+            it.x + 6,
+            it.y + 66,
+            'MV ' + (it.mv != null ? it.mv + ' %' : '—') + (it.u ? '   ' + it.u : ''),
+            { k: 2, z: 12, mono: 1, c: '#9ff0c4' }
+          );
+          reg(
+            it,
+            x => {
+              const m = x ? x.m : it.m || '';
+              mt.textContent = m;
+              mt.setAttribute('fill', m === 'M' ? '#ffd27a' : '#9ff0c4');
+              t1.textContent =
+                'PV ' +
+                (x ? fmtV(x.pv, it.pv) : snap(it.pv != null ? it.pv : '—')) +
+                '  SV ' +
+                (x ? fmtV(x.sv, it.sv) : snap(it.sv != null ? it.sv : '—'));
+              /* 3.2.0-beta.1 (audit M5): the unit of the MV is the one of the faceplate: a PID output is % (before, the PV unit of
                the screen: "MV 56.0 mm" for LICBR1001 whose faceplate says 3.00 %); a MAN station has its own unit (hmi.js P.u) */
-            const r = lvOf(it),
-              mu = r && r.k === 'man' ? (r.b.p && r.b.p.u) || '' : r && r.k === 'ctl' ? '%' : it.u && it.u !== '%' ? it.u : '%';
-            t2.textContent = 'MV ' + (x ? fmtV(x.mv, it.mv) : it.mv != null ? it.mv : '—') + (mu ? ' ' + mu : '');
-            t1.setAttribute('fill', x ? '#5cd6ff' : '#7f90a0');
-            t2.setAttribute('fill', x ? '#9ff0c4' : '#7f90a0');
-          }, box);
+              const r = lvOf(it),
+                mu =
+                  r && r.k === 'man'
+                    ? (r.b.p && r.b.p.u) || ''
+                    : r && r.k === 'ctl'
+                      ? '%'
+                      : it.u && it.u !== '%'
+                        ? it.u
+                        : '%';
+              t2.textContent =
+                'MV ' + (x ? fmtV(x.mv, it.mv) : snap(it.mv != null ? it.mv : '—')) + (mu ? ' ' + mu : '');
+              t1.setAttribute('fill', x ? '#5cd6ff' : '#7f90a0');
+              t2.setAttribute('fill', x ? '#9ff0c4' : '#7f90a0');
+            },
+            box
+          );
         } else if (it.t === 'header') {
           /* 2.2.0-beta.19: the header bar like the HMI: seven cells spread over the full width, bold label, the value in a dark box
              (big, mono, cyan), the unit after it; before a thin left-aligned strip with 14 px text */
@@ -864,7 +938,12 @@
          (phone) it fits the height and starts at the left, drag to see the right part (before: 4 px text and 2/3 of the
          screen black) */
       tall = r.height > r.width,
-      s = tall ? h / Math.max(1, r.height) : Math.max(w / Math.max(1, r.width), h / Math.max(1, r.height));
+      /* retest #61 (R7: beside the Training panel the 007 AIR / FLUE GAS graphic was small with ~40 % of the area empty below it): the
+         graphic fills the height of the area too; when the area is narrower than the graphic, up to 30 % of its width is out of
+         view (drag to pan), so the text grows instead of leaving a band empty */
+      sw = w / Math.max(1, r.width),
+      sh = h / Math.max(1, r.height),
+      s = tall ? sh : sh <= sw ? Math.max(sh, sw * 0.7) : sh;
     vb = [box0[0] + (tall ? 0 : (w - r.width * s) / 2), box0[1], r.width * s, r.height * s];
     svg.setAttribute('viewBox', vb.join(' '));
     svSz = [r.width, r.height];

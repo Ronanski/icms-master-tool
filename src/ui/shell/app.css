@@ -1202,3 +1202,16 @@ body.lsview #inlist::before{content:'VIEW · values only. Press RUN to force or 
 /* retest #13: no logic sheet behind HOME / TRAINING (app.js setTab: inert, aria-hidden) */
 body:is([data-tab=home],[data-tab=training]) :is(#cv,#side,#anp,#tabs,#anptab){visibility:hidden!important}
 body:is([data-tab=home],[data-tab=training]) :is(#meta,#anmeta){visibility:hidden!important}
+/* retest #2 #13: a field step of the Gabay on the Logic page: no sheet of another step, a note says why (dock.js fieldNote) */
+#lsfieldnote{display:none}
+body.lsfield[data-tab=logic] #lsfieldnote{display:block;position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);max-width:min(32rem,90%);padding:1rem 1.25rem;background:var(--c-pane);color:var(--c-tx);border:1px solid var(--c-line2);border-radius:var(--r);font:400 .9375rem/1.45 var(--uf);text-align:center;z-index:5}
+body.lsfield[data-tab=logic] #svg{visibility:hidden}
+body.lsfield[data-tab=logic] #cv{position:relative}
+/* retest #42: a status text longer than its cell: two smaller lines in the same bar (app.js fit2), not cut */
+#sfoot:not(#x) .sf2:is(#st,.shint,.smsg){white-space:normal!important;line-height:.875rem!important;font-size:.6875rem!important;padding-top:.0625rem!important;padding-bottom:0!important;overflow:hidden;text-overflow:clip}
+/* retest #42: the alarm banner keeps room for the alarm name; the unit name and the time give way first when the band is narrow */
+body.cr #gsbar > #crband{container-type:inline-size;container-name:crband}
+body.cr #crband > #cralarm:not(#x){min-width:16rem}
+@container crband (max-width:62rem){#crband .crunit span{display:none}#cralarm .crat{display:none}}
+@container crband (max-width:52rem){#crband .crunit{display:none}}
+body.lsfield[data-tab=logic] :is(#dp,#anp,#dmeta,#anmeta,#meta,#anptab){visibility:hidden!important}

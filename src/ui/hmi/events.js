@@ -118,11 +118,45 @@
       if (!s.nl) s.nl = netlist(s);
       const o = motOuts(s);
       if (!o.trip && !o.run) return null;
+      /* retest #34: a field trip (protection relay, dock FIELD TRIP) */
+      if (s._ftrip) return 'TRIP';
       if (o.trip && DUI.outVal(s, o.trip.row) === 1) return 'TRIP';
       return o.run && DUI.outVal(s, o.run.row) === 1 ? 'RUN' : 'STOP';
     } catch (e) {
       return null;
     }
+  }
+  /* retest #62: the equipment group of an ABC sheet for the shutdown alarm suppression (the lamps of the Training dock, dock.js LAMPS):
+     feedwater / condensate = the BFW pumps; steam, turbine, burners, furnace temperature, CCS = the boiler on coal; the rest (air,
+     flue gas, furnace pressure) = the fans (ID fan, SA fan, PA fan and a fluidizing air blower). Released 10 min (plant time) after the
+     whole group runs */
+  const GRP = [
+    [/DRUM LEVEL|FEED ?WATER|DEAERATOR|CONDENSATE|HOTWELL/i, ['BFWP']],
+    [
+      /STEAM|SUPERHEAT|REHEAT|TURBINE|BYPASS|HPH|LPH|CCS|MASTER|BURNER|FURNACE TEMP|LIMESTONE|BOTTOM ASH|OIL/i,
+      ['COAL']
+    ],
+    [/./, ['IDF', 'SAF', 'PAF', 'FAB']]
+  ];
+  const grpT = {};
+  function grpRel(shn, t) {
+    const A = window.AN,
+      sh = A && A.sheets && A.sheets.find(s => s.name === shn);
+    if (!sh || !/^ABC-/.test(shn)) return true;
+    const g = GRP.findIndex(([re]) => re.test(sh.title || '')),
+      on = (() => {
+        try {
+          return window.LS_DOCK && LS_DOCK.grpOn ? GRP[g][1].every(k => LS_DOCK.grpOn(k)) : false;
+        } catch (e) {
+          return false;
+        }
+      })();
+    if (!on) {
+      delete grpT[g];
+      return false;
+    }
+    if (grpT[g] == null || grpT[g] > t) grpT[g] = t;
+    return t - grpT[g] >= 600; /* plant seconds */
   }
   function almScan() {
     const A = window.AN;
@@ -140,6 +174,7 @@
       almScan.reload = false;
       base = A.startState;
       AT.clear();
+      for (const g in grpT) delete grpT[g];
       almScan.first = true;
     }
     lastT = t;
@@ -160,12 +195,14 @@
       for (const s of dSheets()) {
         if (!s.nl) continue;
         const o = motOuts(s);
-        if (!o.trip) continue;
-        let v = 0;
-        try {
-          v = DUI.outVal(s, o.trip.row);
-        } catch (e) {}
-        if (v === 1) now.set('D|' + s.name, { sh: dnm(s), kind: 'TRIP', nm: o.trip.name, lv: 'TRIP' });
+        if (!o.trip && !s._ftrip) continue;
+        if (motState(s) === 'TRIP')
+          now.set('D|' + s.name, {
+            sh: dnm(s),
+            kind: 'TRIP',
+            nm: o.trip ? o.trip.name.replace(/\s+TRIP$/, '') : dnm(s),
+            lv: 'TRIP'
+          });
       }
     const first = !!almScan.first;
     almScan.first = false;
@@ -175,12 +212,31 @@
       if (!e || e.rtn || e.lv !== x.lv) {
         /* retest #35: the alarms standing when the plant is loaded (a cold unit: no flow, no pressure, the equipment stopped) come
            acknowledged and SUPPRESSED (sd: shutdown state, as the alarm suppression of a DCS after a shutdown): not counted in the
-           header, listed apart. Back to normal (the equipment runs) = gone; any later alarm of the same point is a new one */
-        AT.set(k, { ...x, t: tfmt(t), ack: first, rtn: false, sd: first });
+           header, listed apart. Back to normal (the equipment runs) = gone; any later alarm of the same point is a new one.
+           Retest #62 (the suppression "expired" at t = 1:00: AI0579 / AI0627 air temperature LOW came while nothing was started, the
+           air cooling to the ambient 30 °C): the suppression belongs to the equipment group of the sheet, not to the moment of the
+           load. A LOW / LOW-LOW alarm of a group whose equipment is stopped is suppressed (a shutdown alarm), also when it comes
+           later or changes level; a HIGH alarm or a TRIP always comes through */
+        const sd =
+          first ||
+          (x.kind === 'ALM' &&
+            /LOW/.test(x.lv) &&
+            (A.startState === 'plantCold' || !!(e && e.sd && !e.rtn)) &&
+            !grpRel(x.sh, t));
+        AT.set(k, { ...x, t: tfmt(t), ack: sd, rtn: false, sd });
         if (first) nNew++;
-        else add({ rt: { t } }, { name: x.sh }, x.kind, x.nm + ' ' + x.lv);
+        else if (!sd) add({ rt: { t } }, { name: x.sh }, x.kind, x.nm + ' ' + x.lv);
       }
     }
+    /* retest #62: a group released (its equipment running for 10 min of plant time): its shutdown alarms still standing are real
+       alarms now (NEW, logged), as a DCS releases the alarm suppression of a group after the start of its equipment */
+    if (A.startState === 'plantCold')
+      for (const [k, e] of AT)
+        if (e.sd && !e.rtn && grpRel(e.sh, t)) {
+          e.sd = false;
+          e.ack = false;
+          add({ rt: { t } }, { name: e.sh }, e.kind, e.nm + ' ' + e.lv + ' (suppression released: equipment running)');
+        }
     for (const [k, e] of AT)
       if (!now.has(k) && !e.rtn) {
         add({ rt: { t } }, { name: e.sh }, 'RTN', e.nm + ' ' + (e.kind === 'TRIP' ? 'TRIP reset' : 'back to normal'));

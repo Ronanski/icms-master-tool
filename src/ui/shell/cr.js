@@ -260,14 +260,29 @@
       last = vals.filter(a => a.ack === false && a.kind === 'TRIP').pop() || vals.filter(a => a.ack === false).pop() || vals.pop();
     P.alarm.classList.toggle('on', n > 0);
     P.aChip.className = 'crchip ' + (n ? 'alm' : 'mut') + (un ? ' unack' : '');
-    P.aChip.textContent = (n ? n + (n === 1 ? ' ALARM' : ' ALARMS') + (un ? ' · ' + un + ' NEW' : '') : 'NO ALARM') + (sup ? ' · ' + sup + ' SUPPRESSED' : '');
-    P.aChip.title = sup ? sup + ' alarm' + (sup > 1 ? 's' : '') + ' standing since the plant was loaded (shutdown state): acknowledged and suppressed; each comes back as a new alarm only after it returns to normal' : '';
+    /* retest #42 (R7: the alarm name cut to "A L" at 1280 px): the count of the suppressed alarms is on the chip only when no alarm is
+       active; with an alarm the room goes to its name (the suppressed count is in the tooltip and the alarm list) */
+    P.aChip.textContent = n
+      ? n + (n === 1 ? ' ALARM' : ' ALARMS') + (un ? ' · ' + un + ' NEW' : '')
+      : 'NO ALARM' + (sup ? ' · ' + sup + ' SUPPRESSED' : '');
+    P.aChip.title = sup
+      ? sup +
+        ' shutdown alarm' +
+        (sup > 1 ? 's' : '') +
+        ' suppressed (equipment of their group stopped): listed apart in the alarm list; released 10 min after the equipment of the group runs'
+      : '';
     /* retest #43 #42: the time says what it is; the full text in the tooltip */
     P.aT.textContent = last && last.t ? 'at ' + last.t : '';
     P.aT.title = 'Simulation time of this alarm';
     P.aTx.textContent = last ? last.text + ' · ' + last.sh : 'No active alarm';
     /* retest #42: short in the header, the rest in the tooltip */
-    P.aTx.title = (last ? last.text + ' · ' + last.sh + '\n' : sup ? sup + ' shutdown alarms suppressed (alarm list: ALARM chip)\n' : '') + 'Alarm list of the whole DCS (every ABC sheet and the motor trips of the DITL), simulation time. Click the ALARM chip for the list and ACK.';
+    P.aTx.title =
+      (last
+        ? last.text + ' · ' + last.sh + (last.t ? ' · at ' + last.t : '') + '\n'
+        : sup
+          ? sup + ' shutdown alarms suppressed (alarm list: ALARM chip)\n'
+          : '') +
+      'Alarm list of the whole DCS (every ABC sheet and the motor trips of the DITL), simulation time. Click the ALARM chip for the list and ACK.';
     if (P.aList.classList.contains('open') && (n !== P.aN || un !== P.aU || sup !== P.aS)) aFill();
     P.aS = sup;
     P.aN = n;
