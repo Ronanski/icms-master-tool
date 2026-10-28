@@ -10,6 +10,14 @@
      ON and no starting state picked, the operator picks one here (Cold / 150 MW); nothing loads or runs by itself. after() goes on
      once the picked state is in (RUN pressed with no state) */
   window.lsAskStart = after => {
+    /* retest #59 (R5: the question covered the Training checklist after Clear, and came again at the Gabay press after "Not now"):
+       never while a starting state is being loaded or prepared (Gabay, Practise: AN._startPending); asked by itself (no after: page
+       open, Reset) only outside HOME / TRAINING (they have their own Gabay / Practise buttons) and not again after "Not now";
+       the RUN press still asks */
+    const A = window.AN || {},
+      tb = document.body.dataset.tab;
+    if (A._loadP || A._startPending) return;
+    if (!after && (tb === 'home' || tb === 'training' || A._askNo)) return;
     let d = document.getElementById('lsask');
     if (d) {
       d._after = after || d._after;
@@ -41,7 +49,14 @@
     [
       ['Cold (start-up from zero)', () => pick('loadcold'), 'go'],
       ['150 MW (HMI snapshot)', () => pick('load150'), ''],
-      ['Not now', close, '']
+      [
+        'Not now',
+        () => {
+          if (window.AN) AN._askNo = 1;
+          close();
+        },
+        ''
+      ]
     ].forEach(([t, f, c]) => {
       const b = document.createElement('button');
       b.type = 'button';
@@ -356,19 +371,26 @@
     document.querySelectorAll('.ddw.open').forEach(x => x.classList.remove('open'));
     place();
     hint();
-    /* retest #13: no sheet of an earlier visit behind the Training page (training/dock.js home) */
-    if (t === 'training' && window.LS_DOCK && LS_DOCK.home)
+    /* retest #13 (R5: ABC-057 / DITL-29A of an earlier visit still loaded behind the Training page): on HOME and TRAINING the logic
+       workspace is not shown, not read and not focusable (inert, aria-hidden; CSS visibility in app.css); the guided start opens the
+       sheet of its step when it goes to the Logic page */
+    const away = t === 'home' || t === 'training';
+    for (const id of ['cv', 'side', 'anp', 'tabs', 'anptab'])
       try {
-        LS_DOCK.home();
+        const x = $(id);
+        if (!x) continue;
+        x.inert = away;
+        if (away) x.setAttribute('aria-hidden', 'true');
+        else x.removeAttribute('aria-hidden');
       } catch (e) {}
   }
   const HINTS = {
     /* retest #42: short enough for the status bar; the whole text is in the tooltip */
-    operate: 'PLANT VIEW: system on the left · controller / valve = faceplate · Plant ▾ = model, start',
-    library: 'LIBRARY: search an address, tag or description · Find = info card',
+    operate: 'PLANT VIEW: click a valve or controller = faceplate',
+    library: 'LIBRARY: search an address, tag or description',
     tools: 'TOOLS: tests, drawing checks, simulation switches',
-    home: 'HOME: pick what to do · "/" or Ctrl+K = search a tag',
-    training: 'TRAINING: tick each step · a tag = info card · Plant ▾ > Unit > Cold to practise'
+    home: 'HOME: pick what to do · Ctrl+K = search',
+    training: 'TRAINING: tick each step as you do it'
   };
   window.lsSetTab = setTab;
   function hint() {

@@ -1042,3 +1042,14 @@ Beta na ito (GO BETA ng user). Build at check lang ang pinatakbo, kaya **hindi n
 | 9 | AUTO ticks sa Cold | Walang tick habang naglo-load; nire-reset ang AUTO ticks pagkatapos ma-load ang Cold ng Gabay | live.js, guide.js |
 
 Ang ibang bukas sa table (#5, #15, #16, #28, #31, #33, #34, #39–#41, #45–#53) ay nasa beta.40 na at hinihintay ang retest.
+
+## dev pagkatapos ng 3.2.0-beta.41 (2026-10-28, hinihintay ang GO BETA) — retest 5
+
+Build at check lang; **hindi nasubok**.
+
+| # | Finding | Ayos | Saan |
+|---|---|---|---|
+| 59 | Tanong na "No starting state picked" sa Training page, at lumabas ulit pagka-Gabay kahit "Not now" | Hindi na kusang lumalabas sa Home at Training (may Gabay / Practise doon). Hindi lumalabas habang naghahanda o naglo-load ang Gabay / Practise, at nagsasara kapag may pinili nang load. Tinatandaan ang "Not now"; ang pindot ng RUN lang ang magtatanong ulit | app.js, home.js, guide.js, hmi-op.js |
+| 42 | Putol: "No active alarm (shutdown alarms…" at "Cold to practi…" | Header: "No active alarm" lang (ang bilang ng suppressed ay nasa chip at tooltip). Mas maikli ang hint ng bawat page | cr.js, app.js |
+| 13 | ABC-057 / DITL-29A nakatago sa likod ng Training | Sa Home at Training, hindi ipinapakita, hindi binabasa at hindi mapipindot ang logic sheet sa likod. Ang Gabay ang nagbubukas ng sheet ng hakbang | app.js, app.css, dock.js |
+| 54 | 9 % sa 2 min (browser na hindi nasa harap) | Ang susunod na bahagi ng load ay tinatawag ng message, hindi timer (ang timer ay minsan bawat segundo lang kapag hindi nasa harap ang page) | hmi-op.js |

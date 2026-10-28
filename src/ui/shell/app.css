@@ -1199,3 +1199,5 @@ body.lsview #inlist::before{content:'VIEW · values only. Press RUN to force or 
 #lsask .lsaskbtn.go{border-color:var(--c-acc);background:var(--c-accbg);color:var(--c-acctx,#fff)}
 /* retest #42 (R4: "Even…" in the Plant view header): the Events button keeps its whole label */
 #cralarm #evbtn:not(#x){flex:none!important;white-space:nowrap!important;min-width:max-content!important;overflow:visible!important;text-overflow:clip!important}
+/* retest #13: no logic sheet behind HOME / TRAINING (app.js setTab: inert, aria-hidden) */
+body:is([data-tab=home],[data-tab=training]) :is(#cv,#side,#anp,#tabs,#anptab){visibility:hidden!important}

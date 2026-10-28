@@ -54,6 +54,8 @@
   const abcReady = fn => {
     try {
       AN._cold0 = 1;
+      /* retest #59: a starting state is on its way (Gabay / Practise): no starting-state question meanwhile */
+      AN._startPending = 1;
       if (AN.cat !== 'an') AN.setCat('an');
     } catch (e) {}
     let k = 0;
@@ -61,7 +63,12 @@
       const ok = window.AN && AN.cat === 'an' && AN.sheets && AN.sheets.length >= 54 && AN.plantCold;
       if (ok || ++k > 120) {
         clearInterval(iv);
-        if (ok) fn();
+        if (ok)
+          try {
+            fn();
+          } catch (e) {}
+        /* the Gabay keeps it until its own load starts (guide.js start) */
+        if (window.AN && !AN._gdWait) AN._startPending = 0;
       }
     }, 250);
   };
