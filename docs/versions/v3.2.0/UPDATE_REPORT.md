@@ -1183,3 +1183,18 @@ Check: totoong pindot (persistent profile, "Gabay: Cold" 2 beses), Hakbang 1 →
 **Hindi nasubok:** PC / tablet / EXE / APK ng user. Ang halaga ng AI0387 / AI0432 (analog) ay hindi sinisimulate: ON / OFF lang. Ang bawat output ng 7 sheet ay hindi isa-isang sinubok; ibinangga ang bawat sheet sa PDF gamit ang overlay at screenshot.
 
 **Status:** Beta. Roadmap hakbang 7 TAPOS.
+
+## 3.2.0-beta.48 (Beta, 2026-10-28) — iisang linya sa main: bagong HMI + sand DITL + R9 #86 ~ #90
+
+Pinagsama sa linyang tine-test (utos ng user 2026-10-28: ang tine-test ay nasa main agad; Stable lang ang may GO): PR #49 (bagong HMI Air & Flue Gas, 3 style; kasama ang PR #46 page links), PR #48 (sand DITL 771 ~ 777), PR #50 (instrument / valve list, docs), PR #44 (Library check, docs), PR #51 (HMI art spec at symbol library, docs).
+
+| # | Ugat | Ayos | Saan |
+|---|---|---|---|
+| 86 | Walang fit ng DITL kapag nagbago ang laki ng area (makitid na window, bumukas ang Training panel) | Sinusunod ng view ang hugis ng area (ResizeObserver), pareho ang kaliwang gilid at gitna | ditl.js |
+| 87 | Walang run state ang air preheater sa bagong HMI | DITL-43: RUNNING pula, STOPPED berde, TRIP pula (NOT TRIP bumagsak sa 0) | plant.js `ditl:`, hmi2.js, events.js `ntTrip` |
+| 88 | May checkbox at kasama sa bilang ang mga Note ng SOP sa Training list | Plain text, walang checkbox, hindi kasama sa bilang | home.js, home.css |
+| 89 | 8 hakbang lang ang may "Gawin:" at "Bakit?" | Bawat hakbang: Gawin (o ang pamagat ng hakbang) at Bakit?; bagong paliwanag ng air preheater | dock.js, guide.js |
+| 90 | Hindi nagsasara ang Legend | × button, Esc, click sa labas; ang Legend button ay toggle | paint.js, app.js |
+| bago (check) | Pagkatapos isama ang sand DITL: "SYSTEM TRIP" ng DITL-777 bilang NEW alarm sa Cold (tama ang logic: MFT / BOILER STOP at hindi REMOTE, E10210-3-777) | Ang trip na nakatayo na pagbukas ng sheet = shutdown alarm (suppressed) hanggang mag-reset | events.js |
+
+Check: totoong pindot, Hakbang 1 → 20 (hindi buong start-up), 7 bahagi: Training list, dock, header, logic sheet, bagong HMI (Cutaway at Steel), status bar, events.

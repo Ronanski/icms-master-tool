@@ -4,10 +4,8 @@
 
 ## SIMULAN DITO (2026-10-26 PHT)
 
-- **Stable:** v2.4.0 sa `main`.
-- **Beta:** `3.2.0-beta.39` (dev; walang sariling numero ang parallel thread, ang coordinator ang magbibigay), branch `claude/project-thread-f93qh9`, PR #47; roadmap 3 + 4 sa `claude/project-thread-5nq9pa` (nakapatong sa #47) (nakapatong sa `claude/project-thread-0amxbo` / PR #45 → PR #43 → PR #42). Roadmap step 1 TAPOS; step 2: stall, RH damper, null, Cold header, hakbang 57, air side ng Cold TAPOS; bukas: MST 550 ~ 557 °C at reheat 593 °C sa 150 MW.
-- **Beta (HMI sample):** branch `claude/project-thread-1h2161` (PR #49, nakapatong sa #46; version 3.2.0-beta.39, ang numero ay ibibigay sa pagsasama). Bagong HMI sample Air & Flue Gas; naghihintay ng pag-apruba ng style ng user (`docs/hmi/HMI_SYSTEMS.md`).
-- **Beta:** `3.2.0-beta.39 (+ sand)`, branch `claude/project-thread-cp7ia7` (nakapatong sa beta.39 / PR #45; walang sariling beta number, ibibigay ng coordinator sa pagsasama). Roadmap step 1 at step 7 (Sand DITL) TAPOS. Ang step 2 (plant model) ay ginagawa ng ibang thread.
+- **Stable:** v2.4.0 (huling Stable).
+- **Beta:** `3.2.0-beta.48` sa `main` (2026-10-28: iisang linya; ang tine-test ay laging nasa main, Stable lang ang may GO STABLE). Kasama ang bagong HMI Air & Flue Gas, sand DITL, page links.
 - **Ang gusto ng user:** `docs/SPEC.md` (S1 ~ S9). Plano = seksyon 3 ng file na iyon. Wala nang ROADMAP / CHECKLIST.
 - **Pag-check ng user:** `docs/USER_CHECK.md`.
 - **Rules:** `CLAUDE.md`, `PROJECT_RULES.md` (test policy = seksyon 5).
@@ -38,6 +36,7 @@
 - Plant chip: OFF | Unit lang; starting state: Cold o 150 MW lang. Plant model ON na walang starting state: header "—", ang ABC page ay bumubukas na Cold.
 
 ## Susunod na gagawin (roadmap sa `docs/SPEC.md` seksyon 3)
+0. 2026-10-28 ~10:10 PM PHT: **Beta 3.2.0-beta.48** sa main = bagong HMI (PR #49) + sand DITL (PR #48) + docs PR #44 / #50 / #51 + R9 #86 ~ #90 + maling SYSTEM TRIP alarm ng DITL-777 sa Cold. Check: totoong pindot Hakbang 1 → 20, 7 bahagi. Hindi isinama (luma / napalitan): PR #40, #41, `adoring-carson`, `feat/persistent-context-retrieval`, `ccr-8a6a202c` (listahan sa user bago burahin).
 0. 2026-10-28 ~9:05 PM PHT: **Beta 3.2.0-beta.47** = 19 findings ng retest 9 (air preheater START, NOT TRIP alarm, TCS oil, SOP limits / tag / NOTE sa dock, Hakbang 14 ~ 17 hiwalay, gitna sumusunod nang tama, ‹ Nakaraan, header). Check: totoong pindot Hakbang 1 → 20 (hindi buong start-up). #23 hindi nasubok; #60 bahagi (61 / 121).
 0. 2026-10-28 ~6:30 PM PHT: **Beta 3.2.0-beta.46** = retest 8 (R8) sa ugat: isang equipment block (START / STOP, FIELD, MAN / AUTO, TRIP, lamp, values) at isang step engine (✓ TAPOS + Susunod, stable na buttons, Cold reset ng DITL). Check = totoong pindot, 2 pasada nang hindi nililinis ang storage. #60: 70 item ng 007 walang plant model (flue gas path), "—".
 0. 2026-10-28 ~4:00 PM PHT: **Beta 3.2.0-beta.45** = lahat ng bukas na findings ng retest 7 (sa ugat; paliwanag sa UPDATE_REPORT). Sinubok ng maikling check ng bawat linya ng check-list (hindi ang buong start-up). Susunod: live retest ng user.

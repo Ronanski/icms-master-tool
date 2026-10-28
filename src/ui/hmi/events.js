@@ -108,6 +108,9 @@
     TRO.set(s, o);
     return o;
   }
+  /* R9 (beta.48 check): the DITL sheets already scanned since the load. A sheet built later (the sand DITL-777 SYSTEM TRIP = 1 on a cold
+     plant: MFT / BOILER STOP and NOT REMOTE CONTROL, E10210-3-777) brings its standing trip as a shutdown alarm, not a NEW one */
+  const DSEEN = new Set();
   const NTS = new Set(),
     NTO = new WeakMap();
   function ntOut(s) {
@@ -188,6 +191,7 @@
       base = A.startState;
       AT.clear();
       NTS.clear();
+      DSEEN.clear();
       for (const g in grpT) delete grpT[g];
       almScan.first = true;
     }
@@ -208,6 +212,8 @@
     if (window.WORLD && WORLD.on && WORLD.idx)
       for (const s of dSheets()) {
         if (!s.nl) continue;
+        const fresh = !DSEEN.has(s.name);
+        DSEEN.add(s.name);
         const o = motOuts(s);
         if (!o.trip && !s._ftrip) continue;
         if (motState(s) === 'TRIP')
@@ -215,7 +221,8 @@
             sh: dnm(s),
             kind: 'TRIP',
             nm: o.trip ? o.trip.name.replace(/\s+TRIP$/, '') : dnm(s),
-            lv: 'TRIP'
+            lv: 'TRIP',
+            fresh
           });
       }
     /* R9 #80: a "NOT TRIP" output (DITL-43 row 5 AIR PREHEATER NOT TRIP, 1 = healthy) is an alarm when it falls to 0 after it was
@@ -247,6 +254,7 @@
            later or changes level; a HIGH alarm or a TRIP always comes through */
         const sd =
           first ||
+          !!x.fresh ||
           (x.kind === 'ALM' &&
             /LOW/.test(x.lv) &&
             (A.startState === 'plantCold' || !!(e && e.sd && !e.rtn)) &&
@@ -260,7 +268,7 @@
        alarms now (NEW, logged), as a DCS releases the alarm suppression of a group after the start of its equipment */
     if (A.startState === 'plantCold')
       for (const [k, e] of AT)
-        if (e.sd && !e.rtn && grpRel(e.sh, t)) {
+        if (e.sd && !e.rtn && /^ABC-/.test(e.sh) && grpRel(e.sh, t)) { /* a DITL standing trip stays suppressed until it resets */
           e.sd = false;
           e.ack = false;
           add({ rt: { t } }, { name: e.sh }, e.kind, e.nm + ' ' + e.lv + ' (suppression released: equipment running)');
