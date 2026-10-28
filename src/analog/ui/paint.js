@@ -1089,8 +1089,10 @@ function paint0() {
     }
   }
   for (const o of L.ov) {
+    /* a block with no state yet (ABC-000A painted by the Reset of a starting-state load threw here and stopped the load: unit model
+       OFF, beta.46 check) */
     const b = o.b,
-      st = S.rt.st[b.id];
+      st = S.rt.st[b.id] || {};
     let key,
       fill = 'none',
       op = 0,
@@ -1249,7 +1251,7 @@ function paint0() {
         (q_ && q_.mv ? (q_.dir > 0 ? '▲' : '▼') : '') +
         (b.ai != null && S.rt.st[b.ai] && S.rt.force[b.n] === undefined && !aiBad(S, b.ai)
           ? fmt(S.rt.st[b.ai].act)
-          : S.nets[b.n].dig
+          : (S.nets[b.n] || {}).dig
             ? v[b.n] > 0.5
               ? '1'
               : '0'

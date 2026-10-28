@@ -597,6 +597,17 @@
     return { row, no: row + 1, tag, svc: svc || 'Input row ' + (row + 1) };
   };
 
+  /* retest #69: the AUTO MODE SELECTED input row of a motor drawing (a maintained CRT selection), or null */
+  function amRow(ds) {
+    if (!ds) return null;
+    if (ds._amr !== undefined) return ds._amr;
+    let o = null;
+    for (let r = 0; r < 60 && !o; r++) {
+      const v = rowInfo(ds, r).svc;
+      if (/\bAUTO MODE SELECTED\b/.test(v) && !/REMOTE/.test(v)) o = { s: ds, row: r, svc: svcN(v) };
+    }
+    return (ds._amr = o);
+  }
   /* ---------- the panel ---------- */
   let dock = null,
     tabB = null,
@@ -1054,6 +1065,7 @@
     els.trKey = null;
     els.after = [];
     els.auIt = [];
+    els.before = [];
     const fli = s.field && s.field.length ? fieldList(s.field) : [];
     if (fli.length) {
       const A = call(() => LV().done(), {}),
@@ -1105,6 +1117,7 @@
           } catch (e) {}
         };
         if (cut >= 0 && fi >= cut && !au) els.after.push({ cb, li });
+        if (cut >= 0 && fi < cut && !au) els.before.push(cb);
         if (au) els.auIt.push({ k, cb, li });
         ul.append(li);
       });
@@ -1132,6 +1145,24 @@
       bt.onclick = () => {
         if (bt.dataset.block === '1') return;
         if (pausedWarn(a)) return;
+        /* retest #65 (R8: SWP-A started with 0 / 15 BAGO I-START items ticked): a START with the line-up not done is warned; a second
+           press within 15 s goes on (training override, logged) */
+        if (a.stop && !call(() => a.on(), false)) {
+          const nb = (els.before || []).length,
+            nd = (els.before || []).filter(c => c.checked).length;
+          if (nb && nd < nb) {
+            if (!(bt._ovr && Date.now() - bt._ovr < 15000)) {
+              bt._ovr = Date.now();
+              if (els.ovw) {
+                els.ovw.hidden = false;
+                els.ovw.textContent = '⚠ ' + nd + ' / ' + nb + ' BAGO I-START items pa lang ang tapos. Tapusin muna ang line-up sa field, o pindutin ulit ang ' + a.l + ' para ituloy (training override, naka-log).';
+              }
+              return;
+            }
+            bt._ovr = 0;
+            call(() => lsEventAdd('DCS', 'DCS', 'Training override: ' + a.l + ' with ' + nd + ' / ' + nb + ' BAGO I-START items done'));
+          }
+        }
         try {
           a.f();
         } catch (e) {}
@@ -1198,6 +1229,24 @@
           });
           bs.append(B.ft);
         }
+        /* retest #69 #47 (R8: no way to put the standby SWP in AUTO, Hakbang 2 stuck): the AUTO / MAN selection of the motor when its
+           drawing has one (a CRT input row "... AUTO MODE SELECTED": DITL-29A row 4, M.1152 / 1162 / 1172), on every motor of the step */
+        const am = a.stop && B.ad ? amRow(dOf(B.ad)) : null;
+        if (am) {
+          B.am = Object.assign(
+            E('button', {
+              type: 'button',
+              cls: 'gd-btn gd-am',
+              txt: 'MAN',
+              on: () => {
+                const v = !(call(() => DUI.rowVal(am.s, am.row), null) === 1 || (am.s.sig && am.s.sig[am.row + ':S']));
+                dsel(dName(am.s), am.row, v, a.l.replace(/^START\s+/, '') + (v ? ' AUTO' : ' MAN') + ' (' + am.svc + ')');
+              }
+            }),
+            { _am: am }
+          );
+          bs.append(B.am);
+        }
         bs.append(E('span', { cls: 'gd-brk' }));
       }
     }
@@ -1220,8 +1269,8 @@
         } catch (e) {}
         g.confirm(s.i);
         g.scan();
-        /* 3.2.0 retest #30: the trainee's own confirmation of a field card is the "Susunod" (a DCS step waits for its ✓ TAPOS) */
-        if (s.need && !s.c && g.ready()) g.next();
+        /* retest #64 (one step flow): a field card confirmed shows "✓ TAPOS" and waits for "Susunod ›", like a DCS step and like the
+           shortcut (was retest #30: the confirmation went on to the next step at once) */
         fill(true);
       };
       bs.append(cb);
@@ -1256,7 +1305,9 @@
               } catch (e) {}
               g.confirm(s.i);
               g.scan();
-              if (!s.c && g.ready()) g.next();
+              /* retest #64 (R8: after the skip the dock went on to Hakbang 2 and to the Logic page by itself): "✓ TAPOS (nilaktawan)",
+                 then the trainee's "Susunod ›" */
+              els.skipped = s.i;
               fill(true);
             }
           }))
@@ -1265,7 +1316,8 @@
     if (bs.children.length) card.append(bs);
     els.early = E('div', { cls: 'gd-warn', hidden: '' });
     els.pw = E('div', { cls: 'gd-warn', hidden: '' });
-    card.append(els.pw, els.early);
+    els.ovw = E('div', { cls: 'gd-warn', hidden: '' });
+    card.append(els.pw, els.ovw, els.early);
     col1.append(card);
     /* the faceplates of the step */
     const key = (s.fps || []).join(',');
@@ -1391,7 +1443,7 @@
     const rd = call(() => g.ready(), false);
     if (els.okb) {
       els.okb.hidden = !rd;
-      if (rd) els.okt.textContent = '✓ TAPOS' + (s.c && s.c.now ? ': ' + call(() => s.c.now(), '') : s.need ? ': nakumpirma sa field' : '');
+      if (rd) els.okt.textContent = '✓ TAPOS' + (els.skipped === s.i ? ' (nilaktawan: training shortcut)' : s.c && s.c.now ? ': ' + call(() => s.c.now(), '') : s.need ? ': nakumpirma sa field' : '');
     }
     /* 3.2.0 retest #27: the items after the START open when the equipment runs */
     /* retest #45: the AUTO items tick here as soon as the logic latches them (was: only when the step was drawn again) */
@@ -1464,9 +1516,15 @@
     let shown = 0,
       mk = null;
     const nOn0 = s.max ? (s.a || []).filter(a => a.stop && call(() => a.on(), false)).length : 0;
+    /* retest #66 (R8: "DITL-29A #B ↗" pressed, nothing in the centre): the interlock box was emptied and drawn again 4 times a second,
+       so a press of a mouse (down ... up, about 0.1 s) often ended on a new button and the click was lost (the ↗ links, the FIELD
+       buttons). Each box is drawn into a spare one and put on the screen only when its text changed: the buttons stay the same */
+    for (const it of els.il || []) {
+      it.real = it.real || it.box;
+      it.box = E('div', { cls: it.real.className });
+    }
     for (const it of els.il || []) {
       const I = interlock(it.ad);
-      it.box.textContent = '';
       if (!I) continue;
       /* 3.2.0 P1: a motor operated valve (a valve model, no RUNNING output: DITL-38 MCV, DITL-54 ~ 56) is ready when its interlock is
          complete (REMOTE at the MCC); the next valve of the step then shows its own interlock */
@@ -1486,7 +1544,7 @@
       if (I.live && !run0 && s.max && nOn0 >= s.max) {
         it.box.append(
           E('div', { cls: 'gd-ilh' }, [
-            E('span', { txt: 'STANDBY · AUTO sa susunod na hakbang' }),
+            E('span', { txt: 'STANDBY · ilagay sa AUTO (button na MAN / AUTO)' }),
             E('span', { cls: 'gd-ilm', txt: I.sheet })
           ])
         );
@@ -1595,6 +1653,11 @@
         it.box.append(E('div', { cls: 'gd-ild x', txt: 'Hindi pa aandar ang motor (ayon sa ' + I.sheet + '): ayusin muna ang may ✕ (FIELD button, o ↗ para buksan ang row sa logic).' }));
       }
     }
+    for (const it of els.il || []) {
+      const nb = it.box;
+      it.box = it.real;
+      if (nb.innerHTML !== it.real.innerHTML) it.real.replaceChildren(...nb.childNodes);
+    }
     /* retest #49: a step with a number of machines to run (2 of the 3 SWP): the others are the standby, their START is closed */
     const nOn = s.max ? (s.a || []).filter(a => a.stop && call(() => a.on(), false)).length : 0;
     try {
@@ -1607,6 +1670,13 @@
       B.bt.hidden = hd;
       if (B.sb) B.sb.hidden = hd;
       if (B.lab) B.lab.hidden = hd;
+      if (B.am) {
+        const am = B.am._am,
+          au = call(() => DUI.rowVal(am.s, am.row), null) === 1 || !!(am.s.sig && am.s.sig[am.row + ':S']);
+        B.am.textContent = au ? 'AUTO' : 'MAN';
+        B.am.classList.toggle('on', au);
+        B.am.title = (au ? 'AUTO (standby: aandar kapag nag-trip ang tumatakbo)' : 'MAN') + ' · pindutin para ' + (au ? 'MAN' : 'AUTO') + ' · ' + dName(am.s) + ' row ' + (am.row + 1);
+      }
       /* retest #52: a field start is a toggle */
       if (B.a.tog && B.bt.firstChild) B.bt.firstChild.textContent = on0 ? B.a.l.replace('START', 'STOP') : B.a.l;
       if (s.max && nOn >= s.max && B.a.stop && !on0) {
@@ -1614,7 +1684,7 @@
         B.bt.classList.add('dis');
         B.bt.hidden = true;
         if (B.sb) B.sb.hidden = true;
-        B.bt.title = 'Sapat na: ' + nOn + ' ang tumatakbo. Ito ang standby (AUTO sa susunod na hakbang).';
+        B.bt.title = 'Sapat na: ' + nOn + ' ang tumatakbo. Ito ang standby: ilagay sa AUTO.';
         if (B.lab) {
           B.lab.textContent = 'STANDBY';
           B.lab.className = 'gd-mst';

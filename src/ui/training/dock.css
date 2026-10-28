@@ -141,4 +141,6 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
 .gd-fone{display:block;margin-top:4px;min-height:30px;padding:4px 10px;font-size:13px}
 .gd-rowl{border:0;background:none;color:var(--c-acctx);font:600 12.5px var(--mf);cursor:pointer;padding:0 0 0 4px}
 .gd-btn small{display:block;font:500 11.5px var(--mf);opacity:.8}
+.gd-btn.gd-am{min-width:64px;font-weight:700;border-color:var(--c-line2)}
+.gd-btn.gd-am.on{color:#fff;background:#2563eb;border-color:#2563eb}
 .gd-btn.gd-ft{border-color:#f59e0b;color:#f59e0b;background:transparent}
