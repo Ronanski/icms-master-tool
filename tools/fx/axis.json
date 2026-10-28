@@ -1,0 +1,892 @@
+{
+"S1-LN1": [
+[
+"OIL CALORIE",
+true
+],
+[
+"HS-OIL.MV",
+false
+]
+],
+"S1-LN3": [
+[
+"COAL CORR. CONSTANT",
+true
+],
+[
+"HS-COAL.MV",
+false
+]
+],
+"S1-LN5": [
+[
+"AIR DEMAND",
+true
+],
+[
+"BOILER MASTER",
+false
+]
+],
+"S1-LN7": [
+[
+"SA FLOW DEMAND",
+true
+],
+[
+"TOTAL OIL FLOW",
+false
+]
+],
+"S1-LN8": [
+[
+"PA FLOW DEMAND",
+true
+],
+[
+"TOTAL OIL FLOW",
+false
+]
+],
+"S1-LN9": [
+[
+"SEC. AIR FLOW BIASS",
+true
+],
+[
+"SEC. AIR FLOW BIAS DEMAND",
+false
+]
+],
+"S1-LN12": [
+[
+"PA FLOW DEMAND",
+true
+],
+[
+"TCF",
+false
+]
+],
+"S1-LN13": [
+[
+"IDF DAMPER DEMAND",
+true
+],
+[
+"IDF H/C CONTROL DEMAND",
+false
+]
+],
+"S1-LN14": [
+[
+"PA FLOW BIAS",
+true
+],
+[
+"HIC-TADBS.MV",
+false
+]
+],
+"S1-LN15": [
+[
+"O2 Corr. Constant",
+true
+],
+[
+"O2 CONTROL DEMAND",
+false
+]
+],
+"S1-LN16": [
+[
+"O2 DEMAND",
+true
+],
+[
+"BOILER MASTER",
+false
+]
+],
+"S1-LN17": [
+[
+"O2 BIAS",
+true
+],
+[
+"O2 BIAS DEMAND",
+false
+]
+],
+"S1-LN18": [
+[
+"BLOW-OFF CONTROL VALVE CONTROL DEMAND",
+true
+],
+[
+"BLOW-OFF FLOW REQUEST",
+false
+]
+],
+"S1-LN19": [
+[
+"BNR SA FLOW DEMAND",
+true
+],
+[
+"BNR OIL FLOW",
+false
+]
+],
+"S1-LN21": [
+[
+"FUEL / AIR RATIO",
+true
+],
+[
+"HIC-AFAR.MV",
+false
+]
+],
+"S1-LN22": [
+[
+"TOTAL AIR FLOW DEMAND",
+true
+],
+[
+"TOTAL FUEL FLOW",
+false
+]
+],
+"S1-LN23": [
+[
+"A-COAL FLOW BIAS",
+true
+],
+[
+"A-BIAS.MV",
+false
+]
+],
+"S1-LN25": [
+[
+"B COAL FLOW BIAS",
+true
+],
+[
+"B-BIAS.MV",
+false
+]
+],
+"S1-LN27": [
+[
+"C COAL FLOW BIAS",
+true
+],
+[
+"C-BIAS.MV",
+false
+]
+],
+"S1-LN29": [
+[
+"GAS 02 CONTOLLER RB-MV",
+true
+],
+[
+"SA FLOW PARAMETER",
+false
+]
+],
+"S1-LN30": [
+[
+"DENSITY",
+true
+],
+[
+"TEMP. OF FEED WATER",
+false
+]
+],
+"S1-LN31": [
+[
+"DENSITY",
+true
+],
+[
+"PRESSURE OF MSF",
+false
+]
+],
+"S1-LN32": [
+[
+"DENSITY",
+true
+],
+[
+"TEMP. OF MSF",
+false
+]
+],
+"S1-LN34": [
+[
+"BOTTOM ASH COOLER SPEED BIAS CONTROL",
+false
+],
+[
+"BOTTOM ASH COOLER SPEED BIAS",
+true
+]
+],
+"S1-LN40": [
+[
+"FFD",
+true
+],
+[
+"TAF",
+false
+]
+],
+"S1-LN42": [
+[
+"TEMPERATURE",
+true
+],
+[
+"DRUM PRESSURE",
+false
+]
+],
+"S1-LN43": [
+[
+"TEMP.",
+true
+],
+[
+"MAIN STEAM PRESSURE",
+false
+]
+],
+"S1-LN44": [
+[
+"FUEL FLOW DEVIATION",
+false
+],
+[
+"COAL  FLOW CORRECTION",
+true
+]
+],
+"S1-LN46": [
+[
+"1ST DESUPERHEATER SPRAY WATER TEMP.CONTROL DEMAND",
+false
+],
+[
+"1ST DE-S/H SPRAY WATER CONTROL VALVE(2) DEMAND",
+true
+]
+],
+"S1-LN47": [
+[
+"1ST DESUPERHEATER SPRAY WATER TEMP.CONTROL DEMAND",
+false
+],
+[
+"1ST DE-S/H SPRAY WATER CONTROL VALVE(1) DEMAND",
+true
+]
+],
+"S1-LN48": [
+[
+"2ND DESUPERHEATER SPRAY WATER TEMP.CONTROL DEMAND",
+false
+],
+[
+"2ND DE-S/H SPRAY WATER CONTROL VALVE(2) DEMAND",
+true
+]
+],
+"S1-LN49": [
+[
+"2ND DESUPERHEATER SPRAY WATER TEMP.CONTROL DEMAND",
+false
+],
+[
+"2ND DE-S/H SPRAY WATER CONTROL VALVE(1) DEMAND",
+true
+]
+],
+"S1-LN50": [
+[
+"FURNACE PRESSURE DEMAND(H/C)",
+true
+],
+[
+"PA & SA FLOW CONTROL DEMAND",
+false
+]
+],
+"S1-LN51": [
+[
+"FURNACE PRESSURE DEMAND(DAMPER)",
+true
+],
+[
+"PA & SA FLOW CONTROL DEMAND",
+false
+]
+],
+"S1-LN54": [
+[
+"FUEL  FLOW DEMAND",
+true
+],
+[
+"ULD",
+false
+]
+],
+"S1-LN55": [
+[
+"T/B Override MW",
+true
+],
+[
+"MSP PIC-COBM PV-SV",
+false
+]
+],
+"S1-LN58": [
+[
+"GAIN FOR BIR",
+true
+],
+[
+"MWD DV",
+false
+]
+],
+"S1-LN59": [
+[
+"GAIN FOR BIR",
+true
+],
+[
+"MWD DV",
+false
+]
+],
+"S1-LN60": [
+[
+"GAIN FOR BIR",
+true
+],
+[
+"RAMP RATE",
+false
+]
+],
+"S1-LN61": [
+[
+"BIR FUEL DEMAND",
+true
+],
+[
+"MWD",
+false
+]
+],
+"S1-LN62": [
+[
+"BIR FUEL DEMAND",
+true
+],
+[
+"MWD",
+false
+]
+],
+"S2-LN2": [
+[
+"TEMP.",
+true
+],
+[
+"R/H INLET HEADER PRESSURE",
+false
+]
+],
+"S2-LN3": [
+[
+"UNIT LOAD DEMAND",
+false
+],
+[
+"REHEATER GAS DAMPER POSITION",
+true
+]
+],
+"S2-LN5": [
+[
+"S/H GAS DAMPER DEMAND",
+true
+],
+[
+"R/H GAS DAMPER DEMAND",
+false
+]
+],
+"S2-LN6": [
+[
+"UNIT LOAD DEMAND",
+false
+],
+[
+"REHEATER OUTLET HEADER TEMP. SV DEMAND",
+true
+]
+],
+"S2-LN7": [
+[
+"REHEATER OUTLET HEADER TEMP. DEMAND",
+true
+],
+[
+"REHEATER OUTLET HEADER TEMP.CONTROL MV",
+false
+]
+],
+"S2-LN8": [
+[
+"Y AXIS",
+true
+],
+[
+"X AXIS",
+false
+]
+],
+"S2-LN9": [
+[
+"UNIT LOAD DEMAND",
+false
+],
+[
+"REHEATER OUTLET HEADER TEMP. R-SV BIAS",
+true
+]
+],
+"S2-LN10": [
+[
+"TEMP.",
+true
+],
+[
+"COLD REHEAT STEAM PRESSURE",
+false
+]
+],
+"S2-LN11": [
+[
+"RAMP RATE",
+true
+],
+[
+"LP TURBINE BYPASS STEAM PRESSURE CONTROL DEVIATION",
+false
+]
+],
+"S2-LN12": [
+[
+"OUTPUT",
+true
+],
+[
+"HP TURBINE FIRST STAGE PRESSURE",
+false
+]
+],
+"S2-LN13": [
+[
+"TEMP.",
+true
+],
+[
+"HP BYPASS OUTLET PRESSURE",
+false
+]
+],
+"S2-LN16": [
+[
+"CONTROL VALVE(2) DEMAND",
+true
+],
+[
+"COLD REHEAT TO AUX. STEAM PRESSURE CONTROL DEMAND",
+false
+]
+],
+"S2-LN17": [
+[
+"CONTROL VALVE(1) DEMAND",
+true
+],
+[
+"COLD REHEAT TO AUX. STEAM PRESSURE CONTROL DEMAND",
+false
+]
+],
+"S2-LN18": [
+[
+"Cv VALUE",
+true
+],
+[
+"STEAM SEAL FEED VALVE MANIPULATION VALUE",
+false
+]
+],
+"S2-LN19": [
+[
+"CV VALUE",
+true
+],
+[
+"HP TURBINE WARMING VALVE POSITION",
+false
+]
+],
+"S2-LN20": [
+[
+"OUTPUT",
+true
+],
+[
+"AUX. STEAM HEADER TEMP.",
+false
+]
+],
+"S2-LN21": [
+[
+"OUTPUT",
+true
+],
+[
+"Cv VALUE",
+false
+]
+],
+"S2-LN22": [
+[
+"TURBINE OIL COOLER OUTLET OIL TEMP. DEMAND",
+true
+],
+[
+"TURBINE RATED SPEED",
+false
+]
+],
+"S2-LN31": [
+[
+"STEAM FLOW",
+false
+],
+[
+"HP BYPASS PRESSURE C.V. DEMAND",
+true
+]
+],
+"S2-LN32": [
+[
+"LP BYPASS PRESSURE C.V. DEMAND",
+true
+],
+[
+"STEAM FLOW",
+false
+]
+],
+"S2-LN33": [
+[
+"HP BYPASS TEMP. C.V. DEMAND",
+true
+],
+[
+"HP BYPASS PRESSURE C.V. DEMAND",
+false
+]
+],
+"S2-LN34": [
+[
+"LP BYPASS TEMP. C.V. DEMAND",
+true
+],
+[
+"LP BYPASS PRESSURE C.V. DEMAND",
+false
+]
+],
+"S2-LN38": [
+[
+"PRIMARY DRAIN LEVEL CONTROL VALVE DEMAND",
+true
+],
+[
+"PRIMARY DRAIN LEVEL CONTROL DEMAND",
+false
+]
+],
+"S2-LN39": [
+[
+"ALTERNATE  DRAIN LEVEL CONTROL VALVE DEMAND",
+true
+],
+[
+"ALTERNATE DRAIN LEVEL CONTROL DEMAND",
+false
+]
+],
+"S3-LN1": [
+[
+"FURNACE UPPER MCV-FA1005 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN2": [
+[
+"FURNACE LOWER MCV-FA1006 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN3": [
+[
+"FURNACE UPPER MCV-FA1007 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN4": [
+[
+"FURNACE LOWER MCV-FA1008 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN5": [
+[
+"FURNACE UPPER MCV-FA1009 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN6": [
+[
+"FURNACE LOWER MCV-FA1010 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN7": [
+[
+"FURNACE UPPER MCV-FA1011 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN8": [
+[
+"FURNACE LOWER MCV-FA1012 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN9": [
+[
+"FURNACE UPPER MCV-FA1013 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN10": [
+[
+"FURNACE LOWER MCV-FA1014 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN11": [
+[
+"FURNACE UPPER MCV-FA1015 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN12": [
+[
+"FURNACE LOWER MCV-FA1016 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN13": [
+[
+"FURNACE UPPER MCV-FA1017 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN14": [
+[
+"FURNACE LOWER MCV-FA1018 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN15": [
+[
+"FURNACE UPPER MCV-FA1019 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN16": [
+[
+"FURNACE LOWER MCV-FA1020 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN17": [
+[
+"FURNACE UPPER MCV-FA1021 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN18": [
+[
+"FURNACE LOWER MCV-FA1022 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN19": [
+[
+"FURNACE UPPER MCV-FA1023 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN20": [
+[
+"FURNACE LOWER MCV-FA1024 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN21": [
+[
+"FURNACE UPPER MCV-FA1025 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN22": [
+[
+"FURNACE LOWER MCV-FA1026 POSITION DEMAND",
+true
+],
+[
+"GENERATOR POWER",
+false
+]
+],
+"S3-LN23": [
+[
+"BIAS",
+true
+],
+[
+"FURNACE UPPER WALL FRONT/REAR BIAS DEMAND",
+false
+]
+],
+"S3-LN24": [
+[
+"BIAS",
+true
+],
+[
+"FURNACE LOWER WALL FRONT/REAR BIAS DEMAND",
+false
+]
+]
+}

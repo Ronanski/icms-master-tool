@@ -20,6 +20,12 @@ function movModel0(sh, nl) {
     cm = all.filter(t => /(^|\s)(OPEN|CLOSE)\s+COMMAND$/i.test(t.t) && t.x > mid - 40 && t.x < sh.rng.RS[0] - 30);
     old = 1;
   }
+  if (!cm.length && all.some(t => t.t === 'MCC' && t.x > mid && t.x < sh.rng.RS[0])) {
+    /* 2.5.0-beta.12: MCC box with "VALVE OPEN COMMAND" / "VALVE CLOSE COMMAND" and no feedback labels (sootblower DITL-80S):
+       the feedback rows are read from the right-row service text (REMOTE SELECTED, FULL OPENED, FULL CLOSED, TORQUE, TRIP) */
+    cm = all.filter(t => /(^|\s)(OPEN|CLOSE)\s+COMMAND$/i.test(t.t) && t.x > mid - 40 && t.x < sh.rng.RS[0] - 30);
+    old = 2;
+  }
   if (!cm.length) return [];
   const B = [];
   for (const t of cm.sort((a, b) => b.y - a.y)) {
@@ -32,7 +38,12 @@ function movModel0(sh, nl) {
       oa = near(/^O\.[0-9A-F]{4}$/),
       suf = tg ? tg.t.replace(/^MO[RS]-/, '') : '',
       sg = nl.segs
-        .filter(q => q.h && Math.abs(q.y1 - t.y) < 4 && q.x2 <= t.x + 0.5 && q.x2 >= t.x - (old ? 24 : 6))
+        .filter(
+          q =>
+            q.h &&
+            Math.abs(q.y1 - t.y) < 4 &&
+            ((q.x2 <= t.x + 0.5 && q.x2 >= t.x - (old ? 24 : 6)) || (old === 2 && q.x1 < t.x && q.x2 > t.x))
+        )
         .sort((a, b) => b.x2 - a.x2)[0];
     let b = B.find(b => !b[k] && (b.suf === suf || !suf || !b.suf) && Math.abs(b.y - t.y) < 70);
     if (!b) {
@@ -81,6 +92,33 @@ function movModel0(sh, nl) {
       }
     }
     b.fb.push({ ty, tag: t.t, row: i, adr: ad, mir });
+  }
+  if (old === 2 && B.length === 1 && !B[0].fb.length) {
+    const drv = new Set(nl.src.map(z => z.n));
+    nl.gates.forEach(g => (g.out || []).forEach(n => drv.add(n)));
+    const rsT = all.filter(q => q.x >= sh.rng.RS[0] - 1 && q.x < sh.rng.RS[1]),
+      sv = j =>
+        ['S', 'T']
+          .map(c => (sh.cells[j + ':' + c] || []).map(q => q.t).join(' '))
+          .join(' ')
+          .replace(/\s+/g, ' '),
+      KW = [
+        [/REMOTE SELECTED/, 'MIL'],
+        [/FULL OPEN/, 'ZSO'],
+        [/FULL CLOS/, 'ZSC'],
+        [/TORQUE/, 'TS'],
+        [/TRIP/, 'MIT']
+      ];
+    nl.outs.forEach(o => {
+      if (drv.has(o.n) || B[0].fb.some(f => f.row === o.row)) return;
+      const y = sh.rows[o.row].y,
+        kt = rsT.filter(q => q.y <= y - 2.2 && q.y > y - 6.5).map(q => q.t).join(' '),
+        k = KW.find(k => k[0].test(kt));
+      if (!k) return;
+      const mir = sh.rows.findIndex((r, j) => k[0].test(sv(j)) && nl.src.some(z => z.row === j));
+      /* MIL / MIT / TS with an input row of the same service text: that output IS the input signal (read by the gates too) */
+      B[0].fb.push({ ty: k[1], tag: kt.trim(), row: o.row, adr: '', mir, ind: mir >= 0 && !/^ZS/.test(k[1]) ? o.n : undefined });
+    });
   }
   return B.filter(b => b.open || b.close).map(b => ({
     tag: b.suf,
@@ -177,6 +215,7 @@ function svModel(sh, nl) {
        the contact of SV-CL1061-A) is the command; before, only wires that stop at the box edge were looked at, and the wire of the
        latch reset (MFT / CLOSE P.B.) was taken: the valve opened on MFT and was shut in service */
     const into = q => q.x1 < bx.x1 - 1 && q.x2 > bx.x1 - 1 && q.x2 <= bx.x2;
+    const gIn = q => (nl.gates.some(g => [...(g.ins || []), ...(g.s || []), ...(g.r || [])].includes(q.n)) ? 1 : 0);
     const sg = nl.segs
       .filter(
         q =>
@@ -187,14 +226,31 @@ function svModel(sh, nl) {
           q.y1 <= bx.y2 + 4 &&
           Math.abs(q.y1 - t.y) < 28
       )
-      .sort((a, b) => into(b) - into(a) || b.x2 - a.x2 || Math.abs(a.y1 - t.y) - Math.abs(b.y1 - t.y))[0];
-    if (!sg) continue;
+      /* 2.5.0-beta.11 (DITL PDF audit, DITL-73 SV-CR1011): a wire that ends in the input of a gate is not the command to the box;
+         the free DCS output wire comes first (the row 27 condenser vacuum NOT -> AND wire was taken instead of the row 23 OPEN COMMAND
+         -> NOT -> XV-CR1011 O.0126) */
+      .sort(
+        (a, b) =>
+          into(b) - into(a) ||
+          gIn(a) - gIn(b) ||
+          b.x2 - a.x2 ||
+          Math.abs(a.y1 - t.y) - Math.abs(b.y1 - t.y)
+      )[0];
+    /* 2.5.0-beta.12 (sootblower DITL-80R SV-SB1059 / SB1054): the DCS output (row 12 O.0122) is drawn as an arrow that stops before the
+       field contact and the DC24V supply, further from the assembly box; the coil is on the same line */
+    const sgF =
+      sg ||
+      nl.segs
+        .filter(q => q.h && D.has(q.n) && q.x2 <= bx.x1 + 1 && q.x2 >= bx.x1 - 100 && Math.abs(q.y1 - t.y) < 10)
+        .sort((a, b) => b.x2 - a.x2)[0];
+    if (!sgF) continue;
+    const sg2 = sgF;
     seen.add(suf + '@' + bx.x1.toFixed(0) + bx.y1.toFixed(0));
     const ct = all
-        .filter(q => /(OPEN|CLOSE)\s+COMMAND/i.test(q.t) && Math.abs(q.y - sg.y1) < 20 && q.x < bx.x1 + 5)
-        .sort((a, b) => Math.abs(a.y - sg.y1) - Math.abs(b.y - sg.y1))[0],
+        .filter(q => /(OPEN|CLOSE)\s+COMMAND/i.test(q.t) && Math.abs(q.y - sg2.y1) < 20 && q.x < bx.x1 + 5)
+        .sort((a, b) => Math.abs(a.y - sg2.y1) - Math.abs(b.y - sg2.y1))[0],
       dir = ct && /CLOSE/i.test(ct.t) ? 'close' : 'open',
-      ng = nl.gates.find(g => g.t === 'NOT' && (g.out || []).includes(sg.n)),
+      ng = nl.gates.find(g => g.t === 'NOT' && (g.out || []).includes(sg2.n)),
       after = !!(ng && ct && ct.x >= ng.box.x2 - 0.5),
       inv =
         !!ng &&
@@ -240,7 +296,7 @@ function svModel(sh, nl) {
         dir,
         inv,
         coil: ci ? { x: ci[0], y: ci[1], r: ci[2] } : null,
-        open: { n: sg.n, tag: t.t, adr: '', x: bx.x1, y: sg.y1 },
+        open: { n: sg2.n, tag: t.t, adr: '', x: bx.x1, y: sg2.y1 },
         close: null,
         fb
       });
@@ -376,6 +432,17 @@ function motModel(sh, nl) {
       )
       .map(q => AB(q.t))
       .filter(a => L[a]);
+    /* 2.5.0-beta.11 (DITL PDF audit, DITL-21A rows 57 / 62 MIT / LIS3): the address is written UNDER the field label (MIT-xxx,
+       LIS-xxx), in the band of the next row; the label is on this row */
+    if (!ad.length) {
+      const lb = all.filter(q => /^(MI[TLRAF]|LIS\d?|LS\d?|ZS[OC]|TS)-/.test(q.t) && q.x > S1 + 60 && q.x < R0 && Math.abs(q.y - cy) < 4.5);
+      for (const l of lb) {
+        const q = all
+          .filter(q => /^[IM]\.[0-9A-F]{4}/.test(q.t) && q.x > l.x && q.x - l.x < 50 && q.y < l.y && l.y - q.y < 12)
+          .sort((p, r) => Math.hypot(p.x - l.x, p.y - l.y) - Math.hypot(r.x - l.x, r.y - l.y))[0];
+        if (q && L[AB(q.t)] && !lb.some(o => o !== l && Math.hypot(q.x - o.x, q.y - o.y) < Math.hypot(q.x - l.x, q.y - l.y))) ad.push(AB(q.t));
+      }
+    }
     const a = ad[0];
     if (!a) continue;
     used.add(o.n);

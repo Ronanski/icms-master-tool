@@ -503,9 +503,10 @@ const AN_HMI_DI = {
    written as the raw one: drum level 393 / 146 / 393 mm at the end of the load (DRUM LEVEL H.H. > 254 mm, M.0173 / M.0175 ->
    MFT on the DITL), steam flow 461 instead of 474.1 T/H. The raw value is found so that the compensated one is the snapshot
    (secant, 4 steps); the drum level plant model (integrating) starts again from there */
-function hmiComp(only) {
-  for (const [shn, ai, pv, want] of AN_HMI_COMP) {
+function hmiComp(only, wantOf) {
+  for (const [shn, ai, pv, want0] of AN_HMI_COMP) {
     if (only && !only(ai)) continue;
+    const want = wantOf ? wantOf(ai, want0) : want0;
     try {
       const sh = AN.sheets.find(x => x.name === shn),
         S = sh && sh.S;
@@ -544,15 +545,28 @@ function hmiComp(only) {
   } catch (e) {}
 }
 function anPlantLoad150() {
+  return anGenRun(anPlantLoad150S());
+}
+/* 3.2.0 retest #54 (user 2026-10-28: the page froze over 1 min at "Gabay: Cold -> 150 MW", no loading sign): the starting states are
+   generators that yield after each sheet step. AN.plantCold() / plantLoad150() run them at once (the tests, the same result as
+   before); AN.plantColdAsync() / plantLoad150Async() run them in slices of 40 ms, so the page paints a progress bar in between */
+function* anPlantLoad150S() {
   AN.steady = true;
   try {
-    return anPlantLoad150_();
+    return yield* anPlantLoad150G();
   } finally {
     AN.steady = false;
   }
 }
-function anPlantLoad150_() {
+function* anPlantLoad150G() {
   let n = 0;
+  /* 2.5.0-beta.7: the snapshot is a steady state, so no pulse is running: the first scan after Reset took every pulse input that is
+     already 1 as a new edge (ABC-020 TPS of NOT HICHR1002B.MAN, 2 s): with the ID fan running of the load it set M.017A and the SH and
+     RH gas bias dampers stayed MANUAL at 150 MW (39.PNG: both A) */
+  for (const sh of AN.sheets)
+    if (sh.S && sh.S.rt)
+      for (const b of sh.S.blk)
+        if ((b.k === 'TPS' || b.k === 'TPV') && sh.S.rt.st[b.id]) Object.assign(sh.S.rt.st[b.id], { run: 0, out: 0, acc: 0 });
   for (const sh of AN.sheets) {
     if (/^ABC-000/.test(sh.name)) continue;
     let S;
@@ -692,14 +706,16 @@ function anPlantLoad150_() {
     for (const sh of AN.sheets) {
       if (/^ABC-000/.test(sh.name) || !sh.S) continue;
       const S = sh.S;
-      for (const n of S.ext) {
-        const nm = (AN.nm(S, n) || '').trim().toUpperCase(),
-          k = nm.startsWith(c.tag.toUpperCase() + '.') ? nm.slice(c.tag.length + 1) : null;
-        if (!k) continue;
-        if (MK.MAN.includes(k)) S.rt.ext[n] = m === 'M' ? 1 : 0;
-        else if (MK.REM.includes(k)) S.rt.ext[n] = m === 'R' ? 1 : 0;
-        else if (MK.LOC.includes(k)) S.rt.ext[n] = m === 'A' ? 1 : 0;
-      }
+      for (const n of S.ext)
+        for (const nm0 of [AN.nm(S, n)].concat((S.alias && S.alias[n]) || [])) {
+          /* 2.3.0-beta.1: also the mode status written beside an address-named wire (S.alias, ABC-011 TICBR1130.LOC = M.0230) */
+          const nm = (nm0 || '').trim().toUpperCase(),
+            k = nm.startsWith(c.tag.toUpperCase() + '.') ? nm.slice(c.tag.length + 1) : null;
+          if (!k) continue;
+          if (MK.MAN.includes(k)) S.rt.ext[n] = m === 'M' ? 1 : 0;
+          else if (MK.REM.includes(k)) S.rt.ext[n] = m === 'R' ? 1 : 0;
+          else if (MK.LOC.includes(k)) S.rt.ext[n] = m === 'A' ? 1 : 0;
+        }
     }
   /* 2.1.0-beta.6: the PV of every loop from the snapshot transmitters, with the plant model OFF for a moment (logic only); the
      plant model of the loop is anchored at that PV (plant.js pr.hopReq) at the end of the load, with the MV of the snapshot */
@@ -715,7 +731,7 @@ function anPlantLoad150_() {
           was.push([b.proc, b.proc.on]);
           b.proc.on = false;
         }
-    for (let k = 0; k < 6; k++) for (const sh of L) stepSet(sh, 0);
+    for (let k = 0; k < 6; k++) for (const sh of L) (stepSet(sh, 0), yield);
     for (const sh of L) {
       const S = sh.S;
       for (const b of S.procs || []) {
@@ -761,7 +777,7 @@ function anPlantLoad150_() {
   /* the plant runs 10 s so that the interlocks of the cold boiler clear, then the operator sets the modes (a station that
      was forced to MANUAL stays MANUAL until AUTO is pressed again: user rule 2026-10-15) */
   try {
-    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) for (let k = 0; k < 20; k++) stepSet(sh, 0.5);
+    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) for (let k = 0; k < 20; k++) (stepSet(sh, 0.5), yield);
   } catch (e) {}
   /* 2.2.0-beta.10 (CLAUDE.md 10): a MAN station that a BU-CMD of the drawing forced to MANUAL while the cold plant was loading stays
      MANUAL (the latch, plant.js). Right after the 10 s the operator selects the modes of the snapshot: AUTO (MAN off) for a station
@@ -786,7 +802,7 @@ function anPlantLoad150_() {
           s.fmSet = 0;
         }
       }
-      for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0);
+      for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) (stepSet(sh, 0), yield);
     }
   } catch (e) {}
   /* 2.1.0-beta.6: the MV of the snapshot again after the 10 s: a start pulse of the drawing may have preset it (ABC-008 M.020E:
@@ -802,7 +818,7 @@ function anPlantLoad150_() {
       const ps = rt.st[c.b.id];
       if (ps) hmiPidSet(ps, c.b, h.mv);
     }
-    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) for (let k = 0; k < 4; k++) stepSet(sh, 0.5);
+    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) for (let k = 0; k < 4; k++) (stepSet(sh, 0.5), yield);
   } catch (e) {}
   for (const [pr, pv, mv] of caps) pr.hopReq = { pv, mv };
   /* the held plant models start now, from the snapshot PV (pr.y0) and the anchor */
@@ -827,7 +843,7 @@ function anPlantLoad150_() {
         for (const b of sh.S.procs || []) if (b.proc && (b.txt || [])[1] === 'LICBR1001' && fw && ms) b.proc.integLoss = b.proc.integLoss0 = Math.max(0, fw.pv - ms[0]);
   } catch (e) {}
   try {
-    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0.5);
+    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) (stepSet(sh, 0.5), yield);
   } catch (e) {}
   for (const [S, c, m] of modes) {
     const rt = S.rt;
@@ -862,7 +878,7 @@ function anPlantLoad150_() {
           else if ((b.k === 'RATE' || b.k === 'RAMPB') && b.main !== undefined && isFinite(rt.v[b.main])) st.y = rt.v[b.main];
         }
       }
-      for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0);
+      for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) (stepSet(sh, 0), yield);
       /* the controller outputs of the snapshot once more: an integral that moved while the demands were still low comes back
          (ABC-001C PIC-COBM: 0.8 % on 33.PNG, 13.1 % after the 10 s) */
       for (const [S, c] of modes) {
@@ -897,7 +913,7 @@ function anPlantLoad150_() {
         if (q) q.fm = 'A';
       }
     }
-    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0);
+    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) (stepSet(sh, 0), yield);
     for (const [S, c] of modes) {
       const h = AN_HMI_CTL[c.tag],
         ps = h && h.mv != null ? S.rt.st[c.b.id] : null;
@@ -907,7 +923,10 @@ function anPlantLoad150_() {
   /* 2.2.0-beta.9 (M2): the boiler and the turbine run as one plant from here (unit.js) */
   try {
     anUnitStart();
-  } catch (e) {}
+    AN._unitErr = null;
+  } catch (e) {
+    AN._unitErr = e; /* kept for the checks: the unit model did not start */
+  }
   AN.load150 = { ai: n, ctl: nc, di: nd, sv: nsv, man: nm_, unit: AN_UNIT.on };
   AN.hmiDI = AN_HMI_DI;
   AN.hmiComp = hmiComp;
@@ -928,6 +947,21 @@ const AN_HMI_DI_COLD = {
   'M.3302': 0,
   'M.3303': 0,
   'M.3304': 0 /* PAF / SAF / IDF stopped: the operator starts them for the purge */,
+  /* 3.2.0-beta.14 (source.js): a cold plant has every machine stopped: FA blowers A / B, condensate pumps A / B, seawater pumps A / B / C
+     (memory list BC FROM S3; PR-OPE-5002 starts them in the pre-start). Before they stayed running from the 150 MW snapshot, so the
+     condensate flow FICCD1120 read 380 T/H in a cold plant and the Live Training ticked those steps by itself */
+  'M.3308': 0,
+  'M.3309': 0,
+  'M.3350': 0,
+  'M.3351': 0,
+  'M.3353': 0,
+  'M.3354': 0,
+  'M.3355': 0,
+  /* 3.2.0-beta.21 (bug, user 2026-10-24: "na-reset ko na, cold na, may value pa rin? ... drum lvl at fw flow"): the boiler feedwater
+     pumps A / B (ABC-010 M.3343 / M.3344, memory list BC FROM S3) stayed running from the 150 MW snapshot: the feedwater flow read
+     0.2 T/H with every valve shut and the drum level crept up 2 mm every 10 minutes in a cold plant */
+  'M.3343': 0,
+  'M.3344': 0,
   'M.3410': 1,
   'M.3411': 1,
   'M.3416': 1,
@@ -978,105 +1012,6 @@ function anOilValve(addr, open) {
   }
   return n;
 }
-/* 2.2.0-beta.15 (M4 step 2): START WARM = the cold plant already fired: drum at P kg/cm2 (water at saturation), bed at Tb, fans
-   running with the light-off air, the start-up burners lit (supply oil valves open, BURNER IN SERVICE, FICDO1043x MANUAL at mv %),
-   the blow-off holding the pressure. The end of the CHECK "M4 - Cold start" (30 kg/cm2, 4 burners), so the next steps of the
-   procedure (coal transfer, bypass, roll) start here instead of running the cold start again (boiler manual Fig 3 warm start-up:
-   bed below 700 C, the same steps from a kept pressure). o = { P, Tb, burners, mv, air } */
-const AN_BURNER = [
-  ['ABC-003A', 'FICDO1043A', 'M.3410', 'M.3412'],
-  ['ABC-003B', 'FICDO1043B', 'M.3411', 'M.3413'],
-  ['ABC-003C', 'FICDO1043C', 'M.3416', 'M.3418'],
-  ['ABC-003D', 'FICDO1043D', 'M.3417', 'M.3419']
-];
-/* 2.2.0-beta.17 (M4 step 4): options coal (FIC-CF % with the three feeders A / B / C running and in AUTO: after the coal transfer),
-   rh (hot reheat pressure kg/cm2 in the reheater), hot (the bypass system in service: HP bypass AUTO at P, MS blow-off AUTO at P + 7
-   (shut), LP bypass AUTO 7.6, RH blow-off MANUAL 0, LICBR1001B AUTO 0: the end of step 3) */
-function anPlantWarm(o) {
-  o = Object.assign({ P: 30, Tb: 480, burners: 4, mv: 30, air: 10, coal: 0, rh: 0, hot: false }, o || {});
-  const n = anPlantCold();
-  if (!AN_UNIT.on) return 0;
-  const U = AN_UNIT,
-    L = AN.sheets.filter(sh => sh.S && !/^ABC-000/.test(sh.name)),
-    setx = (l, x) => {
-      for (const sh of L)
-        for (const e of sh.S.ext) if ((AN.nm(sh.S, e) || '').trim() === l && sh.S.rt.force[e] === undefined) sh.S.rt.ext[e] = x;
-    },
-    ctlOf = (k, t) => {
-      const sh = AN.sheets.find(y => y.name === k),
-        S = sh && sh.S,
-        c = S && AN.hmiCtrls ? (AN.hmiCtrls(S) || []).find(q => q.tag === t) : null;
-      return c ? [S, c] : null;
-    },
-    man = (k, t, x) => {
-      const r = ctlOf(k, t);
-      if (!r) return;
-      const [S, c] = r;
-      if (c.manBlk && S.rt.st[c.manBlk.id]) S.rt.st[c.manBlk.id].val = x;
-      else if (c.manNet != null && S.ext.includes(c.manNet)) S.rt.ext[c.manNet] = x;
-      if (c.amt && S.rt.st[c.amt.id]) S.rt.st[c.amt.id].hold = x;
-    },
-    /* A (AUTO) with the operator SV (LOCAL), as the faceplate: the SV where hmi.js writes it, the switches on their auto legs */
-    auto = (k, t, sv) => {
-      const r = ctlOf(k, t);
-      if (!r) return;
-      const [S, c] = r;
-      hmiSvWrite(S, c, sv);
-      if (c.svSw && S.rt.st[c.svSw.id]) {
-        S.rt.st[c.svSw.id].al = 'A';
-        S.rt.st[c.svSw.id].fm = 'B';
-      }
-      if (c.amt && S.rt.st[c.amt.id]) S.rt.st[c.amt.id].fm = c.autoLeg;
-      if (AN.latchMode) AN.latchMode(t, 'LOC');
-    };
-  for (const l of ['M.3302', 'M.3303', 'M.3304']) setx(l, 1);
-  man('ABC-007', 'FICFA1071', o.air);
-  man('ABC-007', 'FICFA1081', o.air);
-  AN_BURNER.slice(0, Math.max(0, Math.min(4, o.burners))).forEach(([k, t, vc, ins]) => {
-    anOilValve(vc, true);
-    setx(ins, 1);
-    man(k, t, o.mv);
-  });
-  if (o.coal > 0) {
-    for (const l of ['M.3400', 'M.3401', 'M.3402']) setx(l, 1);
-    man('ABC-004A', 'FIC-CF', o.coal);
-  }
-  if (o.hot) {
-    auto('ABC-010', 'LICBR1001B', 0);
-    auto('ABC-013', 'PICMS1002', o.P + 7);
-    auto('ABC-050', 'PICMS1006', o.P);
-    auto('ABC-052', 'PICHR1003', 7.6);
-    man('ABC-054', 'PICHR1391', 0);
-  }
-  Object.assign(U, { Pd: o.P, Tw: 100 + 47.1 * Math.log(o.P + 1), Tb: o.Tb });
-  if (o.rh > 0 && U.rhp && U.rhp.length && U.rhp[0].a0 && U.rhp[0].a0[0] > 0) U.rr = o.rh / U.rhp[0].a0[0];
-  AN.steady = true; /* 2.2.0-beta.16: a steady state, no pulse from the inputs it sets (see anPlantCold) */
-  try {
-    const C1 = AN.sheets.find(x => x.name === 'ABC-001C');
-    for (let k = 0; k < 4; k++) stepSet(C1, 0.5);
-    for (const sh of L) sh.S.rt.pm = {};
-    hmiComp(ai => /^AI0(130|258|386)$/.test(ai));
-    for (let k = 0; k < 2; k++) for (const sh of L) stepSet(sh, 0.5);
-    /* the running feeders in AUTO (the drawing forces MANUAL while a feeder is stopped) */
-    if (o.coal > 0 && AN.latchMode) for (const t of ['FICCL1061A', 'FICCL1061B', 'FICCL1061C']) AN.latchMode(t, 'LOC');
-  } catch (e) {}
-  AN.steady = false;
-  /* the fire is already there. Oil only (Start warm, beta.16): as before. 2.2.0-beta.17 with coal (Start hot): the steady state of the
-     firing line of anUnitStep (oil + the coal that burns in the bed); the Start warm value is kept as it was so that the verified
-     bypass scenario of beta.16 starts from the same state */
-  if (o.coal > 0) {
-    const F = (U.fuel || []).reduce((a, l) => a + (anUnitVal(l) || 0), 0),
-      bf = Math.max(0, Math.min(1, (U.Tb - U.Tburn0) / (U.Tburn1 - U.Tburn0))),
-      Fe = bf * F + U.ao * U.oilF;
-    U.Qs = Math.max(0, U.a * Fe + (U.m0 - U.a * U.F0) * Math.min(1, Fe / (0.3 * U.F0)));
-  } else U.Qs = U.a * (U.oilF * U.ao);
-  return n;
-}
-/* 2.2.0-beta.17: the plant at the end of M4 step 3, ready for the turbine: 123 kg/cm2 on the HP bypass, bed 750 C, three coal feeders
-   at FIC-CF 12 % (about 14 T/H), burners out, hot reheat 7.6 kg/cm2 on the LP bypass */
-function anPlantHot() {
-  return anPlantWarm({ P: 123, Tb: 750, burners: 0, mv: 0, air: 14, coal: 12, rh: 7.6, hot: true });
-}
 /* 2.2.0-beta.21 (M5): Start at 150 MW with the shutdown physics on (unit.js anUnitLive) */
 function anPlantLive() {
   const n = anPlantLoad150();
@@ -1084,7 +1019,10 @@ function anPlantLive() {
   return n;
 }
 function anPlantCold() {
-  const n = anPlantLoad150();
+  return anGenRun(anPlantColdG());
+}
+function* anPlantColdG() {
+  const n = yield* anPlantLoad150S();
   if (!AN_UNIT.on) return 0;
   const L = AN.sheets.filter(sh => sh.S && !/^ABC-000/.test(sh.name));
   /* 2.2.0-beta.16: the cold state is a steady state too: a digital input the cold map sets (ABC-050 I.0932 "GCB 52G1 off" = 1) changed
@@ -1128,15 +1066,40 @@ function anPlantCold() {
   try {
     /* one step: the unit model writes its transmitters (drum 0, MSP 0, MW 0 ...) */
     stepSet(AN.sheets.find(x => x.name === 'ABC-001C'), 0.5);
+    yield;
     /* every loop model starts again at the steady state of its (new) command: no feedwater flow decaying from 499 T/H into the
        drum of a cold boiler (an integrating level keeps its PV) */
     for (const sh of L) sh.S.rt.pm = {};
+    /* 3.2.0-beta.14: and not from the PV of the 150 MW snapshot (pr.y0 of anPlantLoad150, still set on a sheet that was not stepped
+       yet): ABC-034 gland steam temperature began at 185 C in a cold plant and took minutes to reach the ambient */
+    for (const sh of L) for (const b of sh.S.procs || []) if (b.proc) b.proc.y0 = 0;
+    /* 3.2.0 roadmap 3: a TANK LEVEL keeps its water in a cold plant (no pump runs, nothing flows in or out): the model starts from the
+       level read now (deaerator LT-CD1104 71 mm, hotwell LT-CD1110 4 mm, at their normal level), not from the steady state of its
+       closed valve (the heater shells stay drained). Before, the cold level depended on whether the sheet had been stepped: a second Start cold read the deaerator at
+       -529 mm and the hotwell at -122 mm */
+    for (const sh of L) for (const b of sh.S.procs || []) if (b.proc && /^LICCD11(04|10A)$/.test((b.txt || [])[1] || '')) b.proc.y0 = 1;
     /* the drum level transmitters: the raw value that gives the snapshot level at the cold drum pressure (the density
        compensation LN38 / LN39 of the drawing changes with the pressure) */
-    hmiComp(ai => /^AI0(130|258|386)$/.test(ai));
+    /* 3.2.0 walkthrough #7 (PR-OPE-5002 STEAM DRUM FILLING: the BFP fills the drum through FCV-FW1130-2 to -150 mm): the drum of a cold
+       plant is not filled yet; its level starts at AN_COLD_DRUM (below the -150 mm of the procedure), the three transmitters 0 / 2 / 8 mm
+       apart as in the snapshot. Before: the normal water level (0 / 2 / 8 mm) */
+    hmiComp(ai => /^AI0(130|258|386)$/.test(ai), (ai, w) => AN_COLD_DRUM + w);
   } catch (e) {}
+  /* 3.2.0-beta.22: the drum level of the model after the compensation above, kept through the settling steps below */
+  const lvl0 = anDrumLvlState();
   /* the lags and the rate limiters of the drawing at their (new) inputs, like anPlantLoad150 */
   try {
+    /* 2.5.0-beta.3: a cold plant has no generator load of the 150 MW snapshot. The average select holds its last value while every
+       input is 0 (zero = lost signal, user rule v1.20.34), so ABC-001C EIC-TM.PV (generator MW AI0419 / AI0774 at 0 MW) kept 151.5 MW
+       and the "MW" link set ABC-013 M.025A (> 81.5 MW); with the turbine trip / 52G1 open wired by the drawing audit (ABC-013-1) that
+       gave house operation M.025B = 1 during the cold start-up: coal feeders forced MANUAL (ABC-004A M.0141), FIC-CF back-up to 0.
+       Only the MW select: the pressure and level selects keep their hold, the warm / hot start states are tuned on it */
+    for (const sh of L)
+      for (const b of sh.S.blk) {
+        const st = sh.S.rt.st[b.id];
+        if (st && b.k === 'SEL' && (b.i || []).some(n => n >= 0 && /^AI0(419|774)$/.test(String((sh.S.lab[n] && sh.S.lab[n].t) || '').trim())))
+          st.last = null;
+      }
     for (let it = 0; it < 4; it++) {
       for (const sh of L)
         for (const b of sh.S.blk) {
@@ -1146,13 +1109,173 @@ function anPlantCold() {
           if (b.k === 'LAG' && b.i && b.i[0] != null && isFinite(v[b.i[0]])) st.y = v[b.i[0]];
           else if ((b.k === 'RATE' || b.k === 'RAMPB') && b.main !== undefined && isFinite(v[b.main])) st.y = v[b.main];
         }
-      for (const sh of L) stepSet(sh, 0);
+      for (const sh of L) (stepSet(sh, 0), yield);
     }
-    for (let k = 0; k < 2; k++) for (const sh of L) stepSet(sh, 0.5);
+    for (let k = 0; k < 2; k++) for (const sh of L) (stepSet(sh, 0.5), yield);
+    /* 3.2.0-beta.22 (bug, user 2026-10-24 "na-reset ko na, cold na, may value pa rin? ... drum lvl"): during these settling steps the
+       feedwater PV of the 3-element loop still read the flow of the snapshot (153 T/H) before its model reached 0, and the drum level
+       model added that water: the cold level began at 55 mm instead of the normal water level (0 / 2 / 8 mm of the three
+       transmitters). The settling steps are not plant time: the level model and its transmitters go back to where they were */
+    if (lvl0) lvl0.put();
+  } catch (e) {}
+  /* 3.2.0 roadmap 3: nor are they plant time for the slow temperatures of the unit model (unit.js anUnitStepX: feedwater, aux steam,
+     FA blowers): they start again at the value of the cold plant (TT-FW1160 kept 99 C, TT-AS1003 209 C) */
+  if (AN_UNIT.xt) {
+    const t = AN_UNIT.Tamb;
+    AN_UNIT.xt.T = { cr: t, aux: t, fw: t, fab0: t, fab1: t };
+  }
+  /* P2 #13: a cold plant has no vacuum: the condenser vacuum breaker MOV MV-AV1391 (DITL-56) is open, the ejector steam MOVs
+     MV-AS1395 / MV-AS1396 (DITL-54 / DITL-55) are shut (PR-OPE-5002 6197: the breaker is open until the vacuum up) */
+  try {
+    if (typeof MST !== 'undefined' && typeof S !== 'undefined') {
+      const s = S.sheets.find(x => /\)DITL-56$/.test(x.name));
+      if (s) MST[s.name] = [{ pos: 100, run: 0, lr: 1, tq: 0 }];
+    }
   } catch (e) {}
   AN.steady = false;
   AN.cold = true;
   return n;
+}
+/* run a starting-state generator at once (AN._asc: the step set of each sheet is kept for the run, actSet; the links do not change) */
+function anGenRun(g) {
+  const own = !AN._asc;
+  if (own) AN._asc = new Map();
+  try {
+    let r;
+    while (!(r = g.next()).done);
+    return r.value;
+  } finally {
+    if (own) AN._asc = null;
+  }
+}
+/* the same in slices of 40 ms; AN._loading stops the RUN timers of the ABC page and of the world meanwhile; prog(k) = steps done */
+function anGenAsync(g, prog) {
+  return new Promise((ok, no) => {
+    let k = 0;
+    AN._loading = true;
+    AN._asc = new Map();
+    const fin = () => {
+      AN._loading = false;
+      AN._asc = null;
+      try {
+        if (mc) mc.port1.close();
+      } catch (e) {}
+    };
+    /* retest #54 (R5: 9 % in 2 min in a browser window that was not in front): the next slice by a message, not a timer (a page
+       not in front runs its timers once a second) */
+    let mc = null;
+    try {
+      mc = new MessageChannel();
+    } catch (e) {}
+    const later = () => (mc ? mc.port2.postMessage(0) : setTimeout(run, 0));
+    const run = () => {
+      const t0 = performance.now();
+      try {
+        for (;;) {
+          const r = g.next();
+          k++;
+          if (r.done) {
+            fin();
+            ok(r.value);
+            return;
+          }
+          if (performance.now() - t0 > 40) break;
+        }
+      } catch (e) {
+        fin();
+        no(e);
+        return;
+      }
+      if (prog)
+        try {
+          prog(k);
+        } catch (e) {}
+      later();
+    };
+    if (mc) mc.port1.onmessage = run;
+    setTimeout(run, 30);
+  });
+}
+const anPlantColdAsync = prog => anGenAsync(anPlantColdG(), prog);
+const anPlantLoad150Async = prog => anGenAsync(anPlantLoad150S(), prog);
+/* Reset + a starting state ('cold' / '150') without freezing the page, with the progress bar of the shell (window.lsBusy, app.js);
+   on = the plant model ON first. One load at a time (AN._loadP); resolves with the anchors, sets AN.startState */
+function anLoadStart(kind, on) {
+  if (AN._loadP) return AN._loadP;
+  /* retest #59: a load picked anywhere closes the starting-state question */
+  try {
+    const q = document.getElementById('lsask');
+    if (q) q.remove();
+  } catch (e) {}
+  const cold = kind === 'cold',
+    B = window.lsBusy,
+    est = (cold ? 46 : 40) * Math.max(1, AN.sheets.length - 1);
+  if (B) B.show(cold ? 'Nilo-load ang Cold plant…' : 'Nilo-load ang 150 MW…');
+  /* retest #69 (R8 second pass: Hakbang 2 never showed ✓ TAPOS with 2 SWP running): a sheet is built only when something opens it
+     (ensure). A starting state loaded before ABC-001C was built left the unit model OFF (anUnitStart needs that sheet) and the other
+     unbuilt sheets out of the load: the Gabay conditions never came true. Every sheet is built first, one per slice (no freeze) */
+  const build = () =>
+    anGenAsync(
+      (function* () {
+        for (const sh of AN.sheets.filter(x => !x.S)) {
+          try {
+            ensure(sh);
+          } catch (e) {}
+          yield;
+        }
+      })()
+    );
+  const p = new Promise(r => setTimeout(r, 40))
+    .then(build)
+    .then(() => {
+      if (on && !AN.plantOn && AN.plantSwitch) AN.plantSwitch(true, true);
+      /* beta.46 check (a second "Gabay: Cold" left the unit model OFF): an error while the Reset paints the sheet on the screen does
+         not stop the load (the model part of the Reset is done before the paint) */
+      try {
+        AN.reset();
+      } catch (e) {
+        AN._resetErr = e;
+      }
+      return (cold ? anPlantColdAsync : anPlantLoad150Async)(k => B && B.prog(k / est));
+    })
+    .then(n => {
+      AN.startState = cold ? 'plantCold' : 'plantLoad150';
+      return n;
+    });
+  AN._loadP = p;
+  p.catch(e => (AN._loadErr = e)); /* kept for the checks: a load that failed */
+  const end = () => {
+    AN._loadP = null;
+    if (B) B.hide();
+  };
+  p.then(end, end);
+  return p;
+}
+/* the drum level of a cold plant before the STEAM DRUM FILLING of PR-OPE-5002 (mm, ASSUMED: low, under the -150 mm fill target) */
+const AN_COLD_DRUM = -300;
+/* the drum level model of ABC-010 (plant.js pr.integ, LICBR1001): its state and the level it holds now */
+function anDrumLvlState() {
+  try {
+    const sh = AN.sheets.find(x => x.name === 'ABC-010'),
+      S = sh && sh.S;
+    for (const b of (S && S.procs) || [])
+      if (b.proc && b.proc.integ) {
+        if (!S.rt.pm[b.id]) stepSet(sh, 0);
+        const q = S.rt.pm[b.id],
+          ai = S.blk.filter(a => a.k === 'AI' && a.o && /^AI0(130|258|386)$/.test((AN.nm(S, a.o[0]) || '').trim())).map(a => [S.rt.st[a.id], S.rt.st[a.id].val]);
+        if (q && isFinite(q.y))
+          return {
+            q,
+            put() {
+              Object.assign(q, this.q0);
+              for (const [st, x] of ai) st.val = st.act = x;
+              stepSet(sh, 0);
+            },
+            q0: { y: q.y, u: q.u, up: q.up, pp: q.pp }
+          };
+      }
+  } catch (e) {}
+  return null;
 }
 /* the output of a PID (plant.js PID: u = kp * es + I): the output and the integral, so it stays there when PV = SV */
 function hmiPidSet(ps, b, mv) {

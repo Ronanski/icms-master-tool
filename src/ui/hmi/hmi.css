@@ -5,8 +5,8 @@
 body.ophmi #anp{display:none!important}
 #opp{display:none;flex-direction:column;width:380px;flex:none;background:var(--panel,#161d23);border-left:1px solid var(--line,#2a3640);overflow:auto;color:var(--tx,#d7e0e6);font:13px/1.4 system-ui}
 :is(#opp,#plfp) .body{padding:8px 10px 40px}
-:is(#opp,#plfp) h4{margin:14px 0 6px;font:700 11px system-ui;letter-spacing:.09em;text-transform:uppercase;color:#7d8e9a}
-:is(#opp,#plfp) .hdr{font:700 15px system-ui;color:#fff}:is(#opp,#plfp) .sub{color:#8fa0ab;font-size:12px;margin:2px 0 6px}
+:is(#opp,#plfp) h4{margin:14px 0 6px;font:700 11px system-ui;letter-spacing:.09em;text-transform:uppercase;color:var(--c-dim)}
+:is(#opp,#plfp) .hdr{font:700 15px system-ui;color:var(--c-tx)}:is(#opp,#plfp) .sub{color:var(--c-dim);font-size:12px;margin:2px 0 6px}
 :is(#opp,#plfp) .fp{background:#10181e;border:1px solid #2c3d49;border-radius:10px;padding:8px 10px;margin:8px 0}
 :is(#opp,#plfp) .fp .tg{display:flex;justify-content:space-between;align-items:baseline;gap:8px}:is(#opp,#plfp) .fp .tg b{font-size:15px;color:#fff}:is(#opp,#plfp) .fp .tg span{color:#8fa0ab;font-size:11px;text-align:right}
 :is(#opp,#plfp) .dg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
@@ -21,11 +21,11 @@ body.ophmi #anp{display:none!important}
 :is(#opp,#plfp) button.b.fon{background:#6b3b12;border-color:#ff9d2e;color:#ffd9a8}
 :is(#opp,#plfp) input.n{width:84px;height:32px;background:#0b1217;color:#fff;border:1px solid #2c3d49;border-radius:6px;padding:0 6px;font:600 14px ui-monospace,Consolas,monospace;text-align:right}
 :is(#opp,#plfp) svg.tr{width:100%;height:96px;background:#0b1217;border:1px solid #243642;border-radius:8px;display:block}
-:is(#opp,#plfp) .lg{font-size:11px;color:#8fa0ab;display:flex;gap:10px;margin:2px 0}:is(#opp,#plfp) .lg i{display:inline-block;width:10px;height:3px;vertical-align:middle;margin-right:4px}
-:is(#opp,#plfp) .tbl{width:100%;border-collapse:collapse}:is(#opp,#plfp) .tbl td{padding:4px 3px;border-top:1px solid #1e2c36;vertical-align:middle}:is(#opp,#plfp) .tbl td.v{text-align:right;font:600 13px ui-monospace,Consolas,monospace;white-space:nowrap}
-:is(#opp,#plfp) .tbl small{color:#7d8e9a;display:block;font-size:11px}
+:is(#opp,#plfp) .lg{font-size:11px;color:var(--c-dim);display:flex;gap:10px;margin:2px 0}:is(#opp,#plfp) .lg i{display:inline-block;width:10px;height:3px;vertical-align:middle;margin-right:4px}
+:is(#opp,#plfp) .tbl{width:100%;border-collapse:collapse}:is(#opp,#plfp) .tbl td{padding:4px 3px;border-top:1px solid var(--c-line);vertical-align:middle}:is(#opp,#plfp) .tbl td.v{text-align:right;font:600 13px ui-monospace,Consolas,monospace;white-space:nowrap}
+:is(#opp,#plfp) .tbl small{color:var(--c-dim);display:block;font-size:11px}
 :is(#opp,#plfp) .lamp{display:inline-block;width:10px;height:10px;border-radius:50%;background:#2a3640;margin-right:6px}:is(#opp,#plfp) .lamp.on{background:#ff4d4d;box-shadow:0 0 6px #f44}
-:is(#opp,#plfp) input.f{width:100%;height:32px;background:#0b1217;color:#dbe5ec;border:1px solid #2c3d49;border-radius:6px;padding:0 8px;margin:4px 0}
+:is(#opp,#plfp) input.f{width:100%;height:32px;background:var(--c-well);color:var(--c-tx);border:1px solid var(--c-line);border-radius:6px;padding:0 8px;margin:4px 0}
 @media (max-width:1180px){#mid :is(#opp,#plfp){position:absolute;z-index:36;right:0;top:0;bottom:0;width:min(400px,94vw);box-shadow:-8px 0 24px #0009}}
 /* v1.20.64: faceplate ayon sa DCS ng planta: bar graph (PV cyan, SV dilaw), kahon ng PV / SV, selector R / A / M, MV, pangalan ng tag sa ibaba */
 :is(#opp,#plfp) .fpx .fpt{background:#c9d4dc;color:#1b252c;border-radius:4px 4px 0 0;padding:6px 8px;font:600 13px system-ui;margin:-8px -10px 8px}
@@ -48,43 +48,43 @@ body.ophmi #anp{display:none!important}
 :is(#opp,#plfp) .mvb{position:relative;width:12px;height:118px;border-left:2px solid #8aa;border-top:2px solid #8aa;border-bottom:2px solid #8aa}
 :is(#opp,#plfp) .mvb .mvp{position:absolute;left:-12px;width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-right:12px solid #3fdc4a;margin-bottom:-7px}
 :is(#opp,#plfp) .fpx .tg{background:#3fbf6a;color:#06210f;border-radius:0 0 4px 4px;padding:5px 8px;margin:8px -10px -2px;align-items:center}:is(#opp,#plfp) .fpx .tg b{color:#06210f;font:700 14px system-ui}:is(#opp,#plfp) .fpx .tg span{color:#0b3a1b}
-:is(#opp,#plfp) .fpe{margin-top:8px}:is(#opp,#plfp) .fpe summary{cursor:pointer;color:#8fa0ab;font-size:11px}
+:is(#opp,#plfp) .fpe{margin-top:8px}:is(#opp,#plfp) .fpe summary{cursor:pointer;color:var(--c-dim);font-size:11px}
 
 :is(#opp,#plfp) .fpop{display:none;position:absolute;left:10px;right:10px;z-index:30;background:#1b2630;border:1px solid #6aaee0;border-radius:8px;padding:8px 10px;box-shadow:0 8px 24px #000a}
 :is(#opp,#plfp) .fpop .row button.b{min-width:44px;font-size:16px}
 :is(#opp,#plfp) .fpb input.fv:not(:disabled),:is(#opp,#plfp) .fpb{cursor:pointer}
 :is(#opp,#plfp) .fpg .gm{position:relative;width:5px;background:#1a242b}:is(#opp,#plfp) .fpg .gm i{position:absolute;left:0;right:0;background:#4be36a}
 /* overview grid + force list (1.23.0) */
-.fpov{margin:4px 0 8px;border:1px solid #26313c;border-radius:6px;background:#10161c;padding:6px}
-.fpov .ovh{display:flex;justify-content:space-between;align-items:center;font:600 10.5px "Segoe UI",Roboto,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#7d8e9a;margin:0 0 4px}
+.fpov{margin:4px 0 8px;border:1px solid var(--c-line);border-radius:6px;background:var(--c-pane);padding:6px}
+.fpov .ovh{display:flex;justify-content:space-between;align-items:center;font:600 10.5px "Segoe UI",Roboto,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--c-dim);margin:0 0 4px}
 .fpov .ovh .b{height:22px;padding:0 8px;font-size:11px;letter-spacing:0;text-transform:none}
 .fpov .ovg{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:4px}
-.fpov .ovc{border:1px solid #26313c;border-radius:5px;background:#161d24;padding:4px;cursor:pointer;display:flex;flex-direction:column;gap:3px}
-.fpov .ovc:hover{border-color:#3d6d93}.fpov .ovc.on{border-color:#3d9cf0;box-shadow:inset 0 0 0 1px #3d9cf0}
+.fpov .ovc{border:1px solid var(--c-line);border-radius:5px;background:var(--c-pane);padding:4px;cursor:pointer;display:flex;flex-direction:column;gap:3px}
+.fpov .ovc:hover{border-color:var(--c-line2)}.fpov .ovc.on{border-color:var(--c-acc);box-shadow:inset 0 0 0 1px #3d9cf0}
 .fpov .tt{font:700 10.5px "Cascadia Mono",Consolas,ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fpov .bars{display:flex;gap:3px;height:38px;align-items:flex-end}
 .fpov .ovb{flex:1;height:38px;background:#0b1015;border:1px solid #26313c;position:relative}
 .fpov .ovb i{position:absolute;left:0;right:0;bottom:0}.fpov i.pv{background:#5cc8ff}.fpov i.sv{background:#ffd84a}.fpov i.mv{background:#6fe3a0}
 .fpov .ft{display:flex;justify-content:space-between;font:700 10px "Cascadia Mono",Consolas,ui-monospace,monospace;gap:4px}
-.fpov .ft .nm{color:#9fb0bd;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fpov .md{padding:0 4px;border-radius:3px}.fpov .m-A{color:#9ff0c4}.fpov .m-M{color:#ffd78a}.fpov .m-R{color:#9fd0ff}
-.fpov .ovfl{margin-top:6px;border-top:1px solid #26313c;padding-top:6px}
+.fpov .ft .nm{color:var(--c-tx2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fpov .md{padding:0 4px;border-radius:3px}.fpov .m-A{color:var(--c-runtx2)}.fpov .m-M{color:var(--c-mantx2)}.fpov .m-R{color:var(--c-acctx)}
+.fpov .ovfl{margin-top:6px;border-top:1px solid var(--c-line);padding-top:6px}
 .fpov .ovf{width:100%;border-collapse:collapse;font:11px "Cascadia Mono",Consolas,ui-monospace,monospace}
-.fpov .ovf td{padding:3px 4px;border-bottom:1px solid #1a232b;vertical-align:middle}
-.fpov .ovf td.nm b{display:block;font-weight:600}.fpov .ovf td.nm small{color:#7d8e9a;font-size:10px}
+.fpov .ovf td{padding:3px 4px;border-bottom:1px solid var(--c-line);vertical-align:middle}
+.fpov .ovf td.nm b{display:block;font-weight:600}.fpov .ovf td.nm small{color:var(--c-dim);font-size:10px}
 .fpov .ovf td.v{text-align:right;width:62px}.fpov .ovf td.c{text-align:right;white-space:nowrap;width:110px}
 .fpov .ovf td.c .b{height:22px;min-width:24px;padding:0 6px;font-size:11px;margin-left:2px}
-.fpov .ovf td.c input{width:58px;height:22px;background:#0b1015;color:#cfd9e2;border:1px solid #26313c;border-radius:4px;font:11px "Cascadia Mono",Consolas,monospace}
-.fpov .ovf tr.frc td{background:#2a2112}.fpov .ovf tr.frc td.v{color:#e8b04a;font-weight:700}
+.fpov .ovf td.c input{width:58px;height:22px;background:var(--c-well);color:var(--c-tx);border:1px solid var(--c-line);border-radius:4px;font:11px "Cascadia Mono",Consolas,monospace}
+.fpov .ovf tr.frc td{background:var(--c-mansoft)}.fpov .ovf tr.frc td.v{color:var(--c-mantx2);font-weight:700}
 /* event log (1.23.0) */
 #evbtn{height:20px!important;padding:0 8px!important;font-size:11px!important;border-radius:4px}
-#evbtn.new{border-color:#e8b04a!important;color:#e8b04a!important}
-#evbox{display:none;position:fixed;left:6px;right:6px;bottom:28px;max-height:34vh;overflow:auto;z-index:110;background:#0d1217f5;border:1px solid #2f4a5a;border-radius:8px;box-shadow:0 -8px 24px #000a;font:11.5px var(--mf,monospace)}
-#evbox .evh{display:flex;align-items:center;gap:10px;padding:6px 10px;border-bottom:1px solid #26313c;position:sticky;top:0;background:#0d1217}
-#evbox .evh span{color:#7d8e9a;margin-right:auto}#evbox .evh .b{height:22px;padding:0 8px;font-size:11px}
-#evbox .evr{display:flex;gap:10px;padding:3px 10px;border-bottom:1px solid #141b21}
-#evbox .tm{color:#7d8e9a;width:56px;flex:none}#evbox .kd{width:44px;flex:none;font-weight:700}#evbox .sh{width:70px;flex:none;color:#9fb0bd}
-#evbox .k-MODE .kd{color:#9ff0c4}#evbox .k-FM .kd{color:#ffd78a}#evbox .k-ALM .kd,#evbox .k-TRIP .kd{color:#ff8a8a}#evbox .k-RTN .kd,#evbox .k-RST .kd{color:#9fb0bd}
+#evbtn.new{border-color:var(--c-man)!important;color:var(--c-mantx2)!important}
+#evbox{display:none;position:fixed;left:6px;right:6px;bottom:28px;max-height:34vh;overflow:auto;z-index:110;background:var(--c-well);border:1px solid var(--c-line);border-radius:8px;box-shadow:0 -8px 24px #000a;font:11.5px var(--mf,monospace)}
+#evbox .evh{display:flex;align-items:center;gap:10px;padding:6px 10px;border-bottom:1px solid var(--c-line);position:sticky;top:0;background:var(--c-well)}
+#evbox .evh span{color:var(--c-dim);margin-right:auto}#evbox .evh .b{height:22px;padding:0 8px;font-size:11px}
+#evbox .evr{display:flex;gap:10px;padding:3px 10px;border-bottom:1px solid var(--c-line)}
+#evbox .tm{color:var(--c-dim);width:56px;flex:none}#evbox .kd{width:44px;flex:none;font-weight:700}#evbox .sh{width:70px;flex:none;color:var(--c-tx2)}
+#evbox .k-MODE .kd{color:var(--c-runtx2)}#evbox .k-FM .kd{color:var(--c-mantx2)}#evbox .k-ALM .kd,#evbox .k-TRIP .kd{color:var(--c-almtx)}#evbox .k-RTN .kd,#evbox .k-RST .kd{color:var(--c-tx2)}#evbox .k-ACK .kd,#evbox .k-FIELD .kd{color:var(--c-acc)}
 /* 2.0.0: manual station faceplate (manual loader) and step buttons */
 :is(#opp,#plfp) .fpman .mlr{display:flex;gap:10px;align-items:stretch}
 :is(#opp,#plfp) .fpman .mlb{width:22px;min-height:110px;background:#0b1217;border:1px solid #243642;position:relative;flex:none}
@@ -100,3 +100,22 @@ body.ophmi #anp{display:none!important}
 :is(#opp,#plfp) .fp.fpx{max-width:380px;margin-left:auto;margin-right:auto}
 :is(#opp,#plfp) .fpg{width:60px}
 :is(#opp,#plfp) .fpx .fpt{white-space:normal;line-height:1.25}
+/* 3.2.0-beta.6 "Why?" of a loop held in MANUAL */
+.whyx{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.whyx .whyb{height:24px;padding:0 10px;font-weight:700}
+.whyl{flex:1 1 100%;display:grid;gap:2px;margin-top:2px}
+.whyl:empty{display:none}
+.whyr{display:flex;align-items:center;gap:6px;font:12px/1.35 var(--mf,monospace);color:#cdd6de;border-left:2px solid #3a4652;padding:2px 4px}
+.whyr span{flex:1;min-width:0;overflow-wrap:anywhere}
+.whyr.k-input,.whyr.k-bad,.whyr.k-force,.whyr.k-cmp,.whyr.k-meas{color:#ffd27a;border-left-color:#ffb020;font-weight:700}
+.whyr.k-force{color:#ff9b9b;border-left-color:#f05252}
+.whyr .b{height:22px;padding:0 8px;flex:none}
+/* 3.2.0-beta.6 first-out: the cause of a TRIP / FORCE MANUAL, captured when it happened */
+#evbox .evr.hasw{cursor:pointer}
+#evbox .evwhy{color:#ffb020;font-weight:700;white-space:nowrap}
+#evbox .evw{padding:2px 10px 6px 190px;border-bottom:1px solid var(--c-line);display:grid;gap:1px}
+#evbox .evwr{color:var(--c-tx2);border-left:2px solid var(--c-line2);padding:1px 4px;overflow-wrap:anywhere}
+#evbox .evwr:is(.k-input,.k-bad,.k-force,.k-cmp,.k-meas,.k-ditl){color:#ffd27a;border-left-color:#ffb020;font-weight:700}
+@media (max-width:700px){#evbox .evw{padding-left:14px}}
+#evbox .evn{color:#ffb020}
+#evbox .evw[hidden]{display:none}

@@ -46,10 +46,60 @@ const block =
   fontCss +
   '</style><style id="shellcss">' +
   fs.readFileSync(__dirname + '/app.css', 'utf8') +
+  fs.readFileSync(__dirname + '/../fx/fx.css', 'utf8') +
+  fs.readFileSync(__dirname + '/home.css', 'utf8') +
+  fs.readFileSync(__dirname + '/../training/dock.css', 'utf8') +
+  fs.readFileSync(__dirname + '/../ladder/ladder.css', 'utf8') +
   '</style><script id="shelljs">' +
+  fs.readFileSync(__dirname + '/ditl.js', 'utf8') +
+  '\n' +
   fs.readFileSync(__dirname + '/app.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/info.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/layout.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/view.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/cr.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/why.js', 'utf8') +
+  '\n' +
+  /* 3.2.0-beta.7: F(X) curves page */
+  fs.readFileSync(__dirname + '/../fx/fx-info.js', 'utf8') +
+  '\n' +
+  /* 3.2.0-beta.9: In operation and AUTO / MANUAL for each table */
+  fs.readFileSync(__dirname + '/../fx/fx-ops.js', 'utf8') +
+  '\n' +
+  /* 3.2.0-beta.11: On the HMI, If it is wrong, and the rise / fall effect of the Try it slider */
+  fs.readFileSync(__dirname + '/../fx/fx-hmi.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/../fx/fx-paths.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/../fx/fx.js', 'utf8') +
+  '\n' +
+  /* 3.2.0-beta.8: HOME and TRAINING pages (Guided Workbench) */
+  fs.readFileSync(__dirname + '/../training/pr-ope-5002.js', 'utf8') +
+  '\n' +
+  /* 3.2.0 R9 #81: the Tag no. / Operating Limits / NOTE of each step (tools/training/extract_limits.py) */
+  fs.readFileSync(__dirname + '/../training/pr-ope-5002-lim.js', 'utf8') +
+  '\n' +
+  /* 3.2.0-beta.10: Live Training (auto / field / TCS steps, the sync and load-up sections) */
+  fs.readFileSync(__dirname + '/../training/live.js', 'utf8') +
+  '\n' +
+  /* 3.2.0-beta.21: guided Training (one step at a time, actions on the card, the coach) */
+  fs.readFileSync(__dirname + '/../training/guide.js', 'utf8') +
+  '\n' +
+  /* 3.2.0-beta.23: the Training dock (guided start-up beside the app) */
+  fs.readFileSync(__dirname + '/../training/dock.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/home.js', 'utf8') +
+  '\n' +
+  /* 3.2.0-beta.9: one VIEW | RUN rule (VIEW locks only force / switches / operation) */
+  fs.readFileSync(__dirname + '/viewlock.js', 'utf8') +
+  '\n' +
+  /* 3.2.0-beta.25: ladder view (preview) of a DITL sheet, made from its logic */
+  fs.readFileSync(__dirname + '/../ladder/ladder.js', 'utf8') +
   '</script>' +
   B;
 const k = s.lastIndexOf('</body>');

@@ -1,18 +1,12 @@
 /* DITL (digital logic) - Timers, buttons, keyboard, loading of the built-in sheets. Part of ONE script (joined by src/digital/order.list, in this order). */
-setInterval(() => {
+/* 2.4.1-beta.4: one step of the open sheet's timers / MOV / motors (Run, and ▶▶ of the DITL tool bar) */
+function ditlStep(dt) {
   const s = cur();
-  if (window.WORLD && WORLD.live) return; /* the one world steps the timers / MOV / motors of EVERY sheet (src/world/world.js) */
-  if (!SIM || !s || !s.nl) {
-    tick.t = 0;
-    return;
-  }
+  if (!s || !s.nl) return;
   const T = tmList(),
     MV = s.nl.mv || [],
     MT = s.nl.mot || [];
   if (!T.length && !MV.length && !MT.length) return;
-  const now = performance.now(),
-    dt = Math.min((now - (tick.t || now)) / 1000, 1) * TSP;
-  tick.t = now;
   const v = simulate(s.nl, simIn(s));
   let ch = false;
   T.forEach(g => {
@@ -27,11 +21,27 @@ setInterval(() => {
   });
   if (mvStep(s, v, dt)) ch = true;
   if (motStep(s, v, dt)) ch = true;
+  if (fdStep(s, dt)) ch = true;
+  if (invStep(s, v, dt)) ch = true;
   if (ch) render();
   else {
     updateTP();
     mvUI(s);
   }
+}
+/* 2.4.1-beta.4: DPAUSE = Pause of the DITL tool bar (Run on, time stopped) */
+let DPAUSE = false;
+setInterval(() => {
+  const s = cur();
+  if (window.WORLD && WORLD.live) return; /* the one world steps the timers / MOV / motors of EVERY sheet (src/world/world.js) */
+  if (!SIM || !s || !s.nl || DPAUSE) {
+    tick.t = 0;
+    return;
+  }
+  const now = performance.now(),
+    dt = Math.min((now - (tick.t || now)) / 1000, 1) * TSP;
+  tick.t = now;
+  ditlStep(dt);
 }, 100);
 /* ---------- title banner ---------- */
 let MUI = { al: 'center', sz: 'M' };
@@ -49,6 +59,10 @@ function renderMeta() {
     m = $('meta');
   m.hidden = !s;
   if (!s) return;
+  /* 3.2.0-beta.35: machine B ~ D of a shared drawing has its own title (SEAWATER PUMP B (1)); its meta was the object of machine A */
+  const I = s._inst;
+  if (I && I.k && (!s.meta || s.meta === I.base.meta) && typeof WORLD !== 'undefined' && WORLD.showText)
+    s.meta = { ...mpar(I.base.name), title: WORLD.showText(s, I.base.title || '') };
   if (!s.meta) s.meta = { ...mpar(s.name), title: s.title || '' };
   if (!s.meta.title && s.title) s.meta.title = s.title;
   const z = MSZ[MUI.sz] || MSZ.M,
@@ -226,6 +240,10 @@ svg.addEventListener('pointerup', e => {
     s = cur();
   if (!s) return;
   clearTimeout(tm);
+  /* 2.5.0-beta.8: a page link (FROM / TO column) opens the other end, in View and Run (src/ui/shell/ditl.js) */
+  if (h && window.DUI && DUI.link && DUI.link(s, h, e)) return;
+  /* 2.5.0-beta.13: the click also selects the row / gate / wire for the Selected tab of the right panel (View and Run) */
+  if (window.DUI && DUI.pick) DUI.pick(s, h, e);
   if (SIM) {
     const [ux, uy] = xy(e),
       u = (s.nl.usr || []).find(u => Math.abs(ux - u.x) < 3.2 && Math.abs(uy - u.y) < 2.4);
@@ -236,7 +254,7 @@ svg.addEventListener('pointerup', e => {
       return;
     }
   }
-  if (!SIM && WT) {
+  if (!SIM && WT && !NOEDIT) {
     wireClick(e);
     return;
   }
@@ -311,13 +329,14 @@ addEventListener('keydown', e => {
     render();
     return;
   }
+  if (NOEDIT && e.ctrlKey && /^[zy]$/.test(e.key)) return;
   if (e.ctrlKey && e.key === 'z') {
     e.preventDefault();
     undo();
   } else if (e.ctrlKey && e.key === 'y') {
     e.preventDefault();
     redo();
-  } else if (e.key === 'Delete') clearSel();
+  } else if (e.key === 'Delete' && !NOEDIT) clearSel();
   else if (e.key === 'Escape') {
     sel = null;
     PEND = null;
@@ -326,6 +345,7 @@ addEventListener('keydown', e => {
 });
 $('bmode').onclick = () => {
   SIM = !SIM;
+  DREG = {};
   MST = {};
   MS = {};
   sel = null;
@@ -333,8 +353,12 @@ $('bmode').onclick = () => {
   PEND = null;
   closeEd();
   S.sheets.forEach(x => {
-    x.sig = {};
+    /* 3.2.0 retest #28 #16 (beta.45 check: the field action "SWP-A REMOTE" done while the Training was PAUSED was lost at the first
+       RUN, START SWP-A stayed blocked): entering RUN keeps the inputs set before it (the field contacts of the Training); leaving RUN
+       (VIEW, and the Reset button = leave + enter) clears them as before */
+    if (!SIM) x.sig = {};
     x.usw = {};
+    x._fd = null;
     if (x.nl) {
       x.nl._v = null;
       x.nl.fx = [];
@@ -342,6 +366,7 @@ $('bmode').onclick = () => {
     }
     ((x.nl && x.nl.gates) || []).forEach(g => {
       if (g.t === 'FF') g.q = 0;
+      if (g.t === 'CNT') g.N = g.pin = g.rp = 0;
       if (g.t === 'TMR') g.st = { acc: 0, out: 0, pre: 0, run: 0 };
     });
   });
@@ -352,7 +377,7 @@ $('bmode').onclick = () => {
   } catch (e) {}
   if (SIM && cur())
     msg(
-      'Simulate: click the SERVICE cell of an input row (switch icon) to turn it ON/OFF. PB rows are push buttons: press and hold.'
+      'Simulate: click an input (switch icon on the drawing, or in the panel) to turn it ON / OFF. PB rows are push buttons: press and hold.'
     );
   render();
 };
@@ -553,7 +578,7 @@ function showHealth(only) {
       )
       .join('\n');
   p.hidden = false;
-  p.innerHTML = `<b>Health</b> — ${rows.length} sheets · <span style="color:#4fd18b">${ok} OK</span> · <span style="color:#ffb84a">${bad.length} issues</span> · <span style="color:#ff6b6b">${FAILS.length} failed</span>${LSF ? ' · <span style="color:#ff6b6b">AUTOSAVE FULL, use Save project</span>' : ''} <label><input type="checkbox" id="hpo" ${only === false ? '' : 'checked'}> problems only</label> <button id="hpc">Close</button><br>`;
+  p.innerHTML = `<b>Health</b> — ${rows.length} sheets · <span style="color:var(--c-runtx2)">${ok} OK</span> · <span style="color:var(--c-mantx2)">${bad.length} issues</span> · <span style="color:var(--c-almtx)">${FAILS.length} failed</span>${LSF ? ' · <span style="color:var(--c-almtx)">AUTOSAVE FULL, use Save project</span>' : ''} <label><input type="checkbox" id="hpo" ${only === false ? '' : 'checked'}> problems only</label> <button id="hpc">Close</button><br>`;
   const L = document.createElement('div');
   p.appendChild(L);
   FAILS.forEach(f => {
@@ -570,7 +595,7 @@ function showHealth(only) {
       .forEach(r => {
         const d = document.createElement('div');
         d.className = 'hr';
-        d.style.cssText = 'cursor:pointer;padding:2px 0;border-top:1px solid #1f3340';
+        d.style.cssText = 'cursor:pointer;padding:2px 0;border-top:1px solid var(--c-line)';
         d.innerHTML = `<b style="color:${r.d.sev === 2 ? '#ff6b6b' : r.d.sev ? '#ffb84a' : '#4fd18b'}">${r.s.name}</b> ${r.d.is.join(' · ') || 'OK'}`;
         d.onclick = () => {
           S.cur = r.i;
@@ -646,7 +671,7 @@ $('fdxf').onchange = async e => {
     showHealth();
   }
 };
-window.PRE_N = 134;
+window.PRE_N = 151;
 render();
 {
   const n = S.sheets.filter(x => x.bv !== BV && !window.PRE_N).length;
@@ -713,7 +738,8 @@ addEventListener('load', async () => {
     hist = [];
     fut = [];
     render();
-    msg(out.length + ' sheets loaded. Pick a page from the sheet list on the left (the arrow button hides it).');
+    /* 2.5.0-beta.20 (UI audit): only on the LOGIC page (the PLANT VIEW has no sheet list) */
+    if (document.body.dataset.tab === 'logic') msg(out.length + ' sheets loaded. Pick a page from the sheet list on the left (the arrow button hides it).');
   } catch (e) {
     msg('Could not load the built-in sheets: ' + e.message);
   }

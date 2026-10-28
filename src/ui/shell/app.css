@@ -1,295 +1,1222 @@
-/* ===== APP SHELL 2 (2.4.0): one top bar, four tabs (OPERATE / LOGIC / LIBRARY / TOOLS), one status bar.
-   Looks and arrangement only: every button is the same element with the same handler; the engine is not touched. ===== */
-:root{--uf:'IBM Plex Sans Condensed','IBM Plex Sans',system-ui,sans-serif;--mf:'JetBrains Mono',ui-monospace,monospace;
- --c-bg:#090d12;--c-pane:#0d1319;--c-strip:#0b1016;--c-ctl:#131b24;--c-ctlh:#18222d;
- --c-line:#1c2731;--c-line2:#273544;--c-tx:#d3dce5;--c-tx2:#a9b7c4;--c-dim:#6f8191;
- --c-acc:#38a8f0;--c-accbg:#0e2536;--c-run:#2fbf71;--c-runbg:#0f3322;--c-man:#e0a526;--c-alm:#e5484d}
-html[data-font=plexc]{--uf:'IBM Plex Sans Condensed','IBM Plex Sans',system-ui,sans-serif;--mf:'JetBrains Mono',ui-monospace,monospace}
-html[data-font=barlow]{--uf:'Barlow Semi Condensed',system-ui,sans-serif;--mf:'JetBrains Mono',ui-monospace,monospace}
-html[data-font=inter]{--uf:'Inter',system-ui,sans-serif;--mf:'JetBrains Mono',ui-monospace,monospace}
-html[data-font=plex]{--uf:'IBM Plex Sans',system-ui,sans-serif;--mf:'IBM Plex Mono',ui-monospace,monospace}
-html[data-font=roboto]{--uf:'Roboto',system-ui,sans-serif;--mf:'Roboto Mono',ui-monospace,monospace}
-html[data-font=device]{--uf:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mf:ui-monospace,Consolas,"Roboto Mono",monospace}
+/* ===================================================================================================================
+   APP SHELL 3.1 (user 2026-10-21: "bagong shell mula sa simula"; Style 2 workbench + a little CAD)
+   One stylesheet, written from scratch, replaces the stacked overrides of 2.4.0 ~ 3.0.0-beta.8.
+   - Fluid: the root size, every height, gap and panel width follow the window (clamp / rem), so it fits any screen.
+   - One set of controls (button, select, input, segmented, tab, card) used by every surface.
+   - Looks and arrangement only: the engine, the logic, the drawing colours (theme.css) and the DCS faceplate box
+     (hmi.css) are not touched. Every button is the app's own element with its own handler.
+   =================================================================================================================== */
+
+/* ---------- 1. tokens ---------- */
+/* the page is light or dark by the app's own choice (⚙ Theme); Android / Chrome auto dark must not repaint it */
+:root{color-scheme:only light}
+html:is([data-theme=dark],[data-theme=hc]){color-scheme:only dark}
+:root{
+ /* 3.2.0-beta.7 (Guided Workbench, user pick 2026-10-23): Roboto + Roboto Mono, the fonts of the B + C design */
+ --uf:'Roboto','Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+ --mf:'Roboto Mono','JetBrains Mono',ui-monospace,Consolas,monospace;
+ /* sizes: the root follows the window, everything else is in rem */
+ --ctl:2.25rem;            /* control height */
+ --ctl-s:1.875rem;         /* small control */
+ --gap:.5rem;
+ --r:.4375rem;             /* corner */
+ --r-l:.75rem;
+ --top:3.25rem;            /* top bar */
+ --tool:2.875rem;          /* tool bar */
+ --foot:1.875rem;          /* status line */
+ --lw:clamp(13.5rem,17vw,19rem);   /* left pane */
+ --rw:clamp(19rem,27vw,27.5rem);   /* right pane */
+ --h:var(--ctl);
+ /* colours (light) */
+ --c-bg:#eef0f3;--c-pane:#ffffff;--c-strip:#ffffff;--c-ribbon:#fafbfc;--c-ctl:#ffffff;--c-ctlh:#f2f4f7;--c-well:#f6f7f9;--c-plate:#ffffff;
+ --c-line:#e2e5ea;--c-line2:#c8cdd4;--c-lineh:#6b7280;--c-tx:#111827;--c-tx2:#374151;--c-dim:#5f6876;--c-white:#ffffff;
+ --c-shadow:rgba(17,24,39,.12);--c-shadow2:rgba(17,24,39,.06);
+ --c-acc:#2563eb;--c-accbg:#eef3ff;--c-accbd:#93b4f5;--c-acctx:#1d4ed8;--c-accon:#2563eb;
+ --c-run:#15803d;--c-runbg:#15803d;--c-runbd:#15803d;--c-runtx:#ffffff;--c-runon:#166534;
+ --c-man:#d97706;--c-mantx:#1a1200;--c-alm:#dc2626;
+ --c-runsoft:#e8f6ee;--c-runtx2:#166534;--c-mansoft:#fff6e5;--c-mantx2:#92400e;--c-almsoft:#fdecec;--c-almtx:#b91c1c;
+ --c-status:#1f2328;--c-statustx:#e6e9ee;--c-statusdim:#a7afba;
+ --c-desk:#e4e7eb;
+}
+html[data-theme=dark]{
+ --c-bg:#0e1116;--c-pane:#161a20;--c-strip:#161a20;--c-ribbon:#13171c;--c-ctl:#1d222a;--c-ctlh:#252b34;--c-well:#11151a;--c-plate:#161a20;
+ --c-line:#262c35;--c-line2:#3a424e;--c-lineh:#97a1ae;--c-tx:#e7eaef;--c-tx2:#bcc3cd;--c-dim:#8e98a6;
+ --c-shadow:rgba(0,0,0,.5);--c-shadow2:rgba(0,0,0,.3);
+ --c-acc:#5b9bff;--c-accbg:#17243b;--c-accbd:#335a99;--c-acctx:#b5d0ff;--c-accon:#2f6bd6;
+ --c-run:#2fb164;--c-runbg:#1d8a4a;--c-runbd:#1d8a4a;--c-runtx:#ffffff;--c-runon:#176c3a;
+ --c-man:#f2a93b;--c-mantx:#1a1200;--c-alm:#f05252;
+ --c-runsoft:#122419;--c-runtx2:#7fdca3;--c-mansoft:#2a2112;--c-mantx2:#ffcf80;--c-almsoft:#331617;--c-almtx:#ff9b9b;
+ --c-status:#0a0c10;--c-statustx:#d9dee5;--c-statusdim:#8e98a6;
+ --c-desk:#0b0d11;
+}
+/* the root size: 13 px on a phone, 14 px on a tablet / laptop, 15 px on a large monitor */
+html{font-size:clamp(13px,calc(11.6px + .19vw),15px)}
+/* fingers need bigger targets than a mouse */
+@media (pointer:coarse){:root{--ctl:2.625rem;--ctl-s:2.25rem;--tool:3.125rem;--foot:2.25rem}}
+/* the older layers (styles/app.css, the ABC panel, hmi.css) read these names */
+html:root:root{--bg:var(--c-bg);--panel:var(--c-pane);--line:var(--c-line);--tx:var(--c-tx);--dim:var(--c-dim);--panel2:var(--c-ribbon);--in:var(--c-well);--bd:var(--c-line2);--hv:var(--c-ctlh);--hv2:var(--c-ctlh);--rowl:var(--c-ribbon);--sel2:var(--c-acc);--sbg:var(--c-strip);--acc:var(--c-run)}
+
+/* ---------- 2. base ---------- */
 html,body{max-width:100vw;overflow-x:hidden}
-body.app2{background:var(--c-bg)!important;color:var(--c-tx);font-size:12.5px}
-body.app2 :not(svg):not(svg *){font-family:var(--uf)!important}
-body.app2 :is(#sfoot,#sfoot *,#ansb,.fv,.fv *,.fpov .tt,.fpov .ft,.fpov .ft *,.fpov .ovf,.fpov .ovf *,input[type=number],code,pre,textarea,.mono){font-family:var(--mf)!important}
+body.app2{background:var(--c-bg)!important;color:var(--c-tx);font:400 1rem/1.4 var(--uf);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body.app2 :not(svg):not(svg *):not(code):not(pre){font-family:var(--uf)}
+body.app2 :is(#sfoot,#ansb,.mono,code,pre,textarea,input[type=number],.fv,.fv *,.fpov .tt,.fpov .ft,.fpov .ft *,.fpov .ovf,.fpov .ovf *){font-family:var(--mf)!important}
+body.app2 ::selection{background:var(--c-accbg)}
+body.app2 *::-webkit-scrollbar{width:10px;height:10px}
+body.app2 *::-webkit-scrollbar-thumb{background:var(--c-line2);border-radius:10px;border:3px solid transparent;background-clip:padding-box}
+body.app2 *::-webkit-scrollbar-thumb:hover{background-color:var(--c-lineh)}
+body.app2 *::-webkit-scrollbar-track{background:transparent}
+body.app2 :focus-visible{outline:2px solid var(--c-acc);outline-offset:1px}
+
+/* ---------- 3. one set of controls (every surface except the DCS faceplate box and the drawing) ---------- */
+body.app2 :is(button,label.b,select):not(.fp *):not(.fpop *):not(#zbar *):not(svg *){
+ font:500 .875rem/1 var(--uf);min-height:var(--ctl-s);padding:0 .75rem;border-radius:var(--r);border:1px solid var(--c-line2);
+ background:var(--c-ctl);color:var(--c-tx);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:.375rem;
+ white-space:nowrap;box-shadow:0 1px 0 var(--c-shadow2);transition:background-color .12s,border-color .12s,color .12s;margin:0}
+body.app2 select:not(.fp *){padding-right:1.75rem;appearance:none;-webkit-appearance:none;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+ background-repeat:no-repeat;background-position:right .625rem center}
+body.app2 :is(button,label.b):not(.fp *):not(.fpop *):not(#zbar *):hover{background-color:var(--c-ctlh);border-color:var(--c-lineh)}
+body.app2 :is(button,label.b).on:not(.fp *):not(.fpop *):not(#zbar *):not(.fpov *){background-color:var(--c-accbg);border-color:var(--c-accbd);color:var(--c-acctx)}
+body.app2 button:disabled{opacity:.45;cursor:default}
+body.app2 :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),textarea):not(.fp *):not(.fpop *){
+ font:400 .875rem/1.2 var(--uf);min-height:var(--ctl-s);padding:0 .625rem;border-radius:var(--r);border:1px solid var(--c-line2);
+ background:var(--c-pane);color:var(--c-tx);box-shadow:inset 0 1px 0 var(--c-shadow2)}
+body.app2 textarea:not(.fp *){padding:.5rem .625rem}
+body.app2 :is(input,textarea,select):not(.fp *):focus{border-color:var(--c-acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--c-acc) 22%,transparent);outline:0}
+body.app2 input::placeholder{color:var(--c-dim);opacity:1}
+body.app2 input[type=checkbox],body.app2 input[type=radio],body.app2 input[type=range]{accent-color:var(--c-acc)}
+
+/* ---------- 4. frame ---------- */
 /* the old toolbars stay in the page (their elements and handlers are reused) but are never shown */
 body.app2 #bar,body.app2 #anbar{display:none!important}
 body.app2.an .dit-only,body.app2:not(.an) .an-only{display:none!important}
 .only{display:contents}
-#gsbar .tb .only{display:inline-flex;gap:3px}
-body.app2 #tbsheets{display:none}
-/* ---- top bar ---- */
-body.app2 #gsbar{display:flex!important;flex-wrap:wrap;align-items:center;gap:6px;min-height:40px;padding:3px 8px!important;background:var(--c-strip)!important;border-bottom:1px solid var(--c-line)!important;box-shadow:0 1px 0 #000;position:relative;z-index:70}
+body.app2 .plbtn,body.app2 .libbtn{display:none!important}
+body.app2 #toast{display:none!important}
+body.app2 :is(#gsbar,#toolsws,.ddm) :is(button,select,label.b){margin-left:0!important;margin-right:0!important}
+
+/* ---------- 5. top bar: brand · tabs · ABC | DITL · sheet · search · VIEW | RUN · ⚙ ---------- */
+body.app2 #gsbar{display:flex!important;flex-wrap:wrap;align-items:center;gap:.75rem;min-height:0;padding:0 .875rem!important;
+ background:var(--c-strip)!important;border-bottom:1px solid var(--c-line)!important;box-shadow:none;position:relative;z-index:70}
+#gsbar > :not(.tbar){height:var(--top);display:flex;align-items:center}
 #gsbar b{display:none}
-#gsbar .tabs{display:flex;border:1px solid var(--c-line2);border-radius:4px;overflow:hidden;flex:none}
-#gsbar .tabs button{height:30px;min-width:68px;padding:0 12px;border:0;border-right:1px solid var(--c-line2);border-radius:0;background:transparent;color:var(--c-tx2);font:600 12px var(--uf);letter-spacing:.08em;cursor:pointer}
-#gsbar .tabs button:last-child{border-right:0}
-#gsbar .tabs button.on{background:var(--c-accbg);color:#fff;box-shadow:inset 0 -2px 0 var(--c-acc)}
-#gsbar .sub{display:none;border:1px solid var(--c-line2);border-radius:4px;overflow:hidden;flex:none}
+#gsbar .brand{flex:none;gap:.625rem;height:var(--top);color:var(--c-tx)}
+#gsbar .brand i{width:1.875rem;height:1.875rem;border-radius:.5rem;background:var(--c-tx);color:var(--c-strip);display:flex;align-items:center;justify-content:center;font-style:normal}
+#gsbar .brand i svg{width:1.125rem;height:1.125rem}
+#gsbar .brand span{font:650 .9375rem var(--uf);letter-spacing:-.01em;white-space:nowrap}
+#gsbar .tabs{display:flex;gap:.125rem;flex:none}
+#gsbar .tabs button{min-height:2.125rem!important;height:2.125rem;padding:0 .75rem!important;border:0!important;border-radius:var(--r)!important;
+ background:transparent!important;color:var(--c-tx2)!important;font:500 .9375rem var(--uf)!important;box-shadow:none!important}
+#gsbar .tabs button:hover{background:var(--c-ctlh)!important;color:var(--c-tx)!important}
+#gsbar .tabs button.on{background:var(--c-accbg)!important;color:var(--c-acctx)!important;font-weight:600!important}
+/* segmented controls: ABC | DITL, VIEW | RUN */
+#gsbar :is(.sub,.seg){display:flex;flex:none;gap:.125rem;padding:.1875rem;height:auto;border-radius:calc(var(--r) + 2px);background:var(--c-well);border:1px solid var(--c-line)}
+#gsbar .sub{display:none}
 body[data-tab=logic] #gsbar .sub{display:flex}
-#gsbar .sub button{height:30px;min-width:48px;padding:0 10px;border:0;border-right:1px solid var(--c-line2);border-radius:0;background:transparent;color:var(--c-tx2);font:600 12px var(--uf);cursor:pointer}
-#gsbar .sub button:last-child{border-right:0}
-#gsbar .sub button.on{background:var(--c-accbg);color:#fff;box-shadow:inset 0 -2px 0 var(--c-acc)}
-#gsbar .tbar{display:flex;align-items:center;gap:4px;flex:1 1 0;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
-#gsbar .tbar::-webkit-scrollbar{display:none}
-#gsbar .tb{display:none;align-items:center;gap:3px;padding:0 6px 0 2px;border-right:1px solid var(--c-line);flex:none}
-#gsbar .tb:last-child{border-right:0}
-#gsbar .tb>*{flex:none}
-#gsbar :is(.tbar,.gs-set) :is(button,select,label.b){height:28px;min-height:28px;padding:0 9px;border-radius:3px;font-size:12px;line-height:26px;background:var(--c-ctl);border:1px solid var(--c-line2);color:var(--c-tx2);font-weight:500;cursor:pointer;display:inline-flex;align-items:center;white-space:nowrap}
-#gsbar :is(.tbar,.gs-set) :is(button,label.b):hover{background:var(--c-ctlh);border-color:#3a5068;color:var(--c-tx)}
-#gsbar :is(.tbar,.gs-set) :is(button,label.b).on{background:var(--c-accbg);border-color:#2a6a98;color:#d8eeff;box-shadow:inset 0 -2px 0 var(--c-acc)}
-#gsbar .tbar :is(.tb-run,#bmode){background:var(--c-runbg)!important;border-color:#2b8a57!important;color:#c9f5dc!important;font-weight:600;min-width:72px}
-#gsbar .tbar :is(.tb-run,#bmode).on{background:#1b5e3c!important;color:#fff!important;box-shadow:inset 0 -2px 0 var(--c-run)!important}
-#gsbar .tbar select{width:auto;padding:0 4px}
-#gsbar .tbar #anshbox,#gsbar .tbar #shbox{display:inline-flex;gap:2px;margin:0}
-#gsbar .tbar :is(#anshbox,#shbox) select{max-width:210px}
-#gsbar .tbar .tb-run+button,#gsbar .tbar .tb-run~button{min-width:0}
-/* which tool groups show on which tab */
-body[data-tab=logic].an #gsbar :is(.g-run,.g-view,.g-sheet){display:flex}
-body[data-tab=logic]:not(.an) #gsbar :is(.g-ditl,.g-sheet){display:flex}
-body[data-tab=operate] #gsbar :is(.g-run,.g-op){display:flex}
-body[data-tab=operate] #gsbar .g-run :is(.tb-step,.tb-view){display:none!important}
-#gsbar .gs-search{flex:1 1 180px;display:flex;align-items:center;gap:4px;min-width:140px}
-#gsbar .gs-search #ansb{flex:1;height:28px;min-width:80px;font:12px var(--mf)!important;padding:0 8px;border-radius:3px;background:#070a0e!important;border:1px solid var(--c-line2)!important;color:var(--c-tx)!important;max-width:none}
-#gsbar .gs-search #ansb:focus{border-color:var(--c-acc)!important;box-shadow:0 0 0 2px #38a8f033;outline:0}
-#gsbar .gs-search #gscope{display:flex;gap:0;padding:1px;background:#070a0e;border:1px solid var(--c-line2);border-radius:3px}
-#gsbar .gs-search #gscope button{height:22px!important;min-height:22px!important;padding:0 6px!important;font-size:11px!important;border:0!important;background:transparent!important;border-radius:2px;color:var(--c-tx2)}
-#gsbar .gs-search #gscope button.on{background:var(--c-accbg)!important;color:#d8eeff!important;box-shadow:inset 0 -2px 0 var(--c-acc)}
-/* drop-down menus (⚙ and Start) */
+#gsbar :is(.sub,.seg) button{min-height:1.875rem!important;height:1.875rem;min-width:3.25rem;padding:0 .75rem!important;border:0!important;
+ border-radius:var(--r)!important;background:transparent!important;color:var(--c-tx2)!important;font:600 .8125rem var(--uf)!important;box-shadow:none!important;letter-spacing:.02em}
+#gsbar :is(.sub,.seg) button:hover{color:var(--c-tx)!important;background:var(--c-ctlh)!important}
+#gsbar :is(.sub,.seg) button.on{background:var(--c-pane)!important;color:var(--c-tx)!important;box-shadow:0 1px 2px var(--c-shadow),0 0 0 1px var(--c-line)!important}
+#gsbar .seg button{min-width:4.25rem;letter-spacing:.06em}
+#gsbar .seg button:first-child.on{background:var(--c-accon)!important;color:#ffffff!important;box-shadow:none!important}
+#gsbar .seg button:last-child.on{background:var(--c-runbg)!important;color:#ffffff!important;box-shadow:none!important}
+#gsbar .seg button:last-child.on.paused{background:var(--c-man)!important;color:var(--c-mantx)!important}
+body:is([data-tab=library],[data-tab=tools]) #gsbar .seg{display:none}
+/* the sheet: "ABC analog › ABC-010  Drum level control …" */
+#gsbar .crumb{flex:1 1 0;min-width:0;gap:.5rem;overflow:hidden;padding-left:.75rem;border-left:1px solid var(--c-line)}
+body:not([data-tab=logic]) #gsbar .crumb{visibility:hidden}
+#gsbar .crumb .cpath{flex:none;font:500 .8125rem var(--uf);color:var(--c-dim);white-space:nowrap}
+#gsbar .crumb #anmeta,#gsbar .crumb #meta{display:flex!important;align-items:center;gap:.625rem;flex:1 1 0;min-width:0;min-height:0!important;margin:0;
+ padding:0!important;background:transparent!important;border:0!important;box-shadow:none}
+#gsbar .crumb #meta[hidden]{display:none!important}
+#gsbar .crumb #anmeta b{display:inline!important;flex:none;font:650 .9375rem var(--mf)!important;color:var(--c-tx)!important;letter-spacing:0}
+#gsbar .crumb #anmeta > span:not(.lg):not(#anmode):not(.sp){font:400 .875rem var(--uf);color:var(--c-tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#gsbar .crumb #anmeta :is(.sp,small,.lg,#anmode){display:none!important}
+#gsbar .crumb #meta #mtx{display:flex;align-items:baseline;gap:.75rem;min-width:0;text-align:left!important}
+#gsbar .crumb #meta #m_title{flex:0 1 auto;min-width:0;font:600 .9375rem var(--uf)!important;color:var(--c-tx)!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#gsbar .crumb #meta #m_sub{display:flex;gap:.75rem;flex:none;justify-content:flex-start!important;font:400 .75rem var(--uf)!important;color:var(--c-dim);white-space:nowrap}
+#gsbar .crumb #meta #m_sub b{display:inline!important;color:var(--c-tx2)!important;font-weight:600}
+#gsbar .crumb #meta #mctl{display:none!important}
+/* search: a field with its key; the scope (All / ABC / DITL) and ⓘ appear while it is used */
+#gsbar .gs-search{flex:0 1 17rem;min-width:9rem;gap:.375rem;position:relative}
+#gsbar .gs-search #ansb{flex:1 1 auto;width:100%;min-width:0;max-width:none;height:2.125rem!important;min-height:2.125rem;padding:0 2.25rem 0 2.125rem!important;
+ border-radius:var(--r)!important;background:var(--c-well) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 16 16'%3E%3Ccircle cx='7' cy='7' r='4.6' fill='none' stroke='%236b7280' stroke-width='1.6'/%3E%3Cpath d='M10.4 10.4 14 14' stroke='%236b7280' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat .75rem center!important;
+ border:1px solid var(--c-line)!important;color:var(--c-tx)!important;font:400 .8125rem var(--mf)!important;box-shadow:none!important}
+#gsbar .gs-search #ansb:focus{background-color:var(--c-pane)!important;border-color:var(--c-acc)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--c-acc) 22%,transparent)!important}
+#gsbar .skbd{position:absolute;right:.5rem;top:50%;transform:translateY(-50%);font:600 .6875rem var(--mf);padding:.0625rem .375rem;border:1px solid var(--c-line2);border-radius:.25rem;color:var(--c-dim);background:var(--c-pane);pointer-events:none}
+#gsbar .gs-search:focus-within .skbd{display:none}
+#gsbar .gs-search :is(#gscope,.infob){display:none!important}
+#gsbar .gs-search:focus-within{position:absolute;right:calc(var(--ctl) + 1.75rem);top:0;z-index:90;width:min(40rem,72vw);background:var(--c-strip);padding-left:.75rem;box-shadow:-1rem 0 1rem var(--c-strip)}
+#gsbar .gs-search:focus-within :is(#gscope,.infob){display:flex!important}
+#gsbar #gscope{gap:.125rem;padding:.1875rem;background:var(--c-well);border:1px solid var(--c-line);border-radius:calc(var(--r) + 2px)}
+#gsbar #gscope button{min-height:1.75rem!important;height:1.75rem;padding:0 .625rem!important;border:0!important;background:transparent!important;font-size:.75rem!important;box-shadow:none!important}
+#gsbar #gscope button.on{background:var(--c-pane)!important;color:var(--c-tx)!important;box-shadow:0 0 0 1px var(--c-line)!important}
+#gsbar .infob{min-width:2.125rem}
+#gsbar #srchbtn{display:none}
+#gsbar :is(#srchbtn,.gs-set > button){width:2.25rem;min-width:2.25rem;height:2.25rem;padding:0!important;border-radius:var(--r)!important}
+#gsbar :is(#srchbtn,.gs-set > button) svg{width:1rem;height:1rem}
+body.srchopen #gsbar #srchbtn{background:var(--c-accbg)!important;border-color:var(--c-accbd)!important;color:var(--c-acctx)!important}
+/* drop-down menus (⚙, Start) */
 .ddw{position:relative;flex:none}
-.ddw>button.ico{min-width:30px!important;padding:0 6px!important;display:inline-flex!important;align-items:center;justify-content:center}
-.ddw>button.ico svg{width:15px;height:15px;display:block}
-.ddm{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:95;min-width:250px;max-width:92vw;max-height:72vh;overflow:auto;background:#0c1117;border:1px solid var(--c-line2);border-radius:4px;padding:8px;box-shadow:0 14px 40px #000c}
+.ddm{display:none;position:absolute;right:0;top:calc(100% + .375rem);z-index:95;min-width:17rem;max-width:92vw;max-height:72vh;overflow:auto;
+ padding:.5rem;background:var(--c-pane);border:1px solid var(--c-line);border-radius:var(--r-l);box-shadow:0 1rem 2.5rem var(--c-shadow)}
 .ddw.left .ddm{left:0;right:auto}
 .ddw.open .ddm{display:block}
-.ddm>*{display:block;width:100%;margin:0 0 6px!important;text-align:left;box-sizing:border-box}
-.ddm>*:last-child{margin-bottom:0}
-.ddm>button,.ddm>select,.ddm>label.b{height:30px!important;min-height:30px!important;white-space:normal!important;line-height:1.2!important;padding:3px 9px!important}
-.ddm .mh{font:600 11px var(--uf)!important;letter-spacing:.12em;text-transform:uppercase;color:var(--c-dim);border-bottom:1px solid var(--c-line);padding-bottom:3px;margin:8px 0 4px!important}
-.ddm .mh:first-child{margin-top:0!important}
-/* ---- sheet title strips ---- */
-body.app2 #anmeta{min-height:28px;padding:2px 10px!important;background:var(--c-pane)!important;border-bottom:1px solid var(--c-line)!important}
-body.app2 #anmeta b{font:600 14px var(--mf)!important;color:#eef4f9;letter-spacing:.02em}
-body.app2 #meta{padding:3px 12px!important;min-height:34px;align-items:center;background:var(--c-pane)!important;border-bottom:1px solid var(--c-line)!important}
-body.app2 #meta #m_title{font-size:14px!important;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-body.app2 #meta #m_sub{font-size:11px;margin-top:0}
-body.app2 #meta #mctl button,body.app2 #meta #mctl select{height:24px;padding:0 6px;font-size:11px}
-/* ---- left pane: sheet navigator ---- */
-body.app2 #side{background:var(--c-pane)!important;border-right:1px solid var(--c-line)!important}
-body.app2 #sidehd{background:var(--c-strip)!important;border-bottom:1px solid var(--c-line)!important;min-height:30px;padding:3px 8px!important}
-body.app2 #sidehd b{font:600 11px var(--uf)!important;letter-spacing:.12em!important;text-transform:uppercase;color:var(--c-dim)!important}
-body.app2 #sidehd button{height:22px;min-height:22px;padding:0 6px;border-radius:3px;background:var(--c-ctl);border:1px solid var(--c-line2)}
-body.app2 #sidesort{gap:0!important;margin:6px 8px!important;border:1px solid var(--c-line2);border-radius:3px;overflow:hidden}
-body.app2 #sidesort button{height:24px;border:0!important;border-radius:0!important;background:var(--c-ctl)!important;color:var(--c-tx2)!important;font-size:12px!important}
-body.app2 #sidesort button.on{background:var(--c-accbg)!important;color:#d8eeff!important;box-shadow:inset 0 -2px 0 var(--c-acc)}
-body.app2 #sidefl{height:28px;margin:0 8px 6px!important;width:calc(100% - 16px)!important;background:#070a0e!important;border:1px solid var(--c-line2)!important;border-radius:3px!important;font:12px var(--mf)!important;box-sizing:border-box}
-body.app2 #sidelist button{padding:5px 10px!important;border-left:2px solid transparent!important;border-bottom:1px solid #141c24!important;background:transparent!important}
-body.app2 #sidelist button:hover{background:#111922!important}
-body.app2 #sidelist button .sn{font:600 12.5px var(--mf)!important;color:#e6edf3!important}
-body.app2 #sidelist button .st{font-size:11px!important;line-height:1.3!important;letter-spacing:.02em;color:var(--c-dim)!important}
-body.app2 #sidelist button.on{background:linear-gradient(90deg,#0f2a3d,#0d1319)!important;border-left-color:var(--c-acc)!important}
-body.app2 #sidelist button.on .sn{color:#fff!important}
-body.app2 #sidelist button.on .st{color:#9cc3df!important}
-/* ---- right pane ---- */
-body.app2 .hmitabs{gap:0!important;padding:0!important;background:var(--c-strip)!important;border-bottom:1px solid var(--c-line)}
-body.app2 .hmitabs button{height:30px!important;border:0!important;border-radius:0!important;background:transparent!important;color:var(--c-dim)!important;font:600 11px var(--uf)!important;letter-spacing:.12em;text-transform:uppercase}
-body.app2 .hmitabs button.on{color:#fff!important;box-shadow:inset 0 -2px 0 var(--c-acc)}
-body.app2 :is(#opp,#plfp,#anp){background:var(--c-pane)!important;border-left:1px solid var(--c-line)!important;font-size:12.5px!important}
-body.app2 :is(#opp,#plfp) h4{font:600 11px var(--uf)!important;letter-spacing:.12em!important;color:var(--c-dim)!important;border-bottom:1px solid var(--c-line);padding-bottom:3px}
-body.app2 :is(#opp,#plfp) .hdr{font:600 14px var(--mf)!important}
-body.app2 :is(#opp,#plfp) .fp{background:#0a0f14!important;border:1px solid var(--c-line2)!important;border-radius:3px!important}
-body.app2 :is(#opp,#plfp) button.b{height:28px;border-radius:3px;font-size:12px}
-body.app2 #anp h4{font:600 11px var(--uf)!important;letter-spacing:.12em;text-transform:uppercase;color:var(--c-dim)!important;border-bottom:1px solid var(--c-line)!important}
-body.app2 .fpov{background:#0a0f14!important;border-color:var(--c-line2)!important;border-radius:3px!important}
-body.app2 .fpov .ovh{font-family:var(--uf)!important;letter-spacing:.12em}
-body.app2 .fpov .ovc{background:var(--c-ctl)!important;border-color:var(--c-line2)!important;border-radius:3px!important}
-body.app2 .fpov .ovc.on{border-color:var(--c-acc)!important;box-shadow:inset 0 0 0 1px var(--c-acc)!important}
-body.app2 #cv{background-color:#06090c!important;background-image:radial-gradient(#16212b 1px,transparent 1px)!important;background-size:24px 24px!important}
-body.app2 :is(#anp,#opp,#plfp,#side,#infocard,#evbox) :is(button,select){border-radius:3px}
-body.app2 #infocard,body.app2 #evbox{border-radius:4px!important;border-color:var(--c-line2)!important;background:#0b1016f7!important}
-body.app2 *::-webkit-scrollbar{width:8px;height:8px}
-body.app2 *::-webkit-scrollbar-thumb{background:#223040;border-radius:0}
-/* ---- status bar ---- */
-#sfoot{display:flex;align-items:center;gap:0;background:var(--c-strip)!important;border-top:1px solid var(--c-line)!important;min-height:24px;padding:0;flex:none;position:relative;z-index:70}
-#sfoot>*{border-right:1px solid var(--c-line);padding:0 8px!important;height:24px;display:flex;align-items:center;flex:none}
-#sfoot #stchip{gap:4px}
-#sfoot #stchip span{font:600 11px var(--mf)!important;padding:1px 8px!important;border-radius:2px!important;letter-spacing:.08em}
-#sfoot .sclock{font:11px var(--mf)!important;color:#9fb0bd!important}
-#sfoot #st{flex:1 1 auto;min-width:0;border:0!important;background:transparent!important;font:11px var(--mf)!important;color:var(--c-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block!important;line-height:24px}
-#sfoot #evbtn{height:24px!important;border:0!important;border-radius:0!important;background:transparent!important;font:600 11px var(--mf)!important;color:var(--c-tx2)!important;cursor:pointer}
-#sfoot #evbtn.new{color:#ffd78a!important;box-shadow:inset 0 -2px 0 var(--c-man)}
-#sfoot .shint{flex:1 1 auto;min-width:0;font:11px var(--mf)!important;color:var(--c-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:none;line-height:24px}
-body:not([data-tab=logic]) #sfoot #st{display:none!important}
-body:not([data-tab=logic]) #sfoot .shint{display:block}
-#sfoot #stchip span:nth-child(2){display:none}
-/* the floating UAT / CHECK buttons of the test panels are docked (UAT in TOOLS, CHECK in OPERATE) */
-body.app2 #uatb,body.app2 #chkb{position:static!important;bottom:auto!important;left:auto!important;right:auto!important;z-index:auto!important;height:28px!important;padding:0 9px!important;font:600 12px var(--uf)!important;border-radius:3px!important}
-body.app2 #toolsws #uatb{height:34px!important}
-/* ---- TOOLS workspace ---- */
-#toolsws{position:fixed;left:0;right:0;top:40px;bottom:24px;z-index:45;display:none;overflow:auto;background:var(--c-bg);color:var(--c-tx);padding:14px 16px 40px;box-sizing:border-box}
-body[data-tab=tools] #toolsws{display:block}
-#toolsws .tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;max-width:1400px}
-#toolsws .tcard{background:var(--c-pane);border:1px solid var(--c-line);border-radius:4px;padding:10px 12px 12px}
-#toolsws .tcard h3{margin:0 0 4px;font:600 11px var(--uf);letter-spacing:.12em;text-transform:uppercase;color:var(--c-dim)}
-#toolsws .tcard p{margin:0 0 8px;font-size:12px;color:var(--c-tx2);line-height:1.35}
-#toolsws .tcard .row{display:flex;flex-wrap:wrap;gap:6px}
-#toolsws .tcard :is(button,select,label.b){height:34px;min-height:34px;padding:0 12px;border-radius:3px;font-size:12.5px;background:var(--c-ctl);border:1px solid var(--c-line2);color:var(--c-tx2);cursor:pointer;display:inline-flex;align-items:center;white-space:nowrap;font-weight:500}
-#toolsws .tcard :is(button,label.b):hover{background:var(--c-ctlh);border-color:#3a5068;color:var(--c-tx)}
-#toolsws .tcard :is(button,label.b).on{background:var(--c-accbg);border-color:#2a6a98;color:#d8eeff;box-shadow:inset 0 -2px 0 var(--c-acc)}
-#toolsws .tcard span.lp{font:12px var(--mf);color:var(--c-dim);align-self:center}
-/* the PLANT / LIBRARY buttons that older scripts add to the hidden category boxes are never needed */
-body.app2 .plbtn,body.app2 .libbtn{display:none!important}
-/* ---- tablet: sheet list and panel as drawers ---- */
-@media (max-width:1180px){
- body.app2 #tbsheets{display:inline-flex}
- #mid{position:relative}
- #mid #side{position:absolute;z-index:40;left:0;top:0;bottom:0;width:min(320px,88vw)!important;display:none;box-shadow:8px 0 24px #0009}
- #mid #side.uiopen{display:flex}
- #mid #cv{flex:1 1 auto;width:100%}
- #mid #anp{position:absolute;z-index:35;right:0;top:0;bottom:0;width:min(400px,94vw)!important;box-shadow:-8px 0 24px #0009}
- body.app2 #gsbar .gs-search{order:9;flex:1 1 260px}
- body.app2 #gsbar .gs-set{order:10}
- body.app2 #anmeta{flex-wrap:nowrap;overflow:hidden}
- body.app2 #anmeta>*{white-space:nowrap}
- body.app2 #anmeta>span:nth-of-type(1){overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
- body.app2 #anmeta small{display:none}
-}
-/* ---- phone: tabs on the first row, the tools scroll sideways, the panel is a bottom sheet ---- */
-@media (max-width:700px){
- body.app2 #gsbar{gap:4px;padding:3px 4px!important}
- #gsbar .tabs{flex:1 1 100%;order:0}
- #gsbar .tabs button{flex:1;min-width:0;padding:0 4px;height:34px;font-size:11.5px}
- #gsbar .sub{order:1}
- #gsbar .tbar{order:2;flex:1 1 0;min-width:0}
- #gsbar .gs-search{order:3;flex:1 1 100%}
- #gsbar .gs-set{order:4}
- body[data-tab=logic] #gsbar .gs-search{display:none}
- body[data-tab=logic] #gsbar .gs-set{order:2}
- #gsbar :is(.tbar,.gs-set) :is(button,select,label.b){height:34px;min-height:34px}
- #gsbar .g-run .tb-step{display:none!important}
- #gsbar .tbar :is(#anshbox,#shbox) select{max-width:120px}
- body.app2 #anmeta{padding:3px 8px;gap:6px}
- body.app2 #anmeta .lg,body.app2 #anmeta small{display:none}
- body.app2 #anmeta>span:nth-of-type(1){max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
- #mid #anp{top:auto!important;left:0;right:0;bottom:0;width:100%!important;height:52%;border-radius:14px 14px 0 0;box-shadow:0 -8px 24px #000a}
- #mid #side{width:min(300px,86vw)!important}
- #anp button,#anp select,#anp input:not([type=checkbox]),:is(#opp,#plfp) button,.fpop button{min-height:40px}
- #sfoot #stchip span:nth-child(n+2){display:none}
- #sfoot .sclock{display:none}
- body.app2 #meta{padding:4px 8px!important;gap:6px}
- body.app2 #meta #mctl{display:none}
- body.app2 #meta #m_title{font-size:13px!important;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal}
- body.app2 #meta #m_sub{gap:12px;font-size:11px}
- #toolsws{padding:10px 10px 40px}
- #toolsws .tgrid{grid-template-columns:1fr}
-}
-/* ===== 2.4.0-beta.2: UI / UX pass (user 2026-10-19: industrial, flat, aligned, no overlap, nothing extra) ===== */
-:root{--h:28px;--r:2px}
-@media (max-width:1180px){:root{--h:32px}}
-@media (max-width:700px){:root{--h:34px}}
-/* one height and one corner for every control of the bar */
-#gsbar .tabs,#gsbar .sub,#gsbar .gs-search #gscope{border-radius:var(--r)}
-#gsbar .tabs button,#gsbar .sub button{height:calc(var(--h) + 2px)}
-#gsbar :is(.tbar,.gs-set,.gs-search) :is(button,select,label.b),#gsbar #srchbtn{height:var(--h)!important;min-height:var(--h)!important;border-radius:var(--r)!important;box-sizing:border-box}
-#gsbar .gs-search #ansb{height:var(--h)!important;border-radius:var(--r)!important}
-#gsbar .gs-search #gscope button{height:calc(var(--h) - 6px)!important;min-height:0!important}
-#gsbar .gs-search .infob{min-width:var(--h);padding:0!important;justify-content:center;background:var(--c-ctl);border:1px solid var(--c-line2);color:var(--c-tx2);cursor:pointer;display:inline-flex;align-items:center}
-#gsbar #srchbtn{display:none;flex:none;width:var(--h);padding:0!important;align-items:center;justify-content:center;background:var(--c-ctl);border:1px solid var(--c-line2);color:var(--c-tx2);cursor:pointer}
-#gsbar #srchbtn svg{width:15px;height:15px}
-body.srchopen #gsbar #srchbtn{background:var(--c-accbg);border-color:#2a6a98;color:#fff}
-#gsbar .tbar{flex:1 1 auto}
-#gsbar .tb{padding:0 8px 0 0;margin-right:4px;gap:4px}
-#gsbar .tbar select{max-width:72px}
-#gsbar .tbar :is(#anshbox,#shbox) select{max-width:170px}
-/* desktop: a compact search that opens wide over the bar while it is used (the tools never move) */
-#gsbar .gs-search{flex:0 0 220px;min-width:0;position:relative}
-#gsbar .gs-search :is(#gscope,.infob){display:none!important}
-#gsbar .gs-search:focus-within{position:absolute;right:46px;top:4px;width:min(620px,70vw);z-index:90;background:var(--c-strip);padding:0 0 0 6px;box-shadow:-12px 0 12px var(--c-strip)}
-#gsbar .gs-search:focus-within :is(#gscope,.infob){display:flex!important}
-/* the sheet list is open on the left: the sheet buttons of the bar repeat it */
-@media (min-width:1181px){body.app2:has(#side:not(.min)) #gsbar .g-sheet{display:none!important}}
-/* narrow desktop and tablet: the search is the magnifier icon and opens as a row under the bar */
-@media (max-width:1280px){
- #gsbar #srchbtn{display:inline-flex}
- #gsbar .gs-search,#gsbar .gs-search:focus-within{display:none;position:absolute;left:0;right:0;top:100%;width:auto;padding:6px 8px;background:var(--c-strip);border-bottom:1px solid var(--c-line);box-shadow:0 8px 16px #0008;z-index:90}
- body.srchopen #gsbar .gs-search{display:flex!important}
- body.srchopen #gsbar .gs-search :is(#gscope,.infob){display:flex!important}
- body.app2 #gsbar .gs-search{order:0;flex:none}
- body.app2 #gsbar .gs-set{order:0}
-}
-/* tablet: two rows, tabs on the first, the tools of the tab on the second; nothing scrolls out of view */
-@media (max-width:1180px) and (min-width:701px){
- #gsbar .tabs{order:0}
- #gsbar .sub{order:1}
- #gsbar #srchbtn{order:2;margin-left:auto}
- body.app2 #gsbar .gs-set{order:3}
- #gsbar .tbar{order:4;flex:1 1 100%;border-top:1px solid var(--c-line);padding-top:4px;margin:0 -8px;padding-left:8px;padding-right:8px}
- body:is([data-tab=library],[data-tab=tools]) #gsbar .tbar{display:none}
-}
-/* phone: tabs on the first row; ABC / DITL, the tools, search and ⚙ on the second */
-@media (max-width:700px){
- #gsbar .tabs{order:0}
- #gsbar .sub{order:1}
- #gsbar .tbar{order:2;flex:1 1 0;min-width:0;mask-image:linear-gradient(90deg,#000 88%,transparent);-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent)}
- #gsbar #srchbtn{order:3}
- body.app2 #gsbar .gs-set{order:4}
- body:is([data-tab=library],[data-tab=tools]) #gsbar #srchbtn{margin-left:auto}
- body[data-tab=logic] #gsbar .gs-search{display:none}
- body.srchopen[data-tab=logic] #gsbar .gs-search{display:flex!important}
- #gsbar .tbar select{max-width:64px}
-}
-/* sheet title strip: one control height */
-body.app2 #anmeta :is(button,select){height:24px!important;min-height:24px!important;padding:0 8px!important;font-size:11.5px!important;border-radius:var(--r)!important}
-/* message line: a small note above the status bar, left, never over the middle of the drawing */
-body.app2 #toast{left:10px!important;right:auto!important;transform:none!important;bottom:calc(var(--footH,24px) + 8px)!important;max-width:min(460px,calc(100vw - 20px))!important;background:#0c131a!important;border:1px solid var(--c-line2)!important;border-left:3px solid var(--c-acc)!important;border-radius:var(--r)!important;padding:6px 10px!important;font:12px var(--uf)!important;color:var(--c-tx)!important;box-shadow:0 6px 18px #0009;z-index:80!important}
-/* test panels (UAT, CHECK): docked on the right between the bar and the status bar, never over the bar or the sheet list */
-body.app2 :is(#uatp,#chkp){top:var(--topH,40px)!important;bottom:var(--footH,24px)!important;left:auto!important;right:0!important;width:min(460px,100vw)!important;border-right:0!important;border-left:1px solid var(--c-line2)!important;background:var(--c-pane)!important;box-shadow:-10px 0 28px #000a;z-index:66!important;font-size:12.5px!important}
-body.app2 :is(#uatp,#chkp) :is(button,select){border-radius:var(--r)!important;background:var(--c-ctl)!important;border:1px solid var(--c-line2)!important;color:var(--c-tx2)!important}
-body.app2 :is(#uatp,#chkp) :is(button.go,button.on){background:var(--c-accbg)!important;border-color:#2a6a98!important;color:#d8eeff!important}
-body.app2 :is(#uatp,#chkp) h3{color:var(--c-tx)!important;font:600 12px var(--uf)!important;letter-spacing:.1em;text-transform:uppercase}
-body.app2 :is(#uatp,#chkp) :is(.card,.sc,details,section){border-radius:var(--r)!important}
-/* DITL side table (Timers / MOV / motor): folded by default, docked above the status bar */
-body.app2 #tp{right:10px!important;bottom:calc(var(--footH,24px) + 8px)!important;background:var(--c-pane)!important;border:1px solid var(--c-line2)!important;border-radius:var(--r)!important;box-shadow:0 6px 18px #0009;z-index:30!important}
-body.app2 #tp>div:first-child b{font:600 11px var(--uf);letter-spacing:.1em;text-transform:uppercase;color:var(--c-dim)}
-/* right pane headings: room above and below */
-body.app2 #anp h4{margin:12px 0 6px!important;padding-bottom:4px!important}
-/* ⚙ menu: every row the same width */
+/* 3.2.0-beta.3: lost in the merge (2.4.1-beta.1 rule): an open menu sits on the page (body), so the ⚙ menu and Start ▾ showed nothing */
+.ddm.ddm-open{display:block;z-index:200;max-width:min(360px,calc(100vw - 16px))}
+.ddm > *,.ddm .only > *{display:flex!important;width:100%!important;margin:0 0 .375rem!important;box-sizing:border-box;justify-content:flex-start!important;text-align:left;white-space:normal!important}
+.ddm > :last-child{margin-bottom:0!important}
 .ddm .only{display:contents}
-.ddm .only>*{display:block!important;width:100%!important;margin:0 0 6px!important;box-sizing:border-box}
-.ddm>button,.ddm>select,.ddm .only>select{border-radius:var(--r)!important}
-/* OPERATE: a screen without values gives its width to the graphic; the list is plain names */
-#plantws.noval{grid-template-columns:240px 1fr 0!important}
-#plantws.noval #plvals,#plantws.noval .plbar .b:last-child{display:none!important}
+.ddm .mh{display:block!important;font:600 .6875rem var(--uf)!important;letter-spacing:.1em;text-transform:uppercase;color:var(--c-dim);padding:.375rem .25rem .25rem;margin:.5rem 0 .25rem!important;border:0}
+.ddm .mh:first-child{margin-top:0!important}
+
+/* ---------- 6. tool bar: one row, the tools of the tab, no labels to read twice ---------- */
+#gsbar .tbar{order:20;flex:1 1 100%!important;display:flex;align-items:center;gap:0;margin:0 -.875rem;padding:0 .625rem;height:var(--tool);min-height:var(--tool);
+ background:var(--c-ribbon);border-top:1px solid var(--c-line);overflow-x:auto;overflow-y:hidden;scrollbar-width:none;container-type:inline-size;container-name:tools}
+#gsbar .tbar::-webkit-scrollbar{display:none}
+body:is([data-tab=library],[data-tab=tools]) #gsbar .tbar{display:none}
+#gsbar .tb{display:none;align-items:center;gap:.25rem;flex:none;height:100%;padding:0 .625rem;margin:0;position:relative}
+#gsbar .tb + .tb::before{content:"";position:absolute;left:0;top:25%;bottom:25%;width:1px;background:var(--c-line)}
+#gsbar .tb[data-label]::after{content:none}
+#gsbar .tb > *{flex:none}
+#gsbar .tb .only{display:inline-flex;gap:.25rem}
+#gsbar .tbar :is(button,select,label.b){min-height:2.125rem!important;height:2.125rem;padding:0 .625rem!important;border-color:transparent!important;background-color:transparent!important;
+ box-shadow:none!important;font-size:.875rem!important;color:var(--c-tx2)!important}
+#gsbar .tbar :is(button,label.b):hover{background-color:var(--c-ctlh)!important;color:var(--c-tx)!important}
+#gsbar .tbar select{border-color:var(--c-line)!important;background-color:var(--c-pane)!important;max-width:6.5rem}
+#gsbar .tbar :is(button,label.b).on{background-color:var(--c-accbg)!important;color:var(--c-acctx)!important;border-color:transparent!important}
+#gsbar .tbar :is(#anshbox,#shbox){display:inline-flex;gap:.25rem}
+#gsbar .tbar :is(#anshbox,#shbox) select{max-width:11rem}
+/* Run / Pause: the one filled button of the bar */
+#gsbar .tbar .tb-run{min-width:5.5rem;font-weight:600!important;background-color:var(--c-runbg)!important;border-color:var(--c-runbd)!important;color:#ffffff!important}
+#gsbar .tbar .tb-run:hover{background-color:var(--c-runon)!important;color:#ffffff!important}
+#gsbar .tbar .tb-run.on{background-color:var(--c-pane)!important;border-color:var(--c-line2)!important;color:var(--c-tx)!important}
+/* which groups show where */
+#gsbar :is(.tb-view,.g-ditl,.g-zoom){display:none!important}
+body[data-tab=logic].an.simmode #gsbar .g-run{display:flex}
+body[data-tab=logic].an #gsbar :is(.g-view){display:flex}
+body[data-tab=logic].an #gsbar .g-nav{display:flex}
+#gsbar .g-nav:not(:has(button:not([hidden]):not([style*="display: none"]):not([style*="display:none"]))){display:none!important}
+body[data-tab=logic]:not(.simmode) #gsbar .g-ref{display:flex}
+body[data-tab=logic] #gsbar .g-sheet{display:flex}
+/* 3.2.0-beta.6 (audit M1): one RUN control; in VIEW the PLANT VIEW bar has no second Run (the VIEW | RUN switch starts it) */
+body[data-tab=operate].simmode #gsbar .g-run{display:flex}
+body[data-tab=operate] #gsbar .g-op{display:flex}
+body[data-tab=operate] #gsbar .g-run :is(.tb-step,.tb-view){display:none!important}
+@media (min-width:821px){body.app2:has(#side:not(.min)) #gsbar .g-sheet{display:none!important}}
+body.app2 #tbsheets{display:none}
+/* icons before the labels; narrow bars keep the icon only (the name is the tooltip) */
+[data-ic]::before{content:"";width:1.0625rem;height:1.0625rem;flex:none;background:currentColor;-webkit-mask:var(--ic) center/contain no-repeat;mask:var(--ic) center/contain no-repeat}
+#gsbar .tabs [data-ic]::before{width:1.0625rem;height:1.0625rem;opacity:.85}
+@container tools (max-width:64rem){#gsbar .tbar [data-ic][data-ic]{font-size:0!important;gap:0;min-width:2.25rem;padding:0!important}#gsbar .tbar [data-ic]::before{width:1.125rem;height:1.125rem}}
+
+/* ---------- 7. work area ---------- */
+body.app2 #mid{min-height:0}
+/* left pane: Sheets | Inputs */
+body.app2 #side{width:var(--lw)!important;background:var(--c-pane)!important;border-right:1px solid var(--c-line)!important}
+body.app2 #side.min{width:2.25rem!important}
+body.app2 #sidehd{display:flex;align-items:center;gap:.5rem;min-height:2.75rem;padding:0 .625rem!important;background:var(--c-pane)!important;border-bottom:0!important}
+body.app2 #sidehd b{font:600 .6875rem var(--uf)!important;letter-spacing:.1em!important;text-transform:uppercase;color:var(--c-dim)!important}
+body.app2 #sidehd button{min-width:1.875rem;padding:0!important;box-shadow:none}
+#sidetabs,#inlist{display:none}
+body.an #sidetabs{display:flex;gap:.125rem;margin:0 .625rem .5rem;padding:.1875rem;background:var(--c-well);border:1px solid var(--c-line);border-radius:calc(var(--r) + 2px);flex:none}
+body.an #sidetabs button{flex:1;min-height:1.875rem!important;border:0!important;background:transparent!important;box-shadow:none!important;color:var(--c-tx2)!important;font-weight:600!important;font-size:.8125rem!important}
+body.an #sidetabs button.on{background:var(--c-pane)!important;color:var(--c-tx)!important;box-shadow:0 1px 2px var(--c-shadow),0 0 0 1px var(--c-line)!important}
+body.app2 #sidesort{display:none;gap:.125rem!important;margin:0 .625rem .5rem!important;padding:.1875rem;background:var(--c-well);border:1px solid var(--c-line)!important;border-radius:calc(var(--r) + 2px);overflow:visible}
+body.an #sidesort{display:flex}
+body.app2 #sidesort button{flex:1;min-height:1.75rem!important;border:0!important;background:transparent!important;box-shadow:none!important;color:var(--c-tx2)!important;font-size:.8125rem!important}
+body.app2 #sidesort button.on{background:var(--c-pane)!important;color:var(--c-tx)!important;box-shadow:0 0 0 1px var(--c-line)!important}
+body.app2 #sidefl{display:block;width:calc(100% - 1.25rem)!important;margin:0 .625rem .5rem!important;height:2.125rem;font:400 .8125rem var(--uf)!important;background:var(--c-well)!important;border-color:var(--c-line)!important;box-shadow:none!important}
+body.app2 :is(#sidelist,#anlist) button{display:block!important;width:100%;min-height:0!important;height:auto;text-align:left;white-space:normal;padding:.5rem .75rem .5rem .875rem!important;border:0!important;border-left:3px solid transparent!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+body.app2 :is(#sidelist,#anlist) button:hover{background:var(--c-ctlh)!important}
+body.app2 :is(#sidelist,#anlist) button .sn{display:block;font:600 .8125rem var(--mf)!important;color:var(--c-tx)!important}
+body.app2 :is(#sidelist,#anlist) button .st{display:block;margin-top:.125rem;font:400 .75rem/1.3 var(--uf)!important;color:var(--c-dim)!important;max-height:2.6em;overflow:hidden}
+body.app2 :is(#sidelist,#anlist) button.on{background:var(--c-accbg)!important;border-left-color:var(--c-acc)!important}
+body.app2 :is(#sidelist,#anlist) button.on :is(.sn,.st){color:var(--c-acctx)!important}
+body.app2 #anlist .fh{padding:.75rem .875rem .375rem;font:600 .6875rem var(--uf);letter-spacing:.1em;text-transform:uppercase;color:var(--c-dim);background:var(--c-pane)}
+body.an #side.inp > :not(#sidehd):not(#sidetabs):not(#inlist){display:none!important}
+body.an #side.inp #inlist{display:block;flex:1 1 0;min-height:0;overflow:auto;padding:0 .625rem .75rem}
+#inlist .inh{padding:.75rem .125rem .375rem;font:600 .6875rem var(--uf);letter-spacing:.1em;text-transform:uppercase;color:var(--c-dim)}
+#inlist .ini{display:flex;align-items:center;gap:.5rem;padding:.5rem .375rem;border-top:1px solid var(--c-line);border-radius:.25rem}
+#inlist .inn{flex:1;min-width:0;cursor:pointer}
+#inlist .inn b{display:block;font:600 .8125rem var(--mf);color:var(--c-tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#inlist .inn small{display:block;font-size:.75rem;color:var(--c-dim);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#inlist .inn:hover b{color:var(--c-acctx)}
+#inlist .inb{flex:none;display:inline-flex!important;min-width:0;height:1.875rem;min-height:1.875rem!important;padding:.125rem!important;gap:.125rem!important;overflow:hidden;background:var(--c-well)!important;border:1px solid var(--c-line)!important;box-shadow:none!important;border-radius:var(--r)!important}
+#inlist .inb i{font:600 .75rem var(--mf);font-style:normal;min-width:2rem;height:100%;padding:0 .375rem;display:flex;align-items:center;justify-content:center;border-radius:.3rem;color:var(--c-dim)}
+#inlist .inb:not(.one) i:first-child{background:var(--c-pane);color:var(--c-tx);box-shadow:0 1px 2px var(--c-shadow),0 0 0 1px var(--c-line)}
+#inlist .inb.one i:last-child{background:var(--c-run);color:#ffffff}
+#inlist .inb:disabled{opacity:.6}
+#inlist .inv{flex:none;font:600 .8125rem var(--mf);color:var(--c-acctx)}
+#inlist .inf{display:none;flex:none;width:1.125rem;height:1.125rem;border-radius:.25rem;background:var(--c-man);color:var(--c-mantx);font:700 .6875rem var(--mf);align-items:center;justify-content:center}
+#inlist .ini.fo .inf{display:inline-flex}
+#inlist .ini.fo{background:var(--c-mansoft)}
+/* the drawing: a sheet of paper on the desk, with CAD rulers */
+body.app2 #cv{background:var(--c-desk)!important;padding:.75rem!important;box-sizing:border-box}
+body.app2 #cv > #svg{border-radius:.375rem;box-shadow:0 0 0 1px var(--c-line),0 .5rem 1.5rem var(--c-shadow2)}
+#rulert,#rulerl,#rulerc{display:none;position:fixed;z-index:6;pointer-events:none}
+body.rulers #rulert,body.rulers #rulerl,body.rulers #rulerc{display:block}
+#rulert{height:18px;border-top-right-radius:.375rem}#rulerl{width:18px;border-bottom-left-radius:.375rem}
+#rulerc{width:18px;height:18px;background:var(--c-ribbon);border-right:1px solid var(--c-line);border-bottom:1px solid var(--c-line);border-top-left-radius:.375rem}
+/* floating zoom bar */
+#zbar{display:none;position:fixed;z-index:25;transform:translateX(-50%);align-items:center;gap:.125rem;padding:.25rem;border-radius:.75rem;background:#1f2328;box-shadow:0 .5rem 1.5rem rgba(0,0,0,.25);color:#fff}
+body.rulers[data-tab=logic] #zbar{display:flex}
+#zbar button{height:2.125rem;min-width:2.125rem;padding:0 .625rem;border:0!important;border-radius:.5rem!important;background:transparent!important;color:#ffffff!important;font:600 .9375rem var(--uf)!important;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:.375rem;box-shadow:none!important}
+#zbar button:hover{background:#343a42!important}
+#zbar :is(#bfit,.only > button){font-size:.8125rem!important;background:#343a42!important}
+#zbar .zpct{min-width:3.25rem;text-align:center;font:600 .8125rem var(--mf);color:#e9ecef}
+#zbar .zsep{width:1px;height:1.25rem;background:#3d444b;margin:0 .25rem}
+/* right pane: Inspector | Faceplate */
+body.app2 :is(#anp,#opp){width:var(--rw)!important;background:var(--c-pane)!important;color:var(--c-tx)!important;border-left:1px solid var(--c-line)!important;font-size:.875rem!important;padding:0 .875rem 1.5rem!important}
+body.app2 .hmitabs{position:sticky;top:0;z-index:3;display:flex;gap:.125rem!important;margin:0 -.875rem .75rem!important;padding:.625rem .875rem!important;background:var(--c-pane)!important;border-bottom:1px solid var(--c-line)}
+body.app2 .hmitabs button{flex:1;min-height:2rem!important;border:0!important;border-radius:var(--r)!important;background:transparent!important;box-shadow:none!important;color:var(--c-tx2)!important;font:600 .8125rem var(--uf)!important;letter-spacing:0;text-transform:none}
+body.app2 .hmitabs button:hover{background:var(--c-ctlh)!important}
+body.app2 .hmitabs button.on{background:var(--c-accbg)!important;color:var(--c-acctx)!important}
+body.app2 :is(#anp,#opp,#plfp) h4{margin:1.125rem 0 .5rem!important;padding:0 0 .375rem!important;font:600 .6875rem var(--uf)!important;letter-spacing:.1em!important;text-transform:uppercase;color:var(--c-dim)!important;border-bottom:1px solid var(--c-line)!important}
+body.app2 #anp .ph{display:flex;align-items:center;gap:.5rem;margin:0 0 .5rem}
+body.app2 #anp .ph > b,body.app2 #anp .ph > span:first-child{font:650 .9375rem var(--mf)}
+body.app2 #anp > small{display:block;color:var(--c-dim)!important;font-size:.8125rem;line-height:1.45;margin-bottom:.5rem}
+body.app2 #anp :is(.r,.ir){padding:.5rem .125rem;border-bottom:1px solid var(--c-line)!important;border-radius:0}
+body.app2 #anp .ir .tg{font:600 .8125rem var(--mf);color:var(--c-tx)!important}
+body.app2 #anp .ir .ds,body.app2 #anp small{color:var(--c-dim)!important;font-size:.75rem}
+body.app2 #anp .sh{margin:.875rem 0 .25rem;font:600 .6875rem var(--uf);letter-spacing:.08em;text-transform:uppercase;color:var(--c-dim)!important}
+body.app2 #anp details.sec>summary{padding:.625rem 0;font:600 .875rem var(--uf);color:var(--c-tx)!important;border-bottom:1px solid var(--c-line)!important;list-style-position:inside}
+body.app2 #anp details.sec>summary::marker{color:var(--c-dim)}
+body.app2 #anp .ir.hl{background:var(--c-accbg)!important;outline:1px solid var(--c-accbd)!important}
+body.app2 #anp .tr:hover{background:var(--c-ctlh)!important}
+body.app2 #anp .why{background:var(--c-well)!important;border-left:3px solid var(--c-acc)!important;border-radius:var(--r);color:var(--c-tx)!important;padding:.5rem .75rem!important;font-size:.8125rem}
+body.app2 #anp .own{background:var(--c-mansoft)!important;border-left:3px solid var(--c-man)!important;color:var(--c-tx)!important}
+body.app2 #anp :is(button.fo,input.fo){border-color:var(--c-man)!important;box-shadow:inset 0 -2px 0 var(--c-man)!important}
+body.app2 #anp input[type=number]{width:5.5rem}
+body.anview #anp :is(input,select,button):not(.keep){opacity:.6!important}
+#anp.hassel > small:first-of-type,#anp.hassel #ansel > h4:first-child,#anp.hassel #ansel > small:nth-child(3){display:none}
+/* selected block card */
+#selcard:empty{display:none}
+#selcard{margin:0 0 1rem;padding:.875rem 1rem;border:1px solid var(--c-line);border-radius:var(--r-l);background:var(--c-pane);box-shadow:0 1px 2px var(--c-shadow2),0 .5rem 1.25rem var(--c-shadow2)}
+#selcard .sch{display:flex;align-items:center;justify-content:space-between}
+#selcard .sch small{font:600 .6875rem var(--uf)!important;letter-spacing:.1em;color:var(--c-dim)!important}
+#selcard .chip{padding:.125rem .625rem;border-radius:999px;background:var(--c-accbg);color:var(--c-acctx);font:600 .75rem var(--uf)}
+#selcard .scn{display:block;margin-top:.375rem;font:650 1.25rem var(--mf);color:var(--c-tx);word-break:break-all}
+#selcard .scd{margin-top:.125rem;color:var(--c-tx2);font-size:.8125rem}
+#selcard .scv{display:grid;grid-template-columns:repeat(auto-fit,minmax(5.5rem,1fr));gap:.5rem;margin-top:.75rem}
+#selcard .scv > div{padding:.5rem .625rem;border-radius:var(--r);background:var(--c-well);border:1px solid var(--c-line);min-width:0}
+#selcard .scv small{display:block;font:600 .625rem var(--uf)!important;letter-spacing:.08em;color:var(--c-dim)!important}
+#selcard .scv b{display:block;font:600 1.125rem var(--mf);color:var(--c-tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#selcard .scb{width:100%;min-height:var(--ctl)!important;margin-top:.75rem!important;font-weight:600!important}
+#selcard .scb:hover{background:var(--c-accbg)!important;color:var(--c-acctx)!important;border-color:var(--c-accbd)!important}
+/* Faceplate pane (the DCS faceplate box itself keeps its own look, hmi.css) */
+body:not(.an) #opp{display:none!important}
+body.app2 :is(#opp,#plfp) .hdr{font:650 .9375rem var(--mf)!important;color:var(--c-tx)}
+body.app2 :is(#opp,#plfp) .sub{color:var(--c-dim)!important}
+body.app2 :is(#opp,#plfp) .fp{background:var(--c-plate)!important;border:1px solid var(--c-line2)!important;border-radius:var(--r)!important}
+body.app2 :is(#opp,#plfp) .fp :is(.fpb .fl,.fpman .fl,.dg small,.lg,.fpe summary){color:var(--c-dim)!important}
+body.app2 :is(#opp,#plfp) .fp:not(.fpx) .tg span{color:var(--c-dim)!important}
+body.app2 :is(#opp,#plfp) .fp .tg b{color:var(--c-tx)}
+body.app2 :is(#opp,#plfp) .fpx .tg b{color:#06210f}
+body.app2 :is(#opp,#plfp) .fpx .tg span{color:#0b3a1b!important}
+body.app2 :is(#opp,#plfp) .fp .mvb{color:var(--c-dim);border-color:var(--c-line2)}
+body.app2 .fpov{background:var(--c-pane)!important;border:1px solid var(--c-line)!important;border-radius:var(--r-l)!important;padding:.625rem!important}
+body.app2 .fpov .ovh{font:600 .6875rem var(--uf)!important;letter-spacing:.1em;color:var(--c-dim)}
+body.app2 .fpov .ovc{background:var(--c-pane)!important;border:1px solid var(--c-line)!important;border-radius:var(--r)!important}
+body.app2 .fpov .ovc:hover{border-color:var(--c-line2)!important}
+body.app2 .fpov .ovc.on{border-color:var(--c-acc)!important;box-shadow:0 0 0 1px var(--c-acc)!important}
+/* the side tab that brings the hidden panel back */
+body.app2 #anptab{min-height:0!important;padding:.75rem .375rem!important;background:var(--c-pane)!important;border:1px solid var(--c-line2)!important;border-right:0!important;color:var(--c-tx2)!important;border-radius:var(--r) 0 0 var(--r)!important;font:600 .75rem var(--uf)!important;box-shadow:-.25rem 0 .875rem var(--c-shadow2)}
+
+/* ---------- 8. status line ---------- */
+#sfoot{display:flex;align-items:stretch;gap:0;flex:none;position:relative;z-index:70;min-height:var(--foot);padding:0;background:var(--c-status)!important;border-top:0!important;color:var(--c-statustx)}
+#sfoot > *{display:flex;align-items:center;flex:none;height:var(--foot);padding:0 .75rem!important;border-right:1px solid rgba(255,255,255,.1);font-size:.75rem!important;line-height:1}
+#sfoot :is(#st,.shint,.smsg){flex:1 1 auto;min-width:0;display:block!important;line-height:var(--foot)!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:transparent!important;border-top:0!important;color:var(--c-statustx)!important;font:400 .75rem/var(--foot) var(--mf)!important}
+#sfoot .shint{display:none!important}
+body:not([data-tab=logic]) #sfoot #st{display:none!important}
+body:not([data-tab=logic]) #sfoot .shint{display:block!important}
+#sfoot .smsg{display:none!important;cursor:pointer;box-shadow:inset 3px 0 0 #7cb4ff}
+body.hasmsg #sfoot .smsg{display:block!important}
+body.hasmsg #sfoot :is(#st,.shint){display:none!important}
+#sfoot #stchip{display:flex;gap:.25rem;padding:0 .5rem!important}
+#sfoot #stchip span{font:600 .6875rem var(--mf)!important;letter-spacing:.08em;padding:.25rem .5rem!important;border-radius:.25rem!important;border:0!important;background:transparent!important;color:var(--c-statustx)!important}
+#sfoot #stchip span.run{background:var(--c-runbg)!important;color:#ffffff!important}
+#sfoot #stchip span.view{background:rgba(255,255,255,.12)!important}
+#sfoot #stchip span:nth-child(2){display:none}
+#sfoot .sclock{font:400 .75rem var(--mf)!important;color:var(--c-statusdim)!important}
+#sfoot #evbtn{min-height:0!important;height:var(--foot);border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--c-statustx)!important;font:500 .75rem var(--mf)!important}
+#sfoot #evbtn:hover{background:rgba(255,255,255,.08)!important}
+#sfoot #evbtn.new{color:#ffcf80!important;box-shadow:inset 0 -2px 0 var(--c-man)!important}
+#sfoot .spm{display:none!important;font:600 .6875rem var(--mf)!important;color:#1a1200!important;background:var(--c-man);letter-spacing:.06em}
+body.pmoff #sfoot .spm{display:flex!important}
+#sfoot :is(.ssel,.sforce):empty{display:none}
+#sfoot .ssel{margin-left:auto;max-width:18rem;color:var(--c-statustx)!important;font:400 .75rem var(--mf)!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block!important;line-height:var(--foot)!important}
+#sfoot .sforce{background:var(--c-man);color:var(--c-mantx)!important;font:700 .6875rem var(--mf)!important;letter-spacing:.06em}
+#sfoot .ssel:empty + .sforce:not(:empty){margin-left:auto}
+#sfoot .sinfo{color:var(--c-statusdim)!important;font:400 .75rem var(--mf)!important;white-space:nowrap}
+#sfoot .ssel:empty + .sforce:empty + .sinfo{margin-left:auto}
+body:not([data-tab=logic]) #sfoot :is(.sinfo,.ssel,.sforce){visibility:hidden}
+
+/* ---------- 9. floating surfaces: menus, cards, panels ---------- */
+/* search results */
+#anfind{z-index:90!important;padding:.375rem!important;background:var(--c-pane)!important;border:1px solid var(--c-line)!important;border-radius:var(--r-l)!important;box-shadow:0 1rem 2.5rem var(--c-shadow)!important;font-size:.875rem}
+#anfind > :not(button):not(.sn){font:600 .6875rem var(--uf);letter-spacing:.08em;text-transform:uppercase;color:var(--c-dim);padding:.625rem .625rem .25rem}
+#anfind button{display:flex!important;width:100%;justify-content:flex-start!important;align-items:baseline;gap:.625rem;min-height:2.125rem!important;padding:.375rem .625rem!important;margin:0!important;border:0!important;border-radius:var(--r)!important;background:transparent!important;box-shadow:none!important;color:var(--c-tx)!important;white-space:nowrap}
+#anfind button:hover,#anfind button:focus-visible{background:var(--c-accbg)!important;color:var(--c-acctx)!important}
+#anfind .sn{font:600 .8125rem var(--mf);flex:none;margin:0!important}
+#anfind .st{opacity:1!important;color:var(--c-tx2);overflow:hidden;text-overflow:ellipsis}
+/* info card of the search */
+#infocard{position:fixed;top:calc(var(--topH,52px) + .5rem);left:50%;transform:translateX(-50%);z-index:120;width:min(34rem,94vw);max-height:calc(100vh - var(--topH,52px) - var(--footH,30px) - 1.5rem);overflow:auto;
+ background:var(--c-pane);border:1px solid var(--c-line);border-radius:var(--r-l);box-shadow:0 1.25rem 3rem var(--c-shadow);font-size:.875rem;color:var(--c-tx)}
+#infocard.wide{width:min(58rem,94vw)}
+#infocard .ich{display:flex;align-items:center;gap:.625rem;padding:.75rem 1rem;border-bottom:1px solid var(--c-line);position:sticky;top:0;background:var(--c-pane);z-index:1}
+#infocard .ich b{font:650 1.0625rem var(--mf)}#infocard .icn{color:var(--c-dim);font-size:.75rem;margin-left:auto}
+#infocard .icd{padding:.625rem 1rem;border-bottom:1px solid var(--c-line);color:var(--c-tx2)}
+#infocard .ics{padding:.75rem 1rem;border-bottom:1px solid var(--c-line)}
+#infocard .ict{display:flex;align-items:center;gap:.5rem;margin-bottom:.375rem}#infocard .ict b{font:600 .6875rem var(--uf);letter-spacing:.08em;color:var(--c-dim)}
+#infocard .icv{font:650 .875rem var(--mf);color:var(--c-acctx);margin-right:auto}
+#infocard .icl{margin:.25rem 0}#infocard .icl .k{display:inline-block;width:6rem;color:var(--c-dim)}#infocard .icl .k.k2{width:9.5rem;font-size:.75rem}
+#infocard .icu{margin:.25rem 0 .375rem 1.25rem;padding:0;font:.8125rem var(--mf)}#infocard .icu li{margin:.125rem 0}
+#infocard .f-fm,#infocard .f-ilk{color:var(--c-mantx2)}#infocard .f-trip{color:var(--c-almtx)}#infocard .f-ditl,#infocard .f-sw{color:var(--c-acctx)}
+#infocard .tg{display:inline-block;padding:.0625rem .5rem;margin-right:.25rem;border-radius:999px;font-weight:600;font-size:.6875rem}
+#infocard .t-trip{background:var(--c-almsoft);color:var(--c-almtx)}#infocard .t-ok{background:var(--c-runsoft);color:var(--c-runtx2)}
+#infocard .t-ilk,#infocard .t-fm{background:var(--c-mansoft);color:var(--c-mantx2)}#infocard .t-sw{background:var(--c-accbg);color:var(--c-acctx)}
+#infocard .icw{display:flex;flex-wrap:wrap;align-items:stretch;gap:.375rem 0;margin:.25rem 0 .125rem}
+#infocard .icwb{flex:0 0 8.5rem;border:1px solid var(--c-line);border-radius:var(--r);background:var(--c-well);padding:.375rem .5rem;display:flex;flex-direction:column;gap:.125rem}
+#infocard .icwb small{font:600 .625rem var(--uf);letter-spacing:.08em;color:var(--c-dim);text-transform:uppercase}
+#infocard .icwb b{font:600 .75rem var(--mf);color:var(--c-tx);word-break:break-all;line-height:1.25}
+#infocard .icwb span{font:.6875rem var(--mf);color:var(--c-acctx);line-height:1.25}
+#infocard .icwb.ad{border-color:var(--c-accbd);background:var(--c-accbg)}
+#infocard .icwb.fd{border-color:var(--c-man);background:var(--c-mansoft)}#infocard .icwb.fd b{color:var(--c-mantx2)}
+#infocard .icwa{flex:0 0 1.125rem;align-self:center;text-align:center;color:var(--c-acc);font-weight:700}
+#libws .libw .ics{border:0;padding:0}
+/* Legend */
+#anlg{padding:.875rem 1rem!important;background:var(--c-pane)!important;border:1px solid var(--c-line)!important;border-radius:var(--r-l)!important;box-shadow:0 1rem 2.5rem var(--c-shadow)!important;font-size:.8125rem!important;color:var(--c-tx)!important;max-width:min(24rem,94vw)!important}
+#anlg b{font:600 .6875rem var(--uf)!important;letter-spacing:.1em;color:var(--c-dim)!important}
+/* floating panels (Health, Audit, F(X), Assumed values, DITL signals, DITL Health) */
+body.app2 :is(#anhp,#anau,#anln,#hp){top:calc(var(--topH,52px) + .5rem)!important;right:.75rem!important;width:min(42rem,calc(100vw - 1.5rem))!important;max-height:calc(100vh - var(--topH,52px) - var(--footH,30px) - 1.5rem)!important;
+ padding:1rem 1.125rem!important;background:var(--c-pane)!important;color:var(--c-tx)!important;border:1px solid var(--c-line)!important;border-radius:var(--r-l)!important;box-shadow:0 1.25rem 3rem var(--c-shadow)!important;font:400 .875rem/1.45 var(--uf)!important}
+body.app2 :is(#anhp,#anau,#anln,#hp) table{border-collapse:collapse;width:100%}
+body.app2 :is(#anhp,#anau,#anln,#hp) :is(th,td){padding:.375rem .5rem;border-bottom:1px solid var(--c-line);text-align:left}
+body.app2 :is(#anhp,#anau,#anln,#hp) th{position:sticky;top:-1rem;background:var(--c-pane);font:600 .6875rem var(--uf);letter-spacing:.06em;text-transform:uppercase;color:var(--c-dim)}
+body.app2 :is(#anhp,#anau,#anln,#hp) tr:hover td{background:var(--c-ctlh)}
+/* event log drawer */
+body.app2 #evbox{left:.75rem!important;right:.75rem!important;bottom:calc(var(--footH,30px) + .5rem)!important;background:var(--c-pane)!important;color:var(--c-tx);border:1px solid var(--c-line)!important;border-radius:var(--r-l)!important;box-shadow:0 1rem 2.5rem var(--c-shadow)!important;font-size:.8125rem}
+body.app2 #evbox .evh{background:var(--c-pane)!important;padding:.5rem .75rem!important}
+/* UAT / CHECK panels: docked right between the bars */
+body.app2 #uatb,body.app2 #chkb{position:static!important;bottom:auto!important;left:auto!important;right:auto!important;z-index:auto!important}
+body.app2 :is(#uatp,#chkp){top:var(--topH,52px)!important;bottom:var(--footH,30px)!important;left:auto!important;right:0!important;width:min(30rem,100vw)!important;border-right:0!important;border-left:1px solid var(--c-line)!important;background:var(--c-pane)!important;box-shadow:-.75rem 0 2rem var(--c-shadow);z-index:66!important;font-size:.875rem!important;padding:1rem!important}
+body.app2 :is(#uatp,#chkp) h3{color:var(--c-tx)!important;font:600 .75rem var(--uf)!important;letter-spacing:.08em;text-transform:uppercase}
+body.app2 :is(#uatp,#chkp) :is(button.go){background:var(--c-accbg)!important;border-color:var(--c-accbd)!important;color:var(--c-acctx)!important}
+body.app2 :is(#uatp,#chkp) :is(.card,.sc,details,section){border-radius:var(--r)!important}
+/* DITL timers / MOV table */
+body.app2 #tp{right:.75rem!important;bottom:calc(var(--footH,30px) + .5rem)!important;background:var(--c-pane)!important;border:1px solid var(--c-line)!important;border-radius:var(--r-l)!important;box-shadow:0 .75rem 2rem var(--c-shadow);z-index:30!important;font-size:.8125rem}
+body.app2 #tp > div:first-child b{font:600 .6875rem var(--uf);letter-spacing:.1em;text-transform:uppercase;color:var(--c-dim)}
+
+/* ---------- 10. TOOLS, LIBRARY, PLANT VIEW ---------- */
+#toolsws{position:fixed;left:0;right:0;top:var(--topH,52px);bottom:var(--footH,30px);z-index:45;display:none;overflow:auto;background:var(--c-bg);color:var(--c-tx);padding:clamp(.75rem,2vw,1.5rem);box-sizing:border-box}
+body[data-tab=tools] #toolsws{display:block}
+#toolsws .tgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(20rem,100%),1fr));gap:1rem;max-width:90rem;margin:0 auto}
+#toolsws .tcard{display:flex;flex-direction:column;gap:.375rem;padding:1.125rem 1.25rem;background:var(--c-pane);border:1px solid var(--c-line);border-radius:var(--r-l);box-shadow:0 1px 2px var(--c-shadow2)}
+#toolsws .tcard h3{margin:0;font:600 .9375rem var(--uf);color:var(--c-tx);letter-spacing:0;text-transform:none}
+#toolsws .tcard p{margin:0 0 .5rem;font-size:.875rem;line-height:1.5;color:var(--c-dim)}
+#toolsws .tcard .row{margin-top:auto;display:flex;flex-wrap:wrap;gap:.5rem}
+#toolsws .tcard :is(button,select,label.b){min-height:var(--ctl)!important}
+#toolsws .tcard span.lp{font:.8125rem var(--mf);color:var(--c-dim);align-self:center}
+/* library and plant view workspaces sit between the bars */
+body.app2 :is(#libws,#plantws){top:var(--topH,52px)!important;bottom:var(--footH,30px)!important}
+#plantws.noval{grid-template-columns:var(--lw) 1fr 0!important}
+#plantws.noval #plvals,#plantws.noval .plbar .plvb{display:none!important}
 #pllist button:not(.novg) small{display:none}
-#pllist button{padding:7px 10px!important}
-#plantws .plbar .b{height:24px;border-radius:var(--r)}
 #plantws .pllive{white-space:nowrap}
 #plantws #plsys{display:none}
-@media (max-width:1180px){#plantws.noval{grid-template-columns:200px 1fr 0!important}}
-@media (max-width:700px){
+body.app2 #plantws #plleft{background:var(--c-pane)!important;border-right:1px solid var(--c-line)!important}
+body.app2 #plantws .plh{padding:.75rem .875rem .375rem!important;background:var(--c-pane)!important;border:0!important}
+body.app2 #plantws .plh b{display:inline;font:600 .6875rem var(--uf)!important;letter-spacing:.1em;text-transform:uppercase;color:var(--c-dim)!important}
+body.app2 #plantws .plf{margin:0 .625rem .5rem!important;width:calc(100% - 1.25rem)!important}
+body.app2 #pllist button{display:block!important;width:100%;text-align:left;min-height:0!important;padding:.5rem .875rem!important;border:0!important;border-left:3px solid transparent!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;font:500 .8125rem var(--uf)!important;color:var(--c-tx)!important;white-space:normal}
+body.app2 #pllist button:hover{background:var(--c-ctlh)!important}
+body.app2 #pllist button.on{background:var(--c-accbg)!important;border-left-color:var(--c-acc)!important;color:var(--c-acctx)!important}
+body.app2 #plantws .plbar{padding:.5rem .875rem!important;background:var(--c-pane)!important;border-bottom:1px solid var(--c-line)!important;gap:.5rem}
+body.app2 #plantws .plbar b{display:inline;font:600 .9375rem var(--uf)!important;color:var(--c-tx)!important}
+body.app2 #libws .libbar{padding:.625rem .875rem!important;gap:.5rem;background:var(--c-pane)!important;border-bottom:1px solid var(--c-line)!important}
+body.app2 #libws .libtabs{display:flex;gap:.125rem;padding:.1875rem;background:var(--c-well);border:1px solid var(--c-line)!important;border-radius:calc(var(--r) + 2px)}
+body.app2 #libws .libtabs .b{min-height:1.875rem!important;border:0!important;background:transparent!important;box-shadow:none!important;font:600 .75rem var(--uf)!important;letter-spacing:.04em;color:var(--c-tx2)!important}
+body.app2 #libws .libtabs .b.on{background:var(--c-pane)!important;color:var(--c-tx)!important;box-shadow:0 1px 2px var(--c-shadow),0 0 0 1px var(--c-line)!important}
+body.app2 #libws .libhd{font:600 .6875rem var(--uf)!important;letter-spacing:.08em;color:var(--c-dim)!important;background:var(--c-ribbon)!important;border-bottom:1px solid var(--c-line)!important}
+body.app2 #libws .libg{background:var(--c-pane)!important;border-color:var(--c-line)!important;color:var(--c-tx)!important}
+body.app2 #libws .libr{border-bottom:1px solid var(--c-line)}
+body.app2 #libws .libr:hover{background:var(--c-ctlh)!important}
+
+/* ---------- 11. the drawing marks (Inputs layer) ---------- */
+#inmk circle.fo{stroke-dasharray:none!important;fill-opacity:.32}
+
+/* ---------- 12. any screen: the panels fold as the window narrows ---------- */
+/* below 1100 px the right panel floats over the drawing (the drawing keeps its width) */
+@media (max-width:1100px){
+ body.app2 #mid{position:relative}
+ body.app2 #mid :is(#anp,#opp){position:absolute!important;z-index:35;right:0;top:0;bottom:0;box-shadow:-.75rem 0 2rem var(--c-shadow)}
+}
+/* below 900 px: the sheet list is a drawer (☰ Sheets), the sheet title gives room */
+@media (max-width:900px){
+ body.app2 #tbsheets{display:inline-flex}
+ body.app2 #mid #side{position:absolute;z-index:40;left:0;top:0;bottom:0;width:min(20rem,86vw)!important;display:none;box-shadow:.75rem 0 2rem var(--c-shadow)}
+ body.app2 #mid #side.uiopen{display:flex}
+ #gsbar .brand span,#gsbar .crumb .cpath,#gsbar .crumb #meta #m_sub{display:none!important}
+ #sfoot .sinfo{display:none!important}
+}
+/* below 1280 px: the search is an icon that opens a row under the bar */
+@media (max-width:1280px){
+ #gsbar #srchbtn{display:inline-flex}
+ #gsbar .gs-search,#gsbar .gs-search:focus-within{display:none;position:absolute;left:0;right:0;top:var(--top);width:auto;height:auto;padding:.5rem .875rem;background:var(--c-strip);border-bottom:1px solid var(--c-line);box-shadow:0 .5rem 1rem var(--c-shadow);z-index:90}
+ body.srchopen #gsbar .gs-search{display:flex!important}
+ body.srchopen #gsbar .gs-search :is(#gscope,.infob){display:flex!important}
+}
+@media (max-width:1100px){#gsbar .tabs [data-ic][data-ic]{font-size:0!important;gap:0;min-width:2.375rem;padding:0!important}#gsbar .tabs [data-ic]::before{width:1.1875rem;height:1.1875rem}}
+/* phone: two rows in the top bar, the right panel is a bottom sheet */
+@media (max-width:640px){
+ body.app2 #gsbar{gap:.375rem;padding:0 .5rem!important}
+ #gsbar > :not(.tbar){height:2.875rem}
+ #gsbar .brand{display:none}
+ #gsbar .tabs{flex:1 1 auto}
+ #gsbar .tabs button{flex:1}
+ #gsbar .crumb{order:15;flex:1 1 100%;height:2.25rem!important;border-left:0;padding-left:.125rem;border-top:1px solid var(--c-line)}
+ #gsbar .tbar{margin:0 -.5rem}
+ #gsbar .seg button{min-width:3.25rem;padding:0 .5rem!important}
+ body.app2 #mid :is(#anp,#opp){top:auto!important;left:0;right:0;bottom:0;width:100%!important;height:55%;border-left:0!important;border-top:1px solid var(--c-line)!important;border-radius:var(--r-l) var(--r-l) 0 0;box-shadow:0 -.75rem 2rem var(--c-shadow)}
+ #zbar > .zsep:first-of-type,#zbar > .zb:nth-child(-n+2){display:none}
+ #sfoot :is(.sclock,.ssel){display:none!important}
  #plantws,#plantws.noval{grid-template-columns:1fr!important;grid-template-rows:1fr!important}
  #plantws #plsys{display:inline-flex;align-items:center;flex:none}
- #plantws #plleft{position:absolute;left:0;top:0;bottom:0;width:min(300px,86vw);max-height:none;z-index:6;display:none;box-shadow:8px 0 24px #000a}
+ #plantws #plleft{position:absolute;left:0;top:0;bottom:0;width:min(20rem,86vw);max-height:none;z-index:6;display:none;box-shadow:.75rem 0 2rem var(--c-shadow)}
  #plantws.lsopen #plleft{display:block}
- #plantws .plbar{gap:6px}
- #plantws .plbar b{min-width:0;flex:1 1 auto;font-size:12.5px}
- #plantws .plbar .b{height:30px}
 }
-/* TOOLS cards: flat, aligned */
-#toolsws .tcard{border-radius:var(--r)}
-#toolsws .tcard :is(button,select,label.b){height:32px;min-height:32px;border-radius:var(--r)}
-body.app2 #toolsws #uatb{height:32px!important}
-/* flat corners everywhere in the frame */
-.ddm,body.app2 :is(#infocard,#evbox),#toolsws .tcard,body.app2 :is(#opp,#plfp) .fp,body.app2 .fpov,body.app2 .fpov .ovc{border-radius:var(--r)!important}
-/* messages of the app go to the status bar (a message line, like a DCS), not over the drawing */
-body.app2 #toast{display:none!important}
-#sfoot .smsg{display:none;flex:1 1 auto;min-width:0;font:600 11px var(--mf)!important;color:#d8eeff;background:var(--c-accbg);box-shadow:inset 3px 0 0 var(--c-acc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:24px;cursor:pointer}
-body.hasmsg #sfoot .smsg{display:block}
-body.hasmsg #sfoot :is(#st,.shint){display:none!important}
-/* plant model OFF: a flag in the status bar, so a forgotten OFF is seen */
-#sfoot .spm{display:none!important;font:600 11px var(--mf)!important;color:#1a1200;background:var(--c-man);letter-spacing:.06em}
-body.pmoff #sfoot .spm{display:flex!important}
-/* engine buttons carry their old toolbar spacing inline: inside the bar and the cards the gap alone spaces them */
-body.app2 :is(#gsbar,#toolsws,.ddm) :is(button,select,label.b){margin-left:0!important;margin-right:0!important}
+
+/* ---------- 13. icons (masks in the text colour) ---------- */
+[data-ic=eye]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M2%2012s3.5-7%2010-7%2010%207%2010%207-3.5%207-10%207S2%2012%202%2012z%22/%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%223%22/%3E%3C/svg%3E")}
+[data-ic=reset]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2012a9%209%200%201%200%202.6-6.4L3%208%22/%3E%3Cpath%20d%3D%22M3%203v5h5%22/%3E%3C/svg%3E")}
+[data-ic=fit]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M4%209V4h5M20%209V4h-5M4%2015v5h5M20%2015v5h-5%22/%3E%3C/svg%3E")}
+[data-ic=hash]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M5%209h14M5%2015h14M10%204L8%2020M16%204l-2%2016%22/%3E%3C/svg%3E")}
+[data-ic=wave]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M2%2012h5l3-7%204%2014%203-7h5%22/%3E%3C/svg%3E")}
+[data-ic=target]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%228%22/%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%223%22/%3E%3C/svg%3E")}
+[data-ic=side]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%223%22%20y%3D%224%22%20width%3D%2218%22%20height%3D%2216%22%20rx%3D%222%22/%3E%3Cpath%20d%3D%22M15%204v16%22/%3E%3C/svg%3E")}
+[data-ic=plant]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2021V10l6%204v-4l6%204V5h6v16z%22/%3E%3Cpath%20d%3D%22M3%2021h18%22/%3E%3C/svg%3E")}
+[data-ic=logic]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%206h5a6%206%200%200%201%200%2012H6z%22/%3E%3Cpath%20d%3D%22M2%209h4M2%2015h4M17%2012h5%22/%3E%3C/svg%3E")}
+[data-ic=book]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%205h6a3%203%200%200%201%203%203v12a2%202%200%200%200-2-2H3z%22/%3E%3Cpath%20d%3D%22M21%205h-6a3%203%200%200%200-3%203v12a2%202%200%200%201%202-2h7z%22/%3E%3C/svg%3E")}
+[data-ic=tool]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M14.7%206.3a4%204%200%200%200-5.4%205.4L3%2018l3%203%206.3-6.3a4%204%200%200%200%205.4-5.4l-2.5%202.5-2.4-.6-.6-2.4z%22/%3E%3C/svg%3E")}
+[data-ic=curve]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2020h18M3%2020V4%22/%3E%3Cpath%20d%3D%22M5%2017c4%200%205-9%209-9s4%204%206%204%22/%3E%3C/svg%3E")}
+[data-ic=legend]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%223%22%20y%3D%224%22%20width%3D%226%22%20height%3D%225%22%20rx%3D%221%22/%3E%3Cpath%20d%3D%22M12%206.5h9M12%2016.5h9%22/%3E%3Crect%20x%3D%223%22%20y%3D%2214%22%20width%3D%226%22%20height%3D%225%22%20rx%3D%221%22/%3E%3C/svg%3E")}
+[data-ic=zin]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2210.5%22%20cy%3D%2210.5%22%20r%3D%226.5%22/%3E%3Cpath%20d%3D%22M15.5%2015.5%2021%2021M10.5%207.5v6M7.5%2010.5h6%22/%3E%3C/svg%3E")}
+[data-ic=zout]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2210.5%22%20cy%3D%2210.5%22%20r%3D%226.5%22/%3E%3Cpath%20d%3D%22M15.5%2015.5%2021%2021M7.5%2010.5h6%22/%3E%3C/svg%3E")}
+[data-ic=back]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M9%2014%204%209l5-5%22/%3E%3Cpath%20d%3D%22M4%209h10a6%206%200%200%201%200%2012h-3%22/%3E%3C/svg%3E")}
+[data-ic=home]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2011l9-7%209%207%22/%3E%3Cpath%20d%3D%22M5%2010v10h14V10%22/%3E%3Cpath%20d%3D%22M10%2020v-6h4v6%22/%3E%3C/svg%3E")}
+[data-ic=learn]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M2%209l10-5%2010%205-10%205z%22/%3E%3Cpath%20d%3D%22M6%2011v5c3%202%209%202%2012%200v-5%22/%3E%3C/svg%3E")}
+/* Legend on the light paper drawing: the paper colours (same mapping as theme.css) */
+html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#35d6c8"]{border-color:#0b7a72!important;background:#ffffff!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#b48cff"]{border-color:#6440b4!important;background:#ffffff!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#b4e04a"]{border-color:#587a10!important;background:#ffffff!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#ff7ad9"]{border-color:#a82e86!important;background:#ffffff!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#4be08a"]{border-color:#157a46!important;background:#ffffff!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#e8c9a0"]{border-color:#8a5a1c!important;background:#ffffff!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#ff4d4d"]{border-color:#c62828!important;background:#ffffff!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#5aa9ff"]{border-color:#1f5fae!important;background:#ffffff!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#c9d3dc"]{border-color:#44525e!important;background:#ffffff!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .sw[style*="#aeb9c3"]{border-color:#5b6874!important;background:#ffffff!important}
+html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .dt[style*="#35e08a"]{background:#157a46!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .dt[style*="#ff4d4d"]{background:#c62828!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg .dt[style*="#4da3ff"]{background:#1f6fbf!important}#anlg .dt[style*="#ffffff"]{box-shadow:inset 0 0 0 1.5px var(--c-line2)}
+html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg span[style*="#8dffb8"]{color:#0a6b3a!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg span[style*="#6ad7ff"]{color:#0b5f8a!important}html:not([data-theme=dark]):not([data-theme=hc])[data-dg=paper] #anlg span[style*="#ffb24a"]{color:#a85d00!important}
+/* each page shows its own title in the bar */
+body.an #gsbar .crumb #meta,body:not(.an) #gsbar .crumb #anmeta{display:none!important}
+#gsbar .tbar select{border:1px solid var(--c-line2)!important;background-color:var(--c-pane)!important;color:var(--c-tx)!important}
+body.app2:not(.an) #anptab{display:none!important}
+@media (max-width:900px){#gsbar .tbar :is(#anshbox,#shbox) select{max-width:7.5rem}}
+/* status line buttons sit on the line's centre; segmented controls keep a finger-size height */
+#sfoot #evbtn{display:flex!important;align-items:center;padding:0 .75rem!important;line-height:1!important}
+#gsbar :is(.sub,.seg) button,body.an #sidetabs button,body.app2 #sidesort button,#gsbar #gscope button{min-height:2rem!important;height:2rem}
+html:is([data-theme=dark],[data-theme=hc]){--c-runbg:#17733d;--c-runon:#135f33}
+/* plant system list: plain names in the UI font */
+body.app2 #pllist button b{font:500 .8125rem var(--uf)!important;color:inherit!important;white-space:normal}
+body.app2 #plantws .plf{font:400 .8125rem var(--uf)!important}
+body.app2 #plantws{grid-template-columns:var(--lw) 1fr clamp(16rem,22vw,20rem)}
+@media (max-width:1100px){body.app2 #plantws{grid-template-columns:var(--lw) 1fr 0}}
+/* status line: one message cell at a time, text on the centre line */
+body.hasmsg #sfoot .shint,body.hasmsg #sfoot #st{display:none!important}
+#sfoot #evbtn{height:var(--foot)!important;line-height:var(--foot)!important;display:block!important;padding:0 .75rem!important}
+#sfoot :is(.ssel,.sforce):empty{display:none!important}
+body:not(.hasmsg) #sfoot .smsg{display:none!important}
+
+/* ---------- 14. BUTTONS 3.1.0-beta.3 (user: "yung buttons, gandahan mo, professional") ----------
+   one look: quiet secondary buttons, one filled primary per place, toggles that read as "on", line icons instead of text symbols */
+:root{--c-btnbd:#d0d5dc;--c-btnhv:#f5f7f9;--c-btnac:#eceff3}
+html:is([data-theme=dark],[data-theme=hc]){--c-btnbd:#363e49;--c-btnhv:#232932;--c-btnac:#2a313b}
+body.app2 :is(button,label.b,select):not(.fp *):not(.fpop *):not(#zbar *):not(svg *){border-color:var(--c-btnbd);border-radius:.4375rem;box-shadow:0 1px 0 var(--c-shadow2);min-height:2rem;font-weight:500;letter-spacing:0}
+body.app2 :is(button,label.b):not(.fp *):not(.fpop *):not(#zbar *):hover{background-color:var(--c-btnhv);border-color:var(--c-line2)}
+body.app2 :is(button,label.b):not(.fp *):not(.fpop *):not(#zbar *):active{background-color:var(--c-btnac);box-shadow:none}
+body.app2 :is(button,label.b).on:not(.fp *):not(.fpop *):not(#zbar *):not(.fpov *){background-color:var(--c-accbg);border-color:var(--c-accbd);color:var(--c-acctx);box-shadow:none}
+/* primary: the one main action of a panel */
+body.app2 :is(#selcard .scb,button.go,#toolsws #uatb):not(.fp *){background:var(--c-accon)!important;border-color:var(--c-accon)!important;color:#ffffff!important;font-weight:600!important}
+body.app2 :is(#selcard .scb,button.go,#toolsws #uatb):not(.fp *):hover{filter:brightness(1.08)}
+/* icon-only buttons are square */
+body.app2 button[data-g]:not(#zbar *){font-size:0!important;width:2rem;min-width:2rem;padding:0!important;gap:0}
+body.app2 :is(button[data-g],.gi)::before{content:"";display:inline-block;width:1rem;height:1rem;flex:none;background:currentColor;-webkit-mask:var(--g) center/contain no-repeat;mask:var(--g) center/contain no-repeat}
+body.app2 .gi{font-size:0;display:inline-flex;align-items:center;vertical-align:middle}
+body.app2 .gi::before{width:.9375rem;height:.9375rem}
+body.app2 #zbar button[data-g]{font-size:0!important}
+/* toolbar: ghost buttons; selects are fields; Run is the green action, Pause a plain button */
+body.app2 #gsbar .tbar select{min-height:1.875rem!important;height:1.875rem;border:1px solid var(--c-btnbd)!important;background-color:var(--c-pane)!important;border-radius:.4375rem!important;box-shadow:0 1px 0 var(--c-shadow2)!important;padding:0 1.75rem 0 .625rem!important;color:var(--c-tx)!important;font-weight:500!important}
+#gsbar .tbar :is(button,label.b).on:not(.tb-run){background-color:var(--c-accbg)!important;color:var(--c-acctx)!important;box-shadow:inset 0 0 0 1px var(--c-accbd)!important}
+#gsbar .tbar .tb-run{border-radius:.4375rem!important;padding:0 .875rem!important;gap:.5rem}
+#gsbar .tbar .tb-run:not(.on){background-color:var(--c-runbg)!important;color:#ffffff!important;box-shadow:0 1px 0 var(--c-shadow2)!important}
+#gsbar .tbar .tb-run.on{background-color:var(--c-pane)!important;color:var(--c-tx)!important;box-shadow:inset 0 0 0 1px var(--c-btnbd),0 1px 0 var(--c-shadow2)!important}
+#gsbar .tbar .tb-step[data-g]{width:2.125rem;min-width:2.125rem}
+/* audit result buttons: quiet, a coloured dot says which */
+body.app2 #anp button[style*="c-runtx2"],body.app2 #anp button[style*="c-almtx"],body.app2 #anp button[style*="c-mantx2"]{border-color:var(--c-btnbd)!important;color:var(--c-tx)!important;gap:.4375rem}
+body.app2 #anp button[style*="c-runtx2"]::before,body.app2 #anp button[style*="c-almtx"]::before,body.app2 #anp button[style*="c-mantx2"]::before{content:"";width:.5rem;height:.5rem;border-radius:50%;flex:none}
+body.app2 #anp button[style*="c-runtx2"]::before{background:var(--c-run)}
+body.app2 #anp button[style*="c-almtx"]::before{background:var(--c-alm)}
+body.app2 #anp button[style*="c-mantx2"]::before{background:var(--c-man)}
+/* value field + set / release: one joined control */
+body.app2 #anp .r input[type=number]+button,body.app2 #anp .r input:not([type])+button{margin-left:-.25rem!important}
+body.app2 #anp .r button[data-g]{width:1.875rem;min-width:1.875rem;min-height:1.875rem}
+/* the sheet list collapse arrow is a quiet icon */
+body.app2 #sidehd button{border-color:transparent!important;background:transparent!important;box-shadow:none!important;color:var(--c-dim)!important}
+body.app2 #sidehd button:hover{background:var(--c-ctlh)!important;color:var(--c-tx)!important}
+/* the side tab that brings the panel back */
+body.app2 #anptab .gi::before{width:.875rem;height:.875rem}
+[data-g=x]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%206l12%2012M18%206L6%2018%22/%3E%3C/svg%3E")}
+[data-g=check]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M5%2012.5l4.5%204.5L19%207.5%22/%3E%3C/svg%3E")}
+[data-g=cl]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M15%205l-7%207%207%207%22/%3E%3C/svg%3E")}
+[data-g=cr]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M9%205l7%207-7%207%22/%3E%3C/svg%3E")}
+[data-g=cu]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M5%2015l7-7%207%207%22/%3E%3C/svg%3E")}
+[data-g=cd]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M5%209l7%207%207-7%22/%3E%3C/svg%3E")}
+[data-g=skipb]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M18%206l-8%206%208%206zM6%206v12%22/%3E%3C/svg%3E")}
+[data-g=skipf]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%206l8%206-8%206zM18%206v12%22/%3E%3C/svg%3E")}
+[data-g=play]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M7%205l12%207-12%207z%22%20fill%3D%22black%22/%3E%3C/svg%3E")}
+[data-g=pause]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M8%205v14M16%205v14%22%20stroke-width%3D%223%22/%3E%3C/svg%3E")}
+[data-g=info]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%229%22/%3E%3Cpath%20d%3D%22M12%2011v6M12%207.5v.5%22/%3E%3C/svg%3E")}
+[data-g=expand]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M14%204h6v6M10%2020H4v-6M20%204l-7%207M4%2020l7-7%22/%3E%3C/svg%3E")}
+[data-g=minus]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M5%2012h14%22/%3E%3C/svg%3E")}
+[data-g=plus]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%205v14M5%2012h14%22/%3E%3C/svg%3E")}
+[data-g=back]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M9%2014%204%209l5-5%22/%3E%3Cpath%20d%3D%22M4%209h10a6%206%200%200%201%200%2012h-3%22/%3E%3C/svg%3E")}
+[data-g=menu]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M4%207h16M4%2012h16M4%2017h16%22/%3E%3C/svg%3E")}
+[data-g=pin]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%2021s-6-5.5-6-11a6%206%200%200%201%2012%200c0%205.5-6%2011-6%2011z%22/%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2210%22%20r%3D%222%22/%3E%3C/svg%3E")}
+[data-g=dice]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%224%22%20y%3D%224%22%20width%3D%2216%22%20height%3D%2216%22%20rx%3D%223%22/%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%221%22%20fill%3D%22black%22/%3E%3Ccircle%20cx%3D%2215%22%20cy%3D%2215%22%20r%3D%221%22%20fill%3D%22black%22/%3E%3Ccircle%20cx%3D%2215%22%20cy%3D%229%22%20r%3D%221%22%20fill%3D%22black%22/%3E%3Ccircle%20cx%3D%229%22%20cy%3D%2215%22%20r%3D%221%22%20fill%3D%22black%22/%3E%3C/svg%3E")}
+[data-g=folder]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%207a2%202%200%200%201%202-2h4l2%202h8a2%202%200%200%201%202%202v8a2%202%200%200%201-2%202H5a2%202%200%200%201-2-2z%22/%3E%3C/svg%3E")}
+[data-g=save]{--g:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M5%204h11l3%203v13H5z%22/%3E%3Cpath%20d%3D%22M8%204v5h7V4M8%2020v-6h8v6%22/%3E%3C/svg%3E")}
+#gsbar .tbar .tb-run.tb-run.on{background-color:var(--c-pane)!important;color:var(--c-tx)!important;box-shadow:inset 0 0 0 1px var(--c-btnbd),0 1px 0 var(--c-shadow2)!important}
+body.app2 #gsbar .tbar select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:right .625rem center!important}
+/* status line: one message cell (ids raise the weight over the shared #st / .smsg rule) */
+body:not(.hasmsg) #sfoot .smsg:not(#x){display:none!important}
+body.hasmsg #sfoot :is(#st,.shint):not(#x){display:none!important}
+body[data-tab=logic] #sfoot .shint:not(#x){display:none!important}
+/* DITL: the reference group stays in RUN too, so the bar is never empty; the sheet title keeps room */
+body[data-tab=logic]:not(.an) #gsbar .g-ref{display:flex}
+#gsbar .crumb #meta #m_title{min-width:6rem;flex:1 1 auto}
+#gsbar .crumb #meta #m_sub{flex:0 1 auto;min-width:0;overflow:hidden}
+/* ---------- 15. SIDE PANELS 3.1.0-beta.4 (user: "sa side panels, tama na ba lahat?") ----------
+   nothing said twice: the sheet name is in the top bar, the inputs are in the left Inputs tab */
+/* Inspector: the sheet name, the how-to paragraph and the inputs list (the left Inputs tab has them) are not repeated */
+body.app2 #anp .ph{justify-content:flex-end}
+body.app2 #anp .ph > :is(b,span:first-child){display:none}
+body.app2 #anp > small:first-of-type{display:none!important}
+body.app2 #anp :is(#anlists,#ansrch){display:none!important}
+/* nothing selected: one quiet line says what to do */
+body.app2 #anp:not(.hassel) #ansel:empty::before{content:"Click a block or a wire on the drawing to inspect it.";display:block;padding:1.25rem 1rem;margin:0 0 1rem;border:1px dashed var(--c-line2);border-radius:var(--r-l);color:var(--c-dim);font-size:.875rem;text-align:center}
+/* Faceplate pane: no repeated sheet name, one heading for the controllers */
+body.app2 #opp .body > .hdr:first-child,body.app2 #opp .body > .hdr:first-child + .sub,body.app2 #opp .body > h4:has(+ .fpov){display:none!important}
+/* controller cards: readable values, light bars */
+body.app2 .fpov{padding:.75rem!important;margin:0 0 1rem!important}
+body.app2 .fpov .ovh{display:flex;align-items:center;justify-content:space-between;margin:0 0 .625rem!important}
+body.app2 .fpov > div:has(> .ovc){display:grid!important;grid-template-columns:repeat(auto-fill,minmax(7.25rem,1fr))!important;gap:.5rem!important}
+body.app2 .fpov .ovc{padding:.5rem .5rem .4375rem!important;gap:.375rem!important}
+body.app2 .fpov .tt{font:600 .75rem var(--mf)!important;color:var(--c-tx)}
+body.app2 .fpov .ovb{height:1.75rem!important;background:var(--c-well)!important;border:1px solid var(--c-line)!important;border-radius:.25rem;overflow:hidden}
+body.app2 .fpov .ft{display:flex;flex-direction:column;align-items:flex-start;gap:.125rem;font:500 .6875rem var(--mf)!important;color:var(--c-tx2)}
+body.app2 .fpov .ft > *{white-space:nowrap}
+body.app2 .fpov .md{font-weight:700;padding:0 .3125rem;border-radius:.1875rem}
+body.app2 .fpov .m-A{background:var(--c-runsoft);color:var(--c-runtx2)!important}
+body.app2 .fpov .m-M{background:var(--c-mansoft);color:var(--c-mantx2)!important}
+body.app2 .fpov .m-R{background:var(--c-accbg);color:var(--c-acctx)!important}
+/* the plain buttons inside a faceplate (Why?, MV steps, Engineering) follow the app buttons; A / M / R keep the DCS look */
+body.app2 :is(#opp,#plfp) .fp button.b:not(.ra):not(.on):not(.fon){background:var(--c-ctl)!important;color:var(--c-tx)!important;border:1px solid var(--c-btnbd)!important;border-radius:.4375rem!important;box-shadow:0 1px 0 var(--c-shadow2)!important;font:500 .8125rem var(--uf)!important}
+body.app2 :is(#opp,#plfp) .fp button.b:not(.ra):not(.on):not(.fon):hover{background:var(--c-btnhv)!important}
+body.app2 :is(#opp,#plfp) .fp .sub{font-size:.8125rem!important;line-height:1.4}
+/* left pane: the sort switch is quieter than the Sheets | Inputs switch */
+body.app2 #sidesort{background:transparent!important;border:0!important;padding:0!important;gap:.375rem!important}
+body.app2 #sidesort button{border:1px solid transparent!important;color:var(--c-dim)!important;font-size:.75rem!important;min-height:1.75rem!important;height:1.75rem}
+body.app2 #sidesort button.on{background:var(--c-well)!important;border-color:var(--c-line)!important;color:var(--c-tx)!important;box-shadow:none!important}
+body.app2 #sidehd b{flex:1}
+/* ---------- 16. DRAWING FIRST 3.1.0-beta.5 (user: "liit na ng drawing, sobrang laki pa ng faceplate") ----------
+   narrower side panes, a compact faceplate (the same DCS faceplate, smaller), shorter bar graph */
+:root{--lw:clamp(12.5rem,15vw,16.5rem);--rw:clamp(16.5rem,21vw,21rem)}
+body.app2 #opp .fp{zoom:.8}
+body.app2 #opp .fpg{min-height:10rem!important}
+body.app2 #opp .fp .fpe{margin-top:.25rem}
+body.app2 #opp .fp + .fp{margin-top:.5rem}
+body.app2 .fpov .ovb{height:1.25rem!important}
+body.app2 .fpov > div:has(> .ovc){grid-template-columns:repeat(auto-fill,minmax(6.5rem,1fr))!important;gap:.375rem!important}
+/* the left pane: smaller rows so more sheets / inputs fit */
+body.app2 :is(#sidelist,#anlist) button{padding:.375rem .625rem .375rem .75rem!important}
+body.app2 :is(#sidelist,#anlist) button .st{font-size:.6875rem!important}
+#inlist .ini{padding:.375rem .25rem}
+/* the desk margin around the paper is thinner */
+body.app2 #cv{padding:.5rem!important}
+/* ---------- 17. CONTROLLER GROUP 3.1.0-beta.6: mini DCS faceplates side by side (more fit, like a group display) ---------- */
+body.app2 .fpov{background:var(--c-pane)!important;padding:.625rem!important}
+body.app2 .fpov .ovg,body.app2 .fpov > div:has(> .ovc){display:grid!important;grid-template-columns:repeat(auto-fill,minmax(4.75rem,1fr))!important;gap:.375rem!important}
+body.app2 .fpov .ovc{display:flex!important;flex-direction:column;gap:0!important;padding:0!important;overflow:hidden;background:#0d1318!important;border:1px solid #2c3a45!important;border-radius:.375rem!important;cursor:pointer}
+body.app2 .fpov .ovc:hover{border-color:#5b7385!important}
+body.app2 .fpov .ovc.on{border-color:var(--c-acc)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--c-acc) 45%,transparent)!important}
+body.app2 .fpov .tt{order:0;padding:.25rem .3125rem;background:#c9d4dc;color:#111a20!important;font:700 .6875rem var(--mf)!important;text-align:center}
+body.app2 .fpov .bars{order:1;display:flex;justify-content:center;gap:.25rem;height:5.5rem!important;padding:.375rem .375rem .25rem;align-items:stretch}
+body.app2 .fpov .ovb{flex:0 0 .625rem!important;height:auto!important;background:#1a242b!important;border:1px solid #2c3d49!important;border-radius:0!important}
+body.app2 .fpov .ovb:last-child{flex-basis:.3125rem!important}
+body.app2 .fpov i.pv{background:#38c8d8!important}body.app2 .fpov i.sv{background:#ffd84a!important}body.app2 .fpov i.mv{background:#4be36a!important}
+body.app2 .fpov .ft{order:2;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between;gap:.25rem;padding:.125rem .3125rem;color:#dbe5ec}
+body.app2 .fpov .ft .nm{font:600 .75rem var(--mf)!important;color:#38c8d8!important;overflow:hidden;text-overflow:ellipsis}
+body.app2 .fpov .md{flex:none;min-width:1rem;text-align:center;font:700 .6875rem var(--mf)!important;padding:0 .1875rem;border-radius:.1875rem;background:#2a3640!important;color:#dbe5ec!important}
+body.app2 .fpov .md.m-A{background:#f1d21a!important;color:#111!important}
+body.app2 .fpov .md.m-M{background:#3fdc4a!important;color:#06210f!important}
+body.app2 .fpov .md.m-R{background:#d9dfe4!important;color:#111!important}
+body.app2 .fpov .mvn{order:3;display:block;padding:0 .3125rem .3125rem;font:500 .625rem var(--mf);color:#9fb0bb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* ---------- 18. ONE BUTTON SYSTEM 3.1.0-beta.6 (inventory: 43 different looks → 4 sizes, 4 kinds) ----------
+   sizes:  md 2.125rem (every button, select, field)   sm 1.875rem (segmented, inside rows)   list rows   icon = md square
+   kinds:  secondary (white, border)   primary (blue, one per panel)   run (green)   ghost (tool bar, menus)
+   text:   .875rem medium, sentence case; segmented .8125rem semibold */
+:root{--b-md:2.125rem;--b-sm:1.875rem}
+@media (pointer:coarse){:root{--b-md:2.5rem;--b-sm:2.25rem}}
+body.app2 :where(button,label.b,select):where(:not(.fp *,.fpop *,#zbar *,svg *,#sidelist *,#anlist *,#pllist *,#anfind *,#sfoot *)){
+ min-height:var(--b-md)!important;font-weight:500;line-height:1;letter-spacing:0}
+body.app2 :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select):not(.fp *):not(.fpop *):not(#sfoot *){min-height:var(--b-md)!important;font-size:.875rem!important}
+body.app2 button[data-g]:not(#zbar *):not(.fp *){width:var(--b-md)!important;min-width:var(--b-md)!important}
+/* segmented controls: one size everywhere (top bar, left pane, library, search scope, inputs) */
+body.app2 :is(#gsbar .sub,#gsbar .seg,#sidetabs,#sidesort,#libws .libtabs,#gscope) button{min-height:var(--b-sm)!important;height:var(--b-sm)!important;font-size:.8125rem!important;font-weight:600!important;letter-spacing:.01em!important;text-transform:none!important}
+#gsbar .seg button{letter-spacing:.06em!important}
+body.app2 #sidesort button{font-weight:500!important}
+/* tool bar and its groups: the same height as everything else */
+#gsbar .tbar :is(button,select,label.b){min-height:var(--b-md)!important;height:var(--b-md)!important}
+/* tabs of the top bar and of the right pane */
+#gsbar .tabs button,body.app2 .hmitabs button{min-height:var(--b-md)!important;height:var(--b-md)!important;font-size:.875rem!important}
+/* primary: blue; the one main action */
+body.app2 :is(#selcard .scb,button.go,#toolsws #uatb):not(.fp *){min-height:var(--b-md)!important}
+/* force editor: value field + Force (✓, blue) + Release (✕, quiet) as one group */
+body.app2 #anp .fc{display:inline-flex;gap:0!important;align-items:stretch}
+body.app2 #anp .fc > input{border-radius:.4375rem 0 0 .4375rem!important;width:6rem!important}
+body.app2 #anp .fc > button{border-radius:0!important;margin-left:-1px!important}
+body.app2 #anp .fc > button:last-child{border-radius:0 .4375rem .4375rem 0!important}
+body.app2 #anp .fc > button[data-g=check]{background:var(--c-accbg)!important;color:var(--c-acctx)!important;border-color:var(--c-accbd)!important}
+/* the left pane collapse, Timers toggle, panel close: icon buttons with the same size and look */
+body.app2 #sidetg{width:var(--b-sm)!important;min-width:var(--b-sm)!important;min-height:var(--b-sm)!important}
+/* events in the status line: a real button in the dark bar */
+#sfoot #evbtn{font:500 .75rem var(--uf)!important;letter-spacing:.02em}
+/* Plant model ON / OFF: reads as a switch state, not a selected tab */
+body.app2 #pmbtn.on{background:var(--c-runsoft)!important;border-color:var(--c-run)!important;color:var(--c-runtx2)!important}
+#gsbar :is(#srchbtn,.gs-set > button){width:var(--b-md)!important;min-width:var(--b-md)!important;height:var(--b-md)!important;min-height:var(--b-md)!important}
+body.app2 #pllist button{padding:.5rem .875rem!important;line-height:1.3}
+/* icon-only buttons draw the icon only (the general text size above must not show the symbol text) */
+body.app2 button[data-g][data-g]:not(#zbar *):not(.fp *){font-size:0!important;padding:0!important;gap:0!important;justify-content:center}
+body.app2 #zbar button[data-g][data-g]{font-size:0!important}
+/* the "Record check:" row wraps as a whole; its label stays on one line */
+body.app2 #ansel > div:has(> small:first-child){flex-wrap:wrap!important;row-gap:.375rem}
+body.app2 #ansel > div:has(> small:first-child) > small{flex:none;white-space:nowrap!important}
+/* force editor sits on the row of its value */
+body.app2 #anp .r{flex-wrap:wrap}
+body.app2 #anp .r > .fc{margin-left:auto}
+body.app2 :where(button:not([data-g]):not([data-ic]),label.b,select):where(:not(.fp *,.fpop *,#zbar *,svg *,#sidelist *,#anlist *,#pllist *,#anfind *,#sfoot *)){font-size:.875rem!important}
+body.app2 :where(button[data-ic]):where(:not(#gsbar .tabs *,#gsbar .tbar *)){font-size:.875rem!important}
+/* panel text breaks between words, not inside them */
+body.app2 #anp,body.app2 #anp *{word-break:normal!important;overflow-wrap:break-word!important}
+body.app2 #anp .fc > input{width:7rem!important}
+/* DITL title: the drawing / sheet numbers give way to the title on narrower screens */
+@media (max-width:1500px){#gsbar .crumb #meta #m_sub{display:none!important}}
+/* ---------- 19. FULL AUDIT FIXES 3.1.0-beta.7 ---------- */
+/* phone / tablet: the menus stay on the screen */
+@media (max-width:640px){.ddm{position:fixed!important;left:.5rem!important;right:.5rem!important;top:calc(var(--topH,96px) + .25rem)!important;min-width:0!important}}
+/* narrow screens: the sheet navigator comes first in the tool bar (it was scrolled out of view) */
+@media (max-width:900px){#gsbar .tbar .g-sheet{order:-1}#gsbar .tbar .g-nav{order:-2}/* 3.2.0-beta.39: the ↩ Back after a page link is the first button, never scrolled out of the row */#gsbar .tbar{justify-content:flex-start}}
+/* the tool bar scrolls sideways on a phone: a fade at the edge says there is more */
+@media (max-width:640px){#gsbar .tbar{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 2rem),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 2rem),transparent)}}
+/* wide tables (library calculations, assumed values) scroll inside their panel */
+body.app2 :is(#libws .libcalc,#anln) table{display:block;max-width:100%;overflow-x:auto}
+/* force editor: the field takes the room that is left */
+body.app2 #anp .fc{max-width:100%}
+body.app2 #anp .fc > input{flex:1 1 5rem!important;width:auto!important;min-width:4rem}
+body.app2 :is(#opp,#plfp) .sg{color:var(--c-dim)!important}
+body.app2 #libws table{display:block;max-width:100%;overflow-x:auto}
+body.app2 #anptab{min-width:2rem!important}
+body.app2 .sg{color:var(--c-dim)!important}
+
+/* ===================================================================================================================
+   3.2.0-beta.1: merge of the 2.5.0 line (PR #34 / #35) into the 3.1 shell. The rules below are the 2.5.0 features that the
+   3.1 stylesheet did not have: DITL right panel (ditl.js), DITL links and header, info card, LOGIC layout (layout.js),
+   Focus / mini-map / Width (view.js). Their 2.5.0 colour names map to the 3.1 tokens here.
+   =================================================================================================================== */
+:root,html:is([data-theme=dark],[data-theme=hc],[data-theme=grey]){--c-bg2:var(--c-well);--c-fp:var(--c-plate);--c-hi:var(--c-tx);--c-hovbd:var(--c-lineh);--c-pop:var(--c-pane);--c-row:var(--c-line)}
+/* ===== 2.4.1-beta.2: UI audit #5-#8 (state colour, touch size, small text) ===== */
+/* Run / Pause: green = "press to run"; while running the button reads Pause and is neutral (not green) */
+/* WCAG 2.5.8: every control at least 24 px on PC */
+/* touch screens (tablet / phone): 44 px controls (Apple 44 pt / Material 48 dp) */
+@media (pointer:coarse){
+ /* every other button / field: 44 px tall, 44 px wide (the vertical Panel tab is already 64 px tall) */
+}
+/* small panel text -> 12 px */
+/* ===== 2.4.1-beta.4: DITL page like the ABC page (tool bar + right panel, src/ui/shell/ditl.js) ===== */
+#gsbar .g-ditl .dui-sep{width:1px;align-self:stretch;margin:4px 4px;background:var(--c-line2)}
+#dp{flex:none;width:380px;overflow-y:auto;box-sizing:border-box;padding:8px 10px 24px;background:var(--c-pane);border-left:1px solid var(--c-line);font:12.5px var(--uf);color:var(--c-tx)}
+#dp.min,body.an #dp{display:none}
+#dp .dp-top{display:flex;align-items:center;gap:8px;padding:2px 0 6px;border-bottom:1px solid var(--c-line)}
+#dp .dp-top b{flex:1;font:600 13px var(--mf);color:var(--c-hi)}
+#dp .dp-top button{min-width:30px;min-height:28px}
+#dp .dp-note{margin:6px 0;color:var(--c-dim);font-size:12px;line-height:1.4}
+#dp .dp-h{margin:12px 0 4px;padding-bottom:4px;border-bottom:1px solid var(--c-line);font:600 11.5px var(--uf);letter-spacing:.12em;text-transform:uppercase;color:var(--c-run)}
+#dp .dp-r{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--c-row)}
+#dp .dp-l{flex:1;min-width:0}
+#dp .dp-t{font:600 12px var(--mf)!important;color:var(--c-hi);overflow-wrap:anywhere}
+#dp .dp-r .dp-d{font-family:var(--uf)!important}
+#dp .dp-d{font-size:12px;color:var(--c-tx2);line-height:1.3;overflow-wrap:anywhere}
+#dp button,#dp input{height:28px;border-radius:3px;background:var(--c-ctl);border:1px solid var(--c-line2);color:var(--c-tx2);font:12px var(--mf);cursor:pointer}
+#dp .dp-v{min-width:74px;flex:none}
+#dp .dp-v.on{background:var(--c-almsoft);border-color:var(--c-alm);color:var(--c-almtx)}
+#dp .dp-v.pb{border-color:var(--c-accbd);color:var(--c-acctx)}
+#dp .dp-v.pb.on{background:var(--c-accbg);color:var(--c-acctx)}
+#dp .dp-v.auto{border-style:dashed;cursor:default}
+#dp .dp-n{width:84px;padding:0 6px;color:var(--c-acctx);cursor:text}
+#dp .dp-u{min-width:30px;color:var(--c-dim);font-size:12px}
+#dp .dp-tr{display:flex;align-items:center;gap:8px;margin-top:3px}
+#dp .dp-bar{flex:1;height:4px;background:var(--c-line2);position:relative}
+#dp .dp-bar i{position:absolute;left:0;top:0;bottom:0;background:var(--c-acc)}
+#dp .dp-tv{font:12px var(--mf);color:var(--c-tx2);white-space:nowrap}
+#dp .dp-tv.on{color:var(--c-almtx)}
+#dp .dp-sk:disabled{opacity:.4;cursor:default}
+#dp .dp-o{min-width:30px;text-align:center;padding:2px 6px;border:1px solid var(--c-line2);font:600 12px var(--mf);color:var(--c-dim)}
+#dp .dp-o.on{border-color:var(--c-alm);color:var(--c-almtx)}
+@media (max-width:700px){#mid #dp{top:auto;left:0;right:0;bottom:0;width:100%;height:52%;border-radius:14px 14px 0 0;box-shadow:0 -8px 24px #000a}}
+@media (pointer:coarse){#dp button,#dp input{height:40px}#dp .dp-top button{min-width:44px;min-height:44px}}
+/* 2.4.1-beta.5: TOOLS = one tool per line, its name and what it does (proposal C) */
+/* 2.4.1-beta.5: the info card (search ⓘ, LIBRARY row, Find) and the DITL "ALSO IN ABC" bar lost their style when the old shell.css
+   was removed in 2.4.0-beta.1 (the card opened as plain text at the bottom of the page). Same rules as v2.2.0, with the theme colours. */
+#abcbar{position:fixed;left:50%;transform:translateX(-50%);bottom:34px;z-index:60;display:none;max-width:min(760px,96vw);background:var(--c-pane);border:1px solid var(--c-line2);border-radius:var(--r);padding:4px 8px;font:12px var(--uf);color:var(--c-tx);box-shadow:0 6px 18px #0009}
+#abcbar .abr{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:2px 0}
+#abcbar .abr b{font-size:10.5px;letter-spacing:.08em;color:var(--c-runtx2)}
+#abcbar .abq{font-family:var(--mf,monospace);color:var(--c-mantx2)}
+/* 2.4.1-beta.6: side tab of the closed panel, same on ABC and DITL */
+body.app2 :is(#anptab,#dptab){position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:40;min-height:96px;padding:10px 7px;writing-mode:vertical-rl;border:1px solid var(--c-acc);border-right:0;border-radius:6px 0 0 6px;background:var(--c-pane);color:var(--c-acc);font:600 12px var(--uf);letter-spacing:.06em;cursor:pointer;box-shadow:-4px 0 12px #0006}
+#dptab{display:none}
+body.app2 :is(#anptab,#dptab):hover{background:var(--c-accbg)}
+/* ===== 2.4.1-beta.7 LOGIC page layout (src/ui/shell/layout.js): [VIEW | Run] ▶▶ ⏱, drawing tools on the drawing,
+   right panel with tabs, VIEW keeps the panel readable ===== */
+.lo-pop{display:none;position:fixed;z-index:210;min-width:230px;padding:8px;background:var(--c-pop);border:1px solid var(--c-line2);border-radius:var(--r,4px);box-shadow:0 12px 30px #000a}
+.lo-pop.open{display:flex;flex-direction:column;gap:6px}
+.lo-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font:12px var(--uf);color:var(--c-tx2)}
+.lo-row>:last-child{height:30px;min-width:96px;background:var(--c-ctl);border:1px solid var(--c-line2);color:var(--c-tx);border-radius:3px;font:12px var(--uf)}
+#lotools{position:fixed;z-index:34;display:none;gap:4px;padding:4px;background:var(--c-pop);border:1px solid var(--c-line2);border-radius:var(--r,4px);box-shadow:0 4px 14px #0007}
+#lotools>div{display:flex;gap:4px}
+body.an #lotools .lo-di,body:not(.an) #lotools .lo-an{display:none!important}
+#lotools button{height:30px;padding:0 10px;border-radius:3px;font:500 12px var(--uf);background:var(--c-ctl);border:1px solid var(--c-line2);color:var(--c-tx2);cursor:pointer;display:inline-flex;align-items:center}
+#lotools button:hover{border-color:var(--c-hovbd);color:var(--c-tx)}
+#lotools button.on{background:var(--c-accbg);color:var(--c-hi);box-shadow:inset 0 -2px 0 var(--c-acc)}
+/* right panel tabs */
+.lo-tabs{display:flex;border-bottom:1px solid var(--c-line2);margin:0 0 8px;position:sticky;top:0;z-index:3;background:var(--c-pane)}
+.lo-tabs button{flex:1 1 auto;min-width:0;height:34px;padding:0 3px;border:0!important;border-radius:0!important;background:transparent!important;color:var(--c-tx2)!important;font:600 11px var(--uf)!important;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lo-tabs button:hover{color:var(--c-tx)!important}
+.lo-tabs button.on{color:var(--c-hi)!important;box-shadow:inset 0 -2px 0 var(--c-acc)!important}
+#dp[data-pt] [data-k]:not([data-k=note]){display:none}
+#dp[data-pt=in] .dp-r[data-k=in],#dp[data-pt=tm] .dp-r[data-k=tm],#dp[data-pt=mv] .dp-r[data-k=mv],#dp[data-pt=out] .dp-r[data-k=out]{display:flex!important}
+#dp[data-pt=in] p[data-k=in],#dp[data-pt=out] p[data-k=out]{display:block!important}
+#dp[data-pt] .dp-h[data-k]{display:none!important}
+/* VIEW: values stay readable; the inputs show they are locked instead of fading */
+/* sheet list: one line per sheet title */
+body.app2.lo #sidelist button{padding:4px 10px!important}
+body.app2.lo #sidelist button .st{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 2.4.1-beta.8 / beta.9: Panel button in the top bar (user: "NASAN NA SIDE PANEL"); the operator faceplate panel belongs to the ABC page only */
+body[data-tab=logic] #gsbar .lo-pg{display:flex}
+/* 2.4.1-beta.10 (full check, user "Buong check muna"):
+   tablet portrait (701-820 px): the old 42 vh limit cut the right panel in half */
+
+
+/* 2.5.0-beta.8: DITL page links (FROM / TO column): link color, the row that a link opened blinks, chooser when a cell names several pages */
+#svg text.plink{fill:var(--c-acc);text-decoration:underline}
+#svg rect.plmiss{fill:rgba(220,38,38,.22);stroke:#ef4444;stroke-width:1.4;pointer-events:none}
+#svg rect.plmiss.off{stroke-opacity:.1;fill-opacity:0}
+#svg rect.plflash{fill:rgba(255,196,0,.22);stroke:#ffc400;stroke-width:.6;pointer-events:none;animation:plf .5s ease-in-out 4 alternate}
+#plpick{position:fixed;z-index:60;min-width:220px;max-width:min(420px,calc(100vw - 16px));max-height:60vh;overflow:auto;padding:6px;background:var(--c-pane,#151c22);border:1px solid var(--c-acc,#4fd18b);border-radius:6px;box-shadow:0 6px 18px #0008}
+#plpick .plhd{font:600 12px var(--uf,sans-serif);color:var(--c-dim,#9aa7b2);padding:2px 4px 6px}
+#plpick button{display:block;width:100%;text-align:left;margin:2px 0;padding:8px 10px;min-height:36px;background:transparent;color:var(--c-tx,#e6edf3);border:1px solid var(--c-line2,#2a3540);border-radius:4px;font:13px var(--uf,sans-serif);cursor:pointer}
+#plpick button:hover{border-color:var(--c-acc,#4fd18b)}
+/* 2.5.0-beta.11: DITL sheet list by category (same header as the ABC list) */
+#sidelist .fhc,#anlist .fhc{cursor:pointer;user-select:none}#sidelist .fhc:hover,#anlist .fhc:hover{filter:brightness(1.3)}
+/* 2.5.0-beta.13 (user: "same function sa ABC ang DITL"): DITL sheet header, By order / By category, Selected tab (src/ui/shell/ditl.js) */
+#dmeta{display:none}
+body:not(.an) #dmeta.has{display:flex;align-items:center;gap:14px;min-height:28px;padding:2px 10px;background:var(--c-pane,var(--panel));border-bottom:1px solid var(--c-line,var(--line));font:12.5px var(--uf,sans-serif);color:var(--c-tx2,#cfd8dc);white-space:nowrap;overflow:hidden}
+#dmeta b{font:600 14px var(--mf,monospace);color:var(--c-hi,#fff);letter-spacing:.02em}
+/* 3.2.0-beta.35: machine A / B / C / D of a shared DITL drawing */
+#dmeta .dm-mach{display:inline-flex;gap:4px;flex:none}#dmeta .dm-m{min-width:30px;min-height:24px;padding:0 6px;border:1px solid var(--c-line,#445);border-radius:6px;background:transparent;color:var(--c-tx,#dde);font:600 12px var(--mf,monospace);cursor:pointer}#dmeta .dm-m.on{background:var(--c-acc,#2e7d5b);border-color:var(--c-acc,#2e7d5b);color:#fff}
+#dmeta .dm-t{overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+#dmeta .sp{flex:1}
+#dmeta small{color:var(--c-dim,#8a99a6)}
+#dmode{margin-left:12px;padding:2px 8px;border-radius:4px;font:700 12px sans-serif;flex:none}
+#dmode.view{background:#16324a;color:#8fd3ff}
+#dmode.run{background:#12391f;color:#7dffb0}
+#dmeta .dm-lg{display:inline-flex;align-items:center;gap:4px;font-size:11.5px}
+#dmeta .dm-lg i{display:inline-block;width:16px;height:3px;background:#2b5f46;margin-left:6px}
+#dmeta .dm-lg i.on{background:#ff4d4d}
+@media (max-width:1100px){#dmeta small{display:none}}
+@media (max-width:700px){body:not(.an) #dmeta.has{padding:3px 8px;gap:6px}#dmeta .dm-lg{display:none}#dmeta .dm-t{max-width:40vw}#dmode{margin-left:0;font-size:11px}}
+#dsort{display:flex;gap:4px;margin:4px 0}
+body.an #dsort{display:none!important}
+#dsort button{flex:1;padding:3px 4px}
+#dsort button.on{background:var(--acc,#2a6fdb);color:#fff}
+body.app2 #dsort{gap:0!important;margin:6px 8px!important;border:1px solid var(--c-line2);border-radius:3px;overflow:hidden}
+body.app2 #dsort button{height:24px;border:0!important;border-radius:0!important;background:var(--c-ctl)!important;color:var(--c-tx2)!important;font-size:12px!important}
+body.app2 #dsort button.on{background:var(--c-accbg)!important;color:var(--c-acctx)!important;box-shadow:inset 0 -2px 0 var(--c-acc)}
+#dp .dp-ah{display:inline-flex;align-items:center;gap:4px;font:12px var(--uf);color:var(--c-tx2);cursor:pointer;white-space:nowrap}
+#dp .dp-ah input{height:auto;margin:0}
+#dp.view::before{content:'VIEW / TRACE · no simulation: press RUN (top right) to see 1 / 0';display:block;margin:6px 0;padding:6px 10px;font:600 11px var(--uf);letter-spacing:.04em;color:var(--c-acctx,#8fd3ff);background:var(--c-accbg,#0e2536);border-left:3px solid var(--c-acc,#38a8f0)}
+#dp[data-pt=sel] .dp-sel{display:block!important}
+#dp .dp-sel .dp-note{display:block!important}
+#dp .dp-st{margin:6px 0 2px;font:600 11px var(--uf);letter-spacing:.12em;color:var(--c-run)}
+#dp .dp-sel>.dp-t{font-size:13px!important;margin-bottom:6px}
+#dp .dp-kv{display:flex;gap:10px;align-items:flex-start;padding:4px 0;border-bottom:1px solid var(--c-row)}
+#dp .dp-kv>span:first-child{flex:0 0 72px;color:var(--c-dim);font-size:12px}
+#dp .dp-kv>:last-child{flex:1;min-width:0;overflow-wrap:anywhere}
+#dp .dp-sw{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#dp .dp-lk{display:flex;flex-wrap:wrap;gap:4px}
+#dp .dp-lk button{height:auto;min-height:26px;padding:2px 8px;text-align:left;color:var(--c-acctx,#9fd2ff)}
+#dp .dp-h2{margin:12px 0 4px;padding-bottom:3px;border-bottom:1px solid var(--c-line);font:600 11px var(--uf);letter-spacing:.1em;text-transform:uppercase;color:var(--c-run)}
+#dp .dp-ln{display:block;width:100%;height:auto!important;min-height:26px;padding:3px 4px;text-align:left;background:transparent!important;border:0!important;border-bottom:1px solid var(--c-row)!important;border-radius:0!important;color:var(--c-tx)!important;font:12px var(--uf)!important;line-height:1.35;white-space:normal;overflow-wrap:anywhere}
+#dp .dp-ln:hover{background:var(--c-ctl)!important}
+#dp .dp-pin{padding:2px 4px;font:600 10.5px var(--uf);letter-spacing:.08em;color:var(--c-dim)}
+#dp .dp-b{display:inline-block;min-width:16px;text-align:center;font:700 12px var(--mf);color:#5fae86}
+#dp .dp-b.on{color:#ff6b62}
+#dp .dp-b.big{min-width:74px;padding:3px 8px;border:1px solid var(--c-line2);border-radius:3px}
+#dp .dp-b.big.on{background:var(--c-almsoft);border-color:var(--c-alm);color:var(--c-almtx)}
+#dp .dp-why .dp-ln{color:var(--c-hi)!important}
+#svg .dsel{pointer-events:none}
+#svg .dsel-box{fill:rgba(79,227,255,.10);stroke:#4fe3ff;stroke-width:.6;stroke-dasharray:1.6 .8}
+#svg .dsel-w{stroke:#4fe3ff;stroke-width:1.3;stroke-linecap:round;opacity:.55}
+/* the tab buttons carry data-k too: the rule that hides the other tabs' rows hid the DITL tab strip itself */
+#dp>.lo-tabs>button[data-k]{display:block!important}
+
+/* ===== 2.5.0-beta.18: readable drawing (src/ui/shell/view.js) ===== */
+/* A Focus: the drawing takes the whole page; the sheet list and the panels are drawers over it */
+body.lo-focus #tbsheets{display:inline-flex!important}
+body.lo-focus #mid{position:relative}
+body.lo-focus #mid #side{position:absolute;z-index:40;left:0;top:0;bottom:0;width:min(320px,88vw)!important;display:none!important;box-shadow:8px 0 24px #0009}
+body.lo-focus #mid #side.uiopen{display:flex!important}
+body.lo-focus #mid #cv{flex:1 1 auto;width:100%}
+body.lo-focus #mid #anp,body.lo-focus #mid #opp{position:absolute;z-index:35;right:0;top:0;bottom:0;width:min(400px,94vw)!important;box-shadow:-8px 0 24px #0009}
+body.lo-focus #mid #dp{position:absolute;z-index:35;right:0;top:0;bottom:0;width:min(380px,94vw);box-shadow:-8px 0 24px #0009}
+body.lo-focus #dptab{display:none!important}
+@media (max-width:700px){body.lo-focus #mid :is(#anp,#opp,#dp){top:auto!important;left:0;width:100%!important;height:52%;border-radius:14px 14px 0 0}}
+#lotools .lo-vw{display:flex;gap:4px;padding-left:4px;border-left:1px solid var(--c-line2)}
+/* B mini-map */
+#lomap{position:fixed;z-index:30;display:none;width:200px;background:var(--c-pop,#141c22);border:1px solid var(--c-line2,#2c3c47);border-radius:4px;box-shadow:0 4px 14px #0008;cursor:crosshair;touch-action:none;overflow:hidden}
+#lomap canvas{display:block;width:100%;opacity:.9}
+#lomap .lomap-win{position:absolute;border:2px solid var(--c-acc,#4fd18b);background:color-mix(in srgb,var(--c-acc,#4fd18b) 14%,transparent);border-radius:2px;pointer-events:none;box-sizing:border-box}
+
+/* 3.2.0-beta.1: the DITL bar of 2.5.0 (Reset, Back of the page links, Zoom, Panel) in the ribbon; VIEW | RUN is the switch in the top bar */
+body[data-tab=logic]:not(.an) #gsbar .tbar .g-ditl{display:flex!important}
+body[data-tab=logic]:not(.an) #gsbar .g-ditl :is(.dui-run,.tb-view,.dui-sep){display:none!important}
+/* 2.4.1-beta.4 / 2.5.0-beta.8 (kept by the merge): the DITL panel over the drawing on a narrow screen; the blink of a linked row */
+@media (max-width:1180px){#mid{position:relative}#mid #dp{position:absolute;z-index:35;right:0;top:0;bottom:0;width:min(380px,94vw);box-shadow:-8px 0 24px var(--c-shadow)}}
+@keyframes plf{from{fill-opacity:1}to{fill-opacity:.15}}
+/* 2.5.0-beta.13: with the DITL tabs, the "Run, then click an input" note is not repeated above every tab */
+#dp>.lo-tabs+.dp-note{display:none}
+/* 2.4.1-beta.7 (kept by the merge): VIEW keeps the values readable; the inputs show they are locked instead of fading */
+body.anview #anp :is(input,select,button:not(.keep)){opacity:1!important}
+body.anview #anp :is(input,select){border-style:dashed!important}
+body.anview #anp::before{content:'VIEW · no simulation: inputs are locked';display:block;margin:0 0 6px;padding:6px 10px;font:600 11px var(--uf);letter-spacing:.06em;color:var(--c-acctx);background:var(--c-accbg);border-left:3px solid var(--c-acc)}
+/* 2.5.0-beta.11 / 13 (kept by the merge): DITL sheet list by category, the same group header as the ABC list (3.1 look) */
+body.app2 #sidelist .fh{padding:.75rem .875rem .375rem;font:600 .6875rem var(--uf);letter-spacing:.1em;text-transform:uppercase;color:var(--c-dim);background:var(--c-pane);position:sticky;top:0;z-index:1;border-bottom:1px solid var(--c-line)}
+#sidelist button{scroll-margin-top:34px}
+body.dm #meta{display:none!important}
+#dp .dp-b.big.on{background:var(--c-almsoft);border-color:var(--c-alm);color:var(--c-almtx)}
+
+/* ===== 3.2.0 P2: CONTROL ROOM SHELL (src/ui/shell/cr.js), 900 px and wider: rail · unit band · alarm banner · ribbon with ABC | DITL
+   and the sheet. ISA-101 idea: neutral chrome, colour only for state (alarm red, forced purple, simulation green). ===== */
+:root{--railW:4rem;--c-rail:#1a1f23;--c-railtx:#e3e8eb;--c-raildim:#9aa6ae;--c-railon:#2b3238;--c-frc:#8e3fc8;--c-frcsoft:#f3e9fb;--c-frctx:#5d2a85}
+html:is([data-theme=dark],[data-theme=hc]){--c-rail:#0b0e11;--c-railon:#22282d;--c-frc:#c77dff;--c-frcsoft:#2a1c36;--c-frctx:#e3c4ff}
+#crrail{display:none}
+body.cr:not(.pvwin){padding-left:var(--railW)!important}
+body.cr #crrail{display:flex;flex-direction:column;align-items:center;gap:.25rem;position:fixed;left:0;top:0;bottom:0;width:var(--railW);z-index:90;padding:.625rem 0;background:var(--c-rail);border-right:1px solid var(--c-rail);box-sizing:border-box}
+body.cr #crrail .brand{display:flex;margin-bottom:.625rem;color:var(--c-railtx)}
+body.cr #crrail .brand span{display:none}
+body.cr #crrail .brand i{width:2.25rem;height:2.25rem;border-radius:.5rem;background:linear-gradient(135deg,#2f6f9f,#1d3f5a);color:#fff;display:flex;align-items:center;justify-content:center;font-style:normal}
+body.cr #crrail .brand i svg{width:1.25rem;height:1.25rem}
+body.cr #crrail .tabs{display:flex;flex-direction:column;gap:.25rem}
+body.cr #crrail .tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.1875rem;width:3.5rem;min-height:3.5rem!important;height:auto;padding:.375rem 0!important;border:0!important;border-radius:.5rem!important;background:transparent!important;box-shadow:none!important;color:var(--c-raildim)!important;font:500 .6875rem/1.1 var(--uf)!important;letter-spacing:.01em;text-align:center;white-space:normal;cursor:pointer}
+body.cr #crrail .tabs button:hover{background:var(--c-railon)!important;color:var(--c-railtx)!important}
+body.cr #crrail .tabs button.on{background:var(--c-railon)!important;color:var(--c-railtx)!important;box-shadow:inset 3px 0 0 var(--c-acc)!important;font-weight:600!important}
+body.cr #crrail .tabs [data-ic]::before{width:1.25rem;height:1.25rem;opacity:1}
+body.cr #crrail .crsp{flex:1}
+body.cr #crrail .gs-set > button{width:2.5rem;height:2.5rem;min-height:2.5rem!important;padding:0!important;border:0!important;border-radius:.5rem!important;background:transparent!important;box-shadow:none!important;color:var(--c-raildim)!important;display:flex;align-items:center;justify-content:center}
+body.cr #crrail .gs-set > button:hover,body.cr #crrail .gs-set.open > button{background:var(--c-railon)!important;color:var(--c-railtx)!important}
+body.cr #crrail .gs-set > button svg{width:1.25rem;height:1.25rem}
+/* the workspaces of the other pages and the event log start right of the rail */
+body.cr:not(.pvwin) :is(#plantws,#libws,#toolsws){left:var(--railW)!important}
+/* unit band */
+body.cr #gsbar{padding:0!important;gap:0;column-gap:0}
+body.cr #gsbar > #crband{flex:1 1 100%;height:var(--top);display:flex;align-items:center;gap:.875rem;padding:0 .875rem;min-width:0;background:var(--c-strip);border-bottom:1px solid var(--c-line)}
+#crband .crunit{display:flex;flex-direction:column;line-height:1.15;min-width:0;flex:none}
+#crband .crunit b{display:block!important;font:600 .9375rem var(--uf);color:var(--c-tx);white-space:nowrap}
+#crband .crunit span{font:400 .75rem var(--uf);color:var(--c-dim);white-space:nowrap}
+#crband .crkpis{display:flex;min-width:0;overflow:hidden;flex:0 1 auto}
+#crband .crkpi{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:.0625rem;height:2.5rem;min-height:0!important;padding:0 .75rem!important;border:0!important;border-left:1px solid var(--c-line)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--c-tx)!important;cursor:pointer;line-height:1.1;flex:none}
+#crband .crkpi:hover{background:var(--c-ctlh)!important}
+#crband .crkpi i{font:600 .625rem var(--uf);font-style:normal;letter-spacing:.08em;color:var(--c-dim)}
+#crband .crkpi b{display:inline!important;font:600 1rem var(--mf);font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--c-tx)}
+#crband .crkpi small{font:400 .6875rem var(--uf);color:var(--c-dim);margin-left:.25rem}
+#crband .crkpi.na b{color:var(--c-dim)}
+#crband .crkpi{flex-direction:row;flex-wrap:wrap;align-content:center;align-items:baseline;max-width:9rem;text-align:left}
+#crband .crkpi i{flex:1 1 100%}
+#crband .crgrow{flex:1}
+#crband :is(.gs-search,.seg,#srchbtn){flex:none}
+@media (max-width:1040px){#crband .crunit span{display:none}}
+/* alarm banner: always on screen (DCS standard), red while an alarm or a trip is active */
+body.cr #crband > #cralarm{flex:1 1 0;display:flex;align-items:center;gap:.625rem;height:2.25rem;padding:0 .375rem 0 .75rem;min-width:8rem;background:var(--c-ribbon);border:1px solid var(--c-line);border-radius:var(--r);font:400 .8125rem var(--uf);color:var(--c-tx2)}
+body.cr #crband > #cralarm.on{background:var(--c-almsoft);border-color:var(--c-alm)}
+#cralarm .crchip{display:inline-flex;align-items:center;gap:.3125rem;height:1.25rem;padding:0 .5rem;border-radius:.625rem;font:600 .6875rem var(--uf);letter-spacing:.05em;white-space:nowrap;flex:none}
+#cralarm .crchip.alm{background:var(--c-alm);color:#fff;cursor:pointer}
+#cralarm .crchip.alm.unack{animation:crblink 1s steps(2,start) infinite;color:#fff}
+#cralarm .cratx.cratx{white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.15;min-width:0;font-size:.75rem}
+@keyframes crblink{50%{background:#7f1d1d;color:#fff}}
+#cralist .crfr.unack .crfn{font-weight:700;color:var(--c-almtx)}#cralist .crfr.rtn .crfn{color:var(--c-dim)}#cralist .crfr.trip.unack{animation:crblink 1s steps(2,start) infinite}
+#cralist .crfr.crfr{grid-template-columns:auto minmax(0,1fr) auto auto}
+#cralarm .crchip.mut{background:var(--c-ctlh);color:var(--c-dim)}
+#cralarm .crchip.frc{background:var(--c-frcsoft);color:var(--c-frctx)}
+/* 3.2.0-beta.6: the FORCED chip opens one list of the user's forces on all ABC sheets */
+#cralarm .crchip.frc{cursor:pointer}
+body.cr #crband > #cralarm{position:relative}
+#crflist,#cralist{display:none;position:absolute;right:0;top:calc(100% + .25rem);z-index:60;width:min(30rem,calc(100vw - 2rem));max-height:60vh;overflow:auto;background:var(--c-pane);color:var(--c-tx);border:1px solid var(--c-line2);border-radius:var(--r);box-shadow:0 .5rem 1.5rem rgba(0,0,0,.25);padding:.5rem;font:400 .8125rem var(--uf)}
+#crflist.open,#cralist.open{display:grid;gap:.25rem}
+#crflist .crfh,#cralist .crfh{display:flex;justify-content:space-between;align-items:center;font-weight:600;padding:0 .25rem .25rem}
+#crflist .crfr,#cralist .crfr{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;gap:.5rem;align-items:center;padding:.25rem;border-top:1px solid var(--c-line)}
+#crflist .crfs,#cralist .crfs{font:600 .75rem var(--mf);color:var(--c-dim)}
+#crflist .crfn,#cralist .crfn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#crflist .crfv,#cralist .crfv{font:600 .75rem var(--mf);color:var(--c-frctx)}
+#crflist .crfe,#cralist .crfe{color:var(--c-dim);padding:.25rem}
+#crflist button,#cralist button{min-height:1.75rem;padding:0 .5rem}
+#cralarm .crat{font:400 .8125rem var(--mf);color:var(--c-dim);flex:none}
+#cralarm .cratx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#cralarm.on .cratx{color:var(--c-almtx);font-weight:600}
+#cralarm .crsp2{flex:1}
+#cralarm #evbtn{height:1.875rem!important;min-height:0!important;padding:0 .75rem!important;border:1px solid var(--c-line2)!important;border-radius:var(--r)!important;background:var(--c-pane)!important;color:var(--c-tx)!important;font:600 .75rem var(--uf)!important;box-shadow:none!important;flex:none;display:inline-flex!important;align-items:center}
+#cralarm #evbtn.new{border-color:var(--c-man)!important;color:var(--c-mantx2)!important}
+/* the Event log opens under the alarm banner, right of the rail */
+body.app2.cr #evbox{top:calc(var(--topH,8rem) + .25rem)!important;bottom:auto!important;left:calc(var(--railW) + .75rem)!important;height:auto!important;max-height:50vh}
+/* the ribbon: ABC | DITL and the sheet first */
+body.cr #gsbar .tbar{margin:0!important}
+#gsbar .tbar .crwhere{display:flex;align-items:center;gap:.625rem;flex:0 1 auto;min-width:12rem;max-width:42%;height:100%;padding:0 .75rem 0 .25rem;border-right:1px solid var(--c-line)}
+#gsbar .tbar .crwhere .sub{height:auto;flex:none}
+#gsbar .tbar .crwhere .crumb .cpath{display:none!important}
+#gsbar .tbar .crwhere .crumb{height:100%;display:flex;align-items:center;border-left:0;padding-left:0;flex:1 1 auto;min-width:0}
+#gsbar .tbar .crwhere :is(.sub,.seg) button{min-height:1.875rem!important;height:1.875rem!important}
+body:not([data-tab=logic]) #gsbar .tbar .crwhere{display:none}
+
+/* ---------- 3.2.0 P3: PLANT VIEW frame (after-plant mockup): the graphic gets the width; ☰ Systems = drawer; screen picker
+   ◀ / list / ▶ and the main screens as chips; Values slide out on the right; the faceplate is a panel docked at the right.
+   .crw = the workspace is 836 px or wider (set by plant.js); narrower keeps the old frame. ---------- */
+#plantws .plbar{flex-wrap:nowrap;min-height:3rem;box-sizing:border-box}
+#plantws .plnav{display:flex;align-items:center;gap:.25rem;flex:none}
+#plantws .plpick{height:2rem;width:clamp(9rem,18vw,17rem);padding:0 .5rem;border:1px solid var(--c-line2,var(--c-line));border-radius:var(--r,.375rem);background:var(--c-ctl,var(--c-pane));color:var(--c-tx);font:600 .875rem var(--uf)}
+#plantws .plbar .plstep{width:2rem;min-width:2rem;height:2rem;padding:0!important;justify-content:center}
+#plantws .plchips{display:flex;flex-wrap:wrap;align-items:center;align-self:center;gap:.375rem;height:1.875rem;overflow:hidden;flex:0 1 auto;min-width:0;padding:1px 0;box-sizing:border-box}
+#plantws .plchip{height:1.75rem!important;min-height:0!important;line-height:1;box-sizing:border-box;padding:0 .75rem!important;border-radius:999px;border:1px solid var(--c-line);background:transparent;color:var(--c-tx2);font:500 .75rem var(--uf);white-space:nowrap;cursor:pointer}
+#plantws .plchip:hover{background:var(--c-ctlh,var(--c-pane))}
+#plantws .plchip.on{background:var(--c-accbg);border-color:var(--c-acc);color:var(--c-acctx)}
+#plantws .plbar .plfull{width:2rem;min-width:2rem;padding:0!important;justify-content:center;font-size:1rem}
+#plantws:not(.crw) .plchips{display:none}
+#plantws #pltitle{display:none!important}
+#plantws.crw,#plantws.crw.noval{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr)!important}
+#plantws.crw:has(> #plfp){grid-template-columns:minmax(0,1fr) clamp(20rem,26vw,24rem)!important}
+#plantws.crw #plsys{display:inline-flex;align-items:center;flex:none}
+#plantws.crw #plleft{position:absolute;left:0;top:3rem;bottom:0;width:min(20rem,86vw);z-index:7;display:none;box-shadow:.75rem 0 2rem var(--c-shadow)}
+#plantws.crw.lsopen #plleft{display:block}
+#plantws.crw #plvals{position:absolute;right:0;top:3rem;bottom:0;width:clamp(16rem,22vw,20rem);z-index:7;display:none;box-shadow:-.75rem 0 2rem var(--c-shadow)}
+#plantws.crw.vals #plvals{display:block}
+#plantws.crw:has(> #plfp) #plvals{right:clamp(20rem,26vw,24rem)}
+#plantws.crw #plmid{grid-column:1;grid-row:1}
+#plantws.crw #plfp{position:relative;top:auto;right:auto;left:auto;bottom:auto;width:auto;max-height:none;min-height:0;grid-row:1;grid-column:2;border:0;border-left:1px solid var(--c-line);border-radius:0;box-shadow:none;background:var(--c-pane)}
+#plantws.crw #plfp .plfph{min-height:3rem;box-sizing:border-box;padding:.5rem .75rem;background:var(--c-pane)}
+@media (min-width:701px){#plmid > #plfp{top:3.5rem}}
+@media (max-width:700px){#plmid > #plfp{border-radius:.75rem .75rem 0 0;box-shadow:0 -.75rem 2rem var(--c-shadow)}}
+/* 3.2.0 P3 DITL (audit M2): the timer card does not cover the drawing or the panel while the panel is open ("Edit presets" in the
+   Timers list shows it beside the panel); the sheet list headers of the category view no longer pile up */
+body.app2:has(#dp:not(.min)):not(.tpon) #tp{display:none!important}
+body.app2:not(:has(#dp:not(.min))) #tp{right:.75rem!important}
+#dp .dp-tpe{flex:none;height:1.75rem;padding:0 .625rem;border:1px solid var(--c-line);border-radius:var(--r,.375rem);background:var(--c-ctl,var(--c-pane));color:var(--c-tx2);font:500 .6875rem var(--uf);letter-spacing:0;text-transform:none;cursor:pointer}
+body.app2 #sidelist .fh.fhc{position:static;cursor:pointer;display:flex;align-items:center;min-height:2.25rem;box-sizing:border-box;padding:.5rem .875rem!important}
+body.app2 #sidelist .fh.fhc:hover{background:var(--c-ctlh,var(--c-pane));color:var(--c-tx)}
+/* 3.2.0 P3 Inspector: comes from / goes to in the selected block card */
+#selcard .scl{margin-top:.75rem;padding-top:.5rem;border-top:1px solid var(--c-line)}
+#selcard .scl small{display:block;margin-bottom:.25rem;font:600 .6875rem var(--uf);letter-spacing:.1em;color:var(--c-dim)}
+#selcard .scl > div{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) auto;gap:.5rem;align-items:baseline;padding:.1875rem 0;font-size:.8125rem}
+#selcard .scl .scn2{font:600 .8125rem var(--mf);color:var(--c-tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#selcard .scl .scw{color:var(--c-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#selcard .scl b{font:500 .8125rem var(--mf);color:var(--c-acctx);text-align:right}
+#selcard .scl .scm{display:block;color:var(--c-dim);font-size:.75rem}
+/* 3.2.0 P3: below 1280 px the search opens as a row UNDER the whole top area (it covered the alarm banner and half the ribbon) */
+@media (max-width:1280px){body.cr.srchopen #gsbar .gs-search{position:fixed!important;top:var(--topH,8rem)!important;left:var(--railW)!important;right:0!important;z-index:95}}
+/* ---------- 3.2.0 P4: phone (640 px and narrower) ---------- */
+#crnav{display:none}
+body.crph #sfoot{flex-wrap:wrap}
+body.crph #crnav{display:flex;order:99;flex:1 1 100%;background:var(--c-pane);border-top:1px solid var(--c-line);padding-bottom:env(safe-area-inset-bottom,0)}
+body.crph #crnav .tabs{display:flex;width:100%;gap:0;height:auto;padding:0;border:0;background:transparent}
+body.crph #crnav .tabs button{flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.1875rem;min-height:3.5rem!important;height:3.5rem;padding:.25rem 0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--c-dim)!important;font:500 .6875rem/1.1 var(--uf)!important;letter-spacing:.01em}
+body.crph #crnav .tabs button.on{color:var(--c-acctx)!important;box-shadow:inset 0 2px 0 var(--c-acc)!important;font-weight:600!important}
+body.crph #crnav .tabs [data-ic]::before{width:1.25rem;height:1.25rem;opacity:1}
+/* the top bar on one row: ABC | DITL, search, VIEW | RUN, ⚙ */
+body.crph #gsbar > .gs-set{margin-left:0}
+body.crph #gsbar > .sub{flex:0 1 auto}
+/* the PLANT VIEW bar scrolls sideways instead of running off the screen */
+@media (max-width:640px){
+ #plantws .plbar{overflow-x:auto;scrollbar-width:none}
+ #plantws .plbar::-webkit-scrollbar{display:none}
+ #plantws .plbar > *{flex:none}
+ #plantws .plpick{width:11rem}
+}
+body.crph #sfoot #crnav{height:auto!important;min-height:3.5rem;max-height:none!important;padding:0 0 env(safe-area-inset-bottom,0)!important;border-right:0}
+body.crph #sfoot:not(#x) :is(.smsg,.shint,#st){display:none!important}
+body.crph #sfoot:not(#x) #evbtn{margin-left:auto}
+body.crph #gsbar #srchbtn{margin-left:auto!important}
+body.crph:not([data-tab=logic]) #gsbar .crumb{display:none!important}
+/* phone: the timer card covered the zoom bar; the timers are in the panel (Panel > Timers, "Edit presets" shows the card) */
+body.crph:not(.tpon) #tp{display:none!important}
+/* 3.2.0-beta.6 (audit L4): touch screens: the 0 / 1 switch of the Inputs list is 32 px tall (24 px with a mouse) */
+@media (pointer:coarse){#inlist .inb{height:2.5rem;min-height:2.5rem!important}}
+/* 3.2.0-beta.6 (Operator station): PLANT VIEW on a wide screen: Start ▾ / CHECK (and Pause / Reset / speed in RUN) sit at the
+   start of the plant bar; the ribbon row above is hidden (cr.js opBar) */
+body.cr.crop #gsbar .tbar{display:none!important}
+#plantws .plbar .crop{display:flex;align-items:center;gap:.25rem;flex:none;padding-right:.5rem;margin-right:.25rem;border-right:1px solid var(--c-line)}
+#plantws .plbar .crop .tb{display:none;align-items:center;gap:.25rem}
+#plantws .plbar .crop .g-op{display:flex}
+body.simmode #plantws .plbar .crop .g-run{display:flex}
+#plantws .plbar .crop .g-run :is(.tb-step,.tb-view){display:none!important}
+#plantws .plbar .crop :is(button,select){height:2rem;min-height:2rem!important}
+#plantws .plbar .crop select{max-width:5rem}
+/* 3.2.0-beta.6 "Why = ?" in the info card */
+.icwhy{margin-left:.5rem;height:1.5rem;min-height:1.5rem!important;padding:0 .5rem!important;font-weight:600!important}
+.icwl{display:grid;gap:2px;margin-top:.375rem}
+.icwr{font:400 .75rem/1.35 var(--mf);color:var(--c-tx2);border-left:2px solid var(--c-line2);padding:2px 4px;overflow-wrap:anywhere}
+.icwr:is(.k-input,.k-bad,.k-force,.k-cmp,.k-meas,.k-ditl){color:var(--c-mantx2);border-left-color:var(--c-man);font-weight:600}
+.icwr.k-force{color:var(--c-almtx);border-left-color:var(--c-alm)}
+#crband .crkpis{flex:none}
+
+/* ===================================================================================================================
+   3.2.0-beta.8 GUIDED WORKBENCH (user pick 2026-10-23, "B + C"): four switchable themes (⚙ Theme), Home, Training,
+   one type scale (12 / 13 / 15 / 18 / 22 / 28 px), 44 px touch targets on the rail and the tab bar.
+   Alarm, trip and forced keep the same shape and words in every theme; the drawing colours (theme.css) and the
+   1:1 HMI screens are not touched.
+   =================================================================================================================== */
+/* Control room grey: ISA-101 style, grey surfaces, colour only for state */
+html[data-theme=grey]{
+ --c-bg:#c3c7cb;--c-pane:#d9dcdf;--c-strip:#d2d5d8;--c-ribbon:#d5d8db;--c-ctl:#e4e6e8;--c-ctlh:#eceef0;--c-well:#cdd0d3;--c-plate:#dfe1e3;
+ --c-line:#b0b5ba;--c-line2:#8f969c;--c-lineh:#3f464c;--c-tx:#111518;--c-tx2:#262c31;--c-dim:#3f4950;
+ --c-shadow:rgba(0,0,0,.18);--c-shadow2:rgba(0,0,0,.08);
+ --c-acc:#1d4f80;--c-accbg:#c6d5e4;--c-accbd:#6f8fb0;--c-acctx:#173f66;--c-accon:#1d4f80;
+ --c-run:#1b6a3b;--c-runbg:#1b6a3b;--c-runbd:#1b6a3b;--c-runtx:#ffffff;--c-runon:#155630;
+ --c-man:#a85c00;--c-mantx:#1a1200;--c-alm:#b8141a;
+ --c-runsoft:#c9ddd0;--c-runtx2:#134d2a;--c-mansoft:#ecd9b6;--c-mantx2:#5e3300;--c-almsoft:#efc6c6;--c-almtx:#8a0e13;
+ --c-status:#30363b;--c-statustx:#eef0f2;--c-statusdim:#c0c6cb;
+ --c-desk:#b9bdc1;--c-btnbd:#8f969c;--c-btnhv:#eceef0;--c-btnac:#d0d4d8;
+ --c-rail:#30363b;--c-railtx:#eef0f2;--c-raildim:#c0c6cb;--c-railon:#454c52;--c-frc:#6a2a9a;--c-frcsoft:#ddcceb;--c-frctx:#45186b
+}
+/* High contrast: black, white text, white lines, yellow focus */
+html[data-theme=hc]{
+ --c-bg:#000;--c-pane:#000;--c-strip:#000;--c-ribbon:#0a0a0a;--c-ctl:#000;--c-ctlh:#262626;--c-well:#000;--c-plate:#000;
+ --c-line:#8c8c8c;--c-line2:#ffffff;--c-lineh:#ffd400;--c-tx:#ffffff;--c-tx2:#ffffff;--c-dim:#dedede;
+ --c-shadow:rgba(0,0,0,.6);--c-shadow2:rgba(0,0,0,.4);
+ --c-acc:#7cc4ff;--c-accbg:#0b2a4a;--c-accbd:#7cc4ff;--c-acctx:#bfe2ff;--c-accon:#1450c8;
+ --c-run:#3dff8a;--c-runbg:#006b2e;--c-runbd:#3dff8a;--c-runtx:#ffffff;--c-runon:#00561f;
+ --c-man:#ffb000;--c-mantx:#000000;--c-alm:#ff4d4d;
+ --c-runsoft:#002a12;--c-runtx2:#7dffb0;--c-mansoft:#332400;--c-mantx2:#ffd27a;--c-almsoft:#3a0000;--c-almtx:#ff9a9a;
+ --c-status:#000;--c-statustx:#ffffff;--c-statusdim:#e0e0e0;
+ --c-desk:#000;--c-btnbd:#ffffff;--c-btnhv:#262626;--c-btnac:#333333;
+ --c-rail:#000;--c-railtx:#ffffff;--c-raildim:#e0e0e0;--c-railon:#333333;--c-frc:#e0a8ff;--c-frcsoft:#2a1236;--c-frctx:#f0d4ff
+}
+html[data-theme=hc] :focus-visible{outline:3px solid #ffd400!important;outline-offset:1px}
+html[data-theme=hc] body.app2 :is(button,select,input){border-color:#fff}
+/* ===== 3.2.0-beta.9 VIEW | RUN (src/ui/shell/viewlock.js): in VIEW only what changes the plant is locked (dashed, dim); the tabs,
+   ✕, Edit table, F(X) page, trend range and wire look of the Inspector work. The I/O list and F(X) buttons are in RUN too. ===== */
+body.anview #anp :is(input,select,button){pointer-events:auto!important;opacity:1!important}
+body.anview #anp :is(input,select):not([data-vlock]){border-style:solid!important}
+body.anview #anp::before{content:'VIEW · controls locked: look and trace only. Press RUN to force, switch or set values'!important}
+body.lsview [data-vlock]{opacity:1!important;filter:grayscale(.8);color:var(--c-dim)!important;cursor:not-allowed!important;border-style:dashed!important}
+#lsvtoast{position:fixed;left:50%;bottom:calc(var(--footH,30px) + 1rem);transform:translateX(-50%);z-index:90;max-width:min(32rem,calc(100vw - 2rem));padding:.625rem 1rem;border-radius:var(--r-l);background:var(--c-accon);color:#fff;font:500 .875rem/1.4 var(--uf);box-shadow:0 4px 16px var(--c-shadow);opacity:0;pointer-events:none;transition:opacity .15s}
+#lsvtoast.on{opacity:1}
+body[data-tab=logic].an #gsbar .g-ref{display:flex}
+#plantws .plchips{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+#inlist .inset{flex:none;width:5.5rem;min-height:2rem;padding:0 .375rem;border:1px solid var(--c-line2);border-radius:var(--r);background:var(--c-well);color:var(--c-acctx);font:600 .8125rem var(--mf);text-align:right}
+#inlist .inu{flex:none;min-width:2.25rem;color:var(--c-dim);font:400 .75rem var(--uf)}
+/* 3.2.0-beta.9: all the groups of the Inputs list (the Inspector rows themselves for setpoints, timers, COS, signals to force,
+   from other sheets), folding group titles and a filter */
+#inlist .inq{display:block;width:calc(100% - .5rem);margin:.375rem .25rem .25rem;min-height:2.25rem;padding:0 .625rem;border:1px solid var(--c-line2);border-radius:var(--r);background:var(--c-well);color:var(--c-tx);font:400 .8125rem var(--uf);box-sizing:border-box}
+body.app2 #inlist button.ingh{display:flex!important;width:100%;justify-content:space-between!important;align-items:center;min-height:2.25rem!important;padding:.5rem .25rem!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--c-dim)!important;font:600 max(12px,.6875rem)/1.3 var(--uf)!important;letter-spacing:.1em;text-align:left;white-space:normal!important;gap:.5rem}
+body.app2 #inlist button.ingh::after{content:'▾';font-size:.75rem;transition:transform .15s}
+body.app2 #inlist button.ingh.shut::after{transform:rotate(-90deg)}
+#inlist .inrow{display:block}
+#inlist .inrow .ir{width:100%}
+#inlist .inrow .l1{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .375rem}
+#inlist .inrow .tg{flex:1 1 7rem;min-width:0;font:600 .8125rem var(--mf);color:var(--c-tx);cursor:pointer;overflow-wrap:anywhere}
+#inlist .inrow .v{font:600 .8125rem var(--mf);color:var(--c-acctx)}
+#inlist .inrow .ds{margin-top:.125rem;font:400 max(12px,.75rem)/1.3 var(--uf);color:var(--c-dim);overflow-wrap:anywhere}
+#inlist .inrow .fc{display:inline-flex;flex-wrap:wrap;align-items:center;gap:.25rem}
+#inlist .inrow .fc small{font:500 max(12px,.6875rem) var(--uf);color:var(--c-dim)}
+#inlist .inrow :is(input[type=number],input:not([type])){width:5rem;min-height:1.875rem;padding:0 .375rem;border:1px solid var(--c-line2);border-radius:var(--r);background:var(--c-well);color:var(--c-tx);font:600 .8125rem var(--mf);text-align:right}
+#inlist .inrow input[type=range]{width:100%}
+body.app2 #inlist .inrow button{min-height:1.875rem;padding:0 .5rem;font-size:max(12px,.75rem)}
+body.app2 #inlist .inrow select{min-height:1.875rem;max-width:100%;font-size:max(12px,.75rem)}
+/* 3.2.0-beta.9: in VIEW the locked switches read as locked too (the values stay readable), and the Inputs list says why */
+body.lsview button[data-vlock]{opacity:.55!important}
+body.lsview #inlist::before{content:'VIEW · values only. Press RUN to force or change them.';display:block;margin:0 0 .375rem;padding:.375rem .625rem;border-left:3px solid var(--c-acc);background:var(--c-accbg);color:var(--c-acctx);font:500 .8125rem/1.35 var(--uf)}
+/* 3.2.0-beta.20: Plant chip beside VIEW | RUN (plant model, starting state, MW) */
+.lsmoved{display:none!important}
+.plchip{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 11px;margin-right:8px;border:1px solid var(--line,#2c4256);border-radius:8px;background:var(--c-well,#13263a);color:inherit;font:600 13px inherit;white-space:nowrap;cursor:pointer}
+.plchip i{width:8px;height:8px;border-radius:50%;background:#35e08a;flex:none}
+.plchip[data-m=off] i{background:#7f8d99}
+.plchip[data-m=loop] i{background:#4da3ff}
+.plchip b{font-weight:600;opacity:.7}
+.plchip span{display:flex;flex-direction:column;align-items:flex-start;line-height:1.05}
+.plchip small{font-size:9px;letter-spacing:.08em;color:var(--c-dim,#7f97a8);font-weight:600}
+.plchip em{font-style:normal}
+.plpop{position:fixed;z-index:9000;width:340px;max-width:calc(100vw - 16px);box-sizing:border-box;padding:14px 16px;border:1px solid var(--line,#2c4256);border-radius:12px;background:var(--c-panel,#0f1a24);color:var(--c-text,#dfe9f1);box-shadow:0 14px 40px #0009;font-size:13px}
+.plpop h5{margin:12px 0 6px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--c-dim,#7f97a8)}
+.plpop h5:first-child{margin-top:0}
+.plpop .plseg{display:flex;border:1px solid var(--line,#2c4256);border-radius:7px;overflow:hidden}
+.plpop .plseg button{flex:1;padding:7px 0;border:0;border-right:1px solid var(--line,#2c4256);background:transparent;color:inherit;font-weight:600;cursor:pointer}
+.plpop .plseg button:last-child{border-right:0}
+.plpop .plseg button.on{background:#2563eb!important;color:#fff!important;border-color:#2563eb}
+.plpop .plrow{display:flex;align-items:center;gap:8px}
+.plpop input{width:84px;padding:6px 8px;border:1px solid var(--line,#2c4256);border-radius:6px;background:var(--c-well,#081118);color:inherit;font:600 14px var(--mono,monospace);text-align:right}
+.plpop .plgo{padding:6px 14px;border:0;border-radius:7px;background:#16a34a;color:#fff;font-weight:600;cursor:pointer}
+.plpop .plh{color:var(--c-dim,#7f97a8)}
+.plpop small{display:block;margin-top:8px;line-height:1.4;color:var(--c-dim,#7f97a8)}
+.plpop .plnote{margin:10px 0 0;color:#ffd479}
+@media (max-width:700px){.plchip{padding:0 8px;font-size:12px}.plchip em{max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+/* 3.2.0 retest #54: progress bar while a starting state loads (app.js lsBusy) */
+#lsbusy{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);cursor:progress}
+#lsbusy[hidden]{display:none}
+#lsbusy .lsbz{min-width:min(20rem,calc(100vw - 2rem));padding:1rem 1.25rem;border-radius:.5rem;background:var(--c-bg,#1e293b);color:var(--c-tx,#e2e8f0);border:1px solid var(--c-line,#475569);box-shadow:0 8px 30px rgba(0,0,0,.4);font:400 .875rem var(--uf,system-ui)}
+#lsbusy b{display:block;margin-bottom:.625rem;font-weight:600}
+#lsbusy .lsbzbar{position:relative;height:.5rem;border-radius:.25rem;background:rgba(127,127,127,.25);overflow:hidden}
+#lsbusy .lsbzbar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--c-acc,#3b82f6);transition:width .2s}
+#lsbusy .lsbzbar i.ind{width:35%!important;animation:lsbz 1.2s linear infinite}
+@keyframes lsbz{0%{transform:translateX(-100%)}100%{transform:translateX(290%)}}
+#lsbusy small{display:block;margin-top:.5rem;opacity:.8}
+/* 3.2.0 retest #57: the starting state is picked by the operator (app.js lsAskStart) */
+#lsask{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35)}
+#lsask .lsbz{max-width:min(28rem,calc(100vw - 2rem));padding:1rem 1.25rem;border-radius:.5rem;background:var(--c-bg,#1e293b);color:var(--c-tx,#e2e8f0);border:1px solid var(--c-line,#475569);box-shadow:0 8px 30px rgba(0,0,0,.4);font:400 .875rem var(--uf,system-ui)}
+#lsask b{display:block;font-size:1rem;font-weight:600}
+#lsask p{margin:.5rem 0 .875rem;color:var(--c-tx2,inherit)}
+#lsask .lsaskb{display:flex;flex-wrap:wrap;gap:.5rem}
+#lsask .lsaskbtn{min-height:2.25rem;padding:0 .875rem;border-radius:.375rem;border:1px solid var(--c-btnbd,#475569);background:var(--c-ribbon,transparent);color:inherit;font:600 .8125rem var(--uf,system-ui);cursor:pointer}
+#lsask .lsaskbtn.go{border-color:var(--c-acc);background:var(--c-accbg);color:var(--c-acctx,#fff)}
+/* retest #42 (R4: "Even…" in the Plant view header): the Events button keeps its whole label */
+#cralarm #evbtn:not(#x){flex:none!important;white-space:nowrap!important;min-width:max-content!important;overflow:visible!important;text-overflow:clip!important}
+/* retest #13: no logic sheet behind HOME / TRAINING (app.js setTab: inert, aria-hidden) */
+body:is([data-tab=home],[data-tab=training]) :is(#cv,#side,#anp,#tabs,#anptab){visibility:hidden!important}
+body:is([data-tab=home],[data-tab=training]) :is(#meta,#anmeta){visibility:hidden!important}
+/* retest #2 #13: a field step of the Gabay on the Logic page: no sheet of another step, a note says why (dock.js fieldNote) */
+#lsfieldnote{display:none}
+body.lsfield[data-tab=logic] #lsfieldnote{display:block;position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);max-width:min(32rem,90%);padding:1rem 1.25rem;background:var(--c-pane);color:var(--c-tx);border:1px solid var(--c-line2);border-radius:var(--r);font:400 .9375rem/1.45 var(--uf);text-align:center;z-index:5}
+body.lsfield[data-tab=logic] #svg{visibility:hidden}
+body.lsfield[data-tab=logic] #cv{position:relative}
+/* retest #42: a status text longer than its cell: two smaller lines in the same bar (app.js fit2), not cut */
+#sfoot:not(#x) .sf2:is(#st,.shint,.smsg){white-space:normal!important;line-height:.875rem!important;font-size:.6875rem!important;padding-top:.0625rem!important;padding-bottom:0!important;overflow:hidden;text-overflow:clip}
+/* retest #42: the alarm banner keeps room for the alarm name; the unit name and the time give way first when the band is narrow */
+body.cr #gsbar > #crband{container-type:inline-size;container-name:crband}
+body.cr #crband > #cralarm:not(#x){min-width:16rem}
+@container crband (max-width:62rem){#crband .crunit span{display:none}#cralarm .crat{display:none}}
+@container crband (max-width:52rem){#crband .crunit{display:none}}
+body.lsfield[data-tab=logic] :is(#dp,#anp,#dmeta,#anmeta,#meta,#anptab){visibility:hidden!important}
+/* R9 #42 (the Events button cut to "Even…" under the search box when the alarm chip reads "NO ALARM · 93 SUPPRESSED"): the alarm box is
+   never narrower than its chips and the Events button; its text line gives way first, then the KPI strip (overflow hidden) */
+#cralarm .cratx.cratx{contain:inline-size;flex:1 1 0}
+body.cr #crband > #cralarm:not(#x):not(#y){min-width:min-content}
+#crband .gs-search:not(#x){flex:0 1 auto;min-width:7.5rem} /* R9 #42: with the Training dock open the band is narrower: the search box gives way too */

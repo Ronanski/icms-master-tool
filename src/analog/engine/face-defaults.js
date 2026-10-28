@@ -2643,7 +2643,8 @@ const AN_DEF = {
         DH: 0,
         PHONDT: 0,
         PLONDT: 0,
-        desc: '#1 Turbine rated speed'
+        /* R9 #78: was "#1 Turbine rated speed" (TCS-AI1004, a wrong match); the PV is TE-LO1002-1 / -2 (AI0452 / AI0516, wiring list) */
+        desc: '#1 Turbine lube oil cooler outlet oil temperature'
       },
       {
         stn: 105,

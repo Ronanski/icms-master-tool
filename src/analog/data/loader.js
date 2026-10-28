@@ -71,7 +71,7 @@ function tagCard() {
     CARD = h$('div', {
       id: 'antag',
       style:
-        'position:absolute;left:10px;top:10px;max-width:440px;background:#0f1a22ee;border:1px solid #2b4a5a;border-left:4px solid #ffe14a;padding:6px 10px;font:12px sans-serif;color:#e7eef3;display:none;z-index:6;pointer-events:none;line-height:1.45'
+        'position:absolute;left:10px;top:10px;max-width:440px;background:var(--c-pane);border:1px solid var(--c-line);border-left:4px solid var(--c-man);padding:6px 10px;font:12px sans-serif;color:var(--c-tx);display:none;z-index:6;pointer-events:none;line-height:1.45'
     });
     const c = $('cv');
     if (c) {
@@ -89,7 +89,7 @@ function tagCard() {
       hc = h$('div', {
         id: 'anhov',
         style:
-          'position:absolute;max-width:420px;background:#0f1a22f5;border:1px solid #2b4a5a;border-left:4px solid #5cc8ff;padding:5px 9px;font:12px sans-serif;color:#e7eef3;display:none;z-index:7;pointer-events:none;line-height:1.4'
+          'position:absolute;max-width:420px;background:var(--c-pane);border:1px solid var(--c-line);border-left:4px solid var(--c-acc);padding:5px 9px;font:12px sans-serif;color:var(--c-tx);display:none;z-index:7;pointer-events:none;line-height:1.4'
       });
       const c = $('cv');
       if (c) {
@@ -481,7 +481,8 @@ function reset() {
   anResetAll(); /* the model part of the reset is in the engine (engine/sheets.js) */
   /* 2.2.0-beta.3: Reset = cold start, the DITL 150 MW state too (src/world/ditl150.js) */
   try {
-    if (window.DITL150 && DITL150.on) DITL150.clear();
+    /* retest #68: always (a motor started by hand in the run before is stopped too, not only the 150 MW state) */
+    if (window.DITL150) DITL150.clear();
   } catch (e) {}
   const sh = cs();
   if (!sh || !sh.S) return;

@@ -59,10 +59,42 @@ function centerOn(x, y) {
   v[1] = -y - v[3] / 2;
   svg.setAttribute('viewBox', v.join(' '));
 }
+/* 3.2.0-beta.26 (user 2026-10-25, Training page link: "hindi ka dinadala kung saan ka talaga magko-control"): open the ABC sheet of a
+   tag AND show its block: zoomed to a readable width, centred, selected (Inspector) and flashed. Returns the sheet name or null */
+AN.showTag = (tag, sheetName) => {
+  const nm = sheetName || (AN.fpFind && AN.fpFind(tag));
+  const i = nm ? AN.sheets.findIndex(z => z.name === nm) : -1;
+  if (i < 0) return null;
+  if (AN.cat !== 'an') setCat('an');
+  if (i !== AN.i) go(i);
+  const sh = cs(),
+    S = sh && sh.S;
+  if (!S) return nm;
+  const K = { PID: 3, PIDV: 3, MAN: 3, AMT: 1 },
+    hit = S.blk
+      .filter(b => b.tag === tag || (b.txt || []).some(t => String(t).trim() === tag))
+      .sort((a, b) => (K[b.k] || 0) - (K[a.k] || 0))[0];
+  if (!hit || hit.cx == null) return nm;
+  const v = AN.av[sh.name],
+    r = $('svg').getBoundingClientRect();
+  if (v && r.width) {
+    v[2] = 240;
+    v[3] = (240 * r.height) / r.width;
+  }
+  centerOn(hit.cx, hit.cy);
+  AN.sel = { blk: hit };
+  try {
+    selBox();
+    paint();
+    AN.panelUpd && AN.panelUpd(true);
+  } catch (e) {}
+  flash(hit.cx, hit.cy, 6);
+  return nm;
+};
 function jumpTo(sh2, c2) {
   const cur_ = cs(),
     pv = (AN.av[cur_.name] || []).slice();
-  AN.hist.push({ name: cur_.name, view: pv });
+  AN.hist.push({ name: cur_.name, view: pv, sel: selKeep() });
   updBack();
   if (sh2 !== cur_) {
     go(AN.sheets.indexOf(sh2));
@@ -84,12 +116,30 @@ function goBack() {
   const h = AN.hist.pop();
   updBack();
   if (!h) return;
+  /* 3.2.0-beta.39: the jump came from a DITL row (FROM / TO ABC-xxx): back to that DITL sheet */
+  if (h.dig) {
+    if (window.DUI && DUI.back) DUI.back();
+    return;
+  }
   const i = AN.sheets.findIndex(s => s.name === h.name);
   if (i < 0) return;
   if (AN.sheets[i] !== cs()) go(i);
   if (h.view.length) {
     AN.av[h.name] = h.view;
     $('svg').setAttribute('viewBox', h.view.join(' '));
+  }
+  /* 3.2.0-beta.18: the selection (and the trace) of that sheet comes back too */
+  const S = cs().S,
+    q = h.sel;
+  if (q && S) {
+    const blk = q.blk != null ? S.blk.find(x => x.id === q.blk) : null;
+    AN.sel = blk ? { blk } : q.net != null ? { net: q.net, nets: q.nets } : null;
+    const P = AN.trPath || [],
+      k = P.findIndex(x => x.name === h.name);
+    if (k >= 0) P.length = k + 1;
+    selBox();
+    paint();
+    panelUpd(true);
   }
 }
 AN.cj = {};
@@ -120,25 +170,94 @@ function endsOf(sh, c) {
   if (lk) addE(lk.peer.sh, lk.peer.c);
   return ends;
 }
-function dsGoRef(r) {
-  const m = /(?:DITL\s*)?([0-9]{2}[A-Z]?)\s*-\s*(\d+)/i.exec(String(r));
+/* 3.2.0-beta.39 (S2 / roadmap 5): EVERY "FROM / TO DITL xx-nn" text of an ABC drawing is a page link, not only the ones beside a circle
+   (before: 10 of 233). A text with a list ("TO DITL 96-18, DITL 97-18") opens a chooser. */
+const DS_ANY = /(?<!\d)(\d{2,3}[A-Z]?)\s*-\s*(\d+)/gi;
+function dsRefsIn(txt) {
+  if (!/DITL/i.test(txt)) return [];
+  const out = [];
+  let m;
+  DS_ANY.lastIndex = 0;
+  while ((m = DS_ANY.exec(txt))) {
+    const r = m[1].toUpperCase() + '-' + +m[2];
+    if (!out.includes(r)) out.push(r);
+  }
+  return out;
+}
+function dsGoRef(r, sb) {
+  const m = /(?<!\d)([0-9]{2,3}[A-Z]?)\s*-\s*(\d+)/i.exec(String(r));
   if (!m) {
     msg('DITL reference not understood: ' + r);
     return false;
   }
   const code = m[1].toUpperCase(),
     nn = m[2];
-  let i = S.sheets.findIndex(x => new RegExp('DITL-' + code + '$', 'i').test(x.name));
-  if (i < 0) i = S.sheets.findIndex(x => new RegExp('DITL-' + code.replace(/[A-Z]$/, '') + '$', 'i').test(x.name));
+  /* "FOR S/B LOGIC" (ABC-001C, ABC-017): the sootblower set of drawings has its own DITL-80 */
+  const i = ditlIdx(code, sb ? { name: '(S0)' } : null);
   if (i < 0) {
     msg('DITL sheet ' + code + ' (' + r + ') is not in the DITL page');
     return false;
   }
+  /* 2.5.0-beta.8: open the item itself (the row blinks); ◀ Back on the DITL bar returns to this ABC sheet */
+  if (window.DUI && DUI.goItem) return DUI.goItem(i, +nn, { cat: 'an', i: AN.i });
   setCat('dig');
   S.cur = i;
   sel = null;
   render();
   msg('DITL page: ' + S.sheets[i].name + ' (reference ' + r + ', item ' + nn + ')');
+  return true;
+}
+/* the DITL text under a click or tap (the screen box of the text, a little wider for a finger), nearest centre wins */
+function dsTextAt(e, exact) {
+  const sh = cs(),
+    S2 = sh && sh.S;
+  if (!S2 || !L || !L.txe) return null;
+  const pad = exact ? 0 : e.pointerType === 'touch' ? 10 : 4;
+  let best = null,
+    bd = 1e9;
+  for (const t of S2.tx) {
+    if (!/DITL/i.test(t.t)) continue;
+    const el = L.txe.get(t);
+    if (!el) continue;
+    const b = el.getBoundingClientRect();
+    if (!b.width || e.clientX < b.left - pad || e.clientX > b.right + pad || e.clientY < b.top - pad || e.clientY > b.bottom + pad) continue;
+    const d = Math.hypot(e.clientX - (b.left + b.right) / 2, e.clientY - (b.top + b.bottom) / 2);
+    if (d < bd) {
+      bd = d;
+      best = t;
+    }
+  }
+  return best;
+}
+function dsTextClick(t, e) {
+  const refs = dsRefsIn(t.t);
+  if (!refs.length) return false;
+  const sb = /S\/B/i.test(t.t);
+  if (refs.length === 1) return dsGoRef(refs[0], sb);
+  const pk = document.getElementById('plpick');
+  if (!pk) return dsGoRef(refs[0], sb);
+  pk.textContent = '';
+  pk.append(h$('div', { cls: 'plhd', txt: (/FROM/i.test(t.t) ? 'FROM' : 'TO') + ' DITL: pick the page' }));
+  refs.forEach(r => {
+    const m = /^(\d{2,3}[A-Z]?)-(\d+)$/.exec(r),
+      i = m ? ditlIdx(m[1], sb ? { name: '(S0)' } : null) : -1;
+    pk.append(
+      h$('button', {
+        txt: i >= 0 ? S.sheets[i].name + ' · item ' + m[2] : 'DITL ' + r + ' (not in the app)',
+        onclick: () => {
+          if (Date.now() - pk.t0 < 400) return;
+          pk.hidden = true;
+          dsGoRef(r, sb);
+        }
+      })
+    );
+  });
+  pk.hidden = false;
+  pk.t0 = Date.now();
+  const w = pk.offsetWidth,
+    hh = pk.offsetHeight;
+  pk.style.left = Math.max(8, Math.min(innerWidth - w - 8, e.clientX - w / 2)) + 'px';
+  pk.style.top = Math.max(8, Math.min(innerHeight - hh - 8, e.clientY + 12)) + 'px';
   return true;
 }
 function connClick(c) {
@@ -239,7 +358,7 @@ function connClick(c) {
         );
         return;
       }
-      AN.hist.push({ name: sh.name, view: (AN.av[sh.name] || []).slice() });
+      AN.hist.push({ name: sh.name, view: (AN.av[sh.name] || []).slice(), sel: selKeep() });
       updBack();
       go(AN.sheets.indexOf(cand[0]));
       msg('Opened ' + cand[0].name + ' (circle ' + c.num + ' was not found there, check by eye).');
@@ -327,7 +446,7 @@ function anRender() {
   meta.innerHTML = '';
   meta.append(
     h$('b', { txt: sh.name }),
-    h$('span', { txt: (sh.no ? 'SHEET ' + sh.no + ' · ' : '') + (sh.title || '') }),
+    h$('span', { txt: (sh.no ? 'SHEET ' + sh.no + ' · ' : '') + (sh.title || ''), title: (sh.no ? 'SHEET ' + sh.no + ' · ' : '') + (sh.title || '') }), /* 3.2.0-beta.6 (audit L1): full title on hover when cut */
     h$('span', { id: 'anmode', style: 'margin-left:12px;padding:2px 8px;border-radius:4px;font:700 12px sans-serif' }),
     h$('span', { cls: 'sp' }),
     lgd(),
@@ -875,6 +994,11 @@ function drawSheet(sh) {
     if (t.r) e.setAttribute('transform', `rotate(${-t.r} ${t.x} ${-t.y})`);
     e.style.fontFamily = "Consolas,'Cascadia Mono',monospace";
     e.textContent = t.t;
+    if (/DITL/i.test(t.t) && dsRefsIn(t.t).length) {
+      e.style.textDecoration = 'underline dotted #5aa9ff 0.12em';
+      e.style.textUnderlineOffset = '0.25em';
+      e.style.cursor = 'pointer';
+    }
     TXE.set(t, e);
   });
   L.txe = TXE;
@@ -1167,7 +1291,7 @@ function drawSheet(sh) {
       );
     });
   }
-  L.selg = el('g', { 'pointer-events': 'none' }, svg);
+  L.selg = el('g', { class: 'selg', 'pointer-events': 'none' }, svg);
   /* value badges */
   const th = R.tx.map(t => t.h).sort((a, b) => a - b),
     bs = Math.max(1.8, Math.min(3.2, (th[th.length >> 1] || 3) * 0.8)) * (+AN.ws.vs || 1);
@@ -1810,7 +1934,8 @@ function drawSheet(sh) {
   }
   const gx = el('g', { class: 'xref' }, svg);
   {
-    const RX = /(ABC-\d{3}[A-Z]?)|DITL[ -]?(\d{1,2}[A-H]?)-\d{1,3}/g;
+    /* 3.2.0-beta.39: only ABC-xxx here; the DITL references are page links of their own (dsTextAt, DITL item + Back) */
+    const RX = /(ABC-\d{3}[A-Z]?)/g;
     let nx = 0;
     for (const t of S.tx) {
       const str = String(t.t),
@@ -1820,15 +1945,11 @@ function drawSheet(sh) {
       RX.lastIndex = 0;
       while ((m = RX.exec(str))) {
         const ab = m[1],
-          dp = m[2],
           tok = m[0];
         let tgt = null;
         if (ab) {
           if (ab === sh.name) continue;
           if (AN.sheets.some(z => z.name === ab)) tgt = { a: ab };
-        } else if (dp) {
-          const pg = 'DITL-' + (/^\d[A-H]?$/.test(dp) ? '0' + dp : dp);
-          tgt = { d: pg };
         }
         if (!tgt) continue;
         nx++;
@@ -1862,7 +1983,7 @@ function drawSheet(sh) {
             gx
           );
         const ti = el('title', {}, r);
-        ti.textContent = 'Go to ' + (tgt.a || tgt.d);
+        ti.textContent = 'Go to ' + tgt.a;
         r._xr = tgt;
         r.addEventListener('mouseenter', () => u.setAttribute('opacity', 1));
         r.addEventListener('mouseleave', () => u.setAttribute('opacity', 0.8));

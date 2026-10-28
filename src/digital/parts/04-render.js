@@ -71,7 +71,7 @@ function fieldInModel(sh, nl, exist) {
     const tg = all
       .filter(
         q =>
-          /^[A-Z]{1,4}\d?-[A-Z0-9]{2,}[A-Z0-9-]*$/.test(q.t.trim()) &&
+          /^[A-Z]{1,4}\d{0,2}-[A-Z0-9]{2,}[A-Z0-9-]*$/.test(q.t.trim()) && /* 2.5.0-beta.11: BI10-DO1043-A (DITL-18 row 78) */
           q.x > e[0] - 62 &&
           q.x < e[0] + 10 &&
           q.y >= e[1] - 5 &&
@@ -115,6 +115,8 @@ function usrModel(sh, nl) {
   }
   return res;
 }
+/* 2.5.0-beta.14: DCS registers shared by the sheets (bottom ash step SI0130); Simulate on / off and Reset clear them */
+let DREG = {};
 function simulate(nl, act) {
   /* v10: keeps the last state (seal-in / latch memory) and applies one net change per step, so cross interlocks (NOT of the other command) settle instead of flipping */
   const N = nl.n;
@@ -123,13 +125,14 @@ function simulate(nl, act) {
   for (let it = 0; it < 4 * N + 60; it++) {
     const w = new Array(N).fill(0);
     (nl.fx || []).forEach(n => (w[n] = 1));
+    (nl.one || []).forEach(n => (w[n] = 1)); /* 2.5.0-beta.11: DEFAULT "1" */
     (nl.ufx || []).forEach(n => (w[n] = 1));
     const MR = nl.mir || [];
     nl.src.forEach(s => {
       if (act.has(s.row) && !MR.some(m => m.row === s.row)) w[s.n] = 1;
     });
     MR.forEach(m => {
-      if (v[m.n])
+      if (m.neg ? !v[m.n] : v[m.n])
         nl.src.forEach(z => {
           if (z.row === m.row) w[z.n] = 1;
         });
@@ -137,6 +140,19 @@ function simulate(nl, act) {
     (nl.ind || []).forEach(m => {
       if (act.has(m.row)) w[m.n] = 1;
     });
+    /* 2.5.0-beta.14 bottom ash step register (SI0130): "STEP=n" outputs write it, "STEP≥n" inputs read it */
+    if (nl.stepW) {
+      nl.stepW.forEach(o => {
+        if (v[o.n]) DREG[o.reg] = o.val;
+      });
+      nl.stepR.forEach(r => {
+        const x = DREG[r.reg] || 0;
+        if (r.op === '≥' ? x >= r.val : r.op === '≤' ? x <= r.val : x === r.val)
+          nl.src.forEach(z => {
+            if (z.row === r.row) w[z.n] = 1;
+          });
+      });
+    }
     nl.gates.forEach((g, gi) => {
       const I = a => a.some(n => v[n]);
       let o = 0;
@@ -152,10 +168,25 @@ function simulate(nl, act) {
           sp = g.spNet !== undefined ? val(g.spNet) : g.sp;
         o = g.cmp === '>' ? (g.eq ? v0 >= sp : v0 > sp) : g.eq ? v0 <= sp : v0 < sp;
       } else if (g.t === 'TMR') o = g.st.out;
-      else {
+      else if (g.t === 'CNT') {
+        /* 2.5.0-beta.12: sequence counter (sootblower DITL-80): RESET = N 0, the input 1 -> 0 = N + 1 (kept when the sheet settles) */
+        const c = I(g.ins);
+        /* 2.5.0-beta.14: the bottom ash COUNTER (+1, =4) counts on the input 0 -> 1 (g.up); its RESET acts on the next scan (BA-20:
+           the count 4 = LAST CYCLE OVER -> AUTOMATIC STOP -> RESET; the same scan would cancel the 4 before anyone sees it) */
+        g.rq = I(g.r);
+        g.Nn = (g.up ? g.rp : g.rq) ? 0 : (g.up ? !g.pin && c : g.pin && !c) ? Math.min(g.N + 1, Math.max(...g.ks)) : g.N;
+        g.cin = c;
+        g.out.forEach((n, j) => {
+          if (g.ks[j] === g.Nn) w[n] = 1;
+        });
+        return;
+      } else {
         const s = I(g.s),
           r = I(g.r);
-        if (r) g.q = 0;
+        if (g.spri) {
+          if (s) g.q = 1;
+          else if (r) g.q = 0;
+        } else if (r) g.q = 0;
         else if (s) g.q = 1;
         o = g.q;
       }
@@ -169,6 +200,13 @@ function simulate(nl, act) {
     if (pick !== undefined) d.filter(n => src.has(n)).forEach(n => (v[n] = w[n]));
     else v[d[0]] = w[d[0]];
   }
+  nl.gates.forEach(g => {
+    if (g.t === 'CNT' && g.Nn !== undefined) {
+      g.N = g.Nn;
+      g.pin = g.cin;
+      g.rp = g.rq;
+    }
+  });
   nl._v = v;
   return v;
 }
@@ -177,10 +215,32 @@ function simulate(nl, act) {
 /* 2.2.0-beta.3: the analog values of the sheet: what the user typed, over the 150 MW values of the HMI snapshots (s.av150,
    src/world/ditl150.js; kept apart so they are never saved as the user's own values) */
 function avOf(s) {
+  /* 2.3.0-beta.1: s.avw = an analog value that the one world brings from the ABC (DITL-79 row 6 TICMS1022.MV of ABC-051) */
+  if (s.avw) return { ...(s.av150 || {}), ...(s.av || {}), ...s.avw };
   return s.av150 ? { ...s.av150, ...(s.av || {}) } : s.av || null;
+}
+function xconPeer(s, c) {
+  if (c.pk !== undefined) return c.pk;
+  const me = (/DITL-?\s*([0-9]{1,3}[A-Z]?)\s*$/i.exec(s.name) || [])[1],
+    sh = S.sheets[ditlIdx(c.peer, s)];
+  let r = null;
+  if (sh && me) {
+    if (!sh.nl) sh.nl = netlist(sh);
+    const pc = ((sh.nl && sh.nl.xcon) || []).find(o => o.dir === 'out' && o.num === c.num && o.peer === me.toUpperCase());
+    if (pc) r = { sh, c: pc };
+  }
+  return (c.pk = r);
 }
 function simSheet(s) {
   s.nl.ufx = (s.nl.usr || []).filter(u => s.usw && s.usw[u.key]).map(u => u.n);
+  /* 2.5.0-beta.11 (DITL PDF audit): off-sheet connector "(n) FROM DITL-xx" = the net of connector (n) "TO DITL-<this>" on that sheet
+     (its last computed value; the one world runs every sheet, alone the other sheet keeps its last state) */
+  for (const c of s.nl.xcon || []) {
+    if (c.dir !== 'in') continue;
+    const P = xconPeer(s, c),
+      v = P && P.sh.nl && P.sh.nl._v;
+    if (v && v[P.c.n]) s.nl.ufx.push(c.n);
+  }
   /* 2.2.0-beta.3: the falling-edge mark on a NORMALLY CLOSED contact (DITL-03F rows 25 / 26 BOILER EMERGENCY TRIP P.B.(1) / (2)
      (N.C.) -> OR -> NOT -> BOILER EMERGENCY TRIP P.B. ON (OPC)) is the contact itself (closed = 1 while nobody presses it):
      read as a 2 s pulse, the trip was ON at rest and the MFT could never be reset. As a level, the trip is ON when both
@@ -190,6 +250,14 @@ function simSheet(s) {
     for (const g of s.nl.gates)
       if (g.t === 'TMR' && g.k === 'npulse')
         g.nc = s.nl.src.some(z => g.ins.includes(z.n) && /N\.\s*C\./i.test((s.cells[z.row + ':S'] || []).map(x => x.t).join(' ')));
+    /* 2.5.0-beta.11 (DITL PDF audit, DITL-22 / 24 / 30 / 31 / 111 / 112): the LOCAL STOP P.B. mark that feeds the MCC seal-in
+       (stop -> AND(NOT remote) -> AND(start OR running) = motor run) is the normally closed contact of the button: 1 at rest, 0 while
+       pressed, so the local start holds until stop is pressed. As a 2 s falling pulse it was 0 at rest and the pump could never run in
+       LOCAL. Where the same mark goes to the RESET of a flip-flop (DITL-61A / 76 / 77) it stays a falling pulse */
+    const into = n => s.nl.gates.filter(h => h.t === 'AND' && (h.ins || []).includes(n));
+    for (const g of s.nl.gates)
+      if (g.t === 'TMR' && g.k === 'npulse' && !g.nc)
+        g.ncp = g.out.some(n => into(n).some(a => a.out.some(m => into(m).length)));
   }
   const rowOn = simIn(s),
     v = simulate(s.nl, rowOn),
@@ -205,7 +273,10 @@ function simSheet(s) {
       });
     } else outOn.delete(row);
   });
-  if (!s.nl.gates.length) rowOn.forEach(i => outOn.add(i));
+  /* 2.5.0-beta.14: not a bottom ash indicator sheet (BA-72). 3.2.0-beta.23: not a field I/O sheet either (DITL-16 / 17: the input
+     rows are the DCS commands to the solenoids, the output rows the limit switches of the device; row 21 OPEN BURNER A OIL VALVE (1)
+     lit output row 21 VALVE (1) CLOSED, so the oil valves read closed while open and the burner had no oil) */
+  if (!s.nl.gates.length && !s.ba && !(s.nl.usr || []).length && !(s.nl.mv || []).length) rowOn.forEach(i => outOn.add(i));
   return { rowOn, v, outOn };
 }
 /* ---------- render ---------- */
@@ -242,12 +313,16 @@ function tx(t, p) {
   );
   if (t.r) e.setAttribute('transform', `rotate(${-t.r} ${t.x} ${-t.y})`);
   e.style.fontFamily = "Consolas,'Cascadia Mono',monospace";
-  e.textContent = t.t;
+  /* 3.2.0-beta.35: machine B / C / D of a shared drawing: its letter and its own address (WORLD.showText) */
+  e.textContent = TXMAP ? TXMAP(t.t) : t.t;
+  return e;
 }
 const SIDE = { L: ['F', 'L', 'T', 'S'], R: ['RS', 'RL', 'RT'] };
+let TXMAP = null;
 function render() {
   const svg = $('svg'),
     s = cur();
+  TXMAP = s && s._inst && s._inst.k && typeof WORLD !== 'undefined' && WORLD.showText ? x => WORLD.showText(s, x) : null;
   svg.innerHTML = '';
   $('meta').hidden = !s;
   if (s && (!s.nl || s.nl.v !== 10)) {
@@ -268,7 +343,7 @@ function render() {
     rowOn = R.rowOn;
     SV = R.v;
     outOn = R.outOn;
-    (s.nl.mir || []).forEach(m => FRC.set(m.row, !!SV[m.n]));
+    (s.nl.mir || []).forEach(m => FRC.set(m.row, m.neg ? !SV[m.n] : !!SV[m.n]));
     grpState(s).forEach((v, i) => FRC.set(i, v));
     /* one world: an input row fed by another sheet shows its value (dashed = it comes from elsewhere, not from a click) */
     const WD = window.WORLD && WORLD.live && WORLD.idx && WORLD.idx.din.get(s);
@@ -326,7 +401,8 @@ function render() {
   };
   const SPL = {};
   (s.nl.split || []).forEach(p => (SPL[p.k] = p));
-  s.raw.ln.forEach(([x1, y1, x2, y2, l], k) => {
+  s.raw.ln.forEach(([x1, y1, x2, y2, l, hop], k) => {
+    if (hop === 'hop') return; /* 2.5.0-beta.14: the straight wire under a hop half circle (bottom ash) is not drawn */
     ext(x1, y1);
     ext(x2, y2);
     const sp = SPL[k];
@@ -430,19 +506,29 @@ function render() {
     ext(t.x, t.y);
     tx(t, g);
   }
-  for (const k in s.cells)
+  for (const k in s.cells) {
+    /* 2.5.0-beta.8: a page link (FROM / TO column) is drawn as a link */
+    const lk = /:(F|RT)$/.test(k) && window.DUI && DUI.refs && DUI.refs(s.cells[k].map(t => t.t).join(' ')).length;
     for (const t of s.cells[k]) {
       ext(t.x, t.y);
-      tx(t, g);
+      const e = tx(t, g);
+      if (lk) e.classList.add('plink');
     }
+  }
+  /* 2.5.0-beta.20 (UI audit): the first view of a sheet is its frame (the lines), as Fit; the loose texts around the frame
+     (DITL-56: "STATION 102", "76") made the sheet small */
+  if (!VB[S.cur] && window.LOVIEW) {
+    const e = LOVIEW.dext(s);
+    if (e) VB[S.cur] = [e[0], e[1], e[2] - e[0], e[3] - e[1]];
+  }
   if (!VB[S.cur]) VB[S.cur] = [a[0] - 6, a[1] - 6, a[2] - a[0] + 12, a[3] - a[1] + 12];
   svg.setAttribute('viewBox', VB[S.cur].join(' '));
   const VR = s.vr || s.rng;
   s.rows.forEach((r, i) => {
-    for (const c in s.rng) {
+    for (const c in r.vx || s.rng) {
       const k = i + ':' + c,
         pop = SIM ? (LEFT.includes(c) ? fbk(s, i, c) : c === 'RS' && outOn.has(i)) : !!s.cells[k] || fbk(s, i, c),
-        [x1, x2] = VR[c],
+        [x1, x2] = (r.vx && r.vx[c]) || VR[c],
         sl = sel && sel.k === k;
       const RB = (s.rb && s.rb[i]) || [r.y - 3.3, r.y + 5.7];
       el(
@@ -465,10 +551,10 @@ function render() {
     }
   });
   if (SIM) {
-    const xr = VR.S[1];
     s.rows.forEach((r, i) => {
       if (!fbk(s, i, 'S')) return;
-      const cy = -(r.y + 1.2),
+      const xr = r.vx && r.vx.S ? r.vx.S[1] : VR.S[1],
+        cy = -(r.y + 1.2),
         on = FRC.has(i) ? FRC.get(i) : !!s.sig[i + ':S'],
         L = LIVES[LIVE];
       if (FRC.has(i)) return;
@@ -651,12 +737,13 @@ function render() {
     });
   el('g', { id: 'ov', 'pointer-events': 'none' }, svg);
   drawOv();
+  if (window.DUI && DUI.after) DUI.after(); /* 2.5.0-beta.8: the row a page link opened keeps blinking through a redraw (Run) */
   updatePanel();
   buildTP();
   renderMeta();
   $('bwire').textContent = 'Wire fix: ' + (WT ? 'On' : 'Off');
   $('bwire').className = WT ? 'on' : '';
-  $('bmode').textContent = SIM ? 'Edit' : '▶ Simulate';
+  $('bmode').textContent = SIM ? '■ Stop' : '▶ Run';
   $('bmode').title = SIM
     ? 'Simulate mode: click a cell = 1 / 0. Press to go back to Edit mode.'
     : 'Edit mode: click = select. Press to simulate (click a cell = 1 / 0).';
@@ -689,9 +776,18 @@ function hit(e) {
   const s = cur();
   if (!s) return null;
   const [x, y] = xy(e),
-    i = s.rows.findIndex(r => y >= r.y - 3.3 && y < r.y + 5.7);
+    VR = s.vr || s.rng;
+  /* 3.2.0-beta.39 (+ sand): a sand injection row (sh.sd) has its own area (r.vx: the flag / switch / lamp on the drawing) and its own height (s.rb) */
+  for (let i = 0; i < s.rows.length; i++) {
+    const r = s.rows[i];
+    if (r.vx) {
+      const RB = s.rb[i];
+      if (y < RB[0] || y >= RB[1]) continue;
+      for (const c in r.vx) if (x >= r.vx[c][0] && x < r.vx[c][1]) return { i, c, k: i + ':' + c };
+    }
+  }
+  const i = s.rows.findIndex(r => !r.vx && y >= r.y - 3.3 && y < r.y + 5.7);
   if (i < 0) return null;
-  const VR = s.vr || s.rng;
   for (const c in VR) if (x >= VR[c][0] && x < VR[c][1]) return { i, c, k: i + ':' + c };
   return null;
 }
@@ -709,6 +805,7 @@ function closeEd() {
   $('ed').hidden = true;
 }
 function openEd(h, cx, cy) {
+  if (NOEDIT) return;
   const s = cur(),
     ed = $('ed');
   EDH = h;
@@ -761,7 +858,7 @@ $('eta').addEventListener('keydown', e => {
   e.stopPropagation();
 });
 function clearSel() {
-  if (!sel || SIM) return;
+  if (!sel || SIM || NOEDIT) return;
   push();
   const s = cur();
   delete s.cells[sel.k];
