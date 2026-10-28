@@ -265,8 +265,9 @@
     /* retest #43 #42: the time says what it is; the full text in the tooltip */
     P.aT.textContent = last && last.t ? 'at ' + last.t : '';
     P.aT.title = 'Simulation time of this alarm';
-    P.aTx.textContent = last ? last.text + ' · ' + last.sh : sup ? 'No active alarm (shutdown alarms suppressed)' : 'No active alarm or trip';
-    P.aTx.title = (last ? last.text + ' · ' + last.sh + '\n' : '') + 'Alarm list of the whole DCS (every ABC sheet and the motor trips of the DITL), simulation time. Click the ALARM chip for the list and ACK.';
+    P.aTx.textContent = last ? last.text + ' · ' + last.sh : 'No active alarm';
+    /* retest #42: short in the header, the rest in the tooltip */
+    P.aTx.title = (last ? last.text + ' · ' + last.sh + '\n' : sup ? sup + ' shutdown alarms suppressed (alarm list: ALARM chip)\n' : '') + 'Alarm list of the whole DCS (every ABC sheet and the motor trips of the DITL), simulation time. Click the ALARM chip for the list and ACK.';
     if (P.aList.classList.contains('open') && (n !== P.aN || un !== P.aU || sup !== P.aS)) aFill();
     P.aS = sup;
     P.aN = n;

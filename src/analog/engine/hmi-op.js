@@ -1154,7 +1154,17 @@ function anGenAsync(g, prog) {
     const fin = () => {
       AN._loading = false;
       AN._asc = null;
+      try {
+        if (mc) mc.port1.close();
+      } catch (e) {}
     };
+    /* retest #54 (R5: 9 % in 2 min in a browser window that was not in front): the next slice by a message, not a timer (a page
+       not in front runs its timers once a second) */
+    let mc = null;
+    try {
+      mc = new MessageChannel();
+    } catch (e) {}
+    const later = () => (mc ? mc.port2.postMessage(0) : setTimeout(run, 0));
     const run = () => {
       const t0 = performance.now();
       try {
@@ -1177,8 +1187,9 @@ function anGenAsync(g, prog) {
         try {
           prog(k);
         } catch (e) {}
-      setTimeout(run, 0);
+      later();
     };
+    if (mc) mc.port1.onmessage = run;
     setTimeout(run, 30);
   });
 }
@@ -1188,6 +1199,11 @@ const anPlantLoad150Async = prog => anGenAsync(anPlantLoad150S(), prog);
    on = the plant model ON first. One load at a time (AN._loadP); resolves with the anchors, sets AN.startState */
 function anLoadStart(kind, on) {
   if (AN._loadP) return AN._loadP;
+  /* retest #59: a load picked anywhere closes the starting-state question */
+  try {
+    const q = document.getElementById('lsask');
+    if (q) q.remove();
+  } catch (e) {}
   const cold = kind === 'cold',
     B = window.lsBusy,
     est = (cold ? 46 : 40) * Math.max(1, AN.sheets.length - 1);

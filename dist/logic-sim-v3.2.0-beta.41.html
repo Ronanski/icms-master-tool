@@ -23743,7 +23743,17 @@ function anGenAsync(g, prog) {
     const fin = () => {
       AN._loading = false;
       AN._asc = null;
+      try {
+        if (mc) mc.port1.close();
+      } catch (e) {}
     };
+    /* retest #54 (R5: 9 % in 2 min in a browser window that was not in front): the next slice by a message, not a timer (a page
+       not in front runs its timers once a second) */
+    let mc = null;
+    try {
+      mc = new MessageChannel();
+    } catch (e) {}
+    const later = () => (mc ? mc.port2.postMessage(0) : setTimeout(run, 0));
     const run = () => {
       const t0 = performance.now();
       try {
@@ -23766,8 +23776,9 @@ function anGenAsync(g, prog) {
         try {
           prog(k);
         } catch (e) {}
-      setTimeout(run, 0);
+      later();
     };
+    if (mc) mc.port1.onmessage = run;
     setTimeout(run, 30);
   });
 }
@@ -23777,6 +23788,11 @@ const anPlantLoad150Async = prog => anGenAsync(anPlantLoad150S(), prog);
    on = the plant model ON first. One load at a time (AN._loadP); resolves with the anchors, sets AN.startState */
 function anLoadStart(kind, on) {
   if (AN._loadP) return AN._loadP;
+  /* retest #59: a load picked anywhere closes the starting-state question */
+  try {
+    const q = document.getElementById('lsask');
+    if (q) q.remove();
+  } catch (e) {}
   const cold = kind === 'cold',
     B = window.lsBusy,
     est = (cold ? 46 : 40) * Math.max(1, AN.sheets.length - 1);
@@ -29011,7 +29027,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.41';
-      c3.textContent += ' · build e9929bf'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 1c92d38'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -47838,6 +47854,8 @@ body.lsview #inlist::before{content:'VIEW · values only. Press RUN to force or 
 #lsask .lsaskbtn.go{border-color:var(--c-acc);background:var(--c-accbg);color:var(--c-acctx,#fff)}
 /* retest #42 (R4: "Even…" in the Plant view header): the Events button keeps its whole label */
 #cralarm #evbtn:not(#x){flex:none!important;white-space:nowrap!important;min-width:max-content!important;overflow:visible!important;text-overflow:clip!important}
+/* retest #13: no logic sheet behind HOME / TRAINING (app.js setTab: inert, aria-hidden) */
+body:is([data-tab=home],[data-tab=training]) :is(#cv,#side,#anp,#tabs,#anptab){visibility:hidden!important}
 /* ===== 3.2.0-beta.7 F(X) CURVES page (src/ui/fx/fx.js). The sheet itself is white paper with black grid lines, like the LINEAR
    CURVE workbook, in every app theme; the frame around it follows the app theme. ===== */
 #fxws{position:fixed;left:0;right:0;top:var(--topH,52px);bottom:var(--footH,30px);z-index:47;display:none;flex-direction:column;background:var(--c-bg);color:var(--c-tx);font:400 .9375rem/1.45 var(--uf)}
@@ -49671,6 +49689,14 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
      ON and no starting state picked, the operator picks one here (Cold / 150 MW); nothing loads or runs by itself. after() goes on
      once the picked state is in (RUN pressed with no state) */
   window.lsAskStart = after => {
+    /* retest #59 (R5: the question covered the Training checklist after Clear, and came again at the Gabay press after "Not now"):
+       never while a starting state is being loaded or prepared (Gabay, Practise: AN._startPending); asked by itself (no after: page
+       open, Reset) only outside HOME / TRAINING (they have their own Gabay / Practise buttons) and not again after "Not now";
+       the RUN press still asks */
+    const A = window.AN || {},
+      tb = document.body.dataset.tab;
+    if (A._loadP || A._startPending) return;
+    if (!after && (tb === 'home' || tb === 'training' || A._askNo)) return;
     let d = document.getElementById('lsask');
     if (d) {
       d._after = after || d._after;
@@ -49702,7 +49728,14 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
     [
       ['Cold (start-up from zero)', () => pick('loadcold'), 'go'],
       ['150 MW (HMI snapshot)', () => pick('load150'), ''],
-      ['Not now', close, '']
+      [
+        'Not now',
+        () => {
+          if (window.AN) AN._askNo = 1;
+          close();
+        },
+        ''
+      ]
     ].forEach(([t, f, c]) => {
       const b = document.createElement('button');
       b.type = 'button';
@@ -50017,19 +50050,26 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
     document.querySelectorAll('.ddw.open').forEach(x => x.classList.remove('open'));
     place();
     hint();
-    /* retest #13: no sheet of an earlier visit behind the Training page (training/dock.js home) */
-    if (t === 'training' && window.LS_DOCK && LS_DOCK.home)
+    /* retest #13 (R5: ABC-057 / DITL-29A of an earlier visit still loaded behind the Training page): on HOME and TRAINING the logic
+       workspace is not shown, not read and not focusable (inert, aria-hidden; CSS visibility in app.css); the guided start opens the
+       sheet of its step when it goes to the Logic page */
+    const away = t === 'home' || t === 'training';
+    for (const id of ['cv', 'side', 'anp', 'tabs', 'anptab'])
       try {
-        LS_DOCK.home();
+        const x = $(id);
+        if (!x) continue;
+        x.inert = away;
+        if (away) x.setAttribute('aria-hidden', 'true');
+        else x.removeAttribute('aria-hidden');
       } catch (e) {}
   }
   const HINTS = {
     /* retest #42: short enough for the status bar; the whole text is in the tooltip */
-    operate: 'PLANT VIEW: system on the left · controller / valve = faceplate · Plant ▾ = model, start',
-    library: 'LIBRARY: search an address, tag or description · Find = info card',
+    operate: 'PLANT VIEW: click a valve or controller = faceplate',
+    library: 'LIBRARY: search an address, tag or description',
     tools: 'TOOLS: tests, drawing checks, simulation switches',
-    home: 'HOME: pick what to do · "/" or Ctrl+K = search a tag',
-    training: 'TRAINING: tick each step · a tag = info card · Plant ▾ > Unit > Cold to practise'
+    home: 'HOME: pick what to do · Ctrl+K = search',
+    training: 'TRAINING: tick each step as you do it'
   };
   window.lsSetTab = setTab;
   function hint() {
@@ -52608,8 +52648,9 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
     /* retest #43 #42: the time says what it is; the full text in the tooltip */
     P.aT.textContent = last && last.t ? 'at ' + last.t : '';
     P.aT.title = 'Simulation time of this alarm';
-    P.aTx.textContent = last ? last.text + ' · ' + last.sh : sup ? 'No active alarm (shutdown alarms suppressed)' : 'No active alarm or trip';
-    P.aTx.title = (last ? last.text + ' · ' + last.sh + '\n' : '') + 'Alarm list of the whole DCS (every ABC sheet and the motor trips of the DITL), simulation time. Click the ALARM chip for the list and ACK.';
+    P.aTx.textContent = last ? last.text + ' · ' + last.sh : 'No active alarm';
+    /* retest #42: short in the header, the rest in the tooltip */
+    P.aTx.title = (last ? last.text + ' · ' + last.sh + '\n' : sup ? sup + ' shutdown alarms suppressed (alarm list: ALARM chip)\n' : '') + 'Alarm list of the whole DCS (every ABC sheet and the motor trips of the DITL), simulation time. Click the ALARM chip for the list and ACK.';
     if (P.aList.classList.contains('open') && (n !== P.aN || un !== P.aU || sup !== P.aS)) aFill();
     P.aS = sup;
     P.aN = n;
@@ -56704,6 +56745,7 @@ window.LS_GUIDE = (function () {
     /* 3.2.0 retest #54 (user 2026-10-28: the page froze over 1 min, no loading sign): the cold plant loads in slices with a progress
        bar (hmi-op.js anLoadStart), then the training starts */
     const go = () => {
+      AN._gdWait = 0;
       const ld = AN.loadStart
         ? AN.loadStart('cold', true)
         : Promise.resolve().then(() => {
@@ -56712,6 +56754,7 @@ window.LS_GUIDE = (function () {
             AN.plantCold();
             AN.startState = 'plantCold';
           });
+      AN._startPending = 0;
       ld.catch(() => {}).then(go2);
     };
     const go2 = () => {
@@ -56754,6 +56797,9 @@ window.LS_GUIDE = (function () {
     };
     try {
       AN._cold0 = 1;
+      /* retest #59: no starting-state question until this load has started */
+      AN._startPending = 1;
+      AN._gdWait = 1;
       if (AN.cat !== 'an') AN.setCat('an');
     } catch (e) {}
     let k = 0;
@@ -56762,6 +56808,7 @@ window.LS_GUIDE = (function () {
       if (ok || ++k > 160) {
         clearInterval(iv);
         if (ok) go();
+        else AN._startPending = AN._gdWait = 0;
       }
     }, 250);
   }
@@ -57659,23 +57706,6 @@ window.LS_GUIDE = (function () {
       if (done) done();
     });
   }
-  /* retest #13 (R4: the DITL-56 vacuum breaker of an earlier visit stayed loaded behind the Training page): opening the Training with
-     no guided start running puts the DITL sheet of the first DCS step (DITL-29A SWP) behind it, quietly (no page switch, no message) */
-  function home() {
-    const g = GD();
-    if (!g || !g.steps || g.on) return;
-    try {
-      const f = g.steps().find(x => (x.a || []).some(a => a.stop && motAddr(a) && MOTOR[motAddr(a)]));
-      const a0 = f && f.a.find(a => a.stop && motAddr(a) && MOTOR[motAddr(a)]);
-      if (!a0) return;
-      const d = String(MOTOR[motAddr(a0)]).replace(/\s*#\w+$/, ''),
-        ss = document.getElementById('shsel'),
-        o = ss && [...ss.options].find(x => new RegExp('\\)' + d + '$').test(x.textContent));
-      if (!o || ss.value === o.value) return;
-      ss.value = o.value;
-      ss.dispatchEvent(new Event('change'));
-    } catch (e) {}
-  }
   function resume() {
     const g = GD();
     if (!g) return;
@@ -58438,7 +58468,7 @@ window.LS_GUIDE = (function () {
   setInterval(() => {
     if (dock && GD() && GD().on && window.AN) ls.set('ls-gdock-spd', +AN.spd || 1);
   }, 5000);
-  window.LS_DOCK = { start, resume, home, open, stop, layout, fill, interlock, fieldOf, fieldSet, fieldRow, dsel, mst, dmotor, dOf, needNet, leaves, permOf, dpress, dset, dout, runOut, get el() {
+  window.LS_DOCK = { start, resume, open, stop, layout, fill, interlock, fieldOf, fieldSet, fieldRow, dsel, mst, dmotor, dOf, needNet, leaves, permOf, dpress, dset, dout, runOut, get el() {
       return dock;
     } };
 })();
@@ -58499,6 +58529,8 @@ window.LS_GUIDE = (function () {
   const abcReady = fn => {
     try {
       AN._cold0 = 1;
+      /* retest #59: a starting state is on its way (Gabay / Practise): no starting-state question meanwhile */
+      AN._startPending = 1;
       if (AN.cat !== 'an') AN.setCat('an');
     } catch (e) {}
     let k = 0;
@@ -58506,7 +58538,12 @@ window.LS_GUIDE = (function () {
       const ok = window.AN && AN.cat === 'an' && AN.sheets && AN.sheets.length >= 54 && AN.plantCold;
       if (ok || ++k > 120) {
         clearInterval(iv);
-        if (ok) fn();
+        if (ok)
+          try {
+            fn();
+          } catch (e) {}
+        /* the Gabay keeps it until its own load starts (guide.js start) */
+        if (window.AN && !AN._gdWait) AN._startPending = 0;
       }
     }, 250);
   };
