@@ -1121,3 +1121,45 @@ Check: totoong pindot (persistent profile, "Gabay: Cold" 2 beses), Hakbang 1 →
 | 42 | Naputol ang "Events" sa header | Lumiliit muna ang alarm text at search | app.css |
 | 60 | 50 / 121 lang ang live sa 007 | 61 / 121 (gas bias damper, R-SV, IDF coupling, furnace average); "—" = walang model | plant.js, systems.js |
 | 23 | Hindi masubok dito (screen ng user) | — | — |
+
+
+## 3.2.0-beta.39 (2026-10-26) — Roadmap 5: ang bawat "FROM / TO DITL" sa ABC ay page link, may Back
+
+**Problem:** sa ABC, 10 lang sa 233 na sulat na "FROM / TO DITL xx-nn" ang napipindot (yung malapit sa bilog na connector). Ang 223 ay sulat lang. Ang lumang xref layer ay sira sa DITL: hindi nito binabasa ang 3-digit na code (DITL-100 ~ 110) at binubuksan nito ang lumang sheet list, hindi ang item.
+
+**As Found:** `connClick` (bilog lang) at `xref` rect (`links-canvas.js`, regex `DITL[ -]?\d{1,2}`). `dsGoRef` ay nagbabasa ng "100-04" bilang "00-04" (mali). Ang DITL → ABC (FROM / TO ABC-xxx) ay gumagana na (`ditl_pagelink.js`), pero ang ABC ay walang Back pabalik sa DITL (kailangang lumipat sa DITL button).
+
+**Work Done:**
+- Ang BAWAT "FROM / TO DITL" na sulat ng 54 ABC sheet (233) ay link: bubukas ang DITL sheet at ang item row (kumikislap). Ang pindot na nasa mismong sulat ay panalo kahit may bilog sa ilalim; ang pindot sa tabi nito ay bilog pa rin. May tuldok na guhit sa ilalim ng sulat para halata.
+- Ang sulat na may listahan ("TO DITL 96-18, DITL 97-18, DITL 98-18") ay nagbubukas ng pagpipilian ng page (tulad ng DITL-03A). "FOR S/B LOGIC" = sootblower DITL-80.
+- `dsGoRef` ay nagbabasa na ng 3-digit na code. Ang lumang xref ay ABC-xxx na lang (inalis ang DITL na sira).
+- DITL → ABC: ang ABC ay may ↩ Back na bumabalik sa DITL sheet (dati wala). Sa phone / tablet na nakatayo, ang Back ay una sa tool row (hindi na nawawala sa kanan).
+- Walang binago sa engine, plant model o DITL data.
+
+**As Left (ebidensya):** `tests/regress/abc_ditl_links.js` (bago): desktop = click sa 233 / 233 na sulat (bubukas ang tamang DITL sheet o ang pagpipilian; Back bumabalik sa parehong ABC sheet); tablet at phone = tap sa 80 / 233 (bawat ika-4 at lahat ng listahan); DITL-01 FROM ABC-006 → ABC-006 → ↩ Back → DITL-01. ALL PASS. `ditl_pagelink.js` (lumang link test) ALL PASS; `ditl_sim.js` (Simulate OFF / ON, ABC ↔ DITL) walang FAIL. Screenshot: PC 1440x900, tablet 1280x800 at 800x1280, phone 390x844 (sulat na may guhit, chooser, DITL pagkatapos ng link, Back).
+
+**Hindi nasubok:** PC / tablet / EXE / APK ng user. Hindi pinatakbo ang Cold run (hindi plant model). Ang "null" sa DITL header at ang MSP 75 / drum −566 sa "not started" ay bukas pa (roadmap 2, ibang thread).
+
+**Status:** Beta. Roadmap hakbang 5 (links at Back) TAPOS.
+
+
+## HMI sample (PR #49, walang sariling numero; nakapatong sa base 3.2.0-beta.39) — Bagong HMI: sample na Air & Flue Gas (roadmap step 6)
+- **Problem (user 2026-10-26):** pangit ang kasalukuyang Plant HMI (kopya ng larawan ng control room, 49 / 121 lang ang live sa 007). Gusto ng user ng bagong HMI na sariling graphics; ang snapshot ay gabay lang sa system, flow at linya, at dapat may improvement.
+- **As Found:** ang 007 ay larawan (`hmibg.js` 3.7 MB) na may numerong pinapatungan; ang item na walang signal ay nagpapakita ng snapshot value kahit Cold. Maraming instrumento ng 007 ay nasa I/O list lang, walang ABC / DITL logic (backpass gas temps, cyclone, ESP pressures, fan currents, CEMS).
+- **Work Done:**
+  - `src/ui/plant/hmi2.js` (bago): library ng simbolo (duct na may arrow at dim kapag walang daloy, fan na may run state, damper na umiikot ang blade ayon sa %, data tag, faceplate chip, status lamp, header) at ang screen **AIR & FLUE GAS (new HMI)**. Lahat SVG, walang larawan.
+  - `plant.js`: ang screen na may `v2` ay iginuguhit ng `PLANT_V2.draw` gamit ang parehong live link, faceplate at Values list; chip na "Air & Gas · new". Ang lumang 28 screen ay hindi ginalaw.
+  - `docs/hmi/HMI_SYSTEMS.md`: listahan ng system at flow ng bagong HMI (14 screen) at mga desisyon sa disenyo.
+- **As Left (ebidensya):**
+  - LIVE **89 / 89** linked sa bagong screen; walang page error.
+  - Click: loop chip PICFG108 / FICFA1071 / HICHR1002A / B = faceplate ng loop; damper MCVFA10531 = FICFA1071, PCDFG10561 = PICFG108A. M sa faceplate (AICFG112) = chip nagiging M.
+  - Cold: fans berde (STOP), ducts dim, flows 0, bed temp 30 °C. 150 MW: fans pula (RUN), TAF 594 T/H, O2 4.3 %, furnace −17 mmH2O.
+  - `plant_view.js` ALL PASS. Screenshots: PC / tablet landscape 1280 × 800, tablet portrait 800 × 1280, phone 390 × 844.
+  - Nakita (plant model, hindi HMI): sa Cold, PIFA1088, PIFA1085, TIFA1086 / 1087 / 1076 / 1077 ay nananatili sa 150 MW na value.
+- **Restyle (user: "Ang pangit. Parang gawang bata."):** iginuhit muli ang buong screen sa ISA-101 high-performance style (gaya ng Ovation / 800xA / Yokogawa): gray na background, manipis na orthogonal na linya, doble-linya na duct na may mahinang tint, ISA 5.1 / ISO 10628 na fan / damper / APH / ESP / tube bank, tag sa itaas at puting value box na may unit, faceplate column na may mode box. Naayos din: walang laman ang PV ng faceplate (natakpan ng SV box). Sinubok muli: LIVE 89 / 89, click test (6 faceplate + mode M), `plant_view.js` ALL PASS, screenshots 150 MW at Cold (PC), tablet portrait, phone.
+- **Bagong drawing (user: "Gawang bata, kulay lang binago... Do better."):** hindi na recolor: bagong komposisyon na process mimic gaya ng operator station ng tunay na DCS. Title bar + alarm banner + navigation bar (bumubukas ang 008 / 009 / 039 / 038 / 011 / 033), equipment na may shading (furnace cut-away na umiilaw ang bed ayon sa bed temp, drum, cyclone + loop seal, backpass tube banks + louvre dampers, tubular air heater, ESP na may T/R at hoppers, fan na may volute at motor, stack na may CEMS), ducts na may gumagalaw na flow marks, ISA bubble at value sa tabi ng bawat instrumento, controller tag sa tabi ng damper nito, live trend. Sinubok: LIVE 87 / 87, click test (6 faceplate + mode M), nav click 008 = bumukas ang 008, `plant_view.js` ALL PASS, screenshots 150 MW / Cold / tablet portrait / phone. Ang CEMS ay walang DCS tag (007 ay plain text lang), kaya "-----".
+- **Professional art (user: "Ok naman ang flow... graphics choice mo... gawang bata pa rin. Wala ka ba taga audit?"):** pareho ang flow, tag at logic; ang art ay sumusunod na sa HMI art spec at symbol library ng project (art audit, PR #51): solid gradient na duct na may maliit na chevron (walang gumagalaw na tuldok), fan + motor na may status band (pula = run, berde = stop), damper na may 3 blade ayon sa tunay na posisyon, furnace at stack na walang glow / brick / guhit, iisang style ng backpass / APH / ESP, label sa labas ng equipment, value #e8eef3 mono, faceplate PV / SV / MV na may outline mode pill (AUT / MAN / CAS), inalis ang walang lamang trend at CEMS box. Nasuri sa 1280x800 (150 MW at Cold), 800x1280 at 390x844.
+- **Cutaway (user: "Medyo nalalakihan pa ko... 2d, medyo realistic na may animation... atleast 3 different"; pinili: "yung cutaway muna gawin. temporary"):** 3 proposal (Steel, Cutaway, Thermal) at ang Cutaway ang inilagay sa app, pansamantala. Pareho ang flow, tag, link at faceplate. Mas maliit ang equipment at text; naka-section ang lahat ng equipment; gumagalaw ayon sa live signal: fan (run bit), particle sa duct (fan ng duct), solids sa furnace at cyclone (PAF), usok (IDF), apoy at bed (bed temp). Side panel: combustion, bed temp bar, fan, alarm.
+- **3 style + bagong pipe (user: "gawin rin ang steel at thermal as option ng HMI... ayusin ang pag kakagawa ng pipes, parang pinagpatong na rectangle"):** STYLE na pindutan sa ibaba ng screen (CUTAWAY / STEEL / THERMAL, naaalala). Ang mga duct ay tuloy-tuloy na path na may bilugang liko at malinis na tee sa lahat ng style. Sa Cold, abo / madilim ang mga duct at kumukupas ang init ng furnace, cyclone, backpass at APH ayon sa bed temperature.
+- **Kumpletong tag at piping (user: "Ang daming kulang na tags, walang descriptions... di kita ang mga internals at externals pipes... flue gas, water, steam... temperature, pressure, flow, level, analyticals, pati ung hydraulic coupling, esp"):** muling iginuhit ang screen ayon sa P&ID PD-051 ~ 054. 109 tag, bawat isa may paglalarawan (lahat naka-link: logic, I/O list, o plant estimate na may tuldok); bed temperature table (18 TC, avg / max / min / rate); bed DP, furnace pressure, drum level at pressure, start-up burner hot SA; cyclone at seal pot; backpass gas temps (RH / SH pass); Ljungstrom APH (PA / SA / GAS sector) na may inlet / outlet T, P, O2; ESP; IDF na may hydraulic coupling (scoop, speed, current); stack CEMS; fan currents; tubo ng tubig at steam at legend ng kulay ng medium (malamig / mainit). Bug na naayos: `PICR1006` (reheat inlet pressure) ay "-----" dahil kinakain ng tag reader ang C ng area code (plant.js `tx`). Nakita (plant model, hindi HMI): walang 150 MW preset ang AI0481 (IDF speed ST-LO1756) kaya 0 sa logic sheet; estimate ang ipinapakita sa HMI.
+- **Status:** sample para sa pag-apruba ng style ng user. Hindi pa ginagawa ang ibang screen; hindi pa tinatanggal ang lumang Plant HMI.

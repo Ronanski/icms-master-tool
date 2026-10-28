@@ -248,6 +248,23 @@ function lgd() {
     dt('#4da3ff', 'stopped half open') +
     '<b>Numbers</b><div class="it"><span style="color:#8dffb8;font-weight:700">12.3</span>&nbsp;computed by the logic</div><div class="it"><span style="color:#6ad7ff;font-weight:700">12.3</span>&nbsp;simulated input (typed or slider)</div><div class="it"><span style="color:var(--c-mantx2);font-weight:700">12.3</span>&nbsp;FORCED value</div><b>Wires</b><div class="it"><svg width="24" height="13"><line x1="0" y1="6" x2="24" y2="6" stroke="var(--live)" stroke-width="1.6"/></svg>digital: Live colour = 1, grey = 0</div><div class="it"><svg width="24" height="13"><line x1="0" y1="6" x2="24" y2="6" stroke="var(--alive,#ffb020)" stroke-width="5"/><line x1="0" y1="6" x2="24" y2="6" stroke="#0f1418" stroke-width="2"/></svg>analog: always coloured (a value is flowing)</div><div class="it"><svg width="24" height="13"><line x1="0" y1="6" x2="24" y2="6" stroke="#35414a" stroke-width="2" opacity=".6"/></svg>grey / faint = INACTIVE: nobody follows it (T input not selected, selector leg not chosen). In VIEW / TRACE mode every wire is grey because nothing is simulated. An orange dashed box = UNRESOLVED (Review marks)</div><div class="it"><svg width="24" height="13"><line x1="0" y1="6" x2="24" y2="6" stroke="var(--pnc,#5cc8ff)" stroke-width="2.2"/></svg>pneumatic (air) line and actuator head: blink while the valve travels</div><div class="it"><svg width="24" height="13"><text x="3" y="11" font-size="12" font-weight="800" fill="var(--alive,#ffb020)">B</text></svg>T: the letter (A or B) of the input in use is coloured and bold</div>';
   document.body.append(d);
+  /* R9 #90 (the Legend popup did not close): a × button, Esc, and a click outside it close it */
+  {
+    const x = h$('button', { txt: '×', title: 'Close the legend', style: 'position:sticky;top:0;float:right;margin:-4px -8px 0 8px;background:none;border:0;color:var(--c-tx);font:700 18px sans-serif;cursor:pointer;line-height:1' });
+    x.onclick = () => (d.style.display = 'none');
+    d.prepend(x);
+    addEventListener('keydown', e => e.key === 'Escape' && d.style.display === 'block' && (d.style.display = 'none'));
+    addEventListener(
+      'pointerdown',
+      e => {
+        if (d.style.display !== 'block' || d.contains(e.target)) return;
+        const b = e.target.closest && e.target.closest('button');
+        if (b && /^Legend/.test(b.textContent.trim())) return; /* its own buttons toggle it */
+        d.style.display = 'none';
+      },
+      true
+    );
+  }
   const REDRAW = { vs: 1, vf: 1, vw: 1 },
     sel = (label, key, opts) => {
       const w = h$('div', { cls: 'it' }),

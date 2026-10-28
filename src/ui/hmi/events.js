@@ -296,6 +296,15 @@
     /* retest #35: the alarms suppressed at the start (shutdown state) */
     suppressed: () => [...AT.values()].filter(e => e.sd && !e.rtn).length,
     motState,
+    /* R9 #87: a NOT TRIP output that was healthy and is 0 now (the air preheater trip on the new HMI) */
+    ntTrip: s => {
+      try {
+        const o = s && ntOut(s);
+        return !!(o && NTS.has(s.name) && DUI.outVal(s, o.row) === 0);
+      } catch (e) {
+        return false;
+      }
+    },
     /* the state of the motor of a memory address of the ABC sheets (M.3353) or of a DITL drawing name */
     motOf: a => {
       try {

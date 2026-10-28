@@ -293,6 +293,11 @@
       if (!window.AN) return false;
       hist.push({ cat: 'dig', i: S.cur, vb: (VB[S.cur] || []).slice() });
       updBack();
+      /* 3.2.0-beta.39: the ABC ↩ Back returns to this DITL sheet */
+      if (AN.hist && AN.updBack) {
+        AN.hist.push({ dig: true });
+        AN.updBack();
+      }
       AN.setCat('an');
       let n = 0;
       const t = setInterval(() => {
@@ -300,7 +305,7 @@
         if (j >= 0 || ++n > 50) {
           clearInterval(t);
           if (j >= 0) AN.go(j);
-          msg(j >= 0 ? r.abc + ' opened. DITL ◀ Back returns to the DITL sheet.' : r.abc + ' is not in the ABC page.');
+          msg(j >= 0 ? r.abc + ' opened. ↩ Back (top left of the tool row) returns to the DITL sheet.' : r.abc + ' is not in the ABC page.');
         }
       }, 120);
       return true;
@@ -354,6 +359,27 @@
     return true;
   };
   D.goItem = goItem;
+  /* R9 #86 (window ~655 px: DITL-29A small in a corner, most of the area empty): the drawing had no fit when its area changes size
+     (window resize, the Training panel opening, a sheet zoomed while the area was 0 wide). The view keeps its left edge, its centre
+     height and its width and takes the shape of the area, so the drawing fills it */
+  if (window.ResizeObserver && $('svg')) {
+    let sz = null;
+    new ResizeObserver(() => {
+      const svg = $('svg'),
+        r = svg.getBoundingClientRect(),
+        v = VB[S.cur];
+      if (!r.width || !r.height || !v || v.length < 4) return;
+      const k = r.width + 'x' + r.height;
+      if (k === sz) return;
+      sz = k;
+      const h = (v[2] * r.height) / r.width;
+      if (Math.abs(h - v[3]) < 0.01 * v[3]) return;
+      v[1] += (v[3] - h) / 2;
+      v[3] = h;
+      svg.setAttribute('viewBox', v.join(' '));
+    }).observe($('svg'));
+  }
+  D.back = () => back.onclick();
   back.onclick = () => {
     const h = hist.pop();
     updBack();

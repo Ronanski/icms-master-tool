@@ -1093,10 +1093,11 @@
     {
       const d = String(s.d || ''),
         m = /^(Gawin:[^.]*\.?)\s*(.*)$/.exec(d);
-      if (m) card.append(E('p', { cls: 'gd-do', txt: m[1] }));
+      /* R9 #89: every step has a "Gawin:" line (a step written without one: its title, which is the action) and the reason under
+         "Bakit?" (was: only 8 steps had them) */
+      card.append(E('p', { cls: 'gd-do', txt: m ? m[1] : 'Gawin: ' + String(s.t || '').replace(/\.?$/, '.') }));
       const rest = m ? m[2] : d;
-      if (rest.length > 110) card.append(E('details', { cls: 'gd-why' }, [E('summary', { txt: 'Bakit?' }), E('p', { txt: rest })]));
-      else if (rest) card.append(E('p', { txt: rest }));
+      if (rest) card.append(E('details', { cls: 'gd-why' }, [E('summary', { txt: 'Bakit?' }), E('p', { txt: rest })]));
     }
     els.cond = E('div', { cls: 'gd-cond' });
     card.append(els.cond);
