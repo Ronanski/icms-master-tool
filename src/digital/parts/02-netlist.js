@@ -72,8 +72,25 @@ function netlistCore(sh, strict) {
     if (b.x1 - b.x0 > 15 && b.y1 - b.y0 > 15 && fbx.some(t => t.x > b.x0 && t.x < b.x1 && t.y > b.y0 && t.y < b.y1))
       fbr.push(b);
   });
+  /* 2.5.0-beta.11 (DITL PDF audit): the small box of a limit comparator "H/" or "/L" (legend DITL-00) drawn on the CON layer is the
+     symbol, not a wire: its sides joined the wire before and after the box, so the comparator had the same net on both sides and was
+     dropped (DITL-23A, 23B, 25B, 26B, 27B, 28B, 29B, 31, 43, 55, 86, 87, 111, 112: the analog row passed as a plain bit) */
+  const cmpT = [...sh.tx, ...Object.values(sh.cells || {}).flat()].filter(t => /^(H\/|\/L|H\/L|HH\/|\/LL)$/.test(t.t)),
+    cmpBox = new Set();
+  if (cmpT.length)
+    r.pl.forEach(([p], k) => {
+      if (p.length < 4 || p.length > 5) return;
+      const xs = p.map(q => q[0]),
+        ys = p.map(q => q[1]),
+        x0 = Math.min(...xs),
+        x1 = Math.max(...xs),
+        y0 = Math.min(...ys),
+        y1 = Math.max(...ys);
+      if (x1 - x0 < 2 || x1 - x0 > 9 || y1 - y0 < 2 || y1 - y0 > 7) return;
+      if (cmpT.some(t => t.x > x0 - 0.3 && t.x < x1 + 0.3 && t.y > y0 - 0.6 && t.y < y1 + 0.6)) cmpBox.add(k);
+    });
   r.pl.forEach(([p, c, l, w], k) => {
-    if (l !== 'CON' || fbr.some(b => b.k === k)) return;
+    if (l !== 'CON' || fbr.some(b => b.k === k) || cmpBox.has(k)) return;
     if (p.length === 2) {
       const [a, b] = p,
         len = Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -204,16 +221,30 @@ function netlistCore(sh, strict) {
   {
     const gk = new Set(),
       allTx = [...sh.tx, ...Object.values(sh.cells).flat()];
+    /* 2.5.0-beta.12 (sootblower DITL-80S row 9 TR1001): a glyph whose top line is missing in the DXF (only the two sides and the legs):
+       two short sides 0.6 ~ 1.2 apart with their TR tag near; the top is put back */
+    for (const a of V)
+      for (const b of V) {
+        const la = a.y2 - a.y1;
+        if (b.x - a.x < 0.6 || b.x - a.x > 1.2 || la < 1 || la > 1.6 || Math.abs(a.y1 - b.y1) > 0.06 || Math.abs(a.y2 - b.y2) > 0.06) continue;
+        if (H.some(q => Math.abs(q.x1 - a.x) < 0.06 && Math.abs(q.x2 - b.x) < 0.06 && (Math.abs(q.y - a.y2) < 0.06 || Math.abs(q.y - a.y1) < 0.06))) continue;
+        const legL = H.some(q => Math.abs(q.x2 - a.x) < 0.06 && q.x2 - q.x1 < 1.2 && Math.abs(q.y - a.y1) < 0.06),
+          legR = H.some(q => Math.abs(q.x1 - b.x) < 0.06 && q.x2 - q.x1 < 1.2 && Math.abs(q.y - a.y1) < 0.06);
+        if (!legL || !legR) continue;
+        if (!allTx.some(t => /^TR\s?\d/i.test(t.t) && Math.hypot(t.x - (a.x + b.x) / 2, t.y - a.y1) < 15)) continue;
+        H.push({ k: 'g' + a.k, x1: a.x, x2: b.x, y: a.y2 });
+      }
     for (const h of H) {
       const L = h.x2 - h.x1;
-      if (L < 0.8 || L > 2.6 || gk.has(h.k)) continue;
+      /* 2.5.0-beta.14 (PDF audit BA-02 TR410 ~ TR413): the bottom ash pulse glyph is a little bigger (3.0 wide, 3.6 high) */
+      if (L < 0.8 || L > (sh.ba ? 3.2 : 2.6) || gk.has(h.k)) continue;
       const vv = x =>
           V.find(
             v =>
               !gk.has(v.k) &&
               Math.abs(v.x - x) < 0.06 &&
-              v.y2 - v.y1 >= 1.4 &&
-              v.y2 - v.y1 <= 3.6 &&
+              v.y2 - v.y1 >= 1.0 &&
+              v.y2 - v.y1 <= (sh.ba ? 3.8 : 3.6) &&
               (Math.abs(v.y1 - h.y) < 0.06 || Math.abs(v.y2 - h.y) < 0.06)
           ),
         a = vv(h.x1),
@@ -239,17 +270,42 @@ function netlistCore(sh, strict) {
             q !== h &&
             !legs.includes(q) &&
             q.x2 - q.x1 > 4 &&
-            q.x1 <= cx - 1.6 &&
+            /* 2.5.0-beta.12 (sootblower DITL-80T row 1 TR697): the glyph at the very start of the wire (its left leg starts after the wire) */
+            (q.x1 <= cx - 1.3 || (legs.length === 2 && q.x1 <= Math.min(...legs.map(l => l.x1)) + 0.05)) &&
             q.x2 >= cx + 1.6 &&
             ((q.y < lo && lo - q.y < 6) || (q.y > hi && q.y - hi < 2.7))
         ).sort(
           (p, q) => Math.min(Math.abs(p.y - lo), Math.abs(p.y - hi)) - Math.min(Math.abs(q.y - lo), Math.abs(q.y - hi))
         )[0];
-      if (!host) continue;
-      [h, a, b, ...legs].forEach(q => gk.add(q.k));
+      let hostIn = host;
+      if (
+        !hostIn &&
+        legs.length === 2 &&
+        (Math.abs(oa - h.y) > 1.4 ||
+          /* 2.5.0-beta.12 (sootblower DITL-80S row 9 TR1001): the smaller glyph, with its TR tag */
+          (Math.abs(oa - h.y) > 0.9 && allTx.some(t => /^TR\s?\d/i.test(t.t) && Math.hypot(t.x - cx, t.y - h.y) < 9)))
+      ) {
+        /* 2.5.0-beta.11 (DITL PDF audit, DITL-03A row 21 BOILER PURGE COMPLETED "TR254"): the glyph drawn IN the wire at the end of the
+           input cell (its legs are the wire, the wire to the gate starts just after it): the same pulse, with the wire after it as host */
+        const lr = legs.reduce((p, q) => (q.x2 > p.x2 ? q : p)),
+          ll = legs.reduce((p, q) => (q.x1 < p.x1 ? q : p)),
+          w = H.filter(q => !gk.has(q.k) && !legs.includes(q) && Math.abs(q.y - oa) < 0.3 && q.x1 >= lr.x2 - 0.1 && q.x1 - lr.x2 < 3 && q.x2 - q.x1 > 4).sort(
+            (p, q) => p.x1 - q.x1
+          )[0];
+        if (w) {
+          w.x1 = ll.x1;
+          hostIn = w;
+        }
+      }
+      if (!hostIn) continue;
+      const host2 = hostIn;
       const tg = allTx
-        .filter(t => /^TR\s?\d/i.test(t.t) && Math.hypot(t.x - cx, t.y - (lo + hi) / 2) < 9)
+        .filter(t => /^TR\s?\d/i.test(t.t) && Math.hypot(t.x - cx, t.y - (lo + hi) / 2) < (hi - lo < 1.4 ? 16 : 9))
         .sort((p, q) => Math.hypot(p.x - cx, p.y - hi) - Math.hypot(q.x - cx, q.y - hi))[0];
+      /* 2.5.0-beta.12 (sootblower DITL-80A rows 5 / 6 / 11 "TR326", "TR1000", "TR325"): a smaller glyph (1.2 high) beside the wire is a
+         pulse only with its TR tag */
+      if (hi - lo < 1.4 && !tg) continue;
+      [h, a, b, ...legs].forEach(q => gk.add(q.k));
       const near = allTx.filter(t => Math.hypot(t.x - cx, t.y - (lo + hi) / 2) < 10),
         cm = near.map(t => /^(\d+(?:\.\d+)?)\s*(SEC|MIN|MS|S)\b/i.exec(t.t)).find(Boolean),
         nm = !cm && near.find(t => /^\d+(\.\d+)?$/.test(t.t) && near.some(u => /^SEC/i.test(u.t))),
@@ -258,23 +314,41 @@ function netlistCore(sh, strict) {
           : nm
             ? { v: +nm.t, u: 'SEC' }
             : null; /* duration written beside the glyph, e.g. DITL-69 TR23 "3 SEC." */
+      /* 2.5.0-beta.14 (bottom ash BA-52 M.133F, BA-69 M.135F "FLASHER(ON/OFF)"): the square-wave glyph on the flasher row is a
+         flasher (ON / OFF times written on the sheet, e.g. "ON:1S" "OFF:0.5S"), not a pulse */
+      const flR = sh.ba && allTx.some(t => /FLASHER/i.test(t.t) && Math.abs(t.y - host2.y) < 6),
+        flT = ['ON', 'OFF'].map(k => allTx.map(t => new RegExp('^' + k + '\\s*:\\s*([\\d.]+)\\s*(MS|S)', 'i').exec(t.t)).find(Boolean));
+      /* a flasher input from another sheet (BA-46 M.133F FROM BA52, no ON / OFF times here): the glyph only says what it is */
+      if (flR && !flT[0]) continue;
+      const fl = flR ? flT.map(m => (m ? +m[1] / (/MS/i.test(m[2]) ? 1000 : 1) : 0.5)) : null;
       PG.push({
+        fl,
+        inl: host2 !== host,
         cx,
-        wy: host.y,
+        wy: host2.y,
         pos,
-        host,
+        host: host2,
         dur,
         tag: tg ? tg.t : '',
-        key: tg ? tg.t + '@' + cx.toFixed(0) : 'P' + cx.toFixed(0) + '_' + host.y.toFixed(0)
+        key: tg ? tg.t + '@' + cx.toFixed(0) : 'P' + cx.toFixed(0) + '_' + host2.y.toFixed(0)
       });
     }
+    /* 2.5.0-beta.11 (DITL PDF audit, DITL-69 TR23): the same timer tag on two pulses is one timer setting; the time is written once */
+    PG.forEach(g => {
+      if (!g.dur && g.tag) {
+        const o = PG.find(q => q !== g && q.dur && q.tag.replace(/\s/g, '') === g.tag.replace(/\s/g, ''));
+        if (o) g.dur = o.dur;
+      }
+    });
     for (let i = H.length - 1; i >= 0; i--) if (gk.has(H[i].k)) H.splice(i, 1);
     for (let i = V.length - 1; i >= 0; i--) if (gk.has(V[i].k)) V.splice(i, 1);
     for (const g of PG) {
       const h = g.host,
         i = H.indexOf(h);
       if (i < 0) continue;
-      const A = { k: h.k + '#a', x1: h.x1, x2: g.cx - 1.5, y: h.y },
+      /* a glyph in the input cell (DITL-03A TR254): the part before it is kept inside the wire area (x > S1 - 4.5) */
+      const ax1 = g.inl ? Math.max(h.x1, S1 - 4.4) : h.x1,
+        A = { k: h.k + '#a', x1: ax1, x2: g.inl ? Math.max(ax1 + 0.4, g.cx - 0.3) : g.cx - 1.5, y: h.y },
         B = { k: h.k + '#b', x1: g.cx + 1.5, x2: h.x2, y: h.y };
       H.splice(i, 1, A, B);
       g.A = A.k;
@@ -402,7 +476,11 @@ function netlistCore(sh, strict) {
         sh.tx
           .filter(q => /^TR\d+/i.test(q.t) && Math.abs(q.x - ax) < 12 && Math.abs(q.y - ay) < rr + 10)
           .sort((p, q) => Math.abs(p.y - ay) - Math.abs(q.y - ay))[0];
+    /* 2.5.0-beta.12 (sootblower DITL-80A TR330 10 MIN. ON DELAY): a D drawn standing (bulging down / up): the input comes from above /
+       below into the flat side, the output leaves the round side */
+    const vert = md > 225 && md < 315 ? 'd' : md > 45 && md < 135 ? 'u' : '';
     TM.push({
+      vert,
       lab: t.t,
       kind: /OFF/i.test(t.t) ? 'off' : /PULSE/i.test(t.t) ? 'pulse' : 'on',
       ax,
@@ -446,7 +524,9 @@ function netlistCore(sh, strict) {
         h1.x2 > R0 + 4
       )
         continue;
-      const ve = x => VE.find(v => Math.abs(v.x - x) < E && v.y1 <= h1.y + E && v.y2 >= h2.y - E),
+      /* 2.5.0-beta.11 (DITL PDF audit, DITL-21A rows 19 / 20 SPEED LOW AND -> (13)): the thick input bar on the left side of an AND
+         is drawn up to 0.5 beside the ends of the top and bottom lines */
+      const ve = x => VE.find(v => Math.abs(v.x - x) < (v.bar ? 0.8 : E) && v.y1 <= h1.y + E && v.y2 >= h2.y - E),
         lv = ve(h1.x1),
         rv = ve(h1.x2);
       if (!lv || !rv) continue;
@@ -548,8 +628,8 @@ function netlistCore(sh, strict) {
   G.filter(g => g.t === 'AND').forEach(g => {
     const q = g.q,
       pr = barPieces(q.L - 1.3, q.L + 1.3, q.T - q.B + 1, q.B, q.T);
-    if (pr.length < 2 && !pr.some(v => v.bar))
-      return; /* v20: the bar can sit up to 1.2 inside the box edge (DITL-83) and a thick bar alone is already a bus */
+    if (pr.length < 2 && !pr.some(v => v.bar) && !(sh.ba && pr.length === 1))
+      return; /* 2.5.0-beta.14: the bottom ash form draws the AND input bus as one thin line longer than the box (BA-04 M.1310) */ /* v20: the bar can sit up to 1.2 inside the box edge (DITL-83) and a thick bar alone is already a bus */
     g.bus = {
       x1: Math.min(...pr.map(v => v.x)),
       x2: Math.max(...pr.map(v => v.x)),
@@ -611,8 +691,12 @@ function netlistCore(sh, strict) {
   for (const h of H)
     if (h.x1 > S1 - 4.5 && h.x2 < R0 + 6 && !inb(h.x1, h.y, h.x2, h.y))
       segs.push({ k: h.k, h: 1, x1: h.x1, x2: h.x2, y1: h.y, y2: h.y });
+  /* 2.5.0-beta.11 (DITL PDF audit, DITL-61A row 8 PUMP B TRIP): a wire that bends down INSIDE the input cell (x < S1 - 1) before it
+     reaches the logic: the vertical joins the END of one input-row wire to the START of a wire into the logic, it is wiring, not frame */
+  const hEnd = (x, y) => H.some(h => Math.abs(h.y - y) < 0.1 && (Math.abs(h.x1 - x) < 0.1 || Math.abs(h.x2 - x) < 0.1) && h.x1 > S1 - 4.5),
+    bend = v => v.x > S1 - 4.5 && v.x <= S1 - 1 && hEnd(v.x, v.y1) && hEnd(v.x, v.y2);
   for (const v of V)
-    if (!vskip.has(v.k) && v.x > S1 - 1 && v.x < R0 + 6 && !inb(v.x, v.y1, v.x, v.y2) && !edge(v))
+    if (!vskip.has(v.k) && (v.x > S1 - 1 || bend(v)) && v.x < R0 + 6 && !inb(v.x, v.y1, v.x, v.y2) && !edge(v))
       segs.push({ k: v.k, h: 0, x1: v.x, x2: v.x, y1: v.y1, y2: v.y2 });
   const P = segs.map((_, i) => i),
     f = i => (P[i] === i ? i : (P[i] = f(P[i]))),
@@ -647,6 +731,16 @@ function netlistCore(sh, strict) {
   dots.forEach(d => {
     const m = segs.map((s, i) => (on(d[0], d[1], s, 0.8) ? i : -1)).filter(i => i >= 0);
     m.forEach(i => u(m[0], i));
+  });
+  /* 2.5.0-beta.12 (sootblower DITL-80M, the "• • •" between N-1012 and the AIR PREHEATER rows): a wire drawn in two pieces with an
+     ellipsis of 3 dots in the gap is one wire (the rows in between are left out of the drawing) */
+  segs.forEach((a, i) => {
+    if (a.h) return;
+    segs.forEach((b, j) => {
+      if (b.h || j === i || Math.abs(a.x1 - b.x1) > 0.6 || b.y1 < a.y2) return;
+      const el = dots.filter(d => Math.abs(d[0] - a.x1) < 0.8 && d[1] > a.y2 + 0.5 && d[1] < b.y1 - 0.5);
+      if (el.length >= 3 && b.y1 - a.y2 < 30) u(i, j);
+    });
   });
   /* v14: ICD130 (two small arcs ")(" on a wire, DITL-61A/76/77 rows 53/54 VCB ON/OFF) = field contact in the wire: the wire is drawn with a gap there, bridge it */
   const CM =
@@ -689,7 +783,13 @@ function netlistCore(sh, strict) {
           q => q.x1
         );
       if (Lf && Rt) {
-        if (z.k === 'icd') u(Lf.i, Rt.i);
+        /* 2.5.0-beta.11 (DITL PDF audit, DITL-76 / 77 rows 53 / 54 VCB ON / OFF): the contact bridges a wire that continues at the SAME
+           height and ENDS at the contact; a lamp wire that ends on a vertical wire (GREEN / RED lamp of the running FF, drawn at the
+           same height as the field contact) is not the other side of the VCB contact: the VCB ON / OFF rows are field signals */
+        if (z.k === 'icd') {
+          const endOn = segs.some((v, j) => j !== Lf.i && !v.h && on(Lf.q.x2, Lf.q.y1, v));
+          if (Math.abs(Lf.q.y1 - Rt.q.y1) < 0.6 && !endOn) u(Lf.i, Rt.i);
+        }
         else
           CM.push({
             Lf: Lf.i,
@@ -713,11 +813,44 @@ function netlistCore(sh, strict) {
     const allT = [...sh.tx, ...Object.values(sh.cells).flat()].filter(t =>
       /^[<>≥≤]=?\s*(-?\d|[A-Z]{1,3}\d{3,5}$)/.test(t.t)
     );
+    /* 2.5.0-beta.11 (DITL PDF audit, DITL-63 rows 78 / 79): two boxes close together, ">= 85°C" above the H/ box and "<= 50°C" above
+       the /L box: a limit text belongs to the box it is nearest to, so one box does not take the text of the other */
+    const own = t => {
+      let best = null,
+        bd = 1e9;
+      CM.forEach(c => {
+        const d = Math.hypot(t.x - c.cx, t.y - c.cy);
+        if (d < bd) {
+          bd = d;
+          best = c;
+        }
+      });
+      return bd < 7 ? best : null;
+    };
     CM.forEach(c => {
       const o = allT
         .filter(t => t.x >= c.cx - 11 && t.x <= c.cx + 42 && Math.abs(t.y - c.cy) < 8)
+        .filter(t => {
+          const w = own(t);
+          return !w || w === c;
+        })
         .sort((a, b) => Math.hypot(a.x - c.cx - 8, a.y - c.cy) - Math.hypot(b.x - c.cx - 8, b.y - c.cy))[0];
-      if (!o) return;
+      if (!o) {
+        /* 2.5.0-beta.11 (DITL PDF audit, DITL-55 row 6 PT-CD1110 "/L  S= 0.7 kg/cm2(A)  R= 0.75 kg/cm2(A)"): a limit written as the set
+           value S= (and the reset value R=): the box kind gives the side (/L = below S, H/ = above S) */
+        const so = [...sh.tx, ...Object.values(sh.cells).flat()]
+          .filter(t => /^S\s*=\s*-?\d/.test(t.t) && t.x >= c.cx - 11 && t.x <= c.cx + 20 && Math.abs(t.y - c.cy) < 8)
+          .sort((a, b) => Math.hypot(a.x - c.cx, a.y - c.cy) - Math.hypot(b.x - c.cx, b.y - c.cy))[0];
+        const sm = so && /^S\s*=\s*(-?\d+(?:\.\d+)?)\s*(.*)$/.exec(so.t.trim());
+        if (sm) {
+          c.op = c.kind === 'L' ? '<' : '>';
+          c.eq = false;
+          c.sptxt = so.t.trim();
+          c.sp = +sm[1];
+          c.unit = sm[2].trim();
+        }
+        return;
+      }
       const tt = o.t.trim(),
         m = /^([<>≥≤]=?)\s*(-?\d+(?:\.\d+)?)\s*(.*)$/.exec(tt),
         mv = !m && /^([<>≥≤]=?)\s*([A-Z]{1,3}\d{3,5})$/.exec(tt);
@@ -786,7 +919,8 @@ function netlistCore(sh, strict) {
       byN = {};
     r.ci.forEach(([x, y, rr, l]) => {
       if (rr < 1.8 || rr > 4.6) return;
-      const t = alltx.find(q => /^\d{1,2}$/.test(q.t) && Math.hypot(q.ix - x, q.iy - y) <= rr + 1.2);
+      /* 2.5.0-beta.11: letters too (DITL-26A / 26B connectors (A) / (B)) */
+      const t = alltx.find(q => /^(\d{1,2}|[A-H])$/.test(q.t) && Math.hypot(q.ix - x, q.iy - y) <= rr + 1.2);
       if (!t) return;
       const c = segs
         .map((q, i) => ({ q, i }))
@@ -908,8 +1042,31 @@ function netlistCore(sh, strict) {
       ...new Set(ends.filter(e => e.x >= x0 && e.x <= x1 && e.y >= y0 - 0.7 && e.y <= y1 + 0.7).map(e => e.n))
     ],
     gates = [];
+  /* 2.5.0-beta.11 (DITL PDF audit, DITL-61A row 11): an input of an OR bar is a wire END that points at the bar; a corner of a wire that
+     turns away 4 units before the bar (row 11 bends up to the 5 s ON DELAY AND) is not an input of the OR */
+  const atBar = (x0, xb, x1, y0, y1) => [
+    ...new Set(
+      ends.filter(e => e.x >= x0 && e.x <= x1 && e.y >= y0 - 0.7 && e.y <= y1 + 0.7 && (e.free || e.x >= xb - 1.2)).map(e => e.n)
+    )
+  ];
   const ai = (x, b, t) => at(x - 4.3, x + 0.7, b, t),
-    ao = (x, b, t) => at(x - 0.7, x + 1.2, b, t);
+    ao = (x, b, t) => at(x - 0.7, x + 1.2, b, t),
+    /* 2.5.0-beta.12 (sootblower DITL-80S row 17 M.4008): a wire that comes up along the right side of the AND box from a row below and
+       turns into the next gate is not an output of this AND: its end at the box side sits on a vertical that runs out of the box */
+    aoA = (x, b, t) => [
+      ...new Set(
+        ends
+          .filter(
+            e =>
+              e.x >= x - 0.7 &&
+              e.x <= x + 1.2 &&
+              e.y >= b - 0.7 &&
+              e.y <= t + 0.7 &&
+              (e.free || !segs.some(v => !v.h && Math.abs(v.x1 - e.x) < 0.4 && e.y >= v.y1 - 0.4 && e.y <= v.y2 + 0.4 && (v.y1 < b - 2 || v.y2 > t + 2)))
+          )
+          .map(e => e.n)
+      )
+    ];
   for (const g of G) {
     if (g.t === 'NOT') {
       const q = g.q,
@@ -1000,7 +1157,7 @@ function netlistCore(sh, strict) {
         ins: g.bus
           ? [...new Set([...ai(g.q.L, g.q.B, g.q.T), ...at(g.bus.x1 - 4.3, g.bus.x2 + 0.9, g.bus.y1, g.bus.y2)])]
           : ai(g.q.L, g.q.B, g.q.T),
-        out: ao(g.q.R, g.q.B, g.q.T),
+        out: aoA(g.q.R, g.q.B, g.q.T),
         box: { x1: g.q.L, x2: g.q.R, y1: g.q.B, y2: g.q.T }
       });
     else if (g.t === 'OR' && g.hb) {
@@ -1047,9 +1204,9 @@ function netlistCore(sh, strict) {
         bar: g.bus ? g.bus.k : -1,
         bus: g.ob,
         ins: g.ob
-          ? at(g.ob.x1 - 4.3, g.ob.x2 + 0.9, g.ob.y1, g.ob.y2)
+          ? atBar(g.ob.x1 - 4.3, g.ob.x1, g.ob.x2 + 0.9, g.ob.y1, g.ob.y2)
           : g.bus
-            ? at(g.bus.x - 4.3, g.bus.x + 0.9, g.bus.y1, g.bus.y2)
+            ? atBar(g.bus.x - 4.3, g.bus.x, g.bus.x + 0.9, g.bus.y1, g.bus.y2)
             : ai(cx - rr, cy - rr, cy + rr),
         out: ao(cx + rr, cy - 1, cy + 1),
         box: {
@@ -1076,6 +1233,9 @@ function netlistCore(sh, strict) {
       usedR.add(R);
       gates.push({
         t: 'FF',
+        /* 2.5.0-beta.11 (DITL PDF audit, DITL-69 / 70 / 71): the circle drawn around the S or the R letter marks the input that wins
+           when both are 1 (legend DITL-00); a circled S = set wins (MOS-CD1001 ~ 1003, M.040C). Without a circle, reset wins as before */
+        spri: (r.ci || []).some(c => Math.abs(c[0] - s.q.cx) < 1.2 && Math.abs(c[1] - s.q.cy) < 1.2 && c[2] > 2 && c[2] < 4.5),
         rt: R.q.cy > s.q.cy,
         s: ai(s.q.L, s.q.B, s.q.T),
         r: ai(R.q.L, R.q.B, R.q.T),
@@ -1090,13 +1250,24 @@ function netlistCore(sh, strict) {
       });
     }
   }
+  const vPin = (m, flat) => {
+    const yf = m.vert === 'd' ? (flat ? m.ay : m.ay - m.rr) : flat ? m.ay : m.ay + m.rr,
+      up = (m.vert === 'd') === !!flat;
+    return [
+      ...new Set(
+        segs
+          .filter(z => !z.h && Math.abs(z.x1 - m.ax) < 1.5 && (up ? z.y1 >= yf - 1 && z.y1 <= yf + 6 : z.y2 <= yf + 1 && z.y2 >= yf - 6))
+          .map(z => z.n)
+      )
+    ];
+  };
   for (const m of TM) {
     gates.push({
       t: 'TMR',
       k: m.kind,
       tm: m,
-      ins: at(m.ia, m.ib, m.ay - 2.5, m.ay + 2.5),
-      out: at(m.oa, m.ob, m.ay - 2.5, m.ay + 2.5),
+      ins: m.vert ? vPin(m, 1) : atBar(m.ia, m.bx1, m.ib, m.ay - 2.5, m.ay + 2.5) /* 2.5.0-beta.11: DITL-112 row 10 corner is not a timer input */,
+      out: m.vert ? vPin(m, 0) : at(m.oa, m.ob, m.ay - 2.5, m.ay + 2.5),
       st: { acc: 0, out: 0, pre: 0, run: 0 },
       box: { x1: m.bx1, x2: m.bx2, y1: m.ay - m.rr, y2: m.ay + m.rr }
     });
@@ -1109,9 +1280,10 @@ function netlistCore(sh, strict) {
       const pd = sh.pdur && sh.pdur[p.key];
       gates.push({
         t: 'TMR',
-        k: p.pos ? 'pulse' : 'npulse',
+        k: p.fl ? 'flash' : p.pos ? 'pulse' : 'npulse',
+        fl: p.fl,
         tm: {
-          lab: 'PULSE',
+          lab: p.fl ? 'FLASHER' : 'PULSE',
           pg: 1,
           key: p.key,
           tag: p.tag,
@@ -1122,7 +1294,7 @@ function netlistCore(sh, strict) {
           bx2: p.cx + 1.5,
           nt: null,
           ut: null,
-          fv: pd || p.dur || { v: 2, u: 'SEC' }
+          fv: p.fl ? { v: p.fl[0], u: 'SEC' } : pd || p.dur || { v: 2, u: 'SEC' }
         },
         ins: [sn[p.A]],
         out: [sn[p.B]],
@@ -1154,7 +1326,76 @@ function netlistCore(sh, strict) {
       box: { x1: c.cx - 3.2, x2: c.cx + 3.2, y1: c.cy - 2.6, y2: c.cy + 2.6 }
     });
   });
+  /* 2.5.0-beta.15 (limestone injection, ROTOFEED, LS-10 ~ LS-240): the drawing is an Excel sheet, its blocks (AND "&", OR "≥1",
+     time delay t1 / t2, PO pulse, compare X ≥ Y / X ≤ Y, SET / RESET, the negation circles) were read by tools/data/ls_xlsx.py
+     (sh.lsg: the block, the point where each wire meets it); here each point is given the net of the wire that ends there */
+  if (sh.ls && sh.lsg) {
+    const netAt = ([x, y]) => {
+      let b = null;
+      segs.forEach(q =>
+        [
+          [q.x1, q.y1],
+          [q.h ? q.x2 : q.x1, q.h ? q.y1 : q.y2]
+        ].forEach(([u, v]) => {
+          const d = Math.hypot(u - x, v - y);
+          if (d < 0.6 && (!b || d < b.d)) b = { d, n: q.n };
+        })
+      );
+      return b ? b.n : undefined;
+    };
+    /* a pin with a negation circle ([x, y, 1]): a NOT between the wire and the block (its own net, it has no wire) */
+    const neg = (p, isOut) => {
+      const w = netAt(p);
+      if (w === undefined) return undefined;
+      const v = n++,
+        r = 1.95;
+      gates.push({ t: 'NOT', ins: [isOut ? v : w], out: [isOut ? w : v], done: true, ev: 1, ls: 1, box: { x1: p[0] - (isOut ? 0 : 2 * r), x2: p[0] + (isOut ? 2 * r : 0), y1: p[1] - r, y2: p[1] + r } });
+      return v;
+    };
+    const ns = (P, isOut) => [...new Set((P || []).map(p => (p[2] ? neg(p, isOut) : netAt(p))).filter(n => n !== undefined))];
+    sh.lsg.forEach(L => {
+      const box = L.box,
+        ins = ns(L.ins).concat(ns(L.top)),
+        out = ns(L.out, 1);
+      if (!out.length) return;
+      if (L.t === 'AND' || L.t === 'OR' || L.t === 'NOT') gates.push({ t: L.t, ins, out, box, done: true, ev: 1, ls: 1 });
+      else if (L.t === 'TMR' || L.t === 'PO')
+        gates.push({
+          t: 'TMR',
+          k: L.t === 'PO' ? 'pulse' : 'on',
+          tm: {
+            lab: L.t === 'PO' ? 'PULSE' : 'ON DELAY',
+            key: (L.tag || 'T') + '@' + box.x1.toFixed(1) + ',' + box.y1.toFixed(1),
+            tag: L.tag,
+            ax: (box.x1 + box.x2) / 2,
+            ay: (box.y1 + box.y2) / 2,
+            rr: (box.y2 - box.y1) / 2,
+            bx1: box.x1,
+            bx2: box.x2,
+            nt: null,
+            ut: null,
+            fv: { v: L.v, u: 'SEC' }
+          },
+          ins,
+          out,
+          st: { acc: 0, out: 0, pre: 0, run: 0 },
+          box
+        });
+      else if (L.t === 'CMP') {
+        const p = ns(L.ins.slice(0, 1)),
+          q = ns(L.ins.slice(1, 2));
+        ins.length = 0;
+        if (p.length && q.length) gates.push({ t: 'CMP', cmp: L.cmp, eq: true, kind: 'ls', sp: 0, spNet: q[0], unit: '', ins: p, out, miss: [], pp: [], box });
+      } else if (L.t === 'FF') gates.push({ t: 'FF', s: ns(L.s), r: ns(L.r).concat(ns(L.top)), out, q: 0, box, rt: true });
+    });
+  }
   const row = y => sh.rows.findIndex(r => y >= r.y - 3.3 && y < r.y + 5.7),
+    /* 2.5.0-beta.14: a bottom ash row with its output flag a little off the input flag (r.ry, baForm) */
+    rowR = y => {
+      /* 2.5.0-beta.15: a limestone output wire on the line between two rows (LS210 line 3) belongs to the row that names it (r.ry) */
+      const k = sh.ls ? sh.rows.findIndex(r => r.ry !== undefined && y >= r.ry - 3.3 && y < r.ry + 5.7) : -1;
+      return k >= 0 ? k : sh.rows.findIndex(r => y >= (r.ry === undefined ? r.y : r.ry) - 3.3 && y < (r.ry === undefined ? r.y : r.ry) + 5.7);
+    },
     src = [],
     outs = [];
   const gOut = new Set();
@@ -1168,7 +1409,7 @@ function netlistCore(sh, strict) {
     maxX[q.n] = Math.max(maxX[q.n] === undefined ? -1e9 : maxX[q.n], q.x2);
   });
   for (const e of ends) {
-    const i = row(e.y);
+    const i = e.x >= R0 - 4 ? rowR(e.y) : row(e.y);
     if (i < 0 || e.cut) continue;
     /* v20: a wire START is a free end, or the left-most point of its net (a bend near the cell edge has more wire to its left: DITL-99 row 1 / row 3) */
     if (e.x <= S1 + 2.2) {
@@ -1448,6 +1689,100 @@ function netlistCore(sh, strict) {
       );
     })
   );
+  /* 2.5.0-beta.12 (sootblower DITL-80, station 102): the sequence COUNTER block. RESET (top) = "SET N=0"; the input on the left counts
+     on its falling edge ("IF 1 TO 0 SET N+1"); the output N = k on the right side is 1 while the count is k (N=0 = COUNTER ON RESET
+     POSITION, 1 ~ 31 = the start command of each sootblower in turn) */
+  {
+    const all = [...sh.tx, ...Object.values(sh.cells).flat()];
+    for (const t of all.filter(q => /^COUNTER$/i.test(q.t) && q.x > S1 && q.x < R0)) {
+      const rs = all.find(q => /^RESET$/i.test(q.t) && Math.abs(q.x - t.x) < 8 && q.y > t.y && q.y - t.y < 12);
+      if (!rs) continue;
+      const labs = all
+        .filter(q => /^(N=0|\d{1,2})$/.test(q.t) && q.x > t.x + 8 && q.x < t.x + 30 && q.y <= t.y + 1.5)
+        .sort((p, q) => q.y - p.y);
+      const x2 = Math.max(...labs.map(q => q.x)) + 1;
+      const out = [],
+        ks = [];
+      labs.forEach(q => {
+        const w = segs.find(z => z.h && Math.abs(z.y1 - q.y) < 1.2 && z.x1 >= q.x - 1 && z.x1 <= q.x + 6);
+        if (!w || out.includes(w.n)) return;
+        out.push(w.n);
+        ks.push(q.t === 'N=0' ? 0 : +q.t);
+      });
+      const r0 = segs.find(z => !z.h && z.x1 > t.x - 12 && z.x1 < x2 && Math.abs(z.y1 - (rs.y + 4)) < 3),
+        c0 = segs.find(z => z.h && Math.abs(z.y1 - t.y) < 1.2 && z.x2 <= t.x - 3 && z.x2 >= t.x - 14);
+      if (!out.length || !c0) continue;
+      gates.push({
+        t: 'CNT',
+        ins: [c0.n],
+        r: r0 ? [r0.n] : [],
+        out,
+        ks,
+        N: 0,
+        pin: 0,
+        box: { x1: t.x - 10, x2: x2, y1: Math.min(...labs.map(q => q.y)) - 3, y2: rs.y + 3 },
+        pp: [],
+        miss: []
+      });
+    }
+  }
+  /* 2.5.0-beta.11 (DITL PDF audit, DITL-38 MCV OPEN / CLOSE OVERTIME): the function block FB2-OT "REFER TO DWG. NO.: DITL50" is drawn
+     on DITL-50 (FUNCTION BLOCK FOR DEVICE OVERTIME ALARM): M.0040 = PULSE TPS_ON(IN_ON_CMD), M.0041 = PULSE TPS_CL(IN_CL_CMD),
+     M.0044 = OR(IN_ON_FB, M.0041, IN_SP_CMD), M.0045 = OR(M.0040, IN_CL_FB, IN_SP_CMD), M.0042 = FF(S M.0040, R M.0044),
+     M.0043 = FF(S M.0041, R M.0045), OUT_ON_AL = ON DELAY TON_ON(M.0042), OUT_CL_AL = ON DELAY TON_CL(M.0043),
+     OUT_FAIL = OR(OUT_ON_AL, OUT_CL_AL). Times from the TIMER SETTING table of the sheet (first column) */
+  {
+    const all = [...sh.tx, ...Object.values(sh.cells).flat()],
+      fb = all.find(t => t.t === 'FB2-OT' && t.x > S1 && t.x < R0);
+    if (fb) {
+      const pin = (nm, out) => {
+          const t = all.find(q => q.t === nm && Math.abs(q.x - fb.x) < 50 && Math.abs(q.y - fb.y) < 25);
+          if (!t) return -1;
+          const w = segs
+            .filter(q => q.h && Math.abs(q.y1 - t.y) < 1.6 && (out ? q.x1 >= t.x - 1 && q.x1 <= t.x + 12 : q.x2 >= t.x - 6 && q.x2 <= t.x + 1))
+            .sort((p, q) => Math.abs(p.y1 - t.y) - Math.abs(q.y1 - t.y))[0];
+          return w ? w.n : -1;
+        },
+        tset = nm => {
+          const t = all.filter(q => q.t === nm).sort((p, q) => p.x - q.x)[0],
+            v = t && all.find(q => /^\d+(\.\d+)?\s*SEC/i.test(q.t) && Math.abs(q.y - t.y) < 0.6 && q.x > t.x && q.x - t.x < 35);
+          return { v: v ? parseFloat(v.t) : nm.startsWith('TPS') ? 2 : 10, u: 'SEC' };
+        },
+        P = {};
+      ['IN_ON_CMD', 'IN_ON_FB', 'IN_CL_CMD', 'IN_CL_FB', 'IN_SP_CMD'].forEach(k => (P[k] = pin(k, 0)));
+      ['OUT_ON_AL', 'OUT_FAIL', 'OUT_CL_AL'].forEach(k => (P[k] = pin(k, 1)));
+      if (Object.values(P).every(v => v >= 0)) {
+        const m40 = n++, m41 = n++, m42 = n++, m43 = n++, m44 = n++, m45 = n++,
+          bx = { x1: fb.x - 30, x2: fb.x + 30, y1: fb.y - 12, y2: fb.y + 14 },
+          tmr = (k, key, fv, i, o) =>
+            gates.push({
+              t: 'TMR',
+              k,
+              tm: { lab: k === 'on' ? 'ON DELAY' : 'PULSE', key: 'FB2-OT ' + key, tag: key, ax: fb.x, ay: fb.y, rr: 1.5, bx1: fb.x - 1.5, bx2: fb.x + 1.5, nt: null, ut: null, fb2: 1, fv: (sh.pdur && sh.pdur['FB2-OT ' + key]) || fv },
+              ins: [i],
+              out: [o],
+              st: { acc: 0, out: 0, pre: 0, run: 0 },
+              box: bx,
+              fb2: 1
+            });
+        tmr('pulse', 'TPS_ON', tset('TPS_ON'), P.IN_ON_CMD, m40);
+        tmr('pulse', 'TPS_CL', tset('TPS_CL'), P.IN_CL_CMD, m41);
+        gates.push({ t: 'OR', bar: -1, ins: [P.IN_ON_FB, m41, P.IN_SP_CMD], out: [m44], box: bx, fb2: 1 });
+        gates.push({ t: 'OR', bar: -1, ins: [m40, P.IN_CL_FB, P.IN_SP_CMD], out: [m45], box: bx, fb2: 1 });
+        gates.push({ t: 'FF', s: [m40], r: [m44], q: 0, out: [m42], box: bx, fb2: 1 });
+        gates.push({ t: 'FF', s: [m41], r: [m45], q: 0, out: [m43], box: bx, fb2: 1 });
+        tmr('on', 'TON_ON', tset('TON_ON'), m42, P.OUT_ON_AL);
+        tmr('on', 'TON_CL', tset('TON_CL'), m43, P.OUT_CL_AL);
+        gates.push({ t: 'OR', bar: -1, ins: [P.OUT_ON_AL, P.OUT_CL_AL], out: [P.OUT_FAIL], box: bx, fb2: 1 });
+        gates.forEach(g => {
+          if (g.fb2 && !g.pp) {
+            g.pp = [];
+            g.miss = [];
+          }
+        });
+      }
+    }
+  }
   const NL = {
     v: 10,
     split: PG.filter(p => p.A).map(p => ({ k: p.hk, cx: p.cx, a: p.A, b: p.B })),
@@ -1464,7 +1799,29 @@ function netlistCore(sh, strict) {
       return { x: d[0], y: d[1], n: q ? q.n : -1 };
     }),
     segs: segs.map(q => ({ k: q.k, h: q.h, x1: q.x1, x2: q.x2, y1: q.y1, y2: q.y2, n: q.n }))
-  }; /* v26 analog inputs: one per left net of the CMP gates; default value = a normal value that leaves every comparator of that net OFF */
+  };
+  /* 2.5.0-beta.12 (sootblower DITL-80G / 80K): an output drawn to the SB PANEL (not to an output row): the wire ends at the address
+     "O.0760" with its service text ("MAIN POWER LINE FORWARD STARTER") */
+  {
+    const all = [...sh.tx, ...Object.values(sh.cells).flat()];
+    NL.pout = [];
+    for (const t of all.filter(q => /^[O0]\.[0-9A-F]{4}$/i.test(q.t) && q.x > S1 && q.x < R0)) {
+      let best = null;
+      segs.forEach(z =>
+        en(z).forEach(p => {
+          const d = Math.hypot(p[0] - t.x, p[1] - t.y);
+          if (d < 14 && (!best || d < best.d)) best = { d, n: z.n };
+        })
+      );
+      if (!best || NL.pout.some(o => o.n === best.n) || outs.some(o => o.n === best.n)) continue;
+      const svc = all
+        .filter(q => q !== t && Math.abs(q.x - t.x) < 14 && q.y < t.y && t.y - q.y < 9 && /[A-Z]{3,}\s+[A-Z]/.test(q.t))
+        .sort((a, b) => b.y - a.y)
+        .map(q => q.t)
+        .join(' ');
+      NL.pout.push({ n: best.n, adr: t.t.replace(/^0/, 'O'), txt: svc });
+    }
+  } /* v26 analog inputs: one per left net of the CMP gates; default value = a normal value that leaves every comparator of that net OFF */
   {
     const by = {};
     NL.gates.forEach((g, gi) => {
@@ -1475,15 +1832,30 @@ function netlistCore(sh, strict) {
     });
     NL.an = [];
     NL.anRows = new Set();
+    /* 2.5.0-beta.15: a limestone comparator limit is an INT. REGISTER row with its value written in the drawing (LS230: 2.5 / 0.5 kg/cm2) */
+    const reg = {};
+    if (sh.ls)
+      for (const n in by) {
+        const z = src.find(z => z.n === +n);
+        const m = z && /(-?\d+(?:\.\d+)?)\s*$/.exec((sh.cells[z.row + ':L'] || []).map(t => t.t).join(' '));
+        if (m && /REGISTER/i.test((sh.cells[z.row + ':L'] || []).map(t => t.t).join(' '))) reg[n] = +m[1];
+      }
+    if (sh.ls)
+      NL.gates.forEach(g => {
+        const z = g.t === 'CMP' && src.find(z => z.n === g.ins[0]);
+        if (z) g.unit = ((sh.cells[z.row + ':L'] || []).map(t => t.t).join(' ').match(/kg\/cm2|kPa|mA|%|°C/i) || [''])[0];
+      });
     for (const n in by) {
       const gs = by[n].map(i => NL.gates[i]),
         asIn = gs.filter(g => g.ins[0] === +n),
         asSp = gs.filter(g => g.spNet === +n),
-        num = asIn.filter(g => g.spNet === undefined),
-        hs = num.filter(g => g.cmp === '>').map(g => g.sp),
-        ls = num.filter(g => g.cmp === '<').map(g => g.sp);
+        spOf = g => (g.spNet !== undefined && reg[g.spNet] !== undefined ? reg[g.spNet] : g.sp),
+        num = asIn.filter(g => g.spNet === undefined || reg[g.spNet] !== undefined),
+        hs = num.filter(g => g.cmp === '>').map(spOf),
+        ls = num.filter(g => g.cmp === '<').map(spOf);
       let def;
-      if (asIn.length && !num.length) def = asIn.some(g => g.cmp === '>') ? 0 : 100;
+      if (reg[n] !== undefined) def = reg[n];
+      else if (asIn.length && !num.length) def = asIn.some(g => g.cmp === '>') ? 0 : 100;
       else if (!asIn.length)
         def = asSp.some(g => g.cmp === '>') ? 100 : 0; /* limit signals sit above (H) / below (L) the measured value */
       else if (hs.length && ls.length) def = (Math.min(...hs) + Math.max(...ls)) / 2;
@@ -1530,9 +1902,55 @@ function netlistCore(sh, strict) {
       });
       if (r0 !== undefined && rows.length === 1) NL.anRows.add(r0);
     }
+    /* 2.5.0-beta.15: the limit shown on a limestone comparator (panel, hover): the register value, else the row of its Y input */
+    NL.gates.forEach(g => {
+      if (g.kind !== 'ls' || g.spNet === undefined) return;
+      const a = NL.an.find(x => x.net === g.spNet);
+      g.spVar = reg[g.spNet] !== undefined ? reg[g.spNet] : a && a.row >= 0 ? 'r' + sh.rows[a.row].n : 'Y';
+    });
   }
   NL.mv = movModel(sh, NL);
+  /* 2.5.0-beta.14 (bottom ash BA-20): the pulse box (TR353) and the COUNTER box (+1, =4, R) found by baForm (raw.bab) */
+  if (sh.ba && r.bab)
+    r.bab.forEach(b => {
+      const ym = (b.y1 + b.y2) / 2,
+        inn = segs.filter(q => q.h && Math.abs(q.x2 - b.x1) < 1.5 && q.y1 > b.y1 && q.y1 < b.y2).sort((p, q) => Math.abs(p.y1 - ym) - Math.abs(q.y1 - ym))[0],
+        out = segs.filter(q => q.h && Math.abs(q.x1 - b.x2) < 1.5 && q.y1 > b.y1 && q.y1 < b.y2).sort((p, q) => Math.abs(p.y1 - ym) - Math.abs(q.y1 - ym))[0];
+      if (!inn || !out) return;
+      if (b.k === 'pulse')
+        gates.push({
+          t: 'TMR',
+          k: 'pulse',
+          tm: { lab: 'PULSE', key: b.tag + '@box', tag: b.tag, ax: (b.x1 + b.x2) / 2, ay: ym, rr: (b.y2 - b.y1) / 2, bx1: b.x1, bx2: b.x2, nt: null, ut: null, fv: (sh.pdur && sh.pdur[b.tag + '@box']) || { v: 2, u: 'SEC' } },
+          ins: [inn.n],
+          out: [out.n],
+          st: { acc: 0, out: 0, pre: 0, run: 0 },
+          box: { x1: b.x1, x2: b.x2, y1: b.y1, y2: b.y2 }
+        });
+      else {
+        const rr = segs.find(q => !q.h && q.x1 > b.x1 && q.x1 < b.x2 && Math.abs(q.y2 - b.y1) < 1.5);
+        gates.push({ t: 'CNT', up: 1, ins: [inn.n], r: rr ? [rr.n] : [], out: [out.n], ks: [b.pre], N: 0, pin: 0, box: { x1: b.x1, x2: b.x2, y1: b.y1, y2: b.y2 }, pp: [], miss: [] });
+      }
+    });
   NL.mir = mirModel(sh, NL);
+  /* 2.5.0-beta.11 (DITL PDF audit, DITL-35 rows 6 / 9 "M.0172" / "-M.0172"): an address written on the start of an input wire is that
+     signal; the same address with a leading minus on another input wire is the same bit inverted (row 9 = NOT row 6) */
+  {
+    const w = sh.tx
+      .filter(t => /^-?[IMB]\.[0-9A-F]{4}$/.test(t.t.trim()) && t.x > S1 - 2 && t.x < S1 + 10)
+      .map(t => {
+        const z = NL.src
+          .map(z => ({ z, q: segs.find(q => q.n === z.n && q.h && Math.abs(q.y1 - t.y) < 2 && q.x1 < t.x + 2) }))
+          .filter(o => o.q)
+          .sort((a, b) => Math.abs(a.q.y1 - t.y) - Math.abs(b.q.y1 - t.y))[0];
+        return z && { neg: t.t.trim()[0] === '-', adr: t.t.trim().replace(/^-/, ''), z: z.z };
+      })
+      .filter(Boolean);
+    w.filter(o => o.neg).forEach(o => {
+      const p = w.find(q => !q.neg && q.adr === o.adr);
+      if (p && p.z.row !== o.z.row && !NL.mir.some(m => m.row === o.z.row)) NL.mir.push({ row: o.z.row, n: p.z.n, adr: '-' + o.adr, neg: 1 });
+    });
+  }
   /* v28: a numbered circle in the FROM column of an input row = the signal comes from the connector with the same number in the logic (DITL-21A row 5 <- (4) <- end of the row 26 wire): the row follows that net, it is not a hand switch */
   cons
     .filter(c => c.i < 0 && c.x < S1 - 1)
@@ -1543,7 +1961,42 @@ function netlistCore(sh, strict) {
       if (ri < 0 || !NL.src.some(z => z.row === ri) || NL.mir.some(m => m.row === ri)) return;
       NL.mir.push({ row: ri, n: segs[peer.i].n, adr: 'conn ' + c.num });
     });
+  /* 2.5.0-beta.11 (DITL PDF audit, DITL-25A / 25B (1), 26A / 26B (A) (B), 76 / 77 (6) (7)): a numbered connector that appears ONCE
+     on the sheet, with "FROM DITL-xx" or "TO DITL-xx" written beside it, is the same wire as the connector with the same number on that
+     sheet (off-sheet connector). simSheet reads the other sheet's net into the FROM side */
+  NL.xcon = [];
+  {
+    const all = [...sh.tx, ...Object.values(sh.cells).flat()],
+      ref = all.filter(t => /^\(?\s*(FROM|TO)\s+DITL-?\s*([0-9]{1,3}[A-Z]?)\s*\)?$/i.test(t.t.trim()));
+    cons
+      .filter(c => c.i >= 0 && cons.filter(o => o.num === c.num).length === 1)
+      .forEach(c => {
+        const t = ref
+          .map(q => ({ q, d: Math.hypot(q.x - c.x, q.y - c.y) }))
+          .filter(o => (o.d < 16 || (Math.abs(o.q.y - c.y) < 6 && o.d < 28)) && !cons.some(z => z !== c && Math.hypot(o.q.x - z.x, o.q.y - z.y) < o.d))
+          .sort((a, b) => a.d - b.d)[0];
+        if (!t) return;
+        const m = /(FROM|TO)\s+DITL-?\s*([0-9]{1,3}[A-Z]?)/i.exec(t.q.t);
+        NL.xcon.push({ num: c.num, n: segs[c.i].n, dir: m[1].toUpperCase() === 'FROM' ? 'in' : 'out', peer: m[2].toUpperCase(), x: c.x, y: c.y });
+      });
+  }
+  /* 2.5.0-beta.11 (DITL PDF audit, DITL-29A row 61 'MOP-P1501A = "1"', DITL-76 / 77 'MOP-P1108A DEFAULT "1"'): a start permission
+     written as a constant 1 at the start of a wire is 1 (before, no driver: the AND before the run FF stayed 0, the pump could not start) */
+  NL.one = [];
+  {
+    const gO = new Set();
+    gates.forEach(g => (g.out || []).forEach(n => gO.add(n)));
+    [...sh.tx, ...Object.values(sh.cells).flat()]
+      .filter(t => /(DEFAULT\s*|=\s*)["“”]?1["“”]?\s*$/i.test(t.t) && t.x > S1 && t.x < R0)
+      .forEach(t => {
+        const w = segs
+          .filter(q => q.h && q.x1 >= t.x - 4 && q.x1 <= t.x + 4 && q.y1 <= t.y + 1 && q.y1 >= t.y - 5 && !gO.has(q.n) && !NL.src.some(z => z.n === q.n))
+          .sort((a, b) => Math.abs(a.y1 - t.y) - Math.abs(b.y1 - t.y))[0];
+        if (w && !NL.one.includes(w.n)) NL.one.push(w.n);
+      });
+  }
   NL.ind = [];
+  NL.mv.forEach(b => b.fb.forEach(f => f.ind >= 0 && NL.ind.push({ row: f.mir, n: f.ind })));
   NL.mot = motModel(sh, NL);
   NL.usr = usrModel(sh, NL);
   NL.usr = NL.usr.concat(fieldInModel(sh, NL, NL.usr));
@@ -1666,6 +2119,63 @@ function netlistCore(sh, strict) {
         !cmd.has(kn[d.k]) &&
         !NL.usr.some(u => d.x >= u.pent[0] && d.x <= u.pent[1] && d.y >= u.pent[2] && d.y <= u.pent[3])
     );
+  }
+  /* 2.5.0-beta.14 (bottom ash sequence, BA-04 ~ BA-18): the step register. An output cell "STEP=8" with "IF M.1333 ON THEN 8 -->
+     SI0130" writes 8 into SI0130 while its wire is 1; an input row "STEP≥8" is 1 while SI0130 ≥ 8 (src/digital/parts/04-render.js) */
+  if (sh.ba) {
+    const ctx = c => (sh.cells[c] || []).map(t => t.t).join(' ');
+    const all = [...sh.tx, ...Object.values(sh.cells).flat()].map(t => t.t).join(' ');
+    const rg = (/THEN\s*\d+\s*-+>\s*(SI\s*[0-9A-F]+)/i.exec(all) || [])[1];
+    const reg = (rg || 'SI0130').replace(/\s/g, '');
+    NL.stepW = [];
+    NL.outs.forEach(o => {
+      const m = /STEP\s*=\s*(\d+)/i.exec(ctx(o.row + ':RS'));
+      if (m && !NL.stepW.some(w => w.n === o.n)) NL.stepW.push({ n: o.n, row: o.row, reg, val: +m[1] });
+    });
+    NL.stepR = [];
+    NL.src.forEach(z => {
+      const m = /STEP\s*([≥≤=])\s*(\d+)/.exec(ctx(z.row + ':S'));
+      if (m && !NL.stepR.some(r => r.row === z.row)) NL.stepR.push({ row: z.row, reg, op: m[1], val: +m[2] });
+    });
+  }
+  /* 2.5.0-beta.14 (bottom ash BA-55 / 56 / 72 ~ 74, the HMI indicator sheets: "0:BLUE 1:RED", "1:RED&YELLOW FLASH"): an input
+     wire that goes into no gate and to no output row ends at the indicator symbol; the dot at its end lights with it (the name of
+     the indicator is the text above it). Before, no output: the sheet showed nothing in Run */
+  if (sh.ba) {
+    const used = new Set(NL.outs.map(o => o.n));
+    gates.forEach(g => [...(g.ins || []), ...(g.s || []), ...(g.r || [])].forEach(n => used.add(n)));
+    const allT = [...sh.tx, ...Object.values(sh.cells).flat()];
+    NL.term = [];
+    /* the lamp may also be driven by a gate (BA-56 EMERGENCY STOP = OR, READY FOR START M.1373 = AND) */
+    [...new Set([...NL.src.map(z => z.n), ...gates.flatMap(g => (g.t === 'AND' || g.t === 'OR' || g.t === 'NOT' ? g.out || [] : []))])].forEach(n => {
+      if (used.has(n)) return;
+      const P = [];
+      segs.filter(q => q.n === n).forEach(q => P.push([q.x1, q.y1], [q.x2, q.y2]));
+      if (!P.length) return;
+      const e = P.reduce((a, p) => (p[0] > a[0] + 0.5 || (Math.abs(p[0] - a[0]) <= 0.5 && p[1] > a[1]) ? p : a), P[0]);
+      if (e[0] <= S1 + 6) return;
+      const lab = allT
+        .filter(t => Math.abs(t.x - e[0]) < 14 && t.y > e[1] && t.y - e[1] < 14 && /[A-Z]{3}/.test(t.t) && !/^\d\s*:/.test(t.t))
+        .sort((a, b) => b.y - a.y)
+        .map(t => t.t)
+        .join(' ');
+      NL.term.push({ n, x: e[0], y: e[1], lab, lamp: null });
+    });
+  }
+  /* 2.5.0-beta.14 (bottom ash BA-11 M.1331): a spare line into an AND / OR that starts on an empty row (no tag, no service, no
+     gate) is not an input; before, it was a 0 that kept the AND off forever */
+  if (sh.ba) {
+    const drv = new Set([...NL.src.map(z => z.n), ...NL.one, ...(NL.mir || []).map(m => m.n), ...NL.ind.map(m => m.n)]);
+    gates.forEach(g => (g.out || []).forEach(n => drv.add(n)));
+    (NL.xcon || []).forEach(c => c.dir === 'in' && drv.add(c.n));
+    NL.usr.forEach(u => drv.add(u.n));
+    NL.mot.forEach(m => [m.mor, m.mos, m.mir].forEach(n => n >= 0 && drv.add(n)));
+    NL.mv.forEach(b => b.fb.forEach(f => f.n >= 0 && drv.add(f.n)));
+    gates.forEach(g => {
+      if ((g.t !== 'AND' && g.t !== 'OR') || !g.ins) return;
+      const k = g.ins.filter(n => drv.has(n));
+      if (k.length && k.length < g.ins.length) g.ins = k;
+    });
   }
   return NL;
 }

@@ -193,11 +193,20 @@ function pick(e) {
   const [x, y] = xy(e),
     k = $('svg').getScreenCTM().a,
     tol = Math.max(0.9, 7 / k);
+  /* 3.2.0-beta.39: a "FROM / TO DITL xx-nn" text is a page link; a click ON the text wins over a circle under it, a click just beside it does not */
+  {
+    const dt = dsTextAt(e, true);
+    if (dt && dsTextClick(dt, e)) return;
+  }
   for (const c of S.conn.concat(S.xc || []))
     if (Math.hypot(x - c.x, y - c.y) <= c.r + 0.4) {
       connClick(c);
       return;
     }
+  {
+    const dt = dsTextAt(e);
+    if (dt && dsTextClick(dt, e)) return;
+  }
   let best = null,
     ba = 1e12;
   for (const b of S.blk) {
@@ -308,7 +317,19 @@ bRun.onclick = () => {
 sSpd.onchange = () => {
   AN.spd = +sSpd.value;
 };
-bRst.onclick = reset;
+/* 3.2.0-beta.13: the Reset button ends the starting state too (the plant is no longer at 150 MW / Cold): the next RUN
+   starts the plant cold (trace.js coldIfNone), so after a Reset MSP is 0 again, not the loop model's middle of the range */
+bRst.onclick = () => {
+  AN.startState = null;
+  reset();
+  /* 3.2.0-beta.18: and the plant is COLD at once (VIEW shows boiler off, not the drawings' defaults MSP 75) */
+  /* retest #57: then the operator picks the starting state (no Cold by itself) */
+  coldIfNone(() => {
+    settle();
+    paint();
+    panelUpd(true);
+  });
+};
 bFit.onclick = fitView;
 bVal.onclick = () => {
   AN.vals = !AN.vals;
@@ -347,7 +368,7 @@ bWv.onclick = () => {
   AN.wireVals = v !== '0';
   bWv.classList.toggle('on', AN.wireVals);
 }
-const ptab = h$('button', { id: 'anptab', txt: '◀ Panel', title: 'Show the right panel' });
+const ptab = h$('button', { id: 'anptab', txt: '◀ Inspector', title: 'Show the Inspector / Faceplate' });
 document.body.append(ptab);
 ptab.onclick = () => {
   AN.tmp = false;
@@ -359,12 +380,8 @@ function panelFor(on) {
     showPanel(on);
     return;
   }
-  if (anp.classList.contains('min')) {
-    if (on) {
-      AN.tmp = true;
-      showPanel(true);
-    }
-  } else if (AN.tmp && !on) showPanel(false);
+  /* 2.4.1-beta.3 (user): Auto-hide OFF = the panel never minimizes by itself; a click on a block opens it and it stays */
+  if (on && anp.classList.contains('min')) showPanel(true);
 }
 function showPanel(on) {
   if (!on) AN.tmp = false;
@@ -392,8 +409,26 @@ bPn.onclick = () => {
   AN.tmp = false;
   showPanel(anp.classList.contains('min'));
 };
+/* retest #41 (R7: an empty Inspector column "Click a block or a wire…" took a third of the drawing beside the Training panel): while
+   the Training panel is open the Inspector is in AUTO-HIDE (over the drawing, shown when a block or a wire is clicked); the user's own
+   setting comes back when the Training panel closes */
+AN.inspAuto = on => {
+  if (on) {
+    if (AN._ahWas != null) return;
+    AN._ahWas = AN.ah;
+    AN.ah = true;
+    showPanel(false);
+  } else if (AN._ahWas != null) {
+    AN.ah = AN._ahWas;
+    AN._ahWas = null;
+    if (!AN.ah && !matchMedia('(max-width:1180px)').matches) showPanel(true);
+  }
+};
+/* 2.5.0-beta.20 (UI audit): up to 1180 px the panel is a drawer OVER the drawing: closed at the start, a click on a block or a
+   wire opens it (an empty panel covered half of the sheet on a tablet standing up and on a phone) */
+if (matchMedia('(max-width:1180px)').matches) showPanel(false);
 setInterval(() => {
-  if (!live() || !AN.run) return;
+  if (!live() || !AN.run || AN._loading) return;
   const sh = cs();
   if (!sh || !sh.S) return;
   const dt = 0.1 * AN.spd,
@@ -404,6 +439,11 @@ setInterval(() => {
   for (let i = 0; i < n; i++) {
     if (K > 1) stepTier(sh, dt / n, K);
     else stepSet(sh, dt / n);
+    /* 3.2.0-beta.21: the Training coach (src/ui/training/guide.js) acts after each step, at the time of the plant */
+    if (AN.onStep)
+      try {
+        AN.onStep(dt / n);
+      } catch (e) {}
   }
   paint();
   panelUpd();

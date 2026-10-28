@@ -1,0 +1,129 @@
+/* 3.2.0-beta.25 ladder view (src/ui/ladder/ladder.js): a panel on the right half of the DITL page */
+#ladder {
+  position: fixed;
+  top: var(--topH, 52px);
+  right: 0;
+  bottom: var(--footH, 30px);
+  width: min(52vw, 900px);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-pane, #151b22);
+  color: var(--c-tx, #d8dee6);
+  border-left: 1px solid var(--c-line, #33404d);
+  box-shadow: -6px 0 18px rgba(0, 0, 0, 0.35);
+}
+#ladder .lh {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px 4px;
+  border-bottom: 1px solid var(--c-line, #33404d);
+}
+#ladder .lh-t {
+  font-weight: 600;
+  font-size: 14px;
+}
+#ladder .lh-s,
+#ladder .lh-n {
+  font-size: 12px;
+  opacity: 0.8;
+}
+#ladder .lh-n {
+  padding: 4px 10px;
+}
+#ladder .lh-x {
+  min-width: 36px;
+  min-height: 32px;
+}
+#ladder .lb {
+  flex: 1;
+  overflow: auto;
+  padding: 4px 6px 16px;
+}
+#ladder .lsvg {
+  display: block;
+  max-width: none !important;
+  height: auto;
+  font-family: inherit;
+}
+#ladder .lsvg .lw,
+#ladder .lsvg .rail {
+  stroke: #66737f;
+  stroke-width: 2;
+}
+#ladder .lsvg .rail {
+  stroke-width: 3;
+}
+#ladder .lsvg .lw.on {
+  stroke: #3ccf72;
+  stroke-width: 3;
+}
+#ladder .lsvg .lc line,
+#ladder .lsvg .lc rect {
+  stroke: #9aa6b2;
+  stroke-width: 2.2;
+  fill: none;
+}
+#ladder .lsvg .lc.cl line,
+#ladder .lsvg .lc.cl rect {
+  stroke: #3ccf72;
+}
+#ladder .lsvg .lc[data-row] {
+  cursor: pointer;
+}
+#ladder .lsvg text {
+  fill: var(--c-tx, #d8dee6);
+  font-size: 11px;
+  text-anchor: middle;
+}
+#ladder .lsvg .la {
+  font-weight: 600;
+}
+#ladder .lsvg .ld {
+  font-size: 10px;
+  opacity: 0.8;
+}
+#ladder .lsvg .rel .la {
+  fill: #e0b552;
+}
+#ladder .lsvg .ln {
+  text-anchor: start;
+  opacity: 0.6;
+}
+#ladder .lsvg .lnote {
+  text-anchor: start;
+  font-size: 11px;
+  opacity: 0.75;
+}
+#ladder .lsvg .lcn {
+  text-anchor: start;
+}
+#ladder .lsvg .lk path,
+#ladder .lsvg .lk line,
+#ladder .lsvg .lk rect {
+  stroke: #9aa6b2;
+  stroke-width: 2.2;
+  fill: none;
+}
+#ladder .lsvg .lk.on path,
+#ladder .lsvg .lk.on line,
+#ladder .lsvg .lk.on rect {
+  stroke: #3ccf72;
+}
+#ladder .lsvg .lk.on rect {
+  fill: rgba(60, 207, 114, 0.15);
+}
+#ladder .lsvg .lk text {
+  font-weight: 700;
+}
+@media (max-width: 900px) {
+  #ladder {
+    width: 100vw;
+    top: auto;
+    height: 55vh;
+    border-left: 0;
+    border-top: 1px solid var(--c-line, #33404d);
+  }
+}

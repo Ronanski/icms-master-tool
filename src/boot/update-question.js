@@ -168,7 +168,7 @@
       d = document.createElement('div');
       d.id = 'updtoast';
       d.style.cssText =
-        'position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:99998;background:#18212a;color:#dbe5ec;border:1px solid #6aaee0;border-radius:8px;padding:8px 14px;font:14px system-ui;max-width:90vw';
+        'position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:99998;background:var(--c-pane);color:var(--c-tx);border:1px solid var(--c-acc);border-radius:8px;padding:8px 14px;font:14px system-ui;max-width:90vw';
       document.body.append(d);
     }
     d.textContent = t;
@@ -183,21 +183,24 @@
     if (d) d.remove();
     d = document.createElement('div');
     d.id = 'updask';
+    /* 3.2.0 retest #23 (R4: the PC kept the old Beta with no clear notice): a banner across the top of the page, over every page,
+       until Update now or Later */
+    d.setAttribute('role', 'alert');
     d.style.cssText =
-      'position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:99997;background:#16324a;color:#fff;border:1px solid #6aaee0;border-radius:10px;padding:12px 16px;font:15px/1.4 system-ui;max-width:92vw;box-shadow:0 4px 20px #0008';
+      'position:fixed;left:0;right:0;top:0;z-index:100001;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 14px;background:#b45309;color:#fff;border-bottom:2px solid #fbbf24;padding:10px 16px;font:15px/1.4 system-ui;box-shadow:0 4px 20px #0008';
     d.innerHTML =
-      '<b>New version available: ' +
-      v +
-      '</b> (' +
+      '<span><b>New ' +
       (beta ? 'Beta' : 'Stable') +
-      ')<br>Installed: ' +
+      ' available: ' +
+      v +
+      '</b> · installed: ' +
       T +
-      '. Update now?<br><span id=updbs style="display:inline-flex;gap:8px;margin-top:8px"></span>';
+      '. Update now to test the same build.</span><span id=updbs style="display:inline-flex;gap:8px"></span>';
     function bt(t, f, c) {
       var b = document.createElement('button');
       b.textContent = t;
       b.style.cssText =
-        'padding:8px 14px;border-radius:6px;border:1px solid #6aaee0;background:' +
+        'padding:8px 14px;border-radius:6px;border:1px solid var(--c-acc);background:' +
         c +
         ';color:#fff;font:600 14px system-ui;cursor:pointer';
       b.onclick = f;
@@ -300,9 +303,15 @@
         b.onclick = function () {
           check(true);
         };
-        g.append(b);
+        /* 3.2.0 retest #23: into the settings menu of the shell at once (not over the Home heading) */
+        if (window.lsUpdHome) window.lsUpdHome(b);
+        else g.append(b);
       }
       check(false);
+      /* 3.2.0 retest #23: a Beta published while the app is open is announced too (every 10 min) */
+      setInterval(function () {
+        if (!document.getElementById('updask')) check(false);
+      }, 600000);
     }, 1500);
   });
 })();

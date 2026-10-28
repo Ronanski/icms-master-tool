@@ -27,6 +27,10 @@
     [/SEAWATER BOOSTER PUMP\s*C\b|\bSWBP\s*-?C\b/, 1, 0, 'SWBP-C 87.2 A, R M'],
     [/SEAWATER PUMP\s*A\b|\bSWP\s*-?A\b/, 0, 0, 'SWP-A stopped, R M'],
     [/SEAWATER PUMP\s*[BC]\b|\bSWP\s*-?[BC]\b|ANY SEAWATER PUMP/, 1, 0, 'SWP-B 242.5 A, SWP-C 207.6 A'],
+    /* 3.2.0 roadmap 3: the condensate pumps had no rule: at 150 MW with Run both read stopped, the condenser lost its vacuum
+       (unit.js: no condensate pump) and the turbine tripped on LOW VACUUM after ~30 s */
+    [/CONDENSATE PUMP\s*-?A\b/, 1, 0, '28.png CP-A (P-1116A) 28.1 A, R M (full load)'],
+    [/CONDENSATE PUMP\s*-?B\b/, 0, 1, '28.png CP-B (P-1116B) standby, R A'],
     [/\bDOP\s*A\b|DIESEL OIL PUMP\s*A\b/, 1, 0, 'P-0702A DIESEL OIL PUMP 25.4 A, R M'],
     [/\bDOP\s*B\b|DIESEL OIL PUMP\s*B\b/, 0, 1, 'P-0702B standby, R A'],
     [/\bMWP\s*[AC]\b/, 1, 0, 'MWP-A 20.5 A, MWP-C 20.8 A'],
@@ -188,6 +192,7 @@
       }
       s.sig = {};
       s.usw = {};
+      s._fd = null;
       s.av150 = null;
       for (const a of s.nl.an || []) {
         const src = s.nl.src.find(z => z.n === a.net),
@@ -215,12 +220,16 @@
     for (let k = 0; k < n; k++) WORLD.tick(dt, { noAbc: !WORLD.on });
   };
   /* back to the cold DITL (what the Simulate button and Reset do) */
+  /* retest #68 (R8: after Clear all ticks + Gabay Cold, SWP-A still RUNNING and in REMOTE from the run before): the cold DITL is clean,
+     every motor stopped, every field contact (REMOTE, AUTO MODE, limit switch) at its default, no field trip */
   D.clear = () => {
     MST = {};
     MS = {};
     for (const x of ALL()) {
       x.sig = {};
       x.usw = {};
+      x._fd = null;
+      x._ftrip = false;
       x.av150 = null;
       if (x.nl) {
         x.nl._v = null;
@@ -228,6 +237,7 @@
         x.nl.ufx = [];
         for (const g of x.nl.gates) {
           if (g.t === 'FF') g.q = 0;
+          if (g.t === 'CNT') g.N = g.pin = g.rp = 0;
           if (g.t === 'TMR') g.st = { acc: 0, out: 0, pre: 0, run: 0 };
         }
       }
@@ -413,6 +423,22 @@
         rep.flips += f;
         D.scan(15, 1);
         if (!f && k > 1) break;
+      }
+      /* 3.2.0 P1 #3 / #4: the eight valves of DITL-38 (one drawing, src/world/world.js W.MCV). On load the turbine takes its steam
+         through the main steam stop MOV MV-MS1391 (4.PNG) and the feedwater flows through the discharge MOVs of the pumps (03.png
+         BFWP-A in service, BFWP-B standby in AUTO: its discharge open so that the auto start feeds at once); the warming bypass
+         MV-MS1392, the filling bypasses MV-FW1391 / 1392 and the mass blowdown MV-BD1001 are shut; the continuous blowdown MV-BD1002
+         in service (the 25 T/H of drum water that does not leave as main steam, plant.js integLoss; ASSUMED) */
+      {
+        const OPEN = { 'MV-MS1391': 1, 'MV-FW1001': 1, 'MV-FW1002': 1, 'MV-BD1002': 1 };
+        for (const s of ALL()) {
+          const lbl = s._inst && s._inst.lbl;
+          if (!lbl || !s.nl || !(s.nl.mv || []).length) continue;
+          const r = mvRT(s);
+          r[0].pos = OPEN[lbl] ? 100 : 0;
+          r[0].run = 0;
+        }
+        D.scan(3, 1);
       }
       /* the operator acknowledges what the start-up left latched (RESET FIRST OUT ...): the RESET push buttons of the CRT */
       const rs = [];

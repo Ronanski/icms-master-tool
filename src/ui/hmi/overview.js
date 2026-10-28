@@ -19,7 +19,8 @@
   const fmt = x => {
     if (x == null || !isFinite(x)) return '—';
     const a = Math.abs(x);
-    return a >= 1000 ? x.toFixed(0) : a >= 100 ? x.toFixed(1) : a >= 10 ? x.toFixed(2) : x.toFixed(2);
+    /* 3.2.0-beta.6 (audit L2): a value that rounds to zero is shown without the minus sign */
+    return (a >= 1000 ? x.toFixed(0) : a >= 100 ? x.toFixed(1) : x.toFixed(2)).replace(/^-(0(?:\.0+)?)$/, '$1');
   };
   let sel = null;
   const cur = () => {
@@ -132,11 +133,13 @@
           sv = E('i', { cls: 'sv' }),
           mv = E('i', { cls: 'mv' }),
           md = E('span', { cls: 'md' }),
-          nums = E('span', { cls: 'nm' });
+          nums = E('span', { cls: 'nm' }),
+          mvn = E('span', { cls: 'mvn' });
         const card = E('div', { cls: 'ovc', title: (c.desc || '') + ' — click: show only this one' }, [
           E('div', { cls: 'tt', txt: c.tag }),
           E('div', { cls: 'bars' }, [E('div', { cls: 'ovb' }, [pv]), E('div', { cls: 'ovb' }, [sv]), E('div', { cls: 'ovb' }, [mv])]),
-          E('div', { cls: 'ft' }, [md, nums])
+          E('div', { cls: 'ft' }, [md, nums]),
+          mvn
         ]);
         card.dataset.t = c.tag;
         card.onclick = () => {
@@ -144,7 +147,7 @@
           apply(opp, ov);
         };
         grid.append(card);
-        return { c, card, pv, sv, mv, md, nums };
+        return { c, card, pv, sv, mv, md, nums, mvn };
       });
       ov.append(
         E('div', { cls: 'ovh' }, [
@@ -174,7 +177,8 @@
       x.mv.style.height = mvv == null ? '0' : Math.max(0, Math.min(100, mvv)) + '%';
       x.md.textContent = m;
       x.md.className = 'md m-' + m;
-      x.nums.textContent = fmt(pvv) + ' · ' + (mvv == null ? '—' : fmt(mvv) + '%');
+      x.nums.textContent = fmt(pvv);
+      x.mvn.textContent = 'MV ' + (mvv == null ? '—' : fmt(mvv) + '%');
     }
     const fl = ov.querySelector('.ovfl');
     if (fl && fl._rows) fl._rows.forEach(r => r._u && r._u());

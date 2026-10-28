@@ -17,13 +17,14 @@
   const fmt = x =>
     x == null || !isFinite(x)
       ? '—'
-      : Math.abs(x) >= 1000
-        ? x.toFixed(0)
-        : Math.abs(x) >= 100
-          ? x.toFixed(1)
-          : Math.abs(x) >= 10
-            ? x.toFixed(2)
-            : x.toFixed(3);
+      : (Math.abs(x) >= 1000
+          ? x.toFixed(0)
+          : Math.abs(x) >= 100
+            ? x.toFixed(1)
+            : Math.abs(x) >= 10
+              ? x.toFixed(2)
+              : x.toFixed(3)
+        ).replace(/^-(0(?:\.0+)?)$/, '$1'); /* 3.2.0-beta.1 (audit L2): not -0.000 */
   const sheet = () => AN.sheets && AN.sheets[AN.i];
   /* 2.0.0: touch screens (tablet / phone) */
   const TOUCH = (() => {
@@ -116,6 +117,8 @@
       for (const n of S2.ext) {
         const t = S2.lab[n] && S2.lab[n].t;
         if (t && want.has(t.trim().toLowerCase())) add(S2, n);
+        /* 2.3.0-beta.1: the mode status written beside a wire that carries an address (ABC-011 "TICBR1130.LOC" = M.0230) */
+        if (S2.alias && S2.alias[n] && S2.alias[n].some(a => want.has(a.toLowerCase()))) add(S2, n);
       }
       /* 1.23.0: the wire may carry the description as its name with the tag text written at its end (ABC-004A "CONTROL IN
          MANUAL" + "PIC-COBM.MAN"): the digital input wire that ends at the tag text (< 14) is that address */
@@ -351,12 +354,15 @@
   }
   /* 2.4.0-beta.5 PLANT VIEW: the sheet that holds the controller (PID / PIDV) or MAN station of a tag; the same faceplate as the
      Operator pane, built for that one tag (A / M / R, SV, MV, trend, interlock); the engine is not changed */
-  let fpIx = null;
+  let fpIx = null,
+    fpOf = null;
   AN.fpFind = tag => {
     const T = String(tag || '').trim().toUpperCase();
     if (!T) return null;
-    if (!fpIx) {
+    /* 3.2.0-beta.10: built again when the sheet list changes; an index made while the page shows DITL (no ABC sheet) is not kept */
+    if (!fpIx || fpOf !== AN.sheets) {
       fpIx = {};
+      fpOf = AN.sheets;
       for (const sh of AN.sheets || []) {
         if (!/^ABC-/.test(sh.name) || /^ABC-000/.test(sh.name)) continue;
         let S;
@@ -375,8 +381,9 @@
             if (t !== 'MAN' && !fpIx[t]) fpIx[t] = sh.name;
           }
       }
+      if (!Object.keys(fpIx).length) fpIx = null;
     }
-    return fpIx[T] || null;
+    return (fpIx && fpIx[T]) || null;
   };
   AN.fpBuild = (tag, box) => {
     const nm = AN.fpFind(tag),
@@ -582,11 +589,20 @@
         ),
         mvRow = E('div', { cls: 'row' }, [E('span', { txt: 'MV (MAN)' })].concat(mvB)),
         fmEl = E('span', { cls: 'sub', style: 'color:#ff7a7a;font-weight:700' }),
+        /* 3.2.0-beta.6 "BAKIT?": why the loop is held in MANUAL, walked to the root signal (src/ui/shell/why.js) */
+        fmList = E('div', { cls: 'whyl' }),
+        fmWhy = E('button', {
+          cls: 'b whyb',
+          txt: 'Why?',
+          title: 'Show the signal that holds this loop in MANUAL, back to its source (drawing logic, live values)',
+          on: () => (fmList.childNodes.length ? (fmList.textContent = '') : whyMan())
+        }),
+        fmBox = E('div', { cls: 'whyx' }, [fmEl, fmWhy, fmList]),
         cutEl = E('div', { cls: 'sub', style: 'color:#ffb454;font-weight:700;margin:2px 0' }),
         cutTx = E('span'),
         cutWhy = E('button', {
           cls: 'b',
-          txt: 'Sanhi?',
+          txt: 'Why?',
           title: 'Find the drawing inputs that clear this interlock when changed',
           style: 'margin-left:6px',
           on: () => whyCut()
@@ -674,7 +690,7 @@
           graph,
           E('div', { cls: 'fpc' }, [pvBox, svBox, E('div', { cls: 'fps' }, [raCol, mvBr]), mvBox])
         ]),
-        fmEl,
+        fmBox,
         cutEl,
         E('div', { cls: 'tg' }, [
           E('b', { txt: c.tag }),
@@ -775,6 +791,24 @@
         openPop('MV', mvBox);
       });
       live.push(popRefresh);
+      const whyMan = () => {
+        fmList.textContent = '';
+        let W = [];
+        try {
+          W = AN.whyMan(sh, c);
+        } catch (e) {}
+        if (!W.length) return fmList.append(E('div', { cls: 'sub', txt: 'Held by the A/M station itself (back-up command): press A when the condition is gone.' }));
+        for (const w of W)
+          for (const l of w.lines) {
+            const row = E('div', { cls: 'whyr k-' + l.k, style: 'padding-left:' + (0.25 + l.d * 0.75) + 'rem' }, [E('span', { txt: l.txt + (l.sh && l.sh !== sh.name ? '  [' + l.sh + ']' : '') })]);
+            const s2 = AN.sheets.find(x => x.name === l.sh);
+            if (l.k === 'input' && s2 && s2.S) {
+              const to = s2.S.rt.v[l.n] > 0.5 ? 0 : 1;
+              row.append(E('button', { cls: 'b', txt: '→ ' + to, title: 'Set this input to ' + to + ' (the same as the switch / PB on the drawing)', on: () => (setIn(s2.S, l.n, to), setTimeout(whyMan, 300)) }));
+            }
+            fmList.append(row);
+          }
+      };
       const whyCut = () => {
         const cg = (c.dn || []).find(d => {
           const t = S.rt.st[d.id];
@@ -906,6 +940,8 @@
           if (!cg) cutList.textContent = '';
         }
         fmEl.textContent = fm_ ? 'FORCE MANUAL (' + (fsg ? fsg.name + ' = 1' : 'logic') + '): AUTO not allowed' : '';
+        fmWhy.style.display = fm_ ? '' : 'none';
+        if (!fm_ && fmList.childNodes.length) fmList.textContent = '';
         bAuto.disabled = !!fm_;
         /* MV is only for MANUAL: in AUTO the operator changes the SV, not the MV */ if (mvOk) {
           mvIn.disabled = (isAuto || rem) && !!c.amt;
@@ -1176,7 +1212,8 @@
   function tick() {
     try {
       if (!opp) return;
-      const pb = [...document.querySelectorAll('button')].find(x => x.textContent.trim() === 'Panel');
+      /* 3.2.0-beta.1: not the Panel button of the DITL bar (it is in the ribbon too, hidden on ABC) */
+      const pb = [...document.querySelectorAll('button')].find(x => /^(Panel|Inspector)$/.test(x.textContent.trim()) && !x.closest('.hmitabs,.g-ditl,#dp'));
       const on = !!(pb && pb.classList.contains('on'));
       const op = document.body.classList.contains('ophmi');
       opp.style.display = on && op ? 'flex' : 'none';
@@ -1189,8 +1226,8 @@
   }
   function tabs(active) {
     const w = E('div', { cls: 'hmitabs' }, [
-      E('button', { cls: active === 'd' ? 'on' : '', txt: 'Details', on: () => mode(false) }),
-      E('button', { cls: active === 'o' ? 'on' : '', txt: 'Operator', on: () => mode(true) })
+      E('button', { cls: active === 'd' ? 'on' : '', txt: 'Inspector', on: () => mode(false) }),
+      E('button', { cls: active === 'o' ? 'on' : '', txt: 'Faceplate', on: () => mode(true) })
     ]);
     w.dataset.hmi = '1';
     return w;

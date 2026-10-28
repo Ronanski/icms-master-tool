@@ -31,7 +31,7 @@ const r=await page.evaluate(async()=>{
   o.tripRow=ti;o.bfwpT=out('23A',55);o.m3343T=abc('ABC-010','M.3343');o.fmT=abc('ABC-010','M.0228');
   /* protection from the ABC: main steam pressure < 72.9 kg/cm2 (ABC-001C M.310D) -> DITL-40 MAIN STEAM PRESSURE LOW LOW */
   {const d40=S.sheets.find(s=>/DITL-40$/.test(s.name)),S1=AN.sheets.find(s=>s.name==='ABC-001C').S,a=S1.blk.find(b=>b.k==='AI'&&(AN.nm(S1,b.o[0])||'').trim()==='AI0131');
-   const ll=()=>{WORLD.live=true;const R=simSheet(d40);WORLD.live=false;return R.outOn.has(8)?1:0};o.ll0=ll();o.lnk=WORLD.stat.digFix.join(',');
+   const ll=()=>{WORLD.live=true;const R=simSheet(d40);WORLD.live=false;return R.outOn.has(8)?1:0};o.ll0=ll();o.lnk=WORLD.stat.digFix.join(',')+'|'+((WORLD.idx.din.get(d40)||new Map()).get(d40.rows.findIndex(x=>+x.n===9))||[]).filter(q=>q.k==='a').map(q=>AN.nm(q.sh.S,q.n)).join(',');/* 2.3.0-beta.1: TO DITL 40-09 is tied to M.310D directly (S.dsTo), not through the analog-wire fix */
    for(const b of S1.procs||[])if(b.proc)b.proc.on=false;if(AN.unit)AN.unit.on=false;/* 2.2.0-beta.9: the unit model writes AI0131 too */S1.rt.st[a.id].val=S1.rt.st[a.id].act=60;for(let k=0;k<6;k++){for(const s of all)AN.stepSet(s,.5);WORLD.tick(.5)}o.ll1=ll()}
   /* Reset = cold */
   AN.reset();WORLD.tick(1);WORLD.tick(1);o.resetOn=DITL150.on;o.mftR=out('03A',63);

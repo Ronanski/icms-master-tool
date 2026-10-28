@@ -15,6 +15,9 @@ function assemble(){let t=rd('index.template.html');
  return t.split('@@VERSION@@').join(ver)}
 function build(dir){const file=path.join(dir,'logic-sim-v'+ver+'.html');fs.writeFileSync(file,assemble());
  for(const t of['shell','hmi','theme','uat'])cp.execFileSync('node',[path.join(root,'src','ui',t,'inject.js'),file],{cwd:root,stdio:'pipe'});
+ /* 3.2.0 retest #24: the build id (7 hex of the sha256 of the built page, before the id goes in: the same sources give the same id) beside
+    the version in the status bar, so two builds of one version can be told apart */
+ const h=fs.readFileSync(file,'utf8');fs.writeFileSync(file,h.split('@@BUILD@@').join(crypto.createHash('sha256').update(h).digest('hex').slice(0,7)));
  return file}
 const sha=f=>crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');
 const oi=process.argv.indexOf('--out');
