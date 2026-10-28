@@ -545,14 +545,20 @@ function hmiComp(only, wantOf) {
   } catch (e) {}
 }
 function anPlantLoad150() {
+  return anGenRun(anPlantLoad150S());
+}
+/* 3.2.0 retest #54 (user 2026-10-28: the page froze over 1 min at "Gabay: Cold -> 150 MW", no loading sign): the starting states are
+   generators that yield after each sheet step. AN.plantCold() / plantLoad150() run them at once (the tests, the same result as
+   before); AN.plantColdAsync() / plantLoad150Async() run them in slices of 40 ms, so the page paints a progress bar in between */
+function* anPlantLoad150S() {
   AN.steady = true;
   try {
-    return anPlantLoad150_();
+    return yield* anPlantLoad150G();
   } finally {
     AN.steady = false;
   }
 }
-function anPlantLoad150_() {
+function* anPlantLoad150G() {
   let n = 0;
   /* 2.5.0-beta.7: the snapshot is a steady state, so no pulse is running: the first scan after Reset took every pulse input that is
      already 1 as a new edge (ABC-020 TPS of NOT HICHR1002B.MAN, 2 s): with the ID fan running of the load it set M.017A and the SH and
@@ -725,7 +731,7 @@ function anPlantLoad150_() {
           was.push([b.proc, b.proc.on]);
           b.proc.on = false;
         }
-    for (let k = 0; k < 6; k++) for (const sh of L) stepSet(sh, 0);
+    for (let k = 0; k < 6; k++) for (const sh of L) (stepSet(sh, 0), yield);
     for (const sh of L) {
       const S = sh.S;
       for (const b of S.procs || []) {
@@ -771,7 +777,7 @@ function anPlantLoad150_() {
   /* the plant runs 10 s so that the interlocks of the cold boiler clear, then the operator sets the modes (a station that
      was forced to MANUAL stays MANUAL until AUTO is pressed again: user rule 2026-10-15) */
   try {
-    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) for (let k = 0; k < 20; k++) stepSet(sh, 0.5);
+    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) for (let k = 0; k < 20; k++) (stepSet(sh, 0.5), yield);
   } catch (e) {}
   /* 2.2.0-beta.10 (CLAUDE.md 10): a MAN station that a BU-CMD of the drawing forced to MANUAL while the cold plant was loading stays
      MANUAL (the latch, plant.js). Right after the 10 s the operator selects the modes of the snapshot: AUTO (MAN off) for a station
@@ -796,7 +802,7 @@ function anPlantLoad150_() {
           s.fmSet = 0;
         }
       }
-      for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0);
+      for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) (stepSet(sh, 0), yield);
     }
   } catch (e) {}
   /* 2.1.0-beta.6: the MV of the snapshot again after the 10 s: a start pulse of the drawing may have preset it (ABC-008 M.020E:
@@ -812,7 +818,7 @@ function anPlantLoad150_() {
       const ps = rt.st[c.b.id];
       if (ps) hmiPidSet(ps, c.b, h.mv);
     }
-    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) for (let k = 0; k < 4; k++) stepSet(sh, 0.5);
+    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) for (let k = 0; k < 4; k++) (stepSet(sh, 0.5), yield);
   } catch (e) {}
   for (const [pr, pv, mv] of caps) pr.hopReq = { pv, mv };
   /* the held plant models start now, from the snapshot PV (pr.y0) and the anchor */
@@ -837,7 +843,7 @@ function anPlantLoad150_() {
         for (const b of sh.S.procs || []) if (b.proc && (b.txt || [])[1] === 'LICBR1001' && fw && ms) b.proc.integLoss = b.proc.integLoss0 = Math.max(0, fw.pv - ms[0]);
   } catch (e) {}
   try {
-    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0.5);
+    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) (stepSet(sh, 0.5), yield);
   } catch (e) {}
   for (const [S, c, m] of modes) {
     const rt = S.rt;
@@ -872,7 +878,7 @@ function anPlantLoad150_() {
           else if ((b.k === 'RATE' || b.k === 'RAMPB') && b.main !== undefined && isFinite(rt.v[b.main])) st.y = rt.v[b.main];
         }
       }
-      for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0);
+      for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) (stepSet(sh, 0), yield);
       /* the controller outputs of the snapshot once more: an integral that moved while the demands were still low comes back
          (ABC-001C PIC-COBM: 0.8 % on 33.PNG, 13.1 % after the 10 s) */
       for (const [S, c] of modes) {
@@ -907,7 +913,7 @@ function anPlantLoad150_() {
         if (q) q.fm = 'A';
       }
     }
-    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0);
+    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) (stepSet(sh, 0), yield);
     for (const [S, c] of modes) {
       const h = AN_HMI_CTL[c.tag],
         ps = h && h.mv != null ? S.rt.st[c.b.id] : null;
@@ -1010,7 +1016,10 @@ function anPlantLive() {
   return n;
 }
 function anPlantCold() {
-  const n = anPlantLoad150();
+  return anGenRun(anPlantColdG());
+}
+function* anPlantColdG() {
+  const n = yield* anPlantLoad150S();
   if (!AN_UNIT.on) return 0;
   const L = AN.sheets.filter(sh => sh.S && !/^ABC-000/.test(sh.name));
   /* 2.2.0-beta.16: the cold state is a steady state too: a digital input the cold map sets (ABC-050 I.0932 "GCB 52G1 off" = 1) changed
@@ -1054,6 +1063,7 @@ function anPlantCold() {
   try {
     /* one step: the unit model writes its transmitters (drum 0, MSP 0, MW 0 ...) */
     stepSet(AN.sheets.find(x => x.name === 'ABC-001C'), 0.5);
+    yield;
     /* every loop model starts again at the steady state of its (new) command: no feedwater flow decaying from 499 T/H into the
        drum of a cold boiler (an integrating level keeps its PV) */
     for (const sh of L) sh.S.rt.pm = {};
@@ -1096,9 +1106,9 @@ function anPlantCold() {
           if (b.k === 'LAG' && b.i && b.i[0] != null && isFinite(v[b.i[0]])) st.y = v[b.i[0]];
           else if ((b.k === 'RATE' || b.k === 'RAMPB') && b.main !== undefined && isFinite(v[b.main])) st.y = v[b.main];
         }
-      for (const sh of L) stepSet(sh, 0);
+      for (const sh of L) (stepSet(sh, 0), yield);
     }
-    for (let k = 0; k < 2; k++) for (const sh of L) stepSet(sh, 0.5);
+    for (let k = 0; k < 2; k++) for (const sh of L) (stepSet(sh, 0.5), yield);
     /* 3.2.0-beta.22 (bug, user 2026-10-24 "na-reset ko na, cold na, may value pa rin? ... drum lvl"): during these settling steps the
        feedwater PV of the 3-element loop still read the flow of the snapshot (153 T/H) before its model reached 0, and the drum level
        model added that water: the cold level began at 55 mm instead of the normal water level (0 / 2 / 8 mm of the three
@@ -1122,6 +1132,83 @@ function anPlantCold() {
   AN.steady = false;
   AN.cold = true;
   return n;
+}
+/* run a starting-state generator at once (AN._asc: the step set of each sheet is kept for the run, actSet; the links do not change) */
+function anGenRun(g) {
+  const own = !AN._asc;
+  if (own) AN._asc = new Map();
+  try {
+    let r;
+    while (!(r = g.next()).done);
+    return r.value;
+  } finally {
+    if (own) AN._asc = null;
+  }
+}
+/* the same in slices of 40 ms; AN._loading stops the RUN timers of the ABC page and of the world meanwhile; prog(k) = steps done */
+function anGenAsync(g, prog) {
+  return new Promise((ok, no) => {
+    let k = 0;
+    AN._loading = true;
+    AN._asc = new Map();
+    const fin = () => {
+      AN._loading = false;
+      AN._asc = null;
+    };
+    const run = () => {
+      const t0 = performance.now();
+      try {
+        for (;;) {
+          const r = g.next();
+          k++;
+          if (r.done) {
+            fin();
+            ok(r.value);
+            return;
+          }
+          if (performance.now() - t0 > 40) break;
+        }
+      } catch (e) {
+        fin();
+        no(e);
+        return;
+      }
+      if (prog)
+        try {
+          prog(k);
+        } catch (e) {}
+      setTimeout(run, 0);
+    };
+    setTimeout(run, 30);
+  });
+}
+const anPlantColdAsync = prog => anGenAsync(anPlantColdG(), prog);
+const anPlantLoad150Async = prog => anGenAsync(anPlantLoad150S(), prog);
+/* Reset + a starting state ('cold' / '150') without freezing the page, with the progress bar of the shell (window.lsBusy, app.js);
+   on = the plant model ON first. One load at a time (AN._loadP); resolves with the anchors, sets AN.startState */
+function anLoadStart(kind, on) {
+  if (AN._loadP) return AN._loadP;
+  const cold = kind === 'cold',
+    B = window.lsBusy,
+    est = (cold ? 46 : 40) * Math.max(1, AN.sheets.length - 1);
+  if (B) B.show(cold ? 'Nilo-load ang Cold plant…' : 'Nilo-load ang 150 MW…');
+  const p = new Promise(r => setTimeout(r, 40))
+    .then(() => {
+      if (on && !AN.plantOn && AN.plantSwitch) AN.plantSwitch(true, true);
+      AN.reset();
+      return (cold ? anPlantColdAsync : anPlantLoad150Async)(k => B && B.prog(k / est));
+    })
+    .then(n => {
+      AN.startState = cold ? 'plantCold' : 'plantLoad150';
+      return n;
+    });
+  AN._loadP = p;
+  const end = () => {
+    AN._loadP = null;
+    if (B) B.hide();
+  };
+  p.then(end, end);
+  return p;
 }
 /* the drum level of a cold plant before the STEAM DRUM FILLING of PR-OPE-5002 (mm, ASSUMED: low, under the -150 mm fill target) */
 const AN_COLD_DRUM = -300;

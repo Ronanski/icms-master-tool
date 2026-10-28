@@ -1179,3 +1179,13 @@ body.lsview #inlist::before{content:'VIEW · values only. Press RUN to force or 
 .plpop small{display:block;margin-top:8px;line-height:1.4;color:var(--c-dim,#7f97a8)}
 .plpop .plnote{margin:10px 0 0;color:#ffd479}
 @media (max-width:700px){.plchip{padding:0 8px;font-size:12px}.plchip em{max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+/* 3.2.0 retest #54: progress bar while a starting state loads (app.js lsBusy) */
+#lsbusy{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);cursor:progress}
+#lsbusy[hidden]{display:none}
+#lsbusy .lsbz{min-width:min(20rem,calc(100vw - 2rem));padding:1rem 1.25rem;border-radius:.5rem;background:var(--c-bg,#1e293b);color:var(--c-tx,#e2e8f0);border:1px solid var(--c-line,#475569);box-shadow:0 8px 30px rgba(0,0,0,.4);font:400 .875rem var(--uf,system-ui)}
+#lsbusy b{display:block;margin-bottom:.625rem;font-weight:600}
+#lsbusy .lsbzbar{position:relative;height:.5rem;border-radius:.25rem;background:rgba(127,127,127,.25);overflow:hidden}
+#lsbusy .lsbzbar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--c-acc,#3b82f6);transition:width .2s}
+#lsbusy .lsbzbar i.ind{width:35%!important;animation:lsbz 1.2s linear infinite}
+@keyframes lsbz{0%{transform:translateX(-100%)}100%{transform:translateX(290%)}}
+#lsbusy small{display:block;margin-top:.5rem;opacity:.8}

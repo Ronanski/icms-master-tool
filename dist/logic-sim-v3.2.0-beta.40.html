@@ -216,16 +216,19 @@
     if (d) d.remove();
     d = document.createElement('div');
     d.id = 'updask';
+    /* 3.2.0 retest #23 (R4: the PC kept the old Beta with no clear notice): a banner across the top of the page, over every page,
+       until Update now or Later */
+    d.setAttribute('role', 'alert');
     d.style.cssText =
-      'position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:99997;background:var(--c-accbg);color:#fff;border:1px solid var(--c-acc);border-radius:10px;padding:12px 16px;font:15px/1.4 system-ui;max-width:92vw;box-shadow:0 4px 20px #0008';
+      'position:fixed;left:0;right:0;top:0;z-index:100001;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 14px;background:#b45309;color:#fff;border-bottom:2px solid #fbbf24;padding:10px 16px;font:15px/1.4 system-ui;box-shadow:0 4px 20px #0008';
     d.innerHTML =
-      '<b>New version available: ' +
-      v +
-      '</b> (' +
+      '<span><b>New ' +
       (beta ? 'Beta' : 'Stable') +
-      ')<br>Installed: ' +
+      ' available: ' +
+      v +
+      '</b> · installed: ' +
       T +
-      '. Update now?<br><span id=updbs style="display:inline-flex;gap:8px;margin-top:8px"></span>';
+      '. Update now to test the same build.</span><span id=updbs style="display:inline-flex;gap:8px"></span>';
     function bt(t, f, c) {
       var b = document.createElement('button');
       b.textContent = t;
@@ -338,6 +341,10 @@
         else g.append(b);
       }
       check(false);
+      /* 3.2.0 retest #23: a Beta published while the app is open is announced too (every 10 min) */
+      setInterval(function () {
+        if (!document.getElementById('updask')) check(false);
+      }, 600000);
     }, 1500);
   });
 })();
@@ -23127,14 +23134,20 @@ function hmiComp(only, wantOf) {
   } catch (e) {}
 }
 function anPlantLoad150() {
+  return anGenRun(anPlantLoad150S());
+}
+/* 3.2.0 retest #54 (user 2026-10-28: the page froze over 1 min at "Gabay: Cold -> 150 MW", no loading sign): the starting states are
+   generators that yield after each sheet step. AN.plantCold() / plantLoad150() run them at once (the tests, the same result as
+   before); AN.plantColdAsync() / plantLoad150Async() run them in slices of 40 ms, so the page paints a progress bar in between */
+function* anPlantLoad150S() {
   AN.steady = true;
   try {
-    return anPlantLoad150_();
+    return yield* anPlantLoad150G();
   } finally {
     AN.steady = false;
   }
 }
-function anPlantLoad150_() {
+function* anPlantLoad150G() {
   let n = 0;
   /* 2.5.0-beta.7: the snapshot is a steady state, so no pulse is running: the first scan after Reset took every pulse input that is
      already 1 as a new edge (ABC-020 TPS of NOT HICHR1002B.MAN, 2 s): with the ID fan running of the load it set M.017A and the SH and
@@ -23307,7 +23320,7 @@ function anPlantLoad150_() {
           was.push([b.proc, b.proc.on]);
           b.proc.on = false;
         }
-    for (let k = 0; k < 6; k++) for (const sh of L) stepSet(sh, 0);
+    for (let k = 0; k < 6; k++) for (const sh of L) (stepSet(sh, 0), yield);
     for (const sh of L) {
       const S = sh.S;
       for (const b of S.procs || []) {
@@ -23353,7 +23366,7 @@ function anPlantLoad150_() {
   /* the plant runs 10 s so that the interlocks of the cold boiler clear, then the operator sets the modes (a station that
      was forced to MANUAL stays MANUAL until AUTO is pressed again: user rule 2026-10-15) */
   try {
-    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) for (let k = 0; k < 20; k++) stepSet(sh, 0.5);
+    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) for (let k = 0; k < 20; k++) (stepSet(sh, 0.5), yield);
   } catch (e) {}
   /* 2.2.0-beta.10 (CLAUDE.md 10): a MAN station that a BU-CMD of the drawing forced to MANUAL while the cold plant was loading stays
      MANUAL (the latch, plant.js). Right after the 10 s the operator selects the modes of the snapshot: AUTO (MAN off) for a station
@@ -23378,7 +23391,7 @@ function anPlantLoad150_() {
           s.fmSet = 0;
         }
       }
-      for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0);
+      for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) (stepSet(sh, 0), yield);
     }
   } catch (e) {}
   /* 2.1.0-beta.6: the MV of the snapshot again after the 10 s: a start pulse of the drawing may have preset it (ABC-008 M.020E:
@@ -23394,7 +23407,7 @@ function anPlantLoad150_() {
       const ps = rt.st[c.b.id];
       if (ps) hmiPidSet(ps, c.b, h.mv);
     }
-    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) for (let k = 0; k < 4; k++) stepSet(sh, 0.5);
+    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) for (let k = 0; k < 4; k++) (stepSet(sh, 0.5), yield);
   } catch (e) {}
   for (const [pr, pv, mv] of caps) pr.hopReq = { pv, mv };
   /* the held plant models start now, from the snapshot PV (pr.y0) and the anchor */
@@ -23419,7 +23432,7 @@ function anPlantLoad150_() {
         for (const b of sh.S.procs || []) if (b.proc && (b.txt || [])[1] === 'LICBR1001' && fw && ms) b.proc.integLoss = b.proc.integLoss0 = Math.max(0, fw.pv - ms[0]);
   } catch (e) {}
   try {
-    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0.5);
+    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) (stepSet(sh, 0.5), yield);
   } catch (e) {}
   for (const [S, c, m] of modes) {
     const rt = S.rt;
@@ -23454,7 +23467,7 @@ function anPlantLoad150_() {
           else if ((b.k === 'RATE' || b.k === 'RAMPB') && b.main !== undefined && isFinite(rt.v[b.main])) st.y = rt.v[b.main];
         }
       }
-      for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0);
+      for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) (stepSet(sh, 0), yield);
       /* the controller outputs of the snapshot once more: an integral that moved while the demands were still low comes back
          (ABC-001C PIC-COBM: 0.8 % on 33.PNG, 13.1 % after the 10 s) */
       for (const [S, c] of modes) {
@@ -23489,7 +23502,7 @@ function anPlantLoad150_() {
         if (q) q.fm = 'A';
       }
     }
-    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) stepSet(sh, 0);
+    for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) (stepSet(sh, 0), yield);
     for (const [S, c] of modes) {
       const h = AN_HMI_CTL[c.tag],
         ps = h && h.mv != null ? S.rt.st[c.b.id] : null;
@@ -23592,7 +23605,10 @@ function anPlantLive() {
   return n;
 }
 function anPlantCold() {
-  const n = anPlantLoad150();
+  return anGenRun(anPlantColdG());
+}
+function* anPlantColdG() {
+  const n = yield* anPlantLoad150S();
   if (!AN_UNIT.on) return 0;
   const L = AN.sheets.filter(sh => sh.S && !/^ABC-000/.test(sh.name));
   /* 2.2.0-beta.16: the cold state is a steady state too: a digital input the cold map sets (ABC-050 I.0932 "GCB 52G1 off" = 1) changed
@@ -23636,6 +23652,7 @@ function anPlantCold() {
   try {
     /* one step: the unit model writes its transmitters (drum 0, MSP 0, MW 0 ...) */
     stepSet(AN.sheets.find(x => x.name === 'ABC-001C'), 0.5);
+    yield;
     /* every loop model starts again at the steady state of its (new) command: no feedwater flow decaying from 499 T/H into the
        drum of a cold boiler (an integrating level keeps its PV) */
     for (const sh of L) sh.S.rt.pm = {};
@@ -23678,9 +23695,9 @@ function anPlantCold() {
           if (b.k === 'LAG' && b.i && b.i[0] != null && isFinite(v[b.i[0]])) st.y = v[b.i[0]];
           else if ((b.k === 'RATE' || b.k === 'RAMPB') && b.main !== undefined && isFinite(v[b.main])) st.y = v[b.main];
         }
-      for (const sh of L) stepSet(sh, 0);
+      for (const sh of L) (stepSet(sh, 0), yield);
     }
-    for (let k = 0; k < 2; k++) for (const sh of L) stepSet(sh, 0.5);
+    for (let k = 0; k < 2; k++) for (const sh of L) (stepSet(sh, 0.5), yield);
     /* 3.2.0-beta.22 (bug, user 2026-10-24 "na-reset ko na, cold na, may value pa rin? ... drum lvl"): during these settling steps the
        feedwater PV of the 3-element loop still read the flow of the snapshot (153 T/H) before its model reached 0, and the drum level
        model added that water: the cold level began at 55 mm instead of the normal water level (0 / 2 / 8 mm of the three
@@ -23704,6 +23721,83 @@ function anPlantCold() {
   AN.steady = false;
   AN.cold = true;
   return n;
+}
+/* run a starting-state generator at once (AN._asc: the step set of each sheet is kept for the run, actSet; the links do not change) */
+function anGenRun(g) {
+  const own = !AN._asc;
+  if (own) AN._asc = new Map();
+  try {
+    let r;
+    while (!(r = g.next()).done);
+    return r.value;
+  } finally {
+    if (own) AN._asc = null;
+  }
+}
+/* the same in slices of 40 ms; AN._loading stops the RUN timers of the ABC page and of the world meanwhile; prog(k) = steps done */
+function anGenAsync(g, prog) {
+  return new Promise((ok, no) => {
+    let k = 0;
+    AN._loading = true;
+    AN._asc = new Map();
+    const fin = () => {
+      AN._loading = false;
+      AN._asc = null;
+    };
+    const run = () => {
+      const t0 = performance.now();
+      try {
+        for (;;) {
+          const r = g.next();
+          k++;
+          if (r.done) {
+            fin();
+            ok(r.value);
+            return;
+          }
+          if (performance.now() - t0 > 40) break;
+        }
+      } catch (e) {
+        fin();
+        no(e);
+        return;
+      }
+      if (prog)
+        try {
+          prog(k);
+        } catch (e) {}
+      setTimeout(run, 0);
+    };
+    setTimeout(run, 30);
+  });
+}
+const anPlantColdAsync = prog => anGenAsync(anPlantColdG(), prog);
+const anPlantLoad150Async = prog => anGenAsync(anPlantLoad150S(), prog);
+/* Reset + a starting state ('cold' / '150') without freezing the page, with the progress bar of the shell (window.lsBusy, app.js);
+   on = the plant model ON first. One load at a time (AN._loadP); resolves with the anchors, sets AN.startState */
+function anLoadStart(kind, on) {
+  if (AN._loadP) return AN._loadP;
+  const cold = kind === 'cold',
+    B = window.lsBusy,
+    est = (cold ? 46 : 40) * Math.max(1, AN.sheets.length - 1);
+  if (B) B.show(cold ? 'Nilo-load ang Cold plant…' : 'Nilo-load ang 150 MW…');
+  const p = new Promise(r => setTimeout(r, 40))
+    .then(() => {
+      if (on && !AN.plantOn && AN.plantSwitch) AN.plantSwitch(true, true);
+      AN.reset();
+      return (cold ? anPlantColdAsync : anPlantLoad150Async)(k => B && B.prog(k / est));
+    })
+    .then(n => {
+      AN.startState = cold ? 'plantCold' : 'plantLoad150';
+      return n;
+    });
+  AN._loadP = p;
+  const end = () => {
+    AN._loadP = null;
+    if (B) B.hide();
+  };
+  p.then(end, end);
+  return p;
 }
 /* the drum level of a cold plant before the STEAM DRUM FILLING of PR-OPE-5002 (mm, ASSUMED: low, under the -150 mm fill target) */
 const AN_COLD_DRUM = -300;
@@ -24431,6 +24525,9 @@ function linksOf(sh) {
   return out;
 }
 function actSet(sh) {
+  /* 3.2.0 retest #54: kept while a starting state loads (hmi-op.js anGenRun: ~2900 steps of the same sets) */
+  const c = AN._asc && AN._asc.get(sh);
+  if (c) return c;
   const set = [sh],
     seen = new Set([sh]),
     grow = () => {
@@ -24461,6 +24558,7 @@ function actSet(sh) {
     }
   }
   grow();
+  if (AN._asc) AN._asc.set(sh, set);
   return set;
 }
 /* 2.2.0-beta.13 (CLAUDE.md rule 1: one address = one signal in the whole DCS). A digital INPUT of the drawing (I.xxxx, M.xxxx,
@@ -28912,7 +29010,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.40';
-      c3.textContent += ' · build 8a0da90'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 45a4c69'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -32758,11 +32856,14 @@ bRst.onclick = () => {
   AN.startState = null;
   reset();
   /* 3.2.0-beta.18: and the plant is COLD at once (VIEW shows boiler off, not the drawings' defaults MSP 75) */
-  if (coldIfNone()) {
-    settle();
-    paint();
-    panelUpd(true);
-  }
+  const p = coldIfNone();
+  if (p)
+    p.then(ok => {
+      if (!ok) return;
+      settle();
+      paint();
+      panelUpd(true);
+    });
 };
 bFit.onclick = fitView;
 bVal.onclick = () => {
@@ -32847,7 +32948,7 @@ bPn.onclick = () => {
    wire opens it (an empty panel covered half of the sheet on a tablet standing up and on a phone) */
 if (matchMedia('(max-width:1180px)').matches) showPanel(false);
 setInterval(() => {
-  if (!live() || !AN.run) return;
+  if (!live() || !AN.run || AN._loading) return;
   const sh = cs();
   if (!sh || !sh.S) return;
   const dt = 0.1 * AN.spd,
@@ -32998,15 +33099,12 @@ stepUi();
    drawings' defaults: an undriven transmitter sits at the middle of its range (MSP 75 kg/cm2 = middle of PT-MS1002 0 ~ 150). Only the
    operator's RUN press does this; AN.viewSet (the tests) is unchanged. */
 function coldIfNone() {
-  if (AN.startState || AN.cat !== 'an' || !AN.plantCold) return false;
-  try {
-    AN.reset();
-    AN.plantCold();
-    AN.startState = 'plantCold';
-    return true;
-  } catch (e) {
-    return false;
-  }
+  /* 3.2.0 retest #54: loaded in slices with a progress bar (hmi-op.js anLoadStart); before, the page froze for about a minute */
+  if (AN.startState || AN.cat !== 'an' || !AN.loadStart) return null;
+  return AN.loadStart('cold').then(
+    () => true,
+    () => false
+  );
 }
 /* 3.2.0-beta.18 (VIEW/TRACE audit, user 2026-10-23: "patay pa naman ang boiler mo ... bkt may value na si MSP?"): the ABC page
    opened by the operator, before any starting state is picked, showed the drawings' defaults in VIEW too (MSP 75 kg/cm2, drum level
@@ -33022,10 +33120,14 @@ function coldShow() {
   /* 3.2.0-beta.40 (roadmap 2, user 2026-10-26: "cold start = true physical state of a cold plant"): with the plant model ON a kept
      session no longer leaves the drawings' defaults (header MSP 75 kg/cm2, drum level -566 mm with "Unit · not started"): RUN starts
      the plant cold from a Reset anyway (coldIfNone), so the page shows that cold plant at once. Plant model OFF: kept as it was */
-  if ((kept && !AN.plantOn) || !coldIfNone()) return;
-  settle();
-  paint();
-  panelUpd(true);
+  const p = kept && !AN.plantOn ? null : coldIfNone();
+  if (p)
+    p.then(ok => {
+      if (!ok) return;
+      settle();
+      paint();
+      panelUpd(true);
+    });
 }
 /* the operator's own click / key (a script driving the page, the tests, sends no trusted event) */
 ['pointerdown', 'keydown'].forEach(t =>
@@ -33038,16 +33140,18 @@ function coldShow() {
   )
 );
 const COLD_MSG = 'No starting state was picked: the plant starts COLD (boiler off, drum 0 kg/cm2, no fire, fans stopped). Pick Plant ▾ (top right) > Unit for 150 MW.';
-bRun.onclick = () => {
-  const c = !AN.run && coldIfNone();
+const runGo = c => {
   if (AN.view) {
     viewSet(false);
     setRun(true);
-    if (c) msg(COLD_MSG);
-    return;
-  }
-  setRun(!AN.run);
+  } else setRun(!AN.run);
   if (c) msg(COLD_MSG);
+};
+bRun.onclick = () => {
+  if (AN._loadP) return;
+  const p = !AN.run && coldIfNone();
+  if (p) p.then(runGo);
+  else runGo(false);
 };
 /* 3.2.0-beta.21 (Training, user 2026-10-24: "irrun mo ba"): the simulation on from a script of the page (the Training start), as the Run button */
 AN.runOn = () => {
@@ -38919,7 +39023,7 @@ fImp.onchange = async e => {
  const good=()=>{try{return AN.cat==='an'&&L&&L.gb&&$('svg').contains(L.gb)&&anlist.children.length>3}catch(e){return false}};
  const fix=()=>{if(AN.cat!=='an'||good())return;AN.key=null;AN.lkey=null;try{SIDEKEY=null}catch(e){}loadData().then(()=>{if(AN.cat==='an'&&!good()){let i=AN.i;if(!AN.sheets[i])i=0;AN.i=i;AN.key=null;AN.lkey=null;render()}}).catch(()=>{})};
  addEventListener('load',()=>{setTimeout(fix,200);setTimeout(fix,900)});[600,1500,3000,6000].forEach(t=>setTimeout(fix,t))}})();
-Object.assign(AN,{viewSet,lookOnly:()=>{/* 2.1.0-beta.8 (user): a search is a LOOK: no force, no simulate (ABC: VIEW / TRACE, DITL: edit view, not Simulate) */try{/* 3.2.0-beta.21 (user 2026-10-24: "pag bumalik ka ng logic magiging VIEW. tapos iRRUN mo"): a look while the simulation RUNS keeps it running */if(AN.cat==='an'){if(!AN.view&&!AN.run)viewSet(true)}/* 3.2.0-beta.23: the DITL Simulate too goes on during a look (one RUN) */}catch(e){}},anStationOf,anSvSwitchOf,anHasRemote,stepTier,fxIn:anFXIn,netRange:anNetRange,extRange:anExtRange,go,cs,paint,fitView,settle,setCat,reset,ensure,pick,linksOf,actSet,panelUpd,selBox,dsIdx,dsOpen,trSeries,trSample,trDraw,trZoom,trModel,trMap,trGoCrumb,cosInfo,cosOn,cosFill,procLock,procAI,procRemote,hmiAdd,hmiFind,hmiPick,hmiVal,hmiOpen,hmiClose,hmiAuto,hmiUpd,hmiSetMode,hmiRender,hmiHeader,hmiSync,hmiAddrOf,hmiList,hmiZoomBy,hmiFit,hmiVb,hmiWrite,procLock,procAI,nm,hmiState,hmiToggleForce,hmiPlantOwned,hmiForced,setForce,wrCtl,anPins,stepSet,plantLoad150:anPlantLoad150,plantCold:anPlantCold,plantLive:anPlantLive,turbine:anTurbine,tcs:()=>tcsState(),tcsInit:h=>AN_UNIT.on?tcsInit(AN_UNIT,h):null,oilValve:anOilValve,blowdown:anBlowdown,field:anField,tsat:steamTsat,fieldState:()=>Object.assign({},AN_SRC.field),ades:async()=>{await adesLoad();return ADES},plOpen,plClose,plAIs,plRes,plVal,plantSwitch,dsGoRef,connClick,lnTables,lnApplyEdits,lneSave,lnResolve,lnOpen,descOf:(sh,t)=>{try{const F=typeof AN_DEF!=='undefined'&&AN_DEF.FACE;if(F&&t)for(const k of ['PID','MAN','SUMA'])for(const q of F[k]||[])if(q.tag===t&&q.desc)return q.desc;const a=adesFind(sh,t);return a?adesText(a.rec):''}catch(e){return ''}},addrTable:nm=>{const sh=AN.sheets.find(s=>s.name===nm)||cs(),S=ensure(sh);return{table:S.addr,notTied:S.addrUn}}});if(innerWidth<820||AN.ah){anp.classList.add('min');bPn.classList.remove('on')}
+Object.assign(AN,{viewSet,lookOnly:()=>{/* 2.1.0-beta.8 (user): a search is a LOOK: no force, no simulate (ABC: VIEW / TRACE, DITL: edit view, not Simulate) */try{/* 3.2.0-beta.21 (user 2026-10-24: "pag bumalik ka ng logic magiging VIEW. tapos iRRUN mo"): a look while the simulation RUNS keeps it running */if(AN.cat==='an'){if(!AN.view&&!AN.run)viewSet(true)}/* 3.2.0-beta.23: the DITL Simulate too goes on during a look (one RUN) */}catch(e){}},anStationOf,anSvSwitchOf,anHasRemote,stepTier,fxIn:anFXIn,netRange:anNetRange,extRange:anExtRange,go,cs,paint,fitView,settle,setCat,reset,ensure,pick,linksOf,actSet,panelUpd,selBox,dsIdx,dsOpen,trSeries,trSample,trDraw,trZoom,trModel,trMap,trGoCrumb,cosInfo,cosOn,cosFill,procLock,procAI,procRemote,hmiAdd,hmiFind,hmiPick,hmiVal,hmiOpen,hmiClose,hmiAuto,hmiUpd,hmiSetMode,hmiRender,hmiHeader,hmiSync,hmiAddrOf,hmiList,hmiZoomBy,hmiFit,hmiVb,hmiWrite,procLock,procAI,nm,hmiState,hmiToggleForce,hmiPlantOwned,hmiForced,setForce,wrCtl,anPins,stepSet,plantLoad150:anPlantLoad150,plantCold:anPlantCold,plantColdAsync:anPlantColdAsync,loadStart:anLoadStart,plantLoad150Async:anPlantLoad150Async,plantLive:anPlantLive,turbine:anTurbine,tcs:()=>tcsState(),tcsInit:h=>AN_UNIT.on?tcsInit(AN_UNIT,h):null,oilValve:anOilValve,blowdown:anBlowdown,field:anField,tsat:steamTsat,fieldState:()=>Object.assign({},AN_SRC.field),ades:async()=>{await adesLoad();return ADES},plOpen,plClose,plAIs,plRes,plVal,plantSwitch,dsGoRef,connClick,lnTables,lnApplyEdits,lneSave,lnResolve,lnOpen,descOf:(sh,t)=>{try{const F=typeof AN_DEF!=='undefined'&&AN_DEF.FACE;if(F&&t)for(const k of ['PID','MAN','SUMA'])for(const q of F[k]||[])if(q.tag===t&&q.desc)return q.desc;const a=adesFind(sh,t);return a?adesText(a.rec):''}catch(e){return ''}},addrTable:nm=>{const sh=AN.sheets.find(s=>s.name===nm)||cs(),S=ensure(sh);return{table:S.addr,notTied:S.addrUn}}});if(innerWidth<820||AN.ah){anp.classList.add('min');bPn.classList.remove('on')}
 window.AN=AN;
 
 })();</script>
@@ -45892,7 +45996,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       try {
         build();
       } catch (e) {}
-    const go = W.on && W.idx && ((AN.cat === 'an' && AN.run) || (AN.cat !== 'an' && SIM && !DPAUSE));
+    const go = !AN._loading && W.on && W.idx && ((AN.cat === 'an' && AN.run) || (AN.cat !== 'an' && SIM && !DPAUSE));
     if (!go) {
       if (W.live) W.live = false;
       last = 0;
@@ -47728,6 +47832,16 @@ body.lsview #inlist::before{content:'VIEW · values only. Press RUN to force or 
 .plpop small{display:block;margin-top:8px;line-height:1.4;color:var(--c-dim,#7f97a8)}
 .plpop .plnote{margin:10px 0 0;color:#ffd479}
 @media (max-width:700px){.plchip{padding:0 8px;font-size:12px}.plchip em{max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+/* 3.2.0 retest #54: progress bar while a starting state loads (app.js lsBusy) */
+#lsbusy{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);cursor:progress}
+#lsbusy[hidden]{display:none}
+#lsbusy .lsbz{min-width:min(20rem,calc(100vw - 2rem));padding:1rem 1.25rem;border-radius:.5rem;background:var(--c-bg,#1e293b);color:var(--c-tx,#e2e8f0);border:1px solid var(--c-line,#475569);box-shadow:0 8px 30px rgba(0,0,0,.4);font:400 .875rem var(--uf,system-ui)}
+#lsbusy b{display:block;margin-bottom:.625rem;font-weight:600}
+#lsbusy .lsbzbar{position:relative;height:.5rem;border-radius:.25rem;background:rgba(127,127,127,.25);overflow:hidden}
+#lsbusy .lsbzbar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--c-acc,#3b82f6);transition:width .2s}
+#lsbusy .lsbzbar i.ind{width:35%!important;animation:lsbz 1.2s linear infinite}
+@keyframes lsbz{0%{transform:translateX(-100%)}100%{transform:translateX(290%)}}
+#lsbusy small{display:block;margin-top:.5rem;opacity:.8}
 /* ===== 3.2.0-beta.7 F(X) CURVES page (src/ui/fx/fx.js). The sheet itself is white paper with black grid lines, like the LINEAR
    CURVE workbook, in every app theme; the frame around it follows the app theme. ===== */
 #fxws{position:fixed;left:0;right:0;top:var(--topH,52px);bottom:var(--footH,30px);z-index:47;display:none;flex-direction:column;background:var(--c-bg);color:var(--c-tx);font:400 .9375rem/1.45 var(--uf)}
@@ -49553,6 +49667,49 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
    Nothing here touches the simulation engine. ===== */
 (function () {
   const $ = id => document.getElementById(id);
+  /* 3.2.0 retest #54 (user 2026-10-28: the page froze over 1 min with no loading sign): a progress bar over the page while a starting
+     state loads (hmi-op.js anLoadStart) or the logic of the first page is read; show(text), prog(0 ~ 1), hide() */
+  window.lsBusy = (() => {
+    let el = null,
+      t0 = 0,
+      iv = null;
+    const sec = () => Math.round((Date.now() - t0) / 1000) + ' s';
+    return {
+      show(t) {
+        if (!el) {
+          el = document.createElement('div');
+          el.id = 'lsbusy';
+          el.setAttribute('role', 'status');
+          el.setAttribute('aria-live', 'polite');
+          el.innerHTML = '<div class=lsbz><b></b><div class=lsbzbar><i></i></div><small></small></div>';
+          document.body.append(el);
+        }
+        if (!el.hidden && iv) return;
+        t0 = Date.now();
+        el.hidden = false;
+        el.querySelector('b').textContent = t || 'Nilo-load…';
+        el.querySelector('i').style.width = '0%';
+        el.querySelector('i').classList.add('ind');
+        el.querySelector('small').textContent = 'Sandali lang · 0 s';
+        clearInterval(iv);
+        iv = setInterval(() => {
+          if (el && !el.hidden) el.querySelector('small').textContent = 'Sandali lang · ' + sec();
+        }, 1000);
+      },
+      prog(f) {
+        if (!el || el.hidden) return;
+        const i = el.querySelector('i');
+        i.classList.remove('ind');
+        i.style.width = Math.round(Math.max(0, Math.min(0.99, f)) * 100) + '%';
+        el.querySelector('small').textContent = Math.round(Math.max(0, Math.min(0.99, f)) * 100) + ' % · ' + sec();
+      },
+      hide() {
+        clearInterval(iv);
+        iv = null;
+        if (el) el.hidden = true;
+      }
+    };
+  })();
   const E = (t, a, c) => {
     const e = document.createElement(t);
     if (a)
@@ -49811,6 +49968,11 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
     document.querySelectorAll('.ddw.open').forEach(x => x.classList.remove('open'));
     place();
     hint();
+    /* retest #13: no sheet of an earlier visit behind the Training page (training/dock.js home) */
+    if (t === 'training' && window.LS_DOCK && LS_DOCK.home)
+      try {
+        LS_DOCK.home();
+      } catch (e) {}
   }
   const HINTS = {
     operate: 'PLANT VIEW: pick a system on the left · click a controller or valve = faceplate (A / M / R, SV, MV) · Plant ▾ (top right) = plant model and starting state',
@@ -50897,38 +51059,34 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
       return b;
     };
     d.head('Starting state of the plant');
+    /* 3.2.0 retest #54: the starting states load in slices with a progress bar (AN.loadStart); AN._startP = the load, for the
+       callers that go on after it (Practise, the PLANT chip) */
     btn('load150', 'At 150 MW (HMI snapshot)', 'Reset, then every transmitter that is on the control-room HMI snapshots takes its snapshot value (docs/hmi)', () => {
-      try {
-        /* roadmap 3 (SPEC S5 / S6): a starting state is for the plant model ON only: picking one turns the model ON */
-        if (!AN.plantOn && AN.plantSwitch) AN.plantSwitch(true, true);
-        AN.reset();
-        const n = AN.plantLoad150();
-        AN.startState = 'plantLoad150';
-        AN.settle();
-        AN.paint();
-        msg('Plant at 150 MW: ' + n + ' transmitters set from the HMI snapshots. Press Run.');
-        if (window.DITL150)
-          (AN.ades ? AN.ades() : Promise.resolve())
-            .then(() => {
-              const r = DITL150.apply();
-              if (r) msg('Plant at 150 MW: ' + n + ' ABC transmitters from the HMI snapshots, DITL in service (MFT reset). Press Run.');
-            })
-            .catch(() => {});
-      } catch (e) {
-        msg('Could not load the 150 MW state: ' + e.message);
-      }
+      /* roadmap 3 (SPEC S5 / S6): a starting state is for the plant model ON only: picking one turns the model ON */
+      AN._startP = AN.loadStart('150', true).then(
+        n => {
+          AN.settle();
+          AN.paint();
+          msg('Plant at 150 MW: ' + n + ' transmitters set from the HMI snapshots. Press Run.');
+          if (window.DITL150)
+            (AN.ades ? AN.ades() : Promise.resolve())
+              .then(() => {
+                const r = DITL150.apply();
+                if (r) msg('Plant at 150 MW: ' + n + ' ABC transmitters from the HMI snapshots, DITL in service (MFT reset). Press Run.');
+              })
+              .catch(() => {});
+        },
+        e => msg('Could not load the 150 MW state: ' + e.message)
+      );
     });
     btn('loadcold', 'Cold (start-up from zero)', 'Reset, the 150 MW anchors, then the plant cold: drum 0 kg/cm2, water and bed 30 C, feeders and fans stopped, oil valves closed, every controller LOCAL + MANUAL 0 %. Training has the procedure.', () => {
-      try {
-        if (!AN.plantOn && AN.plantSwitch) AN.plantSwitch(true, true);
-        AN.reset();
-        const n = AN.plantCold();
-        AN.startState = 'plantCold';
-        AN.paint();
-        msg('Plant cold: drum 0 kg/cm2, water 30 C, no fire. Press Run, then start the utilities (seawater pump M.3354 and condensate pump M.3350 on ABC-052, FA blower M.3308, diesel oil pump in Field equipment), the fans (Buttons M.3302 / 3303 / 3304), purge, open the oil valves (M.3410 / 3411 = 0) and fire the burners (FICDO1043A / B). ' + n + ' anchors.');
-      } catch (e) {
-        msg('Could not load the cold state: ' + e.message);
-      }
+      AN._startP = AN.loadStart('cold', true).then(
+        n => {
+          AN.paint();
+          msg('Plant cold: drum 0 kg/cm2, water 30 C, no fire. Press Run, then start the utilities (seawater pump M.3354 and condensate pump M.3350 on ABC-052, FA blower M.3308, diesel oil pump in Field equipment), the fans (Buttons M.3302 / 3303 / 3304), purge, open the oil valves (M.3410 / 3411 = 0) and fire the burners (FICDO1043A / B). ' + n + ' anchors.');
+        },
+        e => msg('Could not load the cold state: ' + e.message)
+      );
     });
     d.head('TCS panel (turbine)');
     const tcs = (id, label, title, cmd, arg, ok) =>
@@ -51079,6 +51237,10 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
               const b = $(id);
               if (b) b.click();
               upd();
+              (AN._startP || Promise.resolve()).then(() => {
+                upd();
+                if (!pop.hidden) render();
+              }, upd);
             });
         const t = mwBox('pltgt', Math.round(+(AN.unit && AN.unit.MW) || 0) >= 45 ? Math.round(+AN.unit.MW) : 150);
         t.min = '4.5';
@@ -52375,7 +52537,13 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
       else if (e.kind === 'RST' && (m = /^(.*) = 0$/.exec(e.text))) act.delete(e.sh + '|' + m[1]);
     }
     const AL = window.lsAlarms ? lsAlarms.list() : [];
-    for (const a of AL) if (!a.rtn) act.set(a.k, { t: a.t, text: a.nm + ' ' + a.lv, sh: a.sh, kind: a.kind, ack: a.ack });
+    /* retest #35: the alarms standing at the start of a cold plant (shutdown state) are suppressed: not counted, listed apart */
+    let sup = 0;
+    for (const a of AL)
+      if (!a.rtn) {
+        if (a.sd) sup++;
+        else act.set(a.k, { t: a.t, text: a.nm + ' ' + a.lv, sh: a.sh, kind: a.kind, ack: a.ack });
+      }
     const n = act.size,
       un = AL.filter(a => !a.ack).length,
       /* the newest unacknowledged first (a TRIP before an alarm), else the newest */
@@ -52383,13 +52551,15 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
       last = vals.filter(a => a.ack === false && a.kind === 'TRIP').pop() || vals.filter(a => a.ack === false).pop() || vals.pop();
     P.alarm.classList.toggle('on', n > 0);
     P.aChip.className = 'crchip ' + (n ? 'alm' : 'mut') + (un ? ' unack' : '');
-    P.aChip.textContent = n ? n + (n === 1 ? ' ALARM' : ' ALARMS') + (un ? ' · ' + un + ' NEW' : '') : 'NO ALARM';
+    P.aChip.textContent = (n ? n + (n === 1 ? ' ALARM' : ' ALARMS') + (un ? ' · ' + un + ' NEW' : '') : 'NO ALARM') + (sup ? ' · ' + sup + ' SUPPRESSED' : '');
+    P.aChip.title = sup ? sup + ' alarm' + (sup > 1 ? 's' : '') + ' standing since the plant was loaded (shutdown state): acknowledged and suppressed; each comes back as a new alarm only after it returns to normal' : '';
     /* retest #43 #42: the time says what it is; the full text in the tooltip */
     P.aT.textContent = last && last.t ? 'at ' + last.t : '';
     P.aT.title = 'Simulation time of this alarm';
-    P.aTx.textContent = last ? last.text + ' · ' + last.sh : 'No active alarm or trip';
+    P.aTx.textContent = last ? last.text + ' · ' + last.sh : sup ? 'No active alarm (shutdown alarms suppressed)' : 'No active alarm or trip';
     P.aTx.title = (last ? last.text + ' · ' + last.sh + '\n' : '') + 'Alarm list of the whole DCS (every ABC sheet and the motor trips of the DITL), simulation time. Click the ALARM chip for the list and ACK.';
-    if (P.aList.classList.contains('open') && (n !== P.aN || un !== P.aU)) aFill();
+    if (P.aList.classList.contains('open') && (n !== P.aN || un !== P.aU || sup !== P.aS)) aFill();
+    P.aS = sup;
     P.aN = n;
     P.aU = un;
     const f = userForces().length;
@@ -52411,9 +52581,11 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
   function aFill() {
     const d = $('cralist');
     if (!d || !window.lsAlarms) return;
-    const L = lsAlarms.list().reverse();
+    const A0 = lsAlarms.list().reverse(),
+      L = A0.filter(a => !a.sd),
+      SP = A0.filter(a => a.sd && !a.rtn);
     d.textContent = '';
-    const h = E('div', 'crfh', 'Alarm list (' + L.length + ') · ' + lsAlarms.unacked() + ' not acknowledged');
+    const h = E('div', 'crfh', 'Alarm list (' + L.length + ') · ' + lsAlarms.unacked() + ' not acknowledged' + (SP.length ? ' · ' + SP.length + ' suppressed' : ''));
     const x = E('button', 'crfx', '✕');
     x.title = 'Close';
     x.onclick = () => d.classList.remove('open');
@@ -52428,6 +52600,20 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
       ab.onclick = () => (lsAlarms.ack(a.k), aFill());
       r.append(ab);
       d.append(r);
+    }
+    /* retest #35: the suppressed shutdown alarms, apart and folded */
+    if (SP.length) {
+      const g = document.createElement('details'),
+        sm = document.createElement('summary');
+      sm.textContent = 'Suppressed: ' + SP.length + ' standing since the plant was loaded (shutdown state)';
+      g.className = 'crfsup';
+      g.append(sm);
+      for (const a of SP.slice(0, 300)) {
+        const r = E('div', 'crfr' + (a.kind === 'TRIP' ? ' trip' : ''));
+        r.append(E('span', 'crfs', a.t + ' ' + a.sh), E('span', 'crfn', a.nm), E('span', 'crfv', a.lv));
+        g.append(r);
+      }
+      d.append(g);
     }
     if (lsAlarms.unacked()) {
       const all = E('button', 'crfall', 'ACK ALL');
@@ -56462,12 +56648,21 @@ window.LS_GUIDE = (function () {
   }
   /* start: the plant cold, RUN, step 1 */
   function start(done) {
+    /* 3.2.0 retest #54 (user 2026-10-28: the page froze over 1 min, no loading sign): the cold plant loads in slices with a progress
+       bar (hmi-op.js anLoadStart), then the training starts */
     const go = () => {
+      const ld = AN.loadStart
+        ? AN.loadStart('cold', true)
+        : Promise.resolve().then(() => {
+            if (!AN.plantOn && AN.plantSwitch) AN.plantSwitch(true, true);
+            AN.reset();
+            AN.plantCold();
+            AN.startState = 'plantCold';
+          });
+      ld.catch(() => {}).then(go2);
+    };
+    const go2 = () => {
       try {
-        if (!AN.plantOn && AN.plantSwitch) AN.plantSwitch(true, true);
-        AN.reset();
-        AN.plantCold();
-        AN.startState = 'plantCold';
         AN.settle();
         AN.paint();
       } catch (e) {}
@@ -57407,6 +57602,23 @@ window.LS_GUIDE = (function () {
       if (done) done();
     });
   }
+  /* retest #13 (R4: the DITL-56 vacuum breaker of an earlier visit stayed loaded behind the Training page): opening the Training with
+     no guided start running puts the DITL sheet of the first DCS step (DITL-29A SWP) behind it, quietly (no page switch, no message) */
+  function home() {
+    const g = GD();
+    if (!g || !g.steps || g.on) return;
+    try {
+      const f = g.steps().find(x => (x.a || []).some(a => a.stop && motAddr(a) && MOTOR[motAddr(a)]));
+      const a0 = f && f.a.find(a => a.stop && motAddr(a) && MOTOR[motAddr(a)]);
+      if (!a0) return;
+      const d = String(MOTOR[motAddr(a0)]).replace(/\s*#\w+$/, ''),
+        ss = document.getElementById('shsel'),
+        o = ss && [...ss.options].find(x => new RegExp('\\)' + d + '$').test(x.textContent));
+      if (!o || ss.value === o.value) return;
+      ss.value = o.value;
+      ss.dispatchEvent(new Event('change'));
+    } catch (e) {}
+  }
   function resume() {
     const g = GD();
     if (!g) return;
@@ -58130,7 +58342,7 @@ window.LS_GUIDE = (function () {
   setInterval(() => {
     if (dock && GD() && GD().on && window.AN) ls.set('ls-gdock-spd', +AN.spd || 1);
   }, 5000);
-  window.LS_DOCK = { start, resume, open, stop, layout, fill, interlock, fieldOf, fieldSet, fieldRow, dsel, mst, dmotor, dOf, needNet, leaves, permOf, dpress, dset, dout, runOut, get el() {
+  window.LS_DOCK = { start, resume, home, open, stop, layout, fill, interlock, fieldOf, fieldSet, fieldRow, dsel, mst, dmotor, dOf, needNet, leaves, permOf, dpress, dset, dout, runOut, get el() {
       return dock;
     } };
 })();
@@ -58658,6 +58870,7 @@ window.LS_GUIDE = (function () {
             if (tn > 0) clearNote(was, 'Bagong Gabay mula Cold: nabura ang ' + tn + ' tick');
             const t0 = b ? b.textContent : '';
             const back = () => {
+              if (window.lsBusy) lsBusy.hide();
               if (b) {
                 b.disabled = false;
                 b.textContent = t0;
@@ -58667,8 +58880,10 @@ window.LS_GUIDE = (function () {
               b.disabled = true;
               b.textContent = 'Nilo-load ang Cold…';
             }
-            setTimeout(back, 60000);
-            abcReady(() => (window.LS_DOCK ? LS_DOCK.start(() => (back(), fillTrain())) : back()));
+            setTimeout(back, 300000);
+            /* 3.2.0 retest #54: the progress bar from the click (the logic of the ABC page is read first, then the cold plant loads) */
+            if (window.lsBusy) lsBusy.show('Nilo-load ang Cold plant…');
+            setTimeout(() => abcReady(() => (window.LS_DOCK ? LS_DOCK.start(() => (back(), fillTrain())) : back())), 40);
           }
         }),
         E('button', {
@@ -58688,10 +58903,13 @@ window.LS_GUIDE = (function () {
             abcReady(() => {
               const b = $('loadcold');
               if (b) b.click();
-              if (LV()) LV().reset();
-              /* 3.2.0-beta.21: the simulation runs at once (before: the page stayed in VIEW, the operator had to find RUN) */
-              if (AN.runOn) AN.runOn();
-              goPlant();
+              /* 3.2.0 retest #54: after the cold plant is in (it loads in slices with a progress bar) */
+              (AN._startP || Promise.resolve()).then(() => {
+                if (LV()) LV().reset();
+                /* 3.2.0-beta.21: the simulation runs at once (before: the page stayed in VIEW, the operator had to find RUN) */
+                if (AN.runOn) AN.runOn();
+                goPlant();
+              });
             })
         }),
         E('button', {
@@ -58703,10 +58921,12 @@ window.LS_GUIDE = (function () {
             abcReady(() => {
               const b = $('load150');
               if (b) b.click();
-              const L = LV();
-              if (L) L.reset(L.practice);
-              if (AN.runOn) AN.runOn();
-              if (L) show(L.practice);
+              (AN._startP || Promise.resolve()).then(() => {
+                const L = LV();
+                if (L) L.reset(L.practice);
+                if (AN.runOn) AN.runOn();
+                if (L) show(L.practice);
+              });
             })
         }),
         E('button', {
@@ -60983,10 +61203,17 @@ body.ophmi #anp{display:none!important}
   function almScan() {
     const A = window.AN;
     if (!A || !A.sheets || (A.plantOn && !A.startState)) return;
+    /* retest #54 #35: no scan while a starting state loads in slices (hmi-op.js anLoadStart): the half-loaded plant gave NEW alarms;
+       the first scan after the load starts a new table */
+    if (A._loading) {
+      almScan.reload = true;
+      return;
+    }
     const cs = A.sheets[A.i] || A.sheets[0],
       t = cs && cs.S && cs.S.rt ? cs.S.rt.t : 0;
     /* a plant loaded again: a new table */
-    if (A.startState !== base || t + 1 < lastT) {
+    if (A.startState !== base || t + 1 < lastT || almScan.reload) {
+      almScan.reload = false;
       base = A.startState;
       AT.clear();
       almScan.first = true;
@@ -61023,7 +61250,8 @@ body.ophmi #anp{display:none!important}
       const e = AT.get(k);
       if (!e || e.rtn || e.lv !== x.lv) {
         /* retest #35: the alarms standing when the plant is loaded (a cold unit: no flow, no pressure, the equipment stopped) come
-           acknowledged (shutdown state), as on the DCS after a shutdown: only a NEW alarm flashes */
+           acknowledged and SUPPRESSED (sd: shutdown state, as the alarm suppression of a DCS after a shutdown): not counted in the
+           header, listed apart. Back to normal (the equipment runs) = gone; any later alarm of the same point is a new one */
         AT.set(k, { ...x, t: tfmt(t), ack: first, rtn: false, sd: first });
         if (first) nNew++;
         else add({ rt: { t } }, { name: x.sh }, x.kind, x.nm + ' ' + x.lv);
@@ -61035,7 +61263,7 @@ body.ophmi #anp{display:none!important}
         if (e.ack) AT.delete(k);
         else e.rtn = true;
       }
-    if (first && nNew) add({ rt: { t } }, { name: 'DCS' }, 'ALM', nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing at the start, acknowledged (shutdown state; alarm list: header ALARM chip)');
+    if (first && nNew) add({ rt: { t } }, { name: 'DCS' }, 'ALM', nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing at the start: acknowledged and suppressed (shutdown state; listed apart in the alarm list of the header ALARM chip)');
   }
   function ack(k) {
     const L = k ? [k] : [...AT.keys()];
@@ -61057,6 +61285,8 @@ body.ophmi #anp{display:none!important}
     list: () => [...AT.entries()].map(([k, e]) => ({ k, ...e })),
     ack,
     unacked: () => [...AT.values()].filter(e => !e.ack).length,
+    /* retest #35: the alarms suppressed at the start (shutdown state) */
+    suppressed: () => [...AT.values()].filter(e => e.sd && !e.rtn).length,
     motState,
     /* the state of the motor of a memory address of the ABC sheets (M.3353) or of a DITL drawing name */
     motOf: a => {

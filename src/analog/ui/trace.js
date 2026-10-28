@@ -121,15 +121,12 @@ stepUi();
    drawings' defaults: an undriven transmitter sits at the middle of its range (MSP 75 kg/cm2 = middle of PT-MS1002 0 ~ 150). Only the
    operator's RUN press does this; AN.viewSet (the tests) is unchanged. */
 function coldIfNone() {
-  if (AN.startState || AN.cat !== 'an' || !AN.plantCold) return false;
-  try {
-    AN.reset();
-    AN.plantCold();
-    AN.startState = 'plantCold';
-    return true;
-  } catch (e) {
-    return false;
-  }
+  /* 3.2.0 retest #54: loaded in slices with a progress bar (hmi-op.js anLoadStart); before, the page froze for about a minute */
+  if (AN.startState || AN.cat !== 'an' || !AN.loadStart) return null;
+  return AN.loadStart('cold').then(
+    () => true,
+    () => false
+  );
 }
 /* 3.2.0-beta.18 (VIEW/TRACE audit, user 2026-10-23: "patay pa naman ang boiler mo ... bkt may value na si MSP?"): the ABC page
    opened by the operator, before any starting state is picked, showed the drawings' defaults in VIEW too (MSP 75 kg/cm2, drum level
@@ -145,10 +142,14 @@ function coldShow() {
   /* 3.2.0-beta.40 (roadmap 2, user 2026-10-26: "cold start = true physical state of a cold plant"): with the plant model ON a kept
      session no longer leaves the drawings' defaults (header MSP 75 kg/cm2, drum level -566 mm with "Unit · not started"): RUN starts
      the plant cold from a Reset anyway (coldIfNone), so the page shows that cold plant at once. Plant model OFF: kept as it was */
-  if ((kept && !AN.plantOn) || !coldIfNone()) return;
-  settle();
-  paint();
-  panelUpd(true);
+  const p = kept && !AN.plantOn ? null : coldIfNone();
+  if (p)
+    p.then(ok => {
+      if (!ok) return;
+      settle();
+      paint();
+      panelUpd(true);
+    });
 }
 /* the operator's own click / key (a script driving the page, the tests, sends no trusted event) */
 ['pointerdown', 'keydown'].forEach(t =>
@@ -161,16 +162,18 @@ function coldShow() {
   )
 );
 const COLD_MSG = 'No starting state was picked: the plant starts COLD (boiler off, drum 0 kg/cm2, no fire, fans stopped). Pick Plant ▾ (top right) > Unit for 150 MW.';
-bRun.onclick = () => {
-  const c = !AN.run && coldIfNone();
+const runGo = c => {
   if (AN.view) {
     viewSet(false);
     setRun(true);
-    if (c) msg(COLD_MSG);
-    return;
-  }
-  setRun(!AN.run);
+  } else setRun(!AN.run);
   if (c) msg(COLD_MSG);
+};
+bRun.onclick = () => {
+  if (AN._loadP) return;
+  const p = !AN.run && coldIfNone();
+  if (p) p.then(runGo);
+  else runGo(false);
 };
 /* 3.2.0-beta.21 (Training, user 2026-10-24: "irrun mo ba"): the simulation on from a script of the page (the Training start), as the Run button */
 AN.runOn = () => {

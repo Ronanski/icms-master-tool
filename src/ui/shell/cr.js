@@ -246,7 +246,13 @@
       else if (e.kind === 'RST' && (m = /^(.*) = 0$/.exec(e.text))) act.delete(e.sh + '|' + m[1]);
     }
     const AL = window.lsAlarms ? lsAlarms.list() : [];
-    for (const a of AL) if (!a.rtn) act.set(a.k, { t: a.t, text: a.nm + ' ' + a.lv, sh: a.sh, kind: a.kind, ack: a.ack });
+    /* retest #35: the alarms standing at the start of a cold plant (shutdown state) are suppressed: not counted, listed apart */
+    let sup = 0;
+    for (const a of AL)
+      if (!a.rtn) {
+        if (a.sd) sup++;
+        else act.set(a.k, { t: a.t, text: a.nm + ' ' + a.lv, sh: a.sh, kind: a.kind, ack: a.ack });
+      }
     const n = act.size,
       un = AL.filter(a => !a.ack).length,
       /* the newest unacknowledged first (a TRIP before an alarm), else the newest */
@@ -254,13 +260,15 @@
       last = vals.filter(a => a.ack === false && a.kind === 'TRIP').pop() || vals.filter(a => a.ack === false).pop() || vals.pop();
     P.alarm.classList.toggle('on', n > 0);
     P.aChip.className = 'crchip ' + (n ? 'alm' : 'mut') + (un ? ' unack' : '');
-    P.aChip.textContent = n ? n + (n === 1 ? ' ALARM' : ' ALARMS') + (un ? ' · ' + un + ' NEW' : '') : 'NO ALARM';
+    P.aChip.textContent = (n ? n + (n === 1 ? ' ALARM' : ' ALARMS') + (un ? ' · ' + un + ' NEW' : '') : 'NO ALARM') + (sup ? ' · ' + sup + ' SUPPRESSED' : '');
+    P.aChip.title = sup ? sup + ' alarm' + (sup > 1 ? 's' : '') + ' standing since the plant was loaded (shutdown state): acknowledged and suppressed; each comes back as a new alarm only after it returns to normal' : '';
     /* retest #43 #42: the time says what it is; the full text in the tooltip */
     P.aT.textContent = last && last.t ? 'at ' + last.t : '';
     P.aT.title = 'Simulation time of this alarm';
-    P.aTx.textContent = last ? last.text + ' · ' + last.sh : 'No active alarm or trip';
+    P.aTx.textContent = last ? last.text + ' · ' + last.sh : sup ? 'No active alarm (shutdown alarms suppressed)' : 'No active alarm or trip';
     P.aTx.title = (last ? last.text + ' · ' + last.sh + '\n' : '') + 'Alarm list of the whole DCS (every ABC sheet and the motor trips of the DITL), simulation time. Click the ALARM chip for the list and ACK.';
-    if (P.aList.classList.contains('open') && (n !== P.aN || un !== P.aU)) aFill();
+    if (P.aList.classList.contains('open') && (n !== P.aN || un !== P.aU || sup !== P.aS)) aFill();
+    P.aS = sup;
     P.aN = n;
     P.aU = un;
     const f = userForces().length;
@@ -282,9 +290,11 @@
   function aFill() {
     const d = $('cralist');
     if (!d || !window.lsAlarms) return;
-    const L = lsAlarms.list().reverse();
+    const A0 = lsAlarms.list().reverse(),
+      L = A0.filter(a => !a.sd),
+      SP = A0.filter(a => a.sd && !a.rtn);
     d.textContent = '';
-    const h = E('div', 'crfh', 'Alarm list (' + L.length + ') · ' + lsAlarms.unacked() + ' not acknowledged');
+    const h = E('div', 'crfh', 'Alarm list (' + L.length + ') · ' + lsAlarms.unacked() + ' not acknowledged' + (SP.length ? ' · ' + SP.length + ' suppressed' : ''));
     const x = E('button', 'crfx', '✕');
     x.title = 'Close';
     x.onclick = () => d.classList.remove('open');
@@ -299,6 +309,20 @@
       ab.onclick = () => (lsAlarms.ack(a.k), aFill());
       r.append(ab);
       d.append(r);
+    }
+    /* retest #35: the suppressed shutdown alarms, apart and folded */
+    if (SP.length) {
+      const g = document.createElement('details'),
+        sm = document.createElement('summary');
+      sm.textContent = 'Suppressed: ' + SP.length + ' standing since the plant was loaded (shutdown state)';
+      g.className = 'crfsup';
+      g.append(sm);
+      for (const a of SP.slice(0, 300)) {
+        const r = E('div', 'crfr' + (a.kind === 'TRIP' ? ' trip' : ''));
+        r.append(E('span', 'crfs', a.t + ' ' + a.sh), E('span', 'crfn', a.nm), E('span', 'crfv', a.lv));
+        g.append(r);
+      }
+      d.append(g);
     }
     if (lsAlarms.unacked()) {
       const all = E('button', 'crfall', 'ACK ALL');

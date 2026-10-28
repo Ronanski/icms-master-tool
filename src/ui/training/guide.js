@@ -1374,12 +1374,21 @@ window.LS_GUIDE = (function () {
   }
   /* start: the plant cold, RUN, step 1 */
   function start(done) {
+    /* 3.2.0 retest #54 (user 2026-10-28: the page froze over 1 min, no loading sign): the cold plant loads in slices with a progress
+       bar (hmi-op.js anLoadStart), then the training starts */
     const go = () => {
+      const ld = AN.loadStart
+        ? AN.loadStart('cold', true)
+        : Promise.resolve().then(() => {
+            if (!AN.plantOn && AN.plantSwitch) AN.plantSwitch(true, true);
+            AN.reset();
+            AN.plantCold();
+            AN.startState = 'plantCold';
+          });
+      ld.catch(() => {}).then(go2);
+    };
+    const go2 = () => {
       try {
-        if (!AN.plantOn && AN.plantSwitch) AN.plantSwitch(true, true);
-        AN.reset();
-        AN.plantCold();
-        AN.startState = 'plantCold';
         AN.settle();
         AN.paint();
       } catch (e) {}

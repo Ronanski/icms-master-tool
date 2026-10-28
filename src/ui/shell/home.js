@@ -521,6 +521,7 @@
             if (tn > 0) clearNote(was, 'Bagong Gabay mula Cold: nabura ang ' + tn + ' tick');
             const t0 = b ? b.textContent : '';
             const back = () => {
+              if (window.lsBusy) lsBusy.hide();
               if (b) {
                 b.disabled = false;
                 b.textContent = t0;
@@ -530,8 +531,10 @@
               b.disabled = true;
               b.textContent = 'Nilo-load ang Cold…';
             }
-            setTimeout(back, 60000);
-            abcReady(() => (window.LS_DOCK ? LS_DOCK.start(() => (back(), fillTrain())) : back()));
+            setTimeout(back, 300000);
+            /* 3.2.0 retest #54: the progress bar from the click (the logic of the ABC page is read first, then the cold plant loads) */
+            if (window.lsBusy) lsBusy.show('Nilo-load ang Cold plant…');
+            setTimeout(() => abcReady(() => (window.LS_DOCK ? LS_DOCK.start(() => (back(), fillTrain())) : back())), 40);
           }
         }),
         E('button', {
@@ -551,10 +554,13 @@
             abcReady(() => {
               const b = $('loadcold');
               if (b) b.click();
-              if (LV()) LV().reset();
-              /* 3.2.0-beta.21: the simulation runs at once (before: the page stayed in VIEW, the operator had to find RUN) */
-              if (AN.runOn) AN.runOn();
-              goPlant();
+              /* 3.2.0 retest #54: after the cold plant is in (it loads in slices with a progress bar) */
+              (AN._startP || Promise.resolve()).then(() => {
+                if (LV()) LV().reset();
+                /* 3.2.0-beta.21: the simulation runs at once (before: the page stayed in VIEW, the operator had to find RUN) */
+                if (AN.runOn) AN.runOn();
+                goPlant();
+              });
             })
         }),
         E('button', {
@@ -566,10 +572,12 @@
             abcReady(() => {
               const b = $('load150');
               if (b) b.click();
-              const L = LV();
-              if (L) L.reset(L.practice);
-              if (AN.runOn) AN.runOn();
-              if (L) show(L.practice);
+              (AN._startP || Promise.resolve()).then(() => {
+                const L = LV();
+                if (L) L.reset(L.practice);
+                if (AN.runOn) AN.runOn();
+                if (L) show(L.practice);
+              });
             })
         }),
         E('button', {

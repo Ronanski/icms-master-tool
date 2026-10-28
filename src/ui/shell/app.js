@@ -4,6 +4,49 @@
    Nothing here touches the simulation engine. ===== */
 (function () {
   const $ = id => document.getElementById(id);
+  /* 3.2.0 retest #54 (user 2026-10-28: the page froze over 1 min with no loading sign): a progress bar over the page while a starting
+     state loads (hmi-op.js anLoadStart) or the logic of the first page is read; show(text), prog(0 ~ 1), hide() */
+  window.lsBusy = (() => {
+    let el = null,
+      t0 = 0,
+      iv = null;
+    const sec = () => Math.round((Date.now() - t0) / 1000) + ' s';
+    return {
+      show(t) {
+        if (!el) {
+          el = document.createElement('div');
+          el.id = 'lsbusy';
+          el.setAttribute('role', 'status');
+          el.setAttribute('aria-live', 'polite');
+          el.innerHTML = '<div class=lsbz><b></b><div class=lsbzbar><i></i></div><small></small></div>';
+          document.body.append(el);
+        }
+        if (!el.hidden && iv) return;
+        t0 = Date.now();
+        el.hidden = false;
+        el.querySelector('b').textContent = t || 'Nilo-load…';
+        el.querySelector('i').style.width = '0%';
+        el.querySelector('i').classList.add('ind');
+        el.querySelector('small').textContent = 'Sandali lang · 0 s';
+        clearInterval(iv);
+        iv = setInterval(() => {
+          if (el && !el.hidden) el.querySelector('small').textContent = 'Sandali lang · ' + sec();
+        }, 1000);
+      },
+      prog(f) {
+        if (!el || el.hidden) return;
+        const i = el.querySelector('i');
+        i.classList.remove('ind');
+        i.style.width = Math.round(Math.max(0, Math.min(0.99, f)) * 100) + '%';
+        el.querySelector('small').textContent = Math.round(Math.max(0, Math.min(0.99, f)) * 100) + ' % · ' + sec();
+      },
+      hide() {
+        clearInterval(iv);
+        iv = null;
+        if (el) el.hidden = true;
+      }
+    };
+  })();
   const E = (t, a, c) => {
     const e = document.createElement(t);
     if (a)
@@ -262,6 +305,11 @@
     document.querySelectorAll('.ddw.open').forEach(x => x.classList.remove('open'));
     place();
     hint();
+    /* retest #13: no sheet of an earlier visit behind the Training page (training/dock.js home) */
+    if (t === 'training' && window.LS_DOCK && LS_DOCK.home)
+      try {
+        LS_DOCK.home();
+      } catch (e) {}
   }
   const HINTS = {
     operate: 'PLANT VIEW: pick a system on the left · click a controller or valve = faceplate (A / M / R, SV, MV) · Plant ▾ (top right) = plant model and starting state',
@@ -1348,38 +1396,34 @@
       return b;
     };
     d.head('Starting state of the plant');
+    /* 3.2.0 retest #54: the starting states load in slices with a progress bar (AN.loadStart); AN._startP = the load, for the
+       callers that go on after it (Practise, the PLANT chip) */
     btn('load150', 'At 150 MW (HMI snapshot)', 'Reset, then every transmitter that is on the control-room HMI snapshots takes its snapshot value (docs/hmi)', () => {
-      try {
-        /* roadmap 3 (SPEC S5 / S6): a starting state is for the plant model ON only: picking one turns the model ON */
-        if (!AN.plantOn && AN.plantSwitch) AN.plantSwitch(true, true);
-        AN.reset();
-        const n = AN.plantLoad150();
-        AN.startState = 'plantLoad150';
-        AN.settle();
-        AN.paint();
-        msg('Plant at 150 MW: ' + n + ' transmitters set from the HMI snapshots. Press Run.');
-        if (window.DITL150)
-          (AN.ades ? AN.ades() : Promise.resolve())
-            .then(() => {
-              const r = DITL150.apply();
-              if (r) msg('Plant at 150 MW: ' + n + ' ABC transmitters from the HMI snapshots, DITL in service (MFT reset). Press Run.');
-            })
-            .catch(() => {});
-      } catch (e) {
-        msg('Could not load the 150 MW state: ' + e.message);
-      }
+      /* roadmap 3 (SPEC S5 / S6): a starting state is for the plant model ON only: picking one turns the model ON */
+      AN._startP = AN.loadStart('150', true).then(
+        n => {
+          AN.settle();
+          AN.paint();
+          msg('Plant at 150 MW: ' + n + ' transmitters set from the HMI snapshots. Press Run.');
+          if (window.DITL150)
+            (AN.ades ? AN.ades() : Promise.resolve())
+              .then(() => {
+                const r = DITL150.apply();
+                if (r) msg('Plant at 150 MW: ' + n + ' ABC transmitters from the HMI snapshots, DITL in service (MFT reset). Press Run.');
+              })
+              .catch(() => {});
+        },
+        e => msg('Could not load the 150 MW state: ' + e.message)
+      );
     });
     btn('loadcold', 'Cold (start-up from zero)', 'Reset, the 150 MW anchors, then the plant cold: drum 0 kg/cm2, water and bed 30 C, feeders and fans stopped, oil valves closed, every controller LOCAL + MANUAL 0 %. Training has the procedure.', () => {
-      try {
-        if (!AN.plantOn && AN.plantSwitch) AN.plantSwitch(true, true);
-        AN.reset();
-        const n = AN.plantCold();
-        AN.startState = 'plantCold';
-        AN.paint();
-        msg('Plant cold: drum 0 kg/cm2, water 30 C, no fire. Press Run, then start the utilities (seawater pump M.3354 and condensate pump M.3350 on ABC-052, FA blower M.3308, diesel oil pump in Field equipment), the fans (Buttons M.3302 / 3303 / 3304), purge, open the oil valves (M.3410 / 3411 = 0) and fire the burners (FICDO1043A / B). ' + n + ' anchors.');
-      } catch (e) {
-        msg('Could not load the cold state: ' + e.message);
-      }
+      AN._startP = AN.loadStart('cold', true).then(
+        n => {
+          AN.paint();
+          msg('Plant cold: drum 0 kg/cm2, water 30 C, no fire. Press Run, then start the utilities (seawater pump M.3354 and condensate pump M.3350 on ABC-052, FA blower M.3308, diesel oil pump in Field equipment), the fans (Buttons M.3302 / 3303 / 3304), purge, open the oil valves (M.3410 / 3411 = 0) and fire the burners (FICDO1043A / B). ' + n + ' anchors.');
+        },
+        e => msg('Could not load the cold state: ' + e.message)
+      );
     });
     d.head('TCS panel (turbine)');
     const tcs = (id, label, title, cmd, arg, ok) =>
@@ -1530,6 +1574,10 @@
               const b = $(id);
               if (b) b.click();
               upd();
+              (AN._startP || Promise.resolve()).then(() => {
+                upd();
+                if (!pop.hidden) render();
+              }, upd);
             });
         const t = mwBox('pltgt', Math.round(+(AN.unit && AN.unit.MW) || 0) >= 45 ? Math.round(+AN.unit.MW) : 150);
         t.min = '4.5';

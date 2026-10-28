@@ -183,16 +183,19 @@
     if (d) d.remove();
     d = document.createElement('div');
     d.id = 'updask';
+    /* 3.2.0 retest #23 (R4: the PC kept the old Beta with no clear notice): a banner across the top of the page, over every page,
+       until Update now or Later */
+    d.setAttribute('role', 'alert');
     d.style.cssText =
-      'position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:99997;background:var(--c-accbg);color:#fff;border:1px solid var(--c-acc);border-radius:10px;padding:12px 16px;font:15px/1.4 system-ui;max-width:92vw;box-shadow:0 4px 20px #0008';
+      'position:fixed;left:0;right:0;top:0;z-index:100001;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 14px;background:#b45309;color:#fff;border-bottom:2px solid #fbbf24;padding:10px 16px;font:15px/1.4 system-ui;box-shadow:0 4px 20px #0008';
     d.innerHTML =
-      '<b>New version available: ' +
-      v +
-      '</b> (' +
+      '<span><b>New ' +
       (beta ? 'Beta' : 'Stable') +
-      ')<br>Installed: ' +
+      ' available: ' +
+      v +
+      '</b> · installed: ' +
       T +
-      '. Update now?<br><span id=updbs style="display:inline-flex;gap:8px;margin-top:8px"></span>';
+      '. Update now to test the same build.</span><span id=updbs style="display:inline-flex;gap:8px"></span>';
     function bt(t, f, c) {
       var b = document.createElement('button');
       b.textContent = t;
@@ -305,6 +308,10 @@
         else g.append(b);
       }
       check(false);
+      /* 3.2.0 retest #23: a Beta published while the app is open is announced too (every 10 min) */
+      setInterval(function () {
+        if (!document.getElementById('updask')) check(false);
+      }, 600000);
     }, 1500);
   });
 })();

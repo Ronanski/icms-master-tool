@@ -340,6 +340,9 @@ function linksOf(sh) {
   return out;
 }
 function actSet(sh) {
+  /* 3.2.0 retest #54: kept while a starting state loads (hmi-op.js anGenRun: ~2900 steps of the same sets) */
+  const c = AN._asc && AN._asc.get(sh);
+  if (c) return c;
   const set = [sh],
     seen = new Set([sh]),
     grow = () => {
@@ -370,6 +373,7 @@ function actSet(sh) {
     }
   }
   grow();
+  if (AN._asc) AN._asc.set(sh, set);
   return set;
 }
 /* 2.2.0-beta.13 (CLAUDE.md rule 1: one address = one signal in the whole DCS). A digital INPUT of the drawing (I.xxxx, M.xxxx,

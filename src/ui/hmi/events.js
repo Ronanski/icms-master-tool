@@ -127,10 +127,17 @@
   function almScan() {
     const A = window.AN;
     if (!A || !A.sheets || (A.plantOn && !A.startState)) return;
+    /* retest #54 #35: no scan while a starting state loads in slices (hmi-op.js anLoadStart): the half-loaded plant gave NEW alarms;
+       the first scan after the load starts a new table */
+    if (A._loading) {
+      almScan.reload = true;
+      return;
+    }
     const cs = A.sheets[A.i] || A.sheets[0],
       t = cs && cs.S && cs.S.rt ? cs.S.rt.t : 0;
     /* a plant loaded again: a new table */
-    if (A.startState !== base || t + 1 < lastT) {
+    if (A.startState !== base || t + 1 < lastT || almScan.reload) {
+      almScan.reload = false;
       base = A.startState;
       AT.clear();
       almScan.first = true;
@@ -167,7 +174,8 @@
       const e = AT.get(k);
       if (!e || e.rtn || e.lv !== x.lv) {
         /* retest #35: the alarms standing when the plant is loaded (a cold unit: no flow, no pressure, the equipment stopped) come
-           acknowledged (shutdown state), as on the DCS after a shutdown: only a NEW alarm flashes */
+           acknowledged and SUPPRESSED (sd: shutdown state, as the alarm suppression of a DCS after a shutdown): not counted in the
+           header, listed apart. Back to normal (the equipment runs) = gone; any later alarm of the same point is a new one */
         AT.set(k, { ...x, t: tfmt(t), ack: first, rtn: false, sd: first });
         if (first) nNew++;
         else add({ rt: { t } }, { name: x.sh }, x.kind, x.nm + ' ' + x.lv);
@@ -179,7 +187,7 @@
         if (e.ack) AT.delete(k);
         else e.rtn = true;
       }
-    if (first && nNew) add({ rt: { t } }, { name: 'DCS' }, 'ALM', nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing at the start, acknowledged (shutdown state; alarm list: header ALARM chip)');
+    if (first && nNew) add({ rt: { t } }, { name: 'DCS' }, 'ALM', nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing at the start: acknowledged and suppressed (shutdown state; listed apart in the alarm list of the header ALARM chip)');
   }
   function ack(k) {
     const L = k ? [k] : [...AT.keys()];
@@ -201,6 +209,8 @@
     list: () => [...AT.entries()].map(([k, e]) => ({ k, ...e })),
     ack,
     unacked: () => [...AT.values()].filter(e => !e.ack).length,
+    /* retest #35: the alarms suppressed at the start (shutdown state) */
+    suppressed: () => [...AT.values()].filter(e => e.sd && !e.rtn).length,
     motState,
     /* the state of the motor of a memory address of the ABC sheets (M.3353) or of a DITL drawing name */
     motOf: a => {
