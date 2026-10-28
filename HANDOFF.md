@@ -26,6 +26,7 @@
 - Plant chip: OFF | Unit lang; starting state: Cold o 150 MW lang. Plant model ON na walang starting state: header "—", ang ABC page ay bumubukas na Cold.
 
 ## Susunod na gagawin (roadmap sa `docs/SPEC.md` seksyon 3)
+0. 2026-10-28 1:20 PM PHT: **Beta 3.2.0-beta.43** (build 7b1d18c) = #13 (walang drawing ng lumang sheet sa likod ng Home / Training). HINDI nasubok.
 0. 2026-10-28 1:08 PM PHT: **Beta 3.2.0-beta.42** (build 283da5c) = retest 5 fixes. Bagong rule ng user: AUTOMATIC ang Beta (bawat batch = bagong Beta number); Stable lang ang kailangan ng GO STABLE. HINDI nasubok; live test ng user ang susunod.
 0. 2026-10-28 12:45 PM PHT: **Beta 3.2.0-beta.41** (build e9929bf, GO BETA ng user) = lahat ng bukas na findings ng retest 4 (#54–#58, #35, #13, #23, #42, #38, #9; table sa UPDATE_REPORT). Build at check lang; HINDI nasubok. Susunod: live test ng user.
 0. 2026-10-28 ~12:00 PM PHT: **Beta 3.2.0-beta.40** (build id sa status bar) = lahat ng 29 findings ng retest 3 (table sa UPDATE_REPORT). Build at check lang; HINDI nasubok. Susunod: live test ng user mula Step 1, isang hakbang bawat G.
