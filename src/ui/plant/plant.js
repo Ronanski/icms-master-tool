@@ -171,7 +171,7 @@
   }
   /* the transmitter tag of an indicator tag: TIBR11302 -> TTBR11302 / TEBR11302; FIQMS1031 -> FTMS1031 */
   const tx = k => {
-    const m = /^(D?P|T|F|L|A|S|E|Z|W|H|J)I(?:Q|C)?(.*)$/.exec(k);
+    const m = /^(D?P|T|F|L|A|S|E|Z|W|H|J|I)I(?:Q|C)?(.*)$/.exec(k); /* R9 #60: IIF1056 -> ITF1056 (IT-F1056, AI0453 IDF current) */
     return m ? [m[1] + 'T' + m[2], m[1] + 'E' + m[2]] : [];
   };
   /* 2.2.0-beta.19: a reference written on the item (systems.js `ref`): 'SHEET|LABEL' = the net of that sheet with that label
@@ -179,11 +179,16 @@
      For the values and flags that the HMI draws without a tag (033 CCS OPERATION, the header bar) */
   function byRef(ref) {
     if (!ref || !IX) return null;
-    let m = /^(pv|mv):(.+)$/.exec(ref);
+    /* R9 #60: 'unit:Tb' = a state of the unit model (the furnace temperature averages of 007 = the bed temperature of the model) */
+    if (/^unit:\w+$/.test(ref)) return { k: 'unit', f: ref.slice(5), how: 'plant model (unit.js ' + ref.slice(5) + ')' };
+    let m = /^(pv|mv|sv):(.+)$/.exec(ref);
     if (m) {
       const c = IX.ctl.get(m[2]),
         b = IX.man.get(m[2]);
+      /* R9 #60: 'sv:TAG' = the set value of a controller (the R-SV of the SAF / PAF flow and of the O2 control on 007) */
+      if (c && m[1] === 'sv') return c.c.q && c.c.q.sv != null ? { k: 'net', how: 'SV of ' + m[2], sh: c.sh, n: c.c.q.sv } : null;
       if (c) return { k: 'net', how: m[1].toUpperCase() + ' of ' + m[2], sh: c.sh, n: m[1] === 'pv' ? c.c.q.pv : c.c.out };
+      if (m[1] === 'sv') return null;
       if (b) {
         const S = shOf(b.sh).S,
           pvn = IX.pv.get(N(m[2]));
@@ -223,7 +228,12 @@
       return b ? { k: 'man', sh: b.sh, b: b.b, how: 'MAN station', pv: IX.pv.get(k) || null } : null;
     }
     if (it.t === 'val') {
-      if (/AVERAGE/i.test(it.v || '')) return null;
+      /* R9 #60: "TIFA1086/7 AVERAGE" = the average of the two transmitters (TIFA1086, TIFA1087), each linked as a value */
+      if (/AVERAGE/i.test(it.v || '')) {
+        const mm = /^([A-Z]+?)(\d+)\/(\d+)$/.exec(String(it.tag)),
+          L2 = mm ? [mm[1] + mm[2], mm[1] + mm[2].slice(0, mm[2].length - mm[3].length) + mm[3]].map(x => resolve({ t: 'val', tag: x })) : [];
+        return L2.length === 2 && L2.every(x => x && x.k === 'net') ? { k: 'avg', L: L2, how: 'average of ' + it.tag } : null;
+      }
       /* 2.2.0-beta.14: a state of the unit model that has no DCS transmitter (bed temperature, water temperature, oil of the burners) */
       if (/^UNIT\./.test(String(it.tag))) return { k: 'unit', f: String(it.tag).slice(5), how: 'plant model (unit.js)' };
       if (IX.pv.has(k)) return Object.assign({ k: 'net', how: it.tag + '.PV' }, IX.pv.get(k));
@@ -320,6 +330,9 @@
         } else if (r.k === 'unit') {
           const U = window.AN && AN.unit;
           o.set(U && U.on && isFinite(U[r.f]) ? { v: +U[r.f], r } : null);
+        } else if (r.k === 'avg') {
+          const xs = r.L.map(netVal).filter(x => x != null && isFinite(x));
+          o.set(xs.length ? { v: xs.reduce((a, b) => a + b, 0) / xs.length, r } : null);
         } else if (r.k === 'mv') {
           const S = shOf(r.sh).S;
           o.set({ v: S.rt.v[r.c.out], r });

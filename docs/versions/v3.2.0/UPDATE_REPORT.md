@@ -1099,3 +1099,25 @@ Bakit hindi tumama ang dating check: binabasa nito ang estado sa loob ng app (ha
 | 60 | 72 sa 121 item ng 007 ay walang signal sa ABC drawing at walang punto sa plant model | DRUM LEVEL = PV ng LICBR1001 (007: 50 / 121 na ngayon; isa pa sa ibang screen). Ang iba (flue gas temp / press ng economizer / APH / ESP, fan current, LOP, gas bias damper) ay WALA sa ABC drawings at sa plant model: "—" pa rin. Kailangan ng dagdag na plant model (flue gas path) | systems.js |
 
 Sinubok: totoong pindot, 1366 × 768, dalawang pasada nang hindi nililinis ang storage; per-linyang "pindot → nakita" sa ulat ng thread. Hindi sinubok: buong Cold → 150 MW.
+
+## 3.2.0-beta.47 (Beta, 2026-10-28) — retest 9 (R9), 19 findings
+
+Check: totoong pindot (persistent profile, "Gabay: Cold" 2 beses), Hakbang 1 → 20 lang (hindi ang buong start-up). Bawat linya: pindot → nakita, nasa `/mnt/project-files/beta47/CHECK-beta47.md`.
+
+| # | Ugat | Ayos | Saan |
+|---|---|---|---|
+| 79 | Ang DITL-43 (air preheater) ay walang MOR- / MIR- label; ang "INVERTER PANEL" box ang motor, kaya hindi umaandar ang START | Inverter model: START → RUNNING (row 9) at speed rows pagkalipas ng 2 s; STOP o NOT TRIP = 0 → STOP | 05-overlay-interaction.js, world.js, 07-app-events.js |
+| 80 | Ang "NOT TRIP" ay binasa bilang trip (alarm kahit malusog) | Alarm / TRIP event lang kapag ang NOT TRIP ay bumagsak sa 0 | world.js, events.js |
+| 77 | Walang lube / control oil value at walang OIL lamp para sa TCS | TCS oil: lube 6.1, bearing 1.4, control oil 148, MOT vacuum −35; lamp OIL = MOP / COP (ang dating OIL = BRNR) | tcs.js, dock.js |
+| 71 | Ang AUTO ticks ay binabasa lang sa ABC page | Binabasa rin sa DITL; SWBP = 2 pump (SOP) | live.js, guide.js |
+| 74, 81, 82, 83 | Walang Tag / Normal / Alarm / Trip / NOTE ng SOP sa dock | Bagong `pr-ope-5002-lim.js` (502 item, mula sa table ng PR-OPE-5002); Bantayan "SOP · …" rows; NOTE = note na walang checkbox; tag na may slashed zero | extract_limits.py, dock.js, dock.css |
+| 78 | Ang ABC-053 ay walang `.REM` ng TICLO1002 | Hakbang 14 = TICLO1002 sa AUTO (hawak ng DCS), may faceplate button | guide.js, live.js |
+| 84, 85 | Iisang pangkalahatang "Pre-start check" para sa 4 na section | 4 na hakbang (sec 13 ~ 16), bawat isa may "Gawin:" at sariling "Bakit?" | guide.js |
+| 73 | Sumusunod ang gitna sa susunod na makina kahit tapos na ang hakbang | Lilipat lang habang kailangan pa ng pump; tapos = bumalik sa unang tumatakbong pump | dock.js |
+| 75 | Ang "naka-PAUSE" na babala ay nagtatago ng DITL ng local compressor | Bawat local button ay may DITL sheet (113 / 114) | dock.js, guide.js |
+| 76 | Ang interlock ng IA dryer ay naghalo ng REMOTE row ng PA dryer (iisang DITL-45) | Sinasala ayon sa makina ng output row; ang FIELD button ay nagse-set ng lahat ng row ng iisang address | dock.js |
+| 70 | Hindi nawawala ang "⚠ 0 / n" | Nawawala kapag tapos ang BAGO o tumatakbo ang motor; kung hindi, ina-update ang bilang | dock.js |
+| 72 | Walang pabalik | "‹ Nakaraan" button sa ✓ TAPOS row | dock.js, dock.css |
+| 42 | Naputol ang "Events" sa header | Lumiliit muna ang alarm text at search | app.css |
+| 60 | 50 / 121 lang ang live sa 007 | 61 / 121 (gas bias damper, R-SV, IDF coupling, furnace average); "—" = walang model | plant.js, systems.js |
+| 23 | Hindi masubok dito (screen ng user) | — | — |

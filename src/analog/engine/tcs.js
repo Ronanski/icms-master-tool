@@ -535,6 +535,10 @@ function tcsState() {
     Tcvo: c.Tcvo,
     Tx: c.Tx,
     sexp: c.sexp,
+    /* R9 #77: the oil pressures of the TCS panel (PR-OPE-5002 sections 14 / 16 operating limits): MOP (lop) running = lube oil
+       6.1 kg/cm2g (5.6 ~ 6.6), bearing oil 1.4 kg/cm2g (PGLO1008 > 1.05, the EOP starts at <= 1.05); COP (eh) = control oil 148 kg/cm2g
+       (133 ~ 163); the vapour extractor = main oil tank vacuum -35 mmH2O (PGLO1920 -20 ~ -50). Stopped: 0 */
+    oil: { lube: c.lop ? 6.1 : 0, brg: c.lop ? 1.4 : 0, ctl: c.eh ? 148 : 0, vac: c.vex ? -35 : 0 },
     aux: { lop: c.lop, eh: c.eh, vex: c.vex, tg: c.tg, asv: c.asv, gland: c.gland, vb: c.vb, ej: c.ej, hsp: c.hsp, auto: c.auto },
     crit: C,
     next: c.cur < 0 && c.step < 7 ? tcsMiss(U, TCS_A[Math.min(7, c.step + 1)] || []) : ''

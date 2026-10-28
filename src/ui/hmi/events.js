@@ -108,6 +108,19 @@
     TRO.set(s, o);
     return o;
   }
+  const NTS = new Set(),
+    NTO = new WeakMap();
+  function ntOut(s) {
+    let o = NTO.get(s);
+    if (o !== undefined && (!o || o.nl === s.nl)) return o && o.x;
+    o = { nl: s.nl, x: null };
+    try {
+      const x = (DUI.outs(s) || []).find(q => /\bNOT\s+TRIP\b/.test(String(q.name || '')));
+      if (x) o.x = { row: x.row, name: String(x.name).replace(/^Output row \d+ · /, '').replace(/\s*·.*$/, '').replace(/\s*\bNOT\s+TRIP\b/, '').trim() };
+    } catch (e) {}
+    NTO.set(s, o);
+    return o.x;
+  }
   const dSheets = () => (typeof S !== 'undefined' && S.sheets ? S.sheets.concat((window.WORLD && WORLD.inst) || []) : []);
   const dnm = s => String((s && s.name) || '').replace(/^\(\d+\)/, '');
   /* the state of a motor drawing: 'TRIP' / 'RUN' / 'STOP' (null: no motor drawing, or the one world not built). The last state is
@@ -174,6 +187,7 @@
       almScan.reload = false;
       base = A.startState;
       AT.clear();
+      NTS.clear();
       for (const g in grpT) delete grpT[g];
       almScan.first = true;
     }
@@ -203,6 +217,20 @@
             nm: o.trip ? o.trip.name.replace(/\s+TRIP$/, '') : dnm(s),
             lv: 'TRIP'
           });
+      }
+    /* R9 #80: a "NOT TRIP" output (DITL-43 row 5 AIR PREHEATER NOT TRIP, 1 = healthy) is an alarm when it falls to 0 after it was
+       healthy: "AIR PREHEATER TRIP". Before: its rise (the field contact made healthy) was logged as a trip */
+    if (window.WORLD && WORLD.on && WORLD.idx)
+      for (const s of dSheets()) {
+        if (!s.nl) continue;
+        const o = ntOut(s);
+        if (!o) continue;
+        let v = null;
+        try {
+          v = DUI.outVal(s, o.row);
+        } catch (e) {}
+        if (v === 1) NTS.add(s.name);
+        else if (v === 0 && NTS.has(s.name)) now.set('N|' + s.name, { sh: dnm(s), kind: 'TRIP', nm: o.name, lv: 'TRIP' });
       }
     const first = !!almScan.first;
     almScan.first = false;

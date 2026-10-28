@@ -354,6 +354,13 @@ window.LS_LIVE = (function () {
     () => SWPA.map((a, j) => 'SWP-' + 'ABC'[j] + (val(a) > 0.5 ? ' RUN' : dIn(SWPD[j], 3) ? ' AUTO' : ' MAN')).join(', ')
   );
   const FIELD = (k, l) => DC(l + ' running (local)', () => !!(AN.fieldState && AN.fieldState()[k]), () => l + ' ' + (AN.fieldState && AN.fieldState()[k] ? 'RUNNING' : 'STOPPED'));
+  const TCSR = (k, l) => {
+    const on = () => {
+      const x = AN.tcs && AN.tcs();
+      return x ? !!x.aux[k] : !!(AN.unit && AN.unit.on);
+    };
+    return DC(l + ' running (TCS)', on, () => l + ' ' + (on() ? 'RUNNING' : 'STOPPED'));
+  };
   const OUTC = (nm, r, l) => DC(l + ' (' + nm + ' out ' + (r + 1) + ')', () => dOut(nm, r), () => l + ' ' + (dOut(nm, r) ? 'ON' : 'OFF'));
   const INC = (nm, r, l) => DC(l + ' (' + nm + ' row ' + (r + 1) + ')', () => dIn(nm, r), () => l + ' ' + (dIn(nm, r) ? 'ON' : 'OFF'));
   const RUNN = (L, n, l) => DC(n + ' ' + l + ' running', () => nRun(L) >= n, () => L.map(nm => nm.replace(/^DITL-\S+\s*#?/, '') + (dRun(nm) ? ' RUN' : ' STOP')).join(', '));
@@ -378,6 +385,14 @@ window.LS_LIVE = (function () {
     [10, /^Initiate RUN with proper coordination/i, INC('DITL-113', 5, 'IA compressor A RUNNING')],
     [11, /Initiate ON to selected dryer/i, OUTC('DITL-45', 3, 'Plant air dryer A RUNNING')],
     [12, /^Initiate RUN with proper coordination/i, INC('DITL-114', 5, 'PA compressor A RUNNING')],
+    /* R9 #78 #77: the turbine oil sections: the lube oil temperature control to REMOTE (TICLO1002, valve TCVCW1201 of the SOP table; AUTO on the drawing),
+       the vapour extractor, MOP and COP of the TCS panel, the oil purifier at its local panel */
+    [13, /Lube Oil Temp Control Valve change mode to Remote/i, MODE('TICLO1002', 'AUTO')] /* ABC-053 has no TICLO1002.REM: the DCS holds it in AUTO */,
+    [14, /^Start the Vapour Extractor/i, TCSR('vex', 'Vapour extractor')],
+    [14, /^Start one of the Main Oil Pump/i, TCSR('lop', 'Main oil pump MOP')],
+    [15, /^Start the Oil Purifier Pump/i, FIELD('pur', 'Oil purifier pump')],
+    [16, /^Verify that Main Oil Pump is running/i, TCSR('lop', 'Main oil pump MOP')],
+    [16, /^Start one of the Control Oil Pump/i, TCSR('eh', 'Control oil pump COP')],
     [17, /Initiate START air pre-heater drive motor/i, RUNN(['DITL-43'], 1, 'air preheater')],
     [18, /initiate START to selected CEP/i, RUN.CEP],
     [18, /FCV-CD1120 to MANUAL and ADJUST to 60/i, ALL(MODE('FCV-CD1120', 'MAN'), MV('FCV-CD1120', 55, 65))],
@@ -573,7 +588,15 @@ window.LS_LIVE = (function () {
   let LAT = rd();
   const since = {};
   const simT = () => +U().t || 0;
-  const live = () => !!(typeof AN !== 'undefined' && AN.sheets && AN.cat === 'an' && !(window.lsViewLock && lsViewLock.inView()) && !AN.view);
+  /* R9 #71: the simulation runs on a DITL sheet too (the Training dock follows the step to DITL-29A ...): the AUTO items ticked only
+     while an ABC sheet was on the screen (Section 2 32 / 35). Same rule as the Gabay (guide.js live) */
+  const live = () =>
+    !!(
+      typeof AN !== 'undefined' &&
+      AN.sheets &&
+      !(window.lsViewLock && lsViewLock.inView()) &&
+      (AN.cat === 'an' ? !AN.view : typeof SIM !== 'undefined' && SIM && !(typeof DPAUSE !== 'undefined' && DPAUSE) && window.WORLD && WORLD.on && WORLD.live)
+    );
   /* 3.2.0 walkthrough #9: an AUTO step ticks on a real change after the Clear / the start: its condition was seen NOT done since then,
      or the trainee has reached its section (a step of the section before is ticked). Before: every condition already true at Cold
      ticked itself (no coal, no flame ...). The furnace purge steps also need the four fans running (IDF, SAF, PAF, FAB) */

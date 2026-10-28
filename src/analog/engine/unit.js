@@ -637,6 +637,7 @@ function anUnitStart() {
   /* 3.2.0-beta.14: the snapshot plant has its diesel oil pump in service (source.js field equipment) */
   AN_SRC.field.dop = true;
   AN_SRC.field.hypo = true;
+  AN_SRC.field.pur = true;
   AN.unit = U;
 }
 /* 2.2.0-beta.14 (M4 step 1): the plant cold, with the anchors of "Start at 150 MW" kept (called by hmi-op.js anPlantCold after
@@ -676,6 +677,7 @@ function anUnitCold() {
   /* 3.2.0-beta.14: cold = the field equipment stopped too (diesel oil pump, source.js) */
   AN_SRC.field.dop = false;
   AN_SRC.field.hypo = false;
+  AN_SRC.field.pur = false;
   AN_SRC.t = -1;
   tcsInit(U, 'cold');
   return true;

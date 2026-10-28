@@ -1215,3 +1215,8 @@ body.cr #crband > #cralarm:not(#x){min-width:16rem}
 @container crband (max-width:62rem){#crband .crunit span{display:none}#cralarm .crat{display:none}}
 @container crband (max-width:52rem){#crband .crunit{display:none}}
 body.lsfield[data-tab=logic] :is(#dp,#anp,#dmeta,#anmeta,#meta,#anptab){visibility:hidden!important}
+/* R9 #42 (the Events button cut to "Even…" under the search box when the alarm chip reads "NO ALARM · 93 SUPPRESSED"): the alarm box is
+   never narrower than its chips and the Events button; its text line gives way first, then the KPI strip (overflow hidden) */
+#cralarm .cratx.cratx{contain:inline-size;flex:1 1 0}
+body.cr #crband > #cralarm:not(#x):not(#y){min-width:min-content}
+#crband .gs-search:not(#x){flex:0 1 auto;min-width:7.5rem} /* R9 #42: with the Training dock open the band is narrower: the search box gives way too */

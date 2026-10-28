@@ -69,6 +69,7 @@ body.app2:not(#_) #trainws button.trsec.on{background:var(--c-accbg);box-shadow:
 #trainws .trwhen{color:var(--c-acc);font-size:.75rem;white-space:nowrap}
 #trainws .trtags{display:flex;flex-wrap:wrap;gap:.375rem;margin:.375rem 0 0 2.125rem}
 body.app2:not(#_) #trainws button.trtag{min-height:2rem;padding:0 .625rem;border-radius:1rem;border:1px solid var(--c-accbd);background:var(--c-accbg);color:var(--c-acctx);font:500 .8125rem var(--mf)}
+#trainws button.trtag{font-variant-numeric:slashed-zero} /* R9 #83: PGLO1920 = letter O, the zero is slashed */
 body.app2:not(#_) #trainws button.trtag.nf{border-style:dashed;border-color:var(--c-line2);background:transparent;color:var(--c-dim)}
 #trainws .trnf{display:block;margin:.25rem 0 0 2.125rem;font-size:.8125rem;color:var(--c-dim)}
 #trainws .trnext{display:flex;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-top:1rem;max-width:60rem}

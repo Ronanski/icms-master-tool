@@ -26,6 +26,7 @@
 - Plant chip: OFF | Unit lang; starting state: Cold o 150 MW lang. Plant model ON na walang starting state: header "—", ang ABC page ay bumubukas na Cold.
 
 ## Susunod na gagawin (roadmap sa `docs/SPEC.md` seksyon 3)
+0. 2026-10-28 ~9:05 PM PHT: **Beta 3.2.0-beta.47** = 19 findings ng retest 9 (air preheater START, NOT TRIP alarm, TCS oil, SOP limits / tag / NOTE sa dock, Hakbang 14 ~ 17 hiwalay, gitna sumusunod nang tama, ‹ Nakaraan, header). Check: totoong pindot Hakbang 1 → 20 (hindi buong start-up). #23 hindi nasubok; #60 bahagi (61 / 121).
 0. 2026-10-28 ~6:30 PM PHT: **Beta 3.2.0-beta.46** = retest 8 (R8) sa ugat: isang equipment block (START / STOP, FIELD, MAN / AUTO, TRIP, lamp, values) at isang step engine (✓ TAPOS + Susunod, stable na buttons, Cold reset ng DITL). Check = totoong pindot, 2 pasada nang hindi nililinis ang storage. #60: 70 item ng 007 walang plant model (flue gas path), "—".
 0. 2026-10-28 ~4:00 PM PHT: **Beta 3.2.0-beta.45** = lahat ng bukas na findings ng retest 7 (sa ugat; paliwanag sa UPDATE_REPORT). Sinubok ng maikling check ng bawat linya ng check-list (hindi ang buong start-up). Susunod: live retest ng user.
 0. 2026-10-28 1:20 PM PHT: **Beta 3.2.0-beta.43** (build 7b1d18c) = #13 (walang drawing ng lumang sheet sa likod ng Home / Training). HINDI nasubok.
