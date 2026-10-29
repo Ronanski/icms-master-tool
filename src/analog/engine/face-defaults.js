@@ -409,18 +409,21 @@ const AN_DEF = {
       desc: 'Limestone rotary feeder speed (0-100 %)',
       basis: 'speed in percent'
     },
+    /* 3.2.0-beta.50 (live check #96): the alarm list (document-references/alarm-list.zip, "Alarm List _20160912" sheet LT 15 ~ 17,
+       LT-BR1001-1 / -2 / -3): HH 254, H 127, L -100 (dcs), LL -178 (dcs); transmitter 3: L -178, LL -254. Before: +-75 / +-150
+       (ASSUMED), so the -150 mm of STEAM DRUM FILLING was a LOW LOW alarm */
     {
       tag: 'LIBR10011',
-      hh: 150,
-      h: 75,
-      l: -75,
-      ll: -150,
+      hh: 254,
+      h: 127,
+      l: -100,
+      ll: -178,
       u: 'mm',
       desc: 'Drum level (1) (-422..820 mm)',
-      basis: 'zero = normal water level; H/L +-75, HH/LL +-150 (trip band)'
+      basis: 'zero = normal water level; alarm list LT-BR1001-1'
     },
-    { tag: 'LIBR10012', hh: 150, h: 75, l: -75, ll: -150, u: 'mm', desc: 'Drum level (2)', basis: 'same' },
-    { tag: 'LIBR10013', hh: 150, h: 75, l: -75, ll: -150, u: 'mm', desc: 'Drum level (3)', basis: 'same' },
+    { tag: 'LIBR10012', hh: 254, h: 127, l: -100, ll: -178, u: 'mm', desc: 'Drum level (2)', basis: 'alarm list LT-BR1001-2' },
+    { tag: 'LIBR10013', hh: 254, h: 127, l: -178, ll: -254, u: 'mm', desc: 'Drum level (3)', basis: 'alarm list LT-BR1001-3' },
     {
       tag: 'PIBR10011',
       hh: 168,

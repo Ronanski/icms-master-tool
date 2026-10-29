@@ -297,6 +297,31 @@ function anCompNet(S, ai) {
   const q = S.blk.find(z => z.k === 'SQRT' && z.o && z.o.length && (z.i || []).some(i => has(i, 0)));
   return q ? q.o[0] : -1;
 }
+/* 3.2.0-beta.50 (live check #93 #94): the CONDENSATE CYCLE as a water balance (T/H), shared by three loops on two sheets:
+   hotwell (ABC-031 LICCD1110A make-up LCV-MU1110 minus dump LCV-CD1110), condensate flow (ABC-032 FICCD1120 min-flow recirculation
+   FCV-CD1120) and deaerator (ABC-031 LICCD1104 level valve LCV-CD1104). Before: three separate loops anchored at the 150 MW snapshot
+   (condensate 380 T/H whatever the recirculation did, the deaerator falling while condensate went in, a jump at AUTO).
+   The condensate pump (CEP) sends Fda to the deaerator and Frec back to the hotwell; the flow transmitter reads Fda + Frec.
+   Anchored at the 150 MW snapshot (hmi-op.js, 28.png / 03.png): deaerator valve 17.5 % = condensate 380 T/H (21.7 T/H per %,
+   ASSUMED linear up to the CEP capacity 520 T/H), make-up 14 % = the 25 T/H that leaves the drum (1.8 T/H per %), the deaerator
+   also gets 25 % of the main steam on load (extractions and heater drains: 380 + 118.5 = feedwater 499 T/H). Recirculation
+   2.5 T/H per % (SOP: 60 % open about 150 T/H minimum flow). ASSUMED level rates (not in the repository): hotwell 0.01, deaerator
+   0.004 mm/s per T/H. The recirculation goes back to the condenser, so the hotwell loses only the deaerator flow; the deaerator
+   loses the feedwater of the drum balance (AN_CYC.ffw) */
+const AN_CYC = { u: {}, ffw: 0 };
+if (typeof window !== 'undefined') window.AN_CYC = AN_CYC; /* read by the world (plantsw.js BFWP suction pressure) */
+const AN_CYC_TAG = { LICCD1104: 'da', LICCD1110A: 'hw', FICCD1120: 'cf' };
+function anCycFlows(t) {
+  const s = (typeof srcState === 'function' && srcState(t)) || { cep: 0, ms: 0, ext: 0 },
+    c = x => Math.max(0, Math.min(1, x)),
+    /* while a starting state loads, the scan cache of srcState is the state before: read the pump bits now */
+    cep = (AN.steady && typeof srcBit === 'function' ? srcBit(['M.3350', 'M.3351']) : s.cep) ? 1 : 0,
+    fda = cep * Math.min(520, 21.7 * Math.max(0, AN_CYC.u.da || 0)),
+    frec = cep * 2.5 * 100 * c((AN_CYC.u.cf || 0) / 100),
+    ms = s.ms || 0,
+    ext = s.ext || 0;
+  return { fda, frec, hwIn: ms * (1 - 0.25 * ext), daIn: 0.25 * ext * ms, mu: 1.8 * (AN_CYC.u.hw || 0) };
+}
 function anProcStep(S, dt) {
   const rt = S.rt,
     v = rt.v,
@@ -395,6 +420,8 @@ function anProcStep(S, dt) {
         )
       );
     })();
+    if (pr.cyc === undefined) pr.cyc = AN_CYC_TAG[(b.txt || [])[1]] || null;
+    if (pr.cyc) AN_CYC.u[pr.cyc] = u; /* the hotwell u is make-up less dump (the parallel valves above) */
     const span = b.p.span > 0 ? b.p.span : 100,
       lo = b.p.rlo != null ? b.p.rlo : 0,
       um = ((b.p.lo == null ? 0 : b.p.lo) + (b.p.hi == null ? 100 : b.p.hi)) / 2;
@@ -584,7 +611,7 @@ function anProcStep(S, dt) {
     /* 2.2.0-beta.3: pr.y0 (Start at 150 MW): the model starts from the PV of the snapshot, then follows the valve with its own
        time constant (before: from its steady state for the command of that moment, ABC-012 TICMS1004 482 C instead of 542 C) */
     if (!q) {
-      q = pm[b.id] = { y: (pr.integ || pr.y0) && isFinite(v[pr.pv]) ? v[pr.pv] : ss(u), h: [], u: null };
+      q = pm[b.id] = { y: (pr.integ || pr.y0 || pr.cyc) && isFinite(v[pr.pv]) ? v[pr.pv] : ss(u), h: [], u: null };
       pr.y0 = 0;
     }
     /* 2.2.0-beta.1: the drawing gates the measurement: the PV comes through a T switch that now selects a constant
@@ -649,6 +676,7 @@ function anProcStep(S, dt) {
       /* 2.1.0-beta.11: water that leaves the drum besides the main steam (blowdown and the rest), from "Start at 150 MW":
          03.png feedwater 499.1 - main steam 474.1 = 25.0 T/H (pr.integLoss, removed by Reset) */
       q.y = Math.max(lo, Math.min(lo + span, q.y + dt * pr.integ.k * (ffw - fst - (pr.integLoss || 0))));
+      AN_CYC.ffw = ffw; /* the deaerator gives this water (condensate cycle balance) */
       /* 2.2.0-beta.12 (M3): SHRINK / SWELL. A fast change of the drum pressure moves the level the other way for a while (the steam
          bubbles in the water collapse when the pressure rises after a turbine trip, grow when it falls after an MFT): the level
          read is the water level minus ks x (pressure - its lag of tauS), so a pressure step gives a transient of ks mm per
@@ -662,6 +690,20 @@ function anProcStep(S, dt) {
           q.sw = pr.integ.ks * (P - q.pl);
         }
       }
+      q.h.length = 0;
+    } else if (pr.cyc && dt > 0) {
+      /* the condensate cycle balance (AN_CYC above): levels integrate, the flow follows its valves with the lag of the loop */
+      const f = anCycFlows(rt.t);
+      /* while a starting state loads (AN.steady: settling steps, not plant time) the levels keep their water and the flow is at its
+         valves at once (before, the load drained the deaerator 50 mm with the valve openings of the state before) */
+      if (AN.steady) {
+        if (pr.cyc === 'cf') q.y = Math.max(lo, Math.min(lo + span, f.fda + f.frec));
+      } else if (pr.cyc === 'cf') {
+        const tgt = Math.max(lo, Math.min(lo + span, f.fda + f.frec));
+        q.y += (1 - Math.exp(-dt / Math.max(pr.T, 0.05))) * (tgt - q.y);
+      } else if (pr.cyc === 'hw') q.y += dt * 0.01 * (f.hwIn + f.mu - f.fda);
+      else q.y += dt * 0.004 * (f.fda + f.daIn - AN_CYC.ffw);
+      q.y = Math.max(lo, Math.min(lo + span, q.y));
       q.h.length = 0;
     } else if (dt > 0 && pr.shold) {
       q.h.length = 0; /* 3.2.0-beta.14 (source.js): the pump that moves the water is stopped: the tank level stays */

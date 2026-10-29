@@ -30,6 +30,7 @@
   function build(ALL) {
     map = [];
     ana.length = 0;
+    suc.length = 0;
     for (const s of ALL) {
       const b = s._inst ? s._inst.base : s;
       for (let i = 0; i < ((b && b.rows) || []).length; i++) {
@@ -52,12 +53,27 @@
           t = ((I.tag || '') + ' ' + (I.svc || '')).toUpperCase();
         } catch (e) {}
         if (/PT-CD1110\b/.test(t)) ana.push({ s, key: a.key });
+        else if (/(?:^|[^A-Z])PT-FW1115-[AB]\b/.test(t)) suc.push({ s, key: a.key }); /* not DPT-FW1115 (the strainer) */
       }
     }
   }
   /* P2 #13 (INSTRUMENT_VALVE_COVERAGE.md): the condenser pressure follows the vacuum of the unit model (unit.js U.vac, 0 = no vacuum,
      1 = in service): 1.033 kg/cm2A (atmosphere) to 0.057 kg/cm2A (4.PNG PICD1110 at 150 MW) */
-  const ana = [];
+  const ana = [],
+    suc = [];
+  /* 3.2.0-beta.50 (live check #94): the BFWP suction pressure PT-FW1115-A / -B (DITL-23A row 12, START permissive > 1.5 kg/cm2) is the
+     deaerator pressure (ABC-056 AI0417 PT-CD1104) plus the static head of the deaerator water (its level, ABC-031 AI0672 LT-CD1104) less the
+     suction loss at the feedwater flow. Before: the row kept its default 0.75 and the trainee had to FIELD-force it at Hakbang 25.
+     ASSUMED (not in the repository): head 2.2 kg/cm2 at the normal level (about 22 m of water), 1 kg/cm2 per 10 m of level, loss
+     1.4 kg/cm2 at 499 T/H (so 5.9 + 2.2 - 1.4 = 6.7 kg/cm2, PIFW1115A of the 150 MW snapshot) */
+  W.sucP = () => {
+    const pd = val(['ABC-056', null, 'AI0417']),
+      lv = val(['ABC-031', null, 'AI0672']),
+      f = (window.AN_CYC && AN_CYC.ffw) || 0;
+    if (!isFinite(pd)) return NaN;
+    const r = Math.max(0, pd + Math.max(0, 2.2 + (isFinite(lv) ? lv : 0) / 1e4) - 1.4 * (f / 499) * (f / 499));
+    return Math.round(r * 100) / 100;
+  };
   W.condP = () => {
     const U = (window.AN && AN.unit) || {},
       v = isFinite(U.vac) ? Math.max(0, Math.min(1, U.vac)) : NaN;
@@ -90,6 +106,8 @@
     if (!map) build(ALL);
     const pc = W.condP();
     if (isFinite(pc)) for (const a of ana) (a.s.avw = a.s.avw || {})[a.key] = pc;
+    const ps = suc.length ? W.sucP() : NaN;
+    if (isFinite(ps)) for (const a of suc) (a.s.avw = a.s.avw || {})[a.key] = ps;
     for (const m of map) {
       const [, src, sp, dir, nc] = m.d,
         x = val(src);
