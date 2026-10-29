@@ -974,7 +974,9 @@
          view (drag to pan), so the text grows instead of leaving a band empty */
       sw = w / Math.max(1, r.width),
       sh = h / Math.max(1, r.height),
-      s = tall ? sh : sh <= sw ? Math.max(sh, sw * 0.7) : sh;
+      /* #117 (user 2026-10-29): a screen with fitAll (030 SEAWATER) opens whole, nothing out of view */
+      all = cur && cur.fitAll,
+      s = all ? Math.max(sh, sw) : tall ? sh : sh <= sw ? Math.max(sh, sw * 0.7) : sh;
     vb = [box0[0] + (tall ? 0 : (w - r.width * s) / 2), box0[1], r.width * s, r.height * s];
     svg.setAttribute('viewBox', vb.join(' '));
     svSz = [r.width, r.height];
