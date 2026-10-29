@@ -1240,6 +1240,16 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 | 23 | Update banner | Nasubok: may bagong Beta sa version.json → lumalabas ang "New Beta available … Update now / Later" sa itaas, hindi tinatakpan ang Home | — |
 
 
+## 3.2.0-beta.53 (Beta, 2026-10-29) — 5 bukas sa live check R18 ng beta.52
+
+| # | Ugat | Ayos | Saan |
+|---|---|---|---|
+| 103 | Ang air flow loop ay may lag na hanggang 30 s (galing sa Ti ng PID), kaya tumataas pa ang total air nang ilang minuto sa nakapirming damper (117 → 323 T/H) | Ang air flow (FICFA…) ay sumusunod sa damper sa ≤ 5 s. Sa Gawin ng H37: ang total air sa PA 18 % / SA 25 % ay mga 350 T/H (PA ≈ 180 + SA ≈ 145 + FA ≈ 26; SA 25 % ayon sa anchor ng snapshot 37.1 % = 215.3 T/H) | plant.js, guide.js |
+| 105 | Ang furnace pressure (PICFG108 / 108A) ay may lag na 65 s (Ti ng PID), kaya mabagal, may overshoot (−87) at naiiwan sa +7 sa AUTO | Ang furnace draft ay sumusunod sa IDF coupling sa ≤ 5 s (gas, walang imbakan) | plant.js |
+| 102 | Ang "Total air" ng Bantayan ay PA + SA lang | PA + SA + FA, gaya ng Kailangan ng H37 | dock.js |
+| 106 | Ang alarm na lumabas mula sa suppression ay may oras pa ng pag-load ("at 0:00"); AI0273 / AI0433 HH walang paliwanag | Oras = oras na lumabas ito. NOTE sa H40: O2 HH (21 %, hangin lang, HH 8 % ng ABC-002) at PA preheater outlet temp LL (AI0656 / AI0672, ABC-006) ay tama sa purge, i-ACK | events.js, guide.js |
+| 101 | Hindi pa nakikita ang paghinto ng IDF | Hindi na-reproduce: pagkatapos ng H30, 40 min (orasan) na nakaharap ang ibang tab, ×10 = 400 min ng planta: tumatakbo pa rin ang IDF (M.3304 = 1), drum −154 mm, walang STOP. Ang headless browser ay nanatiling "visible" kaya hindi nasubok ang tunay na nakatagong page / sleep ng PC. Kapag huminto ulit, may Event na "IDF STOPPED (M.3304 = 0 …)" (beta.52) | — |
+
 ## 3.2.0-beta.52 (Beta, 2026-10-29) — 6 bukas sa live check R16 / R17 ng beta.51
 
 | # | Ugat | Ayos | Saan |
