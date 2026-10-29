@@ -342,6 +342,10 @@
   }
   function setTab(t, keep) {
     if (!TABS.some(x => x[0] === t)) t = 'logic';
+    /* user 2026-10-30: while the Training dock is on, the centre is the HMI (the Training list and Home are not shown) */
+    try {
+      if (window.LS_DOCK && LS_DOCK.tabFix) t = LS_DOCK.tabFix(t);
+    } catch (e) {}
     /* the PLANT VIEW is in its own window: bring that window to the front */
     if (t === 'operate' && pvW && !pvW.closed) {
       pvW.focus();
