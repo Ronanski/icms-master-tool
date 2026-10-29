@@ -36,6 +36,7 @@
 - Plant chip: OFF | Unit lang; starting state: Cold o 150 MW lang. Plant model ON na walang starting state: header "—", ang ABC page ay bumubukas na Cold.
 
 ## Susunod na gagawin (roadmap sa `docs/SPEC.md` seksyon 3)
+0. 2026-10-30 AM PHT: **3.2.0-beta.54 sa branch lang (walang merge, walang Beta hanggang go ng user)** = Training integrity batch #105 / #107 / #108 / #109 (walang auto coach, walang FORCE sa Training, faceplate + Buksan sa sheet sa dock, H34 ~ H39 ayon sa SOP). Detalye at UNUSUAL findings: UPDATE_REPORT beta.54.
 0. 2026-10-29 PM PHT: **Beta 3.2.0-beta.53** sa main = #102 / #103 / #105 / #106 ng live check R18 (air flow at furnace pressure ≤ 5 s ang tugon, Total air PA + SA + FA, oras ng alarm na lumabas sa suppression, NOTE ng H40) at #101 (40 min na nakatagong page pagkatapos ng H30).
 0. 2026-10-29 PM PHT: **Beta 3.2.0-beta.52** sa main = #100 ~ #104 ng live check R16 / R17 (diesel PCV, drum level na walang FW, FA flow, purge air ayon sa SOP, IDF coupling MV ▲/▼ at AUTO).
 0. 2026-10-29 ~11:30 AM PHT: **Beta 3.2.0-beta.51** sa main = 5 natitira sa beta.50 (#99 furnace pressure kapag IDF lang, #98 diesel PCV buttons, #91 Bantayan galing sa model o "— walang model", #96 NOTE ng alarm, #23 update banner).
