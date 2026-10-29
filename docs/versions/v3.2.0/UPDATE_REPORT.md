@@ -1240,7 +1240,7 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 | 23 | Update banner | Nasubok: may bagong Beta sa version.json → lumalabas ang "New Beta available … Update now / Later" sa itaas, hindi tinatakpan ang Home | — |
 
 
-## 3.2.0-beta.54 (branch lang, HINDI pa Beta; 2026-10-30) — Training integrity batch #105 / #107 / #108 / #109
+## 3.2.0-beta.54 (Beta, 2026-10-29, GO BETA ng user) — Training integrity batch #105 / #107 / #108 / #109
 - **#108 coach:** TINANGGAL nang buo ang 17 coach (code at toggle). Ang hakbang ay umuusad lang sa tunay na signal ng logic / plant model; ang kulang ay ipinapakita ("Kailangan: … Ngayon: …"). Bawat hakbang na dating may coach ay may sariling button (oil A/D, B/C, SV, SA, PA, SH spray, RH damper, coal feeder) at BANTAYAN rows (bilis ng pag-init °C/h, bypass, coal).
 - **#109 FIELD vs FORCE:** sa Training walang FORCE at walang button na naglalagay ng process value (pressure / level / temp / flow): ang mga row na iyon ay "⧗ Proseso: galing sa plant model". FIELD = digital na contact lang, dumadaan sa logic.
 - **Dock:** sa ilalim mismo ng pamagat ng hakbang, isang maikling control row bawat loop: PV, SV, MV, mode, M / A / R, MV ▲▼ 1 %, SV ▲▼ (kita nang walang scroll sa 1366 × 768). Kapag nanatiling MAN pagkatapos ng A / R: "force manual ng logic". Ang buong faceplate ay nasa ibaba pa rin; "Buksan sa sheet ↗" = bubukas ang ABC sheet, naka-select at naka-zoom ang block. Iisang signal: parehong action ng faceplate ng sheet.
