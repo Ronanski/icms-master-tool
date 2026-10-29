@@ -1240,6 +1240,16 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 | 23 | Update banner | Nasubok: may bagong Beta sa version.json → lumalabas ang "New Beta available … Update now / Later" sa itaas, hindi tinatakpan ang Home | — |
 
 
+## 3.2.0-beta.59 (Beta, 2026-10-30, GO BETA ng user) — 030 SEAWATER: lahat ng value galing sa plant model, buong page pagbukas
+- **#116 + utos ng user (2026-10-30 "DAPAT S PLANT MODEL GALING"):** ang mga value ng 030 na walang transmitter sa logic sheet ay kinukuwenta na ng plant model (`unit.js` `AN_SW` / `anSeawaterStep`), hindi na ng HMI. Tinanggal ang ● estimate. Ang HMI ay nagbabasa lang (`UNIT.swxx`); kapag Plant model OFF ay "-----".
+  - **DPISW1502 / 1504 (DP ng debris filter, PACKAGE gauge, alarm list 0 ~ 2000 mmH2O):** 204 mmH2O (20 mbar, PR-OPE-5002) × (flow)² × (1 + dumi). Dumadami ang dumi habang may tubig na dumadaan (ASSUMED: 80 mbar pagkalipas ng 4 h sa normal flow). Sa 816 mmH2O (80 mbar cut-in) nagba-backwash ang package (ASSUMED 60 s) at bumabalik sa 204, PERO lang kung IN OPERATION ang filter (DITL-39 row 3 / 14). Kapag hindi naka-start ang filter, tuloy ang pagtaas ng DP. Walang pump = 0.
+  - **Condenser seawater:** inlet pressure 0 / 0.7 / 1.0 / 1.1 kg/cm² sa 0 / 1 / 2 / 3 SWP (M.3353 ~ 3355); outlet = 0.4 (A) / 0.5 (B) ng inlet (30.PNG); outlet temp = 28.5 / 28.6 °C + 6.7 / 6.5 °C × (exhaust steam ng turbine + LP bypass) / 465.8 T/H ÷ flow.
+  - **LISW1501:** −8.76 m (30.PNG; sumusunod sa tide, hindi sa pump).
+  - **Current ng pump (IIP1501A ~ C, IIP1503A ~ C):** tumatakbo = current ng 30.PNG × load ng pump; nakahinto = 0. Ang SWBP run state ay galing sa motor drawing ng DITL-30 (bagong `anDitlRun`).
+- **#117:** ang 030 page ay buong nakikita pagbukas (`fitAll`, plant.js fit).
+- **Sinubok (app, 1366 × 768, Practise 150 MW, 55 s):** buong page kita; inlet 1.00 / 1.00, outlet 0.40 / 0.50 kg/cm², outlet 35.3 / 35.2 °C, forebay −8.76 m, DP 205 / 205 mmH2O, SWP-B 242.5 A, SWP-C 207.6 A, SWBP-A / C 87.3 / 87.2 A, ang mga nakahinto = 0. Nang ilagay ang dumi sa 3.3 (filter STOPPED sa starting point na ito): DP 828 at tumataas, walang backwash. Walang error sa page.
+- **Hindi sinubok:** backwash habang IN OPERATION ang filter (naka-STOP ang filter sa 150 MW starting point, isyung nilaktawan ng user); pag-start / pag-stop ng SWP sa app; cold start; ibang screen size.
+
 ## 3.2.0-beta.58 (Beta, 2026-10-30, GO BETA ng user) — Training page sa dock, naibalik ang values at indications
 - **Problem (user 2026-10-30):** (1) ang Training button sa kaliwa ay nagbubukas pa ng malaking Training page sa gitna; (2) sa beta.57 natanggal ang mga VALUE at INDICATION ng dock (4 na value lang, walang equipment lamps), button lang ang dapat tinanggal; (3) hindi sumusunod ang gitna sa seksyon (#112): ang hakbang 2 (SWP) ay nasa 007 pa; (4) maikli ang "Bakit?" (#113).
 - **Work Done:** `src/ui/training/dock.js`, `dock.css`, `src/ui/shell/app.js` (setTab → `LS_DOCK.tabFix`), `src/ui/plant/plant.js` (`lsPlantPanX`).
@@ -1256,16 +1266,6 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 - **Work Done (`src/ui/training/dock.js`, `dock.css`):** gitna = HMI lang habang Training, naka-kahon ang equipment ng hakbang ("HAKBANG n"). Dock: 4 na value (Load, Drum, Furnace, O₂), seksyon bar ◄ ► ☰ (48 seksyon ng PR-OPE-5002, naka-lock ang hindi pa naaabot), hakbang ‹ › (berde ang › kapag handa), loop card (PV / SV / MV + unit, mode lamp, M / A / R, MV ±1 / ±5, SV ▲▼), START / STOP, interlock, CHECKLIST (Gawin, Bantayan, Bakit, SOP), footer "Ipakita sa logic sheet" + isang button bawat sheet. Logic view: diagram lang (walang sheet list, toolbar, minimap, timers), banner na may pangalan ng sheet, hakbang at 1 = ON / 0 = OFF, pula ang kulang na row; iisang "◄ Balik sa HMI" (nasa dock). Nakatago habang Training: VIEW / RUN, plant toolbar, Systems, chips, live strip, lamp row, ⇔, "Sheet ↗", ↗ ng row, dobleng faceplate, button na kapareho ng loop card. Bumabalik lahat kapag pinatay ang Training. Walang binago sa logic o plant model.
 - **Sinubok:** build + check; headless 1366 × 768 hakbang 1 / 34 / 35: kasya ang dock, logic → Balik (focus naibabalik), MV ▲▲ FICFA1081 0 → 5, walang page error.
 - **Hindi sinubok:** phone / bottom layout, buong Cold → 150 MW. Luma ang `tests/regress/training_dock.js` (hinahanap ang lumang "Gabay" button; parehong FAIL sa main); `sop_bawal` 6 FAIL na pareho sa main.
-
-## 3.2.0-beta.59 (Beta, GO BETA ng user) — 030 SEAWATER: lahat ng value galing sa plant model, buong page pagbukas
-- **#116 + utos ng user (2026-10-30 "DAPAT S PLANT MODEL GALING"):** ang mga value ng 030 na walang transmitter sa logic sheet ay kinukuwenta na ng plant model (`unit.js` `AN_SW` / `anSeawaterStep`), hindi na ng HMI. Tinanggal ang ● estimate. Ang HMI ay nagbabasa lang (`UNIT.swxx`); kapag Plant model OFF ay "-----".
-  - **DPISW1502 / 1504 (DP ng debris filter, PACKAGE gauge, alarm list 0 ~ 2000 mmH2O):** 204 mmH2O (20 mbar, PR-OPE-5002) × (flow)² × (1 + dumi). Dumadami ang dumi habang may tubig na dumadaan (ASSUMED: 80 mbar pagkalipas ng 4 h sa normal flow). Sa 816 mmH2O (80 mbar cut-in) nagba-backwash ang package (ASSUMED 60 s) at bumabalik sa 204, PERO lang kung IN OPERATION ang filter (DITL-39 row 3 / 14). Kapag hindi naka-start ang filter, tuloy ang pagtaas ng DP. Walang pump = 0.
-  - **Condenser seawater:** inlet pressure 0 / 0.7 / 1.0 / 1.1 kg/cm² sa 0 / 1 / 2 / 3 SWP (M.3353 ~ 3355); outlet = 0.4 (A) / 0.5 (B) ng inlet (30.PNG); outlet temp = 28.5 / 28.6 °C + 6.7 / 6.5 °C × (exhaust steam ng turbine + LP bypass) / 465.8 T/H ÷ flow.
-  - **LISW1501:** −8.76 m (30.PNG; sumusunod sa tide, hindi sa pump).
-  - **Current ng pump (IIP1501A ~ C, IIP1503A ~ C):** tumatakbo = current ng 30.PNG × load ng pump; nakahinto = 0. Ang SWBP run state ay galing sa motor drawing ng DITL-30 (bagong `anDitlRun`).
-- **#117:** ang 030 page ay buong nakikita pagbukas (`fitAll`, plant.js fit).
-- **Sinubok (app, 1366 × 768, Practise 150 MW, 55 s):** buong page kita; inlet 1.00 / 1.00, outlet 0.40 / 0.50 kg/cm², outlet 35.3 / 35.2 °C, forebay −8.76 m, DP 205 / 205 mmH2O, SWP-B 242.5 A, SWP-C 207.6 A, SWBP-A / C 87.3 / 87.2 A, ang mga nakahinto = 0. Nang ilagay ang dumi sa 3.3 (filter STOPPED sa starting point na ito): DP 828 at tumataas, walang backwash. Walang error sa page.
-- **Hindi sinubok:** backwash habang IN OPERATION ang filter (naka-STOP ang filter sa 150 MW starting point, isyung nilaktawan ng user); pag-start / pag-stop ng SWP sa app; cold start; ibang screen size.
 
 ## 3.2.0-beta.56 (Beta, 2026-10-29, GO BETA ng user) — HMI 030 SEAWATER
 - **Problem:** walang HMI page ng seawater system (roadmap step 6; mock-up STEEL inaprubahan ng user 2026-10-29).
