@@ -9,8 +9,8 @@
    - the closed aux cooling water loop of the CCWHE (PD-021): ACWP P-1108A / B (DITL-76 / 77), expansion tank T-1109, the users;
    - hypo-chlorinated dosing P-0761A / B, P-0762A / B (STN105 status DI only, no DCS command).
    Run state = the motor drawing of the one world (LS_DOCK.mst, the same as the Training dock lamps): red = running, green = stopped,
-   red blinking = trip. Values = the logic (I/O list transmitters); a value with no transmitter in the logic (motor currents) is a
-   PLANT ESTIMATE (● dot) from the run state and the 30.PNG snapshot (SWP-B 242.5 A, SWP-C 207.6 A, SWBP 87.3 A). Click on a machine =
+   red blinking = trip. Values = the logic (I/O list transmitters); a value with no transmitter on a logic sheet (condenser seawater T / P,
+   forebay level, debris filter DP, motor currents) comes from the plant model (unit.js AN_SW, beta.59), never from this page. Click on a machine =
    its info card (I/O list, DITL places), like the 007 fans. Drawn in a 1760 x 900 space, scaled to the 1920 x 1000 frame of hmi2.js. */
 (function () {
   if (!window.PLANT_V2) return;
@@ -27,7 +27,6 @@
     run: '#d64545',
     stop: '#3fa34d',
     none: '#6b7480',
-    est: '#c9b06a',
     m: ['#3e454c', '#b4bec7', '#4a525a'],
     cav: '#232a31',
     deck: '#59636d',
@@ -70,14 +69,14 @@
     HDA: { n: 'P-0762A', t: 'NaOCl dosing', fld: 'hypo', io: 'MIR-P0762A', d: 'field (local)' },
     HDB: { n: 'P-0762B', t: 'NaOCl dosing', lcp: 'LOCAL', io: 'MIR-P0762B', d: 'STN105 DI' }
   };
-  /* motor current estimate: running = the 30.PNG current of that pump (SWP-A was stopped there: the mean of B and C) */
+  /* motor current tag of a pump (the value: plant model, unit.js AN_SW) */
   const AMP = {
-    SWA: ['IIP1501A', 225.1],
-    SWB: ['IIP1501B', 242.5],
-    SWC: ['IIP1501C', 207.6],
-    BPA: ['IIP1503A', 87.3],
-    BPB: ['IIP1503B', 87.3],
-    BPC: ['IIP1503C', 87.2]
+    SWA: ['IIP1501A'],
+    SWB: ['IIP1501B'],
+    SWC: ['IIP1501C'],
+    BPA: ['IIP1503A'],
+    BPB: ['IIP1503B'],
+    BPC: ['IIP1503C']
   };
   /* flow keys: a pipe moves while its key is on (SW any SWP, BP any SWBP, CL any ACWP, own machine for its branch, ST turbine steam) */
   const FLOW = {
@@ -136,7 +135,7 @@
       );
     };
     const vbox = (x, y, tag, u, est, k) =>
-      `<g data-vb="${k || tag}" style="cursor:pointer">${T(x, y - 4, (est ? `<tspan fill="${S.est}" data-dot="${k || tag}">● </tspan>` : '') + tag, 'sw9')}<rect x="${x}" y="${y}" width="58" height="17" rx="1.5" fill="${S.box}" stroke="${S.boxs}"/>${T(x + 54, y + 13, '-----', 'swv', `text-anchor="end" data-v="${k || tag}"`)}${T(x + 62, y + 13, u, 'sw9')}</g>`;
+      `<g data-vb="${k || tag}" style="cursor:pointer">${T(x, y - 4, tag, 'sw9')}<rect x="${x}" y="${y}" width="58" height="17" rx="1.5" fill="${S.box}" stroke="${S.boxs}"/>${T(x + 54, y + 13, '-----', 'swv', `text-anchor="end" data-v="${k || tag}"`)}${T(x + 62, y + 13, u, 'sw9')}</g>`;
     const imp = (x, y, r, id) =>
       `<g transform="translate(${x} ${y})"><circle r="${r}" fill="#11161b"/><g data-imp="${id}">${[0, 1, 2, 3, 4].map(i => `<path d="M0 0 Q${r * 0.55} ${-r * 0.2} ${r * 0.85} ${-r * 0.5}" transform="rotate(${i * 72})" stroke="#c3ccd5" stroke-width="${r / 5}" fill="none" stroke-linecap="round"/>`).join('')}</g><circle r="${r * 0.22}" fill="#c3ccd5"/></g>`;
     const valve = (x, y, vert, lab, la) => {
@@ -254,7 +253,7 @@
     );
     o.push(filt(480, 360, 1, 'DF1'));
     o.push(eq(512, 342, 'DF1'));
-    o.push(vbox(494, 406, 'DPISW1502', 'mmH2O', 1) + T(494, 434, 'backwash at 816 (SOP)', 'sw8'));
+    o.push(vbox(494, 406, 'DPISW1502', 'mmH2O', 1) + T(494, 434, 'backwash cut-in 816 (80 mbar)', 'sw8'));
     pipe(
       [
         [458, 380],
@@ -529,7 +528,7 @@
         T(1116, 672, 'MV-SW1002 BACKWASH', 'sw8')
     );
     o.push(eq(1044, 738, 'DF2', 'middle'));
-    o.push(vbox(1112, 746, 'DPISW1504', 'mmH2O', 1) + T(1112, 774, 'backwash at 816 (SOP)', 'sw8'));
+    o.push(vbox(1112, 746, 'DPISW1504', 'mmH2O', 1) + T(1112, 774, 'backwash cut-in 816 (80 mbar)', 'sw8'));
     pipe(
       [
         [1078, 700],
@@ -769,7 +768,7 @@
       T(
         1744,
         874,
-        `<tspan fill="${S.est}">●</tspan> = plant estimate (the tag is on no logic sheet)`,
+        'values with no transmitter on a logic sheet: plant model (Plant model ON)',
         'sw8',
         'text-anchor="end"'
       )
@@ -846,17 +845,7 @@
         if (e.dataset.f) e.setAttribute('visibility', on ? 'visible' : 'hidden');
         else e.setAttribute('stroke', on ? e.dataset.c : S.med.off[0]);
       });
-    /* motor current estimates */
-    const amp = id => {
-      const t = q(`[data-v="${AMP[id][0]}"]`),
-        s = ST[id];
-      if (!t) return;
-      const v = s == null ? null : s === 'RUN' ? AMP[id][1] : 0;
-      t.textContent = fmt(v, 1);
-      t.setAttribute('fill', v == null ? S.none : S.val);
-    };
-    let steam = null,
-      estimate = () => {};
+    let steam = null;
     const tick = () => {
       for (const id in MACH) {
         const M = MACH[id],
@@ -872,7 +861,6 @@
           e.classList.toggle('h2blink', s === 'TRIP');
         });
         setSpin(id, s === 'RUN');
-        if (AMP[id]) amp(id);
         /* the branch of the machine itself (riser, discharge, ball line) */
         flow(id, s === 'RUN');
       }
@@ -884,7 +872,6 @@
       const sv = steam != null && steam > 5;
       const se = q('[data-k="steam"]');
       if (se) se.setAttribute('visibility', sv ? 'visible' : 'hidden');
-      estimate();
     };
     tick();
     let seen = false;
@@ -905,37 +892,37 @@
         null
       );
     /* the transmitters: the value of the logic when a sheet has the transmitter; none of these is on a logic sheet now (the condenser
-       seawater T / P are PICT 30 indications of STN102, LT-SW1501 of STN103), so the PLANT ESTIMATE (● dot) shows:
-       - LISW1501: the 30.PNG level (-8.76 m; the forebay follows the tide, not the pumps);
-       - TISW1110A1 / B1: the seawater temperature of 30.PNG (28.5 / 28.6 °C);
-       - PISW1110A1 / B1: 0 / 0.7 / 1.0 / 1.1 kg/cm² with 0 / 1 / 2 / 3 SWP running (2 SWP = 1.0 at 30.PNG; PR-OPE-5002: normal
-         1.0 ~ 1.1); A2 / B2 (outlet) = 0.4 / 0.5 of the inlet (30.PNG 0.4 / 0.5 at 1.0). ASSUMED proportions;
-       - TISW1110A2 / B2: the inlet + the rise of 30.PNG (6.7 / 6.5 °C at 465.8 T/H main steam, 2 SWP) times the steam flow, over
-         the SWP running (the heat of the exhaust steam in less water). ASSUMED proportions. */
-    const EST = {
-      LISW1501: () => -8.76,
-      TISW1110A1: () => 28.5,
-      TISW1110B1: () => 28.6,
-      PISW1110A1: n => [0, 0.7, 1.0, 1.1][n],
-      PISW1110B1: n => [0, 0.7, 1.0, 1.1][n],
-      PISW1110A2: n => [0, 0.7, 1.0, 1.1][n] * 0.4,
-      PISW1110B2: n => [0, 0.7, 1.0, 1.1][n] * 0.5,
-      TISW1110A2: (n, f) => 28.5 + (n ? (6.7 * f * 2) / n : 0),
-      TISW1110B2: (n, f) => 28.6 + (n ? (6.5 * f * 2) / n : 0),
-      /* DPT-SW1502 / 1504: package instruments of the debris filter panel (alarm list: 0 ~ 2000 mmH2O, PACKAGE; no DCS AI). PR-OPE-5002
-         START DEBRIS FILTER "Input cut in (DP conditions) 20 mBar / 80 mBar": a clean filter with flow = 20 mbar = 204 mmH2O (the
-         backwash cuts in at 80 mbar = 816 mmH2O); no flow = 0 */
-      DPISW1502: n => (n ? 204 : 0),
-      DPISW1504: (n, f, nb) => (nb ? 204 : 0)
+       seawater T / P are PICT 30 indications of STN102, LT-SW1501 of STN103, DPT-SW1502 / 1504 are PACKAGE gauges of the debris
+       filters, the motor currents are not in the logic), so the value is the PLANT MODEL (unit.js AN_SW: the pumps running, the
+       turbine exhaust steam, the debris filter dirt and backwash). This page only shows it; Plant model OFF = no value (-----) */
+    const UNIT = {
+      LISW1501: 'swLvl',
+      TISW1110A1: 'swTiA',
+      TISW1110B1: 'swTiB',
+      PISW1110A1: 'swPiA',
+      PISW1110B1: 'swPiB',
+      PISW1110A2: 'swPoA',
+      PISW1110B2: 'swPoB',
+      TISW1110A2: 'swToA',
+      TISW1110B2: 'swToB',
+      DPISW1502: 'swDp1',
+      DPISW1504: 'swDp2',
+      IIP1501A: 'swIa0',
+      IIP1501B: 'swIa1',
+      IIP1501C: 'swIa2',
+      IIP1503A: 'swIb0',
+      IIP1503B: 'swIb1',
+      IIP1503C: 'swIb2'
     };
-    const LOG = {};
-    const showV = (tag, v, est) => {
+    const LOG = {},
+      PM = {};
+    const showV = tag => {
       const t = q(`[data-v="${tag}"]`),
-        dp = /^[PL]/.test(tag) ? 2 : 1,
-        d = q(`[data-dot="${tag}"]`);
+        v = LOG[tag] != null ? LOG[tag] : PM[tag],
+        dp = /^[PL]/.test(tag) ? 2 : /^DP/.test(tag) ? 0 : 1;
+      if (!t) return;
       t.textContent = fmt(v, dp);
       t.setAttribute('fill', v == null ? S.none : S.val);
-      if (d) d.setAttribute('visibility', est ? 'visible' : 'hidden');
       /* the forebay water follows LISW1501 (range -14.8 ~ 0 m below GL; the pool drawn 0 ~ -10.5 m) */
       if (tag === 'LISW1501') {
         const y = v == null ? 470 : Math.max(300, Math.min(700, 300 + (-v / 10.5) * 400));
@@ -944,39 +931,25 @@
         q('[data-k="poolw"]').setAttribute('transform', `translate(0 ${y - 470})`);
       }
     };
-    estimate = () => {
-      const n = FLOW.SW.filter(id => ST[id] === 'RUN').length,
-        f = steam != null && steam > 0 ? Math.min(1.1, steam / 465.8) : 0;
-      const nb = FLOW.BP.filter(id => ST[id] === 'RUN').length;
-      for (const tag in EST) if (LOG[tag] == null) showV(tag, EST[tag](n, f, nb), 1);
-    };
-    for (const tag in EST) {
-      const b = q(`[data-vb="${tag}"]`),
-        ti = document.createElementNS(NS, 'title');
-      ti.textContent =
-        tag + ' · ● = plant estimate (no transmitter of this tag on a logic sheet) · click = its I/O list line';
+    for (const tag in UNIT) {
+      const b = q(`[data-vb="${tag}"]`);
+      if (!b) continue;
+      const ti = document.createElementNS(NS, 'title');
+      ti.textContent = tag + ' · plant model (no transmitter of this tag on a logic sheet) · click = its I/O list / alarm list line';
       b.append(ti);
       api.reg(
         { t: 'val', tag, v: '' },
-        X => {
-          LOG[tag] = X && isFinite(X.v) ? +X.v : null;
-          if (LOG[tag] != null) showV(tag, LOG[tag], 0);
-          else estimate();
-        },
+        X => ((LOG[tag] = X && isFinite(X.v) ? +X.v : null), showV(tag)),
+        null
+      );
+      api.reg(
+        { t: 'val', tag: 'UNIT.' + UNIT[tag], v: '' },
+        X => ((PM[tag] = X && isFinite(X.v) ? +X.v : null), showV(tag)),
         null
       );
       b.addEventListener('click', e => (e.stopPropagation(), info(tag)));
+      showV(tag);
     }
-    estimate();
-    /* the estimates and the DP gauges with no value in the logic: click = the I/O list / alarm list line */
-    ['IIP1501A', 'IIP1501B', 'IIP1501C', 'IIP1503A', 'IIP1503B', 'IIP1503C'].forEach(tag => {
-      const b = q(`[data-vb="${tag}"]`);
-      if (!b) return;
-      const ti = document.createElementNS(NS, 'title');
-      ti.textContent = tag + ' · plant estimate from the run state (30.PNG current), no transmitter in the logic';
-      b.append(ti);
-      b.addEventListener('click', e => (e.stopPropagation(), info(tag)));
-    });
     return pg;
   }
   PLANT_V2.screens.SW = seawater;
