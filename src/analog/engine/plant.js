@@ -60,7 +60,10 @@ function anProcEst(b) {
     TAU = { flow: 6, pressure: 25, temperature: 60, level: 90, analysis: 40, speed: 15, general: 30 },
     kp = P.kp > 0 ? P.kp : 1;
   /* a tuned loop: Ti is about the process time constant, Kp x K is about 0.6; dead time from Td, otherwise a tenth of T */
-  const T = P.ti > 0 ? Math.min(600, Math.max(3, P.ti)) : TAU[lt] || 30,
+  /* 3.2.0-beta.52 (live check #102: FA blower flow 0 -> 14 T/H in minutes at a fixed damper): an AIR flow answers its damper in
+     seconds; a slow Ti of its PID (FICFA1055A 1500 s) is the tuning, not the process. Air flow loops (FICFA) take at most 30 s */
+  const air = lt === 'flow' && /^FICFA/.test(String((b.txt || [])[1] || ''));
+  const T = P.ti > 0 ? Math.min(air ? 30 : 600, Math.max(3, P.ti)) : TAU[lt] || 30,
     L = P.td > 0 ? Math.min(T / 3, Math.max(0.5, P.td * 2)) : lt === 'flow' ? 1 : Math.min(15, Math.max(1, T / 12)),
     K = Math.min(1, Math.max(0.2, (0.8 * T) / (kp * L)));
   return { K: +K.toFixed(2), T: +T.toFixed(1), L: +L.toFixed(1) };
@@ -548,8 +551,11 @@ function anProcStep(S, dt) {
         /* 2.2.0-beta.7: a flow with its valve almost shut (< 2 %) is not made by that valve alone (28.png: 380 T/H of condensate
            with the min-flow recirculation valve at 0.1 %; the condensate pump and the deaerator level valve make it): the valve
            adds to the flow of the snapshot (offset, gain K), instead of a flow proportional to a 0.1 % opening */
+        /* 3.2.0-beta.52 (live check #103: FIFA1043A ~ C HIGH-HIGH 65 T/H at the purge position 25 %): the start-up burner air dampers
+           of the snapshot are at their minimum stop (12.PNG MCVFA1043A 2.5 % with the burner air flowing): the same offset case */
+        const minStop = /^FICFA1043/.test(String((b.txt || [])[1] || ''));
         pr.Ka =
-          b.p.lt === 'flow' ? (pr.hop.mv < 2 ? pr.K : Math.max(0.02, kdn)) : Math.max(0.02, Math.min(pr.K, 0.9 * kdn));
+          b.p.lt === 'flow' ? (pr.hop.mv < 2 || minStop ? pr.K : Math.max(0.02, kdn)) : Math.max(0.02, Math.min(pr.K, 0.9 * kdn));
         /* 3.2.0-beta.39 (roadmap 2) (roadmap 2, MST): a desuperheater cools the steam from the header before it: its authority is that header less its
            outlet at the snapshot (03.png: SH no.2 outlet TICBR1140 462 C, spray 2 outlet TICBR1150 420 C at MV 30.2 %: 42 C, about 139 C at
            100 %, linear in the valve ASSUMED). The range limit above gave 162 C at 30.2 %: a shut spray 2 put the finishing SH inlet at
@@ -666,7 +672,17 @@ function anProcStep(S, dt) {
               : 0;
       }
       let ffw = +v[pr.integ.fw] || 0;
-      if (pr.integ.su)
+      const fwp = pr.integ.fwp,
+        opE = fwp && fwp.op != null && isFinite(fwp.op) ? fwp.op * (fwp.mul != null ? fwp.mul : 1) : null;
+      /* 3.2.0-beta.52 (live check #101): the unit model already writes the start-up valve flow into the feedwater transmitter
+         (unit.js U.ksu, pr.op of FICFW1007), so it was counted twice, and the drum kept filling for minutes after the start-up valve
+         shut (the transmitter lags, T 75 s): -149 -> -119 mm with the valve at 0 %. Now the drum gets the start-up flow of now and the
+         main valve part of the transmitter (its reading less the lagged start-up part) */
+      if (opE != null) {
+        const T = fwp.T > 0 ? fwp.T : 75;
+        pr.integ.opL = pr.integ.opL == null || AN.steady ? opE : pr.integ.opL + (opE - pr.integ.opL) * Math.min(1, dt / T);
+        ffw = Math.max(0, ffw - pr.integ.opL) + opE;
+      } else if (pr.integ.su)
         ffw +=
           (Math.max(0, Math.min(100, +uOf(pr.integ.su) || 0)) / 100) *
           pr.integ.suK *

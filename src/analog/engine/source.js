@@ -78,6 +78,8 @@ function srcState(t0) {
       coal: U.F0 > 0 ? srcCl(((U.Fc || 0) - (U.unb || 0)) / U.F0) : 0,
       paf: srcBit(['M.3302']),
       saf: srcBit(['M.3303']),
+      /* 3.2.0-beta.52 (live check #103): the share of the secondary air of the snapshot that the SA fan gives now (ABC-006 FIFA1081) */
+      sar: U.saN >= 0 && U.sa0 > 0 && U.tafS ? srcCl((+U.tafS.rt.v[U.saN] || 0) / U.sa0) : 1,
       fab: srcBit(['M.3308', 'M.3309']),
       cep: srcBit(['M.3350', 'M.3351']),
       dop: AN_SRC.field.dop ? 1 : 0
@@ -104,7 +106,9 @@ const SRC_RULES = (() => {
     /* oil flow: needs header pressure (ASSUMED full flow from 3 kg/cm2) */
     R['FICDO1043' + x] = s => ({ mul: srcCl(s.Pdo / 3) });
     /* burner air: from the secondary air fan (HIC-SADBSx = SA damper of the burner) */
-    R['FICFA1043' + x] = s => ({ mul: s.saf });
+    /* 3.2.0-beta.52 (live check #103: FIFA1043A ~ C HIGH-HIGH in the purge): the burner air is a branch of the secondary air header,
+       so it follows the SA flow (the purge SA 25 % gives less than the full-load SA of the snapshot), not only the SA fan running */
+    R['FICFA1043' + x] = s => ({ mul: s.saf * s.sar });
   }
   /* loop 4, fluidizing air: FA blower A / B running (ABC-014 M.3308 / M.3309) */
   R.FICFA1055A = s => ({ mul: s.fab });
