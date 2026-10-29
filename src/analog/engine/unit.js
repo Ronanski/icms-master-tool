@@ -781,6 +781,110 @@ function anDitlPos(name, j) {
     return null;
   }
 }
+/* 3.2.0-beta.59 (#116, user 2026-10-29 "DAPAT S PLANT MODEL GALING"): the run state of a DITL motor drawing (1 RUN, 0 STOP / TRIP), or
+   of one output row of a drawing of two machines ("DITL-39@3" = DEBRIS FILTER S-1502 IN OPERATION); null while the one world is not
+   built. The same reading as the lamps of the Training dock and the HMI (events.js lsAlarms.motState, dock.js mst) */
+function anDitlRun(addr) {
+  try {
+    if (typeof S === 'undefined' || !S.sheets || !window.WORLD || !WORLD.on || !WORLD.idx || !window.DUI) return null;
+    const m = /^(.*?)(?:@(\d+))?$/.exec(String(addr)),
+      C = AN_UNIT._dr || (AN_UNIT._dr = {});
+    let s = C[m[1]];
+    if (!s) {
+      s = S.sheets.concat(WORLD.inst || []).find(x => x.name.endsWith(m[1])) || null;
+      if (s) C[m[1]] = s;
+    }
+    if (!s) return null;
+    if (!s.nl) s.nl = netlist(s);
+    if (m[2] != null) {
+      const v = DUI.outVal(s, +m[2]);
+      return v == null ? null : v === 1 ? 1 : 0;
+    }
+    const st = window.lsAlarms ? lsAlarms.motState(s) : null;
+    return st == null ? null : st === 'RUN' ? 1 : 0;
+  } catch (e) {
+    return null;
+  }
+}
+/* 3.2.0-beta.59 (#116 / #117 follow-up, user 2026-10-29: the values of the 030 SEAWATER HMI come from the plant model, not from the HMI).
+   No transmitter of these tags is on a logic sheet (the condenser seawater T / P are PICT 30 indications of STN102, LT-SW1501 of STN103,
+   the debris filter DP gauges are PACKAGE instruments: alarm list DPT-SW1502 / 1504, 0 ~ 2000 mmH2O), so the plant model makes them
+   from the machines that run and from the exhaust steam of the turbine. Anchor = the HMI snapshot 30.PNG (2 SWP running, 465.8 T/H main
+   steam): condenser inlet 1.0 / 1.0 kg/cm2, outlet 0.4 / 0.5, seawater 28.5 / 28.6 -> 35.2 / 35.1 C, forebay -8.76 m, SWP-B 242.5 A,
+   SWP-C 207.6 A, SWBP 87.3 A. PR-OPE-5002: condenser inlet normal 1.0 ~ 1.1 kg/cm2; START DEBRIS FILTER "Input cut in (DP conditions)
+   20 mBar / 80 mBar" = a clean filter with flow 20 mbar (204 mmH2O), the backwash cuts in at 80 mbar (816 mmH2O).
+     header pressure  P = 0 / 0.7 / 1.0 / 1.1 kg/cm2 with 0 / 1 / 2 / 3 SWP (ASSUMED steps between the 30.PNG point and the SOP limit);
+     relative flow    w = sqrt(P / 1.0) (the condenser and the pipes are a fixed resistance: drop ~ flow^2);
+     condenser out    P x 0.4 (A) / 0.5 (B) (30.PNG);
+     seawater rise    30.PNG rise x (exhaust steam / 465.8) / w (exhaust = turbine steam + LP bypass to the condenser);
+     filter DP        204 x w^2 x (1 + dirt): the dirt of the screen grows while water passes (ASSUMED 80 mbar after 4 h at the
+                      normal flow); at 816 mmH2O the package backwashes (MV-SW1001 / 1002, local panel, ASSUMED 60 s) and the dirt is
+                      washed out. The water passes the screen whether the filter runs or not; only a filter IN OPERATION (DITL-39)
+                      backwashes, so a filter not started fouls on (DP up to the HIGH alarm). No pump: no flow, DP 0;
+     pump current     running: the 30.PNG current x (0.4 + 0.6 x share of the flow of one pump vs 30.PNG) (ASSUMED motor load curve);
+                      stopped 0. SWP-A was stopped in 30.PNG: the mean of B and C. SWBP: 87.3 A running.
+   The forebay level follows the tide, not the pumps: the 30.PNG level. */
+const AN_SW = {
+  swp: ['M.3353', 'M.3354', 'M.3355'],
+  swbp: ['DITL-30', 'DITL-30 #B', 'DITL-30 #C'],
+  df: ['DITL-39@3', 'DITL-39@14'],
+  Ph: [0, 0.7, 1.0, 1.1],
+  I0: [225.1, 242.5, 207.6],
+  Ib: [87.3, 87.3, 87.2],
+  dp0: 204,
+  dpBw: 816,
+  dirtT: 4 * 3600,
+  bwT: 60,
+  tauP: 3,
+  tauT: 60,
+  tauI: 2
+};
+function anSeawaterStep(U, dt) {
+  const K = AN_SW,
+    lag = (k, x, tau) => (U[k] = isFinite(U[k]) ? U[k] + ((x - U[k]) * Math.min(dt, tau)) / tau : x),
+    sw = K.swp.map(a => srcBit([a])),
+    bp = K.swbp.map(a => anDitlRun(a) || 0),
+    df = K.df.map(a => {
+      const r = anDitlRun(a);
+      return r == null ? 1 : r;
+    }),
+    n = sw.reduce((a, b) => a + b, 0),
+    nb = bp.reduce((a, b) => a + b, 0),
+    P = K.Ph[n],
+    w = Math.sqrt(P),
+    ex = Math.max(0, (U.ms || 0) + (U.qlp || 0)),
+    rise = w > 0 ? (ex / 465.8) / w : 0;
+  U.swN = n;
+  U.swNb = nb;
+  lag('swPiA', P, K.tauP);
+  lag('swPiB', P, K.tauP);
+  lag('swPoA', P * 0.4, K.tauP);
+  lag('swPoB', P * 0.5, K.tauP);
+  U.swTiA = 28.5;
+  U.swTiB = 28.6;
+  lag('swToA', 28.5 + 6.7 * rise, K.tauT);
+  lag('swToB', 28.6 + 6.5 * rise, K.tauT);
+  U.swLvl = -8.76;
+  /* the debris filters: S-1502 on the SWP header, S-1504 on the SWBP line (its flow: the SWBP running, ASSUMED 1/2 each up to 1) */
+  [
+    [1, w, df[0]],
+    [2, Math.min(1, nb / 2), df[1]]
+  ].forEach(([i, q, op]) => {
+    const d = 'swDirt' + i,
+      b = 'swBw' + i;
+    if (!isFinite(U[d])) U[d] = 0;
+    if (U[b] > 0) {
+      U[b] = Math.max(0, U[b] - dt);
+      U[d] = Math.max(0, U[d] - (3 * dt) / K.bwT);
+    } else U[d] += (3 * q * q * dt) / K.dirtT;
+    const dp = K.dp0 * q * q * (1 + U[d]);
+    if (op && dp >= K.dpBw && !(U[b] > 0)) U[b] = K.bwT;
+    lag('swDp' + i, dp, K.tauP);
+  });
+  /* the motor currents */
+  K.I0.forEach((I, i) => lag('swIa' + i, sw[i] ? I * (0.4 + (0.6 * w * 2) / n) : 0, K.tauI));
+  K.Ib.forEach((I, i) => lag('swIb' + i, bp[i] ? I : 0, K.tauI));
+}
 function anUnitOwns(T, ids) {
   const U = AN_UNIT;
   return U.on && ids && ids.length && ids.some(id => U.own.has(T.rt.st[id]));
@@ -856,6 +960,8 @@ function anUnitStep(dt) {
       l.S.rt.ext[l.n] = 1;
     }
   }
+  /* 3.2.0-beta.59: the seawater system (030 SEAWATER HMI), see AN_SW */
+  anSeawaterStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
   /* ---- 2.2.0-beta.17 (M4 step 4): the turbine black box (see AN_UNIT rollRate ...) ---- */
   const tb = U.tb || (U.tb = { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN }),
