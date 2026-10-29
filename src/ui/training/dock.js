@@ -657,6 +657,11 @@
     /* the Training page in the dock (no step running): the start buttons, the progress and the SOP sections with their ticks */
     R.classList.toggle('gd-menu', on && !gOn);
     if (gOn || !on) menuPut(false);
+    /* the box of the step on the HMI goes with the Gabay */
+    if (!gOn) {
+      const ov = document.getElementById('gdhl');
+      if (ov) ov.hidden = true;
+    }
     R.classList.toggle('gd-side', on && !min && m === 'side');
     R.classList.toggle('gd-bottom', on && !min && m === 'bottom');
     R.classList.toggle('gd-min', on && min);

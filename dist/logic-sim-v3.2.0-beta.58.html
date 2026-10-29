@@ -29314,7 +29314,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.58';
-      c3.textContent += ' · build e9cab69'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 9045b94'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -57988,6 +57988,11 @@ window.LS_GUIDE = (function () {
     /* the Training page in the dock (no step running): the start buttons, the progress and the SOP sections with their ticks */
     R.classList.toggle('gd-menu', on && !gOn);
     if (gOn || !on) menuPut(false);
+    /* the box of the step on the HMI goes with the Gabay */
+    if (!gOn) {
+      const ov = document.getElementById('gdhl');
+      if (ov) ov.hidden = true;
+    }
     R.classList.toggle('gd-side', on && !min && m === 'side');
     R.classList.toggle('gd-bottom', on && !min && m === 'bottom');
     R.classList.toggle('gd-min', on && min);
