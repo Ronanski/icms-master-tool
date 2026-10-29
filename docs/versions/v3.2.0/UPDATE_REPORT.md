@@ -1240,6 +1240,14 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 | 23 | Update banner | Nasubok: may bagong Beta sa version.json → lumalabas ang "New Beta available … Update now / Later" sa itaas, hindi tinatakpan ang Home | — |
 
 
+## 3.2.0-beta.61 (Beta, 2026-10-30, naghihintay ng GO BETA) — Training: puwedeng piliin ang SWP / SWBP na i-start, #115
+- **Problem (user: "pano kung SWP C ang gsto ko istart ... d mo na ma start e. Fix sa A at B"):** sa Hakbang 2 (2 sa 3 SWP) at sa SWBP (2 sa 3), ang buong interlock box at ang FIELD REMOTE button ay nasa UNANG hindi tumatakbong pump lang (A, saka B). Ang C ay "SUSUNOD · kulang ang interlock" na walang FIELD button, kaya ang START SWP-C ay laging naka-block.
+- **As Found:** `dock.js` fill(): `if (I.live && (run0 || shown))` = isang buong box lang, sa unang motor; ang gitna (goLogic / follow) ay sumusunod din sa unang hindi tumatakbo.
+- **Work Done (`dock.js`):** sa hakbang na may bilang ng makina (`s.max`), bawat hindi pa napiling pump ay may "PILIIN SWP-x (ito ang i-start)"; ang napili (o ang pinindot na START) ang may buong interlock, FIELD REMOTE at START, at siya ang sinusundan ng gitna (`pickOf` / `pickSet`). Walang binago sa logic, DITL o plant model; ang kondisyon ng hakbang (alinmang 2 sa 3, `live.js` SWP2) at ang standby AUTO step ay dati nang tama.
+- **#115:** kapag ✓ TAPOS na ang hakbang (hal. Hakbang 1 na nilaktawan), nawawala na ang "Pindutin ang Simulan ang 6 h purge", ang "Naka-PAUSE ang oras" at ang "Simulan / Laktawan" button.
+- **Sinubok (headless, dist html 1366 × 768, tunay na pindot sa dock; HINDI pa live sa app ng user):** Hakbang 2: PILIIN SWP-C → FIELD REMOTE C → START SWP-C → RUNNING (207.6 A); saka A → A + C RUNNING, B = STANDBY, ✓ TAPOS (M.3353 1, M.3354 0, M.3355 1). Hakbang 1: Laktawan → ✓ TAPOS lang, walang paalala. Walang page error. Screenshot: `/mnt/project-files/training-swp-pick-2026-10-30/`. `sop_bawal.js`: 6 FAIL, pareho sa beta.60 ("NO START BUTTON FOUND", lumang test).
+- **Hindi sinubok:** SWBP (parehong code), phone / tablet, live sa app ng user (pagkatapos ng GO BETA).
+
 ## 3.2.0-beta.60 (Beta, 2026-10-30, GO BETA ng user) — Training: ayos mula sa check ng lahat ng 105 hakbang
 - **Problem (user: "1 2 34 35? ... SPECIAL UNG 4???"):** ang beta.58 ay nasubok lang sa 4 na hakbang.
 - **Check:** lahat ng 105 hakbang, mismong app 1366 × 768, tunay na daloy (Training sa kaliwa → Gabay sa dock), screenshot bawat isa (`/mnt/project-files/training-dock-fix-2026-10-30/all3/`, `CHECK_LAHAT_NG_HAKBANG.md`).
