@@ -34,7 +34,7 @@ window.__CK = (function () {
     out.dreg = snap(DREG, seen, 0); out.mst = snap(MST, seen, 0); out.ms = snap(MS, seen, 0);
     out.anx = {}; for (const k of Object.keys(AN)) if (!SKIP_AN.has(k) && typeof AN[k] !== 'function') { const v = snap(AN[k], seen, 0); const j = v === undefined ? '' : JSON.stringify(v); if (v !== undefined && j.length < 3e6 && !/"\$[rx]"/.test(j)) out.anx[k] = v; }
     out.field = AN.fieldState ? AN.fieldState() : {};
-    out.co = snap(LS_GUIDE.CO, seen, 0);
+    out.co = snap((LS_GUIDE.CO || {}), seen, 0);
     out.guide = { cur: LS_GUIDE.cur, mine: JSON.parse(JSON.stringify(LS_GUIDE.mine())) };
     out.names = { an: AN.sheets.map(s => s.name), ditl: S.sheets.map(s => s.name) };
     return JSON.stringify(out);
@@ -76,7 +76,7 @@ window.__CK = (function () {
     for (const k of Object.keys(d.anx)) if (!/"\$[rx]"/.test(JSON.stringify(d.anx[k]))) put(AN, k, d.anx[k]);
     for (const k of Object.keys(d.field || {})) AN.field(k, d.field[k]);
     LS_GUIDE.open(d.guide.cur);
-    const CO = LS_GUIDE.CO; for (const k of Object.keys(CO)) delete CO[k]; for (const k of Object.keys(d.co)) CO[k] = dec(d.co[k]);
+    const CO = (LS_GUIDE.CO || {}); for (const k of Object.keys(CO)) delete CO[k]; for (const k of Object.keys(d.co)) CO[k] = dec(d.co[k]);
     Object.assign(LS_GUIDE.mine(), d.guide.mine);
     try { AN.paint(); } catch (e) {}
     return { puts: nPut, cur: d.guide.cur, t: AN.unit.t };
