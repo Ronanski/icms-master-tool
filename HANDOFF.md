@@ -5,7 +5,7 @@
 ## SIMULAN DITO (2026-10-26 PHT)
 
 - **Stable:** v2.4.0 (huling Stable).
-- **Beta:** `3.2.0-beta.55` sa `main` (2026-10-28: iisang linya; ang tine-test ay laging nasa main, Stable lang ang may GO STABLE). Kasama ang bagong HMI Air & Flue Gas, sand DITL, page links.
+- **Beta:** `3.2.0-beta.56` sa `main` (2026-10-28: iisang linya; ang tine-test ay laging nasa main, Stable lang ang may GO STABLE). Kasama ang bagong HMI Air & Flue Gas at 030 Seawater, sand DITL, page links.
 - **Ang gusto ng user:** `docs/SPEC.md` (S1 ~ S9). Plano = seksyon 3 ng file na iyon. Wala nang ROADMAP / CHECKLIST.
 - **Pag-check ng user:** `docs/USER_CHECK.md`.
 - **Rules:** `CLAUDE.md`, `PROJECT_RULES.md` (test policy = seksyon 5).
@@ -19,7 +19,7 @@
 
 ## Bagong HMI (PR #49, roadmap step 6)
 - Desisyon ng user 2026-10-26: ang HMI ay GUGUHITIN MULI (sariling vector graphics); ang snapshot ay gabay lang. Pinalitan nito ang lumang "kopyahin 1:1".
-- `src/ui/plant/hmi2.js`: library ng simbolo + screen `AFG` (Air & Flue Gas). `plant.js` draw: `sys.v2` → `PLANT_V2.draw` (parehong live link / faceplate).
+- `src/ui/plant/hmi2.js`: library ng simbolo + screen `AFG` (Air & Flue Gas). `src/ui/plant/hmi-sw.js`: screen `SW` (030 Seawater, STEEL lang). `plant.js` draw: `sys.v2` → `PLANT_V2.draw` (parehong live link / faceplate).
 - Huwag pa tanggalin ang lumang Plant HMI hangga't wala pang kapalit ang lahat ng system (14 screen sa `docs/hmi/HMI_SYSTEMS.md`).
 
 ## Estado ng app (links ABC ↔ DITL)
@@ -36,6 +36,7 @@
 - Plant chip: OFF | Unit lang; starting state: Cold o 150 MW lang. Plant model ON na walang starting state: header "—", ang ABC page ay bumubukas na Cold.
 
 ## Susunod na gagawin (roadmap sa `docs/SPEC.md` seksyon 3)
+0. 2026-10-29 11:40 PM PHT: **Beta 3.2.0-beta.56** sa main (GO BETA ng user) = bagong HMI page 030 SEAWATER (STEEL, `src/ui/plant/hmi-sw.js`). Bukas: DITL-39 rows 2 ~ 4 (SWP A / B / C RUNNING) hindi na-parse kaya M.079C = 0; ACWP at debris filter STOPPED sa 150 MW starting point (UPDATE_REPORT beta.56).
 0. 2026-10-29 10:40 PM PHT: **Beta 3.2.0-beta.55** sa main = START / STOP, AUTO / MAN, control row ng loop at FIELD ng interlock sa ilalim mismo ng pamagat ng hakbang sa Training dock (kita sa 1366 × 768).
 0. 2026-10-30 AM PHT: **Beta 3.2.0-beta.54** sa main (GO BETA ng user 2026-10-29 9:13 PM PHT) = Training integrity batch #105 / #107 / #108 / #109 (17 coach tinanggal, walang FORCE sa Training, control row sa ilalim ng pamagat ng hakbang + Buksan sa sheet, H34 ~ H39 ayon sa SOP). Detalye at UNUSUAL findings: UPDATE_REPORT beta.54.
 0. 2026-10-29 PM PHT: **Beta 3.2.0-beta.53** sa main = #102 / #103 / #105 / #106 ng live check R18 (air flow at furnace pressure ≤ 5 s ang tugon, Total air PA + SA + FA, oras ng alarm na lumabas sa suppression, NOTE ng H40) at #101 (40 min na nakatagong page pagkatapos ng H30).
