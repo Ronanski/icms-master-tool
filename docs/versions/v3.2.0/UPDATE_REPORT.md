@@ -1240,6 +1240,14 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 | 23 | Update banner | Nasubok: may bagong Beta sa version.json → lumalabas ang "New Beta available … Update now / Later" sa itaas, hindi tinatakpan ang Home | — |
 
 
+## 3.2.0-beta.56 (Beta, 2026-10-29, GO BETA ng user) — HMI 030 SEAWATER
+- **Problem:** walang HMI page ng seawater system (roadmap step 6; mock-up STEEL inaprubahan ng user 2026-10-29).
+- **Work Done:** bagong screen `SW` sa Plant view (`src/ui/plant/hmi-sw.js`; `hmi2.js` screens hook, iisang style, NAV; `src/ui/hmi/inject.js`). Daloy ayon sa K1AU3-PD-020 / PD-021: SWP → S-1502 → condenser H-1110 A / B (2 pass, shell at tube side) → siphon pit → channel; CTCS-A / B; SWBP → S-1504 → CCWHE H-1107A / B / C; closed aux cooling water loop (ACWP, T-1109, users; berde = cooled, kahel = hot return); hypo dosing.
+- **As Left:** run state = motor drawing ng one world (`LS_DOCK.mst`: M.3353 ~ 3355, DITL-30 #A ~ C, DITL-39 rows 3 / 14, DITL-76 / 77); CTCS = "STATUS AT LCP" (DITL-119 walang running feedback); P-0761A / B, P-0762B = "LOCAL" (STN105 DI lang), P-0762A = field state `hypo`. ● = plant estimate (TISW / PISW1110, LISW1501, motor current; walang logic sheet ng mga tag; batay sa 30.PNG, ASSUMED proportions sa code). Click = info card.
+- **Sinubok:** build + check; screenshot sa app (Practise 150 MW, 1920 × 1080): SWP-B / C, SWBP-A / C RUNNING, A / B STOPPED (tugma sa 30.PNG); inlet 1.00 kg/cm², outlet 35.3 °C.
+- **Hindi sinubok:** ibang laki ng screen; live test ng user.
+- **UNUSUAL / findings (walang binago):** (1) sa 150 MW starting point, ACWP-A / B (DITL-76 / 77) at debris filter IN OPERATION (DITL-39 rows 3 / 14, DI I.0095 / I.0415) ay STOPPED; sa 27.PNG ay RUNNING ang ACWP-A → kulang ng starting point ng app, hindi logic ng designer. (2) DITL-39 PDF: rows 2 ~ 4 = SEAWATER PUMP A / B / C RUNNING (I.032A / I.0526 / I.081A, FROM 29A-55) → OR → M.079C ANY SEAWATER PUMP RUNNING (TO 119-2, at sa DOP-DF1001 / 1002). Sa parsed drawing ng app, wala ang mga input row na ito, kaya M.079C = 0 kahit tumatakbo ang SWP → bug ng app (parse), hindi pa naayos.
+
 ## 3.2.0-beta.55 (Beta, 2026-10-29, GO BETA ng user) — START / STOP sa itaas ng Training dock
 - Live check ng beta.54 (user 2026-10-29): ang START / STOP ay nasa ibaba ng card (1 900 ~ 2 700 px sa 768 px na screen). Ngayon, sa ilalim mismo ng pamagat ng hakbang: control row ng loop (PV, SV, MV, mode, M / A / R, MV ▲▼, SV ▲▼, Buksan sa sheet ↗), saka START / STOP + RUNNING / STOPPED + AUTO / MAN + "Sheet ↗" bawat motor, ang mga button ng hakbang, at ang interlock na nasa itaas ang FIELD button ng kulang na contact. Ang paliwanag at SOP list ay nasa ilalim na.
 - Sinubok sa 1366 × 768: hakbang 2, 6, 34, 35, 39, 40, 46 — lahat ng START / STOP at control row ay 437 ~ 721 px; FIELD REMOTE → START SWP-A → RUNNING (pula), naka-log.
