@@ -1257,11 +1257,15 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 - **Sinubok:** build + check; headless 1366 × 768 hakbang 1 / 34 / 35: kasya ang dock, logic → Balik (focus naibabalik), MV ▲▲ FICFA1081 0 → 5, walang page error.
 - **Hindi sinubok:** phone / bottom layout, buong Cold → 150 MW. Luma ang `tests/regress/training_dock.js` (hinahanap ang lumang "Gabay" button; parehong FAIL sa main); `sop_bawal` 6 FAIL na pareho sa main.
 
-## 3.2.0-beta.59 (Beta, GO BETA ng user) — 030 SEAWATER: DP ng debris filter at buong page pagbukas
-- **#116:** DPISW1502 / 1504 ay "-----". Ang DPT-SW1502 / 1504 ay PACKAGE instrument (alarm list: 0 ~ 2000 mmH2O, walang DCS AI). Ngayon ● plant estimate ayon sa PR-OPE-5002 START DEBRIS FILTER "Input cut in (DP conditions) 20 mBar / 80 mBar": may flow = 20 mbar = 204 mmH2O, walang flow = 0; nakasulat sa ilalim "backwash at 816 (SOP)" (80 mbar).
-- **#117:** ang 030 page ay buong nakikita pagbukas (`fitAll`, plant.js fit); dati hanggang 30 % ng lapad ang nasa labas.
-- **Sinubok:** screenshot sa app 1366 × 768 (Practise 150 MW, 55 s): buong page kita, DPISW1502 / 1504 = 204.0 mmH2O, SWP-B / C RUNNING.
-- **Hindi sinubok:** cold start; ibang screen size.
+## 3.2.0-beta.59 (Beta, GO BETA ng user) — 030 SEAWATER: lahat ng value galing sa plant model, buong page pagbukas
+- **#116 + utos ng user (2026-10-30 "DAPAT S PLANT MODEL GALING"):** ang mga value ng 030 na walang transmitter sa logic sheet ay kinukuwenta na ng plant model (`unit.js` `AN_SW` / `anSeawaterStep`), hindi na ng HMI. Tinanggal ang ● estimate. Ang HMI ay nagbabasa lang (`UNIT.swxx`); kapag Plant model OFF ay "-----".
+  - **DPISW1502 / 1504 (DP ng debris filter, PACKAGE gauge, alarm list 0 ~ 2000 mmH2O):** 204 mmH2O (20 mbar, PR-OPE-5002) × (flow)² × (1 + dumi). Dumadami ang dumi habang may tubig na dumadaan (ASSUMED: 80 mbar pagkalipas ng 4 h sa normal flow). Sa 816 mmH2O (80 mbar cut-in) nagba-backwash ang package (ASSUMED 60 s) at bumabalik sa 204, PERO lang kung IN OPERATION ang filter (DITL-39 row 3 / 14). Kapag hindi naka-start ang filter, tuloy ang pagtaas ng DP. Walang pump = 0.
+  - **Condenser seawater:** inlet pressure 0 / 0.7 / 1.0 / 1.1 kg/cm² sa 0 / 1 / 2 / 3 SWP (M.3353 ~ 3355); outlet = 0.4 (A) / 0.5 (B) ng inlet (30.PNG); outlet temp = 28.5 / 28.6 °C + 6.7 / 6.5 °C × (exhaust steam ng turbine + LP bypass) / 465.8 T/H ÷ flow.
+  - **LISW1501:** −8.76 m (30.PNG; sumusunod sa tide, hindi sa pump).
+  - **Current ng pump (IIP1501A ~ C, IIP1503A ~ C):** tumatakbo = current ng 30.PNG × load ng pump; nakahinto = 0. Ang SWBP run state ay galing sa motor drawing ng DITL-30 (bagong `anDitlRun`).
+- **#117:** ang 030 page ay buong nakikita pagbukas (`fitAll`, plant.js fit).
+- **Sinubok (app, 1366 × 768, Practise 150 MW, 55 s):** buong page kita; inlet 1.00 / 1.00, outlet 0.40 / 0.50 kg/cm², outlet 35.3 / 35.2 °C, forebay −8.76 m, DP 205 / 205 mmH2O, SWP-B 242.5 A, SWP-C 207.6 A, SWBP-A / C 87.3 / 87.2 A, ang mga nakahinto = 0. Nang ilagay ang dumi sa 3.3 (filter STOPPED sa starting point na ito): DP 828 at tumataas, walang backwash. Walang error sa page.
+- **Hindi sinubok:** backwash habang IN OPERATION ang filter (naka-STOP ang filter sa 150 MW starting point, isyung nilaktawan ng user); pag-start / pag-stop ng SWP sa app; cold start; ibang screen size.
 
 ## 3.2.0-beta.56 (Beta, 2026-10-29, GO BETA ng user) — HMI 030 SEAWATER
 - **Problem:** walang HMI page ng seawater system (roadmap step 6; mock-up STEEL inaprubahan ng user 2026-10-29).
