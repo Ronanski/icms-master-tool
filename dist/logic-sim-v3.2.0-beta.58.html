@@ -29314,7 +29314,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.58';
-      c3.textContent += ' · build 9045b94'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 54c3e78'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -48850,6 +48850,10 @@ body.app2:not(#_) #gdock #trainws button.trbtn{min-height:2.1rem;padding:0 .6rem
 #gdock #trainws .trbody{display:block}
 #gdock #trainws :is(.trlist,.trside,.trsrc){display:none!important}
 #gdock #trainws .trmain{padding:8px 10px 16px;overflow:visible}
+.gd-wr b.run{color:#dc2626}
+.gd-wr b.stop{color:#22a052}
+/* a field step without a DCS control: no empty "CONTROLS NG HAKBANG" heading */
+#gdock .gd-card:not(:has(.gd-ctl,.gd-btn,.gd-ilh,.gd-ild,.gd-vs)) > .gd-h:first-child{display:none}
 /* 3.2.0-beta.25 ladder view (src/ui/ladder/ladder.js): a panel on the right half of the DITL page */
 #ladder {
   position: fixed;
@@ -56348,13 +56352,14 @@ window.LS_GUIDE = (function () {
   const PUSH = {};
   const simT = () => +U().t || 0;
   /* user 2026-10-29 (#108, no coach): the operator's own trims, one press = one step of the faceplate (the same signal as the sheet) */
-  const step = (l, t, d) => btn(l, () => A.man(t, Math.max(0, Math.min(100, Math.round((+mv(t) || 0) * 2) / 2 + d))));
+  /* .tag: the loop of the button (the dock leaves out a button whose loop has its own control card: the same MV ▲▼ twice) */
+  const step = (l, t, d) => Object.assign(btn(l, () => A.man(t, Math.max(0, Math.min(100, Math.round((+mv(t) || 0) * 2) / 2 + d)))), { tag: t });
   const oilStep = (l, ks, d) =>
     btn(l, () => {
       for (const k of ks) if (bit({ A: 'M.3412', B: 'M.3413', C: 'M.3418', D: 'M.3419' }[k]) > 0.5) A.man('FICDO1043' + k, Math.max(20, Math.min(100, Math.round(+mv('FICDO1043' + k) || 0) + d)));
       return '';
     });
-  const svStep = (l, t, d, lo, hi) => btn(l, () => (md(t) === 'AUTO' ? A.auto(t, Math.max(lo, Math.min(hi, Math.round((+svOf(t) || 0) + d)))) : 'Nasa ' + md(t) + ' ang ' + t + ': ilagay muna sa A'));
+  const svStep = (l, t, d, lo, hi) => Object.assign(btn(l, () => (md(t) === 'AUTO' ? A.auto(t, Math.max(lo, Math.min(hi, Math.round((+svOf(t) || 0) + d)))) : 'Nasa ' + md(t) + ' ang ' + t + ': ilagay muna sa A')), { tag: t });
   /* ---------- reading ---------- */
   const mv = t => {
     const f = L().fp(t);
@@ -56817,11 +56822,13 @@ window.LS_GUIDE = (function () {
       FIELD(5, 'Deaerator warming, condensate polisher, bed material (field)', [28, 29, 30, 31, 32, 33, 34, 35], { d: 'Mga gawain ng field operator na walang DCS / TCS signal. Ang aux steam, turning gear, gland sealing at vacuum up ay nasa TCS panel (mga susunod na hakbang).' }),
       /* 3.2.0-beta.38 (CHECKLIST 0.6): the turbine auxiliaries on the TCS model (tcs.js): ATS criteria 1.14 ~ 1.19, PR-OPE-5002 5708 / 6118
          / 6512. Before (beta.37) one "field" confirm */
-      { st: 5, sec: 31, t: 'TCS: lube oil pump, EH oil pump, MOT vapour extractor START', d: 'Kailangan ng bearing oil (ATS 1.15 / 1.16), control oil (1.14) at vapour extractor (1.18) bago ang turning gear at ang lahat ng ATS step.', c: C('Lube oil, EH oil, vapour extractor tumatakbo', () => TC().aux.lop && TC().aux.eh && TC().aux.vex, () => ['lop', 'eh', 'vex'].filter(k => !TC().aux[k]).join(', ') || 'OK'), a: [btn('LUBE OIL PUMP START', () => A.tcs('lop', 1), () => TC().aux.lop), btn('EH OIL PUMP START', () => A.tcs('eh', 1), () => TC().aux.eh), btn('VAPOUR EXTRACTOR START', () => A.tcs('vex', 1), () => TC().aux.vex)] },
-      { st: 5, sec: 31, t: 'Turning gear ON (mga 3 rpm)', d: 'Umiikot nang dahan-dahan ang rotor para hindi ito bumaluktot habang umiinit (ATS 1.19 TURBINE TURNING). Kailangan ng bearing oil.', c: C('Turbine turning (≥ 1 rpm)', () => TC().aux.tg && TC().rpm >= 1, () => f1(+TC().rpm || 0) + ' rpm'), a: [btn('TURNING GEAR ON', () => A.tcs('tg', 1), () => TC().aux.tg)] },
+      /* all-steps check 2026-10-30: the section of each turbine step is the PR-OPE-5002 section that does it (14 lube oil / vapour
+         extractor, 33 gland sealing with the turning gear, 35 vacuum up; the aux steam stays 31); the practice steps are section 47 */
+      { st: 5, sec: 14, t: 'TCS: lube oil pump, EH oil pump, MOT vapour extractor START', d: 'Kailangan ng bearing oil (ATS 1.15 / 1.16), control oil (1.14) at vapour extractor (1.18) bago ang turning gear at ang lahat ng ATS step.', c: C('Lube oil, EH oil, vapour extractor tumatakbo', () => TC().aux.lop && TC().aux.eh && TC().aux.vex, () => ['lop', 'eh', 'vex'].filter(k => !TC().aux[k]).join(', ') || 'OK'), a: [btn('LUBE OIL PUMP START', () => A.tcs('lop', 1), () => TC().aux.lop), btn('EH OIL PUMP START', () => A.tcs('eh', 1), () => TC().aux.eh), btn('VAPOUR EXTRACTOR START', () => A.tcs('vex', 1), () => TC().aux.vex)] },
+      { st: 5, sec: 33, t: 'Turning gear ON (mga 3 rpm)', d: 'Umiikot nang dahan-dahan ang rotor para hindi ito bumaluktot habang umiinit (ATS 1.19 TURBINE TURNING). Kailangan ng bearing oil.', c: C('Turbine turning (≥ 1 rpm)', () => TC().aux.tg && TC().rpm >= 1, () => f1(+TC().rpm || 0) + ' rpm'), a: [btn('TURNING GEAR ON', () => A.tcs('tg', 1), () => TC().aux.tg)] },
       { st: 5, sec: 31, t: 'Aux steam: buksan ang MV-AS1391 (main steam > 12 kg/cm²)', d: 'Ang aux steam header (10 kg/cm²) ay galing sa main steam (PR-OPE-5002 5727 REQUIREMENT: MS > 12 kg/cm²). Ito ang steam ng gland seal at ng ejector.', c: C('Aux steam header > 10 kg/cm²', () => TC().Pa > 10, () => f1(+TC().Pa || 0) + ' kg/cm²'), a: [btn('MV-AS1391 OPEN', () => A.tcs('aux', 1), () => TC().aux.asv)], wait: 1 },
-      { st: 5, sec: 31, t: 'Gland sealing (aux > 7 kg/cm², turning gear, vacuum breaker bukas)', d: 'PR-OPE-5002 6118: MS > 12, aux > 7 kg/cm², gland steam 220 °C, tumatakbo ang turning gear, bukas ang vacuum breaker MV-AV1391 (ATS 1.10).', c: C('Gland steam seal header normal', () => TC().aux.gland, () => (TC().aux.gland ? 'in service' : 'off')), a: [btn('GLAND STEAM IN SERVICE', () => A.tcs('gland', 1), () => TC().aux.gland)] },
-      { st: 5, sec: 31, t: 'Vacuum up: isara ang vacuum breaker, ejectors (aux > 10 kg/cm²)', d: 'PR-OPE-5002 6512: tapos ang gland sealing, aux > 10 kg/cm², sarado ang vacuum breaker MV-AV1391, 1st at 2nd ejector (sa DCS: MV-AV1391 CLOSE sa DITL-56, tapos MV-AS1396 at MV-AS1395 OPEN sa DITL-55 / 54). Mga 15 minuto hanggang ≥ 90 % (ATS 1.11).', c: b.ALL(C('Condenser vacuum ≥ 90 %', () => +U().vac >= 0.9, () => f0(100 * (+U().vac || 0)) + ' %'), C('LP exhaust hood spray FVCD1904 AUTO (PR-OPE-5002 6307)', () => !!TC().aux.hsp, () => (TC().aux.hsp ? 'AUTO' : 'OFF'))), a: [movB('DITL-56', 'MV-AV1391', 0, 3, 13), movB('DITL-55', 'MV-AS1396', 1, 4, 13), movB('DITL-54', 'MV-AS1395', 1, 4, 13), btn('VACUUM UP (ejectors)', () => A.tcs('vacuum', 1), () => TC().aux.ej), btn('Hood spray FVCD1904 AUTO', () => A.tcs('hood', 1), () => !!TC().aux.hsp)], wait: 1 },
+      { st: 5, sec: 33, t: 'Gland sealing (aux > 7 kg/cm², turning gear, vacuum breaker bukas)', d: 'PR-OPE-5002 6118: MS > 12, aux > 7 kg/cm², gland steam 220 °C, tumatakbo ang turning gear, bukas ang vacuum breaker MV-AV1391 (ATS 1.10).', c: C('Gland steam seal header normal', () => TC().aux.gland, () => (TC().aux.gland ? 'in service' : 'off')), a: [btn('GLAND STEAM IN SERVICE', () => A.tcs('gland', 1), () => TC().aux.gland)] },
+      { st: 5, sec: 35, t: 'Vacuum up: isara ang vacuum breaker, ejectors (aux > 10 kg/cm²)', d: 'PR-OPE-5002 6512: tapos ang gland sealing, aux > 10 kg/cm², sarado ang vacuum breaker MV-AV1391, 1st at 2nd ejector (sa DCS: MV-AV1391 CLOSE sa DITL-56, tapos MV-AS1396 at MV-AS1395 OPEN sa DITL-55 / 54). Mga 15 minuto hanggang ≥ 90 % (ATS 1.11).', c: b.ALL(C('Condenser vacuum ≥ 90 %', () => +U().vac >= 0.9, () => f0(100 * (+U().vac || 0)) + ' %'), C('LP exhaust hood spray FVCD1904 AUTO (PR-OPE-5002 6307)', () => !!TC().aux.hsp, () => (TC().aux.hsp ? 'AUTO' : 'OFF'))), a: [movB('DITL-56', 'MV-AV1391', 0, 3, 13), movB('DITL-55', 'MV-AS1396', 1, 4, 13), movB('DITL-54', 'MV-AS1395', 1, 4, 13), btn('VACUUM UP (ejectors)', () => A.tcs('vacuum', 1), () => TC().aux.ej), btn('Hood spray FVCD1904 AUTO', () => A.tcs('hood', 1), () => !!TC().aux.hsp)], wait: 1 },
       /* ---- 6 bypass at 61 kg/cm2, oil only (3.2.0-beta.37, CHECKLIST 0.5: PR-OPE-5002 BYPASS SYSTEM SERVICING -> TURBINE ROLLING ->
          SYNCH. & INITIAL LOAD -> LOAD UP -> solid fuel; FHI SECT_7 Fig. 2 COLD STARTUP: roll at 60 kg/cm2 6 h, coal 8.6 h. Before, the
          coal and 123 kg/cm2 came before the roll and the bypass dumped 155 ~ 189 T/H) ---- */
@@ -57037,10 +57044,10 @@ window.LS_GUIDE = (function () {
       },
       { st: 9, sec: 44, req: ['bm', 'tm'], t: 'Hawakan ang 150 MW: MSP 118 ~ 128, MST ≤ 545 °C, drum level ±150 mm, O₂ 3 ~ 6 %', d: 'Tapos ang start-up. Ang CCS na ang humahawak.', c: b.X2[9][1], wait: 1 },
       /* ---- 10 practice ---- */
-      { st: 10, t: 'Practice: ibaba ang HIC-ULD sa 120 MW (▼▼)', d: 'Sa AUTO, target MW lang ang gagalawin mo. Ang CCS ang magbabawas ng coal at hangin.', c: b.OUT('HIC-ULD', null, 121, 'MW'), fps: ['HIC-ULD'] },
-      { st: 10, t: 'Panoorin: 120 MW, coal mga 72 T/H, MSP hawak', d: 'Bumababa ang MW ng 3 MW bawat minuto at hawak ng PIC-COBM ang 123 kg/cm².', c: b.HOLD(120, b.ALL(b.VAL('MW', 117, 123), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150))), wait: 1 },
-      { st: 10, t: 'Ibalik ang HIC-ULD sa 150 MW (▲▲)', d: 'Itaas ulit ang target.', c: b.OUT('HIC-ULD', 149, null, 'MW'), fps: ['HIC-ULD'] },
-      { st: 10, t: 'Hawakan ang 150 MW', d: 'MSP 118 ~ 128, drum level ±150 mm, O₂ 3 ~ 6 %.', c: b.HOLD(300, b.ALL(b.VAL('MW', 147, 153), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150), b.VAL('O2', 3, 6))), wait: 1 }
+      { st: 10, sec: 47, t: 'Practice: ibaba ang HIC-ULD sa 120 MW (▼▼)', d: 'Sa AUTO, target MW lang ang gagalawin mo. Ang CCS ang magbabawas ng coal at hangin.', c: b.OUT('HIC-ULD', null, 121, 'MW'), fps: ['HIC-ULD'] },
+      { st: 10, sec: 47, t: 'Panoorin: 120 MW, coal mga 72 T/H, MSP hawak', d: 'Bumababa ang MW ng 3 MW bawat minuto at hawak ng PIC-COBM ang 123 kg/cm².', c: b.HOLD(120, b.ALL(b.VAL('MW', 117, 123), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150))), wait: 1 },
+      { st: 10, sec: 47, t: 'Ibalik ang HIC-ULD sa 150 MW (▲▲)', d: 'Itaas ulit ang target.', c: b.OUT('HIC-ULD', 149, null, 'MW'), fps: ['HIC-ULD'] },
+      { st: 10, sec: 47, t: 'Hawakan ang 150 MW', d: 'MSP 118 ~ 128, drum level ±150 mm, O₂ 3 ~ 6 %.', c: b.HOLD(300, b.ALL(b.VAL('MW', 147, 153), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150), b.VAL('O2', 3, 6))), wait: 1 }
     ];
     ST = ST.flat();
     ST.forEach((s, i) => (s.i = i));
@@ -58337,7 +58344,8 @@ window.LS_GUIDE = (function () {
     for (const t0 of (s && s.fps) || []) {
       const t = call(() => LV().ctlTag(t0), null) || t0,
         f = call(() => LV().fp(t), null);
-      if (f && f.shn && !out.some(x => x.t === t)) out.push({ k: f.shn + '|' + t, l: f.shn + ' · ' + t, t, sh: f.shn });
+      /* one button per sheet (FICFA1071 and FICFA1081 are both on ABC-007: one "ABC-007", step 66) */
+      if (f && f.shn && !out.some(x => x.t === t || x.sh === f.shn)) out.push({ k: f.shn + '|' + t, l: f.shn + ' · ' + t, t, sh: f.shn });
     }
     return out.slice(0, 3);
   }
@@ -58454,7 +58462,8 @@ window.LS_GUIDE = (function () {
     put([6], 'SW', /^MV-SW1002 BACKWASH$/, /DPISW1504$/);
     put([7], 'SW', /^EXPANSION TANK$/);
     put([8], 'SW', /^ACWP-[AB]$/);
-    put([9, 10, 11, 12, 13, 14, 15, 16, 21, 29, 31, 33, 34], 'UNIT');
+    put([9, 10, 11, 12, 13, 29, 31, 34], 'UNIT');
+    put([14, 15, 16, 21, 33], 'UNIT', /^Turbine \(TCS/);
     put([17, 27], 'AFG', /^AIR PREHEATER H-1052$/);
     put([18, 35], 'SW', /^CONDENSER H-1110/, /^HOTWELL$/);
     put([19], 'UNIT', /^DRUM LEVEL$/);
@@ -58541,7 +58550,9 @@ window.LS_GUIDE = (function () {
       X = hmiTargets(s).map(x => {
         const r = (x.parentNode && x.parentNode.tagName === 'g' && x.parentNode.getBoundingClientRect().height < 90 ? x.parentNode : x).getBoundingClientRect();
         return [r.left - m.left - 6, r.top - m.top - 5, r.width + 12, r.height + 10];
-      }),
+      })
+        /* one box for one place: a label inside the box of its faceplate is not boxed again (all-steps check 2026-10-30, step 65) */
+        .filter((a, j, L) => !L.slice(0, j).some(b => Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0]) > 0.5 * Math.min(a[2], b[2]) && Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]) > 0.5 * Math.min(a[3], b[3]))),
       k = JSON.stringify(X.map(a => a.map(Math.round))) + (GD() ? GD().cur : '');
     ov.hidden = !X.length;
     if (k === ov.dataset.k) return;
@@ -58999,8 +59010,9 @@ window.LS_GUIDE = (function () {
       /* user 2026-10-29 (mock-up v3 "iwasan ang doble"): a step button that only writes the MV / mode of a loop shown in the controls
          above ("SA damper 0 %", "SA damper ▲▲ +5 %") is left out: the operator uses the faceplate. The guide still knows it (s.a) */
       if (!a.stop && !a.dg && !a.loc && !a.mot && !a.sel && fpTags.length) {
-        const m = /\bA\.(?:man|auto|rem)\(\s*'([^']+)'/.exec(String(a.f));
-        if (m && fpTags.includes(call(() => LV().ctlTag(m[1]), null) || m[1])) continue;
+        const m = /\bA\.(?:man|auto|rem|loc)\(\s*'([^']+)'/.exec(String(a.f)),
+          tg = a.tag || (m && m[1]);
+        if (tg && fpTags.includes(call(() => LV().ctlTag(tg), null) || tg)) continue;
       }
       /* 3.2.0 walkthrough #21: the push button of the drawing under the label (sheet, row, tag of the CRT P.B.); pressed, the row is
          shown on the sheet when the centre follows the step */
@@ -59382,7 +59394,13 @@ window.LS_GUIDE = (function () {
     if (!s) return;
     /* 3.2.0 retest #26: a tick made in the Training list shows here (the list and the panel are the same ticks, ls-train) */
     if (els.trKey != null && JSON.stringify(ls.get('ls-train', {})) !== els.trKey) return fill(true);
-    (els.watch || []).forEach(w => (w.v.textContent = w.fm(call(w.f, NaN))));
+    /* a state in the values to watch: RUNNING / IN OPERATION / OPEN red, STOPPED / CLOSED green (the colour convention of the plant) */
+    (els.watch || []).forEach(w => {
+      const t = String(w.fm(call(w.f, NaN)));
+      w.v.textContent = t;
+      w.v.classList.toggle('run', /\b(RUNNING|IN OPERATION|OPEN(ED)?)\b/.test(t));
+      w.v.classList.toggle('stop', /\b(STOPPED|CLOSED)\b/.test(t) && !/\bRUNNING\b/.test(t));
+    });
     /* R9 #70: the "⚠ 0 / n BAGO I-START" warning goes away once the items are ticked or the machine runs (it stayed on) */
     if (els.ovw && !els.ovw.hidden && !els.ovw._r) {
       const nb = (els.before || []).length,
@@ -59560,7 +59578,13 @@ window.LS_GUIDE = (function () {
           for (const a of o.abc) if (!ab.includes(a)) ab.push(a);
         }
         /* where the missing signal comes from (an indication, not a button: user 2026-10-30) */
-        if (fs.length || ab.length)
+        /* only when it says more than the row itself (a field contact of the same name as the row is the row: step 25 BFWP) */
+        const rn = svcN(r.svc) || r.svc || '',
+          same = f => {
+            const x = svcN(f.svc) || '';
+            return !!x && (rn.includes(x) || x.includes(rn));
+          };
+        if (fs.some(f => !same(f)) || ab.length)
           it.box.append(
             E('div', {
               cls: 'gd-ilw',
