@@ -5,7 +5,7 @@
 ## SIMULAN DITO (2026-10-26 PHT)
 
 - **Stable:** v2.4.0 (huling Stable).
-- **Beta:** `3.2.0-beta.50` sa `main` (2026-10-28: iisang linya; ang tine-test ay laging nasa main, Stable lang ang may GO STABLE). Kasama ang bagong HMI Air & Flue Gas, sand DITL, page links.
+- **Beta:** `3.2.0-beta.51` sa `main` (2026-10-28: iisang linya; ang tine-test ay laging nasa main, Stable lang ang may GO STABLE). Kasama ang bagong HMI Air & Flue Gas, sand DITL, page links.
 - **Ang gusto ng user:** `docs/SPEC.md` (S1 ~ S9). Plano = seksyon 3 ng file na iyon. Wala nang ROADMAP / CHECKLIST.
 - **Pag-check ng user:** `docs/USER_CHECK.md`.
 - **Rules:** `CLAUDE.md`, `PROJECT_RULES.md` (test policy = seksyon 5).
@@ -36,6 +36,7 @@
 - Plant chip: OFF | Unit lang; starting state: Cold o 150 MW lang. Plant model ON na walang starting state: header "—", ang ABC page ay bumubukas na Cold.
 
 ## Susunod na gagawin (roadmap sa `docs/SPEC.md` seksyon 3)
+0. 2026-10-29 ~11:30 AM PHT: **Beta 3.2.0-beta.51** sa main = 5 natitira sa beta.50 (#99 furnace pressure kapag IDF lang, #98 diesel PCV buttons, #91 Bantayan galing sa model o "— walang model", #96 NOTE ng alarm, #23 update banner).
 0. 2026-10-29 ~8:30 AM PHT: **Beta 3.2.0-beta.50** sa main = 9 nakita sa live check ng beta.49 (#90 ~ #97 at #23): condensate / hotwell / deaerator water balance, BFWP suction pressure mula sa deaerator, MOV ng Hakbang 26 gumagalaw na, drum level alarm ayon sa alarm list, NOTE ng Hakbang 30, HMI Steel default at alarm strip = header, Bantayan live, DITL Legend. Check: totoong pindot Hakbang 1 → 30.
 0. 2026-10-28 ~10:45 PM PHT: **Beta 3.2.0-beta.49** sa main = Plant view dalawang page lang (007 Air & Flue Gas bago, UNIT · controllers); tinanggal ang 27 lumang screen at mga larawan nito. Rule ng user: hanggang 3 branch lang bukod sa main.
 0. 2026-10-28 ~10:10 PM PHT: **Beta 3.2.0-beta.48** sa main = bagong HMI (PR #49) + sand DITL (PR #48) + docs PR #44 / #50 / #51 + R9 #86 ~ #90 + maling SYSTEM TRIP alarm ng DITL-777 sa Cold. Check: totoong pindot Hakbang 1 → 20, 7 bahagi. Hindi isinama (luma / napalitan): PR #40, #41, `adoring-carson`, `feat/persistent-context-retrieval`, `ccr-8a6a202c` (listahan sa user bago burahin).

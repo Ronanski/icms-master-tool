@@ -1449,31 +1449,39 @@
         lm = [f.lim.n ? f.lim.n : rg ? rg[1] : '', f.lim.a ? 'Alarm ' + f.lim.a : '', f.lim.tr ? 'Trip ' + f.lim.tr : ''].filter(Boolean);
       if (!lm.length) continue;
       const nm = f.t.replace(/\s*\([^()]*\d[^()]*~[^()]*\)/, '').replace(/^(Check|Verify|Ensure)\s+(that\s+)?(the\s+)?/i, '');
-      /* live check #91: the row shows the FIELD READING now (the gauge the field operator reads), not the SOP value: the normal value
-         of the SOP (the middle of its range) while the equipment of the row runs, 0 (current, pressure) or the ambient (temperature)
-         while it is stopped. ASSUMED field model: these gauges have no DCS signal in the logic; the SOP value is in the hint */
+      /* live check #91 (beta.51): the row shows a value of the PLANT MODEL only: the PV of the DCS loop of the row's tag (PI-DO0005 =
+         PICDO0005) or of the level controller; a field gauge without a model (motor current, local pressure / temperature) reads
+         "— walang model" (before, the middle of the SOP range was shown as if read). The SOP value is in the hint */
       const nums = String(lm[0]).match(/-?\d+(?:\.\d+)?/g) || [],
         lo = nums.length ? +nums[0] : NaN,
-        hi = nums.length > 1 ? +nums[1] : lo,
         un = (/°C|ksc|kg\/cm2|bar|%|\bA\b|(?<=\d)A\b/.exec(lm[0]) || [/current/i.test(f.t) ? 'A' : ''])[0],
-        temp = /°C|temp/i.test(un + ' ' + f.t),
-        runs = () =>
-          /\bCEP\b/i.test(f.t)
-            ? call(() => LV().val('M.3350') > 0.5 || LV().val('M.3351') > 0.5, false)
-            : (s.a || []).some(a => a.on && call(() => !!a.on(), false));
-      /* a level of the SOP table is the PV of its controller; a field gauge of the equipment (current, pressure, temperature) follows
-         the run state; a laboratory value (pH, Fe) stays the SOP value */
+        tagFp = () => {
+          for (const m of f.t.match(/\b[A-Z]{2,4}-?[A-Z]{1,2}[0O]?\d{3,5}[A-Z]?\b/g) || []) {
+            const t = m.replace('-', '').replace(/^([A-Z]{2,4}?)D0+(?=\d)/, (x, a) => a + 'DO' + x.slice(a.length + 2));
+            for (const c of [t, t.replace(/^([A-Z])I/, '$1IC')]) {
+              const fp = call(() => LV().fp(c), null);
+              if (fp && fp.kind === 'ctl') return fp;
+            }
+          }
+          return null;
+        };
+      /* a level of the SOP table is the PV of its controller; a gauge with a DCS loop is that loop's PV; a laboratory value (pH, Fe)
+         stays the SOP value */
       const lvl = /hotwell level/i.test(f.t) ? 'LCV-MU1110' : /deaerator level/i.test(f.t) ? 'LCV-CD1104' : null,
-        gauge = /current|pressure|temperature/i.test(f.t);
+        gauge = /current|pressure|temperature/i.test(f.t),
+        tfp = !lvl && gauge ? tagFp() : null,
+        nomod = !lvl && gauge && !tfp;
       const live = lvl
         ? () => call(() => LV().pvOf(LV().fp(lvl)), NaN)
-        : isFinite(lo) && gauge
-          ? () => (runs() ? (lo + hi) / 2 : temp ? call(() => AN.unit.Tamb, 30) : 0)
-          : () => lm[0];
+        : tfp
+          ? () => call(() => LV().pvOf(tfp), NaN)
+          : nomod
+            ? () => '— walang model'
+            : () => lm[0];
       sop.push([
         'SOP · ' + (nm.length > 34 ? nm.slice(0, 34).replace(/\s+\S*$/, '') + '…' : nm),
         live,
-        isFinite(lo) && (lvl || gauge) ? (lvl ? 'mm' : un) : '',
+        lvl ? 'mm' : tfp ? un : '',
         x => (typeof x === 'number' ? (Math.abs(x) < 10 ? x.toFixed(2).replace(/0$/, '') : f1(x)) : x),
         [f.g, 'SOP ' + lm[0], lm.slice(1).join(' · ')].filter(Boolean).join(' · ')
       ]);

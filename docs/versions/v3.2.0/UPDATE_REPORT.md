@@ -1227,3 +1227,14 @@ Check (totoong pindot): Plant view = 2 page lang; 007 Steel: APH STOPPED berde, 
 | 90 | Walang Legend sa DITL toolbar | Legend button sa DITL toolbar (DITL legend: 1 / 0 kulay, rows, simbolo, TO / FROM); ×, Esc, click sa labas | ditl.js, app.js, app.css |
 
 Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 → 20 at Hakbang 21 → 30, 7 bahagi. Condensate flow 0 → 150 T/H sa SV 150 (recirc 60 %); hotwell +3 mm hindi gumagalaw; deaerator +65 mm, walang talon sa AUTO; BFWP-A START walang FIELD force ng suction (2.22 kg/cm2, row 12 = 1); Hakbang 26 ✓ TAPOS (1391 100 % → 1001 100 % → 1391 0 %); drum −155 mm; Hakbang 30 NOTE; bagong HMI bumubukas sa STEEL, THERMAL natatandaan pagka-reload; HMI strip = header (NO ALARM · 94 SUPPRESSED; at sa APH trip: ■ AIR PREHEATER TRIP); DITL Legend bukas / Esc / × / click sa labas; status bar v3.2.0-beta.50. Hindi nasubok: 150 MW ng condensate cycle sa totoong pindot (probe lang: stable, DA 65 mm, flow 378 T/H), buong Cold → 150 MW.
+
+
+## 3.2.0-beta.51 (Beta, 2026-10-29) — 5 natitira sa live check ng beta.50
+
+| # | Ugat | Ayos | Saan |
+|---|---|---|---|
+| 99 | IDF lang ang tumatakbo (walang PA / SA air): ang air term ng draft model ay −kfpA, kaya tuloy-tuloy bumababa ang furnace pressure (−16 → −117 mmH2O sa ~70 s) | Kapag IDF lang: ang draft ay sumusunod sa fan law ng IDF, −94 × (speed / 1140)², speed = 350 + 790 × MV / 100 rpm (13 % = mga −15 mmH2O; ASSUMED constant 94). Unti-unting nawawala habang pumapasok ang hangin (10 % ng design air = ang dating loop model). Hakbang 31: button MV −1 % / MV +1 % para i-trim sa −15 | unit.js, guide.js |
+| 98 | Walang button para sa PCV-DO0002 at PCV-DO1009 sa Hakbang 28; ang pressure ay nanatiling mababa | Hakbang 28: "PCV-DO0002 M, 100 % (bukas)" → FIELD START diesel oil pump → "PICDO0005 A, SV 12.8" → "PICDO1008 (PCV-DO1009) A, SV 11" (PR-OPE-5002 Section 21). Tapos ang hakbang kapag tumatakbo ang pump at naka-AUTO ang dalawa | guide.js |
+| 91 | Bantayan: gitna ng SOP value ang ipinapakita na parang nabasa | Galing lang sa plant model: level = PV ng controller; gauge na may DCS loop = PV ng loop (PI-DO0005 = PICDO0005); gauge na walang model (motor current, lokal na pressure / temperatura) = "— walang model"; ang SOP value ay nasa hint | dock.js |
+| 96 | Sinasabi ng NOTE ng Hakbang 30 na lalabas ang mga alarm, pero naka-suppress | NOTE: naka-suppress sila sa simula (nasa alarm list, hiwalay); lalabas bilang bagong alarm kapag nakatayo pa 10 min (oras ng planta) pagkatapos tumakbo ang kagamitan ng grupo | guide.js |
+| 23 | Update banner | Nasubok: may bagong Beta sa version.json → lumalabas ang "New Beta available … Update now / Later" sa itaas, hindi tinatakpan ang Home | — |
