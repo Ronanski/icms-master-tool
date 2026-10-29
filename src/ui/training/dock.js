@@ -1096,6 +1096,8 @@
       /* R9 #89: every step has a "Gawin:" line (a step written without one: its title, which is the action) and the reason under
          "Bakit?" (was: only 8 steps had them) */
       card.append(E('p', { cls: 'gd-do', txt: m ? m[1] : 'Gawin: ' + String(s.t || '').replace(/\.?$/, '.') }));
+      /* live check #96: a step note (alarms that are expected at this step) under the action, always shown */
+      if (s.note) card.append(E('p', { cls: 'gd-snote', txt: 'NOTE: ' + s.note }));
       const rest = m ? m[2] : d;
       if (rest) card.append(E('details', { cls: 'gd-why' }, [E('summary', { txt: 'Bakit?' }), E('p', { txt: rest })]));
     }
@@ -1447,7 +1449,34 @@
         lm = [f.lim.n ? f.lim.n : rg ? rg[1] : '', f.lim.a ? 'Alarm ' + f.lim.a : '', f.lim.tr ? 'Trip ' + f.lim.tr : ''].filter(Boolean);
       if (!lm.length) continue;
       const nm = f.t.replace(/\s*\([^()]*\d[^()]*~[^()]*\)/, '').replace(/^(Check|Verify|Ensure)\s+(that\s+)?(the\s+)?/i, '');
-      sop.push(['SOP · ' + (nm.length > 34 ? nm.slice(0, 34).replace(/\s+\S*$/, '') + '…' : nm), () => lm[0], '', x => x, [f.g, lm.slice(1).join(' · ')].filter(Boolean).join(' · ')]);
+      /* live check #91: the row shows the FIELD READING now (the gauge the field operator reads), not the SOP value: the normal value
+         of the SOP (the middle of its range) while the equipment of the row runs, 0 (current, pressure) or the ambient (temperature)
+         while it is stopped. ASSUMED field model: these gauges have no DCS signal in the logic; the SOP value is in the hint */
+      const nums = String(lm[0]).match(/-?\d+(?:\.\d+)?/g) || [],
+        lo = nums.length ? +nums[0] : NaN,
+        hi = nums.length > 1 ? +nums[1] : lo,
+        un = (/°C|ksc|kg\/cm2|bar|%|\bA\b|(?<=\d)A\b/.exec(lm[0]) || [/current/i.test(f.t) ? 'A' : ''])[0],
+        temp = /°C|temp/i.test(un + ' ' + f.t),
+        runs = () =>
+          /\bCEP\b/i.test(f.t)
+            ? call(() => LV().val('M.3350') > 0.5 || LV().val('M.3351') > 0.5, false)
+            : (s.a || []).some(a => a.on && call(() => !!a.on(), false));
+      /* a level of the SOP table is the PV of its controller; a field gauge of the equipment (current, pressure, temperature) follows
+         the run state; a laboratory value (pH, Fe) stays the SOP value */
+      const lvl = /hotwell level/i.test(f.t) ? 'LCV-MU1110' : /deaerator level/i.test(f.t) ? 'LCV-CD1104' : null,
+        gauge = /current|pressure|temperature/i.test(f.t);
+      const live = lvl
+        ? () => call(() => LV().pvOf(LV().fp(lvl)), NaN)
+        : isFinite(lo) && gauge
+          ? () => (runs() ? (lo + hi) / 2 : temp ? call(() => AN.unit.Tamb, 30) : 0)
+          : () => lm[0];
+      sop.push([
+        'SOP · ' + (nm.length > 34 ? nm.slice(0, 34).replace(/\s+\S*$/, '') + '…' : nm),
+        live,
+        isFinite(lo) && (lvl || gauge) ? (lvl ? 'mm' : un) : '',
+        x => (typeof x === 'number' ? (Math.abs(x) < 10 ? x.toFixed(2).replace(/0$/, '') : f1(x)) : x),
+        [f.g, 'SOP ' + lm[0], lm.slice(1).join(' · ')].filter(Boolean).join(' · ')
+      ]);
     }
     els.watch = own.concat(stage, sop.slice(0, 8)).map(([k, f, u, fm, hint]) => {
       const v = E('b', { txt: '—' });
