@@ -1321,6 +1321,51 @@
         : 'VIEW / TRACE: the drawing is shown and a row, gate or wire can be selected and traced, but nothing is simulated';
     }
   }
+  /* live check #90: the Legend of the DITL page (the ribbon Legend button opens it on a DITL sheet; the ABC one is #anlg of paint.js).
+     ×, Esc and a click outside close it, like the ABC legend */
+  {
+    const d = E('div', { id: 'dilg' }),
+      it = (sw, t) => E('div', { cls: 'it' }, [sw, document.createTextNode(t)]),
+      ln = c => {
+        const v = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        v.setAttribute('width', '24');
+        v.setAttribute('height', '13');
+        v.innerHTML = '<line x1="0" y1="6" x2="24" y2="6" stroke="' + c + '" stroke-width="2.2"/>';
+        return v;
+      },
+      x = E('button', { cls: 'dilgx', txt: '×', title: 'Close the legend', on: () => (d.style.display = 'none') });
+    d.append(
+      x,
+      E('b', { txt: 'Signals (RUN)' }),
+      it(ln('var(--c-run,#e5484d)'), 'red = 1 (ON, energized)'),
+      it(ln('var(--c-stop,#30a46c)'), 'green = 0 (OFF)'),
+      it(ln('#8a949c'), 'grey = VIEW / TRACE: nothing is simulated'),
+      E('b', { txt: 'Rows' }),
+      it(E('span', { cls: 'tg', txt: 'IN' }), 'left: inputs (field contact I.xxxx, memory M.xxxx / B.xxxx of the DCS, a row of another sheet)'),
+      it(E('span', { cls: 'tg', txt: 'OUT' }), 'right: outputs (command, memory, alarm, TO another sheet)'),
+      it(E('span', { cls: 'tg', txt: 'AI' }), 'analog row: the value of the plant against its set point (comparator)'),
+      E('b', { txt: 'Symbols' }),
+      it(E('span', { cls: 'tg', txt: '&' }), 'AND: 1 when every input is 1'),
+      it(E('span', { cls: 'tg', txt: '≥1' }), 'OR: 1 when one input is 1'),
+      it(E('span', { cls: 'tg', txt: 'NOT' }), 'NOT: the inverse of its input'),
+      it(E('span', { cls: 'tg', txt: 'S R' }), 'flip-flop: S sets it to 1 and it stays; R resets it to 0'),
+      it(E('span', { cls: 'tg', txt: 'T' }), 'timers: ON delay, OFF delay, pulse (time on the symbol)'),
+      it(E('span', { cls: 'tg', txt: '→' }), 'TO / FROM flag: click it to go to the other sheet; Back returns'),
+      E('small', { txt: 'Reference: document-references/digital logic symbols legend.pdf' })
+    );
+    document.body.append(d);
+    addEventListener('keydown', e => e.key === 'Escape' && d.style.display === 'block' && (d.style.display = 'none'), true);
+    addEventListener(
+      'pointerdown',
+      e => {
+        if (d.style.display !== 'block' || d.contains(e.target)) return;
+        const b = e.target.closest && e.target.closest('button');
+        if (b && /^Legend/.test(b.textContent.trim())) return;
+        d.style.display = 'none';
+      },
+      true
+    );
+  }
   /* ---------- state of the bar and the panel ---------- */
   let tab = null;
   function upd() {

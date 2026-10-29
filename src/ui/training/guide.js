@@ -736,12 +736,18 @@ window.LS_GUIDE = (function () {
     const x = mcvS(tag);
     return x && typeof MST !== 'undefined' && MST[x.name] && MST[x.name][0] ? +MST[x.name][0].pos : 0;
   };
+  /* live check #95 (Hakbang 26 stuck): the instance of the valve is looked up when the button is pressed, not when the steps are made
+     (then the machine instances of the one world did not exist yet: the button pressed nothing and the interlock / FIELD of the step
+     went to the first valve of DITL-38, MV-BD1001). DITL-38 instance names: "(62)DITL-38 #MV-FW1391" */
   const mcvB = (tag, open) => {
-    const x = mcvS(tag),
-      nm = x ? 'DITL-38 #' + tag : '';
+    const nm = 'DITL-38 #' + tag,
+      ad = () => {
+        const x = mcvS(tag);
+        return x && !x._inst.k ? 'DITL-38' : nm;
+      };
     return Object.assign(
-      btn(tag + (open ? ' OPEN' : ' CLOSE') + ' (DITL-38)', () => (WL() && x ? dPress(x._inst.k ? nm : 'DITL-38', open ? 4 : 10) : ''), () => !WL() || (open ? mcvPos(tag) >= 100 : mcvPos(tag) <= 0)),
-      { dg: [x && x._inst.k ? nm : 'DITL-38', open ? 4 : 10], ad: x && x._inst.k ? nm : 'DITL-38' }
+      btn(tag + (open ? ' OPEN' : ' CLOSE') + ' (DITL-38)', () => (WL() && mcvS(tag) ? dPress(ad(), open ? 4 : 10) : ''), () => !WL() || (open ? mcvPos(tag) >= 100 : mcvPos(tag) <= 0)),
+      { dg: [nm, open ? 4 : 10], ad: nm }
     );
   };
   /* P2 #13: a single-valve MOV drawing (DITL-54 start-up ejector MV-AS1395, DITL-55 steam jet air ejector MV-AS1396, DITL-56 vacuum
@@ -944,7 +950,7 @@ window.LS_GUIDE = (function () {
         st: 1,
         sec: 20,
         t: 'BFWP discharge: equalizing MOV MV-FW1391 OPEN, tapos main discharge MOV MV-FW1001 OPEN',
-        d: 'PR-OPE-5002: dahan-dahang buksan ang equalizing MOV ng napiling BFP (MV-FW1391 / MV-FW1392) para pumantay ang pressure. Kapag discharge pressure > 200 kg/cm², buksan ang main discharge MOV (MV-FW1001 / MV-FW1002) nang 100 %, tapos isara ang equalizing MOV. Sarado ang dalawa: walang feedwater na makakarating sa drum.',
+        d: 'Gawin: OPEN MV-FW1391, tapos OPEN MV-FW1001; kapag bukas na nang 100 % ang MV-FW1001, CLOSE MV-FW1391 (hindi tatapos ang hakbang habang bukas pa ang MV-FW1391). PR-OPE-5002: dahan-dahang buksan ang equalizing MOV ng napiling BFP (MV-FW1391 / MV-FW1392) para pumantay ang pressure. Kapag discharge pressure > 200 kg/cm², buksan ang main discharge MOV (MV-FW1001 / MV-FW1002) nang 100 %, tapos isara ang equalizing MOV. Sarado ang dalawa: walang feedwater na makakarating sa drum.',
         c: mcvC('Main discharge MOV open, equalizing MOV closed', () => (mcvPos('MV-FW1001') >= 100 && mcvPos('MV-FW1391') <= 0) || (mcvPos('MV-FW1002') >= 100 && mcvPos('MV-FW1392') <= 0)),
         a: [mcvB('MV-FW1391', 1), mcvB('MV-FW1001', 1), mcvB('MV-FW1391', 0)]
       },
@@ -954,7 +960,7 @@ window.LS_GUIDE = (function () {
       /* ---- 2 fans ---- */
       { st: 2, sec: 21, coachOff: ['fill'], t: 'Diesel oil pump at oil circulation (field)', d: 'Ang diesel oil pump ay nasa field (walang DCS signal). Kailangan ito ng mga start-up burner. Bantayan ang outlet oil pressure (PICDO0005).', fps: ['PICDO0005'], c: C('Diesel oil pump running (field)', () => !!(AN.fieldState && AN.fieldState().dop), () => 'Diesel oil pump ' + (AN.fieldState && AN.fieldState().dop ? 'ON' : 'OFF')), a: [fldB('dop', 'diesel oil pump')], field: [20] },
       { st: 2, sec: 22, t: 'Ihanda ang IDF: PICFG108 sa MANUAL, MV 0 %, biasing damper RH at SH bukas', d: 'Sarado ang hydraulic coupling ng IDF bago ito simulan (mababang starting current). Ang interlock ng IDF (DITL-25A row 1) ay humihingi ng bukas na flue gas bias damper (HICHR1002A / B) para may daanan ang hangin.', c: b.ALL(b.MODE('PICFG108', 'MAN'), b.MV('PICFG108', null, 2), b.MV('HICHR1002A', 30, null), b.MV('HICHR1002B', 60, null)), fps: ['PICFG108', 'HICHR1002A', 'HICHR1002B'], a: [btn('M, MV 0 %', () => A.man('PICFG108', 0)), btn('Biasing damper RH at SH 100 %', () => (A.man('HICHR1002A', 100), A.man('HICHR1002B', 100)))], field: [21] },
-      { st: 2, sec: 22, t: 'Simulan ang ID fan (IDF)', d: 'Ang IDF ang humihigop ng flue gas palabas ng furnace. Ito ang unang fan na tumatakbo.', c: R.IDF, a: [mot('M.3304', 'IDF')] },
+      { st: 2, sec: 22, t: 'Simulan ang ID fan (IDF)', d: 'Ang IDF ang humihigop ng flue gas palabas ng furnace. Ito ang unang fan na tumatakbo.', note: 'Inaasahang alarm dito (cold start-up), i-ACK lang: AI0128 / AI0385 drum pressure LOW LOW (wala pang pressure ang drum), AI0592 economizer inlet temperature LOW LOW (malamig pa ang feedwater), LIBR10011 / LIBR10012 drum level LOW (−150 mm ng drum filling; LOW −100 mm, LOW LOW −178 mm ayon sa alarm list). Kusa silang mawawala kapag umakyat ang pressure, temperatura at level.', c: R.IDF, a: [mot('M.3304', 'IDF')] },
       { st: 2, sec: 22, t: 'IDF hydraulic coupling: PICFG108 MV 13 %', d: 'Buksan ang coupling sa 13 %. Negatibo ang furnace pressure (hinihigop palabas).', c: b.ALL(R.IDF, b.MV('PICFG108', 10, 16)), fps: ['PICFG108'], a: [btn('MV 13 %', () => A.man('PICFG108', 13))] },
       /* 3.2.0-beta.23: the FAB start permissive FCD READY (DITL-28A row 5 <- 28B out 77 = ABC-014 M.3115 inlet FCD demand at 25 % AND
          DITL-28C the silencer SOV opened); without the one world the step is done at once (the DITL is not running) */

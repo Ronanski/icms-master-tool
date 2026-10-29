@@ -585,7 +585,7 @@
     }
   };
   const ORDER = ['cut', 'steel', 'thermal'];
-  let SK = 'cut';
+  let SK = 'steel'; /* live check #97: Steel is the default; the last pick is kept (ls-hmi-style) */
   try {
     const k = localStorage.getItem('ls-hmi-style');
     if (STYLES[k]) SK = k;
@@ -1246,38 +1246,41 @@
     /* alarm bar: one line; colour only while an alarm is active (high = red blinking, medium = amber) */
     g.append(S_('rect', { x: 0, y: 34, width: W, height: 20, fill: C.alarmBar }));
     const al = tx(16, 48, 'NO ACTIVE ALARM', { z: 9.5, b: 600, c: C.dim, ls: 0.5 });
-    const rules = [
-      { k: 'mft', ref: 'ABC-007|M.0182', msg: 'MFT TRIPPED', hi: 1 },
-      { k: 'fp', ref: 'pv:PICFG108', when: v => v > 50 || v < -100, msg: 'FURNACE PRESSURE ABNORMAL', hi: 1 },
-      { k: 'idf', ref: 'ABC-008|M.3304', when: v => v < 0.5, msg: 'IDF F-1056 STOPPED' },
-      { k: 'paf', ref: 'ABC-007|M.3302', when: v => v < 0.5, msg: 'PAF F-1053 STOPPED' },
-      { k: 'saf', ref: 'ABC-007|M.3303', when: v => v < 0.5, msg: 'SAF F-1054 STOPPED' }
-    ];
-    const st = {};
+    /* live check #92: the bar shows the alarm list of the header ALARM chip (cr.js lsActiveAlarms: the same alarms, trips and
+       suppression of the shutdown state); before, its own rules said IDF / PAF / SAF STOPPED while the header said NO ALARM */
+    let last = '';
     const upd = () => {
-      const act = rules.filter(r => st[r.k]);
+      const R = (window.lsActiveAlarms && lsActiveAlarms()) || { list: [], sup: 0 },
+        act = R.list.slice().reverse(),
+        key = act.map(a => a.text + (a.ack ? 1 : 0)).join('|') + '#' + R.sup;
+      if (key === last) return;
+      last = key;
       al.textContent = '';
       const list = g.querySelector('[data-k="alist"]');
       if (!act.length) {
-        al.textContent = 'NO ACTIVE ALARM';
+        al.textContent = 'NO ACTIVE ALARM' + (R.sup ? ' · ' + R.sup + ' SUPPRESSED' : '');
         al.setAttribute('fill', C.dim);
         if (list) (list.textContent = 'No active alarm'), list.setAttribute('fill', C.dim);
         return;
       }
-      act.forEach((r, i) => {
-        const s = S_('tspan', { fill: r.hi ? C.alarm : C.warn, dx: i ? 28 : 0 });
-        s.textContent = (r.hi ? '■ ' : '▲ ') + r.msg;
-        if (r.hi) s.setAttribute('class', 'h2blink');
+      act.slice(0, 4).forEach((r, i) => {
+        const hi = r.kind === 'TRIP',
+          s = S_('tspan', { fill: hi ? C.alarm : C.warn, dx: i ? 28 : 0 });
+        s.textContent = (hi ? '■ ' : '▲ ') + r.text;
+        if (hi && !r.ack) s.setAttribute('class', 'h2blink');
         al.append(s);
       });
-      if (list) (list.textContent = act.length + ' active (see the bar above)'), list.setAttribute('fill', act.some(r => r.hi) ? C.alarm : C.warn);
+      if (act.length > 4) {
+        const s = S_('tspan', { fill: C.dim, dx: 28 });
+        s.textContent = '+' + (act.length - 4) + ' more';
+        al.append(s);
+      }
+      if (list)
+        (list.textContent = act.length + ' active (header ALARM list)'), list.setAttribute('fill', act.some(r => r.kind === 'TRIP') ? C.alarm : C.warn);
     };
-    for (const r of rules)
-      api.reg({ t: 'val', tag: '', ref: r.ref, v: '' }, X => {
-        const ok = X && isFinite(X.v);
-        st[r.k] = ok && (r.when ? r.when(+X.v) : X.v > 0.5);
-        upd();
-      }, null);
+    upd();
+    let seen = false;
+    const iv = setInterval(() => (g.isConnected ? ((seen = true), upd()) : seen && clearInterval(iv)), 1000);
     /* navigation: buttons to the related screens (the old screens open until the new set replaces them); STYLE at the right */
     const y = H - 32;
     g.append(S_('rect', { x: 0, y, width: W, height: 32, fill: C.frame }));
