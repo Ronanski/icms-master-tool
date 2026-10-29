@@ -1249,6 +1249,19 @@
     }, 30);
   };
   window.lsPlantFit = () => (cur && cur.g ? draw(cur.g) : fit());
+  /* the Training dock (user 2026-10-30): pan the graphic sideways so that the screen part x0 .. x1 (px, the boxed equipment of the
+     step) is in view; the zoom stays */
+  window.lsPlantPanX = (x0, x1) => {
+    if (!svg || !vb || !box0) return;
+    const r = svg.getBoundingClientRect();
+    if (r.width < 1 || (x0 >= r.left + 8 && x1 <= r.right - 8)) return;
+    const k = vb[2] / r.width,
+      c = vb[0] + (((x0 + x1) / 2 - r.left) * k),
+      lo = box0[0],
+      hi = box0[0] + box0[2] - vb[2];
+    vb = [hi < lo ? (lo + hi) / 2 : Math.min(Math.max(c - vb[2] / 2, lo), hi), vb[1], vb[2], vb[3]];
+    svg.setAttribute('viewBox', vb.join(' '));
+  };
   window.lsPlantLive = () => LV.map(o => ({ tag: o.it.tag, t: o.it.t, snap: o.it.t === 'ctl' ? o.it.pv + '/' + o.it.sv + '/' + o.it.mv + ' ' + o.it.m : o.it.v, how: o.r ? o.r.how || o.r.k : null, sh: o.r ? o.r.sh : null, live: o.r && o.r.k === 'mv' ? shOf(o.r.sh).S.rt.v[o.r.c.out] : o.r && o.r.cc ? (() => { const x = netVal(o.r), mv = shOf(o.r.cc.sh).S.rt.v[o.r.cc.c.out]; return Math.abs(x - (100 - mv)) < 0.5 && Math.abs(x - mv) > 1 ? 100 - x : x; })() : o.r && (o.r.k === 'net' || o.r.k === 'dig') ? netVal(o.r) : o.r && o.r.k === 'ctl' ? (() => { const S = shOf(o.r.sh).S, c = o.r.c; return [S.rt.v[c.q.pv], S.rt.v[c.q.sv], S.rt.v[c.out]].map(x => +(+x).toFixed(1)).join('/'); })() : o.r && o.r.k === 'man' ? +(+shOf(o.r.sh).S.rt.v[o.r.b.o[0]]).toFixed(1) : null })); /* for the tests */
   addEventListener('resize', () => {
     if (ws && ws.style.display === 'grid') {

@@ -83,8 +83,12 @@
   /* ---------- the main values and the lamps (the strip) ---------- */
   const VALS = [
     ['Load', 'MW', () => H().MW(), f1],
-    ['Drum', 'mm', () => H().lvl(), sgn],
+    ['Drum press', 'kg/cm²', () => U().Pd, f1],
+    ['Drum level', 'mm', () => H().lvl(), sgn],
+    ['FW flow', 'T/H', () => H().FW(), f1],
+    ['Steam flow', 'T/H', () => H().MSF(), f0],
     ['Furnace', 'mmH₂O', () => H().FP(), f0],
+    ['Bed temp', '°C', () => U().Tb, f0],
     ['O₂', '%', () => H().O2(), f1]
   ];
   const LAMPS = [
@@ -646,9 +650,13 @@
   const isMin = () => !!ls.get('ls-gdock-min', false);
   function layout() {
     const R = document.documentElement,
-      on = !!(dock && GD() && GD().on),
-      min = isMin(),
+      gOn = !!(dock && GD() && GD().on),
+      on = gOn || !!(dock && menuOn),
+      min = gOn && isMin(),
       m = mode();
+    /* the Training page in the dock (no step running): the start buttons, the progress and the SOP sections with their ticks */
+    R.classList.toggle('gd-menu', on && !gOn);
+    if (gOn || !on) menuPut(false);
     R.classList.toggle('gd-side', on && !min && m === 'side');
     R.classList.toggle('gd-bottom', on && !min && m === 'bottom');
     R.classList.toggle('gd-min', on && min);
@@ -667,6 +675,39 @@
     try {
       dispatchEvent(new Event('resize'));
     } catch (e) {}
+  }
+  /* user 2026-10-30 ("ililipat sa dock ang training page"; "ang Training button sa kaliwa ang magbubukas ng dock, hindi ang malaking
+     display"): the Training page (home.js #trainws: Gabay, Practise, the 48 sections and their ticks) is shown INSIDE the dock while no
+     step runs; the centre stays the Plant view or the Logic. The page is moved, not copied: its buttons are the same ones */
+  let menuOn = false;
+  function menuPut(inDock) {
+    const tw = document.getElementById('trainws');
+    if (!tw || !els.body) return;
+    if (inDock) {
+      if (tw.parentNode !== els.body) {
+        els.body.textContent = '';
+        els.body.append(tw);
+      }
+    } else if (tw.parentNode !== document.body) document.body.append(tw);
+  }
+  function menu() {
+    build();
+    if (GD() && GD().on) {
+      ls.set('ls-gdock-min', false);
+      layout();
+      fill(true);
+      return;
+    }
+    menuOn = true;
+    layout();
+    menuPut(true);
+    call(() => window.lsHome && lsHome.train());
+    els.foot.hidden = true;
+  }
+  function menuOff() {
+    menuOn = false;
+    menuPut(false);
+    layout();
   }
   /* drag the edge of the panel: width (side) or height (bottom) */
   function grip(g) {
@@ -746,7 +787,7 @@
       E('span', { cls: 'gd-sp' }),
       E('div', { cls: 'gd-seg', role: 'group', 'aria-label': 'Bilis' }, els.spd),
       E('button', { type: 'button', cls: 'gd-ic', txt: '▁', title: 'Itago ang Training (tuloy ang simulation)', on: () => (ls.set('ls-gdock-min', true), layout()) }),
-      E('button', { type: 'button', cls: 'gd-ic', txt: '✕', title: 'Itigil ang Training', on: stopAsk })
+      E('button', { type: 'button', cls: 'gd-ic', txt: '✕', title: 'Itigil ang Training', on: () => (GD() && GD().on ? stopAsk() : menuOff()) })
     ]);
     /* user 2026-10-29 (mock-up v3 "isang monitor lang"): one line of the plant (load, drum level, furnace, O2); the equipment lamps are on
        the HMI in the centre (was: 8 values and 17 lamps, about 210 px) */
@@ -755,7 +796,10 @@
       const d = E('span', { cls: 'gd-kv' }, [E('small', { txt: k }), b, E('em', { txt: u })]);
       return { d, b };
     });
-    const strip = E('div', { cls: 'gd-strip' }, els.vals.map(x => x.d));
+    /* user 2026-10-30 ("ang tinanggal mga values at indications"): the 8 values and the equipment lamps of the plant stay in the dock
+       (beta.57 had 4 values and no lamps); only buttons that do the same thing twice were to go */
+    els.lamps = LAMPS.map(([k, A, t]) => E('span', { cls: 'gd-lamp', txt: k, title: t, 'data-a': A.join(' ') }));
+    const strip = E('div', { cls: 'gd-strip' }, [E('div', { cls: 'gd-kvs' }, els.vals.map(x => x.d)), E('div', { cls: 'gd-lamps' }, els.lamps)]);
     /* the SOP section: ◄ ► and the list (☰, folded over the centre); the step: ‹ › beside its title (‹ Nakaraan, Susunod ›, TAPOS
        were three buttons for one move) */
     els.bar = E('i');
@@ -802,6 +846,8 @@
   /* ---------- open / close ---------- */
   function open() {
     build();
+    menuOn = false;
+    menuPut(false);
     /* 3.2.0-beta.25: the one world is always ON (no switch); turned on again only if a test turned it off */
     if (window.WORLD && !WORLD.on) WORLD.set(true);
     ls.set('ls-gdock-min', false);
@@ -818,10 +864,13 @@
     } catch (e) {}
     fpLive = [];
     fpKey = '';
+    menuOn = true;
     layout();
+    menuPut(true);
     try {
       window.lsHome && lsHome.train();
     } catch (e) {}
+    if (els.foot) els.foot.hidden = true;
   }
   /* the guided start from Cold; resume = go on with the plant that runs */
   /* 3.2.0 walkthrough #1 #2: the start stays on the Training page (the first steps are field steps), PAUSED at 1x; done() when the cold
@@ -964,7 +1013,7 @@
     if (lv) kids.push(E('button', { type: 'button', cls: 'gd-btn gd-back', txt: '◄ Balik sa HMI', on: backHMI }));
     else if (S.length) kids.push(E('span', { cls: 'gd-fl0', txt: '⌖ Ipakita sa logic sheet' }));
     for (const o of S)
-      kids.push(E('button', { type: 'button', cls: 'gd-btn gd-sh' + (lv && els.lvK === o.k ? ' on' : ''), txt: o.l, title: 'Ipakita sa gitna ang ' + o.l + ' (diagram lang)', on: () => showLogic(o) }));
+      kids.push(E('button', { type: 'button', cls: 'gd-btn gd-sh' + (lv && els.lvK === o.k ? ' on' : ''), txt: S.length > 2 ? o.l.split(' · ')[0] : o.l, title: 'Ipakita sa gitna ang ' + o.l + ' (diagram lang)', on: () => showLogic(o) }));
     els.foot.replaceChildren(...kids);
     els.foot.hidden = !kids.length;
   }
@@ -1019,6 +1068,35 @@
     const b = document.getElementById('gdlvbar');
     if (b) b.remove();
   }
+  /* the menu of the left (Home, Logic, Training) while the Training dock is on: the centre stays the HMI; Logic opens the step's sheet
+     as a diagram only, with "Balik sa HMI" (user 2026-10-30: no Training list, no toolbars in the centre during the Training) */
+  function tabFix(t) {
+    const R = document.documentElement,
+      now = document.body.dataset.tab;
+    /* the Training button of the left: the dock (the Training page in it, or the running step); the centre stays */
+    if (t === 'training') {
+      setTimeout(menu, 0);
+      return now === 'logic' || now === 'operate' ? now : 'operate';
+    }
+    if (!R.classList.contains('gd-tr')) return t;
+    if (t === 'home') return 'operate';
+    if (t === 'logic' && !els.lvBusy && !R.classList.contains('gd-lv')) {
+      const g = GD(),
+        s = g && g.steps()[g.cur],
+        S = sheetsOf(s);
+      setTimeout(() => {
+        if (S.length) showLogic(S[0]);
+        else {
+          els.lvFocus = document.body.classList.contains('lo-focus');
+          R.classList.add('gd-lv');
+          call(() => LOVIEW.setFocus(true));
+          lvBar('Logic');
+          footFill(s);
+        }
+      }, 0);
+    }
+    return t;
+  }
   function backHMI() {
     lvOff();
     const g = GD();
@@ -1026,10 +1104,41 @@
     footFill(g && g.steps()[g.cur]);
   }
   /* the equipment of the step on the HMI: its tag (the faceplate box of FICFA1081) and its name ("SAF  F-1054"), boxed */
+  /* #112 (user 2026-10-30: "HMI LANG ang gitna", "sumusunod sa seksyon at hakbang"): the HMI page of each SOP section of PR-OPE-5002
+     and the equipment boxed on it. A section with no page of its own (air compressors, turbine oil, deaerator, turbine) shows the
+     nearest one: the UNIT overview (boiler + turbine) */
+  const SECHMI = (() => {
+    const M = {},
+      put = (L, pg, ...re) => L.forEach(k => (M[k] = { pg, re }));
+    put([1, 32, 43], 'AFG', /^ESP Z-1010$/);
+    put([2], 'SW', /^SWP-[ABC]$/);
+    put([3], 'SW', /^HYPO-CHLORINATED DOSING$/);
+    put([4], 'SW', /^MV-SW1001$/, /DPISW1502$/);
+    put([5], 'SW', /^SWBP-[ABC]$/);
+    put([6], 'SW', /^MV-SW1002 BACKWASH$/, /DPISW1504$/);
+    put([7], 'SW', /^EXPANSION TANK$/);
+    put([8], 'SW', /^ACWP-[AB]$/);
+    put([9, 10, 11, 12, 13, 14, 15, 16, 21, 29, 31, 33, 34], 'UNIT');
+    put([17, 27], 'AFG', /^AIR PREHEATER H-1052$/);
+    put([18, 35], 'SW', /^CONDENSER H-1110/, /^HOTWELL$/);
+    put([19], 'UNIT', /^DRUM LEVEL$/);
+    put([20], 'AFG', /^DRUM T-1001$/);
+    put([22], 'AFG', /^IDF F-1056$/);
+    put([23], 'AFG', /^FAB-[AB]$/);
+    put([24], 'AFG', /^SAF F-1054$/);
+    put([25], 'AFG', /^PAF F-1053$/);
+    put([26, 36], 'AFG', /^FURNACE H-1001$/);
+    put([28], 'AFG', /^START-UP BURNER HOT SA/);
+    put([30], 'UNIT', /^HP BYPASS$/, /^LP BYPASS$/);
+    put([37, 38, 39, 40, 41, 42], 'UNIT', /^Turbine \(TCS/);
+    put([44], 'UNIT', /^COAL MASTER$/);
+    put([45, 46, 47, 48], 'UNIT', /^TARGET MW$/, /^TURBINE MASTER$/);
+    return M;
+  })();
   function hmiTargets(s) {
     const svg = document.getElementById('plsvg');
     if (!svg || !s) return [];
-    const T = [];
+    const T = [].concat((SECHMI[secOf(s)] || {}).re || []);
     for (const t0 of s.fps || []) T.push(new RegExp('^' + (call(() => LV().ctlTag(t0), null) || t0) + '$'));
     for (const a of s.a || [])
       if (a.stop || a.mot || a.loc) {
@@ -1050,10 +1159,24 @@
     try {
       window.lsSetTab && lsSetTab('operate');
     } catch (e) {}
-    /* the screen that has the step's equipment (the 007 Air & Flue Gas page for the fans); else the screen stays */
+    /* the HMI page of the step's SOP section (SECHMI); else the page that has the step's equipment */
     setTimeout(() => {
+      const pk = document.querySelector('#plantws .plpick'),
+        want = (SECHMI[secOf(s)] || {}).pg;
+      if (pk && want && [...pk.options].some(o => o.value === want)) {
+        if (pk.value !== want) {
+          pk.value = want;
+          pk.dispatchEvent(new Event('change'));
+        }
+        /* the boxed equipment in view (the 030 page is wider than the centre beside the dock) */
+        setTimeout(() => {
+          const x = hmiTargets(s)[0],
+            r = x && x.getBoundingClientRect();
+          if (r && window.lsPlantPanX) lsPlantPanX(r.left, r.right);
+        }, 250);
+        return;
+      }
       if (hmiTargets(s).length) return;
-      const pk = document.querySelector('#plantws .plpick');
       if (!pk) return;
       const v0 = pk.value;
       for (const o of [...pk.options]) {
@@ -1276,17 +1399,21 @@
     return ((/\[\s*-?[\d.]+\s*~\s*-?[\d.]+\s*([^\]\d][^\]]*)\]/.exec((fb && fb.textContent) || '') || [])[1] || '').trim();
   };
   /* ---------- the content ---------- */
+  function paintRun() {
+    const R = isRun();
+    els.run.textContent = R ? '● RUN · ❚❚' : '❚❚ PAUSED · ▶';
+    els.run.className = 'gd-pill' + (R ? ' on' : ' off');
+    els.run.title = R ? 'Tumatakbo ang simulation: pindutin para i-PAUSE' : 'Naka-PAUSE (hinto ang oras): pindutin para RUN';
+    paintSpeed();
+    return R;
+  }
   function fill(force) {
     const g = GD();
     if (!dock || !g || !g.on || isMin()) return;
     const L = g.steps(),
       i = g.cur,
       s = L[i];
-    const R = isRun();
-    els.run.textContent = R ? '● RUN · ❚❚' : '❚❚ PAUSED · ▶';
-    els.run.className = 'gd-pill' + (R ? ' on' : ' off');
-    els.run.title = R ? 'Tumatakbo ang simulation: pindutin para i-PAUSE' : 'Naka-PAUSE (hinto ang oras): pindutin para RUN';
-    paintSpeed();
+    const R = paintRun();
     els.bar.style.width = Math.round((100 * Math.min(i, L.length)) / L.length) + '%';
     if (s) els.maxI = Math.max(els.maxI || 0, i);
     /* 3.2.0 walkthrough #11: the SOP section of the step (the Training list numbers) */
@@ -1419,6 +1546,8 @@
       chk.append(E('p', { cls: 'gd-do', txt: m ? m[1] : 'Gawin: ' + String(s.t || '').replace(/\.?$/, '.') }));
       /* live check #96: a step note (alarms that are expected at this step) under the action, always shown */
       if (s.note) chk.append(E('p', { cls: 'gd-snote', txt: 'NOTE: ' + s.note }));
+      /* the PAUSED state of the time, as a line (the pill of the header is its one button) */
+      if (!R) chk.append(E('p', { cls: 'gd-snote gd-psd', txt: s.need && !s.c ? '❚❚ Naka-PAUSE ang oras: puwedeng gawin ang field step; ▶ RUN (sa itaas) bago ang DCS step.' : '❚❚ Naka-PAUSE ang oras: walang aandar (START / OPEN) hangga’t hindi ▶ RUN (sa itaas).' }));
       const rest = m ? m[2] : d;
       if (rest) why = E('details', { cls: 'gd-why' }, [E('summary', { txt: 'Bakit?' }), E('p', { txt: rest })]);
     }
@@ -1846,6 +1975,31 @@
     /* user 2026-10-29 (mock-up v3): the faceplates of the sheet are not shown again under the controls (they were the same loops twice);
        they stay built for their units and live values */
     if (els.watch.length) chk.append(E('div', { cls: 'gd-watch' }, [E('div', { cls: 'gd-h', txt: 'BANTAYAN' })].concat(els.watch.map(x => x.r))));
+    /* #113 (user: "Bakit?" too short): the reason of the step, then where it comes from and what follows, from the data of the app
+       (the SOP section of PR-OPE-5002, the logic sheets of the step, the values watched, the next step) */
+    {
+      const P0 = window.LS_PROC5002 || [],
+        sk = secOf(s),
+        sec = sk ? P0[sk - 1] : null,
+        S = sheetsOf(s),
+        nx = L[i + 1],
+        W = (els.watch || []).map(w => w.r.firstChild.textContent).filter(Boolean),
+        ps = [];
+      if (sec) ps.push('SOP: PR-OPE-5002 seksyon ' + sk + ' (' + sec.t + ')' + (sec.s && sec.s.length ? ', ' + sec.s.length + ' item ang seksyon.' : '.'));
+      if (S.length)
+        ps.push(
+          'Logic: ' +
+            S.map(x => x.l).join('; ') +
+            '. ' +
+            (S.some(x => x.ad || x.dg) ? 'Ang START ay dumadaan sa interlock ng DITL: kapag may ✕ sa PERMISSIVE, hindi aandar ang equipment.' : 'Ang loop ay sumusunod sa A / M / R ng operator at sa force manual ng logic.')
+        );
+      if (W.length) ps.push('Bantayan: ' + W.slice(0, 5).join(', ') + '.');
+      if (nx) ps.push('Susunod: Hakbang ' + (i + 2) + ' · ' + nx.t + '.');
+      if (ps.length) {
+        if (!why) why = E('details', { cls: 'gd-why' }, [E('summary', { txt: 'Bakit?' })]);
+        why.append(...ps.map(t => E('p', { cls: 'gd-why2', txt: t })));
+      }
+    }
     if (why) chk.append(why);
     if (sopBox) chk.append(sopBox);
     b.append(card, chk);
@@ -1861,10 +2015,21 @@
   /* the live part, 4 times a second */
   function live() {
     const g = GD();
-    if (!dock || !g || !g.on || isMin()) return;
-    const s = g.steps()[g.cur];
+    const mOn = menuOn && dock && !dock.hidden;
+    if (!dock || ((!g || !g.on || isMin()) && !mOn)) return;
+    const s = g && g.on ? g.steps()[g.cur] : null;
     VALS.forEach(([k, u, f, fm], j) => (els.vals[j].b.textContent = fm(call(f, NaN))));
     /* 3.2.0 retest #25 #34: RUN = red, STOP = green (power plant convention), TRIP = amber, flashing until ACK */
+    LAMPS.forEach(([k, A], j) => {
+      const tr = A.filter(a => mst(a) === 'TRIP');
+      els.lamps[j].classList.toggle('on', any(A));
+      els.lamps[j].classList.toggle('trip', tr.length > 0);
+      els.lamps[j].classList.toggle('blink', tr.some(tripNew));
+    });
+    if (!(g && g.on)) {
+      paintRun();
+      return;
+    }
     /* the rate of the water temperature (Fig 1), over the last minute of the plant */
     const t = +U().t || 0,
       x = +U().Tw;
@@ -1876,6 +2041,7 @@
     }
     stepNx();
     if (tab() !== 'logic') lvOff();
+    if ((tab() === 'training' || tab() === 'home') && document.documentElement.classList.contains('gd-tr') && window.lsSetTab) lsSetTab('operate');
     hmiMark(s);
     if (!s) return;
     /* 3.2.0 retest #26: a tick made in the Training list shows here (the list and the panel are the same ticks, ls-train) */
@@ -2057,6 +2223,14 @@
           }
           for (const a of o.abc) if (!ab.includes(a)) ab.push(a);
         }
+        /* where the missing signal comes from (an indication, not a button: user 2026-10-30) */
+        if (fs.length || ab.length)
+          it.box.append(
+            E('div', {
+              cls: 'gd-ilw',
+              txt: '↳ ' + fs.map(f => 'field: ' + (f.tag ? f.tag + ' ' : '') + f.svc.replace(/^\(FROM STATION WIRING\)\s*/, '') + (f.av ? ' ' + f.av.txt : '')).concat(ab.map(a => 'galing sa ' + a.replace(/^.*?(ABC-)/, '$1') + ' (operator sa DCS)')).join(' · ')
+            })
+          );
       }
       /* 3.2.0 walkthrough #20: one FIELD button per missing field contact (the field operator sets the LOCAL / REMOTE selector, the limit
          switch ...): it sets that input row of the drawing (every row of the same signal) and writes the Event log */
@@ -2188,6 +2362,12 @@
   /* the steps move on by themselves (RUN): the open step is checked every half second */
   setInterval(() => {
     const g = GD();
+    if (menuOn && dock && !(g && g.on)) {
+      try {
+        live();
+      } catch (e) {}
+      return;
+    }
     if (!g || !g.on || !dock) return;
     try {
       g.scan();
@@ -2216,8 +2396,13 @@
     const g = GD();
     if (g && g.on) goLogic(g.steps()[g.cur], true);
   };
+  setTimeout(() => {
+    if (document.body.dataset.tab === 'training' && window.lsSetTab) lsSetTab('training');
+  }, 0);
   window.LS_DOCK = {
     grpOn,
+    tabFix,
+    menu,
     follow: followNow,
     start,
     resume,

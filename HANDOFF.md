@@ -5,7 +5,7 @@
 ## SIMULAN DITO (2026-10-26 PHT)
 
 - **Stable:** v2.4.0 (huling Stable).
-- **Beta:** `3.2.0-beta.57` sa `main` (2026-10-28: iisang linya; ang tine-test ay laging nasa main, Stable lang ang may GO STABLE). Kasama ang bagong HMI Air & Flue Gas at 030 Seawater, bagong Training layout (HMI sa gitna, lahat sa dock), sand DITL, page links.
+- **Beta:** `3.2.0-beta.58` sa `main` (2026-10-28: iisang linya; ang tine-test ay laging nasa main, Stable lang ang may GO STABLE). Kasama ang bagong HMI Air & Flue Gas at 030 Seawater, bagong Training layout (HMI sa gitna, lahat sa dock), sand DITL, page links.
 - **Ang gusto ng user:** `docs/SPEC.md` (S1 ~ S9). Plano = seksyon 3 ng file na iyon. Wala nang ROADMAP / CHECKLIST.
 - **Pag-check ng user:** `docs/USER_CHECK.md`.
 - **Rules:** `CLAUDE.md`, `PROJECT_RULES.md` (test policy = seksyon 5).
@@ -36,6 +36,7 @@
 - Plant chip: OFF | Unit lang; starting state: Cold o 150 MW lang. Plant model ON na walang starting state: header "—", ang ABC page ay bumubukas na Cold.
 
 ## Susunod na gagawin (roadmap sa `docs/SPEC.md` seksyon 3)
+0. 2026-10-30 12:20 AM PHT: **Beta 3.2.0-beta.58** sa main (GO BETA ng user) = ang Training page ay nasa DOCK na (ang Training button sa kaliwa ay nagbubukas ng dock; ang gitna ay Plant view / Logic lang); naibalik ang 8 values at equipment lamps; ang gitna ay sumusunod sa seksyon (HMI page bawat seksyon, `SECHMI` sa dock.js); Bakit? may SOP, logic, bantayan at susunod. Hindi pa sinubok: phone layout, buong Cold → 150 MW.
 0. 2026-10-29 11:55 PM PHT: **Beta 3.2.0-beta.57** sa main (GO BETA ng user) = bagong Training layout: gitna = HMI lang (naka-kahon ang equipment ng hakbang); nasa dock ang seksyon ◄ ► ☰, hakbang ‹ ›, loop card, START / STOP, interlock, checklist at "Ipakita sa logic sheet" (diagram lang + "Balik sa HMI"). Hindi pa sinubok: phone layout, buong Cold → 150 MW.
 0. 2026-10-29 11:40 PM PHT: **Beta 3.2.0-beta.56** sa main (GO BETA ng user) = bagong HMI page 030 SEAWATER (STEEL, `src/ui/plant/hmi-sw.js`). Bukas: DITL-39 rows 2 ~ 4 (SWP A / B / C RUNNING) hindi na-parse kaya M.079C = 0; ACWP at debris filter STOPPED sa 150 MW starting point (UPDATE_REPORT beta.56).
 0. 2026-10-29 10:40 PM PHT: **Beta 3.2.0-beta.55** sa main = START / STOP, AUTO / MAN, control row ng loop at FIELD ng interlock sa ilalim mismo ng pamagat ng hakbang sa Training dock (kita sa 1366 × 768).
