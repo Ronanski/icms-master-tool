@@ -1240,6 +1240,10 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 | 23 | Update banner | Nasubok: may bagong Beta sa version.json → lumalabas ang "New Beta available … Update now / Later" sa itaas, hindi tinatakpan ang Home | — |
 
 
+## 3.2.0-beta.55 (Beta, 2026-10-29, GO BETA ng user) — START / STOP sa itaas ng Training dock
+- Live check ng beta.54 (user 2026-10-29): ang START / STOP ay nasa ibaba ng card (1 900 ~ 2 700 px sa 768 px na screen). Ngayon, sa ilalim mismo ng pamagat ng hakbang: control row ng loop (PV, SV, MV, mode, M / A / R, MV ▲▼, SV ▲▼, Buksan sa sheet ↗), saka START / STOP + RUNNING / STOPPED + AUTO / MAN + "Sheet ↗" bawat motor, ang mga button ng hakbang, at ang interlock na nasa itaas ang FIELD button ng kulang na contact. Ang paliwanag at SOP list ay nasa ilalim na.
+- Sinubok sa 1366 × 768: hakbang 2, 6, 34, 35, 39, 40, 46 — lahat ng START / STOP at control row ay 437 ~ 721 px; FIELD REMOTE → START SWP-A → RUNNING (pula), naka-log.
+
 ## 3.2.0-beta.54 (Beta, 2026-10-29, GO BETA ng user) — Training integrity batch #105 / #107 / #108 / #109
 - **#108 coach:** TINANGGAL nang buo ang 17 coach (code at toggle). Ang hakbang ay umuusad lang sa tunay na signal ng logic / plant model; ang kulang ay ipinapakita ("Kailangan: … Ngayon: …"). Bawat hakbang na dating may coach ay may sariling button (oil A/D, B/C, SV, SA, PA, SH spray, RH damper, coal feeder) at BANTAYAN rows (bilis ng pag-init °C/h, bypass, coal).
 - **#109 FIELD vs FORCE:** sa Training walang FORCE at walang button na naglalagay ng process value (pressure / level / temp / flow): ang mga row na iyon ay "⧗ Proseso: galing sa plant model". FIELD = digital na contact lang, dumadaan sa logic.
