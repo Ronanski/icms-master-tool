@@ -237,22 +237,7 @@
     /* active alarms and trips. 3.2.0 retest #31 #34: the alarm table of the whole DCS (events.js lsAlarms: every ABC sheet, PAUSED or
        RUN, and the motor TRIPs of the DITL), with ACK; the TRIP nets of the ABC sheet on screen from the Event log (TRIP until reset).
        Before: the sheet on screen only (the LOW-LOW of ABC-057 went away when the screen moved to a DITL sheet) */
-    const L = window.lsEvents || [],
-      act = new Map();
-    for (let i = L.length - 1; i >= 0; i--) {
-      const e = L[i];
-      let m;
-      if (e.kind === 'TRIP' && (m = /^(.*) = 1$/.exec(e.text))) act.set(e.sh + '|' + m[1], e);
-      else if (e.kind === 'RST' && (m = /^(.*) = 0$/.exec(e.text))) act.delete(e.sh + '|' + m[1]);
-    }
-    const AL = window.lsAlarms ? lsAlarms.list() : [];
-    /* retest #35: the alarms standing at the start of a cold plant (shutdown state) are suppressed: not counted, listed apart */
-    let sup = 0;
-    for (const a of AL)
-      if (!a.rtn) {
-        if (a.sd) sup++;
-        else act.set(a.k, { t: a.t, text: a.nm + ' ' + a.lv, sh: a.sh, kind: a.kind, ack: a.ack });
-      }
+    const { act, sup, AL } = activeAlarms();
     const n = act.size,
       un = AL.filter(a => !a.ack).length,
       /* the newest unacknowledged first (a TRIP before an alarm), else the newest */
@@ -303,6 +288,30 @@
     }
     return r;
   }
+  /* the active alarms and trips of the header ALARM chip (live check #92: the ALARMS of the new HMI read this list too) */
+  function activeAlarms() {
+    const L = window.lsEvents || [],
+      act = new Map();
+    for (let i = L.length - 1; i >= 0; i--) {
+      const e = L[i];
+      let m;
+      if (e.kind === 'TRIP' && (m = /^(.*) = 1$/.exec(e.text))) act.set(e.sh + '|' + m[1], e);
+      else if (e.kind === 'RST' && (m = /^(.*) = 0$/.exec(e.text))) act.delete(e.sh + '|' + m[1]);
+    }
+    const AL = window.lsAlarms ? lsAlarms.list() : [];
+    /* retest #35: the alarms standing at the start of a cold plant (shutdown state) are suppressed: not counted, listed apart */
+    let sup = 0;
+    for (const a of AL)
+      if (!a.rtn) {
+        if (a.sd) sup++;
+        else act.set(a.k, { t: a.t, text: a.nm + ' ' + a.lv, sh: a.sh, kind: a.kind, ack: a.ack });
+      }
+    return { act, sup, AL };
+  }
+  window.lsActiveAlarms = () => {
+    const r = activeAlarms();
+    return { list: [...r.act.values()], sup: r.sup };
+  };
   function aFill() {
     const d = $('cralist');
     if (!d || !window.lsAlarms) return;

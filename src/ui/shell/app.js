@@ -846,22 +846,28 @@
     {
       const lg = () => crumb.querySelector('#anmeta .lg > button');
       /* Legend & style sits with the layers (its button is rebuilt with each sheet: the ribbon button presses it) */
-      const lgBtn = E('button', {
-        txt: 'Legend',
-        title: 'Colour code of the symbols, valves and wires; wire style',
-        on: () => {
-          const p = $('anlg'),
-            r = lgBtn.getBoundingClientRect();
-          /* R9 #90: toggles the popup itself (the sheet's own Legend button is not there on every page) */
-          if (p) p.style.display = p.style.display === 'block' ? 'none' : 'block';
-          if (p && r.width) {
-            p.style.top = r.bottom + 6 + 'px';
-            p.style.right = 'auto';
-            p.style.left = Math.max(8, Math.min(innerWidth - p.offsetWidth - 8, r.left)) + 'px';
+      const lgMk = id =>
+        E('button', {
+          txt: 'Legend',
+          title: id === 'anlg' ? 'Colour code of the symbols, valves and wires; wire style' : 'DITL legend: 1 / 0 colours, rows and symbols',
+          on: e => {
+            const p = $(id),
+              r = e.currentTarget.getBoundingClientRect();
+            /* R9 #90: toggles the popup itself (the sheet's own Legend button is not there on every page) */
+            if (p) p.style.display = p.style.display === 'block' ? 'none' : 'block';
+            if (p && r.width) {
+              p.style.top = r.bottom + 6 + 'px';
+              p.style.right = 'auto';
+              p.style.left = Math.max(8, Math.min(innerWidth - p.offsetWidth - 8, r.left)) + 'px';
+            }
           }
-        }
-      });
+        });
+      const lgBtn = lgMk('anlg'),
+        lgDi = lgMk('dilg');
       gView.append(AN_(lgBtn));
+      /* live check #90: the DITL toolbar has its own Legend (ditl.js #dilg) */
+      gDitl.append(lgDi);
+      lgDi.dataset.ic = 'legend';
       [[ioBtn, 'book'], [fxBtn, 'curve'], [lgBtn, 'legend'], [zIn, 'zin'], [zOut, 'zout'], [xback, 'back']].forEach(([b, k]) => b && (b.dataset.ic = k));
       zIn.textContent = 'Zoom in';
       zOut.textContent = 'Zoom out';

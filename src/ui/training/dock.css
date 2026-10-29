@@ -14,6 +14,7 @@ html.gd-side .gd-grip{left:-6px;top:0;bottom:0;width:12px;cursor:ew-resize}
 html.gd-side .gd-grip:after{content:"";position:absolute;top:50%;left:4px;width:5px;height:56px;margin-top:-28px;border-radius:3px;background:var(--c-line2)}
 html.gd-side .gd-grip:hover:after{background:var(--c-acc)}
 .gd-do{margin:4px 0;font:600 15px var(--uf);color:var(--c-tx)}
+.gd-snote{margin:4px 0;font-size:12.5px;color:var(--c-dim);border-left:3px solid var(--c-line2);padding:2px 0 2px 8px}
 .gd-why summary{cursor:pointer;color:var(--c-dim);font:600 13px var(--uf)}
 .gd-why p{margin:4px 0;color:var(--c-tx2)}
 html.gd-bottom .gd-grip{left:0;right:0;top:-6px;height:14px;cursor:ns-resize}

@@ -387,8 +387,9 @@ body:not([data-tab=logic]) #sfoot :is(.sinfo,.ssel,.sforce){visibility:hidden}
 #infocard .icwa{flex:0 0 1.125rem;align-self:center;text-align:center;color:var(--c-acc);font-weight:700}
 #libws .libw .ics{border:0;padding:0}
 /* Legend */
-#anlg{padding:.875rem 1rem!important;background:var(--c-pane)!important;border:1px solid var(--c-line)!important;border-radius:var(--r-l)!important;box-shadow:0 1rem 2.5rem var(--c-shadow)!important;font-size:.8125rem!important;color:var(--c-tx)!important;max-width:min(24rem,94vw)!important}
-#anlg b{font:600 .6875rem var(--uf)!important;letter-spacing:.1em;color:var(--c-dim)!important}
+#dilg{display:none;position:fixed;z-index:70;max-height:calc(100vh - 120px);overflow-y:auto}#dilg .it{display:flex;gap:8px;align-items:center;margin:3px 0}#dilg b{display:block;margin:8px 0 3px;text-transform:uppercase}#dilg .tg{flex:none;min-width:30px;text-align:center;font:700 10px var(--mf,monospace);border:1px solid var(--c-line2);border-radius:3px;padding:1px 3px}#dilg small{display:block;margin-top:8px;color:var(--c-dim)}#dilg .dilgx{position:sticky;top:0;float:right;margin:-4px -8px 0 8px;background:none;border:0;color:var(--c-tx);font:700 18px sans-serif;cursor:pointer;line-height:1}
+#anlg,#dilg{padding:.875rem 1rem!important;background:var(--c-pane)!important;border:1px solid var(--c-line)!important;border-radius:var(--r-l)!important;box-shadow:0 1rem 2.5rem var(--c-shadow)!important;font-size:.8125rem!important;color:var(--c-tx)!important;max-width:min(24rem,94vw)!important}
+#anlg b,#dilg b{font:600 .6875rem var(--uf)!important;letter-spacing:.1em;color:var(--c-dim)!important}
 /* floating panels (Health, Audit, F(X), Assumed values, DITL signals, DITL Health) */
 body.app2 :is(#anhp,#anau,#anln,#hp){top:calc(var(--topH,52px) + .5rem)!important;right:.75rem!important;width:min(42rem,calc(100vw - 1.5rem))!important;max-height:calc(100vh - var(--topH,52px) - var(--footH,30px) - 1.5rem)!important;
  padding:1rem 1.125rem!important;background:var(--c-pane)!important;color:var(--c-tx)!important;border:1px solid var(--c-line)!important;border-radius:var(--r-l)!important;box-shadow:0 1.25rem 3rem var(--c-shadow)!important;font:400 .875rem/1.45 var(--uf)!important}
