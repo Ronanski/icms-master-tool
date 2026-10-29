@@ -1089,6 +1089,60 @@
     /* the card */
     const card = E('div', { cls: 'gd-card' });
     card.append(E('div', { cls: 'gd-eb', txt: 'HAKBANG ' + (i + 1) + ' · ' + (g.STAGES[s.st] || '').toUpperCase() }), E('h3', { txt: s.t }));
+    /* user 2026-10-29 (batch item 3: "kitang-kita agad, walang scroll", 768 px high): the operator control of each loop of the step right
+       under the title, one compact row: PV, SV, MV, mode, M / A / R, MV and SV by one step. It writes through the same actions as the
+       faceplate below and the sheet (LS_GUIDE.A: the faceplate of the sheet), so there is one control layer */
+    els.ctl = [];
+    {
+      const rows = [];
+      for (const t0 of (s.fps || []).slice(0, 3)) {
+        const t = call(() => LV().ctlTag(t0), null) || t0,
+          f = call(() => LV().fp(t), null);
+        if (!f) continue;
+        const ctl = f.kind === 'ctl',
+          ro = E('span', { cls: 'gd-cv' }),
+          op = (l, fn) => {
+            const r = call(fn, '');
+            if (r) {
+              ro.textContent = '⚠ ' + r;
+              ro.dataset.w = Date.now();
+              return;
+            }
+            ro.dataset.w = 0;
+            ro.dataset.a = l === 'A' || l === 'R' ? Date.now() : 0;
+            if (window.lsEventAdd) lsEventAdd('DCS', 'DCS', 'Operator: ' + t + ' ' + l);
+            fill();
+          },
+          b = (txt, title, fn, cls) => E('button', { type: 'button', cls: 'gd-cb' + (cls ? ' ' + cls : ''), txt, title, on: fn }),
+          mvNow = () => call(() => LV().mvOf(LV().fp(t)), NaN),
+          svNow = () => call(() => LV().svOf(LV().fp(t)), NaN),
+          mdNow = () => call(() => LV().modeOf(LV().fp(t)), '?'),
+          span = ctl && f.c && f.c.b && f.c.b.p ? Math.abs((f.c.b.p.rhi != null ? f.c.b.p.rhi : 100) - (f.c.b.p.rlo != null ? f.c.b.p.rlo : 0)) : 100,
+          dsv = span >= 500 ? 1 : span >= 50 ? 1 : 0.1,
+          bm = b('M', 'MANUAL', () => op('M', () => g.A.man(t, +mvNow() || 0)), 'md'),
+          ba = b('A', 'AUTO (SV ng operator)', () => op('A', () => g.A.auto(t)), 'md'),
+          br = ctl && f.c.remote ? b('R', 'REMOTE (SV mula sa logic)', () => op('R', () => g.A.rem(t)), 'md') : null,
+          mvd = d => b('MV ' + (d > 0 ? '▲' : '▼'), 'MV ' + (d > 0 ? '+' : '') + d + ' % (MANUAL)', () => op('MV ' + (d > 0 ? '+' : '') + d + ' %', () => (mdNow() === 'MAN' ? g.A.man(t, Math.max(0, Math.min(100, (+mvNow() || 0) + d))) : 'Nasa ' + mdNow() + ': pindutin muna ang M'))),
+          svd = d => b('SV ' + (d > 0 ? '▲' : '▼'), 'SV ' + (d > 0 ? '+' : '') + d + ' (AUTO)', () => op('SV ' + (d > 0 ? '+' : '') + d, () => (mdNow() === 'AUTO' ? g.A.auto(t, Math.round(((+svNow() || 0) + d) * 10) / 10) : 'Nasa ' + mdNow() + ': pindutin muna ang A'))),
+          row = E('div', { cls: 'gd-ctl' }, [
+            E('div', { cls: 'gd-ch' }, [E('b', { txt: t }), ro]),
+            E('div', { cls: 'gd-cbs' }, [bm, ba, br, mvd(-1), mvd(1)].concat(ctl && f.c.q && f.c.q.sv != null ? [svd(-dsv), svd(dsv)] : []).filter(Boolean))
+          ]);
+        els.ctl.push(() => {
+          const md = mdNow(),
+            pv = ctl ? call(() => LV().pvOf(LV().fp(t)), NaN) : NaN;
+          /* A / R pressed and the loop stays MANUAL: the logic holds it (force manual), the faceplate below says why */
+          const ta = Date.now() - (+ro.dataset.a || 0);
+          if (md === 'MAN' && ta > 1500 && ta < 8000) {
+            ro.textContent = '⚠ Nanatiling MAN: force manual ng logic (tingnan ang "Why?" sa faceplate sa ibaba)';
+          } else if (!(Date.now() - (+ro.dataset.w || 0) < 4000))
+            ro.textContent = (ctl ? 'PV ' + f1(pv) + ' · SV ' + f1(svNow()) + ' · ' : '') + 'MV ' + f1(mvNow()) + ' % · ' + md;
+          for (const [x, m] of [[bm, 'MAN'], [ba, 'AUTO'], [br, 'REM']]) if (x) x.classList.toggle('on', md === m);
+        });
+        rows.push(row);
+      }
+      if (rows.length) card.append(E('div', { cls: 'gd-ctls' }, rows));
+    }
     /* retest #44: one line to do on top; a longer explanation folded under "Bakit?" */
     {
       const d = String(s.d || ''),
@@ -1517,32 +1571,6 @@
        then the values to watch (3.2.0-beta.33 had the faceplates under the values) */
     if (els.fps && els.fps.children.length) col2.append(els.fps);
     if (els.watch.length) col2.append(E('div', { cls: 'gd-watch' }, [E('div', { cls: 'gd-h', txt: 'BANTAYAN SA HAKBANG NA ITO' })].concat(els.watch.map(x => x.r))));
-    /* the coach. User 2026-10-29 (#108): no coach runs by itself. The coaches of this step are listed OFF; the trainee may switch one on
-       (it is logged, and every action it takes is in the Event log as "COACH: ...") */
-    const co = [...new Set((s.coach || []).filter(id => g.coach[id]).concat(Object.keys(g.CO)))];
-    if (co.length)
-      col2.append(
-        E(
-          'div',
-          { cls: 'gd-coach' },
-          [E('div', { cls: 'gd-h', txt: 'COACH (naka-OFF: ikaw ang operator; i-ON kung kailangan ng tulong)' })].concat(
-            co.map(id => {
-              const on = !!g.CO[id],
-                nm = (g.coach[id] && g.coach[id].t) || id,
-                sw = E('button', { type: 'button', cls: 'gd-tg' + (on ? ' on' : ''), 'aria-pressed': on ? 'true' : 'false', title: on ? 'Patayin: ikaw ang hahawak' : 'I-ON ang coach (naka-log)' });
-              sw.onclick = () => {
-                if (g.CO[id]) g.coachOff(id);
-                else g.coachOn(id);
-                try {
-                  if (window.lsEventAdd) lsEventAdd('DCS', 'COACH', 'COACH ' + (g.CO[id] ? 'ON' : 'OFF') + ': ' + nm + ' (trainee)');
-                } catch (e) {}
-                fill(true);
-              };
-              return E('div', { cls: 'gd-cr' }, [E('span', { txt: nm }), sw]);
-            })
-          )
-        )
-      );
     /* follow + the next steps */
     const fl = E('label', { cls: 'gd-follow' }, [E('input', { type: 'checkbox' }), ' Sundan ng gitna ang hakbang (DITL o ABC sheet)']);
     fl.firstChild.checked = !!follow;
@@ -1891,7 +1919,7 @@
       els.early.hidden = !ea.length;
       els.early.textContent = ea.length ? '⚠ Nauna na: ' + ea.join(', ') + ' (hakbang sa susunod). Sa totoong start-up, sundin ang pagkakasunod.' : '';
     }
-    for (const f of fpLive)
+    for (const f of fpLive.concat(els.ctl || []))
       try {
         f();
       } catch (e) {}
