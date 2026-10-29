@@ -328,7 +328,16 @@ window.LS_LIVE = (function () {
     go: { addr: 'M.3412' }
   };
   const NOFEED = NOBIT(['M.3400', 'M.3401', 'M.3402'], 'coal feeders stopped');
-  const PURGE_AIR = VAL('AIR', 115, null); /* > 25 % MCR of the total air (25 % of 460 T/H) */
+  /* user 2026-10-29: the purge air is the logic's own signal, ABC-006 M.0340 "TOTAL AIR FLOW < 25% MCR (151.5 T/H)" = 0, DESIGN BASE of
+     the ABC sheets: total air 606 T/H at 100 % load (was 115 T/H = 25 % of the 460 T/H steam MCR, wrong) */
+  const PURGE_AIR = {
+    sig: ['M.0340', 'AIR'],
+    res: () => has('M.0340') || 'AIR' in NAMES,
+    ok: () => (has('M.0340') ? !(val('M.0340') > 0.5) : rng(getV('AIR'), 151.5, null)),
+    now: () => NAMES.AIR[0] + ' ' + f1(getV('AIR')) + ' ' + NAMES.AIR[1] + (has('M.0340') ? ' · M.0340 = ' + (val('M.0340') > 0.5 ? 1 : 0) : ''),
+    want: 'Total air ≥ 25 % MCR = 151.5 T/H (ABC-006 M.0340 = 0)',
+    go: { addr: 'M.0340' }
+  };
   const MFT = BIT('I.000F', 0, 'no MFT');
 
   /* 3.2.0 retest #45 #47 #33: the equipment of sections 2 ~ 17 that runs on a DITL drawing or at a local panel (dock.js reads the drawing

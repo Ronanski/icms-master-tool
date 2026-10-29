@@ -118,8 +118,8 @@
   const WATCH = [
     [['Seawater pumps running', () => ['M.3353', 'M.3354', 'M.3355'].filter(bit).length, '', f0, '2 bago ang vacuum']],
     [['Hotwell level', () => pv('LICCD1110A'), 'mm', sgn, '', 'LICCD1110A'], ['Condensate flow', () => pv('FICCD1120'), 'T/H', f1, '', 'FICCD1120'], ['Deaerator level', () => pv('LCV-CD1104'), 'mm', sgn, 'SV 0', 'LICCD1104'], lvl, ['FW flow', () => H().FW(), 'T/H', f1, '', 'FICFW1007']],
-    [['Furnace pressure', () => H().FP(), 'mmH₂O', f0, 'target −15', 'PICFG108'], ['Total air (PA + SA + FA)', () => H().PA() + H().SA() + (H().FA ? H().FA() : 0), 'T/H', f0, 'purge > 115'], ['IDF coupling MV', () => mv('PICFG108'), '%', f0, '', 'PICFG108']],
-    [['Furnace pressure', () => H().FP(), 'mmH₂O', f0, 'target −15', 'PICFG108'], ['Total air (PA + SA + FA)', () => H().PA() + H().SA() + (H().FA ? H().FA() : 0), 'T/H', f0, 'purge > 115']],
+    [['Furnace pressure', () => H().FP(), 'mmH₂O', f0, 'target −15', 'PICFG108'], ['Total air (PA + SA + FA)', () => H().PA() + H().SA() + (H().FA ? H().FA() : 0), 'T/H', f0, 'purge ≥ 151.5 (25 % MCR)'], ['IDF coupling MV', () => mv('PICFG108'), '%', f0, '', 'PICFG108']],
+    [['Furnace pressure', () => H().FP(), 'mmH₂O', f0, 'target −15', 'PICFG108'], ['Total air (PA + SA + FA)', () => H().PA() + H().SA() + (H().FA ? H().FA() : 0), 'T/H', f0, 'purge ≥ 151.5 (25 % MCR)']],
     [['Water temp', () => U().Tw, '°C', f0, 'kumukulo sa 100'], ['Drum pressure', () => U().Pd, 'kg/cm²', f1, ''], ['Bilis ng pag-init', () => rate.r, '°C/h', f0, 'Fig 1 ≤ 110'], ['Bed temp', () => U().Tb, '°C', f0, '']],
     [['Condenser vacuum', () => 100 * (+U().vac || 0), '%', f0, '≥ 90'], ['Drum pressure', () => U().Pd, 'kg/cm²', f1, '']],
     [['Bed temp', () => U().Tb, '°C', f0, 'coal ≥ 400 · retract > 700'], ['Coal flow', () => H().coal(), 'T/H', f1, '', 'FIC-CM'], ['O₂', () => H().O2(), '%', f1, '3.5 ~ 8', 'AICFG112'], ['Bilis ng pag-init', () => rate.r, '°C/h', f0, 'Fig 1 ≤ 110']],
@@ -1089,6 +1089,60 @@
     /* the card */
     const card = E('div', { cls: 'gd-card' });
     card.append(E('div', { cls: 'gd-eb', txt: 'HAKBANG ' + (i + 1) + ' · ' + (g.STAGES[s.st] || '').toUpperCase() }), E('h3', { txt: s.t }));
+    /* user 2026-10-29 (batch item 3: "kitang-kita agad, walang scroll", 768 px high): the operator control of each loop of the step right
+       under the title, one compact row: PV, SV, MV, mode, M / A / R, MV and SV by one step. It writes through the same actions as the
+       faceplate below and the sheet (LS_GUIDE.A: the faceplate of the sheet), so there is one control layer */
+    els.ctl = [];
+    {
+      const rows = [];
+      for (const t0 of (s.fps || []).slice(0, 3)) {
+        const t = call(() => LV().ctlTag(t0), null) || t0,
+          f = call(() => LV().fp(t), null);
+        if (!f) continue;
+        const ctl = f.kind === 'ctl',
+          ro = E('span', { cls: 'gd-cv' }),
+          op = (l, fn) => {
+            const r = call(fn, '');
+            if (r) {
+              ro.textContent = '⚠ ' + r;
+              ro.dataset.w = Date.now();
+              return;
+            }
+            ro.dataset.w = 0;
+            ro.dataset.a = l === 'A' || l === 'R' ? Date.now() : 0;
+            if (window.lsEventAdd) lsEventAdd('DCS', 'DCS', 'Operator: ' + t + ' ' + l);
+            fill();
+          },
+          b = (txt, title, fn, cls) => E('button', { type: 'button', cls: 'gd-cb' + (cls ? ' ' + cls : ''), txt, title, on: fn }),
+          mvNow = () => call(() => LV().mvOf(LV().fp(t)), NaN),
+          svNow = () => call(() => LV().svOf(LV().fp(t)), NaN),
+          mdNow = () => call(() => LV().modeOf(LV().fp(t)), '?'),
+          span = ctl && f.c && f.c.b && f.c.b.p ? Math.abs((f.c.b.p.rhi != null ? f.c.b.p.rhi : 100) - (f.c.b.p.rlo != null ? f.c.b.p.rlo : 0)) : 100,
+          dsv = span >= 500 ? 1 : span >= 50 ? 1 : 0.1,
+          bm = b('M', 'MANUAL', () => op('M', () => g.A.man(t, +mvNow() || 0)), 'md'),
+          ba = b('A', 'AUTO (SV ng operator)', () => op('A', () => g.A.auto(t)), 'md'),
+          br = ctl && f.c.remote ? b('R', 'REMOTE (SV mula sa logic)', () => op('R', () => g.A.rem(t)), 'md') : null,
+          mvd = d => b('MV ' + (d > 0 ? '▲' : '▼'), 'MV ' + (d > 0 ? '+' : '') + d + ' % (MANUAL)', () => op('MV ' + (d > 0 ? '+' : '') + d + ' %', () => (mdNow() === 'MAN' ? g.A.man(t, Math.max(0, Math.min(100, (+mvNow() || 0) + d))) : 'Nasa ' + mdNow() + ': pindutin muna ang M'))),
+          svd = d => b('SV ' + (d > 0 ? '▲' : '▼'), 'SV ' + (d > 0 ? '+' : '') + d + ' (AUTO)', () => op('SV ' + (d > 0 ? '+' : '') + d, () => (mdNow() === 'AUTO' ? g.A.auto(t, Math.round(((+svNow() || 0) + d) * 10) / 10) : 'Nasa ' + mdNow() + ': pindutin muna ang A'))),
+          row = E('div', { cls: 'gd-ctl' }, [
+            E('div', { cls: 'gd-ch' }, [E('b', { txt: t }), ro]),
+            E('div', { cls: 'gd-cbs' }, [bm, ba, br, mvd(-1), mvd(1)].concat(ctl && f.c.q && f.c.q.sv != null ? [svd(-dsv), svd(dsv)] : []).filter(Boolean))
+          ]);
+        els.ctl.push(() => {
+          const md = mdNow(),
+            pv = ctl ? call(() => LV().pvOf(LV().fp(t)), NaN) : NaN;
+          /* A / R pressed and the loop stays MANUAL: the logic holds it (force manual), the faceplate below says why */
+          const ta = Date.now() - (+ro.dataset.a || 0);
+          if (md === 'MAN' && ta > 1500 && ta < 8000) {
+            ro.textContent = '⚠ Nanatiling MAN: force manual ng logic (tingnan ang "Why?" sa faceplate sa ibaba)';
+          } else if (!(Date.now() - (+ro.dataset.w || 0) < 4000))
+            ro.textContent = (ctl ? 'PV ' + f1(pv) + ' · SV ' + f1(svNow()) + ' · ' : '') + 'MV ' + f1(mvNow()) + ' % · ' + md;
+          for (const [x, m] of [[bm, 'MAN'], [ba, 'AUTO'], [br, 'REM']]) if (x) x.classList.toggle('on', md === m);
+        });
+        rows.push(row);
+      }
+      if (rows.length) card.append(E('div', { cls: 'gd-ctls' }, rows));
+    }
     /* retest #44: one line to do on top; a longer explanation folded under "Bakit?" */
     {
       const d = String(s.d || ''),
@@ -1247,7 +1301,7 @@
         }
         /* retest #63: the DCS command in the Event log (sheet, row and tag of its CRT push button) */
         if (!a.loc) opLog(a.l, pb); /* a field button logs itself (FIELD) */
-        if (pb && follow) openD(pb.sh, pb.row);
+        if (pb && follow) openD(pb.sh, pb.row, 230);
         setTimeout(() => fill(), 300);
       };
       bs.append(bt);
@@ -1413,7 +1467,21 @@
         } catch (e) {}
         if (!r) continue;
         fpLive = fpLive.concat(r.live);
-        els.fps.append(E('div', { cls: 'gd-fp' }, [E('div', { cls: 'gd-fph' }, [E('b', { txt: t }), E('span', { txt: r.sheet })]), box]));
+        /* user 2026-10-29 (batch item 3): the control of the step in the dock (this IS the faceplate of the sheet: AN.fpBuild writes the
+           same signal), and one press to its block on the sheet, centred at a readable zoom and flashed (AN.showTag) */
+        const sh = r.sheet,
+          go = E('button', {
+            type: 'button',
+            cls: 'gd-lk',
+            txt: 'Buksan sa sheet ↗',
+            title: 'Buksan ang ' + sh + ' at ipakita ang ' + t,
+            on: () => {
+              window.lsSetTab && lsSetTab('logic');
+              if (AN.cat !== 'an' && AN.setCat) AN.setCat('an');
+              if (AN.showTag) setTimeout(() => AN.showTag(t, sh), 60);
+            }
+          });
+        els.fps.append(E('div', { cls: 'gd-fp' }, [E('div', { cls: 'gd-fph' }, [E('b', { txt: t }), E('span', { txt: sh }), go]), box]));
       }
     }
     /* the values to watch */
@@ -1499,26 +1567,10 @@
       const v = E('b', { txt: '—' });
       return { r: E('div', { cls: 'gd-wr' }, [E('span', { txt: k }), E('span', {}, [v, E('em', { txt: u }), hint ? E('small', { txt: hint }) : null])]), v, f, fm };
     });
-    if (els.watch.length) col2.append(E('div', { cls: 'gd-watch' }, [E('div', { cls: 'gd-h', txt: 'BANTAYAN SA HAKBANG NA ITO' })].concat(els.watch.map(x => x.r))));
-    /* 3.2.0-beta.33: the faceplates under the values to watch (the values are what the operator reads all the time; two faceplates pushed them
-       under the screen) */
+    /* user 2026-10-29 (batch item 3: "kitang-kita agad, walang scroll"): the controls of the step (its faceplates: PV, SV, MV, mode) first,
+       then the values to watch (3.2.0-beta.33 had the faceplates under the values) */
     if (els.fps && els.fps.children.length) col2.append(els.fps);
-    /* the coach */
-    const co = Object.keys(g.CO);
-    if (co.length)
-      col2.append(
-        E(
-          'div',
-          { cls: 'gd-coach' },
-          [E('div', { cls: 'gd-h', txt: 'COACH (katulong sa board)' })].concat(
-            co.map(id => {
-              const sw = E('button', { type: 'button', cls: 'gd-tg on', 'aria-pressed': 'true', title: 'Patayin: ikaw ang hahawak' });
-              sw.onclick = () => (g.coachOff(id), fill(true));
-              return E('div', { cls: 'gd-cr' }, [E('span', { txt: (g.coach[id] && g.coach[id].t) || id }), sw]);
-            })
-          )
-        )
-      );
+    if (els.watch.length) col2.append(E('div', { cls: 'gd-watch' }, [E('div', { cls: 'gd-h', txt: 'BANTAYAN SA HAKBANG NA ITO' })].concat(els.watch.map(x => x.r))));
     /* follow + the next steps */
     const fl = E('label', { cls: 'gd-follow' }, [E('input', { type: 'checkbox' }), ' Sundan ng gitna ang hakbang (DITL o ABC sheet)']);
     fl.firstChild.checked = !!follow;
@@ -1728,7 +1780,7 @@
             /* 3.2.0 walkthrough #19: the row on its sheet, one press (to see it, to set it or FORCE it there in the Inputs list) */
             E('span', {}, [
               E('code', { txt: (G.tag ? G.tag + ' · ' : '') + (r.other ? r.other + ' ' : '') + 'row ' + rows }),
-              E('button', { type: 'button', cls: 'gd-rowl', txt: '↗', title: 'Buksan ang ' + dName(r.s) + ' row ' + rows, on: () => (window.lsSetTab && lsSetTab('logic'), openD(dName(r.s), r.row)) })
+              E('button', { type: 'button', cls: 'gd-rowl', txt: '↗', title: 'Buksan ang ' + dName(r.s) + ' row ' + rows, on: () => (window.lsSetTab && lsSetTab('logic'), openD(dName(r.s), r.row, 230)) })
             ])
           ])
         );
@@ -1765,6 +1817,12 @@
         const f = q.f,
           nm = svcN(f.svc),
           rows = q.L.map(x => x.no).join(', ');
+        /* user 2026-10-29 (#109: no FORCE in Training): an analog row (a transmitter into a comparator) is a process value of the plant
+           model, not a field contact: no button sets it; the trainee brings the process there with the steps of the SOP */
+        if (f.av) {
+          it.box.append(E('div', { cls: 'gd-ild x', txt: '⧗ Proseso: ' + nm + ' ' + f.av.txt + ' (row ' + rows + '): galing sa plant model, walang FIELD button. Hintayin o gawin ang hakbang ng SOP na nagdadala rito.' }));
+          continue;
+        }
         it.box.append(
           E('button', {
             type: 'button',
@@ -1861,7 +1919,7 @@
       els.early.hidden = !ea.length;
       els.early.textContent = ea.length ? '⚠ Nauna na: ' + ea.join(', ') + ' (hakbang sa susunod). Sa totoong start-up, sundin ang pagkakasunod.' : '';
     }
-    for (const f of fpLive)
+    for (const f of fpLive.concat(els.ctl || []))
       try {
         f();
       } catch (e) {}
