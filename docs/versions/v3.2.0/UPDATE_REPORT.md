@@ -1240,6 +1240,13 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 | 23 | Update banner | Nasubok: may bagong Beta sa version.json → lumalabas ang "New Beta available … Update now / Later" sa itaas, hindi tinatakpan ang Home | — |
 
 
+## 3.2.0-beta.60 (Beta, 2026-10-30, GO BETA ng user) — Training: ayos mula sa check ng lahat ng 105 hakbang
+- **Problem (user: "1 2 34 35? ... SPECIAL UNG 4???"):** ang beta.58 ay nasubok lang sa 4 na hakbang.
+- **Check:** lahat ng 105 hakbang, mismong app 1366 × 768, tunay na daloy (Training sa kaliwa → Gabay sa dock), screenshot bawat isa (`/mnt/project-files/training-dock-fix-2026-10-30/all3/`, `CHECK_LAHAT_NG_HAKBANG.md`).
+- **Work Done:** `guide.js`: seksyon ng hakbang 60 ~ 64 (dating 31: 14 TCS oil, 33 turning gear at gland, 35 vacuum; 62 aux steam nananatiling 31) at 102 ~ 105 (dating wala: 47); `.tag` sa step / SV step button. `dock.js` / `dock.css`: hindi na ipinapakita ang button ng hakbang na kapareho ng loop card (MV / SV ±, A); walang laman na "CONTROLS NG HAKBANG" sa field step; isang kahon bawat lugar sa HMI; isang logic button bawat sheet; "↳ field" lang kapag may dagdag na impormasyon; RUNNING pula / STOPPED berde sa Bantayan; kahon ng turbine (UNIT) para sa seksyon 14, 15, 16, 21, 33.
+- **Sinubok:** build + check; 105 hakbang: HMI sa gitna, 8 values, 17 lamps, Gawin, Bakit?, seksyon, walang page error; sa ibabaw ng beta.59: hakbang 2, 4 ~ 9, 19, 58 sa 030 may kahon.
+- **Hindi pa ayos:** walang sariling HMI page (UNIT lang, walang kahon): hakbang 10 ~ 14, 52, 54, 57, 62. Hindi sinubok: phone layout.
+
 ## 3.2.0-beta.59 (Beta, 2026-10-30, GO BETA ng user) — 030 SEAWATER: lahat ng value galing sa plant model, buong page pagbukas
 - **#116 + utos ng user (2026-10-30 "DAPAT S PLANT MODEL GALING"):** ang mga value ng 030 na walang transmitter sa logic sheet ay kinukuwenta na ng plant model (`unit.js` `AN_SW` / `anSeawaterStep`), hindi na ng HMI. Tinanggal ang ● estimate. Ang HMI ay nagbabasa lang (`UNIT.swxx`); kapag Plant model OFF ay "-----".
   - **DPISW1502 / 1504 (DP ng debris filter, PACKAGE gauge, alarm list 0 ~ 2000 mmH2O):** 204 mmH2O (20 mbar, PR-OPE-5002) × (flow)² × (1 + dumi). Dumadami ang dumi habang may tubig na dumadaan (ASSUMED: 80 mbar pagkalipas ng 4 h sa normal flow). Sa 816 mmH2O (80 mbar cut-in) nagba-backwash ang package (ASSUMED 60 s) at bumabalik sa 204, PERO lang kung IN OPERATION ang filter (DITL-39 row 3 / 14). Kapag hindi naka-start ang filter, tuloy ang pagtaas ng DP. Walang pump = 0.
