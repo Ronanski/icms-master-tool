@@ -1125,7 +1125,21 @@
           mvd = d => b('MV ' + (d > 0 ? '▲' : '▼'), 'MV ' + (d > 0 ? '+' : '') + d + ' % (MANUAL)', () => op('MV ' + (d > 0 ? '+' : '') + d + ' %', () => (mdNow() === 'MAN' ? g.A.man(t, Math.max(0, Math.min(100, (+mvNow() || 0) + d))) : 'Nasa ' + mdNow() + ': pindutin muna ang M'))),
           svd = d => b('SV ' + (d > 0 ? '▲' : '▼'), 'SV ' + (d > 0 ? '+' : '') + d + ' (AUTO)', () => op('SV ' + (d > 0 ? '+' : '') + d, () => (mdNow() === 'AUTO' ? g.A.auto(t, Math.round(((+svNow() || 0) + d) * 10) / 10) : 'Nasa ' + mdNow() + ': pindutin muna ang A'))),
           row = E('div', { cls: 'gd-ctl' }, [
-            E('div', { cls: 'gd-ch' }, [E('b', { txt: t }), ro]),
+            E('div', { cls: 'gd-ch' }, [
+              E('b', { txt: t }),
+              ro,
+              E('button', {
+                type: 'button',
+                cls: 'gd-lk',
+                txt: 'Buksan sa sheet ↗',
+                title: 'Buksan ang ' + f.shn + ' at ipakita ang ' + t,
+                on: () => {
+                  window.lsSetTab && lsSetTab('logic');
+                  if (AN.cat !== 'an' && AN.setCat) AN.setCat('an');
+                  if (AN.showTag) setTimeout(() => AN.showTag(t, f.shn), 60);
+                }
+              })
+            ]),
             E('div', { cls: 'gd-cbs' }, [bm, ba, br, mvd(-1), mvd(1)].concat(ctl && f.c.q && f.c.q.sv != null ? [svd(-dsv), svd(dsv)] : []).filter(Boolean))
           ]);
         els.ctl.push(() => {
@@ -1143,6 +1157,12 @@
       }
       if (rows.length) card.append(E('div', { cls: 'gd-ctls' }, rows));
     }
+    /* user 2026-10-29 (beta.54 live check: "NASA BABA" the START / STOP): the commands of the step (START / STOP with the feedback, the
+       AUTO / MAN of the motor, the step's own buttons, the interlock with its FIELD contacts) right under the loop rows, before the
+       explanation and the SOP list (they were at the bottom of the card, 1 900 ~ 2 700 px down on a 768 px screen) */
+    const top = E('div', { cls: 'gd-top' });
+    card.append(top);
+    const ilWrap = E('div', { cls: 'gd-ilbox' });
     /* retest #44: one line to do on top; a longer explanation folded under "Bakit?" */
     {
       const d = String(s.d || ''),
@@ -1254,7 +1274,7 @@
       if (ad && MOTOR[ad] && !els.il.some(x => x.ad === ad)) {
         const box = E('div', { cls: 'gd-il' });
         els.il.push({ ad, box });
-        card.append(box);
+        ilWrap.append(box);
       }
     }
     /* the buttons */
@@ -1333,6 +1353,20 @@
           on: () => B.ad && tripAck(B.ad)
         });
         bs.append(B.lab);
+        /* user 2026-10-29: the motor's push button row on its DITL sheet, one press */
+        if (pb)
+          bs.append(
+            E('button', {
+              type: 'button',
+              cls: 'gd-lk',
+              txt: 'Sheet ↗',
+              title: 'Buksan sa sheet: ' + pb.sh + ' row ' + (pb.row + 1),
+              on: () => {
+                window.lsSetTab && lsSetTab('logic');
+                openD(pb.sh, pb.row, 230);
+              }
+            })
+          );
         /* retest #34: a Training fault, the motor protection relay trips in the field (the motor stops, TRIP flashes until ACK, alarm,
            Event log); the field resets the relay, then the operator starts again */
         if (a.stop && B.ad) {
@@ -1446,11 +1480,11 @@
           }))
         );
     }
-    if (bs.children.length) card.append(bs);
+    if (bs.children.length) top.append(bs);
     els.early = E('div', { cls: 'gd-warn', hidden: '' });
     els.pw = E('div', { cls: 'gd-warn', hidden: '' });
     els.ovw = E('div', { cls: 'gd-warn', hidden: '' });
-    card.append(els.pw, els.ovw, els.early);
+    top.append(els.pw, els.ovw, els.early, ilWrap);
     col1.append(card);
     /* the faceplates of the step */
     const key = (s.fps || []).join(',');
@@ -1806,7 +1840,8 @@
       }
       /* 3.2.0 walkthrough #20: one FIELD button per missing field contact (the field operator sets the LOCAL / REMOTE selector, the limit
          switch ...): it sets that input row of the drawing (every row of the same signal) and writes the Event log */
-      const fg = [];
+      const fg = [],
+        fb = [];
       for (const f of F.field) {
         const k = f.s.name + '|' + svcN(f.svc),
           q = fg.find(x => x.k === k);
@@ -1823,7 +1858,7 @@
           it.box.append(E('div', { cls: 'gd-ild x', txt: '⧗ Proseso: ' + nm + ' ' + f.av.txt + ' (row ' + rows + '): galing sa plant model, walang FIELD button. Hintayin o gawin ang hakbang ng SOP na nagdadala rito.' }));
           continue;
         }
-        it.box.append(
+        fb.push(
           E('button', {
             type: 'button',
             cls: 'gd-btn gd-fld gd-fone',
@@ -1838,6 +1873,12 @@
             }
           })
         );
+      }
+      /* user 2026-10-29 ("NASA BABA"): the FIELD buttons of the missing contacts right under the header of the box, before the list */
+      if (fb.length) {
+        const hd = it.box.firstChild;
+        if (hd) hd.after(...fb);
+        else it.box.append(...fb);
       }
       if (!run && !I.miss.length) it.box.append(E('div', { cls: 'gd-ild ok', txt: '✓ Kumpleto ang interlock: puwede nang pindutin ang START.' }));
       /* retest #40: the missing rows outlined on the sheet in the centre */
