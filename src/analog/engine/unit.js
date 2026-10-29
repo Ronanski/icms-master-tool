@@ -1227,18 +1227,28 @@ function anUnitStep(dt) {
       /* the open furnace empties in seconds, not with the time constant of the draft loop (65 s) */
       const q = nair != null && nair < 1 && U.idf && U.idf.S.rt.pm ? U.idf.S.rt.pm[p.b.id] : null;
       if (q && isFinite(q.y)) q.y -= (1 - nair) * q.y * (1 - Math.exp(-dt / 5));
-      /* 3.2.0-beta.51 (#99): ID fan alone, no PA / SA air = the fan draws only the leakage through the open furnace, so the draft
-         settles at a fan-law value (about -c * speed^2; 13 % coupling = about -15 mmH2O), not the runaway of the air term (-117 in
-         70 s). Blended out as the air flow comes in (10 % of the design air = the loop model as before). */
-      const ia = idf && U.taf0 > 0 && U.idf && U.idf.S.rt.pm ? Math.min(1, taf / (0.1 * U.taf0)) : 1;
-      const qi = ia < 1 ? U.idf.S.rt.pm[p.b.id] : null;
-      if (qi && isFinite(qi.y)) {
+      /* 3.2.0-beta.51 (#99) / live check #105 #107 (PR-OPE-5002 IDF / PAF START-UP: "Hydraulic Coupling Furnace Pressure Control at
+         13 %", "Adjust manually (commonly reduce) ... maintaining -15 mmH2O", "Once the Hydraulic Coupling is at 16 % MV and Furnace
+         Pressure is Stable at around -15 mmH2O, set the HC Control in AUTO"): the cold furnace (no fire) is a gas path, the ID fan
+         suction against the loss of the air pushed through it: fp = -A * speed^2 + Kq * (total air / 406 T/H)^2, speed of the fan
+         manual (350 ~ 1140 rpm on the coupling, linear ASSUMED). A = 124: the IDF alone at 13 % = about -19.5 mmH2O (the operator
+         reduces it, SOP); Kq: the purge air of the SOP (PA 180 + SA 200 + FA 26 = 406 T/H) at 16 % = -15 mmH2O. As the bed heats
+         (100 ~ 300 C) the loop model of the hot plant (anchored at 150 MW) takes over. Before: the cold model was blended out at 10 %
+         of the design air, and the loop model wanted 27 % at 348 T/H */
+      const tb = isFinite(+U.Tb) ? +U.Tb : 30,
+        ia = idf && U.idf && U.idf.S.rt.pm ? Math.max(0, Math.min(1, (tb - 100) / 200)) : 1;
+      if (ia < 1 && !p.pr.src) {
         const m = U.idfV ? Math.max(0, Math.min(100, +U.idfV.S.rt.v[U.idfV.n] || 0)) : 0,
           sp = (U.idfRpm[0] + ((U.idfRpm[1] - U.idfRpm[0]) * m) / 100) / U.idfRpm[1],
-          ylo = -94 * sp * sp;
-        p.fpLo = isFinite(p.fpLo) ? p.fpLo + (ylo - p.fpLo) * (1 - Math.exp(-dt / 5)) : qi.y;
-        qi.y = (1 - ia) * p.fpLo + ia * qi.y;
-      } else p.fpLo = NaN;
+          sp16 = (U.idfRpm[0] + ((U.idfRpm[1] - U.idfRpm[0]) * 16) / 100) / U.idfRpm[1],
+          A = 124,
+          Kq = A * sp16 * sp16 - 15,
+          ylo = -A * sp * sp + Kq * Math.pow(taf / 406, 2);
+        /* the target of the loop model (plant.js ss: y = smul * y + (1 - smul) * sbase); its own lag (<= 5 s) makes the response. Before
+           (beta.51 ~ 53) the state was overwritten here and the loop model pulled it back each scan to its own value */
+        p.pr.smul = ia;
+        p.pr.sbase = ylo;
+      }
     }
   }
   anUnitStepX(dt, mso);

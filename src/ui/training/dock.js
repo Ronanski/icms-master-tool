@@ -1247,7 +1247,7 @@
         }
         /* retest #63: the DCS command in the Event log (sheet, row and tag of its CRT push button) */
         if (!a.loc) opLog(a.l, pb); /* a field button logs itself (FIELD) */
-        if (pb && follow) openD(pb.sh, pb.row);
+        if (pb && follow) openD(pb.sh, pb.row, 230);
         setTimeout(() => fill(), 300);
       };
       bs.append(bt);
@@ -1413,7 +1413,21 @@
         } catch (e) {}
         if (!r) continue;
         fpLive = fpLive.concat(r.live);
-        els.fps.append(E('div', { cls: 'gd-fp' }, [E('div', { cls: 'gd-fph' }, [E('b', { txt: t }), E('span', { txt: r.sheet })]), box]));
+        /* user 2026-10-29 (batch item 3): the control of the step in the dock (this IS the faceplate of the sheet: AN.fpBuild writes the
+           same signal), and one press to its block on the sheet, centred at a readable zoom and flashed (AN.showTag) */
+        const sh = r.sheet,
+          go = E('button', {
+            type: 'button',
+            cls: 'gd-lk',
+            txt: 'Buksan sa sheet ↗',
+            title: 'Buksan ang ' + sh + ' at ipakita ang ' + t,
+            on: () => {
+              window.lsSetTab && lsSetTab('logic');
+              if (AN.cat !== 'an' && AN.setCat) AN.setCat('an');
+              if (AN.showTag) setTimeout(() => AN.showTag(t, sh), 60);
+            }
+          });
+        els.fps.append(E('div', { cls: 'gd-fp' }, [E('div', { cls: 'gd-fph' }, [E('b', { txt: t }), E('span', { txt: sh }), go]), box]));
       }
     }
     /* the values to watch */
@@ -1499,22 +1513,32 @@
       const v = E('b', { txt: '—' });
       return { r: E('div', { cls: 'gd-wr' }, [E('span', { txt: k }), E('span', {}, [v, E('em', { txt: u }), hint ? E('small', { txt: hint }) : null])]), v, f, fm };
     });
-    if (els.watch.length) col2.append(E('div', { cls: 'gd-watch' }, [E('div', { cls: 'gd-h', txt: 'BANTAYAN SA HAKBANG NA ITO' })].concat(els.watch.map(x => x.r))));
-    /* 3.2.0-beta.33: the faceplates under the values to watch (the values are what the operator reads all the time; two faceplates pushed them
-       under the screen) */
+    /* user 2026-10-29 (batch item 3: "kitang-kita agad, walang scroll"): the controls of the step (its faceplates: PV, SV, MV, mode) first,
+       then the values to watch (3.2.0-beta.33 had the faceplates under the values) */
     if (els.fps && els.fps.children.length) col2.append(els.fps);
-    /* the coach */
-    const co = Object.keys(g.CO);
+    if (els.watch.length) col2.append(E('div', { cls: 'gd-watch' }, [E('div', { cls: 'gd-h', txt: 'BANTAYAN SA HAKBANG NA ITO' })].concat(els.watch.map(x => x.r))));
+    /* the coach. User 2026-10-29 (#108): no coach runs by itself. The coaches of this step are listed OFF; the trainee may switch one on
+       (it is logged, and every action it takes is in the Event log as "COACH: ...") */
+    const co = [...new Set((s.coach || []).filter(id => g.coach[id]).concat(Object.keys(g.CO)))];
     if (co.length)
       col2.append(
         E(
           'div',
           { cls: 'gd-coach' },
-          [E('div', { cls: 'gd-h', txt: 'COACH (katulong sa board)' })].concat(
+          [E('div', { cls: 'gd-h', txt: 'COACH (naka-OFF: ikaw ang operator; i-ON kung kailangan ng tulong)' })].concat(
             co.map(id => {
-              const sw = E('button', { type: 'button', cls: 'gd-tg on', 'aria-pressed': 'true', title: 'Patayin: ikaw ang hahawak' });
-              sw.onclick = () => (g.coachOff(id), fill(true));
-              return E('div', { cls: 'gd-cr' }, [E('span', { txt: (g.coach[id] && g.coach[id].t) || id }), sw]);
+              const on = !!g.CO[id],
+                nm = (g.coach[id] && g.coach[id].t) || id,
+                sw = E('button', { type: 'button', cls: 'gd-tg' + (on ? ' on' : ''), 'aria-pressed': on ? 'true' : 'false', title: on ? 'Patayin: ikaw ang hahawak' : 'I-ON ang coach (naka-log)' });
+              sw.onclick = () => {
+                if (g.CO[id]) g.coachOff(id);
+                else g.coachOn(id);
+                try {
+                  if (window.lsEventAdd) lsEventAdd('DCS', 'COACH', 'COACH ' + (g.CO[id] ? 'ON' : 'OFF') + ': ' + nm + ' (trainee)');
+                } catch (e) {}
+                fill(true);
+              };
+              return E('div', { cls: 'gd-cr' }, [E('span', { txt: nm }), sw]);
             })
           )
         )
@@ -1728,7 +1752,7 @@
             /* 3.2.0 walkthrough #19: the row on its sheet, one press (to see it, to set it or FORCE it there in the Inputs list) */
             E('span', {}, [
               E('code', { txt: (G.tag ? G.tag + ' · ' : '') + (r.other ? r.other + ' ' : '') + 'row ' + rows }),
-              E('button', { type: 'button', cls: 'gd-rowl', txt: '↗', title: 'Buksan ang ' + dName(r.s) + ' row ' + rows, on: () => (window.lsSetTab && lsSetTab('logic'), openD(dName(r.s), r.row)) })
+              E('button', { type: 'button', cls: 'gd-rowl', txt: '↗', title: 'Buksan ang ' + dName(r.s) + ' row ' + rows, on: () => (window.lsSetTab && lsSetTab('logic'), openD(dName(r.s), r.row, 230)) })
             ])
           ])
         );
@@ -1765,6 +1789,12 @@
         const f = q.f,
           nm = svcN(f.svc),
           rows = q.L.map(x => x.no).join(', ');
+        /* user 2026-10-29 (#109: no FORCE in Training): an analog row (a transmitter into a comparator) is a process value of the plant
+           model, not a field contact: no button sets it; the trainee brings the process there with the steps of the SOP */
+        if (f.av) {
+          it.box.append(E('div', { cls: 'gd-ild x', txt: '⧗ Proseso: ' + nm + ' ' + f.av.txt + ' (row ' + rows + '): galing sa plant model, walang FIELD button. Hintayin o gawin ang hakbang ng SOP na nagdadala rito.' }));
+          continue;
+        }
         it.box.append(
           E('button', {
             type: 'button',

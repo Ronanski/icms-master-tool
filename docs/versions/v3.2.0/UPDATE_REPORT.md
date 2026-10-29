@@ -1240,6 +1240,15 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 | 23 | Update banner | Nasubok: may bagong Beta sa version.json → lumalabas ang "New Beta available … Update now / Later" sa itaas, hindi tinatakpan ang Home | — |
 
 
+## 3.2.0-beta.54 (branch lang, HINDI pa Beta; 2026-10-30) — Training integrity batch #105 / #107 / #108 / #109
+- **#108 coach:** walang coach na kusang tumatakbo. Ang dating coach ng bawat hakbang ay listahan na naka-OFF sa dock ("COACH (naka-OFF …)"); kapag in-ON ng trainee, bawat galaw ay may "COACH:" sa Events. Ang hakbang ay umuusad lang sa tunay na signal ng logic / plant model; ang kulang ay ipinapakita ("Kailangan: … Ngayon: …"). Bawat hakbang na dating may coach ay may sariling button (oil A/D, B/C, SV, SA, PA, SH spray, RH damper, coal feeder) at BANTAYAN rows (bilis ng pag-init °C/h, bypass, coal).
+- **#109 FIELD vs FORCE:** sa Training walang FORCE at walang button na naglalagay ng process value (pressure / level / temp / flow): ang mga row na iyon ay "⧗ Proseso: galing sa plant model". FIELD = digital na contact lang, dumadaan sa logic.
+- **Dock:** faceplate (PV, SP, MV, mode) bago ang BANTAYAN; "Buksan sa sheet ↗" = bubukas ang ABC sheet, naka-select at naka-zoom ang block (iisang signal ng faceplate at sheet).
+- **#105 / #107 H34 ~ H39 ayon sa PR-OPE-5002:** bagong hakbang SAF → SA 200 T/H habang tinataas ang IDF coupling; PAF single arrow → PA 180 T/H; PICFG108 AUTO SV −15 sa ~16 % (tatanggi ang A habang < 14 %, ABC-008 M.0205). Furnace pressure ng malamig na furnace: IDF lang 13 % ≈ −20, 406 T/H sa 16 % ≈ −15 (unit.js).
+- **Sinubok (maikling check H1 ~ H41):** SA 189 / −16.3; PA 179, total 394 / −12 sa 11 %; A tinanggihan sa 12 %, AUTO sa 16 % humawak ng −15.3 nang 28 s; purge → MFT RESET. Warm-up: coach OFF, oil buttons at BANTAYAN naroon. Buksan sa sheet → ABC-003A FICDO1043A naka-select.
+- **Hindi sinubok:** mga hakbang pagkatapos ng H41 (pag-init, bypass, roll, load, coal) nang walang coach; HMI.
+- **UNUSUAL (desisyon ng user):** (1) SOP purge "SA vane 25 %" laban sa SAF start-up "SA 200 T/H"; (2) ayon sa SOP, halos pareho ang draft sa 13 % at 16 % IDF; (3) purge "25 % MCR" = 115 T/H (25 % ng 460 T/H steam), hindi ng design air; (4) walang coach = mano-mano ang warm-up rate, bypass ramp, fuel swap.
+
 ## 3.2.0-beta.53 (Beta, 2026-10-29) — 5 bukas sa live check R18 ng beta.52
 
 | # | Ugat | Ayos | Saan |
