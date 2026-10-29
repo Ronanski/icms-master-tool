@@ -5,7 +5,7 @@
 ## SIMULAN DITO (2026-10-26 PHT)
 
 - **Stable:** v2.4.0 (huling Stable).
-- **Beta:** `3.2.0-beta.60` sa `main` (2026-10-28: iisang linya; ang tine-test ay laging nasa main, Stable lang ang may GO STABLE). Kasama ang bagong HMI Air & Flue Gas at 030 Seawater, bagong Training layout (HMI sa gitna, lahat sa dock), sand DITL, page links.
+- **Beta:** `3.2.0-beta.60` sa `main` (beta.61 sa branch, naghihintay ng GO BETA) (2026-10-28: iisang linya; ang tine-test ay laging nasa main, Stable lang ang may GO STABLE). Kasama ang bagong HMI Air & Flue Gas at 030 Seawater, bagong Training layout (HMI sa gitna, lahat sa dock), sand DITL, page links.
 - **Ang gusto ng user:** `docs/SPEC.md` (S1 ~ S9). Plano = seksyon 3 ng file na iyon. Wala nang ROADMAP / CHECKLIST.
 - **Pag-check ng user:** `docs/USER_CHECK.md`.
 - **Rules:** `CLAUDE.md`, `PROJECT_RULES.md` (test policy = seksyon 5).
@@ -36,6 +36,7 @@
 - Plant chip: OFF | Unit lang; starting state: Cold o 150 MW lang. Plant model ON na walang starting state: header "—", ang ABC page ay bumubukas na Cold.
 
 ## Susunod na gagawin (roadmap sa `docs/SPEC.md` seksyon 3)
+0. 2026-10-30 7:50 AM PHT: **3.2.0-beta.61** (branch `claude/project-thread-z0es2v`, naghihintay ng GO BETA) = Training: puwedeng piliin ang SWP / SWBP na i-start (PILIIN button; dati A at B lang), #115 walang paalala sa ilalim ng ✓ TAPOS. Hindi pa live-tested ng user.
 0. 2026-10-30 12:35 AM PHT: **Beta 3.2.0-beta.60** (GO BETA ng user) = ayos mula sa check ng lahat ng 105 hakbang ng Training: seksyon ng hakbang 60 ~ 64 at 102 ~ 105, dobleng button, walang laman na CONTROLS, isang kahon / isang logic button, RUNNING pula / STOPPED berde sa Bantayan. Walang sariling HMI page: hakbang 10 ~ 14, 52, 54, 57, 62.
 0. 2026-10-30 PHT: **Beta 3.2.0-beta.59** sa main (GO BETA ng user) = 030 SEAWATER: lahat ng value na walang transmitter sa logic (DP ng debris filter, condenser seawater T / P, forebay level, current ng SWP / SWBP) ay galing sa plant model (`unit.js` `AN_SW`), wala nang ● estimate sa HMI; buong page pagbukas (#117). Hindi pa sinubok: backwash habang IN OPERATION ang filter, cold start.
 0. 2026-10-30 12:20 AM PHT: **Beta 3.2.0-beta.58** sa main (GO BETA ng user) = ang Training page ay nasa DOCK na (ang Training button sa kaliwa ay nagbubukas ng dock; ang gitna ay Plant view / Logic lang); naibalik ang 8 values at equipment lamps; ang gitna ay sumusunod sa seksyon (HMI page bawat seksyon, `SECHMI` sa dock.js); Bakit? may SOP, logic, bantayan at susunod. Hindi pa sinubok: phone layout, buong Cold → 150 MW.

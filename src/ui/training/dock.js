@@ -1226,6 +1226,19 @@
     );
   }
   /* ---------- the main area follows the step: the DITL of a motor, the ABC sheet of a faceplate ---------- */
+  /* the machine the operator picked in a step with a number of machines to run (2 of the 3 SWP), while it is not running yet */
+  function pickOf(s, ms) {
+    if (!s || !s.max || els.pickI !== s.i || !els.pick) return null;
+    return ms.find(a => motAddr(a) === els.pick && !call(() => a.on && a.on(), false)) || null;
+  }
+  function pickSet(s, ad) {
+    els.pick = ad;
+    els.pickI = s.i;
+    try {
+      fill();
+    } catch (e) {}
+    if (follow && document.body.dataset.tab === 'logic') goLogic(s);
+  }
   function goLogic(s, enter) {
     if (!follow || !s || goLogic.busy || els.lvBusy) return;
     /* 3.2.0 walkthrough #2: a field card (no DCS button, no faceplate) shows its SOP section in the Training list, not the sheet that
@@ -1246,7 +1259,7 @@
         /* R9 #73: a step already done (SWBP-A started, one is enough) stays on the running machine until Susunod (was: the B sheet,
            its REMOTE row red) */
         on1 = ms.find(a => call(() => a.on && a.on(), false)),
-        nx = (on1 && (!s.max || call(() => GD().ready(), false)) ? on1 : null) || ms.find(a => !call(() => a.on && a.on(), false)) || ms[0],
+        nx = (on1 && (!s.max || call(() => GD().ready(), false)) ? on1 : null) || pickOf(s, ms) || ms.find(a => !call(() => a.on && a.on(), false)) || ms[0],
         mot = nx ? motAddr(nx) : null;
       if (mot) {
         window.lsSetTab && lsSetTab('logic');
@@ -1556,7 +1569,8 @@
       /* live check #96: a step note (alarms that are expected at this step) under the action, always shown */
       if (s.note) chk.append(E('p', { cls: 'gd-snote', txt: 'NOTE: ' + s.note }));
       /* the PAUSED state of the time, as a line (the pill of the header is its one button) */
-      if (!R) chk.append(E('p', { cls: 'gd-snote gd-psd', txt: s.need && !s.c ? '❚❚ Naka-PAUSE ang oras: puwedeng gawin ang field step; ▶ RUN (sa itaas) bago ang DCS step.' : '❚❚ Naka-PAUSE ang oras: walang aandar (START / OPEN) hangga’t hindi ▶ RUN (sa itaas).' }));
+      els.psd = null;
+      if (!R) chk.append((els.psd = E('p', { cls: 'gd-snote gd-psd', txt: s.need && !s.c ? '❚❚ Naka-PAUSE ang oras: puwedeng gawin ang field step; ▶ RUN (sa itaas) bago ang DCS step.' : '❚❚ Naka-PAUSE ang oras: walang aandar (START / OPEN) hangga’t hindi ▶ RUN (sa itaas).' })));
       const rest = m ? m[2] : d;
       if (rest) why = E('details', { cls: 'gd-why' }, [E('summary', { txt: 'Bakit?' }), E('p', { txt: rest })]);
     }
@@ -1681,6 +1695,10 @@
       const pb = pbOf(a, 1);
       const bt = E('button', { type: 'button', cls: 'gd-btn' + (a.stop ? ' go gd-st' : '') }, [a.l, pb ? E('small', { txt: pb.txt }) : null]);
       bt.onclick = () => {
+        if (s.max && a.stop && ad && els.pick !== ad && !call(() => a.on(), false)) {
+          pickSet(s, ad);
+          if (bt.dataset.block === '1') return;
+        }
         if (bt.dataset.block === '1') return;
         if (pausedWarn(a)) return;
         /* retest #65 (R8: SWP-A started with 0 / 15 BAGO I-START items ticked): a START with the line-up not done is warned; a second
@@ -1824,7 +1842,7 @@
       /* 3.2.0 walkthrough #5: the 6 h of the ESP purge held in plant time (RUN, x300 = about 72 s) */
       if (s.pre)
         bs.append(
-          E('button', {
+          (els.preGo = E('button', {
             type: 'button',
             cls: 'gd-btn',
             txt: 'Simulan ang ' + Math.round(s.pre / 3600) + ' h purge (oras ng planta)',
@@ -1835,7 +1853,7 @@
               g.preStart(s.i);
               fill(true);
             }
-          }),
+          })),
           (els.preSkip = E('button', {
             type: 'button',
             cls: 'gd-btn',
@@ -2073,6 +2091,9 @@
     const rd = call(() => g.ready(), false);
     if (els.okb) {
       els.okb.hidden = !rd;
+      /* #115 (live check: "Pindutin ang Simulan ang 6 h purge" and "Naka-PAUSE ang oras" stayed under ✓ TAPOS of Hakbang 1): a done step
+         has no reminder of what to press */
+      if (els.psd) els.psd.hidden = rd;
       if (rd) els.okt.textContent = '✓ TAPOS' + (els.skipped === s.i ? ' (nilaktawan: training shortcut)' : s.c && s.c.now ? ': ' + call(() => s.c.now(), '') : s.need ? ': nakumpirma sa field' : '');
     }
     /* 3.2.0 retest #27: the items after the START open when the equipment runs */
@@ -2112,7 +2133,9 @@
         const left = !hd || hd[0] < hd[1];
         els.preCb.b.disabled = left;
         els.preCb.b.title = left ? (hd ? 'Hintayin ang ' + Math.round(hd[1] / 3600) + ':00 h ng purge' : 'Simulan muna ang purge (o laktawan bilang training shortcut)') : '';
-        if (els.preSkip) els.preSkip.hidden = !!hd;
+        /* #115: a done purge step has no "Simulan" / "Laktawan" left */
+        if (els.preSkip) els.preSkip.hidden = !!hd || rd;
+        if (els.preGo) els.preGo.hidden = rd;
       }
       if (hd && isRun() && hd[0] < hd[1] && sp !== 300 && els.fast !== s.i) {
         els.fast = s.i;
@@ -2123,7 +2146,9 @@
       }
       {
         const hm = x => Math.floor(x / 3600) + ':' + String(Math.floor((x % 3600) / 60)).padStart(2, '0');
-      els.cond.textContent = hd
+      els.cond.textContent = rd
+        ? ''
+        : hd
         ? '⏱ Purge: ' + hm(hd[0]) + ' / ' + hm(hd[1]) + ' h (oras ng planta' + (isRun() ? '' : ', naka-PAUSE: pindutin ang ▶ RUN') + ')'
         : s.need
           ? s.pre
@@ -2135,7 +2160,7 @@
     /* retest #48: the centre follows the machine of the step (SWP-A running -> the SWP-B sheet, tab B) */
     if (follow && els.goKey) {
       const ms = (s.a || []).filter(a => a.stop && motAddr(a) && MOTOR[motAddr(a)]),
-        nx = ms.find(a => !call(() => a.on && a.on(), false)),
+        nx = pickOf(s, ms) || ms.find(a => !call(() => a.on && a.on(), false)),
         on1 = ms.find(a => call(() => a.on && a.on(), false)),
         rd0 = call(() => g.ready(), false);
       /* R9 #73: to the next machine only while the step needs more than one (2 SWP, 2 SWBP); a step done goes back to its first
@@ -2153,6 +2178,9 @@
     let shown = 0,
       mk = null;
     const nOn0 = s.max ? (s.a || []).filter(a => a.stop && call(() => a.on(), false)).length : 0;
+    /* user 2026-10-30 ("pano kung SWP C ang gsto ko istart"): a step with a number of machines to run (2 of the 3 SWP) shows the full
+       interlock (FIELD REMOTE, START) of the machine the operator picked (its "PILIIN" or its START), not always the first one (A, then B) */
+    const pk = (a => (a ? motAddr(a) : null))(pickOf(s, (s.a || []).filter(a => a.stop && motAddr(a) && MOTOR[motAddr(a)])));
     /* retest #66 (R8: "DITL-29A #B ↗" pressed, nothing in the centre): the interlock box was emptied and drawn again 4 times a second,
        so a press of a mouse (down ... up, about 0.1 s) often ended on a new button and the click was lost (the ↗ links, the FIELD
        buttons). Each box is drawn into a spare one and put on the screen only when its text changed: the buttons stay the same */
@@ -2187,13 +2215,18 @@
         );
         continue;
       }
-      if (I.live && (run0 || shown)) {
+      if (I.live && (run0 || (pk ? it.ad !== pk : shown))) {
         /* 3.2.0 walkthrough #22: a motor whose box waits (SUSUNOD) is blocked by its own interlock too (SWP-B / C started while SWP-A
            was blocked by the same missing REMOTE contact) */
         if (!run0 && I.miss.length) blocked[it.ad] = 1;
         it.box.append(
-          E('div', { cls: 'gd-ilh' }, [E('span', { txt: run0 ? (mov ? '✓ REMOTE, HANDA' : '✓ TUMATAKBO NA') : 'SUSUNOD' + (I.miss.length ? ' · kulang ang interlock' : '') }), E('span', { cls: 'gd-ilm', txt: I.sheet })])
+          E('div', { cls: 'gd-ilh' }, [E('span', { txt: run0 ? (mov ? '✓ REMOTE, HANDA' : '✓ TUMATAKBO NA') : (s.max ? 'HINDI PA NAPILI' : 'SUSUNOD') + (I.miss.length ? ' · kulang ang interlock' : '') }), E('span', { cls: 'gd-ilm', txt: I.sheet })])
         );
+        if (!run0 && s.max) {
+          const a0 = (s.a || []).find(a => a.stop && motAddr(a) === it.ad),
+            nm = a0 ? String(a0.l).replace(/^START\s+/, '') : I.sheet;
+          it.box.append(E('button', { type: 'button', cls: 'gd-btn gd-fone gd-pick', txt: 'PILIIN ' + nm + ' (ito ang i-start)', on: () => pickSet(s, it.ad) }));
+        }
         continue;
       }
       if (I.live) shown = 1;
