@@ -1227,6 +1227,18 @@ function anUnitStep(dt) {
       /* the open furnace empties in seconds, not with the time constant of the draft loop (65 s) */
       const q = nair != null && nair < 1 && U.idf && U.idf.S.rt.pm ? U.idf.S.rt.pm[p.b.id] : null;
       if (q && isFinite(q.y)) q.y -= (1 - nair) * q.y * (1 - Math.exp(-dt / 5));
+      /* 3.2.0-beta.51 (#99): ID fan alone, no PA / SA air = the fan draws only the leakage through the open furnace, so the draft
+         settles at a fan-law value (about -c * speed^2; 13 % coupling = about -15 mmH2O), not the runaway of the air term (-117 in
+         70 s). Blended out as the air flow comes in (10 % of the design air = the loop model as before). */
+      const ia = idf && U.taf0 > 0 && U.idf && U.idf.S.rt.pm ? Math.min(1, taf / (0.1 * U.taf0)) : 1;
+      const qi = ia < 1 ? U.idf.S.rt.pm[p.b.id] : null;
+      if (qi && isFinite(qi.y)) {
+        const m = U.idfV ? Math.max(0, Math.min(100, +U.idfV.S.rt.v[U.idfV.n] || 0)) : 0,
+          sp = (U.idfRpm[0] + ((U.idfRpm[1] - U.idfRpm[0]) * m) / 100) / U.idfRpm[1],
+          ylo = -94 * sp * sp;
+        p.fpLo = isFinite(p.fpLo) ? p.fpLo + (ylo - p.fpLo) * (1 - Math.exp(-dt / 5)) : qi.y;
+        qi.y = (1 - ia) * p.fpLo + ia * qi.y;
+      } else p.fpLo = NaN;
     }
   }
   anUnitStepX(dt, mso);
