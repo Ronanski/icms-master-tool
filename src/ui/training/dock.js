@@ -118,8 +118,8 @@
   const WATCH = [
     [['Seawater pumps running', () => ['M.3353', 'M.3354', 'M.3355'].filter(bit).length, '', f0, '2 bago ang vacuum']],
     [['Hotwell level', () => pv('LICCD1110A'), 'mm', sgn, '', 'LICCD1110A'], ['Condensate flow', () => pv('FICCD1120'), 'T/H', f1, '', 'FICCD1120'], ['Deaerator level', () => pv('LCV-CD1104'), 'mm', sgn, 'SV 0', 'LICCD1104'], lvl, ['FW flow', () => H().FW(), 'T/H', f1, '', 'FICFW1007']],
-    [['Furnace pressure', () => H().FP(), 'mmH₂O', f0, 'target −15', 'PICFG108'], ['Total air', () => H().PA() + H().SA(), 'T/H', f0, 'purge > 115'], ['IDF coupling MV', () => mv('PICFG108'), '%', f0, '', 'PICFG108']],
-    [['Furnace pressure', () => H().FP(), 'mmH₂O', f0, 'target −15', 'PICFG108'], ['Total air', () => H().PA() + H().SA(), 'T/H', f0, 'purge > 115']],
+    [['Furnace pressure', () => H().FP(), 'mmH₂O', f0, 'target −15', 'PICFG108'], ['Total air (PA + SA + FA)', () => H().PA() + H().SA() + (H().FA ? H().FA() : 0), 'T/H', f0, 'purge > 115'], ['IDF coupling MV', () => mv('PICFG108'), '%', f0, '', 'PICFG108']],
+    [['Furnace pressure', () => H().FP(), 'mmH₂O', f0, 'target −15', 'PICFG108'], ['Total air (PA + SA + FA)', () => H().PA() + H().SA() + (H().FA ? H().FA() : 0), 'T/H', f0, 'purge > 115']],
     [['Water temp', () => U().Tw, '°C', f0, 'kumukulo sa 100'], ['Drum pressure', () => U().Pd, 'kg/cm²', f1, ''], ['Bilis ng pag-init', () => rate.r, '°C/h', f0, 'Fig 1 ≤ 110'], ['Bed temp', () => U().Tb, '°C', f0, '']],
     [['Condenser vacuum', () => 100 * (+U().vac || 0), '%', f0, '≥ 90'], ['Drum pressure', () => U().Pd, 'kg/cm²', f1, '']],
     [['Bed temp', () => U().Tb, '°C', f0, 'coal ≥ 400 · retract > 700'], ['Coal flow', () => H().coal(), 'T/H', f1, '', 'FIC-CM'], ['O₂', () => H().O2(), '%', f1, '3.5 ~ 8', 'AICFG112'], ['Bilis ng pag-init', () => rate.r, '°C/h', f0, 'Fig 1 ≤ 110']],

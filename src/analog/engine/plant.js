@@ -62,8 +62,12 @@ function anProcEst(b) {
   /* a tuned loop: Ti is about the process time constant, Kp x K is about 0.6; dead time from Td, otherwise a tenth of T */
   /* 3.2.0-beta.52 (live check #102: FA blower flow 0 -> 14 T/H in minutes at a fixed damper): an AIR flow answers its damper in
      seconds; a slow Ti of its PID (FICFA1055A 1500 s) is the tuning, not the process. Air flow loops (FICFA) take at most 30 s */
-  const air = lt === 'flow' && /^FICFA/.test(String((b.txt || [])[1] || ''));
-  const T = P.ti > 0 ? Math.min(air ? 30 : 600, Math.max(3, P.ti)) : TAU[lt] || 30,
+  /* 3.2.0-beta.53 (live check #103 / #105: total air still rising minutes after the damper stopped, furnace pressure -87 mmH2O and
+     +7 for 30 s in AUTO): an air flow follows its damper and the furnace draft its ID fan in a few seconds (gas, no storage).
+     Air flow loops (FICFA) and the furnace pressure (PICFG108 / 108A) take at most 5 s */
+  const tg = String((b.txt || [])[1] || ''),
+    fast = (lt === 'flow' && /^FICFA/.test(tg)) || /^PICFG108/.test(tg);
+  const T = P.ti > 0 ? Math.min(fast ? 5 : 600, Math.max(3, P.ti)) : TAU[lt] || 30,
     L = P.td > 0 ? Math.min(T / 3, Math.max(0.5, P.td * 2)) : lt === 'flow' ? 1 : Math.min(15, Math.max(1, T / 12)),
     K = Math.min(1, Math.max(0.2, (0.8 * T) / (kp * L)));
   return { K: +K.toFixed(2), T: +T.toFixed(1), L: +L.toFixed(1) };

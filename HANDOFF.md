@@ -5,7 +5,7 @@
 ## SIMULAN DITO (2026-10-26 PHT)
 
 - **Stable:** v2.4.0 (huling Stable).
-- **Beta:** `3.2.0-beta.52` sa `main` (2026-10-28: iisang linya; ang tine-test ay laging nasa main, Stable lang ang may GO STABLE). Kasama ang bagong HMI Air & Flue Gas, sand DITL, page links.
+- **Beta:** `3.2.0-beta.53` sa `main` (2026-10-28: iisang linya; ang tine-test ay laging nasa main, Stable lang ang may GO STABLE). Kasama ang bagong HMI Air & Flue Gas, sand DITL, page links.
 - **Ang gusto ng user:** `docs/SPEC.md` (S1 ~ S9). Plano = seksyon 3 ng file na iyon. Wala nang ROADMAP / CHECKLIST.
 - **Pag-check ng user:** `docs/USER_CHECK.md`.
 - **Rules:** `CLAUDE.md`, `PROJECT_RULES.md` (test policy = seksyon 5).
@@ -36,6 +36,7 @@
 - Plant chip: OFF | Unit lang; starting state: Cold o 150 MW lang. Plant model ON na walang starting state: header "—", ang ABC page ay bumubukas na Cold.
 
 ## Susunod na gagawin (roadmap sa `docs/SPEC.md` seksyon 3)
+0. 2026-10-29 PM PHT: **Beta 3.2.0-beta.53** sa main = #102 / #103 / #105 / #106 ng live check R18 (air flow at furnace pressure ≤ 5 s ang tugon, Total air PA + SA + FA, oras ng alarm na lumabas sa suppression, NOTE ng H40) at #101 (40 min na nakatagong page pagkatapos ng H30).
 0. 2026-10-29 PM PHT: **Beta 3.2.0-beta.52** sa main = #100 ~ #104 ng live check R16 / R17 (diesel PCV, drum level na walang FW, FA flow, purge air ayon sa SOP, IDF coupling MV ▲/▼ at AUTO).
 0. 2026-10-29 ~11:30 AM PHT: **Beta 3.2.0-beta.51** sa main = 5 natitira sa beta.50 (#99 furnace pressure kapag IDF lang, #98 diesel PCV buttons, #91 Bantayan galing sa model o "— walang model", #96 NOTE ng alarm, #23 update banner).
 0. 2026-10-29 ~8:30 AM PHT: **Beta 3.2.0-beta.50** sa main = 9 nakita sa live check ng beta.49 (#90 ~ #97 at #23): condensate / hotwell / deaerator water balance, BFWP suction pressure mula sa deaerator, MOV ng Hakbang 26 gumagalaw na, drum level alarm ayon sa alarm list, NOTE ng Hakbang 30, HMI Steel default at alarm strip = header, Bantayan live, DITL Legend. Check: totoong pindot Hakbang 1 → 30.
