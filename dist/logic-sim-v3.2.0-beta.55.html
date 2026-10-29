@@ -29314,7 +29314,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.55';
-      c3.textContent += ' · build 72411e4'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 417eb00'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -48751,6 +48751,84 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
 .gd-fl label small.gd-lim{display:block;font-size:12.5px;color:var(--c-dim);margin-top:1px}
 .gd-tg{font:600 12px var(--mf);font-variant-numeric:slashed-zero;color:var(--c-acctx);margin-right:4px}
 .gd-fl li.gd-note{display:block;font-size:12.5px;color:var(--c-dim);border-left:3px solid var(--c-line2);padding:2px 0 2px 8px;margin:4px 0}
+/* ---------- user 2026-10-29 mock-up v3 ("isang monitor lang"): HMI in the centre, every control of the step in the dock ---------- */
+.gd-strip{display:flex;flex-wrap:wrap;gap:2px 14px;padding:4px 12px;background:var(--c-well)}
+.gd-strip .gd-kv{display:inline-flex;align-items:baseline;gap:4px}
+.gd-strip .gd-kv small{grid-column:auto;font-size:11px}
+.gd-strip .gd-kv b{font-size:13.5px}
+.gd-sec,.gd-step{display:flex;align-items:center;gap:6px;padding:6px 10px}
+.gd-sec{border-bottom:1px solid var(--c-line);background:var(--c-well)}
+.gd-secl,.gd-stl{flex:1;min-width:0;line-height:1.25}
+.gd-secl b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gd-secl small,.gd-stl small{display:block;font-size:11.5px;color:var(--c-dim);letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gd-stl h3{margin:1px 0 0;font-size:15.5px;line-height:1.25;text-wrap:balance}
+.gd-step{border-bottom:1px solid var(--c-line);align-items:flex-start}
+.gd-ic:disabled{opacity:.35;cursor:default}
+.gd-ic.go{background:#22a052;border-color:#22a052;color:#fff;font-weight:700}
+#gdock>.gd-bar{height:3px;border-radius:0}
+#gdock>.gd-bar i{border-radius:0}
+.gd-body{padding:6px 10px 10px;gap:6px}
+.gd-card{border:0;background:none;padding:0}
+.gd-ctls{margin:0 0 4px}
+.gd-ch{align-items:center;flex-wrap:nowrap}
+.gd-cd{flex:1;min-width:0;color:var(--c-dim);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gd-mdl{font:700 11px var(--mf);padding:1px 7px;border-radius:4px;border:1px solid var(--c-line2);color:var(--c-tx2)}
+.gd-mdl.man{color:var(--c-mantx2);border-color:var(--c-man);background:var(--c-mansoft)}
+.gd-mdl.auto,.gd-mdl.rem,.gd-mdl.cas{color:#cfe3f5;border-color:#2563eb;background:color-mix(in srgb,#2563eb 22%,transparent)}
+.gd-vs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:5px}
+.gd-vs.mv1{grid-template-columns:minmax(0,1fr)}
+.gd-v{background:var(--c-well);border:1px solid var(--c-line);border-radius:5px;padding:1px 6px;min-width:0}
+.gd-v small{display:block;font-size:10px;letter-spacing:.06em;color:var(--c-dim)}
+.gd-v b{font:600 14px var(--mf);font-variant-numeric:tabular-nums}
+.gd-v em{font-style:normal;font-size:10.5px;color:var(--c-dim);margin-left:3px}
+.gd-mvb{display:block;height:4px;border-radius:2px;background:var(--c-line);margin:2px 0 3px}
+.gd-mvb i{display:block;height:100%;border-radius:2px;background:#8fb3d1}
+.gd-cbs{align-items:center}
+.gd-cbs .gd-sp{flex:1}
+.gd-cv{font-size:12.5px;color:var(--c-mantx2)}
+.gd-cv:empty{display:none}
+.gd-chk{display:flex;flex-direction:column;gap:4px;border-top:1px solid var(--c-line);padding-top:6px}
+.gd-chk .gd-do{font-size:14px;margin:0}
+.gd-okb{margin:2px 0;padding:5px 9px;font-size:13.5px}
+.gd-okb em{font-style:normal;font-weight:400;font-size:12px}
+.gd-watch{padding:4px 9px}
+.gd-wr{padding:2px 0;font-size:13px}
+.gd-sop>summary,.gd-why>summary{cursor:pointer;color:var(--c-dim);font:600 13px var(--uf)}
+.gd-il{margin:4px 0;padding:5px 8px}
+.gd-ilm{font:12px var(--mf);color:var(--c-dim)}
+.gd-foot{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:7px 10px;border-top:1px solid var(--c-line);background:var(--c-well)}
+.gd-foot[hidden]{display:none}
+.gd-fl0{font-size:12px;color:var(--c-dim);white-space:nowrap}
+.gd-foot .gd-btn{flex:1;min-height:32px;padding:4px 8px;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gd-sh{border-color:#38c6e8;color:var(--c-acctx)}
+.gd-sh.on{background:color-mix(in srgb,#38c6e8 22%,transparent)}
+.gd-back{background:#dfe7ee;color:#111;border-color:#dfe7ee;font-weight:700}
+#gdsecl{position:absolute;right:calc(100% + 6px);top:44px;width:340px;max-height:min(520px,80vh);overflow:auto;background:var(--c-pane);border:1px solid var(--c-line2);border-radius:8px;box-shadow:0 12px 30px var(--c-shadow);padding:6px 0;z-index:5}
+#gdsecl .gd-h{padding:2px 12px 4px}
+#gdsecl button{display:flex;gap:8px;width:100%;text-align:left;border:0;background:none;color:var(--c-tx);font:400 13px var(--uf);padding:5px 12px;cursor:pointer}
+#gdsecl button b{width:24px;flex:none;color:var(--c-dim);font:400 12px var(--mf)}
+#gdsecl button.dn{color:var(--c-dim)}
+#gdsecl button.dn:after{content:"✓";margin-left:auto;color:#22a052}
+#gdsecl button.on{background:var(--c-accbg);box-shadow:inset 3px 0 0 var(--c-acc)}
+#gdsecl button:disabled{opacity:.4;cursor:default}
+html.gd-bottom #gdsecl{right:auto;left:0;top:auto;bottom:calc(100% + 6px)}
+/* the equipment of the step on the HMI */
+html.gd-tr #plmid{position:relative}
+#gdhl{position:absolute;inset:0;pointer-events:none;z-index:6}
+#gdhl[hidden]{display:none}
+.gd-hlb{position:absolute;border:2px dashed #38c6e8;border-radius:6px;box-shadow:0 0 0 3px rgba(56,198,232,.18)}
+.gd-hlb b{position:absolute;left:-2px;bottom:100%;background:#38c6e8;color:#06222c;font:700 10px var(--uf);padding:1px 6px;border-radius:3px 3px 0 0;white-space:nowrap}
+/* while the Training is open: the buttons the dock has already (VIEW / RUN, Run, Reset, speed) and the engineering ones (CHECK,
+   TCS / Field, Systems) are hidden; the Plant view keeps ◄ screen ► */
+html.gd-tr #crband>.seg,html.gd-tr #plmid .plbar .crop,html.gd-tr #plsys,html.gd-tr #plmid .plchips,html.gd-tr #pllive{display:none!important}
+/* "Ipakita sa logic sheet": the diagram alone (no sheet list, tool bar, sheet line, minimap, panel tab, timers; zoom − + Fit) */
+html.gd-lv #gsbar .tbar,html.gd-lv #dmeta,html.gd-lv #lomap,html.gd-lv #tp,html.gd-lv #dptab,html.gd-lv #tbsheets,html.gd-lv #zbar .lo-w,html.gd-lv #zbar .lo-f,html.gd-lv #zbar>button:nth-child(-n+2),html.gd-lv #zbar>.zsep{display:none!important}
+#gdlvbar{position:absolute;left:0;right:0;top:0;z-index:30;display:flex;align-items:center;gap:10px;padding:5px 10px;background:color-mix(in srgb,#13283a 94%,transparent);border-bottom:1px solid #38c6e8;font-size:13px;color:#e8eef4}
+#gdlvbar .gd-back{border-radius:5px;padding:4px 10px;cursor:pointer;font:700 12.5px var(--uf)}
+#gdlvbar span{color:#a6b8c8;font-size:12px}
+#gdlvbar .gd-lg{margin-left:auto;display:flex;align-items:center;gap:5px}
+#gdlvbar .gd-lg i{display:inline-block;width:14px;height:3px;background:#22a052}
+#gdlvbar .gd-lg i.on{background:#dc2626}
 /* 3.2.0-beta.25 ladder view (src/ui/ladder/ladder.js): a panel on the right half of the DITL page */
 #ladder {
   position: fixed;
@@ -57311,12 +57389,8 @@ window.LS_GUIDE = (function () {
   /* ---------- the main values and the lamps (the strip) ---------- */
   const VALS = [
     ['Load', 'MW', () => H().MW(), f1],
-    ['Drum press', 'kg/cm²', () => U().Pd, f1],
-    ['Drum level', 'mm', () => H().lvl(), sgn],
-    ['FW flow', 'T/H', () => H().FW(), f1],
-    ['Steam flow', 'T/H', () => H().MSF(), f0],
+    ['Drum', 'mm', () => H().lvl(), sgn],
     ['Furnace', 'mmH₂O', () => H().FP(), f0],
-    ['Bed temp', '°C', () => U().Tb, f0],
     ['O₂', '%', () => H().O2(), f1]
   ];
   const LAMPS = [
@@ -57884,6 +57958,9 @@ window.LS_GUIDE = (function () {
     R.classList.toggle('gd-side', on && !min && m === 'side');
     R.classList.toggle('gd-bottom', on && !min && m === 'bottom');
     R.classList.toggle('gd-min', on && min);
+    /* the buttons the Training dock already has (RUN / PAUSE, speed) or that do not belong in it are hidden while it is open (dock.css) */
+    R.classList.toggle('gd-tr', on);
+    if (!on) lvOff();
     if (dock) dock.hidden = !on || min;
     if (tabB) tabB.hidden = !on || !min;
     const w = Math.max(340, Math.min(600, ls.get('ls-gdock-w', innerWidth >= 1300 ? 440 : 380), innerWidth - 480)),
@@ -57974,42 +58051,36 @@ window.LS_GUIDE = (function () {
       els.run,
       E('span', { cls: 'gd-sp' }),
       E('div', { cls: 'gd-seg', role: 'group', 'aria-label': 'Bilis' }, els.spd),
-      /* retest #41: the width (or height) of the panel in three sizes, one press each (the edge can be dragged too) */
-      E('button', {
-        type: 'button',
-        cls: 'gd-ic',
-        txt: '⇔',
-        title: 'Laki ng panel: makitid / katamtaman / malapad (o i-drag ang gilid)',
-        on: () => {
-          if (mode() === 'side') {
-            const L = [340, 420, 540],
-              w = ls.get('ls-gdock-w', 400);
-            ls.set('ls-gdock-w', L[(L.findIndex(x => x >= w - 10) + 1) % L.length] || L[0]);
-          } else {
-            const L = [0.28, 0.42, 0.6].map(x => Math.round(innerHeight * x)),
-              h = ls.get('ls-gdock-h', L[1]);
-            ls.set('ls-gdock-h', L[(L.findIndex(x => x >= h - 10) + 1) % L.length] || L[0]);
-          }
-          layout();
-        }
-      }),
       E('button', { type: 'button', cls: 'gd-ic', txt: '▁', title: 'Itago ang Training (tuloy ang simulation)', on: () => (ls.set('ls-gdock-min', true), layout()) }),
       E('button', { type: 'button', cls: 'gd-ic', txt: '✕', title: 'Itigil ang Training', on: stopAsk })
     ]);
+    /* user 2026-10-29 (mock-up v3 "isang monitor lang"): one line of the plant (load, drum level, furnace, O2); the equipment lamps are on
+       the HMI in the centre (was: 8 values and 17 lamps, about 210 px) */
     els.vals = VALS.map(([k, u]) => {
       const b = E('b', { txt: '—' });
-      const d = E('div', { cls: 'gd-kv' }, [E('small', { txt: k }), b, E('em', { txt: u })]);
+      const d = E('span', { cls: 'gd-kv' }, [E('small', { txt: k }), b, E('em', { txt: u })]);
       return { d, b };
     });
-    els.lamps = LAMPS.map(([k, A, t]) => E('span', { cls: 'gd-lamp', txt: k, title: t, 'data-a': A.join(' ') }));
-    const strip = E('div', { cls: 'gd-strip' }, [E('div', { cls: 'gd-kvs' }, els.vals.map(x => x.d)), E('div', { cls: 'gd-lamps' }, els.lamps)]);
+    const strip = E('div', { cls: 'gd-strip' }, els.vals.map(x => x.d));
+    /* the SOP section: ◄ ► and the list (☰, folded over the centre); the step: ‹ › beside its title (‹ Nakaraan, Susunod ›, TAPOS
+       were three buttons for one move) */
     els.bar = E('i');
-    els.stp = E('span');
-    els.stg = E('span');
-    els.secb = E('button', { type: 'button', cls: 'gd-secb', title: 'Buksan ang section na ito sa Training list (PR-OPE-5002)', on: () => toList(GD() && GD().steps()[GD().cur]) });
-    const prog = E('div', { cls: 'gd-prog' }, [E('div', { cls: 'gd-bar' }, [els.bar]), E('div', { cls: 'gd-pl' }, [els.stp, els.secb, els.stg])]);
+    els.secT = E('b');
+    els.secS = E('small');
+    els.secP = E('button', { type: 'button', cls: 'gd-ic', txt: '◄', title: 'Naunang seksyon', on: () => secGo(-1) });
+    els.secN = E('button', { type: 'button', cls: 'gd-ic', txt: '►', title: 'Susunod na seksyon', on: () => secGo(1) });
+    els.secL = E('button', { type: 'button', cls: 'gd-ic', txt: '☰', title: 'Listahan ng mga seksyon (PR-OPE-5002)', 'aria-expanded': 'false', on: secList });
+    const sec = E('div', { cls: 'gd-sec' }, [els.secP, E('div', { cls: 'gd-secl' }, [els.secT, els.secS]), els.secN, els.secL]);
+    const prog = E('div', { cls: 'gd-bar' }, [els.bar]);
+    els.stp = E('small');
+    els.ttl = E('h3');
+    els.stP = E('button', { type: 'button', cls: 'gd-ic', txt: '‹', title: 'Naunang hakbang', on: () => stepGo(-1) });
+    els.stN = E('button', { type: 'button', cls: 'gd-ic', txt: '›', title: 'Susunod na hakbang', on: () => stepGo(1) });
+    const stepb = E('div', { cls: 'gd-step' }, [els.stP, E('div', { cls: 'gd-stl' }, [els.stp, els.ttl]), els.stN]);
     els.body = E('div', { cls: 'gd-body' });
-    dock.append(g, hd, strip, prog, els.body);
+    /* "Ipakita sa logic sheet": one button for each sheet of the step (the DITL of its motor, the ABC sheet of its faceplate) */
+    els.foot = E('div', { cls: 'gd-foot' });
+    dock.append(g, hd, strip, sec, prog, stepb, els.body, els.foot);
     document.documentElement.append(dock);
     tabB = E('button', { id: 'gdtab', type: 'button', title: 'Ipakita ang Training', on: () => (ls.set('ls-gdock-min', false), layout(), fill(true)) });
     document.documentElement.append(tabB);
@@ -58077,15 +58148,260 @@ window.LS_GUIDE = (function () {
   function resume() {
     const g = GD();
     if (!g) return;
-    try {
-      window.lsSetTab && lsSetTab('logic');
-    } catch (e) {}
     g.resume();
     open();
   }
+  /* ---------- user 2026-10-29 (mock-up v3, "isang monitor lang"): the centre is the HMI during the Training; the logic sheet of the
+     step only on "Ipakita sa logic sheet" (the diagram alone, "◄ Balik sa HMI"); the section list and the step moves in the dock ---------- */
+  const tab = () => document.body.dataset.tab;
+  /* the first step of the section before (d < 0) or after (d > 0) the step's own; after only up to the furthest step reached (the
+     Training goes in order) */
+  function secAt(d) {
+    const g = GD();
+    if (!g) return null;
+    const L = g.steps(),
+      i = Math.min(g.cur, L.length - 1),
+      sk = secOf(L[i]);
+    let k = i;
+    if (d < 0) {
+      while (k > 0 && secOf(L[k - 1]) === sk) k--;
+      if (k === 0) return null;
+      const ps = secOf(L[k - 1]);
+      let j = k - 1;
+      while (j > 0 && secOf(L[j - 1]) === ps) j--;
+      return j;
+    }
+    while (k < L.length - 1 && secOf(L[k + 1]) === sk) k++;
+    return k + 1 < L.length && k + 1 <= (els.maxI || 0) ? k + 1 : null;
+  }
+  function secGo(d) {
+    const j = secAt(d),
+      g = GD();
+    if (j == null || !g) return;
+    g.open(j);
+    fill(true);
+  }
+  function stepGo(d) {
+    const g = GD();
+    if (!g) return;
+    if (d < 0) {
+      if (g.cur > 0) (g.open(g.cur - 1), fill(true));
+      return;
+    }
+    if (call(() => g.ready(), false)) {
+      if (g.next()) fill(true);
+    } else if (g.cur < (els.maxI || 0)) (g.open(g.cur + 1), fill(true));
+  }
+  /* the › of the step: green when the step is done (was "✓ TAPOS ... Susunod ›"), open to a step already reached */
+  function stepNx() {
+    const g = GD();
+    if (!g || !els.stN) return;
+    const rd = call(() => g.ready(), false),
+      L = g.steps();
+    els.stN.disabled = !(rd || g.cur < Math.min(els.maxI || 0, L.length));
+    els.stN.classList.toggle('go', !!rd);
+    els.stN.title = rd ? 'Tapos ang hakbang: susunod' : els.stN.disabled ? 'Tapusin muna ang hakbang' : 'Susunod na hakbang';
+  }
+  /* ☰ the sections of PR-OPE-5002 with steps: ✓ done, the step's own lit, the ones not reached yet locked */
+  function secList() {
+    const old = document.getElementById('gdsecl');
+    if (old) {
+      old.remove();
+      els.secL.setAttribute('aria-expanded', 'false');
+      return;
+    }
+    const g = GD();
+    if (!g) return;
+    const L = g.steps(),
+      P = window.LS_PROC5002 || [],
+      cur = secOf(L[g.cur]),
+      S = [];
+    L.forEach((x, k) => {
+      const sk = secOf(x);
+      if (sk == null) return;
+      const o = S.find(y => y.sk === sk);
+      if (o) o.last = k;
+      else S.push({ sk, first: k, last: k });
+    });
+    const box = E('div', { id: 'gdsecl', role: 'menu' }, [E('div', { cls: 'gd-h', txt: 'MGA SEKSYON · PR-OPE-5002' })]);
+    for (const o of S) {
+      const lock = o.first > (els.maxI || 0),
+        b = E('button', { type: 'button', role: 'menuitem', cls: (o.sk === cur ? 'on ' : '') + (o.last < g.cur ? 'dn' : '') }, [
+          E('b', { txt: String(o.sk) }),
+          E('span', { txt: (P[o.sk - 1] || {}).t || '' })
+        ]);
+      b.disabled = lock;
+      b.onclick = () => {
+        box.remove();
+        els.secL.setAttribute('aria-expanded', 'false');
+        g.open(o.first);
+        fill(true);
+      };
+      box.append(b);
+    }
+    dock.append(box);
+    els.secL.setAttribute('aria-expanded', 'true');
+    const on = box.querySelector('button.on');
+    if (on) on.scrollIntoView({ block: 'center' });
+  }
+  /* the sheets of the step: the DITL of each motor / push button, the ABC sheet of each faceplate */
+  function sheetsOf(s) {
+    const out = [];
+    for (const a of (s && s.a) || []) {
+      if (a.hide && call(() => a.hide(), false)) continue;
+      const ad = a.stop || a.dg ? motAddr(a) : null;
+      if (ad && MOTOR[ad]) {
+        const nm = MOTOR[ad];
+        if (!out.some(x => x.k === nm)) out.push({ k: nm, l: String(nm).replace(/^\(\d+\)/, '') + ' · ' + a.l.replace(/^START\s+/, ''), ad, a });
+      } else if (a.dg && !out.some(x => x.k === a.dg[0])) out.push({ k: a.dg[0], l: String(a.dg[0]) + ' · ' + a.l.replace(/\s*\(DITL[^)]*\)$/, ''), dg: a.dg });
+    }
+    for (const t0 of (s && s.fps) || []) {
+      const t = call(() => LV().ctlTag(t0), null) || t0,
+        f = call(() => LV().fp(t), null);
+      if (f && f.shn && !out.some(x => x.t === t)) out.push({ k: f.shn + '|' + t, l: f.shn + ' · ' + t, t, sh: f.shn });
+    }
+    return out.slice(0, 3);
+  }
+  function footFill(s) {
+    if (!els.foot) return;
+    const lv = document.documentElement.classList.contains('gd-lv'),
+      S = sheetsOf(s),
+      kids = [];
+    if (lv) kids.push(E('button', { type: 'button', cls: 'gd-btn gd-back', txt: '◄ Balik sa HMI', on: backHMI }));
+    else if (S.length) kids.push(E('span', { cls: 'gd-fl0', txt: '⌖ Ipakita sa logic sheet' }));
+    for (const o of S)
+      kids.push(E('button', { type: 'button', cls: 'gd-btn gd-sh' + (lv && els.lvK === o.k ? ' on' : ''), txt: o.l, title: 'Ipakita sa gitna ang ' + o.l + ' (diagram lang)', on: () => showLogic(o) }));
+    els.foot.replaceChildren(...kids);
+    els.foot.hidden = !kids.length;
+  }
+  /* the diagram of a sheet of the step in the centre: no sheet list, no tool bar, no minimap (LOVIEW focus), the rows of the step
+     marked (its interlock, its push button) */
+  function showLogic(o) {
+    const R = document.documentElement;
+    if (!R.classList.contains('gd-lv')) els.lvFocus = document.body.classList.contains('lo-focus');
+    R.classList.add('gd-lv');
+    els.lvK = o.k;
+    els.lvBusy = 1;
+    try {
+      window.lsSetTab && lsSetTab('logic');
+      call(() => LOVIEW.setFocus(true));
+      if (o.t) {
+        if (AN.cat !== 'an' && AN.setCat) AN.setCat('an');
+        if (AN.showTag) setTimeout(() => AN.showTag(o.t, o.sh), 60);
+      } else if (o.ad) {
+        const I = call(() => interlock(o.ad), null),
+          r0 = I && I.miss.find(x => !x.other),
+          pb = pbOf(o.a, 1),
+          ds = dOf(o.ad);
+        openD(MOTOR[o.ad], r0 ? r0.row : pb && pb.sh === dName(ds) ? pb.row : null, 230, r0 ? I.miss.filter(x => !x.other).map(x => x.row) : null);
+      } else if (o.dg) openD(o.dg[0], o.dg[1], 230);
+    } finally {
+      setTimeout(() => (els.lvBusy = 0), 400);
+    }
+    lvBar(o.l);
+    footFill(GD() && GD().steps()[GD().cur]);
+  }
+  function lvBar(l) {
+    const cv = document.getElementById('cv');
+    if (!cv) return;
+    let b = document.getElementById('gdlvbar');
+    if (!b) {
+      b = E('div', { id: 'gdlvbar' });
+      cv.append(b);
+    }
+    const g = GD();
+    b.replaceChildren(
+      E('b', { txt: l }),
+      E('span', { txt: g ? 'mula sa Hakbang ' + (g.cur + 1) : '' }),
+      E('span', { cls: 'gd-lg' }, [E('i', { cls: 'on' }), '1 = ON', E('i'), '0 = OFF'])
+    );
+  }
+  function lvOff() {
+    const R = document.documentElement;
+    if (!R.classList.contains('gd-lv')) return;
+    R.classList.remove('gd-lv');
+    els.lvK = null;
+    call(() => LOVIEW.setFocus(!!els.lvFocus));
+    const b = document.getElementById('gdlvbar');
+    if (b) b.remove();
+  }
+  function backHMI() {
+    lvOff();
+    const g = GD();
+    goStep(g && g.steps()[g.cur]);
+    footFill(g && g.steps()[g.cur]);
+  }
+  /* the equipment of the step on the HMI: its tag (the faceplate box of FICFA1081) and its name ("SAF  F-1054"), boxed */
+  function hmiTargets(s) {
+    const svg = document.getElementById('plsvg');
+    if (!svg || !s) return [];
+    const T = [];
+    for (const t0 of s.fps || []) T.push(new RegExp('^' + (call(() => LV().ctlTag(t0), null) || t0) + '$'));
+    for (const a of s.a || [])
+      if (a.stop || a.mot || a.loc) {
+        const n = a.l.replace(/^START\s+/, '').replace(/[-\s]?([A-D])$/, '-$1');
+        if (/^[A-Z]{2,5}(-[A-D])?$/.test(n)) T.push(new RegExp('^' + n.replace(/-/, '[- ]?') + '\\s+[A-Z]{0,2}-?\\d{3,5}'));
+      }
+    if (!T.length) return [];
+    const out = [];
+    for (const x of svg.querySelectorAll('text')) {
+      const v = (x.textContent || '').replace(/\s+/g, ' ').trim();
+      if (T.some(r => r.test(v))) out.push(x);
+    }
+    return out.slice(0, 4);
+  }
+  function goStep(s) {
+    if (!s) return;
+    lvOff();
+    try {
+      window.lsSetTab && lsSetTab('operate');
+    } catch (e) {}
+    /* the screen that has the step's equipment (the 007 Air & Flue Gas page for the fans); else the screen stays */
+    setTimeout(() => {
+      if (hmiTargets(s).length) return;
+      const pk = document.querySelector('#plantws .plpick');
+      if (!pk) return;
+      const v0 = pk.value;
+      for (const o of [...pk.options]) {
+        if (o.value === v0) continue;
+        pk.value = o.value;
+        pk.dispatchEvent(new Event('change'));
+        if (hmiTargets(s).length) return;
+      }
+      pk.value = v0;
+      pk.dispatchEvent(new Event('change'));
+    }, 120);
+  }
+  /* the boxes, 4 times a second (the HMI redraws itself) */
+  function hmiMark(s) {
+    const mid = document.getElementById('plmid');
+    let ov = document.getElementById('gdhl');
+    if (!mid || tab() !== 'operate' || !s) {
+      if (ov) ov.hidden = true;
+      return;
+    }
+    if (!ov) {
+      ov = E('div', { id: 'gdhl', 'aria-hidden': 'true' });
+      mid.append(ov);
+    }
+    const m = mid.getBoundingClientRect(),
+      X = hmiTargets(s).map(x => {
+        const r = (x.parentNode && x.parentNode.tagName === 'g' && x.parentNode.getBoundingClientRect().height < 90 ? x.parentNode : x).getBoundingClientRect();
+        return [r.left - m.left - 6, r.top - m.top - 5, r.width + 12, r.height + 10];
+      }),
+      k = JSON.stringify(X.map(a => a.map(Math.round))) + (GD() ? GD().cur : '');
+    ov.hidden = !X.length;
+    if (k === ov.dataset.k) return;
+    ov.dataset.k = k;
+    ov.replaceChildren(
+      ...X.map((r, j) =>
+        E('div', { cls: 'gd-hlb', style: 'left:' + r[0] + 'px;top:' + r[1] + 'px;width:' + r[2] + 'px;height:' + r[3] + 'px' }, j ? [] : [E('b', { txt: 'HAKBANG ' + (GD().cur + 1) })])
+      )
+    );
+  }
   /* ---------- the main area follows the step: the DITL of a motor, the ABC sheet of a faceplate ---------- */
-  function goStep(s, enter) {
-    if (!follow || !s || goStep.busy) return;
+  function goLogic(s, enter) {
+    if (!follow || !s || goLogic.busy || els.lvBusy) return;
     /* 3.2.0 walkthrough #2: a field card (no DCS button, no faceplate) shows its SOP section in the Training list, not the sheet that
        happened to be open (ABC-057 at the ESP step). Retest #2 #13: the Logic page opened on a field card shows no sheet of another
        step, it says so (body.lsfield, app.css) until a sheet is picked */
@@ -58095,7 +58411,7 @@ window.LS_GUIDE = (function () {
       return;
     }
     document.body.classList.remove('lsfield');
-    goStep.busy = 1;
+    goLogic.busy = 1;
     try {
       /* 3.2.0-beta.26: a push button of a DITL drawing (BURNER ON of DITL-09, a discharge valve of DITL-20): that sheet, its row selected
          (a motor START goes first; was: the ABC sheet of the step's faceplate). Machine B ~ D open the drawing of A until they are sheets of their own (CHECKLIST 0.2) */
@@ -58145,7 +58461,7 @@ window.LS_GUIDE = (function () {
       }
     } catch (e) {
     } finally {
-      goStep.busy = 0;
+      goLogic.busy = 0;
     }
   }
   function fieldNote(s) {
@@ -58260,6 +58576,11 @@ window.LS_GUIDE = (function () {
     }
     return true;
   }
+  /* the unit of a loop: the range of its faceplate ("[0.0 ~ 432.0 T/H]"), built (hidden) for the step */
+  const unitOf = t => {
+    const fb = els.fps && [...els.fps.children].find(x => (x.querySelector('.gd-fph b') || {}).textContent === t);
+    return ((/\[\s*-?[\d.]+\s*~\s*-?[\d.]+\s*([^\]\d][^\]]*)\]/.exec((fb && fb.textContent) || '') || [])[1] || '').trim();
+  };
   /* ---------- the content ---------- */
   function fill(force) {
     const g = GD();
@@ -58273,12 +58594,22 @@ window.LS_GUIDE = (function () {
     els.run.title = R ? 'Tumatakbo ang simulation: pindutin para i-PAUSE' : 'Naka-PAUSE (hinto ang oras): pindutin para RUN';
     paintSpeed();
     els.bar.style.width = Math.round((100 * Math.min(i, L.length)) / L.length) + '%';
-    els.stp.textContent = s ? 'Hakbang ' + (i + 1) + ' / ' + L.length : 'Tapos: ' + L.length + ' / ' + L.length;
+    if (s) els.maxI = Math.max(els.maxI || 0, i);
     /* 3.2.0 walkthrough #11: the SOP section of the step (the Training list numbers) */
-    const sk = secOf(s);
-    els.secb.textContent = sk ? 'Section ' + sk + ' / ' + nSec() + ' ↗' : '';
-    els.secb.hidden = !sk;
-    els.stg.textContent = s ? g.STAGES[s.st] || '' : '150 MW';
+    const sk = secOf(s),
+      P0 = window.LS_PROC5002 || [];
+    els.secT.textContent = sk ? 'Seksyon ' + sk + ' / ' + nSec() + ' · ' + ((P0[sk - 1] || {}).t || '') : s ? '' : 'Tapos ang start-up';
+    els.secT.title = els.secT.textContent;
+    {
+      const inSec = L.map((x, k) => k).filter(k => secOf(L[k]) === sk);
+      els.secS.textContent = (s ? g.STAGES[s.st] || '' : '150 MW') + (sk && inSec.length ? ' · PR-OPE-5002 · hakbang ' + (inSec.indexOf(i) + 1) + ' sa ' + inSec.length + ' ng seksyon' : '');
+    }
+    els.secP.disabled = !secAt(-1);
+    els.secN.disabled = !secAt(1);
+    els.stp.textContent = s ? 'HAKBANG ' + (i + 1) + ' / ' + L.length : 'TAPOS · ' + L.length + ' / ' + L.length;
+    els.ttl.textContent = s ? s.t : 'Nasa 150 MW na ang planta';
+    els.stP.disabled = i <= 0;
+    stepNx();
     if (!force && i === lastCur && R === els.wasR) return live();
     els.wasR = R;
     const first = i !== lastCur;
@@ -58295,40 +58626,24 @@ window.LS_GUIDE = (function () {
       );
       return;
     }
-    const col1 = E('div', { cls: 'gd-c1' }),
-      col2 = E('div', { cls: 'gd-c2' });
-    const prev = L[i - 1];
-    /* R9 #72: back to the step before ("‹ Nakaraan"): it opens again, done or not (its ✓ TAPOS and Susunod come back from the plant) */
-    if (prev)
-      col1.append(
-        E('div', { cls: 'gd-done' }, [
-          E('button', { type: 'button', cls: 'gd-btn gd-prev', txt: '‹ Nakaraan', title: 'Bumalik sa Hakbang ' + i, on: () => (g.open(i - 1), fill(true), followNow()) }),
-          E('span', { txt: i + ' · ' + prev.t })
-        ])
-      );
-    /* 3.2.0 walkthrough #1 #16: PAUSED = the time stopped; a field step is confirmed anyway, a DCS step needs RUN */
-    if (!R)
-      col1.append(
-        E('div', { cls: 'gd-pause' }, [
-          E('span', { txt: s.need && !s.c ? '❚❚ Naka-PAUSE ang oras. Puwede mong kumpirmahin ang field step; pindutin ang ▶ RUN bago ang DCS step.' : '❚❚ Naka-PAUSE ang oras: walang aandar (START / OPEN) hangga’t hindi RUN.' }),
-          E('button', { type: 'button', cls: 'gd-btn go', txt: '▶ RUN', on: runNow })
-        ])
-      );
-    /* the card */
+    /* the step: its controls first (no scroll at 1366 x 768), then the checklist. The PAUSED state is the pill of the header (one
+       button: was the pill and a RUN box), the title is in the step bar */
     const card = E('div', { cls: 'gd-card' });
-    card.append(E('div', { cls: 'gd-eb', txt: 'HAKBANG ' + (i + 1) + ' · ' + (g.STAGES[s.st] || '').toUpperCase() }), E('h3', { txt: s.t }));
+    card.append(E('div', { cls: 'gd-h', txt: 'CONTROLS NG HAKBANG' }));
     /* user 2026-10-29 (batch item 3: "kitang-kita agad, walang scroll", 768 px high): the operator control of each loop of the step right
        under the title, one compact row: PV, SV, MV, mode, M / A / R, MV and SV by one step. It writes through the same actions as the
        faceplate below and the sheet (LS_GUIDE.A: the faceplate of the sheet), so there is one control layer */
     els.ctl = [];
+    const fpTags = [];
     {
       const rows = [];
       for (const t0 of (s.fps || []).slice(0, 3)) {
         const t = call(() => LV().ctlTag(t0), null) || t0,
           f = call(() => LV().fp(t), null);
         if (!f) continue;
+        fpTags.push(t);
         const ctl = f.kind === 'ctl',
-          ro = E('span', { cls: 'gd-cv' }),
+          ro = E('div', { cls: 'gd-cv' }),
           op = (l, fn) => {
             const r = call(fn, '');
             if (r) {
@@ -58350,35 +58665,42 @@ window.LS_GUIDE = (function () {
           bm = b('M', 'MANUAL', () => op('M', () => g.A.man(t, +mvNow() || 0)), 'md'),
           ba = b('A', 'AUTO (SV ng operator)', () => op('A', () => g.A.auto(t)), 'md'),
           br = ctl && f.c.remote ? b('R', 'REMOTE (SV mula sa logic)', () => op('R', () => g.A.rem(t)), 'md') : null,
-          mvd = d => b('MV ' + (d > 0 ? '▲' : '▼'), 'MV ' + (d > 0 ? '+' : '') + d + ' % (MANUAL)', () => op('MV ' + (d > 0 ? '+' : '') + d + ' %', () => (mdNow() === 'MAN' ? g.A.man(t, Math.max(0, Math.min(100, (+mvNow() || 0) + d))) : 'Nasa ' + mdNow() + ': pindutin muna ang M'))),
+          /* MV by 1 % and by 5 % (▲▲): the step buttons that only moved this MV ("SA damper ▲▲ +5 %") are not shown any more */
+          mvd = d => b(Math.abs(d) > 1 ? (d > 0 ? '▲▲' : '▼▼') : d > 0 ? '▲' : '▼', 'MV ' + (d > 0 ? '+' : '') + d + ' % (MANUAL)', () => op('MV ' + (d > 0 ? '+' : '') + d + ' %', () => (mdNow() === 'MAN' ? g.A.man(t, Math.max(0, Math.min(100, (+mvNow() || 0) + d))) : 'Nasa ' + mdNow() + ': pindutin muna ang M'))),
           svd = d => b('SV ' + (d > 0 ? '▲' : '▼'), 'SV ' + (d > 0 ? '+' : '') + d + ' (AUTO)', () => op('SV ' + (d > 0 ? '+' : '') + d, () => (mdNow() === 'AUTO' ? g.A.auto(t, Math.round(((+svNow() || 0) + d) * 10) / 10) : 'Nasa ' + mdNow() + ': pindutin muna ang A'))),
+          v = (k, u) => {
+            const x = E('b', { txt: '—' }),
+              e = E('em', { txt: u });
+            return [E('div', { cls: 'gd-v' }, [E('small', { txt: k }), x, e]), x, e];
+          },
+          [pvD, pvB, pvU] = v('PV', ''),
+          [svD, svB, svU] = v('SV', ''),
+          [mvD, mvB] = v('MV', '%'),
+          bar = E('i'),
+          mdL = E('span', { cls: 'gd-mdl' }),
+          desc = String((f.c && f.c.desc) || '').replace(/\s+/g, ' ').trim(),
           row = E('div', { cls: 'gd-ctl' }, [
-            E('div', { cls: 'gd-ch' }, [
-              E('b', { txt: t }),
-              ro,
-              E('button', {
-                type: 'button',
-                cls: 'gd-lk',
-                txt: 'Buksan sa sheet ↗',
-                title: 'Buksan ang ' + f.shn + ' at ipakita ang ' + t,
-                on: () => {
-                  window.lsSetTab && lsSetTab('logic');
-                  if (AN.cat !== 'an' && AN.setCat) AN.setCat('an');
-                  if (AN.showTag) setTimeout(() => AN.showTag(t, f.shn), 60);
-                }
-              })
-            ]),
-            E('div', { cls: 'gd-cbs' }, [bm, ba, br, mvd(-1), mvd(1)].concat(ctl && f.c.q && f.c.q.sv != null ? [svd(-dsv), svd(dsv)] : []).filter(Boolean))
+            E('div', { cls: 'gd-ch' }, [E('b', { txt: t }), E('span', { cls: 'gd-cd', txt: desc.length > 40 ? desc.slice(0, 40).replace(/\s+\S*$/, '') + '…' : desc, title: desc }), mdL]),
+            E('div', { cls: 'gd-vs' + (ctl ? '' : ' mv1') }, (ctl ? [pvD, svD] : []).concat([mvD])),
+            E('div', { cls: 'gd-cbs' }, [bm, ba, br, E('span', { cls: 'gd-sp' }), mvd(-5), mvd(-1), mvd(1), mvd(5)].concat(ctl && f.c.q && f.c.q.sv != null ? [svd(-dsv), svd(dsv)] : []).filter(Boolean)),
+            ro
           ]);
+        mvD.append(E('span', { cls: 'gd-mvb' }, [bar]));
         els.ctl.push(() => {
           const md = mdNow(),
-            pv = ctl ? call(() => LV().pvOf(LV().fp(t)), NaN) : NaN;
-          /* A / R pressed and the loop stays MANUAL: the logic holds it (force manual), the faceplate below says why */
+            pv = ctl ? call(() => LV().pvOf(LV().fp(t)), NaN) : NaN,
+            mv = +mvNow();
+          pvB.textContent = f1(pv);
+          svB.textContent = f1(svNow());
+          if (ctl && !pvU.textContent) pvU.textContent = svU.textContent = unitOf(t);
+          mvB.textContent = f1(mv);
+          bar.style.width = (isFinite(mv) ? Math.max(0, Math.min(100, mv)) : 0) + '%';
+          mdL.textContent = md;
+          mdL.className = 'gd-mdl ' + String(md).toLowerCase();
+          /* A / R pressed and the loop stays MANUAL: the logic holds it (force manual); its sheet shows why */
           const ta = Date.now() - (+ro.dataset.a || 0);
-          if (md === 'MAN' && ta > 1500 && ta < 8000) {
-            ro.textContent = '⚠ Nanatiling MAN: force manual ng logic (tingnan ang "Why?" sa faceplate sa ibaba)';
-          } else if (!(Date.now() - (+ro.dataset.w || 0) < 4000))
-            ro.textContent = (ctl ? 'PV ' + f1(pv) + ' · SV ' + f1(svNow()) + ' · ' : '') + 'MV ' + f1(mvNow()) + ' % · ' + md;
+          if (md === 'MAN' && ta > 1500 && ta < 8000) ro.textContent = '⚠ Nanatiling MAN: force manual ng logic (tingnan sa logic sheet sa ibaba: ' + f.shn + ')';
+          else if (!(Date.now() - (+ro.dataset.w || 0) < 4000)) ro.textContent = '';
           for (const [x, m] of [[bm, 'MAN'], [ba, 'AUTO'], [br, 'REM']]) if (x) x.classList.toggle('on', md === m);
         });
         rows.push(row);
@@ -58391,27 +58713,28 @@ window.LS_GUIDE = (function () {
     const top = E('div', { cls: 'gd-top' });
     card.append(top);
     const ilWrap = E('div', { cls: 'gd-ilbox' });
+    /* the checklist under the controls: what to do, the result, the values to watch; "Bakit?" and the SOP items folded */
+    const chk = E('div', { cls: 'gd-chk' }, [E('div', { cls: 'gd-h', txt: 'CHECKLIST' })]);
+    let why = null;
     /* retest #44: one line to do on top; a longer explanation folded under "Bakit?" */
     {
       const d = String(s.d || ''),
         m = /^(Gawin:[^.]*\.?)\s*(.*)$/.exec(d);
       /* R9 #89: every step has a "Gawin:" line (a step written without one: its title, which is the action) and the reason under
          "Bakit?" (was: only 8 steps had them) */
-      card.append(E('p', { cls: 'gd-do', txt: m ? m[1] : 'Gawin: ' + String(s.t || '').replace(/\.?$/, '.') }));
+      chk.append(E('p', { cls: 'gd-do', txt: m ? m[1] : 'Gawin: ' + String(s.t || '').replace(/\.?$/, '.') }));
       /* live check #96: a step note (alarms that are expected at this step) under the action, always shown */
-      if (s.note) card.append(E('p', { cls: 'gd-snote', txt: 'NOTE: ' + s.note }));
+      if (s.note) chk.append(E('p', { cls: 'gd-snote', txt: 'NOTE: ' + s.note }));
       const rest = m ? m[2] : d;
-      if (rest) card.append(E('details', { cls: 'gd-why' }, [E('summary', { txt: 'Bakit?' }), E('p', { txt: rest })]));
+      if (rest) why = E('details', { cls: 'gd-why' }, [E('summary', { txt: 'Bakit?' }), E('p', { txt: rest })]);
     }
     els.cond = E('div', { cls: 'gd-cond' });
-    card.append(els.cond);
+    chk.append(els.cond);
     /* 3.2.0 retest #30: a done step waits for the trainee: "✓ TAPOS" with its result, then "Susunod ›" (was: the next step at once) */
+    /* user 2026-10-29 (mock-up v3): the result line only; the › of the step bar turns green and goes on */
     els.okt = E('span');
-    els.okb = E('div', { cls: 'gd-okb', hidden: '' }, [
-      els.okt,
-      E('button', { type: 'button', cls: 'gd-btn go', txt: 'Susunod ›', on: () => (g.next() ? fill(true) : null) })
-    ]);
-    card.append(els.okb);
+    els.okb = E('div', { cls: 'gd-okb', hidden: '' }, [els.okt, E('em', { txt: 'pindutin ang › sa itaas' })]);
+    chk.append(els.okb);
     /* the field items of a field card / a DCS step. 3.2.0 walkthrough #4 #17: every step of the SOP section (the same list and the same
        ticks as the Training list, ls-train), open, with a check box; an AUTO step ticks from the logic (was: the field items only, folded) */
     els.trKey = null;
@@ -58419,10 +58742,14 @@ window.LS_GUIDE = (function () {
     els.auIt = [];
     els.before = [];
     const fli = s.field && s.field.length ? fieldList(s.field) : [];
+    let sopBox = null;
     if (fli.length) {
       const A = call(() => LV().done(), {}),
         dd0 = ls.get('ls-train', {});
-      card.append(E('div', { cls: 'gd-flh', txt: 'SOP SECTION ' + s.field.map(x => x + 1).join(', ') + ' · ' + fli.length + ' ITEM' + (fli.length > 1 ? 'S' : '') }));
+      els.sopS = E('summary', { txt: 'SOP seksyon ' + s.field.map(x => x + 1).join(', ') + ' · ' + fli.length + ' item' });
+      sopBox = E('details', { cls: 'gd-sop' }, [els.sopS]);
+      /* a field card: the SOP items ARE the step, open */
+      if (s.need && !(s.a || []).length) sopBox.open = true;
       /* 3.2.0 retest #27: a step that starts equipment: the items before the START (line-up, permissives) and the items from the START
          on (monitor, adjust, standby to AUTO), these locked until the equipment runs */
       /* retest #50 #45: the START item itself is the last item BEFORE the start (it ticks AUTO when the equipment runs); an AUTO item of the
@@ -58437,7 +58764,7 @@ window.LS_GUIDE = (function () {
       els.trKey = JSON.stringify(dd0);
       let ul = E('ul', { cls: 'gd-fl' });
       if (cut >= 0) {
-        card.append(E('div', { cls: 'gd-flg', txt: 'BAGO I-START' }));
+        sopBox.append(E('div', { cls: 'gd-flg', txt: 'BAGO I-START' }));
 
       }
       const notes = new Set();
@@ -58451,9 +58778,9 @@ window.LS_GUIDE = (function () {
           return;
         }
         if (fi === cut) {
-          card.append(ul);
+          sopBox.append(ul);
           ul = E('ul', { cls: 'gd-fl' });
-          card.append(E('div', { cls: 'gd-flg', txt: 'PAGKATAPOS I-START (bukas kapag tumatakbo na)' }));
+          sopBox.append(E('div', { cls: 'gd-flg', txt: 'PAGKATAPOS I-START (bukas kapag tumatakbo na)' }));
         }
         const id = 'gdf' + f.si + '_' + f.i,
           k = f.si + '.' + f.i,
@@ -58493,7 +58820,7 @@ window.LS_GUIDE = (function () {
         if (au) els.auIt.push({ k, cb, li });
         ul.append(li);
       });
-      card.append(ul);
+      sopBox.append(ul);
     }
     /* the interlock of the motors of the step */
     els.il = [];
@@ -58510,6 +58837,12 @@ window.LS_GUIDE = (function () {
     const bs = E('div', { cls: 'gd-btns' });
     for (const a of s.a || []) {
       const ad = a.stop || a.dg ? motAddr(a) : null; /* 3.2.0-beta.30: a BURNER ON (dg) has its interlock too (DITL-12 out 7) */
+      /* user 2026-10-29 (mock-up v3 "iwasan ang doble"): a step button that only writes the MV / mode of a loop shown in the controls
+         above ("SA damper 0 %", "SA damper ▲▲ +5 %") is left out: the operator uses the faceplate. The guide still knows it (s.a) */
+      if (!a.stop && !a.dg && !a.loc && !a.mot && !a.sel && fpTags.length) {
+        const m = /\bA\.(?:man|auto|rem)\(\s*'([^']+)'/.exec(String(a.f));
+        if (m && fpTags.includes(call(() => LV().ctlTag(m[1]), null) || m[1])) continue;
+      }
       /* 3.2.0 walkthrough #21: the push button of the drawing under the label (sheet, row, tag of the CRT P.B.); pressed, the row is
          shown on the sheet when the centre follows the step */
       const pb = pbOf(a, 1);
@@ -58549,7 +58882,7 @@ window.LS_GUIDE = (function () {
         }
         /* retest #63: the DCS command in the Event log (sheet, row and tag of its CRT push button) */
         if (!a.loc) opLog(a.l, pb); /* a field button logs itself (FIELD) */
-        if (pb && follow) openD(pb.sh, pb.row, 230);
+        if (pb && follow && document.body.dataset.tab === 'logic') openD(pb.sh, pb.row, 230);
         setTimeout(() => fill(), 300);
       };
       bs.append(bt);
@@ -58565,7 +58898,7 @@ window.LS_GUIDE = (function () {
             a.stop.f();
           } catch (e) {}
           opLog(a.stop.l, pb0);
-          if (pb0 && follow) openD(pb0.sh, pb0.row);
+          if (pb0 && follow && document.body.dataset.tab === 'logic') openD(pb0.sh, pb0.row);
           setTimeout(() => fill(), 300);
         };
         bs.append(sb);
@@ -58581,20 +58914,6 @@ window.LS_GUIDE = (function () {
           on: () => B.ad && tripAck(B.ad)
         });
         bs.append(B.lab);
-        /* user 2026-10-29: the motor's push button row on its DITL sheet, one press */
-        if (pb)
-          bs.append(
-            E('button', {
-              type: 'button',
-              cls: 'gd-lk',
-              txt: 'Sheet ↗',
-              title: 'Buksan sa sheet: ' + pb.sh + ' row ' + (pb.row + 1),
-              on: () => {
-                window.lsSetTab && lsSetTab('logic');
-                openD(pb.sh, pb.row, 230);
-              }
-            })
-          );
         /* retest #34: a Training fault, the motor protection relay trips in the field (the motor stops, TRIP flashes until ACK, alarm,
            Event log); the field resets the relay, then the operator starts again */
         if (a.stop && B.ad) {
@@ -58713,7 +59032,6 @@ window.LS_GUIDE = (function () {
     els.pw = E('div', { cls: 'gd-warn', hidden: '' });
     els.ovw = E('div', { cls: 'gd-warn', hidden: '' });
     top.append(els.pw, els.ovw, els.early, ilWrap);
-    col1.append(card);
     /* the faceplates of the step */
     const key = (s.fps || []).join(',');
     if (key !== fpKey || first) {
@@ -58831,20 +59149,13 @@ window.LS_GUIDE = (function () {
     });
     /* user 2026-10-29 (batch item 3: "kitang-kita agad, walang scroll"): the controls of the step (its faceplates: PV, SV, MV, mode) first,
        then the values to watch (3.2.0-beta.33 had the faceplates under the values) */
-    if (els.fps && els.fps.children.length) col2.append(els.fps);
-    if (els.watch.length) col2.append(E('div', { cls: 'gd-watch' }, [E('div', { cls: 'gd-h', txt: 'BANTAYAN SA HAKBANG NA ITO' })].concat(els.watch.map(x => x.r))));
-    /* follow + the next steps */
-    const fl = E('label', { cls: 'gd-follow' }, [E('input', { type: 'checkbox' }), ' Sundan ng gitna ang hakbang (DITL o ABC sheet)']);
-    fl.firstChild.checked = !!follow;
-    fl.firstChild.onchange = e => {
-      follow = e.target.checked;
-      ls.set('ls-gdock-follow', follow);
-      if (follow) goStep(s);
-    };
-    col2.append(fl);
-    const nx = L.slice(i + 1, i + 3);
-    if (nx.length) col2.append(E('div', { cls: 'gd-next' }, nx.map((x, k) => E('div', { txt: i + 2 + k + ' · ' + x.t }))));
-    b.append(col1, col2);
+    /* user 2026-10-29 (mock-up v3): the faceplates of the sheet are not shown again under the controls (they were the same loops twice);
+       they stay built for their units and live values */
+    if (els.watch.length) chk.append(E('div', { cls: 'gd-watch' }, [E('div', { cls: 'gd-h', txt: 'BANTAYAN' })].concat(els.watch.map(x => x.r))));
+    if (why) chk.append(why);
+    if (sopBox) chk.append(sopBox);
+    b.append(card, chk);
+    footFill(s);
     if (first) {
       els.goKey = null;
       /* retest #38: a message of the sheet opened before (the status bar "Opened DITL-29A ...") does not stay on a new step */
@@ -58860,12 +59171,6 @@ window.LS_GUIDE = (function () {
     const s = g.steps()[g.cur];
     VALS.forEach(([k, u, f, fm], j) => (els.vals[j].b.textContent = fm(call(f, NaN))));
     /* 3.2.0 retest #25 #34: RUN = red, STOP = green (power plant convention), TRIP = amber, flashing until ACK */
-    LAMPS.forEach(([k, A], j) => {
-      const tr = A.filter(a => mst(a) === 'TRIP');
-      els.lamps[j].classList.toggle('on', any(A));
-      els.lamps[j].classList.toggle('trip', tr.length > 0);
-      els.lamps[j].classList.toggle('blink', tr.some(tripNew));
-    });
     /* the rate of the water temperature (Fig 1), over the last minute of the plant */
     const t = +U().t || 0,
       x = +U().Tw;
@@ -58875,6 +59180,9 @@ window.LS_GUIDE = (function () {
       rate.t = t;
       rate.x = x;
     }
+    stepNx();
+    if (tab() !== 'logic') lvOff();
+    hmiMark(s);
     if (!s) return;
     /* 3.2.0 retest #26: a tick made in the Training list shows here (the list and the panel are the same ticks, ls-train) */
     if (els.trKey != null && JSON.stringify(ls.get('ls-train', {})) !== els.trKey) return fill(true);
@@ -58957,8 +59265,8 @@ window.LS_GUIDE = (function () {
       /* R9 #73: to the next machine only while the step needs more than one (2 SWP, 2 SWBP); a step done goes back to its first
          running machine (2 SWBP running: pump A, as the 1-pump steps) */
       if (document.body.dataset.tab === 'logic') {
-        if (nx && on1 && s.max && !rd0 && motAddr(nx) !== els.goKey) goStep(s);
-        else if (rd0 && on1 && motAddr(on1) !== els.goKey) goStep(s);
+        if (nx && on1 && s.max && !rd0 && motAddr(nx) !== els.goKey) goLogic(s);
+        else if (rd0 && on1 && motAddr(on1) !== els.goKey) goLogic(s);
       }
     }
     /* the interlock */
@@ -59013,7 +59321,7 @@ window.LS_GUIDE = (function () {
         continue;
       }
       if (I.live) shown = 1;
-      const head = E('div', { cls: 'gd-ilh' }, [E('span', { txt: 'INTERLOCK · START PERMISSION' }), E('button', { type: 'button', cls: 'gd-lk', txt: I.sheet + ' ↗', title: 'Buksan ang ' + I.sheet, on: () => (window.lsSetTab && lsSetTab('logic'), openD(I.sheet)) })]);
+      const head = E('div', { cls: 'gd-ilh' }, [E('span', { txt: 'INTERLOCK · START PERMISSION' }), E('span', { cls: 'gd-ilm', txt: I.sheet })]);
       it.box.append(head);
       if (!I.live) {
         it.box.append(E('div', { cls: 'gd-ild', txt: 'Lalabas ang interlock kapag na-load na ang planta (one world).' }));
@@ -59040,10 +59348,7 @@ window.LS_GUIDE = (function () {
           E('div', { cls: 'gd-ilr' + (G.ok ? '' : ' x') }, [
             E('span', { txt: (G.ok ? '✓ ' : '✕ ') + (svcN(r.svc) || r.svc || '') + (r.cmp ? ' ' + r.cmp : '') + (r.want ? '' : ' (dapat OFF)') }),
             /* 3.2.0 walkthrough #19: the row on its sheet, one press (to see it, to set it or FORCE it there in the Inputs list) */
-            E('span', {}, [
-              E('code', { txt: (G.tag ? G.tag + ' · ' : '') + (r.other ? r.other + ' ' : '') + 'row ' + rows }),
-              E('button', { type: 'button', cls: 'gd-rowl', txt: '↗', title: 'Buksan ang ' + dName(r.s) + ' row ' + rows, on: () => (window.lsSetTab && lsSetTab('logic'), openD(dName(r.s), r.row, 230)) })
-            ])
+            E('code', { txt: (G.tag ? G.tag + ' · ' : '') + (r.other ? r.other + ' ' : '') + 'row ' + rows })
           ])
         );
         const seen = new Set(),
@@ -59058,13 +59363,6 @@ window.LS_GUIDE = (function () {
           }
           for (const a of o.abc) if (!ab.includes(a)) ab.push(a);
         }
-        if (fs.length || ab.length)
-          it.box.append(
-            E('div', {
-              cls: 'gd-ilw',
-              txt: '↳ ' + fs.map(f => 'field: ' + (f.tag ? f.tag + ' ' : '') + f.svc.replace(/^\(FROM STATION WIRING\)\s*/, '') + (f.av ? ' ' + f.av.txt : '')).concat(ab.map(a => 'galing sa ' + a.replace(/^.*?(ABC-)/, '$1') + ' (operator sa DCS)')).join(' · ')
-            })
-          );
       }
       /* 3.2.0 walkthrough #20: one FIELD button per missing field contact (the field operator sets the LOCAL / REMOTE selector, the limit
          switch ...): it sets that input row of the drawing (every row of the same signal) and writes the Event log */
@@ -59116,7 +59414,7 @@ window.LS_GUIDE = (function () {
       }
       if (!run && I.miss.length) {
         blocked[it.ad] = 1;
-        it.box.append(E('div', { cls: 'gd-ild x', txt: 'Hindi pa aandar ang motor (ayon sa ' + I.sheet + '): ayusin muna ang may ✕ (FIELD button, o ↗ para buksan ang row sa logic).' }));
+        it.box.append(E('div', { cls: 'gd-ild x', txt: 'Hindi pa aandar ang motor (ayon sa ' + I.sheet + '): ayusin muna ang may ✕ (FIELD button, o "Ipakita sa logic sheet" sa ibaba).' }));
       }
     }
     for (const it of els.il || []) {
@@ -59222,7 +59520,7 @@ window.LS_GUIDE = (function () {
   /* the centre follows the step when the Logic page opens (app.js setTab) */
   const followNow = () => {
     const g = GD();
-    if (g && g.on) goStep(g.steps()[g.cur], true);
+    if (g && g.on) goLogic(g.steps()[g.cur], true);
   };
   window.LS_DOCK = {
     grpOn,

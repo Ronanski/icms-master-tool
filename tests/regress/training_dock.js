@@ -18,10 +18,10 @@ await clickTxt('button','Training');await p.waitForTimeout(800);
 ck(await clickTxt('#trainws button','Gabay: Cold'),tag+'Gabay pressed');await p.waitForTimeout(7000);
 const a=await p.evaluate(()=>{const d=document.getElementById('gdock'),r=d&&d.getBoundingClientRect(),bw=document.body.getBoundingClientRect();const U=AN.unit||{};
  return {dock:!!d&&!d.hidden,side:document.documentElement.classList.contains('gd-side'),bottom:document.documentElement.classList.contains('gd-bottom'),dw:r&&r.width,dh:r&&r.height,bw:bw.width,bh:bw.height,run:AN.run,view:AN.view,Pd:U.Pd,ss:AN.startState,
-  card:(d&&d.querySelector('.gd-card h3')||{}).textContent||'',vals:d?d.querySelectorAll('.gd-kv b').length:0,lamps:d?d.querySelectorAll('.gd-lamp').length:0,on:LS_GUIDE.on,cur:LS_GUIDE.cur,hx:document.documentElement.scrollWidth>innerWidth+1}});
+  card:(d&&d.querySelector('.gd-stl h3')||{}).textContent||'',vals:d?d.querySelectorAll('.gd-kv b').length:0,lamps:d?d.querySelectorAll('.gd-lamp').length:0,on:LS_GUIDE.on,cur:LS_GUIDE.cur,hx:document.documentElement.scrollWidth>innerWidth+1}});
 ck(a.dock&&(side?a.side&&a.bw<=w-300:a.bottom&&a.bh<=h-250),tag+'dock open, app '+(side?'narrower':'shorter')+' '+JSON.stringify({side:a.side,bottom:a.bottom,bw:a.bw,bh:a.bh,dw:a.dw,dh:a.dh}));
 ck(a.run&&!a.view&&a.ss==='plantCold'&&a.Pd===0&&a.on&&a.cur===0,tag+'cold, RUN, step 1: '+a.card);
-ck(a.vals===8&&a.lamps===9&&!a.hx,tag+'8 values, 9 lamps, no sideways scroll');
+ck(a.vals===4&&a.lamps===0&&!a.hx,tag+'one line of 4 values (the lamps are on the HMI), no sideways scroll');
 await shot('1-start');
 // a motor step: the IDF interlock (DITL-25A) in the card, the main area on the DITL of the motor
 const m=await p.evaluate(()=>{const S=LS_GUIDE.steps();const i=S.findIndex(s=>/Simulan ang ID fan/.test(s.t));LS_GUIDE.open(i);LS_DOCK.fill(true);return {i,t:S[i]&&S[i].t}});
