@@ -295,6 +295,7 @@
         if (e.sd && !e.rtn && /^ABC-/.test(e.sh) && grpRel(e.sh, t)) { /* a DITL standing trip stays suppressed until it resets */
           e.sd = false;
           e.ack = false;
+          e.t = tfmt(t); /* live check #106: the time it comes as a real alarm (before: the load time, "at 0:00") */
           add({ rt: { t } }, { name: e.sh }, e.kind, e.nm + ' ' + e.lv + ' (suppression released: equipment running)');
         }
     for (const [k, e] of AT)
