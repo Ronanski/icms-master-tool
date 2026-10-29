@@ -254,7 +254,7 @@
     );
     o.push(filt(480, 360, 1, 'DF1'));
     o.push(eq(512, 342, 'DF1'));
-    o.push(vbox(494, 406, 'DPISW1502', 'mmH2O', 1));
+    o.push(vbox(494, 406, 'DPISW1502', 'mmH2O', 1) + T(494, 434, 'backwash at 816 (SOP)', 'sw8'));
     pipe(
       [
         [458, 380],
@@ -529,7 +529,7 @@
         T(1116, 672, 'MV-SW1002 BACKWASH', 'sw8')
     );
     o.push(eq(1044, 738, 'DF2', 'middle'));
-    o.push(vbox(1112, 746, 'DPISW1504', 'mmH2O', 1));
+    o.push(vbox(1112, 746, 'DPISW1504', 'mmH2O', 1) + T(1112, 774, 'backwash at 816 (SOP)', 'sw8'));
     pipe(
       [
         [1078, 700],
@@ -921,7 +921,12 @@
       PISW1110A2: n => [0, 0.7, 1.0, 1.1][n] * 0.4,
       PISW1110B2: n => [0, 0.7, 1.0, 1.1][n] * 0.5,
       TISW1110A2: (n, f) => 28.5 + (n ? (6.7 * f * 2) / n : 0),
-      TISW1110B2: (n, f) => 28.6 + (n ? (6.5 * f * 2) / n : 0)
+      TISW1110B2: (n, f) => 28.6 + (n ? (6.5 * f * 2) / n : 0),
+      /* DPT-SW1502 / 1504: package instruments of the debris filter panel (alarm list: 0 ~ 2000 mmH2O, PACKAGE; no DCS AI). PR-OPE-5002
+         START DEBRIS FILTER "Input cut in (DP conditions) 20 mBar / 80 mBar": a clean filter with flow = 20 mbar = 204 mmH2O (the
+         backwash cuts in at 80 mbar = 816 mmH2O); no flow = 0 */
+      DPISW1502: n => (n ? 204 : 0),
+      DPISW1504: (n, f, nb) => (nb ? 204 : 0)
     };
     const LOG = {};
     const showV = (tag, v, est) => {
@@ -942,7 +947,8 @@
     estimate = () => {
       const n = FLOW.SW.filter(id => ST[id] === 'RUN').length,
         f = steam != null && steam > 0 ? Math.min(1.1, steam / 465.8) : 0;
-      for (const tag in EST) if (LOG[tag] == null) showV(tag, EST[tag](n, f), 1);
+      const nb = FLOW.BP.filter(id => ST[id] === 'RUN').length;
+      for (const tag in EST) if (LOG[tag] == null) showV(tag, EST[tag](n, f, nb), 1);
     };
     for (const tag in EST) {
       const b = q(`[data-vb="${tag}"]`),
@@ -963,13 +969,11 @@
     }
     estimate();
     /* the estimates and the DP gauges with no value in the logic: click = the I/O list / alarm list line */
-    ['IIP1501A', 'IIP1501B', 'IIP1501C', 'IIP1503A', 'IIP1503B', 'IIP1503C', 'DPISW1502', 'DPISW1504'].forEach(tag => {
+    ['IIP1501A', 'IIP1501B', 'IIP1501C', 'IIP1503A', 'IIP1503B', 'IIP1503C'].forEach(tag => {
       const b = q(`[data-vb="${tag}"]`);
       if (!b) return;
       const ti = document.createElementNS(NS, 'title');
-      ti.textContent = /^DP/.test(tag)
-        ? tag + ' · alarm list only (0 ~ 2000 mmH2O), no value in the logic'
-        : tag + ' · plant estimate from the run state (30.PNG current), no transmitter in the logic';
+      ti.textContent = tag + ' · plant estimate from the run state (30.PNG current), no transmitter in the logic';
       b.append(ti);
       b.addEventListener('click', e => (e.stopPropagation(), info(tag)));
     });
@@ -980,6 +984,7 @@
   const L = (window.PLANT_SYS = window.PLANT_SYS || []),
     i = L.findIndex(x => x.id === 'AFG');
   L.splice(i >= 0 ? i + 1 : 0, 0, {
+    fitAll: 1,
     id: 'SW',
     title: '030 SEAWATER',
     num: '030',
