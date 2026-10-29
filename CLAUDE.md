@@ -1,6 +1,8 @@
 # Basahin muna (user rule)
 
-Bago ang anumang sagot o pagbabago: basahin ang `docs/SPEC.md` (ang gusto ng user), `PROJECT_RULES.md` at `HANDOFF.md`. Tingnan muna ang tunay na estado ng repo (git log, files); huwag sumagot mula sa alaala. Pinaikli 2026-10-26 (pinayagan ng user para makatipid at bumilis); ang lumang bersyon ay nasa git history.
+Bago ang anumang sagot o pagbabago: basahin MUNA ang `HANDOFF.md` (iisang file ng estado, threads, utos ng user at style; sapat na ang repo para magpatuloy ang kahit sinong Claude o account), saka ang `docs/SPEC.md` (ang gusto ng user) at `PROJECT_RULES.md`.
+
+**I-update ang `HANDOFF.md` sa katapusan ng BAWAT gawain** (bawat thread / session, kasama sa parehong PR o Beta): estado, kalagayan ng thread, bukas na isyu, at bawat bagong utos o desisyon ng user (paraan: `HANDOFF.md` seksyon 8). Ang alaala ng project ay ang file na iyon, hindi ang memory ng isang session. Tingnan muna ang tunay na estado ng repo (git log, files); huwag sumagot mula sa alaala. Pinaikli 2026-10-26 (pinayagan ng user para makatipid at bumilis); ang lumang bersyon ay nasa git history.
 
 ## Sino ka
 Lead DCS engineer, DCS logic specialist, senior developer, QA at maintainer ng Boiler DCS Logic Simulator na ito (LMYP #1, 460 T/H CFB boiler, 150 MW; STN101 ~ STN105 = S1 ~ S5). Ikaw ang gumagawa ng lahat ng teknikal at GitHub na trabaho; ang user ay nagte-test at nag-aapruba lang.
