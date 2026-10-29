@@ -1002,6 +1002,27 @@ function drawSheet(sh) {
     TXE.set(t, e);
   });
   L.txe = TXE;
+  /* user 2026-10-29: the DESIGN BASE (100 % LOAD) table at the upper right of every ABC drawing (PDF; it is not in the DXF text): drawn
+     only, never a text of the sheet (no tag reading, no link) */
+  if (/^ABC-0(?!00)/.test(sh.name)) {
+    const DB = ['DESIGN BASE : ( 100% LOAD )', 'MAIN STEAM FLOW : 460 T/H', 'COAL FLOW       : 81 T/H', 'CALORIE BASE    : 4450 Kcal/Kg', 'TOTAL AIR FLOW  : 606 T/H', 'PA FLOW         : 380 T/H', 'SA FLOW         : 200 T/H', 'FA FLOW         : 26 T/H'],
+      X0 = 880,
+      dy = 6.2;
+    let top = 716;
+    for (let k = 0; k < 6; k++) {
+      const hit = R.tx.filter(t => t.x + t.t.length * t.h * 0.6 >= X0 && t.x <= 1010 && t.y <= top + 4 && t.y >= top - dy * DB.length - 2);
+      if (!hit.length) break;
+      top = Math.min(...hit.map(t => t.y)) - 8;
+    }
+    const gd = el('g', { 'pointer-events': 'none' }, svg);
+    DB.forEach((l, k) => {
+      const e = el('text', { x: X0, y: -(top - k * dy), 'font-size': 3.9, fill: '#d5dde3', 'xml:space': 'preserve' }, gd);
+      e.style.fontFamily = "Consolas,'Cascadia Mono',monospace";
+      e.style.whiteSpace = 'pre';
+      e.textContent = l;
+    });
+    el('line', { x1: X0, y1: -(top - 1.6), x2: X0 + 62, y2: -(top - 1.6), stroke: '#d5dde3', 'stroke-width': 0.3 }, gd);
+  }
   /* live overlay: every net as one path */
   const go_ = el('g', { fill: 'none', 'stroke-linecap': 'round', 'pointer-events': 'none' }, svg);
   const BR = (() => {

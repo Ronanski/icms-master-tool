@@ -29314,7 +29314,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.54';
-      c3.textContent += ' · build 6f22767'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 74e956f'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -30445,6 +30445,27 @@ function drawSheet(sh) {
     TXE.set(t, e);
   });
   L.txe = TXE;
+  /* user 2026-10-29: the DESIGN BASE (100 % LOAD) table at the upper right of every ABC drawing (PDF; it is not in the DXF text): drawn
+     only, never a text of the sheet (no tag reading, no link) */
+  if (/^ABC-0(?!00)/.test(sh.name)) {
+    const DB = ['DESIGN BASE : ( 100% LOAD )', 'MAIN STEAM FLOW : 460 T/H', 'COAL FLOW       : 81 T/H', 'CALORIE BASE    : 4450 Kcal/Kg', 'TOTAL AIR FLOW  : 606 T/H', 'PA FLOW         : 380 T/H', 'SA FLOW         : 200 T/H', 'FA FLOW         : 26 T/H'],
+      X0 = 880,
+      dy = 6.2;
+    let top = 716;
+    for (let k = 0; k < 6; k++) {
+      const hit = R.tx.filter(t => t.x + t.t.length * t.h * 0.6 >= X0 && t.x <= 1010 && t.y <= top + 4 && t.y >= top - dy * DB.length - 2);
+      if (!hit.length) break;
+      top = Math.min(...hit.map(t => t.y)) - 8;
+    }
+    const gd = el('g', { 'pointer-events': 'none' }, svg);
+    DB.forEach((l, k) => {
+      const e = el('text', { x: X0, y: -(top - k * dy), 'font-size': 3.9, fill: '#d5dde3', 'xml:space': 'preserve' }, gd);
+      e.style.fontFamily = "Consolas,'Cascadia Mono',monospace";
+      e.style.whiteSpace = 'pre';
+      e.textContent = l;
+    });
+    el('line', { x1: X0, y1: -(top - 1.6), x2: X0 + 62, y2: -(top - 1.6), stroke: '#d5dde3', 'stroke-width': 0.3 }, gd);
+  }
   /* live overlay: every net as one path */
   const go_ = el('g', { fill: 'none', 'stroke-linecap': 'round', 'pointer-events': 'none' }, svg);
   const BR = (() => {
@@ -55692,7 +55713,16 @@ window.LS_LIVE = (function () {
     go: { addr: 'M.3412' }
   };
   const NOFEED = NOBIT(['M.3400', 'M.3401', 'M.3402'], 'coal feeders stopped');
-  const PURGE_AIR = VAL('AIR', 115, null); /* > 25 % MCR of the total air (25 % of 460 T/H) */
+  /* user 2026-10-29: the purge air is the logic's own signal, ABC-006 M.0340 "TOTAL AIR FLOW < 25% MCR (151.5 T/H)" = 0, DESIGN BASE of
+     the ABC sheets: total air 606 T/H at 100 % load (was 115 T/H = 25 % of the 460 T/H steam MCR, wrong) */
+  const PURGE_AIR = {
+    sig: ['M.0340', 'AIR'],
+    res: () => has('M.0340') || 'AIR' in NAMES,
+    ok: () => (has('M.0340') ? !(val('M.0340') > 0.5) : rng(getV('AIR'), 151.5, null)),
+    now: () => NAMES.AIR[0] + ' ' + f1(getV('AIR')) + ' ' + NAMES.AIR[1] + (has('M.0340') ? ' · M.0340 = ' + (val('M.0340') > 0.5 ? 1 : 0) : ''),
+    want: 'Total air ≥ 25 % MCR = 151.5 T/H (ABC-006 M.0340 = 0)',
+    go: { addr: 'M.0340' }
+  };
   const MFT = BIT('I.000F', 0, 'no MFT');
 
   /* 3.2.0 retest #45 #47 #33: the equipment of sections 2 ~ 17 that runs on a DITL drawing or at a local panel (dock.js reads the drawing
@@ -56608,7 +56638,7 @@ window.LS_GUIDE = (function () {
       { st: 2, sec: 25, t: 'Simulan ang primary air fan (PAF)', d: 'Sarado (0 %) muna ang PA damper bago simulan ang fan.', c: R.PAF, a: [btn('PA damper 0 %', () => A.man('FICFA1071', 0)), mot('M.3302', 'PAF')], fps: ['FICFA1071'], field: [24] },
       /* live check #103 / #107 (PR-OPE-5002 PAF START-UP: "Increase PAF Inlet Damper Manually (Use Single Arrow ...). Maintain the Furnace
          pressure to -15mmH2O whilst simultaneously increasing HC Speed of IDF. Target Primary Air Flow: 180T/H = No Bed") */
-      { st: 2, sec: 25, t: 'PAF inlet damper pataas (single arrow): primary air 180 T/H, IDF coupling pataas (−15 mmH₂O)', d: 'Gawin: itaas ang PA damper FICFA1071 (MANUAL) nang tig-1 % (single arrow) hanggang 180 T/H (walang bed). Kasabay, itaas ang IDF hydraulic coupling PICFG108 (MV ▲) para manatili ang furnace pressure malapit sa −15 mmH₂O. Mga 18 % ang PA damper at mga 16 % ang coupling sa dulo (PA 180 + SA 200 + FA 26 ≈ 406 T/H, higit sa 25 % MCR na 115 T/H).', c: b.HOLD(10, b.ALL(b.VAL('PA', 170, 195), b.PURGE_AIR, b.VAL('FP', -25, -5))), fps: ['FICFA1071', 'PICFG108'], a: [btn('PA damper ▲ +1 %', () => A.man('FICFA1071', Math.max(0, Math.min(100, Math.round(mv('FICFA1071')) + (1))))), btn('PA damper ▼ −1 %', () => A.man('FICFA1071', Math.max(0, Math.min(100, Math.round(mv('FICFA1071')) + (-1))))), btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1)))] },
+      { st: 2, sec: 25, t: 'PAF inlet damper pataas (single arrow): primary air 180 T/H, IDF coupling pataas (−15 mmH₂O)', d: 'Gawin: itaas ang PA damper FICFA1071 (MANUAL) nang tig-1 % (single arrow) hanggang 180 T/H (walang bed). Kasabay, itaas ang IDF hydraulic coupling PICFG108 (MV ▲) para manatili ang furnace pressure malapit sa −15 mmH₂O. Mga 18 % ang PA damper at mga 16 % ang coupling sa dulo (PA 180 + SA 200 + FA 26 ≈ 406 T/H, higit sa 25 % MCR = 151.5 T/H, DESIGN BASE total air 606 T/H).', c: b.HOLD(10, b.ALL(b.VAL('PA', 170, 195), b.PURGE_AIR, b.VAL('FP', -25, -5))), fps: ['FICFA1071', 'PICFG108'], a: [btn('PA damper ▲ +1 %', () => A.man('FICFA1071', Math.max(0, Math.min(100, Math.round(mv('FICFA1071')) + (1))))), btn('PA damper ▼ −1 %', () => A.man('FICFA1071', Math.max(0, Math.min(100, Math.round(mv('FICFA1071')) + (-1))))), btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1)))] },
       { st: 2, sec: 25, t: 'Furnace pressure control PICFG108 sa AUTO, SV −15 mmH₂O', d: 'Gawin: kapag nasa mga 16 % na ang hydraulic coupling at matatag ang furnace pressure sa mga −15 mmH₂O, PICFG108 A, SV −15 (PR-OPE-5002). Habang mas mababa sa 14 % ang MV, FORCE MANUAL ang PICFG108 (ABC-008 M.0205): hindi pa puwede ang AUTO. Sa AUTO, ang PICFG108 na ang gumagalaw ng coupling para sa −15.', c: b.ALL(b.MODE('PICFG108', 'AUTO'), b.SV('PICFG108', -16, -14), b.HOLD(30, b.VAL('FP', -25, -5))), fps: ['PICFG108'], a: [btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1))), btn('PICFG108 A, SV −15', () => (mv('PICFG108') < 14 ? 'FORCE MANUAL pa ang PICFG108 (ABC-008 M.0205: IDF coupling < 14 %): itaas muna ang MV' : h().FP() < -25 || h().FP() > -5 ? 'Hintayin muna: furnace pressure ' + f0(h().FP()) + ' mmH₂O (kailangan malapit sa −15, −25 ~ −5)' : A.auto('PICFG108', -15)))] },
       /* ---- 3 purge ---- */
       {
@@ -57311,8 +57341,8 @@ window.LS_GUIDE = (function () {
   const WATCH = [
     [['Seawater pumps running', () => ['M.3353', 'M.3354', 'M.3355'].filter(bit).length, '', f0, '2 bago ang vacuum']],
     [['Hotwell level', () => pv('LICCD1110A'), 'mm', sgn, '', 'LICCD1110A'], ['Condensate flow', () => pv('FICCD1120'), 'T/H', f1, '', 'FICCD1120'], ['Deaerator level', () => pv('LCV-CD1104'), 'mm', sgn, 'SV 0', 'LICCD1104'], lvl, ['FW flow', () => H().FW(), 'T/H', f1, '', 'FICFW1007']],
-    [['Furnace pressure', () => H().FP(), 'mmH₂O', f0, 'target −15', 'PICFG108'], ['Total air (PA + SA + FA)', () => H().PA() + H().SA() + (H().FA ? H().FA() : 0), 'T/H', f0, 'purge > 115'], ['IDF coupling MV', () => mv('PICFG108'), '%', f0, '', 'PICFG108']],
-    [['Furnace pressure', () => H().FP(), 'mmH₂O', f0, 'target −15', 'PICFG108'], ['Total air (PA + SA + FA)', () => H().PA() + H().SA() + (H().FA ? H().FA() : 0), 'T/H', f0, 'purge > 115']],
+    [['Furnace pressure', () => H().FP(), 'mmH₂O', f0, 'target −15', 'PICFG108'], ['Total air (PA + SA + FA)', () => H().PA() + H().SA() + (H().FA ? H().FA() : 0), 'T/H', f0, 'purge ≥ 151.5 (25 % MCR)'], ['IDF coupling MV', () => mv('PICFG108'), '%', f0, '', 'PICFG108']],
+    [['Furnace pressure', () => H().FP(), 'mmH₂O', f0, 'target −15', 'PICFG108'], ['Total air (PA + SA + FA)', () => H().PA() + H().SA() + (H().FA ? H().FA() : 0), 'T/H', f0, 'purge ≥ 151.5 (25 % MCR)']],
     [['Water temp', () => U().Tw, '°C', f0, 'kumukulo sa 100'], ['Drum pressure', () => U().Pd, 'kg/cm²', f1, ''], ['Bilis ng pag-init', () => rate.r, '°C/h', f0, 'Fig 1 ≤ 110'], ['Bed temp', () => U().Tb, '°C', f0, '']],
     [['Condenser vacuum', () => 100 * (+U().vac || 0), '%', f0, '≥ 90'], ['Drum pressure', () => U().Pd, 'kg/cm²', f1, '']],
     [['Bed temp', () => U().Tb, '°C', f0, 'coal ≥ 400 · retract > 700'], ['Coal flow', () => H().coal(), 'T/H', f1, '', 'FIC-CM'], ['O₂', () => H().O2(), '%', f1, '3.5 ~ 8', 'AICFG112'], ['Bilis ng pag-init', () => rate.r, '°C/h', f0, 'Fig 1 ≤ 110']],
