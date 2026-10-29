@@ -190,7 +190,8 @@
       `<rect x="22" y="300" width="378" height="420" fill="${S.air}"/><rect x="22" y="470" width="378" height="250" fill="url(#swwt)" data-k="pool"/>`
     );
     o.push(
-      `<path d="M24 474 ${Array(19).fill('q10 -3 20 0').join(' ')}" fill="none" stroke="${S.wave}" stroke-width="1.3" class="swwv" data-k="poolw"/>`
+      /* the wave in a group: the level moves the group (the CSS animation owns the transform of the path) */
+      `<g data-k="poolw"><path d="M24 474 ${Array(19).fill('q10 -3 20 0').join(' ')}" fill="none" stroke="${S.wave}" stroke-width="1.3" class="swwv"/></g>`
     );
     o.push(
       `<path d="M18 300 V724 H404 V300" fill="none" stroke="url(#swcc)" stroke-width="8"/><rect x="4" y="296" width="410" height="5" fill="${S.deck}"/>` +
