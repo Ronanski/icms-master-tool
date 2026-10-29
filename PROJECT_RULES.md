@@ -48,7 +48,7 @@ Layunin: patunay na totoo, hindi paulit-ulit at hindi mabagal.
 ## 6. Docs (iisa lang bawat isa)
 - `docs/SPEC.md` — spec ng user, meron / kulang, plano.
 - `docs/USER_CHECK.md` — ano ang pipindutin ng user at ano ang dapat makita.
-- `HANDOFF.md` — kasalukuyang estado lang (palitan, huwag dagdagan ng kasaysayan).
+- `HANDOFF.md` — ang iisang handoff file: kasalukuyang estado, threads, bukas na isyu, utos at desisyon ng user, style. Ina-update ng bawat thread / session sa katapusan ng gawain (palitan, huwag dagdagan ng kasaysayan).
 - `docs/versions/v<ver>/UPDATE_REPORT.md` — isang section bawat Beta: Problem, As Found, Work Done, As Left, Status.
 - Iba pang audit file sa `docs/versions/` at `docs/abc-audit/` lang kapag may tunay na ebidensya. Walang placeholder, walang doble.
 
