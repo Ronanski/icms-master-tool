@@ -263,3 +263,7 @@ body.app2:not(#_) #gdock #trainws button.trbtn{min-height:2.1rem;padding:0 .6rem
 #gdock #trainws .trbody{display:block}
 #gdock #trainws :is(.trlist,.trside,.trsrc){display:none!important}
 #gdock #trainws .trmain{padding:8px 10px 16px;overflow:visible}
+.gd-wr b.run{color:#dc2626}
+.gd-wr b.stop{color:#22a052}
+/* a field step without a DCS control: no empty "CONTROLS NG HAKBANG" heading */
+#gdock .gd-card:not(:has(.gd-ctl,.gd-btn,.gd-ilh,.gd-ild,.gd-vs)) > .gd-h:first-child{display:none}

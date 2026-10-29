@@ -1006,7 +1006,8 @@
     for (const t0 of (s && s.fps) || []) {
       const t = call(() => LV().ctlTag(t0), null) || t0,
         f = call(() => LV().fp(t), null);
-      if (f && f.shn && !out.some(x => x.t === t)) out.push({ k: f.shn + '|' + t, l: f.shn + ' · ' + t, t, sh: f.shn });
+      /* one button per sheet (FICFA1071 and FICFA1081 are both on ABC-007: one "ABC-007", step 66) */
+      if (f && f.shn && !out.some(x => x.t === t || x.sh === f.shn)) out.push({ k: f.shn + '|' + t, l: f.shn + ' · ' + t, t, sh: f.shn });
     }
     return out.slice(0, 3);
   }
@@ -1123,7 +1124,8 @@
     put([6], 'SW', /^MV-SW1002 BACKWASH$/, /DPISW1504$/);
     put([7], 'SW', /^EXPANSION TANK$/);
     put([8], 'SW', /^ACWP-[AB]$/);
-    put([9, 10, 11, 12, 13, 14, 15, 16, 21, 29, 31, 33, 34], 'UNIT');
+    put([9, 10, 11, 12, 13, 29, 31, 34], 'UNIT');
+    put([14, 15, 16, 21, 33], 'UNIT', /^Turbine \(TCS/);
     put([17, 27], 'AFG', /^AIR PREHEATER H-1052$/);
     put([18, 35], 'SW', /^CONDENSER H-1110/, /^HOTWELL$/);
     put([19], 'UNIT', /^DRUM LEVEL$/);
@@ -1210,7 +1212,9 @@
       X = hmiTargets(s).map(x => {
         const r = (x.parentNode && x.parentNode.tagName === 'g' && x.parentNode.getBoundingClientRect().height < 90 ? x.parentNode : x).getBoundingClientRect();
         return [r.left - m.left - 6, r.top - m.top - 5, r.width + 12, r.height + 10];
-      }),
+      })
+        /* one box for one place: a label inside the box of its faceplate is not boxed again (all-steps check 2026-10-30, step 65) */
+        .filter((a, j, L) => !L.slice(0, j).some(b => Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0]) > 0.5 * Math.min(a[2], b[2]) && Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]) > 0.5 * Math.min(a[3], b[3]))),
       k = JSON.stringify(X.map(a => a.map(Math.round))) + (GD() ? GD().cur : '');
     ov.hidden = !X.length;
     if (k === ov.dataset.k) return;
@@ -1668,8 +1672,9 @@
       /* user 2026-10-29 (mock-up v3 "iwasan ang doble"): a step button that only writes the MV / mode of a loop shown in the controls
          above ("SA damper 0 %", "SA damper ▲▲ +5 %") is left out: the operator uses the faceplate. The guide still knows it (s.a) */
       if (!a.stop && !a.dg && !a.loc && !a.mot && !a.sel && fpTags.length) {
-        const m = /\bA\.(?:man|auto|rem)\(\s*'([^']+)'/.exec(String(a.f));
-        if (m && fpTags.includes(call(() => LV().ctlTag(m[1]), null) || m[1])) continue;
+        const m = /\bA\.(?:man|auto|rem|loc)\(\s*'([^']+)'/.exec(String(a.f)),
+          tg = a.tag || (m && m[1]);
+        if (tg && fpTags.includes(call(() => LV().ctlTag(tg), null) || tg)) continue;
       }
       /* 3.2.0 walkthrough #21: the push button of the drawing under the label (sheet, row, tag of the CRT P.B.); pressed, the row is
          shown on the sheet when the centre follows the step */
@@ -2051,7 +2056,13 @@
     if (!s) return;
     /* 3.2.0 retest #26: a tick made in the Training list shows here (the list and the panel are the same ticks, ls-train) */
     if (els.trKey != null && JSON.stringify(ls.get('ls-train', {})) !== els.trKey) return fill(true);
-    (els.watch || []).forEach(w => (w.v.textContent = w.fm(call(w.f, NaN))));
+    /* a state in the values to watch: RUNNING / IN OPERATION / OPEN red, STOPPED / CLOSED green (the colour convention of the plant) */
+    (els.watch || []).forEach(w => {
+      const t = String(w.fm(call(w.f, NaN)));
+      w.v.textContent = t;
+      w.v.classList.toggle('run', /\b(RUNNING|IN OPERATION|OPEN(ED)?)\b/.test(t));
+      w.v.classList.toggle('stop', /\b(STOPPED|CLOSED)\b/.test(t) && !/\bRUNNING\b/.test(t));
+    });
     /* R9 #70: the "⚠ 0 / n BAGO I-START" warning goes away once the items are ticked or the machine runs (it stayed on) */
     if (els.ovw && !els.ovw.hidden && !els.ovw._r) {
       const nb = (els.before || []).length,
@@ -2229,7 +2240,13 @@
           for (const a of o.abc) if (!ab.includes(a)) ab.push(a);
         }
         /* where the missing signal comes from (an indication, not a button: user 2026-10-30) */
-        if (fs.length || ab.length)
+        /* only when it says more than the row itself (a field contact of the same name as the row is the row: step 25 BFWP) */
+        const rn = svcN(r.svc) || r.svc || '',
+          same = f => {
+            const x = svcN(f.svc) || '';
+            return !!x && (rn.includes(x) || x.includes(rn));
+          };
+        if (fs.some(f => !same(f)) || ab.length)
           it.box.append(
             E('div', {
               cls: 'gd-ilw',
