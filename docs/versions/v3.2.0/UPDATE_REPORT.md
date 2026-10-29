@@ -1240,6 +1240,12 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 | 23 | Update banner | Nasubok: may bagong Beta sa version.json → lumalabas ang "New Beta available … Update now / Later" sa itaas, hindi tinatakpan ang Home | — |
 
 
+## 3.2.0-beta.57 (Beta, 2026-10-29, GO BETA ng user) — Training layout: HMI sa gitna, lahat sa dock
+- **Problem:** isang monitor lang ang operator; tumatalon ang gitna sa logic sheet, doble ang faceplate, mahaba ang dock (~5x scroll). Mock-up v3 pasado sa user (2026-10-29) na may rule: logic view = diagram lang; tanggalin ang doble / hindi kailangang button.
+- **Work Done (`src/ui/training/dock.js`, `dock.css`):** gitna = HMI lang habang Training, naka-kahon ang equipment ng hakbang ("HAKBANG n"). Dock: 4 na value (Load, Drum, Furnace, O₂), seksyon bar ◄ ► ☰ (48 seksyon ng PR-OPE-5002, naka-lock ang hindi pa naaabot), hakbang ‹ › (berde ang › kapag handa), loop card (PV / SV / MV + unit, mode lamp, M / A / R, MV ±1 / ±5, SV ▲▼), START / STOP, interlock, CHECKLIST (Gawin, Bantayan, Bakit, SOP), footer "Ipakita sa logic sheet" + isang button bawat sheet. Logic view: diagram lang (walang sheet list, toolbar, minimap, timers), banner na may pangalan ng sheet, hakbang at 1 = ON / 0 = OFF, pula ang kulang na row; iisang "◄ Balik sa HMI" (nasa dock). Nakatago habang Training: VIEW / RUN, plant toolbar, Systems, chips, live strip, lamp row, ⇔, "Sheet ↗", ↗ ng row, dobleng faceplate, button na kapareho ng loop card. Bumabalik lahat kapag pinatay ang Training. Walang binago sa logic o plant model.
+- **Sinubok:** build + check; headless 1366 × 768 hakbang 1 / 34 / 35: kasya ang dock, logic → Balik (focus naibabalik), MV ▲▲ FICFA1081 0 → 5, walang page error.
+- **Hindi sinubok:** phone / bottom layout, buong Cold → 150 MW. Luma ang `tests/regress/training_dock.js` (hinahanap ang lumang "Gabay" button; parehong FAIL sa main); `sop_bawal` 6 FAIL na pareho sa main.
+
 ## 3.2.0-beta.56 (Beta, 2026-10-29, GO BETA ng user) — HMI 030 SEAWATER
 - **Problem:** walang HMI page ng seawater system (roadmap step 6; mock-up STEEL inaprubahan ng user 2026-10-29).
 - **Work Done:** bagong screen `SW` sa Plant view (`src/ui/plant/hmi-sw.js`; `hmi2.js` screens hook, iisang style, NAV; `src/ui/hmi/inject.js`). Daloy ayon sa K1AU3-PD-020 / PD-021: SWP → S-1502 → condenser H-1110 A / B (2 pass, shell at tube side) → siphon pit → channel; CTCS-A / B; SWBP → S-1504 → CCWHE H-1107A / B / C; closed aux cooling water loop (ACWP, T-1109, users; berde = cooled, kahel = hot return); hypo dosing.
