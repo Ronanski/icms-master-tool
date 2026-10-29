@@ -174,6 +174,28 @@
     if (grpT[g] == null || grpT[g] > t) grpT[g] = t;
     return t - grpT[g] >= 600; /* plant seconds */
   }
+  /* 3.2.0-beta.52 (live check #101: the IDF was found STOPPED with no event): a main motor that stops without the STOP of the operator
+     is logged, so a stop never goes unseen */
+  const MOT = { 'M.3304': 'IDF', 'M.3302': 'PAF', 'M.3303': 'SAF', 'M.3308': 'FAB-A', 'M.3309': 'FAB-B', 'M.3343': 'BFWP-A', 'M.3344': 'BFWP-B', 'M.3350': 'CEP-A', 'M.3351': 'CEP-B' },
+    MOTP = new Map();
+  function motScan(t) {
+    const LV = window.LS_LIVE;
+    if (!LV || !LV.val) return;
+    for (const a in MOT) {
+      let v = null;
+      try {
+        v = +LV.val(a) > 0.5 ? 1 : 0;
+      } catch (e) {}
+      if (v == null) continue;
+      const was = MOTP.get(a);
+      MOTP.set(a, v);
+      if (was !== 1 || v !== 0) continue;
+      const nm = MOT[a],
+        op = LOG.slice(0, 12).some(e => /^Operator: STOP /.test(e.text || '') && (e.text || '').includes(nm));
+      if (op) continue;
+      add({ rt: { t } }, { name: 'DCS' }, 'DCS', nm + ' STOPPED (' + a + ' = 0; not by the STOP button of the Training)');
+    }
+  }
   function almScan() {
     const A = window.AN;
     if (!A || !A.sheets || (A.plantOn && !A.startState)) return;
@@ -194,8 +216,10 @@
       DSEEN.clear();
       for (const g in grpT) delete grpT[g];
       almScan.first = true;
+      MOTP.clear();
     }
     lastT = t;
+    motScan(t);
     const now = new Map();
     for (const sh of A.sheets) {
       const S = sh.S;

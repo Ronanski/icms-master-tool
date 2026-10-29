@@ -1233,9 +1233,18 @@
             call(() => lsEventAdd('DCS', 'DCS', 'Training override: ' + a.l + ' with ' + nd + ' / ' + nb + ' BAGO I-START items done'));
           }
         }
+        let r = '';
+        if (els.ovw && els.ovw._r) (els.ovw._r = 0), (els.ovw.hidden = true);
         try {
-          a.f();
+          r = a.f();
         } catch (e) {}
+        /* live check #100: a button that refuses (the condition of the SOP not met yet) says why, and is not logged */
+        if (typeof r === 'string' && r && els.ovw) {
+          els.ovw.hidden = false;
+          els.ovw._r = 1; /* stays until the next press (not the BAGO I-START warning below) */
+          els.ovw.textContent = '⚠ ' + r;
+          return;
+        }
         /* retest #63: the DCS command in the Event log (sheet, row and tag of its CRT push button) */
         if (!a.loc) opLog(a.l, pb); /* a field button logs itself (FIELD) */
         if (pb && follow) openD(pb.sh, pb.row);
@@ -1557,7 +1566,7 @@
     if (els.trKey != null && JSON.stringify(ls.get('ls-train', {})) !== els.trKey) return fill(true);
     (els.watch || []).forEach(w => (w.v.textContent = w.fm(call(w.f, NaN))));
     /* R9 #70: the "⚠ 0 / n BAGO I-START" warning goes away once the items are ticked or the machine runs (it stayed on) */
-    if (els.ovw && !els.ovw.hidden) {
+    if (els.ovw && !els.ovw.hidden && !els.ovw._r) {
       const nb = (els.before || []).length,
         nd = (els.before || []).filter(c => c.checked).length;
       if (nd >= nb || (s.a || []).some(a => a.stop && call(() => a.on(), false))) els.ovw.hidden = true;
