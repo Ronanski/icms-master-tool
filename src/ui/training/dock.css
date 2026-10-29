@@ -165,10 +165,14 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
 .gd-tg{font:600 12px var(--mf);font-variant-numeric:slashed-zero;color:var(--c-acctx);margin-right:4px}
 .gd-fl li.gd-note{display:block;font-size:12.5px;color:var(--c-dim);border-left:3px solid var(--c-line2);padding:2px 0 2px 8px;margin:4px 0}
 /* ---------- user 2026-10-29 mock-up v3 ("isang monitor lang"): HMI in the centre, every control of the step in the dock ---------- */
-.gd-strip{display:flex;flex-wrap:wrap;gap:2px 14px;padding:4px 12px;background:var(--c-well)}
-.gd-strip .gd-kv{display:inline-flex;align-items:baseline;gap:4px}
-.gd-strip .gd-kv small{grid-column:auto;font-size:11px}
+.gd-strip{display:block;padding:4px 12px 5px;background:var(--c-well)}
+.gd-strip .gd-kvs{grid-template-columns:repeat(4,minmax(0,1fr));gap:1px 8px}
+.gd-strip .gd-kv{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 3px}
+.gd-strip .gd-kv small{flex:1 0 100%;font-size:10.5px}
 .gd-strip .gd-kv b{font-size:13.5px}
+.gd-strip .gd-kv em{font-size:10.5px}
+.gd-strip .gd-lamps{gap:1px 9px;margin-top:3px}
+.gd-strip .gd-lamp{font-size:11.5px}
 .gd-sec,.gd-step{display:flex;align-items:center;gap:6px;padding:6px 10px}
 .gd-sec{border-bottom:1px solid var(--c-line);background:var(--c-well)}
 .gd-secl,.gd-stl{flex:1;min-width:0;line-height:1.25}
@@ -242,3 +246,20 @@ html.gd-lv #gsbar .tbar,html.gd-lv #dmeta,html.gd-lv #lomap,html.gd-lv #tp,html.
 #gdlvbar .gd-lg{margin-left:auto;display:flex;align-items:center;gap:5px}
 #gdlvbar .gd-lg i{display:inline-block;width:14px;height:3px;background:#22a052}
 #gdlvbar .gd-lg i.on{background:#dc2626}
+
+.gd-why2{margin:4px 0 0;font-size:12.5px;color:var(--c-tx2)}
+.gd-psd{color:#b45309}
+.gd-foot .gd-sh{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+/* the Training page in the dock (user 2026-10-30): no step bar, no section bar, no footer; the page itself flows in the dock */
+html.gd-menu #gdock :is(.gd-sec,.gd-bar,.gd-step,.gd-foot){display:none!important}
+html.gd-menu #gdock .gd-body{display:block;padding:0}
+#gdock #trainws{position:static!important;display:flex!important;flex-direction:column;inset:auto!important;z-index:auto;background:transparent;min-height:0;font-size:.875rem}
+#gdock #trainws .trhead{padding:8px 10px;gap:6px 8px}
+#gdock #trainws .trtitle{min-width:0;flex:1 1 100%}
+#gdock #trainws .trtitle b{font-size:1rem}
+#gdock #trainws .trprog{flex:1 1 100%;min-width:0}
+body.app2:not(#_) #gdock #trainws button.trbtn{min-height:2.1rem;padding:0 .6rem;font-size:.8125rem}
+#gdock #trainws #trpick{display:block!important;margin:8px 10px 0;min-height:2.4rem}
+#gdock #trainws .trbody{display:block}
+#gdock #trainws :is(.trlist,.trside,.trsrc){display:none!important}
+#gdock #trainws .trmain{padding:8px 10px 16px;overflow:visible}
