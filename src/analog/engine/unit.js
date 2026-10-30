@@ -223,6 +223,7 @@ function anUnitStop() {
     }
   U.cold = false;
   U.turb = true;
+  U.etLvl = NaN; /* 3.2.0-beta.63: the expansion tank starts again at its level of 27.PNG (AN_MU) */
   for (const m of U.mul || []) for (const p of m.pr) p.mul = undefined;
   for (const z of U.spr || []) z.pr.uf = undefined;
   if (U.fwp && U.fwp.pr) U.fwp.pr.op = undefined;
@@ -885,6 +886,60 @@ function anSeawaterStep(U, dt) {
   K.I0.forEach((I, i) => lag('swIa' + i, sw[i] ? I * (0.4 + (0.6 * w * 2) / n) : 0, K.tauI));
   K.Ib.forEach((I, i) => lag('swIb' + i, bp[i] ? I : 0, K.tauI));
 }
+/* 3.2.0-beta.63 (MAKE-UP WATER HMI, PR-OPE-5002 section 7): the make-up water system of flow diagram K1AU3-PD-024 Rev D and the
+   expansion tank of PD-021. Demi water tanks T-0708A / B -> suction header -> MWP P-0709A / B / C (DITL-112) -> common header
+   (PT-MU0709) -> #1 condenser (LCV-MU1110 / MV-MU1001), deaerator and boiler initial fill, expansion tank T-1109 (XV-MU1109, DITL-78),
+   unit 2. The transmitters are local (STN105 / STN103) and feed the logic only as analog rows (DITL-112 LT-MU0708-A / B,
+   PT-MU0709, DPT-MU0709; DITL-76 / 77 / 78 LT-CW1109), so the plant model makes them; the world writes them into those rows
+   (plantsw.js) and the HMI shows the same number. Anchor = the HMI snapshots 28.png / 27.PNG (2 MWP running): demi tanks 13.8 /
+   13.7 m, header 9.0 ~ 9.1 kg/cm2, MWP 20.5 / 20.7 / 20.8 A, strainer DP 0.00 ~ 0.04 kg/cm2, expansion tank 0.80 m.
+     demi tanks      the snapshot level, constant (the water treatment refills them; not modelled);
+     header          no MWP: the static head of the tank water (0.1 kg/cm2 per m, ASSUMED); 1 / 2 / 3 MWP: 9.0 / 9.1 / 9.15 kg/cm2
+                     (ASSUMED: the pumps work near their shut-off head at the small make-up flow; SOP: > 6.0 kg/cm2);
+     strainer DP     0.03 kg/cm2 while its pump runs (ASSUMED clean strainer, inside the snapshot 0.00 ~ 0.04), 0 stopped;
+     current         the snapshot current while running, 0 stopped;
+     expansion tank  start 0.80 m (27.PNG); fills while XV-MU1109 is commanded open (DITL-78 row 4) and the header is above 6 kg/cm2
+                     (SOP: fill to NL 1.7 m) at 0.003 m/s (ASSUMED, 0.8 -> 1.7 m in 5 min, 10 m3/h through the 3" line); the
+                     closed loop loses no water (ASSUMED);
+     make-up flow    FT-MU1001 = the hotwell make-up of the cycle model (plant.js 1.8 T/H per % of LCV-MU1110) + the expansion tank
+                     filling, only while an MWP runs. */
+const AN_MU = {
+  mwp: ['DITL-112', 'DITL-112 #B', 'DITL-112 #C'],
+  xv: 'DITL-78@3',
+  mv: 'DITL-60',
+  lv: [13.8, 13.7],
+  Ph: [9.0, 9.1, 9.15],
+  I0: [20.5, 20.7, 20.8],
+  dp: 0.03,
+  et0: 0.8,
+  etMax: 2.0,
+  etRate: 0.003,
+  etQ: 10,
+  tauP: 3,
+  tauI: 2
+};
+function anMakeupStep(U, dt) {
+  const K = AN_MU,
+    lag = (k, x, tau) => (U[k] = isFinite(U[k]) ? U[k] + ((x - U[k]) * Math.min(dt, tau)) / tau : x),
+    run = K.mwp.map(a => anDitlRun(a) || 0),
+    n = run.reduce((a, b) => a + b, 0);
+  U.muN = n;
+  U.muLvA = K.lv[0];
+  U.muLvB = K.lv[1];
+  lag('muP', n ? K.Ph[n - 1] : 0.1 * Math.max(K.lv[0], K.lv[1]), K.tauP);
+  K.I0.forEach((I, i) => lag('muI' + i, run[i] ? I : 0, K.tauI));
+  run.forEach((r, i) => lag('muDp' + i, r ? K.dp : 0, K.tauP));
+  U.muXv = anDitlRun(K.xv) === 1 ? 1 : 0;
+  const mv = anDitlPos(K.mv);
+  U.muMv = mv == null ? null : mv;
+  if (!isFinite(U.etLvl)) U.etLvl = K.et0;
+  const fill = U.muXv && U.muP > 6 && U.etLvl < K.etMax;
+  U.muFill = fill ? 1 : 0;
+  if (fill) U.etLvl = Math.min(K.etMax, U.etLvl + K.etRate * dt);
+  U.etPct = (100 * U.etLvl) / K.etMax;
+  const hw = typeof AN_CYC !== 'undefined' ? Math.max(0, 1.8 * (AN_CYC.u.hw || 0)) : 0;
+  lag('muF', n ? hw + (fill ? K.etQ : 0) : 0, K.tauP);
+}
 function anUnitOwns(T, ids) {
   const U = AN_UNIT;
   return U.on && ids && ids.length && ids.some(id => U.own.has(T.rt.st[id]));
@@ -962,6 +1017,8 @@ function anUnitStep(dt) {
   }
   /* 3.2.0-beta.59: the seawater system (030 SEAWATER HMI), see AN_SW */
   anSeawaterStep(U, dt);
+  /* 3.2.0-beta.63: the make-up water system and the expansion tank (MAKE-UP WATER HMI), see AN_MU */
+  anMakeupStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
   /* ---- 2.2.0-beta.17 (M4 step 4): the turbine black box (see AN_UNIT rollRate ...) ---- */
   const tb = U.tb || (U.tb = { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN }),
