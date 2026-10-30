@@ -224,7 +224,7 @@ function anUnitStop() {
   U.cold = false;
   U.turb = true;
   U.etLvl = NaN; /* 3.2.0-beta.63: the expansion tank starts again at its level of 27.PNG (AN_MU) */
-  U.acT1 = U.acT2 = NaN; /* 3.2.0-beta.64: the aux cooling water temperatures start again (AN_ACW) */
+  U.acT1 = U.acT2 = NaN; /* 3.2.0-beta.67: the aux cooling water temperatures start again (AN_ACW) */
   for (const m of U.mul || []) for (const p of m.pr) p.mul = undefined;
   for (const z of U.spr || []) z.pr.uf = undefined;
   if (U.fwp && U.fwp.pr) U.fwp.pr.op = undefined;
@@ -635,6 +635,7 @@ function anUnitStart() {
   U.own = own;
   U.on = true;
   U.frT = undefined;
+  U.tco = null; /* 3.2.0-beta.66: the oil-only state of the snapshot (tcs.js tcsOilState) starts again */
   U.tc = null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
   /* 3.2.0-beta.14: the snapshot plant has its diesel oil pump in service (source.js field equipment) */
   AN_SRC.field.dop = true;
@@ -705,6 +706,12 @@ function anTurbine(cmd, arg) {
   const U = AN_UNIT;
   if (!U.on || !U.tb) return 'walang unit model (Start cold muna)';
   const tb = U.tb;
+  /* 3.2.0-beta.66: the 036 TURBINE OIL pumps at the 150 MW snapshot (no TCS model): the oil-only state of tcs.js */
+  if (!U.tc && cmd === 'oil') return tcsOilCmd(tcsOilState(U), arg || {});
+  if (!U.tc && cmd === 'vex') {
+    tcsOilState(U).vex = arg !== 0 && arg !== false;
+    return '';
+  }
   /* 3.2.0-beta.38 (CHECKLIST 0.6): the TCS / ATS model (tcs.js): the auxiliaries and the ATS step push buttons. 'roll' = ATS AUTO
      from the next step up to ACCELERATION (3600 rpm), 'sync' = EXCITATION + SYNCH. & INITIAL LOAD, 'loadup' = LOAD UP to the target */
   if (U.tc) {
@@ -941,7 +948,7 @@ function anMakeupStep(U, dt) {
   const hw = typeof AN_CYC !== 'undefined' ? Math.max(0, 1.8 * (AN_CYC.u.hw || 0)) : 0;
   lag('muF', n ? hw + (fill ? K.etQ : 0) : 0, K.tauP);
 }
-/* 3.2.0-beta.64 (027 CLOSED COOLING WATER HMI, PR-OPE-5002 sections 7 ~ 8): the aux cooling water loop of flow diagram K1AU3-PD-021
+/* 3.2.0-beta.67 (027 CLOSED COOLING WATER HMI, PR-OPE-5002 sections 7 ~ 8): the aux cooling water loop of flow diagram K1AU3-PD-021
    Rev D. Return header CW-1-002 20" + expansion tank T-1109 (V-CW1001) -> suction CW-1-003 20" -> ACWP P-1108A / B (DITL-76 / 77:
    strainer DPT-CW1108-A / B) -> common discharge CW-1-007 20" (PT / TT-CW1152) -> CCWHE H-1107A / B / C (seawater of the SWBP) ->
    supply CW-1-014 20" (PT / TT-CW1153) -> the users (turbine oil coolers TCV-CW1201, generator air coolers, BFP, bottom ash screw
@@ -1078,7 +1085,9 @@ function anUnitStep(dt) {
   anSeawaterStep(U, dt);
   /* 3.2.0-beta.63: the make-up water system and the expansion tank (MAKE-UP WATER HMI), see AN_MU */
   anMakeupStep(U, dt);
-  /* 3.2.0-beta.64: the aux cooling water loop (027 CLOSED COOLING WATER HMI), see AN_ACW */
+  /* 3.2.0-beta.66: the turbine lube and control oil (036 TURBINE OIL HMI), see TCS_OIL (tcs.js) */
+  tcsOil(U, dt);
+  /* 3.2.0-beta.67: the aux cooling water loop (027 CLOSED COOLING WATER HMI), see AN_ACW */
   anAcwStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
   /* ---- 2.2.0-beta.17 (M4 step 4): the turbine black box (see AN_UNIT rollRate ...) ---- */
