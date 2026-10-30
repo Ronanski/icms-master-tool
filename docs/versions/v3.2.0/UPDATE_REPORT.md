@@ -1240,7 +1240,7 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 | 23 | Update banner | Nasubok: may bagong Beta sa version.json → lumalabas ang "New Beta available … Update now / Later" sa itaas, hindi tinatakpan ang Home | — |
 
 
-## 3.2.0-beta.76 (Beta, 2026-10-30; naghihintay ng GO BETA ng user) — findings ng live test sa beta.74 (H1 ~ H8)
+## 3.2.0-beta.76 (Beta, 2026-10-30; GO BETA ng user "Sige beta. G.") — findings ng live test sa beta.74 (H1 ~ H8)
 - **Problem:** live test H1 ~ H8 sa beta.74: #28 sa H1 ang itaas ng dock ay Drum level (-296 mm), hindi ang gagawin; #33 ang pop-out na binuksan mula sa dock ("Buksan ang faceplate") ay nasa kaliwang itaas at tinatakpan ang SWP-A at ang HAKBANG tag; #34 blangko ang trend; #35 nawala ang SWP discharge pressure (SOP 2.2 ~ 2.4); #36 forebay -8.76 m laban sa SOP NL -4 m; #23 / #38 H8 walang valve pop-out (XV-MU1109, V-MU1033) at ang banner ay "MWP-B ay STANDBY (AUTO)" lang; #37 ang standby MWP-B ay "INTERLOCK, 1 ang kulang".
 - **As Found:**
   - #28: walang sariling Bantayan ang H1 (ESP purge), kaya bumalik ang dock sa 8 value ng planta; ang GAWIN ay nasa ilalim pa ng mga value.
@@ -1259,6 +1259,16 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 - **Hindi sinubok:** live sa app ng user; XV-MU1109 OPEN / AUTO na may instrument air (H11 pataas); PG-SW1501 na may 2 SWP na tumatakbo (headless: 0.0 habang walang SWP).
 - **UNUSUAL (para sa user):** 30.PNG LISW1501 -8.76 m ay 4.76 m sa ilalim ng SOP NL (-4 m); ang model ay sumusunod sa SOP (gaya ng SWP current #10).
 - **Hindi pa (susunod):** #16 030 at 007 sa HSYM, values ≥ 14 px: muling guhit ng HMI, kailangan ng mockup at approval ng user (HMI rule) bago gawin.
+
+## 3.2.0-beta.75 (Beta, 2026-10-30) — live test #25: sariling "?" ng bawat SOP item; #21 H6 Bantayan
+- **Problem (live test H1 sa beta.74, FAIL #25):** ang "?" ng bawat item sa Hakbang 1 ay iisang generic na text, hindi Bakit / Dapat makita / Kung lalaktawan ng mismong item.
+- **As Found:** `whyOf(t)` sa `dock.js` ay ayon lang sa uri ng salita ("Ensure", "Set", "Start"), kaya pareho ang text ng magkakaibang item.
+- **Work Done:**
+  - Bagong `src/ui/training/pr-ope-5002-why.js` (`LS_SOP_WHY`): sariling Bakit / Dapat makita / Kung lalaktawan ng lahat ng 91 item ng PR-OPE-5002 seksyon 1 ~ 7 (ESP purge, seawater, hypochlorite, make-up, CCW). Isinama sa `inject.js`.
+  - `dock.js`: ang "?" ay gumagamit muna ng `LS_SOP_WHY`; ang `whyOf` ay para lang sa item na wala pa (seksyon 8 pataas). Nananatili ang Sino (AO / CRO) at seksyon / item.
+- **As Left (ebidensya):** `npm run build` at `npm run check` SAME. Headless 1366 × 768, H1: 6 item, 6 magkakaibang "?" text (hal. "Bakit: malinis na filter = sapat na hangin ng purge fan papasok sa ESP insulator..."), 0 page error. Hindi pa live sa user.
+- **Live test #21 (H6 SWBP, bahagya sa beta.74):** ang Bantayan ay may 3 lumang "SOP · ... — walang model" (suction, Current, Pressure) kahit may value na ang sariling row ng model. Ngayon: ang SOP gauge na nababasa na ng row ng model (suction, discharge, current) ay hindi na inuulit; ang Alarm / Trip ng SOP ay nasa hint ng row (current: alarm 120 · trip 126; discharge: alarm < 2.2). Headless H6: 7 row, walang "walang model", 0 page error.
+- **Natitira:** seksyon 8 pataas ay rule-based pa ang "?".
 
 ## 3.2.0-beta.74 (Beta, 2026-10-30, GO BETA ng user "Oo go beta sa dalawa"; disenyo inaprubahan "G n yan", mockup v7) — operator UI: pop-out faceplate, alarm ACK, progress, dock bilang gabay
 - **Problem:** live test findings #11, #14, #15, #17, #22 (mode ng MWP sa faceplate), #27 ~ #32; utos ng user: "mini pop out sya sa bawat equipment ... controls and permissive based sa SOP at sa logic", HMI graphic ang nasa gitna, controls sa faceplate lang; gabay lang ang dock (hindi pumipindot, hindi nag-a-AUTO, hindi nagfo-force).
