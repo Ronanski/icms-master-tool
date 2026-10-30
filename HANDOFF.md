@@ -4,7 +4,7 @@
 >
 > **Patakaran (CLAUDE.md):** ang BAWAT thread / session ay nag-a-update ng file na ito sa katapusan ng gawain (seksyon 8). Palitan ang luma, huwag magtambak ng kasaysayan.
 
-Huling update: **2026-10-30 8:10 PM PHT** (thread "I-UPDATE ANG REPO PARA SA PAGPAPASA (HANDOVER)": audit ng handover, kopya ng skills, live test findings sa repo, rule ng merge, plano ng Stable; docs lang. Bago nito 7:50 PM: 3.2.0-beta.76 naka-merge, PR #80).
+Huling update: **2026-10-30 10:30 PM PHT** (DOCS thread: mga desisyon ng user sa unang session ng bagong account; docs lang). **Lumipat na sa bagong account** (Claude Code desktop sa PC ng user). Tapos ang `docs/handoff/NEW_ACCOUNT_SETUP.md` bahagi B: 49 memory na-import (5 napalitan, hindi isinama); ang 3 skill mula `docs/handoff/skills/` at ang skill na `dcs-beta-live-test` ay naka-install sa PC.
 
 ---
 
@@ -24,7 +24,7 @@ Huling update: **2026-10-30 8:10 PM PHT** (thread "I-UPDATE ANG REPO PARA SA PAG
 | **Beta sa `main`** | `3.2.0-beta.76` (PR #80, GO BETA ng user "Sige beta. G."): live test findings sa beta.74 (#23, #28, #33 ~ #38, valve pop-out). Bago nito `3.2.0-beta.75` (PR #78, GO BETA ng user "Sige beta. G."): live test #25 at #21. Bago nito `3.2.0-beta.74` (PR #76, operator UI, GO BETA ng user "Oo go beta sa dalawa"), nakapatong sa `3.2.0-beta.73` (PR #77, mga finding ng live test sa beta.72). Bago nito `3.2.0-beta.72` (PR #73, GO ng user "imerge n lahat"): 027 CLOSED COOLING WATER HMI page. Bago nito `3.2.0-beta.71` (PR #75): 036 TURBINE OIL sa HSYM. Bago nito `3.2.0-beta.70` (PR #74, GO BETA ng user 2026-10-30 "g beta"): iisang HMI style HSYM + bagong MAKE-UP WATER. Bago nito `3.2.0-beta.68` (GO BETA ng user 2026-10-30 "Ge batch 1. Sabay beta na agad"): INSTRUMENT & PLANT AIR HMI page. Bago nito `3.2.0-beta.66` (GO BETA ng user 2026-10-30 "Ge batch 1. Sabay beta na agad"): 036 TURBINE OIL HMI page. Bago nito `3.2.0-beta.63` (PR #70, 057ec26): MAKE-UP WATER HMI page. Ang beta.64 / 65 ay numero ng ibang thread ng batch (tingnan ang git log). |
 | **Bukas na PR** | Wala sa thread na ito. |
 | **Naghihintay ng approval** | Mockup ng #16 (030 / 007 sa HSYM): https://claude.ai/artifact/N6DCUgSmrjXMgecVrpkWhA |
-| **Live test** | Huling live run: v3.2.0-beta.74 · build 3f7da0e, malinis na Cold, H1 ~ H8; huminto sa H8 (expansion tank 0.80 m, walang control ng V-MU1033 / XV-MU1109, #23). 38 findings, 21 naayos at nakita live. Bukas: #16, #21, #23, #25, #28, #33 ~ #38 (#21 / #25 claimed fixed sa beta.75; #23, #28, #33 ~ #38 sa beta.76; parehong naka-merge, hindi pa live). **User 2026-10-30 7:39 PM PHT: "Wala ng retest muna. Ung isang account n mgtutuloy nun."** Ang BAGONG account ang magre-retest H1 hanggang Turbine Oil (H16) sa beta.76 (naka-merge na), sa "G" ng user. Buong talaan, protocol at susunod: `docs/handoff/LIVE_TEST_FINDINGS.md`. |
+| **Live test** | Huling live run: v3.2.0-beta.74 · build 3f7da0e, malinis na Cold, H1 ~ H8; huminto sa H8 (expansion tank 0.80 m, walang control ng V-MU1033 / XV-MU1109, #23). 38 findings, 21 naayos at nakita live. Bukas: #16, #21, #23, #25, #28, #33 ~ #38 (#21 / #25 claimed fixed sa beta.75; #23, #28, #33 ~ #38 sa beta.76; parehong naka-merge, hindi pa live). **User 2026-10-30 7:39 PM PHT: "Wala ng retest muna. Ung isang account n mgtutuloy nun."** Ang BAGONG account ang magre-retest LAHAT ng hakbang Cold → 150 MW sa beta.76 (naka-merge na), isa bawat "G" ng user (LIVE RETEST, seksyon 5). Buong talaan, protocol at susunod: `docs/handoff/LIVE_TEST_FINDINGS.md`. |
 | **Rule ng merge** | Sagot ng user 2026-10-30 8:00 PM PHT ("Sa GO BETA mo lang"): Beta sa `main` = GO BETA lang; Stable at workflow = GO STABLE lang. Nakasulat na sa CLAUDE.md, PROJECT_RULES 4 at README. |
 | **Beta site** | Kusang nade-deploy pagkatapos ng berdeng Checks sa `main` (`site.yml`, `/beta/`). Sa app: banner na "Update now". |
 | **Roadmap** (`docs/SPEC.md` 3) | 1, 2, 3, 5, 7 TAPOS. 4 (Training Cold → 150 MW) at 6 (HMI) bahagi. 8 Library ang huli. 9 Stable = GO STABLE lang. |
@@ -54,7 +54,7 @@ Huling update: **2026-10-30 8:10 PM PHT** (thread "I-UPDATE ANG REPO PARA SA PAG
 | IMPROVE MAKE-UP WATER HMI VISUAL (dating "GUMAWA NG HMI PAGE NG MAKE-UP WATER SYSTEM") | beta.70 PR: HSYM + bagong MAKE-UP WATER; style standard naghihintay ng approval | GO BETA ng user; saka ilipat ang ibang HMI page sa HSYM, isa bawat Beta |
 | Mockup: bagong dock at HMI para sa PC at tablet landscape | naka-merge sa beta.61 | live check ng user sa beta.61 |
 | Fix Training to allow starting SWP C | naka-merge sa beta.61 | live check ng user (SWBP hindi pa nasubok) |
-| Live test ng start-up steps (Remote Control) | huminto sa H8 (valve pop-out) sa beta.74; walang retest sa account na ito (user 2026-10-30) | BAGONG account: retest H1 hanggang Turbine Oil sa beta.76 (naka-merge), sa "G" ng user |
+| Live test ng start-up steps (Remote Control) | huminto sa H8 (valve pop-out) sa beta.74; walang retest sa account na ito (user 2026-10-30) | BAGONG account: retest ng lahat ng hakbang Cold → 150 MW sa beta.76, isa bawat "G" ng user (seksyon 5) |
 | AYUSIN ANG 8 FINDINGS NG LIVE TEST (BETA.61) | naka-merge sa beta.62 | retest H2 ~ H8 |
 | Dock: Training button = Training dock (beta.58 ~ 60) | tapos | — |
 | Training: starting points at SOP alignment (fixer) | tapos | wala hanggang may bagong findings |
@@ -65,6 +65,7 @@ Huling update: **2026-10-30 8:10 PM PHT** (thread "I-UPDATE ANG REPO PARA SA PAG
 Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instrument list, HMI audit) ay TAPOS at naka-merge.
 
 ## 4. Bukas na isyu at desisyon
+- **Starting point 150 MW nagti-trip sa RUN (2026-10-30, beta.76 · build 2f48046, live check sa browser):** MFT DITL-03A row 17 sa unang segundo; ang cause ay input row 3 "SAF STOPPED = 1". Huminto ang PAF, SAF at FAB-A, saka ang IDF at FAB-B. Naulit 2 beses. Naka-hold (fokus = Cold → full load). Hindi pa na-trace ang sanhi.
 - **Operator UI (beta.76):** may valve pop-out na ang XV-MU1109 at V-MU1033 (iba pang MOV wala pa). Hindi pa HSYM ang 030 at 007 (#16, maliit ang text sa 1366): mockup muna. Ang banner ng dock ay may button pa rin na pumipindot para sa operator sa ilang kaso (AUTO ng standby, tick ng SOP item): hindi pa binago. Ang "SOP bago i-START" ng pop-out ay ang line-up ng bukas na hakbang (sa H3 ay ang 15 item ng H2 pa: #13 ng findings thread). Bantayan ng dock at value ng HMI magkaiba minsan (#9 / #21).
 - **Bagong nakita (beta.62, user ang magpapasya):** ang standby SWP-C (H3) at SWBP-C (H6) ay AUTO pero LOCAL; ang AUTO start ng DITL-29A / DITL-30 ay nangangailangan din ng REMOTE, kaya hindi aandar ang standby kapag may nag-trip.
 - **Live test findings (beta.72):** #4, #7, #9, #10, #12, #13, #18 ~ #26 nasa beta.73 (headless lang ang subok; live ng user ang huhusga). #11, #14 ~ #17, #27 ~ #32 nasa beta.74 (operator UI: pop-out faceplate, dock layout, alarm ACK, progress bar). UNUSUAL para sa user: 30.PNG SWP current 225 / 242 A (lampas sa SOP 205 ~ 215; model = SOP) at PISW1110A2 0.4 = L alarm.
@@ -83,6 +84,22 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 
 ## 5. Mga utos ng user (dating project memory; HUWAG ipaulit sa user)
 
+### TEAM AT ROLES (user 2026-10-30)
+- **LEADER** (main session): nagma-manage at nag-uutos sa mga thread; siya lang ang nagme-merge at nag-a-update ng Beta / Stable, at sa GO BETA / GO STABLE lang ng user. Batay sa rules at `document-references/`; tunay na check (hindi "gumagana ang code" o "sabi ng user" lang). Sariling desisyon, pero ang user ang final approval. Organized ang sagot: ALL-CAPS na pamagat ng seksyon.
+- **4 thread:**
+  1. **HMI** — mockup at implementation ng HMI; elite operator + software engineer + graphic designer; iisang style (HSYM) sa bawat system.
+  2. **APP UI/UX** — buong app maliban sa HMI (buttons, text, kulay, style); malinaw, madaling basahin, hindi masakit sa mata, professional.
+  3. **CODE FIXER** — logic, engine, plant model at functionality; elite DCS + software engineer.
+  4. **DOCS** — docs, progress, skills, handover, memory, instructions, at BAWAT pagtama ng user.
+- Ang leader lang ang nagbubukas ng thread, at kapag may trabaho lang ito. Iisang format ng sagot sa leader at sa mga thread.
+- Ang bagong session ay mabubuksan lang mula sa mensaheng tina-type sa desktop app (hindi sa Remote Control), at kailangang i-trust nang isang beses ang folder ng repo.
+
+### FOKUS (user 2026-10-30)
+- Live testing ng Cold start-up hanggang full load muna.
+
+### DISKARTE NG PROJECT (user 2026-10-30)
+- Ang user ang masusunod; pag-uusapan pa ("Ako masusunod. Pag-uusapan to at sasabihin ko sayo."). Walang plano na naaprubahan; huwag sundin ang anumang mungkahing plano hangga't hindi sinasabi ng user.
+
 ### Awtorisasyon
 - **Merge sa `main` (user 2026-10-30, pinili sa card):** LANG sa **GO BETA** ng user sa mismong mensahe ("BETA NA" = GO BETA); kusang nade-deploy ang Beta site. Pinapalitan nito ang lumang "kusa, walang GO" (2026-10-28) at ang "GO STABLE para sa merge".
 - **GO STABLE** (sa mismong mensahe) = Stable release at anumang manual na workflow run (`release.yml`, `clean-releases.yml`).
@@ -96,8 +113,10 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 1. **Tanong ≠ G.** Ang "pwede na ba magtest?" o anumang tanong ay HINDI pahintulot. Walang live test hangga't hindi mismong isinusulat ng user ang "G" sa test thread.
 2. **Laging Hakbang 1 ang simula**, sunud-sunod, ISANG hakbang bawat "G". Walang laktaw, walang sabay-sabay.
 3. **Ang user ang SAKSI** sa sarili niyang app, pagkatapos niyang pindutin ang "Update now" at makita ang tamang version sa status bar. WALANG pipindutin ang user; si Claude ang gumagawa ng lahat ng pindot.
-4. **Screenshot bago at pagkatapos** ng bawat hakbang. **Huminto sa unang mali** at iulat ito; huwag ituloy.
+4. **Screenshot bago at pagkatapos** ng bawat hakbang. **Kapag may mali (user 2026-10-30, pinalitan ang "huminto sa unang mali"):** depende sa criticality at kung may chain reaction sa susunod na hakbang. Critical o may chain = huminto at ipaayos; maliit = itala at tuloy. Ang ulat ng hakbang ay may criticality at mungkahi; ang user ang nagpapasya.
 5. **Ang tanong ay sinasagot ng sagot, hindi ng aksyon.** Kapag nagtanong ang user, sumagot lang; huwag magsimula ng test o ng anumang gawain dahil sa tanong.
+
+**LIVE RETEST (user 2026-10-30):** sa built-in browser ng Claude app sa PC ng user (Beta site pagkatapos ng "Update now"); si Claude ang pumipindot, saksi ang user. LAHAT ng hakbang Cold → 150 MW, pero isa-isa (isang hakbang bawat "G"). Bawat ulat ng hakbang: finding, criticality (critical / chain o maliit), mungkahi (huminto para ayusin o tuloy); ang user ang nagpapasya. Skill: `dcs-beta-live-test`.
 
 - **Lahat ng testing ay LIVE** (user 2026-10-30): ang user ang SAKSI, sa sarili niyang app pagkatapos ng "Update now", isang hakbang bawat "G". Ang headless run ay HINDI live test at hindi tinatawag na live.
 - Habang nag-aayos: `npm run build` + `npm run check` lang. Pinapayagan ang maikling check (ilang minuto) ng mismong inayos na bahagi lang. Bawal ang buong Cold → 150 MW run nang walang go ng user.
@@ -132,13 +151,15 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 - ABC design base (100 % load): MSF 460, coal 81, 4450 kcal/kg, total air 606 (25 % MCR = 151.5), PA 380, SA 200, FA 26 T/H.
 - Golden reference ng start-up (Claude Doc): https://claude.ai/artifact/D2EXiHjLsiJf12RBPniT39. Start coal ay PAGKATAPOS ng sync (FHI Fig. 2).
 
-## 6. Pagsubok sa PC ng user (Remote Control)
+## 6. Pagsubok sa PC ng user
+- Live retest: built-in browser ng Claude app (Claude Code desktop) sa PC ng user (seksyon 5, LIVE RETEST).
 - Dell Precision 3570, Windows 11. Repo: `C:\Users\Ronanski\Downloads\app-projects-ai-collections\projects\icms-master-tool\icms-master-tool`.
 - Ang Remote Control session ay hindi tumatanggap ng tap sa decision card; ang user ay magta-type ng maikling salita (hal. "G").
 
 ## 7. Saan ang mga bagay
 - Lipat ng account at kopya ng project memory: `docs/handoff/` (`NEW_ACCOUNT_SETUP.md`, `PROJECT_MEMORY.md`). Live test findings at protocol: `docs/handoff/LIVE_TEST_FINDINGS.md`. Kopya ng skills ng account: `docs/handoff/skills/` (organized-project-coordinator, ui-ux-design-master, one-prompt-app).
-- References: `document-references/` (listahan sa `CLAUDE.md` rule 4).
+- References: `document-references/` (listahan sa `CLAUDE.md` rule 4). P&ID = `document-references/flow-diagram-K1AU3-A1-0-001.zip` (kinumpirma ng user 2026-10-30).
+- **Nasa PC lang ng user, wala sa repo** (`..\for-github-icms-master-tool\document-references\tcs-references\`): "TCA - SOFT LOGIC DIAGRAM OF TCS.pdf", "TCE - SOFT LOGIC DIAGRAM OF TCS.pdf" at folder na "TCS Logic". Hindi kinopya sa repo (kailangan ng OK ng user).
 - Source: `src/` (`src/README.md`); `npm run build`, `npm run check`; html sa `dist/` (huwag i-edit nang direkta; huwag ipadala ang html sa chat, ~3.7 MB).
 - Training dock: `src/ui/training/dock.js`, `dock.css`. HMI: `src/ui/plant/hmi2.js` (AFG), `hmi-sw.js` (030), `hmi-sym.js` (HSYM, iisang style ng HMI; `docs/hmi/HMI_STYLE.md`), `hmi-mu.js` (MAKE-UP WATER), `hmi-ia.js` (INSTRUMENT & PLANT AIR), `hmi-cw.js` (027 CLOSED COOLING WATER). Plant model: `src/analog/engine/unit.js`, `tcs.js`. Mundo ABC + DITL: `src/world/world.js`.
 - Tests: `tests/regress/` (README sa loob), `tools/training/human_run.js`, `tools/ui-audit/audit.mjs`.
@@ -167,5 +188,5 @@ Inihanda 2026-10-30 (walang ginawa; ang user ay pumili ng handover, hindi releas
 4. Kusang lilipat ang Stable page ng site sa pinakabagong tag `v3.2.0` (`site.yml`); ang apk / exe ay mag-a-update nang kusa.
 5. Sabihin sa user; i-update ang seksyon 2 ng file na ito.
 
-**Panganib na sasabihin sa user bago ang GO:** live test H1 ~ H7 lang ang nasaksihan (huminto sa H8 sa beta.74; `docs/handoff/LIVE_TEST_FINDINGS.md`); H9 hanggang 150 MW hindi pa live; bukas ang #16 (030 / 007 HSYM), valve faceplate, standby na AUTO pero LOCAL, Bantayan ≠ HMI (#9 / #21), P2 #7 ~ #12, `sop_bawal.js` 6 FAIL (lumang test). Ang Stable sa site at sa app ng lahat ay mapapalitan mula 2.4.0.
+**Panganib na sasabihin sa user bago ang GO:** live test H1 ~ H7 lang ang nasaksihan (huminto sa H8 sa beta.74; `docs/handoff/LIVE_TEST_FINDINGS.md`); H9 hanggang 150 MW hindi pa live; nagti-trip ang starting point 150 MW sa RUN (seksyon 4); bukas ang #16 (030 / 007 HSYM), valve faceplate, standby na AUTO pero LOCAL, Bantayan ≠ HMI (#9 / #21), P2 #7 ~ #12, `sop_bawal.js` 6 FAIL (lumang test). Ang Stable sa site at sa app ng lahat ay mapapalitan mula 2.4.0.
 

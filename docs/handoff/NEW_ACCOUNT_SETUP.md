@@ -73,6 +73,8 @@
 
 ## B. Gagawin ng Claude ng bagong project (walang tanong sa user)
 
+> **TAPOS 2026-10-30** sa bagong account, sa **Claude Code desktop** sa PC ng user (hindi claude.ai project). Dito: ang project memory = lokal na memory folder ng Claude Code (`%USERPROFILE%\.claude\projects\<folder ng repo>\memory\`); 49 memory na-import, 5 napalitan hindi isinama. Ang skills ay nasa `%USERPROFILE%\.claude\skills` (3 mula `docs/handoff/skills/` + `dcs-beta-live-test`). Ang live test rule sa project instructions sa itaas (A.4, "STOP AT THE FIRST FAIL") ay kopya ng lumang project; ang kasalukuyan ay `HANDOFF.md` seksyon 5 (TEST SOP at LIVE RETEST).
+
 1. Basahin ang `HANDOFF.md`, `CLAUDE.md`, `PROJECT_RULES.md`, `docs/SPEC.md`. Tingnan ang tunay na estado: `git log --oneline -10 origin/main`, `src/version.txt`, bukas na PR.
 2. **Project memory:** i-import ang `docs/handoff/PROJECT_MEMORY.md` sa project memory ng bagong project: ang index (`MEMORY.md`) bilang index, at bawat `## <pangalan>` na seksyon bilang sariling memory file na may parehong pangalan. Huwag i-import ang mga napalitan na (sundin ang petsa at ang `HANDOFF.md` seksyon 5 kapag magkasalungat).
 3. Suriin kung nakakabit ang repo (basahin, gumawa ng branch). Kapag hindi: sabihin sa user sa isang linya kung aling hakbang ng bahagi A ang kulang.
