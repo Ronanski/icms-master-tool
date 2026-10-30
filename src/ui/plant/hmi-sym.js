@@ -39,6 +39,11 @@
       d: ['#2f8fc0', '#a8e4ff'] /* demineralized water */,
       r: ['#3f86a8', '#c8ecff'] /* recirculation */,
       c: ['#4a77b8', '#cfe0ff'] /* closed cooling water */,
+      l: ['#c99a3c', '#ffe2a0'] /* lube oil */,
+      dr: ['#8a6a30', '#e6c88c'] /* oil drain (gravity return) */,
+      co: ['#d0773b', '#ffc79a'] /* control oil (high pressure) */,
+      to: ['#c25f98', '#ffc4e4'] /* trip oil */,
+      st: ['#8c98a5', '#f2f6fa'] /* steam / vapour */,
       off: ['#33414e', null]
     }
   };
@@ -68,24 +73,26 @@
 
   /* ---------- scene builder ---------- */
   function scene(px) {
-    const L = { edge: [], body: [], hi: [], flow: [], eq: [], txt: [] };
+    const L = { edge: [], body: [], hi: [], flow: [], oedge: [], obody: [], ohi: [], oflow: [], eq: [], txt: [] };
     const b = {
       px,
-      /* p = points, o.w = body width, o.med = d / r / c, o.f = flow key ('' = never flows) */
+      /* p = points, o.w = body width, o.med = a key of C.med, o.f = flow key ('' = never flows); o.over = a bridge: drawn whole
+         over the other pipes (its own outline shows the crossing), for the few lines that must cross another one */
       pipe(p, o) {
         const w = o.w || 9,
           med = C.med[o.med || 'd'],
           d = rpath(p, Math.max(10, w * 1.8)),
-          f = o.f || '';
-        L.edge.push(`<path d="${d}" fill="none" stroke="${C.edge}" stroke-width="${w + 5}"/>`);
-        L.body.push(
+          f = o.f || '',
+          Lp = o.over ? { edge: L.oedge, body: L.obody, hi: L.ohi, flow: L.oflow } : L;
+        Lp.edge.push(`<path d="${d}" fill="none" stroke="${C.edge}" stroke-width="${w + 5}"/>`);
+        Lp.body.push(
           `<path d="${d}" fill="none" stroke="${med[0]}" stroke-width="${w}"${f ? ` data-pb="${f}"` : ''} opacity="${f ? 0.5 : 0.35}"/>`
         );
-        L.hi.push(
+        Lp.hi.push(
           `<path d="${d}" fill="none" stroke="#ffffff" stroke-opacity="0.13" stroke-width="${Math.max(1, w * 0.25)}" transform="translate(0 ${(-w * 0.2).toFixed(1)})"/>`
         );
         if (f)
-          L.flow.push(
+          Lp.flow.push(
             `<path d="${d}" fill="none" data-pf="${f}" stroke="${med[1]}" stroke-width="${w > 10 ? 3.2 : w > 6 ? 2.6 : 2}" stroke-linecap="round" stroke-dasharray="1 ${w > 6 ? 15 : 11}" visibility="hidden"/>`
           );
         return b;
@@ -108,7 +115,11 @@
         return b;
       },
       svg() {
-        return css() + defs(px) + ['edge', 'body', 'hi', 'flow', 'eq', 'txt'].map(k => L[k].join('')).join('');
+        return (
+          css() +
+          defs(px) +
+          ['edge', 'body', 'hi', 'flow', 'oedge', 'obody', 'ohi', 'oflow', 'eq', 'txt'].map(k => L[k].join('')).join('')
+        );
       }
     };
     return b;
@@ -118,7 +129,13 @@
 <linearGradient id="${px}-mt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${C.steel[2]}"/><stop offset=".5" stop-color="${C.steel[1]}"/><stop offset="1" stop-color="${C.steel[0]}"/></linearGradient>
 <linearGradient id="${px}-cs" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#7d8a97"/><stop offset="1" stop-color="#3a4550"/></linearGradient>
 <linearGradient id="${px}-wt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3fa6d8"/><stop offset="1" stop-color="#1a5f86"/></linearGradient>
-<linearGradient id="${px}-wc" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#5b8fd6"/><stop offset="1" stop-color="#22457a"/></linearGradient></defs>`;
+<linearGradient id="${px}-wc" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#5b8fd6"/><stop offset="1" stop-color="#22457a"/></linearGradient>
+<linearGradient id="${px}-ol" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#b98523"/><stop offset="1" stop-color="#5a3d0e"/></linearGradient>
+<linearGradient id="${px}-sf" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#6f7c89"/><stop offset=".4" stop-color="#e6ecf1"/><stop offset="1" stop-color="#4b5662"/></linearGradient>
+<linearGradient id="${px}-bb" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#cdb980"/><stop offset="1" stop-color="#7d6c3e"/></linearGradient>
+<linearGradient id="${px}-cu" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e8a86c"/><stop offset="1" stop-color="#8a4f22"/></linearGradient>
+<linearGradient id="${px}-bl" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#f1f4f7"/><stop offset=".6" stop-color="#aab6c2"/><stop offset="1" stop-color="#6a7682"/></linearGradient>
+<linearGradient id="${px}-vn" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#8e9aa6"/><stop offset="1" stop-color="#4f5a66"/></linearGradient></defs>`;
   const css = () =>
     `<style>.hs-zone{font-size:14px;font-weight:600;letter-spacing:.14em;fill:#6f8091;${UF}}.hs-eq{font-size:18px;font-weight:700;letter-spacing:.03em;fill:${C.nm};${UF}}.hs-sub{font-size:13px;fill:${C.dim};${UF}}.hs-tag{font-size:13px;fill:${C.tag};${MF}}.hs-st{font-size:13px;font-weight:700;letter-spacing:.1em;${UF}}.hs-val{font-size:22px;font-weight:600;${MF}}.hs-unit{font-size:12px;fill:${C.dim};${MF}}.hs-hit{cursor:pointer}.hs-hit:hover .hs-hl{stroke:#5fb3e6;stroke-width:2.5}.hs-tab{cursor:pointer}.hs-tab:hover rect{fill:#2a3a48}</style>`;
 
@@ -211,8 +228,8 @@
       `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="14" fill="url(#${o.px}-sh)" stroke="${C.edge}" stroke-width="2" class="hs-hl"/>` +
       `<rect x="${x + 4}" y="${y + 4}" width="${w - 8}" height="${h - 8}" rx="10" fill="#0a1219"/>` +
       `<g clip-path="url(#${cid})"><rect x="${x + 4}" y="${y + h}" width="${w - 8}" height="0" fill="url(#${o.px}-${o.water || 'wt'})" data-tl="${id}" data-y="${y}" data-h="${h}" data-max="${max}"/>` +
-      `<path d="${wd}" fill="#5ec1ee" opacity=".5" data-tw="${id}" visibility="hidden"/>` +
-      `<line x1="${o.sx || x + w / 2}" y1="${o.sy || y + 2}" x2="${o.sx || x + w / 2}" y2="${y + h}" stroke="#a8e4ff" stroke-width="3" stroke-dasharray="6 8" stroke-linecap="round" data-ts="${id}" visibility="hidden"/></g>${marks}</g>`
+      `<path d="${wd}" fill="${o.water === 'ol' ? '#e7b75a' : '#5ec1ee'}" opacity=".5" data-tw="${id}" visibility="hidden"/>` +
+      `<line x1="${o.sx || x + w / 2}" y1="${o.sy || y + 2}" x2="${o.sx || x + w / 2}" y2="${y + h}" stroke="${o.water === 'ol' ? '#ffe2a0' : '#a8e4ff'}" stroke-width="3" stroke-dasharray="6 8" stroke-linecap="round" data-ts="${id}" visibility="hidden"/></g>${marks}</g>`
     );
   }
   /* tag over a dark value box, unit after; key = data-v of the value text, click key = data-vbx */
@@ -228,6 +245,80 @@
           `<rect x="${x + i * 250}" y="${y - 7}" width="24" height="8" rx="2" fill="${C.med[m][0]}"/>${T(x + i * 250 + 30, y + 2, lab, 'hs-sub')}`
       )
       .join('');
+
+  /* vertical submerged pump on a tank roof (y = roof): motor on top (ring = run state), discharge head with the nozzle on the right
+     at y - 34 (a pipe starts at x + 36), column through the roof, bowl with the impeller at y + depth (cutaway) */
+  function vpump(x, y, id, px, depth = 110) {
+    const by = y + depth - 18;
+    let imp = '';
+    for (let k = 0; k < 5; k++)
+      imp += `<path d="M${x} ${by} q6 -4 5 -13" fill="none" stroke="#ffe2a0" stroke-width="2.6" stroke-linecap="round" transform="rotate(${k * 72} ${x} ${by})"/>`;
+    let fins = '';
+    for (let k = 0; k < 6; k++)
+      fins += `<line x1="${x - 25 + k * 10}" x2="${x - 25 + k * 10}" y1="${y - 128}" y2="${y - 74}" stroke="#3b4651" stroke-width="1.5"/>`;
+    return (
+      `<g class="hs-hit" data-hit="${id}"><rect x="${x - 36}" y="${y - 138}" width="72" height="70" rx="6" fill="none" stroke="${C.none}" stroke-width="4" class="hs-hl" data-ring="${id}"/>` +
+      `<rect x="${x - 31}" y="${y - 133}" width="62" height="60" rx="5" fill="url(#${px}-mt)" ${OL}/>${fins}` +
+      `<rect x="${x - 22}" y="${y - 66}" width="44" height="60" rx="3" fill="url(#${px}-cs)" ${OL}/><rect x="${x + 22}" y="${y - 42}" width="14" height="16" fill="url(#${px}-cs)" ${OL}/>` +
+      `<rect x="${x - 36}" y="${y - 7}" width="72" height="7" fill="#2a333c" ${OL}/>` +
+      `<rect x="${x - 7}" y="${y}" width="14" height="${depth - 36}" fill="url(#${px}-cs)" ${OL}/>` +
+      `<path d="M${x - 20} ${by - 18} h40 v24 l8 12 h-56 l8 -12 z" fill="url(#${px}-cs)" ${OL}/><circle cx="${x}" cy="${by}" r="15" fill="#1d150a"/>` +
+      `<g data-imp="${id}" data-cx="${x}" data-cy="${by}">${imp}<circle cx="${x}" cy="${by}" r="3.5" fill="#cfd8e0"/></g></g>`
+    );
+  }
+  /* small centrifugal blower (vapour extractor): scroll casing, impeller, outlet up; motor on the right */
+  function blower(x, y, id, px) {
+    let imp = '';
+    for (let k = 0; k < 8; k++)
+      imp += `<line x1="${x}" y1="${y}" x2="${x}" y2="${y - 12}" stroke="#cfd8e0" stroke-width="2.2" transform="rotate(${k * 45} ${x} ${y})"/>`;
+    return (
+      `<g class="hs-hit" data-hit="${id}"><circle cx="${x}" cy="${y}" r="24" fill="none" stroke="${C.none}" stroke-width="4" class="hs-hl" data-ring="${id}"/>` +
+      `<rect x="${x + 6}" y="${y - 30}" width="14" height="14" fill="url(#${px}-cs)" ${OL}/><circle cx="${x}" cy="${y}" r="19" fill="url(#${px}-cs)" ${OL}/><circle cx="${x}" cy="${y}" r="14" fill="#141b22"/>` +
+      `<g data-imp="${id}" data-cx="${x}" data-cy="${y}">${imp}</g><rect x="${x + 26}" y="${y - 11}" width="30" height="22" rx="3" fill="url(#${px}-mt)" ${OL}/></g>`
+    );
+  }
+  /* shell and tube heat exchanger, horizontal (y = centre line): channel heads at both ends, tubes (tube medium, live key id + 't'),
+     baffles and the shell side path (shell medium, live key id + 's'). Pipes connect at the ends (x, y) / (x + w, y) or on the shell */
+  function hx(x, y, w, h, id, o) {
+    const tm = C.med[o.tube || 'c'],
+      sm = C.med[o.shell || 'l'],
+      t = y - h / 2,
+      n = 5;
+    let tubes = '',
+      tfl = '',
+      baf = '',
+      zz = `M${x + 22} ${y}`;
+    for (let i = 0; i < n; i++) {
+      const ty = (t + 9 + (i * (h - 18)) / (n - 1)).toFixed(1);
+      tubes += `<line x1="${x + 16}" x2="${x + w - 16}" y1="${ty}" y2="${ty}" stroke="${tm[0]}" stroke-width="2.6"/>`;
+      tfl += `<line x1="${x + 16}" x2="${x + w - 16}" y1="${ty}" y2="${ty}" stroke="${tm[1]}" stroke-width="1.8" stroke-dasharray="1 9" stroke-linecap="round" data-pf="${id}t" visibility="hidden"/>`;
+    }
+    const nb = 4;
+    for (let k = 1; k <= nb; k++) {
+      const bx = x + 16 + (k * (w - 32)) / (nb + 1),
+        up = k % 2;
+      baf += `<rect x="${(bx - 1.5).toFixed(1)}" y="${up ? t + 3 : y - h / 2 + h * 0.3}" width="3" height="${(h * 0.7 - 3).toFixed(1)}" fill="#6f7c89"/>`;
+      zz += ` L${(bx - 8).toFixed(1)} ${up ? y + h * 0.36 : t + h * 0.14} L${(bx + 8).toFixed(1)} ${up ? y + h * 0.36 : t + h * 0.14}`;
+    }
+    zz += ` L${x + w - 22} ${y}`;
+    return (
+      `<g class="hs-hit" data-hit="${o.hit || 'HX' + id}"><title>${o.title || ''}</title>` +
+      `<rect x="${x + 12}" y="${t}" width="${w - 24}" height="${h}" rx="${h / 2.6}" fill="#191109" stroke="${C.edge}" stroke-width="2" class="hs-hl"/>` +
+      `<rect x="${x + 14}" y="${t + 2}" width="${w - 28}" height="${h - 4}" rx="${h / 2.8}" fill="url(#${o.px}-ol)" opacity=".55"/>` +
+      `${tubes}${baf}<path d="${zz}" fill="none" stroke="${sm[1]}" stroke-width="2" stroke-dasharray="1 10" stroke-linecap="round" data-pf="${id}s" visibility="hidden"/>${tfl}` +
+      `<rect x="${x}" y="${t - 3}" width="16" height="${h + 6}" rx="5" fill="url(#${o.px}-cs)" ${OL}/><rect x="${x + w - 16}" y="${t - 3}" width="16" height="${h + 6}" rx="5" fill="url(#${o.px}-cs)" ${OL}/></g>`
+    );
+  }
+  /* cartridge filter on a vertical line (x, y = centre): vessel, lid, pleated element */
+  function filter(x, y, id, px, title) {
+    let pl = '';
+    for (let k = 0; k < 6; k++)
+      pl += `<line x1="${x - 10 + k * 4}" x2="${x - 10 + k * 4}" y1="${y - 16}" y2="${y + 20}" stroke="#c3ccd6" stroke-width="1.4"/>`;
+    return `<g class="hs-hit" data-hit="${id}"><title>${title || ''}</title><rect x="${x - 17}" y="${y - 30}" width="34" height="62" rx="7" fill="url(#${px}-cs)" stroke="${C.edge}" stroke-width="1.6" class="hs-hl"/><rect x="${x - 21}" y="${y - 34}" width="42" height="8" rx="2" fill="url(#${px}-mt)" ${OL}/><rect x="${x - 12}" y="${y - 20}" width="24" height="44" rx="3" fill="#141b22"/>${pl}</g>`;
+  }
+  /* status lamp of a switch: dot + tag, the state text under it (live: data-lp / data-lt, see the page) */
+  const lamp = (x, y, key, tag) =>
+    `<g data-lpg="${key}"><circle cx="${x}" cy="${y}" r="7" fill="${C.none}" ${OL} data-lp="${key}"/>${T(x + 14, y + 5, tag, 'hs-tag')}${T(x + 14, y + 23, '-----', 'hs-st', `fill="${C.none}" data-lt="${key}"`)}</g>`;
 
   /* the page frame of the standard (user 2026-10-30 "malabo / maliit"): 1280 x 860, so a PC with the dock open (~910 px for the
      page) shows it at ~0.71 x (text 13 ~ 18 -> 9 ~ 13 px, values 22 -> ~16 px). The drawing area is under the frame bars of hmi2.js
@@ -292,7 +383,8 @@
       V = {},
       CK = {},
       G = {},
-      TK = {};
+      TK = {},
+      EACH = [];
     const reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
     const A = {
       pump(id, s) {
@@ -453,6 +545,7 @@
         t.wave.setAttribute('transform', `translate(${(-t.ph).toFixed(1)} ${(t.yl - 5).toFixed(1)})`);
         if (t.inflow > 0.05) t.str.setAttribute('stroke-dashoffset', (t.so -= adt * 60).toFixed(1));
       }
+      for (const fn of EACH) fn(adt, dt);
       raf = requestAnimationFrame(frame);
     }
     raf = requestAnimationFrame(frame);
@@ -461,6 +554,18 @@
       (V[id].travel = s)
     );
     A.stop = () => cancelAnimationFrame(raf);
+    /* a page's own motion (a turbine shaft, an actuator): fn(adt, dt) every frame; adt = 0 while the simulation is paused */
+    A.each = fn => EACH.push(fn);
+    /* a switch lamp: ok true = normal (green), false = alarm (red, blinking text), null = no value */
+    A.lamp = (key, ok, tOk, tAl) => {
+      const col = ok == null ? C.none : ok ? C.stop : C.run;
+      qa(`[data-lp="${key}"]`).forEach(e => e.setAttribute('fill', col));
+      qa(`[data-lt="${key}"]`).forEach(e => {
+        e.textContent = ok == null ? '-----' : ok ? tOk || 'NORMAL' : tAl || 'ALARM';
+        e.setAttribute('fill', col);
+        e.classList.toggle('h2blink', ok === false);
+      });
+    };
     return A;
   }
 
@@ -474,6 +579,11 @@
     rpath,
     scene,
     pump,
+    vpump,
+    blower,
+    hx,
+    filter,
+    lamp,
     valve,
     check,
     gauge,

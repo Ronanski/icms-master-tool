@@ -43,6 +43,11 @@ Sa PC 1366 x 768 na bukas ang dock, ~912 px lang ang lapad ng page. Ang lumang f
 | Demineralized water | `#2f8fc0` | `med.d` |
 | Recirculation | `#3f86a8` | `med.r` |
 | Closed cooling water | `#4a77b8` | `med.c` |
+| Lube oil | `#c99a3c` | `med.l` |
+| Oil drain (gravity return) | `#8a6a30` | `med.dr` |
+| Control oil | `#d0773b` | `med.co` |
+| Trip oil | `#c25f98` | `med.to` |
+| Steam / vapour | `#8c98a5` | `med.st` |
 | Tubo na walang daloy | parehong kulay, 50 % opacity | |
 
 Bagong medium (steam, oil, air, flue gas): idagdag sa `HSYM.C.med` at sa talaang ito, hindi sa page.
@@ -75,10 +80,17 @@ Bagong medium (steam, oil, air, flue gas): idagdag sa `HSYM.C.med` at sa talaang
 | Gauge | `HSYM.gauge(x, y, id, tag)` | karayom ayon sa value |
 | Strainer | `HSYM.strainer(x, y, tag, px)` | |
 | Orifice | `HSYM.orifice(x, y)` | |
-| Tank | `HSYM.tank(x, y, w, h, id, {max, marks})` | level ng tubig, alon, agos na pumapasok |
+| Tank | `HSYM.tank(x, y, w, h, id, {max, marks, water})` | level ng tubig (o langis: `water: 'ol'`), alon, agos na pumapasok |
+| Vertical pump (submerged) | `HSYM.vpump(x, roof, id, px, depth)` | umiikot ang impeller sa ilalim ng likido |
+| Blower | `HSYM.blower(x, y, id, px)` | umiikot ang impeller |
+| Heat exchanger | `HSYM.hx(x, y, w, h, id, {px, tube, shell})` | daloy sa loob ng tubes (`id + 't'`) at sa shell (`id + 's'`) |
+| Filter | `HSYM.filter(x, y, id, px, title)` | |
+| Switch lamp | `HSYM.lamp(x, y, key, tag)` + `A.lamp(key, ok)` | berde NORMAL, pula kumikislap kapag alarm |
 
 **Mga tubo:** iisang path bawat tubo, bilog na elbow (`rpath`), at layers: lahat ng outline muna, saka lahat ng body, highlight at flow.
 Kaya nagdidikit ang tee at elbow nang walang dugtong o laktaw. Dumadaan ang tubo sa ilalim ng valve at instrument; hindi ito pinuputol.
+Kapag hindi maiiwasang magtawid ang dalawang tubo: `over: 1` (tulay, iginuguhit nang buo sa ibabaw). Bihira lang.
+Galaw na sariling page lang (turbine shaft, actuator): `A.each(fn)`, kasama sa iisang loop (humihinto rin kapag naka-pause).
 
 ## 6. Animation
 
