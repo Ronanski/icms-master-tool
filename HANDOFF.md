@@ -1,79 +1,120 @@
-# Current Project Handoff
+# HANDOFF — iisang file para magpatuloy ang kahit sinong Claude o account
 
-> Iisang kasalukuyang estado lang. Palitan kapag nagbago; huwag magdagdag ng kasaysayan (nasa `docs/versions/<ver>/UPDATE_REPORT.md` at git history). Pinaikli 2026-10-26: ang dating 200+ linya ng lumang Beta notes ay tinanggal dito.
+> **Ito lang ang kailangan.** Kapag binigay ang repo na ito sa bagong Claude, session o account, basahin ang file na ito MUNA: nandito ang kasalukuyang estado, ang mga thread / trabaho, ang mga utos at desisyon ng user (dating nasa project memory), at ang style. Detalye ng bawat Beta: `docs/versions/v3.2.0/UPDATE_REPORT.md` at git history.
+>
+> **Patakaran (CLAUDE.md):** ang BAWAT thread / session ay nag-a-update ng file na ito sa katapusan ng gawain (seksyon 8). Palitan ang luma, huwag magtambak ng kasaysayan.
 
-## SIMULAN DITO (2026-10-26 PHT)
+Huling update: **2026-10-30 9:15 AM PHT** (thread ng HANDOFF.md, PR #65; docs lang).
 
-- **Stable:** v2.4.0 (huling Stable).
-- **Beta:** `3.2.0-beta.60` sa `main` (beta.61 sa branch, naghihintay ng GO BETA) (2026-10-28: iisang linya; ang tine-test ay laging nasa main, Stable lang ang may GO STABLE). Kasama ang bagong HMI Air & Flue Gas at 030 Seawater, bagong Training layout (HMI sa gitna, lahat sa dock), sand DITL, page links.
-- **Ang gusto ng user:** `docs/SPEC.md` (S1 ~ S9). Plano = seksyon 3 ng file na iyon. Wala nang ROADMAP / CHECKLIST.
-- **Pag-check ng user:** `docs/USER_CHECK.md`.
-- **Rules:** `CLAUDE.md`, `PROJECT_RULES.md` (test policy = seksyon 5).
-- Golden reference ng start-up (Claude Doc): https://claude.ai/artifact/D2EXiHjLsiJf12RBPniT39
+---
 
-## Utos ng user na madalas malimutan
-- Update sa user bawat ~30 minuto habang may mahabang trabaho, may ETA sa oras (PHT). Sumagot muna bago magpatuloy.
-- Test batay sa reference (PR-OPE-5002, DITL, ATS criteria, FHI Fig. 2, HMI snapshot), hindi sa coach ng Training. Ang kulang na model ay FAIL, hindi "field step".
-- Huwag magpush ng paisa-isang UI fix: lakarin muna ang bawat screen (PC, tablet, phone) bago ang Beta.
-- Per-loop, Warm at Hot: TINANGGAL na sa app (beta.39). Huwag ibalik hangga't hindi sinasabi ng user.
+## 1. Basahin sa ganitong ayos
+1. **Ang file na ito** (estado, utos ng user, style).
+2. `CLAUDE.md` — sino ka, mga hard rule, kaalaman sa DCS na hindi nagbabago.
+3. `PROJECT_RULES.md` — source of truth, Beta / Stable, test policy.
+4. `docs/SPEC.md` — ang gusto ng user (S1 ~ S9) at ang plano (seksyon 3).
+5. Tingnan ang tunay na estado: `git log --oneline -10 origin/main`, `src/version.txt`, bukas na PR. Huwag umasa sa alaala; kapag iba ang repo sa file na ito, ang repo ang tama at ayusin ang file na ito.
 
-## Bagong HMI (PR #49, roadmap step 6)
-- Desisyon ng user 2026-10-26: ang HMI ay GUGUHITIN MULI (sariling vector graphics); ang snapshot ay gabay lang. Pinalitan nito ang lumang "kopyahin 1:1".
-- `src/ui/plant/hmi2.js`: library ng simbolo + screen `AFG` (Air & Flue Gas). `src/ui/plant/hmi-sw.js`: screen `SW` (030 Seawater, STEEL lang). `plant.js` draw: `sys.v2` → `PLANT_V2.draw` (parehong live link / faceplate).
-- Huwag pa tanggalin ang lumang Plant HMI hangga't wala pang kapalit ang lahat ng system (14 screen sa `docs/hmi/HMI_SYSTEMS.md`).
+## 2. Kasalukuyang estado
+| | |
+|---|---|
+| **Stable** | v2.4.0 (huling Stable). Ang susunod na Stable ay 3.2.0, LANG sa GO STABLE. |
+| **Beta sa `main`** | `3.2.0-beta.61` (merge 24e9c99, PR #67, 2026-10-30 ~9:07 AM PHT, GO BETA ng user). Bagong Training dock (mock-up v2) + pagpili ng SWP / SWBP na i-start. |
+| **Bukas na PR** | Wala, maliban sa PR #65 (ang HANDOFF.md na ito; merge sa "merge n lahat" ng user). |
+| **Beta site** | Kusang nade-deploy pagkatapos ng berdeng Checks sa `main` (`site.yml`, `/beta/`). Sa app: banner na "Update now". |
+| **Roadmap** (`docs/SPEC.md` 3) | 1, 2, 3, 5, 7 TAPOS. 4 (Training Cold → 150 MW) at 6 (HMI) bahagi. 8 Library ang huli. 9 Stable = GO STABLE lang. |
+| **HMI** | Bago: 007 Air & Flue Gas (inaprubahan) at 030 Seawater (STEEL). Plant view = mga bagong page + UNIT · controllers. Ang ibang system ay isa-isa, kapag sinabi ng user (`docs/hmi/HMI_SYSTEMS.md`). |
 
-## Estado ng app (links ABC ↔ DITL)
-- ABC ↔ DITL: ang BAWAT "FROM / TO DITL xx-nn" sa ABC (233) ay page link (`dsTextAt` / `dsTextClick` sa `links-canvas.js`, pick sa `interaction.js`); listahan = pagpipilian; DITL → ABC ay may ↩ Back sa ABC (`AN.hist` marker `{dig:true}`). Test: `tests/regress/abc_ditl_links.js`.
+### Huling mga Beta (pinakabago sa itaas; buo sa UPDATE_REPORT)
+- **beta.61** — bagong Training dock (mock-up v2, PC at tablet landscape): SUSUNOD NA GAWIN na banner, card ng bawat motor na mapipili (hal. SWP-C muna), 4 na yugto Lineup / Permissive / Start / Check, "?" bawat row, iisang font, START pulang outline / STOP berdeng outline; header 3 value + "Lahat ▾"; #115. Hindi pa live-tested ng user; phone at tablet portrait isinantabi ng user.
+- **beta.60** — Training dock: seksyon ng hakbang 60 ~ 64 at 102 ~ 105, walang dobleng button, walang laman na CONTROLS, RUNNING pula / STOPPED berde. Walang sariling HMI page: hakbang 10 ~ 14, 52, 54, 57, 62.
+- **beta.59** — 030 Seawater: lahat ng value na walang transmitter ay galing sa plant model (`unit.js` `AN_SW`), wala nang ● estimate; buong page pagbukas.
+- **beta.58** — Training button ay nagbubukas ng DOCK; gitna = Plant view / Logic lang; HMI page bawat seksyon (`SECHMI` sa `dock.js`).
+- **beta.57** — bagong Training layout: gitna = HMI lang; nasa dock ang seksyon, hakbang, loop card, START / STOP, checklist, "Ipakita sa logic sheet".
 
-## Estado ng app (beta.39 dev, PR #47)
-## Estado ng app (beta.39 (+ sand))
-- Sand injection DITL 771 ~ 777 (`(D71)DITL-771` ~ `(D77)DITL-777`) galing sa PDF: `docs/versions/v3.2.0/DITL_SAND_AUDIT.md`, test `tests/regress/ditl_sand.js`. Analog ng LT / PT ay ON / OFF lang.
-- Turbine + TCS model (`src/analog/engine/tcs.js`, `docs/tcs/ATS_CRITERIA.md`), start-up steam ayon sa FHI Fig. 2 / 3 / 4 (`unit.js`).
-- `tests/regress/sop_bawal.js`: 19 / 19 (lahat ng maagang aksyon ay tinatanggihan).
-- Training: Cold → 150 MW sa isang screen (dock), sunod sa PR-OPE-5002. beta.40: ang MS blow-off at start-up valve ay sa serbisyo na bago ang vacuum stage (dati: stall sa hakbang 43, MFT sa low-low drum level).
-- RH biasing damper: ang model ay bumabasa ng HICHR1002A.MV (`plant.js` `AN_XACT`); tama ang direksyon (mas bukas = mas mainit na reheat, ABC-020). Ang SH biasing damper ay nananatiling AUTO (pasya ng user, `anSelSelf`). Ang TCS / GMCB input row ng DITL ay naka-link na (`world.js` `tcsIn`).
-- SH temperature (`unit.js` `U.sh` / `U.ld`): iisang kadena spray 1 → SH no.2 → spray 2 → finishing SH; lakas ng spray 2 mula sa snapshot (`plant.js` `AN_KUP`); firing ratio na may lag at deadband 0.75 (`U.frDb`).
-- Plant chip: OFF | Unit lang; starting state: Cold o 150 MW lang. Plant model ON na walang starting state: header "—", ang ABC page ay bumubukas na Cold.
+## 3. Mga thread / trabaho (2026-10-30 9:15 AM PHT)
+| Thread | Kalagayan | Susunod |
+|---|---|---|
+| Mockup: bagong dock at HMI para sa PC at tablet landscape | naka-merge sa beta.61 | live check ng user sa beta.61 |
+| Fix Training to allow starting SWP C | naka-merge sa beta.61 | live check ng user (SWBP hindi pa nasubok) |
+| Live test ng start-up steps sa PC ko (Remote Control) | naghihintay ng "G" | live test, ISANG hakbang bawat "G" ng user, may saksi |
+| Dock: Training button = Training dock (beta.58 ~ 60) | tapos | — |
+| Training: starting points at SOP alignment (fixer) | tapos | wala hanggang may bagong findings |
+| Propose Seawater System HMI page | tapos (beta.56 / 59) | — |
+| HANDOFF.md: isang file para sa lipat ng account | PR #65 | merge (user: "merge n lahat"), saka lipat ng account |
 
-## Susunod na gagawin (roadmap sa `docs/SPEC.md` seksyon 3)
-0. 2026-10-30 ~9:30 AM PHT: **3.2.0-beta.61** (branch `claude/project-thread-o689o3`, kasama ang `claude/project-thread-z0es2v`; naghihintay ng GO BETA) = bagong Training dock ayon sa mock-up v2 (SUSUNOD NA GAWIN, card ng bawat motor na mapipili: SWP-C muna puwede na, 4 na yugto Lineup / Permissive / Start / Check, "?" bawat row, iisang font) + #115. PC at tablet landscape lang. Hindi pa live-tested ng user.
-0. 2026-10-30 12:35 AM PHT: **Beta 3.2.0-beta.60** (GO BETA ng user) = ayos mula sa check ng lahat ng 105 hakbang ng Training: seksyon ng hakbang 60 ~ 64 at 102 ~ 105, dobleng button, walang laman na CONTROLS, isang kahon / isang logic button, RUNNING pula / STOPPED berde sa Bantayan. Walang sariling HMI page: hakbang 10 ~ 14, 52, 54, 57, 62.
-0. 2026-10-30 PHT: **Beta 3.2.0-beta.59** sa main (GO BETA ng user) = 030 SEAWATER: lahat ng value na walang transmitter sa logic (DP ng debris filter, condenser seawater T / P, forebay level, current ng SWP / SWBP) ay galing sa plant model (`unit.js` `AN_SW`), wala nang ● estimate sa HMI; buong page pagbukas (#117). Hindi pa sinubok: backwash habang IN OPERATION ang filter, cold start.
-0. 2026-10-30 12:20 AM PHT: **Beta 3.2.0-beta.58** sa main (GO BETA ng user) = ang Training page ay nasa DOCK na (ang Training button sa kaliwa ay nagbubukas ng dock; ang gitna ay Plant view / Logic lang); naibalik ang 8 values at equipment lamps; ang gitna ay sumusunod sa seksyon (HMI page bawat seksyon, `SECHMI` sa dock.js); Bakit? may SOP, logic, bantayan at susunod. Hindi pa sinubok: phone layout, buong Cold → 150 MW.
-0. 2026-10-29 11:55 PM PHT: **Beta 3.2.0-beta.57** sa main (GO BETA ng user) = bagong Training layout: gitna = HMI lang (naka-kahon ang equipment ng hakbang); nasa dock ang seksyon ◄ ► ☰, hakbang ‹ ›, loop card, START / STOP, interlock, checklist at "Ipakita sa logic sheet" (diagram lang + "Balik sa HMI"). Hindi pa sinubok: phone layout, buong Cold → 150 MW.
-0. 2026-10-29 11:40 PM PHT: **Beta 3.2.0-beta.56** sa main (GO BETA ng user) = bagong HMI page 030 SEAWATER (STEEL, `src/ui/plant/hmi-sw.js`). DITL-39 M.079C: tama (itinama ang maling basa sa UPDATE_REPORT). ACWP / debris filter STOPPED sa 150 MW start: skip muna (user).
-0. 2026-10-29 10:40 PM PHT: **Beta 3.2.0-beta.55** sa main = START / STOP, AUTO / MAN, control row ng loop at FIELD ng interlock sa ilalim mismo ng pamagat ng hakbang sa Training dock (kita sa 1366 × 768).
-0. 2026-10-30 AM PHT: **Beta 3.2.0-beta.54** sa main (GO BETA ng user 2026-10-29 9:13 PM PHT) = Training integrity batch #105 / #107 / #108 / #109 (17 coach tinanggal, walang FORCE sa Training, control row sa ilalim ng pamagat ng hakbang + Buksan sa sheet, H34 ~ H39 ayon sa SOP). Detalye at UNUSUAL findings: UPDATE_REPORT beta.54.
-0. 2026-10-29 PM PHT: **Beta 3.2.0-beta.53** sa main = #102 / #103 / #105 / #106 ng live check R18 (air flow at furnace pressure ≤ 5 s ang tugon, Total air PA + SA + FA, oras ng alarm na lumabas sa suppression, NOTE ng H40) at #101 (40 min na nakatagong page pagkatapos ng H30).
-0. 2026-10-29 PM PHT: **Beta 3.2.0-beta.52** sa main = #100 ~ #104 ng live check R16 / R17 (diesel PCV, drum level na walang FW, FA flow, purge air ayon sa SOP, IDF coupling MV ▲/▼ at AUTO).
-0. 2026-10-29 ~11:30 AM PHT: **Beta 3.2.0-beta.51** sa main = 5 natitira sa beta.50 (#99 furnace pressure kapag IDF lang, #98 diesel PCV buttons, #91 Bantayan galing sa model o "— walang model", #96 NOTE ng alarm, #23 update banner).
-0. 2026-10-29 ~8:30 AM PHT: **Beta 3.2.0-beta.50** sa main = 9 nakita sa live check ng beta.49 (#90 ~ #97 at #23): condensate / hotwell / deaerator water balance, BFWP suction pressure mula sa deaerator, MOV ng Hakbang 26 gumagalaw na, drum level alarm ayon sa alarm list, NOTE ng Hakbang 30, HMI Steel default at alarm strip = header, Bantayan live, DITL Legend. Check: totoong pindot Hakbang 1 → 30.
-0. 2026-10-28 ~10:45 PM PHT: **Beta 3.2.0-beta.49** sa main = Plant view dalawang page lang (007 Air & Flue Gas bago, UNIT · controllers); tinanggal ang 27 lumang screen at mga larawan nito. Rule ng user: hanggang 3 branch lang bukod sa main.
-0. 2026-10-28 ~10:10 PM PHT: **Beta 3.2.0-beta.48** sa main = bagong HMI (PR #49) + sand DITL (PR #48) + docs PR #44 / #50 / #51 + R9 #86 ~ #90 + maling SYSTEM TRIP alarm ng DITL-777 sa Cold. Check: totoong pindot Hakbang 1 → 20, 7 bahagi. Hindi isinama (luma / napalitan): PR #40, #41, `adoring-carson`, `feat/persistent-context-retrieval`, `ccr-8a6a202c` (listahan sa user bago burahin).
-0. 2026-10-28 ~9:05 PM PHT: **Beta 3.2.0-beta.47** = 19 findings ng retest 9 (air preheater START, NOT TRIP alarm, TCS oil, SOP limits / tag / NOTE sa dock, Hakbang 14 ~ 17 hiwalay, gitna sumusunod nang tama, ‹ Nakaraan, header). Check: totoong pindot Hakbang 1 → 20 (hindi buong start-up). #23 hindi nasubok; #60 bahagi (61 / 121).
-0. 2026-10-28 ~6:30 PM PHT: **Beta 3.2.0-beta.46** = retest 8 (R8) sa ugat: isang equipment block (START / STOP, FIELD, MAN / AUTO, TRIP, lamp, values) at isang step engine (✓ TAPOS + Susunod, stable na buttons, Cold reset ng DITL). Check = totoong pindot, 2 pasada nang hindi nililinis ang storage. #60: 70 item ng 007 walang plant model (flue gas path), "—".
-0. 2026-10-28 ~4:00 PM PHT: **Beta 3.2.0-beta.45** = lahat ng bukas na findings ng retest 7 (sa ugat; paliwanag sa UPDATE_REPORT). Sinubok ng maikling check ng bawat linya ng check-list (hindi ang buong start-up). Susunod: live retest ng user.
-0. 2026-10-28 1:20 PM PHT: **Beta 3.2.0-beta.43** (build 7b1d18c) = #13 (walang drawing ng lumang sheet sa likod ng Home / Training). HINDI nasubok.
-0. 2026-10-28 1:08 PM PHT: **Beta 3.2.0-beta.42** (build 283da5c) = retest 5 fixes. Bagong rule ng user: AUTOMATIC ang Beta (bawat batch = bagong Beta number); Stable lang ang kailangan ng GO STABLE. HINDI nasubok; live test ng user ang susunod.
-0. 2026-10-28 12:45 PM PHT: **Beta 3.2.0-beta.41** (build e9929bf, GO BETA ng user) = lahat ng bukas na findings ng retest 4 (#54–#58, #35, #13, #23, #42, #38, #9; table sa UPDATE_REPORT). Build at check lang; HINDI nasubok. Susunod: live test ng user.
-0. 2026-10-28 ~12:00 PM PHT: **Beta 3.2.0-beta.40** (build id sa status bar) = lahat ng 29 findings ng retest 3 (table sa UPDATE_REPORT). Build at check lang; HINDI nasubok. Susunod: live test ng user mula Step 1, isang hakbang bawat G.
-0. 2026-10-28 ~4:20 AM PHT: inayos (code lang) ang 18 findings ng retest (table "retest fixes" sa UPDATE_REPORT). HINDI nasubok: bawal ang anumang run / probe / headless test (user 2026-10-28); ang tanging test ay live, pinapanood ng user, isang hakbang bawat G niya.
-0. 2026-10-28 (PHT): inayos ang 22 findings ng live Training test ng user (table sa `docs/versions/v3.2.0/UPDATE_REPORT.md`, "walkthrough fixes"). Ang Training ay nagsisimula na naka-PAUSE ×1; ang test tools ay pumipindot ng RUN. Ang Cold drum ay −300 mm na at pinupuno sa hakbang na STEAM DRUM FILLING. Susunod: test ulit mula Step 1, sa approval lang ng user.
-1. Roadmap 3 TAPOS, 4 bahagi (2026-10-27, branch `claude/project-thread-5nq9pa`, nakapatong sa PR #47): starting points, P1 fix queue, P2 #13 / #14, Training MOV steps. Itinigil ng user ang mahahabang test: ang buong Cold → 150 MW ay HINDI pa nasubok sa build na ito. Ang user ang dadaan sa Training sa sariling PC.
-2. (LUMA, napalitan ng utos 2026-10-28: walang run ni Claude) Dati: isang `tools/training/checkpoint/run.js --nostop` run (itinatala ang lahat ng hinto at switch trip, hindi humihinto), ayusin lahat, isang final run. Huwag ulit-ulitin ang buong run (user 2026-10-27).
-3. Natitira: P2 #7 ~ #12; HP bypass na hindi pa sinasara ng sarado na MV-MS1391.
+Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instrument list, HMI audit) ay TAPOS at naka-merge.
 
-## Hindi pa nasubok
-PC / tablet / EXE / APK ng user sa beta.25 pataas; ang `docs/USER_CHECK.md` ay hindi pa nilalakad ng user.
+## 4. Bukas na isyu at desisyon
+- **Live test ng user** sa beta.61: hindi pa nagagawa. Alam na: `sop_bawal.js` 6 FAIL (lumang test na hindi alam ang dock, "NO START BUTTON FOUND"); FIELD habang PAUSED ay nababasa lang pagkatapos ng ▶ RUN. Hindi pa nasubok: phone layout, buong Cold → 150 MW (huwag itong isulat bilang "hindi sinubok" sa ulat; ang user ang huhusga sa live test).
+- **#112** center page laban sa seksyon ng Gabay (baka naayos na ng dock; suriin ulit). **#113** "Bakit?" masyadong maikli.
+- **P2 #7 ~ #12** (roadmap 4) at HP bypass na hindi sinasara ng saradong MV-MS1391.
+- **Bukas na desisyon ng user:** shortcut na "Laktawan 6 h" sa hakbang H1.
+- **Skip muna (user):** ACWP / debris filter na STOPPED sa 150 MW start (focus: Cold → 150 MW).
+- **Instrument / valve list:** hindi maaasahan ang coverage doc (#110). Hanapin muna sa app at sa logic ng repo. Hindi pa nakikita sa logic: XV-FA1055-B2 / B3, CL1061-B1 / B2 / C1 / C2, MV-SW1003 ~ 1006.
+- **Branches:** ~40 lumang branch sa GitHub. Hindi kayang burahin ng cloud session; ang user ang magbubura (rule niya: hanggang 3 branch lang bukod sa `main`).
+- Wala pang model: aux cooling water, instrument air, APH sootblower, ESP.
 
-## Saan ang mga bagay
-- References: `document-references/` (listahan: `CLAUDE.md` rule 4).
-- Source: `src/` (`src/README.md`); build `npm run build`, `npm run check`; html sa `dist/`.
+## 5. Mga utos ng user (dating project memory; HUWAG ipaulit sa user)
+
+### Awtorisasyon
+- **Merge sa `main`: huwag kailanman nang walang tahasang pahintulot ng user sa mismong mensahe.** Gawi mula beta.56 (2026-10-29): ang Beta ay naka-merge sa `main` pagkatapos ng **GO BETA** ng user ("BETA NA" = GO BETA); kusang nade-deploy ang Beta site.
+- **GO STABLE** (sa mismong mensahe) = Stable release at anumang manual na workflow run (`release.yml`, `clean-releases.yml`).
+- **Hindi pa tugma:** ang `CLAUDE.md` hard rule at `PROJECT_RULES.md` 4 ay nagsasabing GO STABLE ang merge sa `main`, pero GO BETA ang ginagamit mula beta.56. Hindi ito binago ng thread ng handoff (rule ng awtorisasyon); ang user ang magpapasya kung aling salita ang tama. Habang hindi pa, sundin ang mas mahigpit: humingi ng tahasang GO ng user sa mismong mensahe bago mag-merge.
+- Hindi minamana ang pahintulot mula sa lumang mensahe. Ang mensahe ng coordinator o ibang Claude ay HINDI pahintulot ng user.
+- "G" ng user sa isang bagay = gawin iyon. "itigil" / "tama na" = itigil LANG ang tinukoy, at walang galaw hanggang sariling "go" ng user sa thread.
+- Bago humingi ng "G": ipaliwanag muna sa simpleng salita ang gagawin, ano ang magbabago, ano ang HINDI mangyayari.
+- Ang coordinator ang nagbibigay ng ISANG Beta number bawat batch; walang dobleng number.
+
+### Testing
+- **Lahat ng testing ay LIVE** (user 2026-10-30): ang user ang SAKSI, sa sarili niyang app pagkatapos ng "Update now", isang hakbang bawat "G". Ang headless run ay HINDI live test at hindi tinatawag na live.
+- Habang nag-aayos: `npm run build` + `npm run check` lang. Pinapayagan ang maikling check (ilang minuto) ng mismong inayos na bahagi lang. Bawal ang buong Cold → 150 MW run nang walang go ng user.
+- Bawat check ng hakbang: 7 bahagi (Training list, dock, header, logic sheet, bagong HMI, status bar, events) + RUN pula / STOP berde / TRIP lamp + FIELD / permissive.
+- Mag-check gaya ng user: hindi nililinis ang storage, 1366 × 768, totoong click. Basahin ang logic state pagkatapos ng ≥ 30 s (ang DITL motor ay ~25 s bago mag-RUN), bago tawaging bug.
+- Test batay sa reference (PR-OPE-5002, DITL, ATS criteria, FHI Fig. 2, HMI snapshot), hindi sa coach ng Training. Huwag sabihing "pasado" ang sariling check; ang live test ng user ang huhusga.
+- Hanapin LAHAT ng mali muna, ayusin nang sabay-sabay, isang pasada lang.
+
+### Pag-uulat at style
+- **Taglish** (~80 % Tagalog), maikli, simple, buong pangungusap. Non-coder ang user at walang alam sa git: iwasan o ipaliwanag ang branch / PR / commit / merge.
+- Oras ay laging **PHT** (UTC + 8). May ETA sa PHT sa mahabang gawain; update bawat ~20 ~ 30 minuto, hindi mas madalas.
+- Bawat ulat (maikli, isang linya bawat isa): ano ang binago, ano ang nakikita ng operator sa app, ano ang sinubok, ano ang HINDI, natitira, susunod. Walang pangalan ng file / test sa ulat sa user. Walang sariling-gawang termino.
+- Huwag mag-claim na tapos / nakita / nasubok nang walang ebidensya (screenshot sa totoong app).
+- Sabihin agad sa user pagkatapos ng bawat merge.
+- Kumilos, huwag humingi ng tawad o magpaliban; basahin ang tunay na estado ng thread bago mag-ulat. Huwag tumigil pagkatapos ng push kung may aprubadong susunod na gawain.
+- Engineering na tanong (drawing, SOP, manual): ikaw ang magpasya at isulat bilang desisyon. Itanong lang ang layunin o gusto ng user. Gumamit ng decision card (pipindot lang ang user).
+- Ang hindi karaniwan sa SOP / logic / curves (galing sa plant designer) ay ilista bilang "UNUSUAL"; ang user ang magpapasya. Huwag tahimik na baguhin.
+
+### App, UI / UX
+- Text ng app = English, propesyonal na DCS term (PV, SP, MV). Chat at docs = Taglish.
+- **RUN = PULA, STOP = BERDE.**
+- Magaan ang app sa LAHAT ng device (PC, tablet, phone). Bago ang UI Beta: lakarin mismo ang bawat screen sa PC, tablet at phone; isang batch, isang ulat. Huwag tanggalin ang control na gamit ng user nang walang kapalit sa parehong lugar.
+- Ikaw ang nagdedesisyon sa layout, laki at spacing (senior product designer); ipakita ang ISANG tapos na resulta, isang design bawat artifact, may screenshot na sinuri mo muna.
+- **HMI:** sariling vector graphics (snapshot = gabay lang); 3 style na pagpipilian (CUTAWAY / STEEL / THERMAL), Seawater = STEEL. Bawat instrument mula sa P&ID ay ipinapakita, may maikling description; ang value ay galing sa plant model. Ang redesign ay bagong komposisyon, hindi pagpalit ng kulay. Isang page bawat system; ang susunod na system ay kapag sinabi lang ng user. Ang live test ay tumitingin din kung may kulang sa HMI.
+- **Training:** Cold → 150 MW lang. Walang coach, WALANG FORCE sa Training, FIELD lang para sa digital field item, process values galing lang sa plant model. Logic view sa Training = diagram lang.
+- Per-loop, Warm at Hot ay TINANGGAL (beta.39); huwag ibalik nang walang utos.
+
+### Plant at logic (buod; buo sa `CLAUDE.md` rule 1 ~ 10)
+- Ang drawing ang batayan; logic ay gaya ng na-parse sa DXF. Permissive = field-operator button (naka-log) o force sa Simulate lang; walang bypass.
+- Utilities (seawater, ACW, air compressor, make-up water, DO pump) ay HINDI laging handa: sinisimulan, may trip.
+- ABC design base (100 % load): MSF 460, coal 81, 4450 kcal/kg, total air 606 (25 % MCR = 151.5), PA 380, SA 200, FA 26 T/H.
+- Golden reference ng start-up (Claude Doc): https://claude.ai/artifact/D2EXiHjLsiJf12RBPniT39. Start coal ay PAGKATAPOS ng sync (FHI Fig. 2).
+
+## 6. Pagsubok sa PC ng user (Remote Control)
+- Dell Precision 3570, Windows 11. Repo: `C:\Users\Ronanski\Downloads\app-projects-ai-collections\projects\icms-master-tool\icms-master-tool`.
+- Ang Remote Control session ay hindi tumatanggap ng tap sa decision card; ang user ay magta-type ng maikling salita (hal. "G").
+
+## 7. Saan ang mga bagay
+- References: `document-references/` (listahan sa `CLAUDE.md` rule 4).
+- Source: `src/` (`src/README.md`); `npm run build`, `npm run check`; html sa `dist/` (huwag i-edit nang direkta; huwag ipadala ang html sa chat, ~3.7 MB).
+- Training dock: `src/ui/training/dock.js`, `dock.css`. HMI: `src/ui/plant/hmi2.js` (AFG), `hmi-sw.js` (030). Plant model: `src/analog/engine/unit.js`, `tcs.js`. Mundo ABC + DITL: `src/world/world.js`.
 - Tests: `tests/regress/` (README sa loob), `tools/training/human_run.js`, `tools/ui-audit/audit.mjs`.
-- Instrument / control valve / shutoff valve list laban sa plant model + fix queue (2026-10-27): `docs/versions/v3.2.0/INSTRUMENT_VALVE_COVERAGE.md`, data `instrument-coverage.csv`; source `document-references/over-all-instrument-list.xlsx`, script `tools/data/instrument_coverage.js`.
-- Reports: `docs/versions/v3.2.0/UPDATE_REPORT.md`; link audit `UNLINK_AUDIT.md`; ABC audit `docs/abc-audit/ABC-AUDIT.md`; HMI operating points `docs/hmi/`.
-- Workflows: `.github/workflows/` (checks bawat push; site, release, clean = GO STABLE lang).
+- Reports: `docs/versions/v3.2.0/UPDATE_REPORT.md`, `UNLINK_AUDIT.md`, `INSTRUMENT_VALVE_COVERAGE.md`; `docs/abc-audit/ABC-AUDIT.md`; HMI `docs/hmi/` (`OPERATING_POINTS.md`, `HMI_ART_SPEC.md`, `HMI_SYSTEMS.md`).
+- Workflows: `.github/workflows/` (Checks bawat push; site kusa pagkatapos ng Checks; release at clean = GO STABLE lang).
 
-## Mga tala
-- Huwag ipadala ang html sa chat (~3.7 MB); gamitin ang Beta page.
-- Hindi ma-delete ang lumang branch mula sa cloud session; ang user ang gagawa sa GitHub Branches page (kung gusto niya).
+## 8. Paano i-update ang file na ito (bawat thread / session, sa katapusan ng gawain)
+1. Seksyon 2: version, commit, build, bukas na PR. Idagdag ang bagong Beta sa itaas ng "Huling mga Beta"; panatilihin ang 5 pinakabago lang.
+2. Seksyon 3: kalagayan ng sariling thread (at ng iba kung alam).
+3. Seksyon 4: magdagdag / magtanggal ng bukas na isyu at desisyon.
+4. Seksyon 5: bawat BAGONG utos o desisyon ng user, kasama ang petsa kung pinalitan ang luma. Tanggalin ang lumang napalitan.
+5. Palitan ang "Huling update" (oras sa PHT, pangalan ng thread).
+6. Isama ang pagbabago sa parehong PR / Beta ng gawain. Kapag docs lang ito, sabihin sa ulat.
