@@ -627,6 +627,24 @@
     return { row, no: row + 1, tag, svc: svc || 'Input row ' + (row + 1) };
   };
 
+  /* live test 2026-10-30 #5 (#121, HMI 030 as snapshot 30.PNG: R / M / A at each pump): the REMOTE and the AUTO selection of a motor, read on
+     its drawing (DITL-29A row 5 / 22 REMOTE MODE SELECTED, row 4 AUTO MODE SELECTED; DITL-30 row 22, row 4); null when the drawing has none */
+  function modeOf(ad) {
+    const s = dOf(ad);
+    if (!s) return null;
+    if (!s._mrows) {
+      const R = { rem: [], au: [] };
+      for (let r = 0; r < 60; r++) {
+        const v = rowInfo(s, r).svc;
+        if (/REMOTE MODE SELECTED/.test(v)) R.rem.push(r);
+        else if (/\bAUTO MODE SELECTED\b/.test(v)) R.au.push(r);
+      }
+      s._mrows = R;
+    }
+    const val = r => call(() => DUI.rowVal(s, r), null) === 1 || !!(s.sig && s.sig[r + ':S']),
+      R = s._mrows;
+    return { rem: R.rem.length ? R.rem.some(val) : null, au: R.au.length ? R.au.some(val) : null };
+  }
   /* retest #69: the AUTO MODE SELECTED input row of a motor drawing (a maintained CRT selection), or null */
   function amRow(ds) {
     if (!ds) return null;
@@ -952,15 +970,19 @@
       if (g.cur > 0) (g.open(g.cur - 1), fill(true));
       return;
     }
-    if (call(() => g.ready(), false)) {
+    if (isDone()) {
       if (g.next()) fill(true);
     } else if (g.cur < (els.maxI || 0)) (g.open(g.cur + 1), fill(true));
   }
+  /* #120 (live test 2026-10-30, H2 / H4 / H6: "✓ TAPOS" while the SOP items after the START were not ticked): the step is done when its
+     condition is met AND the SOP items of PAGKATAPOS I-START (monitor, adjust, standby to AUTO) are ticked */
+  const postLeft = () => (els.after || []).filter(x => !x.cb.checked);
+  const isDone = () => call(() => GD().ready(), false) && !postLeft().length;
   /* the › of the step: green when the step is done (was "✓ TAPOS ... Susunod ›"), open to a step already reached */
   function stepNx() {
     const g = GD();
     if (!g || !els.stN) return;
-    const rd = call(() => g.ready(), false),
+    const rd = isDone(),
       L = g.steps();
     els.stN.disabled = !(rd || g.cur < Math.min(els.maxI || 0, L.length));
     els.stN.classList.toggle('go', !!rd);
@@ -1239,10 +1261,28 @@
     ov.hidden = !X.length;
     if (k === ov.dataset.k) return;
     ov.dataset.k = k;
+    /* live test 2026-10-30 #7 (H5 / H6: the "HAKBANG n" tag lay on the value box of S-1502 and on the label of SWBP-A): the tag goes to the
+       first place beside the box that covers no text of the HMI (above, below, left, right), not always on top of the box */
+    const tl = 'HAKBANG ' + (GD().cur + 1),
+      tw = tl.length * 6.6 + 12,
+      th = 15,
+      svg = document.getElementById('plsvg'),
+      TX = X.length && svg ? [...svg.querySelectorAll('text')].map(t => t.getBoundingClientRect()).filter(r => r.width > 0).map(r => [r.left - m.left, r.top - m.top, r.right - m.left, r.bottom - m.top]) : [],
+      free = (x, y) => x >= 0 && y >= 0 && x + tw <= m.width && y + th <= m.height && !TX.some(t => t[0] < x + tw && t[2] > x && t[1] < y + th && t[3] > y) && !X.slice(1).some(r => r[0] < x + tw && r[0] + r[2] > x && r[1] < y + th && r[1] + r[3] > y),
+      r0 = X[0] || [0, 0, 0, 0],
+      at = [
+        [r0[0], r0[1] - th - 1],
+        [r0[0] + r0[2] - tw, r0[1] - th - 1],
+        [r0[0], r0[1] + r0[3] + 1],
+        [r0[0] + r0[2] - tw, r0[1] + r0[3] + 1],
+        [r0[0] - tw - 2, r0[1]],
+        [r0[0] + r0[2] + 2, r0[1]],
+        [r0[0], r0[1] - 2 * th - 2],
+        [r0[0], r0[1] + r0[3] + th + 2]
+      ].find(([x, y]) => free(x, y)) || [r0[0], r0[1] - th - 1];
     ov.replaceChildren(
-      ...X.map((r, j) =>
-        E('div', { cls: 'gd-hlb', style: 'left:' + r[0] + 'px;top:' + r[1] + 'px;width:' + r[2] + 'px;height:' + r[3] + 'px' }, j ? [] : [E('b', { txt: 'HAKBANG ' + (GD().cur + 1) })])
-      )
+      ...X.map(r => E('div', { cls: 'gd-hlb', style: 'left:' + r[0] + 'px;top:' + r[1] + 'px;width:' + r[2] + 'px;height:' + r[3] + 'px' })),
+      ...(X.length ? [E('b', { cls: 'gd-hlt', txt: tl, style: 'left:' + Math.round(at[0]) + 'px;top:' + Math.round(at[1]) + 'px' })] : [])
     );
   }
   /* ---------- the main area follows the step: the DITL of a motor, the ABC sheet of a faceplate ---------- */
@@ -1732,7 +1772,7 @@
           } catch (e) {}
           live();
         };
-        if (cut >= 0 && fi >= cut && !au) els.after.push({ cb, li });
+        if (cut >= 0 && fi >= cut && !au) els.after.push({ cb, li, t: f.t, by });
         if (cut >= 0 && fi < cut && !au) els.before.push(cb);
         /* the items of the Lineup stage that the operator ticks (the SUSUNOD NA GAWIN names the first one not done) */
         if (!(cut >= 0 && fi >= cut) && !au) els.lineCb.push({ cb, t: f.t, by });
@@ -2124,32 +2164,43 @@
         hd = E('button', { type: 'button', cls: 'gd-shd', 'aria-expanded': 'false' }, [num, E('span', { cls: 'gd-snm' }, [E('b', { txt: nm }), E('small', { txt: sub })]), cnt]),
         bd = E('div', { cls: 'gd-sbd' }, kids),
         box = E('div', { cls: 'gd-stg' }, [hd, bd]),
-        o = { k, box, hd, bd, num, cnt };
+        chip = E('button', { type: 'button', cls: 'gd-chip', title: nm + ' · ' + sub }, [E('span', { cls: 'gd-cn', txt: String(els.stg.length + 1) }), E('span', { txt: nm })]),
+        o = { k, box, hd, bd, num, cnt, chip };
       hd.onclick = () => {
         const cur = stOpenK(s);
         els.stOpen = { i: s.i, k: cur === k ? '-' : k };
+        live();
+      };
+      chip.onclick = () => {
+        els.stOpen = { i: s.i, k };
         live();
       };
       els.stg.push(o);
       return box;
     };
     const secs = (s.field || []).map(x => x + 1).join(', ');
-    const hasCtl = !!card.querySelector('.gd-ctl') || bs.children.length > 0;
+    const hasCtl = !!card.querySelector('.gd-ctl') || bs.children.length > 0,
+      /* live test 2026-10-30 #3 (H4 hypochlorite pump): a step done only by the field operator at a local panel (no DCS command) says so
+         (was "Gawin sa DCS · Controller (A / M, MV, SV) at mga button ng hakbang") */
+      fldOnly = !hasMot && (s.a || []).length > 0 && (s.a || []).every(a => a.loc || /^FIELD\b/.test(a.l || ''));
     const stBoxes = [
       sopPre && sopPre.children.length ? stg('L', hasMot ? 'Lineup' : 'SOP', (hasMot ? 'Bago i-START · ' : 'Gawin at i-tick · ') + 'PR-OPE-5002 seksyon ' + secs, [sopPre]) : null,
       (els.il || []).length ? stg('P', 'Permissive', 'Start permission ng DITL (interlock)', [ilWrap]) : null,
       hasCtl
         ? stg(
             'S',
-            hasMot ? 'Start' : s.need && !(s.a || []).length ? 'Kumpirmahin' : 'Gawin sa DCS',
-            hasMot ? 'START / STOP · MAN / AUTO' : s.need && !(s.a || []).length ? 'Tapos na sa field' : 'Controller (A / M, MV, SV) at mga button ng hakbang',
+            hasMot ? 'Start' : s.need && !(s.a || []).length ? 'Kumpirmahin' : fldOnly ? 'Gawin sa field' : 'Gawin sa DCS',
+            hasMot ? 'START / STOP · MAN / AUTO' : s.need && !(s.a || []).length ? 'Tapos na sa field' : fldOnly ? 'Field operator sa local panel · walang DCS control' : 'Controller (A / M, MV, SV) at mga button ng hakbang',
             [card]
           )
         : null,
       watchBox || sopPost || s.c ? stg('C', 'Check', 'Value laban sa SOP / HMI · ang kondisyon ng hakbang', [els.cond, watchBox, sopPost ? E('div', { cls: 'gd-flg', txt: 'PAGKATAPOS I-START (bukas kapag tumatakbo na)' }) : null, sopPost]) : null
     ].filter(Boolean);
     if (why) why.firstChild.textContent = 'Bakit ang hakbang na ito?';
-    b.append(chk, ...(els.eq ? [els.eq] : []), E('div', { cls: 'gd-stgs' }, stBoxes), ...(why ? [why] : []));
+    /* live test 2026-10-30 #3 ("nakakalito pa rin ang dock"): one line of the stages (✓ done, the one now lit) and only the open stage under
+       it; a stage done is folded into its chip (press a chip to open it again) */
+    const spr = els.stg.length > 1 ? E('div', { cls: 'gd-spr', role: 'group', 'aria-label': 'Mga yugto' }, els.stg.map(o => o.chip)) : null;
+    b.append(chk, ...(els.eq ? [els.eq] : []), ...(spr ? [spr] : []), E('div', { cls: 'gd-stgs' }, stBoxes), ...(why ? [why] : []));
     footFill(s);
     if (first) {
       els.goKey = null;
@@ -2240,7 +2291,7 @@
         L: nL ? dL + ' / ' + nL : '',
         P: mi ? (mi.run ? 'tumatakbo' : mi.sby ? 'standby' : mi.miss.length ? 'may kulang' : 'kumpleto') : mis.length ? (pOk ? 'kumpleto' : 'may kulang') : '',
         S: selA ? (runSel ? 'RUNNING' : mi && mi.sby ? (autoOf(selAd) ? 'STANDBY AUTO' : 'MAN') : '—') : rd ? 'tapos' : '',
-        C: rd ? 'tapos' : W.length ? wOk + ' / ' + W.length + ' OK' : ''
+        C: rd ? 'tapos' : (els.after || []).length ? 'SOP ' + ((els.after || []).length - postLeft().length) + ' / ' + els.after.length : W.length ? wOk + ' / ' + W.length + ' OK' : ''
       };
     const cur = els.stg.find(o => !ok[o.k]) || els.stg[els.stg.length - 1];
     els.stCur = cur.k;
@@ -2252,6 +2303,11 @@
       o.cnt.textContent = (isOk && cnt[o.k] ? '✓ ' : '') + (cnt[o.k] || '');
       o.box.className = 'gd-stg' + (isOk ? ' ok' : '') + (o === cur && !rd ? ' cur' : '') + (open ? ' open' : '') + (!isOk && els.stg.indexOf(cur) < j ? ' wait' : '');
       o.bd.hidden = !open;
+      /* #3: only the open stage is shown under the line of chips (a single stage: its box stays) */
+      o.box.hidden = els.stg.length > 1 && !open;
+      o.chip.className = 'gd-chip' + (isOk ? ' ok' : '') + (o === cur && !rd ? ' cur' : '') + (open ? ' open' : '');
+      o.chip.firstChild.textContent = isOk ? '✓' : String(j + 1);
+      o.chip.setAttribute('aria-pressed', String(open));
       o.hd.setAttribute('aria-expanded', String(open));
     });
   }
@@ -2272,7 +2328,31 @@
     let say = '',
       bl = '',
       fn = null;
-    if (rd) {
+    const pl = !rd && call(() => GD().ready(), false) ? postLeft() : [],
+      /* live test 2026-10-30 #8: the standby of a step of 2 running (2 SWBP): the third one to AUTO on its drawing (DITL-30 row 4) */
+      sbA = s.sby && s.max && nOn >= s.max && !rd ? ms.find(a => !on(a) && (els.btns || []).some(x => x.ad === motAddr(a) && x.am) && !autoOf(motAddr(a))) : null;
+    if (sbA) {
+      const B = (els.btns || []).find(x => x.ad === motAddr(sbA) && x.am);
+      say = 'Ilagay ang ' + mName(sbA) + ' sa AUTO (standby: aandar kapag nag-trip ang tumatakbo; ' + dName(B.am._am.s) + ' row ' + (B.am._am.row + 1) + ').';
+      bl = 'AUTO ' + mName(sbA);
+      fn = () => {
+        B.am.click();
+        /* the SOP item of the standby (PR-OPE-5002 "Set the standby SWBP to AUTO") is what was just done */
+        const it = (els.after || []).find(x => !x.cb.checked && /standby.*\bAUTO\b/i.test(x.t));
+        if (it) {
+          it.cb.checked = true;
+          it.cb.dispatchEvent(new Event('change'));
+        }
+      };
+    } else if (pl.length) {
+      /* #120: the condition is met; the SOP items after the START are still to tick (Check) */
+      say = 'Check (pagkatapos i-START' + (pl[0].by ? ', ' + pl[0].by : '') + '): ' + pl[0].t + (pl.length > 1 ? ' · natitira: ' + pl.length + ' item' : '');
+      bl = '✓ Tapos';
+      fn = () => {
+        pl[0].cb.checked = true;
+        pl[0].cb.dispatchEvent(new Event('change'));
+      };
+    } else if (rd) {
       say = '✓ Tapos ang hakbang' + (els.skipped === s.i ? ' (nilaktawan: training shortcut)' : '') + '. Pindutin ang Susunod.';
       bl = 'Susunod ›';
       fn = () => stepGo(1);
@@ -2416,7 +2496,7 @@
       if (nd >= nb || (s.a || []).some(a => a.stop && call(() => a.on(), false))) els.ovw.hidden = true;
       else els.ovw.textContent = els.ovw.textContent.replace(/^⚠ \d+ \/ \d+/, '⚠ ' + nd + ' / ' + nb);
     }
-    const rd = call(() => g.ready(), false);
+    const rd = isDone();
     if (els.okb) {
       els.okb.hidden = !rd;
       /* #115 (live check: "Pindutin ang Simulan ang 6 h purge" and "Naka-PAUSE ang oras" stayed under ✓ TAPOS of Hakbang 1): a done step
@@ -2796,6 +2876,7 @@
     fieldRow,
     dsel,
     mst,
+    modeOf,
     dmotor,
     dOf,
     needNet,
