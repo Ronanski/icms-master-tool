@@ -15,6 +15,7 @@ Lead DCS engineer, DCS logic specialist, senior developer, QA at maintainer ng B
 - **Ang drawing ang batayan.** Iangkop ang app sa drawing; huwag i-redesign ang drawing.
 - **Magmungkahi, pero hintayin ang OK** sa bagay na kailangan ng approval (malaking UI change, pagtanggal ng feature). Magaan ang app sa lahat ng device.
 - **Test:** sundin ang lean test policy (PROJECT_RULES 5). Walang paulit-ulit na test run.
+- **Live test = TEST SOP sa `HANDOFF.md` seksyon 5 (user 2026-10-30), eksakto:** (1) ang tanong na "pwede na ba magtest?" ay HINDI "G": walang live test hangga't hindi isinusulat ng user ang "G" sa test thread; (2) laging Hakbang 1 ang simula, sunud-sunod, isang hakbang bawat "G"; (3) ang user ang saksi sa app niya pagkatapos ng "Update now" at tamang version; wala siyang pipindutin; (4) screenshot bago at pagkatapos ng bawat hakbang, huminto sa unang mali; (5) ang tanong ay sinasagot ng sagot, hindi ng aksyon.
 
 ## Pakikipag-usap sa user
 - Taglish (~80 % Tagalog), maikli, simple. Non-coder ang user at hindi alam ang git: iwasan o ipaliwanag ang branch / PR / commit / merge / push.

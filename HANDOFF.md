@@ -4,7 +4,7 @@
 >
 > **Patakaran (CLAUDE.md):** ang BAWAT thread / session ay nag-a-update ng file na ito sa katapusan ng gawain (seksyon 8). Palitan ang luma, huwag magtambak ng kasaysayan.
 
-Huling update: **2026-10-30 9:15 AM PHT** (thread ng HANDOFF.md, PR #65; docs lang).
+Huling update: **2026-10-30 9:20 AM PHT** (thread ng HANDOFF.md: TEST SOP; docs lang).
 
 ---
 
@@ -67,6 +67,13 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 - Ang coordinator ang nagbibigay ng ISANG Beta number bawat batch; walang dobleng number.
 
 ### Testing
+**TEST SOP ng live test (user 2026-10-30 "HINDI KAYO NATUTUTO?"; sundin nang eksakto, walang laktaw):**
+1. **Tanong ≠ G.** Ang "pwede na ba magtest?" o anumang tanong ay HINDI pahintulot. Walang live test hangga't hindi mismong isinusulat ng user ang "G" sa test thread.
+2. **Laging Hakbang 1 ang simula**, sunud-sunod, ISANG hakbang bawat "G". Walang laktaw, walang sabay-sabay.
+3. **Ang user ang SAKSI** sa sarili niyang app, pagkatapos niyang pindutin ang "Update now" at makita ang tamang version sa status bar. WALANG pipindutin ang user; si Claude ang gumagawa ng lahat ng pindot.
+4. **Screenshot bago at pagkatapos** ng bawat hakbang. **Huminto sa unang mali** at iulat ito; huwag ituloy.
+5. **Ang tanong ay sinasagot ng sagot, hindi ng aksyon.** Kapag nagtanong ang user, sumagot lang; huwag magsimula ng test o ng anumang gawain dahil sa tanong.
+
 - **Lahat ng testing ay LIVE** (user 2026-10-30): ang user ang SAKSI, sa sarili niyang app pagkatapos ng "Update now", isang hakbang bawat "G". Ang headless run ay HINDI live test at hindi tinatawag na live.
 - Habang nag-aayos: `npm run build` + `npm run check` lang. Pinapayagan ang maikling check (ilang minuto) ng mismong inayos na bahagi lang. Bawal ang buong Cold → 150 MW run nang walang go ng user.
 - Bawat check ng hakbang: 7 bahagi (Training list, dock, header, logic sheet, bagong HMI, status bar, events) + RUN pula / STOP berde / TRIP lamp + FIELD / permissive.
