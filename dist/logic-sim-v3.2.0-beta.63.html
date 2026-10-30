@@ -29477,7 +29477,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.63';
-      c3.textContent += ' · build 0fd1eb8'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 142c36f'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -48771,6 +48771,14 @@ html.gd-side,html.gd-bottom{overflow:hidden}
 html.gd-side body{width:calc(100vw - var(--gdw,380px))!important;min-height:100vh;transform:translateZ(0)}
 html.gd-side body.cr #crband .crkpis{display:none!important}
 html.gd-bottom body{height:calc(100vh - var(--gdh,42vh))!important;min-height:0!important;transform:translateZ(0);overflow:hidden}
+/* live test 2026-10-30 #2 (the rail of the pages stayed open beside the dock and took the room of the HMI): while the Training dock is open
+   the rail hides to a 14 px strip at the left edge and slides out on hover / tap; the pages start right of the strip */
+html.gd-tr:not(.gd-min){--railW:14px}
+html.gd-tr:not(.gd-min) body.cr #crrail{width:4rem;transform:translateX(calc(14px - 100%));transition:transform .15s ease .3s}
+html.gd-tr:not(.gd-min) body.cr #crrail:is(:hover,:focus-within){transform:none;transition-delay:0s;box-shadow:4px 0 14px var(--c-shadow)}
+html.gd-tr:not(.gd-min) body.cr #crrail::after{content:"";position:absolute;right:4px;top:50%;width:4px;height:48px;margin-top:-24px;border-radius:2px;background:var(--c-raildim);opacity:.7}
+html.gd-tr:not(.gd-min) body.cr #crrail:is(:hover,:focus-within)::after{display:none}
+html.gd-tr:not(.gd-min) body.cr #crrail:not(:hover):not(:focus-within)>*{visibility:hidden}
 #gdock{position:fixed;z-index:400;display:flex;flex-direction:column;background:var(--c-pane);color:var(--c-tx);font:400 15px/1.5 var(--uf);box-sizing:border-box;box-shadow:0 0 18px var(--c-shadow)}
 #gdock[hidden],#gdtab[hidden]{display:none!important}
 html.gd-side #gdock{top:0;right:0;bottom:0;width:var(--gdw,380px);border-left:1px solid var(--c-line2)}
@@ -48899,10 +48907,12 @@ html.gd-bottom .gd-body{display:grid;grid-template-columns:minmax(0,1.15fr) minm
 .gd-wr b{font:600 14.5px var(--mf);color:var(--c-acctx);font-variant-numeric:tabular-nums}
 .gd-wr em{font-style:normal;font-size:12px;color:var(--c-dim);margin-left:3px}
 .gd-wr small{display:block;text-align:right;font-size:12px;color:var(--c-dim)}
-.gd-tg{flex:none;width:32px;height:18px;border-radius:10px;border:0;background:var(--c-line2);position:relative;cursor:pointer}
-.gd-tg.on{background:var(--c-run)}
-.gd-tg:after{content:"";position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:#fff;transition:left .15s}
-.gd-tg.on:after{left:17px}
+button.gd-tg{flex:none;width:32px;height:18px;border-radius:10px;border:0;background:var(--c-line2);position:relative;cursor:pointer}
+button.gd-tg.on{background:var(--c-run)}
+button.gd-tg:after{content:"";position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:#fff;transition:left .15s}
+button.gd-tg.on:after{left:17px}
+/* live test 2026-10-30 (H5 / H6 screenshots): the tag of an SOP item (b.gd-tg) took the switch look above, a white dot over its text */
+b.gd-tg{font-weight:600;color:var(--c-tx2)}
 .gd-follow{font-size:13.5px;color:var(--c-tx2);display:flex;gap:6px;align-items:center}
 .gd-next div{font-size:13.5px;color:var(--c-dim);padding:3px 8px;border:1px solid var(--c-line);border-radius:6px;margin-top:4px}
 .gd-next div:before{content:"🔒 ";filter:grayscale(1)}
@@ -49001,7 +49011,7 @@ html.gd-tr #plmid{position:relative}
 #gdhl{position:absolute;inset:0;pointer-events:none;z-index:6}
 #gdhl[hidden]{display:none}
 .gd-hlb{position:absolute;border:2px dashed #38c6e8;border-radius:6px;box-shadow:0 0 0 3px rgba(56,198,232,.18)}
-.gd-hlb b{position:absolute;left:-2px;bottom:100%;background:#38c6e8;color:#06222c;font:700 10px var(--uf);padding:1px 6px;border-radius:3px 3px 0 0;white-space:nowrap}
+.gd-hlt{position:absolute;background:#38c6e8;color:#06222c;font:700 10px/13px var(--uf);padding:1px 6px;border-radius:3px;white-space:nowrap}
 /* while the Training is open: the buttons the dock has already (VIEW / RUN, Run, Reset, speed) and the engineering ones (CHECK,
    TCS / Field, Systems) are hidden; the Plant view keeps ◄ screen ► */
 html.gd-tr #crband>.seg,html.gd-tr #plmid .plbar .crop,html.gd-tr #plsys,html.gd-tr #plmid .plchips,html.gd-tr #pllive{display:none!important}
@@ -49070,6 +49080,17 @@ html.gd-menu #gdock .gd-nx{display:none!important}
 .gd-es.sby:before{background:none;border:2px solid currentColor;width:7px;height:7px}
 /* the four stages */
 .gd-stgs{display:flex;flex-direction:column;gap:6px}
+.gd-stg[hidden]{display:none}
+/* live test 2026-10-30 #3: the stages in one line; only the open one is shown under it */
+.gd-spr{display:flex;gap:4px;margin:0 0 6px}
+.gd-chip{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:5px;padding:5px 4px;border:1px solid var(--c-line2);border-radius:6px;background:var(--c-pane);color:var(--c-tx2);font:600 13px var(--uf);cursor:pointer;white-space:nowrap;overflow:hidden}
+.gd-chip span:last-child{overflow:hidden;text-overflow:ellipsis}
+.gd-cn{flex:none;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:11px;border:1.5px solid var(--c-dim)}
+.gd-chip.ok{color:var(--gd-ok)}
+.gd-chip.ok .gd-cn{background:var(--gd-ok);border-color:var(--gd-ok);color:#071321}
+.gd-chip.cur{border-color:var(--gd-ok);color:var(--c-tx)}
+.gd-chip.cur .gd-cn{border-color:var(--gd-ok);color:var(--gd-ok)}
+.gd-chip.open{background:var(--c-line);color:var(--c-tx)}
 .gd-stg{border:1px solid var(--c-line2);border-radius:7px;background:var(--c-pane)}
 .gd-stg.cur{border-color:var(--gd-ok)}
 .gd-stg.wait>.gd-shd{opacity:.6}
@@ -56876,6 +56897,10 @@ window.LS_GUIDE = (function () {
       swpN = () => SWPM.filter(a => bit(a) > 0.5).length,
       swpAuto = j => locRun(SWPD[j], 3) === 1,
       swpStby = () => SWPM.findIndex(a => !(bit(a) > 0.5));
+    const BPD = ['DITL-30', 'DITL-30 #B', 'DITL-30 #C'],
+      bpN = () => BPD.filter(nm => dRun(nm) === 1).length,
+      bpAuto = j => locRun(BPD[j], 3) === 1,
+      bpStby = () => BPD.findIndex(nm => dRun(nm) !== 1);
     /* 3.2.0 retest #46 #33: the values of the equipment the operator reads on the HMI (no transmitter on the ABC sheets): from the HMI snapshot
        030 SEAWATER SYSTEM (SWP 207 ~ 243 A, SWBP 87 A, condenser inlet 1.0 / outlet 0.4 ~ 0.5 kg/cm2) and the SOP (SWP discharge 2.2 ~ 2.4
        ksc, condenser dP 0.4), shown while the pump runs (0 when stopped) */
@@ -56908,11 +56933,14 @@ window.LS_GUIDE = (function () {
         w: SWPW
       },
       /* 3.2.0 retest #32 #33: one step per SOP section 3 ~ 17, the machines started from the DCS or locally (were: two field cards, 135 items) */
-      { st: 0, sec: 3, t: 'Simulan ang hypochlorite pump (field)', d: 'Walang DCS signal ang hypochlorite pump: sinisimulan ito ng field operator sa local panel.', c: C('Hypochlorite pump running (field)', () => !!(AN.fieldState && AN.fieldState().hypo), () => 'Hypochlorite pump ' + (AN.fieldState && AN.fieldState().hypo ? 'RUNNING' : 'STOPPED')), a: [fldB('hypo', 'hypochlorite pump')], field: [2], w: [['Hypochlorite pump', () => (fstate('hypo') ? 'RUNNING' : 'STOPPED'), '', x => x, 'local panel']] },
+      { st: 0, sec: 3, t: 'Simulan ang hypochlorite pump (field)', d: 'Walang DCS command ang hypochlorite pump (ang STN105 DI ay running / overload status lang, hal. P-0762A I.0329): sinisimulan ito ng field operator sa local panel (HCDSP).', c: C('Hypochlorite pump running (field)', () => !!(AN.fieldState && AN.fieldState().hypo), () => 'Hypochlorite pump ' + (AN.fieldState && AN.fieldState().hypo ? 'RUNNING' : 'STOPPED')), a: [fldB('hypo', 'hypochlorite pump')], field: [2], w: [['Hypochlorite pump', () => (fstate('hypo') ? 'RUNNING' : 'STOPPED'), '', x => x, 'local panel']] },
       { st: 0, sec: 4, t: 'Simulan ang SWP outlet debris filter (DITL-39)', d: 'REMOTE AUTO START ng debris filter system 1 sa DCS (DITL-39 row 8). Tumatakbo lang kapag may SWP na tumatakbo.', c: outC('SWP outlet debris filter IN OPERATION (DITL-39)', 'DITL-39', 3, 'IN OPERATION', 'stopped'), a: [pbB('Debris filter 1 AUTO START (DITL-39)', 'DITL-39', 7, null, () => dOut('DITL-39', 3) === 1)], field: [3], w: [['SWP outlet debris filter', () => (dOut('DITL-39', 3) === 1 ? 'IN OPERATION' : 'STOPPED'), '', x => x, 'DITL-39 out 4'], ['SWP running', () => swpN() + ' / 3', '', x => x, 'kailangan ≥ 1']] },
       /* R9 #71: PR-OPE-5002 section 5 starts a 1st and a 2nd SWBP and puts the third on standby AUTO (HMI 030: SWBP-A / C running, B
          standby): two running, as the SWP (was: one, so the SOP item "Initiate START to 2nd selected SWBP" could never tick) */
-      { st: 0, sec: 5, max: 2, t: 'Simulan ang 2 seawater booster pump (SWBP), kahit alin', d: 'Gawin: REMOTE sa field, saka START ng dalawang SWBP (DITL-30). Ang ikatlo ay standby (AUTO). Kailangan ang tumatakbong SWP.', c: C('2 seawater booster pumps running (DITL-30)', () => !WL() || ['DITL-30', 'DITL-30 #B', 'DITL-30 #C'].filter(nm => dRun(nm) === 1).length >= 2, () => (WL() ? ['DITL-30', 'DITL-30 #B', 'DITL-30 #C'].map((nm, j) => 'ABC'[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : 'STOPPED')).join(', ') : '— (one world OFF)')), a: [dmot('DITL-30', 'SWBP-A'), dmot('DITL-30 #B', 'SWBP-B'), dmot('DITL-30 #C', 'SWBP-C')], field: [4], w: runW('SWBP', ['DITL-30', 'DITL-30 #B', 'DITL-30 #C'].map(nm => () => dRun(nm) === 1), 87, 'A', 'HMI 030: 87 A') },
+      /* live test 2026-10-30 #8: PR-OPE-5002 section 5 "Set the standby SWBP to AUTO": DITL-30 row 4 SEAWATER BOOSTER PUMP x AUTO MODE
+         SELECTED (CRT, M.1202 / 1212 / 1222; with it the pump starts when a running one trips: B / C RUNNING off-delay 2 s AND TRIP). The step
+         is done with 2 running AND the third in AUTO (was: 2 running only, the third stayed MAN) */
+      { st: 0, sec: 5, max: 2, sby: 1, t: 'Simulan ang 2 seawater booster pump (SWBP), kahit alin', d: 'Gawin: REMOTE sa field, saka START ng dalawang SWBP (DITL-30). Ang ikatlo ay standby: AUTO (DITL-30 row 4, AUTO MODE SELECTED). Kailangan ang tumatakbong SWP.', c: C('2 SWBP running at standby SWBP sa AUTO (DITL-30)', () => !WL() || (bpN() >= 2 && (bpStby() < 0 || bpAuto(bpStby()))), () => (WL() ? BPD.map((nm, j) => 'ABC'[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : 'STOPPED' + (bpAuto(j) ? ' AUTO' : ' MAN'))).join(', ') : '— (one world OFF)')), a: [dmot('DITL-30', 'SWBP-A'), dmot('DITL-30 #B', 'SWBP-B'), dmot('DITL-30 #C', 'SWBP-C')], field: [4], w: runW('SWBP', ['DITL-30', 'DITL-30 #B', 'DITL-30 #C'].map(nm => () => dRun(nm) === 1), 87, 'A', 'HMI 030: 87 A') },
       { st: 0, sec: 6, t: 'Simulan ang SWBP outlet debris filter (DITL-39)', d: 'REMOTE AUTO START ng debris filter system 2 sa DCS (DITL-39 row 19).', c: outC('SWBP outlet debris filter IN OPERATION (DITL-39)', 'DITL-39', 14, 'IN OPERATION', 'stopped'), a: [pbB('Debris filter 2 AUTO START (DITL-39)', 'DITL-39', 18, null, () => dOut('DITL-39', 14) === 1)], field: [5], w: [['SWBP outlet debris filter', () => (dOut('DITL-39', 14) === 1 ? 'IN OPERATION' : 'STOPPED'), '', x => x, 'DITL-39 out 15']] },
       { st: 0, sec: 7, t: 'Simulan ang make-up water pump (MWP)', d: 'Ang MWP ay nasa DCS (DITL-112). Pinupuno nito ang expansion tank at ang condenser.', c: runC('A make-up water pump running (DITL-112)', ['DITL-112', 'DITL-112 #B', 'DITL-112 #C']), a: [dmot('DITL-112', 'MWP-A'), dmot('DITL-112 #B', 'MWP-B'), dmot('DITL-112 #C', 'MWP-C')], field: [6], w: [runW('MWP', ['DITL-112', 'DITL-112 #B', 'DITL-112 #C'].map(nm => () => dRun(nm) === 1), 0, '')[0]] },
       { st: 0, sec: 8, t: 'Simulan ang auxiliary cooling water pump (ACW)', d: 'Ang ACW pump ay nasa DCS (DITL-76 A, DITL-77 B).', c: runC('An aux. cooling water pump running (DITL-76 / 77)', ['DITL-76', 'DITL-77']), a: [dmot('DITL-76', 'ACW pump A'), dmot('DITL-77', 'ACW pump B')], field: [7], w: (() => {
@@ -58243,6 +58271,24 @@ window.LS_GUIDE = (function () {
     return { row, no: row + 1, tag, svc: svc || 'Input row ' + (row + 1) };
   };
 
+  /* live test 2026-10-30 #5 (#121, HMI 030 as snapshot 30.PNG: R / M / A at each pump): the REMOTE and the AUTO selection of a motor, read on
+     its drawing (DITL-29A row 5 / 22 REMOTE MODE SELECTED, row 4 AUTO MODE SELECTED; DITL-30 row 22, row 4); null when the drawing has none */
+  function modeOf(ad) {
+    const s = dOf(ad);
+    if (!s) return null;
+    if (!s._mrows) {
+      const R = { rem: [], au: [] };
+      for (let r = 0; r < 60; r++) {
+        const v = rowInfo(s, r).svc;
+        if (/REMOTE MODE SELECTED/.test(v)) R.rem.push(r);
+        else if (/\bAUTO MODE SELECTED\b/.test(v)) R.au.push(r);
+      }
+      s._mrows = R;
+    }
+    const val = r => call(() => DUI.rowVal(s, r), null) === 1 || !!(s.sig && s.sig[r + ':S']),
+      R = s._mrows;
+    return { rem: R.rem.length ? R.rem.some(val) : null, au: R.au.length ? R.au.some(val) : null };
+  }
   /* retest #69: the AUTO MODE SELECTED input row of a motor drawing (a maintained CRT selection), or null */
   function amRow(ds) {
     if (!ds) return null;
@@ -58568,15 +58614,19 @@ window.LS_GUIDE = (function () {
       if (g.cur > 0) (g.open(g.cur - 1), fill(true));
       return;
     }
-    if (call(() => g.ready(), false)) {
+    if (isDone()) {
       if (g.next()) fill(true);
     } else if (g.cur < (els.maxI || 0)) (g.open(g.cur + 1), fill(true));
   }
+  /* #120 (live test 2026-10-30, H2 / H4 / H6: "✓ TAPOS" while the SOP items after the START were not ticked): the step is done when its
+     condition is met AND the SOP items of PAGKATAPOS I-START (monitor, adjust, standby to AUTO) are ticked */
+  const postLeft = () => (els.after || []).filter(x => !x.cb.checked);
+  const isDone = () => call(() => GD().ready(), false) && !postLeft().length;
   /* the › of the step: green when the step is done (was "✓ TAPOS ... Susunod ›"), open to a step already reached */
   function stepNx() {
     const g = GD();
     if (!g || !els.stN) return;
-    const rd = call(() => g.ready(), false),
+    const rd = isDone(),
       L = g.steps();
     els.stN.disabled = !(rd || g.cur < Math.min(els.maxI || 0, L.length));
     els.stN.classList.toggle('go', !!rd);
@@ -58855,10 +58905,28 @@ window.LS_GUIDE = (function () {
     ov.hidden = !X.length;
     if (k === ov.dataset.k) return;
     ov.dataset.k = k;
+    /* live test 2026-10-30 #7 (H5 / H6: the "HAKBANG n" tag lay on the value box of S-1502 and on the label of SWBP-A): the tag goes to the
+       first place beside the box that covers no text of the HMI (above, below, left, right), not always on top of the box */
+    const tl = 'HAKBANG ' + (GD().cur + 1),
+      tw = tl.length * 6.6 + 12,
+      th = 15,
+      svg = document.getElementById('plsvg'),
+      TX = X.length && svg ? [...svg.querySelectorAll('text')].map(t => t.getBoundingClientRect()).filter(r => r.width > 0).map(r => [r.left - m.left, r.top - m.top, r.right - m.left, r.bottom - m.top]) : [],
+      free = (x, y) => x >= 0 && y >= 0 && x + tw <= m.width && y + th <= m.height && !TX.some(t => t[0] < x + tw && t[2] > x && t[1] < y + th && t[3] > y) && !X.slice(1).some(r => r[0] < x + tw && r[0] + r[2] > x && r[1] < y + th && r[1] + r[3] > y),
+      r0 = X[0] || [0, 0, 0, 0],
+      at = [
+        [r0[0], r0[1] - th - 1],
+        [r0[0] + r0[2] - tw, r0[1] - th - 1],
+        [r0[0], r0[1] + r0[3] + 1],
+        [r0[0] + r0[2] - tw, r0[1] + r0[3] + 1],
+        [r0[0] - tw - 2, r0[1]],
+        [r0[0] + r0[2] + 2, r0[1]],
+        [r0[0], r0[1] - 2 * th - 2],
+        [r0[0], r0[1] + r0[3] + th + 2]
+      ].find(([x, y]) => free(x, y)) || [r0[0], r0[1] - th - 1];
     ov.replaceChildren(
-      ...X.map((r, j) =>
-        E('div', { cls: 'gd-hlb', style: 'left:' + r[0] + 'px;top:' + r[1] + 'px;width:' + r[2] + 'px;height:' + r[3] + 'px' }, j ? [] : [E('b', { txt: 'HAKBANG ' + (GD().cur + 1) })])
-      )
+      ...X.map(r => E('div', { cls: 'gd-hlb', style: 'left:' + r[0] + 'px;top:' + r[1] + 'px;width:' + r[2] + 'px;height:' + r[3] + 'px' })),
+      ...(X.length ? [E('b', { cls: 'gd-hlt', txt: tl, style: 'left:' + Math.round(at[0]) + 'px;top:' + Math.round(at[1]) + 'px' })] : [])
     );
   }
   /* ---------- the main area follows the step: the DITL of a motor, the ABC sheet of a faceplate ---------- */
@@ -59348,7 +59416,7 @@ window.LS_GUIDE = (function () {
           } catch (e) {}
           live();
         };
-        if (cut >= 0 && fi >= cut && !au) els.after.push({ cb, li });
+        if (cut >= 0 && fi >= cut && !au) els.after.push({ cb, li, t: f.t, by });
         if (cut >= 0 && fi < cut && !au) els.before.push(cb);
         /* the items of the Lineup stage that the operator ticks (the SUSUNOD NA GAWIN names the first one not done) */
         if (!(cut >= 0 && fi >= cut) && !au) els.lineCb.push({ cb, t: f.t, by });
@@ -59740,32 +59808,43 @@ window.LS_GUIDE = (function () {
         hd = E('button', { type: 'button', cls: 'gd-shd', 'aria-expanded': 'false' }, [num, E('span', { cls: 'gd-snm' }, [E('b', { txt: nm }), E('small', { txt: sub })]), cnt]),
         bd = E('div', { cls: 'gd-sbd' }, kids),
         box = E('div', { cls: 'gd-stg' }, [hd, bd]),
-        o = { k, box, hd, bd, num, cnt };
+        chip = E('button', { type: 'button', cls: 'gd-chip', title: nm + ' · ' + sub }, [E('span', { cls: 'gd-cn', txt: String(els.stg.length + 1) }), E('span', { txt: nm })]),
+        o = { k, box, hd, bd, num, cnt, chip };
       hd.onclick = () => {
         const cur = stOpenK(s);
         els.stOpen = { i: s.i, k: cur === k ? '-' : k };
+        live();
+      };
+      chip.onclick = () => {
+        els.stOpen = { i: s.i, k };
         live();
       };
       els.stg.push(o);
       return box;
     };
     const secs = (s.field || []).map(x => x + 1).join(', ');
-    const hasCtl = !!card.querySelector('.gd-ctl') || bs.children.length > 0;
+    const hasCtl = !!card.querySelector('.gd-ctl') || bs.children.length > 0,
+      /* live test 2026-10-30 #3 (H4 hypochlorite pump): a step done only by the field operator at a local panel (no DCS command) says so
+         (was "Gawin sa DCS · Controller (A / M, MV, SV) at mga button ng hakbang") */
+      fldOnly = !hasMot && (s.a || []).length > 0 && (s.a || []).every(a => a.loc || /^FIELD\b/.test(a.l || ''));
     const stBoxes = [
       sopPre && sopPre.children.length ? stg('L', hasMot ? 'Lineup' : 'SOP', (hasMot ? 'Bago i-START · ' : 'Gawin at i-tick · ') + 'PR-OPE-5002 seksyon ' + secs, [sopPre]) : null,
       (els.il || []).length ? stg('P', 'Permissive', 'Start permission ng DITL (interlock)', [ilWrap]) : null,
       hasCtl
         ? stg(
             'S',
-            hasMot ? 'Start' : s.need && !(s.a || []).length ? 'Kumpirmahin' : 'Gawin sa DCS',
-            hasMot ? 'START / STOP · MAN / AUTO' : s.need && !(s.a || []).length ? 'Tapos na sa field' : 'Controller (A / M, MV, SV) at mga button ng hakbang',
+            hasMot ? 'Start' : s.need && !(s.a || []).length ? 'Kumpirmahin' : fldOnly ? 'Gawin sa field' : 'Gawin sa DCS',
+            hasMot ? 'START / STOP · MAN / AUTO' : s.need && !(s.a || []).length ? 'Tapos na sa field' : fldOnly ? 'Field operator sa local panel · walang DCS control' : 'Controller (A / M, MV, SV) at mga button ng hakbang',
             [card]
           )
         : null,
       watchBox || sopPost || s.c ? stg('C', 'Check', 'Value laban sa SOP / HMI · ang kondisyon ng hakbang', [els.cond, watchBox, sopPost ? E('div', { cls: 'gd-flg', txt: 'PAGKATAPOS I-START (bukas kapag tumatakbo na)' }) : null, sopPost]) : null
     ].filter(Boolean);
     if (why) why.firstChild.textContent = 'Bakit ang hakbang na ito?';
-    b.append(chk, ...(els.eq ? [els.eq] : []), E('div', { cls: 'gd-stgs' }, stBoxes), ...(why ? [why] : []));
+    /* live test 2026-10-30 #3 ("nakakalito pa rin ang dock"): one line of the stages (✓ done, the one now lit) and only the open stage under
+       it; a stage done is folded into its chip (press a chip to open it again) */
+    const spr = els.stg.length > 1 ? E('div', { cls: 'gd-spr', role: 'group', 'aria-label': 'Mga yugto' }, els.stg.map(o => o.chip)) : null;
+    b.append(chk, ...(els.eq ? [els.eq] : []), ...(spr ? [spr] : []), E('div', { cls: 'gd-stgs' }, stBoxes), ...(why ? [why] : []));
     footFill(s);
     if (first) {
       els.goKey = null;
@@ -59856,7 +59935,7 @@ window.LS_GUIDE = (function () {
         L: nL ? dL + ' / ' + nL : '',
         P: mi ? (mi.run ? 'tumatakbo' : mi.sby ? 'standby' : mi.miss.length ? 'may kulang' : 'kumpleto') : mis.length ? (pOk ? 'kumpleto' : 'may kulang') : '',
         S: selA ? (runSel ? 'RUNNING' : mi && mi.sby ? (autoOf(selAd) ? 'STANDBY AUTO' : 'MAN') : '—') : rd ? 'tapos' : '',
-        C: rd ? 'tapos' : W.length ? wOk + ' / ' + W.length + ' OK' : ''
+        C: rd ? 'tapos' : (els.after || []).length ? 'SOP ' + ((els.after || []).length - postLeft().length) + ' / ' + els.after.length : W.length ? wOk + ' / ' + W.length + ' OK' : ''
       };
     const cur = els.stg.find(o => !ok[o.k]) || els.stg[els.stg.length - 1];
     els.stCur = cur.k;
@@ -59868,6 +59947,11 @@ window.LS_GUIDE = (function () {
       o.cnt.textContent = (isOk && cnt[o.k] ? '✓ ' : '') + (cnt[o.k] || '');
       o.box.className = 'gd-stg' + (isOk ? ' ok' : '') + (o === cur && !rd ? ' cur' : '') + (open ? ' open' : '') + (!isOk && els.stg.indexOf(cur) < j ? ' wait' : '');
       o.bd.hidden = !open;
+      /* #3: only the open stage is shown under the line of chips (a single stage: its box stays) */
+      o.box.hidden = els.stg.length > 1 && !open;
+      o.chip.className = 'gd-chip' + (isOk ? ' ok' : '') + (o === cur && !rd ? ' cur' : '') + (open ? ' open' : '');
+      o.chip.firstChild.textContent = isOk ? '✓' : String(j + 1);
+      o.chip.setAttribute('aria-pressed', String(open));
       o.hd.setAttribute('aria-expanded', String(open));
     });
   }
@@ -59888,7 +59972,31 @@ window.LS_GUIDE = (function () {
     let say = '',
       bl = '',
       fn = null;
-    if (rd) {
+    const pl = !rd && call(() => GD().ready(), false) ? postLeft() : [],
+      /* live test 2026-10-30 #8: the standby of a step of 2 running (2 SWBP): the third one to AUTO on its drawing (DITL-30 row 4) */
+      sbA = s.sby && s.max && nOn >= s.max && !rd ? ms.find(a => !on(a) && (els.btns || []).some(x => x.ad === motAddr(a) && x.am) && !autoOf(motAddr(a))) : null;
+    if (sbA) {
+      const B = (els.btns || []).find(x => x.ad === motAddr(sbA) && x.am);
+      say = 'Ilagay ang ' + mName(sbA) + ' sa AUTO (standby: aandar kapag nag-trip ang tumatakbo; ' + dName(B.am._am.s) + ' row ' + (B.am._am.row + 1) + ').';
+      bl = 'AUTO ' + mName(sbA);
+      fn = () => {
+        B.am.click();
+        /* the SOP item of the standby (PR-OPE-5002 "Set the standby SWBP to AUTO") is what was just done */
+        const it = (els.after || []).find(x => !x.cb.checked && /standby.*\bAUTO\b/i.test(x.t));
+        if (it) {
+          it.cb.checked = true;
+          it.cb.dispatchEvent(new Event('change'));
+        }
+      };
+    } else if (pl.length) {
+      /* #120: the condition is met; the SOP items after the START are still to tick (Check) */
+      say = 'Check (pagkatapos i-START' + (pl[0].by ? ', ' + pl[0].by : '') + '): ' + pl[0].t + (pl.length > 1 ? ' · natitira: ' + pl.length + ' item' : '');
+      bl = '✓ Tapos';
+      fn = () => {
+        pl[0].cb.checked = true;
+        pl[0].cb.dispatchEvent(new Event('change'));
+      };
+    } else if (rd) {
       say = '✓ Tapos ang hakbang' + (els.skipped === s.i ? ' (nilaktawan: training shortcut)' : '') + '. Pindutin ang Susunod.';
       bl = 'Susunod ›';
       fn = () => stepGo(1);
@@ -60032,7 +60140,7 @@ window.LS_GUIDE = (function () {
       if (nd >= nb || (s.a || []).some(a => a.stop && call(() => a.on(), false))) els.ovw.hidden = true;
       else els.ovw.textContent = els.ovw.textContent.replace(/^⚠ \d+ \/ \d+/, '⚠ ' + nd + ' / ' + nb);
     }
-    const rd = call(() => g.ready(), false);
+    const rd = isDone();
     if (els.okb) {
       els.okb.hidden = !rd;
       /* #115 (live check: "Pindutin ang Simulan ang 6 h purge" and "Naka-PAUSE ang oras" stayed under ✓ TAPOS of Hakbang 1): a done step
@@ -60412,6 +60520,7 @@ window.LS_GUIDE = (function () {
     fieldRow,
     dsel,
     mst,
+    modeOf,
     dmotor,
     dOf,
     needNet,
@@ -65294,10 +65403,12 @@ window.PLANT_SYS = [
     CTB: { n: 'CTCS-B', t: 'P-1114', lcp: 'STATUS AT LCP', io: 'DOP-CTCS1002', d: 'DITL-119' },
     ACA: { n: 'ACWP-A', t: 'P-1108A', ad: 'DITL-76', io: 'MIR-P1108A', d: 'DITL-76' },
     ACB: { n: 'ACWP-B', t: 'P-1108B', ad: 'DITL-77', io: 'MIR-P1108B', d: 'DITL-77' },
-    /* status DI of STN105 only, no logic sheet reads them: the dosing pump the Training starts in the field (hypo) is P-0762A */
+    /* status DI of STN105 only (I/O list: running and overload of each pump, from the local panel HCDSP; P-0762A running = I.0329), no DCS
+       command and no logic sheet reads them: the dosing pump the Training starts in the field (hypo) is P-0762A, its DI follows that start
+       (live test 2026-10-30 #6: P-0762A said "field (local)", the other three "STN105 DI": all four are STN105 DI) */
     HUA: { n: 'P-0761A', t: 'Unloading', lcp: 'LOCAL', io: 'MIR-P0761A', d: 'STN105 DI' },
     HUB: { n: 'P-0761B', t: 'Unloading', lcp: 'LOCAL', io: 'MIR-P0761B', d: 'STN105 DI' },
-    HDA: { n: 'P-0762A', t: 'NaOCl dosing', fld: 'hypo', io: 'MIR-P0762A', d: 'field (local)' },
+    HDA: { n: 'P-0762A', t: 'NaOCl dosing', fld: 'hypo', io: 'MIR-P0762A', d: 'STN105 DI' },
     HDB: { n: 'P-0762B', t: 'NaOCl dosing', lcp: 'LOCAL', io: 'MIR-P0762B', d: 'STN105 DI' }
   };
   /* motor current tag of a pump (the value: plant model, unit.js AN_SW) */
@@ -65367,6 +65478,9 @@ window.PLANT_SYS = [
     };
     const vbox = (x, y, tag, u, est, k) =>
       `<g data-vb="${k || tag}" style="cursor:pointer">${T(x, y - 4, tag, 'sw9')}<rect x="${x}" y="${y}" width="58" height="17" rx="1.5" fill="${S.box}" stroke="${S.boxs}"/>${T(x + 54, y + 13, '-----', 'swv', `text-anchor="end" data-v="${k || tag}"`)}${T(x + 62, y + 13, u, 'sw9')}</g>`;
+    /* the mode line of a pump: REM / LOC (field selector) and AUTO / MAN (CRT selection), live from its drawing (LS_DOCK.modeOf) */
+    const md = (x, y, id) =>
+      `<g data-mdh="${id}" style="cursor:pointer">${T(x, y, `<tspan data-rem="${id}">---</tspan><tspan fill="${S.dim}"> · </tspan><tspan data-au="${id}">---</tspan>`, 'sw9b')}</g>`;
     const imp = (x, y, r, id) =>
       `<g transform="translate(${x} ${y})"><circle r="${r}" fill="#11161b"/><g data-imp="${id}">${[0, 1, 2, 3, 4].map(i => `<path d="M0 0 Q${r * 0.55} ${-r * 0.2} ${r * 0.85} ${-r * 0.5}" transform="rotate(${i * 72})" stroke="#c3ccd5" stroke-width="${r / 5}" fill="none" stroke-linecap="round"/>`).join('')}</g><circle r="${r * 0.22}" fill="#c3ccd5"/></g>`;
     const valve = (x, y, vert, lab, la) => {
@@ -65468,6 +65582,8 @@ window.PLANT_SYS = [
       );
       o.push(vbox(x + 12, 326, AMP[id][0], 'A', 1));
       o.push(T(x + 12, 362, '-----', 'sw9b', `data-st="${id}"`) + T(x + 12, 374, MACH[id].d, 'sw8'));
+      /* live test 2026-10-30 #5 (#121, snapshot 30.PNG: VCB ON / OFF, R, M / A at each SWP): REMOTE / LOCAL and AUTO / MAN of DITL-29A, the VCB */
+      o.push(md(x + 12, 390, id) + T(x + 12, 402, '-----', 'sw9b', `data-vcb="${id}"`));
       o.push(valve(x + 34, 226, 1, v, 'rb'));
     });
     /* 96" header -> S-1502 -> condenser inlets */
@@ -65740,6 +65856,8 @@ window.PLANT_SYS = [
     BP.forEach(([id, y, v]) => {
       o.push(hpump(618, y, id));
       o.push(eq(704, y - 8, id));
+      /* #5: REMOTE / LOCAL and AUTO / MAN of DITL-30 (30.PNG: R, M / A beside SWBP-A / B / C; the SWBP have no VCB DI) */
+      o.push(md(760, y - 8, id));
       o.push(vbox(840, y - 6, AMP[id][0], 'A', 1));
       o.push(valve(930, y - 26, 0, v, 'up'));
     });
@@ -66077,6 +66195,8 @@ window.PLANT_SYS = [
         else e.setAttribute('stroke', on ? e.dataset.c : S.med.off[0]);
       });
     let steam = null;
+    const MDS = ['SWA', 'SWB', 'SWC', 'BPA', 'BPB', 'BPC'],
+      MD = {};
     const tick = () => {
       for (const id in MACH) {
         const M = MACH[id],
@@ -66092,8 +66212,34 @@ window.PLANT_SYS = [
           e.classList.toggle('h2blink', s === 'TRIP');
         });
         setSpin(id, s === 'RUN');
+        /* #5: the VCB of an SWP (I/O list STN103 DI "VCB on" / "VCB off", I.032E / F, I.052A / B, I.081E / F; no logic sheet reads them):
+           closed while the motor runs */
+        qa(`[data-vcb="${id}"]`).forEach(e => {
+          e.textContent = s == null ? '-----' : s === 'RUN' ? 'VCB ON' : 'VCB OFF';
+          e.style.fill = s == null ? S.none : s === 'RUN' ? S.run : S.stop;
+        });
         /* the branch of the machine itself (riser, discharge, ball line) */
         flow(id, s === 'RUN');
+      }
+      /* #5: REMOTE / LOCAL and AUTO / MAN, every tick (a selection does not change the run state) */
+      for (const id of MDS) {
+        let m = null;
+        try {
+          m = window.LS_DOCK && LS_DOCK.modeOf ? LS_DOCK.modeOf(MACH[id].ad) : null;
+        } catch (e) {}
+        const k = m ? String(m.rem) + String(m.au) : '';
+        if (k === MD[id]) continue;
+        MD[id] = k;
+        const r = q(`[data-rem="${id}"]`),
+          a = q(`[data-au="${id}"]`);
+        if (r) {
+          r.textContent = !m || m.rem == null ? '---' : m.rem ? 'REM' : 'LOC';
+          r.setAttribute('fill', !m || m.rem == null ? S.none : m.rem ? '#5cd6ff' : '#ffd27a');
+        }
+        if (a) {
+          a.textContent = !m || m.au == null ? '---' : m.au ? 'AUTO' : 'MAN';
+          a.setAttribute('fill', !m || m.au == null ? S.none : m.au ? '#9ff0c4' : '#ffd27a');
+        }
       }
       for (const k in FLOW)
         flow(
@@ -66114,6 +66260,19 @@ window.PLANT_SYS = [
           MACH[id].n + ' ' + MACH[id].t + ' · ' + MACH[id].d + ' (red = running, green = stopped) · click = info card';
         h.append(ti);
         h.addEventListener('click', e => (e.stopPropagation(), info(MACH[id].io)));
+      });
+    for (const id of MDS)
+      qa(`[data-mdh="${id}"]`).forEach(h => {
+        const ti = document.createElementNS(NS, 'title');
+        ti.textContent = MACH[id].n + ' · REM / LOC = REMOTE MODE SELECTED (field selector), AUTO / MAN = AUTO MODE SELECTED (CRT) of ' + MACH[id].d + ' · click = info card';
+        h.append(ti);
+        h.addEventListener('click', e => (e.stopPropagation(), info(MACH[id].io)));
+      });
+    for (const id of ['SWA', 'SWB', 'SWC'])
+      qa(`[data-vcb="${id}"]`).forEach(h => {
+        const ti = document.createElementNS(NS, 'title');
+        ti.textContent = MACH[id].n + ' VCB ON / OFF · STN103 DI (I/O list), no logic sheet reads it: shown closed while the motor runs';
+        h.append(ti);
       });
     /* the turbine passes steam to the condenser: the main steam flow of the header */
     if (api.HDR && api.HDR.MSF)
@@ -67936,9 +68095,11 @@ window.PLANT_SYS = [
       sw = w / Math.max(1, r.width),
       sh = h / Math.max(1, r.height),
       /* #117 (user 2026-10-29): a screen with fitAll (030 SEAWATER) opens whole, nothing out of view */
-      all = cur && cur.fitAll,
+      /* live test 2026-10-30 #1 (030 cut on both sides beside the Training dock): the flag is on the screen (cur.g), cur is its list entry;
+         cur.fitAll was never set, so 030 was fitted to the height like the others. Whole page, centred in the area */
+      all = !!(cur && (cur.fitAll || (cur.g && cur.g.fitAll))),
       s = all ? Math.max(sh, sw) : tall ? sh : sh <= sw ? Math.max(sh, sw * 0.7) : sh;
-    vb = [box0[0] + (tall ? 0 : (w - r.width * s) / 2), box0[1], r.width * s, r.height * s];
+    vb = [box0[0] + (tall && !all ? 0 : (w - r.width * s) / 2), box0[1] - (all ? Math.max(0, (r.height * s - h) / 2) : 0), r.width * s, r.height * s];
     svg.setAttribute('viewBox', vb.join(' '));
     svSz = [r.width, r.height];
   }
@@ -68215,7 +68376,8 @@ window.PLANT_SYS = [
   /* the Training dock (user 2026-10-30): pan the graphic sideways so that the screen part x0 .. x1 (px, the boxed equipment of the
      step) is in view; the zoom stays */
   window.lsPlantPanX = (x0, x1) => {
-    if (!svg || !vb || !box0) return;
+    /* live test 2026-10-30 #1: a whole-page screen (030) does not move when a step boxes its equipment: all of it is in view */
+    if (!svg || !vb || !box0 || (cur && (cur.fitAll || (cur.g && cur.g.fitAll)))) return;
     const r = svg.getBoundingClientRect();
     if (r.width < 1 || (x0 >= r.left + 8 && x1 <= r.right - 8)) return;
     const k = vb[2] / r.width,

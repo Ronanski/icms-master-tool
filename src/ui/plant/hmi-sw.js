@@ -63,10 +63,12 @@
     CTB: { n: 'CTCS-B', t: 'P-1114', lcp: 'STATUS AT LCP', io: 'DOP-CTCS1002', d: 'DITL-119' },
     ACA: { n: 'ACWP-A', t: 'P-1108A', ad: 'DITL-76', io: 'MIR-P1108A', d: 'DITL-76' },
     ACB: { n: 'ACWP-B', t: 'P-1108B', ad: 'DITL-77', io: 'MIR-P1108B', d: 'DITL-77' },
-    /* status DI of STN105 only, no logic sheet reads them: the dosing pump the Training starts in the field (hypo) is P-0762A */
+    /* status DI of STN105 only (I/O list: running and overload of each pump, from the local panel HCDSP; P-0762A running = I.0329), no DCS
+       command and no logic sheet reads them: the dosing pump the Training starts in the field (hypo) is P-0762A, its DI follows that start
+       (live test 2026-10-30 #6: P-0762A said "field (local)", the other three "STN105 DI": all four are STN105 DI) */
     HUA: { n: 'P-0761A', t: 'Unloading', lcp: 'LOCAL', io: 'MIR-P0761A', d: 'STN105 DI' },
     HUB: { n: 'P-0761B', t: 'Unloading', lcp: 'LOCAL', io: 'MIR-P0761B', d: 'STN105 DI' },
-    HDA: { n: 'P-0762A', t: 'NaOCl dosing', fld: 'hypo', io: 'MIR-P0762A', d: 'field (local)' },
+    HDA: { n: 'P-0762A', t: 'NaOCl dosing', fld: 'hypo', io: 'MIR-P0762A', d: 'STN105 DI' },
     HDB: { n: 'P-0762B', t: 'NaOCl dosing', lcp: 'LOCAL', io: 'MIR-P0762B', d: 'STN105 DI' }
   };
   /* motor current tag of a pump (the value: plant model, unit.js AN_SW) */
@@ -136,6 +138,9 @@
     };
     const vbox = (x, y, tag, u, est, k) =>
       `<g data-vb="${k || tag}" style="cursor:pointer">${T(x, y - 4, tag, 'sw9')}<rect x="${x}" y="${y}" width="58" height="17" rx="1.5" fill="${S.box}" stroke="${S.boxs}"/>${T(x + 54, y + 13, '-----', 'swv', `text-anchor="end" data-v="${k || tag}"`)}${T(x + 62, y + 13, u, 'sw9')}</g>`;
+    /* the mode line of a pump: REM / LOC (field selector) and AUTO / MAN (CRT selection), live from its drawing (LS_DOCK.modeOf) */
+    const md = (x, y, id) =>
+      `<g data-mdh="${id}" style="cursor:pointer">${T(x, y, `<tspan data-rem="${id}">---</tspan><tspan fill="${S.dim}"> · </tspan><tspan data-au="${id}">---</tspan>`, 'sw9b')}</g>`;
     const imp = (x, y, r, id) =>
       `<g transform="translate(${x} ${y})"><circle r="${r}" fill="#11161b"/><g data-imp="${id}">${[0, 1, 2, 3, 4].map(i => `<path d="M0 0 Q${r * 0.55} ${-r * 0.2} ${r * 0.85} ${-r * 0.5}" transform="rotate(${i * 72})" stroke="#c3ccd5" stroke-width="${r / 5}" fill="none" stroke-linecap="round"/>`).join('')}</g><circle r="${r * 0.22}" fill="#c3ccd5"/></g>`;
     const valve = (x, y, vert, lab, la) => {
@@ -237,6 +242,8 @@
       );
       o.push(vbox(x + 12, 326, AMP[id][0], 'A', 1));
       o.push(T(x + 12, 362, '-----', 'sw9b', `data-st="${id}"`) + T(x + 12, 374, MACH[id].d, 'sw8'));
+      /* live test 2026-10-30 #5 (#121, snapshot 30.PNG: VCB ON / OFF, R, M / A at each SWP): REMOTE / LOCAL and AUTO / MAN of DITL-29A, the VCB */
+      o.push(md(x + 12, 390, id) + T(x + 12, 402, '-----', 'sw9b', `data-vcb="${id}"`));
       o.push(valve(x + 34, 226, 1, v, 'rb'));
     });
     /* 96" header -> S-1502 -> condenser inlets */
@@ -509,6 +516,8 @@
     BP.forEach(([id, y, v]) => {
       o.push(hpump(618, y, id));
       o.push(eq(704, y - 8, id));
+      /* #5: REMOTE / LOCAL and AUTO / MAN of DITL-30 (30.PNG: R, M / A beside SWBP-A / B / C; the SWBP have no VCB DI) */
+      o.push(md(760, y - 8, id));
       o.push(vbox(840, y - 6, AMP[id][0], 'A', 1));
       o.push(valve(930, y - 26, 0, v, 'up'));
     });
@@ -846,6 +855,8 @@
         else e.setAttribute('stroke', on ? e.dataset.c : S.med.off[0]);
       });
     let steam = null;
+    const MDS = ['SWA', 'SWB', 'SWC', 'BPA', 'BPB', 'BPC'],
+      MD = {};
     const tick = () => {
       for (const id in MACH) {
         const M = MACH[id],
@@ -861,8 +872,34 @@
           e.classList.toggle('h2blink', s === 'TRIP');
         });
         setSpin(id, s === 'RUN');
+        /* #5: the VCB of an SWP (I/O list STN103 DI "VCB on" / "VCB off", I.032E / F, I.052A / B, I.081E / F; no logic sheet reads them):
+           closed while the motor runs */
+        qa(`[data-vcb="${id}"]`).forEach(e => {
+          e.textContent = s == null ? '-----' : s === 'RUN' ? 'VCB ON' : 'VCB OFF';
+          e.style.fill = s == null ? S.none : s === 'RUN' ? S.run : S.stop;
+        });
         /* the branch of the machine itself (riser, discharge, ball line) */
         flow(id, s === 'RUN');
+      }
+      /* #5: REMOTE / LOCAL and AUTO / MAN, every tick (a selection does not change the run state) */
+      for (const id of MDS) {
+        let m = null;
+        try {
+          m = window.LS_DOCK && LS_DOCK.modeOf ? LS_DOCK.modeOf(MACH[id].ad) : null;
+        } catch (e) {}
+        const k = m ? String(m.rem) + String(m.au) : '';
+        if (k === MD[id]) continue;
+        MD[id] = k;
+        const r = q(`[data-rem="${id}"]`),
+          a = q(`[data-au="${id}"]`);
+        if (r) {
+          r.textContent = !m || m.rem == null ? '---' : m.rem ? 'REM' : 'LOC';
+          r.setAttribute('fill', !m || m.rem == null ? S.none : m.rem ? '#5cd6ff' : '#ffd27a');
+        }
+        if (a) {
+          a.textContent = !m || m.au == null ? '---' : m.au ? 'AUTO' : 'MAN';
+          a.setAttribute('fill', !m || m.au == null ? S.none : m.au ? '#9ff0c4' : '#ffd27a');
+        }
       }
       for (const k in FLOW)
         flow(
@@ -883,6 +920,19 @@
           MACH[id].n + ' ' + MACH[id].t + ' · ' + MACH[id].d + ' (red = running, green = stopped) · click = info card';
         h.append(ti);
         h.addEventListener('click', e => (e.stopPropagation(), info(MACH[id].io)));
+      });
+    for (const id of MDS)
+      qa(`[data-mdh="${id}"]`).forEach(h => {
+        const ti = document.createElementNS(NS, 'title');
+        ti.textContent = MACH[id].n + ' · REM / LOC = REMOTE MODE SELECTED (field selector), AUTO / MAN = AUTO MODE SELECTED (CRT) of ' + MACH[id].d + ' · click = info card';
+        h.append(ti);
+        h.addEventListener('click', e => (e.stopPropagation(), info(MACH[id].io)));
+      });
+    for (const id of ['SWA', 'SWB', 'SWC'])
+      qa(`[data-vcb="${id}"]`).forEach(h => {
+        const ti = document.createElementNS(NS, 'title');
+        ti.textContent = MACH[id].n + ' VCB ON / OFF · STN103 DI (I/O list), no logic sheet reads it: shown closed while the motor runs';
+        h.append(ti);
       });
     /* the turbine passes steam to the condenser: the main steam flow of the header */
     if (api.HDR && api.HDR.MSF)

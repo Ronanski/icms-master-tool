@@ -1240,7 +1240,7 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 | 23 | Update banner | Nasubok: may bagong Beta sa version.json → lumalabas ang "New Beta available … Update now / Later" sa itaas, hindi tinatakpan ang Home | — |
 
 
-## 3.2.0-beta.63 (Beta, 2026-10-30, naghihintay ng GO BETA) — bagong HMI page: MAKE-UP WATER (PR-OPE-5002 seksyon 7)
+## 3.2.0-beta.63 (Beta, 2026-10-30, GO BETA ng user) — bagong HMI page: MAKE-UP WATER (PR-OPE-5002 seksyon 7)
 - **Problem:** walang sariling HMI page ang make-up water (MWP-A / B / C, demi water tank, expansion tank). Ang Hakbang 8 ng Training (seksyon 7) ay nagbubukas ng 030 SEAWATER, kung saan expansion tank lang ang nakikita, walang MWP. Kailangan ito bago ang retest ng H8.
 - **As Found:** P&ID = K1AU3-PD-024 MAKE-UP WATER SYSTEM Rev D (`flow-diagram-K1AU3-A1-0-001.zip`, RB page 21) at ang expansion tank sa PD-021 Rev D (RB page 15). Logic: DITL-112 (MWP A, instance #B / #C; trip kapag ang dalawang demi tank < 0.2 m nang 2 s o strainer DP ≥ 1.0 kg/cm2 nang 10 s), DITL-78 (XV-MU1109 AUTO: bukas < 40 %, sarado > 85 % ng LT-CW1109), DITL-76 / 77 (ACWP trip kapag expansion tank < 0.3 m), DITL-60 (MV-MU1001), ABC-031 (LCV-MU1110). Ang mga local transmitter (LT-MU0708-A / B, PT-MU0709, DPT-MU0709-A / B / C, LT-CW1109) ay analog row lang ng logic at may nakapirming default (0.3 m, 8.4 kg/cm2, 0.4 kg/cm2, 62.5 %); walang plant model para sa mga ito.
 - **Work Done:**
@@ -1250,6 +1250,29 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
   - Training: ang seksyon 7 (Hakbang 8) ay nagbubukas na ng MAKE-UP WATER, naka-kahon ang MWP (`dock.js` SECHMI).
 - **Sinubok (headless, dist html, Training → Gabay: Cold, ▶ RUN; HINDI pa live sa app ng user):** Cold: lahat ng MWP STOPPED (berde), header 1.38 kg/cm2, expansion tank 0.80 m; ang logic ay bumabasa ng 13.8 / 13.7 m, 1.38 kg/cm2, 40 %, 0.80 m (dati 0.3 m, 8.4, 62.5 %, 0.45 m). START MWP-A at C (REMOTE + START): RUNNING pula, 20.5 / 20.8 A, header 9.10, strainer 0.030 (B 0.000), MWP-B STOPPED berde. OPEN ng XV-MU1109 (DITL-78 row 5): OPEN pula, FIMU1001 10.0 m3/h, expansion tank 0.80 → 1.56 m sa 4 min. Page buo sa 1366 × 768 kapag sarado ang dock; 0 page error. `npm run check`: SAME.
 - **Hindi sinubok / alam na:** live sa app ng user; buong Cold → 150 MW. Kapag bukas ang Training dock, ang page ay naka-zoom at putol sa gilid (gaya ng 030, bukas na finding #1). Ang AUTO SELECTED ng XV-MU1109 ay galing sa 78-51 (ibang bahagi ng drawing, hindi binabasa), kaya ang mode nito ay hindi ipinapakita sa page; ang AUTO (< 40 % / > 85 %) ay nakasulat bilang tala. Ang make-up sa hotwell ng `plant.js` ay pumapasok kahit walang MWP (dati na, hindi binago).
+
+## 3.2.0-beta.62 (Beta, 2026-10-30, naghihintay ng GO BETA) — 8 findings ng live test ng beta.61 (H1 ~ H7)
+- **Problem (live test ng user, 2026-10-30, findings artifact https://claude.ai/artifact/3riJ4F7xGZx87Z4BCWCWwB):** #1 HMI 030 putol sa magkabilang gilid at lumilipat kapag naka-focus sa hakbang; #2 laging bukas ang left pane (rail); #3 nakakalito ang dock (lahat ng yugto sabay, "Gawin sa DCS: Controller" sa field step ng hypo pump); #4 "✓ TAPOS" bago ma-tick ang PAGKATAPOS I-START items (#120); #5 walang VCB ON / OFF, R / M, AUTO / MAN sa 030 (#121, snapshot 30.PNG); #6 "STN105 DI" sa hypo pump, hindi tiyak; #7 ang "HAKBANG n" ay nakapatong sa value box / label; #8 SWBP-C "Ilagay sa AUTO" pero walang AUTO.
+- **As Found:**
+  - #1: `plant.js` fit() ay tumitingin sa `cur.fitAll`, pero ang `cur` ay ang entry ng listahan; ang flag ay nasa screen (`cur.g.fitAll`). Kaya ang 030 ay naka-fit sa taas (1344 / 1920 ng lapad lang ang kita sa 1366 × 768 na may dock), at ang `lsPlantPanX` ng dock ay nagpa-pan sa equipment ng hakbang.
+  - #4: ang dock ay `GD().ready()` lang (kondisyon ng hakbang); hindi binabasa ang tick ng PAGKATAPOS I-START.
+  - #6: I/O list (`wiring.js`, STN 5, card 1051 / HCDSP → DCS): bawat isa sa 4 na hypo pump ay may running at overload DI (P-0762A running = I.0329, P-0762B = I.032B, P-0761A = I.032D, P-0761B = I.0120). Tama ang "STN105 DI"; ang mali ay ang "field (local)" ng P-0762A. Walang DCS command.
+  - #5: I/O list: VCB on / off DI ay sa SWP lang (I.032E / F, I.052A / B, I.081E / F, STN103); walang VCB DI ang SWBP (tugma sa 30.PNG). Walang logic sheet na bumabasa sa VCB DI. REMOTE / AUTO: DITL-29A row 5, 22 at row 4; DITL-30 row 22 at row 4.
+  - #8: DITL-30 row 4 "SEAWATER BOOSTER PUMP A AUTO MODE SELECTED" (CRT, M.1202 / 1212 / 1222); ang AUTO start = AND(row 4, kabilang pump RUNNING off-delay 2 s AND TRIP). May AUTO; ang hakbang ay natatapos sa 2 RUNNING lang.
+  - Dagdag (nakita sa screenshot): ang tag ng SOP item (`b.gd-tg`, hal. "AO refer to valve PRE-Start Checklist") ay nakuha ang itsura ng switch (puting bilog sa ibabaw ng text).
+- **Work Done:**
+  - #1 `plant.js`: `fitAll` binabasa sa `cur.g`; buong page, nasa gitna; walang pan sa page na `fitAll`.
+  - #2 `dock.css`: habang bukas ang dock, ang rail ay 14 px na guhit sa kaliwa; lumalabas sa hover / tap / focus.
+  - #3 `dock.js` / `dock.css`: isang linya ng yugto (Lineup / Permissive / Start / Check, ✓ ang tapos); ang bukas na yugto lang ang nakikita, pindot sa chip = buksan ito. Ang hakbang na FIELD lang ang aksyon: "Gawin sa field · Field operator sa local panel · walang DCS control".
+  - #4 `dock.js`: tapos ang hakbang = kondisyon AT lahat ng PAGKATAPOS I-START item ay naka-tick. Ang banner: "Check (pagkatapos i-START): <item> · natitira: n item" na may ✓ Tapos; ang › at "✓ Tapos ang hakbang" ay pagkatapos lang noon.
+  - #5 `hmi-sw.js` + `dock.js` `modeOf`: sa bawat SWP at SWBP: REM / LOC at AUTO / MAN (live mula sa DITL-29A / DITL-30); sa SWP: VCB ON (pula) / VCB OFF (berde), kasunod ng running feedback.
+  - #6 `hmi-sw.js`: P-0762A = "STN105 DI" na rin; ang "Bakit" ng hakbang: "Walang DCS command ... ang STN105 DI ay running / overload status lang".
+  - #7 `dock.js`: ang "HAKBANG n" ay inilalagay sa unang lugar sa tabi ng kahon na walang text ng HMI (itaas, ibaba, kaliwa, kanan).
+  - #8 `guide.js` / `dock.js`: hakbang ng SWBP = 2 RUNNING AT ang ikatlo sa AUTO (DITL-30 row 4). Banner: "Ilagay ang SWBP-C sa AUTO (... DITL-30 #C row 4)" + button; nati-tick din ang SOP item "Set the standby SWBP to AUTO".
+  - Dagdag: `dock.css` ang switch style ay sa `button.gd-tg` lang.
+- **As Left (headless, dist html 1366 × 768, pindot sa dock banner; HINDI pa live sa app ng user):** 030 buong page (viewBox 1920 ang lapad) sa H2 ~ H7, walang pan; rail 14 px; H2 banner ay humingi ng 17 Check item bago ang "✓ Tapos ang hakbang"; H4 "Gawin sa field"; H6: START A, B → "Ilagay ang SWBP-C sa AUTO" → AUTO → 10 Check item → tapos; H7, H8 umusad. 0 page error. `npm run check`: SAME.
+- **Bagong nakita (hindi inayos, para sa user):** ang standby (SWP-C sa H3, SWBP-C sa H6) ay AUTO pero LOCAL pa (hindi pinindot ang FIELD REMOTE). Sa DITL-29A ang AUTO start ay AND(row 4 AUTO, row 5 REMOTE, ...); sa DITL-30 ay may row 22 REMOTE din. Ibig sabihin: hindi aandar ang standby kapag nag-trip ang tumatakbo. Nakikita na ito sa 030 ("LOC · AUTO").
+- **Hindi sinubok:** live sa app ng user; phone at tablet portrait (isinantabi ng user); trip ng tumatakbong pump para makita ang AUTO start ng standby.
 
 ## 3.2.0-beta.61 (Beta, 2026-10-30, naghihintay ng GO BETA) — Training: puwedeng piliin ang SWP / SWBP na i-start, #115
 - **Problem (user: "pano kung SWP C ang gsto ko istart ... d mo na ma start e. Fix sa A at B"):** sa Hakbang 2 (2 sa 3 SWP) at sa SWBP (2 sa 3), ang buong interlock box at ang FIELD REMOTE button ay nasa UNANG hindi tumatakbong pump lang (A, saka B). Ang C ay "SUSUNOD · kulang ang interlock" na walang FIELD button, kaya ang START SWP-C ay laging naka-block.
