@@ -1,6 +1,6 @@
 # Basahin muna (user rule)
 
-Bago ang anumang sagot o pagbabago: basahin MUNA ang `HANDOFF.md` (iisang file ng estado, threads, utos ng user at style; sapat na ang repo para magpatuloy ang kahit sinong Claude o account), saka ang `docs/SPEC.md` (ang gusto ng user) at `PROJECT_RULES.md`.
+Bago ang anumang sagot o pagbabago: basahin MUNA ang `HANDOFF.md` (iisang file ng estado, threads, utos ng user at style; sapat na ang repo para magpatuloy ang kahit sinong Claude o account), saka ang `docs/SPEC.md` (ang gusto ng user) at `PROJECT_RULES.md`. Bagong account o bagong project: sundin muna ang `docs/handoff/NEW_ACCOUNT_SETUP.md` bahagi B.
 
 **I-update ang `HANDOFF.md` sa katapusan ng BAWAT gawain** (bawat thread / session, kasama sa parehong PR o Beta): estado, kalagayan ng thread, bukas na isyu, at bawat bagong utos o desisyon ng user (paraan: `HANDOFF.md` seksyon 8). Ang alaala ng project ay ang file na iyon, hindi ang memory ng isang session. Tingnan muna ang tunay na estado ng repo (git log, files); huwag sumagot mula sa alaala. Pinaikli 2026-10-26 (pinayagan ng user para makatipid at bumilis); ang lumang bersyon ay nasa git history.
 
