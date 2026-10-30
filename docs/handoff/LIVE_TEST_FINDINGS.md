@@ -4,7 +4,7 @@
 
 ## Buod (2026-10-30)
 - **Huling live run:** v3.2.0-beta.74 · build 3f7da0e, malinis na Cold, H1 hanggang H8; huminto sa H8 (expansion tank 0.80 m, walang control ng V-MU1033 / XV-MU1109, #23).
-- **38 findings**, 21 naayos at nakita live sa beta.74. **Bukas:** #16, #21, #23, #25, #28, #33 ~ #38 (ang #28 ay naayos sa H2 pero hindi pa sa H1).
+- **38 findings sa file na ito** (ang #39 ~ #52 at ang bago mula #53 ay nasa artifact ng tester: tingnan ang Test protocol), 21 naayos at nakita live sa beta.74. **Bukas:** #16, #21, #23, #25, #28, #33 ~ #38 (ang #28 ay naayos sa H2 pero hindi pa sa H1).
   - #21 at #25: claimed fixed sa **beta.75** (PR #78, naka-merge 2026-10-30), hindi pa live-tested.
   - #23, #28, #33 ~ #38: claimed fixed sa **beta.76** (PR #80, naka-merge 2026-10-30 sa GO BETA ng user), hindi pa live-tested.
   - #16 (030 / 007 sa HSYM, maliit na text): mockup naghihintay ng approval ng user: https://claude.ai/artifact/N6DCUgSmrjXMgecVrpkWhA (private sa lumang account).
@@ -19,8 +19,9 @@
 4. Training → Gabay: **Cold**. Live test ng LAHAT ng hakbang Cold → 150 MW (user 2026-10-30), isang hakbang bawat "G", isang table bawat hakbang, sa built-in browser ng Claude app sa PC ng user.
 
 ## Test protocol (utos ng user)
-- **User 2026-10-31:** buong 32-item na checklist (bahagi A ~ F) sa BAWAT hakbang, may tala bawat item PASA / BAGSAK / HINDI NAGAWA, kahit sabay-sabay ang hakbang na inutos; hindi binabawasan para bumilis (pagbabago = OK ng user lang). WALANG screenshot: basahin mismo ang app (text, value, kulay, posisyon). Isang findings / checklist artifact, ina-update bawat hakbang; ang user ang huling huhusga.
-- Buong checklist bawat hakbang: Training list, dock, header, logic sheet, HMI na may pop-out (kumilos bilang operator), status bar, events, at reference (SOP PR-OPE-5002, ABC / DITL, alarm list).
+- **User 2026-10-31 (inaprubahan):** ang 12 CHECK bawat hakbang + 8 PATAKARAN ng LIVE TESTER (`HANDOFF.md` seksyon 5; pinalitan ang "32-item na checklist"). Priority ng bawat hakbang; hindi binabawasan nang walang OK ng user, kahit sabay-sabay ang hakbang na inutos. Tala bawat check: PASA / BAGSAK / BAHAGYA / HINDI NAGAWA. WALANG screenshot: basahin mismo ang app (text, value, kulay, posisyon). Ang user ang huling huhusga.
+- **Findings / checklist artifact ng tester (2026-10-31):** https://claude.ai/artifact/L8PGXXkK7us2NBApNLqwid (12 check × bawat hakbang). Ang lumang findings ay hanggang #52; ang bago ay mula #53. Ang buong bagong listahan (lampas sa #38 ng file na ito) ay nasa artifact na iyon hangga't hindi pa nakokopya sa repo.
+- Ang dating "buong checklist" (Training list, dock, header, logic sheet, HMI, status bar, events, reference) ay nasa 12 CHECK na (2026-10-31).
 - Totoong 6 h purge; walang shortcut at walang force. I-tick lang ang totoo.
 - Kapag may mali (user 2026-10-30): critical o may chain reaction sa susunod na hakbang = huminto at ipaayos; maliit = itala at tuloy. Bawat ulat ng hakbang ay may criticality at mungkahi; ang user ang nagpapasya.
 - 2-column na table na kasya sa telepono. Magtanong sa user sa live-test thread lang. Nanonood ang user sa TV: iwasan ang reload.
