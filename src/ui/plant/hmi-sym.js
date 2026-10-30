@@ -8,7 +8,7 @@
      b.tee(x, y, { w, med });                        // the weld dot of a branch
      b.add(HSYM.pump(x, y, id)) ...                  // equipment layer (over the pipes)
      b.txt(HSYM.vbox(x, y, tag, unit, key))          // text layer (over everything)
-     g.innerHTML = b.svg(); g.setAttribute('transform', HSYM.fit(1600, 880));  // 1600 x 880 = the standard page space
+     g.innerHTML = b.svg(); g.setAttribute('transform', HSYM.fit(1280, 770));  // frame 1280 x 860, area 1280 x 770 (HSYM.tabs if big)
    Symbols: pump (casing cutaway + impeller, coupling, motor with cooling fan, status ring), valve (man / mov / xv / cv with a
    position bar), check (swing flapper), gauge (dial + needle), strainer (Y type), orifice, tank (shell, water, wave, inflow
    stream, level marks), vbox (tag + value + unit), dest (end card of a line), legend.
@@ -120,7 +120,7 @@
 <linearGradient id="${px}-wt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3fa6d8"/><stop offset="1" stop-color="#1a5f86"/></linearGradient>
 <linearGradient id="${px}-wc" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#5b8fd6"/><stop offset="1" stop-color="#22457a"/></linearGradient></defs>`;
   const css = () =>
-    `<style>.hs-zone{font-size:13px;font-weight:600;letter-spacing:.14em;fill:#6f8091;${UF}}.hs-eq{font-size:15px;font-weight:700;letter-spacing:.03em;fill:${C.nm};${UF}}.hs-sub{font-size:10.5px;fill:${C.dim};${UF}}.hs-tag{font-size:10.5px;fill:${C.tag};${MF}}.hs-st{font-size:11px;font-weight:700;letter-spacing:.1em;${UF}}.hs-val{font-size:14px;font-weight:600;${MF}}.hs-unit{font-size:10px;fill:${C.dim};${MF}}.hs-hit{cursor:pointer}.hs-hit:hover .hs-hl{stroke:#5fb3e6;stroke-width:2.5}</style>`;
+    `<style>.hs-zone{font-size:14px;font-weight:600;letter-spacing:.14em;fill:#6f8091;${UF}}.hs-eq{font-size:18px;font-weight:700;letter-spacing:.03em;fill:${C.nm};${UF}}.hs-sub{font-size:13px;fill:${C.dim};${UF}}.hs-tag{font-size:13px;fill:${C.tag};${MF}}.hs-st{font-size:13px;font-weight:700;letter-spacing:.1em;${UF}}.hs-val{font-size:22px;font-weight:600;${MF}}.hs-unit{font-size:12px;fill:${C.dim};${MF}}.hs-hit{cursor:pointer}.hs-hit:hover .hs-hl{stroke:#5fb3e6;stroke-width:2.5}.hs-tab{cursor:pointer}.hs-tab:hover rect{fill:#2a3a48}</style>`;
 
   /* ---------- symbols (each returns svg text) ---------- */
   /* end-suction pump: casing cutaway with impeller in the line, coupling, motor above with its cooling fan; ring = run state */
@@ -167,12 +167,12 @@
       lab = !o.lab
         ? ''
         : la === 'up'
-          ? T(x, y - (k === 'man' ? 24 : 36), o.lab, 'hs-tag', 'text-anchor="middle"')
+          ? T(x, y - (k === 'man' ? 26 : 38), o.lab, 'hs-tag', 'text-anchor="middle"')
           : la === 'r'
-            ? T(x + 16, y + 4, o.lab, 'hs-tag')
+            ? T(x + 18, y + 5, o.lab, 'hs-tag')
             : la === 'l'
-              ? T(x - 16, y + 4, o.lab, 'hs-tag', 'text-anchor="end"')
-              : T(x, y + (o.id ? 32 : 26), o.lab, 'hs-tag', 'text-anchor="middle"');
+              ? T(x - 18, y + 5, o.lab, 'hs-tag', 'text-anchor="end"')
+              : T(x, y + (o.id ? 36 : 30), o.lab, 'hs-tag', 'text-anchor="middle"');
     return `<g${o.id ? ` class="hs-hit" data-hit="${o.hit || o.id}"` : ''}><title>${o.title || o.lab || ''}</title><path d="${body}" fill="${fill}" stroke="${C.edge}" stroke-width="1.5" stroke-linejoin="round" class="hs-hl"${o.id ? ` data-vb="${o.id}"` : ''}/>${a}${bar}${lab}</g>`;
   }
   /* swing check valve (flow left to right); the flapper opens with the flow */
@@ -186,10 +186,10 @@
       const a = ((-120 + k * 30) * Math.PI) / 180;
       t += `<line x1="${(x + Math.sin(a) * r * 0.7).toFixed(1)}" y1="${(cy - Math.cos(a) * r * 0.7).toFixed(1)}" x2="${(x + Math.sin(a) * r * 0.9).toFixed(1)}" y2="${(cy - Math.cos(a) * r * 0.9).toFixed(1)}" stroke="#26323e" stroke-width="1"/>`;
     }
-    return `<g><title>${tag}</title><line x1="${x}" y1="${y}" x2="${x}" y2="${y - stem}" stroke="#9aa7b3" stroke-width="2"/><circle cx="${x}" cy="${cy}" r="${r}" fill="#e9eef2" ${OL}/>${t}<line x1="${x}" y1="${cy}" x2="${x}" y2="${cy - r * 0.78}" stroke="${C.run}" stroke-width="1.8" stroke-linecap="round" transform="rotate(-120 ${x} ${cy})" data-gn="${id}" data-cx="${x}" data-cy="${cy}"/>${tag ? T(x, cy - r - 5, tag, 'hs-tag', 'text-anchor="middle"') : ''}</g>`;
+    return `<g><title>${tag}</title><line x1="${x}" y1="${y}" x2="${x}" y2="${y - stem}" stroke="#9aa7b3" stroke-width="2"/><circle cx="${x}" cy="${cy}" r="${r}" fill="#e9eef2" ${OL}/>${t}<line x1="${x}" y1="${cy}" x2="${x}" y2="${cy - r * 0.78}" stroke="${C.run}" stroke-width="1.8" stroke-linecap="round" transform="rotate(-120 ${x} ${cy})" data-gn="${id}" data-cx="${x}" data-cy="${cy}"/>${tag ? T(x, cy - r - 6, tag, 'hs-tag', 'text-anchor="middle"') : ''}</g>`;
   }
   const strainer = (x, y, lab, px) =>
-    `<g><title>${lab} · Y-strainer</title><rect x="${x - 18}" y="${y - 9}" width="36" height="18" rx="3" fill="url(#${px}-cs)" ${OL}/><path d="M${x - 6} ${y + 8} l14 20 h10 l-12 -20 z" fill="url(#${px}-cs)" ${OL}/>${T(x, y + 44, lab, 'hs-tag', 'text-anchor="middle"')}</g>`;
+    `<g><title>${lab} · Y-strainer</title><rect x="${x - 18}" y="${y - 9}" width="36" height="18" rx="3" fill="url(#${px}-cs)" ${OL}/><path d="M${x - 6} ${y + 8} l14 20 h10 l-12 -20 z" fill="url(#${px}-cs)" ${OL}/>${T(x, y + 46, lab, 'hs-tag', 'text-anchor="middle"')}</g>`;
   const orifice = (x, y) =>
     `<g><title>RO · restriction orifice (minimum flow)</title><rect x="${x - 2}" y="${y - 11}" width="4" height="22" fill="#cfd8e0" ${OL}/>${T(x, y - 15, 'RO', 'hs-tag', 'text-anchor="middle"')}</g>`;
   /* vertical tank: shell, water (live), wave, inflow stream from (sx, sy), level marks [[m, label, colour]] */
@@ -216,25 +216,60 @@
     );
   }
   /* tag over a dark value box, unit after; key = data-v of the value text, click key = data-vbx */
-  const vbox = (x, y, tag, unit, key, w = 66) =>
-    `<g class="hs-hit" data-vbx="${key || tag}">${T(x, y - 4, tag, 'hs-tag')}<rect x="${x}" y="${y}" width="${w}" height="21" rx="2" fill="${C.box}" stroke="${C.boxs}"/>${T(x + w - 5, y + 16, '-----', 'hs-val', `text-anchor="end" fill="${C.none}" data-v="${key || tag}"`)}${T(x + w + 4, y + 15, unit, 'hs-unit')}</g>`;
+  const vbox = (x, y, tag, unit, key, w = 84) =>
+    `<g class="hs-hit" data-vbx="${key || tag}">${T(x, y - 5, tag, 'hs-tag')}<rect x="${x}" y="${y}" width="${w}" height="29" rx="2" fill="${C.box}" stroke="${C.boxs}"/>${T(x + w - 6, y + 22, '-----', 'hs-val', `text-anchor="end" fill="${C.none}" data-v="${key || tag}"`)}${T(x + w + 5, y + 21, unit, 'hs-unit')}</g>`;
   /* end of a line: arrow card (title, sub) pointing in from the left */
   const dest = (x, y, w, title, sub) =>
-    `<g><path d="M${x} ${y - 22} h${w} a4 4 0 0 1 4 4 v36 a4 4 0 0 1 -4 4 h-${w} l-10 -22 z" fill="#1b252f" stroke="#33424f"/>${T(x + 12, y - 4, title, 'hs-eq', 'style="font-size:13px"')}${sub ? T(x + 12, y + 12, sub, 'hs-sub') : ''}</g>`;
+    `<g><path d="M${x} ${y - 26} h${w} a4 4 0 0 1 4 4 v44 a4 4 0 0 1 -4 4 h-${w} l-12 -26 z" fill="#1b252f" stroke="#33424f"/>${T(x + 12, y - 4, title, 'hs-eq', 'style="font-size:15px"')}${sub ? T(x + 12, y + 15, sub, 'hs-sub') : ''}</g>`;
   const legend = (x, y, items) =>
     items
       .map(
         ([m, lab], i) =>
-          `<rect x="${x + i * 210}" y="${y - 6}" width="22" height="7" rx="2" fill="${C.med[m][0]}"/>${T(x + i * 210 + 28, y + 1, lab, 'hs-sub')}`
+          `<rect x="${x + i * 250}" y="${y - 7}" width="24" height="8" rx="2" fill="${C.med[m][0]}"/>${T(x + i * 250 + 30, y + 2, lab, 'hs-sub')}`
       )
       .join('');
 
-  /* the drawing area of a page: under the frame bars of hmi2.js (title 34 + alarm 20) and above the page tabs (H - 32) of the
-     1920 x 1000 frame; fit(w, h) = the transform that puts a w x h drawing in the middle of it */
-  const AREA = { x: 0, y: 56, w: 1920, h: 910 };
+  /* the page frame of the standard (user 2026-10-30 "malabo / maliit"): 1280 x 860, so a PC with the dock open (~910 px for the
+     page) shows it at ~0.71 x (text 13 ~ 18 -> 9 ~ 13 px, values 22 -> ~16 px). The drawing area is under the frame bars of hmi2.js
+     (title 34 + alarm 20) and above the page tabs (H - 32): 1280 x 770, drawn 1:1 (fit(1280, 770) = translate(0 56)) */
+  const FRAME = { w: 1280, h: 860 };
+  const AREA = { x: 0, y: 56, w: 1280, h: 770 };
   function fit(w, h) {
     const k = Math.min(AREA.w / w, AREA.h / h);
     return `translate(${((AREA.w - w * k) / 2).toFixed(1)} ${(AREA.y + (AREA.h - h * k) / 2).toFixed(1)}) scale(${k.toFixed(4)})`;
+  }
+
+  /* tabs inside a page (a system too big for one 1280 x 770 area): a bar at the top of the area, one <g> per tab. The open tab
+     is kept per page while the app runs. Returns the tab groups; draw tab i's art in tabs[i] (its own space starts at y 44) */
+  const TABSEL = {};
+  function tabs(root, page, names) {
+    const NS = 'http://www.w3.org/2000/svg';
+    const bar = document.createElementNS(NS, 'g'),
+      gs = names.map(() => document.createElementNS(NS, 'g'));
+    let x = 8;
+    const btns = names.map((n, i) => {
+      const w = n.length * 9.6 + 34,
+        b = document.createElementNS(NS, 'g');
+      b.setAttribute('class', 'hs-tab');
+      b.innerHTML = `<rect x="${x}" y="6" width="${w}" height="30" rx="4" stroke="#33424f"/>${T(x + w / 2, 26, n, 'hs-st', 'text-anchor="middle" style="font-size:14px"')}`;
+      b.addEventListener('click', e => (e.stopPropagation(), show(i)));
+      x += w + 6;
+      bar.append(b);
+      return b;
+    });
+    function show(i) {
+      TABSEL[page] = i;
+      gs.forEach((g, j) => g.setAttribute('display', j === i ? 'inline' : 'none'));
+      btns.forEach((b, j) => {
+        b.firstChild.setAttribute('fill', j === i ? '#3d6f93' : '#1b252f');
+        b.lastChild.setAttribute('fill', j === i ? '#ffffff' : C.dim);
+      });
+    }
+    gs.forEach(g => root.append(g));
+    root.append(bar);
+    show(TABSEL[page] || 0);
+    gs.show = show;
+    return gs;
   }
 
   /* ---------- live ---------- */
@@ -432,8 +467,10 @@
   window.HSYM = {
     C,
     T,
+    FRAME,
     AREA,
     fit,
+    tabs,
     rpath,
     scene,
     pump,

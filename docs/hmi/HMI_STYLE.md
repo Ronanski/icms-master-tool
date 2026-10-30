@@ -9,7 +9,7 @@ Mockup na inaprubahan ng user (2026-10-30): https://claude.ai/artifact/D7QHoST3P
 
 ## 1. Layout
 
-- **Page space 1600 x 880**, inilalagay ng `HSYM.fit(1600, 880)` sa drawing area ng frame. Ang drawing area ay nasa ilalim ng title
+- **Frame 1280 x 860, drawing area 1280 x 770** (seksyon 1a), `HSYM.fit(1280, 770)`. Ang drawing area ay nasa ilalim ng title
   at alarm bar, at nasa itaas ng page tabs (`HSYM.AREA`). Walang bahagi ng drawing na natatakpan ng frame, ng left pane o ng dock
   (`fitAll: 1` sa `PLANT_SYS`).
 - **Daloy ng proseso: kaliwa → kanan.** Source (tank, fan inlet, oil tank) → mga makina → header → mga gumagamit.
@@ -22,15 +22,14 @@ Mockup na inaprubahan ng user (2026-10-30): https://claude.ai/artifact/D7QHoST3P
 - Dulo ng linya papunta sa ibang system: `HSYM.dest` card (pangalan + linya / drawing).
 - Sa ibaba: legend ng media (`HSYM.legend`) at ang pinagmulan (P&ID, SOP, "values: plant model").
 
-### 1a. Laki sa totoong screen (MUNGKAHI, naghihintay ng approval ng user, 2026-10-30)
-Sukat sa beta.70: sa PC 1366 x 768 na bukas ang dock, ~912 px lang ang lapad ng page. Ang frame ng `hmi2.js` ay 1920 ang lapad, kaya
-0.47x ang lahat: 10.5 px na text = ~5 px, 14 px na value = ~6.6 px sa screen ("malabo / maliit").
-- Mungkahi: frame ng bawat page = **1280 x 860** (`sys.w` / `sys.h`), ~0.71x sa 1366 + dock. Inaayos ang frame header ng
-  `hmi2.js` para kumasya sa 1280.
-- Minimum sa drawing: text 15, tag 13, value 22 ~ 26. Sa screen (1366 + dock): text >= ~11 px, value >= ~16 px.
-- Kapag hindi kasya ang system: **tabs** sa loob ng page (hal. MAKE-UP WATER: TANKS & PUMPS / USERS & EXPANSION TANK; 036:
-  TURBINE & BEARINGS / LUBE OIL / CONTROL & TRIP OIL).
-- Hanggang sa approval, ang mga numero sa seksyon 1 at 3 ay ang beta.70.
+### 1a. Laki sa totoong screen (user 2026-10-30: "malabo / maliit"; "Cge")
+Sa PC 1366 x 768 na bukas ang dock, ~912 px lang ang lapad ng page. Ang lumang frame (1920) ay 0.47x: 10.5 px na text = ~5 px.
+- **Frame ng bawat page = 1280 x 860** (`sys.w` / `sys.h` = `HSYM.FRAME`), ~0.71x sa 1366 + dock. Sa frame na < 1600 ang lapad, mas
+  malaki ang text ng frame bar ng `hmi2.js` (x1.3) at 4 header value lang (MSP, MST, MSF, LOAD).
+- **Drawing area = 1280 x 770**, iginuguhit nang 1:1 (`HSYM.fit(1280, 770)`); ang content ay mula y 44 kapag may tabs.
+- Minimum sa drawing: text 13, pangalan 18, value 22. Sa screen (1366 + dock): text ~9 ~ 13 px, value ~16 px (nasukat sa beta.70).
+- Kapag hindi kasya ang system: **tabs** sa loob ng page (`HSYM.tabs(pg, id, names)`), hal. MAKE-UP WATER: TANKS & PUMPS /
+  #1 UNIT USERS & EXPANSION TANK. Ang dulo ng linya papunta sa kabilang tab ay card na nagbubukas ng tab na iyon.
 
 ## 2. Kulay (dark steel)
 
@@ -52,12 +51,12 @@ Bagong medium (steam, oil, air, flue gas): idagdag sa `HSYM.C.med` at sa talaang
 
 | Klase | Gamit | Laki |
 | --- | --- | --- |
-| `hs-zone` | label ng zone | 13 px, ALL CAPS, letter-spacing |
-| `hs-eq` | pangalan ng equipment (MWP-A, T-1109) | 15 px bold |
-| `hs-st` | estado (RUNNING, STOPPED, OPEN) | 11 px bold, may kulay ng estado |
-| `hs-tag` | tag ng instrument / valve | 10.5 px mono |
-| `hs-val` | value sa value box | 14 px mono, bold |
-| `hs-unit` / `hs-sub` | unit, maliit na paliwanag | 10 ~ 10.5 px |
+| `hs-zone` | label ng zone | 14 px, ALL CAPS, letter-spacing |
+| `hs-eq` | pangalan ng equipment (MWP-A, T-1109) | 18 px bold |
+| `hs-st` | estado (RUNNING, STOPPED, OPEN) | 13 px bold, may kulay ng estado |
+| `hs-tag` | tag ng instrument / valve | 13 px mono |
+| `hs-val` | value sa value box | 22 px mono, bold |
+| `hs-unit` / `hs-sub` | unit, maliit na paliwanag | 12 ~ 13 px |
 
 ## 4. Value box
 
@@ -97,9 +96,9 @@ Kaya nagdidikit ang tee at elbow nang walang dugtong o laktaw. Dumadaan ang tubo
 
 ## 8. Bagong page: checklist
 
-1. `const b = HSYM.scene('<prefix>')`, iguhit sa 1600 x 880, `pg.setAttribute('transform', HSYM.fit(1600, 880))`.
+1. `PLANT_SYS` entry: `w: HSYM.FRAME.w, h: HSYM.FRAME.h, fitAll: 1`. `pg.setAttribute('transform', HSYM.fit(1280, 770))`; kung malaki: `HSYM.tabs`. Bawat tab: `const b = HSYM.scene('<prefix>')`, iguhit sa 1280 x 770 (content mula y 44).
 2. Kaliwa → kanan na daloy, zones, magkakaparehong row.
 3. Mga tubo gamit ang `b.pipe` / `b.tee`; walang sariling line drawing.
 4. `const A = HSYM.live(pg)`; sa tick: `A.pump`, `A.flow`, `A.valve`, `A.check`, `A.gauge`, `A.tank`.
 5. Mga value mula sa plant model / logic gamit ang `api.reg`.
-6. Screenshot sa 1920 x 1080 at 1366 x 768 na bukas ang dock: walang natatakpan, walang text na nagkakapatong.
+6. Screenshot sa 1366 x 768 na bukas ang dock (ang pinakamaliit na PC): walang natatakpan, walang text na nagkakapatong, nababasa ang value.
