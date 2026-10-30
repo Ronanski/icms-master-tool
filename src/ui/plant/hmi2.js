@@ -690,6 +690,9 @@
     s += P(ESPB, k.esp, ` stroke="${k.shellOl}" stroke-width="1.3"${lift(S)}`);
     for (let x = 1306; x < 1474; x += 7) s += `<line x1="${x}" y1="762" x2="${x}" y2="838" stroke="${k.espPlate}" stroke-opacity="${k.glow ? 0.35 : 0.7}" stroke-width="${x % 14 ? 0.8 : 1.6}"${k.glow ? '><animate attributeName="stroke-opacity" values="0.35;0.15;0.4;0.35" dur="' + (1.5 + (x % 30) / 20).toFixed(2) + 's" repeatCount="indefinite"/></line>' : '/>'}`;
     for (const x of [1348, 1390, 1432]) s += `<line x1="${x}" y1="758" x2="${x}" y2="842" stroke="${k.shellOl}" stroke-width="1.4"/>`;
+    /* live test 2026-10-30 #18: the ESP purge air heater H-1201 and fan F-1201 (PR-OPE-5002 section 1, EP PLC panel, no DCS signal): status
+       of the field equipment (Training: from "Simulan ang 6 h purge"; 150 MW: in service) and the purge time */
+    s += T(1390, 736, 'PURGE AIR HTR H-1201 / FAN F-1201 · EP PLC (field)', { z: 7.5, c: S.C.dim, a: 'middle' }) + T(1390, 724, '-----', { z: 8, b: 700, c: S.C.none, a: 'middle', ls: 0.4, k: 'espst' });
     return s + NAME(1390, 750, 'ESP  Z-1010', 'middle');
   }
   function stack(S) {
@@ -1034,6 +1037,26 @@
       ti.textContent = f.name + ' · run state from the DCS logic (motor: red = running, green = stopped)';
       body.append(ti);
     });
+    /* #18: the ESP purge air heater / fan (field equipment AN_SRC.field.esp) and its 6 h purge time (Training H1) */
+    {
+      const t = K('espst');
+      const upd = () => {
+        if (!t || !t.isConnected) return clearInterval(iv);
+        let on = false,
+          tx = '';
+        try {
+          on = !!(AN.fieldState && AN.fieldState().esp);
+          const G = window.LS_GUIDE,
+            s0 = G && G.on && G.steps()[0],
+            hd = s0 && s0.pre ? G.holdOf(s0) : null;
+          if (hd && on) tx = ' · purge ' + (Math.min(hd[0], hd[1]) / 3600).toFixed(1) + ' / ' + (hd[1] / 3600).toFixed(0) + ' h';
+        } catch (e) {}
+        t.textContent = (on ? 'RUNNING' : 'STOPPED') + tx;
+        t.setAttribute('fill', on ? C.run : C.stop);
+      };
+      const iv = setInterval(upd, 1000);
+      upd();
+    }
     /* R9 #87: air preheater main drive, run state of DITL-43 (was: grey, no state) */
     {
       const mot = q('[data-aphm]'),
