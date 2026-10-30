@@ -1818,11 +1818,11 @@
         /* the "?" of the item: who does it (the By column of the SOP table: AO = field operator, CRO = control room), where it is */
         const by = String(L0.by || '').trim(),
           whoT = by ? by.replace(/CRO/g, 'CRO (control room)').replace(/\bAO\b/g, 'AO (field operator)') : au ? 'CRO: ang logic ang nagpapakita na tapos' : '',
-          wy = whyOf(f.t),
+          wy = ((window.LS_SOP_WHY || {})[f.si + '.' + f.i] || whyOf(f.t)) /* #25: the item's own reason (sections 1 ~ 7), else by its kind */,
           wtx =
             [
               'Bakit: ' + wy[0],
-              'Dapat makita: ' + ([lm, f.g ? 'tag ' + f.g : ''].filter(Boolean).join(' · ') || wy[1]) + '.',
+              'Dapat makita: ' + ((window.LS_SOP_WHY || {})[f.si + '.' + f.i] ? wy[1] : [lm, f.g ? 'tag ' + f.g : ''].filter(Boolean).join(' · ') || wy[1]) + '.',
               'Kung lalaktawan: ' + wy[2],
               whoT ? 'Sino: ' + whoT + '.' : '',
               'PR-OPE-5002 seksyon ' + (f.si + 1) + ' (' + String(((window.LS_PROC5002 || [])[f.si] || {}).t || '').toLowerCase() + '), item ' + (f.i + 1) + '.', au ? 'AUTO: kusang nati-tick kapag nakita ng logic na tapos.' : '', cut >= 0 && fi >= cut ? 'Pagkatapos ng START: bukas kapag tumatakbo na ang equipment.' : '']
@@ -2209,7 +2209,11 @@
       const lvl = /hotwell level/i.test(f.t) ? 'LCV-MU1110' : /deaerator level/i.test(f.t) ? 'LCV-CD1104' : null,
         gauge = /current|pressure|temperature/i.test(f.t),
         tfp = !lvl && gauge ? tagFp() : null,
-        nomod = !lvl && gauge && !tfp;
+        nomod = !lvl && gauge && !tfp,
+        /* live test #21 (H6): a field gauge that the step's own values already read from the plant model (SWBP suction / inlet,
+           discharge, current of each pump, with their SOP range) is not shown again as "— walang model" */
+        kw = /current/i.test(f.t) ? /current/i : /suction|inlet pressure/i.test(f.t) ? /suction/i : /discharge/i.test(f.t) ? /discharge/i : /pressure/i.test(f.t) ? /suction|discharge|pressure/i : null;
+      if (nomod && s.w && kw && stage.some(x => x[2] && kw.test(x[0]))) continue;
       const live = lvl
         ? () => call(() => LV().pvOf(LV().fp(lvl)), NaN)
         : tfp

@@ -374,9 +374,9 @@ window.LS_GUIDE = (function () {
     ];
     const BPW = [
       ['SWBP running', () => bpN() + ' / 3', '', x => x, 'kailangan 2 (ang ikatlo: standby REMOTE + AUTO)'],
-      ...['A', 'B', 'C'].map((l, j) => ['SWBP-' + l + ' current (IIP1503' + l + ')', () => uv('swIb' + j), 'A', f1w, 'SOP 90 · alarm 120']),
+      ...['A', 'B', 'C'].map((l, j) => ['SWBP-' + l + ' current (IIP1503' + l + ')', () => uv('swIb' + j), 'A', f1w, 'SOP 90 · alarm 120 · trip 126']),
       ['SWBP suction', () => uv('swBs0'), 'kg/cm²', f1w, 'SOP 1 ~ 1.1'],
-      ['SWBP discharge, running (PG-SW1503)', () => Math.max(0, ...BPD.map((nm, j) => (dRun(nm) === 1 ? uv('swBd' + j) : 0))), 'kg/cm²', f1w, 'SOP 2.2 ~ 2.4']
+      ['SWBP discharge, running (PG-SW1503)', () => Math.max(0, ...BPD.map((nm, j) => (dRun(nm) === 1 ? uv('swBd' + j) : 0))), 'kg/cm²', f1w, 'SOP 2.2 ~ 2.4 · alarm < 2.2']
     ];
     /* #12: the standby of a pump set (not running): FIELD I-REMOTE (local selector), then AUTO (CRT selection, row au); AUTO refused while LOCAL */
     const stbyB = (D, Lb, au, isRun) =>
