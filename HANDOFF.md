@@ -20,7 +20,7 @@ Huling update: **2026-10-30 9:20 AM PHT** (thread ng HANDOFF.md: TEST SOP; docs 
 |---|---|
 | **Stable** | v2.4.0 (huling Stable). Ang susunod na Stable ay 3.2.0, LANG sa GO STABLE. |
 | **Beta sa `main`** | `3.2.0-beta.61` (merge 24e9c99, PR #67, 2026-10-30 ~9:07 AM PHT, GO BETA ng user). Bagong Training dock (mock-up v2) + pagpili ng SWP / SWBP na i-start. |
-| **Bukas na PR** | Wala, maliban sa PR #65 (ang HANDOFF.md na ito; merge sa "merge n lahat" ng user). |
+| **Bukas na PR** | PR #68 (TEST SOP, docs lang; merge sa GO BETA ng user). |
 | **Beta site** | Kusang nade-deploy pagkatapos ng berdeng Checks sa `main` (`site.yml`, `/beta/`). Sa app: banner na "Update now". |
 | **Roadmap** (`docs/SPEC.md` 3) | 1, 2, 3, 5, 7 TAPOS. 4 (Training Cold → 150 MW) at 6 (HMI) bahagi. 8 Library ang huli. 9 Stable = GO STABLE lang. |
 | **HMI** | Bago: 007 Air & Flue Gas (inaprubahan) at 030 Seawater (STEEL). Plant view = mga bagong page + UNIT · controllers. Ang ibang system ay isa-isa, kapag sinabi ng user (`docs/hmi/HMI_SYSTEMS.md`). |
@@ -41,7 +41,7 @@ Huling update: **2026-10-30 9:20 AM PHT** (thread ng HANDOFF.md: TEST SOP; docs 
 | Dock: Training button = Training dock (beta.58 ~ 60) | tapos | — |
 | Training: starting points at SOP alignment (fixer) | tapos | wala hanggang may bagong findings |
 | Propose Seawater System HMI page | tapos (beta.56 / 59) | — |
-| HANDOFF.md: isang file para sa lipat ng account | PR #65 | merge (user: "merge n lahat"), saka lipat ng account |
+| HANDOFF.md: isang file para sa lipat ng account | naka-merge (PR #65); TEST SOP sa PR #68 | GO BETA ng PR #68, saka lipat ng account |
 
 Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instrument list, HMI audit) ay TAPOS at naka-merge.
 
