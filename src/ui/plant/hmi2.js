@@ -1228,16 +1228,23 @@
         (p || g).append(t);
         return t;
       };
+    /* 3.2.0-beta.70 (user 2026-10-30 "malabo / maliit"): a page of the HMI standard (docs/hmi/HMI_STYLE.md) has a 1280 x 860 frame,
+       so it is shown about 1.5 x larger on a PC with the dock open; its bars use larger text and show 4 header values */
+    const k = W < 1600 ? 1.3 : 1,
+      HV = [['MSP', 1, 'kg/cm²'], ['MST', 0, '°C'], ['MSF', 1, 'T/H'], ['RHP', 1, 'kg/cm²'], ['RHT', 0, '°C'], ['COAL', 1, 'T/H'], ['PWR', 1, 'MW']].filter(
+        v => k === 1 || ['MSP', 'MST', 'MSF', 'PWR'].includes(v[0])
+      );
     g.append(S_('rect', { x: 0, y: 0, width: W, height: 34, fill: C.frame }));
-    tx(16, 22, sys.num || '', { z: 12, b: 700, c: C.dim, mono: 1 });
-    tx(48, 22, sys.name || sys.title, { z: 13, b: 700, ls: 0.6 });
-    [['MSP', 1, 'kg/cm²'], ['MST', 0, '°C'], ['MSF', 1, 'T/H'], ['RHP', 1, 'kg/cm²'], ['RHT', 0, '°C'], ['COAL', 1, 'T/H'], ['PWR', 1, 'MW']].forEach(([k, dp, u], i) => {
-      const x = 760 + i * 158;
-      tx(x, 22, k === 'PWR' ? 'LOAD' : k, { z: 9, b: 600, c: C.dim, ls: 0.5 });
-      const t = tx(x + 92, 22.5, '-----', { z: 12.5, mono: 1, c: C.none, a: 'end' });
-      tx(x + 96, 22, u, { z: 8.5, c: C.unit });
-      if (api.HDR[k])
-        api.reg({ t: 'val', tag: k, ref: api.HDR[k], v: '' }, X => {
+    tx(16, 22 + (k - 1) * 8, sys.num || '', { z: 12 * k, b: 700, c: C.dim, mono: 1 });
+    tx(48 * k, 22 + (k - 1) * 8, sys.name || sys.title, { z: 13 * k, b: 700, ls: 0.6 });
+    HV.forEach(([kk, dp, u], i) => {
+      const x = k === 1 ? 760 + i * 158 : W - HV.length * 152 - 6 + i * 152,
+        k_ = kk;
+      tx(x, 22 + (k - 1) * 6, k_ === 'PWR' ? 'LOAD' : k_, { z: 9 * k, b: 600, c: C.dim, ls: 0.5 });
+      const t = tx(x + 92 * (k === 1 ? 1 : 1.12), 22.5 + (k - 1) * 8, '-----', { z: 12.5 * k, mono: 1, c: C.none, a: 'end' });
+      tx(x + 96 * (k === 1 ? 1 : 1.12), 22 + (k - 1) * 6, u, { z: 8.5 * k, c: C.unit });
+      if (api.HDR[k_])
+        api.reg({ t: 'val', tag: k_, ref: api.HDR[k_], v: '' }, X => {
           const ok = X && isFinite(X.v);
           t.textContent = ok ? fmt(X.v, dp) : '-----';
           t.setAttribute('fill', ok ? C.val : C.none);
@@ -1245,7 +1252,7 @@
     });
     /* alarm bar: one line; colour only while an alarm is active (high = red blinking, medium = amber) */
     g.append(S_('rect', { x: 0, y: 34, width: W, height: 20, fill: C.alarmBar }));
-    const al = tx(16, 48, 'NO ACTIVE ALARM', { z: 9.5, b: 600, c: C.dim, ls: 0.5 });
+    const al = tx(16, 48 + (k - 1) * 6, 'NO ACTIVE ALARM', { z: 9.5 * k, b: 600, c: C.dim, ls: 0.5 });
     /* live check #92: the bar shows the alarm list of the header ALARM chip (cr.js lsActiveAlarms: the same alarms, trips and
        suppression of the shutdown state); before, its own rules said IDF / PAF / SAF STOPPED while the header said NO ALARM */
     let last = '';
@@ -1285,10 +1292,10 @@
     const y = H - 32;
     g.append(S_('rect', { x: 0, y, width: W, height: 32, fill: C.frame }));
     const btn = (x, s, on, title, go) => {
-      const w = s.length * 6.3 + 22,
+      const w = s.length * 6.3 * k + 22,
         gg = S_('g', { class: on ? '' : 'h2btn', style: on ? '' : 'cursor:pointer' });
       gg.append(S_('rect', { x, y: y + 6, width: w, height: 20, rx: 3, fill: on ? C.navOn : C.nav, stroke: C.chipS, 'stroke-width': 0.6 }));
-      tx(x + w / 2, y + 19.5, s, { z: 8.5, b: 600, c: on ? C.navOnT : C.lab, a: 'middle', ls: 0.4 }, gg);
+      tx(x + w / 2, y + 19.5 + (k - 1) * 4, s, { z: 8.5 * k, b: 600, c: on ? C.navOnT : C.lab, a: 'middle', ls: 0.4 }, gg);
       const ti = S_('title', {});
       ti.textContent = title;
       gg.append(ti);
@@ -1298,7 +1305,7 @@
     };
     let x = 12;
     for (const [id, s] of NAV) x += btn(x, s, id === sys.id, id === sys.id ? 'this screen' : 'open ' + s, api.go && (() => api.go(id))) + 6;
-    /* 030 SEAWATER is drawn in one style (user 2026-10-29: STEEL): no style choice there */
+    /* 030 SEAWATER, MAKE-UP WATER, 036 TURBINE OIL, INSTRUMENT & PLANT AIR and 027 CLOSED COOLING WATER are drawn in one style (user 2026-10-29: STEEL): no style choice there */
     if (sys.style) return;
     x = W - 12 - ORDER.reduce((a, k) => a + STYLES[k].name.length * 6.3 + 28, 0);
     tx(x - 8, y + 19.5, 'STYLE', { z: 8.5, b: 700, c: C.dim, a: 'end', ls: 0.6 });
@@ -1315,7 +1322,11 @@
   const NAV = [
     ['UNIT', 'UNIT'],
     ['AFG', '007 AIR & FLUE GAS'],
-    ['SW', '030 SEAWATER']
+    ['SW', '030 SEAWATER'],
+    ['MU', 'MAKE-UP WATER'],
+    ['TO', '036 TURBINE OIL'],
+    ['IA', 'INSTRUMENT & PLANT AIR'],
+    ['CW', '027 CLOSED COOLING WATER']
   ];
   window.PLANT_V2 = {
     C,

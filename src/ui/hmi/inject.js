@@ -35,6 +35,21 @@ const block =
   /* 2026-10-29: 030 SEAWATER (own vector graphics, STEEL) */
   fs.readFileSync(__dirname + '/../plant/hmi-sw.js', 'utf8') +
   '\n' +
+  /* 3.2.0-beta.70: HSYM, the shared symbol library of the HMI pages (pipes, pump, valves, tank, gauge, animation) */
+  fs.readFileSync(__dirname + '/../plant/hmi-sym.js', 'utf8') +
+  '\n' +
+  /* 3.2.0-beta.63: MAKE-UP WATER (own vector graphics, STEEL; PR-OPE-5002 section 7) */
+  fs.readFileSync(__dirname + '/../plant/hmi-mu.js', 'utf8') +
+  '\n' +
+  /* 3.2.0-beta.66: 036 TURBINE OIL (own vector graphics, STEEL; PR-OPE-5002 TURBINE CONTROL OIL) */
+  fs.readFileSync(__dirname + '/../plant/hmi-to.js', 'utf8') +
+  '\n' +
+  /* 3.2.0-beta.68: INSTRUMENT & PLANT AIR (own vector graphics, STEEL; PR-OPE-5002 sections 9 ~ 12) */
+  fs.readFileSync(__dirname + '/../plant/hmi-ia.js', 'utf8') +
+  '\n' +
+  /* 3.2.0-beta.69: 027 CLOSED COOLING WATER (own vector graphics, STEEL; PR-OPE-5002 sections 7 ~ 8) */
+  fs.readFileSync(__dirname + '/../plant/hmi-cw.js', 'utf8') +
+  '\n' +
   /* 3.2.0-beta.49: the old snapshot pictures (hmibg.js) and snapshot value pages (values.js) deleted with the old screens */
   fs.readFileSync(__dirname + '/../plant/plant.js', 'utf8') +
   '\n' +

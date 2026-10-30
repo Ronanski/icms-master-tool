@@ -223,6 +223,9 @@ function anUnitStop() {
     }
   U.cold = false;
   U.turb = true;
+  U.etLvl = NaN; /* 3.2.0-beta.63: the expansion tank starts again at its level of 27.PNG (AN_MU) */
+  U.iaP = U.paP = NaN; /* 3.2.0-beta.68: the air tanks are set again by the start state (AN_AIR) */
+  U.acT1 = U.acT2 = NaN; /* 3.2.0-beta.69: the aux cooling water temperatures start again (AN_ACW) */
   for (const m of U.mul || []) for (const p of m.pr) p.mul = undefined;
   for (const z of U.spr || []) z.pr.uf = undefined;
   if (U.fwp && U.fwp.pr) U.fwp.pr.op = undefined;
@@ -632,7 +635,10 @@ function anUnitStart() {
   for (const l of lists) for (const [S2, b] of l) own.add(S2.rt.st[b.id]);
   U.own = own;
   U.on = true;
+  /* 3.2.0-beta.68: "Start at 150 MW" = the air compressors in service, the tanks at their pressure (AN_AIR, 39.PNG 7.0 kg/cm2) */
+  U.iaP = U.paP = AN_AIR.P;
   U.frT = undefined;
+  U.tco = null; /* 3.2.0-beta.66: the oil-only state of the snapshot (tcs.js tcsOilState) starts again */
   U.tc = null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
   /* 3.2.0-beta.14: the snapshot plant has its diesel oil pump in service (source.js field equipment) */
   AN_SRC.field.dop = true;
@@ -679,6 +685,8 @@ function anUnitCold() {
   AN_SRC.field.hypo = false;
   AN_SRC.field.pur = false;
   AN_SRC.t = -1;
+  /* 3.2.0-beta.68: cold = the air compressors stopped, the air tanks empty (AN_AIR) */
+  U.iaP = U.paP = 0;
   tcsInit(U, 'cold');
   return true;
 }
@@ -703,6 +711,12 @@ function anTurbine(cmd, arg) {
   const U = AN_UNIT;
   if (!U.on || !U.tb) return 'walang unit model (Start cold muna)';
   const tb = U.tb;
+  /* 3.2.0-beta.66: the 036 TURBINE OIL pumps at the 150 MW snapshot (no TCS model): the oil-only state of tcs.js */
+  if (!U.tc && cmd === 'oil') return tcsOilCmd(tcsOilState(U), arg || {});
+  if (!U.tc && cmd === 'vex') {
+    tcsOilState(U).vex = arg !== 0 && arg !== false;
+    return '';
+  }
   /* 3.2.0-beta.38 (CHECKLIST 0.6): the TCS / ATS model (tcs.js): the auxiliaries and the ATS step push buttons. 'roll' = ATS AUTO
      from the next step up to ACCELERATION (3600 rpm), 'sync' = EXCITATION + SYNCH. & INITIAL LOAD, 'loadup' = LOAD UP to the target */
   if (U.tc) {
@@ -885,6 +899,193 @@ function anSeawaterStep(U, dt) {
   K.I0.forEach((I, i) => lag('swIa' + i, sw[i] ? I * (0.4 + (0.6 * w * 2) / n) : 0, K.tauI));
   K.Ib.forEach((I, i) => lag('swIb' + i, bp[i] ? I : 0, K.tauI));
 }
+/* 3.2.0-beta.63 (MAKE-UP WATER HMI, PR-OPE-5002 section 7): the make-up water system of flow diagram K1AU3-PD-024 Rev D and the
+   expansion tank of PD-021. Demi water tanks T-0708A / B -> suction header -> MWP P-0709A / B / C (DITL-112) -> common header
+   (PT-MU0709) -> #1 condenser (LCV-MU1110 / MV-MU1001), deaerator and boiler initial fill, expansion tank T-1109 (XV-MU1109, DITL-78),
+   unit 2. The transmitters are local (STN105 / STN103) and feed the logic only as analog rows (DITL-112 LT-MU0708-A / B,
+   PT-MU0709, DPT-MU0709; DITL-76 / 77 / 78 LT-CW1109), so the plant model makes them; the world writes them into those rows
+   (plantsw.js) and the HMI shows the same number. Anchor = the HMI snapshots 28.png / 27.PNG (2 MWP running): demi tanks 13.8 /
+   13.7 m, header 9.0 ~ 9.1 kg/cm2, MWP 20.5 / 20.7 / 20.8 A, strainer DP 0.00 ~ 0.04 kg/cm2, expansion tank 0.80 m.
+     demi tanks      the snapshot level, constant (the water treatment refills them; not modelled);
+     header          no MWP: the static head of the tank water (0.1 kg/cm2 per m, ASSUMED); 1 / 2 / 3 MWP: 9.0 / 9.1 / 9.15 kg/cm2
+                     (ASSUMED: the pumps work near their shut-off head at the small make-up flow; SOP: > 6.0 kg/cm2);
+     strainer DP     0.03 kg/cm2 while its pump runs (ASSUMED clean strainer, inside the snapshot 0.00 ~ 0.04), 0 stopped;
+     current         the snapshot current while running, 0 stopped;
+     expansion tank  start 0.80 m (27.PNG); fills while XV-MU1109 is commanded open (DITL-78 row 4) and the header is above 6 kg/cm2
+                     (SOP: fill to NL 1.7 m) at 0.003 m/s (ASSUMED, 0.8 -> 1.7 m in 5 min, 10 m3/h through the 3" line); the
+                     closed loop loses no water (ASSUMED);
+     make-up flow    FT-MU1001 = the hotwell make-up of the cycle model (plant.js 1.8 T/H per % of LCV-MU1110) + the expansion tank
+                     filling, only while an MWP runs. */
+const AN_MU = {
+  mwp: ['DITL-112', 'DITL-112 #B', 'DITL-112 #C'],
+  xv: 'DITL-78@3',
+  mv: 'DITL-60',
+  lv: [13.8, 13.7],
+  Ph: [9.0, 9.1, 9.15],
+  I0: [20.5, 20.7, 20.8],
+  dp: 0.03,
+  et0: 0.8,
+  etMax: 2.0,
+  etRate: 0.003,
+  etQ: 10,
+  tauP: 3,
+  tauI: 2
+};
+function anMakeupStep(U, dt) {
+  const K = AN_MU,
+    lag = (k, x, tau) => (U[k] = isFinite(U[k]) ? U[k] + ((x - U[k]) * Math.min(dt, tau)) / tau : x),
+    run = K.mwp.map(a => anDitlRun(a) || 0),
+    n = run.reduce((a, b) => a + b, 0);
+  U.muN = n;
+  U.muLvA = K.lv[0];
+  U.muLvB = K.lv[1];
+  lag('muP', n ? K.Ph[n - 1] : 0.1 * Math.max(K.lv[0], K.lv[1]), K.tauP);
+  K.I0.forEach((I, i) => lag('muI' + i, run[i] ? I : 0, K.tauI));
+  run.forEach((r, i) => lag('muDp' + i, r ? K.dp : 0, K.tauP));
+  U.muXv = anDitlRun(K.xv) === 1 ? 1 : 0;
+  const mv = anDitlPos(K.mv);
+  U.muMv = mv == null ? null : mv;
+  if (!isFinite(U.etLvl)) U.etLvl = K.et0;
+  const fill = U.muXv && U.muP > 6 && U.etLvl < K.etMax;
+  U.muFill = fill ? 1 : 0;
+  if (fill) U.etLvl = Math.min(K.etMax, U.etLvl + K.etRate * dt);
+  U.etPct = (100 * U.etLvl) / K.etMax;
+  const hw = typeof AN_CYC !== 'undefined' ? Math.max(0, 1.8 * (AN_CYC.u.hw || 0)) : 0;
+  lag('muF', n ? hw + (fill ? K.etQ : 0) : 0, K.tauP);
+}
+/* 3.2.0-beta.69 (027 CLOSED COOLING WATER HMI, PR-OPE-5002 sections 7 ~ 8): the aux cooling water loop of flow diagram K1AU3-PD-021
+   Rev D. Return header CW-1-002 20" + expansion tank T-1109 (V-CW1001) -> suction CW-1-003 20" -> ACWP P-1108A / B (DITL-76 / 77:
+   strainer DPT-CW1108-A / B) -> common discharge CW-1-007 20" (PT / TT-CW1152) -> CCWHE H-1107A / B / C (seawater of the SWBP) ->
+   supply CW-1-014 20" (PT / TT-CW1153) -> the users (turbine oil coolers TCV-CW1201, generator air coolers, BFP, bottom ash screw
+   conveyors PT / TT-CW1156, fans, APH, air compressors and dryers, sampling) -> return. PT-CW1152 and DPT-CW1108-A / B are analog rows
+   of DITL-76 / 77 (standby AUTO start < 3.5 kg/cm2, trip > 0.8 kg/cm2 5 s): the world writes them there (plantsw.js), so the logic
+   and the HMI read the same number. Anchor = the HMI snapshot 27.PNG (148 MW, ACWP-A running): PICW1152 6.4, PICW1153 5.2 kg/cm2,
+   TICW1152 40, TICW1153 38 C, ACWP-A 28.2 A, DPICW1108A 0.27 kg/cm2; TICW1156 37 C, PICW1156 5.3, TICW1060 36 ~ 38 C (other pages).
+     pressure     no ACWP: the static head of the expansion tank (1.0 kg/cm2 + its level, ASSUMED); 1 / 2 ACWP: 6.4 / 6.7 kg/cm2 at the
+                  pump discharge (6.4 = 27.PNG, 6.7 ASSUMED), 1.2 kg/cm2 lost in the CCWHE (27.PNG 6.4 -> 5.2); the bottom ash
+                  header PT-CW1156 = the supply header (ASSUMED, the same line);
+     strainer DP  0.27 kg/cm2 while its pump runs (27.PNG), 0 stopped;
+     current      28.2 A while running (27.PNG; SOP normal 30 A, alarm 33.7), 0 stopped;
+     temperature  the heat of the users q = 0.4 + 0.6 x load / 150 MW (ASSUMED: the compressors, BFP and coolers work at no load too);
+                  with an ACWP and an SWBP running the supply (TT-CW1153) goes to 28.5 C (seawater, 30.PNG) + 9.5 x q (38 C at full
+                  load, 27.PNG) and the return / pump discharge (TT-CW1152) is 2 x q above it (40 C); with an ACWP but no SWBP the
+                  CCWHE takes no heat away and the loop warms to 60 C (TE-CW1152 HH of the alarm list) in about 20 min; no ACWP:
+                  no flow, the water goes to the room temperature 30 C (ASSUMED); the bottom ash cooler outlets TT-CW1060 = the
+                  supply + 1 C while an ACWP runs (ASSUMED, the ash heat is not modelled; the snapshot reads 36 ~ 38 C at 37 C). */
+const AN_ACW = {
+  acwp: ['DITL-76', 'DITL-77'],
+  Ph: [6.4, 6.7],
+  dPx: 1.2,
+  dp: 0.27,
+  I0: 28.2,
+  Tsw: 28.5,
+  Tamb: 30,
+  Thot: 60,
+  tauP: 3,
+  tauI: 2,
+  tauT: 600,
+  tauA: 1800
+};
+function anAcwStep(U, dt) {
+  const K = AN_ACW,
+    lag = (k, x, tau) => (U[k] = isFinite(U[k]) ? U[k] + ((x - U[k]) * Math.min(dt, tau)) / tau : x),
+    run = K.acwp.map(a => anDitlRun(a) || 0),
+    n = run.reduce((a, b) => a + b, 0),
+    lv = isFinite(U.etLvl) ? U.etLvl : 0.8,
+    stat = 1.0 + 0.1 * lv,
+    q = 0.4 + 0.6 * Math.max(0, Math.min(1, (isFinite(U.MW) ? U.MW : 0) / 150)),
+    cool = (U.swNb || 0) > 0;
+  U.acN = n;
+  U.acCool = n && cool ? 1 : 0;
+  lag('acP1', n ? K.Ph[n - 1] : stat, K.tauP);
+  lag('acP2', n ? K.Ph[n - 1] - K.dPx : stat, K.tauP);
+  U.acP6 = U.acP2;
+  run.forEach((r, i) => {
+    lag('acDp' + i, r ? K.dp : 0, K.tauP);
+    lag('acI' + i, r ? K.I0 : 0, K.tauI);
+  });
+  const ts = n ? (cool ? K.Tsw + 9.5 * q : K.Thot) : K.Tamb;
+  if (!isFinite(U.acT2)) U.acT2 = ts;
+  lag('acT2', ts, n ? K.tauT : K.tauA);
+  lag('acT1', n ? Math.min(K.Thot + 2, U.acT2 + 2 * q) : K.Tamb, n ? 60 : K.tauA);
+  U.acT6 = U.acT2;
+  U.acTb = n ? U.acT2 + 1 : U.acT2;
+}
+/* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI, PR-OPE-5002 sections 9 ~ 12): the compressed air systems of flow diagram K1AU3-PD-023
+   Rev C sheet 1/6 (plant air) and 2/6 (instrument air). Each system: compressors C-0703A / B / C (PA) or C-0704A / B / C (IA), started
+   at their local panel (the RUNNING / TRIP contacts of DITL-114 / DITL-113 rows 6 / 13 / 20, 7 / 14 / 21) -> dryers D-0703A ~ C /
+   D-0704A ~ C (DITL-45 and its machine instances #B / #C: PLANT AIR DRYER RUNNING output row 4, INSTRUMENT AIR DRYER RUNNING row 15)
+   -> air tanks T-0705A / B (10 m3) or T-0706A / B (5 m3) -> unit 1 (PT-PA1705 / PT-IA1706), unit 2 and the utility area. The
+   transmitters feed the logic as analog rows (DITL-114 / 113 rows 1 ~ 3, the auto start of a standby compressor at < 5 kg/cm2;
+   DITL-03G rows 9 ~ 11, the MFT on instrument air < 3.5 kg/cm2, 2 of 3), so the plant model makes them and the world writes them into
+   those rows (plantsw.js); the HMI shows the same number. Anchor: 39.PNG instrument air buffer tanks 7.0 kg/cm2 (unit at 150 MW);
+   alarm list: tanks and unit header L 5.0, IA LL 3.5, PSL-IA1706 / PSL-PA1705 2.8 kg/cm2; I/O list ranges (0 ~ 10 kg/cm2, dryer
+   outlet flow 0 ~ 2700 (IA) / 0 ~ 5800 (PA) m3/h, compressor current 0 ~ 500 (IA) / 0 ~ 140 (PA) A).
+     tanks        one or more compressors running: up to 7.0 kg/cm2 at 0.06 kg/cm2/s (ASSUMED, 0 -> 7 in 2 min; the load / unload
+                  band of the compressor panel is not in the repository); none running: down at 0.033 kg/cm2/s (ASSUMED: the
+                  consumption empties 2 tanks in about 3.5 min); tank A and B are one header (tank B 0.05 lower, ASSUMED);
+     unit header  the tank pressure less 0.2 kg/cm2 of line loss (ASSUMED);
+     dryer outlet the tank pressure plus 0.15 while a compressor runs (the dryers are upstream of the tanks), else the tank pressure;
+     dryer flow   the consumption (ASSUMED IA 1200, PA 1500 m3/h: half of one dryer's range) split over the dryers in service; no dryer
+                  in service: over the three (their inlet valves stay open, refrigeration off); 0 while no compressor runs;
+     current      while running: IA 400 A (ASSUMED, a 380 V motor for the 2700 m3/h dryer), PA 55 A (ASSUMED, the 6.6 kV VCB motor);
+     winding T    PA motor (TE-M0703-x1 ~ 3, I/O list): 35 C stopped, 85 C running (ASSUMED), time constant 10 min. */
+const AN_AIR = {
+  P: 7.0,
+  up: 0.06,
+  dn: 0.033,
+  dB: 0.05,
+  loss: 0.2,
+  dD: 0.15,
+  sys: {
+    ia: { c: 'DITL-113', d: '@14', Q: 1200, I: 400 },
+    pa: { c: 'DITL-114', d: '@3', Q: 1500, I: 55 }
+  },
+  rows: [5, 12, 19],
+  dry: ['DITL-45', 'DITL-45 #B', 'DITL-45 #C'],
+  Tw: [35, 85, 600],
+  tauI: 2
+};
+/* an input row of a DITL drawing (a field contact: the RUNNING / TRIP of a compressor set at its local panel); null while no world */
+function anDitlIn(name, row) {
+  try {
+    if (typeof S === 'undefined' || !S.sheets || !window.WORLD || !WORLD.on || !window.DUI) return null;
+    const C = AN_UNIT._dr || (AN_UNIT._dr = {});
+    let s = C[name];
+    if (!s) {
+      s = S.sheets.concat(WORLD.inst || []).find(x => x.name.endsWith(name)) || null;
+      if (s) C[name] = s;
+    }
+    return s ? (DUI.rowVal(s, row) ? 1 : 0) : null;
+  } catch (e) {
+    return null;
+  }
+}
+function anAirStep(U, dt) {
+  const K = AN_AIR,
+    lag = (k, x, tau) => (U[k] = isFinite(U[k]) ? U[k] + ((x - U[k]) * Math.min(dt, tau)) / tau : x);
+  for (const k in K.sys) {
+    const Y = K.sys[k],
+      run = K.rows.map(r => (anDitlIn(Y.c, r) && !anDitlIn(Y.c, r + 1) ? 1 : 0)),
+      trip = K.rows.map(r => anDitlIn(Y.c, r + 1) || 0),
+      dry = K.dry.map(d => anDitlRun(d + Y.d) || 0),
+      n = run.reduce((a, b) => a + b, 0),
+      nd = dry.reduce((a, b) => a + b, 0);
+    U[k + 'N'] = n;
+    run.forEach((r, i) => (U[k + 'R' + i] = r));
+    trip.forEach((r, i) => (U[k + 'T' + i] = r));
+    dry.forEach((r, i) => (U[k + 'D' + i] = r));
+    const P0 = isFinite(U[k + 'P']) ? U[k + 'P'] : 0;
+    U[k + 'P'] = n ? Math.min(K.P, P0 + K.up * dt) : Math.max(0, P0 - K.dn * dt);
+    U[k + 'PA'] = U[k + 'P'];
+    U[k + 'PB'] = Math.max(0, U[k + 'P'] - K.dB);
+    U[k + 'PU'] = Math.max(0, U[k + 'P'] - K.loss);
+    U[k + 'PD'] = U[k + 'P'] + (n ? K.dD : 0);
+    dry.forEach((r, i) => lag(k + 'F' + i, n && (nd ? r : 1) ? Y.Q / (nd || dry.length) : 0, 3));
+    run.forEach((r, i) => lag(k + 'I' + i, r ? Y.I : 0, K.tauI));
+    if (k === 'pa') run.forEach((r, i) => lag('paW' + i, r ? K.Tw[1] : K.Tw[0], K.Tw[2]));
+  }
+}
 function anUnitOwns(T, ids) {
   const U = AN_UNIT;
   return U.on && ids && ids.length && ids.some(id => U.own.has(T.rt.st[id]));
@@ -962,6 +1163,14 @@ function anUnitStep(dt) {
   }
   /* 3.2.0-beta.59: the seawater system (030 SEAWATER HMI), see AN_SW */
   anSeawaterStep(U, dt);
+  /* 3.2.0-beta.63: the make-up water system and the expansion tank (MAKE-UP WATER HMI), see AN_MU */
+  anMakeupStep(U, dt);
+  /* 3.2.0-beta.66: the turbine lube and control oil (036 TURBINE OIL HMI), see TCS_OIL (tcs.js) */
+  tcsOil(U, dt);
+  /* 3.2.0-beta.68: the instrument and plant air systems (INSTRUMENT & PLANT AIR HMI), see AN_AIR */
+  anAirStep(U, dt);
+  /* 3.2.0-beta.69: the aux cooling water loop (027 CLOSED COOLING WATER HMI), see AN_ACW */
+  anAcwStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
   /* ---- 2.2.0-beta.17 (M4 step 4): the turbine black box (see AN_UNIT rollRate ...) ---- */
   const tb = U.tb || (U.tb = { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN }),
