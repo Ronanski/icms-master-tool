@@ -1240,7 +1240,7 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 | 23 | Update banner | Nasubok: may bagong Beta sa version.json → lumalabas ang "New Beta available … Update now / Later" sa itaas, hindi tinatakpan ang Home | — |
 
 
-## 3.2.0-beta.75 (Beta, 2026-10-30; naghihintay ng GO BETA ng user) — findings ng live test sa beta.74 (H1 ~ H8)
+## 3.2.0-beta.76 (Beta, 2026-10-30; naghihintay ng GO BETA ng user) — findings ng live test sa beta.74 (H1 ~ H8)
 - **Problem:** live test H1 ~ H8 sa beta.74: #28 sa H1 ang itaas ng dock ay Drum level (-296 mm), hindi ang gagawin; #33 ang pop-out na binuksan mula sa dock ("Buksan ang faceplate") ay nasa kaliwang itaas at tinatakpan ang SWP-A at ang HAKBANG tag; #34 blangko ang trend; #35 nawala ang SWP discharge pressure (SOP 2.2 ~ 2.4); #36 forebay -8.76 m laban sa SOP NL -4 m; #23 / #38 H8 walang valve pop-out (XV-MU1109, V-MU1033) at ang banner ay "MWP-B ay STANDBY (AUTO)" lang; #37 ang standby MWP-B ay "INTERLOCK, 1 ang kulang".
 - **As Found:**
   - #28: walang sariling Bantayan ang H1 (ESP purge), kaya bumalik ang dock sa 8 value ng planta; ang GAWIN ay nasa ilalim pa ng mga value.
