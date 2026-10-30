@@ -143,6 +143,9 @@
       b.txt(
         T(CX - 44, y - 128, '-----', 'hs-st', `data-st="${id}" fill="#6b7480"`) +
           T(CX - 44, y - 108, MACH[id].n, 'hs-eq') +
+          /* live test 2026-10-30 #22: REMOTE / LOCAL (field selector, DITL-112 row 22 = I/O MIL-P0709x) and AUTO / MAN (CRT, row 15) as
+             030; the MWP is an MCC motor (I/O list: running, electric trouble, remote; no VCB DI) */
+          T(CX - 44, y - 90, '--- · ---', 'hs-sub', `data-md="${id}" fill="#6b7480"`) +
           T(CX, y + 58, MACH[id].t, 'hs-sub', 'text-anchor="middle"')
       );
       b.txt(H.vbox(CX + 60, y - 104, 'IIP0709' + n, 'A', 'IIP0709' + n, 76));
@@ -502,6 +505,16 @@
         const s = mst(MACH[id]);
         if (s !== ST[id]) A.pump(id, s);
         ST[id] = s;
+        let m = null;
+        try {
+          m = window.LS_DOCK && LS_DOCK.modeOf ? LS_DOCK.modeOf(MACH[id].ad) : null;
+        } catch (e) {}
+        const md = q(`[data-md="${id}"]`),
+          mt = (!m || m.rem == null ? '---' : m.rem ? 'REM' : 'LOC') + ' · ' + (!m || m.au == null ? '---' : m.au ? 'AUTO' : 'MAN') + ' · MCC';
+        if (md && md.textContent !== mt) {
+          md.textContent = mt;
+          md.setAttribute('fill', m && m.rem && m.au ? '#9ff0c4' : m && m.rem ? '#5cd6ff' : '#ffd27a');
+        }
         run.push(s === 'RUN' ? 1 : 0);
       }
       const n = run[0] + run[1] + run[2],
