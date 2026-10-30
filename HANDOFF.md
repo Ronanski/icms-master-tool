@@ -4,7 +4,7 @@
 >
 > **Patakaran (CLAUDE.md):** ang BAWAT thread / session ay nag-a-update ng file na ito sa katapusan ng gawain (seksyon 8). Palitan ang luma, huwag magtambak ng kasaysayan.
 
-Huling update: **2026-10-30 10:45 PM PHT** (DOCS thread: ika-6 na role na LIVE TESTER, rule na huwag i-archive ang mga thread, rule ng COMPACT at `docs/handoff/THREAD_BRIEFS.md`; docs lang. Bago nito 10:30 PM: mga desisyon ng user sa unang session ng bagong account, PR #83). **Lumipat na sa bagong account** (Claude Code desktop sa PC ng user). Tapos ang `docs/handoff/NEW_ACCOUNT_SETUP.md` bahagi B: 49 memory na-import (5 napalitan, hindi isinama); ang 3 skill mula `docs/handoff/skills/` at ang skill na `dcs-beta-live-test` ay naka-install sa PC.
+Huling update: **2026-10-30 11:00 PM PHT** (DOCS thread: UI CHECK bawat hakbang at bagong rule ng pag-uulat ng LIVE TESTER; docs lang. Bago nito 10:45 PM: LIVE TESTER, COMPACT, THREAD_BRIEFS, PR #84; 10:30 PM: unang session ng bagong account, PR #83). **Lumipat na sa bagong account** (Claude Code desktop sa PC ng user). Tapos ang `docs/handoff/NEW_ACCOUNT_SETUP.md` bahagi B: 49 memory na-import (5 napalitan, hindi isinama); ang 3 skill mula `docs/handoff/skills/` at ang skill na `dcs-beta-live-test` ay naka-install sa PC.
 
 ---
 
@@ -93,7 +93,7 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
   2. **APP UI/UX** — buong app maliban sa HMI (buttons, text, kulay, style); malinaw, madaling basahin, hindi masakit sa mata, professional.
   3. **CODE FIXER** — logic, engine, plant model at functionality; elite DCS + software engineer.
   4. **DOCS** — docs, progress, skills, handover, memory, instructions, at BAWAT pagtama ng user.
-  5. **LIVE TESTER** — siya ang nagla-live test ng Training Cold → full load sa built-in browser ng Claude app sa PC, isang hakbang bawat "G" ng user (saksi ang user). Sumusunod sa TEST SOP, LIVE RETEST at skill na `dcs-beta-live-test`. Ipinapasa niya ang findings sa leader, at ang leader ang nag-uutos ng ayos sa tamang thread. Hindi siya nag-e-edit ng code at hindi nagme-merge. Ang "G" ay tina-type ng user sa LIVE TESTER thread; naka-on ang Remote Control ng thread na iyon para makita ito sa phone.
+  5. **LIVE TESTER** — siya ang nagla-live test ng Training Cold → full load sa built-in browser ng Claude app sa PC, isang hakbang bawat "G" ng user (saksi ang user). Sumusunod sa TEST SOP, LIVE RETEST at skill na `dcs-beta-live-test`. Nag-uulat siya sa USER sa sarili niyang thread at sa sariling log; nagpapasa lang siya sa leader KAPAG INUTOS ng user (user 2026-10-30). Binabasa pa rin ng leader ang thread ng tester para iutos ang ayos sa tamang thread. Hindi siya nag-e-edit ng code at hindi nagme-merge. Ang "G" ay tina-type ng user sa LIVE TESTER thread; naka-on ang Remote Control ng thread na iyon para makita ito sa phone.
 - Ang leader lang ang nagbubukas ng thread, at kapag may trabaho lang ito. Iisang format ng sagot sa leader at sa mga thread.
 - Huwag i-archive ang mga thread (user 2026-10-30); naka-off na ang auto-archive kapag na-merge ang PR.
 - Brief ng bawat role (para sa simula at pagkatapos ng compact): `docs/handoff/THREAD_BRIEFS.md`.
@@ -127,6 +127,12 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 5. **Ang tanong ay sinasagot ng sagot, hindi ng aksyon.** Kapag nagtanong ang user, sumagot lang; huwag magsimula ng test o ng anumang gawain dahil sa tanong.
 
 **LIVE RETEST (user 2026-10-30):** sa built-in browser ng Claude app sa PC ng user (Beta site pagkatapos ng "Update now"); si Claude ang pumipindot, saksi ang user. LAHAT ng hakbang Cold → 150 MW, pero isa-isa (isang hakbang bawat "G"). Bawat ulat ng hakbang: finding, criticality (critical / chain o maliit), mungkahi (huminto para ayusin o tuloy); ang user ang nagpapasya. Skill: `dcs-beta-live-test`.
+
+**UI CHECK bawat hakbang (user 2026-10-30):** bawat mali sa UI ay finding na may criticality at mungkahi.
+- **DOCK UI:** malinaw sa isang tingin; walang dobleng yugto; tamang kulay ng card; SOP list ng hakbang lang; scroll na hindi nakakalito; laki ng font; walang putol na text.
+- **HMI UI:** buo ang page at hindi natatakpan ng dock; walang nagpapatong na label, marka ng hakbang o value box; nababasa ang value nang hindi nag-zoom; RUN pula / STOP berde / TRIP kumikislap; iisang style bawat system.
+- **HMI POP-OUT:** bumubukas sa tamang pindot bilang faceplate (hindi wiring popup); hindi tinatakpan ang mahalagang bahagi; nasasara; kumpleto ang control (REM / LOC, A / M, START / STOP, VCB, lamp).
+- **BUONG APP UI:** header, left pane (kung nagtatago), logic sheet, status bar, Training page: walang putol, natatakpan o nagpapatong; nababasa sa 1366 × 768; hindi masakit sa mata.
 
 - **Lahat ng testing ay LIVE** (user 2026-10-30): ang user ang SAKSI, sa sarili niyang app pagkatapos ng "Update now", isang hakbang bawat "G". Ang headless run ay HINDI live test at hindi tinatawag na live.
 - Habang nag-aayos: `npm run build` + `npm run check` lang. Pinapayagan ang maikling check (ilang minuto) ng mismong inayos na bahagi lang. Bawal ang buong Cold → 150 MW run nang walang go ng user.
