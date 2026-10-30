@@ -1161,7 +1161,7 @@
     put([5], 'SW', /^SWBP-[ABC]$/);
     put([6], 'SW', /^MV-SW1002 BACKWASH$/, /DPISW1504$/);
     put([7], 'MU', /^MWP-[ABC]$/, /^XV-MU1109$/);
-    put([8], 'SW', /^ACWP-[AB]$/);
+    put([8], 'CW', /^ACWP-[AB]$/);
     put([9, 10, 11, 12, 13, 29, 31, 34], 'UNIT');
     put([14, 15, 16, 21, 33], 'UNIT', /^Turbine \(TCS/);
     put([17, 27], 'AFG', /^AIR PREHEATER H-1052$/);
