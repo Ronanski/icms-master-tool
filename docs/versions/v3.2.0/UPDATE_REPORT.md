@@ -1240,6 +1240,15 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 | 23 | Update banner | Nasubok: may bagong Beta sa version.json → lumalabas ang "New Beta available … Update now / Later" sa itaas, hindi tinatakpan ang Home | — |
 
 
+## 3.2.0-beta.75 (Beta, 2026-10-30) — live test #25: sariling "?" ng bawat SOP item
+- **Problem (live test H1 sa beta.74, FAIL #25):** ang "?" ng bawat item sa Hakbang 1 ay iisang generic na text, hindi Bakit / Dapat makita / Kung lalaktawan ng mismong item.
+- **As Found:** `whyOf(t)` sa `dock.js` ay ayon lang sa uri ng salita ("Ensure", "Set", "Start"), kaya pareho ang text ng magkakaibang item.
+- **Work Done:**
+  - Bagong `src/ui/training/pr-ope-5002-why.js` (`LS_SOP_WHY`): sariling Bakit / Dapat makita / Kung lalaktawan ng lahat ng 91 item ng PR-OPE-5002 seksyon 1 ~ 7 (ESP purge, seawater, hypochlorite, make-up, CCW). Isinama sa `inject.js`.
+  - `dock.js`: ang "?" ay gumagamit muna ng `LS_SOP_WHY`; ang `whyOf` ay para lang sa item na wala pa (seksyon 8 pataas). Nananatili ang Sino (AO / CRO) at seksyon / item.
+- **As Left (ebidensya):** `npm run build` at `npm run check` SAME. Headless 1366 × 768, H1: 6 item, 6 magkakaibang "?" text (hal. "Bakit: malinis na filter = sapat na hangin ng purge fan papasok sa ESP insulator..."), 0 page error. Hindi pa live sa user.
+- **Natitira:** seksyon 8 pataas ay rule-based pa ang "?".
+
 ## 3.2.0-beta.74 (Beta, 2026-10-30, GO BETA ng user "Oo go beta sa dalawa"; disenyo inaprubahan "G n yan", mockup v7) — operator UI: pop-out faceplate, alarm ACK, progress, dock bilang gabay
 - **Problem:** live test findings #11, #14, #15, #17, #22 (mode ng MWP sa faceplate), #27 ~ #32; utos ng user: "mini pop out sya sa bawat equipment ... controls and permissive based sa SOP at sa logic", HMI graphic ang nasa gitna, controls sa faceplate lang; gabay lang ang dock (hindi pumipindot, hindi nag-a-AUTO, hindi nagfo-force).
 - **As Found:** click sa pump = I/O wiring popup na tumatakip sa HMI; walang REMOTE / LOCAL, AUTO / MAN, START / STOP sa iisang lugar; walang ACK sa header; 94 → 96 suppressed na sinasabing "standing since the plant was loaded"; walang progress ng seksyon; LOAD / DRUM sa itaas kahit utility step; kahel na BLOCKED kahit normal na hindi pa handa; mahabang listahan ng SOP; ulit na pangalan ng yugto; putol na label.
