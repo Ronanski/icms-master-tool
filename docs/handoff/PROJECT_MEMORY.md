@@ -861,7 +861,7 @@ User answers 2026-10-30 (new account, first session):
 
 ## team-structure-leader
 
-_user_ — User's project setup (2026-10-30): Claude = LEADER of 4 role threads (HMI, APP UI/UX, CODE FIXER, DOCS); focus = live test Cold → full load
+_user_ — User's project setup (2026-10-30): Claude = LEADER of 5 role threads (HMI, APP UI/UX, CODE FIXER, DOCS, LIVE TESTER); focus = live test Cold → full load
 
 User 2026-10-30 (new account): focus of the app now = LIVE TESTING of Cold start-up to full load.
 
@@ -870,9 +870,12 @@ Team (uniform response format in leader and every thread):
 2. APP UI/UX thread — whole app apart from HMI: buttons, text, colours, style, overall look; clear, easy to read, easy on the eyes, professional.
 3. CODE FIXER thread — any fault in logic, engine, plant model, overall functionality; elite DCS engineer + software engineer.
 4. DOCS thread — docs, progress saves, skills, HANDOFF, memory, instructions; applies EVERY correction of the user; organized document controller / librarian / secretary.
-5. LEADER (main session): manages and instructs the threads, opens a thread only when it has work, does all merging and Beta/Stable updates (only on the user's GO BETA / GO STABLE), bases everything on rules + document-references, checks properly, makes own decisions; user gives final approval. ALL-CAPS section titles.
+5. LIVE TESTER thread (added 2026-10-30) — runs the live test of Training Cold → full load in the Claude app's built-in browser on the user's PC, one step per user "G" (user witnesses); follows TEST SOP, LIVE RETEST and skill `dcs-beta-live-test`; passes findings to the leader, who routes fixes to the right thread. Never edits code, never merges. The user types "G" in the LIVE TESTER thread; its Remote Control is on so he sees it on his phone.
+6. LEADER (main session): manages and instructs the threads, opens a thread only when it has work, does all merging and Beta/Stable updates (only on the user's GO BETA / GO STABLE), bases everything on rules + document-references, checks properly, makes own decisions; user gives final approval. ALL-CAPS section titles.
 
 New sessions open only from a message typed in the desktop app (not over Remote Control); the repo folder must be trusted once.
+
+Do not archive threads (user 2026-10-30); auto-archive when a PR merges is turned off.
 
 Local-only references (not in the repo): `..\for-github-icms-master-tool\document-references\tcs-references\` has "TCA - SOFT LOGIC DIAGRAM OF TCS.pdf", "TCE - SOFT LOGIC DIAGRAM OF TCS.pdf" and a "TCS Logic" folder. P&ID = `document-references/flow-diagram-K1AU3-A1-0-001.zip` (user confirmed).
 

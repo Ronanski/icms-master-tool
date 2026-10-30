@@ -4,7 +4,7 @@
 >
 > **Patakaran (CLAUDE.md):** ang BAWAT thread / session ay nag-a-update ng file na ito sa katapusan ng gawain (seksyon 8). Palitan ang luma, huwag magtambak ng kasaysayan.
 
-Huling update: **2026-10-30 10:30 PM PHT** (DOCS thread: mga desisyon ng user sa unang session ng bagong account; docs lang). **Lumipat na sa bagong account** (Claude Code desktop sa PC ng user). Tapos ang `docs/handoff/NEW_ACCOUNT_SETUP.md` bahagi B: 49 memory na-import (5 napalitan, hindi isinama); ang 3 skill mula `docs/handoff/skills/` at ang skill na `dcs-beta-live-test` ay naka-install sa PC.
+Huling update: **2026-10-30 10:45 PM PHT** (DOCS thread: ika-6 na role na LIVE TESTER at rule na huwag i-archive ang mga thread; docs lang. Bago nito 10:30 PM: mga desisyon ng user sa unang session ng bagong account, PR #83). **Lumipat na sa bagong account** (Claude Code desktop sa PC ng user). Tapos ang `docs/handoff/NEW_ACCOUNT_SETUP.md` bahagi B: 49 memory na-import (5 napalitan, hindi isinama); ang 3 skill mula `docs/handoff/skills/` at ang skill na `dcs-beta-live-test` ay naka-install sa PC.
 
 ---
 
@@ -43,9 +43,11 @@ Huling update: **2026-10-30 10:30 PM PHT** (DOCS thread: mga desisyon ng user sa
 - **beta.63** (PR #70, GO BETA ng user) — bagong HMI page MAKE-UP WATER (PD-024 Rev D + expansion tank ng PD-021): demi tank, MWP-A / B / C, header, condenser make-up, XV-MU1109 + expansion tank; plant model `unit.js` AN_MU, ang parehong value ay binabasa ng DITL-112 / 76 / 77 / 78 (`plantsw.js`). Hakbang 8 (seksyon 7) ay nagbubukas ng page na ito.
 - **beta.62** (PR #69, merged cbe8659, GO BETA ng user) — 8 findings ng live test: 030 buong page (bug: `fitAll` hindi nababasa) at walang pan; rail nagtatago habang may dock; dock: isang linya ng yugto, isang bukas lang, "Gawin sa field"; TAPOS lang kapag naka-tick ang PAGKATAPOS I-START (#120); 030 REM / LOC, AUTO / MAN, VCB ON / OFF (#121); P-0762A "STN105 DI"; HAKBANG tag walang tinatakpan; SWBP standby AUTO (DITL-30 row 4).
 
-## 3. Mga thread / trabaho (2026-10-30 7:40 PM PHT)
+## 3. Mga thread / trabaho (2026-10-30 10:45 PM PHT)
 | Thread | Kalagayan | Susunod |
 |---|---|---|
+| LIVE TESTER | bukas (2026-10-30) | naghihintay ng "G H1" ng user |
+| DOCS | bukas (2026-10-30); PR #83 naka-merge | bawat bagong utos o pagtama ng user |
 | AYUSIN LAHAT NG BUKAS NA FINDINGS NG LIVE TEST (BETA.72) | beta.73 at beta.75 naka-merge | retest H1 hanggang Turbine Oil |
 | BUILD ANG OPERATOR UI: POP-OUT FACEPLATE, GABAY DOCK, ALARM | beta.74 (PR #76) at beta.76 (PR #80) naka-merge | mockup #16 030 / 007 sa HSYM naghihintay ng approval |
 | GUMAWA NG HMI PAGE NG CLOSE COOLING WATER | beta.69 (GO BETA ng user) | live check ng user sa H9 |
@@ -86,12 +88,14 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 
 ### TEAM AT ROLES (user 2026-10-30)
 - **LEADER** (main session): nagma-manage at nag-uutos sa mga thread; siya lang ang nagme-merge at nag-a-update ng Beta / Stable, at sa GO BETA / GO STABLE lang ng user. Batay sa rules at `document-references/`; tunay na check (hindi "gumagana ang code" o "sabi ng user" lang). Sariling desisyon, pero ang user ang final approval. Organized ang sagot: ALL-CAPS na pamagat ng seksyon.
-- **4 thread:**
+- **5 thread:**
   1. **HMI** — mockup at implementation ng HMI; elite operator + software engineer + graphic designer; iisang style (HSYM) sa bawat system.
   2. **APP UI/UX** — buong app maliban sa HMI (buttons, text, kulay, style); malinaw, madaling basahin, hindi masakit sa mata, professional.
   3. **CODE FIXER** — logic, engine, plant model at functionality; elite DCS + software engineer.
   4. **DOCS** — docs, progress, skills, handover, memory, instructions, at BAWAT pagtama ng user.
+  5. **LIVE TESTER** — siya ang nagla-live test ng Training Cold → full load sa built-in browser ng Claude app sa PC, isang hakbang bawat "G" ng user (saksi ang user). Sumusunod sa TEST SOP, LIVE RETEST at skill na `dcs-beta-live-test`. Ipinapasa niya ang findings sa leader, at ang leader ang nag-uutos ng ayos sa tamang thread. Hindi siya nag-e-edit ng code at hindi nagme-merge. Ang "G" ay tina-type ng user sa LIVE TESTER thread; naka-on ang Remote Control ng thread na iyon para makita ito sa phone.
 - Ang leader lang ang nagbubukas ng thread, at kapag may trabaho lang ito. Iisang format ng sagot sa leader at sa mga thread.
+- Huwag i-archive ang mga thread (user 2026-10-30); naka-off na ang auto-archive kapag na-merge ang PR.
 - Ang bagong session ay mabubuksan lang mula sa mensaheng tina-type sa desktop app (hindi sa Remote Control), at kailangang i-trust nang isang beses ang folder ng repo.
 
 ### FOKUS (user 2026-10-30)
