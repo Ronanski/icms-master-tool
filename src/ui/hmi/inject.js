@@ -35,6 +35,9 @@ const block =
   /* 2026-10-29: 030 SEAWATER (own vector graphics, STEEL) */
   fs.readFileSync(__dirname + '/../plant/hmi-sw.js', 'utf8') +
   '\n' +
+  /* 3.2.0-beta.70: HSYM, the shared symbol library of the HMI pages (pipes, pump, valves, tank, gauge, animation) */
+  fs.readFileSync(__dirname + '/../plant/hmi-sym.js', 'utf8') +
+  '\n' +
   /* 3.2.0-beta.63: MAKE-UP WATER (own vector graphics, STEEL; PR-OPE-5002 section 7) */
   fs.readFileSync(__dirname + '/../plant/hmi-mu.js', 'utf8') +
   '\n' +

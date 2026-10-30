@@ -1,46 +1,27 @@
-/* MAKE-UP WATER SYSTEM (roadmap step 6, PR-OPE-5002 section 7 "MAKE UP WATER PUMP / EXPANSION TANK FILLING"). Own vector graphics in
-   the STEEL style of 030 SEAWATER, after the flow diagrams K1AU3-PD-024 MAKE-UP WATER SYSTEM Rev D (flow-diagram-K1AU3-A1-0-001.zip,
-   RB page 21) and PD-021 AUX COOLING WATER Rev D (RB page 15, the expansion tank); the HMI snapshots 28.png / 27.PNG are only the
-   guide for the instruments.
+/* MAKE-UP WATER SYSTEM (roadmap step 6, PR-OPE-5002 section 7 "MAKE UP WATER PUMP / EXPANSION TANK FILLING").
+   3.2.0-beta.70: redrawn with the shared symbol library HSYM (hmi-sym.js) after the mockup the user approved on 2026-10-30
+   (https://claude.ai/artifact/D7QHoST3PTVzav5Pw1T1q7): process left to right (tanks -> pumps -> header -> users), continuous
+   pipes with welded tees and rounded elbows, equipment that moves (impeller and motor fan, check valve flapper, gauge needles,
+   valve travel, tank water and inflow). Equipment and tags after the flow diagrams K1AU3-PD-024 MAKE-UP WATER SYSTEM Rev D
+   (flow-diagram-K1AU3-A1-0-001.zip, RB page 21) and PD-021 AUX COOLING WATER Rev D (RB page 15, the expansion tank):
    - demi water tanks T-0708A / B (from CED1 permeate, water treatment) -> V-MU0001 / 0002 -> suction header MU-0-003 12";
    - MWP P-0709A / B / C (DITL-112): suction V-MU0003 / 4 / 5, strainer STR-MU0001 ~ 3 (DPT-MU0709-A / B / C), PG-MU0709-A / B / C,
-     check V-MU0006 / 8 / 10, discharge V-MU0007 / 9 / 11, recirculation RO + V-MU0012 ~ 17 back to the tanks (V-MU0018 / 0019);
-   - common header MU-0-010 12" (PT-MU0709) -> MU-1-020 to unit 1 (FT-MU1001): #1 condenser (LCV-MU1110 of ABC-031, MV-MU1001 of
-     DITL-60), deaerator and boiler initial fill, sampling, expansion tank T-1109 (MU-1-021 3": V-MU1031, XV-MU1109 of DITL-78 with
-     bypass V-MU1033, V-MU1032; LT-CW1109, LSLL-CW1109) -> ACWP suction; MU-2-020 to unit 2.
+     check V-MU0006 / 8 / 10, discharge V-MU0007 / 9 / 11, recirculation RO + check V-MU0012 / 14 / 16 + V-MU0013 / 15 / 17 back
+     to the tanks (V-MU0018 / 0019);
+   - common header MU-0-010 12" (PT-MU0709) -> MU-1-020 to unit 1 (FT-MU1001): sampling, boiler and deaerator initial fill, #1
+     condenser (LCV-MU1110 of ABC-031 parallel to MV-MU1001 of DITL-60), expansion tank T-1109 (MU-1-021 3": V-MU1031, XV-MU1109 of
+     DITL-78 with bypass V-MU1033, V-MU1032; LT-CW1109, LSLL-CW1109) -> ACWP suction; MU-2-020 to unit 2.
    Run state = the motor drawing of the one world (LS_DOCK.mst, as the Training dock lamps): red = running, green = stopped, red
-   blinking = trip; XV-MU1109 red = open, green = closed. Values = the plant model (unit.js AN_MU, written into the analog rows of
-   DITL-112 / 76 / 77 / 78 by plantsw.js, so the logic reads the same number); never from this page. Drawn in a 1760 x 900 space,
-   scaled to the 1920 x 1000 frame of hmi2.js. */
+   blinking = trip; valves red = open, green = closed, amber blinking = travelling. Values = the plant model (unit.js AN_MU,
+   written into the analog rows of DITL-112 / 76 / 77 / 78 by plantsw.js, so the logic reads the same number); never from this
+   page. The flow animation speed follows FIMU1001 (the pumps share it); the recirculation moves while a pump runs.
+   Frame 1280 x 860 of the HMI standard (docs/hmi/HMI_STYLE.md, readable with the dock open) in two tabs: TANKS & PUMPS and
+   #1 UNIT USERS & EXPANSION TANK, each drawn 1:1 in the 1280 x 770 area. */
 (function () {
-  if (!window.PLANT_V2) return;
+  if (!window.PLANT_V2 || !window.HSYM) return;
   const NS = 'http://www.w3.org/2000/svg';
-  const S = {
-    bar: '#11161b',
-    ol: '#0c1014',
-    nm: '#d3dbe2',
-    dim: '#7f8b97',
-    box: '#0d1116',
-    boxs: '#3a4550',
-    val: '#e8eef3',
-    run: '#d64545',
-    stop: '#3fa34d',
-    none: '#6b7480',
-    m: ['#3e454c', '#b4bec7', '#4a525a'],
-    cav: '#232a31',
-    water: ['#4f8f86', '#1d4a45'],
-    wave: '#9fd6cc',
-    air: '#20272e',
-    /* media: d demineralized water, r recirculation to the tanks, c closed cooling water (expansion tank out) */
-    med: {
-      d: ['#4f8f86', '#c9efe9'],
-      r: ['#6f8f6a', '#dcefd2'],
-      c: ['#5d7f9e', '#cfe3f3'],
-      off: ['#3a424b', null]
-    }
-  };
-  const T = (x, y, s, c, a) => `<text x="${x}" y="${y}" class="${c}"${a ? ' ' + a : ''}>${s}</text>`;
-  const OL = `stroke="${S.ol}" stroke-width="1"`;
+  const H = HSYM,
+    T = H.T;
   const fmt = (x, dp) => (x == null || !isFinite(x) ? '-----' : (+x).toFixed(dp).replace(/^-(0(?:\.0+)?)$/, '$1'));
   /* the machines: name, tag, run state address (LS_DOCK.mst), info card tag, logic sheet */
   const MACH = {
@@ -48,505 +29,459 @@
     PB: { n: 'MWP-B', t: 'P-0709B', ad: 'DITL-112 #B', io: 'MIR-P0709B', d: 'DITL-112 #B' },
     PC: { n: 'MWP-C', t: 'P-0709C', ad: 'DITL-112 #C', io: 'MIR-P0709C', d: 'DITL-112 #C' }
   };
+  /* id, y, letter, suction valve, strainer, check, discharge valve, recirc check, recirc valve */
   const ROWS = [
-    ['PA', 236, 'A', 'V-MU0003', 'STR-MU0001', 'V-MU0006', 'V-MU0007', 'V-MU0012', 'V-MU0013', 0],
-    ['PB', 446, 'B', 'V-MU0004', 'STR-MU0002', 'V-MU0008', 'V-MU0009', 'V-MU0014', 'V-MU0015', 1],
-    ['PC', 656, 'C', 'V-MU0005', 'STR-MU0003', 'V-MU0010', 'V-MU0011', 'V-MU0016', 'V-MU0017', 2]
+    ['PA', 200, 'A', 'V-MU0003', 'STR-MU0001', 'V-MU0006', 'V-MU0007', 'V-MU0012', 'V-MU0013'],
+    ['PB', 420, 'B', 'V-MU0004', 'STR-MU0002', 'V-MU0008', 'V-MU0009', 'V-MU0014', 'V-MU0015'],
+    ['PC', 640, 'C', 'V-MU0005', 'STR-MU0003', 'V-MU0010', 'V-MU0011', 'V-MU0016', 'V-MU0017']
   ];
-
-  function art() {
-    const o = [],
-      G = { main: [[], [], [], []] };
-    const rpath = (p, r) => {
-      let d = `M${p[0][0]} ${p[0][1]}`;
-      for (let i = 1; i < p.length - 1; i++) {
-        const [x0, y0] = p[i - 1],
-          [x1, y1] = p[i],
-          [x2, y2] = p[i + 1];
-        const l1 = Math.hypot(x1 - x0, y1 - y0),
-          l2 = Math.hypot(x2 - x1, y2 - y1),
-          rr = Math.min(r, l1 / 2, l2 / 2);
-        const ax = x1 - ((x1 - x0) / l1) * rr,
-          ay = y1 - ((y1 - y0) / l1) * rr,
-          bx = x1 + ((x2 - x1) / l2) * rr,
-          by = y1 + ((y2 - y1) / l2) * rr;
-        d += ` L${ax.toFixed(1)} ${ay.toFixed(1)} Q${x1} ${y1} ${bx.toFixed(1)} ${by.toFixed(1)}`;
-      }
-      const e = p[p.length - 1];
-      return d + ` L${e[0]} ${e[1]}`;
-    };
-    /* one pipe in 4 layers (outline, medium, highlight, moving dashes); f = flow key ('' = never flows: drawn as idle) */
-    const pipe = (p, m, w, f) => {
-      const d = rpath(p, w * 1.6),
-        med = S.med[m],
-        L = G.main;
-      L[0].push(`<path d="${d}" fill="none" stroke="${S.ol}" stroke-width="${w + 2.5}"/>`);
-      L[1].push(
-        `<path d="${d}" fill="none" stroke="${f ? med[0] : S.med.off[0]}" stroke-width="${w}"${f ? ` data-fb="${f}" data-c="${med[0]}"` : ''}/>`
+  /* tab 1: TANKS & PUMPS (1280 x 770 area, tab bar on top, content from y 44) */
+  const CX = 560; /* pump centre */
+  function art1() {
+    const b = H.scene('mua'),
+      PX = 'mua';
+    const zone = (x, w, s) =>
+      b.add(
+        `<rect x="${x}" y="42" width="${w}" height="724" rx="6" fill="#ffffff" fill-opacity=".018"/>` +
+          T(x + 12, 62, s, 'hs-zone')
       );
-      L[2].push(
-        `<path d="${d}" fill="none" stroke="#ffffff" stroke-opacity="0.16" stroke-width="${Math.max(1, w * 0.28)}" transform="translate(0 ${-w * 0.18})"/>`
-      );
-      if (f)
-        L[3].push(
-          `<path d="${d}" class="mufl" data-f="${f}" stroke="${med[1]}" stroke-width="${w > 10 ? 2.4 : w > 5 ? 1.8 : 1.3}"/>`
-        );
-    };
-    const vbox = (x, y, tag, u, k) =>
-      `<g data-vb="${k || tag}" style="cursor:pointer">${T(x, y - 4, tag, 'mu9')}<rect x="${x}" y="${y}" width="58" height="17" rx="1.5" fill="${S.box}" stroke="${S.boxs}"/>${T(x + 54, y + 13, '-----', 'muv', `text-anchor="end" data-v="${k || tag}"`)}${T(x + 62, y + 13, u, 'mu9')}</g>`;
-    const imp = (x, y, r, id) =>
-      `<g transform="translate(${x} ${y})"><circle r="${r}" fill="#11161b"/><g data-imp="${id}">${[0, 1, 2, 3, 4].map(i => `<path d="M0 0 Q${r * 0.55} ${-r * 0.2} ${r * 0.85} ${-r * 0.5}" transform="rotate(${i * 72})" stroke="#c3ccd5" stroke-width="${r / 5}" fill="none" stroke-linecap="round"/>`).join('')}</g><circle r="${r * 0.22}" fill="#c3ccd5"/></g>`;
-    /* manual valve of the field (no DCS signal): grey */
-    const valve = (x, y, vert, lab, la) => {
-      const b = vert
-        ? `M${x - 7} ${y - 8} L${x + 7} ${y - 8} L${x - 7} ${y + 8} L${x + 7} ${y + 8} Z`
-        : `M${x - 8} ${y - 7} L${x + 8} ${y + 7} L${x + 8} ${y - 7} L${x - 8} ${y + 7} Z`;
-      const t = !lab
-        ? ''
-        : la === 'up'
-          ? T(x, y - 12, lab, 'mu8', 'text-anchor="middle"')
-          : la === 'dn'
-            ? T(x, y + 20, lab, 'mu8', 'text-anchor="middle"')
-            : la === 'l'
-              ? T(x - 10, y + 3, lab, 'mu8', 'text-anchor="end"')
-              : T(x + 12, y + 3, lab, 'mu8');
-      return `<g><title>${lab} · manual valve (field)</title><path d="${b}" fill="${S.m[1]}" ${OL}/>${t}</g>`;
-    };
-    /* check valve (flow left -> right or up) */
-    const check = (x, y, lab) =>
-      `<g><title>${lab} · check valve</title><path d="M${x - 8} ${y - 7} L${x + 8} ${y} L${x - 8} ${y + 7} Z" fill="${S.m[1]}" ${OL}/><line x1="${x + 8}" y1="${y - 7}" x2="${x + 8}" y2="${y + 7}" stroke="${S.ol}" stroke-width="2"/>${T(x, y + 20, lab, 'mu8', 'text-anchor="middle"')}</g>`;
-    const orifice = (x, y) =>
-      `<g><title>RO · restriction orifice (minimum flow)</title><rect x="${x - 2}" y="${y - 9}" width="4" height="18" fill="${S.m[1]}" ${OL}/>${T(x + 6, y - 6, 'RO', 'mu8')}</g>`;
-    /* local gauge (field only, no DCS value) */
-    const gauge = (x, y, tag) =>
-      `<g><title>${tag} · local pressure gauge (field, no DCS signal)</title><line x1="${x}" y1="${y}" x2="${x}" y2="${y - 14}" stroke="${S.m[1]}"/><circle cx="${x}" cy="${y - 22}" r="8" fill="#e5e9ec" ${OL}/><line x1="${x}" y1="${y - 22}" x2="${x + 4}" y2="${y - 27}" stroke="#11161b" stroke-width="1.2"/>${T(x + 11, y - 25, tag, 'mu8')}</g>`;
-    const strainer = (x, y) =>
-      `<g><title>suction strainer</title><path d="M${x - 16} ${y - 9} H${x + 16} L${x + 10} ${y + 9} H${x - 10} Z" fill="url(#mumv)" ${OL}/><path d="M${x - 9} ${y - 7} l6 13 M${x - 1} ${y - 7} l6 13 M${x + 7} ${y - 7} l5 11" stroke="#7f8a94" stroke-width="1.1"/></g>`;
-    /* end-suction pump: casing in the line, motor above (lamp under the motor: red RUN, green STOP) */
-    const pump = (x, y, id) =>
-      `<g data-hit="${id}" style="cursor:pointer"><rect x="${x - 4}" y="${y - 50}" width="8" height="30" fill="${S.m[1]}" ${OL}/><rect x="${x - 26}" y="${y - 96}" width="52" height="46" rx="4" fill="url(#mumt)" ${OL}/>${[-86, -78, -70, -62].map(d => `<line x1="${x - 24}" y1="${y + d}" x2="${x + 24}" y2="${y + d}" stroke="${S.ol}" stroke-opacity=".45"/>`).join('')}<rect x="${x - 26}" y="${y - 54}" width="52" height="4" fill="${S.none}" data-lamp="${id}"/><circle cx="${x}" cy="${y}" r="21" fill="url(#mumv)" ${OL}/><circle cx="${x}" cy="${y}" r="13" fill="${S.cav}"/>${imp(x, y, 11, id)}<path d="M${x - 18} ${y + 14} L${x - 26} ${y + 30} H${x + 26} L${x + 18} ${y + 14}" fill="url(#mumv)" ${OL}/></g>`;
-
-    /* ---------------- demi water tanks T-0708A / B ---------------- */
-    o.push(T(24, 34, 'FROM CED1 PERMEATE (WATER TREATMENT)', 'mu9') + T(24, 46, 'LMYP-1-P3-110 · by VWST', 'mu8'));
-    pipe(
+    zone(4, 250, 'DEMI WATER TANKS');
+    zone(258, 666, 'MAKE-UP WATER PUMPS · DITL-112');
+    zone(928, 348, 'HEADER');
+    const man = (x, y, lab, open, o = {}) => b.add(H.valve(x, y, Object.assign({ lab, open, px: PX }, o)));
+    /* tank outlets, suction header MU-0-003 12" */
+    b.pipe(
       [
-        [24, 60],
-        [100, 60],
-        [100, 128]
+        [190, 300],
+        [280, 300]
       ],
-      'd',
-      6,
-      ''
+      { w: 11, f: 'sucA' }
     );
-    pipe(
+    b.pipe(
       [
-        [100, 60],
-        [60, 60],
-        [60, 520],
-        [100, 520],
-        [100, 548]
+        [190, 630],
+        [280, 630]
       ],
-      'd',
-      6,
-      ''
+      { w: 11, f: 'sucB' }
     );
-    [
-      ['A', 128, 'LIMU0708A', 'V-MU0001', 'LS-MU0708-A', 'V-MU0018'],
-      ['B', 548, 'LIMU0708B', 'V-MU0002', 'LS-MU0708-B', 'V-MU0019']
-    ].forEach(([n, y, lt, ov, ls, rv]) => {
-      const x = 90,
-        w = 170,
-        h = 250;
-      o.push(
-        `<g data-hit="TK${n}" style="cursor:pointer"><path d="M${x} ${y + 26} Q${x + w / 2} ${y - 8} ${x + w} ${y + 26} V${y + h} H${x} Z" fill="url(#mumt)" ${OL}/><rect x="${x + 10}" y="${y + 30}" width="${w - 20}" height="${h - 38}" fill="${S.air}" stroke="#59636d"/><rect x="${x + 10}" y="${y + 30}" width="${w - 20}" height="0" fill="url(#muwt)" data-k="tk${n}"/><g data-k="tk${n}w"><path d="M${x + 12} 0 ${Array(7).fill('q10 -3 20 0').join(' ')}" fill="none" stroke="${S.wave}" stroke-width="1.2" class="muwv"/></g><path d="M${x - 6} ${y + h} h${w + 12} v8 h-${w + 12}z" fill="#59636d"/></g>`
-      );
-      o.push(
-        T(x + w / 2, y - 16, 'T-0708' + n, 'mu11', 'text-anchor="middle"') +
-          T(x + w / 2, y - 4, 'DEMINERALIZED WATER TANK', 'mu8', 'text-anchor="middle"')
-      );
-      o.push(vbox(x + 46, y + 92, lt, 'm'));
-      o.push(T(x + 46, y + 128, 'range 0 ~ 15 m · SOP > 2 m', 'mu8'));
-      o.push(T(x + 46, y + 150, ls + ' LOW', 'mu8') + T(x + 46, y + 161, 'MWP trip < 0.2 m (both tanks)', 'mu8'));
-      /* recirculation in at the top (V-MU0018 / 0019) */
-      o.push(valve(x + w - 30, y - 26, 1, rv));
-      /* outlet to the suction header */
-      pipe(
+    b.pipe(
+      [
+        [280, 300],
+        [280, 200],
+        [530, 200]
+      ],
+      { w: 11, f: 'sA' }
+    );
+    b.pipe(
+      [
+        [280, 300],
+        [280, 420]
+      ],
+      { w: 11, f: 'sB1' }
+    );
+    b.pipe(
+      [
+        [280, 630],
+        [280, 420]
+      ],
+      { w: 11, f: 'sB2' }
+    );
+    b.pipe(
+      [
+        [280, 630],
+        [280, 640],
+        [530, 640]
+      ],
+      { w: 11, f: 'sC' }
+    );
+    b.pipe(
+      [
+        [280, 420],
+        [530, 420]
+      ],
+      { w: 11, f: 'sB' }
+    );
+    b.tee(280, 300, { w: 11, f: 'sucA' }).tee(280, 630, { w: 11, f: 'sucB' }).tee(280, 420, { w: 11, f: 'sB' });
+    man(232, 300, 'V-MU0001', 1, { la: 'up' });
+    man(232, 630, 'V-MU0002', 1, { la: 'up' });
+    b.add(
+      H.tank(40, 128, 150, 212, 'A', {
+        px: PX,
+        max: 15,
+        hit: 'TKA',
+        sx: 115,
+        marks: [[2, 'SOP 2 m', '#f2a531']],
+        markIn: 1
+      })
+    );
+    b.add(
+      H.tank(40, 450, 150, 220, 'B', {
+        px: PX,
+        max: 15,
+        hit: 'TKB',
+        sx: 115,
+        marks: [[2, 'SOP 2 m', '#f2a531']],
+        markIn: 1
+      })
+    );
+    b.txt(T(40, 374, 'T-0708A', 'hs-eq') + T(40, 704, 'T-0708B', 'hs-eq'));
+    b.txt(H.vbox(126, 354, 'LIMU0708A', 'm', 'LIMU0708A', 70) + H.vbox(126, 684, 'LIMU0708B', 'm', 'LIMU0708B', 70));
+    /* pumps */
+    ROWS.forEach(([id, y, n, sv, st, ck, dv, rck, rv], i) => {
+      b.pipe(
         [
-          [x + w, y + h - 24],
-          [380, y + h - 24]
+          [590, y],
+          [720, y]
         ],
-        'd',
-        10,
-        'MU'
+        { f: 'dr' + i }
       );
-      o.push(valve(x + w + 40, y + h - 24, 0, ov, 'up'));
+      b.tee(720, y, { f: 'dr' + i });
+      man(380, y, sv, 1);
+      b.add(H.strainer(458, y, st, PX));
+      b.txt(H.vbox(392, y - 60, 'DPIMU0709' + n, 'kg/cm²', 'DPIMU0709' + n, 76));
+      b.add(H.pump(CX, y, id, PX));
+      b.txt(
+        T(CX - 44, y - 128, '-----', 'hs-st', `data-st="${id}" fill="#6b7480"`) +
+          T(CX - 44, y - 108, MACH[id].n, 'hs-eq') +
+          T(CX, y + 58, MACH[id].t, 'hs-sub', 'text-anchor="middle"')
+      );
+      b.txt(H.vbox(CX + 60, y - 104, 'IIP0709' + n, 'A', 'IIP0709' + n, 76));
+      b.add(H.check(640, y, 'ck' + i, ''));
+      b.add(`<title>${ck}</title>`);
+      b.add(H.gauge(670, y, 'pg' + i, 'PG-MU0709-' + n));
+      b.add(H.orifice(748, y - 55));
+      b.add(
+        `<g><title>${rck} · check valve</title><circle cx="776" cy="${y - 55}" r="8" fill="#1b252f" stroke="#090d11" stroke-width="1.4"/><line x1="776" y1="${y - 62}" x2="776" y2="${y - 48}" stroke="#cfd8e0" stroke-width="2" stroke-linecap="round" data-ck="rck${i}" data-cx="776" data-cy="${y - 62}"/></g>`
+      );
+      man(806, y - 55, rv, 1, { la: 'up' });
+      man(800, y, dv, 1);
     });
-    /* suction header MU-0-003 12" */
-    pipe(
+    /* minimum flow recirculation (RO) back to T-0708A / B (V-MU0018 / 0019), along the bottom */
+    b.pipe(
       [
-        [380, 194],
-        [380, 774]
+        [720, 200],
+        [720, 145],
+        [840, 145],
+        [840, 365]
       ],
-      'd',
-      14,
-      'MU'
+      { w: 6, med: 'r', f: 'r0' }
     );
-    o.push(T(372, 790, 'SUCTION HEADER  MU-0-003 12"', 'mu8', 'text-anchor="middle"'));
+    b.pipe(
+      [
+        [720, 420],
+        [720, 365],
+        [840, 365]
+      ],
+      { w: 6, med: 'r', f: 'r1' }
+    );
+    b.pipe(
+      [
+        [840, 365],
+        [840, 585]
+      ],
+      { w: 6, med: 'r', f: 'rc1' }
+    );
+    b.pipe(
+      [
+        [720, 640],
+        [720, 585],
+        [840, 585]
+      ],
+      { w: 6, med: 'r', f: 'r2' }
+    );
+    b.pipe(
+      [
+        [840, 585],
+        [840, 740],
+        [24, 740],
+        [24, 420]
+      ],
+      { w: 6, med: 'r', f: 'rcAll' }
+    );
+    b.pipe(
+      [
+        [24, 420],
+        [24, 104],
+        [115, 104],
+        [115, 130]
+      ],
+      { w: 6, med: 'r', f: 'rcHalf' }
+    );
+    b.pipe(
+      [
+        [24, 420],
+        [115, 420],
+        [115, 452]
+      ],
+      { w: 6, med: 'r', f: 'rcHalf' }
+    );
+    b.tee(840, 365, { w: 6, med: 'r', f: 'rc1' })
+      .tee(840, 585, { w: 6, med: 'r', f: 'rcAll' })
+      .tee(24, 420, { w: 6, med: 'r', f: 'rcAll' });
+    man(66, 104, 'V-MU0018', 1, { la: 'up' });
+    man(66, 420, 'V-MU0019', 1, { la: 'up' });
+    b.txt(T(300, 760, 'MIN. FLOW RECIRCULATION (RO) TO T-0708A / B', 'hs-sub'));
+    /* discharge header MU-0-010 12" (PT-MU0709) */
+    b.pipe(
+      [
+        [720, 200],
+        [940, 200],
+        [940, 300]
+      ],
+      { f: 'd0' }
+    );
+    b.pipe(
+      [
+        [940, 300],
+        [940, 420]
+      ],
+      { f: 'h1' }
+    );
+    b.pipe(
+      [
+        [720, 420],
+        [940, 420]
+      ],
+      { f: 'd1' }
+    );
+    b.pipe(
+      [
+        [940, 420],
+        [940, 560]
+      ],
+      { f: 'h2' }
+    );
+    b.pipe(
+      [
+        [720, 640],
+        [940, 640],
+        [940, 560]
+      ],
+      { f: 'd2' }
+    );
+    b.pipe(
+      [
+        [940, 300],
+        [1110, 300]
+      ],
+      { w: 11, f: 'u1' }
+    );
+    b.pipe(
+      [
+        [940, 560],
+        [1110, 560]
+      ],
+      { f: 'u2' }
+    );
+    b.tee(940, 300, { f: 'u1' }).tee(940, 420, { f: 'd1' }).tee(940, 560, { f: 'u2' });
+    b.add(
+      `<g><title>FE-MU1001 · flow orifice</title><rect x="1002" y="283" width="5" height="34" fill="#cfd8e0" stroke="#090d11"/></g>`
+    );
+    b.txt(H.vbox(972, 246, 'FIMU1001', 'm³/h', 'FIMU1001', 76));
+    b.add(
+      `<line x1="940" y1="480" x2="964" y2="480" stroke="#9aa7b3" stroke-width="2"/>` +
+        H.gauge(984, 498, 'pt', '', 18, 0)
+    );
+    b.txt(H.vbox(1014, 456, 'PIMU0709', 'kg/cm²', 'PIMU0709', 76) + T(1014, 506, 'SOP > 6.0 · 0 ~ 10', 'hs-sub'));
+    b.txt(T(952, 386, 'MU-0-010 12"', 'hs-sub'));
+    b.add(`<g class="hs-hit" data-tab="1">${H.dest(1122, 300, 140, '#1 UNIT USERS', 'open tab 2 ▸')}</g>`);
+    b.add(H.dest(1122, 560, 140, 'TO UNIT 2', 'MU-2-020 12"'));
+    b.txt(
+      H.legend(940, 700, [['d', 'DEMIN. WATER']]) +
+        H.legend(940, 724, [['r', 'RECIRCULATION']]) +
+        H.legend(940, 748, [['c', 'CLOSED COOLING WATER']])
+    );
+    return b.svg();
+  }
 
-    /* ---------------- make-up water pumps P-0709A / B / C (DITL-112) ---------------- */
-    o.push(T(470, 120, 'MAKE-UP WATER PUMPS  (DITL-112)', 'mu11'));
-    ROWS.forEach(([id, y, n, sv, st, ck, dv, rck, rv, i]) => {
-      pipe(
-        [
-          [380, y],
-          [680, y]
-        ],
-        'd',
-        10,
-        id
-      );
-      pipe(
-        [
-          [720, y],
-          [1000, y]
-        ],
-        'd',
-        10,
-        id
-      );
-      o.push(valve(430, y, 0, sv, 'dn'));
-      o.push(strainer(520, y) + T(520, y + 26, st, 'mu8', 'text-anchor="middle"'));
-      o.push(vbox(486, y - 60, 'DPIMU0709' + n, 'kg/cm²'));
-      o.push(T(486, y - 28, 'trip ≥ 1.0 (10 s)', 'mu8'));
-      o.push(
-        `<rect x="590" y="${y - 7}" width="16" height="14" rx="3" fill="#2a3138" ${OL}/>` +
-          T(598, y + 22, 'EJ', 'mu8', 'text-anchor="middle"')
-      );
-      o.push(pump(700, y, id));
-      o.push(
-        T(640, y - 74, MACH[id].n, 'mu11', 'text-anchor="end"') + T(640, y - 62, MACH[id].t, 'mu9', 'text-anchor="end"')
-      );
-      o.push(
-        T(640, y - 48, '-----', 'mu9b', `text-anchor="end" data-st="${id}"`) +
-          T(640, y - 36, MACH[id].d, 'mu8', 'text-anchor="end"')
-      );
-      o.push(vbox(736, y - 92, 'IIP0709' + n, 'A'));
-      o.push(gauge(772, y, 'PG-MU0709-' + n));
-      o.push(check(850, y, ck) + valve(920, y, 0, dv, 'dn'));
-      /* minimum flow recirculation (RO, check, V-MU0013 / 15 / 17) back to the demi water tanks */
-      pipe(
-        [
-          [810, y],
-          [810, y - 64],
-          [1010 + i * 8, y - 64]
-        ],
-        'r',
-        4,
-        id
-      );
-      o.push(orifice(860, y - 64) + check(900, y - 64, rck) + valve(950, y - 64, 0, rv, 'up'));
-    });
-    /* the recirculation header back to the tanks (over the top) */
-    pipe(
+  /* tab 2: #1 UNIT USERS & EXPANSION TANK */
+  function art2() {
+    const b = H.scene('mub'),
+      PX = 'mub';
+    b.add(
+      `<rect x="4" y="42" width="1272" height="724" rx="6" fill="#ffffff" fill-opacity=".018"/>` +
+        T(16, 62, '#1 UNIT USERS · MU-1-020 12"', 'hs-zone')
+    );
+    const man = (x, y, lab, open, o = {}) => b.add(H.valve(x, y, Object.assign({ lab, open, px: PX }, o)));
+    b.add(`<g class="hs-hit" data-tab="0">${T(20, 384, '◂ FROM HEADER (tab 1)', 'hs-sub')}</g>`);
+    b.pipe(
       [
-        [1010, 172],
-        [1010, 84],
-        [230, 84],
-        [230, 106]
+        [20, 400],
+        [300, 400]
       ],
-      'r',
-      4,
-      'MU'
+      { w: 11, f: 'u1' }
     );
-    pipe(
+    b.add(
+      `<g><title>FE-MU1001 · flow orifice</title><rect x="108" y="383" width="5" height="34" fill="#cfd8e0" stroke="#090d11"/></g>`
+    );
+    b.txt(H.vbox(140, 430, 'FIMU1001', 'm³/h', 'FIMU1001', 76));
+    /* initial fill and sampling (manual, closed) */
+    b.pipe(
       [
-        [330, 84],
-        [330, 500],
-        [230, 500],
-        [230, 526]
+        [300, 400],
+        [300, 110],
+        [900, 110]
       ],
-      'r',
-      4,
-      'MU'
+      { f: 'up' }
     );
-    pipe(
+    b.pipe(
       [
-        [1018, 382],
-        [1010, 382],
-        [1010, 172]
+        [300, 180],
+        [900, 180]
       ],
-      'r',
-      4,
-      'MU'
+      { f: 'blr' }
     );
-    pipe(
+    b.pipe(
       [
-        [1026, 592],
-        [1010, 592],
-        [1010, 382]
+        [300, 250],
+        [900, 250]
       ],
-      'r',
-      4,
-      'MU'
+      { f: 'da' }
     );
-    o.push(T(640, 78, 'MINIMUM FLOW RECIRCULATION TO T-0708A / B', 'mu8'));
-
-    /* ---------------- common discharge header MU-0-010 12" ---------------- */
-    pipe(
+    b.tee(300, 400, { w: 11, f: 'u1' }).tee(300, 180, { f: 'up' }).tee(300, 250, { f: 'up' });
+    man(600, 110, 'SP-1-003 ½"', 0);
+    man(600, 180, 'initial fill (manual)', 0);
+    man(600, 250, 'initial fill (manual)', 0);
+    b.add(H.dest(912, 110, 300, 'SAMPLING', 'K1AU3-PD-044'));
+    b.add(H.dest(912, 180, 300, '#1 BOILER', 'initial fill only · MU-1-022 6"'));
+    b.add(H.dest(912, 250, 300, '#1 DEAERATOR', 'initial fill only · MU-1-023 6"'));
+    /* condenser hotwell: LCV-MU1110 (ABC-031) parallel to MV-MU1001 (DITL-60) */
+    b.pipe(
       [
-        [1000, 236],
-        [1060, 236],
-        [1060, 656],
-        [1000, 656]
+        [300, 400],
+        [380, 400]
       ],
-      'd',
-      14,
-      'MU'
+      { f: 'hw' }
     );
-    pipe(
+    b.pipe(
       [
-        [1000, 446],
-        [1060, 446]
+        [380, 400],
+        [380, 340],
+        [660, 340],
+        [660, 400]
       ],
-      'd',
-      14,
-      'MU'
+      { f: 'lcvF' }
     );
-    o.push(T(1068, 700, 'DISCHARGE HEADER', 'mu8') + T(1068, 711, 'MU-0-010 12"', 'mu8'));
-    o.push(gauge(1060, 560, 'PT-MU0709').replace('#e5e9ec', S.box));
-    o.push(vbox(1078, 530, 'PIMU0709', 'kg/cm²') + T(1078, 562, 'SOP > 6.0 · range 0 ~ 10', 'mu8'));
-    /* to unit 2 */
-    pipe(
+    b.pipe(
       [
-        [1060, 656],
-        [1060, 790],
-        [1210, 790]
+        [380, 400],
+        [380, 460],
+        [660, 460],
+        [660, 400]
       ],
-      'd',
-      10,
-      'MU'
+      { f: 'movF' }
     );
-    o.push(T(1218, 794, '▸ TO UNIT NO.2  (MU-2-020 12")', 'mu9'));
-    /* to unit 1 (MU-1-020 12"), FT-MU1001 */
-    pipe(
+    b.pipe(
       [
-        [1060, 300],
-        [1200, 300]
+        [660, 400],
+        [900, 400]
       ],
-      'd',
-      12,
-      'MU'
+      { f: 'hw' }
     );
-    o.push(vbox(1086, 318, 'FIMU1001', 'm³/h') + T(1086, 350, '#1 make-up flow', 'mu8'));
-    o.push(T(1100, 286, 'TO UNIT NO.1  MU-1-020 12"', 'mu8'));
-
-    /* ---------------- unit 1 users ---------------- */
-    const DX = 1520;
-    const dest = (y, a, b) =>
-      `<rect x="${DX}" y="${y - 15}" width="226" height="30" rx="3" fill="#232a31" stroke="#46525e"/>` +
-      T(DX + 8, y - 2, a, 'mu7') +
-      T(DX + 8, y + 10, b, 'mu8');
-    /* boiler and deaerator initial fill (manual, only for the first filling) */
-    pipe(
+    b.tee(380, 400, { f: 'hw' }).tee(660, 400, { f: 'hw' });
+    b.add(
+      H.valve(520, 340, {
+        kind: 'cv',
+        id: 'LCV',
+        px: PX,
+        lab: 'LCV-MU1110',
+        la: 'up',
+        title: 'LCV-MU1110 condenser make-up level control valve · ABC-031 LICCD1110A'
+      })
+    );
+    b.add(
+      H.valve(520, 460, {
+        kind: 'mov',
+        id: 'MV',
+        px: PX,
+        lab: 'MV-MU1001',
+        title: 'MV-MU1001 make-up water to condenser shut-off MOV · DITL-60'
+      })
+    );
+    b.txt(H.vbox(700, 304, 'LCVMU1110', '%', 'LCV', 70) + H.vbox(700, 470, 'MVMU1001', '%', 'MV', 70));
+    b.add(H.dest(912, 400, 300, '#1 CONDENSER HOTWELL', 'MU-1-024 8" · 028 CONDENSATE'));
+    /* expansion tank T-1109: MU-1-021 3", V-MU1031, XV-MU1109 (bypass V-MU1033), V-MU1032 */
+    b.pipe(
       [
-        [1200, 300],
-        [1200, 150],
-        [DX, 150]
+        [300, 400],
+        [300, 590],
+        [760, 590]
       ],
-      'd',
-      7,
-      ''
+      { w: 7, f: 'et' }
     );
-    pipe(
+    b.pipe(
       [
-        [1240, 300],
-        [1240, 214],
-        [DX, 214]
+        [420, 590],
+        [420, 548],
+        [520, 548],
+        [520, 590]
       ],
-      'd',
-      7,
-      ''
+      { w: 6, f: 'byp' }
     );
-    o.push(
-      valve(1420, 150, 0, 'MU-1-022 6"', 'up') +
-        dest(150, '#1 BOILER (INITIAL FILL)', 'K1AU3-PD-017 · manual, filling only')
+    b.tee(420, 590, { w: 7, f: 'et' }).tee(520, 590, { w: 7, f: 'et' });
+    man(360, 590, 'V-MU1031', 1);
+    man(620, 590, 'V-MU1032', 1);
+    man(470, 548, 'V-MU1033 bypass', 0, { la: 'up' });
+    b.add(
+      H.valve(470, 590, {
+        kind: 'xv',
+        id: 'XV',
+        px: PX,
+        lab: 'XV-MU1109',
+        title: 'XV-MU1109 make-up water to expansion tank inlet shut-off · DITL-78'
+      })
     );
-    o.push(
-      valve(1420, 214, 0, 'MU-1-023 6"', 'up') +
-        dest(214, '#1 DEAERATOR (INITIAL FILL)', 'K1AU3-PD-016 · manual, filling only')
+    b.txt(
+      T(470, 650, '-----', 'hs-st', 'text-anchor="middle" data-k="xvst" fill="#6b7480"') +
+        T(470, 668, 'AUTO: open < 40 %, close > 85 %', 'hs-sub', 'text-anchor="middle"')
     );
-    /* the condenser: LCV-MU1110 (hotwell level control ABC-031) and MV-MU1001 (shut-off MOV DITL-60) in parallel */
-    pipe(
+    b.pipe(
       [
-        [1200, 300],
-        [1300, 300],
-        [1300, 280],
-        [1460, 280],
-        [1460, 300],
-        [DX, 300]
+        [890, 740],
+        [1060, 740]
       ],
-      'd',
-      10,
-      'HW'
+      { med: 'c', f: 'acw' }
     );
-    pipe(
-      [
-        [1300, 300],
-        [1300, 340],
-        [1460, 340],
-        [1460, 300]
-      ],
-      'd',
-      8,
-      'MV'
-    );
-    o.push(
-      `<g data-hit="LCV" style="cursor:pointer"><path d="M1372 273 L1388 287 L1388 273 L1372 287 Z" fill="${S.none}" ${OL} data-vl="LCV"/><path d="M1370 262 q10 -12 20 0 z" fill="url(#mumv)" ${OL}/><line x1="1380" y1="262" x2="1380" y2="280" stroke="${S.ol}"/></g>` +
-        T(1338, 258, 'LCVMU1110', 'mu9', 'text-anchor="end"') +
-        T(1338, 270, 'hotwell level (ABC-031)', 'mu8', 'text-anchor="end"')
-    );
-    o.push(
-      `<g data-hit="MV" style="cursor:pointer"><path d="M1372 333 L1388 347 L1388 333 L1372 347 Z" fill="${S.none}" ${OL} data-vl="MV"/><rect x="1372" y="315" width="16" height="12" rx="2" fill="url(#mumv)" ${OL}/>${T(1380, 325, 'M', 'mu8', 'text-anchor="middle" style="fill:#0c1014;font-weight:600"')}</g>` +
-        T(1338, 358, 'MVMU1001', 'mu9', 'text-anchor="end"') +
-        T(1338, 370, 'shut-off MOV (DITL-60)', 'mu8', 'text-anchor="end"')
-    );
-    o.push(vbox(1396, 238, 'LCVMU1110', '%', 'LCV') + vbox(1396, 368, 'MVMU1001', '%', 'MV'));
-    o.push(dest(300, '#1 CONDENSER HOTWELL', 'K1AU3-PD-016 · MU-1-024 8" · 028 CONDENSATE'));
-    /* sampling */
-    pipe(
-      [
-        [1160, 300],
-        [1160, 420],
-        [DX, 420]
-      ],
-      'd',
-      3,
-      ''
-    );
-    o.push(dest(420, 'SAMPLING SYSTEM', 'K1AU3-PD-044 · SP-1-003 ½"'));
-
-    /* ---------------- expansion tank T-1109 (PD-021): MU-1-021 3" ---------------- */
-    pipe(
-      [
-        [1260, 300],
-        [1260, 560],
-        [1560, 560],
-        [1560, 588]
-      ],
-      'd',
-      6,
-      'ET'
-    );
-    pipe(
-      [
-        [1316, 560],
-        [1316, 516],
-        [1440, 516],
-        [1440, 560]
-      ],
-      'd',
-      4,
-      ''
-    );
-    o.push(T(1270, 474, 'TO #1 EXPANSION TANK  MU-1-021 3"', 'mu9'));
-    o.push(
-      valve(1300, 560, 0, 'V-MU1031', 'dn') +
-        valve(1460, 560, 0, 'V-MU1032', 'dn') +
-        valve(1378, 516, 0, 'V-MU1033 bypass', 'up')
-    );
-    o.push(
-      `<g data-hit="XV" style="cursor:pointer"><path d="M1370 553 L1386 567 L1386 553 L1370 567 Z" fill="${S.none}" ${OL} data-vl="XV"/><line x1="1378" y1="560" x2="1378" y2="590" stroke="${S.ol}"/><rect x="1368" y="590" width="20" height="14" rx="2" fill="url(#mumv)" ${OL}/>${T(1378, 600, 'S', 'mu8', 'text-anchor="middle" style="fill:#0c1014;font-weight:600"')}</g>`
-    );
-    o.push(
-      T(1378, 622, 'XV-MU1109', 'mu11', 'text-anchor="middle"') +
-        T(1378, 634, 'inlet shut-off (DITL-78)', 'mu8', 'text-anchor="middle"') +
-        T(1378, 648, '-----', 'mu9b', 'text-anchor="middle" data-k="xvst"') +
-        T(1378, 672, 'AUTO (DITL-78): open < 40 %, close > 85 %', 'mu8', 'text-anchor="middle"')
-    );
-    const EX = 1500,
-      EY = 588,
-      EW = 120,
-      EH = 150;
-    o.push(
-      `<g data-hit="ET" style="cursor:pointer"><rect x="${EX}" y="${EY}" width="${EW}" height="${EH}" rx="14" fill="url(#mumt)" ${OL}/><rect x="${EX + 8}" y="${EY + 10}" width="${EW - 16}" height="${EH - 20}" rx="6" fill="${S.air}" stroke="#59636d"/><rect x="${EX + 8}" y="${EY + 10}" width="${EW - 16}" height="0" fill="url(#muwc)" data-k="et"/><g data-k="etw"><path d="M${EX + 10} 0 ${Array(5).fill('q10 -3 20 0').join(' ')}" fill="none" stroke="#cfe3f3" stroke-width="1.2" class="muwv"/></g>` +
-        /* NL 1.7 m (SOP) and LAL 40 % / LAH 85 % marks */
-        [
-          [1.7, 'NL 1.7 m'],
-          [0.8, 'L 0.8'],
-          [0.3, 'LL 0.3']
+    b.add(
+      H.tank(760, 560, 130, 200, 'E', {
+        px: PX,
+        max: 2.4,
+        hit: 'ET',
+        water: 'wc',
+        sx: 772,
+        sy: 590,
+        marks: [
+          [1.7, 'LAH 85 %', '#f2a531'],
+          [0.8, 'LAL 40 %', '#f2a531'],
+          [0.3, 'LL 0.3', '#e5484d']
         ]
-          .map(([m, l]) => {
-            const yy = EY + 10 + (EH - 20) * (1 - m / 2);
-            return `<line x1="${EX + EW - 8}" y1="${yy}" x2="${EX + EW + 6}" y2="${yy}" stroke="#aab6c1"/>${T(EX + EW + 9, yy + 3, l, 'mu8')}`;
-          })
-          .join('') +
-        `</g>`
+      })
     );
-    o.push(T(EX + EW / 2, EY - 10, 'T-1109  EXPANSION TANK', 'mu11', 'text-anchor="middle"'));
-    o.push(
-      vbox(1672, 600, 'LICW1109', 'm') +
-        T(1672, 632, 'range 0 ~ 2 m', 'mu8') +
-        T(1672, 644, 'LT-CW1109', 'mu8') + T(1672, 664, 'ACWP trip', 'mu8') + T(1672, 676, '< 0.3 m', 'mu8')
-    );
-    o.push(T(1672, 696, 'LSLL-CW1109', 'mu8'));
-    /* tank outlet CW-1-001 8" to the ACWP suction */
-    pipe(
-      [
-        [EX + 40, EY + EH],
-        [EX + 40, 800],
-        [1740, 800]
-      ],
-      'c',
-      8,
-      ''
-    );
-    o.push(
-      T(1740, 820, '▸ ACWP P-1108A / B SUCTION', 'mu9', 'text-anchor="end"') +
-        T(1740, 832, 'CW-1-001 8" · 030 SEAWATER (aux cooling water)', 'mu8', 'text-anchor="end"')
-    );
-
-    /* legend */
-    o.push(
-      `<rect x="24" y="830" width="18" height="5" fill="${S.med.d[0]}"/><rect x="190" y="830" width="18" height="5" fill="${S.med.r[0]}"/><rect x="390" y="830" width="18" height="5" fill="${S.med.c[0]}"/>` +
-        T(46, 836, 'DEMINERALIZED WATER', 'mu8') +
-        T(212, 836, 'RECIRCULATION (min. flow)', 'mu8') +
-        T(412, 836, 'CLOSED COOLING WATER', 'mu8')
-    );
-    o.push(
-      T(
-        24,
-        856,
-        'P&amp;ID K1AU3-PD-024 Rev D (make-up water), K1AU3-PD-021 Rev D (expansion tank) · SOP PR-OPE-5002 section 7',
-        'mu8'
-      )
-    );
-    o.push(
-      T(1744, 874, 'values: plant model (Plant model ON); the logic reads the same value', 'mu8', 'text-anchor="end"')
-    );
-
-    const defs = `<defs><linearGradient id="mumt" x1="0" x2="1"><stop offset="0" stop-color="${S.m[0]}"/><stop offset=".45" stop-color="${S.m[1]}"/><stop offset="1" stop-color="${S.m[2]}"/></linearGradient>
-<linearGradient id="mumv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${S.m[2]}"/><stop offset=".4" stop-color="${S.m[1]}"/><stop offset="1" stop-color="${S.m[0]}"/></linearGradient>
-<linearGradient id="muwt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${S.water[0]}"/><stop offset="1" stop-color="${S.water[1]}"/></linearGradient>
-<linearGradient id="muwc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d75a0"/><stop offset="1" stop-color="#163a57"/></linearGradient></defs>`;
-    const UF = "font-family:Barlow,'IBM Plex Sans','Segoe UI',Roboto,Arial,sans-serif",
-      MF = "font-family:'Roboto Mono','JetBrains Mono',Consolas,monospace";
-    const css = `<style>.mu7{font-size:8.5px;fill:${S.nm};${UF}}.mu8{font-size:8.5px;fill:${S.dim};${UF}}.mu9{font-size:9.5px;fill:${S.dim};${UF}}.mu9b{font-size:9.5px;font-weight:600;fill:${S.none};${UF}}.mu11{font-size:11px;font-weight:600;fill:${S.nm};${UF}}
-.muv{font-size:12px;fill:${S.none};${MF}}
-.mufl{fill:none;stroke-dasharray:2 14;stroke-linecap:round;animation:mufl 1.4s linear infinite}@keyframes mufl{to{stroke-dashoffset:-32}}
-.muwv{animation:muwv 3s ease-in-out infinite alternate}@keyframes muwv{to{transform:translateX(-8px)}}
-@media (prefers-reduced-motion:reduce){.mufl,.muwv{animation:none}}</style>`;
-    /* the pipes first (under the machines and the tanks) */
-    return css + defs + G.main.map(l => l.join('')).join('') + o.join('');
+    b.txt(T(760, 532, 'T-1109', 'hs-eq') + T(830, 532, '#1 EXPANSION TANK', 'hs-sub'));
+    b.txt(H.vbox(980, 586, 'LT-CW1109', 'm', 'LICW1109', 70) + H.vbox(980, 642, 'LICW1109', '%', 'ETPCT', 70));
+    b.txt(T(980, 692, 'LSLL-CW1109: ACWP trip < 0.3 m', 'hs-sub'));
+    b.add(H.dest(1072, 740, 190, 'ACWP SUCTION', '030 · CW-1-001 8"'));
+    b.txt(T(16, 760, 'K1AU3-PD-024 Rev D · PD-021 Rev D · SOP PR-OPE-5002 sec. 7 · values: plant model', 'hs-sub'));
+    return b.svg();
   }
 
   /* ---------- live links ---------- */
   function makeup(g, api) {
     const pg = document.createElementNS(NS, 'g');
-    pg.setAttribute('transform', 'translate(0 2) scale(1.0909)');
-    pg.innerHTML = art();
+    pg.setAttribute('transform', H.fit(1280, 770));
     g.append(pg);
+    const tabs = H.tabs(pg, 'MU', ['TANKS & PUMPS', '#1 UNIT USERS & EXPANSION TANK']);
+    tabs[0].innerHTML = art1();
+    tabs[1].innerHTML = art2();
+    pg.querySelectorAll('[data-tab]').forEach(e =>
+      e.addEventListener('click', ev => (ev.stopPropagation(), tabs.show(+e.dataset.tab)))
+    );
     const q = s => pg.querySelector(s),
       qa = s => pg.querySelectorAll(s);
+    const A = H.live(pg);
+    A.travel('XV', 5);
+    A.travel('MV', 1);
+    A.travel('LCV', 1);
     const info = tag => {
       try {
         if (window.lsInfo) window.lsInfo(tag);
@@ -561,92 +496,89 @@
         return null;
       }
     };
-    const spin = {};
-    const setSpin = (id, on) => {
-      const el = q(`[data-imp="${id}"]`);
-      if (!el) return;
-      if (on && !spin[id]) {
-        spin[id] = document.createElementNS(NS, 'animateTransform');
-        for (const [k, v] of Object.entries({
-          attributeName: 'transform',
-          type: 'rotate',
-          from: '0',
-          to: '360',
-          dur: '1s',
-          repeatCount: 'indefinite'
-        }))
-          spin[id].setAttribute(k, v);
-        el.append(spin[id]);
-        try {
-          spin[id].beginElement();
-        } catch (e) {}
-      } else if (!on && spin[id]) {
-        spin[id].remove();
-        spin[id] = null;
-        el.removeAttribute('transform');
-      }
-    };
-    const flow = (k, on) =>
-      qa(`[data-f="${k}"],[data-fb="${k}"]`).forEach(e => {
-        if (e.dataset.f) e.setAttribute('visibility', on ? 'visible' : 'hidden');
-        else e.setAttribute('stroke', on ? e.dataset.c : S.med.off[0]);
-      });
-    /* a level in a drawn vessel: the water rect and its wave group follow the level (0 ~ max) */
-    const level = (k, v, max, y0, h) => {
-      const r = q(`[data-k="${k}"]`),
-        w = q(`[data-k="${k}w"]`);
-      if (!r) return;
-      const f = v == null || !isFinite(v) ? 0 : Math.max(0, Math.min(1, v / max)),
-        hh = h * f;
-      r.setAttribute('y', y0 + h - hh);
-      r.setAttribute('height', hh);
-      if (w) {
-        w.setAttribute('transform', `translate(0 ${y0 + h - hh + 3})`);
-        w.setAttribute('visibility', f > 0.02 ? 'visible' : 'hidden');
-      }
-    };
     const tick = () => {
+      const run = [];
       for (const id in MACH) {
-        const M = MACH[id],
-          s = mst(M);
-        if (s === ST[id] && ST[id] !== undefined) continue;
+        const s = mst(MACH[id]);
+        if (s !== ST[id]) A.pump(id, s);
         ST[id] = s;
-        const col = s == null ? S.none : s === 'TRIP' || s === 'RUN' ? S.run : S.stop;
-        qa(`[data-lamp="${id}"]`).forEach(e => e.setAttribute('fill', col));
-        qa(`[data-st="${id}"]`).forEach(e => {
-          e.textContent = s == null ? '-----' : s === 'TRIP' ? 'TRIP' : s === 'RUN' ? 'RUNNING' : 'STOPPED';
-          e.style.fill = col;
-          e.classList.toggle('h2blink', s === 'TRIP');
-        });
-        setSpin(id, s === 'RUN');
-        flow(id, s === 'RUN');
+        run.push(s === 'RUN' ? 1 : 0);
       }
-      const any = Object.keys(MACH).some(id => ST[id] === 'RUN');
-      flow('MU', any);
-      flow('HW', any && V.LCV > 1);
-      flow('MV', any && V.MV > 1);
-      flow('ET', any && V.XV === 1 && V.ETF === 1);
-      /* XV-MU1109: red = open, green = closed (DITL-78 open command) */
-      const xo = V.XV == null ? null : V.XV === 1;
-      const xc = xo == null ? S.none : xo ? S.run : S.stop;
-      const xv = q('[data-vl="XV"]');
-      if (xv) xv.setAttribute('fill', xc);
+      const n = run[0] + run[1] + run[2],
+        F = n && isFinite(V.FIMU1001) ? Math.max(0, V.FIMU1001) : 0,
+        et = n && V.ETF === 1 ? (window.AN_MU && AN_MU.etQ) || 10 : 0,
+        hw = Math.max(0, F - et),
+        wl = V.LCV > 1 ? V.LCV * 0.4 : 0,
+        wm = V.MV > 1 ? V.MV * 0.3 : 0,
+        lcvF = wl + wm ? (hw * wl) / (wl + wm) : 0,
+        movF = hw - lcvF;
+      const fwd = run.map(r => (r ? F / n : 0)),
+        rec = run.map(r => (r ? 4 : 0)),
+        suc = fwd.map((f, i) => f + rec[i]),
+        recAll = rec[0] + rec[1] + rec[2];
+      const flows = {
+        sucA: suc[0] + suc[1] / 2,
+        sucB: suc[2] + suc[1] / 2,
+        sA: suc[0],
+        sB1: suc[1] / 2,
+        sB2: suc[1] / 2,
+        sB: suc[1],
+        sC: suc[2],
+        dr0: suc[0],
+        dr1: suc[1],
+        dr2: suc[2],
+        r0: rec[0],
+        r1: rec[1],
+        r2: rec[2],
+        rc1: rec[1] + rec[2],
+        rcAll: recAll,
+        rcHalf: recAll / 2,
+        d0: fwd[0],
+        d1: fwd[1],
+        d2: fwd[2],
+        h1: fwd[0] - F,
+        h2: fwd[0] - F + fwd[1],
+        u2: 0,
+        u1: F,
+        bd: 0,
+        blr: 0,
+        smp: 0,
+        da: 0,
+        hw,
+        lcvF: n ? lcvF : 0,
+        movF: n ? movF : 0,
+        et,
+        byp: 0,
+        acw: 0
+      };
+      for (const k in flows) A.flow(k, flows[k]);
+      run.forEach((r, i) => {
+        A.check('ck' + i, r ? 1 : 0);
+        A.check('rck' + i, r ? 0.7 : 0);
+        /* the local gauge sits before the check valve: discharge pressure when running, else the static head of the tanks */
+        const head = isFinite(V.LIMU0708A) ? V.LIMU0708A / 10 : 0;
+        A.gauge('pg' + i, r && isFinite(V.PIMU0709) ? V.PIMU0709 + 0.1 : head, 16);
+      });
+      A.gauge('pt', V.PIMU0709, 10);
+      A.valve('XV', V.XV == null ? null : V.XV);
+      A.valve('LCV', V.LCV == null ? null : V.LCV / 100);
+      A.valve('MV', V.MV == null ? null : V.MV / 100);
       const xs = q('[data-k="xvst"]');
       if (xs) {
+        const xo = V.XV == null ? null : V.XV === 1;
         xs.textContent = xo == null ? '-----' : xo ? 'OPEN' : 'CLOSED';
-        xs.style.fill = xc;
+        xs.setAttribute('fill', xo == null ? H.C.none : xo ? H.C.run : H.C.stop);
       }
-      for (const k of ['LCV', 'MV']) {
-        const e = q(`[data-vl="${k}"]`);
-        if (e) e.setAttribute('fill', V[k] == null ? S.none : V[k] > 1 ? S.run : S.stop);
-      }
-      level('tkA', V.LIMU0708A, 15, 128 + 30, 250 - 38);
-      level('tkB', V.LIMU0708B, 15, 548 + 30, 250 - 38);
-      level('et', V.LICW1109, 2, 588 + 10, 150 - 20);
+      A.tank('A', V.LIMU0708A, 15, flows.rcHalf);
+      A.tank('B', V.LIMU0708B, 15, flows.rcHalf);
+      A.tank('E', V.LICW1109, 2.4, et);
     };
     tick();
     let seen = false;
-    const iv = setInterval(() => (g.isConnected ? ((seen = true), tick()) : seen && clearInterval(iv)), 500);
+    const iv = setInterval(
+      () => (g.isConnected ? ((seen = true), tick()) : seen && (clearInterval(iv), A.stop())),
+      500
+    );
     const HIT = {
       PA: [MACH.PA.io, MACH.PA.n + ' ' + MACH.PA.t + ' · DITL-112 (red = running, green = stopped)'],
       PB: [MACH.PB.io, MACH.PB.n + ' ' + MACH.PB.t + ' · DITL-112 #B (red = running, green = stopped)'],
@@ -684,6 +616,7 @@
       PIMU0709: 'muP',
       FIMU1001: 'muF',
       LICW1109: 'etLvl',
+      ETPCT: 'etPct',
       MV: 'muMv',
       XV: 'muXv',
       ETF: 'muFill'
@@ -700,16 +633,17 @@
       PIMU0709: 'PT-MU0709',
       FIMU1001: 'FT-MU1001',
       LICW1109: 'LT-CW1109',
+      ETPCT: 'LT-CW1109',
       LCV: 'LCV-MU1110',
       MV: 'ZT-MU1001'
     };
     const showV = k => {
-      const t = q(`[data-v="${k}"]`);
-      if (!t) return;
       const v = V[k],
         dp = /^DP/.test(k) ? 3 : /^(LI|PI)/.test(k) ? 2 : 1;
-      t.textContent = fmt(v, dp);
-      t.setAttribute('fill', v == null ? S.none : S.val);
+      qa(`[data-v="${k}"]`).forEach(t => {
+        t.textContent = fmt(v, dp);
+        t.setAttribute('fill', v == null ? H.C.none : H.C.val);
+      });
     };
     for (const k in UNIT)
       api.reg(
@@ -723,13 +657,13 @@
       null
     );
     for (const k in IO) {
-      const b = q(`[data-vb="${k}"]`);
-      if (!b) continue;
-      const ti = document.createElementNS(NS, 'title');
-      ti.textContent =
-        IO[k] + (k === 'LCV' ? ' · MV of LICCD1110A (ABC-031)' : ' · plant model') + ' · click = its I/O list line';
-      b.append(ti);
-      b.addEventListener('click', e => (e.stopPropagation(), info(IO[k])));
+      qa(`[data-vbx="${k}"]`).forEach(b => {
+        const ti = document.createElementNS(NS, 'title');
+        ti.textContent =
+          IO[k] + (k === 'LCV' ? ' · MV of LICCD1110A (ABC-031)' : ' · plant model') + ' · click = its I/O list line';
+        b.append(ti);
+        b.addEventListener('click', e => (e.stopPropagation(), info(IO[k])));
+      });
       showV(k);
     }
     return pg;
@@ -745,8 +679,8 @@
     num: 'MU',
     name: 'MAKE-UP WATER SYSTEM',
     src: '28.png',
-    w: 1920,
-    h: 1000,
+    w: H.FRAME.w,
+    h: H.FRAME.h,
     v2: true,
     screen: 'MU',
     style: 'steel',
