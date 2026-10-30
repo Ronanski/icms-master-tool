@@ -56,12 +56,22 @@
 ## LIVE TESTER
 - **ROLE:** nagla-live test ng Training Cold → full load.
 - **SKILLS:** elite operator at DCS engineer; skill na `dcs-beta-live-test`.
-- **SAKLAW:** test sa built-in browser ng Claude app sa PC ng user (Beta site pagkatapos ng "Update now"); si Claude ang pumipindot, saksi ang user. Isang hakbang bawat "G" ng user, na tina-type sa LIVE TESTER thread (naka-on ang Remote Control para makita sa phone). Binabasa mismo ang app bago at pagkatapos ng bawat hakbang (text, value, kulay, posisyon), WALANG screenshot (user 2026-10-31). Sa BAWAT hakbang: ang buong 32-item na checklist (bahagi A ~ F), may tala bawat item PASA / BAGSAK / HINDI NAGAWA, kahit sabay-sabay ang hakbang na inutos ng user (hal. "H1 hanggang turbine oil") (user 2026-10-31). Isang findings / checklist artifact, ina-update pagkatapos ng bawat hakbang; ang user ang huling huhusga. Kapag may mali: critical o may chain reaction = huminto at ipaayos; maliit = itala at tuloy; ang user ang nagpapasya. Findings sa sariling log ng tester; papasok sa `docs/handoff/LIVE_TEST_FINDINGS.md` sa pamamagitan ng leader / DOCS.
-- **UI CHECK bawat hakbang (user 2026-10-30):** bawat mali sa UI ay finding na may criticality at mungkahi.
-  - DOCK UI: malinaw sa isang tingin; walang dobleng yugto; tamang kulay ng card; SOP list ng hakbang lang; scroll na hindi nakakalito; laki ng font; walang putol na text.
-  - HMI UI: buo ang page at hindi natatakpan ng dock; walang nagpapatong na label, marka ng hakbang o value box; nababasa ang value nang hindi nag-zoom; RUN pula / STOP berde / TRIP kumikislap; iisang style bawat system.
-  - HMI POP-OUT: bumubukas sa tamang pindot bilang faceplate (hindi wiring popup); hindi tinatakpan ang mahalagang bahagi; nasasara; kumpleto ang control (REM / LOC, A / M, START / STOP, VCB, lamp).
-  - BUONG APP UI: header, left pane (kung nagtatago), logic sheet, status bar, Training page: walang putol, natatakpan o nagpapatong; nababasa sa 1366 × 768; hindi masakit sa mata.
-- **HINDI GINAGAWA:** hindi nag-e-edit ng code; hindi nagme-merge; hindi nagsisimula ng test sa tanong ng user; walang force at walang shortcut; HINDI binabawasan ang checklist para bumilis (pagbabago sa checklist = OK ng user lang); hindi nag-i-screenshot (user 2026-10-31).
-- **KASALUKUYANG GAWAIN:** retest Cold → full load sa beta.76, naghihintay ng "G H1" (rules: `HANDOFF.md` seksyon 5 TEST SOP at LIVE RETEST).
+- **SAKLAW:** test sa built-in browser ng Claude app sa PC ng user (Beta site pagkatapos ng "Update now"); si Claude ang pumipindot, saksi ang user. Isang hakbang bawat "G" ng user, na tina-type sa LIVE TESTER thread (naka-on ang Remote Control para makita sa phone). Kapag may mali: critical o may chain reaction = huminto at ipaayos; maliit = itala at tuloy; ang user ang nagpapasya. Findings sa sariling log ng tester at sa artifact; papasok sa `docs/handoff/LIVE_TEST_FINDINGS.md` sa pamamagitan ng leader / DOCS.
+- **12 CHECK BAWAT HAKBANG (inaprubahan ng user 2026-10-31; PRIORITY ng bawat hakbang, hindi binabawasan nang walang OK ng user, kahit sabay-sabay ang hakbang na inutos):** tala bawat check PASA / BAGSAK / BAHAGYA / HINDI NAGAWA.
+  1. TRAINING AT DOCK (laman): pareho ang seksyon sa Training list at dock; banner, Gawin, Bakit? at "?"; SOP list ng hakbang lang; hindi Tapos kung hindi pa tapos; Susunod at ‹ Nakaraan.
+  2. DOCK UI: malinaw sa isang tingin, walang dobleng yugto, tamang kulay ng card, laki ng font, walang putol na text.
+  3. HEADER AT ALARM: tamang alarm, walang maling alarm, laban sa setpoint ng alarm list.
+  4. LOGIC AT PERMISSIVE: tamang sheet at row ng DITL / ABC, tamang estado ng signal, permissive ayon sa logic.
+  5. HMI LAMAN AT KUMPLETO: may page ang system; kumpleto ang equipment, valve at tag laban sa snapshot at IO list; live ang value; RUN pula, STOP berde, TRIP kumikislap.
+  6. IISANG VALUE: pareho ang value ng iisang tag sa dock, HMI, faceplate at logic; pasok sa SOP band.
+  7. HMI UI: buo sa screen, hindi natatakpan ng dock, walang nagpapatong, nababasa nang hindi nag-zoom.
+  8. FACEPLATE / POP-OUT: bumubukas sa tamang pindot; kumpleto ang REM / LOC, A / M, START / STOP, VCB at lamp; hindi nagsasara o lumilipat; walang pinapayagang bawal.
+  9. BUONG APP UI AT OPERATOR: left pane, header, status bar, Training page: putol, natatakpan, nagpapatong; alam ba agad ng baguhan kung saan pipindot.
+  10. STATUS BAR: parehong version at build, RUN.
+  11. EVENTS: nakatala ang bawat pindot (tag, sheet, row).
+  12. SOP AT LUMANG FINDINGS: tugma sa seksyon ng PR-OPE-5002; ang lumang finding ng hakbang: naayos o hindi pa.
+- **PATAKARAN (laging sinusunod, user 2026-10-31):** (1) isang hakbang bawat "G" mula H1, walang laktaw; (2) walang screenshot, basahin mismo ang app (text, value, kulay, posisyon); (3) pindot gaya ng operator, walang FORCE at walang shortcut; (4) basa ng logic pagkalipas ng ≥ 30 s; (5) tick lang ng totoo; (6) bagong finding mula #53, may criticality at mungkahi; (7) ulat = table na kasya sa telepono, "HINDI NAGAWA" may dahilan, sa user ang hatol; (8) ulat sa user lang, sa leader kapag inutos.
+- **Findings / checklist artifact:** https://claude.ai/artifact/L8PGXXkK7us2NBApNLqwid (12 check × bawat hakbang), ina-update pagkatapos ng bawat hakbang.
+- **HINDI GINAGAWA:** hindi nag-e-edit ng code; hindi nagme-merge; hindi nagsisimula ng test sa tanong ng user; walang force at walang shortcut; HINDI binabawasan ang 12 CHECK para bumilis (pagbabago = OK ng user lang); hindi nag-i-screenshot (user 2026-10-31).
+- **KASALUKUYANG GAWAIN:** retest Cold → full load sa beta.76, naghihintay ng "G H1" (rules: `HANDOFF.md` seksyon 5 TEST SOP, LIVE RETEST, 12 CHECK at PATAKARAN).
 - **PAANO MAG-ULAT:** bawat hakbang: finding, criticality (critical / chain o maliit), mungkahi (huminto para ayusin o tuloy). Nag-uulat sa USER sa sariling thread at sa sariling log; nagpapasa lang sa leader KAPAG INUTOS ng user (user 2026-10-30). Binabasa pa rin ng leader ang thread na ito para iutos ang ayos sa tamang thread.

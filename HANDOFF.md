@@ -4,7 +4,7 @@
 >
 > **Patakaran (CLAUDE.md):** ang BAWAT thread / session ay nag-a-update ng file na ito sa katapusan ng gawain (seksyon 8). Palitan ang luma, huwag magtambak ng kasaysayan.
 
-Huling update: **2026-10-31 12:05 AM PHT** (DOCS thread: LIVE TESTER = buong 32-item na checklist bawat hakbang at walang screenshot, user 2026-10-31; bago nito 2026-10-30 11:00 PM: UI CHECK bawat hakbang at bagong rule ng pag-uulat; docs lang. Bago nito 10:45 PM: LIVE TESTER, COMPACT, THREAD_BRIEFS, PR #84; 10:30 PM: unang session ng bagong account, PR #83). **Lumipat na sa bagong account** (Claude Code desktop sa PC ng user). Tapos ang `docs/handoff/NEW_ACCOUNT_SETUP.md` bahagi B: 49 memory na-import (5 napalitan, hindi isinama); ang 3 skill mula `docs/handoff/skills/` at ang skill na `dcs-beta-live-test` ay naka-install sa PC.
+Huling update: **2026-10-31 12:15 AM PHT** (DOCS thread: 12 CHECK bawat hakbang + 8 PATAKARAN ng LIVE TESTER, inaprubahan ng user 2026-10-31, at walang screenshot; bago nito 2026-10-30 11:00 PM: UI CHECK bawat hakbang at bagong rule ng pag-uulat; docs lang. Bago nito 10:45 PM: LIVE TESTER, COMPACT, THREAD_BRIEFS, PR #84; 10:30 PM: unang session ng bagong account, PR #83). **Lumipat na sa bagong account** (Claude Code desktop sa PC ng user). Tapos ang `docs/handoff/NEW_ACCOUNT_SETUP.md` bahagi B: 49 memory na-import (5 napalitan, hindi isinama); ang 3 skill mula `docs/handoff/skills/` at ang skill na `dcs-beta-live-test` ay naka-install sa PC.
 
 ---
 
@@ -128,19 +128,35 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 
 **LIVE RETEST (user 2026-10-30):** sa built-in browser ng Claude app sa PC ng user (Beta site pagkatapos ng "Update now"); si Claude ang pumipindot, saksi ang user. LAHAT ng hakbang Cold → 150 MW, pero isa-isa (isang hakbang bawat "G"). Bawat ulat ng hakbang: finding, criticality (critical / chain o maliit), mungkahi (huminto para ayusin o tuloy); ang user ang nagpapasya. Skill: `dcs-beta-live-test`.
 
-**BUONG CHECKLIST, HINDI BINABAWASAN (user 2026-10-31):** sa BAWAT hakbang, ang buong 32-item na checklist (bahagi A ~ F) ng LIVE TESTER, may tala bawat item: PASA / BAGSAK / HINDI NAGAWA. Kahit sabihin ng user na sabay-sabay ang ilang hakbang (hal. "H1 hanggang turbine oil"), buo pa rin bawat hakbang. Ang bilis ay hindi dahilan para magbawas; ang pagbabago sa checklist ay sa OK lang ng user. Isang findings / checklist artifact, ina-update pagkatapos ng bawat hakbang; ang user ang huling huhusga. (Dahilan: nilaktawan ng tester ang ilang bahagi para bumilis nang hindi sinasabi sa user.)
+**12 CHECK BAWAT HAKBANG (inaprubahan ng user 2026-10-31; pinalitan ang "32-item na checklist" at ang hiwalay na UI CHECK):** ito ang PRIORITY ng bawat hakbang. Hindi binabawasan nang walang OK ng user, kahit sabay-sabay ang inutos na hakbang (hal. "H1 hanggang turbine oil"); ang bilis ay hindi dahilan. Tala bawat check: PASA / BAGSAK / BAHAGYA / HINDI NAGAWA. (Dahilan: nilaktawan ng tester ang ilang bahagi para bumilis nang hindi sinasabi sa user.)
+1. **TRAINING AT DOCK (laman):** pareho ang seksyon sa Training list at dock; banner, Gawin, Bakit? at "?"; SOP list ng hakbang lang; hindi Tapos kung hindi pa tapos; Susunod at ‹ Nakaraan.
+2. **DOCK UI:** malinaw sa isang tingin, walang dobleng yugto, tamang kulay ng card, laki ng font, walang putol na text.
+3. **HEADER AT ALARM:** tamang alarm, walang maling alarm, laban sa setpoint ng alarm list.
+4. **LOGIC AT PERMISSIVE:** tamang sheet at row ng DITL / ABC, tamang estado ng signal, permissive ayon sa logic.
+5. **HMI LAMAN AT KUMPLETO:** may page ang system; kumpleto ang equipment, valve at tag laban sa snapshot at IO list; live ang value; RUN pula, STOP berde, TRIP kumikislap.
+6. **IISANG VALUE:** pareho ang value ng iisang tag sa dock, HMI, faceplate at logic; pasok sa SOP band.
+7. **HMI UI:** buo sa screen, hindi natatakpan ng dock, walang nagpapatong, nababasa nang hindi nag-zoom.
+8. **FACEPLATE / POP-OUT:** bumubukas sa tamang pindot; kumpleto ang REM / LOC, A / M, START / STOP, VCB at lamp; hindi nagsasara o lumilipat; walang pinapayagang bawal.
+9. **BUONG APP UI AT OPERATOR:** left pane, header, status bar, Training page: putol, natatakpan, nagpapatong; alam ba agad ng baguhan kung saan pipindot.
+10. **STATUS BAR:** parehong version at build, RUN.
+11. **EVENTS:** nakatala ang bawat pindot (tag, sheet, row).
+12. **SOP AT LUMANG FINDINGS:** tugma sa seksyon ng PR-OPE-5002; ang lumang finding ng hakbang: naayos o hindi pa.
 
-**WALANG SCREENSHOT (user 2026-10-31):** binabasa ng tester ang app mismo (text, value, kulay, posisyon) sa halip na mag-screenshot.
+**PATAKARAN NG LIVE TESTER (laging sinusunod, user 2026-10-31):**
+1. Isang hakbang bawat "G" mula H1, walang laktaw.
+2. Walang screenshot: basahin mismo ang app (text, value, kulay, posisyon).
+3. Pindot gaya ng operator; walang FORCE at walang shortcut.
+4. Basa ng logic pagkalipas ng ≥ 30 s.
+5. Tick lang ng totoo.
+6. Bagong finding mula #53, may criticality at mungkahi.
+7. Ulat = table na kasya sa telepono; "HINDI NAGAWA" ay may dahilan; sa user ang hatol.
+8. Ulat sa user lang; sa leader kapag inutos ng user.
 
-**UI CHECK bawat hakbang (user 2026-10-30):** bawat mali sa UI ay finding na may criticality at mungkahi.
-- **DOCK UI:** malinaw sa isang tingin; walang dobleng yugto; tamang kulay ng card; SOP list ng hakbang lang; scroll na hindi nakakalito; laki ng font; walang putol na text.
-- **HMI UI:** buo ang page at hindi natatakpan ng dock; walang nagpapatong na label, marka ng hakbang o value box; nababasa ang value nang hindi nag-zoom; RUN pula / STOP berde / TRIP kumikislap; iisang style bawat system.
-- **HMI POP-OUT:** bumubukas sa tamang pindot bilang faceplate (hindi wiring popup); hindi tinatakpan ang mahalagang bahagi; nasasara; kumpleto ang control (REM / LOC, A / M, START / STOP, VCB, lamp).
-- **BUONG APP UI:** header, left pane (kung nagtatago), logic sheet, status bar, Training page: walang putol, natatakpan o nagpapatong; nababasa sa 1366 × 768; hindi masakit sa mata.
+**Findings / checklist artifact ng tester:** https://claude.ai/artifact/L8PGXXkK7us2NBApNLqwid (12 check × bawat hakbang; isang artifact, ina-update pagkatapos ng bawat hakbang).
 
 - **Lahat ng testing ay LIVE** (user 2026-10-30): ang user ang SAKSI, sa sarili niyang app pagkatapos ng "Update now", isang hakbang bawat "G". Ang headless run ay HINDI live test at hindi tinatawag na live.
 - Habang nag-aayos: `npm run build` + `npm run check` lang. Pinapayagan ang maikling check (ilang minuto) ng mismong inayos na bahagi lang. Bawal ang buong Cold → 150 MW run nang walang go ng user.
-- Bawat check ng hakbang: 7 bahagi (Training list, dock, header, logic sheet, bagong HMI, status bar, events) + RUN pula / STOP berde / TRIP lamp + FIELD / permissive.
+- Bawat check ng hakbang sa live test: ang 12 CHECK sa itaas (user 2026-10-31; pinalitan ang lumang 7 bahagi).
 - Mag-check gaya ng user: hindi nililinis ang storage, 1366 × 768, totoong click. Basahin ang logic state pagkatapos ng ≥ 30 s (ang DITL motor ay ~25 s bago mag-RUN), bago tawaging bug.
 - Test batay sa reference (PR-OPE-5002, DITL, ATS criteria, FHI Fig. 2, HMI snapshot), hindi sa coach ng Training. Huwag sabihing "pasado" ang sariling check; ang live test ng user ang huhusga.
 - Hanapin LAHAT ng mali muna, ayusin nang sabay-sabay, isang pasada lang.
