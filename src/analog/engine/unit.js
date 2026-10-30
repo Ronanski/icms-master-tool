@@ -644,6 +644,8 @@ function anUnitStart() {
   AN_SRC.field.dop = true;
   AN_SRC.field.hypo = true;
   AN_SRC.field.pur = true;
+  AN_SRC.field.mu1033 = false;
+  AN_SRC.field.esp = true;
   AN.unit = U;
 }
 /* 2.2.0-beta.14 (M4 step 1): the plant cold, with the anchors of "Start at 150 MW" kept (called by hmi-op.js anPlantCold after
@@ -684,6 +686,8 @@ function anUnitCold() {
   AN_SRC.field.dop = false;
   AN_SRC.field.hypo = false;
   AN_SRC.field.pur = false;
+  AN_SRC.field.mu1033 = false;
+  AN_SRC.field.esp = false;
   AN_SRC.t = -1;
   /* 3.2.0-beta.68: cold = the air compressors stopped, the air tanks empty (AN_AIR) */
   U.iaP = U.paP = 0;
@@ -843,7 +847,7 @@ const AN_SW = {
   swbp: ['DITL-30', 'DITL-30 #B', 'DITL-30 #C'],
   df: ['DITL-39@3', 'DITL-39@14'],
   Ph: [0, 0.7, 1.0, 1.1],
-  I0: [225.1, 242.5, 207.6],
+  I0: [210, 212, 208] /* live test 2026-10-30 #10: PR-OPE-5002 section 2 Normal Current 205 ~ 215 A (UNUSUAL: 30.PNG 225.1 / 242.5 / 207.6 A, above the SOP); the model follows the SOP, ASSUMED spread */,
   Ib: [87.3, 87.3, 87.2],
   dp0: 204,
   dpBw: 816,
@@ -898,6 +902,13 @@ function anSeawaterStep(U, dt) {
   /* the motor currents */
   K.I0.forEach((I, i) => lag('swIa' + i, sw[i] ? I * (0.4 + (0.6 * w * 2) / n) : 0, K.tauI));
   K.Ib.forEach((I, i) => lag('swIb' + i, bp[i] ? I : 0, K.tauI));
+  /* live test 2026-10-30 #21: the SWBP suction and discharge pressure (PR-OPE-5002 section 5: suction 1 ~ 1.1 ksc, inlet 1.0 ksc,
+     discharge 2.3 ~ 2.4 kg/cm2 at PG-SW1503A / B / C, local gauges): suction = the SWP header (the SWBP takes from it), discharge 2.35
+     while its pump runs (ASSUMED mid of the SOP band), else the suction */
+  K.Ib.forEach((I, i) => {
+    lag('swBs' + i, P, K.tauP);
+    lag('swBd' + i, bp[i] && P > 0 ? 2.35 : P, K.tauP);
+  });
 }
 /* 3.2.0-beta.63 (MAKE-UP WATER HMI, PR-OPE-5002 section 7): the make-up water system of flow diagram K1AU3-PD-024 Rev D and the
    expansion tank of PD-021. Demi water tanks T-0708A / B -> suction header -> MWP P-0709A / B / C (DITL-112) -> common header
@@ -946,7 +957,9 @@ function anMakeupStep(U, dt) {
   const mv = anDitlPos(K.mv);
   U.muMv = mv == null ? null : mv;
   if (!isFinite(U.etLvl)) U.etLvl = K.et0;
-  const fill = U.muXv && U.muP > 6 && U.etLvl < K.etMax;
+  /* live test 2026-10-30 #23: or through the bypass V-MU1033 (manual, field operator; PR-OPE-5002 section 7 "XV-MU1109 ... or Bypass valve V-MU1033") */
+  U.muByp = typeof AN_SRC !== 'undefined' && AN_SRC.field && AN_SRC.field.mu1033 ? 1 : 0;
+  const fill = (U.muXv || U.muByp) && U.muP > 6 && U.etLvl < K.etMax;
   U.muFill = fill ? 1 : 0;
   if (fill) U.etLvl = Math.min(K.etMax, U.etLvl + K.etRate * dt);
   U.etPct = (100 * U.etLvl) / K.etMax;

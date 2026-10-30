@@ -4,7 +4,7 @@
 >
 > **Patakaran (CLAUDE.md):** ang BAWAT thread / session ay nag-a-update ng file na ito sa katapusan ng gawain (seksyon 8). Palitan ang luma, huwag magtambak ng kasaysayan.
 
-Huling update: **2026-10-30 4:10 PM PHT** (live test thread: PR #73 merged bilang 3.2.0-beta.72, GO ng user "imerge n lahat").
+Huling update: **2026-10-30 6:20 PM PHT** (thread "AYUSIN LAHAT NG BUKAS NA FINDINGS NG LIVE TEST (BETA.72)": 3.2.0-beta.73, GO BETA ng user 6:08 PM PHT "Oo go beta sa dalawa").
 
 ---
 
@@ -20,12 +20,13 @@ Huling update: **2026-10-30 4:10 PM PHT** (live test thread: PR #73 merged bilan
 |---|---|
 | **Stable** | v2.4.0 (huling Stable). Ang susunod na Stable ay 3.2.0, LANG sa GO STABLE. |
 | **Beta sa `main`** | `3.2.0-beta.72` (PR #73, GO ng user "imerge n lahat"): 027 CLOSED COOLING WATER HMI page. Bago nito `3.2.0-beta.71` (PR #75): 036 TURBINE OIL sa HSYM. Bago nito `3.2.0-beta.70` (PR #74, GO BETA ng user 2026-10-30 "g beta"): iisang HMI style HSYM + bagong MAKE-UP WATER. Bago nito `3.2.0-beta.68` (GO BETA ng user 2026-10-30 "Ge batch 1. Sabay beta na agad"): INSTRUMENT & PLANT AIR HMI page. Bago nito `3.2.0-beta.66` (GO BETA ng user 2026-10-30 "Ge batch 1. Sabay beta na agad"): 036 TURBINE OIL HMI page. Bago nito `3.2.0-beta.63` (PR #70, 057ec26): MAKE-UP WATER HMI page. Ang beta.64 / 65 ay numero ng ibang thread ng batch (tingnan ang git log). |
-| **Bukas na PR** | Wala (PR #68 TEST SOP merged, GO ng user "imerge n lahat"). |
+| **Bukas na PR** | `3.2.0-beta.73` (GO BETA ng user): mga finding ng live test sa beta.72 (#4, #7, #9, #10, #12, #13, #18 ~ #26). |
 | **Beta site** | Kusang nade-deploy pagkatapos ng berdeng Checks sa `main` (`site.yml`, `/beta/`). Sa app: banner na "Update now". |
 | **Roadmap** (`docs/SPEC.md` 3) | 1, 2, 3, 5, 7 TAPOS. 4 (Training Cold → 150 MW) at 6 (HMI) bahagi. 8 Library ang huli. 9 Stable = GO STABLE lang. |
 | **HMI** | Bago: 007 Air & Flue Gas (inaprubahan), 030 Seawater (STEEL), MAKE-UP WATER (STEEL, beta.63), 036 TURBINE OIL (STEEL, beta.66; may TCS OPERATION box ng pump) INSTRUMENT & PLANT AIR (STEEL, beta.68) at 027 CLOSED COOLING WATER (STEEL, beta.72). Plant view = mga bagong page + UNIT · controllers. Ang ibang system ay isa-isa, kapag sinabi ng user (`docs/hmi/HMI_SYSTEMS.md`). |
 
 ### Huling mga Beta (pinakabago sa itaas; buo sa UPDATE_REPORT)
+- **beta.73** (GO BETA ng user "Oo go beta sa dalawa") — findings ng live test sa beta.72: H8 expansion tank (XV-MU1109 OPEN / CLOSE / AUTO, FIELD V-MU1033, pumupuno hanggang 1.7 m; tapos lang sa planta), standby MWP / SWP-C / SWBP-C: FIELD I-REMOTE muna saka AUTO; line-up muna bago ang DCS button; Tapos = lahat ng SOP item; H3 = 2 SOP item lang; Bantayan = plant model (SWP current SOP 205 ~ 215 A, SWBP suction / discharge); MWP REM / LOC · A / M sa HMI; H-1201 / F-1201 sa 007; Events ng SOP tick at purge; HAKBANG tag walang tinatakpan; "?" may Bakit.
 - **beta.72** (GO BETA ng user) — bagong HMI page 027 CLOSED COOLING WATER (PD-021 Rev D, SOP seksyon 7 ~ 8): mga user (turbine / generator, boiler, air compressors), return header, expansion tank + XV-MU1109 (OPEN / CLOSED, AUTO / MAN), ACWP-A / B (RUNNING / STOPPED, REM / LOC, AUTO / MAN, VCB, current, strainer DP), CCWHE A / B / C, supply header. Plant model `unit.js` AN_ACW; PT-CW1152 at DPT-CW1108-A / B ay binabasa rin ng DITL-76 / 77 (`plantsw.js`). Hakbang 9 (seksyon 8) ay nagbubukas ng page na ito at kinakahon ang napiling ACWP (card = ACWP-A / ACWP-B).
 - **beta.71** (PR #75, merged, GO ng user) — 036 TURBINE OIL iginuhit muli sa HSYM ayon sa mockup v3 na inaprubahan ng user ("OK v3 + bearing temp at vibration"): 3 tab TURBINE & BEARINGS / LUBE OIL / CONTROL & TRIP OIL; hiniwang turbine, bearing, generator, actuator; bearing metal temp TEST1009/1010, TEGE1001/1002 at vibration VEST/VEGE X/Y sa `tcs.js` (ASSUMED). HSYM: oil media, `vpump`, `blower`, `hx`, `filter`, `lamp`, `over` (tulay), `A.each`.
 - **beta.70** (PR #74, GO BETA ng user "g beta") — `src/ui/plant/hmi-sym.js` (HSYM), ang iisang HMI style ng lahat ng page (`docs/hmi/HMI_STYLE.md`): tubong walang dugtong, pump na umiikot, valve na may travel, check flapper, gauge, tank na may tubig at agos; MAKE-UP WATER iginuhit muli ayon sa mockup na inaprubahan ng user.
@@ -37,6 +38,8 @@ Huling update: **2026-10-30 4:10 PM PHT** (live test thread: PR #73 merged bilan
 ## 3. Mga thread / trabaho (2026-10-30 9:15 AM PHT)
 | Thread | Kalagayan | Susunod |
 |---|---|---|
+| AYUSIN LAHAT NG BUKAS NA FINDINGS NG LIVE TEST (BETA.72) | beta.73 (GO BETA ng user) | live retest H1 ~ H8 sa "G" ng user; saka live retest H1 ~ H8 (sa "G" ng user) |
+| BUILD ANG OPERATOR UI (faceplate, dock, alarm banner) | gumagawa | ibabase sa beta.73 |
 | GUMAWA NG HMI PAGE NG CLOSE COOLING WATER | beta.69 (GO BETA ng user) | live check ng user sa H9 |
 | GUMAWA NG HMI PAGE NG INSTRUMENT AT PLANT AIR | beta.68 (GO BETA ng user) | live check ng Hakbang 10 ~ 13 |
 | GUMAWA NG HMI PAGE NG TURBINE CONTROL OIL | beta.66 (GO BETA ng user) | live check ng user sa H13 ~ H16 |
@@ -53,7 +56,7 @@ Huling update: **2026-10-30 4:10 PM PHT** (live test thread: PR #73 merged bilan
 Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instrument list, HMI audit) ay TAPOS at naka-merge.
 
 ## 4. Bukas na isyu at desisyon
-- **Bagong nakita (beta.62, user ang magpapasya):** ang standby SWP-C (H3) at SWBP-C (H6) ay AUTO pero LOCAL; ang AUTO start ng DITL-29A / DITL-30 ay nangangailangan din ng REMOTE, kaya hindi aandar ang standby kapag may nag-trip.
+- **Live test findings (beta.72):** #4, #7, #9, #10, #12, #13, #18 ~ #26 nasa beta.73 (headless lang ang subok; live ng user ang huhusga). #11, #14 ~ #17, #27 ~ #32 = thread na BUILD ANG OPERATOR UI (faceplate, dock layout, alarm banner, progress bar). UNUSUAL para sa user: 30.PNG SWP current 225 / 242 A (lampas sa SOP 205 ~ 215; model = SOP) at PISW1110A2 0.4 = L alarm.
 - **Live test ng user** sa beta.61: naka-pause pagkatapos ng H7; 8 findings inayos sa beta.62. Alam na: `sop_bawal.js` 6 FAIL (lumang test na hindi alam ang dock, "NO START BUTTON FOUND"); FIELD habang PAUSED ay nababasa lang pagkatapos ng ▶ RUN. Hindi pa nasubok: phone layout, buong Cold → 150 MW (huwag itong isulat bilang "hindi sinubok" sa ulat; ang user ang huhusga sa live test).
 - **#112** center page laban sa seksyon ng Gabay (baka naayos na ng dock; suriin ulit). **#113** "Bakit?" masyadong maikli.
 - **P2 #7 ~ #12** (roadmap 4) at HP bypass na hindi sinasara ng saradong MV-MS1391.
@@ -65,7 +68,7 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 - **Closed cooling water (beta.69):** ang Bantayan ng Hakbang 9 sa dock ay nakapirming 7.0 / 6.4 kg/cm2 pa rin (`guide.js`), hindi pa ang plant model. Ang VCB ON / OFF ng ACWP ay sumusunod sa RUN (ang DI I.008A / B at I.040A / B ay wala sa netlist ng DITL-76 / 77). Ang AUTO ng XV-MU1109 sa page ay ang row 3 ng DITL-78 (ang binabasa ng logic).
 - **Instrument / plant air (beta.68):** Cold = walang hangin, kaya aktibo ang MFT condition ng instrument air (DITL-03G) hanggang tumakbo ang IA compressor (Hakbang 11, bago ang purge). Ang auto start ng standby compressor (DITL-113 / 114 START COMMAND sa local panel) ay walang field model. Sa 150 MW, compressor A at dryer A ang tumatakbo (ASSUMED; walang snapshot ng PICT 24 / 25). DITL-114 row 3 "PT-PA1706" = PT-PA1705 (UNLINK_AUDIT).
 - **Turbine oil (beta.66), UNUSUAL para sa user:** 36.PNG MOP discharge 6.9 kg/cm2 (lampas sa SOP 5.6 ~ 6.6) at COP 164.2 (lampas sa SOP 163); ang model ay sumusunod sa SOP (6.1 / 163.2). Walang model ng tank level, filter DP at cooling water side (laging NORMAL / tala lang).
-- **Make-up water (beta.63):** ang make-up sa hotwell ng cycle model (`plant.js`, LCV-MU1110) ay pumapasok kahit walang tumatakbong MWP (dati na; hindi binago). Ang HMI ay nagpapakita ng FIMU1001 = 0 kapag walang MWP. Ang FIELD bypass V-MU1033 ay walang button (XV-MU1109 lang ang nagpupuno). Analyzer ng make-up (AISP1006 ~ 1008) ay nasa sampling (PD-044), wala sa page.
+- **Make-up water (beta.63):** ang make-up sa hotwell ng cycle model (`plant.js`, LCV-MU1110) ay pumapasok kahit walang tumatakbong MWP (dati na; hindi binago). Ang HMI ay nagpapakita ng FIMU1001 = 0 kapag walang MWP. Ang FIELD bypass V-MU1033 ay may button na sa Hakbang 8 (beta.73); ang XV-MU1109 ay bumubukas lang kapag may instrument air (≥ 3.5 kg/cm2, ASSUMED). Analyzer ng make-up (AISP1006 ~ 1008) ay nasa sampling (PD-044), wala sa page.
 
 ## 5. Mga utos ng user (dating project memory; HUWAG ipaulit sa user)
 
