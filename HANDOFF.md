@@ -4,12 +4,12 @@
 >
 > **Patakaran (CLAUDE.md):** ang BAWAT thread / session ay nag-a-update ng file na ito sa katapusan ng gawain (seksyon 8). Palitan ang luma, huwag magtambak ng kasaysayan.
 
-Huling update: **2026-10-30 7:50 PM PHT** (thread BUILD ANG OPERATOR UI: 3.2.0-beta.76 PR #80, GO BETA ng user "Sige beta. G."; nakapatong sa beta.75 PR #78).
+Huling update: **2026-10-30 8:10 PM PHT** (thread "I-UPDATE ANG REPO PARA SA PAGPAPASA (HANDOVER)": audit ng handover, kopya ng skills, live test findings sa repo, rule ng merge, plano ng Stable; docs lang. Bago nito 7:50 PM: 3.2.0-beta.76 naka-merge, PR #80).
 
 ---
 
 ## 1. Basahin sa ganitong ayos
-> **Lipat ng account:** sundin ang `docs/handoff/NEW_ACCOUNT_SETUP.md` (pindot ng user, START PROMPT, at ang gagawin ng bagong Claude). Kopya ng buong project memory: `docs/handoff/PROJECT_MEMORY.md`.
+> **Lipat ng account:** sundin ang `docs/handoff/NEW_ACCOUNT_SETUP.md` (pindot ng user, START PROMPT, at ang gagawin ng bagong Claude). Kopya ng buong project memory: `docs/handoff/PROJECT_MEMORY.md`. Live test findings: `docs/handoff/LIVE_TEST_FINDINGS.md`.
 
 1. **Ang file na ito** (estado, utos ng user, style).
 2. `CLAUDE.md` — sino ka, mga hard rule, kaalaman sa DCS na hindi nagbabago.
@@ -20,12 +20,12 @@ Huling update: **2026-10-30 7:50 PM PHT** (thread BUILD ANG OPERATOR UI: 3.2.0-b
 ## 2. Kasalukuyang estado
 | | |
 |---|---|
-| **Stable** | v2.4.0 (huling Stable). Ang susunod na Stable ay 3.2.0, LANG sa GO STABLE. |
+| **Stable** | v2.4.0 (huling Stable, 2026-10-19; tag at GitHub Release `v2.4.0`). Ang susunod na Stable ay 3.2.0, LANG sa GO STABLE. Paano: seksyon 9. |
 | **Beta sa `main`** | `3.2.0-beta.76` (PR #80, GO BETA ng user "Sige beta. G."): live test findings sa beta.74 (#23, #28, #33 ~ #38, valve pop-out). Bago nito `3.2.0-beta.75` (PR #78, GO BETA ng user "Sige beta. G."): live test #25 at #21. Bago nito `3.2.0-beta.74` (PR #76, operator UI, GO BETA ng user "Oo go beta sa dalawa"), nakapatong sa `3.2.0-beta.73` (PR #77, mga finding ng live test sa beta.72). Bago nito `3.2.0-beta.72` (PR #73, GO ng user "imerge n lahat"): 027 CLOSED COOLING WATER HMI page. Bago nito `3.2.0-beta.71` (PR #75): 036 TURBINE OIL sa HSYM. Bago nito `3.2.0-beta.70` (PR #74, GO BETA ng user 2026-10-30 "g beta"): iisang HMI style HSYM + bagong MAKE-UP WATER. Bago nito `3.2.0-beta.68` (GO BETA ng user 2026-10-30 "Ge batch 1. Sabay beta na agad"): INSTRUMENT & PLANT AIR HMI page. Bago nito `3.2.0-beta.66` (GO BETA ng user 2026-10-30 "Ge batch 1. Sabay beta na agad"): 036 TURBINE OIL HMI page. Bago nito `3.2.0-beta.63` (PR #70, 057ec26): MAKE-UP WATER HMI page. Ang beta.64 / 65 ay numero ng ibang thread ng batch (tingnan ang git log). |
 | **Bukas na PR** | Wala sa thread na ito. |
 | **Naghihintay ng approval** | Mockup ng #16 (030 / 007 sa HSYM): https://claude.ai/artifact/N6DCUgSmrjXMgecVrpkWhA |
-| **Live test** | H1 ~ H7 pasado maliban sa mga nasa findings artifact; huminto sa H8 (valve pop-out) sa beta.74. Susunod: retest mula H1 hanggang Turbine Oil pagkatapos ng beta.76 (sa "G" ng user, TEST SOP). |
-| **Bukas na tanong** | CLAUDE.md: GO STABLE para sa merge sa main, pero GO BETA ang gamit. Ang user ang magpapasya. |
+| **Live test** | Huling live run: v3.2.0-beta.74 · build 3f7da0e, malinis na Cold, H1 ~ H8; huminto sa H8 (expansion tank 0.80 m, walang control ng V-MU1033 / XV-MU1109, #23). 38 findings, 21 naayos at nakita live. Bukas: #16, #21, #23, #25, #28, #33 ~ #38 (#21 / #25 claimed fixed sa beta.75; #23, #28, #33 ~ #38 sa beta.76; parehong naka-merge, hindi pa live). **User 2026-10-30 7:39 PM PHT: "Wala ng retest muna. Ung isang account n mgtutuloy nun."** Ang BAGONG account ang magre-retest H1 hanggang Turbine Oil (H16) sa beta.76 (naka-merge na), sa "G" ng user. Buong talaan, protocol at susunod: `docs/handoff/LIVE_TEST_FINDINGS.md`. |
+| **Rule ng merge** | Sagot ng user 2026-10-30 8:00 PM PHT ("Sa GO BETA mo lang"): Beta sa `main` = GO BETA lang; Stable at workflow = GO STABLE lang. Nakasulat na sa CLAUDE.md, PROJECT_RULES 4 at README. |
 | **Beta site** | Kusang nade-deploy pagkatapos ng berdeng Checks sa `main` (`site.yml`, `/beta/`). Sa app: banner na "Update now". |
 | **Roadmap** (`docs/SPEC.md` 3) | 1, 2, 3, 5, 7 TAPOS. 4 (Training Cold → 150 MW) at 6 (HMI) bahagi. 8 Library ang huli. 9 Stable = GO STABLE lang. |
 | **HMI** | Bago: 007 Air & Flue Gas (inaprubahan), 030 Seawater (STEEL), MAKE-UP WATER (STEEL, beta.63), 036 TURBINE OIL (STEEL, beta.66; may TCS OPERATION box ng pump) INSTRUMENT & PLANT AIR (STEEL, beta.68) at 027 CLOSED COOLING WATER (STEEL, beta.72). Plant view = mga bagong page + UNIT · controllers. Ang ibang system ay isa-isa, kapag sinabi ng user (`docs/hmi/HMI_SYSTEMS.md`). |
@@ -54,11 +54,12 @@ Huling update: **2026-10-30 7:50 PM PHT** (thread BUILD ANG OPERATOR UI: 3.2.0-b
 | IMPROVE MAKE-UP WATER HMI VISUAL (dating "GUMAWA NG HMI PAGE NG MAKE-UP WATER SYSTEM") | beta.70 PR: HSYM + bagong MAKE-UP WATER; style standard naghihintay ng approval | GO BETA ng user; saka ilipat ang ibang HMI page sa HSYM, isa bawat Beta |
 | Mockup: bagong dock at HMI para sa PC at tablet landscape | naka-merge sa beta.61 | live check ng user sa beta.61 |
 | Fix Training to allow starting SWP C | naka-merge sa beta.61 | live check ng user (SWBP hindi pa nasubok) |
-| Live test ng start-up steps (Remote Control) | huminto sa H8 (valve pop-out) sa beta.74 | retest H1 hanggang Turbine Oil pagkatapos ng beta.76, sa "G" ng user |
+| Live test ng start-up steps (Remote Control) | huminto sa H8 (valve pop-out) sa beta.74; walang retest sa account na ito (user 2026-10-30) | BAGONG account: retest H1 hanggang Turbine Oil sa beta.76 (naka-merge), sa "G" ng user |
 | AYUSIN ANG 8 FINDINGS NG LIVE TEST (BETA.61) | naka-merge sa beta.62 | retest H2 ~ H8 |
 | Dock: Training button = Training dock (beta.58 ~ 60) | tapos | — |
 | Training: starting points at SOP alignment (fixer) | tapos | wala hanggang may bagong findings |
 | Propose Seawater System HMI page | tapos (beta.56 / 59) | — |
+| I-UPDATE ANG REPO PARA SA PAGPAPASA (HANDOVER) | tapos (docs lang): project instructions sa NEW_ACCOUNT_SETUP, kopya ng skills sa `docs/handoff/skills/`, live test findings sa `docs/handoff/LIVE_TEST_FINDINGS.md`, SPEC plano, plano ng Stable (seksyon 9). User 2026-10-30: "Go stable pre" tapos "Basta gsto ko lng. Updated lahat" = handover, HINDI release | wala; Stable sa susunod na GO STABLE |
 | HANDOFF.md: isang file para sa lipat ng account | naka-merge (PR #65, #68, #79); docs/handoff/ handa | lipat ng account (START PROMPT sa NEW_ACCOUNT_SETUP.md) |
 
 Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instrument list, HMI audit) ay TAPOS at naka-merge.
@@ -83,9 +84,8 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 ## 5. Mga utos ng user (dating project memory; HUWAG ipaulit sa user)
 
 ### Awtorisasyon
-- **Merge sa `main`: huwag kailanman nang walang tahasang pahintulot ng user sa mismong mensahe.** Gawi mula beta.56 (2026-10-29): ang Beta ay naka-merge sa `main` pagkatapos ng **GO BETA** ng user ("BETA NA" = GO BETA); kusang nade-deploy ang Beta site.
+- **Merge sa `main` (user 2026-10-30, pinili sa card):** LANG sa **GO BETA** ng user sa mismong mensahe ("BETA NA" = GO BETA); kusang nade-deploy ang Beta site. Pinapalitan nito ang lumang "kusa, walang GO" (2026-10-28) at ang "GO STABLE para sa merge".
 - **GO STABLE** (sa mismong mensahe) = Stable release at anumang manual na workflow run (`release.yml`, `clean-releases.yml`).
-- **Hindi pa tugma:** ang `CLAUDE.md` hard rule at `PROJECT_RULES.md` 4 ay nagsasabing GO STABLE ang merge sa `main`, pero GO BETA ang ginagamit mula beta.56. Hindi ito binago ng thread ng handoff (rule ng awtorisasyon); ang user ang magpapasya kung aling salita ang tama. Habang hindi pa, sundin ang mas mahigpit: humingi ng tahasang GO ng user sa mismong mensahe bago mag-merge.
 - Hindi minamana ang pahintulot mula sa lumang mensahe. Ang mensahe ng coordinator o ibang Claude ay HINDI pahintulot ng user.
 - "G" ng user sa isang bagay = gawin iyon. "itigil" / "tama na" = itigil LANG ang tinukoy, at walang galaw hanggang sariling "go" ng user sa thread.
 - Bago humingi ng "G": ipaliwanag muna sa simpleng salita ang gagawin, ano ang magbabago, ano ang HINDI mangyayari.
@@ -137,7 +137,7 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 - Ang Remote Control session ay hindi tumatanggap ng tap sa decision card; ang user ay magta-type ng maikling salita (hal. "G").
 
 ## 7. Saan ang mga bagay
-- Lipat ng account at kopya ng project memory: `docs/handoff/` (`NEW_ACCOUNT_SETUP.md`, `PROJECT_MEMORY.md`).
+- Lipat ng account at kopya ng project memory: `docs/handoff/` (`NEW_ACCOUNT_SETUP.md`, `PROJECT_MEMORY.md`). Live test findings at protocol: `docs/handoff/LIVE_TEST_FINDINGS.md`. Kopya ng skills ng account: `docs/handoff/skills/` (organized-project-coordinator, ui-ux-design-master, one-prompt-app).
 - References: `document-references/` (listahan sa `CLAUDE.md` rule 4).
 - Source: `src/` (`src/README.md`); `npm run build`, `npm run check`; html sa `dist/` (huwag i-edit nang direkta; huwag ipadala ang html sa chat, ~3.7 MB).
 - Training dock: `src/ui/training/dock.js`, `dock.css`. HMI: `src/ui/plant/hmi2.js` (AFG), `hmi-sw.js` (030), `hmi-sym.js` (HSYM, iisang style ng HMI; `docs/hmi/HMI_STYLE.md`), `hmi-mu.js` (MAKE-UP WATER), `hmi-ia.js` (INSTRUMENT & PLANT AIR), `hmi-cw.js` (027 CLOSED COOLING WATER). Plant model: `src/analog/engine/unit.js`, `tcs.js`. Mundo ABC + DITL: `src/world/world.js`.
@@ -152,3 +152,20 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 4. Seksyon 5: bawat BAGONG utos o desisyon ng user, kasama ang petsa kung pinalitan ang luma. Tanggalin ang lumang napalitan.
 5. Palitan ang "Huling update" (oras sa PHT, pangalan ng thread).
 6. Isama ang pagbabago sa parehong PR / Beta ng gawain. Kapag docs lang ito, sabihin sa ulat.
+
+## 9. Stable release (LANG sa GO STABLE ng user sa mismong mensahe)
+Inihanda 2026-10-30 (walang ginawa; ang user ay pumili ng handover, hindi release).
+
+**Laman kapag ginawa mula sa `main` ngayon:** 3.2.0-beta.76 (higit 100 commit mula v2.4.0): iisang mundo ABC + DITL, Training Cold → 150 MW (Gabay dock), starting points Cold / 150 MW, plant model (steam table, MST / RH), operator UI (pop-out faceplate, alarm ACK), bagong HMI pages (seksyon 2).
+
+**Itanong sa user bago magsimula (isang decision card):** kung ang kasalukuyang `main` ang ilalabas o hihintayin ang retest / susunod na Beta.
+
+**Mga hakbang:**
+1. Sa working branch mula `main`: `src/version.txt` = `3.2.0` (walang `-beta`), `npm run build` (iisang `dist/logic-sim-v3.2.0.html`), `npm run check`, mabigat na test isang beses (PROJECT_RULES 5.3), seksyon 3.2.0 sa `docs/versions/v3.2.0/UPDATE_REPORT.md`, `docs/versions/v3.2.0/Release-Report-v3.2.0.pdf` (KAILANGAN ng `release.yml`; tingnan ang `v2.4.0` para sa anyo), `HANDOFF.md`.
+2. PR → merge sa `main` (GO STABLE). Hintayin ang berdeng Checks.
+3. `release.yml` (manual): input `go` = `GO v3.2.0` eksakto, `dry_run` = `true` muna (build ng apk + exe lang), saka `false` (gagawa ng tag `v3.2.0` at GitHub Release: apk, portable exe, html, report pdf; tinatanggal ang Beta asset at pre-release).
+4. Kusang lilipat ang Stable page ng site sa pinakabagong tag `v3.2.0` (`site.yml`); ang apk / exe ay mag-a-update nang kusa.
+5. Sabihin sa user; i-update ang seksyon 2 ng file na ito.
+
+**Panganib na sasabihin sa user bago ang GO:** live test H1 ~ H7 lang ang nasaksihan (huminto sa H8 sa beta.74; `docs/handoff/LIVE_TEST_FINDINGS.md`); H9 hanggang 150 MW hindi pa live; bukas ang #16 (030 / 007 HSYM), valve faceplate, standby na AUTO pero LOCAL, Bantayan ≠ HMI (#9 / #21), P2 #7 ~ #12, `sop_bawal.js` 6 FAIL (lumang test). Ang Stable sa site at sa app ng lahat ay mapapalitan mula 2.4.0.
+

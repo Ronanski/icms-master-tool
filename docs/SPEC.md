@@ -21,6 +21,8 @@ Ito ang gusto ng user, sa sarili niyang salita. Ito ang sukatan ng bawat gawa. K
 
 ## 2. Meron na at kulang (3.2.0-beta.40, 2026-10-26)
 
+> Ang talaang ito ay noong beta.40. Ang kasalukuyang estado (beta.74+, HMI pages, operator UI, live test) ay nasa `HANDOFF.md` seksyon 2 ~ 4; ang plano sa ibaba ay updated hanggang 2026-10-30.
+
 | # | Meron na sa app | Kulang / bukas |
 |---|---|---|
 | S1 | Laging iisang mundo ang ABC + DITL (mula beta.25, walang button). Page link ABC ↔ DITL, dalawang direksyon: ang BAWAT "FROM / TO DITL" sa ABC (233, links ABC ↔ DITL) at ang FROM / TO column ng DITL; ↩ Back sa magkabilang panig. | — |
@@ -42,10 +44,10 @@ Ang user ay susubok lang sa DULO ng buong plano (gabay: `docs/USER_CHECK.md`).
 1. [x] **Tinanggal ang Per-loop, Warm at Hot** (3.2.0-beta.39, 2026-10-26): plant chip = OFF | Unit lang; starting state = Cold at 150 MW lang (chip, Home, Start menu); wala na ang engine ng loop study at ng warm / hot start. Ang mga CHECK stage (coal, byp, roll) ay sa loob na lang ng buong chain.
 2. [x] Plant model (3.2.0-beta.40): TAPOS: stall sa bypass (hakbang 43, dati na), RH biasing damper (ABC-020), "null" sa DITL header, header ng Cold ("—" bago pumili). TAPOS din (ikalawang batch): hakbang 57 (MS blow-off SV), SH temperature chain, air side ng Cold. TAPOS din (ikatlong batch, 2026-10-27): reheat sa AUTO (541 °C sa 150 MW), MST pinakamataas 547.7 °C (alarm 548), hinto sa 3600 rpm heat soak; mouse Cold run TAPOS hanggang Practice (UPDATE_REPORT, seksyon ikatlong batch).
 3. [x] Starting points (2026-10-27, branch `claude/project-thread-5nq9pa`): Cold = tunay na malamig na planta; 150 MW = tumatakbo nang walang trip; ang pagpili ng starting point ay nag-o-ON ng plant model. Kasama ang P1 fix queue (ZT, protection switches, DITL-38 MOV, spray block, coal outlet valve).
-4. [ ] Training Cold → 150 MW laban sa SOP (PR-OPE-5002), kasama ang negative test (`sop_bawal.js`). Bahagi (2026-10-27): static audit at mga ayos (UPDATE_REPORT, seksyon roadmap 3 + 4), `sop_bawal.js` 19 / 19; ang buong Cold run ay hindi pa nasubok. Natitirang P2: #7 ~ #12.
+4. [ ] Training Cold → 150 MW laban sa SOP (PR-OPE-5002), kasama ang negative test (`sop_bawal.js`). Bahagi (2026-10-27): static audit at mga ayos (UPDATE_REPORT, seksyon roadmap 3 + 4). 2026-10-30: operator UI (pop-out faceplate, Gabay dock, alarm ACK) sa beta.74; live test ng user H1 ~ H7, huminto sa H8. Natitira: retest mula H1 hanggang 150 MW, P2 #7 ~ #12 (`HANDOFF.md` seksyon 4).
 5. [x] Viewer at Simulate OFF (3.2.0-beta.39, 2026-10-26): lahat ng "FROM / TO DITL" sa ABC ay page link na may Back; nilakad ang VIEW / RUN sa PC, tablet (dalawang direksyon) at phone; Simulate OFF: `ditl_sim.js` walang FAIL (hand input → output, ABC ↔ DITL tugma, force).
-6. [ ] HMI: BAGONG HMI na sariling graphics (user 2026-10-26; snapshot = gabay lang). Listahan ng system: `docs/hmi/HMI_SYSTEMS.md`. Sample Air & Flue Gas (PR #49) (89 / 89 live), naghihintay ng pag-apruba ng style; saka ang 13 pang screen, tapos tanggalin ang lumang Plant HMI.
-7. [ ] Sand silo DITL (8 drawing, `sand-sootblower-logic.zip`).
+6. [ ] HMI: BAGONG HMI na sariling graphics (user 2026-10-26; snapshot = gabay lang). Listahan ng system: `docs/hmi/HMI_SYSTEMS.md`. Bahagi (2026-10-30): 007 Air & Flue Gas (inaprubahan), 030 Seawater, MAKE-UP WATER, 036 TURBINE OIL, INSTRUMENT & PLANT AIR, 027 CLOSED COOLING WATER; iisang style HSYM (`docs/hmi/HMI_STYLE.md`). Natitira: 030 / 007 sa HSYM (#16), valve faceplate, ang ibang system isa-isa kapag sinabi ng user.
+7. [x] Sand silo DITL (8 drawing, `sand-sootblower-logic.zip`).
 8. [ ] Library: loop diagram, instrument list, dictionary.
 9. [ ] Merge ng mga nakabinbing PR at Stable release: LANG kapag nag-GO STABLE ang user.
 
