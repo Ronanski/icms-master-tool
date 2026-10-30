@@ -55,7 +55,7 @@
    ```
    Bagong account ito ng project na LOGIC_SIM_PROJECT (DCS Logic Simulator, repo Ronanski/icms-master-tool).
    Bago ituloy ang anumang trabaho, gawin muna ito nang sunud-sunod:
-   1. Basahin ang HANDOFF.md, CLAUDE.md, PROJECT_RULES.md, docs/SPEC.md at docs/handoff/NEW_ACCOUNT_SETUP.md.
+   1. Basahin ang HANDOFF.md, CLAUDE.md, PROJECT_RULES.md, docs/SPEC.md, docs/handoff/NEW_ACCOUNT_SETUP.md at docs/handoff/LIVE_TEST_FINDINGS.md.
    2. Tingnan ang tunay na estado ng repo: huling commit sa main, version, bukas na PR at branch.
    3. Gawin ang bahagi B ng NEW_ACCOUNT_SETUP.md: i-import sa project memory ang docs/handoff/PROJECT_MEMORY.md.
    4. Iulat sa akin (Taglish, maikli): ano ang kasalukuyang Beta, ano ang bukas na trabaho at isyu, ano ang susunod.
@@ -84,4 +84,4 @@
 
 - **Project files** ng lumang project (screenshot ng audit, mock-up, test log). Luma na ang karamihan; ang mahalagang resulta ay nasa `docs/versions/` at `HANDOFF.md`.
 - **Mga lumang thread / chat.** Ang buod ng bawat isa ay nasa `HANDOFF.md` seksyon 3 at sa `PROJECT_MEMORY.md`.
-- **Mga link ng artifact** (claude.ai/artifact/...) sa memory: pag-aari ng lumang account. Maaaring hindi mabuksan ng bagong account; ang laman ng mga desisyon ay nakasulat na sa repo.
+- **Mga link ng artifact** (claude.ai/artifact/...) sa memory: pag-aari ng lumang account. Maaaring hindi mabuksan ng bagong account; ang laman ng mga desisyon ay nakasulat na sa repo (findings ng live test: `docs/handoff/LIVE_TEST_FINDINGS.md`).
