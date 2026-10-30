@@ -224,6 +224,7 @@ function anUnitStop() {
   U.cold = false;
   U.turb = true;
   U.etLvl = NaN; /* 3.2.0-beta.63: the expansion tank starts again at its level of 27.PNG (AN_MU) */
+  U.acT1 = U.acT2 = NaN; /* 3.2.0-beta.64: the aux cooling water temperatures start again (AN_ACW) */
   for (const m of U.mul || []) for (const p of m.pr) p.mul = undefined;
   for (const z of U.spr || []) z.pr.uf = undefined;
   if (U.fwp && U.fwp.pr) U.fwp.pr.op = undefined;
@@ -940,6 +941,64 @@ function anMakeupStep(U, dt) {
   const hw = typeof AN_CYC !== 'undefined' ? Math.max(0, 1.8 * (AN_CYC.u.hw || 0)) : 0;
   lag('muF', n ? hw + (fill ? K.etQ : 0) : 0, K.tauP);
 }
+/* 3.2.0-beta.64 (027 CLOSED COOLING WATER HMI, PR-OPE-5002 sections 7 ~ 8): the aux cooling water loop of flow diagram K1AU3-PD-021
+   Rev D. Return header CW-1-002 20" + expansion tank T-1109 (V-CW1001) -> suction CW-1-003 20" -> ACWP P-1108A / B (DITL-76 / 77:
+   strainer DPT-CW1108-A / B) -> common discharge CW-1-007 20" (PT / TT-CW1152) -> CCWHE H-1107A / B / C (seawater of the SWBP) ->
+   supply CW-1-014 20" (PT / TT-CW1153) -> the users (turbine oil coolers TCV-CW1201, generator air coolers, BFP, bottom ash screw
+   conveyors PT / TT-CW1156, fans, APH, air compressors and dryers, sampling) -> return. PT-CW1152 and DPT-CW1108-A / B are analog rows
+   of DITL-76 / 77 (standby AUTO start < 3.5 kg/cm2, trip > 0.8 kg/cm2 5 s): the world writes them there (plantsw.js), so the logic
+   and the HMI read the same number. Anchor = the HMI snapshot 27.PNG (148 MW, ACWP-A running): PICW1152 6.4, PICW1153 5.2 kg/cm2,
+   TICW1152 40, TICW1153 38 C, ACWP-A 28.2 A, DPICW1108A 0.27 kg/cm2; TICW1156 37 C, PICW1156 5.3, TICW1060 36 ~ 38 C (other pages).
+     pressure     no ACWP: the static head of the expansion tank (1.0 kg/cm2 + its level, ASSUMED); 1 / 2 ACWP: 6.4 / 6.7 kg/cm2 at the
+                  pump discharge (6.4 = 27.PNG, 6.7 ASSUMED), 1.2 kg/cm2 lost in the CCWHE (27.PNG 6.4 -> 5.2); the bottom ash
+                  header PT-CW1156 = the supply header (ASSUMED, the same line);
+     strainer DP  0.27 kg/cm2 while its pump runs (27.PNG), 0 stopped;
+     current      28.2 A while running (27.PNG; SOP normal 30 A, alarm 33.7), 0 stopped;
+     temperature  the heat of the users q = 0.4 + 0.6 x load / 150 MW (ASSUMED: the compressors, BFP and coolers work at no load too);
+                  with an ACWP and an SWBP running the supply (TT-CW1153) goes to 28.5 C (seawater, 30.PNG) + 9.5 x q (38 C at full
+                  load, 27.PNG) and the return / pump discharge (TT-CW1152) is 2 x q above it (40 C); with an ACWP but no SWBP the
+                  CCWHE takes no heat away and the loop warms to 60 C (TE-CW1152 HH of the alarm list) in about 20 min; no ACWP:
+                  no flow, the water goes to the room temperature 30 C (ASSUMED); the bottom ash cooler outlets TT-CW1060 = the
+                  supply + 1 C while an ACWP runs (ASSUMED, the ash heat is not modelled; the snapshot reads 36 ~ 38 C at 37 C). */
+const AN_ACW = {
+  acwp: ['DITL-76', 'DITL-77'],
+  Ph: [6.4, 6.7],
+  dPx: 1.2,
+  dp: 0.27,
+  I0: 28.2,
+  Tsw: 28.5,
+  Tamb: 30,
+  Thot: 60,
+  tauP: 3,
+  tauI: 2,
+  tauT: 600,
+  tauA: 1800
+};
+function anAcwStep(U, dt) {
+  const K = AN_ACW,
+    lag = (k, x, tau) => (U[k] = isFinite(U[k]) ? U[k] + ((x - U[k]) * Math.min(dt, tau)) / tau : x),
+    run = K.acwp.map(a => anDitlRun(a) || 0),
+    n = run.reduce((a, b) => a + b, 0),
+    lv = isFinite(U.etLvl) ? U.etLvl : 0.8,
+    stat = 1.0 + 0.1 * lv,
+    q = 0.4 + 0.6 * Math.max(0, Math.min(1, (isFinite(U.MW) ? U.MW : 0) / 150)),
+    cool = (U.swNb || 0) > 0;
+  U.acN = n;
+  U.acCool = n && cool ? 1 : 0;
+  lag('acP1', n ? K.Ph[n - 1] : stat, K.tauP);
+  lag('acP2', n ? K.Ph[n - 1] - K.dPx : stat, K.tauP);
+  U.acP6 = U.acP2;
+  run.forEach((r, i) => {
+    lag('acDp' + i, r ? K.dp : 0, K.tauP);
+    lag('acI' + i, r ? K.I0 : 0, K.tauI);
+  });
+  const ts = n ? (cool ? K.Tsw + 9.5 * q : K.Thot) : K.Tamb;
+  if (!isFinite(U.acT2)) U.acT2 = ts;
+  lag('acT2', ts, n ? K.tauT : K.tauA);
+  lag('acT1', n ? Math.min(K.Thot + 2, U.acT2 + 2 * q) : K.Tamb, n ? 60 : K.tauA);
+  U.acT6 = U.acT2;
+  U.acTb = n ? U.acT2 + 1 : U.acT2;
+}
 function anUnitOwns(T, ids) {
   const U = AN_UNIT;
   return U.on && ids && ids.length && ids.some(id => U.own.has(T.rt.st[id]));
@@ -1019,6 +1078,8 @@ function anUnitStep(dt) {
   anSeawaterStep(U, dt);
   /* 3.2.0-beta.63: the make-up water system and the expansion tank (MAKE-UP WATER HMI), see AN_MU */
   anMakeupStep(U, dt);
+  /* 3.2.0-beta.64: the aux cooling water loop (027 CLOSED COOLING WATER HMI), see AN_ACW */
+  anAcwStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
   /* ---- 2.2.0-beta.17 (M4 step 4): the turbine black box (see AN_UNIT rollRate ...) ---- */
   const tb = U.tb || (U.tb = { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN }),

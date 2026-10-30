@@ -38,6 +38,9 @@ const block =
   /* 3.2.0-beta.63: MAKE-UP WATER (own vector graphics, STEEL; PR-OPE-5002 section 7) */
   fs.readFileSync(__dirname + '/../plant/hmi-mu.js', 'utf8') +
   '\n' +
+  /* 3.2.0-beta.64: 027 CLOSED COOLING WATER (own vector graphics, STEEL; PR-OPE-5002 sections 7 ~ 8) */
+  fs.readFileSync(__dirname + '/../plant/hmi-cw.js', 'utf8') +
+  '\n' +
   /* 3.2.0-beta.49: the old snapshot pictures (hmibg.js) and snapshot value pages (values.js) deleted with the old screens */
   fs.readFileSync(__dirname + '/../plant/plant.js', 'utf8') +
   '\n' +
