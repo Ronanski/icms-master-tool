@@ -224,7 +224,8 @@ function anUnitStop() {
   U.cold = false;
   U.turb = true;
   U.etLvl = NaN; /* 3.2.0-beta.63: the expansion tank starts again at its level of 27.PNG (AN_MU) */
-  U.acT1 = U.acT2 = NaN; /* 3.2.0-beta.67: the aux cooling water temperatures start again (AN_ACW) */
+  U.iaP = U.paP = NaN; /* 3.2.0-beta.68: the air tanks are set again by the start state (AN_AIR) */
+  U.acT1 = U.acT2 = NaN; /* 3.2.0-beta.69: the aux cooling water temperatures start again (AN_ACW) */
   for (const m of U.mul || []) for (const p of m.pr) p.mul = undefined;
   for (const z of U.spr || []) z.pr.uf = undefined;
   if (U.fwp && U.fwp.pr) U.fwp.pr.op = undefined;
@@ -634,6 +635,8 @@ function anUnitStart() {
   for (const l of lists) for (const [S2, b] of l) own.add(S2.rt.st[b.id]);
   U.own = own;
   U.on = true;
+  /* 3.2.0-beta.68: "Start at 150 MW" = the air compressors in service, the tanks at their pressure (AN_AIR, 39.PNG 7.0 kg/cm2) */
+  U.iaP = U.paP = AN_AIR.P;
   U.frT = undefined;
   U.tco = null; /* 3.2.0-beta.66: the oil-only state of the snapshot (tcs.js tcsOilState) starts again */
   U.tc = null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
@@ -682,6 +685,8 @@ function anUnitCold() {
   AN_SRC.field.hypo = false;
   AN_SRC.field.pur = false;
   AN_SRC.t = -1;
+  /* 3.2.0-beta.68: cold = the air compressors stopped, the air tanks empty (AN_AIR) */
+  U.iaP = U.paP = 0;
   tcsInit(U, 'cold');
   return true;
 }
@@ -948,7 +953,7 @@ function anMakeupStep(U, dt) {
   const hw = typeof AN_CYC !== 'undefined' ? Math.max(0, 1.8 * (AN_CYC.u.hw || 0)) : 0;
   lag('muF', n ? hw + (fill ? K.etQ : 0) : 0, K.tauP);
 }
-/* 3.2.0-beta.67 (027 CLOSED COOLING WATER HMI, PR-OPE-5002 sections 7 ~ 8): the aux cooling water loop of flow diagram K1AU3-PD-021
+/* 3.2.0-beta.69 (027 CLOSED COOLING WATER HMI, PR-OPE-5002 sections 7 ~ 8): the aux cooling water loop of flow diagram K1AU3-PD-021
    Rev D. Return header CW-1-002 20" + expansion tank T-1109 (V-CW1001) -> suction CW-1-003 20" -> ACWP P-1108A / B (DITL-76 / 77:
    strainer DPT-CW1108-A / B) -> common discharge CW-1-007 20" (PT / TT-CW1152) -> CCWHE H-1107A / B / C (seawater of the SWBP) ->
    supply CW-1-014 20" (PT / TT-CW1153) -> the users (turbine oil coolers TCV-CW1201, generator air coolers, BFP, bottom ash screw
@@ -1005,6 +1010,81 @@ function anAcwStep(U, dt) {
   lag('acT1', n ? Math.min(K.Thot + 2, U.acT2 + 2 * q) : K.Tamb, n ? 60 : K.tauA);
   U.acT6 = U.acT2;
   U.acTb = n ? U.acT2 + 1 : U.acT2;
+}
+/* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI, PR-OPE-5002 sections 9 ~ 12): the compressed air systems of flow diagram K1AU3-PD-023
+   Rev C sheet 1/6 (plant air) and 2/6 (instrument air). Each system: compressors C-0703A / B / C (PA) or C-0704A / B / C (IA), started
+   at their local panel (the RUNNING / TRIP contacts of DITL-114 / DITL-113 rows 6 / 13 / 20, 7 / 14 / 21) -> dryers D-0703A ~ C /
+   D-0704A ~ C (DITL-45 and its machine instances #B / #C: PLANT AIR DRYER RUNNING output row 4, INSTRUMENT AIR DRYER RUNNING row 15)
+   -> air tanks T-0705A / B (10 m3) or T-0706A / B (5 m3) -> unit 1 (PT-PA1705 / PT-IA1706), unit 2 and the utility area. The
+   transmitters feed the logic as analog rows (DITL-114 / 113 rows 1 ~ 3, the auto start of a standby compressor at < 5 kg/cm2;
+   DITL-03G rows 9 ~ 11, the MFT on instrument air < 3.5 kg/cm2, 2 of 3), so the plant model makes them and the world writes them into
+   those rows (plantsw.js); the HMI shows the same number. Anchor: 39.PNG instrument air buffer tanks 7.0 kg/cm2 (unit at 150 MW);
+   alarm list: tanks and unit header L 5.0, IA LL 3.5, PSL-IA1706 / PSL-PA1705 2.8 kg/cm2; I/O list ranges (0 ~ 10 kg/cm2, dryer
+   outlet flow 0 ~ 2700 (IA) / 0 ~ 5800 (PA) m3/h, compressor current 0 ~ 500 (IA) / 0 ~ 140 (PA) A).
+     tanks        one or more compressors running: up to 7.0 kg/cm2 at 0.06 kg/cm2/s (ASSUMED, 0 -> 7 in 2 min; the load / unload
+                  band of the compressor panel is not in the repository); none running: down at 0.033 kg/cm2/s (ASSUMED: the
+                  consumption empties 2 tanks in about 3.5 min); tank A and B are one header (tank B 0.05 lower, ASSUMED);
+     unit header  the tank pressure less 0.2 kg/cm2 of line loss (ASSUMED);
+     dryer outlet the tank pressure plus 0.15 while a compressor runs (the dryers are upstream of the tanks), else the tank pressure;
+     dryer flow   the consumption (ASSUMED IA 1200, PA 1500 m3/h: half of one dryer's range) split over the dryers in service; no dryer
+                  in service: over the three (their inlet valves stay open, refrigeration off); 0 while no compressor runs;
+     current      while running: IA 400 A (ASSUMED, a 380 V motor for the 2700 m3/h dryer), PA 55 A (ASSUMED, the 6.6 kV VCB motor);
+     winding T    PA motor (TE-M0703-x1 ~ 3, I/O list): 35 C stopped, 85 C running (ASSUMED), time constant 10 min. */
+const AN_AIR = {
+  P: 7.0,
+  up: 0.06,
+  dn: 0.033,
+  dB: 0.05,
+  loss: 0.2,
+  dD: 0.15,
+  sys: {
+    ia: { c: 'DITL-113', d: '@14', Q: 1200, I: 400 },
+    pa: { c: 'DITL-114', d: '@3', Q: 1500, I: 55 }
+  },
+  rows: [5, 12, 19],
+  dry: ['DITL-45', 'DITL-45 #B', 'DITL-45 #C'],
+  Tw: [35, 85, 600],
+  tauI: 2
+};
+/* an input row of a DITL drawing (a field contact: the RUNNING / TRIP of a compressor set at its local panel); null while no world */
+function anDitlIn(name, row) {
+  try {
+    if (typeof S === 'undefined' || !S.sheets || !window.WORLD || !WORLD.on || !window.DUI) return null;
+    const C = AN_UNIT._dr || (AN_UNIT._dr = {});
+    let s = C[name];
+    if (!s) {
+      s = S.sheets.concat(WORLD.inst || []).find(x => x.name.endsWith(name)) || null;
+      if (s) C[name] = s;
+    }
+    return s ? (DUI.rowVal(s, row) ? 1 : 0) : null;
+  } catch (e) {
+    return null;
+  }
+}
+function anAirStep(U, dt) {
+  const K = AN_AIR,
+    lag = (k, x, tau) => (U[k] = isFinite(U[k]) ? U[k] + ((x - U[k]) * Math.min(dt, tau)) / tau : x);
+  for (const k in K.sys) {
+    const Y = K.sys[k],
+      run = K.rows.map(r => (anDitlIn(Y.c, r) && !anDitlIn(Y.c, r + 1) ? 1 : 0)),
+      trip = K.rows.map(r => anDitlIn(Y.c, r + 1) || 0),
+      dry = K.dry.map(d => anDitlRun(d + Y.d) || 0),
+      n = run.reduce((a, b) => a + b, 0),
+      nd = dry.reduce((a, b) => a + b, 0);
+    U[k + 'N'] = n;
+    run.forEach((r, i) => (U[k + 'R' + i] = r));
+    trip.forEach((r, i) => (U[k + 'T' + i] = r));
+    dry.forEach((r, i) => (U[k + 'D' + i] = r));
+    const P0 = isFinite(U[k + 'P']) ? U[k + 'P'] : 0;
+    U[k + 'P'] = n ? Math.min(K.P, P0 + K.up * dt) : Math.max(0, P0 - K.dn * dt);
+    U[k + 'PA'] = U[k + 'P'];
+    U[k + 'PB'] = Math.max(0, U[k + 'P'] - K.dB);
+    U[k + 'PU'] = Math.max(0, U[k + 'P'] - K.loss);
+    U[k + 'PD'] = U[k + 'P'] + (n ? K.dD : 0);
+    dry.forEach((r, i) => lag(k + 'F' + i, n && (nd ? r : 1) ? Y.Q / (nd || dry.length) : 0, 3));
+    run.forEach((r, i) => lag(k + 'I' + i, r ? Y.I : 0, K.tauI));
+    if (k === 'pa') run.forEach((r, i) => lag('paW' + i, r ? K.Tw[1] : K.Tw[0], K.Tw[2]));
+  }
 }
 function anUnitOwns(T, ids) {
   const U = AN_UNIT;
@@ -1087,7 +1167,9 @@ function anUnitStep(dt) {
   anMakeupStep(U, dt);
   /* 3.2.0-beta.66: the turbine lube and control oil (036 TURBINE OIL HMI), see TCS_OIL (tcs.js) */
   tcsOil(U, dt);
-  /* 3.2.0-beta.67: the aux cooling water loop (027 CLOSED COOLING WATER HMI), see AN_ACW */
+  /* 3.2.0-beta.68: the instrument and plant air systems (INSTRUMENT & PLANT AIR HMI), see AN_AIR */
+  anAirStep(U, dt);
+  /* 3.2.0-beta.69: the aux cooling water loop (027 CLOSED COOLING WATER HMI), see AN_ACW */
   anAcwStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
   /* ---- 2.2.0-beta.17 (M4 step 4): the turbine black box (see AN_UNIT rollRate ...) ---- */

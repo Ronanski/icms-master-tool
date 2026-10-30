@@ -41,7 +41,10 @@ const block =
   /* 3.2.0-beta.66: 036 TURBINE OIL (own vector graphics, STEEL; PR-OPE-5002 TURBINE CONTROL OIL) */
   fs.readFileSync(__dirname + '/../plant/hmi-to.js', 'utf8') +
   '\n' +
-  /* 3.2.0-beta.67: 027 CLOSED COOLING WATER (own vector graphics, STEEL; PR-OPE-5002 sections 7 ~ 8) */
+  /* 3.2.0-beta.68: INSTRUMENT & PLANT AIR (own vector graphics, STEEL; PR-OPE-5002 sections 9 ~ 12) */
+  fs.readFileSync(__dirname + '/../plant/hmi-ia.js', 'utf8') +
+  '\n' +
+  /* 3.2.0-beta.69: 027 CLOSED COOLING WATER (own vector graphics, STEEL; PR-OPE-5002 sections 7 ~ 8) */
   fs.readFileSync(__dirname + '/../plant/hmi-cw.js', 'utf8') +
   '\n' +
   /* 3.2.0-beta.49: the old snapshot pictures (hmibg.js) and snapshot value pages (values.js) deleted with the old screens */
