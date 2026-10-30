@@ -25,7 +25,7 @@ Huling update: **2026-10-30 8:00 PM PHT** (thread "I-UPDATE ANG REPO PARA SA PAG
 | **Bukas na PR** | PR #80 (`3.2.0-beta.76`: #23, #28, #33 ~ #38): naghihintay ng GO BETA ng user. |
 | **Naghihintay ng approval** | Mockup ng #16 (030 / 007 sa HSYM): https://claude.ai/artifact/N6DCUgSmrjXMgecVrpkWhA |
 | **Live test** | Huling live run: v3.2.0-beta.74 · build 3f7da0e, malinis na Cold, H1 ~ H8; huminto sa H8 (expansion tank 0.80 m, walang control ng V-MU1033 / XV-MU1109, #23). 38 findings, 21 naayos at nakita live. Bukas: #16, #21, #23, #25, #28, #33 ~ #38 (#21 / #25 claimed fixed sa beta.75; #23, #28, #33 ~ #38 sa beta.76 PR #80; hindi pa live). **User 2026-10-30 7:39 PM PHT: "Wala ng retest muna. Ung isang account n mgtutuloy nun."** Ang BAGONG account ang magre-retest H1 hanggang Turbine Oil (H16) pagkatapos ma-merge ang beta.76, sa "G" ng user. Buong talaan, protocol at susunod: `docs/handoff/LIVE_TEST_FINDINGS.md`. |
-| **Bukas na tanong** | CLAUDE.md: GO STABLE para sa merge sa main, pero GO BETA ang gamit. Ang user ang magpapasya. |
+| **Rule ng merge** | Sagot ng user 2026-10-30 8:00 PM PHT ("Sa GO BETA mo lang"): Beta sa `main` = GO BETA lang; Stable at workflow = GO STABLE lang. Nakasulat na sa CLAUDE.md, PROJECT_RULES 4 at README. |
 | **Beta site** | Kusang nade-deploy pagkatapos ng berdeng Checks sa `main` (`site.yml`, `/beta/`). Sa app: banner na "Update now". |
 | **Roadmap** (`docs/SPEC.md` 3) | 1, 2, 3, 5, 7 TAPOS. 4 (Training Cold → 150 MW) at 6 (HMI) bahagi. 8 Library ang huli. 9 Stable = GO STABLE lang. |
 | **HMI** | Bago: 007 Air & Flue Gas (inaprubahan), 030 Seawater (STEEL), MAKE-UP WATER (STEEL, beta.63), 036 TURBINE OIL (STEEL, beta.66; may TCS OPERATION box ng pump) INSTRUMENT & PLANT AIR (STEEL, beta.68) at 027 CLOSED COOLING WATER (STEEL, beta.72). Plant view = mga bagong page + UNIT · controllers. Ang ibang system ay isa-isa, kapag sinabi ng user (`docs/hmi/HMI_SYSTEMS.md`). |
@@ -83,9 +83,8 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 ## 5. Mga utos ng user (dating project memory; HUWAG ipaulit sa user)
 
 ### Awtorisasyon
-- **Merge sa `main`: huwag kailanman nang walang tahasang pahintulot ng user sa mismong mensahe.** Gawi mula beta.56 (2026-10-29): ang Beta ay naka-merge sa `main` pagkatapos ng **GO BETA** ng user ("BETA NA" = GO BETA); kusang nade-deploy ang Beta site.
+- **Merge sa `main` (user 2026-10-30, pinili sa card):** LANG sa **GO BETA** ng user sa mismong mensahe ("BETA NA" = GO BETA); kusang nade-deploy ang Beta site. Pinapalitan nito ang lumang "kusa, walang GO" (2026-10-28) at ang "GO STABLE para sa merge".
 - **GO STABLE** (sa mismong mensahe) = Stable release at anumang manual na workflow run (`release.yml`, `clean-releases.yml`).
-- **Hindi pa tugma:** ang `CLAUDE.md` hard rule at `PROJECT_RULES.md` 4 ay nagsasabing GO STABLE ang merge sa `main`, pero GO BETA ang ginagamit mula beta.56. Hindi ito binago ng thread ng handoff (rule ng awtorisasyon); ang user ang magpapasya kung aling salita ang tama. Habang hindi pa, sundin ang mas mahigpit: humingi ng tahasang GO ng user sa mismong mensahe bago mag-merge.
 - Hindi minamana ang pahintulot mula sa lumang mensahe. Ang mensahe ng coordinator o ibang Claude ay HINDI pahintulot ng user.
 - "G" ng user sa isang bagay = gawin iyon. "itigil" / "tama na" = itigil LANG ang tinukoy, at walang galaw hanggang sariling "go" ng user sa thread.
 - Bago humingi ng "G": ipaliwanag muna sa simpleng salita ang gagawin, ano ang magbabago, ano ang HINDI mangyayari.
