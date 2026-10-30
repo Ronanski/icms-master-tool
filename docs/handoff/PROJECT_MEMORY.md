@@ -1,4 +1,4 @@
-# PROJECT MEMORY (kopya ng project memory ng claude.ai, 2026-10-30 7:40 PM PHT)
+# PROJECT MEMORY (kopya ng project memory ng claude.ai, 2026-10-30 8:10 PM PHT)
 > Kopya ng lahat ng project memory file ng project na "LOGIC_SIM_PROJECT" sa lumang account, para sa bagong account / Claude. Ang `HANDOFF.md` ang kasalukuyan at nananaig; ito ay background at kasaysayan ng mga desisyon (English, gaya ng orihinal). Kapag magkasalungat, sundin ang mas bago (tingnan ang petsa) at ang `HANDOFF.md`.
 > Para sa bagong account: i-import ang mga ito sa project memory ng bagong project (ang index bilang `MEMORY.md`, at isang file bawat `## ` seksyon).
 
@@ -8,8 +8,10 @@
 - **HANDOFF FIRST:** repo `HANDOFF.md` is the one self-updating handoff file (state, threads, user orders, style, TEST SOP); every thread updates it at task end. New account setup + full memory copy: `docs/handoff/` (NEW_ACCOUNT_SETUP.md, PROJECT_MEMORY.md). See [[project-handoff-single-file]], [[feedback-live-test-sop]].
 - USER CHANNEL (2026-10-30): User only keeps the LIVE TEST thread open on phone and watches tests on TV. Anything needing the user (GO BETA, approvals, questions) must ALSO be relayed via message_thread to the live test thread so the user sees it there.
 - OPERATOR UI (2026-10-30): User approved mockup v7 ("G n yan"): https://claude.ai/artifact/Xjzj9XgmtT62qqiRF8zRQa . Real process graphic stays; step target pulses; mini pop-out per equipment (FIELD LOC/REM, MAN/AUTO, START/STOP Execute/Cancel, SOP line-up + DITL permissives live); dock is GUIDE ONLY (no "coach" word, never acts); alarm banner ACK + progress bar (44 sections); one HSYM style. Build thread: BUILD ANG OPERATOR UI cmsg_01V4rVM9gnpMDfWtQBoeoBk62jr5WSfQZirXgKvogMoYqs. Fixer thread (findings): cmsg_01V4rVM9gnpMDfWtQBoeoBk68gFTwUscfyfQ2mSKJp7KDe, beta.73; build thread next number. "G" = design approval, NOT GO BETA; merge only on GO BETA.
-- STATUS 2026-10-30 7:35 PM PHT: main = beta.74 (PR #76) on top of beta.73 (PR #77), both merged. OPEN, waiting user GO BETA: PR #78 (beta.75: #25, #21), PR #80 (beta.76: #23, #28, #33~#38). Mockup #16 (030/007 HSYM) waiting approval: https://claude.ai/artifact/N6DCUgSmrjXMgecVrpkWhA . Live test H1~H7 passed except items in the findings artifact; stopped at H8 (valve pop-out) on beta.74; next = retest H1 up to Turbine Oil after beta.76. OPEN QUESTION to user: CLAUDE.md says GO STABLE for merge to main, practice is GO BETA.
+- STATUS 2026-10-30 8:10 PM PHT: main = beta.76 (PR #80, merged; beta.75 PR #78 before it). No open app PR. Mockup #16 (030/007 HSYM) waiting approval: https://claude.ai/artifact/N6DCUgSmrjXMgecVrpkWhA . Live test H1~H7 passed except items in the findings artifact; stopped at H8 (valve pop-out) on beta.74; next = retest H1 up to Turbine Oil after beta.76, done by the NEW account (user 2026-10-30 7:39 PM PHT: "Wala ng retest muna. Ung isang account n mgtutuloy nun.").
+- STABLE PLAN (2026-10-30): "Go stable" became handover-only (no release). Stable 3.2.0 steps + risks: HANDOFF.md section 9; full live test findings + protocol: docs/handoff/LIVE_TEST_FINDINGS.md; skills copy in docs/handoff/skills/ ([[project-stable-plan-2026-10-30]]).
 - Goals: 1) DCS logic simulator with plant model on/off; 2) plant simulator built on logic sim + plant model; 3) DCS library.
+- MERGE RULE (user card 2026-10-30): Beta into main ONLY on GO BETA (same message); Stable + workflows ONLY on GO STABLE ([[feedback-merge-rule-go-beta]]).
 - Repo: https://github.com/Ronanski/icms-master-tool . Read HANDOFF.md, CLAUDE.md, PROJECT_RULES.md, docs/SPEC.md first. Never merge to main, run workflows or release without explicit same-message GO (GO BETA / GO STABLE).
 - User (turla-ece): DCS engineer, non-coder in the Philippines, Taglish (80% Tagalog), concise. Knows NOTHING about git/GitHub: explain in plain words or avoid. Knows DCS logic, not plant operation. Show all times in PHT.
 - ASKING FOR APPROVAL / "G": FIRST explain in plain words what will be done, what changes, what will NOT happen, then ask. Threads too.
@@ -52,6 +54,8 @@ User (turla-ece) asked "Matic yan dpat dba beta? Kada may merge o changes?" then
 
 **How to apply:** every finished fix batch gets a new Beta number (X.Y.Z-beta.N, no duplicates) published without asking; announce version + build id + how to open; keep telling him which build the walkthrough thread tests (same build as his PC). Stable still needs explicit GO STABLE, and merge to main still needs explicit authorization. Supersedes the "GO BETA required" wording in older notes.
 
+**SUPERSEDED 2026-10-30 (merge part):** merge to main only on GO BETA; see [[feedback-merge-rule-go-beta]].
+
 ## feedback-beta-automatic
 
 _feedback_ — User 2026-10-28 1:06 PM PHT: Beta is AUTOMATIC (no GO BETA); every finished fix batch = new Beta number pushed; only Stable needs his GO
@@ -62,9 +66,11 @@ User (2026-10-28 ~1:06 PM PHT, firm: "Stable lng ang need sakin. Itatak mo yan s
 
 **How to apply:** after build + check of a batch, push it as a new Beta and report version + build id. Only the Stable release (and merge to main) needs his explicit GO STABLE. Testing rule unchanged: [[feedback-test-at-end]].
 
+**SUPERSEDED 2026-10-30 (merge part):** merge to main only on GO BETA; see [[feedback-merge-rule-go-beta]].
+
 ## feedback-check-like-user
 
-_feedback · 2026-10-28_ — How a pre-Beta check must be done (user 2026-10-28 after R8): real UI clicks, 2 passes without clearing storage, report what is SEEN on screen per line
+_feedback_ — How a pre-Beta check must be done (user 2026-10-28 after R8): real UI clicks, 2 passes without clearing storage, report what is SEEN on screen per line
 
 User (2026-10-28, via coordinator): "Ayaw ko na paulit ulit na pinapaayos natin tapos hindi pa rin pala naayos sa test." Beta.45 fixes #2/#47/#49 "passed" my check but failed his live test: my check read internal state (AN.cat, S.cur) from a clean browser with instant script clicks.
 
@@ -74,7 +80,7 @@ User (2026-10-28, via coordinator): "Ayaw ko na paulit ulit na pinapaayos natin 
 
 ## feedback-decide-dont-ask-plant
 
-_feedback · 2026-10-23_ — User 2026-10-23 9:40 PM PHT: don't ask the user to confirm loop groupings or model assumptions; decide from drawings/procedures and state it. Utilities must be started and can trip.
+_feedback_ — User 2026-10-23 9:40 PM PHT: don't ask the user to confirm loop groupings or model assumptions; decide from drawings/procedures and state it. Utilities must be started and can trip.
 
 I put a "Pakisuri" checklist in the loop map doc: are the groupings right, are utilities always ready, are the sources enough. The user replied: "hindi ko masasagot", "hindi ka ba sigurado?", "bkt tinatanong pa ito?"
 
@@ -106,7 +112,7 @@ _feedback_ — User furious 2026-10-22 ~7:45 PM PHT about the design-pick page: 
 
 ## feedback-device-focus-pc-tablet-landscape
 
-_feedback · 2026-10-30_ — User 2026-10-30: focus on PC desktop and tablet LANDSCAPE only; phone and tablet portrait postponed; working functionality first
+_feedback_ — User 2026-10-30: focus on PC desktop and tablet LANDSCAPE only; phone and tablet portrait postponed; working functionality first
 
 User (2026-10-30 ~8:05 AM PHT): "Focus muna tayo s PC VIEW AT TABLET VIEW NA LANDSCAPE. LETS FOCUS ON WORKING FUNCTIONALITY!!!" Mobile and tablet portrait views will be fixed later.
 
@@ -115,7 +121,7 @@ User (2026-10-30 ~8:05 AM PHT): "Focus muna tayo s PC VIEW AT TABLET VIEW NA LAN
 
 ## feedback-full-report-every-milestone
 
-_feedback · 2026-10-17_ — User (turla-ece) expects the full Problem / As Found / Work Done / As Left / Hindi nasubok / Susunod report in the thread at every milestone (push, Beta), without being asked
+_feedback_ — User (turla-ece) expects the full Problem / As Found / Work Done / As Left / Hindi nasubok / Susunod report in the thread at every milestone (push, Beta), without being asked
 
 At every milestone (a push = Beta, a finished fix, a blocked step), the reply must carry the complete report in Taglish: Problem, As Found, Work Done (files), As Left (evidence: test names and numbers, commit, PR link), what was NOT checked, remaining issues / blockers, next action, and "what the operator sees in the app".
 
@@ -127,7 +133,7 @@ At every milestone (a push = Beta, a finished fix, a blocked step), the reply mu
 
 ## feedback-full-self-check-before-ui-push
 
-_feedback · 2026-10-19_ — User (turla-ece) got very angry 2026-10-19 18:34 PHT at piecemeal UI fixes (beta.7→8→9 for a missing Panel button); do a full self-check of every screen before any UI push
+_feedback_ — User (turla-ece) got very angry 2026-10-19 18:34 PHT at piecemeal UI fixes (beta.7→8→9 for a missing Panel button); do a full self-check of every screen before any UI push
 
 2026-10-19 the beta.7 layout removed the top-bar Panel button; the user could not find the panel ("NASAN NA SIDE PANEL", "WALA", "DI MATATAPOS TO KAKAAYOS PRE", swearing). beta.8 put Panel on the drawing corner (still not found), beta.9 put it in the top bar next to ⏱.
 
@@ -138,7 +144,7 @@ Tool: /mnt/project-files/ui-audit-2026-10-19/tools/fullcheck.js <outdir> <html> 
 
 ## feedback-genuine-tests
 
-_feedback · 2026-10-25_ — User 2026-10-25 10:29 PM PHT: tests are "not genuine". Test against references (SOP, FHI Fig 2, HMI snapshot, DITL permissives) with negative "bawal" tests, not "Training reached 150 MW"
+_feedback_ — User 2026-10-25 10:29 PM PHT: tests are "not genuine". Test against references (SOP, FHI Fig 2, HMI snapshot, DITL permissives) with negative "bawal" tests, not "Training reached 150 MW"
 
 User (2026-10-25 ~10:29 PM PHT, upset): "Hindi genuine ang test mo kaya dapat yan baguhin yang pamamaraan ng testing mo". The user caught the missing aux steam / vacuum / gland / turning gear that the tests missed.
 
@@ -155,7 +161,7 @@ Related: [[reference-golden-startup-doc]].
 
 ## feedback-hmi-realism-2026-10-30
 
-_feedback · 2026-10-30_ — User 2026-10-30 12:55 PM PHT rejected 036 Turbine Oil page as snapshot copy; every HMI page must show equipment internals with animation, clean continuous pipes, no text on art; proposal+mockup before app code
+_feedback_ — User 2026-10-30 12:55 PM PHT rejected 036 Turbine Oil page as snapshot copy; every HMI page must show equipment internals with animation, clean continuous pipes, no text on art; proposal+mockup before app code
 
 User on the 036 TURBINE OIL page (beta.66): "Ginaya lang ata ang sa snapshot", turbine is just a block with no rotor/blades/stator, no generator/exciter, values small and blurry, text on top of the art, crowded. Coordinator relayed to all HMI threads: do not copy the snapshot layout; show the real insides of each equipment and what happens, with animation. Also: "Iwasan ung mga halatang pinagdugtong. May laktaw... Professional dapat" (pipes).
 
@@ -166,7 +172,7 @@ User on the 036 TURBINE OIL page (beta.66): "Ginaya lang ata ang sa snapshot", t
 
 ## feedback-hmi-style-2026-10-27
 
-_feedback · 2026-10-26_ — New HMI style history: flat ISA-101 grey and pastel block-diagram styles were rejected ("gawang bata", "kulay lang binago"); v3 dark shaded process mimic shown 2026-10-27 02:35 PHT
+_feedback_ — New HMI style history: flat ISA-101 grey and pastel block-diagram styles were rejected ("gawang bata", "kulay lang binago"); v3 dark shaded process mimic shown 2026-10-27 02:35 PHT
 
 User rejected the Air & Flue Gas sample twice. The first style used pastel chips and thick colored ducts. The second was a flat ISA-101 grey recolor of the same layout ("Gawang bata, kulay lng binago. Same style. Same design. Eww. Do better.").
 
@@ -201,7 +207,7 @@ User complaint "pipes parang pinagpatong na rectangle": fixed with ONE pipe rend
 
 ## feedback-live-test-sop
 
-_feedback · 2026-10-30_ — TEST SOP for live tests (2026-10-30): question is not G, start Step 1, one step per G, user witnesses only, screenshots, stop at first fault
+_feedback_ — TEST SOP for live tests (2026-10-30): question is not G, start Step 1, one step per G, user witnesses only, screenshots, stop at first fault
 
 User 2026-10-30 ~9:15 AM PHT, angry: "HINDI KAYO NATUTUTO?" (a thread treated "pwede na ba magtest?" as a go).
 
@@ -227,9 +233,22 @@ User (turla-ece): "KUNG ANO ANG TINETEST NATIN DAPAT NAKA MERGE NA ETO AGAD!!! S
 
 **Update 2026-10-28 10:10 PM PHT (user):** branch cleanup allowed; "Wag palampasin ng 3 floating branch ang repo" = never more than 3 branches besides main; always push/merge cleanly. Plant view: only 2 HMI pages (new HMI Air & Flue Gas + the PID/MAN controllers page); old HMI pages deleted.
 
+**SUPERSEDED 2026-10-30 (merge part):** merge to main only on GO BETA; see [[feedback-merge-rule-go-beta]].
+
+## feedback-merge-rule-go-beta
+
+_feedback_ — User 2026-10-30 8:00 PM PHT card answer: Beta enters main ONLY on GO BETA in the same message; Stable and workflows ONLY on GO STABLE
+
+User picked "Sa GO BETA mo lang" (answered "0") on the card "Kailan puwedeng ilagay sa main (site Beta) ang bagong Beta?" 2026-10-30 ~8:00 PM PHT.
+
+Rule: push to a working branch needs no GO. Merge to `main` (= Beta site) only on the user's GO BETA in that same message ("BETA NA" = GO BETA). Stable release and any manual workflow run (release.yml, clean-releases.yml) only on GO STABLE. GO BETA never authorizes Stable.
+
+**Why:** ends the conflict between CLAUDE.md ("GO STABLE for merge"), the 2026-10-28 "auto merge, no GO" order and practice since beta.56 (GO BETA).
+**How to apply:** written into CLAUDE.md, PROJECT_RULES 4, README, HANDOFF 5. Supersedes [[feedback-merge-auto]], [[feedback-auto-beta]], [[feedback-beta-automatic]] on the merge part.
+
 ## feedback-never-idle-after-push
 
-_feedback · 2026-10-22_ — User (turla-ece) cursed ("inamo") 2026-10-22 18:25 PHT after Claude went idle ~1h40m after pushing a Beta although the next approved phase (P4) was pending
+_feedback_ — User (turla-ece) cursed ("inamo") 2026-10-22 18:25 PHT after Claude went idle ~1h40m after pushing a Beta although the next approved phase (P4) was pending
 
 After a push/report, if the next phase or task is already approved, Claude must keep working in the same turn (start the next phase immediately), not end the turn and wait. Ending a turn with no background work and no scheduled wake = the thread stalls until the user asks "update?".
 
@@ -239,7 +258,7 @@ After a push/report, if the next phase or task is already approved, Claude must 
 
 ## feedback-no-idle-waiting
 
-_feedback · 2026-10-18_ — User (turla-ece, 2026-10-18 13:00 PHT) was upset that a 5-hour session ended with idle waiting on a background test run; never block the next task on a long non-blocking test, work in parallel
+_feedback_ — User (turla-ece, 2026-10-18 13:00 PHT) was upset that a 5-hour session ended with idle waiting on a background test run; never block the next task on a long non-blocking test, work in parallel
 
 While a long headless run (regression, generic tester ~2 h, full chain) runs in the background, Claude does the next task (docs, guide, analysis, code that does not need the browser) instead of waiting for the result. A non-blocking extra regression (generic tester) never delays a push: push with the finished regression, report the extra run later. Only one headless Chromium run at a time in the cloud container (two runs share the browser profile and kill each other; killing one hung the other).
 
@@ -258,7 +277,7 @@ User: "ANG GUSTO KO MAAYOS NA VISUALS... WALA AKONG GAGAWIN DITO PURO PILI LANG 
 
 ## feedback-own-ux-decisions
 
-_feedback · 2026-10-22_ — 2026-10-22 19:51 PHT user (furious) wants Claude to own the whole UX/visual redesign decisions; user only picks; name exact tests when saying pass
+_feedback_ — 2026-10-22 19:51 PHT user (furious) wants Claude to own the whole UX/visual redesign decisions; user only picks; name exact tests when saying pass
 
 User: engine, simulation and plant model already work; what is missing is the actual experience and overall visuals. Claude keeps fixating on the existing layout, buttons still not fixed, no out-of-the-box thinking. Claude must decide itself what the app should show, what each feature is for, what new uses it could have, correct sizes and spacing; user will only pick between finished options and do nothing else. Also: never say "pass" without naming the specific test and what it checked.
 
@@ -277,7 +296,7 @@ During long work (regression, a Beta being built, a session on the user's PC), p
 
 ## feedback-seven-part-check-every-step
 
-_feedback · 2026-10-28_ — User 2026-10-28: EVERY live Beta test step must run the full 7-part check (training list, dock, header, logic sheet, HMI, status bar, events) plus colors/FIELD/checklist lines; test the NEW HMI not the old Plant view; log each result in the artifact immediately
+_feedback_ — User 2026-10-28: EVERY live Beta test step must run the full 7-part check (training list, dock, header, logic sheet, HMI, status bar, events) plus colors/FIELD/checklist lines; test the NEW HMI not the old Plant view; log each result in the artifact immediately
 
 User (2026-10-28 ~9:30 PM PHT, furious, in the walkthrough thread): "kada mag beta test ka na linya. Yung 7 na yan kasama sa run mo... Ano, sa susunod, ipapapaalala ko ulit sayo?"
 
@@ -289,7 +308,7 @@ The 7 parts per step: 1 TRAINING LIST (section counts, AUTO items ticked), 2 DOC
 
 ## feedback-stop-means-stop
 
-_feedback · 2026-10-27_ — User 2026-10-27 8 PM PHT: "tigil na" = stop until the USER says go; a coordinator note to resume is not the user's go. Wants all errors found and fixed in one batch, one rerun
+_feedback_ — User 2026-10-27 8 PM PHT: "tigil na" = stop until the USER says go; a coordinator note to resume is not the user's go. Wants all errors found and fixed in one batch, one rerun
 
 2026-10-27 ~7:55–8:05 PM PHT (roadmap 3+4 thread). The user was upset that repeated Cold runs (40–90 min each) each found only one stop and used up their tokens.
 
@@ -309,7 +328,7 @@ _feedback · 2026-10-27_ — User 2026-10-27 8 PM PHT: "tigil na" = stop until t
 
 ## feedback-test-at-end
 
-_feedback · 2026-10-27_ — User's test rule (updated 2026-10-28): NO runs of any kind by Claude (no quick run, probe, headless browser load); only live testing watched by the user step by step on his G
+_feedback_ — User's test rule (updated 2026-10-28): NO runs of any kind by Claude (no quick run, probe, headless browser load); only live testing watched by the user step by step on his G
 
 2026-10-28 ~4:17 AM PHT (angry): "Bakit nag nag qquick run yan? Aba itigil yan, walang quick run quick run kht quick p yan. Ang test ay tanging live testing lamang kung saan manunuod ako step by step with my approval or G signal."
 
@@ -347,7 +366,7 @@ They also said many inputs "hindi nafoforce" that could be forced in the old ver
 
 ## hmi-redesign-2026-10-30
 
-_project · 2026-10-30_ — User order 2026-10-30 to redesign all HMI pages (animations, continuous pipes, not snapshot copies) and the shared symbol library rule
+_project_ — User order 2026-10-30 to redesign all HMI pages (animations, continuous pipes, not snapshot copies) and the shared symbol library rule
 
 User (turla-ece, 2026-10-30 ~12:58 PM PHT): HMI pages look like drafts. Do not copy snapshot layout; show what really happens in each equipment with animations (flow, rotation, level, heat), not just blocks and colors. Pipes must be continuous and professional, with no visible splices or gaps.
 
@@ -360,7 +379,7 @@ User (turla-ece, 2026-10-30 ~12:58 PM PHT): HMI pages look like drafts. Do not c
 
 ## hmi-symbol-library
 
-_project · 2026-10-30_ — Shared HMI symbol library src/ui/plant/hmi-sym.js is built by the Make-up Water thread; other HMI pages must reuse it, not make their own
+_project_ — Shared HMI symbol library src/ui/plant/hmi-sym.js is built by the Make-up Water thread; other HMI pages must reuse it, not make their own
 
 Since 2026-10-30, the Make-up Water thread owns the shared HMI symbol library at `src/ui/plant/hmi-sym.js` (pumps, compressors, valves, tanks, animated pipes, and so on).
 
@@ -374,7 +393,7 @@ ONE HMI THREAD ONLY (user 2026-10-30): the Make-up Water thread builds all HMI p
 
 ## operator-ui-mockup
 
-_project · 2026-10-30_ — Approved operator UI mockup (2026-10-30): link, key decisions, and which thread builds it
+_project_ — Approved operator UI mockup (2026-10-30): link, key decisions, and which thread builds it
 
 Operator UI mockup v3 (HMI thread, 2026-10-30): https://claude.ai/artifact/9bXtfVRUnDvvMAY8K2LKuv. Source: /mnt/project-files/ui-dcs-flow-2026-10-30/dcs-flow-mockup.html.
 
@@ -397,7 +416,7 @@ Decisions:
 
 ## project-app-audit-2026-10-22
 
-_project · 2026-10-22_ — Full UI/functional audit of 3.1.0-beta.7 (2026-10-22): key bugs (Plant view click dead, Plant view not live if opened first), two diverged Beta lines, report links
+_project_ — Full UI/functional audit of 3.1.0-beta.7 (2026-10-22): key bugs (Plant view click dead, Plant view not live if opened first), two diverged Beta lines, report links
 
 2026-10-22 ~1 PM PHT, thread "Full app quality audit" (audit only, no code change). Audited 3.1.0-beta.7 (PR #37, branch claude/design-system-extraction-4dogzg). Report: https://claude.ai/artifact/3RbWZ8V96QbzL1y6ZMAH18 ; copy + playwright scripts in /mnt/project-files/app-audit-2026-10-22/ (tools/f9.mjs = real-click test, f3.mjs = linked count).
 
@@ -425,7 +444,7 @@ Status 2026-10-22 7:15 PM PHT: user pasted a much larger 14-section prompt ("COM
 
 ## project-beta25-training-human-path
 
-_project · 2026-10-24_ — 3.2.0-beta.25 (2026-10-24, PR #40 stacked on #39, branch claude/project-thread-2qon2r): Training drum filling fixed after user found scripts passed but real clicks failed
+_project_ — 3.2.0-beta.25 (2026-10-24, PR #40 stacked on #39, branch claude/project-thread-2qon2r): Training drum filling fixed after user found scripts passed but real clicks failed
 
 User 2026-10-24 ~10 PM PHT: "PASADO SAU, SAKEN HINDI?" — guide script passed, manual Training failed (drum filling impossible, wrong sheets, LT values differ).
 
@@ -473,7 +492,7 @@ Related: [[project-plant-chip-2026-10-24]]
 
 ## project-dock-redesign-2026-10-30
 
-_project · 2026-10-29_ — Dock redesign (mock-up v2) implemented in beta.61, PR #67 (supersedes #66); MERGED to main 2026-10-30 (24e9c99); live test pending
+_project_ — Dock redesign (mock-up v2) implemented in beta.61, PR #67 (supersedes #66); MERGED to main 2026-10-30 (24e9c99); live test pending
 
 2026-10-30 ~7:45 AM PHT: user said the Training dock is ugly, has a bad font, is hard to read and is confusing. User asked: how does an operator line up, start and check one equipment? Mockup artifact: https://claude.ai/artifact/SB6amXK2fNEmwiTu1Nurh3 . Source and screenshots: /mnt/project-files/dock-redesign-2026-10-30/ (swp-dock-mockup.html, mock-*.png, asis/).
 
@@ -507,7 +526,7 @@ Waiting for the user's OK to code.
 
 ## project-docs-lean-2026-10-26
 
-_project · 2026-10-26_ — 2026-10-26 docs restructure: docs/SPEC.md = user spec + gaps + plan (replaced ROADMAP/CHECKLIST); USER_CHECK.md; lean test policy in PROJECT_RULES 5
+_project_ — 2026-10-26 docs restructure: docs/SPEC.md = user spec + gaps + plan (replaced ROADMAP/CHECKLIST); USER_CHECK.md; lean test policy in PROJECT_RULES 5
 
 On 2026-10-26 (~7:50 PM PHT), PR #43 (branch claude/project-thread-6t8nxq) was opened, stacked on beta.38 (#42). It is docs only.
 
@@ -529,7 +548,7 @@ Open decision for the user: hide the Per-loop, Warm and Hot options (they are no
 
 ## project-handoff-single-file
 
-_project · 2026-10-29_ — HANDOFF.md in the repo is the one self-updating handoff file (state, threads, user orders, style); every thread updates it at task end
+_project_ — HANDOFF.md in the repo is the one self-updating handoff file (state, threads, user orders, style); every thread updates it at task end
 
 User 2026-10-30 ~7:40 AM PHT: "isang file nlng na kusang inaupdate nio pra kht sino gumawa alam agad, memory, threads, style. Ibbgay lng ang repo."
 
@@ -542,7 +561,7 @@ Open: CLAUDE.md / PROJECT_RULES 4 say merge to main needs GO STABLE, but practic
 
 ## project-hmi-seawater-030
 
-_project · 2026-10-29_ — 030 Seawater HMI page (STEEL) live in app since 3.2.0-beta.56 (src/ui/plant/hmi-sw.js); facts, findings, lessons
+_project_ — 030 Seawater HMI page (STEEL) live in app since 3.2.0-beta.56 (src/ui/plant/hmi-sw.js); facts, findings, lessons
 
 HMI thread "Propose Seawater System HMI page" (started 2026-10-29 by user: separate HMI thread does proposal AND execution).
 
@@ -560,7 +579,7 @@ HMI thread "Propose Seawater System HMI page" (started 2026-10-29 by user: separ
 
 ## project-hmi-style-standard
 
-_project · 2026-10-30_ — 2026-10-30 one uniform HMI style for all pages = library src/ui/plant/hmi-sym.js (HSYM) + docs/hmi/HMI_STYLE.md; first page MAKE-UP WATER beta.70 (PR #74)
+_project_ — 2026-10-30 one uniform HMI style for all pages = library src/ui/plant/hmi-sym.js (HSYM) + docs/hmi/HMI_STYLE.md; first page MAKE-UP WATER beta.70 (PR #74)
 
 User 2026-10-30 ~1:18 PM PHT: "Dapat uniform ang style ng mga HMI natin." Approved MU mockup direction (https://claude.ai/artifact/D7QHoST3PTVzav5Pw1T1q7, "OK, simulan sa Make-up Water").
 
@@ -573,7 +592,7 @@ PR #74 = 3.2.0-beta.70 waits GO BETA (beta.69 = CCW on hold).
 
 ## project-live-training-2026-10-23
 
-_project · 2026-10-23_ — Live Training shipped 3.2.0-beta.10 and F(X) operational effect shipped 3.2.0-beta.11 on PR #39; RUN-without-Start = Cold in beta.12
+_project_ — Live Training shipped 3.2.0-beta.10 and F(X) operational effect shipped 3.2.0-beta.11 on PR #39; RUN-without-Start = Cold in beta.12
 
 The user picked the "full run" option for Live Training (2026-10-23). It shipped as 3.2.0-beta.10, commit 322bcf2 on PR #39 (not merged), at about 5 PM PHT.
 
@@ -599,7 +618,7 @@ Top-bar question resolved differently (user 8:10 PM PHT "patay pa naman ang boil
 
 ## project-local-remote-control-plan
 
-_project · 2026-10-18_ — User (turla-ece) PC (Ronanski-PC) Remote Control setup and lessons; M4 step 5 was finished in the cloud as beta.20 on 2026-10-18 (laptop beta.18 superseded, do not merge it)
+_project_ — User (turla-ece) PC (Ronanski-PC) Remote Control setup and lessons; M4 step 5 was finished in the cloud as beta.20 on 2026-10-18 (laptop beta.18 superseded, do not merge it)
 
 Decision (user, 2026-10-17 ~23:05 PHT): after beta.17, move roadmap work to the user's PC (Remote Control). Outcome: the laptop session made beta.18 (M4 step 5) but never pushed it and went offline; the cloud thread redid step 5 as **2.2.0-beta.20 (2026-10-18, pushed to ccr-3def3a81-kcpwgn / PR #31)**. The laptop beta.18 is superseded: do not merge it; if the laptop has local commits, discard or rebase them on the branch head.
 
@@ -611,7 +630,7 @@ Facts: PC = Ronanski-PC, Dell Precision 3570, i7-1255U (10 cores), 16 GB, Window
 
 ## project-plant-chip-2026-10-24
 
-_project · 2026-10-24_ — User decisions 2026-10-24 AM PHT: plant model/MW picker = chip beside VIEW|RUN (option B); UAT and CHECK removed from the app
+_project_ — User decisions 2026-10-24 AM PHT: plant model/MW picker = chip beside VIEW|RUN (option B); UAT and CHECK removed from the app
 
 - User 2026-10-24 ~7:45 AM PHT picked **B**: a "PLANT" chip beside VIEW | RUN on every page (OFF / Per-loop any MW 45~150 / Unit Cold-Warm-Hot-150 MW + target MW). Shipped in 3.2.0-beta.20 (`app.js` buildPlantChip). Start ▾ in Plant view renamed "TCS / Field ▾" (TCS + field equipment only). User words: "wag mo jan ilagay. dpt common tools yn s simulate".
 - User 2026-10-24: "remove uat test completely sa app mismo saka yung check sa tools. di ba meron naman training. basta mahalaga ay meron ng plant model." UAT + CHECK buttons/panels removed from the app; runners kept only for automated tests (navigator.webdriver) because check_panel's 17 scenarios are the proof of the plant model.
@@ -621,7 +640,7 @@ _project · 2026-10-24_ — User decisions 2026-10-24 AM PHT: plant model/MW pic
 
 ## project-plant-model-truth-2026-10-23
 
-_project · 2026-10-23_ — Plant model redesign agreed 2026-10-23 9:30 PM PHT: loop map first, per-loop model with selectable MW load + source rule, unit model cold→150 MW; MSP 75 came from per-loop model
+_project_ — Plant model redesign agreed 2026-10-23 9:30 PM PHT: loop map first, per-loop model with selectable MW load + source rule, unit model cold→150 MW; MSP 75 came from per-loop model
 
 **Cause of MSP 75 before Start:**
 - `plant.js` per-loop model: PV = mid range + MV effect. That gave MSP 75, FP 600 mmH2O, level −422 mm and O2 6.25 %.
@@ -676,7 +695,7 @@ User 2026-10-22 19:56 PHT: "if only the engine, diagrams, plant model and simula
 
 ## project-skill-dcs-app-quality
 
-_project · 2026-10-22_ — Generic one-prompt app skill "one-prompt-app" (replaced "dcs-app-quality") and its Playwright click-every-control checker; where the files are
+_project_ — Generic one-prompt app skill "one-prompt-app" (replaced "dcs-app-quality") and its Playwright click-every-control checker; where the files are
 
 User 2026-10-22/23 PHT: wants ONE skill for ANY app, new or existing, not tied to the DCS project ("di naman pang-new and existing apps na gagawin ko" about the dcs-named version). Final skill name: **one-prompt-app**, proposed 2026-10-23 ~7:30 AM PHT. It covers new apps (Claude picks the stack and scaffolds) and existing apps (rules, inventory, baseline tests). DCS/ISA-101 is only a short "if plant app" section. The user only says Yes/Adjust and gives GO words. The old "dcs-app-quality" cards are obsolete; the user was told to delete it if saved.
 
@@ -690,9 +709,20 @@ A test run on icms 3.2.0-beta.6 found a Plant view JS error on phone/tablet (svg
 2026-10-23 12:30 PM PHT: user was torn between B and C and asked "bakit light lang / dark lang, hindi pwedeng baguhin ang kulay?". Feedback: a theme is never locked to a layout; always offer switchable themes (Light, Dark, Control room grey ISA-101, High contrast) via tokens. Hybrid "B + C Guided Workbench" page: https://claude.ai/artifact/K6ZGL1j9U8kYN5ZTJQPphc . New pick card posted (B+C recommended / B / C).
 2026-10-23 12:28 PM PHT: user picked "B + C · Guided Workbench" (card). Then 12:33 PM asked for an F(X) feature: Excel-like table (look of document-references/linear-curves-fx.xls, "tulad ng sa repo natin") editable to play the plant response, plus a plain explanation per LN (purpose, from, to, effect). Plan told to user: F(X) first as 3.2.0-beta.7 (~3:30 PM PHT), Guided Workbench as beta.8 (~8 PM PHT). Branch claude/project-thread-vhcfv9 (off PR #38 branch). Workbench theme CSS WIP is in `git stash` "workbench-themes-wip". Keep dark as default theme (user said "AYAW KO NG PUTI" 2026-10-22).
 
+## project-stable-plan-2026-10-30
+
+_project_ — 2026-10-30 user "Go stable pre" then "Updated lahat" = handover-ready repo, NOT a release; Stable 3.2.0 steps live in HANDOFF.md section 9
+
+2026-10-30 ~7:35 PM PHT the user wrote "Go stable pre :)" then, asked for scope, "Di ko alam pre. Basta gsto ko lng. Updated lahat. Yung app, docs, handover, progress, memory, instructions, skills" so the next account needs to ask him almost nothing.
+
+Result (thread I-UPDATE ANG REPO PARA SA PAGPAPASA (HANDOVER)): no release, no workflow. Docs only: full current project instructions copied into docs/handoff/NEW_ACCOUNT_SETUP.md, account skills copied to docs/handoff/skills/ (organized-project-coordinator, ui-ux-design-master, one-prompt-app), SPEC plan refreshed, HANDOFF section 9 = Stable 3.2.0 steps + risks (release.yml needs docs/versions/v3.2.0/Release-Report-v3.2.0.pdf and go input "GO v3.2.0"; dry_run true first).
+
+**Why:** user's goal was a complete handover, not shipping; live test only reached H8.
+**How to apply:** on a future GO STABLE, follow HANDOFF.md section 9 and first ask (one card) which Betas to include. Related: [[project-handoff-single-file]].
+
 ## project-status-beta6
 
-_project · 2026-10-20_ — Status 2026-10-20 PHT: 2.5.0-beta.9 pushed (921fc7a, PR #34): DITL VIEW|SIMULATE, blocks_io 0 wrong plant off+on; waiting on user device test + GO STABLE
+_project_ — Status 2026-10-20 PHT: 2.5.0-beta.9 pushed (921fc7a, PR #34): DITL VIEW|SIMULATE, blocks_io 0 wrong plant off+on; waiting on user device test + GO STABLE
 
 2026-10-20 10:00 PHT: 2.5.0-beta.8 (fb8c9f5, PR #34, branch claude/project-thread-yezgyg, CI green): DITL FROM / TO references are page links (src/ui/shell/ditl.js DUI.link / goItem, chooser, ◀ Back; ABC dsGoRef opens the DITL row). tests: ditl_pagelink.js, pid_auto.js (plant off from 150 MW: 39 AUTO PASS, 29 MAN).
 beta.9 (user 2026-10-20 09:45 PHT "go lang", "save progress every merge" = push each step, update ROADMAP): DITL bar = [VIEW | SIMULATE] + Reset (no ▶▶ / step size / speed; layout.js DITL part). tests/regress/blocks_io.js = every ABC calc/logic block black-box vs legend, plant off+on (beta.8: 1666 blocks, 12006 checks, 0 wrong; S.kn constants are not forced). tests/regress/ditl_sim.js = world off/on x plant off/on all pass.
@@ -701,7 +731,7 @@ Earlier: beta.7 RH/SH damper fix = clear TPS/TPV run state at start of anPlantLo
 
 ## project-training-dock-2026-10-24
 
-_project · 2026-10-24_ — 3.2.0-beta.23 Training dock + start-up guide through real DITL interlocks; open CCS-handover stall
+_project_ — 3.2.0-beta.23 Training dock + start-up guide through real DITL interlocks; open CCS-handover stall
 
 2026-10-24 ~7:15 PM PHT: 3.2.0-beta.23 pushed (40c986b, PR #39, not merged). User picked the Training dock mockup and then "Ituloy hanggang 150 MW sa DITL" (card).
 
@@ -734,7 +764,7 @@ Not tested: phone/bottom layout, full Cold→150 MW.
 
 ## project-ui-audit-v240
 
-_project · 2026-10-19_ — UI/UX audit of v2.4.0 (2026-10-19 14:10 PHT): findings, standards used, where the report and reusable tour scripts are
+_project_ — UI/UX audit of v2.4.0 (2026-10-19 14:10 PHT): findings, standards used, where the report and reusable tour scripts are
 
 2026-10-19 the user asked for a full UI/UX audit vs standards. Report: /mnt/project-files/ui-audit-2026-10-19/UI_UX_AUDIT_v2.4.0.md (54 screenshots, annotated A-D). Standards used: WCAG 2.2 (contrast, 24 px target), 44 px touch, ISA-101, plant's real MICREX HMI (03.png). Pass: contrast, fonts, speed, focus. Fail: PLANT VIEW text ~9 px PC / 4 px phone (real DCS ~16 px), empty bands, text overflow on UNIT, phone CHECK clipped, colour/state wording inconsistent, snapshot mixed with live values.
 Recommendation #1-4 = PLANT VIEW fixes; card offered (recommended "PLANT VIEW 1-4"). UI-only; any Beta must be a new branch off main, not PR #32's branch.
@@ -745,7 +775,7 @@ Recommendation #1-4 = PLANT VIEW fixes; card offered (recommended "PLANT VIEW 1-
 
 ## project-ui-restructure-2026-10-19
 
-_project · 2026-10-19_ — User approved a full UI clean-up (2026-10-19) and said project rules may be broken for UI as long as engine, simulation and plant model keep working
+_project_ — User approved a full UI clean-up (2026-10-19) and said project rules may be broken for UI as long as engine, simulation and plant model keep working
 
 2026-10-19 08:10 PHT the user said the app feels "magulo, walang direksyon, kalat" and asked for a full audit (thread "Status at breakdown ng app"). Audit found: about 234 buttons on the ABC screen, 4 search boxes, settings menu with 17 items, toolbar not following the tab, floating UAT/CHECK panels, old Plant window duplicating the PLANT tab, plant model ON/OFF button hidden (plant model always ON). Report: /mnt/project-files/app-status/FULL_AUDIT_2026-10-19.md.
 
@@ -762,7 +792,7 @@ Status 2026-10-19 ~09:15 PHT: user chose "Scratch" (new shell). 2.4.0-beta.1 pus
 
 ## project-ui-themes-2026-10-19
 
-_project · 2026-10-19_ — UI themes / style picks and DITL-like-ABC work on PR #34 (2.4.1-beta.4..6), and the user's view that colour-only themes are not a real overhaul
+_project_ — UI themes / style picks and DITL-like-ABC work on PR #34 (2.4.1-beta.4..6), and the user's view that colour-only themes are not a real overhaul
 
 2026-10-19 (PR #34, branch claude/project-thread-yezgyg): beta.4 DITL without editor + Run/Pause bar + right panel (src/ui/shell/ditl.js); beta.5 ⚙ Theme Standard/A/B/C (html[data-shell], --c-* vars in src/ui/shell/app.css), TOOLS list with descriptions, info card CSS restored (lost since 2.4.0-beta.1); beta.6 ◀ Panel side tab on DITL (#dptab) + panel follows ABC↔DITL at once (tests/regress/sidetab.js).
 
@@ -775,7 +805,7 @@ Layout overhaul proposal (before/after, prototype only, not in repo): https://cl
 
 ## reference-golden-startup-doc
 
-_reference · 2026-10-25_ — Golden reference doc (2026-10-25) for plant start-up and operation, the yardstick for Training order and plant model
+_reference_ — Golden reference doc (2026-10-25) for plant start-up and operation, the yardstick for Training order and plant model
 
 User asked 2026-10-25 ~10 PM PHT for a simple explanation of start-up and operation, to serve as the "golden reference and principle".
 Claude Doc: https://claude.ai/artifact/D2EXiHjLsiJf12RBPniT39
@@ -792,7 +822,7 @@ User asked "diba dapat may coal na bago ang sync?". Answer: no. FHI Fig. 2 puts 
 
 ## user-eta-philippine-time
 
-_feedback · 2026-10-17_ — User (turla-ece) is in the Philippines (GMT+8): every estimated finish time (ETA) in status lines and replies is written in Philippine time, not UTC; the status line cannot show a countdown, so give an ETA clock time
+_feedback_ — User (turla-ece) is in the Philippines (GMT+8): every estimated finish time (ETA) in status lines and replies is written in Philippine time, not UTC; the status line cannot show a countdown, so give an ETA clock time
 
 Write every ETA ("tapos ~14:15 PHT") in GMT+8 Philippine time, in the status checklist header and in replies, whenever a long job (regression, generic tester, build) is running. The status line has no timer, so a clock time is the substitute.
 
