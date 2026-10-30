@@ -1,0 +1,68 @@
+/* 3.2.0-beta.74 the operator pop-out faceplate (fp-pop.js): beside the clicked equipment, over the HMI graphic. One look for every
+   faceplate: dark well, values >= 14 px, colour only for state and abnormal (RUN red, STOP green, amber = interlock / out of SOP,
+   blue = the step target and the EXECUTE). */
+#fpop{position:absolute;z-index:8;width:330px;max-height:calc(100% - 12px);overflow:auto;background:#121920;border:1px solid #556677;border-radius:6px;box-shadow:0 10px 30px #000b;color:#e3eaf0;font:14px/1.4 var(--uf,system-ui)}
+#fpop::before{content:'';position:absolute;top:var(--ay,30px);width:12px;height:12px;background:#1b2631;border:1px solid #556677;transform:translateY(-50%) rotate(45deg)}
+#fpop[data-side="l"]::before{left:-7px;border-right:0;border-top:0}
+#fpop[data-side="r"]::before{right:-7px;border-left:0;border-bottom:0}
+#fpop[data-side="n"]::before{display:none}
+#fpop .fpo-h{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:7px 8px 7px 10px;background:#1b2631;border-bottom:1px solid #2b3742;border-radius:6px 6px 0 0;cursor:move;touch-action:none}
+#fpop .fpo-tt{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px}
+#fpop .fpo-tt b{font:700 16px var(--uf,system-ui)}
+#fpop .fpo-tt small{font:13px var(--mf,monospace);color:#93a2b2}
+#fpop .fpo-hv{font:600 15px var(--mf,monospace);color:#eaf6ff;white-space:nowrap}
+#fpop .fpo-lamp{flex:none;width:14px;height:14px;border-radius:50%;background:#3a434e;border:1px solid #000}
+#fpop .fpo-lamp.run{background:#e5484d;box-shadow:0 0 8px #e5484d}
+#fpop .fpo-lamp.stop{background:#2fa56a;box-shadow:0 0 8px #2fa56a}
+#fpop .fpo-lamp.trip{background:#e5484d;animation:fpobl 1s steps(2) infinite}
+#fpop .fpo-x{flex:none;width:30px;height:30px;padding:0;border-radius:4px;background:transparent;border:1px solid #3a4b5a;color:#c3ced8;font-size:15px;cursor:pointer}
+#fpop .fpo-chip{font:700 12px var(--uf,system-ui);letter-spacing:.06em;border-radius:3px;padding:1px 7px;border:1px solid #475563;color:#c3ced8;background:#1c252e}
+#fpop .fpo-chip:empty{display:none}
+#fpop .fpo-chip.ilk{border-color:#8a6420;color:#ffd08a;background:#2a2112}
+#fpop .fpo-chip.trip{border-color:#e5484d;color:#ffd0d2;background:#3a1416}
+#fpop .fpo-b{padding:9px 10px 10px;display:grid;gap:8px}
+#fpop .fpo-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#fpop .fpo-r[hidden]{display:none}
+#fpop .fpo-l{width:78px;flex:none;font:600 12px var(--uf,system-ui);letter-spacing:.08em;color:#93a2b2}
+#fpop .fpo-lp{display:inline-flex;align-items:center;gap:5px;font:700 13px var(--uf,system-ui);color:#93a2b2}
+#fpop .fpo-lp i{width:12px;height:12px;border-radius:50%;background:#2a333c;border:1px solid #000}
+#fpop .fpo-lp.run{color:#ffb4b6}#fpop .fpo-lp.run i{background:#e5484d;box-shadow:0 0 7px #e5484d}
+#fpop .fpo-lp.stop{color:#9fe0bd}#fpop .fpo-lp.stop i{background:#2fa56a;box-shadow:0 0 7px #2fa56a}
+#fpop .fpo-lp.trip{color:#ffb4b6}#fpop .fpo-lp.trip i{background:#e5484d;animation:fpobl 1s steps(2) infinite}
+@keyframes fpobl{50%{opacity:.25}}
+#fpop button{font:600 14px var(--uf,system-ui);color:#e3eaf0;background:#22303c;border:1px solid #3a4b5a;border-radius:4px;padding:6px 12px;min-height:32px;cursor:pointer}
+#fpop button:hover:not(:disabled){background:#2b3c4b}
+#fpop button:focus-visible{outline:2px solid #5fb3e6;outline-offset:2px}
+#fpop button:disabled{opacity:.42;cursor:not-allowed}
+#fpop .fpo-seg{display:inline-flex;border:1px solid #3a4b5a;border-radius:4px;overflow:hidden}
+#fpop .fpo-seg button{border:0;border-radius:0;background:#1a232c}
+#fpop .fpo-seg button+button{border-left:1px solid #3a4b5a}
+#fpop .fpo-seg button.on{background:#3d6f93;color:#fff}
+#fpop .fpo-fld{font:600 12px var(--uf,system-ui);letter-spacing:.08em;color:#c3ced8;border:1px solid #475563;border-radius:3px;padding:1px 6px}
+#fpop .fpo-cmd{min-width:84px}
+#fpop .fpo-cmd.lit-run{background:#5a1c1f;border-color:#e5484d;color:#ffd0d2;opacity:1}
+#fpop .fpo-cmd.lit-stop{background:#173826;border-color:#2fa56a;color:#bdf0d3;opacity:1}
+#fpop .fpo-why{font-size:13px;color:#c3ced8;background:#1a2129;border-left:3px solid #475563;padding:5px 8px;border-radius:2px}
+#fpop .fpo-why[hidden]{display:none}
+#fpop .fpo-ex{display:flex;gap:8px;align-items:center;background:#16263a;border:1px solid #3e7fb0;border-radius:4px;padding:8px}
+#fpop .fpo-ex[hidden]{display:none}
+#fpop .fpo-ex span{flex:1;font-size:14px}
+#fpop .fpo-go{background:#2c6a9a!important;border-color:#5aa0d4!important;color:#fff!important}
+#fpop .fpo-vb{display:inline-block;min-width:84px;text-align:right;background:#05090d;border:1px solid #2f3d4a;border-radius:2px;padding:2px 8px;font:600 16px var(--mf,monospace)}
+#fpop .fpo-vb.hi{border-color:#f2a531;color:#ffd08a}
+#fpop .fpo-dim{font-size:13px;color:#93a2b2}
+#fpop .fpo-tr{display:block;width:100%;height:46px;background:#05090d;border:1px solid #2f3d4a;border-radius:2px}
+#fpop .fpo-sh{font:600 12px var(--uf,system-ui);letter-spacing:.08em;color:#93a2b2;margin-top:2px}
+#fpop .fpo-sh[hidden],#fpop .fpo-il[hidden]{display:none}
+#fpop .fpo-il{margin:0;padding:0;list-style:none;display:grid;gap:3px;font-size:13px}
+#fpop .fpo-il li{display:flex;gap:6px;align-items:baseline}
+#fpop .fpo-il li i{flex:none;width:14px;font:700 12px var(--mf,monospace);font-style:normal;text-align:center}
+#fpop .fpo-il li span{flex:1;min-width:0}
+#fpop .fpo-il li em{flex:none;font:12px var(--mf,monospace);font-style:normal;color:#7f8b97}
+#fpop .fpo-il li.ok{color:#c3ced8}
+#fpop .fpo-il li.bad{color:#ffd08a}
+#fpop .fpo-ln{display:flex;gap:4px 12px;flex-wrap:wrap;border-top:1px solid #2b3742;padding-top:6px}
+#fpop .fpo-a{background:none!important;border:0!important;padding:2px 0!important;min-height:0!important;color:#7fb3e0!important;font-weight:500!important;text-decoration:underline;text-underline-offset:2px}
+@media (prefers-reduced-motion:reduce){#fpop .fpo-lamp.trip,#fpop .fpo-lp.trip i{animation:none}}
+/* the controller faceplate of plant.js (#plfp) beside its equipment too (same frame) */
+#plantws #plmid > #plfp.fpo-near{position:absolute;right:auto;bottom:auto;width:360px;max-height:calc(100% - 12px);overflow:auto;grid-row:auto;grid-column:auto;z-index:8;border:1px solid #556677;border-radius:6px;box-shadow:0 10px 30px #000b}
