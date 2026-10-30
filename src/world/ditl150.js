@@ -39,6 +39,10 @@
     [/CHAIN CONVEYOR/, 1, 0, 'L-1090 CHAIN CONVEYOR running'],
     [/AIR PREHEATER|\bAPH\b/, 1, 0, 'APH MAIN DRIVE MOTOR 4.7 A'],
     [/LIMESTONE FEEDER|ROTO FEEDER/, 1, 0, 'L-1311 ROTO FEEDER running'],
+    /* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI): air in service at 150 MW (39.PNG instrument air buffer tanks 7.0 kg/cm2); the compressor
+       and dryer pages (PICT 24 / 25) are not in the snapshots: compressor A and dryer A in service is ASSUMED (B and C standby) */
+    [/(INSTRUMENT|PLANT) AIR COMPRESSOR\s*-?\s*A\b/, 1, 0, '39.PNG air 7.0 kg/cm2: compressor A running (ASSUMED A)'],
+    [/(INSTRUMENT|PLANT) AIR DRYER\s*-?\s*A\b/, 1, 0, '39.PNG air 7.0 kg/cm2: dryer A running (ASSUMED A)'],
     [/IGNITER/, 0, 0, '6.PNG: oil burners out of service (FIC-OM 0 %), no igniter'],
     [/\bBURNER\s*[A-D]\b|ALL BURNER|ANY BURNER/, 0, 0, '6.PNG: oil burners out of service (oil flow 0, FIC-OM M 0 %)']
   ];
