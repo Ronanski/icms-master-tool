@@ -30034,7 +30034,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.75';
-      c3.textContent += ' · build 95396b0'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 3f3899a'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -57694,9 +57694,9 @@ window.LS_GUIDE = (function () {
     ];
     const BPW = [
       ['SWBP running', () => bpN() + ' / 3', '', x => x, 'kailangan 2 (ang ikatlo: standby REMOTE + AUTO)'],
-      ...['A', 'B', 'C'].map((l, j) => ['SWBP-' + l + ' current (IIP1503' + l + ')', () => uv('swIb' + j), 'A', f1w, 'SOP 90 · alarm 120']),
+      ...['A', 'B', 'C'].map((l, j) => ['SWBP-' + l + ' current (IIP1503' + l + ')', () => uv('swIb' + j), 'A', f1w, 'SOP 90 · alarm 120 · trip 126']),
       ['SWBP suction', () => uv('swBs0'), 'kg/cm²', f1w, 'SOP 1 ~ 1.1'],
-      ['SWBP discharge, running (PG-SW1503)', () => Math.max(0, ...BPD.map((nm, j) => (dRun(nm) === 1 ? uv('swBd' + j) : 0))), 'kg/cm²', f1w, 'SOP 2.2 ~ 2.4']
+      ['SWBP discharge, running (PG-SW1503)', () => Math.max(0, ...BPD.map((nm, j) => (dRun(nm) === 1 ? uv('swBd' + j) : 0))), 'kg/cm²', f1w, 'SOP 2.2 ~ 2.4 · alarm < 2.2']
     ];
     /* #12: the standby of a pump set (not running): FIELD I-REMOTE (local selector), then AUTO (CRT selection, row au); AUTO refused while LOCAL */
     const stbyB = (D, Lb, au, isRun) =>
@@ -60715,7 +60715,11 @@ window.LS_GUIDE = (function () {
       const lvl = /hotwell level/i.test(f.t) ? 'LCV-MU1110' : /deaerator level/i.test(f.t) ? 'LCV-CD1104' : null,
         gauge = /current|pressure|temperature/i.test(f.t),
         tfp = !lvl && gauge ? tagFp() : null,
-        nomod = !lvl && gauge && !tfp;
+        nomod = !lvl && gauge && !tfp,
+        /* live test #21 (H6): a field gauge that the step's own values already read from the plant model (SWBP suction / inlet,
+           discharge, current of each pump, with their SOP range) is not shown again as "— walang model" */
+        kw = /current/i.test(f.t) ? /current/i : /suction|inlet pressure/i.test(f.t) ? /suction/i : /discharge/i.test(f.t) ? /discharge/i : /pressure/i.test(f.t) ? /suction|discharge|pressure/i : null;
+      if (nomod && s.w && kw && stage.some(x => x[2] && kw.test(x[0]))) continue;
       const live = lvl
         ? () => call(() => LV().pvOf(LV().fp(lvl)), NaN)
         : tfp

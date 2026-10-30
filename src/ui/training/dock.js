@@ -2208,7 +2208,11 @@
       const lvl = /hotwell level/i.test(f.t) ? 'LCV-MU1110' : /deaerator level/i.test(f.t) ? 'LCV-CD1104' : null,
         gauge = /current|pressure|temperature/i.test(f.t),
         tfp = !lvl && gauge ? tagFp() : null,
-        nomod = !lvl && gauge && !tfp;
+        nomod = !lvl && gauge && !tfp,
+        /* live test #21 (H6): a field gauge that the step's own values already read from the plant model (SWBP suction / inlet,
+           discharge, current of each pump, with their SOP range) is not shown again as "— walang model" */
+        kw = /current/i.test(f.t) ? /current/i : /suction|inlet pressure/i.test(f.t) ? /suction/i : /discharge/i.test(f.t) ? /discharge/i : /pressure/i.test(f.t) ? /suction|discharge|pressure/i : null;
+      if (nomod && s.w && kw && stage.some(x => x[2] && kw.test(x[0]))) continue;
       const live = lvl
         ? () => call(() => LV().pvOf(LV().fp(lvl)), NaN)
         : tfp
