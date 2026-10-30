@@ -365,6 +365,9 @@ window.LS_GUIDE = (function () {
     const SWPW = [
       ['SWP running', () => swpN() + ' / 3', '', x => x, 'kailangan 2 (ang ikatlo: standby AUTO)'],
       ...SWPL.map((l, j) => [l + ' current (IIP1501' + 'ABC'[j] + ')', () => uv('swIa' + j), 'A', f1w, 'SOP 205 ~ 215']),
+      /* live test beta.74 #35 #36: the SWP discharge (local gauge) and the forebay, plant model, the same number as the HMI 030 */
+      ['SWP discharge, running (PG-SW1501)', () => Math.max(0, ...['M.3353', 'M.3354', 'M.3355'].map((a, j) => (bit(a) ? uv('swPd' + j) : 0))), 'kg/cm²', f1w, 'SOP 2.2 ~ 2.4'],
+      ['Forebay level (LISW1501)', () => +U().swLvl, 'm', f1w, 'SOP NL −4 m (4 m below GL)'],
       ['SWP header / condenser inlet (PISW1110A1)', () => uv('swPiA'), 'kg/cm²', f1w, 'SOP 1.0 ~ 1.1'],
       ['Condenser SW outlet A / B (PISW1110A2 / B2)', () => f1w(uv('swPoA')) + ' / ' + f1w(uv('swPoB')), 'kg/cm²', x => x, 'HMI 30.PNG 0.4 / 0.5'],
       ['Condenser SW ΔP A / B', () => f1w(uv('swPiA') - uv('swPoA')) + ' / ' + f1w(uv('swPiB') - uv('swPoB')), 'kg/cm²', x => x, 'SOP ≥ 0.4']
@@ -466,9 +469,9 @@ window.LS_GUIDE = (function () {
             /* the order is the order of the SOP (the banner names the first one not done): open the fill (XV-MU1109 with instrument air,
                else the bypass), close it at NL 1.7 m, then XV-MU1109 to AUTO when instrument air is available */
             Object.assign(btn('XV-MU1109 OPEN (DITL-78)', () => (!WL() ? '' : xvAuto() ? 'Nasa AUTO ang XV-MU1109: MAN muna para buksan.' : !air() ? 'Walang instrument air (IA < 3.5 kg/cm²): hindi bubukas ang XV-MU1109. Gamitin ang bypass V-MU1033 (field).' : (dPress('DITL-78', 4), '')), () => xvOpen() || !air() || byp() || et() >= 1.69), { dg: ['DITL-78', 4] }),
-            Object.assign(btn('FIELD: OPEN V-MU1033 (bypass)', () => (byp() ? '' : (bypSet(true), '')), () => byp() || xvOpen() || et() >= 1.69), { loc: 1 }),
+            Object.assign(btn('FIELD: OPEN V-MU1033 (bypass)', () => (byp() ? '' : (bypSet(true), '')), () => byp() || xvOpen() || et() >= 1.69), { loc: 1, fp: 'F:mu1033' }),
             Object.assign(btn('XV-MU1109 CLOSE (DITL-78)', () => (!WL() ? '' : xvAuto() ? 'Nasa AUTO ang XV-MU1109: ang logic ang nagsasara sa 85 % (1.7 m).' : (dPress('DITL-78', 8), '')), () => !xvOpen() || et() < 1.69), { dg: ['DITL-78', 8] }),
-            Object.assign(btn('FIELD: CLOSE V-MU1033 (bypass)', () => (byp() ? (bypSet(false), '') : ''), () => !byp() || et() < 1.69), { loc: 1 }),
+            Object.assign(btn('FIELD: CLOSE V-MU1033 (bypass)', () => (byp() ? (bypSet(false), '') : ''), () => !byp() || et() < 1.69), { loc: 1, fp: 'F:mu1033' }),
             Object.assign(btn('XV-MU1109 AUTO / MAN (DITL-78)', () => xvSel(!xvAuto()), () => xvAuto() || !air() || et() < 1.69), { dg: ['DITL-78', 2] })
           ],
           field: [6],
