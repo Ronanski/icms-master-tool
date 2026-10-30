@@ -101,6 +101,8 @@
     { n: 'ECO #1', x: 692, y: 438, w: 258, h: 56, k: 'fw' }
   ];
   /* fans: run state from the logic (memory list M.3302 PAF / M.3303 SAF / M.3304 IDF; FA blowers by their tag) */
+  /* 3.2.0-beta.74: the running memory of each fan (memory list; FA blowers M.3308 / M.3309), the address of its motor drawing */
+  const FANAD = ['M.3302', 'M.3303', 'M.3304', 'M.3308', 'M.3309'];
   const FANS = [
     { tag: 'F-1053 PAF', name: 'PAF  F-1053', cx: 816, cy: 820, r: 24, out: 836 },
     { tag: 'F-1054 SAF', name: 'SAF  F-1054', cx: 816, cy: 930, r: 24, out: 836 },
@@ -1031,8 +1033,24 @@
         body
       );
       const ti = S_('title', {});
-      ti.textContent = f.name + ' · run state from the DCS logic (motor: red = running, green = stopped)';
+      ti.textContent = f.name + ' · run state from the DCS logic (motor: red = running, green = stopped) · click = faceplate';
       body.append(ti);
+      /* 3.2.0-beta.74: a click on a fan = its pop-out faceplate beside it (fp-pop.js: the motor drawing of its running memory M.33xx) */
+      const M = { n: f.name.split(/\s+/)[0], t: f.tag.split(' ')[0], ad: FANAD[i] };
+      /* the casing, the impeller and the motor are separate shapes: a click on any of them */
+      for (const el of [body, imp, mot])
+        if (el)
+          el.addEventListener(
+            'click',
+            e => {
+              if (!window.LS_FPOP || !M.ad) return;
+              e.stopPropagation();
+              LS_FPOP.hit(M, null);
+            },
+            true
+          );
+      for (const el of [imp, mot]) if (el) el.style.cursor = 'pointer';
+      (window.LS_FPREG = window.LS_FPREG || {})[M.ad] = { open: () => LS_FPOP.hit(M, null), el: () => body };
     });
     /* R9 #87: air preheater main drive, run state of DITL-43 (was: grey, no state) */
     {

@@ -596,12 +596,22 @@
       MV: ['MOR-MU1001', 'MV-MU1001 make-up water to condenser shut-off MOV · DITL-60 (red = open, green = closed)'],
       ET: ['LT-CW1109', 'T-1109 expansion tank · LT-CW1109']
     };
+    /* the dock's "Buksan ang faceplate" of a step motor (fp-pop.js LS_FPOP.openAd) */
+    for (const id in MACH)
+      (window.LS_FPREG = window.LS_FPREG || {})[MACH[id].ad] = { open: () => q(`[data-hit="${id}"]`).dispatchEvent(new MouseEvent('click')), el: () => q(`[data-hit="${id}"]`) };
     for (const id in HIT)
       qa(`[data-hit="${id}"]`).forEach(h => {
         const ti = document.createElementNS(NS, 'title');
-        ti.textContent = HIT[id][1] + ' · click = info card';
+        ti.textContent = HIT[id][1] + (MACH[id] ? ' · click = faceplate' : ' · click = info card');
         h.append(ti);
-        h.addEventListener('click', e => (e.stopPropagation(), info(HIT[id][0])));
+        /* 3.2.0-beta.74: a pump = its pop-out faceplate beside it (fp-pop.js), the I/O wiring a link inside; the rest: the info card */
+        h.addEventListener('click', e => {
+          e.stopPropagation();
+          const go = () => info(HIT[id][0]),
+            M = MACH[id];
+          if (M && window.LS_FPOP) LS_FPOP.hit({ ...M, cur: () => (AN.unit && AN.unit.on ? AN.unit['muI' + 'ABC'.indexOf(id[1])] : null) }, go);
+          else go();
+        });
       });
     /* the values: the plant model (unit.js AN_MU), except LCV-MU1110 = the MV of its controller (ABC-031 LICCD1110A) */
     const UNIT = {

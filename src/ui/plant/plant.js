@@ -904,7 +904,8 @@
       ch.style.visibility = '';
       ch.style.visibility = ch.clientWidth + 1 < ch.firstChild.offsetWidth ? 'hidden' : '';
     }
-    const host = ws.classList.contains('crw') ? ws : $('plmid');
+    /* 3.2.0-beta.74: the faceplate pops out beside the clicked equipment, over the graphic (fp-pop.js), on every screen width */
+    const host = ws.classList.contains('crw') && !window.LS_FPOP ? ws : $('plmid');
     if (fp && host && fp.parentNode !== host) host.append(fp);
     keepZoom();
   }
@@ -941,8 +942,13 @@
       box
     ]);
     lay();
-    (ws.classList.contains('crw') ? ws : $('plmid')).append(fp);
+    (ws.classList.contains('crw') && !window.LS_FPOP ? ws : $('plmid')).append(fp);
     lay();
+    if (window.LS_FPOP) {
+      LS_FPOP.close();
+      fp.classList.add('fpo-near');
+      LS_FPOP.place(fp);
+    }
     fpLive = r.live;
     fpTick();
     return true;

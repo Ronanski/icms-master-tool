@@ -82,6 +82,8 @@
       aT = E('span', 'crat'),
       aTx = E('span', 'cratx'),
       aSp = E('span', 'crsp2'),
+      /* 3.2.0-beta.74: the alarm banner's ACK (the newest alarm not acknowledged), flashing until it is acknowledged */
+      aAck = E('button', 'crack', 'ACK'),
       fChip = E('span', 'crchip frc');
     fChip.title = 'Signals you forced (FORCE in the Inspector), on every ABC sheet: they stay until you release them. Click for the list';
     /* 3.2.0-beta.6 (engineering audit, signals): the chip opens ONE list of the user's forces on all ABC sheets (the Inspector
@@ -106,10 +108,18 @@
     };
     aChip.onclick = aOpen;
     aChip.onkeydown = e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), aOpen());
-    alarm.append(aChip, aT, aTx, aSp, fChip, fList, aList);
+    aAck.type = 'button';
+    aAck.hidden = true;
+    aAck.title = 'Acknowledge the newest alarm (the alarm list: the ALARM chip)';
+    aAck.onclick = () => {
+      const A = window.lsAlarms ? lsAlarms.list().filter(a => !a.ack && !a.sd && !a.rtn) : [];
+      if (A.length) lsAlarms.ack(A[A.length - 1].k);
+      tick();
+    };
+    alarm.append(aChip, aT, aTx, aAck, aSp, fChip, fList, aList);
     const ev = $('evbtn'),
       evMark = mark(ev);
-    P = { rail, band, alarm, moved, ev, evMark, gs, tabs, brand, set, setM, setB, sub, crumb, srchBtn, srch, seg, tbar, unit, kpis, K, aChip, aT, aTx, fChip, sp, aList };
+    P = { rail, band, alarm, moved, ev, evMark, gs, tabs, brand, set, setM, setB, sub, crumb, srchBtn, srch, seg, tbar, unit, kpis, K, aChip, aT, aTx, aAck, fChip, sp, aList };
     band.append(unit, kpis, E('div', 'crgrow'));
     /* ⚙ in the rail: its menu opens beside the rail, above the bottom of the screen */
     setB.addEventListener('click', () => {
@@ -245,16 +255,24 @@
       last = vals.filter(a => a.ack === false && a.kind === 'TRIP').pop() || vals.filter(a => a.ack === false).pop() || vals.pop();
     P.alarm.classList.toggle('on', n > 0);
     P.aChip.className = 'crchip ' + (n ? 'alm' : 'mut') + (un ? ' unack' : '');
+    const unA = AL.filter(a => !a.ack && !a.sd && !a.rtn).length;
+    P.aAck.hidden = !unA;
+    P.alarm.classList.toggle('new', !!unA);
     /* retest #42 (R7: the alarm name cut to "A L" at 1280 px): the count of the suppressed alarms is on the chip only when no alarm is
        active; with an alarm the room goes to its name (the suppressed count is in the tooltip and the alarm list) */
     P.aChip.textContent = n
       ? n + (n === 1 ? ' ALARM' : ' ALARMS') + (un ? ' · ' + un + ' NEW' : '')
       : 'NO ALARM' + (sup ? ' · ' + sup + ' SUPPRESSED' : '');
+    const supL = AL.filter(a => a.sd && !a.rtn && a.late).length;
     P.aChip.title = sup
       ? sup +
         ' shutdown alarm' +
         (sup > 1 ? 's' : '') +
-        ' suppressed (equipment of their group stopped): listed apart in the alarm list; released 10 min after the equipment of the group runs'
+        ' suppressed (equipment of their group stopped): ' +
+        (sup - supL) +
+        ' standing since the plant was loaded' +
+        (supL ? ', ' + supL + ' came later while their group was stopped' : '') +
+        '; listed apart in the alarm list; released 10 min after the equipment of the group runs'
       : '';
     /* retest #43 #42: the time says what it is; the full text in the tooltip */
     P.aT.textContent = last && last.t ? 'at ' + last.t : '';
@@ -339,12 +357,15 @@
     if (SP.length) {
       const g = document.createElement('details'),
         sm = document.createElement('summary');
-      sm.textContent = 'Suppressed: ' + SP.length + ' standing since the plant was loaded (shutdown state)';
+      /* live test #11: the ones that came after the load (their group still stopped) apart from the ones standing at the load */
+      const LT = SP.filter(a => a.late),
+        ST = SP.filter(a => !a.late);
+      sm.textContent = 'Suppressed: ' + SP.length + ' (' + ST.length + ' standing since the plant was loaded' + (LT.length ? ', ' + LT.length + ' came later while their group was stopped' : '') + ')';
       g.className = 'crfsup';
       g.append(sm);
-      for (const a of SP.slice(0, 300)) {
+      for (const a of LT.concat(ST).slice(0, 300)) {
         const r = E('div', 'crfr' + (a.kind === 'TRIP' ? ' trip' : ''));
-        r.append(E('span', 'crfs', a.t + ' ' + a.sh), E('span', 'crfn', a.nm), E('span', 'crfv', a.lv));
+        r.append(E('span', 'crfs', a.t + ' ' + a.sh), E('span', 'crfn', a.nm + (a.late ? ' · later' : '')), E('span', 'crfv', a.lv));
         g.append(r);
       }
       d.append(g);

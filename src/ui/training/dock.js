@@ -815,9 +815,11 @@
     /* user 2026-10-29 (mock-up v3 "isang monitor lang"): one line of the plant (load, drum level, furnace, O2); the equipment lamps are on
        the HMI in the centre (was: 8 values and 17 lamps, about 210 px) */
     els.vals = VALS.map(([k, u]) => {
-      const b = E('b', { txt: '—' });
-      const d = E('span', { cls: 'gd-kv' }, [E('small', { txt: k }), b, E('em', { txt: u })]);
-      return { d, b };
+      const b = E('b', { txt: '—' }),
+        kk = E('small', { txt: k }),
+        uu = E('em', { txt: u });
+      const d = E('span', { cls: 'gd-kv' }, [kk, b, uu]);
+      return { d, b, kk, uu };
     });
     /* user 2026-10-30 ("ang tinanggal mga values at indications"): the 8 values and the equipment lamps of the plant stay in the dock
        (beta.57 had 4 values and no lamps); only buttons that do the same thing twice were to go */
@@ -829,7 +831,9 @@
     /* the one thing to do now (SUSUNOD NA GAWIN) with the button that does it, above the step (dock live: nextPaint) */
     els.nxS = E('div', { cls: 'gd-nxs' });
     els.nxB = E('button', { type: 'button', cls: 'gd-nxb', hidden: true });
-    els.nx = E('div', { cls: 'gd-nx' }, [E('small', { txt: 'SUSUNOD NA GAWIN' }), els.nxS, els.nxB]);
+    /* 3.2.0-beta.74: the faceplate of the step's motor beside its symbol on the HMI (the operator acts there; the dock does not press) */
+    els.nxF = E('button', { type: 'button', cls: 'gd-nxf', hidden: true });
+    els.nx = E('div', { cls: 'gd-nx' }, [E('small', { txt: 'SUSUNOD NA GAWIN' }), els.nxS, els.nxB, els.nxF]);
     /* the SOP section: ◄ ► and the list (☰, folded over the centre); the step: ‹ › beside its title (‹ Nakaraan, Susunod ›, TAPOS
        were three buttons for one move) */
     els.bar = E('i');
@@ -839,7 +843,10 @@
     els.secN = E('button', { type: 'button', cls: 'gd-ic', txt: '►', title: 'Susunod na seksyon', on: () => secGo(1) });
     els.secL = E('button', { type: 'button', cls: 'gd-ic', txt: '☰', title: 'Listahan ng mga seksyon (PR-OPE-5002)', 'aria-expanded': 'false', on: secList });
     const sec = E('div', { cls: 'gd-sec' }, [els.secP, E('div', { cls: 'gd-secl' }, [els.secT, els.secS]), els.secN, els.secL]);
-    const prog = E('div', { cls: 'gd-bar' }, [els.bar]);
+    /* live test #32: the progress of the start-up, one segment per SOP section (done, current, to come) and the next systems */
+    els.segs = E('div', { cls: 'gd-segs', role: 'img' });
+    els.segN = E('small', { cls: 'gd-segn' });
+    const prog = E('div', { cls: 'gd-prog' }, [E('div', { cls: 'gd-bar', hidden: '' }, [els.bar]), els.segs, els.segN]);
     els.stp = E('small');
     els.ttl = E('h3');
     els.stP = E('button', { type: 'button', cls: 'gd-ic', txt: '‹', title: 'Naunang hakbang', on: () => stepGo(-1) });
@@ -1557,6 +1564,7 @@
       const inSec = L.map((x, k) => k).filter(k => secOf(L[k]) === sk);
       els.secS.textContent = (s ? g.STAGES[s.st] || '' : '150 MW') + (sk && inSec.length ? ' · PR-OPE-5002 · hakbang ' + (inSec.indexOf(i) + 1) + ' sa ' + inSec.length + ' ng seksyon' : '');
     }
+    progPaint(sk, P0);
     els.secP.disabled = !secAt(-1);
     els.secN.disabled = !secAt(1);
     els.stp.textContent = s ? 'HAKBANG ' + (i + 1) + ' / ' + L.length : 'TAPOS · ' + L.length + ' / ' + L.length;
@@ -2126,7 +2134,7 @@
     els.watch = own.concat(stage, sop.slice(0, 8)).map(([k, f, u, fm, hint]) => {
       const v = E('b', { txt: '—' }),
         ck = E('i', { cls: 'gd-wk', 'aria-hidden': 'true' });
-      return { r: E('div', { cls: 'gd-wr' }, [ck, E('span', { txt: k }), E('span', {}, [v, E('em', { txt: u }), hint ? E('small', { txt: hint }) : null])]), v, f, fm, ck, rg: rangeOf(hint) };
+      return { r: E('div', { cls: 'gd-wr' }, [ck, E('span', { txt: k }), E('span', {}, [v, E('em', { txt: u }), hint ? E('small', { txt: hint }) : null])]), v, f, fm, ck, rg: rangeOf(hint), k, u };
     });
     /* user 2026-10-29 (batch item 3: "kitang-kita agad, walang scroll"): the controls of the step (its faceplates: PV, SV, MV, mode) first,
        then the values to watch (3.2.0-beta.33 had the faceplates under the values) */
@@ -2248,13 +2256,15 @@
         au = autoOf(ad),
         hasAm = !!(els.btns || []).find(x => x.ad === ad && x.am);
       let c, t, r;
-      if (st === 'TRIP') [c, t, r] = ['blk', 'TRIP', 'Nag-trip: RESET sa field, saka START'];
+      /* live test #27: colour for the abnormal only: a normal "not ready yet" (line-up, standby not in AUTO) is grey NOT READY, a
+         missing interlock amber INTERLOCK, a trip red TRIP (was: amber BLOCKED for all) */
+      if (st === 'TRIP') [c, t, r] = ['trip', 'TRIP', 'Nag-trip: RESET sa field, saka START'];
       else if (on(a)) [c, t, r] = ['run', 'RUNNING', 'Tumatakbo'];
-      else if (s.max && nOn >= s.max) [c, t, r] = au ? ['sby', 'STANDBY', 'AUTO: aandar kapag may nag-trip'] : ['blk', 'BLOCKED', 'Ilagay sa AUTO para maging standby'];
-      else if (dL < nL) [c, t, r] = ['blk', 'BLOCKED', 'Lineup ' + dL + ' / ' + nL];
+      else if (s.max && nOn >= s.max) [c, t, r] = au ? ['sby', 'STANDBY', 'AUTO: aandar kapag may nag-trip'] : ['nr', 'NOT READY', 'Ilagay sa AUTO para maging standby'];
+      else if (dL < nL) [c, t, r] = ['nr', 'NOT READY', 'Lineup ' + dL + ' / ' + nL];
       else if (blocked[ad]) {
         const r0 = (mi.miss || [])[0];
-        [c, t, r] = ['blk', 'BLOCKED', 'Kulang: ' + (r0 ? svcN(r0.svc) || r0.svc : 'interlock')];
+        [c, t, r] = ['blk', 'INTERLOCK', 'Kulang: ' + (r0 ? svcN(r0.svc) || r0.svc : 'interlock')];
       } else [c, t, r] = ['stop', 'STOPPED', isRun() ? 'Handa: START' : 'Handa: ▶ RUN, saka START'];
       return { ad, nm: mName(a), c, t, r: r + (hasAm ? ' · ' + (au ? 'AUTO' : 'MAN') : ''), sel: ad === selAd, sh: MOTOR[ad] };
     });
@@ -2319,6 +2329,22 @@
       o.chip.firstChild.textContent = isOk ? '✓' : String(j + 1);
       o.chip.setAttribute('aria-pressed', String(open));
       o.hd.setAttribute('aria-expanded', String(open));
+      /* live test #30: with the line of chips the open stage does not say its name again (the chip does); its sub line and count stay */
+      o.hd.classList.toggle('mini', els.stg.length > 1);
+      /* live test #29: the items already done are folded under "Nagawa na · n" (what is left stays in view) */
+      if (open)
+        for (const ul of o.bd.querySelectorAll('ul.gd-fl')) {
+          const n = ul.querySelectorAll(':scope > li.dn').length;
+          let t = ul.nextElementSibling;
+          if (!t || !t.classList.contains('gd-dnt')) {
+            t = E('button', { type: 'button', cls: 'gd-dnt' });
+            t.onclick = () => (ul.classList.toggle('showdn'), stagePaint(s, selAd, rd));
+            ul.after(t);
+          }
+          t.hidden = !n;
+          const tx = (ul.classList.contains('showdn') ? 'Itago ang nagawa na ▴' : 'Nagawa na · ' + n + ' ▾');
+          if (t.textContent !== tx) t.textContent = tx;
+        }
     });
   }
   /* SUSUNOD NA GAWIN: one sentence and the one button that does it (the same button of the stage below, pressed for the operator) */
@@ -2454,7 +2480,29 @@
     const mOn = menuOn && dock && !dock.hidden;
     if (!dock || ((!g || !g.on || isMin()) && !mOn)) return;
     const s = g && g.on ? g.steps()[g.cur] : null;
-    VALS.forEach(([k, u, f, fm], j) => (els.vals[j].b.textContent = fm(call(f, NaN))));
+    /* live test #28: a utility step (stage 0) or a step with its own values shows the first 3 values of its Bantayan on top (the
+       same value and range as below; amber only when out of its range), not LOAD / DRUM; "Lahat ▾" keeps the 8 values of the plant */
+    const W = s && (s.w || s.st === 0) && els.watch && els.watch.length && !ls.get('ls-gdock-all', false) ? els.watch.slice(0, 3) : null;
+    VALS.forEach(([k, u, f, fm], j) => {
+      const V = els.vals[j],
+        w = W && j < 3 ? W[j] : null;
+      let t = '',
+        x = NaN;
+      if (W && j < 3) {
+        if (w) {
+          x = call(w.f, NaN);
+          t = w.fm(x);
+        }
+        V.d.hidden = !w;
+        if (w && V.kk.textContent !== w.k) ((V.kk.textContent = w.k), (V.kk.title = w.k), (V.uu.textContent = w.u || ''));
+      } else {
+        V.d.hidden = false;
+        if (V.kk.textContent !== k) ((V.kk.textContent = k), (V.kk.title = ''), (V.uu.textContent = u));
+        t = fm(call(f, NaN));
+      }
+      V.b.textContent = t;
+      V.d.classList.toggle('hi', !!(w && w.rg && typeof x === 'number' && isFinite(x) && (x < w.rg[0] || x > w.rg[1])));
+    });
     /* 3.2.0 retest #25 #34: RUN = red, STOP = green (power plant convention), TRIP = amber, flashing until ACK */
     LAMPS.forEach(([k, A], j) => {
       const tr = A.filter(a => mst(a) === 'TRIP');
@@ -2818,6 +2866,7 @@
     eqPaint(s, selAd, blocked);
     stagePaint(s, selAd, rd);
     nextPaint(s, selAd, rd);
+    fpPaint(s, selAd, rd);
     /* out of order: a motor of a later step already running */
     const ea = call(() => g.early(), []);
     if (els.early) {
@@ -2828,6 +2877,44 @@
       try {
         f();
       } catch (e) {}
+  }
+  /* live test #32: the section segments (done = before the step's section, current, to come) and the next three systems */
+  function progPaint(sk, P0) {
+    const n = nSec();
+    if (!els.segs || !n) return;
+    const k = sk + '/' + n;
+    if (els.segs.dataset.k === k) return;
+    els.segs.dataset.k = k;
+    els.segs.replaceChildren(...Array.from({ length: n }, (_, j) => E('i', { cls: j + 1 < sk ? 'd' : j + 1 === sk ? 'c' : '', title: 'Seksyon ' + (j + 1) + ' · ' + ((P0[j] || {}).t || '') })));
+    els.segs.setAttribute('aria-label', 'Seksyon ' + sk + ' sa ' + n + ' ng start-up');
+    const nx = P0.slice(sk, sk + 3).map(x => String(x.t || '').replace(/\s*\(.*$/, '').toLowerCase().replace(/^./, c => c.toUpperCase()));
+    els.segN.textContent = nx.length ? 'Susunod: ' + nx.join(' → ') : '';
+    els.segN.title = els.segN.textContent;
+  }
+  /* 3.2.0-beta.74: "Buksan ang faceplate ng SWP-C" under the next action: the HMI page of the step, then the pop-out beside the motor */
+  function fpPaint(s, selAd, rd) {
+    const b = els.nxF;
+    if (!b) return;
+    const ms = motorsOf(s),
+      R = window.LS_FPREG || {};
+    let ad = selAd || (ms[0] && motAddr(ms[0])),
+      a = ad && ms.find(x => motAddr(x) === ad),
+      nmA = a ? mName(a) : '';
+    /* a step of a drawing button (AUTO SWP-C (standby), DITL-29A #C row 4): the machine of that drawing, the first one still to do */
+    if (!a) {
+      const d = (s.a || []).find(x => x.dg && R[x.dg[0]] && !call(() => x.hide && x.hide(), false) && !call(() => x.on && x.on(), false));
+      if (d) ((ad = d.dg[0]), (a = d), (nmA = String(d.l).replace(/^(AUTO|START|STOP)\s+/, '').replace(/\s*\(.*$/, '')));
+    }
+    b.hidden = !!rd || !a || !window.LS_FPOP;
+    if (b.hidden) return;
+    const t = 'Buksan ang faceplate ng ' + nmA + ' ▸';
+    if (b.textContent !== t) b.textContent = t;
+    b.title = 'Sa HMI kumikilos ang operator: REMOTE / LOCAL (field), AUTO / MAN, START / STOP, permissive ng SOP at ng logic';
+    b.onclick = () => {
+      if (call(() => LS_FPOP.openAd(ad), false)) return;
+      goStep(s);
+      setTimeout(() => call(() => LS_FPOP.openAd(ad), false) || call(() => LS_FPOP.motor({ ad, n: nmA, d: MOTOR[ad] }), false), 700);
+    };
   }
   /* the steps move on by themselves (RUN): the open step is checked every half second */
   setInterval(() => {
@@ -2869,7 +2956,18 @@
   setTimeout(() => {
     if (document.body.dataset.tab === 'training' && window.lsSetTab) lsSetTab('training');
   }, 0);
+  /* 3.2.0-beta.74: the SOP line-up of the open step for the pop-out faceplate of one of its motors (the same ticks as the dock), else null */
+  const sopFor = (ad, d) => {
+    const g = GD(),
+      s = g && g.on ? g.steps()[g.cur] : null;
+    if (!s || !(s.a || []).some(a => ((a.stop || a.dg) && motAddr(a) === ad) || (a.dg && d && a.dg[0] === d))) return null;
+    return { sec: secOf(s), items: (els.lineCb || []).map(x => ({ t: x.t, by: x.by, ok: !!x.cb.checked })) };
+  };
   window.LS_DOCK = {
+    sopFor,
+    dName,
+    amRow,
+    openD,
     grpOn,
     tabFix,
     menu,
