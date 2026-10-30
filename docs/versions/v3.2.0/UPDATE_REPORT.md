@@ -1240,6 +1240,26 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 | 23 | Update banner | Nasubok: may bagong Beta sa version.json → lumalabas ang "New Beta available … Update now / Later" sa itaas, hindi tinatakpan ang Home | — |
 
 
+## 3.2.0-beta.76 (Beta, 2026-10-30; GO BETA ng user "Sige beta. G.") — findings ng live test sa beta.74 (H1 ~ H8)
+- **Problem:** live test H1 ~ H8 sa beta.74: #28 sa H1 ang itaas ng dock ay Drum level (-296 mm), hindi ang gagawin; #33 ang pop-out na binuksan mula sa dock ("Buksan ang faceplate") ay nasa kaliwang itaas at tinatakpan ang SWP-A at ang HAKBANG tag; #34 blangko ang trend; #35 nawala ang SWP discharge pressure (SOP 2.2 ~ 2.4); #36 forebay -8.76 m laban sa SOP NL -4 m; #23 / #38 H8 walang valve pop-out (XV-MU1109, V-MU1033) at ang banner ay "MWP-B ay STANDBY (AUTO)" lang; #37 ang standby MWP-B ay "INTERLOCK, 1 ang kulang".
+- **As Found:**
+  - #28: walang sariling Bantayan ang H1 (ESP purge), kaya bumalik ang dock sa 8 value ng planta; ang GAWIN ay nasa ilalim pa ng mga value.
+  - #33: ang SWP-A ay nasa kaliwang gilid; kumanan ang pop-out pero 682 px ang taas at tumapat sa HAKBANG tag (hindi kasama sa anchor). Sa click sa HMI, ang anchor ay maaaring malaking `g` ng buong scene.
+  - #34: kinukuha lang ang current habang bukas ang pop-out (5 s); isang punto = walang linya.
+  - #35: PR-OPE-5002 seksyon 2 "Adjust SWP discharge valve opening to attain 2.2 – 2.4 ksc" sa PG-SW1501A / B / C (local gauge); walang ganitong value sa plant model mula beta.73.
+  - #36: `unit.js` AN_SW `swLvl = -8.76` (30.PNG). SOP seksyon 2: "Sea Water inlet pool (fore bay) level (NL = 4m below GL)".
+  - #37: DITL-112 OUT8 = AND(PULSE(START P.B.), NOT(AUTO)): ang START ng DCS ay sa MAN lang; hindi ito interlock ng standby na naka-AUTO.
+  - #23 / #38: XV-MU1109 (DITL-78 row 5 OPEN P.B., row 9 CLOSE P.B., row 1 + 3 AUTO) at V-MU1033 (field item `mu1033`) ay nasa tab 2 ng MAKE-UP WATER; walang pop-out; static na guhit ang V-MU1033.
+- **Work Done:**
+  - Dock (`dock.js`): GAWIN NGAYON ang nasa itaas (sa ilalim ng title bar), saka ang mga value; sa utility step na walang sariling value ay walang value ng planta sa itaas ("Lahat ▾" = 8 value). Banner sa standby na naka-AUTO: "Susunod: …" ang natitirang gagawin ng hakbang (H8: punuin ang expansion tank); "Buksan ang faceplate" ay lumilipat sa susunod na makina na hindi pa tapos (XV-MU1109 o V-MU1033).
+  - Pop-out (`fp-pop.js`): anchor = equipment + kahon at HAKBANG tag ng hakbang; malaking group ay hindi anchor (click point ang gamit); muling inilalagay pagkatapos mag-layout ang page; SOP list max 5 (ang iba nasa dock). Trend: bawat 5 s mula sa pagbukas ng page para sa lahat ng motor na may current; tuldok ng huling value. Standby (REMOTE + AUTO, STOP): chip STANDBY, "STANDBY, handa: kusang aandar sa logic …", sarado ang START.
+  - Bago: valve pop-out (`LS_FPOP.valve`): XV-MU1109 ZSO / ZSC, AUTO / MAN (DITL-78 row 1 + 3), OPEN / CLOSE (row 5 / 9, MAN lang) na may EXECUTE / CANCEL, dahilan kapag walang instrument air (< 3.5 kg/cm2), links. Field valve pop-out (`LS_FPOP.valveTag`): V-MU1033 OPEN / CLOSE (FIELD, naka-log "Field operator"). HMI MAKE-UP WATER at 027: click = pop-out; buhay na ang guhit ng V-MU1033.
+  - Plant model (`unit.js`): PG-SW1501A / B / C = 2.4 / 2.3 / 2.2 kg/cm2 kapag tumatakbo (1 / 2 / 3 pump, ASSUMED sa SOP band), kung hindi ay header; forebay = SOP NL -4.0 m. HMI 030: PG-SW1501x sa ilalim ng bawat SWP ("local · SOP 2.2 ~ 2.4"); dock H2: SWP discharge at forebay.
+- **As Left (headless 1366 × 768, HINDI live test):** H1: itaas = "GAWIN NGAYON SOP (AO): Ensure fan filter is clean.", walang Drum level. H2 "Buksan ang faceplate ng SWP-A": pop-out sa x 118 (kanan ng tag na nagtatapos sa 104), hindi tinatakpan ang SWP-A. Trend may linya pagkatapos ng 16 s RUN. LISW1501 = -4.00. H8: MWP-B REMOTE + AUTO → chip STANDBY; MWP-A RUNNING → banner "MWP-B ay STANDBY (AUTO). Susunod: FIELD: OPEN V-MU1033 (bypass) (punuin ang expansion tank …)" + "Buksan ang faceplate ng V-MU1033" → pop-out sa tabi nito, OPEN → OPEN; XV-MU1109 pop-out: MAN, CLOSED, "Walang instrument air". 0 page error. `npm run build`, `npm run check` SAME.
+- **Hindi sinubok:** live sa app ng user; XV-MU1109 OPEN / AUTO na may instrument air (H11 pataas); PG-SW1501 na may 2 SWP na tumatakbo (headless: 0.0 habang walang SWP).
+- **UNUSUAL (para sa user):** 30.PNG LISW1501 -8.76 m ay 4.76 m sa ilalim ng SOP NL (-4 m); ang model ay sumusunod sa SOP (gaya ng SWP current #10).
+- **Hindi pa (susunod):** #16 030 at 007 sa HSYM, values ≥ 14 px: muling guhit ng HMI, kailangan ng mockup at approval ng user (HMI rule) bago gawin.
+
 ## 3.2.0-beta.75 (Beta, 2026-10-30) — live test #25: sariling "?" ng bawat SOP item; #21 H6 Bantayan
 - **Problem (live test H1 sa beta.74, FAIL #25):** ang "?" ng bawat item sa Hakbang 1 ay iisang generic na text, hindi Bakit / Dapat makita / Kung lalaktawan ng mismong item.
 - **As Found:** `whyOf(t)` sa `dock.js` ay ayon lang sa uri ng salita ("Ensure", "Set", "Start"), kaya pareho ang text ng magkakaibang item.

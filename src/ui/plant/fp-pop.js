@@ -33,11 +33,32 @@
   document.addEventListener(
     'pointerdown',
     e => {
-      const t = e.target && e.target.closest ? e.target.closest('g,rect,text,div') : null;
-      last = { x: e.clientX, y: e.clientY, r: t && !t.closest('#fpop') ? t.getBoundingClientRect() : null };
+      /* live test beta.74 #33: the equipment's own hit area first; a big group (the whole scene of a page) is not the anchor, the
+         click point is (the pop-out opened at the top left over the pump and the HAKBANG tag) */
+      const c = e.target && e.target.closest ? e.target : null,
+        t = c ? c.closest('[data-hit],[data-mdh],[data-fan],[data-dmp]') || c.closest('g,rect,text,div') : null;
+      let r = t && !t.closest('#fpop') ? t.getBoundingClientRect() : null;
+      if (r && (r.width > 220 || r.height > 220)) r = null;
+      last = { x: e.clientX, y: e.clientY, r };
     },
     true
   );
+  /* live test beta.74 #34 (blank trend): the current of every motor of the HMI pages is sampled every 5 s from the load of the page,
+     not only while its faceplate is open (one point drew no line) */
+  const hist = (window.LS_FPHIST = window.LS_FPHIST || {});
+  function sample(H, v, now) {
+    if (H.length && now - H[H.length - 1][0] < 5000) return;
+    H.push([now, v == null || !isFinite(+v) ? 0 : +v]);
+    while (H.length && now - H[0][0] > 600e3) H.shift();
+  }
+  setInterval(() => {
+    const now = Date.now();
+    for (const k in REG) {
+      const R = REG[k];
+      if (!R || !R.cur || !R.n) continue;
+      sample(hist[R.n] || (hist[R.n] = []), call(() => R.cur(), null), now);
+    }
+  }, 5000);
   const host = () => document.getElementById('plmid') || document.body;
   /* beside the clicked equipment: right of it, else left, else below; inside the HMI area; never over the step tag of the dock */
   function place(el, r) {
@@ -45,7 +66,15 @@
       H = h.getBoundingClientRect(),
       w = el.offsetWidth,
       ht = el.offsetHeight,
-      a = r || (last && (last.r || { left: last.x, right: last.x, top: last.y, bottom: last.y, width: 0, height: 0 })) || { left: H.left + H.width / 2, right: H.left + H.width / 2, top: H.top + 40, bottom: H.top + 40 };
+      a0 = r || (last && (last.r || { left: last.x, right: last.x, top: last.y, bottom: last.y, width: 0, height: 0 })) || { left: H.left + H.width / 2, right: H.left + H.width / 2, top: H.top + 40, bottom: H.top + 40 },
+      a = { left: a0.left, right: a0.right, top: a0.top, bottom: a0.bottom };
+    /* live test beta.74 #33: the step's box and its "HAKBANG n" tag around the equipment are part of the anchor, so the pop-out opens
+       beside all of them (from the dock it covered SWP-A and the tag) */
+    for (const g of document.querySelectorAll('#gdhl:not([hidden]) .gd-hlb, #gdhl:not([hidden]) .gd-hlt')) {
+      const G = g.getBoundingClientRect();
+      if (G.width && G.left < a.right + 24 && G.right > a.left - 24 && G.top < a.bottom + 60 && G.bottom > a.top - 60)
+        ((a.left = Math.min(a.left, G.left)), (a.right = Math.max(a.right, G.right)), (a.top = Math.min(a.top, G.top)), (a.bottom = Math.max(a.bottom, G.bottom)));
+    }
     let x,
       side = 'l';
     if (a.right + 14 + w <= H.right - 6) x = a.right + 14 - H.left;
@@ -235,8 +264,8 @@
     if (nm) link('Logic ' + nm, () => (close(), call(() => dk.openD(nm, null))));
     link('Events', () => call(() => document.getElementById('evbtn').click()));
     F.bd.append(ln);
-    const hist = (window.LS_FPHIST = window.LS_FPHIST || {});
     const H = hist[M.n] || (hist[M.n] = []);
+    if (M.cur) REG['cur:' + M.n] = { cur: M.cur };
     /* a drawing whose rows are not named "... MODE SELECTED" (DITL-76 / 77 ACWP: LCP REMOTE SELECTED row 20, CRT AUTO PB row 1): the
        page gives its rows (remRows, auRow) and its reader of the mode (modeFn) */
     const mrows = () => (M.remRows ? { rem: M.remRows } : call(() => (s && (s._mrows || (dk.modeOf(M.ad), s._mrows))) || null, null));
@@ -278,11 +307,14 @@
       bAu.classList.toggle('on', md.au === true);
       bMa.classList.toggle('on', md.au === false);
       bAu.disabled = loc || md.au == null;
-      const miss = I ? I.miss.filter(r => !/REMOTE/.test(r.svc)) : [];
+      /* live test beta.74 #37: a standby (REMOTE + AUTO, stopped) is ready: the logic starts it (a trip of the running one, low header);
+         the DCS START of the drawing is the one accepted only in MAN (DITL-112 OUT8 = PULSE(START P.B.) AND NOT AUTO), not an interlock */
+      const sby = st === 'STOP' && md.rem === true && md.au === true;
+      const miss = I && !sby ? I.miss.filter(r => !/REMOTE/.test(r.svc)) : [];
       /* the SOP line-up of the open step first (PR-OPE-5002: line-up before the start), as the dock */
       const sop = call(() => (dk.sopFor ? dk.sopFor(M.ad, M.d) : null), null),
         sopLeft = sop ? sop.items.filter(x => !x.ok).length : 0;
-      bSt.disabled = loc || st === 'RUN' || st === 'TRIP' || miss.length > 0 || sopLeft > 0;
+      bSt.disabled = loc || sby || st === 'RUN' || st === 'TRIP' || miss.length > 0 || sopLeft > 0;
       bSp.disabled = loc || st !== 'RUN';
       bSt.classList.toggle('lit-run', st === 'RUN');
       bSp.classList.toggle('lit-stop', st === 'STOP');
@@ -292,7 +324,9 @@
           ? 'TRIP: hanapin ang sanhi; i-reset sa field bago muling i-START.'
           : loc
             ? 'LOCAL ang selector: sarado ang AUTO, START at STOP ng DCS. REMOTE muna (field).'
-            : sopLeft && st !== 'RUN'
+            : sby
+              ? 'STANDBY, handa: kusang aandar sa logic kapag nag-trip ang tumatakbo o bumaba ang header. Ang START ng DCS ay sa MAN lang.'
+              : sopLeft && st !== 'RUN'
               ? 'START sarado: tapusin muna ang SOP line-up (' + sopLeft + ' natitira, ✕ sa ibaba; i-tick sa dock).'
               : miss.length && st !== 'RUN'
               ? 'START sarado: ' + miss.length + ' permissive ang kulang (0 sa ibaba).'
@@ -300,7 +334,7 @@
                 ? 'Naka-PAUSE ang oras: ▶ RUN muna bago ang START (walang aandar habang naka-PAUSE).'
                 : '';
       why.hidden = !why.textContent;
-      chip.textContent = st === 'TRIP' ? 'TRIP' : st === 'RUN' ? 'RUNNING' : loc ? 'NOT READY' : miss.length ? 'INTERLOCK' : st === 'STOP' ? 'READY' : '';
+      chip.textContent = st === 'TRIP' ? 'TRIP' : st === 'RUN' ? 'RUNNING' : loc ? 'NOT READY' : sby ? 'STANDBY' : miss.length ? 'INTERLOCK' : st === 'STOP' ? 'READY' : '';
       chip.className = 'fpo-chip ' + (st === 'TRIP' ? 'trip' : miss.length && !loc && st !== 'RUN' ? 'ilk' : '');
       /* current */
       if (M.cur) {
@@ -310,14 +344,13 @@
         cur.classList.toggle('hi', !!out);
         F.val.textContent = v == null ? '' : (+v).toFixed(1) + ' A';
         const now = Date.now();
-        if (!H.length || now - H[H.length - 1][0] >= 5000) {
-          H.push([now, v == null ? 0 : +v]);
-          while (H.length && now - H[0][0] > 600e3) H.shift();
-        }
+        sample(H, v, now);
         const mx = Math.max(10, ...H.map(p => p[1]), M.band ? M.band[1] * 1.3 : 0);
         trend.innerHTML =
-          (M.band ? `<rect x="0" width="300" y="${50 - (M.band[1] / mx) * 48}" height="${((M.band[1] - M.band[0]) / mx) * 48}" fill="#2b3742"/>` : '') +
-          `<polyline fill="none" stroke="${st === 'RUN' ? '#e5484d' : '#7f8b97'}" stroke-width="2" points="${H.map(p => ((300 * (p[0] - (now - 600e3))) / 600e3).toFixed(1) + ',' + (50 - (p[1] / mx) * 48).toFixed(1)).join(' ')}"/>`;
+          (M.band ? `<rect x="0" width="300" y="${47 - (M.band[1] / mx) * 44}" height="${((M.band[1] - M.band[0]) / mx) * 44}" fill="#2b3742"/>` : '') +
+          `<polyline fill="none" stroke="${st === 'RUN' ? '#e5484d' : '#7f8b97'}" stroke-width="2" points="${H.map(p => ((300 * (p[0] - (now - 600e3))) / 600e3).toFixed(1) + ',' + (47 - (p[1] / mx) * 44).toFixed(1)).join(' ')}"/>` +
+          /* the newest value as a dot (a line needs two samples, 5 s apart) */
+          (H.length ? `<circle cx="298" cy="${(47 - (H[H.length - 1][1] / mx) * 44).toFixed(1)}" r="2.5" fill="${st === 'RUN' ? '#e5484d' : '#93a2b2'}"/>` : '');
       }
       /* SOP line-up of the open step */
       sopH.hidden = sopL.hidden = !(sop && sop.items.length);
@@ -330,12 +363,12 @@
           const left = sop.items.filter(x => !x.ok),
             dn = sop.items.length - left.length;
           sopL.replaceChildren(
-            ...left.slice(0, 8).map(x => {
+            ...left.slice(0, 5).map(x => {
               const li = E('li', 'bad');
               li.append(E('i', '', '✕'), E('span', '', x.t), x.by ? E('em', '', x.by) : '');
               return li;
             }),
-            ...(left.length > 8 ? [E('li', 'bad', '+ ' + (left.length - 8) + ' pa (nasa dock)')] : []),
+            ...(left.length > 5 ? [E('li', 'bad', '+ ' + (left.length - 5) + ' pa (nasa dock)')] : []),
             ...(dn ? [(() => {
               const li = E('li', 'ok');
               li.append(E('i', '', '✓'), E('span', '', 'Nagawa na: ' + dn + ' item'));
@@ -374,6 +407,177 @@
     iv = setInterval(tick, 500);
     return true;
   }
+  /* ---------- the valve faceplate (live test beta.74, spec item 2: OPEN / CLOSE, AUTO / MAN, ZSO / ZSC) ----------
+     V = { n, t, d (its DITL drawing), io, isOpen(), isAuto(), opRow, clRow (the OPEN / CLOSE P.B. rows, pulses in MAN), auSel(v) (the
+     AUTO / MAN selection of the drawing), auto (what the logic does in AUTO), why() (a reason it cannot open: '' when none) }.
+     The same calls as the dock (LS_DOCK.dpress / dset / dsel); the operator presses, the faceplate never acts on its own */
+  function valve(V) {
+    const dk = D();
+    if (!V || !dk || !V.d || !call(() => dk.dOf(V.d), null)) return false;
+    const F = frame(V.n, (V.t || '') + ' · ' + V.d);
+    const chip = E('span', 'fpo-chip');
+    F.hd.querySelector('.fpo-tt').append(chip);
+    const lO = lampEl('ZSO OPEN'),
+      lC = lampEl('ZSC CLOSED');
+    F.bd.append(row('POSITION', lO, lC));
+    const [sAM, [bAu, bMa]] = seg(['AUTO', 'MAN']);
+    F.bd.append(row('MODE', sAM));
+    const bOp = E('button', 'fpo-cmd', 'OPEN'),
+      bCl = E('button', 'fpo-cmd', 'CLOSE');
+    bOp.type = bCl.type = 'button';
+    F.bd.append(row('DCS', bOp, bCl));
+    const why = E('div', 'fpo-why');
+    F.bd.append(why);
+    const ex = E('div', 'fpo-ex'),
+      exT = E('span'),
+      exGo = E('button', 'fpo-go', 'EXECUTE'),
+      exNo = E('button', '', 'CANCEL');
+    exGo.type = exNo.type = 'button';
+    ex.append(exT, exGo, exNo);
+    ex.hidden = true;
+    F.bd.append(ex);
+    let pend = null;
+    const ask = (t, f) => ((pend = f), (exT.textContent = t), (ex.hidden = false), exGo.focus());
+    exNo.onclick = () => ((pend = null), (ex.hidden = true));
+    exGo.onclick = () => {
+      const f = pend;
+      pend = null;
+      ex.hidden = true;
+      if (f) f();
+      setTimeout(tick, 150);
+    };
+    if (V.auto) F.bd.append(E('div', 'fpo-dim', 'AUTO: ' + V.auto));
+    const ln = E('div', 'fpo-ln');
+    const link = (t, f) => {
+      const a = E('button', 'fpo-a', t);
+      a.type = 'button';
+      a.onclick = f;
+      ln.append(a);
+    };
+    if (V.io) link('I/O wiring', () => call(() => window.lsInfo(V.io)));
+    link('Logic ' + V.d, () => (close(), call(() => dk.openD(V.d, null))));
+    link('Events', () => call(() => document.getElementById('evbtn').click()));
+    F.bd.append(ln);
+    const ev = t => call(() => window.lsEventAdd(V.d, 'DCS', 'Operator: ' + V.n + ' ' + t + ' (faceplate)'));
+    bAu.onclick = () => !bAu.disabled && (V.auSel(true), ev('AUTO'), setTimeout(tick, 150));
+    bMa.onclick = () => !bMa.disabled && (V.auSel(false), ev('MAN'), setTimeout(tick, 150));
+    bOp.onclick = () => ask(V.n + ' OPEN?', () => (dk.dpress(V.d, V.opRow), ev('OPEN')));
+    bCl.onclick = () => ask(V.n + ' CLOSE?', () => (dk.dpress(V.d, V.clRow), ev('CLOSE')));
+    function tick() {
+      if (!box || !box.isConnected) return close();
+      const op = !!call(() => V.isOpen(), false),
+        au = !!call(() => V.isAuto(), false),
+        run = isRun(),
+        w = call(() => (V.why ? V.why() : ''), '');
+      F.lamp.className = 'fpo-lamp ' + (op ? 'run' : 'stop');
+      F.val.textContent = op ? 'OPEN' : 'CLOSED';
+      lO.className = 'fpo-lp' + (op ? ' run' : '');
+      lC.className = 'fpo-lp' + (!op ? ' stop' : '');
+      bAu.classList.toggle('on', au);
+      bMa.classList.toggle('on', !au);
+      bAu.disabled = au || !run;
+      bMa.disabled = !au || !run;
+      bOp.disabled = au || op || !run || !!w;
+      bCl.disabled = au || !op || !run;
+      bOp.classList.toggle('lit-run', op);
+      bCl.classList.toggle('lit-stop', !op);
+      why.textContent = !run
+        ? 'Naka-PAUSE ang oras: ▶ RUN muna (walang kikilos habang naka-PAUSE).'
+        : au
+          ? 'Nasa AUTO: ang logic ang nagbubukas at nagsasara. MAN muna para sa OPEN / CLOSE.'
+          : w || '';
+      why.hidden = !why.textContent;
+      chip.textContent = au ? 'AUTO' : 'MAN';
+      chip.className = 'fpo-chip';
+    }
+    paint = tick;
+    tick();
+    place(box);
+    iv = setInterval(tick, 500);
+    return true;
+  }
+  /* the valves of the HMI pages with a DITL drawing (the same rows the Training step 8 presses, guide.js) */
+  const VALVES = {
+    'XV-MU1109': {
+      n: 'XV-MU1109',
+      t: 'Expansion tank make-up',
+      d: 'DITL-78',
+      io: 'XV-MU1109',
+      isOpen: () => !!(window.AN && AN.unit && +AN.unit.muXv === 1),
+      isAuto: () => {
+        const s = D() && D().dOf('DITL-78');
+        return !!(s && window.DUI && DUI.rowVal(s, 2) === 1);
+      },
+      opRow: 4,
+      clRow: 8,
+      auSel: v => (D().dset('DITL-78', 0, v), D().dsel('DITL-78', 2, v, 'EXPANSION TANK INLET VLV XV-MU1109 AUTO SELECTED (M.1252)')),
+      auto: 'bukas kapag LT-CW1109 < 40 %, sarado kapag > 85 % (1.7 m) · DITL-78',
+      why: () => (window.AN && AN.unit && (+AN.unit.iaP || 0) < 3.5 ? 'Walang instrument air (IA < 3.5 kg/cm²): hindi bubukas ang pneumatic valve. Bypass V-MU1033 (field) ang gamit.' : '')
+    }
+  };
+  /* a manual valve the field operator turns (Training: FIELD, a digital field item of the plant model, logged as "Field operator") */
+  const FIELDV = {
+    'V-MU1033': { n: 'V-MU1033', t: 'Expansion tank bypass (manual)', k: 'mu1033', io: 'V-MU1033', use: 'Ginagamit para punuin ang T-1109 kapag wala pang instrument air (sarado ang XV-MU1109). Isara kapag LT-CW1109 ≥ 1.7 m.' }
+  };
+  function fieldValve(V) {
+    if (!V || !window.AN || !AN.field) return false;
+    const st = () => !!(AN.fieldState && AN.fieldState()[V.k]);
+    const F = frame(V.n, V.t);
+    const chip = E('span', 'fpo-chip', 'FIELD');
+    F.hd.querySelector('.fpo-tt').append(chip);
+    const lO = lampEl('OPEN'),
+      lC = lampEl('CLOSED');
+    F.bd.append(row('POSITION', lO, lC));
+    const bOp = E('button', 'fpo-cmd', 'OPEN'),
+      bCl = E('button', 'fpo-cmd', 'CLOSE'),
+      fTag = E('span', 'fpo-fld', 'FIELD');
+    bOp.type = bCl.type = 'button';
+    fTag.title = 'A manual valve: turned by the field operator at the valve (logged in Events as "Field operator")';
+    F.bd.append(row('LOCAL', bOp, bCl, fTag));
+    const why = E('div', 'fpo-why');
+    F.bd.append(why);
+    if (V.use) F.bd.append(E('div', 'fpo-dim', V.use));
+    const ln = E('div', 'fpo-ln'),
+      a = E('button', 'fpo-a', 'Events');
+    a.type = 'button';
+    a.onclick = () => call(() => document.getElementById('evbtn').click());
+    if (V.io) {
+      const b = E('button', 'fpo-a', 'Info');
+      b.type = 'button';
+      b.onclick = () => call(() => window.lsInfo(V.io));
+      ln.append(b);
+    }
+    ln.append(a);
+    F.bd.append(ln);
+    const set = v => {
+      AN.field(V.k, v);
+      call(() => window.lsEventAdd('FIELD', 'FIELD', 'Field operator: ' + (v ? 'OPEN' : 'CLOSE') + ' ' + V.n + ' (local)'));
+      setTimeout(tick, 150);
+    };
+    bOp.onclick = () => !bOp.disabled && set(true);
+    bCl.onclick = () => !bCl.disabled && set(false);
+    function tick() {
+      if (!box || !box.isConnected) return close();
+      const op = st(),
+        run = isRun();
+      F.lamp.className = 'fpo-lamp ' + (op ? 'run' : 'stop');
+      F.val.textContent = op ? 'OPEN' : 'CLOSED';
+      lO.className = 'fpo-lp' + (op ? ' run' : '');
+      lC.className = 'fpo-lp' + (!op ? ' stop' : '');
+      bOp.disabled = op || !run;
+      bCl.disabled = !op || !run;
+      bOp.classList.toggle('lit-run', op);
+      bCl.classList.toggle('lit-stop', !op);
+      why.textContent = run ? '' : 'Naka-PAUSE ang oras: ▶ RUN muna (walang kikilos habang naka-PAUSE).';
+      why.hidden = !why.textContent;
+    }
+    paint = tick;
+    tick();
+    place(box);
+    iv = setInterval(tick, 500);
+    return true;
+  }
+  const valveTag = tg => (VALVES[tg] ? valve(VALVES[tg]) : FIELDV[tg] ? fieldValve(FIELDV[tg]) : false);
   /* an HMI page's click on a machine: its faceplate when the motor is known to the logic, else the info card (as before) */
   function hit(M, fallback) {
     if (M && M.ad && !M.fld && !/@/.test(M.ad) && D() && call(() => D().dOf(M.ad), null) && motor(M)) return;
@@ -386,9 +590,17 @@
     if (!R || !el || !el.isConnected) return false;
     last = { r: el.getBoundingClientRect() };
     R.open();
+    /* the page may still be laying out after a step change: placed again on its symbol once drawn */
+    const b = box,
+      re = () => {
+        const q = el.getBoundingClientRect();
+        if (b && b === box && q.width) place(b, q);
+      };
+    requestAnimationFrame(re);
+    setTimeout(re, 350);
     return !!box;
   }
-  window.LS_FPOP = { motor, hit, openAd, place, close, get open() {
+  window.LS_FPOP = { motor, valve, valveTag, hit, openAd, place, close, get open() {
     return !!box;
   } };
 })();
