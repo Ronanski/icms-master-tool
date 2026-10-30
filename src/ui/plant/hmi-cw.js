@@ -724,12 +724,36 @@
       HXB: ['TT-CW1153', 'H-1107B CCWHE-B (closed cooling water / seawater)'],
       HXC: ['TT-CW1153', 'H-1107C CCWHE-C (closed cooling water / seawater)']
     };
+    /* 3.2.0-beta.74: a click on an ACWP = its pop-out faceplate beside it (fp-pop.js), the I/O wiring a link inside. DITL-76 / 77: REMOTE
+       SELECTED from the local control panel (row 20, the field selector), AUTO PB of the CRT (row 1, maintained: OUT1 = IN1) */
+    const fpHit = id => {
+      const M = MACH[id],
+        go = () => info(M.io);
+      if (!window.LS_FPOP) return go();
+      LS_FPOP.hit(
+        {
+          ...M,
+          d: M.ad,
+          remRows: [19],
+          auRow: 0,
+          modeFn: () => {
+            const r = outV(M.ad, /REMOTE SELECTED/),
+              a = outV(M.ad, /AUTO SELECTED/);
+            return { rem: r == null ? null : r === 1, au: a == null ? null : a === 1 };
+          },
+          cur: () => (AN.unit && AN.unit.on ? AN.unit['acI' + (id === 'ACA' ? 0 : 1)] : null)
+        },
+        go
+      );
+    };
+    /* the dock's "Buksan ang faceplate" of a step motor (fp-pop.js LS_FPOP.openAd) */
+    for (const id in MACH) (window.LS_FPREG = window.LS_FPREG || {})[MACH[id].ad] = { open: () => fpHit(id), el: () => q(`[data-hit="${id}"]`) };
     for (const id in HIT)
       qa(`[data-hit="${id}"]`).forEach(h => {
         const ti = document.createElementNS(NS, 'title');
-        ti.textContent = HIT[id][1] + ' · click = info card';
+        ti.textContent = HIT[id][1] + (MACH[id] ? ' · click = faceplate' : ' · click = info card');
         h.append(ti);
-        h.addEventListener('click', e => (e.stopPropagation(), info(HIT[id][0])));
+        h.addEventListener('click', e => (e.stopPropagation(), MACH[id] ? fpHit(id) : info(HIT[id][0])));
       });
     for (const id in MACH)
       qa(`[data-mdh="${id}"]`).forEach(h => {
@@ -738,9 +762,9 @@
           MACH[id].n +
           ' · REM / LOC = REMOTE SELECTED (local control panel), AUTO / MAN = AUTO SELECTED (CRT) of ' +
           MACH[id].ad +
-          ' · click = info card';
+          ' · click = faceplate';
         h.append(ti);
-        h.addEventListener('click', e => (e.stopPropagation(), info(MACH[id].io)));
+        h.addEventListener('click', e => (e.stopPropagation(), fpHit(id)));
       });
     for (const id in MACH)
       qa(`[data-vcb="${id}"]`).forEach(h => {

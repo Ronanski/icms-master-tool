@@ -26,6 +26,8 @@ const block =
   fs.readFileSync(__dirname + '/events.js', 'utf8') +
   '</script><style id="plantcss">' +
   fs.readFileSync(__dirname + '/../plant/plant.css', 'utf8') +
+  /* 3.2.0-beta.74: the operator pop-out faceplate */
+  fs.readFileSync(__dirname + '/../plant/fp-pop.css', 'utf8') +
   '</style><script id="plantjs">' +
   (fs.existsSync(__dirname + '/../plant/systems.js') ? fs.readFileSync(__dirname + '/../plant/systems.js', 'utf8') : '') +
   '\n' +
@@ -49,6 +51,9 @@ const block =
   '\n' +
   /* 3.2.0-beta.69: 027 CLOSED COOLING WATER (own vector graphics, STEEL; PR-OPE-5002 sections 7 ~ 8) */
   fs.readFileSync(__dirname + '/../plant/hmi-cw.js', 'utf8') +
+  '\n' +
+  /* 3.2.0-beta.74: the operator pop-out faceplate beside the clicked equipment (motor; the controllers of plant.js) */
+  fs.readFileSync(__dirname + '/../plant/fp-pop.js', 'utf8') +
   '\n' +
   /* 3.2.0-beta.49: the old snapshot pictures (hmibg.js) and snapshot value pages (values.js) deleted with the old screens */
   fs.readFileSync(__dirname + '/../plant/plant.js', 'utf8') +
