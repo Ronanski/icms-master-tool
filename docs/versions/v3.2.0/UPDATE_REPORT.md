@@ -1240,7 +1240,14 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 | 23 | Update banner | Nasubok: may bagong Beta sa version.json → lumalabas ang "New Beta available … Update now / Later" sa itaas, hindi tinatakpan ang Home | — |
 
 
-## 3.2.0-beta.70 (Beta, 2026-10-30, naghihintay ng GO BETA) — iisang HMI style (HSYM) at bagong MAKE-UP WATER page
+## 3.2.0-beta.71 (Beta, 2026-10-30, naghihintay ng GO BETA) — 036 TURBINE OIL sa iisang HMI style
+
+- 3 tab sa 1280 x 860 frame: TURBINE & BEARINGS (hiniwang HP / IP / LP, steam sa blades, shaft, bearing No.1 ~ 4 na may oil film, turning gear, generator, exciter; metal temp at vibration X / Y bawat bearing), LUBE OIL (T-1920, MOP-A / B at EOP na submerged, cooler A / B + TICLO1002 / TCV-CW1201, filter, vapour extractor, purifier), CONTROL & TRIP OIL (COP-A / B, master trip solenoid, hiniwang actuator ng MSV / CV / CRV).
+- Plant model `tcs.js`: bearing metal temp (TEST1009 / 1010, TEGE1001 / 1002) at vibration X / Y (VEST10011 ~ 22, VEGE10011 ~ 22), ASSUMED (walang value sa snapshot).
+- HSYM: oil / drain / control / trip / steam media, `vpump`, `blower`, `hx`, `filter`, `lamp` + `A.lamp`, `over` (tulay), `A.each`.
+- Sinubok (headless, 1366 + dock): 150 MW 3600 rpm, bearing oil 3.30, metal 69 ~ 77 °C; STOP MOP-A → MOP-B AUTO start; Cold lahat STOP; 0 page error; check SAME. Hindi sinubok: live sa app ng user, turbine trip animation.
+
+## 3.2.0-beta.70 (Beta, 2026-10-30, merged PR #74) — iisang HMI style (HSYM) at bagong MAKE-UP WATER page
 - **Problem (user 2026-10-30):** "Wag masyadong gaya gaya tulad ng snapshot ang layout... Parang draft lng lahat. Ipakita talaga ... kung ano tlga nangyayari s bawat equipment with animations"; "Iwasan ung mga halatang pinagdugtong. May laktaw ... Professional dapat"; "Dapat uniform ang style ng mga HMI natin." Inaprubahan ng user ang direksyon ng mockup (https://claude.ai/artifact/D7QHoST3PTVzav5Pw1T1q7, "OK, simulan sa Make-up Water").
 - **As Found:** bawat HMI page ay may sariling drawing ng tubo, pump, valve at tank; ang MAKE-UP WATER (beta.63) ay sumusunod sa layout ng snapshot 28.png, bloke at kulay ang pump at valve, at may dugtong ang mga tubo.
 - **Work Done:**
