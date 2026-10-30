@@ -4,7 +4,7 @@
 >
 > **Patakaran (CLAUDE.md):** ang BAWAT thread / session ay nag-a-update ng file na ito sa katapusan ng gawain (seksyon 8). Palitan ang luma, huwag magtambak ng kasaysayan.
 
-Huling update: **2026-10-30 11:50 AM PHT** (thread "GUMAWA NG HMI PAGE NG MAKE-UP WATER SYSTEM", 3.2.0-beta.63).
+Huling update: **2026-10-30 12:10 PM PHT** (thread "GUMAWA NG HMI PAGE NG MAKE-UP WATER SYSTEM", 3.2.0-beta.63).
 
 ---
 
@@ -19,26 +19,27 @@ Huling update: **2026-10-30 11:50 AM PHT** (thread "GUMAWA NG HMI PAGE NG MAKE-U
 | | |
 |---|---|
 | **Stable** | v2.4.0 (huling Stable). Ang susunod na Stable ay 3.2.0, LANG sa GO STABLE. |
-| **Beta sa `main`** | `3.2.0-beta.61` (merge 24e9c99, PR #67, 2026-10-30 ~9:07 AM PHT, GO BETA ng user). Bagong Training dock (mock-up v2) + pagpili ng SWP / SWBP na i-start. |
-| **Bukas na PR** | 3.2.0-beta.63 MAKE-UP WATER HMI page (branch `claude/project-thread-r6ilfi`), naghihintay ng GO BETA. |
+| **Beta sa `main`** | `3.2.0-beta.63` (PR #70, GO BETA ng user 2026-10-30 ~12:00 PM PHT): MAKE-UP WATER HMI page. Bago nito `3.2.0-beta.62` (PR #69, cbe8659): 8 findings ng live test. |
+| **Bukas na PR** | Wala (beta.63 PR #70 ay mina-merge sa GO BETA ng user). |
 | **Beta site** | Kusang nade-deploy pagkatapos ng berdeng Checks sa `main` (`site.yml`, `/beta/`). Sa app: banner na "Update now". |
 | **Roadmap** (`docs/SPEC.md` 3) | 1, 2, 3, 5, 7 TAPOS. 4 (Training Cold → 150 MW) at 6 (HMI) bahagi. 8 Library ang huli. 9 Stable = GO STABLE lang. |
-| **HMI** | Bago: 007 Air & Flue Gas (inaprubahan), 030 Seawater (STEEL) at MAKE-UP WATER (STEEL, beta.63, hindi pa naka-merge). Plant view = mga bagong page + UNIT · controllers. Ang ibang system ay isa-isa, kapag sinabi ng user (`docs/hmi/HMI_SYSTEMS.md`). |
+| **HMI** | Bago: 007 Air & Flue Gas (inaprubahan), 030 Seawater (STEEL) at MAKE-UP WATER (STEEL, beta.63). Plant view = mga bagong page + UNIT · controllers. Ang ibang system ay isa-isa, kapag sinabi ng user (`docs/hmi/HMI_SYSTEMS.md`). |
 
 ### Huling mga Beta (pinakabago sa itaas; buo sa UPDATE_REPORT)
-- **beta.63** (PR #70, naghihintay ng GO BETA) — bagong HMI page MAKE-UP WATER (PD-024 Rev D + expansion tank ng PD-021): demi tank, MWP-A / B / C, header, condenser make-up, XV-MU1109 + expansion tank; plant model `unit.js` AN_MU, ang parehong value ay binabasa ng DITL-112 / 76 / 77 / 78 (`plantsw.js`). Hakbang 8 (seksyon 7) ay nagbubukas ng page na ito.
+- **beta.63** (PR #70, GO BETA ng user) — bagong HMI page MAKE-UP WATER (PD-024 Rev D + expansion tank ng PD-021): demi tank, MWP-A / B / C, header, condenser make-up, XV-MU1109 + expansion tank; plant model `unit.js` AN_MU, ang parehong value ay binabasa ng DITL-112 / 76 / 77 / 78 (`plantsw.js`). Hakbang 8 (seksyon 7) ay nagbubukas ng page na ito.
+- **beta.62** (PR #69, merged cbe8659, GO BETA ng user) — 8 findings ng live test: 030 buong page (bug: `fitAll` hindi nababasa) at walang pan; rail nagtatago habang may dock; dock: isang linya ng yugto, isang bukas lang, "Gawin sa field"; TAPOS lang kapag naka-tick ang PAGKATAPOS I-START (#120); 030 REM / LOC, AUTO / MAN, VCB ON / OFF (#121); P-0762A "STN105 DI"; HAKBANG tag walang tinatakpan; SWBP standby AUTO (DITL-30 row 4).
 - **beta.61** — bagong Training dock (mock-up v2, PC at tablet landscape): SUSUNOD NA GAWIN na banner, card ng bawat motor na mapipili (hal. SWP-C muna), 4 na yugto Lineup / Permissive / Start / Check, "?" bawat row, iisang font, START pulang outline / STOP berdeng outline; header 3 value + "Lahat ▾"; #115. Hindi pa live-tested ng user; phone at tablet portrait isinantabi ng user.
 - **beta.60** — Training dock: seksyon ng hakbang 60 ~ 64 at 102 ~ 105, walang dobleng button, walang laman na CONTROLS, RUNNING pula / STOPPED berde. Walang sariling HMI page: hakbang 10 ~ 14, 52, 54, 57, 62.
 - **beta.59** — 030 Seawater: lahat ng value na walang transmitter ay galing sa plant model (`unit.js` `AN_SW`), wala nang ● estimate; buong page pagbukas.
-- **beta.58** — Training button ay nagbubukas ng DOCK; gitna = Plant view / Logic lang; HMI page bawat seksyon (`SECHMI` sa `dock.js`).
 
 ## 3. Mga thread / trabaho (2026-10-30 9:15 AM PHT)
 | Thread | Kalagayan | Susunod |
 |---|---|---|
-| GUMAWA NG HMI PAGE NG MAKE-UP WATER SYSTEM | PR #70 beta.63, naghihintay ng GO BETA | GO BETA ng user, saka retest ng H8 |
+| GUMAWA NG HMI PAGE NG MAKE-UP WATER SYSTEM | naka-merge sa beta.63 | retest ng H8 sa live test |
 | Mockup: bagong dock at HMI para sa PC at tablet landscape | naka-merge sa beta.61 | live check ng user sa beta.61 |
 | Fix Training to allow starting SWP C | naka-merge sa beta.61 | live check ng user (SWBP hindi pa nasubok) |
-| Live test ng start-up steps sa PC ko (Remote Control) | naghihintay ng "G" | live test, ISANG hakbang bawat "G" ng user, may saksi |
+| Live test ng start-up steps sa PC ko (Remote Control) | naka-pause pagkatapos ng H7 (8 findings) | retest H2 ~ H8 lang sa beta.63, sa "G" ng user |
+| AYUSIN ANG 8 FINDINGS NG LIVE TEST (BETA.61) | naka-merge sa beta.62 | retest H2 ~ H8 |
 | Dock: Training button = Training dock (beta.58 ~ 60) | tapos | — |
 | Training: starting points at SOP alignment (fixer) | tapos | wala hanggang may bagong findings |
 | Propose Seawater System HMI page | tapos (beta.56 / 59) | — |
@@ -47,7 +48,8 @@ Huling update: **2026-10-30 11:50 AM PHT** (thread "GUMAWA NG HMI PAGE NG MAKE-U
 Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instrument list, HMI audit) ay TAPOS at naka-merge.
 
 ## 4. Bukas na isyu at desisyon
-- **Live test ng user** sa beta.61: hindi pa nagagawa. Alam na: `sop_bawal.js` 6 FAIL (lumang test na hindi alam ang dock, "NO START BUTTON FOUND"); FIELD habang PAUSED ay nababasa lang pagkatapos ng ▶ RUN. Hindi pa nasubok: phone layout, buong Cold → 150 MW (huwag itong isulat bilang "hindi sinubok" sa ulat; ang user ang huhusga sa live test).
+- **Bagong nakita (beta.62, user ang magpapasya):** ang standby SWP-C (H3) at SWBP-C (H6) ay AUTO pero LOCAL; ang AUTO start ng DITL-29A / DITL-30 ay nangangailangan din ng REMOTE, kaya hindi aandar ang standby kapag may nag-trip.
+- **Live test ng user** sa beta.61: naka-pause pagkatapos ng H7; 8 findings inayos sa beta.62. Alam na: `sop_bawal.js` 6 FAIL (lumang test na hindi alam ang dock, "NO START BUTTON FOUND"); FIELD habang PAUSED ay nababasa lang pagkatapos ng ▶ RUN. Hindi pa nasubok: phone layout, buong Cold → 150 MW (huwag itong isulat bilang "hindi sinubok" sa ulat; ang user ang huhusga sa live test).
 - **#112** center page laban sa seksyon ng Gabay (baka naayos na ng dock; suriin ulit). **#113** "Bakit?" masyadong maikli.
 - **P2 #7 ~ #12** (roadmap 4) at HP bypass na hindi sinasara ng saradong MV-MS1391.
 - **Bukas na desisyon ng user:** shortcut na "Laktawan 6 h" sa hakbang H1.
