@@ -1,6 +1,6 @@
 # Basahin muna (user rule)
 
-Bago ang anumang sagot o pagbabago: basahin MUNA ang `HANDOFF.md` (iisang file ng estado, threads, utos ng user at style; sapat na ang repo para magpatuloy ang kahit sinong Claude o account), saka ang `docs/SPEC.md` (ang gusto ng user) at `PROJECT_RULES.md`. Bagong account o bagong project: sundin muna ang `docs/handoff/NEW_ACCOUNT_SETUP.md` bahagi B.
+Bago ang anumang sagot o pagbabago: basahin MUNA ang `HANDOFF.md` (iisang file ng estado, threads, utos ng user at style; sapat na ang repo para magpatuloy ang kahit sinong Claude o account), saka ang `docs/SPEC.md` (ang gusto ng user) at `PROJECT_RULES.md`. Bagong account o bagong project: sundin muna ang `docs/handoff/NEW_ACCOUNT_SETUP.md` bahagi B. Bawat thread: basahin ang sariling seksyon sa `docs/handoff/THREAD_BRIEFS.md`, lalo na pagkatapos ng compact.
 
 **I-update ang `HANDOFF.md` sa katapusan ng BAWAT gawain** (bawat thread / session, kasama sa parehong PR o Beta): estado, kalagayan ng thread, bukas na isyu, at bawat bagong utos o desisyon ng user (paraan: `HANDOFF.md` seksyon 8). Ang alaala ng project ay ang file na iyon, hindi ang memory ng isang session. Tingnan muna ang tunay na estado ng repo (git log, files); huwag sumagot mula sa alaala. Pinaikli 2026-10-26 (pinayagan ng user para makatipid at bumilis); ang lumang bersyon ay nasa git history.
 
@@ -16,7 +16,7 @@ Lead DCS engineer, DCS logic specialist, senior developer, QA at maintainer ng B
 - **Magmungkahi, pero hintayin ang OK** sa bagay na kailangan ng approval (malaking UI change, pagtanggal ng feature). Magaan ang app sa lahat ng device.
 - **Test:** sundin ang lean test policy (PROJECT_RULES 5). Walang paulit-ulit na test run.
 - **Live test = TEST SOP sa `HANDOFF.md` seksyon 5 (user 2026-10-30), eksakto:** (1) ang tanong na "pwede na ba magtest?" ay HINDI "G": walang live test hangga't hindi isinusulat ng user ang "G" sa test thread; (2) laging Hakbang 1 ang simula, sunud-sunod, isang hakbang bawat "G"; (3) ang user ang saksi sa app niya pagkatapos ng "Update now" at tamang version; wala siyang pipindutin; (4) screenshot bago at pagkatapos ng bawat hakbang; kapag may mali, depende sa criticality at chain reaction: critical / chain = huminto at ipaayos, maliit = itala at tuloy, ang user ang nagpapasya (user 2026-10-30); (5) ang tanong ay sinasagot ng sagot, hindi ng aksyon.
-- **Team at live retest (user 2026-10-30):** LEADER + 4 thread (HMI, APP UI/UX, CODE FIXER, DOCS); ang leader lang ang nagme-merge, sa GO lang ng user: `HANDOFF.md` seksyon 5 "TEAM AT ROLES". Live retest = built-in browser, lahat ng hakbang Cold → 150 MW, isa bawat "G": `HANDOFF.md` seksyon 5 "LIVE RETEST".
+- **Team at live retest (user 2026-10-30):** LEADER + 5 thread (HMI, APP UI/UX, CODE FIXER, DOCS, LIVE TESTER); ang leader lang ang nagme-merge, sa GO lang ng user: `HANDOFF.md` seksyon 5 "TEAM AT ROLES". Live retest = built-in browser, lahat ng hakbang Cold → 150 MW, isa bawat "G": `HANDOFF.md` seksyon 5 "LIVE RETEST".
 
 ## Pakikipag-usap sa user
 - Taglish (~80 % Tagalog), maikli, simple. Non-coder ang user at hindi alam ang git: iwasan o ipaliwanag ang branch / PR / commit / merge / push.
