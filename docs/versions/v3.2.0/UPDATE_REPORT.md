@@ -1240,7 +1240,7 @@ Check (totoong pindot, persistent profile, 1366 × 768): regression Hakbang 1 �
 | 23 | Update banner | Nasubok: may bagong Beta sa version.json → lumalabas ang "New Beta available … Update now / Later" sa itaas, hindi tinatakpan ang Home | — |
 
 
-## 3.2.0-beta.62 (Beta, 2026-10-30, naghihintay ng GO BETA) — bagong HMI page: MAKE-UP WATER (PR-OPE-5002 seksyon 7)
+## 3.2.0-beta.63 (Beta, 2026-10-30, naghihintay ng GO BETA) — bagong HMI page: MAKE-UP WATER (PR-OPE-5002 seksyon 7)
 - **Problem:** walang sariling HMI page ang make-up water (MWP-A / B / C, demi water tank, expansion tank). Ang Hakbang 8 ng Training (seksyon 7) ay nagbubukas ng 030 SEAWATER, kung saan expansion tank lang ang nakikita, walang MWP. Kailangan ito bago ang retest ng H8.
 - **As Found:** P&ID = K1AU3-PD-024 MAKE-UP WATER SYSTEM Rev D (`flow-diagram-K1AU3-A1-0-001.zip`, RB page 21) at ang expansion tank sa PD-021 Rev D (RB page 15). Logic: DITL-112 (MWP A, instance #B / #C; trip kapag ang dalawang demi tank < 0.2 m nang 2 s o strainer DP ≥ 1.0 kg/cm2 nang 10 s), DITL-78 (XV-MU1109 AUTO: bukas < 40 %, sarado > 85 % ng LT-CW1109), DITL-76 / 77 (ACWP trip kapag expansion tank < 0.3 m), DITL-60 (MV-MU1001), ABC-031 (LCV-MU1110). Ang mga local transmitter (LT-MU0708-A / B, PT-MU0709, DPT-MU0709-A / B / C, LT-CW1109) ay analog row lang ng logic at may nakapirming default (0.3 m, 8.4 kg/cm2, 0.4 kg/cm2, 62.5 %); walang plant model para sa mga ito.
 - **Work Done:**

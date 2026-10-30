@@ -65,7 +65,7 @@
   const ana = [],
     suc = [],
     mu = [];
-  /* 3.2.0-beta.62 (MAKE-UP WATER HMI): the local transmitters of the make-up water system and of the expansion tank are analog rows of
+  /* 3.2.0-beta.63 (MAKE-UP WATER HMI): the local transmitters of the make-up water system and of the expansion tank are analog rows of
      the logic only (DITL-112 trip < 0.2 m / >= 1 kg/cm2, DITL-76 / 77 ACWP trip < 0.3 m, DITL-78 XV-MU1109 AUTO 40 % / 85 %); their value
      is the plant model's (unit.js AN_MU), the same number as the HMI. [row text, unit model key] */
   const MU = [
