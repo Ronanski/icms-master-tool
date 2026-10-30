@@ -4,7 +4,7 @@
 >
 > **Patakaran (CLAUDE.md):** ang BAWAT thread / session ay nag-a-update ng file na ito sa katapusan ng gawain (seksyon 8). Palitan ang luma, huwag magtambak ng kasaysayan.
 
-Huling update: **2026-10-30 10:45 PM PHT** (DOCS thread: ika-6 na role na LIVE TESTER at rule na huwag i-archive ang mga thread; docs lang. Bago nito 10:30 PM: mga desisyon ng user sa unang session ng bagong account, PR #83). **Lumipat na sa bagong account** (Claude Code desktop sa PC ng user). Tapos ang `docs/handoff/NEW_ACCOUNT_SETUP.md` bahagi B: 49 memory na-import (5 napalitan, hindi isinama); ang 3 skill mula `docs/handoff/skills/` at ang skill na `dcs-beta-live-test` ay naka-install sa PC.
+Huling update: **2026-10-30 10:45 PM PHT** (DOCS thread: ika-6 na role na LIVE TESTER, rule na huwag i-archive ang mga thread, rule ng COMPACT at `docs/handoff/THREAD_BRIEFS.md`; docs lang. Bago nito 10:30 PM: mga desisyon ng user sa unang session ng bagong account, PR #83). **Lumipat na sa bagong account** (Claude Code desktop sa PC ng user). Tapos ang `docs/handoff/NEW_ACCOUNT_SETUP.md` bahagi B: 49 memory na-import (5 napalitan, hindi isinama); ang 3 skill mula `docs/handoff/skills/` at ang skill na `dcs-beta-live-test` ay naka-install sa PC.
 
 ---
 
@@ -96,6 +96,12 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
   5. **LIVE TESTER** — siya ang nagla-live test ng Training Cold → full load sa built-in browser ng Claude app sa PC, isang hakbang bawat "G" ng user (saksi ang user). Sumusunod sa TEST SOP, LIVE RETEST at skill na `dcs-beta-live-test`. Ipinapasa niya ang findings sa leader, at ang leader ang nag-uutos ng ayos sa tamang thread. Hindi siya nag-e-edit ng code at hindi nagme-merge. Ang "G" ay tina-type ng user sa LIVE TESTER thread; naka-on ang Remote Control ng thread na iyon para makita ito sa phone.
 - Ang leader lang ang nagbubukas ng thread, at kapag may trabaho lang ito. Iisang format ng sagot sa leader at sa mga thread.
 - Huwag i-archive ang mga thread (user 2026-10-30); naka-off na ang auto-archive kapag na-merge ang PR.
+- Brief ng bawat role (para sa simula at pagkatapos ng compact): `docs/handoff/THREAD_BRIEFS.md`.
+
+### COMPACT (user 2026-10-30)
+- Ang leader ang nagsasabi kung kailan mag-compact: thread na lampas ~70 %, sa malinis na pahinga lang (pagkatapos ng ulat ng hakbang o ng tapos na gawain, bago ang susunod na "G"). Hindi sa gitna ng hakbang o ng edit, at naka-save muna ang progreso sa repo.
+- Ang compact ay buod lang ng chat; hindi nito binabago ang memory, `CLAUDE.md`, `HANDOFF.md` o ang repo.
+- Pagkatapos ng compact, babasahin ulit ng thread ang sariling seksyon sa `docs/handoff/THREAD_BRIEFS.md` bago magpatuloy.
 - Ang bagong session ay mabubuksan lang mula sa mensaheng tina-type sa desktop app (hindi sa Remote Control), at kailangang i-trust nang isang beses ang folder ng repo.
 
 ### FOKUS (user 2026-10-30)
