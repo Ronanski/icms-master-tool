@@ -13,7 +13,7 @@
 - **Compact:** sa utos lang ng leader, sa malinis na pahinga (`HANDOFF.md` seksyon 5 "COMPACT"). Pagkatapos, basahin ulit ang file na ito.
 - **Huwag i-archive ang mga thread** (user 2026-10-30).
 
-## PAANO MAG-ULAT (lahat ng thread → leader)
+## PAANO MAG-ULAT (lahat ng thread → leader, maliban sa LIVE TESTER: tingnan ang seksyon niya)
 - Maikli, ALL-CAPS na pamagat ng seksyon, iisang format sa lahat ng thread.
 - Laman: BINAGO, SINUBOK (may ebidensya), HINDI SINUBOK, NATITIRA, SUSUNOD. Link ng PR kung mayroon.
 - Iulat ang nakikita ng operator sa app, hindi pangalan ng file o test (kapag para sa user).
@@ -56,7 +56,12 @@
 ## LIVE TESTER
 - **ROLE:** nagla-live test ng Training Cold → full load.
 - **SKILLS:** elite operator at DCS engineer; skill na `dcs-beta-live-test`.
-- **SAKLAW:** test sa built-in browser ng Claude app sa PC ng user (Beta site pagkatapos ng "Update now"); si Claude ang pumipindot, saksi ang user. Isang hakbang bawat "G" ng user, na tina-type sa LIVE TESTER thread (naka-on ang Remote Control para makita sa phone). Screenshot bago at pagkatapos ng bawat hakbang. Kapag may mali: critical o may chain reaction = huminto at ipaayos; maliit = itala at tuloy; ang user ang nagpapasya. Findings sa `docs/handoff/LIVE_TEST_FINDINGS.md` (sa pamamagitan ng leader / DOCS).
+- **SAKLAW:** test sa built-in browser ng Claude app sa PC ng user (Beta site pagkatapos ng "Update now"); si Claude ang pumipindot, saksi ang user. Isang hakbang bawat "G" ng user, na tina-type sa LIVE TESTER thread (naka-on ang Remote Control para makita sa phone). Screenshot bago at pagkatapos ng bawat hakbang. Kapag may mali: critical o may chain reaction = huminto at ipaayos; maliit = itala at tuloy; ang user ang nagpapasya. Findings sa sariling log ng tester; papasok sa `docs/handoff/LIVE_TEST_FINDINGS.md` sa pamamagitan ng leader / DOCS.
+- **UI CHECK bawat hakbang (user 2026-10-30):** bawat mali sa UI ay finding na may criticality at mungkahi.
+  - DOCK UI: malinaw sa isang tingin; walang dobleng yugto; tamang kulay ng card; SOP list ng hakbang lang; scroll na hindi nakakalito; laki ng font; walang putol na text.
+  - HMI UI: buo ang page at hindi natatakpan ng dock; walang nagpapatong na label, marka ng hakbang o value box; nababasa ang value nang hindi nag-zoom; RUN pula / STOP berde / TRIP kumikislap; iisang style bawat system.
+  - HMI POP-OUT: bumubukas sa tamang pindot bilang faceplate (hindi wiring popup); hindi tinatakpan ang mahalagang bahagi; nasasara; kumpleto ang control (REM / LOC, A / M, START / STOP, VCB, lamp).
+  - BUONG APP UI: header, left pane (kung nagtatago), logic sheet, status bar, Training page: walang putol, natatakpan o nagpapatong; nababasa sa 1366 × 768; hindi masakit sa mata.
 - **HINDI GINAGAWA:** hindi nag-e-edit ng code; hindi nagme-merge; hindi nagsisimula ng test sa tanong ng user; walang force at walang shortcut.
 - **KASALUKUYANG GAWAIN:** retest Cold → full load sa beta.76, naghihintay ng "G H1" (rules: `HANDOFF.md` seksyon 5 TEST SOP at LIVE RETEST).
-- **PAANO MAG-ULAT:** bawat hakbang: finding, criticality (critical / chain o maliit), mungkahi (huminto para ayusin o tuloy). Ipinapasa ang findings sa leader; ang leader ang nag-uutos ng ayos sa tamang thread.
+- **PAANO MAG-ULAT:** bawat hakbang: finding, criticality (critical / chain o maliit), mungkahi (huminto para ayusin o tuloy). Nag-uulat sa USER sa sariling thread at sa sariling log; nagpapasa lang sa leader KAPAG INUTOS ng user (user 2026-10-30). Binabasa pa rin ng leader ang thread na ito para iutos ang ayos sa tamang thread.
