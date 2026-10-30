@@ -22,6 +22,16 @@ Mockup na inaprubahan ng user (2026-10-30): https://claude.ai/artifact/D7QHoST3P
 - Dulo ng linya papunta sa ibang system: `HSYM.dest` card (pangalan + linya / drawing).
 - Sa ibaba: legend ng media (`HSYM.legend`) at ang pinagmulan (P&ID, SOP, "values: plant model").
 
+### 1a. Laki sa totoong screen (MUNGKAHI, naghihintay ng approval ng user, 2026-10-30)
+Sukat sa beta.70: sa PC 1366 x 768 na bukas ang dock, ~912 px lang ang lapad ng page. Ang frame ng `hmi2.js` ay 1920 ang lapad, kaya
+0.47x ang lahat: 10.5 px na text = ~5 px, 14 px na value = ~6.6 px sa screen ("malabo / maliit").
+- Mungkahi: frame ng bawat page = **1280 x 860** (`sys.w` / `sys.h`), ~0.71x sa 1366 + dock. Inaayos ang frame header ng
+  `hmi2.js` para kumasya sa 1280.
+- Minimum sa drawing: text 15, tag 13, value 22 ~ 26. Sa screen (1366 + dock): text >= ~11 px, value >= ~16 px.
+- Kapag hindi kasya ang system: **tabs** sa loob ng page (hal. MAKE-UP WATER: TANKS & PUMPS / USERS & EXPANSION TANK; 036:
+  TURBINE & BEARINGS / LUBE OIL / CONTROL & TRIP OIL).
+- Hanggang sa approval, ang mga numero sa seksyon 1 at 3 ay ang beta.70.
+
 ## 2. Kulay (dark steel)
 
 | Gamit | Kulay | Token (`HSYM.C`) |
