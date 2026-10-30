@@ -23,7 +23,8 @@
 - SHORT GO: "go opus"/"go sonnet" = next roadmap step. Merge/release need explicit GO BETA / GO STABLE.
 - User's "G" on something = do it. "BETA NA" = GO BETA. Do EXACTLY what the user ordered; don't over-message threads; "itigil" = stop only the named work. User gets very angry at delays/apologies: act, verify threads' real state (read_thread), report facts.
 - Only start threads from roadmap or user's ask. Resolve finished threads.
-- TEST SOP (2026-10-30): question is NOT a G; start at Step 1, one step per G; user only witnesses on his updated app; screenshots before/after; stop at first fault; answer questions with words, not actions ([[feedback-live-test-sop]]).
+- TEST SOP (2026-10-30): question is NOT a G; start at Step 1, one step per G; user only witnesses on his updated app; screenshots before/after; on a fault: critical / chain → stop and fix, minor → log and continue, user decides (2026-10-30, [[retest-rules-new-account]]); answer questions with words, not actions ([[feedback-live-test-sop]]).
+- NEW ACCOUNT (2026-10-30): Claude Code desktop on the user's PC. Claude = LEADER of 4 threads (HMI, APP UI/UX, CODE FIXER, DOCS); focus = live test Cold → full load in the built-in browser, all steps one per G ([[team-structure-leader]], [[retest-rules-new-account]]). Strategy is the user's call.
 - VERSIONING: coordinator assigns ONE beta number. Stable 3.2.0 at the end on GO STABLE.
 - HMI: Air & Flue Gas approved (hmi2.js). Seawater (hmi-sw.js, STEEL) done. One page per system, own art, RUN red/STOP green; live test also checks HMI for missing items.
 - INSTRUMENT/VALVE LIST: coverage doc UNRELIABLE (#110). Search app AND repo logic first. Unconfirmed in logic: XV-FA1055-B2/B3, CL1061-B1/B2/C1/C2, MV-SW1003..1006. Docs in document-references/.
@@ -829,3 +830,50 @@ Write every ETA ("tapos ~14:15 PHT") in GMT+8 Philippine time, in the status che
 **Why:** 2026-10-17 the user asked how long the regression would take and for a countdown; after an ETA in UTC they asked for GMT+8 because they are in the Philippines.
 
 **How to apply:** convert UTC + 8 h; label it PHT. Related: [[feedback-full-report-every-milestone]].
+
+## branch-merge-policy
+
+_feedback_ — Few branches (max 3 besides main); tested work must be in the tested Beta; merge to main ONLY on GO BETA, Stable ONLY on GO STABLE
+
+The user (28 Okt 2026, very angry) does not want many branches in Ronanski/icms-master-tool. Whatever is under test must already be merged into the line that builds the Beta. At that time there were 40 branches and 16 open PRs (#34 to #52), and the steel-theme HMI was sitting in PR #49, outside the Beta (PR #52).
+
+**Why:** separate unmerged branches meant the user tested a Beta without the new HMI.
+**How to apply:** before any test, confirm all related work is merged into the tested build. Don't leave work on side branches. The 7-part check is automatic in every test, official or self ([[startup-test-method]], [[hmi-vs-plant-view]]).
+
+Update 2026-10-28 22:10 PHT: user authorized deleting useless branches. Rule: always push and merge, keep the repo clean, never more than 3 floating (unmerged) branches. Plant view should have only 2 HMI pages: the new steel Air & Flue Gas HMI and the PID / manual-controllers page; delete all other Plant view pages.
+
+30 Okt 2026 ("kung ano latest gnun dn dapat ung app", "imerge n lahat"): once the user has given GO for work, merge every finished PR right away, resolving conflicts myself if needed.
+
+**SUPERSEDED 2026-10-30 8:00 PM PHT (merge part):** merge to `main` only on the user's GO BETA in the same message; Stable and workflows only on GO STABLE. See [[feedback-merge-rule-go-beta]]. Branch-count rule still stands.
+
+## retest-rules-new-account
+
+_feedback_ — Live retest setup agreed 2026-10-30 in the new account: built-in browser, all steps one by one, stop depends on criticality/chain effect, strategy is the user's call
+
+User answers 2026-10-30 (new account, first session):
+- Live retest runs in the Claude app's built-in browser on the user's PC (Beta site, after "Update now"); Claude clicks, user watches.
+- Scope: ALL steps (Cold → 150 MW), but one step per "G".
+- On a fault: depends on how critical it is and whether it causes a chain reaction in later steps. Critical / chain-reaction → stop and get it fixed; minor → log and continue. Claude states its criticality call in the step report; user decides.
+- Project strategy: "Ako masusunod. Pag-uusapan to at sasabihin ko sayo." Do not adopt Claude's proposed plan until the user says so.
+
+**Why:** user wants control of direction; avoids repeated full reruns while not pushing past a fault that breaks later steps.
+**How to apply:** every step report ends with: finding, criticality (critical/chain or minor), recommendation (stop to fix or continue). Replaces item 4 "stop at first fault" of [[feedback-live-test-sop]]. Related: [[feedback-stop-means-stop]].
+
+## team-structure-leader
+
+_user_ — User's project setup (2026-10-30): Claude = LEADER of 4 role threads (HMI, APP UI/UX, CODE FIXER, DOCS); focus = live test Cold → full load
+
+User 2026-10-30 (new account): focus of the app now = LIVE TESTING of Cold start-up to full load.
+
+Team (uniform response format in leader and every thread):
+1. HMI thread — HMI mockup + implementation; elite operator + software engineer + graphic designer; one style for every system (HSYM), proper HMI UI/UX standards.
+2. APP UI/UX thread — whole app apart from HMI: buttons, text, colours, style, overall look; clear, easy to read, easy on the eyes, professional.
+3. CODE FIXER thread — any fault in logic, engine, plant model, overall functionality; elite DCS engineer + software engineer.
+4. DOCS thread — docs, progress saves, skills, HANDOFF, memory, instructions; applies EVERY correction of the user; organized document controller / librarian / secretary.
+5. LEADER (main session): manages and instructs the threads, opens a thread only when it has work, does all merging and Beta/Stable updates (only on the user's GO BETA / GO STABLE), bases everything on rules + document-references, checks properly, makes own decisions; user gives final approval. ALL-CAPS section titles.
+
+New sessions open only from a message typed in the desktop app (not over Remote Control); the repo folder must be trusted once.
+
+Local-only references (not in the repo): `..\for-github-icms-master-tool\document-references\tcs-references\` has "TCA - SOFT LOGIC DIAGRAM OF TCS.pdf", "TCE - SOFT LOGIC DIAGRAM OF TCS.pdf" and a "TCS Logic" folder. P&ID = `document-references/flow-diagram-K1AU3-A1-0-001.zip` (user confirmed).
+
+**How to apply:** route work to the right role thread; brief each thread with rules + references; every user correction goes to the DOCS thread. Related: [[retest-rules-new-account]], [[feedback-merge-rule-go-beta]].

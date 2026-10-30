@@ -10,18 +10,18 @@
   - #16 (030 / 007 sa HSYM, maliit na text): mockup naghihintay ng approval ng user: https://claude.ai/artifact/N6DCUgSmrjXMgecVrpkWhA (private sa lumang account).
 - **Bukas na desisyon ng user:** approval ng mockup #16; forebay level -4 m (SOP NL) laban sa -8.76 m (snapshot) (#36).
 - **User 2026-10-30 7:39 PM PHT:** "Wala ng retest muna. Ung isang account n mgtutuloy nun." = ang BAGONG account ang magre-retest.
-- Binanggit ng log ang skill na `dcs-beta-live-test`; WALA ito sa listahan ng skills ng account noong 2026-10-30 (hindi nakopya). Ang protocol sa ibaba ang sundin.
+- Ang skill na `dcs-beta-live-test` ay naka-install na sa PC ng user (bagong account, 2026-10-30). Kasama nito ang protocol sa ibaba at ang LIVE RETEST sa `HANDOFF.md` seksyon 5.
 
 ## Susunod para sa bagong account (sa "G" ng user lang, TEST SOP sa `HANDOFF.md` seksyon 5)
 1. Ang beta.76 (PR #80) ay naka-merge na (2026-10-30); gamitin ang pinakabagong Beta sa `main`.
 2. I-load ang pinakabagong Beta (tingnan ang version sa status bar; user pumipindot ng "Update now").
 3. Burahin ang localStorage keys `ls-train`, `ls-guide`, `ls-train-auto` (malinis na simula).
-4. Training → Gabay: **Cold**. Live test H1 hanggang Turbine Oil (H16), isang table bawat hakbang.
+4. Training → Gabay: **Cold**. Live test ng LAHAT ng hakbang Cold → 150 MW (user 2026-10-30), isang hakbang bawat "G", isang table bawat hakbang, sa built-in browser ng Claude app sa PC ng user.
 
 ## Test protocol (utos ng user)
 - Buong checklist bawat hakbang: Training list, dock, header, logic sheet, HMI na may pop-out (kumilos bilang operator), status bar, events, at reference (SOP PR-OPE-5002, ABC / DITL, alarm list).
 - Totoong 6 h purge; walang shortcut at walang force. I-tick lang ang totoo.
-- Huminto at mag-ulat sa unang blocker.
+- Kapag may mali (user 2026-10-30): critical o may chain reaction sa susunod na hakbang = huminto at ipaayos; maliit = itala at tuloy. Bawat ulat ng hakbang ay may criticality at mungkahi; ang user ang nagpapasya.
 - 2-column na table na kasya sa telepono. Magtanong sa user sa live-test thread lang. Nanonood ang user sa TV: iwasan ang reload.
 - UI direction na inaprubahan (mockup v7, https://claude.ai/artifact/Xjzj9XgmtT62qqiRF8zRQa): kumilos sa HMI process graphic; mini pop-out bawat equipment na may controls, SOP line-up at logic permissive; ang dock ay GABAY lang (hindi pumipindot, hindi nagfo-force; bawal ang salitang "coach").
 
