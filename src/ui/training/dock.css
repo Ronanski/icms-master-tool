@@ -267,3 +267,101 @@ body.app2:not(#_) #gdock #trainws button.trbtn{min-height:2.1rem;padding:0 .6rem
 .gd-wr b.stop{color:#22a052}
 /* a field step without a DCS control: no empty "CONTROLS NG HAKBANG" heading */
 #gdock .gd-card:not(:has(.gd-ctl,.gd-btn,.gd-ilh,.gd-ild,.gd-vs)) > .gd-h:first-child{display:none}
+/* ---------- user 2026-10-30 (dock mock-up v2, approved "g na yan"): one font, four sizes (13 / 15 / 17 / 20), the SUSUNOD NA GAWIN banner,
+   the cards of the motors, the four stages. Colours: RUNNING red, STOPPED green (plant), done / OK blue, missing / out of range amber ---------- */
+#gdock{--gd-ok:#5aa8ff;--gd-okbg:color-mix(in srgb,#5aa8ff 16%,transparent);--gd-wn:#f2b33d;--gd-wnbg:color-mix(in srgb,#f2b33d 14%,transparent);--gd-run:#ff5d5d;--gd-stop:#3fd38a}
+#gdock,#gdock :is(b,small,em,code,span,button,label,input,h3,p,div,i){font-family:var(--uf)}
+#gdock :is(.gd-kv b,.gd-wr b,.gd-v b){font-variant-numeric:tabular-nums}
+#gdock :is(.gd-secl small,.gd-stl small,.gd-kv small,.gd-kv em,.gd-v small,.gd-v em,.gd-ilm,.gd-mdl,.gd-cd,.gd-fl0,.gd-wr em,.gd-wr small,.gd-btn small,.gd-tg,.gd-fl em,.gd-lim,.gd-why2,.gd-snote,.gd-lamp){font-size:13px}
+#gdock :is(.gd-secl b,.gd-btn,.gd-cb,.gd-wr,.gd-fl li,.gd-ilr,.gd-ild,.gd-warn,.gd-cond,.gd-kv b,.gd-v b,.gd-ch){font-size:15px}
+#gdock .gd-stl h3{font-size:20px;font-weight:700;line-height:1.2}
+#gdock .gd-strip .gd-kvs{grid-template-columns:repeat(3,minmax(0,1fr)) auto;align-items:end}
+#gdock .gd-strip .gd-kv b{font-size:15px}
+#gdock .gd-strip:not(.all) .gd-kv:nth-child(n+4),#gdock .gd-strip:not(.all) .gd-lamps{display:none}
+#gdock .gd-strip.all .gd-kvs{grid-template-columns:repeat(4,minmax(0,1fr))}
+.gd-all{border:0;background:none;color:var(--gd-ok);font:600 13px var(--uf);cursor:pointer;padding:2px 0;white-space:nowrap;justify-self:end}
+#gdock .gd-strip.all .gd-all{grid-column:1/-1;justify-self:end}
+/* SUSUNOD NA GAWIN */
+.gd-nx{margin:8px 10px 2px;border:1px solid var(--gd-ok);background:var(--gd-okbg);border-radius:8px;padding:8px 10px;display:grid;grid-template-columns:minmax(0,1fr) max-content;gap:2px 10px;align-items:center}
+.gd-nx small{grid-column:1/-1;font:700 12px var(--uf);letter-spacing:.08em;color:var(--gd-ok)}
+.gd-nxs{font:700 17px/1.3 var(--uf);color:var(--c-tx);min-width:0}
+.gd-nxb{border:0;background:var(--gd-ok);color:#071321;border-radius:6px;padding:9px 12px;font:700 13px var(--uf);cursor:pointer;white-space:nowrap;max-width:170px;overflow:hidden;text-overflow:ellipsis}
+.gd-nxb[hidden]{display:none}
+.gd-nx.done{border-color:var(--c-line2);background:var(--c-well)}
+html.gd-menu #gdock .gd-nx{display:none!important}
+/* the motors of the step */
+.gd-eqh{font-size:13px;color:var(--c-dim);margin:2px 0 4px}
+.gd-eqs{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:6px}
+.gd-eqs.n1{--n:1}.gd-eqs.n2{--n:2}.gd-eqs.n3{--n:3}.gd-eqs.n4{--n:2}
+.gd-ec{border:1px solid var(--c-line2);background:var(--c-ctl);color:var(--c-tx);border-radius:7px;padding:7px 9px;text-align:left;display:grid;gap:1px;align-content:start;cursor:pointer;min-width:0}
+.gd-ec b{font:700 15px var(--uf)}
+.gd-ec small{font-size:13px;color:var(--c-tx2);line-height:1.3}
+.gd-ec.sel{border-color:var(--gd-ok);box-shadow:inset 0 0 0 1px var(--gd-ok);background:var(--gd-okbg)}
+.gd-es{font:700 13px var(--uf);display:flex;align-items:center;gap:5px}
+.gd-es:before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor;flex:none}
+.gd-es.run{color:var(--gd-run)}.gd-es.stop{color:var(--gd-stop)}.gd-es.sby{color:var(--gd-ok)}.gd-es.blk{color:var(--gd-wn)}
+.gd-es.sby:before{background:none;border:2px solid currentColor;width:7px;height:7px}
+/* the four stages */
+.gd-stgs{display:flex;flex-direction:column;gap:6px}
+.gd-stg{border:1px solid var(--c-line2);border-radius:7px;background:var(--c-pane)}
+.gd-stg.cur{border-color:var(--gd-ok)}
+.gd-stg.wait>.gd-shd{opacity:.6}
+.gd-shd{width:100%;display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:8px;align-items:center;background:none;border:0;color:var(--c-tx);padding:7px 10px;text-align:left;cursor:pointer}
+.gd-sn{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font:700 13px var(--uf);border:2px solid var(--c-dim);color:var(--c-tx2)}
+.gd-stg.cur .gd-sn{border-color:var(--gd-ok);color:var(--gd-ok)}
+.gd-stg.ok .gd-sn{background:var(--gd-ok);border-color:var(--gd-ok);color:#071321}
+.gd-snm{min-width:0}
+.gd-snm b{display:block;font:700 15px var(--uf)}
+.gd-snm small{display:block;font-size:13px;color:var(--c-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gd-sc{font-size:13px;color:var(--c-tx2);white-space:nowrap}
+.gd-stg.ok .gd-sc{color:var(--gd-ok)}
+.gd-sbd{border-top:1px solid var(--c-line);padding:6px 10px 8px}
+.gd-sbd[hidden]{display:none}
+.gd-sbd .gd-card{padding:0}
+.gd-sbd .gd-il{border:0;padding:0;margin:0;background:none}
+/* the "?" of a row and its text */
+.gd-q{flex:none;width:24px;height:24px;border-radius:50%;border:1px solid var(--c-line2);background:none;color:var(--gd-ok);font:700 13px var(--uf);cursor:pointer;padding:0;align-self:center}
+.gd-q.on{background:var(--gd-ok);border-color:var(--gd-ok);color:#071321}
+.gd-qt{flex-basis:100%;grid-column:1/-1;font-size:13px;line-height:1.45;color:var(--c-tx2);background:var(--c-well);border-left:3px solid var(--gd-ok);border-radius:0 4px 4px 0;padding:6px 9px;margin-top:4px}
+.gd-qt[hidden]{display:none}
+#gdock .gd-fl li{flex-wrap:wrap;align-items:center}
+#gdock .gd-fl li label{flex:1;min-width:0}
+.gd-fl em.gd-by{color:var(--c-tx2)}
+/* the interlock rows: ✓ / ✕, the row, the fix on the row, "?" */
+#gdock .gd-ilr{display:grid;grid-template-columns:20px minmax(0,1fr) auto auto;gap:4px 8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--c-line)}
+#gdock .gd-ilr:last-of-type{border-bottom:0}
+.gd-ik{width:20px;height:20px;border-radius:4px;display:grid;place-items:center;font:700 13px var(--uf);font-style:normal;background:var(--gd-ok);color:#071321}
+.gd-ilr.x .gd-ik{background:none;border:2px solid var(--gd-wn);color:var(--gd-wn)}
+#gdock .gd-ilr .gd-it{color:var(--c-tx);min-width:0}
+#gdock .gd-ilr.x .gd-it{color:var(--c-tx)}
+.gd-it small{display:block;font-size:13px;color:var(--c-dim)}
+.gd-ifx{display:flex;gap:4px}
+.gd-fix{border:1px solid var(--gd-wn);background:var(--gd-wnbg);color:var(--gd-wn);border-radius:6px;padding:5px 9px;font:700 13px var(--uf);cursor:pointer;white-space:nowrap}
+/* START red outline, STOP green outline; the state (RUNNING / STOPPED) is the label beside them (was: STOP lit bright green, read as "press") */
+#gdock .gd-btn.go.gd-st{border-color:var(--gd-run);color:var(--gd-run);background:transparent}
+#gdock .gd-btn.gd-sp0{border-color:var(--gd-stop);color:var(--gd-stop);background:transparent}
+#gdock .gd-btn.lit-run{background:color-mix(in srgb,var(--gd-run) 22%,transparent);border-color:var(--gd-run);color:var(--c-tx)}
+#gdock .gd-btn.lit-stop{background:color-mix(in srgb,var(--gd-stop) 16%,transparent);border-color:var(--gd-stop);color:var(--c-tx)}
+#gdock .gd-btn.dis{opacity:.35}
+/* Check: ✓ within the range, ! out of it */
+#gdock .gd-wr{display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:baseline;gap:2px 8px}
+.gd-wk{font:700 13px var(--uf);font-style:normal;color:var(--c-dim)}
+.gd-wr.ok .gd-wk{color:var(--gd-ok)}
+.gd-wr.no .gd-wk,.gd-wr.no b{color:var(--gd-wn)!important}
+#gdock .gd-watch{border:0;padding:0}
+.gd-chk:empty{display:none}
+.gd-chk{border-top:0;padding-top:0}
+#gdock .gd-seg button{padding:5px 6px;font-size:13px}
+/* the interlock row on two lines: ✓ / ✕, the row and "?" first, the FIELD button under the row (long contact names wrap) */
+#gdock .gd-ilr{grid-template-columns:20px minmax(0,1fr) auto}
+#gdock .gd-ilr .gd-ik{grid-row:1}
+#gdock .gd-ilr .gd-it{grid-column:2;grid-row:1}
+#gdock .gd-ilr .gd-q{grid-column:3;grid-row:1}
+#gdock .gd-ilr .gd-ifx{grid-column:2/-1;grid-row:2;flex-wrap:wrap}
+#gdock .gd-ilr .gd-ifx:empty{display:none}
+#gdock .gd-ilr .gd-qt{grid-column:2/-1}
+#gdock .gd-fix{white-space:normal;text-align:left}
+#gdock .gd-pill{white-space:nowrap}
+.gd-nxb{white-space:normal!important;text-align:center;line-height:1.25}
+/* tablet landscape (dock about 380 px): the header keeps the four speeds in view */
+@media (max-width:1280px){#gdock .gd-hd>b{display:none}#gdock .gd-hd{gap:6px}}
