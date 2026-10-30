@@ -70,8 +70,17 @@ function tcsInit(U, how) {
   /* 'cold': all stopped, metal at the ambient; 'load': on the grid */
   const hot = how === 'load' ? 480 : T;
   U.tc = {
-    lop: svc, /* AC lube oil pump: bearing oil pressure (1.15), bearing oil temp. (1.16), main oil tank level (1.17) */
-    eh: svc, /* EH (control) oil pump: control oil pressure (1.14) */
+    lop: svc, /* a main oil pump MOP running (= mop[0] || mop[1], tcsOilSet): lube oil (1.15 / 1.16 with the bearing oil, see brgOk) */
+    eh: svc, /* a control oil pump COP running (= cop[0] || cop[1]): control oil pressure (1.14) */
+    /* 3.2.0-beta.66 (036 TURBINE OIL HMI): the pumps one by one, as the TCS I/O list (HMI_DI: 1P1922A / B, 1P1931A / B RUNNING, AUTO,
+       MANUAL; 1P1923 EOP; 1F1937 vapour extractor). In service = the 36.PNG / SOP 2620 line-up: A running, B standby in AUTO */
+    mop: [svc, false],
+    mopAu: [false, svc],
+    cop: [svc, false],
+    copAu: [false, svc],
+    eop: false,
+    eopArm: svc, /* the EOP auto start (bearing oil <= 1.05) is armed once the lube oil was in service (ASSUMED: not at a cold plant) */
+    brgOk: svc,
     vex: svc, /* main oil tank vapour extractor (1.18) */
     tg: svc && how !== 'load', /* turning gear selected (1.19); the gear engages below 4 rpm */
     asv: svc, /* MV-AS1391 aux steam from the main steam */
@@ -98,6 +107,8 @@ function tcsInit(U, how) {
     auto: false, /* ATS AUTO: the next step starts by itself when its step-in condition is satisfied */
     last: ''
   };
+  /* 3.2.0-beta.66: the oil values start again at the state chosen (tcsOil: the first step jumps to them, no false auto start) */
+  for (const k of ['loPa', 'loPb', 'loEop', 'loBrg', 'loCa', 'loCb', 'loTrip', 'loVac', 'loPur', 'loTin', 'loTb3', 'loTb4']) U[k] = NaN;
   tcsMode(U);
   return U.tc;
 }
@@ -157,11 +168,11 @@ function tcsCrit(U) {
     '1.11': f('1.11', 'CONDENSER VACUUM OK', U.vac >= 0.9, U.vac),
     '1.12': f('1.12', 'LP TURBINE EXHAUST HOOD STEAM TEMP. NOT HIGH (≤ 80 C)', c.Tx <= 80, c.Tx),
     '1.14': f('1.14', 'CONTROL OIL PRESS. NOT LOW', c.eh),
-    '1.15': f('1.15', 'BEARING OIL PRESS. NOT LOW', c.lop),
-    '1.16': f('1.16', 'BEARING OIL TEMP. OK', c.lop),
+    '1.15': f('1.15', 'BEARING OIL PRESS. NOT LOW', c.brgOk !== undefined ? c.brgOk : c.lop),
+    '1.16': f('1.16', 'BEARING OIL TEMP. OK', c.brgOk !== undefined ? c.brgOk : c.lop),
     '1.17': f('1.17', 'MAIN OIL TANK LEVEL OK', true),
     '1.18': f('1.18', 'MAIN OIL TANK VAPOUR EXTRACTOR RUNNING', c.vex),
-    '1.19': f('1.19', 'TURBINE TURNING (turning gear)', (c.tg && c.lop && U.tb && U.tb.rpm >= 1) || (U.tb && U.tb.rpm >= 4)),
+    '1.19': f('1.19', 'TURBINE TURNING (turning gear)', (c.tg && c.brgOk && U.tb && U.tb.rpm >= 1) || (U.tb && U.tb.rpm >= 4)),
     '1.20': f('1.20', 'TURBINE RESET', c.rst),
     '1.21': f('1.21', 'MSV OPEN', c.rst),
     '1.8': f('1.8', 'HP / LP BYPASS CONTROL IN AUTO', tcsByp(U)),
@@ -231,17 +242,29 @@ function tcsCmd(U, cmd, arg) {
     tb = U.tb;
   const on = arg !== 0 && arg !== false;
   switch (cmd) {
+    /* the Training buttons (guide.js): START = the A pump if none runs; STOP = both, to MANUAL (else the standby in AUTO starts) */
     case 'lop':
-      c.lop = on;
+    case 'eh': {
+      const k = cmd === 'lop' ? 'mop' : 'cop';
+      tcsOilInit(c);
+      if (on) {
+        if (!c[k][0] && !c[k][1]) c[k][0] = true;
+      } else {
+        c[k] = [false, false];
+        c[k + 'Au'] = [false, false];
+      }
+      tcsOilSet(c);
       return '';
-    case 'eh':
-      c.eh = on;
-      return '';
+    }
+    /* 3.2.0-beta.66: the TCS CRT operation of one pump (036 TURBINE OIL HMI, SOP 2620 "COP(B) > MANUAL > EXECUTE > STOP ... AUTO >
+       EXECUTE"): arg = { p: 'mopA' | 'mopB' | 'copA' | 'copB' | 'eop', op: 'start' | 'stop' | 'auto' | 'man' } */
+    case 'oil':
+      return tcsOilCmd(c, arg || {});
     case 'vex':
       c.vex = on;
       return '';
     case 'tg':
-      if (on && !c.lop) return 'walang bearing oil: i-start muna ang lube oil pump (ATS 1.15)';
+      if (on && !c.brgOk) return 'walang bearing oil: i-start muna ang lube oil pump (ATS 1.15)';
       c.tg = on;
       return '';
     case 'aux':
@@ -330,7 +353,7 @@ function tcsStep(U, dt) {
   const PaSS = c.asv ? Math.max(0, Math.min(10.5, U.Pd - 1)) : 0;
   c.Pa += ((PaSS - c.Pa) * dt) / TCS.tauAux;
   if (c.Pa < 7) c.gland = c.gland && c.Pa > 5;
-  if (!c.lop) c.tg = false;
+  if (!c.brgOk) c.tg = false;
   /* turning gear: about 3 rpm (PR-OPE-5002 7955); disengages above 4 rpm and engages again at zero speed */
   const steam = tb.st !== 'off' && (tb.icv > 0.001 || U.gv > 0.001);
   /* metal: toward the steam while steam flows, else cooling to the ambient (ASSUMED time constants) */
@@ -487,11 +510,131 @@ function tcsStep(U, dt) {
   }
   /* the turning gear holds the shaft at about 3 rpm when no steam turns it */
   if (!steam && tb.rpm < 4) {
-    const tg = c.tg && c.lop;
+    const tg = c.tg && c.brgOk;
     tb.rpm = tg ? Math.min(3, tb.rpm + dt) : Math.max(0, tb.rpm - dt);
   }
   /* a loss of the bearing oil trips a turning machine (1.15) */
-  c.trip = (!c.lop && tb.rpm > 4) ? 'BEARING OIL PRESS. LOW' : '';
+  c.trip = (!c.brgOk && tb.rpm > 4) ? 'BEARING OIL PRESS. LOW' : '';
+}
+/* 3.2.0-beta.66 (036 TURBINE OIL HMI, PR-OPE-5002 "TURBINE CONTROL OIL": pre-start check, MAIN OIL PUMP & VAPOR EXTRACTOR, OIL
+   PURIFIER, CONTROL OIL PUMP start-up). The pumps and their automatic start as the SOP note and the TCS I/O list (iolist-tcs HMI_AI /
+   HMI_DI) give them:
+     MOP P-1922A / B   lube oil; the one in AUTO starts when the running pump discharge (1PTLO1922A / B) is <= 5.6 kg/cm2g;
+     COP P-1931A / B   control oil (the suction is the lube oil header, 36.PNG); AUTO start at the discharge (1PTLO1931A / B) <= 133;
+     EOP P-1923 (DC)   bearing oil; starts at the bearing oil (1PSLO1004) <= 1.05 kg/cm2g; stop by hand only (SOP);
+     vapour extractor  F-1937 (main oil tank vacuum PGLO1920 -20 ~ -50 mmH2O);
+     oil purifier      P-1941, local panel (AN_SRC.field.pur), discharge ~ 2.96 kg/cm2 (SOP).
+   Values (36.PNG at 149 MW, SOP limits; the rest ASSUMED and marked):
+     MOP discharge     6.1 kg/cm2g while running (SOP 5.6 ~ 6.6; 36.PNG shows 6.9, UNUSUAL: above the SOP range, so the SOP mid value);
+     bearing oil       3.3 (36.PNG PILO10031 ~ 33) with a MOP; 1.6 with the EOP only (ASSUMED, above its 1.05 start); else 0;
+     EOP discharge     1.6 while running (ASSUMED);
+     COP discharge     163.2 while running (SOP "163.2 ksc"; 36.PNG 164.2); control oil header = discharge - 0.6 (the filter, 36.PNG
+                       164.2 -> 163.6); trip oil (PILO10071 ~ 73) = the control oil while the turbine is reset (36.PNG 163.2 ~ 163.7), 0 tripped;
+     cooler inlet      TILO1001 = the cooler outlet (TICLO1002 PV, ABC-053) + 16 C x speed / 3600 (36.PNG 62 / 46 C) with lube oil;
+     bearing outlet    TIGE1007 / 1008 = the cooler outlet + 9 / 10 C x speed / 3600 (36.PNG 55 / 56 C);
+     pressures follow with a lag of 1.5 s (ASSUMED), so a stopped running pump lets the header fall and the standby in AUTO start. */
+const TCS_OIL = { mop: 6.1, brg: 3.3, brgEop: 1.6, eop: 1.6, cop: 163.2, filt: 0.6, mopLo: 5.6, copLo: 133, brgLo: 1.05, pur: 2.96, vac: -35, tau: 1.5 };
+function tcsOilInit(c) {
+  if (c.mop) return;
+  c.mop = [!!c.lop, false];
+  c.mopAu = [false, false];
+  c.cop = [!!c.eh, false];
+  c.copAu = [false, false];
+  c.eop = false;
+  c.eopArm = !!c.lop;
+  c.brgOk = !!c.lop;
+}
+function tcsOilSet(c) {
+  c.lop = !!(c.mop[0] || c.mop[1]);
+  c.eh = !!(c.cop[0] || c.cop[1]);
+  if (c.lop) c.eopArm = true;
+  /* a pump started now gives the bearing oil at once (the turning gear may follow in the same action, as before) */
+  if (c.lop || c.eop) c.brgOk = true;
+}
+function tcsOilCmd(c, a) {
+  tcsOilInit(c);
+  const m = /^(mop|cop)([AB])$/.exec(a.p || ''),
+    op = a.op;
+  if (a.p === 'eop') {
+    if (op !== 'start' && op !== 'stop') return 'EOP: START / STOP lang (walang AUTO / MANUAL sa TCS I/O list)';
+    c.eop = op === 'start';
+    return '';
+  }
+  if (!m) return 'hindi kilalang pump: ' + a.p;
+  const k = m[1],
+    i = m[2] === 'A' ? 0 : 1;
+  if (op === 'start') c[k][i] = true;
+  else if (op === 'stop') {
+    /* SOP 2620: the standby to MANUAL first, then STOP; a pump in AUTO cannot be stopped */
+    if (c[k + 'Au'][i]) return (k === 'mop' ? 'MOP' : 'COP') + '-' + m[2] + ' ay AUTO: MANUAL muna, saka STOP (SOP)';
+    c[k][i] = false;
+  } else if (op === 'auto') c[k + 'Au'][i] = true;
+  else if (op === 'man') c[k + 'Au'][i] = false;
+  else return 'hindi kilalang utos: ' + op;
+  tcsOilSet(c);
+  return '';
+}
+/* the oil state: the TCS model (U.tc, start-up / shutdown) or, at the "Start at 150 MW" snapshot (no TCS model, U.tc null), an oil-only
+   state in service (36.PNG: MOP-A / COP-A running, B in AUTO, vapour extractor running) so the 036 page and its pumps work there too */
+function tcsOilState(U) {
+  if (U.tc) return U.tc;
+  if (!U.tco) {
+    U.tco = { lop: true, eh: true, vex: true };
+    tcsOilInit(U.tco);
+    U.tco.mopAu = [false, true];
+    U.tco.copAu = [false, true];
+    for (const k of ['loPa', 'loPb', 'loEop', 'loBrg', 'loCa', 'loCb', 'loTrip', 'loVac', 'loPur', 'loTin', 'loTb3', 'loTb4']) U[k] = NaN;
+  }
+  return U.tco;
+}
+/* every step of the unit model, tripped or not (the oil serves a stopped turbine too) */
+function tcsOil(U, dt) {
+  const c = tcsOilState(U);
+  tcsOilInit(c);
+  const K = TCS_OIL,
+    lag = (k, x) => (U[k] = isFinite(U[k]) ? U[k] + ((x - U[k]) * Math.min(dt, K.tau)) / K.tau : x),
+    lube = () => Math.max(U.loPa || 0, U.loPb || 0),
+    ctl = () => Math.max(U.loCa || 0, U.loCb || 0);
+  /* the automatic starts on the falling header (the operator saw the pressure drop: SOP 2620); the headers of the last step */
+  const has = k => isFinite(U[k]);
+  for (let i = 0; i < 2; i++) {
+    if (c.mopAu[i] && !c.mop[i] && has('loPa') && lube() <= K.mopLo) c.mop[i] = true;
+    if (c.copAu[i] && !c.cop[i] && has('loCa') && ctl() <= K.copLo && lube() > K.brgLo) c.cop[i] = true;
+  }
+  tcsOilSet(c);
+  lag('loPa', c.mop[0] ? K.mop : 0);
+  lag('loPb', c.mop[1] ? K.mop : 0);
+  U.loLube = lube();
+  if (c.eopArm && !c.eop && isFinite(U.loBrg) && U.loBrg <= K.brgLo && !c.lop) c.eop = true;
+  lag('loEop', c.eop ? K.eop : 0);
+  lag('loBrg', c.lop ? K.brg : c.eop ? K.brgEop : 0);
+  c.brgOk = U.loBrg > K.brgLo || c.lop || c.eop;
+  /* COP suction = the lube oil header (36.PNG): no lube oil, no control oil */
+  const suc = U.loLube > K.brgLo;
+  lag('loCa', c.cop[0] && suc ? K.cop : 0);
+  lag('loCb', c.cop[1] && suc ? K.cop : 0);
+  U.loCtl = Math.max(0, ctl() - (ctl() > 1 ? K.filt : 0));
+  const rst = U.tc ? c.rst : !!(U.tb && U.tb.st !== 'off');
+  lag('loTrip', rst ? U.loCtl : 0);
+  lag('loVac', c.vex ? K.vac : 0);
+  lag('loPur', typeof AN_SRC !== 'undefined' && AN_SRC.field && AN_SRC.field.pur ? K.pur : 0);
+  const Ta = U.Tamb || 30,
+    to = tcsPV('TICLO1002'),
+    out = isFinite(to) ? to : Ta,
+    sp = Math.max(0, Math.min(1, (U.tb ? U.tb.rpm : 0) / 3600)),
+    flow = c.lop || c.eop;
+  U.loTout = out;
+  lag('loTin', out + (flow ? 16 * sp : 0));
+  lag('loTb3', out + (flow ? 9 * sp : 0));
+  lag('loTb4', out + (flow ? 10 * sp : 0));
+  /* the run states and modes for the 036 page (with or without the TCS model) */
+  U.loMop = c.mop.slice();
+  U.loMopAu = c.mopAu.slice();
+  U.loCop = c.cop.slice();
+  U.loCopAu = c.copAu.slice();
+  U.loEopR = !!c.eop;
+  U.loVex = !!c.vex;
+  U.loRst = rst ? 1 : 0;
 }
 const TCS_ICV = 0.13;
 function tcsGcb(U, on) {
@@ -538,8 +681,9 @@ function tcsState() {
     /* R9 #77: the oil pressures of the TCS panel (PR-OPE-5002 sections 14 / 16 operating limits): MOP (lop) running = lube oil
        6.1 kg/cm2g (5.6 ~ 6.6), bearing oil 1.4 kg/cm2g (PGLO1008 > 1.05, the EOP starts at <= 1.05); COP (eh) = control oil 148 kg/cm2g
        (133 ~ 163); the vapour extractor = main oil tank vacuum -35 mmH2O (PGLO1920 -20 ~ -50). Stopped: 0 */
-    oil: { lube: c.lop ? 6.1 : 0, brg: c.lop ? 1.4 : 0, ctl: c.eh ? 148 : 0, vac: c.vex ? -35 : 0 },
-    aux: { lop: c.lop, eh: c.eh, vex: c.vex, tg: c.tg, asv: c.asv, gland: c.gland, vb: c.vb, ej: c.ej, hsp: c.hsp, auto: c.auto },
+    /* 3.2.0-beta.66: the values of the oil model (tcsOil, AN_UNIT lo*): the same numbers as the 036 TURBINE OIL HMI */
+    oil: { lube: U.loLube || 0, brg: U.loBrg || 0, ctl: U.loCtl || 0, vac: U.loVac || 0 },
+    aux: { lop: c.lop, eh: c.eh, vex: c.vex, mop: (c.mop || []).slice(), mopAu: (c.mopAu || []).slice(), cop: (c.cop || []).slice(), copAu: (c.copAu || []).slice(), eop: !!c.eop, tg: c.tg, asv: c.asv, gland: c.gland, vb: c.vb, ej: c.ej, hsp: c.hsp, auto: c.auto },
     crit: C,
     next: c.cur < 0 && c.step < 7 ? tcsMiss(U, TCS_A[Math.min(7, c.step + 1)] || []) : ''
   };

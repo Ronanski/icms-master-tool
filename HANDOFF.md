@@ -4,7 +4,7 @@
 >
 > **Patakaran (CLAUDE.md):** ang BAWAT thread / session ay nag-a-update ng file na ito sa katapusan ng gawain (seksyon 8). Palitan ang luma, huwag magtambak ng kasaysayan.
 
-Huling update: **2026-10-30 12:10 PM PHT** (thread "GUMAWA NG HMI PAGE NG MAKE-UP WATER SYSTEM", 3.2.0-beta.63).
+Huling update: **2026-10-30 1:10 PM PHT** (thread "GUMAWA NG HMI PAGE NG CLOSE COOLING WATER", 3.2.0-beta.67).
 
 ---
 
@@ -19,22 +19,24 @@ Huling update: **2026-10-30 12:10 PM PHT** (thread "GUMAWA NG HMI PAGE NG MAKE-U
 | | |
 |---|---|
 | **Stable** | v2.4.0 (huling Stable). Ang susunod na Stable ay 3.2.0, LANG sa GO STABLE. |
-| **Beta sa `main`** | `3.2.0-beta.63` (PR #70, GO BETA ng user 2026-10-30 ~12:00 PM PHT): MAKE-UP WATER HMI page. Bago nito `3.2.0-beta.62` (PR #69, cbe8659): 8 findings ng live test. |
-| **Bukas na PR** | Wala (beta.63 PR #70 ay mina-merge sa GO BETA ng user). |
+| **Beta sa `main`** | `3.2.0-beta.67` (GO BETA ng user, batch 1): 027 CLOSED COOLING WATER HMI page. Bago nito `3.2.0-beta.66` (GO BETA ng user 2026-10-30 "Ge batch 1. Sabay beta na agad"): 036 TURBINE OIL HMI page. Bago nito `3.2.0-beta.63` (PR #70, 057ec26): MAKE-UP WATER HMI page. Ang beta.64 / 65 ay numero ng ibang thread ng batch (tingnan ang git log). |
+| **Bukas na PR** | Tingnan ang GitHub; ang beta.66 ay mina-merge pagkatapos ng berdeng Checks. |
 | **Beta site** | Kusang nade-deploy pagkatapos ng berdeng Checks sa `main` (`site.yml`, `/beta/`). Sa app: banner na "Update now". |
 | **Roadmap** (`docs/SPEC.md` 3) | 1, 2, 3, 5, 7 TAPOS. 4 (Training Cold → 150 MW) at 6 (HMI) bahagi. 8 Library ang huli. 9 Stable = GO STABLE lang. |
-| **HMI** | Bago: 007 Air & Flue Gas (inaprubahan), 030 Seawater (STEEL) at MAKE-UP WATER (STEEL, beta.63). Plant view = mga bagong page + UNIT · controllers. Ang ibang system ay isa-isa, kapag sinabi ng user (`docs/hmi/HMI_SYSTEMS.md`). |
+| **HMI** | Bago: 007 Air & Flue Gas (inaprubahan), 030 Seawater (STEEL), MAKE-UP WATER (STEEL, beta.63) 036 TURBINE OIL (STEEL, beta.66; may TCS OPERATION box ng pump) at 027 CLOSED COOLING WATER (STEEL, beta.67). Plant view = mga bagong page + UNIT · controllers. Ang ibang system ay isa-isa, kapag sinabi ng user (`docs/hmi/HMI_SYSTEMS.md`). |
 
 ### Huling mga Beta (pinakabago sa itaas; buo sa UPDATE_REPORT)
+- **beta.67** (GO BETA ng user) — bagong HMI page 027 CLOSED COOLING WATER (PD-021 Rev D, SOP seksyon 7 ~ 8): mga user (turbine / generator, boiler, air compressors), return header, expansion tank + XV-MU1109 (OPEN / CLOSED, AUTO / MAN), ACWP-A / B (RUNNING / STOPPED, REM / LOC, AUTO / MAN, VCB, current, strainer DP), CCWHE A / B / C, supply header. Plant model `unit.js` AN_ACW; PT-CW1152 at DPT-CW1108-A / B ay binabasa rin ng DITL-76 / 77 (`plantsw.js`). Hakbang 9 (seksyon 8) ay nagbubukas ng page na ito at kinakahon ang napiling ACWP (card = ACWP-A / ACWP-B).
+- **beta.66** (GO BETA ng user) — bagong HMI page 036 TURBINE OIL (SOP "TURBINE CONTROL OIL", seksyon 13 ~ 16; TCS I/O list, walang P&ID): MOP / COP A·B na may AUTO / MANUAL at kusang standby start (≤ 5.6 / ≤ 133), EOP (≤ 1.05), vapour extractor, lube oil cooler + TICLO1002, control at trip oil, oil purifier (FIELD). Click sa pump = TCS OPERATION box (START / STOP / AUTO / MANUAL). Plant model `tcs.js` TCS_OIL. Hakbang 13 ~ 16 ay nagbubukas ng page na ito.
 - **beta.63** (PR #70, GO BETA ng user) — bagong HMI page MAKE-UP WATER (PD-024 Rev D + expansion tank ng PD-021): demi tank, MWP-A / B / C, header, condenser make-up, XV-MU1109 + expansion tank; plant model `unit.js` AN_MU, ang parehong value ay binabasa ng DITL-112 / 76 / 77 / 78 (`plantsw.js`). Hakbang 8 (seksyon 7) ay nagbubukas ng page na ito.
 - **beta.62** (PR #69, merged cbe8659, GO BETA ng user) — 8 findings ng live test: 030 buong page (bug: `fitAll` hindi nababasa) at walang pan; rail nagtatago habang may dock; dock: isang linya ng yugto, isang bukas lang, "Gawin sa field"; TAPOS lang kapag naka-tick ang PAGKATAPOS I-START (#120); 030 REM / LOC, AUTO / MAN, VCB ON / OFF (#121); P-0762A "STN105 DI"; HAKBANG tag walang tinatakpan; SWBP standby AUTO (DITL-30 row 4).
 - **beta.61** — bagong Training dock (mock-up v2, PC at tablet landscape): SUSUNOD NA GAWIN na banner, card ng bawat motor na mapipili (hal. SWP-C muna), 4 na yugto Lineup / Permissive / Start / Check, "?" bawat row, iisang font, START pulang outline / STOP berdeng outline; header 3 value + "Lahat ▾"; #115. Hindi pa live-tested ng user; phone at tablet portrait isinantabi ng user.
-- **beta.60** — Training dock: seksyon ng hakbang 60 ~ 64 at 102 ~ 105, walang dobleng button, walang laman na CONTROLS, RUNNING pula / STOPPED berde. Walang sariling HMI page: hakbang 10 ~ 14, 52, 54, 57, 62.
-- **beta.59** — 030 Seawater: lahat ng value na walang transmitter ay galing sa plant model (`unit.js` `AN_SW`), wala nang ● estimate; buong page pagbukas.
 
 ## 3. Mga thread / trabaho (2026-10-30 9:15 AM PHT)
 | Thread | Kalagayan | Susunod |
 |---|---|---|
+| GUMAWA NG HMI PAGE NG CLOSE COOLING WATER | beta.67 (GO BETA ng user) | live check ng user sa H9 |
+| GUMAWA NG HMI PAGE NG TURBINE CONTROL OIL | beta.66 (GO BETA ng user) | live check ng user sa H13 ~ H16 |
 | GUMAWA NG HMI PAGE NG MAKE-UP WATER SYSTEM | naka-merge sa beta.63 | retest ng H8 sa live test |
 | Mockup: bagong dock at HMI para sa PC at tablet landscape | naka-merge sa beta.61 | live check ng user sa beta.61 |
 | Fix Training to allow starting SWP C | naka-merge sa beta.61 | live check ng user (SWBP hindi pa nasubok) |
@@ -56,7 +58,9 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 - **Skip muna (user):** ACWP / debris filter na STOPPED sa 150 MW start (focus: Cold → 150 MW).
 - **Instrument / valve list:** hindi maaasahan ang coverage doc (#110). Hanapin muna sa app at sa logic ng repo. Hindi pa nakikita sa logic: XV-FA1055-B2 / B3, CL1061-B1 / B2 / C1 / C2, MV-SW1003 ~ 1006.
 - **Branches:** ~40 lumang branch sa GitHub. Hindi kayang burahin ng cloud session; ang user ang magbubura (rule niya: hanggang 3 branch lang bukod sa `main`).
-- Wala pang model: aux cooling water, instrument air, APH sootblower, ESP.
+- Wala pang model: instrument air, APH sootblower, ESP. (Aux cooling water: AN_ACW mula beta.67.)
+- **Closed cooling water (beta.67):** ang Bantayan ng Hakbang 9 sa dock ay nakapirming 7.0 / 6.4 kg/cm2 pa rin (`guide.js`), hindi pa ang plant model. Ang VCB ON / OFF ng ACWP ay sumusunod sa RUN (ang DI I.008A / B at I.040A / B ay wala sa netlist ng DITL-76 / 77). Ang AUTO ng XV-MU1109 sa page ay ang row 3 ng DITL-78 (ang binabasa ng logic).
+- **Turbine oil (beta.66), UNUSUAL para sa user:** 36.PNG MOP discharge 6.9 kg/cm2 (lampas sa SOP 5.6 ~ 6.6) at COP 164.2 (lampas sa SOP 163); ang model ay sumusunod sa SOP (6.1 / 163.2). Walang model ng tank level, filter DP at cooling water side (laging NORMAL / tala lang).
 - **Make-up water (beta.63):** ang make-up sa hotwell ng cycle model (`plant.js`, LCV-MU1110) ay pumapasok kahit walang tumatakbong MWP (dati na; hindi binago). Ang HMI ay nagpapakita ng FIMU1001 = 0 kapag walang MWP. Ang FIELD bypass V-MU1033 ay walang button (XV-MU1109 lang ang nagpupuno). Analyzer ng make-up (AISP1006 ~ 1008) ay nasa sampling (PD-044), wala sa page.
 
 ## 5. Mga utos ng user (dating project memory; HUWAG ipaulit sa user)
@@ -110,7 +114,7 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 ## 7. Saan ang mga bagay
 - References: `document-references/` (listahan sa `CLAUDE.md` rule 4).
 - Source: `src/` (`src/README.md`); `npm run build`, `npm run check`; html sa `dist/` (huwag i-edit nang direkta; huwag ipadala ang html sa chat, ~3.7 MB).
-- Training dock: `src/ui/training/dock.js`, `dock.css`. HMI: `src/ui/plant/hmi2.js` (AFG), `hmi-sw.js` (030), `hmi-mu.js` (MAKE-UP WATER). Plant model: `src/analog/engine/unit.js`, `tcs.js`. Mundo ABC + DITL: `src/world/world.js`.
+- Training dock: `src/ui/training/dock.js`, `dock.css`. HMI: `src/ui/plant/hmi2.js` (AFG), `hmi-sw.js` (030), `hmi-mu.js` (MAKE-UP WATER), `hmi-cw.js` (027 CLOSED COOLING WATER). Plant model: `src/analog/engine/unit.js`, `tcs.js`. Mundo ABC + DITL: `src/world/world.js`.
 - Tests: `tests/regress/` (README sa loob), `tools/training/human_run.js`, `tools/ui-audit/audit.mjs`.
 - Reports: `docs/versions/v3.2.0/UPDATE_REPORT.md`, `UNLINK_AUDIT.md`, `INSTRUMENT_VALVE_COVERAGE.md`; `docs/abc-audit/ABC-AUDIT.md`; HMI `docs/hmi/` (`OPERATING_POINTS.md`, `HMI_ART_SPEC.md`, `HMI_SYSTEMS.md`).
 - Workflows: `.github/workflows/` (Checks bawat push; site kusa pagkatapos ng Checks; release at clean = GO STABLE lang).
