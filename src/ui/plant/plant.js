@@ -975,9 +975,11 @@
       sw = w / Math.max(1, r.width),
       sh = h / Math.max(1, r.height),
       /* #117 (user 2026-10-29): a screen with fitAll (030 SEAWATER) opens whole, nothing out of view */
-      all = cur && cur.fitAll,
+      /* live test 2026-10-30 #1 (030 cut on both sides beside the Training dock): the flag is on the screen (cur.g), cur is its list entry;
+         cur.fitAll was never set, so 030 was fitted to the height like the others. Whole page, centred in the area */
+      all = !!(cur && (cur.fitAll || (cur.g && cur.g.fitAll))),
       s = all ? Math.max(sh, sw) : tall ? sh : sh <= sw ? Math.max(sh, sw * 0.7) : sh;
-    vb = [box0[0] + (tall ? 0 : (w - r.width * s) / 2), box0[1], r.width * s, r.height * s];
+    vb = [box0[0] + (tall && !all ? 0 : (w - r.width * s) / 2), box0[1] - (all ? Math.max(0, (r.height * s - h) / 2) : 0), r.width * s, r.height * s];
     svg.setAttribute('viewBox', vb.join(' '));
     svSz = [r.width, r.height];
   }
@@ -1254,7 +1256,8 @@
   /* the Training dock (user 2026-10-30): pan the graphic sideways so that the screen part x0 .. x1 (px, the boxed equipment of the
      step) is in view; the zoom stays */
   window.lsPlantPanX = (x0, x1) => {
-    if (!svg || !vb || !box0) return;
+    /* live test 2026-10-30 #1: a whole-page screen (030) does not move when a step boxes its equipment: all of it is in view */
+    if (!svg || !vb || !box0 || (cur && (cur.fitAll || (cur.g && cur.g.fitAll)))) return;
     const r = svg.getBoundingClientRect();
     if (r.width < 1 || (x0 >= r.left + 8 && x1 <= r.right - 8)) return;
     const k = vb[2] / r.width,

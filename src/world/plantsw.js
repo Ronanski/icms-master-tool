@@ -23,7 +23,11 @@
     L.push(['PSHHH-FG' + k + '-NC', src, 381, 'hi', 1], ['PSHH-FG' + k + '-NC', src, 267, 'hi', 1], ['PSLL-FG' + k + '-NC', src, -267, 'lo', 1]);
   }
   L.push(['LSLL-CD1104-4', ['ABC-031', null, 'AI0672'], -2147, 'lo'], ['LSLL-CD1110', ['ABC-031', null, 'AI0640'], -150, 'lo']);
-  const DB = 10;
+  /* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI): the pressure switch of the instrument air to unit 1 (alarm list PSL-IA1706 / -NC 2.8
+     kg/cm2; DITL-03G rows 7 / 27, the MFT and the annunciator) follows the unit header of the plant model (unit.js AN_AIR iaPU) */
+  const iaU = () => (window.AN && AN.unit && isFinite(AN.unit.iaPU) ? AN.unit.iaPU : NaN);
+  L.push(['PSL-IA1706', iaU, 2.8, 'lo', 0, 0.2], ['PSL-IA1706-NC', iaU, 2.8, 'lo', 1, 0.2]); /* dead band 0.2 kg/cm2 (ASSUMED) */
+  const DB0 = 10;
   let map = null;
   /* the rows of every sheet and machine instance whose text starts with a switch tag (the tag may follow a few words: "CONDENSER
      WATER LSLL-CD1110 LEVEL LOW LOW") */
@@ -31,6 +35,8 @@
     map = [];
     ana.length = 0;
     suc.length = 0;
+    mu.length = 0;
+    air.length = 0;
     for (const s of ALL) {
       const b = s._inst ? s._inst.base : s;
       for (let i = 0; i < ((b && b.rows) || []).length; i++) {
@@ -52,15 +58,51 @@
           const I = (z && window.DUI && DUI.rowInfo(s, z.row)) || {};
           t = ((I.tag || '') + ' ' + (I.svc || '')).toUpperCase();
         } catch (e) {}
+        const m = MU.find(([re]) => re.test(t));
         if (/PT-CD1110\b/.test(t)) ana.push({ s, key: a.key });
         else if (/(?:^|[^A-Z])PT-FW1115-[AB]\b/.test(t)) suc.push({ s, key: a.key }); /* not DPT-FW1115 (the strainer) */
+        else if (m) mu.push({ s, key: a.key, f: typeof m[1] === 'function' ? m[1](t, a, s) : m[1] });
+        else {
+          const m = AIR.find(([re]) => re.test(t));
+          if (m) air.push({ s, key: a.key, f: m[1] });
+        }
       }
     }
   }
   /* P2 #13 (INSTRUMENT_VALVE_COVERAGE.md): the condenser pressure follows the vacuum of the unit model (unit.js U.vac, 0 = no vacuum,
      1 = in service): 1.033 kg/cm2A (atmosphere) to 0.057 kg/cm2A (4.PNG PICD1110 at 150 MW) */
   const ana = [],
-    suc = [];
+    suc = [],
+    mu = [],
+    air = [];
+  /* 3.2.0-beta.63 (MAKE-UP WATER HMI): the local transmitters of the make-up water system and of the expansion tank are analog rows of
+     the logic only (DITL-112 trip < 0.2 m / >= 1 kg/cm2, DITL-76 / 77 ACWP trip < 0.3 m, DITL-78 XV-MU1109 AUTO 40 % / 85 %); their value
+     is the plant model's (unit.js AN_MU), the same number as the HMI. [row text, unit model key] */
+  const MU = [
+    [/LT-MU0708-A\b/, 'muLvA'],
+    [/LT-MU0708-B\b/, 'muLvB'],
+    /* the drawing of MWP A serves B and C (machine instances "DITL-112 #B" / "#C"): the strainer of the instance's own pump */
+    [/DPT-MU0709-([ABC])\b/, (t, a, s) => 'muDp' + 'ABC'.indexOf((/#\s*([BC])\b/.exec(s.name) || /DPT-MU0709-([ABC])/.exec(t))[1])],
+    [/(?:^|[^A-Z])PT-MU0709\b/, 'muP'],
+    [/LT-CW1109\b/, (t, a) => (/%/.test(a.unit || '') ? 'etPct' : 'etLvl')],
+    /* 3.2.0-beta.69 (027 CLOSED COOLING WATER HMI): DITL-76 / 77 row 25 strainer DP (trip > 0.8 kg/cm2 5 s), DITL-76 row 28 the common
+       discharge pressure (< 3.5 kg/cm2 = standby AUTO start); the plant model's (unit.js AN_ACW) */
+    [/DPT-CW1108-([AB])\b/, t => 'acDp' + 'AB'.indexOf(/DPT-CW1108-([AB])/.exec(t)[1])],
+    [/(?:^|[^A-Z])PT-CW1152\b/, 'acP1']
+  ];
+  /* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI): the tank and unit header pressure transmitters of the compressed air systems are analog
+     rows of the logic (DITL-113 / 114 rows 1 ~ 3: auto start of the standby compressor < 5 kg/cm2; DITL-03G rows 9 ~ 11: MFT on
+     instrument air < 3.5 kg/cm2, 2 of 3); their value is the plant model's (unit.js AN_AIR), the same number as the HMI. DITL-114 row 3
+     reads "PT-PA1706 PLANT AIR SYSTEM PRESSURE": the I/O list (STN104 AI0435), the alarm list and flow diagram PD-023 1/6 name the plant
+     air to unit 1 transmitter PT-PA1705 (no PT-PA1706 exists), so the row is PT-PA1705 (UNLINK_AUDIT.md). [row text, unit model key] */
+  const AIR = [
+    [/PT-IA0706-?A\b/, 'iaPA'],
+    [/PT-IA0706-?B\b/, 'iaPB'],
+    [/PT-IA1706\b/, 'iaPU'],
+    [/PT-PA0705-?A\b/, 'paPA'],
+    [/PT-PA0705-?B\b/, 'paPB'],
+    [/PT-PA170[56]\b/, 'paPU']
+  ];
   /* 3.2.0-beta.50 (live check #94): the BFWP suction pressure PT-FW1115-A / -B (DITL-23A row 12, START permissive > 1.5 kg/cm2) is the
      deaerator pressure (ABC-056 AI0417 PT-CD1104) plus the static head of the deaerator water (its level, ABC-031 AI0672 LT-CD1104) less the
      suction loss at the feedwater flow. Before: the row kept its default 0.75 and the trainee had to FIELD-force it at Hakbang 25.
@@ -81,6 +123,7 @@
   };
   const SRC = {};
   function val(src) {
+    if (typeof src === 'function') return src();
     const [k, net, ai] = src,
       key = src.join('|');
     let r = SRC[key];
@@ -106,10 +149,14 @@
     if (!map) build(ALL);
     const pc = W.condP();
     if (isFinite(pc)) for (const a of ana) (a.s.avw = a.s.avw || {})[a.key] = pc;
+    const U = AN.unit || {};
+    for (const a of mu) if (isFinite(U[a.f])) (a.s.avw = a.s.avw || {})[a.key] = Math.round(U[a.f] * 1000) / 1000;
+    for (const a of air) if (isFinite(U[a.f])) (a.s.avw = a.s.avw || {})[a.key] = Math.round(U[a.f] * 1000) / 1000;
     const ps = suc.length ? W.sucP() : NaN;
     if (isFinite(ps)) for (const a of suc) (a.s.avw = a.s.avw || {})[a.key] = ps;
     for (const m of map) {
-      const [, src, sp, dir, nc] = m.d,
+      const [, src, sp, dir, nc, db] = m.d,
+        DB = db || DB0,
         x = val(src);
       if (!isFinite(x)) continue;
       /* the state of the switch: tripped (level low / pressure high) with its dead band */
