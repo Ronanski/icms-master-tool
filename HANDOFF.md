@@ -38,7 +38,7 @@ Huling update: **2026-10-30 6:50 PM PHT** (thread BUILD ANG OPERATOR UI: 3.2.0-b
 ## 3. Mga thread / trabaho (2026-10-30 9:15 AM PHT)
 | Thread | Kalagayan | Susunod |
 |---|---|---|
-| BUILD ANG OPERATOR UI: FACEPLATE, COACH DOCK, ALARM BANNER | beta.74 PR (GO BETA ng user) | merge pagkatapos ng beta.73; live check ng user; susunod: valve faceplate, 030 / 007 sa HSYM |
+| BUILD ANG OPERATOR UI: POP-OUT FACEPLATE, GABAY DOCK, ALARM | beta.74 PR (GO BETA ng user) | merge pagkatapos ng beta.73; live check ng user; susunod: valve faceplate, 030 / 007 sa HSYM |
 | GUMAWA NG HMI PAGE NG CLOSE COOLING WATER | beta.69 (GO BETA ng user) | live check ng user sa H9 |
 | GUMAWA NG HMI PAGE NG INSTRUMENT AT PLANT AIR | beta.68 (GO BETA ng user) | live check ng Hakbang 10 ~ 13 |
 | GUMAWA NG HMI PAGE NG TURBINE CONTROL OIL | beta.66 (GO BETA ng user) | live check ng user sa H13 ~ H16 |
