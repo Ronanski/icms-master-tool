@@ -24,7 +24,7 @@
 - User's "G" on something = do it. "BETA NA" = GO BETA. Do EXACTLY what the user ordered; don't over-message threads; "itigil" = stop only the named work. User gets very angry at delays/apologies: act, verify threads' real state (read_thread), report facts.
 - Only start threads from roadmap or user's ask. Resolve finished threads.
 - TEST SOP (2026-10-30): question is NOT a G; start at Step 1, one step per G; user only witnesses on his updated app; screenshots before/after; on a fault: critical / chain → stop and fix, minor → log and continue, user decides (2026-10-30, [[retest-rules-new-account]]); answer questions with words, not actions ([[feedback-live-test-sop]]).
-- NEW ACCOUNT (2026-10-30): Claude Code desktop on the user's PC. Claude = LEADER of 4 threads (HMI, APP UI/UX, CODE FIXER, DOCS); focus = live test Cold → full load in the built-in browser, all steps one per G ([[team-structure-leader]], [[retest-rules-new-account]]). Strategy is the user's call.
+- NEW ACCOUNT (2026-10-30): Claude Code desktop on the user's PC. Claude = LEADER of 5 threads (HMI, APP UI/UX, CODE FIXER, DOCS, LIVE TESTER); threads are never archived; focus = live test Cold → full load in the built-in browser, all steps one per G ([[team-structure-leader]], [[retest-rules-new-account]]). Strategy is the user's call.
 - VERSIONING: coordinator assigns ONE beta number. Stable 3.2.0 at the end on GO STABLE.
 - HMI: Air & Flue Gas approved (hmi2.js). Seawater (hmi-sw.js, STEEL) done. One page per system, own art, RUN red/STOP green; live test also checks HMI for missing items.
 - INSTRUMENT/VALVE LIST: coverage doc UNRELIABLE (#110). Search app AND repo logic first. Unconfirmed in logic: XV-FA1055-B2/B3, CL1061-B1/B2/C1/C2, MV-SW1003..1006. Docs in document-references/.
