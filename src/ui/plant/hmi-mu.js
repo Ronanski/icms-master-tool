@@ -424,7 +424,8 @@
     b.tee(420, 590, { w: 7, f: 'et' }).tee(520, 590, { w: 7, f: 'et' });
     man(360, 590, 'V-MU1031', 1);
     man(620, 590, 'V-MU1032', 1);
-    man(470, 548, 'V-MU1033 bypass', 0, { la: 'up' });
+    /* live test beta.74 #23: the bypass is a FIELD valve with a state (AN.field mu1033): live, and a click = its pop-out */
+    man(470, 548, 'V-MU1033 bypass', 0, { la: 'up', id: 'BYP', title: 'V-MU1033 expansion tank bypass (manual, field)' });
     b.add(
       H.valve(470, 590, {
         kind: 'xv',
@@ -574,6 +575,7 @@
       });
       A.gauge('pt', V.PIMU0709, 10);
       A.valve('XV', V.XV == null ? null : V.XV);
+      A.valve('BYP', AN.fieldState && AN.fieldState().mu1033 ? 1 : 0);
       A.valve('LCV', V.LCV == null ? null : V.LCV / 100);
       A.valve('MV', V.MV == null ? null : V.MV / 100);
       const xs = q('[data-k="xvst"]');
@@ -602,6 +604,7 @@
         'XV-MU1109',
         'XV-MU1109 make-up water to expansion tank inlet shut-off · DITL-78 (red = open, green = closed)'
       ],
+      BYP: ['V-MU1033', 'V-MU1033 expansion tank bypass, manual valve (FIELD) (red = open, green = closed)'],
       LCV: [
         'LCV-MU1110',
         'LCV-MU1110 condenser make-up level control valve · ABC-031 LICCD1110A (red = open, green = closed)'
@@ -611,11 +614,23 @@
     };
     /* the dock's "Buksan ang faceplate" of a step motor (fp-pop.js LS_FPOP.openAd) */
     for (const id in MACH)
-      (window.LS_FPREG = window.LS_FPREG || {})[MACH[id].ad] = { open: () => q(`[data-hit="${id}"]`).dispatchEvent(new MouseEvent('click')), el: () => q(`[data-hit="${id}"]`) };
+      (window.LS_FPREG = window.LS_FPREG || {})[MACH[id].ad] = { open: () => q(`[data-hit="${id}"]`).dispatchEvent(new MouseEvent('click')), el: () => q(`[data-hit="${id}"]`), n: MACH[id].n, cur: () => (AN.unit && AN.unit.on ? AN.unit['muI' + 'ABC'.indexOf(id[1])] : null) };
+    /* XV-MU1109 is on MAKE-UP WATER and on 027 CCW (the same data-hit): the one on screen opens */
+    /* (the MAKE-UP page shows tab 2 first: the valves are there; the one on screen = has a size) */
+    const onScr = id => [...document.querySelectorAll(`[data-hit="${id}"]`)].find(e => e.getBoundingClientRect().width) || null,
+      fpV = id => ({
+        open: () => {
+          if (!onScr(id) && pg.isConnected) tabs.show(1);
+          const e = onScr(id);
+          if (e) e.dispatchEvent(new MouseEvent('click'));
+        },
+        el: () => (pg.isConnected && !onScr(id) && tabs.show(1), onScr(id))
+      });
+    Object.assign((window.LS_FPREG = window.LS_FPREG || {}), { 'DITL-78': fpV('XV'), 'F:mu1033': fpV('BYP') });
     for (const id in HIT)
       qa(`[data-hit="${id}"]`).forEach(h => {
         const ti = document.createElementNS(NS, 'title');
-        ti.textContent = HIT[id][1] + (MACH[id] ? ' · click = faceplate' : ' · click = info card');
+        ti.textContent = HIT[id][1] + (MACH[id] || id === 'XV' || id === 'BYP' ? ' · click = faceplate' : ' · click = info card');
         h.append(ti);
         /* 3.2.0-beta.74: a pump = its pop-out faceplate beside it (fp-pop.js), the I/O wiring a link inside; the rest: the info card */
         h.addEventListener('click', e => {
@@ -623,7 +638,8 @@
           const go = () => info(HIT[id][0]),
             M = MACH[id];
           if (M && window.LS_FPOP) LS_FPOP.hit({ ...M, cur: () => (AN.unit && AN.unit.on ? AN.unit['muI' + 'ABC'.indexOf(id[1])] : null) }, go);
-          else go();
+          /* live test beta.74: XV-MU1109 = its valve pop-out (DITL-78 OPEN / CLOSE, AUTO / MAN, ZSO / ZSC) */
+          else if (!((id === 'XV' || id === 'BYP') && window.LS_FPOP && LS_FPOP.valveTag(HIT[id][0]))) go();
         });
       });
     /* the values: the plant model (unit.js AN_MU), except LCV-MU1110 = the MV of its controller (ABC-031 LICCD1110A) */
