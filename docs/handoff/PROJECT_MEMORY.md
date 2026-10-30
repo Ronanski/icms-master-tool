@@ -1,12 +1,46 @@
-# PROJECT MEMORY (kopya ng project memory ng claude.ai, 2026-10-30)
+# PROJECT MEMORY (kopya ng project memory ng claude.ai, 2026-10-30 7:40 PM PHT)
 > Kopya ng lahat ng project memory file ng project na "LOGIC_SIM_PROJECT" sa lumang account, para sa bagong account / Claude. Ang `HANDOFF.md` ang kasalukuyan at nananaig; ito ay background at kasaysayan ng mga desisyon (English, gaya ng orihinal). Kapag magkasalungat, sundin ang mas bago (tingnan ang petsa) at ang `HANDOFF.md`.
-> Para sa bagong account: puwedeng i-import ang mga ito sa project memory ng bagong project (isang file bawat `## ` seksyon), pero hindi kailangan: sapat ang `HANDOFF.md` + `CLAUDE.md`.
+> Para sa bagong account: i-import ang mga ito sa project memory ng bagong project (ang index bilang `MEMORY.md`, at isang file bawat `## ` seksyon).
 
 ## MEMORY.md (index)
 
 # LOGIC_SIM_PROJECT
+- **HANDOFF FIRST:** repo `HANDOFF.md` is the one self-updating handoff file (state, threads, user orders, style, TEST SOP); every thread updates it at task end. New account setup + full memory copy: `docs/handoff/` (NEW_ACCOUNT_SETUP.md, PROJECT_MEMORY.md). See [[project-handoff-single-file]], [[feedback-live-test-sop]].
 - USER CHANNEL (2026-10-30): User only keeps the LIVE TEST thread open on phone and watches tests on TV. Anything needing the user (GO BETA, approvals, questions) must ALSO be relayed via message_thread to the live test thread so the user sees it there.
 - OPERATOR UI (2026-10-30): User approved mockup v7 ("G n yan"): https://claude.ai/artifact/Xjzj9XgmtT62qqiRF8zRQa . Real process graphic stays; step target pulses; mini pop-out per equipment (FIELD LOC/REM, MAN/AUTO, START/STOP Execute/Cancel, SOP line-up + DITL permissives live); dock is GUIDE ONLY (no "coach" word, never acts); alarm banner ACK + progress bar (44 sections); one HSYM style. Build thread: BUILD ANG OPERATOR UI cmsg_01V4rVM9gnpMDfWtQBoeoBk62jr5WSfQZirXgKvogMoYqs. Fixer thread (findings): cmsg_01V4rVM9gnpMDfWtQBoeoBk68gFTwUscfyfQ2mSKJp7KDe, beta.73; build thread next number. "G" = design approval, NOT GO BETA; merge only on GO BETA.
+- STATUS 2026-10-30 7:35 PM PHT: main = beta.74 (PR #76) on top of beta.73 (PR #77), both merged. OPEN, waiting user GO BETA: PR #78 (beta.75: #25, #21), PR #80 (beta.76: #23, #28, #33~#38). Mockup #16 (030/007 HSYM) waiting approval: https://claude.ai/artifact/N6DCUgSmrjXMgecVrpkWhA . Live test H1~H7 passed except items in the findings artifact; stopped at H8 (valve pop-out) on beta.74; next = retest H1 up to Turbine Oil after beta.76. OPEN QUESTION to user: CLAUDE.md says GO STABLE for merge to main, practice is GO BETA.
+- Goals: 1) DCS logic simulator with plant model on/off; 2) plant simulator built on logic sim + plant model; 3) DCS library.
+- Repo: https://github.com/Ronanski/icms-master-tool . Read HANDOFF.md, CLAUDE.md, PROJECT_RULES.md, docs/SPEC.md first. Never merge to main, run workflows or release without explicit same-message GO (GO BETA / GO STABLE).
+- User (turla-ece): DCS engineer, non-coder in the Philippines, Taglish (80% Tagalog), concise. Knows NOTHING about git/GitHub: explain in plain words or avoid. Knows DCS logic, not plant operation. Show all times in PHT.
+- ASKING FOR APPROVAL / "G": FIRST explain in plain words what will be done, what changes, what will NOT happen, then ask. Threads too.
+- REPORT POLICY: organized, clean, simple, NO self-made terms.
+- NEVER claim implemented/seen unless verified on the real app with a screenshot.
+- SOP, logic and curves come from the plant DESIGNER. Unusual items: list as "UNUSUAL", user decides; never silently change. HMI snapshots are from a real scenario.
+- APP WORDING: professional DCS terms (PV, SP, MV). Chat: explain simply.
+- COLOR: RUN = RED, STOP = GREEN.
+- SHORT GO: "go opus"/"go sonnet" = next roadmap step. Merge/release need explicit GO BETA / GO STABLE.
+- User's "G" on something = do it. "BETA NA" = GO BETA. Do EXACTLY what the user ordered; don't over-message threads; "itigil" = stop only the named work. User gets very angry at delays/apologies: act, verify threads' real state (read_thread), report facts.
+- Only start threads from roadmap or user's ask. Resolve finished threads.
+- TEST SOP (2026-10-30): question is NOT a G; start at Step 1, one step per G; user only witnesses on his updated app; screenshots before/after; stop at first fault; answer questions with words, not actions ([[feedback-live-test-sop]]).
+- VERSIONING: coordinator assigns ONE beta number. Stable 3.2.0 at the end on GO STABLE.
+- HMI: Air & Flue Gas approved (hmi2.js). Seawater (hmi-sw.js, STEEL) done. One page per system, own art, RUN red/STOP green; live test also checks HMI for missing items.
+- INSTRUMENT/VALVE LIST: coverage doc UNRELIABLE (#110). Search app AND repo logic first. Unconfirmed in logic: XV-FA1055-B2/B3, CL1061-B1/B2/C1/C2, MV-SW1003..1006. Docs in document-references/.
+- TRAINING INTEGRITY: no coach, NO FORCE in Training, FIELD only for digital field items, process values only from plant model.
+- Open decisions: "Laktawan 6 h" shortcut in H1.
+- ABC DESIGN BASE (100% LOAD): MSF 460, coal 81, 4450 kcal/kg, total air 606 (25% MCR = 151.5), PA 380, SA 200, FA 26 T/H.
+
+## Product spec (2026-10-26)
+ONE WORLD = ABC + DITL sheets. VIEWER = signal tracing. SIMULATE plant OFF = user sets values; ON = physics + steam table. STARTING POINTS (plant ON): full load, cold start. TRAINING = cold to full load only. LIBRARY = IO list, wiring, loop diagrams, linears, compensations, memory list, instrument list, dictionary. Docs: docs/SPEC.md, docs/USER_CHECK.md.
+
+## Roadmap
+1,2,5,7 DONE. 3+4 Starting points + Training: operator UI + live retest in progress. 6 HMI: Air&Flue + Seawater done; rest per system on user's say. 8 Library last. 9 Stable only on GO STABLE.
+
+## Decisions (settled)
+Logic stays as parsed from DXF; HMI own graphics; plant ideal model; permissives via field-operator button (logged) or force in Simulate only; no bypass.
+
+## Other facts
+- v2.4.0 STABLE. User wants to be TOLD right after every merge. Threads can't delete remote branches: user deletes extras in GitHub (max 3 branches besides main).
+- User PC (Remote Control): Dell Precision 3570, Win 11, repo at C:\Users\Ronanski\Downloads\app-projects-ai-collections\projects\icms-master-tool\icms-master-tool.
 
 ## feedback-auto-beta
 
