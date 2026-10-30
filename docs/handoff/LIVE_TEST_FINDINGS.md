@@ -6,14 +6,14 @@
 - **Huling live run:** v3.2.0-beta.74 · build 3f7da0e, malinis na Cold, H1 hanggang H8; huminto sa H8 (expansion tank 0.80 m, walang control ng V-MU1033 / XV-MU1109, #23).
 - **38 findings**, 21 naayos at nakita live sa beta.74. **Bukas:** #16, #21, #23, #25, #28, #33 ~ #38 (ang #28 ay naayos sa H2 pero hindi pa sa H1).
   - #21 at #25: claimed fixed sa **beta.75** (PR #78, naka-merge 2026-10-30), hindi pa live-tested.
-  - #23, #28, #33 ~ #38: claimed fixed sa **beta.76** (PR #80, naghihintay ng GO BETA), hindi pa live-tested.
+  - #23, #28, #33 ~ #38: claimed fixed sa **beta.76** (PR #80, naka-merge 2026-10-30 sa GO BETA ng user), hindi pa live-tested.
   - #16 (030 / 007 sa HSYM, maliit na text): mockup naghihintay ng approval ng user: https://claude.ai/artifact/N6DCUgSmrjXMgecVrpkWhA (private sa lumang account).
 - **Bukas na desisyon ng user:** approval ng mockup #16; forebay level -4 m (SOP NL) laban sa -8.76 m (snapshot) (#36).
 - **User 2026-10-30 7:39 PM PHT:** "Wala ng retest muna. Ung isang account n mgtutuloy nun." = ang BAGONG account ang magre-retest.
 - Binanggit ng log ang skill na `dcs-beta-live-test`; WALA ito sa listahan ng skills ng account noong 2026-10-30 (hindi nakopya). Ang protocol sa ibaba ang sundin.
 
 ## Susunod para sa bagong account (sa "G" ng user lang, TEST SOP sa `HANDOFF.md` seksyon 5)
-1. Siguraduhing naka-merge ang beta.76 (PR #80) sa GO BETA ng user.
+1. Ang beta.76 (PR #80) ay naka-merge na (2026-10-30); gamitin ang pinakabagong Beta sa `main`.
 2. I-load ang pinakabagong Beta (tingnan ang version sa status bar; user pumipindot ng "Update now").
 3. Burahin ang localStorage keys `ls-train`, `ls-guide`, `ls-train-auto` (malinis na simula).
 4. Training → Gabay: **Cold**. Live test H1 hanggang Turbine Oil (H16), isang table bawat hakbang.

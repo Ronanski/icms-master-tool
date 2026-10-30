@@ -4,7 +4,7 @@
 >
 > **Patakaran (CLAUDE.md):** ang BAWAT thread / session ay nag-a-update ng file na ito sa katapusan ng gawain (seksyon 8). Palitan ang luma, huwag magtambak ng kasaysayan.
 
-Huling update: **2026-10-30 8:00 PM PHT** (thread "I-UPDATE ANG REPO PARA SA PAGPAPASA (HANDOVER)": audit ng handover, kopya ng skills, live test findings sa repo, plano ng Stable; docs lang. Bago nito 7:45 PM: 3.2.0-beta.75 naka-merge, PR #78).
+Huling update: **2026-10-30 8:10 PM PHT** (thread "I-UPDATE ANG REPO PARA SA PAGPAPASA (HANDOVER)": audit ng handover, kopya ng skills, live test findings sa repo, rule ng merge, plano ng Stable; docs lang. Bago nito 7:50 PM: 3.2.0-beta.76 naka-merge, PR #80).
 
 ---
 
@@ -21,16 +21,17 @@ Huling update: **2026-10-30 8:00 PM PHT** (thread "I-UPDATE ANG REPO PARA SA PAG
 | | |
 |---|---|
 | **Stable** | v2.4.0 (huling Stable, 2026-10-19; tag at GitHub Release `v2.4.0`). Ang susunod na Stable ay 3.2.0, LANG sa GO STABLE. Paano: seksyon 9. |
-| **Beta sa `main`** | `3.2.0-beta.75` (PR #78, GO BETA ng user "Sige beta. G."): live test #25 at #21. Bago nito `3.2.0-beta.74` (PR #76, operator UI, GO BETA ng user "Oo go beta sa dalawa"), nakapatong sa `3.2.0-beta.73` (PR #77, mga finding ng live test sa beta.72). Bago nito `3.2.0-beta.72` (PR #73, GO ng user "imerge n lahat"): 027 CLOSED COOLING WATER HMI page. Bago nito `3.2.0-beta.71` (PR #75): 036 TURBINE OIL sa HSYM. Bago nito `3.2.0-beta.70` (PR #74, GO BETA ng user 2026-10-30 "g beta"): iisang HMI style HSYM + bagong MAKE-UP WATER. Bago nito `3.2.0-beta.68` (GO BETA ng user 2026-10-30 "Ge batch 1. Sabay beta na agad"): INSTRUMENT & PLANT AIR HMI page. Bago nito `3.2.0-beta.66` (GO BETA ng user 2026-10-30 "Ge batch 1. Sabay beta na agad"): 036 TURBINE OIL HMI page. Bago nito `3.2.0-beta.63` (PR #70, 057ec26): MAKE-UP WATER HMI page. Ang beta.64 / 65 ay numero ng ibang thread ng batch (tingnan ang git log). |
-| **Bukas na PR** | PR #80 (`3.2.0-beta.76`: #23, #28, #33 ~ #38): naghihintay ng GO BETA ng user. |
+| **Beta sa `main`** | `3.2.0-beta.76` (PR #80, GO BETA ng user "Sige beta. G."): live test findings sa beta.74 (#23, #28, #33 ~ #38, valve pop-out). Bago nito `3.2.0-beta.75` (PR #78, GO BETA ng user "Sige beta. G."): live test #25 at #21. Bago nito `3.2.0-beta.74` (PR #76, operator UI, GO BETA ng user "Oo go beta sa dalawa"), nakapatong sa `3.2.0-beta.73` (PR #77, mga finding ng live test sa beta.72). Bago nito `3.2.0-beta.72` (PR #73, GO ng user "imerge n lahat"): 027 CLOSED COOLING WATER HMI page. Bago nito `3.2.0-beta.71` (PR #75): 036 TURBINE OIL sa HSYM. Bago nito `3.2.0-beta.70` (PR #74, GO BETA ng user 2026-10-30 "g beta"): iisang HMI style HSYM + bagong MAKE-UP WATER. Bago nito `3.2.0-beta.68` (GO BETA ng user 2026-10-30 "Ge batch 1. Sabay beta na agad"): INSTRUMENT & PLANT AIR HMI page. Bago nito `3.2.0-beta.66` (GO BETA ng user 2026-10-30 "Ge batch 1. Sabay beta na agad"): 036 TURBINE OIL HMI page. Bago nito `3.2.0-beta.63` (PR #70, 057ec26): MAKE-UP WATER HMI page. Ang beta.64 / 65 ay numero ng ibang thread ng batch (tingnan ang git log). |
+| **Bukas na PR** | Wala sa thread na ito. |
 | **Naghihintay ng approval** | Mockup ng #16 (030 / 007 sa HSYM): https://claude.ai/artifact/N6DCUgSmrjXMgecVrpkWhA |
-| **Live test** | Huling live run: v3.2.0-beta.74 · build 3f7da0e, malinis na Cold, H1 ~ H8; huminto sa H8 (expansion tank 0.80 m, walang control ng V-MU1033 / XV-MU1109, #23). 38 findings, 21 naayos at nakita live. Bukas: #16, #21, #23, #25, #28, #33 ~ #38 (#21 / #25 claimed fixed sa beta.75; #23, #28, #33 ~ #38 sa beta.76 PR #80; hindi pa live). **User 2026-10-30 7:39 PM PHT: "Wala ng retest muna. Ung isang account n mgtutuloy nun."** Ang BAGONG account ang magre-retest H1 hanggang Turbine Oil (H16) pagkatapos ma-merge ang beta.76, sa "G" ng user. Buong talaan, protocol at susunod: `docs/handoff/LIVE_TEST_FINDINGS.md`. |
+| **Live test** | Huling live run: v3.2.0-beta.74 · build 3f7da0e, malinis na Cold, H1 ~ H8; huminto sa H8 (expansion tank 0.80 m, walang control ng V-MU1033 / XV-MU1109, #23). 38 findings, 21 naayos at nakita live. Bukas: #16, #21, #23, #25, #28, #33 ~ #38 (#21 / #25 claimed fixed sa beta.75; #23, #28, #33 ~ #38 sa beta.76; parehong naka-merge, hindi pa live). **User 2026-10-30 7:39 PM PHT: "Wala ng retest muna. Ung isang account n mgtutuloy nun."** Ang BAGONG account ang magre-retest H1 hanggang Turbine Oil (H16) sa beta.76 (naka-merge na), sa "G" ng user. Buong talaan, protocol at susunod: `docs/handoff/LIVE_TEST_FINDINGS.md`. |
 | **Rule ng merge** | Sagot ng user 2026-10-30 8:00 PM PHT ("Sa GO BETA mo lang"): Beta sa `main` = GO BETA lang; Stable at workflow = GO STABLE lang. Nakasulat na sa CLAUDE.md, PROJECT_RULES 4 at README. |
 | **Beta site** | Kusang nade-deploy pagkatapos ng berdeng Checks sa `main` (`site.yml`, `/beta/`). Sa app: banner na "Update now". |
 | **Roadmap** (`docs/SPEC.md` 3) | 1, 2, 3, 5, 7 TAPOS. 4 (Training Cold → 150 MW) at 6 (HMI) bahagi. 8 Library ang huli. 9 Stable = GO STABLE lang. |
 | **HMI** | Bago: 007 Air & Flue Gas (inaprubahan), 030 Seawater (STEEL), MAKE-UP WATER (STEEL, beta.63), 036 TURBINE OIL (STEEL, beta.66; may TCS OPERATION box ng pump) INSTRUMENT & PLANT AIR (STEEL, beta.68) at 027 CLOSED COOLING WATER (STEEL, beta.72). Plant view = mga bagong page + UNIT · controllers. Ang ibang system ay isa-isa, kapag sinabi ng user (`docs/hmi/HMI_SYSTEMS.md`). |
 
 ### Huling mga Beta (pinakabago sa itaas; buo sa UPDATE_REPORT)
+- **beta.76** (PR #80, GO BETA ng user "Sige beta. G.") — findings ng live test sa beta.74: GAWIN NGAYON sa itaas ng dock; pop-out mula sa dock sa tabi ng equipment at ng HAKBANG tag; trend ng current; PG-SW1501 SWP discharge (2.2 ~ 2.4) at forebay = SOP -4 m (UNUSUAL 30.PNG -8.76); STANDBY sa pop-out; valve pop-out XV-MU1109 (DITL-78) at V-MU1033 (FIELD); banner H8 = punuin ang expansion tank.
 - **beta.75** (PR #78, GO BETA ng user "Sige beta. G.") — ang "?" ng bawat SOP item sa seksyon 1 ~ 7 ay may sariling Bakit / Dapat makita / Kung lalaktawan (`pr-ope-5002-why.js`); seksyon 8 pataas ay rule-based pa. #21: wala nang "— walang model" sa H6 Bantayan (SWBP suction / discharge / current ay galing sa model).
 - **beta.74** (operator UI, GO BETA ng user) — click sa equipment = maliit na pop-out faceplate sa tabi nito (`src/ui/plant/fp-pop.js`): motor (RUN / STOP / TRIP, FIELD REMOTE / LOCAL, AUTO / MAN na sarado habang LOCAL, START / STOP na may EXECUTE / CANCEL, VCB, current + trend, SOP line-up ng hakbang, logic permissive ng DITL) sa 030, MAKE-UP, 027 CCW at 007 fans; controller faceplate pop-out din. Asul na kumikislap na step target, "Buksan ang faceplate" sa dock, ACK sa alarm banner, progress bar ng seksyon, 3 value ng hakbang, NOT READY abo (findings #11, #14, #15, #17, #27 ~ #32).
 - **beta.73** (GO BETA ng user "Oo go beta sa dalawa") — findings ng live test sa beta.72: H8 expansion tank (XV-MU1109 OPEN / CLOSE / AUTO, FIELD V-MU1033, pumupuno hanggang 1.7 m; tapos lang sa planta), standby MWP / SWP-C / SWBP-C: FIELD I-REMOTE muna saka AUTO; line-up muna bago ang DCS button; Tapos = lahat ng SOP item; H3 = 2 SOP item lang; Bantayan = plant model (SWP current SOP 205 ~ 215 A, SWBP suction / discharge); MWP REM / LOC · A / M sa HMI; H-1201 / F-1201 sa 007; Events ng SOP tick at purge; HAKBANG tag walang tinatakpan; "?" may Bakit.
@@ -45,15 +46,15 @@ Huling update: **2026-10-30 8:00 PM PHT** (thread "I-UPDATE ANG REPO PARA SA PAG
 ## 3. Mga thread / trabaho (2026-10-30 7:40 PM PHT)
 | Thread | Kalagayan | Susunod |
 |---|---|---|
-| AYUSIN LAHAT NG BUKAS NA FINDINGS NG LIVE TEST (BETA.72) | beta.73 at beta.75 naka-merge; beta.76 (PR #80) bukas | GO BETA ng user; saka retest H1 hanggang Turbine Oil |
-| BUILD ANG OPERATOR UI: POP-OUT FACEPLATE, GABAY DOCK, ALARM | beta.74 naka-merge (PR #76) | valve pop-out (H8); mockup #16 030 / 007 sa HSYM naghihintay ng approval |
+| AYUSIN LAHAT NG BUKAS NA FINDINGS NG LIVE TEST (BETA.72) | beta.73 at beta.75 naka-merge | retest H1 hanggang Turbine Oil |
+| BUILD ANG OPERATOR UI: POP-OUT FACEPLATE, GABAY DOCK, ALARM | beta.74 (PR #76) at beta.76 (PR #80) naka-merge | mockup #16 030 / 007 sa HSYM naghihintay ng approval |
 | GUMAWA NG HMI PAGE NG CLOSE COOLING WATER | beta.69 (GO BETA ng user) | live check ng user sa H9 |
 | GUMAWA NG HMI PAGE NG INSTRUMENT AT PLANT AIR | beta.68 (GO BETA ng user) | live check ng Hakbang 10 ~ 13 |
 | GUMAWA NG HMI PAGE NG TURBINE CONTROL OIL | beta.66 (GO BETA ng user) | live check ng user sa H13 ~ H16 |
 | IMPROVE MAKE-UP WATER HMI VISUAL (dating "GUMAWA NG HMI PAGE NG MAKE-UP WATER SYSTEM") | beta.70 PR: HSYM + bagong MAKE-UP WATER; style standard naghihintay ng approval | GO BETA ng user; saka ilipat ang ibang HMI page sa HSYM, isa bawat Beta |
 | Mockup: bagong dock at HMI para sa PC at tablet landscape | naka-merge sa beta.61 | live check ng user sa beta.61 |
 | Fix Training to allow starting SWP C | naka-merge sa beta.61 | live check ng user (SWBP hindi pa nasubok) |
-| Live test ng start-up steps (Remote Control) | huminto sa H8 (valve pop-out) sa beta.74; walang retest sa account na ito (user 2026-10-30) | BAGONG account: retest H1 hanggang Turbine Oil pagkatapos ma-merge ang beta.76, sa "G" ng user |
+| Live test ng start-up steps (Remote Control) | huminto sa H8 (valve pop-out) sa beta.74; walang retest sa account na ito (user 2026-10-30) | BAGONG account: retest H1 hanggang Turbine Oil sa beta.76 (naka-merge), sa "G" ng user |
 | AYUSIN ANG 8 FINDINGS NG LIVE TEST (BETA.61) | naka-merge sa beta.62 | retest H2 ~ H8 |
 | Dock: Training button = Training dock (beta.58 ~ 60) | tapos | — |
 | Training: starting points at SOP alignment (fixer) | tapos | wala hanggang may bagong findings |
@@ -64,7 +65,7 @@ Huling update: **2026-10-30 8:00 PM PHT** (thread "I-UPDATE ANG REPO PARA SA PAG
 Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instrument list, HMI audit) ay TAPOS at naka-merge.
 
 ## 4. Bukas na isyu at desisyon
-- **Operator UI (beta.74):** wala pang valve faceplate (XV-MU1109, MOV) at hindi pa HSYM ang 030 at 007 (#16, maliit ang text sa 1366). Ang "SOP bago i-START" ng pop-out ay ang line-up ng bukas na hakbang (sa H3 ay ang 15 item ng H2 pa: #13 ng findings thread). Bantayan ng dock at value ng HMI magkaiba minsan (#9 / #21).
+- **Operator UI (beta.76):** may valve pop-out na ang XV-MU1109 at V-MU1033 (iba pang MOV wala pa). Hindi pa HSYM ang 030 at 007 (#16, maliit ang text sa 1366): mockup muna. Ang banner ng dock ay may button pa rin na pumipindot para sa operator sa ilang kaso (AUTO ng standby, tick ng SOP item): hindi pa binago. Ang "SOP bago i-START" ng pop-out ay ang line-up ng bukas na hakbang (sa H3 ay ang 15 item ng H2 pa: #13 ng findings thread). Bantayan ng dock at value ng HMI magkaiba minsan (#9 / #21).
 - **Bagong nakita (beta.62, user ang magpapasya):** ang standby SWP-C (H3) at SWBP-C (H6) ay AUTO pero LOCAL; ang AUTO start ng DITL-29A / DITL-30 ay nangangailangan din ng REMOTE, kaya hindi aandar ang standby kapag may nag-trip.
 - **Live test findings (beta.72):** #4, #7, #9, #10, #12, #13, #18 ~ #26 nasa beta.73 (headless lang ang subok; live ng user ang huhusga). #11, #14 ~ #17, #27 ~ #32 nasa beta.74 (operator UI: pop-out faceplate, dock layout, alarm ACK, progress bar). UNUSUAL para sa user: 30.PNG SWP current 225 / 242 A (lampas sa SOP 205 ~ 215; model = SOP) at PISW1110A2 0.4 = L alarm.
 - **Live test ng user** sa beta.61: naka-pause pagkatapos ng H7; 8 findings inayos sa beta.62. Alam na: `sop_bawal.js` 6 FAIL (lumang test na hindi alam ang dock, "NO START BUTTON FOUND"); FIELD habang PAUSED ay nababasa lang pagkatapos ng ▶ RUN. Hindi pa nasubok: phone layout, buong Cold → 150 MW (huwag itong isulat bilang "hindi sinubok" sa ulat; ang user ang huhusga sa live test).
@@ -155,9 +156,9 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 ## 9. Stable release (LANG sa GO STABLE ng user sa mismong mensahe)
 Inihanda 2026-10-30 (walang ginawa; ang user ay pumili ng handover, hindi release).
 
-**Laman kapag ginawa mula sa `main` ngayon:** 3.2.0-beta.75 (higit 100 commit mula v2.4.0): iisang mundo ABC + DITL, Training Cold → 150 MW (Gabay dock), starting points Cold / 150 MW, plant model (steam table, MST / RH), operator UI (pop-out faceplate, alarm ACK), bagong HMI pages (seksyon 2). Ang beta.76 (PR #80) ay kasama lang kapag naka-merge na.
+**Laman kapag ginawa mula sa `main` ngayon:** 3.2.0-beta.76 (higit 100 commit mula v2.4.0): iisang mundo ABC + DITL, Training Cold → 150 MW (Gabay dock), starting points Cold / 150 MW, plant model (steam table, MST / RH), operator UI (pop-out faceplate, alarm ACK), bagong HMI pages (seksyon 2).
 
-**Itanong sa user bago magsimula (isang decision card):** aling Beta ang isasama (main lang, o kasama ang #80 at ang mga susunod).
+**Itanong sa user bago magsimula (isang decision card):** kung ang kasalukuyang `main` ang ilalabas o hihintayin ang retest / susunod na Beta.
 
 **Mga hakbang:**
 1. Sa working branch mula `main`: `src/version.txt` = `3.2.0` (walang `-beta`), `npm run build` (iisang `dist/logic-sim-v3.2.0.html`), `npm run check`, mabigat na test isang beses (PROJECT_RULES 5.3), seksyon 3.2.0 sa `docs/versions/v3.2.0/UPDATE_REPORT.md`, `docs/versions/v3.2.0/Release-Report-v3.2.0.pdf` (KAILANGAN ng `release.yml`; tingnan ang `v2.4.0` para sa anyo), `HANDOFF.md`.

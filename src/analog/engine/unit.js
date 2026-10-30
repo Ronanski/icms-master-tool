@@ -882,7 +882,13 @@ function anSeawaterStep(U, dt) {
   U.swTiB = 28.6;
   lag('swToA', 28.5 + 6.7 * rise, K.tauT);
   lag('swToB', 28.6 + 6.5 * rise, K.tauT);
-  U.swLvl = -8.76;
+  /* live test beta.74 #36: the forebay at the SOP normal level, PR-OPE-5002 section 2 "Sea Water inlet pool (fore bay) level (NL = 4m
+     below GL)" (UNUSUAL: 30.PNG LISW1501 -8.76 m, 4.76 m below the SOP NL; the model follows the SOP, as the SWP current #10) */
+  U.swLvl = -4.0;
+  /* live test beta.74 #35: the SWP discharge pressure at PG-SW1501A / B / C (local gauges), PR-OPE-5002 section 2 "Adjust SWP discharge
+     valve opening to attain 2.2 - 2.4 ksc": a running pump 2.4 / 2.3 / 2.2 with 1 / 2 / 3 pumps (fewer pumps = less flow = more head
+     on its curve; ASSUMED within the SOP band), a stopped pump the header behind its check valve */
+  sw.forEach((r, i) => lag('swPd' + i, r ? [0, 2.4, 2.3, 2.2][n] : P, K.tauP));
   /* the debris filters: S-1502 on the SWP header, S-1504 on the SWBP line (its flow: the SWBP running, ASSUMED 1/2 each up to 1) */
   [
     [1, w, df[0]],
