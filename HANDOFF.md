@@ -4,7 +4,7 @@
 >
 > **Patakaran (CLAUDE.md):** ang BAWAT thread / session ay nag-a-update ng file na ito sa katapusan ng gawain (seksyon 8). Palitan ang luma, huwag magtambak ng kasaysayan.
 
-Huling update: **2026-10-30 7:40 PM PHT** (wrap-up bago lumipat ng account; thread ng HANDOFF.md; docs lang).
+Huling update: **2026-10-30 7:55 PM PHT** (thread "I-UPDATE ANG REPO PARA SA PAGPAPASA (HANDOVER)": audit ng handover, kopya ng skills, plano ng Stable; docs lang).
 
 ---
 
@@ -20,7 +20,7 @@ Huling update: **2026-10-30 7:40 PM PHT** (wrap-up bago lumipat ng account; thre
 ## 2. Kasalukuyang estado
 | | |
 |---|---|
-| **Stable** | v2.4.0 (huling Stable). Ang susunod na Stable ay 3.2.0, LANG sa GO STABLE. |
+| **Stable** | v2.4.0 (huling Stable, 2026-10-19; tag at GitHub Release `v2.4.0`). Ang susunod na Stable ay 3.2.0, LANG sa GO STABLE. Paano: seksyon 9. |
 | **Beta sa `main`** | `3.2.0-beta.74` (PR #76, operator UI, GO BETA ng user "Oo go beta sa dalawa"), nakapatong sa `3.2.0-beta.73` (PR #77, mga finding ng live test sa beta.72). Bago nito `3.2.0-beta.72` (PR #73, GO ng user "imerge n lahat"): 027 CLOSED COOLING WATER HMI page. Bago nito `3.2.0-beta.71` (PR #75): 036 TURBINE OIL sa HSYM. Bago nito `3.2.0-beta.70` (PR #74, GO BETA ng user 2026-10-30 "g beta"): iisang HMI style HSYM + bagong MAKE-UP WATER. Bago nito `3.2.0-beta.68` (GO BETA ng user 2026-10-30 "Ge batch 1. Sabay beta na agad"): INSTRUMENT & PLANT AIR HMI page. Bago nito `3.2.0-beta.66` (GO BETA ng user 2026-10-30 "Ge batch 1. Sabay beta na agad"): 036 TURBINE OIL HMI page. Bago nito `3.2.0-beta.63` (PR #70, 057ec26): MAKE-UP WATER HMI page. Ang beta.64 / 65 ay numero ng ibang thread ng batch (tingnan ang git log). |
 | **Bukas na PR** | PR #78 (`3.2.0-beta.75`: findings #25, #21) at PR #80 (`3.2.0-beta.76`: #23, #28, #33 ~ #38): parehong naghihintay ng GO BETA ng user. |
 | **Naghihintay ng approval** | Mockup ng #16 (030 / 007 sa HSYM): https://claude.ai/artifact/N6DCUgSmrjXMgecVrpkWhA |
@@ -57,6 +57,7 @@ Huling update: **2026-10-30 7:40 PM PHT** (wrap-up bago lumipat ng account; thre
 | Dock: Training button = Training dock (beta.58 ~ 60) | tapos | — |
 | Training: starting points at SOP alignment (fixer) | tapos | wala hanggang may bagong findings |
 | Propose Seawater System HMI page | tapos (beta.56 / 59) | — |
+| I-UPDATE ANG REPO PARA SA PAGPAPASA (HANDOVER) | tapos (docs lang): project instructions sa NEW_ACCOUNT_SETUP, kopya ng skills sa `docs/handoff/skills/`, SPEC plano, plano ng Stable (seksyon 9). User 2026-10-30: "Go stable pre" tapos "Basta gsto ko lng. Updated lahat" = handover, HINDI release | wala; Stable sa susunod na GO STABLE |
 | HANDOFF.md: isang file para sa lipat ng account | naka-merge (PR #65, #68, #79); docs/handoff/ handa | lipat ng account (START PROMPT sa NEW_ACCOUNT_SETUP.md) |
 
 Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instrument list, HMI audit) ay TAPOS at naka-merge.
@@ -135,7 +136,7 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 - Ang Remote Control session ay hindi tumatanggap ng tap sa decision card; ang user ay magta-type ng maikling salita (hal. "G").
 
 ## 7. Saan ang mga bagay
-- Lipat ng account at kopya ng project memory: `docs/handoff/` (`NEW_ACCOUNT_SETUP.md`, `PROJECT_MEMORY.md`).
+- Lipat ng account at kopya ng project memory: `docs/handoff/` (`NEW_ACCOUNT_SETUP.md`, `PROJECT_MEMORY.md`). Kopya ng skills ng account: `docs/handoff/skills/` (organized-project-coordinator, ui-ux-design-master, one-prompt-app).
 - References: `document-references/` (listahan sa `CLAUDE.md` rule 4).
 - Source: `src/` (`src/README.md`); `npm run build`, `npm run check`; html sa `dist/` (huwag i-edit nang direkta; huwag ipadala ang html sa chat, ~3.7 MB).
 - Training dock: `src/ui/training/dock.js`, `dock.css`. HMI: `src/ui/plant/hmi2.js` (AFG), `hmi-sw.js` (030), `hmi-sym.js` (HSYM, iisang style ng HMI; `docs/hmi/HMI_STYLE.md`), `hmi-mu.js` (MAKE-UP WATER), `hmi-ia.js` (INSTRUMENT & PLANT AIR), `hmi-cw.js` (027 CLOSED COOLING WATER). Plant model: `src/analog/engine/unit.js`, `tcs.js`. Mundo ABC + DITL: `src/world/world.js`.
@@ -150,3 +151,20 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 4. Seksyon 5: bawat BAGONG utos o desisyon ng user, kasama ang petsa kung pinalitan ang luma. Tanggalin ang lumang napalitan.
 5. Palitan ang "Huling update" (oras sa PHT, pangalan ng thread).
 6. Isama ang pagbabago sa parehong PR / Beta ng gawain. Kapag docs lang ito, sabihin sa ulat.
+
+## 9. Stable release (LANG sa GO STABLE ng user sa mismong mensahe)
+Inihanda 2026-10-30 (walang ginawa; ang user ay pumili ng handover, hindi release).
+
+**Laman kapag ginawa mula sa `main` ngayon:** 3.2.0-beta.74 (104 na commit mula v2.4.0): iisang mundo ABC + DITL, Training Cold → 150 MW (Gabay dock), starting points Cold / 150 MW, plant model (steam table, MST / RH), operator UI (pop-out faceplate, alarm ACK), bagong HMI pages (seksyon 2). Ang bukas na PR (beta.75 #78, beta.76 #80) ay kasama lang kapag naka-merge na; pareho nilang binago ang `dock.js`, `guide.js`, `version.txt`, `HANDOFF.md`, UPDATE_REPORT: ayusin ang banggaan.
+
+**Itanong sa user bago magsimula (isang decision card):** aling Beta ang isasama (main lang, o kasama ang #78 / #80).
+
+**Mga hakbang:**
+1. Sa working branch mula `main`: `src/version.txt` = `3.2.0` (walang `-beta`), `npm run build` (iisang `dist/logic-sim-v3.2.0.html`), `npm run check`, mabigat na test isang beses (PROJECT_RULES 5.3), seksyon 3.2.0 sa `docs/versions/v3.2.0/UPDATE_REPORT.md`, `docs/versions/v3.2.0/Release-Report-v3.2.0.pdf` (KAILANGAN ng `release.yml`; tingnan ang `v2.4.0` para sa anyo), `HANDOFF.md`.
+2. PR → merge sa `main` (GO STABLE). Hintayin ang berdeng Checks.
+3. `release.yml` (manual): input `go` = `GO v3.2.0` eksakto, `dry_run` = `true` muna (build ng apk + exe lang), saka `false` (gagawa ng tag `v3.2.0` at GitHub Release: apk, portable exe, html, report pdf; tinatanggal ang Beta asset at pre-release).
+4. Kusang lilipat ang Stable page ng site sa pinakabagong tag `v3.2.0` (`site.yml`); ang apk / exe ay mag-a-update nang kusa.
+5. Sabihin sa user; i-update ang seksyon 2 ng file na ito.
+
+**Panganib na sasabihin sa user bago ang GO:** live test H1 ~ H7 lang ang nasaksihan (huminto sa H8 sa beta.74); H9 hanggang 150 MW hindi pa live; bukas ang #16 (030 / 007 HSYM), valve faceplate, standby na AUTO pero LOCAL, Bantayan ≠ HMI (#9 / #21), P2 #7 ~ #12, `sop_bawal.js` 6 FAIL (lumang test). Ang Stable sa site at sa app ng lahat ay mapapalitan mula 2.4.0.
+

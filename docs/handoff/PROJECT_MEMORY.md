@@ -9,6 +9,7 @@
 - USER CHANNEL (2026-10-30): User only keeps the LIVE TEST thread open on phone and watches tests on TV. Anything needing the user (GO BETA, approvals, questions) must ALSO be relayed via message_thread to the live test thread so the user sees it there.
 - OPERATOR UI (2026-10-30): User approved mockup v7 ("G n yan"): https://claude.ai/artifact/Xjzj9XgmtT62qqiRF8zRQa . Real process graphic stays; step target pulses; mini pop-out per equipment (FIELD LOC/REM, MAN/AUTO, START/STOP Execute/Cancel, SOP line-up + DITL permissives live); dock is GUIDE ONLY (no "coach" word, never acts); alarm banner ACK + progress bar (44 sections); one HSYM style. Build thread: BUILD ANG OPERATOR UI cmsg_01V4rVM9gnpMDfWtQBoeoBk62jr5WSfQZirXgKvogMoYqs. Fixer thread (findings): cmsg_01V4rVM9gnpMDfWtQBoeoBk68gFTwUscfyfQ2mSKJp7KDe, beta.73; build thread next number. "G" = design approval, NOT GO BETA; merge only on GO BETA.
 - STATUS 2026-10-30 7:35 PM PHT: main = beta.74 (PR #76) on top of beta.73 (PR #77), both merged. OPEN, waiting user GO BETA: PR #78 (beta.75: #25, #21), PR #80 (beta.76: #23, #28, #33~#38). Mockup #16 (030/007 HSYM) waiting approval: https://claude.ai/artifact/N6DCUgSmrjXMgecVrpkWhA . Live test H1~H7 passed except items in the findings artifact; stopped at H8 (valve pop-out) on beta.74; next = retest H1 up to Turbine Oil after beta.76. OPEN QUESTION to user: CLAUDE.md says GO STABLE for merge to main, practice is GO BETA.
+- STABLE PLAN (2026-10-30): "Go stable" became handover-only (no release). Stable 3.2.0 steps + risks: HANDOFF.md section 9; skills copy in docs/handoff/skills/ ([[project-stable-plan-2026-10-30]]).
 - Goals: 1) DCS logic simulator with plant model on/off; 2) plant simulator built on logic sim + plant model; 3) DCS library.
 - Repo: https://github.com/Ronanski/icms-master-tool . Read HANDOFF.md, CLAUDE.md, PROJECT_RULES.md, docs/SPEC.md first. Never merge to main, run workflows or release without explicit same-message GO (GO BETA / GO STABLE).
 - User (turla-ece): DCS engineer, non-coder in the Philippines, Taglish (80% Tagalog), concise. Knows NOTHING about git/GitHub: explain in plain words or avoid. Knows DCS logic, not plant operation. Show all times in PHT.
@@ -799,3 +800,19 @@ Write every ETA ("tapos ~14:15 PHT") in GMT+8 Philippine time, in the status che
 **Why:** 2026-10-17 the user asked how long the regression would take and for a countdown; after an ETA in UTC they asked for GMT+8 because they are in the Philippines.
 
 **How to apply:** convert UTC + 8 h; label it PHT. Related: [[feedback-full-report-every-milestone]].
+
+## project-stable-plan-2026-10-30
+
+---
+name: project-stable-plan-2026-10-30
+description: 2026-10-30 user "Go stable pre" then "Updated lahat" = handover-ready repo, NOT a release; Stable 3.2.0 steps live in HANDOFF.md section 9
+metadata:
+  type: project
+  modified: 2026-10-30T11:39:08.451Z
+---
+2026-10-30 ~7:35 PM PHT the user wrote "Go stable pre :)" then, asked for scope, "Di ko alam pre. Basta gsto ko lng. Updated lahat. Yung app, docs, handover, progress, memory, instructions, skills" so the next account needs to ask him almost nothing.
+
+Result (thread I-UPDATE ANG REPO PARA SA PAGPAPASA (HANDOVER)): no release, no workflow. Docs only: full current project instructions copied into docs/handoff/NEW_ACCOUNT_SETUP.md, account skills copied to docs/handoff/skills/ (organized-project-coordinator, ui-ux-design-master, one-prompt-app), SPEC plan refreshed, HANDOFF section 9 = Stable 3.2.0 steps + risks (release.yml needs docs/versions/v3.2.0/Release-Report-v3.2.0.pdf and go input "GO v3.2.0"; dry_run true first).
+
+**Why:** user's goal was a complete handover, not shipping; live test only reached H8.
+**How to apply:** on a future GO STABLE, follow HANDOFF.md section 9 and first ask (one card) which Betas to include. Related: [[project-handoff-single-file]].
