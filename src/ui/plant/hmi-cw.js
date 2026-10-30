@@ -747,13 +747,13 @@
       );
     };
     /* the dock's "Buksan ang faceplate" of a step motor (fp-pop.js LS_FPOP.openAd) */
-    for (const id in MACH) (window.LS_FPREG = window.LS_FPREG || {})[MACH[id].ad] = { open: () => fpHit(id), el: () => q(`[data-hit="${id}"]`) };
+    for (const id in MACH) (window.LS_FPREG = window.LS_FPREG || {})[MACH[id].ad] = { open: () => fpHit(id), el: () => q(`[data-hit="${id}"]`), n: MACH[id].n, cur: () => (AN.unit && AN.unit.on ? AN.unit['acI' + (id === 'ACA' ? 0 : 1)] : null) };
     for (const id in HIT)
       qa(`[data-hit="${id}"]`).forEach(h => {
         const ti = document.createElementNS(NS, 'title');
-        ti.textContent = HIT[id][1] + (MACH[id] ? ' · click = faceplate' : ' · click = info card');
+        ti.textContent = HIT[id][1] + (MACH[id] || id === 'XV' ? ' · click = faceplate' : ' · click = info card');
         h.append(ti);
-        h.addEventListener('click', e => (e.stopPropagation(), MACH[id] ? fpHit(id) : info(HIT[id][0])));
+        h.addEventListener('click', e => (e.stopPropagation(), MACH[id] ? fpHit(id) : (id === 'XV' && window.LS_FPOP && LS_FPOP.valveTag(HIT[id][0])) || info(HIT[id][0])));
       });
     for (const id in MACH)
       qa(`[data-mdh="${id}"]`).forEach(h => {

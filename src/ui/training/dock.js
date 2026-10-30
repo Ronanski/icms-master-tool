@@ -853,7 +853,7 @@
     els.nxB = E('button', { type: 'button', cls: 'gd-nxb', hidden: true });
     /* 3.2.0-beta.74: the faceplate of the step's motor beside its symbol on the HMI (the operator acts there; the dock does not press) */
     els.nxF = E('button', { type: 'button', cls: 'gd-nxf', hidden: true });
-    els.nx = E('div', { cls: 'gd-nx' }, [E('small', { txt: 'SUSUNOD NA GAWIN' }), els.nxS, els.nxB, els.nxF]);
+    els.nx = E('div', { cls: 'gd-nx' }, [E('small', { txt: 'GAWIN NGAYON' }), els.nxS, els.nxB, els.nxF]);
     /* the SOP section: ◄ ► and the list (☰, folded over the centre); the step: ‹ › beside its title (‹ Nakaraan, Susunod ›, TAPOS
        were three buttons for one move) */
     els.bar = E('i');
@@ -875,7 +875,8 @@
     els.body = E('div', { cls: 'gd-body' });
     /* "Ipakita sa logic sheet": one button for each sheet of the step (the DITL of its motor, the ABC sheet of its faceplate) */
     els.foot = E('div', { cls: 'gd-foot' });
-    dock.append(g, hd, strip, sec, prog, stepb, els.nx, els.body, els.foot);
+    /* live test beta.74 #28: the one thing to do now is the top of the dock (under the title bar), then the values of the step */
+    dock.append(g, hd, els.nx, strip, sec, prog, stepb, els.body, els.foot);
     allPaint();
     document.documentElement.append(dock);
     tabB = E('button', { id: 'gdtab', type: 'button', title: 'Ipakita ang Training', on: () => (ls.set('ls-gdock-min', false), layout(), fill(true)) });
@@ -2514,7 +2515,12 @@
         say = 'Ilagay ang ' + mName(selA) + ' sa AUTO (standby: aandar kapag nag-trip ang tumatakbo).';
         bl = 'AUTO ' + mName(selA);
         fn = () => B.am.click();
-      } else say = mName(selA) + ' ay STANDBY (AUTO).';
+      } else {
+        /* live test beta.74 #38: the standby is set; the banner names what the step still needs (H8: fill the expansion tank by
+           XV-MU1109 or the bypass V-MU1033), done by the operator in its faceplate (no button here) */
+        const na = (s.a || []).find(x => (x.dg || x.fp) && !call(() => x.hide && x.hide(), false) && !call(() => x.on && x.on(), false));
+        say = mName(selA) + ' ay STANDBY (AUTO).' + (na ? ' Susunod: ' + String(na.l).replace(/\s*\((DITL-[^)]*)\)/, ' ($1)') + (s.sec === 7 ? ' (punuin ang expansion tank T-1109 hanggang 1.7 m)' : '') + '.' : '');
+      }
     } else if (lc && !(selA && on(selA))) {
       say = (ms.length ? 'Lineup' : 'SOP') + (lc.by ? ' (' + lc.by + ')' : '') + ': ' + lc.t;
       bl = '✓ Nagawa na'; /* #26: one item ticked ("Tapos" is the whole step only) */
@@ -2593,7 +2599,10 @@
     const s = g && g.on ? g.steps()[g.cur] : null;
     /* live test #28: a utility step (stage 0) or a step with its own values shows the first 3 values of its Bantayan on top (the
        same value and range as below; amber only when out of its range), not LOAD / DRUM; "Lahat ▾" keeps the 8 values of the plant */
-    const W = s && (s.w || s.st === 0) && els.watch && els.watch.length && !ls.get('ls-gdock-all', false) ? els.watch.slice(0, 3) : null;
+    /* live test beta.74 #28: a utility step with no value of its own (H1 ESP purge) shows no plant value on top (the drum level of a
+       cold boiler is not the step); "Lahat ▾" still opens the 8 values */
+    const util = !!(s && (s.w || s.st === 0)) && !ls.get('ls-gdock-all', false),
+      W = util ? (els.watch || []).slice(0, 3) : null;
     VALS.forEach(([k, u, f, fm], j) => {
       const V = els.vals[j],
         w = W && j < 3 ? W[j] : null;
@@ -3015,10 +3024,18 @@
     let ad = selAd || (ms[0] && motAddr(ms[0])),
       a = ad && ms.find(x => motAddr(x) === ad),
       nmA = a ? mName(a) : '';
-    /* a step of a drawing button (AUTO SWP-C (standby), DITL-29A #C row 4): the machine of that drawing, the first one still to do */
+    /* live test beta.74 #23 #38: the motor of the step already running (H8 MWP-A), the next machine still to do: a drawing button (AUTO
+       SWP-C (standby), DITL-29A #C row 4; XV-MU1109 OPEN, DITL-78 row 5) or a field valve (fp: V-MU1033), the first one in SOP order */
+    if (a && (call(() => a.on && a.on(), false) || (els.mi && els.mi[ad] && els.mi[ad].sby && autoOf(ad)))) a = null;
     if (!a) {
-      const d = (s.a || []).find(x => x.dg && R[x.dg[0]] && !call(() => x.hide && x.hide(), false) && !call(() => x.on && x.on(), false));
-      if (d) ((ad = d.dg[0]), (a = d), (nmA = String(d.l).replace(/^(AUTO|START|STOP)\s+/, '').replace(/\s*\(.*$/, '')));
+      const key = x => x.fp || (x.dg && x.dg[0]),
+        d = (s.a || []).find(x => key(x) && R[key(x)] && !call(() => x.hide && x.hide(), false) && !call(() => x.on && x.on(), false));
+      if (d) {
+        ad = key(d);
+        a = d;
+        const tg = /\b[A-Z]{1,3}-[A-Z]{2}\d{4}\b/.exec(String(d.l));
+        nmA = d.fp && tg ? tg[0] : String(d.l).replace(/^(AUTO|START|STOP)\s+/, '').replace(/\s*\(.*$/, '').replace(/\s+(OPEN|CLOSE|AUTO \/ MAN)$/, '');
+      }
     }
     b.hidden = !!rd || !a || !window.LS_FPOP;
     if (b.hidden) return;
