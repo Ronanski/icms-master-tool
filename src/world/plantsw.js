@@ -84,7 +84,11 @@
     /* the drawing of MWP A serves B and C (machine instances "DITL-112 #B" / "#C"): the strainer of the instance's own pump */
     [/DPT-MU0709-([ABC])\b/, (t, a, s) => 'muDp' + 'ABC'.indexOf((/#\s*([BC])\b/.exec(s.name) || /DPT-MU0709-([ABC])/.exec(t))[1])],
     [/(?:^|[^A-Z])PT-MU0709\b/, 'muP'],
-    [/LT-CW1109\b/, (t, a) => (/%/.test(a.unit || '') ? 'etPct' : 'etLvl')]
+    [/LT-CW1109\b/, (t, a) => (/%/.test(a.unit || '') ? 'etPct' : 'etLvl')],
+    /* 3.2.0-beta.69 (027 CLOSED COOLING WATER HMI): DITL-76 / 77 row 25 strainer DP (trip > 0.8 kg/cm2 5 s), DITL-76 row 28 the common
+       discharge pressure (< 3.5 kg/cm2 = standby AUTO start); the plant model's (unit.js AN_ACW) */
+    [/DPT-CW1108-([AB])\b/, t => 'acDp' + 'AB'.indexOf(/DPT-CW1108-([AB])/.exec(t)[1])],
+    [/(?:^|[^A-Z])PT-CW1152\b/, 'acP1']
   ];
   /* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI): the tank and unit header pressure transmitters of the compressed air systems are analog
      rows of the logic (DITL-113 / 114 rows 1 ~ 3: auto start of the standby compressor < 5 kg/cm2; DITL-03G rows 9 ~ 11: MFT on
