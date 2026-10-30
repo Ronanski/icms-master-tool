@@ -24,7 +24,7 @@ Huling update: **2026-10-30 7:55 PM PHT** (thread "I-UPDATE ANG REPO PARA SA PAG
 | **Beta sa `main`** | `3.2.0-beta.74` (PR #76, operator UI, GO BETA ng user "Oo go beta sa dalawa"), nakapatong sa `3.2.0-beta.73` (PR #77, mga finding ng live test sa beta.72). Bago nito `3.2.0-beta.72` (PR #73, GO ng user "imerge n lahat"): 027 CLOSED COOLING WATER HMI page. Bago nito `3.2.0-beta.71` (PR #75): 036 TURBINE OIL sa HSYM. Bago nito `3.2.0-beta.70` (PR #74, GO BETA ng user 2026-10-30 "g beta"): iisang HMI style HSYM + bagong MAKE-UP WATER. Bago nito `3.2.0-beta.68` (GO BETA ng user 2026-10-30 "Ge batch 1. Sabay beta na agad"): INSTRUMENT & PLANT AIR HMI page. Bago nito `3.2.0-beta.66` (GO BETA ng user 2026-10-30 "Ge batch 1. Sabay beta na agad"): 036 TURBINE OIL HMI page. Bago nito `3.2.0-beta.63` (PR #70, 057ec26): MAKE-UP WATER HMI page. Ang beta.64 / 65 ay numero ng ibang thread ng batch (tingnan ang git log). |
 | **Bukas na PR** | PR #78 (`3.2.0-beta.75`: findings #25, #21) at PR #80 (`3.2.0-beta.76`: #23, #28, #33 ~ #38): parehong naghihintay ng GO BETA ng user. |
 | **Naghihintay ng approval** | Mockup ng #16 (030 / 007 sa HSYM): https://claude.ai/artifact/N6DCUgSmrjXMgecVrpkWhA |
-| **Live test** | H1 ~ H7 pasado maliban sa mga nasa findings artifact; huminto sa H8 (valve pop-out) sa beta.74. Susunod: retest mula H1 hanggang Turbine Oil pagkatapos ng beta.76 (sa "G" ng user, TEST SOP). |
+| **Live test** | H1 ~ H7 pasado maliban sa mga nasa findings artifact; huminto sa H8 (valve pop-out) sa beta.74. **User 2026-10-30 7:39 PM PHT: "Wala ng retest muna. Ung isang account n mgtutuloy nun."** Ang retest mula H1 hanggang Turbine Oil ay gagawin ng BAGONG account, pagkatapos ma-merge ang beta.75 (PR #78) at beta.76 (PR #80) sa GO BETA ng user, at sa "G" ng user (TEST SOP). Walang retest sa account na ito. |
 | **Bukas na tanong** | CLAUDE.md: GO STABLE para sa merge sa main, pero GO BETA ang gamit. Ang user ang magpapasya. |
 | **Beta site** | Kusang nade-deploy pagkatapos ng berdeng Checks sa `main` (`site.yml`, `/beta/`). Sa app: banner na "Update now". |
 | **Roadmap** (`docs/SPEC.md` 3) | 1, 2, 3, 5, 7 TAPOS. 4 (Training Cold → 150 MW) at 6 (HMI) bahagi. 8 Library ang huli. 9 Stable = GO STABLE lang. |
@@ -52,7 +52,7 @@ Huling update: **2026-10-30 7:55 PM PHT** (thread "I-UPDATE ANG REPO PARA SA PAG
 | IMPROVE MAKE-UP WATER HMI VISUAL (dating "GUMAWA NG HMI PAGE NG MAKE-UP WATER SYSTEM") | beta.70 PR: HSYM + bagong MAKE-UP WATER; style standard naghihintay ng approval | GO BETA ng user; saka ilipat ang ibang HMI page sa HSYM, isa bawat Beta |
 | Mockup: bagong dock at HMI para sa PC at tablet landscape | naka-merge sa beta.61 | live check ng user sa beta.61 |
 | Fix Training to allow starting SWP C | naka-merge sa beta.61 | live check ng user (SWBP hindi pa nasubok) |
-| Live test ng start-up steps (Remote Control) | huminto sa H8 (valve pop-out) sa beta.74 | retest H1 hanggang Turbine Oil pagkatapos ng beta.76, sa "G" ng user |
+| Live test ng start-up steps (Remote Control) | huminto sa H8 (valve pop-out) sa beta.74; walang retest sa account na ito (user 2026-10-30) | BAGONG account: retest H1 hanggang Turbine Oil pagkatapos ma-merge ang beta.76, sa "G" ng user |
 | AYUSIN ANG 8 FINDINGS NG LIVE TEST (BETA.61) | naka-merge sa beta.62 | retest H2 ~ H8 |
 | Dock: Training button = Training dock (beta.58 ~ 60) | tapos | — |
 | Training: starting points at SOP alignment (fixer) | tapos | wala hanggang may bagong findings |
