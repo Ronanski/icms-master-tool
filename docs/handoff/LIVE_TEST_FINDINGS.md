@@ -19,6 +19,7 @@
 4. Training → Gabay: **Cold**. Live test ng LAHAT ng hakbang Cold → 150 MW (user 2026-10-30), isang hakbang bawat "G", isang table bawat hakbang, sa built-in browser ng Claude app sa PC ng user.
 
 ## Test protocol (utos ng user)
+- **User 2026-10-31:** buong 32-item na checklist (bahagi A ~ F) sa BAWAT hakbang, may tala bawat item PASA / BAGSAK / HINDI NAGAWA, kahit sabay-sabay ang hakbang na inutos; hindi binabawasan para bumilis (pagbabago = OK ng user lang). WALANG screenshot: basahin mismo ang app (text, value, kulay, posisyon). Isang findings / checklist artifact, ina-update bawat hakbang; ang user ang huling huhusga.
 - Buong checklist bawat hakbang: Training list, dock, header, logic sheet, HMI na may pop-out (kumilos bilang operator), status bar, events, at reference (SOP PR-OPE-5002, ABC / DITL, alarm list).
 - Totoong 6 h purge; walang shortcut at walang force. I-tick lang ang totoo.
 - Kapag may mali (user 2026-10-30): critical o may chain reaction sa susunod na hakbang = huminto at ipaayos; maliit = itala at tuloy. Bawat ulat ng hakbang ay may criticality at mungkahi; ang user ang nagpapasya.

@@ -4,7 +4,7 @@
 >
 > **Patakaran (CLAUDE.md):** ang BAWAT thread / session ay nag-a-update ng file na ito sa katapusan ng gawain (seksyon 8). Palitan ang luma, huwag magtambak ng kasaysayan.
 
-Huling update: **2026-10-30 11:00 PM PHT** (DOCS thread: UI CHECK bawat hakbang at bagong rule ng pag-uulat ng LIVE TESTER; docs lang. Bago nito 10:45 PM: LIVE TESTER, COMPACT, THREAD_BRIEFS, PR #84; 10:30 PM: unang session ng bagong account, PR #83). **Lumipat na sa bagong account** (Claude Code desktop sa PC ng user). Tapos ang `docs/handoff/NEW_ACCOUNT_SETUP.md` bahagi B: 49 memory na-import (5 napalitan, hindi isinama); ang 3 skill mula `docs/handoff/skills/` at ang skill na `dcs-beta-live-test` ay naka-install sa PC.
+Huling update: **2026-10-31 12:05 AM PHT** (DOCS thread: LIVE TESTER = buong 32-item na checklist bawat hakbang at walang screenshot, user 2026-10-31; bago nito 2026-10-30 11:00 PM: UI CHECK bawat hakbang at bagong rule ng pag-uulat; docs lang. Bago nito 10:45 PM: LIVE TESTER, COMPACT, THREAD_BRIEFS, PR #84; 10:30 PM: unang session ng bagong account, PR #83). **Lumipat na sa bagong account** (Claude Code desktop sa PC ng user). Tapos ang `docs/handoff/NEW_ACCOUNT_SETUP.md` bahagi B: 49 memory na-import (5 napalitan, hindi isinama); ang 3 skill mula `docs/handoff/skills/` at ang skill na `dcs-beta-live-test` ay naka-install sa PC.
 
 ---
 
@@ -123,10 +123,14 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 1. **Tanong ≠ G.** Ang "pwede na ba magtest?" o anumang tanong ay HINDI pahintulot. Walang live test hangga't hindi mismong isinusulat ng user ang "G" sa test thread.
 2. **Laging Hakbang 1 ang simula**, sunud-sunod, ISANG hakbang bawat "G". Walang laktaw, walang sabay-sabay.
 3. **Ang user ang SAKSI** sa sarili niyang app, pagkatapos niyang pindutin ang "Update now" at makita ang tamang version sa status bar. WALANG pipindutin ang user; si Claude ang gumagawa ng lahat ng pindot.
-4. **Screenshot bago at pagkatapos** ng bawat hakbang. **Kapag may mali (user 2026-10-30, pinalitan ang "huminto sa unang mali"):** depende sa criticality at kung may chain reaction sa susunod na hakbang. Critical o may chain = huminto at ipaayos; maliit = itala at tuloy. Ang ulat ng hakbang ay may criticality at mungkahi; ang user ang nagpapasya.
+4. **Basahin mismo ang app bago at pagkatapos** ng bawat hakbang (text, value, kulay, posisyon); **WALANG screenshot** (user 2026-10-31, pinalitan ang "screenshot bago at pagkatapos"). **Kapag may mali (user 2026-10-30, pinalitan ang "huminto sa unang mali"):** depende sa criticality at kung may chain reaction sa susunod na hakbang. Critical o may chain = huminto at ipaayos; maliit = itala at tuloy. Ang ulat ng hakbang ay may criticality at mungkahi; ang user ang nagpapasya.
 5. **Ang tanong ay sinasagot ng sagot, hindi ng aksyon.** Kapag nagtanong ang user, sumagot lang; huwag magsimula ng test o ng anumang gawain dahil sa tanong.
 
 **LIVE RETEST (user 2026-10-30):** sa built-in browser ng Claude app sa PC ng user (Beta site pagkatapos ng "Update now"); si Claude ang pumipindot, saksi ang user. LAHAT ng hakbang Cold → 150 MW, pero isa-isa (isang hakbang bawat "G"). Bawat ulat ng hakbang: finding, criticality (critical / chain o maliit), mungkahi (huminto para ayusin o tuloy); ang user ang nagpapasya. Skill: `dcs-beta-live-test`.
+
+**BUONG CHECKLIST, HINDI BINABAWASAN (user 2026-10-31):** sa BAWAT hakbang, ang buong 32-item na checklist (bahagi A ~ F) ng LIVE TESTER, may tala bawat item: PASA / BAGSAK / HINDI NAGAWA. Kahit sabihin ng user na sabay-sabay ang ilang hakbang (hal. "H1 hanggang turbine oil"), buo pa rin bawat hakbang. Ang bilis ay hindi dahilan para magbawas; ang pagbabago sa checklist ay sa OK lang ng user. Isang findings / checklist artifact, ina-update pagkatapos ng bawat hakbang; ang user ang huling huhusga. (Dahilan: nilaktawan ng tester ang ilang bahagi para bumilis nang hindi sinasabi sa user.)
+
+**WALANG SCREENSHOT (user 2026-10-31):** binabasa ng tester ang app mismo (text, value, kulay, posisyon) sa halip na mag-screenshot.
 
 **UI CHECK bawat hakbang (user 2026-10-30):** bawat mali sa UI ay finding na may criticality at mungkahi.
 - **DOCK UI:** malinaw sa isang tingin; walang dobleng yugto; tamang kulay ng card; SOP list ng hakbang lang; scroll na hindi nakakalito; laki ng font; walang putol na text.
@@ -145,7 +149,7 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 - **Taglish** (~80 % Tagalog), maikli, simple, buong pangungusap. Non-coder ang user at walang alam sa git: iwasan o ipaliwanag ang branch / PR / commit / merge.
 - Oras ay laging **PHT** (UTC + 8). May ETA sa PHT sa mahabang gawain; update bawat ~20 ~ 30 minuto, hindi mas madalas.
 - Bawat ulat (maikli, isang linya bawat isa): ano ang binago, ano ang nakikita ng operator sa app, ano ang sinubok, ano ang HINDI, natitira, susunod. Walang pangalan ng file / test sa ulat sa user. Walang sariling-gawang termino.
-- Huwag mag-claim na tapos / nakita / nasubok nang walang ebidensya (screenshot sa totoong app).
+- Huwag mag-claim na tapos / nakita / nasubok nang walang ebidensya mula sa totoong app (sa live test: basa mismo ng app, walang screenshot, user 2026-10-31).
 - Sabihin agad sa user pagkatapos ng bawat merge.
 - Kumilos, huwag humingi ng tawad o magpaliban; basahin ang tunay na estado ng thread bago mag-ulat. Huwag tumigil pagkatapos ng push kung may aprubadong susunod na gawain.
 - Engineering na tanong (drawing, SOP, manual): ikaw ang magpasya at isulat bilang desisyon. Itanong lang ang layunin o gusto ng user. Gumamit ng decision card (pipindot lang ang user).
