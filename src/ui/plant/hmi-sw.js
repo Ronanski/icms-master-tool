@@ -913,20 +913,37 @@
     tick();
     let seen = false;
     const iv = setInterval(() => (g.isConnected ? ((seen = true), tick()) : seen && clearInterval(iv)), 500);
+    /* 3.2.0-beta.74: a click on a pump = its pop-out faceplate beside it (fp-pop.js; the I/O wiring is a link inside); a machine with no
+       motor drawing (debris filter, CTCS panel, hypo pumps): its info card as before. Current = the same value as the page (plant model) */
+    const CUR = { SWA: 'IIP1501A', SWB: 'IIP1501B', SWC: 'IIP1501C', BPA: 'IIP1503A', BPB: 'IIP1503B', BPC: 'IIP1503C' };
+    const fpHit = id => {
+      const M = MACH[id],
+        c = CUR[id],
+        go = () => info(M.io);
+      if (!window.LS_FPOP || !c) return go();
+      /* SOP section 2: SWP normal current 205 ~ 215 A */
+      LS_FPOP.hit({ ...M, cur: () => (LOG[c] != null ? LOG[c] : PM[c]), band: /^SW/.test(id) ? [205, 215] : null }, go);
+    };
+    /* the dock's "Buksan ang faceplate" of a step motor (fp-pop.js LS_FPOP.openAd) */
+    for (const id in CUR) {
+      const R = (window.LS_FPREG = window.LS_FPREG || {}),
+        o = { open: () => fpHit(id), el: () => q(`[data-hit="${id}"]`) };
+      R[MACH[id].ad] = R[MACH[id].d] = o;
+    }
     for (const id in MACH)
       qa(`[data-hit="${id}"]`).forEach(h => {
         const ti = document.createElementNS(NS, 'title');
         ti.textContent =
-          MACH[id].n + ' ' + MACH[id].t + ' · ' + MACH[id].d + ' (red = running, green = stopped) · click = info card';
+          MACH[id].n + ' ' + MACH[id].t + ' · ' + MACH[id].d + ' (red = running, green = stopped) · click = faceplate';
         h.append(ti);
-        h.addEventListener('click', e => (e.stopPropagation(), info(MACH[id].io)));
+        h.addEventListener('click', e => (e.stopPropagation(), fpHit(id)));
       });
     for (const id of MDS)
       qa(`[data-mdh="${id}"]`).forEach(h => {
         const ti = document.createElementNS(NS, 'title');
-        ti.textContent = MACH[id].n + ' · REM / LOC = REMOTE MODE SELECTED (field selector), AUTO / MAN = AUTO MODE SELECTED (CRT) of ' + MACH[id].d + ' · click = info card';
+        ti.textContent = MACH[id].n + ' · REM / LOC = REMOTE MODE SELECTED (field selector), AUTO / MAN = AUTO MODE SELECTED (CRT) of ' + MACH[id].d + ' · click = faceplate';
         h.append(ti);
-        h.addEventListener('click', e => (e.stopPropagation(), info(MACH[id].io)));
+        h.addEventListener('click', e => (e.stopPropagation(), fpHit(id)));
       });
     for (const id of ['SWA', 'SWB', 'SWC'])
       qa(`[data-vcb="${id}"]`).forEach(h => {

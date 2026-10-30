@@ -283,9 +283,13 @@
             /LOW/.test(x.lv) &&
             (A.startState === 'plantCold' || !!(e && e.sd && !e.rtn)) &&
             !grpRel(x.sh, t));
-        AT.set(k, { ...x, t: tfmt(t), ack: sd, rtn: false, sd });
+        /* live test #11 (94 at the start, 96 in the header later, "standing since the plant was loaded"): an alarm suppressed after the
+           load (its group still stopped) is marked late and logged, so the count and the text say where it came from */
+        const late = sd && !first && !(e && e.sd && !e.rtn && !e.late) ? true : !!(e && e.late && sd);
+        AT.set(k, { ...x, t: tfmt(t), ack: sd, rtn: false, sd, late });
         if (first) nNew++;
         else if (!sd) add({ rt: { t } }, { name: x.sh }, x.kind, x.nm + ' ' + x.lv);
+        else if (late && (!e || e.rtn)) add({ rt: { t } }, { name: x.sh }, x.kind, x.nm + ' ' + x.lv + ' (suppressed: the equipment of its group is stopped; released 10 min after it runs)');
       }
     }
     /* retest #62: a group released (its equipment running for 10 min of plant time): its shutdown alarms still standing are real

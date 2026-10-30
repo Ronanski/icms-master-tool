@@ -243,8 +243,12 @@ html.gd-bottom #gdsecl{right:auto;left:0;top:auto;bottom:calc(100% + 6px)}
 html.gd-tr #plmid{position:relative}
 #gdhl{position:absolute;inset:0;pointer-events:none;z-index:6}
 #gdhl[hidden]{display:none}
-.gd-hlb{position:absolute;border:2px dashed #38c6e8;border-radius:6px;box-shadow:0 0 0 3px rgba(56,198,232,.18)}
-.gd-hlt{position:absolute;background:#38c6e8;color:#06222c;font:700 10px/13px var(--uf);padding:1px 6px;border-radius:3px;white-space:nowrap}
+/* 3.2.0-beta.74: the equipment of the step pulses in place (blue = step target); the click goes through to it (= its faceplate) */
+.gd-hlb{position:absolute;border:2px solid #5fb3e6;border-radius:6px;animation:gdhlp 1.4s ease-out infinite}
+@keyframes gdhlp{0%{box-shadow:0 0 0 0 rgba(95,179,230,.75)}70%{box-shadow:0 0 0 12px rgba(95,179,230,0)}100%{box-shadow:0 0 0 0 rgba(95,179,230,0)}}
+@keyframes gdpl{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.gd-hlb,.gd-es.trip{animation:none}}
+.gd-hlt{position:absolute;background:#5fb3e6;color:#06222c;font:700 10px/13px var(--uf);padding:1px 6px;border-radius:3px;white-space:nowrap}
 /* while the Training is open: the buttons the dock has already (VIEW / RUN, Run, Reset, speed) and the engineering ones (CHECK,
    TCS / Field, Systems) are hidden; the Plant view keeps ◄ screen ► */
 html.gd-tr #crband>.seg,html.gd-tr #plmid .plbar .crop,html.gd-tr #plsys,html.gd-tr #plmid .plchips,html.gd-tr #pllive{display:none!important}
@@ -297,6 +301,10 @@ body.app2:not(#_) #gdock #trainws button.trbtn{min-height:2.1rem;padding:0 .6rem
 .gd-nxs{font:700 17px/1.3 var(--uf);color:var(--c-tx);min-width:0}
 .gd-nxb{border:0;background:var(--gd-ok);color:#071321;border-radius:6px;padding:9px 12px;font:700 13px var(--uf);cursor:pointer;white-space:nowrap;max-width:170px;overflow:hidden;text-overflow:ellipsis}
 .gd-nxb[hidden]{display:none}
+/* 3.2.0-beta.74: the faceplate of the step's motor (opens beside its symbol on the HMI) */
+.gd-nxf{grid-column:1/-1;justify-self:start;margin-top:4px;border:1px solid var(--gd-ok);background:transparent;color:var(--c-tx);border-radius:6px;padding:7px 12px;font:700 14px var(--uf);cursor:pointer}
+.gd-nxf:hover{background:var(--gd-okbg)}
+.gd-nxf[hidden]{display:none}
 .gd-nx.done{border-color:var(--c-line2);background:var(--c-well)}
 html.gd-menu #gdock .gd-nx{display:none!important}
 /* the motors of the step */
@@ -309,7 +317,7 @@ html.gd-menu #gdock .gd-nx{display:none!important}
 .gd-ec.sel{border-color:var(--gd-ok);box-shadow:inset 0 0 0 1px var(--gd-ok);background:var(--gd-okbg)}
 .gd-es{font:700 13px var(--uf);display:flex;align-items:center;gap:5px}
 .gd-es:before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor;flex:none}
-.gd-es.run{color:var(--gd-run)}.gd-es.stop{color:var(--gd-stop)}.gd-es.sby{color:var(--gd-ok)}.gd-es.blk{color:var(--gd-wn)}
+.gd-es.run{color:var(--gd-run)}.gd-es.stop{color:var(--gd-stop)}.gd-es.sby{color:var(--gd-ok)}.gd-es.blk{color:var(--gd-wn)}.gd-es.nr{color:var(--c-tx2,#93a2b2)}.gd-es.trip{color:var(--gd-run);animation:gdpl 1s steps(2) infinite}
 .gd-es.sby:before{background:none;border:2px solid currentColor;width:7px;height:7px}
 /* the four stages */
 .gd-stgs{display:flex;flex-direction:column;gap:6px}
@@ -386,3 +394,23 @@ html.gd-menu #gdock .gd-nx{display:none!important}
 .gd-nxb{white-space:normal!important;text-align:center;line-height:1.25}
 /* tablet landscape (dock about 380 px): the header keeps the four speeds in view */
 @media (max-width:1280px){#gdock .gd-hd>b{display:none}#gdock .gd-hd{gap:6px}}
+
+/* live test #32 (3.2.0-beta.74): the progress of the start-up, one segment per SOP section */
+#gdock .gd-prog{padding:4px 12px 6px;border-bottom:1px solid var(--c-line)}
+#gdock .gd-segs{display:flex;gap:2px;height:6px}
+#gdock .gd-segs i{flex:1;border-radius:1px;background:var(--c-line)}
+#gdock .gd-segs i.d{background:#5f7487}
+#gdock .gd-segs i.c{background:#5fb3e6}
+#gdock .gd-segn{display:block;margin-top:3px;font:400 13px var(--uf);color:var(--c-tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#gdock .gd-segn:empty{display:none}
+html.gd-menu #gdock .gd-prog{display:none!important}
+#gdock .gd-kv[hidden]{display:none}
+#gdock .gd-kv small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#gdock .gd-kv.hi b{color:#ffd08a}
+/* live test #29 #30 #31 (3.2.0-beta.74): done items folded, no stage name twice, no cut labels */
+#gdock .gd-fl:not(.showdn)>li.dn{display:none}
+#gdock .gd-dnt{display:block;margin:4px 0 0;border:0;background:none;color:var(--c-tx2);font:600 13px var(--uf);cursor:pointer;padding:4px 0}
+#gdock .gd-dnt[hidden]{display:none}
+#gdock .gd-shd.mini .gd-sn,#gdock .gd-shd.mini .gd-snm b{display:none}
+#gdock .gd-secl b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#gdock .gd-foot button{white-space:normal;max-width:none;text-overflow:clip;height:auto;min-height:32px;line-height:1.2}
