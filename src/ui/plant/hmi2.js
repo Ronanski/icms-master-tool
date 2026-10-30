@@ -1298,7 +1298,7 @@
     };
     let x = 12;
     for (const [id, s] of NAV) x += btn(x, s, id === sys.id, id === sys.id ? 'this screen' : 'open ' + s, api.go && (() => api.go(id))) + 6;
-    /* 030 SEAWATER and MAKE-UP WATER are drawn in one style (user 2026-10-29: STEEL): no style choice there */
+    /* 030 SEAWATER, MAKE-UP WATER and 036 TURBINE OIL are drawn in one style (user 2026-10-29: STEEL): no style choice there */
     if (sys.style) return;
     x = W - 12 - ORDER.reduce((a, k) => a + STYLES[k].name.length * 6.3 + 28, 0);
     tx(x - 8, y + 19.5, 'STYLE', { z: 8.5, b: 700, c: C.dim, a: 'end', ls: 0.6 });
@@ -1316,7 +1316,8 @@
     ['UNIT', 'UNIT'],
     ['AFG', '007 AIR & FLUE GAS'],
     ['SW', '030 SEAWATER'],
-    ['MU', 'MAKE-UP WATER']
+    ['MU', 'MAKE-UP WATER'],
+    ['TO', '036 TURBINE OIL']
   ];
   window.PLANT_V2 = {
     C,

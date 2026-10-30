@@ -634,6 +634,7 @@ function anUnitStart() {
   U.own = own;
   U.on = true;
   U.frT = undefined;
+  U.tco = null; /* 3.2.0-beta.66: the oil-only state of the snapshot (tcs.js tcsOilState) starts again */
   U.tc = null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
   /* 3.2.0-beta.14: the snapshot plant has its diesel oil pump in service (source.js field equipment) */
   AN_SRC.field.dop = true;
@@ -704,6 +705,12 @@ function anTurbine(cmd, arg) {
   const U = AN_UNIT;
   if (!U.on || !U.tb) return 'walang unit model (Start cold muna)';
   const tb = U.tb;
+  /* 3.2.0-beta.66: the 036 TURBINE OIL pumps at the 150 MW snapshot (no TCS model): the oil-only state of tcs.js */
+  if (!U.tc && cmd === 'oil') return tcsOilCmd(tcsOilState(U), arg || {});
+  if (!U.tc && cmd === 'vex') {
+    tcsOilState(U).vex = arg !== 0 && arg !== false;
+    return '';
+  }
   /* 3.2.0-beta.38 (CHECKLIST 0.6): the TCS / ATS model (tcs.js): the auxiliaries and the ATS step push buttons. 'roll' = ATS AUTO
      from the next step up to ACCELERATION (3600 rpm), 'sync' = EXCITATION + SYNCH. & INITIAL LOAD, 'loadup' = LOAD UP to the target */
   if (U.tc) {
@@ -1019,6 +1026,8 @@ function anUnitStep(dt) {
   anSeawaterStep(U, dt);
   /* 3.2.0-beta.63: the make-up water system and the expansion tank (MAKE-UP WATER HMI), see AN_MU */
   anMakeupStep(U, dt);
+  /* 3.2.0-beta.66: the turbine lube and control oil (036 TURBINE OIL HMI), see TCS_OIL (tcs.js) */
+  tcsOil(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
   /* ---- 2.2.0-beta.17 (M4 step 4): the turbine black box (see AN_UNIT rollRate ...) ---- */
   const tb = U.tb || (U.tb = { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN }),
