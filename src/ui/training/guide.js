@@ -167,6 +167,13 @@ window.LS_GUIDE = (function () {
   /* a motor button: START / STOP of its running memory (memory list), the same address the Inputs list forces */
   const mot = (a, l) => ({ ad: a, l: 'START ' + l, f: () => A.motor(a, 1), on: () => bit(a) > 0.5, stop: { l: 'STOP ' + l, f: () => A.motor(a, 0) } });
   const btn = (l, f, on) => ({ l, f, on });
+  const call0 = f => {
+    try {
+      return f();
+    } catch (e) {
+      return null;
+    }
+  };
   /* a motor that the old (no one world) way starts with an extra forced memory (feeder C + M.3405 ALL IN REMOTE AND RUNNING) */
   const WLm = (a, l, fOff) => Object.assign(mot(a, l), { f: () => (WL() ? A.motor(a, 1) : fOff()) });
   /* a push button / an output of a DITL drawing (one world ON, src/ui/training/dock.js) */
@@ -339,24 +346,44 @@ window.LS_GUIDE = (function () {
       SWPD = ['DITL-29A', 'DITL-29A #B', 'DITL-29A #C'],
       SWPL = ['SWP-A', 'SWP-B', 'SWP-C'],
       swpN = () => SWPM.filter(a => bit(a) > 0.5).length,
-      swpAuto = j => locRun(SWPD[j], 3) === 1,
+      /* live test 2026-10-30 #12: the standby is AUTO only with its LOCAL / REMOTE selector in REMOTE (DITL-29A row 5 / 18 / 22): the AUTO start
+         of the drawing needs both (PR-OPE-5002 section 2 "Ensure SWP in remote position" before "Set the standby SWP to AUTO") */
+      remOf = nm => call0(() => LS_DOCK.modeOf(nm).rem) === true,
+      swpAuto = j => locRun(SWPD[j], 3) === 1 && remOf(SWPD[j]),
       swpStby = () => SWPM.findIndex(a => !(bit(a) > 0.5));
     const BPD = ['DITL-30', 'DITL-30 #B', 'DITL-30 #C'],
       bpN = () => BPD.filter(nm => dRun(nm) === 1).length,
-      bpAuto = j => locRun(BPD[j], 3) === 1,
+      bpAuto = j => locRun(BPD[j], 3) === 1 && remOf(BPD[j]),
       bpStby = () => BPD.findIndex(nm => dRun(nm) !== 1);
     /* 3.2.0 retest #46 #33: the values of the equipment the operator reads on the HMI (no transmitter on the ABC sheets): from the HMI snapshot
        030 SEAWATER SYSTEM (SWP 207 ~ 243 A, SWBP 87 A, condenser inlet 1.0 / outlet 0.4 ~ 0.5 kg/cm2) and the SOP (SWP discharge 2.2 ~ 2.4
        ksc, condenser dP 0.4), shown while the pump runs (0 when stopped) */
     const ifRun = (on, x) => (on ? x : 0);
+    /* live test 2026-10-30 #9 #10 #21: the values of the plant model, the same number as the HMI 030 (was: fixed numbers here, PISW1110A2
+       0.5 in the dock and 0.40 on the HMI); bands of PR-OPE-5002 */
+    const uv = k => +U()[k] || 0;
     const SWPW = [
       ['SWP running', () => swpN() + ' / 3', '', x => x, 'kailangan 2 (ang ikatlo: standby AUTO)'],
-      ...SWPL.map((l, j) => [l + ' current', () => ifRun(bit(SWPM[j]) > 0.5, j === 0 ? 225 : j === 1 ? 242 : 208), 'A', null, 'HMI 030: 207 ~ 243 A']),
-      ['SWP discharge press', () => ifRun(swpN() > 0, 2.3), 'kg/cm²', null, 'SOP 2.2 ~ 2.4'],
-      ['Condenser SW inlet press', () => ifRun(swpN() > 0, swpN() > 1 ? 1.0 : 0.7), 'kg/cm²', null, 'PISW1110A1'],
-      ['Condenser SW outlet press', () => ifRun(swpN() > 0, swpN() > 1 ? 0.5 : 0.35), 'kg/cm²', null, 'PISW1110A2'],
-      ['Condenser SW ΔP', () => ifRun(swpN() > 0, swpN() > 1 ? 0.5 : 0.35), 'kg/cm²', null, 'SOP ≥ 0.4']
+      ...SWPL.map((l, j) => [l + ' current (IIP1501' + 'ABC'[j] + ')', () => uv('swIa' + j), 'A', f1w, 'SOP 205 ~ 215']),
+      ['SWP header / condenser inlet (PISW1110A1)', () => uv('swPiA'), 'kg/cm²', f1w, 'SOP 1.0 ~ 1.1'],
+      ['Condenser SW outlet A / B (PISW1110A2 / B2)', () => f1w(uv('swPoA')) + ' / ' + f1w(uv('swPoB')), 'kg/cm²', x => x, 'HMI 30.PNG 0.4 / 0.5'],
+      ['Condenser SW ΔP A / B', () => f1w(uv('swPiA') - uv('swPoA')) + ' / ' + f1w(uv('swPiB') - uv('swPoB')), 'kg/cm²', x => x, 'SOP ≥ 0.4']
     ];
+    const BPW = [
+      ['SWBP running', () => bpN() + ' / 3', '', x => x, 'kailangan 2 (ang ikatlo: standby REMOTE + AUTO)'],
+      ...['A', 'B', 'C'].map((l, j) => ['SWBP-' + l + ' current (IIP1503' + l + ')', () => uv('swIb' + j), 'A', f1w, 'SOP 90 · alarm 120']),
+      ['SWBP suction', () => uv('swBs0'), 'kg/cm²', f1w, 'SOP 1 ~ 1.1'],
+      ['SWBP discharge, running (PG-SW1503)', () => Math.max(0, ...BPD.map((nm, j) => (dRun(nm) === 1 ? uv('swBd' + j) : 0))), 'kg/cm²', f1w, 'SOP 2.2 ~ 2.4']
+    ];
+    /* #12: the standby of a pump set (not running): FIELD I-REMOTE (local selector), then AUTO (CRT selection, row au); AUTO refused while LOCAL */
+    const stbyB = (D, Lb, au, isRun) =>
+      D.flatMap((nm, j) => [
+        Object.assign(btn('FIELD: I-REMOTE ' + Lb[j] + ' (standby)', () => (window.LS_DOCK && LS_DOCK.dremote(nm, Lb[j]), ''), () => remOf(nm)), { loc: 1, hide: () => isRun(j) || remOf(nm) }),
+        Object.assign(
+          btn('AUTO ' + Lb[j] + ' (standby)', () => (!remOf(nm) ? 'LOCAL pa ang ' + Lb[j] + ': FIELD I-REMOTE muna (SOP: "in remote position"), saka AUTO.' : window.LS_DOCK && LS_DOCK.dsel(nm, au, 1, Lb[j] + ' AUTO MODE SELECTED') && ''), () => locRun(nm, au) === 1),
+          { dg: [nm, au], sel: 1, auto: 1, hide: () => isRun(j) }
+        )
+      ]);
     const runW = (l, L, cur, unit, hint) => [[l + ' running', () => L.filter(f => f()).length + ' / ' + L.length, '', x => x, hint || ''], [l + ' ' + (unit === 'A' ? 'current' : 'discharge press'), () => ifRun(L.some(f => f()), cur), unit, null, '']];
     ST = [
       /* ---- 0 utilities ---- */
@@ -364,14 +391,15 @@ window.LS_GUIDE = (function () {
          or held 6 h of plant time from the card (pre) */
       FIELD(0, 'ESP purge air heater at fan (field), 6 oras bago ang start-up', [0], { pre: 21600, d: 'Gawin: "Simulan ang 6 h purge", saka ▶ RUN (kusa ang ×300, balik ×1 sa 6:00). SOP: pinapaandar ng field operator ang ESP purge air heater at fan 6 ORAS BAGO ang start-up. Bukas ang "Tapos na ang 6 h purge" pagka-6:00; kung 6 h na itong tumatakbo sa field, "Laktawan ang 6 h (training shortcut)" (may kumpirmasyon at log sa Events).' }),
       /* 3.2.0 retest #49: any two of the three SWP (was: a first and a second SWP step, the second showed the third pump to start) */
-      { st: 0, sec: 2, t: 'Simulan ang 2 seawater pump (SWP), kahit alin', d: 'Gawin: REMOTE sa field, saka START ng dalawang SWP. Ang ikatlo ay standby.', c: b.SWP2, max: 2, a: [mot('M.3353', 'SWP-A'), mot('M.3354', 'SWP-B'), mot('M.3355', 'SWP-C')], field: [1], w: SWPW },
+      { st: 0, sec: 2, it: [0, 32], t: 'Simulan ang 2 seawater pump (SWP), kahit alin', d: 'Gawin: REMOTE sa field, saka START ng dalawang SWP. Ang ikatlo ay standby.', c: b.SWP2, max: 2, a: [mot('M.3353', 'SWP-A'), mot('M.3354', 'SWP-B'), mot('M.3355', 'SWP-C')], field: [1], w: SWPW },
       {
         st: 0,
         sec: 2,
-        t: 'Ilagay ang standby SWP sa AUTO',
-        d: 'Gawin: AUTO ng hindi tumatakbong SWP (DITL-29A row 4, AUTO MODE SELECTED). Ito ang aandar kapag nag-trip ang isa.',
-        c: C('2 SWP running at standby SWP sa AUTO', () => !WL() || (swpN() >= 2 && swpStby() >= 0 && swpAuto(swpStby())), () => swpN() + ' running · standby ' + (swpStby() >= 0 ? SWPL[swpStby()] + (swpAuto(swpStby()) ? ' AUTO' : ' MAN') : '—')),
-        a: SWPD.map((nm, j) => Object.assign(btn('AUTO ' + SWPL[j] + ' (standby)', () => window.LS_DOCK && LS_DOCK.dsel(nm, 3, 1, SWPL[j] + ' AUTO MODE SELECTED'), () => swpAuto(j)), { dg: [nm, 3], sel: 1, auto: 1, hide: () => bit(SWPM[j]) > 0.5 })),
+        it: [33, 34] /* live test 2026-10-30 #13: the two SOP items of this step (was: the 35 items of section 2) */,
+        t: 'Ilagay ang standby SWP sa REMOTE at AUTO',
+        d: 'Gawin: FIELD I-REMOTE ng hindi tumatakbong SWP, saka AUTO (DITL-29A row 4, AUTO MODE SELECTED). Ito ang aandar kapag nag-trip ang isa; ang AUTO start ng drawing ay kailangan din ng REMOTE (row 5).',
+        c: C('2 SWP running at standby SWP sa REMOTE + AUTO', () => !WL() || (swpN() >= 2 && swpStby() >= 0 && swpAuto(swpStby())), () => swpN() + ' running · standby ' + (swpStby() >= 0 ? SWPL[swpStby()] + (remOf(SWPD[swpStby()]) ? ' REM' : ' LOC') + (locRun(SWPD[swpStby()], 3) === 1 ? ' · AUTO' : ' · MAN') : '—')),
+        a: stbyB(SWPD, SWPL, 3, j => bit(SWPM[j]) > 0.5),
         runN: swpN,
         field: [1],
         w: SWPW
@@ -384,9 +412,77 @@ window.LS_GUIDE = (function () {
       /* live test 2026-10-30 #8: PR-OPE-5002 section 5 "Set the standby SWBP to AUTO": DITL-30 row 4 SEAWATER BOOSTER PUMP x AUTO MODE
          SELECTED (CRT, M.1202 / 1212 / 1222; with it the pump starts when a running one trips: B / C RUNNING off-delay 2 s AND TRIP). The step
          is done with 2 running AND the third in AUTO (was: 2 running only, the third stayed MAN) */
-      { st: 0, sec: 5, max: 2, sby: 1, t: 'Simulan ang 2 seawater booster pump (SWBP), kahit alin', d: 'Gawin: REMOTE sa field, saka START ng dalawang SWBP (DITL-30). Ang ikatlo ay standby: AUTO (DITL-30 row 4, AUTO MODE SELECTED). Kailangan ang tumatakbong SWP.', c: C('2 SWBP running at standby SWBP sa AUTO (DITL-30)', () => !WL() || (bpN() >= 2 && (bpStby() < 0 || bpAuto(bpStby()))), () => (WL() ? BPD.map((nm, j) => 'ABC'[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : 'STOPPED' + (bpAuto(j) ? ' AUTO' : ' MAN'))).join(', ') : '— (one world OFF)')), a: [dmot('DITL-30', 'SWBP-A'), dmot('DITL-30 #B', 'SWBP-B'), dmot('DITL-30 #C', 'SWBP-C')], field: [4], w: runW('SWBP', ['DITL-30', 'DITL-30 #B', 'DITL-30 #C'].map(nm => () => dRun(nm) === 1), 87, 'A', 'HMI 030: 87 A') },
+      { st: 0, sec: 5, max: 2, sby: 1, t: 'Simulan ang 2 seawater booster pump (SWBP), kahit alin', d: 'Gawin: REMOTE sa field, saka START ng dalawang SWBP (DITL-30). Ang ikatlo ay standby: AUTO (DITL-30 row 4, AUTO MODE SELECTED). Kailangan ang tumatakbong SWP.', c: C('2 SWBP running at standby SWBP sa REMOTE + AUTO (DITL-30)', () => !WL() || (bpN() >= 2 && (bpStby() < 0 || bpAuto(bpStby()))), () => (WL() ? BPD.map((nm, j) => 'ABC'[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : 'STOPPED' + (bpAuto(j) ? ' AUTO' : ' MAN'))).join(', ') : '— (one world OFF)')), a: [dmot('DITL-30', 'SWBP-A'), dmot('DITL-30 #B', 'SWBP-B'), dmot('DITL-30 #C', 'SWBP-C')], field: [4], w: BPW },
       { st: 0, sec: 6, t: 'Simulan ang SWBP outlet debris filter (DITL-39)', d: 'REMOTE AUTO START ng debris filter system 2 sa DCS (DITL-39 row 19).', c: outC('SWBP outlet debris filter IN OPERATION (DITL-39)', 'DITL-39', 14, 'IN OPERATION', 'stopped'), a: [pbB('Debris filter 2 AUTO START (DITL-39)', 'DITL-39', 18, null, () => dOut('DITL-39', 14) === 1)], field: [5], w: [['SWBP outlet debris filter', () => (dOut('DITL-39', 14) === 1 ? 'IN OPERATION' : 'STOPPED'), '', x => x, 'DITL-39 out 15']] },
-      { st: 0, sec: 7, t: 'Simulan ang make-up water pump (MWP)', d: 'Ang MWP ay nasa DCS (DITL-112). Pinupuno nito ang expansion tank at ang condenser.', c: runC('A make-up water pump running (DITL-112)', ['DITL-112', 'DITL-112 #B', 'DITL-112 #C']), a: [dmot('DITL-112', 'MWP-A'), dmot('DITL-112 #B', 'MWP-B'), dmot('DITL-112 #C', 'MWP-C')], field: [6], w: [runW('MWP', ['DITL-112', 'DITL-112 #B', 'DITL-112 #C'].map(nm => () => dRun(nm) === 1), 0, '')[0]] },
+      /* live test 2026-10-30 #23 #24 (H8 stuck: expansion tank 0.80 m, no control of XV-MU1109 / V-MU1033, no AUTO of the standby MWP, yet
+         "✓ Tapos"): PR-OPE-5002 section 7 as the plant does it. One MWP running (DITL-112), the standby in REMOTE (row 22) + AUTO (row 15
+         AUTO MODE SELECTED, M.1052 / 1062 / 1072: its auto start on a trip of the running one or the header L.L.); the expansion tank
+         T-1109 filled to NL 1.7 m through XV-MU1109 (DITL-78: row 5 OPEN P.B. M.1250 / row 9 CLOSE P.B. M.1251 in MAN, row 1 AUTO P.B.
+         = row 3 AUTO SELECTED M.1252: open < 40 %, close > 85 % = 1.7 m of LT-CW1109) or its manual bypass V-MU1033 (field), the header
+         > 6.0 kg/cm2, the valve closed when the filling is OK, then XV-MU1109 to AUTO when instrument air is available. The step is done
+         on the plant: level >= 1.7 m and the filling valve closed (the plant model AN_MU), not on the ticks */
+      (() => {
+        const MW = ['DITL-112', 'DITL-112 #B', 'DITL-112 #C'],
+          ML = ['MWP-A', 'MWP-B', 'MWP-C'],
+          mwN = () => MW.filter(nm => dRun(nm) === 1).length,
+          mwStby = () => MW.findIndex(nm => dRun(nm) !== 1),
+          mwAuto = j => locRun(MW[j], 14) === 1 && remOf(MW[j]),
+          et = () => +U().etLvl || 0,
+          air = () => (+U().iaP || 0) >= 3.5,
+          xvAuto = () => locRun('DITL-78', 2) === 1,
+          xvOpen = () => +U().muXv === 1,
+          byp = () => fstate('mu1033'),
+          closed = () => !xvOpen() && !byp(),
+          bypSet = v => {
+            A.field('mu1033', v);
+            try {
+              window.lsEventAdd && lsEventAdd('FIELD', 'FIELD', 'Field operator: ' + (v ? 'OPEN' : 'CLOSE') + ' expansion tank bypass valve V-MU1033 (local)');
+            } catch (e) {}
+          },
+          xvSel = v => {
+            if (!window.LS_DOCK) return '';
+            LS_DOCK.dset('DITL-78', 0, v);
+            LS_DOCK.dsel('DITL-78', 2, v, 'EXPANSION TANK INLET VLV XV-MU1109 AUTO SELECTED (M.1252)');
+            return '';
+          };
+        return {
+          st: 0,
+          sec: 7,
+          max: 1,
+          sby: 1,
+          t: 'Simulan ang make-up water pump (MWP) at punuin ang expansion tank',
+          d: 'Gawin: START ng isang MWP, REMOTE + AUTO ng standby MWP, saka punuin ang expansion tank hanggang NL 1.7 m (XV-MU1109 o bypass V-MU1033) at isara ang valve. Ang MWP ay nasa DCS (DITL-112). Ang XV-MU1109 (DITL-78) ay pneumatic: bumubukas lang kapag may instrument air (≥ 3.5 kg/cm²); kung wala pa (Cold, bago ang Hakbang 11), ang bypass V-MU1033 ang ginagamit ng field operator. Kailangan ang header > 6.0 kg/cm² para pumasok ang tubig.',
+          c: C(
+            '1 MWP running, standby MWP REMOTE + AUTO, expansion tank ≥ 1.7 m at sarado ang fill valve' + ' (XV-MU1109 AUTO kung may instrument air)',
+            () => !WL() || (mwN() >= 1 && mwStby() >= 0 && MW.some((nm, j) => dRun(nm) !== 1 && mwAuto(j)) && et() >= 1.69 && closed() && (xvAuto() || !air())),
+            () =>
+              (WL() ? MW.map((nm, j) => ML[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : (remOf(nm) ? 'REM' : 'LOC') + (locRun(nm, 14) === 1 ? ' AUTO' : ' MAN'))).join(', ') : '— (one world OFF)') +
+              ' · T-1109 ' + et().toFixed(2) + ' m · XV-MU1109 ' + (xvOpen() ? 'OPEN' : 'CLOSED') + (xvAuto() ? ' AUTO' : ' MAN') + ' · V-MU1033 ' + (byp() ? 'OPEN' : 'CLOSED')
+          ),
+          a: [
+            dmot('DITL-112', 'MWP-A'),
+            dmot('DITL-112 #B', 'MWP-B'),
+            dmot('DITL-112 #C', 'MWP-C'),
+            /* the order is the order of the SOP (the banner names the first one not done): open the fill (XV-MU1109 with instrument air,
+               else the bypass), close it at NL 1.7 m, then XV-MU1109 to AUTO when instrument air is available */
+            Object.assign(btn('XV-MU1109 OPEN (DITL-78)', () => (!WL() ? '' : xvAuto() ? 'Nasa AUTO ang XV-MU1109: MAN muna para buksan.' : !air() ? 'Walang instrument air (IA < 3.5 kg/cm²): hindi bubukas ang XV-MU1109. Gamitin ang bypass V-MU1033 (field).' : (dPress('DITL-78', 4), '')), () => xvOpen() || !air() || byp() || et() >= 1.69), { dg: ['DITL-78', 4] }),
+            Object.assign(btn('FIELD: OPEN V-MU1033 (bypass)', () => (byp() ? '' : (bypSet(true), '')), () => byp() || xvOpen() || et() >= 1.69), { loc: 1 }),
+            Object.assign(btn('XV-MU1109 CLOSE (DITL-78)', () => (!WL() ? '' : xvAuto() ? 'Nasa AUTO ang XV-MU1109: ang logic ang nagsasara sa 85 % (1.7 m).' : (dPress('DITL-78', 8), '')), () => !xvOpen() || et() < 1.69), { dg: ['DITL-78', 8] }),
+            Object.assign(btn('FIELD: CLOSE V-MU1033 (bypass)', () => (byp() ? (bypSet(false), '') : ''), () => !byp() || et() < 1.69), { loc: 1 }),
+            Object.assign(btn('XV-MU1109 AUTO / MAN (DITL-78)', () => xvSel(!xvAuto()), () => xvAuto() || !air() || et() < 1.69), { dg: ['DITL-78', 2] })
+          ],
+          field: [6],
+          w: [
+            ['MWP running', () => mwN() + ' / 3', '', x => x, 'kailangan 1 + standby AUTO'],
+            ...ML.map((l, j) => [l + ' current', () => +U()['muI' + j] || 0, 'A', f1w, 'SOP 20 A · alarm 61.1 A']),
+            ['MWP header press (PIMU0709)', () => +U().muP || 0, 'kg/cm²', f1w, 'SOP > 6.0 · alarm 6.5'],
+            ['Expansion tank level (LT-CW1109)', () => et(), 'm', x => (+x).toFixed(2), 'NL 1.7 m'],
+            ['XV-MU1109', () => (xvOpen() ? 'OPEN' : 'CLOSED') + (xvAuto() ? ' · AUTO' : ' · MAN'), '', x => x, 'DITL-78'],
+            ['V-MU1033 bypass', () => (byp() ? 'OPEN' : 'CLOSED'), '', x => x, 'field'],
+            ['Instrument air', () => +U().iaP || 0, 'kg/cm²', f1w, '≥ 3.5 para sa XV-MU1109']
+          ]
+        };
+      })(),
       { st: 0, sec: 8, t: 'Simulan ang auxiliary cooling water pump (ACW)', d: 'Ang ACW pump ay nasa DCS (DITL-76 A, DITL-77 B).', c: runC('An aux. cooling water pump running (DITL-76 / 77)', ['DITL-76', 'DITL-77']), a: [dmot('DITL-76', 'ACWP-A'), dmot('DITL-77', 'ACWP-B')] /* 3.2.0-beta.69: the SOP / HMI name (027 boxes the picked ACWP) */, field: [7], w: (() => {
           /* R9 #74: SOP section 9: the discharge valve opened until the pump discharge reaches 7 kg/cm² (PG-CW1108A/B, local gauge);
              the header PICW1152 reads 6.4 at 150 MW (HMI snapshot) */

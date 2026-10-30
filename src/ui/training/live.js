@@ -358,10 +358,21 @@ window.LS_LIVE = (function () {
   const SWPA = ['M.3353', 'M.3354', 'M.3355'],
     SWPD = ['DITL-29A', 'DITL-29A #B', 'DITL-29A #C'];
   const SWP_STBY = DC(
-    'two seawater pumps running and the standby in AUTO (DITL-29A row 4 AUTO MODE SELECTED)',
-    () => SWPA.filter(a => val(a) > 0.5).length >= 2 && SWPA.some((a, j) => !(val(a) > 0.5) && dIn(SWPD[j], 3)),
-    () => SWPA.map((a, j) => 'SWP-' + 'ABC'[j] + (val(a) > 0.5 ? ' RUN' : dIn(SWPD[j], 3) ? ' AUTO' : ' MAN')).join(', ')
+    'two seawater pumps running and the standby in REMOTE + AUTO (DITL-29A row 5 REMOTE, row 4 AUTO MODE SELECTED)',
+    () => SWPA.filter(a => val(a) > 0.5).length >= 2 && SWPA.some((a, j) => !(val(a) > 0.5) && dIn(SWPD[j], 3) && dIn(SWPD[j], 4)),
+    () => SWPA.map((a, j) => 'SWP-' + 'ABC'[j] + (val(a) > 0.5 ? ' RUN' : (dIn(SWPD[j], 4) ? ' REM' : ' LOC') + (dIn(SWPD[j], 3) ? ' AUTO' : ' MAN'))).join(', ')
   );
+  /* live test 2026-10-30 #12 #24: the standby of a pump set in REMOTE (row 22 REMOTE MODE SELECTED) and AUTO (row au) on its drawing */
+  const STBY = (L, n, au, l) =>
+    DC(
+      n + ' ' + l + ' running and the standby in REMOTE + AUTO',
+      () => nRun(L) >= n && L.some(nm => !dRun(nm) && dIn(nm, au) && dIn(nm, 21)),
+      () => L.map(nm => nm.replace(/^DITL-\S+\s*#?/, '') + (dRun(nm) ? ' RUN' : (dIn(nm, 21) ? ' REM' : ' LOC') + (dIn(nm, au) ? ' AUTO' : ' MAN'))).join(', ')
+    );
+  /* #23: the expansion tank T-1109 at NL 1.7 m (LT-CW1109, plant model AN_MU) and XV-MU1109 in AUTO (DITL-78 row 3 AUTO SELECTED) */
+  const ET = () => +((AN.unit || {}).etLvl) || 0;
+  const ET_NL = DC('expansion tank at NL 1.7 m (LT-CW1109)', () => ET() >= 1.69, () => 'LT-CW1109 ' + ET().toFixed(2) + ' m');
+  const XV_AUTO = DC('XV-MU1109 in AUTO (DITL-78 row 3)', () => dIn('DITL-78', 2) || dIn('DITL-78', 0), () => 'XV-MU1109 ' + (dIn('DITL-78', 2) || dIn('DITL-78', 0) ? 'AUTO' : 'MAN'));
   const FIELD = (k, l) => DC(l + ' running (local)', () => !!(AN.fieldState && AN.fieldState()[k]), () => l + ' ' + (AN.fieldState && AN.fieldState()[k] ? 'RUNNING' : 'STOPPED'));
   const TCSR = (k, l) => {
     const on = () => {
@@ -387,8 +398,12 @@ window.LS_LIVE = (function () {
     [4, /Set debris filter to auto start/i, OUTC('DITL-39', 3, 'SWP outlet debris filter IN OPERATION')],
     [5, /START to 1st selected Sea Water Booster/i, RUNN(SWBP, 1, 'SWBP')],
     [5, /START to 2nd selected Sea Water Booster/i, RUNN(SWBP, 2, 'SWBP')],
+    [5, /Set the standby SWBP to AUTO/i, STBY(SWBP, 2, 3, 'SWBP')],
     [6, /Set debris filter to auto start/i, OUTC('DITL-39', 14, 'SWBP outlet debris filter IN OPERATION')],
     [7, /Initiate START to selected MWP/i, RUNN(MWP, 1, 'MWP')],
+    [7, /Standby Make-up Pump and Set the Pump to AUTO/i, STBY(MWP, 1, 14, 'MWP')],
+    [7, /^Open Expansion tank automatic inlet valve/i, ET_NL],
+    [7, /^Set Expansion tank inlet valve \(XV-MU1109\) to AUTO/i, ALL(ET_NL, XV_AUTO)],
     [8, /Initiate START of the selected AWCP/i, RUNN(ACW, 1, 'ACW pump')],
     [9, /Initiate ON to selected dryer/i, OUTC('DITL-45', 14, 'Instrument air dryer A RUNNING')],
     [10, /^Initiate RUN with proper coordination/i, INC('DITL-113', 5, 'IA compressor A RUNNING')],

@@ -249,6 +249,7 @@ html.gd-tr #plmid{position:relative}
 @keyframes gdpl{50%{opacity:.35}}
 @media (prefers-reduced-motion:reduce){.gd-hlb,.gd-es.trip{animation:none}}
 .gd-hlt{position:absolute;background:#5fb3e6;color:#06222c;font:700 10px/13px var(--uf);padding:1px 6px;border-radius:3px;white-space:nowrap}
+.gd-hlt.ol{background:none;color:#5fb3e6;box-shadow:inset 0 0 0 1px #5fb3e6;text-shadow:0 0 2px #000}
 /* while the Training is open: the buttons the dock has already (VIEW / RUN, Run, Reset, speed) and the engineering ones (CHECK,
    TCS / Field, Systems) are hidden; the Plant view keeps ◄ screen ► */
 html.gd-tr #crband>.seg,html.gd-tr #plmid .plbar .crop,html.gd-tr #plsys,html.gd-tr #plmid .plchips,html.gd-tr #pllive{display:none!important}
