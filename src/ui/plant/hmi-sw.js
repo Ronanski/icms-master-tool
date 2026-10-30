@@ -244,6 +244,8 @@
       o.push(T(x + 12, 362, '-----', 'sw9b', `data-st="${id}"`) + T(x + 12, 374, MACH[id].d, 'sw8'));
       /* live test 2026-10-30 #5 (#121, snapshot 30.PNG: VCB ON / OFF, R, M / A at each SWP): REMOTE / LOCAL and AUTO / MAN of DITL-29A, the VCB */
       o.push(md(x + 12, 390, id) + T(x + 12, 402, '-----', 'sw9b', `data-vcb="${id}"`));
+      /* live test beta.74 #35: the discharge pressure of the pump, local gauge PG-SW1501x (SOP 2.2 ~ 2.4 ksc) */
+      o.push(vbox(x + 12, 428, 'PGSW1501' + id[2], 'kg/cm²', 1) + T(x + 12, 458, 'local · SOP 2.2 ~ 2.4', 'sw8'));
       o.push(valve(x + 34, 226, 1, v, 'rb'));
     });
     /* 96" header -> S-1502 -> condenser inlets */
@@ -927,7 +929,7 @@
     /* the dock's "Buksan ang faceplate" of a step motor (fp-pop.js LS_FPOP.openAd) */
     for (const id in CUR) {
       const R = (window.LS_FPREG = window.LS_FPREG || {}),
-        o = { open: () => fpHit(id), el: () => q(`[data-hit="${id}"]`) };
+        o = { open: () => fpHit(id), el: () => q(`[data-hit="${id}"]`), n: MACH[id].n, cur: () => (LOG[CUR[id]] != null ? LOG[CUR[id]] : PM[CUR[id]]) };
       R[MACH[id].ad] = R[MACH[id].d] = o;
     }
     for (const id in MACH)
@@ -974,6 +976,9 @@
       TISW1110B2: 'swToB',
       DPISW1502: 'swDp1',
       DPISW1504: 'swDp2',
+      PGSW1501A: 'swPd0',
+      PGSW1501B: 'swPd1',
+      PGSW1501C: 'swPd2',
       IIP1501A: 'swIa0',
       IIP1501B: 'swIa1',
       IIP1501C: 'swIa2',
