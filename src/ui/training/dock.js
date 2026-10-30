@@ -1161,7 +1161,7 @@
     put([5], 'SW', /^SWBP-[ABC]$/);
     put([6], 'SW', /^MV-SW1002 BACKWASH$/, /DPISW1504$/);
     put([7], 'MU', /^MWP-[ABC]$/, /^XV-MU1109$/);
-    put([8], 'SW', /^ACWP-[AB]$/);
+    put([8], 'CW', /^ACWP-[AB]$/);
     /* 3.2.0-beta.68: sections 9 ~ 12 (instrument / plant air dryers and compressors) have their page */
     put([9], 'IA', /^IA DRYER-[ABC]$/);
     put([10], 'IA', /^IA COMPRESSOR-[ABC]$/);
