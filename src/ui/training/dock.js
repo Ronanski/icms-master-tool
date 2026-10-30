@@ -1162,7 +1162,12 @@
     put([6], 'SW', /^MV-SW1002 BACKWASH$/, /DPISW1504$/);
     put([7], 'MU', /^MWP-[ABC]$/, /^XV-MU1109$/);
     put([8], 'SW', /^ACWP-[AB]$/);
-    put([9, 10, 11, 12, 29, 31, 34], 'UNIT');
+    /* 3.2.0-beta.68: sections 9 ~ 12 (instrument / plant air dryers and compressors) have their page */
+    put([9], 'IA', /^IA DRYER-[ABC]$/);
+    put([10], 'IA', /^IA COMPRESSOR-[ABC]$/);
+    put([11], 'IA', /^PA DRYER-[ABC]$/);
+    put([12], 'IA', /^PA COMPRESSOR-[ABC]$/);
+    put([29, 31, 34], 'UNIT');
     /* 3.2.0-beta.66: the turbine lube and control oil (sections 13 ~ 16) on their own page 036 TURBINE OIL */
     put([13], 'TO', /^TICLO1002$/);
     put([14], 'TO', /^VAPOUR EXTRACTOR$/, /^MOP-[AB]$/);
