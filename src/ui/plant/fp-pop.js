@@ -128,10 +128,9 @@
   /* another HMI page, another tab: the faceplate of the page before goes */
   document.addEventListener('change', e => e.target && e.target.classList && e.target.classList.contains('plpick') && close(), true);
   new MutationObserver(() => box && document.body.dataset.tab !== 'operate' && close()).observe(document.body, { attributes: true, attributeFilter: ['data-tab'] });
-  /* a click outside (not on another equipment, which opens its own) closes it; live test #43: a tick in the Training dock does not
-     (the operator ticks the SOP item there and then presses START on the same faceplate) */
+  /* a click outside (not on another equipment, which opens its own) closes it */
   document.addEventListener('pointerdown', e => {
-    if (box && !box.contains(e.target) && !(e.target.closest && e.target.closest('[data-hit],[data-mdh],#plfp,#gdock,#gdtab'))) setTimeout(() => box && !box.contains(document.activeElement) && close(), 0);
+    if (box && !box.contains(e.target) && !(e.target.closest && e.target.closest('[data-hit],[data-mdh],#plfp'))) setTimeout(() => box && !box.contains(document.activeElement) && close(), 0);
   });
   function frame(title, sub) {
     close();
