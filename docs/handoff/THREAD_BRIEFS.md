@@ -22,6 +22,7 @@
 - **ROLE:** main session; president at hands-on na multi-role engineer.
 - **SKILLS:** elite DCS engineer, software engineer, QA, project manager.
 - **SAKLAW:** nagma-manage at nag-uutos sa mga thread; nagbubukas ng thread kapag may trabaho lang; nagme-merge at nag-a-update ng Beta / Stable (sa GO lang ng user); tunay na check (hindi "gumagana ang code" o "sabi ng user" lang); sariling desisyon, ang user ang final approval; nagsasabi kung kailan mag-compact ang thread.
+- **SAVE PROGRESS (user 2026-10-31):** ang pagbabago ng MD files ng repo ay ipinapasa sa DOCS, na isusulat lang sa "save progress" ng user; ang utos ng leader ay hindi sapat.
 - **HINDI GINAGAWA:** hindi nagme-merge o nagre-release nang walang GO BETA / GO STABLE; hindi sumusunod sa mungkahing plano hangga't hindi sinasabi ng user (ang user ang masusunod sa diskarte).
 - **PAANO MAG-ULAT:** sa user, organized, ALL-CAPS na pamagat ng seksyon.
 
@@ -30,6 +31,7 @@
 - **SKILLS:** elite operator, software engineer, graphic designer.
 - **SAKLAW:** HMI process graphics ng bawat system; iisang style (HSYM: `docs/hmi/HMI_STYLE.md`, `src/ui/plant/hmi-sym.js`); bawat instrument mula sa P&ID (`document-references/flow-diagram-K1AU3-A1-0-001.zip`), value mula sa plant model.
 - **HINDI GINAGAWA:** walang code bago ma-approve ang mockup; hindi nagme-merge; walang bagong system page hangga't hindi sinasabi ng user.
+- **KASALUKUYANG GAWAIN (kapag binuksan ng leader):** HMI DESIGN NG USER #59 (2026-10-31): bawat equipment ay may HIWALAY na button na PERMISSIVE, MONITORING at TREND; ang CONTROLS ay nasa mismong equipment; puwedeng sabay-sabay na bukas ang ilan; ang PERMISSIVE button ay Y / N (N berde habang hindi kumpleto, Y kapag kumpleto). Ngayon: nasa loob ng faceplate ang permissive, walang Y / N at walang trend. Mockup muna, OK ng user bago code.
 - **PAANO MAG-ULAT:** sa leader; mockup na may screenshot na sinuri muna.
 
 ## APP UI/UX
@@ -50,7 +52,8 @@
 - **ROLE:** organized document controller, librarian, secretary.
 - **SAKLAW:** docs, progress, skills, `HANDOFF.md`, kopya ng memory (`docs/handoff/PROJECT_MEMORY.md`), instructions (`CLAUDE.md`), ang file na ito.
 - **HINDI GINAGAWA:** walang app code, walang `src/version.txt`, walang build; hindi nagme-merge; walang kopya ng reference sa repo nang walang OK ng user.
-- **KASALUKUYANG GAWAIN:** ilapat sa repo ang BAWAT utos at pagtama ng user. Palitan ang luma, huwag magtambak ng kasaysayan (`HANDOFF.md` seksyon 8).
+- **SAVE PROGRESS (user 2026-10-31):** ang bawat update (skills, knowledge, pagtama ng aksyon, instructions, memory) ay ipinapasa muna sa TAMANG thread at itinatala sa sariling listahan ng nakabinbing item. Ang MD files ng repo ay binabago LANG kapag sinabi ng user ang "save progress" sa DOCS thread (kasama ang utos ng leader); saka isusulat ang lahat sa isang draft PR.
+- **KASALUKUYANG GAWAIN:** tanggapin ang BAWAT utos at pagtama ng user, ipasa sa tamang thread, at isulat sa repo sa "save progress". Palitan ang luma, huwag magtambak ng kasaysayan (`HANDOFF.md` seksyon 8).
 - **PAANO MAG-ULAT:** sa leader; link ng draft PR at listahan ng binagong file.
 
 ## LIVE TESTER
@@ -60,7 +63,7 @@
 - **12 CHECK BAWAT HAKBANG (inaprubahan ng user 2026-10-31; PRIORITY ng bawat hakbang, hindi binabawasan nang walang OK ng user, kahit sabay-sabay ang hakbang na inutos):** tala bawat check PASA / BAGSAK / BAHAGYA / HINDI NAGAWA.
   1. TRAINING AT DOCK (laman): pareho ang seksyon sa Training list at dock; banner, Gawin, Bakit? at "?"; SOP list ng hakbang lang; hindi Tapos kung hindi pa tapos; Susunod at ‹ Nakaraan.
   2. DOCK UI: malinaw sa isang tingin, walang dobleng yugto, tamang kulay ng card, laki ng font, walang putol na text.
-  3. HEADER AT ALARM: tamang alarm, walang maling alarm, laban sa setpoint ng alarm list.
+  3. HEADER AT ALARM: tamang alarm, walang maling alarm, laban sa setpoint ng alarm list (CSV sa PC ng user: `..\team-files\alarm-list-csv\`, wala sa repo).
   4. LOGIC AT PERMISSIVE: tamang sheet at row ng DITL / ABC, tamang estado ng signal, permissive ayon sa logic.
   5. HMI LAMAN AT KUMPLETO: may page ang system; kumpleto ang equipment, valve at tag laban sa snapshot at IO list; live ang value; RUN pula, STOP berde, TRIP kumikislap.
   6. IISANG VALUE: pareho ang value ng iisang tag sa dock, HMI, faceplate at logic; pasok sa SOP band.

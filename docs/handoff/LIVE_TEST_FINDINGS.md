@@ -4,7 +4,7 @@
 
 ## Buod (2026-10-30)
 - **Huling live run:** v3.2.0-beta.74 · build 3f7da0e, malinis na Cold, H1 hanggang H8; huminto sa H8 (expansion tank 0.80 m, walang control ng V-MU1033 / XV-MU1109, #23).
-- **38 findings sa file na ito** (ang #39 ~ #52 at ang bago mula #53 ay nasa artifact ng tester: tingnan ang Test protocol), 21 naayos at nakita live sa beta.74. **Bukas:** #16, #21, #23, #25, #28, #33 ~ #38 (ang #28 ay naayos sa H2 pero hindi pa sa H1).
+- **38 findings sa file na ito** (ang #39 ~ #58 ay nasa artifact ng tester: tingnan ang Test protocol; ang #59 ay nasa talaan sa ibaba), 21 naayos at nakita live sa beta.74. **Bukas:** #16, #21, #23, #25, #28, #33 ~ #38 (ang #28 ay naayos sa H2 pero hindi pa sa H1).
   - #21 at #25: claimed fixed sa **beta.75** (PR #78, naka-merge 2026-10-30), hindi pa live-tested.
   - #23, #28, #33 ~ #38: claimed fixed sa **beta.76** (PR #80, naka-merge 2026-10-30 sa GO BETA ng user), hindi pa live-tested.
   - #16 (030 / 007 sa HSYM, maliit na text): mockup naghihintay ng approval ng user: https://claude.ai/artifact/N6DCUgSmrjXMgecVrpkWhA (private sa lumang account).
@@ -20,7 +20,7 @@
 
 ## Test protocol (utos ng user)
 - **User 2026-10-31 (inaprubahan):** ang 12 CHECK bawat hakbang + 8 PATAKARAN ng LIVE TESTER (`HANDOFF.md` seksyon 5; pinalitan ang "32-item na checklist"). Priority ng bawat hakbang; hindi binabawasan nang walang OK ng user, kahit sabay-sabay ang hakbang na inutos. Tala bawat check: PASA / BAGSAK / BAHAGYA / HINDI NAGAWA. WALANG screenshot: basahin mismo ang app (text, value, kulay, posisyon). Ang user ang huling huhusga.
-- **Findings / checklist artifact ng tester (2026-10-31):** https://claude.ai/artifact/L8PGXXkK7us2NBApNLqwid (12 check × bawat hakbang). Ang lumang findings ay hanggang #52; ang bago ay mula #53. Ang buong bagong listahan (lampas sa #38 ng file na ito) ay nasa artifact na iyon hangga't hindi pa nakokopya sa repo.
+- **Findings / checklist artifact ng tester (2026-10-31):** https://claude.ai/artifact/L8PGXXkK7us2NBApNLqwid (12 check × bawat hakbang). Ang lumang findings ay hanggang #52; ang bago ay mula #53. Ang #39 ~ #58 ay nasa artifact na iyon (2026-10-31 11:45 AM PHT), hindi pa nakokopya sa repo (kokopyahin kapag sinabi ng user). Alarm list para sa check 3 (HEADER AT ALARM): CSV sa PC ng user lang, `..\team-files\alarm-list-csv\` (katabi ng repo folder), hindi kinopya sa repo (kailangan ng OK ng user).
 - Ang dating "buong checklist" (Training list, dock, header, logic sheet, HMI, status bar, events, reference) ay nasa 12 CHECK na (2026-10-31).
 - Totoong 6 h purge; walang shortcut at walang force. I-tick lang ang totoo.
 - Kapag may mali (user 2026-10-30): critical o may chain reaction sa susunod na hakbang = huminto at ipaayos; maliit = itala at tuloy. Bawat ulat ng hakbang ay may criticality at mungkahi; ang user ang nagpapasya.
@@ -68,6 +68,7 @@
 | 36 | **H2 · HMI 030 (forebay level)** LISW1501 = -8.76 m sa HMI, pero ang SOP ay "fore bay level NL = 4 m below GL". Mas mababa nang halos 5 m sa normal; walang paliwanag. (Alarm list LT-SW1501: range -13 ~ -3 m, H -6.) | Ang value ay malapit sa NL ng SOP, o may paliwanag (tide). | Low | Bukas (beta.74) |
 | 37 | **H8 · POP-OUT (standby)** Ang pop-out ng MWP-B na naka-STANDBY (REMOTE + AUTO) ay may header na "INTERLOCK" at ang text na "START sarado: 1 permissive ang kulang (0 sa ibaba)", habang ang dock card ay "STANDBY". Magkasalungat at nakakalito. | Iisang kalagayan sa dock at pop-out: STANDBY (AUTO), at walang kulang na permissive. | Low | Bukas (beta.74) |
 | 38 | **H8 · DOCK banner (susunod na gawin)** Pagkatapos ng standby AUTO, ang banner ay "MWP-B ay STANDBY (AUTO)" at "Buksan ang faceplate ng MWP-B" lang, kahit ang natitira ay ang pagpuno ng expansion tank (V-MU1033 / XV-MU1109) at ang vents. Hindi alam ng operator ang susunod. | Ang banner ay laging ang unang hindi pa tapos na item, na may button papunta sa equipment nito. | Medium | Bukas (beta.74) |
+| 59 | **HMI DESIGN NG USER (2026-10-31, sa LIVE TESTER; para sa HMI thread)** Ngayon ang permissive ay nasa loob ng faceplate; walang Y / N na button at walang trend. | Bawat equipment ay may HIWALAY na button: PERMISSIVE, MONITORING at TREND; ang CONTROLS ay nasa mismong equipment; puwedeng sabay-sabay na bukas ang ilan. Ang PERMISSIVE button ay Y / N: N (berde, ayon sa user) habang hindi kumpleto, Y kapag kumpleto. | Medium | Bukas: ibibigay ng leader sa HMI thread kapag nagsimula ito; mockup muna bago code. |
 
 ## Mga hakbang na nasubok (live log)
 
