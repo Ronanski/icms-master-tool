@@ -933,6 +933,17 @@
           perm = DF.perm.map(r => ({ row: r, l: String((s && window.DUI && DUI.rowInfo(s, r).svc) || 'row ' + r) }));
         if (LS_FPOP.pb({ n: M.n, t: M.t, d: M.d, io: M.io, st: { row: DF.st, on: M.on, off: 'STOPPED' }, pbs: DF.pbs, perm, permWhy: DF.why, vals: [[DF.dp, () => (LOG[DF.dp] != null ? LOG[DF.dp] : PM[DF.dp]), 'mmH2O']] })) return;
       }
+      /* live test #44: the hypochlorite pumps (STN105 DI only): a status pop-out, FIELD START / STOP for P-0762A (the one the model runs) */
+      if (/^H[UD]/.test(id) && window.LS_FPOP && LS_FPOP.field)
+        return void LS_FPOP.field({
+          n: M.n,
+          t: M.t,
+          d: 'STN105 DI',
+          io: M.io,
+          why: 'FIELD lang (local panel HCDSP): ang STN105 DI ay running / overload status lang, walang DCS command.' + (M.fld ? '' : ' Walang plant model ang pump na ito.'),
+          st: () => (M.fld ? mst(M) : null),
+          fld: M.fld ? on => AN.field(M.fld, on) : null
+        });
       if (!window.LS_FPOP || !c) return go();
       /* SOP section 2: SWP normal current 205 ~ 215 A */
       LS_FPOP.hit({ ...M, cur: () => (LOG[c] != null ? LOG[c] : PM[c]), band: /^SW/.test(id) ? [205, 215] : null }, go);
