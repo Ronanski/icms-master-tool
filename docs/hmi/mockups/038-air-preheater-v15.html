@@ -1,0 +1,333 @@
+<title>038 Air Preheater</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one HMI page in the app's approved dark-steel style (same as MAKE-UP WATER): title bar, zone bands, shaded ducts, page tabs. Single dark look like the plant DCS. */
+:root{
+  --bg:#0e1216; --frame:#141a20; --band:#ffffff07; --line:#26303a; --fg:#dfe5ea; --dim:#7f8b96;
+  --run:#e5484d; --stop:#2fa56a; --val-bg:#06090c; --val:#f4f7f9; --tab-on:#2a5d8c;
+  --sans:Inter,"Segoe UI",Arial,sans-serif; --mono:"IBM Plex Mono",Consolas,monospace;
+  color-scheme:dark;
+}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
+.screen{max-width:1280px;margin:0 auto;background:var(--frame);border:1px solid var(--line)}
+.title{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 22px;padding:10px 14px 4px}
+.title h1{margin:0;font:600 17px var(--mono);letter-spacing:.06em}
+.title h1 b{color:var(--dim);font-weight:500;margin-right:14px}
+.title .kv{font:500 12px var(--sans);color:var(--dim);letter-spacing:.06em}
+.title .kv span{font:600 16px var(--mono);color:var(--val);margin-left:8px}
+.title .kv i{font-style:normal;font-size:11px;color:var(--dim);margin-left:3px}
+.alarm{padding:0 14px 8px;font:500 11px var(--sans);letter-spacing:.1em;color:var(--dim)}
+.scroll{overflow-x:auto}
+.wrap{position:relative}
+svg{display:block;width:100%;height:auto}
+.zone{fill:var(--dim);font:600 13px var(--sans);letter-spacing:.14em}
+.tag{fill:#c9d1d8;font:500 13px var(--mono)}
+.num{fill:var(--val);font:600 18px var(--mono)}
+.unit{fill:var(--dim);font:500 12px var(--sans)}
+.eq{fill:#f1f4f6;font:700 18px var(--sans);letter-spacing:.02em}
+.st{font:700 11px var(--sans);letter-spacing:.12em}
+.inside{fill:#f1f4f6;font:600 11px var(--sans);letter-spacing:.14em}
+.card-t{fill:#f1f4f6;font:700 14px var(--sans);letter-spacing:.04em}
+.card-s{fill:var(--dim);font:500 12px var(--sans)}
+.pf{fill:none;stroke:#ffffff;stroke-width:2.5;stroke-dasharray:8 22;opacity:.5;stroke-linejoin:round;animation:pf 1.2s linear infinite}
+@keyframes pf{to{stroke-dashoffset:-30}}
+.st-gas,.st-air{stroke:#ffffff;stroke-width:1.4;opacity:.35;stroke-dasharray:6 22;fill:none}
+.st-gas{animation:dn 1.1s linear infinite}.st-air{animation:up 1.1s linear infinite}
+@keyframes dn{to{stroke-dashoffset:-28}}@keyframes up{to{stroke-dashoffset:28}}
+.flow{fill:none;stroke:#ffffff;stroke-width:2;stroke-dasharray:10 34;opacity:.28;animation:mv 1.8s linear infinite}
+@keyframes mv{to{stroke-dashoffset:-44}}
+.hit{cursor:pointer}.hit:focus-visible{outline:2px solid #6aa7dd}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;padding:6px 10px;border-top:1px solid var(--line)}
+.tabs div{padding:5px 14px;font:600 11px var(--sans);letter-spacing:.08em;color:#aab4bd;background:#1c242c;border:1px solid #2c3640}
+.tabs div.on{background:#dfe5ea;color:#11161b}
+.fp{position:absolute;width:260px;background:#1a2128;border:1px solid #3a4652;box-shadow:0 8px 22px #000a;font-size:13px}
+.fp header{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#222b34;font:600 13px var(--mono);letter-spacing:.04em}
+.fp header button{background:none;border:0;color:var(--dim);font-size:16px;cursor:pointer}
+.fp .body{padding:10px;display:grid;gap:7px}
+.row{display:flex;justify-content:space-between;gap:10px}
+.row span:last-child{font-family:var(--mono)}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.btns button{padding:7px 4px;border:1px solid #47535f;background:#2a343e;color:var(--fg);font:600 11px var(--sans);letter-spacing:.06em;cursor:pointer}
+.sub{color:var(--dim);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.r{color:var(--run)}.g{color:var(--stop)}
+.note{max-width:1280px;margin:16px auto 0;font-size:15px;line-height:1.55}
+.note h2{font-size:16px;margin:0 0 6px}
+.note ul{margin:0;padding-left:20px;max-width:72ch}
+@media (prefers-reduced-motion:reduce){.flow,.pf,.st-gas,.st-air{animation:none}}
+</style>
+
+<div class="screen">
+  <div class="title">
+    <h1><b>038</b>AIR PREHEATER SYSTEM</h1>
+    <div class="kv">MSP<span>121.8</span><i>kg/cm²</i></div>
+    <div class="kv">MST<span>542</span><i>°C</i></div>
+    <div class="kv">MSF<span>477.3</span><i>T/H</i></div>
+    <div class="kv">LOAD<span>149.9</span><i>MW</i></div>
+  </div>
+  <div class="alarm">NO ACTIVE ALARM</div>
+
+  <div class="scroll"><div class="wrap">
+  <svg id="hmi" viewBox="0 0 1280 830" role="img" aria-label="Air preheater H-1052: flue gas passes down through the right half of the rotor and heats it; primary and secondary air pass up through the left half and take the heat">
+    <defs id="defs">
+      <linearGradient id="metalV" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2c343c"/><stop offset=".3" stop-color="#7d8892"/><stop offset=".45" stop-color="#a3adb6"/><stop offset=".7" stop-color="#5d6872"/><stop offset="1" stop-color="#262d34"/></linearGradient>
+      <linearGradient id="metalH" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a3adb6"/><stop offset=".5" stop-color="#6c7780"/><stop offset="1" stop-color="#2c343c"/></linearGradient>
+      <linearGradient id="gGas" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b8563a"/><stop offset=".5" stop-color="#8f6a45"/><stop offset="1" stop-color="#6d665c"/></linearGradient>
+      <linearGradient id="gAir" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#3f77a6"/><stop offset=".5" stop-color="#857a5c"/><stop offset="1" stop-color="#c5824a"/></linearGradient>
+      <pattern id="bask" width="14" height="200" patternUnits="userSpaceOnUse">
+        <rect width="2" height="200" fill="#00000066"/><rect x="7" width="1" height="200" fill="#ffffff18"/>
+        <animateTransform attributeName="patternTransform" type="translate" from="0 0" to="14 0" dur="1.4s" repeatCount="indefinite"/>
+      </pattern>
+      <pattern id="shaftV" width="8" height="16" patternUnits="userSpaceOnUse"><rect width="8" height="16" fill="#7d8892"/><path d="M-4 16 L4 0 M4 16 L12 0" stroke="#c3ccd3" stroke-width="2.5"/><animateTransform attributeName="patternTransform" type="translate" from="0 0" to="8 0" dur=".5s" repeatCount="indefinite"/></pattern>
+      <pattern id="shaftH" width="16" height="10" patternUnits="userSpaceOnUse"><rect width="16" height="10" fill="#7d8892"/><path d="M0 -4 L16 6 M0 4 L16 14" stroke="#c3ccd3" stroke-width="2.5"/><animateTransform attributeName="patternTransform" type="translate" from="0 0" to="0 10" dur=".25s" repeatCount="indefinite"/></pattern>
+      <marker id="ah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#f1f4f6"/></marker>
+    </defs>
+
+    <!-- zone bands -->
+    <rect x="0" y="0" width="470" height="830" fill="var(--band)"/>
+    <rect x="474" y="0" width="356" height="830" fill="#ffffff04"/>
+    <rect x="834" y="0" width="446" height="830" fill="var(--band)"/>
+    <text class="zone" x="14" y="24">AIR SIDE · PRIMARY AND SECONDARY AIR</text>
+    <text class="zone" x="488" y="24">AIR PREHEATER · DITL-43 / 44</text>
+    <text class="zone" x="848" y="24">GAS SIDE · FLUE GAS</text>
+
+    <g transform="translate(0,30)">
+      <g id="ducts"></g>
+      <!-- destination cards -->
+      <g id="cards"></g>
+
+      <!-- rotor housing (steel), bearings, cut-away window with the turning rotor -->
+      <defs><clipPath id="win"><rect x="504" y="312" width="292" height="256"/></clipPath></defs>
+      <rect x="638" y="280" width="24" height="16" rx="2" fill="url(#metalH)" stroke="#0b0f13"/>
+      <rect x="634" y="586" width="32" height="18" rx="2" fill="url(#metalH)" stroke="#0b0f13"/>
+      <rect x="622" y="604" width="56" height="6" fill="#4a545d"/>
+      <rect x="490" y="300" width="320" height="280" fill="url(#metalV)" stroke="#0b0f13"/>
+      <rect x="482" y="294" width="336" height="12" fill="url(#metalH)" stroke="#0b0f13"/>
+      <rect x="482" y="574" width="336" height="12" fill="url(#metalH)" stroke="#0b0f13"/>
+      <rect x="504" y="312" width="292" height="256" fill="#0a0d10"/>
+      <g id="rotor" clip-path="url(#win)"></g>
+      <g id="streams" clip-path="url(#win)"></g>
+      <g stroke="#0b0f13" stroke-width="3"><line x1="504" y1="397" x2="796" y2="397"/><line x1="504" y1="483" x2="796" y2="483"/></g>
+      <rect x="504" y="312" width="292" height="256" fill="none" stroke="#0b0f13" stroke-width="2"/>
+      <rect x="642" y="306" width="16" height="268" fill="url(#metalV)" stroke="#0b0f13"/>
+      <g fill="#b9c3cb" stroke="#0b0f13"><rect x="624" y="306" width="52" height="8"/><rect x="624" y="566" width="52" height="8"/><rect x="571" y="306" width="8" height="8"/><rect x="571" y="566" width="8" height="8"/></g>
+      <g class="inside" text-anchor="end" fill="#9aa6b1" font-size="11">
+        <text x="474" y="352">HOT END</text><text x="474" y="366" class="card-s" font-size="11">elements</text>
+        <text x="474" y="438">INTERMEDIATE</text><text x="474" y="452" class="card-s" font-size="11">elements</text>
+        <text x="474" y="524">COLD END</text><text x="474" y="538" class="card-s" font-size="11">enamelled</text>
+      </g>
+      <g font-size="11" class="inside" text-anchor="middle">
+        <rect x="522" y="528" width="38" height="16" rx="2" fill="#0b0f13cc"/><text x="541" y="540">PA</text>
+        <rect x="594" y="528" width="38" height="16" rx="2" fill="#0b0f13cc"/><text x="613" y="540">SA</text>
+        <rect x="701" y="528" width="48" height="16" rx="2" fill="#0b0f13cc"/><text x="725" y="540">GAS</text>
+      </g>
+
+      <!-- drive: shaft, gearbox, main motor, air motor -->
+      <rect x="645" y="84" width="10" height="196" fill="url(#shaftV)" stroke="#0b0f13"/>
+      <rect x="616" y="40" width="68" height="46" rx="4" fill="url(#metalH)" stroke="#0b0f13"/>
+      <rect x="628" y="46" width="44" height="34" rx="3" fill="#11161b" stroke="#0b0f13"/>
+      <g transform="translate(641,63)"><g><path d="M-11 0a11 11 0 1 0 22 0a11 11 0 1 0 -22 0" fill="#5d6872"/><g stroke="#a9b3bc" stroke-width="3"><line x1="0" y1="-13" x2="0" y2="13"/><line x1="-13" y1="0" x2="13" y2="0"/><line x1="-9" y1="-9" x2="9" y2="9"/><line x1="-9" y1="9" x2="9" y2="-9"/></g><circle r="4" fill="#2c343c"/><animateTransform attributeName="transform" type="rotate" from="0" to="-360" dur="2.4s" repeatCount="indefinite"/></g></g>
+      <g transform="translate(662,63)"><g><path d="M-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" fill="#5d6872"/><g stroke="#a9b3bc" stroke-width="2.5"><line x1="0" y1="-9" x2="0" y2="9"/><line x1="-9" y1="0" x2="9" y2="0"/><line x1="-6" y1="-6" x2="6" y2="6"/><line x1="-6" y1="6" x2="6" y2="-6"/></g><circle r="3" fill="#2c343c"/><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1.5s" repeatCount="indefinite"/></g></g>
+      <rect x="640" y="84" width="20" height="8" fill="url(#metalH)" stroke="#0b0f13"/>
+      <rect x="606" y="58" width="10" height="10" fill="#7d8892" stroke="#0b0f13"/><rect x="684" y="58" width="10" height="10" fill="url(#shaftH)" stroke="#0b0f13"/>
+      <g class="hit" id="mMain" tabindex="0" role="button" aria-label="Main drive motor: open control faceplate">
+        <rect x="694" y="42" width="86" height="42" rx="6" fill="url(#metalH)" stroke="var(--run)" stroke-width="2.5"/>
+        <g stroke="#1b2228" stroke-width="2"><line x1="706" y1="46" x2="706" y2="80"/><line x1="716" y1="46" x2="716" y2="80"/><line x1="726" y1="46" x2="726" y2="80"/><line x1="736" y1="46" x2="736" y2="80"/><line x1="746" y1="46" x2="746" y2="80"/><line x1="756" y1="46" x2="756" y2="80"/></g>
+        <rect x="780" y="46" width="8" height="34" rx="2" fill="#3b444c" stroke="#0b0f13"/>
+        <g transform="translate(800,63)"><circle r="15" fill="#1b2228" stroke="#8d98a2" stroke-width="2"/><g><path d="M0 0 L-3 -12 L3 -12Z M0 0 L12 -3 L12 3Z M0 0 L3 12 L-3 12Z M0 0 L-12 3 L-12 -3Z" fill="#a9b3bc"/><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur=".35s" repeatCount="indefinite"/></g><circle r="3" fill="#5d6872"/></g>
+      </g>
+      <g class="hit" id="mAir" tabindex="0" role="button" aria-label="Air motor: open control faceplate">
+        <rect x="540" y="46" width="66" height="34" rx="6" fill="url(#metalH)" stroke="var(--stop)" stroke-width="2.5"/>
+        <g stroke="#1b2228" stroke-width="2"><line x1="552" y1="50" x2="552" y2="76"/><line x1="562" y1="50" x2="562" y2="76"/><line x1="572" y1="50" x2="572" y2="76"/></g>
+      </g>
+      <text class="st" x="737" y="12" text-anchor="middle" fill="var(--run)">RUNNING</text>
+      <text class="eq" x="737" y="32" text-anchor="middle" font-size="15">MAIN MOTOR</text>
+      <text class="st" x="573" y="12" text-anchor="middle" fill="var(--stop)">STOPPED</text>
+      <text class="eq" x="573" y="32" text-anchor="middle" font-size="15">AIR MOTOR</text>
+
+      <!-- soot blowers on the gas side -->
+      <g stroke="#0b0f13">
+        <rect x="668" y="314" width="160" height="5" fill="url(#metalH)"/><rect x="668" y="561" width="160" height="5" fill="url(#metalH)"/>
+        <g fill="#c3ccd3"><circle cx="690" cy="321" r="2"/><circle cx="725" cy="321" r="2"/><circle cx="760" cy="321" r="2"/><circle cx="690" cy="559" r="2"/><circle cx="725" cy="559" r="2"/><circle cx="760" cy="559" r="2"/></g>
+        <rect x="828" y="303" width="44" height="26" rx="3" fill="url(#metalH)"/><rect x="828" y="550" width="44" height="26" rx="3" fill="url(#metalH)"/>
+      </g>
+      <g stroke-linejoin="round" fill="none"><polyline points="872,316 900,316" stroke="#0b0f13" stroke-width="8"/><polyline points="872,316 900,316" stroke="#8c98a5" stroke-width="5"/><polyline points="872,563 900,563" stroke="#0b0f13" stroke-width="8"/><polyline points="872,563 900,563" stroke="#8c98a5" stroke-width="5"/></g>
+
+      <!-- equipment name, Y / N button -->
+      <text class="st" x="848" y="350" fill="var(--run)">RUNNING</text>
+      <text class="eq" x="848" y="372">AIR PREHEATER H-1052</text>
+      <text class="card-s" x="848" y="390">Rotary regenerative · rotor ~1 rpm</text>
+      <g class="hit" id="yn" tabindex="0" role="button" aria-label="Permissive, monitor and trend: Y, complete">
+        <rect x="1078" y="354" width="28" height="22" rx="3" fill="var(--run)"/>
+        <text x="1092" y="370" text-anchor="middle" fill="#fff" font-weight="700" font-size="14">Y</text>
+      </g>
+
+      <g id="vals"></g>
+
+      <!-- rotor top view -->
+      <text class="tag" x="1195" y="420" text-anchor="middle" fill="#9aa6b1">ROTOR · TOP VIEW</text>
+      <g id="planWrap" transform="translate(1195,500)"><g id="plan"></g></g>
+      <circle cx="1195" cy="500" r="64" fill="none" stroke="#a9b3bc" stroke-width="4"/>
+      <g stroke="#b9c3cb" stroke-width="7"><line x1="1195" y1="436" x2="1195" y2="564"/><line x1="1195" y1="500" x2="1137" y2="473"/></g>
+      <circle cx="1195" cy="500" r="9" fill="#a9b3bc" stroke="#0b0f13"/>
+      <g class="inside" font-size="11"><text x="1262" y="440" text-anchor="end">GAS</text><text x="1122" y="470" text-anchor="end" fill="#c9d1d8">PA</text><text x="1122" y="540" text-anchor="end" fill="#c9d1d8">SA</text></g>
+      <!-- compressed air supply to the air motor -->
+      <g id="air"></g>
+      <!-- legend -->
+      <g transform="translate(1080,740)">
+        <rect width="34" height="8" fill="#4f86b5"/><text class="unit" x="44" y="9" fill="#c9d1d8">COLD AIR</text>
+        <rect y="20" width="34" height="8" fill="#c98a4a"/><text class="unit" x="44" y="29" fill="#c9d1d8">HOT AIR</text>
+        <rect y="40" width="34" height="8" fill="#b85a3c"/><text class="unit" x="44" y="49" fill="#c9d1d8">FLUE GAS</text>
+      </g>
+    </g>
+  </svg>
+
+  <div class="fp" id="fpCtl" hidden style="left:22%;top:6%">
+    <header><span id="fpCtlT">MAIN MOTOR</span><button aria-label="Close" data-close="fpCtl">✕</button></header>
+    <div class="body" id="fpCtlB"></div>
+  </div>
+  <div class="fp" id="fpPer" hidden style="left:68%;top:36%;width:290px">
+    <header><span>H-1052 · PERMISSIVE</span><button aria-label="Close" data-close="fpPer">✕</button></header>
+    <div class="body">
+      <div class="sub">Permissive · DITL-43</div>
+      <div class="row"><span>Remote selected · I.0652</span><span class="r">Y</span></div>
+      <div class="row"><span>Main motor running</span><span class="r">Y</span></div>
+      <div class="sub">Trip / first out · all normal</div>
+      <div class="row"><span>Speed low · speed low low</span><span class="g">N</span></div>
+      <div class="row"><span>Fire alarm · fire detect fault / open circuit</span><span class="g">N</span></div>
+      <div class="row"><span>Speed sensor fault</span><span class="g">N</span></div>
+      <div class="row"><span>Secure / normal power supply failure</span><span class="g">N</span></div>
+      <div class="row"><span>Emergency push button operated</span><span class="g">N</span></div>
+      <div class="sub">Monitor</div>
+      <div class="row"><span>Top bearing · TIFA10526</span><span>60 °C</span></div>
+      <div class="row"><span>Bottom bearing · TIFA10527</span><span>47 °C</span></div>
+      <div class="row"><span>Inlet gas press · PIFG1121</span><span>-62 mmH₂O</span></div>
+      <div class="row"><span>Outlet gas press · PIFG1134</span><span>-160 mmH₂O</span></div>
+      <div class="row"><span>Hot PA flow · FIFA1079</span><span>182 T/H</span></div>
+      <div class="sub">Trend · 30 min · gas out TIFG1132 °C</div>
+      <svg viewBox="0 0 270 56" aria-label="Gas outlet temperature trend, steady near 140 °C"><rect width="270" height="56" fill="#0a0e12"/><g stroke="#ffffff12"><line x1="0" y1="18" x2="270" y2="18"/><line x1="0" y1="38" x2="270" y2="38"/></g><polyline fill="none" stroke="#c9a27a" stroke-width="2" points="0,36 30,35 60,35 90,32 120,33 150,30 180,31 210,29 240,30 270,29"/><circle cx="270" cy="29" r="3" fill="#c9a27a"/></svg>
+    </div>
+  </div>
+  </div></div>
+
+  <div class="tabs"><div>UNIT</div><div>007 AIR &amp; FLUE GAS</div><div>030 SEAWATER</div><div>MAKE-UP WATER</div><div>036 TURBINE OIL</div><div class="on">038 AIR PREHEATER</div></div>
+</div>
+
+<div class="note">
+  <h2>Mockup v15 · loob ng air preheater (sample values)</h2>
+  <ul>
+    <li>Bago sa v15 (galing sa 38.PNG): compressed air papunta sa air motor sa SVPA1052 (berde = CLOSED), TIFA1052 average hot SA, TIFA10526 / 10527 top at bottom bearing, at trip / first-out list sa Y faceplate.</li>
+    <li>Dulo ng linya: gaya ng HMI ng planta (38.PNG): pangalan ng laman sa tabi ng linya at maliit na tulis na nagsasabi ng daloy. Tulis palayo sa pangalan = galing doon; tulis papunta sa pangalan = papunta doon.</li>
+    <li>Pipes na kapareho ng MAKE-UP WATER (bilugan ang liko, may lilim).</li>
+    <li>Loob ng rotor: 12 sector na may baskets ng corrugated na bakal na plates sa tatlong layer (hot end, intermediate, cold end na enamelled).</li>
+    <li>Gumagalaw na guhit sa loob ng rotor = gas pababa at hangin paakyat sa pagitan ng plates. Ang TOP VIEW sa kanan = umiikot na rotor, kita kung saan umiinit at lumalamig ang bawat sector.</li>
+    <li>Habang umiikot: umiinit ang plates sa gas side (kanan), at lumalamig sa air side (kaliwa) dahil ibinibigay ang init sa hangin.</li>
+    <li>Buhay ang drive: umiikot ang fan ng main motor, ang coupling, ang gears sa gearbox at ang shaft (gumagalaw na guhit). Nakatigil ang air motor kasi STOPPED.</li>
+    <li>Soot blowers: lance na nasa ibabaw ng hot end at cold end face ng gas side (doon sila talaga), steam galing auxiliary steam. Idle ngayon (0.0).</li>
+    <li>May daloy na ulit sa lahat ng pipes, sa tamang direksyon.</li>
+    <li>Center post na may guide bearing sa itaas at support bearing sa ibaba; sector plates sa dalawang mukha para hindi maghalo ang gas at hangin.</li>
+    <li>Pindutin ang main motor o air motor = control faceplate. Pindutin ang Y = permissive, monitor at trend.</li>
+  </ul>
+</div>
+
+<script>
+(function(){
+  var ns='http://www.w3.org/2000/svg',defs=document.getElementById('defs');
+  function mk(p,n,a,t){var e=document.createElementNS(ns,n);for(var k in a)e.setAttribute(k,a[k]);if(t!=null)e.textContent=t;p.appendChild(e);return e}
+  function sh(h,f){var n=parseInt(h.slice(1),16),r=n>>16,g=n>>8&255,b=n&255;function c(v){return Math.max(0,Math.min(255,Math.round(f<0?v*(1+f):v+(255-v)*f)))}return'#'+((1<<24)+(c(r)<<16)+(c(g)<<8)+c(b)).toString(16).slice(1)}
+  var med={cold:'#4f86b5',hot:'#c98a4a',gas:'#b85a3c',gasc:'#8b7f70'};
+  Object.keys(med).forEach(function(k){['h','v'].forEach(function(o){var g=mk(defs,'linearGradient',{id:'d'+k+o,x1:0,y1:0,x2:o==='v'?1:0,y2:o==='h'?1:0});
+    [[0,-.6],[.18,-.15],[.42,.28],[.62,0],[1,-.65]].forEach(function(s){mk(g,'stop',{offset:s[0],'stop-color':sh(med[k],s[1])})});});});
+  var D=document.getElementById('ducts');
+  function duct(x,y,w,h,m){var o=w>h?'h':'v';mk(D,'rect',{x:x,y:y,width:w,height:h,fill:'url(#d'+m+o+')',stroke:'#0b0f13','stroke-width':1.5});}
+  // pipes: same build as the MAKE-UP WATER lines (dark rim, medium colour, light core), round bends
+  function pipe(pts,m,w){[['#0b0f13',w+4,1],[med[m],w,1],[sh(med[m],.45),Math.max(2,w*.28),.7]].forEach(function(s){
+      mk(D,'polyline',{points:pts,fill:'none',stroke:s[0],'stroke-width':s[1],opacity:s[2],'stroke-linejoin':'round','stroke-linecap':'butt'});});}
+  pipe('232,168 613,168 613,300','hot',12);   // hot SA out
+  pipe('232,264 541,264 541,300','hot',12);   // hot PA out
+  pipe('232,612 541,612 541,580','cold',12);  // cold PA in
+  pipe('232,702 613,702 613,580','cold',12);  // cold SA in
+  pipe('1090,156 725,156 725,300','gas',16);  // gas in
+  pipe('725,580 725,655 1090,655','gasc',16); // gas out
+  [[541,12],[613,12],[725,16]].forEach(function(n){[300,580].forEach(function(y){mk(D,'rect',{x:n[0]-n[1]/2-5,y:y-(y<400?8:0),width:n[1]+10,height:8,fill:'#a9b3bc',stroke:'#0b0f13'});});});
+  [['613,300 613,168 232,168'],['541,300 541,264 232,264'],['232,612 541,612 541,580'],['232,702 613,702 613,580'],['1090,156 725,156 725,300'],['725,580 725,655 1090,655']].forEach(function(p){mk(D,'polyline',{points:p[0],'class':'pf'});});
+  var AG=document.getElementById('air'),ia='#9fb3c8';
+  [['#0b0f13',9,1],[ia,6,1],[sh(ia,.45),2,.7]].forEach(function(q){mk(AG,'polyline',{points:'300,63 540,63',fill:'none',stroke:q[0],'stroke-width':q[1],opacity:q[2]})});
+  mk(AG,'path',{d:'M301 63 L291 57 L291 69Z',fill:ia});
+  mk(AG,'text',{x:284,y:61,'class':'card-t','font-size':'14','text-anchor':'end'},'COMPRESSED AIR');
+  mk(AG,'text',{x:284,y:78,'class':'card-s','font-size':'12','text-anchor':'end'},'supply to air motor');
+  mk(AG,'path',{d:'M455 53 L475 73 L475 53 L455 73Z',fill:'#16301f',stroke:'var(--stop)','stroke-width':2.5});
+  mk(AG,'line',{x1:465,y1:63,x2:465,y2:45,stroke:'#a9b3bc','stroke-width':2});mk(AG,'rect',{x:457,y:35,width:16,height:10,rx:2,fill:'url(#metalH)',stroke:'#0b0f13'});
+  mk(AG,'text',{x:448,y:38,'class':'tag','text-anchor':'end'},'SVPA1052');
+  mk(AG,'text',{x:448,y:51,'class':'st','text-anchor':'end',fill:'var(--stop)'},'CLOSED');
+  // gas and air passing through the element channels: gas down on the right, air up on the left
+  var S=document.getElementById('streams');
+  for(var x=516;x<796;x+=13){if(x>636&&x<664)continue;var gas=x>650;
+    mk(S,'line',{x1:x,y1:312,x2:x,y2:568,'class':gas?'st-gas':'st-air'});}
+  // top view of the rotor: the same sectors turning through the gas, PA and SA zones
+  var P=document.getElementById('plan'),cx=1195,cy=500,rr=62,NW=24,wd=[];
+  for(var i=0;i<NW;i++){var a0=i*2*Math.PI/NW,a1=(i+1)*2*Math.PI/NW;
+    wd.push(mk(P,'path',{d:'M0 0 L'+rr*Math.cos(a0)+' '+rr*Math.sin(a0)+' A'+rr+' '+rr+' 0 0 1 '+rr*Math.cos(a1)+' '+rr*Math.sin(a1)+'Z',stroke:'#0b0f13','stroke-width':1.5}));}
+  // turning rotor: 12 sectors (between radial diaphragms) carry the element baskets through the gas half (heat up)
+  // and the air half (give the heat to the air); shown as an unrolled ring, ~20 s per turn (real ~1 rpm)
+  var R=document.getElementById('rotor'),N=12,W=292/N,L0=504,LY=[[312,85],[397,86],[483,85]],secs=[];
+  function heat(t){t=Math.max(0,Math.min(1,t));var a=[[63,119,166],[133,122,92],[197,96,58]],i=t<.5?0:1,f=t<.5?t*2:(t-.5)*2;
+    return 'rgb('+a[i].map(function(c,k){return Math.round(c+(a[i+1][k]-c)*f)}).join(',')+')';}
+  for(var s=0;s<N+1;s++){var g=mk(R,'g',{}),ls=[];
+    LY.forEach(function(ly,j){ls.push(mk(g,'rect',{x:0,y:ly[0],width:W,height:ly[1]}));
+      for(var p=1;p<4;p++){var x=p*W/4,d='M'+x+' '+ly[0];for(var yy=ly[0];yy<ly[0]+ly[1];yy+=8)d+=' l'+(j===2?2:3)+' 4 l'+(j===2?-2:-3)+' 4';
+        mk(g,'path',{d:d,fill:'none',stroke:'#0b0f1399','stroke-width':1.2});}});
+    mk(g,'rect',{x:0,y:312,width:2,height:256,fill:'#a9b3bc'});
+    secs.push({g:g,ls:ls});}
+  var t0=performance.now(),still=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function frame(now){var off=still?0:((now-t0)/20000*292)%292;
+    secs.forEach(function(sc,i){var x=L0+((i*W+off)%(292+W))-W;sc.g.setAttribute('transform','translate('+x+',0)');
+      var c=x+W/2,ph=c>=650?(c-650)/146:1-(c-504)/146;     // 0 = coolest (leaving the air side), 1 = hottest (leaving the gas side)
+      sc.ls[0].setAttribute('fill',heat(.35+.6*ph));sc.ls[1].setAttribute('fill',heat(.2+.55*ph));sc.ls[2].setAttribute('fill',heat(.02+.45*ph));});
+    var ang=still?0:((now-t0)/20000*360)%360;document.getElementById("plan").setAttribute("transform","rotate("+ang+")");
+    wd.forEach(function(w,i){var a=((i+.5)*360/NW+ang)%360,ph=(a<=90||a>=270)?((a+90)%360)/180:1-((a-90)/180);w.setAttribute("fill",heat(.1+.8*ph));});
+    if(!still)requestAnimationFrame(frame);}
+  requestAnimationFrame(frame);
+  // destination cards
+  var C=document.getElementById('cards');
+  // line ends like the plant HMI: the medium name beside the line, the arrowhead shows the way it flows
+  function card(y,t,sub,side,out,m){var L=side==='L',px=L?232:1090,ax=L?214:1108,d=(L?-1:1)*(out?1:-1),tip=out?(L?ax-9:ax+9):px;
+    var base=out?px:(L?ax-9:ax+9);
+    mk(C,'line',{x1:L?ax-9:px,y1:y,x2:L?px:ax+9,y2:y,stroke:med[m],'stroke-width':3});
+    var hx=out?(L?ax-9:ax+9):(L?px:px), bx2=out?(L?ax+1:ax-1):(L?px-10:px+10);
+    hx=L?(out?ax-12:px-1):(out?ax+12:px+1); bx2=L?(out?ax-2:px-11):(out?ax+2:px+11);
+    mk(C,'path',{d:'M'+hx+' '+y+' L'+bx2+' '+(y-6)+' L'+bx2+' '+(y+6)+'Z',fill:med[m]});
+    var tx=L?ax-18:ax+18,an=L?'end':'start';
+    mk(C,'text',{x:tx,y:y-2,'class':'card-t','font-size':'14','text-anchor':an},t);
+    mk(C,'text',{x:tx,y:y+15,'class':'card-s','font-size':'12','text-anchor':an},sub);}
+  card(168,'HOT SECONDARY AIR','to furnace','L',1,'hot');
+  card(264,'HOT PRIMARY AIR','to furnace','L',1,'hot');
+  card(612,'COLD PRIMARY AIR','from PAF F-1053','L',0,'cold');
+  card(702,'COLD SECONDARY AIR','from SAF F-1054','L',0,'cold');
+  card(156,'FLUE GAS INLET','from economizer','R',0,'gas');
+  card(655,'FLUE GAS OUTLET','to ESP Z-1010','R',1,'gasc');
+  // values: x, y(box top), tag, value, unit
+  var V=[[396,104,'TIFA1052','287','°C'],[176,104,'TIFA1086','288','°C'],[286,104,'TIFA1087','286','°C'],
+         [176,318,'TIFA1076','281','°C'],[286,318,'TIFA1077','283','°C'],
+         [176,540,'TIFA1073','38','°C'],[286,540,'TIFA1074','37','°C'],
+         [176,754,'TIFA1083','35','°C'],[286,754,'TIFA1084','35','°C'],
+         [848,84,'TIFG1124','338','°C'],[966,84,'TIFG1125','336','°C'],
+         [848,712,'TIFG1132','139','°C'],[966,712,'TIFG1133','141','°C'],
+         [848,428,'DPIFG10525','98','mmH₂O'],[1000,428,'IIFA1052M1','4.7','A'],
+         [770,205,'TIFA10526','60','°C'],[770,612,'TIFA10527','47','°C'],[900,302,'PISB1040','0.0','kg/cm²'],[900,549,'PISB1042','0.0','kg/cm²']];
+  var G=document.getElementById('vals');
+  V.forEach(function(v){var x=v[0],y=v[1];
+    var nm={TIFA1052:'avg hot SA',TIFA10526:'top bearing',TIFA10527:'bottom bearing'};if(nm[v[2]]){mk(G,'text',{x:x,y:y-7,'class':'tag'},v[2]);mk(G,'text',{x:x+75,y:y-7,'class':'card-s','font-size':'11'},nm[v[2]]);}else if(v[2]==='PISB1040'||v[2]==='PISB1042'){mk(G,'text',{x:x+80,y:y+12,'class':'tag'},v[2]);mk(G,'text',{x:x+80,y:y+27,'class':'card-s'},v[2]==='PISB1040'?'hot end soot blower · idle':'cold end soot blower · idle');}else if(!nm[v[2]])mk(G,'text',{x:x,y:y-7,'class':'tag'},v[2]);
+    mk(G,'rect',{x:x,y:y,width:70,height:28,fill:'#06090c',stroke:'#2c3640'});
+    mk(G,'text',{x:x+63,y:y+21,'class':'num','text-anchor':'end'},v[3]);
+    if(v[2]!=='PISB1040'&&v[2]!=='PISB1042')mk(G,'text',{x:x+75,y:y+19,'class':'unit'},v[4]);});
+  var ctl={
+    mMain:['MAIN MOTOR · DITL-43','<div class="row"><span>Status</span><span class="r">RUNNING</span></div><div class="row"><span>Mode</span><span>REMOTE</span></div><div class="row"><span>Current · IIFA1052M1</span><span>4.7 A</span></div><div class="btns"><button>START · M.1420</button><button>STOP · M.1421</button><button>LOW SPEED · M.1423</button><button>NORMAL · M.1424</button></div>'],
+    mAir:['AIR MOTOR · DITL-44','<div class="row"><span>Status</span><span class="g">STOPPED</span></div><div class="row"><span>Use</span><span>back-up drive</span></div><div class="row"><span>Air valve · SVPA1052</span><span class="g">CLOSED</span></div><div class="btns"><button>OPEN SVPA1052</button><button>CLOSE SVPA1052</button></div>']};
+  function bind(id,fn){var e=document.getElementById(id);e.addEventListener('click',fn);e.addEventListener('keydown',function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();fn();}});}
+  ['mMain','mAir'].forEach(function(id){bind(id,function(){document.getElementById('fpCtlT').textContent=ctl[id][0];document.getElementById('fpCtlB').innerHTML=ctl[id][1];var f=document.getElementById('fpCtl');f.style.left=id==='mAir'?'14%':'22%';f.hidden=false;});});
+  bind('yn',function(){document.getElementById('fpPer').hidden=false;});
+  document.querySelectorAll('[data-close]').forEach(function(b){b.addEventListener('click',function(){document.getElementById(b.dataset.close).hidden=true;});});
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches){var s=document.getElementById('hmi');s.pauseAnimations&&s.pauseAnimations();}
+})();
+</script>
