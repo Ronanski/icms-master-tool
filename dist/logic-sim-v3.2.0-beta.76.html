@@ -30156,7 +30156,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.76';
-      c3.textContent += ' · build 7dfb5a2'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build f68736b'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -61035,7 +61035,7 @@ window.LS_GUIDE = (function () {
       const nm = f.t.replace(/\s*\([^()]*\d[^()]*~[^()]*\)/, '').replace(/^(Check|Verify|Ensure)\s+(that\s+)?(the\s+)?/i, '');
       /* live check #91 (beta.51): the row shows a value of the PLANT MODEL only: the PV of the DCS loop of the row's tag (PI-DO0005 =
          PICDO0005) or of the level controller; a field gauge without a model (motor current, local pressure / temperature) reads
-         "— walang model" (before, the middle of the SOP range was shown as if read). The SOP value is in the hint */
+         "— walang model" (#49: "— field gauge"; before, the middle of the SOP range was shown as if read). The SOP value is in the hint */
       const nums = String(lm[0]).match(/-?\d+(?:\.\d+)?/g) || [],
         lo = nums.length ? +nums[0] : NaN,
         un = (/°C|ksc|kg\/cm2|bar|%|\bA\b|(?<=\d)A\b/.exec(lm[0]) || [/current/i.test(f.t) ? 'A' : ''])[0],
@@ -61051,27 +61051,41 @@ window.LS_GUIDE = (function () {
         };
       /* a level of the SOP table is the PV of its controller; a gauge with a DCS loop is that loop's PV; a laboratory value (pH, Fe)
          stays the SOP value */
+      /* live test #49: the gauges of the SOP that the HMI reads from the plant model (unit.js AN_MU / AN_ACW): section 7 MWP current
+         IIP0709A ~ C and header pressure PIMU0709 (MAKE-UP WATER page), section 8 ACWP current IIP1108A / B (027 page); the running pump */
+      const U0 = (window.AN && AN.unit) || {},
+        mdl =
+          f.si === 6 && /current/i.test(f.t)
+            ? ['IIP0709A ~ C', () => (U0.on ? Math.max(+U0.muI0 || 0, +U0.muI1 || 0, +U0.muI2 || 0) : NaN), 'A']
+            : f.si === 6 && /pressure/i.test(f.t)
+              ? ['PIMU0709', () => (U0.on ? +U0.muP : NaN), 'kg/cm²']
+              : f.si === 7 && /current/i.test(f.t)
+                ? ['IIP1108A / B', () => (U0.on ? Math.max(+U0.acI0 || 0, +U0.acI1 || 0) : NaN), 'A']
+                : null;
       const lvl = /hotwell level/i.test(f.t) ? 'LCV-MU1110' : /deaerator level/i.test(f.t) ? 'LCV-CD1104' : null,
         gauge = /current|pressure|temperature/i.test(f.t),
-        tfp = !lvl && gauge ? tagFp() : null,
-        nomod = !lvl && gauge && !tfp,
+        tfp = !lvl && gauge && !mdl ? tagFp() : null,
+        nomod = !lvl && gauge && !tfp && !mdl,
         /* live test #21 (H6): a field gauge that the step's own values already read from the plant model (SWBP suction / inlet,
            discharge, current of each pump, with their SOP range) is not shown again as "— walang model" */
         kw = /current/i.test(f.t) ? /current/i : /suction|inlet pressure/i.test(f.t) ? /suction/i : /discharge/i.test(f.t) ? /discharge/i : /pressure/i.test(f.t) ? /suction|discharge|pressure/i : null;
       if (nomod && s.w && kw && stage.some(x => x[2] && kw.test(x[0]))) continue;
+      /* #49: a gauge with no DCS signal (the dryer / compressor local panel T1 ~ T7, a local pressure gauge) is read in the field */
       const live = lvl
         ? () => call(() => LV().pvOf(LV().fp(lvl)), NaN)
-        : tfp
-          ? () => call(() => LV().pvOf(tfp), NaN)
-          : nomod
-            ? () => '— walang model'
-            : () => lm[0];
+        : mdl
+          ? mdl[1]
+          : tfp
+            ? () => call(() => LV().pvOf(tfp), NaN)
+            : nomod
+              ? () => '— field gauge'
+              : () => lm[0];
       sop.push([
         'SOP · ' + (nm.length > 34 ? nm.slice(0, 34).replace(/\s+\S*$/, '') + '…' : nm),
         live,
-        lvl ? 'mm' : tfp ? un : '',
+        lvl ? 'mm' : mdl ? mdl[2] : tfp ? un : '',
         x => (typeof x === 'number' ? (Math.abs(x) < 10 ? x.toFixed(2).replace(/0$/, '') : f1(x)) : x),
-        [f.g, 'SOP ' + lm[0], lm.slice(1).join(' · ')].filter(Boolean).join(' · ')
+        [mdl ? mdl[0] : f.g, 'SOP ' + lm[0], lm.slice(1).join(' · ')].filter(Boolean).join(' · ')
       ]);
     }
     els.watch = own.concat(stage, sop.slice(0, 8)).map(([k, f, u, fm, hint]) => {
