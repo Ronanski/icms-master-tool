@@ -368,6 +368,8 @@
   };
   const R = (x, y, w, h, f, o) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}"${o == null ? ` stroke="${C.ol}" stroke-width="${C.olw}"` : o}/>`;
   const P = (d, f, o) => `<path d="${d}" fill="${f}"${o == null ? ` stroke="${C.ol}" stroke-width="${C.olw}"` : o}/>`;
+  /* live test #70: the text of the page takes no click (plant.css), so a label that opens a faceplate gets a clear hit rect over it */
+  const HIT = (x, y, w, h, at) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#000" fill-opacity="0" style="cursor:pointer" ${at}/>`;
   const NAME = (x, y, s, a, sub) => T(x, y, s, { z: 10, b: 700, c: C.name, a: a || 'middle', ls: 0.6 }) + (sub ? T(x, y + 11, sub, { z: 8, c: C.dim, a: a || 'middle' }) : '');
   /* serpentine tube bank */
   const bankPath = b => {
@@ -683,7 +685,9 @@
     s += `<rect x="${x + w - 2}" y="${y + 40}" width="12" height="26" rx="2" fill="${S.C.none}" stroke="${k.shellOl}" stroke-width="1" data-aphm="1"/>` + T(x + w + 4, y + 56, 'M', { z: 7, b: 700, c: k.dark ? '#e6ebef' : '#26303a', a: 'middle' });
     /* R9 #87: the run state of the main drive (DITL-43), as the fans: red RUNNING, green STOPPED */
     s += T(x + w - 8, y + 9.5, '-----', { z: 7.5, b: 700, c: S.C.none, a: 'end', ls: 0.4, k: 'aphst' }); /* in the hot end strip (left of the box: the PAF faceplate) */
-    return s + NAME(1012, 730, 'AIR PREHEATER  H-1052', 'end') + T(1012, 741, 'Ljungstrom rotary: PA / SA / gas', { z: 7.5, c: S.C.dim, a: 'end' });
+    s += NAME(1012, 730, 'AIR PREHEATER  H-1052', 'end') + T(1012, 741, 'Ljungstrom rotary: PA / SA / gas', { z: 7.5, c: S.C.dim, a: 'end' });
+    /* #70: a click on the rotor, the drive motor or the name = the faceplate of the main drive (DITL-43) */
+    return s + HIT(x, y, w + 12, h, 'data-aphh="1"') + HIT(1012 - 136, 719, 136, 25, 'data-aphh="1"');
   }
   function esp(S) {
     const k = S.sk;
@@ -694,7 +698,8 @@
     for (const x of [1348, 1390, 1432]) s += `<line x1="${x}" y1="758" x2="${x}" y2="842" stroke="${k.shellOl}" stroke-width="1.4"/>`;
     /* live test 2026-10-30 #18: the ESP purge air heater H-1201 and fan F-1201 (PR-OPE-5002 section 1, EP PLC panel, no DCS signal): status
        of the field equipment (Training: from "Simulan ang 6 h purge"; 150 MW: in service) and the purge time */
-    s += T(1390, 736, 'PURGE AIR HTR H-1201 / FAN F-1201 · EP PLC (field)', { z: 7.5, c: S.C.dim, a: 'middle' }) + T(1390, 724, '-----', { z: 8, b: 700, c: S.C.none, a: 'middle', ls: 0.4, k: 'espst' });
+    /* live test #40: right of the ESP, between it and the stack (over the PISB1040 / PISB1042 boxes it covered their values) */
+    s += T(1494, 746, '-----', { z: 8, b: 700, c: S.C.none, ls: 0.4, k: 'espst' }) + T(1494, 757, 'PURGE AIR HTR H-1201', { z: 7.5, c: S.C.dim }) + T(1494, 767, 'PURGE FAN F-1201', { z: 7.5, c: S.C.dim }) + T(1494, 777, 'EP PLC (field)', { z: 7.5, c: S.C.dim });
     return s + NAME(1390, 750, 'ESP  Z-1010', 'middle');
   }
   function stack(S) {
@@ -739,23 +744,23 @@
       mx = hx - 46;
       my = cy - 9;
       s += `<rect x="${mx - 30}" y="${my - 2}" width="34" height="22" rx="3" fill="${C.eq}" stroke="${C.ol}" stroke-width="1.1"/><rect x="${mx - 27}" y="${my + 1}" width="28" height="16" rx="2" fill="${C.none}" data-mot="${i}"/>` + T(mx - 13, my + 13, 'M', { z: 8, b: 700, c: '#fff', a: 'middle' });
-      return s + T(cx, cy + r + 13, f.name, { z: 9.5, b: 700, c: C.name, a: 'middle', ls: 0.4 });
+      return s + T(cx, cy + r + 13, f.name, { z: 9.5, b: 700, c: C.name, a: 'middle', ls: 0.4 }) + HIT(cx - 40, cy + r + 2, 80, 15, `data-fl="${i}"`);
     }
     if (f.small) {
       s += `<line x1="${cx}" y1="${cy + r}" x2="${cx}" y2="${cy + r + 6}" stroke="${C.eqIn}" stroke-width="2"/><rect x="${cx - 9}" y="${cy + r + 6}" width="18" height="11" rx="2" fill="${C.eq}" stroke="${C.ol}" stroke-width="1"/><rect x="${cx - 7}" y="${cy + r + 8}" width="14" height="7" rx="1" fill="${C.none}" data-mot="${i}"/>`;
       const [n1, n2] = f.name.split('  ');
-      return s + T(cx + r + 4, cy - 2, n1, { z: 8, b: 700, c: C.name }) + T(cx + r + 4, cy + 8, n2, { z: 7, c: C.dim });
+      return s + T(cx + r + 4, cy - 2, n1, { z: 8, b: 700, c: C.name }) + T(cx + r + 4, cy + 8, n2, { z: 7, c: C.dim }) + HIT(cx + r + 2, cy - 11, 40, 22, `data-fl="${i}"`);
     }
     s += `<line x1="${cx + r}" y1="${cy + 8}" x2="${mx}" y2="${cy + 8}" stroke="${C.eqIn}" stroke-width="2"/>`;
     s += `<rect x="${mx}" y="${my + 8}" width="24" height="13" rx="2" fill="${C.eq}" stroke="${C.ol}" stroke-width="1.1"/>`;
     s += `<rect x="${mx + 2}" y="${my + 10}" width="20" height="9" rx="1" fill="${C.none}" data-mot="${i}"/>` + T(mx + 12, my + 17.5, 'M', { z: 7.5, b: 700, c: '#fff', a: 'middle' });
-    return s + T(cx, cy + r + 13, f.name, { z: 9, b: 700, c: C.name, a: 'middle', ls: 0.4 });
+    return s + T(cx, cy + r + 13, f.name, { z: 9, b: 700, c: C.name, a: 'middle', ls: 0.4 }) + HIT(cx - 38, cy + r + 2, 76, 15, `data-fl="${i}"`);
   }
   /* damper: blades turned by the real position (across the flow = closed, along = open); click = its controller's faceplate */
   function damper(d, i) {
     let s = `<g data-dmp="${i}" style="cursor:pointer">`;
     if (d.hor) {
-      s += `<rect x="${d.x - d.len / 2}" y="${d.y - 8}" width="${d.len}" height="16" fill="#000" fill-opacity="0"/>`;
+      s += `<rect x="${d.x - d.len / 2}" y="${d.y - 8}" width="${d.len}" height="32" fill="#000" fill-opacity="0"/>`; /* #70: down to the tag / value under the blades */
       for (let k = 0; k < 4; k++) {
         const bx = d.x - d.len / 2 + 14 + k * 28;
         s += `<line x1="${bx - 11}" y1="${d.y}" x2="${bx + 11}" y2="${d.y}" stroke="${C.blade}" stroke-width="2.2" stroke-linecap="round" data-bl="${bx} ${d.y}"/><circle cx="${bx}" cy="${d.y}" r="1.3" fill="${C.bg}"/>`;
@@ -763,7 +768,7 @@
       s += `<text x="${d.x}" y="${d.y + 19}" font-family="${MF}" font-size="8.5" fill="${C.none}" text-anchor="middle" data-dv="${i}">-----</text>`;
     } else {
       const w = d.w;
-      s += `<rect x="${d.x - 8}" y="${d.y - w / 2 - 16}" width="16" height="${w + 18}" fill="#000" fill-opacity="0"/>`;
+      s += `<rect x="${d.x - 18}" y="${d.y - w / 2 - 16}" width="36" height="${w + 32}" fill="#000" fill-opacity="0"/>`; /* #70: with the value under it */
       s += R(d.x - 4, d.y - w / 2 - 2, 8, w + 4, 'none', ` stroke="${C.eqIn}" stroke-width="1.2"`);
       s += `<line x1="${d.x}" y1="${d.y - w / 2 + 1}" x2="${d.x}" y2="${d.y + w / 2 - 1}" stroke="${C.blade}" stroke-width="2.2" stroke-linecap="round" data-bl="${d.x} ${d.y}"/><circle cx="${d.x}" cy="${d.y}" r="1.4" fill="${C.bg}" stroke="${C.blade}" stroke-width="0.8"/>`;
       s += `<line x1="${d.x}" y1="${d.y - w / 2 - 2}" x2="${d.x}" y2="${d.y - w / 2 - 8}" stroke="${C.eqIn}" stroke-width="1.2"/>` + R(d.x - 6, d.y - w / 2 - 15, 12, 7, C.eq, ` stroke="${C.ol}" stroke-width="1"`);
@@ -888,7 +893,7 @@
     FANS.forEach((f, i) => {
       s += T(x, y + 10, f.name, { z: 9.5, c: C.lab }) + num('fa' + i, x + w - 92, y + 10.5, 10.5) + T(x + w - 89, y + 10, 'A', { z: 8, c: C.unit });
       s += `<circle cx="${x + w - 72}" cy="${y + 7}" r="3.5" fill="${C.none}" data-k="fd${i}"/>` + T(x + w, y + 10, '-----', { z: 8.5, b: 700, c: C.none, a: 'end', ls: 0.4, k: 'ft' + i });
-      s += `<title>${esc(f.name + ' · motor current ' + AMP[i] + ' (plant estimate) · run state from the DCS logic')}</title>`;
+      s += `<rect x="${x - 2}" y="${y - 2}" width="${w + 4}" height="17" fill="#000" fill-opacity="0" style="cursor:pointer" data-fl="${i}"><title>${esc(f.name + ' · motor current ' + AMP[i] + ' (plant estimate) · run state from the DCS logic · click = faceplate')}</title></rect>`;
       y += 19;
     });
     y += 10;
@@ -918,6 +923,21 @@
     return s + bedTable() + legend() + panel();
   }
 
+  /* the plant estimate of the air / flue gas transmitters no logic sheet reads (EST): the derived inputs of E from its live ones (bed
+     temperature, air flows, fans); shared with the pages that show the same transmitters (038 AIR PREHEATER) */
+  function estPrep(E) {
+    E.kb = E.tb == null ? 0 : clamp((E.tb - 30) / (937 - 30), 0, 1.3);
+    E.pa = (E.fpa || 0) / E.pa0;
+    E.sa = (E.fsa || 0) / E.sa0;
+    E.fa = (E.ffa || 0) / E.fa0;
+    E.g = E.idf ? clamp(((E.fpa || 0) + (E.fsa || 0) + (E.ffa || 0)) / 594, 0, 1.4) : 0;
+    E.pf = E.pf0 == null ? 0 : E.pf0;
+    E.tpa = E.ta == null ? 30 : E.ta;
+    E.tsa = E.ts == null ? E.tpa : E.ts;
+    const amb = E.tpa;
+    E.T = (t0, after) => amb + (t0 - amb) * E.kb * (after ? 0.85 + 0.15 * clamp(E.g, 0.2, 1.2) : 1);
+    E.P = p0 => (E.idf ? E.pf + (p0 - -16) * E.g * E.g : E.pf);
+  }
   /* ---------- live links ---------- */
   function airFlueGas(g, api) {
     const pg = S_('g', { transform: `translate(0 ${OY})` });
@@ -936,17 +956,7 @@
     const E = { tb: null, pa0: 354, sa0: 213, fa0: 26.3 };
     const ESTV = [];
     const recalc = () => {
-      E.kb = E.tb == null ? 0 : clamp((E.tb - 30) / (937 - 30), 0, 1.3);
-      E.pa = (E.fpa || 0) / E.pa0;
-      E.sa = (E.fsa || 0) / E.sa0;
-      E.fa = (E.ffa || 0) / E.fa0;
-      E.g = E.idf ? clamp(((E.fpa || 0) + (E.fsa || 0) + (E.ffa || 0)) / 594, 0, 1.4) : 0;
-      E.pf = E.pf0 == null ? 0 : E.pf0;
-      E.tpa = E.ta == null ? 30 : E.ta;
-      E.tsa = E.ts == null ? E.tpa : E.ts;
-      const amb = E.tpa;
-      E.T = (t0, after) => amb + (t0 - amb) * E.kb * (after ? 0.85 + 0.15 * clamp(E.g, 0.2, 1.2) : 1);
-      E.P = p0 => (E.idf ? E.pf + (p0 - -16) * E.g * E.g : E.pf);
+      estPrep(E);
       for (const o of ESTV) {
         let v = null;
         try {
@@ -1040,8 +1050,8 @@
       body.append(ti);
       /* 3.2.0-beta.74: a click on a fan = its pop-out faceplate beside it (fp-pop.js: the motor drawing of its running memory M.33xx) */
       const M = { n: f.name.split(/\s+/)[0], t: f.tag.split(' ')[0], ad: FANAD[i] };
-      /* the casing, the impeller and the motor are separate shapes: a click on any of them */
-      for (const el of [body, imp, mot])
+      /* the casing, the impeller and the motor are separate shapes: a click on any of them, on its name or on its row of the FANS panel (#70) */
+      for (const el of [body, imp, mot, ...pg.querySelectorAll(`[data-fl="${i}"]`)])
         if (el)
           el.addEventListener(
             'click',
@@ -1091,6 +1101,22 @@
         },
         body
       );
+      /* live test #70: the APH had no faceplate (click and the dock's "Buksan ang faceplate" did nothing): the motor pop-out of its drawing
+         DITL-43 (status, FIELD selector, START / STOP, the logic permissive), as the fans */
+      const M = { n: 'APH', t: 'H-1052', ad: 'DITL-43' },
+        hits = [...pg.querySelectorAll('[data-aphh]')];
+      for (const el of [mot, ...hits])
+        el.addEventListener(
+          'click',
+          e => {
+            if (!window.LS_FPOP) return;
+            e.stopPropagation();
+            LS_FPOP.hit(M, null);
+          },
+          true
+        );
+      if (mot) mot.style.cursor = 'pointer';
+      (window.LS_FPREG = window.LS_FPREG || {})[M.ad] = { open: () => LS_FPOP.hit(M, null), el: () => hits[0] || mot };
     }
     /* fan motor currents (plant estimate) */
     ['IIF1053', 'IIF1054', 'IIF1056', 'IIF1055A', 'IIF1055B'].forEach((tg, i) => {
@@ -1377,6 +1403,8 @@
     },
     /* the screens of the other files (hmi-sw.js: 030 SEAWATER) */
     screens: SCREENS,
+    EST,
+    estPrep,
     draw(g, sys, api) {
       const S = STYLES[sys.style || SK];
       for (const k in C) delete C[k];

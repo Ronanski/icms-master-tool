@@ -44,6 +44,9 @@
       co: ['#d0773b', '#ffc79a'] /* control oil (high pressure) */,
       to: ['#c25f98', '#ffc4e4'] /* trip oil */,
       st: ['#8c98a5', '#f2f6fa'] /* steam / vapour */,
+      air: ['#5f87a8', '#d6ecff'] /* cold air (primary / secondary / fluidizing) */,
+      ha: ['#b07a3c', '#ffd9a0'] /* hot air (after the air preheater) */,
+      fg: ['#77706a', '#e2dad2'] /* flue gas */,
       off: ['#33414e', null]
     }
   };
@@ -238,6 +241,30 @@
   /* end of a line: arrow card (title, sub) pointing in from the left */
   const dest = (x, y, w, title, sub) =>
     `<g><path d="M${x} ${y - 26} h${w} a4 4 0 0 1 4 4 v44 a4 4 0 0 1 -4 4 h-${w} l-12 -26 z" fill="#1b252f" stroke="#33424f"/>${T(x + 12, y - 4, title, 'hs-eq', 'style="font-size:15px"')}${sub ? T(x + 12, y + 15, sub, 'hs-sub') : ''}</g>`;
+  /* a value with a plain description (user 2026-10-31: no acronyms as labels): description above the box, the tag (small) and the unit
+     at its right; key = data-v of the value, click key = data-vbx */
+  const vb = (x, y, desc, tag, unit, key, w = 70) =>
+    `<g class="hs-hit" data-vbx="${key}">${T(x, y - 6, desc, 'hs-sub', 'fill="#c3ced8"')}<rect x="${x}" y="${y}" width="${w}" height="29" rx="2" fill="${C.box}" stroke="${C.boxs}"/>${T(x + w - 6, y + 22, '-----', 'hs-val', `text-anchor="end" fill="${C.none}" data-v="${key}"`)}${T(x + w + 5, y + 11, tag, 'hs-tag', 'style="font-size:10.5px"')}${T(x + w + 5, y + 26, unit, 'hs-unit')}</g>`;
+  /* a small motor box with fins and a run ring (drives, actuators); A.pump(id, ...) colours the ring */
+  const motor = (x, y, id, px, o = {}) => {
+    const w = o.w || 60,
+      h = o.h || 40;
+    return `<g class="hs-hit" data-hit="${id}"><rect x="${x - 4}" y="${y - 4}" width="${w + 8}" height="${h + 8}" rx="7" fill="none" stroke="${C.none}" stroke-width="4" data-ring="${id}" class="hs-hl"/><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="url(#${px}-mt)" ${OL}/>${[0, 1, 2, 3, 4].map(k => `<line x1="${x + 6 + k * ((w - 12) / 4)}" x2="${x + 6 + k * ((w - 12) / 4)}" y1="${y + 5}" y2="${y + h - 5}" stroke="#3b4651" stroke-width="1.5"/>`).join('')}${T(x + w / 2, y + h / 2 + 5, o.lab || 'M', 'hs-st', 'fill="#0c1014" text-anchor="middle"')}</g>`;
+  };
+  /* #59 (user 2026-10-31): the one button beside an equipment that opens its second faceplate (permissive, monitoring, trend);
+     small and quiet (leader review, clean layout): "PERMISSIVE" + the Y / N square, Y = red = every permissive complete, N = green =
+     not complete (A.eqb(id, ok) sets it) */
+  const eqb = (x, y, id) =>
+    `<g data-eqb="${id}" class="hs-hit" role="button" aria-label="Permissive, trend and monitoring"><title>Permissive, trend and monitoring</title><rect x="${x}" y="${y}" width="112" height="22" rx="3" fill="#161e26" stroke="#3a4b5a" data-eqbr="${id}"/>${T(x + 8, y + 15, 'PERMISSIVE', 'hs-st', 'fill="#b8c4cf" style="font-size:10px;letter-spacing:.04em"')}<rect x="${x + 92}" y="${y + 4}" width="14" height="14" rx="2" fill="${C.none}" data-eqbk="${id}"/>${T(x + 99, y + 15.5, '-', 'hs-st', 'fill="#04150c" text-anchor="middle" style="font-size:11px" data-eqbt="' + id + '"')}</g>`;
+  /* clean layout (leader review 2026-10-31): a value with its description and unit, the tag only on hover (and in the faceplate);
+     vb2 = an A / B pair as one two-cell block */
+  const vbc = (x, y, desc, tag, unit, key, w = 76) =>
+    `<g class="hs-hit" data-vbx="${key}"><title>${tag}</title>${T(x, y - 6, desc, 'hs-sub', 'fill="#c3ced8"')}<rect x="${x}" y="${y}" width="${w}" height="28" rx="2" fill="${C.box}" stroke="${C.boxs}"/>${T(x + w - 6, y + 21, '-----', 'hs-val', `text-anchor="end" fill="${C.none}" data-v="${key}" style="font-size:20px"`)}${T(x + w + 5, y + 21, unit, 'hs-unit')}</g>`;
+  const vb2 = (x, y, desc, tags, unit, keys, w = 56) =>
+    `<g class="hs-hit" data-vbx="${keys[0]}"><title>${tags.join(' / ')}</title>${T(x, y - 6, desc, 'hs-sub', 'fill="#c3ced8"')}${[0, 1].map(i => `<rect x="${x + i * (w + 3)}" y="${y}" width="${w}" height="28" rx="2" fill="${C.box}" stroke="${C.boxs}"/>${T(x + i * (w + 3) + w - 5, y + 21, '-----', 'hs-val', `text-anchor="end" fill="${C.none}" data-v="${keys[i]}" style="font-size:20px"`)}`).join('')}${T(x + 2 * w + 8, y + 21, unit, 'hs-unit')}</g>`;
+  /* a flow arrow on a duct (direction instead of a sentence): dir r / l / u / d */
+  const arrow = (x, y, dir, c = '#dce4eb') =>
+    `<path d="M${x - 7} ${y - 6} L${x + 5} ${y} L${x - 7} ${y + 6} Z" fill="${c}" opacity=".85" transform="rotate(${{ r: 0, d: 90, l: 180, u: 270 }[dir] || 0} ${x} ${y})"/>`;
   const legend = (x, y, items) =>
     items
       .map(
@@ -566,6 +593,16 @@
         e.classList.toggle('h2blink', ok === false);
       });
     };
+    /* the #59 button: ok true = Y (red, every permissive complete), false = N (green), null = no logic */
+    A.eqb = (id, ok) => {
+      const col = ok == null ? C.none : ok ? C.run : C.stop;
+      qa(`[data-eqbr="${id}"]`).forEach(e => e.setAttribute('stroke', col));
+      qa(`[data-eqbk="${id}"]`).forEach(e => e.setAttribute('fill', col));
+      qa(`[data-eqbt="${id}"]`).forEach(e => {
+        e.textContent = ok == null ? '-' : ok ? 'Y' : 'N';
+        e.setAttribute('fill', ok ? '#fff' : '#04150c');
+      });
+    };
     return A;
   }
 
@@ -591,6 +628,12 @@
     orifice,
     tank,
     vbox,
+    vb,
+    motor,
+    eqb,
+    vbc,
+    vb2,
+    arrow,
     dest,
     legend,
     live,
