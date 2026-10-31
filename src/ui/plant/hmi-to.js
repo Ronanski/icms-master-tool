@@ -768,8 +768,8 @@
       if (!M) return;
       let r = '';
       try {
-        if (!(window.AN && AN.unit && AN.unit.on)) r = 'walang plant model: piliin ang Cold o 150 MW (Plant model ON)';
-        else if (M.field) r = AN.field && AN.field('pur', op === 'start') ? '' : 'oil purifier: walang plant model';
+        if (!(window.AN && AN.unit && AN.unit.on)) r = 'no plant model: choose Cold or 150 MW (Plant model ON)';
+        else if (M.field) r = AN.field && AN.field('pur', op === 'start') ? '' : 'oil purifier: no plant model';
         else if (M.k === 'vex') r = AN.turbine('vex', op === 'start' ? 1 : 0) || '';
         else r = AN.turbine('oil', { p: M.k, op }) || '';
       } catch (e) {

@@ -925,7 +925,7 @@
       /* live test #45: the debris filters = the push buttons of DITL-39 (REMOTE AUTO START / STOP P.B. to the local panel; IN OPERATION
          back; START with any pump of its line running: rows 1 ~ 3 for S-1502), not the wiring card */
       const DF = {
-        DF1: { pbs: [['AUTO START', 7, 'M.0790'], ['AUTO STOP', 9, 'M.0791']], st: 3, dp: 'DPISW1502', perm: [1, 2, 3], why: 'tumatakbong SWP' },
+        DF1: { pbs: [['AUTO START', 7, 'M.0790'], ['AUTO STOP', 9, 'M.0791']], st: 3, dp: 'DPISW1502', perm: [1, 2, 3], why: 'running seawater pump' },
         DF2: { pbs: [['AUTO START', 18, 'M.0792'], ['AUTO STOP', 20, 'M.0793']], st: 14, dp: 'DPISW1504', perm: [], why: '' }
       }[id];
       if (DF && window.LS_FPOP && LS_FPOP.pb) {
@@ -940,7 +940,7 @@
           t: M.t,
           d: 'STN105 DI',
           io: M.io,
-          why: 'FIELD lang (local panel HCDSP): ang STN105 DI ay running / overload status lang, walang DCS command.' + (M.fld ? '' : ' Walang plant model ang pump na ito.'),
+          why: 'Field equipment (local panel HCDSP): the STN105 inputs are running / overload status only, no DCS command.' + (M.fld ? '' : ' This pump has no plant model.'),
           st: () => (M.fld ? mst(M) : null),
           fld: M.fld ? on => AN.field(M.fld, on) : null
         });

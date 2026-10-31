@@ -30040,7 +30040,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.76';
-      c3.textContent += ' · build 8a14e9d'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 3684f3d'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -67535,7 +67535,7 @@ window.PLANT_SYS = [
       /* live test #45: the debris filters = the push buttons of DITL-39 (REMOTE AUTO START / STOP P.B. to the local panel; IN OPERATION
          back; START with any pump of its line running: rows 1 ~ 3 for S-1502), not the wiring card */
       const DF = {
-        DF1: { pbs: [['AUTO START', 7, 'M.0790'], ['AUTO STOP', 9, 'M.0791']], st: 3, dp: 'DPISW1502', perm: [1, 2, 3], why: 'tumatakbong SWP' },
+        DF1: { pbs: [['AUTO START', 7, 'M.0790'], ['AUTO STOP', 9, 'M.0791']], st: 3, dp: 'DPISW1502', perm: [1, 2, 3], why: 'running seawater pump' },
         DF2: { pbs: [['AUTO START', 18, 'M.0792'], ['AUTO STOP', 20, 'M.0793']], st: 14, dp: 'DPISW1504', perm: [], why: '' }
       }[id];
       if (DF && window.LS_FPOP && LS_FPOP.pb) {
@@ -67550,7 +67550,7 @@ window.PLANT_SYS = [
           t: M.t,
           d: 'STN105 DI',
           io: M.io,
-          why: 'FIELD lang (local panel HCDSP): ang STN105 DI ay running / overload status lang, walang DCS command.' + (M.fld ? '' : ' Walang plant model ang pump na ito.'),
+          why: 'Field equipment (local panel HCDSP): the STN105 inputs are running / overload status only, no DCS command.' + (M.fld ? '' : ' This pump has no plant model.'),
           st: () => (M.fld ? mst(M) : null),
           fld: M.fld ? on => AN.field(M.fld, on) : null
         });
@@ -69775,8 +69775,8 @@ window.PLANT_SYS = [
       if (!M) return;
       let r = '';
       try {
-        if (!(window.AN && AN.unit && AN.unit.on)) r = 'walang plant model: piliin ang Cold o 150 MW (Plant model ON)';
-        else if (M.field) r = AN.field && AN.field('pur', op === 'start') ? '' : 'oil purifier: walang plant model';
+        if (!(window.AN && AN.unit && AN.unit.on)) r = 'no plant model: choose Cold or 150 MW (Plant model ON)';
+        else if (M.field) r = AN.field && AN.field('pur', op === 'start') ? '' : 'oil purifier: no plant model';
         else if (M.k === 'vex') r = AN.turbine('vex', op === 'start' ? 1 : 0) || '';
         else r = AN.turbine('oil', { p: M.k, op }) || '';
       } catch (e) {
@@ -71881,17 +71881,17 @@ window.PLANT_SYS = [
       /* one line: why a button is closed */
       why.textContent =
         st === 'TRIP'
-          ? 'TRIP: hanapin ang sanhi; i-reset sa field bago muling i-START.'
+          ? 'TRIP: find the cause and reset it in the field before starting again.'
           : loc
-            ? 'LOCAL ang selector: sarado ang AUTO, START at STOP ng DCS. REMOTE muna (field).'
+            ? 'Selector at LOCAL: AUTO, START and STOP from the DCS are blocked. Set the field selector to REMOTE first.'
             : sby
-              ? 'STANDBY, handa: kusang aandar sa logic kapag nag-trip ang tumatakbo o bumaba ang header. Ang START ng DCS ay sa MAN lang.'
+              ? 'STANDBY, ready: the logic starts it when the running pump trips or the header pressure drops. DCS START is in MAN only.'
               : sopLeft && st !== 'RUN'
-              ? 'START sarado: tapusin muna ang SOP line-up (' + sopLeft + ' natitira, ✕ sa ibaba; i-tick sa dock).'
+              ? 'START blocked: finish the SOP line-up first (' + sopLeft + ' left, ✕ below; tick them in the guide).'
               : miss.length && st !== 'RUN'
-              ? 'START sarado: ' + miss.length + ' permissive ang kulang (0 sa ibaba).'
+              ? 'START blocked: ' + miss.length + ' permissive missing (0 below).'
               : !run && st !== 'RUN'
-                ? 'Naka-PAUSE ang oras: ▶ RUN muna bago ang START (walang aandar habang naka-PAUSE).'
+                ? 'Simulation PAUSED: press ▶ RUN before START (nothing moves while paused).'
                 : '';
       why.hidden = !why.textContent;
       chip.textContent = st === 'TRIP' ? 'TRIP' : st === 'RUN' ? 'RUNNING' : loc ? 'NOT READY' : sby ? 'STANDBY' : miss.length ? 'INTERLOCK' : st === 'STOP' ? 'READY' : '';
@@ -71915,7 +71915,7 @@ window.PLANT_SYS = [
       /* SOP line-up of the open step */
       sopH.hidden = sopL.hidden = !(sop && sop.items.length);
       if (sop && sop.items.length) {
-        sopH.textContent = 'SOP BAGO I-START · PR-OPE-5002 seksyon ' + sop.sec + ' · ' + sop.items.filter(x => x.ok).length + ' / ' + sop.items.length;
+        sopH.textContent = 'SOP BEFORE START · PR-OPE-5002 section ' + sop.sec + ' · ' + sop.items.filter(x => x.ok).length + ' / ' + sop.items.length;
         /* what is left only (✕), the done ones as one line (the full list with its ticks is in the dock) */
         const k = JSON.stringify(sop.items.map(x => [x.t, x.ok]));
         if (k !== sopL.dataset.k) {
@@ -71928,10 +71928,10 @@ window.PLANT_SYS = [
               li.append(E('i', '', '✕'), E('span', '', x.t), x.by ? E('em', '', x.by) : '');
               return li;
             }),
-            ...(left.length > 5 ? [E('li', 'bad', '+ ' + (left.length - 5) + ' pa (nasa dock)')] : []),
+            ...(left.length > 5 ? [E('li', 'bad', '+ ' + (left.length - 5) + ' more (in the guide)')] : []),
             ...(dn ? [(() => {
               const li = E('li', 'ok');
-              li.append(E('i', '', '✓'), E('span', '', 'Nagawa na: ' + dn + ' item'));
+              li.append(E('i', '', '✓'), E('span', '', 'Done: ' + dn + ' items'));
               return li;
             })()] : [])
           );
@@ -71954,10 +71954,10 @@ window.PLANT_SYS = [
             ? rows.slice(0, 12).map(r => {
                 const li = E('li', r.ok ? 'ok' : 'bad');
                 li.append(E('i', '', String(r.ok ? +r.want : 1 - r.want)), E('span', '', r.t), E('em', '', (r.other ? r.other + ' ' : '') + 'row ' + r.no));
-                li.title = (r.ok ? 'OK: ' : 'Kulang: ') + r.svc + ' · ' + (r.other || nm) + ' row ' + r.no + (r.want ? ' (dapat 1)' : ' (dapat 0)');
+                li.title = (r.ok ? 'OK: ' : 'Missing: ') + r.svc + ' · ' + (r.other || nm) + ' row ' + r.no + (r.want ? ' (must be 1)' : ' (must be 0)');
                 return li;
               })
-            : [E('li', 'ok', I ? 'Walang permissive sa drawing.' : 'Hindi pa handa ang logic (Plant view, RUN).')])
+            : [E('li', 'ok', I ? 'No permissive on the drawing.' : 'Logic not ready yet (Plant view, RUN).')])
         );
       }
     }
@@ -72042,9 +72042,9 @@ window.PLANT_SYS = [
       bOp.classList.toggle('lit-run', op);
       bCl.classList.toggle('lit-stop', !op);
       why.textContent = !run
-        ? 'Naka-PAUSE ang oras: ▶ RUN muna (walang kikilos habang naka-PAUSE).'
+        ? 'Simulation PAUSED: press ▶ RUN first (nothing moves while paused).'
         : au
-          ? 'Nasa AUTO: ang logic ang nagbubukas at nagsasara. MAN muna para sa OPEN / CLOSE.'
+          ? 'In AUTO the logic opens and closes it. Select MAN for OPEN / CLOSE.'
           : w || '';
       why.hidden = !why.textContent;
       chip.textContent = au ? 'AUTO' : 'MAN';
@@ -72071,13 +72071,13 @@ window.PLANT_SYS = [
       opRow: 4,
       clRow: 8,
       auSel: v => (D().dset('DITL-78', 0, v), D().dsel('DITL-78', 2, v, 'EXPANSION TANK INLET VLV XV-MU1109 AUTO SELECTED (M.1252)')),
-      auto: 'bukas kapag LT-CW1109 < 40 %, sarado kapag > 85 % (1.7 m) · DITL-78',
-      why: () => (window.AN && AN.unit && (+AN.unit.iaP || 0) < 3.5 ? 'Walang instrument air (IA < 3.5 kg/cm²): hindi bubukas ang pneumatic valve. Bypass V-MU1033 (field) ang gamit.' : '')
+      auto: 'opens below 40 % of LT-CW1109, closes above 85 % (1.7 m) · DITL-78',
+      why: () => (window.AN && AN.unit && (+AN.unit.iaP || 0) < 3.5 ? 'No instrument air (below 3.5 kg/cm²): the pneumatic valve cannot open. Use the field bypass V-MU1033.' : '')
     }
   };
   /* a manual valve the field operator turns (Training: FIELD, a digital field item of the plant model, logged as "Field operator") */
   const FIELDV = {
-    'V-MU1033': { n: 'V-MU1033', t: 'Expansion tank bypass (manual)', k: 'mu1033', io: 'V-MU1033', use: 'Ginagamit para punuin ang T-1109 kapag wala pang instrument air (sarado ang XV-MU1109). Isara kapag LT-CW1109 ≥ 1.7 m.' }
+    'V-MU1033': { n: 'V-MU1033', t: 'Expansion tank bypass (manual)', k: 'mu1033', io: 'V-MU1033', use: 'Fills T-1109 while there is no instrument air yet (XV-MU1109 closed). Close it when LT-CW1109 reaches 1.7 m.' }
   };
   function fieldValve(V) {
     if (!V || !window.AN || !AN.field) return false;
@@ -72128,7 +72128,7 @@ window.PLANT_SYS = [
       bCl.disabled = !op || !run;
       bOp.classList.toggle('lit-run', op);
       bCl.classList.toggle('lit-stop', !op);
-      why.textContent = run ? '' : 'Naka-PAUSE ang oras: ▶ RUN muna (walang kikilos habang naka-PAUSE).';
+      why.textContent = run ? '' : 'Simulation PAUSED: press ▶ RUN first (nothing moves while paused).';
       why.hidden = !why.textContent;
     }
     paint = tick;
@@ -72180,7 +72180,7 @@ window.PLANT_SYS = [
       F.bd.append(row(tag, v, E('small', 'fpo-dim', u || '')));
       return [v, f];
     });
-    const ilH = E('div', 'fpo-sh', 'LOGIC PERMISSIVE · ' + P.d + ' (isa lang ang kailangan)'),
+    const ilH = E('div', 'fpo-sh', 'LOGIC PERMISSIVE · ' + P.d + ' (any one is enough)'),
       ilL = E('ul', 'fpo-il');
     if (P.perm && P.perm.length) F.bd.append(ilH, ilL);
     const ln = E('div', 'fpo-ln');
@@ -72214,7 +72214,7 @@ window.PLANT_SYS = [
       if (B[1]) B[1].disabled = !on || !run;
       B[0].classList.toggle('lit-run', on);
       if (B[1]) B[1].classList.toggle('lit-stop', !on);
-      why.textContent = !run ? 'Naka-PAUSE ang oras: ▶ RUN muna (walang kikilos habang naka-PAUSE).' : !ok && !on ? P.pbs[0][0] + ' sarado: walang ' + (P.permWhy || 'permissive') + '.' : '';
+      why.textContent = !run ? 'Simulation PAUSED: press ▶ RUN first (nothing moves while paused).' : !ok && !on ? P.pbs[0][0] + ' blocked: no ' + (P.permWhy || 'permissive') + '.' : '';
       why.hidden = !why.textContent;
       for (const [v, f] of V) {
         const x = call(f, null);
@@ -72245,7 +72245,7 @@ window.PLANT_SYS = [
     const lR = lampEl('RUN'),
       lS = lampEl('STOP');
     F.bd.append(row('STATUS', lR, lS));
-    F.bd.append(E('div', 'fpo-why', P.why || 'FIELD lang: walang DCS command. Pinapaandar sa local panel.'));
+    F.bd.append(E('div', 'fpo-why', P.why || 'Field equipment: no DCS command. Started at the local panel.'));
     let bSt = null,
       bSp = null,
       ex = null;
@@ -72273,8 +72273,8 @@ window.PLANT_SYS = [
         setTimeout(tick, 150);
       };
       const go = on => (P.fld(on), call(() => window.lsEventAdd('FIELD', 'FIELD', 'Field operator: ' + (on ? 'START ' : 'STOP ') + P.n + ' (local panel)')));
-      bSt.onclick = () => !bSt.disabled && ask('FIELD: START ' + P.n + ' sa local panel?', () => go(true));
-      bSp.onclick = () => !bSp.disabled && ask('FIELD: STOP ' + P.n + ' sa local panel?', () => go(false));
+      bSt.onclick = () => !bSt.disabled && ask('FIELD: START ' + P.n + ' at the local panel?', () => go(true));
+      bSp.onclick = () => !bSp.disabled && ask('FIELD: STOP ' + P.n + ' at the local panel?', () => go(false));
     }
     const ln = E('div', 'fpo-ln');
     if (P.io) {
