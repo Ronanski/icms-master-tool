@@ -33,7 +33,7 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
   /* the person: Training > Gabay: Cold (the plant is cold, the one world runs) */
   await p.getByText('Training', { exact: true }).first().click();
   await p.waitForTimeout(1500);
-  await p.getByRole('button', { name: /Gabay: Cold/ }).first().click();
+  await p.getByRole('button', { name: /(Gabay|Guide): Cold/ }).first().click();
   await p.waitForTimeout(6000);
   await p.waitForFunction(() => window.WORLD && WORLD.on && WORLD.live, null, { timeout: 20000 }).catch(() => {});
   const ev = (f, a) => p.evaluate(f, a);
