@@ -117,6 +117,22 @@ window.LS_GUIDE = (function () {
     return f ? L().modeOf(f) : '?';
   };
   const bit = a => L().val(a);
+  /* live test #71: the position transmitters of the flue gas biasing dampers on ABC-020 (I/O list STN104 AI0368 ~ 71 ZT-FG1116-A ~ D RH
+     side, AI0372 ~ 75 ZT-FG1117-A ~ D SH side), mean of the four */
+  const ZTN = {};
+  const ztOf = side => {
+    const sh = AN.sheets.find(x => x.name === 'ABC-020'),
+      T = sh && sh.S;
+    if (!T) return NaN;
+    const L4 = side === 'RH' ? ['S4 AI0368', 'S4 AI0369', 'S4 AI0370', 'S4 AI0371'] : ['S4 AI0372', 'S4 AI0373', 'S4 AI0374', 'S4 AI0375'];
+    if (!ZTN[side] || ZTN[side].T !== T) {
+      const ix = [];
+      for (let n = 0; n < T.nets.length; n++) if (L4.includes((AN.nm(T, n) || '').trim())) ix.push(n);
+      ZTN[side] = { T, ix };
+    }
+    const v = ZTN[side].ix.map(n => +T.rt.v[n]).filter(isFinite);
+    return v.length ? v.reduce((a, b) => a + b, 0) / v.length : NaN;
+  };
   /* the manual value the operator set on a controller (its MV reads 0 while the drawing holds the output: FIC-CF before a coal
      feeder runs) */
   const setOf = t => {
@@ -577,7 +593,24 @@ window.LS_GUIDE = (function () {
           ['Lube oil pressure', () => (TC().oil || {}).lube, 'kg/cm²g', f1, 'P-n922 · 5.6 ~ 6.6']
         ]
       },
-      { st: 0, sec: 17, t: 'Simulan ang rotary air pre-heater (DITL-43)', d: 'Gawin: FIELD NOT TRIP kapag may ✕ sa interlock, saka START ng air preheater (DITL-43). Ang air preheater ay umiikot na rotor (Ljungstrom) na nagpapainit ng PA at SA gamit ang flue gas. Pinapaandar ito bago ang mga fan para pantay ang init ng rotor at hindi ito mabaluktot. Hindi ito aandar kapag walang AIR PREHEATER NOT TRIP (I.0651, DITL-43 row 5) o kapag LOCAL ang switch sa field.', c: runC('Air preheater running (DITL-43)', ['DITL-43']), a: [dmot('DITL-43', 'air preheater')], field: [16], w: [['Air preheater', () => (dRun('DITL-43') === 1 ? 'RUNNING' : 'STOPPED'), '', x => x, 'DITL-43 out 3']] },
+      { st: 0, sec: 17, t: 'Simulan ang rotary air pre-heater (DITL-43)', d: 'Gawin: FIELD NOT TRIP kapag may ✕ sa interlock, saka START ng air preheater (DITL-43). Ang air preheater ay umiikot na rotor (Ljungstrom) na nagpapainit ng PA at SA gamit ang flue gas. Pinapaandar ito bago ang mga fan para pantay ang init ng rotor at hindi ito mabaluktot. Hindi ito aandar kapag walang AIR PREHEATER NOT TRIP (I.0651, DITL-43 row 5) o kapag LOCAL ang switch sa field.', c: runC('Air preheater running (DITL-43)', ['DITL-43']), a: [dmot('DITL-43', 'air preheater')], field: [16], w: [['Air preheater', () => (dRun('DITL-43') === 1 ? 'RUNNING' : 'STOPPED'), '', x => x, 'DITL-43 out 3'], ['RH biasing damper HICHR1002A MV', () => mv('HICHR1002A'), '%', f1w, 'SOP 17.1 closed (min 10)'], ['SH biasing damper HICHR1002B MV', () => mv('HICHR1002B'), '%', f1w, 'SOP 17.1 closed (min 10)']] },
+      /* live test #71: PR-OPE-5002 sec 17.12 "Open Biasing damper to 100% at Reheater and Superheater side" (after the air preheater runs;
+         in Cold both are MANUAL at 10 %, the lowest position of the DCS = closed, SOP 17.1) */
+      {
+        st: 0,
+        sec: 17,
+        t: 'Biasing damper RH at SH: buksan sa 100 %',
+        d: 'Gawin: HICHR1002A (RH side) at HICHR1002B (SH side) MANUAL, MV 100 % (PR-OPE-5002 17.12). Sarado (10 %, ang pinakamababa ng DCS) ang dalawa sa Cold (17.1). Bantayan ang ZT-FG1116 / 1117 (posisyon ng damper).',
+        c: b.ALL(b.MV('HICHR1002A', 95, null), b.MV('HICHR1002B', 95, null)),
+        fps: ['HICHR1002A', 'HICHR1002B'],
+        a: [btn('Biasing damper RH at SH 100 %', () => (A.man('HICHR1002A', 100), A.man('HICHR1002B', 100)))],
+        w: [
+          ['RH damper HICHR1002A MV', () => mv('HICHR1002A'), '%', f1w, 'SOP 100'],
+          ['ZT-FG1116-A ~ D (RH)', () => ztOf('RH'), '%', f1w, 'mean of 4'],
+          ['SH damper HICHR1002B MV', () => mv('HICHR1002B'), '%', f1w, 'SOP 100'],
+          ['ZT-FG1117-A ~ D (SH)', () => ztOf('SH'), '%', f1w, 'mean of 4']
+        ]
+      },
       /* ---- 1 water ---- */
       FIELD(1, 'Hotwell filling line-up (field)', [17]),
       { st: 1, sec: 18, t: 'Hotwell level control LCV-MU1110 sa AUTO', d: 'Ang make-up valve na ang hahawak ng level ng hotwell ng condenser.', c: b.MODE('LCV-MU1110', 'AUTO'), fps: ['LCV-MU1110'], a: [btn('A (AUTO)', () => A.auto('LCV-MU1110'))] },
