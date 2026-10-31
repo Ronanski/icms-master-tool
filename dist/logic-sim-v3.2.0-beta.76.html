@@ -30042,7 +30042,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.76';
-      c3.textContent += ' · build b766058'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 35bbb01'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -49894,6 +49894,7 @@ html.gd-menu #gdock .gd-prog{display:none!important}
 body.app2 #gdtrb{margin-left:8px;border-color:#5aa8ff!important;background:color-mix(in srgb,#5aa8ff 16%,transparent)!important;color:#8cc4ff!important;font-weight:700;white-space:nowrap}
 body.app2 #gdtrb[hidden]{display:none!important}
 @container gdock (max-width:419px){#gdock .gd-chip{padding:4px 5px;gap:0 4px}#gdock .gd-chip .gd-cnm{font-size:12px}#gdock .gd-chip .gd-cn{width:16px;height:16px;font-size:10px}}
+@container gdock (max-width:419px){#gdock .gd-chip{grid-template-columns:minmax(0,1fr)}#gdock .gd-chip .gd-cn{display:none}#gdock .gd-chip.ok .gd-cnm:before{content:"✓ "}}
 /* 3.2.0-beta.25 ladder view (src/ui/ladder/ladder.js): a panel on the right half of the DITL page */
 #ladder {
   position: fixed;
