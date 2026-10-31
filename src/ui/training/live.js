@@ -397,6 +397,16 @@ window.LS_LIVE = (function () {
   const OUTC = (nm, r, l) => DC(l + ' (' + nm + ' out ' + (r + 1) + ')', () => dOut(nm, r), () => l + ' ' + (dOut(nm, r) ? 'ON' : 'OFF'));
   const INC = (nm, r, l) => DC(l + ' (' + nm + ' row ' + (r + 1) + ')', () => dIn(nm, r), () => l + ' ' + (dIn(nm, r) ? 'ON' : 'OFF'));
   const RUNN = (L, n, l) => DC(n + ' ' + l + ' running', () => nRun(L) >= n, () => L.map(nm => nm.replace(/^DITL-\S+\s*#?/, '') + (dRun(nm) ? ' RUN' : ' STOP')).join(', '));
+  /* live test #54: [running memory, [model tags]] of the machines: done when one runs and every tag of the running ones is read below hi */
+  const MOT = (L, hi, l, u) => {
+    const mt = t => (U().mt ? +U().mt[t] : NaN),
+      on = () => L.filter(([a]) => val(a) > 0.5);
+    return DC(
+      l + ' < ' + hi + ' ' + u + ' (running)',
+      () => on().length > 0 && on().every(([, T]) => T.every(t => mt(t) < hi)),
+      () => on().map(([, T]) => T.map(t => t.replace(/^[TV]T-/, '') + ' ' + f1(mt(t))).join(', ')).join(' · ') || 'not running'
+    );
+  };
   const SWBP = ['DITL-30', 'DITL-30 #B', 'DITL-30 #C'],
     MWP = ['DITL-112', 'DITL-112 #B', 'DITL-112 #C'],
     ACW = ['DITL-76', 'DITL-77'];
@@ -406,6 +416,13 @@ window.LS_LIVE = (function () {
     [2, /initiate selected 1st SWP START/i, RUN.SWP1],
     [2, /START 2nd Selected SWP/i, SWP2],
     [2, /Set the standby SWP to AUTO/i, SWP_STBY],
+    /* live test #54: the motor temperatures and vibration of the plant model (unit.js AN_MT), read on a running machine and below the H
+       of the alarm list (SWP bearing H 95 C, vibration H 7.6 mm/s; IDF bearing H 90, winding H 140, vibration H 8) */
+    [2, /^Temperature$/i, MOT(['A', 'B', 'C'].map((p, j) => [SWPA[j], ['TT-SW1501-' + p + '3', 'TT-SW1501-' + p + '4']]), 95, 'SWP bearing TI SW1501x3 / x4', 'C')],
+    [2, /^Vibration$/i, MOT(['A', 'B', 'C'].map((p, j) => [SWPA[j], ['VT-SW1501-' + p + '1', 'VT-SW1501-' + p + '2']]), 7.6, 'SWP vibration VI SW1501x1 / x2', 'mm/s')],
+    [22, /^Fan bearing temperature/i, MOT([['M.3304', ['TT-FG1056-1', 'TT-FG1056-2', 'TT-FG1056-3', 'TT-FG1056-4']]], 90, 'IDF bearing TT-FG1056-1 ~ 4', 'C')],
+    [22, /^Fan winding temperature/i, MOT([['M.3304', ['TT-FG1056-U', 'TT-FG1056-V', 'TT-FG1056-W']]], 140, 'IDF winding TT-FG1056-U / V / W', 'C')],
+    [22, /^Fan bearing vibration/i, MOT([['M.3304', ['VT-FG1056-1', 'VT-FG1056-2', 'VT-FG1056-3', 'VT-FG1056-4']]], 8, 'IDF vibration VT-FG1056-1 ~ 4', 'mm/s')],
     [3, /Initiated START Hypo/i, FIELD('hypo', 'Hypochlorite pump')],
     [3, /pump is running at local/i, FIELD('hypo', 'Hypochlorite pump')],
     [4, /Set debris filter to auto start/i, OUTC('DITL-39', 3, 'SWP outlet debris filter IN OPERATION')],
