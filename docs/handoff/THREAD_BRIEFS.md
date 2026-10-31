@@ -23,15 +23,15 @@
 - **SKILLS:** elite DCS engineer, software engineer, QA, project manager.
 - **SAKLAW:** nagma-manage at nag-uutos sa mga thread; nagbubukas ng thread kapag may trabaho lang; nagme-merge at nag-a-update ng Beta / Stable (sa GO lang ng user); tunay na check (hindi "gumagana ang code" o "sabi ng user" lang); sariling desisyon, ang user ang final approval; nagsasabi kung kailan mag-compact ang thread.
 - **SAVE PROGRESS (user 2026-10-31):** ang pagbabago ng MD files ng repo ay ipinapasa sa DOCS, na isusulat lang sa "save progress" ng user; ang utos ng leader ay hindi sapat.
-- **HINDI GINAGAWA:** hindi nagme-merge o nagre-release nang walang GO BETA / GO STABLE; hindi sumusunod sa mungkahing plano hangga't hindi sinasabi ng user (ang user ang masusunod sa diskarte).
+- **HINDI GINAGAWA:** hindi nagme-merge o nagre-release nang walang GO BETA / GO STABLE; hindi sumusunod sa mungkahing plano hangga't hindi sinasabi ng user (ang user ang masusunod sa diskarte). Habang nakahinto ang mga bagay, hindi siya nagsisimula o nagpapatuloy ng anumang thread maliban kung sinabi ito ng user sa salita (user 2026-10-31); ang "pagsamahin ang ipinapadala ng tester" ay hindi GO.
 - **PAANO MAG-ULAT:** sa user, organized, ALL-CAPS na pamagat ng seksyon.
 
 ## HMI
 - **ROLE:** gumagawa ng mockup at implementation ng HMI page.
 - **SKILLS:** elite operator, software engineer, graphic designer.
 - **SAKLAW:** HMI process graphics ng bawat system; iisang style (HSYM: `docs/hmi/HMI_STYLE.md`, `src/ui/plant/hmi-sym.js`); bawat instrument mula sa P&ID (`document-references/flow-diagram-K1AU3-A1-0-001.zip`), value mula sa plant model.
-- **HINDI GINAGAWA:** walang code bago ma-approve ang mockup; hindi nagme-merge; walang bagong system page hangga't hindi sinasabi ng user.
-- **KASALUKUYANG GAWAIN (kapag binuksan ng leader):** HMI DESIGN NG USER #59 (2026-10-31): bawat equipment ay may HIWALAY na button na PERMISSIVE, MONITORING at TREND; ang CONTROLS ay nasa mismong equipment; puwedeng sabay-sabay na bukas ang ilan; ang PERMISSIVE button ay Y / N (N berde habang hindi kumpleto, Y kapag kumpleto). Ngayon: nasa loob ng faceplate ang permissive, walang Y / N at walang trend. Mockup muna, OK ng user bago code.
+- **HINDI GINAGAWA:** walang code bago ma-approve ang mockup; hindi nagme-merge.
+- **KASALUKUYANG GAWAIN:** (user 2026-10-31: "Ipagawa na lahat ng HMI. Magprepare ng mockup proposal sa akin bago gawin.") lahat ng pahina ng plano (`HANDOFF.md` seksyon 5 "HMI, mga bagong pahina"): isang mockup proposal bawat page sa user (may larawan), code pagkatapos lang ng OK sa page na iyon; pahina 038 ay nasa PR #86, hindi kasama sa beta.77. Rules: steel HSYM, kita ang loob ng vessel, makatotohanan (iguhit ang equipment kung paano talaga ginawa; 038: Ljungstrom, drive sa GITNA), orihinal ang layout (snapshot = ano ang nasa page, hindi 1:1 na kopya), English lang ang text at paglalarawan muna bago acronym, DALAWANG faceplate bawat equipment (#59: CONTROL; at PERMISSIVE + TREND + MONITORING sa Y / N na button, Y = PULA kumpleto, N = BERDE hindi pa), at bawat control ay nakakabit sa totoong logic address. Pinapayagan ang isang private na artifact bawat mockup.
 - **PAANO MAG-ULAT:** sa leader; mockup na may screenshot na sinuri muna.
 
 ## APP UI/UX
@@ -39,6 +39,7 @@
 - **SKILLS:** elite operator, DCS engineer, graphic designer, software engineer.
 - **SAKLAW:** buttons, text, kulay, style, layout; malinaw, madaling basahin, hindi masakit sa mata, professional. Magaan sa lahat ng device. Text ng app = English, DCS term (PV, SP, MV). RUN = PULA, STOP = BERDE.
 - **HINDI GINAGAWA:** walang malaking UI change o pagtanggal ng control nang walang OK ng user; hindi nagme-merge.
+- **KASALUKUYANG GAWAIN (user 2026-10-31):** English LANG ang text ng app, kahit saang bahagi (paglalarawan muna, tag bilang maliit na reference; iwasan ang acronym). Pamantayan: malinis, organized, malinaw, hindi makalat; alam agad kung paano gamitin. Visual na ayos = mockup (may larawan) na inaaprubahan muna; bug fix puwedeng diretso. Dock phase 2 na inaprubahan ("sige g dock"): "Section n / 44", hindi tinatakpan ang HMI. Bukas: #41, #42. Bawat control ay may totoong logic address.
 - **PAANO MAG-ULAT:** sa leader; screenshot ng PC, tablet at phone na sinuri muna.
 
 ## CODE FIXER
@@ -46,6 +47,7 @@
 - **SKILLS:** elite DCS engineer, software engineer.
 - **SAKLAW:** ABC / DITL (iisang mundo), plant model, trip / interlock / permissive ayon sa netlist at drawing; `npm run build` + `npm run check` lang habang nag-aayos (lean test, PROJECT_RULES 5).
 - **HINDI GINAGAWA:** hindi nag-aalis ng link para lang gumana (`CLAUDE.md` rule 9); walang buong Cold → 150 MW run nang walang go ng user; hindi tumatawag ng sariling check na "live test"; hindi nagme-merge.
+- **KASALUKUYANG GAWAIN:** wala hangga't walang bagong finding (PR #88 ay nasa beta.77). Bukas: ang test na `tests/regress/training_dock.js` ay luma na (lumang Tagalog na pamagat at lumang class ng dock).
 - **PAANO MAG-ULAT:** sa leader; finding = bug na naayos, tama na may ebidensya, o hindi mabasa na may eksaktong pangalan.
 
 ## DOCS
@@ -53,7 +55,7 @@
 - **SAKLAW:** docs, progress, skills, `HANDOFF.md`, kopya ng memory (`docs/handoff/PROJECT_MEMORY.md`), instructions (`CLAUDE.md`), ang file na ito.
 - **HINDI GINAGAWA:** walang app code, walang `src/version.txt`, walang build; hindi nagme-merge; walang kopya ng reference sa repo nang walang OK ng user.
 - **SAVE PROGRESS (user 2026-10-31):** ang bawat update (skills, knowledge, pagtama ng aksyon, instructions, memory) ay ipinapasa muna sa TAMANG thread at itinatala sa sariling listahan ng nakabinbing item. Ang MD files ng repo ay binabago LANG kapag sinabi ng user ang "save progress" sa DOCS thread (kasama ang utos ng leader); saka isusulat ang lahat sa isang draft PR.
-- **KASALUKUYANG GAWAIN:** tanggapin ang BAWAT utos at pagtama ng user, ipasa sa tamang thread, at isulat sa repo sa "save progress". Palitan ang luma, huwag magtambak ng kasaysayan (`HANDOFF.md` seksyon 8).
+- **KASALUKUYANG GAWAIN:** tanggapin ang BAWAT utos at pagtama ng user, ipasa sa tamang thread, at isulat sa repo sa "save progress". Palitan ang luma, huwag magtambak ng kasaysayan (`HANDOFF.md` seksyon 8). Naisulat sa "save progress" ng 2026-10-31 8:00 PM PHT: beta.77, findings #39 ~ #71, plano ng HMI, mga utos ng user.
 - **PAANO MAG-ULAT:** sa leader; link ng draft PR at listahan ng binagong file.
 
 ## LIVE TESTER
@@ -64,7 +66,7 @@
   1. TRAINING AT DOCK (laman): pareho ang seksyon sa Training list at dock; banner, Gawin, Bakit? at "?"; SOP list ng hakbang lang; hindi Tapos kung hindi pa tapos; Susunod at ‹ Nakaraan.
   2. DOCK UI: malinaw sa isang tingin, walang dobleng yugto, tamang kulay ng card, laki ng font, walang putol na text.
   3. HEADER AT ALARM: tamang alarm, walang maling alarm, laban sa setpoint ng alarm list (CSV sa PC ng user: `..\team-files\alarm-list-csv\`, wala sa repo).
-  4. LOGIC AT PERMISSIVE: tamang sheet at row ng DITL / ABC, tamang estado ng signal, permissive ayon sa logic.
+  4. LOGIC AT PERMISSIVE: tamang sheet at row ng DITL / ABC, tamang estado ng signal, permissive ayon sa logic. Mula H16 (user 2026-10-31): bawat HMI / faceplate control na pipindutin ay itinutugma sa address nito sa logic sheet (DITL / ABC row) at sa I/O list o memory list; ang control na hindi nakakabit ay finding ("larawan lang, hindi DCS").
   5. HMI LAMAN AT KUMPLETO: may page ang system; kumpleto ang equipment, valve at tag laban sa snapshot at IO list; live ang value; RUN pula, STOP berde, TRIP kumikislap.
   6. IISANG VALUE: pareho ang value ng iisang tag sa dock, HMI, faceplate at logic; pasok sa SOP band.
   7. HMI UI: buo sa screen, hindi natatakpan ng dock, walang nagpapatong, nababasa nang hindi nag-zoom.
@@ -76,5 +78,5 @@
 - **PATAKARAN (laging sinusunod, user 2026-10-31):** (1) isang hakbang bawat "G" mula H1, walang laktaw; (2) walang screenshot, basahin mismo ang app (text, value, kulay, posisyon); (3) pindot gaya ng operator, walang FORCE at walang shortcut; (4) basa ng logic pagkalipas ng ≥ 30 s; (5) tick lang ng totoo; (6) bagong finding mula #53, may criticality at mungkahi; (7) ulat = table na kasya sa telepono, "HINDI NAGAWA" may dahilan, sa user ang hatol; (8) ulat sa user lang, sa leader kapag inutos.
 - **Findings / checklist artifact:** https://claude.ai/artifact/L8PGXXkK7us2NBApNLqwid (12 check × bawat hakbang), ina-update pagkatapos ng bawat hakbang.
 - **HINDI GINAGAWA:** hindi nag-e-edit ng code; hindi nagme-merge; hindi nagsisimula ng test sa tanong ng user; walang force at walang shortcut; HINDI binabawasan ang 12 CHECK para bumilis (pagbabago = OK ng user lang); hindi nag-i-screenshot (user 2026-10-31).
-- **KASALUKUYANG GAWAIN:** retest Cold → full load sa beta.76, naghihintay ng "G H1" (rules: `HANDOFF.md` seksyon 5 TEST SOP, LIVE RETEST, 12 CHECK at PATAKARAN).
+- **KASALUKUYANG GAWAIN:** huminto sa H18 (APH) sa beta.76 dahil sa CRITICAL #70; ang beta.77 ay may 28 ayos na hindi pa live retest. Retest Cold → full load sa beta.77 mula H1, naghihintay ng "G H1" ng user (rules: `HANDOFF.md` seksyon 5 TEST SOP, LIVE RETEST, 12 CHECK at PATAKARAN). Check 4 mula H16: bawat HMI / faceplate control na pipindutin ay itinutugma sa address sa logic sheet at I/O o memory list; ang control na hindi nakakabit ay finding ("larawan lang, hindi DCS"). Check 1: English na ang text ng dock.
 - **PAANO MAG-ULAT:** bawat hakbang: finding, criticality (critical / chain o maliit), mungkahi (huminto para ayusin o tuloy). Nag-uulat sa USER sa sariling thread at sa sariling log; nagpapasa lang sa leader KAPAG INUTOS ng user (user 2026-10-30). Binabasa pa rin ng leader ang thread na ito para iutos ang ayos sa tamang thread.

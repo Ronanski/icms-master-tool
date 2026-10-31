@@ -114,3 +114,13 @@ Galaw na sariling page lang (turbine shaft, actuator): `A.each(fn)`, kasama sa i
 4. `const A = HSYM.live(pg)`; sa tick: `A.pump`, `A.flow`, `A.valve`, `A.check`, `A.gauge`, `A.tank`.
 5. Mga value mula sa plant model / logic gamit ang `api.reg`.
 6. Screenshot sa 1366 x 768 na bukas ang dock (ang pinakamaliit na PC): walang natatakpan, walang text na nagkakapatong, nababasa ang value.
+
+
+## 9. Mga utos ng user 2026-10-31 (bagong page)
+
+- Orihinal ang layout; ang snapshot ay batayan lang ng laman (equipment, tag, value), hindi 1:1 na kopya: "wag masyado dependent sa snapshot ... Magkaroon ng originality."
+- Steel theme, makatotohanan, kita ang loob ng vessel; iguhit ang equipment kung paano talaga ginawa.
+- English lang ang text; paglalarawan muna, tag bilang maliit na reference.
+- DALAWANG faceplate bawat equipment: CONTROL (pindot sa equipment) at PERMISSIVE + TREND + MONITORING (Y / N na button; Y = PULA kumpleto, N = BERDE hindi pa); puwedeng sabay na bukas.
+- Bawat control at status ay nakakabit sa totoong logic address (DITL / ABC row, I/O o memory list, TCS list).
+- Isang mockup bawat page (may larawan) na inaaprubahan ng user BAGO i-code. Magaan: 2D SVG, binubuo lang kapag binuksan ang page.
