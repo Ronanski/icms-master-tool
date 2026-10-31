@@ -737,7 +737,8 @@
       stx.setAttribute('fill', !s ? C.none : s.run ? C.run : C.stop);
       for (const op of ['auto', 'man']) {
         const bb = q(`[data-op="${op}"]`);
-        if (bb) bb.setAttribute('visibility', M.ops ? 'visible' : 'hidden');
+        /* live test #67: 'inherit', not 'visible' (an SVG child with visibility=visible shows through its hidden box: AUTO / MANUAL stayed) */
+        if (bb) bb.setAttribute('visibility', M.ops ? 'inherit' : 'hidden');
       }
       const lit = { start: s && s.run, stop: s && !s.run, auto: s && s.au, man: s && M.ops && !s.au };
       for (const op in lit) {
