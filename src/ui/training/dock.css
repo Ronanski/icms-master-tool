@@ -16,6 +16,11 @@ html.gd-tr:not(.gd-min) body.cr #crrail:not(:hover):not(:focus-within)>*{visibil
 #gdock[hidden],#gdtab[hidden]{display:none!important}
 html.gd-side #gdock{top:0;right:0;bottom:0;width:var(--gdw,380px);border-left:1px solid var(--c-line2)}
 html.gd-bottom #gdock{left:0;right:0;bottom:0;height:var(--gdh,42vh);border-top:1px solid var(--c-line2)}
+/* live test #61: the dock is in body (readable); the transform makes body its box, so it sits just outside the narrowed body and body
+   does not clip it */
+html.gd-side body,html.gd-bottom body{overflow:visible!important}
+html.gd-side body>#gdock{right:calc(-1 * var(--gdw,380px));bottom:auto;height:100vh}
+html.gd-bottom body>#gdock{bottom:calc(-1 * var(--gdh,42vh))}
 .gd-grip{position:absolute;z-index:2;touch-action:none}
 html.gd-side .gd-grip{left:-6px;top:0;bottom:0;width:12px;cursor:ew-resize}
 /* retest #41: the edge to drag is visible */
@@ -273,7 +278,6 @@ html.gd-menu #gdock .gd-body{display:block;padding:0}
 #gdock #trainws .trtitle{min-width:0;flex:1 1 100%}
 #gdock #trainws .trtitle b{font-size:1rem}
 #gdock #trainws .trprog{flex:1 1 100%;min-width:0}
-body.app2:not(#_) #gdock #trainws button.trbtn{min-height:2.1rem;padding:0 .6rem;font-size:.8125rem}
 #gdock #trainws #trpick{display:block!important;margin:8px 10px 0;min-height:2.4rem}
 #gdock #trainws .trbody{display:block}
 #gdock #trainws :is(.trlist,.trside,.trsrc){display:none!important}
@@ -415,3 +419,109 @@ html.gd-menu #gdock .gd-prog{display:none!important}
 #gdock .gd-shd.mini .gd-sn,#gdock .gd-shd.mini .gd-snm b{display:none}
 #gdock .gd-secl b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 #gdock .gd-foot button{white-space:normal;max-width:none;text-overflow:clip;height:auto;min-height:32px;line-height:1.2}
+/* ---- user G 2026-10-31 ("g dock", mock-up https://claude.ai/artifact/RLkA424UMUFb3FVZgoiVMw): one glance, one next action ---- */
+#gdock{container:gdock/inline-size}
+/* header: the speed as one "×1 ▾" button in a narrow dock (tablet), the four in a wide one */
+#gdock .gd-spdw{position:relative;display:flex}
+#gdock .gd-spdb{display:none;min-height:28px;padding:0 9px;border:1px solid var(--c-line2);border-radius:6px;background:var(--c-ctl);color:var(--c-tx);font:600 12.5px var(--mf);cursor:pointer}
+#gdock .gd-pill{white-space:nowrap}
+@container gdock (max-width:419px){
+ #gdock .gd-spdb{display:block}
+ #gdock .gd-seg{display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:5;box-shadow:0 6px 18px var(--c-shadow)}
+ #gdock .gd-seg.open{display:flex}
+}
+/* where am I: the section on one line, the step title with its number and ‹ ›, a thin bar of the start-up */
+#gdock .gd-where{border-bottom:1px solid var(--c-line)}
+#gdock .gd-where .gd-sec{border:0;background:none;padding:7px 10px 0 12px}
+#gdock .gd-where .gd-sec>.gd-ic:not(:last-child){display:none}
+#gdock .gd-where .gd-secl b{font:600 11.5px/1.3 var(--uf);letter-spacing:.06em;text-transform:uppercase;color:var(--c-dim);-webkit-line-clamp:1}
+#gdock .gd-where .gd-secl small{display:none}
+#gdock .gd-where .gd-step{border:0;padding:2px 10px 2px;align-items:center}
+#gdock .gd-where .gd-stl{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 10px}
+#gdock .gd-where .gd-stl h3{flex:1 1 220px;font-size:18px;margin:0}
+#gdock .gd-where .gd-stl small{flex:none;font:600 12px var(--mf);color:var(--c-dim);letter-spacing:0}
+#gdock .gd-where .gd-prog{border:0;padding:3px 12px 8px}
+#gdock .gd-where .gd-segs,#gdock .gd-where .gd-segn{display:none}
+#gdock .gd-where .gd-bar{display:block;height:4px;border-radius:2px;background:var(--c-line);overflow:hidden}
+#gdock .gd-where .gd-bar i{display:block;height:100%;background:var(--gd-ok);border-radius:2px}
+/* NEXT: who · the action · where it acts, one button */
+#gdock .gd-nx{display:block;margin:10px 10px 0;padding:9px 12px;border:1px solid var(--gd-ok);border-left-width:4px;border-radius:8px;background:var(--gd-okbg)}
+#gdock .gd-nxw{display:flex;flex-wrap:wrap;gap:0 6px;align-items:baseline;font:600 12px var(--uf);letter-spacing:0;color:var(--c-dim)}
+#gdock .gd-nxw b{font:700 12px var(--uf);letter-spacing:.07em;color:#8cc4ff}
+#gdock .gd-nxw em{font-style:normal}
+#gdock .gd-nxs{margin:3px 0 6px;font:700 16.5px/1.3 var(--uf)}
+#gdock .gd-nxr{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
+#gdock .gd-nxa{flex:1 1 140px;min-width:0;font:600 12px/1.35 var(--mf);color:#9fb3c8}
+#gdock .gd-nxa[hidden]{display:none}
+#gdock .gd-nxb,#gdock .gd-nxf{margin:0 0 0 auto;max-width:none;min-height:34px;padding:0 12px;border-radius:7px;font:700 13px var(--uf);white-space:nowrap!important}
+#gdock .gd-nxb{background:var(--gd-ok);border:1px solid var(--gd-ok);color:#071321}
+#gdock .gd-nxb.fld{background:#173326;border-color:#2f8f5b;color:#7fe0a8}
+#gdock .gd-nxf{grid-column:auto;background:var(--gd-ok);border:1px solid var(--gd-ok);color:#071321}
+#gdock .gd-nx.done .gd-nxw b{color:var(--c-tx2)}
+/* the values of the step: name, value, band and ✓ / ! (the tag in the tooltip) */
+#gdock .gd-strip{padding:0;margin-top:10px;border-top:1px solid var(--c-line)}
+#gdock .gd-strip .gd-kvs{gap:0;grid-template-columns:repeat(3,minmax(0,1fr)) auto}
+#gdock .gd-strip .gd-kv{display:block;padding:6px 10px 7px;border-right:1px solid var(--c-line);min-width:0}
+#gdock .gd-strip .gd-kv small{display:block;font:600 12px/1.25 var(--uf);letter-spacing:0;text-transform:none;color:var(--c-tx2);white-space:normal;min-height:2.5em}
+#gdock .gd-strip .gd-kv b{font:600 17px var(--mf)}
+#gdock .gd-strip .gd-kv.fld b{font:600 14px var(--uf);color:var(--c-tx2)}
+#gdock .gd-kb{display:flex;gap:6px;align-items:center;margin-top:1px;font:500 11.5px var(--mf);color:var(--c-dim);white-space:nowrap}
+#gdock .gd-kb:empty{display:none}
+#gdock .gd-tk{font-style:normal;font:700 11.5px var(--uf);padding:0 5px;border-radius:4px;background:var(--c-line);color:var(--c-dim)}
+#gdock .gd-tk.k{background:color-mix(in srgb,#5aa8ff 18%,transparent);color:#8cc4ff}
+#gdock .gd-tk.w{background:color-mix(in srgb,#f2b33d 18%,transparent);color:#f2b33d}
+#gdock .gd-strip .gd-all{align-self:center;margin:0 8px}
+/* the equipment cards: name, RUN / STOP lamp and state, Permissive Y / N (HMI standard: Y red = complete, N green = not complete) */
+#gdock .gd-ec{padding:6px 8px}
+#gdock .gd-ec b{font:700 13.5px/1.25 var(--uf)}
+#gdock .gd-es{font:600 12px var(--uf);display:flex;flex-wrap:wrap;gap:0 4px;align-items:center;color:#3fd38a}
+#gdock .gd-es:before{display:none}
+#gdock .gd-es.run,#gdock .gd-es.trip{color:#ff6b6b}
+#gdock .gd-esl{width:9px;height:9px;border-radius:50%;background:#22a052;flex:none;margin-right:2px}
+#gdock .gd-esl.run{background:#dc2626}
+#gdock .gd-es em{font-style:normal;color:var(--c-tx2)}
+#gdock .gd-es.nr em,#gdock .gd-es.blk em{color:#f2b33d}
+#gdock .gd-es.sby em{color:#8cc4ff}
+#gdock .gd-pm{display:flex;align-items:center;gap:5px;margin-top:3px;font:600 12px var(--uf);color:var(--c-tx2)}
+#gdock .gd-yn{display:inline-grid;place-items:center;width:20px;height:18px;border-radius:4px;font:700 11px var(--uf);font-style:normal;color:#fff;background:#22a052}
+#gdock .gd-yn.y{background:#dc2626}
+/* the stages: one line of chips with the full name and the count; the open stage has no head of its own */
+#gdock .gd-spr{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px}
+#gdock .gd-chip{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:0 5px;padding:4px 6px;min-height:42px;text-align:left;justify-content:stretch}
+#gdock .gd-chip .gd-cnm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:600 13px var(--uf)}
+#gdock .gd-chip .gd-cc{grid-column:1/-1;font:600 11.5px var(--mf);color:var(--c-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#gdock .gd-chip.cur{border-color:var(--gd-ok);background:var(--gd-okbg);color:#8cc4ff}
+#gdock .gd-shd[hidden]{display:none}
+/* an SOP item the logic ticks: a dashed ring and "auto ✓" in its tag line; who does it in plain words */
+#gdock .gd-fl li input:disabled{appearance:none;-webkit-appearance:none;width:17px;height:17px;border:2px dashed #8cc4ff;border-radius:50%;opacity:1}
+#gdock .gd-fl li input:disabled:checked{border-style:solid;background:#5aa8ff}
+#gdock .gd-fl li.lk input:disabled{border-color:var(--c-line2);border-style:solid;border-radius:4px}
+#gdock .gd-auto{font-style:normal;font-weight:600;color:#8cc4ff}
+#gdock .gd-fl em.gd-by{font:600 11px var(--uf);letter-spacing:0;color:var(--c-tx2);white-space:nowrap}
+/* Check: name (tag small) · value · band · ✓ / ! */
+#gdock .gd-wr{display:grid;grid-template-columns:minmax(0,1fr) auto auto 26px;gap:2px 8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--c-line)}
+#gdock .gd-wn{min-width:0}
+#gdock .gd-wn b{display:block;font:600 13.5px/1.3 var(--uf);color:var(--c-tx)}
+#gdock .gd-wn small{display:block;font:500 11.5px/1.3 var(--mf);color:var(--c-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+#gdock .gd-wv{white-space:nowrap;text-align:right}
+#gdock .gd-wv b{font:600 15px var(--mf);color:#8cc4ff}
+#gdock .gd-wr.fld .gd-wv b{font:600 12.5px var(--uf);color:var(--c-tx2)}
+#gdock .gd-wb{font:500 11.5px var(--mf);color:var(--c-dim);white-space:nowrap}
+#gdock .gd-wr .gd-wk{justify-self:center;font:700 12px var(--uf);padding:0 5px;border-radius:4px;background:var(--c-line);color:var(--c-dim)}
+#gdock .gd-wr.ok .gd-wk{background:color-mix(in srgb,#5aa8ff 18%,transparent);color:#8cc4ff}
+#gdock .gd-wr.no .gd-wk{background:color-mix(in srgb,#f2b33d 18%,transparent);color:#f2b33d!important}
+/* a control shown from NEXT ("Show control ▾") flashes once */
+#gdock .gd-flash{outline:2px solid var(--gd-ok);outline-offset:2px}
+#gdock .gd-strip .gd-kv small{display:block;white-space:normal;overflow:visible}
+#gdock .gd-strip .gd-kv.run b{color:#ff6b6b}
+#gdock .gd-strip .gd-kv.stop b{color:#3fd38a}
+#gdock .gd-es em{flex-basis:100%}
+#gdock .gd-wr.fld .gd-wb{font-family:var(--uf)}
+/* live test #60: the Training button of the top bar while the panel is hidden (the side tab is then not needed) */
+#gdtab.gd-hide{display:none!important}
+body.app2 #gdtrb{margin-left:8px;border-color:#5aa8ff!important;background:color-mix(in srgb,#5aa8ff 16%,transparent)!important;color:#8cc4ff!important;font-weight:700;white-space:nowrap}
+body.app2 #gdtrb[hidden]{display:none!important}
+@container gdock (max-width:419px){#gdock .gd-chip{padding:4px 5px;gap:0 4px}#gdock .gd-chip .gd-cnm{font-size:12px}#gdock .gd-chip .gd-cn{width:16px;height:16px;font-size:10px}}
+@container gdock (max-width:419px){#gdock .gd-chip{grid-template-columns:minmax(0,1fr)}#gdock .gd-chip .gd-cn{display:none}#gdock .gd-chip.ok .gd-cnm:before{content:"✓ "}}
+#gdock .gd-chip .gd-cc{display:flex;align-items:center;gap:4px}
+#gdock .gd-chip .gd-cc .gd-yn{width:16px;height:14px;font-size:10px;flex:none}

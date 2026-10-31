@@ -521,7 +521,7 @@
         E('button', {
           cls: 'trbtn go',
           type: 'button',
-          txt: 'Gabay: Cold → 150 MW',
+          txt: 'Guide: Cold → 150 MW',
           title: 'Guided start-up beside the logic: the plant cold, RUN, one step at a time with the interlock of each motor, the faceplates and the values to watch',
           /* 3.2.0 walkthrough #10: a new Cold start-up = a clean checklist (the ticks of an earlier run stayed: 13 ticked at Cold); #15: the
              button says it is loading until the cold plant is in */
@@ -552,7 +552,7 @@
             } catch (e) {}
             fillTrain();
             /* 3.2.0 retest #12: the ticks of the earlier run are cleared without a pop-up; the page says so, with Undo */
-            if (tn > 0) clearNote(was, 'Bagong Gabay mula Cold: nabura ang ' + tn + ' tick');
+            if (tn > 0) clearNote(was, 'New guide from Cold: cleared ' + tn + ' ticks');
             const t0 = b ? b.textContent : '';
             const back = () => {
               if (window.lsBusy) lsBusy.hide();
@@ -563,18 +563,18 @@
             };
             if (b) {
               b.disabled = true;
-              b.textContent = 'Nilo-load ang Cold…';
+              b.textContent = 'Loading Cold…';
             }
             setTimeout(back, 300000);
             /* 3.2.0 retest #54: the progress bar from the click (the logic of the ABC page is read first, then the cold plant loads) */
-            if (window.lsBusy) lsBusy.show('Nilo-load ang Cold plant…');
+            if (window.lsBusy) lsBusy.show('Loading the Cold plant…');
             setTimeout(() => abcReady(() => (window.LS_DOCK ? LS_DOCK.start(() => (back(), fillTrain())) : back())), 40);
           }
         }),
         E('button', {
           cls: 'trbtn trresume',
           type: 'button',
-          txt: 'Ituloy ang gabay',
+          txt: 'Resume the guide',
           hidden: true,
           title: 'Go on with the guided start-up where it stopped',
           on: () => abcReady(() => window.LS_DOCK && LS_DOCK.resume())
@@ -636,7 +636,7 @@
                current step. A Clear while the Gabay runs stops the Gabay too (asked first); "Gabay: Cold" starts it again at Hakbang 1 */
             const G = window.LS_GUIDE;
             if (G && G.on) {
-              if (!window.confirm('Naka-Gabay ka (Hakbang ' + (G.cur + 1) + '). Ang Clear all ticks ay ihihinto rin ang Gabay. Pindutin ulit ang "Gabay: Cold → 150 MW" para magsimula sa Hakbang 1. Ituloy?')) return;
+              if (!window.confirm('The guide is running (Step ' + (G.cur + 1) + '). Clear all ticks stops the guide too. Press "Guide: Cold → 150 MW" again to start at Step 1. Continue?')) return;
               try {
                 window.LS_DOCK && LS_DOCK.stop();
               } catch (e) {}

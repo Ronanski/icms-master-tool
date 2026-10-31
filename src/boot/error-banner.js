@@ -2,6 +2,8 @@
   'error',
   function (e) {
     try {
+      /* live test #69: the browser's "ResizeObserver loop" warning is not a program error (the layout settles in the next frame) */
+      if (/ResizeObserver loop/i.test(e.message || '')) return;
       var d = document.getElementById('errbn');
       if (!d) {
         d = document.createElement('div');
