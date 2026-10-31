@@ -526,7 +526,9 @@ window.LS_GUIDE = (function () {
           ]
         };
       })(),
-      { st: 0, sec: 8, t: 'Simulan ang auxiliary cooling water pump (ACW)', d: 'Ang ACW pump ay nasa DCS (DITL-76 A, DITL-77 B).', c: runC('An aux. cooling water pump running (DITL-76 / 77)', ['DITL-76', 'DITL-77']), a: [dmot('DITL-76', 'ACWP-A'), dmot('DITL-77', 'ACWP-B')] /* 3.2.0-beta.69: the SOP / HMI name (027 boxes the picked ACWP) */, field: [7], w: (() => {
+      /* live test #51: PR-OPE-5002 8.27 "Set selected standby ACWP in AUTO": the standby in REMOTE (row 5 MIL-P1108A / B REMOTE SELECTED)
+         and AUTO (out 1 AUTO SELECTED, the output the 027 faceplate reads) */
+      { st: 0, sec: 8, max: 1, sby: 1, t: 'Simulan ang auxiliary cooling water pump (ACW), standby sa AUTO', d: 'Ang ACW pump ay nasa DCS (DITL-76 A, DITL-77 B). Gawin: START ng isang ACWP; ang isa pa ay standby: REMOTE sa LCP, saka AUTO (SOP 8.27).', c: C('1 ACWP running, standby ACWP REMOTE + AUTO (DITL-76 / 77 out 1)', () => !WL() || (['DITL-76', 'DITL-77'].some(nm => dRun(nm) === 1) && ['DITL-76', 'DITL-77'].some(nm => dRun(nm) !== 1 && dOut(nm, 0) === 1 && DUI.rowVal(LS_DOCK.dOf(nm), 4) === 1)), () => (WL() ? ['DITL-76', 'DITL-77'].map((nm, j) => 'ACWP-' + 'AB'[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : 'STOPPED' + (DUI.rowVal(LS_DOCK.dOf(nm), 4) === 1 ? ' REM' : ' LOC') + (dOut(nm, 0) === 1 ? ' AUTO' : ' MAN'))).join(', ') : '— (one world OFF)')), a: [dmot('DITL-76', 'ACWP-A'), dmot('DITL-77', 'ACWP-B')] /* 3.2.0-beta.69: the SOP / HMI name (027 boxes the picked ACWP) */, field: [7], w: (() => {
           /* R9 #74: SOP section 9: the discharge valve opened until the pump discharge reaches 7 kg/cm² (PG-CW1108A/B, local gauge);
              the header PICW1152 reads 6.4 at 150 MW (HMI snapshot) */
           const L = ['DITL-76', 'DITL-77'].map(nm => () => dRun(nm) === 1);
