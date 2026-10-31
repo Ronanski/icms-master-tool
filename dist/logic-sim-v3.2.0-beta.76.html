@@ -30178,7 +30178,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.76';
-      c3.textContent += ' · build 350782b'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 430430a'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -46565,7 +46565,8 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
      the address of that machine only ("M.1150/1160 M.1170 SEAWATER PUMP A START P.B." -> "M.1160 SEAWATER PUMP B START P.B.") */
   W.showText = (s, t) => {
     const I = s && s._inst;
-    if (!I || !I.k || !t) return t;
+    /* live test #56: machine A (k 0) of a drawing for several machines keeps its own address of the list too */
+    if (!I || !t || (!I.k && !(I.n > 1))) return t;
     let x = W.remap(s, t);
     const la = addrList(t);
     if (la.length > 1 && la[I.k]) {
@@ -50502,6 +50503,9 @@ html.gd-menu #gdock .gd-prog{display:none!important}
   };
   /* 3.2.0-beta.35: machine B / C / D of a shared drawing reads its own letter and address (WORLD.showText / addrK) */
   const isK = s => !!(s && s._inst && s._inst.k && window.WORLD && WORLD.showText);
+  /* live test #56: machine A of a drawing for several machines (DITL-45 dryer A / B / C: TAG "M.1120/1125/M.112A") reads its own address too
+     (M.1120, not the last one M.112A of dryer C) in the row text, the dock and the Event log */
+  const isKA = s => !!(s && s._inst && (s._inst.k || s._inst.n > 1) && window.WORLD && WORLD.showText && WORLD.addrK);
   const txt = (s, i, c) => {
     const r = ((c === 'RS' && rsNear(s) ? rsNear(s)[i] : s.cells[i + ':' + c]) || [])
       .map(t => t.t)
@@ -50514,7 +50518,7 @@ html.gd-menu #gdock .gd-prog{display:none!important}
   const ADR = /^[A-Z]{1,3}\.[0-9A-F]{3,5}[A-Z]?$/;
   const tagOf = (s, i) => {
     const t = (s.cells[i + ':T'] || []).map(t => t.t.trim()).filter(t => ADR.test(t)).join(' ');
-    return t && isK(s) ? WORLD.addrK(s, i) || t : t;
+    return t && isKA(s) ? WORLD.addrK(s, i) || t : t;
   };
   const svcOf = (s, i) => {
     const r = (s.cells[i + ':T'] || [])
@@ -50522,7 +50526,7 @@ html.gd-menu #gdock .gd-prog{display:none!important}
       .map(t => t.t.trim())
       .filter(t => t && !ADR.test(t))
       .join(' ');
-    return isK(s) ? WORLD.showText(s, r) : r;
+    return isKA(s) ? WORLD.showText(s, r) : r;
   };
   const fmt = x => (x >= 60 ? (x / 60).toFixed(1) + ' min' : x.toFixed(1) + ' s');
   let key = '',
