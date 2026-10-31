@@ -512,7 +512,7 @@ html.gd-menu #gdock .gd-prog{display:none!important}
 #gdock .gd-wr.no .gd-wk{background:color-mix(in srgb,#f2b33d 18%,transparent);color:#f2b33d!important}
 /* a control shown from NEXT ("Show control ▾") flashes once */
 #gdock .gd-flash{outline:2px solid var(--gd-ok);outline-offset:2px}
-#gdock .gd-strip .gd-kv small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#gdock .gd-strip .gd-kv small{display:block;white-space:normal;overflow:visible}
 #gdock .gd-strip .gd-kv.run b{color:#ff6b6b}
 #gdock .gd-strip .gd-kv.stop b{color:#3fd38a}
 #gdock .gd-es em{flex-basis:100%}
@@ -523,3 +523,5 @@ body.app2 #gdtrb{margin-left:8px;border-color:#5aa8ff!important;background:color
 body.app2 #gdtrb[hidden]{display:none!important}
 @container gdock (max-width:419px){#gdock .gd-chip{padding:4px 5px;gap:0 4px}#gdock .gd-chip .gd-cnm{font-size:12px}#gdock .gd-chip .gd-cn{width:16px;height:16px;font-size:10px}}
 @container gdock (max-width:419px){#gdock .gd-chip{grid-template-columns:minmax(0,1fr)}#gdock .gd-chip .gd-cn{display:none}#gdock .gd-chip.ok .gd-cnm:before{content:"✓ "}}
+#gdock .gd-chip .gd-cc{display:flex;align-items:center;gap:4px}
+#gdock .gd-chip .gd-cc .gd-yn{width:16px;height:14px;font-size:10px;flex:none}
