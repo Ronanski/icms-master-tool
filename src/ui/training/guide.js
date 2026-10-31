@@ -496,7 +496,7 @@ window.LS_GUIDE = (function () {
           t: 'Simulan ang make-up water pump (MWP) at punuin ang expansion tank',
           d: 'Gawin: START ng isang MWP, REMOTE + AUTO ng standby MWP, saka punuin ang expansion tank hanggang NL 1.7 m (XV-MU1109 o bypass V-MU1033) at isara ang valve. Ang MWP ay nasa DCS (DITL-112). Ang XV-MU1109 (DITL-78) ay pneumatic: bumubukas lang kapag may instrument air (≥ 3.5 kg/cm²); kung wala pa (Cold, bago ang Hakbang 11), ang bypass V-MU1033 ang ginagamit ng field operator. Kailangan ang header > 6.0 kg/cm² para pumasok ang tubig.',
           c: C(
-            '1 MWP running, standby MWP REMOTE + AUTO, primed ang closed cooling line (V-CW1001), expansion tank ≥ 1.7 m at sarado ang fill valve' + ' (XV-MU1109 AUTO kung may instrument air)',
+            '1 MWP running, standby MWP REMOTE + AUTO, expansion tank ≥ 1.7 m at sarado ang fill valve' + ' (XV-MU1109 AUTO kung may instrument air)',
             () => !WL() || (mwN() >= 1 && mwStby() >= 0 && MW.some((nm, j) => dRun(nm) !== 1 && mwAuto(j)) && +U().cwPrime >= 1 && et() >= 1.69 && closed() && (xvAuto() || !air())),
             () =>
               (WL() ? MW.map((nm, j) => ML[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : (remOf(nm) ? 'REM' : 'LOC') + (locRun(nm, 14) === 1 ? ' AUTO' : ' MAN'))).join(', ') : '— (one world OFF)') +
@@ -540,7 +540,7 @@ window.LS_GUIDE = (function () {
       })(),
       /* live test #51: PR-OPE-5002 8.27 "Set selected standby ACWP in AUTO": the standby in REMOTE (row 5 MIL-P1108A / B REMOTE SELECTED)
          and AUTO (out 1 AUTO SELECTED, the output the 027 faceplate reads) */
-      { st: 0, sec: 8, max: 1, sby: 1, t: 'Simulan ang auxiliary cooling water pump (ACW), standby sa AUTO', d: 'Ang ACW pump ay nasa DCS (DITL-76 A, DITL-77 B). Gawin: START ng isang ACWP; ang isa pa ay standby: REMOTE sa LCP, saka AUTO (SOP 8.27).', c: C('1 ACWP running, standby ACWP REMOTE + AUTO (DITL-76 / 77 out 1)', () => !WL() || (['DITL-76', 'DITL-77'].some(nm => dRun(nm) === 1) && ['DITL-76', 'DITL-77'].some(nm => dRun(nm) !== 1 && dOut(nm, 0) === 1 && DUI.rowVal(LS_DOCK.dOf(nm), 4) === 1)), () => (WL() ? ['DITL-76', 'DITL-77'].map((nm, j) => 'ACWP-' + 'AB'[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : 'STOPPED' + (DUI.rowVal(LS_DOCK.dOf(nm), 4) === 1 ? ' REM' : ' LOC') + (dOut(nm, 0) === 1 ? ' AUTO' : ' MAN'))).join(', ') : '— (one world OFF)')), a: [dmot('DITL-76', 'ACWP-A'), dmot('DITL-77', 'ACWP-B')] /* 3.2.0-beta.69: the SOP / HMI name (027 boxes the picked ACWP) */, field: [7], w: (() => {
+      { st: 0, sec: 8, max: 1, sby: 1, t: 'Simulan ang auxiliary cooling water pump (ACW)', d: 'Ang ACW pump ay nasa DCS (DITL-76 A, DITL-77 B).', c: C('1 ACWP running, standby ACWP REMOTE + AUTO (DITL-76 / 77 out 1)', () => !WL() || (['DITL-76', 'DITL-77'].some(nm => dRun(nm) === 1) && ['DITL-76', 'DITL-77'].some(nm => dRun(nm) !== 1 && dOut(nm, 0) === 1 && DUI.rowVal(LS_DOCK.dOf(nm), 4) === 1)), () => (WL() ? ['DITL-76', 'DITL-77'].map((nm, j) => 'ACWP-' + 'AB'[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : 'STOPPED' + (DUI.rowVal(LS_DOCK.dOf(nm), 4) === 1 ? ' REM' : ' LOC') + (dOut(nm, 0) === 1 ? ' AUTO' : ' MAN'))).join(', ') : '— (one world OFF)')), a: [dmot('DITL-76', 'ACWP-A'), dmot('DITL-77', 'ACWP-B')] /* 3.2.0-beta.69: the SOP / HMI name (027 boxes the picked ACWP) */, field: [7], w: (() => {
           /* R9 #74: SOP section 9: the discharge valve opened until the pump discharge reaches 7 kg/cm² (PG-CW1108A/B, local gauge);
              the header PICW1152 reads 6.4 at 150 MW (HMI snapshot) */
           const L = ['DITL-76', 'DITL-77'].map(nm => () => dRun(nm) === 1);
@@ -613,8 +613,8 @@ window.LS_GUIDE = (function () {
       {
         st: 0,
         sec: 17,
-        t: 'Biasing damper RH at SH: buksan sa 100 %',
-        d: 'Gawin: HICHR1002A (RH side) at HICHR1002B (SH side) MANUAL, MV 100 % (PR-OPE-5002 17.12). Sarado (10 %, ang pinakamababa ng DCS) ang dalawa sa Cold (17.1). Bantayan ang ZT-FG1116 / 1117 (posisyon ng damper).',
+        t: 'Open the RH and SH biasing dampers to 100 %',
+        d: 'Set the RH and SH biasing dampers to MANUAL, output 100 % (PR-OPE-5002 17.12). At Cold both are closed at 10 %, the lowest DCS position (17.1). Watch the damper position transmitters. Tags: HICHR1002A, HICHR1002B, ZT-FG1116, ZT-FG1117.',
         c: b.ALL(b.MV('HICHR1002A', 95, null), b.MV('HICHR1002B', 95, null)),
         fps: ['HICHR1002A', 'HICHR1002B'],
         a: [btn('Biasing damper RH at SH 100 %', () => (A.man('HICHR1002A', 100), A.man('HICHR1002B', 100)))],
@@ -702,15 +702,15 @@ window.LS_GUIDE = (function () {
       {
         st: 3,
         sec: 27,
-        t: 'APH soot blower: plant air ≥ 7 kg/cm², PLANT AIR ang source sa LOCAL',
-        d: 'Gawin: tiyaking tumatakbo ang plant air compressor at ≥ 7 kg/cm² ang plant air (PT-PA1705). Sa field: sa LOCAL, buksan ang plant air source at isara ang steam source ng APH soot blower; tingnan na naka-RETRACT ang lahat ng soot blower lance (DITL-80K row 5, M.4008, galing sa SB panel).',
+        t: 'Air heater soot blower: plant air available, source set to plant air',
+        d: 'Check that a plant air compressor runs and plant air pressure is at least 7 kg/cm². In the field: at the local panel, open the plant air source and close the steam source of the air heater soot blower, and check that every soot blower lance is retracted. Tags: PT-PA1705, M.4008 (DITL-80K row 5).',
         c: b.ALL(
           C('Plant air PT-PA1705 ≥ 7 kg/cm²', () => +U().paP >= 6.95, () => 'PT-PA1705 ' + f1w(+U().paP || 0) + ' kg/cm²'),
-          C('Lahat ng S/B lance naka-RETRACT (M.4008)', () => !WL() || sbRetOn(), () => (WL() ? (sbRetOn() ? 'ALL ON RETRACT' : 'not confirmed') : '— (one world OFF)'))
+          C('All soot blower lances retracted (M.4008)', () => !WL() || sbRetOn(), () => (WL() ? (sbRetOn() ? 'ALL ON RETRACT' : 'not confirmed') : '— (one world OFF)'))
         ),
         a: [
           Object.assign(
-            btn('FIELD: lahat ng S/B lance naka-RETRACT (M.4008)', () => {
+            btn('FIELD: all soot blower lances retracted (M.4008)', () => {
               /* one address on five drawings (CLAUDE.md 1); the field action is logged once, on DITL-80K (a unique name: "DITL-80" is
                  also the hot reheat drain sheet (99)DITL-80) */
               for (const [x, r] of sbRet()) if (!/DITL-80K$/.test(x.name)) x.sig[r + ':S'] = true;
@@ -726,16 +726,16 @@ window.LS_GUIDE = (function () {
       {
         st: 3,
         sec: 27,
-        t: 'APH soot blower source: PLANT AIR sa DCS (M.4212)',
-        d: 'Gawin: S/B SELECT PLANT AIR / STEAM (M.4212, DITL-80K row 20) = PLANT AIR (1). Ang 0 ay STEAM: wala pang steam sa Cold.',
+        t: 'Select plant air as the soot blower source at the DCS',
+        d: 'Set the soot blower source select to PLANT AIR (1). STEAM (0) is not available at Cold. Tag: M.4212 (DITL-80K row 20).',
         c: C('S/B source PLANT AIR (DITL-80K row 20 = 1)', () => !WL() || DUI.rowVal(sbK(), 19) === 1, () => (WL() ? (DUI.rowVal(sbK(), 19) === 1 ? 'PLANT AIR' : 'STEAM') : '— (one world OFF)')),
         a: [Object.assign(btn('S/B SELECT PLANT AIR (M.4212, DITL-80K)', () => window.LS_DOCK && LS_DOCK.dsel('DITL-80K', 19, 1, 'S/B SELECT PLANT AIR / STEAM P.B. (M.4212) PLANT AIR'), () => WL() && DUI.rowVal(sbK(), 19) === 1), { dg: ['DITL-80K', 19] })]
       },
       {
         st: 3,
         sec: 27,
-        t: 'Simulan ang APH soot blowing (REMOTE START, DITL-80M)',
-        d: 'Gawin: AIR HEATER SOOTBLOWER START (M.417D, DITL-80M row 6). Ang drawing ang nagpapadala ng 3 s na FORWARD STARTER (SB panel O.077C, DITL-80K) kapag naka-MANUAL ang sootblower system at naka-RETRACT ang lahat ng lance.',
+        t: 'Start the air heater soot blowing',
+        d: 'Press the air heater soot blower START. The logic sends a 3 s forward starter command to the soot blower panel when the soot blower system is in MANUAL and every lance is retracted. Tags: M.417D (DITL-80M row 6), O.077C (DITL-80K).',
         c: C('APH S/B forward starter O.077C (DITL-80K)', () => !WL() || !!G.aphSb, () => (WL() ? (G.aphSb || aphSbFwd() ? 'FORWARD STARTER ON' : 'not started') : '— (one world OFF)')),
         a: [Object.assign(btn('APH S/B START (M.417D, DITL-80M)', () => (WL() ? dPress('DITL-80M', 5) : ''), () => !!G.aphSb), { dg: ['DITL-80M', 5], ad: 'DITL-80M@5' })]
       },
@@ -743,8 +743,8 @@ window.LS_GUIDE = (function () {
         st: 3,
         sec: 27,
         need: 1,
-        t: 'APH soot blower Circulation Function ON (DCS)',
-        d: 'PR-OPE-5002: "Set Air heater soot blower Circulation Function to ON at DCS." Walang address nito sa DITL-80 ~ 80T at sa memory list STN102 (M.4000 ~ M.4253), kaya kumpirmahin lang kapag tapos na.'
+        t: 'Air heater soot blower circulation function ON',
+        d: 'PR-OPE-5002: "Set Air heater soot blower Circulation Function to ON at DCS." The logic drawings DITL-80 ~ 80T and memory list STN102 have no address for this function: confirm it when done.'
       },
       /* ---- 4 burners and warm-up ---- */
       { st: 4, sec: 28, t: 'Sindihan ang burner A', d: 'SA damper at oil FCV sa ignition, tapos BURNER ON (DITL-09): ang DITL ang magpapasok ng igniter, magbubukas ng dalawang supply oil valve at magsisindi (DITL-10 / 13). Kapag may apoy na, ang oil flow FICDO1043A sa 60 %.', c: b.ALL(b.BIT('M.3412', 1, 'burner A in service'), b.VAL('oilF', 0.3, null)), fps: ['FICDO1043A'], get a() {

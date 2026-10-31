@@ -1226,7 +1226,7 @@ function anLoadStart(kind, on) {
   const cold = kind === 'cold',
     B = window.lsBusy,
     est = (cold ? 46 : 40) * Math.max(1, AN.sheets.length - 1);
-  if (B) B.show(cold ? 'Nilo-load ang Cold plant…' : 'Nilo-load ang 150 MW…');
+  if (B) B.show(cold ? 'Loading the Cold plant…' : 'Loading the 150 MW plant…');
   /* retest #69 (R8 second pass: Hakbang 2 never showed ✓ TAPOS with 2 SWP running): a sheet is built only when something opens it
      (ensure). A starting state loaded before ABC-001C was built left the unit model OFF (anUnitStart needs that sheet) and the other
      unbuilt sheets out of the load: the Gabay conditions never came true. Every sheet is built first, one per slice (no freeze) */

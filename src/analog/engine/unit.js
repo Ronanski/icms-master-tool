@@ -721,7 +721,7 @@ function anUnitLive() {
    OPERATION). Returns the state or a reason ('' = done) */
 function anTurbine(cmd, arg) {
   const U = AN_UNIT;
-  if (!U.on || !U.tb) return 'walang unit model (Start cold muna)';
+  if (!U.on || !U.tb) return 'No unit model: start from Cold first';
   const tb = U.tb;
   /* 3.2.0-beta.66: the 036 TURBINE OIL pumps at the 150 MW snapshot (no TCS model): the oil-only state of tcs.js */
   if (!U.tc && cmd === 'oil') return tcsOilCmd(tcsOilState(U), arg || {});
@@ -734,8 +734,8 @@ function anTurbine(cmd, arg) {
   if (U.tc) {
     const c = U.tc;
     if (cmd === 'roll') {
-      if (tb.st === 'sync' || tb.st === 'load') return 'naka-sync na';
-      if (c.step >= 3) return 'umiikot na ang turbine (3600 rpm)';
+      if (tb.st === 'sync' || tb.st === 'load') return 'Already synchronised';
+      if (c.step >= 3) return 'The turbine is already at 3600 rpm';
       let nx = c.cur >= 0 ? c.cur : c.step + 1;
       if (nx === 0 && c.Thp > 150) nx = 1;
       if (nx === 2 && !(c.mode === 'amb' || c.mode === 'c1')) nx = 3;
@@ -746,8 +746,8 @@ function anTurbine(cmd, arg) {
       return '';
     }
     if (cmd === 'sync') {
-      if (tb.st === 'sync' || tb.st === 'load') return 'naka-sync na';
-      if (c.step < 3) return c.step < 1 ? 'i-roll muna ang turbine' : 'hindi pa 3600 rpm / tapos ang ACCELERATION (' + tb.rpm.toFixed(0) + ' rpm)';
+      if (tb.st === 'sync' || tb.st === 'load') return 'Already synchronised';
+      if (c.step < 3) return c.step < 1 ? 'Roll the turbine first' : 'Not at 3600 rpm / ACCELERATION not finished (' + tb.rpm.toFixed(0) + ' rpm)';
       const r = c.cur >= 0 ? '' : tcsStepIn(U, c.step + 1);
       if (r) return r;
       c.auto = true;
@@ -755,22 +755,22 @@ function anTurbine(cmd, arg) {
       return '';
     }
     if (cmd === 'loadup') {
-      if (tb.st !== 'sync' && tb.st !== 'load') return 'i-sync muna ang generator';
-      if (c.step < 5) return 'hinihintay ang initial load hold (SYNCH. & INITIAL LOAD, ' + (c.tm / 60).toFixed(0) + ' / ' + (c.holdMin || 0) + ' min)';
+      if (tb.st !== 'sync' && tb.st !== 'load') return 'Synchronise the generator first';
+      if (c.step < 5) return 'Waiting for the initial load hold (SYNCH. & INITIAL LOAD, ' + (c.tm / 60).toFixed(0) + ' / ' + (c.holdMin || 0) + ' min)';
       return tcsStepIn(U, 6, arg);
     }
     const r = tcsCmd(U, cmd, arg);
-    return r == null ? 'hindi kilalang utos: ' + cmd : r;
+    return r == null ? 'Unknown command: ' + cmd : r;
   }
   if (cmd === 'roll') {
-    if (tb.st !== 'off') return 'umiikot na ang turbine (' + tb.st + ')';
-    if (!(U.vac >= 0.9)) return 'walang vacuum ang condenser (' + Math.round(100 * (U.vac || 0)) + ' %): i-start muna ang seawater pump (SWP) at condensate pump (CEP); ang VACUUM UP (ejector, gland sealing) ay kailangan ng aux steam: main steam > 12 kg/cm2';
+    if (tb.st !== 'off') return 'The turbine is already turning (' + tb.st + ')';
+    if (!(U.vac >= 0.9)) return 'No condenser vacuum (' + Math.round(100 * (U.vac || 0)) + ' %): start the seawater pumps (SWP) and a condensate pump (CEP); VACUUM UP (ejectors, gland sealing) needs aux steam: main steam > 12 kg/cm2';
     Object.assign(tb, { st: 'roll', xfer: false, tgt: 0, aim: 0 });
     return '';
   }
   if (cmd === 'sync') {
-    if (tb.st !== 'roll') return tb.st === 'off' ? 'i-roll muna ang turbine' : 'naka-sync na';
-    if (tb.rpm < 3599) return 'hindi pa 3600 rpm (' + tb.rpm.toFixed(0) + ')';
+    if (tb.st !== 'roll') return tb.st === 'off' ? 'Roll the turbine first' : 'Already synchronised';
+    if (tb.rpm < 3599) return 'Not at 3600 rpm yet (' + tb.rpm.toFixed(0) + ')';
     Object.assign(tb, { st: 'sync', tgt: 0, aim: U.MWinit });
     const dirt = (l, x) => {
       if (l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n)) l.S.rt.ext[l.n] = x;
@@ -780,12 +780,12 @@ function anTurbine(cmd, arg) {
     return '';
   }
   if (cmd === 'loadup') {
-    if (tb.st !== 'sync' && tb.st !== 'load') return 'i-sync muna ang generator';
+    if (tb.st !== 'sync' && tb.st !== 'load') return 'Synchronise the generator first';
     tb.st = 'load';
     tb.aim = isFinite(+arg) ? +arg : 45;
     return '';
   }
-  return 'hindi kilalang utos: ' + cmd;
+  return 'Unknown command: ' + cmd;
 }
 /* 3.2.0 roadmap 3: the position (0 ~ 100 %) of a valve of the DITL valve model (MOV / solenoid) by sheet ("DITL-32", an instance "DITL-32 #B",
    a template valve "DITL-38 MV-MS1391"), while the one world runs; null without it (the engine alone, the DITL state is the operator's) */

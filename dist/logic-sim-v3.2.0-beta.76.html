@@ -21549,7 +21549,7 @@ function anUnitLive() {
    OPERATION). Returns the state or a reason ('' = done) */
 function anTurbine(cmd, arg) {
   const U = AN_UNIT;
-  if (!U.on || !U.tb) return 'walang unit model (Start cold muna)';
+  if (!U.on || !U.tb) return 'No unit model: start from Cold first';
   const tb = U.tb;
   /* 3.2.0-beta.66: the 036 TURBINE OIL pumps at the 150 MW snapshot (no TCS model): the oil-only state of tcs.js */
   if (!U.tc && cmd === 'oil') return tcsOilCmd(tcsOilState(U), arg || {});
@@ -21562,8 +21562,8 @@ function anTurbine(cmd, arg) {
   if (U.tc) {
     const c = U.tc;
     if (cmd === 'roll') {
-      if (tb.st === 'sync' || tb.st === 'load') return 'naka-sync na';
-      if (c.step >= 3) return 'umiikot na ang turbine (3600 rpm)';
+      if (tb.st === 'sync' || tb.st === 'load') return 'Already synchronised';
+      if (c.step >= 3) return 'The turbine is already at 3600 rpm';
       let nx = c.cur >= 0 ? c.cur : c.step + 1;
       if (nx === 0 && c.Thp > 150) nx = 1;
       if (nx === 2 && !(c.mode === 'amb' || c.mode === 'c1')) nx = 3;
@@ -21574,8 +21574,8 @@ function anTurbine(cmd, arg) {
       return '';
     }
     if (cmd === 'sync') {
-      if (tb.st === 'sync' || tb.st === 'load') return 'naka-sync na';
-      if (c.step < 3) return c.step < 1 ? 'i-roll muna ang turbine' : 'hindi pa 3600 rpm / tapos ang ACCELERATION (' + tb.rpm.toFixed(0) + ' rpm)';
+      if (tb.st === 'sync' || tb.st === 'load') return 'Already synchronised';
+      if (c.step < 3) return c.step < 1 ? 'Roll the turbine first' : 'Not at 3600 rpm / ACCELERATION not finished (' + tb.rpm.toFixed(0) + ' rpm)';
       const r = c.cur >= 0 ? '' : tcsStepIn(U, c.step + 1);
       if (r) return r;
       c.auto = true;
@@ -21583,22 +21583,22 @@ function anTurbine(cmd, arg) {
       return '';
     }
     if (cmd === 'loadup') {
-      if (tb.st !== 'sync' && tb.st !== 'load') return 'i-sync muna ang generator';
-      if (c.step < 5) return 'hinihintay ang initial load hold (SYNCH. & INITIAL LOAD, ' + (c.tm / 60).toFixed(0) + ' / ' + (c.holdMin || 0) + ' min)';
+      if (tb.st !== 'sync' && tb.st !== 'load') return 'Synchronise the generator first';
+      if (c.step < 5) return 'Waiting for the initial load hold (SYNCH. & INITIAL LOAD, ' + (c.tm / 60).toFixed(0) + ' / ' + (c.holdMin || 0) + ' min)';
       return tcsStepIn(U, 6, arg);
     }
     const r = tcsCmd(U, cmd, arg);
-    return r == null ? 'hindi kilalang utos: ' + cmd : r;
+    return r == null ? 'Unknown command: ' + cmd : r;
   }
   if (cmd === 'roll') {
-    if (tb.st !== 'off') return 'umiikot na ang turbine (' + tb.st + ')';
-    if (!(U.vac >= 0.9)) return 'walang vacuum ang condenser (' + Math.round(100 * (U.vac || 0)) + ' %): i-start muna ang seawater pump (SWP) at condensate pump (CEP); ang VACUUM UP (ejector, gland sealing) ay kailangan ng aux steam: main steam > 12 kg/cm2';
+    if (tb.st !== 'off') return 'The turbine is already turning (' + tb.st + ')';
+    if (!(U.vac >= 0.9)) return 'No condenser vacuum (' + Math.round(100 * (U.vac || 0)) + ' %): start the seawater pumps (SWP) and a condensate pump (CEP); VACUUM UP (ejectors, gland sealing) needs aux steam: main steam > 12 kg/cm2';
     Object.assign(tb, { st: 'roll', xfer: false, tgt: 0, aim: 0 });
     return '';
   }
   if (cmd === 'sync') {
-    if (tb.st !== 'roll') return tb.st === 'off' ? 'i-roll muna ang turbine' : 'naka-sync na';
-    if (tb.rpm < 3599) return 'hindi pa 3600 rpm (' + tb.rpm.toFixed(0) + ')';
+    if (tb.st !== 'roll') return tb.st === 'off' ? 'Roll the turbine first' : 'Already synchronised';
+    if (tb.rpm < 3599) return 'Not at 3600 rpm yet (' + tb.rpm.toFixed(0) + ')';
     Object.assign(tb, { st: 'sync', tgt: 0, aim: U.MWinit });
     const dirt = (l, x) => {
       if (l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n)) l.S.rt.ext[l.n] = x;
@@ -21608,12 +21608,12 @@ function anTurbine(cmd, arg) {
     return '';
   }
   if (cmd === 'loadup') {
-    if (tb.st !== 'sync' && tb.st !== 'load') return 'i-sync muna ang generator';
+    if (tb.st !== 'sync' && tb.st !== 'load') return 'Synchronise the generator first';
     tb.st = 'load';
     tb.aim = isFinite(+arg) ? +arg : 45;
     return '';
   }
-  return 'hindi kilalang utos: ' + cmd;
+  return 'Unknown command: ' + cmd;
 }
 /* 3.2.0 roadmap 3: the position (0 ~ 100 %) of a valve of the DITL valve model (MOV / solenoid) by sheet ("DITL-32", an instance "DITL-32 #B",
    a template valve "DITL-38 MV-MS1391"), while the one world runs; null without it (the engine alone, the DITL state is the operator's) */
@@ -23000,12 +23000,12 @@ function tcsCmd(U, cmd, arg) {
       c.vex = on;
       return '';
     case 'tg':
-      if (on && !c.brgOk) return 'walang bearing oil: i-start muna ang lube oil pump (ATS 1.15)';
+      if (on && !c.brgOk) return 'No bearing oil: start a lube oil pump first (ATS 1.15)';
       c.tg = on;
       return '';
     case 'aux':
       if (on && !(U.Pd > 12))
-        return 'aux steam: kailangan ng main steam > 12 kg/cm2 (PR-OPE-5002 5727), drum ' + U.Pd.toFixed(1);
+        return 'Aux steam needs main steam > 12 kg/cm2 (PR-OPE-5002 5727), drum ' + U.Pd.toFixed(1);
       c.asv = on;
       return '';
     case 'gland':
@@ -23014,8 +23014,8 @@ function tcsCmd(U, cmd, arg) {
         return '';
       }
       if (!(c.Pa > 7)) return 'gland sealing: aux steam > 7 kg/cm2 (PR-OPE-5002 6164), ngayon ' + c.Pa.toFixed(1);
-      if (!(tb && tb.rpm >= 1)) return 'gland sealing: dapat umiikot ang turbine sa turning gear (PR-OPE-5002 6219)';
-      if (!c.vb) return 'gland sealing: bukas dapat ang vacuum breaker MV-AV1391 (PR-OPE-5002 6197)';
+      if (!(tb && tb.rpm >= 1)) return 'Gland sealing: the turbine must turn on the turning gear (PR-OPE-5002 6219)';
+      if (!c.vb) return 'Gland sealing: the vacuum breaker MV-AV1391 must be open (PR-OPE-5002 6197)';
       c.gland = true;
       return '';
     case 'vacuum':
@@ -23030,7 +23030,7 @@ function tcsCmd(U, cmd, arg) {
         return '';
       }
       if (!(c.Pa > 10)) return 'vacuum up: aux steam > 10 kg/cm2 (PR-OPE-5002 6545), ngayon ' + c.Pa.toFixed(1);
-      if (!c.gland) return 'vacuum up: gland sealing muna (PR-OPE-5002 6545)';
+      if (!c.gland) return 'Vacuum up: put the gland sealing in service first (PR-OPE-5002 6545)';
       c.vb = false;
       c.ej = true;
       /* P2 #13: the vacuum breaker MOV CLOSE, then the ejector steam MOVs OPEN (DITL-56 / 55 / 54 push buttons, rows of the drawing) */
@@ -23059,7 +23059,7 @@ function tcsCmd(U, cmd, arg) {
 function tcsStepIn(U, k, arg) {
   const c = U.tc,
     tb = U.tb;
-  if (c.cur >= 0 && c.cur !== k && c.cur < 6) return 'tumatakbo pa ang step ' + c.cur + ' ' + TCS.names[c.cur];
+  if (c.cur >= 0 && c.cur !== k && c.cur < 6) return 'Step still running: ' + c.cur + ' ' + TCS.names[c.cur];
   if (k === 6 && c.step >= 6) {
     /* LOAD UP again: a new target (the TCS panel target MW) */
     tb.st = 'load';
@@ -23072,7 +23072,7 @@ function tcsStepIn(U, k, arg) {
   const need = k === 1 ? -1 : k === 3 && !(c.mode === 'amb' || c.mode === 'c1') ? 1 : k - 1;
   if (c.step < need)
     return (
-      'tapusin muna ang step ' +
+      'Finish step ' +
       need +
       ' ' +
       TCS.names[need] +
@@ -23080,9 +23080,9 @@ function tcsStepIn(U, k, arg) {
       [13, 14, 17, 19, 23, 24, 26, 28][need] +
       ')'
     );
-  if (c.step >= k) return 'tapos na ang ' + TCS.names[k];
+  if (c.step >= k) return 'Already done: ' + TCS.names[k];
   const miss = tcsMiss(U, TCS_A[k]);
-  if (miss) return 'CRITERIA A' + k + ' (' + TCS.names[k] + ') kulang: ' + miss;
+  if (miss) return 'CRITERIA A' + k + ' (' + TCS.names[k] + ') missing: ' + miss;
   c.cur = k;
   c.ph = 'in';
   c.tm = 0;
@@ -23094,7 +23094,7 @@ function tcsDone(U, k) {
   c.step = k;
   c.cur = -1;
   c.ph = '';
-  c.last = TCS.names[k] + ' tapos';
+  c.last = TCS.names[k] + ' done';
 }
 /* one step of dt s: auxiliaries, metal, ATS program. Called by anUnitStep before the turbine black box; tb.rpm / tb.st / tb.icv are set
    here while the ATS controls the speed */
@@ -23325,21 +23325,21 @@ function tcsOilCmd(c, a) {
   const m = /^(mop|cop)([AB])$/.exec(a.p || ''),
     op = a.op;
   if (a.p === 'eop') {
-    if (op !== 'start' && op !== 'stop') return 'EOP: START / STOP lang (walang AUTO / MANUAL sa TCS I/O list)';
+    if (op !== 'start' && op !== 'stop') return 'EOP: START / STOP only (no AUTO / MANUAL in the TCS I/O list)';
     c.eop = op === 'start';
     return '';
   }
-  if (!m) return 'hindi kilalang pump: ' + a.p;
+  if (!m) return 'Unknown pump: ' + a.p;
   const k = m[1],
     i = m[2] === 'A' ? 0 : 1;
   if (op === 'start') c[k][i] = true;
   else if (op === 'stop') {
     /* SOP 2620: the standby to MANUAL first, then STOP; a pump in AUTO cannot be stopped */
-    if (c[k + 'Au'][i]) return (k === 'mop' ? 'MOP' : 'COP') + '-' + m[2] + ' ay AUTO: MANUAL muna, saka STOP (SOP)';
+    if (c[k + 'Au'][i]) return (k === 'mop' ? 'MOP' : 'COP') + '-' + m[2] + ' is in AUTO: set MANUAL first, then STOP (SOP)';
     c[k][i] = false;
   } else if (op === 'auto') c[k + 'Au'][i] = true;
   else if (op === 'man') c[k + 'Au'][i] = false;
-  else return 'hindi kilalang utos: ' + op;
+  else return 'Unknown command: ' + op;
   /* live test #62: the last TCS command output of the pump (HMI_DO JYS START / JYP STOP / IKA AUTO / IKH MANUAL, HOLD 3000 ms) */
   (c.do = c.do || {})[a.p] = { op, t: +AN_UNIT.t || 0 };
   tcsOilSet(c);
@@ -24935,7 +24935,7 @@ function anLoadStart(kind, on) {
   const cold = kind === 'cold',
     B = window.lsBusy,
     est = (cold ? 46 : 40) * Math.max(1, AN.sheets.length - 1);
-  if (B) B.show(cold ? 'Nilo-load ang Cold plant…' : 'Nilo-load ang 150 MW…');
+  if (B) B.show(cold ? 'Loading the Cold plant…' : 'Loading the 150 MW plant…');
   /* retest #69 (R8 second pass: Hakbang 2 never showed ✓ TAPOS with 2 SWP running): a sheet is built only when something opens it
      (ensure). A starting state loaded before ABC-001C was built left the unit model OFF (anUnitStart needs that sheet) and the other
      unbuilt sheets out of the load: the Gabay conditions never came true. Every sheet is built first, one per slice (no freeze) */
@@ -30196,7 +30196,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.76';
-      c3.textContent += ' · build b2d064c'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 1325cd1'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -58071,7 +58071,7 @@ window.LS_GUIDE = (function () {
           t: 'Simulan ang make-up water pump (MWP) at punuin ang expansion tank',
           d: 'Gawin: START ng isang MWP, REMOTE + AUTO ng standby MWP, saka punuin ang expansion tank hanggang NL 1.7 m (XV-MU1109 o bypass V-MU1033) at isara ang valve. Ang MWP ay nasa DCS (DITL-112). Ang XV-MU1109 (DITL-78) ay pneumatic: bumubukas lang kapag may instrument air (≥ 3.5 kg/cm²); kung wala pa (Cold, bago ang Hakbang 11), ang bypass V-MU1033 ang ginagamit ng field operator. Kailangan ang header > 6.0 kg/cm² para pumasok ang tubig.',
           c: C(
-            '1 MWP running, standby MWP REMOTE + AUTO, primed ang closed cooling line (V-CW1001), expansion tank ≥ 1.7 m at sarado ang fill valve' + ' (XV-MU1109 AUTO kung may instrument air)',
+            '1 MWP running, standby MWP REMOTE + AUTO, expansion tank ≥ 1.7 m at sarado ang fill valve' + ' (XV-MU1109 AUTO kung may instrument air)',
             () => !WL() || (mwN() >= 1 && mwStby() >= 0 && MW.some((nm, j) => dRun(nm) !== 1 && mwAuto(j)) && +U().cwPrime >= 1 && et() >= 1.69 && closed() && (xvAuto() || !air())),
             () =>
               (WL() ? MW.map((nm, j) => ML[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : (remOf(nm) ? 'REM' : 'LOC') + (locRun(nm, 14) === 1 ? ' AUTO' : ' MAN'))).join(', ') : '— (one world OFF)') +
@@ -58115,7 +58115,7 @@ window.LS_GUIDE = (function () {
       })(),
       /* live test #51: PR-OPE-5002 8.27 "Set selected standby ACWP in AUTO": the standby in REMOTE (row 5 MIL-P1108A / B REMOTE SELECTED)
          and AUTO (out 1 AUTO SELECTED, the output the 027 faceplate reads) */
-      { st: 0, sec: 8, max: 1, sby: 1, t: 'Simulan ang auxiliary cooling water pump (ACW), standby sa AUTO', d: 'Ang ACW pump ay nasa DCS (DITL-76 A, DITL-77 B). Gawin: START ng isang ACWP; ang isa pa ay standby: REMOTE sa LCP, saka AUTO (SOP 8.27).', c: C('1 ACWP running, standby ACWP REMOTE + AUTO (DITL-76 / 77 out 1)', () => !WL() || (['DITL-76', 'DITL-77'].some(nm => dRun(nm) === 1) && ['DITL-76', 'DITL-77'].some(nm => dRun(nm) !== 1 && dOut(nm, 0) === 1 && DUI.rowVal(LS_DOCK.dOf(nm), 4) === 1)), () => (WL() ? ['DITL-76', 'DITL-77'].map((nm, j) => 'ACWP-' + 'AB'[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : 'STOPPED' + (DUI.rowVal(LS_DOCK.dOf(nm), 4) === 1 ? ' REM' : ' LOC') + (dOut(nm, 0) === 1 ? ' AUTO' : ' MAN'))).join(', ') : '— (one world OFF)')), a: [dmot('DITL-76', 'ACWP-A'), dmot('DITL-77', 'ACWP-B')] /* 3.2.0-beta.69: the SOP / HMI name (027 boxes the picked ACWP) */, field: [7], w: (() => {
+      { st: 0, sec: 8, max: 1, sby: 1, t: 'Simulan ang auxiliary cooling water pump (ACW)', d: 'Ang ACW pump ay nasa DCS (DITL-76 A, DITL-77 B).', c: C('1 ACWP running, standby ACWP REMOTE + AUTO (DITL-76 / 77 out 1)', () => !WL() || (['DITL-76', 'DITL-77'].some(nm => dRun(nm) === 1) && ['DITL-76', 'DITL-77'].some(nm => dRun(nm) !== 1 && dOut(nm, 0) === 1 && DUI.rowVal(LS_DOCK.dOf(nm), 4) === 1)), () => (WL() ? ['DITL-76', 'DITL-77'].map((nm, j) => 'ACWP-' + 'AB'[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : 'STOPPED' + (DUI.rowVal(LS_DOCK.dOf(nm), 4) === 1 ? ' REM' : ' LOC') + (dOut(nm, 0) === 1 ? ' AUTO' : ' MAN'))).join(', ') : '— (one world OFF)')), a: [dmot('DITL-76', 'ACWP-A'), dmot('DITL-77', 'ACWP-B')] /* 3.2.0-beta.69: the SOP / HMI name (027 boxes the picked ACWP) */, field: [7], w: (() => {
           /* R9 #74: SOP section 9: the discharge valve opened until the pump discharge reaches 7 kg/cm² (PG-CW1108A/B, local gauge);
              the header PICW1152 reads 6.4 at 150 MW (HMI snapshot) */
           const L = ['DITL-76', 'DITL-77'].map(nm => () => dRun(nm) === 1);
@@ -58188,8 +58188,8 @@ window.LS_GUIDE = (function () {
       {
         st: 0,
         sec: 17,
-        t: 'Biasing damper RH at SH: buksan sa 100 %',
-        d: 'Gawin: HICHR1002A (RH side) at HICHR1002B (SH side) MANUAL, MV 100 % (PR-OPE-5002 17.12). Sarado (10 %, ang pinakamababa ng DCS) ang dalawa sa Cold (17.1). Bantayan ang ZT-FG1116 / 1117 (posisyon ng damper).',
+        t: 'Open the RH and SH biasing dampers to 100 %',
+        d: 'Set the RH and SH biasing dampers to MANUAL, output 100 % (PR-OPE-5002 17.12). At Cold both are closed at 10 %, the lowest DCS position (17.1). Watch the damper position transmitters. Tags: HICHR1002A, HICHR1002B, ZT-FG1116, ZT-FG1117.',
         c: b.ALL(b.MV('HICHR1002A', 95, null), b.MV('HICHR1002B', 95, null)),
         fps: ['HICHR1002A', 'HICHR1002B'],
         a: [btn('Biasing damper RH at SH 100 %', () => (A.man('HICHR1002A', 100), A.man('HICHR1002B', 100)))],
@@ -58277,15 +58277,15 @@ window.LS_GUIDE = (function () {
       {
         st: 3,
         sec: 27,
-        t: 'APH soot blower: plant air ≥ 7 kg/cm², PLANT AIR ang source sa LOCAL',
-        d: 'Gawin: tiyaking tumatakbo ang plant air compressor at ≥ 7 kg/cm² ang plant air (PT-PA1705). Sa field: sa LOCAL, buksan ang plant air source at isara ang steam source ng APH soot blower; tingnan na naka-RETRACT ang lahat ng soot blower lance (DITL-80K row 5, M.4008, galing sa SB panel).',
+        t: 'Air heater soot blower: plant air available, source set to plant air',
+        d: 'Check that a plant air compressor runs and plant air pressure is at least 7 kg/cm². In the field: at the local panel, open the plant air source and close the steam source of the air heater soot blower, and check that every soot blower lance is retracted. Tags: PT-PA1705, M.4008 (DITL-80K row 5).',
         c: b.ALL(
           C('Plant air PT-PA1705 ≥ 7 kg/cm²', () => +U().paP >= 6.95, () => 'PT-PA1705 ' + f1w(+U().paP || 0) + ' kg/cm²'),
-          C('Lahat ng S/B lance naka-RETRACT (M.4008)', () => !WL() || sbRetOn(), () => (WL() ? (sbRetOn() ? 'ALL ON RETRACT' : 'not confirmed') : '— (one world OFF)'))
+          C('All soot blower lances retracted (M.4008)', () => !WL() || sbRetOn(), () => (WL() ? (sbRetOn() ? 'ALL ON RETRACT' : 'not confirmed') : '— (one world OFF)'))
         ),
         a: [
           Object.assign(
-            btn('FIELD: lahat ng S/B lance naka-RETRACT (M.4008)', () => {
+            btn('FIELD: all soot blower lances retracted (M.4008)', () => {
               /* one address on five drawings (CLAUDE.md 1); the field action is logged once, on DITL-80K (a unique name: "DITL-80" is
                  also the hot reheat drain sheet (99)DITL-80) */
               for (const [x, r] of sbRet()) if (!/DITL-80K$/.test(x.name)) x.sig[r + ':S'] = true;
@@ -58301,16 +58301,16 @@ window.LS_GUIDE = (function () {
       {
         st: 3,
         sec: 27,
-        t: 'APH soot blower source: PLANT AIR sa DCS (M.4212)',
-        d: 'Gawin: S/B SELECT PLANT AIR / STEAM (M.4212, DITL-80K row 20) = PLANT AIR (1). Ang 0 ay STEAM: wala pang steam sa Cold.',
+        t: 'Select plant air as the soot blower source at the DCS',
+        d: 'Set the soot blower source select to PLANT AIR (1). STEAM (0) is not available at Cold. Tag: M.4212 (DITL-80K row 20).',
         c: C('S/B source PLANT AIR (DITL-80K row 20 = 1)', () => !WL() || DUI.rowVal(sbK(), 19) === 1, () => (WL() ? (DUI.rowVal(sbK(), 19) === 1 ? 'PLANT AIR' : 'STEAM') : '— (one world OFF)')),
         a: [Object.assign(btn('S/B SELECT PLANT AIR (M.4212, DITL-80K)', () => window.LS_DOCK && LS_DOCK.dsel('DITL-80K', 19, 1, 'S/B SELECT PLANT AIR / STEAM P.B. (M.4212) PLANT AIR'), () => WL() && DUI.rowVal(sbK(), 19) === 1), { dg: ['DITL-80K', 19] })]
       },
       {
         st: 3,
         sec: 27,
-        t: 'Simulan ang APH soot blowing (REMOTE START, DITL-80M)',
-        d: 'Gawin: AIR HEATER SOOTBLOWER START (M.417D, DITL-80M row 6). Ang drawing ang nagpapadala ng 3 s na FORWARD STARTER (SB panel O.077C, DITL-80K) kapag naka-MANUAL ang sootblower system at naka-RETRACT ang lahat ng lance.',
+        t: 'Start the air heater soot blowing',
+        d: 'Press the air heater soot blower START. The logic sends a 3 s forward starter command to the soot blower panel when the soot blower system is in MANUAL and every lance is retracted. Tags: M.417D (DITL-80M row 6), O.077C (DITL-80K).',
         c: C('APH S/B forward starter O.077C (DITL-80K)', () => !WL() || !!G.aphSb, () => (WL() ? (G.aphSb || aphSbFwd() ? 'FORWARD STARTER ON' : 'not started') : '— (one world OFF)')),
         a: [Object.assign(btn('APH S/B START (M.417D, DITL-80M)', () => (WL() ? dPress('DITL-80M', 5) : ''), () => !!G.aphSb), { dg: ['DITL-80M', 5], ad: 'DITL-80M@5' })]
       },
@@ -58318,8 +58318,8 @@ window.LS_GUIDE = (function () {
         st: 3,
         sec: 27,
         need: 1,
-        t: 'APH soot blower Circulation Function ON (DCS)',
-        d: 'PR-OPE-5002: "Set Air heater soot blower Circulation Function to ON at DCS." Walang address nito sa DITL-80 ~ 80T at sa memory list STN102 (M.4000 ~ M.4253), kaya kumpirmahin lang kapag tapos na.'
+        t: 'Air heater soot blower circulation function ON',
+        d: 'PR-OPE-5002: "Set Air heater soot blower Circulation Function to ON at DCS." The logic drawings DITL-80 ~ 80T and memory list STN102 have no address for this function: confirm it when done.'
       },
       /* ---- 4 burners and warm-up ---- */
       { st: 4, sec: 28, t: 'Sindihan ang burner A', d: 'SA damper at oil FCV sa ignition, tapos BURNER ON (DITL-09): ang DITL ang magpapasok ng igniter, magbubukas ng dalawang supply oil valve at magsisindi (DITL-10 / 13). Kapag may apoy na, ang oil flow FICDO1043A sa 60 %.', c: b.ALL(b.BIT('M.3412', 1, 'burner A in service'), b.VAL('oilF', 0.3, null)), fps: ['FICDO1043A'], get a() {
