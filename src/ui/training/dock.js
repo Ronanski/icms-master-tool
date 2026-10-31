@@ -570,8 +570,7 @@
       /* R9 #76: one address = one signal (CLAUDE.md 1): DITL-45 rows 5 and 9 are both I.0085 PLANT AIR DRYER-A REMOTE (the START and
          the STOP gate); setting one row left the other 0, shown red as missing */
       {
-        const sv = rowInfo(f.s, f.row).svc;
-        if (/\b[IM]\.[0-9A-F]{4}/.test(sv)) for (let r = 0; r < 40; r++) if (r !== f.row && rowInfo(f.s, r).svc === sv) f.s.sig[r + ':S'] = !!f.want;
+        for (const r of twinRows(f.s, f.row)) f.s.sig[r + ':S'] = !!f.want;
       }
       /* the other limit switch of the same vane / damper: OPENED <-> CLOSED */
       const tw = f.svc.replace(/\bOPENED\b|\bOPEN\b|\bCLOSED\b/, w => (w === 'CLOSED' ? 'OPENED' : 'CLOSED'));
@@ -592,8 +591,8 @@
     if (!s) return false;
     s.sig[row + ':S'] = !!v;
     {
-      const sv = rowInfo(s, row).svc; /* one address = one signal (CLAUDE.md 1): DITL-29A rows 4 and 19 are both M.1152 */
-      if (/\b[IM]\.[0-9A-F]{4}/.test(sv)) for (let r = 0; r < 40; r++) if (r !== row && rowInfo(s, r).svc === sv) s.sig[r + ':S'] = !!v;
+      /* one address = one signal (CLAUDE.md 1): DITL-29A rows 4 and 19 are both M.1152 */
+      for (const r of twinRows(s, row)) s.sig[r + ':S'] = !!v;
     }
     if (WORLD.live) WORLD.busy = true;
     pscan();
@@ -610,8 +609,8 @@
     if (!s) return false;
     s.sig[row + ':S'] = !!on;
     {
-      const sv = rowInfo(s, row).svc; /* R9 #76: the other rows of the same address */
-      if (/\b[IM]\.[0-9A-F]{4}/.test(sv)) for (let r = 0; r < 40; r++) if (r !== row && rowInfo(s, r).svc === sv) s.sig[r + ':S'] = !!on;
+      /* R9 #76: the other rows of the same address */
+      for (const r of twinRows(s, row)) s.sig[r + ':S'] = !!on;
     }
     if (WORLD.live) WORLD.busy = true;
     pscan();
@@ -636,6 +635,22 @@
     } catch (e) {}
     setTimeout(() => fill(true), 200);
     return true;
+  }
+  /* the other input rows of the same address on a drawing (one address = one signal, CLAUDE.md 1): the same service text with an address
+     (DITL-29A rows 4 and 19 M.1152), or live test #51 the same TAG NO. (DITL-77 row 1 "B-AUX. CW PUMP AUTO PB" and row 4 "B-AUX. CW PUMP
+     AUTO SELECTED" are both M.1242 B-AUX. COOLING WATER PUMP AUTO MODE (CRT), memory list STN103: the AUTO of the faceplate set row 1
+     only and the dock read row 4 as missing) */
+  function twinRows(s, row) {
+    const I = rowInfo(s, row),
+      sv = I.svc,
+      tg = /^[IM]\.[0-9A-F]{4}$/.test(I.tag || '') ? I.tag : '',
+      o = [];
+    for (let r = 0; r < 40; r++) {
+      if (r === row) continue;
+      const J = rowInfo(s, r);
+      if ((tg && J.tag === tg) || (/\b[IM]\.[0-9A-F]{4}/.test(sv) && J.svc === sv)) o.push(r);
+    }
+    return o;
   }
   const rowInfo = (s, row) => {
     let tag = '',
@@ -673,6 +688,13 @@
     for (let r = 0; r < 60 && !o; r++) {
       const v = rowInfo(ds, r).svc;
       if (/\bAUTO MODE SELECTED\b/.test(v) && !/REMOTE/.test(v)) o = { s: ds, row: r, svc: svcN(v) };
+    }
+    /* live test #51: the ACW pumps write it "B-AUX. CW PUMP AUTO SELECTED" (DITL-77 row 4, M.1242 AUTO MODE (CRT), memory list STN103):
+       a CRT memory row of a motor drawing only (the drain valves DITL-73 / 80 / 88 ... have their own AUTO SELECTED) */
+    const motor = !o && call(() => DUI.outs(ds).some(q => /RUNNING/.test(q.name) && !/NOT RUNNING/.test(q.name)), false);
+    for (let r = 0; r < 60 && !o && motor; r++) {
+      const I = rowInfo(ds, r);
+      if (/\bAUTO SELECTED\b/.test(I.svc) && !/REMOTE|START/.test(I.svc) && /^M\.[0-9A-F]{4}$/.test(I.tag || '')) o = { s: ds, row: r, svc: svcN(I.svc) };
     }
     return (ds._amr = o);
   }

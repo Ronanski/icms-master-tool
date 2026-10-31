@@ -30073,7 +30073,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.76';
-      c3.textContent += ' · build 95e8189'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 087320f'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -56992,6 +56992,17 @@ window.LS_LIVE = (function () {
     [7, /^Open Expansion tank automatic inlet valve/i, ET_NL],
     [7, /^Set Expansion tank inlet valve \(XV-MU1109\) to AUTO/i, ALL(ET_NL, XV_AUTO)],
     [8, /Initiate START of the selected AWCP/i, RUNN(ACW, 1, 'ACW pump')],
+    /* live test #51: the standby ACWP in REMOTE (row 5 MIL-P1108A / B REMOTE SELECTED, I.0088 / I.0408) and AUTO (out 1 AUTO SELECTED, the
+       same output the 027 faceplate reads; input rows 1 and 4 are both M.1232 / M.1242 AUTO MODE (CRT)) */
+    [
+      8,
+      /Set selected standby ACWP in AUTO/i,
+      DC(
+        'one ACW pump running and the standby in REMOTE + AUTO (DITL-76 / 77 out 1 AUTO SELECTED)',
+        () => nRun(ACW) >= 1 && ACW.some(nm => !dRun(nm) && dOut(nm, 0) && dIn(nm, 4)),
+        () => ACW.map((nm, j) => 'ACWP-' + 'AB'[j] + (dRun(nm) ? ' RUN' : (dIn(nm, 4) ? ' REM' : ' LOC') + (dOut(nm, 0) ? ' AUTO' : ' MAN'))).join(', ')
+      )
+    ],
     [9, /Initiate ON to selected dryer/i, OUTC('DITL-45', 14, 'Instrument air dryer A RUNNING')],
     [10, /^Initiate RUN with proper coordination/i, INC('DITL-113', 5, 'IA compressor A RUNNING')],
     [11, /Initiate ON to selected dryer/i, OUTC('DITL-45', 3, 'Plant air dryer A RUNNING')],
@@ -57898,7 +57909,9 @@ window.LS_GUIDE = (function () {
           ]
         };
       })(),
-      { st: 0, sec: 8, t: 'Simulan ang auxiliary cooling water pump (ACW)', d: 'Ang ACW pump ay nasa DCS (DITL-76 A, DITL-77 B).', c: runC('An aux. cooling water pump running (DITL-76 / 77)', ['DITL-76', 'DITL-77']), a: [dmot('DITL-76', 'ACWP-A'), dmot('DITL-77', 'ACWP-B')] /* 3.2.0-beta.69: the SOP / HMI name (027 boxes the picked ACWP) */, field: [7], w: (() => {
+      /* live test #51: PR-OPE-5002 8.27 "Set selected standby ACWP in AUTO": the standby in REMOTE (row 5 MIL-P1108A / B REMOTE SELECTED)
+         and AUTO (out 1 AUTO SELECTED, the output the 027 faceplate reads) */
+      { st: 0, sec: 8, max: 1, sby: 1, t: 'Simulan ang auxiliary cooling water pump (ACW), standby sa AUTO', d: 'Ang ACW pump ay nasa DCS (DITL-76 A, DITL-77 B). Gawin: START ng isang ACWP; ang isa pa ay standby: REMOTE sa LCP, saka AUTO (SOP 8.27).', c: C('1 ACWP running, standby ACWP REMOTE + AUTO (DITL-76 / 77 out 1)', () => !WL() || (['DITL-76', 'DITL-77'].some(nm => dRun(nm) === 1) && ['DITL-76', 'DITL-77'].some(nm => dRun(nm) !== 1 && dOut(nm, 0) === 1 && DUI.rowVal(LS_DOCK.dOf(nm), 4) === 1)), () => (WL() ? ['DITL-76', 'DITL-77'].map((nm, j) => 'ACWP-' + 'AB'[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : 'STOPPED' + (DUI.rowVal(LS_DOCK.dOf(nm), 4) === 1 ? ' REM' : ' LOC') + (dOut(nm, 0) === 1 ? ' AUTO' : ' MAN'))).join(', ') : '— (one world OFF)')), a: [dmot('DITL-76', 'ACWP-A'), dmot('DITL-77', 'ACWP-B')] /* 3.2.0-beta.69: the SOP / HMI name (027 boxes the picked ACWP) */, field: [7], w: (() => {
           /* R9 #74: SOP section 9: the discharge valve opened until the pump discharge reaches 7 kg/cm² (PG-CW1108A/B, local gauge);
              the header PICW1152 reads 6.4 at 150 MW (HMI snapshot) */
           const L = ['DITL-76', 'DITL-77'].map(nm => () => dRun(nm) === 1);
@@ -59243,8 +59256,7 @@ window.LS_GUIDE = (function () {
       /* R9 #76: one address = one signal (CLAUDE.md 1): DITL-45 rows 5 and 9 are both I.0085 PLANT AIR DRYER-A REMOTE (the START and
          the STOP gate); setting one row left the other 0, shown red as missing */
       {
-        const sv = rowInfo(f.s, f.row).svc;
-        if (/\b[IM]\.[0-9A-F]{4}/.test(sv)) for (let r = 0; r < 40; r++) if (r !== f.row && rowInfo(f.s, r).svc === sv) f.s.sig[r + ':S'] = !!f.want;
+        for (const r of twinRows(f.s, f.row)) f.s.sig[r + ':S'] = !!f.want;
       }
       /* the other limit switch of the same vane / damper: OPENED <-> CLOSED */
       const tw = f.svc.replace(/\bOPENED\b|\bOPEN\b|\bCLOSED\b/, w => (w === 'CLOSED' ? 'OPENED' : 'CLOSED'));
@@ -59265,8 +59277,8 @@ window.LS_GUIDE = (function () {
     if (!s) return false;
     s.sig[row + ':S'] = !!v;
     {
-      const sv = rowInfo(s, row).svc; /* one address = one signal (CLAUDE.md 1): DITL-29A rows 4 and 19 are both M.1152 */
-      if (/\b[IM]\.[0-9A-F]{4}/.test(sv)) for (let r = 0; r < 40; r++) if (r !== row && rowInfo(s, r).svc === sv) s.sig[r + ':S'] = !!v;
+      /* one address = one signal (CLAUDE.md 1): DITL-29A rows 4 and 19 are both M.1152 */
+      for (const r of twinRows(s, row)) s.sig[r + ':S'] = !!v;
     }
     if (WORLD.live) WORLD.busy = true;
     pscan();
@@ -59283,8 +59295,8 @@ window.LS_GUIDE = (function () {
     if (!s) return false;
     s.sig[row + ':S'] = !!on;
     {
-      const sv = rowInfo(s, row).svc; /* R9 #76: the other rows of the same address */
-      if (/\b[IM]\.[0-9A-F]{4}/.test(sv)) for (let r = 0; r < 40; r++) if (r !== row && rowInfo(s, r).svc === sv) s.sig[r + ':S'] = !!on;
+      /* R9 #76: the other rows of the same address */
+      for (const r of twinRows(s, row)) s.sig[r + ':S'] = !!on;
     }
     if (WORLD.live) WORLD.busy = true;
     pscan();
@@ -59309,6 +59321,22 @@ window.LS_GUIDE = (function () {
     } catch (e) {}
     setTimeout(() => fill(true), 200);
     return true;
+  }
+  /* the other input rows of the same address on a drawing (one address = one signal, CLAUDE.md 1): the same service text with an address
+     (DITL-29A rows 4 and 19 M.1152), or live test #51 the same TAG NO. (DITL-77 row 1 "B-AUX. CW PUMP AUTO PB" and row 4 "B-AUX. CW PUMP
+     AUTO SELECTED" are both M.1242 B-AUX. COOLING WATER PUMP AUTO MODE (CRT), memory list STN103: the AUTO of the faceplate set row 1
+     only and the dock read row 4 as missing) */
+  function twinRows(s, row) {
+    const I = rowInfo(s, row),
+      sv = I.svc,
+      tg = /^[IM]\.[0-9A-F]{4}$/.test(I.tag || '') ? I.tag : '',
+      o = [];
+    for (let r = 0; r < 40; r++) {
+      if (r === row) continue;
+      const J = rowInfo(s, r);
+      if ((tg && J.tag === tg) || (/\b[IM]\.[0-9A-F]{4}/.test(sv) && J.svc === sv)) o.push(r);
+    }
+    return o;
   }
   const rowInfo = (s, row) => {
     let tag = '',
@@ -59346,6 +59374,13 @@ window.LS_GUIDE = (function () {
     for (let r = 0; r < 60 && !o; r++) {
       const v = rowInfo(ds, r).svc;
       if (/\bAUTO MODE SELECTED\b/.test(v) && !/REMOTE/.test(v)) o = { s: ds, row: r, svc: svcN(v) };
+    }
+    /* live test #51: the ACW pumps write it "B-AUX. CW PUMP AUTO SELECTED" (DITL-77 row 4, M.1242 AUTO MODE (CRT), memory list STN103):
+       a CRT memory row of a motor drawing only (the drain valves DITL-73 / 80 / 88 ... have their own AUTO SELECTED) */
+    const motor = !o && call(() => DUI.outs(ds).some(q => /RUNNING/.test(q.name) && !/NOT RUNNING/.test(q.name)), false);
+    for (let r = 0; r < 60 && !o && motor; r++) {
+      const I = rowInfo(ds, r);
+      if (/\bAUTO SELECTED\b/.test(I.svc) && !/REMOTE|START/.test(I.svc) && /^M\.[0-9A-F]{4}$/.test(I.tag || '')) o = { s: ds, row: r, svc: svcN(I.svc) };
     }
     return (ds._amr = o);
   }
