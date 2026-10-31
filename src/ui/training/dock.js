@@ -2499,7 +2499,8 @@
       },
       cnt = {
         L: li('L') || (nL ? dL + ' / ' + nL : ''),
-        P: mi ? (mi.run ? 'running' : mi.sby ? 'standby' : mi.miss.length ? 'not complete' : 'complete') : mis.length ? (pOk ? 'complete' : 'not complete') : '',
+        /* Y / N as on the card and the faceplate (Y complete, N not complete) */
+        P: mi ? (mi.run ? 'running' : mi.sby ? 'standby' : mi.miss.length ? 'N' : 'Y') : mis.length ? (pOk ? 'Y' : 'N') : '',
         S: selA ? (runSel ? 'RUNNING' : mi && mi.sby ? (autoOf(selAd) ? 'STANDBY AUTO' : 'MAN') : '—') : rd ? 'done' : '',
         C: rd ? 'done' : li('C') || (W.length ? wOk + ' / ' + W.length + ' OK' : '')
       };
@@ -2820,8 +2821,8 @@
       V.d.classList.toggle('hi', out);
       V.d.classList.toggle('fld', t === 'FIELD');
       /* RUN red, STOP green (plant convention) on top too */
-      V.d.classList.toggle('run', /(RUNNING|IN OPERATION|OPEN(ED)?)/.test(t));
-      V.d.classList.toggle('stop', /(STOPPED|CLOSED)/.test(t) && !/RUNNING/.test(t));
+      V.d.classList.toggle('run', /\b(RUNNING|IN OPERATION|OPEN(ED)?)\b/.test(t));
+      V.d.classList.toggle('stop', /\b(STOPPED|CLOSED)\b/.test(t) && !/\bRUNNING\b/.test(t));
     });
     /* 3.2.0 retest #25 #34: RUN = red, STOP = green (power plant convention), TRIP = amber, flashing until ACK */
     LAMPS.forEach(([k, A], j) => {
