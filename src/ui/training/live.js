@@ -11,6 +11,19 @@
    Read only: nothing here writes the engine. A condition names its signals; a signal that is not on any ABC sheet makes the step a
    field step (and is listed by LS_LIVE.audit() for the test). ===== */
 window.LS_LIVE = (function () {
+  /* live test #63 #66: two readings of the generated SOP data (pr-ope-5002.js / -lim.js, extracted from the docx as written):
+     - the procedure is written for both units with "n" for the unit number (P-n941, V-LOn201, T-n920, H-n921A/B, P-n922A/B): this is
+       unit #1 (HMI 036 P-1941, T-1920, H-1921A);
+     - 16.1 "Verify that Main Oil Pump is running within normal pressure" has "≤ 5.6 kg/cm2g" in its limit column: that is the auto
+       start of the standby MOP (the NOTE of 16.5 "discharge pressure ≤ 5.6 kg/cm2g"); the normal band is 5.6 ~ 6.6 (14.9 P-n922A/B
+       "~5.6 kg/cm2g -6.6 kg/cm2g") */
+  {
+    const un = x => (typeof x === 'string' ? x.replace(/\b([A-Z]{1,2}-(?:[A-Z]{2})?)n(\d{3})/g, '$11$2') : x);
+    for (const sec of window.LS_PROC5002 || []) for (const st of sec.s || []) (st.t = un(st.t)), (st.g = (st.g || []).map(un));
+    const LIM = window.LS_PROC5002_LIM || {};
+    for (const k in LIM) for (const f of ['g', 'n', 'x']) if (LIM[k][f]) LIM[k][f] = un(LIM[k][f]);
+    if (LIM['15.0'] && /5\.6/.test(LIM['15.0'].n || '')) LIM['15.0'].n = '5.6 ~ 6.6 kg/cm2g (≤ 5.6 = auto start of the standby MOP)';
+  }
   const PROC = window.LS_PROC5002 || [];
   const BASE_N = PROC.length;
   /* ---------- reading the running plant ---------- */
@@ -383,7 +396,18 @@ window.LS_LIVE = (function () {
   };
   const OUTC = (nm, r, l) => DC(l + ' (' + nm + ' out ' + (r + 1) + ')', () => dOut(nm, r), () => l + ' ' + (dOut(nm, r) ? 'ON' : 'OFF'));
   const INC = (nm, r, l) => DC(l + ' (' + nm + ' row ' + (r + 1) + ')', () => dIn(nm, r), () => l + ' ' + (dIn(nm, r) ? 'ON' : 'OFF'));
-  const RUNN = (L, n, l) => DC(n + ' ' + l + ' running', () => nRun(L) >= n, () => L.map(nm => nm.replace(/^DITL-\S+\s*#?/, '') + (dRun(nm) ? ' RUN' : ' STOP')).join(', '));
+  /* #55: a drawing of one machine keeps its name (DITL-76 / 77 ACW pumps read " RUN,  STOP") */
+  const RUNN = (L, n, l) => DC(n + ' ' + l + ' running', () => nRun(L) >= n, () => L.map(nm => (nm.replace(/^DITL-\S+\s*#?/, '') || nm) + (dRun(nm) ? ' RUN' : ' STOP')).join(', '));
+  /* live test #54: [running memory, [model tags]] of the machines: done when one runs and every tag of the running ones is read below hi */
+  const MOT = (L, hi, l, u) => {
+    const mt = t => (U().mt ? +U().mt[t] : NaN),
+      on = () => L.filter(([a]) => val(a) > 0.5);
+    return DC(
+      l + ' < ' + hi + ' ' + u + ' (running)',
+      () => on().length > 0 && on().every(([, T]) => T.every(t => mt(t) < hi)),
+      () => on().map(([, T]) => T.map(t => t.replace(/^[TV]T-/, '') + ' ' + f1(mt(t))).join(', ')).join(' · ') || 'not running'
+    );
+  };
   const SWBP = ['DITL-30', 'DITL-30 #B', 'DITL-30 #C'],
     MWP = ['DITL-112', 'DITL-112 #B', 'DITL-112 #C'],
     ACW = ['DITL-76', 'DITL-77'];
@@ -393,6 +417,13 @@ window.LS_LIVE = (function () {
     [2, /initiate selected 1st SWP START/i, RUN.SWP1],
     [2, /START 2nd Selected SWP/i, SWP2],
     [2, /Set the standby SWP to AUTO/i, SWP_STBY],
+    /* live test #54: the motor temperatures and vibration of the plant model (unit.js AN_MT), read on a running machine and below the H
+       of the alarm list (SWP bearing H 95 C, vibration H 7.6 mm/s; IDF bearing H 90, winding H 140, vibration H 8) */
+    [2, /^Temperature$/i, MOT(['A', 'B', 'C'].map((p, j) => [SWPA[j], ['TT-SW1501-' + p + '3', 'TT-SW1501-' + p + '4']]), 95, 'SWP bearing TI SW1501x3 / x4', 'C')],
+    [2, /^Vibration$/i, MOT(['A', 'B', 'C'].map((p, j) => [SWPA[j], ['VT-SW1501-' + p + '1', 'VT-SW1501-' + p + '2']]), 7.6, 'SWP vibration VI SW1501x1 / x2', 'mm/s')],
+    [22, /^Fan bearing temperature/i, MOT([['M.3304', ['TT-FG1056-1', 'TT-FG1056-2', 'TT-FG1056-3', 'TT-FG1056-4']]], 90, 'IDF bearing TT-FG1056-1 ~ 4', 'C')],
+    [22, /^Fan winding temperature/i, MOT([['M.3304', ['TT-FG1056-U', 'TT-FG1056-V', 'TT-FG1056-W']]], 140, 'IDF winding TT-FG1056-U / V / W', 'C')],
+    [22, /^Fan bearing vibration/i, MOT([['M.3304', ['VT-FG1056-1', 'VT-FG1056-2', 'VT-FG1056-3', 'VT-FG1056-4']]], 8, 'IDF vibration VT-FG1056-1 ~ 4', 'mm/s')],
     [3, /Initiated START Hypo/i, FIELD('hypo', 'Hypochlorite pump')],
     [3, /pump is running at local/i, FIELD('hypo', 'Hypochlorite pump')],
     [4, /Set debris filter to auto start/i, OUTC('DITL-39', 3, 'SWP outlet debris filter IN OPERATION')],
@@ -404,7 +435,21 @@ window.LS_LIVE = (function () {
     [7, /Standby Make-up Pump and Set the Pump to AUTO/i, STBY(MWP, 1, 14, 'MWP')],
     [7, /^Open Expansion tank automatic inlet valve/i, ET_NL],
     [7, /^Set Expansion tank inlet valve \(XV-MU1109\) to AUTO/i, ALL(ET_NL, XV_AUTO)],
+    /* live test #50: the priming of the closed cooling line from the tank (V-CW1001, field valve of the plant model AN_MU) */
+    [7, /^Open Expansion tank outlet valve to prime/i, DC('V-CW1001 open, closed cooling line primed', () => +(U().cwPrime || 0) >= 1, () => 'V-CW1001 ' + (AN.fieldState && AN.fieldState().cw1001 ? 'OPEN' : 'CLOSED') + ' · primed ' + Math.round(100 * (+U().cwPrime || 0)) + ' %')],
+    [7, /^Close all vents if close cooling line is fully primed/i, ALL(DC('closed cooling line primed', () => +(U().cwPrime || 0) >= 1, () => 'primed ' + Math.round(100 * (+U().cwPrime || 0)) + ' %'), ET_NL)],
     [8, /Initiate START of the selected AWCP/i, RUNN(ACW, 1, 'ACW pump')],
+    /* live test #51: the standby ACWP in REMOTE (row 5 MIL-P1108A / B REMOTE SELECTED, I.0088 / I.0408) and AUTO (out 1 AUTO SELECTED, the
+       same output the 027 faceplate reads; input rows 1 and 4 are both M.1232 / M.1242 AUTO MODE (CRT)) */
+    [
+      8,
+      /Set selected standby ACWP in AUTO/i,
+      DC(
+        'one ACW pump running and the standby in REMOTE + AUTO (DITL-76 / 77 out 1 AUTO SELECTED)',
+        () => nRun(ACW) >= 1 && ACW.some(nm => !dRun(nm) && dOut(nm, 0) && dIn(nm, 4)),
+        () => ACW.map((nm, j) => 'ACWP-' + 'AB'[j] + (dRun(nm) ? ' RUN' : (dIn(nm, 4) ? ' REM' : ' LOC') + (dOut(nm, 0) ? ' AUTO' : ' MAN'))).join(', ')
+      )
+    ],
     [9, /Initiate ON to selected dryer/i, OUTC('DITL-45', 14, 'Instrument air dryer A RUNNING')],
     [10, /^Initiate RUN with proper coordination/i, INC('DITL-113', 5, 'IA compressor A RUNNING')],
     [11, /Initiate ON to selected dryer/i, OUTC('DITL-45', 3, 'Plant air dryer A RUNNING')],
@@ -415,9 +460,28 @@ window.LS_LIVE = (function () {
     [14, /^Start the Vapour Extractor/i, TCSR('vex', 'Vapour extractor')],
     [14, /^Start one of the Main Oil Pump/i, TCSR('lop', 'Main oil pump MOP')],
     [15, /^Start the Oil Purifier Pump/i, FIELD('pur', 'Oil purifier pump')],
-    [16, /^Verify that Main Oil Pump is running/i, TCSR('lop', 'Main oil pump MOP')],
+    /* live test #66: running AND within the normal band 5.6 ~ 6.6 kg/cm2g (was: running only) */
+    [
+      16,
+      /^Verify that Main Oil Pump is running/i,
+      DC(
+        'Main oil pump MOP running, lube oil 5.6 ~ 6.6 kg/cm2g',
+        () => {
+          const x = AN.tcs && AN.tcs(),
+            p = x && x.oil ? +x.oil.lube : NaN;
+          return !!(x && x.aux && x.aux.lop) && p >= 5.6 && p <= 6.6;
+        },
+        () => {
+          const x = AN.tcs && AN.tcs();
+          return 'MOP ' + (x && x.aux && x.aux.lop ? 'RUNNING' : 'STOPPED') + ' · lube oil ' + f1(x && x.oil ? +x.oil.lube : NaN) + ' kg/cm2g';
+        }
+      )
+    ],
     [16, /^Start one of the Control Oil Pump/i, TCSR('eh', 'Control oil pump COP')],
+    /* live test #71: the biasing dampers (ABC-020 hand stations; 10 % = the lowest DCS position, ML of the parameter sheet) */
+    [17, /^Ensure biasing dampers are closed/i, ALL(MV('HICHR1002A', null, 12), MV('HICHR1002B', null, 12))],
     [17, /Initiate START air pre-heater drive motor/i, RUNN(['DITL-43'], 1, 'air preheater')],
+    [17, /^Open Biasing damper to 100% at Reheater and Superheater/i, ALL(MV('HICHR1002A', 95, null), MV('HICHR1002B', 95, null))],
     [18, /initiate START to selected CEP/i, RUN.CEP],
     [18, /FCV-CD1120 to MANUAL and ADJUST to 60/i, ALL(MODE('FCV-CD1120', 'MAN'), MV('FCV-CD1120', 55, 65))],
     [18, /set the standby CEP to REMOTE/i, RUN.CEP],
@@ -466,6 +530,13 @@ window.LS_LIVE = (function () {
     [26, /Check MFT will RESET/i, AFTER('25.21', MFT, 'the 5 minute purge')],
     [26, /Set biasing damper opening to RH 10% and SH 90%/i, ALL(MV('HICHR1002A', 5, 15), MV('HICHR1002B', 85, 95))],
     [26, /Put SH biasing damper to AUTO/i, MODE('HICHR1002B', 'AUTO')],
+    /* live test #57: AIR PRE-HEATER SOOT BLOWER START-UP (DITL-80K / 80M, see guide.js sbK); LOCAL medium source and Circulation
+       Function: no DCS signal on the drawings */
+    [27, /^Ensure Plant Air Compressor is running/i, DC('plant air PT-PA1705 >= 7 kg/cm2', () => +U().paP >= 6.95, () => 'PT-PA1705 ' + f1(+U().paP || 0) + ' kg/cm2')],
+    [27, /^Check the medium source at LOCAL/i, null],
+    [27, /^Select air heater soot blower source select PLANT AIR/i, INC('DITL-80K', 19, 'S/B source PLANT AIR (M.4212)')],
+    [27, /^Start soot blowing Air Preheater/i, DC('APH S/B forward starter O.077C (DITL-80K)', () => !!(window.LS_GUIDE && LS_GUIDE.aphSb && LS_GUIDE.aphSb()), () => 'APH S/B ' + (window.LS_GUIDE && LS_GUIDE.aphSb && LS_GUIDE.aphSb() ? 'STARTED' : 'not started'))],
+    [27, /Circulation Function/i, null],
     [28, /Press Burner .ON. Push button at DCS/i, BURN],
     [28, /shut-off valves for diesel oil supply/i, VAL('oilF', 0.3, null)],
     [28, /Check if flame scanner detects flame/i, ALL(BURN, VAL('oilF', 0.3, null))],
@@ -689,6 +760,10 @@ window.LS_LIVE = (function () {
         }
         LAT[key] = Math.round(t);
         ch.push(key);
+        /* live test #55: the AUTO tick is an event too (the step, what the logic shows) */
+        try {
+          if (window.lsEventAdd) lsEventAdd('PR-OPE-5002', 'SOP', '✓ ' + (si + 1) + '.' + (i + 1) + ' ' + String(st.t).slice(0, 60) + ' (AUTO: ' + String(q.c.now ? q.c.now() : '').slice(0, 80) + ')');
+        } catch (e) {}
       })
     );
     if (ch.length) wrt(LAT);

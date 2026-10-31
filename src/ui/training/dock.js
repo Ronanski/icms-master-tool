@@ -570,8 +570,7 @@
       /* R9 #76: one address = one signal (CLAUDE.md 1): DITL-45 rows 5 and 9 are both I.0085 PLANT AIR DRYER-A REMOTE (the START and
          the STOP gate); setting one row left the other 0, shown red as missing */
       {
-        const sv = rowInfo(f.s, f.row).svc;
-        if (/\b[IM]\.[0-9A-F]{4}/.test(sv)) for (let r = 0; r < 40; r++) if (r !== f.row && rowInfo(f.s, r).svc === sv) f.s.sig[r + ':S'] = !!f.want;
+        for (const r of twinRows(f.s, f.row)) f.s.sig[r + ':S'] = !!f.want;
       }
       /* the other limit switch of the same vane / damper: OPENED <-> CLOSED */
       const tw = f.svc.replace(/\bOPENED\b|\bOPEN\b|\bCLOSED\b/, w => (w === 'CLOSED' ? 'OPENED' : 'CLOSED'));
@@ -592,8 +591,8 @@
     if (!s) return false;
     s.sig[row + ':S'] = !!v;
     {
-      const sv = rowInfo(s, row).svc; /* one address = one signal (CLAUDE.md 1): DITL-29A rows 4 and 19 are both M.1152 */
-      if (/\b[IM]\.[0-9A-F]{4}/.test(sv)) for (let r = 0; r < 40; r++) if (r !== row && rowInfo(s, r).svc === sv) s.sig[r + ':S'] = !!v;
+      /* one address = one signal (CLAUDE.md 1): DITL-29A rows 4 and 19 are both M.1152 */
+      for (const r of twinRows(s, row)) s.sig[r + ':S'] = !!v;
     }
     if (WORLD.live) WORLD.busy = true;
     pscan();
@@ -610,8 +609,8 @@
     if (!s) return false;
     s.sig[row + ':S'] = !!on;
     {
-      const sv = rowInfo(s, row).svc; /* R9 #76: the other rows of the same address */
-      if (/\b[IM]\.[0-9A-F]{4}/.test(sv)) for (let r = 0; r < 40; r++) if (r !== row && rowInfo(s, r).svc === sv) s.sig[r + ':S'] = !!on;
+      /* R9 #76: the other rows of the same address */
+      for (const r of twinRows(s, row)) s.sig[r + ':S'] = !!on;
     }
     if (WORLD.live) WORLD.busy = true;
     pscan();
@@ -636,6 +635,22 @@
     } catch (e) {}
     setTimeout(() => fill(true), 200);
     return true;
+  }
+  /* the other input rows of the same address on a drawing (one address = one signal, CLAUDE.md 1): the same service text with an address
+     (DITL-29A rows 4 and 19 M.1152), or live test #51 the same TAG NO. (DITL-77 row 1 "B-AUX. CW PUMP AUTO PB" and row 4 "B-AUX. CW PUMP
+     AUTO SELECTED" are both M.1242 B-AUX. COOLING WATER PUMP AUTO MODE (CRT), memory list STN103: the AUTO of the faceplate set row 1
+     only and the dock read row 4 as missing) */
+  function twinRows(s, row) {
+    const I = rowInfo(s, row),
+      sv = I.svc,
+      tg = /^[IM]\.[0-9A-F]{4}$/.test(I.tag || '') ? I.tag : '',
+      o = [];
+    for (let r = 0; r < 40; r++) {
+      if (r === row) continue;
+      const J = rowInfo(s, r);
+      if ((tg && J.tag === tg) || (/\b[IM]\.[0-9A-F]{4}/.test(sv) && J.svc === sv)) o.push(r);
+    }
+    return o;
   }
   const rowInfo = (s, row) => {
     let tag = '',
@@ -673,6 +688,13 @@
     for (let r = 0; r < 60 && !o; r++) {
       const v = rowInfo(ds, r).svc;
       if (/\bAUTO MODE SELECTED\b/.test(v) && !/REMOTE/.test(v)) o = { s: ds, row: r, svc: svcN(v) };
+    }
+    /* live test #51: the ACW pumps write it "B-AUX. CW PUMP AUTO SELECTED" (DITL-77 row 4, M.1242 AUTO MODE (CRT), memory list STN103):
+       a CRT memory row of a motor drawing only (the drain valves DITL-73 / 80 / 88 ... have their own AUTO SELECTED) */
+    const motor = !o && call(() => DUI.outs(ds).some(q => /RUNNING/.test(q.name) && !/NOT RUNNING/.test(q.name)), false);
+    for (let r = 0; r < 60 && !o && motor; r++) {
+      const I = rowInfo(ds, r);
+      if (/\bAUTO SELECTED\b/.test(I.svc) && !/REMOTE|START/.test(I.svc) && /^M\.[0-9A-F]{4}$/.test(I.tag || '')) o = { s: ds, row: r, svc: svcN(I.svc) };
     }
     return (ds._amr = o);
   }
@@ -2190,7 +2212,7 @@
       const nm = f.t.replace(/\s*\([^()]*\d[^()]*~[^()]*\)/, '').replace(/^(Check|Verify|Ensure)\s+(that\s+)?(the\s+)?/i, '');
       /* live check #91 (beta.51): the row shows a value of the PLANT MODEL only: the PV of the DCS loop of the row's tag (PI-DO0005 =
          PICDO0005) or of the level controller; a field gauge without a model (motor current, local pressure / temperature) reads
-         "— walang model" (before, the middle of the SOP range was shown as if read). The SOP value is in the hint */
+         "— walang model" (#49: "— field gauge"; before, the middle of the SOP range was shown as if read). The SOP value is in the hint */
       const nums = String(lm[0]).match(/-?\d+(?:\.\d+)?/g) || [],
         lo = nums.length ? +nums[0] : NaN,
         un = (/°C|ksc|kg\/cm2|bar|%|\bA\b|(?<=\d)A\b/.exec(lm[0]) || [/current/i.test(f.t) ? 'A' : ''])[0],
@@ -2206,27 +2228,41 @@
         };
       /* a level of the SOP table is the PV of its controller; a gauge with a DCS loop is that loop's PV; a laboratory value (pH, Fe)
          stays the SOP value */
+      /* live test #49: the gauges of the SOP that the HMI reads from the plant model (unit.js AN_MU / AN_ACW): section 7 MWP current
+         IIP0709A ~ C and header pressure PIMU0709 (MAKE-UP WATER page), section 8 ACWP current IIP1108A / B (027 page); the running pump */
+      const U0 = (window.AN && AN.unit) || {},
+        mdl =
+          f.si === 6 && /current/i.test(f.t)
+            ? ['IIP0709A ~ C', () => (U0.on ? Math.max(+U0.muI0 || 0, +U0.muI1 || 0, +U0.muI2 || 0) : NaN), 'A']
+            : f.si === 6 && /pressure/i.test(f.t)
+              ? ['PIMU0709', () => (U0.on ? +U0.muP : NaN), 'kg/cm²']
+              : f.si === 7 && /current/i.test(f.t)
+                ? ['IIP1108A / B', () => (U0.on ? Math.max(+U0.acI0 || 0, +U0.acI1 || 0) : NaN), 'A']
+                : null;
       const lvl = /hotwell level/i.test(f.t) ? 'LCV-MU1110' : /deaerator level/i.test(f.t) ? 'LCV-CD1104' : null,
         gauge = /current|pressure|temperature/i.test(f.t),
-        tfp = !lvl && gauge ? tagFp() : null,
-        nomod = !lvl && gauge && !tfp,
+        tfp = !lvl && gauge && !mdl ? tagFp() : null,
+        nomod = !lvl && gauge && !tfp && !mdl,
         /* live test #21 (H6): a field gauge that the step's own values already read from the plant model (SWBP suction / inlet,
            discharge, current of each pump, with their SOP range) is not shown again as "— walang model" */
         kw = /current/i.test(f.t) ? /current/i : /suction|inlet pressure/i.test(f.t) ? /suction/i : /discharge/i.test(f.t) ? /discharge/i : /pressure/i.test(f.t) ? /suction|discharge|pressure/i : null;
       if (nomod && s.w && kw && stage.some(x => x[2] && kw.test(x[0]))) continue;
+      /* #49: a gauge with no DCS signal (the dryer / compressor local panel T1 ~ T7, a local pressure gauge) is read in the field */
       const live = lvl
         ? () => call(() => LV().pvOf(LV().fp(lvl)), NaN)
-        : tfp
-          ? () => call(() => LV().pvOf(tfp), NaN)
-          : nomod
-            ? () => '— walang model'
-            : () => lm[0];
+        : mdl
+          ? mdl[1]
+          : tfp
+            ? () => call(() => LV().pvOf(tfp), NaN)
+            : nomod
+              ? () => '— field gauge'
+              : () => lm[0];
       sop.push([
         'SOP · ' + (nm.length > 34 ? nm.slice(0, 34).replace(/\s+\S*$/, '') + '…' : nm),
         live,
-        lvl ? 'mm' : tfp ? un : '',
+        lvl ? 'mm' : mdl ? mdl[2] : tfp ? un : '',
         x => (typeof x === 'number' ? (Math.abs(x) < 10 ? x.toFixed(2).replace(/0$/, '') : f1(x)) : x),
-        [f.g, 'SOP ' + lm[0], lm.slice(1).join(' · ')].filter(Boolean).join(' · ')
+        [mdl ? mdl[0] : f.g, 'SOP ' + lm[0], lm.slice(1).join(' · ')].filter(Boolean).join(' · ')
       ]);
     }
     els.watch = own.concat(stage, sop.slice(0, 8)).map(([k, f, u, fm, hint]) => {
