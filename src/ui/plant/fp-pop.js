@@ -678,6 +678,79 @@
     iv = setInterval(tick, 500);
     return true;
   }
+  /* live test #44: a machine with no DCS command (hypochlorite pumps P-0761 / P-0762: STN105 running / overload DI only) = a small status
+     pop-out: what it is, where it is run (local panel), its state; FIELD START / STOP only for the one the plant model runs (the field
+     operator, logged as such, the same call as the dock). P = { n, t, d, io, why, st: () => 'RUN' | 'STOP' | null, fld: (on) => void } */
+  function field(P) {
+    if (!P) return false;
+    const F = frame(P.n, (P.t || '') + ' · ' + (P.d || 'field'));
+    const lR = lampEl('RUN'),
+      lS = lampEl('STOP');
+    F.bd.append(row('STATUS', lR, lS));
+    F.bd.append(E('div', 'fpo-why', P.why || 'FIELD lang: walang DCS command. Pinapaandar sa local panel.'));
+    let bSt = null,
+      bSp = null,
+      ex = null;
+    if (P.fld) {
+      bSt = E('button', 'fpo-cmd', 'START');
+      bSp = E('button', 'fpo-cmd', 'STOP');
+      bSt.type = bSp.type = 'button';
+      F.bd.append(row('FIELD', bSt, bSp));
+      ex = E('div', 'fpo-ex');
+      const exT = E('span'),
+        exGo = E('button', 'fpo-go', 'EXECUTE'),
+        exNo = E('button', '', 'CANCEL');
+      exGo.type = exNo.type = 'button';
+      ex.append(exT, exGo, exNo);
+      ex.hidden = true;
+      F.bd.append(ex);
+      let pend = null;
+      const ask = (t, f) => ((pend = f), (exT.textContent = t), (ex.hidden = false), exGo.focus());
+      exNo.onclick = () => ((pend = null), (ex.hidden = true));
+      exGo.onclick = () => {
+        const f = pend;
+        pend = null;
+        ex.hidden = true;
+        if (f) f();
+        setTimeout(tick, 150);
+      };
+      const go = on => (P.fld(on), call(() => window.lsEventAdd('FIELD', 'FIELD', 'Field operator: ' + (on ? 'START ' : 'STOP ') + P.n + ' (local panel)')));
+      bSt.onclick = () => !bSt.disabled && ask('FIELD: START ' + P.n + ' sa local panel?', () => go(true));
+      bSp.onclick = () => !bSp.disabled && ask('FIELD: STOP ' + P.n + ' sa local panel?', () => go(false));
+    }
+    const ln = E('div', 'fpo-ln');
+    if (P.io) {
+      const a = E('button', 'fpo-a', 'I/O list');
+      a.type = 'button';
+      a.onclick = () => call(() => window.lsInfo(P.io));
+      ln.append(a);
+    }
+    const ev = E('button', 'fpo-a', 'Events');
+    ev.type = 'button';
+    ev.onclick = () => call(() => document.getElementById('evbtn').click());
+    ln.append(ev);
+    F.bd.append(ln);
+    function tick() {
+      if (!box || !box.isConnected) return close();
+      const st = call(P.st, null),
+        run = isRun();
+      F.lamp.className = 'fpo-lamp ' + (st === 'RUN' ? 'run' : st === 'STOP' ? 'stop' : '');
+      F.val.textContent = st === 'RUN' ? 'RUNNING' : st === 'STOP' ? 'STOPPED' : '-----';
+      lR.className = 'fpo-lp' + (st === 'RUN' ? ' run' : '');
+      lS.className = 'fpo-lp' + (st === 'STOP' ? ' stop' : '');
+      if (bSt) {
+        bSt.disabled = st === 'RUN' || !run;
+        bSp.disabled = st !== 'RUN' || !run;
+        bSt.classList.toggle('lit-run', st === 'RUN');
+        bSp.classList.toggle('lit-stop', st === 'STOP');
+      }
+    }
+    paint = tick;
+    tick();
+    place(box);
+    iv = setInterval(tick, 500);
+    return true;
+  }
   const valveTag = tg => (VALVES[tg] ? valve(VALVES[tg]) : FIELDV[tg] ? fieldValve(FIELDV[tg]) : false);
   /* an HMI page's click on a machine: its faceplate when the motor is known to the logic, else the info card (as before) */
   function hit(M, fallback) {
@@ -701,7 +774,7 @@
     setTimeout(re, 350);
     return !!box;
   }
-  window.LS_FPOP = { motor, valve, valveTag, pb, hit, openAd, place, close, get open() {
+  window.LS_FPOP = { motor, valve, valveTag, pb, field, hit, openAd, place, close, get open() {
     return !!box;
   } };
 })();
