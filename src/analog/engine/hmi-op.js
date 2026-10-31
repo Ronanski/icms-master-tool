@@ -1062,6 +1062,22 @@ function* anPlantColdG() {
     }
     for (const b of S.procs || []) if (b.proc && (b.txt || [])[1] === 'LICBR1001') b.proc.integLoss = 0;
   }
+  /* 3.2.0 live test #71: the flue gas biasing dampers of ABC-020 are hand stations (MAN blocks), not in the controller list above: the
+     SH damper HICHR1002B stayed AUTO and followed the RH damper through LN5 (RH 10 % -> SH 100 %). PR-OPE-5002 sec 17 "Ensure biasing
+     dampers are closed" (sec 26 then "Put SH biasing damper to AUTO"): both MANUAL at their lowest DCS position, ML 10 % of the
+     parameter sheet (controller-para: HICHR1002A SL 10 / ML 10, HICHR1002B SL 0 / ML 10) */
+  for (const t of ['HICHR1002A', 'HICHR1002B']) {
+    const sh = L.find(x => x.name === 'ABC-020'),
+      T = sh && sh.S,
+      b = T && T.blk.find(q => q.k === 'MAN' && (q.tag === t || (q.txt || []).includes(t)));
+    if (!b || !T.rt.st[b.id]) continue;
+    if (AN.latchMode)
+      try {
+        AN.latchMode(t, 'MAN');
+      } catch (e) {}
+    T.rt.st[b.id].val = 10;
+    for (const n of b.i || []) if (n >= 0 && T.ext.includes(n) && !(T.xlk && T.xlk[n]) && (AN.nm(T, n) || '').trim() === t + '.MV') T.rt.ext[n] = 10;
+  }
   anUnitCold();
   try {
     /* one step: the unit model writes its transmitters (drum 0, MSP 0, MW 0 ...) */

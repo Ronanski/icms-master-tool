@@ -417,7 +417,10 @@ window.LS_LIVE = (function () {
     [15, /^Start the Oil Purifier Pump/i, FIELD('pur', 'Oil purifier pump')],
     [16, /^Verify that Main Oil Pump is running/i, TCSR('lop', 'Main oil pump MOP')],
     [16, /^Start one of the Control Oil Pump/i, TCSR('eh', 'Control oil pump COP')],
+    /* live test #71: the biasing dampers (ABC-020 hand stations; 10 % = the lowest DCS position, ML of the parameter sheet) */
+    [17, /^Ensure biasing dampers are closed/i, ALL(MV('HICHR1002A', null, 12), MV('HICHR1002B', null, 12))],
     [17, /Initiate START air pre-heater drive motor/i, RUNN(['DITL-43'], 1, 'air preheater')],
+    [17, /^Open Biasing damper to 100% at Reheater and Superheater/i, ALL(MV('HICHR1002A', 95, null), MV('HICHR1002B', 95, null))],
     [18, /initiate START to selected CEP/i, RUN.CEP],
     [18, /FCV-CD1120 to MANUAL and ADJUST to 60/i, ALL(MODE('FCV-CD1120', 'MAN'), MV('FCV-CD1120', 55, 65))],
     [18, /set the standby CEP to REMOTE/i, RUN.CEP],
