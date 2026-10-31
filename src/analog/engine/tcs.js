@@ -772,8 +772,48 @@ function tcsOilCmd(c, a) {
   } else if (op === 'auto') c[k + 'Au'][i] = true;
   else if (op === 'man') c[k + 'Au'][i] = false;
   else return 'hindi kilalang utos: ' + op;
+  /* live test #62: the last TCS command output of the pump (HMI_DO JYS START / JYP STOP / IKA AUTO / IKH MANUAL, HOLD 3000 ms) */
+  (c.do = c.do || {})[a.p] = { op, t: +AN_UNIT.t || 0 };
   tcsOilSet(c);
   return '';
+}
+/* 3.2.0 live test #62: the TCS I/O list points of the control oil pumps P-1931A / B and the oil purifier pump P-1941 (iolist-tcs HMI_DI /
+   HMI_DO / HMI_AI, unit 1), as the signals of the oil model, so the 036 page can show the status lamps, the faults, the CRT commands and
+   the low pressure alarm the TCS has:
+     DI  _IIA AUTO, _IIH MANUAL, _YIP STOPPED, _YIR RUNNING, _ABN FAULT, _IEP STOP FAULT, _IES START FAULT, _IET TRIPPED, _IYP CRT OPE
+         PERM, _YEE MOTOR ELECTRICAL TROUBLE (P-1941: no IIA / IIH, its AUTO / MANUAL is at the local panel);
+     DO  _IKA AUTO, _IKH MANUAL, _IYS CRT AVAILABLE, _JYP STOP, _JYS START, _IKR RESET (HOLD 3000 ms: 1 for 3 s after the command);
+     AI  1PTLO1931A_PV / B_PV COP (A) / (B) DISCHARGE OIL PRESS. (FOR COP (B) / (A) AUTO START);
+     alarm 1PTLO1931AA_XA "COP (B) DISCHARGE OIL PRESS. (FOR COP (A) AUTO START) LOW" / 1PTLO1931BA_XA = the other pump's discharge at or
+         below the auto start of the SOP NOTE (<= 133 kg/cm2g) while that pump runs (ASSUMED: the LOW contact is the auto start one).
+   The model has no fault of these pumps: ABN / IEP / IES / IET / YEE are 0 and IYP / IYS (CRT operation permitted / available) 1. */
+function tcsIO(U) {
+  U = U || AN_UNIT;
+  const c = tcsOilState(U);
+  if (!c) return null;
+  tcsOilInit(c);
+  const o = {},
+    now = +U.t || 0,
+    held = (p, op) => !!(c.do && c.do[p] && c.do[p].op === op && now - c.do[p].t <= 3),
+    st = (pfx, run, au) => {
+      Object.assign(o, { [pfx + '_YIR']: run ? 1 : 0, [pfx + '_YIP']: run ? 0 : 1, [pfx + '_ABN']: 0, [pfx + '_IEP']: 0, [pfx + '_IES']: 0, [pfx + '_IET']: 0, [pfx + '_IYP']: 1, [pfx + '_YEE']: 0, [pfx + '_IYS']: 1 });
+      if (au != null) Object.assign(o, { [pfx + '_IIA']: au ? 1 : 0, [pfx + '_IIH']: au ? 0 : 1 });
+    };
+  ['A', 'B'].forEach((L, i) => {
+    const p = '1P1931' + L,
+      k = 'cop' + L;
+    st(p, c.cop[i], c.copAu[i]);
+    Object.assign(o, { [p + '_JYS']: held(k, 'start') ? 1 : 0, [p + '_JYP']: held(k, 'stop') ? 1 : 0, [p + '_IKA']: held(k, 'auto') ? 1 : 0, [p + '_IKH']: held(k, 'man') ? 1 : 0, [p + '_IKR']: 0 });
+    o['1PTLO1931' + L + '_PV'] = +U['loC' + L.toLowerCase()] || 0;
+  });
+  o['1PTLO1931AA_XA'] = c.cop[1] && o['1PTLO1931B_PV'] <= TCS_OIL.copLo ? 1 : 0;
+  o['1PTLO1931BA_XA'] = c.cop[0] && o['1PTLO1931A_PV'] <= TCS_OIL.copLo ? 1 : 0;
+  /* the transmitter ABNORMAL / QUALITY points (1PTLO1931A_XA / _PVQ): no transmitter fault in the model */
+  Object.assign(o, { '1PTLO1931A_XA': 0, '1PTLO1931B_XA': 0, '1PTLO1931A_PVQ': 0, '1PTLO1931B_PVQ': 0 });
+  const pur = !!AN_SRC.field.pur;
+  st('1P1941', pur, null);
+  Object.assign(o, { '1P1941_JYS': 0, '1P1941_JYP': 0, '1P1941_IKR': 0 });
+  return o;
 }
 /* the oil state: the TCS model (U.tc, start-up / shutdown) or, at the "Start at 150 MW" snapshot (no TCS model, U.tc null), an oil-only
    state in service (36.PNG: MOP-A / COP-A running, B in AUTO, vapour extractor running) so the 036 page and its pumps work there too */
