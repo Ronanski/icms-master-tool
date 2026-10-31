@@ -698,7 +698,8 @@
     for (const x of [1348, 1390, 1432]) s += `<line x1="${x}" y1="758" x2="${x}" y2="842" stroke="${k.shellOl}" stroke-width="1.4"/>`;
     /* live test 2026-10-30 #18: the ESP purge air heater H-1201 and fan F-1201 (PR-OPE-5002 section 1, EP PLC panel, no DCS signal): status
        of the field equipment (Training: from "Simulan ang 6 h purge"; 150 MW: in service) and the purge time */
-    s += T(1390, 736, 'PURGE AIR HTR H-1201 / FAN F-1201 · EP PLC (field)', { z: 7.5, c: S.C.dim, a: 'middle' }) + T(1390, 724, '-----', { z: 8, b: 700, c: S.C.none, a: 'middle', ls: 0.4, k: 'espst' });
+    /* live test #40: right of the ESP, between it and the stack (over the PISB1040 / PISB1042 boxes it covered their values) */
+    s += T(1494, 746, '-----', { z: 8, b: 700, c: S.C.none, ls: 0.4, k: 'espst' }) + T(1494, 757, 'PURGE AIR HTR H-1201', { z: 7.5, c: S.C.dim }) + T(1494, 767, 'PURGE FAN F-1201', { z: 7.5, c: S.C.dim }) + T(1494, 777, 'EP PLC (field)', { z: 7.5, c: S.C.dim });
     return s + NAME(1390, 750, 'ESP  Z-1010', 'middle');
   }
   function stack(S) {
