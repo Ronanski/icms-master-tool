@@ -432,12 +432,12 @@ function tcsCmd(U, cmd, arg) {
       c.vex = on;
       return '';
     case 'tg':
-      if (on && !c.brgOk) return 'walang bearing oil: i-start muna ang lube oil pump (ATS 1.15)';
+      if (on && !c.brgOk) return 'No bearing oil: start a lube oil pump first (ATS 1.15)';
       c.tg = on;
       return '';
     case 'aux':
       if (on && !(U.Pd > 12))
-        return 'aux steam: kailangan ng main steam > 12 kg/cm2 (PR-OPE-5002 5727), drum ' + U.Pd.toFixed(1);
+        return 'Aux steam needs main steam > 12 kg/cm2 (PR-OPE-5002 5727), drum ' + U.Pd.toFixed(1);
       c.asv = on;
       return '';
     case 'gland':
@@ -446,8 +446,8 @@ function tcsCmd(U, cmd, arg) {
         return '';
       }
       if (!(c.Pa > 7)) return 'gland sealing: aux steam > 7 kg/cm2 (PR-OPE-5002 6164), ngayon ' + c.Pa.toFixed(1);
-      if (!(tb && tb.rpm >= 1)) return 'gland sealing: dapat umiikot ang turbine sa turning gear (PR-OPE-5002 6219)';
-      if (!c.vb) return 'gland sealing: bukas dapat ang vacuum breaker MV-AV1391 (PR-OPE-5002 6197)';
+      if (!(tb && tb.rpm >= 1)) return 'Gland sealing: the turbine must turn on the turning gear (PR-OPE-5002 6219)';
+      if (!c.vb) return 'Gland sealing: the vacuum breaker MV-AV1391 must be open (PR-OPE-5002 6197)';
       c.gland = true;
       return '';
     case 'vacuum':
@@ -462,7 +462,7 @@ function tcsCmd(U, cmd, arg) {
         return '';
       }
       if (!(c.Pa > 10)) return 'vacuum up: aux steam > 10 kg/cm2 (PR-OPE-5002 6545), ngayon ' + c.Pa.toFixed(1);
-      if (!c.gland) return 'vacuum up: gland sealing muna (PR-OPE-5002 6545)';
+      if (!c.gland) return 'Vacuum up: put the gland sealing in service first (PR-OPE-5002 6545)';
       c.vb = false;
       c.ej = true;
       /* P2 #13: the vacuum breaker MOV CLOSE, then the ejector steam MOVs OPEN (DITL-56 / 55 / 54 push buttons, rows of the drawing) */
@@ -491,7 +491,7 @@ function tcsCmd(U, cmd, arg) {
 function tcsStepIn(U, k, arg) {
   const c = U.tc,
     tb = U.tb;
-  if (c.cur >= 0 && c.cur !== k && c.cur < 6) return 'tumatakbo pa ang step ' + c.cur + ' ' + TCS.names[c.cur];
+  if (c.cur >= 0 && c.cur !== k && c.cur < 6) return 'Step still running: ' + c.cur + ' ' + TCS.names[c.cur];
   if (k === 6 && c.step >= 6) {
     /* LOAD UP again: a new target (the TCS panel target MW) */
     tb.st = 'load';
@@ -504,7 +504,7 @@ function tcsStepIn(U, k, arg) {
   const need = k === 1 ? -1 : k === 3 && !(c.mode === 'amb' || c.mode === 'c1') ? 1 : k - 1;
   if (c.step < need)
     return (
-      'tapusin muna ang step ' +
+      'Finish step ' +
       need +
       ' ' +
       TCS.names[need] +
@@ -512,9 +512,9 @@ function tcsStepIn(U, k, arg) {
       [13, 14, 17, 19, 23, 24, 26, 28][need] +
       ')'
     );
-  if (c.step >= k) return 'tapos na ang ' + TCS.names[k];
+  if (c.step >= k) return 'Already done: ' + TCS.names[k];
   const miss = tcsMiss(U, TCS_A[k]);
-  if (miss) return 'CRITERIA A' + k + ' (' + TCS.names[k] + ') kulang: ' + miss;
+  if (miss) return 'CRITERIA A' + k + ' (' + TCS.names[k] + ') missing: ' + miss;
   c.cur = k;
   c.ph = 'in';
   c.tm = 0;
@@ -526,7 +526,7 @@ function tcsDone(U, k) {
   c.step = k;
   c.cur = -1;
   c.ph = '';
-  c.last = TCS.names[k] + ' tapos';
+  c.last = TCS.names[k] + ' done';
 }
 /* one step of dt s: auxiliaries, metal, ATS program. Called by anUnitStep before the turbine black box; tb.rpm / tb.st / tb.icv are set
    here while the ATS controls the speed */
@@ -757,21 +757,21 @@ function tcsOilCmd(c, a) {
   const m = /^(mop|cop)([AB])$/.exec(a.p || ''),
     op = a.op;
   if (a.p === 'eop') {
-    if (op !== 'start' && op !== 'stop') return 'EOP: START / STOP lang (walang AUTO / MANUAL sa TCS I/O list)';
+    if (op !== 'start' && op !== 'stop') return 'EOP: START / STOP only (no AUTO / MANUAL in the TCS I/O list)';
     c.eop = op === 'start';
     return '';
   }
-  if (!m) return 'hindi kilalang pump: ' + a.p;
+  if (!m) return 'Unknown pump: ' + a.p;
   const k = m[1],
     i = m[2] === 'A' ? 0 : 1;
   if (op === 'start') c[k][i] = true;
   else if (op === 'stop') {
     /* SOP 2620: the standby to MANUAL first, then STOP; a pump in AUTO cannot be stopped */
-    if (c[k + 'Au'][i]) return (k === 'mop' ? 'MOP' : 'COP') + '-' + m[2] + ' ay AUTO: MANUAL muna, saka STOP (SOP)';
+    if (c[k + 'Au'][i]) return (k === 'mop' ? 'MOP' : 'COP') + '-' + m[2] + ' is in AUTO: set MANUAL first, then STOP (SOP)';
     c[k][i] = false;
   } else if (op === 'auto') c[k + 'Au'][i] = true;
   else if (op === 'man') c[k + 'Au'][i] = false;
-  else return 'hindi kilalang utos: ' + op;
+  else return 'Unknown command: ' + op;
   /* live test #62: the last TCS command output of the pump (HMI_DO JYS START / JYP STOP / IKA AUTO / IKH MANUAL, HOLD 3000 ms) */
   (c.do = c.do || {})[a.p] = { op, t: +AN_UNIT.t || 0 };
   tcsOilSet(c);
