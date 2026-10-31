@@ -396,7 +396,8 @@ window.LS_LIVE = (function () {
   };
   const OUTC = (nm, r, l) => DC(l + ' (' + nm + ' out ' + (r + 1) + ')', () => dOut(nm, r), () => l + ' ' + (dOut(nm, r) ? 'ON' : 'OFF'));
   const INC = (nm, r, l) => DC(l + ' (' + nm + ' row ' + (r + 1) + ')', () => dIn(nm, r), () => l + ' ' + (dIn(nm, r) ? 'ON' : 'OFF'));
-  const RUNN = (L, n, l) => DC(n + ' ' + l + ' running', () => nRun(L) >= n, () => L.map(nm => nm.replace(/^DITL-\S+\s*#?/, '') + (dRun(nm) ? ' RUN' : ' STOP')).join(', '));
+  /* #55: a drawing of one machine keeps its name (DITL-76 / 77 ACW pumps read " RUN,  STOP") */
+  const RUNN = (L, n, l) => DC(n + ' ' + l + ' running', () => nRun(L) >= n, () => L.map(nm => (nm.replace(/^DITL-\S+\s*#?/, '') || nm) + (dRun(nm) ? ' RUN' : ' STOP')).join(', '));
   /* live test #54: [running memory, [model tags]] of the machines: done when one runs and every tag of the running ones is read below hi */
   const MOT = (L, hi, l, u) => {
     const mt = t => (U().mt ? +U().mt[t] : NaN),
@@ -759,6 +760,10 @@ window.LS_LIVE = (function () {
         }
         LAT[key] = Math.round(t);
         ch.push(key);
+        /* live test #55: the AUTO tick is an event too (the step, what the logic shows) */
+        try {
+          if (window.lsEventAdd) lsEventAdd('PR-OPE-5002', 'SOP', '✓ ' + (si + 1) + '.' + (i + 1) + ' ' + String(st.t).slice(0, 60) + ' (AUTO: ' + String(q.c.now ? q.c.now() : '').slice(0, 80) + ')');
+        } catch (e) {}
       })
     );
     if (ch.length) wrt(LAT);

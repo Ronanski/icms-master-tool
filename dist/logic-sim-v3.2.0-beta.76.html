@@ -30178,7 +30178,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.76';
-      c3.textContent += ' · build 60e2040'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 350782b'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -57096,7 +57096,8 @@ window.LS_LIVE = (function () {
   };
   const OUTC = (nm, r, l) => DC(l + ' (' + nm + ' out ' + (r + 1) + ')', () => dOut(nm, r), () => l + ' ' + (dOut(nm, r) ? 'ON' : 'OFF'));
   const INC = (nm, r, l) => DC(l + ' (' + nm + ' row ' + (r + 1) + ')', () => dIn(nm, r), () => l + ' ' + (dIn(nm, r) ? 'ON' : 'OFF'));
-  const RUNN = (L, n, l) => DC(n + ' ' + l + ' running', () => nRun(L) >= n, () => L.map(nm => nm.replace(/^DITL-\S+\s*#?/, '') + (dRun(nm) ? ' RUN' : ' STOP')).join(', '));
+  /* #55: a drawing of one machine keeps its name (DITL-76 / 77 ACW pumps read " RUN,  STOP") */
+  const RUNN = (L, n, l) => DC(n + ' ' + l + ' running', () => nRun(L) >= n, () => L.map(nm => (nm.replace(/^DITL-\S+\s*#?/, '') || nm) + (dRun(nm) ? ' RUN' : ' STOP')).join(', '));
   /* live test #54: [running memory, [model tags]] of the machines: done when one runs and every tag of the running ones is read below hi */
   const MOT = (L, hi, l, u) => {
     const mt = t => (U().mt ? +U().mt[t] : NaN),
@@ -57459,6 +57460,10 @@ window.LS_LIVE = (function () {
         }
         LAT[key] = Math.round(t);
         ch.push(key);
+        /* live test #55: the AUTO tick is an event too (the step, what the logic shows) */
+        try {
+          if (window.lsEventAdd) lsEventAdd('PR-OPE-5002', 'SOP', '✓ ' + (si + 1) + '.' + (i + 1) + ' ' + String(st.t).slice(0, 60) + ' (AUTO: ' + String(q.c.now ? q.c.now() : '').slice(0, 80) + ')');
+        } catch (e) {}
       })
     );
     if (ch.length) wrt(LAT);
@@ -63820,6 +63825,19 @@ body.ophmi #anp{display:none!important}
         rhi = P.rhi != null ? P.rhi : 100,
         unit = P.unit || '';
       const key = sh.name + '|' + c.b.id;
+      /* live test #55: every A / M / R and SV / MV of the faceplate is an operator event (tag, sheet), also while the sheet is not on the
+         screen (the MODE events of events.js read the sheet on screen only); a ramp of SV / MV (hold, ▲▲) is one event when it stops */
+      const opT = {},
+        opEv = (k, v) => {
+          const say = () => {
+            try {
+              window.lsEventAdd && lsEventAdd(sh.name, 'DCS', 'Operator: ' + c.tag + ' ' + k + (v === undefined ? '' : ' = ' + (+v).toFixed(2).replace(/\.?0+$/, '')) + ' (faceplate)');
+            } catch (e) {}
+          };
+          clearTimeout(opT[k]);
+          if (v === undefined) say();
+          else opT[k] = setTimeout(say, 1200);
+        };
       const pv = E('b', { txt: '—' }),
         sv = E('b', { txt: '—' }),
         mv = E('b', { txt: '—' });
@@ -63895,6 +63913,7 @@ body.ophmi #anp{display:none!important}
           on: () => {
             swMode('A');
             if (c.remote) pulse(['REM', 'REMOTE']);
+            opEv(c.remote ? 'REMOTE' : 'SV: LOGIC');
           }
         }),
         bLoc = E('button', {
@@ -63902,7 +63921,7 @@ body.ophmi #anp{display:none!important}
           style: c.remote ? 'display:none' : '',
           txt: c.remote ? 'LOCAL' : 'SV: OPERATOR',
           title: c.remote ? 'LOCAL: MAN allowed, SV set by the operator (COS)' : 'Operator SV (COS)',
-          on: () => swMode('B')
+          on: () => (swMode('B'), opEv(c.remote ? 'LOCAL' : 'SV: OPERATOR'))
         }),
         modeRow = c.svSw && !c.remote ? E('div', { cls: 'row' }, [E('span', { txt: 'SV' }), bRem, bLoc]) : null;
       const sgEls = c.sigs.map(z => {
@@ -63939,6 +63958,7 @@ body.ophmi #anp{display:none!important}
             on: () => {
               mvIn.value = x;
               setMV(S, c, x);
+              opEv('MV', x);
             }
           })
         ),
@@ -63966,13 +63986,13 @@ body.ophmi #anp{display:none!important}
       cutEl.append(cutTx, cutWhy, cutList);
       svRow.append(svSrc);
       if (svOk) {
-        svIn.onchange = () => svSet(+svIn.value);
+        svIn.onchange = () => (svSet(+svIn.value), opEv('SV', +svIn.value));
       } else {
         svIn.disabled = true;
         svRow.append(E('span', { cls: 'sub', txt: '(SV from the logic)' }));
       }
       if (mvOk) {
-        mvIn.onchange = () => setMV(S, c, +mvIn.value);
+        mvIn.onchange = () => (setMV(S, c, +mvIn.value), opEv('MV', +mvIn.value));
       } else {
         mvIn.disabled = true;
         mvRow.append(E('span', { cls: 'sub', txt: '(no manual input)' }));
@@ -64001,10 +64021,12 @@ body.ophmi #anp{display:none!important}
         }
         setMode('A');
         pulse(['LOC', 'LOCAL', 'AUTO', 'AUT']);
+        opEv('AUTO');
       };
       bMan.onclick = () => {
         setMode('M');
         pulse(['MAN', 'MANUAL']);
+        opEv('MAN');
       };
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('class', 'tr');
@@ -64087,6 +64109,7 @@ body.ophmi #anp{display:none!important}
         popIn(k).value = +v.toFixed(3);
         if (k === 'SV') svSet(v);
         else setMV(S, c, v);
+        opEv(k, v);
         popRefresh();
       };
       const popRefresh = () => {
