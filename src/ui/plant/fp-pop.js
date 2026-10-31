@@ -108,36 +108,49 @@
       addEventListener('pointerup', up);
     });
   }
+  /* #59 (user 2026-10-31): two faceplates per equipment that can be open together, the CONTROL one and the PERMISSIVE · TREND ·
+     MONITOR one; BOX = the open ones by slot ('control' / 'info'), box = the one being built */
   let box = null,
-    iv = null,
     paint = null;
-  function close() {
-    if (box) box.remove();
-    box = paint = null;
-    clearInterval(iv);
-    iv = null;
+  const BOX = {};
+  function closeEl(el) {
+    if (!el) return;
+    clearInterval(el._iv);
+    el.remove();
+    for (const k in BOX) if (BOX[k] === el) delete BOX[k];
+    if (box === el) box = paint = null;
   }
+  function close() {
+    for (const k in BOX) closeEl(BOX[k]);
+    box = paint = null;
+  }
+  const anyOpen = () => Object.keys(BOX).length > 0;
   /* on the window (capture): a listener of the app stops the key there before the document */
   addEventListener(
     'keydown',
     e => {
-      if (e.key === 'Escape' && box) close();
+      if (e.key === 'Escape' && anyOpen()) close();
     },
     true
   );
   /* another HMI page, another tab: the faceplate of the page before goes */
   document.addEventListener('change', e => e.target && e.target.classList && e.target.classList.contains('plpick') && close(), true);
-  new MutationObserver(() => box && document.body.dataset.tab !== 'operate' && close()).observe(document.body, { attributes: true, attributeFilter: ['data-tab'] });
+  new MutationObserver(() => anyOpen() && document.body.dataset.tab !== 'operate' && close()).observe(document.body, { attributes: true, attributeFilter: ['data-tab'] });
   /* a click on the graphic outside it (not on another equipment, which opens its own) closes it. Live test #48 / #43: a click in the
      Training dock, the header or the alarm bar (a tick of the line-up, then START here) leaves it open where it is */
   document.addEventListener('pointerdown', e => {
-    if (box && !box.contains(e.target) && host().contains(e.target) && !(e.target.closest && e.target.closest('[data-hit],[data-mdh],[data-fan],[data-dmp],[data-fl],[data-aphh],#plfp')))
-      setTimeout(() => box && !box.contains(document.activeElement) && close(), 0);
+    if (!host().contains(e.target) || (e.target.closest && e.target.closest('.fpo-box,[data-hit],[data-mdh],[data-fan],[data-dmp],[data-fl],[data-aphh],[data-eqb],#plfp'))) return;
+    for (const k in BOX) {
+      const el = BOX[k];
+      setTimeout(() => el.isConnected && !el.contains(document.activeElement) && closeEl(el), 0);
+    }
   });
-  function frame(title, sub) {
-    close();
-    box = E('div', '');
-    box.id = 'fpop';
+  function frame(title, sub, slot = 'control') {
+    closeEl(BOX[slot]);
+    box = E('div', 'fpo-box');
+    box.id = slot === 'info' ? 'fpop2' : 'fpop';
+    BOX[slot] = box;
+    const me = box;
     box.setAttribute('role', 'dialog');
     box.setAttribute('aria-label', title + ' faceplate');
     const hd = E('div', 'fpo-h'),
@@ -149,7 +162,7 @@
     x.type = 'button';
     x.title = 'Close (Esc)';
     x.setAttribute('aria-label', 'Close');
-    x.onclick = close;
+    x.onclick = () => closeEl(me);
     const tt = E('div', 'fpo-tt');
     tt.append(nm, sb);
     hd.append(lamp, tt, val, x);
@@ -184,20 +197,27 @@
     const dk = D();
     if (!M || !dk || !M.ad) return false;
     const s = call(() => dk.dOf(M.ad), null);
-    const F = frame(M.n, (M.t || '') + (M.d ? ' · ' + M.d : ''));
+    /* #59: M.part 'control' = the CONTROL faceplate (click on the equipment), 'info' = PERMISSIVE · TREND · MONITOR (its Y / N button);
+       no part = both in one (the pages not yet on the #59 standard) */
+    const part = M.part || '';
+    const F = frame(M.n, (M.t || '') + (M.d ? ' · ' + M.d : ''), part === 'info' ? 'info' : 'control');
+    const me = box;
     const nm = s ? call(() => dk.dName(s), M.d) : M.d;
     const chip = E('span', 'fpo-chip');
     F.hd.querySelector('.fpo-tt').append(chip);
+    if (part) F.hd.querySelector('.fpo-tt').append(E('span', 'fpo-k', part === 'info' ? 'PERMISSIVE · TREND · MONITOR' : 'CONTROL'));
     /* status */
     const lR = lampEl('RUN'),
       lS = lampEl('STOP'),
       lT = lampEl('TRIP');
-    F.bd.append(row('STATUS', lR, lS, lT));
+    const rSt = row('STATUS', lR, lS, lT);
+    F.bd.append(rSt);
     /* FIELD selector */
     const [sRL, [bRem, bLoc]] = seg(['REMOTE', 'LOCAL']);
     const fTag = E('span', 'fpo-fld', 'FIELD');
     fTag.title = 'The selector switch at the switchgear: set by the field operator (logged in Events as "Field operator")';
-    F.bd.append(row('SELECTOR', sRL, fTag));
+    const rSel = row('SELECTOR', sRL, fTag);
+    F.bd.append(rSel);
     /* MODE */
     const [sAM, [bAu, bMa]] = seg(['AUTO', 'MAN']);
     const amR = row('MODE', sAM);
@@ -206,7 +226,8 @@
     const bSt = E('button', 'fpo-cmd', 'START'),
       bSp = E('button', 'fpo-cmd', 'STOP');
     bSt.type = bSp.type = 'button';
-    F.bd.append(row('DCS', bSt, bSp));
+    const rCmd = row('DCS', bSt, bSp);
+    F.bd.append(rCmd);
     const why = E('div', 'fpo-why');
     F.bd.append(why);
     /* EXECUTE / CANCEL */
@@ -237,23 +258,40 @@
     const vcb = lampEl('VCB');
     const cur = E('span', 'fpo-vb'),
       band = E('small', 'fpo-dim', M.band ? 'SOP ' + M.band[0] + ' ~ ' + M.band[1] + ' A' : '');
-    F.bd.append(row('VCB', vcb));
+    const rVcb = row('VCB', vcb);
+    F.bd.append(rVcb);
     const trend = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     trend.setAttribute('viewBox', '0 0 300 50');
     trend.setAttribute('preserveAspectRatio', 'none');
     trend.setAttribute('class', 'fpo-tr');
     trend.setAttribute('role', 'img');
     trend.setAttribute('aria-label', 'Current trend, 10 minutes');
-    if (M.cur) {
-      F.bd.append(row('CURRENT', cur, band));
-      F.bd.append(trend);
-    }
+    const trH = E('div', 'fpo-sh', 'TREND · 10 min'),
+      rCur = row('CURRENT', cur, band);
+    if (M.cur) F.bd.append(rCur);
+    /* monitoring values of the info faceplate: M.mon = [[label, fn, unit, tag]] (bearing, winding, vibration, ...) */
+    const mon = (part === 'info' && M.mon) || [];
+    const monV = mon.map(([l, f, u, tg]) => {
+      const v = E('span', 'fpo-vb');
+      F.bd.append(row(l, v, E('small', 'fpo-dim', (u || '') + (tg ? ' · ' + tg : ''))));
+      return [v, f];
+    });
+    if (M.cur) F.bd.append(trH, trend);
     /* SOP line-up of the open step (only when this motor belongs to it) and the logic permissive */
     const sopH = E('div', 'fpo-sh'),
       sopL = E('ul', 'fpo-il');
     const ilH = E('div', 'fpo-sh', 'LOGIC PERMISSIVE' + (nm ? ' · ' + nm : '')),
       ilL = E('ul', 'fpo-il');
     F.bd.append(sopH, sopL, ilH, ilL);
+    /* the sections of the part: CONTROL without permissive / trend, INFO without the commands (moved to the top: permissive first) */
+    if (part === 'control') for (const el of [rCur, trH, trend, sopH, sopL, ilH, ilL]) el.hidden = true;
+    if (part === 'info') {
+      for (const el of [rSel, amR, rCmd, why, rVcb]) el.hidden = true;
+      F.bd.insertBefore(ilL, rSt.nextSibling);
+      F.bd.insertBefore(ilH, ilL);
+      F.bd.insertBefore(sopL, ilL.nextSibling);
+      F.bd.insertBefore(sopH, sopL);
+    }
     /* links */
     const ln = E('div', 'fpo-ln');
     const link = (t, f) => {
@@ -290,7 +328,7 @@
     bSp.onclick = () => !bSp.disabled && ask('STOP ' + M.n + '?', () => (dk.dmotor(M.ad, 0), call(() => window.lsEventAdd(nm, 'DCS', 'Operator: STOP ' + M.n + ' (faceplate)'))));
     let k0 = '';
     function tick() {
-      if (!box || !box.isConnected) return close();
+      if (!me.isConnected) return closeEl(me);
       const st = call(() => dk.mst(M.ad), null),
         md = call(() => (M.modeFn ? M.modeFn() : dk.modeOf(M.ad)), null) || {},
         I = call(() => dk.interlock(M.ad), null),
@@ -335,7 +373,15 @@
               : !run && st !== 'RUN'
                 ? 'Simulation PAUSED: press ▶ RUN before START (nothing moves while paused).'
                 : '';
-      why.hidden = !why.textContent;
+      why.hidden = part === 'info' || !why.textContent;
+      /* #59: the Y / N of the info faceplate (and of the page's button: M.onYN) = every logic permissive and SOP line-up item complete */
+      const yn = !loc && !miss.length && !sopLeft;
+      if (part === 'info') ilH.textContent = 'PERMISSIVE · ' + (yn ? 'Y (all complete)' : 'N (not complete)') + (nm ? ' · ' + nm : '');
+      if (M.onYN) call(() => M.onYN(yn), null);
+      for (const [v, f] of monV) {
+        const x = call(f, null);
+        v.textContent = x == null || !isFinite(+x) ? '-----' : (+x).toFixed(1);
+      }
       chip.textContent = st === 'TRIP' ? 'TRIP' : st === 'RUN' ? 'RUNNING' : loc ? 'NOT READY' : sby ? 'STANDBY' : miss.length ? 'INTERLOCK' : st === 'STOP' ? 'READY' : '';
       chip.className = 'fpo-chip ' + (st === 'TRIP' ? 'trip' : miss.length && !loc && st !== 'RUN' ? 'ilk' : '');
       /* current */
@@ -355,7 +401,7 @@
           (H.length ? `<circle cx="298" cy="${(47 - (H[H.length - 1][1] / mx) * 44).toFixed(1)}" r="2.5" fill="${st === 'RUN' ? '#e5484d' : '#93a2b2'}"/>` : '');
       }
       /* SOP line-up of the open step */
-      sopH.hidden = sopL.hidden = !(sop && sop.items.length);
+      sopH.hidden = sopL.hidden = part === 'control' || !(sop && sop.items.length);
       if (sop && sop.items.length) {
         sopH.textContent = 'SOP BEFORE START · PR-OPE-5002 section ' + sop.sec + ' · ' + sop.items.filter(x => x.ok).length + ' / ' + sop.items.length;
         /* what is left only (✕), the done ones as one line (the full list with its ticks is in the dock) */
@@ -405,8 +451,8 @@
     }
     paint = tick;
     tick();
-    place(box);
-    iv = setInterval(tick, 500);
+    place(me);
+    me._iv = setInterval(tick, 500);
     return true;
   }
   /* ---------- the valve faceplate (live test beta.74, spec item 2: OPEN / CLOSE, AUTO / MAN, ZSO / ZSC) ----------
@@ -417,6 +463,7 @@
     const dk = D();
     if (!V || !dk || !V.d || !call(() => dk.dOf(V.d), null)) return false;
     const F = frame(V.n, (V.t || '') + ' · ' + V.d);
+    const me = box;
     const chip = E('span', 'fpo-chip');
     F.hd.querySelector('.fpo-tt').append(chip);
     const lO = lampEl('ZSO OPEN'),
@@ -466,7 +513,7 @@
     bOp.onclick = () => ask(V.n + ' OPEN?', () => (dk.dpress(V.d, V.opRow), ev('OPEN')));
     bCl.onclick = () => ask(V.n + ' CLOSE?', () => (dk.dpress(V.d, V.clRow), ev('CLOSE')));
     function tick() {
-      if (!box || !box.isConnected) return close();
+      if (!me.isConnected) return closeEl(me);
       const op = !!call(() => V.isOpen(), false),
         au = !!call(() => V.isAuto(), false),
         run = isRun(),
@@ -494,8 +541,8 @@
     }
     paint = tick;
     tick();
-    place(box);
-    iv = setInterval(tick, 500);
+    place(me);
+    me._iv = setInterval(tick, 500);
     return true;
   }
   /* the valves of the HMI pages with a DITL drawing (the same rows the Training step 8 presses, guide.js) */
@@ -525,6 +572,7 @@
     if (!V || !window.AN || !AN.field) return false;
     const st = () => !!(AN.fieldState && AN.fieldState()[V.k]);
     const F = frame(V.n, V.t);
+    const me = box;
     const chip = E('span', 'fpo-chip', 'FIELD');
     F.hd.querySelector('.fpo-tt').append(chip);
     const lO = lampEl('OPEN'),
@@ -559,7 +607,7 @@
     bOp.onclick = () => !bOp.disabled && set(true);
     bCl.onclick = () => !bCl.disabled && set(false);
     function tick() {
-      if (!box || !box.isConnected) return close();
+      if (!me.isConnected) return closeEl(me);
       const op = st(),
         run = isRun();
       F.lamp.className = 'fpo-lamp ' + (op ? 'run' : 'stop');
@@ -575,8 +623,8 @@
     }
     paint = tick;
     tick();
-    place(box);
-    iv = setInterval(tick, 500);
+    place(me);
+    me._iv = setInterval(tick, 500);
     return true;
   }
   /* live test #45: a package run by push buttons of a DITL drawing (debris filter S-1502 / S-1504, DITL-39: REMOTE AUTO START / STOP P.B.
@@ -587,6 +635,7 @@
     if (!P || !dk || !P.d || !call(() => dk.dOf(P.d), null)) return false;
     const s = dk.dOf(P.d);
     const F = frame(P.n, (P.t || '') + ' · ' + P.d);
+    const me = box;
     const lOn = lampEl(P.st.on),
       lOff = lampEl(P.st.off || 'STOPPED');
     F.bd.append(row('STATUS', lOn, lOff));
@@ -643,7 +692,7 @@
     });
     let k0 = '';
     function tick() {
-      if (!box || !box.isConnected) return close();
+      if (!me.isConnected) return closeEl(me);
       const on = call(() => dk.dout(P.d, P.st.row), null) === 1,
         run = isRun(),
         pv = (P.perm || []).map(p => ({ ...p, v: call(() => window.DUI.rowVal(s, p.row), null) })),
@@ -674,8 +723,8 @@
     }
     paint = tick;
     tick();
-    place(box);
-    iv = setInterval(tick, 500);
+    place(me);
+    me._iv = setInterval(tick, 500);
     return true;
   }
   /* live test #44: a machine with no DCS command (hypochlorite pumps P-0761 / P-0762: STN105 running / overload DI only) = a small status
@@ -684,6 +733,7 @@
   function field(P) {
     if (!P) return false;
     const F = frame(P.n, (P.t || '') + ' · ' + (P.d || 'field'));
+    const me = box;
     const lR = lampEl('RUN'),
       lS = lampEl('STOP');
     F.bd.append(row('STATUS', lR, lS));
@@ -731,7 +781,7 @@
     ln.append(ev);
     F.bd.append(ln);
     function tick() {
-      if (!box || !box.isConnected) return close();
+      if (!me.isConnected) return closeEl(me);
       const st = call(P.st, null),
         run = isRun();
       F.lamp.className = 'fpo-lamp ' + (st === 'RUN' ? 'run' : st === 'STOP' ? 'stop' : '');
@@ -747,11 +797,25 @@
     }
     paint = tick;
     tick();
-    place(box);
-    iv = setInterval(tick, 500);
+    place(me);
+    me._iv = setInterval(tick, 500);
     return true;
   }
   const valveTag = tg => (VALVES[tg] ? valve(VALVES[tg]) : FIELDV[tg] ? fieldValve(FIELDV[tg]) : false);
+  /* #59: the Y / N of a motor for the button on its page (the same test as the info faceplate): true = every logic permissive and SOP
+     line-up item complete, false = not, null = no logic */
+  function yn(M) {
+    const dk = D();
+    if (!M || !dk || !M.ad) return null;
+    const I = call(() => dk.interlock(M.ad), null);
+    if (!I) return null;
+    const st = call(() => dk.mst(M.ad), null),
+      md = call(() => (M.modeFn ? M.modeFn() : dk.modeOf(M.ad)), null) || {},
+      sby = st === 'STOP' && md.rem === true && md.au === true,
+      miss = sby ? [] : I.miss.filter(r => !/REMOTE/.test(r.svc)),
+      sop = call(() => (dk.sopFor ? dk.sopFor(M.ad, M.d) : null), null);
+    return md.rem !== false && !miss.length && !(sop && sop.items.some(x => !x.ok));
+  }
   /* an HMI page's click on a machine: its faceplate when the motor is known to the logic, else the info card (as before) */
   function hit(M, fallback) {
     if (M && M.ad && !M.fld && !/@/.test(M.ad) && D() && call(() => D().dOf(M.ad), null) && motor(M)) return;
@@ -774,7 +838,7 @@
     setTimeout(re, 350);
     return !!box;
   }
-  window.LS_FPOP = { motor, valve, valveTag, pb, field, hit, openAd, place, close, get open() {
-    return !!box;
+  window.LS_FPOP = { motor, valve, valveTag, pb, field, yn, hit, openAd, place, close, get open() {
+    return anyOpen();
   } };
 })();
