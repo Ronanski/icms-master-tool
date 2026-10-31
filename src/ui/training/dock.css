@@ -517,3 +517,7 @@ html.gd-menu #gdock .gd-prog{display:none!important}
 #gdock .gd-strip .gd-kv.stop b{color:#3fd38a}
 #gdock .gd-es em{flex-basis:100%}
 #gdock .gd-wr.fld .gd-wb{font-family:var(--uf)}
+/* live test #60: the Training button of the top bar while the panel is hidden (the side tab is then not needed) */
+#gdtab.gd-hide{display:none!important}
+body.app2 #gdtrb{margin-left:8px;border-color:#5aa8ff!important;background:color-mix(in srgb,#5aa8ff 16%,transparent)!important;color:#8cc4ff!important;font-weight:700;white-space:nowrap}
+body.app2 #gdtrb[hidden]{display:none!important}
