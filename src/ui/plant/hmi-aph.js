@@ -1,14 +1,16 @@
-/* 038 AIR PREHEATER (PR-OPE-5002 section 17 "start the air preheater", section 27 sootblower): the mockup the user approved on
-   2026-10-31 (v4, team-files/hmi-mockups/038-air-preheater.html; leader review: center drive, primary air on the inner hoods).
-   One rotating Ljungstrom rotor H-1052 (FHI manual part 5 section 1: rotary, preheating the primary and the secondary air), drawn
-   twice: a side cutaway (element baskets in three layers, hot end on top; counter-flow: flue gas down, air up) and a top view (the
-   sectors turning; the sector angles are not in the plant documents, so flue gas 180°, primary and secondary air 90° each). The
-   center drive on the rotor post (38.PNG): main drive motor M1 of DITL-43 (START M.1420, STOP M.1421, LOW / NORMAL speed M.1423 /
-   M.1424, LOCAL I.0652, NOT TRIP I.0651) and the back-up air motor of DITL-44 (SV-PA1052). Sootblowers N1040 (hot end) / N1042
-   (cold end) on the gas side. Values: the logic where a sheet reads the transmitter, else the plant estimate of the 007 page
-   (PLANT_V2.EST, the same numbers on both pages). #59: two faceplates, CONTROL (click on the rotor or the drive) and PERMISSIVE ·
-   TREND · MONITOR (the Y / N button). Page text in English (user 2026-10-31); the right strip (x >= 990) is kept free for the
-   faceplates. */
+/* 038 AIR PREHEATER (PR-OPE-5002 section 17 "start the air preheater", section 27 sootblower): mockup v5 (team-files/hmi-mockups/
+   038-air-preheater.html; user 2026-10-31 "di ko maimagine paano dumadaan sa loob ang mga hangin at flue gas, pati na rin ang pag
+   ikot"; leader review: clean layout). A 2.5D cutaway of the ONE Ljungstrom rotor H-1052 (FHI manual part 5 section 1) that teaches
+   how it works: the element baskets turn around the drum while the drive runs (shown faster than the real ~1 rpm), they heat up in
+   the flue gas half and give the heat to the air (the colour travels with the rotation), flue gas goes DOWN through the gas half (hot
+   end on top), primary and secondary air go UP through their sectors (the particles move while their fan runs). Sector angles are not
+   in the plant documents: flue gas 180°, primary air 30°, secondary air 150° here. Center drive on the rotor post (38.PNG): main drive
+   motor M1 of DITL-43 (START M.1420, STOP M.1421, LOW / NORMAL speed M.1423 / M.1424, LOCAL I.0652, NOT TRIP I.0651) and the back-up
+   air motor of DITL-44 (SV-PA1052). Sootblowers N1040 (hot end) / N1042 (cold end) on the gas side. Values: the logic where a sheet
+   reads the transmitter, else the plant estimate of the 007 page (PLANT_V2.EST, the same numbers on both pages); description + value
+   + unit at the duct it measures, the tag on hover and in the faceplate, the rest in the MONITORING of the second faceplate. #59: two
+   faceplates, CONTROL (click on the rotor or the drive) and PERMISSIVE · TREND · MONITOR (the PERMISSIVE Y / N button). The faceplates
+   open right of every value and button (measured), so they never cover one. */
 (function () {
   if (!window.PLANT_V2 || !window.HSYM) return;
   const H = HSYM,
@@ -17,128 +19,135 @@
   const PX = 'aph';
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const fmt = (x, dp) => (x == null || !isFinite(x) ? '-----' : (+x).toFixed(dp).replace(/^-(0(?:\.0+)?)$/, '$1'));
-  /* the drive of DITL-43 (the motor faceplate of fp-pop.js) and its monitoring values */
+  /* the drive of DITL-43 (the motor faceplate of fp-pop.js) */
   const M = { n: 'Air preheater', t: 'H-1052', ad: 'DITL-43', d: 'DITL-43' };
-  /* rotor top view */
-  const CX = 792,
-    CY = 330,
-    R = 80;
+  /* the drum: centre x, radii, top (hot end) and bottom (cold end) ellipse centres; baskets around the rotor */
+  const CX = 470,
+    RX = 210,
+    RY = 60,
+    YT = 226,
+    YB = 516,
+    N = 24;
+  const GAS = [-90, 90],
+    PA = [90, 120],
+    SA = [120, 270];
+  const rad = a => (a * Math.PI) / 180;
+  const px = a => CX + RX * Math.cos(rad(a));
+  const py = (a, yc) => yc + RY * Math.sin(rad(a));
+  /* basket temperature by its angle (the rotor turns with the angle decreasing: a basket enters the gas half at 90°, front centre,
+     cold and leaves it at -90°, back, hot, then cools down through the air half 270° -> 90°); th / tc = gas in / air in */
+  const tempAt = (a, th, tc) => {
+    let p = ((a % 360) + 360) % 360;
+    if (p > 270) p -= 360;
+    const k = 1 - Math.exp(-2.4),
+      f = t => (1 - Math.exp(-2.4 * t)) / k,
+      lo = tc + 25,
+      hi = th - 25;
+    if (p <= 90) return lo + (hi - lo) * f((90 - p) / 180);
+    return hi - (hi - lo) * f((270 - p) / 180);
+  };
+  const colAt = (t, th, tc) => {
+    const u = clamp((t - tc) / Math.max(1, th - tc), 0, 1),
+      a = [44, 74, 108],
+      b = [236, 96, 36];
+    return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * u)).join(',')})`;
+  };
   function art() {
     const b = H.scene(PX);
-    b.txt(T(16, 26, 'AIR SIDE', 'hs-zone') + T(975, 26, 'FLUE GAS SIDE', 'hs-zone', 'text-anchor="end"'));
-    /* ducts: primary air on the inner hoods (next to the center post), secondary air outside; gas in on top, out at the bottom */
-    b.pipe([[380, 200], [380, 100], [10, 100]], { w: 22, med: 'ha', f: 'hpa' });
-    b.pipe([[310, 200], [310, 160], [10, 160]], { w: 30, med: 'ha', f: 'hsa' });
-    b.pipe([[310, 500], [310, 560], [10, 560]], { w: 30, med: 'air', f: 'csa' });
-    b.pipe([[380, 500], [380, 620], [10, 620]], { w: 22, med: 'air', f: 'cpa' });
-    b.pipe([[487, 200], [487, 100], [985, 100]], { w: 36, med: 'fg', f: 'gin' });
-    b.pipe([[487, 500], [487, 640], [985, 640]], { w: 36, med: 'fg', f: 'gout' });
-    const hood = (x, w, y, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="url(#${PX}-cs)" stroke="#090d11" stroke-width="1.5"/>`;
-    b.add(hood(278, 64, 190, 16) + hood(348, 64, 190, 16) + hood(424, 128, 190, 16) + hood(278, 64, 494, 16) + hood(348, 64, 494, 16) + hood(424, 128, 494, 16));
-    /* side cutaway: casing, element baskets in three layers, center post */
-    const layer = (y, h, col) => {
-      let l = '';
-      for (let x = 274; x < 556; x += 7) l += `<line x1="${x}" y1="${y + 3}" x2="${x}" y2="${y + h - 3}" stroke="${col}" stroke-width="1.6" opacity=".7"/>`;
-      return `<rect x="270" y="${y}" width="290" height="${h}" fill="#221c16"/>${l}`;
-    };
+    /* ducts: primary air on the inner hood (next to the centre post), secondary air outside; gas on the right */
+    b.pipe([[420, 168], [420, 90], [10, 90]], { w: 22, med: 'ha', f: 'hpa' });
+    b.pipe([[315, 182], [315, 140], [10, 140]], { w: 30, med: 'ha', f: 'hsa' });
+    b.pipe([[315, 566], [315, 610], [10, 610]], { w: 30, med: 'air', f: 'csa' });
+    b.pipe([[420, 576], [420, 650], [10, 650]], { w: 22, med: 'air', f: 'cpa' });
+    b.pipe([[590, 170], [590, 110], [985, 110]], { w: 36, med: 'fg', f: 'gin' });
+    b.pipe([[590, 570], [590, 690], [985, 690]], { w: 36, med: 'fg', f: 'gout' });
+    b.add(H.arrow(160, 90, 'l') + H.arrow(160, 140, 'l') + H.arrow(160, 610, 'r') + H.arrow(160, 650, 'r') + H.arrow(800, 110, 'l') + H.arrow(800, 690, 'r'));
+    /* hoods over and under the drum (gas half right, primary air inner left, secondary air outer left) */
+    const hood = (x0, x1, top) =>
+      top
+        ? `<path d="M${x0} ${YT - 4} L${x0 + 6} ${YT - 50} L${x1 - 6} ${YT - 50} L${x1} ${YT - 4} Z" fill="url(#${PX}-cs)" stroke="#090d11" stroke-width="1.4"/>`
+        : `<path d="M${x0} ${YB + 4} L${x0 + 6} ${YB + 50} L${x1 - 6} ${YB + 50} L${x1} ${YB + 4} Z" fill="url(#${PX}-cs)" stroke="#090d11" stroke-width="1.4"/>`;
+    b.add(hood(266, 368, 1) + hood(372, 464, 1) + hood(476, 674, 1) + hood(266, 368, 0) + hood(372, 464, 0) + hood(476, 674, 0));
+    /* streamlines (fixed): flue gas down in the gas half, air up in the primary and secondary sectors */
+    const stream = [[20, 0], [48, 0], [76, 0], [104, 1], [140, 1], [166, 1]]
+      .map(([a, up]) => {
+        const x = +px(a).toFixed(1),
+          y0 = py(a, YT) + 18,
+          y1 = py(a, YB) - 14,
+          c = up ? '#9fd0f5' : '#e6c8a8';
+        return (
+          `<line x1="${x}" y1="${y0.toFixed(1)}" x2="${x}" y2="${y1.toFixed(1)}" stroke="${c}" stroke-width="1.2" stroke-dasharray="5 5" opacity=".75"/>` +
+          [0.3, 0.7]
+            .map(f => {
+              const y = y0 + (y1 - y0) * f,
+                d = up ? 5 : -5;
+              return `<path d="M${x - 6} ${(y + d).toFixed(1)} L${x} ${(y - d).toFixed(1)} L${x + 6} ${(y + d).toFixed(1)}" fill="none" stroke="${c}" stroke-width="2"/>`;
+            })
+            .join('')
+        );
+      })
+      .join('');
+    const plate = a => `<line x1="${px(a).toFixed(1)}" y1="${py(a, YT).toFixed(1)}" x2="${px(a).toFixed(1)}" y2="${py(a, YB).toFixed(1)}" stroke="#e8edf2" stroke-width="2.5" opacity=".8"/>`;
+    /* the drum: back of the casing, the turning baskets (top face + the cut-open front), sector plates, the front rim */
     b.add(
-      `<g class="hs-hit" data-hit="RTR"><title>Air preheater H-1052 · rotor (side cutaway) · click: control faceplate</title><rect x="266" y="206" width="298" height="288" rx="4" fill="#2b2620" stroke="#8b9aaa" stroke-width="2" class="hs-hl"/>` +
-        layer(210, 70, '#d08a4a') +
-        layer(284, 110, '#a3784a') +
-        layer(398, 92, '#6f8aa0') +
-        `<rect x="406" y="200" width="18" height="300" fill="#7b8894" stroke="#090d11" stroke-width="1.4"/></g>`
+      `<g class="hs-hit" data-hit="RTR"><title>Air preheater H-1052 · click: control faceplate</title>` +
+        `<path d="M${CX - RX} ${YT} L${CX - RX} ${YB} A${RX} ${RY} 0 0 0 ${CX + RX} ${YB} L${CX + RX} ${YT} Z" fill="#1d2329" stroke="#5e6d7b" stroke-width="1.6"/>` +
+        `<g data-front="1"></g><g data-top="1"></g>` +
+        `<ellipse cx="${CX}" cy="${YT}" rx="${RX}" ry="${RY}" fill="none" stroke="#8b9aaa" stroke-width="2.2"/>` +
+        `<path d="M${CX - RX} ${YB} A${RX} ${RY} 0 0 0 ${CX + RX} ${YB}" fill="none" stroke="#8b9aaa" stroke-width="2.2"/>` +
+        `<line x1="${CX - RX}" y1="${YT}" x2="${CX - RX}" y2="${YB}" stroke="#8b9aaa" stroke-width="2.2"/><line x1="${CX + RX}" y1="${YT}" x2="${CX + RX}" y2="${YB}" stroke="#8b9aaa" stroke-width="2.2"/>` +
+        [GAS[0], GAS[1], PA[1], SA[1]].map(a => `<line x1="${CX}" y1="${YT}" x2="${px(a).toFixed(1)}" y2="${py(a, YT).toFixed(1)}" stroke="#e8edf2" stroke-width="3.5"/>`).join('') +
+        plate(GAS[1]) +
+        plate(PA[1]) +
+        stream +
+        `<g data-parts="1"></g>` +
+        `<rect x="${CX - 9}" y="${YT - 10}" width="18" height="${YB - YT + 20}" fill="#7b8894" stroke="#090d11" stroke-width="1.2" opacity=".9"/>` +
+        `<circle cx="${CX}" cy="${YT}" r="8" fill="#c99a3c" stroke="#090d11"/><circle cx="${CX}" cy="${YB}" r="8" fill="#c99a3c" stroke="#090d11"/></g>`
     );
-    /* top (guide) and bottom (support) bearings on the center post */
-    b.add(`<circle cx="415" cy="200" r="8" fill="#c99a3c" stroke="#090d11" stroke-width="1.4"/><circle cx="415" cy="500" r="8" fill="#c99a3c" stroke="#090d11" stroke-width="1.4"/>`);
-    const arr = (x, y, up, c) => `<path d="M${x} ${y} l-7 ${up ? 10 : -10} h14 Z" fill="${c}"/>`;
-    b.add(`<g data-k="arr">${[250, 330, 440].map(y => arr(330, y, 1, '#d6ecff') + arr(370, y + 20, 1, '#d6ecff') + arr(470, y + 12, 0, '#e2dad2') + arr(520, y - 6, 0, '#e2dad2')).join('')}</g>`);
-    b.txt(
-      T(260, 250, 'Hot end', 'hs-st', 'fill="#f0b47a" text-anchor="end" style="font-size:11px"') +
-        T(260, 344, 'Intermediate', 'hs-st', 'fill="#d9c2a2" text-anchor="end" style="font-size:11px"') +
-        T(260, 450, 'Cold end', 'hs-st', 'fill="#a9c6dc" text-anchor="end" style="font-size:11px"')
-    );
-    /* center drive on the rotor post, above the top bearing: gear reducer, main drive motor, back-up air motor */
-    b.add(`<rect x="398" y="166" width="34" height="28" rx="3" fill="url(#${PX}-cs)" stroke="#090d11" stroke-width="1.4"/>`);
-    b.add(H.motor(397, 116, 'MD', PX, { w: 36, h: 44 }) + H.motor(440, 146, 'AM', PX, { w: 24, h: 22, lab: 'A' }));
-    b.pipe([[452, 66], [452, 142]], { w: 4, med: 'air', f: 'ia' });
-    b.add(H.valve(452, 96, { kind: 'xv', id: 'SV', vert: 1 }));
-    b.txt(T(300, 44, 'Main drive motor', 'hs-sub', 'fill="#dce4eb"') + T(300, 60, '-----', 'hs-st', 'data-st="MD" fill="#6b7480"'));
-    b.txt(T(470, 44, 'Air motor', 'hs-sub', 'fill="#dce4eb"') + T(470, 60, '-----', 'hs-st', 'data-st="AM" fill="#6b7480"') + T(470, 76, 'valve SV-PA1052', 'hs-tag', 'style="font-size:10.5px"'));
-    /* top view: the sectors and the turning element pattern (leader review: three clearly different fills) */
-    const sec = (a0, a1, col) => {
-      const p = a => [CX + R * Math.cos((a * Math.PI) / 180), CY + R * Math.sin((a * Math.PI) / 180)];
-      const [x0, y0] = p(a0),
-        [x1, y1] = p(a1);
-      return `<path d="M${CX} ${CY} L${x0.toFixed(1)} ${y0.toFixed(1)} A${R} ${R} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(1)} ${y1.toFixed(1)} Z" fill="${col}" opacity=".7"/>`;
-    };
-    let sp = '';
-    for (let k = 0; k < 24; k++) sp += `<line x1="${CX}" y1="${CY}" x2="${CX + R}" y2="${CY}" stroke="#d9c3a3" stroke-width="1.1" opacity=".5" transform="rotate(${k * 15} ${CX} ${CY})"/>`;
-    for (let k = 1; k < 4; k++) sp += `<circle cx="${CX}" cy="${CY}" r="${(R * k) / 4}" fill="none" stroke="#d9c3a3" stroke-width="1" opacity=".4"/>`;
-    const SEC = [['#6d6660', 'Flue gas'], ['#d0782c', 'Primary air'], ['#3f7fae', 'Secondary air']];
-    b.add(
-      `<g class="hs-hit" data-hit="RTR2"><title>Air preheater H-1052 · top view · click: control faceplate</title><circle cx="${CX}" cy="${CY}" r="${R + 10}" fill="#20262c" stroke="#8b9aaa" stroke-width="2" class="hs-hl"/>` +
-        `<circle cx="${CX}" cy="${CY}" r="${R + 6}" fill="none" stroke="#c99a3c" stroke-width="3" stroke-dasharray="2 3"/>` +
-        sec(-90, 90, SEC[0][0]) +
-        sec(90, 180, SEC[1][0]) +
-        sec(180, 270, SEC[2][0]) +
-        `<g data-rot="1">${sp}</g>` +
-        [-90, 90, 180, 270].map(a => `<line x1="${CX}" y1="${CY}" x2="${(CX + (R + 6) * Math.cos((a * Math.PI) / 180)).toFixed(1)}" y2="${(CY + (R + 6) * Math.sin((a * Math.PI) / 180)).toFixed(1)}" stroke="#d8dee4" stroke-width="4"/>`).join('') +
-        `<circle cx="${CX}" cy="${CY}" r="10" fill="#7b8894" stroke="#090d11" stroke-width="1.4"/></g>`
-    );
-    b.add(`<path d="M${CX + 70} ${CY - 92} a 116 116 0 0 1 40 40" fill="none" stroke="#e8edf2" stroke-width="2.4"/><path d="M${CX + 112} ${CY - 48} l-2 -12 l-9 7 Z" fill="#e8edf2"/>`);
-    b.txt(T(CX, CY + R + 28, 'Top view · rotor turns about 1 rpm', 'hs-sub', 'text-anchor="middle"'));
-    b.add(SEC.map(([c], i) => `<rect x="${686 + i * 96}" y="${CY + R + 40}" width="12" height="12" rx="2" fill="${c}"/>`).join(''));
-    b.txt(SEC.map(([, t], i) => T(702 + i * 96, CY + R + 51, t, 'hs-sub', 'style="font-size:12px"')).join(''));
-    /* sootblowers: hot end and cold end lances on the gas side */
+    /* centre drive above the top bearing: gear reducer, main drive motor, back-up air motor with its valve on the compressed air line */
+    b.add(`<rect x="${CX - 16}" y="${YT - 66}" width="32" height="22" rx="3" fill="url(#${PX}-cs)" stroke="#090d11" stroke-width="1.4"/><line x1="${CX}" y1="${YT - 44}" x2="${CX}" y2="${YT - 10}" stroke="#7b8894" stroke-width="6"/>`);
+    b.add(H.motor(CX - 18, YT - 120, 'MD', PX, { w: 36, h: 48 }) + H.motor(CX + 26, YT - 92, 'AM', PX, { w: 24, h: 22, lab: 'A' }));
+    b.pipe([[CX + 38, 56], [CX + 38, YT - 96]], { w: 4, med: 'air', f: 'ia' });
+    b.add(H.valve(CX + 38, 74, { kind: 'xv', id: 'SV', vert: 1 }));
+    b.txt(T(CX + 52, 30, 'Main drive motor', 'hs-sub', 'fill="#dce4eb"') + T(CX + 52, 46, '-----', 'hs-st', 'data-st="MD" fill="#6b7480"') + T(CX + 172, 30, 'Air motor (back-up)', 'hs-sub') + T(CX + 172, 46, '-----', 'hs-st', 'data-st="AM" fill="#6b7480"'));
+    /* sootblowers: retractable lances into the gas half, hot end and cold end */
     const sb = (y, id, t) => {
-      b.pipe([[600, y], [556, y]], { w: 5, med: 'st', f: '' });
-      b.add(`<g class="hs-hit" data-hit="${id}"><title>${t}</title><rect x="598" y="${y - 13}" width="34" height="26" rx="4" fill="url(#${PX}-mt)" stroke="#090d11" stroke-width="1.4" class="hs-hl"/></g>`);
+      b.pipe([[742, y], [CX + RX - 10, y]], { w: 5, med: 'st', f: '' });
+      b.add(`<g class="hs-hit" data-hit="${id}"><title>${t}</title><rect x="740" y="${y - 13}" width="40" height="26" rx="4" fill="url(#${PX}-mt)" stroke="#090d11" stroke-width="1.4" class="hs-hl"/></g>`);
     };
-    sb(244, 'SBH', 'Hot end sootblower N1040');
-    sb(460, 'SBC', 'Cold end sootblower N1042');
-    b.txt(T(572, 222, 'Hot end sootblower', 'hs-sub') + T(572, 494, 'Cold end sootblower', 'hs-sub'));
-    /* name (leader review: clear of the hot end sootblower label) and the #59 button */
-    b.txt(T(690, 192, 'Air preheater', 'hs-eq') + T(690, 210, 'H-1052 · Ljungstrom rotary', 'hs-sub'));
-    b.add(H.eqb(720, 486, 'APH'));
-    /* air side values between the hot and the cold ducts */
+    sb(262, 'SBH', 'Hot end sootblower N1040');
+    sb(486, 'SBC', 'Cold end sootblower N1042');
+    /* name and the #59 button */
+    b.txt(T(CX + 52, 76, 'Air preheater', 'hs-eq', 'data-hit="RTR"'));
+    b.add(H.eqb(CX + 182, 60, 'APH'));
+    /* values at their ducts (description + value + unit, the tag on hover) */
+    const v2 = (x, y, d, tags) => H.vb2(x, y, d, tags, '°C', tags);
+    b.txt(v2(20, 42, 'Hot primary air out', ['TIFA1076', 'TIFA1077']) + v2(20, 176, 'Hot secondary air out', ['TIFA1086', 'TIFA1087']));
+    b.txt(v2(20, 554, 'Cold secondary air in', ['TIFA1083', 'TIFA1084']) + v2(20, 682, 'Cold primary air in', ['TIFA1073', 'TIFA1074']));
+    b.txt(v2(620, 152, 'Flue gas in', ['TIFG1124', 'TIFG1125']) + v2(620, 632, 'Flue gas out', ['TIFG1132', 'TIFG1133']));
+    b.txt(H.vbc(696, 296, 'Hot end sootblower steam', 'PISB1040', 'kg/cm²', 'PISB1040') + H.vbc(696, 370, 'Gas side ΔP', 'DPIFG10525', 'mmH2O', 'DPIFG10525') + H.vbc(696, 520, 'Cold end sootblower steam', 'PISB1042', 'kg/cm²', 'PISB1042'));
+    /* how it works, under the art (the temperatures are the values of the page) */
     b.txt(
-      H.vb(16, 214, 'Hot secondary air, average', 'TIFA1052', '°C', 'TIFA1052', 56) +
-        H.vb(16, 282, 'Hot secondary air A / B', 'TIFA1086/87', '°C', 'hsa', 84) +
-        H.vb(16, 350, 'Hot primary air A / B', 'TIFA1076/77', '°C', 'hpa', 84) +
-        H.vb(16, 418, 'Hot primary air pressure', 'PIFA1078', 'mmH2O', 'PIFA1078', 64) +
-        H.vb(16, 486, 'Cold primary air A / B', 'TIFA1073/74', '°C', 'cpa', 84)
+      T(200, 726, 'Flue gas', 'hs-sub', 'fill="#e2dad2"') + T(270, 726, '-----', 'hs-sub', 'data-lg="g"') +
+        T(200, 745, 'Air', 'hs-sub', 'fill="#d6ecff"') + T(270, 745, '-----', 'hs-sub', 'data-lg="a"') +
+        T(200, 764, 'Rotor', 'hs-sub', 'fill="#c99a3c"') + T(270, 764, 'about 1 rpm (shown faster)', 'hs-sub')
     );
-    b.txt(H.vb(16, 690, 'Primary fan outlet', 'PIFA1075', 'mmH2O', 'PIFA1075', 56) + H.vb(150, 690, 'Cold secondary air A / B', 'TIFA1083/84', '°C', 'csa', 84) + H.vb(330, 690, 'Secondary fan outlet', 'PIFA1085', 'mmH2O', 'PIFA1085', 56));
-    b.txt(T(16, 76, 'hot primary air to the furnace', 'hs-sub') + T(16, 140, 'hot secondary air to the furnace', 'hs-sub') + T(16, 594, 'cold secondary air from the fan', 'hs-sub') + T(16, 656, 'cold primary air from the fan', 'hs-sub'));
-    /* gas side values */
-    b.txt(H.vb(560, 140, 'Gas inlet temperature A / B', 'TIFG1124/25', '°C', 'gin', 84) + H.vb(724, 140, 'Gas inlet pressure', 'PIFG1121', 'mmH2O', 'PIFG1121', 56) + H.vb(852, 140, 'Inlet oxygen A', 'AIFG1122', '%', 'AIFG1122', 56));
-    b.txt(H.vb(560, 700, 'Gas outlet temperature A / B', 'TIFG1132/33', '°C', 'gout', 84) + H.vb(760, 700, 'Gas outlet pressure', 'PIFG1134', 'mmH2O', 'PIFG1134', 56) + H.vb(880, 700, 'Outlet oxygen', 'AIFG1131', '%', 'AIFG1131', 46));
-    b.txt(H.vb(560, 580, 'Gas side differential pressure', 'DPIFG10525', 'mmH2O', 'DPIFG10525', 56) + H.vb(800, 580, 'Drive motor current', 'IIFA1052M1', 'A', 'cur', 56));
-    b.txt(H.vb(574, 290, 'Top bearing oil', 'TIFA10526', '°C', 'b6', 50) + H.vb(574, 360, 'Bottom bearing oil', 'TIFA10527', '°C', 'b7', 50));
-    b.txt(H.vb(574, 418, 'Hot sootblower steam', 'PISB1040', 'kg/cm²', 'PISB1040', 50) + H.vb(574, 524, 'Cold sootblower steam', 'PISB1042', 'kg/cm²', 'PISB1042', 50));
-    b.txt(T(975, 74, 'flue gas from the economizer', 'hs-sub', 'text-anchor="end"') + T(975, 672, 'flue gas to the precipitator', 'hs-sub', 'text-anchor="end"'));
     return b.svg();
   }
 
-  /* the values: [key, tags (one or A / B), decimals]; a tag a logic sheet reads = the logic value, else the plant estimate of 007 */
+  /* the values on the page [tag, decimals] and in the MONITORING of the second faceplate [label, tag, unit, decimals]; a tag a logic
+     sheet reads = the logic value, else the plant estimate of 007 */
   const VALS = [
-    ['TIFA1052', ['TIFA1052'], 0],
-    ['hsa', ['TIFA1086', 'TIFA1087'], 0],
-    ['hpa', ['TIFA1076', 'TIFA1077'], 0],
-    ['PIFA1078', ['PIFA1078'], 0],
-    ['cpa', ['TIFA1073', 'TIFA1074'], 0],
-    ['csa', ['TIFA1083', 'TIFA1084'], 0],
-    ['PIFA1075', ['PIFA1075'], 0],
-    ['PIFA1085', ['PIFA1085'], 0],
-    ['gin', ['TIFG1124', 'TIFG1125'], 0],
-    ['PIFG1121', ['PIFG1121'], 0],
-    ['AIFG1122', ['AIFG1122'], 1],
-    ['gout', ['TIFG1132', 'TIFG1133'], 0],
-    ['PIFG1134', ['PIFG1134'], 0],
-    ['AIFG1131', ['AIFG1131'], 1],
-    ['DPIFG10525', ['DPIFG10525'], 0],
-    ['PISB1040', ['PISB1040'], 1],
-    ['PISB1042', ['PISB1042'], 1]
+    ['TIFA1076', 0], ['TIFA1077', 0], ['TIFA1086', 0], ['TIFA1087', 0], ['TIFA1083', 0], ['TIFA1084', 0], ['TIFA1073', 0], ['TIFA1074', 0],
+    ['TIFG1124', 0], ['TIFG1125', 0], ['TIFG1132', 0], ['TIFG1133', 0], ['DPIFG10525', 0], ['PISB1040', 1], ['PISB1042', 1]
+  ];
+  const MONV = [
+    ['Hot sec. air, avg', 'TIFA1052', '°C', 0],
+    ['Gas inlet press.', 'PIFG1121', 'mmH2O', 0],
+    ['Gas outlet press.', 'PIFG1134', 'mmH2O', 0],
+    ['Hot prim. air press.', 'PIFA1078', 'mmH2O', 0],
+    ['Inlet oxygen', 'AIFG1122', '%', 1],
+    ['Outlet oxygen', 'AIFG1131', '%', 1]
   ];
 
   function page(g, api) {
@@ -160,28 +169,36 @@
       E = { tb: null, pa0: 354, sa0: 213, fa0: 26.3 },
       V = {};
     const live = (ref, tag, set) => api.reg({ t: 'val', tag: tag || '', ref: ref || undefined, v: '' }, X => set(X && isFinite(X.v) ? +X.v : null), null);
+    const get = t => {
+      if (V[t] !== undefined && V[t] !== null) return V[t];
+      if (!EST[t]) return null;
+      try {
+        const v = EST[t](E);
+        return v != null && isFinite(v) ? v : null;
+      } catch (e) {
+        return null;
+      }
+    };
+    const avg = (a, b) => (a != null && b != null ? (a + b) / 2 : a != null ? a : b);
+    /* the heat colours follow the page values: gas in (top) and air in (bottom) */
+    let th = 338,
+      tc = 35;
     const paint = () => {
       if (PLANT_V2.estPrep) PLANT_V2.estPrep(E);
-      for (const [key, tags, dp] of VALS) {
-        const vs = tags.map(t => {
-          if (V[t] !== undefined && V[t] !== null) return V[t];
-          if (EST[t]) {
-            try {
-              const v = EST[t](E);
-              return v != null && isFinite(v) ? v : null;
-            } catch (e) {
-              return null;
-            }
-          }
-          return null;
-        });
-        showV(key, vs.every(v => v == null) ? null : vs.map(v => fmt(v, dp)).join('/'));
+      for (const [t, dp] of VALS) {
+        const v = get(t);
+        showV(t, v == null ? null : fmt(v, dp));
       }
-      /* the drive: its current while it runs (38.PNG 4.7 A), bearing oil warming towards 60 / 47 °C with the gas (38.PNG) */
-      const run = st === 'RUN';
-      showV('cur', st == null ? null : fmt(run ? 4.7 : 0, 1));
-      showV('b6', fmt(E.tpa != null ? E.tpa + (60 - 30) * clamp(E.kb || 0, 0, 1) : null, 0));
-      showV('b7', fmt(E.tpa != null ? E.tpa + (47 - 30) * clamp(E.kb || 0, 0, 1) : null, 0));
+      const gi = avg(get('TIFG1124'), get('TIFG1125')),
+        go = avg(get('TIFG1132'), get('TIFG1133')),
+        ai = avg(avg(get('TIFA1073'), get('TIFA1074')), avg(get('TIFA1083'), get('TIFA1084'))),
+        ao = avg(get('TIFA1086'), get('TIFA1087'));
+      if (gi != null) th = gi;
+      if (ai != null) tc = ai;
+      const lg = (k, t) => qa(`[data-lg="${k}"]`).forEach(e => (e.textContent = t));
+      lg('g', gi == null || go == null ? '-----' : `${fmt(gi, 0)} → ${fmt(go, 0)} °C, heats the baskets`);
+      lg('a', ai == null || ao == null ? '-----' : `${fmt(ai, 0)} → ${fmt(ao, 0)} °C, cools the baskets`);
+      drum();
     };
     let rq = 0;
     const later = () => rq || (rq = setTimeout(() => ((rq = 0), paint()), 60)); /* a timer, not a frame: the values also land while the window is in the background */
@@ -195,8 +212,8 @@
     inp('ts', '', 'TIFA1082');
     let o2a = null,
       o2b = null;
-    live('', 'AIFG1122', v => ((o2a = v), (E.o2 = o2a != null && o2b != null ? (o2a + o2b) / 2 : o2a), later()));
-    live('', 'AIFG1123', v => ((o2b = v), (E.o2 = o2a != null && o2b != null ? (o2a + o2b) / 2 : o2a), later()));
+    live('', 'AIFG1122', v => ((o2a = v), (E.o2 = avg(o2a, o2b)), later()));
+    live('', 'AIFG1123', v => ((o2b = v), (E.o2 = avg(o2a, o2b)), later()));
     const FAN = { idf: 'ABC-008|M.3304', saf: 'ABC-007|M.3303', paf: 'ABC-007|M.3302' };
     for (const k in FAN)
       live(FAN[k], '', v => {
@@ -219,15 +236,68 @@
       )
     );
     /* the transmitters a logic sheet reads (the logic value wins over the estimate) */
-    for (const [, tags] of VALS) for (const t of tags) if (!EST[t]) live('', t, v => ((V[t] = v), later()));
+    for (const t of [...VALS.map(x => x[0]), ...MONV.map(x => x[1])]) if (!EST[t]) live('', t, v => ((V[t] = v), later()));
+    /* the turning baskets: top face (all) and the cut-open front half, coloured by their temperature */
+    const gTop = q('[data-top]'),
+      gFront = q('[data-front]'),
+      gParts = q('[data-parts]');
+    let rot = 0;
+    function drum() {
+      let top = '',
+        front = '';
+      for (let i = 0; i < N; i++) {
+        const a0 = rot + (i * 360) / N,
+          a1 = a0 + 360 / N - 1.2,
+          t0 = tempAt(a0 + 180 / N, th, tc);
+        top += `<path d="M${CX} ${YT} L${px(a0).toFixed(1)} ${py(a0, YT).toFixed(1)} A${RX} ${RY} 0 0 1 ${px(a1).toFixed(1)} ${py(a1, YT).toFixed(1)} Z" fill="${colAt(t0, th, tc)}" opacity=".9" stroke="#0b0f13" stroke-width=".8"/>`;
+        const s0 = ((a0 % 360) + 360) % 360,
+          s1 = s0 + 360 / N - 1.2;
+        if (s0 > 0 && s1 < 180) {
+          const x0 = px(s0).toFixed(1),
+            x1 = px(s1).toFixed(1),
+            yy = (a, f) => (py(a, YT) + (py(a, YB) - py(a, YT)) * f).toFixed(1);
+          /* three layers: hot end, intermediate, cold end */
+          for (const [f0, f1, dk] of [[0, 0.24, 1.08], [0.26, 0.63, 0.86], [0.65, 1, 0.62]])
+            front += `<path d="M${x0} ${yy(s0, f0)} L${x1} ${yy(s1, f0)} L${x1} ${yy(s1, f1)} L${x0} ${yy(s0, f1)} Z" fill="${colAt(tc + (t0 - tc) * dk, th, tc)}" opacity=".85" stroke="#0b0f13" stroke-width=".6"/>`;
+        }
+      }
+      if (gTop) gTop.innerHTML = top;
+      if (gFront) gFront.innerHTML = front;
+    }
+    /* particles: flue gas down (while the induced draft fan runs), primary / secondary air up (while their fan runs) */
+    const P = [];
+    const pick = k => (k === 'g' ? 6 + Math.random() * 80 : k === 'p' ? 92 + Math.random() * 26 : 122 + Math.random() * 54);
+    for (let i = 0; i < 60 && gParts; i++) {
+      const kind = i < 30 ? 'g' : i < 40 ? 'p' : 's',
+        c = document.createElementNS(NS, 'circle');
+      c.setAttribute('r', kind === 'g' ? 3.4 : 3);
+      c.setAttribute('stroke', '#0b0f13');
+      c.setAttribute('stroke-width', '.6');
+      gParts.append(c);
+      P.push({ kind, a: pick(kind), t: Math.random(), c, v: 0.21 + Math.random() * 0.12 });
+    }
+    const movePart = (p, dt) => {
+      const on = (p.kind === 'g' ? E.idf : p.kind === 'p' ? E.paf : E.saf) !== 0;
+      p.c.setAttribute('visibility', on ? 'visible' : 'hidden');
+      if (!on) return;
+      p.t += p.v * dt;
+      if (p.t > 1) ((p.t = 0), (p.a = pick(p.kind)));
+      const yt = py(p.a, YT),
+        yb = py(p.a, YB),
+        down = p.kind === 'g',
+        y = down ? yt + (yb - yt) * p.t : yb - (yb - yt) * p.t;
+      p.c.setAttribute('cx', px(p.a).toFixed(1));
+      p.c.setAttribute('cy', y.toFixed(1));
+      p.c.setAttribute('fill', down ? `rgb(${Math.round(150 + 80 * (1 - p.t))},${Math.round(130 + 30 * (1 - p.t))},${Math.round(120 - 40 * (1 - p.t))})` : colAt(tc + (th - 60 - tc) * p.t, th, tc));
+    };
+    P.forEach(p => movePart(p, 0));
     /* the drive (DITL-43) and the air motor valve (DITL-44): run state, rotor turning, the #59 button */
-    let st = null,
-      ang = 0;
-    const g0 = q('[data-rot]');
-    A.each(adt => {
-      if (st !== 'RUN' || !g0) return;
-      ang = (ang + adt * 6) % 360; /* ~1 rpm */
-      g0.setAttribute('transform', `rotate(${ang.toFixed(2)} ${CX} ${CY})`);
+    let st = null;
+    A.each(dt => {
+      P.forEach(p => movePart(p, dt));
+      if (st !== 'RUN') return;
+      rot = (rot - dt * 18 + 360) % 360; /* ~3 rpm on the screen, the real rotor ~1 rpm */
+      drum();
     });
     const D = () => window.LS_DOCK;
     const tick = () => {
@@ -249,29 +319,36 @@
     };
     const iv = setInterval(tick, 1000);
     tick();
-    /* #59: click on the rotor or the drive = CONTROL faceplate; the Y / N button = PERMISSIVE · TREND · MONITOR */
-    const MON = [
-      ['Top bearing oil', () => (q('[data-v="b6"]') ? parseFloat(q('[data-v="b6"]').textContent) : null), '°C', 'TIFA10526'],
-      ['Bottom bearing oil', () => (q('[data-v="b7"]') ? parseFloat(q('[data-v="b7"]').textContent) : null), '°C', 'TIFA10527']
-    ];
+    /* #59: click on the rotor, its name or the drive = CONTROL faceplate; the PERMISSIVE button = PERMISSIVE · TREND · MONITOR */
     const cur = () => (st === 'RUN' ? 4.7 : st ? 0 : null);
-    /* the faceplates open in the right strip of the page (x >= 990, kept free for them): CONTROL on top, the info one under it */
+    /* the drive current while it runs (38.PNG 4.7 A), bearing oil warming towards 60 / 47 °C with the gas (38.PNG) */
+    const oil = top => (E.tpa != null ? E.tpa + ((top ? 60 : 47) - 30) * clamp(E.kb || 0, 0, 1) : null);
+    const MON = [
+      ['Top bearing oil', () => oil(1), '°C', 'TIFA10526'],
+      ['Bottom bearing oil', () => oil(0), '°C', 'TIFA10527'],
+      ...MONV.map(([l, t, u, dp]) => [l, () => (get(t) == null ? null : +get(t).toFixed(dp)), u, t])
+    ];
+    /* the faceplates open in the right strip, CONTROL on top and the info one under it, each in its half of the HMI area (scrolls
+       inside when longer); the left edge never left of the right end of any value or button of the page (measured, the descriptions
+       included): narrower when the strip is narrow */
     const open = part => {
       if (!window.LS_FPOP || !LS_FPOP.motor({ ...M, part, cur, mon: MON })) return;
       const el = document.getElementById(part === 'info' ? 'fpop2' : 'fpop'),
         host = el && el.parentNode,
         m = pg.getScreenCTM && pg.getScreenCTM();
       if (!el || !host || !m) return;
-      /* each one in its half of the HMI area (scrolls inside when longer), at the strip x 990 (or as far right as it fits) */
       const Hr = host.getBoundingClientRect(),
-        x = new DOMPoint(990, 0).matrixTransform(m).x,
-        half = Math.floor(Hr.height / 2) - 9;
+        x0 = Math.max(...[...qa('[data-vbx], [data-eqb], [data-st]')].map(e => e.getBoundingClientRect().right)) + 4,
+        x1 = new DOMPoint(990, 0).matrixTransform(m).x,
+        half = Math.floor(Hr.height / 2) - 9,
+        room = Hr.right - 6 - x0;
       el.dataset.side = 'n';
       el.style.maxHeight = half + 'px';
-      el.style.left = Math.round(Math.max(6, Math.min(x, Hr.right - el.offsetWidth - 6) - Hr.left)) + 'px';
+      if (room < el.offsetWidth) el.style.width = Math.max(240, Math.floor(room)) + 'px';
+      el.style.left = Math.round(Math.max(6, Math.max(x0, Math.min(x1, Hr.right - el.offsetWidth - 6))) - Hr.left) + 'px';
       el.style.top = (part === 'info' ? half + 12 : 6) + 'px';
     };
-    for (const id of ['RTR', 'RTR2', 'MD', 'AM'])
+    for (const id of ['RTR', 'MD', 'AM'])
       qa(`[data-hit="${id}"]`).forEach(h => h.addEventListener('click', e => (e.stopPropagation(), open('control'))));
     qa('[data-eqb="APH"]').forEach(h => h.addEventListener('click', e => (e.stopPropagation(), open('info'))));
     (window.LS_FPREG = window.LS_FPREG || {})['DITL-43'] = { open: () => open('control'), el: () => q('[data-hit="MD"]'), n: M.n, cur };
