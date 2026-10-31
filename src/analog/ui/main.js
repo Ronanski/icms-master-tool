@@ -663,7 +663,7 @@ AN.errs = [];
       }
     } catch (e) {}
   };
-  addEventListener('error', e => note(e.message || 'error', (e.filename || '').split('/').pop() + ':' + e.lineno));
+  addEventListener('error', e => /ResizeObserver loop/i.test(e.message || '') || note(e.message || 'error', (e.filename || '').split('/').pop() + ':' + e.lineno));
   addEventListener('unhandledrejection', e => note('promise: ' + ((e.reason && e.reason.message) || e.reason)));
 }
 function anDiag() {
