@@ -434,6 +434,9 @@ window.LS_LIVE = (function () {
     [7, /Standby Make-up Pump and Set the Pump to AUTO/i, STBY(MWP, 1, 14, 'MWP')],
     [7, /^Open Expansion tank automatic inlet valve/i, ET_NL],
     [7, /^Set Expansion tank inlet valve \(XV-MU1109\) to AUTO/i, ALL(ET_NL, XV_AUTO)],
+    /* live test #50: the priming of the closed cooling line from the tank (V-CW1001, field valve of the plant model AN_MU) */
+    [7, /^Open Expansion tank outlet valve to prime/i, DC('V-CW1001 open, closed cooling line primed', () => +(U().cwPrime || 0) >= 1, () => 'V-CW1001 ' + (AN.fieldState && AN.fieldState().cw1001 ? 'OPEN' : 'CLOSED') + ' · primed ' + Math.round(100 * (+U().cwPrime || 0)) + ' %')],
+    [7, /^Close all vents if close cooling line is fully primed/i, ALL(DC('closed cooling line primed', () => +(U().cwPrime || 0) >= 1, () => 'primed ' + Math.round(100 * (+U().cwPrime || 0)) + ' %'), ET_NL)],
     [8, /Initiate START of the selected AWCP/i, RUNN(ACW, 1, 'ACW pump')],
     /* live test #51: the standby ACWP in REMOTE (row 5 MIL-P1108A / B REMOTE SELECTED, I.0088 / I.0408) and AUTO (out 1 AUTO SELECTED, the
        same output the 027 faceplate reads; input rows 1 and 4 are both M.1232 / M.1242 AUTO MODE (CRT)) */

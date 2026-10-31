@@ -224,6 +224,7 @@ function anUnitStop() {
   U.cold = false;
   U.turb = true;
   U.etLvl = NaN; /* 3.2.0-beta.63: the expansion tank starts again at its level of 27.PNG (AN_MU) */
+  U.cwPrime = NaN; /* live test #50: the closed cooling loop primed as V-CW1001 of the start state (AN_MU) */
   U.mt = {};
   U.iaP = U.paP = NaN; /* 3.2.0-beta.68: the air tanks are set again by the start state (AN_AIR) */
   U.acT1 = U.acT2 = NaN; /* 3.2.0-beta.69: the aux cooling water temperatures start again (AN_ACW) */
@@ -647,6 +648,8 @@ function anUnitStart() {
   AN_SRC.field.hypo = true;
   AN_SRC.field.pur = true;
   AN_SRC.field.mu1033 = false;
+  AN_SRC.field.cw1001 = true; /* live test #50: the expansion tank outlet open, the closed cooling loop primed */
+  U.cwPrime = 1;
   AN_SRC.field.esp = true;
   AN.unit = U;
 }
@@ -689,6 +692,8 @@ function anUnitCold() {
   AN_SRC.field.hypo = false;
   AN_SRC.field.pur = false;
   AN_SRC.field.mu1033 = false;
+  AN_SRC.field.cw1001 = false; /* live test #50: the expansion tank outlet closed, the closed cooling loop not primed */
+  U.cwPrime = 0;
   AN_SRC.field.esp = false;
   AN_SRC.t = -1;
   /* 3.2.0-beta.68: cold = the air compressors stopped, the air tanks empty (AN_AIR) */
@@ -948,6 +953,11 @@ const AN_MU = {
   etMax: 2.0,
   etRate: 0.003,
   etQ: 10,
+  etPrime: 0.4 /* m of tank level that the priming of the closed loop takes (ASSUMED) */,
+  etPrimeT: 120 /* s (ASSUMED) */,
+  etH: 1.7,
+  etL: 0.8,
+  etLL: 0.3,
   tauP: 3,
   tauI: 2
 };
@@ -971,7 +981,19 @@ function anMakeupStep(U, dt) {
   const fill = (U.muXv || U.muByp) && U.muP > 6 && U.etLvl < K.etMax;
   U.muFill = fill ? 1 : 0;
   if (fill) U.etLvl = Math.min(K.etMax, U.etLvl + K.etRate * dt);
+  /* live test #50: PR-OPE-5002 7.20 "Open Expansion tank outlet valve to prime the close cooling line (V-CW1001)" and 7.22 "Ensure
+     Expansion tank is at NL = 1.7m and make up if necessary": the first opening of V-CW1001 after a cold plant fills the closed loop
+     from the tank (K.etPrime m of tank level over K.etPrimeT s, ASSUMED: the loop volume is not in the repository); then the level stays */
+  if (!isFinite(U.cwPrime)) U.cwPrime = AN_SRC.field.cw1001 ? 1 : 0;
+  if (AN_SRC.field.cw1001 && U.cwPrime < 1) {
+    const d = Math.min(1 - U.cwPrime, dt / K.etPrimeT);
+    U.cwPrime += d;
+    U.etLvl = Math.max(0, U.etLvl - K.etPrime * d);
+  }
   U.etPct = (100 * U.etLvl) / K.etMax;
+  /* live test #50: the alarms of LT-CW1109 (alarm list LT: H 1700 mm (DCS), L 800 mm (DCS); LS: LSLL-CW1109 300 mm = DITL-77 row 26
+     M.1238 "EXPANSION TANK LEVEL < 0.3 M", the ACWP trip). UNUSUAL: the H alarm is the normal level NL 1.7 m of the SOP */
+  U.etAlm = U.etLvl <= K.etLL ? 'LL' : U.etLvl <= K.etL ? 'L' : U.etLvl > K.etH ? 'H' : '';
   const hw = typeof AN_CYC !== 'undefined' ? Math.max(0, 1.8 * (AN_CYC.u.hw || 0)) : 0;
   lag('muF', n ? hw + (fill ? K.etQ : 0) : 0, K.tauP);
 }
