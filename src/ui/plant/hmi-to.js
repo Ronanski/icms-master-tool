@@ -37,10 +37,14 @@
     VX: { n: 'VAPOUR EXTRACTOR', t: 'F-1937', d: 'MAIN OIL TANK VAPOUR EXTRACTOR', k: 'vex', ops: 0 },
     PU: { n: 'OIL PURIFIER', t: 'P-1941', d: 'OIL PURIFIER PUMP (local panel)', k: 'pur', ops: 0, field: 1 }
   };
+  /* live test #53 (36.PNG shows three values): a redundant set of three transmitters (2oo3 trip) = three value boxes under one tag line;
+     the three read the one header pressure of the plant model (tcs.js), so they show the same value */
+  const vbox3 = (x, y, tag, unit, key, w = 58) =>
+    `<g class="hs-hit" data-vbx="${key}">${T(x, y - 5, tag + '  ' + unit, 'hs-tag')}${[0, 1, 2].map(i => `<rect x="${x + i * (w + 4)}" y="${y}" width="${w}" height="29" rx="2" fill="${C.box}" stroke="${C.boxs}"/>${T(x + i * (w + 4) + w - 5, y + 22, '-----', 'hs-val', `text-anchor="end" fill="${C.none}" data-v="${key}"`)}`).join('')}</g>`;
   /* name, state and mode of a machine (state / mode filled live) */
   const label = (x, y, id, a = 'middle') =>
-    T(x, y, MACH[id].n, 'hs-eq', `text-anchor="${a}"`) +
-    T(x, y + 18, MACH[id].t, 'hs-tag', `text-anchor="${a}"`) +
+    T(x, y, MACH[id].n, 'hs-eq', `text-anchor="${a}" data-hit="${id}"`) + /* #48: the name opens what the symbol opens */
+    T(x, y + 18, MACH[id].t, 'hs-tag', `text-anchor="${a}" data-hit="${id}"`) +
     T(x, y + 36, '-----', 'hs-st', `text-anchor="${a}" fill="${C.none}" data-st="${id}"`) +
     T(
       x,
@@ -253,7 +257,7 @@
     }
     b.txt(
       H.vbox(20, 690, 'SPEED (TCS)', 'rpm', 'rpm', 92) +
-        H.vbox(196, 690, 'PILO10031 ~ 33', 'kg/cm²', 'loBrg', 84) +
+        vbox3(196, 690, 'PILO10031 / 32 / 33', 'kg/cm²', 'loBrg') +
         H.lamp(394, 704, 'PSL', 'PSLO1004 bearing oil') +
         H.vbox(640, 690, 'TIGE1007 No.3 out', '°C', 'loTb3', 84) +
         H.vbox(820, 690, 'TIGE1008 No.4 out', '°C', 'loTb4', 84) +
@@ -375,14 +379,14 @@
     b.add(H.filter(1120, 440, 'FLT', PX, 'lube oil filter · DP switch DPISL01932'));
     b.txt(
       H.lamp(960, 440, 'DPF', 'DPISL01932') +
-        H.vbox(1134, 230, 'TE-LO1002-1', '°C', 'TE-LO1002-1', 72) +
-        H.vbox(1134, 290, 'TE-LO1002-2', '°C', 'TE-LO1002-2', 72) +
+        H.vbox(1134, 230, 'TILO10021', '°C', 'TE-LO1002-1', 72) /* #53: the DCS tag (36.PNG); the I/O line is TE-LO1002-1 */ +
+        H.vbox(1134, 290, 'TILO10022', '°C', 'TE-LO1002-2', 72) +
         H.vbox(640, 328, 'TILO1001 in', '°C', 'loTin', 72)
     );
     b.txt(
       `<g class="hs-hit" data-tab="0">${T(1276, 470, 'TO BEARINGS ▶', 'hs-sub', 'text-anchor="end"')}</g>` +
         `<g class="hs-hit" data-tab="0">${T(1276, 550, '◀ DRAIN from bearings (tab 1)', 'hs-sub', 'text-anchor="end"')}</g>` +
-        H.vbox(1150, 506, 'PILO10031 ~ 33', 'kg/cm²', 'loBrg', 72) +
+        vbox3(1090, 506, 'PILO10031 / 32 / 33', 'kg/cm²', 'loBrg') +
         H.lamp(900, 506, 'PSL', 'PSLO1004')
     );
     /* the DCS loop TICLO1002 (ABC-053): PV = the cooler outlet TE-LO1002, MV = TCV-CW1201; click = faceplate */
@@ -482,7 +486,7 @@
         `<g transform="rotate(90 470 400)" `
       )
     );
-    b.txt(H.lamp(500, 450, 'DPC', 'DPISL01933') + H.vbox(560, 494, 'PILO10061 ~ 63 control', 'kg/cm²', 'loCtl', 84));
+    b.txt(H.lamp(500, 450, 'DPC', 'DPISL01933') + vbox3(560, 494, 'PILO10061 / 62 / 63 control', 'kg/cm²', 'loCtl'));
     /* master trip solenoids: coils and spools */
     let mts = '';
     ['A1', 'A2', 'B1', 'B2'].forEach((n, i) => {
@@ -503,7 +507,7 @@
         .join('') +
         T(570, 196, 'MASTER TRIP SOLENOID', 'hs-st', `text-anchor="middle" fill="${C.nm}"`) +
         T(600, 382, '-----', 'hs-st', `fill="${C.none}" data-lt="MTS"`) +
-        H.vbox(780, 70, 'PILO10071 ~ 73 trip', 'kg/cm²', 'loTrip', 84)
+        vbox3(780, 70, 'PILO10071 / 72 / 73 trip', 'kg/cm²', 'loTrip')
     );
     /* actuators cut open: spring on top, piston, oil under the piston (control oil), dump (trip oil), stem to the plug */
     const act = (x, name, k) => {
@@ -737,7 +741,8 @@
       stx.setAttribute('fill', !s ? C.none : s.run ? C.run : C.stop);
       for (const op of ['auto', 'man']) {
         const bb = q(`[data-op="${op}"]`);
-        if (bb) bb.setAttribute('visibility', M.ops ? 'visible' : 'hidden');
+        /* live test #67: 'inherit', not 'visible' (an SVG child with visibility=visible shows through its hidden box: AUTO / MANUAL stayed) */
+        if (bb) bb.setAttribute('visibility', M.ops ? 'inherit' : 'hidden');
       }
       const lit = { start: s && s.run, stop: s && !s.run, auto: s && s.au, man: s && M.ops && !s.au };
       for (const op in lit) {
@@ -763,8 +768,8 @@
       if (!M) return;
       let r = '';
       try {
-        if (!(window.AN && AN.unit && AN.unit.on)) r = 'walang plant model: piliin ang Cold o 150 MW (Plant model ON)';
-        else if (M.field) r = AN.field && AN.field('pur', op === 'start') ? '' : 'oil purifier: walang plant model';
+        if (!(window.AN && AN.unit && AN.unit.on)) r = 'no plant model: choose Cold or 150 MW (Plant model ON)';
+        else if (M.field) r = AN.field && AN.field('pur', op === 'start') ? '' : 'oil purifier: no plant model';
         else if (M.k === 'vex') r = AN.turbine('vex', op === 'start' ? 1 : 0) || '';
         else r = AN.turbine('oil', { p: M.k, op }) || '';
       } catch (e) {

@@ -420,7 +420,7 @@
     let s = '';
     const n = tr.t.length;
     if (n < 2) {
-      svg.innerHTML = '<text x="10" y="50" fill="#7d8e9a" font-size="12">Walang data pa: i-RUN ang simulation.</text>';
+      svg.innerHTML = '<text x="10" y="50" fill="#7d8e9a" font-size="12">No data yet: RUN the simulation.</text>';
       return;
     }
     const t0 = tr.t[0],
@@ -465,6 +465,19 @@
         rhi = P.rhi != null ? P.rhi : 100,
         unit = P.unit || '';
       const key = sh.name + '|' + c.b.id;
+      /* live test #55: every A / M / R and SV / MV of the faceplate is an operator event (tag, sheet), also while the sheet is not on the
+         screen (the MODE events of events.js read the sheet on screen only); a ramp of SV / MV (hold, ▲▲) is one event when it stops */
+      const opT = {},
+        opEv = (k, v) => {
+          const say = () => {
+            try {
+              window.lsEventAdd && lsEventAdd(sh.name, 'DCS', 'Operator: ' + c.tag + ' ' + k + (v === undefined ? '' : ' = ' + (+v).toFixed(2).replace(/\.?0+$/, '')) + ' (faceplate)');
+            } catch (e) {}
+          };
+          clearTimeout(opT[k]);
+          if (v === undefined) say();
+          else opT[k] = setTimeout(say, 1200);
+        };
       const pv = E('b', { txt: '—' }),
         sv = E('b', { txt: '—' }),
         mv = E('b', { txt: '—' });
@@ -540,6 +553,7 @@
           on: () => {
             swMode('A');
             if (c.remote) pulse(['REM', 'REMOTE']);
+            opEv(c.remote ? 'REMOTE' : 'SV: LOGIC');
           }
         }),
         bLoc = E('button', {
@@ -547,7 +561,7 @@
           style: c.remote ? 'display:none' : '',
           txt: c.remote ? 'LOCAL' : 'SV: OPERATOR',
           title: c.remote ? 'LOCAL: MAN allowed, SV set by the operator (COS)' : 'Operator SV (COS)',
-          on: () => swMode('B')
+          on: () => (swMode('B'), opEv(c.remote ? 'LOCAL' : 'SV: OPERATOR'))
         }),
         modeRow = c.svSw && !c.remote ? E('div', { cls: 'row' }, [E('span', { txt: 'SV' }), bRem, bLoc]) : null;
       const sgEls = c.sigs.map(z => {
@@ -584,6 +598,7 @@
             on: () => {
               mvIn.value = x;
               setMV(S, c, x);
+              opEv('MV', x);
             }
           })
         ),
@@ -611,13 +626,13 @@
       cutEl.append(cutTx, cutWhy, cutList);
       svRow.append(svSrc);
       if (svOk) {
-        svIn.onchange = () => svSet(+svIn.value);
+        svIn.onchange = () => (svSet(+svIn.value), opEv('SV', +svIn.value));
       } else {
         svIn.disabled = true;
         svRow.append(E('span', { cls: 'sub', txt: '(SV from the logic)' }));
       }
       if (mvOk) {
-        mvIn.onchange = () => setMV(S, c, +mvIn.value);
+        mvIn.onchange = () => (setMV(S, c, +mvIn.value), opEv('MV', +mvIn.value));
       } else {
         mvIn.disabled = true;
         mvRow.append(E('span', { cls: 'sub', txt: '(no manual input)' }));
@@ -646,10 +661,12 @@
         }
         setMode('A');
         pulse(['LOC', 'LOCAL', 'AUTO', 'AUT']);
+        opEv('AUTO');
       };
       bMan.onclick = () => {
         setMode('M');
         pulse(['MAN', 'MANUAL']);
+        opEv('MAN');
       };
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('class', 'tr');
@@ -732,6 +749,7 @@
         popIn(k).value = +v.toFixed(3);
         if (k === 'SV') svSet(v);
         else setMV(S, c, v);
+        opEv(k, v);
         popRefresh();
       };
       const popRefresh = () => {
@@ -838,7 +856,7 @@
             AN.settle();
           } catch (e) {}
           if ((S.rt.v[cg.sel] > 0.5 ? 1 : 0) !== (was > 0.5 ? 1 : 0))
-            hits.push({ n, to: S.rt.ext[n], name: (S.lab[n] && S.lab[n].t) || 'n' + n + ' (walang label)' });
+            hits.push({ n, to: S.rt.ext[n], name: (S.lab[n] && S.lab[n].t) || 'n' + n + ' (no label)' });
           S.rt.ext[n] = o;
         }
         try {

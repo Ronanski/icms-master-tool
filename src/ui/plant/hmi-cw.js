@@ -405,8 +405,8 @@
       o.push(T(1396, y - 30, 'H 0.6 · trip 0.8 (5 s)', 'cw8'));
       o.push(pump(1230, y, id));
       o.push(
-        T(1268, y - 86, MACH[id].n, 'cw11') +
-          T(1268, y - 74, MACH[id].t + ' · ' + MACH[id].ad, 'cw8') +
+        T(1268, y - 86, MACH[id].n, 'cw11', `data-hit="${id}"`) + /* #48: the name opens what the symbol opens */
+          T(1268, y - 74, MACH[id].t + ' · ' + MACH[id].ad, 'cw8', `data-hit="${id}"`) +
           T(1268, y - 60, '-----', 'cw9b', `data-st="${id}"`) +
           `<g data-mdh="${id}" style="cursor:pointer">${T(1268, y - 47, `<tspan data-rem="${id}">---</tspan><tspan fill="${S.dim}"> · </tspan><tspan data-au="${id}">---</tspan>`, 'cw9b')}</g>` +
           T(1268, y - 34, '-----', 'cw9b', `data-vcb="${id}"`)

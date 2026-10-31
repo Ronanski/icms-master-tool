@@ -196,7 +196,7 @@
         o.push(silencer(96, yy, 'Z-' + Y.sil + L));
         o.push(comp(140, yy, id));
         o.push(
-          T(212, yy - 46, (X === 'IA' ? 'IA' : 'PA') + ' COMPRESSOR-' + L, 'ia11', 'text-anchor="middle"') +
+          T(212, yy - 46, (X === 'IA' ? 'IA' : 'PA') + ' COMPRESSOR-' + L, 'ia11', `text-anchor="middle" data-hit="${id}"`) /* #48 */ +
             T(212, yy - 34, 'C-' + Y.cn + L + ' · M-' + Y.cn + L, 'ia8', 'text-anchor="middle"')
         );
         o.push(
@@ -286,7 +286,7 @@
         o.push(filt(756, yy, 'S-' + Y.cn + L + '3/4'));
         o.push(check(866, yy, 'V-' + X + '00' + (10 + i), 'dn'));
         o.push(
-          T(663, yy - 46, (X === 'IA' ? 'IA' : 'PA') + ' DRYER-' + L, 'ia11', 'text-anchor="middle"') +
+          T(663, yy - 46, (X === 'IA' ? 'IA' : 'PA') + ' DRYER-' + L, 'ia11', `text-anchor="middle" data-hit="${id}"`) /* #48 */ +
             T(663, yy - 34, 'D-' + Y.cn + L + ' · ' + DRY[i], 'ia8', 'text-anchor="middle"')
         );
         o.push(
