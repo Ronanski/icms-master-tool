@@ -420,7 +420,7 @@
     let s = '';
     const n = tr.t.length;
     if (n < 2) {
-      svg.innerHTML = '<text x="10" y="50" fill="#7d8e9a" font-size="12">Walang data pa: i-RUN ang simulation.</text>';
+      svg.innerHTML = '<text x="10" y="50" fill="#7d8e9a" font-size="12">No data yet: RUN the simulation.</text>';
       return;
     }
     const t0 = tr.t[0],
@@ -838,7 +838,7 @@
             AN.settle();
           } catch (e) {}
           if ((S.rt.v[cg.sel] > 0.5 ? 1 : 0) !== (was > 0.5 ? 1 : 0))
-            hits.push({ n, to: S.rt.ext[n], name: (S.lab[n] && S.lab[n].t) || 'n' + n + ' (walang label)' });
+            hits.push({ n, to: S.rt.ext[n], name: (S.lab[n] && S.lab[n].t) || 'n' + n + ' (no label)' });
           S.rt.ext[n] = o;
         }
         try {

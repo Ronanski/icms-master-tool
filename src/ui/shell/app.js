@@ -88,13 +88,13 @@
         if (!el.hidden && iv) return;
         t0 = Date.now();
         el.hidden = false;
-        el.querySelector('b').textContent = t || 'Nilo-load…';
+        el.querySelector('b').textContent = t || 'Loading…';
         el.querySelector('i').style.width = '0%';
         el.querySelector('i').classList.add('ind');
-        el.querySelector('small').textContent = 'Sandali lang · 0 s';
+        el.querySelector('small').textContent = 'One moment · 0 s';
         clearInterval(iv);
         iv = setInterval(() => {
-          if (el && !el.hidden) el.querySelector('small').textContent = 'Sandali lang · ' + sec();
+          if (el && !el.hidden) el.querySelector('small').textContent = 'One moment · ' + sec();
         }, 1000);
       },
       prog(f) {
@@ -1606,19 +1606,19 @@
     });
     d.head('Field equipment (no DCS signal)');
     for (const [id, txt, on, ok] of [
-      ['dopstart', 'Diesel oil pump START', true, 'Diesel oil pump tumatakbo: may oil pressure na sa header (ABC-028).'],
-      ['dopstop', 'Diesel oil pump STOP', false, 'Diesel oil pump nakahinto: walang oil pressure, walang oil sa burners.']
+      ['dopstart', 'Diesel oil pump START', true, 'Diesel oil pump running: oil pressure in the header (ABC-028).'],
+      ['dopstop', 'Diesel oil pump STOP', false, 'Diesel oil pump stopped: no oil pressure, no oil to the burners.']
     ])
       btn(id, txt, 'Diesel oil pump P-0005 (DITL-31, field start; no running signal on the ABC sheets). Without it the start-up burner oil header (ABC-028 PICDO0005) has no pressure.', () =>
-        msg(AN.field && AN.field('dop', on) ? ok : 'Diesel oil pump: walang plant model.')
+        msg(AN.field && AN.field('dop', on) ? ok : 'Diesel oil pump: no plant model.')
       );
     d.head('Field valves');
     for (const [id, txt, open, ok] of [
-      ['bdclose', 'Drum BLOWDOWN valve CLOSE', false, 'Blowdown sarado: walang tubig na lumalabas sa drum maliban sa steam.'],
-      ['bdopen', 'Drum BLOWDOWN valve OPEN', true, 'Blowdown bukas: 25 T/H (03.png, 150 MW).']
+      ['bdclose', 'Drum BLOWDOWN valve CLOSE', false, 'Blowdown closed: no water leaves the drum except the steam.'],
+      ['bdopen', 'Drum BLOWDOWN valve OPEN', true, 'Blowdown open: 25 T/H (03.png, 150 MW).']
     ])
       btn(id, txt, 'Field hand valve of the drum blowdown (not a DCS station). PR-OPE-5003: "Before stopping BFP, set the drum level near HH (blow down valve must be close)".', () =>
-        msg(AN.blowdown && AN.blowdown(open) ? ok : 'Blowdown: walang drum level loop.')
+        msg(AN.blowdown && AN.blowdown(open) ? ok : 'Blowdown: no drum level loop.')
       );
   }
   /* 3.2.0-beta.20 (user 2026-10-24 "dpt common tools yn s simulate", pick B of https://claude.ai/artifact/ShJf2VmTtFDsMGFCMD5zeT):
