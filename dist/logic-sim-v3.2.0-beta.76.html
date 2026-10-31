@@ -1439,11 +1439,46 @@ function rowFix(sh) {
     }
   }
 }
+/* 3.2.0 live test #57: on the narrow sootblower form (DITL-80G / 80K: FROM | NO. | SERVICE) the FROM text starts a little left of the
+   FROM column line (80K "80M-373" at x 21.6 < 22.5, "DITL-43-70" at 19.4), so the reader left it out of the cell and the page link was
+   lost: the APH sootblower REMOTE START COMMAND of 80M never reached 80K row 6 (the PDF 80K / 80G FROM column). One word up to 4 units
+   left of the line, on a row, is the FROM of that row */
+function fromFix(sh) {
+  if (!sh || !sh.cells || !sh.rows || !sh.tx || !sh.rng || !sh.rng.F || sh._ffx) return;
+  sh._ffx = 1;
+  const x0 = sh.rng.F[0];
+  for (const t of sh.tx.slice()) {
+    if (!(t.ix < x0 && t.ix >= x0 - 4 && /^\S+$/.test(String(t.t).trim()))) continue;
+    const i = sh.rows.findIndex(r => t.iy >= r.y - 3.3 && t.iy < r.y + 5.7);
+    if (i < 0 || (sh.cells[i + ':F'] || []).length) continue;
+    sh.tx.splice(sh.tx.indexOf(t), 1);
+    sh.cells[i + ':F'] = [t];
+  }
+}
+/* 3.2.0 live test (7 DCS push buttons with no address): DITL-09 writes the address list of the four burners just right of the SERVICE
+   column, on the row (row 5 "M.0110/210/1610/1710" IGNITER A "ON" P.B., row 7 M.0111/.. OFF, row 9 M.0118/.. BURNER A "ON" P.B., row 11
+   M.0119/.. OFF; memory list STN104 M.0110 A-IGNITER ON PB, M.0118 A-OIL BNR ON PB, M.0210 B-, M.1610 C-, M.1710 D-IGNITER ON PB): it
+   fell out of the TAG NO. cell and the push buttons had no address. An address (list) up to 6 units right of the SERVICE column, on a
+   row with an empty TAG NO., is the TAG NO. of that row */
+function tagFix(sh) {
+  if (!sh || !sh.cells || !sh.rows || !sh.tx || !sh.rng || !sh.rng.S || sh._tfx) return;
+  sh._tfx = 1;
+  const x1 = sh.rng.S[1];
+  for (const t of sh.tx.slice()) {
+    if (!(t.ix >= x1 && t.ix < x1 + 6 && /^[IMOB]\.[0-9A-F]{4}(\/[0-9A-F]{3,4})*$/.test(String(t.t).trim()))) continue;
+    const i = sh.rows.findIndex(r => t.iy >= r.y - 3.3 && t.iy < r.y + 5.7);
+    if (i < 0 || (sh.cells[i + ':T'] || []).length) continue;
+    sh.tx.splice(sh.tx.indexOf(t), 1);
+    sh.cells[i + ':T'] = [t];
+  }
+}
 function netlist(sh) {
   if (sh.sd) return sdNL(sh); /* 3.2.0-beta.39 (+ sand): sand injection (PDF drawing, no row table): the netlist comes from sh.sd (02b-sand.js) */
   letterRows(sh);
   trCells(sh);
   rowFix(sh);
+  fromFix(sh);
+  tagFix(sh);
   const a = netlistCore(sh, false),
     c = mdCount(a, sh);
   if (!c) return a;
@@ -21017,6 +21052,8 @@ function anUnitStop() {
   U.cold = false;
   U.turb = true;
   U.etLvl = NaN; /* 3.2.0-beta.63: the expansion tank starts again at its level of 27.PNG (AN_MU) */
+  U.cwPrime = NaN; /* live test #50: the closed cooling loop primed as V-CW1001 of the start state (AN_MU) */
+  U.mt = {};
   U.iaP = U.paP = NaN; /* 3.2.0-beta.68: the air tanks are set again by the start state (AN_AIR) */
   U.acT1 = U.acT2 = NaN; /* 3.2.0-beta.69: the aux cooling water temperatures start again (AN_ACW) */
   for (const m of U.mul || []) for (const p of m.pr) p.mul = undefined;
@@ -21430,6 +21467,7 @@ function anUnitStart() {
   U.on = true;
   /* 3.2.0-beta.68: "Start at 150 MW" = the air compressors in service, the tanks at their pressure (AN_AIR, 39.PNG 7.0 kg/cm2) */
   U.iaP = U.paP = AN_AIR.P;
+  U.mt = {}; /* live test #54: the running motors start at their steady temperature (AN_MT) */
   U.frT = undefined;
   U.tco = null; /* 3.2.0-beta.66: the oil-only state of the snapshot (tcs.js tcsOilState) starts again */
   U.tc = null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
@@ -21438,6 +21476,8 @@ function anUnitStart() {
   AN_SRC.field.hypo = true;
   AN_SRC.field.pur = true;
   AN_SRC.field.mu1033 = false;
+  AN_SRC.field.cw1001 = true; /* live test #50: the expansion tank outlet open, the closed cooling loop primed */
+  U.cwPrime = 1;
   AN_SRC.field.esp = true;
   AN.unit = U;
 }
@@ -21480,10 +21520,13 @@ function anUnitCold() {
   AN_SRC.field.hypo = false;
   AN_SRC.field.pur = false;
   AN_SRC.field.mu1033 = false;
+  AN_SRC.field.cw1001 = false; /* live test #50: the expansion tank outlet closed, the closed cooling loop not primed */
+  U.cwPrime = 0;
   AN_SRC.field.esp = false;
   AN_SRC.t = -1;
   /* 3.2.0-beta.68: cold = the air compressors stopped, the air tanks empty (AN_AIR) */
   U.iaP = U.paP = 0;
+  U.mt = {}; /* live test #54: the motors start again from the ambient (AN_MT) */
   tcsInit(U, 'cold');
   return true;
 }
@@ -21506,7 +21549,7 @@ function anUnitLive() {
    OPERATION). Returns the state or a reason ('' = done) */
 function anTurbine(cmd, arg) {
   const U = AN_UNIT;
-  if (!U.on || !U.tb) return 'walang unit model (Start cold muna)';
+  if (!U.on || !U.tb) return 'No unit model: start from Cold first';
   const tb = U.tb;
   /* 3.2.0-beta.66: the 036 TURBINE OIL pumps at the 150 MW snapshot (no TCS model): the oil-only state of tcs.js */
   if (!U.tc && cmd === 'oil') return tcsOilCmd(tcsOilState(U), arg || {});
@@ -21519,8 +21562,8 @@ function anTurbine(cmd, arg) {
   if (U.tc) {
     const c = U.tc;
     if (cmd === 'roll') {
-      if (tb.st === 'sync' || tb.st === 'load') return 'naka-sync na';
-      if (c.step >= 3) return 'umiikot na ang turbine (3600 rpm)';
+      if (tb.st === 'sync' || tb.st === 'load') return 'Already synchronised';
+      if (c.step >= 3) return 'The turbine is already at 3600 rpm';
       let nx = c.cur >= 0 ? c.cur : c.step + 1;
       if (nx === 0 && c.Thp > 150) nx = 1;
       if (nx === 2 && !(c.mode === 'amb' || c.mode === 'c1')) nx = 3;
@@ -21531,8 +21574,8 @@ function anTurbine(cmd, arg) {
       return '';
     }
     if (cmd === 'sync') {
-      if (tb.st === 'sync' || tb.st === 'load') return 'naka-sync na';
-      if (c.step < 3) return c.step < 1 ? 'i-roll muna ang turbine' : 'hindi pa 3600 rpm / tapos ang ACCELERATION (' + tb.rpm.toFixed(0) + ' rpm)';
+      if (tb.st === 'sync' || tb.st === 'load') return 'Already synchronised';
+      if (c.step < 3) return c.step < 1 ? 'Roll the turbine first' : 'Not at 3600 rpm / ACCELERATION not finished (' + tb.rpm.toFixed(0) + ' rpm)';
       const r = c.cur >= 0 ? '' : tcsStepIn(U, c.step + 1);
       if (r) return r;
       c.auto = true;
@@ -21540,22 +21583,22 @@ function anTurbine(cmd, arg) {
       return '';
     }
     if (cmd === 'loadup') {
-      if (tb.st !== 'sync' && tb.st !== 'load') return 'i-sync muna ang generator';
-      if (c.step < 5) return 'hinihintay ang initial load hold (SYNCH. & INITIAL LOAD, ' + (c.tm / 60).toFixed(0) + ' / ' + (c.holdMin || 0) + ' min)';
+      if (tb.st !== 'sync' && tb.st !== 'load') return 'Synchronise the generator first';
+      if (c.step < 5) return 'Waiting for the initial load hold (SYNCH. & INITIAL LOAD, ' + (c.tm / 60).toFixed(0) + ' / ' + (c.holdMin || 0) + ' min)';
       return tcsStepIn(U, 6, arg);
     }
     const r = tcsCmd(U, cmd, arg);
-    return r == null ? 'hindi kilalang utos: ' + cmd : r;
+    return r == null ? 'Unknown command: ' + cmd : r;
   }
   if (cmd === 'roll') {
-    if (tb.st !== 'off') return 'umiikot na ang turbine (' + tb.st + ')';
-    if (!(U.vac >= 0.9)) return 'walang vacuum ang condenser (' + Math.round(100 * (U.vac || 0)) + ' %): i-start muna ang seawater pump (SWP) at condensate pump (CEP); ang VACUUM UP (ejector, gland sealing) ay kailangan ng aux steam: main steam > 12 kg/cm2';
+    if (tb.st !== 'off') return 'The turbine is already turning (' + tb.st + ')';
+    if (!(U.vac >= 0.9)) return 'No condenser vacuum (' + Math.round(100 * (U.vac || 0)) + ' %): start the seawater pumps (SWP) and a condensate pump (CEP); VACUUM UP (ejectors, gland sealing) needs aux steam: main steam > 12 kg/cm2';
     Object.assign(tb, { st: 'roll', xfer: false, tgt: 0, aim: 0 });
     return '';
   }
   if (cmd === 'sync') {
-    if (tb.st !== 'roll') return tb.st === 'off' ? 'i-roll muna ang turbine' : 'naka-sync na';
-    if (tb.rpm < 3599) return 'hindi pa 3600 rpm (' + tb.rpm.toFixed(0) + ')';
+    if (tb.st !== 'roll') return tb.st === 'off' ? 'Roll the turbine first' : 'Already synchronised';
+    if (tb.rpm < 3599) return 'Not at 3600 rpm yet (' + tb.rpm.toFixed(0) + ')';
     Object.assign(tb, { st: 'sync', tgt: 0, aim: U.MWinit });
     const dirt = (l, x) => {
       if (l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n)) l.S.rt.ext[l.n] = x;
@@ -21565,12 +21608,12 @@ function anTurbine(cmd, arg) {
     return '';
   }
   if (cmd === 'loadup') {
-    if (tb.st !== 'sync' && tb.st !== 'load') return 'i-sync muna ang generator';
+    if (tb.st !== 'sync' && tb.st !== 'load') return 'Synchronise the generator first';
     tb.st = 'load';
     tb.aim = isFinite(+arg) ? +arg : 45;
     return '';
   }
-  return 'hindi kilalang utos: ' + cmd;
+  return 'Unknown command: ' + cmd;
 }
 /* 3.2.0 roadmap 3: the position (0 ~ 100 %) of a valve of the DITL valve model (MOV / solenoid) by sheet ("DITL-32", an instance "DITL-32 #B",
    a template valve "DITL-38 MV-MS1391"), while the one world runs; null without it (the engine alone, the DITL state is the operator's) */
@@ -21738,6 +21781,11 @@ const AN_MU = {
   etMax: 2.0,
   etRate: 0.003,
   etQ: 10,
+  etPrime: 0.4 /* m of tank level that the priming of the closed loop takes (ASSUMED) */,
+  etPrimeT: 120 /* s (ASSUMED) */,
+  etH: 1.7,
+  etL: 0.8,
+  etLL: 0.3,
   tauP: 3,
   tauI: 2
 };
@@ -21761,7 +21809,19 @@ function anMakeupStep(U, dt) {
   const fill = (U.muXv || U.muByp) && U.muP > 6 && U.etLvl < K.etMax;
   U.muFill = fill ? 1 : 0;
   if (fill) U.etLvl = Math.min(K.etMax, U.etLvl + K.etRate * dt);
+  /* live test #50: PR-OPE-5002 7.20 "Open Expansion tank outlet valve to prime the close cooling line (V-CW1001)" and 7.22 "Ensure
+     Expansion tank is at NL = 1.7m and make up if necessary": the first opening of V-CW1001 after a cold plant fills the closed loop
+     from the tank (K.etPrime m of tank level over K.etPrimeT s, ASSUMED: the loop volume is not in the repository); then the level stays */
+  if (!isFinite(U.cwPrime)) U.cwPrime = AN_SRC.field.cw1001 ? 1 : 0;
+  if (AN_SRC.field.cw1001 && U.cwPrime < 1) {
+    const d = Math.min(1 - U.cwPrime, dt / K.etPrimeT);
+    U.cwPrime += d;
+    U.etLvl = Math.max(0, U.etLvl - K.etPrime * d);
+  }
   U.etPct = (100 * U.etLvl) / K.etMax;
+  /* live test #50: the alarms of LT-CW1109 (alarm list LT: H 1700 mm (DCS), L 800 mm (DCS); LS: LSLL-CW1109 300 mm = DITL-77 row 26
+     M.1238 "EXPANSION TANK LEVEL < 0.3 M", the ACWP trip). UNUSUAL: the H alarm is the normal level NL 1.7 m of the SOP */
+  U.etAlm = U.etLvl <= K.etLL ? 'LL' : U.etLvl <= K.etL ? 'L' : U.etLvl > K.etH ? 'H' : '';
   const hw = typeof AN_CYC !== 'undefined' ? Math.max(0, 1.8 * (AN_CYC.u.hw || 0)) : 0;
   lag('muF', n ? hw + (fill ? K.etQ : 0) : 0, K.tauP);
 }
@@ -21822,6 +21882,44 @@ function anAcwStep(U, dt) {
   lag('acT1', n ? Math.min(K.Thot + 2, U.acT2 + 2 * q) : K.Tamb, n ? 60 : K.tauA);
   U.acT6 = U.acT2;
   U.acTb = n ? U.acT2 + 1 : U.acT2;
+}
+/* 3.2.0 live test #54: MOTOR BEARING / WINDING TEMPERATURE AND VIBRATION of the seawater pumps P-1501A / B / C, the aux. cooling water
+   pumps P-1108A / B and the ID fan (I/O list STN103: TT-SW1501-x3 / x4 / xU / xV / xW AI0720 ~ 0758, VT-SW1501-x1 / x2; TT-CW1108-x3 /
+   x4 / xU / xV / xW AI0912 ~ 0932; TT-FG1056-1 ~ 4 / U / V / W AI0672 ~ 0678, VT-FG1056-1 ~ 4 AI0528 ~ 0531). PR-OPE-5002 2.19 / 2.21
+   / 2.27 (TI SW1501A3 / A4, VI SW1501A1 / A2) and 22.13 ~ 22.15 ask the operator to read them. No curve of the motors in the repository:
+     running      bearing to 55 C (ASSUMED) with a 30 min time constant, winding to 85 C (ASSUMED) with 15 min; vibration 1.8 mm/s (pumps)
+                  / 2.2 mm/s (IDF) (ASSUMED) at once;
+     stopped      back to the ambient 30 C with twice the time constant, vibration 0.1 mm/s;
+     each element +0 ~ 2.5 C / +0 ~ 0.3 mm/s of its own (ASSUMED) so that two elements are not one number.
+   Limits (alarm list "Alarm List _20160912" TE / VT): SWP bearing H 95 / HH 100, winding H 145 / HH 155, vibration H 7.6 / HH 11.9;
+   ACWP bearing H 95 / HH 100, winding H 155 / HH 165 (DITL-76 / 77 rows 13 ~ 17 "> 100" / "> 165 C", plantsw.js); IDF bearing H 90 /
+   HH 95 (< 80 / 82 start permissive), winding H 140 / HH 145 (< 130), vibration H 8 / HH 11 mm/s (< 8). U.mt = { tag: value } */
+const AN_MT = {
+  m: [
+    ['SWP-A', 'M.3353', 'SW1501-A', ['3', '4'], ['1', '2'], 1.8],
+    ['SWP-B', 'M.3354', 'SW1501-B', ['3', '4'], ['1', '2'], 1.8],
+    ['SWP-C', 'M.3355', 'SW1501-C', ['3', '4'], ['1', '2'], 1.8],
+    ['ACWP-A', 'DITL-76', 'CW1108-A', ['3', '4'], [], 1.8],
+    ['ACWP-B', 'DITL-77', 'CW1108-B', ['3', '4'], [], 1.8],
+    ['IDF', 'IDF', 'FG1056-', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2]
+  ],
+  Tb: 55,
+  Tw: 85,
+  tauB: 1800,
+  tauW: 900,
+  vib0: 0.1
+};
+function anMotorStep(U, dt) {
+  const K = AN_MT,
+    T0 = isFinite(U.Tamb) ? U.Tamb : 30,
+    mt = U.mt || (U.mt = {}),
+    lag = (k, x, tau) => (mt[k] = isFinite(mt[k]) ? mt[k] + ((x - mt[k]) * Math.min(dt, tau)) / tau : x);
+  for (const [, ad, base, brg, vib, v1] of K.m) {
+    const run = ad === 'IDF' ? !U.idf || +U.idf.S.rt.v[U.idf.n] > 0.5 : /^DITL/.test(ad) ? anDitlRun(ad) === 1 : srcBit([ad]) > 0.5;
+    brg.forEach((e, i) => lag('TT-' + base + e, run ? K.Tb + 1.2 * i : T0, run ? K.tauB : 2 * K.tauB));
+    ['U', 'V', 'W'].forEach((e, i) => lag('TT-' + base + e, run ? K.Tw + 1.0 * i : T0, run ? K.tauW : 2 * K.tauW));
+    vib.forEach((e, i) => (mt['VT-' + base + e] = run ? v1 + 0.1 * i : K.vib0));
+  }
 }
 /* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI, PR-OPE-5002 sections 9 ~ 12): the compressed air systems of flow diagram K1AU3-PD-023
    Rev C sheet 1/6 (plant air) and 2/6 (instrument air). Each system: compressors C-0703A / B / C (PA) or C-0704A / B / C (IA), started
@@ -21983,6 +22081,8 @@ function anUnitStep(dt) {
   anAirStep(U, dt);
   /* 3.2.0-beta.69: the aux cooling water loop (027 CLOSED COOLING WATER HMI), see AN_ACW */
   anAcwStep(U, dt);
+  /* live test #54: motor bearing / winding temperature and vibration (AN_MT) */
+  anMotorStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
   /* ---- 2.2.0-beta.17 (M4 step 4): the turbine black box (see AN_UNIT rollRate ...) ---- */
   const tb = U.tb || (U.tb = { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN }),
@@ -22900,12 +23000,12 @@ function tcsCmd(U, cmd, arg) {
       c.vex = on;
       return '';
     case 'tg':
-      if (on && !c.brgOk) return 'walang bearing oil: i-start muna ang lube oil pump (ATS 1.15)';
+      if (on && !c.brgOk) return 'No bearing oil: start a lube oil pump first (ATS 1.15)';
       c.tg = on;
       return '';
     case 'aux':
       if (on && !(U.Pd > 12))
-        return 'aux steam: kailangan ng main steam > 12 kg/cm2 (PR-OPE-5002 5727), drum ' + U.Pd.toFixed(1);
+        return 'Aux steam needs main steam > 12 kg/cm2 (PR-OPE-5002 5727), drum ' + U.Pd.toFixed(1);
       c.asv = on;
       return '';
     case 'gland':
@@ -22914,8 +23014,8 @@ function tcsCmd(U, cmd, arg) {
         return '';
       }
       if (!(c.Pa > 7)) return 'gland sealing: aux steam > 7 kg/cm2 (PR-OPE-5002 6164), ngayon ' + c.Pa.toFixed(1);
-      if (!(tb && tb.rpm >= 1)) return 'gland sealing: dapat umiikot ang turbine sa turning gear (PR-OPE-5002 6219)';
-      if (!c.vb) return 'gland sealing: bukas dapat ang vacuum breaker MV-AV1391 (PR-OPE-5002 6197)';
+      if (!(tb && tb.rpm >= 1)) return 'Gland sealing: the turbine must turn on the turning gear (PR-OPE-5002 6219)';
+      if (!c.vb) return 'Gland sealing: the vacuum breaker MV-AV1391 must be open (PR-OPE-5002 6197)';
       c.gland = true;
       return '';
     case 'vacuum':
@@ -22930,7 +23030,7 @@ function tcsCmd(U, cmd, arg) {
         return '';
       }
       if (!(c.Pa > 10)) return 'vacuum up: aux steam > 10 kg/cm2 (PR-OPE-5002 6545), ngayon ' + c.Pa.toFixed(1);
-      if (!c.gland) return 'vacuum up: gland sealing muna (PR-OPE-5002 6545)';
+      if (!c.gland) return 'Vacuum up: put the gland sealing in service first (PR-OPE-5002 6545)';
       c.vb = false;
       c.ej = true;
       /* P2 #13: the vacuum breaker MOV CLOSE, then the ejector steam MOVs OPEN (DITL-56 / 55 / 54 push buttons, rows of the drawing) */
@@ -22959,7 +23059,7 @@ function tcsCmd(U, cmd, arg) {
 function tcsStepIn(U, k, arg) {
   const c = U.tc,
     tb = U.tb;
-  if (c.cur >= 0 && c.cur !== k && c.cur < 6) return 'tumatakbo pa ang step ' + c.cur + ' ' + TCS.names[c.cur];
+  if (c.cur >= 0 && c.cur !== k && c.cur < 6) return 'Step still running: ' + c.cur + ' ' + TCS.names[c.cur];
   if (k === 6 && c.step >= 6) {
     /* LOAD UP again: a new target (the TCS panel target MW) */
     tb.st = 'load';
@@ -22972,7 +23072,7 @@ function tcsStepIn(U, k, arg) {
   const need = k === 1 ? -1 : k === 3 && !(c.mode === 'amb' || c.mode === 'c1') ? 1 : k - 1;
   if (c.step < need)
     return (
-      'tapusin muna ang step ' +
+      'Finish step ' +
       need +
       ' ' +
       TCS.names[need] +
@@ -22980,9 +23080,9 @@ function tcsStepIn(U, k, arg) {
       [13, 14, 17, 19, 23, 24, 26, 28][need] +
       ')'
     );
-  if (c.step >= k) return 'tapos na ang ' + TCS.names[k];
+  if (c.step >= k) return 'Already done: ' + TCS.names[k];
   const miss = tcsMiss(U, TCS_A[k]);
-  if (miss) return 'CRITERIA A' + k + ' (' + TCS.names[k] + ') kulang: ' + miss;
+  if (miss) return 'CRITERIA A' + k + ' (' + TCS.names[k] + ') missing: ' + miss;
   c.cur = k;
   c.ph = 'in';
   c.tm = 0;
@@ -22994,7 +23094,7 @@ function tcsDone(U, k) {
   c.step = k;
   c.cur = -1;
   c.ph = '';
-  c.last = TCS.names[k] + ' tapos';
+  c.last = TCS.names[k] + ' done';
 }
 /* one step of dt s: auxiliaries, metal, ATS program. Called by anUnitStep before the turbine black box; tb.rpm / tb.st / tb.icv are set
    here while the ATS controls the speed */
@@ -23225,23 +23325,63 @@ function tcsOilCmd(c, a) {
   const m = /^(mop|cop)([AB])$/.exec(a.p || ''),
     op = a.op;
   if (a.p === 'eop') {
-    if (op !== 'start' && op !== 'stop') return 'EOP: START / STOP lang (walang AUTO / MANUAL sa TCS I/O list)';
+    if (op !== 'start' && op !== 'stop') return 'EOP: START / STOP only (no AUTO / MANUAL in the TCS I/O list)';
     c.eop = op === 'start';
     return '';
   }
-  if (!m) return 'hindi kilalang pump: ' + a.p;
+  if (!m) return 'Unknown pump: ' + a.p;
   const k = m[1],
     i = m[2] === 'A' ? 0 : 1;
   if (op === 'start') c[k][i] = true;
   else if (op === 'stop') {
     /* SOP 2620: the standby to MANUAL first, then STOP; a pump in AUTO cannot be stopped */
-    if (c[k + 'Au'][i]) return (k === 'mop' ? 'MOP' : 'COP') + '-' + m[2] + ' ay AUTO: MANUAL muna, saka STOP (SOP)';
+    if (c[k + 'Au'][i]) return (k === 'mop' ? 'MOP' : 'COP') + '-' + m[2] + ' is in AUTO: set MANUAL first, then STOP (SOP)';
     c[k][i] = false;
   } else if (op === 'auto') c[k + 'Au'][i] = true;
   else if (op === 'man') c[k + 'Au'][i] = false;
-  else return 'hindi kilalang utos: ' + op;
+  else return 'Unknown command: ' + op;
+  /* live test #62: the last TCS command output of the pump (HMI_DO JYS START / JYP STOP / IKA AUTO / IKH MANUAL, HOLD 3000 ms) */
+  (c.do = c.do || {})[a.p] = { op, t: +AN_UNIT.t || 0 };
   tcsOilSet(c);
   return '';
+}
+/* 3.2.0 live test #62: the TCS I/O list points of the control oil pumps P-1931A / B and the oil purifier pump P-1941 (iolist-tcs HMI_DI /
+   HMI_DO / HMI_AI, unit 1), as the signals of the oil model, so the 036 page can show the status lamps, the faults, the CRT commands and
+   the low pressure alarm the TCS has:
+     DI  _IIA AUTO, _IIH MANUAL, _YIP STOPPED, _YIR RUNNING, _ABN FAULT, _IEP STOP FAULT, _IES START FAULT, _IET TRIPPED, _IYP CRT OPE
+         PERM, _YEE MOTOR ELECTRICAL TROUBLE (P-1941: no IIA / IIH, its AUTO / MANUAL is at the local panel);
+     DO  _IKA AUTO, _IKH MANUAL, _IYS CRT AVAILABLE, _JYP STOP, _JYS START, _IKR RESET (HOLD 3000 ms: 1 for 3 s after the command);
+     AI  1PTLO1931A_PV / B_PV COP (A) / (B) DISCHARGE OIL PRESS. (FOR COP (B) / (A) AUTO START);
+     alarm 1PTLO1931AA_XA "COP (B) DISCHARGE OIL PRESS. (FOR COP (A) AUTO START) LOW" / 1PTLO1931BA_XA = the other pump's discharge at or
+         below the auto start of the SOP NOTE (<= 133 kg/cm2g) while that pump runs (ASSUMED: the LOW contact is the auto start one).
+   The model has no fault of these pumps: ABN / IEP / IES / IET / YEE are 0 and IYP / IYS (CRT operation permitted / available) 1. */
+function tcsIO(U) {
+  U = U || AN_UNIT;
+  const c = tcsOilState(U);
+  if (!c) return null;
+  tcsOilInit(c);
+  const o = {},
+    now = +U.t || 0,
+    held = (p, op) => !!(c.do && c.do[p] && c.do[p].op === op && now - c.do[p].t <= 3),
+    st = (pfx, run, au) => {
+      Object.assign(o, { [pfx + '_YIR']: run ? 1 : 0, [pfx + '_YIP']: run ? 0 : 1, [pfx + '_ABN']: 0, [pfx + '_IEP']: 0, [pfx + '_IES']: 0, [pfx + '_IET']: 0, [pfx + '_IYP']: 1, [pfx + '_YEE']: 0, [pfx + '_IYS']: 1 });
+      if (au != null) Object.assign(o, { [pfx + '_IIA']: au ? 1 : 0, [pfx + '_IIH']: au ? 0 : 1 });
+    };
+  ['A', 'B'].forEach((L, i) => {
+    const p = '1P1931' + L,
+      k = 'cop' + L;
+    st(p, c.cop[i], c.copAu[i]);
+    Object.assign(o, { [p + '_JYS']: held(k, 'start') ? 1 : 0, [p + '_JYP']: held(k, 'stop') ? 1 : 0, [p + '_IKA']: held(k, 'auto') ? 1 : 0, [p + '_IKH']: held(k, 'man') ? 1 : 0, [p + '_IKR']: 0 });
+    o['1PTLO1931' + L + '_PV'] = +U['loC' + L.toLowerCase()] || 0;
+  });
+  o['1PTLO1931AA_XA'] = c.cop[1] && o['1PTLO1931B_PV'] <= TCS_OIL.copLo ? 1 : 0;
+  o['1PTLO1931BA_XA'] = c.cop[0] && o['1PTLO1931A_PV'] <= TCS_OIL.copLo ? 1 : 0;
+  /* the transmitter ABNORMAL / QUALITY points (1PTLO1931A_XA / _PVQ): no transmitter fault in the model */
+  Object.assign(o, { '1PTLO1931A_XA': 0, '1PTLO1931B_XA': 0, '1PTLO1931A_PVQ': 0, '1PTLO1931B_PVQ': 0 });
+  const pur = !!AN_SRC.field.pur;
+  st('1P1941', pur, null);
+  Object.assign(o, { '1P1941_JYS': 0, '1P1941_JYP': 0, '1P1941_IKR': 0 });
+  return o;
 }
 /* the oil state: the TCS model (U.tc, start-up / shutdown) or, at the "Start at 150 MW" snapshot (no TCS model, U.tc null), an oil-only
    state in service (36.PNG: MOP-A / COP-A running, B in AUTO, vapour extractor running) so the 036 page and its pumps work there too */
@@ -23419,7 +23559,7 @@ function tcsState() {
    The machines that have no DCS signal (diesel oil pump P-0005, DITL-31) are FIELD equipment: AN.field (Start ▾ > Field equipment).
    Numbers marked ASSUMED are not in the repository. */
 const AN_SRC = {
-  field: { dop: true, hypo: true, pur: true, mu1033: false, esp: true } /* 3.2.0 retest #33: hypochlorite pump (no DCS signal); R9 #77: turbine oil purifier pump P-n941 (local); live test 2026-10-30 #23: V-MU1033 expansion tank bypass (manual valve, PD-021) */,
+  field: { dop: true, hypo: true, pur: true, mu1033: false, esp: true, cw1001: true } /* 3.2.0 retest #33: hypochlorite pump (no DCS signal); R9 #77: turbine oil purifier pump P-n941 (local); live test 2026-10-30 #23: V-MU1033 expansion tank bypass (manual valve, PD-021) */,
   Tamb: 30,
   st: null,
   t: -1,
@@ -24631,6 +24771,22 @@ function* anPlantColdG() {
     }
     for (const b of S.procs || []) if (b.proc && (b.txt || [])[1] === 'LICBR1001') b.proc.integLoss = 0;
   }
+  /* 3.2.0 live test #71: the flue gas biasing dampers of ABC-020 are hand stations (MAN blocks), not in the controller list above: the
+     SH damper HICHR1002B stayed AUTO and followed the RH damper through LN5 (RH 10 % -> SH 100 %). PR-OPE-5002 sec 17 "Ensure biasing
+     dampers are closed" (sec 26 then "Put SH biasing damper to AUTO"): both MANUAL at their lowest DCS position, ML 10 % of the
+     parameter sheet (controller-para: HICHR1002A SL 10 / ML 10, HICHR1002B SL 0 / ML 10) */
+  for (const t of ['HICHR1002A', 'HICHR1002B']) {
+    const sh = L.find(x => x.name === 'ABC-020'),
+      T = sh && sh.S,
+      b = T && T.blk.find(q => q.k === 'MAN' && (q.tag === t || (q.txt || []).includes(t)));
+    if (!b || !T.rt.st[b.id]) continue;
+    if (AN.latchMode)
+      try {
+        AN.latchMode(t, 'MAN');
+      } catch (e) {}
+    T.rt.st[b.id].val = 10;
+    for (const n of b.i || []) if (n >= 0 && T.ext.includes(n) && !(T.xlk && T.xlk[n]) && (AN.nm(T, n) || '').trim() === t + '.MV') T.rt.ext[n] = 10;
+  }
   anUnitCold();
   try {
     /* one step: the unit model writes its transmitters (drum 0, MSP 0, MW 0 ...) */
@@ -24779,7 +24935,7 @@ function anLoadStart(kind, on) {
   const cold = kind === 'cold',
     B = window.lsBusy,
     est = (cold ? 46 : 40) * Math.max(1, AN.sheets.length - 1);
-  if (B) B.show(cold ? 'Nilo-load ang Cold plant…' : 'Nilo-load ang 150 MW…');
+  if (B) B.show(cold ? 'Loading the Cold plant…' : 'Loading the 150 MW plant…');
   /* retest #69 (R8 second pass: Hakbang 2 never showed ✓ TAPOS with 2 SWP running): a sheet is built only when something opens it
      (ensure). A starting state loaded before ABC-001C was built left the unit model OFF (anUnitStart needs that sheet) and the other
      unbuilt sheets out of the load: the Gabay conditions never came true. Every sheet is built first, one per slice (no freeze) */
@@ -30040,7 +30196,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.76';
-      c3.textContent += ' · build 2f48046'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 1325cd1'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -40177,7 +40333,7 @@ fImp.onchange = async e => {
  const good=()=>{try{return AN.cat==='an'&&L&&L.gb&&$('svg').contains(L.gb)&&anlist.children.length>3}catch(e){return false}};
  const fix=()=>{if(AN.cat!=='an'||good())return;AN.key=null;AN.lkey=null;try{SIDEKEY=null}catch(e){}loadData().then(()=>{if(AN.cat==='an'&&!good()){let i=AN.i;if(!AN.sheets[i])i=0;AN.i=i;AN.key=null;AN.lkey=null;render()}}).catch(()=>{})};
  addEventListener('load',()=>{setTimeout(fix,200);setTimeout(fix,900)});[600,1500,3000,6000].forEach(t=>setTimeout(fix,t))}})();
-Object.assign(AN,{updBack,dsTextAt,dsRefsIn,viewSet,lookOnly:()=>{/* 2.1.0-beta.8 (user): a search is a LOOK: no force, no simulate (ABC: VIEW / TRACE, DITL: edit view, not Simulate) */try{/* 3.2.0-beta.21 (user 2026-10-24: "pag bumalik ka ng logic magiging VIEW. tapos iRRUN mo"): a look while the simulation RUNS keeps it running */if(AN.cat==='an'){if(!AN.view&&!AN.run)viewSet(true)}/* 3.2.0-beta.23: the DITL Simulate too goes on during a look (one RUN) */}catch(e){}},anStationOf,anSvSwitchOf,anHasRemote,stepTier,fxIn:anFXIn,netRange:anNetRange,extRange:anExtRange,go,cs,paint,fitView,settle,setCat,reset,ensure,pick,linksOf,actSet,panelUpd,selBox,dsIdx,dsOpen,trSeries,trSample,trDraw,trZoom,trModel,trMap,trGoCrumb,cosInfo,cosOn,cosFill,procLock,procAI,procRemote,hmiAdd,hmiFind,hmiPick,hmiVal,hmiOpen,hmiClose,hmiAuto,hmiUpd,hmiSetMode,hmiRender,hmiHeader,hmiSync,hmiAddrOf,hmiList,hmiZoomBy,hmiFit,hmiVb,hmiWrite,procLock,procAI,nm,hmiState,hmiToggleForce,hmiPlantOwned,hmiForced,setForce,wrCtl,anPins,stepSet,plantLoad150:anPlantLoad150,plantCold:anPlantCold,plantColdAsync:anPlantColdAsync,loadStart:anLoadStart,plantLoad150Async:anPlantLoad150Async,plantLive:anPlantLive,turbine:anTurbine,tcs:()=>tcsState(),tcsInit:h=>AN_UNIT.on?tcsInit(AN_UNIT,h):null,oilValve:anOilValve,blowdown:anBlowdown,field:anField,tsat:steamTsat,fieldState:()=>Object.assign({},AN_SRC.field),ades:async()=>{await adesLoad();return ADES},plOpen,plClose,plAIs,plRes,plVal,plantSwitch,dsGoRef,connClick,lnTables,lnApplyEdits,lneSave,lnResolve,lnOpen,descOf:(sh,t)=>{try{const F=typeof AN_DEF!=='undefined'&&AN_DEF.FACE;if(F&&t)for(const k of ['PID','MAN','SUMA'])for(const q of F[k]||[])if(q.tag===t&&q.desc)return q.desc;const a=adesFind(sh,t);return a?adesText(a.rec):''}catch(e){return ''}},addrTable:nm=>{const sh=AN.sheets.find(s=>s.name===nm)||cs(),S=ensure(sh);return{table:S.addr,notTied:S.addrUn}}});if(innerWidth<820||AN.ah){anp.classList.add('min');bPn.classList.remove('on')}
+Object.assign(AN,{updBack,dsTextAt,dsRefsIn,viewSet,lookOnly:()=>{/* 2.1.0-beta.8 (user): a search is a LOOK: no force, no simulate (ABC: VIEW / TRACE, DITL: edit view, not Simulate) */try{/* 3.2.0-beta.21 (user 2026-10-24: "pag bumalik ka ng logic magiging VIEW. tapos iRRUN mo"): a look while the simulation RUNS keeps it running */if(AN.cat==='an'){if(!AN.view&&!AN.run)viewSet(true)}/* 3.2.0-beta.23: the DITL Simulate too goes on during a look (one RUN) */}catch(e){}},anStationOf,anSvSwitchOf,anHasRemote,stepTier,fxIn:anFXIn,netRange:anNetRange,extRange:anExtRange,go,cs,paint,fitView,settle,setCat,reset,ensure,pick,linksOf,actSet,panelUpd,selBox,dsIdx,dsOpen,trSeries,trSample,trDraw,trZoom,trModel,trMap,trGoCrumb,cosInfo,cosOn,cosFill,procLock,procAI,procRemote,hmiAdd,hmiFind,hmiPick,hmiVal,hmiOpen,hmiClose,hmiAuto,hmiUpd,hmiSetMode,hmiRender,hmiHeader,hmiSync,hmiAddrOf,hmiList,hmiZoomBy,hmiFit,hmiVb,hmiWrite,procLock,procAI,nm,hmiState,hmiToggleForce,hmiPlantOwned,hmiForced,setForce,wrCtl,anPins,stepSet,plantLoad150:anPlantLoad150,plantCold:anPlantCold,plantColdAsync:anPlantColdAsync,loadStart:anLoadStart,plantLoad150Async:anPlantLoad150Async,plantLive:anPlantLive,turbine:anTurbine,tcs:()=>tcsState(),tcsIO:()=>(AN_UNIT.on?tcsIO(AN_UNIT):null),tcsInit:h=>AN_UNIT.on?tcsInit(AN_UNIT,h):null,oilValve:anOilValve,blowdown:anBlowdown,field:anField,tsat:steamTsat,fieldState:()=>Object.assign({},AN_SRC.field),ades:async()=>{await adesLoad();return ADES},plOpen,plClose,plAIs,plRes,plVal,plantSwitch,dsGoRef,connClick,lnTables,lnApplyEdits,lneSave,lnResolve,lnOpen,descOf:(sh,t)=>{try{const F=typeof AN_DEF!=='undefined'&&AN_DEF.FACE;if(F&&t)for(const k of ['PID','MAN','SUMA'])for(const q of F[k]||[])if(q.tag===t&&q.desc)return q.desc;const a=adesFind(sh,t);return a?adesText(a.rec):''}catch(e){return ''}},addrTable:nm=>{const sh=AN.sheets.find(s=>s.name===nm)||cs(),S=ensure(sh);return{table:S.addr,notTied:S.addrUn}}});if(innerWidth<820||AN.ah){anp.classList.add('min');bPn.classList.remove('on')}
 window.AN=AN;
 
 })();</script>
@@ -46427,7 +46583,8 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
      the address of that machine only ("M.1150/1160 M.1170 SEAWATER PUMP A START P.B." -> "M.1160 SEAWATER PUMP B START P.B.") */
   W.showText = (s, t) => {
     const I = s && s._inst;
-    if (!I || !I.k || !t) return t;
+    /* live test #56: machine A (k 0) of a drawing for several machines keeps its own address of the list too */
+    if (!I || !t || (!I.k && !(I.n > 1))) return t;
     let x = W.remap(s, t);
     const la = addrList(t);
     if (la.length > 1 && la[I.k]) {
@@ -47256,6 +47413,14 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
      kg/cm2; DITL-03G rows 7 / 27, the MFT and the annunciator) follows the unit header of the plant model (unit.js AN_AIR iaPU) */
   const iaU = () => (window.AN && AN.unit && isFinite(AN.unit.iaPU) ? AN.unit.iaPU : NaN);
   L.push(['PSL-IA1706', iaU, 2.8, 'lo', 0, 0.2], ['PSL-IA1706-NC', iaU, 2.8, 'lo', 1, 0.2]); /* dead band 0.2 kg/cm2 (ASSUMED) */
+  /* live test #54: the ACWP motor temperatures of the plant model (unit.js AN_MT) on their DITL rows: DITL-76 / 77 rows 13 ~ 17
+     "TT-CW1108-x3 / x4 ... BEARING TEMP > 100 C" (M.2620 ~ 2621 / M.2630 ~ 2631) and "TT-CW1108-xU / xV / xW ... WINDING TEMP > 165 C"
+     (M.2622 ~ 2624 / M.2632 ~ 2634) = the HH of the alarm list (TE-CW1108: bearing HH 100, winding HH 165); dead band 2 C (ASSUMED) */
+  const mtOf = t => () => (window.AN && AN.unit && AN.unit.mt && isFinite(AN.unit.mt[t]) ? AN.unit.mt[t] : NaN);
+  for (const p of ['A', 'B']) {
+    for (const e of ['3', '4']) L.push(['TT-CW1108-' + p + e, mtOf('TT-CW1108-' + p + e), 100, 'hi', 0, 2]);
+    for (const e of ['U', 'V', 'W']) L.push(['TT-CW1108-' + p + e, mtOf('TT-CW1108-' + p + e), 165, 'hi', 0, 2]);
+  }
   const DB0 = 10;
   let map = null;
   /* the rows of every sheet and machine instance whose text starts with a switch tag (the tag may follow a few words: "CONDENSER
@@ -50356,6 +50521,9 @@ html.gd-menu #gdock .gd-prog{display:none!important}
   };
   /* 3.2.0-beta.35: machine B / C / D of a shared drawing reads its own letter and address (WORLD.showText / addrK) */
   const isK = s => !!(s && s._inst && s._inst.k && window.WORLD && WORLD.showText);
+  /* live test #56: machine A of a drawing for several machines (DITL-45 dryer A / B / C: TAG "M.1120/1125/M.112A") reads its own address too
+     (M.1120, not the last one M.112A of dryer C) in the row text, the dock and the Event log */
+  const isKA = s => !!(s && s._inst && (s._inst.k || s._inst.n > 1) && window.WORLD && WORLD.showText && WORLD.addrK);
   const txt = (s, i, c) => {
     const r = ((c === 'RS' && rsNear(s) ? rsNear(s)[i] : s.cells[i + ':' + c]) || [])
       .map(t => t.t)
@@ -50367,8 +50535,11 @@ html.gd-menu #gdock .gd-prog{display:none!important}
   /* the TAG NO. column holds the address (I.0406, M.0378) and, on many sheets, the service text too */
   const ADR = /^[A-Z]{1,3}\.[0-9A-F]{3,5}[A-Z]?$/;
   const tagOf = (s, i) => {
-    const t = (s.cells[i + ':T'] || []).map(t => t.t.trim()).filter(t => ADR.test(t)).join(' ');
-    return t && isK(s) ? WORLD.addrK(s, i) || t : t;
+    const t = (s.cells[i + ':T'] || []).map(t => t.t.trim()).filter(t => ADR.test(t)).join(' '),
+      /* an address list of the machines in the TAG NO. ("M.0110/210/1610/1710" DITL-09 row 5): the address of this machine */
+      l = !t && (s.cells[i + ':T'] || []).some(x => /^[IMOB]\.[0-9A-F]{4}(\/[0-9A-F]{3,4})+\/?$/.test(x.t.trim()));
+    if (l && window.WORLD && WORLD.addrK) return WORLD.addrK(s, i) || '';
+    return t && isKA(s) ? WORLD.addrK(s, i) || t : t;
   };
   const svcOf = (s, i) => {
     const r = (s.cells[i + ':T'] || [])
@@ -50376,7 +50547,7 @@ html.gd-menu #gdock .gd-prog{display:none!important}
       .map(t => t.t.trim())
       .filter(t => t && !ADR.test(t))
       .join(' ');
-    return isK(s) ? WORLD.showText(s, r) : r;
+    return isKA(s) ? WORLD.showText(s, r) : r;
   };
   const fmt = x => (x >= 60 ? (x / 60).toFixed(1) + ' min' : x.toFixed(1) + ' s');
   let key = '',
@@ -56565,6 +56736,19 @@ window.LS_SOP_WHY = {
    Read only: nothing here writes the engine. A condition names its signals; a signal that is not on any ABC sheet makes the step a
    field step (and is listed by LS_LIVE.audit() for the test). ===== */
 window.LS_LIVE = (function () {
+  /* live test #63 #66: two readings of the generated SOP data (pr-ope-5002.js / -lim.js, extracted from the docx as written):
+     - the procedure is written for both units with "n" for the unit number (P-n941, V-LOn201, T-n920, H-n921A/B, P-n922A/B): this is
+       unit #1 (HMI 036 P-1941, T-1920, H-1921A);
+     - 16.1 "Verify that Main Oil Pump is running within normal pressure" has "≤ 5.6 kg/cm2g" in its limit column: that is the auto
+       start of the standby MOP (the NOTE of 16.5 "discharge pressure ≤ 5.6 kg/cm2g"); the normal band is 5.6 ~ 6.6 (14.9 P-n922A/B
+       "~5.6 kg/cm2g -6.6 kg/cm2g") */
+  {
+    const un = x => (typeof x === 'string' ? x.replace(/\b([A-Z]{1,2}-(?:[A-Z]{2})?)n(\d{3})/g, '$11$2') : x);
+    for (const sec of window.LS_PROC5002 || []) for (const st of sec.s || []) (st.t = un(st.t)), (st.g = (st.g || []).map(un));
+    const LIM = window.LS_PROC5002_LIM || {};
+    for (const k in LIM) for (const f of ['g', 'n', 'x']) if (LIM[k][f]) LIM[k][f] = un(LIM[k][f]);
+    if (LIM['15.0'] && /5\.6/.test(LIM['15.0'].n || '')) LIM['15.0'].n = '5.6 ~ 6.6 kg/cm2g (≤ 5.6 = auto start of the standby MOP)';
+  }
   const PROC = window.LS_PROC5002 || [];
   const BASE_N = PROC.length;
   /* ---------- reading the running plant ---------- */
@@ -56937,7 +57121,18 @@ window.LS_LIVE = (function () {
   };
   const OUTC = (nm, r, l) => DC(l + ' (' + nm + ' out ' + (r + 1) + ')', () => dOut(nm, r), () => l + ' ' + (dOut(nm, r) ? 'ON' : 'OFF'));
   const INC = (nm, r, l) => DC(l + ' (' + nm + ' row ' + (r + 1) + ')', () => dIn(nm, r), () => l + ' ' + (dIn(nm, r) ? 'ON' : 'OFF'));
-  const RUNN = (L, n, l) => DC(n + ' ' + l + ' running', () => nRun(L) >= n, () => L.map(nm => nm.replace(/^DITL-\S+\s*#?/, '') + (dRun(nm) ? ' RUN' : ' STOP')).join(', '));
+  /* #55: a drawing of one machine keeps its name (DITL-76 / 77 ACW pumps read " RUN,  STOP") */
+  const RUNN = (L, n, l) => DC(n + ' ' + l + ' running', () => nRun(L) >= n, () => L.map(nm => (nm.replace(/^DITL-\S+\s*#?/, '') || nm) + (dRun(nm) ? ' RUN' : ' STOP')).join(', '));
+  /* live test #54: [running memory, [model tags]] of the machines: done when one runs and every tag of the running ones is read below hi */
+  const MOT = (L, hi, l, u) => {
+    const mt = t => (U().mt ? +U().mt[t] : NaN),
+      on = () => L.filter(([a]) => val(a) > 0.5);
+    return DC(
+      l + ' < ' + hi + ' ' + u + ' (running)',
+      () => on().length > 0 && on().every(([, T]) => T.every(t => mt(t) < hi)),
+      () => on().map(([, T]) => T.map(t => t.replace(/^[TV]T-/, '') + ' ' + f1(mt(t))).join(', ')).join(' · ') || 'not running'
+    );
+  };
   const SWBP = ['DITL-30', 'DITL-30 #B', 'DITL-30 #C'],
     MWP = ['DITL-112', 'DITL-112 #B', 'DITL-112 #C'],
     ACW = ['DITL-76', 'DITL-77'];
@@ -56947,6 +57142,13 @@ window.LS_LIVE = (function () {
     [2, /initiate selected 1st SWP START/i, RUN.SWP1],
     [2, /START 2nd Selected SWP/i, SWP2],
     [2, /Set the standby SWP to AUTO/i, SWP_STBY],
+    /* live test #54: the motor temperatures and vibration of the plant model (unit.js AN_MT), read on a running machine and below the H
+       of the alarm list (SWP bearing H 95 C, vibration H 7.6 mm/s; IDF bearing H 90, winding H 140, vibration H 8) */
+    [2, /^Temperature$/i, MOT(['A', 'B', 'C'].map((p, j) => [SWPA[j], ['TT-SW1501-' + p + '3', 'TT-SW1501-' + p + '4']]), 95, 'SWP bearing TI SW1501x3 / x4', 'C')],
+    [2, /^Vibration$/i, MOT(['A', 'B', 'C'].map((p, j) => [SWPA[j], ['VT-SW1501-' + p + '1', 'VT-SW1501-' + p + '2']]), 7.6, 'SWP vibration VI SW1501x1 / x2', 'mm/s')],
+    [22, /^Fan bearing temperature/i, MOT([['M.3304', ['TT-FG1056-1', 'TT-FG1056-2', 'TT-FG1056-3', 'TT-FG1056-4']]], 90, 'IDF bearing TT-FG1056-1 ~ 4', 'C')],
+    [22, /^Fan winding temperature/i, MOT([['M.3304', ['TT-FG1056-U', 'TT-FG1056-V', 'TT-FG1056-W']]], 140, 'IDF winding TT-FG1056-U / V / W', 'C')],
+    [22, /^Fan bearing vibration/i, MOT([['M.3304', ['VT-FG1056-1', 'VT-FG1056-2', 'VT-FG1056-3', 'VT-FG1056-4']]], 8, 'IDF vibration VT-FG1056-1 ~ 4', 'mm/s')],
     [3, /Initiated START Hypo/i, FIELD('hypo', 'Hypochlorite pump')],
     [3, /pump is running at local/i, FIELD('hypo', 'Hypochlorite pump')],
     [4, /Set debris filter to auto start/i, OUTC('DITL-39', 3, 'SWP outlet debris filter IN OPERATION')],
@@ -56958,7 +57160,21 @@ window.LS_LIVE = (function () {
     [7, /Standby Make-up Pump and Set the Pump to AUTO/i, STBY(MWP, 1, 14, 'MWP')],
     [7, /^Open Expansion tank automatic inlet valve/i, ET_NL],
     [7, /^Set Expansion tank inlet valve \(XV-MU1109\) to AUTO/i, ALL(ET_NL, XV_AUTO)],
+    /* live test #50: the priming of the closed cooling line from the tank (V-CW1001, field valve of the plant model AN_MU) */
+    [7, /^Open Expansion tank outlet valve to prime/i, DC('V-CW1001 open, closed cooling line primed', () => +(U().cwPrime || 0) >= 1, () => 'V-CW1001 ' + (AN.fieldState && AN.fieldState().cw1001 ? 'OPEN' : 'CLOSED') + ' · primed ' + Math.round(100 * (+U().cwPrime || 0)) + ' %')],
+    [7, /^Close all vents if close cooling line is fully primed/i, ALL(DC('closed cooling line primed', () => +(U().cwPrime || 0) >= 1, () => 'primed ' + Math.round(100 * (+U().cwPrime || 0)) + ' %'), ET_NL)],
     [8, /Initiate START of the selected AWCP/i, RUNN(ACW, 1, 'ACW pump')],
+    /* live test #51: the standby ACWP in REMOTE (row 5 MIL-P1108A / B REMOTE SELECTED, I.0088 / I.0408) and AUTO (out 1 AUTO SELECTED, the
+       same output the 027 faceplate reads; input rows 1 and 4 are both M.1232 / M.1242 AUTO MODE (CRT)) */
+    [
+      8,
+      /Set selected standby ACWP in AUTO/i,
+      DC(
+        'one ACW pump running and the standby in REMOTE + AUTO (DITL-76 / 77 out 1 AUTO SELECTED)',
+        () => nRun(ACW) >= 1 && ACW.some(nm => !dRun(nm) && dOut(nm, 0) && dIn(nm, 4)),
+        () => ACW.map((nm, j) => 'ACWP-' + 'AB'[j] + (dRun(nm) ? ' RUN' : (dIn(nm, 4) ? ' REM' : ' LOC') + (dOut(nm, 0) ? ' AUTO' : ' MAN'))).join(', ')
+      )
+    ],
     [9, /Initiate ON to selected dryer/i, OUTC('DITL-45', 14, 'Instrument air dryer A RUNNING')],
     [10, /^Initiate RUN with proper coordination/i, INC('DITL-113', 5, 'IA compressor A RUNNING')],
     [11, /Initiate ON to selected dryer/i, OUTC('DITL-45', 3, 'Plant air dryer A RUNNING')],
@@ -56969,9 +57185,28 @@ window.LS_LIVE = (function () {
     [14, /^Start the Vapour Extractor/i, TCSR('vex', 'Vapour extractor')],
     [14, /^Start one of the Main Oil Pump/i, TCSR('lop', 'Main oil pump MOP')],
     [15, /^Start the Oil Purifier Pump/i, FIELD('pur', 'Oil purifier pump')],
-    [16, /^Verify that Main Oil Pump is running/i, TCSR('lop', 'Main oil pump MOP')],
+    /* live test #66: running AND within the normal band 5.6 ~ 6.6 kg/cm2g (was: running only) */
+    [
+      16,
+      /^Verify that Main Oil Pump is running/i,
+      DC(
+        'Main oil pump MOP running, lube oil 5.6 ~ 6.6 kg/cm2g',
+        () => {
+          const x = AN.tcs && AN.tcs(),
+            p = x && x.oil ? +x.oil.lube : NaN;
+          return !!(x && x.aux && x.aux.lop) && p >= 5.6 && p <= 6.6;
+        },
+        () => {
+          const x = AN.tcs && AN.tcs();
+          return 'MOP ' + (x && x.aux && x.aux.lop ? 'RUNNING' : 'STOPPED') + ' · lube oil ' + f1(x && x.oil ? +x.oil.lube : NaN) + ' kg/cm2g';
+        }
+      )
+    ],
     [16, /^Start one of the Control Oil Pump/i, TCSR('eh', 'Control oil pump COP')],
+    /* live test #71: the biasing dampers (ABC-020 hand stations; 10 % = the lowest DCS position, ML of the parameter sheet) */
+    [17, /^Ensure biasing dampers are closed/i, ALL(MV('HICHR1002A', null, 12), MV('HICHR1002B', null, 12))],
     [17, /Initiate START air pre-heater drive motor/i, RUNN(['DITL-43'], 1, 'air preheater')],
+    [17, /^Open Biasing damper to 100% at Reheater and Superheater/i, ALL(MV('HICHR1002A', 95, null), MV('HICHR1002B', 95, null))],
     [18, /initiate START to selected CEP/i, RUN.CEP],
     [18, /FCV-CD1120 to MANUAL and ADJUST to 60/i, ALL(MODE('FCV-CD1120', 'MAN'), MV('FCV-CD1120', 55, 65))],
     [18, /set the standby CEP to REMOTE/i, RUN.CEP],
@@ -57020,6 +57255,13 @@ window.LS_LIVE = (function () {
     [26, /Check MFT will RESET/i, AFTER('25.21', MFT, 'the 5 minute purge')],
     [26, /Set biasing damper opening to RH 10% and SH 90%/i, ALL(MV('HICHR1002A', 5, 15), MV('HICHR1002B', 85, 95))],
     [26, /Put SH biasing damper to AUTO/i, MODE('HICHR1002B', 'AUTO')],
+    /* live test #57: AIR PRE-HEATER SOOT BLOWER START-UP (DITL-80K / 80M, see guide.js sbK); LOCAL medium source and Circulation
+       Function: no DCS signal on the drawings */
+    [27, /^Ensure Plant Air Compressor is running/i, DC('plant air PT-PA1705 >= 7 kg/cm2', () => +U().paP >= 6.95, () => 'PT-PA1705 ' + f1(+U().paP || 0) + ' kg/cm2')],
+    [27, /^Check the medium source at LOCAL/i, null],
+    [27, /^Select air heater soot blower source select PLANT AIR/i, INC('DITL-80K', 19, 'S/B source PLANT AIR (M.4212)')],
+    [27, /^Start soot blowing Air Preheater/i, DC('APH S/B forward starter O.077C (DITL-80K)', () => !!(window.LS_GUIDE && LS_GUIDE.aphSb && LS_GUIDE.aphSb()), () => 'APH S/B ' + (window.LS_GUIDE && LS_GUIDE.aphSb && LS_GUIDE.aphSb() ? 'STARTED' : 'not started'))],
+    [27, /Circulation Function/i, null],
     [28, /Press Burner .ON. Push button at DCS/i, BURN],
     [28, /shut-off valves for diesel oil supply/i, VAL('oilF', 0.3, null)],
     [28, /Check if flame scanner detects flame/i, ALL(BURN, VAL('oilF', 0.3, null))],
@@ -57243,6 +57485,10 @@ window.LS_LIVE = (function () {
         }
         LAT[key] = Math.round(t);
         ch.push(key);
+        /* live test #55: the AUTO tick is an event too (the step, what the logic shows) */
+        try {
+          if (window.lsEventAdd) lsEventAdd('PR-OPE-5002', 'SOP', '✓ ' + (si + 1) + '.' + (i + 1) + ' ' + String(st.t).slice(0, 60) + ' (AUTO: ' + String(q.c.now ? q.c.now() : '').slice(0, 80) + ')');
+        } catch (e) {}
       })
     );
     if (ch.length) wrt(LAT);
@@ -57446,6 +57692,22 @@ window.LS_GUIDE = (function () {
     return f ? L().modeOf(f) : '?';
   };
   const bit = a => L().val(a);
+  /* live test #71: the position transmitters of the flue gas biasing dampers on ABC-020 (I/O list STN104 AI0368 ~ 71 ZT-FG1116-A ~ D RH
+     side, AI0372 ~ 75 ZT-FG1117-A ~ D SH side), mean of the four */
+  const ZTN = {};
+  const ztOf = side => {
+    const sh = AN.sheets.find(x => x.name === 'ABC-020'),
+      T = sh && sh.S;
+    if (!T) return NaN;
+    const L4 = side === 'RH' ? ['S4 AI0368', 'S4 AI0369', 'S4 AI0370', 'S4 AI0371'] : ['S4 AI0372', 'S4 AI0373', 'S4 AI0374', 'S4 AI0375'];
+    if (!ZTN[side] || ZTN[side].T !== T) {
+      const ix = [];
+      for (let n = 0; n < T.nets.length; n++) if (L4.includes((AN.nm(T, n) || '').trim())) ix.push(n);
+      ZTN[side] = { T, ix };
+    }
+    const v = ZTN[side].ix.map(n => +T.rt.v[n]).filter(isFinite);
+    return v.length ? v.reduce((a, b) => a + b, 0) / v.length : NaN;
+  };
   /* the manual value the operator set on a controller (its MV reads 0 while the drawing holds the output: FIC-CF before a coal
      feeder runs) */
   const setOf = t => {
@@ -57579,6 +57841,30 @@ window.LS_GUIDE = (function () {
   const mcvC = (want, f) => C(want, () => !WL() || f(), () => (WL() ? W_MCV().map(t => t.replace('MV-', '') + ' ' + mcvPos(t).toFixed(0) + '%').join(', ') : '— (one world OFF)'));
   const W_MCV = () => ['MV-FW1001', 'MV-FW1391', 'MV-FW1002', 'MV-FW1392', 'MV-MS1391', 'MV-MS1392'];
   const dTxt = (nm, row, on, off) => () => (dOut(nm, row) === 1 ? on : dOut(nm, row) === 0 ? off : '— (one world OFF)');
+  /* live test #57: PR-OPE-5002 sec 27 AIR PRE-HEATER SOOT BLOWER START-UP on the sootblower drawings (sand-sootblower-logic.zip PDF
+     (14)Ditl80K / (16)Ditl80M, memory list STN102): 80K row 20 PLANT AIR / STEAM SELECT (1: PLANT AIR) = M.4212 "S/B SELECT PLANT AIR /
+     STEAM P.B.(CRT)"; 80M row 6 M.417D AIR HEATER SOOTBLOWER START P.B. -> out 373 REMOTE START COMMAND -> 80K row 6 -> TR317 3 s ->
+     SB PANEL O.077C MAIN POWER LINE FORWARD STARTER (with 80K row 5 M.4008 all lances on retract position, from DITL80L = the SB panel).
+     The forward starter is a 3 s pulse: it is latched in the plant step (onStep) so that x300 does not miss it */
+  const sbK = () => (typeof S !== 'undefined' ? S.sheets.find(x => /^\(S\d+\)DITL-80K$/.test(x.name)) : null);
+  const aphSbFwd = () => {
+    const s = sbK(),
+      p = s && s.nl && (s.nl.pout || []).find(q => q.adr === 'O.077C');
+    try {
+      return !!(p && WL() && simSheet(s).v[p.n]);
+    } catch (e) {
+      return false;
+    }
+  };
+  /* the lance retract limits of the SB panel (M.4008 on DITL-80 / 80A / 80G / 80K / 80S; no logic drawing of their source, 80L is the
+     panel box): the field operator checks every lance at its retract position (PR-OPE-5002 sec 17 "Ensure soot blower lance is in
+     retract position") */
+  const sbRet = () => (typeof S !== 'undefined' ? S.sheets.filter(x => /^\(S\d+\)DITL-80/.test(x.name)) : []).flatMap(x => {
+    const o = [];
+    for (let r = 0; r < 40; r++) if (/AIR PREHEATER S\/B ALL ON RETRACT POSITION/.test((DUI.rowInfo(x, r) || {}).svc || '') && !(WORLD.idx && WORLD.idx.din.get(x) && WORLD.idx.din.get(x).get(r))) o.push([x, r]);
+    return o;
+  });
+  const sbRetOn = () => WL() && sbRet().length > 0 && sbRet().every(([x, r]) => DUI.rowVal(x, r) === 1);
   /* a motor of a DITL drawing with no running memory on the ABC sheets: START / STOP from its drawing, its interlock in the card */
   const dmot = (nm, l) => ({ ad: nm, l: 'START ' + l, f: () => LS_DOCK && LS_DOCK.dmotor(nm, 1), on: () => dRun(nm) === 1, stop: { l: 'STOP ' + l, f: () => LS_DOCK && LS_DOCK.dmotor(nm, 0) } });
   /* the field items of procedure sections (0-based): the FIELD and TCS steps the operator confirms */
@@ -57786,10 +58072,10 @@ window.LS_GUIDE = (function () {
           d: 'Gawin: START ng isang MWP, REMOTE + AUTO ng standby MWP, saka punuin ang expansion tank hanggang NL 1.7 m (XV-MU1109 o bypass V-MU1033) at isara ang valve. Ang MWP ay nasa DCS (DITL-112). Ang XV-MU1109 (DITL-78) ay pneumatic: bumubukas lang kapag may instrument air (≥ 3.5 kg/cm²); kung wala pa (Cold, bago ang Hakbang 11), ang bypass V-MU1033 ang ginagamit ng field operator. Kailangan ang header > 6.0 kg/cm² para pumasok ang tubig.',
           c: C(
             '1 MWP running, standby MWP REMOTE + AUTO, expansion tank ≥ 1.7 m at sarado ang fill valve' + ' (XV-MU1109 AUTO kung may instrument air)',
-            () => !WL() || (mwN() >= 1 && mwStby() >= 0 && MW.some((nm, j) => dRun(nm) !== 1 && mwAuto(j)) && et() >= 1.69 && closed() && (xvAuto() || !air())),
+            () => !WL() || (mwN() >= 1 && mwStby() >= 0 && MW.some((nm, j) => dRun(nm) !== 1 && mwAuto(j)) && +U().cwPrime >= 1 && et() >= 1.69 && closed() && (xvAuto() || !air())),
             () =>
               (WL() ? MW.map((nm, j) => ML[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : (remOf(nm) ? 'REM' : 'LOC') + (locRun(nm, 14) === 1 ? ' AUTO' : ' MAN'))).join(', ') : '— (one world OFF)') +
-              ' · T-1109 ' + et().toFixed(2) + ' m · XV-MU1109 ' + (xvOpen() ? 'OPEN' : 'CLOSED') + (xvAuto() ? ' AUTO' : ' MAN') + ' · V-MU1033 ' + (byp() ? 'OPEN' : 'CLOSED')
+              ' · T-1109 ' + et().toFixed(2) + ' m · XV-MU1109 ' + (xvOpen() ? 'OPEN' : 'CLOSED') + (xvAuto() ? ' AUTO' : ' MAN') + ' · V-MU1033 ' + (byp() ? 'OPEN' : 'CLOSED') + ' · V-CW1001 ' + (fstate('cw1001') ? 'OPEN' : 'CLOSED')
           ),
           a: [
             dmot('DITL-112', 'MWP-A'),
@@ -57801,6 +58087,18 @@ window.LS_GUIDE = (function () {
             Object.assign(btn('FIELD: OPEN V-MU1033 (bypass)', () => (byp() ? '' : (bypSet(true), '')), () => byp() || xvOpen() || et() >= 1.69), { loc: 1, fp: 'F:mu1033' }),
             Object.assign(btn('XV-MU1109 CLOSE (DITL-78)', () => (!WL() ? '' : xvAuto() ? 'Nasa AUTO ang XV-MU1109: ang logic ang nagsasara sa 85 % (1.7 m).' : (dPress('DITL-78', 8), '')), () => !xvOpen() || et() < 1.69), { dg: ['DITL-78', 8] }),
             Object.assign(btn('FIELD: CLOSE V-MU1033 (bypass)', () => (byp() ? (bypSet(false), '') : ''), () => !byp() || et() < 1.69), { loc: 1, fp: 'F:mu1033' }),
+            /* live test #50: SOP 7.20 prime the closed cooling line from the tank (V-CW1001), 7.22 back to NL 1.7 m (make up if necessary) */
+            Object.assign(
+              btn('FIELD: OPEN V-CW1001 (prime closed cooling line)', () => {
+                if (fstate('cw1001')) return '';
+                A.field('cw1001', true);
+                try {
+                  window.lsEventAdd && lsEventAdd('FIELD', 'FIELD', 'Field operator: OPEN expansion tank outlet valve V-CW1001 (prime the closed cooling line)');
+                } catch (e) {}
+                return '';
+              }, () => fstate('cw1001')),
+              { loc: 1 }
+            ),
             Object.assign(btn('XV-MU1109 AUTO / MAN (DITL-78)', () => xvSel(!xvAuto()), () => xvAuto() || !air() || et() < 1.69), { dg: ['DITL-78', 2] })
           ],
           field: [6],
@@ -57815,7 +58113,9 @@ window.LS_GUIDE = (function () {
           ]
         };
       })(),
-      { st: 0, sec: 8, t: 'Simulan ang auxiliary cooling water pump (ACW)', d: 'Ang ACW pump ay nasa DCS (DITL-76 A, DITL-77 B).', c: runC('An aux. cooling water pump running (DITL-76 / 77)', ['DITL-76', 'DITL-77']), a: [dmot('DITL-76', 'ACWP-A'), dmot('DITL-77', 'ACWP-B')] /* 3.2.0-beta.69: the SOP / HMI name (027 boxes the picked ACWP) */, field: [7], w: (() => {
+      /* live test #51: PR-OPE-5002 8.27 "Set selected standby ACWP in AUTO": the standby in REMOTE (row 5 MIL-P1108A / B REMOTE SELECTED)
+         and AUTO (out 1 AUTO SELECTED, the output the 027 faceplate reads) */
+      { st: 0, sec: 8, max: 1, sby: 1, t: 'Simulan ang auxiliary cooling water pump (ACW)', d: 'Ang ACW pump ay nasa DCS (DITL-76 A, DITL-77 B).', c: C('1 ACWP running, standby ACWP REMOTE + AUTO (DITL-76 / 77 out 1)', () => !WL() || (['DITL-76', 'DITL-77'].some(nm => dRun(nm) === 1) && ['DITL-76', 'DITL-77'].some(nm => dRun(nm) !== 1 && dOut(nm, 0) === 1 && DUI.rowVal(LS_DOCK.dOf(nm), 4) === 1)), () => (WL() ? ['DITL-76', 'DITL-77'].map((nm, j) => 'ACWP-' + 'AB'[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : 'STOPPED' + (DUI.rowVal(LS_DOCK.dOf(nm), 4) === 1 ? ' REM' : ' LOC') + (dOut(nm, 0) === 1 ? ' AUTO' : ' MAN'))).join(', ') : '— (one world OFF)')), a: [dmot('DITL-76', 'ACWP-A'), dmot('DITL-77', 'ACWP-B')] /* 3.2.0-beta.69: the SOP / HMI name (027 boxes the picked ACWP) */, field: [7], w: (() => {
           /* R9 #74: SOP section 9: the discharge valve opened until the pump discharge reaches 7 kg/cm² (PG-CW1108A/B, local gauge);
              the header PICW1152 reads 6.4 at 150 MW (HMI snapshot) */
           const L = ['DITL-76', 'DITL-77'].map(nm => () => dRun(nm) === 1);
@@ -57839,7 +58139,7 @@ window.LS_GUIDE = (function () {
         need: 1,
         field: [12],
         t: 'Pre-start check ng turbine lube at control oil; TICLO1002 sa AUTO',
-        d: 'Gawin: ilagay sa AUTO ang lube oil temperature control TICLO1002 (valve TCVCW1201), tapos pindutin ang "Tapos na ito sa field" kapag tapos ang check. Ang "change mode to Remote" ng SOP: sa drawing ABC-053 walang REMOTE (.REM) ang TICLO1002, kaya ang DCS ang humahawak sa AUTO. Ang TCVCW1201 ang nagpapadaan ng cooling water sa lube oil cooler: sa REMOTE, ang DCS ang humahawak ng oil outlet temperature (average 46 °C, cooling water inlet hanggang 37 °C). Bago paandarin ang oil pumps: puno ang main oil tank (T-n920), sarado ang drains (V-LOn021 / 032), at walang alarm sa TCS.',
+        d: 'Gawin: ilagay sa AUTO ang lube oil temperature control TICLO1002 (valve TCVCW1201), tapos pindutin ang "Tapos na ito sa field" kapag tapos ang check. Ang "change mode to Remote" ng SOP: sa drawing ABC-053 walang REMOTE (.REM) ang TICLO1002, kaya ang DCS ang humahawak sa AUTO. Ang TCVCW1201 ang nagpapadaan ng cooling water sa lube oil cooler: sa REMOTE, ang DCS ang humahawak ng oil outlet temperature (average 46 °C, cooling water inlet hanggang 37 °C). Bago paandarin ang oil pumps: puno ang main oil tank (T-1920), sarado ang drains (V-LO1021 / 032), at walang alarm sa TCS.',
         c: C('TICLO1002 (TCVCW1201) hawak ng DCS (AUTO)', () => /AUTO|REM/.test(md('TICLO1002')), () => 'TICLO1002 ' + md('TICLO1002')),
         fps: ['TICLO1002'],
         a: [btn('A (AUTO) TICLO1002 · TCVCW1201', () => A.auto('TICLO1002'), () => /AUTO|REM/.test(md('TICLO1002')))],
@@ -57850,12 +58150,12 @@ window.LS_GUIDE = (function () {
         sec: 14,
         field: [13],
         t: 'Simulan ang vapour extractor at ang main oil pump (MOP) sa TCS',
-        d: 'Gawin: START ang vapour extractor, tapos START ang isang main oil pump (MOP, P-n922A/B) sa TCS panel. Ang vapour extractor ang humihigop ng singaw ng langis sa main oil tank (vacuum −20 ~ −50 mmH₂O sa PGLO1920). Ang MOP ang nagbibigay ng lube oil (5.6 ~ 6.6 kg/cm²g) sa bearings ng turbine at generator; kailangan ito bago ang turning gear. Bearing oil (PGLO1008) dapat > 1.05 kg/cm²g: sa ≤ 1.05 aandar ang emergency oil pump (EOP).',
+        d: 'Gawin: START ang vapour extractor, tapos START ang isang main oil pump (MOP, P-1922A/B) sa TCS panel. Ang vapour extractor ang humihigop ng singaw ng langis sa main oil tank (vacuum −20 ~ −50 mmH₂O sa PGLO1920). Ang MOP ang nagbibigay ng lube oil (5.6 ~ 6.6 kg/cm²g) sa bearings ng turbine at generator; kailangan ito bago ang turning gear. Bearing oil (PGLO1008) dapat > 1.05 kg/cm²g: sa ≤ 1.05 aandar ang emergency oil pump (EOP).',
         c: C('Vapour extractor at MOP tumatakbo (TCS)', () => !!(TC().aux.vex && TC().aux.lop), () => 'vapour extractor ' + (TC().aux.vex ? 'RUNNING' : 'STOPPED') + ', MOP ' + (TC().aux.lop ? 'RUNNING' : 'STOPPED')),
         a: [btn('START vapour extractor (TCS)', () => A.tcs('vex', 1), () => !!TC().aux.vex), btn('START main oil pump MOP (TCS)', () => A.tcs('lop', 1), () => !!TC().aux.lop)],
         w: [
           ['MOT vacuum', () => (TC().oil || {}).vac, 'mmH₂O', f1, 'PGLO1920 · −20 ~ −50'],
-          ['Lube oil pressure', () => (TC().oil || {}).lube, 'kg/cm²g', f1, 'P-n922 · 5.6 ~ 6.6'],
+          ['Lube oil pressure', () => (TC().oil || {}).lube, 'kg/cm²g', f1, 'P-1922 · 5.6 ~ 6.6'],
           ['Bearing oil pressure', () => (TC().oil || {}).brg, 'kg/cm²g', x => (isFinite(x) ? (+x).toFixed(2) : '—'), 'PGLO1008 · > 1.05']
         ]
       },
@@ -57864,25 +58164,42 @@ window.LS_GUIDE = (function () {
         sec: 15,
         field: [14],
         t: 'Simulan ang oil purifier pump (local)',
-        d: 'Gawin: i-drain ang tubig (V-LO1223), buksan ang inlet valves (V-LOn201, V-LOn205), tapos START ang oil purifier pump (P-n941) sa local panel. Nililinis ng purifier ang lube at control oil (tubig at dumi); discharge pressure mga 2.96 kg/cm². Puwede itong tumakbo nang tuloy-tuloy o paminsan-minsan.',
+        d: 'Gawin: i-drain ang tubig (V-LO1223), buksan ang inlet valves (V-LO1201, V-LO1205), tapos START ang oil purifier pump (P-1941) sa local panel. Nililinis ng purifier ang lube at control oil (tubig at dumi); discharge pressure mga 2.96 kg/cm². Puwede itong tumakbo nang tuloy-tuloy o paminsan-minsan.',
         c: C('Oil purifier pump running (local)', () => fstate('pur'), () => 'Oil purifier pump ' + (fstate('pur') ? 'RUNNING' : 'STOPPED')),
         a: [fldB('pur', 'oil purifier pump')],
-        w: [['Oil purifier pump', () => (fstate('pur') ? 'RUNNING' : 'STOPPED'), '', x => x, 'P-n941'], ['Purifier discharge', () => (fstate('pur') ? 2.96 : 0), 'kg/cm²', f1, '~ 2.96']]
+        w: [['Oil purifier pump', () => (fstate('pur') ? 'RUNNING' : 'STOPPED'), '', x => x, 'P-1941'], ['Purifier discharge', () => (fstate('pur') ? 2.96 : 0), 'kg/cm²', f1, '~ 2.96']]
       },
       {
         st: 0,
         sec: 16,
         field: [15],
         t: 'Simulan ang control oil pump (COP) sa TCS',
-        d: 'Gawin: kapag normal ang lube oil pressure ng MOP, START ang isang control oil pump (COP, P-n931A/B) sa TCS panel. Ang control oil (133 ~ 163 kg/cm²g) ang nagpapagalaw sa MSV, RSV, CV at ICV ng turbine; kailangan ito bago ang ATS. Ang mga pump sa AUTO ay kusang aandar: MOP kapag ≤ 5.6, COP kapag ≤ 133, EOP kapag bearing oil ≤ 1.05.',
+        d: 'Gawin: kapag normal ang lube oil pressure ng MOP, START ang isang control oil pump (COP, P-1931A/B) sa TCS panel. Ang control oil (133 ~ 163 kg/cm²g) ang nagpapagalaw sa MSV, RSV, CV at ICV ng turbine; kailangan ito bago ang ATS. Ang mga pump sa AUTO ay kusang aandar: MOP kapag ≤ 5.6, COP kapag ≤ 133, EOP kapag bearing oil ≤ 1.05.',
         c: C('Control oil pump COP tumatakbo (TCS)', () => !!TC().aux.eh, () => 'COP ' + (TC().aux.eh ? 'RUNNING' : 'STOPPED')),
         a: [btn('START control oil pump COP (TCS)', () => (TC().aux.lop ? A.tcs('eh', 1) : ''), () => !!TC().aux.eh)],
         w: [
-          ['Control oil pressure', () => (TC().oil || {}).ctl, 'kg/cm²g', f1, 'P-n931 · 133 ~ 163'],
-          ['Lube oil pressure', () => (TC().oil || {}).lube, 'kg/cm²g', f1, 'P-n922 · 5.6 ~ 6.6']
+          ['Control oil pressure', () => (TC().oil || {}).ctl, 'kg/cm²g', f1, 'P-1931 · 133 ~ 163'],
+          ['Lube oil pressure', () => (TC().oil || {}).lube, 'kg/cm²g', f1, 'P-1922 · 5.6 ~ 6.6']
         ]
       },
-      { st: 0, sec: 17, t: 'Simulan ang rotary air pre-heater (DITL-43)', d: 'Gawin: FIELD NOT TRIP kapag may ✕ sa interlock, saka START ng air preheater (DITL-43). Ang air preheater ay umiikot na rotor (Ljungstrom) na nagpapainit ng PA at SA gamit ang flue gas. Pinapaandar ito bago ang mga fan para pantay ang init ng rotor at hindi ito mabaluktot. Hindi ito aandar kapag walang AIR PREHEATER NOT TRIP (I.0651, DITL-43 row 5) o kapag LOCAL ang switch sa field.', c: runC('Air preheater running (DITL-43)', ['DITL-43']), a: [dmot('DITL-43', 'air preheater')], field: [16], w: [['Air preheater', () => (dRun('DITL-43') === 1 ? 'RUNNING' : 'STOPPED'), '', x => x, 'DITL-43 out 3']] },
+      { st: 0, sec: 17, t: 'Simulan ang rotary air pre-heater (DITL-43)', d: 'Gawin: FIELD NOT TRIP kapag may ✕ sa interlock, saka START ng air preheater (DITL-43). Ang air preheater ay umiikot na rotor (Ljungstrom) na nagpapainit ng PA at SA gamit ang flue gas. Pinapaandar ito bago ang mga fan para pantay ang init ng rotor at hindi ito mabaluktot. Hindi ito aandar kapag walang AIR PREHEATER NOT TRIP (I.0651, DITL-43 row 5) o kapag LOCAL ang switch sa field.', c: runC('Air preheater running (DITL-43)', ['DITL-43']), a: [dmot('DITL-43', 'air preheater')], field: [16], w: [['Air preheater', () => (dRun('DITL-43') === 1 ? 'RUNNING' : 'STOPPED'), '', x => x, 'DITL-43 out 3'], ['RH biasing damper HICHR1002A MV', () => mv('HICHR1002A'), '%', f1w, 'SOP 17.1 closed (min 10)'], ['SH biasing damper HICHR1002B MV', () => mv('HICHR1002B'), '%', f1w, 'SOP 17.1 closed (min 10)']] },
+      /* live test #71: PR-OPE-5002 sec 17.12 "Open Biasing damper to 100% at Reheater and Superheater side" (after the air preheater runs;
+         in Cold both are MANUAL at 10 %, the lowest position of the DCS = closed, SOP 17.1) */
+      {
+        st: 0,
+        sec: 17,
+        t: 'Open the RH and SH biasing dampers to 100 %',
+        d: 'Set the RH and SH biasing dampers to MANUAL, output 100 % (PR-OPE-5002 17.12). At Cold both are closed at 10 %, the lowest DCS position (17.1). Watch the damper position transmitters. Tags: HICHR1002A, HICHR1002B, ZT-FG1116, ZT-FG1117.',
+        c: b.ALL(b.MV('HICHR1002A', 95, null), b.MV('HICHR1002B', 95, null)),
+        fps: ['HICHR1002A', 'HICHR1002B'],
+        a: [btn('Biasing damper RH at SH 100 %', () => (A.man('HICHR1002A', 100), A.man('HICHR1002B', 100)))],
+        w: [
+          ['RH damper HICHR1002A MV', () => mv('HICHR1002A'), '%', f1w, 'SOP 100'],
+          ['ZT-FG1116-A ~ D (RH)', () => ztOf('RH'), '%', f1w, 'mean of 4'],
+          ['SH damper HICHR1002B MV', () => mv('HICHR1002B'), '%', f1w, 'SOP 100'],
+          ['ZT-FG1117-A ~ D (SH)', () => ztOf('SH'), '%', f1w, 'mean of 4']
+        ]
+      },
       /* ---- 1 water ---- */
       FIELD(1, 'Hotwell filling line-up (field)', [17]),
       { st: 1, sec: 18, t: 'Hotwell level control LCV-MU1110 sa AUTO', d: 'Ang make-up valve na ang hahawak ng level ng hotwell ng condenser.', c: b.MODE('LCV-MU1110', 'AUTO'), fps: ['LCV-MU1110'], a: [btn('A (AUTO)', () => A.auto('LCV-MU1110'))] },
@@ -57956,6 +58273,54 @@ window.LS_GUIDE = (function () {
         wait: 1
       },
       { st: 3, sec: 26, t: 'Biasing damper: RH 10 %, SH 90 %', d: 'Pagkatapos ng purge, karamihan ng flue gas ay sa SH side muna.', c: b.ALL(b.MV('HICHR1002A', 5, 15), b.MV('HICHR1002B', 85, 95)), fps: ['HICHR1002A', 'HICHR1002B'], a: [btn('RH 10 %, SH 90 %', () => (A.man('HICHR1002A', 10), A.man('HICHR1002B', 90)))] },
+      /* ---- live test #57: sec 27 AIR PRE-HEATER SOOT BLOWER START-UP (PR-OPE-5002, between the purge and the burners) ---- */
+      {
+        st: 3,
+        sec: 27,
+        t: 'Air heater soot blower: plant air available, source set to plant air',
+        d: 'Check that a plant air compressor runs and plant air pressure is at least 7 kg/cm². In the field: at the local panel, open the plant air source and close the steam source of the air heater soot blower, and check that every soot blower lance is retracted. Tags: PT-PA1705, M.4008 (DITL-80K row 5).',
+        c: b.ALL(
+          C('Plant air PT-PA1705 ≥ 7 kg/cm²', () => +U().paP >= 6.95, () => 'PT-PA1705 ' + f1w(+U().paP || 0) + ' kg/cm²'),
+          C('All soot blower lances retracted (M.4008)', () => !WL() || sbRetOn(), () => (WL() ? (sbRetOn() ? 'ALL ON RETRACT' : 'not confirmed') : '— (one world OFF)'))
+        ),
+        a: [
+          Object.assign(
+            btn('FIELD: all soot blower lances retracted (M.4008)', () => {
+              /* one address on five drawings (CLAUDE.md 1); the field action is logged once, on DITL-80K (a unique name: "DITL-80" is
+                 also the hot reheat drain sheet (99)DITL-80) */
+              for (const [x, r] of sbRet()) if (!/DITL-80K$/.test(x.name)) x.sig[r + ':S'] = true;
+              const k = sbRet().find(([x]) => /DITL-80K$/.test(x.name));
+              if (k && window.LS_DOCK) LS_DOCK.fieldRow('DITL-80K', k[1], 1, 'all S/B lances on retract position (M.4008)');
+            }, sbRetOn),
+            { loc: 1 }
+          )
+        ],
+        field: [26],
+        w: [['Plant air PT-PA1705', () => +U().paP, 'kg/cm²', f1w, 'SOP ≥ 7']]
+      },
+      {
+        st: 3,
+        sec: 27,
+        t: 'Select plant air as the soot blower source at the DCS',
+        d: 'Set the soot blower source select to PLANT AIR (1). STEAM (0) is not available at Cold. Tag: M.4212 (DITL-80K row 20).',
+        c: C('S/B source PLANT AIR (DITL-80K row 20 = 1)', () => !WL() || DUI.rowVal(sbK(), 19) === 1, () => (WL() ? (DUI.rowVal(sbK(), 19) === 1 ? 'PLANT AIR' : 'STEAM') : '— (one world OFF)')),
+        a: [Object.assign(btn('S/B SELECT PLANT AIR (M.4212, DITL-80K)', () => window.LS_DOCK && LS_DOCK.dsel('DITL-80K', 19, 1, 'S/B SELECT PLANT AIR / STEAM P.B. (M.4212) PLANT AIR'), () => WL() && DUI.rowVal(sbK(), 19) === 1), { dg: ['DITL-80K', 19] })]
+      },
+      {
+        st: 3,
+        sec: 27,
+        t: 'Start the air heater soot blowing',
+        d: 'Press the air heater soot blower START. The logic sends a 3 s forward starter command to the soot blower panel when the soot blower system is in MANUAL and every lance is retracted. Tags: M.417D (DITL-80M row 6), O.077C (DITL-80K).',
+        c: C('APH S/B forward starter O.077C (DITL-80K)', () => !WL() || !!G.aphSb, () => (WL() ? (G.aphSb || aphSbFwd() ? 'FORWARD STARTER ON' : 'not started') : '— (one world OFF)')),
+        a: [Object.assign(btn('APH S/B START (M.417D, DITL-80M)', () => (WL() ? dPress('DITL-80M', 5) : ''), () => !!G.aphSb), { dg: ['DITL-80M', 5], ad: 'DITL-80M@5' })]
+      },
+      {
+        st: 3,
+        sec: 27,
+        need: 1,
+        t: 'Air heater soot blower circulation function ON',
+        d: 'PR-OPE-5002: "Set Air heater soot blower Circulation Function to ON at DCS." The logic drawings DITL-80 ~ 80T and memory list STN102 have no address for this function: confirm it when done.'
+      },
       /* ---- 4 burners and warm-up ---- */
       { st: 4, sec: 28, t: 'Sindihan ang burner A', d: 'SA damper at oil FCV sa ignition, tapos BURNER ON (DITL-09): ang DITL ang magpapasok ng igniter, magbubukas ng dalawang supply oil valve at magsisindi (DITL-10 / 13). Kapag may apoy na, ang oil flow FICDO1043A sa 60 %.', c: b.ALL(b.BIT('M.3412', 1, 'burner A in service'), b.VAL('oilF', 0.3, null)), fps: ['FICDO1043A'], get a() {
           return WL() ? [bIgn('A'), bOn('A'), bOil('A', 60)] : [btn('Buksan oil valve A', () => A.oil('M.3410', true)), btn('BURNER A ON', () => A.motor('M.3412', 1), () => bit('M.3412') > 0.5), btn('FICDO1043A M 60 %', () => A.man('FICDO1043A', 60))];
@@ -58298,7 +58663,13 @@ window.LS_GUIDE = (function () {
   }
   /* every step of the plant (AN.onStep): the heating rate, the pushbutton release; every second: the latch */
   const onStep = dt => {
-    if (!G.on || !live()) return;
+    if (!live()) return;
+    /* live test #57: the 3 s FORWARD STARTER pulse of the APH sootblower (DITL-80K O.077C), latched */
+    if (!G.aphSb && aphSbFwd()) {
+      G.aphSb = 1;
+      save();
+    }
+    if (!G.on) return;
     {
       const t = simT(),
         H = RATE.h;
@@ -58402,6 +58773,7 @@ window.LS_GUIDE = (function () {
       G.mine = {};
       G.pw = {};
       G.cur = 0;
+      G.aphSb = 0;
       HH = null;
       /* the sheets the steps operate that may not be linked to the sheet on the screen: stepped too (links.js actSet) */
       AN.checkSheets = ['ABC-001C', 'ABC-002', 'ABC-003A', 'ABC-003B', 'ABC-003C', 'ABC-003D', 'ABC-004A', 'ABC-005', 'ABC-007', 'ABC-008', 'ABC-010', 'ABC-011', 'ABC-012', 'ABC-013', 'ABC-020', 'ABC-028', 'ABC-031', 'ABC-032', 'ABC-050', 'ABC-052', 'ABC-054']
@@ -58509,7 +58881,9 @@ window.LS_GUIDE = (function () {
     get on() {
       return G.on;
     },
-    mine: () => G.mine
+    mine: () => G.mine,
+    /* live test #57: the APH sootblower was started (forward starter O.077C seen), for the SOP tick of sec 27 (live.js) */
+    aphSb: () => !!G.aphSb
   };
   return API;
 })();
@@ -59086,8 +59460,7 @@ window.LS_GUIDE = (function () {
       /* R9 #76: one address = one signal (CLAUDE.md 1): DITL-45 rows 5 and 9 are both I.0085 PLANT AIR DRYER-A REMOTE (the START and
          the STOP gate); setting one row left the other 0, shown red as missing */
       {
-        const sv = rowInfo(f.s, f.row).svc;
-        if (/\b[IM]\.[0-9A-F]{4}/.test(sv)) for (let r = 0; r < 40; r++) if (r !== f.row && rowInfo(f.s, r).svc === sv) f.s.sig[r + ':S'] = !!f.want;
+        for (const r of twinRows(f.s, f.row)) f.s.sig[r + ':S'] = !!f.want;
       }
       /* the other limit switch of the same vane / damper: OPENED <-> CLOSED */
       const tw = f.svc.replace(/\bOPENED\b|\bOPEN\b|\bCLOSED\b/, w => (w === 'CLOSED' ? 'OPENED' : 'CLOSED'));
@@ -59108,8 +59481,8 @@ window.LS_GUIDE = (function () {
     if (!s) return false;
     s.sig[row + ':S'] = !!v;
     {
-      const sv = rowInfo(s, row).svc; /* one address = one signal (CLAUDE.md 1): DITL-29A rows 4 and 19 are both M.1152 */
-      if (/\b[IM]\.[0-9A-F]{4}/.test(sv)) for (let r = 0; r < 40; r++) if (r !== row && rowInfo(s, r).svc === sv) s.sig[r + ':S'] = !!v;
+      /* one address = one signal (CLAUDE.md 1): DITL-29A rows 4 and 19 are both M.1152 */
+      for (const r of twinRows(s, row)) s.sig[r + ':S'] = !!v;
     }
     if (WORLD.live) WORLD.busy = true;
     pscan();
@@ -59126,8 +59499,8 @@ window.LS_GUIDE = (function () {
     if (!s) return false;
     s.sig[row + ':S'] = !!on;
     {
-      const sv = rowInfo(s, row).svc; /* R9 #76: the other rows of the same address */
-      if (/\b[IM]\.[0-9A-F]{4}/.test(sv)) for (let r = 0; r < 40; r++) if (r !== row && rowInfo(s, r).svc === sv) s.sig[r + ':S'] = !!on;
+      /* R9 #76: the other rows of the same address */
+      for (const r of twinRows(s, row)) s.sig[r + ':S'] = !!on;
     }
     if (WORLD.live) WORLD.busy = true;
     pscan();
@@ -59152,6 +59525,22 @@ window.LS_GUIDE = (function () {
     } catch (e) {}
     setTimeout(() => fill(true), 200);
     return true;
+  }
+  /* the other input rows of the same address on a drawing (one address = one signal, CLAUDE.md 1): the same service text with an address
+     (DITL-29A rows 4 and 19 M.1152), or live test #51 the same TAG NO. (DITL-77 row 1 "B-AUX. CW PUMP AUTO PB" and row 4 "B-AUX. CW PUMP
+     AUTO SELECTED" are both M.1242 B-AUX. COOLING WATER PUMP AUTO MODE (CRT), memory list STN103: the AUTO of the faceplate set row 1
+     only and the dock read row 4 as missing) */
+  function twinRows(s, row) {
+    const I = rowInfo(s, row),
+      sv = I.svc,
+      tg = /^[IM]\.[0-9A-F]{4}$/.test(I.tag || '') ? I.tag : '',
+      o = [];
+    for (let r = 0; r < 40; r++) {
+      if (r === row) continue;
+      const J = rowInfo(s, r);
+      if ((tg && J.tag === tg) || (/\b[IM]\.[0-9A-F]{4}/.test(sv) && J.svc === sv)) o.push(r);
+    }
+    return o;
   }
   const rowInfo = (s, row) => {
     let tag = '',
@@ -59189,6 +59578,13 @@ window.LS_GUIDE = (function () {
     for (let r = 0; r < 60 && !o; r++) {
       const v = rowInfo(ds, r).svc;
       if (/\bAUTO MODE SELECTED\b/.test(v) && !/REMOTE/.test(v)) o = { s: ds, row: r, svc: svcN(v) };
+    }
+    /* live test #51: the ACW pumps write it "B-AUX. CW PUMP AUTO SELECTED" (DITL-77 row 4, M.1242 AUTO MODE (CRT), memory list STN103):
+       a CRT memory row of a motor drawing only (the drain valves DITL-73 / 80 / 88 ... have their own AUTO SELECTED) */
+    const motor = !o && call(() => DUI.outs(ds).some(q => /RUNNING/.test(q.name) && !/NOT RUNNING/.test(q.name)), false);
+    for (let r = 0; r < 60 && !o && motor; r++) {
+      const I = rowInfo(ds, r);
+      if (/\bAUTO SELECTED\b/.test(I.svc) && !/REMOTE|START/.test(I.svc) && /^M\.[0-9A-F]{4}$/.test(I.tag || '')) o = { s: ds, row: r, svc: svcN(I.svc) };
     }
     return (ds._amr = o);
   }
@@ -60706,7 +61102,7 @@ window.LS_GUIDE = (function () {
       const nm = f.t.replace(/\s*\([^()]*\d[^()]*~[^()]*\)/, '').replace(/^(Check|Verify|Ensure)\s+(that\s+)?(the\s+)?/i, '');
       /* live check #91 (beta.51): the row shows a value of the PLANT MODEL only: the PV of the DCS loop of the row's tag (PI-DO0005 =
          PICDO0005) or of the level controller; a field gauge without a model (motor current, local pressure / temperature) reads
-         "— walang model" (before, the middle of the SOP range was shown as if read). The SOP value is in the hint */
+         "— walang model" (#49: "— field gauge"; before, the middle of the SOP range was shown as if read). The SOP value is in the hint */
       const nums = String(lm[0]).match(/-?\d+(?:\.\d+)?/g) || [],
         lo = nums.length ? +nums[0] : NaN,
         un = (/°C|ksc|kg\/cm2|bar|%|\bA\b|(?<=\d)A\b/.exec(lm[0]) || [/current/i.test(f.t) ? 'A' : ''])[0],
@@ -60722,27 +61118,41 @@ window.LS_GUIDE = (function () {
         };
       /* a level of the SOP table is the PV of its controller; a gauge with a DCS loop is that loop's PV; a laboratory value (pH, Fe)
          stays the SOP value */
+      /* live test #49: the gauges of the SOP that the HMI reads from the plant model (unit.js AN_MU / AN_ACW): section 7 MWP current
+         IIP0709A ~ C and header pressure PIMU0709 (MAKE-UP WATER page), section 8 ACWP current IIP1108A / B (027 page); the running pump */
+      const U0 = (window.AN && AN.unit) || {},
+        mdl =
+          f.si === 6 && /current/i.test(f.t)
+            ? ['IIP0709A ~ C', () => (U0.on ? Math.max(+U0.muI0 || 0, +U0.muI1 || 0, +U0.muI2 || 0) : NaN), 'A']
+            : f.si === 6 && /pressure/i.test(f.t)
+              ? ['PIMU0709', () => (U0.on ? +U0.muP : NaN), 'kg/cm²']
+              : f.si === 7 && /current/i.test(f.t)
+                ? ['IIP1108A / B', () => (U0.on ? Math.max(+U0.acI0 || 0, +U0.acI1 || 0) : NaN), 'A']
+                : null;
       const lvl = /hotwell level/i.test(f.t) ? 'LCV-MU1110' : /deaerator level/i.test(f.t) ? 'LCV-CD1104' : null,
         gauge = /current|pressure|temperature/i.test(f.t),
-        tfp = !lvl && gauge ? tagFp() : null,
-        nomod = !lvl && gauge && !tfp,
+        tfp = !lvl && gauge && !mdl ? tagFp() : null,
+        nomod = !lvl && gauge && !tfp && !mdl,
         /* live test #21 (H6): a field gauge that the step's own values already read from the plant model (SWBP suction / inlet,
            discharge, current of each pump, with their SOP range) is not shown again as "— walang model" */
         kw = /current/i.test(f.t) ? /current/i : /suction|inlet pressure/i.test(f.t) ? /suction/i : /discharge/i.test(f.t) ? /discharge/i : /pressure/i.test(f.t) ? /suction|discharge|pressure/i : null;
       if (nomod && s.w && kw && stage.some(x => x[2] && kw.test(x[0]))) continue;
+      /* #49: a gauge with no DCS signal (the dryer / compressor local panel T1 ~ T7, a local pressure gauge) is read in the field */
       const live = lvl
         ? () => call(() => LV().pvOf(LV().fp(lvl)), NaN)
-        : tfp
-          ? () => call(() => LV().pvOf(tfp), NaN)
-          : nomod
-            ? () => '— walang model'
-            : () => lm[0];
+        : mdl
+          ? mdl[1]
+          : tfp
+            ? () => call(() => LV().pvOf(tfp), NaN)
+            : nomod
+              ? () => '— field gauge'
+              : () => lm[0];
       sop.push([
         'SOP · ' + (nm.length > 34 ? nm.slice(0, 34).replace(/\s+\S*$/, '') + '…' : nm),
         live,
-        lvl ? 'mm' : tfp ? un : '',
+        lvl ? 'mm' : mdl ? mdl[2] : tfp ? un : '',
         x => (typeof x === 'number' ? (Math.abs(x) < 10 ? x.toFixed(2).replace(/0$/, '') : f1(x)) : x),
-        [f.g, 'SOP ' + lm[0], lm.slice(1).join(' · ')].filter(Boolean).join(' · ')
+        [mdl ? mdl[0] : f.g, 'SOP ' + lm[0], lm.slice(1).join(' · ')].filter(Boolean).join(' · ')
       ]);
     }
     els.watch = own.concat(stage, sop.slice(0, 8)).map(([k, f, u, fm, hint]) => {
@@ -63440,6 +63850,19 @@ body.ophmi #anp{display:none!important}
         rhi = P.rhi != null ? P.rhi : 100,
         unit = P.unit || '';
       const key = sh.name + '|' + c.b.id;
+      /* live test #55: every A / M / R and SV / MV of the faceplate is an operator event (tag, sheet), also while the sheet is not on the
+         screen (the MODE events of events.js read the sheet on screen only); a ramp of SV / MV (hold, ▲▲) is one event when it stops */
+      const opT = {},
+        opEv = (k, v) => {
+          const say = () => {
+            try {
+              window.lsEventAdd && lsEventAdd(sh.name, 'DCS', 'Operator: ' + c.tag + ' ' + k + (v === undefined ? '' : ' = ' + (+v).toFixed(2).replace(/\.?0+$/, '')) + ' (faceplate)');
+            } catch (e) {}
+          };
+          clearTimeout(opT[k]);
+          if (v === undefined) say();
+          else opT[k] = setTimeout(say, 1200);
+        };
       const pv = E('b', { txt: '—' }),
         sv = E('b', { txt: '—' }),
         mv = E('b', { txt: '—' });
@@ -63515,6 +63938,7 @@ body.ophmi #anp{display:none!important}
           on: () => {
             swMode('A');
             if (c.remote) pulse(['REM', 'REMOTE']);
+            opEv(c.remote ? 'REMOTE' : 'SV: LOGIC');
           }
         }),
         bLoc = E('button', {
@@ -63522,7 +63946,7 @@ body.ophmi #anp{display:none!important}
           style: c.remote ? 'display:none' : '',
           txt: c.remote ? 'LOCAL' : 'SV: OPERATOR',
           title: c.remote ? 'LOCAL: MAN allowed, SV set by the operator (COS)' : 'Operator SV (COS)',
-          on: () => swMode('B')
+          on: () => (swMode('B'), opEv(c.remote ? 'LOCAL' : 'SV: OPERATOR'))
         }),
         modeRow = c.svSw && !c.remote ? E('div', { cls: 'row' }, [E('span', { txt: 'SV' }), bRem, bLoc]) : null;
       const sgEls = c.sigs.map(z => {
@@ -63559,6 +63983,7 @@ body.ophmi #anp{display:none!important}
             on: () => {
               mvIn.value = x;
               setMV(S, c, x);
+              opEv('MV', x);
             }
           })
         ),
@@ -63586,13 +64011,13 @@ body.ophmi #anp{display:none!important}
       cutEl.append(cutTx, cutWhy, cutList);
       svRow.append(svSrc);
       if (svOk) {
-        svIn.onchange = () => svSet(+svIn.value);
+        svIn.onchange = () => (svSet(+svIn.value), opEv('SV', +svIn.value));
       } else {
         svIn.disabled = true;
         svRow.append(E('span', { cls: 'sub', txt: '(SV from the logic)' }));
       }
       if (mvOk) {
-        mvIn.onchange = () => setMV(S, c, +mvIn.value);
+        mvIn.onchange = () => (setMV(S, c, +mvIn.value), opEv('MV', +mvIn.value));
       } else {
         mvIn.disabled = true;
         mvRow.append(E('span', { cls: 'sub', txt: '(no manual input)' }));
@@ -63621,10 +64046,12 @@ body.ophmi #anp{display:none!important}
         }
         setMode('A');
         pulse(['LOC', 'LOCAL', 'AUTO', 'AUT']);
+        opEv('AUTO');
       };
       bMan.onclick = () => {
         setMode('M');
         pulse(['MAN', 'MANUAL']);
+        opEv('MAN');
       };
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('class', 'tr');
@@ -63707,6 +64134,7 @@ body.ophmi #anp{display:none!important}
         popIn(k).value = +v.toFixed(3);
         if (k === 'SV') svSet(v);
         else setMV(S, c, v);
+        opEv(k, v);
         popRefresh();
       };
       const popRefresh = () => {

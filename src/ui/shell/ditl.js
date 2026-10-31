@@ -440,6 +440,9 @@
   };
   /* 3.2.0-beta.35: machine B / C / D of a shared drawing reads its own letter and address (WORLD.showText / addrK) */
   const isK = s => !!(s && s._inst && s._inst.k && window.WORLD && WORLD.showText);
+  /* live test #56: machine A of a drawing for several machines (DITL-45 dryer A / B / C: TAG "M.1120/1125/M.112A") reads its own address too
+     (M.1120, not the last one M.112A of dryer C) in the row text, the dock and the Event log */
+  const isKA = s => !!(s && s._inst && (s._inst.k || s._inst.n > 1) && window.WORLD && WORLD.showText && WORLD.addrK);
   const txt = (s, i, c) => {
     const r = ((c === 'RS' && rsNear(s) ? rsNear(s)[i] : s.cells[i + ':' + c]) || [])
       .map(t => t.t)
@@ -451,8 +454,11 @@
   /* the TAG NO. column holds the address (I.0406, M.0378) and, on many sheets, the service text too */
   const ADR = /^[A-Z]{1,3}\.[0-9A-F]{3,5}[A-Z]?$/;
   const tagOf = (s, i) => {
-    const t = (s.cells[i + ':T'] || []).map(t => t.t.trim()).filter(t => ADR.test(t)).join(' ');
-    return t && isK(s) ? WORLD.addrK(s, i) || t : t;
+    const t = (s.cells[i + ':T'] || []).map(t => t.t.trim()).filter(t => ADR.test(t)).join(' '),
+      /* an address list of the machines in the TAG NO. ("M.0110/210/1610/1710" DITL-09 row 5): the address of this machine */
+      l = !t && (s.cells[i + ':T'] || []).some(x => /^[IMOB]\.[0-9A-F]{4}(\/[0-9A-F]{3,4})+\/?$/.test(x.t.trim()));
+    if (l && window.WORLD && WORLD.addrK) return WORLD.addrK(s, i) || '';
+    return t && isKA(s) ? WORLD.addrK(s, i) || t : t;
   };
   const svcOf = (s, i) => {
     const r = (s.cells[i + ':T'] || [])
@@ -460,7 +466,7 @@
       .map(t => t.t.trim())
       .filter(t => t && !ADR.test(t))
       .join(' ');
-    return isK(s) ? WORLD.showText(s, r) : r;
+    return isKA(s) ? WORLD.showText(s, r) : r;
   };
   const fmt = x => (x >= 60 ? (x / 60).toFixed(1) + ' min' : x.toFixed(1) + ' s');
   let key = '',
