@@ -142,7 +142,7 @@
       b.add(H.pump(CX, y, id, PX));
       b.txt(
         T(CX - 44, y - 128, '-----', 'hs-st', `data-st="${id}" fill="#6b7480"`) +
-          T(CX - 44, y - 108, MACH[id].n, 'hs-eq') +
+          T(CX - 44, y - 108, MACH[id].n, 'hs-eq', `data-hit="${id}"`) + /* #48: the name opens what the symbol opens */
           /* live test 2026-10-30 #22: REMOTE / LOCAL (field selector, DITL-112 row 22 = I/O MIL-P0709x) and AUTO / MAN (CRT, row 15) as
              030; the MWP is an MCC motor (I/O list: running, electric trouble, remote; no VCB DI) */
           T(CX - 44, y - 90, '--- · ---', 'hs-sub', `data-md="${id}" fill="#6b7480"`) +
