@@ -237,7 +237,8 @@
      the address of that machine only ("M.1150/1160 M.1170 SEAWATER PUMP A START P.B." -> "M.1160 SEAWATER PUMP B START P.B.") */
   W.showText = (s, t) => {
     const I = s && s._inst;
-    if (!I || !I.k || !t) return t;
+    /* live test #56: machine A (k 0) of a drawing for several machines keeps its own address of the list too */
+    if (!I || !t || (!I.k && !(I.n > 1))) return t;
     let x = W.remap(s, t);
     const la = addrList(t);
     if (la.length > 1 && la[I.k]) {

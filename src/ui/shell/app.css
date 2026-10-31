@@ -59,7 +59,7 @@ html:root:root{--bg:var(--c-bg);--panel:var(--c-pane);--line:var(--c-line);--tx:
 /* ---------- 2. base ---------- */
 html,body{max-width:100vw;overflow-x:hidden}
 body.app2{background:var(--c-bg)!important;color:var(--c-tx);font:400 1rem/1.4 var(--uf);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
-body.app2 :not(svg):not(svg *):not(code):not(pre){font-family:var(--uf)}
+body.app2 :not(svg):not(svg *):not(code):not(pre):where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){font-family:var(--uf)}
 body.app2 :is(#sfoot,#ansb,.mono,code,pre,textarea,input[type=number],.fv,.fv *,.fpov .tt,.fpov .ft,.fpov .ft *,.fpov .ovf,.fpov .ovf *){font-family:var(--mf)!important}
 body.app2 ::selection{background:var(--c-accbg)}
 body.app2 *::-webkit-scrollbar{width:10px;height:10px}
@@ -69,23 +69,23 @@ body.app2 *::-webkit-scrollbar-track{background:transparent}
 body.app2 :focus-visible{outline:2px solid var(--c-acc);outline-offset:1px}
 
 /* ---------- 3. one set of controls (every surface except the DCS faceplate box and the drawing) ---------- */
-body.app2 :is(button,label.b,select):not(.fp *):not(.fpop *):not(#zbar *):not(svg *){
+body.app2 :is(button,label.b,select):not(.fp *):not(.fpop *):not(#zbar *):not(svg *):where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){
  font:500 .875rem/1 var(--uf);min-height:var(--ctl-s);padding:0 .75rem;border-radius:var(--r);border:1px solid var(--c-line2);
  background:var(--c-ctl);color:var(--c-tx);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:.375rem;
  white-space:nowrap;box-shadow:0 1px 0 var(--c-shadow2);transition:background-color .12s,border-color .12s,color .12s;margin:0}
-body.app2 select:not(.fp *){padding-right:1.75rem;appearance:none;-webkit-appearance:none;
+body.app2 select:not(.fp *):where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){padding-right:1.75rem;appearance:none;-webkit-appearance:none;
  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
  background-repeat:no-repeat;background-position:right .625rem center}
-body.app2 :is(button,label.b):not(.fp *):not(.fpop *):not(#zbar *):hover{background-color:var(--c-ctlh);border-color:var(--c-lineh)}
-body.app2 :is(button,label.b).on:not(.fp *):not(.fpop *):not(#zbar *):not(.fpov *){background-color:var(--c-accbg);border-color:var(--c-accbd);color:var(--c-acctx)}
-body.app2 button:disabled{opacity:.45;cursor:default}
+body.app2 :is(button,label.b):not(.fp *):not(.fpop *):not(#zbar *):hover:where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){background-color:var(--c-ctlh);border-color:var(--c-lineh)}
+body.app2 :is(button,label.b).on:not(.fp *):not(.fpop *):not(#zbar *):not(.fpov *):where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){background-color:var(--c-accbg);border-color:var(--c-accbd);color:var(--c-acctx)}
+body.app2 button:disabled:where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){opacity:.45;cursor:default}
 body.app2 :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),textarea):not(.fp *):not(.fpop *){
  font:400 .875rem/1.2 var(--uf);min-height:var(--ctl-s);padding:0 .625rem;border-radius:var(--r);border:1px solid var(--c-line2);
  background:var(--c-pane);color:var(--c-tx);box-shadow:inset 0 1px 0 var(--c-shadow2)}
 body.app2 textarea:not(.fp *){padding:.5rem .625rem}
-body.app2 :is(input,textarea,select):not(.fp *):focus{border-color:var(--c-acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--c-acc) 22%,transparent);outline:0}
-body.app2 input::placeholder{color:var(--c-dim);opacity:1}
-body.app2 input[type=checkbox],body.app2 input[type=radio],body.app2 input[type=range]{accent-color:var(--c-acc)}
+body.app2 :is(input,textarea,select):not(.fp *):focus:where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){border-color:var(--c-acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--c-acc) 22%,transparent);outline:0}
+body.app2 input:where(:not(#gdock,#gdock *,#gdtab,#gdtab *))::placeholder{color:var(--c-dim);opacity:1}
+body.app2 input[type=checkbox]:where(:not(#gdock,#gdock *,#gdtab,#gdtab *)),body.app2 input[type=radio],body.app2 input[type=range]{accent-color:var(--c-acc)}
 
 /* ---------- 4. frame ---------- */
 /* the old toolbars stay in the page (their elements and handlers are reused) but are never shown */
@@ -536,18 +536,18 @@ body:not(.hasmsg) #sfoot .smsg{display:none!important}
    one look: quiet secondary buttons, one filled primary per place, toggles that read as "on", line icons instead of text symbols */
 :root{--c-btnbd:#d0d5dc;--c-btnhv:#f5f7f9;--c-btnac:#eceff3}
 html:is([data-theme=dark],[data-theme=hc]){--c-btnbd:#363e49;--c-btnhv:#232932;--c-btnac:#2a313b}
-body.app2 :is(button,label.b,select):not(.fp *):not(.fpop *):not(#zbar *):not(svg *){border-color:var(--c-btnbd);border-radius:.4375rem;box-shadow:0 1px 0 var(--c-shadow2);min-height:2rem;font-weight:500;letter-spacing:0}
-body.app2 :is(button,label.b):not(.fp *):not(.fpop *):not(#zbar *):hover{background-color:var(--c-btnhv);border-color:var(--c-line2)}
-body.app2 :is(button,label.b):not(.fp *):not(.fpop *):not(#zbar *):active{background-color:var(--c-btnac);box-shadow:none}
-body.app2 :is(button,label.b).on:not(.fp *):not(.fpop *):not(#zbar *):not(.fpov *){background-color:var(--c-accbg);border-color:var(--c-accbd);color:var(--c-acctx);box-shadow:none}
+body.app2 :is(button,label.b,select):not(.fp *):not(.fpop *):not(#zbar *):not(svg *):where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){border-color:var(--c-btnbd);border-radius:.4375rem;box-shadow:0 1px 0 var(--c-shadow2);min-height:2rem;font-weight:500;letter-spacing:0}
+body.app2 :is(button,label.b):not(.fp *):not(.fpop *):not(#zbar *):hover:where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){background-color:var(--c-btnhv);border-color:var(--c-line2)}
+body.app2 :is(button,label.b):not(.fp *):not(.fpop *):not(#zbar *):active:where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){background-color:var(--c-btnac);box-shadow:none}
+body.app2 :is(button,label.b).on:not(.fp *):not(.fpop *):not(#zbar *):not(.fpov *):where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){background-color:var(--c-accbg);border-color:var(--c-accbd);color:var(--c-acctx);box-shadow:none}
 /* primary: the one main action of a panel */
-body.app2 :is(#selcard .scb,button.go,#toolsws #uatb):not(.fp *){background:var(--c-accon)!important;border-color:var(--c-accon)!important;color:#ffffff!important;font-weight:600!important}
-body.app2 :is(#selcard .scb,button.go,#toolsws #uatb):not(.fp *):hover{filter:brightness(1.08)}
+body.app2 :is(#selcard .scb,button.go,#toolsws #uatb):not(.fp *):where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){background:var(--c-accon)!important;border-color:var(--c-accon)!important;color:#ffffff!important;font-weight:600!important}
+body.app2 :is(#selcard .scb,button.go,#toolsws #uatb):not(.fp *):hover:where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){filter:brightness(1.08)}
 /* icon-only buttons are square */
-body.app2 button[data-g]:not(#zbar *){font-size:0!important;width:2rem;min-width:2rem;padding:0!important;gap:0}
-body.app2 :is(button[data-g],.gi)::before{content:"";display:inline-block;width:1rem;height:1rem;flex:none;background:currentColor;-webkit-mask:var(--g) center/contain no-repeat;mask:var(--g) center/contain no-repeat}
-body.app2 .gi{font-size:0;display:inline-flex;align-items:center;vertical-align:middle}
-body.app2 .gi::before{width:.9375rem;height:.9375rem}
+body.app2 button[data-g]:not(#zbar *):where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){font-size:0!important;width:2rem;min-width:2rem;padding:0!important;gap:0}
+body.app2 :is(button[data-g],.gi):where(:not(#gdock,#gdock *,#gdtab,#gdtab *))::before{content:"";display:inline-block;width:1rem;height:1rem;flex:none;background:currentColor;-webkit-mask:var(--g) center/contain no-repeat;mask:var(--g) center/contain no-repeat}
+body.app2 .gi:where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){font-size:0;display:inline-flex;align-items:center;vertical-align:middle}
+body.app2 .gi:where(:not(#gdock,#gdock *,#gdtab,#gdtab *))::before{width:.9375rem;height:.9375rem}
 body.app2 #zbar button[data-g]{font-size:0!important}
 /* toolbar: ghost buttons; selects are fields; Run is the green action, Pause a plain button */
 body.app2 #gsbar .tbar select{min-height:1.875rem!important;height:1.875rem;border:1px solid var(--c-btnbd)!important;background-color:var(--c-pane)!important;border-radius:.4375rem!important;box-shadow:0 1px 0 var(--c-shadow2)!important;padding:0 1.75rem 0 .625rem!important;color:var(--c-tx)!important;font-weight:500!important}
@@ -672,10 +672,10 @@ body.app2 .fpov .mvn{order:3;display:block;padding:0 .3125rem .3125rem;font:500 
    text:   .875rem medium, sentence case; segmented .8125rem semibold */
 :root{--b-md:2.125rem;--b-sm:1.875rem}
 @media (pointer:coarse){:root{--b-md:2.5rem;--b-sm:2.25rem}}
-body.app2 :where(button,label.b,select):where(:not(.fp *,.fpop *,#zbar *,svg *,#sidelist *,#anlist *,#pllist *,#anfind *,#sfoot *)){
+body.app2 :where(button,label.b,select):where(:not(.fp *,.fpop *,#zbar *,svg *,#sidelist *,#anlist *,#pllist *,#anfind *,#sfoot *)):where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){
  min-height:var(--b-md)!important;font-weight:500;line-height:1;letter-spacing:0}
-body.app2 :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select):not(.fp *):not(.fpop *):not(#sfoot *){min-height:var(--b-md)!important;font-size:.875rem!important}
-body.app2 button[data-g]:not(#zbar *):not(.fp *){width:var(--b-md)!important;min-width:var(--b-md)!important}
+body.app2 :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select):not(.fp *):not(.fpop *):not(#sfoot *):where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){min-height:var(--b-md)!important;font-size:.875rem!important}
+body.app2 button[data-g]:not(#zbar *):not(.fp *):where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){width:var(--b-md)!important;min-width:var(--b-md)!important}
 /* segmented controls: one size everywhere (top bar, left pane, library, search scope, inputs) */
 body.app2 :is(#gsbar .sub,#gsbar .seg,#sidetabs,#sidesort,#libws .libtabs,#gscope) button{min-height:var(--b-sm)!important;height:var(--b-sm)!important;font-size:.8125rem!important;font-weight:600!important;letter-spacing:.01em!important;text-transform:none!important}
 #gsbar .seg button{letter-spacing:.06em!important}
@@ -685,7 +685,7 @@ body.app2 #sidesort button{font-weight:500!important}
 /* tabs of the top bar and of the right pane */
 #gsbar .tabs button,body.app2 .hmitabs button{min-height:var(--b-md)!important;height:var(--b-md)!important;font-size:.875rem!important}
 /* primary: blue; the one main action */
-body.app2 :is(#selcard .scb,button.go,#toolsws #uatb):not(.fp *){min-height:var(--b-md)!important}
+body.app2 :is(#selcard .scb,button.go,#toolsws #uatb):not(.fp *):where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){min-height:var(--b-md)!important}
 /* force editor: value field + Force (✓, blue) + Release (✕, quiet) as one group */
 body.app2 #anp .fc{display:inline-flex;gap:0!important;align-items:stretch}
 body.app2 #anp .fc > input{border-radius:.4375rem 0 0 .4375rem!important;width:6rem!important}
@@ -701,7 +701,7 @@ body.app2 #pmbtn.on{background:var(--c-runsoft)!important;border-color:var(--c-r
 #gsbar :is(#srchbtn,.gs-set > button){width:var(--b-md)!important;min-width:var(--b-md)!important;height:var(--b-md)!important;min-height:var(--b-md)!important}
 body.app2 #pllist button{padding:.5rem .875rem!important;line-height:1.3}
 /* icon-only buttons draw the icon only (the general text size above must not show the symbol text) */
-body.app2 button[data-g][data-g]:not(#zbar *):not(.fp *){font-size:0!important;padding:0!important;gap:0!important;justify-content:center}
+body.app2 button[data-g][data-g]:not(#zbar *):not(.fp *):where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){font-size:0!important;padding:0!important;gap:0!important;justify-content:center}
 body.app2 #zbar button[data-g][data-g]{font-size:0!important}
 /* the "Record check:" row wraps as a whole; its label stays on one line */
 body.app2 #ansel > div:has(> small:first-child){flex-wrap:wrap!important;row-gap:.375rem}
@@ -709,7 +709,7 @@ body.app2 #ansel > div:has(> small:first-child) > small{flex:none;white-space:no
 /* force editor sits on the row of its value */
 body.app2 #anp .r{flex-wrap:wrap}
 body.app2 #anp .r > .fc{margin-left:auto}
-body.app2 :where(button:not([data-g]):not([data-ic]),label.b,select):where(:not(.fp *,.fpop *,#zbar *,svg *,#sidelist *,#anlist *,#pllist *,#anfind *,#sfoot *)){font-size:.875rem!important}
+body.app2 :where(button:not([data-g]):not([data-ic]),label.b,select):where(:not(.fp *,.fpop *,#zbar *,svg *,#sidelist *,#anlist *,#pllist *,#anfind *,#sfoot *)):where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){font-size:.875rem!important}
 body.app2 :where(button[data-ic]):where(:not(#gsbar .tabs *,#gsbar .tbar *)){font-size:.875rem!important}
 /* panel text breaks between words, not inside them */
 body.app2 #anp,body.app2 #anp *{word-break:normal!important;overflow-wrap:break-word!important}

@@ -49,3 +49,15 @@ Pinagsama ang ilang lumang screen para mas kaunti ang lipat-lipat. Ang "logic" a
 1. Aprubahan ng user ang style ng sample.
 2. Gawin ang screen 1 ~ 14 sa parehong library (`src/ui/plant/hmi2.js`).
 3. TAPOS 2026-10-28 (beta.49, utos ng user: dalawang HMI page lang, UNIT at 007): Kapag kumpleto, tanggalin ang lumang Plant HMI (`systems.js`, `hmibg.js` 3.7 MB) sa iisang update.
+
+
+## Plano ng mga kulang na page (user 2026-10-31, PR-OPE-5002 order)
+
+Inaprubahan ng user ang plano at nag-utos na gawin lahat; isang mockup proposal bawat page sa user muna, code pagkatapos lang ng OK sa page na iyon. Steel HSYM, kita ang loob ng vessel, orihinal ang layout (snapshot = ano ang nasa page), bawat control sa totoong address, dalawang faceplate (#59). Buong text ng mga rule: `HANDOFF.md` seksyon 5 "HMI, mga bagong pahina".
+
+- **Batch 1:** bagong 007 (ayos ng #70), 038 AIR PREHEATER, 039 RH/SH BIASING DAMPER, 028 CONDENSATE, 002 FEED WATER PREHEATING, 003 MAIN WATER/STEAM, 006 DIESEL OIL.
+- **Batch 2:** 009 FLUIDIZING AIR, 008 PRIMARY/SECONDARY AIR, 010 FURNACE PURGE.
+- **Batch 3:** 018 SOOTBLOWER, 012 ~ 015 START-UP BURNER A ~ D, 029 AUX STEAM/PACKING, 004 EXTRACTION + 005 RH STEAM, 020 SAND, ESP.
+- **Batch 4:** 035 SHAFT MONITOR, 037 GENERATOR, 033 CCS, 011 COAL FEEDER + 019 LIMESTONE + 016 BOTTOM ASH.
+- Kasama: 030 sa bagong style (#16) na may pop-out ng hypo pump at debris filter (#44, #45). Hindi ginagawa ng kopya ng snapshot: ang bawat page ay binubuo lang kapag binuksan (magaan ang app).
+- **038 AIR PREHEATER:** inaprubahan na may ayos: rotary na Ljungstrom para sa primary at secondary air (FHI manual Part 5), tri-sector, walang sector angle sa mga dokumento; ang drive ay nasa GITNA (main drive + air motor sa rotor post) ayon sa 38.PNG. Nasa PR #86, hindi pa kasama sa Beta.

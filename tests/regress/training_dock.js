@@ -15,7 +15,7 @@ const clickTxt=async(sel,txt)=>{for(const e of await p.$$(sel)){const t=(await e
 const shot=async n=>{if(shots)await p.screenshot({path:shots+'/'+w+'x'+h+'-'+n+'.png'})};
 const tag=w+'x'+h+': ';
 await clickTxt('button','Training');await p.waitForTimeout(800);
-ck(await clickTxt('#trainws button','Gabay: Cold'),tag+'Gabay pressed');await p.waitForTimeout(7000);
+ck(await clickTxt('#trainws button','Guide: Cold'),tag+'Gabay pressed');await p.waitForTimeout(7000);
 const a=await p.evaluate(()=>{const d=document.getElementById('gdock'),r=d&&d.getBoundingClientRect(),bw=document.body.getBoundingClientRect();const U=AN.unit||{};
  return {dock:!!d&&!d.hidden,side:document.documentElement.classList.contains('gd-side'),bottom:document.documentElement.classList.contains('gd-bottom'),dw:r&&r.width,dh:r&&r.height,bw:bw.width,bh:bw.height,run:AN.run,view:AN.view,Pd:U.Pd,ss:AN.startState,
   card:(d&&d.querySelector('.gd-stl h3')||{}).textContent||'',vals:d?d.querySelectorAll('.gd-kv b').length:0,lamps:d?d.querySelectorAll('.gd-lamp').length:0,on:LS_GUIDE.on,cur:LS_GUIDE.cur,hx:document.documentElement.scrollWidth>innerWidth+1}});
@@ -24,7 +24,7 @@ ck(a.run&&!a.view&&a.ss==='plantCold'&&a.Pd===0&&a.on&&a.cur===0,tag+'cold, RUN,
 ck(a.vals===4&&a.lamps===0&&!a.hx,tag+'one line of 4 values (the lamps are on the HMI), no sideways scroll');
 await shot('1-start');
 // a motor step: the IDF interlock (DITL-25A) in the card, the main area on the DITL of the motor
-const m=await p.evaluate(()=>{const S=LS_GUIDE.steps();const i=S.findIndex(s=>/Simulan ang ID fan/.test(s.t));LS_GUIDE.open(i);LS_DOCK.fill(true);return {i,t:S[i]&&S[i].t}});
+const m=await p.evaluate(()=>{const S=LS_GUIDE.steps();const i=S.findIndex(s=>/(Simulan ang|Start the) ID fan/.test(s.t));LS_GUIDE.open(i);LS_DOCK.fill(true);return {i,t:S[i]&&S[i].t}});
 await p.waitForTimeout(2500);
 const il=await p.evaluate(()=>{const d=document.getElementById('gdock');return {rows:d.querySelectorAll('.gd-ilr').length,x:d.querySelectorAll('.gd-ilr.x').length,dis:d.querySelectorAll('.gd-btn.dis').length,cat:AN.cat,sim:typeof SIM!=='undefined'&&SIM,txt:(d.querySelector('.gd-il')||{}).textContent||''}});
 ck(il.rows>=5&&il.x>=1&&il.dis>=1,tag+'IDF step #'+m.i+' shows the interlock: '+il.rows+' rows, '+il.x+' missing, START blocked');

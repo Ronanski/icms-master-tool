@@ -17,7 +17,7 @@ const see=()=>p.evaluate(()=>[...document.querySelectorAll('#gdock .gd-card butt
 const press=async (txt)=>{const pt=await p.evaluate(t=>{const e=[...document.querySelectorAll('#gdock .gd-card button')].find(x=>x.getClientRects().length&&x.textContent.trim()===t);if(!e)return null;e.scrollIntoView({block:'center'});const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}},txt);if(!pt)return false;await p.mouse.click(pt.x,pt.y);return true};
 const card=()=>p.evaluate(()=>{const c=document.querySelector('#gdock .gd-card');if(!c)return {eb:'',h:'',cond:''};const q=s=>(c.querySelector(s)||{}).textContent||'';return {eb:q('.gd-eb').trim(),h:q('h3').trim(),cond:q('.gd-cond').replace(/\s+/g,' ').trim()}});
 await p.getByText('Training',{exact:true}).first().click();await p.waitForTimeout(1500);
-await p.getByRole('button',{name:/Gabay: Cold/}).first().click();await p.waitForTimeout(6000);
+await p.getByRole('button',{name:/(Gabay|Guide): Cold/}).first().click();await p.waitForTimeout(6000);
 await p.locator('#gdock .gd-seg button',{hasText:'×300'}).first().click();L('speed ×300 clicked');
 /* 3.2.0 walkthrough #1: the Training starts PAUSED; the trainee presses RUN (the pill of the panel) */
 await p.evaluate(()=>{const b=document.querySelector('#gdock .gd-pill');if(b&&/PAUSED/.test(b.textContent))b.click()});await p.waitForTimeout(500);
