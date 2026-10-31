@@ -128,9 +128,11 @@
   /* another HMI page, another tab: the faceplate of the page before goes */
   document.addEventListener('change', e => e.target && e.target.classList && e.target.classList.contains('plpick') && close(), true);
   new MutationObserver(() => box && document.body.dataset.tab !== 'operate' && close()).observe(document.body, { attributes: true, attributeFilter: ['data-tab'] });
-  /* a click outside (not on another equipment, which opens its own) closes it */
+  /* a click on the graphic outside it (not on another equipment, which opens its own) closes it. Live test #48 / #43: a click in the
+     Training dock, the header or the alarm bar (a tick of the line-up, then START here) leaves it open where it is */
   document.addEventListener('pointerdown', e => {
-    if (box && !box.contains(e.target) && !(e.target.closest && e.target.closest('[data-hit],[data-mdh],#plfp'))) setTimeout(() => box && !box.contains(document.activeElement) && close(), 0);
+    if (box && !box.contains(e.target) && host().contains(e.target) && !(e.target.closest && e.target.closest('[data-hit],[data-mdh],[data-fan],[data-dmp],[data-fl],[data-aphh],#plfp')))
+      setTimeout(() => box && !box.contains(document.activeElement) && close(), 0);
   });
   function frame(title, sub) {
     close();
