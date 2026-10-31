@@ -39,8 +39,8 @@
   };
   /* name, state and mode of a machine (state / mode filled live) */
   const label = (x, y, id, a = 'middle') =>
-    T(x, y, MACH[id].n, 'hs-eq', `text-anchor="${a}"`) +
-    T(x, y + 18, MACH[id].t, 'hs-tag', `text-anchor="${a}"`) +
+    T(x, y, MACH[id].n, 'hs-eq', `text-anchor="${a}" data-hit="${id}"`) + /* #48: the name opens what the symbol opens */
+    T(x, y + 18, MACH[id].t, 'hs-tag', `text-anchor="${a}" data-hit="${id}"`) +
     T(x, y + 36, '-----', 'hs-st', `text-anchor="${a}" fill="${C.none}" data-st="${id}"`) +
     T(
       x,

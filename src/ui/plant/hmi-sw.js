@@ -130,8 +130,8 @@
       const M = MACH[id],
         a = `text-anchor="${anchor || 'start'}"`;
       return (
-        T(x, y, M.n, 'sw11', a) +
-        T(x, y + 12, M.t, 'sw9', a) +
+        T(x, y, M.n, 'sw11', `${a} data-hit="${id}"`) + /* #48: the name opens what the symbol opens */
+        T(x, y + 12, M.t, 'sw9', `${a} data-hit="${id}"`) +
         T(x, y + 24, '-----', 'sw9b', `${a} data-st="${id}"`) +
         T(x, y + 36, esc(M.d), 'sw8', a)
       );
@@ -237,8 +237,8 @@
         `<ellipse cx="${x}" cy="200" rx="18" ry="5" fill="url(#swmt)" ${OL}/><rect x="${x - 24}" y="260" width="48" height="5" fill="${S.none}" data-lamp="${id}"/></g>`
       );
       o.push(
-        T(x - 6, 180, MACH[id].n, 'sw11', 'text-anchor="middle"') +
-          T(x - 6, 192, MACH[id].t, 'sw9', 'text-anchor="middle"')
+        T(x - 6, 180, MACH[id].n, 'sw11', `text-anchor="middle" data-hit="${id}"`) +
+          T(x - 6, 192, MACH[id].t, 'sw9', `text-anchor="middle" data-hit="${id}"`)
       );
       o.push(vbox(x + 12, 326, AMP[id][0], 'A', 1));
       o.push(T(x + 12, 362, '-----', 'sw9b', `data-st="${id}"`) + T(x + 12, 374, MACH[id].d, 'sw8'));
