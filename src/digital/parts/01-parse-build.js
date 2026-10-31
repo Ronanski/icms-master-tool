@@ -1006,11 +1006,28 @@ function rowFix(sh) {
     }
   }
 }
+/* 3.2.0 live test #57: on the narrow sootblower form (DITL-80G / 80K: FROM | NO. | SERVICE) the FROM text starts a little left of the
+   FROM column line (80K "80M-373" at x 21.6 < 22.5, "DITL-43-70" at 19.4), so the reader left it out of the cell and the page link was
+   lost: the APH sootblower REMOTE START COMMAND of 80M never reached 80K row 6 (the PDF 80K / 80G FROM column). One word up to 4 units
+   left of the line, on a row, is the FROM of that row */
+function fromFix(sh) {
+  if (!sh || !sh.cells || !sh.rows || !sh.tx || !sh.rng || !sh.rng.F || sh._ffx) return;
+  sh._ffx = 1;
+  const x0 = sh.rng.F[0];
+  for (const t of sh.tx.slice()) {
+    if (!(t.ix < x0 && t.ix >= x0 - 4 && /^\S+$/.test(String(t.t).trim()))) continue;
+    const i = sh.rows.findIndex(r => t.iy >= r.y - 3.3 && t.iy < r.y + 5.7);
+    if (i < 0 || (sh.cells[i + ':F'] || []).length) continue;
+    sh.tx.splice(sh.tx.indexOf(t), 1);
+    sh.cells[i + ':F'] = [t];
+  }
+}
 function netlist(sh) {
   if (sh.sd) return sdNL(sh); /* 3.2.0-beta.39 (+ sand): sand injection (PDF drawing, no row table): the netlist comes from sh.sd (02b-sand.js) */
   letterRows(sh);
   trCells(sh);
   rowFix(sh);
+  fromFix(sh);
   const a = netlistCore(sh, false),
     c = mdCount(a, sh);
   if (!c) return a;

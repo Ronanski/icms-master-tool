@@ -466,6 +466,13 @@ window.LS_LIVE = (function () {
     [26, /Check MFT will RESET/i, AFTER('25.21', MFT, 'the 5 minute purge')],
     [26, /Set biasing damper opening to RH 10% and SH 90%/i, ALL(MV('HICHR1002A', 5, 15), MV('HICHR1002B', 85, 95))],
     [26, /Put SH biasing damper to AUTO/i, MODE('HICHR1002B', 'AUTO')],
+    /* live test #57: AIR PRE-HEATER SOOT BLOWER START-UP (DITL-80K / 80M, see guide.js sbK); LOCAL medium source and Circulation
+       Function: no DCS signal on the drawings */
+    [27, /^Ensure Plant Air Compressor is running/i, DC('plant air PT-PA1705 >= 7 kg/cm2', () => +U().paP >= 6.95, () => 'PT-PA1705 ' + f1(+U().paP || 0) + ' kg/cm2')],
+    [27, /^Check the medium source at LOCAL/i, null],
+    [27, /^Select air heater soot blower source select PLANT AIR/i, INC('DITL-80K', 19, 'S/B source PLANT AIR (M.4212)')],
+    [27, /^Start soot blowing Air Preheater/i, DC('APH S/B forward starter O.077C (DITL-80K)', () => !!(window.LS_GUIDE && LS_GUIDE.aphSb && LS_GUIDE.aphSb()), () => 'APH S/B ' + (window.LS_GUIDE && LS_GUIDE.aphSb && LS_GUIDE.aphSb() ? 'STARTED' : 'not started'))],
+    [27, /Circulation Function/i, null],
     [28, /Press Burner .ON. Push button at DCS/i, BURN],
     [28, /shut-off valves for diesel oil supply/i, VAL('oilF', 0.3, null)],
     [28, /Check if flame scanner detects flame/i, ALL(BURN, VAL('oilF', 0.3, null))],
