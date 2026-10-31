@@ -878,9 +878,11 @@
     /* live test beta.74 #28: the one thing to do now is the top of the dock (under the title bar), then the values of the step */
     dock.append(g, hd, els.nx, strip, sec, prog, stepb, els.body, els.foot);
     allPaint();
-    document.documentElement.append(dock);
+    /* live test #61: inside body (outside it the dock was not in the page text that screen readers and find read); dock.css places it
+       beside the narrowed body, and the general button / font rules of the app skip it (app.css, home.css: :not(#gdock *)) */
+    document.body.append(dock);
     tabB = E('button', { id: 'gdtab', type: 'button', title: 'Ipakita ang Training', on: () => (ls.set('ls-gdock-min', false), layout(), fill(true)) });
-    document.documentElement.append(tabB);
+    document.body.append(tabB);
     addEventListener('resize', () => {
       const m = mode();
       if (m !== build.m) {

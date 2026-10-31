@@ -16,6 +16,11 @@ html.gd-tr:not(.gd-min) body.cr #crrail:not(:hover):not(:focus-within)>*{visibil
 #gdock[hidden],#gdtab[hidden]{display:none!important}
 html.gd-side #gdock{top:0;right:0;bottom:0;width:var(--gdw,380px);border-left:1px solid var(--c-line2)}
 html.gd-bottom #gdock{left:0;right:0;bottom:0;height:var(--gdh,42vh);border-top:1px solid var(--c-line2)}
+/* live test #61: the dock is in body (readable); the transform makes body its box, so it sits just outside the narrowed body and body
+   does not clip it */
+html.gd-side body,html.gd-bottom body{overflow:visible!important}
+html.gd-side body>#gdock{right:calc(-1 * var(--gdw,380px));bottom:auto;height:100vh}
+html.gd-bottom body>#gdock{bottom:calc(-1 * var(--gdh,42vh))}
 .gd-grip{position:absolute;z-index:2;touch-action:none}
 html.gd-side .gd-grip{left:-6px;top:0;bottom:0;width:12px;cursor:ew-resize}
 /* retest #41: the edge to drag is visible */
@@ -273,7 +278,6 @@ html.gd-menu #gdock .gd-body{display:block;padding:0}
 #gdock #trainws .trtitle{min-width:0;flex:1 1 100%}
 #gdock #trainws .trtitle b{font-size:1rem}
 #gdock #trainws .trprog{flex:1 1 100%;min-width:0}
-body.app2:not(#_) #gdock #trainws button.trbtn{min-height:2.1rem;padding:0 .6rem;font-size:.8125rem}
 #gdock #trainws #trpick{display:block!important;margin:8px 10px 0;min-height:2.4rem}
 #gdock #trainws .trbody{display:block}
 #gdock #trainws :is(.trlist,.trside,.trsrc){display:none!important}
