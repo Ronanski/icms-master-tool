@@ -250,6 +250,30 @@ window.LS_GUIDE = (function () {
   const mcvC = (want, f) => C(want, () => !WL() || f(), () => (WL() ? W_MCV().map(t => t.replace('MV-', '') + ' ' + mcvPos(t).toFixed(0) + '%').join(', ') : '— (one world OFF)'));
   const W_MCV = () => ['MV-FW1001', 'MV-FW1391', 'MV-FW1002', 'MV-FW1392', 'MV-MS1391', 'MV-MS1392'];
   const dTxt = (nm, row, on, off) => () => (dOut(nm, row) === 1 ? on : dOut(nm, row) === 0 ? off : '— (one world OFF)');
+  /* live test #57: PR-OPE-5002 sec 27 AIR PRE-HEATER SOOT BLOWER START-UP on the sootblower drawings (sand-sootblower-logic.zip PDF
+     (14)Ditl80K / (16)Ditl80M, memory list STN102): 80K row 20 PLANT AIR / STEAM SELECT (1: PLANT AIR) = M.4212 "S/B SELECT PLANT AIR /
+     STEAM P.B.(CRT)"; 80M row 6 M.417D AIR HEATER SOOTBLOWER START P.B. -> out 373 REMOTE START COMMAND -> 80K row 6 -> TR317 3 s ->
+     SB PANEL O.077C MAIN POWER LINE FORWARD STARTER (with 80K row 5 M.4008 all lances on retract position, from DITL80L = the SB panel).
+     The forward starter is a 3 s pulse: it is latched in the plant step (onStep) so that x300 does not miss it */
+  const sbK = () => (typeof S !== 'undefined' ? S.sheets.find(x => /^\(S\d+\)DITL-80K$/.test(x.name)) : null);
+  const aphSbFwd = () => {
+    const s = sbK(),
+      p = s && s.nl && (s.nl.pout || []).find(q => q.adr === 'O.077C');
+    try {
+      return !!(p && WL() && simSheet(s).v[p.n]);
+    } catch (e) {
+      return false;
+    }
+  };
+  /* the lance retract limits of the SB panel (M.4008 on DITL-80 / 80A / 80G / 80K / 80S; no logic drawing of their source, 80L is the
+     panel box): the field operator checks every lance at its retract position (PR-OPE-5002 sec 17 "Ensure soot blower lance is in
+     retract position") */
+  const sbRet = () => (typeof S !== 'undefined' ? S.sheets.filter(x => /^\(S\d+\)DITL-80/.test(x.name)) : []).flatMap(x => {
+    const o = [];
+    for (let r = 0; r < 40; r++) if (/AIR PREHEATER S\/B ALL ON RETRACT POSITION/.test((DUI.rowInfo(x, r) || {}).svc || '') && !(WORLD.idx && WORLD.idx.din.get(x) && WORLD.idx.din.get(x).get(r))) o.push([x, r]);
+    return o;
+  });
+  const sbRetOn = () => WL() && sbRet().length > 0 && sbRet().every(([x, r]) => DUI.rowVal(x, r) === 1);
   /* a motor of a DITL drawing with no running memory on the ABC sheets: START / STOP from its drawing, its interlock in the card */
   const dmot = (nm, l) => ({ ad: nm, l: 'START ' + l, f: () => LS_DOCK && LS_DOCK.dmotor(nm, 1), on: () => dRun(nm) === 1, stop: { l: 'STOP ' + l, f: () => LS_DOCK && LS_DOCK.dmotor(nm, 0) } });
   /* the field items of procedure sections (0-based): the FIELD and TCS steps the operator confirms */
@@ -627,6 +651,54 @@ window.LS_GUIDE = (function () {
         wait: 1
       },
       { st: 3, sec: 26, t: 'Biasing damper: RH 10 %, SH 90 %', d: 'Pagkatapos ng purge, karamihan ng flue gas ay sa SH side muna.', c: b.ALL(b.MV('HICHR1002A', 5, 15), b.MV('HICHR1002B', 85, 95)), fps: ['HICHR1002A', 'HICHR1002B'], a: [btn('RH 10 %, SH 90 %', () => (A.man('HICHR1002A', 10), A.man('HICHR1002B', 90)))] },
+      /* ---- live test #57: sec 27 AIR PRE-HEATER SOOT BLOWER START-UP (PR-OPE-5002, between the purge and the burners) ---- */
+      {
+        st: 3,
+        sec: 27,
+        t: 'APH soot blower: plant air ≥ 7 kg/cm², PLANT AIR ang source sa LOCAL',
+        d: 'Gawin: tiyaking tumatakbo ang plant air compressor at ≥ 7 kg/cm² ang plant air (PT-PA1705). Sa field: sa LOCAL, buksan ang plant air source at isara ang steam source ng APH soot blower; tingnan na naka-RETRACT ang lahat ng soot blower lance (DITL-80K row 5, M.4008, galing sa SB panel).',
+        c: b.ALL(
+          C('Plant air PT-PA1705 ≥ 7 kg/cm²', () => +U().paP >= 6.95, () => 'PT-PA1705 ' + f1w(+U().paP || 0) + ' kg/cm²'),
+          C('Lahat ng S/B lance naka-RETRACT (M.4008)', () => !WL() || sbRetOn(), () => (WL() ? (sbRetOn() ? 'ALL ON RETRACT' : 'not confirmed') : '— (one world OFF)'))
+        ),
+        a: [
+          Object.assign(
+            btn('FIELD: lahat ng S/B lance naka-RETRACT (M.4008)', () => {
+              /* one address on five drawings (CLAUDE.md 1); the field action is logged once, on DITL-80K (a unique name: "DITL-80" is
+                 also the hot reheat drain sheet (99)DITL-80) */
+              for (const [x, r] of sbRet()) if (!/DITL-80K$/.test(x.name)) x.sig[r + ':S'] = true;
+              const k = sbRet().find(([x]) => /DITL-80K$/.test(x.name));
+              if (k && window.LS_DOCK) LS_DOCK.fieldRow('DITL-80K', k[1], 1, 'all S/B lances on retract position (M.4008)');
+            }, sbRetOn),
+            { loc: 1 }
+          )
+        ],
+        field: [26],
+        w: [['Plant air PT-PA1705', () => +U().paP, 'kg/cm²', f1w, 'SOP ≥ 7']]
+      },
+      {
+        st: 3,
+        sec: 27,
+        t: 'APH soot blower source: PLANT AIR sa DCS (M.4212)',
+        d: 'Gawin: S/B SELECT PLANT AIR / STEAM (M.4212, DITL-80K row 20) = PLANT AIR (1). Ang 0 ay STEAM: wala pang steam sa Cold.',
+        c: C('S/B source PLANT AIR (DITL-80K row 20 = 1)', () => !WL() || DUI.rowVal(sbK(), 19) === 1, () => (WL() ? (DUI.rowVal(sbK(), 19) === 1 ? 'PLANT AIR' : 'STEAM') : '— (one world OFF)')),
+        a: [Object.assign(btn('S/B SELECT PLANT AIR (M.4212, DITL-80K)', () => window.LS_DOCK && LS_DOCK.dsel('DITL-80K', 19, 1, 'S/B SELECT PLANT AIR / STEAM P.B. (M.4212) PLANT AIR'), () => WL() && DUI.rowVal(sbK(), 19) === 1), { dg: ['DITL-80K', 19] })]
+      },
+      {
+        st: 3,
+        sec: 27,
+        t: 'Simulan ang APH soot blowing (REMOTE START, DITL-80M)',
+        d: 'Gawin: AIR HEATER SOOTBLOWER START (M.417D, DITL-80M row 6). Ang drawing ang nagpapadala ng 3 s na FORWARD STARTER (SB panel O.077C, DITL-80K) kapag naka-MANUAL ang sootblower system at naka-RETRACT ang lahat ng lance.',
+        c: C('APH S/B forward starter O.077C (DITL-80K)', () => !WL() || !!G.aphSb, () => (WL() ? (G.aphSb || aphSbFwd() ? 'FORWARD STARTER ON' : 'not started') : '— (one world OFF)')),
+        a: [Object.assign(btn('APH S/B START (M.417D, DITL-80M)', () => (WL() ? dPress('DITL-80M', 5) : ''), () => !!G.aphSb), { dg: ['DITL-80M', 5], ad: 'DITL-80M@5' })]
+      },
+      {
+        st: 3,
+        sec: 27,
+        need: 1,
+        t: 'APH soot blower Circulation Function ON (DCS)',
+        d: 'PR-OPE-5002: "Set Air heater soot blower Circulation Function to ON at DCS." Walang address nito sa DITL-80 ~ 80T at sa memory list STN102 (M.4000 ~ M.4253), kaya kumpirmahin lang kapag tapos na.'
+      },
       /* ---- 4 burners and warm-up ---- */
       { st: 4, sec: 28, t: 'Sindihan ang burner A', d: 'SA damper at oil FCV sa ignition, tapos BURNER ON (DITL-09): ang DITL ang magpapasok ng igniter, magbubukas ng dalawang supply oil valve at magsisindi (DITL-10 / 13). Kapag may apoy na, ang oil flow FICDO1043A sa 60 %.', c: b.ALL(b.BIT('M.3412', 1, 'burner A in service'), b.VAL('oilF', 0.3, null)), fps: ['FICDO1043A'], get a() {
           return WL() ? [bIgn('A'), bOn('A'), bOil('A', 60)] : [btn('Buksan oil valve A', () => A.oil('M.3410', true)), btn('BURNER A ON', () => A.motor('M.3412', 1), () => bit('M.3412') > 0.5), btn('FICDO1043A M 60 %', () => A.man('FICDO1043A', 60))];
@@ -969,7 +1041,13 @@ window.LS_GUIDE = (function () {
   }
   /* every step of the plant (AN.onStep): the heating rate, the pushbutton release; every second: the latch */
   const onStep = dt => {
-    if (!G.on || !live()) return;
+    if (!live()) return;
+    /* live test #57: the 3 s FORWARD STARTER pulse of the APH sootblower (DITL-80K O.077C), latched */
+    if (!G.aphSb && aphSbFwd()) {
+      G.aphSb = 1;
+      save();
+    }
+    if (!G.on) return;
     {
       const t = simT(),
         H = RATE.h;
@@ -1073,6 +1151,7 @@ window.LS_GUIDE = (function () {
       G.mine = {};
       G.pw = {};
       G.cur = 0;
+      G.aphSb = 0;
       HH = null;
       /* the sheets the steps operate that may not be linked to the sheet on the screen: stepped too (links.js actSet) */
       AN.checkSheets = ['ABC-001C', 'ABC-002', 'ABC-003A', 'ABC-003B', 'ABC-003C', 'ABC-003D', 'ABC-004A', 'ABC-005', 'ABC-007', 'ABC-008', 'ABC-010', 'ABC-011', 'ABC-012', 'ABC-013', 'ABC-020', 'ABC-028', 'ABC-031', 'ABC-032', 'ABC-050', 'ABC-052', 'ABC-054']
@@ -1180,7 +1259,9 @@ window.LS_GUIDE = (function () {
     get on() {
       return G.on;
     },
-    mine: () => G.mine
+    mine: () => G.mine,
+    /* live test #57: the APH sootblower was started (forward starter O.077C seen), for the SOP tick of sec 27 (live.js) */
+    aphSb: () => !!G.aphSb
   };
   return API;
 })();
