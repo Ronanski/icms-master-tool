@@ -16,15 +16,17 @@
 - User (turla-ece): DCS engineer, non-coder in the Philippines, Taglish (80% Tagalog), concise. Knows NOTHING about git/GitHub: explain in plain words or avoid. Knows DCS logic, not plant operation. Show all times in PHT.
 - ASKING FOR APPROVAL / "G": FIRST explain in plain words what will be done, what changes, what will NOT happen, then ask. Threads too.
 - REPORT POLICY: organized, clean, simple, NO self-made terms.
-- NEVER claim implemented/seen unless verified on the real app with a screenshot.
+- NEVER claim implemented/seen unless verified on the real app (live test: read the app directly, NO screenshots, user 2026-10-31).
 - SOP, logic and curves come from the plant DESIGNER. Unusual items: list as "UNUSUAL", user decides; never silently change. HMI snapshots are from a real scenario.
 - APP WORDING: professional DCS terms (PV, SP, MV). Chat: explain simply.
 - COLOR: RUN = RED, STOP = GREEN.
 - SHORT GO: "go opus"/"go sonnet" = next roadmap step. Merge/release need explicit GO BETA / GO STABLE.
 - User's "G" on something = do it. "BETA NA" = GO BETA. Do EXACTLY what the user ordered; don't over-message threads; "itigil" = stop only the named work. User gets very angry at delays/apologies: act, verify threads' real state (read_thread), report facts.
 - Only start threads from roadmap or user's ask. Resolve finished threads.
-- TEST SOP (2026-10-30): question is NOT a G; start at Step 1, one step per G; user only witnesses on his updated app; screenshots before/after; on a fault: critical / chain → stop and fix, minor → log and continue, user decides (2026-10-30, [[retest-rules-new-account]]); answer questions with words, not actions ([[feedback-live-test-sop]]).
+- TEST SOP (2026-10-30): question is NOT a G; start at Step 1, one step per G; user only witnesses on his updated app; read the app directly before/after, NO screenshots (changed by user 2026-10-31); 12 CHECKS per step + 8 PATAKARAN (user approved 2026-10-31, HANDOFF 5), never reduced without the user OK; tester artifact https://claude.ai/artifact/L8PGXXkK7us2NBApNLqwid; on a fault: critical / chain → stop and fix, minor → log and continue, user decides (2026-10-30, [[retest-rules-new-account]]); answer questions with words, not actions ([[feedback-live-test-sop]]).
 - NEW ACCOUNT (2026-10-30): Claude Code desktop on the user's PC. Claude = LEADER of 5 threads (HMI, APP UI/UX, CODE FIXER, DOCS, LIVE TESTER); threads are never archived; focus = live test Cold → full load in the built-in browser, all steps one per G ([[team-structure-leader]], [[retest-rules-new-account]]). Strategy is the user's call.
+- SAVE PROGRESS (user 2026-10-31, DOCS thread): every update (skills, knowledge, action correction, instructions, memory) goes to the RIGHT thread first; repo MD files change ONLY when the user says "save progress" in the DOCS thread (leader requests included). HANDOFF 5 TEAM AT ROLES.
+- HMI DESIGN #59 (user 2026-10-31, for the HMI thread): each equipment has SEPARATE buttons PERMISSIVE (Y / N: N green while not complete, Y when complete), MONITORING and TREND; CONTROLS sit on the equipment itself; several open at once. Mockup first. HANDOFF 4 + 5, LIVE_TEST_FINDINGS #59.
 - VERSIONING: coordinator assigns ONE beta number. Stable 3.2.0 at the end on GO STABLE.
 - HMI: Air & Flue Gas approved (hmi2.js). Seawater (hmi-sw.js, STEEL) done. One page per system, own art, RUN red/STOP green; live test also checks HMI for missing items.
 - INSTRUMENT/VALVE LIST: coverage doc UNRELIABLE (#110). Search app AND repo logic first. Unconfirmed in logic: XV-FA1055-B2/B3, CL1061-B1/B2/C1/C2, MV-SW1003..1006. Docs in document-references/.
@@ -216,7 +218,7 @@ TEST SOP (in repo: HANDOFF.md section 5 + CLAUDE.md hard rules, PR #68):
 1. A question like "pwede na ba magtest?" is NOT a G. No live test until the user writes "G" in the test thread.
 2. Always start at Step 1, in order, ONE step per G.
 3. User is the WITNESS on his own app after "Update now" and the right version shows; he clicks nothing.
-4. Screenshot before and after every step; stop at the first fault and report.
+4. Screenshot before and after every step; stop at the first fault and report. **CHANGED by user:** stop rule 2026-10-30 ([[retest-rules-new-account]]); screenshots replaced 2026-10-31 by reading the app directly (text, values, colours, position), no screenshots.
 5. A question gets an answer, never an action.
 
 **Why:** repeated mistakes made the user feel threads never learn.
@@ -350,7 +352,7 @@ _feedback_ — User rule 2026-10-30: ALL testing in every thread must be LIVE on
 User (2026-10-30 00:18 PHT): "LAHAT NG TESTING LIVE KHT SAAN THREAD P YN. UNG CODE SA INYO N YUN" (all testing, in any thread, is LIVE; the code is ours).
 
 **Why:** earlier reports claimed fixes checked on only a few steps (1, 2, 34, 35) and the user found faults in the real app.
-**How to apply:** prove every change by driving the real built app (dist html) step by step through the real user flow (e.g. Training button → Gabay in the dock), screenshot each screen, and check EVERY step/section, not samples. Report which items were checked live and which were not. Related: [[project-training-dock-mock]].
+**How to apply:** prove every change by driving the real built app (dist html) step by step through the real user flow (e.g. Training button → Gabay in the dock), read each screen directly (screenshots dropped by user 2026-10-31), and check EVERY step/section, not samples. Report which items were checked live and which were not. Related: [[project-training-dock-mock]].
 
 2026-10-30: "live" = user WITNESSES every check on his own app after pressing the app's "Update now" (not a local copy, not headless). Headless runs are not live tests; don't call them live.
 
@@ -870,7 +872,7 @@ Team (uniform response format in leader and every thread):
 2. APP UI/UX thread — whole app apart from HMI: buttons, text, colours, style, overall look; clear, easy to read, easy on the eyes, professional.
 3. CODE FIXER thread — any fault in logic, engine, plant model, overall functionality; elite DCS engineer + software engineer.
 4. DOCS thread — docs, progress saves, skills, HANDOFF, memory, instructions; applies EVERY correction of the user; organized document controller / librarian / secretary.
-5. LIVE TESTER thread (added 2026-10-30) — runs the live test of Training Cold → full load in the Claude app's built-in browser on the user's PC, one step per user "G" (user witnesses); follows TEST SOP, LIVE RETEST and skill `dcs-beta-live-test`; passes findings to the leader, who routes fixes to the right thread. Never edits code, never merges. The user types "G" in the LIVE TESTER thread; its Remote Control is on so he sees it on his phone.
+5. LIVE TESTER thread (added 2026-10-30) — runs the live test of Training Cold → full load in the Claude app's built-in browser on the user's PC, one step per user "G" (user witnesses); follows TEST SOP, LIVE RETEST and skill `dcs-beta-live-test`; checks the UI every step (dock, HMI, pop-out, whole app at 1366 × 768). Reports to the USER in its own thread and own log; passes findings to the leader ONLY when the user orders it (2026-10-30). The leader still reads the tester's thread to route fixes. Never edits code, never merges. User 2026-10-31 (approved): 12 CHECKS on EVERY step (1 Training and dock content, 2 dock UI, 3 header and alarm, 4 logic and permissive, 5 HMI content complete, 6 one value everywhere, 7 HMI UI, 8 faceplate / pop-out, 9 whole app UI and operator, 10 status bar, 11 events, 12 SOP and old findings) with PASA / BAGSAK / BAHAGYA / HINDI NAGAWA, the priority of every step, never reduced without the user OK even when several steps are ordered at once; plus 8 PATAKARAN (one step per G from H1, no screenshots, operator clicks no FORCE / shortcut, logic read after >= 30 s, tick only the truth, new findings from #53 with criticality and recommendation, phone-size table with reasons for HINDI NAGAWA and the verdict is the user, report to the user only and to the leader when ordered). Findings/checklist artifact: https://claude.ai/artifact/L8PGXXkK7us2NBApNLqwid. Full text: HANDOFF 5. NO screenshots: read the app directly (text, values, colours, position). The user types "G" in the LIVE TESTER thread; its Remote Control is on so he sees it on his phone.
 6. LEADER (main session): manages and instructs the threads, opens a thread only when it has work, does all merging and Beta/Stable updates (only on the user's GO BETA / GO STABLE), bases everything on rules + document-references, checks properly, makes own decisions; user gives final approval. ALL-CAPS section titles.
 
 New sessions open only from a message typed in the desktop app (not over Remote Control); the repo folder must be trusted once.

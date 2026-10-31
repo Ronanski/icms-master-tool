@@ -4,7 +4,7 @@
 >
 > **Patakaran (CLAUDE.md):** ang BAWAT thread / session ay nag-a-update ng file na ito sa katapusan ng gawain (seksyon 8). Palitan ang luma, huwag magtambak ng kasaysayan.
 
-Huling update: **2026-10-30 10:45 PM PHT** (DOCS thread: ika-6 na role na LIVE TESTER, rule na huwag i-archive ang mga thread, rule ng COMPACT at `docs/handoff/THREAD_BRIEFS.md`; docs lang. Bago nito 10:30 PM: mga desisyon ng user sa unang session ng bagong account, PR #83). **Lumipat na sa bagong account** (Claude Code desktop sa PC ng user). Tapos ang `docs/handoff/NEW_ACCOUNT_SETUP.md` bahagi B: 49 memory na-import (5 napalitan, hindi isinama); ang 3 skill mula `docs/handoff/skills/` at ang skill na `dcs-beta-live-test` ay naka-install sa PC.
+Huling update: **2026-10-31 11:45 AM PHT** (DOCS thread, "save progress" ng user: rule na SAVE PROGRESS (seksyon 5 TEAM AT ROLES), HMI DESIGN NG USER #59 (seksyon 4 at 5), alarm list CSV (seksyon 7), findings #39 ~ #58 nasa artifact; docs lang. Bago nito 12:15 AM: 12 CHECK bawat hakbang + 8 PATAKARAN ng LIVE TESTER, inaprubahan ng user 2026-10-31, at walang screenshot; bago nito 2026-10-30 11:00 PM: UI CHECK bawat hakbang at bagong rule ng pag-uulat; docs lang. Bago nito 10:45 PM: LIVE TESTER, COMPACT, THREAD_BRIEFS, PR #84; 10:30 PM: unang session ng bagong account, PR #83). **Lumipat na sa bagong account** (Claude Code desktop sa PC ng user). Tapos ang `docs/handoff/NEW_ACCOUNT_SETUP.md` bahagi B: 49 memory na-import (5 napalitan, hindi isinama); ang 3 skill mula `docs/handoff/skills/` at ang skill na `dcs-beta-live-test` ay naka-install sa PC.
 
 ---
 
@@ -69,6 +69,7 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 ## 4. Bukas na isyu at desisyon
 - **Starting point 150 MW nagti-trip sa RUN (2026-10-30, beta.76 · build 2f48046, live check sa browser):** MFT DITL-03A row 17 sa unang segundo; ang cause ay input row 3 "SAF STOPPED = 1". Huminto ang PAF, SAF at FAB-A, saka ang IDF at FAB-B. Naulit 2 beses. Naka-hold (fokus = Cold → full load). Hindi pa na-trace ang sanhi.
 - **Operator UI (beta.76):** may valve pop-out na ang XV-MU1109 at V-MU1033 (iba pang MOV wala pa). Hindi pa HSYM ang 030 at 007 (#16, maliit ang text sa 1366): mockup muna. Ang banner ng dock ay may button pa rin na pumipindot para sa operator sa ilang kaso (AUTO ng standby, tick ng SOP item): hindi pa binago. Ang "SOP bago i-START" ng pop-out ay ang line-up ng bukas na hakbang (sa H3 ay ang 15 item ng H2 pa: #13 ng findings thread). Bantayan ng dock at value ng HMI magkaiba minsan (#9 / #21).
+- **HMI DESIGN NG USER #59 (2026-10-31, para sa HMI thread):** bawat equipment ay may HIWALAY na button na PERMISSIVE, MONITORING at TREND; ang CONTROLS ay nasa mismong equipment; puwedeng sabay-sabay na bukas ang ilan; ang PERMISSIVE button ay Y / N (N berde habang hindi kumpleto, Y kapag kumpleto). Ngayon: nasa loob ng faceplate ang permissive, walang Y / N at walang trend. Ibibigay ng leader sa HMI thread kapag nagsimula ito; mockup muna (`docs/handoff/LIVE_TEST_FINDINGS.md` #59).
 - **Bagong nakita (beta.62, user ang magpapasya):** ang standby SWP-C (H3) at SWBP-C (H6) ay AUTO pero LOCAL; ang AUTO start ng DITL-29A / DITL-30 ay nangangailangan din ng REMOTE, kaya hindi aandar ang standby kapag may nag-trip.
 - **Live test findings (beta.72):** #4, #7, #9, #10, #12, #13, #18 ~ #26 nasa beta.73 (headless lang ang subok; live ng user ang huhusga). #11, #14 ~ #17, #27 ~ #32 nasa beta.74 (operator UI: pop-out faceplate, dock layout, alarm ACK, progress bar). UNUSUAL para sa user: 30.PNG SWP current 225 / 242 A (lampas sa SOP 205 ~ 215; model = SOP) at PISW1110A2 0.4 = L alarm.
 - **Live test ng user** sa beta.61: naka-pause pagkatapos ng H7; 8 findings inayos sa beta.62. Alam na: `sop_bawal.js` 6 FAIL (lumang test na hindi alam ang dock, "NO START BUTTON FOUND"); FIELD habang PAUSED ay nababasa lang pagkatapos ng ▶ RUN. Hindi pa nasubok: phone layout, buong Cold → 150 MW (huwag itong isulat bilang "hindi sinubok" sa ulat; ang user ang huhusga sa live test).
@@ -93,10 +94,11 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
   2. **APP UI/UX** — buong app maliban sa HMI (buttons, text, kulay, style); malinaw, madaling basahin, hindi masakit sa mata, professional.
   3. **CODE FIXER** — logic, engine, plant model at functionality; elite DCS + software engineer.
   4. **DOCS** — docs, progress, skills, handover, memory, instructions, at BAWAT pagtama ng user.
-  5. **LIVE TESTER** — siya ang nagla-live test ng Training Cold → full load sa built-in browser ng Claude app sa PC, isang hakbang bawat "G" ng user (saksi ang user). Sumusunod sa TEST SOP, LIVE RETEST at skill na `dcs-beta-live-test`. Ipinapasa niya ang findings sa leader, at ang leader ang nag-uutos ng ayos sa tamang thread. Hindi siya nag-e-edit ng code at hindi nagme-merge. Ang "G" ay tina-type ng user sa LIVE TESTER thread; naka-on ang Remote Control ng thread na iyon para makita ito sa phone.
+  5. **LIVE TESTER** — siya ang nagla-live test ng Training Cold → full load sa built-in browser ng Claude app sa PC, isang hakbang bawat "G" ng user (saksi ang user). Sumusunod sa TEST SOP, LIVE RETEST at skill na `dcs-beta-live-test`. Nag-uulat siya sa USER sa sarili niyang thread at sa sariling log; nagpapasa lang siya sa leader KAPAG INUTOS ng user (user 2026-10-30). Binabasa pa rin ng leader ang thread ng tester para iutos ang ayos sa tamang thread. Hindi siya nag-e-edit ng code at hindi nagme-merge. Ang "G" ay tina-type ng user sa LIVE TESTER thread; naka-on ang Remote Control ng thread na iyon para makita ito sa phone.
 - Ang leader lang ang nagbubukas ng thread, at kapag may trabaho lang ito. Iisang format ng sagot sa leader at sa mga thread.
 - Huwag i-archive ang mga thread (user 2026-10-30); naka-off na ang auto-archive kapag na-merge ang PR.
 - Brief ng bawat role (para sa simula at pagkatapos ng compact): `docs/handoff/THREAD_BRIEFS.md`.
+- **SAVE PROGRESS (user 2026-10-31, sa DOCS thread):** ang bawat update (skills, knowledge, pagtama ng aksyon, instructions, memory) ay ipinapasa muna sa TAMANG thread, hindi isinusulat sa repo. Ang MD files ng repo (`HANDOFF.md`, `CLAUDE.md`, `docs/handoff/*`) ay binabago LANG kapag sinabi ng user ang "save progress" sa DOCS thread; kasama rito ang utos ng leader. Habang wala pa, ang DOCS ang may hawak ng listahan ng nakabinbing item.
 
 ### COMPACT (user 2026-10-30)
 - Ang leader ang nagsasabi kung kailan mag-compact: thread na lampas ~70 %, sa malinis na pahinga lang (pagkatapos ng ulat ng hakbang o ng tapos na gawain, bago ang susunod na "G"). Hindi sa gitna ng hakbang o ng edit, at naka-save muna ang progreso sa repo.
@@ -123,14 +125,40 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 1. **Tanong ≠ G.** Ang "pwede na ba magtest?" o anumang tanong ay HINDI pahintulot. Walang live test hangga't hindi mismong isinusulat ng user ang "G" sa test thread.
 2. **Laging Hakbang 1 ang simula**, sunud-sunod, ISANG hakbang bawat "G". Walang laktaw, walang sabay-sabay.
 3. **Ang user ang SAKSI** sa sarili niyang app, pagkatapos niyang pindutin ang "Update now" at makita ang tamang version sa status bar. WALANG pipindutin ang user; si Claude ang gumagawa ng lahat ng pindot.
-4. **Screenshot bago at pagkatapos** ng bawat hakbang. **Kapag may mali (user 2026-10-30, pinalitan ang "huminto sa unang mali"):** depende sa criticality at kung may chain reaction sa susunod na hakbang. Critical o may chain = huminto at ipaayos; maliit = itala at tuloy. Ang ulat ng hakbang ay may criticality at mungkahi; ang user ang nagpapasya.
+4. **Basahin mismo ang app bago at pagkatapos** ng bawat hakbang (text, value, kulay, posisyon); **WALANG screenshot** (user 2026-10-31, pinalitan ang "screenshot bago at pagkatapos"). **Kapag may mali (user 2026-10-30, pinalitan ang "huminto sa unang mali"):** depende sa criticality at kung may chain reaction sa susunod na hakbang. Critical o may chain = huminto at ipaayos; maliit = itala at tuloy. Ang ulat ng hakbang ay may criticality at mungkahi; ang user ang nagpapasya.
 5. **Ang tanong ay sinasagot ng sagot, hindi ng aksyon.** Kapag nagtanong ang user, sumagot lang; huwag magsimula ng test o ng anumang gawain dahil sa tanong.
 
 **LIVE RETEST (user 2026-10-30):** sa built-in browser ng Claude app sa PC ng user (Beta site pagkatapos ng "Update now"); si Claude ang pumipindot, saksi ang user. LAHAT ng hakbang Cold → 150 MW, pero isa-isa (isang hakbang bawat "G"). Bawat ulat ng hakbang: finding, criticality (critical / chain o maliit), mungkahi (huminto para ayusin o tuloy); ang user ang nagpapasya. Skill: `dcs-beta-live-test`.
 
+**12 CHECK BAWAT HAKBANG (inaprubahan ng user 2026-10-31; pinalitan ang "32-item na checklist" at ang hiwalay na UI CHECK):** ito ang PRIORITY ng bawat hakbang. Hindi binabawasan nang walang OK ng user, kahit sabay-sabay ang inutos na hakbang (hal. "H1 hanggang turbine oil"); ang bilis ay hindi dahilan. Tala bawat check: PASA / BAGSAK / BAHAGYA / HINDI NAGAWA. (Dahilan: nilaktawan ng tester ang ilang bahagi para bumilis nang hindi sinasabi sa user.)
+1. **TRAINING AT DOCK (laman):** pareho ang seksyon sa Training list at dock; banner, Gawin, Bakit? at "?"; SOP list ng hakbang lang; hindi Tapos kung hindi pa tapos; Susunod at ‹ Nakaraan.
+2. **DOCK UI:** malinaw sa isang tingin, walang dobleng yugto, tamang kulay ng card, laki ng font, walang putol na text.
+3. **HEADER AT ALARM:** tamang alarm, walang maling alarm, laban sa setpoint ng alarm list.
+4. **LOGIC AT PERMISSIVE:** tamang sheet at row ng DITL / ABC, tamang estado ng signal, permissive ayon sa logic.
+5. **HMI LAMAN AT KUMPLETO:** may page ang system; kumpleto ang equipment, valve at tag laban sa snapshot at IO list; live ang value; RUN pula, STOP berde, TRIP kumikislap.
+6. **IISANG VALUE:** pareho ang value ng iisang tag sa dock, HMI, faceplate at logic; pasok sa SOP band.
+7. **HMI UI:** buo sa screen, hindi natatakpan ng dock, walang nagpapatong, nababasa nang hindi nag-zoom.
+8. **FACEPLATE / POP-OUT:** bumubukas sa tamang pindot; kumpleto ang REM / LOC, A / M, START / STOP, VCB at lamp; hindi nagsasara o lumilipat; walang pinapayagang bawal.
+9. **BUONG APP UI AT OPERATOR:** left pane, header, status bar, Training page: putol, natatakpan, nagpapatong; alam ba agad ng baguhan kung saan pipindot.
+10. **STATUS BAR:** parehong version at build, RUN.
+11. **EVENTS:** nakatala ang bawat pindot (tag, sheet, row).
+12. **SOP AT LUMANG FINDINGS:** tugma sa seksyon ng PR-OPE-5002; ang lumang finding ng hakbang: naayos o hindi pa.
+
+**PATAKARAN NG LIVE TESTER (laging sinusunod, user 2026-10-31):**
+1. Isang hakbang bawat "G" mula H1, walang laktaw.
+2. Walang screenshot: basahin mismo ang app (text, value, kulay, posisyon).
+3. Pindot gaya ng operator; walang FORCE at walang shortcut.
+4. Basa ng logic pagkalipas ng ≥ 30 s.
+5. Tick lang ng totoo.
+6. Bagong finding mula #53, may criticality at mungkahi.
+7. Ulat = table na kasya sa telepono; "HINDI NAGAWA" ay may dahilan; sa user ang hatol.
+8. Ulat sa user lang; sa leader kapag inutos ng user.
+
+**Findings / checklist artifact ng tester:** https://claude.ai/artifact/L8PGXXkK7us2NBApNLqwid (12 check × bawat hakbang; isang artifact, ina-update pagkatapos ng bawat hakbang).
+
 - **Lahat ng testing ay LIVE** (user 2026-10-30): ang user ang SAKSI, sa sarili niyang app pagkatapos ng "Update now", isang hakbang bawat "G". Ang headless run ay HINDI live test at hindi tinatawag na live.
 - Habang nag-aayos: `npm run build` + `npm run check` lang. Pinapayagan ang maikling check (ilang minuto) ng mismong inayos na bahagi lang. Bawal ang buong Cold → 150 MW run nang walang go ng user.
-- Bawat check ng hakbang: 7 bahagi (Training list, dock, header, logic sheet, bagong HMI, status bar, events) + RUN pula / STOP berde / TRIP lamp + FIELD / permissive.
+- Bawat check ng hakbang sa live test: ang 12 CHECK sa itaas (user 2026-10-31; pinalitan ang lumang 7 bahagi).
 - Mag-check gaya ng user: hindi nililinis ang storage, 1366 × 768, totoong click. Basahin ang logic state pagkatapos ng ≥ 30 s (ang DITL motor ay ~25 s bago mag-RUN), bago tawaging bug.
 - Test batay sa reference (PR-OPE-5002, DITL, ATS criteria, FHI Fig. 2, HMI snapshot), hindi sa coach ng Training. Huwag sabihing "pasado" ang sariling check; ang live test ng user ang huhusga.
 - Hanapin LAHAT ng mali muna, ayusin nang sabay-sabay, isang pasada lang.
@@ -139,7 +167,7 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 - **Taglish** (~80 % Tagalog), maikli, simple, buong pangungusap. Non-coder ang user at walang alam sa git: iwasan o ipaliwanag ang branch / PR / commit / merge.
 - Oras ay laging **PHT** (UTC + 8). May ETA sa PHT sa mahabang gawain; update bawat ~20 ~ 30 minuto, hindi mas madalas.
 - Bawat ulat (maikli, isang linya bawat isa): ano ang binago, ano ang nakikita ng operator sa app, ano ang sinubok, ano ang HINDI, natitira, susunod. Walang pangalan ng file / test sa ulat sa user. Walang sariling-gawang termino.
-- Huwag mag-claim na tapos / nakita / nasubok nang walang ebidensya (screenshot sa totoong app).
+- Huwag mag-claim na tapos / nakita / nasubok nang walang ebidensya mula sa totoong app (sa live test: basa mismo ng app, walang screenshot, user 2026-10-31).
 - Sabihin agad sa user pagkatapos ng bawat merge.
 - Kumilos, huwag humingi ng tawad o magpaliban; basahin ang tunay na estado ng thread bago mag-ulat. Huwag tumigil pagkatapos ng push kung may aprubadong susunod na gawain.
 - Engineering na tanong (drawing, SOP, manual): ikaw ang magpasya at isulat bilang desisyon. Itanong lang ang layunin o gusto ng user. Gumamit ng decision card (pipindot lang ang user).
@@ -151,6 +179,7 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 - **RUN = PULA, STOP = BERDE.**
 - Magaan ang app sa LAHAT ng device (PC, tablet, phone). Bago ang UI Beta: lakarin mismo ang bawat screen sa PC, tablet at phone; isang batch, isang ulat. Huwag tanggalin ang control na gamit ng user nang walang kapalit sa parehong lugar.
 - Ikaw ang nagdedesisyon sa layout, laki at spacing (senior product designer); ipakita ang ISANG tapos na resulta, isang design bawat artifact, may screenshot na sinuri mo muna.
+- **HMI equipment buttons (user 2026-10-31, #59):** bawat equipment ay may hiwalay na PERMISSIVE (Y / N; N berde habang hindi kumpleto, Y kapag kumpleto), MONITORING at TREND na button; ang CONTROLS ay nasa mismong equipment; puwedeng sabay-sabay na bukas. Mockup muna bago code.
 - **HMI (user 2026-10-30):** iisang style para sa LAHAT ng HMI page: `docs/hmi/HMI_STYLE.md` + library `src/ui/plant/hmi-sym.js` (HSYM). Huwag kopyahin ang layout ng snapshot; ipakita ang loob at galaw ng equipment (animation); tuloy-tuloy na tubo, walang halatang dugtong o laktaw; professional. Mockup / proposal muna bago code. Dati: sariling vector graphics (snapshot = gabay lang); 3 style na pagpipilian (CUTAWAY / STEEL / THERMAL), Seawater = STEEL. Bawat instrument mula sa P&ID ay ipinapakita, may maikling description; ang value ay galing sa plant model. Ang redesign ay bagong komposisyon, hindi pagpalit ng kulay. Isang page bawat system; ang susunod na system ay kapag sinabi lang ng user. Ang live test ay tumitingin din kung may kulang sa HMI.
 - **Training:** Cold → 150 MW lang. Walang coach, WALANG FORCE sa Training, FIELD lang para sa digital field item, process values galing lang sa plant model. Logic view sa Training = diagram lang.
 - Per-loop, Warm at Hot ay TINANGGAL (beta.39); huwag ibalik nang walang utos.
@@ -170,6 +199,7 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 - Lipat ng account at kopya ng project memory: `docs/handoff/` (`NEW_ACCOUNT_SETUP.md`, `PROJECT_MEMORY.md`). Live test findings at protocol: `docs/handoff/LIVE_TEST_FINDINGS.md`. Kopya ng skills ng account: `docs/handoff/skills/` (organized-project-coordinator, ui-ux-design-master, one-prompt-app).
 - References: `document-references/` (listahan sa `CLAUDE.md` rule 4). P&ID = `document-references/flow-diagram-K1AU3-A1-0-001.zip` (kinumpirma ng user 2026-10-30).
 - **Nasa PC lang ng user, wala sa repo** (`..\for-github-icms-master-tool\document-references\tcs-references\`): "TCA - SOFT LOGIC DIAGRAM OF TCS.pdf", "TCE - SOFT LOGIC DIAGRAM OF TCS.pdf" at folder na "TCS Logic". Hindi kinopya sa repo (kailangan ng OK ng user).
+- **Nasa PC lang ng user, wala sa repo:** alarm list CSV para sa check 3 ng live test, `..\team-files\alarm-list-csv\` (katabi ng repo folder). Hindi kinopya sa repo (kailangan ng OK ng user).
 - Source: `src/` (`src/README.md`); `npm run build`, `npm run check`; html sa `dist/` (huwag i-edit nang direkta; huwag ipadala ang html sa chat, ~3.7 MB).
 - Training dock: `src/ui/training/dock.js`, `dock.css`. HMI: `src/ui/plant/hmi2.js` (AFG), `hmi-sw.js` (030), `hmi-sym.js` (HSYM, iisang style ng HMI; `docs/hmi/HMI_STYLE.md`), `hmi-mu.js` (MAKE-UP WATER), `hmi-ia.js` (INSTRUMENT & PLANT AIR), `hmi-cw.js` (027 CLOSED COOLING WATER). Plant model: `src/analog/engine/unit.js`, `tcs.js`. Mundo ABC + DITL: `src/world/world.js`.
 - Tests: `tests/regress/` (README sa loob), `tools/training/human_run.js`, `tools/ui-audit/audit.mjs`.
