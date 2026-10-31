@@ -52,6 +52,9 @@ const block =
   /* 3.2.0-beta.69: 027 CLOSED COOLING WATER (own vector graphics, STEEL; PR-OPE-5002 sections 7 ~ 8) */
   fs.readFileSync(__dirname + '/../plant/hmi-cw.js', 'utf8') +
   '\n' +
+  /* 038 AIR PREHEATER (own vector graphics, STEEL; PR-OPE-5002 sections 17 / 27; the #59 two faceplates) */
+  fs.readFileSync(__dirname + '/../plant/hmi-aph.js', 'utf8') +
+  '\n' +
   /* 3.2.0-beta.74: the operator pop-out faceplate beside the clicked equipment (motor; the controllers of plant.js) */
   fs.readFileSync(__dirname + '/../plant/fp-pop.js', 'utf8') +
   '\n' +
