@@ -124,3 +124,15 @@ Galaw na sariling page lang (turbine shaft, actuator): `A.each(fn)`, kasama sa i
 - DALAWANG faceplate bawat equipment: CONTROL (pindot sa equipment) at PERMISSIVE + TREND + MONITORING (Y / N na button; Y = PULA kumpleto, N = BERDE hindi pa); puwedeng sabay na bukas.
 - Bawat control at status ay nakakabit sa totoong logic address (DITL / ABC row, I/O o memory list, TCS list).
 - Isang mockup bawat page (may larawan) na inaaprubahan ng user BAGO i-code. Magaan: 2D SVG, binubuo lang kapag binuksan ang page.
+## 10. Estilong pumasa (038 AIR PREHEATER v15, user 2026-10-31 "perfect!")
+
+Batayan: ang MAKE-UP WATER na itsura. Mockup: `docs/hmi/mockups/038-air-preheater-v15.html`. Ang app page ay dapat kapareho nito, walang sariling design.
+
+- **Tubo (tulad ng MAKE-UP WATER):** manipis (12 ~ 16), madilim na rim, kulay ng medium, maliwanag na core; bilog ang liko; gumagalaw na flow dashes sa direksyon ng daloy (WALA kapag sarado ang valve).
+- **Dulo ng linya (tulad ng plant HMI snapshot):** pangalan ng medium sa tabi ng linya at maliit na arrowhead para sa direksyon. Walang card, walang hugis-arrow na connector.
+- **Equipment ay buhay kapag RUNNING:** umiikot ang motor fan, coupling, gears at shaft. STOPPED = hindi gumagalaw.
+- **X-ray ng loob** na may totoong parts, at top view kung nakakatulong.
+- **Kulay ng media:** cold air `#4f86b5`; hot air `#c98a4a`; flue gas `#b85a3c`; flue gas pagkatapos ng APH `#8b7f70`; compressed air `#9fb3c8`.
+- **Tag at parts:** tingnan muna ang plant snapshot (`document-references/hmi-snapshot-sample.zip`) para sa totoong tag at bahagi.
+- **TINANGGIHAN ng user:** flat 3D drum, flat polygons, matatabang duct, arrows (bilang tubo), duct na square ang sulok, card na hugis-arrow o plain sa dulo ng linya, sariling design sa labas ng aprubadong estilo.
+- **Proseso:** ang leader ang gumagawa ng mockup bawat page; user ang nag-aaprubahan; HMI thread ang nagko-code, at naglalagay ng screenshot ng app katabi ng mockup bago mag-ulat.
