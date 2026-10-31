@@ -1310,7 +1310,8 @@
       /* #7 (live test 2: still on the condenser drawing at H5 and under the MWP-A label at H8): the text of every HMI svg (the HSYM pages are
          svg of their own), the equipment drawings (closed shapes smaller than a quarter of the page, not the pipes), more places to try,
          and an outline tag (no fill) when no place is free */
-      TX = X.length && svg ? [...mid.querySelectorAll('svg text')].map(t => t.getBoundingClientRect()).filter(r => r.width > 0).map(r => [r.left - m.left, r.top - m.top, r.right - m.left, r.bottom - m.top]) : [],
+      /* #7 (live test 3: on the page tabs of 030 and on the INSTRUMENT AIR title): the page tabs, bars and buttons of the HMI area too */
+      TX = X.length && svg ? [...mid.querySelectorAll('svg text, nav, button, [role=tab], .hs-tab')].map(t => t.getBoundingClientRect()).filter(r => r.width > 0).map(r => [r.left - m.left, r.top - m.top, r.right - m.left, r.bottom - m.top]) : [],
       EQ = X.length
         ? [...mid.querySelectorAll('svg rect, svg circle, svg ellipse, svg polygon')]
             .map(e => e.getBoundingClientRect())
@@ -1337,7 +1338,13 @@
         [r0[0] + (r0[2] - tw) / 2, r0[1] - 3 * th - 3],
         [r0[0] + (r0[2] - tw) / 2, r0[1] + r0[3] + 2 * th + 3]
       ].find(([x, y]) => free(x, y)),
-      at = at0 || [r0[0], r0[1] - th - 1];
+      /* no free place: the one that covers the fewest texts (not always the top of the box) */
+      hits = (x, y) => TX.filter(t => t[0] < x + tw && t[2] > x && t[1] < y + th && t[3] > y).length * 3 + EQ.filter(t => t[0] < x + tw && t[2] > x && t[1] < y + th && t[3] > y).length,
+      at =
+        at0 ||
+        [[r0[0], r0[1] - th - 1], [r0[0], r0[1] + r0[3] + 1], [r0[0] - tw - 2, r0[1]], [r0[0] + r0[2] + 2, r0[1]]]
+          .filter(([x, y]) => x >= 0 && y >= 0 && x + tw <= m.width && y + th <= m.height)
+          .sort((a, b) => hits(...a) - hits(...b))[0] || [Math.max(0, r0[0]), Math.max(0, r0[1] - th - 1)];
     ov.replaceChildren(
       ...X.map(r => E('div', { cls: 'gd-hlb', style: 'left:' + r[0] + 'px;top:' + r[1] + 'px;width:' + r[2] + 'px;height:' + r[3] + 'px' })),
       ...(X.length ? [E('b', { cls: 'gd-hlt' + (at0 ? '' : ' ol'), txt: tl, style: 'left:' + Math.round(at[0]) + 'px;top:' + Math.round(at[1]) + 'px' })] : [])
