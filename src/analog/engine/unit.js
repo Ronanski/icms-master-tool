@@ -224,6 +224,8 @@ function anUnitStop() {
   U.cold = false;
   U.turb = true;
   U.etLvl = NaN; /* 3.2.0-beta.63: the expansion tank starts again at its level of 27.PNG (AN_MU) */
+  U.cwPrime = NaN; /* live test #50: the closed cooling loop primed as V-CW1001 of the start state (AN_MU) */
+  U.mt = {};
   U.iaP = U.paP = NaN; /* 3.2.0-beta.68: the air tanks are set again by the start state (AN_AIR) */
   U.acT1 = U.acT2 = NaN; /* 3.2.0-beta.69: the aux cooling water temperatures start again (AN_ACW) */
   for (const m of U.mul || []) for (const p of m.pr) p.mul = undefined;
@@ -637,6 +639,7 @@ function anUnitStart() {
   U.on = true;
   /* 3.2.0-beta.68: "Start at 150 MW" = the air compressors in service, the tanks at their pressure (AN_AIR, 39.PNG 7.0 kg/cm2) */
   U.iaP = U.paP = AN_AIR.P;
+  U.mt = {}; /* live test #54: the running motors start at their steady temperature (AN_MT) */
   U.frT = undefined;
   U.tco = null; /* 3.2.0-beta.66: the oil-only state of the snapshot (tcs.js tcsOilState) starts again */
   U.tc = null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
@@ -645,6 +648,8 @@ function anUnitStart() {
   AN_SRC.field.hypo = true;
   AN_SRC.field.pur = true;
   AN_SRC.field.mu1033 = false;
+  AN_SRC.field.cw1001 = true; /* live test #50: the expansion tank outlet open, the closed cooling loop primed */
+  U.cwPrime = 1;
   AN_SRC.field.esp = true;
   AN.unit = U;
 }
@@ -687,10 +692,13 @@ function anUnitCold() {
   AN_SRC.field.hypo = false;
   AN_SRC.field.pur = false;
   AN_SRC.field.mu1033 = false;
+  AN_SRC.field.cw1001 = false; /* live test #50: the expansion tank outlet closed, the closed cooling loop not primed */
+  U.cwPrime = 0;
   AN_SRC.field.esp = false;
   AN_SRC.t = -1;
   /* 3.2.0-beta.68: cold = the air compressors stopped, the air tanks empty (AN_AIR) */
   U.iaP = U.paP = 0;
+  U.mt = {}; /* live test #54: the motors start again from the ambient (AN_MT) */
   tcsInit(U, 'cold');
   return true;
 }
@@ -713,7 +721,7 @@ function anUnitLive() {
    OPERATION). Returns the state or a reason ('' = done) */
 function anTurbine(cmd, arg) {
   const U = AN_UNIT;
-  if (!U.on || !U.tb) return 'walang unit model (Start cold muna)';
+  if (!U.on || !U.tb) return 'No unit model: start from Cold first';
   const tb = U.tb;
   /* 3.2.0-beta.66: the 036 TURBINE OIL pumps at the 150 MW snapshot (no TCS model): the oil-only state of tcs.js */
   if (!U.tc && cmd === 'oil') return tcsOilCmd(tcsOilState(U), arg || {});
@@ -726,8 +734,8 @@ function anTurbine(cmd, arg) {
   if (U.tc) {
     const c = U.tc;
     if (cmd === 'roll') {
-      if (tb.st === 'sync' || tb.st === 'load') return 'naka-sync na';
-      if (c.step >= 3) return 'umiikot na ang turbine (3600 rpm)';
+      if (tb.st === 'sync' || tb.st === 'load') return 'Already synchronised';
+      if (c.step >= 3) return 'The turbine is already at 3600 rpm';
       let nx = c.cur >= 0 ? c.cur : c.step + 1;
       if (nx === 0 && c.Thp > 150) nx = 1;
       if (nx === 2 && !(c.mode === 'amb' || c.mode === 'c1')) nx = 3;
@@ -738,8 +746,8 @@ function anTurbine(cmd, arg) {
       return '';
     }
     if (cmd === 'sync') {
-      if (tb.st === 'sync' || tb.st === 'load') return 'naka-sync na';
-      if (c.step < 3) return c.step < 1 ? 'i-roll muna ang turbine' : 'hindi pa 3600 rpm / tapos ang ACCELERATION (' + tb.rpm.toFixed(0) + ' rpm)';
+      if (tb.st === 'sync' || tb.st === 'load') return 'Already synchronised';
+      if (c.step < 3) return c.step < 1 ? 'Roll the turbine first' : 'Not at 3600 rpm / ACCELERATION not finished (' + tb.rpm.toFixed(0) + ' rpm)';
       const r = c.cur >= 0 ? '' : tcsStepIn(U, c.step + 1);
       if (r) return r;
       c.auto = true;
@@ -747,22 +755,22 @@ function anTurbine(cmd, arg) {
       return '';
     }
     if (cmd === 'loadup') {
-      if (tb.st !== 'sync' && tb.st !== 'load') return 'i-sync muna ang generator';
-      if (c.step < 5) return 'hinihintay ang initial load hold (SYNCH. & INITIAL LOAD, ' + (c.tm / 60).toFixed(0) + ' / ' + (c.holdMin || 0) + ' min)';
+      if (tb.st !== 'sync' && tb.st !== 'load') return 'Synchronise the generator first';
+      if (c.step < 5) return 'Waiting for the initial load hold (SYNCH. & INITIAL LOAD, ' + (c.tm / 60).toFixed(0) + ' / ' + (c.holdMin || 0) + ' min)';
       return tcsStepIn(U, 6, arg);
     }
     const r = tcsCmd(U, cmd, arg);
-    return r == null ? 'hindi kilalang utos: ' + cmd : r;
+    return r == null ? 'Unknown command: ' + cmd : r;
   }
   if (cmd === 'roll') {
-    if (tb.st !== 'off') return 'umiikot na ang turbine (' + tb.st + ')';
-    if (!(U.vac >= 0.9)) return 'walang vacuum ang condenser (' + Math.round(100 * (U.vac || 0)) + ' %): i-start muna ang seawater pump (SWP) at condensate pump (CEP); ang VACUUM UP (ejector, gland sealing) ay kailangan ng aux steam: main steam > 12 kg/cm2';
+    if (tb.st !== 'off') return 'The turbine is already turning (' + tb.st + ')';
+    if (!(U.vac >= 0.9)) return 'No condenser vacuum (' + Math.round(100 * (U.vac || 0)) + ' %): start the seawater pumps (SWP) and a condensate pump (CEP); VACUUM UP (ejectors, gland sealing) needs aux steam: main steam > 12 kg/cm2';
     Object.assign(tb, { st: 'roll', xfer: false, tgt: 0, aim: 0 });
     return '';
   }
   if (cmd === 'sync') {
-    if (tb.st !== 'roll') return tb.st === 'off' ? 'i-roll muna ang turbine' : 'naka-sync na';
-    if (tb.rpm < 3599) return 'hindi pa 3600 rpm (' + tb.rpm.toFixed(0) + ')';
+    if (tb.st !== 'roll') return tb.st === 'off' ? 'Roll the turbine first' : 'Already synchronised';
+    if (tb.rpm < 3599) return 'Not at 3600 rpm yet (' + tb.rpm.toFixed(0) + ')';
     Object.assign(tb, { st: 'sync', tgt: 0, aim: U.MWinit });
     const dirt = (l, x) => {
       if (l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n)) l.S.rt.ext[l.n] = x;
@@ -772,12 +780,12 @@ function anTurbine(cmd, arg) {
     return '';
   }
   if (cmd === 'loadup') {
-    if (tb.st !== 'sync' && tb.st !== 'load') return 'i-sync muna ang generator';
+    if (tb.st !== 'sync' && tb.st !== 'load') return 'Synchronise the generator first';
     tb.st = 'load';
     tb.aim = isFinite(+arg) ? +arg : 45;
     return '';
   }
-  return 'hindi kilalang utos: ' + cmd;
+  return 'Unknown command: ' + cmd;
 }
 /* 3.2.0 roadmap 3: the position (0 ~ 100 %) of a valve of the DITL valve model (MOV / solenoid) by sheet ("DITL-32", an instance "DITL-32 #B",
    a template valve "DITL-38 MV-MS1391"), while the one world runs; null without it (the engine alone, the DITL state is the operator's) */
@@ -945,6 +953,11 @@ const AN_MU = {
   etMax: 2.0,
   etRate: 0.003,
   etQ: 10,
+  etPrime: 0.4 /* m of tank level that the priming of the closed loop takes (ASSUMED) */,
+  etPrimeT: 120 /* s (ASSUMED) */,
+  etH: 1.7,
+  etL: 0.8,
+  etLL: 0.3,
   tauP: 3,
   tauI: 2
 };
@@ -968,7 +981,19 @@ function anMakeupStep(U, dt) {
   const fill = (U.muXv || U.muByp) && U.muP > 6 && U.etLvl < K.etMax;
   U.muFill = fill ? 1 : 0;
   if (fill) U.etLvl = Math.min(K.etMax, U.etLvl + K.etRate * dt);
+  /* live test #50: PR-OPE-5002 7.20 "Open Expansion tank outlet valve to prime the close cooling line (V-CW1001)" and 7.22 "Ensure
+     Expansion tank is at NL = 1.7m and make up if necessary": the first opening of V-CW1001 after a cold plant fills the closed loop
+     from the tank (K.etPrime m of tank level over K.etPrimeT s, ASSUMED: the loop volume is not in the repository); then the level stays */
+  if (!isFinite(U.cwPrime)) U.cwPrime = AN_SRC.field.cw1001 ? 1 : 0;
+  if (AN_SRC.field.cw1001 && U.cwPrime < 1) {
+    const d = Math.min(1 - U.cwPrime, dt / K.etPrimeT);
+    U.cwPrime += d;
+    U.etLvl = Math.max(0, U.etLvl - K.etPrime * d);
+  }
   U.etPct = (100 * U.etLvl) / K.etMax;
+  /* live test #50: the alarms of LT-CW1109 (alarm list LT: H 1700 mm (DCS), L 800 mm (DCS); LS: LSLL-CW1109 300 mm = DITL-77 row 26
+     M.1238 "EXPANSION TANK LEVEL < 0.3 M", the ACWP trip). UNUSUAL: the H alarm is the normal level NL 1.7 m of the SOP */
+  U.etAlm = U.etLvl <= K.etLL ? 'LL' : U.etLvl <= K.etL ? 'L' : U.etLvl > K.etH ? 'H' : '';
   const hw = typeof AN_CYC !== 'undefined' ? Math.max(0, 1.8 * (AN_CYC.u.hw || 0)) : 0;
   lag('muF', n ? hw + (fill ? K.etQ : 0) : 0, K.tauP);
 }
@@ -1029,6 +1054,44 @@ function anAcwStep(U, dt) {
   lag('acT1', n ? Math.min(K.Thot + 2, U.acT2 + 2 * q) : K.Tamb, n ? 60 : K.tauA);
   U.acT6 = U.acT2;
   U.acTb = n ? U.acT2 + 1 : U.acT2;
+}
+/* 3.2.0 live test #54: MOTOR BEARING / WINDING TEMPERATURE AND VIBRATION of the seawater pumps P-1501A / B / C, the aux. cooling water
+   pumps P-1108A / B and the ID fan (I/O list STN103: TT-SW1501-x3 / x4 / xU / xV / xW AI0720 ~ 0758, VT-SW1501-x1 / x2; TT-CW1108-x3 /
+   x4 / xU / xV / xW AI0912 ~ 0932; TT-FG1056-1 ~ 4 / U / V / W AI0672 ~ 0678, VT-FG1056-1 ~ 4 AI0528 ~ 0531). PR-OPE-5002 2.19 / 2.21
+   / 2.27 (TI SW1501A3 / A4, VI SW1501A1 / A2) and 22.13 ~ 22.15 ask the operator to read them. No curve of the motors in the repository:
+     running      bearing to 55 C (ASSUMED) with a 30 min time constant, winding to 85 C (ASSUMED) with 15 min; vibration 1.8 mm/s (pumps)
+                  / 2.2 mm/s (IDF) (ASSUMED) at once;
+     stopped      back to the ambient 30 C with twice the time constant, vibration 0.1 mm/s;
+     each element +0 ~ 2.5 C / +0 ~ 0.3 mm/s of its own (ASSUMED) so that two elements are not one number.
+   Limits (alarm list "Alarm List _20160912" TE / VT): SWP bearing H 95 / HH 100, winding H 145 / HH 155, vibration H 7.6 / HH 11.9;
+   ACWP bearing H 95 / HH 100, winding H 155 / HH 165 (DITL-76 / 77 rows 13 ~ 17 "> 100" / "> 165 C", plantsw.js); IDF bearing H 90 /
+   HH 95 (< 80 / 82 start permissive), winding H 140 / HH 145 (< 130), vibration H 8 / HH 11 mm/s (< 8). U.mt = { tag: value } */
+const AN_MT = {
+  m: [
+    ['SWP-A', 'M.3353', 'SW1501-A', ['3', '4'], ['1', '2'], 1.8],
+    ['SWP-B', 'M.3354', 'SW1501-B', ['3', '4'], ['1', '2'], 1.8],
+    ['SWP-C', 'M.3355', 'SW1501-C', ['3', '4'], ['1', '2'], 1.8],
+    ['ACWP-A', 'DITL-76', 'CW1108-A', ['3', '4'], [], 1.8],
+    ['ACWP-B', 'DITL-77', 'CW1108-B', ['3', '4'], [], 1.8],
+    ['IDF', 'IDF', 'FG1056-', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2]
+  ],
+  Tb: 55,
+  Tw: 85,
+  tauB: 1800,
+  tauW: 900,
+  vib0: 0.1
+};
+function anMotorStep(U, dt) {
+  const K = AN_MT,
+    T0 = isFinite(U.Tamb) ? U.Tamb : 30,
+    mt = U.mt || (U.mt = {}),
+    lag = (k, x, tau) => (mt[k] = isFinite(mt[k]) ? mt[k] + ((x - mt[k]) * Math.min(dt, tau)) / tau : x);
+  for (const [, ad, base, brg, vib, v1] of K.m) {
+    const run = ad === 'IDF' ? !U.idf || +U.idf.S.rt.v[U.idf.n] > 0.5 : /^DITL/.test(ad) ? anDitlRun(ad) === 1 : srcBit([ad]) > 0.5;
+    brg.forEach((e, i) => lag('TT-' + base + e, run ? K.Tb + 1.2 * i : T0, run ? K.tauB : 2 * K.tauB));
+    ['U', 'V', 'W'].forEach((e, i) => lag('TT-' + base + e, run ? K.Tw + 1.0 * i : T0, run ? K.tauW : 2 * K.tauW));
+    vib.forEach((e, i) => (mt['VT-' + base + e] = run ? v1 + 0.1 * i : K.vib0));
+  }
 }
 /* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI, PR-OPE-5002 sections 9 ~ 12): the compressed air systems of flow diagram K1AU3-PD-023
    Rev C sheet 1/6 (plant air) and 2/6 (instrument air). Each system: compressors C-0703A / B / C (PA) or C-0704A / B / C (IA), started
@@ -1190,6 +1253,8 @@ function anUnitStep(dt) {
   anAirStep(U, dt);
   /* 3.2.0-beta.69: the aux cooling water loop (027 CLOSED COOLING WATER HMI), see AN_ACW */
   anAcwStep(U, dt);
+  /* live test #54: motor bearing / winding temperature and vibration (AN_MT) */
+  anMotorStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
   /* ---- 2.2.0-beta.17 (M4 step 4): the turbine black box (see AN_UNIT rollRate ...) ---- */
   const tb = U.tb || (U.tb = { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN }),

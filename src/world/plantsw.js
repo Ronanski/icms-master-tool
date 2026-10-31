@@ -27,6 +27,14 @@
      kg/cm2; DITL-03G rows 7 / 27, the MFT and the annunciator) follows the unit header of the plant model (unit.js AN_AIR iaPU) */
   const iaU = () => (window.AN && AN.unit && isFinite(AN.unit.iaPU) ? AN.unit.iaPU : NaN);
   L.push(['PSL-IA1706', iaU, 2.8, 'lo', 0, 0.2], ['PSL-IA1706-NC', iaU, 2.8, 'lo', 1, 0.2]); /* dead band 0.2 kg/cm2 (ASSUMED) */
+  /* live test #54: the ACWP motor temperatures of the plant model (unit.js AN_MT) on their DITL rows: DITL-76 / 77 rows 13 ~ 17
+     "TT-CW1108-x3 / x4 ... BEARING TEMP > 100 C" (M.2620 ~ 2621 / M.2630 ~ 2631) and "TT-CW1108-xU / xV / xW ... WINDING TEMP > 165 C"
+     (M.2622 ~ 2624 / M.2632 ~ 2634) = the HH of the alarm list (TE-CW1108: bearing HH 100, winding HH 165); dead band 2 C (ASSUMED) */
+  const mtOf = t => () => (window.AN && AN.unit && AN.unit.mt && isFinite(AN.unit.mt[t]) ? AN.unit.mt[t] : NaN);
+  for (const p of ['A', 'B']) {
+    for (const e of ['3', '4']) L.push(['TT-CW1108-' + p + e, mtOf('TT-CW1108-' + p + e), 100, 'hi', 0, 2]);
+    for (const e of ['U', 'V', 'W']) L.push(['TT-CW1108-' + p + e, mtOf('TT-CW1108-' + p + e), 165, 'hi', 0, 2]);
+  }
   const DB0 = 10;
   let map = null;
   /* the rows of every sheet and machine instance whose text starts with a switch tag (the tag may follow a few words: "CONDENSER

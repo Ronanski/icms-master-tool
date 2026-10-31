@@ -130,8 +130,8 @@
       const M = MACH[id],
         a = `text-anchor="${anchor || 'start'}"`;
       return (
-        T(x, y, M.n, 'sw11', a) +
-        T(x, y + 12, M.t, 'sw9', a) +
+        T(x, y, M.n, 'sw11', `${a} data-hit="${id}"`) + /* #48: the name opens what the symbol opens */
+        T(x, y + 12, M.t, 'sw9', `${a} data-hit="${id}"`) +
         T(x, y + 24, '-----', 'sw9b', `${a} data-st="${id}"`) +
         T(x, y + 36, esc(M.d), 'sw8', a)
       );
@@ -237,8 +237,8 @@
         `<ellipse cx="${x}" cy="200" rx="18" ry="5" fill="url(#swmt)" ${OL}/><rect x="${x - 24}" y="260" width="48" height="5" fill="${S.none}" data-lamp="${id}"/></g>`
       );
       o.push(
-        T(x - 6, 180, MACH[id].n, 'sw11', 'text-anchor="middle"') +
-          T(x - 6, 192, MACH[id].t, 'sw9', 'text-anchor="middle"')
+        T(x - 6, 180, MACH[id].n, 'sw11', `text-anchor="middle" data-hit="${id}"`) +
+          T(x - 6, 192, MACH[id].t, 'sw9', `text-anchor="middle" data-hit="${id}"`)
       );
       o.push(vbox(x + 12, 326, AMP[id][0], 'A', 1));
       o.push(T(x + 12, 362, '-----', 'sw9b', `data-st="${id}"`) + T(x + 12, 374, MACH[id].d, 'sw8'));
@@ -922,6 +922,28 @@
       const M = MACH[id],
         c = CUR[id],
         go = () => info(M.io);
+      /* live test #45: the debris filters = the push buttons of DITL-39 (REMOTE AUTO START / STOP P.B. to the local panel; IN OPERATION
+         back; START with any pump of its line running: rows 1 ~ 3 for S-1502), not the wiring card */
+      const DF = {
+        DF1: { pbs: [['AUTO START', 7, 'M.0790'], ['AUTO STOP', 9, 'M.0791']], st: 3, dp: 'DPISW1502', perm: [1, 2, 3], why: 'running seawater pump' },
+        DF2: { pbs: [['AUTO START', 18, 'M.0792'], ['AUTO STOP', 20, 'M.0793']], st: 14, dp: 'DPISW1504', perm: [], why: '' }
+      }[id];
+      if (DF && window.LS_FPOP && LS_FPOP.pb) {
+        const s = window.LS_DOCK && LS_DOCK.dOf(M.d),
+          perm = DF.perm.map(r => ({ row: r, l: String((s && window.DUI && DUI.rowInfo(s, r).svc) || 'row ' + r) }));
+        if (LS_FPOP.pb({ n: M.n, t: M.t, d: M.d, io: M.io, st: { row: DF.st, on: M.on, off: 'STOPPED' }, pbs: DF.pbs, perm, permWhy: DF.why, vals: [[DF.dp, () => (LOG[DF.dp] != null ? LOG[DF.dp] : PM[DF.dp]), 'mmH2O']] })) return;
+      }
+      /* live test #44: the hypochlorite pumps (STN105 DI only): a status pop-out, FIELD START / STOP for P-0762A (the one the model runs) */
+      if (/^H[UD]/.test(id) && window.LS_FPOP && LS_FPOP.field)
+        return void LS_FPOP.field({
+          n: M.n,
+          t: M.t,
+          d: 'STN105 DI',
+          io: M.io,
+          why: 'Field equipment (local panel HCDSP): the STN105 inputs are running / overload status only, no DCS command.' + (M.fld ? '' : ' This pump has no plant model.'),
+          st: () => (M.fld ? mst(M) : null),
+          fld: M.fld ? on => AN.field(M.fld, on) : null
+        });
       if (!window.LS_FPOP || !c) return go();
       /* SOP section 2: SWP normal current 205 ~ 215 A */
       LS_FPOP.hit({ ...M, cur: () => (LOG[c] != null ? LOG[c] : PM[c]), band: /^SW/.test(id) ? [205, 215] : null }, go);
