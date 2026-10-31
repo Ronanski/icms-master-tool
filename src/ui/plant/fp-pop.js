@@ -579,6 +579,105 @@
     iv = setInterval(tick, 500);
     return true;
   }
+  /* live test #45: a package run by push buttons of a DITL drawing (debris filter S-1502 / S-1504, DITL-39: REMOTE AUTO START / STOP P.B.
+     to the local panel, IN OPERATION back). P = { n, t, d (drawing), io, st: { row, on, off }, pbs: [[label, row, address]],
+     perm: [{ row, l }] (any one = 1), vals: [[tag, fn, unit]] }. Same rows and calls as the dock (LS_DOCK.dout / dpress) */
+  function pb(P) {
+    const dk = D();
+    if (!P || !dk || !P.d || !call(() => dk.dOf(P.d), null)) return false;
+    const s = dk.dOf(P.d);
+    const F = frame(P.n, (P.t || '') + ' · ' + P.d);
+    const lOn = lampEl(P.st.on),
+      lOff = lampEl(P.st.off || 'STOPPED');
+    F.bd.append(row('STATUS', lOn, lOff));
+    const B = P.pbs.map(([l, r, ad]) => {
+      const b = E('button', 'fpo-cmd', l);
+      b.type = 'button';
+      b.title = P.d + ' row ' + r + ' · ' + ad;
+      return b;
+    });
+    F.bd.append(row('DCS', ...B));
+    const why = E('div', 'fpo-why');
+    F.bd.append(why);
+    const ex = E('div', 'fpo-ex'),
+      exT = E('span'),
+      exGo = E('button', 'fpo-go', 'EXECUTE'),
+      exNo = E('button', '', 'CANCEL');
+    exGo.type = exNo.type = 'button';
+    ex.append(exT, exGo, exNo);
+    ex.hidden = true;
+    F.bd.append(ex);
+    let pend = null;
+    const ask = (t, f) => ((pend = f), (exT.textContent = t), (ex.hidden = false), exGo.focus());
+    exNo.onclick = () => ((pend = null), (ex.hidden = true));
+    exGo.onclick = () => {
+      const f = pend;
+      pend = null;
+      ex.hidden = true;
+      if (f) f();
+      setTimeout(tick, 150);
+    };
+    const V = (P.vals || []).map(([tag, f, u]) => {
+      const v = E('span', 'fpo-vb');
+      F.bd.append(row(tag, v, E('small', 'fpo-dim', u || '')));
+      return [v, f];
+    });
+    const ilH = E('div', 'fpo-sh', 'LOGIC PERMISSIVE · ' + P.d + ' (isa lang ang kailangan)'),
+      ilL = E('ul', 'fpo-il');
+    if (P.perm && P.perm.length) F.bd.append(ilH, ilL);
+    const ln = E('div', 'fpo-ln');
+    const link = (t, f) => {
+      const a = E('button', 'fpo-a', t);
+      a.type = 'button';
+      a.onclick = f;
+      ln.append(a);
+    };
+    if (P.io) link('I/O wiring', () => call(() => window.lsInfo(P.io)));
+    link('Logic ' + P.d, () => (close(), call(() => dk.openD(P.d, null))));
+    link('Events', () => call(() => document.getElementById('evbtn').click()));
+    F.bd.append(ln);
+    B.forEach((b, i) => {
+      const [l, r, ad] = P.pbs[i];
+      b.onclick = () =>
+        !b.disabled && ask(P.n + ' ' + l + '?', () => (dk.dpress(P.d, r), call(() => window.lsEventAdd(P.d, 'DCS', 'Operator: ' + P.n + ' ' + l + ' (' + P.d + ' row ' + r + ' · ' + ad + ', faceplate)'))));
+    });
+    let k0 = '';
+    function tick() {
+      if (!box || !box.isConnected) return close();
+      const on = call(() => dk.dout(P.d, P.st.row), null) === 1,
+        run = isRun(),
+        pv = (P.perm || []).map(p => ({ ...p, v: call(() => window.DUI.rowVal(s, p.row), null) })),
+        ok = !pv.length || pv.some(p => p.v === 1);
+      F.lamp.className = 'fpo-lamp ' + (on ? 'run' : 'stop');
+      F.val.textContent = on ? P.st.on : P.st.off || 'STOPPED';
+      lOn.className = 'fpo-lp' + (on ? ' run' : '');
+      lOff.className = 'fpo-lp' + (!on ? ' stop' : '');
+      B[0].disabled = on || !run || !ok;
+      if (B[1]) B[1].disabled = !on || !run;
+      B[0].classList.toggle('lit-run', on);
+      if (B[1]) B[1].classList.toggle('lit-stop', !on);
+      why.textContent = !run ? 'Naka-PAUSE ang oras: ▶ RUN muna (walang kikilos habang naka-PAUSE).' : !ok && !on ? P.pbs[0][0] + ' sarado: walang ' + (P.permWhy || 'permissive') + '.' : '';
+      why.hidden = !why.textContent;
+      for (const [v, f] of V) {
+        const x = call(f, null);
+        v.textContent = x == null || !isFinite(+x) ? '-----' : (+x).toFixed(0);
+      }
+      const k = pv.map(p => p.v).join();
+      if (k !== k0) {
+        k0 = k;
+        ilL.replaceChildren(...pv.map(p => {
+          const li = E('li', ok ? 'ok' : 'bad');
+          li.append(E('i', '', p.v == null ? '-' : String(p.v)), E('span', '', p.l), E('em', '', 'row ' + p.row));
+          return li;
+        }));
+      }
+    }
+    paint = tick;
+    tick();
+    place(box);
+    iv = setInterval(tick, 500);
+    return true;
+  }
   const valveTag = tg => (VALVES[tg] ? valve(VALVES[tg]) : FIELDV[tg] ? fieldValve(FIELDV[tg]) : false);
   /* an HMI page's click on a machine: its faceplate when the motor is known to the logic, else the info card (as before) */
   function hit(M, fallback) {
@@ -602,7 +701,7 @@
     setTimeout(re, 350);
     return !!box;
   }
-  window.LS_FPOP = { motor, valve, valveTag, hit, openAd, place, close, get open() {
+  window.LS_FPOP = { motor, valve, valveTag, pb, hit, openAd, place, close, get open() {
     return !!box;
   } };
 })();
