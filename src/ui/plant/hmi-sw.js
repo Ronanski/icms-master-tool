@@ -922,6 +922,17 @@
       const M = MACH[id],
         c = CUR[id],
         go = () => info(M.io);
+      /* live test #45: the debris filters = the push buttons of DITL-39 (REMOTE AUTO START / STOP P.B. to the local panel; IN OPERATION
+         back; START with any pump of its line running: rows 1 ~ 3 for S-1502), not the wiring card */
+      const DF = {
+        DF1: { pbs: [['AUTO START', 7, 'M.0790'], ['AUTO STOP', 9, 'M.0791']], st: 3, dp: 'DPISW1502', perm: [1, 2, 3], why: 'tumatakbong SWP' },
+        DF2: { pbs: [['AUTO START', 18, 'M.0792'], ['AUTO STOP', 20, 'M.0793']], st: 14, dp: 'DPISW1504', perm: [], why: '' }
+      }[id];
+      if (DF && window.LS_FPOP && LS_FPOP.pb) {
+        const s = window.LS_DOCK && LS_DOCK.dOf(M.d),
+          perm = DF.perm.map(r => ({ row: r, l: String((s && window.DUI && DUI.rowInfo(s, r).svc) || 'row ' + r) }));
+        if (LS_FPOP.pb({ n: M.n, t: M.t, d: M.d, io: M.io, st: { row: DF.st, on: M.on, off: 'STOPPED' }, pbs: DF.pbs, perm, permWhy: DF.why, vals: [[DF.dp, () => (LOG[DF.dp] != null ? LOG[DF.dp] : PM[DF.dp]), 'mmH2O']] })) return;
+      }
       if (!window.LS_FPOP || !c) return go();
       /* SOP section 2: SWP normal current 205 ~ 215 A */
       LS_FPOP.hit({ ...M, cur: () => (LOG[c] != null ? LOG[c] : PM[c]), band: /^SW/.test(id) ? [205, 215] : null }, go);
