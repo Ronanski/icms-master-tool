@@ -2201,7 +2201,7 @@
       if (m) d = m[1];
       else if (d.includes('/')) d = d.split('/').pop();
       d = d.replace(/\s*\bCONTROL(?:LER)?\b.*$/i, '').replace(/\s+/g, ' ').trim().toLowerCase();
-      if (d.length > 36) d = d.slice(0, 36).replace(/\s+\S*$/, '') + '…';
+      /* leader review 2026-10-31: no ellipsis; a long name wraps (was cut at 36 characters with …) */
       return d.replace(/^./, c => c.toUpperCase());
     };
     const own = [];
@@ -2501,7 +2501,7 @@
         L: li('L') || (nL ? dL + ' / ' + nL : ''),
         /* Y / N as on the card and the faceplate (Y complete, N not complete) */
         P: mi ? (mi.run ? 'running' : mi.sby ? 'standby' : mi.miss.length ? 'N' : 'Y') : mis.length ? (pOk ? 'Y' : 'N') : '',
-        S: selA ? (runSel ? 'RUNNING' : mi && mi.sby ? (autoOf(selAd) ? 'STANDBY AUTO' : 'MAN') : '—') : rd ? 'done' : '',
+        S: selA ? (runSel ? 'RUNNING' : mi && mi.sby ? (autoOf(selAd) ? 'STANDBY AUTO' : 'MAN') : 'not started') : rd ? 'done' : '',
         C: rd ? 'done' : li('C') || (W.length ? wOk + ' / ' + W.length + ' OK' : '')
       };
     const cur = els.stg.find(o => !ok[o.k]) || els.stg[els.stg.length - 1];
@@ -2518,7 +2518,14 @@
       o.box.hidden = els.stg.length > 1 && !open;
       o.chip.className = 'gd-chip' + (isOk ? ' ok' : '') + (o === cur && !rd ? ' cur' : '') + (open ? ' open' : '');
       o.chip.firstChild.textContent = isOk ? '✓' : String(j + 1);
-      if (o.cc.textContent !== (cnt[o.k] || '')) o.cc.textContent = cnt[o.k] || '';
+      /* leader review: the Permissive chip as the Y / N of the card (Y red complete, N green not complete), with its word */
+      const ct = cnt[o.k] || '',
+        yn = o.k === 'P' && /^[YN]$/.test(ct);
+      if (o.cc.dataset.k !== ct) {
+        o.cc.dataset.k = ct;
+        if (yn) o.cc.replaceChildren(E('i', { cls: 'gd-yn ' + (ct === 'Y' ? 'y' : 'n'), txt: ct }), ct === 'Y' ? ' complete' : ' not complete');
+        else o.cc.textContent = ct;
+      }
       /* the open stage under a line of chips has no head of its own (its name and count are on the chip); its sub line is the list's */
       o.hd.hidden = els.stg.length > 1;
       o.chip.setAttribute('aria-pressed', String(open));
