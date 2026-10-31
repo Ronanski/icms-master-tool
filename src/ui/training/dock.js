@@ -2244,17 +2244,31 @@
         };
       /* a level of the SOP table is the PV of its controller; a gauge with a DCS loop is that loop's PV; a laboratory value (pH, Fe)
          stays the SOP value */
+      /* live test #49 (CODE FIXER, merged here for one dock.js): the gauges of the SOP that the HMI reads from the plant model (unit.js
+         AN_MU / AN_ACW): section 7 MWP current IIP0709A ~ C and header pressure PIMU0709 (MAKE-UP WATER page), section 8 ACWP current
+         IIP1108A / B (027 page); the running pump */
+      const U0 = (window.AN && AN.unit) || {},
+        mdl =
+          f.si === 6 && /current/i.test(f.t)
+            ? ['IIP0709A ~ C', () => (U0.on ? Math.max(+U0.muI0 || 0, +U0.muI1 || 0, +U0.muI2 || 0) : NaN), 'A']
+            : f.si === 6 && /pressure/i.test(f.t)
+              ? ['PIMU0709', () => (U0.on ? +U0.muP : NaN), 'kg/cm²']
+              : f.si === 7 && /current/i.test(f.t)
+                ? ['IIP1108A / B', () => (U0.on ? Math.max(+U0.acI0 || 0, +U0.acI1 || 0) : NaN), 'A']
+                : null;
       const lvl = /hotwell level/i.test(f.t) ? 'LCV-MU1110' : /deaerator level/i.test(f.t) ? 'LCV-CD1104' : null,
         gauge = /current|pressure|temperature/i.test(f.t),
-        tfp = !lvl && gauge ? tagFp() : null,
-        nomod = !lvl && gauge && !tfp,
+        tfp = !lvl && gauge && !mdl ? tagFp() : null,
+        nomod = !lvl && gauge && !tfp && !mdl,
         /* live test #21 (H6): a field gauge that the step's own values already read from the plant model (SWBP suction / inlet,
            discharge, current of each pump, with their SOP range) is not shown again as "— walang model" */
         kw = /current/i.test(f.t) ? /current/i : /suction|inlet pressure/i.test(f.t) ? /suction/i : /discharge/i.test(f.t) ? /discharge/i : /pressure/i.test(f.t) ? /suction|discharge|pressure/i : null;
       if (nomod && s.w && kw && stage.some(x => x[2] && kw.test(x[0]))) continue;
       const live = lvl
         ? () => call(() => LV().pvOf(LV().fp(lvl)), NaN)
-        : tfp
+        : mdl
+          ? mdl[1]
+          : tfp
           ? () => call(() => LV().pvOf(tfp), NaN)
           : /* live test #47: an SOP limit with no DCS value is read in the field (was "— walang model" or the SOP text shown as the value) */
             () => 'FIELD';
@@ -2262,9 +2276,9 @@
         /* live test #47: the name of what is read (no "SOP ·" and no SOP sentence as the value); a field gauge with no DCS value is FIELD */
         u1(nm.replace(/\.$/, '')).replace(/^./, c => c.toUpperCase()),
         live,
-        lvl ? 'mm' : tfp ? un : '',
+        lvl ? 'mm' : mdl ? mdl[2] : tfp ? un : '',
         x => (typeof x === 'number' ? (Math.abs(x) < 10 ? x.toFixed(2).replace(/0$/, '') : f1(x)) : x),
-        [f.g ? u1(f.g) : '', 'SOP ' + lm[0], lm.slice(1).join(' · '), !lvl && !tfp ? 'field gauge' : ''].filter(Boolean).join(' · ')
+        [mdl ? mdl[0] : f.g ? u1(f.g) : '', 'SOP ' + lm[0], lm.slice(1).join(' · '), !lvl && !tfp && !mdl ? 'field gauge' : ''].filter(Boolean).join(' · ')
       ]);
     }
     /* user G 2026-10-31 (live test #46 #47, "iwasan ang acronym"): each value as name (tag small under it) · value unit · band · ✓ / ! */
@@ -3048,7 +3062,7 @@
             E('button', {
               type: 'button',
               cls: 'gd-fix',
-              txt: 'FIELD: ' + (f.want ? (/\bREMOTE\b/.test(nm) ? 'I-REMOTE' : 'set ' + nm) : nm + ' = OFF'),
+              txt: 'FIELD: ' + (f.want ? (/\bREMOTE\b/.test(nm) ? 'to REMOTE' : 'set ' + nm) : nm + ' = OFF'),
               title: 'Field operator (AO): ' + dName(f.s) + ' row ' + rws + ' (' + nm + ') = ' + (f.want ? 1 : 0),
               on: () => {
                 fieldSet(q.L);
@@ -3247,7 +3261,12 @@
       } catch (e) {}
       return;
     }
+    trainBtn(g);
     if (!g || !g.on || !dock) return;
+    /* live test #60 (the dock was gone after a sheet opened from the search, the Training button off screen): while the Training runs
+       and is not hidden by the operator, the dock comes back; a page scrolled by a list (scrollIntoView) is put back at 0 */
+    if (!isMin() && (dock.hidden || !/\bgd-(side|bottom)\b/.test(document.documentElement.className))) layout();
+    for (const x of [document.documentElement, document.body]) if (x.scrollLeft || x.scrollTop) (x.scrollLeft = 0), (x.scrollTop = 0);
     try {
       g.scan();
     } catch (e) {}
@@ -3261,6 +3280,25 @@
       tabB.textContent = 'Training · ' + Math.min(g.cur + 1, L.length) + ' / ' + L.length;
     }
   }, 500);
+  /* user G 2026-10-31 (live test #60): "▶ Training · Step n" in the top bar beside Events while the Training runs and its panel is
+     hidden: one press brings the panel back at the same step (the side tab did the same, at the edge of the screen) */
+  let trainH = null;
+  function trainBtn(g) {
+    const on = !!(g && g.on && dock && (isMin() || dock.hidden)),
+      ev = document.getElementById('evbtn');
+    if (!trainH && on && ev && ev.parentNode) {
+      trainH = E('button', { type: 'button', id: 'gdtrb', cls: 'b', title: 'Show the Training panel', on: () => (ls.set('ls-gdock-min', false), layout(), fill(true)) });
+      ev.after(trainH);
+    }
+    if (!trainH) return;
+    trainH.hidden = !on;
+    if (tabB) tabB.classList.toggle('gd-hide', on);
+    if (on) {
+      const L = g.steps(),
+        t = '▶ Training ' + Math.min(g.cur + 1, L.length) + ' / ' + L.length;
+      if (trainH.textContent !== t) trainH.textContent = t;
+    }
+  }
   /* the speed chosen in the panel is kept */
   setInterval(() => {
     if (dock && GD() && GD().on && window.AN) ls.set('ls-gdock-spd', +AN.spd || 1);
