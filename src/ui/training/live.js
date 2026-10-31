@@ -11,6 +11,19 @@
    Read only: nothing here writes the engine. A condition names its signals; a signal that is not on any ABC sheet makes the step a
    field step (and is listed by LS_LIVE.audit() for the test). ===== */
 window.LS_LIVE = (function () {
+  /* live test #63 #66: two readings of the generated SOP data (pr-ope-5002.js / -lim.js, extracted from the docx as written):
+     - the procedure is written for both units with "n" for the unit number (P-n941, V-LOn201, T-n920, H-n921A/B, P-n922A/B): this is
+       unit #1 (HMI 036 P-1941, T-1920, H-1921A);
+     - 16.1 "Verify that Main Oil Pump is running within normal pressure" has "≤ 5.6 kg/cm2g" in its limit column: that is the auto
+       start of the standby MOP (the NOTE of 16.5 "discharge pressure ≤ 5.6 kg/cm2g"); the normal band is 5.6 ~ 6.6 (14.9 P-n922A/B
+       "~5.6 kg/cm2g -6.6 kg/cm2g") */
+  {
+    const un = x => (typeof x === 'string' ? x.replace(/\b([A-Z]{1,2}-(?:[A-Z]{2})?)n(\d{3})/g, '$11$2') : x);
+    for (const sec of window.LS_PROC5002 || []) for (const st of sec.s || []) (st.t = un(st.t)), (st.g = (st.g || []).map(un));
+    const LIM = window.LS_PROC5002_LIM || {};
+    for (const k in LIM) for (const f of ['g', 'n', 'x']) if (LIM[k][f]) LIM[k][f] = un(LIM[k][f]);
+    if (LIM['15.0'] && /5\.6/.test(LIM['15.0'].n || '')) LIM['15.0'].n = '5.6 ~ 6.6 kg/cm2g (≤ 5.6 = auto start of the standby MOP)';
+  }
   const PROC = window.LS_PROC5002 || [];
   const BASE_N = PROC.length;
   /* ---------- reading the running plant ---------- */
@@ -426,7 +439,23 @@ window.LS_LIVE = (function () {
     [14, /^Start the Vapour Extractor/i, TCSR('vex', 'Vapour extractor')],
     [14, /^Start one of the Main Oil Pump/i, TCSR('lop', 'Main oil pump MOP')],
     [15, /^Start the Oil Purifier Pump/i, FIELD('pur', 'Oil purifier pump')],
-    [16, /^Verify that Main Oil Pump is running/i, TCSR('lop', 'Main oil pump MOP')],
+    /* live test #66: running AND within the normal band 5.6 ~ 6.6 kg/cm2g (was: running only) */
+    [
+      16,
+      /^Verify that Main Oil Pump is running/i,
+      DC(
+        'Main oil pump MOP running, lube oil 5.6 ~ 6.6 kg/cm2g',
+        () => {
+          const x = AN.tcs && AN.tcs(),
+            p = x && x.oil ? +x.oil.lube : NaN;
+          return !!(x && x.aux && x.aux.lop) && p >= 5.6 && p <= 6.6;
+        },
+        () => {
+          const x = AN.tcs && AN.tcs();
+          return 'MOP ' + (x && x.aux && x.aux.lop ? 'RUNNING' : 'STOPPED') + ' · lube oil ' + f1(x && x.oil ? +x.oil.lube : NaN) + ' kg/cm2g';
+        }
+      )
+    ],
     [16, /^Start one of the Control Oil Pump/i, TCSR('eh', 'Control oil pump COP')],
     /* live test #71: the biasing dampers (ABC-020 hand stations; 10 % = the lowest DCS position, ML of the parameter sheet) */
     [17, /^Ensure biasing dampers are closed/i, ALL(MV('HICHR1002A', null, 12), MV('HICHR1002B', null, 12))],
