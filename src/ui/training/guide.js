@@ -552,7 +552,7 @@ window.LS_GUIDE = (function () {
         need: 1,
         field: [12],
         t: 'Pre-start check ng turbine lube at control oil; TICLO1002 sa AUTO',
-        d: 'Gawin: ilagay sa AUTO ang lube oil temperature control TICLO1002 (valve TCVCW1201), tapos pindutin ang "Tapos na ito sa field" kapag tapos ang check. Ang "change mode to Remote" ng SOP: sa drawing ABC-053 walang REMOTE (.REM) ang TICLO1002, kaya ang DCS ang humahawak sa AUTO. Ang TCVCW1201 ang nagpapadaan ng cooling water sa lube oil cooler: sa REMOTE, ang DCS ang humahawak ng oil outlet temperature (average 46 °C, cooling water inlet hanggang 37 °C). Bago paandarin ang oil pumps: puno ang main oil tank (T-n920), sarado ang drains (V-LOn021 / 032), at walang alarm sa TCS.',
+        d: 'Gawin: ilagay sa AUTO ang lube oil temperature control TICLO1002 (valve TCVCW1201), tapos pindutin ang "Tapos na ito sa field" kapag tapos ang check. Ang "change mode to Remote" ng SOP: sa drawing ABC-053 walang REMOTE (.REM) ang TICLO1002, kaya ang DCS ang humahawak sa AUTO. Ang TCVCW1201 ang nagpapadaan ng cooling water sa lube oil cooler: sa REMOTE, ang DCS ang humahawak ng oil outlet temperature (average 46 °C, cooling water inlet hanggang 37 °C). Bago paandarin ang oil pumps: puno ang main oil tank (T-1920), sarado ang drains (V-LO1021 / 032), at walang alarm sa TCS.',
         c: C('TICLO1002 (TCVCW1201) hawak ng DCS (AUTO)', () => /AUTO|REM/.test(md('TICLO1002')), () => 'TICLO1002 ' + md('TICLO1002')),
         fps: ['TICLO1002'],
         a: [btn('A (AUTO) TICLO1002 · TCVCW1201', () => A.auto('TICLO1002'), () => /AUTO|REM/.test(md('TICLO1002')))],
@@ -563,12 +563,12 @@ window.LS_GUIDE = (function () {
         sec: 14,
         field: [13],
         t: 'Simulan ang vapour extractor at ang main oil pump (MOP) sa TCS',
-        d: 'Gawin: START ang vapour extractor, tapos START ang isang main oil pump (MOP, P-n922A/B) sa TCS panel. Ang vapour extractor ang humihigop ng singaw ng langis sa main oil tank (vacuum −20 ~ −50 mmH₂O sa PGLO1920). Ang MOP ang nagbibigay ng lube oil (5.6 ~ 6.6 kg/cm²g) sa bearings ng turbine at generator; kailangan ito bago ang turning gear. Bearing oil (PGLO1008) dapat > 1.05 kg/cm²g: sa ≤ 1.05 aandar ang emergency oil pump (EOP).',
+        d: 'Gawin: START ang vapour extractor, tapos START ang isang main oil pump (MOP, P-1922A/B) sa TCS panel. Ang vapour extractor ang humihigop ng singaw ng langis sa main oil tank (vacuum −20 ~ −50 mmH₂O sa PGLO1920). Ang MOP ang nagbibigay ng lube oil (5.6 ~ 6.6 kg/cm²g) sa bearings ng turbine at generator; kailangan ito bago ang turning gear. Bearing oil (PGLO1008) dapat > 1.05 kg/cm²g: sa ≤ 1.05 aandar ang emergency oil pump (EOP).',
         c: C('Vapour extractor at MOP tumatakbo (TCS)', () => !!(TC().aux.vex && TC().aux.lop), () => 'vapour extractor ' + (TC().aux.vex ? 'RUNNING' : 'STOPPED') + ', MOP ' + (TC().aux.lop ? 'RUNNING' : 'STOPPED')),
         a: [btn('START vapour extractor (TCS)', () => A.tcs('vex', 1), () => !!TC().aux.vex), btn('START main oil pump MOP (TCS)', () => A.tcs('lop', 1), () => !!TC().aux.lop)],
         w: [
           ['MOT vacuum', () => (TC().oil || {}).vac, 'mmH₂O', f1, 'PGLO1920 · −20 ~ −50'],
-          ['Lube oil pressure', () => (TC().oil || {}).lube, 'kg/cm²g', f1, 'P-n922 · 5.6 ~ 6.6'],
+          ['Lube oil pressure', () => (TC().oil || {}).lube, 'kg/cm²g', f1, 'P-1922 · 5.6 ~ 6.6'],
           ['Bearing oil pressure', () => (TC().oil || {}).brg, 'kg/cm²g', x => (isFinite(x) ? (+x).toFixed(2) : '—'), 'PGLO1008 · > 1.05']
         ]
       },
@@ -577,22 +577,22 @@ window.LS_GUIDE = (function () {
         sec: 15,
         field: [14],
         t: 'Simulan ang oil purifier pump (local)',
-        d: 'Gawin: i-drain ang tubig (V-LO1223), buksan ang inlet valves (V-LOn201, V-LOn205), tapos START ang oil purifier pump (P-n941) sa local panel. Nililinis ng purifier ang lube at control oil (tubig at dumi); discharge pressure mga 2.96 kg/cm². Puwede itong tumakbo nang tuloy-tuloy o paminsan-minsan.',
+        d: 'Gawin: i-drain ang tubig (V-LO1223), buksan ang inlet valves (V-LO1201, V-LO1205), tapos START ang oil purifier pump (P-1941) sa local panel. Nililinis ng purifier ang lube at control oil (tubig at dumi); discharge pressure mga 2.96 kg/cm². Puwede itong tumakbo nang tuloy-tuloy o paminsan-minsan.',
         c: C('Oil purifier pump running (local)', () => fstate('pur'), () => 'Oil purifier pump ' + (fstate('pur') ? 'RUNNING' : 'STOPPED')),
         a: [fldB('pur', 'oil purifier pump')],
-        w: [['Oil purifier pump', () => (fstate('pur') ? 'RUNNING' : 'STOPPED'), '', x => x, 'P-n941'], ['Purifier discharge', () => (fstate('pur') ? 2.96 : 0), 'kg/cm²', f1, '~ 2.96']]
+        w: [['Oil purifier pump', () => (fstate('pur') ? 'RUNNING' : 'STOPPED'), '', x => x, 'P-1941'], ['Purifier discharge', () => (fstate('pur') ? 2.96 : 0), 'kg/cm²', f1, '~ 2.96']]
       },
       {
         st: 0,
         sec: 16,
         field: [15],
         t: 'Simulan ang control oil pump (COP) sa TCS',
-        d: 'Gawin: kapag normal ang lube oil pressure ng MOP, START ang isang control oil pump (COP, P-n931A/B) sa TCS panel. Ang control oil (133 ~ 163 kg/cm²g) ang nagpapagalaw sa MSV, RSV, CV at ICV ng turbine; kailangan ito bago ang ATS. Ang mga pump sa AUTO ay kusang aandar: MOP kapag ≤ 5.6, COP kapag ≤ 133, EOP kapag bearing oil ≤ 1.05.',
+        d: 'Gawin: kapag normal ang lube oil pressure ng MOP, START ang isang control oil pump (COP, P-1931A/B) sa TCS panel. Ang control oil (133 ~ 163 kg/cm²g) ang nagpapagalaw sa MSV, RSV, CV at ICV ng turbine; kailangan ito bago ang ATS. Ang mga pump sa AUTO ay kusang aandar: MOP kapag ≤ 5.6, COP kapag ≤ 133, EOP kapag bearing oil ≤ 1.05.',
         c: C('Control oil pump COP tumatakbo (TCS)', () => !!TC().aux.eh, () => 'COP ' + (TC().aux.eh ? 'RUNNING' : 'STOPPED')),
         a: [btn('START control oil pump COP (TCS)', () => (TC().aux.lop ? A.tcs('eh', 1) : ''), () => !!TC().aux.eh)],
         w: [
-          ['Control oil pressure', () => (TC().oil || {}).ctl, 'kg/cm²g', f1, 'P-n931 · 133 ~ 163'],
-          ['Lube oil pressure', () => (TC().oil || {}).lube, 'kg/cm²g', f1, 'P-n922 · 5.6 ~ 6.6']
+          ['Control oil pressure', () => (TC().oil || {}).ctl, 'kg/cm²g', f1, 'P-1931 · 133 ~ 163'],
+          ['Lube oil pressure', () => (TC().oil || {}).lube, 'kg/cm²g', f1, 'P-1922 · 5.6 ~ 6.6']
         ]
       },
       { st: 0, sec: 17, t: 'Simulan ang rotary air pre-heater (DITL-43)', d: 'Gawin: FIELD NOT TRIP kapag may ✕ sa interlock, saka START ng air preheater (DITL-43). Ang air preheater ay umiikot na rotor (Ljungstrom) na nagpapainit ng PA at SA gamit ang flue gas. Pinapaandar ito bago ang mga fan para pantay ang init ng rotor at hindi ito mabaluktot. Hindi ito aandar kapag walang AIR PREHEATER NOT TRIP (I.0651, DITL-43 row 5) o kapag LOCAL ang switch sa field.', c: runC('Air preheater running (DITL-43)', ['DITL-43']), a: [dmot('DITL-43', 'air preheater')], field: [16], w: [['Air preheater', () => (dRun('DITL-43') === 1 ? 'RUNNING' : 'STOPPED'), '', x => x, 'DITL-43 out 3'], ['RH biasing damper HICHR1002A MV', () => mv('HICHR1002A'), '%', f1w, 'SOP 17.1 closed (min 10)'], ['SH biasing damper HICHR1002B MV', () => mv('HICHR1002B'), '%', f1w, 'SOP 17.1 closed (min 10)']] },
