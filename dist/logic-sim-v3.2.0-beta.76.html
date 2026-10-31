@@ -30040,7 +30040,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.76';
-      c3.textContent += ' · build 2f48046'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 8a14e9d'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -53491,12 +53491,16 @@ html.gd-menu #gdock .gd-prog{display:none!important}
       rl = relays([...io.map(x => x.st + '|' + x.a), ...io.filter(x => x.r.tag).map(x => 'T|' + x.r.tag), 'T|' + q, ...(stn ? [stn + '|' + q] : ['1', '2', '3', '4', '5'].map(st => st + '|' + q))]);
     if (!oc.length && !dp.length && !io.length && !wr.length && !cp.length && !rl.length) return false;
     close();
-    const tag = oc.length ? oc[0].nm : raw.trim();
-    let desc = '';
-    for (const o of oc) {
-      desc = (AN.descOf && AN.descOf(o.sh, o.nm)) || '';
-      if (desc) break;
-    }
+    /* live test #40: an address opened for one station (an HMI value: 2|AI0549 = PT-SB1040) is titled by that station's I/O list line,
+       not by a sheet of another station that has the same address (STN103 AI0549 = ZT-FA1010) */
+    const own = stn && io.length && io[0].r.tag ? io[0].r : null;
+    const tag = own ? own.tag : oc.length ? oc[0].nm : raw.trim();
+    let desc = own ? own.d || '' : '';
+    if (!own)
+      for (const o of oc) {
+        desc = (AN.descOf && AN.descOf(o.sh, o.nm)) || '';
+        if (desc) break;
+      }
     const body = E('div', { cls: 'icb' });
     card = E('div', { id: 'infocard' }, [
       E('div', { cls: 'ich' }, [
@@ -59826,7 +59830,8 @@ window.LS_GUIDE = (function () {
       /* #7 (live test 2: still on the condenser drawing at H5 and under the MWP-A label at H8): the text of every HMI svg (the HSYM pages are
          svg of their own), the equipment drawings (closed shapes smaller than a quarter of the page, not the pipes), more places to try,
          and an outline tag (no fill) when no place is free */
-      TX = X.length && svg ? [...mid.querySelectorAll('svg text')].map(t => t.getBoundingClientRect()).filter(r => r.width > 0).map(r => [r.left - m.left, r.top - m.top, r.right - m.left, r.bottom - m.top]) : [],
+      /* #7 (live test 3: on the page tabs of 030 and on the INSTRUMENT AIR title): the page tabs, bars and buttons of the HMI area too */
+      TX = X.length && svg ? [...mid.querySelectorAll('svg text, nav, button, [role=tab], .hs-tab')].map(t => t.getBoundingClientRect()).filter(r => r.width > 0).map(r => [r.left - m.left, r.top - m.top, r.right - m.left, r.bottom - m.top]) : [],
       EQ = X.length
         ? [...mid.querySelectorAll('svg rect, svg circle, svg ellipse, svg polygon')]
             .map(e => e.getBoundingClientRect())
@@ -59853,7 +59858,13 @@ window.LS_GUIDE = (function () {
         [r0[0] + (r0[2] - tw) / 2, r0[1] - 3 * th - 3],
         [r0[0] + (r0[2] - tw) / 2, r0[1] + r0[3] + 2 * th + 3]
       ].find(([x, y]) => free(x, y)),
-      at = at0 || [r0[0], r0[1] - th - 1];
+      /* no free place: the one that covers the fewest texts (not always the top of the box) */
+      hits = (x, y) => TX.filter(t => t[0] < x + tw && t[2] > x && t[1] < y + th && t[3] > y).length * 3 + EQ.filter(t => t[0] < x + tw && t[2] > x && t[1] < y + th && t[3] > y).length,
+      at =
+        at0 ||
+        [[r0[0], r0[1] - th - 1], [r0[0], r0[1] + r0[3] + 1], [r0[0] - tw - 2, r0[1]], [r0[0] + r0[2] + 2, r0[1]]]
+          .filter(([x, y]) => x >= 0 && y >= 0 && x + tw <= m.width && y + th <= m.height)
+          .sort((a, b) => hits(...a) - hits(...b))[0] || [Math.max(0, r0[0]), Math.max(0, r0[1] - th - 1)];
     ov.replaceChildren(
       ...X.map(r => E('div', { cls: 'gd-hlb', style: 'left:' + r[0] + 'px;top:' + r[1] + 'px;width:' + r[2] + 'px;height:' + r[3] + 'px' })),
       ...(X.length ? [E('b', { cls: 'gd-hlt' + (at0 ? '' : ' ol'), txt: tl, style: 'left:' + Math.round(at[0]) + 'px;top:' + Math.round(at[1]) + 'px' })] : [])
@@ -64922,6 +64933,8 @@ body.ophmi #anp{display:none!important}
 #plantws .pldraft{flex:1;font:600 10.5px var(--uf,sans-serif);letter-spacing:.1em;color:#ffd27a;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #plantws .plbar .b{height:24px;padding:0 10px;border-radius:3px;background:var(--c-pane);border:1px solid var(--c-line);color:var(--c-tx2)}
 #plsvg text{pointer-events:none}
+/* live test #48: the name of a machine opens its faceplate as its symbol does (one hit for the name and the symbol) */
+#plsvg text[data-hit]{pointer-events:auto;cursor:pointer}
 #plsvg{flex:1;width:100%;min-height:0;background:#06090c;touch-action:none;cursor:grab}
 #plantws .pltb{display:flex;flex-direction:column}
 #plantws .plr{display:grid;grid-template-columns:1fr auto 26px;gap:6px;padding:3px 2px;border-bottom:1px solid var(--c-line);align-items:baseline}
@@ -65543,6 +65556,8 @@ window.PLANT_SYS = [
   };
   const R = (x, y, w, h, f, o) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}"${o == null ? ` stroke="${C.ol}" stroke-width="${C.olw}"` : o}/>`;
   const P = (d, f, o) => `<path d="${d}" fill="${f}"${o == null ? ` stroke="${C.ol}" stroke-width="${C.olw}"` : o}/>`;
+  /* live test #70: the text of the page takes no click (plant.css), so a label that opens a faceplate gets a clear hit rect over it */
+  const HIT = (x, y, w, h, at) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#000" fill-opacity="0" style="cursor:pointer" ${at}/>`;
   const NAME = (x, y, s, a, sub) => T(x, y, s, { z: 10, b: 700, c: C.name, a: a || 'middle', ls: 0.6 }) + (sub ? T(x, y + 11, sub, { z: 8, c: C.dim, a: a || 'middle' }) : '');
   /* serpentine tube bank */
   const bankPath = b => {
@@ -65858,7 +65873,9 @@ window.PLANT_SYS = [
     s += `<rect x="${x + w - 2}" y="${y + 40}" width="12" height="26" rx="2" fill="${S.C.none}" stroke="${k.shellOl}" stroke-width="1" data-aphm="1"/>` + T(x + w + 4, y + 56, 'M', { z: 7, b: 700, c: k.dark ? '#e6ebef' : '#26303a', a: 'middle' });
     /* R9 #87: the run state of the main drive (DITL-43), as the fans: red RUNNING, green STOPPED */
     s += T(x + w - 8, y + 9.5, '-----', { z: 7.5, b: 700, c: S.C.none, a: 'end', ls: 0.4, k: 'aphst' }); /* in the hot end strip (left of the box: the PAF faceplate) */
-    return s + NAME(1012, 730, 'AIR PREHEATER  H-1052', 'end') + T(1012, 741, 'Ljungstrom rotary: PA / SA / gas', { z: 7.5, c: S.C.dim, a: 'end' });
+    s += NAME(1012, 730, 'AIR PREHEATER  H-1052', 'end') + T(1012, 741, 'Ljungstrom rotary: PA / SA / gas', { z: 7.5, c: S.C.dim, a: 'end' });
+    /* #70: a click on the rotor, the drive motor or the name = the faceplate of the main drive (DITL-43) */
+    return s + HIT(x, y, w + 12, h, 'data-aphh="1"') + HIT(1012 - 136, 719, 136, 25, 'data-aphh="1"');
   }
   function esp(S) {
     const k = S.sk;
@@ -65869,7 +65886,8 @@ window.PLANT_SYS = [
     for (const x of [1348, 1390, 1432]) s += `<line x1="${x}" y1="758" x2="${x}" y2="842" stroke="${k.shellOl}" stroke-width="1.4"/>`;
     /* live test 2026-10-30 #18: the ESP purge air heater H-1201 and fan F-1201 (PR-OPE-5002 section 1, EP PLC panel, no DCS signal): status
        of the field equipment (Training: from "Simulan ang 6 h purge"; 150 MW: in service) and the purge time */
-    s += T(1390, 736, 'PURGE AIR HTR H-1201 / FAN F-1201 · EP PLC (field)', { z: 7.5, c: S.C.dim, a: 'middle' }) + T(1390, 724, '-----', { z: 8, b: 700, c: S.C.none, a: 'middle', ls: 0.4, k: 'espst' });
+    /* live test #40: right of the ESP, between it and the stack (over the PISB1040 / PISB1042 boxes it covered their values) */
+    s += T(1494, 746, '-----', { z: 8, b: 700, c: S.C.none, ls: 0.4, k: 'espst' }) + T(1494, 757, 'PURGE AIR HTR H-1201', { z: 7.5, c: S.C.dim }) + T(1494, 767, 'PURGE FAN F-1201', { z: 7.5, c: S.C.dim }) + T(1494, 777, 'EP PLC (field)', { z: 7.5, c: S.C.dim });
     return s + NAME(1390, 750, 'ESP  Z-1010', 'middle');
   }
   function stack(S) {
@@ -65914,23 +65932,23 @@ window.PLANT_SYS = [
       mx = hx - 46;
       my = cy - 9;
       s += `<rect x="${mx - 30}" y="${my - 2}" width="34" height="22" rx="3" fill="${C.eq}" stroke="${C.ol}" stroke-width="1.1"/><rect x="${mx - 27}" y="${my + 1}" width="28" height="16" rx="2" fill="${C.none}" data-mot="${i}"/>` + T(mx - 13, my + 13, 'M', { z: 8, b: 700, c: '#fff', a: 'middle' });
-      return s + T(cx, cy + r + 13, f.name, { z: 9.5, b: 700, c: C.name, a: 'middle', ls: 0.4 });
+      return s + T(cx, cy + r + 13, f.name, { z: 9.5, b: 700, c: C.name, a: 'middle', ls: 0.4 }) + HIT(cx - 40, cy + r + 2, 80, 15, `data-fl="${i}"`);
     }
     if (f.small) {
       s += `<line x1="${cx}" y1="${cy + r}" x2="${cx}" y2="${cy + r + 6}" stroke="${C.eqIn}" stroke-width="2"/><rect x="${cx - 9}" y="${cy + r + 6}" width="18" height="11" rx="2" fill="${C.eq}" stroke="${C.ol}" stroke-width="1"/><rect x="${cx - 7}" y="${cy + r + 8}" width="14" height="7" rx="1" fill="${C.none}" data-mot="${i}"/>`;
       const [n1, n2] = f.name.split('  ');
-      return s + T(cx + r + 4, cy - 2, n1, { z: 8, b: 700, c: C.name }) + T(cx + r + 4, cy + 8, n2, { z: 7, c: C.dim });
+      return s + T(cx + r + 4, cy - 2, n1, { z: 8, b: 700, c: C.name }) + T(cx + r + 4, cy + 8, n2, { z: 7, c: C.dim }) + HIT(cx + r + 2, cy - 11, 40, 22, `data-fl="${i}"`);
     }
     s += `<line x1="${cx + r}" y1="${cy + 8}" x2="${mx}" y2="${cy + 8}" stroke="${C.eqIn}" stroke-width="2"/>`;
     s += `<rect x="${mx}" y="${my + 8}" width="24" height="13" rx="2" fill="${C.eq}" stroke="${C.ol}" stroke-width="1.1"/>`;
     s += `<rect x="${mx + 2}" y="${my + 10}" width="20" height="9" rx="1" fill="${C.none}" data-mot="${i}"/>` + T(mx + 12, my + 17.5, 'M', { z: 7.5, b: 700, c: '#fff', a: 'middle' });
-    return s + T(cx, cy + r + 13, f.name, { z: 9, b: 700, c: C.name, a: 'middle', ls: 0.4 });
+    return s + T(cx, cy + r + 13, f.name, { z: 9, b: 700, c: C.name, a: 'middle', ls: 0.4 }) + HIT(cx - 38, cy + r + 2, 76, 15, `data-fl="${i}"`);
   }
   /* damper: blades turned by the real position (across the flow = closed, along = open); click = its controller's faceplate */
   function damper(d, i) {
     let s = `<g data-dmp="${i}" style="cursor:pointer">`;
     if (d.hor) {
-      s += `<rect x="${d.x - d.len / 2}" y="${d.y - 8}" width="${d.len}" height="16" fill="#000" fill-opacity="0"/>`;
+      s += `<rect x="${d.x - d.len / 2}" y="${d.y - 8}" width="${d.len}" height="32" fill="#000" fill-opacity="0"/>`; /* #70: down to the tag / value under the blades */
       for (let k = 0; k < 4; k++) {
         const bx = d.x - d.len / 2 + 14 + k * 28;
         s += `<line x1="${bx - 11}" y1="${d.y}" x2="${bx + 11}" y2="${d.y}" stroke="${C.blade}" stroke-width="2.2" stroke-linecap="round" data-bl="${bx} ${d.y}"/><circle cx="${bx}" cy="${d.y}" r="1.3" fill="${C.bg}"/>`;
@@ -65938,7 +65956,7 @@ window.PLANT_SYS = [
       s += `<text x="${d.x}" y="${d.y + 19}" font-family="${MF}" font-size="8.5" fill="${C.none}" text-anchor="middle" data-dv="${i}">-----</text>`;
     } else {
       const w = d.w;
-      s += `<rect x="${d.x - 8}" y="${d.y - w / 2 - 16}" width="16" height="${w + 18}" fill="#000" fill-opacity="0"/>`;
+      s += `<rect x="${d.x - 18}" y="${d.y - w / 2 - 16}" width="36" height="${w + 32}" fill="#000" fill-opacity="0"/>`; /* #70: with the value under it */
       s += R(d.x - 4, d.y - w / 2 - 2, 8, w + 4, 'none', ` stroke="${C.eqIn}" stroke-width="1.2"`);
       s += `<line x1="${d.x}" y1="${d.y - w / 2 + 1}" x2="${d.x}" y2="${d.y + w / 2 - 1}" stroke="${C.blade}" stroke-width="2.2" stroke-linecap="round" data-bl="${d.x} ${d.y}"/><circle cx="${d.x}" cy="${d.y}" r="1.4" fill="${C.bg}" stroke="${C.blade}" stroke-width="0.8"/>`;
       s += `<line x1="${d.x}" y1="${d.y - w / 2 - 2}" x2="${d.x}" y2="${d.y - w / 2 - 8}" stroke="${C.eqIn}" stroke-width="1.2"/>` + R(d.x - 6, d.y - w / 2 - 15, 12, 7, C.eq, ` stroke="${C.ol}" stroke-width="1"`);
@@ -66063,7 +66081,7 @@ window.PLANT_SYS = [
     FANS.forEach((f, i) => {
       s += T(x, y + 10, f.name, { z: 9.5, c: C.lab }) + num('fa' + i, x + w - 92, y + 10.5, 10.5) + T(x + w - 89, y + 10, 'A', { z: 8, c: C.unit });
       s += `<circle cx="${x + w - 72}" cy="${y + 7}" r="3.5" fill="${C.none}" data-k="fd${i}"/>` + T(x + w, y + 10, '-----', { z: 8.5, b: 700, c: C.none, a: 'end', ls: 0.4, k: 'ft' + i });
-      s += `<title>${esc(f.name + ' · motor current ' + AMP[i] + ' (plant estimate) · run state from the DCS logic')}</title>`;
+      s += `<rect x="${x - 2}" y="${y - 2}" width="${w + 4}" height="17" fill="#000" fill-opacity="0" style="cursor:pointer" data-fl="${i}"><title>${esc(f.name + ' · motor current ' + AMP[i] + ' (plant estimate) · run state from the DCS logic · click = faceplate')}</title></rect>`;
       y += 19;
     });
     y += 10;
@@ -66215,8 +66233,8 @@ window.PLANT_SYS = [
       body.append(ti);
       /* 3.2.0-beta.74: a click on a fan = its pop-out faceplate beside it (fp-pop.js: the motor drawing of its running memory M.33xx) */
       const M = { n: f.name.split(/\s+/)[0], t: f.tag.split(' ')[0], ad: FANAD[i] };
-      /* the casing, the impeller and the motor are separate shapes: a click on any of them */
-      for (const el of [body, imp, mot])
+      /* the casing, the impeller and the motor are separate shapes: a click on any of them, on its name or on its row of the FANS panel (#70) */
+      for (const el of [body, imp, mot, ...pg.querySelectorAll(`[data-fl="${i}"]`)])
         if (el)
           el.addEventListener(
             'click',
@@ -66266,6 +66284,22 @@ window.PLANT_SYS = [
         },
         body
       );
+      /* live test #70: the APH had no faceplate (click and the dock's "Buksan ang faceplate" did nothing): the motor pop-out of its drawing
+         DITL-43 (status, FIELD selector, START / STOP, the logic permissive), as the fans */
+      const M = { n: 'APH', t: 'H-1052', ad: 'DITL-43' },
+        hits = [...pg.querySelectorAll('[data-aphh]')];
+      for (const el of [mot, ...hits])
+        el.addEventListener(
+          'click',
+          e => {
+            if (!window.LS_FPOP) return;
+            e.stopPropagation();
+            LS_FPOP.hit(M, null);
+          },
+          true
+        );
+      if (mot) mot.style.cursor = 'pointer';
+      (window.LS_FPREG = window.LS_FPREG || {})[M.ad] = { open: () => LS_FPOP.hit(M, null), el: () => hits[0] || mot };
     }
     /* fan motor currents (plant estimate) */
     ['IIF1053', 'IIF1054', 'IIF1056', 'IIF1055A', 'IIF1055B'].forEach((tg, i) => {
@@ -66706,8 +66740,8 @@ window.PLANT_SYS = [
       const M = MACH[id],
         a = `text-anchor="${anchor || 'start'}"`;
       return (
-        T(x, y, M.n, 'sw11', a) +
-        T(x, y + 12, M.t, 'sw9', a) +
+        T(x, y, M.n, 'sw11', `${a} data-hit="${id}"`) + /* #48: the name opens what the symbol opens */
+        T(x, y + 12, M.t, 'sw9', `${a} data-hit="${id}"`) +
         T(x, y + 24, '-----', 'sw9b', `${a} data-st="${id}"`) +
         T(x, y + 36, esc(M.d), 'sw8', a)
       );
@@ -66813,8 +66847,8 @@ window.PLANT_SYS = [
         `<ellipse cx="${x}" cy="200" rx="18" ry="5" fill="url(#swmt)" ${OL}/><rect x="${x - 24}" y="260" width="48" height="5" fill="${S.none}" data-lamp="${id}"/></g>`
       );
       o.push(
-        T(x - 6, 180, MACH[id].n, 'sw11', 'text-anchor="middle"') +
-          T(x - 6, 192, MACH[id].t, 'sw9', 'text-anchor="middle"')
+        T(x - 6, 180, MACH[id].n, 'sw11', `text-anchor="middle" data-hit="${id}"`) +
+          T(x - 6, 192, MACH[id].t, 'sw9', `text-anchor="middle" data-hit="${id}"`)
       );
       o.push(vbox(x + 12, 326, AMP[id][0], 'A', 1));
       o.push(T(x + 12, 362, '-----', 'sw9b', `data-st="${id}"`) + T(x + 12, 374, MACH[id].d, 'sw8'));
@@ -67498,6 +67532,28 @@ window.PLANT_SYS = [
       const M = MACH[id],
         c = CUR[id],
         go = () => info(M.io);
+      /* live test #45: the debris filters = the push buttons of DITL-39 (REMOTE AUTO START / STOP P.B. to the local panel; IN OPERATION
+         back; START with any pump of its line running: rows 1 ~ 3 for S-1502), not the wiring card */
+      const DF = {
+        DF1: { pbs: [['AUTO START', 7, 'M.0790'], ['AUTO STOP', 9, 'M.0791']], st: 3, dp: 'DPISW1502', perm: [1, 2, 3], why: 'tumatakbong SWP' },
+        DF2: { pbs: [['AUTO START', 18, 'M.0792'], ['AUTO STOP', 20, 'M.0793']], st: 14, dp: 'DPISW1504', perm: [], why: '' }
+      }[id];
+      if (DF && window.LS_FPOP && LS_FPOP.pb) {
+        const s = window.LS_DOCK && LS_DOCK.dOf(M.d),
+          perm = DF.perm.map(r => ({ row: r, l: String((s && window.DUI && DUI.rowInfo(s, r).svc) || 'row ' + r) }));
+        if (LS_FPOP.pb({ n: M.n, t: M.t, d: M.d, io: M.io, st: { row: DF.st, on: M.on, off: 'STOPPED' }, pbs: DF.pbs, perm, permWhy: DF.why, vals: [[DF.dp, () => (LOG[DF.dp] != null ? LOG[DF.dp] : PM[DF.dp]), 'mmH2O']] })) return;
+      }
+      /* live test #44: the hypochlorite pumps (STN105 DI only): a status pop-out, FIELD START / STOP for P-0762A (the one the model runs) */
+      if (/^H[UD]/.test(id) && window.LS_FPOP && LS_FPOP.field)
+        return void LS_FPOP.field({
+          n: M.n,
+          t: M.t,
+          d: 'STN105 DI',
+          io: M.io,
+          why: 'FIELD lang (local panel HCDSP): ang STN105 DI ay running / overload status lang, walang DCS command.' + (M.fld ? '' : ' Walang plant model ang pump na ito.'),
+          st: () => (M.fld ? mst(M) : null),
+          fld: M.fld ? on => AN.field(M.fld, on) : null
+        });
       if (!window.LS_FPOP || !c) return go();
       /* SOP section 2: SWP normal current 205 ~ 215 A */
       LS_FPOP.hit({ ...M, cur: () => (LOG[c] != null ? LOG[c] : PM[c]), band: /^SW/.test(id) ? [205, 215] : null }, go);
@@ -68364,7 +68420,7 @@ window.PLANT_SYS = [
       b.add(H.pump(CX, y, id, PX));
       b.txt(
         T(CX - 44, y - 128, '-----', 'hs-st', `data-st="${id}" fill="#6b7480"`) +
-          T(CX - 44, y - 108, MACH[id].n, 'hs-eq') +
+          T(CX - 44, y - 108, MACH[id].n, 'hs-eq', `data-hit="${id}"`) + /* #48: the name opens what the symbol opens */
           /* live test 2026-10-30 #22: REMOTE / LOCAL (field selector, DITL-112 row 22 = I/O MIL-P0709x) and AUTO / MAN (CRT, row 15) as
              030; the MWP is an MCC motor (I/O list: running, electric trouble, remote; no VCB DI) */
           T(CX - 44, y - 90, '--- · ---', 'hs-sub', `data-md="${id}" fill="#6b7480"`) +
@@ -68988,10 +69044,14 @@ window.PLANT_SYS = [
     VX: { n: 'VAPOUR EXTRACTOR', t: 'F-1937', d: 'MAIN OIL TANK VAPOUR EXTRACTOR', k: 'vex', ops: 0 },
     PU: { n: 'OIL PURIFIER', t: 'P-1941', d: 'OIL PURIFIER PUMP (local panel)', k: 'pur', ops: 0, field: 1 }
   };
+  /* live test #53 (36.PNG shows three values): a redundant set of three transmitters (2oo3 trip) = three value boxes under one tag line;
+     the three read the one header pressure of the plant model (tcs.js), so they show the same value */
+  const vbox3 = (x, y, tag, unit, key, w = 58) =>
+    `<g class="hs-hit" data-vbx="${key}">${T(x, y - 5, tag + '  ' + unit, 'hs-tag')}${[0, 1, 2].map(i => `<rect x="${x + i * (w + 4)}" y="${y}" width="${w}" height="29" rx="2" fill="${C.box}" stroke="${C.boxs}"/>${T(x + i * (w + 4) + w - 5, y + 22, '-----', 'hs-val', `text-anchor="end" fill="${C.none}" data-v="${key}"`)}`).join('')}</g>`;
   /* name, state and mode of a machine (state / mode filled live) */
   const label = (x, y, id, a = 'middle') =>
-    T(x, y, MACH[id].n, 'hs-eq', `text-anchor="${a}"`) +
-    T(x, y + 18, MACH[id].t, 'hs-tag', `text-anchor="${a}"`) +
+    T(x, y, MACH[id].n, 'hs-eq', `text-anchor="${a}" data-hit="${id}"`) + /* #48: the name opens what the symbol opens */
+    T(x, y + 18, MACH[id].t, 'hs-tag', `text-anchor="${a}" data-hit="${id}"`) +
     T(x, y + 36, '-----', 'hs-st', `text-anchor="${a}" fill="${C.none}" data-st="${id}"`) +
     T(
       x,
@@ -69204,7 +69264,7 @@ window.PLANT_SYS = [
     }
     b.txt(
       H.vbox(20, 690, 'SPEED (TCS)', 'rpm', 'rpm', 92) +
-        H.vbox(196, 690, 'PILO10031 ~ 33', 'kg/cm²', 'loBrg', 84) +
+        vbox3(196, 690, 'PILO10031 / 32 / 33', 'kg/cm²', 'loBrg') +
         H.lamp(394, 704, 'PSL', 'PSLO1004 bearing oil') +
         H.vbox(640, 690, 'TIGE1007 No.3 out', '°C', 'loTb3', 84) +
         H.vbox(820, 690, 'TIGE1008 No.4 out', '°C', 'loTb4', 84) +
@@ -69326,14 +69386,14 @@ window.PLANT_SYS = [
     b.add(H.filter(1120, 440, 'FLT', PX, 'lube oil filter · DP switch DPISL01932'));
     b.txt(
       H.lamp(960, 440, 'DPF', 'DPISL01932') +
-        H.vbox(1134, 230, 'TE-LO1002-1', '°C', 'TE-LO1002-1', 72) +
-        H.vbox(1134, 290, 'TE-LO1002-2', '°C', 'TE-LO1002-2', 72) +
+        H.vbox(1134, 230, 'TILO10021', '°C', 'TE-LO1002-1', 72) /* #53: the DCS tag (36.PNG); the I/O line is TE-LO1002-1 */ +
+        H.vbox(1134, 290, 'TILO10022', '°C', 'TE-LO1002-2', 72) +
         H.vbox(640, 328, 'TILO1001 in', '°C', 'loTin', 72)
     );
     b.txt(
       `<g class="hs-hit" data-tab="0">${T(1276, 470, 'TO BEARINGS ▶', 'hs-sub', 'text-anchor="end"')}</g>` +
         `<g class="hs-hit" data-tab="0">${T(1276, 550, '◀ DRAIN from bearings (tab 1)', 'hs-sub', 'text-anchor="end"')}</g>` +
-        H.vbox(1150, 506, 'PILO10031 ~ 33', 'kg/cm²', 'loBrg', 72) +
+        vbox3(1090, 506, 'PILO10031 / 32 / 33', 'kg/cm²', 'loBrg') +
         H.lamp(900, 506, 'PSL', 'PSLO1004')
     );
     /* the DCS loop TICLO1002 (ABC-053): PV = the cooler outlet TE-LO1002, MV = TCV-CW1201; click = faceplate */
@@ -69433,7 +69493,7 @@ window.PLANT_SYS = [
         `<g transform="rotate(90 470 400)" `
       )
     );
-    b.txt(H.lamp(500, 450, 'DPC', 'DPISL01933') + H.vbox(560, 494, 'PILO10061 ~ 63 control', 'kg/cm²', 'loCtl', 84));
+    b.txt(H.lamp(500, 450, 'DPC', 'DPISL01933') + vbox3(560, 494, 'PILO10061 / 62 / 63 control', 'kg/cm²', 'loCtl'));
     /* master trip solenoids: coils and spools */
     let mts = '';
     ['A1', 'A2', 'B1', 'B2'].forEach((n, i) => {
@@ -69454,7 +69514,7 @@ window.PLANT_SYS = [
         .join('') +
         T(570, 196, 'MASTER TRIP SOLENOID', 'hs-st', `text-anchor="middle" fill="${C.nm}"`) +
         T(600, 382, '-----', 'hs-st', `fill="${C.none}" data-lt="MTS"`) +
-        H.vbox(780, 70, 'PILO10071 ~ 73 trip', 'kg/cm²', 'loTrip', 84)
+        vbox3(780, 70, 'PILO10071 / 72 / 73 trip', 'kg/cm²', 'loTrip')
     );
     /* actuators cut open: spring on top, piston, oil under the piston (control oil), dump (trip oil), stem to the plug */
     const act = (x, name, k) => {
@@ -69688,7 +69748,8 @@ window.PLANT_SYS = [
       stx.setAttribute('fill', !s ? C.none : s.run ? C.run : C.stop);
       for (const op of ['auto', 'man']) {
         const bb = q(`[data-op="${op}"]`);
-        if (bb) bb.setAttribute('visibility', M.ops ? 'visible' : 'hidden');
+        /* live test #67: 'inherit', not 'visible' (an SVG child with visibility=visible shows through its hidden box: AUTO / MANUAL stayed) */
+        if (bb) bb.setAttribute('visibility', M.ops ? 'inherit' : 'hidden');
       }
       const lit = { start: s && s.run, stop: s && !s.run, auto: s && s.au, man: s && M.ops && !s.au };
       for (const op in lit) {
@@ -70107,7 +70168,7 @@ window.PLANT_SYS = [
         o.push(silencer(96, yy, 'Z-' + Y.sil + L));
         o.push(comp(140, yy, id));
         o.push(
-          T(212, yy - 46, (X === 'IA' ? 'IA' : 'PA') + ' COMPRESSOR-' + L, 'ia11', 'text-anchor="middle"') +
+          T(212, yy - 46, (X === 'IA' ? 'IA' : 'PA') + ' COMPRESSOR-' + L, 'ia11', `text-anchor="middle" data-hit="${id}"`) /* #48 */ +
             T(212, yy - 34, 'C-' + Y.cn + L + ' · M-' + Y.cn + L, 'ia8', 'text-anchor="middle"')
         );
         o.push(
@@ -70197,7 +70258,7 @@ window.PLANT_SYS = [
         o.push(filt(756, yy, 'S-' + Y.cn + L + '3/4'));
         o.push(check(866, yy, 'V-' + X + '00' + (10 + i), 'dn'));
         o.push(
-          T(663, yy - 46, (X === 'IA' ? 'IA' : 'PA') + ' DRYER-' + L, 'ia11', 'text-anchor="middle"') +
+          T(663, yy - 46, (X === 'IA' ? 'IA' : 'PA') + ' DRYER-' + L, 'ia11', `text-anchor="middle" data-hit="${id}"`) /* #48 */ +
             T(663, yy - 34, 'D-' + Y.cn + L + ' · ' + DRY[i], 'ia8', 'text-anchor="middle"')
         );
         o.push(
@@ -71034,8 +71095,8 @@ window.PLANT_SYS = [
       o.push(T(1396, y - 30, 'H 0.6 · trip 0.8 (5 s)', 'cw8'));
       o.push(pump(1230, y, id));
       o.push(
-        T(1268, y - 86, MACH[id].n, 'cw11') +
-          T(1268, y - 74, MACH[id].t + ' · ' + MACH[id].ad, 'cw8') +
+        T(1268, y - 86, MACH[id].n, 'cw11', `data-hit="${id}"`) + /* #48: the name opens what the symbol opens */
+          T(1268, y - 74, MACH[id].t + ' · ' + MACH[id].ad, 'cw8', `data-hit="${id}"`) +
           T(1268, y - 60, '-----', 'cw9b', `data-st="${id}"`) +
           `<g data-mdh="${id}" style="cursor:pointer">${T(1268, y - 47, `<tspan data-rem="${id}">---</tspan><tspan fill="${S.dim}"> · </tspan><tspan data-au="${id}">---</tspan>`, 'cw9b')}</g>` +
           T(1268, y - 34, '-----', 'cw9b', `data-vcb="${id}"`)
@@ -71625,9 +71686,11 @@ window.PLANT_SYS = [
   /* another HMI page, another tab: the faceplate of the page before goes */
   document.addEventListener('change', e => e.target && e.target.classList && e.target.classList.contains('plpick') && close(), true);
   new MutationObserver(() => box && document.body.dataset.tab !== 'operate' && close()).observe(document.body, { attributes: true, attributeFilter: ['data-tab'] });
-  /* a click outside (not on another equipment, which opens its own) closes it */
+  /* a click on the graphic outside it (not on another equipment, which opens its own) closes it. Live test #48 / #43: a click in the
+     Training dock, the header or the alarm bar (a tick of the line-up, then START here) leaves it open where it is */
   document.addEventListener('pointerdown', e => {
-    if (box && !box.contains(e.target) && !(e.target.closest && e.target.closest('[data-hit],[data-mdh],#plfp'))) setTimeout(() => box && !box.contains(document.activeElement) && close(), 0);
+    if (box && !box.contains(e.target) && host().contains(e.target) && !(e.target.closest && e.target.closest('[data-hit],[data-mdh],[data-fan],[data-dmp],[data-fl],[data-aphh],#plfp')))
+      setTimeout(() => box && !box.contains(document.activeElement) && close(), 0);
   });
   function frame(title, sub) {
     close();
@@ -72074,6 +72137,178 @@ window.PLANT_SYS = [
     iv = setInterval(tick, 500);
     return true;
   }
+  /* live test #45: a package run by push buttons of a DITL drawing (debris filter S-1502 / S-1504, DITL-39: REMOTE AUTO START / STOP P.B.
+     to the local panel, IN OPERATION back). P = { n, t, d (drawing), io, st: { row, on, off }, pbs: [[label, row, address]],
+     perm: [{ row, l }] (any one = 1), vals: [[tag, fn, unit]] }. Same rows and calls as the dock (LS_DOCK.dout / dpress) */
+  function pb(P) {
+    const dk = D();
+    if (!P || !dk || !P.d || !call(() => dk.dOf(P.d), null)) return false;
+    const s = dk.dOf(P.d);
+    const F = frame(P.n, (P.t || '') + ' · ' + P.d);
+    const lOn = lampEl(P.st.on),
+      lOff = lampEl(P.st.off || 'STOPPED');
+    F.bd.append(row('STATUS', lOn, lOff));
+    const B = P.pbs.map(([l, r, ad]) => {
+      const b = E('button', 'fpo-cmd', l);
+      b.type = 'button';
+      b.title = P.d + ' row ' + r + ' · ' + ad;
+      return b;
+    });
+    F.bd.append(row('DCS', ...B));
+    const why = E('div', 'fpo-why');
+    F.bd.append(why);
+    const ex = E('div', 'fpo-ex'),
+      exT = E('span'),
+      exGo = E('button', 'fpo-go', 'EXECUTE'),
+      exNo = E('button', '', 'CANCEL');
+    exGo.type = exNo.type = 'button';
+    ex.append(exT, exGo, exNo);
+    ex.hidden = true;
+    F.bd.append(ex);
+    let pend = null;
+    const ask = (t, f) => ((pend = f), (exT.textContent = t), (ex.hidden = false), exGo.focus());
+    exNo.onclick = () => ((pend = null), (ex.hidden = true));
+    exGo.onclick = () => {
+      const f = pend;
+      pend = null;
+      ex.hidden = true;
+      if (f) f();
+      setTimeout(tick, 150);
+    };
+    const V = (P.vals || []).map(([tag, f, u]) => {
+      const v = E('span', 'fpo-vb');
+      F.bd.append(row(tag, v, E('small', 'fpo-dim', u || '')));
+      return [v, f];
+    });
+    const ilH = E('div', 'fpo-sh', 'LOGIC PERMISSIVE · ' + P.d + ' (isa lang ang kailangan)'),
+      ilL = E('ul', 'fpo-il');
+    if (P.perm && P.perm.length) F.bd.append(ilH, ilL);
+    const ln = E('div', 'fpo-ln');
+    const link = (t, f) => {
+      const a = E('button', 'fpo-a', t);
+      a.type = 'button';
+      a.onclick = f;
+      ln.append(a);
+    };
+    if (P.io) link('I/O wiring', () => call(() => window.lsInfo(P.io)));
+    link('Logic ' + P.d, () => (close(), call(() => dk.openD(P.d, null))));
+    link('Events', () => call(() => document.getElementById('evbtn').click()));
+    F.bd.append(ln);
+    B.forEach((b, i) => {
+      const [l, r, ad] = P.pbs[i];
+      b.onclick = () =>
+        !b.disabled && ask(P.n + ' ' + l + '?', () => (dk.dpress(P.d, r), call(() => window.lsEventAdd(P.d, 'DCS', 'Operator: ' + P.n + ' ' + l + ' (' + P.d + ' row ' + r + ' · ' + ad + ', faceplate)'))));
+    });
+    let k0 = '';
+    function tick() {
+      if (!box || !box.isConnected) return close();
+      const on = call(() => dk.dout(P.d, P.st.row), null) === 1,
+        run = isRun(),
+        pv = (P.perm || []).map(p => ({ ...p, v: call(() => window.DUI.rowVal(s, p.row), null) })),
+        ok = !pv.length || pv.some(p => p.v === 1);
+      F.lamp.className = 'fpo-lamp ' + (on ? 'run' : 'stop');
+      F.val.textContent = on ? P.st.on : P.st.off || 'STOPPED';
+      lOn.className = 'fpo-lp' + (on ? ' run' : '');
+      lOff.className = 'fpo-lp' + (!on ? ' stop' : '');
+      B[0].disabled = on || !run || !ok;
+      if (B[1]) B[1].disabled = !on || !run;
+      B[0].classList.toggle('lit-run', on);
+      if (B[1]) B[1].classList.toggle('lit-stop', !on);
+      why.textContent = !run ? 'Naka-PAUSE ang oras: ▶ RUN muna (walang kikilos habang naka-PAUSE).' : !ok && !on ? P.pbs[0][0] + ' sarado: walang ' + (P.permWhy || 'permissive') + '.' : '';
+      why.hidden = !why.textContent;
+      for (const [v, f] of V) {
+        const x = call(f, null);
+        v.textContent = x == null || !isFinite(+x) ? '-----' : (+x).toFixed(0);
+      }
+      const k = pv.map(p => p.v).join();
+      if (k !== k0) {
+        k0 = k;
+        ilL.replaceChildren(...pv.map(p => {
+          const li = E('li', ok ? 'ok' : 'bad');
+          li.append(E('i', '', p.v == null ? '-' : String(p.v)), E('span', '', p.l), E('em', '', 'row ' + p.row));
+          return li;
+        }));
+      }
+    }
+    paint = tick;
+    tick();
+    place(box);
+    iv = setInterval(tick, 500);
+    return true;
+  }
+  /* live test #44: a machine with no DCS command (hypochlorite pumps P-0761 / P-0762: STN105 running / overload DI only) = a small status
+     pop-out: what it is, where it is run (local panel), its state; FIELD START / STOP only for the one the plant model runs (the field
+     operator, logged as such, the same call as the dock). P = { n, t, d, io, why, st: () => 'RUN' | 'STOP' | null, fld: (on) => void } */
+  function field(P) {
+    if (!P) return false;
+    const F = frame(P.n, (P.t || '') + ' · ' + (P.d || 'field'));
+    const lR = lampEl('RUN'),
+      lS = lampEl('STOP');
+    F.bd.append(row('STATUS', lR, lS));
+    F.bd.append(E('div', 'fpo-why', P.why || 'FIELD lang: walang DCS command. Pinapaandar sa local panel.'));
+    let bSt = null,
+      bSp = null,
+      ex = null;
+    if (P.fld) {
+      bSt = E('button', 'fpo-cmd', 'START');
+      bSp = E('button', 'fpo-cmd', 'STOP');
+      bSt.type = bSp.type = 'button';
+      F.bd.append(row('FIELD', bSt, bSp));
+      ex = E('div', 'fpo-ex');
+      const exT = E('span'),
+        exGo = E('button', 'fpo-go', 'EXECUTE'),
+        exNo = E('button', '', 'CANCEL');
+      exGo.type = exNo.type = 'button';
+      ex.append(exT, exGo, exNo);
+      ex.hidden = true;
+      F.bd.append(ex);
+      let pend = null;
+      const ask = (t, f) => ((pend = f), (exT.textContent = t), (ex.hidden = false), exGo.focus());
+      exNo.onclick = () => ((pend = null), (ex.hidden = true));
+      exGo.onclick = () => {
+        const f = pend;
+        pend = null;
+        ex.hidden = true;
+        if (f) f();
+        setTimeout(tick, 150);
+      };
+      const go = on => (P.fld(on), call(() => window.lsEventAdd('FIELD', 'FIELD', 'Field operator: ' + (on ? 'START ' : 'STOP ') + P.n + ' (local panel)')));
+      bSt.onclick = () => !bSt.disabled && ask('FIELD: START ' + P.n + ' sa local panel?', () => go(true));
+      bSp.onclick = () => !bSp.disabled && ask('FIELD: STOP ' + P.n + ' sa local panel?', () => go(false));
+    }
+    const ln = E('div', 'fpo-ln');
+    if (P.io) {
+      const a = E('button', 'fpo-a', 'I/O list');
+      a.type = 'button';
+      a.onclick = () => call(() => window.lsInfo(P.io));
+      ln.append(a);
+    }
+    const ev = E('button', 'fpo-a', 'Events');
+    ev.type = 'button';
+    ev.onclick = () => call(() => document.getElementById('evbtn').click());
+    ln.append(ev);
+    F.bd.append(ln);
+    function tick() {
+      if (!box || !box.isConnected) return close();
+      const st = call(P.st, null),
+        run = isRun();
+      F.lamp.className = 'fpo-lamp ' + (st === 'RUN' ? 'run' : st === 'STOP' ? 'stop' : '');
+      F.val.textContent = st === 'RUN' ? 'RUNNING' : st === 'STOP' ? 'STOPPED' : '-----';
+      lR.className = 'fpo-lp' + (st === 'RUN' ? ' run' : '');
+      lS.className = 'fpo-lp' + (st === 'STOP' ? ' stop' : '');
+      if (bSt) {
+        bSt.disabled = st === 'RUN' || !run;
+        bSp.disabled = st !== 'RUN' || !run;
+        bSt.classList.toggle('lit-run', st === 'RUN');
+        bSp.classList.toggle('lit-stop', st === 'STOP');
+      }
+    }
+    paint = tick;
+    tick();
+    place(box);
+    iv = setInterval(tick, 500);
+    return true;
+  }
   const valveTag = tg => (VALVES[tg] ? valve(VALVES[tg]) : FIELDV[tg] ? fieldValve(FIELDV[tg]) : false);
   /* an HMI page's click on a machine: its faceplate when the motor is known to the logic, else the info card (as before) */
   function hit(M, fallback) {
@@ -72097,7 +72332,7 @@ window.PLANT_SYS = [
     setTimeout(re, 350);
     return !!box;
   }
-  window.LS_FPOP = { motor, valve, valveTag, hit, openAd, place, close, get open() {
+  window.LS_FPOP = { motor, valve, valveTag, pb, field, hit, openAd, place, close, get open() {
     return !!box;
   } };
 })();
