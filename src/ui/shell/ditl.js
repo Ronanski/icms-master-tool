@@ -454,7 +454,10 @@
   /* the TAG NO. column holds the address (I.0406, M.0378) and, on many sheets, the service text too */
   const ADR = /^[A-Z]{1,3}\.[0-9A-F]{3,5}[A-Z]?$/;
   const tagOf = (s, i) => {
-    const t = (s.cells[i + ':T'] || []).map(t => t.t.trim()).filter(t => ADR.test(t)).join(' ');
+    const t = (s.cells[i + ':T'] || []).map(t => t.t.trim()).filter(t => ADR.test(t)).join(' '),
+      /* an address list of the machines in the TAG NO. ("M.0110/210/1610/1710" DITL-09 row 5): the address of this machine */
+      l = !t && (s.cells[i + ':T'] || []).some(x => /^[IMOB]\.[0-9A-F]{4}(\/[0-9A-F]{3,4})+\/?$/.test(x.t.trim()));
+    if (l && window.WORLD && WORLD.addrK) return WORLD.addrK(s, i) || '';
     return t && isKA(s) ? WORLD.addrK(s, i) || t : t;
   };
   const svcOf = (s, i) => {

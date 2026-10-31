@@ -1022,12 +1022,30 @@ function fromFix(sh) {
     sh.cells[i + ':F'] = [t];
   }
 }
+/* 3.2.0 live test (7 DCS push buttons with no address): DITL-09 writes the address list of the four burners just right of the SERVICE
+   column, on the row (row 5 "M.0110/210/1610/1710" IGNITER A "ON" P.B., row 7 M.0111/.. OFF, row 9 M.0118/.. BURNER A "ON" P.B., row 11
+   M.0119/.. OFF; memory list STN104 M.0110 A-IGNITER ON PB, M.0118 A-OIL BNR ON PB, M.0210 B-, M.1610 C-, M.1710 D-IGNITER ON PB): it
+   fell out of the TAG NO. cell and the push buttons had no address. An address (list) up to 6 units right of the SERVICE column, on a
+   row with an empty TAG NO., is the TAG NO. of that row */
+function tagFix(sh) {
+  if (!sh || !sh.cells || !sh.rows || !sh.tx || !sh.rng || !sh.rng.S || sh._tfx) return;
+  sh._tfx = 1;
+  const x1 = sh.rng.S[1];
+  for (const t of sh.tx.slice()) {
+    if (!(t.ix >= x1 && t.ix < x1 + 6 && /^[IMOB]\.[0-9A-F]{4}(\/[0-9A-F]{3,4})*$/.test(String(t.t).trim()))) continue;
+    const i = sh.rows.findIndex(r => t.iy >= r.y - 3.3 && t.iy < r.y + 5.7);
+    if (i < 0 || (sh.cells[i + ':T'] || []).length) continue;
+    sh.tx.splice(sh.tx.indexOf(t), 1);
+    sh.cells[i + ':T'] = [t];
+  }
+}
 function netlist(sh) {
   if (sh.sd) return sdNL(sh); /* 3.2.0-beta.39 (+ sand): sand injection (PDF drawing, no row table): the netlist comes from sh.sd (02b-sand.js) */
   letterRows(sh);
   trCells(sh);
   rowFix(sh);
   fromFix(sh);
+  tagFix(sh);
   const a = netlistCore(sh, false),
     c = mdCount(a, sh);
   if (!c) return a;
