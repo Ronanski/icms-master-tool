@@ -316,12 +316,16 @@
       rl = relays([...io.map(x => x.st + '|' + x.a), ...io.filter(x => x.r.tag).map(x => 'T|' + x.r.tag), 'T|' + q, ...(stn ? [stn + '|' + q] : ['1', '2', '3', '4', '5'].map(st => st + '|' + q))]);
     if (!oc.length && !dp.length && !io.length && !wr.length && !cp.length && !rl.length) return false;
     close();
-    const tag = oc.length ? oc[0].nm : raw.trim();
-    let desc = '';
-    for (const o of oc) {
-      desc = (AN.descOf && AN.descOf(o.sh, o.nm)) || '';
-      if (desc) break;
-    }
+    /* live test #40: an address opened for one station (an HMI value: 2|AI0549 = PT-SB1040) is titled by that station's I/O list line,
+       not by a sheet of another station that has the same address (STN103 AI0549 = ZT-FA1010) */
+    const own = stn && io.length && io[0].r.tag ? io[0].r : null;
+    const tag = own ? own.tag : oc.length ? oc[0].nm : raw.trim();
+    let desc = own ? own.d || '' : '';
+    if (!own)
+      for (const o of oc) {
+        desc = (AN.descOf && AN.descOf(o.sh, o.nm)) || '';
+        if (desc) break;
+      }
     const body = E('div', { cls: 'icb' });
     card = E('div', { id: 'infocard' }, [
       E('div', { cls: 'ich' }, [

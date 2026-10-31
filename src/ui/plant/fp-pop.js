@@ -128,9 +128,11 @@
   /* another HMI page, another tab: the faceplate of the page before goes */
   document.addEventListener('change', e => e.target && e.target.classList && e.target.classList.contains('plpick') && close(), true);
   new MutationObserver(() => box && document.body.dataset.tab !== 'operate' && close()).observe(document.body, { attributes: true, attributeFilter: ['data-tab'] });
-  /* a click outside (not on another equipment, which opens its own) closes it */
+  /* a click on the graphic outside it (not on another equipment, which opens its own) closes it. Live test #48 / #43: a click in the
+     Training dock, the header or the alarm bar (a tick of the line-up, then START here) leaves it open where it is */
   document.addEventListener('pointerdown', e => {
-    if (box && !box.contains(e.target) && !(e.target.closest && e.target.closest('[data-hit],[data-mdh],#plfp'))) setTimeout(() => box && !box.contains(document.activeElement) && close(), 0);
+    if (box && !box.contains(e.target) && host().contains(e.target) && !(e.target.closest && e.target.closest('[data-hit],[data-mdh],[data-fan],[data-dmp],[data-fl],[data-aphh],#plfp')))
+      setTimeout(() => box && !box.contains(document.activeElement) && close(), 0);
   });
   function frame(title, sub) {
     close();
@@ -321,17 +323,17 @@
       /* one line: why a button is closed */
       why.textContent =
         st === 'TRIP'
-          ? 'TRIP: hanapin ang sanhi; i-reset sa field bago muling i-START.'
+          ? 'TRIP: find the cause and reset it in the field before starting again.'
           : loc
-            ? 'LOCAL ang selector: sarado ang AUTO, START at STOP ng DCS. REMOTE muna (field).'
+            ? 'Selector at LOCAL: AUTO, START and STOP from the DCS are blocked. Set the field selector to REMOTE first.'
             : sby
-              ? 'STANDBY, handa: kusang aandar sa logic kapag nag-trip ang tumatakbo o bumaba ang header. Ang START ng DCS ay sa MAN lang.'
+              ? 'STANDBY, ready: the logic starts it when the running pump trips or the header pressure drops. DCS START is in MAN only.'
               : sopLeft && st !== 'RUN'
-              ? 'START sarado: tapusin muna ang SOP line-up (' + sopLeft + ' natitira, ✕ sa ibaba; i-tick sa dock).'
+              ? 'START blocked: finish the SOP line-up first (' + sopLeft + ' left, ✕ below; tick them in the guide).'
               : miss.length && st !== 'RUN'
-              ? 'START sarado: ' + miss.length + ' permissive ang kulang (0 sa ibaba).'
+              ? 'START blocked: ' + miss.length + ' permissive missing (0 below).'
               : !run && st !== 'RUN'
-                ? 'Naka-PAUSE ang oras: ▶ RUN muna bago ang START (walang aandar habang naka-PAUSE).'
+                ? 'Simulation PAUSED: press ▶ RUN before START (nothing moves while paused).'
                 : '';
       why.hidden = !why.textContent;
       chip.textContent = st === 'TRIP' ? 'TRIP' : st === 'RUN' ? 'RUNNING' : loc ? 'NOT READY' : sby ? 'STANDBY' : miss.length ? 'INTERLOCK' : st === 'STOP' ? 'READY' : '';
@@ -355,7 +357,7 @@
       /* SOP line-up of the open step */
       sopH.hidden = sopL.hidden = !(sop && sop.items.length);
       if (sop && sop.items.length) {
-        sopH.textContent = 'SOP BAGO I-START · PR-OPE-5002 seksyon ' + sop.sec + ' · ' + sop.items.filter(x => x.ok).length + ' / ' + sop.items.length;
+        sopH.textContent = 'SOP BEFORE START · PR-OPE-5002 section ' + sop.sec + ' · ' + sop.items.filter(x => x.ok).length + ' / ' + sop.items.length;
         /* what is left only (✕), the done ones as one line (the full list with its ticks is in the dock) */
         const k = JSON.stringify(sop.items.map(x => [x.t, x.ok]));
         if (k !== sopL.dataset.k) {
@@ -368,10 +370,10 @@
               li.append(E('i', '', '✕'), E('span', '', x.t), x.by ? E('em', '', x.by) : '');
               return li;
             }),
-            ...(left.length > 5 ? [E('li', 'bad', '+ ' + (left.length - 5) + ' pa (nasa dock)')] : []),
+            ...(left.length > 5 ? [E('li', 'bad', '+ ' + (left.length - 5) + ' more (in the guide)')] : []),
             ...(dn ? [(() => {
               const li = E('li', 'ok');
-              li.append(E('i', '', '✓'), E('span', '', 'Nagawa na: ' + dn + ' item'));
+              li.append(E('i', '', '✓'), E('span', '', 'Done: ' + dn + ' items'));
               return li;
             })()] : [])
           );
@@ -394,10 +396,10 @@
             ? rows.slice(0, 12).map(r => {
                 const li = E('li', r.ok ? 'ok' : 'bad');
                 li.append(E('i', '', String(r.ok ? +r.want : 1 - r.want)), E('span', '', r.t), E('em', '', (r.other ? r.other + ' ' : '') + 'row ' + r.no));
-                li.title = (r.ok ? 'OK: ' : 'Kulang: ') + r.svc + ' · ' + (r.other || nm) + ' row ' + r.no + (r.want ? ' (dapat 1)' : ' (dapat 0)');
+                li.title = (r.ok ? 'OK: ' : 'Missing: ') + r.svc + ' · ' + (r.other || nm) + ' row ' + r.no + (r.want ? ' (must be 1)' : ' (must be 0)');
                 return li;
               })
-            : [E('li', 'ok', I ? 'Walang permissive sa drawing.' : 'Hindi pa handa ang logic (Plant view, RUN).')])
+            : [E('li', 'ok', I ? 'No permissive on the drawing.' : 'Logic not ready yet (Plant view, RUN).')])
         );
       }
     }
@@ -482,9 +484,9 @@
       bOp.classList.toggle('lit-run', op);
       bCl.classList.toggle('lit-stop', !op);
       why.textContent = !run
-        ? 'Naka-PAUSE ang oras: ▶ RUN muna (walang kikilos habang naka-PAUSE).'
+        ? 'Simulation PAUSED: press ▶ RUN first (nothing moves while paused).'
         : au
-          ? 'Nasa AUTO: ang logic ang nagbubukas at nagsasara. MAN muna para sa OPEN / CLOSE.'
+          ? 'In AUTO the logic opens and closes it. Select MAN for OPEN / CLOSE.'
           : w || '';
       why.hidden = !why.textContent;
       chip.textContent = au ? 'AUTO' : 'MAN';
@@ -511,13 +513,13 @@
       opRow: 4,
       clRow: 8,
       auSel: v => (D().dset('DITL-78', 0, v), D().dsel('DITL-78', 2, v, 'EXPANSION TANK INLET VLV XV-MU1109 AUTO SELECTED (M.1252)')),
-      auto: 'bukas kapag LT-CW1109 < 40 %, sarado kapag > 85 % (1.7 m) · DITL-78',
-      why: () => (window.AN && AN.unit && (+AN.unit.iaP || 0) < 3.5 ? 'Walang instrument air (IA < 3.5 kg/cm²): hindi bubukas ang pneumatic valve. Bypass V-MU1033 (field) ang gamit.' : '')
+      auto: 'opens below 40 % of LT-CW1109, closes above 85 % (1.7 m) · DITL-78',
+      why: () => (window.AN && AN.unit && (+AN.unit.iaP || 0) < 3.5 ? 'No instrument air (below 3.5 kg/cm²): the pneumatic valve cannot open. Use the field bypass V-MU1033.' : '')
     }
   };
   /* a manual valve the field operator turns (Training: FIELD, a digital field item of the plant model, logged as "Field operator") */
   const FIELDV = {
-    'V-MU1033': { n: 'V-MU1033', t: 'Expansion tank bypass (manual)', k: 'mu1033', io: 'V-MU1033', use: 'Ginagamit para punuin ang T-1109 kapag wala pang instrument air (sarado ang XV-MU1109). Isara kapag LT-CW1109 ≥ 1.7 m.' }
+    'V-MU1033': { n: 'V-MU1033', t: 'Expansion tank bypass (manual)', k: 'mu1033', io: 'V-MU1033', use: 'Fills T-1109 while there is no instrument air yet (XV-MU1109 closed). Close it when LT-CW1109 reaches 1.7 m.' }
   };
   function fieldValve(V) {
     if (!V || !window.AN || !AN.field) return false;
@@ -568,8 +570,180 @@
       bCl.disabled = !op || !run;
       bOp.classList.toggle('lit-run', op);
       bCl.classList.toggle('lit-stop', !op);
-      why.textContent = run ? '' : 'Naka-PAUSE ang oras: ▶ RUN muna (walang kikilos habang naka-PAUSE).';
+      why.textContent = run ? '' : 'Simulation PAUSED: press ▶ RUN first (nothing moves while paused).';
       why.hidden = !why.textContent;
+    }
+    paint = tick;
+    tick();
+    place(box);
+    iv = setInterval(tick, 500);
+    return true;
+  }
+  /* live test #45: a package run by push buttons of a DITL drawing (debris filter S-1502 / S-1504, DITL-39: REMOTE AUTO START / STOP P.B.
+     to the local panel, IN OPERATION back). P = { n, t, d (drawing), io, st: { row, on, off }, pbs: [[label, row, address]],
+     perm: [{ row, l }] (any one = 1), vals: [[tag, fn, unit]] }. Same rows and calls as the dock (LS_DOCK.dout / dpress) */
+  function pb(P) {
+    const dk = D();
+    if (!P || !dk || !P.d || !call(() => dk.dOf(P.d), null)) return false;
+    const s = dk.dOf(P.d);
+    const F = frame(P.n, (P.t || '') + ' · ' + P.d);
+    const lOn = lampEl(P.st.on),
+      lOff = lampEl(P.st.off || 'STOPPED');
+    F.bd.append(row('STATUS', lOn, lOff));
+    const B = P.pbs.map(([l, r, ad]) => {
+      const b = E('button', 'fpo-cmd', l);
+      b.type = 'button';
+      b.title = P.d + ' row ' + r + ' · ' + ad;
+      return b;
+    });
+    F.bd.append(row('DCS', ...B));
+    const why = E('div', 'fpo-why');
+    F.bd.append(why);
+    const ex = E('div', 'fpo-ex'),
+      exT = E('span'),
+      exGo = E('button', 'fpo-go', 'EXECUTE'),
+      exNo = E('button', '', 'CANCEL');
+    exGo.type = exNo.type = 'button';
+    ex.append(exT, exGo, exNo);
+    ex.hidden = true;
+    F.bd.append(ex);
+    let pend = null;
+    const ask = (t, f) => ((pend = f), (exT.textContent = t), (ex.hidden = false), exGo.focus());
+    exNo.onclick = () => ((pend = null), (ex.hidden = true));
+    exGo.onclick = () => {
+      const f = pend;
+      pend = null;
+      ex.hidden = true;
+      if (f) f();
+      setTimeout(tick, 150);
+    };
+    const V = (P.vals || []).map(([tag, f, u]) => {
+      const v = E('span', 'fpo-vb');
+      F.bd.append(row(tag, v, E('small', 'fpo-dim', u || '')));
+      return [v, f];
+    });
+    const ilH = E('div', 'fpo-sh', 'LOGIC PERMISSIVE · ' + P.d + ' (any one is enough)'),
+      ilL = E('ul', 'fpo-il');
+    if (P.perm && P.perm.length) F.bd.append(ilH, ilL);
+    const ln = E('div', 'fpo-ln');
+    const link = (t, f) => {
+      const a = E('button', 'fpo-a', t);
+      a.type = 'button';
+      a.onclick = f;
+      ln.append(a);
+    };
+    if (P.io) link('I/O wiring', () => call(() => window.lsInfo(P.io)));
+    link('Logic ' + P.d, () => (close(), call(() => dk.openD(P.d, null))));
+    link('Events', () => call(() => document.getElementById('evbtn').click()));
+    F.bd.append(ln);
+    B.forEach((b, i) => {
+      const [l, r, ad] = P.pbs[i];
+      b.onclick = () =>
+        !b.disabled && ask(P.n + ' ' + l + '?', () => (dk.dpress(P.d, r), call(() => window.lsEventAdd(P.d, 'DCS', 'Operator: ' + P.n + ' ' + l + ' (' + P.d + ' row ' + r + ' · ' + ad + ', faceplate)'))));
+    });
+    let k0 = '';
+    function tick() {
+      if (!box || !box.isConnected) return close();
+      const on = call(() => dk.dout(P.d, P.st.row), null) === 1,
+        run = isRun(),
+        pv = (P.perm || []).map(p => ({ ...p, v: call(() => window.DUI.rowVal(s, p.row), null) })),
+        ok = !pv.length || pv.some(p => p.v === 1);
+      F.lamp.className = 'fpo-lamp ' + (on ? 'run' : 'stop');
+      F.val.textContent = on ? P.st.on : P.st.off || 'STOPPED';
+      lOn.className = 'fpo-lp' + (on ? ' run' : '');
+      lOff.className = 'fpo-lp' + (!on ? ' stop' : '');
+      B[0].disabled = on || !run || !ok;
+      if (B[1]) B[1].disabled = !on || !run;
+      B[0].classList.toggle('lit-run', on);
+      if (B[1]) B[1].classList.toggle('lit-stop', !on);
+      why.textContent = !run ? 'Simulation PAUSED: press ▶ RUN first (nothing moves while paused).' : !ok && !on ? P.pbs[0][0] + ' blocked: no ' + (P.permWhy || 'permissive') + '.' : '';
+      why.hidden = !why.textContent;
+      for (const [v, f] of V) {
+        const x = call(f, null);
+        v.textContent = x == null || !isFinite(+x) ? '-----' : (+x).toFixed(0);
+      }
+      const k = pv.map(p => p.v).join();
+      if (k !== k0) {
+        k0 = k;
+        ilL.replaceChildren(...pv.map(p => {
+          const li = E('li', ok ? 'ok' : 'bad');
+          li.append(E('i', '', p.v == null ? '-' : String(p.v)), E('span', '', p.l), E('em', '', 'row ' + p.row));
+          return li;
+        }));
+      }
+    }
+    paint = tick;
+    tick();
+    place(box);
+    iv = setInterval(tick, 500);
+    return true;
+  }
+  /* live test #44: a machine with no DCS command (hypochlorite pumps P-0761 / P-0762: STN105 running / overload DI only) = a small status
+     pop-out: what it is, where it is run (local panel), its state; FIELD START / STOP only for the one the plant model runs (the field
+     operator, logged as such, the same call as the dock). P = { n, t, d, io, why, st: () => 'RUN' | 'STOP' | null, fld: (on) => void } */
+  function field(P) {
+    if (!P) return false;
+    const F = frame(P.n, (P.t || '') + ' · ' + (P.d || 'field'));
+    const lR = lampEl('RUN'),
+      lS = lampEl('STOP');
+    F.bd.append(row('STATUS', lR, lS));
+    F.bd.append(E('div', 'fpo-why', P.why || 'Field equipment: no DCS command. Started at the local panel.'));
+    let bSt = null,
+      bSp = null,
+      ex = null;
+    if (P.fld) {
+      bSt = E('button', 'fpo-cmd', 'START');
+      bSp = E('button', 'fpo-cmd', 'STOP');
+      bSt.type = bSp.type = 'button';
+      F.bd.append(row('FIELD', bSt, bSp));
+      ex = E('div', 'fpo-ex');
+      const exT = E('span'),
+        exGo = E('button', 'fpo-go', 'EXECUTE'),
+        exNo = E('button', '', 'CANCEL');
+      exGo.type = exNo.type = 'button';
+      ex.append(exT, exGo, exNo);
+      ex.hidden = true;
+      F.bd.append(ex);
+      let pend = null;
+      const ask = (t, f) => ((pend = f), (exT.textContent = t), (ex.hidden = false), exGo.focus());
+      exNo.onclick = () => ((pend = null), (ex.hidden = true));
+      exGo.onclick = () => {
+        const f = pend;
+        pend = null;
+        ex.hidden = true;
+        if (f) f();
+        setTimeout(tick, 150);
+      };
+      const go = on => (P.fld(on), call(() => window.lsEventAdd('FIELD', 'FIELD', 'Field operator: ' + (on ? 'START ' : 'STOP ') + P.n + ' (local panel)')));
+      bSt.onclick = () => !bSt.disabled && ask('FIELD: START ' + P.n + ' at the local panel?', () => go(true));
+      bSp.onclick = () => !bSp.disabled && ask('FIELD: STOP ' + P.n + ' at the local panel?', () => go(false));
+    }
+    const ln = E('div', 'fpo-ln');
+    if (P.io) {
+      const a = E('button', 'fpo-a', 'I/O list');
+      a.type = 'button';
+      a.onclick = () => call(() => window.lsInfo(P.io));
+      ln.append(a);
+    }
+    const ev = E('button', 'fpo-a', 'Events');
+    ev.type = 'button';
+    ev.onclick = () => call(() => document.getElementById('evbtn').click());
+    ln.append(ev);
+    F.bd.append(ln);
+    function tick() {
+      if (!box || !box.isConnected) return close();
+      const st = call(P.st, null),
+        run = isRun();
+      F.lamp.className = 'fpo-lamp ' + (st === 'RUN' ? 'run' : st === 'STOP' ? 'stop' : '');
+      F.val.textContent = st === 'RUN' ? 'RUNNING' : st === 'STOP' ? 'STOPPED' : '-----';
+      lR.className = 'fpo-lp' + (st === 'RUN' ? ' run' : '');
+      lS.className = 'fpo-lp' + (st === 'STOP' ? ' stop' : '');
+      if (bSt) {
+        bSt.disabled = st === 'RUN' || !run;
+        bSp.disabled = st !== 'RUN' || !run;
+        bSt.classList.toggle('lit-run', st === 'RUN');
+        bSp.classList.toggle('lit-stop', st === 'STOP');
+      }
     }
     paint = tick;
     tick();
@@ -600,7 +774,7 @@
     setTimeout(re, 350);
     return !!box;
   }
-  window.LS_FPOP = { motor, valve, valveTag, hit, openAd, place, close, get open() {
+  window.LS_FPOP = { motor, valve, valveTag, pb, field, hit, openAd, place, close, get open() {
     return !!box;
   } };
 })();
