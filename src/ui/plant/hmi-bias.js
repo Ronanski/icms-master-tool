@@ -691,14 +691,24 @@
       vTx.textContent = spray == null ? '-----' : o ? 'OPEN ' + fmt(spray, 1) + ' %' : 'CLOSED';
       vTx.setAttribute('fill', spray == null ? '#6b7480' : o ? '#e5484d' : '#2fa56a');
     });
-    /* the buffer tanks */
-    const PII = {};
-    for (const [id, tg] of [['gRH', 'PIIA1064A'], ['gSH', 'PIIA1064B']])
-      val(tg, '', v => {
+    /* the buffer tanks: PT-IA1064-A / B (I/O list AI0438 / AI0470, PICT 39) are on no logic sheet. The over-all instrument list puts
+       them on P&ID PD-023 sheet 6/6, the instrument air drawing (with IA1706 instrument air to unit 1 and IA1128 the turning gear
+       buffer tank): the tank is filled from the instrument air header, so without a logic value it shows the instrument air
+       pressure of the plant model (unit.js AN_AIR, U.iaP; 7.0 kg/cm2 at 150 MW = these two gauges on 39.PNG). ASSUMED: no drop
+       across the tank inlet (no data) */
+    const PII = {},
+      PIL = {},
+      PIM = { v: null };
+    const piShow = () => {
+      for (const [id, tg] of [['gRH', 'PIIA1064A'], ['gSH', 'PIIA1064B']]) {
+        const v = PIL[tg] != null ? PIL[tg] : PIM.v;
         PII[tg] = v;
         DR[id].tv.textContent = fmt(v, 1);
         DR[id].tv.setAttribute('fill', v == null ? '#6b7480' : '#f4f7f9');
-      });
+      }
+    };
+    for (const tg of ['PIIA1064A', 'PIIA1064B']) val(tg, '', v => ((PIL[tg] = v), piShow()));
+    val('UNIT.iaP', '', v => ((PIM.v = v), piShow()));
     /* the interlock memories of ABC-020: purge (reheater >= 30 % M.0506, superheater >= 60 % M.0507), ID fan start (> 95 %
        M.3440 / M.3441) */
     const MEM = {};
