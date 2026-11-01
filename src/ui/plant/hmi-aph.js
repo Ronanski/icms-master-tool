@@ -368,7 +368,7 @@
     live('', 'SVPA1052', v => (svIO = v == null ? null : v > 0.5 ? 1 : 0));
     const Dk = () => window.LS_DOCK;
     const tick = () => {
-      if (!pg.isConnected) return clearInterval(iv);
+      if (!pg.isConnected) return iv.stop();
       let s = null,
         v = null;
       try {
@@ -394,7 +394,8 @@
       q('[data-yn="t"]').textContent = ok == null ? '-' : ok ? 'Y' : 'N';
       q('[data-eqb="APH"]').setAttribute('aria-label', 'Permissive, monitor and trend: ' + (ok == null ? 'no logic' : ok ? 'Y, complete' : 'N, not complete'));
     };
-    const iv = setInterval(tick, 1000);
+    /* P2: the shared driver, only while the page is on the screen */
+    const iv = H.every(pg, 1000, tick);
     tick();
     /* everything that moves, on the one 15 Hz clock: frozen while the simulation is paused or the motion is reduced */
     const still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -437,7 +438,7 @@
         rot.fan.setAttribute('transform', `rotate(${a.fan})`);
         pH.setAttribute('patternTransform', `translate(0 ${a.sh.toFixed(1)})`);
       }
-    });
+    }, pg); /* P2: only while the page is on the screen */
     /* #59: the motors = CONTROL faceplate, the Y / N square = PERMISSIVE · TREND · MONITOR */
     const MON = [
       ['Top bearing', () => oil(1), '°C', 'TIFA10526'],

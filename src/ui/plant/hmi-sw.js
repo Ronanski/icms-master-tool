@@ -913,8 +913,8 @@
       if (se) se.setAttribute('visibility', sv ? 'visible' : 'hidden');
     };
     tick();
-    let seen = false;
-    const iv = setInterval(() => (g.isConnected ? ((seen = true), tick()) : seen && clearInterval(iv)), 500);
+    /* P2: the shared driver, only while the page is on the screen */
+    HSYM.every(g, 500, tick);
     /* 3.2.0-beta.74: a click on a pump = its pop-out faceplate beside it (fp-pop.js; the I/O wiring is a link inside); a machine with no
        motor drawing (debris filter, CTCS panel, hypo pumps): its info card as before. Current = the same value as the page (plant model) */
     const CUR = { SWA: 'IIP1501A', SWB: 'IIP1501B', SWC: 'IIP1501C', BPA: 'IIP1503A', BPB: 'IIP1503B', BPC: 'IIP1503C' };

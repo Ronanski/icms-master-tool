@@ -688,8 +688,8 @@
         h.addEventListener('click', e => (e.stopPropagation(), info(HIT[id][0])));
       });
     tick();
-    let seen = false;
-    const iv = setInterval(() => (g.isConnected ? ((seen = true), tick()) : seen && clearInterval(iv)), 500);
+    /* P2: the shared driver, only while the page is on the screen */
+    HSYM.every(g, 500, tick);
     return pg;
   }
   PLANT_V2.screens.IA = air;

@@ -842,8 +842,12 @@
       AS.xlk = AS.xlk || {};
       if (!AS.xlk[a.n]) AS.xlk[a.n] = { from: fakeFrom(a.d), fromNets: [], tag: 'DITL ' + a.ref, ditl: true };
     }
-    /* 4. the DITL page shows the new values */
-    if (AN.cat !== 'an' && c) {
+    /* 4. the DITL page shows the new values (P2, user 2026-11-01: only while the Logic page is on the screen; it is drawn again when
+       it opens) */
+    const dShown = !(document.body.dataset.tab && document.body.dataset.tab !== 'logic') && !document.body.classList.contains('plant');
+    if (AN.cat !== 'an' && c && !dShown) W._dStale = 1;
+    if (AN.cat !== 'an' && c && dShown) {
+      if (W._dStale) ((W._dStale = 0), (chCur = true));
       if (chCur) render();
       else
         try {

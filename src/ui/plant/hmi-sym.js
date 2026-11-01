@@ -517,22 +517,10 @@
       if (v.bar) SA(v.bar, 'width', (28 * (v.pos || 0)).toFixed(1));
     }
     let last = 0,
-      bt = 0,
-      seen = false,
-      raf = 0;
+      bt = 0;
     function frame(now) {
-      if (!root.isConnected) {
-        if (seen) return;
-        raf = requestAnimationFrame(frame);
-        return;
-      }
-      seen = true;
       const dt = Math.min(0.1, last ? (now - last) / 1000 : 0);
       last = now;
-      if (document.hidden) {
-        raf = requestAnimationFrame(frame);
-        return;
-      }
       bt += dt;
       if (bt > 0.5) ((bt = 0), (blink = !blink));
       const run = simRunning(),
@@ -583,14 +571,14 @@
         if (t.inflow > 0.05) SA(t.str, 'stroke-dashoffset', (t.so -= adt * 60).toFixed(1));
       }
       for (const fn of EACH) fn(adt, dt);
-      raf = requestAnimationFrame(frame);
     }
-    raf = requestAnimationFrame(frame);
+    /* the shared driver (drive below): only while the page is on the screen; back on the screen, the time jump is capped (0.1 s) */
+    const job = run(root, 0, frame, () => (last = 0));
     A.travel = (id, s) => (
       (V[id] = V[id] || { pos: null, b: qa(`[data-vb="${id}"]`), bar: q(`[data-vp="${id}"]`) }),
       (V[id].travel = s)
     );
-    A.stop = () => cancelAnimationFrame(raf);
+    A.stop = () => job.stop();
     /* a page's own motion (a turbine shaft, an actuator): fn(adt, dt) every frame; adt = 0 while the simulation is paused */
     A.each = fn => EACH.push(fn);
     /* a switch lamp: ok true = normal (green), false = alarm (red, blinking text), null = no value */
@@ -619,17 +607,63 @@
   /* ---------- light pages (user 2026-11-01: light on a tablet, PENDING_HMI_BUILD rule 5) ---------- */
   /* one shared 15 Hz clock for everything that moves on the pages built from an approved mockup (pipe flows, rotor, fans): one
      small repaint 15 times a second instead of CSS / SMIL animations on the big drawing. fn(t seconds) returns false to leave */
-  const TICKS = new Set();
-  let tickIv = 0;
-  function clock(fn) {
-    TICKS.add(fn);
-    if (!tickIv)
-      tickIv = setInterval(() => {
-        if (document.hidden) return;
-        const t = performance.now() / 1000;
-        for (const f of TICKS) if (f(t) === false) TICKS.delete(f);
-        if (!TICKS.size) (clearInterval(tickIv), (tickIv = 0));
-      }, 66);
+  /* user 2026-11-01 (P2): ONE driver for every page: the scene loops (live), this 15 Hz clock and the page refreshes (every) run on one
+     requestAnimationFrame, and only while their page is on the screen (in the document, displayed, the browser tab visible). A
+     hidden page does nothing at all; when it comes back (wake: the plant workspace opens, a tab, the browser tab) its refresh runs
+     at once */
+  const JOBS = new Set();
+  let rafD = 0;
+  function shown(el) {
+    try {
+      return !!el && el.isConnected && !document.hidden && el.getClientRects().length > 0;
+    } catch (e) {
+      return false;
+    }
+  }
+  function drive(now) {
+    rafD = 0;
+    let more = false;
+    for (const j of JOBS) {
+      if (!j.el.isConnected) {
+        /* not in the page yet (drawn a moment later): wait up to 3 s (a drawing that never goes in the page is dropped); gone after it
+           was there: removed with its page */
+        if (j.seen || now - j.t0 > 3000) JOBS.delete(j);
+        else more = true;
+        continue;
+      }
+      j.seen = true;
+      if (!shown(j.el)) {
+        if (!j.hid) ((j.hid = true), j.off && j.off());
+        continue;
+      }
+      more = true;
+      if (j.hid) ((j.hid = false), (j.lt = -1e9));
+      if (now - j.lt < j.ms) continue;
+      j.lt = now;
+      let r;
+      try {
+        r = j.fn(now);
+      } catch (e) {}
+      if (r === false) JOBS.delete(j);
+    }
+    if (more) rafD = requestAnimationFrame(drive);
+  }
+  function wake() {
+    if (!rafD && JOBS.size) rafD = requestAnimationFrame(drive);
+  }
+  document.addEventListener('visibilitychange', wake);
+  /* fn(now ms) every ms (0 = every frame) while el is on the screen; off() when it goes off the screen */
+  function run(el, ms, fn, off) {
+    const j = { el, ms: ms || 0, fn, off, lt: -1e9, t0: performance.now(), seen: false, hid: false, stop: () => JOBS.delete(j) };
+    JOBS.add(j);
+    wake();
+    return j;
+  }
+  /* a page refresh (was a setInterval of the page): only while el is on the screen, at once when it comes back */
+  const every = (el, ms, fn) => run(el, ms, () => fn());
+  function clock(fn, el) {
+    /* el: the page (pages before P2 passed none: the document root, always on the screen) */
+    run(el || document.documentElement, 66, now => fn(now / 1000));
   }
   /* an HTML layer over the plant svg that follows its pan and zoom (CSS transform only, the compositor moves it): the drawing of an
      approved mockup as it is (its own svg, HTML flue gas behind it, the flow overlay over it). anchor = a <g> of the page whose
@@ -678,6 +712,10 @@
   window.HSYM = {
     C,
     clock,
+    every,
+    shown,
+    wake,
+    jobs: () => [...JOBS].map(j => ({ tag: j.el.tagName, id: j.el.id || j.el.getAttribute('data-k') || '', ms: j.ms, conn: j.el.isConnected, seen: j.seen, hid: j.hid })) /* for the checks */,
     layer,
     T,
     FRAME,

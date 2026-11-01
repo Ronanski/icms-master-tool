@@ -1226,6 +1226,12 @@
     if (!ws) return;
     ws.style.display = on ? 'grid' : 'none';
     document.body.classList.toggle('plant', !!on);
+    /* P2 (user 2026-11-01): a hidden plant page does nothing: its SMIL motion (007, 030) stops, the shared driver of the pages
+       (hmi-sym.js) stops by itself and starts again here */
+    try {
+      if (svg && svg.pauseAnimations) on ? svg.unpauseAnimations() : svg.pauseAnimations();
+      if (on && window.HSYM && HSYM.wake) HSYM.wake();
+    } catch (e) {}
     if (btn) btn.classList.toggle('on', !!on);
     document.querySelectorAll('#gsbar .cat button').forEach(b => b !== btn && on && b.classList.remove('on'));
     if (on) {

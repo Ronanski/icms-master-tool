@@ -743,7 +743,7 @@
         if (f._o !== o) (f[0].setAttribute('visibility', o ? 'visible' : 'hidden'), (f._o = o));
         if (o && go) f[0].setAttribute('stroke-dashoffset', ((f._d = ((f._d || 0) - f[1] * dt) % 100)).toFixed(1));
       }
-    });
+    }, pg); /* P2: only while the page is on the screen */
 
     /* ---------- #59 faceplates ---------- */
     const bind = (id, f) =>

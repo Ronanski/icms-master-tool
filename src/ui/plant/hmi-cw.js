@@ -712,8 +712,8 @@
       }
     };
     tick();
-    let seen = false;
-    const iv = setInterval(() => (g.isConnected ? ((seen = true), tick()) : seen && clearInterval(iv)), 500);
+    /* P2: the shared driver, only while the page is on the screen */
+    HSYM.every(g, 500, tick);
     const HIT = {
       ACA: [MACH.ACA.io, 'ACWP-A P-1108A · DITL-76 (red = running, green = stopped)'],
       ACB: [MACH.ACB.io, 'ACWP-B P-1108B · DITL-77 (red = running, green = stopped)'],
