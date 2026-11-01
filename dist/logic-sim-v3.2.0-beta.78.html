@@ -30203,7 +30203,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build a6df039'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 63da10c'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -47232,8 +47232,12 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       AS.xlk = AS.xlk || {};
       if (!AS.xlk[a.n]) AS.xlk[a.n] = { from: fakeFrom(a.d), fromNets: [], tag: 'DITL ' + a.ref, ditl: true };
     }
-    /* 4. the DITL page shows the new values */
-    if (AN.cat !== 'an' && c) {
+    /* 4. the DITL page shows the new values (P2, user 2026-11-01: only while the Logic page is on the screen; it is drawn again when
+       it opens) */
+    const dShown = !(document.body.dataset.tab && document.body.dataset.tab !== 'logic') && !document.body.classList.contains('plant');
+    if (AN.cat !== 'an' && c && !dShown) W._dStale = 1;
+    if (AN.cat !== 'an' && c && dShown) {
+      if (W._dStale) ((W._dStale = 0), (chCur = true));
       if (chCur) render();
       else
         try {
@@ -53120,7 +53124,8 @@ body.app2 #gdtrb[hidden]{display:none!important}
     });
     const pmUpd = () => {
       const on = !!(window.AN && AN.plantOn);
-      pmBtn.textContent = 'Plant model: ' + (on ? 'ON' : 'OFF');
+      const t = 'Plant model: ' + (on ? 'ON' : 'OFF');
+      if (pmBtn.textContent !== t) pmBtn.textContent = t; /* P2: every 300 ms, written only on a change (a hidden Tools page did a DOM write each time) */
       pmBtn.classList.toggle('on', on);
       document.body.classList.toggle('pmoff', !on);
     };
@@ -67120,7 +67125,7 @@ window.PLANT_SYS = [
     {
       const t = K('espst');
       const upd = () => {
-        if (!t || !t.isConnected) return clearInterval(iv);
+        if (!t || !t.isConnected) return iv && iv.stop();
         let on = false,
           tx = '';
         try {
@@ -67133,7 +67138,8 @@ window.PLANT_SYS = [
         t.textContent = (on ? 'RUNNING' : 'STOPPED') + tx;
         t.setAttribute('fill', on ? C.run : C.stop);
       };
-      const iv = setInterval(upd, 1000);
+      /* P2: the shared driver (hmi-sym.js), only while the page is on the screen */
+      const iv = t ? HSYM.every(t, 1000, upd) : null;
       upd();
     }
     /* R9 #87: air preheater main drive, run state of DITL-43 (was: grey, no state) */
@@ -67404,8 +67410,8 @@ window.PLANT_SYS = [
         (list.textContent = act.length + ' active (header ALARM list)'), list.setAttribute('fill', act.some(r => r.kind === 'TRIP') ? C.alarm : C.warn);
     };
     upd();
-    let seen = false;
-    const iv = setInterval(() => (g.isConnected ? ((seen = true), upd()) : seen && clearInterval(iv)), 1000);
+    /* P2: the shared driver (hmi-sym.js), only while the page is on the screen */
+    HSYM.every(g, 1000, upd);
     /* navigation: buttons to the related screens (the old screens open until the new set replaces them); STYLE at the right */
     const y = H - 32;
     g.append(S_('rect', { x: 0, y, width: W, height: 32, fill: C.frame }));
@@ -68399,8 +68405,8 @@ window.PLANT_SYS = [
       if (se) se.setAttribute('visibility', sv ? 'visible' : 'hidden');
     };
     tick();
-    let seen = false;
-    const iv = setInterval(() => (g.isConnected ? ((seen = true), tick()) : seen && clearInterval(iv)), 500);
+    /* P2: the shared driver, only while the page is on the screen */
+    HSYM.every(g, 500, tick);
     /* 3.2.0-beta.74: a click on a pump = its pop-out faceplate beside it (fp-pop.js; the I/O wiring is a link inside); a machine with no
        motor drawing (debris filter, CTCS panel, hypo pumps): its info card as before. Current = the same value as the page (plant model) */
     const CUR = { SWA: 'IIP1501A', SWB: 'IIP1501B', SWC: 'IIP1501C', BPA: 'IIP1503A', BPB: 'IIP1503B', BPC: 'IIP1503C' };
@@ -69071,22 +69077,10 @@ window.PLANT_SYS = [
       if (v.bar) SA(v.bar, 'width', (28 * (v.pos || 0)).toFixed(1));
     }
     let last = 0,
-      bt = 0,
-      seen = false,
-      raf = 0;
+      bt = 0;
     function frame(now) {
-      if (!root.isConnected) {
-        if (seen) return;
-        raf = requestAnimationFrame(frame);
-        return;
-      }
-      seen = true;
       const dt = Math.min(0.1, last ? (now - last) / 1000 : 0);
       last = now;
-      if (document.hidden) {
-        raf = requestAnimationFrame(frame);
-        return;
-      }
       bt += dt;
       if (bt > 0.5) ((bt = 0), (blink = !blink));
       const run = simRunning(),
@@ -69137,14 +69131,14 @@ window.PLANT_SYS = [
         if (t.inflow > 0.05) SA(t.str, 'stroke-dashoffset', (t.so -= adt * 60).toFixed(1));
       }
       for (const fn of EACH) fn(adt, dt);
-      raf = requestAnimationFrame(frame);
     }
-    raf = requestAnimationFrame(frame);
+    /* the shared driver (drive below): only while the page is on the screen; back on the screen, the time jump is capped (0.1 s) */
+    const job = run(root, 0, frame, () => (last = 0));
     A.travel = (id, s) => (
       (V[id] = V[id] || { pos: null, b: qa(`[data-vb="${id}"]`), bar: q(`[data-vp="${id}"]`) }),
       (V[id].travel = s)
     );
-    A.stop = () => cancelAnimationFrame(raf);
+    A.stop = () => job.stop();
     /* a page's own motion (a turbine shaft, an actuator): fn(adt, dt) every frame; adt = 0 while the simulation is paused */
     A.each = fn => EACH.push(fn);
     /* a switch lamp: ok true = normal (green), false = alarm (red, blinking text), null = no value */
@@ -69173,17 +69167,63 @@ window.PLANT_SYS = [
   /* ---------- light pages (user 2026-11-01: light on a tablet, PENDING_HMI_BUILD rule 5) ---------- */
   /* one shared 15 Hz clock for everything that moves on the pages built from an approved mockup (pipe flows, rotor, fans): one
      small repaint 15 times a second instead of CSS / SMIL animations on the big drawing. fn(t seconds) returns false to leave */
-  const TICKS = new Set();
-  let tickIv = 0;
-  function clock(fn) {
-    TICKS.add(fn);
-    if (!tickIv)
-      tickIv = setInterval(() => {
-        if (document.hidden) return;
-        const t = performance.now() / 1000;
-        for (const f of TICKS) if (f(t) === false) TICKS.delete(f);
-        if (!TICKS.size) (clearInterval(tickIv), (tickIv = 0));
-      }, 66);
+  /* user 2026-11-01 (P2): ONE driver for every page: the scene loops (live), this 15 Hz clock and the page refreshes (every) run on one
+     requestAnimationFrame, and only while their page is on the screen (in the document, displayed, the browser tab visible). A
+     hidden page does nothing at all; when it comes back (wake: the plant workspace opens, a tab, the browser tab) its refresh runs
+     at once */
+  const JOBS = new Set();
+  let rafD = 0;
+  function shown(el) {
+    try {
+      return !!el && el.isConnected && !document.hidden && el.getClientRects().length > 0;
+    } catch (e) {
+      return false;
+    }
+  }
+  function drive(now) {
+    rafD = 0;
+    let more = false;
+    for (const j of JOBS) {
+      if (!j.el.isConnected) {
+        /* not in the page yet (drawn a moment later): wait up to 3 s (a drawing that never goes in the page is dropped); gone after it
+           was there: removed with its page */
+        if (j.seen || now - j.t0 > 3000) JOBS.delete(j);
+        else more = true;
+        continue;
+      }
+      j.seen = true;
+      if (!shown(j.el)) {
+        if (!j.hid) ((j.hid = true), j.off && j.off());
+        continue;
+      }
+      more = true;
+      if (j.hid) ((j.hid = false), (j.lt = -1e9));
+      if (now - j.lt < j.ms) continue;
+      j.lt = now;
+      let r;
+      try {
+        r = j.fn(now);
+      } catch (e) {}
+      if (r === false) JOBS.delete(j);
+    }
+    if (more) rafD = requestAnimationFrame(drive);
+  }
+  function wake() {
+    if (!rafD && JOBS.size) rafD = requestAnimationFrame(drive);
+  }
+  document.addEventListener('visibilitychange', wake);
+  /* fn(now ms) every ms (0 = every frame) while el is on the screen; off() when it goes off the screen */
+  function run(el, ms, fn, off) {
+    const j = { el, ms: ms || 0, fn, off, lt: -1e9, t0: performance.now(), seen: false, hid: false, stop: () => JOBS.delete(j) };
+    JOBS.add(j);
+    wake();
+    return j;
+  }
+  /* a page refresh (was a setInterval of the page): only while el is on the screen, at once when it comes back */
+  const every = (el, ms, fn) => run(el, ms, () => fn());
+  function clock(fn, el) {
+    /* el: the page (pages before P2 passed none: the document root, always on the screen) */
+    run(el || document.documentElement, 66, now => fn(now / 1000));
   }
   /* an HTML layer over the plant svg that follows its pan and zoom (CSS transform only, the compositor moves it): the drawing of an
      approved mockup as it is (its own svg, HTML flue gas behind it, the flow overlay over it). anchor = a <g> of the page whose
@@ -69232,6 +69272,10 @@ window.PLANT_SYS = [
   window.HSYM = {
     C,
     clock,
+    every,
+    shown,
+    wake,
+    jobs: () => [...JOBS].map(j => ({ tag: j.el.tagName, id: j.el.id || j.el.getAttribute('data-k') || '', ms: j.ms, conn: j.el.isConnected, seen: j.seen, hid: j.hid })) /* for the checks */,
     layer,
     T,
     FRAME,
@@ -69857,11 +69901,8 @@ window.PLANT_SYS = [
       A.tank('E', V.LICW1109, 2.4, et);
     };
     tick();
-    let seen = false;
-    const iv = setInterval(
-      () => (g.isConnected ? ((seen = true), tick()) : seen && (clearInterval(iv), A.stop())),
-      500
-    );
+    /* P2: the shared driver, only while the page is on the screen (the scene loop stops with the page) */
+    H.every(g, 500, tick);
     const HIT = {
       PA: [MACH.PA.io, MACH.PA.n + ' ' + MACH.PA.t + ' · DITL-112 (red = running, green = stopped)'],
       PB: [MACH.PB.io, MACH.PB.n + ' ' + MACH.PB.t + ' · DITL-112 #B (red = running, green = stopped)'],
@@ -70793,11 +70834,8 @@ window.PLANT_SYS = [
     qa('[data-op]').forEach(bb => bb.addEventListener('click', e => (e.stopPropagation(), doOp(bb.dataset.op))));
     boxEl.addEventListener('click', e => e.stopPropagation());
     tick();
-    let seen = false;
-    const iv = setInterval(
-      () => (g.isConnected ? ((seen = true), tick()) : seen && (clearInterval(iv), A.stop())),
-      500
-    );
+    /* P2: the shared driver, only while the page is on the screen (the scene loop stops with the page) */
+    H.every(g, 500, tick);
     const HIT = {
       TK: 'T-1920 main oil tank · level switches LSH / LSL (TCS, MAIN OIL TANK LEVEL HIGH / LOW)',
       CLA: 'H-1921A lube oil cooler (in service) · outlet TE-LO1002-1 (DCS ABC-053)',
@@ -71655,8 +71693,8 @@ window.PLANT_SYS = [
         h.addEventListener('click', e => (e.stopPropagation(), info(HIT[id][0])));
       });
     tick();
-    let seen = false;
-    const iv = setInterval(() => (g.isConnected ? ((seen = true), tick()) : seen && clearInterval(iv)), 500);
+    /* P2: the shared driver, only while the page is on the screen */
+    HSYM.every(g, 500, tick);
     return pg;
   }
   PLANT_V2.screens.IA = air;
@@ -72397,8 +72435,8 @@ window.PLANT_SYS = [
       }
     };
     tick();
-    let seen = false;
-    const iv = setInterval(() => (g.isConnected ? ((seen = true), tick()) : seen && clearInterval(iv)), 500);
+    /* P2: the shared driver, only while the page is on the screen */
+    HSYM.every(g, 500, tick);
     const HIT = {
       ACA: [MACH.ACA.io, 'ACWP-A P-1108A · DITL-76 (red = running, green = stopped)'],
       ACB: [MACH.ACB.io, 'ACWP-B P-1108B · DITL-77 (red = running, green = stopped)'],
@@ -72926,7 +72964,7 @@ window.PLANT_SYS = [
     live('', 'SVPA1052', v => (svIO = v == null ? null : v > 0.5 ? 1 : 0));
     const Dk = () => window.LS_DOCK;
     const tick = () => {
-      if (!pg.isConnected) return clearInterval(iv);
+      if (!pg.isConnected) return iv.stop();
       let s = null,
         v = null;
       try {
@@ -72952,7 +72990,8 @@ window.PLANT_SYS = [
       q('[data-yn="t"]').textContent = ok == null ? '-' : ok ? 'Y' : 'N';
       q('[data-eqb="APH"]').setAttribute('aria-label', 'Permissive, monitor and trend: ' + (ok == null ? 'no logic' : ok ? 'Y, complete' : 'N, not complete'));
     };
-    const iv = setInterval(tick, 1000);
+    /* P2: the shared driver, only while the page is on the screen */
+    const iv = H.every(pg, 1000, tick);
     tick();
     /* everything that moves, on the one 15 Hz clock: frozen while the simulation is paused or the motion is reduced */
     const still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -72995,7 +73034,7 @@ window.PLANT_SYS = [
         rot.fan.setAttribute('transform', `rotate(${a.fan})`);
         pH.setAttribute('patternTransform', `translate(0 ${a.sh.toFixed(1)})`);
       }
-    });
+    }, pg); /* P2: only while the page is on the screen */
     /* #59: the motors = CONTROL faceplate, the Y / N square = PERMISSIVE · TREND · MONITOR */
     const MON = [
       ['Top bearing', () => oil(1), '°C', 'TIFA10526'],
@@ -73783,7 +73822,7 @@ window.PLANT_SYS = [
         if (f._o !== o) (f[0].setAttribute('visibility', o ? 'visible' : 'hidden'), (f._o = o));
         if (o && go) f[0].setAttribute('stroke-dashoffset', ((f._d = ((f._d || 0) - f[1] * dt) % 100)).toFixed(1));
       }
-    });
+    }, pg); /* P2: only while the page is on the screen */
 
     /* ---------- #59 faceplates ---------- */
     const bind = (id, f) =>
@@ -75983,6 +76022,12 @@ window.PLANT_SYS = [
     if (!ws) return;
     ws.style.display = on ? 'grid' : 'none';
     document.body.classList.toggle('plant', !!on);
+    /* P2 (user 2026-11-01): a hidden plant page does nothing: its SMIL motion (007, 030) stops, the shared driver of the pages
+       (hmi-sym.js) stops by itself and starts again here */
+    try {
+      if (svg && svg.pauseAnimations) on ? svg.unpauseAnimations() : svg.pauseAnimations();
+      if (on && window.HSYM && HSYM.wake) HSYM.wake();
+    } catch (e) {}
     if (btn) btn.classList.toggle('on', !!on);
     document.querySelectorAll('#gsbar .cat button').forEach(b => b !== btn && on && b.classList.remove('on'));
     if (on) {
