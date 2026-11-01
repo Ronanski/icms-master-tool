@@ -30198,7 +30198,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.77';
-      c3.textContent += ' · build 0d0ab48'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build f43a683'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -73697,7 +73697,7 @@ window.PLANT_SYS = [
   const Ls = (window.PLANT_SYS = window.PLANT_SYS || []),
     i = Ls.findIndex(x => x.id === 'APH');
   Ls.splice(i >= 0 ? i + 1 : Ls.length, 0, {
-    fitW: 1,
+    fitAll: 1,
     id: 'BIAS',
     title: '039 RH / SH BIASING DAMPER',
     num: '039',
@@ -75612,9 +75612,7 @@ window.PLANT_SYS = [
       /* live test 2026-10-30 #1 (030 cut on both sides beside the Training dock): the flag is on the screen (cur.g), cur is its list entry;
          cur.fitAll was never set, so 030 was fitted to the height like the others. Whole page, centred in the area */
       all = !!(cur && (cur.fitAll || (cur.g && cur.g.fitAll))),
-      /* a tall page built from an approved mockup (039, fitW) fits the width and starts at the top: drag to see the rest */
-      fw = !all && !!(cur && (cur.fitW || (cur.g && cur.g.fitW))),
-      s = all ? Math.max(sh, sw) : fw ? sw : tall ? sh : sh <= sw ? Math.max(sh, sw * 0.7) : sh;
+      s = all ? Math.max(sh, sw) : tall ? sh : sh <= sw ? Math.max(sh, sw * 0.7) : sh;
     vb = [box0[0] + (tall && !all ? 0 : (w - r.width * s) / 2), box0[1] - (all ? Math.max(0, (r.height * s - h) / 2) : 0), r.width * s, r.height * s];
     svg.setAttribute('viewBox', vb.join(' '));
     svSz = [r.width, r.height];

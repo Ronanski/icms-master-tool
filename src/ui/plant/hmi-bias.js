@@ -776,7 +776,7 @@
   const Ls = (window.PLANT_SYS = window.PLANT_SYS || []),
     i = Ls.findIndex(x => x.id === 'APH');
   Ls.splice(i >= 0 ? i + 1 : Ls.length, 0, {
-    fitW: 1,
+    fitAll: 1,
     id: 'BIAS',
     title: '039 RH / SH BIASING DAMPER',
     num: '039',
