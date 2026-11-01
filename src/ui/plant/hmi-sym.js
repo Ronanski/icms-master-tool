@@ -606,8 +606,69 @@
     return A;
   }
 
+  /* ---------- light pages (user 2026-11-01: light on a tablet, PENDING_HMI_BUILD rule 5) ---------- */
+  /* one shared 15 Hz clock for everything that moves on the pages built from an approved mockup (pipe flows, rotor, fans): one
+     small repaint 15 times a second instead of CSS / SMIL animations on the big drawing. fn(t seconds) returns false to leave */
+  const TICKS = new Set();
+  let tickIv = 0;
+  function clock(fn) {
+    TICKS.add(fn);
+    if (!tickIv)
+      tickIv = setInterval(() => {
+        if (document.hidden) return;
+        const t = performance.now() / 1000;
+        for (const f of TICKS) if (f(t) === false) TICKS.delete(f);
+        if (!TICKS.size) (clearInterval(tickIv), (tickIv = 0));
+      }, 66);
+  }
+  /* an HTML layer over the plant svg that follows its pan and zoom (CSS transform only, the compositor moves it): the drawing of an
+     approved mockup as it is (its own svg, HTML flue gas behind it, the flow overlay over it). anchor = a <g> of the page whose
+     user space is the mockup space (w x h). Only the .hs-lay [data-hit] elements take the pointer; a wheel over them zooms the plant
+     as anywhere else. Removed with the page */
+  function layer(anchor, w, h) {
+    const svg = anchor.ownerSVGElement,
+      par = svg && svg.parentNode;
+    if (!par) return null;
+    const clip = document.createElement('div'),
+      root = document.createElement('div');
+    clip.className = 'hs-lay';
+    clip.style.cssText = 'position:absolute;overflow:hidden;pointer-events:none;z-index:1;left:0;top:0;width:0;height:0';
+    root.style.cssText = `position:absolute;left:0;top:0;width:${w}px;height:${h}px;transform-origin:0 0`;
+    clip.append(root);
+    par.append(clip);
+    if (getComputedStyle(par).position === 'static') par.style.position = 'relative';
+    const sync = () => {
+      if (!anchor.isConnected) return gone();
+      const m = anchor.getScreenCTM(),
+        P = par.getBoundingClientRect(),
+        R = svg.getBoundingClientRect();
+      if (!m) return;
+      Object.assign(clip.style, { left: R.left - P.left + par.scrollLeft + 'px', top: R.top - P.top + par.scrollTop + 'px', width: R.width + 'px', height: R.height + 'px' });
+      root.style.transform = `matrix(${m.a},${m.b},${m.c},${m.d},${m.e - R.left},${m.f - R.top})`;
+    };
+    const mo = new MutationObserver(sync),
+      ro = window.ResizeObserver ? new ResizeObserver(sync) : null;
+    mo.observe(svg, { attributes: true, attributeFilter: ['viewBox'] });
+    if (ro) ro.observe(svg);
+    addEventListener('resize', sync);
+    const iv = setInterval(() => anchor.isConnected || gone(), 1000);
+    function gone() {
+      mo.disconnect();
+      if (ro) ro.disconnect();
+      removeEventListener('resize', sync);
+      clearInterval(iv);
+      clip.remove();
+    }
+    clip.addEventListener('wheel', e => (e.preventDefault(), svg.dispatchEvent(new WheelEvent('wheel', e))), { passive: false });
+    sync();
+    requestAnimationFrame(sync);
+    return { root, sync };
+  }
+
   window.HSYM = {
     C,
+    clock,
+    layer,
     T,
     FRAME,
     AREA,

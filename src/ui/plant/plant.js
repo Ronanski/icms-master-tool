@@ -984,7 +984,9 @@
       /* live test 2026-10-30 #1 (030 cut on both sides beside the Training dock): the flag is on the screen (cur.g), cur is its list entry;
          cur.fitAll was never set, so 030 was fitted to the height like the others. Whole page, centred in the area */
       all = !!(cur && (cur.fitAll || (cur.g && cur.g.fitAll))),
-      s = all ? Math.max(sh, sw) : tall ? sh : sh <= sw ? Math.max(sh, sw * 0.7) : sh;
+      /* a tall page built from an approved mockup (039, fitW) fits the width and starts at the top: drag to see the rest */
+      fw = !all && !!(cur && (cur.fitW || (cur.g && cur.g.fitW))),
+      s = all ? Math.max(sh, sw) : fw ? sw : tall ? sh : sh <= sw ? Math.max(sh, sw * 0.7) : sh;
     vb = [box0[0] + (tall && !all ? 0 : (w - r.width * s) / 2), box0[1] - (all ? Math.max(0, (r.height * s - h) / 2) : 0), r.width * s, r.height * s];
     svg.setAttribute('viewBox', vb.join(' '));
     svSz = [r.width, r.height];

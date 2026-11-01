@@ -1371,7 +1371,9 @@
       return w;
     };
     let x = 12;
-    for (const [id, s] of NAV) x += btn(x, s, id === sys.id, id === sys.id ? 'this screen' : 'open ' + s, api.go && (() => api.go(id))) + 6;
+    /* a page built from an approved mockup lists the tabs of its mockup (sys.nav: 038, 039) */
+    const nav = sys.nav ? sys.nav.map(k => NAV.concat(XNAV).find(n => n[0] === k)).filter(Boolean) : NAV;
+    for (const [id, s] of nav) x += btn(x, s, id === sys.id, id === sys.id ? 'this screen' : 'open ' + s, api.go && (() => api.go(id))) + 6;
     /* 030 SEAWATER, MAKE-UP WATER, 036 TURBINE OIL, INSTRUMENT & PLANT AIR and 027 CLOSED COOLING WATER are drawn in one style (user 2026-10-29: STEEL): no style choice there */
     if (sys.style) return;
     x = W - 12 - ORDER.reduce((a, k) => a + STYLES[k].name.length * 6.3 + 28, 0);
@@ -1394,6 +1396,10 @@
     ['TO', '036 TURBINE OIL'],
     ['IA', 'INSTRUMENT & PLANT AIR'],
     ['CW', '027 CLOSED COOLING WATER']
+  ];
+  const XNAV = [
+    ['APH', '038 AIR PREHEATER'],
+    ['BIAS', '039 RH / SH BIASING DAMPER']
   ];
   window.PLANT_V2 = {
     C,
