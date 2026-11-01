@@ -92,6 +92,20 @@
     const ay = Math.max(14, Math.min(ht - 14, (a.top + a.bottom) / 2 - H.top - y));
     el.style.setProperty('--ay', Math.round(ay) + 'px');
   }
+  /* the window got smaller (a phone turned, the browser narrowed): an open pop-out placed for the old size stays inside the page (it
+     stood off the screen at the right and the whole page scrolled sideways: 867 px wide at 390 px) */
+  function keepIn(el) {
+    const H = host().getBoundingClientRect(),
+      w = el.offsetWidth,
+      ht = el.offsetHeight,
+      x = parseFloat(el.style.left) || 0,
+      y = parseFloat(el.style.top) || 0,
+      nx = Math.max(6, Math.min(H.width - w - 6, x)),
+      ny = Math.max(6, Math.min(H.height - ht - 6, y));
+    if (Math.abs(nx - x) > 0.5) ((el.style.left = Math.round(nx) + 'px'), (el.dataset.side = 'n'));
+    if (Math.abs(ny - y) > 0.5) el.style.top = Math.round(ny) + 'px';
+  }
+  addEventListener('resize', () => document.querySelectorAll('.fpo-near').forEach(el => el.offsetParent && keepIn(el)));
   /* dragged by its header */
   function drag(el, hd) {
     hd.addEventListener('pointerdown', e => {

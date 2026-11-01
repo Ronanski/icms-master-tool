@@ -722,7 +722,13 @@
     return XL.get(d);
   }
   /* one scan of the whole world */
+  /* P3 time-slicing (user 2026-11-01 "T1, 3"): one scan as a generator that yields after each DITL sheet (AN.sched runs it in slices
+     between the frames); tick() runs the same generator to the end at once (W.tick, the tests), after a sliced scan still queued */
   function tick(dt, opt) {
+    if (window.AN && AN.sched) AN.sched.flush();
+    for (const _ of tickG(dt, opt));
+  }
+  function* tickG(dt, opt) {
     const t0 = performance.now(),
       { din, ain } = W.idx,
       prev = W.out,
@@ -791,6 +797,7 @@
         if (ch || k !== W._ck) chCur = true;
         W._ck = k;
       }
+      yield;
     }
     /* 3.2.0-beta.6 FIRST-OUT: a TRIP / MFT / STOP output that goes 1 in this scan: its cause is read now (DUI.cause), before
        the other conditions follow, and written to the Event log */
@@ -970,7 +977,9 @@
     }
   };
   let last = 0;
-  setInterval(() => {
+  /* P3 (user 2026-11-01): the DITL scan of the one world is group 2 of the engine scheduler (src/analog/engine/sched.js calls this
+     every 200 ms): the job (a generator) of one scan, or null when the world does not run now */
+  W.scanJob = () => {
     /* the ABC sheets are loaded the first time the ABC page opens: build the index again when they arrive */
     if (W.on && W.idx && W._nA !== AN.sheets.length && AN.sheets.length)
       try {
@@ -980,12 +989,13 @@
     if (!go) {
       if (W.live) W.live = false;
       last = 0;
-      return;
+      return null;
     }
     W.live = true;
     const now = performance.now();
     let dt = Math.min((now - (last || now)) / 1000, 1) * (AN.cat === 'an' ? AN.spd || 1 : TSP);
     last = now;
+    const job = function* () {
     try {
       /* 3.2.0-beta.23: while a short timer counts, a device moves or an output changed (W.busy, set by the scan: tmStep / mvStep / fdStep /
          tick), scans of 2 s,
@@ -993,14 +1003,14 @@
          jumped over in one scan and failed; the time of that frame is what the scans took (the plant follows the same time) */
       if (!W.busy || dt <= 2) {
         TMBUSY = false;
-        tick(dt);
+        yield* tickG(dt);
         W.busy = TMBUSY;
       } else {
         let used = 0;
         for (let n = 0; n < 12 && used < dt - 1e-6; n++) {
           const h = W.busy ? Math.min(2, dt - used) : dt - used;
           TMBUSY = false;
-          tick(h);
+          yield* tickG(h);
           W.busy = TMBUSY;
           used += h;
         }
@@ -1030,7 +1040,9 @@
       } catch (e) {
         console.error(e);
       }
-  }, 200);
+    };
+    return job();
+  };
   /* the world is built once both pages are there (the ABC sheets are linked again when they load, the interval above) */
   let n = 0;
   const iv = setInterval(() => {

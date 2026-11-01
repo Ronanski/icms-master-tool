@@ -25785,7 +25785,14 @@ function shareExt(set) {
     for (const e of l) e.v = cur(e);
   }
 }
+/* P3 time-slicing (user 2026-11-01 "T1, 3"): one step of the set as a generator that yields after each sheet (AN.sched runs it in
+   slices between the frames); stepSet / stepTier run the same generator to the end at once, so a step is the same either way. A
+   synchronous step first finishes a sliced step still in the queue (AN.sched.flush) */
 function stepSet(sh, dt) {
+  if (AN.sched) AN.sched.flush();
+  for (const _ of stepSetG(sh, dt));
+}
+function* stepSetG(sh, dt) {
   const set = actSet(sh);
   for (const x of set)
     for (const l of x.lk || []) {
@@ -25813,9 +25820,16 @@ function stepSet(sh, dt) {
   try {
     shareExt(set);
   } catch (e) {}
-  for (const x of set) anStep(x.S, dt);
+  for (const x of set) {
+    anStep(x.S, dt);
+    yield;
+  }
 }
 function stepTier(sh, dt, K) {
+  if (AN.sched) AN.sched.flush();
+  for (const _ of stepTierG(sh, dt, K));
+}
+function* stepTierG(sh, dt, K) {
   const full = actSet(sh),
     near = new Set([sh]);
   try {
@@ -25860,6 +25874,7 @@ function stepTier(sh, dt, K) {
         m = Math.max(1, Math.ceil(T / 0.5));
       for (let i = 0; i < m; i++) anStep(x.S, T / m);
     }
+    yield;
   }
 }
 function procRemote(x) {
@@ -30203,7 +30218,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build 63da10c'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build cabe91e'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -34297,44 +34312,159 @@ AN.inspAuto = on => {
 /* 2.5.0-beta.20 (UI audit): up to 1180 px the panel is a drawer OVER the drawing: closed at the start, a click on a block or a
    wire opens it (an empty panel covered half of the sheet on a tablet standing up and on a phone) */
 if (matchMedia('(max-width:1180px)').matches) showPanel(false);
+/* the run loop of the ABC (10 Hz) and the DITL scan of the one world (5 Hz): src/analog/engine/sched.js (P3, one place) */
+/* ===== ENGINE SCHEDULER (P3, user 2026-11-01 "T1, 3": time-slicing; the one place where the simulation is run) =====
+
+   SCAN GROUPS (fixed list, fixed order; nothing else steps the simulation on a timer):
+
+   | # | group      | every  | what one job does (the same code as before, as a generator that yields after each sheet)            |
+   |---|------------|--------|-----------------------------------------------------------------------------------------------------|
+   | 1 | ABC        | 100 ms | the set of the current ABC sheet (links.js stepSetG / stepTierG): links -> procRemote -> shareExt ->  |
+   |   |            |        | anStep of each sheet. The PLANT MODEL (unit.js anUnitStep) runs inside anStep of ABC-001C, as before. |
+   |   |            |        | After each step the Training coach (AN.onStep); at the end the drawing / panel paint (Logic page)    |
+   | 2 | DITL world | 200 ms | one scan of the one world (world.js WORLD.scanJob -> tickG): inputs of every DITL sheet -> plantIn ->|
+   |   |            |        | simSheet + timers / MOV / motors of each sheet -> FIRST-OUT events -> W.out -> DITL -> ABC inputs    |
+
+   Rules:
+   - A job runs in slices of at most SLICE ms; the page paints between the slices. Jobs never mix: one job ends before the next
+     starts, in the order they were queued (ABC -> DITL as the timers come).
+   - A group whose last job is still running skips its timer; the time goes into its next job (as a speed above 1x did).
+   - A synchronous step (stepSet / stepTier / WORLD.tick: a faceplate A / M / R / SV / MV, a force, a starting state, the tests)
+     first finishes what is queued (flush). A step called from inside a running job (the Training coach) runs at once.
+   - The result of a step is the same as before: the generators are the old step functions, cut at the sheet boundaries. */
+const AN_SLICE = 4; /* ms */
+AN.sched = (() => {
+  const Q = [],
+    mc = new MessageChannel();
+  let busy = false,
+    posted = false;
+  const end = j => {
+    if (j.end)
+      try {
+        j.end(j);
+      } catch (e) {
+        console.error(e);
+      }
+  };
+  const post = () => {
+    if (!posted) ((posted = true), mc.port2.postMessage(0));
+  };
+  function pump() {
+    posted = false;
+    if (busy) return;
+    busy = true;
+    const t0 = performance.now();
+    try {
+      while (Q.length && performance.now() - t0 < AN_SLICE) {
+        const j = Q[0],
+          t1 = performance.now();
+        let r;
+        try {
+          r = j.g.next();
+        } catch (e) {
+          console.error(e);
+          r = { done: true };
+        }
+        j.cpu += performance.now() - t1;
+        if (r.done) (Q.shift(), end(j));
+      }
+    } finally {
+      busy = false;
+    }
+    if (Q.length) post();
+  }
+  mc.port1.onmessage = pump;
+  return {
+    add(key, g, fin) {
+      Q.push({ key, g, end: fin, cpu: 0 });
+      post();
+    },
+    has: key => Q.some(j => j.key === key),
+    flush() {
+      if (busy) return;
+      busy = true;
+      try {
+        while (Q.length) {
+          const j = Q.shift(),
+            t1 = performance.now();
+          try {
+            while (!j.g.next().done);
+          } catch (e) {
+            console.error(e);
+          }
+          j.cpu += performance.now() - t1;
+          end(j);
+        }
+      } finally {
+        busy = false;
+      }
+    },
+    get size() {
+      return Q.length;
+    }
+  };
+})();
+
+/* group 1: ABC */
+let anAcc = 0;
 setInterval(() => {
-  if (!live() || !AN.run || AN._loading) return;
+  if (!live() || !AN.run || AN._loading) {
+    anAcc = 0;
+    return;
+  }
   const sh = cs();
   if (!sh || !sh.S) return;
-  const dt = 0.1 * AN.spd,
+  anAcc += 0.1 * AN.spd;
+  if (AN.sched.has('abc')) return;
+  const dt = anAcc,
     n = Math.max(1, Math.ceil(dt / 0.5));
+  anAcc = 0;
   histRec(sh, 1);
-  const t0_ = performance.now(),
-    K = AN.tierK || 1;
-  for (let i = 0; i < n; i++) {
-    if (K > 1) stepTier(sh, dt / n, K);
-    else stepSet(sh, dt / n);
-    /* 3.2.0-beta.21: the Training coach (src/ui/training/guide.js) acts after each step, at the time of the plant */
-    if (AN.onStep)
-      try {
-        AN.onStep(dt / n);
-      } catch (e) {}
-  }
-  /* speed (user 2026-11-01, 6x CPU): the drawing and the side panel are painted only while the Logic page shows them; on Home,
-     Training or a plant page only the trends and the hooks run (a faceplate, the plant window), and the drawing is painted when it
-     comes back (anShown below) */
-  if (anShown()) {
-    AN._pStale = 0;
-    paint();
-    panelUpd();
-  } else {
-    AN._pStale = 1;
-    panelUpd(false, true);
-  }
-  {
-    const ms = performance.now() - t0_;
-    AN._ms = AN._ms == null ? ms : AN._ms * 0.85 + ms * 0.15;
-    if (!AN.tierLock && (AN._tn = (AN._tn || 0) + 1) % 10 === 0) {
-      const k = AN.tierK || 1;
-      AN.tierK = AN._ms > 35 ? Math.min(6, k + 1) : AN._ms < 14 ? Math.max(1, k - 1) : k;
+  const K = AN.tierK || 1;
+  AN.sched.add(
+    'abc',
+    (function* () {
+      for (let i = 0; i < n; i++) {
+        if (K > 1) yield* stepTierG(sh, dt / n, K);
+        else yield* stepSetG(sh, dt / n);
+        /* 3.2.0-beta.21: the Training coach (src/ui/training/guide.js) acts after each step, at the time of the plant */
+        if (AN.onStep)
+          try {
+            AN.onStep(dt / n);
+          } catch (e) {}
+      }
+    })(),
+    j => {
+      /* the drawing and the side panel are painted only while the Logic page shows them (interaction.js anShown); elsewhere only
+         the trends and the hooks run, and the drawing is painted when it comes back */
+      if (anShown()) {
+        AN._pStale = 0;
+        paint();
+        panelUpd();
+      } else {
+        AN._pStale = 1;
+        panelUpd(false, true);
+      }
+      /* the tiers: the CPU time of the step (its slices), not the time between them */
+      const ms = j.cpu;
+      AN._ms = AN._ms == null ? ms : AN._ms * 0.85 + ms * 0.15;
+      if (!AN.tierLock && (AN._tn = (AN._tn || 0) + 1) % 10 === 0) {
+        const k = AN.tierK || 1;
+        AN.tierK = AN._ms > 35 ? Math.min(6, k + 1) : AN._ms < 14 ? Math.max(1, k - 1) : k;
+      }
     }
-  }
+  );
 }, 100);
+
+/* group 2: DITL world */
+setInterval(() => {
+  const W = window.WORLD;
+  if (!W || !W.scanJob || AN.sched.has('world')) return;
+  const g = W.scanJob();
+  if (g) AN.sched.add('world', g);
+}, 200);
+/* for the checks (the recorder that proves a sliced step = a step at once) */
+AN.stepSetG = stepSetG;
 /* ---------- v1.13.0 F: step / view / trace / why ---------- */
 {
   const st = document.createElement('style');
@@ -47112,7 +47242,13 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     return XL.get(d);
   }
   /* one scan of the whole world */
+  /* P3 time-slicing (user 2026-11-01 "T1, 3"): one scan as a generator that yields after each DITL sheet (AN.sched runs it in slices
+     between the frames); tick() runs the same generator to the end at once (W.tick, the tests), after a sliced scan still queued */
   function tick(dt, opt) {
+    if (window.AN && AN.sched) AN.sched.flush();
+    for (const _ of tickG(dt, opt));
+  }
+  function* tickG(dt, opt) {
     const t0 = performance.now(),
       { din, ain } = W.idx,
       prev = W.out,
@@ -47181,6 +47317,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
         if (ch || k !== W._ck) chCur = true;
         W._ck = k;
       }
+      yield;
     }
     /* 3.2.0-beta.6 FIRST-OUT: a TRIP / MFT / STOP output that goes 1 in this scan: its cause is read now (DUI.cause), before
        the other conditions follow, and written to the Event log */
@@ -47360,7 +47497,9 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     }
   };
   let last = 0;
-  setInterval(() => {
+  /* P3 (user 2026-11-01): the DITL scan of the one world is group 2 of the engine scheduler (src/analog/engine/sched.js calls this
+     every 200 ms): the job (a generator) of one scan, or null when the world does not run now */
+  W.scanJob = () => {
     /* the ABC sheets are loaded the first time the ABC page opens: build the index again when they arrive */
     if (W.on && W.idx && W._nA !== AN.sheets.length && AN.sheets.length)
       try {
@@ -47370,12 +47509,13 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     if (!go) {
       if (W.live) W.live = false;
       last = 0;
-      return;
+      return null;
     }
     W.live = true;
     const now = performance.now();
     let dt = Math.min((now - (last || now)) / 1000, 1) * (AN.cat === 'an' ? AN.spd || 1 : TSP);
     last = now;
+    const job = function* () {
     try {
       /* 3.2.0-beta.23: while a short timer counts, a device moves or an output changed (W.busy, set by the scan: tmStep / mvStep / fdStep /
          tick), scans of 2 s,
@@ -47383,14 +47523,14 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
          jumped over in one scan and failed; the time of that frame is what the scans took (the plant follows the same time) */
       if (!W.busy || dt <= 2) {
         TMBUSY = false;
-        tick(dt);
+        yield* tickG(dt);
         W.busy = TMBUSY;
       } else {
         let used = 0;
         for (let n = 0; n < 12 && used < dt - 1e-6; n++) {
           const h = W.busy ? Math.min(2, dt - used) : dt - used;
           TMBUSY = false;
-          tick(h);
+          yield* tickG(h);
           W.busy = TMBUSY;
           used += h;
         }
@@ -47420,7 +47560,9 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       } catch (e) {
         console.error(e);
       }
-  }, 200);
+    };
+    return job();
+  };
   /* the world is built once both pages are there (the ABC sheets are linked again when they load, the interval above) */
   let n = 0;
   const iv = setInterval(() => {
@@ -73975,6 +74117,20 @@ window.PLANT_SYS = [
     const ay = Math.max(14, Math.min(ht - 14, (a.top + a.bottom) / 2 - H.top - y));
     el.style.setProperty('--ay', Math.round(ay) + 'px');
   }
+  /* the window got smaller (a phone turned, the browser narrowed): an open pop-out placed for the old size stays inside the page (it
+     stood off the screen at the right and the whole page scrolled sideways: 867 px wide at 390 px) */
+  function keepIn(el) {
+    const H = host().getBoundingClientRect(),
+      w = el.offsetWidth,
+      ht = el.offsetHeight,
+      x = parseFloat(el.style.left) || 0,
+      y = parseFloat(el.style.top) || 0,
+      nx = Math.max(6, Math.min(H.width - w - 6, x)),
+      ny = Math.max(6, Math.min(H.height - ht - 6, y));
+    if (Math.abs(nx - x) > 0.5) ((el.style.left = Math.round(nx) + 'px'), (el.dataset.side = 'n'));
+    if (Math.abs(ny - y) > 0.5) el.style.top = Math.round(ny) + 'px';
+  }
+  addEventListener('resize', () => document.querySelectorAll('.fpo-near').forEach(el => el.offsetParent && keepIn(el)));
   /* dragged by its header */
   function drag(el, hd) {
     hd.addEventListener('pointerdown', e => {
