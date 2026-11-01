@@ -442,41 +442,4 @@ AN.inspAuto = on => {
 /* 2.5.0-beta.20 (UI audit): up to 1180 px the panel is a drawer OVER the drawing: closed at the start, a click on a block or a
    wire opens it (an empty panel covered half of the sheet on a tablet standing up and on a phone) */
 if (matchMedia('(max-width:1180px)').matches) showPanel(false);
-setInterval(() => {
-  if (!live() || !AN.run || AN._loading) return;
-  const sh = cs();
-  if (!sh || !sh.S) return;
-  const dt = 0.1 * AN.spd,
-    n = Math.max(1, Math.ceil(dt / 0.5));
-  histRec(sh, 1);
-  const t0_ = performance.now(),
-    K = AN.tierK || 1;
-  for (let i = 0; i < n; i++) {
-    if (K > 1) stepTier(sh, dt / n, K);
-    else stepSet(sh, dt / n);
-    /* 3.2.0-beta.21: the Training coach (src/ui/training/guide.js) acts after each step, at the time of the plant */
-    if (AN.onStep)
-      try {
-        AN.onStep(dt / n);
-      } catch (e) {}
-  }
-  /* speed (user 2026-11-01, 6x CPU): the drawing and the side panel are painted only while the Logic page shows them; on Home,
-     Training or a plant page only the trends and the hooks run (a faceplate, the plant window), and the drawing is painted when it
-     comes back (anShown below) */
-  if (anShown()) {
-    AN._pStale = 0;
-    paint();
-    panelUpd();
-  } else {
-    AN._pStale = 1;
-    panelUpd(false, true);
-  }
-  {
-    const ms = performance.now() - t0_;
-    AN._ms = AN._ms == null ? ms : AN._ms * 0.85 + ms * 0.15;
-    if (!AN.tierLock && (AN._tn = (AN._tn || 0) + 1) % 10 === 0) {
-      const k = AN.tierK || 1;
-      AN.tierK = AN._ms > 35 ? Math.min(6, k + 1) : AN._ms < 14 ? Math.max(1, k - 1) : k;
-    }
-  }
-}, 100);
+/* the run loop of the ABC (10 Hz) and the DITL scan of the one world (5 Hz): src/analog/engine/sched.js (P3, one place) */

@@ -22,6 +22,10 @@ ck(a.auto>=80&&a.tcs>=40&&a.miss.every(x=>/FCV-DO1012/.test(x)),'kinds: auto '+a
 const v=await p.evaluate(async()=>{AN.reset();AN.plantLoad150();AN.viewSet(true);await new Promise(r=>setTimeout(r,2500));return {n:Object.keys(LS_LIVE.done()).length,live:LS_LIVE.live()}});
 ck(v.n===0&&!v.live,'VIEW at 150 MW: '+v.n+' AUTO steps ticked (live '+v.live+')');
 // 3
+// 3.2.0-beta.78: an AUTO step ticks only in a section the start-up has reached (live.js scan, retest #9: a tick in the section before,
+// or the Gabay there), never ahead of the trainee. The CHECK chain has no Gabay: the trainee's FIELD / TCS ticks ("Assume field steps
+// done") come first, as on the Training page, so every section is reached
+await p.evaluate(()=>{const d={};LS_PROC5002.forEach((s,si)=>s.s.forEach((x,i)=>{if(LS_LIVE.kind(si,i).k!=='auto')d[si+'.'+i]='00:00'}));localStorage.setItem('ls-train',JSON.stringify(d))});
 await p.evaluate(()=>{AN.viewSet(false);LS_LIVE.reset();document.getElementById('chkb').click();window.__done=false;CHECK.run('full').then(()=>window.__done=true)});
 const t0=Date.now();let last=-1;
 while(!(await p.evaluate(()=>window.__done))&&Date.now()-t0<15*60e3){await p.waitForTimeout(15000);const r=await p.evaluate(()=>({n:Object.keys(LS_LIVE.done()).length,mw:+AN.unit.MW||0,t:+AN.unit.t||0}));if(r.n!==last){console.log('     '+Math.round((Date.now()-t0)/1000)+' s: '+r.n+' AUTO steps ticked, '+r.mw.toFixed(1)+' MW');last=r.n}}

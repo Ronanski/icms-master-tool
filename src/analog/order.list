@@ -25,6 +25,7 @@ ui/category-search.js
 ui/links-canvas.js
 ui/paint.js
 ui/interaction.js
+engine/sched.js
 ui/trace.js
 ui/panel.js
 ui/plant-window.js
