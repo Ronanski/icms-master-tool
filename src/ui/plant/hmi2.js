@@ -923,6 +923,21 @@
     return s + bedTable() + legend() + panel();
   }
 
+  /* the plant estimate of the air / flue gas transmitters no logic sheet reads (EST): the derived inputs of E from its live ones (bed
+     temperature, air flows, fans); shared with the pages that show the same transmitters (038 AIR PREHEATER) */
+  function estPrep(E) {
+    E.kb = E.tb == null ? 0 : clamp((E.tb - 30) / (937 - 30), 0, 1.3);
+    E.pa = (E.fpa || 0) / E.pa0;
+    E.sa = (E.fsa || 0) / E.sa0;
+    E.fa = (E.ffa || 0) / E.fa0;
+    E.g = E.idf ? clamp(((E.fpa || 0) + (E.fsa || 0) + (E.ffa || 0)) / 594, 0, 1.4) : 0;
+    E.pf = E.pf0 == null ? 0 : E.pf0;
+    E.tpa = E.ta == null ? 30 : E.ta;
+    E.tsa = E.ts == null ? E.tpa : E.ts;
+    const amb = E.tpa;
+    E.T = (t0, after) => amb + (t0 - amb) * E.kb * (after ? 0.85 + 0.15 * clamp(E.g, 0.2, 1.2) : 1);
+    E.P = p0 => (E.idf ? E.pf + (p0 - -16) * E.g * E.g : E.pf);
+  }
   /* ---------- live links ---------- */
   function airFlueGas(g, api) {
     const pg = S_('g', { transform: `translate(0 ${OY})` });
@@ -941,17 +956,7 @@
     const E = { tb: null, pa0: 354, sa0: 213, fa0: 26.3 };
     const ESTV = [];
     const recalc = () => {
-      E.kb = E.tb == null ? 0 : clamp((E.tb - 30) / (937 - 30), 0, 1.3);
-      E.pa = (E.fpa || 0) / E.pa0;
-      E.sa = (E.fsa || 0) / E.sa0;
-      E.fa = (E.ffa || 0) / E.fa0;
-      E.g = E.idf ? clamp(((E.fpa || 0) + (E.fsa || 0) + (E.ffa || 0)) / 594, 0, 1.4) : 0;
-      E.pf = E.pf0 == null ? 0 : E.pf0;
-      E.tpa = E.ta == null ? 30 : E.ta;
-      E.tsa = E.ts == null ? E.tpa : E.ts;
-      const amb = E.tpa;
-      E.T = (t0, after) => amb + (t0 - amb) * E.kb * (after ? 0.85 + 0.15 * clamp(E.g, 0.2, 1.2) : 1);
-      E.P = p0 => (E.idf ? E.pf + (p0 - -16) * E.g * E.g : E.pf);
+      estPrep(E);
       for (const o of ESTV) {
         let v = null;
         try {
@@ -1366,7 +1371,9 @@
       return w;
     };
     let x = 12;
-    for (const [id, s] of NAV) x += btn(x, s, id === sys.id, id === sys.id ? 'this screen' : 'open ' + s, api.go && (() => api.go(id))) + 6;
+    /* a page built from an approved mockup lists the tabs of its mockup (sys.nav: 038, 039) */
+    const nav = sys.nav ? sys.nav.map(k => NAV.concat(XNAV).find(n => n[0] === k)).filter(Boolean) : NAV;
+    for (const [id, s] of nav) x += btn(x, s, id === sys.id, id === sys.id ? 'this screen' : 'open ' + s, api.go && (() => api.go(id))) + 6;
     /* 030 SEAWATER, MAKE-UP WATER, 036 TURBINE OIL, INSTRUMENT & PLANT AIR and 027 CLOSED COOLING WATER are drawn in one style (user 2026-10-29: STEEL): no style choice there */
     if (sys.style) return;
     x = W - 12 - ORDER.reduce((a, k) => a + STYLES[k].name.length * 6.3 + 28, 0);
@@ -1390,6 +1397,10 @@
     ['IA', 'INSTRUMENT & PLANT AIR'],
     ['CW', '027 CLOSED COOLING WATER']
   ];
+  const XNAV = [
+    ['APH', '038 AIR PREHEATER'],
+    ['BIAS', '039 RH / SH BIASING DAMPER']
+  ];
   window.PLANT_V2 = {
     C,
     styles: ORDER,
@@ -1398,6 +1409,8 @@
     },
     /* the screens of the other files (hmi-sw.js: 030 SEAWATER) */
     screens: SCREENS,
+    EST,
+    estPrep,
     draw(g, sys, api) {
       const S = STYLES[sys.style || SK];
       for (const k in C) delete C[k];

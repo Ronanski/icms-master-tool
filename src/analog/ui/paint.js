@@ -883,6 +883,12 @@ function p2Sync() {
     paint();
   }
 }
+/* a custom property of the page root restyles the whole page: written only when its value changes (speed, user 2026-11-01; --pnc
+   was written once per wire on every paint) */
+function rootVar(k, v) {
+  const r = document.documentElement.style;
+  if (r.getPropertyValue(k) !== v) r.setProperty(k, v);
+}
 function paint0() {
   const sh = cs();
   if (!sh || !sh.S || !L) return;
@@ -937,8 +943,8 @@ function paint0() {
     dW = +AN.ws.dw || 1,
     aW = +AN.ws.aw || 1,
     tube = AN.ws.as !== 'solid';
-  document.documentElement.style.setProperty('--alive', ANC);
-  document.documentElement.style.setProperty('--alv', anLite(ANC));
+  rootVar('--alive', ANC);
+  rootVar('--alv', anLite(ANC));
   anLgdUpd();
   for (const b of S.blk)
     if (b.k === 'VLV' && b.pnl) {
@@ -953,14 +959,13 @@ function paint0() {
       }
     }
   {
-    const rs = document.documentElement.style;
-    rs.setProperty('--vcol', AN.ws.vc === 'wire' ? anLite(ANC) : VCS[AN.ws.vc] || VCS.green);
+    rootVar('--vcol', AN.ws.vc === 'wire' ? anLite(ANC) : VCS[AN.ws.vc] || VCS.green);
     AN.ws.vi = AN.ws.vi || 'cyan';
     AN.ws.vz = AN.ws.vz || 'amber';
-    document.documentElement.style.setProperty('--vin', VCS[AN.ws.vi] || VCS.cyan);
-    document.documentElement.style.setProperty('--vfr', VCS[AN.ws.vz] || VCS.amber);
-    rs.setProperty('--vff', VFF[AN.ws.vf] || VFF.mono);
-    rs.setProperty('--vfw', String(AN.ws.vw || 600));
+    rootVar('--vin', VCS[AN.ws.vi] || VCS.cyan);
+    rootVar('--vfr', VCS[AN.ws.vz] || VCS.amber);
+    rootVar('--vff', VFF[AN.ws.vf] || VFF.mono);
+    rootVar('--vfw', String(AN.ws.vw || 600));
   }
   const BADC = '#ff4d4d',
     BADN = new Set();
@@ -987,7 +992,7 @@ function paint0() {
     const wd_ = (dTube ? 0.95 : 0.8) * dW,
       wa_ = (tube ? 0.95 : 0.8) * aW,
       PNC = COLS[AN.ws.pc] || COLS.sky;
-    document.documentElement.style.setProperty('--pnc', PNC);
+    rootVar('--pnc', PNC);
     if (AN.view) {
       c = '#7f8d99';
       w = n.dig ? wd_ : wa_;

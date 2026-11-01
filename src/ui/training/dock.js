@@ -532,6 +532,19 @@
       return null;
     }
   }
+  /* an output that the drawing writes at a DO address in the logic area, not on an output row (netlist pout): DITL-44 O.029F, the
+     open command of the APH air motor solenoid valve SV-PA1052 (I/O list: DO, "Logic DITL44", PICT 38); 1 / 0, null = no such output */
+  function pout(nm, adr) {
+    const s = dSheet(nm);
+    if (!s || !wlOn()) return null;
+    try {
+      if (!s.nl) s.nl = netlist(s);
+      const o = (s.nl.pout || []).find(q => q.adr === adr);
+      return o ? (simSheet(s).v[o.n] ? 1 : 0) : null;
+    } catch (e) {
+      return null;
+    }
+  }
   /* the RUNNING output of a drawing */
   function runOut(nm) {
     const s = dSheet(nm);
@@ -3391,6 +3404,7 @@
     dpress,
     dset,
     dout,
+    pout,
     runOut,
     get el() {
       return dock;
