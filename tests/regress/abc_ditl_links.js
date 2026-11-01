@@ -14,6 +14,9 @@ for(const [n,w,h] of (quick?[['desktop',1440,900]]:[['desktop',1440,900],['table
  await page.goto('file://'+require('path').resolve(html));
  await page.waitForFunction(()=>document.body.classList.contains('app2')&&window.AN&&AN.sheets&&AN.sheets.length>=54&&window.DUI&&DUI.link&&S.sheets.length>50,null,{timeout:60000});
  await page.waitForTimeout(500);
+ // 3.2.0-beta.78: the operator only traces here: the starting-state question (app.js lsAskStart, retest #57 / #59) that a real click +
+ // Back to the ABC page brings up is answered "Not now" (AN._askNo), else it covers the drawing and the next clicks hit it
+ await page.evaluate(()=>{AN._askNo=1;const q=document.getElementById('lsask');if(q)q.remove()});
  // list: sheet index, text index, refs
  let list=await page.evaluate(()=>{const o=[];AN.sheets.forEach((sh,si)=>{const S2=AN.ensure(sh);S2.tx.forEach((t,ti)=>{if(/DITL/i.test(t.t))o.push({si,ti,t:t.t,name:sh.name})})});return o});
  ck(list.length>=230,`${n}: ${list.length} FROM / TO DITL texts found on the ABC sheets`);
