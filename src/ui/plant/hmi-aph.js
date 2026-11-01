@@ -4,7 +4,7 @@
    in an HTML layer over the plant svg that follows its pan and zoom (HSYM.layer). LIGHT (PENDING_HMI_BUILD rule 5): no CSS / SMIL
    animation on the drawing; the pipe flows and the streams in the rotor are in an overlay svg, and everything that moves (flows,
    rotor, top view, gears, fans, shafts) steps on the one 15 Hz clock of HSYM (the mockup ran ~30 fps at 6x CPU throttle).
-   Live: main drive motor M1 of DITL-43 (run state LS_DOCK.mst), back-up air motor of DITL-44 (its air valve SV-PA1052, row 7), the
+   Live: main drive motor M1 of DITL-43 (run state LS_DOCK.mst), back-up air motor of DITL-44 (its air valve SV-PA1052, DO O.029F), the
    fans (memory list M.3302 PAF / M.3303 SAF / M.3304 IDF) move the air and gas flows, the values are the logic where a sheet reads
    the transmitter, else the plant estimate of the 007 page (PLANT_V2.EST, the same numbers on both pages). #59: click on a motor =
    the CONTROL faceplate, the Y / N square = PERMISSIVE · TREND · MONITOR (Y red = complete, N green). */
@@ -356,14 +356,14 @@
         });
     /* the transmitters a logic sheet reads (the logic value wins over the estimate) */
     for (const t of [...V.map(x => x[2]), 'PIFG1121', 'PIFG1134', 'FIFA1079']) if (!EST[t] && !OWN[t]) live('', t, v => ((LV[t] = v), later()));
-    /* the drive (DITL-43), the air motor valve (DITL-44 row 7), the Y / N */
+    /* the drive (DITL-43), the air motor valve (DITL-44 O.029F), the Y / N */
     const COL = s => (s === 'RUN' ? '#e5484d' : s === 'STOP' ? '#2fa56a' : s === 'TRIP' ? '#e5484d' : '#6b7480'),
       WORD = s => (s === 'RUN' ? 'RUNNING' : s === 'STOP' ? 'STOPPED' : s === 'TRIP' ? 'TRIP' : '-----');
     const state = (k, s) => {
       qa(`[data-ring="${k}"]`).forEach(e => e.setAttribute('stroke', COL(s)));
       qa(`[data-st="${k}"]`).forEach(e => ((e.textContent = WORD(s)), e.setAttribute('fill', COL(s))));
     };
-    /* the air valve: DITL-44 row 7 (SV-PA1052), else its point of the I/O list */
+    /* the air valve: DITL-44 O.029F (SV-PA1052 open command), else its point of the I/O list */
     let svIO = null;
     live('', 'SVPA1052', v => (svIO = v == null ? null : v > 0.5 ? 1 : 0));
     const Dk = () => window.LS_DOCK;
@@ -373,7 +373,8 @@
         v = null;
       try {
         s = Dk() && Dk().mst ? Dk().mst('DITL-43') : null;
-        v = Dk() && Dk().dout ? Dk().dout('DITL-44', 7) : null;
+        /* DITL-44 has no output row: its logic ends at the DO address O.029F (relay, DC 24 V, SV-PA1052) */
+        v = Dk() && Dk().pout ? Dk().pout('DITL-44', 'O.029F') : null;
       } catch (e) {}
       if (s !== st) ((st = s), later());
       sv = v != null ? v : svIO;

@@ -814,22 +814,27 @@
       TILO10022: 'TILO10022'
     };
     for (const n of 'ABCD') for (const j of '12') IO['TICW1060' + n + j] = 'TT-CW1060-' + n + j;
+    /* speed (user 2026-11-01, 6x CPU): every value of the LIVE refresh asked for the whole page; now once after that refresh */
+    let tq = 0;
+    const tickSoon = () => tq || (tq = Promise.resolve().then(() => ((tq = 0), tick())));
     const showV = k => {
       const t = q(`[data-v="${k}"]`);
       if (!t) return;
       const v = V[k],
         dp = /^DP/.test(k) ? 2 : /^(PI|LI)/.test(k) ? 2 : /^TI/.test(k) ? 0 : 1;
-      t.textContent = fmt(v, dp);
-      t.setAttribute('fill', v == null ? S.none : S.val);
+      const tx = fmt(v, dp),
+        fl = v == null ? S.none : S.val;
+      if (t.textContent !== tx) t.textContent = tx;
+      if (t.getAttribute('fill') !== fl) t.setAttribute('fill', fl);
     };
     for (const k in UNIT)
       api.reg(
         { t: 'val', tag: 'UNIT.' + UNIT[k], v: '' },
-        X => ((V[k] = X && isFinite(X.v) ? +X.v : null), showV(k), tick()),
+        X => ((V[k] = X && isFinite(X.v) ? +X.v : null), showV(k), tickSoon()),
         null
       );
     /* ABC-053: TCV-CW1201 = the MV of TICLO1002, the lube oil temperatures of the logic */
-    api.reg({ t: 'valve', tag: 'TCVCW1201', v: '' }, X => ((V.TCV = X && isFinite(X.v) ? +X.v : null), showV('TCV'), tick()), null);
+    api.reg({ t: 'valve', tag: 'TCVCW1201', v: '' }, X => ((V.TCV = X && isFinite(X.v) ? +X.v : null), showV('TCV'), tickSoon()), null);
     for (const k of ['TILO10021', 'TILO10022'])
       api.reg({ t: 'val', tag: k, v: '' }, X => ((V[k] = X && isFinite(X.v) ? +X.v : null), showV(k)), null);
     for (const k in IO) {

@@ -8,7 +8,7 @@
      b.tee(x, y, { w, med });                        // the weld dot of a branch
      b.add(HSYM.pump(x, y, id)) ...                  // equipment layer (over the pipes)
      b.txt(HSYM.vbox(x, y, tag, unit, key))          // text layer (over everything)
-     g.innerHTML = b.svg(); g.setAttribute('transform', HSYM.fit(1280, 770));  // frame 1280 x 860, area 1280 x 770 (HSYM.tabs if big)
+     g.innerHTML = b.svg(); SA(g, 'transform', HSYM.fit(1280, 770));  // frame 1280 x 860, area 1280 x 770 (HSYM.tabs if big)
    Symbols: pump (casing cutaway + impeller, coupling, motor with cooling fan, status ring), valve (man / mov / xv / cv with a
    position bar), check (swing flapper), gauge (dial + needle), strainer (Y type), orifice, tank (shell, water, wave, inflow
    stream, level marks), vbox (tag + value + unit), dest (end card of a line), legend.
@@ -21,6 +21,16 @@
      A.check(id, open 0..1), A.gauge(id, v, max), A.tank(id, level, max, inflow)
    The loop runs only while the page is in the document and visible, and freezes while the simulation is paused. */
 (function () {
+  /* speed (user 2026-11-01, 6x CPU): the live loop writes every frame; a write of the same value still makes the browser restyle and
+     repaint (a new text node each time), so only a changed value is written */
+  const SA = (e, k, v) => {
+    v = String(v);
+    if (e.getAttribute(k) !== v) e.setAttribute(k, v);
+  };
+  const ST = (e, v) => {
+    v = String(v);
+    if (e.textContent !== v) e.textContent = v;
+  };
   const C = {
     edge: '#090d11',
     run: '#e5484d',
@@ -368,7 +378,7 @@
     const btns = names.map((n, i) => {
       const w = n.length * 9.6 + 34,
         b = document.createElementNS(NS, 'g');
-      b.setAttribute('class', 'hs-tab');
+      SA(b, 'class', 'hs-tab');
       b.innerHTML = `<rect x="${x}" y="6" width="${w}" height="30" rx="4" stroke="#33424f"/>${T(x + w / 2, 26, n, 'hs-st', 'text-anchor="middle" style="font-size:14px"')}`;
       b.addEventListener('click', e => (e.stopPropagation(), show(i)));
       x += w + 6;
@@ -377,10 +387,10 @@
     });
     function show(i) {
       TABSEL[page] = i;
-      gs.forEach((g, j) => g.setAttribute('display', j === i ? 'inline' : 'none'));
+      gs.forEach((g, j) => SA(g, 'display', j === i ? 'inline' : 'none'));
       btns.forEach((b, j) => {
-        b.firstChild.setAttribute('fill', j === i ? '#3d6f93' : '#1b252f');
-        b.lastChild.setAttribute('fill', j === i ? '#ffffff' : C.dim);
+        SA(b.firstChild, 'fill', j === i ? '#3d6f93' : '#1b252f');
+        SA(b.lastChild, 'fill', j === i ? '#ffffff' : C.dim);
       });
     }
     gs.forEach(g => root.append(g));
@@ -435,8 +445,8 @@
         const on = Math.abs(f.q) > 0.05;
         if (on !== f.on) {
           f.on = on;
-          f.el.forEach(e => e.setAttribute('visibility', on ? 'visible' : 'hidden'));
-          f.b.forEach(e => e.setAttribute('opacity', on ? 1 : 0.5));
+          f.el.forEach(e => SA(e, 'visibility', on ? 'visible' : 'hidden'));
+          f.b.forEach(e => SA(e, 'opacity', on ? 1 : 0.5));
         }
       },
       valve(id, pos) {
@@ -470,19 +480,19 @@
           ok = lv != null && isFinite(lv),
           f = ok ? Math.max(0, Math.min(1, lv / mx)) : 0;
         t.yl = y + h - 6 - (h - 12) * f;
-        t.liq.setAttribute('y', t.yl.toFixed(1));
-        t.liq.setAttribute('height', Math.max(0, y + h - 4 - t.yl).toFixed(1));
-        t.wave.setAttribute('visibility', ok && f > 0.01 ? 'visible' : 'hidden');
-        t.wave.setAttribute('transform', `translate(${(-t.ph).toFixed(1)} ${(t.yl - 5).toFixed(1)})`);
-        t.str.setAttribute('y2', t.yl.toFixed(1));
-        t.str.setAttribute('visibility', t.inflow > 0.05 ? 'visible' : 'hidden');
+        SA(t.liq, 'y', t.yl.toFixed(1));
+        SA(t.liq, 'height', Math.max(0, y + h - 4 - t.yl).toFixed(1));
+        SA(t.wave, 'visibility', ok && f > 0.01 ? 'visible' : 'hidden');
+        SA(t.wave, 'transform', `translate(${(-t.ph).toFixed(1)} ${(t.yl - 5).toFixed(1)})`);
+        SA(t.str, 'y2', t.yl.toFixed(1));
+        SA(t.str, 'visibility', t.inflow > 0.05 ? 'visible' : 'hidden');
       }
     };
     let blink = true;
     function paintPump(p) {
       const moving = p.spd > 0.001 && p.spd < 0.999 && !reduce;
       const col = p.s == null ? C.none : p.s === 'TRIP' ? (blink ? C.run : C.edge) : p.on ? C.run : C.stop;
-      if (p.ring) p.ring.setAttribute('stroke', moving && !blink ? C.amber : col);
+      if (p.ring) SA(p.ring, 'stroke', moving && !blink ? C.amber : col);
       const txt =
         p.s == null
           ? '-----'
@@ -496,15 +506,15 @@
                 ? 'COASTING DOWN'
                 : 'STOPPED';
       p.st.forEach(e => {
-        e.textContent = txt;
-        e.setAttribute('fill', moving ? C.amber : p.s === 'TRIP' ? C.run : col);
+        ST(e, txt);
+        SA(e, 'fill', moving ? C.amber : p.s === 'TRIP' ? C.run : col);
       });
     }
     function paintValve(v) {
       const moving = v.cmd != null && v.pos != null && Math.abs(v.cmd - v.pos) > 0.002;
       const col = v.pos == null ? C.none : moving ? (blink ? C.amber : '#5a4a2a') : v.pos > 0.01 ? C.run : C.stop;
-      v.b.forEach(e => e.setAttribute('fill', col));
-      if (v.bar) v.bar.setAttribute('width', (28 * (v.pos || 0)).toFixed(1));
+      v.b.forEach(e => SA(e, 'fill', col));
+      if (v.bar) SA(v.bar, 'width', (28 * (v.pos || 0)).toFixed(1));
     }
     let last = 0,
       bt = 0,
@@ -532,9 +542,9 @@
         p.spd = Math.max(0, Math.min(1, p.spd + (p.on ? adt / 3 : -adt / 6)));
         p.ang = (p.ang + p.spd * 900 * adt) % 360;
         if (p.imp)
-          p.imp.setAttribute('transform', `rotate(${p.ang.toFixed(1)} ${p.imp.dataset.cx} ${p.imp.dataset.cy})`);
+          SA(p.imp, 'transform', `rotate(${p.ang.toFixed(1)} ${p.imp.dataset.cx} ${p.imp.dataset.cy})`);
         if (p.fan)
-          p.fan.setAttribute('transform', `rotate(${p.ang.toFixed(1)} ${p.fan.dataset.cx} ${p.fan.dataset.cy})`);
+          SA(p.fan, 'transform', `rotate(${p.ang.toFixed(1)} ${p.fan.dataset.cx} ${p.fan.dataset.cy})`);
         paintPump(p);
       }
       for (const k in F) {
@@ -542,7 +552,7 @@
         if (!f.on || !adt) continue;
         f.off -= Math.sign(f.q) * Math.min(160, 16 + Math.abs(f.q) * 5) * adt;
         const s = f.off.toFixed(1);
-        f.el.forEach(e => e.setAttribute('stroke-dashoffset', s));
+        f.el.forEach(e => SA(e, 'stroke-dashoffset', s));
       }
       for (const id in V) {
         const v = V[id];
@@ -557,20 +567,20 @@
         const c = CK[id];
         if (!c.el) continue;
         c.a += (c.t - c.a) * Math.min(1, (reduce ? 1 : adt * 3) || 0);
-        c.el.setAttribute('transform', `rotate(${(-65 * c.a).toFixed(1)} ${c.el.dataset.cx} ${c.el.dataset.cy})`);
+        SA(c.el, 'transform', `rotate(${(-65 * c.a).toFixed(1)} ${c.el.dataset.cx} ${c.el.dataset.cy})`);
       }
       for (const id in G) {
         const g = G[id];
         if (!g.el) continue;
         g.a += (g.t - g.a) * Math.min(1, reduce ? 1 : dt * 3);
-        g.el.setAttribute('transform', `rotate(${g.a.toFixed(1)} ${g.el.dataset.cx} ${g.el.dataset.cy})`);
+        SA(g.el, 'transform', `rotate(${g.a.toFixed(1)} ${g.el.dataset.cx} ${g.el.dataset.cy})`);
       }
       for (const id in TK) {
         const t = TK[id];
         if (!t.liq || !adt) continue;
         t.ph = (t.ph + adt * (10 + t.inflow * 2)) % 30;
-        t.wave.setAttribute('transform', `translate(${(-t.ph).toFixed(1)} ${(t.yl - 5).toFixed(1)})`);
-        if (t.inflow > 0.05) t.str.setAttribute('stroke-dashoffset', (t.so -= adt * 60).toFixed(1));
+        SA(t.wave, 'transform', `translate(${(-t.ph).toFixed(1)} ${(t.yl - 5).toFixed(1)})`);
+        if (t.inflow > 0.05) SA(t.str, 'stroke-dashoffset', (t.so -= adt * 60).toFixed(1));
       }
       for (const fn of EACH) fn(adt, dt);
       raf = requestAnimationFrame(frame);
@@ -586,21 +596,21 @@
     /* a switch lamp: ok true = normal (green), false = alarm (red, blinking text), null = no value */
     A.lamp = (key, ok, tOk, tAl) => {
       const col = ok == null ? C.none : ok ? C.stop : C.run;
-      qa(`[data-lp="${key}"]`).forEach(e => e.setAttribute('fill', col));
+      qa(`[data-lp="${key}"]`).forEach(e => SA(e, 'fill', col));
       qa(`[data-lt="${key}"]`).forEach(e => {
-        e.textContent = ok == null ? '-----' : ok ? tOk || 'NORMAL' : tAl || 'ALARM';
-        e.setAttribute('fill', col);
+        ST(e, ok == null ? '-----' : ok ? tOk || 'NORMAL' : tAl || 'ALARM');
+        SA(e, 'fill', col);
         e.classList.toggle('h2blink', ok === false);
       });
     };
     /* the #59 button: ok true = Y (red, every permissive complete), false = N (green), null = no logic */
     A.eqb = (id, ok) => {
       const col = ok == null ? C.none : ok ? C.run : C.stop;
-      qa(`[data-eqbr="${id}"]`).forEach(e => e.setAttribute('stroke', col));
-      qa(`[data-eqbk="${id}"]`).forEach(e => e.setAttribute('fill', col));
+      qa(`[data-eqbr="${id}"]`).forEach(e => SA(e, 'stroke', col));
+      qa(`[data-eqbk="${id}"]`).forEach(e => SA(e, 'fill', col));
       qa(`[data-eqbt="${id}"]`).forEach(e => {
-        e.textContent = ok == null ? '-' : ok ? 'Y' : 'N';
-        e.setAttribute('fill', ok ? '#fff' : '#04150c');
+        ST(e, ok == null ? '-' : ok ? 'Y' : 'N');
+        SA(e, 'fill', ok ? '#fff' : '#04150c');
       });
     };
     return A;

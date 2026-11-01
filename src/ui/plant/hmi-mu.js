@@ -676,23 +676,28 @@
       LCV: 'LCV-MU1110',
       MV: 'ZT-MU1001'
     };
+    /* speed (user 2026-11-01, 6x CPU): every value of the LIVE refresh asked for the whole page; now once after that refresh */
+    let tq = 0;
+    const tickSoon = () => tq || (tq = Promise.resolve().then(() => ((tq = 0), tick())));
     const showV = k => {
       const v = V[k],
         dp = /^DP/.test(k) ? 3 : /^(LI|PI)/.test(k) ? 2 : 1;
+      const tx = fmt(v, dp),
+        fl = v == null ? H.C.none : H.C.val;
       qa(`[data-v="${k}"]`).forEach(t => {
-        t.textContent = fmt(v, dp);
-        t.setAttribute('fill', v == null ? H.C.none : H.C.val);
+        if (t.textContent !== tx) t.textContent = tx;
+        if (t.getAttribute('fill') !== fl) t.setAttribute('fill', fl);
       });
     };
     for (const k in UNIT)
       api.reg(
         { t: 'val', tag: 'UNIT.' + UNIT[k], v: '' },
-        X => ((V[k] = X && isFinite(X.v) ? +X.v : null), showV(k), tick()),
+        X => ((V[k] = X && isFinite(X.v) ? +X.v : null), showV(k), tickSoon()),
         null
       );
     api.reg(
       { t: 'valve', tag: 'LCVMU1110', v: '' },
-      X => ((V.LCV = X && isFinite(X.v) ? +X.v : null), showV('LCV'), tick()),
+      X => ((V.LCV = X && isFinite(X.v) ? +X.v : null), showV('LCV'), tickSoon()),
       null
     );
     for (const k in IO) {

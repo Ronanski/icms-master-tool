@@ -99,7 +99,7 @@
   const descWire = (S2, n) =>
     !(S2.xlk && S2.xlk[n]) &&
     !/^(?:(?:S\d\s+)?[A-Z]{1,2}\.[0-9A-F]{4}|(?:S\d\s+)?[A-Z]{2}\d{4}|[A-Z]{2,}[A-Z0-9-]*\.[A-Z]{2,4}|\d\s*:\s*[A-Z])$/.test((AN.nm(S2, n) || '').trim()); /* 2.2.0-beta.9: also an address with its station (S2 M.2502) and a switch leg mark (1:B) */
-  const modeNetsByTag = (tag, kinds, own) => {
+  const modeNetsRaw = (tag, kinds, own) => {
     const out = own ? [own] : [],
       want = new Set(kinds.map(k => (tag + '.' + k).toLowerCase())),
       add = (S2, n) => !out.some(q => q[0] === S2 && q[1] === n) && out.push([S2, n]),
@@ -194,6 +194,23 @@
           if (nn && nn.dig && descWire(S2, n) && [...descs].some(x => d === x || d.endsWith(' ' + x))) add(S2, n);
         }
     return out;
+  };
+  /* speed (user 2026-11-01 "Ge ayusin pre", 6x CPU: the SOP scan and the dock asked this every second for every step, each time a
+     walk over all the sheets): the wires of a tag only change when a sheet is built again, so they are kept per tag while every
+     sheet keeps the same built state (S) */
+  let mnK = null;
+  const mnC = new Map();
+  const modeNetsByTag = (tag, kinds, own) => {
+    const sh = AN.sheets || [];
+    if (!sh.length || sh.some(x => !x.S && !/^ABC-000/.test(x.name))) return modeNetsRaw(tag, kinds, own);
+    if (!mnK || mnK.length !== sh.length || sh.some((x, i) => x.S !== mnK[i])) {
+      mnK = sh.map(x => x.S);
+      mnC.clear();
+    }
+    const k = tag + '|' + kinds.join(',');
+    let r = mnC.get(k);
+    if (!r) mnC.set(k, (r = modeNetsRaw(tag, kinds, null)));
+    return own ? [own, ...r.filter(q => !(q[0] === own[0] && q[1] === own[1]))] : r.slice();
   };
   /* 1.22.0: .MAN / .LOC / .REM are the MODE STATUS of the controller (textbook: status word .MAN = MANUAL, .LOC = LOCAL,
      .REM = REMOTE), not a short pulse: pressing M / A / R sets that one to 1 and the other two to 0, on every sheet with the tag,

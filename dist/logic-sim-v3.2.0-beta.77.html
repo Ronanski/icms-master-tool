@@ -5890,8 +5890,13 @@ function grpState(s) {
   return m;
 }
 /* simulate mode: the DITL Simulate button, or the one world (ABC + DITL, src/world/world.js) while it runs */
+/* 2026-11-01 (user "Ge ayusin pre", 150 MW: PAF / SAF / IDF STOPPED in the logic, M.3302 / 3303 / 3304 = 0): the ABC PAUSED is the
+   simulation with its time stopped, not a plant with its wires cut. A read while paused (the alarm scan, a faceplate, an HMI page:
+   DUI.outVal -> simSheet) evaluated the latches without the inputs from the other sheets (_win): DITL-27A saw "IDF RUNNING" = 0 and
+   its SAF latch was reset, at RUN the PAF followed (DITL-26A row 18 SAF STOPPED -> TR120 -> reset). The one world with its links keeps
+   its inputs while the ABC page is paused too */
 function simOn() {
-  return SIM || !!(window.WORLD && WORLD.live);
+  return SIM || !!(window.WORLD && (WORLD.live || (WORLD.on && WORLD.idx && window.AN && AN.cat === 'an')));
 }
 function simIn(s) {
   const sim = simOn(),
@@ -30198,7 +30203,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.77';
-      c3.textContent += ' · build f43a683'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 81f0319'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -33274,6 +33279,12 @@ function p2Sync() {
     paint();
   }
 }
+/* a custom property of the page root restyles the whole page: written only when its value changes (speed, user 2026-11-01; --pnc
+   was written once per wire on every paint) */
+function rootVar(k, v) {
+  const r = document.documentElement.style;
+  if (r.getPropertyValue(k) !== v) r.setProperty(k, v);
+}
 function paint0() {
   const sh = cs();
   if (!sh || !sh.S || !L) return;
@@ -33328,8 +33339,8 @@ function paint0() {
     dW = +AN.ws.dw || 1,
     aW = +AN.ws.aw || 1,
     tube = AN.ws.as !== 'solid';
-  document.documentElement.style.setProperty('--alive', ANC);
-  document.documentElement.style.setProperty('--alv', anLite(ANC));
+  rootVar('--alive', ANC);
+  rootVar('--alv', anLite(ANC));
   anLgdUpd();
   for (const b of S.blk)
     if (b.k === 'VLV' && b.pnl) {
@@ -33344,14 +33355,13 @@ function paint0() {
       }
     }
   {
-    const rs = document.documentElement.style;
-    rs.setProperty('--vcol', AN.ws.vc === 'wire' ? anLite(ANC) : VCS[AN.ws.vc] || VCS.green);
+    rootVar('--vcol', AN.ws.vc === 'wire' ? anLite(ANC) : VCS[AN.ws.vc] || VCS.green);
     AN.ws.vi = AN.ws.vi || 'cyan';
     AN.ws.vz = AN.ws.vz || 'amber';
-    document.documentElement.style.setProperty('--vin', VCS[AN.ws.vi] || VCS.cyan);
-    document.documentElement.style.setProperty('--vfr', VCS[AN.ws.vz] || VCS.amber);
-    rs.setProperty('--vff', VFF[AN.ws.vf] || VFF.mono);
-    rs.setProperty('--vfw', String(AN.ws.vw || 600));
+    rootVar('--vin', VCS[AN.ws.vi] || VCS.cyan);
+    rootVar('--vfr', VCS[AN.ws.vz] || VCS.amber);
+    rootVar('--vff', VFF[AN.ws.vf] || VFF.mono);
+    rootVar('--vfw', String(AN.ws.vw || 600));
   }
   const BADC = '#ff4d4d',
     BADN = new Set();
@@ -33378,7 +33388,7 @@ function paint0() {
     const wd_ = (dTube ? 0.95 : 0.8) * dW,
       wa_ = (tube ? 0.95 : 0.8) * aW,
       PNC = COLS[AN.ws.pc] || COLS.sky;
-    document.documentElement.style.setProperty('--pnc', PNC);
+    rootVar('--pnc', PNC);
     if (AN.view) {
       c = '#7f8d99';
       w = n.dig ? wd_ : wa_;
@@ -33857,6 +33867,21 @@ const xy = e => {
   return [q.x, -q.y];
 };
 const live = () => AN.cat === 'an';
+/* the ABC drawing is on the screen: the Logic page (no tab = the old shell), not under the plant workspace */
+const anShown = () => {
+  const b = document.body,
+    t = b.dataset.tab;
+  return !(t && t !== 'logic') && !b.classList.contains('plant');
+};
+new MutationObserver(() => {
+  if (AN._pStale && live() && anShown()) {
+    AN._pStale = 0;
+    try {
+      paint();
+      panelUpd();
+    } catch (e) {}
+  }
+}).observe(document.body, { attributes: true, attributeFilter: ['class', 'data-tab'] });
 ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'wheel', 'dblclick', 'click', 'contextmenu'].forEach(t =>
   cv.addEventListener(
     t,
@@ -34290,8 +34315,17 @@ setInterval(() => {
         AN.onStep(dt / n);
       } catch (e) {}
   }
-  paint();
-  panelUpd();
+  /* speed (user 2026-11-01, 6x CPU): the drawing and the side panel are painted only while the Logic page shows them; on Home,
+     Training or a plant page only the trends and the hooks run (a faceplate, the plant window), and the drawing is painted when it
+     comes back (anShown below) */
+  if (anShown()) {
+    AN._pStale = 0;
+    paint();
+    panelUpd();
+  } else {
+    AN._pStale = 1;
+    panelUpd(false, true);
+  }
   {
     const ms = performance.now() - t0_;
     AN._ms = AN._ms == null ? ms : AN._ms * 0.85 + ms * 0.15;
@@ -38272,12 +38306,20 @@ AN.markInputs = function () {
     el('circle', { cx: p.x, cy: -p.y, r: R0, fill: '#e8a317', 'fill-opacity': 0.14, stroke: '#e8a317', 'stroke-width': sw, 'stroke-dasharray': R0 * 0.42 + ' ' + R0 * 0.28, 'data-k': k }, g);
   }
 };
-function panelUpd(sel) {
+/* bg = the Logic page is not on the screen: the trends and the tick hooks only (interaction.js) */
+function panelUpd(sel, bg) {
   const sh = cs();
   if (!sh || !sh.S) return;
   try {
     trSample(sh);
   } catch (e) {}
+  if (bg) {
+    for (const f of AN.tickHooks || [])
+      try {
+        f();
+      } catch (e) {}
+    return;
+  }
   if (sel || !panelUpd.f) {
   }
   for (const f of PU)
@@ -52229,21 +52271,35 @@ body.app2 #gdtrb[hidden]{display:none!important}
       }
       /* retest #42 (R7: "…as yo…" in the status bar at 1280 px with the Training panel open): a text longer than its cell goes on two
          smaller lines in the same bar (class sf2, app.css) instead of being cut; the whole text stays in the tooltip */
-      const fit2 = () =>
-        foot.querySelectorAll('#st,.shint,.smsg').forEach(x => {
+      /* speed (user 2026-11-01, 6x CPU): the status bar text changes every simulation step; the cells are measured once per frame
+         and only when a text, the bar width or the page changed (each measure is a forced layout of the page) */
+      let fitK = '',
+        fitQ = 0,
+        fitW = 0;
+      const fit2 = () => {
+        fitQ = 0;
+        const L = foot.querySelectorAll('#st,.shint,.smsg'),
+          k = fitW + '|' + document.body.className + '|' + document.body.dataset.tab + '|' + [...L].map(x => x.textContent.length).join('|');
+        if (k === fitK) return;
+        fitK = k;
+        L.forEach(x => {
           x.classList.remove('sf2');
           if (x.offsetParent && x.scrollWidth > x.clientWidth + 1) x.classList.add('sf2');
         });
-      new MutationObserver(() => requestAnimationFrame(fit2)).observe(foot, {
+      };
+      const fitLater = () => fitQ || (fitQ = requestAnimationFrame(fit2));
+      new MutationObserver(fitLater).observe(foot, {
         childList: true,
         characterData: true,
         subtree: true
       });
-      new MutationObserver(() => requestAnimationFrame(fit2)).observe(document.body, {
+      new MutationObserver(fitLater).observe(document.body, {
         attributes: true,
         attributeFilter: ['class', 'data-tab']
       });
-      addEventListener('resize', () => requestAnimationFrame(fit2));
+      addEventListener('resize', () => ((fitK = ''), fitLater()));
+      /* the bar width without a layout read: counted by a resize observer */
+      if (window.ResizeObserver) new ResizeObserver(() => (fitW++, fitLater())).observe(foot);
     }
     /* --- top bar --- */
     const ansb = $('ansb'),
@@ -52978,8 +53034,8 @@ body.app2 #gdtrb[hidden]{display:none!important}
       const G = { '✕': 'x', '×': 'x', '✖': 'x', '✓': 'check', '✔': 'check', '◀': 'cl', '‹': 'cl', '◄': 'cl', '▶': 'cr', '›': 'cr', '►': 'cr', '◀◀': 'skipb', '▶▶': 'skipf', '▲': 'cu', '▼': 'cd', '▾': 'cd', 'ⓘ': 'info', '⤢': 'expand', '−': 'minus', '+': 'plus', '❚❚': 'pause', '↩': 'back', '☰': 'menu', '📍': 'pin', '🎲': 'dice', '📂': 'folder', '💾': 'save' };
       const LEAD = { '▶': 'play', '❚❚': 'pause' };
       const skip = b => b.closest('.fp,.fpop,svg,#sidelist,#anlist,#pllist,.libg,#anfind');
-      const tag = () => {
-        for (const b of document.querySelectorAll('button')) {
+      const tag = L => {
+        for (const b of L || document.querySelectorAll('button')) {
           const t = b.textContent;
           if (b._gt === t) continue;
           b._gt = t;
@@ -53007,13 +53063,24 @@ body.app2 #gdtrb[hidden]{display:none!important}
         }
       };
       /* panels that rebuild their buttons (UAT, CHECK, Inspector) get the icons at once: tag after each change, once per frame */
+      /* speed (user 2026-11-01, 6x CPU): only the buttons that came in or whose text changed are looked at, not every button of the
+         app after every change of the page (the plant pages and the status bar change many times a second) */
       let tq = false;
-      new MutationObserver(() => {
-        if (tq) return;
+      const tB = new Set();
+      new MutationObserver(rs => {
+        for (const r of rs) {
+          const t = r.target.nodeType === 1 ? r.target : r.target.parentElement,
+            ob = t && t.closest && t.closest('button');
+          if (ob) tB.add(ob);
+          for (const n of r.addedNodes) if (n.nodeType === 1) n.tagName === 'BUTTON' ? tB.add(n) : n.querySelectorAll('button').forEach(x => tB.add(x));
+        }
+        if (tq || !tB.size) return;
         tq = true;
         requestAnimationFrame(() => {
           tq = false;
-          tag();
+          const L = [...tB].filter(x => x.isConnected);
+          tB.clear();
+          tag(L);
         });
       }).observe(document.body, { childList: true, subtree: true });
       tag();
@@ -59538,6 +59605,19 @@ window.LS_GUIDE = (function () {
       return null;
     }
   }
+  /* an output that the drawing writes at a DO address in the logic area, not on an output row (netlist pout): DITL-44 O.029F, the
+     open command of the APH air motor solenoid valve SV-PA1052 (I/O list: DO, "Logic DITL44", PICT 38); 1 / 0, null = no such output */
+  function pout(nm, adr) {
+    const s = dSheet(nm);
+    if (!s || !wlOn()) return null;
+    try {
+      if (!s.nl) s.nl = netlist(s);
+      const o = (s.nl.pout || []).find(q => q.adr === adr);
+      return o ? (simSheet(s).v[o.n] ? 1 : 0) : null;
+    } catch (e) {
+      return null;
+    }
+  }
   /* the RUNNING output of a drawing */
   function runOut(nm) {
     const s = dSheet(nm);
@@ -62397,6 +62477,7 @@ window.LS_GUIDE = (function () {
     dpress,
     dset,
     dout,
+    pout,
     runOut,
     get el() {
       return dock;
@@ -63829,7 +63910,7 @@ body.ophmi #anp{display:none!important}
   const descWire = (S2, n) =>
     !(S2.xlk && S2.xlk[n]) &&
     !/^(?:(?:S\d\s+)?[A-Z]{1,2}\.[0-9A-F]{4}|(?:S\d\s+)?[A-Z]{2}\d{4}|[A-Z]{2,}[A-Z0-9-]*\.[A-Z]{2,4}|\d\s*:\s*[A-Z])$/.test((AN.nm(S2, n) || '').trim()); /* 2.2.0-beta.9: also an address with its station (S2 M.2502) and a switch leg mark (1:B) */
-  const modeNetsByTag = (tag, kinds, own) => {
+  const modeNetsRaw = (tag, kinds, own) => {
     const out = own ? [own] : [],
       want = new Set(kinds.map(k => (tag + '.' + k).toLowerCase())),
       add = (S2, n) => !out.some(q => q[0] === S2 && q[1] === n) && out.push([S2, n]),
@@ -63924,6 +64005,23 @@ body.ophmi #anp{display:none!important}
           if (nn && nn.dig && descWire(S2, n) && [...descs].some(x => d === x || d.endsWith(' ' + x))) add(S2, n);
         }
     return out;
+  };
+  /* speed (user 2026-11-01 "Ge ayusin pre", 6x CPU: the SOP scan and the dock asked this every second for every step, each time a
+     walk over all the sheets): the wires of a tag only change when a sheet is built again, so they are kept per tag while every
+     sheet keeps the same built state (S) */
+  let mnK = null;
+  const mnC = new Map();
+  const modeNetsByTag = (tag, kinds, own) => {
+    const sh = AN.sheets || [];
+    if (!sh.length || sh.some(x => !x.S && !/^ABC-000/.test(x.name))) return modeNetsRaw(tag, kinds, own);
+    if (!mnK || mnK.length !== sh.length || sh.some((x, i) => x.S !== mnK[i])) {
+      mnK = sh.map(x => x.S);
+      mnC.clear();
+    }
+    const k = tag + '|' + kinds.join(',');
+    let r = mnC.get(k);
+    if (!r) mnC.set(k, (r = modeNetsRaw(tag, kinds, null)));
+    return own ? [own, ...r.filter(q => !(q[0] === own[0] && q[1] === own[1]))] : r.slice();
   };
   /* 1.22.0: .MAN / .LOC / .REM are the MODE STATUS of the controller (textbook: status word .MAN = MANUAL, .LOC = LOCAL,
      .REM = REMOTE), not a short pulse: pressing M / A / R sets that one to 1 and the other two to 0, on every sheet with the tag,
@@ -68464,7 +68562,7 @@ window.PLANT_SYS = [
      b.tee(x, y, { w, med });                        // the weld dot of a branch
      b.add(HSYM.pump(x, y, id)) ...                  // equipment layer (over the pipes)
      b.txt(HSYM.vbox(x, y, tag, unit, key))          // text layer (over everything)
-     g.innerHTML = b.svg(); g.setAttribute('transform', HSYM.fit(1280, 770));  // frame 1280 x 860, area 1280 x 770 (HSYM.tabs if big)
+     g.innerHTML = b.svg(); SA(g, 'transform', HSYM.fit(1280, 770));  // frame 1280 x 860, area 1280 x 770 (HSYM.tabs if big)
    Symbols: pump (casing cutaway + impeller, coupling, motor with cooling fan, status ring), valve (man / mov / xv / cv with a
    position bar), check (swing flapper), gauge (dial + needle), strainer (Y type), orifice, tank (shell, water, wave, inflow
    stream, level marks), vbox (tag + value + unit), dest (end card of a line), legend.
@@ -68477,6 +68575,16 @@ window.PLANT_SYS = [
      A.check(id, open 0..1), A.gauge(id, v, max), A.tank(id, level, max, inflow)
    The loop runs only while the page is in the document and visible, and freezes while the simulation is paused. */
 (function () {
+  /* speed (user 2026-11-01, 6x CPU): the live loop writes every frame; a write of the same value still makes the browser restyle and
+     repaint (a new text node each time), so only a changed value is written */
+  const SA = (e, k, v) => {
+    v = String(v);
+    if (e.getAttribute(k) !== v) e.setAttribute(k, v);
+  };
+  const ST = (e, v) => {
+    v = String(v);
+    if (e.textContent !== v) e.textContent = v;
+  };
   const C = {
     edge: '#090d11',
     run: '#e5484d',
@@ -68824,7 +68932,7 @@ window.PLANT_SYS = [
     const btns = names.map((n, i) => {
       const w = n.length * 9.6 + 34,
         b = document.createElementNS(NS, 'g');
-      b.setAttribute('class', 'hs-tab');
+      SA(b, 'class', 'hs-tab');
       b.innerHTML = `<rect x="${x}" y="6" width="${w}" height="30" rx="4" stroke="#33424f"/>${T(x + w / 2, 26, n, 'hs-st', 'text-anchor="middle" style="font-size:14px"')}`;
       b.addEventListener('click', e => (e.stopPropagation(), show(i)));
       x += w + 6;
@@ -68833,10 +68941,10 @@ window.PLANT_SYS = [
     });
     function show(i) {
       TABSEL[page] = i;
-      gs.forEach((g, j) => g.setAttribute('display', j === i ? 'inline' : 'none'));
+      gs.forEach((g, j) => SA(g, 'display', j === i ? 'inline' : 'none'));
       btns.forEach((b, j) => {
-        b.firstChild.setAttribute('fill', j === i ? '#3d6f93' : '#1b252f');
-        b.lastChild.setAttribute('fill', j === i ? '#ffffff' : C.dim);
+        SA(b.firstChild, 'fill', j === i ? '#3d6f93' : '#1b252f');
+        SA(b.lastChild, 'fill', j === i ? '#ffffff' : C.dim);
       });
     }
     gs.forEach(g => root.append(g));
@@ -68891,8 +68999,8 @@ window.PLANT_SYS = [
         const on = Math.abs(f.q) > 0.05;
         if (on !== f.on) {
           f.on = on;
-          f.el.forEach(e => e.setAttribute('visibility', on ? 'visible' : 'hidden'));
-          f.b.forEach(e => e.setAttribute('opacity', on ? 1 : 0.5));
+          f.el.forEach(e => SA(e, 'visibility', on ? 'visible' : 'hidden'));
+          f.b.forEach(e => SA(e, 'opacity', on ? 1 : 0.5));
         }
       },
       valve(id, pos) {
@@ -68926,19 +69034,19 @@ window.PLANT_SYS = [
           ok = lv != null && isFinite(lv),
           f = ok ? Math.max(0, Math.min(1, lv / mx)) : 0;
         t.yl = y + h - 6 - (h - 12) * f;
-        t.liq.setAttribute('y', t.yl.toFixed(1));
-        t.liq.setAttribute('height', Math.max(0, y + h - 4 - t.yl).toFixed(1));
-        t.wave.setAttribute('visibility', ok && f > 0.01 ? 'visible' : 'hidden');
-        t.wave.setAttribute('transform', `translate(${(-t.ph).toFixed(1)} ${(t.yl - 5).toFixed(1)})`);
-        t.str.setAttribute('y2', t.yl.toFixed(1));
-        t.str.setAttribute('visibility', t.inflow > 0.05 ? 'visible' : 'hidden');
+        SA(t.liq, 'y', t.yl.toFixed(1));
+        SA(t.liq, 'height', Math.max(0, y + h - 4 - t.yl).toFixed(1));
+        SA(t.wave, 'visibility', ok && f > 0.01 ? 'visible' : 'hidden');
+        SA(t.wave, 'transform', `translate(${(-t.ph).toFixed(1)} ${(t.yl - 5).toFixed(1)})`);
+        SA(t.str, 'y2', t.yl.toFixed(1));
+        SA(t.str, 'visibility', t.inflow > 0.05 ? 'visible' : 'hidden');
       }
     };
     let blink = true;
     function paintPump(p) {
       const moving = p.spd > 0.001 && p.spd < 0.999 && !reduce;
       const col = p.s == null ? C.none : p.s === 'TRIP' ? (blink ? C.run : C.edge) : p.on ? C.run : C.stop;
-      if (p.ring) p.ring.setAttribute('stroke', moving && !blink ? C.amber : col);
+      if (p.ring) SA(p.ring, 'stroke', moving && !blink ? C.amber : col);
       const txt =
         p.s == null
           ? '-----'
@@ -68952,15 +69060,15 @@ window.PLANT_SYS = [
                 ? 'COASTING DOWN'
                 : 'STOPPED';
       p.st.forEach(e => {
-        e.textContent = txt;
-        e.setAttribute('fill', moving ? C.amber : p.s === 'TRIP' ? C.run : col);
+        ST(e, txt);
+        SA(e, 'fill', moving ? C.amber : p.s === 'TRIP' ? C.run : col);
       });
     }
     function paintValve(v) {
       const moving = v.cmd != null && v.pos != null && Math.abs(v.cmd - v.pos) > 0.002;
       const col = v.pos == null ? C.none : moving ? (blink ? C.amber : '#5a4a2a') : v.pos > 0.01 ? C.run : C.stop;
-      v.b.forEach(e => e.setAttribute('fill', col));
-      if (v.bar) v.bar.setAttribute('width', (28 * (v.pos || 0)).toFixed(1));
+      v.b.forEach(e => SA(e, 'fill', col));
+      if (v.bar) SA(v.bar, 'width', (28 * (v.pos || 0)).toFixed(1));
     }
     let last = 0,
       bt = 0,
@@ -68988,9 +69096,9 @@ window.PLANT_SYS = [
         p.spd = Math.max(0, Math.min(1, p.spd + (p.on ? adt / 3 : -adt / 6)));
         p.ang = (p.ang + p.spd * 900 * adt) % 360;
         if (p.imp)
-          p.imp.setAttribute('transform', `rotate(${p.ang.toFixed(1)} ${p.imp.dataset.cx} ${p.imp.dataset.cy})`);
+          SA(p.imp, 'transform', `rotate(${p.ang.toFixed(1)} ${p.imp.dataset.cx} ${p.imp.dataset.cy})`);
         if (p.fan)
-          p.fan.setAttribute('transform', `rotate(${p.ang.toFixed(1)} ${p.fan.dataset.cx} ${p.fan.dataset.cy})`);
+          SA(p.fan, 'transform', `rotate(${p.ang.toFixed(1)} ${p.fan.dataset.cx} ${p.fan.dataset.cy})`);
         paintPump(p);
       }
       for (const k in F) {
@@ -68998,7 +69106,7 @@ window.PLANT_SYS = [
         if (!f.on || !adt) continue;
         f.off -= Math.sign(f.q) * Math.min(160, 16 + Math.abs(f.q) * 5) * adt;
         const s = f.off.toFixed(1);
-        f.el.forEach(e => e.setAttribute('stroke-dashoffset', s));
+        f.el.forEach(e => SA(e, 'stroke-dashoffset', s));
       }
       for (const id in V) {
         const v = V[id];
@@ -69013,20 +69121,20 @@ window.PLANT_SYS = [
         const c = CK[id];
         if (!c.el) continue;
         c.a += (c.t - c.a) * Math.min(1, (reduce ? 1 : adt * 3) || 0);
-        c.el.setAttribute('transform', `rotate(${(-65 * c.a).toFixed(1)} ${c.el.dataset.cx} ${c.el.dataset.cy})`);
+        SA(c.el, 'transform', `rotate(${(-65 * c.a).toFixed(1)} ${c.el.dataset.cx} ${c.el.dataset.cy})`);
       }
       for (const id in G) {
         const g = G[id];
         if (!g.el) continue;
         g.a += (g.t - g.a) * Math.min(1, reduce ? 1 : dt * 3);
-        g.el.setAttribute('transform', `rotate(${g.a.toFixed(1)} ${g.el.dataset.cx} ${g.el.dataset.cy})`);
+        SA(g.el, 'transform', `rotate(${g.a.toFixed(1)} ${g.el.dataset.cx} ${g.el.dataset.cy})`);
       }
       for (const id in TK) {
         const t = TK[id];
         if (!t.liq || !adt) continue;
         t.ph = (t.ph + adt * (10 + t.inflow * 2)) % 30;
-        t.wave.setAttribute('transform', `translate(${(-t.ph).toFixed(1)} ${(t.yl - 5).toFixed(1)})`);
-        if (t.inflow > 0.05) t.str.setAttribute('stroke-dashoffset', (t.so -= adt * 60).toFixed(1));
+        SA(t.wave, 'transform', `translate(${(-t.ph).toFixed(1)} ${(t.yl - 5).toFixed(1)})`);
+        if (t.inflow > 0.05) SA(t.str, 'stroke-dashoffset', (t.so -= adt * 60).toFixed(1));
       }
       for (const fn of EACH) fn(adt, dt);
       raf = requestAnimationFrame(frame);
@@ -69042,21 +69150,21 @@ window.PLANT_SYS = [
     /* a switch lamp: ok true = normal (green), false = alarm (red, blinking text), null = no value */
     A.lamp = (key, ok, tOk, tAl) => {
       const col = ok == null ? C.none : ok ? C.stop : C.run;
-      qa(`[data-lp="${key}"]`).forEach(e => e.setAttribute('fill', col));
+      qa(`[data-lp="${key}"]`).forEach(e => SA(e, 'fill', col));
       qa(`[data-lt="${key}"]`).forEach(e => {
-        e.textContent = ok == null ? '-----' : ok ? tOk || 'NORMAL' : tAl || 'ALARM';
-        e.setAttribute('fill', col);
+        ST(e, ok == null ? '-----' : ok ? tOk || 'NORMAL' : tAl || 'ALARM');
+        SA(e, 'fill', col);
         e.classList.toggle('h2blink', ok === false);
       });
     };
     /* the #59 button: ok true = Y (red, every permissive complete), false = N (green), null = no logic */
     A.eqb = (id, ok) => {
       const col = ok == null ? C.none : ok ? C.run : C.stop;
-      qa(`[data-eqbr="${id}"]`).forEach(e => e.setAttribute('stroke', col));
-      qa(`[data-eqbk="${id}"]`).forEach(e => e.setAttribute('fill', col));
+      qa(`[data-eqbr="${id}"]`).forEach(e => SA(e, 'stroke', col));
+      qa(`[data-eqbk="${id}"]`).forEach(e => SA(e, 'fill', col));
       qa(`[data-eqbt="${id}"]`).forEach(e => {
-        e.textContent = ok == null ? '-' : ok ? 'Y' : 'N';
-        e.setAttribute('fill', ok ? '#fff' : '#04150c');
+        ST(e, ok == null ? '-' : ok ? 'Y' : 'N');
+        SA(e, 'fill', ok ? '#fff' : '#04150c');
       });
     };
     return A;
@@ -69836,23 +69944,28 @@ window.PLANT_SYS = [
       LCV: 'LCV-MU1110',
       MV: 'ZT-MU1001'
     };
+    /* speed (user 2026-11-01, 6x CPU): every value of the LIVE refresh asked for the whole page; now once after that refresh */
+    let tq = 0;
+    const tickSoon = () => tq || (tq = Promise.resolve().then(() => ((tq = 0), tick())));
     const showV = k => {
       const v = V[k],
         dp = /^DP/.test(k) ? 3 : /^(LI|PI)/.test(k) ? 2 : 1;
+      const tx = fmt(v, dp),
+        fl = v == null ? H.C.none : H.C.val;
       qa(`[data-v="${k}"]`).forEach(t => {
-        t.textContent = fmt(v, dp);
-        t.setAttribute('fill', v == null ? H.C.none : H.C.val);
+        if (t.textContent !== tx) t.textContent = tx;
+        if (t.getAttribute('fill') !== fl) t.setAttribute('fill', fl);
       });
     };
     for (const k in UNIT)
       api.reg(
         { t: 'val', tag: 'UNIT.' + UNIT[k], v: '' },
-        X => ((V[k] = X && isFinite(X.v) ? +X.v : null), showV(k), tick()),
+        X => ((V[k] = X && isFinite(X.v) ? +X.v : null), showV(k), tickSoon()),
         null
       );
     api.reg(
       { t: 'valve', tag: 'LCVMU1110', v: '' },
-      X => ((V.LCV = X && isFinite(X.v) ? +X.v : null), showV('LCV'), tick()),
+      X => ((V.LCV = X && isFinite(X.v) ? +X.v : null), showV('LCV'), tickSoon()),
       null
     );
     for (const k in IO) {
@@ -72386,22 +72499,27 @@ window.PLANT_SYS = [
       TILO10022: 'TILO10022'
     };
     for (const n of 'ABCD') for (const j of '12') IO['TICW1060' + n + j] = 'TT-CW1060-' + n + j;
+    /* speed (user 2026-11-01, 6x CPU): every value of the LIVE refresh asked for the whole page; now once after that refresh */
+    let tq = 0;
+    const tickSoon = () => tq || (tq = Promise.resolve().then(() => ((tq = 0), tick())));
     const showV = k => {
       const t = q(`[data-v="${k}"]`);
       if (!t) return;
       const v = V[k],
         dp = /^DP/.test(k) ? 2 : /^(PI|LI)/.test(k) ? 2 : /^TI/.test(k) ? 0 : 1;
-      t.textContent = fmt(v, dp);
-      t.setAttribute('fill', v == null ? S.none : S.val);
+      const tx = fmt(v, dp),
+        fl = v == null ? S.none : S.val;
+      if (t.textContent !== tx) t.textContent = tx;
+      if (t.getAttribute('fill') !== fl) t.setAttribute('fill', fl);
     };
     for (const k in UNIT)
       api.reg(
         { t: 'val', tag: 'UNIT.' + UNIT[k], v: '' },
-        X => ((V[k] = X && isFinite(X.v) ? +X.v : null), showV(k), tick()),
+        X => ((V[k] = X && isFinite(X.v) ? +X.v : null), showV(k), tickSoon()),
         null
       );
     /* ABC-053: TCV-CW1201 = the MV of TICLO1002, the lube oil temperatures of the logic */
-    api.reg({ t: 'valve', tag: 'TCVCW1201', v: '' }, X => ((V.TCV = X && isFinite(X.v) ? +X.v : null), showV('TCV'), tick()), null);
+    api.reg({ t: 'valve', tag: 'TCVCW1201', v: '' }, X => ((V.TCV = X && isFinite(X.v) ? +X.v : null), showV('TCV'), tickSoon()), null);
     for (const k of ['TILO10021', 'TILO10022'])
       api.reg({ t: 'val', tag: k, v: '' }, X => ((V[k] = X && isFinite(X.v) ? +X.v : null), showV(k)), null);
     for (const k in IO) {
@@ -72444,7 +72562,7 @@ window.PLANT_SYS = [
    in an HTML layer over the plant svg that follows its pan and zoom (HSYM.layer). LIGHT (PENDING_HMI_BUILD rule 5): no CSS / SMIL
    animation on the drawing; the pipe flows and the streams in the rotor are in an overlay svg, and everything that moves (flows,
    rotor, top view, gears, fans, shafts) steps on the one 15 Hz clock of HSYM (the mockup ran ~30 fps at 6x CPU throttle).
-   Live: main drive motor M1 of DITL-43 (run state LS_DOCK.mst), back-up air motor of DITL-44 (its air valve SV-PA1052, row 7), the
+   Live: main drive motor M1 of DITL-43 (run state LS_DOCK.mst), back-up air motor of DITL-44 (its air valve SV-PA1052, DO O.029F), the
    fans (memory list M.3302 PAF / M.3303 SAF / M.3304 IDF) move the air and gas flows, the values are the logic where a sheet reads
    the transmitter, else the plant estimate of the 007 page (PLANT_V2.EST, the same numbers on both pages). #59: click on a motor =
    the CONTROL faceplate, the Y / N square = PERMISSIVE · TREND · MONITOR (Y red = complete, N green). */
@@ -72796,14 +72914,14 @@ window.PLANT_SYS = [
         });
     /* the transmitters a logic sheet reads (the logic value wins over the estimate) */
     for (const t of [...V.map(x => x[2]), 'PIFG1121', 'PIFG1134', 'FIFA1079']) if (!EST[t] && !OWN[t]) live('', t, v => ((LV[t] = v), later()));
-    /* the drive (DITL-43), the air motor valve (DITL-44 row 7), the Y / N */
+    /* the drive (DITL-43), the air motor valve (DITL-44 O.029F), the Y / N */
     const COL = s => (s === 'RUN' ? '#e5484d' : s === 'STOP' ? '#2fa56a' : s === 'TRIP' ? '#e5484d' : '#6b7480'),
       WORD = s => (s === 'RUN' ? 'RUNNING' : s === 'STOP' ? 'STOPPED' : s === 'TRIP' ? 'TRIP' : '-----');
     const state = (k, s) => {
       qa(`[data-ring="${k}"]`).forEach(e => e.setAttribute('stroke', COL(s)));
       qa(`[data-st="${k}"]`).forEach(e => ((e.textContent = WORD(s)), e.setAttribute('fill', COL(s))));
     };
-    /* the air valve: DITL-44 row 7 (SV-PA1052), else its point of the I/O list */
+    /* the air valve: DITL-44 O.029F (SV-PA1052 open command), else its point of the I/O list */
     let svIO = null;
     live('', 'SVPA1052', v => (svIO = v == null ? null : v > 0.5 ? 1 : 0));
     const Dk = () => window.LS_DOCK;
@@ -72813,7 +72931,8 @@ window.PLANT_SYS = [
         v = null;
       try {
         s = Dk() && Dk().mst ? Dk().mst('DITL-43') : null;
-        v = Dk() && Dk().dout ? Dk().dout('DITL-44', 7) : null;
+        /* DITL-44 has no output row: its logic ends at the DO address O.029F (relay, DC 24 V, SV-PA1052) */
+        v = Dk() && Dk().pout ? Dk().pout('DITL-44', 'O.029F') : null;
       } catch (e) {}
       if (s !== st) ((st = s), later());
       sv = v != null ? v : svIO;
@@ -73612,14 +73731,24 @@ window.PLANT_SYS = [
       vTx.textContent = spray == null ? '-----' : o ? 'OPEN ' + fmt(spray, 1) + ' %' : 'CLOSED';
       vTx.setAttribute('fill', spray == null ? '#6b7480' : o ? '#e5484d' : '#2fa56a');
     });
-    /* the buffer tanks */
-    const PII = {};
-    for (const [id, tg] of [['gRH', 'PIIA1064A'], ['gSH', 'PIIA1064B']])
-      val(tg, '', v => {
+    /* the buffer tanks: PT-IA1064-A / B (I/O list AI0438 / AI0470, PICT 39) are on no logic sheet. The over-all instrument list puts
+       them on P&ID PD-023 sheet 6/6, the instrument air drawing (with IA1706 instrument air to unit 1 and IA1128 the turning gear
+       buffer tank): the tank is filled from the instrument air header, so without a logic value it shows the instrument air
+       pressure of the plant model (unit.js AN_AIR, U.iaP; 7.0 kg/cm2 at 150 MW = these two gauges on 39.PNG). ASSUMED: no drop
+       across the tank inlet (no data) */
+    const PII = {},
+      PIL = {},
+      PIM = { v: null };
+    const piShow = () => {
+      for (const [id, tg] of [['gRH', 'PIIA1064A'], ['gSH', 'PIIA1064B']]) {
+        const v = PIL[tg] != null ? PIL[tg] : PIM.v;
         PII[tg] = v;
         DR[id].tv.textContent = fmt(v, 1);
         DR[id].tv.setAttribute('fill', v == null ? '#6b7480' : '#f4f7f9');
-      });
+      }
+    };
+    for (const tg of ['PIIA1064A', 'PIIA1064B']) val(tg, '', v => ((PIL[tg] = v), piShow()));
+    val('UNIT.iaP', '', v => ((PIM.v = v), piShow()));
     /* the interlock memories of ABC-020: purge (reheater >= 30 % M.0506, superheater >= 60 % M.0507), ID fan start (> 95 %
        M.3440 / M.3441) */
     const MEM = {};
