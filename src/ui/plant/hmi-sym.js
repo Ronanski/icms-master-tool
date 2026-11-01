@@ -8,7 +8,7 @@
      b.tee(x, y, { w, med });                        // the weld dot of a branch
      b.add(HSYM.pump(x, y, id)) ...                  // equipment layer (over the pipes)
      b.txt(HSYM.vbox(x, y, tag, unit, key))          // text layer (over everything)
-     g.innerHTML = b.svg(); g.setAttribute('transform', HSYM.fit(1280, 770));  // frame 1280 x 860, area 1280 x 770 (HSYM.tabs if big)
+     g.innerHTML = b.svg(); SA(g, 'transform', HSYM.fit(1280, 770));  // frame 1280 x 860, area 1280 x 770 (HSYM.tabs if big)
    Symbols: pump (casing cutaway + impeller, coupling, motor with cooling fan, status ring), valve (man / mov / xv / cv with a
    position bar), check (swing flapper), gauge (dial + needle), strainer (Y type), orifice, tank (shell, water, wave, inflow
    stream, level marks), vbox (tag + value + unit), dest (end card of a line), legend.
@@ -21,6 +21,16 @@
      A.check(id, open 0..1), A.gauge(id, v, max), A.tank(id, level, max, inflow)
    The loop runs only while the page is in the document and visible, and freezes while the simulation is paused. */
 (function () {
+  /* speed (user 2026-11-01, 6x CPU): the live loop writes every frame; a write of the same value still makes the browser restyle and
+     repaint (a new text node each time), so only a changed value is written */
+  const SA = (e, k, v) => {
+    v = String(v);
+    if (e.getAttribute(k) !== v) e.setAttribute(k, v);
+  };
+  const ST = (e, v) => {
+    v = String(v);
+    if (e.textContent !== v) e.textContent = v;
+  };
   const C = {
     edge: '#090d11',
     run: '#e5484d',
@@ -44,6 +54,9 @@
       co: ['#d0773b', '#ffc79a'] /* control oil (high pressure) */,
       to: ['#c25f98', '#ffc4e4'] /* trip oil */,
       st: ['#8c98a5', '#f2f6fa'] /* steam / vapour */,
+      air: ['#5f87a8', '#d6ecff'] /* cold air (primary / secondary / fluidizing) */,
+      ha: ['#b07a3c', '#ffd9a0'] /* hot air (after the air preheater) */,
+      fg: ['#77706a', '#e2dad2'] /* flue gas */,
       off: ['#33414e', null]
     }
   };
@@ -238,6 +251,30 @@
   /* end of a line: arrow card (title, sub) pointing in from the left */
   const dest = (x, y, w, title, sub) =>
     `<g><path d="M${x} ${y - 26} h${w} a4 4 0 0 1 4 4 v44 a4 4 0 0 1 -4 4 h-${w} l-12 -26 z" fill="#1b252f" stroke="#33424f"/>${T(x + 12, y - 4, title, 'hs-eq', 'style="font-size:15px"')}${sub ? T(x + 12, y + 15, sub, 'hs-sub') : ''}</g>`;
+  /* a value with a plain description (user 2026-10-31: no acronyms as labels): description above the box, the tag (small) and the unit
+     at its right; key = data-v of the value, click key = data-vbx */
+  const vb = (x, y, desc, tag, unit, key, w = 70) =>
+    `<g class="hs-hit" data-vbx="${key}">${T(x, y - 6, desc, 'hs-sub', 'fill="#c3ced8"')}<rect x="${x}" y="${y}" width="${w}" height="29" rx="2" fill="${C.box}" stroke="${C.boxs}"/>${T(x + w - 6, y + 22, '-----', 'hs-val', `text-anchor="end" fill="${C.none}" data-v="${key}"`)}${T(x + w + 5, y + 11, tag, 'hs-tag', 'style="font-size:10.5px"')}${T(x + w + 5, y + 26, unit, 'hs-unit')}</g>`;
+  /* a small motor box with fins and a run ring (drives, actuators); A.pump(id, ...) colours the ring */
+  const motor = (x, y, id, px, o = {}) => {
+    const w = o.w || 60,
+      h = o.h || 40;
+    return `<g class="hs-hit" data-hit="${id}"><rect x="${x - 4}" y="${y - 4}" width="${w + 8}" height="${h + 8}" rx="7" fill="none" stroke="${C.none}" stroke-width="4" data-ring="${id}" class="hs-hl"/><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="url(#${px}-mt)" ${OL}/>${[0, 1, 2, 3, 4].map(k => `<line x1="${x + 6 + k * ((w - 12) / 4)}" x2="${x + 6 + k * ((w - 12) / 4)}" y1="${y + 5}" y2="${y + h - 5}" stroke="#3b4651" stroke-width="1.5"/>`).join('')}${T(x + w / 2, y + h / 2 + 5, o.lab || 'M', 'hs-st', 'fill="#0c1014" text-anchor="middle"')}</g>`;
+  };
+  /* #59 (user 2026-10-31): the one button beside an equipment that opens its second faceplate (permissive, monitoring, trend);
+     small and quiet (leader review, clean layout): "PERMISSIVE" + the Y / N square, Y = red = every permissive complete, N = green =
+     not complete (A.eqb(id, ok) sets it) */
+  const eqb = (x, y, id) =>
+    `<g data-eqb="${id}" class="hs-hit" role="button" aria-label="Permissive, trend and monitoring"><title>Permissive, trend and monitoring</title><rect x="${x}" y="${y}" width="112" height="22" rx="3" fill="#161e26" stroke="#3a4b5a" data-eqbr="${id}"/>${T(x + 8, y + 15, 'PERMISSIVE', 'hs-st', 'fill="#b8c4cf" style="font-size:10px;letter-spacing:.04em"')}<rect x="${x + 92}" y="${y + 4}" width="14" height="14" rx="2" fill="${C.none}" data-eqbk="${id}"/>${T(x + 99, y + 15.5, '-', 'hs-st', 'fill="#04150c" text-anchor="middle" style="font-size:11px" data-eqbt="' + id + '"')}</g>`;
+  /* clean layout (leader review 2026-10-31): a value with its description and unit, the tag only on hover (and in the faceplate);
+     vb2 = an A / B pair as one two-cell block */
+  const vbc = (x, y, desc, tag, unit, key, w = 76) =>
+    `<g class="hs-hit" data-vbx="${key}"><title>${tag}</title>${T(x, y - 6, desc, 'hs-sub', 'fill="#c3ced8"')}<rect x="${x}" y="${y}" width="${w}" height="28" rx="2" fill="${C.box}" stroke="${C.boxs}"/>${T(x + w - 6, y + 21, '-----', 'hs-val', `text-anchor="end" fill="${C.none}" data-v="${key}" style="font-size:20px"`)}${T(x + w + 5, y + 21, unit, 'hs-unit')}</g>`;
+  const vb2 = (x, y, desc, tags, unit, keys, w = 56) =>
+    `<g class="hs-hit" data-vbx="${keys[0]}"><title>${tags.join(' / ')}</title>${T(x, y - 6, desc, 'hs-sub', 'fill="#c3ced8"')}${[0, 1].map(i => `<rect x="${x + i * (w + 3)}" y="${y}" width="${w}" height="28" rx="2" fill="${C.box}" stroke="${C.boxs}"/>${T(x + i * (w + 3) + w - 5, y + 21, '-----', 'hs-val', `text-anchor="end" fill="${C.none}" data-v="${keys[i]}" style="font-size:20px"`)}`).join('')}${T(x + 2 * w + 8, y + 21, unit, 'hs-unit')}</g>`;
+  /* a flow arrow on a duct (direction instead of a sentence): dir r / l / u / d */
+  const arrow = (x, y, dir, c = '#dce4eb') =>
+    `<path d="M${x - 7} ${y - 6} L${x + 5} ${y} L${x - 7} ${y + 6} Z" fill="${c}" opacity=".85" transform="rotate(${{ r: 0, d: 90, l: 180, u: 270 }[dir] || 0} ${x} ${y})"/>`;
   const legend = (x, y, items) =>
     items
       .map(
@@ -341,7 +378,7 @@
     const btns = names.map((n, i) => {
       const w = n.length * 9.6 + 34,
         b = document.createElementNS(NS, 'g');
-      b.setAttribute('class', 'hs-tab');
+      SA(b, 'class', 'hs-tab');
       b.innerHTML = `<rect x="${x}" y="6" width="${w}" height="30" rx="4" stroke="#33424f"/>${T(x + w / 2, 26, n, 'hs-st', 'text-anchor="middle" style="font-size:14px"')}`;
       b.addEventListener('click', e => (e.stopPropagation(), show(i)));
       x += w + 6;
@@ -350,10 +387,10 @@
     });
     function show(i) {
       TABSEL[page] = i;
-      gs.forEach((g, j) => g.setAttribute('display', j === i ? 'inline' : 'none'));
+      gs.forEach((g, j) => SA(g, 'display', j === i ? 'inline' : 'none'));
       btns.forEach((b, j) => {
-        b.firstChild.setAttribute('fill', j === i ? '#3d6f93' : '#1b252f');
-        b.lastChild.setAttribute('fill', j === i ? '#ffffff' : C.dim);
+        SA(b.firstChild, 'fill', j === i ? '#3d6f93' : '#1b252f');
+        SA(b.lastChild, 'fill', j === i ? '#ffffff' : C.dim);
       });
     }
     gs.forEach(g => root.append(g));
@@ -408,8 +445,8 @@
         const on = Math.abs(f.q) > 0.05;
         if (on !== f.on) {
           f.on = on;
-          f.el.forEach(e => e.setAttribute('visibility', on ? 'visible' : 'hidden'));
-          f.b.forEach(e => e.setAttribute('opacity', on ? 1 : 0.5));
+          f.el.forEach(e => SA(e, 'visibility', on ? 'visible' : 'hidden'));
+          f.b.forEach(e => SA(e, 'opacity', on ? 1 : 0.5));
         }
       },
       valve(id, pos) {
@@ -443,19 +480,19 @@
           ok = lv != null && isFinite(lv),
           f = ok ? Math.max(0, Math.min(1, lv / mx)) : 0;
         t.yl = y + h - 6 - (h - 12) * f;
-        t.liq.setAttribute('y', t.yl.toFixed(1));
-        t.liq.setAttribute('height', Math.max(0, y + h - 4 - t.yl).toFixed(1));
-        t.wave.setAttribute('visibility', ok && f > 0.01 ? 'visible' : 'hidden');
-        t.wave.setAttribute('transform', `translate(${(-t.ph).toFixed(1)} ${(t.yl - 5).toFixed(1)})`);
-        t.str.setAttribute('y2', t.yl.toFixed(1));
-        t.str.setAttribute('visibility', t.inflow > 0.05 ? 'visible' : 'hidden');
+        SA(t.liq, 'y', t.yl.toFixed(1));
+        SA(t.liq, 'height', Math.max(0, y + h - 4 - t.yl).toFixed(1));
+        SA(t.wave, 'visibility', ok && f > 0.01 ? 'visible' : 'hidden');
+        SA(t.wave, 'transform', `translate(${(-t.ph).toFixed(1)} ${(t.yl - 5).toFixed(1)})`);
+        SA(t.str, 'y2', t.yl.toFixed(1));
+        SA(t.str, 'visibility', t.inflow > 0.05 ? 'visible' : 'hidden');
       }
     };
     let blink = true;
     function paintPump(p) {
       const moving = p.spd > 0.001 && p.spd < 0.999 && !reduce;
       const col = p.s == null ? C.none : p.s === 'TRIP' ? (blink ? C.run : C.edge) : p.on ? C.run : C.stop;
-      if (p.ring) p.ring.setAttribute('stroke', moving && !blink ? C.amber : col);
+      if (p.ring) SA(p.ring, 'stroke', moving && !blink ? C.amber : col);
       const txt =
         p.s == null
           ? '-----'
@@ -469,15 +506,15 @@
                 ? 'COASTING DOWN'
                 : 'STOPPED';
       p.st.forEach(e => {
-        e.textContent = txt;
-        e.setAttribute('fill', moving ? C.amber : p.s === 'TRIP' ? C.run : col);
+        ST(e, txt);
+        SA(e, 'fill', moving ? C.amber : p.s === 'TRIP' ? C.run : col);
       });
     }
     function paintValve(v) {
       const moving = v.cmd != null && v.pos != null && Math.abs(v.cmd - v.pos) > 0.002;
       const col = v.pos == null ? C.none : moving ? (blink ? C.amber : '#5a4a2a') : v.pos > 0.01 ? C.run : C.stop;
-      v.b.forEach(e => e.setAttribute('fill', col));
-      if (v.bar) v.bar.setAttribute('width', (28 * (v.pos || 0)).toFixed(1));
+      v.b.forEach(e => SA(e, 'fill', col));
+      if (v.bar) SA(v.bar, 'width', (28 * (v.pos || 0)).toFixed(1));
     }
     let last = 0,
       bt = 0,
@@ -505,9 +542,9 @@
         p.spd = Math.max(0, Math.min(1, p.spd + (p.on ? adt / 3 : -adt / 6)));
         p.ang = (p.ang + p.spd * 900 * adt) % 360;
         if (p.imp)
-          p.imp.setAttribute('transform', `rotate(${p.ang.toFixed(1)} ${p.imp.dataset.cx} ${p.imp.dataset.cy})`);
+          SA(p.imp, 'transform', `rotate(${p.ang.toFixed(1)} ${p.imp.dataset.cx} ${p.imp.dataset.cy})`);
         if (p.fan)
-          p.fan.setAttribute('transform', `rotate(${p.ang.toFixed(1)} ${p.fan.dataset.cx} ${p.fan.dataset.cy})`);
+          SA(p.fan, 'transform', `rotate(${p.ang.toFixed(1)} ${p.fan.dataset.cx} ${p.fan.dataset.cy})`);
         paintPump(p);
       }
       for (const k in F) {
@@ -515,7 +552,7 @@
         if (!f.on || !adt) continue;
         f.off -= Math.sign(f.q) * Math.min(160, 16 + Math.abs(f.q) * 5) * adt;
         const s = f.off.toFixed(1);
-        f.el.forEach(e => e.setAttribute('stroke-dashoffset', s));
+        f.el.forEach(e => SA(e, 'stroke-dashoffset', s));
       }
       for (const id in V) {
         const v = V[id];
@@ -530,20 +567,20 @@
         const c = CK[id];
         if (!c.el) continue;
         c.a += (c.t - c.a) * Math.min(1, (reduce ? 1 : adt * 3) || 0);
-        c.el.setAttribute('transform', `rotate(${(-65 * c.a).toFixed(1)} ${c.el.dataset.cx} ${c.el.dataset.cy})`);
+        SA(c.el, 'transform', `rotate(${(-65 * c.a).toFixed(1)} ${c.el.dataset.cx} ${c.el.dataset.cy})`);
       }
       for (const id in G) {
         const g = G[id];
         if (!g.el) continue;
         g.a += (g.t - g.a) * Math.min(1, reduce ? 1 : dt * 3);
-        g.el.setAttribute('transform', `rotate(${g.a.toFixed(1)} ${g.el.dataset.cx} ${g.el.dataset.cy})`);
+        SA(g.el, 'transform', `rotate(${g.a.toFixed(1)} ${g.el.dataset.cx} ${g.el.dataset.cy})`);
       }
       for (const id in TK) {
         const t = TK[id];
         if (!t.liq || !adt) continue;
         t.ph = (t.ph + adt * (10 + t.inflow * 2)) % 30;
-        t.wave.setAttribute('transform', `translate(${(-t.ph).toFixed(1)} ${(t.yl - 5).toFixed(1)})`);
-        if (t.inflow > 0.05) t.str.setAttribute('stroke-dashoffset', (t.so -= adt * 60).toFixed(1));
+        SA(t.wave, 'transform', `translate(${(-t.ph).toFixed(1)} ${(t.yl - 5).toFixed(1)})`);
+        if (t.inflow > 0.05) SA(t.str, 'stroke-dashoffset', (t.so -= adt * 60).toFixed(1));
       }
       for (const fn of EACH) fn(adt, dt);
       raf = requestAnimationFrame(frame);
@@ -559,18 +596,89 @@
     /* a switch lamp: ok true = normal (green), false = alarm (red, blinking text), null = no value */
     A.lamp = (key, ok, tOk, tAl) => {
       const col = ok == null ? C.none : ok ? C.stop : C.run;
-      qa(`[data-lp="${key}"]`).forEach(e => e.setAttribute('fill', col));
+      qa(`[data-lp="${key}"]`).forEach(e => SA(e, 'fill', col));
       qa(`[data-lt="${key}"]`).forEach(e => {
-        e.textContent = ok == null ? '-----' : ok ? tOk || 'NORMAL' : tAl || 'ALARM';
-        e.setAttribute('fill', col);
+        ST(e, ok == null ? '-----' : ok ? tOk || 'NORMAL' : tAl || 'ALARM');
+        SA(e, 'fill', col);
         e.classList.toggle('h2blink', ok === false);
+      });
+    };
+    /* the #59 button: ok true = Y (red, every permissive complete), false = N (green), null = no logic */
+    A.eqb = (id, ok) => {
+      const col = ok == null ? C.none : ok ? C.run : C.stop;
+      qa(`[data-eqbr="${id}"]`).forEach(e => SA(e, 'stroke', col));
+      qa(`[data-eqbk="${id}"]`).forEach(e => SA(e, 'fill', col));
+      qa(`[data-eqbt="${id}"]`).forEach(e => {
+        ST(e, ok == null ? '-' : ok ? 'Y' : 'N');
+        SA(e, 'fill', ok ? '#fff' : '#04150c');
       });
     };
     return A;
   }
 
+  /* ---------- light pages (user 2026-11-01: light on a tablet, PENDING_HMI_BUILD rule 5) ---------- */
+  /* one shared 15 Hz clock for everything that moves on the pages built from an approved mockup (pipe flows, rotor, fans): one
+     small repaint 15 times a second instead of CSS / SMIL animations on the big drawing. fn(t seconds) returns false to leave */
+  const TICKS = new Set();
+  let tickIv = 0;
+  function clock(fn) {
+    TICKS.add(fn);
+    if (!tickIv)
+      tickIv = setInterval(() => {
+        if (document.hidden) return;
+        const t = performance.now() / 1000;
+        for (const f of TICKS) if (f(t) === false) TICKS.delete(f);
+        if (!TICKS.size) (clearInterval(tickIv), (tickIv = 0));
+      }, 66);
+  }
+  /* an HTML layer over the plant svg that follows its pan and zoom (CSS transform only, the compositor moves it): the drawing of an
+     approved mockup as it is (its own svg, HTML flue gas behind it, the flow overlay over it). anchor = a <g> of the page whose
+     user space is the mockup space (w x h). Only the .hs-lay [data-hit] elements take the pointer; a wheel over them zooms the plant
+     as anywhere else. Removed with the page */
+  function layer(anchor, w, h) {
+    const svg = anchor.ownerSVGElement,
+      par = svg && svg.parentNode;
+    if (!par) return null;
+    const clip = document.createElement('div'),
+      root = document.createElement('div');
+    clip.className = 'hs-lay';
+    clip.style.cssText = 'position:absolute;overflow:hidden;pointer-events:none;z-index:1;left:0;top:0;width:0;height:0';
+    root.style.cssText = `position:absolute;left:0;top:0;width:${w}px;height:${h}px;transform-origin:0 0`;
+    clip.append(root);
+    par.append(clip);
+    if (getComputedStyle(par).position === 'static') par.style.position = 'relative';
+    const sync = () => {
+      if (!anchor.isConnected) return gone();
+      const m = anchor.getScreenCTM(),
+        P = par.getBoundingClientRect(),
+        R = svg.getBoundingClientRect();
+      if (!m) return;
+      Object.assign(clip.style, { left: R.left - P.left + par.scrollLeft + 'px', top: R.top - P.top + par.scrollTop + 'px', width: R.width + 'px', height: R.height + 'px' });
+      root.style.transform = `matrix(${m.a},${m.b},${m.c},${m.d},${m.e - R.left},${m.f - R.top})`;
+    };
+    const mo = new MutationObserver(sync),
+      ro = window.ResizeObserver ? new ResizeObserver(sync) : null;
+    mo.observe(svg, { attributes: true, attributeFilter: ['viewBox'] });
+    if (ro) ro.observe(svg);
+    addEventListener('resize', sync);
+    const iv = setInterval(() => anchor.isConnected || gone(), 1000);
+    function gone() {
+      mo.disconnect();
+      if (ro) ro.disconnect();
+      removeEventListener('resize', sync);
+      clearInterval(iv);
+      clip.remove();
+    }
+    clip.addEventListener('wheel', e => (e.preventDefault(), svg.dispatchEvent(new WheelEvent('wheel', e))), { passive: false });
+    sync();
+    requestAnimationFrame(sync);
+    return { root, sync };
+  }
+
   window.HSYM = {
     C,
+    clock,
+    layer,
     T,
     FRAME,
     AREA,
@@ -591,6 +699,12 @@
     orifice,
     tank,
     vbox,
+    vb,
+    motor,
+    eqb,
+    vbc,
+    vb2,
+    arrow,
     dest,
     legend,
     live,

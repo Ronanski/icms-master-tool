@@ -1463,12 +1463,20 @@ AN.markInputs = function () {
     el('circle', { cx: p.x, cy: -p.y, r: R0, fill: '#e8a317', 'fill-opacity': 0.14, stroke: '#e8a317', 'stroke-width': sw, 'stroke-dasharray': R0 * 0.42 + ' ' + R0 * 0.28, 'data-k': k }, g);
   }
 };
-function panelUpd(sel) {
+/* bg = the Logic page is not on the screen: the trends and the tick hooks only (interaction.js) */
+function panelUpd(sel, bg) {
   const sh = cs();
   if (!sh || !sh.S) return;
   try {
     trSample(sh);
   } catch (e) {}
+  if (bg) {
+    for (const f of AN.tickHooks || [])
+      try {
+        f();
+      } catch (e) {}
+    return;
+  }
   if (sel || !panelUpd.f) {
   }
   for (const f of PU)

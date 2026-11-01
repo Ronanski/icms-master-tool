@@ -671,8 +671,13 @@ function grpState(s) {
   return m;
 }
 /* simulate mode: the DITL Simulate button, or the one world (ABC + DITL, src/world/world.js) while it runs */
+/* 2026-11-01 (user "Ge ayusin pre", 150 MW: PAF / SAF / IDF STOPPED in the logic, M.3302 / 3303 / 3304 = 0): the ABC PAUSED is the
+   simulation with its time stopped, not a plant with its wires cut. A read while paused (the alarm scan, a faceplate, an HMI page:
+   DUI.outVal -> simSheet) evaluated the latches without the inputs from the other sheets (_win): DITL-27A saw "IDF RUNNING" = 0 and
+   its SAF latch was reset, at RUN the PAF followed (DITL-26A row 18 SAF STOPPED -> TR120 -> reset). The one world with its links keeps
+   its inputs while the ABC page is paused too */
 function simOn() {
-  return SIM || !!(window.WORLD && WORLD.live);
+  return SIM || !!(window.WORLD && (WORLD.live || (WORLD.on && WORLD.idx && window.AN && AN.cat === 'an')));
 }
 function simIn(s) {
   const sim = simOn(),

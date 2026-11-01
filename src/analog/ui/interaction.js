@@ -12,6 +12,21 @@ const xy = e => {
   return [q.x, -q.y];
 };
 const live = () => AN.cat === 'an';
+/* the ABC drawing is on the screen: the Logic page (no tab = the old shell), not under the plant workspace */
+const anShown = () => {
+  const b = document.body,
+    t = b.dataset.tab;
+  return !(t && t !== 'logic') && !b.classList.contains('plant');
+};
+new MutationObserver(() => {
+  if (AN._pStale && live() && anShown()) {
+    AN._pStale = 0;
+    try {
+      paint();
+      panelUpd();
+    } catch (e) {}
+  }
+}).observe(document.body, { attributes: true, attributeFilter: ['class', 'data-tab'] });
 ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'wheel', 'dblclick', 'click', 'contextmenu'].forEach(t =>
   cv.addEventListener(
     t,
@@ -445,8 +460,17 @@ setInterval(() => {
         AN.onStep(dt / n);
       } catch (e) {}
   }
-  paint();
-  panelUpd();
+  /* speed (user 2026-11-01, 6x CPU): the drawing and the side panel are painted only while the Logic page shows them; on Home,
+     Training or a plant page only the trends and the hooks run (a faceplate, the plant window), and the drawing is painted when it
+     comes back (anShown below) */
+  if (anShown()) {
+    AN._pStale = 0;
+    paint();
+    panelUpd();
+  } else {
+    AN._pStale = 1;
+    panelUpd(false, true);
+  }
   {
     const ms = performance.now() - t0_;
     AN._ms = AN._ms == null ? ms : AN._ms * 0.85 + ms * 0.15;

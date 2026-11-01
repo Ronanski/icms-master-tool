@@ -601,21 +601,35 @@
       }
       /* retest #42 (R7: "…as yo…" in the status bar at 1280 px with the Training panel open): a text longer than its cell goes on two
          smaller lines in the same bar (class sf2, app.css) instead of being cut; the whole text stays in the tooltip */
-      const fit2 = () =>
-        foot.querySelectorAll('#st,.shint,.smsg').forEach(x => {
+      /* speed (user 2026-11-01, 6x CPU): the status bar text changes every simulation step; the cells are measured once per frame
+         and only when a text, the bar width or the page changed (each measure is a forced layout of the page) */
+      let fitK = '',
+        fitQ = 0,
+        fitW = 0;
+      const fit2 = () => {
+        fitQ = 0;
+        const L = foot.querySelectorAll('#st,.shint,.smsg'),
+          k = fitW + '|' + document.body.className + '|' + document.body.dataset.tab + '|' + [...L].map(x => x.textContent.length).join('|');
+        if (k === fitK) return;
+        fitK = k;
+        L.forEach(x => {
           x.classList.remove('sf2');
           if (x.offsetParent && x.scrollWidth > x.clientWidth + 1) x.classList.add('sf2');
         });
-      new MutationObserver(() => requestAnimationFrame(fit2)).observe(foot, {
+      };
+      const fitLater = () => fitQ || (fitQ = requestAnimationFrame(fit2));
+      new MutationObserver(fitLater).observe(foot, {
         childList: true,
         characterData: true,
         subtree: true
       });
-      new MutationObserver(() => requestAnimationFrame(fit2)).observe(document.body, {
+      new MutationObserver(fitLater).observe(document.body, {
         attributes: true,
         attributeFilter: ['class', 'data-tab']
       });
-      addEventListener('resize', () => requestAnimationFrame(fit2));
+      addEventListener('resize', () => ((fitK = ''), fitLater()));
+      /* the bar width without a layout read: counted by a resize observer */
+      if (window.ResizeObserver) new ResizeObserver(() => (fitW++, fitLater())).observe(foot);
     }
     /* --- top bar --- */
     const ansb = $('ansb'),
@@ -1350,8 +1364,8 @@
       const G = { '✕': 'x', '×': 'x', '✖': 'x', '✓': 'check', '✔': 'check', '◀': 'cl', '‹': 'cl', '◄': 'cl', '▶': 'cr', '›': 'cr', '►': 'cr', '◀◀': 'skipb', '▶▶': 'skipf', '▲': 'cu', '▼': 'cd', '▾': 'cd', 'ⓘ': 'info', '⤢': 'expand', '−': 'minus', '+': 'plus', '❚❚': 'pause', '↩': 'back', '☰': 'menu', '📍': 'pin', '🎲': 'dice', '📂': 'folder', '💾': 'save' };
       const LEAD = { '▶': 'play', '❚❚': 'pause' };
       const skip = b => b.closest('.fp,.fpop,svg,#sidelist,#anlist,#pllist,.libg,#anfind');
-      const tag = () => {
-        for (const b of document.querySelectorAll('button')) {
+      const tag = L => {
+        for (const b of L || document.querySelectorAll('button')) {
           const t = b.textContent;
           if (b._gt === t) continue;
           b._gt = t;
@@ -1379,13 +1393,24 @@
         }
       };
       /* panels that rebuild their buttons (UAT, CHECK, Inspector) get the icons at once: tag after each change, once per frame */
+      /* speed (user 2026-11-01, 6x CPU): only the buttons that came in or whose text changed are looked at, not every button of the
+         app after every change of the page (the plant pages and the status bar change many times a second) */
       let tq = false;
-      new MutationObserver(() => {
-        if (tq) return;
+      const tB = new Set();
+      new MutationObserver(rs => {
+        for (const r of rs) {
+          const t = r.target.nodeType === 1 ? r.target : r.target.parentElement,
+            ob = t && t.closest && t.closest('button');
+          if (ob) tB.add(ob);
+          for (const n of r.addedNodes) if (n.nodeType === 1) n.tagName === 'BUTTON' ? tB.add(n) : n.querySelectorAll('button').forEach(x => tB.add(x));
+        }
+        if (tq || !tB.size) return;
         tq = true;
         requestAnimationFrame(() => {
           tq = false;
-          tag();
+          const L = [...tB].filter(x => x.isConnected);
+          tB.clear();
+          tag(L);
         });
       }).observe(document.body, { childList: true, subtree: true });
       tag();
