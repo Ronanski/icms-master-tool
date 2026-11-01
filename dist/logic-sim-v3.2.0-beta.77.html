@@ -30198,7 +30198,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.77';
-      c3.textContent += ' · build a161e47'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 0d0ab48'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -65768,71 +65768,74 @@ body.ophmi #anp{display:none!important}
 /* 3.2.0-beta.74 the operator pop-out faceplate (fp-pop.js): beside the clicked equipment, over the HMI graphic. One look for every
    faceplate: dark well, values >= 14 px, colour only for state and abnormal (RUN red, STOP green, amber = interlock / out of SOP,
    blue = the step target and the EXECUTE). */
-#fpop{position:absolute;z-index:8;width:330px;max-height:calc(100% - 12px);overflow:auto;background:#121920;border:1px solid #556677;border-radius:6px;box-shadow:0 10px 30px #000b;color:#e3eaf0;font:14px/1.4 var(--uf,system-ui)}
-#fpop::before{content:'';position:absolute;top:var(--ay,30px);width:12px;height:12px;background:#1b2631;border:1px solid #556677;transform:translateY(-50%) rotate(45deg)}
-#fpop[data-side="l"]::before{left:-7px;border-right:0;border-top:0}
-#fpop[data-side="r"]::before{right:-7px;border-left:0;border-bottom:0}
-#fpop[data-side="n"]::before{display:none}
-#fpop .fpo-h{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:7px 8px 7px 10px;background:#1b2631;border-bottom:1px solid #2b3742;border-radius:6px 6px 0 0;cursor:move;touch-action:none}
-#fpop .fpo-tt{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px}
-#fpop .fpo-tt b{font:700 16px var(--uf,system-ui)}
-#fpop .fpo-tt small{font:13px var(--mf,monospace);color:#93a2b2}
-#fpop .fpo-hv{font:600 15px var(--mf,monospace);color:#eaf6ff;white-space:nowrap}
-#fpop .fpo-lamp{flex:none;width:14px;height:14px;border-radius:50%;background:#3a434e;border:1px solid #000}
-#fpop .fpo-lamp.run{background:#e5484d;box-shadow:0 0 8px #e5484d}
-#fpop .fpo-lamp.stop{background:#2fa56a;box-shadow:0 0 8px #2fa56a}
-#fpop .fpo-lamp.trip{background:#e5484d;animation:fpobl 1s steps(2) infinite}
-#fpop .fpo-x{flex:none;width:30px;height:30px;padding:0;border-radius:4px;background:transparent;border:1px solid #3a4b5a;color:#c3ced8;font-size:15px;cursor:pointer}
-#fpop .fpo-chip{font:700 12px var(--uf,system-ui);letter-spacing:.06em;border-radius:3px;padding:1px 7px;border:1px solid #475563;color:#c3ced8;background:#1c252e}
-#fpop .fpo-chip:empty{display:none}
-#fpop .fpo-chip.ilk{border-color:#8a6420;color:#ffd08a;background:#2a2112}
-#fpop .fpo-chip.trip{border-color:#e5484d;color:#ffd0d2;background:#3a1416}
-#fpop .fpo-b{padding:9px 10px 10px;display:grid;gap:8px}
-#fpop .fpo-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-#fpop .fpo-r[hidden]{display:none}
-#fpop .fpo-l{width:78px;flex:none;font:600 12px var(--uf,system-ui);letter-spacing:.08em;color:#93a2b2}
-#fpop .fpo-lp{display:inline-flex;align-items:center;gap:5px;font:700 13px var(--uf,system-ui);color:#93a2b2}
-#fpop .fpo-lp i{width:12px;height:12px;border-radius:50%;background:#2a333c;border:1px solid #000}
-#fpop .fpo-lp.run{color:#ffb4b6}#fpop .fpo-lp.run i{background:#e5484d;box-shadow:0 0 7px #e5484d}
-#fpop .fpo-lp.stop{color:#9fe0bd}#fpop .fpo-lp.stop i{background:#2fa56a;box-shadow:0 0 7px #2fa56a}
-#fpop .fpo-lp.trip{color:#ffb4b6}#fpop .fpo-lp.trip i{background:#e5484d;animation:fpobl 1s steps(2) infinite}
+.fpo-box{position:absolute;z-index:8;width:330px;max-height:calc(100% - 12px);overflow:auto;background:#121920;border:1px solid #556677;border-radius:6px;box-shadow:0 10px 30px #000b;color:#e3eaf0;font:14px/1.4 var(--uf,system-ui)}
+.fpo-box::before{content:'';position:absolute;top:var(--ay,30px);width:12px;height:12px;background:#1b2631;border:1px solid #556677;transform:translateY(-50%) rotate(45deg)}
+.fpo-box[data-side="l"]::before{left:-7px;border-right:0;border-top:0}
+.fpo-box[data-side="r"]::before{right:-7px;border-left:0;border-bottom:0}
+.fpo-box[data-side="n"]::before{display:none}
+.fpo-box .fpo-h{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:7px 8px 7px 10px;background:#1b2631;border-bottom:1px solid #2b3742;border-radius:6px 6px 0 0;cursor:move;touch-action:none}
+.fpo-box .fpo-tt{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px}
+.fpo-box .fpo-tt b{font:700 16px var(--uf,system-ui)}
+.fpo-box .fpo-tt small{font:13px var(--mf,monospace);color:#93a2b2}
+.fpo-box .fpo-hv{font:600 15px var(--mf,monospace);color:#eaf6ff;white-space:nowrap}
+.fpo-box .fpo-lamp{flex:none;width:14px;height:14px;border-radius:50%;background:#3a434e;border:1px solid #000}
+.fpo-box .fpo-lamp.run{background:#e5484d;box-shadow:0 0 8px #e5484d}
+.fpo-box .fpo-lamp.stop{background:#2fa56a;box-shadow:0 0 8px #2fa56a}
+.fpo-box .fpo-lamp.trip{background:#e5484d;animation:fpobl 1s steps(2) infinite}
+.fpo-box .fpo-x{flex:none;width:30px;height:30px;padding:0;border-radius:4px;background:transparent;border:1px solid #3a4b5a;color:#c3ced8;font-size:15px;cursor:pointer}
+.fpo-box .fpo-chip{font:700 12px var(--uf,system-ui);letter-spacing:.06em;border-radius:3px;padding:1px 7px;border:1px solid #475563;color:#c3ced8;background:#1c252e}
+.fpo-box .fpo-chip:empty{display:none}
+.fpo-box .fpo-chip.ilk{border-color:#8a6420;color:#ffd08a;background:#2a2112}
+.fpo-box .fpo-chip.trip{border-color:#e5484d;color:#ffd0d2;background:#3a1416}
+.fpo-box .fpo-b{padding:9px 10px 10px;display:grid;gap:8px}
+.fpo-box .fpo-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fpo-box .fpo-r[hidden]{display:none}
+.fpo-box .fpo-l{width:78px;flex:none;font:600 12px var(--uf,system-ui);letter-spacing:.08em;color:#93a2b2}
+.fpo-box .fpo-lp{display:inline-flex;align-items:center;gap:5px;font:700 13px var(--uf,system-ui);color:#93a2b2}
+.fpo-box .fpo-lp i{width:12px;height:12px;border-radius:50%;background:#2a333c;border:1px solid #000}
+.fpo-box .fpo-lp.run{color:#ffb4b6}.fpo-box .fpo-lp.run i{background:#e5484d;box-shadow:0 0 7px #e5484d}
+.fpo-box .fpo-lp.stop{color:#9fe0bd}.fpo-box .fpo-lp.stop i{background:#2fa56a;box-shadow:0 0 7px #2fa56a}
+.fpo-box .fpo-lp.trip{color:#ffb4b6}.fpo-box .fpo-lp.trip i{background:#e5484d;animation:fpobl 1s steps(2) infinite}
 @keyframes fpobl{50%{opacity:.25}}
-#fpop button{font:600 14px var(--uf,system-ui);color:#e3eaf0;background:#22303c;border:1px solid #3a4b5a;border-radius:4px;padding:6px 12px;min-height:32px;cursor:pointer}
-#fpop button:hover:not(:disabled){background:#2b3c4b}
-#fpop button:focus-visible{outline:2px solid #5fb3e6;outline-offset:2px}
-#fpop button:disabled{opacity:.42;cursor:not-allowed}
-#fpop .fpo-seg{display:inline-flex;border:1px solid #3a4b5a;border-radius:4px;overflow:hidden}
-#fpop .fpo-seg button{border:0;border-radius:0;background:#1a232c}
-#fpop .fpo-seg button+button{border-left:1px solid #3a4b5a}
-#fpop .fpo-seg button.on{background:#3d6f93;color:#fff}
-#fpop .fpo-fld{font:600 12px var(--uf,system-ui);letter-spacing:.08em;color:#c3ced8;border:1px solid #475563;border-radius:3px;padding:1px 6px}
-#fpop .fpo-cmd{min-width:84px}
-#fpop .fpo-cmd.lit-run{background:#5a1c1f;border-color:#e5484d;color:#ffd0d2;opacity:1}
-#fpop .fpo-cmd.lit-stop{background:#173826;border-color:#2fa56a;color:#bdf0d3;opacity:1}
-#fpop .fpo-why{font-size:13px;color:#c3ced8;background:#1a2129;border-left:3px solid #475563;padding:5px 8px;border-radius:2px}
-#fpop .fpo-why[hidden]{display:none}
-#fpop .fpo-ex{display:flex;gap:8px;align-items:center;background:#16263a;border:1px solid #3e7fb0;border-radius:4px;padding:8px}
-#fpop .fpo-ex[hidden]{display:none}
-#fpop .fpo-ex span{flex:1;font-size:14px}
-#fpop .fpo-go{background:#2c6a9a!important;border-color:#5aa0d4!important;color:#fff!important}
-#fpop .fpo-vb{display:inline-block;min-width:84px;text-align:right;background:#05090d;border:1px solid #2f3d4a;border-radius:2px;padding:2px 8px;font:600 16px var(--mf,monospace)}
-#fpop .fpo-vb.hi{border-color:#f2a531;color:#ffd08a}
-#fpop .fpo-dim{font-size:13px;color:#93a2b2}
-#fpop .fpo-tr{display:block;width:100%;height:46px;background:#05090d;border:1px solid #2f3d4a;border-radius:2px}
-#fpop .fpo-sh{font:600 12px var(--uf,system-ui);letter-spacing:.08em;color:#93a2b2;margin-top:2px}
-#fpop .fpo-sh[hidden],#fpop .fpo-il[hidden]{display:none}
-#fpop .fpo-il{margin:0;padding:0;list-style:none;display:grid;gap:3px;font-size:13px}
-#fpop .fpo-il li{display:flex;gap:6px;align-items:baseline}
-#fpop .fpo-il li i{flex:none;width:14px;font:700 12px var(--mf,monospace);font-style:normal;text-align:center}
-#fpop .fpo-il li span{flex:1;min-width:0}
-#fpop .fpo-il li em{flex:none;font:12px var(--mf,monospace);font-style:normal;color:#7f8b97}
-#fpop .fpo-il li.ok{color:#c3ced8}
-#fpop .fpo-il li.bad{color:#ffd08a}
-#fpop .fpo-ln{display:flex;gap:4px 12px;flex-wrap:wrap;border-top:1px solid #2b3742;padding-top:6px}
-#fpop .fpo-a{background:none!important;border:0!important;padding:2px 0!important;min-height:0!important;color:#7fb3e0!important;font-weight:500!important;text-decoration:underline;text-underline-offset:2px}
-@media (prefers-reduced-motion:reduce){#fpop .fpo-lamp.trip,#fpop .fpo-lp.trip i{animation:none}}
+.fpo-box button{font:600 14px var(--uf,system-ui);color:#e3eaf0;background:#22303c;border:1px solid #3a4b5a;border-radius:4px;padding:6px 12px;min-height:32px;cursor:pointer}
+.fpo-box button:hover:not(:disabled){background:#2b3c4b}
+.fpo-box button:focus-visible{outline:2px solid #5fb3e6;outline-offset:2px}
+.fpo-box button:disabled{opacity:.42;cursor:not-allowed}
+.fpo-box .fpo-seg{display:inline-flex;border:1px solid #3a4b5a;border-radius:4px;overflow:hidden}
+.fpo-box .fpo-seg button{border:0;border-radius:0;background:#1a232c}
+.fpo-box .fpo-seg button+button{border-left:1px solid #3a4b5a}
+.fpo-box .fpo-seg button.on{background:#3d6f93;color:#fff}
+.fpo-box .fpo-fld{font:600 12px var(--uf,system-ui);letter-spacing:.08em;color:#c3ced8;border:1px solid #475563;border-radius:3px;padding:1px 6px}
+.fpo-box .fpo-cmd{min-width:84px}
+.fpo-box .fpo-cmd.lit-run{background:#5a1c1f;border-color:#e5484d;color:#ffd0d2;opacity:1}
+.fpo-box .fpo-cmd.lit-stop{background:#173826;border-color:#2fa56a;color:#bdf0d3;opacity:1}
+.fpo-box .fpo-why{font-size:13px;color:#c3ced8;background:#1a2129;border-left:3px solid #475563;padding:5px 8px;border-radius:2px}
+.fpo-box .fpo-why[hidden]{display:none}
+.fpo-box .fpo-ex{display:flex;gap:8px;align-items:center;background:#16263a;border:1px solid #3e7fb0;border-radius:4px;padding:8px}
+.fpo-box .fpo-ex[hidden]{display:none}
+.fpo-box .fpo-ex span{flex:1;font-size:14px}
+.fpo-box .fpo-go{background:#2c6a9a!important;border-color:#5aa0d4!important;color:#fff!important}
+.fpo-box .fpo-vb{display:inline-block;min-width:84px;text-align:right;background:#05090d;border:1px solid #2f3d4a;border-radius:2px;padding:2px 8px;font:600 16px var(--mf,monospace)}
+.fpo-box .fpo-vb.hi{border-color:#f2a531;color:#ffd08a}
+.fpo-box .fpo-dim{font-size:13px;color:#93a2b2}
+.fpo-box .fpo-tr{display:block;width:100%;height:46px;background:#05090d;border:1px solid #2f3d4a;border-radius:2px}
+.fpo-box .fpo-sh{font:600 12px var(--uf,system-ui);letter-spacing:.08em;color:#93a2b2;margin-top:2px}
+.fpo-box .fpo-sh[hidden],.fpo-box .fpo-il[hidden]{display:none}
+.fpo-box .fpo-il{margin:0;padding:0;list-style:none;display:grid;gap:3px;font-size:13px}
+.fpo-box .fpo-il li{display:flex;gap:6px;align-items:baseline}
+.fpo-box .fpo-il li i{flex:none;width:14px;font:700 12px var(--mf,monospace);font-style:normal;text-align:center}
+.fpo-box .fpo-il li span{flex:1;min-width:0}
+.fpo-box .fpo-il li em{flex:none;font:12px var(--mf,monospace);font-style:normal;color:#7f8b97}
+.fpo-box .fpo-il li.ok{color:#c3ced8}
+.fpo-box .fpo-il li.bad{color:#ffd08a}
+.fpo-box .fpo-ln{display:flex;gap:4px 12px;flex-wrap:wrap;border-top:1px solid #2b3742;padding-top:6px}
+.fpo-box .fpo-a{background:none!important;border:0!important;padding:2px 0!important;min-height:0!important;color:#7fb3e0!important;font-weight:500!important;text-decoration:underline;text-underline-offset:2px}
+@media (prefers-reduced-motion:reduce){.fpo-box .fpo-lamp.trip,.fpo-box .fpo-lp.trip i{animation:none}}
 /* the controller faceplate of plant.js (#plfp) beside its equipment too (same frame) */
 #plantws #plmid > #plfp.fpo-near{position:absolute;right:auto;bottom:auto;width:360px;max-height:calc(100% - 12px);overflow:auto;grid-row:auto;grid-column:auto;z-index:8;border:1px solid #556677;border-radius:6px;box-shadow:0 10px 30px #000b}
+
+/* #59: the kind of the faceplate (CONTROL / PERMISSIVE · TREND · MONITOR) */
+.fpo-box .fpo-k{white-space:nowrap;font:700 10px var(--uf,system-ui);letter-spacing:.04em;color:#93a2b2;border:1px solid #475563;border-radius:3px;padding:1px 6px}
 </style><script id="plantjs">/* 3.2.0-beta.49 (user 2026-10-28: "two HMI pages only"): the UNIT screen (own drawing, PID / MAN controller faceplates) stays here; the
    new Air & Flue Gas screen comes from hmi2.js. The 27 old snapshot screens (003 ~ 039) and their pictures were deleted (git history).
    Plant HMI draft graphics (2.1.0): one entry per system, coordinates in the pixel space of the HMI snapshot (about 1920 x 1000); the renderer scales them. Values are the snapshot values (static), no addresses yet. */
@@ -66873,6 +66876,21 @@ window.PLANT_SYS = [
     return s + bedTable() + legend() + panel();
   }
 
+  /* the plant estimate of the air / flue gas transmitters no logic sheet reads (EST): the derived inputs of E from its live ones (bed
+     temperature, air flows, fans); shared with the pages that show the same transmitters (038 AIR PREHEATER) */
+  function estPrep(E) {
+    E.kb = E.tb == null ? 0 : clamp((E.tb - 30) / (937 - 30), 0, 1.3);
+    E.pa = (E.fpa || 0) / E.pa0;
+    E.sa = (E.fsa || 0) / E.sa0;
+    E.fa = (E.ffa || 0) / E.fa0;
+    E.g = E.idf ? clamp(((E.fpa || 0) + (E.fsa || 0) + (E.ffa || 0)) / 594, 0, 1.4) : 0;
+    E.pf = E.pf0 == null ? 0 : E.pf0;
+    E.tpa = E.ta == null ? 30 : E.ta;
+    E.tsa = E.ts == null ? E.tpa : E.ts;
+    const amb = E.tpa;
+    E.T = (t0, after) => amb + (t0 - amb) * E.kb * (after ? 0.85 + 0.15 * clamp(E.g, 0.2, 1.2) : 1);
+    E.P = p0 => (E.idf ? E.pf + (p0 - -16) * E.g * E.g : E.pf);
+  }
   /* ---------- live links ---------- */
   function airFlueGas(g, api) {
     const pg = S_('g', { transform: `translate(0 ${OY})` });
@@ -66891,17 +66909,7 @@ window.PLANT_SYS = [
     const E = { tb: null, pa0: 354, sa0: 213, fa0: 26.3 };
     const ESTV = [];
     const recalc = () => {
-      E.kb = E.tb == null ? 0 : clamp((E.tb - 30) / (937 - 30), 0, 1.3);
-      E.pa = (E.fpa || 0) / E.pa0;
-      E.sa = (E.fsa || 0) / E.sa0;
-      E.fa = (E.ffa || 0) / E.fa0;
-      E.g = E.idf ? clamp(((E.fpa || 0) + (E.fsa || 0) + (E.ffa || 0)) / 594, 0, 1.4) : 0;
-      E.pf = E.pf0 == null ? 0 : E.pf0;
-      E.tpa = E.ta == null ? 30 : E.ta;
-      E.tsa = E.ts == null ? E.tpa : E.ts;
-      const amb = E.tpa;
-      E.T = (t0, after) => amb + (t0 - amb) * E.kb * (after ? 0.85 + 0.15 * clamp(E.g, 0.2, 1.2) : 1);
-      E.P = p0 => (E.idf ? E.pf + (p0 - -16) * E.g * E.g : E.pf);
+      estPrep(E);
       for (const o of ESTV) {
         let v = null;
         try {
@@ -67316,7 +67324,9 @@ window.PLANT_SYS = [
       return w;
     };
     let x = 12;
-    for (const [id, s] of NAV) x += btn(x, s, id === sys.id, id === sys.id ? 'this screen' : 'open ' + s, api.go && (() => api.go(id))) + 6;
+    /* a page built from an approved mockup lists the tabs of its mockup (sys.nav: 038, 039) */
+    const nav = sys.nav ? sys.nav.map(k => NAV.concat(XNAV).find(n => n[0] === k)).filter(Boolean) : NAV;
+    for (const [id, s] of nav) x += btn(x, s, id === sys.id, id === sys.id ? 'this screen' : 'open ' + s, api.go && (() => api.go(id))) + 6;
     /* 030 SEAWATER, MAKE-UP WATER, 036 TURBINE OIL, INSTRUMENT & PLANT AIR and 027 CLOSED COOLING WATER are drawn in one style (user 2026-10-29: STEEL): no style choice there */
     if (sys.style) return;
     x = W - 12 - ORDER.reduce((a, k) => a + STYLES[k].name.length * 6.3 + 28, 0);
@@ -67340,6 +67350,10 @@ window.PLANT_SYS = [
     ['IA', 'INSTRUMENT & PLANT AIR'],
     ['CW', '027 CLOSED COOLING WATER']
   ];
+  const XNAV = [
+    ['APH', '038 AIR PREHEATER'],
+    ['BIAS', '039 RH / SH BIASING DAMPER']
+  ];
   window.PLANT_V2 = {
     C,
     styles: ORDER,
@@ -67348,6 +67362,8 @@ window.PLANT_SYS = [
     },
     /* the screens of the other files (hmi-sw.js: 030 SEAWATER) */
     screens: SCREENS,
+    EST,
+    estPrep,
     draw(g, sys, api) {
       const S = STYLES[sys.style || SK];
       for (const k in C) delete C[k];
@@ -68484,6 +68500,9 @@ window.PLANT_SYS = [
       co: ['#d0773b', '#ffc79a'] /* control oil (high pressure) */,
       to: ['#c25f98', '#ffc4e4'] /* trip oil */,
       st: ['#8c98a5', '#f2f6fa'] /* steam / vapour */,
+      air: ['#5f87a8', '#d6ecff'] /* cold air (primary / secondary / fluidizing) */,
+      ha: ['#b07a3c', '#ffd9a0'] /* hot air (after the air preheater) */,
+      fg: ['#77706a', '#e2dad2'] /* flue gas */,
       off: ['#33414e', null]
     }
   };
@@ -68678,6 +68697,30 @@ window.PLANT_SYS = [
   /* end of a line: arrow card (title, sub) pointing in from the left */
   const dest = (x, y, w, title, sub) =>
     `<g><path d="M${x} ${y - 26} h${w} a4 4 0 0 1 4 4 v44 a4 4 0 0 1 -4 4 h-${w} l-12 -26 z" fill="#1b252f" stroke="#33424f"/>${T(x + 12, y - 4, title, 'hs-eq', 'style="font-size:15px"')}${sub ? T(x + 12, y + 15, sub, 'hs-sub') : ''}</g>`;
+  /* a value with a plain description (user 2026-10-31: no acronyms as labels): description above the box, the tag (small) and the unit
+     at its right; key = data-v of the value, click key = data-vbx */
+  const vb = (x, y, desc, tag, unit, key, w = 70) =>
+    `<g class="hs-hit" data-vbx="${key}">${T(x, y - 6, desc, 'hs-sub', 'fill="#c3ced8"')}<rect x="${x}" y="${y}" width="${w}" height="29" rx="2" fill="${C.box}" stroke="${C.boxs}"/>${T(x + w - 6, y + 22, '-----', 'hs-val', `text-anchor="end" fill="${C.none}" data-v="${key}"`)}${T(x + w + 5, y + 11, tag, 'hs-tag', 'style="font-size:10.5px"')}${T(x + w + 5, y + 26, unit, 'hs-unit')}</g>`;
+  /* a small motor box with fins and a run ring (drives, actuators); A.pump(id, ...) colours the ring */
+  const motor = (x, y, id, px, o = {}) => {
+    const w = o.w || 60,
+      h = o.h || 40;
+    return `<g class="hs-hit" data-hit="${id}"><rect x="${x - 4}" y="${y - 4}" width="${w + 8}" height="${h + 8}" rx="7" fill="none" stroke="${C.none}" stroke-width="4" data-ring="${id}" class="hs-hl"/><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="url(#${px}-mt)" ${OL}/>${[0, 1, 2, 3, 4].map(k => `<line x1="${x + 6 + k * ((w - 12) / 4)}" x2="${x + 6 + k * ((w - 12) / 4)}" y1="${y + 5}" y2="${y + h - 5}" stroke="#3b4651" stroke-width="1.5"/>`).join('')}${T(x + w / 2, y + h / 2 + 5, o.lab || 'M', 'hs-st', 'fill="#0c1014" text-anchor="middle"')}</g>`;
+  };
+  /* #59 (user 2026-10-31): the one button beside an equipment that opens its second faceplate (permissive, monitoring, trend);
+     small and quiet (leader review, clean layout): "PERMISSIVE" + the Y / N square, Y = red = every permissive complete, N = green =
+     not complete (A.eqb(id, ok) sets it) */
+  const eqb = (x, y, id) =>
+    `<g data-eqb="${id}" class="hs-hit" role="button" aria-label="Permissive, trend and monitoring"><title>Permissive, trend and monitoring</title><rect x="${x}" y="${y}" width="112" height="22" rx="3" fill="#161e26" stroke="#3a4b5a" data-eqbr="${id}"/>${T(x + 8, y + 15, 'PERMISSIVE', 'hs-st', 'fill="#b8c4cf" style="font-size:10px;letter-spacing:.04em"')}<rect x="${x + 92}" y="${y + 4}" width="14" height="14" rx="2" fill="${C.none}" data-eqbk="${id}"/>${T(x + 99, y + 15.5, '-', 'hs-st', 'fill="#04150c" text-anchor="middle" style="font-size:11px" data-eqbt="' + id + '"')}</g>`;
+  /* clean layout (leader review 2026-10-31): a value with its description and unit, the tag only on hover (and in the faceplate);
+     vb2 = an A / B pair as one two-cell block */
+  const vbc = (x, y, desc, tag, unit, key, w = 76) =>
+    `<g class="hs-hit" data-vbx="${key}"><title>${tag}</title>${T(x, y - 6, desc, 'hs-sub', 'fill="#c3ced8"')}<rect x="${x}" y="${y}" width="${w}" height="28" rx="2" fill="${C.box}" stroke="${C.boxs}"/>${T(x + w - 6, y + 21, '-----', 'hs-val', `text-anchor="end" fill="${C.none}" data-v="${key}" style="font-size:20px"`)}${T(x + w + 5, y + 21, unit, 'hs-unit')}</g>`;
+  const vb2 = (x, y, desc, tags, unit, keys, w = 56) =>
+    `<g class="hs-hit" data-vbx="${keys[0]}"><title>${tags.join(' / ')}</title>${T(x, y - 6, desc, 'hs-sub', 'fill="#c3ced8"')}${[0, 1].map(i => `<rect x="${x + i * (w + 3)}" y="${y}" width="${w}" height="28" rx="2" fill="${C.box}" stroke="${C.boxs}"/>${T(x + i * (w + 3) + w - 5, y + 21, '-----', 'hs-val', `text-anchor="end" fill="${C.none}" data-v="${keys[i]}" style="font-size:20px"`)}`).join('')}${T(x + 2 * w + 8, y + 21, unit, 'hs-unit')}</g>`;
+  /* a flow arrow on a duct (direction instead of a sentence): dir r / l / u / d */
+  const arrow = (x, y, dir, c = '#dce4eb') =>
+    `<path d="M${x - 7} ${y - 6} L${x + 5} ${y} L${x - 7} ${y + 6} Z" fill="${c}" opacity=".85" transform="rotate(${{ r: 0, d: 90, l: 180, u: 270 }[dir] || 0} ${x} ${y})"/>`;
   const legend = (x, y, items) =>
     items
       .map(
@@ -69006,11 +69049,82 @@ window.PLANT_SYS = [
         e.classList.toggle('h2blink', ok === false);
       });
     };
+    /* the #59 button: ok true = Y (red, every permissive complete), false = N (green), null = no logic */
+    A.eqb = (id, ok) => {
+      const col = ok == null ? C.none : ok ? C.run : C.stop;
+      qa(`[data-eqbr="${id}"]`).forEach(e => e.setAttribute('stroke', col));
+      qa(`[data-eqbk="${id}"]`).forEach(e => e.setAttribute('fill', col));
+      qa(`[data-eqbt="${id}"]`).forEach(e => {
+        e.textContent = ok == null ? '-' : ok ? 'Y' : 'N';
+        e.setAttribute('fill', ok ? '#fff' : '#04150c');
+      });
+    };
     return A;
+  }
+
+  /* ---------- light pages (user 2026-11-01: light on a tablet, PENDING_HMI_BUILD rule 5) ---------- */
+  /* one shared 15 Hz clock for everything that moves on the pages built from an approved mockup (pipe flows, rotor, fans): one
+     small repaint 15 times a second instead of CSS / SMIL animations on the big drawing. fn(t seconds) returns false to leave */
+  const TICKS = new Set();
+  let tickIv = 0;
+  function clock(fn) {
+    TICKS.add(fn);
+    if (!tickIv)
+      tickIv = setInterval(() => {
+        if (document.hidden) return;
+        const t = performance.now() / 1000;
+        for (const f of TICKS) if (f(t) === false) TICKS.delete(f);
+        if (!TICKS.size) (clearInterval(tickIv), (tickIv = 0));
+      }, 66);
+  }
+  /* an HTML layer over the plant svg that follows its pan and zoom (CSS transform only, the compositor moves it): the drawing of an
+     approved mockup as it is (its own svg, HTML flue gas behind it, the flow overlay over it). anchor = a <g> of the page whose
+     user space is the mockup space (w x h). Only the .hs-lay [data-hit] elements take the pointer; a wheel over them zooms the plant
+     as anywhere else. Removed with the page */
+  function layer(anchor, w, h) {
+    const svg = anchor.ownerSVGElement,
+      par = svg && svg.parentNode;
+    if (!par) return null;
+    const clip = document.createElement('div'),
+      root = document.createElement('div');
+    clip.className = 'hs-lay';
+    clip.style.cssText = 'position:absolute;overflow:hidden;pointer-events:none;z-index:1;left:0;top:0;width:0;height:0';
+    root.style.cssText = `position:absolute;left:0;top:0;width:${w}px;height:${h}px;transform-origin:0 0`;
+    clip.append(root);
+    par.append(clip);
+    if (getComputedStyle(par).position === 'static') par.style.position = 'relative';
+    const sync = () => {
+      if (!anchor.isConnected) return gone();
+      const m = anchor.getScreenCTM(),
+        P = par.getBoundingClientRect(),
+        R = svg.getBoundingClientRect();
+      if (!m) return;
+      Object.assign(clip.style, { left: R.left - P.left + par.scrollLeft + 'px', top: R.top - P.top + par.scrollTop + 'px', width: R.width + 'px', height: R.height + 'px' });
+      root.style.transform = `matrix(${m.a},${m.b},${m.c},${m.d},${m.e - R.left},${m.f - R.top})`;
+    };
+    const mo = new MutationObserver(sync),
+      ro = window.ResizeObserver ? new ResizeObserver(sync) : null;
+    mo.observe(svg, { attributes: true, attributeFilter: ['viewBox'] });
+    if (ro) ro.observe(svg);
+    addEventListener('resize', sync);
+    const iv = setInterval(() => anchor.isConnected || gone(), 1000);
+    function gone() {
+      mo.disconnect();
+      if (ro) ro.disconnect();
+      removeEventListener('resize', sync);
+      clearInterval(iv);
+      clip.remove();
+    }
+    clip.addEventListener('wheel', e => (e.preventDefault(), svg.dispatchEvent(new WheelEvent('wheel', e))), { passive: false });
+    sync();
+    requestAnimationFrame(sync);
+    return { root, sync };
   }
 
   window.HSYM = {
     C,
+    clock,
+    layer,
     T,
     FRAME,
     AREA,
@@ -69031,6 +69145,12 @@ window.PLANT_SYS = [
     orifice,
     tank,
     vbox,
+    vb,
+    motor,
+    eqb,
+    vbc,
+    vb2,
+    arrow,
     dest,
     legend,
     live,
@@ -72318,6 +72438,1281 @@ window.PLANT_SYS = [
   });
 })();
 
+/* 038 AIR PREHEATER (PR-OPE-5002 section 17 "start the air preheater", section 27 sootblower): the APPROVED mockup v15 as it is
+   (user 2026-10-31 v14 "perfect!", v15; user 2026-11-01 "Yung mga approved. Ipalagay mo na sa app."; docs/hmi/mockups/038-air-
+   preheater-v15.html, artifact ERonWczg8MEvi6AWsL7qCP). Same coordinates, colours and sizes ("ganyan na ganyan"); the drawing sits
+   in an HTML layer over the plant svg that follows its pan and zoom (HSYM.layer). LIGHT (PENDING_HMI_BUILD rule 5): no CSS / SMIL
+   animation on the drawing; the pipe flows and the streams in the rotor are in an overlay svg, and everything that moves (flows,
+   rotor, top view, gears, fans, shafts) steps on the one 15 Hz clock of HSYM (the mockup ran ~30 fps at 6x CPU throttle).
+   Live: main drive motor M1 of DITL-43 (run state LS_DOCK.mst), back-up air motor of DITL-44 (its air valve SV-PA1052, row 7), the
+   fans (memory list M.3302 PAF / M.3303 SAF / M.3304 IDF) move the air and gas flows, the values are the logic where a sheet reads
+   the transmitter, else the plant estimate of the 007 page (PLANT_V2.EST, the same numbers on both pages). #59: click on a motor =
+   the CONTROL faceplate, the Y / N square = PERMISSIVE · TREND · MONITOR (Y red = complete, N green). */
+(function () {
+  if (!window.PLANT_V2 || !window.HSYM) return;
+  const H = HSYM;
+  const M = { n: 'Air preheater', t: 'H-1052', ad: 'DITL-43', d: 'DITL-43' };
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const fmt = (x, dp) => (x == null || !isFinite(x) ? '-----' : (+x).toFixed(dp).replace(/^-(0(?:\.0+)?)$/, '$1'));
+  const VW = 1280,
+    VH = 830;
+  /* the css of the mockup, kept to the layer */
+  const CSS = `.a8{--band:#ffffff07;--dim:#7f8b96;--run:#e5484d;--stop:#2fa56a;--val:#f4f7f9;--sans:Inter,"Segoe UI",Arial,sans-serif;--mono:"IBM Plex Mono",Consolas,monospace;background:#141a20;font-family:var(--sans)}
+.a8 svg{position:absolute;left:0;top:0;width:${VW}px;height:${VH}px;display:block;pointer-events:none}
+.a8 .flo{will-change:transform}
+.a8 .zone{fill:var(--dim);font:600 13px var(--sans);letter-spacing:.14em}
+.a8 .tag{fill:#c9d1d8;font:500 13px var(--mono)}
+.a8 .num{fill:var(--val);font:600 18px var(--mono)}
+.a8 .unit{fill:var(--dim);font:500 12px var(--sans)}
+.a8 .eq{fill:#f1f4f6;font:700 18px var(--sans);letter-spacing:.02em}
+.a8 .st{font:700 11px var(--sans);letter-spacing:.12em}
+.a8 .inside{fill:#f1f4f6;font:600 11px var(--sans);letter-spacing:.14em}
+.a8 .card-t{fill:#f1f4f6;font:700 14px var(--sans);letter-spacing:.04em}
+.a8 .card-s{fill:var(--dim);font:500 12px var(--sans)}
+.a8 .pf{fill:none;stroke:#ffffff;stroke-width:2.5;stroke-dasharray:8 22;opacity:.5;stroke-linejoin:round}
+.a8 .st-gas,.a8 .st-air{stroke:#ffffff;stroke-width:1.4;opacity:.35;stroke-dasharray:6 22;fill:none}
+.a8 [data-hit]{pointer-events:auto;cursor:pointer}.a8 [data-hit]:focus-visible{outline:2px solid #6aa7dd}`;
+  /* the static drawing of the mockup (@ = the id prefix of this page) */
+  const ART = `<defs>
+<linearGradient id="@metalV" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2c343c"/><stop offset=".3" stop-color="#7d8892"/><stop offset=".45" stop-color="#a3adb6"/><stop offset=".7" stop-color="#5d6872"/><stop offset="1" stop-color="#262d34"/></linearGradient>
+<linearGradient id="@metalH" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a3adb6"/><stop offset=".5" stop-color="#6c7780"/><stop offset="1" stop-color="#2c343c"/></linearGradient>
+<pattern id="@shaftV" width="8" height="16" patternUnits="userSpaceOnUse"><rect width="8" height="16" fill="#7d8892"/><path d="M-4 16 L4 0 M4 16 L12 0" stroke="#c3ccd3" stroke-width="2.5"/></pattern>
+<pattern id="@shaftH" width="16" height="10" patternUnits="userSpaceOnUse"><rect width="16" height="10" fill="#7d8892"/><path d="M0 -4 L16 6 M0 4 L16 14" stroke="#c3ccd3" stroke-width="2.5"/></pattern>
+<clipPath id="@win"><rect x="504" y="312" width="292" height="256"/></clipPath>
+</defs>
+<rect x="0" y="0" width="470" height="830" fill="var(--band)"/>
+<rect x="474" y="0" width="356" height="830" fill="#ffffff04"/>
+<rect x="834" y="0" width="446" height="830" fill="var(--band)"/>
+<text class="zone" x="14" y="24">AIR SIDE · PRIMARY AND SECONDARY AIR</text>
+<text class="zone" x="488" y="24">AIR PREHEATER · DITL-43 / 44</text>
+<text class="zone" x="848" y="24">GAS SIDE · FLUE GAS</text>
+<g transform="translate(0,30)">
+<g data-k="ducts"></g>
+<g data-k="cards"></g>
+<rect x="638" y="280" width="24" height="16" rx="2" fill="url(#@metalH)" stroke="#0b0f13"/>
+<rect x="634" y="586" width="32" height="18" rx="2" fill="url(#@metalH)" stroke="#0b0f13"/>
+<rect x="622" y="604" width="56" height="6" fill="#4a545d"/>
+<rect x="490" y="300" width="320" height="280" fill="url(#@metalV)" stroke="#0b0f13"/>
+<rect x="482" y="294" width="336" height="12" fill="url(#@metalH)" stroke="#0b0f13"/>
+<rect x="482" y="574" width="336" height="12" fill="url(#@metalH)" stroke="#0b0f13"/>
+<rect x="504" y="312" width="292" height="256" fill="#0a0d10"/>
+<g data-k="rotor" clip-path="url(#@win)"></g>
+<g data-k="streams"></g>
+<g stroke="#0b0f13" stroke-width="3"><line x1="504" y1="397" x2="796" y2="397"/><line x1="504" y1="483" x2="796" y2="483"/></g>
+<rect x="504" y="312" width="292" height="256" fill="none" stroke="#0b0f13" stroke-width="2"/>
+<rect x="642" y="306" width="16" height="268" fill="url(#@metalV)" stroke="#0b0f13"/>
+<g fill="#b9c3cb" stroke="#0b0f13"><rect x="624" y="306" width="52" height="8"/><rect x="624" y="566" width="52" height="8"/><rect x="571" y="306" width="8" height="8"/><rect x="571" y="566" width="8" height="8"/></g>
+<g class="inside" text-anchor="end" fill="#9aa6b1" font-size="11">
+<text x="474" y="352">HOT END</text><text x="474" y="366" class="card-s" font-size="11">elements</text>
+<text x="474" y="438">INTERMEDIATE</text><text x="474" y="452" class="card-s" font-size="11">elements</text>
+<text x="474" y="524">COLD END</text><text x="474" y="538" class="card-s" font-size="11">enamelled</text>
+</g>
+<g font-size="11" class="inside" text-anchor="middle">
+<rect x="522" y="528" width="38" height="16" rx="2" fill="#0b0f13cc"/><text x="541" y="540">PA</text>
+<rect x="594" y="528" width="38" height="16" rx="2" fill="#0b0f13cc"/><text x="613" y="540">SA</text>
+<rect x="701" y="528" width="48" height="16" rx="2" fill="#0b0f13cc"/><text x="725" y="540">GAS</text>
+</g>
+<rect x="645" y="84" width="10" height="196" fill="url(#@shaftV)" stroke="#0b0f13"/>
+<rect x="616" y="40" width="68" height="46" rx="4" fill="url(#@metalH)" stroke="#0b0f13"/>
+<rect x="628" y="46" width="44" height="34" rx="3" fill="#11161b" stroke="#0b0f13"/>
+<g transform="translate(641,63)"><g data-rot="g1"><path d="M-11 0a11 11 0 1 0 22 0a11 11 0 1 0 -22 0" fill="#5d6872"/><g stroke="#a9b3bc" stroke-width="3"><line x1="0" y1="-13" x2="0" y2="13"/><line x1="-13" y1="0" x2="13" y2="0"/><line x1="-9" y1="-9" x2="9" y2="9"/><line x1="-9" y1="9" x2="9" y2="-9"/></g><circle r="4" fill="#2c343c"/></g></g>
+<g transform="translate(662,63)"><g data-rot="g2"><path d="M-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" fill="#5d6872"/><g stroke="#a9b3bc" stroke-width="2.5"><line x1="0" y1="-9" x2="0" y2="9"/><line x1="-9" y1="0" x2="9" y2="0"/><line x1="-6" y1="-6" x2="6" y2="6"/><line x1="-6" y1="6" x2="6" y2="-6"/></g><circle r="3" fill="#2c343c"/></g></g>
+<rect x="640" y="84" width="20" height="8" fill="url(#@metalH)" stroke="#0b0f13"/>
+<rect x="606" y="58" width="10" height="10" fill="#7d8892" stroke="#0b0f13"/><rect x="684" y="58" width="10" height="10" fill="url(#@shaftH)" stroke="#0b0f13"/>
+<g data-hit="MD" tabindex="0" role="button" aria-label="Main drive motor: open control faceplate"><title>Main drive motor M1 · DITL-43</title>
+<rect x="694" y="42" width="86" height="42" rx="6" fill="url(#@metalH)" stroke="#6b7480" stroke-width="2.5" data-ring="MD"/>
+<g stroke="#1b2228" stroke-width="2"><line x1="706" y1="46" x2="706" y2="80"/><line x1="716" y1="46" x2="716" y2="80"/><line x1="726" y1="46" x2="726" y2="80"/><line x1="736" y1="46" x2="736" y2="80"/><line x1="746" y1="46" x2="746" y2="80"/><line x1="756" y1="46" x2="756" y2="80"/></g>
+<rect x="780" y="46" width="8" height="34" rx="2" fill="#3b444c" stroke="#0b0f13"/>
+<g transform="translate(800,63)"><circle r="15" fill="#1b2228" stroke="#8d98a2" stroke-width="2"/><g data-rot="fan"><path d="M0 0 L-3 -12 L3 -12Z M0 0 L12 -3 L12 3Z M0 0 L3 12 L-3 12Z M0 0 L-12 3 L-12 -3Z" fill="#a9b3bc"/></g><circle r="3" fill="#5d6872"/></g>
+</g>
+<g data-hit="AM" tabindex="0" role="button" aria-label="Air motor: open control faceplate"><title>Air motor (back-up drive) · DITL-44 SV-PA1052</title>
+<rect x="540" y="46" width="66" height="34" rx="6" fill="url(#@metalH)" stroke="#6b7480" stroke-width="2.5" data-ring="AM"/>
+<g stroke="#1b2228" stroke-width="2"><line x1="552" y1="50" x2="552" y2="76"/><line x1="562" y1="50" x2="562" y2="76"/><line x1="572" y1="50" x2="572" y2="76"/></g>
+</g>
+<text class="st" x="737" y="12" text-anchor="middle" fill="#6b7480" data-st="MD">-----</text>
+<text class="eq" x="737" y="32" text-anchor="middle" font-size="15">MAIN MOTOR</text>
+<text class="st" x="573" y="12" text-anchor="middle" fill="#6b7480" data-st="AM">-----</text>
+<text class="eq" x="573" y="32" text-anchor="middle" font-size="15">AIR MOTOR</text>
+<g stroke="#0b0f13">
+<rect x="668" y="314" width="160" height="5" fill="url(#@metalH)"/><rect x="668" y="561" width="160" height="5" fill="url(#@metalH)"/>
+<g fill="#c3ccd3"><circle cx="690" cy="321" r="2"/><circle cx="725" cy="321" r="2"/><circle cx="760" cy="321" r="2"/><circle cx="690" cy="559" r="2"/><circle cx="725" cy="559" r="2"/><circle cx="760" cy="559" r="2"/></g>
+<rect x="828" y="303" width="44" height="26" rx="3" fill="url(#@metalH)"/><rect x="828" y="550" width="44" height="26" rx="3" fill="url(#@metalH)"/>
+</g>
+<g stroke-linejoin="round" fill="none"><polyline points="872,316 900,316" stroke="#0b0f13" stroke-width="8"/><polyline points="872,316 900,316" stroke="#8c98a5" stroke-width="5"/><polyline points="872,563 900,563" stroke="#0b0f13" stroke-width="8"/><polyline points="872,563 900,563" stroke="#8c98a5" stroke-width="5"/></g>
+<text class="st" x="848" y="350" fill="#6b7480" data-st="APH">-----</text>
+<text class="eq" x="848" y="372">AIR PREHEATER H-1052</text>
+<text class="card-s" x="848" y="390">Rotary regenerative · rotor ~1 rpm</text>
+<g data-hit="YN" data-eqb="APH" tabindex="0" role="button" aria-label="Permissive, monitor and trend"><title>Permissive, monitor and trend</title>
+<rect x="1078" y="354" width="28" height="22" rx="3" fill="#6b7480" data-yn="r"/>
+<text x="1092" y="370" text-anchor="middle" fill="#fff" font-weight="700" font-size="14" data-yn="t">-</text>
+</g>
+<g data-k="vals"></g>
+<text class="tag" x="1195" y="420" text-anchor="middle" fill="#9aa6b1">ROTOR · TOP VIEW</text>
+<g transform="translate(1195,500)"><g data-k="plan"></g></g>
+<circle cx="1195" cy="500" r="64" fill="none" stroke="#a9b3bc" stroke-width="4"/>
+<g stroke="#b9c3cb" stroke-width="7"><line x1="1195" y1="436" x2="1195" y2="564"/><line x1="1195" y1="500" x2="1137" y2="473"/></g>
+<circle cx="1195" cy="500" r="9" fill="#a9b3bc" stroke="#0b0f13"/>
+<g class="inside" font-size="11"><text x="1262" y="440" text-anchor="end">GAS</text><text x="1122" y="470" text-anchor="end" fill="#c9d1d8">PA</text><text x="1122" y="540" text-anchor="end" fill="#c9d1d8">SA</text></g>
+<g data-k="air"></g>
+<g transform="translate(1080,740)">
+<rect width="34" height="8" fill="#4f86b5"/><text class="unit" x="44" y="9" fill="#c9d1d8">COLD AIR</text>
+<rect y="20" width="34" height="8" fill="#c98a4a"/><text class="unit" x="44" y="29" fill="#c9d1d8">HOT AIR</text>
+<rect y="40" width="34" height="8" fill="#b85a3c"/><text class="unit" x="44" y="49" fill="#c9d1d8">FLUE GAS</text>
+</g>
+</g>`;
+  /* the values: x, y (box top), tag, decimals (mockup V list) */
+  const V = [
+    [396, 104, 'TIFA1052', 0], [176, 104, 'TIFA1086', 0], [286, 104, 'TIFA1087', 0],
+    [176, 318, 'TIFA1076', 0], [286, 318, 'TIFA1077', 0],
+    [176, 540, 'TIFA1073', 0], [286, 540, 'TIFA1074', 0],
+    [176, 754, 'TIFA1083', 0], [286, 754, 'TIFA1084', 0],
+    [848, 84, 'TIFG1124', 0], [966, 84, 'TIFG1125', 0],
+    [848, 712, 'TIFG1132', 0], [966, 712, 'TIFG1133', 0],
+    [848, 428, 'DPIFG10525', 0], [1000, 428, 'IIFA1052M1', 1],
+    [770, 205, 'TIFA10526', 0], [770, 612, 'TIFA10527', 0], [900, 302, 'PISB1040', 1], [900, 549, 'PISB1042', 1]
+  ];
+  const UNIT = { DPIFG10525: 'mmH₂O', IIFA1052M1: 'A', PISB1040: 'kg/cm²', PISB1042: 'kg/cm²' };
+  function page(g, api) {
+    const NS = 'http://www.w3.org/2000/svg';
+    const pg = document.createElementNS(NS, 'g');
+    pg.setAttribute('transform', 'translate(0 56)');
+    g.append(pg);
+    const L = H.layer(pg, VW, VH);
+    if (!L) return pg;
+    const root = L.root;
+    root.classList.add('a8');
+    root.innerHTML = `<style>${CSS}</style><svg viewBox="0 0 ${VW} ${VH}" role="img" aria-label="Air preheater H-1052: flue gas passes down through the right half of the rotor and heats it; primary and secondary air pass up through the left half and take the heat">${ART.replace(/@/g, 'a8-')}</svg><svg class="flo" viewBox="0 0 ${VW} ${VH}" aria-hidden="true"><g transform="translate(0,30)" data-k="flo"></g></svg>`;
+    const q = s => root.querySelector(s),
+      qa = s => root.querySelectorAll(s),
+      K = k => q(`[data-k="${k}"]`);
+    function mk(p, n, a, t) {
+      const e = document.createElementNS(NS, n);
+      for (const k in a) e.setAttribute(k, a[k]);
+      if (t != null) e.textContent = t;
+      p.appendChild(e);
+      return e;
+    }
+    function sh(h, f) {
+      const n = parseInt(h.slice(1), 16),
+        c = v => Math.max(0, Math.min(255, Math.round(f < 0 ? v * (1 + f) : v + (255 - v) * f)));
+      return '#' + ((1 << 24) + (c(n >> 16) << 16) + (c((n >> 8) & 255) << 8) + c(n & 255)).toString(16).slice(1);
+    }
+    const defs = q('defs'),
+      med = { cold: '#4f86b5', hot: '#c98a4a', gas: '#b85a3c', gasc: '#8b7f70' };
+    for (const k in med)
+      for (const o of ['h', 'v']) {
+        const gr = mk(defs, 'linearGradient', { id: 'a8-d' + k + o, x1: 0, y1: 0, x2: o === 'v' ? 1 : 0, y2: o === 'h' ? 1 : 0 });
+        for (const s of [[0, -0.6], [0.18, -0.15], [0.42, 0.28], [0.62, 0], [1, -0.65]]) mk(gr, 'stop', { offset: s[0], 'stop-color': sh(med[k], s[1]) });
+      }
+    /* pipes: same build as the MAKE-UP WATER lines (dark rim, medium colour, light core), round bends */
+    const D = K('ducts'),
+      FL = K('flo');
+    const pipe = (pts, m, w) =>
+      [['#0b0f13', w + 4, 1], [med[m], w, 1], [sh(med[m], 0.45), Math.max(2, w * 0.28), 0.7]].forEach(s =>
+        mk(D, 'polyline', { points: pts, fill: 'none', stroke: s[0], 'stroke-width': s[1], opacity: s[2], 'stroke-linejoin': 'round', 'stroke-linecap': 'butt' })
+      );
+    pipe('232,168 613,168 613,300', 'hot', 12);
+    pipe('232,264 541,264 541,300', 'hot', 12);
+    pipe('232,612 541,612 541,580', 'cold', 12);
+    pipe('232,702 613,702 613,580', 'cold', 12);
+    pipe('1090,156 725,156 725,300', 'gas', 16);
+    pipe('725,580 725,655 1090,655', 'gasc', 16);
+    for (const n of [[541, 12], [613, 12], [725, 16]]) for (const y of [300, 580]) mk(D, 'rect', { x: n[0] - n[1] / 2 - 5, y: y - (y < 400 ? 8 : 0), width: n[1] + 10, height: 8, fill: '#a9b3bc', stroke: '#0b0f13' });
+    /* the flows (overlay): [points, fan] */
+    const PF = [['613,300 613,168 232,168', 'saf'], ['541,300 541,264 232,264', 'paf'], ['232,612 541,612 541,580', 'paf'], ['232,702 613,702 613,580', 'saf'], ['1090,156 725,156 725,300', 'idf'], ['725,580 725,655 1090,655', 'idf']].map(([p, f]) => [mk(FL, 'polyline', { points: p, class: 'pf' }), f, 25]);
+    /* compressed air supply to the air motor, SV-PA1052 */
+    const AG = K('air'),
+      ia = '#9fb3c8';
+    for (const s of [['#0b0f13', 9, 1], [ia, 6, 1], [sh(ia, 0.45), 2, 0.7]]) mk(AG, 'polyline', { points: '300,63 540,63', fill: 'none', stroke: s[0], 'stroke-width': s[1], opacity: s[2] });
+    mk(AG, 'path', { d: 'M301 63 L291 57 L291 69Z', fill: ia });
+    mk(AG, 'text', { x: 284, y: 61, class: 'card-t', 'font-size': '14', 'text-anchor': 'end' }, 'COMPRESSED AIR');
+    mk(AG, 'text', { x: 284, y: 78, class: 'card-s', 'font-size': '12', 'text-anchor': 'end' }, 'supply to air motor');
+    const svB = mk(AG, 'path', { d: 'M455 53 L475 73 L475 53 L455 73Z', fill: '#1b2228', stroke: '#6b7480', 'stroke-width': 2.5 });
+    mk(AG, 'line', { x1: 465, y1: 63, x2: 465, y2: 45, stroke: '#a9b3bc', 'stroke-width': 2 });
+    mk(AG, 'rect', { x: 457, y: 35, width: 16, height: 10, rx: 2, fill: 'url(#a8-metalH)', stroke: '#0b0f13' });
+    mk(AG, 'text', { x: 448, y: 38, class: 'tag', 'text-anchor': 'end' }, 'SVPA1052');
+    const svT = mk(AG, 'text', { x: 448, y: 51, class: 'st', 'text-anchor': 'end', fill: '#6b7480' }, '-----');
+    /* gas and air passing through the element channels: gas down on the right, air up on the left (PA left of x 578, SA right) */
+    const ST = [];
+    for (let x = 516; x < 796; x += 13) {
+      if (x > 636 && x < 664) continue;
+      const gas = x > 650;
+      ST.push([mk(FL, 'line', { x1: x, y1: 312, x2: x, y2: 568, class: gas ? 'st-gas' : 'st-air' }), gas ? 'idf' : x < 578 ? 'paf' : 'saf', gas ? 25.5 : -25.5]);
+    }
+    /* top view of the rotor: the same sectors turning through the gas, PA and SA zones */
+    const P = K('plan'),
+      rr = 62,
+      NW = 24,
+      wd = [];
+    for (let i = 0; i < NW; i++) {
+      const a0 = (i * 2 * Math.PI) / NW,
+        a1 = ((i + 1) * 2 * Math.PI) / NW;
+      wd.push(mk(P, 'path', { d: `M0 0 L${rr * Math.cos(a0)} ${rr * Math.sin(a0)} A${rr} ${rr} 0 0 1 ${rr * Math.cos(a1)} ${rr * Math.sin(a1)}Z`, stroke: '#0b0f13', 'stroke-width': 1.5 }));
+    }
+    /* turning rotor: 12 sectors (between radial diaphragms) carry the element baskets through the gas half (heat up) and the air half
+       (give the heat to the air); shown as an unrolled ring, ~20 s per turn (real ~1 rpm) */
+    const R = K('rotor'),
+      N = 12,
+      W = 292 / N,
+      L0 = 504,
+      LY = [[312, 85], [397, 86], [483, 85]],
+      secs = [];
+    const heat = t => {
+      t = clamp(t, 0, 1);
+      const a = [[63, 119, 166], [133, 122, 92], [197, 96, 58]],
+        i = t < 0.5 ? 0 : 1,
+        f = t < 0.5 ? t * 2 : (t - 0.5) * 2;
+      return 'rgb(' + a[i].map((c, k) => Math.round(c + (a[i + 1][k] - c) * f)).join(',') + ')';
+    };
+    for (let s = 0; s < N + 1; s++) {
+      const gs = mk(R, 'g', {}),
+        ls = [];
+      LY.forEach((ly, j) => {
+        ls.push(mk(gs, 'rect', { x: 0, y: ly[0], width: W, height: ly[1] }));
+        for (let p = 1; p < 4; p++) {
+          const x = (p * W) / 4;
+          let d = 'M' + x + ' ' + ly[0];
+          for (let yy = ly[0]; yy < ly[0] + ly[1]; yy += 8) d += ' l' + (j === 2 ? 2 : 3) + ' 4 l' + (j === 2 ? -2 : -3) + ' 4';
+          mk(gs, 'path', { d, fill: 'none', stroke: '#0b0f1399', 'stroke-width': 1.2 });
+        }
+      });
+      mk(gs, 'rect', { x: 0, y: 312, width: 2, height: 256, fill: '#a9b3bc' });
+      secs.push({ g: gs, ls });
+    }
+    /* the rotor at turn fraction u (0..1): the sectors, their colour by where they are, the top view */
+    const rotor = u => {
+      const off = (u * 292) % 292;
+      secs.forEach((sc, i) => {
+        const x = L0 + ((i * W + off) % (292 + W)) - W;
+        sc.g.setAttribute('transform', 'translate(' + x.toFixed(1) + ',0)');
+        const c = x + W / 2,
+          ph = c >= 650 ? (c - 650) / 146 : 1 - (c - 504) / 146; /* 0 = coolest (leaving the air side), 1 = hottest (leaving the gas side) */
+        sc.ls[0].setAttribute('fill', heat(0.35 + 0.6 * ph));
+        sc.ls[1].setAttribute('fill', heat(0.2 + 0.55 * ph));
+        sc.ls[2].setAttribute('fill', heat(0.02 + 0.45 * ph));
+      });
+      const ang = (u * 360) % 360;
+      P.setAttribute('transform', 'rotate(' + ang.toFixed(1) + ')');
+      wd.forEach((w, i) => {
+        const a = ((i + 0.5) * 360 / NW + ang) % 360,
+          ph = a <= 90 || a >= 270 ? ((a + 90) % 360) / 180 : 1 - (a - 90) / 180;
+        w.setAttribute('fill', heat(0.1 + 0.8 * ph));
+      });
+    };
+    rotor(0);
+    /* line ends like the plant HMI: the medium name beside the line, the arrowhead shows the way it flows */
+    const C2 = K('cards');
+    const card = (y, t, sub, side, out, m) => {
+      const Lf = side === 'L',
+        px = Lf ? 232 : 1090,
+        ax = Lf ? 214 : 1108;
+      mk(C2, 'line', { x1: Lf ? ax - 9 : px, y1: y, x2: Lf ? px : ax + 9, y2: y, stroke: med[m], 'stroke-width': 3 });
+      const hx = Lf ? (out ? ax - 12 : px - 1) : out ? ax + 12 : px + 1,
+        bx2 = Lf ? (out ? ax - 2 : px - 11) : out ? ax + 2 : px + 11;
+      mk(C2, 'path', { d: 'M' + hx + ' ' + y + ' L' + bx2 + ' ' + (y - 6) + ' L' + bx2 + ' ' + (y + 6) + 'Z', fill: med[m] });
+      const tx = Lf ? ax - 18 : ax + 18,
+        an = Lf ? 'end' : 'start';
+      mk(C2, 'text', { x: tx, y: y - 2, class: 'card-t', 'font-size': '14', 'text-anchor': an }, t);
+      mk(C2, 'text', { x: tx, y: y + 15, class: 'card-s', 'font-size': '12', 'text-anchor': an }, sub);
+    };
+    card(168, 'HOT SECONDARY AIR', 'to furnace', 'L', 1, 'hot');
+    card(264, 'HOT PRIMARY AIR', 'to furnace', 'L', 1, 'hot');
+    card(612, 'COLD PRIMARY AIR', 'from PAF F-1053', 'L', 0, 'cold');
+    card(702, 'COLD SECONDARY AIR', 'from SAF F-1054', 'L', 0, 'cold');
+    card(156, 'FLUE GAS INLET', 'from economizer', 'R', 0, 'gas');
+    card(655, 'FLUE GAS OUTLET', 'to ESP Z-1010', 'R', 1, 'gasc');
+    /* the value boxes (live text: data-v) */
+    const G = K('vals'),
+      NM = { TIFA1052: 'avg hot SA', TIFA10526: 'top bearing', TIFA10527: 'bottom bearing' };
+    for (const [x, y, tag] of V) {
+      if (NM[tag]) (mk(G, 'text', { x, y: y - 7, class: 'tag' }, tag), mk(G, 'text', { x: x + 75, y: y - 7, class: 'card-s', 'font-size': '11' }, NM[tag]));
+      else if (tag === 'PISB1040' || tag === 'PISB1042')
+        (mk(G, 'text', { x: x + 80, y: y + 12, class: 'tag' }, tag), mk(G, 'text', { x: x + 80, y: y + 27, class: 'card-s', 'data-sb': tag }, tag === 'PISB1040' ? 'hot end soot blower · idle' : 'cold end soot blower · idle'));
+      else mk(G, 'text', { x, y: y - 7, class: 'tag' }, tag);
+      mk(G, 'rect', { x, y, width: 70, height: 28, fill: '#06090c', stroke: '#2c3640' });
+      mk(G, 'text', { x: x + 63, y: y + 21, class: 'num', 'text-anchor': 'end', 'data-v': tag }, '-----');
+      if (tag !== 'PISB1040' && tag !== 'PISB1042') mk(G, 'text', { x: x + 75, y: y + 19, class: 'unit' }, UNIT[tag] || '°C');
+    }
+
+    /* ---------- live ---------- */
+    const EST = PLANT_V2.EST || {},
+      E = { tb: null, pa0: 354, sa0: 213, fa0: 26.3, idf: 1, paf: 1, saf: 1 },
+      LV = {};
+    const live = (ref, tag, set) => api.reg({ t: 'val', tag: tag || '', ref: ref || undefined, v: '' }, X => set(X && isFinite(X.v) ? +X.v : null), null);
+    const avg = (a, b) => (a != null && b != null ? (a + b) / 2 : a != null ? a : b);
+    let st = null,
+      sv = null;
+    const cur = () => (st === 'RUN' ? 4.7 : st ? 0 : null);
+    /* bearing oil warming towards 60 / 47 °C with the gas (38.PNG) */
+    const oil = top => (E.tpa != null ? E.tpa + ((top ? 60 : 47) - 30) * clamp(E.kb || 0, 0, 1) : null);
+    const OWN = { IIFA1052M1: cur, TIFA10526: () => oil(1), TIFA10527: () => oil(0) };
+    const get = t => {
+      if (OWN[t]) return OWN[t]();
+      if (LV[t] != null) return LV[t];
+      if (!EST[t]) return null;
+      try {
+        const v = EST[t](E);
+        return v != null && isFinite(v) ? v : null;
+      } catch (e) {
+        return null;
+      }
+    };
+    const paint = () => {
+      if (PLANT_V2.estPrep) PLANT_V2.estPrep(E);
+      for (const [, , tag, dp] of V) {
+        const v = get(tag);
+        qa(`[data-v="${tag}"]`).forEach(t => ((t.textContent = fmt(v, dp)), t.setAttribute('fill', v == null ? '#6b7480' : '#f4f7f9')));
+      }
+      for (const tag of ['PISB1040', 'PISB1042']) {
+        const v = get(tag),
+          on = v != null && v > 0.5;
+        qa(`[data-sb="${tag}"]`).forEach(t => (t.textContent = (tag === 'PISB1040' ? 'hot end soot blower · ' : 'cold end soot blower · ') + (on ? 'blowing' : 'idle')));
+      }
+    };
+    let rq = 0;
+    const later = () => rq || (rq = setTimeout(() => ((rq = 0), paint()), 60)); /* a timer, not a frame: the values also land while the window is in the background */
+    /* the inputs of the estimate: the same as 007 */
+    const inp = (k, ref, tag) => live(ref, tag, v => ((E[k] = v), later()));
+    inp('fpa', 'pv:FICFA1071');
+    inp('fsa', 'pv:FICFA1081');
+    inp('ffa', '', 'FIFA1055');
+    inp('pf0', '', 'PIFG1085');
+    inp('ta', '', 'TIFA1072');
+    inp('ts', '', 'TIFA1082');
+    let o2a = null,
+      o2b = null;
+    live('', 'AIFG1122', v => ((o2a = v), (E.o2 = avg(o2a, o2b)), later()));
+    live('', 'AIFG1123', v => ((o2b = v), (E.o2 = avg(o2a, o2b)), later()));
+    const FAN = { idf: 'ABC-008|M.3304', saf: 'ABC-007|M.3303', paf: 'ABC-007|M.3302' };
+    for (const k in FAN) live(FAN[k], '', v => ((E[k] = v == null ? 1 : v > 0.5 ? 1 : 0), later()));
+    const TT = {};
+    for (const c of 'ABCDEFGHI')
+      for (const pre of ['TIFG1091', 'TIFG1090'])
+        live('', pre + c, v => {
+          TT[pre + c] = v;
+          const Lt = Object.values(TT).filter(x => x != null);
+          E.tb = Lt.length ? Lt.reduce((a, b) => a + b, 0) / Lt.length : null;
+          later();
+        });
+    /* the transmitters a logic sheet reads (the logic value wins over the estimate) */
+    for (const t of [...V.map(x => x[2]), 'PIFG1121', 'PIFG1134', 'FIFA1079']) if (!EST[t] && !OWN[t]) live('', t, v => ((LV[t] = v), later()));
+    /* the drive (DITL-43), the air motor valve (DITL-44 row 7), the Y / N */
+    const COL = s => (s === 'RUN' ? '#e5484d' : s === 'STOP' ? '#2fa56a' : s === 'TRIP' ? '#e5484d' : '#6b7480'),
+      WORD = s => (s === 'RUN' ? 'RUNNING' : s === 'STOP' ? 'STOPPED' : s === 'TRIP' ? 'TRIP' : '-----');
+    const state = (k, s) => {
+      qa(`[data-ring="${k}"]`).forEach(e => e.setAttribute('stroke', COL(s)));
+      qa(`[data-st="${k}"]`).forEach(e => ((e.textContent = WORD(s)), e.setAttribute('fill', COL(s))));
+    };
+    /* the air valve: DITL-44 row 7 (SV-PA1052), else its point of the I/O list */
+    let svIO = null;
+    live('', 'SVPA1052', v => (svIO = v == null ? null : v > 0.5 ? 1 : 0));
+    const Dk = () => window.LS_DOCK;
+    const tick = () => {
+      if (!pg.isConnected) return clearInterval(iv);
+      let s = null,
+        v = null;
+      try {
+        s = Dk() && Dk().mst ? Dk().mst('DITL-43') : null;
+        v = Dk() && Dk().dout ? Dk().dout('DITL-44', 7) : null;
+      } catch (e) {}
+      if (s !== st) ((st = s), later());
+      sv = v != null ? v : svIO;
+      const am = sv === 1 ? 'RUN' : sv == null ? null : 'STOP';
+      state('MD', st);
+      state('AM', am);
+      state('APH', st === 'TRIP' ? 'TRIP' : st === 'RUN' || am === 'RUN' ? 'RUN' : st || am);
+      svB.setAttribute('fill', sv === 1 ? '#3a1618' : sv === 0 ? '#16301f' : '#1b2228');
+      svB.setAttribute('stroke', sv === 1 ? '#e5484d' : sv === 0 ? '#2fa56a' : '#6b7480');
+      svT.textContent = sv === 1 ? 'OPEN' : sv === 0 ? 'CLOSED' : '-----';
+      svT.setAttribute('fill', sv === 1 ? '#e5484d' : sv === 0 ? '#2fa56a' : '#6b7480');
+      let ok = null;
+      try {
+        ok = window.LS_FPOP && LS_FPOP.yn ? LS_FPOP.yn(M) : null;
+      } catch (e) {}
+      q('[data-yn="r"]').setAttribute('fill', ok == null ? '#6b7480' : ok ? '#e5484d' : '#2fa56a');
+      q('[data-yn="t"]').textContent = ok == null ? '-' : ok ? 'Y' : 'N';
+      q('[data-eqb="APH"]').setAttribute('aria-label', 'Permissive, monitor and trend: ' + (ok == null ? 'no logic' : ok ? 'Y, complete' : 'N, not complete'));
+    };
+    const iv = setInterval(tick, 1000);
+    tick();
+    /* everything that moves, on the one 15 Hz clock: frozen while the simulation is paused or the motion is reduced */
+    const still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const rot = {};
+    qa('[data-rot]').forEach(e => (rot[e.dataset.rot] = e));
+    const pV = q('#a8-shaftV'),
+      pH = q('#a8-shaftH');
+    let t0 = null,
+      u = 0,
+      a = { g1: 0, g2: 0, fan: 0, sv: 0, sh: 0 };
+    H.clock(t => {
+      if (!pg.isConnected) return false;
+      const dt = t0 == null ? 0 : Math.min(0.2, t - t0);
+      t0 = t;
+      const go = !still && H.simRunning(),
+        turn = go && (st === 'RUN' || sv === 1),
+        k = go ? dt : 0;
+      for (const [el, f, sp] of PF) {
+        el.setAttribute('visibility', E[f] ? 'visible' : 'hidden');
+        if (E[f] && k) el.setAttribute('stroke-dashoffset', ((el._o = ((el._o || 0) - sp * k) % 30)).toFixed(1));
+      }
+      for (const [el, f, sp] of ST) {
+        el.setAttribute('visibility', E[f] ? 'visible' : 'hidden');
+        if (E[f] && k) el.setAttribute('stroke-dashoffset', ((el._o = ((el._o || 0) - sp * k) % 28)).toFixed(1));
+      }
+      if (turn) {
+        u = (u + dt / 20) % 1;
+        rotor(u);
+        a.g1 = (a.g1 - 150 * dt) % 360;
+        a.g2 = (a.g2 + 240 * dt) % 360;
+        a.sv = (a.sv + 16 * dt) % 8;
+        rot.g1.setAttribute('transform', `rotate(${a.g1.toFixed(1)})`);
+        rot.g2.setAttribute('transform', `rotate(${a.g2.toFixed(1)})`);
+        pV.setAttribute('patternTransform', `translate(${a.sv.toFixed(1)} 0)`);
+      }
+      if (go && st === 'RUN') {
+        /* 22.5° a step: the four blades never seem to turn backwards on the 15 Hz clock */
+        a.fan = (a.fan + 22.5) % 360;
+        a.sh = (a.sh + 40 * dt) % 10;
+        rot.fan.setAttribute('transform', `rotate(${a.fan})`);
+        pH.setAttribute('patternTransform', `translate(0 ${a.sh.toFixed(1)})`);
+      }
+    });
+    /* #59: the motors = CONTROL faceplate, the Y / N square = PERMISSIVE · TREND · MONITOR */
+    const MON = [
+      ['Top bearing', () => oil(1), '°C', 'TIFA10526'],
+      ['Bottom bearing', () => oil(0), '°C', 'TIFA10527'],
+      ['Inlet gas press.', () => (get('PIFG1121') == null ? null : +get('PIFG1121').toFixed(0)), 'mmH2O', 'PIFG1121'],
+      ['Outlet gas press.', () => (get('PIFG1134') == null ? null : +get('PIFG1134').toFixed(0)), 'mmH2O', 'PIFG1134'],
+      ['Hot PA flow', () => (get('FIFA1079') == null ? null : +get('FIFA1079').toFixed(0)), 'T/H', 'FIFA1079']
+    ];
+    const open = part => window.LS_FPOP && LS_FPOP.motor({ ...M, part, cur, mon: MON });
+    const bind = (id, f) =>
+      qa(`[data-hit="${id}"]`).forEach(h => {
+        h.addEventListener('click', e => (e.stopPropagation(), f()));
+        h.addEventListener('keydown', e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), f()));
+      });
+    bind('MD', () => open('control'));
+    bind('AM', () => (window.LS_FPOP && LS_FPOP.valveTag && LS_FPOP.valveTag('SVPA1052')) || open('control'));
+    bind('YN', () => open('info'));
+    (window.LS_FPREG = window.LS_FPREG || {})['DITL-43'] = { open: () => open('control'), el: () => q('[data-hit="MD"]'), n: M.n, cur };
+    paint();
+    return pg;
+  }
+  PLANT_V2.screens.APH = page;
+  /* after 007 AIR & FLUE GAS in the list of the Plant view */
+  const Ls = (window.PLANT_SYS = window.PLANT_SYS || []),
+    i = Ls.findIndex(x => x.id === 'AFG');
+  Ls.splice(i >= 0 ? i + 1 : Ls.length, 0, {
+    fitAll: 1,
+    id: 'APH',
+    title: '038 AIR PREHEATER',
+    num: '038',
+    name: 'AIR PREHEATER SYSTEM',
+    src: '38.PNG',
+    w: 1280,
+    h: 56 + VH + 32,
+    v2: true,
+    screen: 'APH',
+    style: 'steel',
+    nav: ['UNIT', 'AFG', 'SW', 'MU', 'TO', 'APH'],
+    items: []
+  });
+})();
+
+/* 039 RH / SH BIASING DAMPER: the APPROVED mockup (user 2026-11-01 "ok approved", Style B v12 x-ray side cut-away, flue gas option A;
+   user 2026-11-01 "Yung mga approved. Ipalagay mo na sa app."; team-files/hmi-mockups/039-biasing-damper-APPROVED.html, artifact
+   He9LATqBJ5Cniahco5AAr8) as it is: same coordinates, colours and sizes ("ganyan na ganyan"), in an HTML layer over the plant svg
+   that follows its pan and zoom (HSYM.layer). LIGHT (PENDING_HMI_BUILD rule 5): the flue gas is HTML layers behind the drawing that
+   move by CSS transform only (a noise texture made once, feathered zone edges); the tube flows are in an overlay svg and move on the
+   one 15 Hz clock of HSYM; nothing else is animated. Sources (the table of the mockup): FHI manual Part 4 Sect 1 / 3 Fig. 1 and
+   Part 3 Sect 3 p.3-3-3 (backpass, banks, headers, pipe routes), DCS I/O list station 104 (TIFG1100 ~ 1113, ZT-FG1116 / 1117 A ~ D,
+   PIIA1064A / B), ABC-020 (HICHR1002A / B, TCV-FG1116 / 1117, interlocks M.0506 / 0507 / 3440 / 3441), ABC-019 (TICHR1002 spray
+   TCV-FW1150), PR-OPE-5002 (start-up sequence). Live: the controllers (PV / SV / MV / mode of the faceplates), the damper positions
+   (ZT feedback, else the valve on the drawing), the interlock memories, the gas temperatures (the logic where a sheet reads them, else
+   the plant estimate of 007, PLANT_V2.EST). #59: click on a controller, a damper row or the spray valve = its faceplate; the Y / N
+   square = PERMISSIVE · TREND · MONITOR (Y red = purge permissive made, N green). */
+(function () {
+  if (!window.PLANT_V2 || !window.HSYM) return;
+  const H = HSYM;
+  const VW = 1280,
+    VH = 1156;
+  const fmt = (x, dp) => (x == null || !isFinite(x) ? '-----' : (+x).toFixed(dp).replace(/^-(0(?:\.0+)?)$/, '$1'));
+  const CSS = `.b9{--band:#ffffff07;--dim:#7f8b96;--run:#e5484d;--stop:#2fa56a;--val:#f4f7f9;--sans:Inter,"Segoe UI",Arial,sans-serif;--mono:"IBM Plex Mono",Consolas,monospace;background:#141a20;font-family:var(--sans)}
+.b9 svg{position:absolute;left:0;top:0;width:${VW}px;height:${VH}px;display:block;pointer-events:none;z-index:1}
+.b9 .flo{z-index:2;will-change:transform}
+.b9 .zone{fill:var(--dim);font:600 13px var(--sans);letter-spacing:.14em}
+.b9 .tag{fill:#c9d1d8;font:500 13px var(--mono)}
+.b9 .num{fill:var(--val);font:600 18px var(--mono)}
+.b9 .unit{fill:var(--dim);font:500 12px var(--sans)}
+.b9 .st{font:700 11px var(--sans);letter-spacing:.12em}
+.b9 .inside{fill:#f1f4f6;font:600 11px var(--sans);letter-spacing:.14em}
+.b9 .card-t{fill:#f1f4f6;font:700 14px var(--sans);letter-spacing:.04em}
+.b9 .card-s{fill:var(--dim);font:500 12px var(--sans)}
+.b9 .bank{fill:#e9edf0;font:700 13px var(--sans);letter-spacing:.06em}
+.b9 .bank-s{fill:#9aa6b1;font:500 12px var(--sans)}
+.b9 .wl{fill:#10161b;font:700 9.5px var(--sans);letter-spacing:.16em}
+.b9 .chip-t{fill:#c9d1d8;font:500 12px var(--mono)}
+.b9 .chip-v{fill:var(--val);font:600 16px var(--mono)}
+.b9 [data-hit]{pointer-events:auto;cursor:pointer}.b9 [data-hit]:focus-visible{outline:2px solid #6aa7dd}
+.b9 [data-hit]:hover .tile-bg{stroke:#6aa7dd}
+.b9 .gasL{position:absolute;inset:0;z-index:0;pointer-events:none}
+.b9 .gz{position:absolute;overflow:hidden}
+.b9 .gw{position:absolute;will-change:transform;animation:linear infinite}
+.b9.still .gw{animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){.b9 .gw{animation:none}}`;
+  /* the noise texture of the flue gas, made once (option A of the mockup) */
+  let TEX = null;
+  function noiseTex(w, h, gx, gy, seed) {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const x = c.getContext('2d'),
+      im = x.createImageData(w, h),
+      d = im.data,
+      AMP = 0.42;
+    let s = seed || 7;
+    const r = () => ((s = (s * 16807) % 2147483647), s / 2147483647);
+    const lat = (n, m) => {
+      const L = [];
+      for (let j = 0; j < m; j++) {
+        L.push([]);
+        for (let i = 0; i < n; i++) L[j].push(r());
+      }
+      return L;
+    };
+    const oct = [[gx, gy, 0.55], [gx * 2, gy * 2, 0.3], [gx * 4, gy * 4, 0.15]].map(o => [o[0], o[1], o[2], lat(o[0], o[1])]);
+    const sm = t => t * t * (3 - 2 * t);
+    for (let py = 0; py < h; py++)
+      for (let px = 0; px < w; px++) {
+        let v = 0;
+        for (const o of oct) {
+          const fx = (px / w) * o[0],
+            fy = (py / h) * o[1],
+            i = Math.floor(fx),
+            j = Math.floor(fy),
+            u = sm(fx - i),
+            q = sm(fy - j),
+            L = o[3],
+            n = o[0],
+            m = o[1];
+          const a = L[j % m][i % n],
+            b = L[j % m][(i + 1) % n],
+            cc = L[(j + 1) % m][i % n],
+            dd = L[(j + 1) % m][(i + 1) % n];
+          v += o[2] * ((a * (1 - u) + b * u) * (1 - q) + (cc * (1 - u) + dd * u) * q);
+        }
+        const k = (py * w + px) * 4;
+        if (v > 0.5) ((d[k] = 255), (d[k + 1] = 228), (d[k + 2] = 196), (d[k + 3] = Math.min(255, (v - 0.5) * 2 * AMP * 255)));
+        else ((d[k] = 0), (d[k + 1] = 0), (d[k + 2] = 0), (d[k + 3] = Math.min(255, (0.5 - v) * 2 * AMP * 0.9 * 255)));
+      }
+    x.putImageData(im, 0, 0);
+    return c.toDataURL();
+  }
+
+  function page(g, api) {
+    const NS = 'http://www.w3.org/2000/svg';
+    const pg = document.createElementNS(NS, 'g');
+    pg.setAttribute('transform', 'translate(0 56)');
+    g.append(pg);
+    const Lr = H.layer(pg, VW, VH);
+    if (!Lr) return pg;
+    const root = Lr.root;
+    root.classList.add('b9');
+    const K = ['inner', 'walls', 'tubes', 'hdrs', 'dmp', 'chips', 'lbl', 'tiles'];
+    root.innerHTML =
+      `<style>${CSS}</style><div class="gasL" aria-hidden="true"></div>` +
+      `<svg viewBox="0 0 ${VW} ${VH}" role="img" aria-label="Backpass side cut-away: flue gas from the cyclones enters at the top of the front wall and flows down the reheater pass and the superheater pass; biasing dampers at the bottom of each pass share the gas; reheat steam, main steam and feedwater flow up through continuous tube circuits"><defs></defs>` +
+      `<rect x="0" y="0" width="354" height="1018" fill="var(--band)"/><rect x="356" y="0" width="598" height="958" fill="#ffffff03"/><rect x="956" y="0" width="324" height="1018" fill="var(--band)"/><rect x="0" y="1022" width="1280" height="134" fill="var(--band)"/>` +
+      `<text class="zone" x="14" y="22">REHEAT STEAM</text><text class="zone" x="370" y="22">BACKPASS · SIDE CUT-AWAY</text><text class="zone" x="970" y="22">MAIN STEAM · FEEDWATER</text><text class="zone" x="14" y="1044">CONTROLLERS</text>` +
+      `<g data-k="inner"></g><g data-k="walls"></g><g data-k="tubes"><g data-k="tRim"></g><g data-k="tCol"></g><g data-k="tCore"></g></g>${K.slice(3).map(k => `<g data-k="${k}"></g>`).join('')}</svg>` +
+      `<svg class="flo" viewBox="0 0 ${VW} ${VH}" aria-hidden="true"></svg>`;
+    const q = s => root.querySelector(s),
+      $ = k => q(`[data-k="${k}"]`);
+    function mk(p, n, a, t) {
+      const e = document.createElementNS(NS, n);
+      for (const k in a) e.setAttribute(k, a[k]);
+      if (t != null) e.textContent = t;
+      p.appendChild(e);
+      return e;
+    }
+    function sh(h, f) {
+      const n = parseInt(h.slice(1), 16),
+        c = v => Math.max(0, Math.min(255, Math.round(f < 0 ? v * (1 + f) : v + (255 - v) * f)));
+      return '#' + ((1 << 24) + (c(n >> 16) << 16) + (c((n >> 8) & 255) << 8) + c(n & 255)).toString(16).slice(1);
+    }
+    const defs = q('defs');
+    defs.innerHTML =
+      `<linearGradient id="b9-metalV" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2c343c"/><stop offset=".3" stop-color="#7d8892"/><stop offset=".45" stop-color="#a3adb6"/><stop offset=".7" stop-color="#5d6872"/><stop offset="1" stop-color="#262d34"/></linearGradient>` +
+      `<linearGradient id="b9-metalH" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a3adb6"/><stop offset=".5" stop-color="#6c7780"/><stop offset="1" stop-color="#2c343c"/></linearGradient>` +
+      `<linearGradient id="b9-wallV" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#262d34"/><stop offset=".22" stop-color="#6f7b86"/><stop offset=".5" stop-color="#b3bdc6"/><stop offset=".78" stop-color="#6f7b86"/><stop offset="1" stop-color="#262d34"/></linearGradient>` +
+      `<linearGradient id="b9-wallH" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#262d34"/><stop offset=".22" stop-color="#6f7b86"/><stop offset=".5" stop-color="#b3bdc6"/><stop offset=".78" stop-color="#6f7b86"/><stop offset="1" stop-color="#262d34"/></linearGradient>`;
+    const MH = 'url(#b9-metalH)',
+      MV = 'url(#b9-metalV)';
+    const med = { gas: '#b85a3c', gasc: '#8b7f70', ms: '#8c98a5', rh: '#a596cf', fw: '#2f8fc0', ia: '#9fb3c8' };
+    /* rounded-corner path through points (round bends like the MAKE-UP WATER pipes) */
+    function rp(P, R) {
+      R = R || 9;
+      let d = 'M' + P[0][0] + ' ' + P[0][1];
+      for (let i = 1; i < P.length - 1; i++) {
+        const a = P[i - 1],
+          b = P[i],
+          c = P[i + 1],
+          l1 = Math.hypot(b[0] - a[0], b[1] - a[1]),
+          l2 = Math.hypot(c[0] - b[0], c[1] - b[1]);
+        if (!l1 || !l2) continue;
+        const r = Math.min(R, l1 / 2, l2 / 2);
+        d += ' L' + (b[0] - ((b[0] - a[0]) / l1) * r).toFixed(1) + ' ' + (b[1] - ((b[1] - a[1]) / l1) * r).toFixed(1) + ' Q' + b[0] + ' ' + b[1] + ' ' + (b[0] + ((c[0] - b[0]) / l2) * r).toFixed(1) + ' ' + (b[1] + ((c[1] - b[1]) / l2) * r).toFixed(1);
+      }
+      const z = P[P.length - 1];
+      return d + ' L' + z[0] + ' ' + z[1];
+    }
+    /* pipe / tube: dark rim, medium colour, light core in three shared layers (no seam where pipes meet); the medium itself = two
+       uneven soft textures in the overlay that drift with the flow at different speeds, on the 15 Hz clock */
+    const FLO = q('svg.flo'),
+      FLOWS = [];
+    function pipe(P, m, w, dur, cls) {
+      const d = typeof P === 'string' ? P : rp(P);
+      for (const s of [['tRim', '#0b0f13', w + 4, 1], ['tCol', med[m], w, 1], ['tCore', sh(med[m], 0.45), Math.max(1.5, w * 0.28), 0.7]])
+        mk($(s[0]), 'path', { d, fill: 'none', stroke: s[1], 'stroke-width': s[2], opacity: s[3], 'stroke-linejoin': 'round', 'stroke-linecap': 'round' });
+      if (dur) {
+        const wet = m === 'fw',
+          air = m === 'ia',
+          v = 100 / (dur * (cls === 'tf' ? 5.5 : 3.3));
+        for (const t of [['7 5 16 9 3 12 22 6 4 16', 1, wet ? 0.22 : air ? 0.18 : 0.2], ['11 8 4 14 19 7 5 13 9 10', wet ? 1.2 : 1.35, wet ? 0.15 : air ? 0.12 : 0.14]]) {
+          const f = mk(FLO, 'path', { d, fill: 'none', 'stroke-linecap': 'butt', 'stroke-linejoin': 'round', stroke: wet ? sh(med[m], 0.75) : '#ffffff', 'stroke-dasharray': t[0], 'stroke-width': Math.max(1.5, w * (air ? 0.55 : 0.8)), opacity: t[2] });
+          FLOWS.push([f, v * t[1], m]);
+        }
+      }
+    }
+    /* serpentine bank: n horizontal runs, s apart, hairpin bends, starting at the bottom (yb) */
+    function serp(P, xa, xb, yb, n, s, ltr, lastX) {
+      const e = s / 2;
+      for (let k = 0; k < n; k++) {
+        const y = yb - k * s,
+          d = (k % 2 === 0) === ltr;
+        if (k < n - 1) {
+          const xe = d ? xb + e : xa - e;
+          P.push([xe, y], [xe, y - s]);
+        } else P.push([lastX != null ? lastX : d ? xb : xa, y]);
+      }
+      return P;
+    }
+    const IN = $('inner'),
+      WA = $('walls'),
+      HD = $('hdrs'),
+      DM = $('dmp'),
+      CH = $('chips'),
+      LB = $('lbl'),
+      TI = $('tiles');
+    /* gas window duct from the cyclones */
+    mk(IN, 'path', { d: 'M366 104 L190 104 L190 184 L366 184', fill: 'none', stroke: '#0b0f13', 'stroke-width': 1.5 });
+
+    /* ---------- tube circuits (continuous) ---------- */
+    /* reheater: cold reheat -> R-1 spray -> R-2 -> R-3 -> R-4 -> R-5 -> R-6 -> R-7 -> hot reheat */
+    pipe([[190, 590], [360, 590]], 'rh', 16, 1.6);
+    const R = [[360, 590], [392, 590]];
+    serp(R, 392, 626, 590, 5, 12, true);
+    R.push([643, 542], [643, 500]);
+    serp(R, 392, 626, 500, 6, 12, false);
+    R.push([643, 440], [643, 398]);
+    serp(R, 392, 626, 398, 6, 12, false);
+    R.push([643, 338], [643, 296]);
+    serp(R, 392, 626, 296, 5, 12, false);
+    R.push([360, 248]);
+    pipe(R, 'rh', 6, 1.15, 'tf');
+    pipe([[360, 248], [300, 248]], 'rh', 16, 1.6);
+    /* spray water through TCV-FW1150 into desuperheater R-1 */
+    pipe([[190, 500], [242, 500], [242, 584]], 'fw', 5, 1.4);
+    FLOWS[FLOWS.length - 1][2] = FLOWS[FLOWS.length - 2][2] = 'spray';
+    /* finishing superheater: S-34 -> banks -> S-38 -> main steam */
+    pipe([[1080, 100], [1080, 448], [948, 448]], 'ms', 12, 1.6);
+    const S = [[948, 448], [916, 448]];
+    serp(S, 688, 916, 448, 5, 10, false);
+    S.push([671, 408], [671, 372]);
+    serp(S, 688, 916, 372, 6, 10, true);
+    S.push([671, 322], [671, 286]);
+    serp(S, 688, 916, 286, 5, 10, true);
+    S.push([948, 246]);
+    pipe(S, 'ms', 5, 0.95, 'tf');
+    pipe([[948, 246], [990, 246], [990, 58], [1110, 58]], 'ms', 12, 1.4);
+    /* economizers (FHI Part 3 Sect 3, p.3-3-3): E-1 -> ECO #1 (E-2) -> E-3 -> link E-4 -> E-5 under the dampers -> E-8 / E-9 -> ECO #2R
+       (E-10) and E-6 -> ECO #2S (E-7) -> junction E-11 -> link E-12 -> E-13 -> ECO #3 (E-14, E-15) -> E-16 -> link E-17 -> drum */
+    pipe([[1110, 990], [764, 990]], 'fw', 9, 1.6);
+    const Ec = [[764, 990]];
+    serp(Ec, 572, 736, 990, 3, 16, false);
+    Ec.push([544, 958]);
+    pipe(Ec, 'fw', 5, 1.1, 'tf');
+    pipe([[544, 958], [352, 958], [352, 667], [376, 667]], 'fw', 7, 1.6);
+    pipe([[352, 784], [958, 784], [958, 667], [932, 667]], 'fw', 7, 1.6);
+    const B1 = [[376, 667]];
+    serp(B1, 392, 626, 667, 3, 13, true);
+    B1.push([654, 641]);
+    pipe(B1, 'fw', 5, 1.1, 'tf');
+    const B2 = [[932, 667]];
+    serp(B2, 688, 916, 667, 3, 13, false);
+    B2.push([654, 641]);
+    pipe(B2, 'fw', 5, 1.1, 'tf');
+    pipe([[654, 641], [654, 628], [972, 628], [972, 590], [948, 590]], 'fw', 7, 1.6);
+    const T3 = [[948, 590], [916, 590]];
+    serp(T3, 688, 916, 590, 4, 10, false);
+    T3.push([926, 560], [926, 524]);
+    serp(T3, 688, 916, 524, 4, 10, false);
+    T3.push([948, 494]);
+    pipe(T3, 'fw', 5, 1.1, 'tf');
+    pipe([[948, 494], [1116, 494], [1116, 300]], 'fw', 9, 1.6);
+
+    /* ---------- casing walls (fin-welded tube panels) ---------- */
+    function wallV(x, y, h) {
+      mk(WA, 'rect', { x, y, width: 16, height: h, fill: 'url(#b9-wallV)', stroke: '#0b0f13', 'stroke-width': 1.2 });
+      mk(WA, 'line', { x1: x + 3, y1: y, x2: x + 3, y2: y + h, stroke: '#0b0f1366' });
+      mk(WA, 'line', { x1: x + 13, y1: y, x2: x + 13, y2: y + h, stroke: '#0b0f1366' });
+    }
+    wallV(360, 80, 24);
+    wallV(360, 184, 616);
+    wallV(932, 80, 720);
+    mk(WA, 'rect', { x: 646, y: 206, width: 16, height: 586, rx: 6, fill: 'url(#b9-wallV)', stroke: '#0b0f13', 'stroke-width': 1.2 });
+    mk(WA, 'rect', { x: 356, y: 78, width: 596, height: 18, fill: 'url(#b9-wallH)', stroke: '#0b0f13', 'stroke-width': 1.2 });
+    mk(WA, 'polygon', { points: '360,800 376,800 560,848 560,864 544,864', fill: '#6f7b86', stroke: '#0b0f13', 'stroke-width': 1.2 });
+    mk(WA, 'polygon', { points: '948,800 932,800 748,848 748,864 764,864', fill: '#6f7b86', stroke: '#0b0f13', 'stroke-width': 1.2 });
+    mk(WA, 'rect', { x: 544, y: 862, width: 16, height: 150, fill: '#6f7b86', stroke: '#0b0f13', 'stroke-width': 1.2 });
+    mk(WA, 'rect', { x: 748, y: 862, width: 16, height: 150, fill: '#6f7b86', stroke: '#0b0f13', 'stroke-width': 1.2 });
+    mk(WA, 'rect', { x: 356, y: 100, width: 24, height: 6, fill: MH, stroke: '#0b0f13' });
+    mk(WA, 'rect', { x: 356, y: 182, width: 24, height: 6, fill: MH, stroke: '#0b0f13' });
+    for (const p of [[360, 590], [360, 248], [360, 667], [360, 784], [932, 246], [932, 448], [932, 494], [932, 590], [932, 628], [932, 667], [932, 784]])
+      mk(HD, 'rect', { x: p[0] - 3, y: p[1] - 9, width: 22, height: 18, rx: 2, fill: MH, stroke: '#0b0f13' });
+    const wtxt = (x, y, t, rot) => mk(WA, 'text', { x, y, class: 'wl', 'text-anchor': 'middle', transform: rot ? 'rotate(-90 ' + x + ' ' + y + ')' : '' }, t);
+    wtxt(371.5, 440, 'FRONT WALL S-6', 1);
+    wtxt(943.5, 320, 'REAR WALL S-9', 1);
+    wtxt(657.5, 410, 'DIVISION WALL S-13 · STEAM-COOLED', 1);
+    wtxt(500, 90.5, 'ROOF S-8');
+
+    /* ---------- desuperheater R-1 and the spray valve TCV-FW1150 ---------- */
+    mk(HD, 'rect', { x: 206, y: 579, width: 66, height: 22, rx: 6, fill: sh(med.rh, -0.25), stroke: '#0b0f13', 'stroke-width': 2 });
+    mk(HD, 'rect', { x: 206, y: 585, width: 66, height: 4, fill: sh(med.rh, 0.4), opacity: 0.6 });
+    for (const x of [210, 264]) mk(HD, 'rect', { x, y: 576, width: 4, height: 28, fill: '#a9b3bc', stroke: '#0b0f13' });
+    const vT = mk(HD, 'g', { 'data-hit': 'TCV', tabindex: 0, role: 'button', 'aria-label': 'TCV-FW1150 reheater spray valve: open control faceplate' });
+    mk(vT, 'title', {}, 'TCV-FW1150 reheater spray valve · TICHR1002 (ABC-019)');
+    const vBody = mk(vT, 'path', { d: 'M232 530 L252 530 L232 550 L252 550Z', fill: '#1b2228', stroke: '#6b7480', 'stroke-width': 2.5, 'stroke-linejoin': 'round' });
+    mk(vT, 'line', { x1: 252, y1: 540, x2: 268, y2: 540, stroke: '#a9b3bc', 'stroke-width': 2 });
+    mk(vT, 'rect', { x: 268, y: 532, width: 12, height: 16, rx: 2, fill: MH, stroke: '#0b0f13' });
+
+    /* ---------- biasing dampers: multi-blade louvres, blade angle from % open (redrawn when the position moves) ---------- */
+    const dG = { RH: mk(DM, 'g', {}), SH: mk(DM, 'g', {}) };
+    function damper(g, x0, x1, open, front) {
+      g.replaceChildren();
+      const n = 5,
+        pitch = (x1 - x0) / n,
+        th = (open == null ? 0 : open) * 0.9,
+        rad = (th * Math.PI) / 180,
+        yc = 748;
+      mk(g, 'rect', { x: x0, y: yc - 22, width: x1 - x0, height: 6, fill: MH, stroke: '#0b0f13' });
+      mk(g, 'rect', { x: x0, y: yc + 16, width: x1 - x0, height: 6, fill: MH, stroke: '#0b0f13' });
+      mk(g, 'rect', { x: x0, y: yc - 22, width: 6, height: 44, fill: MV, stroke: '#0b0f13' });
+      mk(g, 'rect', { x: x1 - 6, y: yc - 22, width: 6, height: 44, fill: MV, stroke: '#0b0f13' });
+      const ca = Math.cos(rad + Math.PI / 2) * 11,
+        sa = Math.sin(rad + Math.PI / 2) * 11,
+        tips = [];
+      for (let i = 0; i < n; i++) {
+        const px = x0 + pitch * (i + 0.5);
+        const b = mk(g, 'g', { transform: 'translate(' + px.toFixed(1) + ' ' + yc + ') rotate(' + th.toFixed(1) + ')' });
+        mk(b, 'path', { d: 'M-24 0 Q-12 -5.5 0 -5 Q12 -4 24 0 Q12 4 0 5 Q-12 5.5 -24 0Z', fill: MH, stroke: '#0b0f13', 'stroke-width': 1.2 });
+        mk(b, 'line', { x1: -22, y1: 0, x2: 22, y2: 0, stroke: '#ffffff33', 'stroke-width': 1 });
+        tips.push([px - ca, yc - sa]);
+      }
+      tips.forEach((t, i) => mk(g, 'line', { x1: x0 + pitch * (i + 0.5), y1: yc, x2: t[0], y2: t[1], stroke: '#c3ccd3', 'stroke-width': 2.5, 'stroke-linecap': 'round' }));
+      mk(g, 'line', { x1: tips[0][0], y1: tips[0][1], x2: tips[n - 1][0], y2: tips[n - 1][1], stroke: '#c3ccd3', 'stroke-width': 2.5, 'stroke-linecap': 'round' });
+      for (let i = 0; i < n; i++) mk(g, 'circle', { cx: x0 + pitch * (i + 0.5), cy: yc, r: 3.2, fill: '#dfe5ea', stroke: '#0b0f13' });
+      const wx = front ? 360 : 948,
+        bx = front ? x0 + pitch * 0.5 : x1 - pitch * 0.5;
+      mk(g, 'rect', { x: Math.min(wx, bx), y: yc - 2, width: Math.abs(bx - wx), height: 4, fill: '#a9b3bc', stroke: '#0b0f13', 'stroke-width': 0.8 });
+    }
+    mk(WA, 'rect', { x: 357, y: 739, width: 22, height: 18, rx: 2, fill: MH, stroke: '#0b0f13' });
+    mk(WA, 'rect', { x: 929, y: 739, width: 22, height: 18, rx: 2, fill: MH, stroke: '#0b0f13' });
+
+    /* ---------- pneumatic actuators A-D outside the walls: drive shaft out of the wall at damper level, the 4 actuators under it,
+       positioners fed from the air manifold above, buffer tank at the outer end, % feedback boxes under the actuators ---------- */
+    const DR = {};
+    function drives(id, xs, wallX, label, tagSub, yn, aria, tank) {
+      const g = mk(DM, 'g', { 'data-hit': id, tabindex: 0, role: 'button', 'aria-label': aria });
+      mk(g, 'title', {}, label + ' · ' + tagSub);
+      const right = wallX > 600,
+        far = right ? Math.max(...xs) + 24 : Math.min(...xs) - 24,
+        sy = 748,
+        my = 716;
+      const tk = right ? 1176 : 12,
+        tx = right ? tk : tk + 92;
+      pipe([[tx, my], [right ? Math.min(...xs) + 9 : Math.max(...xs) - 9, my]], 'ia', 4, 2.2);
+      for (const xc of xs) {
+        const px = right ? xc + 15 : xc - 15;
+        pipe([[px, my], [px, 764]], 'ia', 3, 1.8);
+      }
+      mk(g, 'rect', { x: Math.min(wallX, far), y: sy - 2.5, width: Math.abs(far - wallX), height: 5, fill: '#a9b3bc', stroke: '#0b0f13', 'stroke-width': 0.8 });
+      const cranks = mk(g, 'g', {}),
+        vals = [];
+      xs.forEach((xc, i) => {
+        const px = right ? xc + 9 : xc - 21;
+        mk(g, 'rect', { x: xc - 11, y: 760, width: 22, height: 5, rx: 1, fill: MH, stroke: '#0b0f13' });
+        vals.push(mk(g, 'rect', { x: xc - 9, y: 764, width: 18, height: 40, rx: 3, fill: MV, stroke: '#6b7480', 'stroke-width': 2 }));
+        mk(g, 'text', { x: xc, y: 789, 'text-anchor': 'middle', fill: '#0b0f13', 'font-weight': 800, 'font-size': 12, 'font-family': 'Inter,Arial' }, 'ABCD'[i]);
+        mk(g, 'rect', { x: px, y: 764, width: 12, height: 16, rx: 2, fill: '#3b444c', stroke: '#0b0f13' });
+        mk(g, 'circle', { cx: px + 6, cy: 772, r: 2.4, fill: '#c3ccd3' });
+        mk(g, 'rect', { x: xc - 21, y: 812, width: 42, height: 24, fill: '#06090c', stroke: '#2c3640' });
+        vals.push(mk(g, 'text', { x: xc + 17, y: 830, class: 'num', 'text-anchor': 'end', 'font-size': 15 }, '-----'));
+      });
+      mk(g, 'rect', { x: tk + 14, y: my + 12, width: 8, height: 10, fill: '#3b444c' });
+      mk(g, 'rect', { x: tk + 70, y: my + 12, width: 8, height: 10, fill: '#3b444c' });
+      mk(g, 'rect', { x: tk, y: my - 15, width: 92, height: 30, rx: 15, fill: MH, stroke: '#0b0f13', 'stroke-width': 1.5 });
+      mk(g, 'text', { x: tk + 46, y: my + 4, 'text-anchor': 'middle', fill: '#0b0f13', 'font-weight': 800, 'font-size': 11, 'font-family': 'Inter,Arial', 'letter-spacing': '.06em' }, right ? 'T-1064B' : 'T-1064A');
+      const ix = right ? tk + 70 : tk + 22,
+        ty = right ? my - 96 : my - 58;
+      pipe([[ix, ty], [ix, my - 15]], 'ia', 4, 2.2);
+      mk(LB, 'path', { d: 'M' + ix + ' ' + (ty + 2) + ' L' + (ix - 6) + ' ' + (ty - 8) + ' L' + (ix + 6) + ' ' + (ty - 8) + 'Z', fill: med.ia });
+      const lx = right ? ix - 12 : ix + 12,
+        an = right ? 'end' : 'start';
+      mk(LB, 'text', { x: lx, y: ty - 4, class: 'card-t', 'text-anchor': an }, 'INSTRUMENT AIR');
+      mk(LB, 'text', { x: lx, y: ty + 11, class: 'card-s', 'text-anchor': an }, 'from header (dryers)');
+      const bx = right ? tk + 16 : tk + 8;
+      mk(LB, 'text', { x: bx, y: my + 40, class: 'tag' }, tank);
+      mk(LB, 'rect', { x: bx, y: my + 46, width: 62, height: 26, fill: '#06090c', stroke: '#2c3640' });
+      const tv = mk(LB, 'text', { x: bx + 56, y: my + 65, class: 'num', 'text-anchor': 'end', 'font-size': 17 }, '-----');
+      mk(LB, 'text', { x: bx + 62, y: my + 88, class: 'unit', 'text-anchor': 'end' }, 'kg/cm²');
+      const hx = right ? 996 : 20;
+      mk(g, 'text', { x: hx + 38, y: 920, class: 'card-t' }, label);
+      mk(g, 'text', { x: hx + 38, y: 937, class: 'card-s' }, tagSub);
+      const yb = mk(LB, 'g', { 'data-hit': yn, 'data-eqb': yn, tabindex: 0, role: 'button', 'aria-label': 'Purge permissive: open permissive, monitor and trend' });
+      mk(yb, 'title', {}, 'Permissive, monitor and trend');
+      const ybR = mk(yb, 'rect', { x: hx, y: 904, width: 28, height: 22, rx: 3, fill: '#6b7480' });
+      const ybT = mk(yb, 'text', { x: hx + 14, y: 920, 'text-anchor': 'middle', fill: '#fff', 'font-weight': 700, 'font-size': 14 }, '-');
+      DR[id] = { xs, right, cranks, vals, tv, ybR, ybT, sy };
+    }
+    /* the crank on the shaft (angle follows % open) and the piston rod; the cylinder rim red when open */
+    function cranks(id, P) {
+      const d = DR[id];
+      d.cranks.replaceChildren();
+      d.xs.forEach((xc, i) => {
+        const o = P[i],
+          th = ((o == null ? 0 : o) * 0.9 * Math.PI) / 180,
+          kx = xc + Math.cos(th) * 10 * (d.right ? 1 : -1),
+          ky = d.sy + Math.sin(th) * 10;
+        mk(d.cranks, 'line', { x1: xc, y1: d.sy, x2: kx, y2: ky, stroke: '#c3ccd3', 'stroke-width': 3, 'stroke-linecap': 'round' });
+        mk(d.cranks, 'line', { x1: kx, y1: ky, x2: xc, y2: 762, stroke: '#dfe5ea', 'stroke-width': 3 });
+        mk(d.cranks, 'circle', { cx: xc, cy: d.sy, r: 4, fill: '#5d6872', stroke: '#0b0f13' });
+        d.vals[i * 2].setAttribute('stroke', o == null ? '#6b7480' : o > 1 ? '#e5484d' : '#2fa56a');
+        d.vals[i * 2 + 1].textContent = fmt(o, 1);
+        d.vals[i * 2 + 1].setAttribute('fill', o == null ? '#6b7480' : '#f4f7f9');
+      });
+    }
+    drives('gRH', [330, 272, 214, 156], 360, 'REHEATER PASS DAMPERS', 'TCV-FG1116 A–D · % open', 'ynRH', 'Reheater pass dampers: open control faceplate', 'PIIA1064A');
+    drives('gSH', [978, 1036, 1094, 1152], 948, 'SUPERHEATER PASS DAMPERS', 'TCV-FG1117 A–D · % open', 'ynSH', 'Superheater pass dampers: open control faceplate', 'PIIA1064B');
+
+    /* ---------- gas temperature points: thermowell from the wall + reading ---------- */
+    const CHV = {};
+    function chip(tag, y, front) {
+      const x = front ? 394 : 772,
+        wx = front ? 376 : 932,
+        tx = front ? 390 : 918;
+      mk(CH, 'line', { x1: wx, y1: y, x2: tx, y2: y, stroke: '#c3ccd3', 'stroke-width': 3 });
+      mk(CH, 'circle', { cx: tx, cy: y, r: 3, fill: '#e9edf0', stroke: '#0b0f13' });
+      mk(CH, 'rect', { x, y: y - 12, width: 142, height: 24, rx: 4, fill: '#06090ce8', stroke: '#3a4652' });
+      mk(CH, 'text', { x: x + 8, y: y + 4.5, class: 'chip-t' }, tag);
+      CHV[tag] = mk(CH, 'text', { x: x + 114, y: y + 5.5, class: 'chip-v', 'text-anchor': 'end' }, '-----');
+      mk(CH, 'text', { x: x + 118, y: y + 4.5, class: 'unit', 'font-size': 11 }, '°C');
+    }
+    const RHT = [['TIFG1100', 214], ['TIFG1102', 317], ['TIFG1104', 419], ['TIFG1106', 521], ['TIFG1108', 609], ['TIFG1110', 697]],
+      SHT = [['TIFG1101', 214], ['TIFG1103', 304], ['TIFG1105', 390], ['TIFG1107', 466], ['TIFG1109', 542], ['TIFG1111', 609], ['TIFG1113', 697]];
+    for (const c of RHT) chip(c[0], c[1], true);
+    for (const c of SHT) chip(c[0], c[1], false);
+
+    /* ---------- labels ---------- */
+    function T2(x, y, a, parts) {
+      const t = mk(LB, 'text', { x, y, 'text-anchor': a });
+      for (const p of parts) mk(t, 'tspan', { class: p[1], dx: p[2] || 0 }, p[0]);
+    }
+    T2(350, 280, 'end', [['reheater', 'bank-s'], ['R-6', 'bank', 6]]);
+    T2(350, 373, 'end', [['reheater', 'bank-s'], ['R-5', 'bank', 6]]);
+    T2(350, 475, 'end', [['reheater', 'bank-s'], ['R-4', 'bank', 6]]);
+    T2(350, 571, 'end', [['reheater', 'bank-s'], ['R-3', 'bank', 6]]);
+    T2(350, 652, 'end', [['ECONOMIZER #2R', 'bank']]);
+    mk(LB, 'text', { x: 962, y: 322, class: 'bank' }, 'FINISHING');
+    mk(LB, 'text', { x: 962, y: 339, class: 'bank' }, 'SUPERHEATER');
+    mk(LB, 'text', { x: 962, y: 356, class: 'bank-s' }, 'S-35 · S-36 · S-37');
+    mk(LB, 'text', { x: 992, y: 516, class: 'bank' }, 'ECONOMIZER #3 UPPER');
+    mk(LB, 'text', { x: 992, y: 576, class: 'bank' }, 'ECONOMIZER #3 LOWER');
+    mk(LB, 'text', { x: 992, y: 660, class: 'bank' }, 'ECONOMIZER #2S');
+    mk(LB, 'rect', { x: 574, y: 896, width: 160, height: 20, rx: 3, fill: '#0b0f13d9' });
+    mk(LB, 'text', { x: 654, y: 910, class: 'inside', 'text-anchor': 'middle' }, 'ECONOMIZER #1 · COMMON');
+    for (const h of [[346, 232, 'middle', 'R-7'], [958, 272, 'start', 'S-38'], [346, 614, 'middle', 'R-2'], [960, 438, 'start', 'S-34'], [772, 1008, 'start', 'E-1'], [632, 630, 'end', 'E-11'], [984, 612, 'start', 'E-12'], [530, 950, 'end', 'E-3 · E-4'], [384, 797, 'start', 'E-5']]) {
+      if (h[3] === 'E-11') mk(LB, 'rect', { x: 596, y: 618, width: 40, height: 16, rx: 3, fill: '#0b0f13e6' });
+      mk(LB, 'text', { x: h[0], y: h[1], class: 'tag', 'text-anchor': h[2] }, h[3]);
+    }
+    mk(LB, 'text', { x: 239, y: 622, class: 'card-s', 'text-anchor': 'middle' }, 'R-1 desuperheater');
+    mk(LB, 'text', { x: 224, y: 536, class: 'tag', 'text-anchor': 'end' }, 'TCV-FW1150');
+    const vTx = mk(LB, 'text', { x: 224, y: 552, class: 'st', 'text-anchor': 'end', fill: '#6b7480' }, '-----');
+    mk(LB, 'text', { x: 511, y: 200, class: 'inside', 'text-anchor': 'middle', fill: '#c9d1d8' }, 'REHEATER PASS');
+    mk(LB, 'text', { x: 797, y: 200, class: 'inside', 'text-anchor': 'middle', fill: '#c9d1d8' }, 'SUPERHEATER PASS');
+    /* line ends like the plant HMI: medium name beside the line, small arrowhead for the direction */
+    function endH(x, y, side, out, m, t, sub) {
+      const Lf = side === 'L',
+        x2 = Lf ? x - 16 : x + 16;
+      mk(LB, 'line', { x1: x, y1: y, x2, y2: y, stroke: med[m], 'stroke-width': 3 });
+      const tip = out ? x2 + (Lf ? -2 : 2) : x + (Lf ? -1 : 1),
+        base = out ? tip + (Lf ? 10 : -10) : tip + (Lf ? -10 : 10);
+      mk(LB, 'path', { d: 'M' + tip + ' ' + y + ' L' + base + ' ' + (y - 6) + ' L' + base + ' ' + (y + 6) + 'Z', fill: med[m] });
+      const tx = Lf ? x - 24 : x + 24,
+        an = Lf ? 'end' : 'start';
+      mk(LB, 'text', { x: tx, y: y - 2, class: 'card-t', 'text-anchor': an }, t);
+      if (sub) [].concat(sub).forEach((s, i) => mk(LB, 'text', { x: tx, y: y + 15 + i * 15, class: 'card-s', 'text-anchor': an }, s));
+    }
+    function endV(x, y, up, m) {
+      const y2 = up ? y - 14 : y + 14;
+      mk(LB, 'line', { x1: x, y1: y, x2: x, y2, stroke: med[m], 'stroke-width': 3 });
+      const tip = up ? y2 - 2 : y2 + 2,
+        base = up ? tip + 10 : tip - 10;
+      mk(LB, 'path', { d: 'M' + x + ' ' + tip + ' L' + (x - 6) + ' ' + base + ' L' + (x + 6) + ' ' + base + 'Z', fill: med[m] });
+    }
+    endH(300, 248, 'L', 1, 'rh', 'HOT REHEAT', 'to intermediate-pressure turbine');
+    endH(190, 144, 'L', 0, 'gas', 'FLUE GAS', 'from the cyclones');
+    endH(190, 500, 'L', 0, 'fw', 'SPRAY WATER', 'reheater spray');
+    endH(190, 590, 'L', 0, 'rh', 'COLD REHEAT', 'from high-pressure turbine');
+    endH(1110, 58, 'R', 1, 'ms', 'MAIN STEAM', 'to high-pressure turbine');
+    endH(1110, 990, 'R', 0, 'fw', 'FEEDWATER', ['from feed stop', 'and check valves']);
+    mk(LB, 'line', { x1: 1080, y1: 100, x2: 1080, y2: 86, stroke: med.ms, 'stroke-width': 3 });
+    mk(LB, 'path', { d: 'M1080 102 L1074 92 L1086 92Z', fill: med.ms });
+    mk(LB, 'text', { x: 1096, y: 98, class: 'card-t' }, 'SUPERHEATED STEAM');
+    mk(LB, 'text', { x: 1096, y: 115, class: 'card-s' }, 'from furnace panels');
+    mk(LB, 'text', { x: 1096, y: 130, class: 'card-s' }, 'via desuperheater #2');
+    endV(1116, 300, true, 'fw');
+    mk(LB, 'text', { x: 1130, y: 294, class: 'card-t' }, 'FEEDWATER');
+    mk(LB, 'text', { x: 1130, y: 310, class: 'card-s' }, 'to steam drum');
+    mk(LB, 'path', { d: 'M654 1022 L644 1010 L664 1010Z', fill: med.gasc });
+    mk(LB, 'text', { x: 536, y: 996, class: 'card-t', 'text-anchor': 'end' }, 'FLUE GAS');
+    mk(LB, 'text', { x: 536, y: 1012, class: 'card-s', 'text-anchor': 'end' }, 'to air preheater H-1052 · page 038');
+    [['FLUE GAS', '#b85a3c'], ['REHEAT STEAM', med.rh], ['MAIN STEAM', med.ms], ['FEEDWATER', med.fw], ['INSTRUMENT AIR', med.ia]].forEach((l, i) => {
+      mk(LB, 'rect', { x: 1130, y: 330 + i * 22, width: 26, height: 8, fill: l[1] });
+      mk(LB, 'text', { x: 1164, y: 339 + i * 22, class: 'unit', fill: '#c9d1d8' }, l[0]);
+    });
+
+    /* ---------- controller tiles along the bottom (live: mode, values, output bar) ---------- */
+    const TL = [
+      { id: 'tTIC', tag: 'TICHR1002A', fp: 'TICHR1002A', desc: 'Reheater outlet header temperature', vals: [['Measured', 'pv', '°C', 0], ['Setpoint', 'sv', '°C', 0], ['Output', 'mv', '%', 0]] },
+      { id: 'tHICA', tag: 'HICHR1002A', fp: 'HICHR1002A', desc: 'Reheater gas bias damper · TCV-FG1116', vals: [['Output', 'mv', '%', 1]], lim: 'limits 10–100 %' },
+      { id: 'tHICB', tag: 'HICHR1002B', fp: 'HICHR1002B', desc: 'Superheater gas bias damper · TCV-FG1117', vals: [['Output', 'mv', '%', 1]], lim: 'auto in normal operation' },
+      { id: 'tTCV', tag: 'TCV-FW1150', fp: 'TICHR1002', desc: 'Reheater spray · desuperheater R-1', vals: [['Measured', 'pv', '°C', 0], ['Setpoint', 'sv', '°C', 0], ['Output', 'mv', '%', 1]] }
+    ];
+    TL.forEach((t, i) => {
+      const x = 16 + i * 314,
+        y = 1054,
+        w = 300,
+        h = 92;
+      const g = mk(TI, 'g', { 'data-hit': t.id, tabindex: 0, role: 'button', 'aria-label': t.tag + ': open control faceplate' });
+      mk(g, 'title', {}, t.fp + ' · click: faceplate');
+      mk(g, 'rect', { class: 'tile-bg', x, y, width: w, height: h, rx: 4, fill: '#1a2128', stroke: '#2c3640', 'stroke-width': 1.5 });
+      mk(g, 'text', { x: x + 14, y: y + 22, class: 'tag', 'font-weight': 600, fill: '#f1f4f6', 'font-size': 14 }, t.tag);
+      t.mR = mk(g, 'rect', { x: x + w - 82, y: y + 9, width: 68, height: 19, rx: 3, fill: '#2a343e', stroke: '#47535f' });
+      t.mT = mk(g, 'text', { x: x + w - 48, y: y + 22.5, class: 'st', 'text-anchor': 'middle', fill: '#f1f4f6' }, '-----');
+      mk(g, 'text', { x: x + 14, y: y + 40, class: 'card-s' }, t.desc);
+      t.vT = t.vals.map((v, k) => {
+        const bx = x + 14 + k * 94;
+        mk(g, 'text', { x: bx, y: y + 57, class: 'unit', 'font-size': 11 }, v[0]);
+        mk(g, 'rect', { x: bx, y: y + 62, width: 86, height: 24, fill: '#06090c', stroke: '#2c3640' });
+        const e = mk(g, 'text', { x: bx + 60, y: y + 80, class: 'num', 'font-size': 16, 'text-anchor': 'end' }, '-----');
+        mk(g, 'text', { x: bx + 65, y: y + 79, class: 'unit', 'font-size': 11 }, v[2]);
+        return e;
+      });
+      if (t.vals.length === 1) {
+        const bx = x + 116,
+          bw = w - 130;
+        mk(g, 'text', { x: bx, y: y + 57, class: 'unit', 'font-size': 11 }, t.lim);
+        mk(g, 'rect', { x: bx, y: y + 66, width: bw, height: 14, fill: '#06090c', stroke: '#2c3640' });
+        t.bar = mk(g, 'rect', { x: bx + 1, y: y + 67, width: 0, height: 12, fill: '#5d7f9e' });
+        t.bw = bw;
+        for (const p of [0, 25, 50, 75, 100]) mk(g, 'line', { x1: bx + (bw * p) / 100, y1: y + 80, x2: bx + (bw * p) / 100, y2: y + 84, stroke: '#47535f' });
+      }
+    });
+
+    /* ---------- flue gas: HTML layers behind the drawing (option A), CSS transform only ---------- */
+    const GL = q('.gasL'),
+      F = 36,
+      TW = 360,
+      TH = 820;
+    if (!TEX) TEX = noiseTex(128, 256, 4, 6, 11);
+    const RHg = [[206, 864], [317, 657], [419, 504], [521, 443], [609, 388], [697, 359], [800, 355]],
+      SHg = [[206, 854], [304, 694], [390, 584], [466, 502], [542, 426], [609, 382], [697, 370], [800, 365]],
+      CM = [[300, [40, 33, 30]], [380, [58, 39, 31]], [460, [82, 46, 33]], [560, [112, 52, 34]], [700, [140, 58, 36]], [870, [178, 80, 46]]];
+    const col = t => {
+      let c = CM[CM.length - 1][1];
+      if (t <= CM[0][0]) c = CM[0][1];
+      else
+        for (let i = 1; i < CM.length; i++)
+          if (t <= CM[i][0]) {
+            const a = CM[i - 1],
+              b = CM[i],
+              f = (t - a[0]) / (b[0] - a[0]);
+            c = [0, 1, 2].map(k => Math.round(a[1][k] + (b[1][k] - a[1][k]) * f));
+            break;
+          }
+      return 'rgb(' + c + ')';
+    };
+    const grad = (T, y0, y1) => 'linear-gradient(to bottom,' + T.map(p => col(p[1]) + ' ' + (((p[0] - y0) / (y1 - y0)) * 100).toFixed(1) + '%').join(',') + ')';
+    const kf = document.createElement('style');
+    kf.textContent = `@keyframes b9gD{from{transform:translateY(-${TH}px)}to{transform:translateY(0)}}@keyframes b9gR{from{transform:translateX(-${TH}px)}to{transform:translateX(0)}}@keyframes b9gDR{from{transform:translate(-${TW}px,-${TH}px)}to{transform:translate(0,0)}}`;
+    root.append(kf);
+    const box = (x, y, w, h) => {
+      const z = document.createElement('div');
+      z.className = 'gz';
+      z.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px`;
+      GL.appendChild(z);
+      return z;
+    };
+    const HOP = y0 => {
+      const h = 1010 - y0,
+        t = 800 - y0,
+        s = 848 - y0;
+      return `polygon(0 0,100% 0,100% ${(t / h) * 100}%,${(372 / 556) * 100}% ${(s / h) * 100}%,${(372 / 556) * 100}% 100%,${(184 / 556) * 100}% 100%,${(184 / 556) * 100}% ${(s / h) * 100}%,0 ${(t / h) * 100}%)`;
+    };
+    const hot = col(866);
+    box(190, 104, 186, 80).style.background = hot;
+    box(376, 96, 556, 112).style.background = 'linear-gradient(to bottom,' + hot + ',' + col(864) + ')';
+    box(376, 205, 279, 596).style.background = grad(RHg, 205, 801);
+    box(654, 205, 278, 596).style.background = grad(SHg, 205, 801);
+    const hb = box(376, 800, 556, 210);
+    hb.style.background = 'linear-gradient(to bottom,' + col(360) + ',' + col(330) + ')';
+    hb.style.clipPath = HOP(800);
+    function wave(x, y, w, h, dir, dur, a, fade, clip) {
+      const z = box(x, y, w, h);
+      const m =
+        fade === 'x'
+          ? `linear-gradient(to right,#000 calc(100% - ${F}px),transparent)`
+          : fade === 'tb'
+            ? `linear-gradient(to bottom,transparent,#000 ${F}px,#000 calc(100% - ${F}px),transparent)`
+            : fade === 't'
+              ? `linear-gradient(to bottom,transparent,#000 ${F}px)`
+              : `linear-gradient(to bottom,#000 calc(100% - ${F}px),transparent),linear-gradient(to right,transparent,#000 ${F}px)`;
+      z.style.webkitMaskImage = z.style.maskImage = m;
+      if (fade === 'lb') ((z.style.webkitMaskComposite = 'source-in'), (z.style.maskComposite = 'intersect'));
+      if (clip) z.style.clipPath = clip;
+      z.style.opacity = Math.min(1, a * 6);
+      const gw = document.createElement('div');
+      gw.className = 'gw';
+      const T = `url(${TEX}) 0 0/${TW}px ${TH}px repeat`,
+        TR = `url(${TEX}) 0 0/${TH}px ${TW}px repeat`;
+      if (dir === 'R') gw.style.cssText = `left:0;top:0;bottom:0;width:calc(100% + ${TH}px);background:${TR};animation-name:b9gR`;
+      else if (dir === 'DR') gw.style.cssText = `left:0;top:0;width:calc(100% + ${TW}px);height:calc(100% + ${TH}px);background:${T};animation-name:b9gDR`;
+      else gw.style.cssText = `left:0;top:0;right:0;height:calc(100% + ${TH}px);background:${T};animation-name:b9gD`;
+      gw.style.animationDuration = (dur * TH) / 120 + 's';
+      z.appendChild(gw);
+    }
+    wave(190, 104, 186 + F, 80, 'R', 1.6, 0.15, 'x'); /* inlet window: in from the cyclones, sideways */
+    wave(376 - F, 96, 556 + F, 110 + F, 'DR', 2.2, 0.15, 'lb'); /* under the roof: turning down */
+    wave(376, 206 - F, 278, 516 + 2 * F, 'D', 6.5, 0.1, 'tb'); /* reheater pass: slow, faint */
+    wave(654, 206 - F, 278, 516 + 2 * F, 'D', 2.8, 0.17, 'tb'); /* superheater pass */
+    wave(376, 722 - F, 278, 78 + 2 * F, 'D', 3.2, 0.12, 'tb'); /* reheater damper gaps (~11 %) */
+    wave(654, 722 - F, 278, 78 + 2 * F, 'D', 1.4, 0.19, 'tb'); /* superheater damper gaps (~89 %) */
+    wave(376, 800 - F, 556, 210 + F, 'D', 0.95, 0.19, 't', HOP(800 - F)); /* hopper and ECO #1 duct: fastest, out to the air preheater */
+
+    /* ---------- live ---------- */
+    const live = (it, set) => api.reg(it, set, null);
+    const val = (tag, ref, set) => live({ t: 'val', tag: tag || '', ref: ref || undefined, v: '' }, X => set(X && isFinite(X.v) ? +X.v : null));
+    /* the gas temperatures: the logic value, else the plant estimate of 007 (the same inputs as 007 / 038) */
+    const EST = PLANT_V2.EST || {},
+      E = { tb: null, pa0: 354, sa0: 213, fa0: 26.3, idf: 1, paf: 1, saf: 1 },
+      LV = {};
+    const get = t => {
+      if (LV[t] != null) return LV[t];
+      if (!EST[t]) return null;
+      try {
+        const v = EST[t](E);
+        return v != null && isFinite(v) ? v : null;
+      } catch (e) {
+        return null;
+      }
+    };
+    const paint = () => {
+      if (PLANT_V2.estPrep) PLANT_V2.estPrep(E);
+      for (const t in CHV) {
+        const v = get(t);
+        CHV[t].textContent = fmt(v, 0);
+        CHV[t].setAttribute('fill', v == null ? '#6b7480' : '#f4f7f9');
+      }
+    };
+    let rq = 0;
+    const later = () => rq || (rq = setTimeout(() => ((rq = 0), paint()), 60));
+    const inp = (k, ref, tag) => val(tag, ref, v => ((E[k] = v), later()));
+    inp('fpa', 'pv:FICFA1071');
+    inp('fsa', 'pv:FICFA1081');
+    inp('ffa', '', 'FIFA1055');
+    inp('pf0', '', 'PIFG1085');
+    inp('ta', '', 'TIFA1072');
+    inp('ts', '', 'TIFA1082');
+    const FAN = { idf: 'ABC-008|M.3304', saf: 'ABC-007|M.3303', paf: 'ABC-007|M.3302' };
+    for (const k in FAN) val('', FAN[k], v => ((E[k] = v == null ? 1 : v > 0.5 ? 1 : 0), later()));
+    const TT = {};
+    for (const c of 'ABCDEFGHI')
+      for (const pre of ['TIFG1091', 'TIFG1090'])
+        val(pre + c, '', v => {
+          TT[pre + c] = v;
+          const Lt = Object.values(TT).filter(x => x != null);
+          E.tb = Lt.length ? Lt.reduce((a, b) => a + b, 0) / Lt.length : null;
+          later();
+        });
+    for (const [t] of [...RHT, ...SHT]) if (!EST[t]) val(t, '', v => ((LV[t] = v), later()));
+    /* the controllers: PV / SV / MV and mode (M / A / R) of their faceplate */
+    const CT = {};
+    const MODE = { M: 'MANUAL', A: 'AUTO', R: 'REMOTE' };
+    for (const t of TL)
+      live({ t: 'ctl', tag: t.fp }, X => {
+        CT[t.fp] = X || null;
+        t.mT.textContent = X ? MODE[X.m] || '-----' : '-----';
+        t.mR.setAttribute('fill', X && X.m === 'R' ? '#2a5d8c' : '#2a343e');
+        t.vals.forEach((v, k) => {
+          const x = X ? X[v[1]] : null;
+          t.vT[k].textContent = fmt(x, v[3]);
+          t.vT[k].setAttribute('fill', x == null || !isFinite(x) ? '#6b7480' : '#f4f7f9');
+        });
+        if (t.bar) t.bar.setAttribute('width', (((t.bw - 2) * Math.max(0, Math.min(100, X && isFinite(X.mv) ? X.mv : 0))) / 100).toFixed(1));
+      });
+    /* the damper positions: ZT-FG1116 / 1117 A ~ D (I/O list station 104 AI0368 ~ AI0375, read by ABC-020), else the output of
+       their MAN station HICHR1002A / B; the blades follow the average of the four */
+    const POS = { RH: [null, null, null, null], SH: [null, null, null, null] },
+      ZT = {};
+    let pend = 0;
+    const redraw = () =>
+      pend ||
+      (pend = setTimeout(() => {
+        pend = 0;
+        for (const [k, id, x0, x1, fr] of [['RH', 'gRH', 376, 632, 1], ['SH', 'gSH', 678, 932, 0]]) {
+          const P = POS[k],
+            ok = P.filter(x => x != null),
+            av = ok.length ? ok.reduce((a, b) => a + b, 0) / ok.length : null;
+          const key = P.map(x => (x == null ? '-' : x.toFixed(1))).join();
+          if (dG[k]._k === key) continue;
+          dG[k]._k = key;
+          damper(dG[k], x0, x1, av, fr);
+          cranks(id, P);
+        }
+      }, 120));
+    ['A', 'B', 'C', 'D'].forEach((c, i) => {
+      for (const [k, ai, hic] of [['RH', 368, 'HICHR1002A'], ['SH', 372, 'HICHR1002B']]) {
+        val('', 'ABC-020|S4 AI0' + (ai + i), v => ((ZT[k + c] = v != null), v != null && ((POS[k][i] = v), redraw())));
+        val('', 'mv:' + hic, v => {
+          if (ZT[k + c]) return;
+          POS[k][i] = v;
+          redraw();
+        });
+      }
+    });
+    redraw();
+    /* the spray valve TCV-FW1150 (MV of TICHR1002, ABC-019) */
+    let spray = null;
+    live({ t: 'valve', tag: 'TCVFW1150', v: '' }, X => {
+      spray = X && isFinite(X.v) ? +X.v : null;
+      const o = spray != null && spray > 1;
+      vBody.setAttribute('fill', spray == null ? '#1b2228' : o ? '#3a1618' : '#16301f');
+      vBody.setAttribute('stroke', spray == null ? '#6b7480' : o ? '#e5484d' : '#2fa56a');
+      vTx.textContent = spray == null ? '-----' : o ? 'OPEN ' + fmt(spray, 1) + ' %' : 'CLOSED';
+      vTx.setAttribute('fill', spray == null ? '#6b7480' : o ? '#e5484d' : '#2fa56a');
+    });
+    /* the buffer tanks */
+    const PII = {};
+    for (const [id, tg] of [['gRH', 'PIIA1064A'], ['gSH', 'PIIA1064B']])
+      val(tg, '', v => {
+        PII[tg] = v;
+        DR[id].tv.textContent = fmt(v, 1);
+        DR[id].tv.setAttribute('fill', v == null ? '#6b7480' : '#f4f7f9');
+      });
+    /* the interlock memories of ABC-020: purge (reheater >= 30 % M.0506, superheater >= 60 % M.0507), ID fan start (> 95 %
+       M.3440 / M.3441) */
+    const MEM = {};
+    for (const a of ['M.0506', 'M.0507', 'M.3440', 'M.3441']) val('', 'ABC-020|S4 ' + a, v => ((MEM[a] = v == null ? null : v > 0.5 ? 1 : 0), yn()));
+    function yn() {
+      for (const [id, a] of [['gRH', 'M.0506'], ['gSH', 'M.0507']]) {
+        const v = MEM[a],
+          d = DR[id];
+        d.ybR.setAttribute('fill', v == null ? '#6b7480' : v ? '#e5484d' : '#2fa56a');
+        d.ybT.textContent = v == null ? '-' : v ? 'Y' : 'N';
+      }
+    }
+    yn();
+    /* the main steam flow (header MSF): the steam and feedwater tubes flow while the boiler makes steam */
+    let msf = null;
+    if (api.HDR && api.HDR.MSF) val('MSF', api.HDR.MSF, v => (msf = v));
+
+    /* everything that moves: the tube flows on the 15 Hz clock, the flue gas by CSS (paused with the simulation or the induced draft
+       fan) */
+    const still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    let t0 = null;
+    H.clock(t => {
+      if (!pg.isConnected) return false;
+      const dt = t0 == null ? 0 : Math.min(0.2, t - t0);
+      t0 = t;
+      const go = !still && H.simRunning(),
+        steam = msf == null || msf > 5,
+        on = { rh: steam, ms: steam, fw: steam, ia: true, spray: spray != null && spray > 1 };
+      root.classList.toggle('still', !go || !E.idf);
+      for (const f of FLOWS) {
+        const o = on[f[2]];
+        if (f._o !== o) (f[0].setAttribute('visibility', o ? 'visible' : 'hidden'), (f._o = o));
+        if (o && go) f[0].setAttribute('stroke-dashoffset', ((f._d = ((f._d || 0) - f[1] * dt) % 100)).toFixed(1));
+      }
+    });
+
+    /* ---------- #59 faceplates ---------- */
+    const bind = (id, f) =>
+      root.querySelectorAll(`[data-hit="${id}"]`).forEach(h => {
+        h.addEventListener('click', e => (e.stopPropagation(), f()));
+        h.addEventListener('keydown', e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), f()));
+      });
+    for (const t of TL) bind(t.id, () => api.fp(t.fp));
+    bind('gRH', () => api.fp('HICHR1002A'));
+    bind('gSH', () => api.fp('HICHR1002B'));
+    bind('TCV', () => api.fp('TICHR1002'));
+    const forced = ['Master fuel trip', 'Steam flow < 15 % of maximum continuous rating', 'High-pressure bypass closed', 'Cyclone outlet > 535 °C', 'Purge complete', 'Reheater outlet > 555 °C', 'ID fan running'];
+    const sop = ['Cold: closed', 'After air preheater start: 100 %', 'Before ID / PA fan: 100 % (> 95 %)', 'After purge: reheater 30 / superheater 70', 'Operator sets 10 / 90, superheater to AUTO', 'After synchronization: reheater remote-auto'];
+    const per = (k, n, tank, gin, gout, ginT, goutT, pm, im, pl, il) => () =>
+      window.LS_FPOP &&
+      LS_FPOP.info({
+        n,
+        t: 'ABC-020',
+        permH: 'PERMISSIVE · ABC-020',
+        perm: [[pl + ' · ' + pm, () => MEM[pm]], [il + ' · ' + im, () => MEM[im]]],
+        lists: [['FORCED POSITION APPLIES ON', forced], ['START-UP SEQUENCE · PR-OPE-5002', sop]],
+        mon: [
+          ['A', () => POS[k][0], '%', 1],
+          ['B', () => POS[k][1], '%', 1],
+          ['C', () => POS[k][2], '%', 1],
+          ['D', () => POS[k][3], '%', 1],
+          ['Buffer tank · ' + tank, () => PII[tank], 'kg/cm² · low alarm 4.0', 1],
+          [gin + ' · ' + ginT, () => get(ginT), '°C', 0],
+          [gout + ' · ' + goutT, () => get(goutT), '°C', 0]
+        ],
+        trend: { h: 'TREND · 10 min · reheater outlet TICHR1002A °C', fn: () => (CT.TICHR1002A ? CT.TICHR1002A.pv : null), col: '#a596cf' }
+      });
+    bind('ynRH', per('RH', 'TCV-FG1116', 'PIIA1064A', 'Gas into reheater', 'Gas out of ECO #2R', 'TIFG1100', 'TIFG1110', 'M.0506', 'M.3440', 'Purge: reheater ≥ 30 %', 'ID fan start: reheater > 95 %'));
+    bind('ynSH', per('SH', 'TCV-FG1117', 'PIIA1064B', 'Gas into superheater', 'Gas out of ECO #2S', 'TIFG1101', 'TIFG1113', 'M.0507', 'M.3441', 'Purge: superheater ≥ 60 %', 'ID fan start: superheater > 95 %'));
+    paint();
+    return pg;
+  }
+  PLANT_V2.screens.BIAS = page;
+  /* after 038 AIR PREHEATER in the list of the Plant view */
+  const Ls = (window.PLANT_SYS = window.PLANT_SYS || []),
+    i = Ls.findIndex(x => x.id === 'APH');
+  Ls.splice(i >= 0 ? i + 1 : Ls.length, 0, {
+    fitW: 1,
+    id: 'BIAS',
+    title: '039 RH / SH BIASING DAMPER',
+    num: '039',
+    name: 'RH / SH BIASING DAMPER',
+    src: '39.PNG',
+    w: 1280,
+    h: 56 + VH + 32,
+    v2: true,
+    screen: 'BIAS',
+    style: 'steel',
+    nav: ['UNIT', 'AFG', 'APH', 'BIAS'],
+    items: []
+  });
+})();
+
 /* 3.2.0-beta.74 OPERATOR POP-OUT FACEPLATE (user 2026-10-30: "mini pop out sya sa bawat equipment. Halimbawa SWP-A, meron syang popout for
    controls and permissive based sa SOP at sa logic"; mockups https://claude.ai/artifact/Xjzj9XgmtT62qqiRF8zRQa v7 and
    https://claude.ai/artifact/9bXtfVRUnDvvMAY8K2LKuv v3). A click on a motor of an HMI page opens its faceplate beside the motor, over the
@@ -72428,36 +73823,49 @@ window.PLANT_SYS = [
       addEventListener('pointerup', up);
     });
   }
+  /* #59 (user 2026-10-31): two faceplates per equipment that can be open together, the CONTROL one and the PERMISSIVE · TREND ·
+     MONITOR one; BOX = the open ones by slot ('control' / 'info'), box = the one being built */
   let box = null,
-    iv = null,
     paint = null;
-  function close() {
-    if (box) box.remove();
-    box = paint = null;
-    clearInterval(iv);
-    iv = null;
+  const BOX = {};
+  function closeEl(el) {
+    if (!el) return;
+    clearInterval(el._iv);
+    el.remove();
+    for (const k in BOX) if (BOX[k] === el) delete BOX[k];
+    if (box === el) box = paint = null;
   }
+  function close() {
+    for (const k in BOX) closeEl(BOX[k]);
+    box = paint = null;
+  }
+  const anyOpen = () => Object.keys(BOX).length > 0;
   /* on the window (capture): a listener of the app stops the key there before the document */
   addEventListener(
     'keydown',
     e => {
-      if (e.key === 'Escape' && box) close();
+      if (e.key === 'Escape' && anyOpen()) close();
     },
     true
   );
   /* another HMI page, another tab: the faceplate of the page before goes */
   document.addEventListener('change', e => e.target && e.target.classList && e.target.classList.contains('plpick') && close(), true);
-  new MutationObserver(() => box && document.body.dataset.tab !== 'operate' && close()).observe(document.body, { attributes: true, attributeFilter: ['data-tab'] });
+  new MutationObserver(() => anyOpen() && document.body.dataset.tab !== 'operate' && close()).observe(document.body, { attributes: true, attributeFilter: ['data-tab'] });
   /* a click on the graphic outside it (not on another equipment, which opens its own) closes it. Live test #48 / #43: a click in the
      Training dock, the header or the alarm bar (a tick of the line-up, then START here) leaves it open where it is */
   document.addEventListener('pointerdown', e => {
-    if (box && !box.contains(e.target) && host().contains(e.target) && !(e.target.closest && e.target.closest('[data-hit],[data-mdh],[data-fan],[data-dmp],[data-fl],[data-aphh],#plfp')))
-      setTimeout(() => box && !box.contains(document.activeElement) && close(), 0);
+    if (!host().contains(e.target) || (e.target.closest && e.target.closest('.fpo-box,[data-hit],[data-mdh],[data-fan],[data-dmp],[data-fl],[data-aphh],[data-eqb],#plfp'))) return;
+    for (const k in BOX) {
+      const el = BOX[k];
+      setTimeout(() => el.isConnected && !el.contains(document.activeElement) && closeEl(el), 0);
+    }
   });
-  function frame(title, sub) {
-    close();
-    box = E('div', '');
-    box.id = 'fpop';
+  function frame(title, sub, slot = 'control') {
+    closeEl(BOX[slot]);
+    box = E('div', 'fpo-box');
+    box.id = slot === 'info' ? 'fpop2' : 'fpop';
+    BOX[slot] = box;
+    const me = box;
     box.setAttribute('role', 'dialog');
     box.setAttribute('aria-label', title + ' faceplate');
     const hd = E('div', 'fpo-h'),
@@ -72469,7 +73877,7 @@ window.PLANT_SYS = [
     x.type = 'button';
     x.title = 'Close (Esc)';
     x.setAttribute('aria-label', 'Close');
-    x.onclick = close;
+    x.onclick = () => closeEl(me);
     const tt = E('div', 'fpo-tt');
     tt.append(nm, sb);
     hd.append(lamp, tt, val, x);
@@ -72504,20 +73912,27 @@ window.PLANT_SYS = [
     const dk = D();
     if (!M || !dk || !M.ad) return false;
     const s = call(() => dk.dOf(M.ad), null);
-    const F = frame(M.n, (M.t || '') + (M.d ? ' · ' + M.d : ''));
+    /* #59: M.part 'control' = the CONTROL faceplate (click on the equipment), 'info' = PERMISSIVE · TREND · MONITOR (its Y / N button);
+       no part = both in one (the pages not yet on the #59 standard) */
+    const part = M.part || '';
+    const F = frame(M.n, (M.t || '') + (M.d ? ' · ' + M.d : ''), part === 'info' ? 'info' : 'control');
+    const me = box;
     const nm = s ? call(() => dk.dName(s), M.d) : M.d;
     const chip = E('span', 'fpo-chip');
     F.hd.querySelector('.fpo-tt').append(chip);
+    if (part) F.hd.querySelector('.fpo-tt').append(E('span', 'fpo-k', part === 'info' ? 'PERMISSIVE · TREND · MONITOR' : 'CONTROL'));
     /* status */
     const lR = lampEl('RUN'),
       lS = lampEl('STOP'),
       lT = lampEl('TRIP');
-    F.bd.append(row('STATUS', lR, lS, lT));
+    const rSt = row('STATUS', lR, lS, lT);
+    F.bd.append(rSt);
     /* FIELD selector */
     const [sRL, [bRem, bLoc]] = seg(['REMOTE', 'LOCAL']);
     const fTag = E('span', 'fpo-fld', 'FIELD');
     fTag.title = 'The selector switch at the switchgear: set by the field operator (logged in Events as "Field operator")';
-    F.bd.append(row('SELECTOR', sRL, fTag));
+    const rSel = row('SELECTOR', sRL, fTag);
+    F.bd.append(rSel);
     /* MODE */
     const [sAM, [bAu, bMa]] = seg(['AUTO', 'MAN']);
     const amR = row('MODE', sAM);
@@ -72526,7 +73941,8 @@ window.PLANT_SYS = [
     const bSt = E('button', 'fpo-cmd', 'START'),
       bSp = E('button', 'fpo-cmd', 'STOP');
     bSt.type = bSp.type = 'button';
-    F.bd.append(row('DCS', bSt, bSp));
+    const rCmd = row('DCS', bSt, bSp);
+    F.bd.append(rCmd);
     const why = E('div', 'fpo-why');
     F.bd.append(why);
     /* EXECUTE / CANCEL */
@@ -72557,23 +73973,40 @@ window.PLANT_SYS = [
     const vcb = lampEl('VCB');
     const cur = E('span', 'fpo-vb'),
       band = E('small', 'fpo-dim', M.band ? 'SOP ' + M.band[0] + ' ~ ' + M.band[1] + ' A' : '');
-    F.bd.append(row('VCB', vcb));
+    const rVcb = row('VCB', vcb);
+    F.bd.append(rVcb);
     const trend = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     trend.setAttribute('viewBox', '0 0 300 50');
     trend.setAttribute('preserveAspectRatio', 'none');
     trend.setAttribute('class', 'fpo-tr');
     trend.setAttribute('role', 'img');
     trend.setAttribute('aria-label', 'Current trend, 10 minutes');
-    if (M.cur) {
-      F.bd.append(row('CURRENT', cur, band));
-      F.bd.append(trend);
-    }
+    const trH = E('div', 'fpo-sh', 'TREND · 10 min'),
+      rCur = row('CURRENT', cur, band);
+    if (M.cur) F.bd.append(rCur);
+    /* monitoring values of the info faceplate: M.mon = [[label, fn, unit, tag]] (bearing, winding, vibration, ...) */
+    const mon = (part === 'info' && M.mon) || [];
+    const monV = mon.map(([l, f, u, tg]) => {
+      const v = E('span', 'fpo-vb');
+      F.bd.append(row(l, v, E('small', 'fpo-dim', (u || '') + (tg ? ' · ' + tg : ''))));
+      return [v, f];
+    });
+    if (M.cur) F.bd.append(trH, trend);
     /* SOP line-up of the open step (only when this motor belongs to it) and the logic permissive */
     const sopH = E('div', 'fpo-sh'),
       sopL = E('ul', 'fpo-il');
     const ilH = E('div', 'fpo-sh', 'LOGIC PERMISSIVE' + (nm ? ' · ' + nm : '')),
       ilL = E('ul', 'fpo-il');
     F.bd.append(sopH, sopL, ilH, ilL);
+    /* the sections of the part: CONTROL without permissive / trend, INFO without the commands (moved to the top: permissive first) */
+    if (part === 'control') for (const el of [rCur, trH, trend, sopH, sopL, ilH, ilL]) el.hidden = true;
+    if (part === 'info') {
+      for (const el of [rSel, amR, rCmd, why, rVcb]) el.hidden = true;
+      F.bd.insertBefore(ilL, rSt.nextSibling);
+      F.bd.insertBefore(ilH, ilL);
+      F.bd.insertBefore(sopL, ilL.nextSibling);
+      F.bd.insertBefore(sopH, sopL);
+    }
     /* links */
     const ln = E('div', 'fpo-ln');
     const link = (t, f) => {
@@ -72610,7 +74043,7 @@ window.PLANT_SYS = [
     bSp.onclick = () => !bSp.disabled && ask('STOP ' + M.n + '?', () => (dk.dmotor(M.ad, 0), call(() => window.lsEventAdd(nm, 'DCS', 'Operator: STOP ' + M.n + ' (faceplate)'))));
     let k0 = '';
     function tick() {
-      if (!box || !box.isConnected) return close();
+      if (!me.isConnected) return closeEl(me);
       const st = call(() => dk.mst(M.ad), null),
         md = call(() => (M.modeFn ? M.modeFn() : dk.modeOf(M.ad)), null) || {},
         I = call(() => dk.interlock(M.ad), null),
@@ -72655,7 +74088,15 @@ window.PLANT_SYS = [
               : !run && st !== 'RUN'
                 ? 'Simulation PAUSED: press ▶ RUN before START (nothing moves while paused).'
                 : '';
-      why.hidden = !why.textContent;
+      why.hidden = part === 'info' || !why.textContent;
+      /* #59: the Y / N of the info faceplate (and of the page's button: M.onYN) = every logic permissive and SOP line-up item complete */
+      const yn = !loc && !miss.length && !sopLeft;
+      if (part === 'info') ilH.textContent = 'PERMISSIVE · ' + (yn ? 'Y (all complete)' : 'N (not complete)') + (nm ? ' · ' + nm : '');
+      if (M.onYN) call(() => M.onYN(yn), null);
+      for (const [v, f] of monV) {
+        const x = call(f, null);
+        v.textContent = x == null || !isFinite(+x) ? '-----' : (+x).toFixed(1);
+      }
       chip.textContent = st === 'TRIP' ? 'TRIP' : st === 'RUN' ? 'RUNNING' : loc ? 'NOT READY' : sby ? 'STANDBY' : miss.length ? 'INTERLOCK' : st === 'STOP' ? 'READY' : '';
       chip.className = 'fpo-chip ' + (st === 'TRIP' ? 'trip' : miss.length && !loc && st !== 'RUN' ? 'ilk' : '');
       /* current */
@@ -72675,7 +74116,7 @@ window.PLANT_SYS = [
           (H.length ? `<circle cx="298" cy="${(47 - (H[H.length - 1][1] / mx) * 44).toFixed(1)}" r="2.5" fill="${st === 'RUN' ? '#e5484d' : '#93a2b2'}"/>` : '');
       }
       /* SOP line-up of the open step */
-      sopH.hidden = sopL.hidden = !(sop && sop.items.length);
+      sopH.hidden = sopL.hidden = part === 'control' || !(sop && sop.items.length);
       if (sop && sop.items.length) {
         sopH.textContent = 'SOP BEFORE START · PR-OPE-5002 section ' + sop.sec + ' · ' + sop.items.filter(x => x.ok).length + ' / ' + sop.items.length;
         /* what is left only (✕), the done ones as one line (the full list with its ticks is in the dock) */
@@ -72725,8 +74166,8 @@ window.PLANT_SYS = [
     }
     paint = tick;
     tick();
-    place(box);
-    iv = setInterval(tick, 500);
+    place(me);
+    me._iv = setInterval(tick, 500);
     return true;
   }
   /* ---------- the valve faceplate (live test beta.74, spec item 2: OPEN / CLOSE, AUTO / MAN, ZSO / ZSC) ----------
@@ -72737,6 +74178,7 @@ window.PLANT_SYS = [
     const dk = D();
     if (!V || !dk || !V.d || !call(() => dk.dOf(V.d), null)) return false;
     const F = frame(V.n, (V.t || '') + ' · ' + V.d);
+    const me = box;
     const chip = E('span', 'fpo-chip');
     F.hd.querySelector('.fpo-tt').append(chip);
     const lO = lampEl('ZSO OPEN'),
@@ -72786,7 +74228,7 @@ window.PLANT_SYS = [
     bOp.onclick = () => ask(V.n + ' OPEN?', () => (dk.dpress(V.d, V.opRow), ev('OPEN')));
     bCl.onclick = () => ask(V.n + ' CLOSE?', () => (dk.dpress(V.d, V.clRow), ev('CLOSE')));
     function tick() {
-      if (!box || !box.isConnected) return close();
+      if (!me.isConnected) return closeEl(me);
       const op = !!call(() => V.isOpen(), false),
         au = !!call(() => V.isAuto(), false),
         run = isRun(),
@@ -72814,8 +74256,8 @@ window.PLANT_SYS = [
     }
     paint = tick;
     tick();
-    place(box);
-    iv = setInterval(tick, 500);
+    place(me);
+    me._iv = setInterval(tick, 500);
     return true;
   }
   /* the valves of the HMI pages with a DITL drawing (the same rows the Training step 8 presses, guide.js) */
@@ -72845,6 +74287,7 @@ window.PLANT_SYS = [
     if (!V || !window.AN || !AN.field) return false;
     const st = () => !!(AN.fieldState && AN.fieldState()[V.k]);
     const F = frame(V.n, V.t);
+    const me = box;
     const chip = E('span', 'fpo-chip', 'FIELD');
     F.hd.querySelector('.fpo-tt').append(chip);
     const lO = lampEl('OPEN'),
@@ -72879,7 +74322,7 @@ window.PLANT_SYS = [
     bOp.onclick = () => !bOp.disabled && set(true);
     bCl.onclick = () => !bCl.disabled && set(false);
     function tick() {
-      if (!box || !box.isConnected) return close();
+      if (!me.isConnected) return closeEl(me);
       const op = st(),
         run = isRun();
       F.lamp.className = 'fpo-lamp ' + (op ? 'run' : 'stop');
@@ -72895,8 +74338,8 @@ window.PLANT_SYS = [
     }
     paint = tick;
     tick();
-    place(box);
-    iv = setInterval(tick, 500);
+    place(me);
+    me._iv = setInterval(tick, 500);
     return true;
   }
   /* live test #45: a package run by push buttons of a DITL drawing (debris filter S-1502 / S-1504, DITL-39: REMOTE AUTO START / STOP P.B.
@@ -72907,6 +74350,7 @@ window.PLANT_SYS = [
     if (!P || !dk || !P.d || !call(() => dk.dOf(P.d), null)) return false;
     const s = dk.dOf(P.d);
     const F = frame(P.n, (P.t || '') + ' · ' + P.d);
+    const me = box;
     const lOn = lampEl(P.st.on),
       lOff = lampEl(P.st.off || 'STOPPED');
     F.bd.append(row('STATUS', lOn, lOff));
@@ -72963,7 +74407,7 @@ window.PLANT_SYS = [
     });
     let k0 = '';
     function tick() {
-      if (!box || !box.isConnected) return close();
+      if (!me.isConnected) return closeEl(me);
       const on = call(() => dk.dout(P.d, P.st.row), null) === 1,
         run = isRun(),
         pv = (P.perm || []).map(p => ({ ...p, v: call(() => window.DUI.rowVal(s, p.row), null) })),
@@ -72994,8 +74438,8 @@ window.PLANT_SYS = [
     }
     paint = tick;
     tick();
-    place(box);
-    iv = setInterval(tick, 500);
+    place(me);
+    me._iv = setInterval(tick, 500);
     return true;
   }
   /* live test #44: a machine with no DCS command (hypochlorite pumps P-0761 / P-0762: STN105 running / overload DI only) = a small status
@@ -73004,6 +74448,7 @@ window.PLANT_SYS = [
   function field(P) {
     if (!P) return false;
     const F = frame(P.n, (P.t || '') + ' · ' + (P.d || 'field'));
+    const me = box;
     const lR = lampEl('RUN'),
       lS = lampEl('STOP');
     F.bd.append(row('STATUS', lR, lS));
@@ -73051,7 +74496,7 @@ window.PLANT_SYS = [
     ln.append(ev);
     F.bd.append(ln);
     function tick() {
-      if (!box || !box.isConnected) return close();
+      if (!me.isConnected) return closeEl(me);
       const st = call(P.st, null),
         run = isRun();
       F.lamp.className = 'fpo-lamp ' + (st === 'RUN' ? 'run' : st === 'STOP' ? 'stop' : '');
@@ -73067,11 +74512,25 @@ window.PLANT_SYS = [
     }
     paint = tick;
     tick();
-    place(box);
-    iv = setInterval(tick, 500);
+    place(me);
+    me._iv = setInterval(tick, 500);
     return true;
   }
   const valveTag = tg => (VALVES[tg] ? valve(VALVES[tg]) : FIELDV[tg] ? fieldValve(FIELDV[tg]) : false);
+  /* #59: the Y / N of a motor for the button on its page (the same test as the info faceplate): true = every logic permissive and SOP
+     line-up item complete, false = not, null = no logic */
+  function yn(M) {
+    const dk = D();
+    if (!M || !dk || !M.ad) return null;
+    const I = call(() => dk.interlock(M.ad), null);
+    if (!I) return null;
+    const st = call(() => dk.mst(M.ad), null),
+      md = call(() => (M.modeFn ? M.modeFn() : dk.modeOf(M.ad)), null) || {},
+      sby = st === 'STOP' && md.rem === true && md.au === true,
+      miss = sby ? [] : I.miss.filter(r => !/REMOTE/.test(r.svc)),
+      sop = call(() => (dk.sopFor ? dk.sopFor(M.ad, M.d) : null), null);
+    return md.rem !== false && !miss.length && !(sop && sop.items.some(x => !x.ok));
+  }
   /* an HMI page's click on a machine: its faceplate when the motor is known to the logic, else the info card (as before) */
   function hit(M, fallback) {
     if (M && M.ad && !M.fld && !/@/.test(M.ad) && D() && call(() => D().dOf(M.ad), null) && motor(M)) return;
@@ -73094,8 +74553,76 @@ window.PLANT_SYS = [
     setTimeout(re, 350);
     return !!box;
   }
-  window.LS_FPOP = { motor, valve, valveTag, pb, field, hit, openAd, place, close, get open() {
-    return !!box;
+  /* #59 for a controller (039 biasing dampers, ABC-020): the PERMISSIVE · TREND · MONITOR faceplate of its Y / N square.
+     P = { n, t, perm: [[label, () => 1 | 0 | null]], lists: [[heading, [lines]]], mon: [[label, fn, unit, dp]], trend: { h, fn, col } };
+     a permissive row: Y red = made, N green = not (the approved mockup) */
+  function info(P) {
+    if (!P) return false;
+    const F = frame(P.n, P.t || '', 'info');
+    const me = box;
+    F.hd.querySelector('.fpo-tt').append(E('span', 'fpo-k', 'PERMISSIVE · TREND · MONITOR'));
+    const pH = E('div', 'fpo-sh', P.permH || 'LOGIC PERMISSIVE'),
+      pL = E('ul', 'fpo-il');
+    if (P.perm && P.perm.length) F.bd.append(pH, pL);
+    for (const [h, lines] of P.lists || []) {
+      const ul = E('ul', 'fpo-il');
+      ul.replaceChildren(...lines.map(t => {
+        const li = E('li', '');
+        li.append(E('span', '', t));
+        return li;
+      }));
+      F.bd.append(E('div', 'fpo-sh', h), ul);
+    }
+    const monV = (P.mon || []).map(([l, f, u, dp]) => {
+      const v = E('span', 'fpo-vb');
+      F.bd.append(row(l, v, E('small', 'fpo-dim', u || '')));
+      return [v, f, dp == null ? 1 : dp];
+    });
+    const trend = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    trend.setAttribute('viewBox', '0 0 300 50');
+    trend.setAttribute('preserveAspectRatio', 'none');
+    trend.setAttribute('class', 'fpo-tr');
+    trend.setAttribute('role', 'img');
+    trend.setAttribute('aria-label', (P.trend && P.trend.h) || 'Trend');
+    if (P.trend) F.bd.append(E('div', 'fpo-sh', P.trend.h), trend);
+    const Hs = P.trend ? hist['trend:' + P.trend.h] || (hist['trend:' + P.trend.h] = []) : null;
+    let k0 = '';
+    function tick() {
+      if (!me.isConnected) return closeEl(me);
+      const pv = (P.perm || []).map(([l, f]) => [l, call(f, null)]),
+        k = pv.map(p => p[1]).join();
+      if (k !== k0) {
+        k0 = k;
+        pL.replaceChildren(...pv.map(([l, v]) => {
+          const li = E('li', v === 1 ? 'ok' : 'bad');
+          li.append(E('i', '', v == null ? '-' : v === 1 ? 'Y' : 'N'), E('span', '', l));
+          return li;
+        }));
+      }
+      for (const [v, f, dp] of monV) {
+        const x = call(f, null);
+        v.textContent = x == null || !isFinite(+x) ? '-----' : (+x).toFixed(dp);
+      }
+      if (Hs) {
+        const now = Date.now(),
+          v = call(P.trend.fn, null);
+        if (v != null) sample(Hs, v, now);
+        const ys = Hs.map(p => p[1]),
+          lo = Math.min(...ys, v == null ? Infinity : v) - 5,
+          hi = Math.max(...ys, v == null ? -Infinity : v) + 5,
+          y = x => (47 - ((x - lo) / Math.max(1, hi - lo)) * 44).toFixed(1);
+        trend.innerHTML = Hs.length
+          ? `<polyline fill="none" stroke="${P.trend.col || '#a596cf'}" stroke-width="2" points="${Hs.map(p => ((300 * (p[0] - (now - 600e3))) / 600e3).toFixed(1) + ',' + y(p[1])).join(' ')}"/><circle cx="298" cy="${y(Hs[Hs.length - 1][1])}" r="2.5" fill="${P.trend.col || '#a596cf'}"/>`
+          : '';
+      }
+    }
+    tick();
+    place(me);
+    me._iv = setInterval(tick, 500);
+    return true;
+  }
+  window.LS_FPOP = { motor, valve, valveTag, pb, field, yn, hit, openAd, place, close, info, get open() {
+    return anyOpen();
   } };
 })();
 
@@ -74085,7 +75612,9 @@ window.PLANT_SYS = [
       /* live test 2026-10-30 #1 (030 cut on both sides beside the Training dock): the flag is on the screen (cur.g), cur is its list entry;
          cur.fitAll was never set, so 030 was fitted to the height like the others. Whole page, centred in the area */
       all = !!(cur && (cur.fitAll || (cur.g && cur.g.fitAll))),
-      s = all ? Math.max(sh, sw) : tall ? sh : sh <= sw ? Math.max(sh, sw * 0.7) : sh;
+      /* a tall page built from an approved mockup (039, fitW) fits the width and starts at the top: drag to see the rest */
+      fw = !all && !!(cur && (cur.fitW || (cur.g && cur.g.fitW))),
+      s = all ? Math.max(sh, sw) : fw ? sw : tall ? sh : sh <= sw ? Math.max(sh, sw * 0.7) : sh;
     vb = [box0[0] + (tall && !all ? 0 : (w - r.width * s) / 2), box0[1] - (all ? Math.max(0, (r.height * s - h) / 2) : 0), r.width * s, r.height * s];
     svg.setAttribute('viewBox', vb.join(' '));
     svSz = [r.width, r.height];

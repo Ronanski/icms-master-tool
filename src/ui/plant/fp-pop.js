@@ -838,7 +838,75 @@
     setTimeout(re, 350);
     return !!box;
   }
-  window.LS_FPOP = { motor, valve, valveTag, pb, field, yn, hit, openAd, place, close, get open() {
+  /* #59 for a controller (039 biasing dampers, ABC-020): the PERMISSIVE · TREND · MONITOR faceplate of its Y / N square.
+     P = { n, t, perm: [[label, () => 1 | 0 | null]], lists: [[heading, [lines]]], mon: [[label, fn, unit, dp]], trend: { h, fn, col } };
+     a permissive row: Y red = made, N green = not (the approved mockup) */
+  function info(P) {
+    if (!P) return false;
+    const F = frame(P.n, P.t || '', 'info');
+    const me = box;
+    F.hd.querySelector('.fpo-tt').append(E('span', 'fpo-k', 'PERMISSIVE · TREND · MONITOR'));
+    const pH = E('div', 'fpo-sh', P.permH || 'LOGIC PERMISSIVE'),
+      pL = E('ul', 'fpo-il');
+    if (P.perm && P.perm.length) F.bd.append(pH, pL);
+    for (const [h, lines] of P.lists || []) {
+      const ul = E('ul', 'fpo-il');
+      ul.replaceChildren(...lines.map(t => {
+        const li = E('li', '');
+        li.append(E('span', '', t));
+        return li;
+      }));
+      F.bd.append(E('div', 'fpo-sh', h), ul);
+    }
+    const monV = (P.mon || []).map(([l, f, u, dp]) => {
+      const v = E('span', 'fpo-vb');
+      F.bd.append(row(l, v, E('small', 'fpo-dim', u || '')));
+      return [v, f, dp == null ? 1 : dp];
+    });
+    const trend = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    trend.setAttribute('viewBox', '0 0 300 50');
+    trend.setAttribute('preserveAspectRatio', 'none');
+    trend.setAttribute('class', 'fpo-tr');
+    trend.setAttribute('role', 'img');
+    trend.setAttribute('aria-label', (P.trend && P.trend.h) || 'Trend');
+    if (P.trend) F.bd.append(E('div', 'fpo-sh', P.trend.h), trend);
+    const Hs = P.trend ? hist['trend:' + P.trend.h] || (hist['trend:' + P.trend.h] = []) : null;
+    let k0 = '';
+    function tick() {
+      if (!me.isConnected) return closeEl(me);
+      const pv = (P.perm || []).map(([l, f]) => [l, call(f, null)]),
+        k = pv.map(p => p[1]).join();
+      if (k !== k0) {
+        k0 = k;
+        pL.replaceChildren(...pv.map(([l, v]) => {
+          const li = E('li', v === 1 ? 'ok' : 'bad');
+          li.append(E('i', '', v == null ? '-' : v === 1 ? 'Y' : 'N'), E('span', '', l));
+          return li;
+        }));
+      }
+      for (const [v, f, dp] of monV) {
+        const x = call(f, null);
+        v.textContent = x == null || !isFinite(+x) ? '-----' : (+x).toFixed(dp);
+      }
+      if (Hs) {
+        const now = Date.now(),
+          v = call(P.trend.fn, null);
+        if (v != null) sample(Hs, v, now);
+        const ys = Hs.map(p => p[1]),
+          lo = Math.min(...ys, v == null ? Infinity : v) - 5,
+          hi = Math.max(...ys, v == null ? -Infinity : v) + 5,
+          y = x => (47 - ((x - lo) / Math.max(1, hi - lo)) * 44).toFixed(1);
+        trend.innerHTML = Hs.length
+          ? `<polyline fill="none" stroke="${P.trend.col || '#a596cf'}" stroke-width="2" points="${Hs.map(p => ((300 * (p[0] - (now - 600e3))) / 600e3).toFixed(1) + ',' + y(p[1])).join(' ')}"/><circle cx="298" cy="${y(Hs[Hs.length - 1][1])}" r="2.5" fill="${P.trend.col || '#a596cf'}"/>`
+          : '';
+      }
+    }
+    tick();
+    place(me);
+    me._iv = setInterval(tick, 500);
+    return true;
+  }
+  window.LS_FPOP = { motor, valve, valveTag, pb, field, yn, hit, openAd, place, close, info, get open() {
     return anyOpen();
   } };
 })();
