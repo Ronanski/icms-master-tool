@@ -44,7 +44,8 @@ window.LS_LIVE = (function () {
     const L = abc();
     if (LX && LXof === (typeof AN !== 'undefined' && AN.sheets) && L.length) return LX;
     LXof = typeof AN !== 'undefined' && AN.sheets;
-    const m = {};
+    const m = {},
+      P = {};
     for (const sh of L) {
       let S;
       try {
@@ -54,14 +55,23 @@ window.LS_LIVE = (function () {
       }
       if (!S || !S.lab) continue;
       for (let n = 0; n < S.lab.length; n++) {
-        const a = S.lab[n] && String(S.lab[n].t).trim().replace(/^S\d\s+/, '');
+        /* 3.2.0-beta.78: an address written with its station ("S4 M.0340" on ABC-020 = STN104 RH biasing damper open) is another signal
+           than the same number written plain (ABC-006 M.0340 = STN101 total air < 25 % MCR, memory lists 101 / 104): it is kept under
+           its station key, and under the plain key only when no sheet writes that address plain (below) */
+        const raw = S.lab[n] ? String(S.lab[n].t).trim() : '',
+          ps = /^S\d\s+/.test(raw),
+          a = raw.replace(/^S\d\s+/, '');
         let b = '';
         try {
-          b = (AN.nm(S, n) || '').trim();
+          b = (AN.nm(S, n) || '').trim().replace(/^S\d\s+/, '');
         } catch (e) {}
-        for (const k of new Set([a, b])) if (k) (m[k] = m[k] || []).push({ sh: sh.name, n });
+        /* d: the net is driven by the logic of its sheet (an output, not an input of the sheet) */
+        const d = !(S.ext || []).includes(n) && !!(S.drv && S.drv[n] && S.drv[n].length);
+        for (const k of new Set([a, b])) if (k) (ps ? (P[k] = P[k] || []) : (m[k] = m[k] || [])).push({ sh: sh.name, n, d });
+        if (ps) (m[raw] = m[raw] || []).push({ sh: sh.name, n, d });
       }
     }
+    for (const k in P) if (!m[k]) m[k] = P[k];
     LX = L.length ? m : null;
     return m;
   }
@@ -69,6 +79,14 @@ window.LS_LIVE = (function () {
   const val = l => {
     const r = lx()[l];
     if (!r) return NaN;
+    /* 3.2.0-beta.78 (CLAUDE.md 1, one address = one signal): the sheet whose logic writes the address is the value (ABC-006 M.0340 = 0
+       at 221 T/H while an unlinked input copy elsewhere still read 1: the purge air step never ended) */
+    for (const q of r) {
+      if (!q.d) continue;
+      const S = sOf(q.sh),
+        y = S && S.rt ? +S.rt.v[q.n] : NaN;
+      if (isFinite(y)) return y;
+    }
     /* an input: the first sheet that has a value other than the default is as good as any (the links keep them equal) */
     let x = NaN;
     for (const q of r) {

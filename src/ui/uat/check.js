@@ -274,6 +274,47 @@
   const f0 = x => (isFinite(x) ? (+x).toFixed(0) : '-'),
     f1 = x => (isFinite(x) ? (+x).toFixed(1) : '-');
   /* ---- the scenarios: steps (what the operator / the DITL does), each(t) every 0.5 s, checks at the end ---- */
+  /* 3.2.0-beta.78 (the M4 chain stopped at ATS HOLD "CONDENSER VACUUM LOW; BEARING OIL PRESS. LOW", 0 MW): the TCS auxiliaries the oil model
+     (TCS_OIL) and the vacuum model need before the roll, in the order of the Gabay stage 5 (PR-OPE-5002 sections 14 lube / EH oil and vapour
+     extractor, 33 turning gear, 31 aux steam, 33 gland sealing, 35 vacuum up and hood spray): one press every 10 s, the next only when the
+     one before is in (the TCS refuses a step whose condition is not met yet). Started in the bypass stage (the warm-up, as the Gabay
+     does): in the roll stage the vacuum took 95 of its 100 minutes and the load up began at 1800 rpm */
+  /* the ACCELERATION time (min) and the initial load (MW) of the ATS mode in use (tcs.js tcsState().ats; HOT when none) */
+  const atsN = () => (AN.tcs && AN.tcs() && AN.tcs().ats) || { rate: 360, s1800: 0, s3600: 3, init: 5 };
+  const atsAcc = () => 3600 / atsN().rate + atsN().s1800 + atsN().s3600;
+  const atsInit = () => (atsN().init * 150) / 100;
+  /* 3.2.0-beta.78 (live_training: the chain ticked 79 of 137 AUTO steps of PR-OPE-5002, under the 70 %): the hand steps of the procedure
+     that the chain skipped are done with the buttons of the Training (src/ui/training/guide.js), the same operator actions: the actions of
+     the Gabay step whose title matches, one every dt s from t0 (a START / STOP of a motor and the ▲ / ▼ trims are left out: the chain
+     starts the machines itself) */
+  function gabQ(o, re, t0, dt, all) {
+    const G = window.LS_GUIDE,
+      s = G && G.steps().find(x => re.test(x.t));
+    if (!s) return;
+    /* all: a machine the chain does not start itself (the utilities): its START too, as many as the step runs (max) */
+    let m = 0;
+    (s.a || []).filter(a => !/[▲▼]/.test(a.l) && (!a.stop || (all && m++ < (s.max || 1)))).forEach((a, i) => (o.q = o.q || []).push([t0 + i * dt, () => (a.hide && a.hide()) || a.f()])); /* a hidden button (a running pump) is not pressed */
+  }
+  function runQ(o, t) {
+    for (const x of o.q || [])
+      if (!x[2] && t >= x[0]) {
+        x[2] = 1;
+        try {
+          x[1]();
+        } catch (e) {}
+      }
+  }
+  function tcsAux(o, t) {
+    if (t % 10 !== 0 || !AN.tcs) return;
+    const x = AN.tcs().aux || {},
+      on = { lop: x.lop, eh: x.eh, vex: x.vex, tg: x.tg, aux: x.asv, gland: x.gland, vacuum: x.ej, hood: x.hsp };
+    for (const k of ['lop', 'eh', 'vex', 'tg', 'aux', 'gland', 'vacuum', 'hood'])
+      if (!on[k]) {
+        const r = AN.turbine(k, 1);
+        if (r) o.tcsWait = k + ': ' + r;
+        return;
+      }
+  }
   const SC = [
     {
       id: 'cold',
@@ -295,6 +336,33 @@
       each(h, o) {
         const t = o.t,
           U = h.U;
+        /* 3.2.0-beta.78: the hand steps of PR-OPE-5002 before the fans (gabQ): biasing dampers 100 %, ID fan prepared (PICFG108 M 0 %),
+           secondary / primary air dampers 100 % then 0 % (natural draft, then closed for the fan starts), condensate recirculation and
+           hotwell / deaerator level controls, diesel oil circulation (PCV-DO0002 / PCV-DO1009), oil purifier, TICLO1002 */
+        if (t === 0.5) {
+          gabQ(o, /^Open the RH and SH biasing dampers to 100/, 1, 1);
+          gabQ(o, /^Prepare the ID fan/, 2, 1);
+          gabQ(o, /^Pre-start check of the turbine lube/, 3, 1);
+          gabQ(o, /^Start the oil purifier pump/, 3, 1);
+          gabQ(o, /^Hotwell level control LCV-MU1110/, 4, 1);
+          gabQ(o, /^Condensate recirculation FCV-CD1120: MANUAL/, 4, 1);
+          gabQ(o, /^Diesel oil pump and oil circulation/, 4, 3);
+          (o.q = o.q || []).push([2, () => (h.man('ABC-007', 'FICFA1071', 100), h.man('ABC-007', 'FICFA1081', 100))], [6, () => (h.man('ABC-007', 'FICFA1071', 0), h.man('ABC-007', 'FICFA1081', 0))]);
+          gabQ(o, /^FCV-CD1120 in AUTO, SV 150/, 40, 1);
+          gabQ(o, /^Deaerator level LCV-CD1104 in AUTO/, 40, 1);
+          gabQ(o, /^Prepare the fluidizing air blower/, 40, 2);
+          /* after the purge (light-off at 320 s): RH 10 % / SH 90 % (PR-OPE-5002 section 26, user decision #71) */
+          gabQ(o, /^Biasing dampers: RH 10/, 315, 1);
+          /* the utilities of PR-OPE-5002 sections 3 ~ 9 the chain does not need for its plant (after the SWP start at t = 10): hypochlorite
+             pump, seawater pump debris filter, auxiliary cooling water pump, instrument air dryer. Not the standby SWP: its FIELD / AUTO
+             buttons scan DITL-29A at once (dock.js pscan) and the scan writes the running memories this chain sets on the ABC side by
+             address (setx M.3302 ~ M.3304, M.3354 / M.3355) back to the DITL value 0: no fans, no air (the Training starts them on the DITL) */
+          gabQ(o, /^Start the hypochlorite pump/, 24, 1, 1);
+          gabQ(o, /^Start the seawater pump outlet debris filter/, 26, 1, 1);
+          gabQ(o, /^Start the auxiliary cooling water pump/, 28, 2, 1);
+          gabQ(o, /^Start the instrument air dryer/, 36, 1, 1);
+        }
+        runQ(o, t);
         if (t === 10) {
           /* 3.2.0-beta.14: Cold now has the utilities stopped (no medium, no PV). PR-OPE-5002 starts them before the fans:
              SWP (M.3354 / M.3355), CEP (M.3350), FA blower (M.3308), diesel oil pump (field equipment, no DCS signal) */
@@ -302,8 +370,15 @@
           /* 3.2.0-beta.22: and the boiler feedwater pump A (ABC-010 M.3343; B standby), started before the drum is filled. Before, Cold
              left the BFWP running from the 150 MW snapshot and this chain never started it */
           h.setx(null, 'M.3343', 1);
+          /* 3.2.0-beta.78: STEAM DRUM FILLING (PR-OPE-5002): the cold plant starts with the drum low (hmi-op.js AN_COLD_DRUM -300 mm); the
+             start-up level control LICBR1001B in A at SV 0, as the coal stage does (the drawing allows it while FICFW1007 and LICBR1001A
+             are M). Before, the chain never filled the drum and the level check read -296 mm */
+          h.autoSv('ABC-010', 'LICBR1001B', 0);
           AN.field('dop', true);
           for (const l of ['M.3302', 'M.3303', 'M.3304']) h.setx(null, l, 1);
+        }
+        /* 3.2.0-beta.78: the dampers open once the fans run (PR-OPE-5002: closed for the start, then up) */
+        if (t === 60) {
           h.man('ABC-007', 'FICFA1071', 35);
           h.man('ABC-007', 'FICFA1081', 35);
         }
@@ -326,8 +401,12 @@
           o.tBoil = t;
           o.pBoil = U.Pd;
         }
-        o.lvMin = Math.min(o.lvMin, h.lvl());
-        o.lvMax = Math.max(o.lvMax, h.lvl());
+        /* the level band counts once the drum is filled (> -150 mm) */
+        if (h.lvl() > -150) o.filled = true;
+        if (o.filled) {
+          o.lvMin = o.lvMin < -150 ? h.lvl() : Math.min(o.lvMin, h.lvl());
+          o.lvMax = o.lvMax < -150 ? h.lvl() : Math.max(o.lvMax, h.lvl());
+        }
         if (t % 60 === 0) {
           /* the rate of the saturation temperature as Fig 1 reads it: over 5 minutes, in C/h. The operator watches the water
              temperature too while it heats up (the same rise reaches the drum metal): U.Tw = saturation once boiling */
@@ -506,7 +585,9 @@
             r < 90 &&
             o.feed >= 1 &&
             o.auto[0] &&
-            o.cf < 15 &&
+            /* PR-OPE-5002 (Solid firing): "CONTINUE to remove Oil Burner until Lower Furnace temperature is > 750 C ... FOLLOW the start-up
+               curve for increasing furnace temperature": with the burners out and the bed under 750 C the coal goes on up (to 20 %) while the O2 has room (> 4.5 %) */
+            o.cf < (o.allOut != null && U.Tb < 750 && h.O2() > 4.5 ? 20 : 15) &&
             (o.feed < 2 || o.auto[1]) &&
             (o.feed < 3 || o.auto[2])
           ) {
@@ -525,12 +606,15 @@
               h.man(k, tg, o.ab);
           }
           /* retract the burners one by one (A, D, B, C) above 700 C, 3 min apart, until all are out */
-          if (o.feed >= 3 && U.Tb > 700 && t - o.lastRet >= 180) {
+          /* "When removing a burner from service, ALLOW the furnace temperature to recover": the next one only when the bed is back at
+             the temperature of the last retraction */
+          if (o.feed >= 3 && U.Tb > 700 && t - o.lastRet >= 180 && (o.tbRet == null || U.Tb >= o.tbRet)) {
             const order = [0, 3, 1, 2],
               i = order.find(j => o.lit[j]);
             if (i != null) {
               o.lit[i] = 0;
               o.lastRet = t;
+              o.tbRet = U.Tb;
               const vc = ['M.3410', 'M.3411', 'M.3416', 'M.3417'][i],
                 ins = ['M.3412', 'M.3413', 'M.3418', 'M.3419'][i];
               h.oilValve(vc, false);
@@ -656,6 +740,8 @@
       each(h, o) {
         const t = o.t,
           U = h.U;
+        /* 3.2.0-beta.78: the turbine auxiliaries and the vacuum during the warm-up (tcsAux) */
+        tcsAux(o, t);
         if (t === 10) {
           /* chain: the coal stage leaves the pressure at ~ 80 kg/cm2; an HP bypass SV of 50 there opens the bypass wide at once
              (steam flow 44 -> 124 T/H in 3 min: drum level -148 then +243 mm, reheat 12.5 kg/cm2). PR-OPE-5002 (7150): set the SV to
@@ -722,21 +808,37 @@
              back to AUTO (SV 0, bumpless) as soon as the level stops falling or is over −50 mm (+10 % a minute and AUTO only at −20
              overshot to +243 mm; +5 % with AUTO at −40: +154) */
           {
+            /* and the steam ahead of the feed (the HP bypass and the blow-off opening together: steam 43 -> 95 T/H in 9 min with the
+               feed 34 -> 65, level -192 mm): the operator matches the feed to the steam before the level falls far (PR-OPE-5002
+               bypass servicing: "Steam Drum Level (May cause swelling due to transfer of steam flow)") */
             const lv = h.lvl(),
+              short = h.MSF() - h.FW() > 20 && lv < 0,
               falling = lv < (o.lvPrev == null ? lv : o.lvPrev) - 1;
             o.lvPrev = lv;
-            if (!o.lvMan && lv < -60 && falling) {
+            if (!o.lvMan && ((lv < -60 && falling) || (short && falling))) {
               o.lvMan = 1;
               o.lvMv = h.mv('ABC-010', 'LICBR1001B');
             }
             if (o.lvMan) {
-              if (lv < -50 && falling) {
-                o.lvMv = Math.min(100, o.lvMv + 5);
+              if ((lv < -50 || short) && falling) {
+                o.lvMv = Math.min(100, o.lvMv + (short ? 10 : 5)); /* 10 % a minute while the steam is 20 T/H over the feed */
                 h.man('ABC-010', 'LICBR1001B', o.lvMv);
               } else {
                 h.autoSv('ABC-010', 'LICBR1001B', 0);
                 o.lvMan = 0;
               }
+            }
+            /* the other way: the opened valve overshoots (+161 mm) while the AUTO winds back slowly: over +60 mm and rising, the
+               operator closes it 10 % a minute by hand, AUTO again (bumpless) once the level stops rising */
+            const rising = lv > (o.lvHiP == null ? lv : o.lvHiP) + 1;
+            o.lvHiP = lv;
+            if (!o.lvMan && lv > 60 && rising) {
+              o.lvHi = 1;
+              o.lvMv = Math.max(0, h.mv('ABC-010', 'LICBR1001B') - 10);
+              h.man('ABC-010', 'LICBR1001B', o.lvMv);
+            } else if (o.lvHi) {
+              o.lvHi = 0;
+              h.autoSv('ABC-010', 'LICBR1001B', 0);
             }
           }
           /* bypass servicing (PR-OPE-5002: 50 ksc, steam flow > 40 T/H) */
@@ -877,7 +979,13 @@
       title: 'M4 · Turbine roll, sync, load up to 45 MW',
       how: 'Start hot (dulo ng hakbang 3: 123 kg/cm2 sa HP bypass AUTO, LP bypass AUTO 7.6, bed 750 °C, 3 feeder sa FIC-CF 12 %, burners out). Operator sa TCS panel (labas ng DCS drawing): ROLL sa t = 1 min (ATS AUTO, HOT mode: 360 rpm/min, 3 min heat soak sa 3600 rpm, IP start mode: roll steam mula sa reheat sa ICV); pagkatapos ng ACCELERATION: SYNC (EXCITATION, GCB 52G1 sarado: ABC-050 I.0931 = 1 / I.0932 = 0, initial load 5 % = 7.5 MW), LP bypass R (REMOTE: SV = first stage + 5.1); 5 min hold; LOAD UP 45 MW (5 %/min = 7.5 MW/min). Sa 20 MW o ICV full open: ICV → CV transfer (I.0418 = 1; ang drawing ang nagpapa-REMOTE ng HP bypass SV = PV + 2 sa sync pulse M.070D, kaya sumasara). Coal: FIC-CF +2 ~ 3 % kada minuto habang paakyat (+3 kapag MSP < 118), ±1 pagkatapos para hawak ang 123; O2 3.5 ~ 8 (PA / SA); furnace −15 sa PICFG108 M. Feedwater ayon sa interlock ng ABC-010: kapag LICBR1001B > 30 %: LICBR1001B M (hawak), LICBR1001A A SV 0 (single-element sa main valve; M.0227: isa lang ang level controller), LICBR1001B pasara 5 % kada minuto; kapag FW > 100 T/H at wala na ang force manual (M.0228 = 0: M.022C → TON 60 s): FICFW1007 R (SV = steam flow + level master), LICBR1001 A SV 0, pindot ng 3-ELEMENT pushbutton M.054E (FF M.0222). Tigil 10 min pagkatapos umabot sa 45 MW.',
       want: '0 → 3600 rpm + soak sa 12 ~ 16 min; GCB sarado (I.0931 = 1, M.3220 = 0 sa ABC-010); initial load 7.5 ± 1 MW; 7.5 → 45 MW sa loob ng 5 ~ 12 min; transfer sa 15 ~ 22 MW (I.0418); HP at LP bypass sarado sa 45 MW (M.0709 = 0), HP bypass REMOTE (LP bypass: preset 33 % ng drawing sa transfer, isinasara ng operator sa M tapos R + A); MSP 123 ± 8 kg/cm2 habang nakakarga, HIC-BM MANUAL (M.2013 BU-CMD: MSF < 220); 3-element feedwater: FICFW1007 R + A, LICBR1001 A, M.0228 = 0, M.0222 = 0, LICBR1001B sarado; MST 345 ~ 535 °C; drum level ±150 mm; MW ≥ 44.5 at I.0081 = 1 (NORMAL OPERATION); walang trip, furnace −55 ~ +25.',
-      secs: 6000,
+      /* 3.2.0-beta.78: 8 h (was 100 min, written for the HOT mode of the ATS): from the cold start the ATS takes a cold mode (AMBIENT
+         COLD: 88 min heat soak at 1800 rpm and 86 min at 3600, 30 min of acceleration: tcs.js TCS.rate / soak1800 / soak3600, pages
+         19 / 20 / 22) and waits for the steam temperatures before the roll; the stage ends 10 min after 45 MW (done) */
+      secs: 28800,
+      done(h, o) {
+        return o.p45 != null && o.t >= o.p45 + 600;
+      },
       run(h, o) {
         o.cf = o.chain ? h.mv('ABC-004A', 'FIC-CF') : 12; /* 2.2.0-beta.20: in the chain, the coal of the stage before */
         o.airMv = o.chain ? h.mv('ABC-007', 'FICFA1071') : 14;
@@ -907,6 +1015,8 @@
           LS_GUIDE.A.man('HICHR1002A', 10);
           LS_GUIDE.A.man('HICHR1002B', 90);
         }
+        /* 3.2.0-beta.78: the TCS auxiliaries still missing (tcsAux, started in the bypass stage) */
+        if (o.roll == null) tcsAux(o, t);
         /* 3.2.0-beta.38: the ATS refuses the roll until its step-in condition is met (tcs.js): the operator tries again every 30 s */
         if (o.roll == null && t >= 60 && t % 30 === 0) {
           const r = AN.turbine('roll');
@@ -934,7 +1044,11 @@
           if (!isFinite(o.mwInit)) o.mwInit = h.MW();
           const r = AN.turbine('loadup', 45);
           if (r) o.lr = r;
-          else o.load = t;
+          else {
+            o.load = t;
+            /* 3.2.0-beta.78 (CHECK scenario only, the operator of this test): the coal follows the load up (below), from here */
+            o.ff = { cf: o.cf, c: Math.max(1, h.coal()), mw: h.MW() };
+          }
         }
         if (o.xfer == null && h.bit('ABC-050', 'I.0418') > 0.5) {
           o.xfer = t;
@@ -966,7 +1080,16 @@
           /* coal: the boiler master is MANUAL (BU-CMD below 220 T/H): the operator fires for the load and holds 123 kg/cm2 */
           const msp = h.MSP(),
             hb = h.mv('ABC-050', 'PICMS1006');
-          if (o.load != null && o.p45 == null && msp < 125) o.cf += msp < 118 ? 3 : 2;
+          /* 3.2.0-beta.78: during the load up the firing follows the MW (feed-forward): the coal of the start + 0.593 T/H a MW. Source:
+             FHI CFB boiler manual Part 2 Sect 7 DESIGN DATA, solid fuel 89 T/H at MCR 150 MW (89 / 150 = 0.593, ASSUMED linear in the
+             load); PR-OPE-5002 "ADJUST the Fuel Flow". The demand in % from the demand / coal at the start. A step at the start of
+             the load up (tried) came with the HP bypass closing: 132 kg/cm2, then 111 at 45 MW (check 123 +- 8) */
+          if (o.load != null && o.p45 == null && o.ff) o.cf = Math.max(o.cf, (o.ff.cf * (o.ff.c + (89 / 150) * Math.max(0, h.MW() - o.ff.mw))) / o.ff.c);
+          else if (o.load != null && o.p45 == null && msp < 125) o.cf += msp < 118 ? 3 : 2;
+          /* 3.2.0-beta.78: after 45 MW the operator holds the pressure at the SV 123 of PIC-COBM (ABC-001C; PR-OPE-5002 "ADJUST the Fuel
+             Flow"): 0.5 % a kg/cm2, up to 3 % a minute (was 1 % a minute: the pressure drifted to 113 and the 45 -> 150 MW stage began
+             there, 106 kg/cm2) */
+          else if (o.p45 != null) o.cf += Math.max(-3, Math.min(3, (123 - msp) * 0.5));
           else if (msp < 121 || (o.load != null && o.xfer == null && hb < 15)) o.cf += 1;
           else if (msp > 125) o.cf -= 1;
           o.cf = Math.max(10, Math.min(60, o.cf));
@@ -1054,14 +1177,16 @@
           mins = (a, b) => (a != null && b != null ? f0((a - b) / 60) : '—');
         return [
           [
-            o.sync != null && o.acc != null && tb.rpm >= 3599 && o.sync - o.acc - (o.holdT || 0) >= 12 * 60 && o.sync - o.acc - (o.holdT || 0) <= 16 * 60,
-            'ACCELERATION 0 → 3600 rpm + heat soak sa ' + mins(o.sync, o.acc) + ' min, ' + Math.round((o.holdT || 0) / 60) + ' min dito ay ATS HOLD (ATS HOT mode: 360 rpm/min, 3 min soak sa 3600; 12 ~ 16 min wala ang hold; ROLL hanggang ACCELERATION ' + mins(o.acc, o.roll) + ' min, hinihintay ang criteria)' + (o.holds ? '; ATS HOLD: ' + Object.entries(o.holds).map(([k, v]) => k + ' (' + v + ')').join(' | ') : '') + '; ngayon ' + f0(tb.rpm) + ' rpm, estado ' + tb.st + (o.roll == null && o.rr ? ', ROLL tinanggihan: ' + o.rr : o.roll != null ? ', roll sa t = ' + o.roll + ' s' : '')
+            /* 3.2.0-beta.78: the time the ATS mode in use gives (3600 rpm at its rate + its two heat soaks; HOT = 10 + 0 + 3 = 13 min, the
+               12 ~ 16 window of before), not the HOT mode only: a start from cold takes a COLD mode (tcs.js TCS.rate / soak1800 / soak3600) */
+            o.sync != null && o.acc != null && tb.rpm >= 3599 && Math.abs(o.sync - o.acc - (o.holdT || 0) - atsAcc() * 60) <= 3 * 60,
+            'ACCELERATION 0 → 3600 rpm + heat soak sa ' + mins(o.sync, o.acc) + ' min, ' + Math.round((o.holdT || 0) / 60) + ' min dito ay ATS HOLD (ATS ' + ((AN.tcs && AN.tcs().mode) || '—') + ' mode: ' + f0(atsAcc()) + ' ± 3 min wala ang hold; ROLL hanggang ACCELERATION ' + mins(o.acc, o.roll) + ' min, hinihintay ang criteria)' + (o.holds ? '; ATS HOLD: ' + Object.entries(o.holds).map(([k, v]) => k + ' (' + v + ')').join(' | ') : '') + '; ngayon ' + f0(tb.rpm) + ' rpm, estado ' + tb.st + (o.roll == null && o.rr ? ', ROLL tinanggihan: ' + o.rr : o.roll != null ? ', roll sa t = ' + o.roll + ' s' : '')
           ],
           [
             h.bit('ABC-050', 'I.0931') > 0.5 && h.bit('ABC-050', 'I.0932') < 0.5 && h.bit('ABC-010', 'M.3220') < 0.5,
             'GCB 52G1 sarado: ABC-050 I.0931 ' + f0(h.bit('ABC-050', 'I.0931')) + ', I.0932 ' + f0(h.bit('ABC-050', 'I.0932')) + ', ABC-010 M.3220 (52G1 OPENED) ' + f0(h.bit('ABC-010', 'M.3220'))
           ],
-          [isFinite(o.mwInit) && Math.abs(o.mwInit - 7.5) <= 1, 'initial load ' + f1(o.mwInit) + ' MW pagkatapos ng 5 min (ATS page 25: HOT mode 5 % = 7.5 MW)'],
+          [isFinite(o.mwInit) && Math.abs(o.mwInit - atsInit()) <= 1, 'initial load ' + f1(o.mwInit) + ' MW pagkatapos ng 5 min (ATS page 25: ' + f1(atsInit()) + ' MW sa mode na ito; HOT 5 % = 7.5, COLD / WARM 3 % = 4.5)'],
           [
             o.p45 != null && o.p45 - o.load >= 4.5 * 60 && o.p45 - o.load <= 12 * 60,
             'LOAD UP 7.5 → 45 MW sa ' + mins(o.p45, o.load) + ' min (5 %/min = 7.5 MW/min; TCS target ' + f1(U.tcsT) + ', MW ' + f1(h.MW()) + ')' + (o.load == null && o.lr ? ', LOAD UP tinanggihan: ' + o.lr : '')
@@ -1932,7 +2057,11 @@
             e = (o.fansOff != null || (o.cyc != null && MSF < 5) ? 200 : 0) - lv,
             step = Math.max(-4, Math.min(4, 0.02 * e - 0.1 * (o.lvP == null ? 0 : lv - o.lvP)));
           o.lvP = lv;
-          if (o.lvMan == null) o.fwMv = Math.max(0, Math.min(60, o.fwMv + step));
+          /* PR-OPE-5003 "Drum level (delay of 5 minutes for HH): maintain normal level": a high level after the trip (the swell, and the
+             main valve still open from the load-down) shuts the main valve at once, the hand rule of the load-down (lv > 150 → 0) */
+          const hi = o.fansOff == null && lv > 60;
+          if (hi) o.fwMv = lv > 150 ? 0 : Math.max(0, o.fwMv - 10);
+          if (o.lvMan == null) o.fwMv = Math.max(0, Math.min(60, o.fwMv + (hi ? 0 : step)));
           else {
             o.suvMv = Math.max(0, Math.min(100, o.suvMv + step));
             h.man('ABC-010', 'LICBR1001B', o.suvMv);
