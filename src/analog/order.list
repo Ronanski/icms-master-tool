@@ -17,6 +17,7 @@ engine/source.js
 engine/hmi-op.js
 engine/sheets.js
 engine/links.js
+engine/state.js
 ui/main.js
 ui/hmi-view.js
 ui/hmi-v2.js
