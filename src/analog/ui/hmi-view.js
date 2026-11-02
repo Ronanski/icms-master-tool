@@ -154,7 +154,7 @@ function hmiWrite(w, v, rel) {
   if (p.ext) {
     if (rel === true) return;
     setExt(p.sh, p.n, v);
-  } else setForce(p.sh, p.n, rel === true ? undefined : v);
+  } else AN.setForce(p.sh, p.n, rel === true ? undefined : v);
 }
 function hmiBlk(w) {
   const c = hmiIndex().blk.get(hmN(w.addr)) || [];
@@ -614,7 +614,7 @@ function hmiBuild(w) {
               (sv(bb.sh).man = sv(bb.sh).man || {})[bb.b.id] = s.val;
               anSave();
               hmiSync();
-              settle();
+              AN.settle();
             },
             P2.lo,
             P2.hi,
@@ -1368,11 +1368,11 @@ hmiWrite = function (w, v, rel) {
   const sh = st.p.sh;
   hmiSync();
   if (rel === true) {
-    if (st.forced) setForce(sh, st.n, undefined);
+    if (st.forced) AN.setForce(sh, st.n, undefined);
     return;
   }
   if (st.how === 'forced') {
-    setForce(sh, st.n, v);
+    AN.setForce(sh, st.n, v);
     return;
   }
   if (st.how === 'plant') {
@@ -1395,7 +1395,7 @@ hmiWrite = function (w, v, rel) {
     if (st.src.k === 'AI') s.act = x;
     (sv(sh).ai = sv(sh).ai || {})[st.src.id] = x;
     anSave();
-    settle();
+    AN.settle();
   }
 };
 function hmiToggleForce(w) {
@@ -1403,13 +1403,13 @@ function hmiToggleForce(w) {
   if (!st) return;
   const sh = st.p.sh;
   if (st.forced) {
-    setForce(sh, st.n, undefined);
+    AN.setForce(sh, st.n, undefined);
     return;
   }
   let v = st.S.rt.v[st.n];
   if (v == null || !isFinite(v)) v = 0;
   if (st.S.nets[st.n].dig) v = v > 0.5 ? 1 : 0;
-  setForce(sh, st.n, v);
+  AN.setForce(sh, st.n, v);
 }
 function hmiFBox(g, w, W, H, upd) {
   if (!['button', 'slider', 'num', 'lamp', 'bar', 'tank', 'valve', 'motor', 'pipe'].includes(w.type)) return;
