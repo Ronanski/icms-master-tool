@@ -908,8 +908,8 @@
     const ask = E('div', { cls: 'gd-ask' }, [
       E('p', { txt: 'Stop the Training? The plant simulation goes on; you can resume later from the Training page.' }),
       E('div', { cls: 'gd-btns' }, [
-        E('button', { type: 'button', cls: 'gd-btn bad', txt: 'Itigil', on: stop }),
-        E('button', { type: 'button', cls: 'gd-btn', txt: 'Huwag', on: () => ask.remove() })
+        E('button', { type: 'button', cls: 'gd-btn bad', txt: 'Stop Training', on: stop }),
+        E('button', { type: 'button', cls: 'gd-btn', txt: 'Keep training', on: () => ask.remove() })
       ])
     ]);
     b.prepend(ask);
@@ -1622,6 +1622,11 @@
   }
   /* the band of a value as the operator reads it: "205 ~ 215", "≥ 0.4", "≤ 37" */
   const bandTxt = rg => (!rg ? '' : rg[1] === Infinity ? '≥ ' + rg[0] : rg[0] === -Infinity ? '≤ ' + rg[1] : rg[0] + ' ~ ' + rg[1]);
+  /* the number a value shows ("9.0", "210 A"): a band check uses it, so what the operator reads and the ✓ / ! agree */
+  const shownNum = (t, x) => {
+    const p = parseFloat(String(t).replace(/−/g, '-'));
+    return isFinite(p) ? p : x;
+  };
   /* a watch label "SWP-A current (IIP1501A)" or "Lube oil cooler outlet temp · TICLO1002": the name, and the tag apart (small) */
   const splitTag = k => {
     const m = /^(.*?)\s*\(([A-Z][A-Z0-9 /,.-]*\d[A-Z0-9 /,.-]*)\)\s*$/.exec(k) || /^(.*?)\s+·\s+([A-Z][A-Z0-9-]*\d[A-Z0-9-]*)$/.exec(k);
@@ -2240,15 +2245,19 @@
          stays the SOP value */
       /* live test #49: the gauges of the SOP that the HMI reads from the plant model (unit.js AN_MU / AN_ACW): section 7 MWP current
          IIP0709A ~ C and header pressure PIMU0709 (MAKE-UP WATER page), section 8 ACWP current IIP1108A / B (027 page); the running pump */
-      const U0 = (window.AN && AN.unit) || {},
+      /* the unit model read at each paint (AN.unit is set by a start and goes at a Reset: a copy taken when the card was built stayed empty) */
+      const U0 = () => (window.AN && AN.unit) || {},
         mdl =
           f.si === 6 && /current/i.test(f.t)
-            ? ['IIP0709A ~ C', () => (U0.on ? Math.max(+U0.muI0 || 0, +U0.muI1 || 0, +U0.muI2 || 0) : NaN), 'A']
+            ? ['IIP0709A ~ C', () => (U0().on ? Math.max(+U0().muI0 || 0, +U0().muI1 || 0, +U0().muI2 || 0) : NaN), 'A']
             : f.si === 6 && /pressure/i.test(f.t)
-              ? ['PIMU0709', () => (U0.on ? +U0.muP : NaN), 'kg/cm²']
+              ? ['PIMU0709', () => (U0().on ? +U0().muP : NaN), 'kg/cm²']
               : f.si === 7 && /current/i.test(f.t)
-                ? ['IIP1108A / B', () => (U0.on ? Math.max(+U0.acI0 || 0, +U0.acI1 || 0) : NaN), 'A']
-                : null;
+                ? ['IIP1108A / B', () => (U0().on ? Math.max(+U0().acI0 || 0, +U0().acI1 || 0) : NaN), 'A']
+                : /* Mina #M8: section 2 SWP current (SOP 205 ~ 215 A) on the later steps: the running pump of the plant model (HMI 030 IIP1501A ~ C) */
+                  f.si === 1 && /current/i.test(f.t)
+                  ? ['IIP1501A ~ C', () => (U0().on ? Math.max(+U0().swIa0 || 0, +U0().swIa1 || 0, +U0().swIa2 || 0) : NaN), 'A']
+                  : null;
       const lvl = /hotwell level/i.test(f.t) ? 'LCV-MU1110' : /deaerator level/i.test(f.t) ? 'LCV-CD1104' : null,
         gauge = /current|pressure|temperature/i.test(f.t),
         tfp = !lvl && gauge && !mdl ? tagFp() : null,
@@ -2811,8 +2820,10 @@
         t = fm(call(f, NaN));
       }
       V.b.textContent = t;
-      const has = !!(w && w.rg && typeof x === 'number' && isFinite(x) && !(x === 0 && w.rg[0] > 0)),
-        out = has && (x < w.rg[0] || x > w.rg[1]),
+      /* the band is judged on the value as shown (Mina #M16: 8.97 shown "9.0" was "!" against 9 ~ 11) */
+      const xs = shownNum(t, x),
+        has = !!(w && w.rg && typeof x === 'number' && isFinite(x) && !(x === 0 && w.rg[0] > 0)),
+        out = has && (xs < w.rg[0] || xs > w.rg[1]),
         fld = t === 'FIELD',
         hb = w ? [fld ? 'field check' : w.rg ? bandTxt(w.rg) : w.tg || '', !fld && w.rg ? (has ? (out ? '!' : '✓') : '—') : ''] : ['', ''];
       if (V.hb.dataset.k !== hb.join('|')) {
@@ -2859,7 +2870,7 @@
       w.v.textContent = t;
       /* user 2026-10-30 (mock-up v2, Check): ✓ within the range of its hint, ! out of it; 0 of a machine not started is no reading */
       if (w.rg) {
-        const n = typeof x === 'number' && isFinite(x) ? x : NaN,
+        const n = typeof x === 'number' && isFinite(x) ? shownNum(t, x) : NaN,
           has = isFinite(n) && !(n === 0 && w.rg[0] > 0),
           okv = has && n >= w.rg[0] && n <= w.rg[1];
         w.ck.textContent = has ? (okv ? '✓' : '!') : '—';
