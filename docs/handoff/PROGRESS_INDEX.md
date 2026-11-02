@@ -14,4 +14,4 @@ User: "isave ang lahat ng progress natin ngayon simula ung una ko kayong ginawa.
 | `YUNA.md` | DESIGN : YUNA | dock v3, English text, mockup audits, outline studies (paused) |
 | `SYSTEM.md` | LEADER | team at method (nasa `team-files/progress/system/`, hindi pa sa repo) |
 
-Hindi kinopya sa repo: ang `system/` ng team-files (SYSTEM.md, 97 memory file ng leader, hooks, skills) ay hinarang ng auto mode ng session ng DOCS; kokopyahin ito ng user o ng leader sa `docs/handoff/progress/system/`. Ang ibang laman ng `progress/` ay eksaktong kopya (`diff -r` ay `system/` lang ang pagkakaiba).
+Hindi kinopya sa repo (desisyon ng user, PUBLIC ang repo): ang `system/` ng team-files (SYSTEM.md, 97 memory file ng leader, hooks, skills) ay LOCAL lang; tingnan ang `team-files/progress/system/`. Ang ibang laman ng `progress/` ay eksaktong kopya (`diff -r` ay `system/` lang ang pagkakaiba).
