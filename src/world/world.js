@@ -933,13 +933,18 @@
       s._win = null;
       s.avw = null;
     }
+    W.unlinkAbc();
+    AN.worldSheets = [];
+  }
+  /* the DITL links of the ABC inputs (made by the first scan that feeds them, tickG step 3) go; Reset uses it too (sheets.js anResetRun),
+     so a Reset after a run has the links of a fresh page: none until the next scan (Winter's diag_abc4: "(28)DITL-14 #B" left) */
+  W.unlinkAbc = () => {
     if (W.idx)
       for (const a of W.idx.ain) {
         const AS = a.sh.S;
         if (AS && AS.xlk && AS.xlk[a.n] && AS.xlk[a.n].ditl) delete AS.xlk[a.n];
       }
-    AN.worldSheets = [];
-  }
+  };
   /* 2.2.0-beta.3: one scan on demand (DITL 150 MW state, src/world/ditl150.js) */
   W.tick = (dt, opt) => {
     if (!W.idx) return;
