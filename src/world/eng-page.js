@@ -124,7 +124,9 @@
            flush every slot first (eng.js), so no write is ever put under */
         E._fl = setInterval(() => {
           if (E.mode !== 'mirror' || !E.port) return;
-          const ops = AN.sync.patch(true, { slice: true });
+          /* and the flags of AN every time (one small slot): the Run button is a write (AN.run), so a Run pressed while paused waited
+             for its quarter, up to 2 s, before the engine started (mcc_valve DITL-30: the press came before the world ran) */
+          const ops = AN.sync.patch(true, { slice: true }).concat(AN.sync.patch(true, { keys: ['fl'] }));
           if (!ops.length) return;
           try {
             E.port.postMessage({ t: 'op', ops, calls: [] });
