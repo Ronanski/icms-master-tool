@@ -188,6 +188,9 @@ function anResetRun() {
   try {
     if (globalThis.DITL150) globalThis.DITL150.clear();
   } catch (e) {}
+  /* a push button the dock still held (src/world/dock-eng.js) would press again at the next scan */
+  const W = globalThis.WORLD;
+  if (W) W._press = W._rel = undefined;
 }
 /* RESET of the model: every sheet back to the drawing (tuning kept in AN.sv), then all sheets are settled: the same start as a fresh load, whatever the sheet order */
 function anResetAll() {
