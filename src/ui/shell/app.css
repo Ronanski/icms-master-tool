@@ -12,12 +12,14 @@
 :root{color-scheme:only light}
 html:is([data-theme=dark],[data-theme=hc]){color-scheme:only dark}
 :root{
- /* 3.2.0-beta.7 (Guided Workbench, user pick 2026-10-23): Roboto + Roboto Mono, the fonts of the B + C design */
- --uf:'Roboto','Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
- --mf:'Roboto Mono','JetBrains Mono',ui-monospace,Consolas,monospace;
+ /* UI overhaul 2026-11-02 (user G): design tokens. The user's pick from the Design Picker drops in here.
+    Default until the pick = Yuna's recommendation: IBM Plex Sans + JetBrains Mono + Pill buttons. */
+ --uf:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;   /* words */
+ --mf:'JetBrains Mono',ui-monospace,Consolas,monospace;                 /* numbers, tags, addresses */
+ --btn-r:999px;            /* button shape: 999px = pill */
  /* sizes: the root follows the window, everything else is in rem */
  --ctl:2.25rem;            /* control height */
- --ctl-s:1.875rem;         /* small control */
+ --ctl-s:2.5rem;           /* small control (overhaul: 40 px on PC, was 30) */
  --gap:.5rem;
  --r:.4375rem;             /* corner */
  --r-l:.75rem;
@@ -52,7 +54,7 @@ html[data-theme=dark]{
 /* the root size: 13 px on a phone, 14 px on a tablet / laptop, 15 px on a large monitor */
 html{font-size:clamp(13px,calc(11.6px + .19vw),15px)}
 /* fingers need bigger targets than a mouse */
-@media (pointer:coarse){:root{--ctl:2.625rem;--ctl-s:2.25rem;--tool:3.125rem;--foot:2.25rem}}
+@media (pointer:coarse){:root{--ctl:2.75rem;--ctl-s:2.75rem;--tool:3.125rem;--foot:2.25rem}}
 /* the older layers (styles/app.css, the ABC panel, hmi.css) read these names */
 html:root:root{--bg:var(--c-bg);--panel:var(--c-pane);--line:var(--c-line);--tx:var(--c-tx);--dim:var(--c-dim);--panel2:var(--c-ribbon);--in:var(--c-well);--bd:var(--c-line2);--hv:var(--c-ctlh);--hv2:var(--c-ctlh);--rowl:var(--c-ribbon);--sel2:var(--c-acc);--sbg:var(--c-strip);--acc:var(--c-run)}
 
@@ -70,7 +72,7 @@ body.app2 :focus-visible{outline:2px solid var(--c-acc);outline-offset:1px}
 
 /* ---------- 3. one set of controls (every surface except the DCS faceplate box and the drawing) ---------- */
 body.app2 :is(button,label.b,select):not(.fp *):not(.fpop *):not(#zbar *):not(svg *):where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){
- font:500 .875rem/1 var(--uf);min-height:var(--ctl-s);padding:0 .75rem;border-radius:var(--r);border:1px solid var(--c-line2);
+ font:600 .9375rem/1 var(--uf);min-height:var(--ctl-s);padding:0 1rem;border-radius:var(--btn-r);border:1px solid var(--c-line2);
  background:var(--c-ctl);color:var(--c-tx);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:.375rem;
  white-space:nowrap;box-shadow:0 1px 0 var(--c-shadow2);transition:background-color .12s,border-color .12s,color .12s;margin:0}
 body.app2 select:not(.fp *):where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){padding-right:1.75rem;appearance:none;-webkit-appearance:none;

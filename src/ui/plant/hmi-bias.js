@@ -16,7 +16,7 @@
   const VW = 1280,
     VH = 1156;
   const fmt = (x, dp) => (x == null || !isFinite(x) ? '-----' : (+x).toFixed(dp).replace(/^-(0(?:\.0+)?)$/, '$1'));
-  const CSS = `.b9{--band:#ffffff07;--dim:#7f8b96;--run:#e5484d;--stop:#2fa56a;--val:#f4f7f9;--sans:Inter,"Segoe UI",Arial,sans-serif;--mono:"IBM Plex Mono",Consolas,monospace;background:#141a20;font-family:var(--sans)}
+  const CSS = `.b9{--band:#ffffff07;--dim:#7f8b96;--run:#e5484d;--stop:#2fa56a;--val:#f4f7f9;--sans:var(--uf,"IBM Plex Sans",sans-serif);--mono:var(--mf,"JetBrains Mono",monospace);background:#141a20;font-family:var(--sans)}
 .b9 svg{position:absolute;left:0;top:0;width:${VW}px;height:${VH}px;display:block;pointer-events:none;z-index:1}
 .b9 .flo{z-index:2;will-change:transform}
 .b9 .zone{fill:var(--dim);font:600 13px var(--sans);letter-spacing:.14em}
@@ -332,7 +332,7 @@
         const px = right ? xc + 9 : xc - 21;
         mk(g, 'rect', { x: xc - 11, y: 760, width: 22, height: 5, rx: 1, fill: MH, stroke: '#0b0f13' });
         vals.push(mk(g, 'rect', { x: xc - 9, y: 764, width: 18, height: 40, rx: 3, fill: MV, stroke: '#6b7480', 'stroke-width': 2 }));
-        mk(g, 'text', { x: xc, y: 789, 'text-anchor': 'middle', fill: '#0b0f13', 'font-weight': 800, 'font-size': 12, 'font-family': 'Inter,Arial' }, 'ABCD'[i]);
+        mk(g, 'text', { x: xc, y: 789, 'text-anchor': 'middle', fill: '#0b0f13', 'font-weight': 800, 'font-size': 12, 'font-family': "'IBM Plex Sans',Arial" }, 'ABCD'[i]);
         mk(g, 'rect', { x: px, y: 764, width: 12, height: 16, rx: 2, fill: '#3b444c', stroke: '#0b0f13' });
         mk(g, 'circle', { cx: px + 6, cy: 772, r: 2.4, fill: '#c3ccd3' });
         mk(g, 'rect', { x: xc - 21, y: 812, width: 42, height: 24, fill: '#06090c', stroke: '#2c3640' });
@@ -341,7 +341,7 @@
       mk(g, 'rect', { x: tk + 14, y: my + 12, width: 8, height: 10, fill: '#3b444c' });
       mk(g, 'rect', { x: tk + 70, y: my + 12, width: 8, height: 10, fill: '#3b444c' });
       mk(g, 'rect', { x: tk, y: my - 15, width: 92, height: 30, rx: 15, fill: MH, stroke: '#0b0f13', 'stroke-width': 1.5 });
-      mk(g, 'text', { x: tk + 46, y: my + 4, 'text-anchor': 'middle', fill: '#0b0f13', 'font-weight': 800, 'font-size': 11, 'font-family': 'Inter,Arial', 'letter-spacing': '.06em' }, right ? 'T-1064B' : 'T-1064A');
+      mk(g, 'text', { x: tk + 46, y: my + 4, 'text-anchor': 'middle', fill: '#0b0f13', 'font-weight': 800, 'font-size': 11, 'font-family': "'IBM Plex Sans',Arial", 'letter-spacing': '.06em' }, right ? 'T-1064B' : 'T-1064A');
       const ix = right ? tk + 70 : tk + 22,
         ty = right ? my - 96 : my - 58;
       pipe([[ix, ty], [ix, my - 15]], 'ia', 4, 2.2);

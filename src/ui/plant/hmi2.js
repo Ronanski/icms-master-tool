@@ -35,8 +35,9 @@
     return e;
   };
   const fmt = (x, dp) => (x == null || !isFinite(x) ? '-----' : (+x).toFixed(dp).replace(/^-(0(?:\.0+)?)$/, '$1'));
-  const UF = "Barlow, 'IBM Plex Sans', 'Segoe UI', Roboto, Arial, sans-serif",
-    MF = "'Roboto Mono', 'JetBrains Mono', Consolas, monospace";
+  /* SVG font-family attributes cannot read CSS variables: these two lines follow the tokens --uf / --mf in app.css */
+  const UF = "'IBM Plex Sans', 'Segoe UI', Arial, sans-serif",
+    MF = "'JetBrains Mono', Consolas, monospace";
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 

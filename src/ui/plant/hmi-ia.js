@@ -463,8 +463,8 @@
     o.push(T(1744, 438, 'values: plant model (Plant model ON); the logic reads the same value', 'ia8', 'text-anchor="end"'));
     const defs = `<defs><linearGradient id="iamt" x1="0" x2="1"><stop offset="0" stop-color="${S.m[0]}"/><stop offset=".45" stop-color="${S.m[1]}"/><stop offset="1" stop-color="${S.m[2]}"/></linearGradient>
 <linearGradient id="iamv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${S.m[2]}"/><stop offset=".4" stop-color="${S.m[1]}"/><stop offset="1" stop-color="${S.m[0]}"/></linearGradient></defs>`;
-    const UF = "font-family:Barlow,'IBM Plex Sans','Segoe UI',Roboto,Arial,sans-serif",
-      MF = "font-family:'Roboto Mono','JetBrains Mono',Consolas,monospace";
+    const UF = "font-family:var(--uf,'IBM Plex Sans',sans-serif)",
+      MF = "font-family:var(--mf,'JetBrains Mono',monospace)";
     const css = `<style>.ia7{font-size:8.5px;fill:${S.nm};${UF}}.ia8{font-size:8.5px;fill:${S.dim};${UF}}.ia9{font-size:9.5px;fill:${S.dim};${UF}}.ia9b{font-size:9.5px;font-weight:600;fill:${S.none};${UF}}.ia11{font-size:11px;font-weight:600;fill:${S.nm};${UF}}.ia13{font-size:13px;font-weight:700;letter-spacing:.6px;fill:${S.nm};${UF}}
 .iav{font-size:12px;fill:${S.none};${MF}}
 .iafl{fill:none;stroke-dasharray:2 14;stroke-linecap:round;animation:iafl 1.1s linear infinite}@keyframes iafl{to{stroke-dashoffset:-32}}

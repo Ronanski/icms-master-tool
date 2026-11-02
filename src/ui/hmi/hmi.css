@@ -56,7 +56,7 @@ body.ophmi #anp{display:none!important}
 :is(#opp,#plfp) .fpg .gm{position:relative;width:5px;background:#1a242b}:is(#opp,#plfp) .fpg .gm i{position:absolute;left:0;right:0;background:#4be36a}
 /* overview grid + force list (1.23.0) */
 .fpov{margin:4px 0 8px;border:1px solid var(--c-line);border-radius:6px;background:var(--c-pane);padding:6px}
-.fpov .ovh{display:flex;justify-content:space-between;align-items:center;font:600 10.5px "Segoe UI",Roboto,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--c-dim);margin:0 0 4px}
+.fpov .ovh{display:flex;justify-content:space-between;align-items:center;font:600 12px var(--uf);letter-spacing:.08em;text-transform:uppercase;color:var(--c-dim);margin:0 0 4px}
 .fpov .ovh .b{height:22px;padding:0 8px;font-size:11px;letter-spacing:0;text-transform:none}
 .fpov .ovg{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:4px}
 .fpov .ovc{border:1px solid var(--c-line);border-radius:5px;background:var(--c-pane);padding:4px;cursor:pointer;display:flex;flex-direction:column;gap:3px}

@@ -17,14 +17,9 @@ if (i >= 0) {
 /* fonts built into the app (offline), OFL licences in src/ui/fonts (1.23.0) */
 const FD = __dirname + '/../fonts/',
   FACES = [
-    ['Inter', 'inter', [400, 600]],
-    ['JetBrains Mono', 'jetbrains-mono', [400, 600]],
+    /* UI overhaul 2026-11-02: two families only (was 8); the tokens --uf / --mf in app.css name them */
     ['IBM Plex Sans', 'ibm-plex-sans', [400, 600]],
-    ['IBM Plex Mono', 'ibm-plex-mono', [400, 600]],
-    ['Roboto', 'roboto', [400, 500]],
-    ['Roboto Mono', 'roboto-mono', [400, 600]],
-    ['IBM Plex Sans Condensed', 'ibm-plex-sans-condensed', [400, 500, 600]],
-    ['Barlow Semi Condensed', 'barlow-semi-condensed', [400, 500, 600]]
+    ['JetBrains Mono', 'jetbrains-mono', [400, 600]]
   ],
   fontCss = FACES.map(([fam, f, ws]) =>
     ws

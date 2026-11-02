@@ -1,6 +1,6 @@
 
 :root{--bg:#0f1418;--panel:#161d23;--line:#2a3640;--tx:#d7e0e6;--dim:#7d8e9a;--acc:#4fd18b;--sel:#38c9ff;--live:#ff4d4d;--lives:rgba(255,77,77,.30)}
-*{box-sizing:border-box}html,body{height:100%;margin:0;background:var(--bg);color:var(--tx);font:13px 'Segoe UI',system-ui,sans-serif}
+*{box-sizing:border-box}html,body{height:100%;margin:0;background:var(--bg);color:var(--tx);font:13px var(--uf,'IBM Plex Sans',system-ui,sans-serif)}
 body{display:flex;flex-direction:column}
 #bar{display:flex;gap:6px;align-items:center;padding:6px 10px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
 button,label.b{background:var(--c-ctlh);color:var(--tx);border:1px solid var(--line);padding:5px 10px;cursor:pointer;font:inherit}

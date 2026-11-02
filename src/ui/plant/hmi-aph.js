@@ -17,7 +17,7 @@
   const VW = 1280,
     VH = 830;
   /* the css of the mockup, kept to the layer */
-  const CSS = `.a8{--band:#ffffff07;--dim:#7f8b96;--run:#e5484d;--stop:#2fa56a;--val:#f4f7f9;--sans:Inter,"Segoe UI",Arial,sans-serif;--mono:"IBM Plex Mono",Consolas,monospace;background:#141a20;font-family:var(--sans)}
+  const CSS = `.a8{--band:#ffffff07;--dim:#7f8b96;--run:#e5484d;--stop:#2fa56a;--val:#f4f7f9;--sans:var(--uf,"IBM Plex Sans",sans-serif);--mono:var(--mf,"JetBrains Mono",monospace);background:#141a20;font-family:var(--sans)}
 .a8 svg{position:absolute;left:0;top:0;width:${VW}px;height:${VH}px;display:block;pointer-events:none}
 .a8 .flo{will-change:transform}
 .a8 .zone{fill:var(--dim);font:600 13px var(--sans);letter-spacing:.14em}
