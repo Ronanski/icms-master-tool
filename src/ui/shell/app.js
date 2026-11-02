@@ -736,32 +736,14 @@
     if (ln) ln.textContent = 'F(X) tables';
     if (second) second.textContent = 'Second sheet';
     /* ⚙: appearance, channel, update */
-    const setBtn = E('button', { cls: 'ico', html: GEAR, title: 'Settings: theme, drawing, channel, update' });
+    const setBtn = E('button', { cls: 'ico', html: GEAR, title: 'Settings: drawing text, channel, update' });
     const set = dropdown(setBtn, 'gs-set');
     set.head('Appearance');
     /* 3.0.0: one app font; the older look selectors (font, UI skin, live colour, symbol theme) keep their defaults and are not shown */
     document.documentElement.dataset.font = 'plexc';
-    {
-      const th = E('select', { id: 'thsel', title: 'Colours of the app (the drawing has its own setting below)', 'aria-label': 'App theme' });
-      /* 3.2.0-beta.8 (user 2026-10-23 "bakit light lang, bakit dark lang, hindi pwedeng baguhin ang mga kulay?"): four themes */
-      [
-        ['light', 'Theme: Light'],
-        ['dark', 'Theme: Dark'],
-        ['grey', 'Theme: Control room grey'],
-        ['hc', 'Theme: High contrast']
-      ].forEach(([v, t]) => th.append(E('option', { value: v, txt: t })));
-      /* 3.2.0-beta.6 (user 2026-10-22 "AYAW KO NG PUTI"): dark is the default; a new key so the old light default does not carry over */
-      const tv = ls.get('ls-theme4'),
-        t0 = ['light', 'grey', 'hc'].includes(tv) ? tv : 'dark';
-      th.value = t0;
-      document.documentElement.dataset.theme = t0;
-      th.onchange = () => {
-        document.documentElement.dataset.theme = th.value;
-        ls.set('ls-theme4', th.value);
-      };
-      set.m.append(th);
-    }
-    if ($('dgsel')) set.m.append($('dgsel'));
+    /* UI overhaul 2026-11-02 (approved Remove list): ONE look, no theme picker. The app is always the dark look that was the
+       default (user 2026-10-22 "AYAW KO NG PUTI"); the user's style pick will change the tokens, not add themes. */
+    document.documentElement.dataset.theme = 'dark';
     if ($('dgtsel')) set.m.append($('dgtsel'));
     {
       const hold = E('div', { hidden: '' }, [uisel, live && AN_(live), theme && AN_(theme), slive && DI_(slive)]);

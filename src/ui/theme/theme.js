@@ -28,7 +28,8 @@
   }
   /* 3.2.0-beta.6 (user 2026-10-22 "AYAW KO NG PUTI"): the dark drawing is the default again (a new key, so the 3.0.0 light
      paper default does not carry over once) */
-  let dg = applyDg(get('ditl.dg4') || 'std');
+  /* UI overhaul 2026-11-02: one look, the drawing colour picker is removed; the drawing is always the default dark colours */
+  let dg = applyDg('std');
   /* text of the drawing: 100 / 125 / 150 % (each label grows from its own anchor; positions, wires and blocks do not move) */
   const DT = ['100', '125', '150'];
   const applyDt = v => {
@@ -39,33 +40,9 @@
   let dt = applyDt(get('ditl.dgt') || '100');
   function build() {
     const ui = document.getElementById('uisel');
-    if (!ui || document.getElementById('dgsel')) return;
-    UI2.forEach(([k, n]) => {
-      const o = document.createElement('option');
-      o.value = k;
-      o.textContent = 'UI: ' + n;
-      ui.append(o);
-    });
-    const u = get('ditl.ui');
-    if (u && UI2.some(x => x[0] === u)) {
-      root.setAttribute('data-ui', u);
-      ui.value = u;
-    }
-    const sel = document.createElement('select');
-    sel.id = 'dgsel';
-    sel.title = 'Colours of the diagram';
-    DG.forEach(([k, n]) => {
-      const o = document.createElement('option');
-      o.value = k;
-      o.textContent = 'Diagram: ' + n;
-      sel.append(o);
-    });
-    sel.value = dg;
-    sel.onchange = () => {
-      dg = applyDg(sel.value);
-      set('ditl.dg4', dg);
-    };
-    ui.after(sel);
+    if (!ui || document.getElementById('dgtsel')) return;
+    /* UI overhaul 2026-11-02: the "UI: Slate" skin is removed (one look) */
+    root.removeAttribute('data-ui');
     const ts = document.createElement('select');
     ts.id = 'dgtsel';
     ts.title = 'Size of the text on the drawing';
@@ -80,8 +57,8 @@
       dt = applyDt(ts.value);
       set('ditl.dgt', dt);
     };
-    sel.after(ts);
+    ui.after(ts);
   }
   build();
-  if (!document.getElementById('dgsel')) document.addEventListener('DOMContentLoaded', build);
+  if (!document.getElementById('dgtsel')) document.addEventListener('DOMContentLoaded', build);
 })();
