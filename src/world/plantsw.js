@@ -155,6 +155,7 @@
   W.plantIn = ALL => {
     if (!(window.AN && AN.plantOn === true)) return;
     if (!map) build(ALL);
+    if (pend) put();
     const pc = W.condP();
     if (isFinite(pc)) for (const a of ana) (a.s.avw = a.s.avw || {})[a.key] = pc;
     const U = AN.unit || {};
@@ -181,4 +182,18 @@
     }
   };
   W.plantSw = () => (map || []).map(m => ({ sheet: m.s.name, row: m.row + 1, tag: m.d[0], on: m.on }));
+  /* 3.2.0 Web Worker: the state of the switches (their dead band) back from a keyframe (src/digital/parts/03d-state.js); kept until the
+     list is built (the first scan) */
+  W.plantSwSet = L => {
+    pend = L;
+    if (map) put();
+  };
+  let pend = null;
+  const put = () => {
+    for (const q of pend || []) {
+      const m = map.find(x => x.s.name === q.sheet && x.row === q.row - 1 && x.d[0] === q.tag);
+      if (m) m.on = q.on;
+    }
+    pend = null;
+  };
 })(window.WORLD);

@@ -22,6 +22,9 @@ function anStateRefs() {
     S.blk.forEach((b, j) => ref.set(b, { $B: [i, j] }));
     S.nets.forEach((n, j) => ref.set(n, { $N: [i, j] }));
   });
+  /* a DITL sheet by its name (the unit model keeps the sheets it reads, AN_UNIT._dr: copied, it was 1.4 MB of drawings and the copy
+     was read instead of the sheet) */
+  if (typeof ditlAll === 'function') for (const d of ditlAll()) ref.set(d, { $D: d.name });
   return ref;
 }
 const AN_TA = { Float64Array, Float32Array, Int32Array, Uint8Array, Int8Array, Uint16Array, Int16Array, Uint32Array };
@@ -74,6 +77,8 @@ function anStateDec(x, keep) {
     if (v.$S != null) return ensure(AN.sheets[v.$S]);
     if (v.$B) return ensure(AN.sheets[v.$B[0]]).blk[v.$B[1]];
     if (v.$N) return ensure(AN.sheets[v.$N[0]]).nets[v.$N[1]];
+    if (v.$D) return (typeof ditlAll === 'function' && ditlAll().find(x => x.name === v.$D)) || null;
+    if (v.$P) return ensure(AN.sheets[v.$P[0]]).blk[v.$P[1]].proc; /* engine/sync.js: a plant model by its block */
     if (v.$ref != null) return ids.get(v.$ref);
     if (v.$ta) {
       const a = new AN_TA[v.$ta](v.a.length);
@@ -151,7 +156,8 @@ function anStateCapture() {
   for (const k of AN_STATE_FLAGS) flags[k] = AN[k];
   const sets = {};
   for (const k of AN_STATE_SETS) sets[k] = AN[k];
-  return anStateEnc({ sh, obj: AN_STATE_OBJ(), flags, sets }, ref);
+  /* AN.unit: the unit model once started (unit.js anUnitStart), the same object */
+  return anStateEnc({ sh, obj: AN_STATE_OBJ(), flags, sets, u: AN.unit === AN_UNIT ? 1 : 0 }, ref);
 }
 function anStateApply(kf) {
   const objs = AN_STATE_OBJ(),
@@ -170,5 +176,7 @@ function anStateApply(kf) {
   for (const k in objs) if (st.obj[k]) anStateInto(objs[k], st.obj[k]);
   for (const k of AN_STATE_FLAGS) AN[k] = st.flags[k];
   for (const k of AN_STATE_SETS) AN[k] = st.sets[k];
+  if (st.u) AN.unit = AN_UNIT;
+  else delete AN.unit;
   AN._asc = null; /* the step sets kept while a starting state loads */
 }

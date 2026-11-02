@@ -37,6 +37,8 @@ function anEngAPI() {
     tsat: steamTsat,
     fieldState: () => Object.assign({}, AN_SRC.field),
     engState: { capture: anStateCapture, apply: anStateApply },
+    /* engine/sync.js: what changed, both ways (worker -> page, page -> worker) */
+    sync: { patch: anSyncPatch, apply: anSyncApply, mark: anSyncMark },
     /* engine/ds.js: the FROM / TO DITL texts of a sheet, the description of an address (the face plate defaults first) */
     dsIdx,
     descOf: (sh, t) => {

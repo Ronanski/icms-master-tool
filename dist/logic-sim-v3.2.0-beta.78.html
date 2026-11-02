@@ -4202,7 +4202,9 @@ function motModel(sh, nl) {
   }
   return res;
 }
-/* DITL (digital logic) - Drawing of a sheet (render) and its helpers. Part of ONE script (joined by src/digital/order.list, in this order). */
+/* DITL (digital logic) - the simulation, no DOM (3.2.0 Web Worker, stage b): the models of a sheet (grpModel, fieldInModel, usrModel), the net solve of a sheet (simulate, simSheet) and the
+   timers, motors, flow dampers, inverters and motor-operated valves (tmStep, motStep, fdStep, invStep, simIn, mvStep), moved as they
+   were from 04-render.js and 05-overlay-interaction.js. Part of ONE script (joined by src/digital/order.list, in this order). */
 /* v14 user test switch: pentagon ELECTRICAL TROUBLE (arrow pointing into the wire) is a field/relay signal that does not come from the DCS: give it a switch */
 /* v17 address groups: left input rows that carry the SAME address are one signal. One row writes (the PB row if there is one, else the first), the others read it (a leading "-" reads it inverted). A PB that has readers is a mode selector (AUTO PB): press = toggle, the DCS keeps the state. */
 function grpModel(sh, nl) {
@@ -4483,6 +4485,947 @@ function simSheet(s) {
   if (!s.nl.gates.length && !s.ba && !(s.nl.usr || []).length && !(s.nl.mv || []).length) rowOn.forEach(i => outOn.add(i));
   return { rowOn, v, outOn };
 }
+/* ---------- timers ---------- */
+const UN = { MS: 0.001, SEC: 1, MIN: 60, HR: 3600 },
+  UT = { MS: 'MS', SEC: 'SEC.', MIN: 'MIN.', HR: 'HR.' };
+let TSP = 1;
+const tick = { t: 0 };
+function unorm(s) {
+  const u = s.replace(/[.\s]/g, '').toUpperCase();
+  return u === 'MS'
+    ? 'MS'
+    : /^S(EC(OND)?)?S?$/.test(u)
+      ? 'SEC'
+      : /^M(IN(UTE)?)?S?$/.test(u)
+        ? 'MIN'
+        : /^H(R|OUR)?S?$/.test(u)
+          ? 'HR'
+          : null;
+}
+function tmGet(m) {
+  let v = NaN,
+    u = null;
+  if (m.nt && m.nt === m.ut) {
+    const x = /^(\d+(?:\.\d+)?)\s*([A-Za-z.]+)$/.exec(m.nt.t);
+    if (x) {
+      v = +x[1];
+      u = unorm(x[2]);
+    }
+  } else {
+    if (m.nt) v = +m.nt.t;
+    if (m.ut) u = unorm(m.ut.t);
+  }
+  if (!isFinite(v) && m.fv) return m.fv;
+  return { v: isFinite(v) ? v : 5, u: u || 'SEC' };
+}
+function tmSet(m, v, u) {
+  const t = UT[u];
+  if (!m.nt) {
+    m.fv = { v, u };
+    return;
+  }
+  if (m.nt === m.ut) m.nt.t = v + ' ' + t;
+  else {
+    m.nt.t = String(v);
+    if (m.ut) m.ut.t = t;
+  }
+}
+const tmSecs = m => {
+  const p = tmGet(m);
+  return p.v * UN[p.u];
+};
+/* 3.2.0-beta.23: a short timer counting, a valve / device moving or a motor changing in this scan: the one world takes small steps of
+   time while it lasts (src/world/world.js), so a sequence of seconds (burner light-off) is not jumped over at x300 */
+let TMBUSY = false;
+function tmStep(g, inp, dt) {
+  const st = g.st,
+    P = tmSecs(g.tm),
+    was = st.out;
+  if (P > 0 && P <= 30 && ((g.k === 'on' && inp && st.acc < P) || (g.k === 'off' && !inp && st.out) || st.run)) TMBUSY = true;
+  if (g.k === 'on') {
+    if (inp) {
+      st.acc = Math.min(st.acc + dt, P);
+      st.out = st.acc >= P ? 1 : 0;
+    } else {
+      st.acc = 0;
+      st.out = 0;
+    }
+  } else if (g.k === 'off') {
+    if (inp) {
+      st.out = 1;
+      st.acc = 0;
+    } else if (st.out) {
+      st.acc += dt;
+      if (st.acc >= P) {
+        st.out = 0;
+        st.acc = 0;
+      }
+    }
+  } else if (g.k === 'flash') {
+    /* 2.5.0-beta.14 bottom ash flasher: ON / OFF while the input is 1 */
+    if (inp) {
+      st.acc = (st.acc + dt) % (g.fl[0] + g.fl[1]);
+      st.out = st.acc < g.fl[0] ? 1 : 0;
+    } else {
+      st.acc = 0;
+      st.out = 0;
+    }
+  } else if (g.nc) {
+    st.out = inp ? 1 : 0;
+  } else if (g.ncp) {
+    st.out = inp ? 0 : 1; /* 2.5.0-beta.11: N.C. stop button of an MCC seal-in: open (0) only while pressed */
+  } else {
+    const trg = g.k === 'npulse' ? !inp && st.pre : inp && !st.pre;
+    /* 3.2.0-beta.23: a pulse is 1 for at least the scan that starts it (a fast simulation steps 60 s in one scan: a 2 s pulse began
+       and ended inside it and the start command never came, Training at x300) */
+    const now = trg && !st.run;
+    if (now) {
+      st.run = 1;
+      st.acc = 0;
+    }
+    if (st.run && !now) {
+      st.acc += dt;
+      if (st.acc >= P) {
+        st.run = 0;
+        st.acc = 0;
+      }
+    }
+    st.out = st.run ? 1 : 0;
+  }
+  st.pre = inp ? 1 : 0;
+  return st.out !== was;
+}
+/* v9 MOV runtime: valve position 0..100 %, starts CLOSED. OPEN command -> runs to 100 %, CLOSE -> runs to 0 % (sealed in, so a pulse command is enough).
+ Both commands = stop. Trip (MIT input ON) = motor stops. LOCAL (MIL off) = DCS commands ignored. ZSO = 100 %, ZSC = 0 %; a left input with the same address follows it. */
+let MST = {},
+  MS = {};
+function motRT(s) {
+  const mt = (s.nl && s.nl.mot) || [];
+  let r = MS[s.name];
+  if (!r || r.length !== mt.length) r = MS[s.name] = mt.map(() => ({ run: 0, acc: 0 }));
+  return r;
+}
+function mtDelay(s) {
+  const v = s.mtd && +s.mtd;
+  return v > 0 ? v : 0.5;
+} /* contactor / drive feedback delay, 0.5 s (editable): a push button held ~0.6 s must be able to seal in through the running feedback */
+function motStep(s, v, dt) {
+  const mt = (s.nl && s.nl.mot) || [];
+  if (!mt.length) return false;
+  const r = motRT(s),
+    md = mtDelay(s);
+  let ch = false;
+  mt.forEach((m, j) => {
+    /* 3.2.0 retest #34: a field trip of the motor (the protection relay, a Training fault from the dock: s._ftrip) stops it at once and
+       holds it stopped until the field resets the relay; a new START is needed after that */
+    if (s._ftrip) {
+      if (r[j].run) ch = true;
+      r[j].run = 0;
+      r[j].tgt = 0;
+      r[j].acc = 0;
+      r[j].pm = !!v[m.mor];
+      return;
+    }
+    const t = !!v[m.mor],
+      sp = m.mos >= 0 && !!v[m.mos],
+      x = r[j];
+    if (m.mos >= 0) {
+      if (t && !x.pm) {
+        x.tgt = 1;
+        x.acc = 0;
+      }
+      if (sp && !x.ps) {
+        x.tgt = 0;
+        x.acc = 0;
+      }
+      x.pm = t;
+      x.ps = sp;
+      if (x.tgt === undefined) x.tgt = 0;
+      if (!!x.tgt !== !!x.run) {
+        x.acc += dt;
+        if (x.acc >= md) {
+          x.run = x.tgt;
+          x.acc = 0;
+          ch = true;
+        }
+      } else x.acc = 0;
+    } else if (t !== !!x.run) {
+      x.acc += dt;
+      if (x.acc >= md) {
+        x.run = t ? 1 : 0;
+        x.acc = 0;
+        ch = true;
+      }
+    } else x.acc = 0;
+  });
+  s.nl.fx = mt.filter((m, j) => r[j].run).map(m => m.mir);
+  return ch;
+}
+/* 3.2.0-beta.23 FIELD DEVICES of the burner I/O sheets: the limit switches and flame scanner contacts drawn there as field contacts
+   (the small circles, s.usw) follow the DCS command like the real device. DITL-16: burner gun double solenoid SVR / SVE-DO1043-A5
+   (row 2 RETRACT, row 4 INSERT -> ZSR / ZSE-A5), igniter single solenoid SVR-DO1043-A4 (row 6 INSERT -> ZSE / ZSR-A4), oil valve (2)
+   SV-DO1043-A2 (row 23 -> ZSO / ZSC-A2; valve (1) is the SV block of the sheet). DITL-18: igniter transformer O.0090 (row 24) ->
+   BI8 IGNITER IN OPERATION; BI9 FLAME DETECTOR ON = oil flows (both oil valves OPENED, DITL-16 of the same burner) and the igniter
+   sparks or the flame is already on; BI10 FLAME DETECTOR READY at rest. Burner B / C / D = the machine instances of the one world.
+   A contact is written only when the device moves, so a contact the operator toggles by hand stays until the next command */
+const FD = {
+  'DITL-16': [
+    { on: 3, off: 1, e: 'FIZSE-DO1043-A5', r: 'FIZSR-DO1043-A5', t: 10 },
+    { hold: 5, e: 'FIZSE-DO1043-A4', r: 'FIZSR-DO1043-A4', t: 5 },
+    { hold: 22, e: 'FIZSO-DO1043-A2', r: 'FIZSC-DO1043-A2', t: 3 }
+  ],
+  'DITL-18': [{ hold: 23, e: 'FIBI8-DO1043-A', t: 1 }, { flame: 1, e: 'FIBI9-DO1043-A', t: 2 }, { rest: 1, e: 'FIBI10-DO1043-A' }],
+  /* 3.2.0 retest #53: the debris filter panels (LCP) of DITL-39. REMOTE AUTO START P.B. M.0790 (row 8, pulse TR390 -> O.0281 DOR-DF1001)
+     starts the SWP outlet filter system 1 at its panel; REMOTE AUTO STOP P.B. M.0791 (row 10) stops it; the panel answers I.0095
+     DIR-DF1001 "SWP OUTLET DEBRIS FILTER IN OPERATION". It runs only with a seawater pump running (output row 1 ANY SEAWATER PUMP
+     RUNNING M.079C, the COOLING WATER ON FEEDBACK O.0280 to the panel). System 2 (SWBP outlet): M.0792 row 19 / M.0793 row 21 ->
+     I.0415 DIR-DF1002. Before: nothing answered the command, the filter stayed STOPPED */
+  'DITL-39': [
+    { on: 7, off: 9, req: 0, e: 'FIDIR-DF1001', t: 0 },
+    { on: 18, off: 20, e: 'FIDIR-DF1002', t: 0 }
+  ]
+};
+function fdSheet(s, code) {
+  const k = (s._inst && s._inst.k) || 0;
+  const t = S.sheets.find(x => new RegExp('\\)' + code + '$').test(x.name));
+  if (!t || k === 0 || !window.WORLD || !WORLD.instOf) return t;
+  const L = WORLD.instOf.get(t);
+  return (L && L[k]) || null;
+}
+function fdStep(s, dt) {
+  const b = (s._inst && s._inst.base) || s,
+    m = /(DITL-\d+[A-Z]?)$/.exec(b.name),
+    L = m && FD[m[1]];
+  if (!L) return false;
+  s.usw = s.usw || {};
+  const act = simIn(s),
+    st = (s._fd = s._fd || {});
+  let ch = false;
+  L.forEach((d, j) => {
+    const x = (st[j] = st[j] || { pos: d.rest ? 1 : 0, init: 0 });
+    let want = x.pos;
+    if (d.on != null) {
+      if (act.has(d.on) && !act.has(d.off)) want = 1;
+      else if (act.has(d.off) && !act.has(d.on)) want = 0;
+      /* a permissive output row of this sheet (DITL-39 row 1 ANY SEAWATER PUMP RUNNING) */
+      if (d.req != null) {
+        const o = window.WORLD && WORLD.out && WORLD.out[s.name];
+        if (!(o && o.has(d.req))) want = 0;
+      }
+    } else if (d.hold != null) want = act.has(d.hold) ? 1 : 0;
+    else if (d.flame) {
+      const v16 = fdSheet(s, 'DITL-16'),
+        o = v16 && window.WORLD && WORLD.out && WORLD.out[v16.name],
+        oil = !!(o && o.has(21) && o.has(23)),
+        ign = !!(st[0] && st[0].pos >= 1);
+      want = oil && (ign || x.pos >= 1) ? 1 : 0;
+    }
+    if (d.rest) want = 1;
+    const tgt = want ? 1 : 0;
+    if (tgt !== x.pos) {
+      TMBUSY = true;
+      x.acc = (x.acc || 0) + dt;
+      if (x.acc >= (d.t || 0) || !x.init) {
+        x.pos = tgt;
+        x.acc = 0;
+      }
+    } else x.acc = 0;
+    const se = x.pos >= 1,
+      sr = x.pos <= 0;
+    if (!x.init || x.se !== se) {
+      s.usw[d.e] = se;
+      if (d.r) s.usw[d.r] = sr;
+      x.se = se;
+      ch = true;
+    }
+    x.init = 1;
+  });
+  return ch;
+}
+/* 3.2.0 R9 #79: the INVERTER PANEL of a drive drawn as a box on the sheet (DITL-43 AIR PREHEATER INVERTER PANEL): the DCS sends
+   CSC-FA1052M1-1 START COMMAND (net into the box, AND of the START P.B. pulse, NOT TRIP and NOT LOCAL) and CSO-FA1052M1-1 STOP
+   COMMAND (STOP P.B., or running with the speed LOW and LOW LOW after the delays); the panel answers YS-FA1052M1 I.0650 RUNNING
+   (input row 10) and the speed switches SAL / SALL-FA1052 I.0653 / I.0654 SPEED NOT LOW / NOT L.L. (rows 12, 13). The panel holds the
+   drive running until a STOP COMMAND or a trip (I.0651 NOT TRIP = 0, a field trip). Before: nothing answered the START COMMAND (no
+   MOR / MIR label on this sheet), the air preheater stayed STOPPED */
+const INV = { 'DITL-43': { st: 'START COMMAND', sp: 'STOP COMMAND', run: 9, spd: [11, 12], ok: 4, t: 2 } };
+function invNets(s) {
+  if (s.nl._inv) return s.nl._inv;
+  const all = [...s.tx, ...Object.values(s.cells).flat()],
+    net = w => {
+      const t = all.find(q => q.t === w);
+      if (!t) return -1;
+      const g = s.nl.segs
+        .filter(q => q.h && q.x2 >= t.x - 2 && q.x2 <= t.x + 12 && q.y1 > t.y && q.y1 - t.y <= 8)
+        .sort((a, b) => a.y1 - b.y1)[0];
+      return g ? g.n : -1;
+    };
+  const b = (s._inst && s._inst.base) || s,
+    d = INV[/(DITL-\d+[A-Z]?)$/.exec(b.name)[1]];
+  return (s.nl._inv = { st: net(d.st), sp: net(d.sp) });
+}
+function invStep(s, v, dt) {
+  const b = (s._inst && s._inst.base) || s,
+    m = /(DITL-\d+[A-Z]?)$/.exec(b.name),
+    d = m && INV[m[1]];
+  if (!d || !s.nl) return false;
+  const N = invNets(s);
+  if (N.st < 0) return false;
+  s.sig = s.sig || {};
+  const F = (s._fd = s._fd || {}),
+    x = (F.inv = F.inv || { run: s.sig[d.run + ':S'] ? 1 : 0, acc: 0 });
+  let tgt = x.tgt == null ? x.run : x.tgt;
+  if (v[N.st] && !(N.sp >= 0 && v[N.sp])) tgt = 1;
+  if (N.sp >= 0 && v[N.sp]) tgt = 0;
+  const trip = s._ftrip || !s.sig[d.ok + ':S'];
+  if (trip) tgt = 0;
+  x.tgt = tgt;
+  let ch = false;
+  if (tgt !== x.run) {
+    TMBUSY = true;
+    x.acc += dt;
+    if (x.acc >= d.t || trip) {
+      x.run = tgt;
+      x.acc = 0;
+      s.sig[d.run + ':S'] = !!tgt;
+      d.spd.forEach(r => (s.sig[r + ':S'] = !!tgt));
+      ch = true;
+    }
+  } else x.acc = 0;
+  return ch;
+}
+function motTxt(s) {
+  const mt = s.nl.mot || [],
+    r = motRT(s);
+  return mt
+    .map(
+      (m, j) =>
+        'MOT ' +
+        m.tag +
+        ': ' +
+        (r[j].run ? 'RUNNING' : 'STOPPED') +
+        ((m.mos < 0 && !!r[j].run !== !!simulate(s.nl, simIn(s))[m.mor]) || (m.mos >= 0 && !!r[j].tgt !== !!r[j].run)
+          ? ' (changing…)'
+          : '')
+    )
+    .join(' | ');
+}
+function mvRT(s) {
+  const mv = (s.nl && s.nl.mv) || [];
+  let r = MST[s.name];
+  if (!r || r.length !== mv.length)
+    r = MST[s.name] = mv.map(b => ({ pos: b.sv && b.dir === 'close' ? 100 : 0, run: 0, lr: 1, tq: 0 }));
+  return r;
+}
+function mvTr(s, j) {
+  const v = s.mvt && +s.mvt[j];
+  return v > 0 ? v : s.nl.mv[j] && s.nl.mv[j].sv ? 3 : 10;
+}
+function mvForced(s) {
+  const F = new Map(),
+    mv = (s.nl && s.nl.mv) || [];
+  if (!mv.length) return F;
+  const rt = mvRT(s);
+  mv.forEach((b, j) =>
+    b.fb.forEach(f => {
+      if ((f.ty === 'ZSO' || f.ty === 'ZSC') && f.mir >= 0)
+        F.set(f.mir, f.ty === 'ZSO' ? rt[j].pos >= 100 : rt[j].pos <= 0);
+    })
+  );
+  return F;
+}
+function grpState(s) {
+  const m = new Map(),
+    /* one world (2.2.0-beta.6): the master row can be fed by another sheet (FROM column); a reader that has its own FROM link follows that link */
+    W = window.WORLD && WORLD.live && s._win,
+    D = W && WORLD.idx && WORLD.idx.din.get(s);
+  ((s.nl && s.nl.grp) || []).forEach(g => {
+    const v = !!s.sig[g.master + ':S'] || !!(W && s._win.has(g.master));
+    g.readers.forEach(r => {
+      if (!(D && D.has(r.row))) m.set(r.row, r.inv ? !v : v);
+    });
+  });
+  return m;
+}
+/* simulate mode: the DITL Simulate button, or the one world (ABC + DITL, src/world/world.js) while it runs */
+/* 2026-11-01 (user "Ge ayusin pre", 150 MW: PAF / SAF / IDF STOPPED in the logic, M.3302 / 3303 / 3304 = 0): the ABC PAUSED is the
+   simulation with its time stopped, not a plant with its wires cut. A read while paused (the alarm scan, a faceplate, an HMI page:
+   DUI.outVal -> simSheet) evaluated the latches without the inputs from the other sheets (_win): DITL-27A saw "IDF RUNNING" = 0 and
+   its SAF latch was reset, at RUN the PAF followed (DITL-26A row 18 SAF STOPPED -> TR120 -> reset). The one world with its links keeps
+   its inputs while the ABC page is paused too */
+function simOn() {
+  return SIM || !!(window.WORLD && (WORLD.live || (WORLD.on && WORLD.idx && window.AN && AN.cat === 'an')));
+}
+function simIn(s) {
+  const sim = simOn(),
+    on = new Set(),
+    F = sim ? mvForced(s) : new Map(),
+    GR = sim ? grpState(s) : new Map();
+  /* one world: input rows driven by another DITL sheet (FROM column, e.g. 28A-77) or by the ABC (TO DITL) */
+  if (sim && s._win) s._win.forEach(i => on.add(i));
+  /* 3.2.0-beta.23: a normally closed push button (DITL-03F rows 25 / 26 BOILER EMERGENCY TRIP P.B.(1) / (2) (N.C.); the LCP contacts
+     "NOT OFF P.B." / "NOT LOCAL STOP P.B." of DITL-09 rows 18 / 22 and DITL-21A row 25) is closed (1) while nobody presses it: a cold
+     start had it 0 = pressed, the trip / OFF was ON for ever (the MFT could never be reset, a burner never lit). A press (or the
+     operator's hand value) sets it 0 */
+  if (!s._ncRows) {
+    s._ncRows = [];
+    for (let i = 0; i < (s.rows || []).length; i++) {
+      const t = (s.cells[i + ':S'] || []).map(x => x.t).join(' ');
+      if ((/N\.\s*C\./i.test(t) || /\bNOT\b.*\b(OFF|STOP)\b/i.test(t)) && /P\.\s*B|PUSH/i.test(t)) s._ncRows.push(i);
+    }
+  }
+  for (const i of s._ncRows) if (s.sig[i + ':S'] === undefined) s.sig[i + ':S'] = true;
+  for (const k in s.sig)
+    if (s.sig[k] && k.split(':')[1] === 'S') {
+      const i = +k.split(':')[0];
+      if (!F.has(i) && !GR.has(i)) on.add(i);
+    }
+  GR.forEach((v, i) => {
+    if (v) on.add(i);
+  });
+  F.forEach((v, i) => {
+    if (v) on.add(i);
+  });
+  if (sim && s.nl && s.nl.mv && s.nl.mv.length) {
+    const rt = mvRT(s);
+    s.nl.mv.forEach((b, j) => {
+      if (rt[j].tq)
+        b.fb.forEach(f => {
+          if (f.ty === 'TS' && f.mir >= 0) on.add(f.mir);
+        });
+    });
+  }
+  return on;
+}
+function mvOut(s, act) {
+  const M = new Map(),
+    mv = (s.nl && s.nl.mv) || [];
+  if (!mv.length) return M;
+  const rt = mvRT(s);
+  mv.forEach((b, j) => {
+    const r = rt[j];
+    b.fb.forEach(f => {
+      let v = 0;
+      if (f.ty === 'ZSO') v = r.pos >= 100;
+      else if (f.ty === 'ZSC') v = r.pos <= 0;
+      else if (f.ty === 'MIL') v = f.mir >= 0 ? act.has(f.mir) : !!r.lr;
+      else if (f.ty === 'MIT') v = f.mir >= 0 && act.has(f.mir);
+      else if (f.ty === 'TS') v = (f.mir >= 0 && act.has(f.mir)) || r.tq;
+      M.set(f.row, v ? 1 : 0);
+    });
+  });
+  return M;
+}
+function mvFlags(s, j, act) {
+  const b = s.nl.mv[j],
+    r = mvRT(s)[j],
+    mil = b.fb.find(f => f.ty === 'MIL');
+  return {
+    rem: !mil || (mil.mir >= 0 ? act.has(mil.mir) : !!r.lr),
+    trip: b.fb.some(f => f.ty === 'MIT' && f.mir >= 0 && act.has(f.mir))
+  };
+}
+function mvStep(s, v, dt) {
+  const mv = (s.nl && s.nl.mv) || [];
+  if (!mv.length) return false;
+  const rt = mvRT(s),
+    act = simIn(s);
+  let ch = false;
+  mv.forEach((b, j) => {
+    const r = rt[j],
+      o = !!(b.open && b.open.n >= 0 && v[b.open.n]),
+      c = !!(b.close && b.close.n >= 0 && v[b.close.n]),
+      { rem, trip } = mvFlags(s, j, act),
+      st = x => (x >= 100 ? 2 : x <= 0 ? 0 : 1),
+      s0 = st(r.pos),
+      run0 = r.run;
+    if (b.sv) {
+      const cmd = b.inv ? !o : o,
+        wantOpen = b.dir === 'close' ? !cmd : cmd;
+      if (!r.init) {
+        r.init = 1;
+        r.pos = wantOpen ? 100 : 0;
+      }
+      r.run = wantOpen ? (r.pos < 100 ? 1 : 0) : r.pos > 0 ? -1 : 0;
+    } else if (trip) r.run = 0;
+    else if (rem) {
+      if (o && c) r.run = 0;
+      else if (o && r.pos < 100) r.run = 1;
+      else if (c && r.pos > 0) r.run = -1;
+    }
+    if (r.run) TMBUSY = true;
+    r.pos = Math.max(0, Math.min(100, r.pos + (r.run * dt * 100) / mvTr(s, j)));
+    if ((r.run > 0 && r.pos >= 100) || (r.run < 0 && r.pos <= 0)) r.run = 0;
+    const tq0 = r.tq;
+    r.tq =
+      !b.sv && ((r.pos <= 0 && c && !o) || (r.pos >= 100 && o && !c))
+        ? 1
+        : 0; /* v12b: torque switch (TS) trips when the valve is at the end and the motor is still commanded (seats the valve, breaks the seal-in) */
+    if (st(r.pos) !== s0 || r.run !== run0 || r.tq !== tq0) ch = true;
+  });
+  return ch;
+}
+/* the analog input rows, comparators, locked rows and timer kinds (from 07-app-events.js and 05-overlay-interaction.js) */
+const isAn = (s, i) =>
+  !!(
+    s.nl &&
+    s.nl.anRows &&
+    s.nl.anRows.has(i)
+  ); /* v26: row that feeds only limit comparators = analog input (numeric value, not a switch) */
+const anVal = (s, a) => {
+  const v = avOf(s);
+  return v && v[a.key] !== undefined ? v[a.key] : a.def;
+};
+const anValN = (s, n) => {
+  const a = (s.nl.an || []).find(x => x.net === n);
+  return a ? anVal(s, a) : 0;
+};
+const cmpOn = (s, g) => {
+  const v = anValN(s, g.ins[0]),
+    sp = g.spNet !== undefined ? anValN(s, g.spNet) : g.sp;
+  return g.cmp === '>' ? (g.eq ? v >= sp : v > sp) : g.eq ? v <= sp : v < sp;
+};
+const cmpTxt = g =>
+  (g.cmp === '>' ? 'High ' : 'Low ') +
+  g.cmp +
+  (g.eq ? '=' : '') +
+  ' ' +
+  (g.spNet !== undefined ? g.spVar : g.sp) +
+  (g.unit || '');
+const lockd = (s, i) =>
+  mvForced(s).has(i) ||
+  (s.nl.mir || []).some(m => m.row === i) ||
+  grpState(s).has(i); /* v10: the input of a row = its SERVICE cell, only rows that a wire reaches */
+const KN = { on: 'ON DELAY', off: 'OFF DELAY', pulse: 'PULSE', npulse: 'PULSE (falling)', flash: 'FLASHER' };
+/* SIMULATE on / off (the bmode button, 07-app-events.js) and Reset: the DITL states start again (3.2.0 Web Worker: no DOM, the engine
+   runs it too) */
+function ditlStates() {
+  DREG = {};
+  MST = {};
+  MS = {};
+  S.sheets.forEach(x => {
+    /* 3.2.0 retest #28 #16 (beta.45 check: the field action "SWP-A REMOTE" done while the Training was PAUSED was lost at the first
+       RUN, START SWP-A stayed blocked): entering RUN keeps the inputs set before it (the field contacts of the Training); leaving RUN
+       (VIEW, and the Reset button = leave + enter) clears them as before */
+    if (!SIM) x.sig = {};
+    x.usw = {};
+    x._fd = null;
+    if (x.nl) {
+      x.nl._v = null;
+      x.nl.fx = [];
+      x.nl.ufx = [];
+    }
+    ((x.nl && x.nl.gates) || []).forEach(g => {
+      if (g.t === 'FF') g.q = 0;
+      if (g.t === 'CNT') g.N = g.pin = g.rp = 0;
+      if (g.t === 'TMR') g.st = { acc: 0, out: 0, pre: 0, run: 0 };
+    });
+  });
+  tick.t = 0;
+  /* 2.2.0-beta.3: after "Start at 150 MW" the DITL starts again in the 150 MW state (src/world/ditl150.js) */
+  try {
+    if (SIM && window.DITL150 && DITL150.on) DITL150.apply();
+  } catch (e) {}
+}
+/* DITL (digital logic) - the reader of a sheet, no DOM (3.2.0 Web Worker, stage b): the row texts and addresses (txt, tagOf, svcOf), the
+   drivers / users of a net (maps), the names of rows and parts, what a net needs to become 1 or 0 (why, whyD) and the engine part of DUI
+   (why, need, rowInfo, rowVal, outs, outVal, cause, rowNets: read by the one world src/world/world.js, the unit model and the Training).
+   Moved as they were from src/ui/shell/ditl.js, which takes them from DREAD. Part of ONE script (joined by src/digital/order.list). */
+const DREAD = (function () {
+  const D = (window.DUI = window.DUI || {});
+  /* 3.2.0 P3: on (S22)DITL-80S the 3-line output labels sit ON the wire (one line above, one on, one below: PDF (22)Ditl80S.pdf,
+     output 57 = "S/B STEAM SUPPLY MOTOR VALVE TORQUE"), so the cell grouping (text up to 5.7 above a wire = that row) gave each
+     output the first line of the next label down. For the text shown in the panel only, a sheet whose output texts sit like
+     that (5 or more lines nearer to another wire) takes each line of the RS column from its nearest wire. The drawing, the
+     links and the valve model (03-models.js reads the label of the wire itself) do not use this. */
+  const rsNear = s => {
+    if (s._rsN !== undefined) return s._rsN;
+    const M = {};
+    let mv = 0;
+    s.rows.forEach((r, i) =>
+      (s.cells[i + ':RS'] || []).forEach(t => {
+        let j = i;
+        s.rows.forEach((q, k) => Math.abs(q.y - t.y) < Math.abs(s.rows[j].y - t.y) && (j = k));
+        if (j !== i) mv++;
+        (M[j] = M[j] || []).push(t);
+      })
+    );
+    for (const k in M) M[k].sort((a, b) => b.y - a.y);
+    return (s._rsN = mv >= 5 ? M : null);
+  };
+  /* 3.2.0-beta.35: machine B / C / D of a shared drawing reads its own letter and address (WORLD.showText / addrK) */
+  const isK = s => !!(s && s._inst && s._inst.k && window.WORLD && WORLD.showText);
+  /* live test #56: machine A of a drawing for several machines (DITL-45 dryer A / B / C: TAG "M.1120/1125/M.112A") reads its own address too
+     (M.1120, not the last one M.112A of dryer C) in the row text, the dock and the Event log */
+  const isKA = s => !!(s && s._inst && (s._inst.k || s._inst.n > 1) && window.WORLD && WORLD.showText && WORLD.addrK);
+  const txt = (s, i, c) => {
+    const r = ((c === 'RS' && rsNear(s) ? rsNear(s)[i] : s.cells[i + ':' + c]) || [])
+      .map(t => t.t)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return isK(s) ? WORLD.showText(s, r) : r;
+  };
+  /* the TAG NO. column holds the address (I.0406, M.0378) and, on many sheets, the service text too */
+  const ADR = /^[A-Z]{1,3}\.[0-9A-F]{3,5}[A-Z]?$/;
+  const tagOf = (s, i) => {
+    const t = (s.cells[i + ':T'] || []).map(t => t.t.trim()).filter(t => ADR.test(t)).join(' '),
+      /* an address list of the machines in the TAG NO. ("M.0110/210/1610/1710" DITL-09 row 5): the address of this machine */
+      l = !t && (s.cells[i + ':T'] || []).some(x => /^[IMOB]\.[0-9A-F]{4}(\/[0-9A-F]{3,4})+\/?$/.test(x.t.trim()));
+    if (l && window.WORLD && WORLD.addrK) return WORLD.addrK(s, i) || '';
+    return t && isKA(s) ? WORLD.addrK(s, i) || t : t;
+  };
+  const svcOf = (s, i) => {
+    const r = (s.cells[i + ':T'] || [])
+      .concat(s.cells[i + ':S'] || [])
+      .map(t => t.t.trim())
+      .filter(t => t && !ADR.test(t))
+      .join(' ');
+    return isKA(s) ? WORLD.showText(s, r) : r;
+  };
+  const fmt = x => (x >= 60 ? (x / 60).toFixed(1) + ' min' : x.toFixed(1) + ' s');
+  const auto = (s, i) => lockd(s, i) || !!(window.WORLD && WORLD.live && s._win && s._win.has(i));
+  const MAPS = new WeakMap();
+  const maps = s => {
+    const nl = s.nl;
+    let m = MAPS.get(nl);
+    if (m) return m;
+    const drv = new Map(),
+      use = new Map(),
+      add = (M, n, x) => n >= 0 && (M.get(n) || M.set(n, []).get(n)).push(x);
+    nl.gates.forEach((g, gi) => {
+      (g.out || []).forEach(n => add(drv, n, { g: gi }));
+      (g.ins || []).forEach(n => add(use, n, { g: gi }));
+      (g.s || []).forEach(n => add(use, n, { g: gi, pin: 'S' }));
+      (g.r || []).forEach(n => add(use, n, { g: gi, pin: 'R' }));
+      if (g.spNet !== undefined) add(use, g.spNet, { g: gi, pin: 'SP' });
+    });
+    nl.src.forEach(z => add(drv, z.n, { row: z.row }));
+    (nl.ind || []).forEach(z => add(drv, z.n, { row: z.row }));
+    (nl.xcon || []).forEach(c => add(c.dir === 'in' ? drv : use, c.n, { x: c }));
+    (nl.one || []).forEach(n => add(drv, n, { one: 1 }));
+    (nl.usr || []).forEach(u => add(drv, u.n, { u }));
+    (nl.outs || []).forEach(o => add(use, o.n, { row: o.row, out: 1 }));
+    (nl.pout || []).forEach(o => add(use, o.n, { po: o }));
+    (nl.mir || []).forEach(o => add(use, o.n, { row: o.row, mir: 1 }));
+    m = { drv, use };
+    MAPS.set(nl, m);
+    return m;
+  };
+  const rowNo = (s, i) => s.rows[i].n || i + 1;
+  const inName = (s, i) => 'Input row ' + rowNo(s, i) + (tagOf(s, i) ? ' · ' + tagOf(s, i) : '') + (svcOf(s, i) ? ' · ' + svcOf(s, i) : '');
+  const outName = (s, i) => 'Output row ' + rowNo(s, i) + (txt(s, i, 'RS') ? ' · ' + txt(s, i, 'RS') : '') + (txt(s, i, 'RL') ? ' · ' + txt(s, i, 'RL') : '');
+  const gName = (s, g) =>
+    g.t === 'TMR'
+      ? 'TIMER ' + (g.tm.tag ? g.tm.tag + ' ' : '') + KN[g.k] + ' ' + fmt(tmSecs(g.tm))
+      : g.t === 'CMP'
+        ? 'COMPARATOR ' + cmpTxt(g)
+        : g.t === 'FF'
+          ? 'FLIP-FLOP (' + (g.spri ? 'SET' : 'RESET') + ' wins)'
+          : g.t === 'CNT'
+            ? 'COUNTER (N = ' + (g.N || 0) + ')'
+            : g.t;
+  /* a driver / user of a net: name and the part it selects */
+  const dName = (s, d) =>
+    d.g !== undefined
+      ? (d.pin && d.pin !== 'SP' ? d.pin + ' of ' : d.pin ? 'set point of ' : '') + gName(s, s.nl.gates[d.g])
+      : d.row !== undefined
+        ? d.out
+          ? outName(s, d.row)
+          : d.mir
+            ? inName(s, d.row) + ' (follows this wire)'
+            : inName(s, d.row)
+        : d.x
+          ? (d.x.dir === 'in' ? 'FROM ' : 'TO ') + d.x.peer + ' connector (' + d.x.num + ')'
+          : d.one
+            ? 'DEFAULT "1" (always 1)'
+            : d.u
+              ? 'switch on the drawing'
+              : d.po
+                ? d.po.adr + ' ' + (d.po.txt || '')
+                : '?';
+  const dPick = d => (d.g !== undefined ? { t: 'g', g: d.g } : d.row !== undefined ? { t: 'row', i: d.row, side: d.out ? 'R' : 'L' } : null);
+  const rowNets = (s, i, side) => (side === 'R' ? s.nl.outs : s.nl.src.concat(s.nl.ind || [])).filter(o => o.row === i).map(o => o.n);
+  const val = (R, n) => (R ? (R.v[n] ? 1 : 0) : null);
+  /* what must change for net n to be `want` (the values of RUN); the shortest way when one of several is enough */
+  let ALL = false;
+  function why(s, v, n, want, seen, d) {
+    if (!!v[n] === !!want) return [];
+    if (d > 16 || seen.has(n + ':' + want)) return [];
+    seen.add(n + ':' + want);
+    const D = maps(s).drv.get(n) || [];
+    if (!D.length) return [{ txt: 'a wire with no source on this sheet', n }];
+    let best = null;
+    for (const x of D) {
+      const r = whyD(s, v, x, want, seen, d + 1, n);
+      if (want) {
+        if (r.length && (!best || r.length < best.length)) best = r;
+      } else best = (best || []).concat(r);
+    }
+    return best || [];
+  }
+  const shortest = L => L.filter(r => r.length).sort((a, b) => a.length - b.length)[0] || [];
+  function whyD(s, v, x, want, seen, d, n0) {
+    const W = want ? '1' : '0';
+    if (x.row !== undefined) return [{ row: x.row, want, auto: auto(s, x.row) }];
+    if (x.one) return [{ txt: 'DEFAULT "1": always 1' }];
+    if (x.u) return [{ txt: 'the switch drawn on the sheet must be ' + W }];
+    if (x.x) return [{ txt: 'FROM ' + x.x.peer + ' connector (' + x.x.num + ') must be ' + W + ' (open ' + x.x.peer + ')' }];
+    const g = s.nl.gates[x.g],
+      on = n => !!v[n],
+      ins = g.ins || [],
+      one = x2 => [{ g: x.g, txt: x2 }];
+    switch (g.t) {
+      case 'AND':
+        /* FIRST-OUT (ALL): an AND at 1 is held by ALL its inputs (e.g. two of three drum level channels), not the shortest one */
+        return want ? ins.filter(n => !on(n)).flatMap(n => why(s, v, n, 1, seen, d)) : ALL ? ins.flatMap(n => why(s, v, n, 0, seen, d)) : shortest(ins.map(n => why(s, v, n, 0, seen, d)));
+      case 'OR':
+        return want ? shortest(ins.map(n => why(s, v, n, 1, seen, d))) : ins.filter(on).flatMap(n => why(s, v, n, 0, seen, d));
+      case 'NOT':
+        return want ? ins.filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : shortest(ins.map(n => why(s, v, n, 1, seen, d)));
+      case 'FF': {
+        const S0 = (g.s || []).some(on),
+          R0 = (g.r || []).some(on);
+        if (want) {
+          const a = R0 && !g.spri ? (g.r || []).filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : [];
+          return a.concat(S0 ? [] : shortest((g.s || []).map(n => why(s, v, n, 1, seen, d))), S0 ? [] : one('then the flip-flop is SET (it stays 1 after S goes 0)'));
+        }
+        const a = S0 && g.spri ? (g.s || []).filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : [];
+        return a.concat(R0 ? [] : shortest((g.r || []).map(n => why(s, v, n, 1, seen, d))), R0 ? [] : one('then the flip-flop is RESET'));
+      }
+      case 'TMR': {
+        const I0 = ins.some(on),
+          P = fmt(tmSecs(g.tm)),
+          tag = g.tm.tag || 'timer';
+        if (g.k === 'on')
+          return want ? (I0 ? one(tag + ' is counting: ' + fmt(g.st.acc || 0) + ' / ' + P) : shortest(ins.map(n => why(s, v, n, 1, seen, d))).concat(one('then ' + tag + ' counts ' + P))) : shortest(ins.map(n => why(s, v, n, 0, seen, d)));
+        if (g.k === 'flash') return want ? shortest(ins.map(n => why(s, v, n, 1, seen, d))).concat(one('then the flasher blinks ON ' + fmt(g.fl[0]) + ' / OFF ' + fmt(g.fl[1]))) : shortest(ins.map(n => why(s, v, n, 0, seen, d)));
+        if (g.k === 'off') return want ? shortest(ins.map(n => why(s, v, n, 1, seen, d))) : I0 ? shortest(ins.map(n => why(s, v, n, 0, seen, d))).concat(one('then ' + tag + ' holds 1 for ' + P)) : one(tag + ' holds 1: ' + fmt(g.st.acc || 0) + ' / ' + P);
+        return want
+          ? (g.k === 'pulse' ? (I0 ? shortest(ins.map(n => why(s, v, n, 0, seen, d))) : []) : I0 ? [] : shortest(ins.map(n => why(s, v, n, 1, seen, d)))).concat(one(tag + ' gives a ' + P + ' pulse when its input goes ' + (g.k === 'pulse' ? '0 → 1' : '1 → 0')))
+          : one(tag + ' pulse ends after ' + P);
+      }
+      case 'CMP':
+        return one('the analog value must be ' + (want ? '' : 'NOT ') + cmpTxt(g) + ' (now ' + anValN(s, ins[0]) + ')');
+      case 'CNT':
+        return one('the COUNTER must ' + (want ? 'reach N = ' + g.ks[g.out.indexOf(n0)] : 'move on') + ' (now N = ' + (g.N || 0) + ')');
+    }
+    return one(gName(s, g) + ' must give ' + W);
+  }
+  D.why = (s, n, want) => why(s, simSheet(s).v, n, want, new Set(), 0);
+  /* 3.2.0-beta.23 TRAINING INTERLOCK (user 2026-10-24: "di ba may interlock yan s kada equipment? na-icoconsider ba ito sa start-up
+     training?"): what output row `row` of DITL sheet s needs to become 1 now, read from the netlist (the "To make it 1" of the
+     Selected tab), with the names of the input rows; [] = it is 1. D.outs lists the output rows of a sheet with their names */
+  D.need = (s, row) => {
+    try {
+      if (!s.nl) s.nl = netlist(s);
+      const o = s.nl.outs.find(x => x.row === row);
+      if (!o) return null;
+      const v = simSheet(s).v;
+      if (v[o.n]) return [];
+      const L = why(s, v, o.n, 1, new Set(), 0),
+        out = [];
+      for (const r of L) {
+        const it =
+          r.row !== undefined
+            ? { row: r.row, no: rowNo(s, r.row), tag: tagOf(s, r.row) || '', svc: svcOf(s, r.row) || '', want: r.want ? 1 : 0, auto: !!r.auto }
+            : { txt: r.txt };
+        const k = r.row !== undefined ? 'r' + r.row + it.want : it.txt;
+        if (!out.some(q => (q.row !== undefined ? 'r' + q.row + q.want : q.txt) === k)) out.push(it);
+      }
+      return out.slice(0, 12);
+    } catch (e) {
+      return null;
+    }
+  };
+  D.rowInfo = (s, row) => ({ tag: tagOf(s, row) || '', svc: svcOf(s, row) || '' });
+  D.rowVal = (s, row) => {
+    try {
+      const v = simSheet(s).v,
+        an = s.nl.an || [];
+      /* 3.2.0-beta.28 (human run of the Training: BFWP-A START stayed locked): an ANALOG input row (DITL-23A row 12 PT-FW1115-A BFWP
+         A SUCTION PRESSURE > 1.5 kg/cm2) is met when the comparator of the drawing that reads it says 1; its own net is the analog value
+         (0 / 1 meaningless). Before, the interlock read the analog net: always 0, the START of the Training was locked */
+      return rowNets(s, row, 'L').some(n => {
+        if (!an.some(a => a.net === n)) return v[n];
+        const g = s.nl.gates.filter(x => x.t === 'CMP' && x.ins[0] === n);
+        return g.length ? g.some(x => x.out.some(o => v[o])) : v[n];
+      })
+        ? 1
+        : 0;
+    } catch (e) {
+      return null;
+    }
+  };
+  D.outs = s => {
+    if (!s.nl) s.nl = netlist(s);
+    return [...new Set(s.nl.outs.map(o => o.row))].map(r => ({ row: r, name: outName(s, r) }));
+  };
+  D.outVal = (s, row) => {
+    try {
+      const o = s.nl && s.nl.outs.find(x => x.row === row);
+      return o ? (simSheet(s).v[o.n] ? 1 : 0) : null;
+    } catch (e) {
+      return null;
+    }
+  };
+  /* 3.2.0-beta.6 FIRST-OUT: why output row `row` of sheet s is 1 now (the inputs that are 1 and keep it 1), as text lines for the
+     Event log: called by the one world (src/world/world.js) at the scan where a TRIP / MFT output goes 1 */
+  D.cause = (s, row) => {
+    const o = s.nl && s.nl.outs.find(x => x.row === row);
+    if (!o) return null;
+    ALL = true;
+    let L;
+    try {
+      L = D.why(s, o.n, 0);
+    } finally {
+      ALL = false;
+    }
+    const seen = new Set(),
+      lines = [];
+    for (const r of L) {
+      /* only what IS 1 now: the "then ..." and pulse lines of the To-make-it list are what would happen next, not the cause */
+      if (r.row === undefined && (/^then /.test(r.txt || '') || / gives a .* pulse /.test(r.txt || ''))) continue;
+      /* a row that must go 0 IS 1 now: a cause; a row that must go 1 is the reset of a memory (flip-flop): it holds the output */
+      const t =
+        r.row !== undefined
+          ? r.want
+            ? 'memory (flip-flop): stays 1 until ' + inName(s, r.row) + ' = 1'
+            : inName(s, r.row) + ' = 1' + (r.auto ? ' · from the equipment / another sheet' : '')
+          : String(r.txt || '').replace(/^the analog value must be NOT /, 'the analog value is ');
+      if (!t || seen.has(t)) continue;
+      seen.add(t);
+      lines.push({ d: 1, k: r.row !== undefined && !r.want ? 'input' : 'gate', txt: t, sh: s.name, row: r.row !== undefined && !r.want ? r.row : undefined });
+    }
+    return { name: outName(s, row), lines: lines.slice(0, 12) };
+  };
+  D.rowNets = rowNets;
+  /* the TRIP / RUNNING outputs of a motor drawing and its state (moved as they were from src/ui/hmi/events.js) */
+  const TRO = new WeakMap();
+  /* the TRIP output of a motor drawing ("SEAWATER PUMP A TRIP · CRT (ANN)"; not "TRIP COMMAND", not "TRIP INTERLOCK CONDITION",
+     not "NOT TRIP"), and its RUNNING output */
+  function motOuts(s) {
+    let o = TRO.get(s);
+    if (o && o.nl === s.nl) return o;
+    o = { nl: s.nl, trip: null, run: null };
+    try {
+      for (const x of DUI.outs(s) || []) {
+        const n = String(x.name || '');
+        /* retest #37: not "NO TRIP PRESENT" (DITL-05: 1 when there is NO trip) */
+        if (o.trip == null && /\bTRIP\b/.test(n) && !/COMMAND|INTERLOCK|NOT TRIP|NO TRIP|\bNO\b|\bCMD\b|RESET/.test(n)) o.trip = { row: x.row, name: n.replace(/^Output row \d+ · /, '').replace(/\s+[IO]\.\S+/g, '').replace(/\s*·.*$/, '').trim() };
+        if (o.run == null && /RUNNING/.test(n) && !/NOT RUNNING|STOP|\bANY\b|LOCAL/.test(n)) o.run = { row: x.row };
+      }
+    } catch (e) {}
+    /* a motor drawing only (a RUNNING output too): the MFT sheets have their own trip lines */
+    if (!o.run) o.trip = null;
+    TRO.set(s, o);
+    return o;
+  }
+  /* the state of a motor drawing: 'TRIP' / 'RUN' / 'STOP' (null: no motor drawing, or the one world not built). The last state is
+     kept while PAUSED (the drawing holds its values) */
+  function motState(s) {
+    if (!s || !window.DUI || !(window.WORLD && WORLD.on && WORLD.idx)) return null;
+    try {
+      if (!s.nl) s.nl = netlist(s);
+      const o = motOuts(s);
+      if (!o.trip && !o.run) return null;
+      /* retest #34: a field trip (protection relay, dock FIELD TRIP) */
+      if (s._ftrip) return 'TRIP';
+      if (o.trip && DUI.outVal(s, o.trip.row) === 1) return 'TRIP';
+      return o.run && DUI.outVal(s, o.run.row) === 1 ? 'RUN' : 'STOP';
+    } catch (e) {
+      return null;
+    }
+  }
+  D.motState = motState;
+  return { motOuts, motState, rsNear, isK, isKA, txt, ADR, tagOf, svcOf, fmt, auto, MAPS, maps, rowNo, inName, outName, gName, dName, dPick, rowNets, val, why, shortest, whyD };
+})();
+/* DITL (digital logic) - the state of the DITL world as plain JSON, no DOM (3.2.0 Web Worker, stage c): ditlCapture() / ditlApply(k), the
+   DITL half of the keyframe (the ABC half: src/analog/engine/state.js). What a scan changes (read from the page: every key of every sheet,
+   netlist and part before and after a run at 150 MW): per sheet the inputs (sig), the switches (usw), the analog values (av, av150, avw),
+   the automatic rows (_win), the flow dampers (_fd), the field trip (_ftrip); per netlist the nets (_v) and the forces (fx, ufx); per
+   part the flip-flop, counter and timer state; the motors and valves (MST, MS), the DCS registers (DREG), the DITL clock, the outputs of
+   the one world (WORLD.out) and the protection switches of the plant (src/world/plantsw.js). Part of ONE script (src/digital/order.list). */
+const DITL_SH = ['sig', 'usw', 'av', 'av150', 'avw', '_win', '_fd', '_ftrip'],
+  DITL_NL = ['_v', 'fx', 'ufx'],
+  DITL_G = ['q', 'st', 'N', 'pin', 'rp', 'rq', 'Nn', 'cin'],
+  DITL_W = ['out', '_o', 'tk', '_ck', 'busy'];
+function ditlEnc(v) {
+  if (v instanceof Set) return { $set: [...v] };
+  if (v instanceof Map) return { $map: [...v].map(([k, w]) => [k, ditlEnc(w)]) };
+  if (Array.isArray(v)) return v.map(ditlEnc);
+  if (v && typeof v === 'object') {
+    const o = {};
+    for (const k of Object.keys(v)) if (v[k] !== undefined) o[k] = ditlEnc(v[k]);
+    return o;
+  }
+  return typeof v === 'number' && !isFinite(v) ? { $num: String(v) } : v;
+}
+function ditlDec(v) {
+  if (Array.isArray(v)) return v.map(ditlDec);
+  if (v && typeof v === 'object') {
+    if (v.$set) return new Set(v.$set);
+    if (v.$map) return new Map(v.$map.map(([k, w]) => [k, ditlDec(w)]));
+    if ('$num' in v) return Number(v.$num);
+    const o = {};
+    for (const k of Object.keys(v)) o[k] = ditlDec(v[k]);
+    return o;
+  }
+  return v;
+}
+const ditlAll = () => S.sheets.concat((window.WORLD && WORLD.inst) || []);
+const ditlPick = (o, ks) => {
+  const r = {};
+  for (const k of ks) if (o[k] !== undefined) r[k] = ditlEnc(o[k]);
+  return r;
+};
+function ditlCapture() {
+  const W = window.WORLD || {};
+  return {
+    sh: ditlAll().map(s => ({
+      name: s.name,
+      s: ditlPick(s, DITL_SH),
+      nl: s.nl ? { ...ditlPick(s.nl, DITL_NL), g: (s.nl.gates || []).map(g => ditlPick(g, DITL_G)) } : null
+    })),
+    MST: ditlEnc(MST),
+    MS: ditlEnc(MS),
+    DREG: ditlEnc(DREG),
+    t: tick.t,
+    SIM,
+    W: ditlPick(W, DITL_W),
+    sw: W.plantSw ? W.plantSw() : null
+  };
+}
+/* the same keys take the values of k (a key that k does not have goes), on the sheets of this side by name */
+function ditlApply(k) {
+  const put = (o, ks, v) => {
+    for (const x of ks)
+      if (x in v) o[x] = ditlDec(v[x]);
+      else delete o[x];
+  };
+  const by = new Map(ditlAll().map(s => [s.name, s]));
+  for (const q of k.sh) {
+    const s = by.get(q.name);
+    if (!s) continue;
+    put(s, DITL_SH, q.s);
+    if (!q.nl) continue;
+    if (!s.nl) s.nl = netlist(s);
+    put(s.nl, DITL_NL, q.nl);
+    (s.nl.gates || []).forEach((g, i) => q.nl.g[i] && put(g, DITL_G, q.nl.g[i]));
+  }
+  MST = ditlDec(k.MST);
+  MS = ditlDec(k.MS);
+  DREG = ditlDec(k.DREG);
+  tick.t = k.t;
+  SIM = k.SIM;
+  if (window.WORLD) {
+    put(WORLD, DITL_W, k.W);
+    if (k.sw && WORLD.plantSwSet) WORLD.plantSwSet(k.sw);
+  }
+}
+/* DITL (digital logic) - Drawing of a sheet (render) and its helpers. Part of ONE script (joined by src/digital/order.list, in this order). */
+/* the models of a sheet (grpModel, fieldInModel, usrModel): parts/03b-sim.js */
+/* the simulation (DREG, simulate, avOf, xconPeer, simSheet): parts/03b-sim.js */
 /* ---------- render ---------- */
 const COL = { CON: '#4fd18b', HID: '#35505f', CEN: '#e0a030', DCS: '#ffd24a', SYM: '#4fd18b' },
   stk = l => COL[l] || '#cfd8dc';
@@ -5527,486 +6470,7 @@ $('wload').onchange = async e => {
   }
   e.target.value = '';
 };
-/* ---------- timers ---------- */
-const UN = { MS: 0.001, SEC: 1, MIN: 60, HR: 3600 },
-  UT = { MS: 'MS', SEC: 'SEC.', MIN: 'MIN.', HR: 'HR.' };
-let TSP = 1;
-const tick = { t: 0 };
-function unorm(s) {
-  const u = s.replace(/[.\s]/g, '').toUpperCase();
-  return u === 'MS'
-    ? 'MS'
-    : /^S(EC(OND)?)?S?$/.test(u)
-      ? 'SEC'
-      : /^M(IN(UTE)?)?S?$/.test(u)
-        ? 'MIN'
-        : /^H(R|OUR)?S?$/.test(u)
-          ? 'HR'
-          : null;
-}
-function tmGet(m) {
-  let v = NaN,
-    u = null;
-  if (m.nt && m.nt === m.ut) {
-    const x = /^(\d+(?:\.\d+)?)\s*([A-Za-z.]+)$/.exec(m.nt.t);
-    if (x) {
-      v = +x[1];
-      u = unorm(x[2]);
-    }
-  } else {
-    if (m.nt) v = +m.nt.t;
-    if (m.ut) u = unorm(m.ut.t);
-  }
-  if (!isFinite(v) && m.fv) return m.fv;
-  return { v: isFinite(v) ? v : 5, u: u || 'SEC' };
-}
-function tmSet(m, v, u) {
-  const t = UT[u];
-  if (!m.nt) {
-    m.fv = { v, u };
-    return;
-  }
-  if (m.nt === m.ut) m.nt.t = v + ' ' + t;
-  else {
-    m.nt.t = String(v);
-    if (m.ut) m.ut.t = t;
-  }
-}
-const tmSecs = m => {
-  const p = tmGet(m);
-  return p.v * UN[p.u];
-};
-/* 3.2.0-beta.23: a short timer counting, a valve / device moving or a motor changing in this scan: the one world takes small steps of
-   time while it lasts (src/world/world.js), so a sequence of seconds (burner light-off) is not jumped over at x300 */
-let TMBUSY = false;
-function tmStep(g, inp, dt) {
-  const st = g.st,
-    P = tmSecs(g.tm),
-    was = st.out;
-  if (P > 0 && P <= 30 && ((g.k === 'on' && inp && st.acc < P) || (g.k === 'off' && !inp && st.out) || st.run)) TMBUSY = true;
-  if (g.k === 'on') {
-    if (inp) {
-      st.acc = Math.min(st.acc + dt, P);
-      st.out = st.acc >= P ? 1 : 0;
-    } else {
-      st.acc = 0;
-      st.out = 0;
-    }
-  } else if (g.k === 'off') {
-    if (inp) {
-      st.out = 1;
-      st.acc = 0;
-    } else if (st.out) {
-      st.acc += dt;
-      if (st.acc >= P) {
-        st.out = 0;
-        st.acc = 0;
-      }
-    }
-  } else if (g.k === 'flash') {
-    /* 2.5.0-beta.14 bottom ash flasher: ON / OFF while the input is 1 */
-    if (inp) {
-      st.acc = (st.acc + dt) % (g.fl[0] + g.fl[1]);
-      st.out = st.acc < g.fl[0] ? 1 : 0;
-    } else {
-      st.acc = 0;
-      st.out = 0;
-    }
-  } else if (g.nc) {
-    st.out = inp ? 1 : 0;
-  } else if (g.ncp) {
-    st.out = inp ? 0 : 1; /* 2.5.0-beta.11: N.C. stop button of an MCC seal-in: open (0) only while pressed */
-  } else {
-    const trg = g.k === 'npulse' ? !inp && st.pre : inp && !st.pre;
-    /* 3.2.0-beta.23: a pulse is 1 for at least the scan that starts it (a fast simulation steps 60 s in one scan: a 2 s pulse began
-       and ended inside it and the start command never came, Training at x300) */
-    const now = trg && !st.run;
-    if (now) {
-      st.run = 1;
-      st.acc = 0;
-    }
-    if (st.run && !now) {
-      st.acc += dt;
-      if (st.acc >= P) {
-        st.run = 0;
-        st.acc = 0;
-      }
-    }
-    st.out = st.run ? 1 : 0;
-  }
-  st.pre = inp ? 1 : 0;
-  return st.out !== was;
-}
-/* v9 MOV runtime: valve position 0..100 %, starts CLOSED. OPEN command -> runs to 100 %, CLOSE -> runs to 0 % (sealed in, so a pulse command is enough).
- Both commands = stop. Trip (MIT input ON) = motor stops. LOCAL (MIL off) = DCS commands ignored. ZSO = 100 %, ZSC = 0 %; a left input with the same address follows it. */
-let MST = {},
-  MS = {};
-function motRT(s) {
-  const mt = (s.nl && s.nl.mot) || [];
-  let r = MS[s.name];
-  if (!r || r.length !== mt.length) r = MS[s.name] = mt.map(() => ({ run: 0, acc: 0 }));
-  return r;
-}
-function mtDelay(s) {
-  const v = s.mtd && +s.mtd;
-  return v > 0 ? v : 0.5;
-} /* contactor / drive feedback delay, 0.5 s (editable): a push button held ~0.6 s must be able to seal in through the running feedback */
-function motStep(s, v, dt) {
-  const mt = (s.nl && s.nl.mot) || [];
-  if (!mt.length) return false;
-  const r = motRT(s),
-    md = mtDelay(s);
-  let ch = false;
-  mt.forEach((m, j) => {
-    /* 3.2.0 retest #34: a field trip of the motor (the protection relay, a Training fault from the dock: s._ftrip) stops it at once and
-       holds it stopped until the field resets the relay; a new START is needed after that */
-    if (s._ftrip) {
-      if (r[j].run) ch = true;
-      r[j].run = 0;
-      r[j].tgt = 0;
-      r[j].acc = 0;
-      r[j].pm = !!v[m.mor];
-      return;
-    }
-    const t = !!v[m.mor],
-      sp = m.mos >= 0 && !!v[m.mos],
-      x = r[j];
-    if (m.mos >= 0) {
-      if (t && !x.pm) {
-        x.tgt = 1;
-        x.acc = 0;
-      }
-      if (sp && !x.ps) {
-        x.tgt = 0;
-        x.acc = 0;
-      }
-      x.pm = t;
-      x.ps = sp;
-      if (x.tgt === undefined) x.tgt = 0;
-      if (!!x.tgt !== !!x.run) {
-        x.acc += dt;
-        if (x.acc >= md) {
-          x.run = x.tgt;
-          x.acc = 0;
-          ch = true;
-        }
-      } else x.acc = 0;
-    } else if (t !== !!x.run) {
-      x.acc += dt;
-      if (x.acc >= md) {
-        x.run = t ? 1 : 0;
-        x.acc = 0;
-        ch = true;
-      }
-    } else x.acc = 0;
-  });
-  s.nl.fx = mt.filter((m, j) => r[j].run).map(m => m.mir);
-  return ch;
-}
-/* 3.2.0-beta.23 FIELD DEVICES of the burner I/O sheets: the limit switches and flame scanner contacts drawn there as field contacts
-   (the small circles, s.usw) follow the DCS command like the real device. DITL-16: burner gun double solenoid SVR / SVE-DO1043-A5
-   (row 2 RETRACT, row 4 INSERT -> ZSR / ZSE-A5), igniter single solenoid SVR-DO1043-A4 (row 6 INSERT -> ZSE / ZSR-A4), oil valve (2)
-   SV-DO1043-A2 (row 23 -> ZSO / ZSC-A2; valve (1) is the SV block of the sheet). DITL-18: igniter transformer O.0090 (row 24) ->
-   BI8 IGNITER IN OPERATION; BI9 FLAME DETECTOR ON = oil flows (both oil valves OPENED, DITL-16 of the same burner) and the igniter
-   sparks or the flame is already on; BI10 FLAME DETECTOR READY at rest. Burner B / C / D = the machine instances of the one world.
-   A contact is written only when the device moves, so a contact the operator toggles by hand stays until the next command */
-const FD = {
-  'DITL-16': [
-    { on: 3, off: 1, e: 'FIZSE-DO1043-A5', r: 'FIZSR-DO1043-A5', t: 10 },
-    { hold: 5, e: 'FIZSE-DO1043-A4', r: 'FIZSR-DO1043-A4', t: 5 },
-    { hold: 22, e: 'FIZSO-DO1043-A2', r: 'FIZSC-DO1043-A2', t: 3 }
-  ],
-  'DITL-18': [{ hold: 23, e: 'FIBI8-DO1043-A', t: 1 }, { flame: 1, e: 'FIBI9-DO1043-A', t: 2 }, { rest: 1, e: 'FIBI10-DO1043-A' }],
-  /* 3.2.0 retest #53: the debris filter panels (LCP) of DITL-39. REMOTE AUTO START P.B. M.0790 (row 8, pulse TR390 -> O.0281 DOR-DF1001)
-     starts the SWP outlet filter system 1 at its panel; REMOTE AUTO STOP P.B. M.0791 (row 10) stops it; the panel answers I.0095
-     DIR-DF1001 "SWP OUTLET DEBRIS FILTER IN OPERATION". It runs only with a seawater pump running (output row 1 ANY SEAWATER PUMP
-     RUNNING M.079C, the COOLING WATER ON FEEDBACK O.0280 to the panel). System 2 (SWBP outlet): M.0792 row 19 / M.0793 row 21 ->
-     I.0415 DIR-DF1002. Before: nothing answered the command, the filter stayed STOPPED */
-  'DITL-39': [
-    { on: 7, off: 9, req: 0, e: 'FIDIR-DF1001', t: 0 },
-    { on: 18, off: 20, e: 'FIDIR-DF1002', t: 0 }
-  ]
-};
-function fdSheet(s, code) {
-  const k = (s._inst && s._inst.k) || 0;
-  const t = S.sheets.find(x => new RegExp('\\)' + code + '$').test(x.name));
-  if (!t || k === 0 || !window.WORLD || !WORLD.instOf) return t;
-  const L = WORLD.instOf.get(t);
-  return (L && L[k]) || null;
-}
-function fdStep(s, dt) {
-  const b = (s._inst && s._inst.base) || s,
-    m = /(DITL-\d+[A-Z]?)$/.exec(b.name),
-    L = m && FD[m[1]];
-  if (!L) return false;
-  s.usw = s.usw || {};
-  const act = simIn(s),
-    st = (s._fd = s._fd || {});
-  let ch = false;
-  L.forEach((d, j) => {
-    const x = (st[j] = st[j] || { pos: d.rest ? 1 : 0, init: 0 });
-    let want = x.pos;
-    if (d.on != null) {
-      if (act.has(d.on) && !act.has(d.off)) want = 1;
-      else if (act.has(d.off) && !act.has(d.on)) want = 0;
-      /* a permissive output row of this sheet (DITL-39 row 1 ANY SEAWATER PUMP RUNNING) */
-      if (d.req != null) {
-        const o = window.WORLD && WORLD.out && WORLD.out[s.name];
-        if (!(o && o.has(d.req))) want = 0;
-      }
-    } else if (d.hold != null) want = act.has(d.hold) ? 1 : 0;
-    else if (d.flame) {
-      const v16 = fdSheet(s, 'DITL-16'),
-        o = v16 && window.WORLD && WORLD.out && WORLD.out[v16.name],
-        oil = !!(o && o.has(21) && o.has(23)),
-        ign = !!(st[0] && st[0].pos >= 1);
-      want = oil && (ign || x.pos >= 1) ? 1 : 0;
-    }
-    if (d.rest) want = 1;
-    const tgt = want ? 1 : 0;
-    if (tgt !== x.pos) {
-      TMBUSY = true;
-      x.acc = (x.acc || 0) + dt;
-      if (x.acc >= (d.t || 0) || !x.init) {
-        x.pos = tgt;
-        x.acc = 0;
-      }
-    } else x.acc = 0;
-    const se = x.pos >= 1,
-      sr = x.pos <= 0;
-    if (!x.init || x.se !== se) {
-      s.usw[d.e] = se;
-      if (d.r) s.usw[d.r] = sr;
-      x.se = se;
-      ch = true;
-    }
-    x.init = 1;
-  });
-  return ch;
-}
-/* 3.2.0 R9 #79: the INVERTER PANEL of a drive drawn as a box on the sheet (DITL-43 AIR PREHEATER INVERTER PANEL): the DCS sends
-   CSC-FA1052M1-1 START COMMAND (net into the box, AND of the START P.B. pulse, NOT TRIP and NOT LOCAL) and CSO-FA1052M1-1 STOP
-   COMMAND (STOP P.B., or running with the speed LOW and LOW LOW after the delays); the panel answers YS-FA1052M1 I.0650 RUNNING
-   (input row 10) and the speed switches SAL / SALL-FA1052 I.0653 / I.0654 SPEED NOT LOW / NOT L.L. (rows 12, 13). The panel holds the
-   drive running until a STOP COMMAND or a trip (I.0651 NOT TRIP = 0, a field trip). Before: nothing answered the START COMMAND (no
-   MOR / MIR label on this sheet), the air preheater stayed STOPPED */
-const INV = { 'DITL-43': { st: 'START COMMAND', sp: 'STOP COMMAND', run: 9, spd: [11, 12], ok: 4, t: 2 } };
-function invNets(s) {
-  if (s.nl._inv) return s.nl._inv;
-  const all = [...s.tx, ...Object.values(s.cells).flat()],
-    net = w => {
-      const t = all.find(q => q.t === w);
-      if (!t) return -1;
-      const g = s.nl.segs
-        .filter(q => q.h && q.x2 >= t.x - 2 && q.x2 <= t.x + 12 && q.y1 > t.y && q.y1 - t.y <= 8)
-        .sort((a, b) => a.y1 - b.y1)[0];
-      return g ? g.n : -1;
-    };
-  const b = (s._inst && s._inst.base) || s,
-    d = INV[/(DITL-\d+[A-Z]?)$/.exec(b.name)[1]];
-  return (s.nl._inv = { st: net(d.st), sp: net(d.sp) });
-}
-function invStep(s, v, dt) {
-  const b = (s._inst && s._inst.base) || s,
-    m = /(DITL-\d+[A-Z]?)$/.exec(b.name),
-    d = m && INV[m[1]];
-  if (!d || !s.nl) return false;
-  const N = invNets(s);
-  if (N.st < 0) return false;
-  s.sig = s.sig || {};
-  const F = (s._fd = s._fd || {}),
-    x = (F.inv = F.inv || { run: s.sig[d.run + ':S'] ? 1 : 0, acc: 0 });
-  let tgt = x.tgt == null ? x.run : x.tgt;
-  if (v[N.st] && !(N.sp >= 0 && v[N.sp])) tgt = 1;
-  if (N.sp >= 0 && v[N.sp]) tgt = 0;
-  const trip = s._ftrip || !s.sig[d.ok + ':S'];
-  if (trip) tgt = 0;
-  x.tgt = tgt;
-  let ch = false;
-  if (tgt !== x.run) {
-    TMBUSY = true;
-    x.acc += dt;
-    if (x.acc >= d.t || trip) {
-      x.run = tgt;
-      x.acc = 0;
-      s.sig[d.run + ':S'] = !!tgt;
-      d.spd.forEach(r => (s.sig[r + ':S'] = !!tgt));
-      ch = true;
-    }
-  } else x.acc = 0;
-  return ch;
-}
-function motTxt(s) {
-  const mt = s.nl.mot || [],
-    r = motRT(s);
-  return mt
-    .map(
-      (m, j) =>
-        'MOT ' +
-        m.tag +
-        ': ' +
-        (r[j].run ? 'RUNNING' : 'STOPPED') +
-        ((m.mos < 0 && !!r[j].run !== !!simulate(s.nl, simIn(s))[m.mor]) || (m.mos >= 0 && !!r[j].tgt !== !!r[j].run)
-          ? ' (changing…)'
-          : '')
-    )
-    .join(' | ');
-}
-function mvRT(s) {
-  const mv = (s.nl && s.nl.mv) || [];
-  let r = MST[s.name];
-  if (!r || r.length !== mv.length)
-    r = MST[s.name] = mv.map(b => ({ pos: b.sv && b.dir === 'close' ? 100 : 0, run: 0, lr: 1, tq: 0 }));
-  return r;
-}
-function mvTr(s, j) {
-  const v = s.mvt && +s.mvt[j];
-  return v > 0 ? v : s.nl.mv[j] && s.nl.mv[j].sv ? 3 : 10;
-}
-function mvForced(s) {
-  const F = new Map(),
-    mv = (s.nl && s.nl.mv) || [];
-  if (!mv.length) return F;
-  const rt = mvRT(s);
-  mv.forEach((b, j) =>
-    b.fb.forEach(f => {
-      if ((f.ty === 'ZSO' || f.ty === 'ZSC') && f.mir >= 0)
-        F.set(f.mir, f.ty === 'ZSO' ? rt[j].pos >= 100 : rt[j].pos <= 0);
-    })
-  );
-  return F;
-}
-function grpState(s) {
-  const m = new Map(),
-    /* one world (2.2.0-beta.6): the master row can be fed by another sheet (FROM column); a reader that has its own FROM link follows that link */
-    W = window.WORLD && WORLD.live && s._win,
-    D = W && WORLD.idx && WORLD.idx.din.get(s);
-  ((s.nl && s.nl.grp) || []).forEach(g => {
-    const v = !!s.sig[g.master + ':S'] || !!(W && s._win.has(g.master));
-    g.readers.forEach(r => {
-      if (!(D && D.has(r.row))) m.set(r.row, r.inv ? !v : v);
-    });
-  });
-  return m;
-}
-/* simulate mode: the DITL Simulate button, or the one world (ABC + DITL, src/world/world.js) while it runs */
-/* 2026-11-01 (user "Ge ayusin pre", 150 MW: PAF / SAF / IDF STOPPED in the logic, M.3302 / 3303 / 3304 = 0): the ABC PAUSED is the
-   simulation with its time stopped, not a plant with its wires cut. A read while paused (the alarm scan, a faceplate, an HMI page:
-   DUI.outVal -> simSheet) evaluated the latches without the inputs from the other sheets (_win): DITL-27A saw "IDF RUNNING" = 0 and
-   its SAF latch was reset, at RUN the PAF followed (DITL-26A row 18 SAF STOPPED -> TR120 -> reset). The one world with its links keeps
-   its inputs while the ABC page is paused too */
-function simOn() {
-  return SIM || !!(window.WORLD && (WORLD.live || (WORLD.on && WORLD.idx && window.AN && AN.cat === 'an')));
-}
-function simIn(s) {
-  const sim = simOn(),
-    on = new Set(),
-    F = sim ? mvForced(s) : new Map(),
-    GR = sim ? grpState(s) : new Map();
-  /* one world: input rows driven by another DITL sheet (FROM column, e.g. 28A-77) or by the ABC (TO DITL) */
-  if (sim && s._win) s._win.forEach(i => on.add(i));
-  /* 3.2.0-beta.23: a normally closed push button (DITL-03F rows 25 / 26 BOILER EMERGENCY TRIP P.B.(1) / (2) (N.C.); the LCP contacts
-     "NOT OFF P.B." / "NOT LOCAL STOP P.B." of DITL-09 rows 18 / 22 and DITL-21A row 25) is closed (1) while nobody presses it: a cold
-     start had it 0 = pressed, the trip / OFF was ON for ever (the MFT could never be reset, a burner never lit). A press (or the
-     operator's hand value) sets it 0 */
-  if (!s._ncRows) {
-    s._ncRows = [];
-    for (let i = 0; i < (s.rows || []).length; i++) {
-      const t = (s.cells[i + ':S'] || []).map(x => x.t).join(' ');
-      if ((/N\.\s*C\./i.test(t) || /\bNOT\b.*\b(OFF|STOP)\b/i.test(t)) && /P\.\s*B|PUSH/i.test(t)) s._ncRows.push(i);
-    }
-  }
-  for (const i of s._ncRows) if (s.sig[i + ':S'] === undefined) s.sig[i + ':S'] = true;
-  for (const k in s.sig)
-    if (s.sig[k] && k.split(':')[1] === 'S') {
-      const i = +k.split(':')[0];
-      if (!F.has(i) && !GR.has(i)) on.add(i);
-    }
-  GR.forEach((v, i) => {
-    if (v) on.add(i);
-  });
-  F.forEach((v, i) => {
-    if (v) on.add(i);
-  });
-  if (sim && s.nl && s.nl.mv && s.nl.mv.length) {
-    const rt = mvRT(s);
-    s.nl.mv.forEach((b, j) => {
-      if (rt[j].tq)
-        b.fb.forEach(f => {
-          if (f.ty === 'TS' && f.mir >= 0) on.add(f.mir);
-        });
-    });
-  }
-  return on;
-}
-function mvOut(s, act) {
-  const M = new Map(),
-    mv = (s.nl && s.nl.mv) || [];
-  if (!mv.length) return M;
-  const rt = mvRT(s);
-  mv.forEach((b, j) => {
-    const r = rt[j];
-    b.fb.forEach(f => {
-      let v = 0;
-      if (f.ty === 'ZSO') v = r.pos >= 100;
-      else if (f.ty === 'ZSC') v = r.pos <= 0;
-      else if (f.ty === 'MIL') v = f.mir >= 0 ? act.has(f.mir) : !!r.lr;
-      else if (f.ty === 'MIT') v = f.mir >= 0 && act.has(f.mir);
-      else if (f.ty === 'TS') v = (f.mir >= 0 && act.has(f.mir)) || r.tq;
-      M.set(f.row, v ? 1 : 0);
-    });
-  });
-  return M;
-}
-function mvFlags(s, j, act) {
-  const b = s.nl.mv[j],
-    r = mvRT(s)[j],
-    mil = b.fb.find(f => f.ty === 'MIL');
-  return {
-    rem: !mil || (mil.mir >= 0 ? act.has(mil.mir) : !!r.lr),
-    trip: b.fb.some(f => f.ty === 'MIT' && f.mir >= 0 && act.has(f.mir))
-  };
-}
-function mvStep(s, v, dt) {
-  const mv = (s.nl && s.nl.mv) || [];
-  if (!mv.length) return false;
-  const rt = mvRT(s),
-    act = simIn(s);
-  let ch = false;
-  mv.forEach((b, j) => {
-    const r = rt[j],
-      o = !!(b.open && b.open.n >= 0 && v[b.open.n]),
-      c = !!(b.close && b.close.n >= 0 && v[b.close.n]),
-      { rem, trip } = mvFlags(s, j, act),
-      st = x => (x >= 100 ? 2 : x <= 0 ? 0 : 1),
-      s0 = st(r.pos),
-      run0 = r.run;
-    if (b.sv) {
-      const cmd = b.inv ? !o : o,
-        wantOpen = b.dir === 'close' ? !cmd : cmd;
-      if (!r.init) {
-        r.init = 1;
-        r.pos = wantOpen ? 100 : 0;
-      }
-      r.run = wantOpen ? (r.pos < 100 ? 1 : 0) : r.pos > 0 ? -1 : 0;
-    } else if (trip) r.run = 0;
-    else if (rem) {
-      if (o && c) r.run = 0;
-      else if (o && r.pos < 100) r.run = 1;
-      else if (c && r.pos > 0) r.run = -1;
-    }
-    if (r.run) TMBUSY = true;
-    r.pos = Math.max(0, Math.min(100, r.pos + (r.run * dt * 100) / mvTr(s, j)));
-    if ((r.run > 0 && r.pos >= 100) || (r.run < 0 && r.pos <= 0)) r.run = 0;
-    const tq0 = r.tq;
-    r.tq =
-      !b.sv && ((r.pos <= 0 && c && !o) || (r.pos >= 100 && o && !c))
-        ? 1
-        : 0; /* v12b: torque switch (TS) trips when the valve is at the end and the motor is still commanded (seats the valve, breaks the seal-in) */
-    if (st(r.pos) !== s0 || r.run !== run0 || r.tq !== tq0) ch = true;
-  });
-  return ch;
-}
+/* the timers, motors, flow dampers, inverters and motor-operated valves (UN ... mvStep): parts/03b-sim.js */
 function mvTxt(s, j) {
   const r = mvRT(s)[j],
     f = mvFlags(s, j, simIn(s));
@@ -6057,7 +6521,7 @@ function mvUI(s) {
     }
   });
 }
-const KN = { on: 'ON DELAY', off: 'OFF DELAY', pulse: 'PULSE', npulse: 'PULSE (falling)', flash: 'FLASHER' };
+/* KN: parts/03b-sim.js */
 function tmList() {
   const s = cur();
   return s && s.nl ? s.nl.gates.filter(g => g.t === 'TMR') : [];
@@ -6940,36 +7404,11 @@ addEventListener('keydown', e => {
 });
 $('bmode').onclick = () => {
   SIM = !SIM;
-  DREG = {};
-  MST = {};
-  MS = {};
   sel = null;
   WT = false;
   PEND = null;
   closeEd();
-  S.sheets.forEach(x => {
-    /* 3.2.0 retest #28 #16 (beta.45 check: the field action "SWP-A REMOTE" done while the Training was PAUSED was lost at the first
-       RUN, START SWP-A stayed blocked): entering RUN keeps the inputs set before it (the field contacts of the Training); leaving RUN
-       (VIEW, and the Reset button = leave + enter) clears them as before */
-    if (!SIM) x.sig = {};
-    x.usw = {};
-    x._fd = null;
-    if (x.nl) {
-      x.nl._v = null;
-      x.nl.fx = [];
-      x.nl.ufx = [];
-    }
-    ((x.nl && x.nl.gates) || []).forEach(g => {
-      if (g.t === 'FF') g.q = 0;
-      if (g.t === 'CNT') g.N = g.pin = g.rp = 0;
-      if (g.t === 'TMR') g.st = { acc: 0, out: 0, pre: 0, run: 0 };
-    });
-  });
-  tick.t = 0;
-  /* 2.2.0-beta.3: after "Start at 150 MW" the DITL starts again in the 150 MW state (src/world/ditl150.js) */
-  try {
-    if (SIM && window.DITL150 && DITL150.on) DITL150.apply();
-  } catch (e) {}
+  ditlStates();
   if (SIM && cur())
     msg(
       'Simulate: click an input (switch icon on the drawing, or in the panel) to turn it ON / OFF. PB rows are push buttons: press and hold.'
@@ -7045,32 +7484,7 @@ $('fjson').onchange = async e => {
 };
 let LSF = false,
   FAILS = [];
-const isAn = (s, i) =>
-  !!(
-    s.nl &&
-    s.nl.anRows &&
-    s.nl.anRows.has(i)
-  ); /* v26: row that feeds only limit comparators = analog input (numeric value, not a switch) */
-const anVal = (s, a) => {
-  const v = avOf(s);
-  return v && v[a.key] !== undefined ? v[a.key] : a.def;
-};
-const anValN = (s, n) => {
-  const a = (s.nl.an || []).find(x => x.net === n);
-  return a ? anVal(s, a) : 0;
-};
-const cmpOn = (s, g) => {
-  const v = anValN(s, g.ins[0]),
-    sp = g.spNet !== undefined ? anValN(s, g.spNet) : g.sp;
-  return g.cmp === '>' ? (g.eq ? v >= sp : v > sp) : g.eq ? v <= sp : v < sp;
-};
-const cmpTxt = g =>
-  (g.cmp === '>' ? 'High ' : 'Low ') +
-  g.cmp +
-  (g.eq ? '=' : '') +
-  ' ' +
-  (g.spNet !== undefined ? g.spVar : g.sp) +
-  (g.unit || '');
+/* isAn, anVal, anValN, cmpOn, cmpTxt: parts/03b-sim.js */
 function anAsk(s, a) {
   const g = a.g.map(i => s.nl.gates[i]),
     v = prompt(
@@ -7104,10 +7518,7 @@ const isPB = (s, i) =>
     (s.cells[i + ':' + c] || []).some(t => /(^|[^A-Z])P\.?\s?B\.?($|[^A-Z])|PUSH\s*-?\s*BUTTON/i.test(t.t))
   );
 let PBD = null;
-const lockd = (s, i) =>
-  mvForced(s).has(i) ||
-  (s.nl.mir || []).some(m => m.row === i) ||
-  grpState(s).has(i); /* v10: the input of a row = its SERVICE cell, only rows that a wire reaches */
+/* lockd: parts/03b-sim.js */
 function diag(s) {
   /* 1.22.0: the netlist of a sheet is built when the sheet is first opened (render); Health reads every sheet, so build it here too
      (before: "Cannot read properties of undefined (reading 'src')" and the Health panel did not open) */
@@ -19312,6 +19723,8 @@ function anProcList(S) {
       } else byPv[k] = b;
     }
   }
+  /* 3.2.0: the plant model as built, for Reset (sheets.js anResetAll: back to this, in the same object; the unit model holds it) */
+  for (const b of out) if (b.proc && !b.proc0) b.proc0 = anStateEnc(b.proc, new Map());
   S.procs = out;
   return out;
 }
@@ -19320,6 +19733,10 @@ function anProcList(S) {
    the direction (ACT) stay as before. Only loops that run in AUTO / REMOTE on the snapshot with their own valve; cascade
    masters, parallel valves and measurements shared by two controllers are not anchored (their PV is made by other loops). */
 /* actuators in series on one fan (see u below): tag -> 1 */
+/* 3.2.0: the fields of a plant model that a run writes (plant.js step, unit.js, hmi-op.js, plant-window.js): Reset takes them back. Not
+   hop / Ka: the HMI snapshot anchor of a loop is made once at the first scan (ABC-019 TICHR1002: 39.PNG 541 C; made again after a run it
+   was null, the reheat steam stayed at 185 C and the turbine roll held, CHECK full); Reset takes away the 150 MW one only (hop.dyn, sheets.js) */
+const AN_PROC_RUN = ['integ', 'y0', 'ld', 'uf', 'smul', 'sbase', 'tcap', 'fr', 'tsat', 'src', 'shold', 'scap', 'op', 'hopReq', 'fell', 'dn', 'cyc', 'mul', 'integLoss', 'integLoss0'];
 const AN_SERIES = { PICFG108: 1, PICFG108A: 1 };
 /* 3.2.0-beta.40: controller -> the hand station whose output is the real actuator of the process (ABC-020, see xman below) */
 const AN_XACT = { TICHR1002A: 'HICHR1002A' };
@@ -21644,7 +22061,7 @@ function anDitlPos(name, j) {
 }
 /* 3.2.0-beta.59 (#116, user 2026-10-29 "DAPAT S PLANT MODEL GALING"): the run state of a DITL motor drawing (1 RUN, 0 STOP / TRIP), or
    of one output row of a drawing of two machines ("DITL-39@3" = DEBRIS FILTER S-1502 IN OPERATION); null while the one world is not
-   built. The same reading as the lamps of the Training dock and the HMI (events.js lsAlarms.motState, dock.js mst) */
+   built. The same reading as the lamps of the Training dock and the HMI (DUI.motState of src/digital/parts/03c-read.js, dock.js mst) */
 function anDitlRun(addr) {
   try {
     if (typeof S === 'undefined' || !S.sheets || !window.WORLD || !WORLD.on || !WORLD.idx || !window.DUI) return null;
@@ -21661,7 +22078,7 @@ function anDitlRun(addr) {
       const v = DUI.outVal(s, +m[2]);
       return v == null ? null : v === 1 ? 1 : 0;
     }
-    const st = window.lsAlarms ? lsAlarms.motState(s) : null;
+    const st = DUI.motState ? DUI.motState(s) : null;
     return st == null ? null : st === 'RUN' ? 1 : 0;
   } catch (e) {
     return null;
@@ -25208,11 +25625,48 @@ function anPull(sh) {
 /* RESET of the model: every sheet back to the drawing (tuning kept in AN.sv), then all sheets are settled: the same start as a fresh load, whatever the sheet order */
 function anResetAll() {
   anUnitStop(); /* 2.2.0-beta.9: Reset = cold boiler, the unit model stops (2.2.0-beta.11: and its load disturbance of the spray loops) */
+  /* 3.2.0 (user 2026-11-02 via the leader: "dapat iisa ang state pagkatapos ng Reset, kahit ano ang ginawa bago nito"): the unit /
+     source / cycle models as the page loaded them (state.js). Before, what a run left there (the unit lists of the plant models, the
+     field states, the cycle) made the next start differ: Reset + 150 MW after a cold start gave other coal / PID values */
+  anStateReset();
+  /* and what a start left on AN: the sheets of the unit model (the next start sets them again: unit.js anUnitStart), its report */
+  AN.unitSheets = [];
+  AN.load150 = null;
+  AN.steady = false;
   for (const sh of AN.sheets) {
     if (!sh.S) continue;
     const S = sh.S;
     S.look = {};
     anInit(S);
+    /* the run state of every plant model back to what the load built (it kept ld, y0, the integrator, the cold start fields of the run
+       before), in the same object: the unit model holds these objects (a new one in its place: no air in a cold start). Only the run
+       state: the links made after the load (links.js procRemote: mode, remote, xsh) stay (restoring them broke the turbine roll) */
+    for (const b of S.procs || [])
+      if (b.proc && b.proc0) {
+        const p0 = anStateDec(b.proc0);
+        /* a model that fell to "pin" during the run (plant.js q.bad: ABC-010 FICFW1007 in a cold start) gets its links back */
+        if (b.proc.fell && b.proc1) {
+          Object.assign(b.proc, b.proc1, { ai: b.proc1.ai.slice(), aiOut: b.proc1.aiOut.slice() });
+          if (!('remote' in b.proc1)) delete b.proc.remote;
+        }
+        for (const k of AN_PROC_RUN)
+          if (k in p0) b.proc[k] = p0[k];
+          else delete b.proc[k];
+      }
+    {
+      const v = AN.sv[sh.name];
+      for (const id in (v && v.proc) || {}) {
+        const b = S.blk.find(q => String(q.id) === String(id));
+        if (b && b.proc) {
+          const q = v.proc[id];
+          if (q.ver === 2) Object.assign(b.proc, q);
+          else {
+            b.proc.on = q.on;
+            b.proc.dist = q.dist || 0;
+          }
+        }
+      }
+    }
     /* 2.1.0: the plant model of every sheet follows the same rule as a fresh load (ensure): before, a sheet loaded before the
        plant was switched on kept it OFF until RUN, so Reset on a fresh page and Reset after a run gave another start (5 sheets) */
     if (AN.procDefault === true || (AN.procDefault === undefined && AN.plantOn === true)) for (const b of S.procs || []) if (b.proc) b.proc.on = true;
@@ -25241,6 +25695,14 @@ function anResetAll() {
       try {
         procRemote(sh);
       } catch (e) {}
+  /* 3.2.0: the links of every plant model as they are now (not fallen), for the next Reset */
+  for (const sh of AN.sheets)
+    for (const b of (sh.S && sh.S.procs) || [])
+      if (b.proc && !b.proc.fell && !b.proc1) {
+        const pr = b.proc;
+        b.proc1 = { mode: pr.mode, ai: (pr.ai || []).slice(), aiOut: (pr.aiOut || []).slice(), pinExt: pr.pinExt };
+        if ('remote' in pr) b.proc1.remote = pr.remote;
+      }
   {
     const seen = new Set(),
       fr = sh => {
@@ -25992,6 +26454,114 @@ function wireTag(S, n) {
   }
   return (S.nets[n]._wt = best);
 }
+/* ---------- the FROM / TO DITL texts of an ABC sheet and the address descriptions (3.2.0 Web Worker, stage b: no DOM, the one world
+   src/world/world.js reads them; moved as they were from ui/trace.js and data/loader.js) ---------- */
+/* descriptions: station -> address -> record (IO list rows: tag, description, range, unit, type, SIG.AB address; memory lists: description,
+   remark, timer type / seconds). The page fills it from its data (data/loader.js adesLoad), the engine alone from its host */
+let ADES = null;
+function adesFind(sh, text) {
+  if (!ADES || !text) return null;
+  const t = String(text).trim();
+  let m = /^(?:S(\d)\s*)?([A-Z]{1,2})\.([0-9A-F]{3,4})$/i.exec(t),
+    pre,
+    num,
+    dot = '.';
+  if (m) {
+    pre = m[2].toUpperCase();
+    num = m[3].toUpperCase().padStart(4, '0');
+  } else {
+    m = /^(?:S(\d)\s*)?(TR|SI|SO|AI|AO|DI|DO|FP|PTN)(\d{1,6})$/i.exec(t);
+    if (!m) return null;
+    pre = m[2].toUpperCase();
+    dot = '';
+    num = pre === 'PTN' ? m[3].padStart(6, '0') : m[3].padStart(4, '0');
+  }
+  const stn = m[1] ? +m[1] : sh ? shStn(sh) : null,
+    T = ADES[String(stn)],
+    key = pre + dot + num,
+    r = T && T[key];
+  return r ? { rec: r, stn, key } : null;
+}
+function adesText(r) {
+  if (!r) return '';
+  return r.k === 'io' ? [r.tag, r.d].filter(Boolean).join(' · ') : [r.d, r.r].filter(Boolean).join(' · ');
+}
+const DS_RX = /(FROM|TO)\s+DITL\s*([0-9]{2}[A-Z]?)\s*-\s*(\d+)/gi;
+function dsIdx(sh) {
+  if (sh._ds) return sh._ds;
+  const S = ensure(sh),
+    from = new Map(),
+    to = new Map(),
+    toDig = new Map(),
+    lost = [];
+  for (const t of S.tx) {
+    if (!/DITL/i.test(t.t)) continue;
+    const isFrom = /FROM/i.test(t.t);
+    DS_RX.lastIndex = 0;
+    const refs = [];
+    let m;
+    while ((m = DS_RX.exec(t.t))) refs.push('DITL ' + m[2] + '-' + m[3]);
+    /* 2.2.0-beta.3: a list after the first one ("TO DITL 02-25, DITL 03F-16, DITL 19-16", ABC-027 M.2504): every reference, not the first only */
+    if (refs.length) {
+      const L = /,\s*(?:DITL\s*)?([0-9]{2}[A-Z]?)\s*-\s*(\d+)/gi;
+      while ((m = L.exec(t.t))) if (!refs.includes('DITL ' + m[1] + '-' + m[2])) refs.push('DITL ' + m[1] + '-' + m[2]);
+    }
+    if (!refs.length) refs.push(t.t.replace(/[()]/g, '').trim());
+    const near = [];
+    for (const nn of S.nets) {
+      if (!nn.segs.length) continue;
+      let d = 1e9;
+      for (const i of nn.segs) d = Math.min(d, anPtSeg(t.x, t.y, S.seg[i]));
+      if (d <= 20) near.push({ id: nn.id, d });
+    }
+    near.sort((p, q) => p.d - q.d);
+    /* 1.22.0: a FROM text that touches a wire (<= 8) names THAT wire, even when an input wire is a bit farther
+       (ABC-004A: the four "( FROM DITL 07-64 )" were put on the SIG.AB flags B.0723 ... at 8 ~ 9 instead of M.3410 ... at 5; ABC-003B: M.025B at 18 instead of M.3434 at 5) */
+    const pick = isFrom
+      ? (near[0] && near[0].d <= 8 ? near[0] : null) || near.find(q => S.ext.includes(q.id)) || near[0]
+      : near.find(q => !S.ext.includes(q.id) && S.drv[q.id] && S.drv[q.id].some(d => d.k !== 'LINK')) || near[0];
+    if (!pick) {
+      lost.push({ t: t.t, x: Math.round(t.x), y: Math.round(t.y) });
+      continue;
+    }
+    const M = isFrom ? from : to;
+    const o = M.get(pick.id) || [];
+    for (const r of refs) if (!o.includes(r)) o.push(r);
+    M.set(pick.id, o);
+    /* 2.2.0-beta.4: the nearest DIGITAL net driven by the logic, for a TO DITL text that sits by an analog wire (ABC-001C "TO DITL
+       40-09" between the main steam pressure AI0131 and the output M.310D of its LOW LOW comparator, < 72.9 kg/cm2) */
+    if (!isFrom && S.nets[pick.id] && !S.nets[pick.id].dig) {
+      const dg = near.find(q => S.nets[q.id] && S.nets[q.id].dig && !S.ext.includes(q.id) && S.drv[q.id] && S.drv[q.id].length);
+      if (dg) for (const r of refs) toDig.set(r + '@' + pick.id, dg.id);
+    }
+  }
+  /* 2.3.0-beta.1 (LINK-3): a "TO DITL" text written under its own comparator box belongs to the wire named in S.dsTo (ABC-001C
+     "TO DITL 40-06" = O.0177 > 134 kg/cm2, not M.3109 under it; DITL-40 rows 6 ~ 9, 13) */
+  if (S.dsTo) {
+    const key = r => {
+      const m = /([0-9]{2,3}[A-Z]?)\s*-\s*(\d+)/.exec(r);
+      return m ? m[1] + '-' + +m[2] : r;
+    };
+    for (const ref in S.dsTo) {
+      const n = S.lab.findIndex((l, i) => l && String(l.t).trim() === S.dsTo[ref] && S.drv[i] && S.drv[i].length);
+      if (n < 0) continue;
+      let full = null;
+      for (const [id, o] of [...to]) {
+        const j = o.findIndex(r => key(r) === ref);
+        if (j < 0) continue;
+        full = o[j];
+        o.splice(j, 1);
+        if (!o.length) to.delete(id);
+        toDig.delete(full + '@' + id);
+      }
+      if (!full) continue;
+      const o = to.get(n) || [];
+      if (!o.includes(full)) o.push(full);
+      to.set(n, o);
+    }
+  }
+  return (sh._ds = { from, to, toDig, lost });
+}
 /* ===== ENGINE STATE: the whole running state of the analog engine as one plain value (a KEYFRAME) and back. No page access.
    3.2.0 Web Worker (user 2026-11-02 "Worker n. Lhat n", stage a): the engine of a worker and the mirror of the page must hold the
    same state; a keyframe carries it from one to the other (start, a starting state, an operator action that the engine runs).
@@ -26002,7 +26572,7 @@ function wireTag(S, n) {
    copied: the other side keeps its own ===== */
 const AN_STATE_OBJ = () => ({ AN_UNIT, AN_SRC, AN_CYC, AN_SW, AN_MU, AN_ACW, AN_MT, AN_AIR });
 /* the flags of AN that the engine reads (plain values) */
-const AN_STATE_FLAGS = ['plantOn', 'procDefault', 'startState', 'steady', 'spd', 'run', 'view', 'tierK', '_cold0', 'load150'];
+const AN_STATE_FLAGS = ['i', 'plantOn', 'procDefault', 'startState', 'steady', 'spd', 'run', 'view', 'tierK', '_cold0', 'load150'];
 /* the sheets a step takes besides the linked ones (links.js actSet): names, and the second sheet of the page (a sheet) */
 const AN_STATE_SETS = ['hmiSheets', 'plantSheets', 'unitSheets', 'checkSheets', 'worldSheets', 'p2'];
 function anStateRefs() {
@@ -26016,6 +26586,9 @@ function anStateRefs() {
     S.blk.forEach((b, j) => ref.set(b, { $B: [i, j] }));
     S.nets.forEach((n, j) => ref.set(n, { $N: [i, j] }));
   });
+  /* a DITL sheet by its name (the unit model keeps the sheets it reads, AN_UNIT._dr: copied, it was 1.4 MB of drawings and the copy
+     was read instead of the sheet) */
+  if (typeof ditlAll === 'function') for (const d of ditlAll()) ref.set(d, { $D: d.name });
   return ref;
 }
 const AN_TA = { Float64Array, Float32Array, Int32Array, Uint8Array, Int8Array, Uint16Array, Int16Array, Uint32Array };
@@ -26068,6 +26641,8 @@ function anStateDec(x, keep) {
     if (v.$S != null) return ensure(AN.sheets[v.$S]);
     if (v.$B) return ensure(AN.sheets[v.$B[0]]).blk[v.$B[1]];
     if (v.$N) return ensure(AN.sheets[v.$N[0]]).nets[v.$N[1]];
+    if (v.$D) return (typeof ditlAll === 'function' && ditlAll().find(x => x.name === v.$D)) || null;
+    if (v.$P) return ensure(AN.sheets[v.$P[0]]).blk[v.$P[1]].proc; /* engine/sync.js: a plant model by its block */
     if (v.$ref != null) return ids.get(v.$ref);
     if (v.$ta) {
       const a = new AN_TA[v.$ta](v.a.length);
@@ -26106,6 +26681,28 @@ function anStateInto(dst, src) {
   for (const k of Object.keys(dst)) if (!(k in src)) delete dst[k];
   for (const k of Object.keys(src)) if (src[k] !== undefined || !(k in dst) || typeof dst[k] !== 'function') dst[k] = src[k];
 }
+/* the unit / source / cycle models as the script loaded them (Reset takes them again: sheets.js anResetAll) */
+const AN_STATE_INIT = anStateEnc(AN_STATE_OBJ(), new Map());
+/* in place, down the tree: a key the run made goes, a value goes back; an object that was there at load stays the same object (others
+   hold it: a copy in its place broke the CHECK cold start, the fans gave no air) */
+function anStateInPlace(live, init) {
+  for (const k of Object.keys(live)) if (!(k in init)) delete live[k];
+  for (const k of Object.keys(init)) {
+    const a = live[k],
+      b = init[k];
+    if (typeof a === 'function') continue;
+    const plain = x => x && typeof x === 'object' && !ArrayBuffer.isView(x) && !(x instanceof Map) && !(x instanceof Set);
+    if (plain(a) && plain(b) && Array.isArray(a) === Array.isArray(b)) {
+      if (Array.isArray(a)) a.length = b.length;
+      anStateInPlace(a, b);
+    } else live[k] = b;
+  }
+}
+function anStateReset() {
+  const objs = AN_STATE_OBJ(),
+    st = anStateDec(AN_STATE_INIT, objs);
+  for (const k in objs) anStateInPlace(objs[k], st[k]);
+}
 function anStateCapture() {
   const ref = anStateRefs(),
     sh = AN.sheets.map(s => {
@@ -26123,7 +26720,8 @@ function anStateCapture() {
   for (const k of AN_STATE_FLAGS) flags[k] = AN[k];
   const sets = {};
   for (const k of AN_STATE_SETS) sets[k] = AN[k];
-  return anStateEnc({ sh, obj: AN_STATE_OBJ(), flags, sets }, ref);
+  /* AN.unit: the unit model once started (unit.js anUnitStart), the same object */
+  return anStateEnc({ sh, obj: AN_STATE_OBJ(), flags, sets, u: AN.unit === AN_UNIT ? 1 : 0 }, ref);
 }
 function anStateApply(kf) {
   const objs = AN_STATE_OBJ(),
@@ -26142,7 +26740,767 @@ function anStateApply(kf) {
   for (const k in objs) if (st.obj[k]) anStateInto(objs[k], st.obj[k]);
   for (const k of AN_STATE_FLAGS) AN[k] = st.flags[k];
   for (const k of AN_STATE_SETS) AN[k] = st.sets[k];
+  if (st.u) AN.unit = AN_UNIT;
+  else delete AN.unit;
   AN._asc = null; /* the step sets kept while a starting state loads */
+}
+/* ===== ENGINE SYNC (3.2.0 Web Worker, stage c): the engine of the worker and the mirror of the page hold the same state; after a start
+   from one keyframe (engine/state.js + the DITL keyframe of src/digital/parts/03d-state.js) only what changed goes across.
+   The state is cut in SLOTS, the same list on both sides (the same sheets, the same order): per ABC sheet its values (rt.v, stp, acc:
+   the changed entries only), its inputs and forces, the rest of its run time, each block state, each plant model; each field of the
+   unit / source / cycle models; the flags of AN; per DITL sheet its inputs, its nets and parts, its forces; the DITL globals.
+   AN.sync.patch(w) = the slots whose value changed since the last patch or apply of this side (w = the writable slots only: what the
+   operator can write from the page); AN.sync.apply(p) puts a patch in, IN PLACE (other objects hold these: the unit model holds the
+   plant models), and takes it as seen. Engine -> page: patch() after each job; page -> engine: patch(true) = the operator's writes.
+   A plant model is written as its block ({$P}), not copied: the unit model points at it. No page access. ===== */
+let AN_SYNC = null;
+function anSyncRefs() {
+  const ref = anStateRefs();
+  AN.sheets.forEach((sh, i) => sh.S && sh.S.blk.forEach((b, j) => b.proc && ref.set(b.proc, { $P: [i, j] })));
+  return ref;
+}
+/* in place: an object keeps its identity, an array its length and items, anything else is replaced */
+function anSyncPut(o, k, v) {
+  const a = o[k],
+    plain = x => x && typeof x === 'object' && !ArrayBuffer.isView(x) && !(x instanceof Map) && !(x instanceof Set);
+  if (plain(a) && plain(v) && Array.isArray(a) === Array.isArray(v) && !(v.$S || v.$B || v.$N || v.$P)) {
+    if (Array.isArray(a)) {
+      a.length = v.length;
+      for (let i = 0; i < v.length; i++) a[i] = v[i];
+      for (const x of Object.keys(v)) if (!/^\d+$/.test(x)) a[x] = v[x];
+    } else anStateInto(a, v);
+  } else o[k] = v;
+}
+function anSyncSlots() {
+  const L = [],
+    add = (k, get, put, o) => L.push(Object.assign({ k, get, put }, o || {}));
+  AN.sheets.forEach((sh, i) => {
+    const S = sh.S;
+    if (!S) return;
+    /* the values: typed arrays, the changed entries only */
+    for (const f of ['v', 'stp', 'acc']) add('a' + i + f, () => S.rt[f], null, { ta: f });
+    /* the inputs and the forces: the operator writes them (faceplate, FORCE, the Training) */
+    add('x' + i, () => ({ ext: S.rt.ext, force: S.rt.force }), d => (anSyncPut(S.rt, 'ext', d.ext), anSyncPut(S.rt, 'force', d.force)), { w: 1 });
+    add(
+      'r' + i,
+      () => {
+        const mn = [];
+        S.blk.forEach((b, j) => b._mn !== undefined && mn.push([j, b._mn]));
+        return { t: S.rt.t, k: S.rt.k, ramp: S.rt.ramp, pm: S.rt.pm, pf: S.rt.pf, ev: S.rt.ev, look: S.look, xlk: S.xlk, plantT: S.plantT, _rem: S._rem, mn };
+      },
+      d => {
+        for (const f of ['t', 'k', 'ramp']) S.rt[f] = d[f];
+        for (const f of ['pm', 'pf', 'ev']) anSyncPut(S.rt, f, d[f]);
+        S.look = d.look;
+        S.xlk = d.xlk;
+        S.plantT = d.plantT;
+        S._rem = d._rem;
+        for (const [j, m] of d.mn) S.blk[j]._mn = m;
+      }
+    );
+    /* each block state (the operator writes the output of a MAN station: st.val) */
+    for (const id of Object.keys(S.rt.st))
+      add('s' + i + ':' + id, () => S.rt.st[id], d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => { const q = S.rt.st[id]; return q ? String(q.val) : ''; } });
+    /* each plant model (the PLANT window writes its operating point / disturbance) */
+    S.blk.forEach((b, j) => {
+      if (b.proc) add('p' + i + ':' + j, () => b.proc, d => anStateInto(b.proc, d), { w: 1, fast: () => b.proc.op + '|' + b.proc.dist + '|' + b.proc.on });
+    });
+  });
+  const objs = AN_STATE_OBJ();
+  for (const o in objs) for (const f of Object.keys(objs[o])) if (typeof objs[o][f] !== 'function') add('o' + o + '.' + f, () => objs[o][f], d => anSyncPut(objs[o], f, d));
+  add(
+    'fl',
+    () => {
+      const r = { f: {}, s: {} };
+      for (const k of AN_STATE_FLAGS) r.f[k] = AN[k];
+      for (const k of AN_STATE_SETS) r.s[k] = AN[k];
+      r.u = AN.unit === AN_UNIT ? 1 : 0;
+      return r;
+    },
+    d => {
+      for (const k of AN_STATE_FLAGS) AN[k] = d.f[k];
+      for (const k of AN_STATE_SETS) AN[k] = d.s[k];
+      if (d.u) AN.unit = AN_UNIT;
+      else delete AN.unit;
+    },
+    { w: 1 }
+  );
+  /* the DITL world (src/digital/parts/03d-state.js keys), by sheet name */
+  if (typeof ditlAll === 'function') {
+    for (const s of ditlAll()) {
+      const n = s.name;
+      const sh = () => ditlAll().find(x => x.name === n);
+      add('ds' + n, () => ditlPick(s, DITL_SH), d => { for (const x of DITL_SH) if (x in d) s[x] = ditlDec(d[x]); else delete s[x]; }, { w: 1, raw: 1 });
+      if (!s.nl) continue;
+      add('dn' + n, () => ({ v: (s.nl._v || []).map(x => (x ? 1 : 0)).join(''), g: (s.nl.gates || []).map(g => ditlPick(g, DITL_G)) }), d => {
+        const nl = s.nl;
+        nl._v = d.v ? Array.from(d.v, c => +c) : null;
+        (nl.gates || []).forEach((g, i) => { if (d.g[i]) for (const x of DITL_G) if (x in d.g[i]) g[x] = ditlDec(d.g[i][x]); else delete g[x]; });
+      }, { raw: 1 });
+      add('dx' + n, () => ditlPick(s.nl, ['fx', 'ufx']), d => { for (const x of ['fx', 'ufx']) if (x in d) s.nl[x] = ditlDec(d[x]); else delete s.nl[x]; }, { w: 1, raw: 1 });
+      void sh;
+    }
+    add('dg', () => {
+      const W = window.WORLD || {};
+      return { MST: ditlEnc(MST), MS: ditlEnc(MS), DREG: ditlEnc(DREG), t: tick.t, W: ditlPick(W, DITL_W), sw: W.plantSw ? W.plantSw() : null };
+    }, d => {
+      MST = ditlDec(d.MST);
+      MS = ditlDec(d.MS);
+      DREG = ditlDec(d.DREG);
+      tick.t = d.t;
+      if (window.WORLD) {
+        for (const x of DITL_W) if (x in d.W) WORLD[x] = ditlDec(d.W[x]); else delete WORLD[x];
+        if (d.sw && WORLD.plantSwSet) WORLD.plantSwSet(d.sw);
+      }
+    }, { raw: 1 });
+    add('dsim', () => ({ SIM, TSP, DPAUSE: typeof DPAUSE !== 'undefined' ? DPAUSE : false }), d => {
+      SIM = d.SIM;
+      TSP = d.TSP;
+      if (typeof DPAUSE !== 'undefined') DPAUSE = d.DPAUSE;
+    }, { w: 1, raw: 1 });
+  }
+  return L;
+}
+/* the slot list and what this side last sent or took (the same sheets: built again when the sheets change) */
+function anSyncState() {
+  const n = AN.sheets.filter(s => s.S).length + ':' + (typeof ditlAll === 'function' ? ditlAll().length : 0);
+  if (AN_SYNC && AN_SYNC.n === n) return AN_SYNC;
+  const L = anSyncSlots();
+  AN_SYNC = { n, L, by: new Map(L.map(s => [s.k, s])), last: new Map(), fast: new Map(), ref: anSyncRefs() };
+  return AN_SYNC;
+}
+const anSyncJ = (s, Y) => (s.raw ? JSON.stringify(s.get()) : JSON.stringify(anStateEnc(s.get(), Y.ref)));
+/* the slots that changed: [[key, json]] or, for the values, [[key, [index, value] ...]] */
+function anSyncPatch(w) {
+  const Y = anSyncState(),
+    out = [];
+  for (const s of Y.L) {
+    if (w && !s.w) continue;
+    if (s.ta) {
+      const a = s.get();
+      if (!a) continue;
+      let b = Y.last.get(s.k);
+      const ch = [];
+      if (!b || b.length !== a.length) {
+        for (let i = 0; i < a.length; i++) ch.push(i, a[i]);
+        Y.last.set(s.k, (b = a.slice()));
+      } else
+        for (let i = 0; i < a.length; i++)
+          if (!Object.is(a[i], b[i])) {
+            ch.push(i, a[i]);
+            b[i] = a[i];
+          }
+      if (ch.length) out.push([s.k, ch.map(x => (typeof x === 'number' && !isFinite(x) ? String(x) : x)), a.length]);
+      continue;
+    }
+    /* the operator's writes: a quick look first (a block state: its output only) */
+    if (w && s.fast) {
+      const f = s.fast();
+      if (Y.fast.get(s.k) === f) continue;
+      Y.fast.set(s.k, f);
+    }
+    const j = anSyncJ(s, Y);
+    if (Y.last.get(s.k) === j) continue;
+    Y.last.set(s.k, j);
+    out.push([s.k, j]);
+  }
+  return out;
+}
+/* a patch in (skip = keys this side wrote itself since: the operator wins) */
+function anSyncApply(p, skip) {
+  const Y = anSyncState();
+  for (const [k, j, n] of p) {
+    if (skip && skip.has(k)) continue;
+    const s = Y.by.get(k);
+    if (!s) continue;
+    if (s.ta) {
+      const a = s.get();
+      if (!a) continue;
+      let b = Y.last.get(k);
+      if (!b || b.length !== a.length) Y.last.set(k, (b = a.slice()));
+      for (let i = 0; i < j.length; i += 2) a[j[i]] = b[j[i]] = Number(j[i + 1]);
+      void n;
+      continue;
+    }
+    s.put(s.raw ? JSON.parse(j) : anStateDec(JSON.parse(j), s.get()));
+    /* as this side writes it now (the keys of an object put in place can come in another order) */
+    Y.last.set(k, anSyncJ(s, Y));
+    if (s.fast) Y.fast.set(k, s.fast());
+  }
+}
+/* after a keyframe (or any change of the whole state): this side takes the state as it is now as seen */
+function anSyncMark() {
+  AN_SYNC = null;
+  anSyncPatch();
+  const Y = anSyncState();
+  for (const s of Y.L) if (s.fast) Y.fast.set(s.k, s.fast());
+}
+/* ===== ENGINE: the controllers of a sheet (PID / PIDV with their A / M station, SV switch, mode inputs) and the .MAN / .LOC / .REM
+   mode addresses of a tag on every sheet, with the one M / A / R command (latchMode). No page access.
+   3.2.0 Web Worker (stage a): moved here from src/ui/hmi/hmi.js (the engine reads them: hmi-op.js starting states, plant.js MAN
+   station, unit.js, tcs.js); the faceplate takes them from AN (boot.js) ===== */
+/* ang .MAN / .LOC / .REM ng isang tag ay iisang HMI command sa buong DCS: lahat ng input na may ganitong pangalan sa lahat ng sheet (hindi lang ang sa sheet ng controller) */
+/* a wire named by its description only: not an address (B.0641, M.0228, AI0641) and not linked from another sheet */
+const descWire = (S2, n) =>
+  !(S2.xlk && S2.xlk[n]) &&
+  !/^(?:(?:S\d\s+)?[A-Z]{1,2}\.[0-9A-F]{4}|(?:S\d\s+)?[A-Z]{2}\d{4}|[A-Z]{2,}[A-Z0-9-]*\.[A-Z]{2,4}|\d\s*:\s*[A-Z])$/.test((AN.nm(S2, n) || '').trim()); /* 2.2.0-beta.9: also an address with its station (S2 M.2502) and a switch leg mark (1:B) */
+const modeNetsRaw = (tag, kinds, own) => {
+  const out = own ? [own] : [],
+    want = new Set(kinds.map(k => (tag + '.' + k).toLowerCase())),
+    add = (S2, n) => !out.some(q => q[0] === S2 && q[1] === n) && out.push([S2, n]),
+    descs = new Set(),
+    tagged = [];
+  for (const sh2 of AN.sheets) {
+    if (/^ABC-000/.test(sh2.name)) continue;
+    let S2;
+    try {
+      S2 = AN.ensure(sh2);
+    } catch (e) {
+      continue;
+    }
+    if (!S2 || !S2.ext) continue;
+    for (const n of S2.ext) {
+      const t = S2.lab[n] && S2.lab[n].t;
+      if (t && want.has(t.trim().toLowerCase())) add(S2, n);
+      /* 2.3.0-beta.1: the mode status written beside a wire that carries an address (ABC-011 "TICBR1130.LOC" = M.0230) */
+      if (S2.alias && S2.alias[n] && S2.alias[n].some(a => want.has(a.toLowerCase()))) add(S2, n);
+    }
+    /* 1.23.0: the wire may carry the description as its name with the tag text written at its end (ABC-004A "CONTROL IN
+       MANUAL" + "PIC-COBM.MAN"): the digital input wire that ends at the tag text (< 14) is that address */
+    const tq = (S2.tx || []).filter(q => want.has(String(q.t).trim().toLowerCase()));
+    if (!tq.length) continue;
+    tagged.push(S2);
+    for (const q of tq) {
+      let best = -1,
+        bd = 8; /* 2.2.0-beta.9: distance to the line of the wire (the own wire is about 5 units under its tag text) */
+      for (const n of S2.ext) {
+        const nn = S2.nets[n];
+        if (!nn || !nn.dig || !descWire(S2, n)) continue;
+        for (const i of nn.segs) {
+          /* 2.2.0-beta.9: the distance to the LINE of the wire, not to its ends: the tag text is written on its own wire (ABC-001C
+             "HIC-BM.MAN" over the wire "BOILER MASTER IN MANUAL"); with the ends, a shorter wire of the pair above was nearer
+             ("TURBINE MASTER IN MANUAL", 12 units from its end, while the own wire ends 34 units away), so HIC-BM.MAN was the
+             turbine master wire */
+          const g = S2.seg[i],
+            dx = g.x2 - g.x1,
+            dy = g.y2 - g.y1,
+            L2 = dx * dx + dy * dy,
+            t = L2 > 0 ? Math.max(0, Math.min(1, ((q.x - g.x1) * dx + (q.y - g.y1) * dy) / L2)) : 0,
+            d = Math.hypot(q.x - (g.x1 + t * dx), q.y - (g.y1 + t * dy));
+          if (d < bd) {
+            bd = d;
+            best = n;
+          }
+        }
+      }
+      /* 2.2.0-beta.20: the tag text written at the LEFT END of its wire, as a label (ABC-004A "FICCL1061B.MAN  C/F B FLOW CTL IN
+         MANUAL ( FROM ABC-004B )": the text ends about where the wire starts, 40 units right of the text's origin): a digital
+         description wire whose end is within 60 units right of the text, on the same line (dy <= 4) */
+      let leftEnd = false;
+      if (best < 0) {
+        let bx = 61;
+        for (const n of S2.ext) {
+          const nn = S2.nets[n];
+          if (!nn || !nn.dig || !descWire(S2, n)) continue;
+          /* the leftmost end of a horizontal segment of the wire */
+          let lx = 1e9,
+            ly = 0;
+          for (const i of nn.segs) {
+            const g = S2.seg[i];
+            if (Math.abs(g.y1 - g.y2) > 1) continue;
+            const ex = Math.min(g.x1, g.x2);
+            if (ex < lx) {
+              lx = ex;
+              ly = g.y1;
+            }
+          }
+          const dx = lx - q.x;
+          if (dx > 0 && dx < bx && Math.abs(ly - q.y) <= 4) {
+            bx = dx;
+            best = n;
+            leftEnd = true;
+          }
+        }
+      }
+      if (best >= 0) {
+        add(S2, best);
+        const d = (AN.nm(S2, best) || '').trim().toUpperCase();
+        if (!leftEnd && d.length >= 10 && !/^[A-Z]{1,3}\.\w{4}$/.test(d) && !d.includes(tag.toUpperCase())) descs.add(d);
+      }
+    }
+  }
+  /* the same description on another sheet that shows the same tag text (ABC-001C "BOILER PRESSURE CONTROL IN MANUAL"
+     with "PIC-COBM.MAN" a little further away, under other wires) */
+  if (descs.size)
+    for (const S2 of tagged)
+      for (const n of S2.ext) {
+        const nn = S2.nets[n],
+          d = (AN.nm(S2, n) || '').trim().toUpperCase();
+        if (nn && nn.dig && descWire(S2, n) && [...descs].some(x => d === x || d.endsWith(' ' + x))) add(S2, n);
+      }
+  return out;
+};
+/* speed (user 2026-11-01 "Ge ayusin pre", 6x CPU: the SOP scan and the dock asked this every second for every step, each time a
+   walk over all the sheets): the wires of a tag only change when a sheet is built again, so they are kept per tag while every
+   sheet keeps the same built state (S) */
+let mnK = null;
+const mnC = new Map();
+const modeNetsByTag = (tag, kinds, own) => {
+  const sh = AN.sheets || [];
+  if (!sh.length || sh.some(x => !x.S && !/^ABC-000/.test(x.name))) return modeNetsRaw(tag, kinds, own);
+  if (!mnK || mnK.length !== sh.length || sh.some((x, i) => x.S !== mnK[i])) {
+    mnK = sh.map(x => x.S);
+    mnC.clear();
+  }
+  const k = tag + '|' + kinds.join(',');
+  let r = mnC.get(k);
+  if (!r) mnC.set(k, (r = modeNetsRaw(tag, kinds, null)));
+  return own ? [own, ...r.filter(q => !(q[0] === own[0] && q[1] === own[1]))] : r.slice();
+};
+/* 1.22.0: .MAN / .LOC / .REM are the MODE STATUS of the controller (textbook: status word .MAN = MANUAL, .LOC = LOCAL,
+   .REM = REMOTE), not a short pulse: pressing M / A / R sets that one to 1 and the other two to 0, on every sheet with the tag,
+   and it STAYS until another mode is pressed. The drawing reads it as a level (ABC-010: "DRUM LEVEL CONTROL MANUAL FOR
+   START-UP  LICBR1001B.MAN" -> NOT -> force manual of FICFW1007: with a pulse the feedwater loop could never go to AUTO) */
+const MODEK = { MAN: ['MAN', 'MANUAL'], LOC: ['LOC', 'LOCAL', 'AUTO', 'AUT'], REM: ['REM', 'REMOTE'] };
+const latchMode = (tag, kind, own) => {
+  /* 2.2.0-beta.20: ONE command. Every .MAN / .LOC / .REM address of the tag is written first (the selected mode last), then the
+     sheets settle once. Before, each address settled on its own (setIn): for those scans the controller was in no mode at all
+     (MAN = 0, LOC = 0, REM still 0). FIC-CM R (M4 step 5) took its SV to 0 for those scans, the fuel SI0017 fell with it, and the
+     boiler master, tracking SI0017 while the coal master is not REMOTE (ABC-001C M.2000), kept 27.0 % instead of 33.6 %: the coal
+     fell from 36 to 11 T/H and the main steam pressure to 108.7 kg/cm2 */
+  const w = [];
+  for (const k in MODEK) for (const [S2, n] of modeNetsByTag(tag, MODEK[k], k === kind ? own : null)) w.push([S2, n, k === kind ? 1 : 0]);
+  w.sort((a, b) => a[2] - b[2]);
+  for (const [S2, n, v] of w) S2.rt.ext[n] = v;
+  try {
+    AN.settle();
+  } catch (e) {}
+};
+function ctrls(S) {
+  const out = [];
+  for (const b of S.blk) {
+    if (b.k !== 'PID' && b.k !== 'PIDV') continue;
+    const tag = (b.txt || [])[1];
+    if (!tag || /^X+-/.test(tag)) continue;
+    let q = null;
+    try {
+      q = AN.anPins(S, b);
+    } catch (e) {}
+    if (!q || q.pv == null || q.pv < 0) continue;
+    /* the A/M station of this controller is found by the engine (anStationOf): the same rule for the panel and for the force-manual logic */
+    const stn = AN.anStationOf(S, b),
+      amt = stn.amt,
+      autoLeg = stn.autoLeg,
+      manNet = stn.manNet,
+      manBlk = stn.manBlk;
+    /* the SV is the output of a T switch whose B leg is a COS (the operator's SV, drawing ABC-007 etc.): the faceplate SV field sets that COS and picks leg B (LOCAL); REM goes back to the SV of the logic */
+    const svSw = AN.anSvSwitchOf(S, b),
+      remote = !!svSw && AN.anHasRemote(S, b); /* REMOTE / LOCAL only where the drawing has a REMOTE mode */
+    /* the switching signals of the drawing for this loop: the select signals of the A/M station (1:A / 1:B) and the mode inputs TAG.MAN / .LOC / .REM; the panel shows them live and the mode inputs are buttons that write the SAME signals as the diagram */
+    const manLeg = autoLeg === 'A' ? 'B' : 'A',
+      lb = n => (S.lab[n] && S.lab[n].t) || 'n' + n,
+      sigs = [];
+    if (amt) {
+      const L =
+        amt.cs && amt.cs.length > 1
+          ? amt.cs.map(z => ({ n: z.n, leg: z.A ? 'A' : 'B' }))
+          : amt.sel >= 0
+            ? [{ n: amt.sel, leg: amt.p && amt.p.selA ? 'A' : 'B' }]
+            : [];
+      for (const z of L) {
+        const dr = (S.drv[z.n] || []).find(d => d.k !== 'LINK');
+        sigs.push({
+          n: z.n,
+          name: lb(z.n),
+          role: z.leg === manLeg ? 'MAN' : 'AUTO',
+          src: dr && dr.i ? dr.i.map(m => ({ n: m, name: lb(m) })) : []
+        });
+      }
+    }
+    const modes = [],
+      mre = new RegExp(
+        '^' + tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.(MAN|LOC|REM|AUTO|AUT|LOCAL|REMOTE|MANUAL)$',
+        'i'
+      );
+    for (let n = 0; n < S.nets.length; n++) {
+      const tx = S.lab[n] && S.lab[n].t;
+      if (tx && mre.test(tx.trim()) && S.ext.includes(n) && !modes.some(z => z.n === n))
+        modes.push({ n, name: tx.trim(), kind: tx.trim().split('.').pop().toUpperCase() });
+    }
+    /* selectors after the controller output (interlock / back-up legs): when one is on its B leg the valve command is NOT the MV of the faceplate */ const dn =
+      [];
+    {
+      let cur = amt ? amt.o[0] : b.o[0];
+      for (let k = 0; k < 6; k++) {
+        const g = S.blk.find(
+          x =>
+            (x.k === 'AMT' || x.k === 'SW') &&
+            (!amt || x.id !== amt.id) &&
+            x.a === cur &&
+            x.b !== cur &&
+            !dn.some(d => d.id === x.id)
+        );
+        if (!g) break;
+        dn.push({ id: g.id, sel: g.cs && g.cs[0] ? g.cs[0].n : g.sel });
+        cur = g.o[0];
+      }
+    }
+    out.push({
+      b,
+      tag,
+      q,
+      amt,
+      autoLeg,
+      manNet,
+      manBlk,
+      svSw,
+      remote,
+      sigs,
+      modes,
+      dn,
+      out: amt ? amt.o[0] : b.o[0],
+      desc: (b.face && b.face.desc) || ''
+    });
+  }
+  /* pamagat: ang paglalarawan ng DCS (xlsx) ang ginagamit; kung pareho ito sa dalawang controller ng sheet (hal. "PAF/SAF AIR FLOW CONTROL"), ang nakasulat sa drawing sa tabi ng PID ang gagamitin ("PRIMARY AIR FLOW CONTROL") */
+  {
+    const cnt = {};
+    out.forEach(o => {
+      cnt[o.desc] = (cnt[o.desc] || 0) + 1;
+    });
+    for (const o of out) {
+      if (o.desc && cnt[o.desc] < 2) continue;
+      const b = o.b;
+      const t = (S.tx || [])
+        .filter(
+          x =>
+            x.x >= b.x1 - 2 &&
+            x.x <= b.x1 + 25 &&
+            x.y >= b.y0 - 6 &&
+            x.y <= b.y1 + 6 &&
+            !/~/.test(x.t) &&
+            x.t.trim().length > 2
+        )
+        .sort((a, c) => c.y - a.y)
+        .map(x => x.t.trim())
+        .join(' ');
+      if (t) o.desc = t;
+    }
+  }
+  return out;
+}
+/* ===== ENGINE: the name of a net (the label, the address of the wire, the text beside it, the COS manual / change-over it is, the
+   block that drives it) and the COS of a net with its range. No page access.
+   3.2.0 Web Worker (stage a): moved here from src/analog/ui/panel.js (the engine names the nets it reads: hmi-op.js starting states,
+   plant.js, unit.js) ===== */
+function nearTx(S, n) {
+  const c = S.nets[n]._nt;
+  if (c !== undefined) return c;
+  let best = null,
+    bd = 11;
+  for (const i of S.nets[n].segs) {
+    const s = S.seg[i];
+    for (const [x, y] of [
+      [s.x1, s.y1],
+      [s.x2, s.y2]
+    ])
+      for (const t of S.tx) {
+        const q = t.t.trim();
+        if ((q.length < 3 && !/^(SV|PV|SP|MV)$/.test(q)) || q.length > 34 || /^[-+\d.\s%~]+$/.test(q)) continue;
+        const d = Math.hypot(t.x - x, t.y - y);
+        if (d < bd) {
+          bd = d;
+          best = q;
+        }
+      }
+  }
+  return (S.nets[n]._nt = best);
+}
+function cosFromNets(S, nets, self) {
+  const seen = new Set();
+  let fr = nets.slice(),
+    g = 0;
+  while (fr.length && g++ < 6) {
+    const nx = [];
+    for (const n of fr) {
+      if (seen.has(n)) continue;
+      seen.add(n);
+      const l = S.lab[n];
+      if (l && l.t && !/^COS/.test(l.t) && n !== nets[0]) return l.t;
+      for (const b of S.cns[n] || []) {
+        const tg = b.tag || (b.k === 'PID' || b.k === 'PIDV' ? (b.txt || [])[1] : '');
+        if (tg && b !== self) return b.k + ' ' + tg;
+        if (b.k === 'AO' || b.k === 'IP') {
+          const o = (b.pins || []).map(p => S.lab[p.n] && S.lab[p.n].t).find(Boolean);
+          if (o) return o;
+        }
+        for (const m of b.o || []) nx.push(m);
+      }
+    }
+    fr = nx;
+  }
+  return '';
+}
+/* 2.2.0-beta.24 (M6 / checklist A10): a COS whose switch output carries no label down to the valve (AO -> I/P -> valve without a tag
+   on the drawing: ABC-010, 031, 036 ~ 039 ...) is named by the controller / station on the OTHER leg of its switch (the loop it is
+   the manual of). Before: "COS manual ▸ T23" (22 of 173 COS) */
+function cosUpTag(S, n, d, seen) {
+  if (n == null || n < 0 || d > 5 || seen.has(n)) return '';
+  seen.add(n);
+  for (const b of S.drv[n] || []) {
+    const tg = b.tag || (b.k === 'PID' || b.k === 'PIDV' ? (b.txt || [])[1] : '');
+    if (tg) return b.k + ' ' + tg;
+    for (const i of b.i || []) {
+      const r = cosUpTag(S, i, d + 1, seen);
+      if (r) return r;
+    }
+  }
+  return '';
+}
+function cosFromUp(S, t) {
+  const seen = new Set();
+  for (const n of [t.a, t.b].concat(t.i || [])) {
+    const r = cosUpTag(S, n, 0, seen);
+    if (r) return r + ' (manual of this loop)';
+  }
+  return '';
+}
+function cosRange(S, e) {
+  const t = e.t,
+    seen = new Set();
+  let hit = null;
+  const up = (n, d) => {
+    if (hit || d > 6 || n == null || n < 0 || seen.has(n)) return;
+    seen.add(n);
+    for (const dr of S.drv[n] || []) {
+      const b = S.blk.find(q => q.id === dr.id);
+      if (!b) continue;
+      if (b.k === 'MAN' && b.p && b.p.lo != null) {
+        hit = { lo: b.p.rlo != null ? b.p.rlo : b.p.lo, hi: b.p.rhi != null ? b.p.rhi : b.p.hi, u: b.p.u || '%' };
+        return;
+      }
+      if ((b.k === 'PID' || b.k === 'PIDV') && b.p) {
+        hit = { lo: b.p.lo == null ? 0 : b.p.lo, hi: b.p.hi == null ? 100 : b.p.hi, u: '%' };
+        return;
+      }
+      for (const q of b.i || []) up(q, d + 1);
+    }
+  };
+  if (t) up(t.a, 0);
+  if (!hit) {
+    try {
+      const r = anRange(S, { cx: e.c.cx, cy: e.c.cy }, 60);
+      if (r && r.hi > r.lo) hit = { lo: r.lo, hi: r.hi, u: r.u || '' };
+    } catch (x) {}
+  }
+  return hit || { lo: 0, hi: 100, u: '%' };
+}
+function cosSvRange(S, e) {
+  if (!e.t) return null;
+  let dr = null;
+  try {
+    dr = anRange(S, { cx: e.c.cx, cy: e.c.cy }, 60);
+  } catch (x) {}
+  if (dr && dr.hi > dr.lo) return null;
+  for (const n of e.t.o || [])
+    for (const b of S.cns[n] || [])
+      for (const P of S.blk) {
+        if ((P.k !== 'PID' && P.k !== 'PIDV') || !P.p || P.p.rlo == null || P.p.rhi == null || !(P.p.rhi > P.p.rlo))
+          continue;
+        const pp = anPins(S, P);
+        if (pp && pp.dev === b && pp.sv === n) return { lo: P.p.rlo, hi: P.p.rhi, u: P.p.unit || '' };
+      }
+  return null;
+}
+function cosInfo(S, n) {
+  if (!S._cm) {
+    const m = (S._cm = new Map()),
+      all = (S._cosAll = []),
+      Ts = S.blk.filter(b => b.k === 'AMT' || b.k === 'SW'),
+      unres = (S._cosUn = []),
+      ds = (px, py, s) => {
+        const dx = s.x2 - s.x1,
+          dy = s.y2 - s.y1,
+          l2 = dx * dx + dy * dy;
+        let t = l2 ? ((px - s.x1) * dx + (py - s.y1) * dy) / l2 : 0;
+        t = Math.max(0, Math.min(1, t));
+        return Math.hypot(px - (s.x1 + t * dx), py - (s.y1 + t * dy));
+      };
+    for (const c of S.blk) {
+      if (c.k !== 'COS') continue;
+      const t = c.used
+        ? S.blk.find(b => b.id === c.tb)
+        : Ts.filter(x => Math.hypot(x.cx - c.cx, x.cy - c.cy) < 30).sort(
+            (p, q) => Math.hypot(p.cx - c.cx, p.cy - c.cy) - Math.hypot(q.cx - c.cx, q.cy - c.cy)
+          )[0];
+      let e = null;
+      if (t) {
+        const net = c.used ? c.vnet : t.b >= 0 && S.ext.includes(t.b) ? t.b : null;
+        if (net != null && !m.has(net)) e = { c, t, net, kind: 'T', dig: !!S.nets[net].dig };
+      }
+      if (!e) {
+        /* an external wire that touches the diamond */ const ws = S.nets
+          .filter(
+            nn =>
+              nn.segs.length &&
+              S.ext.includes(nn.id) &&
+              !m.has(nn.id) &&
+              !(S.xlk && S.xlk[nn.id]) &&
+              nn.segs.some(i => ds(c.cx, c.cy, S.seg[i]) < 16)
+          )
+          .map(nn => ({ nn, d: Math.min(...nn.segs.map(i => ds(c.cx, c.cy, S.seg[i]))) }))
+          .sort((p, q) => p.d - q.d);
+        if (ws.length) {
+          const nn = ws[0].nn;
+          const dv = S.blk.filter(x => x.k === 'DEV').find(x => (x.ip || []).some(q => q.n === nn.id)),
+            sg = dv && dv.ip.find(q => q.n === nn.id).sg,
+            pid = dv && (S.cns[dv.o[0]] || []).find(x => x.k === 'PID' || x.k === 'PIDV');
+          e = {
+            c,
+            t: null,
+            dev: dv,
+            pid,
+            net: nn.id,
+            kind: 'W',
+            role: dv
+              ? pid && anPins(S, pid)
+                ? anPins(S, pid).sv === nn.id
+                  ? 'SV'
+                  : 'PV'
+                : sg > 0
+                  ? 'SV'
+                  : 'PV'
+              : '',
+            dig: !!nn.dig
+          };
+        }
+      }
+      if (!e && t && t.b >= 0 && !S.ext.includes(t.b))
+        e = { c, t, net: null, kind: 'L', dig: !!S.nets[t.b].dig, sel: t.b };
+      if (!e) {
+        unres.push(c);
+        continue;
+      }
+      all.push(e);
+      if (e.net != null) m.set(e.net, e);
+    }
+  }
+  const e = n === -99 ? null : S._cm.get(n);
+  if (!e) return null;
+  return cosFill(S, e);
+}
+function cosFill(S, e) {
+  if (e.name) return e;
+  if (e.kind === 'L') {
+    const o = (e.t.o || [])[0],
+      on = o != null ? cosFromNets(S, [o], e.t) : '',
+      sn = e.sel >= 0 && S.lab[e.sel] ? S.lab[e.sel].t : 'net ' + e.sel;
+    e.out = on;
+    e.name = 'COS change-over ▸ ' + (on || 'T' + e.t.id) + ' (switched by ' + sn + ')';
+    e.rng = null;
+    return e;
+  }
+  if (e.kind === 'W') {
+    const l = S.lab[e.net],
+      P = (e.pid && e.pid.p) || {},
+      tg = e.pid ? (e.pid.txt || [])[1] || e.pid.k : '';
+    e.out = tg || cosFromNets(S, [e.net], null);
+    e.name = 'COS manual ' + (e.role ? e.role + ' ' : '') + '▸ ' + (l && l.t ? l.t : e.out || 'wire ' + e.net);
+    if (e.pid && P.rlo != null) e.rng = { lo: P.rlo, hi: P.rhi, u: P.unit || '' };
+    else {
+      let r = null;
+      try {
+        r = anRange(S, { cx: e.c.cx, cy: e.c.cy }, 45);
+      } catch (x) {}
+      e.rng = r && r.hi > r.lo ? { lo: r.lo, hi: r.hi, u: r.u || '' } : { lo: 0, hi: 100, u: '%' };
+    }
+    return e;
+  }
+  e.out = cosFromNets(S, e.t.o || [], e.t) || cosFromUp(S, e.t);
+  e.name = 'COS manual' + (e.dig ? ' (on / off)' : '') + ' ▸ ' + (e.out || 'T' + e.t.id);
+  e.rng = e.dig ? { lo: 0, hi: 1, u: '' } : cosSvRange(S, e) || cosRange(S, e);
+  return e;
+}
+function nm(S, n) {
+  {
+    const ci = cosInfo(S, n);
+    if (ci) return ci.name;
+  }
+  const l = S.lab[n];
+  if (l) return l.t;
+  if (S.ext.includes(n)) {
+    const w = wireTag(S, n);
+    if (w) return w;
+    const t = nearTx(S, n);
+    if (t) return t;
+  }
+  const c = S.cns[n] && S.cns[n][0],
+    d = S.drv[n] && S.drv[n][0];
+  if (d && d.k !== 'LINK') return d.k + (d.tag ? ' ' + d.tag : '') + ' out';
+  if (c) return '→ ' + c.k + (c.tag ? ' ' + c.tag : '') + (S.nets[n].dig ? ' (digital)' : '');
+  return 'net ' + n;
+}
+/* ===== ENGINE API: what the engine gives on AN (the page and a Web Worker take the same list). No page access.
+   3.2.0 Web Worker (stage a): the engine part of the AN map of boot.js; boot.js takes it first, then the page functions ===== */
+function anEngAPI() {
+  return {
+    anStationOf,
+    anSvSwitchOf,
+    anHasRemote,
+    stepTier,
+    ensure,
+    linksOf,
+    actSet,
+    cosInfo,
+    cosFill,
+    procRemote,
+    nm,
+    anPins,
+    stepSet,
+    lnTables,
+    lnApplyEdits,
+    lnResolve,
+    fxIn: anFXIn,
+    netRange: anNetRange,
+    extRange: anExtRange,
+    plantLoad150: anPlantLoad150,
+    plantCold: anPlantCold,
+    plantColdAsync: anPlantColdAsync,
+    loadStart: anLoadStart,
+    plantLoad150Async: anPlantLoad150Async,
+    plantLive: anPlantLive,
+    turbine: anTurbine,
+    tcs: () => tcsState(),
+    tcsIO: () => (AN_UNIT.on ? tcsIO(AN_UNIT) : null),
+    tcsInit: h => (AN_UNIT.on ? tcsInit(AN_UNIT, h) : null),
+    oilValve: anOilValve,
+    blowdown: anBlowdown,
+    field: anField,
+    tsat: steamTsat,
+    fieldState: () => Object.assign({}, AN_SRC.field),
+    engState: { capture: anStateCapture, apply: anStateApply },
+    /* engine/sync.js: what changed, both ways (worker -> page, page -> worker) */
+    sync: { patch: anSyncPatch, apply: anSyncApply, mark: anSyncMark },
+    /* engine/ds.js: the FROM / TO DITL texts of a sheet, the description of an address (the face plate defaults first) */
+    dsIdx,
+    descOf: (sh, t) => {
+      try {
+        const F = typeof AN_DEF !== 'undefined' && AN_DEF.FACE;
+        if (F && t) for (const k of ['PID', 'MAN', 'SUMA']) for (const q of F[k] || []) if (q.tag === t && q.desc) return q.desc;
+        const a = adesFind(sh, t);
+        return a ? adesText(a.rec) : '';
+      } catch (e) {
+        return '';
+      }
+    },
+    /* engine/ctrls.js: the controllers of a sheet and the mode addresses of a tag */
+    hmiCtrls: ctrls,
+    modeNets: (tag, kinds) => modeNetsByTag(tag, kinds || MODEK.MAN),
+    modeNetsBy: modeNetsByTag,
+    MODEK,
+    latchMode,
+    descWire
+  };
 }
 /* ===== v29 ANALOG UI: category switch, sheet list, canvas, live simulation, panels ===== */
 const AN = {
@@ -29138,7 +30496,7 @@ hmiAuto = function () {
 };
 /* ---------- data (built-in sheets, lazy) ---------- */
 /* descriptions: station -> address -> record (IO list rows: tag, description, range, unit, type, SIG.AB address; memory lists: description, remark, timer type / seconds) */
-let ADES = null;
+/* ADES (the descriptions, filled by adesLoad below): engine/ds.js */
 async function adesLoad() {
   if (ADES) return ADES;
   const e = document.getElementById('ades');
@@ -29154,33 +30512,7 @@ async function adesLoad() {
   }
   return ADES;
 }
-function adesFind(sh, text) {
-  if (!ADES || !text) return null;
-  const t = String(text).trim();
-  let m = /^(?:S(\d)\s*)?([A-Z]{1,2})\.([0-9A-F]{3,4})$/i.exec(t),
-    pre,
-    num,
-    dot = '.';
-  if (m) {
-    pre = m[2].toUpperCase();
-    num = m[3].toUpperCase().padStart(4, '0');
-  } else {
-    m = /^(?:S(\d)\s*)?(TR|SI|SO|AI|AO|DI|DO|FP|PTN)(\d{1,6})$/i.exec(t);
-    if (!m) return null;
-    pre = m[2].toUpperCase();
-    dot = '';
-    num = pre === 'PTN' ? m[3].padStart(6, '0') : m[3].padStart(4, '0');
-  }
-  const stn = m[1] ? +m[1] : sh ? shStn(sh) : null,
-    T = ADES[String(stn)],
-    key = pre + dot + num,
-    r = T && T[key];
-  return r ? { rec: r, stn, key } : null;
-}
-function adesText(r) {
-  if (!r) return '';
-  return r.k === 'io' ? [r.tag, r.d].filter(Boolean).join(' · ') : [r.d, r.r].filter(Boolean).join(' · ');
-}
+/* adesFind, adesText: engine/ds.js */
 function adesLines(a) {
   const r = a.rec,
     o = [];
@@ -30372,7 +31704,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build aa06d78'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 4613acc'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -35277,82 +36609,7 @@ function trMapUi(d, sh) {
   d.append(h$('div', { cls: 'r' }, [b]), box);
 }
 
-const DS_RX = /(FROM|TO)\s+DITL\s*([0-9]{2}[A-Z]?)\s*-\s*(\d+)/gi;
-function dsIdx(sh) {
-  if (sh._ds) return sh._ds;
-  const S = ensure(sh),
-    from = new Map(),
-    to = new Map(),
-    toDig = new Map(),
-    lost = [];
-  for (const t of S.tx) {
-    if (!/DITL/i.test(t.t)) continue;
-    const isFrom = /FROM/i.test(t.t);
-    DS_RX.lastIndex = 0;
-    const refs = [];
-    let m;
-    while ((m = DS_RX.exec(t.t))) refs.push('DITL ' + m[2] + '-' + m[3]);
-    /* 2.2.0-beta.3: a list after the first one ("TO DITL 02-25, DITL 03F-16, DITL 19-16", ABC-027 M.2504): every reference, not the first only */
-    if (refs.length) {
-      const L = /,\s*(?:DITL\s*)?([0-9]{2}[A-Z]?)\s*-\s*(\d+)/gi;
-      while ((m = L.exec(t.t))) if (!refs.includes('DITL ' + m[1] + '-' + m[2])) refs.push('DITL ' + m[1] + '-' + m[2]);
-    }
-    if (!refs.length) refs.push(t.t.replace(/[()]/g, '').trim());
-    const near = [];
-    for (const nn of S.nets) {
-      if (!nn.segs.length) continue;
-      let d = 1e9;
-      for (const i of nn.segs) d = Math.min(d, anPtSeg(t.x, t.y, S.seg[i]));
-      if (d <= 20) near.push({ id: nn.id, d });
-    }
-    near.sort((p, q) => p.d - q.d);
-    /* 1.22.0: a FROM text that touches a wire (<= 8) names THAT wire, even when an input wire is a bit farther
-       (ABC-004A: the four "( FROM DITL 07-64 )" were put on the SIG.AB flags B.0723 ... at 8 ~ 9 instead of M.3410 ... at 5; ABC-003B: M.025B at 18 instead of M.3434 at 5) */
-    const pick = isFrom
-      ? (near[0] && near[0].d <= 8 ? near[0] : null) || near.find(q => S.ext.includes(q.id)) || near[0]
-      : near.find(q => !S.ext.includes(q.id) && S.drv[q.id] && S.drv[q.id].some(d => d.k !== 'LINK')) || near[0];
-    if (!pick) {
-      lost.push({ t: t.t, x: Math.round(t.x), y: Math.round(t.y) });
-      continue;
-    }
-    const M = isFrom ? from : to;
-    const o = M.get(pick.id) || [];
-    for (const r of refs) if (!o.includes(r)) o.push(r);
-    M.set(pick.id, o);
-    /* 2.2.0-beta.4: the nearest DIGITAL net driven by the logic, for a TO DITL text that sits by an analog wire (ABC-001C "TO DITL
-       40-09" between the main steam pressure AI0131 and the output M.310D of its LOW LOW comparator, < 72.9 kg/cm2) */
-    if (!isFrom && S.nets[pick.id] && !S.nets[pick.id].dig) {
-      const dg = near.find(q => S.nets[q.id] && S.nets[q.id].dig && !S.ext.includes(q.id) && S.drv[q.id] && S.drv[q.id].length);
-      if (dg) for (const r of refs) toDig.set(r + '@' + pick.id, dg.id);
-    }
-  }
-  /* 2.3.0-beta.1 (LINK-3): a "TO DITL" text written under its own comparator box belongs to the wire named in S.dsTo (ABC-001C
-     "TO DITL 40-06" = O.0177 > 134 kg/cm2, not M.3109 under it; DITL-40 rows 6 ~ 9, 13) */
-  if (S.dsTo) {
-    const key = r => {
-      const m = /([0-9]{2,3}[A-Z]?)\s*-\s*(\d+)/.exec(r);
-      return m ? m[1] + '-' + +m[2] : r;
-    };
-    for (const ref in S.dsTo) {
-      const n = S.lab.findIndex((l, i) => l && String(l.t).trim() === S.dsTo[ref] && S.drv[i] && S.drv[i].length);
-      if (n < 0) continue;
-      let full = null;
-      for (const [id, o] of [...to]) {
-        const j = o.findIndex(r => key(r) === ref);
-        if (j < 0) continue;
-        full = o[j];
-        o.splice(j, 1);
-        if (!o.length) to.delete(id);
-        toDig.delete(full + '@' + id);
-      }
-      if (!full) continue;
-      const o = to.get(n) || [];
-      if (!o.includes(full)) o.push(full);
-      to.set(n, o);
-    }
-  }
-  return (sh._ds = { from, to, toDig, lost });
-}
+/* DS_RX, dsIdx: engine/ds.js */
 const TR_COL = ['#4da3ff', '#ff8a3d', '#35e08a', '#ff4dd0', '#ffd84d', '#9b8cff', '#7fe0e0', '#c0c0c0'],
   TR_DT = 0.25,
   TR_CAP = 2400;
@@ -36439,234 +37696,7 @@ function settle() {
   panelUpd();
   pauseHint(sh);
 }
-function nearTx(S, n) {
-  const c = S.nets[n]._nt;
-  if (c !== undefined) return c;
-  let best = null,
-    bd = 11;
-  for (const i of S.nets[n].segs) {
-    const s = S.seg[i];
-    for (const [x, y] of [
-      [s.x1, s.y1],
-      [s.x2, s.y2]
-    ])
-      for (const t of S.tx) {
-        const q = t.t.trim();
-        if ((q.length < 3 && !/^(SV|PV|SP|MV)$/.test(q)) || q.length > 34 || /^[-+\d.\s%~]+$/.test(q)) continue;
-        const d = Math.hypot(t.x - x, t.y - y);
-        if (d < bd) {
-          bd = d;
-          best = q;
-        }
-      }
-  }
-  return (S.nets[n]._nt = best);
-}
-function cosFromNets(S, nets, self) {
-  const seen = new Set();
-  let fr = nets.slice(),
-    g = 0;
-  while (fr.length && g++ < 6) {
-    const nx = [];
-    for (const n of fr) {
-      if (seen.has(n)) continue;
-      seen.add(n);
-      const l = S.lab[n];
-      if (l && l.t && !/^COS/.test(l.t) && n !== nets[0]) return l.t;
-      for (const b of S.cns[n] || []) {
-        const tg = b.tag || (b.k === 'PID' || b.k === 'PIDV' ? (b.txt || [])[1] : '');
-        if (tg && b !== self) return b.k + ' ' + tg;
-        if (b.k === 'AO' || b.k === 'IP') {
-          const o = (b.pins || []).map(p => S.lab[p.n] && S.lab[p.n].t).find(Boolean);
-          if (o) return o;
-        }
-        for (const m of b.o || []) nx.push(m);
-      }
-    }
-    fr = nx;
-  }
-  return '';
-}
-/* 2.2.0-beta.24 (M6 / checklist A10): a COS whose switch output carries no label down to the valve (AO -> I/P -> valve without a tag
-   on the drawing: ABC-010, 031, 036 ~ 039 ...) is named by the controller / station on the OTHER leg of its switch (the loop it is
-   the manual of). Before: "COS manual ▸ T23" (22 of 173 COS) */
-function cosUpTag(S, n, d, seen) {
-  if (n == null || n < 0 || d > 5 || seen.has(n)) return '';
-  seen.add(n);
-  for (const b of S.drv[n] || []) {
-    const tg = b.tag || (b.k === 'PID' || b.k === 'PIDV' ? (b.txt || [])[1] : '');
-    if (tg) return b.k + ' ' + tg;
-    for (const i of b.i || []) {
-      const r = cosUpTag(S, i, d + 1, seen);
-      if (r) return r;
-    }
-  }
-  return '';
-}
-function cosFromUp(S, t) {
-  const seen = new Set();
-  for (const n of [t.a, t.b].concat(t.i || [])) {
-    const r = cosUpTag(S, n, 0, seen);
-    if (r) return r + ' (manual of this loop)';
-  }
-  return '';
-}
-function cosRange(S, e) {
-  const t = e.t,
-    seen = new Set();
-  let hit = null;
-  const up = (n, d) => {
-    if (hit || d > 6 || n == null || n < 0 || seen.has(n)) return;
-    seen.add(n);
-    for (const dr of S.drv[n] || []) {
-      const b = S.blk.find(q => q.id === dr.id);
-      if (!b) continue;
-      if (b.k === 'MAN' && b.p && b.p.lo != null) {
-        hit = { lo: b.p.rlo != null ? b.p.rlo : b.p.lo, hi: b.p.rhi != null ? b.p.rhi : b.p.hi, u: b.p.u || '%' };
-        return;
-      }
-      if ((b.k === 'PID' || b.k === 'PIDV') && b.p) {
-        hit = { lo: b.p.lo == null ? 0 : b.p.lo, hi: b.p.hi == null ? 100 : b.p.hi, u: '%' };
-        return;
-      }
-      for (const q of b.i || []) up(q, d + 1);
-    }
-  };
-  if (t) up(t.a, 0);
-  if (!hit) {
-    try {
-      const r = anRange(S, { cx: e.c.cx, cy: e.c.cy }, 60);
-      if (r && r.hi > r.lo) hit = { lo: r.lo, hi: r.hi, u: r.u || '' };
-    } catch (x) {}
-  }
-  return hit || { lo: 0, hi: 100, u: '%' };
-}
-function cosSvRange(S, e) {
-  if (!e.t) return null;
-  let dr = null;
-  try {
-    dr = anRange(S, { cx: e.c.cx, cy: e.c.cy }, 60);
-  } catch (x) {}
-  if (dr && dr.hi > dr.lo) return null;
-  for (const n of e.t.o || [])
-    for (const b of S.cns[n] || [])
-      for (const P of S.blk) {
-        if ((P.k !== 'PID' && P.k !== 'PIDV') || !P.p || P.p.rlo == null || P.p.rhi == null || !(P.p.rhi > P.p.rlo))
-          continue;
-        const pp = anPins(S, P);
-        if (pp && pp.dev === b && pp.sv === n) return { lo: P.p.rlo, hi: P.p.rhi, u: P.p.unit || '' };
-      }
-  return null;
-}
-function cosInfo(S, n) {
-  if (!S._cm) {
-    const m = (S._cm = new Map()),
-      all = (S._cosAll = []),
-      Ts = S.blk.filter(b => b.k === 'AMT' || b.k === 'SW'),
-      unres = (S._cosUn = []),
-      ds = (px, py, s) => {
-        const dx = s.x2 - s.x1,
-          dy = s.y2 - s.y1,
-          l2 = dx * dx + dy * dy;
-        let t = l2 ? ((px - s.x1) * dx + (py - s.y1) * dy) / l2 : 0;
-        t = Math.max(0, Math.min(1, t));
-        return Math.hypot(px - (s.x1 + t * dx), py - (s.y1 + t * dy));
-      };
-    for (const c of S.blk) {
-      if (c.k !== 'COS') continue;
-      const t = c.used
-        ? S.blk.find(b => b.id === c.tb)
-        : Ts.filter(x => Math.hypot(x.cx - c.cx, x.cy - c.cy) < 30).sort(
-            (p, q) => Math.hypot(p.cx - c.cx, p.cy - c.cy) - Math.hypot(q.cx - c.cx, q.cy - c.cy)
-          )[0];
-      let e = null;
-      if (t) {
-        const net = c.used ? c.vnet : t.b >= 0 && S.ext.includes(t.b) ? t.b : null;
-        if (net != null && !m.has(net)) e = { c, t, net, kind: 'T', dig: !!S.nets[net].dig };
-      }
-      if (!e) {
-        /* an external wire that touches the diamond */ const ws = S.nets
-          .filter(
-            nn =>
-              nn.segs.length &&
-              S.ext.includes(nn.id) &&
-              !m.has(nn.id) &&
-              !(S.xlk && S.xlk[nn.id]) &&
-              nn.segs.some(i => ds(c.cx, c.cy, S.seg[i]) < 16)
-          )
-          .map(nn => ({ nn, d: Math.min(...nn.segs.map(i => ds(c.cx, c.cy, S.seg[i]))) }))
-          .sort((p, q) => p.d - q.d);
-        if (ws.length) {
-          const nn = ws[0].nn;
-          const dv = S.blk.filter(x => x.k === 'DEV').find(x => (x.ip || []).some(q => q.n === nn.id)),
-            sg = dv && dv.ip.find(q => q.n === nn.id).sg,
-            pid = dv && (S.cns[dv.o[0]] || []).find(x => x.k === 'PID' || x.k === 'PIDV');
-          e = {
-            c,
-            t: null,
-            dev: dv,
-            pid,
-            net: nn.id,
-            kind: 'W',
-            role: dv
-              ? pid && anPins(S, pid)
-                ? anPins(S, pid).sv === nn.id
-                  ? 'SV'
-                  : 'PV'
-                : sg > 0
-                  ? 'SV'
-                  : 'PV'
-              : '',
-            dig: !!nn.dig
-          };
-        }
-      }
-      if (!e && t && t.b >= 0 && !S.ext.includes(t.b))
-        e = { c, t, net: null, kind: 'L', dig: !!S.nets[t.b].dig, sel: t.b };
-      if (!e) {
-        unres.push(c);
-        continue;
-      }
-      all.push(e);
-      if (e.net != null) m.set(e.net, e);
-    }
-  }
-  const e = n === -99 ? null : S._cm.get(n);
-  if (!e) return null;
-  return cosFill(S, e);
-}
-function cosFill(S, e) {
-  if (e.name) return e;
-  if (e.kind === 'L') {
-    const o = (e.t.o || [])[0],
-      on = o != null ? cosFromNets(S, [o], e.t) : '',
-      sn = e.sel >= 0 && S.lab[e.sel] ? S.lab[e.sel].t : 'net ' + e.sel;
-    e.out = on;
-    e.name = 'COS change-over ▸ ' + (on || 'T' + e.t.id) + ' (switched by ' + sn + ')';
-    e.rng = null;
-    return e;
-  }
-  if (e.kind === 'W') {
-    const l = S.lab[e.net],
-      P = (e.pid && e.pid.p) || {},
-      tg = e.pid ? (e.pid.txt || [])[1] || e.pid.k : '';
-    e.out = tg || cosFromNets(S, [e.net], null);
-    e.name = 'COS manual ' + (e.role ? e.role + ' ' : '') + '▸ ' + (l && l.t ? l.t : e.out || 'wire ' + e.net);
-    if (e.pid && P.rlo != null) e.rng = { lo: P.rlo, hi: P.rhi, u: P.unit || '' };
-    else {
-      let r = null;
-      try {
-        r = anRange(S, { cx: e.c.cx, cy: e.c.cy }, 45);
-      } catch (x) {}
-      e.rng = r && r.hi > r.lo ? { lo: r.lo, hi: r.hi, u: r.u || '' } : { lo: 0, hi: 100, u: '%' };
-    }
-    return e;
-  }
-  e.out = cosFromNets(S, e.t.o || [], e.t) || cosFromUp(S, e.t);
-  e.name = 'COS manual' + (e.dig ? ' (on / off)' : '') + ' ▸ ' + (e.out || 'T' + e.t.id);
-  e.rng = e.dig ? { lo: 0, hi: 1, u: '' } : cosSvRange(S, e) || cosRange(S, e);
-  return e;
-}
+/* nearTx, cosFromNets, cosUpTag, cosFromUp, cosRange, cosSvRange, cosInfo, cosFill: in the engine (src/analog/engine/names.js) */
 function cosDesc(S, sh, e) {
   let d = '';
   const tag = e.pid ? (e.pid.txt || [])[1] || '' : '',
@@ -36835,25 +37865,7 @@ function cosStatus(S, sh, e) {
   PU.push(u);
   return box;
 }
-function nm(S, n) {
-  {
-    const ci = cosInfo(S, n);
-    if (ci) return ci.name;
-  }
-  const l = S.lab[n];
-  if (l) return l.t;
-  if (S.ext.includes(n)) {
-    const w = wireTag(S, n);
-    if (w) return w;
-    const t = nearTx(S, n);
-    if (t) return t;
-  }
-  const c = S.cns[n] && S.cns[n][0],
-    d = S.drv[n] && S.drv[n][0];
-  if (d && d.k !== 'LINK') return d.k + (d.tag ? ' ' + d.tag : '') + ' out';
-  if (c) return '→ ' + c.k + (c.tag ? ' ' + c.tag : '') + (S.nets[n].dig ? ' (digital)' : '');
-  return 'net ' + n;
-}
+/* nm: in the engine (src/analog/engine/names.js) */
 const almLv = (b, x) => {
   const P = b.p;
   if (P.hh != null && x >= P.hh) return 'HIGH-HIGH';
@@ -40661,7 +41673,7 @@ fImp.onchange = async e => {
  const good=()=>{try{return AN.cat==='an'&&L&&L.gb&&$('svg').contains(L.gb)&&anlist.children.length>3}catch(e){return false}};
  const fix=()=>{if(AN.cat!=='an'||good())return;AN.key=null;AN.lkey=null;try{SIDEKEY=null}catch(e){}loadData().then(()=>{if(AN.cat==='an'&&!good()){let i=AN.i;if(!AN.sheets[i])i=0;AN.i=i;AN.key=null;AN.lkey=null;render()}}).catch(()=>{})};
  addEventListener('load',()=>{setTimeout(fix,200);setTimeout(fix,900)});[600,1500,3000,6000].forEach(t=>setTimeout(fix,t))}})();
-Object.assign(AN,{updBack,dsTextAt,dsRefsIn,viewSet,lookOnly:()=>{/* 2.1.0-beta.8 (user): a search is a LOOK: no force, no simulate (ABC: VIEW / TRACE, DITL: edit view, not Simulate) */try{/* 3.2.0-beta.21 (user 2026-10-24: "pag bumalik ka ng logic magiging VIEW. tapos iRRUN mo"): a look while the simulation RUNS keeps it running */if(AN.cat==='an'){if(!AN.view&&!AN.run)viewSet(true)}/* 3.2.0-beta.23: the DITL Simulate too goes on during a look (one RUN) */}catch(e){}},anStationOf,anSvSwitchOf,anHasRemote,stepTier,fxIn:anFXIn,netRange:anNetRange,extRange:anExtRange,go,cs,paint,fitView,settle,setCat,reset,ensure,pick,linksOf,actSet,panelUpd,selBox,dsIdx,dsOpen,trSeries,trSample,trDraw,trZoom,trModel,trMap,trGoCrumb,cosInfo,cosOn,cosFill,procLock,procAI,procRemote,hmiAdd,hmiFind,hmiPick,hmiVal,hmiOpen,hmiClose,hmiAuto,hmiUpd,hmiSetMode,hmiRender,hmiHeader,hmiSync,hmiAddrOf,hmiList,hmiZoomBy,hmiFit,hmiVb,hmiWrite,procLock,procAI,nm,hmiState,hmiToggleForce,hmiPlantOwned,hmiForced,setForce,wrCtl,anPins,stepSet,plantLoad150:anPlantLoad150,plantCold:anPlantCold,plantColdAsync:anPlantColdAsync,loadStart:anLoadStart,plantLoad150Async:anPlantLoad150Async,plantLive:anPlantLive,turbine:anTurbine,tcs:()=>tcsState(),tcsIO:()=>(AN_UNIT.on?tcsIO(AN_UNIT):null),tcsInit:h=>AN_UNIT.on?tcsInit(AN_UNIT,h):null,oilValve:anOilValve,blowdown:anBlowdown,field:anField,tsat:steamTsat,fieldState:()=>Object.assign({},AN_SRC.field),engState:{capture:anStateCapture,apply:anStateApply},ades:async()=>{await adesLoad();return ADES},plOpen,plClose,plAIs,plRes,plVal,plantSwitch,dsGoRef,connClick,lnTables,lnApplyEdits,lneSave,lnResolve,lnOpen,descOf:(sh,t)=>{try{const F=typeof AN_DEF!=='undefined'&&AN_DEF.FACE;if(F&&t)for(const k of ['PID','MAN','SUMA'])for(const q of F[k]||[])if(q.tag===t&&q.desc)return q.desc;const a=adesFind(sh,t);return a?adesText(a.rec):''}catch(e){return ''}},addrTable:nm=>{const sh=AN.sheets.find(s=>s.name===nm)||cs(),S=ensure(sh);return{table:S.addr,notTied:S.addrUn}}});if(innerWidth<820||AN.ah){anp.classList.add('min');bPn.classList.remove('on')}
+Object.assign(AN,anEngAPI()/* 3.2.0 Web Worker: the engine part (engine/api.js), then the page */,{updBack,dsTextAt,dsRefsIn,viewSet,lookOnly:()=>{/* 2.1.0-beta.8 (user): a search is a LOOK: no force, no simulate (ABC: VIEW / TRACE, DITL: edit view, not Simulate) */try{/* 3.2.0-beta.21 (user 2026-10-24: "pag bumalik ka ng logic magiging VIEW. tapos iRRUN mo"): a look while the simulation RUNS keeps it running */if(AN.cat==='an'){if(!AN.view&&!AN.run)viewSet(true)}/* 3.2.0-beta.23: the DITL Simulate too goes on during a look (one RUN) */}catch(e){}},anStationOf,anSvSwitchOf,anHasRemote,stepTier,fxIn:anFXIn,netRange:anNetRange,extRange:anExtRange,go,cs,paint,fitView,settle,setCat,reset,ensure,pick,linksOf,actSet,panelUpd,selBox,dsOpen,trSeries,trSample,trDraw,trZoom,trModel,trMap,trGoCrumb,cosInfo,cosOn,cosFill,procLock,procAI,procRemote,hmiAdd,hmiFind,hmiPick,hmiVal,hmiOpen,hmiClose,hmiAuto,hmiUpd,hmiSetMode,hmiRender,hmiHeader,hmiSync,hmiAddrOf,hmiList,hmiZoomBy,hmiFit,hmiVb,hmiWrite,procLock,procAI,nm,hmiState,hmiToggleForce,hmiPlantOwned,hmiForced,setForce,wrCtl,anPins,stepSet,plantLoad150:anPlantLoad150,plantCold:anPlantCold,plantColdAsync:anPlantColdAsync,loadStart:anLoadStart,plantLoad150Async:anPlantLoad150Async,plantLive:anPlantLive,turbine:anTurbine,tcs:()=>tcsState(),tcsIO:()=>(AN_UNIT.on?tcsIO(AN_UNIT):null),tcsInit:h=>AN_UNIT.on?tcsInit(AN_UNIT,h):null,oilValve:anOilValve,blowdown:anBlowdown,field:anField,tsat:steamTsat,fieldState:()=>Object.assign({},AN_SRC.field),ades:async()=>{await adesLoad();return ADES},plOpen,plClose,plAIs,plRes,plVal,plantSwitch,dsGoRef,connClick,lnTables,lnApplyEdits,lneSave,lnResolve,lnOpen,addrTable:nm=>{const sh=AN.sheets.find(s=>s.name===nm)||cs(),S=ensure(sh);return{table:S.addr,notTied:S.addrUn}}});if(innerWidth<820||AN.ah){anp.classList.add('min');bPn.classList.remove('on')}
 window.AN=AN;
 
 })();</script>
@@ -47523,8 +48535,17 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       AS.xlk = AS.xlk || {};
       if (!AS.xlk[a.n]) AS.xlk[a.n] = { from: fakeFrom(a.d), fromNets: [], tag: 'DITL ' + a.ref, ditl: true };
     }
-    /* 4. the DITL page shows the new values (P2, user 2026-11-01: only while the Logic page is on the screen; it is drawn again when
-       it opens) */
+    /* 4. the DITL page shows the new values (none in the engine alone, 3.2.0 Web Worker: no page) */
+    if (typeof document !== 'undefined') paintD(c, chCur);
+    /* 3.2.0-beta.23: after each scan (the Training dock releases its push buttons after two scans) */
+    if (W.onTick)
+      try {
+        W.onTick(dt);
+      } catch (e) {}
+    W.ms = W.ms * 0.8 + (performance.now() - t0) * 0.2;
+  }
+  /* the DITL page after a scan (P2, user 2026-11-01: only while the Logic page is on the screen; it is drawn again when it opens) */
+  function paintD(c, chCur) {
     const dShown = !(document.body.dataset.tab && document.body.dataset.tab !== 'logic') && !document.body.classList.contains('plant');
     if (AN.cat !== 'an' && c && !dShown) W._dStale = 1;
     if (AN.cat !== 'an' && c && dShown) {
@@ -47536,12 +48557,6 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
           mvUI(c);
         } catch (e) {}
     }
-    /* 3.2.0-beta.23: after each scan (the Training dock releases its push buttons after two scans) */
-    if (W.onTick)
-      try {
-        W.onTick(dt);
-      } catch (e) {}
-    W.ms = W.ms * 0.8 + (performance.now() - t0) * 0.2;
   }
   /* 3.2.0-beta.6 FIRST-OUT across sheets: an input row that is 1 because of another sheet is followed to that sheet's output
      (FROM column, the same map the one world uses) and its cause, up to 4 sheets deep: "IDF STOPPED" on DITL-03A -> the row
@@ -47717,9 +48732,10 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     };
     return job();
   };
-  /* the world is built once both pages are there (the ABC sheets are linked again when they load, the interval above) */
+  /* the world is built once both pages are there (the ABC sheets are linked again when they load, the interval above); the engine
+     alone (3.2.0 Web Worker, no page) builds it when its host says so */
   let n = 0;
-  const iv = setInterval(() => {
+  const iv = typeof document !== 'undefined' && setInterval(() => {
     const a = document.querySelector('#anbar .tbg-run'),
       d = document.querySelector('#bar .tbg-run');
     if ((a && d) || ++n > 60) {
@@ -47885,6 +48901,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   W.plantIn = ALL => {
     if (!(window.AN && AN.plantOn === true)) return;
     if (!map) build(ALL);
+    if (pend) put();
     const pc = W.condP();
     if (isFinite(pc)) for (const a of ana) (a.s.avw = a.s.avw || {})[a.key] = pc;
     const U = AN.unit || {};
@@ -47911,6 +48928,20 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     }
   };
   W.plantSw = () => (map || []).map(m => ({ sheet: m.s.name, row: m.row + 1, tag: m.d[0], on: m.on }));
+  /* 3.2.0 Web Worker: the state of the switches (their dead band) back from a keyframe (src/digital/parts/03d-state.js); kept until the
+     list is built (the first scan) */
+  W.plantSwSet = L => {
+    pend = L;
+    if (map) put();
+  };
+  let pend = null;
+  const put = () => {
+    for (const q of pend || []) {
+      const m = map.find(x => x.s.name === q.sheet && x.row === q.row - 1 && x.d[0] === q.tag);
+      if (m) m.on = q.on;
+    }
+    pend = null;
+  };
 })(window.WORLD);
 </script>
 <script id="ditl150js">/* DITL 150 MW (2.2.0-beta.3): "Start at 150 MW" for the DITL sheets too.
@@ -50559,7 +51590,7 @@ body.app2 #gdtrb[hidden]{display:none!important}
     } catch (e) {}
     return null;
   };
-  const D = (window.DUI = {});
+  const D = (window.DUI = window.DUI || {});
   const mode = () => $('bmode');
   /* SIM on = the DITL states start again (the old Simulate button) */
   const enter = () => {
@@ -50953,64 +51984,15 @@ body.app2 #gdtrb[hidden]{display:none!important}
   const dp = E('div', { id: 'dp' });
   const mid = $('mid');
   if (mid) mid.append(dp);
-  /* 3.2.0 P3: on (S22)DITL-80S the 3-line output labels sit ON the wire (one line above, one on, one below: PDF (22)Ditl80S.pdf,
-     output 57 = "S/B STEAM SUPPLY MOTOR VALVE TORQUE"), so the cell grouping (text up to 5.7 above a wire = that row) gave each
-     output the first line of the next label down. For the text shown in the panel only, a sheet whose output texts sit like
-     that (5 or more lines nearer to another wire) takes each line of the RS column from its nearest wire. The drawing, the
-     links and the valve model (03-models.js reads the label of the wire itself) do not use this. */
-  const rsNear = s => {
-    if (s._rsN !== undefined) return s._rsN;
-    const M = {};
-    let mv = 0;
-    s.rows.forEach((r, i) =>
-      (s.cells[i + ':RS'] || []).forEach(t => {
-        let j = i;
-        s.rows.forEach((q, k) => Math.abs(q.y - t.y) < Math.abs(s.rows[j].y - t.y) && (j = k));
-        if (j !== i) mv++;
-        (M[j] = M[j] || []).push(t);
-      })
-    );
-    for (const k in M) M[k].sort((a, b) => b.y - a.y);
-    return (s._rsN = mv >= 5 ? M : null);
-  };
-  /* 3.2.0-beta.35: machine B / C / D of a shared drawing reads its own letter and address (WORLD.showText / addrK) */
-  const isK = s => !!(s && s._inst && s._inst.k && window.WORLD && WORLD.showText);
-  /* live test #56: machine A of a drawing for several machines (DITL-45 dryer A / B / C: TAG "M.1120/1125/M.112A") reads its own address too
-     (M.1120, not the last one M.112A of dryer C) in the row text, the dock and the Event log */
-  const isKA = s => !!(s && s._inst && (s._inst.k || s._inst.n > 1) && window.WORLD && WORLD.showText && WORLD.addrK);
-  const txt = (s, i, c) => {
-    const r = ((c === 'RS' && rsNear(s) ? rsNear(s)[i] : s.cells[i + ':' + c]) || [])
-      .map(t => t.t)
-      .join(' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    return isK(s) ? WORLD.showText(s, r) : r;
-  };
-  /* the TAG NO. column holds the address (I.0406, M.0378) and, on many sheets, the service text too */
-  const ADR = /^[A-Z]{1,3}\.[0-9A-F]{3,5}[A-Z]?$/;
-  const tagOf = (s, i) => {
-    const t = (s.cells[i + ':T'] || []).map(t => t.t.trim()).filter(t => ADR.test(t)).join(' '),
-      /* an address list of the machines in the TAG NO. ("M.0110/210/1610/1710" DITL-09 row 5): the address of this machine */
-      l = !t && (s.cells[i + ':T'] || []).some(x => /^[IMOB]\.[0-9A-F]{4}(\/[0-9A-F]{3,4})+\/?$/.test(x.t.trim()));
-    if (l && window.WORLD && WORLD.addrK) return WORLD.addrK(s, i) || '';
-    return t && isKA(s) ? WORLD.addrK(s, i) || t : t;
-  };
-  const svcOf = (s, i) => {
-    const r = (s.cells[i + ':T'] || [])
-      .concat(s.cells[i + ':S'] || [])
-      .map(t => t.t.trim())
-      .filter(t => t && !ADR.test(t))
-      .join(' ');
-    return isKA(s) ? WORLD.showText(s, r) : r;
-  };
-  const fmt = x => (x >= 60 ? (x / 60).toFixed(1) + ' min' : x.toFixed(1) + ' s');
+  /* the reader of a sheet (src/digital/parts/03c-read.js, no DOM: the engine reads it too) */
+  const { rsNear, isK, isKA, txt, ADR, tagOf, svcOf, fmt, auto, MAPS, maps, rowNo, inName, outName, gName, dName, dPick, rowNets, val, why, shortest, whyD } = DREAD;
   let key = '',
     U = []; /* value updaters of the built panel */
   function sec(title, n) {
     return E('div', { cls: 'dp-h', txt: title + (n != null ? ' (' + n + ')' : '') });
   }
   /* the switch of an input row (Inputs tab and Selected tab): hand switch, push button (press and hold) or auto (dashed) */
-  const auto = (s, i) => lockd(s, i) || !!(window.WORLD && WORLD.live && s._win && s._win.has(i));
+  /* auto: src/digital/parts/03c-read.js */
   /* retest #63: an operator command on the drawing (a CRT push button, a hand switch) goes to the Event log with its row and tag */
   const opLog = (s, i, what) => {
     try {
@@ -51086,133 +52068,7 @@ body.app2 #gdtrb[hidden]{display:none!important}
     SU = [];
   const selBox = E('div', { cls: 'dp-sel' });
   const RIGHT = ['RS', 'RL', 'RT'];
-  const MAPS = new WeakMap();
-  const maps = s => {
-    const nl = s.nl;
-    let m = MAPS.get(nl);
-    if (m) return m;
-    const drv = new Map(),
-      use = new Map(),
-      add = (M, n, x) => n >= 0 && (M.get(n) || M.set(n, []).get(n)).push(x);
-    nl.gates.forEach((g, gi) => {
-      (g.out || []).forEach(n => add(drv, n, { g: gi }));
-      (g.ins || []).forEach(n => add(use, n, { g: gi }));
-      (g.s || []).forEach(n => add(use, n, { g: gi, pin: 'S' }));
-      (g.r || []).forEach(n => add(use, n, { g: gi, pin: 'R' }));
-      if (g.spNet !== undefined) add(use, g.spNet, { g: gi, pin: 'SP' });
-    });
-    nl.src.forEach(z => add(drv, z.n, { row: z.row }));
-    (nl.ind || []).forEach(z => add(drv, z.n, { row: z.row }));
-    (nl.xcon || []).forEach(c => add(c.dir === 'in' ? drv : use, c.n, { x: c }));
-    (nl.one || []).forEach(n => add(drv, n, { one: 1 }));
-    (nl.usr || []).forEach(u => add(drv, u.n, { u }));
-    (nl.outs || []).forEach(o => add(use, o.n, { row: o.row, out: 1 }));
-    (nl.pout || []).forEach(o => add(use, o.n, { po: o }));
-    (nl.mir || []).forEach(o => add(use, o.n, { row: o.row, mir: 1 }));
-    m = { drv, use };
-    MAPS.set(nl, m);
-    return m;
-  };
-  const rowNo = (s, i) => s.rows[i].n || i + 1;
-  const inName = (s, i) => 'Input row ' + rowNo(s, i) + (tagOf(s, i) ? ' · ' + tagOf(s, i) : '') + (svcOf(s, i) ? ' · ' + svcOf(s, i) : '');
-  const outName = (s, i) => 'Output row ' + rowNo(s, i) + (txt(s, i, 'RS') ? ' · ' + txt(s, i, 'RS') : '') + (txt(s, i, 'RL') ? ' · ' + txt(s, i, 'RL') : '');
-  const gName = (s, g) =>
-    g.t === 'TMR'
-      ? 'TIMER ' + (g.tm.tag ? g.tm.tag + ' ' : '') + KN[g.k] + ' ' + fmt(tmSecs(g.tm))
-      : g.t === 'CMP'
-        ? 'COMPARATOR ' + cmpTxt(g)
-        : g.t === 'FF'
-          ? 'FLIP-FLOP (' + (g.spri ? 'SET' : 'RESET') + ' wins)'
-          : g.t === 'CNT'
-            ? 'COUNTER (N = ' + (g.N || 0) + ')'
-            : g.t;
-  /* a driver / user of a net: name and the part it selects */
-  const dName = (s, d) =>
-    d.g !== undefined
-      ? (d.pin && d.pin !== 'SP' ? d.pin + ' of ' : d.pin ? 'set point of ' : '') + gName(s, s.nl.gates[d.g])
-      : d.row !== undefined
-        ? d.out
-          ? outName(s, d.row)
-          : d.mir
-            ? inName(s, d.row) + ' (follows this wire)'
-            : inName(s, d.row)
-        : d.x
-          ? (d.x.dir === 'in' ? 'FROM ' : 'TO ') + d.x.peer + ' connector (' + d.x.num + ')'
-          : d.one
-            ? 'DEFAULT "1" (always 1)'
-            : d.u
-              ? 'switch on the drawing'
-              : d.po
-                ? d.po.adr + ' ' + (d.po.txt || '')
-                : '?';
-  const dPick = d => (d.g !== undefined ? { t: 'g', g: d.g } : d.row !== undefined ? { t: 'row', i: d.row, side: d.out ? 'R' : 'L' } : null);
-  const rowNets = (s, i, side) => (side === 'R' ? s.nl.outs : s.nl.src.concat(s.nl.ind || [])).filter(o => o.row === i).map(o => o.n);
-  const val = (R, n) => (R ? (R.v[n] ? 1 : 0) : null);
-  /* what must change for net n to be `want` (the values of RUN); the shortest way when one of several is enough */
-  let ALL = false;
-  function why(s, v, n, want, seen, d) {
-    if (!!v[n] === !!want) return [];
-    if (d > 16 || seen.has(n + ':' + want)) return [];
-    seen.add(n + ':' + want);
-    const D = maps(s).drv.get(n) || [];
-    if (!D.length) return [{ txt: 'a wire with no source on this sheet', n }];
-    let best = null;
-    for (const x of D) {
-      const r = whyD(s, v, x, want, seen, d + 1, n);
-      if (want) {
-        if (r.length && (!best || r.length < best.length)) best = r;
-      } else best = (best || []).concat(r);
-    }
-    return best || [];
-  }
-  const shortest = L => L.filter(r => r.length).sort((a, b) => a.length - b.length)[0] || [];
-  function whyD(s, v, x, want, seen, d, n0) {
-    const W = want ? '1' : '0';
-    if (x.row !== undefined) return [{ row: x.row, want, auto: auto(s, x.row) }];
-    if (x.one) return [{ txt: 'DEFAULT "1": always 1' }];
-    if (x.u) return [{ txt: 'the switch drawn on the sheet must be ' + W }];
-    if (x.x) return [{ txt: 'FROM ' + x.x.peer + ' connector (' + x.x.num + ') must be ' + W + ' (open ' + x.x.peer + ')' }];
-    const g = s.nl.gates[x.g],
-      on = n => !!v[n],
-      ins = g.ins || [],
-      one = x2 => [{ g: x.g, txt: x2 }];
-    switch (g.t) {
-      case 'AND':
-        /* FIRST-OUT (ALL): an AND at 1 is held by ALL its inputs (e.g. two of three drum level channels), not the shortest one */
-        return want ? ins.filter(n => !on(n)).flatMap(n => why(s, v, n, 1, seen, d)) : ALL ? ins.flatMap(n => why(s, v, n, 0, seen, d)) : shortest(ins.map(n => why(s, v, n, 0, seen, d)));
-      case 'OR':
-        return want ? shortest(ins.map(n => why(s, v, n, 1, seen, d))) : ins.filter(on).flatMap(n => why(s, v, n, 0, seen, d));
-      case 'NOT':
-        return want ? ins.filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : shortest(ins.map(n => why(s, v, n, 1, seen, d)));
-      case 'FF': {
-        const S0 = (g.s || []).some(on),
-          R0 = (g.r || []).some(on);
-        if (want) {
-          const a = R0 && !g.spri ? (g.r || []).filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : [];
-          return a.concat(S0 ? [] : shortest((g.s || []).map(n => why(s, v, n, 1, seen, d))), S0 ? [] : one('then the flip-flop is SET (it stays 1 after S goes 0)'));
-        }
-        const a = S0 && g.spri ? (g.s || []).filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : [];
-        return a.concat(R0 ? [] : shortest((g.r || []).map(n => why(s, v, n, 1, seen, d))), R0 ? [] : one('then the flip-flop is RESET'));
-      }
-      case 'TMR': {
-        const I0 = ins.some(on),
-          P = fmt(tmSecs(g.tm)),
-          tag = g.tm.tag || 'timer';
-        if (g.k === 'on')
-          return want ? (I0 ? one(tag + ' is counting: ' + fmt(g.st.acc || 0) + ' / ' + P) : shortest(ins.map(n => why(s, v, n, 1, seen, d))).concat(one('then ' + tag + ' counts ' + P))) : shortest(ins.map(n => why(s, v, n, 0, seen, d)));
-        if (g.k === 'flash') return want ? shortest(ins.map(n => why(s, v, n, 1, seen, d))).concat(one('then the flasher blinks ON ' + fmt(g.fl[0]) + ' / OFF ' + fmt(g.fl[1]))) : shortest(ins.map(n => why(s, v, n, 0, seen, d)));
-        if (g.k === 'off') return want ? shortest(ins.map(n => why(s, v, n, 1, seen, d))) : I0 ? shortest(ins.map(n => why(s, v, n, 0, seen, d))).concat(one('then ' + tag + ' holds 1 for ' + P)) : one(tag + ' holds 1: ' + fmt(g.st.acc || 0) + ' / ' + P);
-        return want
-          ? (g.k === 'pulse' ? (I0 ? shortest(ins.map(n => why(s, v, n, 0, seen, d))) : []) : I0 ? [] : shortest(ins.map(n => why(s, v, n, 1, seen, d)))).concat(one(tag + ' gives a ' + P + ' pulse when its input goes ' + (g.k === 'pulse' ? '0 → 1' : '1 → 0')))
-          : one(tag + ' pulse ends after ' + P);
-      }
-      case 'CMP':
-        return one('the analog value must be ' + (want ? '' : 'NOT ') + cmpTxt(g) + ' (now ' + anValN(s, ins[0]) + ')');
-      case 'CNT':
-        return one('the COUNTER must ' + (want ? 'reach N = ' + g.ks[g.out.indexOf(n0)] : 'move on') + ' (now N = ' + (g.N || 0) + ')');
-    }
-    return one(gName(s, g) + ' must give ' + W);
-  }
+  /* MAPS, maps, rowNo, inName, outName, gName, dName, dPick, rowNets, val, why, shortest, whyD: src/digital/parts/03c-read.js */
   /* the items of a why list, without repeats, at most 10 */
   function whyBox(s, n, R) {
     const box = E('div', { cls: 'dp-why' });
@@ -51475,94 +52331,6 @@ body.app2 #gdtrb[hidden]{display:none!important}
     }
   };
   D.sel = () => pk && { t: pk.t, i: pk.i, side: pk.side, g: pk.g, n: pk.n };
-  D.why = (s, n, want) => why(s, simSheet(s).v, n, want, new Set(), 0);
-  /* 3.2.0-beta.23 TRAINING INTERLOCK (user 2026-10-24: "di ba may interlock yan s kada equipment? na-icoconsider ba ito sa start-up
-     training?"): what output row `row` of DITL sheet s needs to become 1 now, read from the netlist (the "To make it 1" of the
-     Selected tab), with the names of the input rows; [] = it is 1. D.outs lists the output rows of a sheet with their names */
-  D.need = (s, row) => {
-    try {
-      if (!s.nl) s.nl = netlist(s);
-      const o = s.nl.outs.find(x => x.row === row);
-      if (!o) return null;
-      const v = simSheet(s).v;
-      if (v[o.n]) return [];
-      const L = why(s, v, o.n, 1, new Set(), 0),
-        out = [];
-      for (const r of L) {
-        const it =
-          r.row !== undefined
-            ? { row: r.row, no: rowNo(s, r.row), tag: tagOf(s, r.row) || '', svc: svcOf(s, r.row) || '', want: r.want ? 1 : 0, auto: !!r.auto }
-            : { txt: r.txt };
-        const k = r.row !== undefined ? 'r' + r.row + it.want : it.txt;
-        if (!out.some(q => (q.row !== undefined ? 'r' + q.row + q.want : q.txt) === k)) out.push(it);
-      }
-      return out.slice(0, 12);
-    } catch (e) {
-      return null;
-    }
-  };
-  D.rowInfo = (s, row) => ({ tag: tagOf(s, row) || '', svc: svcOf(s, row) || '' });
-  D.rowVal = (s, row) => {
-    try {
-      const v = simSheet(s).v,
-        an = s.nl.an || [];
-      /* 3.2.0-beta.28 (human run of the Training: BFWP-A START stayed locked): an ANALOG input row (DITL-23A row 12 PT-FW1115-A BFWP
-         A SUCTION PRESSURE > 1.5 kg/cm2) is met when the comparator of the drawing that reads it says 1; its own net is the analog value
-         (0 / 1 meaningless). Before, the interlock read the analog net: always 0, the START of the Training was locked */
-      return rowNets(s, row, 'L').some(n => {
-        if (!an.some(a => a.net === n)) return v[n];
-        const g = s.nl.gates.filter(x => x.t === 'CMP' && x.ins[0] === n);
-        return g.length ? g.some(x => x.out.some(o => v[o])) : v[n];
-      })
-        ? 1
-        : 0;
-    } catch (e) {
-      return null;
-    }
-  };
-  D.outs = s => {
-    if (!s.nl) s.nl = netlist(s);
-    return [...new Set(s.nl.outs.map(o => o.row))].map(r => ({ row: r, name: outName(s, r) }));
-  };
-  D.outVal = (s, row) => {
-    try {
-      const o = s.nl && s.nl.outs.find(x => x.row === row);
-      return o ? (simSheet(s).v[o.n] ? 1 : 0) : null;
-    } catch (e) {
-      return null;
-    }
-  };
-  /* 3.2.0-beta.6 FIRST-OUT: why output row `row` of sheet s is 1 now (the inputs that are 1 and keep it 1), as text lines for the
-     Event log: called by the one world (src/world/world.js) at the scan where a TRIP / MFT output goes 1 */
-  D.cause = (s, row) => {
-    const o = s.nl && s.nl.outs.find(x => x.row === row);
-    if (!o) return null;
-    ALL = true;
-    let L;
-    try {
-      L = D.why(s, o.n, 0);
-    } finally {
-      ALL = false;
-    }
-    const seen = new Set(),
-      lines = [];
-    for (const r of L) {
-      /* only what IS 1 now: the "then ..." and pulse lines of the To-make-it list are what would happen next, not the cause */
-      if (r.row === undefined && (/^then /.test(r.txt || '') || / gives a .* pulse /.test(r.txt || ''))) continue;
-      /* a row that must go 0 IS 1 now: a cause; a row that must go 1 is the reset of a memory (flip-flop): it holds the output */
-      const t =
-        r.row !== undefined
-          ? r.want
-            ? 'memory (flip-flop): stays 1 until ' + inName(s, r.row) + ' = 1'
-            : inName(s, r.row) + ' = 1' + (r.auto ? ' · from the equipment / another sheet' : '')
-          : String(r.txt || '').replace(/^the analog value must be NOT /, 'the analog value is ');
-      if (!t || seen.has(t)) continue;
-      seen.add(t);
-      lines.push({ d: 1, k: r.row !== undefined && !r.want ? 'input' : 'gate', txt: t, sh: s.name, row: r.row !== undefined && !r.want ? r.row : undefined });
-    }
-    return { name: outName(s, row), lines: lines.slice(0, 12) };
-  };
-  D.rowNets = rowNets;
   D.labelOf = labelOf;
   D.goRef = goRef;
   D.setPick = p => setPick(p);
@@ -64275,143 +65043,11 @@ body.ophmi #anp{display:none!important}
       AN.settle();
     } catch (e) {}
   };
-  /* ang .MAN / .LOC / .REM ng isang tag ay iisang HMI command sa buong DCS: lahat ng input na may ganitong pangalan sa lahat ng sheet (hindi lang ang sa sheet ng controller) */
-  /* a wire named by its description only: not an address (B.0641, M.0228, AI0641) and not linked from another sheet */
-  const descWire = (S2, n) =>
-    !(S2.xlk && S2.xlk[n]) &&
-    !/^(?:(?:S\d\s+)?[A-Z]{1,2}\.[0-9A-F]{4}|(?:S\d\s+)?[A-Z]{2}\d{4}|[A-Z]{2,}[A-Z0-9-]*\.[A-Z]{2,4}|\d\s*:\s*[A-Z])$/.test((AN.nm(S2, n) || '').trim()); /* 2.2.0-beta.9: also an address with its station (S2 M.2502) and a switch leg mark (1:B) */
-  const modeNetsRaw = (tag, kinds, own) => {
-    const out = own ? [own] : [],
-      want = new Set(kinds.map(k => (tag + '.' + k).toLowerCase())),
-      add = (S2, n) => !out.some(q => q[0] === S2 && q[1] === n) && out.push([S2, n]),
-      descs = new Set(),
-      tagged = [];
-    for (const sh2 of AN.sheets) {
-      if (/^ABC-000/.test(sh2.name)) continue;
-      let S2;
-      try {
-        S2 = AN.ensure(sh2);
-      } catch (e) {
-        continue;
-      }
-      if (!S2 || !S2.ext) continue;
-      for (const n of S2.ext) {
-        const t = S2.lab[n] && S2.lab[n].t;
-        if (t && want.has(t.trim().toLowerCase())) add(S2, n);
-        /* 2.3.0-beta.1: the mode status written beside a wire that carries an address (ABC-011 "TICBR1130.LOC" = M.0230) */
-        if (S2.alias && S2.alias[n] && S2.alias[n].some(a => want.has(a.toLowerCase()))) add(S2, n);
-      }
-      /* 1.23.0: the wire may carry the description as its name with the tag text written at its end (ABC-004A "CONTROL IN
-         MANUAL" + "PIC-COBM.MAN"): the digital input wire that ends at the tag text (< 14) is that address */
-      const tq = (S2.tx || []).filter(q => want.has(String(q.t).trim().toLowerCase()));
-      if (!tq.length) continue;
-      tagged.push(S2);
-      for (const q of tq) {
-        let best = -1,
-          bd = 8; /* 2.2.0-beta.9: distance to the line of the wire (the own wire is about 5 units under its tag text) */
-        for (const n of S2.ext) {
-          const nn = S2.nets[n];
-          if (!nn || !nn.dig || !descWire(S2, n)) continue;
-          for (const i of nn.segs) {
-            /* 2.2.0-beta.9: the distance to the LINE of the wire, not to its ends: the tag text is written on its own wire (ABC-001C
-               "HIC-BM.MAN" over the wire "BOILER MASTER IN MANUAL"); with the ends, a shorter wire of the pair above was nearer
-               ("TURBINE MASTER IN MANUAL", 12 units from its end, while the own wire ends 34 units away), so HIC-BM.MAN was the
-               turbine master wire */
-            const g = S2.seg[i],
-              dx = g.x2 - g.x1,
-              dy = g.y2 - g.y1,
-              L2 = dx * dx + dy * dy,
-              t = L2 > 0 ? Math.max(0, Math.min(1, ((q.x - g.x1) * dx + (q.y - g.y1) * dy) / L2)) : 0,
-              d = Math.hypot(q.x - (g.x1 + t * dx), q.y - (g.y1 + t * dy));
-            if (d < bd) {
-              bd = d;
-              best = n;
-            }
-          }
-        }
-        /* 2.2.0-beta.20: the tag text written at the LEFT END of its wire, as a label (ABC-004A "FICCL1061B.MAN  C/F B FLOW CTL IN
-           MANUAL ( FROM ABC-004B )": the text ends about where the wire starts, 40 units right of the text's origin): a digital
-           description wire whose end is within 60 units right of the text, on the same line (dy <= 4) */
-        let leftEnd = false;
-        if (best < 0) {
-          let bx = 61;
-          for (const n of S2.ext) {
-            const nn = S2.nets[n];
-            if (!nn || !nn.dig || !descWire(S2, n)) continue;
-            /* the leftmost end of a horizontal segment of the wire */
-            let lx = 1e9,
-              ly = 0;
-            for (const i of nn.segs) {
-              const g = S2.seg[i];
-              if (Math.abs(g.y1 - g.y2) > 1) continue;
-              const ex = Math.min(g.x1, g.x2);
-              if (ex < lx) {
-                lx = ex;
-                ly = g.y1;
-              }
-            }
-            const dx = lx - q.x;
-            if (dx > 0 && dx < bx && Math.abs(ly - q.y) <= 4) {
-              bx = dx;
-              best = n;
-              leftEnd = true;
-            }
-          }
-        }
-        if (best >= 0) {
-          add(S2, best);
-          const d = (AN.nm(S2, best) || '').trim().toUpperCase();
-          if (!leftEnd && d.length >= 10 && !/^[A-Z]{1,3}\.\w{4}$/.test(d) && !d.includes(tag.toUpperCase())) descs.add(d);
-        }
-      }
-    }
-    /* the same description on another sheet that shows the same tag text (ABC-001C "BOILER PRESSURE CONTROL IN MANUAL"
-       with "PIC-COBM.MAN" a little further away, under other wires) */
-    if (descs.size)
-      for (const S2 of tagged)
-        for (const n of S2.ext) {
-          const nn = S2.nets[n],
-            d = (AN.nm(S2, n) || '').trim().toUpperCase();
-          if (nn && nn.dig && descWire(S2, n) && [...descs].some(x => d === x || d.endsWith(' ' + x))) add(S2, n);
-        }
-    return out;
-  };
-  /* speed (user 2026-11-01 "Ge ayusin pre", 6x CPU: the SOP scan and the dock asked this every second for every step, each time a
-     walk over all the sheets): the wires of a tag only change when a sheet is built again, so they are kept per tag while every
-     sheet keeps the same built state (S) */
-  let mnK = null;
-  const mnC = new Map();
-  const modeNetsByTag = (tag, kinds, own) => {
-    const sh = AN.sheets || [];
-    if (!sh.length || sh.some(x => !x.S && !/^ABC-000/.test(x.name))) return modeNetsRaw(tag, kinds, own);
-    if (!mnK || mnK.length !== sh.length || sh.some((x, i) => x.S !== mnK[i])) {
-      mnK = sh.map(x => x.S);
-      mnC.clear();
-    }
-    const k = tag + '|' + kinds.join(',');
-    let r = mnC.get(k);
-    if (!r) mnC.set(k, (r = modeNetsRaw(tag, kinds, null)));
-    return own ? [own, ...r.filter(q => !(q[0] === own[0] && q[1] === own[1]))] : r.slice();
-  };
-  /* 1.22.0: .MAN / .LOC / .REM are the MODE STATUS of the controller (textbook: status word .MAN = MANUAL, .LOC = LOCAL,
-     .REM = REMOTE), not a short pulse: pressing M / A / R sets that one to 1 and the other two to 0, on every sheet with the tag,
-     and it STAYS until another mode is pressed. The drawing reads it as a level (ABC-010: "DRUM LEVEL CONTROL MANUAL FOR
-     START-UP  LICBR1001B.MAN" -> NOT -> force manual of FICFW1007: with a pulse the feedwater loop could never go to AUTO) */
-  const MODEK = { MAN: ['MAN', 'MANUAL'], LOC: ['LOC', 'LOCAL', 'AUTO', 'AUT'], REM: ['REM', 'REMOTE'] };
-  const latchMode = (tag, kind, own) => {
-    /* 2.2.0-beta.20: ONE command. Every .MAN / .LOC / .REM address of the tag is written first (the selected mode last), then the
-       sheets settle once. Before, each address settled on its own (setIn): for those scans the controller was in no mode at all
-       (MAN = 0, LOC = 0, REM still 0). FIC-CM R (M4 step 5) took its SV to 0 for those scans, the fuel SI0017 fell with it, and the
-       boiler master, tracking SI0017 while the coal master is not REMOTE (ABC-001C M.2000), kept 27.0 % instead of 33.6 %: the coal
-       fell from 36 to 11 T/H and the main steam pressure to 108.7 kg/cm2 */
-    const w = [];
-    for (const k in MODEK) for (const [S2, n] of modeNetsByTag(tag, MODEK[k], k === kind ? own : null)) w.push([S2, n, k === kind ? 1 : 0]);
-    w.sort((a, b) => a[2] - b[2]);
-    for (const [S2, n, v] of w) S2.rt.ext[n] = v;
-    try {
-      AN.settle();
-    } catch (e) {}
-  };
+  /* 3.2.0 Web Worker (stage a): descWire, modeNetsRaw, modeNetsByTag, MODEK, latchMode are in the engine (src/analog/engine/ctrls.js) */
+  const descWire = (S2, n) => AN.descWire(S2, n),
+    modeNetsByTag = (tag, kinds, own) => AN.modeNetsBy(tag, kinds, own),
+    MODEK = AN.MODEK,
+    latchMode = (tag, kind, own) => AN.latchMode(tag, kind, own);
   const setMV = (S, c, v) => {
     if (c.manBlk && S.rt.st[c.manBlk.id]) S.rt.st[c.manBlk.id].val = v;
     else S.rt.ext[c.manNet] = v;
@@ -64433,120 +65069,8 @@ body.ophmi #anp{display:none!important}
     } catch (e) {}
     return '';
   }
-  function ctrls(S) {
-    const out = [];
-    for (const b of S.blk) {
-      if (b.k !== 'PID' && b.k !== 'PIDV') continue;
-      const tag = (b.txt || [])[1];
-      if (!tag || /^X+-/.test(tag)) continue;
-      let q = null;
-      try {
-        q = AN.anPins(S, b);
-      } catch (e) {}
-      if (!q || q.pv == null || q.pv < 0) continue;
-      /* the A/M station of this controller is found by the engine (anStationOf): the same rule for the panel and for the force-manual logic */
-      const stn = AN.anStationOf(S, b),
-        amt = stn.amt,
-        autoLeg = stn.autoLeg,
-        manNet = stn.manNet,
-        manBlk = stn.manBlk;
-      /* the SV is the output of a T switch whose B leg is a COS (the operator's SV, drawing ABC-007 etc.): the faceplate SV field sets that COS and picks leg B (LOCAL); REM goes back to the SV of the logic */
-      const svSw = AN.anSvSwitchOf(S, b),
-        remote = !!svSw && AN.anHasRemote(S, b); /* REMOTE / LOCAL only where the drawing has a REMOTE mode */
-      /* the switching signals of the drawing for this loop: the select signals of the A/M station (1:A / 1:B) and the mode inputs TAG.MAN / .LOC / .REM; the panel shows them live and the mode inputs are buttons that write the SAME signals as the diagram */
-      const manLeg = autoLeg === 'A' ? 'B' : 'A',
-        lb = n => (S.lab[n] && S.lab[n].t) || 'n' + n,
-        sigs = [];
-      if (amt) {
-        const L =
-          amt.cs && amt.cs.length > 1
-            ? amt.cs.map(z => ({ n: z.n, leg: z.A ? 'A' : 'B' }))
-            : amt.sel >= 0
-              ? [{ n: amt.sel, leg: amt.p && amt.p.selA ? 'A' : 'B' }]
-              : [];
-        for (const z of L) {
-          const dr = (S.drv[z.n] || []).find(d => d.k !== 'LINK');
-          sigs.push({
-            n: z.n,
-            name: lb(z.n),
-            role: z.leg === manLeg ? 'MAN' : 'AUTO',
-            src: dr && dr.i ? dr.i.map(m => ({ n: m, name: lb(m) })) : []
-          });
-        }
-      }
-      const modes = [],
-        mre = new RegExp(
-          '^' + tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.(MAN|LOC|REM|AUTO|AUT|LOCAL|REMOTE|MANUAL)$',
-          'i'
-        );
-      for (let n = 0; n < S.nets.length; n++) {
-        const tx = S.lab[n] && S.lab[n].t;
-        if (tx && mre.test(tx.trim()) && S.ext.includes(n) && !modes.some(z => z.n === n))
-          modes.push({ n, name: tx.trim(), kind: tx.trim().split('.').pop().toUpperCase() });
-      }
-      /* selectors after the controller output (interlock / back-up legs): when one is on its B leg the valve command is NOT the MV of the faceplate */ const dn =
-        [];
-      {
-        let cur = amt ? amt.o[0] : b.o[0];
-        for (let k = 0; k < 6; k++) {
-          const g = S.blk.find(
-            x =>
-              (x.k === 'AMT' || x.k === 'SW') &&
-              (!amt || x.id !== amt.id) &&
-              x.a === cur &&
-              x.b !== cur &&
-              !dn.some(d => d.id === x.id)
-          );
-          if (!g) break;
-          dn.push({ id: g.id, sel: g.cs && g.cs[0] ? g.cs[0].n : g.sel });
-          cur = g.o[0];
-        }
-      }
-      out.push({
-        b,
-        tag,
-        q,
-        amt,
-        autoLeg,
-        manNet,
-        manBlk,
-        svSw,
-        remote,
-        sigs,
-        modes,
-        dn,
-        out: amt ? amt.o[0] : b.o[0],
-        desc: (b.face && b.face.desc) || ''
-      });
-    }
-    /* pamagat: ang paglalarawan ng DCS (xlsx) ang ginagamit; kung pareho ito sa dalawang controller ng sheet (hal. "PAF/SAF AIR FLOW CONTROL"), ang nakasulat sa drawing sa tabi ng PID ang gagamitin ("PRIMARY AIR FLOW CONTROL") */
-    {
-      const cnt = {};
-      out.forEach(o => {
-        cnt[o.desc] = (cnt[o.desc] || 0) + 1;
-      });
-      for (const o of out) {
-        if (o.desc && cnt[o.desc] < 2) continue;
-        const b = o.b;
-        const t = (S.tx || [])
-          .filter(
-            x =>
-              x.x >= b.x1 - 2 &&
-              x.x <= b.x1 + 25 &&
-              x.y >= b.y0 - 6 &&
-              x.y <= b.y1 + 6 &&
-              !/~/.test(x.t) &&
-              x.t.trim().length > 2
-          )
-          .sort((a, c) => c.y - a.y)
-          .map(x => x.t.trim())
-          .join(' ');
-        if (t) o.desc = t;
-      }
-    }
-    return out;
-  }
-  AN.hmiCtrls = ctrls; /* for the tests */
+  /* the controllers of a sheet: in the engine (src/analog/engine/ctrls.js, AN.hmiCtrls) */
+  const ctrls = S => AN.hmiCtrls(S);
   function manTag(b) {
     return b.tag || (b.txt || []).find(t => t && t !== 'MAN' && !/^S\d-MDL/.test(t)) || 'MAN';
   }
@@ -64605,10 +65129,6 @@ body.ophmi #anp{display:none!important}
     }
     return out && out.live.length ? out : null;
   };
-  /* 2.2.0-beta.9: the .MAN / .LOC / .REM addresses of a tag on every sheet, for the engine (plant.js MAN station status) */
-  AN.modeNets = (tag, kinds) => modeNetsByTag(tag, kinds || MODEK.MAN);
-  /* 2.2.0-beta.15: the operator's M / A (LOC) / R on a tag, for the engine (Start cold: every controller MANUAL = .MAN 1) and the CHECK */
-  AN.latchMode = latchMode;
   function trendOf(key) {
     return trends[key] || (trends[key] = { t: [], pv: [], sv: [], mv: [] });
   }
@@ -65769,26 +66289,8 @@ body.ophmi #anp{display:none!important}
   const AT = new Map();
   let base = null,
     lastT = -1;
-  const TRO = new WeakMap();
-  /* the TRIP output of a motor drawing ("SEAWATER PUMP A TRIP · CRT (ANN)"; not "TRIP COMMAND", not "TRIP INTERLOCK CONDITION",
-     not "NOT TRIP"), and its RUNNING output */
-  function motOuts(s) {
-    let o = TRO.get(s);
-    if (o && o.nl === s.nl) return o;
-    o = { nl: s.nl, trip: null, run: null };
-    try {
-      for (const x of DUI.outs(s) || []) {
-        const n = String(x.name || '');
-        /* retest #37: not "NO TRIP PRESENT" (DITL-05: 1 when there is NO trip) */
-        if (o.trip == null && /\bTRIP\b/.test(n) && !/COMMAND|INTERLOCK|NOT TRIP|NO TRIP|\bNO\b|\bCMD\b|RESET/.test(n)) o.trip = { row: x.row, name: n.replace(/^Output row \d+ · /, '').replace(/\s+[IO]\.\S+/g, '').replace(/\s*·.*$/, '').trim() };
-        if (o.run == null && /RUNNING/.test(n) && !/NOT RUNNING|STOP|\bANY\b|LOCAL/.test(n)) o.run = { row: x.row };
-      }
-    } catch (e) {}
-    /* a motor drawing only (a RUNNING output too): the MFT sheets have their own trip lines */
-    if (!o.run) o.trip = null;
-    TRO.set(s, o);
-    return o;
-  }
+  /* TRO, motOuts: src/digital/parts/03c-read.js */
+  const motOuts = s => DREAD.motOuts(s);
   /* R9 (beta.48 check): the DITL sheets already scanned since the load. A sheet built later (the sand DITL-777 SYSTEM TRIP = 1 on a cold
      plant: MFT / BOILER STOP and NOT REMOTE CONTROL, E10210-3-777) brings its standing trip as a shutdown alarm, not a NEW one */
   const DSEEN = new Set();
@@ -65807,22 +66309,8 @@ body.ophmi #anp{display:none!important}
   }
   const dSheets = () => (typeof S !== 'undefined' && S.sheets ? S.sheets.concat((window.WORLD && WORLD.inst) || []) : []);
   const dnm = s => String((s && s.name) || '').replace(/^\(\d+\)/, '');
-  /* the state of a motor drawing: 'TRIP' / 'RUN' / 'STOP' (null: no motor drawing, or the one world not built). The last state is
-     kept while PAUSED (the drawing holds its values) */
-  function motState(s) {
-    if (!s || !window.DUI || !(window.WORLD && WORLD.on && WORLD.idx)) return null;
-    try {
-      if (!s.nl) s.nl = netlist(s);
-      const o = motOuts(s);
-      if (!o.trip && !o.run) return null;
-      /* retest #34: a field trip (protection relay, dock FIELD TRIP) */
-      if (s._ftrip) return 'TRIP';
-      if (o.trip && DUI.outVal(s, o.trip.row) === 1) return 'TRIP';
-      return o.run && DUI.outVal(s, o.run.row) === 1 ? 'RUN' : 'STOP';
-    } catch (e) {
-      return null;
-    }
-  }
+  /* motState: src/digital/parts/03c-read.js (DUI.motState, no DOM: the unit model reads it too) */
+  const motState = s => DUI.motState(s);
   /* retest #62: the equipment group of an ABC sheet for the shutdown alarm suppression (the lamps of the Training dock, dock.js LAMPS):
      feedwater / condensate = the BFW pumps; steam, turbine, burners, furnace temperature, CCS = the boiler on coal; the rest (air,
      flue gas, furnace pressure) = the fans (ID fan, SA fan, PA fan and a fluidizing air blower). Released 10 min (plant time) after the

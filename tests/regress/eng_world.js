@@ -3,7 +3,7 @@
 // Both: Reset of the ABC (AN.reset) and of the DITL (ditlStates, the Reset of the DITL bar), the ABC keyframe of the page into the
 // engine (src/analog/engine/state.js), then STEPS times: ABC-001C 0.5 s + one scan of the world 0.5 s. Then every ABC value, input and
 // block state, the numbers of the unit model (AN.unit), every DITL net, flip-flop, counter, timer, input switch, the world outputs W.out and the motors / valves (MST, MS, DREG)
-// must be the same (0 differences). From cold, then from 150 MW (the DITL in service: src/world/ditl150.js). Usage: node tests/regress/eng_world.js [html]
+// must be the same (0 differences). Then the keyframe of a moving plant (ABC + DITL) into the engine. From cold, then from 150 MW (the DITL in service: src/world/ditl150.js). Usage: node tests/regress/eng_world.js [html]
 const {open}=require('./lib.js');const fs=require('fs'),vm=require('vm'),zlib=require('zlib'),path=require('path');
 const {worldBundle}=require('../../tools/build/engine-bundle.js');
 const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
@@ -39,5 +39,19 @@ const lock=async(prep,label)=>{
 };
 await lock('','cold (Reset)');
 await lock('AN.plantLoad150();DITL150.apply();','150 MW (Start at 150 MW, the DITL in service: DITL150.apply)');
+/* the keyframe of a moving plant (the way the worker starts from the page): the page runs first (150 MW, HP bypass by hand, a DITL
+   push button), then its ABC keyframe and its DITL keyframe (src/digital/parts/03d-state.js) go into the engine, whatever it ran before */
+{
+  const r=await page.evaluate(([steps,DUMP])=>{const dump=eval(DUMP);AN.run=false;AN.reset();ditlStates();AN.plantLoad150();DITL150.apply();
+   const C1=AN.sheets.find(s=>s.name==='ABC-001C');const S50=AN.sheets.find(s=>s.name==='ABC-050');const c=AN.hmiCtrls(S50.S).find(x=>x.tag==='PICMS1006');
+   AN.latchMode('PICMS1006','MAN');if(c.manBlk&&S50.S.rt.st[c.manBlk.id])S50.S.rt.st[c.manBlk.id].val=20;
+   for(let k=0;k<100;k++){AN.stepSet(C1,0.5);WORLD.tick(0.5)}
+   const K=JSON.stringify(AN.engState.capture()),KD=JSON.stringify(ditlCapture());
+   for(let k=0;k<steps;k++){AN.stepSet(C1,0.5);WORLD.tick(0.5)}return {K,KD,i:AN.i,kb:K.length+KD.length,d:dump(AN,S.sheets,WORLD,MST,MS,DREG)}},[STEPS,DUMP]);
+  eng.AN.i=r.i;eng.AN.engState.apply(JSON.parse(r.K));eng.DITL.ditlApply(JSON.parse(r.KD));
+  const C1=eng.AN.sheets.find(s=>s.name==='ABC-001C');for(let k=0;k<STEPS;k++){eng.ctx.ENGINE.E.stepSet(C1,0.5);eng.WORLD.tick(0.5)}
+  const c=cmp(r.d,eng.dump());
+  ck(c.n===0,'keyframe of a moving plant ('+Math.round(r.kb/1024)+' kB, ABC + DITL) into the engine, then '+STEPS+' scans = '+c.n+' differences of '+c.len+' records'+(c.n?'\n   '+c.ex.join('\n   '):''));
+}
 ck(!errs.length,'no page error'+(errs.length?': '+errs.slice(0,3).join(' | '):''));
 console.log(fail?'FAILED '+fail:'ALL PASS');await browser.close();process.exit(fail?1:0)})();
