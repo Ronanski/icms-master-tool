@@ -80,10 +80,8 @@
         if (m.t === 'beat') return;
         E.busyAt = m.t === 'acting' ? E.inAt : m.t === 'busy' ? E.busyAt : 0;
         if (m.t === 'acting') return;
-        if (m.t === 'ready') {
-          watch();
-          return ok(w);
-        }
+        /* the worker has loaded the drawings: the page hands over the plant as it is NOW and becomes the mirror (go) */
+        if (m.t === 'ready') return void E._go(w).then(ok, no);
         if (m.t === 'kf') {
           const r = E._kf && E._kf[m.id];
           if (r) delete E._kf[m.id], r(m);
@@ -113,12 +111,40 @@
       try {
         for (const sh of AN.sheets) AN.ensure(sh);
         if (window.WORLD && WORLD.build) WORLD.build();
-        const kf = AN.engState.capture(),
-          kd = ditlCapture();
         E.onPatch = () => AN.patchPaint && AN.patchPaint();
         /* the events of the engine into the Event log of the page */
         E.onEvent = a => window.lsEventAdd && lsEventAdd(...a);
-        E.start('mirror', w);
+        /* the DITL sheets of the page (with the user's fixes), the saved settings of the ABC (Reset applies them) */
+        const ds = JSON.stringify(S.sheets, (k, v) => (k === 'nl' || k[0] === '_' ? undefined : v instanceof Set ? [...v] : v)); /* the _ keys: caches, links to instances (the keyframe carries the state ones) */
+        /* 3.2.0 Web Worker: the page keeps running the plant itself (local) while the worker loads the drawings (seconds on a slow
+           device: before, the page was the mirror at once and the plant stood still until the worker was ready; a Run pressed then
+           started ~9 s late, mcc_valve on the cloud). The state goes over at 'ready' (E._go), so nothing done meanwhile is lost */
+        w.postMessage({ t: 'init', apre: txt('apre'), ades: txt('ades'), ds, sv: AN.sv || {}, lne: AN.lne || {}, i: AN.i });
+      } catch (e) {
+        fail('init', e.message);
+        no(e);
+      }
+    });
+  /* the hand-over: wait until no job of the page is half done and no starting state is loading here, then the keyframe of the page
+     as it is now goes to the worker (go) and the page becomes the mirror in the same moment (no scan of the page between them) */
+  E._go = w =>
+    new Promise((ok, no) => {
+      const go = () => {
+        if (!E.worker) return no(new Error('the worker stopped before the hand-over'));
+        /* a starting state loading here (in slices, seconds): it ends first */
+        if (AN._loading || AN._loadP) return void setTimeout(go, 100);
+        try {
+          /* a scan of the page that is half done (the scheduler runs jobs in slices) is finished first */
+          if (AN.sched && AN.sched.flush) AN.sched.flush();
+          const kf = AN.engState.capture(),
+            kd = ditlCapture();
+          w.postMessage({ t: 'go', sv: AN.sv || {}, lne: AN.lne || {}, kf, kd, i: AN.i, d150: !!(window.DITL150 && DITL150.on) });
+          E.start('mirror', w);
+        } catch (e) {
+          fail('hand-over', e.message);
+          return no(e);
+        }
+        watch();
         /* the operator's writes leave every 500 ms too (no patch comes while the plant is paused); a quarter of the writable slots
            each time, in turn (sync.js o.slice: ~1/4 of the cost, every slot seen within 2 s). A patch coming in and an action still
            flush every slot first (eng.js), so no write is ever put under */
@@ -136,13 +162,9 @@
             if (E.onError) E.onError(e);
           }
         }, 500);
-        /* the DITL sheets of the page (with the user's fixes), the saved settings of the ABC (Reset applies them) */
-        const ds = JSON.stringify(S.sheets, (k, v) => (k === 'nl' || k[0] === '_' ? undefined : v instanceof Set ? [...v] : v)); /* the _ keys: caches, links to instances (the keyframe carries the state ones) */
-        w.postMessage({ t: 'init', apre: txt('apre'), ades: txt('ades'), ds, sv: AN.sv || {}, lne: AN.lne || {}, kf, kd, i: AN.i });
-      } catch (e) {
-        fail('init', e.message);
-        no(e);
-      }
+        ok(w);
+      };
+      go();
     });
   /* the whole state of the engine (for the checks: the mirror must be the same) */
   E.peek = () =>
