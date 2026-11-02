@@ -32048,7 +32048,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build d3973a1'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 0938fcb'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -50044,11 +50044,11 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       m.ev = (E.evHeld || []).concat(m.ev || []);
       E.evHeld = [];
       /* the operator wins: a write not sent yet goes first */
-      /* only the slots this patch carries can cover a write of the page, so only those are looked at (Ningning, sync.js keys: 0.05 ms
-         for a few slots, the whole flush took ~5 ms at 6x); the other writes go with the 500 ms flush (eng-page.js) and before each action */
-      const mine = E.mode === 'mirror' && G.AN && G.AN.sync ? G.AN.sync.patch(true, { keys: m.p.map(x => x[0]) }) : [],
+      /* every writable slot, not only the ones this patch carries (Ningning's sync.js keys, tried in 390e423): an operator write the engine
+         did not touch in this scan (a DITL push button, an input switch) then waited for the 500 ms flush (up to 2 s in slices), too slow
+         for a press; the whole flush is ~5 ms at 6x, twice a second (eng_radio_ningning: a write leaves with the next patch) */
+      const mine = E.flush(),
         skip = new Set(mine.map(x => x[0]));
-      if (mine.length) post({ t: 'op', ops: mine, calls: [] });
       /* in slices of at most 4 ms, the page draws between them (a patch at once took ~100 ms at 6x: the long frames of the 038 page,
          Ningning's trace); no slices where there is no MessageChannel (the node tests: at once) */
       if (E.yieldNow && m.p.length > 8) {
@@ -50326,7 +50326,9 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
            flush every slot first (eng.js), so no write is ever put under */
         E._fl = setInterval(() => {
           if (E.mode !== 'mirror' || !E.port) return;
-          const ops = AN.sync.patch(true, { slice: true });
+          /* and the flags of AN every time (one small slot): the Run button is a write (AN.run), so a Run pressed while paused waited
+             for its quarter, up to 2 s, before the engine started (mcc_valve DITL-30: the press came before the world ran) */
+          const ops = AN.sync.patch(true, { slice: true }).concat(AN.sync.patch(true, { keys: ['fl'] }));
           if (!ops.length) return;
           try {
             E.port.postMessage({ t: 'op', ops, calls: [] });
@@ -75371,11 +75373,11 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
       m.ev = (E.evHeld || []).concat(m.ev || []);
       E.evHeld = [];
       /* the operator wins: a write not sent yet goes first */
-      /* only the slots this patch carries can cover a write of the page, so only those are looked at (Ningning, sync.js keys: 0.05 ms
-         for a few slots, the whole flush took ~5 ms at 6x); the other writes go with the 500 ms flush (eng-page.js) and before each action */
-      const mine = E.mode === 'mirror' && G.AN && G.AN.sync ? G.AN.sync.patch(true, { keys: m.p.map(x => x[0]) }) : [],
+      /* every writable slot, not only the ones this patch carries (Ningning's sync.js keys, tried in 390e423): an operator write the engine
+         did not touch in this scan (a DITL push button, an input switch) then waited for the 500 ms flush (up to 2 s in slices), too slow
+         for a press; the whole flush is ~5 ms at 6x, twice a second (eng_radio_ningning: a write leaves with the next patch) */
+      const mine = E.flush(),
         skip = new Set(mine.map(x => x[0]));
-      if (mine.length) post({ t: 'op', ops: mine, calls: [] });
       /* in slices of at most 4 ms, the page draws between them (a patch at once took ~100 ms at 6x: the long frames of the 038 page,
          Ningning's trace); no slices where there is no MessageChannel (the node tests: at once) */
       if (E.yieldNow && m.p.length > 8) {
