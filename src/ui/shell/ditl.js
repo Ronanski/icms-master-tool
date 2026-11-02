@@ -710,7 +710,8 @@
       add(whyBox(s, pk.n));
     }
   }
-  let AH = ls('ditl.ah') === '1',
+  /* UI overhaul 2026-11-02: no Auto-hide checkbox (approved Remove list); auto-hide only while the Training panel is open */
+  let AH = false,
     ahWas = null;
   /* retest #41: AUTO-HIDE while the Training panel is open (interaction.js AN.inspAuto); the user's setting comes back after */
   D.inspAuto = on => {
@@ -825,7 +826,6 @@
     if (!s || !s.nl) return;
     const hd = E('div', { cls: 'dp-top' }, [
       E('b', { txt: (s.meta && s.meta.dwg) || s.name }),
-      ahBox(),
       E('button', {
         txt: '✕',
         title: 'Hide panel (Panel button brings it back)',

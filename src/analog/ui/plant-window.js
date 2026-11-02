@@ -862,14 +862,6 @@ function buildPanel() {
     anp.append(
       h$('div', { cls: 'ph' }, [
         h$('b', { txt: sh.name, style: 'flex:1' }),
-        h$(
-          'label',
-          {
-            title:
-              'Hide this panel automatically when nothing is selected; it opens again when you click a block or wire'
-          },
-          [ck, document.createTextNode('Auto-hide')]
-        ),
         h$('button', { txt: '✕', title: 'Hide panel (Panel button brings it back)', onclick: () => showPanel(false) })
       ])
     );

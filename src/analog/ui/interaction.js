@@ -432,10 +432,9 @@ function showPanel(on) {
   bPn.classList.toggle('on', on);
   if (!ov && was !== !on) setTimeout(() => dispatchEvent(new Event('resize')), 30);
 }
+/* UI overhaul 2026-11-02 (approved Remove list): the Auto-hide checkbox is gone; the panel stays where the user put it (open, or
+   closed with ✕ and opened with Panel). Auto-hide is only used while the Training panel is open (inspAuto below). */
 AN.ah = false;
-try {
-  AN.ah = localStorage.getItem('ditl.an.ah') === '1';
-} catch (e) {}
 bPn.onclick = () => {
   AN.tmp = false;
   showPanel(anp.classList.contains('min'));
