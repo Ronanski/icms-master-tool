@@ -38,7 +38,10 @@ function anEngAPI() {
     fieldState: () => Object.assign({}, AN_SRC.field),
     engState: { capture: anStateCapture, apply: anStateApply },
     /* engine/sync.js: what changed, both ways (worker -> page, page -> worker) */
-    sync: { patch: anSyncPatch, apply: anSyncApply, mark: anSyncMark, forget: anSyncForget },
+    sync: { patch: anSyncPatch, apply: anSyncApply, mark: anSyncMark, forget: anSyncForget, encArgs: anSyncEncArgs, decArgs: anSyncDecArgs },
+    /* engine/trace-step.js: Next / Back of the ABC trace, one engine action each */
+    stepN: anStepN,
+    stepBack: anStepBack,
     /* engine/ds.js: the FROM / TO DITL texts of a sheet, the description of an address (the face plate defaults first) */
     dsIdx,
     descOf: (sh, t) => {

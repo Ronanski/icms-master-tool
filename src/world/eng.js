@@ -12,8 +12,9 @@
 (function (G) {
   /* the engine actions: names on AN (engine/api.js and the page hooks), DITL (src/digital/parts), WORLD / DITL150 */
   const CALLS = {
-    AN: ['reset', 'settle', 'loadStart', 'plantLoad150', 'plantCold', 'plantLoad150Async', 'plantColdAsync', 'plantSwitch', 'latchMode', 'setForce', 'turbine', 'field', 'oilValve', 'blowdown', 'stepSet', 'stepTier', 'actSet'],
-    G: ['ditlStates'],
+    /* not setForce: a page function (ui/panel.js), its force goes as a write and its settle as an action */
+    AN: ['reset', 'settle', 'loadStart', 'plantLoad150', 'plantCold', 'plantLoad150Async', 'plantColdAsync', 'plantSwitch', 'latchMode', 'turbine', 'field', 'oilValve', 'blowdown', 'stepSet', 'stepTier', 'actSet', 'stepN', 'stepBack'],
+    G: ['ditlStates', 'ditlUser'],
     DITL150: ['apply'],
     WORLD: ['tick', 'set']
   };
@@ -62,7 +63,8 @@
           } finally {
             inCall--;
           }
-          post({ t: 'op', ops: [], calls: [[h + '.' + k, a]] });
+          /* the arguments by their refs (a sheet or a block as its index: a copy would be another object in the engine) */
+          post({ t: 'op', ops: [], calls: [[h + '.' + k, G.AN.sync.encArgs ? G.AN.sync.encArgs(a) : a]] });
           /* an action that goes on (a starting state loads in slices): no patch is put in while it runs here (it would mix two states);
              then the whole state of the engine is asked for once */
           if (r && typeof r.then === 'function') {
@@ -100,7 +102,7 @@
         if (!f) continue;
         inCall++;
         try {
-          const r = f.apply(holder(n.split('.')[0]), a);
+          const r = f.apply(holder(n.split('.')[0]), a && a.$j != null ? G.AN.sync.decArgs(a) : a);
           if (r && typeof r.then === 'function') await r;
         } catch (e) {
           if (G.console) console.error('ENG ' + n, e);

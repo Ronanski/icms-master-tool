@@ -33,13 +33,13 @@ function bundle(o) {
     'globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad150,anPlantCold}};\n';
   return '(function(){\n' + core + body + '\n;\n' + hooks + '})();\n';
 }
-/* 3.2.0 Web Worker, stage b: the whole engine, the one world: the DITL engine parts of src/digital/order.list (up to 03d-state.js:
-   parse, netlist, models, simulation, reader, keyframe; one global script as in the page), the analog engine above (its AN on globalThis, as
-   ui/main.js puts it on window), then src/world/world.js, plantsw.js, ditl150.js and eng.js (the radio). The host gives msg (the page: the toast). */
+/* 3.2.0 Web Worker, stage b: the whole engine, the one world: the DITL engine parts of src/digital/order.list (up to 03e-user.js:
+   parse, netlist, models, simulation, reader, keyframe, panel settings; one global script as in the page), the analog engine above (its AN on globalThis, as
+   ui/main.js puts it on window), then src/world/world.js, plantsw.js, ditl150.js, eng.js (the radio) and dock-eng.js (the dock press). The host gives msg (the page: the toast). */
 function dFiles() {
   const D = path.join(root, 'src', 'digital');
   const l = fs.readFileSync(path.join(D, 'order.list'), 'utf8').split(/\r?\n/).map(s => s.trim()).filter(s => s && s[0] !== '#');
-  return l.slice(0, l.indexOf('parts/03d-state.js') + 1).map(f => path.join(D, f));
+  return l.slice(0, l.indexOf('parts/03e-user.js') + 1).map(f => path.join(D, f));
 }
 function worldBundle(o) {
   const rd = f => fs.readFileSync(f, 'utf8');
@@ -48,7 +48,7 @@ function worldBundle(o) {
     dFiles().map(f => '/* ---- ' + path.relative(root, f) + ' ---- */\n' + rd(f)).join('\n') +
     '\n;globalThis.DITL={get S(){return S},set S(v){S=v},get SIM(){return SIM},set SIM(v){SIM=v},get MST(){return MST},get MS(){return MS},get DREG(){return DREG},ditlStates,ditlCapture,ditlApply,simSheet,netlist};\n' +
     an +
-    ['world.js', 'plantsw.js', 'ditl150.js', 'eng.js'].map(f => '/* ---- src/world/' + f + ' ---- */\n' + rd(path.join(root, 'src', 'world', f))).join('\n')
+    ['world.js', 'plantsw.js', 'ditl150.js', 'eng.js', 'dock-eng.js'].map(f => '/* ---- src/world/' + f + ' ---- */\n' + rd(path.join(root, 'src', 'world', f))).join('\n')
   );
 }
 module.exports = { bundle, files, worldBundle };

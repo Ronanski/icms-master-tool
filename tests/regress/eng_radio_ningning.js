@@ -57,6 +57,7 @@ const scan = X => { X.ctx.ENGINE.E.stepSet(X.C1, 0.5); X.WORLD.tick(0.5); };
   for (const X of [A, B]) if (!X.ENG.CALLS.G.includes('ditlUser')) X.ENG.CALLS.G.push('ditlUser');
   const toA = [], toB = [], sentB = [];
   A.ENG.start('engine', { postMessage: m => toB.push(structuredClone(m)) });
+  A.ENG.gap = 0; /* no timers here: every patch at once (the worker sends at most 2 a second) */
   B.ENG.start('mirror', { postMessage: m => { sentB.push(m); toA.push(structuredClone(m)); } });
   let c = cmp(A.dump(), C.dump());
   ck(c.n === 0, 'start: A = C: ' + c.n + ' differences of ' + c.len + ' records');
@@ -108,7 +109,7 @@ const scan = X => { X.ctx.ENGINE.E.stepSet(X.C1, 0.5); X.WORLD.tick(0.5); };
     A.ENG.send();
     const n0 = sentB.length;
     while (toB.length) await B.ENG.onMsg(toB.shift());
-    const flushed = sentB.slice(n0).flatMap(m => m.ops.map(o => o[0]));
+    const flushed = sentB.slice(n0).flatMap(m => (m.ops || []).map(o => o[0]));
     for (const [at, w, f, dl] of W)
       if (at === k) {
         f(B);

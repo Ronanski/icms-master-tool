@@ -7,7 +7,7 @@
 const DITL_SH = ['sig', 'usw', 'av', 'av150', 'avw', '_win', '_fd', '_ftrip'],
   DITL_NL = ['_v', 'fx', 'ufx'],
   DITL_G = ['q', 'st', 'N', 'pin', 'rp', 'rq', 'Nn', 'cin'],
-  DITL_W = ['out', '_o', 'tk', '_ck', 'busy'];
+  DITL_W = ['out', '_o', 'tk', '_ck', 'busy', 'live', '_press', '_rel']; /* live, _press, _rel: the dock press (src/world/dock-eng.js) */
 function ditlEnc(v) {
   if (v instanceof Set) return { $set: [...v] };
   if (v instanceof Map) return { $map: [...v].map(([k, w]) => [k, ditlEnc(w)]) };
