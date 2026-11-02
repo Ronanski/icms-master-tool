@@ -115,7 +115,11 @@
       else if (m.t === 'stop') {
         timers.forEach(clearInterval);
         timers = [];
-      } else await G.ENG.onMsg(m);
+      } else {
+        await G.ENG.onMsg(m);
+        /* what the message changed goes back at once (no job runs while the plant is paused) */
+        if (m.t === "op" || m.t === "full") G.ENG.send();
+      }
     } catch (x) {
       say({ t: 'error', where: m && m.t, text: String((x && x.stack) || x) });
     }

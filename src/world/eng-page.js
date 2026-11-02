@@ -75,8 +75,8 @@
           kd = ditlCapture();
         E.onPatch = () => AN.patchPaint && AN.patchPaint();
         E.start('mirror', w);
-        /* the operator's writes leave every 100 ms too (no patch comes while the plant is paused) */
-        E._fl = setInterval(() => E.mode === 'mirror' && E.flush(), 100);
+        /* the operator's writes leave every 500 ms too (no patch comes while the plant is paused) */
+        E._fl = setInterval(() => E.mode === 'mirror' && E.flush(), 500);
         /* the DITL sheets of the page (with the user's fixes), the saved settings of the ABC (Reset applies them) */
         const ds = JSON.stringify(S.sheets, (k, v) => (k === 'nl' || k[0] === '_' ? undefined : v instanceof Set ? [...v] : v)); /* the _ keys: caches, links to instances (the keyframe carries the state ones) */
         w.postMessage({ t: 'init', apre: txt('apre'), ades: txt('ades'), ds, sv: AN.sv || {}, lne: AN.lne || {}, kf, kd, i: AN.i });

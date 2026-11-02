@@ -56,30 +56,28 @@ function anSyncSlots() {
     for (const f of ['v', 'stp', 'acc']) add('a' + i + f, () => S.rt[f], null, { ta: f });
     /* the inputs and the forces: the operator writes them (faceplate, FORCE, the Training) */
     add('x' + i, () => ({ ext: S.rt.ext, force: S.rt.force }), d => (anSyncPut(S.rt, 'ext', d.ext), anSyncPut(S.rt, 'force', d.force)), { w: 1 });
-    /* the rest of the run time and of the sheet: only the keys it has (a key that is not there is not "undefined" on the other side) */
-    const RT = ['t', 'k', 'ramp', 'pm', 'pf', 'ev'],
-      SK = ['look', 'xlk', 'plantT', '_rem'];
-    add(
-      'r' + i,
-      () => {
-        const mn = [],
-          r = { rt: {}, s: {}, mn };
-        S.blk.forEach((b, j) => b._mn !== undefined && mn.push([j, b._mn]));
-        for (const f of RT) if (f in S.rt) r.rt[f] = S.rt[f];
-        for (const f of SK) if (f in S) r.s[f] = S[f];
+    /* the rest of the run time and of the sheet, in three slots (what changes every scan apart from what rarely does: the links xlk
+       went across with every scan before); only the keys it has (a key that is not there is not "undefined" on the other side) */
+    const part = (k, keys, of, put) =>
+      add(k + i, () => {
+        const r = {},
+          o = of();
+        for (const f of keys) if (f in o) r[f] = o[f];
         return r;
-      },
-      d => {
-        for (const f of RT)
-          if (!(f in d.rt)) delete S.rt[f];
-          else if (f === 'pm' || f === 'pf' || f === 'ev') anSyncPut(S.rt, f, d.rt[f]);
-          else S.rt[f] = d.rt[f];
-        for (const f of SK)
-          if (f in d.s) S[f] = d.s[f];
-          else delete S[f];
-        for (const [j, m] of d.mn) S.blk[j]._mn = m;
-      }
-    );
+      }, d => {
+        const o = of();
+        for (const f of keys)
+          if (!(f in d)) delete o[f];
+          else put(o, f, d[f]);
+      });
+    part('rt', ['t', 'k', 'ramp'], () => S.rt, (o, f, v) => (o[f] = v));
+    part('rp', ['pm', 'pf', 'ev'], () => S.rt, anSyncPut);
+    part('rs', ['look', 'xlk', 'plantT', '_rem'], () => S, (o, f, v) => (o[f] = v));
+    add('rm' + i, () => {
+      const mn = [];
+      S.blk.forEach((b, j) => b._mn !== undefined && mn.push([j, b._mn]));
+      return mn;
+    }, d => { for (const [j, m] of d) S.blk[j]._mn = m; });
     /* each block state (the operator writes the output of a MAN station: st.val) */
     for (const id of Object.keys(S.rt.st))
       add('s' + i + ':' + id, () => (S.rt.st[id] ? { ...S.rt.st[id] } : S.rt.st[id]) /* its content: the state itself is a ref {$T} */, d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => { const q = S.rt.st[id]; return q ? String(q.val) : ''; } });
@@ -136,19 +134,18 @@ function anSyncSlots() {
       add('dx' + n, () => ditlPick(s.nl, ['fx', 'ufx']), d => { for (const x of ['fx', 'ufx']) if (x in d) s.nl[x] = ditlDec(d[x]); else delete s.nl[x]; }, { w: 1, raw: 1 });
       void sh;
     }
-    add('dg', () => {
-      const W = window.WORLD || {};
-      return { MST: ditlEnc(MST), MS: ditlEnc(MS), DREG: ditlEnc(DREG), t: tick.t, W: ditlPick(W, DITL_W), sw: W.plantSw ? W.plantSw() : null };
-    }, d => {
-      MST = ditlDec(d.MST);
-      MS = ditlDec(d.MS);
-      DREG = ditlDec(d.DREG);
-      tick.t = d.t;
-      if (window.WORLD) {
-        for (const x of DITL_W) if (x in d.W) WORLD[x] = ditlDec(d.W[x]); else delete WORLD[x];
-        if (d.sw && WORLD.plantSwSet) WORLD.plantSwSet(d.sw);
-      }
-    }, { raw: 1 });
+    /* the DITL globals, one slot each (37 kB a patch as one) */
+    add('dgMST', () => ditlEnc(MST), d => (MST = ditlDec(d)), { raw: 1 });
+    add('dgMS', () => ditlEnc(MS), d => (MS = ditlDec(d)), { raw: 1 });
+    add('dgDREG', () => ditlEnc(DREG), d => (DREG = ditlDec(d)), { raw: 1 });
+    add('dgt', () => tick.t, d => (tick.t = d), { raw: 1 });
+    for (const x of DITL_W)
+      add('dgW' + x, () => { const W = window.WORLD || {}; return x in W ? { v: ditlEnc(W[x]) } : {}; }, d => {
+        if (!window.WORLD) return;
+        if ('v' in d) WORLD[x] = ditlDec(d.v);
+        else delete WORLD[x];
+      }, { raw: 1 });
+    add('dgsw', () => (window.WORLD && WORLD.plantSw ? WORLD.plantSw() : null), d => d && window.WORLD && WORLD.plantSwSet && WORLD.plantSwSet(d), { raw: 1 });
     add('dsim', () => ({ SIM, TSP, DPAUSE: typeof DPAUSE !== 'undefined' ? DPAUSE : false }), d => {
       SIM = d.SIM;
       TSP = d.TSP;
@@ -189,7 +186,31 @@ function anSyncFresh(Y) {
   Y.ref = anSyncRefs();
   anSyncOwn = new WeakSet(Y.ref.keys());
 }
-const anSyncJ = (s, Y) => (s.raw ? JSON.stringify(s.get()) : JSON.stringify(anStateEnc(s.get(), Y.ref)));
+/* a slot as JSON. Most slots hold plain values only (a block state: numbers, text, small arrays): those go as plain JSON with a '#'
+   in front (2 ~ 3 times smaller, a plain JSON.parse on the other side); a slot with a ref (a sheet, a block, a plant model ...), a
+   Map / Set / typed array, a cycle or a NaN / Infinity / undefined goes through anStateEnc */
+const anSyncPlainJ = (v, Y) => {
+  const seen = new Set();
+  let ok = true;
+  const t = (x, d) => {
+    if (!ok) return;
+    if (x === undefined || (typeof x === 'number' && !isFinite(x)) || typeof x === 'function') return void (ok = false);
+    if (!x || typeof x !== 'object') return;
+    if (Y.ref.has(x) || seen.has(x) || ArrayBuffer.isView(x) || x instanceof Map || x instanceof Set || d > 8) return void (ok = false);
+    seen.add(x);
+    if (Array.isArray(x)) {
+      for (const e of x) t(e, d + 1);
+      if (Object.keys(x).length !== x.length) ok = false;
+    } else for (const k in x) t(x[k], d + 1);
+  };
+  t(v, 0);
+  return ok ? '#' + JSON.stringify(v) : null;
+};
+const anSyncJ = (s, Y) => {
+  if (s.raw) return JSON.stringify(s.get());
+  const v = s.get();
+  return anSyncPlainJ(v, Y) || JSON.stringify(anStateEnc(v, Y.ref));
+};
 /* the slots that changed: [[key, json]] or, for the values, [[key, [index, value] ...]] */
 function anSyncPatch(w) {
   const Y = anSyncState(),
@@ -251,9 +272,10 @@ function anSyncApply(p, skip) {
       void n;
       continue;
     }
-    s.put(s.raw ? JSON.parse(j) : anStateDec(JSON.parse(j), s.get()));
-    /* as this side writes it now (the keys of an object put in place can come in another order) */
-    Y2.last.set(k, anSyncJ(s, Y2));
+    s.put(s.raw ? JSON.parse(j) : j[0] === '#' ? JSON.parse(j.slice(1)) : anStateDec(JSON.parse(j), s.get()));
+    /* as this side writes it now (the keys of an object put in place can come in another order): needed only where the operator's
+       writes are found by the JSON itself (a writable slot with no quick look); elsewhere the JSON that came is enough */
+    Y2.last.set(k, s.w && !s.fast ? anSyncJ(s, Y2) : j);
     if (s.fast) Y2.fast.set(k, s.fast());
   }
 }
