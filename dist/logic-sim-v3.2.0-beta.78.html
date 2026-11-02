@@ -25693,9 +25693,18 @@ function anResetRun() {
   }
   AN.sv = keep;
   anResetAll();
+  const W = globalThis.WORLD;
+  /* the links of the one world for every ABC sheet loaded now: the world was built once when the ABC list came, so a sheet loaded
+     after it had no DITL links until a 150 MW load built the world again (Winter's diag_abc: an xlk "(28)DITL-14 #B" only after a run).
+     The instances and their state stay (world.js build) */
+  try {
+    if (W && W.on && W.build && AN.sheets.length) W.build();
+  } catch (e) {}
   try {
     if (globalThis.DITL150) globalThis.DITL150.clear();
   } catch (e) {}
+  /* a push button the dock still held (src/world/dock-eng.js) would press again at the next scan */
+  if (W) W._press = W._rel = undefined;
 }
 /* RESET of the model: every sheet back to the drawing (tuning kept in AN.sv), then all sheets are settled: the same start as a fresh load, whatever the sheet order */
 function anResetAll() {
@@ -25707,6 +25716,9 @@ function anResetAll() {
   /* and what a start left on AN: the sheets of the unit model (the next start sets them again: unit.js anUnitStart), its report */
   AN.unitSheets = [];
   AN.load150 = null;
+  /* and what the first 150 MW load set (hmi-op.js: the DI of the HMI snapshots, ditl150.js reads them): a fresh page has none (Winter, "h") */
+  delete AN.hmiDI;
+  delete AN.hmiComp;
   AN.steady = false;
   /* the one-address groups start again as on a fresh page (links.js shareExt: the values of the run before were kept) */
   AN._xs = null;
@@ -25751,8 +25763,8 @@ function anResetAll() {
     for (const b of S.procs || [])
       if (b.proc) {
         if (b.proc.hop && b.proc.hop.dyn) {
-          b.proc.hop = undefined;
-          b.proc.Ka = undefined;
+          delete b.proc.hop; /* deleted, not undefined: a key left as undefined made the keyframe of a Reset after a run differ (Winter) */
+          delete b.proc.Ka;
         }
         b.proc.hopReq = null;
         b.proc.integLoss = 0;
@@ -26655,7 +26667,7 @@ function dsIdx(sh) {
    copied: the other side keeps its own ===== */
 const AN_STATE_OBJ = () => ({ AN_UNIT, AN_SRC, AN_CYC, AN_SW, AN_MU, AN_ACW, AN_MT, AN_AIR });
 /* the flags of AN that the engine reads (plain values) */
-const AN_STATE_FLAGS = ['i', 'plantOn', 'procDefault', 'startState', 'steady', 'spd', 'run', 'view', 'tierK', '_cold0', 'load150'];
+const AN_STATE_FLAGS = ['i', 'plantOn', 'procDefault', 'startState', 'steady', 'spd', 'run', 'view', 'tierK', '_cold0', 'load150', 'ramp'];
 /* the sheets a step takes besides the linked ones (links.js actSet): names, and the second sheet of the page (a sheet) */
 const AN_STATE_SETS = ['hmiSheets', 'plantSheets', 'unitSheets', 'checkSheets', 'worldSheets', 'p2'];
 const anStateTabs = () => ({ AN_HMI_OP, AN_HMI_AI, AN_HMI_CTL, AN_HMI_MAN, AN_HMI_FF, AN_HMI_DI, AN_HMI_DI_COLD });
@@ -26856,6 +26868,7 @@ function anStateApply(kf) {
   if (st.u) AN.unit = AN_UNIT;
   else delete AN.unit;
   if (st.h) (AN.hmiDI = AN_HMI_DI), (AN.hmiComp = hmiComp);
+  else delete AN.hmiDI, delete AN.hmiComp;
   anXsPut(st.xs);
   AN._asc = null; /* the step sets kept while a starting state loads */
   AN._gen = (AN._gen || 0) + 1; /* new objects (engine/sync.js refs) */
@@ -26992,6 +27005,7 @@ function anSyncSlots() {
       if (d.u) AN.unit = AN_UNIT;
       else delete AN.unit;
       if (d.h) (AN.hmiDI = AN_HMI_DI), (AN.hmiComp = hmiComp);
+      else delete AN.hmiDI, delete AN.hmiComp;
     },
     { w: 1 }
   );
@@ -32034,7 +32048,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build 71942d4'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build d3973a1'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -36022,6 +36036,15 @@ sSpd.onchange = () => {
    starts the plant cold (trace.js coldIfNone), so after a Reset MSP is 0 again, not the loop model's middle of the range */
 bRst.onclick = () => {
   AN.startState = null;
+  /* 3.2.0 Web Worker check (Winter, reset_worker.js): Reset also STOPS the run, as on a fresh page. Before, RUN went on with no
+     starting state: the ABC and the DITL scanned the cold plant again at once and wrote back field contacts, motor memories and the
+     speed tier, so a Reset after a run never gave the start of a fresh page. The operator picks Cold / 150 MW, then presses Run. The
+     run flags go to the engine with the flush before the call (src/world/eng.js) */
+  AN.run = false;
+  AN.tierK = undefined;
+  AN._cold0 = undefined;
+  bRun.textContent = '▶ Run';
+  bRun.classList.remove('on');
   /* 3.2.0 Web Worker: the Reset runs in the engine and answers later (a promise): the rest waits for it */
   const r = AN.reset();
   /* 3.2.0-beta.18: and the plant is COLD at once (VIEW shows boiler off, not the drawings' defaults MSP 75) */
@@ -49301,6 +49324,11 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   W.plantSw = () => (map ? map.map(m => ({ sheet: m.s.name, row: m.row + 1, tag: m.d[0], on: m.on })) : pend || []);
   /* 3.2.0 Web Worker: the state of the switches (their dead band) back from a keyframe (src/digital/parts/03d-state.js); kept until the
      list is built (the first scan) */
+  /* Reset (ditl150.js clear): the switches as on a fresh page (no list yet: the first scan with the plant model builds it, W.plantIn) */
+  W.plantSwClear = () => {
+    pend = null;
+    map = null;
+  };
   W.plantSwSet = L => {
     pend = L;
     if (map) put();
@@ -49543,26 +49571,43 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   /* back to the cold DITL (what the Simulate button and Reset do) */
   /* retest #68 (R8: after Clear all ticks + Gabay Cold, SWP-A still RUNNING and in REMOTE from the run before): the cold DITL is clean,
      every motor stopped, every field contact (REMOTE, AUTO MODE, limit switch) at its default, no field trip */
+  /* 3.2.0 Web Worker check (Winter, reset_worker.js; Ningning's reading): everything a scan leaves in the DITL keyframe
+     (src/digital/parts/03d-state.js) goes back too, so a Reset after a run is the Reset of a fresh page: the DCS registers (DREG), the
+     DITL clock, the automatic rows and the analog values the world brought (_win, avw: world.js sets them again at each scan), the
+     counter edges (rq, Nn, cin), the outputs and the clock of the one world, and the dead band of the plant switches (plantsw.js) */
   D.clear = () => {
     MST = {};
     MS = {};
+    DREG = {};
+    tick.t = 0;
     for (const x of ALL()) {
       x.sig = {};
       x.usw = {};
       x._fd = null;
       x._ftrip = false;
       x.av150 = null;
+      x._win = null;
+      x.avw = null;
       if (x.nl) {
         x.nl._v = null;
         x.nl.fx = [];
         x.nl.ufx = [];
         for (const g of x.nl.gates) {
           if (g.t === 'FF') g.q = 0;
-          if (g.t === 'CNT') g.N = g.pin = g.rp = 0;
+          if (g.t === 'CNT') {
+            g.N = g.pin = g.rp = 0;
+            g.rq = g.Nn = g.cin = undefined;
+          }
           if (g.t === 'TMR') g.st = { acc: 0, out: 0, pre: 0, run: 0 };
         }
       }
     }
+    const W = window.WORLD;
+    /* as the world starts (world.js: out {}, live false; _o, tk, _ck, busy not set): the first scan reads W.out */
+    W.out = {};
+    W.live = false;
+    W._o = W.tk = W._ck = W.busy = undefined;
+    if (W.plantSwClear) W.plantSwClear();
     D.on = false;
   };
   /* what an OUTPUT row of the drawing must show at 150 MW, from its text (the same rules; a command or a push button is not a state) */
@@ -50015,7 +50060,14 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
           if (i < m.p.length) await E.yieldNow();
         }
       } else G.AN.sync.apply(m.p, skip);
-      if (E.onPatch) E.onPatch(m);
+      /* the paint after it: an error of the paint is the page's (local mode: the same paint error stops nothing), not of the data,
+         so it does not stop the worker (Winter: eng-page.js fail('page') took the whole engine back for a paint error) */
+      if (E.onPatch)
+        try {
+          E.onPatch(m);
+        } catch (x) {
+          if (G.console) console.error('ENG paint', x);
+        }
       for (const a of m.ev || [])
         try {
           if (E.onEvent) E.onEvent(a);
@@ -55402,7 +55454,7 @@ function ditlUser(name, op, a, b, c) {
 
 ;globalThis.DITL={get S(){return S},set S(v){S=v},get SIM(){return SIM},set SIM(v){SIM=v},get MST(){return MST},get MS(){return MS},get DREG(){return DREG},ditlStates,ditlCapture,ditlApply,simSheet,netlist};
 (function(){
-const AN={cat:"an",sheets:[],i:-1,run:false,spd:1,sv:{},lne:{},av:{},ws:{},plantUi:{}};
+const AN={cat:"an",sheets:[],i:-1,run:false,spd:1,ramp:0,sv:{},lne:{},av:{},ws:{},plantUi:{}};
 Object.defineProperty(AN,"ln",{get:()=>globalThis.ANLN||{},set:v=>{globalThis.ANLN=v}});
 /* ---- reader/dxf.js ---- */
 
@@ -71160,9 +71212,18 @@ function anResetRun() {
   }
   AN.sv = keep;
   anResetAll();
+  const W = globalThis.WORLD;
+  /* the links of the one world for every ABC sheet loaded now: the world was built once when the ABC list came, so a sheet loaded
+     after it had no DITL links until a 150 MW load built the world again (Winter's diag_abc: an xlk "(28)DITL-14 #B" only after a run).
+     The instances and their state stay (world.js build) */
+  try {
+    if (W && W.on && W.build && AN.sheets.length) W.build();
+  } catch (e) {}
   try {
     if (globalThis.DITL150) globalThis.DITL150.clear();
   } catch (e) {}
+  /* a push button the dock still held (src/world/dock-eng.js) would press again at the next scan */
+  if (W) W._press = W._rel = undefined;
 }
 /* RESET of the model: every sheet back to the drawing (tuning kept in AN.sv), then all sheets are settled: the same start as a fresh load, whatever the sheet order */
 function anResetAll() {
@@ -71174,6 +71235,9 @@ function anResetAll() {
   /* and what a start left on AN: the sheets of the unit model (the next start sets them again: unit.js anUnitStart), its report */
   AN.unitSheets = [];
   AN.load150 = null;
+  /* and what the first 150 MW load set (hmi-op.js: the DI of the HMI snapshots, ditl150.js reads them): a fresh page has none (Winter, "h") */
+  delete AN.hmiDI;
+  delete AN.hmiComp;
   AN.steady = false;
   /* the one-address groups start again as on a fresh page (links.js shareExt: the values of the run before were kept) */
   AN._xs = null;
@@ -71218,8 +71282,8 @@ function anResetAll() {
     for (const b of S.procs || [])
       if (b.proc) {
         if (b.proc.hop && b.proc.hop.dyn) {
-          b.proc.hop = undefined;
-          b.proc.Ka = undefined;
+          delete b.proc.hop; /* deleted, not undefined: a key left as undefined made the keyframe of a Reset after a run differ (Winter) */
+          delete b.proc.Ka;
         }
         b.proc.hopReq = null;
         b.proc.integLoss = 0;
@@ -72128,7 +72192,7 @@ function dsIdx(sh) {
    copied: the other side keeps its own ===== */
 const AN_STATE_OBJ = () => ({ AN_UNIT, AN_SRC, AN_CYC, AN_SW, AN_MU, AN_ACW, AN_MT, AN_AIR });
 /* the flags of AN that the engine reads (plain values) */
-const AN_STATE_FLAGS = ['i', 'plantOn', 'procDefault', 'startState', 'steady', 'spd', 'run', 'view', 'tierK', '_cold0', 'load150'];
+const AN_STATE_FLAGS = ['i', 'plantOn', 'procDefault', 'startState', 'steady', 'spd', 'run', 'view', 'tierK', '_cold0', 'load150', 'ramp'];
 /* the sheets a step takes besides the linked ones (links.js actSet): names, and the second sheet of the page (a sheet) */
 const AN_STATE_SETS = ['hmiSheets', 'plantSheets', 'unitSheets', 'checkSheets', 'worldSheets', 'p2'];
 const anStateTabs = () => ({ AN_HMI_OP, AN_HMI_AI, AN_HMI_CTL, AN_HMI_MAN, AN_HMI_FF, AN_HMI_DI, AN_HMI_DI_COLD });
@@ -72329,6 +72393,7 @@ function anStateApply(kf) {
   if (st.u) AN.unit = AN_UNIT;
   else delete AN.unit;
   if (st.h) (AN.hmiDI = AN_HMI_DI), (AN.hmiComp = hmiComp);
+  else delete AN.hmiDI, delete AN.hmiComp;
   anXsPut(st.xs);
   AN._asc = null; /* the step sets kept while a starting state loads */
   AN._gen = (AN._gen || 0) + 1; /* new objects (engine/sync.js refs) */
@@ -72467,6 +72532,7 @@ function anSyncSlots() {
       if (d.u) AN.unit = AN_UNIT;
       else delete AN.unit;
       if (d.h) (AN.hmiDI = AN_HMI_DI), (AN.hmiComp = hmiComp);
+      else delete AN.hmiDI, delete AN.hmiComp;
     },
     { w: 1 }
   );
@@ -74582,6 +74648,11 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
   W.plantSw = () => (map ? map.map(m => ({ sheet: m.s.name, row: m.row + 1, tag: m.d[0], on: m.on })) : pend || []);
   /* 3.2.0 Web Worker: the state of the switches (their dead band) back from a keyframe (src/digital/parts/03d-state.js); kept until the
      list is built (the first scan) */
+  /* Reset (ditl150.js clear): the switches as on a fresh page (no list yet: the first scan with the plant model builds it, W.plantIn) */
+  W.plantSwClear = () => {
+    pend = null;
+    map = null;
+  };
   W.plantSwSet = L => {
     pend = L;
     if (map) put();
@@ -74825,26 +74896,43 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
   /* back to the cold DITL (what the Simulate button and Reset do) */
   /* retest #68 (R8: after Clear all ticks + Gabay Cold, SWP-A still RUNNING and in REMOTE from the run before): the cold DITL is clean,
      every motor stopped, every field contact (REMOTE, AUTO MODE, limit switch) at its default, no field trip */
+  /* 3.2.0 Web Worker check (Winter, reset_worker.js; Ningning's reading): everything a scan leaves in the DITL keyframe
+     (src/digital/parts/03d-state.js) goes back too, so a Reset after a run is the Reset of a fresh page: the DCS registers (DREG), the
+     DITL clock, the automatic rows and the analog values the world brought (_win, avw: world.js sets them again at each scan), the
+     counter edges (rq, Nn, cin), the outputs and the clock of the one world, and the dead band of the plant switches (plantsw.js) */
   D.clear = () => {
     MST = {};
     MS = {};
+    DREG = {};
+    tick.t = 0;
     for (const x of ALL()) {
       x.sig = {};
       x.usw = {};
       x._fd = null;
       x._ftrip = false;
       x.av150 = null;
+      x._win = null;
+      x.avw = null;
       if (x.nl) {
         x.nl._v = null;
         x.nl.fx = [];
         x.nl.ufx = [];
         for (const g of x.nl.gates) {
           if (g.t === 'FF') g.q = 0;
-          if (g.t === 'CNT') g.N = g.pin = g.rp = 0;
+          if (g.t === 'CNT') {
+            g.N = g.pin = g.rp = 0;
+            g.rq = g.Nn = g.cin = undefined;
+          }
           if (g.t === 'TMR') g.st = { acc: 0, out: 0, pre: 0, run: 0 };
         }
       }
     }
+    const W = window.WORLD;
+    /* as the world starts (world.js: out {}, live false; _o, tk, _ck, busy not set): the first scan reads W.out */
+    W.out = {};
+    W.live = false;
+    W._o = W.tk = W._ck = W.busy = undefined;
+    if (W.plantSwClear) W.plantSwClear();
     D.on = false;
   };
   /* what an OUTPUT row of the drawing must show at 150 MW, from its text (the same rules; a command or a push button is not a state) */
@@ -75299,7 +75387,14 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
           if (i < m.p.length) await E.yieldNow();
         }
       } else G.AN.sync.apply(m.p, skip);
-      if (E.onPatch) E.onPatch(m);
+      /* the paint after it: an error of the paint is the page's (local mode: the same paint error stops nothing), not of the data,
+         so it does not stop the worker (Winter: eng-page.js fail('page') took the whole engine back for a paint error) */
+      if (E.onPatch)
+        try {
+          E.onPatch(m);
+        } catch (x) {
+          if (G.console) console.error('ENG paint', x);
+        }
       for (const a of m.ev || [])
         try {
           if (E.onEvent) E.onEvent(a);
