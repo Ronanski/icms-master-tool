@@ -184,6 +184,7 @@
       DSEEN.clear();
       for (const g in grpT) delete grpT[g];
       almScan.first = true;
+      almScan.tk0 = (window.WORLD && WORLD.tk) || 0;
       MOTP.clear();
     }
     lastT = t;
@@ -205,7 +206,9 @@
       for (const s of dSheets()) {
         if (!s.nl) continue;
         const fresh = !DSEEN.has(s.name);
-        DSEEN.add(s.name);
+        /* seen only once the world has scanned it twice since the load (Mina #M1, Worker: the page scans the alarms before the first
+           patch of the engine brings the cold DITL-777 trip, so the sheet was "seen" without it and its standing trip came as NEW) */
+        if (((WORLD.tk || 0) - (almScan.tk0 || 0)) >= 2 || (WORLD.tk || 0) < (almScan.tk0 || 0)) DSEEN.add(s.name);
         const o = motOuts(s);
         if (!o.trip && !s._ftrip) continue;
         if (motState(s) === 'TRIP')
