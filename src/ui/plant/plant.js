@@ -907,6 +907,15 @@
     /* 3.2.0-beta.74: the faceplate pops out beside the clicked equipment, over the graphic (fp-pop.js), on every screen width */
     const host = ws.classList.contains('crw') && !window.LS_FPOP ? ws : $('plmid');
     if (fp && host && fp.parentNode !== host) host.append(fp);
+    /* UI overhaul 2026-11-02 (approved Fix list: HMI controls float beside the equipment): the controller faceplate opens beside the
+       clicked controller, like the motor pop-out (fp-pop.js place), instead of a fixed corner; a phone keeps the bottom sheet */
+    if (fp && host && host.id === 'plmid' && window.LS_FPOP && LS_FPOP.place && !matchMedia('(max-width:700px)').matches && !fp.dataset.placed) {
+      fp.style.right = 'auto';
+      try {
+        LS_FPOP.place(fp);
+        fp.dataset.placed = '1';
+      } catch (e) {}
+    }
     keepZoom();
   }
 
