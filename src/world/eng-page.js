@@ -57,7 +57,21 @@
       /* the page itself was busy (its messages still wait in the queue): no verdict on this tick */
       if (late || E.mode !== 'mirror' || !E.worker) return;
       const lim = E.busyAt || E.heavy ? WD_CALL : WD;
-      if (now - E.inAt > lim) fail('no answer', 'the engine in the worker stopped answering (no message for ' + lim / 1000 + ' s)');
+      if (now - E.inAt > lim) return void fail('no answer', 'the engine in the worker stopped answering (no message for ' + lim / 1000 + ' s)');
+      /* a stall: the plant runs and the worker is alive (its heartbeat comes) but no patch has come for 5 s (Winter's world run 1: the
+         page never got the world). Kept for the checks (ENG.stalls: when, how long, what the engine said), and the whole state is asked
+         for again ('full': the engine sends every slot and takes the page as ready) */
+      if (!AN.run || !E.patchAt) E.patchAt = now; /* paused: no patch is due */
+      else if (!E.heavy && !E.busyAt && now - E.patchAt > 5000 && now - (E._stallAt || 0) > 10000) {
+        E._stallAt = now;
+        const st = { at: now, since: now - E.patchAt, got: E.got, sent: E.sent };
+        (E.stalls = E.stalls || []).push(st);
+        console.warn('ENG stall', st);
+        if (E.worker) E.peek().then(k => ((st.n = k && k.n), console.warn('ENG stall engine', st.n))).catch(() => {});
+        try {
+          E.worker.postMessage({ t: 'full' });
+        } catch (e) {}
+      }
     }, 1000);
   };
   E.boot = () =>
@@ -111,7 +125,7 @@
       try {
         for (const sh of AN.sheets) AN.ensure(sh);
         if (window.WORLD && WORLD.build) WORLD.build();
-        E.onPatch = () => AN.patchPaint && AN.patchPaint();
+        E.onPatch = () => ((E.patchAt = Date.now()), AN.patchPaint && AN.patchPaint());
         /* the events of the engine into the Event log of the page */
         E.onEvent = a => window.lsEventAdd && lsEventAdd(...a);
         /* the DITL sheets of the page (with the user's fixes), the saved settings of the ABC (Reset applies them) */
