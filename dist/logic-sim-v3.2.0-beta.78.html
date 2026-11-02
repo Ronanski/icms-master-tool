@@ -25694,11 +25694,12 @@ function anResetRun() {
   AN.sv = keep;
   anResetAll();
   const W = globalThis.WORLD;
-  /* the links of the one world for every ABC sheet loaded now: the world was built once when the ABC list came, so a sheet loaded
-     after it had no DITL links until a 150 MW load built the world again (Winter's diag_abc: an xlk "(28)DITL-14 #B" only after a run).
-     The instances and their state stay (world.js build) */
+  /* the index of the one world for every ABC sheet loaded now (the instances and their state stay: world.js build), then the DITL links
+     of the ABC inputs go: the first scan makes them (world.js tickG step 3), so a fresh page has none; a Reset after a run kept them
+     (Winter's diag_abc4: an xlk "(28)DITL-14 #B" only after a run) */
   try {
     if (W && W.on && W.build && AN.sheets.length) W.build();
+    if (W && W.unlinkAbc) W.unlinkAbc();
   } catch (e) {}
   try {
     if (globalThis.DITL150) globalThis.DITL150.clear();
@@ -32087,7 +32088,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build 7d973c1'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 7fb65e8'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -49047,13 +49048,18 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       s._win = null;
       s.avw = null;
     }
+    W.unlinkAbc();
+    AN.worldSheets = [];
+  }
+  /* the DITL links of the ABC inputs (made by the first scan that feeds them, tickG step 3) go; Reset uses it too (sheets.js anResetRun),
+     so a Reset after a run has the links of a fresh page: none until the next scan (Winter's diag_abc4: "(28)DITL-14 #B" left) */
+  W.unlinkAbc = () => {
     if (W.idx)
       for (const a of W.idx.ain) {
         const AS = a.sh.S;
         if (AS && AS.xlk && AS.xlk[a.n] && AS.xlk[a.n].ditl) delete AS.xlk[a.n];
       }
-    AN.worldSheets = [];
-  }
+  };
   /* 2.2.0-beta.3: one scan on demand (DITL 150 MW state, src/world/ditl150.js) */
   W.tick = (dt, opt) => {
     if (!W.idx) return;
@@ -71276,11 +71282,12 @@ function anResetRun() {
   AN.sv = keep;
   anResetAll();
   const W = globalThis.WORLD;
-  /* the links of the one world for every ABC sheet loaded now: the world was built once when the ABC list came, so a sheet loaded
-     after it had no DITL links until a 150 MW load built the world again (Winter's diag_abc: an xlk "(28)DITL-14 #B" only after a run).
-     The instances and their state stay (world.js build) */
+  /* the index of the one world for every ABC sheet loaded now (the instances and their state stay: world.js build), then the DITL links
+     of the ABC inputs go: the first scan makes them (world.js tickG step 3), so a fresh page has none; a Reset after a run kept them
+     (Winter's diag_abc4: an xlk "(28)DITL-14 #B" only after a run) */
   try {
     if (W && W.on && W.build && AN.sheets.length) W.build();
+    if (W && W.unlinkAbc) W.unlinkAbc();
   } catch (e) {}
   try {
     if (globalThis.DITL150) globalThis.DITL150.clear();
@@ -74432,13 +74439,18 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
       s._win = null;
       s.avw = null;
     }
+    W.unlinkAbc();
+    AN.worldSheets = [];
+  }
+  /* the DITL links of the ABC inputs (made by the first scan that feeds them, tickG step 3) go; Reset uses it too (sheets.js anResetRun),
+     so a Reset after a run has the links of a fresh page: none until the next scan (Winter's diag_abc4: "(28)DITL-14 #B" left) */
+  W.unlinkAbc = () => {
     if (W.idx)
       for (const a of W.idx.ain) {
         const AS = a.sh.S;
         if (AS && AS.xlk && AS.xlk[a.n] && AS.xlk[a.n].ditl) delete AS.xlk[a.n];
       }
-    AN.worldSheets = [];
-  }
+  };
   /* 2.2.0-beta.3: one scan on demand (DITL 150 MW state, src/world/ditl150.js) */
   W.tick = (dt, opt) => {
     if (!W.idx) return;
