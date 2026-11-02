@@ -4489,6 +4489,10 @@ function simSheet(s) {
 const UN = { MS: 0.001, SEC: 1, MIN: 60, HR: 3600 },
   UT = { MS: 'MS', SEC: 'SEC.', MIN: 'MIN.', HR: 'HR.' };
 let TSP = 1;
+/* 2.4.1-beta.4: DPAUSE = Pause of the DITL tool bar (Run on, time stopped). Here, in an engine part, since 3.2.0 (Web Worker): the
+   engine follows the page on a DITL page (world.js scanJob: SIM && !DPAUSE); in 07-app-events.js it was not in the worker, and the first
+   scan there with the DITL page open threw (ReferenceError) and stopped the worker (Winter, ditl_run_keeps on e3de194) */
+let DPAUSE = false;
 const tick = { t: 0 };
 function unorm(s) {
   const u = s.replace(/[.\s]/g, '').toUpperCase();
@@ -7142,8 +7146,7 @@ function ditlStep(dt) {
     mvUI(s);
   }
 }
-/* 2.4.1-beta.4: DPAUSE = Pause of the DITL tool bar (Run on, time stopped) */
-let DPAUSE = false;
+/* 2.4.1-beta.4: DPAUSE = Pause of the DITL tool bar (Run on, time stopped): declared in 03b-sim.js (the engine reads it too) */
 setInterval(() => {
   const s = cur();
   if (window.WORLD && WORLD.live) return; /* the one world steps the timers / MOV / motors of EVERY sheet (src/world/world.js) */
@@ -24553,7 +24556,7 @@ const AN_HMI_CTL = {
   'FICFA1043B': { pv: null, sv: null, mv: 5.5, mode: 'M' } /* 2.1.0-beta.10: valve MCVFA1043B 5.5 % M (R shown, R-SV 26.0) (13.PNG) */,
   'FICFA1043C': { pv: null, sv: null, mv: 5.0, mode: 'M' } /* 2.1.0-beta.10: valve MCVFA1043C 5.0 % M (L shown, R-SV 26.0) (14.PNG) */,
   'FICFA1043D': { pv: null, sv: null, mv: 1.7, mode: 'M' } /* 2.1.0-beta.10: valve MCVFA1043D 1.7 % M (L shown, R-SV 26.0) (15.PNG) */,
-  'FICFA1055A': { pv: null, sv: null, mv: 42.8, mode: 'A' } /* 2.1.0-beta.10: valve FCVFA1055A1 42.8 % A (9.png) */,
+  'FICFA1055A': { pv: 26.3, sv: null, mv: 42.8, mode: 'A' } /* 2.1.0-beta.10: valve FCVFA1055A1 42.8 % A (9.png); 3.2.0 (Rose, FA blower B standby at 150 MW): its PV is the common FA flow FT-FA1055 (range 0 ~ 35 T/H = PH 35 of the loop), 9.png FIFA1055 26.3 T/H with blower A alone running (B standby): without it the loop had no anchor and gave 14.9 T/H, under ABC-006 M.3114 L.L. 20 T/H, and DITL-28A started blower B (OPERATING_POINTS.md FIFA1055) */,
   'FICFA1055B': { pv: null, sv: null, mv: 24.9, mode: 'M' } /* 2.1.0-beta.10: valve FCVFA1055B1 24.9 % M (9.png) */,
   'HICBR1391': { pv: null, sv: null, mv: 0.0, mode: 'R' } /* 2.1.0-beta.10: valve MVBR1391 0.0 % R TQ (A) (03.png) */,
   'HICDO1012': { pv: null, sv: null, mv: 100.0, mode: 'M' } /* 2.1.0-beta.10: valve FCVDO1012 100.0 % M (6.PNG) */,
@@ -26674,7 +26677,7 @@ function dsIdx(sh) {
    copied: the other side keeps its own ===== */
 const AN_STATE_OBJ = () => ({ AN_UNIT, AN_SRC, AN_CYC, AN_SW, AN_MU, AN_ACW, AN_MT, AN_AIR });
 /* the flags of AN that the engine reads (plain values) */
-const AN_STATE_FLAGS = ['i', 'plantOn', 'procDefault', 'startState', 'steady', 'spd', 'run', 'view', 'tierK', '_cold0', 'load150', 'ramp'];
+const AN_STATE_FLAGS = ['i', 'plantOn', 'procDefault', 'startState', 'steady', 'spd', 'run', 'view', 'tierK', '_cold0', 'load150', 'ramp', 'cat'];
 /* the sheets a step takes besides the linked ones (links.js actSet): names, and the second sheet of the page (a sheet) */
 const AN_STATE_SETS = ['hmiSheets', 'plantSheets', 'unitSheets', 'checkSheets', 'worldSheets', 'p2'];
 const anStateTabs = () => ({ AN_HMI_OP, AN_HMI_AI, AN_HMI_CTL, AN_HMI_MAN, AN_HMI_FF, AN_HMI_DI, AN_HMI_DI_COLD });
@@ -32090,7 +32093,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build 4d2b0e6'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build e943c88'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -54522,6 +54525,10 @@ function simSheet(s) {
 const UN = { MS: 0.001, SEC: 1, MIN: 60, HR: 3600 },
   UT = { MS: 'MS', SEC: 'SEC.', MIN: 'MIN.', HR: 'HR.' };
 let TSP = 1;
+/* 2.4.1-beta.4: DPAUSE = Pause of the DITL tool bar (Run on, time stopped). Here, in an engine part, since 3.2.0 (Web Worker): the
+   engine follows the page on a DITL page (world.js scanJob: SIM && !DPAUSE); in 07-app-events.js it was not in the worker, and the first
+   scan there with the DITL page open threw (ReferenceError) and stopped the worker (Winter, ditl_run_keeps on e3de194) */
+let DPAUSE = false;
 const tick = { t: 0 };
 function unorm(s) {
   const u = s.replace(/[.\s]/g, '').toUpperCase();
@@ -70162,7 +70169,7 @@ const AN_HMI_CTL = {
   'FICFA1043B': { pv: null, sv: null, mv: 5.5, mode: 'M' } /* 2.1.0-beta.10: valve MCVFA1043B 5.5 % M (R shown, R-SV 26.0) (13.PNG) */,
   'FICFA1043C': { pv: null, sv: null, mv: 5.0, mode: 'M' } /* 2.1.0-beta.10: valve MCVFA1043C 5.0 % M (L shown, R-SV 26.0) (14.PNG) */,
   'FICFA1043D': { pv: null, sv: null, mv: 1.7, mode: 'M' } /* 2.1.0-beta.10: valve MCVFA1043D 1.7 % M (L shown, R-SV 26.0) (15.PNG) */,
-  'FICFA1055A': { pv: null, sv: null, mv: 42.8, mode: 'A' } /* 2.1.0-beta.10: valve FCVFA1055A1 42.8 % A (9.png) */,
+  'FICFA1055A': { pv: 26.3, sv: null, mv: 42.8, mode: 'A' } /* 2.1.0-beta.10: valve FCVFA1055A1 42.8 % A (9.png); 3.2.0 (Rose, FA blower B standby at 150 MW): its PV is the common FA flow FT-FA1055 (range 0 ~ 35 T/H = PH 35 of the loop), 9.png FIFA1055 26.3 T/H with blower A alone running (B standby): without it the loop had no anchor and gave 14.9 T/H, under ABC-006 M.3114 L.L. 20 T/H, and DITL-28A started blower B (OPERATING_POINTS.md FIFA1055) */,
   'FICFA1055B': { pv: null, sv: null, mv: 24.9, mode: 'M' } /* 2.1.0-beta.10: valve FCVFA1055B1 24.9 % M (9.png) */,
   'HICBR1391': { pv: null, sv: null, mv: 0.0, mode: 'R' } /* 2.1.0-beta.10: valve MVBR1391 0.0 % R TQ (A) (03.png) */,
   'HICDO1012': { pv: null, sv: null, mv: 100.0, mode: 'M' } /* 2.1.0-beta.10: valve FCVDO1012 100.0 % M (6.PNG) */,
@@ -72291,7 +72298,7 @@ function dsIdx(sh) {
    copied: the other side keeps its own ===== */
 const AN_STATE_OBJ = () => ({ AN_UNIT, AN_SRC, AN_CYC, AN_SW, AN_MU, AN_ACW, AN_MT, AN_AIR });
 /* the flags of AN that the engine reads (plain values) */
-const AN_STATE_FLAGS = ['i', 'plantOn', 'procDefault', 'startState', 'steady', 'spd', 'run', 'view', 'tierK', '_cold0', 'load150', 'ramp'];
+const AN_STATE_FLAGS = ['i', 'plantOn', 'procDefault', 'startState', 'steady', 'spd', 'run', 'view', 'tierK', '_cold0', 'load150', 'ramp', 'cat'];
 /* the sheets a step takes besides the linked ones (links.js actSet): names, and the second sheet of the page (a sheet) */
 const AN_STATE_SETS = ['hmiSheets', 'plantSheets', 'unitSheets', 'checkSheets', 'worldSheets', 'p2'];
 const anStateTabs = () => ({ AN_HMI_OP, AN_HMI_AI, AN_HMI_CTL, AN_HMI_MAN, AN_HMI_FF, AN_HMI_DI, AN_HMI_DI_COLD });
@@ -75749,7 +75756,8 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
        seen there (eng-page.js watchdog) */
     timers.push(setInterval(() => say({ t: 'beat' }), 1000));
     const { AN, WORLD, ENG } = G;
-    let acc = 0,
+    let lastLive = null,
+      acc = 0,
       busy = false;
     const cs = () => AN.sheets[AN.i] || AN.sheets.find(x => /057/.test(x.name));
     timers.push(
@@ -75795,7 +75803,13 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
       setInterval(() => {
         if (busy || !WORLD.scanJob) return;
         const g = WORLD.scanJob();
-        if (!g) return;
+        if (!g) {
+          /* paused: scanJob turned WORLD.live off, but no job runs to send it, so the page kept "live" (Rosé, 1 of 3 runs) */
+          if (lastLive !== WORLD.live) N.sent += ENG.send() ? 1 : 0;
+          lastLive = WORLD.live;
+          return;
+        }
+        lastLive = WORLD.live;
         busy = true;
         try {
           for (const _ of g);
@@ -78023,9 +78037,19 @@ body.app2 #gdtrb[hidden]{display:none!important}
   const zoom = E('button', { txt: 'Zoom', title: 'Zoom to readable text (12 px) on the selected cell; Fit shows the whole sheet again' });
   const panel = E('button', { txt: 'Panel', title: 'Show / hide the right panel (inputs, timers, outputs)' });
   run.onclick = () => {
-    if (!SIM) enter();
-    DPAUSE = false;
-    TSP = 1;
+    /* 3.2.0 (Mina's live test #M9, user OK 2026-11-03): with the one world (always ON) RUN only runs the plant: SIM on, no DITL
+       Reset. Before, RUN went through the old Simulate button (ditlStates: motors, valves, latches, timers back to the start), so the
+       Training dock's RUN on a DITL page stopped the debris filter and reset the DITL-777 / APH soot blower trip latches. The speed
+       chosen in the Training stays. Reset stays on the Reset buttons */
+    if (window.WORLD && WORLD.on) {
+      SIM = true;
+      DPAUSE = false;
+      TSP = (window.AN && AN.spd) || 1;
+    } else {
+      if (!SIM) enter();
+      DPAUSE = false;
+      TSP = 1;
+    }
     upd();
     render();
   };
@@ -87560,8 +87584,8 @@ window.LS_GUIDE = (function () {
     const ask = E('div', { cls: 'gd-ask' }, [
       E('p', { txt: 'Stop the Training? The plant simulation goes on; you can resume later from the Training page.' }),
       E('div', { cls: 'gd-btns' }, [
-        E('button', { type: 'button', cls: 'gd-btn bad', txt: 'Itigil', on: stop }),
-        E('button', { type: 'button', cls: 'gd-btn', txt: 'Huwag', on: () => ask.remove() })
+        E('button', { type: 'button', cls: 'gd-btn bad', txt: 'Stop Training', on: stop }),
+        E('button', { type: 'button', cls: 'gd-btn', txt: 'Keep training', on: () => ask.remove() })
       ])
     ]);
     b.prepend(ask);
@@ -87715,6 +87739,20 @@ window.LS_GUIDE = (function () {
     els.secL.setAttribute('aria-expanded', 'true');
     const on = box.querySelector('button.on');
     if (on) on.scrollIntoView({ block: 'center' });
+    /* Mina #M11: the list closes on a click outside it or on Esc, as a menu does (it stayed open over the HMI until ☰ again) */
+    const close = () => {
+      box.remove();
+      els.secL.setAttribute('aria-expanded', 'false');
+      removeEventListener('pointerdown', out, true);
+      removeEventListener('keydown', esc, true);
+    };
+    const out = e => {
+      if (!box.isConnected) return close();
+      if (!box.contains(e.target) && e.target !== els.secL) close();
+    };
+    const esc = e => e.key === 'Escape' && close();
+    addEventListener('pointerdown', out, true);
+    addEventListener('keydown', esc, true);
   }
   /* the sheets of the step: the DITL of each motor / push button, the ABC sheet of each faceplate */
   function sheetsOf(s) {
@@ -88027,9 +88065,18 @@ window.LS_GUIDE = (function () {
   function selOf(s) {
     const ms = motorsOf(s);
     if (!ms.length) return null;
-    if (els.selI === s.i && els.sel && ms.some(a => motAddr(a) === els.sel)) return els.sel;
     const on = a => call(() => a.on(), false),
       nOn = ms.filter(on).length;
+    /* Mina #M13: the pump picked to START stays selected only until enough run; then the standby is the one shown (its REMOTE / AUTO
+       controls were hidden until its card was clicked) */
+    const kept = els.selI === s.i && els.sel && ms.find(a => motAddr(a) === els.sel);
+    if (kept && !(s.max && nOn >= s.max && on(kept) && ms.some(a => !on(a)) && els.sbOnce !== s.i)) return els.sel;
+    if (kept) {
+      /* once per step: a later click on a running pump's card stays */
+      els.sbOnce = s.i;
+      els.sel = motAddr(ms.find(a => !on(a)));
+      return els.sel;
+    }
     if (s.max && nOn >= s.max) return motAddr(ms.find(a => !on(a)) || ms[0]);
     return motAddr(pickOf(s, ms) || ms.find(a => !on(a)) || ms[0]);
   }
@@ -88274,6 +88321,11 @@ window.LS_GUIDE = (function () {
   }
   /* the band of a value as the operator reads it: "205 ~ 215", "≥ 0.4", "≤ 37" */
   const bandTxt = rg => (!rg ? '' : rg[1] === Infinity ? '≥ ' + rg[0] : rg[0] === -Infinity ? '≤ ' + rg[1] : rg[0] + ' ~ ' + rg[1]);
+  /* the number a value shows ("9.0", "210 A"): a band check uses it, so what the operator reads and the ✓ / ! agree */
+  const shownNum = (t, x) => {
+    const p = parseFloat(String(t).replace(/−/g, '-'));
+    return isFinite(p) ? p : x;
+  };
   /* a watch label "SWP-A current (IIP1501A)" or "Lube oil cooler outlet temp · TICLO1002": the name, and the tag apart (small) */
   const splitTag = k => {
     const m = /^(.*?)\s*\(([A-Z][A-Z0-9 /,.-]*\d[A-Z0-9 /,.-]*)\)\s*$/.exec(k) || /^(.*?)\s+·\s+([A-Z][A-Z0-9-]*\d[A-Z0-9-]*)$/.exec(k);
@@ -88716,7 +88768,8 @@ window.LS_GUIDE = (function () {
           bs.append(B.am);
           /* #12: the LOCAL / REMOTE selector of a motor that is not running (the standby), set by the field operator */
           if (call(() => modeOf(B.ad).rem, null) != null) {
-            B.rm = E('button', { type: 'button', cls: 'gd-btn gd-fix', txt: 'FIELD: to REMOTE', title: 'Field operator: LOCAL / REMOTE selector of ' + a.l.replace(/^START\s+/, '') + ' to REMOTE', on: () => dremote(B.ad, a.l.replace(/^START\s+/, '')) });
+            /* Mina #M14: two standby pumps gave two identical "FIELD: to REMOTE": the pump is named */
+            B.rm = E('button', { type: 'button', cls: 'gd-btn gd-fix', txt: 'FIELD: ' + a.l.replace(/^START\s+/, '') + ' to REMOTE', title: 'Field operator: LOCAL / REMOTE selector of ' + a.l.replace(/^START\s+/, '') + ' to REMOTE', on: () => dremote(B.ad, a.l.replace(/^START\s+/, '')) });
             bs.append(B.rm);
           }
         }
@@ -88871,6 +88924,8 @@ window.LS_GUIDE = (function () {
       const rg = /\(([^()]*\d[^()]*~[^()]*)\)/.exec(f.t),
         lm = [f.lim.n ? f.lim.n : rg ? rg[1] : '', f.lim.a ? 'Alarm ' + f.lim.a : '', f.lim.tr ? 'Trip ' + f.lim.tr : ''].filter(Boolean);
       if (!lm.length) continue;
+      /* Mina #M13: an SOP sentence is not a value to watch ("All permissive are satisfied ..." filled a tile): the item stays in the list */
+      if (/permissive|satisf/i.test(f.t)) continue;
       const nm = f.t.replace(/\s*\([^()]*\d[^()]*~[^()]*\)/, '').replace(/^(Check|Verify|Ensure)\s+(that\s+)?(the\s+)?/i, '');
       /* live check #91 (beta.51): the row shows a value of the PLANT MODEL only: the PV of the DCS loop of the row's tag (PI-DO0005 =
          PICDO0005) or of the level controller; a field gauge without a model (motor current, local pressure / temperature) reads
@@ -88892,15 +88947,28 @@ window.LS_GUIDE = (function () {
          stays the SOP value */
       /* live test #49: the gauges of the SOP that the HMI reads from the plant model (unit.js AN_MU / AN_ACW): section 7 MWP current
          IIP0709A ~ C and header pressure PIMU0709 (MAKE-UP WATER page), section 8 ACWP current IIP1108A / B (027 page); the running pump */
-      const U0 = (window.AN && AN.unit) || {},
+      /* the unit model read at each paint (AN.unit is set by a start and goes at a Reset: a copy taken when the card was built stayed empty) */
+      const U0 = () => (window.AN && AN.unit) || {},
         mdl =
           f.si === 6 && /current/i.test(f.t)
-            ? ['IIP0709A ~ C', () => (U0.on ? Math.max(+U0.muI0 || 0, +U0.muI1 || 0, +U0.muI2 || 0) : NaN), 'A']
+            ? ['IIP0709A ~ C', () => (U0().on ? Math.max(+U0().muI0 || 0, +U0().muI1 || 0, +U0().muI2 || 0) : NaN), 'A']
             : f.si === 6 && /pressure/i.test(f.t)
-              ? ['PIMU0709', () => (U0.on ? +U0.muP : NaN), 'kg/cm²']
+              ? ['PIMU0709', () => (U0().on ? +U0().muP : NaN), 'kg/cm²']
               : f.si === 7 && /current/i.test(f.t)
-                ? ['IIP1108A / B', () => (U0.on ? Math.max(+U0.acI0 || 0, +U0.acI1 || 0) : NaN), 'A']
-                : null;
+                ? ['IIP1108A / B', () => (U0().on ? Math.max(+U0().acI0 || 0, +U0().acI1 || 0) : NaN), 'A']
+                : /* Mina #M8: section 2 SWP current (SOP 205 ~ 215 A) and section 5 SWBP current (81 ~ 99 A) on the later steps: the plant
+                     model (HMI 030 IIP1501A ~ C = swIa, IIP1503A ~ C = swIb): the pump the row names, else the highest running one */
+                  (f.si === 1 || f.si === 4) && /current/i.test(f.t)
+                  ? (() => {
+                      const k = f.si === 1 ? 'swIa' : 'swIb',
+                        tg = f.si === 1 ? 'IIP1501' : 'IIP1503',
+                        one = /pump\s*-?\s*([ABC])\b(?!\s*\/)/i.exec(f.t),
+                        j = one ? 'ABC'.indexOf(one[1].toUpperCase()) : -1;
+                      return j >= 0
+                        ? [tg + 'ABC'[j], () => (U0().on ? +U0()[k + j] || 0 : NaN), 'A']
+                        : [tg + 'A ~ C', () => (U0().on ? Math.max(+U0()[k + 0] || 0, +U0()[k + 1] || 0, +U0()[k + 2] || 0) : NaN), 'A'];
+                    })()
+                  : null;
       const lvl = /hotwell level/i.test(f.t) ? 'LCV-MU1110' : /deaerator level/i.test(f.t) ? 'LCV-CD1104' : null,
         gauge = /current|pressure|temperature/i.test(f.t),
         tfp = !lvl && gauge && !mdl ? tagFp() : null,
@@ -89298,12 +89366,22 @@ window.LS_GUIDE = (function () {
       } else {
         /* live test beta.74 #38: the standby is set; the banner names what the step still needs (H8: fill the expansion tank by
            XV-MU1109 or the bypass V-MU1033), done by the operator in its faceplate (no button here) */
-        const na = (s.a || []).find(x => (x.dg || x.fp) && !call(() => x.hide && x.hide(), false) && !call(() => x.on && x.on(), false));
+        /* Mina #M15: a field action of the step with no faceplate (FIELD: OPEN V-CW1001, prime the closed cooling line) counts too, and
+           it gets its own button here (it was only under "Show control": the NEXT card stood on "MWP-B is STANDBY (AUTO)" with no press) */
+        const na = (s.a || []).find(x => (x.dg || x.fp || x.loc) && !call(() => x.hide && x.hide(), false) && !call(() => x.on && x.on(), false));
+        if (na && na.loc && !na.fp && !na.dg && typeof na.f === 'function') {
+          bl = String(na.l).replace(/\s*\(.*$/, '');
+          fn = () => {
+            const r = call(() => na.f(), '');
+            if (r && window.msg) msg(r);
+            fill(true);
+          };
+        }
         who = na ? (/^FIELD\b/.test(na.l) || na.loc ? 'FIELD OPERATOR' : 'CONTROL ROOM') : 'CONTROL ROOM';
         ctx = mName(selA) + ' is STANDBY (AUTO)';
         say = na ? String(na.l).replace(/^FIELD:\s*/, '').replace(/\s*\((DITL-[^)]*)\)/, '') + (s.sec === 7 ? ' (fill the expansion tank T-1109 to 1.7 m)' : '') : mName(selA) + ' is STANDBY (AUTO)';
         adr = na ? (na.dg ? na.dg[0] + ' row ' + (na.dg[1] + 1) : (/\((DITL-[^)]*)\)/.exec(na.l) || [])[1] || 'field valve') : '';
-        fp = !!na;
+        fp = !!na && !bl;
       }
     } else if (auNext && !(selA && on(selA)) && !(selA && mi && mi.live && !mi.run && mi.miss.length)) {
       /* live test #52: the next SOP item in order is one the logic ticks (TICLO1002 to AUTO, ABC-053): the control room does it on its
@@ -89463,8 +89541,10 @@ window.LS_GUIDE = (function () {
         t = fm(call(f, NaN));
       }
       V.b.textContent = t;
-      const has = !!(w && w.rg && typeof x === 'number' && isFinite(x) && !(x === 0 && w.rg[0] > 0)),
-        out = has && (x < w.rg[0] || x > w.rg[1]),
+      /* the band is judged on the value as shown (Mina #M16: 8.97 shown "9.0" was "!" against 9 ~ 11) */
+      const xs = shownNum(t, x),
+        has = !!(w && w.rg && typeof x === 'number' && isFinite(x) && !(x === 0 && w.rg[0] > 0)),
+        out = has && (xs < w.rg[0] || xs > w.rg[1]),
         fld = t === 'FIELD',
         hb = w ? [fld ? 'field check' : w.rg ? bandTxt(w.rg) : w.tg || '', !fld && w.rg ? (has ? (out ? '!' : '✓') : '—') : ''] : ['', ''];
       if (V.hb.dataset.k !== hb.join('|')) {
@@ -89511,7 +89591,7 @@ window.LS_GUIDE = (function () {
       w.v.textContent = t;
       /* user 2026-10-30 (mock-up v2, Check): ✓ within the range of its hint, ! out of it; 0 of a machine not started is no reading */
       if (w.rg) {
-        const n = typeof x === 'number' && isFinite(x) ? x : NaN,
+        const n = typeof x === 'number' && isFinite(x) ? shownNum(t, x) : NaN,
           has = isFinite(n) && !(n === 0 && w.rg[0] > 0),
           okv = has && n >= w.rg[0] && n <= w.rg[1];
         w.ck.textContent = has ? (okv ? '✓' : '!') : '—';
@@ -89828,8 +89908,17 @@ window.LS_GUIDE = (function () {
         tn = st === 'TRIP' && tripNew(B.ad);
       B.bt.classList.toggle('lit-run', st === 'RUN');
       if (B.sb) B.sb.classList.toggle('lit-stop', st === 'STOP' || st === 'TRIP');
-      B.lab.textContent = st === 'RUN' ? 'RUNNING' : st === 'STOP' ? 'STOPPED' : st === 'TRIP' ? (tn ? 'TRIP · ACK' : 'TRIP') : '—';
-      B.lab.className = 'gd-mst' + (st ? ' ' + st.toLowerCase() : '') + (tn ? ' blink' : '');
+      /* Mina #M14: a valve button (XV-MU1109 OPEN / CLOSE, AUTO / MAN of DITL-78) shows the valve's own state, not RUNNING / STOPPED of a
+         motor: OPEN red, CLOSED green (the colour convention of the plant), AUTO / MAN */
+      const vk = !B.a.stop && /\b(OPEN|CLOSE|AUTO \/ MAN)\b/.exec(String(B.a.l || ''));
+      if (vk) {
+        const vt = vk[1] === 'OPEN' ? (on ? 'OPEN' : 'CLOSED') : vk[1] === 'CLOSE' ? (on ? 'CLOSED' : 'OPEN') : on ? 'AUTO' : 'MAN';
+        B.lab.textContent = vt;
+        B.lab.className = 'gd-mst' + (vt === 'OPEN' ? ' run' : vt === 'CLOSED' ? ' stop' : '');
+      } else {
+        B.lab.textContent = st === 'RUN' ? 'RUNNING' : st === 'STOP' ? 'STOPPED' : st === 'TRIP' ? (tn ? 'TRIP · ACK' : 'TRIP') : '—';
+        B.lab.className = 'gd-mst' + (st ? ' ' + st.toLowerCase() : '') + (tn ? ' blink' : '');
+      }
       if (B.ft) {
         const ftr = !!call(() => dOf(B.ad)._ftrip, false);
         B.ft.hidden = !(st === 'RUN' || ftr);
@@ -89882,6 +89971,16 @@ window.LS_GUIDE = (function () {
     /* live test beta.74 #23 #38: the motor of the step already running (H8 MWP-A), the next machine still to do: a drawing button (AUTO
        SWP-C (standby), DITL-29A #C row 4; XV-MU1109 OPEN, DITL-78 row 5) or a field valve (fp: V-MU1033), the first one in SOP order */
     if (a && (call(() => a.on && a.on(), false) || (els.mi && els.mi[ad] && els.mi[ad].sby && autoOf(ad)))) a = null;
+    /* Mina #M14: the standby of the step still to put in AUTO comes before the valves (step 8 opened V-MU1033 before MWP-B) */
+    if (!a && s.sby && s.max) {
+      const nOn = ms.filter(x => call(() => x.on && x.on(), false)).length,
+        sb = nOn >= s.max ? ms.find(x => !call(() => x.on && x.on(), false) && !autoOf(motAddr(x))) : null;
+      if (sb) {
+        a = sb;
+        ad = motAddr(sb);
+        nmA = mName(sb);
+      }
+    }
     if (!a) {
       const key = x => x.fp || (x.dg && x.dg[0]),
         d = (s.a || []).find(x => key(x) && R[key(x)] && !call(() => x.hide && x.hide(), false) && !call(() => x.on && x.on(), false));
@@ -92778,6 +92877,7 @@ body.ophmi #anp{display:none!important}
       DSEEN.clear();
       for (const g in grpT) delete grpT[g];
       almScan.first = true;
+      almScan.tk0 = (window.WORLD && WORLD.tk) || 0;
       MOTP.clear();
     }
     lastT = t;
@@ -92795,11 +92895,16 @@ body.ophmi #anp{display:none!important}
           if (lv !== 'normal') now.set(sh.name + '|' + b.id, { sh: sh.name, kind: 'ALM', nm: A.nm(S, b.i[0]) || 'ALM #' + b.id, lv });
         }
     }
+    /* Mina #M15: the expansion tank T-1109 HIGH level (alarm list LT-CW1109, PD-021: H 1700 mm / L 800 mm in the DCS): the level is the
+       plant model's (unit.js etAlm, LICW1109), no ABC alarm block reads it. HIGH only: the cold tank stands at L (0.8 m), a shutdown alarm */
+    if (A.unit && A.unit.etAlm === 'H') now.set('U|LICW1109', { sh: 'MAKE-UP WATER', kind: 'ALM', nm: 'LICW1109 expansion tank T-1109 level', lv: 'HIGH' });
     if (window.WORLD && WORLD.on && WORLD.idx)
       for (const s of dSheets()) {
         if (!s.nl) continue;
         const fresh = !DSEEN.has(s.name);
-        DSEEN.add(s.name);
+        /* seen only once the world has scanned it twice since the load (Mina #M1, Worker: the page scans the alarms before the first
+           patch of the engine brings the cold DITL-777 trip, so the sheet was "seen" without it and its standing trip came as NEW) */
+        if (((WORLD.tk || 0) - (almScan.tk0 || 0)) >= 2 || (WORLD.tk || 0) < (almScan.tk0 || 0)) DSEEN.add(s.name);
         const o = motOuts(s);
         if (!o.trip && !s._ftrip) continue;
         if (motState(s) === 'TRIP')
@@ -99358,7 +99463,10 @@ window.PLANT_SYS = [
       8,
       'CL'
     );
-    o.push(valve(EX + 45, 540, 1, 'V-CW1001', 'l'));
+    /* Mina's retest step 8: V-CW1001 = the field valve pop-out (fp-pop.js FIELDV, PR-OPE-5002 7.20); red = open, green = closed */
+    o.push(
+      `<g data-hit="CW1001" style="cursor:pointer"><rect x="${EX + 45 - 70}" y="${540 - 12}" width="82" height="24" fill="transparent"/><path d="M${EX + 45 - 7} ${540 - 8} L${EX + 45 + 7} ${540 - 8} L${EX + 45 - 7} ${540 + 8} L${EX + 45 + 7} ${540 + 8} Z" fill="${S.none}" ${OL} data-vl="CW1001"/>${T(EX + 45 - 10, 540 + 3, 'V-CW1001', 'cw8', 'text-anchor="end"')}</g>`
+    );
 
     /* ---------------- ACWP P-1108A / B (DITL-76 / 77): flow right -> left ---------------- */
     o.push(T(820, 600, 'AUX. COOLING WATER PUMPS  (DITL-76 / 77)', 'cw11'));
@@ -99677,6 +99785,9 @@ window.PLANT_SYS = [
         xa.textContent = au == null ? '---' : au ? 'AUTO' : 'MAN';
         xa.style.fill = au == null ? S.none : au ? '#9ff0c4' : '#ffd27a';
       }
+      /* V-CW1001 (field): red = open, green = closed (plant model AN_SRC.field.cw1001) */
+      const cwv = q('[data-vl="CW1001"]');
+      if (cwv) cwv.setAttribute('fill', AN.fieldState ? (AN.fieldState().cw1001 ? S.run : S.stop) : S.none);
       const tv = q('[data-vl="TCV"]');
       if (tv) tv.setAttribute('fill', V.TCV == null ? S.none : V.TCV > 1 ? S.run : S.stop);
       /* the expansion tank water follows LICW1109 (0 ~ 2 m) */
@@ -99702,6 +99813,7 @@ window.PLANT_SYS = [
       XV: ['XV-MU1109', 'XV-MU1109 make-up water to expansion tank inlet shut-off · DITL-78 (red = open, green = closed)'],
       TCV: ['TCV-CW1201', 'TCV-CW1201 turbine lube oil temperature control valve · ABC-053 TICLO1002 (red = open, green = closed)'],
       ET: ['LT-CW1109', 'T-1109 expansion tank · LT-CW1109'],
+      CW1001: ['V-CW1001', 'V-CW1001 expansion tank outlet, manual valve (FIELD) (red = open, green = closed)'],
       HXA: ['TT-CW1153', 'H-1107A CCWHE-A (closed cooling water / seawater)'],
       HXB: ['TT-CW1153', 'H-1107B CCWHE-B (closed cooling water / seawater)'],
       HXC: ['TT-CW1153', 'H-1107C CCWHE-C (closed cooling water / seawater)']
@@ -99729,13 +99841,15 @@ window.PLANT_SYS = [
       );
     };
     /* the dock's "Buksan ang faceplate" of a step motor (fp-pop.js LS_FPOP.openAd) */
+    /* the dock's faceplate of a field step (fp: 'F:cw1001', as 'F:mu1033' on MAKE-UP WATER) */
+    (window.LS_FPREG = window.LS_FPREG || {})['F:cw1001'] = { open: () => { const e = q('[data-hit="CW1001"]'); if (e) e.dispatchEvent(new MouseEvent('click')); }, el: () => q('[data-hit="CW1001"]'), n: 'V-CW1001' };
     for (const id in MACH) (window.LS_FPREG = window.LS_FPREG || {})[MACH[id].ad] = { open: () => fpHit(id), el: () => q(`[data-hit="${id}"]`), n: MACH[id].n, cur: () => (AN.unit && AN.unit.on ? AN.unit['acI' + (id === 'ACA' ? 0 : 1)] : null) };
     for (const id in HIT)
       qa(`[data-hit="${id}"]`).forEach(h => {
         const ti = document.createElementNS(NS, 'title');
-        ti.textContent = HIT[id][1] + (MACH[id] || id === 'XV' ? ' · click = faceplate' : ' · click = info card');
+        ti.textContent = HIT[id][1] + (MACH[id] || id === 'XV' || id === 'CW1001' ? ' · click = faceplate' : ' · click = info card');
         h.append(ti);
-        h.addEventListener('click', e => (e.stopPropagation(), MACH[id] ? fpHit(id) : (id === 'XV' && window.LS_FPOP && LS_FPOP.valveTag(HIT[id][0])) || info(HIT[id][0])));
+        h.addEventListener('click', e => (e.stopPropagation(), MACH[id] ? fpHit(id) : ((id === 'XV' || id === 'CW1001') && window.LS_FPOP && LS_FPOP.valveTag(HIT[id][0])) || info(HIT[id][0])));
       });
     for (const id in MACH)
       qa(`[data-mdh="${id}"]`).forEach(h => {
@@ -101722,7 +101836,10 @@ window.PLANT_SYS = [
   };
   /* a manual valve the field operator turns (Training: FIELD, a digital field item of the plant model, logged as "Field operator") */
   const FIELDV = {
-    'V-MU1033': { n: 'V-MU1033', t: 'Expansion tank bypass (manual)', k: 'mu1033', io: 'V-MU1033', use: 'Fills T-1109 while there is no instrument air yet (XV-MU1109 closed). Close it when LT-CW1109 reaches 1.7 m.' }
+    'V-MU1033': { n: 'V-MU1033', t: 'Expansion tank bypass (manual)', k: 'mu1033', io: 'V-MU1033', use: 'Fills T-1109 while there is no instrument air yet (XV-MU1109 closed). Close it when LT-CW1109 reaches 1.7 m.' },
+    /* Mina's retest step 8 (PR-OPE-5002 7.20 "Open Expansion tank outlet valve to prime the close cooling line (V-CW1001)", 7.22 NL 1.7 m;
+       flow diagram K1AU3-PD-021 Rev D: T-1109 outlet V-CW1001 CW-1-001 8"; not in the I/O list: a field valve, plant model AN_SRC.field) */
+    'V-CW1001': { n: 'V-CW1001', t: 'Expansion tank outlet (manual)', k: 'cw1001', io: 'V-CW1001', use: 'Primes the closed cooling line from T-1109 (PR-OPE-5002 7.20). Then keep T-1109 at NL 1.7 m, make up if necessary (7.22).' }
   };
   function fieldValve(V) {
     if (!V || !window.AN || !AN.field) return false;
