@@ -4489,6 +4489,10 @@ function simSheet(s) {
 const UN = { MS: 0.001, SEC: 1, MIN: 60, HR: 3600 },
   UT = { MS: 'MS', SEC: 'SEC.', MIN: 'MIN.', HR: 'HR.' };
 let TSP = 1;
+/* 2.4.1-beta.4: DPAUSE = Pause of the DITL tool bar (Run on, time stopped). Here, in an engine part, since 3.2.0 (Web Worker): the
+   engine follows the page on a DITL page (world.js scanJob: SIM && !DPAUSE); in 07-app-events.js it was not in the worker, and the first
+   scan there with the DITL page open threw (ReferenceError) and stopped the worker (Winter, ditl_run_keeps on e3de194) */
+let DPAUSE = false;
 const tick = { t: 0 };
 function unorm(s) {
   const u = s.replace(/[.\s]/g, '').toUpperCase();
@@ -7142,8 +7146,7 @@ function ditlStep(dt) {
     mvUI(s);
   }
 }
-/* 2.4.1-beta.4: DPAUSE = Pause of the DITL tool bar (Run on, time stopped) */
-let DPAUSE = false;
+/* 2.4.1-beta.4: DPAUSE = Pause of the DITL tool bar (Run on, time stopped): declared in 03b-sim.js (the engine reads it too) */
 setInterval(() => {
   const s = cur();
   if (window.WORLD && WORLD.live) return; /* the one world steps the timers / MOV / motors of EVERY sheet (src/world/world.js) */
@@ -26674,7 +26677,7 @@ function dsIdx(sh) {
    copied: the other side keeps its own ===== */
 const AN_STATE_OBJ = () => ({ AN_UNIT, AN_SRC, AN_CYC, AN_SW, AN_MU, AN_ACW, AN_MT, AN_AIR });
 /* the flags of AN that the engine reads (plain values) */
-const AN_STATE_FLAGS = ['i', 'plantOn', 'procDefault', 'startState', 'steady', 'spd', 'run', 'view', 'tierK', '_cold0', 'load150', 'ramp'];
+const AN_STATE_FLAGS = ['i', 'plantOn', 'procDefault', 'startState', 'steady', 'spd', 'run', 'view', 'tierK', '_cold0', 'load150', 'ramp', 'cat'];
 /* the sheets a step takes besides the linked ones (links.js actSet): names, and the second sheet of the page (a sheet) */
 const AN_STATE_SETS = ['hmiSheets', 'plantSheets', 'unitSheets', 'checkSheets', 'worldSheets', 'p2'];
 const anStateTabs = () => ({ AN_HMI_OP, AN_HMI_AI, AN_HMI_CTL, AN_HMI_MAN, AN_HMI_FF, AN_HMI_DI, AN_HMI_DI_COLD });
@@ -32090,7 +32093,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build 4d2b0e6'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 91985b3'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -35575,13 +35578,20 @@ function paint0() {
       }
     }
   }
-  const t = S.rt.t;
-  tClk.textContent =
-    't = ' +
-    Math.floor(t / 60) +
-    ':' +
-    String(Math.floor(t % 60)).padStart(2, '0') +
-    (AN.run && AN.tierK > 1 ? '  · light mode x' + AN.tierK : '');
+  anClock(S);
+}
+/* the plant time in the status bar (t = m:ss). Live test M2 (Mina, Worker f97955e): it was written only by the paint of the Logic page,
+   so on the Plant view (and the Training dock over it) it stood still while RUN; it is written every half second on every page too */
+function anClock(S) {
+  if (!S || !S.rt) return;
+  const t = S.rt.t,
+    x =
+      't = ' +
+      Math.floor(t / 60) +
+      ':' +
+      String(Math.floor(t % 60)).padStart(2, '0') +
+      (AN.run && AN.tierK > 1 ? '  · light mode x' + AN.tierK : '');
+  if (tClk.textContent !== x) tClk.textContent = x;
   tClk.title =
     AN.tierK > 1
       ? 'Slow device: the sheets that are not joined to this one are calculated every ' +
@@ -35589,6 +35599,13 @@ function paint0() {
         'th tick (the whole plant keeps running)'
       : '';
 }
+setInterval(() => {
+  try {
+    if (anShown()) return; /* the Logic page: its paint writes it */
+    const sh = AN.sheets && AN.sheets[AN.i];
+    if (sh && sh.S) anClock(sh.S);
+  } catch (e) {}
+}, 500);
 function cosPopClose() {
   const o = document.getElementById('cospop');
   if (o) {
@@ -54522,6 +54539,10 @@ function simSheet(s) {
 const UN = { MS: 0.001, SEC: 1, MIN: 60, HR: 3600 },
   UT = { MS: 'MS', SEC: 'SEC.', MIN: 'MIN.', HR: 'HR.' };
 let TSP = 1;
+/* 2.4.1-beta.4: DPAUSE = Pause of the DITL tool bar (Run on, time stopped). Here, in an engine part, since 3.2.0 (Web Worker): the
+   engine follows the page on a DITL page (world.js scanJob: SIM && !DPAUSE); in 07-app-events.js it was not in the worker, and the first
+   scan there with the DITL page open threw (ReferenceError) and stopped the worker (Winter, ditl_run_keeps on e3de194) */
+let DPAUSE = false;
 const tick = { t: 0 };
 function unorm(s) {
   const u = s.replace(/[.\s]/g, '').toUpperCase();
@@ -72291,7 +72312,7 @@ function dsIdx(sh) {
    copied: the other side keeps its own ===== */
 const AN_STATE_OBJ = () => ({ AN_UNIT, AN_SRC, AN_CYC, AN_SW, AN_MU, AN_ACW, AN_MT, AN_AIR });
 /* the flags of AN that the engine reads (plain values) */
-const AN_STATE_FLAGS = ['i', 'plantOn', 'procDefault', 'startState', 'steady', 'spd', 'run', 'view', 'tierK', '_cold0', 'load150', 'ramp'];
+const AN_STATE_FLAGS = ['i', 'plantOn', 'procDefault', 'startState', 'steady', 'spd', 'run', 'view', 'tierK', '_cold0', 'load150', 'ramp', 'cat'];
 /* the sheets a step takes besides the linked ones (links.js actSet): names, and the second sheet of the page (a sheet) */
 const AN_STATE_SETS = ['hmiSheets', 'plantSheets', 'unitSheets', 'checkSheets', 'worldSheets', 'p2'];
 const anStateTabs = () => ({ AN_HMI_OP, AN_HMI_AI, AN_HMI_CTL, AN_HMI_MAN, AN_HMI_FF, AN_HMI_DI, AN_HMI_DI_COLD });
@@ -78023,9 +78044,19 @@ body.app2 #gdtrb[hidden]{display:none!important}
   const zoom = E('button', { txt: 'Zoom', title: 'Zoom to readable text (12 px) on the selected cell; Fit shows the whole sheet again' });
   const panel = E('button', { txt: 'Panel', title: 'Show / hide the right panel (inputs, timers, outputs)' });
   run.onclick = () => {
-    if (!SIM) enter();
-    DPAUSE = false;
-    TSP = 1;
+    /* 3.2.0 (Mina's live test #M9, user OK 2026-11-03): with the one world (always ON) RUN only runs the plant: SIM on, no DITL
+       Reset. Before, RUN went through the old Simulate button (ditlStates: motors, valves, latches, timers back to the start), so the
+       Training dock's RUN on a DITL page stopped the debris filter and reset the DITL-777 / APH soot blower trip latches. The speed
+       chosen in the Training stays. Reset stays on the Reset buttons */
+    if (window.WORLD && WORLD.on) {
+      SIM = true;
+      DPAUSE = false;
+      TSP = (window.AN && AN.spd) || 1;
+    } else {
+      if (!SIM) enter();
+      DPAUSE = false;
+      TSP = 1;
+    }
     upd();
     render();
   };
