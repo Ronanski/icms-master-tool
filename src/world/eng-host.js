@@ -4,6 +4,7 @@
    Messages from the page:
    - {t:'init', apre, ades, ds | pre, sv, lne, kf, kd, i}: the drawings (the same texts as the page: ABC sheets and descriptions,
      base64 gzip; the DITL sheets of the page as JSON, with the user's fixes), the saved settings (AN.sv, AN.lne), then the keyframe of the page (ABC kf, DITL kd): the engine starts where the page is;
+   - {t:'go', sv, lne, kf, kd, i, d150}: after 'ready', the plant of the page at that moment (the page ran it while this loaded);
    - {t:'op', ...}: the radio (src/world/eng.js);
    - {t:'kf', id}: the whole state back (the check that the page mirror = the engine);
    - {t:'stop'}.
@@ -49,9 +50,21 @@
     AN.i = m.i;
     if (m.kf) AN.engState.apply(m.kf);
     if (m.kd) DITL.ditlApply(m.kd);
+    /* loaded: the page still runs the plant; it answers with the plant as it is now (go) */
+    say({ t: 'ready' });
+  }
+  /* the hand-over (eng-page.js E._go): the plant of the page as it is at this moment, then this engine runs it */
+  function go(m) {
+    const { AN, DITL, ENG } = G;
+    if (ENG.mode === 'engine') return;
+    AN.sv = m.sv || AN.sv || {};
+    AN.lne = m.lne || AN.lne || {};
+    AN.i = m.i;
+    if (m.kf) AN.engState.apply(m.kf);
+    if (m.kd) DITL.ditlApply(m.kd);
+    if (G.DITL150 && 'd150' in m) G.DITL150.on = !!m.d150;
     ENG.start('engine', { postMessage: say });
     run();
-    say({ t: 'ready' });
   }
   function run() {
     /* the heartbeat (Giselle): the page knows the engine is alive also while nothing changes (paused); a worker that died or hangs is
@@ -136,6 +149,7 @@
           await G.ENG.onMsg(q);
         }
       }
+      else if (m.t === 'go') go(m);
       else if (m.t === 'kf') say({ t: 'kf', id: m.id, kf: G.AN.engState.capture(), kd: G.DITL.ditlCapture(), n: Object.assign({ loading: !!G.AN._loading, mode: G.ENG.mode, run: G.AN.run, at: Date.now() }, N) });
       else if (m.t === 'stop') {
         timers.forEach(clearInterval);
