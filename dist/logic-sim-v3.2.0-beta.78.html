@@ -32090,7 +32090,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build 16f08a8'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 4d2b0e6'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -50049,6 +50049,9 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     /* the page asks for the whole state (after its own long action) */
     if (m.t === 'full') {
       if (G.AN.sync.forget) G.AN.sync.forget();
+      /* the page asks for it when it is ready to take it (after its own long action, or a stall: eng-page.js): an ack it never sent
+         would hold every next patch */
+      E.wait = false;
       return;
     }
     if (m.t === 'op') {
@@ -50310,7 +50313,21 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       /* the page itself was busy (its messages still wait in the queue): no verdict on this tick */
       if (late || E.mode !== 'mirror' || !E.worker) return;
       const lim = E.busyAt || E.heavy ? WD_CALL : WD;
-      if (now - E.inAt > lim) fail('no answer', 'the engine in the worker stopped answering (no message for ' + lim / 1000 + ' s)');
+      if (now - E.inAt > lim) return void fail('no answer', 'the engine in the worker stopped answering (no message for ' + lim / 1000 + ' s)');
+      /* a stall: the plant runs and the worker is alive (its heartbeat comes) but no patch has come for 5 s (Winter's world run 1: the
+         page never got the world). Kept for the checks (ENG.stalls: when, how long, what the engine said), and the whole state is asked
+         for again ('full': the engine sends every slot and takes the page as ready) */
+      if (!AN.run || !E.patchAt) E.patchAt = now; /* paused: no patch is due */
+      else if (!E.heavy && !E.busyAt && now - E.patchAt > 5000 && now - (E._stallAt || 0) > 10000) {
+        E._stallAt = now;
+        const st = { at: now, since: now - E.patchAt, got: E.got, sent: E.sent };
+        (E.stalls = E.stalls || []).push(st);
+        console.warn('ENG stall', st);
+        if (E.worker) E.peek().then(k => ((st.n = k && k.n), console.warn('ENG stall engine', st.n))).catch(() => {});
+        try {
+          E.worker.postMessage({ t: 'full' });
+        } catch (e) {}
+      }
     }, 1000);
   };
   E.boot = () =>
@@ -50364,7 +50381,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       try {
         for (const sh of AN.sheets) AN.ensure(sh);
         if (window.WORLD && WORLD.build) WORLD.build();
-        E.onPatch = () => AN.patchPaint && AN.patchPaint();
+        E.onPatch = () => ((E.patchAt = Date.now()), AN.patchPaint && AN.patchPaint());
         /* the events of the engine into the Event log of the page */
         E.onEvent = a => window.lsEventAdd && lsEventAdd(...a);
         /* the DITL sheets of the page (with the user's fixes), the saved settings of the ABC (Reset applies them) */
@@ -75451,6 +75468,9 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
     /* the page asks for the whole state (after its own long action) */
     if (m.t === 'full') {
       if (G.AN.sync.forget) G.AN.sync.forget();
+      /* the page asks for it when it is ready to take it (after its own long action, or a stall: eng-page.js): an ack it never sent
+         would hold every next patch */
+      E.wait = false;
       return;
     }
     if (m.t === 'op') {
@@ -75808,7 +75828,7 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
         }
       }
       else if (m.t === 'go') go(m);
-      else if (m.t === 'kf') say({ t: 'kf', id: m.id, kf: G.AN.engState.capture(), kd: G.DITL.ditlCapture(), n: Object.assign({ loading: !!G.AN._loading, mode: G.ENG.mode, run: G.AN.run, at: Date.now(), ms: G.WORLD.ms }, N) });
+      else if (m.t === 'kf') say({ t: 'kf', id: m.id, kf: G.AN.engState.capture(), kd: G.DITL.ditlCapture(), n: Object.assign({ loading: !!G.AN._loading, mode: G.ENG.mode, run: G.AN.run, at: Date.now(), ms: G.WORLD.ms, wait: !!G.ENG.wait, owed: !!G.ENG.owed, live: !!G.WORLD.live, wsh: (G.AN.worldSheets || []).length }, N) });
       else if (m.t === 'stop') {
         timers.forEach(clearInterval);
         timers = [];
