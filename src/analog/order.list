@@ -19,6 +19,7 @@ engine/sheets.js
 engine/links.js
 engine/ds.js
 engine/state.js
+engine/sync.js
 engine/ctrls.js
 engine/names.js
 engine/api.js
