@@ -124,5 +124,30 @@ window.UATR = (function () {
     }
     return { ok, res };
   }
-  return { runCase, runItem, fmt, plantOff, plantRestore };
+  /* 3.2.0 Web Worker: a UAT / CHECK run resets, loads and steps the plant thousands of times and reads the result at once, so it runs
+     on the engine of the page (local, as before the worker): the worker is stopped for the run (its last patch put in first) and
+     started again after it from the plant as the run left it (eng-page.js boot: the page's keyframe). Without a worker: fn as it is */
+  async function onPageRun(E, fn) {
+    AN.run = false;
+    E.flush();
+    clearInterval(E._fl);
+    clearInterval(E._wd);
+    try {
+      E.worker.terminate();
+    } catch (e) {}
+    E.worker = null;
+    E.stop();
+    E.heavy = 0;
+    await E.take({ t: 'none' }).catch(() => {});
+    try {
+      return await fn();
+    } finally {
+      E.boot().catch(() => {});
+    }
+  }
+  function onPage(fn) {
+    const E = window.ENG;
+    return E && E.mode === 'mirror' && E.worker ? onPageRun(E, fn) : fn();
+  }
+  return { runCase, runItem, fmt, plantOff, plantRestore, onPage };
 })();
