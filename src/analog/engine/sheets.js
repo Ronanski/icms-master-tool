@@ -185,11 +185,17 @@ function anResetRun() {
   }
   AN.sv = keep;
   anResetAll();
+  const W = globalThis.WORLD;
+  /* the links of the one world for every ABC sheet loaded now: the world was built once when the ABC list came, so a sheet loaded
+     after it had no DITL links until a 150 MW load built the world again (Winter's diag_abc: an xlk "(28)DITL-14 #B" only after a run).
+     The instances and their state stay (world.js build) */
+  try {
+    if (W && W.on && W.build && AN.sheets.length) W.build();
+  } catch (e) {}
   try {
     if (globalThis.DITL150) globalThis.DITL150.clear();
   } catch (e) {}
   /* a push button the dock still held (src/world/dock-eng.js) would press again at the next scan */
-  const W = globalThis.WORLD;
   if (W) W._press = W._rel = undefined;
 }
 /* RESET of the model: every sheet back to the drawing (tuning kept in AN.sv), then all sheets are settled: the same start as a fresh load, whatever the sheet order */
