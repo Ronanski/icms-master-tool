@@ -1400,7 +1400,7 @@ function cosPop() {
         S.rt.ext[n] = v;
         (sv(sh).ext = sv(sh).ext || {})[n] = v;
         anSave();
-        settle();
+        AN.settle();
       },
       row = h$('div', { style: 'display:flex;gap:6px;margin-top:6px' });
     for (const [t, v] of [

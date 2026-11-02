@@ -50,7 +50,7 @@ function trStrip(box, sh, m) {
         st.val = Math.max(P.lo, Math.min(P.hi, v));
         (sv(sh).man = sv(sh).man || {})[b.id] = st.val;
         anSave();
-        settle();
+        AN.settle();
       };
     i.classList.add('wr');
     rg.classList.add('wr');
@@ -104,7 +104,7 @@ function trStrip(box, sh, m) {
           b.p[k] = v;
           (sv(sh).p = sv(sh).p || {})[b.id] = Object.assign({}, (sv(sh).p || {})[b.id], { [k]: v });
           anSave();
-          settle();
+          AN.settle();
         }
       };
       return h$('div', { cls: 'r', title: tt }, [h$('span', { cls: 'n', txt: t }), i]);
@@ -357,7 +357,7 @@ function procPanel(d, b, sh) {
     }
     procSave(sh, b);
     S.procs = S.procs;
-    settle();
+    AN.settle();
     buildPanel();
     panelUpd(true);
   };
@@ -379,7 +379,7 @@ function procPanel(d, b, sh) {
         p.est = 0;
         if (S.rt.pm) delete S.rt.pm[b.id];
         procSave(sh, b);
-        settle();
+        AN.settle();
       }
     };
     return h$('div', { cls: 'r', title: tt }, [h$('span', { cls: 'n', txt: t }), i]);
@@ -627,7 +627,7 @@ function cosCtl(S, sh, n, e) {
       S.rt.ext[n] = v;
       (sv(sh).ext = sv(sh).ext || {})[n] = v;
       anSave();
-      settle();
+      AN.settle();
     };
     bx.append(h$('small', { txt: ds, style: 'flex-basis:100%;color:var(--c-tx2)' }), bt, wy);
     const u0 = () => {
@@ -659,7 +659,7 @@ function cosCtl(S, sh, n, e) {
       S.rt.ext[n] = v;
       (sv(sh).ext = sv(sh).ext || {})[n] = v;
       anSave();
-      settle();
+      AN.settle();
     },
     acc = () => {
       const v = parseFloat(i.value);
@@ -747,14 +747,14 @@ function swSet(sh, b, m) {
   st.fm = m || undefined;
   (sv(sh).sw = sv(sh).sw || {})[b.id] = m || 0;
   anSave();
-  settle();
+  AN.settle();
 }
 function pSet(sh, b, k, v) {
   b.p[k] = v;
   const o = sv(sh);
   (o.p = o.p || {})[b.id] = Object.assign(o.p[b.id] || {}, { [k]: v });
   anSave();
-  settle();
+  AN.settle();
   try {
     AN.panelUpd && AN.panelUpd(true);
   } catch (e) {}
@@ -820,9 +820,9 @@ function forceCtl(S, sh, n) {
       b1 = h$('button', { txt: '1', title: 'Force this signal to 1 (like a bypass in the DCS)' }),
       b0 = h$('button', { txt: '0', title: 'Force this signal to 0' }),
       x = h$('button', { txt: 'Release', title: 'Release the force: back to the value computed by the logic' });
-    b1.onclick = () => setForce(sh, n, 1);
-    b0.onclick = () => setForce(sh, n, 0);
-    x.onclick = () => setForce(sh, n, undefined);
+    b1.onclick = () => AN.setForce(sh, n, 1);
+    b0.onclick = () => AN.setForce(sh, n, 0);
+    x.onclick = () => AN.setForce(sh, n, undefined);
     box.append(lab, b1, b0, x);
     const u = () => {
       const c = F[n];
@@ -846,7 +846,7 @@ function forceCtl(S, sh, n) {
         const r_ = anNetRange(S, n) || (S.ext.includes(n) ? anExtRange(S, n) : null),
           c_ = anClamp(r_, v);
         if (c_.cut) msg('Limited to the range written on the drawing: ' + r_.lo + ' ~ ' + r_.hi + ' ' + r_.u);
-        setForce(sh, n, c_.x);
+        AN.setForce(sh, n, c_.x);
       } else msg('Type a number first, then press ✓');
     };
     ok.onclick = acc;
@@ -858,7 +858,7 @@ function forceCtl(S, sh, n) {
     };
     x.onclick = () => {
       i._clr();
-      setForce(sh, n, undefined);
+      AN.setForce(sh, n, undefined);
       i.value = '';
     };
     box.append(i, ok, x);
@@ -885,7 +885,7 @@ function fpUpd() {
   ks.forEach(k => {
     const n = +k,
       x = h$('button', { txt: '✕', title: 'Release' });
-    x.onclick = () => setForce(sh, n, undefined);
+    x.onclick = () => AN.setForce(sh, n, undefined);
     d.append(
       h$('div', { cls: 'r' }, [
         h$('span', { cls: 'n', txt: nm(S, n) }),
@@ -907,7 +907,7 @@ function fpUpd() {
           });
           delete sv(sh).force;
           anSave();
-          settle();
+          AN.settle();
           fpUpd();
         }
       })
@@ -927,7 +927,7 @@ function inCtl(S, sh, n) {
       S.rt.ext[n] = x;
       (sv(sh).ext = sv(sh).ext || {})[n] = x;
       anSave();
-      settle();
+      AN.settle();
     };
   if (dig) {
     const bt = h$('button', { title: 'This is an input: click to switch it' });

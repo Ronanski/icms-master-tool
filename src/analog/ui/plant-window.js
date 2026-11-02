@@ -802,7 +802,7 @@ function plantSwitch(on, quiet) {
         : 'Plant model OFF: transmitters / PV are free inputs, only the drawn logic runs'
     );
 }
-bPm.onclick = () => plantSwitch(!AN.plantOn);
+bPm.onclick = () => AN.plantSwitch(!AN.plantOn);
 {
   let v = null;
   try {
@@ -1037,14 +1037,14 @@ function buildPanel() {
         inp.value = x;
         (sv(sh).ai = sv(sh).ai || {})[b.id] = x;
         anSave();
-        settle();
+        AN.settle();
       });
       rg.oninput = () => {
         st.val = +rg.value;
         inp.value = (+rg.value).toFixed(2);
         (sv(sh).ai = sv(sh).ai || {})[b.id] = st.val;
         anSave();
-        settle();
+        AN.settle();
       };
       const nowv = h$('small', {});
       const row = mkRow(
@@ -1106,7 +1106,7 @@ function buildPanel() {
         st.val = st.val === 0 ? 1 : st.val === 1 ? 2 : 0;
         (sv(sh).ai = sv(sh).ai || {})[b.id] = st.val;
         anSave();
-        settle();
+        AN.settle();
       };
       const d = boxDesc(b.cx, b.cy, 40, -6, 6);
       mkRow(
@@ -1145,7 +1145,7 @@ function buildPanel() {
         S.rt.ext[n] = x;
         (sv(sh).ext = sv(sh).ext || {})[n] = x;
         anSave();
-        settle();
+        AN.settle();
       };
     const g = grp(dig ? 'Digital inputs' : 'Analog inputs', wd.src ? 'From ' + wd.src : dig ? 'Other' : 'Other');
     let ce;
@@ -1237,7 +1237,7 @@ function buildPanel() {
         else if (b.k === 'TOF') {
           if (st.out) st.acc = b.p.sec;
         } else st.run = 0;
-        settle();
+        AN.settle();
       };
       const T = () => (b.k === 'TPV' ? (b.xin >= 0 ? S.rt.v[b.xin] : 0) : b.p.sec);
       PU.push(() => {
@@ -1289,7 +1289,7 @@ function buildPanel() {
           st.val = +rg.value;
           (sv(sh).man = sv(sh).man || {})[b.id] = st.val;
           anSave();
-          settle();
+          AN.settle();
         };
         row.append(rg);
         PU.push(() => {
@@ -2077,7 +2077,7 @@ function selUpd0_(d) {
       st.val = st.val === 0 ? 1 : st.val === 1 ? 2 : 0;
       (sv(sh).ai = sv(sh).ai || {})[b.sig.id] = st.val;
       anSave();
-      settle();
+      AN.settle();
     };
     const up = () => {
       bt.textContent =
@@ -2105,7 +2105,7 @@ function selUpd0_(d) {
             const o = sv(sh);
             if (o.p) delete o.p[b.id];
             anSave();
-            settle();
+            AN.settle();
             buildPanel();
             panelUpd(true);
           }
@@ -2675,7 +2675,7 @@ function selUpd0_(d) {
           lnApplyEdits();
           btn.textContent = 'Edit table (edited)';
           upd();
-          settle();
+          AN.settle();
         };
         box.append(
           h$('div', { cls: 'r', style: 'font-weight:700' }, [
@@ -2715,7 +2715,7 @@ function selUpd0_(d) {
                 lneSave();
                 lnApplyEdits();
                 btn.textContent = 'Edit table';
-                settle();
+                AN.settle();
                 build();
               }
             })

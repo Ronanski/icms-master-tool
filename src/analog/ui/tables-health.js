@@ -76,7 +76,7 @@ function lnOpen() {
             } catch (e) {}
             msg(n + ' table(s) loaded.');
             lnOpen();
-            if (cs() && cs().S) settle();
+            if (cs() && cs().S) AN.settle();
           } catch (e) {
             msg('Cannot read the tables: ' + e.message);
           }
@@ -90,7 +90,7 @@ function lnOpen() {
             localStorage.removeItem('ditl.ln');
           } catch (e) {}
           lnOpen();
-          if (cs() && cs().S) settle();
+          if (cs() && cs().S) AN.settle();
         }
       }),
       h$('button', {
@@ -101,7 +101,7 @@ function lnOpen() {
           lneSave();
           lnApplyEdits();
           lnOpen();
-          if (cs() && cs().S) settle();
+          if (cs() && cs().S) AN.settle();
         }
       }),
       h$('button', {
