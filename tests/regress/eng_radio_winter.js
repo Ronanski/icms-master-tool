@@ -49,6 +49,7 @@ const pj = W => JSON.stringify([W._press || {}, W._rel || {}]);
   if (!SLOT) B.WORLD.live = true;
   const toA = [], toB = [];
   A.ENG.start('engine', { postMessage: m => toB.push(structuredClone(m)) });
+  A.ENG.gap = 0; /* no timers here: every patch at once (the worker sends at most 2 a second) */
   B.ENG.start('mirror', { postMessage: m => toA.push(structuredClone(m)) });
   ck(A.ENG.CALLS.WORLD.includes('dpress') && A.ENG.CALLS.WORLD.includes('dset') && !!A.WORLD.__eng_dpress && !!B.WORLD.__eng_dpress, 'WORLD.dpress / dset are engine calls (wrapped on both sides)');
   ck(B.WORLD.live === true, 'the page knows the one world runs (WORLD.live)');

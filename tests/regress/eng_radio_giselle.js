@@ -41,6 +41,7 @@ async function pair() {
   B.DITL.ditlApply(JSON.parse(JSON.stringify(A.DITL.ditlCapture())));
   const toA = [], toB = [];
   A.ENG.start('engine', { postMessage: m => toB.push(structuredClone(m)) });
+  A.ENG.gap = 0; /* no timers here: every patch at once (the worker sends at most 2 a second) */
   B.ENG.start('mirror', { postMessage: m => toA.push(structuredClone(m)) });
   return { A, B, toA, toB };
 }

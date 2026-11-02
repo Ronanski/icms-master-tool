@@ -46,6 +46,16 @@ function anSyncPut(o, k, v) {
   if (a !== v && anSyncPlain(a) && anSyncPlain(v) && Array.isArray(a) === Array.isArray(v) && !anSyncOwn.has(v)) anSyncDeep(a, v, new Set());
   else o[k] = v;
 }
+/* the quick look at a block state for the operator's writes: every plain field (the output val, the leg fm of a switch, the mode ...) */
+function anSyncStFast(q) {
+  if (!q) return '';
+  let s = '';
+  for (const k in q) {
+    const v = q[k];
+    if (v === null || typeof v !== 'object') s += k + '=' + v + '|';
+  }
+  return s;
+}
 function anSyncSlots() {
   const L = [],
     add = (k, get, put, o) => L.push(Object.assign({ k, get, put }, o || {}));
@@ -80,7 +90,7 @@ function anSyncSlots() {
     }, d => { for (const [j, m] of d) S.blk[j]._mn = m; });
     /* each block state (the operator writes the output of a MAN station: st.val) */
     for (const id of Object.keys(S.rt.st))
-      add('s' + i + ':' + id, () => (S.rt.st[id] ? { ...S.rt.st[id] } : S.rt.st[id]) /* its content: the state itself is a ref {$T} */, d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => { const q = S.rt.st[id]; return q ? String(q.val) : ''; } });
+      add('s' + i + ':' + id, () => (S.rt.st[id] ? { ...S.rt.st[id] } : S.rt.st[id]) /* its content: the state itself is a ref {$T} */, d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => anSyncStFast(S.rt.st[id]) });
     /* each plant model (the PLANT window writes its operating point / disturbance) */
     S.blk.forEach((b, j) => {
       if (b.proc) add('p' + i + ':' + j, () => ({ ...b.proc }) /* its content: the model itself is written as {$P} */, d => anSyncDeep(b.proc, d, new Set()), { w: 1, fast: () => b.proc.op + '|' + b.proc.dist + '|' + b.proc.on });
@@ -291,4 +301,13 @@ function anSyncMark() {
 function anSyncForget() {
   const Y = anSyncState();
   Y.last.clear();
+}
+/* the arguments of an engine action, for the radio (src/world/eng.js): a sheet, a block, a net ... as its ref */
+function anSyncEncArgs(a) {
+  const Y = anSyncState();
+  anSyncFresh(Y);
+  return { $j: JSON.stringify(anStateEnc(a, Y.ref)) };
+}
+function anSyncDecArgs(x) {
+  return anStateDec(JSON.parse(x.$j));
 }

@@ -5349,7 +5349,7 @@ const DREAD = (function () {
 const DITL_SH = ['sig', 'usw', 'av', 'av150', 'avw', '_win', '_fd', '_ftrip'],
   DITL_NL = ['_v', 'fx', 'ufx'],
   DITL_G = ['q', 'st', 'N', 'pin', 'rp', 'rq', 'Nn', 'cin'],
-  DITL_W = ['out', '_o', 'tk', '_ck', 'busy'];
+  DITL_W = ['out', '_o', 'tk', '_ck', 'busy', 'live', '_press', '_rel']; /* live, _press, _rel: the dock press (src/world/dock-eng.js) */
 function ditlEnc(v) {
   if (v instanceof Set) return { $set: [...v] };
   if (v instanceof Map) return { $map: [...v].map(([k, w]) => [k, ditlEnc(w)]) };
@@ -5423,6 +5423,82 @@ function ditlApply(k) {
     if (k.sw && WORLD.plantSwSet) WORLD.plantSwSet(k.sw);
   }
 }
+/* DITL (digital logic) - what the operator sets on a sheet that is not an input (3.2.0 Web Worker, stage c), no DOM: the presets of the
+   side panels (timer time and unit, MOV / solenoid stroke time, motor run feedback delay), Skip of a timer, LOCAL / REMOTE of a MOV
+   whose MIL has no input on the sheet, and the values kept from the last session (localStorage 'ditl.uv', 05-overlay-interaction.js
+   uvApply). These live in the sheet, the netlist (the timer of a gate) and MST, outside the slots of the radio: ditlUser is an engine
+   action (src/world/eng.js CALLS.G), run on the page and in the engine alike. Part of ONE script (src/digital/order.list). */
+/* a sheet as the drawing, the panels and the Library show it: in a mirror (the page while the engine runs in the worker, ENG.mode
+   'mirror') the result of the engine's last scan (the nets of the netlist, the outputs of the one world), read only: simSheet would
+   compute the sheet again on the page and write what the engine keeps (nets, latches, counters, the step register, nl.ufx) without the
+   engine's inputs of this scan (WORLD.live, the rows from other sheets). Elsewhere (no worker, the engine itself): simSheet */
+function simRead(s) {
+  const W = window.WORLD;
+  if (!(window.ENG && ENG.mode === 'mirror' && W && W.on && W.idx)) return simSheet(s);
+  const lv = W.live;
+  W.live = true;
+  try {
+    const nl = s.nl,
+      o = W.out && W.out[s.name];
+    return { rowOn: simIn(s), v: nl._v && nl._v.length === nl.n ? nl._v : new Array(nl.n).fill(0), outOn: o instanceof Set ? o : new Set(o || []) };
+  } finally {
+    W.live = lv;
+  }
+}
+const tmKey = g => (g.tm.tag || '') + '|' + (g.tm.lab || '') + '|' + g.tm.ax.toFixed(0) + ',' + g.tm.ay.toFixed(0);
+/* name = the sheet; op:
+   'tm' (gate, time, unit): the preset of a timer (the timer starts again)   'skip' (gate): finish the timer now
+   'mvt' (MOV, sec): full stroke time   'mtd' (sec): motor run feedback delay   'lr' (MOV): LOCAL / REMOTE
+   'uv' (kept values {av, mvt, pdur, mtd, tmo}) */
+function ditlUser(name, op, a, b, c) {
+  const s = ditlAll().find(x => x.name === name);
+  if (!s || !s.nl) return;
+  const g = typeof a === 'number' ? s.nl.gates[a] : null;
+  if (op === 'tm') {
+    if (!g || !g.tm) return;
+    tmSet(g.tm, b, c);
+    s.tmo = s.tmo || {};
+    s.tmo[tmKey(g)] = [b, c];
+    if (g.tm.pg) {
+      s.pdur = s.pdur || {};
+      s.pdur[g.tm.key] = { v: b, u: c };
+    }
+    g.st = { acc: 0, out: 0, pre: 0, run: 0 };
+  } else if (op === 'skip') {
+    if (!g || !g.tm) return;
+    const v = simulate(s.nl, simIn(s));
+    tmStep(
+      g,
+      g.ins.some(n => v[n]),
+      tmSecs(g.tm) + 1
+    );
+  } else if (op === 'mvt') {
+    s.mvt = s.mvt || {};
+    s.mvt[a] = b;
+  } else if (op === 'mtd') s.mtd = a;
+  else if (op === 'lr') {
+    const r = mvRT(s)[a];
+    if (r) r.lr = r.lr ? 0 : 1;
+  } else if (op === 'uv') {
+    const u = a || {};
+    if (u.av) s.av = { ...(s.av || {}), ...u.av };
+    if (u.mvt) s.mvt = { ...(s.mvt || {}), ...u.mvt };
+    if (u.pdur) s.pdur = { ...(s.pdur || {}), ...u.pdur };
+    if (u.mtd) s.mtd = u.mtd;
+    if (u.tmo) {
+      s.tmo = { ...(s.tmo || {}), ...u.tmo };
+      s.nl.gates.forEach(x => {
+        if (x.t !== 'TMR' || !x.tm) return;
+        const o = s.tmo[tmKey(x)];
+        if (o && o[0] >= 0) {
+          if (x.tm.pg) x.tm.fv = { v: o[0], u: o[1] };
+          else tmSet(x.tm, o[0], o[1]);
+        }
+      });
+    }
+  }
+  s.nl.avk = avOf(s);
+}
 /* DITL (digital logic) - Drawing of a sheet (render) and its helpers. Part of ONE script (joined by src/digital/order.list, in this order). */
 /* the models of a sheet (grpModel, fieldInModel, usrModel): parts/03b-sim.js */
 /* the simulation (DREG, simulate, avOf, xconPeer, simSheet): parts/03b-sim.js */
@@ -5486,7 +5562,7 @@ function render() {
   let FRC = new Map();
   if (simOn() && s) {
     FRC = mvForced(s);
-    const R = simSheet(s);
+    const R = simRead(s);
     rowOn = R.rowOn;
     SV = R.v;
     outOn = R.outOn;
@@ -6535,28 +6611,17 @@ try {
   UVL = {};
 }
 let UVKEY = JSON.stringify(UVL);
-const tmKey = g => (g.tm.tag || '') + '|' + (g.tm.lab || '') + '|' + g.tm.ax.toFixed(0) + ',' + g.tm.ay.toFixed(0);
+/* tmKey: parts/03e-user.js. 3.2.0 Web Worker: the kept values go in as an engine action (ditlUser 'uv'), the engine has no localStorage */
 function uvApply(s) {
   if (!s || s.uvDone || !s.nl) return;
   s.uvDone = true;
   const u = UVL[s.name];
   if (!u) return;
-  if (u.av) s.av = { ...(s.av || {}), ...u.av };
-  if (u.mvt) s.mvt = { ...(s.mvt || {}), ...u.mvt };
-  if (u.pdur) s.pdur = { ...(s.pdur || {}), ...u.pdur };
-  if (u.mtd) s.mtd = u.mtd;
-  if (u.tmo) {
-    s.tmo = { ...(s.tmo || {}), ...u.tmo };
-    s.nl.gates.forEach(g => {
-      if (g.t !== 'TMR' || !g.tm) return;
-      const o = s.tmo[tmKey(g)];
-      if (o && o[0] >= 0) {
-        if (g.tm.pg) g.tm.fv = { v: o[0], u: o[1] };
-        else tmSet(g.tm, o[0], o[1]);
-      }
-    });
-  }
-  s.nl.avk = avOf(s);
+  ditlUser(s.name, 'uv', u);
+}
+/* the engine started from a keyframe (a worker that starts later): the kept values of the sheets already shown go to it again */
+function uvReplay() {
+  S.sheets.forEach(s => s.uvDone && UVL[s.name] && ditlUser(s.name, 'uv', UVL[s.name]));
 }
 function uvSave() {
   const o = { ...UVL };
@@ -6898,18 +6963,8 @@ function buildTP() {
       const x = parseFloat(n.value);
       if (!(x >= 0)) return;
       push();
-      tmSet(g.tm, x, u.value);
-      {
-        const s1 = cur();
-        s1.tmo = s1.tmo || {};
-        s1.tmo[tmKey(g)] = [x, u.value];
-      }
-      if (g.tm.pg) {
-        const s = cur();
-        s.pdur = s.pdur || {};
-        s.pdur[g.tm.key] = { v: x, u: u.value };
-      }
-      g.st = { acc: 0, out: 0, pre: 0, run: 0 };
+      /* 3.2.0 Web Worker: the preset is an engine action (parts/03e-user.js): the engine's timer takes it too */
+      ditlUser(s0.name, 'tm', s0.nl.gates.indexOf(g), x, u.value);
       render();
     };
     n.onchange = ch;
@@ -6920,13 +6975,8 @@ function buildTP() {
       b.textContent = 'Skip';
       b.title = 'Finish this timer now';
       b.onclick = () => {
-        const s = cur(),
-          vv = simulate(s.nl, simIn(s));
-        tmStep(
-          g,
-          g.ins.some(q => vv[q]),
-          tmSecs(g.tm) + 1
-        );
+        const s = cur();
+        ditlUser(s.name, 'skip', s.nl.gates.indexOf(g));
         render();
       };
       d.appendChild(b);
@@ -6959,8 +7009,7 @@ function buildTP() {
       const x = parseFloat(n.value);
       if (!(x > 0)) return;
       push();
-      s0.mvt = s0.mvt || {};
-      s0.mvt[j] = x;
+      ditlUser(s0.name, 'mvt', j, x);
       render();
     };
     if (b.noZS) d.append(a);
@@ -6973,7 +7022,7 @@ function buildTP() {
       lr.className = r.lr ? 'on' : '';
       lr.title = 'MIL ' + (mil.adr || '') + ' has no input on this sheet: select LOCAL / REMOTE here';
       lr.onclick = () => {
-        r.lr = r.lr ? 0 : 1;
+        ditlUser(s0.name, 'lr', j);
         render();
       };
       d.appendChild(lr);
@@ -7031,7 +7080,7 @@ function buildTP() {
       const x = parseFloat(n.value);
       if (!(x > 0)) return;
       push();
-      s0.mtd = x;
+      ditlUser(s0.name, 'mtd', x);
       render();
     };
     d.append(a, n, document.createTextNode('sec'));
@@ -7093,6 +7142,8 @@ let DPAUSE = false;
 setInterval(() => {
   const s = cur();
   if (window.WORLD && WORLD.live) return; /* the one world steps the timers / MOV / motors of EVERY sheet (src/world/world.js) */
+  /* 3.2.0 Web Worker: the engine steps them; the page (a mirror) only shows what it sends */
+  if (window.ENG && ENG.mode === 'mirror') return;
   if (!SIM || !s || !s.nl || DPAUSE) {
     tick.t = 0;
     return;
@@ -23097,7 +23148,9 @@ const tcsLin = (pts, x) => {
 /* P2 #13: a push button row of a DITL MOV pressed from the TCS panel (row of the drawing, 1-based; no one world: nothing) */
 function tcsDitl(L) {
   try {
-    if (window.LS_DOCK && LS_DOCK.dpress) for (const [nm, r] of L) LS_DOCK.dpress(nm, r - 1);
+    /* the press in the engine (src/world/dock-eng.js; the page dock in a page without it) */
+    const P = window.WORLD && WORLD.dpress ? (nm, r) => WORLD.dpress(nm, r) : window.LS_DOCK && LS_DOCK.dpress ? (nm, r) => LS_DOCK.dpress(nm, r) : null;
+    if (P) for (const [nm, r] of L) P(nm, r - 1);
   } catch (e) {}
 }
 /* the turbine state: cold (Start cold: everything stopped, metal at the ambient) or in service (Start at 150 MW) */
@@ -26834,6 +26887,16 @@ function anSyncPut(o, k, v) {
   if (a !== v && anSyncPlain(a) && anSyncPlain(v) && Array.isArray(a) === Array.isArray(v) && !anSyncOwn.has(v)) anSyncDeep(a, v, new Set());
   else o[k] = v;
 }
+/* the quick look at a block state for the operator's writes: every plain field (the output val, the leg fm of a switch, the mode ...) */
+function anSyncStFast(q) {
+  if (!q) return '';
+  let s = '';
+  for (const k in q) {
+    const v = q[k];
+    if (v === null || typeof v !== 'object') s += k + '=' + v + '|';
+  }
+  return s;
+}
 function anSyncSlots() {
   const L = [],
     add = (k, get, put, o) => L.push(Object.assign({ k, get, put }, o || {}));
@@ -26868,7 +26931,7 @@ function anSyncSlots() {
     }, d => { for (const [j, m] of d) S.blk[j]._mn = m; });
     /* each block state (the operator writes the output of a MAN station: st.val) */
     for (const id of Object.keys(S.rt.st))
-      add('s' + i + ':' + id, () => (S.rt.st[id] ? { ...S.rt.st[id] } : S.rt.st[id]) /* its content: the state itself is a ref {$T} */, d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => { const q = S.rt.st[id]; return q ? String(q.val) : ''; } });
+      add('s' + i + ':' + id, () => (S.rt.st[id] ? { ...S.rt.st[id] } : S.rt.st[id]) /* its content: the state itself is a ref {$T} */, d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => anSyncStFast(S.rt.st[id]) });
     /* each plant model (the PLANT window writes its operating point / disturbance) */
     S.blk.forEach((b, j) => {
       if (b.proc) add('p' + i + ':' + j, () => ({ ...b.proc }) /* its content: the model itself is written as {$P} */, d => anSyncDeep(b.proc, d, new Set()), { w: 1, fast: () => b.proc.op + '|' + b.proc.dist + '|' + b.proc.on });
@@ -27079,6 +27142,15 @@ function anSyncMark() {
 function anSyncForget() {
   const Y = anSyncState();
   Y.last.clear();
+}
+/* the arguments of an engine action, for the radio (src/world/eng.js): a sheet, a block, a net ... as its ref */
+function anSyncEncArgs(a) {
+  const Y = anSyncState();
+  anSyncFresh(Y);
+  return { $j: JSON.stringify(anStateEnc(a, Y.ref)) };
+}
+function anSyncDecArgs(x) {
+  return anStateDec(JSON.parse(x.$j));
 }
 /* ===== ENGINE: the controllers of a sheet (PID / PIDV with their A / M station, SV switch, mode inputs) and the .MAN / .LOC / .REM
    mode addresses of a tag on every sheet, with the one M / A / R command (latchMode). No page access.
@@ -27585,6 +27657,34 @@ function nm(S, n) {
   if (c) return '→ ' + c.k + (c.tag ? ' ' + c.tag : '') + (S.nets[n].dig ? ' (digital)' : '');
   return 'net ' + n;
 }
+/* ===== TRACE STEPS (3.2.0 Web Worker, stage c): Next ▶ and ◀ Back of the ABC sheet (ui/trace.js) as ONE engine action each, so the
+   radio (src/world/eng.js) sends one call, not one per step. The sheet goes by its NAME (a sheet object would reach the worker as a
+   copy). No page access. ===== */
+const anShByName = n => AN.sheets.find(s => s.name === n);
+/* Next ▶: n steps of dt of the sheet (and its set) */
+function anStepN(name, n, dt) {
+  const sh = anShByName(name);
+  if (!sh || !sh.S) return;
+  for (let i = 0; i < n; i++) stepSet(sh, dt);
+}
+/* ◀ Back: the run time of each sheet of the set as it was (the history of the page: names, rt), then steps up to the time tg */
+function anStepBack(names, rts, name, tg) {
+  names.forEach((nm, i) => {
+    const x = anShByName(nm);
+    if (!x || !x.S) return;
+    x.S.rt = structuredClone(rts[i]);
+    x.S._tk = null;
+    x.S._dk = null;
+  });
+  const sh = anShByName(name);
+  if (!sh || !sh.S) return;
+  let rem = tg - sh.S.rt.t;
+  while (rem > 1e-6) {
+    const d = Math.min(rem > 10 ? 0.25 : 0.1, rem);
+    stepSet(sh, d);
+    rem -= d;
+  }
+}
 /* ===== ENGINE API: what the engine gives on AN (the page and a Web Worker take the same list). No page access.
    3.2.0 Web Worker (stage a): the engine part of the AN map of boot.js; boot.js takes it first, then the page functions ===== */
 function anEngAPI() {
@@ -27625,7 +27725,10 @@ function anEngAPI() {
     fieldState: () => Object.assign({}, AN_SRC.field),
     engState: { capture: anStateCapture, apply: anStateApply },
     /* engine/sync.js: what changed, both ways (worker -> page, page -> worker) */
-    sync: { patch: anSyncPatch, apply: anSyncApply, mark: anSyncMark, forget: anSyncForget },
+    sync: { patch: anSyncPatch, apply: anSyncApply, mark: anSyncMark, forget: anSyncForget, encArgs: anSyncEncArgs, decArgs: anSyncDecArgs },
+    /* engine/trace-step.js: Next / Back of the ABC trace, one engine action each */
+    stepN: anStepN,
+    stepBack: anStepBack,
     /* engine/ds.js: the FROM / TO DITL texts of a sheet, the description of an address (the face plate defaults first) */
     dsIdx,
     descOf: (sh, t) => {
@@ -29086,7 +29189,7 @@ function hmiBuild(w) {
               (sv(bb.sh).man = sv(bb.sh).man || {})[bb.b.id] = s.val;
               anSave();
               hmiSync();
-              settle();
+              AN.settle();
             },
             P2.lo,
             P2.hi,
@@ -29867,7 +29970,7 @@ hmiWrite = function (w, v, rel) {
     if (st.src.k === 'AI') s.act = x;
     (sv(sh).ai = sv(sh).ai || {})[st.src.id] = x;
     anSave();
-    settle();
+    AN.settle();
   }
 };
 function hmiToggleForce(w) {
@@ -31849,7 +31952,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build 9b00ff7'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build de99fb9'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -35442,7 +35545,7 @@ function cosPop() {
         S.rt.ext[n] = v;
         (sv(sh).ext = sv(sh).ext || {})[n] = v;
         anSave();
-        settle();
+        AN.settle();
       },
       row = h$('div', { style: 'display:flex;gap:6px;margin-top:6px' });
     for (const [t, v] of [
@@ -35640,7 +35743,7 @@ function setExt(sh, n, x) {
   S.rt.ext[n] = x;
   (sv(sh).ext = sv(sh).ext || {})[n] = x;
   anSave();
-  settle();
+  AN.settle();
 }
 function digClick(sh, n, shift) {
   if (((AN.hmiUi && AN.hmiUi.open) || (AN.plantUi && AN.plantUi.open)) && !AN.view) {
@@ -35745,7 +35848,7 @@ function pick(e) {
       st.val = st.val ? 0 : 1;
       (sv(sh).ai = sv(sh).ai || {})[best.id] = st.val;
       anSave();
-      settle();
+      AN.settle();
       msg('SIG.AB ' + (best.txt.find(q => !/SIG/i.test(q)) || '') + ' → ' + st.val);
       return;
     }
@@ -35837,11 +35940,11 @@ sSpd.onchange = () => {
    starts the plant cold (trace.js coldIfNone), so after a Reset MSP is 0 again, not the loop model's middle of the range */
 bRst.onclick = () => {
   AN.startState = null;
-  reset();
+  AN.reset();
   /* 3.2.0-beta.18: and the plant is COLD at once (VIEW shows boiler off, not the drawings' defaults MSP 75) */
   /* retest #57: then the operator picks the starting state (no Cold by itself) */
   coldIfNone(() => {
-    settle();
+    AN.settle();
     paint();
     panelUpd(true);
   });
@@ -36129,6 +36232,8 @@ AN.view = true;
 AN.allLegs = false;
 document.body.classList.add('anview');
 bVw.classList.add('on');
+/* 3.2.0 Web Worker: Next ▶ / ◀ Back as engine actions (engine/trace-step.js, when it is in the bundle) */
+if (typeof anStepN === 'function') Object.assign(AN, { stepN: anStepN, stepBack: anStepBack });
 function fmtT(t) {
   return Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
 }
@@ -36162,7 +36267,9 @@ function stepFwd() {
     ch = sec <= 10 ? 0.1 : 0.25,
     n = Math.round(sec / ch);
   histRec(sh, 0);
-  for (let i = 0; i < n; i++) stepSet(sh, ch);
+  /* 3.2.0 Web Worker: one engine action (engine/trace-step.js), the radio sends it once */
+  if (AN.stepN) AN.stepN(sh.name, n, ch);
+  else for (let i = 0; i < n; i++) AN.stepSet(sh, ch);
   paint();
   panelUpd();
   msg('Next ▶ +' + sec + ' s → t = ' + fmtT(sh.S.rt.t));
@@ -36191,16 +36298,26 @@ function stepBack() {
   }
   const e = H[k];
   H.length = k + 1;
-  for (const q of e.snap) {
-    q.x.S.rt = structuredClone(q.rt);
-    q.x.S._tk = null;
-    q.x.S._dk = null;
-  }
-  let rem = tg - sh.S.rt.t;
-  while (rem > 1e-6) {
-    const d = Math.min(rem > 10 ? 0.25 : 0.1, rem);
-    stepSet(sh, d);
-    rem -= d;
+  /* 3.2.0 Web Worker: the restore and the steps are one engine action (engine/trace-step.js): the engine goes back too */
+  if (AN.stepBack)
+    AN.stepBack(
+      e.snap.map(q => q.x.name),
+      e.snap.map(q => q.rt),
+      sh.name,
+      tg
+    );
+  else {
+    for (const q of e.snap) {
+      q.x.S.rt = structuredClone(q.rt);
+      q.x.S._tk = null;
+      q.x.S._dk = null;
+    }
+    let rem = tg - sh.S.rt.t;
+    while (rem > 1e-6) {
+      const d = Math.min(rem > 10 ? 0.25 : 0.1, rem);
+      AN.stepSet(sh, d);
+      rem -= d;
+    }
   }
   buildPanel();
   paint();
@@ -37345,7 +37462,7 @@ function trStrip(box, sh, m) {
         st.val = Math.max(P.lo, Math.min(P.hi, v));
         (sv(sh).man = sv(sh).man || {})[b.id] = st.val;
         anSave();
-        settle();
+        AN.settle();
       };
     i.classList.add('wr');
     rg.classList.add('wr');
@@ -37399,7 +37516,7 @@ function trStrip(box, sh, m) {
           b.p[k] = v;
           (sv(sh).p = sv(sh).p || {})[b.id] = Object.assign({}, (sv(sh).p || {})[b.id], { [k]: v });
           anSave();
-          settle();
+          AN.settle();
         }
       };
       return h$('div', { cls: 'r', title: tt }, [h$('span', { cls: 'n', txt: t }), i]);
@@ -37652,7 +37769,7 @@ function procPanel(d, b, sh) {
     }
     procSave(sh, b);
     S.procs = S.procs;
-    settle();
+    AN.settle();
     buildPanel();
     panelUpd(true);
   };
@@ -37674,7 +37791,7 @@ function procPanel(d, b, sh) {
         p.est = 0;
         if (S.rt.pm) delete S.rt.pm[b.id];
         procSave(sh, b);
-        settle();
+        AN.settle();
       }
     };
     return h$('div', { cls: 'r', title: tt }, [h$('span', { cls: 'n', txt: t }), i]);
@@ -37922,7 +38039,7 @@ function cosCtl(S, sh, n, e) {
       S.rt.ext[n] = v;
       (sv(sh).ext = sv(sh).ext || {})[n] = v;
       anSave();
-      settle();
+      AN.settle();
     };
     bx.append(h$('small', { txt: ds, style: 'flex-basis:100%;color:var(--c-tx2)' }), bt, wy);
     const u0 = () => {
@@ -37954,7 +38071,7 @@ function cosCtl(S, sh, n, e) {
       S.rt.ext[n] = v;
       (sv(sh).ext = sv(sh).ext || {})[n] = v;
       anSave();
-      settle();
+      AN.settle();
     },
     acc = () => {
       const v = parseFloat(i.value);
@@ -38042,14 +38159,14 @@ function swSet(sh, b, m) {
   st.fm = m || undefined;
   (sv(sh).sw = sv(sh).sw || {})[b.id] = m || 0;
   anSave();
-  settle();
+  AN.settle();
 }
 function pSet(sh, b, k, v) {
   b.p[k] = v;
   const o = sv(sh);
   (o.p = o.p || {})[b.id] = Object.assign(o.p[b.id] || {}, { [k]: v });
   anSave();
-  settle();
+  AN.settle();
   try {
     AN.panelUpd && AN.panelUpd(true);
   } catch (e) {}
@@ -38068,7 +38185,8 @@ function setForce(sh, n, x) {
     o.force[n] = x;
   }
   anSave();
-  settle();
+  /* 3.2.0 Web Worker: through the radio (the force goes as a write, the settle runs in the engine too; inside AN.setForce: here only) */
+  AN.settle();
   fpUpd();
 }
 /* a numeric field is DIRTY from the first typed character until it is committed (check / Enter / change), cancelled (Esc, release) or abandoned (2.5 s after it lost focus). The 100 ms updater never overwrites a dirty field. */
@@ -38202,7 +38320,7 @@ function fpUpd() {
           });
           delete sv(sh).force;
           anSave();
-          settle();
+          AN.settle();
           fpUpd();
         }
       })
@@ -38222,7 +38340,7 @@ function inCtl(S, sh, n) {
       S.rt.ext[n] = x;
       (sv(sh).ext = sv(sh).ext || {})[n] = x;
       anSave();
-      settle();
+      AN.settle();
     };
   if (dig) {
     const bt = h$('button', { title: 'This is an input: click to switch it' });
@@ -39103,7 +39221,7 @@ function plantSwitch(on, quiet) {
         : 'Plant model OFF: transmitters / PV are free inputs, only the drawn logic runs'
     );
 }
-bPm.onclick = () => plantSwitch(!AN.plantOn);
+bPm.onclick = () => AN.plantSwitch(!AN.plantOn);
 {
   let v = null;
   try {
@@ -39338,14 +39456,14 @@ function buildPanel() {
         inp.value = x;
         (sv(sh).ai = sv(sh).ai || {})[b.id] = x;
         anSave();
-        settle();
+        AN.settle();
       });
       rg.oninput = () => {
         st.val = +rg.value;
         inp.value = (+rg.value).toFixed(2);
         (sv(sh).ai = sv(sh).ai || {})[b.id] = st.val;
         anSave();
-        settle();
+        AN.settle();
       };
       const nowv = h$('small', {});
       const row = mkRow(
@@ -39407,7 +39525,7 @@ function buildPanel() {
         st.val = st.val === 0 ? 1 : st.val === 1 ? 2 : 0;
         (sv(sh).ai = sv(sh).ai || {})[b.id] = st.val;
         anSave();
-        settle();
+        AN.settle();
       };
       const d = boxDesc(b.cx, b.cy, 40, -6, 6);
       mkRow(
@@ -39446,7 +39564,7 @@ function buildPanel() {
         S.rt.ext[n] = x;
         (sv(sh).ext = sv(sh).ext || {})[n] = x;
         anSave();
-        settle();
+        AN.settle();
       };
     const g = grp(dig ? 'Digital inputs' : 'Analog inputs', wd.src ? 'From ' + wd.src : dig ? 'Other' : 'Other');
     let ce;
@@ -39538,7 +39656,7 @@ function buildPanel() {
         else if (b.k === 'TOF') {
           if (st.out) st.acc = b.p.sec;
         } else st.run = 0;
-        settle();
+        AN.settle();
       };
       const T = () => (b.k === 'TPV' ? (b.xin >= 0 ? S.rt.v[b.xin] : 0) : b.p.sec);
       PU.push(() => {
@@ -39590,7 +39708,7 @@ function buildPanel() {
           st.val = +rg.value;
           (sv(sh).man = sv(sh).man || {})[b.id] = st.val;
           anSave();
-          settle();
+          AN.settle();
         };
         row.append(rg);
         PU.push(() => {
@@ -40378,7 +40496,7 @@ function selUpd0_(d) {
       st.val = st.val === 0 ? 1 : st.val === 1 ? 2 : 0;
       (sv(sh).ai = sv(sh).ai || {})[b.sig.id] = st.val;
       anSave();
-      settle();
+      AN.settle();
     };
     const up = () => {
       bt.textContent =
@@ -40406,7 +40524,7 @@ function selUpd0_(d) {
             const o = sv(sh);
             if (o.p) delete o.p[b.id];
             anSave();
-            settle();
+            AN.settle();
             buildPanel();
             panelUpd(true);
           }
@@ -40976,7 +41094,7 @@ function selUpd0_(d) {
           lnApplyEdits();
           btn.textContent = 'Edit table (edited)';
           upd();
-          settle();
+          AN.settle();
         };
         box.append(
           h$('div', { cls: 'r', style: 'font-weight:700' }, [
@@ -41016,7 +41134,7 @@ function selUpd0_(d) {
                 lneSave();
                 lnApplyEdits();
                 btn.textContent = 'Edit table';
-                settle();
+                AN.settle();
                 build();
               }
             })
@@ -41157,7 +41275,7 @@ function lnOpen() {
             } catch (e) {}
             msg(n + ' table(s) loaded.');
             lnOpen();
-            if (cs() && cs().S) settle();
+            if (cs() && cs().S) AN.settle();
           } catch (e) {
             msg('Cannot read the tables: ' + e.message);
           }
@@ -41171,7 +41289,7 @@ function lnOpen() {
             localStorage.removeItem('ditl.ln');
           } catch (e) {}
           lnOpen();
-          if (cs() && cs().S) settle();
+          if (cs() && cs().S) AN.settle();
         }
       }),
       h$('button', {
@@ -41182,7 +41300,7 @@ function lnOpen() {
           lneSave();
           lnApplyEdits();
           lnOpen();
-          if (cs() && cs().S) settle();
+          if (cs() && cs().S) AN.settle();
         }
       }),
       h$('button', {
@@ -49609,8 +49727,9 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
 (function (G) {
   /* the engine actions: names on AN (engine/api.js and the page hooks), DITL (src/digital/parts), WORLD / DITL150 */
   const CALLS = {
-    AN: ['reset', 'settle', 'loadStart', 'plantLoad150', 'plantCold', 'plantLoad150Async', 'plantColdAsync', 'plantSwitch', 'latchMode', 'setForce', 'turbine', 'field', 'oilValve', 'blowdown', 'stepSet', 'stepTier', 'actSet'],
-    G: ['ditlStates'],
+    /* not setForce: a page function (ui/panel.js), its force goes as a write and its settle as an action */
+    AN: ['reset', 'settle', 'loadStart', 'plantLoad150', 'plantCold', 'plantLoad150Async', 'plantColdAsync', 'plantSwitch', 'latchMode', 'turbine', 'field', 'oilValve', 'blowdown', 'stepSet', 'stepTier', 'actSet', 'stepN', 'stepBack'],
+    G: ['ditlStates', 'ditlUser'],
     DITL150: ['apply'],
     WORLD: ['tick', 'set']
   };
@@ -49659,7 +49778,8 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
           } finally {
             inCall--;
           }
-          post({ t: 'op', ops: [], calls: [[h + '.' + k, a]] });
+          /* the arguments by their refs (a sheet or a block as its index: a copy would be another object in the engine) */
+          post({ t: 'op', ops: [], calls: [[h + '.' + k, G.AN.sync.encArgs ? G.AN.sync.encArgs(a) : a]] });
           /* an action that goes on (a starting state loads in slices): no patch is put in while it runs here (it would mix two states);
              then the whole state of the engine is asked for once */
           if (r && typeof r.then === 'function') {
@@ -49697,7 +49817,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
         if (!f) continue;
         inCall++;
         try {
-          const r = f.apply(holder(n.split('.')[0]), a);
+          const r = f.apply(holder(n.split('.')[0]), a && a.$j != null ? G.AN.sync.decArgs(a) : a);
           if (r && typeof r.then === 'function') await r;
         } catch (e) {
           if (G.console) console.error('ENG ' + n, e);
@@ -49762,6 +49882,89 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     E.mode = 'local';
     E.port = null;
   };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script><script id="dockengjs">/* DOCK PRESS (3.2.0 Web Worker, stage c): the push button and the maintained selection of a DITL input row, pressed by the Training
+   dock, the guide, the faceplate and the TCS (WORLD.dpress / WORLD.dset). No DOM. The press is held for two scans of the one world (and
+   1.5 s of plant) and released after a scan (WORLD.onTick): the scans run in the engine, so the hold is engine state, kept in the world
+   (WORLD._press, WORLD._rel: by sheet name, plain JSON, a slot of the DITL keyframe) and not in the page. Both are engine actions (ENG
+   calls): they run on the page at once and in the engine. Before: src/ui/training/dock.js hold / dset (3.2.0-beta.23). */
+(function (G) {
+  const W = G.WORLD;
+  if (!W) return;
+  const all = () => (typeof S !== 'undefined' && S.sheets ? S.sheets.concat(W.inst || []) : []);
+  /* a drawing by its name, machine A, or an instance "DITL-09 #B" (the same name first) */
+  const sheet = nm => {
+    const L = all(),
+      n = String(nm).split('@')[0];
+    return L.find(x => x.name === n) || L.find(x => x.name.endsWith(n)) || null;
+  };
+  const press = () => W._press || (W._press = {});
+  const rel = () => W._rel || (W._rel = {});
+  const live = () => !!(W.on && W.live);
+  /* one press of a push button row: held for two scans of the one world (and 1.5 s) and released (the drawing starts on the pulse); a press
+     while it is held is the same press. In scans (simulation time), not in milliseconds: at x300 a 0.8 s press was 4 minutes of
+     plant and a press again within 3 s (15 minutes) was lost (the batch firing of the coal feeder, 10 s ON / 60 s OFF) */
+  function hold(s, k) {
+    const id = s.name + '|' + k,
+      P = press(),
+      R = rel();
+    if (P[id]) return true;
+    /* a press again right after the release (no scan saw the button open between them) is no new edge: the START pulse of the drawing
+       never came and the coal feeder C never started while the guide pressed it every frame at x300. It waits one scan */
+    const wait = R[id] != null && (W.tk || 0) - R[id] < 1;
+    P[id] = { nm: s.name, k, tk: W.tk || 0, wait, age: 0 };
+    if (!wait) s.sig[k] = true;
+    W.busy = true;
+    return true;
+  }
+  /* after each scan of the one world */
+  function release(dt) {
+    const P = W._press;
+    if (!P) return;
+    const R = rel(),
+      L = all();
+    for (const j of Object.keys(P)) {
+      const p = P[j],
+        s = L.find(x => x.name === p.nm);
+      if (!s) {
+        delete P[j];
+        continue;
+      }
+      if (p.wait) {
+        if ((W.tk || 0) - R[j] >= 1) {
+          p.wait = false;
+          p.tk = W.tk || 0;
+          s.sig[p.k] = true;
+          W.busy = true;
+        }
+        continue;
+      }
+      p.age = (p.age || 0) + (dt || 0);
+      /* at least 1.5 s of plant too: a motor seals in through its running feedback (0.5 s) while START is held */
+      if ((W.tk || 0) - p.tk >= 2 && p.age >= 1.5) {
+        s.sig[p.k] = false;
+        R[j] = W.tk || 0;
+        delete P[j];
+      }
+    }
+  }
+  /* a push button row of a DITL drawing pressed (hold); false without the one world running */
+  W.dpress = (nm, row) => {
+    const s = sheet(nm);
+    if (!s || !live()) return false;
+    return hold(s, row + ':S');
+  };
+  /* a maintained selection of a DITL input row (the AUTO MODE of a shut-off valve chosen on the CRT, DITL-32 row 5 M.1012): stays until changed */
+  W.dset = (nm, row, v) => {
+    const s = sheet(nm);
+    if (!s || !live()) return false;
+    s.sig[row + ':S'] = !!v;
+    W.busy = true;
+    return true;
+  };
+  W.onTick = release;
+  /* the radio: both run in the engine too (src/world/eng.js, wrapped at ENG.start) */
+  if (G.ENG && G.ENG.CALLS && G.ENG.CALLS.WORLD) for (const k of ['dpress', 'dset']) if (!G.ENG.CALLS.WORLD.includes(k)) G.ENG.CALLS.WORLD.push(k);
 })(typeof window !== 'undefined' ? window : globalThis);
 </script><script id="engpagejs">/* ENG PAGE (3.2.0 Web Worker, stage d): the page side. The engine starts in a Web Worker made from the inline text #engsrc (the engine
    bundle + src/world/eng-host.js, put in by tools/build/build.js; a blob, so it runs from file://, the apk and the exe); the page keeps
@@ -54800,7 +55003,7 @@ const DREAD = (function () {
 const DITL_SH = ['sig', 'usw', 'av', 'av150', 'avw', '_win', '_fd', '_ftrip'],
   DITL_NL = ['_v', 'fx', 'ufx'],
   DITL_G = ['q', 'st', 'N', 'pin', 'rp', 'rq', 'Nn', 'cin'],
-  DITL_W = ['out', '_o', 'tk', '_ck', 'busy'];
+  DITL_W = ['out', '_o', 'tk', '_ck', 'busy', 'live', '_press', '_rel']; /* live, _press, _rel: the dock press (src/world/dock-eng.js) */
 function ditlEnc(v) {
   if (v instanceof Set) return { $set: [...v] };
   if (v instanceof Map) return { $map: [...v].map(([k, w]) => [k, ditlEnc(w)]) };
@@ -54873,6 +55076,84 @@ function ditlApply(k) {
     put(WORLD, DITL_W, k.W);
     if (k.sw && WORLD.plantSwSet) WORLD.plantSwSet(k.sw);
   }
+}
+
+/* ---- src\digital\parts\03e-user.js ---- */
+/* DITL (digital logic) - what the operator sets on a sheet that is not an input (3.2.0 Web Worker, stage c), no DOM: the presets of the
+   side panels (timer time and unit, MOV / solenoid stroke time, motor run feedback delay), Skip of a timer, LOCAL / REMOTE of a MOV
+   whose MIL has no input on the sheet, and the values kept from the last session (localStorage 'ditl.uv', 05-overlay-interaction.js
+   uvApply). These live in the sheet, the netlist (the timer of a gate) and MST, outside the slots of the radio: ditlUser is an engine
+   action (src/world/eng.js CALLS.G), run on the page and in the engine alike. Part of ONE script (src/digital/order.list). */
+/* a sheet as the drawing, the panels and the Library show it: in a mirror (the page while the engine runs in the worker, ENG.mode
+   'mirror') the result of the engine's last scan (the nets of the netlist, the outputs of the one world), read only: simSheet would
+   compute the sheet again on the page and write what the engine keeps (nets, latches, counters, the step register, nl.ufx) without the
+   engine's inputs of this scan (WORLD.live, the rows from other sheets). Elsewhere (no worker, the engine itself): simSheet */
+function simRead(s) {
+  const W = window.WORLD;
+  if (!(window.ENG && ENG.mode === 'mirror' && W && W.on && W.idx)) return simSheet(s);
+  const lv = W.live;
+  W.live = true;
+  try {
+    const nl = s.nl,
+      o = W.out && W.out[s.name];
+    return { rowOn: simIn(s), v: nl._v && nl._v.length === nl.n ? nl._v : new Array(nl.n).fill(0), outOn: o instanceof Set ? o : new Set(o || []) };
+  } finally {
+    W.live = lv;
+  }
+}
+const tmKey = g => (g.tm.tag || '') + '|' + (g.tm.lab || '') + '|' + g.tm.ax.toFixed(0) + ',' + g.tm.ay.toFixed(0);
+/* name = the sheet; op:
+   'tm' (gate, time, unit): the preset of a timer (the timer starts again)   'skip' (gate): finish the timer now
+   'mvt' (MOV, sec): full stroke time   'mtd' (sec): motor run feedback delay   'lr' (MOV): LOCAL / REMOTE
+   'uv' (kept values {av, mvt, pdur, mtd, tmo}) */
+function ditlUser(name, op, a, b, c) {
+  const s = ditlAll().find(x => x.name === name);
+  if (!s || !s.nl) return;
+  const g = typeof a === 'number' ? s.nl.gates[a] : null;
+  if (op === 'tm') {
+    if (!g || !g.tm) return;
+    tmSet(g.tm, b, c);
+    s.tmo = s.tmo || {};
+    s.tmo[tmKey(g)] = [b, c];
+    if (g.tm.pg) {
+      s.pdur = s.pdur || {};
+      s.pdur[g.tm.key] = { v: b, u: c };
+    }
+    g.st = { acc: 0, out: 0, pre: 0, run: 0 };
+  } else if (op === 'skip') {
+    if (!g || !g.tm) return;
+    const v = simulate(s.nl, simIn(s));
+    tmStep(
+      g,
+      g.ins.some(n => v[n]),
+      tmSecs(g.tm) + 1
+    );
+  } else if (op === 'mvt') {
+    s.mvt = s.mvt || {};
+    s.mvt[a] = b;
+  } else if (op === 'mtd') s.mtd = a;
+  else if (op === 'lr') {
+    const r = mvRT(s)[a];
+    if (r) r.lr = r.lr ? 0 : 1;
+  } else if (op === 'uv') {
+    const u = a || {};
+    if (u.av) s.av = { ...(s.av || {}), ...u.av };
+    if (u.mvt) s.mvt = { ...(s.mvt || {}), ...u.mvt };
+    if (u.pdur) s.pdur = { ...(s.pdur || {}), ...u.pdur };
+    if (u.mtd) s.mtd = u.mtd;
+    if (u.tmo) {
+      s.tmo = { ...(s.tmo || {}), ...u.tmo };
+      s.nl.gates.forEach(x => {
+        if (x.t !== 'TMR' || !x.tm) return;
+        const o = s.tmo[tmKey(x)];
+        if (o && o[0] >= 0) {
+          if (x.tm.pg) x.tm.fv = { v: o[0], u: o[1] };
+          else tmSet(x.tm, o[0], o[1]);
+        }
+      });
+    }
+  }
+  s.nl.avk = avOf(s);
 }
 
 ;globalThis.DITL={get S(){return S},set S(v){S=v},get SIM(){return SIM},set SIM(v){SIM=v},get MST(){return MST},get MS(){return MS},get DREG(){return DREG},ditlStates,ditlCapture,ditlApply,simSheet,netlist};
@@ -68089,7 +68370,9 @@ const tcsLin = (pts, x) => {
 /* P2 #13: a push button row of a DITL MOV pressed from the TCS panel (row of the drawing, 1-based; no one world: nothing) */
 function tcsDitl(L) {
   try {
-    if (window.LS_DOCK && LS_DOCK.dpress) for (const [nm, r] of L) LS_DOCK.dpress(nm, r - 1);
+    /* the press in the engine (src/world/dock-eng.js; the page dock in a page without it) */
+    const P = window.WORLD && WORLD.dpress ? (nm, r) => WORLD.dpress(nm, r) : window.LS_DOCK && LS_DOCK.dpress ? (nm, r) => LS_DOCK.dpress(nm, r) : null;
+    if (P) for (const [nm, r] of L) P(nm, r - 1);
   } catch (e) {}
 }
 /* the turbine state: cold (Start cold: everything stopped, metal at the ambient) or in service (Start at 150 MW) */
@@ -71840,6 +72123,16 @@ function anSyncPut(o, k, v) {
   if (a !== v && anSyncPlain(a) && anSyncPlain(v) && Array.isArray(a) === Array.isArray(v) && !anSyncOwn.has(v)) anSyncDeep(a, v, new Set());
   else o[k] = v;
 }
+/* the quick look at a block state for the operator's writes: every plain field (the output val, the leg fm of a switch, the mode ...) */
+function anSyncStFast(q) {
+  if (!q) return '';
+  let s = '';
+  for (const k in q) {
+    const v = q[k];
+    if (v === null || typeof v !== 'object') s += k + '=' + v + '|';
+  }
+  return s;
+}
 function anSyncSlots() {
   const L = [],
     add = (k, get, put, o) => L.push(Object.assign({ k, get, put }, o || {}));
@@ -71874,7 +72167,7 @@ function anSyncSlots() {
     }, d => { for (const [j, m] of d) S.blk[j]._mn = m; });
     /* each block state (the operator writes the output of a MAN station: st.val) */
     for (const id of Object.keys(S.rt.st))
-      add('s' + i + ':' + id, () => (S.rt.st[id] ? { ...S.rt.st[id] } : S.rt.st[id]) /* its content: the state itself is a ref {$T} */, d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => { const q = S.rt.st[id]; return q ? String(q.val) : ''; } });
+      add('s' + i + ':' + id, () => (S.rt.st[id] ? { ...S.rt.st[id] } : S.rt.st[id]) /* its content: the state itself is a ref {$T} */, d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => anSyncStFast(S.rt.st[id]) });
     /* each plant model (the PLANT window writes its operating point / disturbance) */
     S.blk.forEach((b, j) => {
       if (b.proc) add('p' + i + ':' + j, () => ({ ...b.proc }) /* its content: the model itself is written as {$P} */, d => anSyncDeep(b.proc, d, new Set()), { w: 1, fast: () => b.proc.op + '|' + b.proc.dist + '|' + b.proc.on });
@@ -72085,6 +72378,15 @@ function anSyncMark() {
 function anSyncForget() {
   const Y = anSyncState();
   Y.last.clear();
+}
+/* the arguments of an engine action, for the radio (src/world/eng.js): a sheet, a block, a net ... as its ref */
+function anSyncEncArgs(a) {
+  const Y = anSyncState();
+  anSyncFresh(Y);
+  return { $j: JSON.stringify(anStateEnc(a, Y.ref)) };
+}
+function anSyncDecArgs(x) {
+  return anStateDec(JSON.parse(x.$j));
 }
 
 /* ---- engine/ctrls.js ---- */
@@ -72596,6 +72898,36 @@ function nm(S, n) {
   return 'net ' + n;
 }
 
+/* ---- engine/trace-step.js ---- */
+/* ===== TRACE STEPS (3.2.0 Web Worker, stage c): Next ▶ and ◀ Back of the ABC sheet (ui/trace.js) as ONE engine action each, so the
+   radio (src/world/eng.js) sends one call, not one per step. The sheet goes by its NAME (a sheet object would reach the worker as a
+   copy). No page access. ===== */
+const anShByName = n => AN.sheets.find(s => s.name === n);
+/* Next ▶: n steps of dt of the sheet (and its set) */
+function anStepN(name, n, dt) {
+  const sh = anShByName(name);
+  if (!sh || !sh.S) return;
+  for (let i = 0; i < n; i++) stepSet(sh, dt);
+}
+/* ◀ Back: the run time of each sheet of the set as it was (the history of the page: names, rt), then steps up to the time tg */
+function anStepBack(names, rts, name, tg) {
+  names.forEach((nm, i) => {
+    const x = anShByName(nm);
+    if (!x || !x.S) return;
+    x.S.rt = structuredClone(rts[i]);
+    x.S._tk = null;
+    x.S._dk = null;
+  });
+  const sh = anShByName(name);
+  if (!sh || !sh.S) return;
+  let rem = tg - sh.S.rt.t;
+  while (rem > 1e-6) {
+    const d = Math.min(rem > 10 ? 0.25 : 0.1, rem);
+    stepSet(sh, d);
+    rem -= d;
+  }
+}
+
 /* ---- engine/api.js ---- */
 /* ===== ENGINE API: what the engine gives on AN (the page and a Web Worker take the same list). No page access.
    3.2.0 Web Worker (stage a): the engine part of the AN map of boot.js; boot.js takes it first, then the page functions ===== */
@@ -72637,7 +72969,10 @@ function anEngAPI() {
     fieldState: () => Object.assign({}, AN_SRC.field),
     engState: { capture: anStateCapture, apply: anStateApply },
     /* engine/sync.js: what changed, both ways (worker -> page, page -> worker) */
-    sync: { patch: anSyncPatch, apply: anSyncApply, mark: anSyncMark, forget: anSyncForget },
+    sync: { patch: anSyncPatch, apply: anSyncApply, mark: anSyncMark, forget: anSyncForget, encArgs: anSyncEncArgs, decArgs: anSyncDecArgs },
+    /* engine/trace-step.js: Next / Back of the ABC trace, one engine action each */
+    stepN: anStepN,
+    stepBack: anStepBack,
     /* engine/ds.js: the FROM / TO DITL texts of a sheet, the description of an address (the face plate defaults first) */
     dsIdx,
     descOf: (sh, t) => {
@@ -74439,8 +74774,9 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
 (function (G) {
   /* the engine actions: names on AN (engine/api.js and the page hooks), DITL (src/digital/parts), WORLD / DITL150 */
   const CALLS = {
-    AN: ['reset', 'settle', 'loadStart', 'plantLoad150', 'plantCold', 'plantLoad150Async', 'plantColdAsync', 'plantSwitch', 'latchMode', 'setForce', 'turbine', 'field', 'oilValve', 'blowdown', 'stepSet', 'stepTier', 'actSet'],
-    G: ['ditlStates'],
+    /* not setForce: a page function (ui/panel.js), its force goes as a write and its settle as an action */
+    AN: ['reset', 'settle', 'loadStart', 'plantLoad150', 'plantCold', 'plantLoad150Async', 'plantColdAsync', 'plantSwitch', 'latchMode', 'turbine', 'field', 'oilValve', 'blowdown', 'stepSet', 'stepTier', 'actSet', 'stepN', 'stepBack'],
+    G: ['ditlStates', 'ditlUser'],
     DITL150: ['apply'],
     WORLD: ['tick', 'set']
   };
@@ -74489,7 +74825,8 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
           } finally {
             inCall--;
           }
-          post({ t: 'op', ops: [], calls: [[h + '.' + k, a]] });
+          /* the arguments by their refs (a sheet or a block as its index: a copy would be another object in the engine) */
+          post({ t: 'op', ops: [], calls: [[h + '.' + k, G.AN.sync.encArgs ? G.AN.sync.encArgs(a) : a]] });
           /* an action that goes on (a starting state loads in slices): no patch is put in while it runs here (it would mix two states);
              then the whole state of the engine is asked for once */
           if (r && typeof r.then === 'function') {
@@ -74527,7 +74864,7 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
         if (!f) continue;
         inCall++;
         try {
-          const r = f.apply(holder(n.split('.')[0]), a);
+          const r = f.apply(holder(n.split('.')[0]), a && a.$j != null ? G.AN.sync.decArgs(a) : a);
           if (r && typeof r.then === 'function') await r;
         } catch (e) {
           if (G.console) console.error('ENG ' + n, e);
@@ -74592,6 +74929,91 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
     E.mode = 'local';
     E.port = null;
   };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+/* ---- src/world/dock-eng.js ---- */
+/* DOCK PRESS (3.2.0 Web Worker, stage c): the push button and the maintained selection of a DITL input row, pressed by the Training
+   dock, the guide, the faceplate and the TCS (WORLD.dpress / WORLD.dset). No DOM. The press is held for two scans of the one world (and
+   1.5 s of plant) and released after a scan (WORLD.onTick): the scans run in the engine, so the hold is engine state, kept in the world
+   (WORLD._press, WORLD._rel: by sheet name, plain JSON, a slot of the DITL keyframe) and not in the page. Both are engine actions (ENG
+   calls): they run on the page at once and in the engine. Before: src/ui/training/dock.js hold / dset (3.2.0-beta.23). */
+(function (G) {
+  const W = G.WORLD;
+  if (!W) return;
+  const all = () => (typeof S !== 'undefined' && S.sheets ? S.sheets.concat(W.inst || []) : []);
+  /* a drawing by its name, machine A, or an instance "DITL-09 #B" (the same name first) */
+  const sheet = nm => {
+    const L = all(),
+      n = String(nm).split('@')[0];
+    return L.find(x => x.name === n) || L.find(x => x.name.endsWith(n)) || null;
+  };
+  const press = () => W._press || (W._press = {});
+  const rel = () => W._rel || (W._rel = {});
+  const live = () => !!(W.on && W.live);
+  /* one press of a push button row: held for two scans of the one world (and 1.5 s) and released (the drawing starts on the pulse); a press
+     while it is held is the same press. In scans (simulation time), not in milliseconds: at x300 a 0.8 s press was 4 minutes of
+     plant and a press again within 3 s (15 minutes) was lost (the batch firing of the coal feeder, 10 s ON / 60 s OFF) */
+  function hold(s, k) {
+    const id = s.name + '|' + k,
+      P = press(),
+      R = rel();
+    if (P[id]) return true;
+    /* a press again right after the release (no scan saw the button open between them) is no new edge: the START pulse of the drawing
+       never came and the coal feeder C never started while the guide pressed it every frame at x300. It waits one scan */
+    const wait = R[id] != null && (W.tk || 0) - R[id] < 1;
+    P[id] = { nm: s.name, k, tk: W.tk || 0, wait, age: 0 };
+    if (!wait) s.sig[k] = true;
+    W.busy = true;
+    return true;
+  }
+  /* after each scan of the one world */
+  function release(dt) {
+    const P = W._press;
+    if (!P) return;
+    const R = rel(),
+      L = all();
+    for (const j of Object.keys(P)) {
+      const p = P[j],
+        s = L.find(x => x.name === p.nm);
+      if (!s) {
+        delete P[j];
+        continue;
+      }
+      if (p.wait) {
+        if ((W.tk || 0) - R[j] >= 1) {
+          p.wait = false;
+          p.tk = W.tk || 0;
+          s.sig[p.k] = true;
+          W.busy = true;
+        }
+        continue;
+      }
+      p.age = (p.age || 0) + (dt || 0);
+      /* at least 1.5 s of plant too: a motor seals in through its running feedback (0.5 s) while START is held */
+      if ((W.tk || 0) - p.tk >= 2 && p.age >= 1.5) {
+        s.sig[p.k] = false;
+        R[j] = W.tk || 0;
+        delete P[j];
+      }
+    }
+  }
+  /* a push button row of a DITL drawing pressed (hold); false without the one world running */
+  W.dpress = (nm, row) => {
+    const s = sheet(nm);
+    if (!s || !live()) return false;
+    return hold(s, row + ':S');
+  };
+  /* a maintained selection of a DITL input row (the AUTO MODE of a shut-off valve chosen on the CRT, DITL-32 row 5 M.1012): stays until changed */
+  W.dset = (nm, row, v) => {
+    const s = sheet(nm);
+    if (!s || !live()) return false;
+    s.sig[row + ':S'] = !!v;
+    W.busy = true;
+    return true;
+  };
+  W.onTick = release;
+  /* the radio: both run in the engine too (src/world/eng.js, wrapped at ENG.start) */
+  if (G.ENG && G.ENG.CALLS && G.ENG.CALLS.WORLD) for (const k of ['dpress', 'dset']) if (!G.ENG.CALLS.WORLD.includes(k)) G.ENG.CALLS.WORLD.push(k);
 })(typeof window !== 'undefined' ? window : globalThis);
 
 /* ENG HOST (3.2.0 Web Worker, stage d, DRAFT): the engine in the worker. No DOM. Loaded after the engine bundle
@@ -77780,12 +78202,8 @@ body.app2 #gdtrb[hidden]{display:none!important}
             title: 'Finish this timer now',
             on: () => {
               if (!SIM) return;
-              const vv = simulate(s.nl, simIn(s));
-              tmStep(
-                g,
-                g.ins.some(q => vv[q]),
-                tmSecs(g.tm) + 1
-              );
+              /* 3.2.0 Web Worker: an engine action (parts/03e-user.js), the engine finishes the timer too */
+              ditlUser(s.name, 'skip', s.nl.gates.indexOf(g));
               render();
             }
           });
@@ -77850,7 +78268,7 @@ body.app2 #gdtrb[hidden]{display:none!important}
     if (!s || !s.nl) return;
     let R = null;
     try {
-      if (simOn()) R = simSheet(s);
+      if (simOn()) R = simRead(s);
     } catch (e) {}
     U.concat(SU).forEach(f => {
       try {
@@ -84346,8 +84764,9 @@ window.LS_GUIDE = (function () {
   };
   /* a motor that the old (no one world) way starts with an extra forced memory (feeder C + M.3405 ALL IN REMOTE AND RUNNING) */
   const WLm = (a, l, fOff) => Object.assign(mot(a, l), { f: () => (WL() ? A.motor(a, 1) : fOff()) });
-  /* a push button / an output of a DITL drawing (one world ON, src/ui/training/dock.js) */
-  const dPress = (nm, row) => !!(window.LS_DOCK && LS_DOCK.dpress && LS_DOCK.dpress(nm, row));
+  /* a push button / an output of a DITL drawing (one world ON): the press is an engine action (src/world/dock-eng.js), the output is read
+     from the dock (src/ui/training/dock.js) */
+  const dPress = (nm, row) => !!(window.WORLD && WORLD.dpress && WORLD.dpress(nm, row));
   const dOut = (nm, row) => (window.LS_DOCK && LS_DOCK.dout ? LS_DOCK.dout(nm, row) : null);
   const dRun = nm => (window.LS_DOCK && LS_DOCK.runOut ? LS_DOCK.runOut(nm) : null);
   /* 3.2.0-beta.23: a condition read on the DITL while the one world runs (w), else the ABC / plant condition (o) */
@@ -85265,8 +85684,29 @@ window.LS_GUIDE = (function () {
         delete PUSH[a];
       }
   };
-  const hook = () => window.AN && (AN.onStep = onStep);
+  /* inside every step of the engine when it runs on this page (ENG.mode 'local'); with the engine in the worker (3.2.0 Web Worker) the
+     steps run there: the coach runs here after each patch, with the plant time that passed (it reads the dock and the page; its writes go
+     to the engine through the radio, src/world/eng.js) */
+  const mirror = () => !!(window.ENG && ENG.mode === 'mirror');
+  const hook = () => window.AN && (AN.onStep = dt => (mirror() ? 0 : onStep(dt)));
   hook();
+  {
+    let t0 = null;
+    const onPatch = window.ENG ? ENG.onPatch : null;
+    if (window.ENG)
+      ENG.onPatch = m => {
+        if (onPatch) onPatch(m);
+        if (!mirror()) return (t0 = null);
+        const t = simT();
+        /* a new start (Reset, a starting state) or the first patch: no time passed */
+        const dt = t0 == null || t < t0 ? 0 : t - t0;
+        t0 = t;
+        if (dt > 0)
+          try {
+            onStep(dt);
+          } catch (e) {}
+      };
+  }
   /* check the open step; returns true when it moved on */
   function scan() {
     if (!G.on) return false;
@@ -85977,59 +86417,11 @@ window.LS_GUIDE = (function () {
     }
     return -1;
   };
-  const PRESS = {},
-    REL = {};
-  /* a push button row of a DITL drawing (by name, machine A, or an instance "DITL-09 #B"), pressed (hold); dout = an output row of a drawing (1 / 0, null
-     without the one world) */
-  function dpress(nm, row) {
-    const s = dSheet(nm);
-    if (!s || !(window.WORLD && WORLD.on && WORLD.live)) return false;
-    return hold(s, row + ':S');
-  }
-  /* one press of a push button row: held for two scans of the one world (and 1.5 s) and released (the drawing starts on the pulse); a press
-     while it is held is the same press. In scans (simulation time), not in milliseconds: at x300 a 0.8 s press was 4 minutes of
-     plant and a press again within 3 s (15 minutes) was lost (the batch firing of the coal feeder, 10 s ON / 60 s OFF) */
-  function hold(s, k) {
-    const id = s.name + '|' + k;
-    if (PRESS[id]) return true;
-    /* a press again right after the release (no scan saw the button open between them) is no new edge: the START pulse of the drawing
-       never came and the coal feeder C never started while the guide pressed it every frame at x300. It waits one scan */
-    const wait = REL[id] != null && (WORLD.tk || 0) - REL[id] < 1;
-    PRESS[id] = { s, k, tk: WORLD.tk || 0, wait };
-    if (!wait) s.sig[k] = true;
-    WORLD.busy = true;
-    if (!WORLD.onTick)
-      WORLD.onTick = dt => {
-        for (const j in PRESS) {
-          const p = PRESS[j];
-          if (p.wait) {
-            if ((WORLD.tk || 0) - REL[j] >= 1) {
-              p.wait = false;
-              p.tk = WORLD.tk || 0;
-              p.s.sig[p.k] = true;
-              WORLD.busy = true;
-            }
-            continue;
-          }
-          p.age = (p.age || 0) + (dt || 0);
-          /* at least 1.5 s of plant too: a motor seals in through its running feedback (0.5 s) while START is held */
-          if ((WORLD.tk || 0) - p.tk >= 2 && p.age >= 1.5) {
-            p.s.sig[p.k] = false;
-            REL[j] = WORLD.tk || 0;
-            delete PRESS[j];
-          }
-        }
-      };
-    return true;
-  }
-  /* a maintained selection of a DITL input row (the AUTO MODE of a shut-off valve chosen on the CRT, DITL-32 row 5 M.1012): stays until changed */
-  function dset(nm, row, v) {
-    const s = dSheet(nm);
-    if (!s || !(window.WORLD && WORLD.on && WORLD.live)) return false;
-    s.sig[row + ':S'] = !!v;
-    WORLD.busy = true;
-    return true;
-  }
+  /* a push button row of a DITL drawing (by name, machine A, or an instance "DITL-09 #B"), pressed (held for two scans, then released), and
+     a maintained selection of an input row: engine actions of the one world (src/world/dock-eng.js WORLD.dpress / WORLD.dset, 3.2.0 Web
+     Worker: the hold runs where the scans run); dout = an output row of a drawing (1 / 0, null without the one world) */
+  const dpress = (nm, row) => !!(window.WORLD && WORLD.dpress && WORLD.dpress(nm, row));
+  const dset = (nm, row, v) => !!(window.WORLD && WORLD.dset && WORLD.dset(nm, row, v));
   function dout(nm, row) {
     const s = dSheet(nm);
     if (!s || !wlOn()) return null;
@@ -86074,7 +86466,7 @@ window.LS_GUIDE = (function () {
     }
     const r = pbRow(s, on ? /\bSTART\b|\bST$/ : /\bSTOP\b/);
     if (r < 0) return false;
-    return hold(s, r + ':S');
+    return dpress(s.name, r);
   }
   /* the field operator sets the contacts (the switch of the input row on its DITL sheet, the same as the Inputs tab) */
   function fieldSet(L) {
@@ -89753,7 +90145,7 @@ window.LS_GUIDE = (function () {
     const nl = nlOf(s);
     if (nl._v && nl._v.length === nl.n) return nl._v;
     try {
-      return simSheet(s).v;
+      return simRead(s).v;
     } catch (e) {
       return new Array(nl.n).fill(0);
     }
