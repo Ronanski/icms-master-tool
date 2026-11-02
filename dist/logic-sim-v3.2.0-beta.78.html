@@ -31849,7 +31849,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build 1855989'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 9b00ff7'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -49708,11 +49708,21 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       /* after an action the next patch carries everything: the page is the engine again, whatever its run of the action gave */
       if ((m.calls || []).length && E.mode === 'engine' && G.AN.sync.forget) G.AN.sync.forget();
     } else if (m.t === 'patch') {
-      if (E.busy) return void post({ t: 'ack' }); /* an action of the page still runs: the full state comes after it */
+      if (E.busy) {
+        /* an action of the page still runs: the full state comes after it; its events wait */
+        (E.evHeld = E.evHeld || []).push(...(m.ev || []));
+        return void post({ t: 'ack' });
+      }
+      m.ev = (E.evHeld || []).concat(m.ev || []);
+      E.evHeld = [];
       /* the operator wins: a write not sent yet goes first */
       const mine = E.flush();
       G.AN.sync.apply(m.p, new Set(mine.map(x => x[0])));
       if (E.onPatch) E.onPatch(m);
+      for (const a of m.ev || [])
+        try {
+          if (E.onEvent) E.onEvent(a);
+        } catch (x) {}
       post({ t: 'ack' });
     }
   };
@@ -49739,12 +49749,14 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       return 0;
     }
     E._ls = now;
-    const p = G.AN.sync.patch();
-    if (p.length) {
-      post({ t: 'patch', p });
+    const p = G.AN.sync.patch(),
+      ev = E.evq || [];
+    if (p.length || ev.length) {
+      post({ t: 'patch', p, ev });
+      E.evq = [];
       E.wait = true;
     }
-    return p.length;
+    return p.length + ev.length;
   };
   E.stop = () => {
     E.mode = 'local';
@@ -49827,6 +49839,8 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
         const kf = AN.engState.capture(),
           kd = ditlCapture();
         E.onPatch = () => AN.patchPaint && AN.patchPaint();
+        /* the events of the engine into the Event log of the page */
+        E.onEvent = a => window.lsEventAdd && lsEventAdd(...a);
         E.start('mirror', w);
         /* the operator's writes leave every 500 ms too (no patch comes while the plant is paused) */
         E._fl = setInterval(() => E.mode === 'mirror' && E.flush(), 500);
@@ -74524,11 +74538,21 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
       /* after an action the next patch carries everything: the page is the engine again, whatever its run of the action gave */
       if ((m.calls || []).length && E.mode === 'engine' && G.AN.sync.forget) G.AN.sync.forget();
     } else if (m.t === 'patch') {
-      if (E.busy) return void post({ t: 'ack' }); /* an action of the page still runs: the full state comes after it */
+      if (E.busy) {
+        /* an action of the page still runs: the full state comes after it; its events wait */
+        (E.evHeld = E.evHeld || []).push(...(m.ev || []));
+        return void post({ t: 'ack' });
+      }
+      m.ev = (E.evHeld || []).concat(m.ev || []);
+      E.evHeld = [];
       /* the operator wins: a write not sent yet goes first */
       const mine = E.flush();
       G.AN.sync.apply(m.p, new Set(mine.map(x => x[0])));
       if (E.onPatch) E.onPatch(m);
+      for (const a of m.ev || [])
+        try {
+          if (E.onEvent) E.onEvent(a);
+        } catch (x) {}
       post({ t: 'ack' });
     }
   };
@@ -74555,12 +74579,14 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
       return 0;
     }
     E._ls = now;
-    const p = G.AN.sync.patch();
-    if (p.length) {
-      post({ t: 'patch', p });
+    const p = G.AN.sync.patch(),
+      ev = E.evq || [];
+    if (p.length || ev.length) {
+      post({ t: 'patch', p, ev });
+      E.evq = [];
       E.wait = true;
     }
-    return p.length;
+    return p.length + ev.length;
   };
   E.stop = () => {
     E.mode = 'local';
@@ -74591,6 +74617,9 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
   const N = (G.ENG_N = { abc: 0, world: 0, sent: 0, skip: 0 });
   const say = m => G.postMessage(m);
   G.msg = t => say({ t: 'msg', text: String(t) });
+  /* an event of the engine (world.js FIRST-OUT: a TRIP and its cause) goes to the Event log of the page with the patch of its scan
+     (the page takes the state first, so the event has the plant time of its scan) */
+  G.lsEventAdd = (...a) => ((N.ev = (N.ev || 0) + 1), (G.ENG.evq = G.ENG.evq || []).push(a));
   async function init(m) {
     const { AN, DITL, WORLD, ENG } = G;
     AN.sheets = lines(await gunz(m.apre));
