@@ -56,6 +56,14 @@ function anSyncStFast(q) {
   }
   return s;
 }
+/* the plain fields of a block state (as anSyncStFast looks at them), and one field as it goes across: [field, value] or, for a
+   number JSON cannot hold, [field, text, 1], for undefined / a field gone [field, null, 2] */
+function anSyncScal(q) {
+  const r = {};
+  if (q) for (const k in q) if (q[k] === null || typeof q[k] !== 'object') r[k] = q[k];
+  return r;
+}
+const anSyncFv = (f, v) => (v === undefined ? [f, null, 2] : typeof v === 'number' && !isFinite(v) ? [f, String(v), 1] : [f, v]);
 function anSyncSlots() {
   const L = [],
     add = (k, get, put, o) => L.push(Object.assign({ k, get, put }, o || {}));
@@ -90,7 +98,7 @@ function anSyncSlots() {
     }, d => { for (const [j, m] of d) S.blk[j]._mn = m; });
     /* each block state (the operator writes the output of a MAN station: st.val) */
     for (const id of Object.keys(S.rt.st))
-      add('s' + i + ':' + id, () => (S.rt.st[id] ? { ...S.rt.st[id] } : S.rt.st[id]) /* its content: the state itself is a ref {$T} */, d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => anSyncStFast(S.rt.st[id]) });
+      add('s' + i + ':' + id, () => (S.rt.st[id] ? { ...S.rt.st[id] } : S.rt.st[id]) /* its content: the state itself is a ref {$T} */, d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => anSyncStFast(S.rt.st[id]), obj: () => S.rt.st[id] });
     /* the parameters of the blocks (the operator's tuning: PID / MAN / timer parameters): page -> engine only (the engine changes
        some each step, a rate from its pin: those are made again there) */
     add('bp' + i, () => S.blk.map(b => b.p || null), d => d.forEach((p, j) => S.blk[j] && p && anSyncPut(S.blk[j], 'p', p)), {
@@ -214,6 +222,8 @@ function anSyncState() {
   /* what this side had sent or taken stays: only the new slots go across whole */
   if (old) for (const [k, v] of old.last) if (AN_SYNC.by.has(k)) AN_SYNC.last.set(k, v);
   if (old) for (const [k, v] of old.fast) if (AN_SYNC.by.has(k)) AN_SYNC.fast.set(k, v);
+  AN_SYNC.fv = new Map();
+  if (old && old.fv) for (const [k, v] of old.fv) if (AN_SYNC.by.has(k)) AN_SYNC.fv.set(k, v);
   return AN_SYNC;
 }
 /* the refs again when the objects they name may be new: a Reset / keyframe / init of a sheet makes new block states (AN._gen) */
@@ -301,11 +311,25 @@ function anSyncPatch(w, o) {
       const f = s.fast();
       if (Y.fast.get(s.k) === f) continue;
       Y.fast.set(s.k, f);
+      /* a block state: only the plain fields this side changed since it last saw the state (the operator's mode / leg / value), not
+         the whole state: the rest (y, hold ...) is the engine's and a copy of the page's older one put it back (mcc_valve ABC-054:
+         the A/M leg written by the page took y and hold 20.24 along, the valve stayed there) */
+      const pv = s.obj && Y.fv && Y.fv.get(s.k);
+      if (pv) {
+        const cur = anSyncScal(s.obj()),
+          d = [];
+        for (const f2 in cur) if (!Object.is(cur[f2], pv[f2])) d.push(anSyncFv(f2, cur[f2]));
+        for (const f2 in pv) if (!(f2 in cur)) d.push([f2, null, 2]);
+        Y.fv.set(s.k, cur);
+        if (d.length) out.push([s.k, '~' + JSON.stringify(d)]);
+        continue;
+      }
     }
     const j = anSyncJ(s, Y);
     if (Y.last.get(s.k) === j) continue;
     Y.last.set(s.k, j);
     out.push([s.k, j]);
+    if (s.obj && Y.fv) Y.fv.set(s.k, anSyncScal(s.obj()));
   }
   return out;
 }
@@ -333,11 +357,19 @@ function anSyncApply(p, skip) {
       void n;
       continue;
     }
-    s.put(s.raw ? JSON.parse(j) : j[0] === '#' ? JSON.parse(j.slice(1)) : anStateDec(JSON.parse(j), s.get()));
-    /* as this side writes it now (the keys of an object put in place can come in another order): needed only where the operator's
-       writes are found by the JSON itself (a writable slot with no quick look); elsewhere the JSON that came is enough */
-    Y2.last.set(k, s.w && !s.fast ? anSyncJ(s, Y2) : j);
+    /* the fields of a block state that the other side changed (anSyncPatch): into the state itself, the rest stays this side's */
+    if (s.obj && typeof j === 'string' && j[0] === '~') {
+      const o = s.obj();
+      if (o) for (const [f, v, t] of JSON.parse(j.slice(1))) t === 2 ? delete o[f] : (o[f] = t === 1 ? Number(v) : v);
+      Y2.last.delete(k); /* the whole state goes back with the next patch of this side */
+    } else {
+      s.put(s.raw ? JSON.parse(j) : j[0] === '#' ? JSON.parse(j.slice(1)) : anStateDec(JSON.parse(j), s.get()));
+      /* as this side writes it now (the keys of an object put in place can come in another order): needed only where the operator's
+         writes are found by the JSON itself (a writable slot with no quick look); elsewhere the JSON that came is enough */
+      Y2.last.set(k, s.w && !s.fast ? anSyncJ(s, Y2) : j);
+    }
     if (s.fast) Y2.fast.set(k, s.fast());
+    if (s.obj && Y2.fv) Y2.fv.set(k, anSyncScal(s.obj()));
   }
 }
 /* after a keyframe (or any change of the whole state): this side takes the state as it is now as seen */
@@ -345,7 +377,10 @@ function anSyncMark() {
   AN_SYNC = null;
   anSyncPatch();
   const Y = anSyncState();
-  for (const s of Y.L) if (s.fast) Y.fast.set(s.k, s.fast());
+  for (const s of Y.L) {
+    if (s.fast) Y.fast.set(s.k, s.fast());
+    if (s.obj) Y.fv.set(s.k, anSyncScal(s.obj()));
+  }
 }
 /* the engine after an action: the next patch carries every slot (the page ran the same action; whatever came out different there is
    put right; the action is rare, the full patch is a few hundred kB) */
