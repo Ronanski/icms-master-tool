@@ -186,11 +186,12 @@ function anResetRun() {
   AN.sv = keep;
   anResetAll();
   const W = globalThis.WORLD;
-  /* the links of the one world for every ABC sheet loaded now: the world was built once when the ABC list came, so a sheet loaded
-     after it had no DITL links until a 150 MW load built the world again (Winter's diag_abc: an xlk "(28)DITL-14 #B" only after a run).
-     The instances and their state stay (world.js build) */
+  /* the index of the one world for every ABC sheet loaded now (the instances and their state stay: world.js build), then the DITL links
+     of the ABC inputs go: the first scan makes them (world.js tickG step 3), so a fresh page has none; a Reset after a run kept them
+     (Winter's diag_abc4: an xlk "(28)DITL-14 #B" only after a run) */
   try {
     if (W && W.on && W.build && AN.sheets.length) W.build();
+    if (W && W.unlinkAbc) W.unlinkAbc();
   } catch (e) {}
   try {
     if (globalThis.DITL150) globalThis.DITL150.clear();
