@@ -14,6 +14,8 @@ AN.view = true;
 AN.allLegs = false;
 document.body.classList.add('anview');
 bVw.classList.add('on');
+/* 3.2.0 Web Worker: Next ▶ / ◀ Back as engine actions (engine/trace-step.js, when it is in the bundle) */
+if (typeof anStepN === 'function') Object.assign(AN, { stepN: anStepN, stepBack: anStepBack });
 function fmtT(t) {
   return Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
 }
@@ -47,7 +49,9 @@ function stepFwd() {
     ch = sec <= 10 ? 0.1 : 0.25,
     n = Math.round(sec / ch);
   histRec(sh, 0);
-  for (let i = 0; i < n; i++) stepSet(sh, ch);
+  /* 3.2.0 Web Worker: one engine action (engine/trace-step.js), the radio sends it once */
+  if (AN.stepN) AN.stepN(sh.name, n, ch);
+  else for (let i = 0; i < n; i++) AN.stepSet(sh, ch);
   paint();
   panelUpd();
   msg('Next ▶ +' + sec + ' s → t = ' + fmtT(sh.S.rt.t));
@@ -76,16 +80,26 @@ function stepBack() {
   }
   const e = H[k];
   H.length = k + 1;
-  for (const q of e.snap) {
-    q.x.S.rt = structuredClone(q.rt);
-    q.x.S._tk = null;
-    q.x.S._dk = null;
-  }
-  let rem = tg - sh.S.rt.t;
-  while (rem > 1e-6) {
-    const d = Math.min(rem > 10 ? 0.25 : 0.1, rem);
-    stepSet(sh, d);
-    rem -= d;
+  /* 3.2.0 Web Worker: the restore and the steps are one engine action (engine/trace-step.js): the engine goes back too */
+  if (AN.stepBack)
+    AN.stepBack(
+      e.snap.map(q => q.x.name),
+      e.snap.map(q => q.rt),
+      sh.name,
+      tg
+    );
+  else {
+    for (const q of e.snap) {
+      q.x.S.rt = structuredClone(q.rt);
+      q.x.S._tk = null;
+      q.x.S._dk = null;
+    }
+    let rem = tg - sh.S.rt.t;
+    while (rem > 1e-6) {
+      const d = Math.min(rem > 10 ? 0.25 : 0.1, rem);
+      AN.stepSet(sh, d);
+      rem -= d;
+    }
   }
   buildPanel();
   paint();

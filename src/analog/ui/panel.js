@@ -50,7 +50,7 @@ function trStrip(box, sh, m) {
         st.val = Math.max(P.lo, Math.min(P.hi, v));
         (sv(sh).man = sv(sh).man || {})[b.id] = st.val;
         anSave();
-        settle();
+        AN.settle();
       };
     i.classList.add('wr');
     rg.classList.add('wr');
@@ -104,7 +104,7 @@ function trStrip(box, sh, m) {
           b.p[k] = v;
           (sv(sh).p = sv(sh).p || {})[b.id] = Object.assign({}, (sv(sh).p || {})[b.id], { [k]: v });
           anSave();
-          settle();
+          AN.settle();
         }
       };
       return h$('div', { cls: 'r', title: tt }, [h$('span', { cls: 'n', txt: t }), i]);
@@ -357,7 +357,7 @@ function procPanel(d, b, sh) {
     }
     procSave(sh, b);
     S.procs = S.procs;
-    settle();
+    AN.settle();
     buildPanel();
     panelUpd(true);
   };
@@ -379,7 +379,7 @@ function procPanel(d, b, sh) {
         p.est = 0;
         if (S.rt.pm) delete S.rt.pm[b.id];
         procSave(sh, b);
-        settle();
+        AN.settle();
       }
     };
     return h$('div', { cls: 'r', title: tt }, [h$('span', { cls: 'n', txt: t }), i]);
@@ -627,7 +627,7 @@ function cosCtl(S, sh, n, e) {
       S.rt.ext[n] = v;
       (sv(sh).ext = sv(sh).ext || {})[n] = v;
       anSave();
-      settle();
+      AN.settle();
     };
     bx.append(h$('small', { txt: ds, style: 'flex-basis:100%;color:var(--c-tx2)' }), bt, wy);
     const u0 = () => {
@@ -659,7 +659,7 @@ function cosCtl(S, sh, n, e) {
       S.rt.ext[n] = v;
       (sv(sh).ext = sv(sh).ext || {})[n] = v;
       anSave();
-      settle();
+      AN.settle();
     },
     acc = () => {
       const v = parseFloat(i.value);
@@ -747,14 +747,14 @@ function swSet(sh, b, m) {
   st.fm = m || undefined;
   (sv(sh).sw = sv(sh).sw || {})[b.id] = m || 0;
   anSave();
-  settle();
+  AN.settle();
 }
 function pSet(sh, b, k, v) {
   b.p[k] = v;
   const o = sv(sh);
   (o.p = o.p || {})[b.id] = Object.assign(o.p[b.id] || {}, { [k]: v });
   anSave();
-  settle();
+  AN.settle();
   try {
     AN.panelUpd && AN.panelUpd(true);
   } catch (e) {}
@@ -773,7 +773,8 @@ function setForce(sh, n, x) {
     o.force[n] = x;
   }
   anSave();
-  settle();
+  /* 3.2.0 Web Worker: through the radio (the force goes as a write, the settle runs in the engine too; inside AN.setForce: here only) */
+  AN.settle();
   fpUpd();
 }
 /* a numeric field is DIRTY from the first typed character until it is committed (check / Enter / change), cancelled (Esc, release) or abandoned (2.5 s after it lost focus). The 100 ms updater never overwrites a dirty field. */
@@ -907,7 +908,7 @@ function fpUpd() {
           });
           delete sv(sh).force;
           anSave();
-          settle();
+          AN.settle();
           fpUpd();
         }
       })
@@ -927,7 +928,7 @@ function inCtl(S, sh, n) {
       S.rt.ext[n] = x;
       (sv(sh).ext = sv(sh).ext || {})[n] = x;
       anSave();
-      settle();
+      AN.settle();
     };
   if (dig) {
     const bt = h$('button', { title: 'This is an input: click to switch it' });
