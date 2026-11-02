@@ -30203,7 +30203,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build 522d33e'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 2a7cc06'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -69328,6 +69328,8 @@ window.PLANT_SYS = [
     return mk(p, 'text', o, s);
   }
   const rid = p => p + Math.random().toString(36).slice(2);
+  /* a moving part gets its own layer: a step repaints only that part, not the still drawing around it (light on a tablet) */
+  const lay = e => ((e.style.willChange = 'transform'), e);
 
   /* ---------- the clock and the pieces ---------- */
   const own = new Set();
@@ -69345,11 +69347,12 @@ window.PLANT_SYS = [
           }, 66)));
   /* a piece: its own <g>; draw(g, o, mov) draws it in state o; mov(fn) = one motion of this drawing (ends when the piece is redrawn
      or leaves the page) */
-  /* a piece out of view does not move (nothing to paint there): one shared observer */
+  /* a drawing out of view does not move (nothing to paint there): one shared observer per svg */
   const IO = window.IntersectionObserver ? new IntersectionObserver(es => es.forEach(e => (e.target._vis = e.isIntersecting))) : null;
   function piece(parent, o, draw) {
-    const el = mk(parent, 'g', {});
-    if (IO) IO.observe(el);
+    const el = mk(parent, 'g', {}),
+      sv = el.ownerSVGElement;
+    if (IO && sv && !sv._io) ((sv._io = 1), IO.observe(sv));
     let gen = 0;
     const st = Object.assign({}, o);
     const paint = () => {
@@ -69360,11 +69363,11 @@ window.PLANT_SYS = [
         clock(t => {
           if (my !== gen) return false;
           if (!el.isConnected) {
-            if (seen) return (IO && IO.unobserve(el), false);
+            if (seen) return false;
             return;
           }
           seen = true;
-          if (el._vis !== false) fn(t);
+          if (!sv || sv._vis !== false) fn(t);
         });
       return draw(el, st, mov);
     };
@@ -69437,7 +69440,7 @@ window.PLANT_SYS = [
       mk(s, 'path', { d, fill: 'none', stroke: '#000000', 'stroke-width': w + 3, 'stroke-linejoin': 'miter' });
       mk(s, 'path', { d, fill: 'none', stroke: M[m], 'stroke-width': w, 'stroke-linejoin': 'miter' });
       if (st.flow) {
-        const f = mk(s, 'path', { d, fill: 'none', stroke: '#ffffff', 'stroke-width': Math.max(1.5, w * 0.35), 'stroke-dasharray': '46 74', 'stroke-linecap': 'butt', opacity: 0.14 });
+        const f = lay(mk(s, 'path', { d, fill: 'none', stroke: '#ffffff', 'stroke-width': Math.max(1.5, w * 0.35), 'stroke-dasharray': '46 74', 'stroke-linecap': 'butt', opacity: 0.14 }));
         mov(t => f.setAttribute('stroke-dashoffset', (-(t * st.flow) % 120).toFixed(1)));
       }
     });
@@ -69449,7 +69452,7 @@ window.PLANT_SYS = [
       for (const d of ds) mk(s, 'path', { d, fill: 'none', stroke: M[m], 'stroke-width': W, 'stroke-linejoin': 'miter', 'stroke-linecap': 'butt' });
       if (st.flow)
         for (const d of ds) {
-          const f = mk(s, 'path', { d, fill: 'none', stroke: '#ffffff', 'stroke-width': W * 0.35, 'stroke-dasharray': '46 74', opacity: 0.14 });
+          const f = lay(mk(s, 'path', { d, fill: 'none', stroke: '#ffffff', 'stroke-width': W * 0.35, 'stroke-dasharray': '46 74', opacity: 0.14 }));
           mov(t => f.setAttribute('stroke-dashoffset', (-(t * st.flow) % 120).toFixed(1)));
         }
     });
@@ -69511,7 +69514,7 @@ window.PLANT_SYS = [
       mk(s, 'ellipse', { cx: x, cy: y - hi, rx: 9, ry: 2.8, fill: 'none', stroke: LT, 'stroke-width': 1.5 });
       for (const k of [0, 1]) {
         const a = (k * Math.PI) / 2;
-        spokes.push([mk(s, 'line', { x1: x - 8 * Math.cos(a), y1: y - hi - 2.5 * Math.sin(a), x2: x + 8 * Math.cos(a), y2: y - hi + 2.5 * Math.sin(a), stroke: LT, 'stroke-width': 0.9 }), x, y - hi, k]);
+        spokes.push([lay(mk(s, 'line', { x1: x - 8 * Math.cos(a), y1: y - hi - 2.5 * Math.sin(a), x2: x + 8 * Math.cos(a), y2: y - hi + 2.5 * Math.sin(a), stroke: LT, 'stroke-width': 0.9 })), x, y - hi, k]);
       }
       mk(s, 'circle', { cx: x, cy: y - hi, r: 1.6, fill: LT, stroke: '#000', 'stroke-width': 0.8 });
     }
@@ -69531,8 +69534,30 @@ window.PLANT_SYS = [
       T(s, x, y - hi - 3.5, 'kit-st', 'S', 'middle', null, 'fill:' + ht);
     }
     const tx = pct != null ? T(s, x, y + 24, 'kit-tag', pct + ' %', 'middle', null, 'fill:#0b0f13;font-weight:600') : null;
-    if (tx) tx.dataset.v = pct;
     return { spokes, tx };
+  }
+  /* the % under a valve while it travels: each text is laid out once and kept; a new position only swaps which one is visible (no
+     layout per step, the page stays light while a valve moves); at most 120 kept per valve */
+  function pctShow(v, txt) {
+    const C = v.cache || (v.cache = new Map([[v.tx.textContent, v.tx]]));
+    let e = C.get(txt);
+    if (e === v.cur) return;
+    if (!e) {
+      e = v.tx.cloneNode(false);
+      e.textContent = txt;
+      v.tx.parentNode.insertBefore(e, v.tx);
+      C.set(txt, e);
+      if (C.size > 120)
+        for (const [k, o] of C)
+          if (o !== e && o !== (v.cur || v.tx) && o !== v.tx) {
+            o.remove();
+            C.delete(k);
+            break;
+          }
+    }
+    (v.cur || v.tx).setAttribute('visibility', 'hidden');
+    e.setAttribute('visibility', 'visible');
+    v.cur = e;
   }
   /* the hand wheel turning (seen from above: counterclockwise opens, clockwise closes) */
   const turn = (spokes, an0) =>
@@ -69563,7 +69588,7 @@ window.PLANT_SYS = [
         mov(t => turn(v.spokes, dir * t * 7));
       }
       /* the same state (and limits): only the % text changes */
-      return { upd: n => (kind === 'hand' ? n.state === hs : vstate(kind, n) === open && !!v.tx === (pc(n) != null) && (!v.tx || ((v.tx.textContent = pc(n) + ' %'), true))) };
+      return { upd: n => (kind === 'hand' ? n.state === hs : vstate(kind, n) === open && !!v.tx === (pc(n) != null) && (!v.tx || (pctShow(v, pc(n) + ' %'), true))) };
     });
   /* a valve in its line (x0 -> x1 at y, valve at xv): flow before it while the line has flow (o.flow), after it only while it is open
      (slow while it travels); the 8c rule of the kit */
@@ -69613,7 +69638,7 @@ window.PLANT_SYS = [
   }
   function impeller(s, mov, cx, cy, r, run, speed, n) {
     n = n || 5;
-    const g = mk(s, 'g', {});
+    const g = run ? lay(mk(s, 'g', {})) : mk(s, 'g', {});
     for (let a = 0; a < n; a++) {
       const t = (a * 2 * Math.PI) / n;
       mk(g, 'path', { d: `M${cx} ${cy} Q${(cx + Math.cos(t + 0.7) * r * 0.6).toFixed(1)} ${(cy + Math.sin(t + 0.7) * r * 0.6).toFixed(1)} ${(cx + Math.cos(t) * r).toFixed(1)} ${(cy + Math.sin(t) * r).toFixed(1)}`, fill: 'none', stroke: DK, 'stroke-width': 2 });
@@ -69735,7 +69760,7 @@ window.PLANT_SYS = [
     const g = mk(s, 'g', { 'clip-path': 'url(#' + id + ')' }),
       ly = y + h * (1 - frac);
     mk(g, 'rect', { x, y: ly, width: w, height: h * frac, fill: M[m] });
-    const wv = mk(g, 'path', { d: '', fill: '#fff', opacity: 0.22 });
+    const wv = lay(mk(g, 'path', { d: '', fill: '#fff', opacity: 0.22 }));
     mov(t => {
       let d = 'M' + x + ' ' + (ly + 3);
       for (let i = 0; i <= w; i += 4) d += ' L' + (x + i) + ' ' + (ly + Math.sin(t * 2.2 + i * 0.35) * 1.2).toFixed(1);
@@ -69799,7 +69824,7 @@ window.PLANT_SYS = [
       mk(w, 'rect', { x: wx, y: wy, width: ww, height: wh, fill: DK });
       mk(w, 'rect', { x: x + 2, y: wy, width: ww - 15, height: wh, fill: M[sm], opacity: 0.3 }); /* steam around the tubes */
       mk(w, 'rect', { x: x + 2, y: py, width: ww - 15, height: wy + wh - py, fill: M[tm] }); /* condensate pool */
-      const wv = mk(w, 'path', { d: '', fill: '#fff', opacity: 0.3 });
+      const wv = lay(mk(w, 'path', { d: '', fill: '#fff', opacity: 0.3 }));
       mov(t => {
         let d = 'M' + (x + 2) + ' ' + (py + 3);
         for (let i = 0; i <= ww - 15; i += 5) d += ' L' + (x + 2 + i) + ' ' + (py + Math.sin(t * 2 + i * 0.3) * 1).toFixed(1);
@@ -69807,7 +69832,7 @@ window.PLANT_SYS = [
       });
       if (flow)
         [22, 58, 94, 118].forEach((o2, k) => {
-          const dp = mk(w, 'circle', { cx: x + o2, cy: 0, r: 1.3, fill: '#e9f3fa' });
+          const dp = lay(mk(w, 'circle', { cx: x + o2, cy: 0, r: 1.3, fill: '#e9f3fa' }));
           mov(t => {
             const p = (t * 0.9 + k * 0.37) % 1;
             dp.setAttribute('cy', (yc + 14 + p * (py - yc - 13)).toFixed(1));
@@ -69819,7 +69844,7 @@ window.PLANT_SYS = [
       mk(w, 'rect', { x: wx, y: yc - 2.2, width: 13, height: 4.4, fill: '#c3ccd3', stroke: '#000', 'stroke-width': 1.2 }); /* pass partition plate */
       if (flow)
         for (const d of [`M${x - 8} ${wy + wh} L${x - 8} ${yc + 8} L${x + 2} ${yc + 8}`, `M${x + 2} ${yc - 8} L${x - 8} ${yc - 8} L${x - 8} ${wy}`]) {
-          const f = mk(w, 'path', { d, fill: 'none', stroke: '#fff', 'stroke-width': 1.8, 'stroke-linecap': 'round', 'stroke-dasharray': '0.1 6', opacity: 0.8 });
+          const f = lay(mk(w, 'path', { d, fill: 'none', stroke: '#fff', 'stroke-width': 1.8, 'stroke-linecap': 'round', 'stroke-dasharray': '0.1 6', opacity: 0.8 }));
           mov(t => f.setAttribute('stroke-dashoffset', (-(t * flow * 0.6) % 6.1).toFixed(2)));
         }
       for (const b of [[40, 1], [75, -1], [108, 1]]) mk(w, 'rect', { x: x + b[0] - 1.2, y: b[1] > 0 ? wy : yc - 6, width: 2.4, height: b[1] > 0 ? yc + 10 - wy : py - yc + 6, fill: '#c3ccd3' }); /* baffles */
@@ -69847,7 +69872,7 @@ window.PLANT_SYS = [
         mk(w, 'path', { d: bend, fill: 'none', stroke: 'url(#' + gid + 'c)', 'stroke-width': 2.2 });
         mk(w, 'path', { d: up, fill: 'none', stroke: 'url(#' + gid + 'b)', 'stroke-width': 2.2 });
         if (flow) {
-          const f = mk(w, 'path', { d: all, fill: 'none', stroke: '#fff', 'stroke-width': 1.6, 'stroke-linecap': 'round', 'stroke-dasharray': '0.1 9', opacity: 0.75 });
+          const f = lay(mk(w, 'path', { d: all, fill: 'none', stroke: '#fff', 'stroke-width': 1.6, 'stroke-linecap': 'round', 'stroke-dasharray': '0.1 9', opacity: 0.75 }));
           mov(t => f.setAttribute('stroke-dashoffset', (-(t * flow * 0.6) % 9.1).toFixed(2)));
         }
       }
@@ -69886,7 +69911,7 @@ window.PLANT_SYS = [
       mk(w, 'rect', { x: wx, y: wy, width: ww, height: wh, fill: DK });
       mk(w, 'rect', { x: wx, y: wy, width: ww, height: ly - wy, fill: M.steam, opacity: 0.28 });
       mk(w, 'rect', { x: wx, y: ly, width: ww, height: wy + wh - ly, fill: M.water });
-      const wv = mk(w, 'path', { d: '', fill: '#fff', opacity: 0.3 });
+      const wv = lay(mk(w, 'path', { d: '', fill: '#fff', opacity: 0.3 }));
       mov(t => {
         let d = 'M' + wx + ' ' + (ly + 3);
         for (let i = 0; i <= ww; i += 5) d += ' L' + (wx + i) + ' ' + (ly + Math.sin(t * 2 + i * 0.3) * 1).toFixed(1);
@@ -69894,7 +69919,7 @@ window.PLANT_SYS = [
       });
       if (st.flow)
         [16, 38, 61, 84, 107].forEach((o2, k) => {
-          const b = mk(w, 'circle', { cx: wx + o2, cy: 0, r: 1.2, fill: '#e9f3fa' });
+          const b = lay(mk(w, 'circle', { cx: wx + o2, cy: 0, r: 1.2, fill: '#e9f3fa' }));
           mov(t => {
             const p = (t * 0.6 + k * 0.29) % 1;
             b.setAttribute('cy', (wy + wh - 2 - p * (wy + wh - 2 - ly)).toFixed(1));
@@ -69960,7 +69985,7 @@ window.PLANT_SYS = [
       for (let i = 0; i < 5; i++) mk(w, 'line', { x1: x - 3, y1: y - 4 + i * 3, x2: x + 3, y2: y - 4 + i * 3, stroke: '#e9eef2', 'stroke-width': 0.5, opacity: 0.8 });
       for (let j = 0; j < 3; j++) mk(w, 'line', { x1: x - 2.5 + j * 2.5, y1: y - 4, x2: x - 2.5 + j * 2.5, y2: y + 9, stroke: '#e9eef2', 'stroke-width': 0.5, opacity: 0.8 });
       for (const d of [[-1.5, 8], [1.5, 9], [0, 7], [-2, 9.5]]) mk(w, 'circle', { cx: x + d[0], cy: y + d[1], r: 0.8, fill: '#6b5a44' });
-      if (st.flow) stream(w, mov, 3, x - 4.5, y - 5, x - 4.5, y + 9, 0, '#e9f3fa', 0.8, 0.6, true);
+      if (st.flow) stream(lay(mk(w, 'g', {})), mov, 3, x - 4.5, y - 5, x - 4.5, y + 9, 0, '#e9f3fa', 0.8, 0.6, true);
       winEdge(s, x - 4.5, y - 6, 9, 17);
     });
   /* 23 coal / limestone feeder (x, y = top left of the 90 x 22 box): inlet chute at (x + 16, y - 17), outlet chute at (x + 77, y + 36) */
@@ -69975,12 +70000,13 @@ window.PLANT_SYS = [
       const w = win(s, x + 4, y + 2, 82, 18),
         belt = `M${x + 12} ${y + 10} L${x + 78} ${y + 10} A3.5 3.5 0 0 1 ${x + 78} ${y + 17} L${x + 12} ${y + 17} A3.5 3.5 0 0 1 ${x + 12} ${y + 10}`;
       mk(w, 'path', { d: belt, fill: 'none', stroke: '#0b0f13', 'stroke-width': 2 });
-      const bd = mk(w, 'path', { d: belt, fill: 'none', stroke: '#9fb0bd', 'stroke-width': 0.8, 'stroke-dasharray': '2 3.5' });
+      const bd = lay(mk(w, 'path', { d: belt, fill: 'none', stroke: '#9fb0bd', 'stroke-width': 0.8, 'stroke-dasharray': '2 3.5' }));
       for (const px of [12, 78]) mk(w, 'circle', { cx: x + px, cy: y + 13.5, r: 3.1, fill: LT, stroke: '#000', 'stroke-width': 0.8 });
-      const coal = [];
-      for (let i = 0; i < 11; i++) coal.push(mk(w, 'circle', { cx: x + 16 + i * 5.6, cy: y + 7.4 - (i % 2) * 0.8, r: 1.3, fill: M.ash, stroke: '#000', 'stroke-width': 0.35 }));
+      const coal = [],
+        cg = run ? lay(mk(w, 'g', {})) : w;
+      for (let i = 0; i < 11; i++) coal.push(mk(cg, 'circle', { cx: x + 16 + i * 5.6, cy: y + 7.4 - (i % 2) * 0.8, r: 1.3, fill: M.ash, stroke: '#000', 'stroke-width': 0.35 }));
       const fall = [];
-      for (let k = 0; k < 3; k++) fall.push([mk(w, 'circle', { cx: x + 16, cy: y + 3, r: 1.1, fill: M.ash, stroke: '#000', 'stroke-width': 0.3 }), mk(w, 'circle', { cx: x + 82, cy: y + 14, r: 1.1, fill: M.ash, stroke: '#000', 'stroke-width': 0.3 })]);
+      for (let k = 0; k < 3; k++) fall.push([mk(cg, 'circle', { cx: x + 16, cy: y + 3, r: 1.1, fill: M.ash, stroke: '#000', 'stroke-width': 0.3 }), mk(cg, 'circle', { cx: x + 82, cy: y + 14, r: 1.1, fill: M.ash, stroke: '#000', 'stroke-width': 0.3 })]);
       if (run)
         mov(t => {
           bd.setAttribute('stroke-dashoffset', (-t * 10).toFixed(1));
@@ -70016,15 +70042,16 @@ window.PLANT_SYS = [
       /* furnace and flame (flame on the oil gun axis) */
       const w = win(s, x + 8, y - 24, 30, 48, 2);
       mk(w, 'rect', { x: x + 8, y: y - 24, width: 30, height: 48, fill: DK });
-      const glow = mk(w, 'rect', { x: x + 8, y: y - 24, width: 30, height: 48, fill: '#5a2a14', opacity: 0 });
-      const fr = mk(w, 'path', { d: `M${x + 8} ${GY - 8} Q${x + 26} ${GY - 22} ${x + 40} ${GY - 2} Q${x + 30} ${GY + 20} ${x + 8} ${GY + 8}Z`, fill: '#c8401e', opacity: 0 });
+      const fg = lay(mk(w, 'g', {})); /* the flame: its own layer */
+      const glow = mk(fg, 'rect', { x: x + 8, y: y - 24, width: 30, height: 48, fill: '#5a2a14', opacity: 0 });
+      const fr = mk(fg, 'path', { d: `M${x + 8} ${GY - 8} Q${x + 26} ${GY - 22} ${x + 40} ${GY - 2} Q${x + 30} ${GY + 20} ${x + 8} ${GY + 8}Z`, fill: '#c8401e', opacity: 0 });
       const tg = [];
-      for (let q = 0; q < 3; q++) tg.push(mk(w, 'path', { d: '', fill: q === 1 ? '#f39a3a' : '#d9572a', opacity: 0 }));
+      for (let q = 0; q < 3; q++) tg.push(mk(fg, 'path', { d: '', fill: q === 1 ? '#f39a3a' : '#d9572a', opacity: 0 }));
       const em = [];
-      for (let q = 0; q < 6; q++) em.push(mk(w, 'circle', { cx: 0, cy: 0, r: 0.8, fill: '#ffd36b', opacity: 0 }));
-      const fo = mk(w, 'path', { d: `M${x + 8} ${GY - 6} Q${x + 29} ${GY - 14} ${x + 37} ${GY} Q${x + 29} ${GY + 14} ${x + 8} ${GY + 6}Z`, fill: '#e8742f', opacity: 0 });
-      const fi = mk(w, 'path', { d: `M${x + 8} ${GY - 3} Q${x + 21} ${GY - 6} ${x + 28} ${GY} Q${x + 21} ${GY + 6} ${x + 8} ${GY + 3}Z`, fill: '#ffd36b', opacity: 0 });
-      const fc = mk(w, 'path', { d: `M${x + 8} ${GY - 1.3} Q${x + 15} ${GY - 2.5} ${x + 19} ${GY} Q${x + 15} ${GY + 2.5} ${x + 8} ${GY + 1.3}Z`, fill: '#fffbe8', opacity: 0 });
+      for (let q = 0; q < 6; q++) em.push(mk(fg, 'circle', { cx: 0, cy: 0, r: 0.8, fill: '#ffd36b', opacity: 0 }));
+      const fo = mk(fg, 'path', { d: `M${x + 8} ${GY - 6} Q${x + 29} ${GY - 14} ${x + 37} ${GY} Q${x + 29} ${GY + 14} ${x + 8} ${GY + 6}Z`, fill: '#e8742f', opacity: 0 });
+      const fi = mk(fg, 'path', { d: `M${x + 8} ${GY - 3} Q${x + 21} ${GY - 6} ${x + 28} ${GY} Q${x + 21} ${GY + 6} ${x + 8} ${GY + 3}Z`, fill: '#ffd36b', opacity: 0 });
+      const fc = mk(fg, 'path', { d: `M${x + 8} ${GY - 1.3} Q${x + 15} ${GY - 2.5} ${x + 19} ${GY} Q${x + 15} ${GY + 2.5} ${x + 8} ${GY + 1.3}Z`, fill: '#fffbe8', opacity: 0 });
       winEdge(s, x + 8, y - 24, 30, 48);
       /* tube wall around the throat and the air box */
       solid(s, [R(x, y - 28, 8, 20, LT), R(x, y + 8, 8, 20, LT), R(x - 28, y - 14, 28, 28, LT, 2)]);
@@ -70035,7 +70062,7 @@ window.PLANT_SYS = [
       }
       const rw = win(s, x - 24, y - 11, 20, 22, 1.5);
       mk(rw, 'rect', { x: x - 24, y: y - 11, width: 20, height: 22, fill: DK });
-      const vn = mk(rw, 'path', { d: '', fill: 'none', stroke: '#c98a4a', 'stroke-width': 1.4, opacity: 0.9 });
+      const vn = lay(mk(rw, 'path', { d: '', fill: 'none', stroke: '#c98a4a', 'stroke-width': 1.4, opacity: 0.9 }));
       winEdge(s, x - 24, y - 11, 20, 22);
       /* fixed parts on the two axes: air cylinders behind, guide tubes through the air box */
       solid(s, [R(x - 104, GY - 5, 18, 10, LT, 2, 'cyl'), R(x - 62, GY - 2, 34, 4, LT)]);
@@ -70043,26 +70070,27 @@ window.PLANT_SYS = [
         ia = mk(s, 'g', { transform: 'rotate(' + IA.toFixed(2) + ' ' + (x + 4) + ' ' + (GY - 2.5) + ')' });
       IY = GY - 2.5;
       solid(ia, [R(x - 98, IY - 4, 12, 8, LT, 2, 'cyl'), R(x - 62, IY - 1.5, 34, 3, LT)]);
-      const pr = mk(s, 'rect', { x: x - 86, y: GY - 1, width: 0, height: 2, fill: '#5d6872', stroke: '#000', 'stroke-width': 0.5 }),
-        ir = mk(ia, 'rect', { x: x - 86, y: IY - 0.8, width: 0, height: 1.6, fill: '#5d6872', stroke: '#000', 'stroke-width': 0.5 });
+      const pr = lay(mk(s, 'rect', { x: x - 86, y: GY - 1, width: 0, height: 2, fill: '#5d6872', stroke: '#000', 'stroke-width': 0.5 })),
+        ir = lay(mk(ia, 'rect', { x: x - 86, y: IY - 0.8, width: 0, height: 1.6, fill: '#5d6872', stroke: '#000', 'stroke-width': 0.5 }));
       /* moving oil gun (lance + head) and igniter (rod + head) */
-      const gg = mk(s, 'g', {});
+      const gg = lay(mk(s, 'g', {}));
       solid(gg, [R(x - 60, GY - 1.2, 64, 2.4, '#5d6872')]);
       const gh = mk(gg, 'rect', { x: x - 70, y: GY - 5, width: 9, height: 10, rx: 1.5, fill: STOP, stroke: '#000', 'stroke-width': 1.4 });
       shade(gg, 'rect', { x: x - 70, y: GY - 5, width: 9, height: 10, rx: 1.5 }, 'kitCyl');
-      const ig = mk(ia, 'g', {});
+      const ig = lay(mk(ia, 'g', {}));
       solid(ig, [R(x - 62, IY - 0.9, 66, 1.8, '#5d6872'), R(x - 70, IY - 3.5, 7, 7, LT, 1)]);
-      const sp = mk(ia, 'path', { d: `M${x + 4} ${IY - 2} l2 2 l-1.5 .6 l2.2 2.4`, fill: 'none', stroke: '#fff3b0', 'stroke-width': 1.3, opacity: 0 });
+      const sp = lay(mk(ia, 'path', { d: `M${x + 4} ${IY - 2} l2 2 l-1.5 .6 l2.2 2.4`, fill: 'none', stroke: '#fff3b0', 'stroke-width': 1.3, opacity: 0 }));
       /* hoses ride with the gun head */
-      const ho = mk(s, 'path', { fill: 'none', stroke: '#000', 'stroke-width': 3.6 }),
-        hoi = mk(s, 'path', { fill: 'none', stroke: M.oil, 'stroke-width': 1.8 }),
-        ha = mk(s, 'path', { fill: 'none', stroke: '#000', 'stroke-width': 3.6 }),
-        hai = mk(s, 'path', { fill: 'none', stroke: M.ia, 'stroke-width': 1.8 });
+      const hg = lay(mk(s, 'g', {})),
+        ho = mk(hg, 'path', { fill: 'none', stroke: '#000', 'stroke-width': 3.6 }),
+        hoi = mk(hg, 'path', { fill: 'none', stroke: M.oil, 'stroke-width': 1.8 }),
+        ha = mk(hg, 'path', { fill: 'none', stroke: '#000', 'stroke-width': 3.6 }),
+        hai = mk(hg, 'path', { fill: 'none', stroke: M.ia, 'stroke-width': 1.8 });
       /* flame scanner on its sight tube */
       mk(s, 'line', { x1: x - 10, y1: y - 14, x2: x - 20, y2: y - 26, stroke: '#000', 'stroke-width': 5 });
       mk(s, 'line', { x1: x - 10, y1: y - 14, x2: x - 20, y2: y - 26, stroke: LT, 'stroke-width': 3 });
       solid(s, [R(x - 28, y - 34, 12, 9, LT, 2, 'cyl')]);
-      const eye = mk(s, 'circle', { cx: x - 22, cy: y - 29.5, r: 2.4, fill: DK, stroke: '#000', 'stroke-width': 0.8 });
+      const eye = lay(mk(s, 'circle', { cx: x - 22, cy: y - 29.5, r: 2.4, fill: DK, stroke: '#000', 'stroke-width': 0.8 }));
       const TR = 16;
       const frame = t => {
         const q = st(t),
@@ -70153,9 +70181,10 @@ window.PLANT_SYS = [
       const w = win(gr, x + 6, y - 8, L - 12, 16);
       mk(w, 'rect', { x: x + 6, y: y - 8, width: L - 12, height: 2.5, fill: M.water });
       mk(w, 'rect', { x: x + 6, y: y + 5.5, width: L - 12, height: 2.5, fill: M.water });
-      const spiral = mk(w, 'path', { d: '', fill: 'none', stroke: '#9fb0bd', 'stroke-width': 1, opacity: 0.7 });
-      const ash = [];
-      for (let i = 0; i < 11; i++) ash.push(mk(w, 'circle', { cx: 0, cy: y + 2.5 - (i % 3) * 0.8, r: 1.4 }));
+      const spiral = lay(mk(w, 'path', { d: '', fill: 'none', stroke: '#9fb0bd', 'stroke-width': 1, opacity: 0.7 }));
+      const ash = [],
+        ag = lay(mk(w, 'g', {}));
+      for (let i = 0; i < 11; i++) ash.push(mk(ag, 'circle', { cx: 0, cy: y + 2.5 - (i % 3) * 0.8, r: 1.4 }));
       const frame = t => {
         const o2 = run ? (t * 12) % 10 : 0;
         let d = '';
