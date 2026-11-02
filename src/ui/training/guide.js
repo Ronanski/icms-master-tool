@@ -1242,12 +1242,18 @@ window.LS_GUIDE = (function () {
         .filter((x, i, a) => a.indexOf(x) === i);
       /* 3.2.0 walkthrough #1: the start-up begins at t = 0 (the clock of the sheets counted the settling of the cold state: t = 11:29) and
          PAUSED (simulation on, time stopped, 1x): the field steps come first and the trainee presses RUN. Before: RUN at once, x10 */
+      /* the clock and the trend histories of the engine: an engine action (AN.clock0, runs in the engine and on the page: with the
+         engine in the worker a write here never reached it, the clock showed 0 while PAUSED and jumped back at RUN); the page's own
+         history of the sheets (_hs) stays here */
       try {
+        const c0 = !!AN.clock0;
+        if (c0) AN.clock0();
         for (const sh of AN.sheets)
           if (sh.S && sh.S.rt) {
+            sh._hs = [];
+            if (c0) continue;
             const rt = sh.S.rt;
             rt.t = 0;
-            sh._hs = [];
             for (const k in rt.pm || {}) if (rt.pm[k] && Array.isArray(rt.pm[k].h)) rt.pm[k].h = [];
             for (const k in rt.st || {}) if (rt.st[k] && Array.isArray(rt.st[k].h)) rt.st[k].h = [];
           }

@@ -2,7 +2,7 @@
 // ?worker=1. The worker starts from the page (keyframe), the page is the mirror. Checks: the worker starts (no error bar); RUN: the
 // plant time moves on the page (the engine runs, the patches arrive); the operator on the page (HP bypass PICMS1006 to MAN, MV 20 %,
 // AUTO again, a DITL push button) reaches the engine; the speed 6x gives 6 s of plant a second; after a pause the whole state of the worker (ABC + DITL keyframe) = the page
-// mirror. Usage: node tests/regress/eng_worker.js [html]
+// mirror; a worker that dies and an error inside an engine action: the red bar, and the page runs the engine (the watchdog). Usage: node tests/regress/eng_worker.js [html]
 const { open } = require('./lib.js');
 const fs = require('fs'), url = require('url'), path = require('path');
 const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSync('dist').find(x => /^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
@@ -73,7 +73,35 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
   ck(r.ditl, 'DITL state: worker = page mirror (' + (r.ld >> 10) + ' kB)' + (r.ditl ? '' : '\n   ' + r.ed));
   console.log('   messages: page sent ' + r.sent + ', got ' + r.got);
   ck(!errs.length, 'no page error' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
-  console.log(fail ? 'FAILED ' + fail : 'ALL PASS');
+  /* the watchdog said nothing during all this (Start at 150 MW takes seconds in the worker too) */
+  const bar0 = await page.evaluate(() => ({ mode: ENG.mode, bar: (document.getElementById('engerr') || {}).textContent || '' }));
+  ck(bar0.mode === 'mirror' && !bar0.bar, 'no false stop of the watchdog (mode ' + bar0.mode + (bar0.bar ? ', bar: ' + bar0.bar : '') + ')');
   await browser.close();
+  /* a worker that dies (terminate: the same for the page as a hang, nothing comes) and an error inside an engine action: the red bar,
+     and the page runs the engine by itself (the plant time goes on), each on a new page */
+  for (const [name, hit, want] of [
+    ['the worker dies (terminate)', () => ENG.worker.terminate(), /^Engine stopped \(no answer\): .* - the page runs the engine by itself now\.$/],
+    ['an error inside an engine action', () => ENG.worker.postMessage({ t: 'op', ops: [], calls: [['AN.turbine', { $j: '{not json' }]] }), /^Engine stopped \(AN\.turbine\): .* - the page runs the engine by itself now\.$/]
+  ]) {
+    const o = await open(html);
+    const p = o.page;
+    await p.goto(url.pathToFileURL(path.resolve(html)).href + '?worker=1');
+    await p.waitForTimeout(2500);
+    await p.evaluate(() => AN.setCat('an'));
+    await p.waitForFunction(() => window.ENG && (ENG.mode === 'mirror' || ENG.err), null, { timeout: 180000 });
+    await p.evaluate(() => { const C = AN.sheets.find(s => s.name === 'ABC-001C'); AN.i = AN.sheets.indexOf(C); AN.plantLoad150(); DITL150.apply(); AN.run = true; });
+    /* the Start at 150 MW in the engine first (a long action: the watchdog waits 60 s then) */
+    await p.waitForFunction(() => ENG.got > 0 && !ENG.heavy, null, { timeout: 180000 }).catch(() => {});
+    await p.waitForTimeout(3000);
+    await p.evaluate(hit);
+    const t0 = Date.now();
+    await p.waitForFunction(() => document.getElementById('engerr'), null, { timeout: 30000 }).catch(() => {});
+    const s1 = await p.evaluate(() => ({ mode: ENG.mode, bar: (document.getElementById('engerr') || {}).textContent || '', t: AN.sheets.find(s => s.name === 'ABC-001C').S.rt.t }));
+    await p.waitForTimeout(4000);
+    const t2 = await p.evaluate(() => AN.sheets.find(s => s.name === 'ABC-001C').S.rt.t);
+    ck(want.test(s1.bar) && s1.mode === 'local' && t2 > s1.t + 2, name + ': ' + (s1.bar ? '"' + s1.bar.slice(0, 160) + '"' : 'NO BAR') + ' after ' + ((Date.now() - t0 - 4000) / 1000).toFixed(1) + ' s, mode ' + s1.mode + ', plant time ' + s1.t.toFixed(1) + ' -> ' + t2.toFixed(1) + ' s in 4 s');
+    await o.browser.close();
+  }
+  console.log(fail ? 'FAILED ' + fail : 'ALL PASS');
   process.exit(fail ? 1 : 0);
 })();

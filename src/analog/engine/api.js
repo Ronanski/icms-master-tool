@@ -42,6 +42,7 @@ function anEngAPI() {
     /* engine/trace-step.js: Next / Back of the ABC trace, one engine action each */
     stepN: anStepN,
     stepBack: anStepBack,
+    clock0: anClock0,
     /* engine/ds.js: the FROM / TO DITL texts of a sheet, the description of an address (the face plate defaults first) */
     dsIdx,
     descOf: (sh, t) => {

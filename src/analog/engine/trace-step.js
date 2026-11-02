@@ -26,3 +26,15 @@ function anStepBack(names, rts, name, tg) {
     rem -= d;
   }
 }
+/* The clock of the sheets back to 0 and their trends emptied (the Training: "the start-up begins at t = 0", walkthrough #1; was done
+   by src/ui/training/guide.js on the page only: the run time t and the plant-model trends are not writable slots, so the engine kept
+   its clock; Winter's finding). An engine action: it runs in the engine and on the page (src/world/eng.js CALLS). */
+function anClock0() {
+  for (const sh of AN.sheets)
+    if (sh.S && sh.S.rt) {
+      const rt = sh.S.rt;
+      rt.t = 0;
+      for (const k in rt.pm || {}) if (rt.pm[k] && Array.isArray(rt.pm[k].h)) rt.pm[k].h = [];
+      for (const k in rt.st || {}) if (rt.st[k] && Array.isArray(rt.st[k].h)) rt.st[k].h = [];
+    }
+}

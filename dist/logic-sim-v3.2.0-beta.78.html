@@ -31984,7 +31984,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build fea4065'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build e396c12'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -49893,8 +49893,8 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
           E._last = r;
         } catch (e) {
           if (G.console) console.error('ENG ' + n, e);
-          /* an engine action that fails is said on the page (it was silent) */
-          if (E.mode === 'engine') post({ t: 'error', where: 'engine action ' + n, text: String((e && e.stack) || e), soft: 1 });
+          /* not silent: the page stops the worker and runs the engine itself (eng-page.js fail), as for an error of a scan (Giselle) */
+          if (E.mode === 'engine') post({ t: 'error', where: n, text: String((e && e.stack) || e) });
         } finally {
           inCall--;
         }
@@ -50104,10 +50104,30 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     } catch (e) {}
     E.worker = null;
     clearInterval(E._fl);
+    clearInterval(E._wd);
     E.stop();
   };
   /* for the watchdog (src/world/eng-watch.js): stop the worker with a message on the screen, back to the page engine */
   E.fail = fail;
+  /* the watchdog (Giselle, point 12): the worker sends a heartbeat every second (eng-host.js); a worker that died (terminated, out of
+     memory) or hangs sends nothing, so the page would wait for ever with the plant still. No message for 10 s = stopped; 60 s after
+     'acting' or while the page waits for a long action (ENG.heavy: a starting state takes seconds there, with no heartbeat) */
+  const WD = 10000,
+    WD_CALL = 60000;
+  const watch = () => {
+    clearInterval(E._wd);
+    let tk = (E.inAt = Date.now());
+    E.busyAt = 0;
+    E._wd = setInterval(() => {
+      const now = Date.now(),
+        late = now - tk > 3000;
+      tk = now;
+      /* the page itself was busy (its messages still wait in the queue): no verdict on this tick */
+      if (late || E.mode !== 'mirror' || !E.worker) return;
+      const lim = E.busyAt || E.heavy ? WD_CALL : WD;
+      if (now - E.inAt > lim) fail('no answer', 'the engine in the worker stopped answering (no message for ' + lim / 1000 + ' s)');
+    }, 1000);
+  };
   E.boot = () =>
     new Promise((ok, no) => {
       if (E.worker) return ok(E.worker);
@@ -50124,7 +50144,14 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       w.onerror = e => fail('worker', (e && e.message) || e);
       w.onmessage = ev => {
         const m = ev.data;
-        if (m.t === 'ready') return ok(w);
+        E.inAt = Date.now();
+        if (m.t === 'beat') return;
+        E.busyAt = m.t === 'acting' ? E.inAt : m.t === 'busy' ? E.busyAt : 0;
+        if (m.t === 'acting') return;
+        if (m.t === 'ready') {
+          watch();
+          return ok(w);
+        }
         if (m.t === 'kf') {
           const r = E._kf && E._kf[m.id];
           if (r) delete E._kf[m.id], r(m);
@@ -50184,8 +50211,8 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       setTimeout(go, 1000);
     });
 })();
-</script><script id="engwatchjs">/* ENG WATCH (3.2.0 Web Worker): the watchdog of the worker on the page (a worker that is killed or hangs: a message on the screen, the
-   page engine again). Owner: Giselle. Empty until her commit. */
+</script><script id="engwatchjs">/* ENG WATCH (3.2.0 Web Worker): the watchdog of the worker is in src/world/eng-page.js (Giselle's heartbeat, merged there: it needs
+   the worker's messages). This slot stays empty. */
 </script><script type="text/plain" id="engsrc">/* ENG WORKER HEAD (3.2.0 Web Worker, stage d): the first lines of the worker script (tools/build/build.js #engsrc). The engine code
    names the page as `window`; in the worker that is the worker itself. It reads no storage of its own: the page sends its saved
    fixes and settings with the start (src/world/eng-page.js), so the storage here is empty */
@@ -75057,8 +75084,8 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
           E._last = r;
         } catch (e) {
           if (G.console) console.error('ENG ' + n, e);
-          /* an engine action that fails is said on the page (it was silent) */
-          if (E.mode === 'engine') post({ t: 'error', where: 'engine action ' + n, text: String((e && e.stack) || e), soft: 1 });
+          /* not silent: the page stops the worker and runs the engine itself (eng-page.js fail), as for an error of a scan (Giselle) */
+          if (E.mode === 'engine') post({ t: 'error', where: n, text: String((e && e.stack) || e) });
         } finally {
           inCall--;
         }
@@ -75289,6 +75316,9 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
     say({ t: 'ready' });
   }
   function run() {
+    /* the heartbeat (Giselle): the page knows the engine is alive also while nothing changes (paused); a worker that died or hangs is
+       seen there (eng-page.js watchdog) */
+    timers.push(setInterval(() => say({ t: 'beat' }), 1000));
     const { AN, WORLD, ENG } = G;
     let acc = 0,
       busy = false;
@@ -75348,6 +75378,9 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
     );
   }
   /* the messages that come while the engine is still loading wait (in order) */
+  /* an action (Reset, a starting state ...) can take seconds here, with no heartbeat: the page is told first (Giselle; 'acting', not
+     'busy': 'busy' is the progress bar) */
+  const acting = m => m && m.t === 'op' && m.calls && m.calls.length && say({ t: 'acting' });
   let ready = false;
   const Q = [];
   G.onmessage = async e => {
@@ -75357,13 +75390,18 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
       if (m.t === 'init') {
         await init(m);
         ready = true;
-        while (Q.length) await G.ENG.onMsg(Q.shift());
+        while (Q.length) {
+          const q = Q.shift();
+          acting(q);
+          await G.ENG.onMsg(q);
+        }
       }
       else if (m.t === 'kf') say({ t: 'kf', id: m.id, kf: G.AN.engState.capture(), kd: G.DITL.ditlCapture(), n: Object.assign({ loading: !!G.AN._loading, mode: G.ENG.mode, run: G.AN.run, at: Date.now() }, N) });
       else if (m.t === 'stop') {
         timers.forEach(clearInterval);
         timers = [];
       } else {
+        acting(m);
         await G.ENG.onMsg(m);
         /* what the message changed goes back at once (no job runs while the plant is paused) */
         if (m.t === "op" || m.t === "full") G.ENG.send();
