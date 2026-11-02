@@ -41,9 +41,19 @@
   const zoom = E('button', { txt: 'Zoom', title: 'Zoom to readable text (12 px) on the selected cell; Fit shows the whole sheet again' });
   const panel = E('button', { txt: 'Panel', title: 'Show / hide the right panel (inputs, timers, outputs)' });
   run.onclick = () => {
-    if (!SIM) enter();
-    DPAUSE = false;
-    TSP = 1;
+    /* 3.2.0 (Mina's live test #M9, user OK 2026-11-03): with the one world (always ON) RUN only runs the plant: SIM on, no DITL
+       Reset. Before, RUN went through the old Simulate button (ditlStates: motors, valves, latches, timers back to the start), so the
+       Training dock's RUN on a DITL page stopped the debris filter and reset the DITL-777 / APH soot blower trip latches. The speed
+       chosen in the Training stays. Reset stays on the Reset buttons */
+    if (window.WORLD && WORLD.on) {
+      SIM = true;
+      DPAUSE = false;
+      TSP = (window.AN && AN.spd) || 1;
+    } else {
+      if (!SIM) enter();
+      DPAUSE = false;
+      TSP = 1;
+    }
     upd();
     render();
   };
