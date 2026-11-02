@@ -17,6 +17,7 @@ engine/source.js
 engine/hmi-op.js
 engine/sheets.js
 engine/links.js
+engine/ds.js
 engine/state.js
 engine/ctrls.js
 engine/names.js

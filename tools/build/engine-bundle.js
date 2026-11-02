@@ -24,6 +24,8 @@ function bundle(o) {
     'Object.defineProperty(AN,"ln",{get:()=>globalThis.ANLN||{},set:v=>{globalThis.ANLN=v}});\n';
   const hooks = 'Object.assign(AN,anEngAPI());\n' +
     'AN.lnSrc=()=>(' + aln + ');\n' +
+    /* the descriptions (engine/ds.js ADES): the host puts them in (the page: data/loader.js adesLoad from its #ades data) */
+    'AN.ades=()=>Promise.resolve(ADES||{});AN.adesPut=d=>{ADES=d};\n' +
     'const anCur=()=>AN.sheets[AN.i]||AN.sheets.find(x=>/057/.test(x.name));\n' +
     'AN.reset=()=>{anResetAll();const c=anCur();if(c&&c.S)for(let i=0;i<6;i++)stepSet(c,0)};\n' +
     'AN.settle=()=>{const c=anCur();if(c&&c.S)for(let i=0;i<6;i++)stepSet(c,0)};\n' +
@@ -31,6 +33,23 @@ function bundle(o) {
     'globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad150,anPlantCold}};\n';
   return '(function(){\n' + core + body + '\n;\n' + hooks + '})();\n';
 }
-
-module.exports = { bundle, files };
+/* 3.2.0 Web Worker, stage b: the whole engine, the one world: the DITL engine parts of src/digital/order.list (up to 03c-read.js:
+   parse, netlist, models, simulation, reader; one global script as in the page), the analog engine above (its AN on globalThis, as
+   ui/main.js puts it on window), then src/world/world.js, plantsw.js and ditl150.js. The host gives msg (the page: the toast). */
+function dFiles() {
+  const D = path.join(root, 'src', 'digital');
+  const l = fs.readFileSync(path.join(D, 'order.list'), 'utf8').split(/\r?\n/).map(s => s.trim()).filter(s => s && s[0] !== '#');
+  return l.slice(0, l.indexOf('parts/03c-read.js') + 1).map(f => path.join(D, f));
+}
+function worldBundle(o) {
+  const rd = f => fs.readFileSync(f, 'utf8');
+  const an = bundle(o).replace('globalThis.ENGINE=', 'globalThis.AN=AN;globalThis.ENGINE=');
+  return (
+    dFiles().map(f => '/* ---- ' + path.relative(root, f) + ' ---- */\n' + rd(f)).join('\n') +
+    '\n;globalThis.DITL={get S(){return S},set S(v){S=v},get SIM(){return SIM},set SIM(v){SIM=v},get MST(){return MST},get MS(){return MS},get DREG(){return DREG},ditlStates,simSheet,netlist};\n' +
+    an +
+    ['world.js', 'plantsw.js', 'ditl150.js'].map(f => '/* ---- src/world/' + f + ' ---- */\n' + rd(path.join(root, 'src', 'world', f))).join('\n')
+  );
+}
+module.exports = { bundle, files, worldBundle };
 if (require.main === module) process.stdout.write(bundle());

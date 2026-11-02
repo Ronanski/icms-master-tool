@@ -1,6 +1,6 @@
 /* ---------- data (built-in sheets, lazy) ---------- */
 /* descriptions: station -> address -> record (IO list rows: tag, description, range, unit, type, SIG.AB address; memory lists: description, remark, timer type / seconds) */
-let ADES = null;
+/* ADES (the descriptions, filled by adesLoad below): engine/ds.js */
 async function adesLoad() {
   if (ADES) return ADES;
   const e = document.getElementById('ades');
@@ -16,33 +16,7 @@ async function adesLoad() {
   }
   return ADES;
 }
-function adesFind(sh, text) {
-  if (!ADES || !text) return null;
-  const t = String(text).trim();
-  let m = /^(?:S(\d)\s*)?([A-Z]{1,2})\.([0-9A-F]{3,4})$/i.exec(t),
-    pre,
-    num,
-    dot = '.';
-  if (m) {
-    pre = m[2].toUpperCase();
-    num = m[3].toUpperCase().padStart(4, '0');
-  } else {
-    m = /^(?:S(\d)\s*)?(TR|SI|SO|AI|AO|DI|DO|FP|PTN)(\d{1,6})$/i.exec(t);
-    if (!m) return null;
-    pre = m[2].toUpperCase();
-    dot = '';
-    num = pre === 'PTN' ? m[3].padStart(6, '0') : m[3].padStart(4, '0');
-  }
-  const stn = m[1] ? +m[1] : sh ? shStn(sh) : null,
-    T = ADES[String(stn)],
-    key = pre + dot + num,
-    r = T && T[key];
-  return r ? { rec: r, stn, key } : null;
-}
-function adesText(r) {
-  if (!r) return '';
-  return r.k === 'io' ? [r.tag, r.d].filter(Boolean).join(' · ') : [r.d, r.r].filter(Boolean).join(' · ');
-}
+/* adesFind, adesText: engine/ds.js */
 function adesLines(a) {
   const r = a.rec,
     o = [];
