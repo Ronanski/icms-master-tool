@@ -1,7 +1,7 @@
 // The radio (3.2.0 Web Worker, stage c: src/world/eng.js + src/analog/engine/sync.js), in node only: two engines, A = the engine (as the
 // worker will run it), B = the mirror of the page. B starts from the keyframe of A (ABC + DITL); then A scans and sends what changed,
 // B takes it; the operator works on B only (a mode press = an action, the output of a MAN station = a write, a DITL push button =
-// a write); everything reaches A through the radio. After every scan A and B must hold the same state (0 differences in every ABC
+// a write; Reset of the ABC and the DITL, Start at 150 MW = actions); everything reaches A through the radio. After every scan A and B must hold the same state (0 differences in every ABC
 // value, input, block state, unit model number, DITL net, gate, input, W.out, motor / valve).
 // Usage: node tests/regress/eng_radio.js
 const fs = require('fs'), vm = require('vm'), zlib = require('zlib'), path = require('path');
@@ -68,6 +68,12 @@ const cmp = (a, b) => { let n = 0; const ex = []; for (let i = 0; i < Math.max(a
     }
     if (k === 32) delete B.DITL.S.sheets.find(x => /DITL-15$/.test(x.name)).sig['11:S'];
     if (k === 50) B.AN.latchMode('PICMS1006', 'AUTO');
+    /* Reset of the ABC and of the DITL from the page, then Start at 150 MW */
+    if (k === 60) {
+      B.AN.reset();
+      B.ctx.ditlStates();
+    }
+    if (k === 62) B.AN.plantLoad150();
     /* the operator's writes leave at the next message (here: now) */
     B.ENG.flush();
     while (toA.length) await A.ENG.onMsg(toA.shift());
@@ -78,7 +84,7 @@ const cmp = (a, b) => { let n = 0; const ex = []; for (let i = 0; i < Math.max(a
   }
   const hp = S50(A).S.rt.v;
   void hp;
-  ck(bad < 0, '80 scans, the operator on the page (mode press, MAN output 20 %, settle, DITL push button, AUTO): ' + (bad < 0 ? '0 differences after every scan' : 'first difference after scan ' + bad + ': ' + worst.n + '\n   ' + worst.ex.join('\n   ')));
+  ck(bad < 0, '80 scans, the operator on the page (mode press, MAN output 20 %, settle, DITL push button, AUTO, Reset ABC + DITL, Start at 150 MW): ' + (bad < 0 ? '0 differences after every scan' : 'first difference after scan ' + bad + ': ' + worst.n + '\n   ' + worst.ex.join('\n   ')));
   console.log('   patch ' + (tp / 80).toFixed(1) + ' ms / scan, ' + (kb / 80).toFixed(0) + ' kB / scan');
   console.log(fail ? 'FAILED ' + fail : 'ALL PASS');
   process.exit(fail ? 1 : 0);
