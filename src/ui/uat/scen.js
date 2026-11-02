@@ -1116,5 +1116,6 @@ window.UATS = (function () {
       AN.run = run0;
     }
   }
-  return { run, expand, generic };
+  /* 3.2.0 Web Worker: on the engine of the page (runner.js UATR.onPage) */
+  return { run: (...a) => UATR.onPage(() => run(...a)), expand, generic: (...a) => UATR.onPage(() => generic(...a)) };
 })();

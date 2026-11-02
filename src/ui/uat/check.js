@@ -3068,7 +3068,12 @@
     }
   ];
   /* ---- run one scenario: Start at 150 MW, then 0.5 s steps in batches so the page stays alive ---- */
-  async function runSc(sc, ui) {
+  /* 3.2.0 Web Worker: a scenario resets, loads and steps the plant and judges it at once: on the engine of the page (runner.js) */
+  function runSc(sc, ui) {
+    if (busy) return;
+    return UATR.onPage(() => runSc0(sc, ui));
+  }
+  async function runSc0(sc, ui) {
     if (busy) return;
     busy = true;
     P.querySelectorAll('button.go').forEach(b => (b.disabled = true));
