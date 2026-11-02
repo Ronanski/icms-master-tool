@@ -47,7 +47,9 @@ async function pair() {
 }
 const sh = n => n.AN.sheets.find(s => s.name === SH);
 const ctl = n => n.AN.hmiCtrls(sh(n).S).find(x => x.tag === TAG);
-async function run(name, act, reached) {
+/* opt.afterPatch: a HEAVY action (eng.js HEAVY: Reset ...) runs in the engine only since a2357e8 and reaches the page with the next
+   patch: its "reached" is read after that patch (the 0 differences check is the same) */
+async function run(name, act, reached, opt = {}) {
   const { A, B, toA, toB } = await pair();
   let c = cmp(A.dump(), B.dump());
   if (c.n) return ck(false, name + ': keyframe ' + c.n + ' differences');
@@ -61,9 +63,10 @@ async function run(name, act, reached) {
     if (k === 2) act(B);
     B.ENG.flush();
     while (toA.length) await A.ENG.onMsg(toA.shift());
-    if (k === 2) got = reached(A, B);
+    if (k === 2 && !opt.afterPatch) got = reached(A, B);
     A.ENG.send();
     while (toB.length) await B.ENG.onMsg(toB.shift());
+    if (k === 2 && opt.afterPatch) got = reached(A, B);
     c = cmp(A.dump(), B.dump());
     if (c.n && bad < 0) { bad = k; worst = c; }
   }
@@ -103,7 +106,7 @@ async function run(name, act, reached) {
   const lnOf = n => { for (const s of n.AN.sheets) if (s.S) for (const b of s.S.blk) if (b.k === 'FX' && b.p.ln) return b.p.ln; };
   await run('F(X) table loaded by hand (ANLN) + settle', B => { B.AN.ln = Object.assign({}, B.AN.ln, { [lnOf(B)]: [[0, 0], [50, 40], [100, 100]] }); B.AN.settle(); }, (A, B) => JSON.stringify(A.AN.ln) === JSON.stringify(B.AN.ln) || 'ANLN engine ' + JSON.stringify(A.AN.ln).slice(0, 80));
   /* loader.js reset */
-  await run('Reset', B => B.AN.reset(), (A, B) => sh(A).S.rt.t === sh(B).S.rt.t || 't engine ' + sh(A).S.rt.t + ', page ' + sh(B).S.rt.t);
+  await run('Reset', B => B.AN.reset(), (A, B) => sh(A).S.rt.t === sh(B).S.rt.t || 't engine ' + sh(A).S.rt.t + ', page ' + sh(B).S.rt.t, { afterPatch: true });
   console.log(fail ? 'FAILED ' + fail : 'ALL PASS');
   process.exit(fail ? 1 : 0);
 })();
