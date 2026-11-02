@@ -359,7 +359,7 @@ const AN_HMI_CTL = {
   'FICFA1043B': { pv: null, sv: null, mv: 5.5, mode: 'M' } /* 2.1.0-beta.10: valve MCVFA1043B 5.5 % M (R shown, R-SV 26.0) (13.PNG) */,
   'FICFA1043C': { pv: null, sv: null, mv: 5.0, mode: 'M' } /* 2.1.0-beta.10: valve MCVFA1043C 5.0 % M (L shown, R-SV 26.0) (14.PNG) */,
   'FICFA1043D': { pv: null, sv: null, mv: 1.7, mode: 'M' } /* 2.1.0-beta.10: valve MCVFA1043D 1.7 % M (L shown, R-SV 26.0) (15.PNG) */,
-  'FICFA1055A': { pv: null, sv: null, mv: 42.8, mode: 'A' } /* 2.1.0-beta.10: valve FCVFA1055A1 42.8 % A (9.png) */,
+  'FICFA1055A': { pv: 26.3, sv: null, mv: 42.8, mode: 'A' } /* 2.1.0-beta.10: valve FCVFA1055A1 42.8 % A (9.png); 3.2.0 (Rose, FA blower B standby at 150 MW): its PV is the common FA flow FT-FA1055 (range 0 ~ 35 T/H = PH 35 of the loop), 9.png FIFA1055 26.3 T/H with blower A alone running (B standby): without it the loop had no anchor and gave 14.9 T/H, under ABC-006 M.3114 L.L. 20 T/H, and DITL-28A started blower B (OPERATING_POINTS.md FIFA1055) */,
   'FICFA1055B': { pv: null, sv: null, mv: 24.9, mode: 'M' } /* 2.1.0-beta.10: valve FCVFA1055B1 24.9 % M (9.png) */,
   'HICBR1391': { pv: null, sv: null, mv: 0.0, mode: 'R' } /* 2.1.0-beta.10: valve MVBR1391 0.0 % R TQ (A) (03.png) */,
   'HICDO1012': { pv: null, sv: null, mv: 100.0, mode: 'M' } /* 2.1.0-beta.10: valve FCVDO1012 100.0 % M (6.PNG) */,
