@@ -40,6 +40,9 @@ const block =
   /* 3.2.0-beta.70: HSYM, the shared symbol library of the HMI pages (pipes, pump, valves, tank, gauge, animation) */
   fs.readFileSync(__dirname + '/../plant/hmi-sym.js', 'utf8') +
   '\n' +
+  /* 2026-11-02: HSYM.kit, the approved plant HMI kit pieces (team-files/hmi-mockups/HMI_KIT_APPROVED.md) */
+  fs.readFileSync(__dirname + '/../plant/hmi-kit.js', 'utf8') +
+  '\n' +
   /* 3.2.0-beta.63: MAKE-UP WATER (own vector graphics, STEEL; PR-OPE-5002 section 7) */
   fs.readFileSync(__dirname + '/../plant/hmi-mu.js', 'utf8') +
   '\n' +
