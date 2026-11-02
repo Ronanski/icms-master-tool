@@ -368,8 +368,8 @@
     const el = $('pllive');
     if (el) {
       el.textContent = liveOn
-        ? 'LIVE · ' + n + ' / ' + LV.length + ' linked' + (n < LV.length ? ' · — = no model' : '')
-        : 'SNAPSHOT';
+        ? /* UI overhaul 2026-11-02: operator words on the bar; the link count stays in the tooltip below */ 'Live values'
+        : 'Snapshot values';
       el.title = liveOn
         ? n +
           ' values read the simulation; ' +

@@ -736,7 +736,9 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v@@VERSION@@';
-      c3.textContent += ' · build @@BUILD@@'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      /* UI overhaul 2026-11-02: the build id is developer text, so it moves from the status bar into the tooltip of the version
+         (3.2.0 retest #24 still holds: two builds of one version can be told apart by pointing at the version) */
+      c3.title = 'Build @@BUILD@@';
     } catch (e) {}
   };
   upd();
