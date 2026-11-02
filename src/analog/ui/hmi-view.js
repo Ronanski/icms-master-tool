@@ -154,7 +154,7 @@ function hmiWrite(w, v, rel) {
   if (p.ext) {
     if (rel === true) return;
     setExt(p.sh, p.n, v);
-  } else AN.setForce(p.sh, p.n, rel === true ? undefined : v);
+  } else setForce(p.sh, p.n, rel === true ? undefined : v);
 }
 function hmiBlk(w) {
   const c = hmiIndex().blk.get(hmN(w.addr)) || [];
@@ -1368,11 +1368,11 @@ hmiWrite = function (w, v, rel) {
   const sh = st.p.sh;
   hmiSync();
   if (rel === true) {
-    if (st.forced) AN.setForce(sh, st.n, undefined);
+    if (st.forced) setForce(sh, st.n, undefined);
     return;
   }
   if (st.how === 'forced') {
-    AN.setForce(sh, st.n, v);
+    setForce(sh, st.n, v);
     return;
   }
   if (st.how === 'plant') {
@@ -1403,13 +1403,13 @@ function hmiToggleForce(w) {
   if (!st) return;
   const sh = st.p.sh;
   if (st.forced) {
-    AN.setForce(sh, st.n, undefined);
+    setForce(sh, st.n, undefined);
     return;
   }
   let v = st.S.rt.v[st.n];
   if (v == null || !isFinite(v)) v = 0;
   if (st.S.nets[st.n].dig) v = v > 0.5 ? 1 : 0;
-  AN.setForce(sh, st.n, v);
+  setForce(sh, st.n, v);
 }
 function hmiFBox(g, w, W, H, upd) {
   if (!['button', 'slider', 'num', 'lamp', 'bar', 'tank', 'valve', 'motor', 'pipe'].includes(w.type)) return;

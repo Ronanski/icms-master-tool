@@ -773,7 +773,8 @@ function setForce(sh, n, x) {
     o.force[n] = x;
   }
   anSave();
-  settle();
+  /* 3.2.0 Web Worker: through the radio (the force goes as a write, the settle runs in the engine too; inside AN.setForce: here only) */
+  AN.settle();
   fpUpd();
 }
 /* a numeric field is DIRTY from the first typed character until it is committed (check / Enter / change), cancelled (Esc, release) or abandoned (2.5 s after it lost focus). The 100 ms updater never overwrites a dirty field. */
@@ -820,9 +821,9 @@ function forceCtl(S, sh, n) {
       b1 = h$('button', { txt: '1', title: 'Force this signal to 1 (like a bypass in the DCS)' }),
       b0 = h$('button', { txt: '0', title: 'Force this signal to 0' }),
       x = h$('button', { txt: 'Release', title: 'Release the force: back to the value computed by the logic' });
-    b1.onclick = () => AN.setForce(sh, n, 1);
-    b0.onclick = () => AN.setForce(sh, n, 0);
-    x.onclick = () => AN.setForce(sh, n, undefined);
+    b1.onclick = () => setForce(sh, n, 1);
+    b0.onclick = () => setForce(sh, n, 0);
+    x.onclick = () => setForce(sh, n, undefined);
     box.append(lab, b1, b0, x);
     const u = () => {
       const c = F[n];
@@ -846,7 +847,7 @@ function forceCtl(S, sh, n) {
         const r_ = anNetRange(S, n) || (S.ext.includes(n) ? anExtRange(S, n) : null),
           c_ = anClamp(r_, v);
         if (c_.cut) msg('Limited to the range written on the drawing: ' + r_.lo + ' ~ ' + r_.hi + ' ' + r_.u);
-        AN.setForce(sh, n, c_.x);
+        setForce(sh, n, c_.x);
       } else msg('Type a number first, then press ✓');
     };
     ok.onclick = acc;
@@ -858,7 +859,7 @@ function forceCtl(S, sh, n) {
     };
     x.onclick = () => {
       i._clr();
-      AN.setForce(sh, n, undefined);
+      setForce(sh, n, undefined);
       i.value = '';
     };
     box.append(i, ok, x);
@@ -885,7 +886,7 @@ function fpUpd() {
   ks.forEach(k => {
     const n = +k,
       x = h$('button', { txt: '✕', title: 'Release' });
-    x.onclick = () => AN.setForce(sh, n, undefined);
+    x.onclick = () => setForce(sh, n, undefined);
     d.append(
       h$('div', { cls: 'r' }, [
         h$('span', { cls: 'n', txt: nm(S, n) }),
