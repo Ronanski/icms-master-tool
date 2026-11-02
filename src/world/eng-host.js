@@ -150,7 +150,7 @@
         }
       }
       else if (m.t === 'go') go(m);
-      else if (m.t === 'kf') say({ t: 'kf', id: m.id, kf: G.AN.engState.capture(), kd: G.DITL.ditlCapture(), n: Object.assign({ loading: !!G.AN._loading, mode: G.ENG.mode, run: G.AN.run, at: Date.now(), ms: G.WORLD.ms }, N) });
+      else if (m.t === 'kf') say({ t: 'kf', id: m.id, kf: G.AN.engState.capture(), kd: G.DITL.ditlCapture(), n: Object.assign({ loading: !!G.AN._loading, mode: G.ENG.mode, run: G.AN.run, at: Date.now(), ms: G.WORLD.ms, wait: !!G.ENG.wait, owed: !!G.ENG.owed, live: !!G.WORLD.live, wsh: (G.AN.worldSheets || []).length }, N) });
       else if (m.t === 'stop') {
         timers.forEach(clearInterval);
         timers = [];
