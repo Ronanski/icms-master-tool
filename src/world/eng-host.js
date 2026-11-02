@@ -21,6 +21,16 @@
   const N = (G.ENG_N = { abc: 0, world: 0, sent: 0, skip: 0 });
   const say = m => G.postMessage(m);
   G.msg = t => say({ t: 'msg', text: String(t) });
+  /* the progress bar of a long action (hmi-op.js anLoadStart: window.lsBusy) on the page; the steps at most 5 a second */
+  let pt = 0;
+  G.lsBusy = {
+    show: t => say({ t: 'busy', f: 'show', a: [t] }),
+    prog: f => {
+      const n = Date.now();
+      if (n - pt > 200) (pt = n), say({ t: 'busy', f: 'prog', a: [f] });
+    },
+    hide: () => say({ t: 'busy', f: 'hide', a: [] })
+  };
   /* an event of the engine (world.js FIRST-OUT: a TRIP and its cause) goes to the Event log of the page with the patch of its scan
      (the page takes the state first, so the event has the plant time of its scan) */
   G.lsEventAdd = (...a) => ((N.ev = (N.ev || 0) + 1), (G.ENG.evq = G.ENG.evq || []).push(a));

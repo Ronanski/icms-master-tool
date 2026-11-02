@@ -10,14 +10,14 @@
 let AN_SYNC = null;
 function anSyncRefs() {
   const ref = anStateRefs();
-  /* across slots (one slot is decoded alone): a plant model, its remote measurement (procRemote; b.proc1 holds it too), a block state
+  /* across slots (one slot is decoded alone): a plant model, a block state
      (the unit model holds some: U.zt ...; written as a copy, the copy moved). The keyframe is decoded at once and keeps them by $id */
   AN.sheets.forEach((sh, i) => {
     if (!sh.S) return;
     sh.S.blk.forEach((b, j) => {
       if (!b.proc) return;
       ref.set(b.proc, { $P: [i, j] });
-      if (b.proc.remote && typeof b.proc.remote === 'object') ref.set(b.proc.remote, { $R: [i, j] });
+      /* not the remote measurement: plain data that the page does not make itself since the long actions run in the engine only */
     });
     for (const id of Object.keys(sh.S.rt.st)) if (sh.S.rt.st[id] && typeof sh.S.rt.st[id] === 'object') ref.set(sh.S.rt.st[id], { $T: [i, id] });
   });
