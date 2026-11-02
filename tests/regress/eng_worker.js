@@ -18,7 +18,7 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
   const st = await page.evaluate(() => ({ mode: ENG.mode, err: ENG.err, bar: !!document.getElementById('engerr') }));
   ck(st.mode === 'mirror' && !st.err && !st.bar, 'the engine starts in the worker' + (st.err ? ': ' + JSON.stringify(st.err).slice(0, 300) : ''));
   /* RUN at 1x: the plant time of ABC-001C moves on the page */
-  const t0 = await page.evaluate(() => { const C = AN.sheets.find(s => s.name === 'ABC-001C'); AN.i = AN.sheets.indexOf(C); AN.plantLoad150(); AN.run = true; return C.S.rt.t; });
+  const t0 = await page.evaluate(() => { const C = AN.sheets.find(s => s.name === 'ABC-001C'); AN.i = AN.sheets.indexOf(C); AN.plantLoad150(); DITL150.apply(); AN.run = true; return C.S.rt.t; });
   /* the engine first runs the same Start at 150 MW (some seconds), then the patches come */
   const g0 = Date.now();
   await page.waitForFunction(() => ENG.got > 0, null, { timeout: 90000 }).catch(() => {});
@@ -49,6 +49,13 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
   await page.waitForTimeout(1500);
   await page.evaluate(() => { delete S.sheets.find(x => /DITL-15$/.test(x.name)).sig['11:S']; AN.latchMode('PICMS1006', 'AUTO'); });
   await page.waitForTimeout(3000);
+  /* an MFT in the engine (BOILER EMERGENCY TRIP P.B., DITL-03A row 14) reaches the Event log of the page with its cause (FIRST-OUT) */
+  await page.evaluate(() => { lsEvents.length = 0; S.sheets.find(x => /DITL-03A/.test(x.name)).sig['13:S'] = true; });
+  await page.waitForTimeout(3000);
+  await page.evaluate(() => { S.sheets.find(x => /DITL-03A/.test(x.name)).sig['13:S'] = false; });
+  await page.waitForTimeout(2000);
+  const ev = await page.evaluate(() => lsEvents.filter(e => e.kind === 'TRIP' && /MASTER FUEL TRIP \(MFT\)/.test(e.text)).map(e => ({ sh: e.sh, t: e.text, why: (e.why || []).map(l => l.txt) })));
+  ck(ev.length === 1 && /DITL-03A/.test(ev[0].sh) && ev[0].why.some(w => /BOILER EMERGENCY TRIP P\.B\./.test(w)), 'MFT in the worker: Event log of the page "' + (ev[0] ? ev[0].t : '-') + '", cause ' + JSON.stringify(ev[0] && ev[0].why) + ' (' + ev.length + ' event)');
   /* pause, let the last patch arrive, then the whole state of the worker against the page */
   const r = await page.evaluate(async () => {
     AN.run = false;

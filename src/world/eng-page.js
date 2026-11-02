@@ -74,6 +74,8 @@
         const kf = AN.engState.capture(),
           kd = ditlCapture();
         E.onPatch = () => AN.patchPaint && AN.patchPaint();
+        /* the events of the engine into the Event log of the page */
+        E.onEvent = a => window.lsEventAdd && lsEventAdd(...a);
         E.start('mirror', w);
         /* the operator's writes leave every 500 ms too (no patch comes while the plant is paused) */
         E._fl = setInterval(() => E.mode === 'mirror' && E.flush(), 500);

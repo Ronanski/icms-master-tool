@@ -111,11 +111,21 @@
       /* after an action the next patch carries everything: the page is the engine again, whatever its run of the action gave */
       if ((m.calls || []).length && E.mode === 'engine' && G.AN.sync.forget) G.AN.sync.forget();
     } else if (m.t === 'patch') {
-      if (E.busy) return void post({ t: 'ack' }); /* an action of the page still runs: the full state comes after it */
+      if (E.busy) {
+        /* an action of the page still runs: the full state comes after it; its events wait */
+        (E.evHeld = E.evHeld || []).push(...(m.ev || []));
+        return void post({ t: 'ack' });
+      }
+      m.ev = (E.evHeld || []).concat(m.ev || []);
+      E.evHeld = [];
       /* the operator wins: a write not sent yet goes first */
       const mine = E.flush();
       G.AN.sync.apply(m.p, new Set(mine.map(x => x[0])));
       if (E.onPatch) E.onPatch(m);
+      for (const a of m.ev || [])
+        try {
+          if (E.onEvent) E.onEvent(a);
+        } catch (x) {}
       post({ t: 'ack' });
     }
   };
@@ -142,12 +152,14 @@
       return 0;
     }
     E._ls = now;
-    const p = G.AN.sync.patch();
-    if (p.length) {
-      post({ t: 'patch', p });
+    const p = G.AN.sync.patch(),
+      ev = E.evq || [];
+    if (p.length || ev.length) {
+      post({ t: 'patch', p, ev });
+      E.evq = [];
       E.wait = true;
     }
-    return p.length;
+    return p.length + ev.length;
   };
   E.stop = () => {
     E.mode = 'local';

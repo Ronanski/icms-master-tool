@@ -21,6 +21,9 @@
   const N = (G.ENG_N = { abc: 0, world: 0, sent: 0, skip: 0 });
   const say = m => G.postMessage(m);
   G.msg = t => say({ t: 'msg', text: String(t) });
+  /* an event of the engine (world.js FIRST-OUT: a TRIP and its cause) goes to the Event log of the page with the patch of its scan
+     (the page takes the state first, so the event has the plant time of its scan) */
+  G.lsEventAdd = (...a) => ((N.ev = (N.ev || 0) + 1), (G.ENG.evq = G.ENG.evq || []).push(a));
   async function init(m) {
     const { AN, DITL, WORLD, ENG } = G;
     AN.sheets = lines(await gunz(m.apre));
