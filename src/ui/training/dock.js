@@ -1504,7 +1504,15 @@
   function openD(nm, row, zoom, rows) {
     const m = /\s*#([B-D])$/.exec(String(nm));
     document.body.classList.remove('lsfield');
+    /* Mina #M10 / #M20: opening a drawing never changes RUN. setCat carries the run over (runWas), but it reads the ABC run of that
+       moment (a switch back to ABC turns it on again only after its sheets load), so now and then the DITL page opened PAUSED */
+    const wasRun = isRun();
     AN.xrefGo({ d: String(nm).replace(/\s*#\w+$/, '') });
+    if (wasRun && !isRun())
+      try {
+        runNow();
+        window.lsEventAdd && lsEventAdd('DCS', 'RUN', 'RUN kept while opening ' + String(nm));
+      } catch (e) {}
     setTimeout(() => {
       try {
         if (window.DUI && DUI.setMach) DUI.setMach(m ? 'ABCD'.indexOf(m[1]) : 0);
@@ -2254,7 +2262,12 @@
       if (f.lim.note) continue;
       const rg = /\(([^()]*\d[^()]*~[^()]*)\)/.exec(f.t),
         lm = [f.lim.n ? f.lim.n : rg ? rg[1] : '', f.lim.a ? 'Alarm ' + f.lim.a : '', f.lim.tr ? 'Trip ' + f.lim.tr : ''].filter(Boolean);
-      if (!lm.length) continue;
+      /* Mina #M19: a "Monitor parameters" item with no SOP limit and no DCS signal (the SWBP Temperature, PR-OPE-5002 5.12: the I/O list has no
+         TT for P-1503A ~ C, the alarm list none) is read in the field: it shows as a field check, not left out */
+      if (!lm.length) {
+        if (/^\s*temperature\b/i.test(f.t)) sop.push([u1(f.t.replace(/\s*\(.*$/, '')), () => 'FIELD', '°C', x => x, 'field gauge · no DCS signal, no SOP limit']);
+        continue;
+      }
       /* Mina #M13: an SOP sentence is not a value to watch ("All permissive are satisfied ..." filled a tile): the item stays in the list */
       if (/permissive|satisf/i.test(f.t)) continue;
       const nm = f.t.replace(/\s*\([^()]*\d[^()]*~[^()]*\)/, '').replace(/^(Check|Verify|Ensure)\s+(that\s+)?(the\s+)?/i, '');
