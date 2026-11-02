@@ -198,11 +198,11 @@
       m.ev = (E.evHeld || []).concat(m.ev || []);
       E.evHeld = [];
       /* the operator wins: a write not sent yet goes first */
-      /* only the slots this patch carries can cover a write of the page, so only those are looked at (Ningning, sync.js keys: 0.05 ms
-         for a few slots, the whole flush took ~5 ms at 6x); the other writes go with the 500 ms flush (eng-page.js) and before each action */
-      const mine = E.mode === 'mirror' && G.AN && G.AN.sync ? G.AN.sync.patch(true, { keys: m.p.map(x => x[0]) }) : [],
+      /* every writable slot, not only the ones this patch carries (Ningning's sync.js keys, tried in 390e423): an operator write the engine
+         did not touch in this scan (a DITL push button, an input switch) then waited for the 500 ms flush (up to 2 s in slices), too slow
+         for a press; the whole flush is ~5 ms at 6x, twice a second (eng_radio_ningning: a write leaves with the next patch) */
+      const mine = E.flush(),
         skip = new Set(mine.map(x => x[0]));
-      if (mine.length) post({ t: 'op', ops: mine, calls: [] });
       /* in slices of at most 4 ms, the page draws between them (a patch at once took ~100 ms at 6x: the long frames of the 038 page,
          Ningning's trace); no slices where there is no MessageChannel (the node tests: at once) */
       if (E.yieldNow && m.p.length > 8) {
