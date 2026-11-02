@@ -188,8 +188,11 @@
       m.ev = (E.evHeld || []).concat(m.ev || []);
       E.evHeld = [];
       /* the operator wins: a write not sent yet goes first */
-      const mine = E.flush(),
+      /* only the slots this patch carries can cover a write of the page, so only those are looked at (Ningning, sync.js keys: 0.05 ms
+         for a few slots, the whole flush took ~5 ms at 6x); the other writes go with the 500 ms flush (eng-page.js) and before each action */
+      const mine = E.mode === 'mirror' && G.AN && G.AN.sync ? G.AN.sync.patch(true, { keys: m.p.map(x => x[0]) }) : [],
         skip = new Set(mine.map(x => x[0]));
+      if (mine.length) post({ t: 'op', ops: mine, calls: [] });
       /* in slices of at most 4 ms, the page draws between them (a patch at once took ~100 ms at 6x: the long frames of the 038 page,
          Ningning's trace); no slices where there is no MessageChannel (the node tests: at once) */
       if (E.yieldNow && m.p.length > 8) {
