@@ -1063,6 +1063,20 @@
     els.secL.setAttribute('aria-expanded', 'true');
     const on = box.querySelector('button.on');
     if (on) on.scrollIntoView({ block: 'center' });
+    /* Mina #M11: the list closes on a click outside it or on Esc, as a menu does (it stayed open over the HMI until ☰ again) */
+    const close = () => {
+      box.remove();
+      els.secL.setAttribute('aria-expanded', 'false');
+      removeEventListener('pointerdown', out, true);
+      removeEventListener('keydown', esc, true);
+    };
+    const out = e => {
+      if (!box.isConnected) return close();
+      if (!box.contains(e.target) && e.target !== els.secL) close();
+    };
+    const esc = e => e.key === 'Escape' && close();
+    addEventListener('pointerdown', out, true);
+    addEventListener('keydown', esc, true);
   }
   /* the sheets of the step: the DITL of each motor / push button, the ABC sheet of each faceplate */
   function sheetsOf(s) {
@@ -2254,9 +2268,18 @@
               ? ['PIMU0709', () => (U0().on ? +U0().muP : NaN), 'kg/cm²']
               : f.si === 7 && /current/i.test(f.t)
                 ? ['IIP1108A / B', () => (U0().on ? Math.max(+U0().acI0 || 0, +U0().acI1 || 0) : NaN), 'A']
-                : /* Mina #M8: section 2 SWP current (SOP 205 ~ 215 A) on the later steps: the running pump of the plant model (HMI 030 IIP1501A ~ C) */
-                  f.si === 1 && /current/i.test(f.t)
-                  ? ['IIP1501A ~ C', () => (U0().on ? Math.max(+U0().swIa0 || 0, +U0().swIa1 || 0, +U0().swIa2 || 0) : NaN), 'A']
+                : /* Mina #M8: section 2 SWP current (SOP 205 ~ 215 A) and section 5 SWBP current (81 ~ 99 A) on the later steps: the plant
+                     model (HMI 030 IIP1501A ~ C = swIa, IIP1503A ~ C = swIb): the pump the row names, else the highest running one */
+                  (f.si === 1 || f.si === 4) && /current/i.test(f.t)
+                  ? (() => {
+                      const k = f.si === 1 ? 'swIa' : 'swIb',
+                        tg = f.si === 1 ? 'IIP1501' : 'IIP1503',
+                        one = /pump\s*-?\s*([ABC])\b(?!\s*\/)/i.exec(f.t),
+                        j = one ? 'ABC'.indexOf(one[1].toUpperCase()) : -1;
+                      return j >= 0
+                        ? [tg + 'ABC'[j], () => (U0().on ? +U0()[k + j] || 0 : NaN), 'A']
+                        : [tg + 'A ~ C', () => (U0().on ? Math.max(+U0()[k + 0] || 0, +U0()[k + 1] || 0, +U0()[k + 2] || 0) : NaN), 'A'];
+                    })()
                   : null;
       const lvl = /hotwell level/i.test(f.t) ? 'LCV-MU1110' : /deaerator level/i.test(f.t) ? 'LCV-CD1104' : null,
         gauge = /current|pressure|temperature/i.test(f.t),
