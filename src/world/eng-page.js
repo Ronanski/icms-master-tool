@@ -119,8 +119,21 @@
         /* the events of the engine into the Event log of the page */
         E.onEvent = a => window.lsEventAdd && lsEventAdd(...a);
         E.start('mirror', w);
-        /* the operator's writes leave every 500 ms too (no patch comes while the plant is paused) */
-        E._fl = setInterval(() => E.mode === 'mirror' && E.flush(), 500);
+        /* the operator's writes leave every 500 ms too (no patch comes while the plant is paused); a quarter of the writable slots
+           each time, in turn (sync.js o.slice: ~1/4 of the cost, every slot seen within 2 s). A patch coming in and an action still
+           flush every slot first (eng.js), so no write is ever put under */
+        E._fl = setInterval(() => {
+          if (E.mode !== 'mirror' || !E.port) return;
+          const ops = AN.sync.patch(true, { slice: true });
+          if (!ops.length) return;
+          try {
+            E.port.postMessage({ t: 'op', ops, calls: [] });
+            E.sent++;
+          } catch (e) {
+            E.err = e;
+            if (E.onError) E.onError(e);
+          }
+        }, 500);
         /* the DITL sheets of the page (with the user's fixes), the saved settings of the ABC (Reset applies them) */
         const ds = JSON.stringify(S.sheets, (k, v) => (k === 'nl' || k[0] === '_' ? undefined : v instanceof Set ? [...v] : v)); /* the _ keys: caches, links to instances (the keyframe carries the state ones) */
         w.postMessage({ t: 'init', apre: txt('apre'), ades: txt('ades'), ds, sv: AN.sv || {}, lne: AN.lne || {}, kf, kd, i: AN.i });
