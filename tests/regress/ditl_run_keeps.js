@@ -16,7 +16,8 @@ const mem = (page, worker) =>
     const k = worker ? (await ENG.peek()).kd : ditlCapture();
     let ff = 0;
     for (const s of k.sh) for (const g of (s.nl && s.nl.g) || []) if (g.q === 1) ff++;
-    return { mst: Object.keys(k.MST || {}).length, ff, SIM, TSP, spd: AN.spd };
+    const p = k.sh.find(s => /\)DITL-15$/.test(s.name));
+    return { mst: Object.keys(k.MST || {}).length, ff, SIM, TSP, spd: AN.spd, probe: !!(p && p.s.sig && p.s.sig["11:S"]) };
   }, worker);
 async function mode(worker) {
   const name = worker ? 'worker' : 'local';
@@ -47,11 +48,16 @@ async function mode(worker) {
   ck(b.SIM === true, name + ': RUN turns the simulation on (SIM ' + b.SIM + ')');
   ck(b.mst >= a.mst && b.ff >= Math.round(a.ff * 0.9), name + ': RUN keeps the logic (motor / valve states ' + a.mst + ' -> ' + b.mst + ', latches ' + a.ff + ' -> ' + b.ff + ')');
   ck(b.TSP === b.spd, name + ': RUN keeps the plant speed (DITL speed ' + b.TSP + ', plant x' + b.spd + ')');
-  /* the DITL "Reset" button is still the DITL Reset */
+  /* the DITL "Reset" button is still the DITL Reset ("all inputs OFF"). Not the latch count: with the plant at 150 MW and the DITL in
+     service, ditlStates applies the 150 MW DITL state again right after (03b-sim.js: SIM && DITL150.on), and the running world latches
+     the same interlocks again, so the latches come back by design. A manual input (DITL-15 row 11, a push button no plant drives) must go */
+  await page.evaluate(() => (S.sheets.find(x => /\)DITL-15$/.test(x.name)).sig["11:S"] = true));
+  await page.waitForTimeout(1500);
+  const p0 = await mem(page, worker);
   await page.evaluate(() => [...document.querySelectorAll('button')].find(x => x.textContent === 'Reset' && /Start again/.test(x.title)).click());
   await page.waitForTimeout(2000);
   const c = await mem(page, worker);
-  ck(c.ff < a.ff, name + ': the DITL Reset button still resets (latches ' + a.ff + ' -> ' + c.ff + ', motor / valve states ' + c.mst + ')');
+  ck(p0.probe && !c.probe, name + ": the DITL Reset button still resets (the manual input DITL-15 row 11: " + p0.probe + " -> " + c.probe + ")");
   ck(!errs.length, name + ': no page error' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
   await browser.close();
 }
