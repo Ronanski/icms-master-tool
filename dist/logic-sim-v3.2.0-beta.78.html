@@ -26844,30 +26844,28 @@ function anSyncSlots() {
     for (const f of ['v', 'stp', 'acc']) add('a' + i + f, () => S.rt[f], null, { ta: f });
     /* the inputs and the forces: the operator writes them (faceplate, FORCE, the Training) */
     add('x' + i, () => ({ ext: S.rt.ext, force: S.rt.force }), d => (anSyncPut(S.rt, 'ext', d.ext), anSyncPut(S.rt, 'force', d.force)), { w: 1 });
-    /* the rest of the run time and of the sheet: only the keys it has (a key that is not there is not "undefined" on the other side) */
-    const RT = ['t', 'k', 'ramp', 'pm', 'pf', 'ev'],
-      SK = ['look', 'xlk', 'plantT', '_rem'];
-    add(
-      'r' + i,
-      () => {
-        const mn = [],
-          r = { rt: {}, s: {}, mn };
-        S.blk.forEach((b, j) => b._mn !== undefined && mn.push([j, b._mn]));
-        for (const f of RT) if (f in S.rt) r.rt[f] = S.rt[f];
-        for (const f of SK) if (f in S) r.s[f] = S[f];
+    /* the rest of the run time and of the sheet, in three slots (what changes every scan apart from what rarely does: the links xlk
+       went across with every scan before); only the keys it has (a key that is not there is not "undefined" on the other side) */
+    const part = (k, keys, of, put) =>
+      add(k + i, () => {
+        const r = {},
+          o = of();
+        for (const f of keys) if (f in o) r[f] = o[f];
         return r;
-      },
-      d => {
-        for (const f of RT)
-          if (!(f in d.rt)) delete S.rt[f];
-          else if (f === 'pm' || f === 'pf' || f === 'ev') anSyncPut(S.rt, f, d.rt[f]);
-          else S.rt[f] = d.rt[f];
-        for (const f of SK)
-          if (f in d.s) S[f] = d.s[f];
-          else delete S[f];
-        for (const [j, m] of d.mn) S.blk[j]._mn = m;
-      }
-    );
+      }, d => {
+        const o = of();
+        for (const f of keys)
+          if (!(f in d)) delete o[f];
+          else put(o, f, d[f]);
+      });
+    part('rt', ['t', 'k', 'ramp'], () => S.rt, (o, f, v) => (o[f] = v));
+    part('rp', ['pm', 'pf', 'ev'], () => S.rt, anSyncPut);
+    part('rs', ['look', 'xlk', 'plantT', '_rem'], () => S, (o, f, v) => (o[f] = v));
+    add('rm' + i, () => {
+      const mn = [];
+      S.blk.forEach((b, j) => b._mn !== undefined && mn.push([j, b._mn]));
+      return mn;
+    }, d => { for (const [j, m] of d) S.blk[j]._mn = m; });
     /* each block state (the operator writes the output of a MAN station: st.val) */
     for (const id of Object.keys(S.rt.st))
       add('s' + i + ':' + id, () => (S.rt.st[id] ? { ...S.rt.st[id] } : S.rt.st[id]) /* its content: the state itself is a ref {$T} */, d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => { const q = S.rt.st[id]; return q ? String(q.val) : ''; } });
@@ -26924,19 +26922,18 @@ function anSyncSlots() {
       add('dx' + n, () => ditlPick(s.nl, ['fx', 'ufx']), d => { for (const x of ['fx', 'ufx']) if (x in d) s.nl[x] = ditlDec(d[x]); else delete s.nl[x]; }, { w: 1, raw: 1 });
       void sh;
     }
-    add('dg', () => {
-      const W = window.WORLD || {};
-      return { MST: ditlEnc(MST), MS: ditlEnc(MS), DREG: ditlEnc(DREG), t: tick.t, W: ditlPick(W, DITL_W), sw: W.plantSw ? W.plantSw() : null };
-    }, d => {
-      MST = ditlDec(d.MST);
-      MS = ditlDec(d.MS);
-      DREG = ditlDec(d.DREG);
-      tick.t = d.t;
-      if (window.WORLD) {
-        for (const x of DITL_W) if (x in d.W) WORLD[x] = ditlDec(d.W[x]); else delete WORLD[x];
-        if (d.sw && WORLD.plantSwSet) WORLD.plantSwSet(d.sw);
-      }
-    }, { raw: 1 });
+    /* the DITL globals, one slot each (37 kB a patch as one) */
+    add('dgMST', () => ditlEnc(MST), d => (MST = ditlDec(d)), { raw: 1 });
+    add('dgMS', () => ditlEnc(MS), d => (MS = ditlDec(d)), { raw: 1 });
+    add('dgDREG', () => ditlEnc(DREG), d => (DREG = ditlDec(d)), { raw: 1 });
+    add('dgt', () => tick.t, d => (tick.t = d), { raw: 1 });
+    for (const x of DITL_W)
+      add('dgW' + x, () => { const W = window.WORLD || {}; return x in W ? { v: ditlEnc(W[x]) } : {}; }, d => {
+        if (!window.WORLD) return;
+        if ('v' in d) WORLD[x] = ditlDec(d.v);
+        else delete WORLD[x];
+      }, { raw: 1 });
+    add('dgsw', () => (window.WORLD && WORLD.plantSw ? WORLD.plantSw() : null), d => d && window.WORLD && WORLD.plantSwSet && WORLD.plantSwSet(d), { raw: 1 });
     add('dsim', () => ({ SIM, TSP, DPAUSE: typeof DPAUSE !== 'undefined' ? DPAUSE : false }), d => {
       SIM = d.SIM;
       TSP = d.TSP;
@@ -26977,7 +26974,31 @@ function anSyncFresh(Y) {
   Y.ref = anSyncRefs();
   anSyncOwn = new WeakSet(Y.ref.keys());
 }
-const anSyncJ = (s, Y) => (s.raw ? JSON.stringify(s.get()) : JSON.stringify(anStateEnc(s.get(), Y.ref)));
+/* a slot as JSON. Most slots hold plain values only (a block state: numbers, text, small arrays): those go as plain JSON with a '#'
+   in front (2 ~ 3 times smaller, a plain JSON.parse on the other side); a slot with a ref (a sheet, a block, a plant model ...), a
+   Map / Set / typed array, a cycle or a NaN / Infinity / undefined goes through anStateEnc */
+const anSyncPlainJ = (v, Y) => {
+  const seen = new Set();
+  let ok = true;
+  const t = (x, d) => {
+    if (!ok) return;
+    if (x === undefined || (typeof x === 'number' && !isFinite(x)) || typeof x === 'function') return void (ok = false);
+    if (!x || typeof x !== 'object') return;
+    if (Y.ref.has(x) || seen.has(x) || ArrayBuffer.isView(x) || x instanceof Map || x instanceof Set || d > 8) return void (ok = false);
+    seen.add(x);
+    if (Array.isArray(x)) {
+      for (const e of x) t(e, d + 1);
+      if (Object.keys(x).length !== x.length) ok = false;
+    } else for (const k in x) t(x[k], d + 1);
+  };
+  t(v, 0);
+  return ok ? '#' + JSON.stringify(v) : null;
+};
+const anSyncJ = (s, Y) => {
+  if (s.raw) return JSON.stringify(s.get());
+  const v = s.get();
+  return anSyncPlainJ(v, Y) || JSON.stringify(anStateEnc(v, Y.ref));
+};
 /* the slots that changed: [[key, json]] or, for the values, [[key, [index, value] ...]] */
 function anSyncPatch(w) {
   const Y = anSyncState(),
@@ -27039,9 +27060,10 @@ function anSyncApply(p, skip) {
       void n;
       continue;
     }
-    s.put(s.raw ? JSON.parse(j) : anStateDec(JSON.parse(j), s.get()));
-    /* as this side writes it now (the keys of an object put in place can come in another order) */
-    Y2.last.set(k, anSyncJ(s, Y2));
+    s.put(s.raw ? JSON.parse(j) : j[0] === '#' ? JSON.parse(j.slice(1)) : anStateDec(JSON.parse(j), s.get()));
+    /* as this side writes it now (the keys of an object put in place can come in another order): needed only where the operator's
+       writes are found by the JSON itself (a writable slot with no quick look); elsewhere the JSON that came is enough */
+    Y2.last.set(k, s.w && !s.fast ? anSyncJ(s, Y2) : j);
     if (s.fast) Y2.fast.set(k, s.fast());
   }
 }
@@ -31827,7 +31849,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build a012422'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 1855989'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -49638,6 +49660,17 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
             inCall--;
           }
           post({ t: 'op', ops: [], calls: [[h + '.' + k, a]] });
+          /* an action that goes on (a starting state loads in slices): no patch is put in while it runs here (it would mix two states);
+             then the whole state of the engine is asked for once */
+          if (r && typeof r.then === 'function') {
+            E.busy = (E.busy || 0) + 1;
+            const done = () => {
+              E.busy--;
+              if (!E.busy) post({ t: 'full' });
+            };
+            r.then(done, done);
+            return r;
+          }
           /* what the action changed here is the engine's too: taken as seen */
           if (G.AN.sync) G.AN.sync.patch();
           return r;
@@ -49647,6 +49680,16 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   /* a message in */
   E.onMsg = async m => {
     E.got++;
+    if (m.t === 'ack') {
+      E.wait = false;
+      if (E.owed) (E.owed = false), E.send();
+      return;
+    }
+    /* the page asks for the whole state (after its own long action) */
+    if (m.t === 'full') {
+      if (G.AN.sync.forget) G.AN.sync.forget();
+      return;
+    }
     if (m.t === 'op') {
       if (m.ops && m.ops.length) G.AN.sync.apply(m.ops);
       for (const [n, a] of m.calls || []) {
@@ -49665,10 +49708,12 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       /* after an action the next patch carries everything: the page is the engine again, whatever its run of the action gave */
       if ((m.calls || []).length && E.mode === 'engine' && G.AN.sync.forget) G.AN.sync.forget();
     } else if (m.t === 'patch') {
+      if (E.busy) return void post({ t: 'ack' }); /* an action of the page still runs: the full state comes after it */
       /* the operator wins: a write not sent yet goes first */
       const mine = E.flush();
       G.AN.sync.apply(m.p, new Set(mine.map(x => x[0])));
       if (E.onPatch) E.onPatch(m);
+      post({ t: 'ack' });
     }
   };
   /* start: mode 'mirror' (page) or 'engine' (worker), port = the other side (postMessage / onmessage) */
@@ -49679,10 +49724,26 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     if (G.AN && G.AN.sync) G.AN.sync.mark();
   };
   /* engine: after a job, what changed to the page */
+  /* flow: the next patch only after the page has put the last one in (ack): a slow page (a phone, 6x) never gets a queue; what changes
+     meanwhile is in the next patch (a patch is what changed since the last one sent) */
   E.send = () => {
     if (E.mode !== 'engine' || !G.AN || !G.AN.sync) return 0;
+    if (E.wait) return void (E.owed = true), 0;
+    /* at most 2 patches a second (a DCS screen shows new values about once a second): at 6x one patch carries several scans */
+    const now = Date.now();
+    const gap = E.gap == null ? 500 : E.gap;
+    if (now - (E._ls || 0) < gap) {
+      E.owed = true;
+      /* sent when the gap is over, also while the plant is paused (no job comes to send it) */
+      if (!E._tm) E._tm = setTimeout(() => ((E._tm = null), E.owed && ((E.owed = false), E.send())), gap - (now - (E._ls || 0)));
+      return 0;
+    }
+    E._ls = now;
     const p = G.AN.sync.patch();
-    if (p.length) post({ t: 'patch', p });
+    if (p.length) {
+      post({ t: 'patch', p });
+      E.wait = true;
+    }
     return p.length;
   };
   E.stop = () => {
@@ -49767,8 +49828,8 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
           kd = ditlCapture();
         E.onPatch = () => AN.patchPaint && AN.patchPaint();
         E.start('mirror', w);
-        /* the operator's writes leave every 100 ms too (no patch comes while the plant is paused) */
-        E._fl = setInterval(() => E.mode === 'mirror' && E.flush(), 100);
+        /* the operator's writes leave every 500 ms too (no patch comes while the plant is paused) */
+        E._fl = setInterval(() => E.mode === 'mirror' && E.flush(), 500);
         /* the DITL sheets of the page (with the user's fixes), the saved settings of the ABC (Reset applies them) */
         const ds = JSON.stringify(S.sheets, (k, v) => (k === 'nl' || k[0] === '_' ? undefined : v instanceof Set ? [...v] : v)); /* the _ keys: caches, links to instances (the keyframe carries the state ones) */
         w.postMessage({ t: 'init', apre: txt('apre'), ades: txt('ades'), ds, sv: AN.sv || {}, lne: AN.lne || {}, kf, kd, i: AN.i });
@@ -71775,30 +71836,28 @@ function anSyncSlots() {
     for (const f of ['v', 'stp', 'acc']) add('a' + i + f, () => S.rt[f], null, { ta: f });
     /* the inputs and the forces: the operator writes them (faceplate, FORCE, the Training) */
     add('x' + i, () => ({ ext: S.rt.ext, force: S.rt.force }), d => (anSyncPut(S.rt, 'ext', d.ext), anSyncPut(S.rt, 'force', d.force)), { w: 1 });
-    /* the rest of the run time and of the sheet: only the keys it has (a key that is not there is not "undefined" on the other side) */
-    const RT = ['t', 'k', 'ramp', 'pm', 'pf', 'ev'],
-      SK = ['look', 'xlk', 'plantT', '_rem'];
-    add(
-      'r' + i,
-      () => {
-        const mn = [],
-          r = { rt: {}, s: {}, mn };
-        S.blk.forEach((b, j) => b._mn !== undefined && mn.push([j, b._mn]));
-        for (const f of RT) if (f in S.rt) r.rt[f] = S.rt[f];
-        for (const f of SK) if (f in S) r.s[f] = S[f];
+    /* the rest of the run time and of the sheet, in three slots (what changes every scan apart from what rarely does: the links xlk
+       went across with every scan before); only the keys it has (a key that is not there is not "undefined" on the other side) */
+    const part = (k, keys, of, put) =>
+      add(k + i, () => {
+        const r = {},
+          o = of();
+        for (const f of keys) if (f in o) r[f] = o[f];
         return r;
-      },
-      d => {
-        for (const f of RT)
-          if (!(f in d.rt)) delete S.rt[f];
-          else if (f === 'pm' || f === 'pf' || f === 'ev') anSyncPut(S.rt, f, d.rt[f]);
-          else S.rt[f] = d.rt[f];
-        for (const f of SK)
-          if (f in d.s) S[f] = d.s[f];
-          else delete S[f];
-        for (const [j, m] of d.mn) S.blk[j]._mn = m;
-      }
-    );
+      }, d => {
+        const o = of();
+        for (const f of keys)
+          if (!(f in d)) delete o[f];
+          else put(o, f, d[f]);
+      });
+    part('rt', ['t', 'k', 'ramp'], () => S.rt, (o, f, v) => (o[f] = v));
+    part('rp', ['pm', 'pf', 'ev'], () => S.rt, anSyncPut);
+    part('rs', ['look', 'xlk', 'plantT', '_rem'], () => S, (o, f, v) => (o[f] = v));
+    add('rm' + i, () => {
+      const mn = [];
+      S.blk.forEach((b, j) => b._mn !== undefined && mn.push([j, b._mn]));
+      return mn;
+    }, d => { for (const [j, m] of d) S.blk[j]._mn = m; });
     /* each block state (the operator writes the output of a MAN station: st.val) */
     for (const id of Object.keys(S.rt.st))
       add('s' + i + ':' + id, () => (S.rt.st[id] ? { ...S.rt.st[id] } : S.rt.st[id]) /* its content: the state itself is a ref {$T} */, d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => { const q = S.rt.st[id]; return q ? String(q.val) : ''; } });
@@ -71855,19 +71914,18 @@ function anSyncSlots() {
       add('dx' + n, () => ditlPick(s.nl, ['fx', 'ufx']), d => { for (const x of ['fx', 'ufx']) if (x in d) s.nl[x] = ditlDec(d[x]); else delete s.nl[x]; }, { w: 1, raw: 1 });
       void sh;
     }
-    add('dg', () => {
-      const W = window.WORLD || {};
-      return { MST: ditlEnc(MST), MS: ditlEnc(MS), DREG: ditlEnc(DREG), t: tick.t, W: ditlPick(W, DITL_W), sw: W.plantSw ? W.plantSw() : null };
-    }, d => {
-      MST = ditlDec(d.MST);
-      MS = ditlDec(d.MS);
-      DREG = ditlDec(d.DREG);
-      tick.t = d.t;
-      if (window.WORLD) {
-        for (const x of DITL_W) if (x in d.W) WORLD[x] = ditlDec(d.W[x]); else delete WORLD[x];
-        if (d.sw && WORLD.plantSwSet) WORLD.plantSwSet(d.sw);
-      }
-    }, { raw: 1 });
+    /* the DITL globals, one slot each (37 kB a patch as one) */
+    add('dgMST', () => ditlEnc(MST), d => (MST = ditlDec(d)), { raw: 1 });
+    add('dgMS', () => ditlEnc(MS), d => (MS = ditlDec(d)), { raw: 1 });
+    add('dgDREG', () => ditlEnc(DREG), d => (DREG = ditlDec(d)), { raw: 1 });
+    add('dgt', () => tick.t, d => (tick.t = d), { raw: 1 });
+    for (const x of DITL_W)
+      add('dgW' + x, () => { const W = window.WORLD || {}; return x in W ? { v: ditlEnc(W[x]) } : {}; }, d => {
+        if (!window.WORLD) return;
+        if ('v' in d) WORLD[x] = ditlDec(d.v);
+        else delete WORLD[x];
+      }, { raw: 1 });
+    add('dgsw', () => (window.WORLD && WORLD.plantSw ? WORLD.plantSw() : null), d => d && window.WORLD && WORLD.plantSwSet && WORLD.plantSwSet(d), { raw: 1 });
     add('dsim', () => ({ SIM, TSP, DPAUSE: typeof DPAUSE !== 'undefined' ? DPAUSE : false }), d => {
       SIM = d.SIM;
       TSP = d.TSP;
@@ -71908,7 +71966,31 @@ function anSyncFresh(Y) {
   Y.ref = anSyncRefs();
   anSyncOwn = new WeakSet(Y.ref.keys());
 }
-const anSyncJ = (s, Y) => (s.raw ? JSON.stringify(s.get()) : JSON.stringify(anStateEnc(s.get(), Y.ref)));
+/* a slot as JSON. Most slots hold plain values only (a block state: numbers, text, small arrays): those go as plain JSON with a '#'
+   in front (2 ~ 3 times smaller, a plain JSON.parse on the other side); a slot with a ref (a sheet, a block, a plant model ...), a
+   Map / Set / typed array, a cycle or a NaN / Infinity / undefined goes through anStateEnc */
+const anSyncPlainJ = (v, Y) => {
+  const seen = new Set();
+  let ok = true;
+  const t = (x, d) => {
+    if (!ok) return;
+    if (x === undefined || (typeof x === 'number' && !isFinite(x)) || typeof x === 'function') return void (ok = false);
+    if (!x || typeof x !== 'object') return;
+    if (Y.ref.has(x) || seen.has(x) || ArrayBuffer.isView(x) || x instanceof Map || x instanceof Set || d > 8) return void (ok = false);
+    seen.add(x);
+    if (Array.isArray(x)) {
+      for (const e of x) t(e, d + 1);
+      if (Object.keys(x).length !== x.length) ok = false;
+    } else for (const k in x) t(x[k], d + 1);
+  };
+  t(v, 0);
+  return ok ? '#' + JSON.stringify(v) : null;
+};
+const anSyncJ = (s, Y) => {
+  if (s.raw) return JSON.stringify(s.get());
+  const v = s.get();
+  return anSyncPlainJ(v, Y) || JSON.stringify(anStateEnc(v, Y.ref));
+};
 /* the slots that changed: [[key, json]] or, for the values, [[key, [index, value] ...]] */
 function anSyncPatch(w) {
   const Y = anSyncState(),
@@ -71970,9 +72052,10 @@ function anSyncApply(p, skip) {
       void n;
       continue;
     }
-    s.put(s.raw ? JSON.parse(j) : anStateDec(JSON.parse(j), s.get()));
-    /* as this side writes it now (the keys of an object put in place can come in another order) */
-    Y2.last.set(k, anSyncJ(s, Y2));
+    s.put(s.raw ? JSON.parse(j) : j[0] === '#' ? JSON.parse(j.slice(1)) : anStateDec(JSON.parse(j), s.get()));
+    /* as this side writes it now (the keys of an object put in place can come in another order): needed only where the operator's
+       writes are found by the JSON itself (a writable slot with no quick look); elsewhere the JSON that came is enough */
+    Y2.last.set(k, s.w && !s.fast ? anSyncJ(s, Y2) : j);
     if (s.fast) Y2.fast.set(k, s.fast());
   }
 }
@@ -74393,6 +74476,17 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
             inCall--;
           }
           post({ t: 'op', ops: [], calls: [[h + '.' + k, a]] });
+          /* an action that goes on (a starting state loads in slices): no patch is put in while it runs here (it would mix two states);
+             then the whole state of the engine is asked for once */
+          if (r && typeof r.then === 'function') {
+            E.busy = (E.busy || 0) + 1;
+            const done = () => {
+              E.busy--;
+              if (!E.busy) post({ t: 'full' });
+            };
+            r.then(done, done);
+            return r;
+          }
           /* what the action changed here is the engine's too: taken as seen */
           if (G.AN.sync) G.AN.sync.patch();
           return r;
@@ -74402,6 +74496,16 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
   /* a message in */
   E.onMsg = async m => {
     E.got++;
+    if (m.t === 'ack') {
+      E.wait = false;
+      if (E.owed) (E.owed = false), E.send();
+      return;
+    }
+    /* the page asks for the whole state (after its own long action) */
+    if (m.t === 'full') {
+      if (G.AN.sync.forget) G.AN.sync.forget();
+      return;
+    }
     if (m.t === 'op') {
       if (m.ops && m.ops.length) G.AN.sync.apply(m.ops);
       for (const [n, a] of m.calls || []) {
@@ -74420,10 +74524,12 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
       /* after an action the next patch carries everything: the page is the engine again, whatever its run of the action gave */
       if ((m.calls || []).length && E.mode === 'engine' && G.AN.sync.forget) G.AN.sync.forget();
     } else if (m.t === 'patch') {
+      if (E.busy) return void post({ t: 'ack' }); /* an action of the page still runs: the full state comes after it */
       /* the operator wins: a write not sent yet goes first */
       const mine = E.flush();
       G.AN.sync.apply(m.p, new Set(mine.map(x => x[0])));
       if (E.onPatch) E.onPatch(m);
+      post({ t: 'ack' });
     }
   };
   /* start: mode 'mirror' (page) or 'engine' (worker), port = the other side (postMessage / onmessage) */
@@ -74434,10 +74540,26 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
     if (G.AN && G.AN.sync) G.AN.sync.mark();
   };
   /* engine: after a job, what changed to the page */
+  /* flow: the next patch only after the page has put the last one in (ack): a slow page (a phone, 6x) never gets a queue; what changes
+     meanwhile is in the next patch (a patch is what changed since the last one sent) */
   E.send = () => {
     if (E.mode !== 'engine' || !G.AN || !G.AN.sync) return 0;
+    if (E.wait) return void (E.owed = true), 0;
+    /* at most 2 patches a second (a DCS screen shows new values about once a second): at 6x one patch carries several scans */
+    const now = Date.now();
+    const gap = E.gap == null ? 500 : E.gap;
+    if (now - (E._ls || 0) < gap) {
+      E.owed = true;
+      /* sent when the gap is over, also while the plant is paused (no job comes to send it) */
+      if (!E._tm) E._tm = setTimeout(() => ((E._tm = null), E.owed && ((E.owed = false), E.send())), gap - (now - (E._ls || 0)));
+      return 0;
+    }
+    E._ls = now;
     const p = G.AN.sync.patch();
-    if (p.length) post({ t: 'patch', p });
+    if (p.length) {
+      post({ t: 'patch', p });
+      E.wait = true;
+    }
     return p.length;
   };
   E.stop = () => {
@@ -74563,7 +74685,11 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
       else if (m.t === 'stop') {
         timers.forEach(clearInterval);
         timers = [];
-      } else await G.ENG.onMsg(m);
+      } else {
+        await G.ENG.onMsg(m);
+        /* what the message changed goes back at once (no job runs while the plant is paused) */
+        if (m.t === "op" || m.t === "full") G.ENG.send();
+      }
     } catch (x) {
       say({ t: 'error', where: m && m.t, text: String((x && x.stack) || x) });
     }
@@ -95167,7 +95293,8 @@ window.PLANT_SYS = [
      hidden page does nothing at all; when it comes back (wake: the plant workspace opens, a tab, the browser tab) its refresh runs
      at once */
   const JOBS = new Set();
-  let rafD = 0;
+  let VIS = new WeakMap(),
+    rafD = 0;
   function shown(el) {
     try {
       return !!el && el.isConnected && !document.hidden && el.getClientRects().length > 0;
@@ -95178,6 +95305,15 @@ window.PLANT_SYS = [
   function drive(now) {
     rafD = 0;
     let more = false;
+    /* 3.2.0 Web Worker fps (6x): "on the screen" is read at most every 250 ms per page, and only for a job that is due (it forced a
+       layout for every job in every frame: a quarter of the CPU of the 039 / MU pages) */
+    const on = el => {
+      const c = VIS.get(el);
+      if (c && now - c.t < 250) return c.v;
+      const v = shown(el);
+      VIS.set(el, { v, t: now });
+      return v;
+    };
     for (const j of JOBS) {
       if (!j.el.isConnected) {
         /* not in the page yet (drawn a moment later): wait up to 3 s (a drawing that never goes in the page is dropped); gone after it
@@ -95187,13 +95323,16 @@ window.PLANT_SYS = [
         continue;
       }
       j.seen = true;
-      if (!shown(j.el)) {
+      if (!j.hid && now - j.lt < j.ms) {
+        more = true;
+        continue;
+      }
+      if (!on(j.el)) {
         if (!j.hid) ((j.hid = true), j.off && j.off());
         continue;
       }
       more = true;
       if (j.hid) ((j.hid = false), (j.lt = -1e9));
-      if (now - j.lt < j.ms) continue;
       j.lt = now;
       let r;
       try {
@@ -95206,7 +95345,7 @@ window.PLANT_SYS = [
   function wake() {
     if (!rafD && JOBS.size) rafD = requestAnimationFrame(drive);
   }
-  document.addEventListener('visibilitychange', wake);
+  document.addEventListener('visibilitychange', () => ((VIS = new WeakMap()), wake()));
   /* fn(now ms) every ms (0 = every frame) while el is on the screen; off() when it goes off the screen */
   function run(el, ms, fn, off) {
     const j = { el, ms: ms || 0, fn, off, lt: -1e9, t0: performance.now(), seen: false, hid: false, stop: () => JOBS.delete(j) };

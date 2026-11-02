@@ -40,6 +40,7 @@ const cmp = (a, b) => { let n = 0; const ex = []; for (let i = 0; i < Math.max(a
   /* the port: messages as the worker gets them (structured clone), delivered in order */
   const toA = [], toB = [];
   A.ENG.start('engine', { postMessage: m => toB.push(structuredClone(m)) });
+  A.ENG.gap = 0; /* no timers here: every patch at once (the worker sends at most 4 a second) */
   B.ENG.start('mirror', { postMessage: m => toA.push(structuredClone(m)) });
   let c = cmp(A.dump(), B.dump());
   ck(c.n === 0, 'keyframe of the engine into the page: ' + c.n + ' differences of ' + c.len + ' records' + (c.n ? '\n   ' + c.ex.join('\n   ') : ''));

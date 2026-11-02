@@ -63,6 +63,17 @@
             inCall--;
           }
           post({ t: 'op', ops: [], calls: [[h + '.' + k, a]] });
+          /* an action that goes on (a starting state loads in slices): no patch is put in while it runs here (it would mix two states);
+             then the whole state of the engine is asked for once */
+          if (r && typeof r.then === 'function') {
+            E.busy = (E.busy || 0) + 1;
+            const done = () => {
+              E.busy--;
+              if (!E.busy) post({ t: 'full' });
+            };
+            r.then(done, done);
+            return r;
+          }
           /* what the action changed here is the engine's too: taken as seen */
           if (G.AN.sync) G.AN.sync.patch();
           return r;
@@ -72,6 +83,16 @@
   /* a message in */
   E.onMsg = async m => {
     E.got++;
+    if (m.t === 'ack') {
+      E.wait = false;
+      if (E.owed) (E.owed = false), E.send();
+      return;
+    }
+    /* the page asks for the whole state (after its own long action) */
+    if (m.t === 'full') {
+      if (G.AN.sync.forget) G.AN.sync.forget();
+      return;
+    }
     if (m.t === 'op') {
       if (m.ops && m.ops.length) G.AN.sync.apply(m.ops);
       for (const [n, a] of m.calls || []) {
@@ -90,10 +111,12 @@
       /* after an action the next patch carries everything: the page is the engine again, whatever its run of the action gave */
       if ((m.calls || []).length && E.mode === 'engine' && G.AN.sync.forget) G.AN.sync.forget();
     } else if (m.t === 'patch') {
+      if (E.busy) return void post({ t: 'ack' }); /* an action of the page still runs: the full state comes after it */
       /* the operator wins: a write not sent yet goes first */
       const mine = E.flush();
       G.AN.sync.apply(m.p, new Set(mine.map(x => x[0])));
       if (E.onPatch) E.onPatch(m);
+      post({ t: 'ack' });
     }
   };
   /* start: mode 'mirror' (page) or 'engine' (worker), port = the other side (postMessage / onmessage) */
@@ -104,10 +127,26 @@
     if (G.AN && G.AN.sync) G.AN.sync.mark();
   };
   /* engine: after a job, what changed to the page */
+  /* flow: the next patch only after the page has put the last one in (ack): a slow page (a phone, 6x) never gets a queue; what changes
+     meanwhile is in the next patch (a patch is what changed since the last one sent) */
   E.send = () => {
     if (E.mode !== 'engine' || !G.AN || !G.AN.sync) return 0;
+    if (E.wait) return void (E.owed = true), 0;
+    /* at most 2 patches a second (a DCS screen shows new values about once a second): at 6x one patch carries several scans */
+    const now = Date.now();
+    const gap = E.gap == null ? 500 : E.gap;
+    if (now - (E._ls || 0) < gap) {
+      E.owed = true;
+      /* sent when the gap is over, also while the plant is paused (no job comes to send it) */
+      if (!E._tm) E._tm = setTimeout(() => ((E._tm = null), E.owed && ((E.owed = false), E.send())), gap - (now - (E._ls || 0)));
+      return 0;
+    }
+    E._ls = now;
     const p = G.AN.sync.patch();
-    if (p.length) post({ t: 'patch', p });
+    if (p.length) {
+      post({ t: 'patch', p });
+      E.wait = true;
+    }
     return p.length;
   };
   E.stop = () => {

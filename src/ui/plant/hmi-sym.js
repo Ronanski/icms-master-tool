@@ -612,7 +612,8 @@
      hidden page does nothing at all; when it comes back (wake: the plant workspace opens, a tab, the browser tab) its refresh runs
      at once */
   const JOBS = new Set();
-  let rafD = 0;
+  let VIS = new WeakMap(),
+    rafD = 0;
   function shown(el) {
     try {
       return !!el && el.isConnected && !document.hidden && el.getClientRects().length > 0;
@@ -623,6 +624,15 @@
   function drive(now) {
     rafD = 0;
     let more = false;
+    /* 3.2.0 Web Worker fps (6x): "on the screen" is read at most every 250 ms per page, and only for a job that is due (it forced a
+       layout for every job in every frame: a quarter of the CPU of the 039 / MU pages) */
+    const on = el => {
+      const c = VIS.get(el);
+      if (c && now - c.t < 250) return c.v;
+      const v = shown(el);
+      VIS.set(el, { v, t: now });
+      return v;
+    };
     for (const j of JOBS) {
       if (!j.el.isConnected) {
         /* not in the page yet (drawn a moment later): wait up to 3 s (a drawing that never goes in the page is dropped); gone after it
@@ -632,13 +642,16 @@
         continue;
       }
       j.seen = true;
-      if (!shown(j.el)) {
+      if (!j.hid && now - j.lt < j.ms) {
+        more = true;
+        continue;
+      }
+      if (!on(j.el)) {
         if (!j.hid) ((j.hid = true), j.off && j.off());
         continue;
       }
       more = true;
       if (j.hid) ((j.hid = false), (j.lt = -1e9));
-      if (now - j.lt < j.ms) continue;
       j.lt = now;
       let r;
       try {
@@ -651,7 +664,7 @@
   function wake() {
     if (!rafD && JOBS.size) rafD = requestAnimationFrame(drive);
   }
-  document.addEventListener('visibilitychange', wake);
+  document.addEventListener('visibilitychange', () => ((VIS = new WeakMap()), wake()));
   /* fn(now ms) every ms (0 = every frame) while el is on the screen; off() when it goes off the screen */
   function run(el, ms, fn, off) {
     const j = { el, ms: ms || 0, fn, off, lt: -1e9, t0: performance.now(), seen: false, hid: false, stop: () => JOBS.delete(j) };
