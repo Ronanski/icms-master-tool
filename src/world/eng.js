@@ -85,6 +85,9 @@
   /* a message in */
   E.onMsg = async m => {
     E.got++;
+    E.lastAt = Date.now(); /* the time of the last message from the other side (the watchdog, src/world/eng-watch.js) */
+    /* the heartbeat: a ping of the page gets a pong from the engine (the engine answers between its jobs: a hung engine does not) */
+    if (m.t === 'ping') return void post({ t: 'pong', id: m.id });
     if (m.t === 'ack') {
       E.wait = false;
       if (E.owed) (E.owed = false), E.send();
@@ -106,6 +109,8 @@
           if (r && typeof r.then === 'function') await r;
         } catch (e) {
           if (G.console) console.error('ENG ' + n, e);
+          /* an engine action that fails is said on the page (it was silent) */
+          if (E.mode === 'engine') post({ t: 'error', where: 'engine action ' + n, text: String((e && e.stack) || e), soft: 1 });
         } finally {
           inCall--;
         }

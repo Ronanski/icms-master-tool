@@ -93,7 +93,12 @@ function anSyncSlots() {
       add('s' + i + ':' + id, () => (S.rt.st[id] ? { ...S.rt.st[id] } : S.rt.st[id]) /* its content: the state itself is a ref {$T} */, d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => anSyncStFast(S.rt.st[id]) });
     /* the parameters of the blocks (the operator's tuning: PID / MAN / timer parameters): page -> engine only (the engine changes
        some each step, a rate from its pin: those are made again there) */
-    add('bp' + i, () => S.blk.map(b => b.p || null), d => d.forEach((p, j) => S.blk[j] && p && anSyncPut(S.blk[j], 'p', p)), { w: 1, wo: 1 });
+    add('bp' + i, () => S.blk.map(b => b.p || null), d => d.forEach((p, j) => S.blk[j] && p && anSyncPut(S.blk[j], 'p', p)), {
+      w: 1,
+      wo: 1,
+      /* the quick look: the plain fields of every b.p (Giselle) */
+      fast: () => S.blk.map(b => anSyncStFast(b.p)).join(';')
+    });
     /* each plant model (the PLANT window writes its operating point / disturbance) */
     S.blk.forEach((b, j) => {
       if (b.proc) add('p' + i + ':' + j, () => ({ ...b.proc }) /* its content: the model itself is written as {$P} */, d => anSyncDeep(b.proc, d, new Set()), { w: 1, fast: () => b.proc.op + '|' + b.proc.dist + '|' + b.proc.on });
@@ -137,6 +142,15 @@ function anSyncSlots() {
       lnApplyEdits();
     } catch (e) {}
   }, { w: 1, raw: 1 });
+  /* the F(X) tables loaded by hand (AN.ln = window.ANLN on the page: Tables / Health "load", ranges-fx.js reads them first; Giselle) */
+  add('ln', () => AN.ln || {}, d => (AN.ln = d), {
+    w: 1,
+    raw: 1,
+    fast: () => {
+      const o = AN.ln || {};
+      return Object.keys(o).map(k => k + ':' + (o[k] && o[k].length)).join('|');
+    }
+  });
   /* the one-address groups (links.js shareExt) */
   add('xs', anXsGet, anXsPut, { raw: 1 });
   /* the DITL world (src/digital/parts/03d-state.js keys), by sheet name */

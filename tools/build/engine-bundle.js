@@ -45,7 +45,8 @@ function worldBundle(o) {
   const rd = f => fs.readFileSync(f, 'utf8');
   const an = bundle(o).replace('globalThis.ENGINE=', 'globalThis.AN=AN;globalThis.ENGINE=');
   return (
-    dFiles().map(f => '/* ---- ' + path.relative(root, f) + ' ---- */\n' + rd(f)).join('\n') +
+    /* the file name with / on every OS (built on Windows it was src\digital\..., another html than the Linux build of the CI) */
+    dFiles().map(f => '/* ---- ' + path.relative(root, f).split(path.sep).join('/') + ' ---- */\n' + rd(f)).join('\n') +
     '\n;globalThis.DITL={get S(){return S},set S(v){S=v},get SIM(){return SIM},set SIM(v){SIM=v},get MST(){return MST},get MS(){return MS},get DREG(){return DREG},ditlStates,ditlCapture,ditlApply,simSheet,netlist};\n' +
     an +
     ['world.js', 'plantsw.js', 'ditl150.js', 'eng.js', 'dock-eng.js'].map(f => '/* ---- src/world/' + f + ' ---- */\n' + rd(path.join(root, 'src', 'world', f))).join('\n')

@@ -26939,7 +26939,12 @@ function anSyncSlots() {
       add('s' + i + ':' + id, () => (S.rt.st[id] ? { ...S.rt.st[id] } : S.rt.st[id]) /* its content: the state itself is a ref {$T} */, d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => anSyncStFast(S.rt.st[id]) });
     /* the parameters of the blocks (the operator's tuning: PID / MAN / timer parameters): page -> engine only (the engine changes
        some each step, a rate from its pin: those are made again there) */
-    add('bp' + i, () => S.blk.map(b => b.p || null), d => d.forEach((p, j) => S.blk[j] && p && anSyncPut(S.blk[j], 'p', p)), { w: 1, wo: 1 });
+    add('bp' + i, () => S.blk.map(b => b.p || null), d => d.forEach((p, j) => S.blk[j] && p && anSyncPut(S.blk[j], 'p', p)), {
+      w: 1,
+      wo: 1,
+      /* the quick look: the plain fields of every b.p (Giselle) */
+      fast: () => S.blk.map(b => anSyncStFast(b.p)).join(';')
+    });
     /* each plant model (the PLANT window writes its operating point / disturbance) */
     S.blk.forEach((b, j) => {
       if (b.proc) add('p' + i + ':' + j, () => ({ ...b.proc }) /* its content: the model itself is written as {$P} */, d => anSyncDeep(b.proc, d, new Set()), { w: 1, fast: () => b.proc.op + '|' + b.proc.dist + '|' + b.proc.on });
@@ -26983,6 +26988,15 @@ function anSyncSlots() {
       lnApplyEdits();
     } catch (e) {}
   }, { w: 1, raw: 1 });
+  /* the F(X) tables loaded by hand (AN.ln = window.ANLN on the page: Tables / Health "load", ranges-fx.js reads them first; Giselle) */
+  add('ln', () => AN.ln || {}, d => (AN.ln = d), {
+    w: 1,
+    raw: 1,
+    fast: () => {
+      const o = AN.ln || {};
+      return Object.keys(o).map(k => k + ':' + (o[k] && o[k].length)).join('|');
+    }
+  });
   /* the one-address groups (links.js shareExt) */
   add('xs', anXsGet, anXsPut, { raw: 1 });
   /* the DITL world (src/digital/parts/03d-state.js keys), by sheet name */
@@ -31970,7 +31984,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build b342bc2'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 79216b9'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -49818,6 +49832,9 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   /* a message in */
   E.onMsg = async m => {
     E.got++;
+    E.lastAt = Date.now(); /* the time of the last message from the other side (the watchdog, src/world/eng-watch.js) */
+    /* the heartbeat: a ping of the page gets a pong from the engine (the engine answers between its jobs: a hung engine does not) */
+    if (m.t === 'ping') return void post({ t: 'pong', id: m.id });
     if (m.t === 'ack') {
       E.wait = false;
       if (E.owed) (E.owed = false), E.send();
@@ -49839,6 +49856,8 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
           if (r && typeof r.then === 'function') await r;
         } catch (e) {
           if (G.console) console.error('ENG ' + n, e);
+          /* an engine action that fails is said on the page (it was silent) */
+          if (E.mode === 'engine') post({ t: 'error', where: 'engine action ' + n, text: String((e && e.stack) || e), soft: 1 });
         } finally {
           inCall--;
         }
@@ -50024,6 +50043,8 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     clearInterval(E._fl);
     E.stop();
   };
+  /* for the watchdog (src/world/eng-watch.js): stop the worker with a message on the screen, back to the page engine */
+  E.fail = fail;
   E.boot = () =>
     new Promise((ok, no) => {
       if (E.worker) return ok(E.worker);
@@ -50044,6 +50065,12 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
         if (m.t === 'kf') {
           const r = E._kf && E._kf[m.id];
           if (r) delete E._kf[m.id], r(m);
+          return;
+        }
+        /* an engine action that failed: said on the screen, the engine goes on; anything else: the worker stops */
+        if (m.t === 'error' && m.soft) {
+          console.error('ENGINE', m.where, m.text);
+          if (typeof msg === 'function') msg('Engine: ' + m.where + ' failed (' + String(m.text).split(String.fromCharCode(10))[0] + ')');
           return;
         }
         if (m.t === 'error') return fail(m.where || 'engine', m.text);
@@ -50087,12 +50114,14 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       setTimeout(go, 1000);
     });
 })();
+</script><script id="engwatchjs">/* ENG WATCH (3.2.0 Web Worker): the watchdog of the worker on the page (a worker that is killed or hangs: a message on the screen, the
+   page engine again). Owner: Giselle. Empty until her commit. */
 </script><script type="text/plain" id="engsrc">/* ENG WORKER HEAD (3.2.0 Web Worker, stage d): the first lines of the worker script (tools/build/build.js #engsrc). The engine code
    names the page as `window`; in the worker that is the worker itself. It reads no storage of its own: the page sends its saved
    fixes and settings with the start (src/world/eng-page.js), so the storage here is empty */
 self.window = self;
 self.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
-/* ---- src\digital\parts\01-parse-build.js ---- */
+/* ---- src/digital/parts/01-parse-build.js ---- */
 /* DITL (digital logic) - Constants, state, text decoding, DXF parse and build of the sheets. Part of ONE script (joined by src/digital/order.list, in this order). */
 const NS = 'http://www.w3.org/2000/svg',
   $ = id => document.getElementById(id);
@@ -51152,7 +51181,7 @@ function netlist(sh) {
   return a;
 }
 
-/* ---- src\digital\parts\02-netlist.js ---- */
+/* ---- src/digital/parts/02-netlist.js ---- */
 /* DITL (digital logic) - Netlist of one sheet: wires, blocks, pins, nets (netlistCore). Part of ONE script (joined by src/digital/order.list, in this order). */
 function netlistCore(sh, strict) {
   const r = sh.raw,
@@ -53335,7 +53364,7 @@ function netlistCore(sh, strict) {
   return NL;
 }
 
-/* ---- src\digital\parts\02b-sand.js ---- */
+/* ---- src/digital/parts/02b-sand.js ---- */
 /* DITL (digital logic) - Sand injection system (E10210-3-771 ~ 777, station 103 FM0007 P701 ~ P709): the netlist of a sheet whose logic was read from the PDF
    (tools/data/sand_sheet.py). The drawing has no row table: a terminal is a wire end (a field switch, a push button, a FROM flag = an input row; a lamp, a
    field output, an alarm, a TO flag = an output row). sh.sd holds the nets, the blocks and the terminals; here they get the same netlist object as the
@@ -53415,7 +53444,7 @@ function sdNL(sh) {
   return NL;
 }
 
-/* ---- src\digital\parts\03-models.js ---- */
+/* ---- src/digital/parts/03-models.js ---- */
 /* DITL (digital logic) - Simulation models of the digital blocks (movements, solenoid valves, motors). Part of ONE script (joined by src/digital/order.list, in this order). */
 /* ---------- MOV block model (v9) ----------
  OPEN / CLOSE COMM. text = command entry of a MOV function block. Feedback rows on the right are found by tag:
@@ -53869,7 +53898,7 @@ function motModel(sh, nl) {
   return res;
 }
 
-/* ---- src\digital\parts\03b-sim.js ---- */
+/* ---- src/digital/parts/03b-sim.js ---- */
 /* DITL (digital logic) - the simulation, no DOM (3.2.0 Web Worker, stage b): the models of a sheet (grpModel, fieldInModel, usrModel), the net solve of a sheet (simulate, simSheet) and the
    timers, motors, flow dampers, inverters and motor-operated valves (tmStep, motStep, fdStep, invStep, simIn, mvStep), moved as they
    were from 04-render.js and 05-overlay-interaction.js. Part of ONE script (joined by src/digital/order.list, in this order). */
@@ -54696,7 +54725,7 @@ function ditlStates() {
   } catch (e) {}
 }
 
-/* ---- src\digital\parts\03c-read.js ---- */
+/* ---- src/digital/parts/03c-read.js ---- */
 /* DITL (digital logic) - the reader of a sheet, no DOM (3.2.0 Web Worker, stage b): the row texts and addresses (txt, tagOf, svcOf), the
    drivers / users of a net (maps), the names of rows and parts, what a net needs to become 1 or 0 (why, whyD) and the engine part of DUI
    (why, need, rowInfo, rowVal, outs, outVal, cause, rowNets: read by the one world src/world/world.js, the unit model and the Training).
@@ -55014,7 +55043,7 @@ const DREAD = (function () {
   return { motOuts, motState, rsNear, isK, isKA, txt, ADR, tagOf, svcOf, fmt, auto, MAPS, maps, rowNo, inName, outName, gName, dName, dPick, rowNets, val, why, shortest, whyD };
 })();
 
-/* ---- src\digital\parts\03d-state.js ---- */
+/* ---- src/digital/parts/03d-state.js ---- */
 /* DITL (digital logic) - the state of the DITL world as plain JSON, no DOM (3.2.0 Web Worker, stage c): ditlCapture() / ditlApply(k), the
    DITL half of the keyframe (the ABC half: src/analog/engine/state.js). What a scan changes (read from the page: every key of every sheet,
    netlist and part before and after a run at 150 MW): per sheet the inputs (sig), the switches (usw), the analog values (av, av150, avw),
@@ -55101,7 +55130,7 @@ function ditlApply(k) {
   }
 }
 
-/* ---- src\digital\parts\03e-user.js ---- */
+/* ---- src/digital/parts/03e-user.js ---- */
 /* DITL (digital logic) - what the operator sets on a sheet that is not an input (3.2.0 Web Worker, stage c), no DOM: the presets of the
    side panels (timer time and unit, MOV / solenoid stroke time, motor run feedback delay), Skip of a timer, LOCAL / REMOTE of a MOV
    whose MIL has no input on the sheet, and the values kept from the last session (localStorage 'ditl.uv', 05-overlay-interaction.js
@@ -72193,7 +72222,12 @@ function anSyncSlots() {
       add('s' + i + ':' + id, () => (S.rt.st[id] ? { ...S.rt.st[id] } : S.rt.st[id]) /* its content: the state itself is a ref {$T} */, d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => anSyncStFast(S.rt.st[id]) });
     /* the parameters of the blocks (the operator's tuning: PID / MAN / timer parameters): page -> engine only (the engine changes
        some each step, a rate from its pin: those are made again there) */
-    add('bp' + i, () => S.blk.map(b => b.p || null), d => d.forEach((p, j) => S.blk[j] && p && anSyncPut(S.blk[j], 'p', p)), { w: 1, wo: 1 });
+    add('bp' + i, () => S.blk.map(b => b.p || null), d => d.forEach((p, j) => S.blk[j] && p && anSyncPut(S.blk[j], 'p', p)), {
+      w: 1,
+      wo: 1,
+      /* the quick look: the plain fields of every b.p (Giselle) */
+      fast: () => S.blk.map(b => anSyncStFast(b.p)).join(';')
+    });
     /* each plant model (the PLANT window writes its operating point / disturbance) */
     S.blk.forEach((b, j) => {
       if (b.proc) add('p' + i + ':' + j, () => ({ ...b.proc }) /* its content: the model itself is written as {$P} */, d => anSyncDeep(b.proc, d, new Set()), { w: 1, fast: () => b.proc.op + '|' + b.proc.dist + '|' + b.proc.on });
@@ -72237,6 +72271,15 @@ function anSyncSlots() {
       lnApplyEdits();
     } catch (e) {}
   }, { w: 1, raw: 1 });
+  /* the F(X) tables loaded by hand (AN.ln = window.ANLN on the page: Tables / Health "load", ranges-fx.js reads them first; Giselle) */
+  add('ln', () => AN.ln || {}, d => (AN.ln = d), {
+    w: 1,
+    raw: 1,
+    fast: () => {
+      const o = AN.ln || {};
+      return Object.keys(o).map(k => k + ':' + (o[k] && o[k].length)).join('|');
+    }
+  });
   /* the one-address groups (links.js shareExt) */
   add('xs', anXsGet, anXsPut, { raw: 1 });
   /* the DITL world (src/digital/parts/03d-state.js keys), by sheet name */
@@ -74883,6 +74926,9 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
   /* a message in */
   E.onMsg = async m => {
     E.got++;
+    E.lastAt = Date.now(); /* the time of the last message from the other side (the watchdog, src/world/eng-watch.js) */
+    /* the heartbeat: a ping of the page gets a pong from the engine (the engine answers between its jobs: a hung engine does not) */
+    if (m.t === 'ping') return void post({ t: 'pong', id: m.id });
     if (m.t === 'ack') {
       E.wait = false;
       if (E.owed) (E.owed = false), E.send();
@@ -74904,6 +74950,8 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
           if (r && typeof r.then === 'function') await r;
         } catch (e) {
           if (G.console) console.error('ENG ' + n, e);
+          /* an engine action that fails is said on the page (it was silent) */
+          if (E.mode === 'engine') post({ t: 'error', where: 'engine action ' + n, text: String((e && e.stack) || e), soft: 1 });
         } finally {
           inCall--;
         }

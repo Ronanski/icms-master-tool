@@ -38,6 +38,8 @@
     clearInterval(E._fl);
     E.stop();
   };
+  /* for the watchdog (src/world/eng-watch.js): stop the worker with a message on the screen, back to the page engine */
+  E.fail = fail;
   E.boot = () =>
     new Promise((ok, no) => {
       if (E.worker) return ok(E.worker);
@@ -58,6 +60,12 @@
         if (m.t === 'kf') {
           const r = E._kf && E._kf[m.id];
           if (r) delete E._kf[m.id], r(m);
+          return;
+        }
+        /* an engine action that failed: said on the screen, the engine goes on; anything else: the worker stops */
+        if (m.t === 'error' && m.soft) {
+          console.error('ENGINE', m.where, m.text);
+          if (typeof msg === 'function') msg('Engine: ' + m.where + ' failed (' + String(m.text).split(String.fromCharCode(10))[0] + ')');
           return;
         }
         if (m.t === 'error') return fail(m.where || 'engine', m.text);
