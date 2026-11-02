@@ -152,6 +152,9 @@
     /* the page asks for the whole state (after its own long action) */
     if (m.t === 'full') {
       if (G.AN.sync.forget) G.AN.sync.forget();
+      /* the page asks for it when it is ready to take it (after its own long action, or a stall: eng-page.js): an ack it never sent
+         would hold every next patch */
+      E.wait = false;
       return;
     }
     if (m.t === 'op') {
