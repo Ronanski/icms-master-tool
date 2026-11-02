@@ -25763,8 +25763,12 @@ function anResetAll() {
     for (const b of S.procs || [])
       if (b.proc) {
         if (b.proc.hop && b.proc.hop.dyn) {
-          delete b.proc.hop; /* deleted, not undefined: a key left as undefined made the keyframe of a Reset after a run differ (Winter) */
-          delete b.proc.Ka;
+          /* the keys as the load left them (proc0): there as undefined where the load had them (their place in the object stays, so the
+             keyframe of a fresh page and of a Reset number the same), gone where the run made them (Winter: reset_worker "Ka" left as
+             undefined; reset_clean: the numbering moved when they were always deleted) */
+          for (const f of ['hop', 'Ka'])
+            if (b.proc0 && f in b.proc0) b.proc[f] = undefined;
+            else delete b.proc[f];
         }
         b.proc.hopReq = null;
         b.proc.integLoss = 0;
@@ -32048,7 +32052,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build 0938fcb'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 147b181'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -71284,8 +71288,12 @@ function anResetAll() {
     for (const b of S.procs || [])
       if (b.proc) {
         if (b.proc.hop && b.proc.hop.dyn) {
-          delete b.proc.hop; /* deleted, not undefined: a key left as undefined made the keyframe of a Reset after a run differ (Winter) */
-          delete b.proc.Ka;
+          /* the keys as the load left them (proc0): there as undefined where the load had them (their place in the object stays, so the
+             keyframe of a fresh page and of a Reset number the same), gone where the run made them (Winter: reset_worker "Ka" left as
+             undefined; reset_clean: the numbering moved when they were always deleted) */
+          for (const f of ['hop', 'Ka'])
+            if (b.proc0 && f in b.proc0) b.proc[f] = undefined;
+            else delete b.proc[f];
         }
         b.proc.hopReq = null;
         b.proc.integLoss = 0;
@@ -75600,16 +75608,18 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
         N.t = (N.t || 0) + 1;
         N.lr = AN.run;
         N.same = AN === G.AN;
-        if (busy) return void N.skip++;
         if (!AN.run || AN._loading) {
           if (!AN.run) N.norun = (N.norun || 0) + 1;
           else N.load = (N.load || 0) + 1;
           acc = 0;
           return;
         }
+        /* the plant time of this tick is kept even while a world scan holds the engine (as the page scheduler, sched.js: its anAcc
+           grows before the busy check); before, a tick that met a scan was lost: 4.4 s of plant a second at 6x (eng_worker, Winter) */
+        acc += 0.1 * AN.spd;
+        if (busy) return void N.skip++;
         const sh = cs();
         if (!sh || !sh.S) return void (N.nosh = (N.nosh || 0) + 1);
-        acc += 0.1 * AN.spd;
         const dt = acc,
           n = Math.max(1, Math.ceil(dt / 0.5)),
           K = AN.tierK || 1;
