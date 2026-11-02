@@ -214,7 +214,14 @@
           if (i < m.p.length) await E.yieldNow();
         }
       } else G.AN.sync.apply(m.p, skip);
-      if (E.onPatch) E.onPatch(m);
+      /* the paint after it: an error of the paint is the page's (local mode: the same paint error stops nothing), not of the data,
+         so it does not stop the worker (Winter: eng-page.js fail('page') took the whole engine back for a paint error) */
+      if (E.onPatch)
+        try {
+          E.onPatch(m);
+        } catch (x) {
+          if (G.console) console.error('ENG paint', x);
+        }
       for (const a of m.ev || [])
         try {
           if (E.onEvent) E.onEvent(a);
