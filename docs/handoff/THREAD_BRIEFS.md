@@ -19,7 +19,7 @@
 - Iulat ang nakikita ng operator sa app, hindi pangalan ng file o test (kapag para sa user).
 
 ## ROSTER (2026-11-02)
-Ang titulo ng bawat session ay "ROLE : NAME"; lahat ay sub-session ng LEADER. LEADER : JENNIE; FIXER : LISA (lead ng Worker) + FIXER : WINTER / GISELLE / NINGNING (helper) = CODE FIXER; TESTER : JISOO = LIVE TESTER; HMI : ROSÉ = HMI; DESIGN : YUNA = APP UI/UX; DOCS : KARINA = DOCS. Progress ng bawat isa at RESUME HERE: `docs/handoff/progress-2026-11-02/`. Mga bagong rule: `HANDOFF.md` seksyon 5 "Mga utos ng user 2026-11-01 ~ 11-02" (TEST_LOCK, PC ≤ 85 % CPU, HMI kit, drawing study, 15-point Worker test).
+Ang titulo ng bawat session ay "ROLE : NAME"; lahat ay sub-session ng LEADER. LEADER : JENNIE; FIXER : LISA (lead ng Worker) + FIXER : WINTER / GISELLE / NINGNING (helper) = CODE FIXER; TESTER : JISOO = LIVE TESTER; HMI : ROSÉ = HMI; DESIGN : YUNA = APP UI/UX; DOCS : KARINA = DOCS. Progress ng bawat isa at RESUME HERE: `docs/handoff/progress/`. Mga bagong rule: `HANDOFF.md` seksyon 5 "Mga utos ng user 2026-11-01 ~ 11-02" (TEST_LOCK, PC ≤ 85 % CPU, HMI kit, drawing study, 15-point Worker test).
 
 ## LEADER
 - **ROLE:** main session; president at hands-on na multi-role engineer.
@@ -50,7 +50,7 @@ Ang titulo ng bawat session ay "ROLE : NAME"; lahat ay sub-session ng LEADER. LE
 - **SKILLS:** elite DCS engineer, software engineer.
 - **SAKLAW:** ABC / DITL (iisang mundo), plant model, trip / interlock / permissive ayon sa netlist at drawing; `npm run build` + `npm run check` lang habang nag-aayos (lean test, PROJECT_RULES 5).
 - **HINDI GINAGAWA:** hindi nag-aalis ng link para lang gumana (`CLAUDE.md` rule 9); walang buong Cold → 150 MW run nang walang go ng user; hindi tumatawag ng sariling check na "live test"; hindi nagme-merge.
-- **KASALUKUYANG GAWAIN (2026-11-02):** Worker move (engine sa Web Worker): branch `claude/worker-fix-after-lt` @ 5dbd645; mga hakbang C3 ~ C5 at KNOWN BUG C1 sa `progress-2026-11-02/LISA.md` (RESUME HERE) at `GISELLE.md`; test ayon sa TEST_LOCK. (Dati: PR #88 nasa beta.77.) Bukas: ang test na `tests/regress/training_dock.js` ay luma na (lumang Tagalog na pamagat at lumang class ng dock).
+- **KASALUKUYANG GAWAIN (2026-11-02):** Worker move (engine sa Web Worker): branch `claude/worker-fix-after-lt` @ 5dbd645; mga hakbang C3 ~ C5 at KNOWN BUG C1 sa `progress/LISA.md` (RESUME HERE) at `GISELLE.md`; test ayon sa TEST_LOCK. (Dati: PR #88 nasa beta.77.) Bukas: ang test na `tests/regress/training_dock.js` ay luma na (lumang Tagalog na pamagat at lumang class ng dock).
 - **PAANO MAG-ULAT:** sa leader; finding = bug na naayos, tama na may ebidensya, o hindi mabasa na may eksaktong pangalan.
 
 ## DOCS

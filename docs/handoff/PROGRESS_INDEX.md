@@ -12,6 +12,6 @@ User: "isave ang lahat ng progress natin ngayon simula ung una ko kayong ginawa.
 | `JISOO.md`, `jisoo-files/live_log.md` | TESTER : JISOO | live test beta.76 / beta.77, findings #72 ~ #108, Worker test (hold) |
 | `ROSE.md` | HMI : ROSÉ | 038 / 039 sa app, HMI kit (`HSYM.kit`, PR #93) |
 | `YUNA.md` | DESIGN : YUNA | dock v3, English text, mockup audits, outline studies (paused) |
-| `SYSTEM.md` | LEADER | team at method (kopya ng `team-files/progress/system/SYSTEM.md`) |
+| `SYSTEM.md` | LEADER | team at method (nasa `team-files/progress/system/`, hindi pa sa repo) |
 
-Hindi kinopya sa repo: ang 97 memory file ng leader, ang hooks at skills (`team-files/progress/system/`, lokal sa PC ng user), ang `jennie-files/` renders (4.9 MB) at ang iba pang `jisoo-files/`. Ang buod ay nasa `HANDOFF.md` seksyon 2 ~ 5; ang mga file dito ay ang buong detalye.
+Hindi kinopya sa repo: ang `system/` ng team-files (SYSTEM.md, 97 memory file ng leader, hooks, skills) ay hinarang ng auto mode ng session ng DOCS; kokopyahin ito ng user o ng leader sa `docs/handoff/progress/system/`. Ang ibang laman ng `progress/` ay eksaktong kopya (`diff -r` ay `system/` lang ang pagkakaiba).

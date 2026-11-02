@@ -1,0 +1,3 @@
+{"done":"3 / 14","nf":"7",
+"row":" [\"H5 · ULIT\",\"SWP debris filter S-1502 (buong 12 check)\",[P(\"sec 4/44 · Step 5/110 · SOP 2/2 · Check done\"),B(\"#73 SWP-B current blangko\"),P(\"NO ALARM · 96 SUPPRESSED · CSV DPT-SW1502 0 ~ 2000 mmH2O, walang setpoint\"),P(\"DITL-39 binuksan: A / B run (I.032A / I.0526) = 1, C (I.081A) = 0 → OR → O.0280 = 1 · PB M.0790 (memory S3 tugma) · IN OPERATION = 1 (out 4)\"),P(\"S-1502 IN OPERATION · DPISW1502 523 mmH2O (bantayan: tumataas mula 231, cut-in 816)\"),P(\"IN OPERATION dock = HMI = logic\"),B(\"#98 'HAKBANG 5'\"),B(\"#45 walang faceplate (click = wala)\"),P(\"walang sagabal\"),ST7,P(\"8:53:46 FIELD 4.1 · 8:54:32 DCS DITL-39 row 8 M.0790 · 8:54:34 4.2 AUTO\"),P(\"SOP sec 4 tugma\")]]",
+"findings":[]}

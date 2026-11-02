@@ -1,0 +1,4 @@
+const fs=require('fs');const {chromium}=require(process.env.PLAYWRIGHT_MODULE);
+(async()=>{const [pdf,from,to,grep]=process.argv.slice(2);const b=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});const p=await b.newPage();await p.setContent('<div></div>');await p.addScriptTag({url:'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'});
+const b64=fs.readFileSync(pdf).toString('base64');const out=await p.evaluate(async([b64,from,to])=>{pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';const d=await pdfjsLib.getDocument({data:Uint8Array.from(atob(b64),c=>c.charCodeAt(0))}).promise;let r='pages '+d.numPages+'\n';for(let i=+from;i<=Math.min(d.numPages,+to);i++){const pg=await d.getPage(i);const tc=await pg.getTextContent();r+='--- p'+i+': '+tc.items.map(x=>x.str).join(' ')+'\n';}return r;},[b64,from,to]);
+console.log(out);await b.close();})();

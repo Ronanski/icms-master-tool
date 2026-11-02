@@ -893,4 +893,4 @@ Local-only references (not in the repo): `..\for-github-icms-master-tool\documen
 - "Worker n. Lhat n": ang engine ay lilipat sa Web Worker (Lisa + Winter, Giselle, Ningning); test scope = 15 loop-check point, hindi buong Cold→150 MW run. "GO STABLE workflow site": Beta site = main lang (PR #94). HMI kit (24 aprubadong piraso, PR #93); mga outline study PAUSED ("tama na muna… until my next command").
 - Titulo ng session "ROLE : NAME"; BANTAY bawat 15 min; PC ≤ 85 % CPU, isang heavy run lang (TEST_LOCK); huwag patayin ang proseso by name; gawin ang recommended nang hindi nagtatanong; zero known bugs bago live test.
 - 2026-11-01: BINAGSAK ng user ang unang H3 ~ H16 run sa beta.77 (putol na check, hindi totoong tick: "wag mandaraya"); inulit nang buo. Walang value = tick + HINDI NA-VERIFY + finding; labas sa SOP band = tick + BAGSAK + finding.
-- "isave ang lahat ng progress natin... Lahat ng session": buong detalye sa `docs/handoff/progress-2026-11-02/`.
+- "isave ang lahat ng progress natin... Lahat ng session": buong detalye sa `docs/handoff/progress/`.
