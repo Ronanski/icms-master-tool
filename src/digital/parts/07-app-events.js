@@ -29,8 +29,7 @@ function ditlStep(dt) {
     mvUI(s);
   }
 }
-/* 2.4.1-beta.4: DPAUSE = Pause of the DITL tool bar (Run on, time stopped) */
-let DPAUSE = false;
+/* 2.4.1-beta.4: DPAUSE = Pause of the DITL tool bar (Run on, time stopped): declared in 03b-sim.js (the engine reads it too) */
 setInterval(() => {
   const s = cur();
   if (window.WORLD && WORLD.live) return; /* the one world steps the timers / MOV / motors of EVERY sheet (src/world/world.js) */

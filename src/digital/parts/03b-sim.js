@@ -285,6 +285,10 @@ function simSheet(s) {
 const UN = { MS: 0.001, SEC: 1, MIN: 60, HR: 3600 },
   UT = { MS: 'MS', SEC: 'SEC.', MIN: 'MIN.', HR: 'HR.' };
 let TSP = 1;
+/* 2.4.1-beta.4: DPAUSE = Pause of the DITL tool bar (Run on, time stopped). Here, in an engine part, since 3.2.0 (Web Worker): the
+   engine follows the page on a DITL page (world.js scanJob: SIM && !DPAUSE); in 07-app-events.js it was not in the worker, and the first
+   scan there with the DITL page open threw (ReferenceError) and stopped the worker (Winter, ditl_run_keeps on e3de194) */
+let DPAUSE = false;
 const tick = { t: 0 };
 function unorm(s) {
   const u = s.replace(/[.\s]/g, '').toUpperCase();
