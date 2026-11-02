@@ -66,16 +66,18 @@
         N.t = (N.t || 0) + 1;
         N.lr = AN.run;
         N.same = AN === G.AN;
-        if (busy) return void N.skip++;
         if (!AN.run || AN._loading) {
           if (!AN.run) N.norun = (N.norun || 0) + 1;
           else N.load = (N.load || 0) + 1;
           acc = 0;
           return;
         }
+        /* the plant time of this tick is kept even while a world scan holds the engine (as the page scheduler, sched.js: its anAcc
+           grows before the busy check); before, a tick that met a scan was lost: 4.4 s of plant a second at 6x (eng_worker, Winter) */
+        acc += 0.1 * AN.spd;
+        if (busy) return void N.skip++;
         const sh = cs();
         if (!sh || !sh.S) return void (N.nosh = (N.nosh || 0) + 1);
-        acc += 0.1 * AN.spd;
         const dt = acc,
           n = Math.max(1, Math.ceil(dt / 0.5)),
           K = AN.tierK || 1;
