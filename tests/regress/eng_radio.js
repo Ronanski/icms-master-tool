@@ -87,6 +87,8 @@ const cmp = (a, b) => { let n = 0; const ex = []; for (let i = 0; i < Math.max(a
       B.DITL.SIM = true;
       B.ctx.ditlStates();
     }
+    /* the clock of the sheets back to 0 (the Training start: AN.clock0, an engine action, Winter's finding) */
+    if (k === 72) B.AN.clock0();
     /* a tuning of the operator: the gain of the first PID of ABC-050 (block parameters, page -> engine) */
     if (k === 70) {
       const b = S50(B).S.blk.find(x => x.k === 'PID' && x.p && x.p.kp > 0);
@@ -102,7 +104,7 @@ const cmp = (a, b) => { let n = 0; const ex = []; for (let i = 0; i < Math.max(a
   }
   const hp = S50(A).S.rt.v;
   void hp;
-  ck(bad < 0, '80 scans, the operator on the page (mode press, MAN output 20 %, settle, DITL push button, AUTO, Reset ABC + DITL, Start at 150 MW, DITL Simulate OFF / ON, a PID gain): ' + (bad < 0 ? '0 differences after every scan' : 'first difference after scan ' + bad + ': ' + worst.n + '\n   ' + worst.ex.join('\n   ')));
+  ck(bad < 0, '80 scans, the operator on the page (mode press, MAN output 20 %, settle, DITL push button, AUTO, Reset ABC + DITL, Start at 150 MW, DITL Simulate OFF / ON, a PID gain, the clock to 0): ' + (bad < 0 ? '0 differences after every scan' : 'first difference after scan ' + bad + ': ' + worst.n + '\n   ' + worst.ex.join('\n   ')));
   {
     const j = S50(B).S.blk.findIndex(x => x.k === 'PID' && x.p && x.p.kp > 0),
       ka = S50(A).S.blk[j].p.kp,

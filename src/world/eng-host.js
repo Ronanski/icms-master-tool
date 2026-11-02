@@ -54,6 +54,9 @@
     say({ t: 'ready' });
   }
   function run() {
+    /* the heartbeat (Giselle): the page knows the engine is alive also while nothing changes (paused); a worker that died or hangs is
+       seen there (eng-page.js watchdog) */
+    timers.push(setInterval(() => say({ t: 'beat' }), 1000));
     const { AN, WORLD, ENG } = G;
     let acc = 0,
       busy = false;
@@ -113,6 +116,9 @@
     );
   }
   /* the messages that come while the engine is still loading wait (in order) */
+  /* an action (Reset, a starting state ...) can take seconds here, with no heartbeat: the page is told first (Giselle; 'acting', not
+     'busy': 'busy' is the progress bar) */
+  const acting = m => m && m.t === 'op' && m.calls && m.calls.length && say({ t: 'acting' });
   let ready = false;
   const Q = [];
   G.onmessage = async e => {
@@ -122,13 +128,18 @@
       if (m.t === 'init') {
         await init(m);
         ready = true;
-        while (Q.length) await G.ENG.onMsg(Q.shift());
+        while (Q.length) {
+          const q = Q.shift();
+          acting(q);
+          await G.ENG.onMsg(q);
+        }
       }
       else if (m.t === 'kf') say({ t: 'kf', id: m.id, kf: G.AN.engState.capture(), kd: G.DITL.ditlCapture(), n: Object.assign({ loading: !!G.AN._loading, mode: G.ENG.mode, run: G.AN.run, at: Date.now() }, N) });
       else if (m.t === 'stop') {
         timers.forEach(clearInterval);
         timers = [];
       } else {
+        acting(m);
         await G.ENG.onMsg(m);
         /* what the message changed goes back at once (no job runs while the plant is paused) */
         if (m.t === "op" || m.t === "full") G.ENG.send();

@@ -13,7 +13,7 @@
   /* the engine actions: names on AN (engine/api.js and the page hooks), DITL (src/digital/parts), WORLD / DITL150 */
   const CALLS = {
     /* not setForce: a page function (ui/panel.js), its force goes as a write and its settle as an action */
-    AN: ['reset', 'settle', 'loadStart', 'plantLoad150', 'plantCold', 'plantLoad150Async', 'plantColdAsync', 'plantSwitch', 'latchMode', 'turbine', 'field', 'oilValve', 'blowdown', 'stepSet', 'stepTier', 'actSet', 'stepN', 'stepBack'],
+    AN: ['reset', 'settle', 'loadStart', 'plantLoad150', 'plantCold', 'plantLoad150Async', 'plantColdAsync', 'plantSwitch', 'latchMode', 'turbine', 'field', 'oilValve', 'blowdown', 'stepSet', 'stepTier', 'actSet', 'stepN', 'stepBack', 'clock0'],
     G: ['ditlStates', 'ditlUser'],
     DITL150: ['apply'],
     WORLD: ['tick', 'set']
@@ -146,8 +146,8 @@
           E._last = r;
         } catch (e) {
           if (G.console) console.error('ENG ' + n, e);
-          /* an engine action that fails is said on the page (it was silent) */
-          if (E.mode === 'engine') post({ t: 'error', where: 'engine action ' + n, text: String((e && e.stack) || e), soft: 1 });
+          /* not silent: the page stops the worker and runs the engine itself (eng-page.js fail), as for an error of a scan (Giselle) */
+          if (E.mode === 'engine') post({ t: 'error', where: n, text: String((e && e.stack) || e) });
         } finally {
           inCall--;
         }

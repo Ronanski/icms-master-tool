@@ -36,10 +36,30 @@
     } catch (e) {}
     E.worker = null;
     clearInterval(E._fl);
+    clearInterval(E._wd);
     E.stop();
   };
   /* for the watchdog (src/world/eng-watch.js): stop the worker with a message on the screen, back to the page engine */
   E.fail = fail;
+  /* the watchdog (Giselle, point 12): the worker sends a heartbeat every second (eng-host.js); a worker that died (terminated, out of
+     memory) or hangs sends nothing, so the page would wait for ever with the plant still. No message for 10 s = stopped; 60 s after
+     'acting' or while the page waits for a long action (ENG.heavy: a starting state takes seconds there, with no heartbeat) */
+  const WD = 10000,
+    WD_CALL = 60000;
+  const watch = () => {
+    clearInterval(E._wd);
+    let tk = (E.inAt = Date.now());
+    E.busyAt = 0;
+    E._wd = setInterval(() => {
+      const now = Date.now(),
+        late = now - tk > 3000;
+      tk = now;
+      /* the page itself was busy (its messages still wait in the queue): no verdict on this tick */
+      if (late || E.mode !== 'mirror' || !E.worker) return;
+      const lim = E.busyAt || E.heavy ? WD_CALL : WD;
+      if (now - E.inAt > lim) fail('no answer', 'the engine in the worker stopped answering (no message for ' + lim / 1000 + ' s)');
+    }, 1000);
+  };
   E.boot = () =>
     new Promise((ok, no) => {
       if (E.worker) return ok(E.worker);
@@ -56,7 +76,14 @@
       w.onerror = e => fail('worker', (e && e.message) || e);
       w.onmessage = ev => {
         const m = ev.data;
-        if (m.t === 'ready') return ok(w);
+        E.inAt = Date.now();
+        if (m.t === 'beat') return;
+        E.busyAt = m.t === 'acting' ? E.inAt : m.t === 'busy' ? E.busyAt : 0;
+        if (m.t === 'acting') return;
+        if (m.t === 'ready') {
+          watch();
+          return ok(w);
+        }
         if (m.t === 'kf') {
           const r = E._kf && E._kf[m.id];
           if (r) delete E._kf[m.id], r(m);
