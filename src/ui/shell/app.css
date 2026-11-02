@@ -952,7 +952,7 @@ body.cr #gsbar > #crband{flex:1 1 100%;height:var(--top);display:flex;align-item
 #crband .crkpis{display:flex;min-width:0;overflow:hidden;flex:0 1 auto}
 #crband .crkpi{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:.0625rem;height:2.5rem;min-height:0!important;padding:0 .75rem!important;border:0!important;border-left:1px solid var(--c-line)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--c-tx)!important;cursor:pointer;line-height:1.1;flex:none}
 #crband .crkpi:hover{background:var(--c-ctlh)!important}
-#crband .crkpi i{font:600 .625rem var(--uf);font-style:normal;letter-spacing:.08em;color:var(--c-dim)}
+#crband .crkpi i{font:500 .75rem var(--uf);font-style:normal;letter-spacing:0;white-space:nowrap;color:var(--c-dim)}
 #crband .crkpi b{display:inline!important;font:600 1rem var(--mf);font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--c-tx)}
 #crband .crkpi small{font:400 .6875rem var(--uf);color:var(--c-dim);margin-left:.25rem}
 #crband .crkpi.na b{color:var(--c-dim)}

@@ -1309,7 +1309,8 @@
     HV.forEach(([kk, dp, u], i) => {
       const x = k === 1 ? 760 + i * 158 : W - HV.length * 152 - 6 + i * 152,
         k_ = kk;
-      tx(x, 22 + (k - 1) * 6, k_ === 'PWR' ? 'LOAD' : k_, { z: 9 * k, b: 600, c: C.dim, ls: 0.5 });
+      /* UI overhaul 2026-11-02: plain words instead of MSP / MST / MSF (they fit the same 92 px slot) */
+      tx(x, 22 + (k - 1) * 6, { MSP: 'Steam press.', MST: 'Steam temp.', MSF: 'Steam flow', RHP: 'Reheat press.', RHT: 'Reheat temp.', COAL: 'Coal', PWR: 'Load' }[k_] || k_, { z: 9 * k, b: 600, c: C.dim, ls: 0.2 });
       const t = tx(x + 92 * (k === 1 ? 1 : 1.12), 22.5 + (k - 1) * 8, '-----', { z: 12.5 * k, mono: 1, c: C.none, a: 'end' });
       tx(x + 96 * (k === 1 ? 1 : 1.12), 22 + (k - 1) * 6, u, { z: 8.5 * k, c: C.unit });
       if (api.HDR[k_])

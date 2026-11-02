@@ -53,10 +53,11 @@
     const kpis = E('div', 'crkpis');
     /* the values of the unit, from the sheets that run (the same blocks the PLANT VIEW and the plant model read) */
     const K = [
-      ['LOAD', 'MW', 'ABC-001C', 'ai', 'AI0419', 'Generator MW (ABC-001C AI0419)'],
-      ['MSP', 'kg/cm²', 'ABC-001C', 'ai', 'AI0131', 'Main steam pressure (ABC-001C AI0131)'],
-      ['DRUM LVL', 'mm', 'ABC-010', 'pv', 'LICBR1001', 'Drum level, PV of LICBR1001 (ABC-010)'],
-      ['FW FLOW', 'T/H', 'ABC-010', 'pv', 'FICFW1007', 'Feedwater flow, PV of FICFW1007 (ABC-010)']
+      /* UI overhaul 2026-11-02 (approved Fix list): plain names, not acronyms, as the labels */
+      ['Load', 'MW', 'ABC-001C', 'ai', 'AI0419', 'Generator MW (ABC-001C AI0419)'],
+      ['Main steam pressure', 'kg/cm²', 'ABC-001C', 'ai', 'AI0131', 'Main steam pressure (ABC-001C AI0131)'],
+      ['Drum level', 'mm', 'ABC-010', 'pv', 'LICBR1001', 'Drum level, PV of LICBR1001 (ABC-010)'],
+      ['Feedwater flow', 'T/H', 'ABC-010', 'pv', 'FICFW1007', 'Feedwater flow, PV of FICFW1007 (ABC-010)']
     ].map(([k, u, sh, how, ref, t]) => {
       const b = E('button', 'crkpi');
       b.type = 'button';
