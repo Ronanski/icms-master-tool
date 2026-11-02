@@ -1,16 +1,16 @@
 name: Site (Stable + Beta)
-# Stable = html of the latest Stable tag (vX.Y.Z, made only on GO STABLE) at /, Beta = html of the branch that was just pushed at /beta/.
+# Stable = html of the latest Stable tag (vX.Y.Z, made only on GO STABLE) at /, Beta = html of MAIN at /beta/ (main changes only on GO BETA).
+# (2026-11-02, B1: before, the Beta was the html of ANY branch with a green Checks run, so a helper branch pushed for review replaced the
+# Beta of the user. A green Checks run of another branch does nothing here now.)
 # (2026-10-28: main carries the Beta under test, so the Stable page no longer follows main.) The apk / exe load these pages, so they update by themselves.
 on:
   workflow_run: { workflows: [Checks], types: [completed] }
-  workflow_dispatch:
-    inputs:
-      beta_ref: { description: 'Branch / sha for Beta (default main)', required: false, default: main }
+  workflow_dispatch: # by hand (after a GO STABLE release: the Stable page takes the new tag at once); the Beta is main
 permissions: { contents: read, pages: write, id-token: write }
 concurrency: { group: pages, cancel-in-progress: true }
 jobs:
   deploy:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     environment: { name: github-pages, url: '${{ steps.d.outputs.page_url }}' }
     steps:
@@ -22,7 +22,7 @@ jobs:
           T=$(git tag -l 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
           test -n "$T" && git checkout -q "$T" && echo "Stable page: $T"
       - uses: actions/checkout@v4
-        with: { ref: '${{ github.event.workflow_run.head_sha || inputs.beta_ref || ''main'' }}', path: beta }
+        with: { ref: '${{ github.event.workflow_run.head_sha || ''main'' }}', path: beta }
       - name: Assemble
         run: |
           mkdir -p site/beta
