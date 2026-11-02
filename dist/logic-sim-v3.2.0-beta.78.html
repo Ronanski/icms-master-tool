@@ -25681,6 +25681,22 @@ function anPull(sh) {
     }
   } catch (e) {}
 }
+/* RESET as the operator presses it, one body for the page (data/loader.js reset) and the Web Worker (tools/build/engine-bundle.js
+   AN.reset; Giselle's review of a2357e8: the Worker Reset had only anResetAll): the saved values of the operator go (forced signals,
+   values, switches; the block settings stay), the model back to the drawing, and the DITL too (retest #68: a motor started by hand
+   in the run before is stopped, not only the 150 MW state). The page keeps its own part: anSave, the panel, the message */
+function anResetRun() {
+  const keep = {};
+  for (const k in AN.sv) {
+    const q = AN.sv[k];
+    if (q && q.p && Object.keys(q.p).length) keep[k] = { pv: q.pv, p: q.p };
+  }
+  AN.sv = keep;
+  anResetAll();
+  try {
+    if (globalThis.DITL150) globalThis.DITL150.clear();
+  } catch (e) {}
+}
 /* RESET of the model: every sheet back to the drawing (tuning kept in AN.sv), then all sheets are settled: the same start as a fresh load, whatever the sheet order */
 function anResetAll() {
   anUnitStop(); /* 2.2.0-beta.9: Reset = cold boiler, the unit model stops (2.2.0-beta.11: and its load disturbance of the spray loops) */
@@ -27093,12 +27109,35 @@ const anSyncJ = (s, Y) => {
   const v = s.get();
   return anSyncPlainJ(v, Y) || JSON.stringify(anStateEnc(v, Y.ref));
 };
-/* the slots that changed: [[key, json]] or, for the values, [[key, [index, value] ...]] */
-function anSyncPatch(w) {
-  const Y = anSyncState(),
+/* the slots that changed: [[key, json]] or, for the values, [[key, [index, value] ...]].
+   o.slice (the page's timer flush, 3.2.0 Web Worker fps): one part of the writable slots a call, in turn (1 / o.parts, 4 by default),
+   so a flush costs about a quarter and every slot is looked at within o.parts flushes; the list of slots is checked again at the
+   start of each turn (a slot made since is seen from there). o.keys (a Set or array of slot keys): only those slots (the page before
+   it puts a patch in: the writable slots of that patch, so a write not sent yet is never put under, the operator wins). Without o
+   (the call wrapper before an action): every slot, as before */
+function anSyncPatch(w, o) {
+  const sl = !!(w && o && o.slice),
+    ks = !!(w && o && o.keys),
+    Y = (sl && AN_SYNC && AN_SYNC.wc) || (ks && AN_SYNC) ? AN_SYNC : anSyncState(),
     out = [];
   anSyncFresh(Y);
-  for (const s of Y.L) {
+  let L = Y.L;
+  if (ks) {
+    L = [];
+    for (const k of o.keys) {
+      const x = Y.by.get(k);
+      if (x && x.w) L.push(x);
+    }
+  } else if (sl) {
+    const Wl = Y.wl || (Y.wl = Y.L.filter(x => x.w)),
+      n = Wl.length,
+      c = (Y.wc || 0) % (n || 1),
+      m = Math.ceil(n / (o.parts || 4));
+    L = Wl.slice(c, c + m);
+    if (c + m > n) L = L.concat(Wl.slice(0, c + m - n));
+    Y.wc = (c + m) % (n || 1);
+  }
+  for (const s of L) {
     if (w && !s.w) continue;
     if (!w && s.wo) continue; /* the operator's only */
     if (s.ta) {
@@ -27717,6 +27756,18 @@ function anStepBack(names, rts, name, tg) {
     rem -= d;
   }
 }
+/* The clock of the sheets back to 0 and their trends emptied (the Training: "the start-up begins at t = 0", walkthrough #1; was done
+   by src/ui/training/guide.js on the page only: the run time t and the plant-model trends are not writable slots, so the engine kept
+   its clock; Winter's finding). An engine action: it runs in the engine and on the page (src/world/eng.js CALLS). */
+function anClock0() {
+  for (const sh of AN.sheets)
+    if (sh.S && sh.S.rt) {
+      const rt = sh.S.rt;
+      rt.t = 0;
+      for (const k in rt.pm || {}) if (rt.pm[k] && Array.isArray(rt.pm[k].h)) rt.pm[k].h = [];
+      for (const k in rt.st || {}) if (rt.st[k] && Array.isArray(rt.st[k].h)) rt.st[k].h = [];
+    }
+}
 /* ===== ENGINE API: what the engine gives on AN (the page and a Web Worker take the same list). No page access.
    3.2.0 Web Worker (stage a): the engine part of the AN map of boot.js; boot.js takes it first, then the page functions ===== */
 function anEngAPI() {
@@ -27761,6 +27812,7 @@ function anEngAPI() {
     /* engine/trace-step.js: Next / Back of the ABC trace, one engine action each */
     stepN: anStepN,
     stepBack: anStepBack,
+    clock0: anClock0,
     /* engine/ds.js: the FROM / TO DITL texts of a sheet, the description of an address (the face plate defaults first) */
     dsIdx,
     descOf: (sh, t) => {
@@ -31218,25 +31270,23 @@ function applySaved(sh) {
 }
 AN.applySaved = applySaved; /* ensure() (engine) asks the page for the saved values of a sheet through this hook */
 function reset() {
-  /* RESET = everything back to the drawing: all sheets, all forced signals, switches, sliders, timers, tuning */
-  {
-    const keep = {};
-    for (const k in AN.sv) {
-      const q = AN.sv[k];
-      if (q && q.p && Object.keys(q.p).length) keep[k] = { pv: q.pv, p: q.p };
-    }
-    AN.sv = keep;
-    anSave();
-  }
-  anResetAll(); /* the model part of the reset is in the engine (engine/sheets.js) */
-  /* 2.2.0-beta.3: Reset = cold start, the DITL 150 MW state too (src/world/ditl150.js) */
-  try {
-    /* retest #68: always (a motor started by hand in the run before is stopped too, not only the 150 MW state) */
-    if (window.DITL150) DITL150.clear();
-  } catch (e) {}
+  /* RESET = everything back to the drawing: all sheets, all forced signals, switches, sliders, timers, tuning; the DITL too
+     (2.2.0-beta.3, retest #68). The model part is in the engine (engine/sheets.js anResetRun), the same as the Worker runs */
+  anResetRun();
+  anSave();
   const sh = cs();
   if (!sh || !sh.S) return;
   for (let i = 0; i < 6; i++) stepSet(sh, 0);
+  resetShown();
+}
+/* 3.2.0 Web Worker: the Reset ran in the engine (src/world/eng.js: a long action); after its answer, with the engine state put in
+   here, the page part: the saved values kept on this device, the panel and the message */
+reset.after = () => {
+  anSave();
+  const sh = cs();
+  if (sh && sh.S) resetShown();
+};
+function resetShown() {
   AN.sel = null;
   selBox();
   buildPanel();
@@ -31984,7 +32034,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build e396c12'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 71942d4'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -35972,14 +36022,18 @@ sSpd.onchange = () => {
    starts the plant cold (trace.js coldIfNone), so after a Reset MSP is 0 again, not the loop model's middle of the range */
 bRst.onclick = () => {
   AN.startState = null;
-  AN.reset();
+  /* 3.2.0 Web Worker: the Reset runs in the engine and answers later (a promise): the rest waits for it */
+  const r = AN.reset();
   /* 3.2.0-beta.18: and the plant is COLD at once (VIEW shows boiler off, not the drawings' defaults MSP 75) */
   /* retest #57: then the operator picks the starting state (no Cold by itself) */
-  coldIfNone(() => {
-    AN.settle();
-    paint();
-    panelUpd(true);
-  });
+  const then = () =>
+    coldIfNone(() => {
+      AN.settle();
+      paint();
+      panelUpd(true);
+    });
+  if (r && typeof r.then === 'function') r.then(then);
+  else then();
 };
 bFit.onclick = fitView;
 bVal.onclick = () => {
@@ -49760,7 +49814,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   /* the engine actions: names on AN (engine/api.js and the page hooks), DITL (src/digital/parts), WORLD / DITL150 */
   const CALLS = {
     /* not setForce: a page function (ui/panel.js), its force goes as a write and its settle as an action */
-    AN: ['reset', 'settle', 'loadStart', 'plantLoad150', 'plantCold', 'plantLoad150Async', 'plantColdAsync', 'plantSwitch', 'latchMode', 'turbine', 'field', 'oilValve', 'blowdown', 'stepSet', 'stepTier', 'actSet', 'stepN', 'stepBack'],
+    AN: ['reset', 'settle', 'loadStart', 'plantLoad150', 'plantCold', 'plantLoad150Async', 'plantColdAsync', 'plantSwitch', 'latchMode', 'turbine', 'field', 'oilValve', 'blowdown', 'stepSet', 'stepTier', 'actSet', 'stepN', 'stepBack', 'clock0'],
     G: ['ditlStates', 'ditlUser'],
     DITL150: ['apply'],
     WORLD: ['tick', 'set']
@@ -49820,7 +49874,27 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
             const id = ++nid;
             E.heavy = (E.heavy || 0) + 1;
             post({ t: 'op', ops: [], calls: [[h + '.' + k, G.AN.sync.encArgs ? G.AN.sync.encArgs(a) : a]], id });
-            return new Promise(ok => waits.set(id, ok));
+            /* the page part of the action (f.after, e.g. loader.js reset: anSave, the panel, the message), once the engine state is in */
+            const after = f.after;
+            const self = this;
+            return new Promise(ok => {
+              const w = r => {
+                if (after)
+                  try {
+                    after(r);
+                  } catch (x) {}
+                ok(r);
+              };
+              /* the worker stopped before its answer (E.stop): the page runs the action itself, with its own page part */
+              w.local = () => {
+                let r;
+                try {
+                  r = f.apply(self, a);
+                } catch (x) {}
+                Promise.resolve(r).then(ok, () => ok(null));
+              };
+              waits.set(id, w);
+            });
           }
           inCall++;
           let r;
@@ -49925,8 +49999,11 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       m.ev = (E.evHeld || []).concat(m.ev || []);
       E.evHeld = [];
       /* the operator wins: a write not sent yet goes first */
-      const mine = E.flush(),
+      /* only the slots this patch carries can cover a write of the page, so only those are looked at (Ningning, sync.js keys: 0.05 ms
+         for a few slots, the whole flush took ~5 ms at 6x); the other writes go with the 500 ms flush (eng-page.js) and before each action */
+      const mine = E.mode === 'mirror' && G.AN && G.AN.sync ? G.AN.sync.patch(true, { keys: m.p.map(x => x[0]) }) : [],
         skip = new Set(mine.map(x => x[0]));
+      if (mine.length) post({ t: 'op', ops: mine, calls: [] });
       /* in slices of at most 4 ms, the page draws between them (a patch at once took ~100 ms at 6x: the long frames of the 038 page,
          Ningning's trace); no slices where there is no MessageChannel (the node tests: at once) */
       if (E.yieldNow && m.p.length > 8) {
@@ -49981,6 +50058,11 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   E.stop = () => {
     E.mode = 'local';
     E.port = null;
+    /* a long action still waiting for the worker (Reset, a starting state) would never answer: it runs here now (the page is the engine) */
+    const left = [...waits.values()];
+    waits.clear();
+    E.heavy = 0;
+    for (const w of left) if (w.local) w.local();
   };
 })(typeof window !== 'undefined' ? window : globalThis);
 </script><script id="dockengjs">/* DOCK PRESS (3.2.0 Web Worker, stage c): the push button and the maintained selection of a DITL input row, pressed by the Training
@@ -50187,8 +50269,21 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
         /* the events of the engine into the Event log of the page */
         E.onEvent = a => window.lsEventAdd && lsEventAdd(...a);
         E.start('mirror', w);
-        /* the operator's writes leave every 500 ms too (no patch comes while the plant is paused) */
-        E._fl = setInterval(() => E.mode === 'mirror' && E.flush(), 500);
+        /* the operator's writes leave every 500 ms too (no patch comes while the plant is paused); a quarter of the writable slots
+           each time, in turn (sync.js o.slice: ~1/4 of the cost, every slot seen within 2 s). A patch coming in and an action still
+           flush every slot first (eng.js), so no write is ever put under */
+        E._fl = setInterval(() => {
+          if (E.mode !== 'mirror' || !E.port) return;
+          const ops = AN.sync.patch(true, { slice: true });
+          if (!ops.length) return;
+          try {
+            E.port.postMessage({ t: 'op', ops, calls: [] });
+            E.sent++;
+          } catch (e) {
+            E.err = e;
+            if (E.onError) E.onError(e);
+          }
+        }, 500);
         /* the DITL sheets of the page (with the user's fixes), the saved settings of the ABC (Reset applies them) */
         const ds = JSON.stringify(S.sheets, (k, v) => (k === 'nl' || k[0] === '_' ? undefined : v instanceof Set ? [...v] : v)); /* the _ keys: caches, links to instances (the keyframe carries the state ones) */
         w.postMessage({ t: 'init', apre: txt('apre'), ades: txt('ades'), ds, sv: AN.sv || {}, lne: AN.lne || {}, kf, kd, i: AN.i });
@@ -71053,6 +71148,22 @@ function anPull(sh) {
     }
   } catch (e) {}
 }
+/* RESET as the operator presses it, one body for the page (data/loader.js reset) and the Web Worker (tools/build/engine-bundle.js
+   AN.reset; Giselle's review of a2357e8: the Worker Reset had only anResetAll): the saved values of the operator go (forced signals,
+   values, switches; the block settings stay), the model back to the drawing, and the DITL too (retest #68: a motor started by hand
+   in the run before is stopped, not only the 150 MW state). The page keeps its own part: anSave, the panel, the message */
+function anResetRun() {
+  const keep = {};
+  for (const k in AN.sv) {
+    const q = AN.sv[k];
+    if (q && q.p && Object.keys(q.p).length) keep[k] = { pv: q.pv, p: q.p };
+  }
+  AN.sv = keep;
+  anResetAll();
+  try {
+    if (globalThis.DITL150) globalThis.DITL150.clear();
+  } catch (e) {}
+}
 /* RESET of the model: every sheet back to the drawing (tuning kept in AN.sv), then all sheets are settled: the same start as a fresh load, whatever the sheet order */
 function anResetAll() {
   anUnitStop(); /* 2.2.0-beta.9: Reset = cold boiler, the unit model stops (2.2.0-beta.11: and its load disturbance of the spray loops) */
@@ -72473,12 +72584,35 @@ const anSyncJ = (s, Y) => {
   const v = s.get();
   return anSyncPlainJ(v, Y) || JSON.stringify(anStateEnc(v, Y.ref));
 };
-/* the slots that changed: [[key, json]] or, for the values, [[key, [index, value] ...]] */
-function anSyncPatch(w) {
-  const Y = anSyncState(),
+/* the slots that changed: [[key, json]] or, for the values, [[key, [index, value] ...]].
+   o.slice (the page's timer flush, 3.2.0 Web Worker fps): one part of the writable slots a call, in turn (1 / o.parts, 4 by default),
+   so a flush costs about a quarter and every slot is looked at within o.parts flushes; the list of slots is checked again at the
+   start of each turn (a slot made since is seen from there). o.keys (a Set or array of slot keys): only those slots (the page before
+   it puts a patch in: the writable slots of that patch, so a write not sent yet is never put under, the operator wins). Without o
+   (the call wrapper before an action): every slot, as before */
+function anSyncPatch(w, o) {
+  const sl = !!(w && o && o.slice),
+    ks = !!(w && o && o.keys),
+    Y = (sl && AN_SYNC && AN_SYNC.wc) || (ks && AN_SYNC) ? AN_SYNC : anSyncState(),
     out = [];
   anSyncFresh(Y);
-  for (const s of Y.L) {
+  let L = Y.L;
+  if (ks) {
+    L = [];
+    for (const k of o.keys) {
+      const x = Y.by.get(k);
+      if (x && x.w) L.push(x);
+    }
+  } else if (sl) {
+    const Wl = Y.wl || (Y.wl = Y.L.filter(x => x.w)),
+      n = Wl.length,
+      c = (Y.wc || 0) % (n || 1),
+      m = Math.ceil(n / (o.parts || 4));
+    L = Wl.slice(c, c + m);
+    if (c + m > n) L = L.concat(Wl.slice(0, c + m - n));
+    Y.wc = (c + m) % (n || 1);
+  }
+  for (const s of L) {
     if (w && !s.w) continue;
     if (!w && s.wo) continue; /* the operator's only */
     if (s.ta) {
@@ -73103,6 +73237,18 @@ function anStepBack(names, rts, name, tg) {
     rem -= d;
   }
 }
+/* The clock of the sheets back to 0 and their trends emptied (the Training: "the start-up begins at t = 0", walkthrough #1; was done
+   by src/ui/training/guide.js on the page only: the run time t and the plant-model trends are not writable slots, so the engine kept
+   its clock; Winter's finding). An engine action: it runs in the engine and on the page (src/world/eng.js CALLS). */
+function anClock0() {
+  for (const sh of AN.sheets)
+    if (sh.S && sh.S.rt) {
+      const rt = sh.S.rt;
+      rt.t = 0;
+      for (const k in rt.pm || {}) if (rt.pm[k] && Array.isArray(rt.pm[k].h)) rt.pm[k].h = [];
+      for (const k in rt.st || {}) if (rt.st[k] && Array.isArray(rt.st[k].h)) rt.st[k].h = [];
+    }
+}
 
 /* ---- engine/api.js ---- */
 /* ===== ENGINE API: what the engine gives on AN (the page and a Web Worker take the same list). No page access.
@@ -73149,6 +73295,7 @@ function anEngAPI() {
     /* engine/trace-step.js: Next / Back of the ABC trace, one engine action each */
     stepN: anStepN,
     stepBack: anStepBack,
+    clock0: anClock0,
     /* engine/ds.js: the FROM / TO DITL texts of a sheet, the description of an address (the face plate defaults first) */
     dsIdx,
     descOf: (sh, t) => {
@@ -73176,7 +73323,7 @@ Object.assign(AN,anEngAPI());
 AN.lnSrc=()=>([{"key":"S1-LN38","stn":1,"ln":38,"dwg":"ABC-010","ptn":"S1-LN-38","title":"DRUM LEVEL PRESSURE COMPENSATION F4(p), N x 100 % (from the Drum Level Calculation file)","xr":[0,250],"yr":[0,100],"xu":"RANGE (kg/cm2)","yu":"RANGE (%)","src":"DCS Engr Station pattern 038 (user screenshot 2026-10-10: 16 points LX / LY in % of the range)","pts":[[-50,100],[0,100],[19,99.12],[29,98.66],[39,98.18],[49,97.69],[59,97.17],[69,96.64],[79,96.08],[89,95.48],[99,94.85],[109,94.18],[119,93.47],[129,92.69],[139,91.85],[219,77.15]]},{"key":"S1-LN39","stn":1,"ln":39,"dwg":"ABC-010","ptn":"S1-LN-39","title":"DRUM LEVEL PRESSURE COMPENSATION F3(p), K as a ratio (from the Drum Level Calculation file)","xr":[0,250],"yr":[0,1],"xu":"RANGE (kg/cm2)","yu":"RANGE (%)","src":"DCS Engr Station pattern 039 (user screenshot 2026-10-10: 16 points LX / LY in % of the range)","pts":[[-50,1],[0,1],[19,0.8776],[29,0.8437],[39,0.8142],[49,0.7872],[59,0.7616],[69,0.737],[79,0.7129],[89,0.689],[99,0.6651],[109,0.641],[119,0.6164],[129,0.5911],[139,0.5648],[219,0.1976]]},{"key":"S1-LN1","stn":1,"ln":1,"dwg":"ABC-002","ptn":"S1-LN-01","title":"DIESEL OIL CALORIE CORRECTION","xr":[0,100],"yr":[0,1],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[50,1],[100,1.2],[120,1.2]]},{"key":"S1-LN3","stn":1,"ln":3,"dwg":"ABC-004A","ptn":"S1-LN-03","title":"COAL CALORIE CORRECTION","xr":[0,100],"yr":[0,1],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-20,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[50,1],[100,1.2],[120,1.2]]},{"key":"S1-LN5","stn":1,"ln":5,"dwg":"ABC-002","ptn":"S1-LN-05","title":"BM vs AIR DEMAND\n(COAL FIRING)","xr":[0,120],"yr":[0,1115],"xu":"RANGE (T/H)","yu":"RANGE (T/H)","pts":[[-24,446],[0,446],[0,446],[0,446],[0,446],[0,446],[0,446],[35,446],[42.8,490],[50.5,520],[61.9,548],[69.5,582],[81,616],[108,728],[120,728],[144,728]]},{"key":"S1-LN7","stn":1,"ln":7,"dwg":"ABC-002","ptn":"S1-LN-07","title":"TOTAL OIL FLOW vs  SA FLOW DEMAND","xr":[0,14],"yr":[0,432],"xu":"RANGE (T/H)","yu":"RANGE (T/H)","pts":[[0,180],[0,180],[0,180],[0,180],[0,180],[0,180],[0,180],[0,180],[0,180],[0,180],[0,180],[4,190],[8,225],[12,245],[14,245],[16.8,245]]},{"key":"S1-LN8","stn":1,"ln":8,"dwg":"ABC-002","ptn":"S1-LN-08","title":"TOTAL OIL FLOW vs  PA FLOW DEMAND","xr":[0,14],"yr":[0,648],"xu":"RANGE (T/H)","yu":"RANGE (T/H)","pts":[[-2.8000000000000003,180],[0,180],[0,180],[0,180],[0,180],[0,180],[0,180],[0,180],[0,180],[0,180],[0,180],[4,210],[8,210],[12,245],[14,245],[16.8,245]]},{"key":"S1-LN9","stn":1,"ln":9,"dwg":"ABC-003A","ptn":"S1-LN-09","title":"BNR SEC. AIR FLOW BIAS","xr":[0,100],"yr":[0,65],"xu":"RANGE (%)","yu":"RANGE (T/H)","pts":[[-20,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[50,0],[100,10],[120,10]]},{"key":"S1-LN12","stn":1,"ln":12,"dwg":"ABC-002","ptn":"S1-LN-12","title":"TCF vs PA FLOW DEMAND","xr":[0,120],"yr":[0,648],"xu":"RANGE (T/H)","yu":"RANGE (T/H)","pts":[[-24,285],[0,285],[0,285],[0,285],[0,285],[0,285],[0,285],[35,285],[42.8,310],[50.5,330],[61.9,345],[69.5,362],[81,380],[108,506],[120,506],[144,506]]},{"key":"S1-LN13","stn":1,"ln":13,"dwg":"ABC-008","ptn":"S1-LN-13","title":"IDF H/C DEMAND vs DAMPER DEMAND","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-20,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[14,100],[100,100],[120,100]]},{"key":"S1-LN14","stn":1,"ln":14,"dwg":"ABC-002","ptn":"S1-LN-14","title":"PA FLOW BIAS","xr":[0,100],"yr":[0,648],"xu":"RANGE (%)","yu":"RANGE (T/H)","pts":[[-20,-30],[0,-30],[0,-30],[0,-30],[0,-30],[0,-30],[0,-30],[0,-30],[0,-30],[0,-30],[0,-30],[0,-30],[0,-30],[50,0],[100,30],[120,30]]},{"key":"S1-LN15","stn":1,"ln":15,"dwg":"ABC-002","ptn":"S1-LN-15","title":"O2 Corr. Constant","xr":[0,100],"yr":[0,1],"xu":"RANGE (%)","yu":"RATIO (0.8 ~ 1.2)","pts":[[-20,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[50,1],[100,1.2],[120,1.2]],"fix":"outputs /100: the drawing gives the output as a ratio 0.8 ~ 1.2"},{"key":"S1-LN16","stn":1,"ln":16,"dwg":"ABC-002","ptn":"S1-LN-16","title":"BM vs O2 DEMAND\n(COAL FIRING)","xr":[0,120],"yr":[0,25],"xu":"RANGE (T/H)","yu":"RANGE (%)","pts":[[-24,8],[0,8],[0,8],[0,8],[0,8],[0,8],[0,8],[35,8],[42.8,6.2],[50.5,5.6],[61.9,4.6],[69.5,3.8],[81,3.5],[108,3.5],[120,3.5],[144,3.5]]},{"key":"S1-LN17","stn":1,"ln":17,"dwg":"ABC-002","ptn":"S1-LN-17","title":"O2 BIAS","xr":[0,100],"yr":[0,21],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-20,-4],[0,-4],[0,-4],[0,-4],[0,-4],[0,-4],[0,-4],[0,-4],[0,-4],[0,-4],[0,-4],[0,-4],[0,-4],[50,0],[100,4],[120,4]]},{"key":"S1-LN18","stn":1,"ln":18,"dwg":"ABC-013","ptn":"S1-LN-18","title":"Blow-Off flow request vs Blow-Off control demand","xr":[0,500],"yr":[0,100],"xu":"RANGE (T/H)","yu":"RANGE (%)","pts":[[-100,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[8.84,14],[184,76],[221,100],[650,100]]},{"key":"S1-LN19","stn":1,"ln":19,"dwg":"ABC-003A","ptn":"S1-LN-19","title":"BNR OIL FLOW vs BNR SA FLOW DEMAND","xr":[0,3.5],"yr":[0,65],"xu":"RANGE (T/H)","yu":"RANGE (T/H)","pts":[[-0.7000000000000001,26],[0,26],[0,26],[0,26],[0,26],[0,26],[0,26],[0,26],[0,26],[0,26],[0,26],[1,26],[2,45],[3,60],[3.5,70],[4.2,70]]},{"key":"S1-LN21","stn":1,"ln":21,"dwg":"ABC-003A","ptn":"S1-LN-21","title":"FUEL / AIR RATIO","xr":[0,100],"yr":[0,1],"xu":"RANGE (%)","yu":"RATIO (0.8 ~ 1.2)","pts":[[-20,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[0,0.8],[50,1],[100,1.2],[120,1.2]],"fix":"outputs /100: the drawing gives the output as a ratio 0.8 ~ 1.2"},{"key":"S1-LN22","stn":1,"ln":22,"dwg":"ABC-002","ptn":"S1-LN-22","title":"TFF vs TAF DEMAND","xr":[0,120],"yr":[0,1115],"xu":"RANGE (T/H)","yu":"RANGE (T/H)","pts":[[-24,446],[0,446],[0,446],[0,446],[0,446],[0,446],[0,446],[35,446],[42.8,471],[50.5,501],[61.9,529],[69.5,563],[81,606],[108,728],[120,728],[144,728]]},{"key":"S1-LN23","stn":1,"ln":23,"dwg":"ABC-004A","ptn":"S1-LN-23","title":"A-COAL FLOW BIAS","xr":[0,100],"yr":[0,40],"xu":"RANGE (%)","yu":"RANGE (T/H)","pts":[[-20,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[50,0],[100,8],[120,8]]},{"key":"S1-LN25","stn":1,"ln":25,"dwg":"ABC-004B","ptn":"S1-LN-25","title":"B-COAL FLOW BIAS","xr":[0,100],"yr":[0,40],"xu":"RANGE (%)","yu":"RANGE (T/H)","pts":[[-20,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[50,0],[100,8],[120,8]]},{"key":"S1-LN27","stn":1,"ln":27,"dwg":"ABC-004C","ptn":"S1-LN-27","title":"C-COAL FLOW BIAS","xr":[0,100],"yr":[0,40],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-20,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[0,-8],[50,0],[100,8],[120,8]]},{"key":"S1-LN29","stn":1,"ln":29,"dwg":"ABC-002","ptn":"S1-LN-29","title":"O2 CONTROL FUNCTION","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-20,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[80,0],[100,50],[120,100]]},{"key":"S1-LN30","stn":1,"ln":30,"dwg":"ABC-010","ptn":"S1-LN-30","title":"FEED WATER FLOW COMPENSATION","xr":[0,300],"yr":[0,833.34],"xu":"RANGE  (°C)","yu":"RANGE (kg/cm2)","pts":[[-60,1007.76],[0,1007.76],[50,995.025],[100,965.717],[150,925.669],[200,875.503],[220,852.224],[245.4,833.333],[250,812.612],[270,782.35],[290,747.608],[300,728.014],[300,728.014],[300,728.014],[300,728.014],[360,728.014]]},{"key":"S1-LN31","stn":1,"ln":31,"dwg":"ABC-001C","ptn":"S1-LN-31","title":"MAIN STEAM FLOW COMPENSATION(Press.)","xr":[0,150],"yr":[0,35.971],"xu":"RANGE (kg/cm2)","yu":"RANGE (kg/cm2)","pts":[[-30,2.636],[0,2.636],[9,2.636],[29,8.006],[49,13.514],[70,19.455],[80,22.371],[90,25.316],[100,28.329],[110,31.348],[120,34.364],[125,35.971],[130,37.453],[140,40.65],[150,43.86],[187.5,43.86]]},{"key":"S1-LN32","stn":1,"ln":32,"dwg":"ABC-001C","ptn":"S1-LN-32","title":"MAIN STEAM FLOW COMPENSATION(Temp.)","xr":[0,600],"yr":[0,35.97],"xu":"RANGE (°C)","yu":"RANGE (kg/cm2)","pts":[[-120,70.423],[300,70.423],[330,70.423],[350,60.976],[380,52.91],[410,47.619],[440,43.859],[470,40.984],[500,38.462],[538,35.971],[541,35.714],[549,35.336],[600,32.573],[600,32.573],[600,32.573],[750,32.573]]},{"key":"S1-LN34","stn":1,"ln":34,"dwg":"ABC-009A,9B","ptn":"S1-LN-34","title":"A/B/C/D-BOTTOM ASH COOLER SPEED BIAS","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-20,-25],[0,-25],[0,-25],[0,-25],[0,-25],[0,-25],[0,-25],[0,-25],[0,-25],[0,-25],[0,-25],[0,-25],[0,-25],[50,0],[100,25],[120,25]]},{"key":"S1-LN40","stn":1,"ln":40,"dwg":"ABC-002","ptn":"S1-LN-40","title":"TAF TRANSFER TO FFD(COAL FIRING)","xr":[0,1115],"yr":[0,120],"xu":"RANGE (T/H)","yu":"RANGE (T/H)","pts":[[-223,0],[0,0],[0,0],[0,0],[0,0],[0,0],[414,0],[446,35],[471,42.8],[501,50.5],[529,61.9],[563,69.5],[606,81],[728,108],[1115,108],[1338,108]]},{"key":"S1-LN42","stn":1,"ln":42,"dwg":"ABC-011","ptn":"S1-LN-42","title":"DRUM PRESS. TRANSFER TO TEMP.","xr":[0,250],"yr":[0,600],"xu":"RANGE (kg/cm2)","yu":"RANGE (°C)","pts":[[-50,100.02],[0,100.02],[9,179.88],[19,212.4],[29,233.88],[39,250.38],[44,257.52],[49,264],[79,295.02],[89,303],[99,311.11],[109,318.18],[119,324.78],[129,330.9],[139,336.78],[300,336.78]]},{"key":"S1-LN43","stn":1,"ln":43,"dwg":"ABC-012","ptn":"S1-LN-43","title":"MAIN STEAM PRESS. TRANSFER TO TEMP.","xr":[0,150],"yr":[0,600],"xu":"RANGE (kg/cm2)","yu":"RANGE (°C)","pts":[[-30,100.02],[9,179.88],[19,212.4],[29,233.88],[39,250.38],[44,257.52],[49,264],[79,295.02],[89,303],[99,311.1],[109,318.18],[119,324.78],[129,330.9],[139,336.78],[150,336.78],[180,336.78]]},{"key":"S1-LN44","stn":1,"ln":44,"dwg":"ABC-004A","ptn":"S1-LN-44","title":"Fuel Flow Deviation vs Coal Flow Correction","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-20,1],[-20,1],[-20,1],[-20,1],[-20,1],[-20,1],[-20,1],[-20,1],[-20,1],[-20,1],[-1,1],[-1,0],[0,0],[1,0],[1,-1],[100,-1]]},{"key":"S1-LN46","stn":1,"ln":46,"dwg":"ABC-011","ptn":"S1-LN-46","title":"1ST DE-S/H Water Control\nvs Control Valve(2) Demand","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-20,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[22.22,100],[100,100],[120,100]]},{"key":"S1-LN47","stn":1,"ln":47,"dwg":"ABC-011","ptn":"S1-LN-47","title":"1ST DE-S/H Water Control\nvs Control Valve(1) Demand","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-20,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[22,0],[100,100],[120,100]]},{"key":"S1-LN48","stn":1,"ln":48,"dwg":"ABC-012","ptn":"S1-LN-48","title":"2ND DE-S/H Water Control\nvs Control Valve(2) Demand","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-20,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[22,100],[100,100],[120,100]]},{"key":"S1-LN49","stn":1,"ln":49,"dwg":"ABC-012","ptn":"S1-LN-49","title":"2ND DE-S/H Water Control\nvs Control Valve(1) Demand","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-20,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[18,0],[100,100],[120,100]]},{"key":"S1-LN50","stn":1,"ln":50,"dwg":"ABC-008","ptn":"S1-LN-50","title":"PA & SA flow ctl demand - \nFurnace press. demand(H/C)","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-20,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[100,100],[120,100]]},{"key":"S1-LN51","stn":1,"ln":51,"dwg":"ABC-008","ptn":"S1-LN-51","title":"PA & SA flow ctl demand - \nFur. press. demand(damper)","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-20,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[100,100],[120,100]]},{"key":"S1-LN54","stn":1,"ln":54,"dwg":"ABC-001C","ptn":"S1-LN-54","title":"ULD vs FUEL FLOW DEMAND","xr":[0,200],"yr":[0,120],"xu":"RANGE (MW)","yu":"RANGE (T/H)","pts":[[-40,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[60,35],[75,42.8],[90,50.5],[112.5,61.9],[127.5,69.5],[150,81],[200,108],[240,108]]},{"key":"S1-LN55","stn":1,"ln":55,"dwg":"ABC-001C","ptn":"S1-LN-55","title":"MSP vs T/B Override MW","xr":[0,150],"yr":[0,200],"xu":"RANGE (kg/cm2)","yu":"RANGE (MW)","pts":[[-30,-2],[-9.5,-2],[-9.5,-2],[-9.5,-2],[-9.5,-2],[-6.5,-2],[-5.5,-2],[-3.5,-2],[-3,-1],[-2.99,0],[0,0],[2.99,0],[3,1],[3.5,2],[5.5,2],[30,2]]},{"key":"S1-LN58","stn":1,"ln":58,"dwg":"ABC-001D","ptn":"S1-LN58","title":"MWD DV GAIN FOR BIR LOGIC(LOAD UP)","xr":[0,200],"yr":[0,1],"xu":"RANGE (MW)","yu":"RANGE","pts":[[-40,0.55],[0,0.55],[0,0.55],[0,0.55],[0,0.55],[0,0.55],[0,0.55],[0,0.55],[0,0.55],[4.9,0.55],[5,1],[10,1],[20,1.2],[30,1.2],[200,1.2],[240,1.2]]},{"key":"S1-LN59","stn":1,"ln":59,"dwg":"ABC-001D","ptn":"S1-LN-59","title":"MWD DV GAIN FOR BIR LOGIC(LOAD DOWN)","xr":[0,200],"yr":[0,1],"xu":"RANGE (MW)","yu":"RANGE ","pts":[[-40,0.25],[0,0.25],[0,0.25],[0,0.25],[0,0.25],[0,0.25],[0,0.25],[0,0.25],[0,0.25],[1.98,0.25],[2,1],[10,1],[20,1],[30,1],[200,1],[240,1]]},{"key":"S1-LN60","stn":1,"ln":60,"dwg":"ABC-001D","ptn":"S1-LN-60","title":"RAMP RATE GAIN FOR BIR LOGIC","xr":[0,10],"yr":[0,1],"xu":"RANGE (MW/MIN)","yu":"RANGE ","pts":[[-2,0.95],[0,0.95],[0,0.95],[0,0.95],[0,0.95],[0,0.95],[0,0.95],[0,0.95],[0,0.95],[0,0.95],[0.6,0.95],[0.8,1],[1,1.05],[1.2,1.1],[10,1.1],[12,1.1]]},{"key":"S1-LN61","stn":1,"ln":61,"dwg":"ABC-001D","ptn":"S1-LN-61","title":"ULD UP MWD vs BIR FUEL DEMAND","xr":[0,200],"yr":[0,120],"xu":"RANGE (MW)","yu":"RANGE (T/H)","pts":[[-40,0],[0,0],[0,0],[0,0],[0,0],[64,0],[70,0.25],[75,0.5],[91.9,0.5],[92,0.65],[110,0.65],[110.1,0.6],[115,0.6],[150,0.6],[200,0.6],[240,0.6]]},{"key":"S1-LN62","stn":1,"ln":62,"dwg":"ABC-001D","ptn":"S1-LN-62","title":"ULD DOWN MWD vs BIR FUEL DEMAND","xr":[0,200],"yr":[0,120],"xu":"RANGE (MW)","yu":"RANGE (T/H)","pts":[[-40,0],[0,0],[0,0],[0,0],[50,0],[60,-0.44],[75.8,-0.44],[76,0],[90,0],[95,-0.65],[109.9,-0.65],[110,-0.44],[149.9,-0.44],[150,0],[200,0],[240,0]]},{"key":"S2-LN2","stn":2,"ln":2,"dwg":"ABC-019","ptn":"S2-LN-02","title":"R/H Inlet Header Press. Transfer to Temp.","xr":[0,50],"yr":[0,600],"xu":"RANGE (kg/cm2)","yu":"RANGE (°C)","pts":[[-10,0],[0,99.09],[5,158.08],[9,179.04],[13,194.13],[17,206.15],[20,213.86],[23,220.76],[26,227.02],[29,232.76],[32,238.08],[35,243.04],[40,250.64],[45,257.56],[50,265.15],[60,274.28]]},{"key":"S2-LN3","stn":2,"ln":3,"dwg":"ABC-020","ptn":"S2-LN-03","title":"Unit Load Demand\nvs R/H Gas Damper Pos.","xr":[0,200],"yr":[0,100],"xu":"RANGE (MW)","yu":"RANGE (%)","pts":[[-40,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[30,15],[75,45],[112,25],[150,25],[200,25],[240,25]]},{"key":"S2-LN5","stn":2,"ln":5,"dwg":"ABC-020","ptn":"S2-LN-05","title":"RH gas damper demand - SH gas damper demand","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-20,100],[0,100],[0,100],[0,100],[0,100],[0,100],[0,100],[0,100],[0,100],[0,100],[0,100],[0,100],[0,100],[50,50],[90,10],[100,10]]},{"key":"S2-LN6","stn":2,"ln":6,"dwg":"ABC-020","ptn":"S2-LN-06","title":"MW vs R/H Outlet Header Temp. SV Demand","xr":[0,200],"yr":[0,600],"xu":"RANGE (MW)","yu":"RANGE (°C)","pts":[[-40,420],[0,420],[0,420],[0,420],[0,420],[0,420],[0,420],[0,420],[0,420],[0,420],[37.5,480],[75,520],[112,538],[150,538],[200,538],[240,538]]},{"key":"S2-LN7","stn":2,"ln":7,"dwg":"ABC-020","ptn":"S2-LN-07","title":"R/H Outlet Header Temp. Control Demand","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[0,-50],[0,-50],[0,-50],[0,-50],[0,-50],[0,-50],[0,-50],[0,-50],[0,-50],[0,-50],[0,-50],[0,-50],[0,-50],[0,-50],[0,-50],[100,50]]},{"key":"S2-LN8","stn":2,"ln":8,"dwg":"ABC-020","ptn":"S2-LN-08","title":"R/H Outlet Header Temp. Control Tracking","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-50,0],[-50,0],[-50,0],[-50,0],[-50,0],[-50,0],[-50,0],[-50,0],[-50,0],[-50,0],[-50,0],[-50,0],[-50,0],[-50,0],[-50,0],[50,100]]},{"key":"S2-LN9","stn":2,"ln":9,"dwg":"ABC-019","ptn":"S2-LN-09","title":"MW vs R/H Outlet Header Temp. R-SV BIAS","xr":[0,200],"yr":[0,600],"xu":"RANGE (MW)","yu":"RANGE (°C)","pts":[[-40,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[37.5,10],[75,10],[112,5],[150,5],[200,5],[240,5]]},{"key":"S2-LN10","stn":2,"ln":10,"dwg":"ABC-051","ptn":"S2-LN-10","title":"Cold reheat steam press. transfer to temp.","xr":[0,50],"yr":[0,600],"xu":"RANGE (kg/cm2)","yu":"RANGE (°C)","pts":[[-10,0],[0,129.09],[5,188.08],[9,209.04],[13,224.13],[17,236.15],[20,243.86],[23,250.76],[26,257.02],[29,262.76],[32,268.08000000000004],[35,273.03999999999996],[40,280.64],[45,287.56],[50,295.15],[60,304.28]]},{"key":"S2-LN11","stn":2,"ln":11,"dwg":"ABC-052","ptn":"S2-LN-11","title":"PICHR1003.DV vs Time Constant","xr":[0,50],"yr":[0,10000],"xu":"RANGE (kg/cm2)","yu":"RANGE ","pts":[[-50,33],[0,33],[0,33],[0,33],[0,33],[0,33],[0,33],[0,33],[0,33],[0,33],[0,33],[0,33],[0,33],[0,33],[50,1667],[60,1667]]},{"key":"S2-LN12","stn":2,"ln":12,"dwg":"ABC-052","ptn":"S2-LN12","title":"HP turbine 1st stage pressure - Output","xr":[0,150],"yr":[0,50],"xu":"RANGE (kg/cm2)","yu":"RANGE (kg/cm2)","pts":[[-30,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[108.94,34.77],[150,34.77],[180,34.77]]},{"key":"S2-LN13","stn":2,"ln":13,"dwg":"ABC-051","ptn":"S2-LN-13","title":"HP bypass outlet pressure transfer to temp.","xr":[0,50],"yr":[0,600],"xu":"RANGE (kg/cm2)","yu":"RANGE (°C)","pts":[[-10,0],[0,99.09],[5,158.07],[9,179.04],[13,194.14],[17,206.16],[20,213.86],[23,220.76],[26,227.03],[29,232.76],[32,238.1],[35,243.06],[40,250.64],[45,257.56],[50,265.15],[60,274.28]]},{"key":"S2-LN16","stn":2,"ln":16,"dwg":"ABC-030","ptn":"S2-LN-16","title":"Cold reheat to aux. press. control- control valve(2) demand","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-30,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[13,100],[100,100],[130,100]]},{"key":"S2-LN17","stn":2,"ln":17,"dwg":"ABC-030","ptn":"S2-LN-17","title":"Cold reheat to aux. press. control- control valve(1) demand","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-30,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[13,0],[100,100],[130,100]]},{"key":"S2-LN18","stn":2,"ln":18,"dwg":"ABC-034","ptn":"S2-LN-18","title":"Steam seal feed valve manipulation value - Cv value","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-20,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[100,28],[130,28]]},{"key":"S2-LN19","stn":2,"ln":19,"dwg":"ABC-034","ptn":"S2-LN-19","title":"HP turbine warming valve position - Cv value","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-20,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[100,50],[120,50]]},{"key":"S2-LN20","stn":2,"ln":20,"dwg":"ABC-034","ptn":"S2-LN-20","title":"Aux. steam header temp. - Output","xr":[0,600],"yr":[0,100],"xu":"RANGE  (°C)","yu":"RANGE (%)","pts":[[-120,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[250,0],[350,100],[600,100],[720,100]]},{"key":"S2-LN21","stn":2,"ln":21,"dwg":"ABC-034","ptn":"S2-LN-21","title":"Cv value - Output","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-30,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[2.5,10],[7,20],[40,80],[50,100],[100,100],[130,100]]},{"key":"S2-LN22","stn":2,"ln":22,"dwg":"ABC-053","ptn":"S2-LN-22","title":"T/B rated speed - T/B lube oil temp. demand","xr":[0,4000],"yr":[0,100],"xu":"RANGE (rpm)","yu":"RANGE (°C)","pts":[[-800,38],[0,38],[0,38],[0,38],[0,38],[0,38],[0,38],[0,38],[0,38],[0,38],[0,38],[0,38],[0,38],[3600,46],[4000,46],[4800,46]]},{"key":"S2-LN31","stn":2,"ln":31,"dwg":"ABC-050","ptn":"S2-LN-31","title":"Steam Flow - HP Bypass Pressure C.V. Demand","xr":[0,500],"yr":[0,100],"xu":"RANGE T/H)","yu":"RANGE (%)","pts":[[-150,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[8.6,19],[141,62],[193,80],[227,100],[650,100]]},{"key":"S2-LN32","stn":2,"ln":32,"dwg":"ABC-050","ptn":"S2-LN32","title":"Steam Flow - LP Bypass Pressure C.V. Demand","xr":[0,500],"yr":[0,100],"xu":"RANGE T/H)","yu":"RANGE (%)","pts":[[-100,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[12.6,19],[90,34],[171.8,46],[387.6,81],[503,100],[650,100]]},{"key":"S2-LN33","stn":2,"ln":33,"dwg":"ABC-051","ptn":"S2-LN-33","title":"HP bypass PCV demand - HP bypass TCV demand","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-30,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[19,19],[23,33],[42,62],[62,73],[92,100],[130,100]]},{"key":"S2-LN34","stn":2,"ln":34,"dwg":"ABC-052","ptn":"S2-LN-34","title":"LP bypass PCV demand - LP bypass TCV demand","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-30,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[19,12.5],[32.5,52],[42,76],[46,81],[62,100],[130,100]]},{"key":"S2-LN38","stn":2,"ln":38,"dwg":"ABC-35-39","ptn":"S2-LN-38","title":"Primary drain level Control\nvs control valve demand","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-30,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[60,100],[100,100],[130,100]]},{"key":"S2-LN39","stn":2,"ln":39,"dwg":"ABC-35-39","ptn":"S2-LN-39","title":"Alternate drain level Control\nvs control valve demand","xr":[0,100],"yr":[0,100],"xu":"RANGE (%)","yu":"RANGE (%)","pts":[[-30,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[55,0],[100,100],[130,100]]},{"key":"S3-LN1","stn":3,"ln":1,"dwg":"ABC-057","ptn":"S3-LN-01","title":"Gen. power - Furnace upper MCV-FA1005 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE (MW)","yu":"RANGE (%)","pts":[[-40,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[75,10],[90,10],[110,15],[130,15],[150,15],[200,15],[240,15]]},{"key":"S3-LN2","stn":3,"ln":2,"dwg":"ABC-057","ptn":"S3-LN-02","title":"Gen. power - Furnace lower MCV-FA1006 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE","yu":"RANGE (%)","pts":[[-40,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[75,15],[80,20],[90,30],[110,40],[130,50],[150,60],[200,60],[240,60]]},{"key":"S3-LN3","stn":3,"ln":3,"dwg":"ABC-057","ptn":"S3-LN-03","title":"Gen. power - Furnace upper MCV-FA1007 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE (MW)","yu":"RANGE (%)","pts":[[-40,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[75,10],[90,10],[110,15],[130,15],[150,15],[200,15],[240,15]]},{"key":"S3-LN4","stn":3,"ln":4,"dwg":"ABC-057","ptn":"S3-LN-04","title":"Gen. power - Furnace lower MCV-FA1008 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE","yu":"RANGE (%)","pts":[[-40,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[75,15],[80,20],[90,30],[110,40],[130,50],[150,60],[200,60],[240,60]]},{"key":"S3-LN5","stn":3,"ln":5,"dwg":"ABC-057","ptn":"S3-LN-05","title":"Gen. power - Furnace upper MCV-FA1009 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE (MW)","yu":"RANGE (%)","pts":[[-40,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[75,10],[90,10],[110,15],[130,15],[150,15],[200,15],[240,15]]},{"key":"S3-LN6","stn":3,"ln":6,"dwg":"ABC-057","ptn":"S3-LN-06","title":"Gen. power - Furnace lower MCV-FA1010 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE","yu":"RANGE (%)","pts":[[-40,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[75,15],[80,20],[90,30],[110,40],[130,50],[150,60],[200,60],[240,60]]},{"key":"S3-LN7","stn":3,"ln":7,"dwg":"ABC-057","ptn":"S3-LN-07","title":"Gen. power - Furnace upper MCV-FA1011 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE (MW)","yu":"RANGE (%)","pts":[[-40,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[75,10],[90,10],[110,15],[130,15],[150,15],[200,15],[240,15]]},{"key":"S3-LN8","stn":3,"ln":8,"dwg":"ABC-057","ptn":"S3-LN-08","title":"Gen. power - Furnace lower MCV-FA1012 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE","yu":"RANGE (%)","pts":[[-40,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[75,15],[80,20],[90,30],[110,40],[130,50],[150,60],[200,60],[240,60]]},{"key":"S3-LN9","stn":3,"ln":9,"dwg":"ABC-057","ptn":"S3-LN-09","title":"Gen. power - Furnace upper MCV-FA1013 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE (MW)","yu":"RANGE (%)","pts":[[-40,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[75,10],[90,10],[110,15],[130,15],[150,15],[200,15],[240,15]]},{"key":"S3-LN10","stn":3,"ln":10,"dwg":"ABC-057","ptn":"S3-LN-10","title":"Gen. power - Furnace lower MCV-FA1014 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE","yu":"RANGE (%)","pts":[[-40,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[75,15],[80,20],[90,30],[110,40],[130,50],[150,60],[200,60],[240,60]]},{"key":"S3-LN11","stn":3,"ln":11,"dwg":"ABC-057","ptn":"S3-LN-11","title":"Gen. power - Furnace upper MCV-FA1015 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE (MW)","yu":"RANGE (%)","pts":[[-40,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[75,10],[90,10],[110,15],[130,15],[150,15],[200,15],[240,15]]},{"key":"S3-LN12","stn":3,"ln":12,"dwg":"ABC-057","ptn":"S3-LN-12","title":"Gen. power - Furnace lower MCV-FA1016 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE","yu":"RANGE (%)","pts":[[-40,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[75,15],[80,20],[90,30],[110,40],[130,50],[150,60],[200,60],[240,60]]},{"key":"S3-LN13","stn":3,"ln":13,"dwg":"ABC-057","ptn":"S3-LN-13","title":"Gen. power - Furnace upper MCV-FA1017 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE (MW)","yu":"RANGE (%)","pts":[[-40,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[75,10],[90,10],[110,15],[130,15],[150,15],[200,15],[240,15]]},{"key":"S3-LN14","stn":3,"ln":14,"dwg":"ABC-057","ptn":"S3-LN-14","title":"Gen. power - Furnace lower MCV-FA1018 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE","yu":"RANGE (%)","pts":[[-40,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[75,15],[80,20],[90,30],[110,40],[130,50],[150,60],[200,60],[240,60]]},{"key":"S3-LN15","stn":3,"ln":15,"dwg":"ABC-057","ptn":"S3-LN-15","title":"Gen. power - Furnace upper MCV-FA1019 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE (MW)","yu":"RANGE (%)","pts":[[-40,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[75,10],[90,10],[110,15],[130,15],[150,15],[200,15],[240,15]]},{"key":"S3-LN16","stn":3,"ln":16,"dwg":"ABC-057","ptn":"S3-LN-16","title":"Gen. power - Furnace lower MCV-FA1020 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE","yu":"RANGE (%)","pts":[[-40,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[75,15],[80,20],[90,30],[110,40],[130,50],[150,60],[200,60],[240,60]]},{"key":"S3-LN17","stn":3,"ln":17,"dwg":"ABC-057","ptn":"S3-LN-17","title":"Gen. power - Furnace upper MCV-FA1021 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE (MW)","yu":"RANGE (%)","pts":[[-40,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[75,10],[90,10],[110,15],[130,15],[150,15],[200,15],[240,15]]},{"key":"S3-LN18","stn":3,"ln":18,"dwg":"ABC-057","ptn":"S3-LN-18","title":"Gen. power - Furnace lower MCV-FA1022 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE","yu":"RANGE (%)","pts":[[-40,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[75,15],[80,20],[90,30],[110,40],[130,50],[150,60],[200,60],[240,60]]},{"key":"S3-LN19","stn":3,"ln":19,"dwg":"ABC-057","ptn":"S3-LN-19","title":"Gen. power - Furnace upper MCV-FA1023 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE (MW)","yu":"RANGE (%)","pts":[[-40,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[75,10],[90,10],[110,15],[130,15],[150,15],[200,15],[240,15]]},{"key":"S3-LN20","stn":3,"ln":20,"dwg":"ABC-057","ptn":"S3-LN-20","title":"Gen. power - Furnace lower MCV-FA1024 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE","yu":"RANGE (%)","pts":[[-40,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[75,15],[80,20],[90,30],[110,40],[130,50],[150,60],[200,60],[240,60]]},{"key":"S3-LN21","stn":3,"ln":21,"dwg":"ABC-057","ptn":"S3-LN-21","title":"Gen. power - Furnace upper MCV-FA1025 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE (MW)","yu":"RANGE (%)","pts":[[-40,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[0,10],[75,10],[90,10],[110,15],[130,15],[150,15],[200,15],[240,15]]},{"key":"S3-LN22","stn":3,"ln":22,"dwg":"ABC-057","ptn":"S3-LN-22","title":"Gen. power - Furnace lower MCV-FA1026 pos. demand","xr":[0,200],"yr":[0,100],"xu":"RANGE","yu":"RANGE (%)","pts":[[-40,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[0,15],[75,15],[80,20],[90,30],[110,40],[130,50],[150,60],[200,60],[240,60]]},{"key":"S3-LN23","stn":3,"ln":23,"dwg":"ABC-057","ptn":"S3-LN-23","title":"Furnace upper wall front/rear bias","xr":[0,100],"yr":[0,100],"xu":"RANGE","yu":"RANGE (%)","pts":[[-20,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[50,0],[100,10],[120,10]]},{"key":"S3-LN24","stn":3,"ln":24,"dwg":"ABC-057","ptn":"S3-LN-24","title":"Furnace lower wall front/rear bias","xr":[0,100],"yr":[0,100],"xu":"RANGE","yu":"RANGE (%)","pts":[[-20,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[0,-10],[50,0],[100,10],[120,10]]}]);
 AN.ades=()=>Promise.resolve(ADES||{});AN.adesPut=d=>{ADES=d};
 const anCur=()=>AN.sheets[AN.i]||AN.sheets.find(x=>/057/.test(x.name));
-AN.reset=()=>{anResetAll();const c=anCur();if(c&&c.S)for(let i=0;i<6;i++)stepSet(c,0)};
+AN.reset=()=>{anResetRun();const c=anCur();if(c&&c.S)for(let i=0;i<6;i++)stepSet(c,0)};
 AN.settle=()=>{const c=anCur();if(c&&c.S)for(let i=0;i<6;i++)stepSet(c,0)};
 AN.plantSwitch=on=>{AN.plantOn=!!on;for(const sh of AN.sheets){if(!sh.S)continue;for(const b of sh.S.procs||[])if(b.proc)b.proc.on=!!on;if(!on){sh.S.rt.pm={};sh.S.plantT=null;sh.S._rem=0}}};
 globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad150,anPlantCold}};
@@ -74951,7 +75098,7 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
   /* the engine actions: names on AN (engine/api.js and the page hooks), DITL (src/digital/parts), WORLD / DITL150 */
   const CALLS = {
     /* not setForce: a page function (ui/panel.js), its force goes as a write and its settle as an action */
-    AN: ['reset', 'settle', 'loadStart', 'plantLoad150', 'plantCold', 'plantLoad150Async', 'plantColdAsync', 'plantSwitch', 'latchMode', 'turbine', 'field', 'oilValve', 'blowdown', 'stepSet', 'stepTier', 'actSet', 'stepN', 'stepBack'],
+    AN: ['reset', 'settle', 'loadStart', 'plantLoad150', 'plantCold', 'plantLoad150Async', 'plantColdAsync', 'plantSwitch', 'latchMode', 'turbine', 'field', 'oilValve', 'blowdown', 'stepSet', 'stepTier', 'actSet', 'stepN', 'stepBack', 'clock0'],
     G: ['ditlStates', 'ditlUser'],
     DITL150: ['apply'],
     WORLD: ['tick', 'set']
@@ -75011,7 +75158,27 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
             const id = ++nid;
             E.heavy = (E.heavy || 0) + 1;
             post({ t: 'op', ops: [], calls: [[h + '.' + k, G.AN.sync.encArgs ? G.AN.sync.encArgs(a) : a]], id });
-            return new Promise(ok => waits.set(id, ok));
+            /* the page part of the action (f.after, e.g. loader.js reset: anSave, the panel, the message), once the engine state is in */
+            const after = f.after;
+            const self = this;
+            return new Promise(ok => {
+              const w = r => {
+                if (after)
+                  try {
+                    after(r);
+                  } catch (x) {}
+                ok(r);
+              };
+              /* the worker stopped before its answer (E.stop): the page runs the action itself, with its own page part */
+              w.local = () => {
+                let r;
+                try {
+                  r = f.apply(self, a);
+                } catch (x) {}
+                Promise.resolve(r).then(ok, () => ok(null));
+              };
+              waits.set(id, w);
+            });
           }
           inCall++;
           let r;
@@ -75116,8 +75283,11 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
       m.ev = (E.evHeld || []).concat(m.ev || []);
       E.evHeld = [];
       /* the operator wins: a write not sent yet goes first */
-      const mine = E.flush(),
+      /* only the slots this patch carries can cover a write of the page, so only those are looked at (Ningning, sync.js keys: 0.05 ms
+         for a few slots, the whole flush took ~5 ms at 6x); the other writes go with the 500 ms flush (eng-page.js) and before each action */
+      const mine = E.mode === 'mirror' && G.AN && G.AN.sync ? G.AN.sync.patch(true, { keys: m.p.map(x => x[0]) }) : [],
         skip = new Set(mine.map(x => x[0]));
+      if (mine.length) post({ t: 'op', ops: mine, calls: [] });
       /* in slices of at most 4 ms, the page draws between them (a patch at once took ~100 ms at 6x: the long frames of the 038 page,
          Ningning's trace); no slices where there is no MessageChannel (the node tests: at once) */
       if (E.yieldNow && m.p.length > 8) {
@@ -75172,6 +75342,11 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
   E.stop = () => {
     E.mode = 'local';
     E.port = null;
+    /* a long action still waiting for the worker (Reset, a starting state) would never answer: it runs here now (the page is the engine) */
+    const left = [...waits.values()];
+    waits.clear();
+    E.heavy = 0;
+    for (const w of left) if (w.local) w.local();
   };
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -80307,8 +80482,9 @@ body.app2 #gdtrb[hidden]{display:none!important}
           msg('Plant at 150 MW: ' + n + ' transmitters set from the HMI snapshots. Press Run.');
           if (window.DITL150)
             (AN.ades ? AN.ades() : Promise.resolve())
-              .then(() => {
-                const r = DITL150.apply();
+              /* 3.2.0 Web Worker: DITL150.apply runs in the engine only there and gives a promise of its answer */
+              .then(() => DITL150.apply())
+              .then(r => {
                 if (r) msg('Plant at 150 MW: ' + n + ' ABC transmitters from the HMI snapshots, DITL in service (MFT reset). Press Run.');
               })
               .catch(() => {});
@@ -86067,12 +86243,18 @@ window.LS_GUIDE = (function () {
         .filter((x, i, a) => a.indexOf(x) === i);
       /* 3.2.0 walkthrough #1: the start-up begins at t = 0 (the clock of the sheets counted the settling of the cold state: t = 11:29) and
          PAUSED (simulation on, time stopped, 1x): the field steps come first and the trainee presses RUN. Before: RUN at once, x10 */
+      /* the clock and the trend histories of the engine: an engine action (AN.clock0, runs in the engine and on the page: with the
+         engine in the worker a write here never reached it, the clock showed 0 while PAUSED and jumped back at RUN); the page's own
+         history of the sheets (_hs) stays here */
       try {
+        const c0 = !!AN.clock0;
+        if (c0) AN.clock0();
         for (const sh of AN.sheets)
           if (sh.S && sh.S.rt) {
+            sh._hs = [];
+            if (c0) continue;
             const rt = sh.S.rt;
             rt.t = 0;
-            sh._hs = [];
             for (const k in rt.pm || {}) if (rt.pm[k] && Array.isArray(rt.pm[k].h)) rt.pm[k].h = [];
             for (const k in rt.st || {}) if (rt.st[k] && Array.isArray(rt.st[k].h)) rt.st[k].h = [];
           }
@@ -103596,7 +103778,32 @@ window.UATR = (function () {
     }
     return { ok, res };
   }
-  return { runCase, runItem, fmt, plantOff, plantRestore };
+  /* 3.2.0 Web Worker: a UAT / CHECK run resets, loads and steps the plant thousands of times and reads the result at once, so it runs
+     on the engine of the page (local, as before the worker): the worker is stopped for the run (its last patch put in first) and
+     started again after it from the plant as the run left it (eng-page.js boot: the page's keyframe). Without a worker: fn as it is */
+  async function onPageRun(E, fn) {
+    AN.run = false;
+    E.flush();
+    clearInterval(E._fl);
+    clearInterval(E._wd);
+    try {
+      E.worker.terminate();
+    } catch (e) {}
+    E.worker = null;
+    E.stop();
+    E.heavy = 0;
+    await E.take({ t: 'none' }).catch(() => {});
+    try {
+      return await fn();
+    } finally {
+      E.boot().catch(() => {});
+    }
+  }
+  function onPage(fn) {
+    const E = window.ENG;
+    return E && E.mode === 'mirror' && E.worker ? onPageRun(E, fn) : fn();
+  }
+  return { runCase, runItem, fmt, plantOff, plantRestore, onPage };
 })();
 
 /* UAT generator (runs in the page): builds, for every sheet, one test per logic block / controller, grouped by type.
@@ -105990,7 +106197,8 @@ window.UATS = (function () {
       AN.run = run0;
     }
   }
-  return { run, expand, generic };
+  /* 3.2.0 Web Worker: on the engine of the page (runner.js UATR.onPage) */
+  return { run: (...a) => UATR.onPage(() => run(...a)), expand, generic: (...a) => UATR.onPage(() => generic(...a)) };
 })();
 
 /* In-app UAT v2: every logic block and controller of a sheet is tested one by one, grouped by block type.
@@ -106269,7 +106477,7 @@ window.UATS = (function () {
               E('button', {
                 txt: '👁' + (mv === 'ok' ? ' ✔' : mv === 'bad' ? ' ✖' : ''),
                 title: 'Set the sheet up like this case and look at the drawing yourself',
-                on: () => manual(sh, it, k)
+                on: () => UATR.onPage(() => manual(sh, it, k))
               })
             ])
           ])
@@ -106376,7 +106584,7 @@ window.UATS = (function () {
         E('button', {
           cls: 'go',
           txt: sbusy ? 'Running...' : '▶ Run ALL scenarios',
-          on: () => runScen(sh, sp.scenarios)
+          on: () => UATR.onPage(() => runScen(sh, sp.scenarios))
         })
       ])
     );
@@ -106397,7 +106605,7 @@ window.UATS = (function () {
       d.append(E('div', { cls: 'sub', txt: 'Sa drawing: ' + sc.drawing }));
       d.append(
         E('div', { cls: 'row', style: 'padding:0 10px' }, [
-          E('button', { txt: '▶ Run this one', on: () => runScen(sh, [sc]) })
+          E('button', { txt: '▶ Run this one', on: () => UATR.onPage(() => runScen(sh, [sc])) })
         ])
       );
       if (r) {
@@ -106488,7 +106696,7 @@ window.UATS = (function () {
         txt: 'Bawat controller: hinahanap ng app ang malinis na estado mula sa drawing (walang force manual / interlock), tapos A / M / R, MV, SV, trip at pagbalik, at ang sagot ng proseso. Ang inaasahan ay mula sa drawing. Nakatigil ang app habang tumatakbo; 1 ~ 8 min bawat controller.'
       }),
       E('div', { cls: 'row' }, [
-        E('button', { cls: 'go', txt: gbusy ? 'Running...' : '▶ Test ALL controllers', on: () => runGen(sh, tags) })
+        E('button', { cls: 'go', txt: gbusy ? 'Running...' : '▶ Test ALL controllers', on: () => UATR.onPage(() => runGen(sh, tags)) })
       ])
     );
     for (const tag of tags) {
@@ -106504,7 +106712,7 @@ window.UATS = (function () {
           E('span', { cls: 'c', txt: x && !x.running && !x.none ? p2 + ' / ' + (p2 + f) : '' })
         ])
       );
-      d.append(E('div', { cls: 'row', style: 'padding:0 10px' }, [E('button', { txt: '▶ Test ' + tag, on: () => runGen(sh, [tag]) })]));
+      d.append(E('div', { cls: 'row', style: 'padding:0 10px' }, [E('button', { txt: '▶ Test ' + tag, on: () => UATR.onPage(() => runGen(sh, [tag])) })]));
       if (x) {
         if (x.trig) d.append(E('div', { cls: 'sub', style: 'padding:0 10px', txt: 'trip input: ' + x.trig }));
         for (const n of x.notes || []) d.append(E('div', { cls: 'sub', style: 'padding:0 10px', txt: '· ' + n }));
@@ -106649,7 +106857,7 @@ window.UATS = (function () {
           cls: 'go',
           txt: '▶ Test this sheet',
           on: async () => {
-            await runSheet(sh);
+            await UATR.onPage(() => runSheet(sh));
             build();
           }
         }),
@@ -106657,13 +106865,13 @@ window.UATS = (function () {
           cls: 'go',
           txt: '▶ Test ALL sheets',
           on: () => {
-            runAll();
+            UATR.onPage(runAll);
           }
         }),
         E('button', {
           txt: '🎲 Spot check (5)',
           title: '5 random cases with the rule in numbers, the expected and the actual value; check them yourself (calculator / drawing)',
-          on: () => spotCheck(sh, sp)
+          on: () => UATR.onPage(() => spotCheck(sh, sp))
         })
       ])
     );
@@ -109896,7 +110104,12 @@ window.UATS = (function () {
     }
   ];
   /* ---- run one scenario: Start at 150 MW, then 0.5 s steps in batches so the page stays alive ---- */
-  async function runSc(sc, ui) {
+  /* 3.2.0 Web Worker: a scenario resets, loads and steps the plant and judges it at once: on the engine of the page (runner.js) */
+  function runSc(sc, ui) {
+    if (busy) return;
+    return UATR.onPage(() => runSc0(sc, ui));
+  }
+  async function runSc0(sc, ui) {
     if (busy) return;
     busy = true;
     P.querySelectorAll('button.go').forEach(b => (b.disabled = true));
