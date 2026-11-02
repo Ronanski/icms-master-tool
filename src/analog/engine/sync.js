@@ -247,12 +247,35 @@ const anSyncJ = (s, Y) => {
   const v = s.get();
   return anSyncPlainJ(v, Y) || JSON.stringify(anStateEnc(v, Y.ref));
 };
-/* the slots that changed: [[key, json]] or, for the values, [[key, [index, value] ...]] */
-function anSyncPatch(w) {
-  const Y = anSyncState(),
+/* the slots that changed: [[key, json]] or, for the values, [[key, [index, value] ...]].
+   o.slice (the page's timer flush, 3.2.0 Web Worker fps): one part of the writable slots a call, in turn (1 / o.parts, 4 by default),
+   so a flush costs about a quarter and every slot is looked at within o.parts flushes; the list of slots is checked again at the
+   start of each turn (a slot made since is seen from there). o.keys (a Set or array of slot keys): only those slots (the page before
+   it puts a patch in: the writable slots of that patch, so a write not sent yet is never put under, the operator wins). Without o
+   (the call wrapper before an action): every slot, as before */
+function anSyncPatch(w, o) {
+  const sl = !!(w && o && o.slice),
+    ks = !!(w && o && o.keys),
+    Y = (sl && AN_SYNC && AN_SYNC.wc) || (ks && AN_SYNC) ? AN_SYNC : anSyncState(),
     out = [];
   anSyncFresh(Y);
-  for (const s of Y.L) {
+  let L = Y.L;
+  if (ks) {
+    L = [];
+    for (const k of o.keys) {
+      const x = Y.by.get(k);
+      if (x && x.w) L.push(x);
+    }
+  } else if (sl) {
+    const Wl = Y.wl || (Y.wl = Y.L.filter(x => x.w)),
+      n = Wl.length,
+      c = (Y.wc || 0) % (n || 1),
+      m = Math.ceil(n / (o.parts || 4));
+    L = Wl.slice(c, c + m);
+    if (c + m > n) L = L.concat(Wl.slice(0, c + m - n));
+    Y.wc = (c + m) % (n || 1);
+  }
+  for (const s of L) {
     if (w && !s.w) continue;
     if (!w && s.wo) continue; /* the operator's only */
     if (s.ta) {
