@@ -942,7 +942,11 @@
     if (W.idx)
       for (const a of W.idx.ain) {
         const AS = a.sh.S;
-        if (AS && AS.xlk && AS.xlk[a.n] && AS.xlk[a.n].ditl) delete AS.xlk[a.n];
+        if (AS && AS.xlk && AS.xlk[a.n] && AS.xlk[a.n].ditl) {
+          delete AS.xlk[a.n];
+          /* a sheet whose only links were these: no link table, as before its first scan made one (step 3: AS.xlk = AS.xlk || {}) */
+          if (!Object.keys(AS.xlk).length) delete AS.xlk;
+        }
       }
   };
   /* 2.2.0-beta.3: one scan on demand (DITL 150 MW state, src/world/ditl150.js) */
