@@ -50,6 +50,7 @@ function ditlCapture() {
     DREG: ditlEnc(DREG),
     t: tick.t,
     SIM,
+    d150: !!(window.DITL150 && DITL150.on),
     W: ditlPick(W, DITL_W),
     sw: W.plantSw ? W.plantSw() : null
   };
@@ -76,6 +77,7 @@ function ditlApply(k) {
   DREG = ditlDec(k.DREG);
   tick.t = k.t;
   SIM = k.SIM;
+  if (window.DITL150 && 'd150' in k) DITL150.on = !!k.d150;
   if (window.WORLD) {
     put(WORLD, DITL_W, k.W);
     if (k.sw && WORLD.plantSwSet) WORLD.plantSwSet(k.sw);

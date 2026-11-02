@@ -3,6 +3,9 @@
    (why, need, rowInfo, rowVal, outs, outVal, cause, rowNets: read by the one world src/world/world.js, the unit model and the Training).
    Moved as they were from src/ui/shell/ditl.js, which takes them from DREAD. Part of ONE script (joined by src/digital/order.list). */
 const DREAD = (function () {
+  /* the sheet as the page shows it: in a mirror the last scan of the engine (src/digital/parts/03e-user.js simRead), elsewhere a solve
+     (a solve on the page wrote nets, latches and counters of the mirror: Ningning / Winter finding) */
+  const dRead = s => (typeof simRead === 'function' ? simRead(s) : simSheet(s));
   const D = (window.DUI = window.DUI || {});
   /* 3.2.0 P3: on (S22)DITL-80S the 3-line output labels sit ON the wire (one line above, one on, one below: PDF (22)Ditl80S.pdf,
      output 57 = "S/B STEAM SUPPLY MOTOR VALVE TORQUE"), so the cell grouping (text up to 5.7 above a wire = that row) gave each
@@ -183,7 +186,7 @@ const DREAD = (function () {
     }
     return one(gName(s, g) + ' must give ' + W);
   }
-  D.why = (s, n, want) => why(s, simSheet(s).v, n, want, new Set(), 0);
+  D.why = (s, n, want) => why(s, dRead(s).v, n, want, new Set(), 0);
   /* 3.2.0-beta.23 TRAINING INTERLOCK (user 2026-10-24: "di ba may interlock yan s kada equipment? na-icoconsider ba ito sa start-up
      training?"): what output row `row` of DITL sheet s needs to become 1 now, read from the netlist (the "To make it 1" of the
      Selected tab), with the names of the input rows; [] = it is 1. D.outs lists the output rows of a sheet with their names */
@@ -192,7 +195,7 @@ const DREAD = (function () {
       if (!s.nl) s.nl = netlist(s);
       const o = s.nl.outs.find(x => x.row === row);
       if (!o) return null;
-      const v = simSheet(s).v;
+      const v = dRead(s).v;
       if (v[o.n]) return [];
       const L = why(s, v, o.n, 1, new Set(), 0),
         out = [];
@@ -212,7 +215,7 @@ const DREAD = (function () {
   D.rowInfo = (s, row) => ({ tag: tagOf(s, row) || '', svc: svcOf(s, row) || '' });
   D.rowVal = (s, row) => {
     try {
-      const v = simSheet(s).v,
+      const v = dRead(s).v,
         an = s.nl.an || [];
       /* 3.2.0-beta.28 (human run of the Training: BFWP-A START stayed locked): an ANALOG input row (DITL-23A row 12 PT-FW1115-A BFWP
          A SUCTION PRESSURE > 1.5 kg/cm2) is met when the comparator of the drawing that reads it says 1; its own net is the analog value
@@ -235,7 +238,7 @@ const DREAD = (function () {
   D.outVal = (s, row) => {
     try {
       const o = s.nl && s.nl.outs.find(x => x.row === row);
-      return o ? (simSheet(s).v[o.n] ? 1 : 0) : null;
+      return o ? (dRead(s).v[o.n] ? 1 : 0) : null;
     } catch (e) {
       return null;
     }
