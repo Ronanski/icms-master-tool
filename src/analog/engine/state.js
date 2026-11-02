@@ -209,6 +209,7 @@ function anStateApply(kf) {
   if (st.u) AN.unit = AN_UNIT;
   else delete AN.unit;
   if (st.h) (AN.hmiDI = AN_HMI_DI), (AN.hmiComp = hmiComp);
+  else delete AN.hmiDI, delete AN.hmiComp;
   anXsPut(st.xs);
   AN._asc = null; /* the step sets kept while a starting state loads */
   AN._gen = (AN._gen || 0) + 1; /* new objects (engine/sync.js refs) */

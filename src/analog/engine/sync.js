@@ -130,6 +130,7 @@ function anSyncSlots() {
       if (d.u) AN.unit = AN_UNIT;
       else delete AN.unit;
       if (d.h) (AN.hmiDI = AN_HMI_DI), (AN.hmiComp = hmiComp);
+      else delete AN.hmiDI, delete AN.hmiComp;
     },
     { w: 1 }
   );

@@ -202,6 +202,9 @@ function anResetAll() {
   /* and what a start left on AN: the sheets of the unit model (the next start sets them again: unit.js anUnitStart), its report */
   AN.unitSheets = [];
   AN.load150 = null;
+  /* and what the first 150 MW load set (hmi-op.js: the DI of the HMI snapshots, ditl150.js reads them): a fresh page has none (Winter, "h") */
+  delete AN.hmiDI;
+  delete AN.hmiComp;
   AN.steady = false;
   /* the one-address groups start again as on a fresh page (links.js shareExt: the values of the run before were kept) */
   AN._xs = null;
@@ -246,8 +249,8 @@ function anResetAll() {
     for (const b of S.procs || [])
       if (b.proc) {
         if (b.proc.hop && b.proc.hop.dyn) {
-          b.proc.hop = undefined;
-          b.proc.Ka = undefined;
+          delete b.proc.hop; /* deleted, not undefined: a key left as undefined made the keyframe of a Reset after a run differ (Winter) */
+          delete b.proc.Ka;
         }
         b.proc.hopReq = null;
         b.proc.integLoss = 0;
