@@ -535,7 +535,7 @@ window.LS_GUIDE = (function () {
                 } catch (e) {}
                 return '';
               }, () => fstate('cw1001')),
-              { loc: 1 }
+              { loc: 1, fp: 'F:cw1001' } /* the FIELDV pop-out of V-CW1001 on page 027 (hmi-cw.js, Rose) */
             ),
             Object.assign(btn('XV-MU1109 AUTO / MAN (DITL-78)', () => xvSel(!xvAuto()), () => xvAuto() || !air() || et() < 1.69), { dg: ['DITL-78', 2] })
           ],

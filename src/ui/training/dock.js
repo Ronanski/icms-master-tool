@@ -2693,7 +2693,7 @@
         /* Mina #M15: a field action of the step with no faceplate (FIELD: OPEN V-CW1001, prime the closed cooling line) counts too, and
            it gets its own button here (it was only under "Show control": the NEXT card stood on "MWP-B is STANDBY (AUTO)" with no press) */
         const na = (s.a || []).find(x => (x.dg || x.fp || x.loc) && !call(() => x.hide && x.hide(), false) && !call(() => x.on && x.on(), false));
-        if (na && na.loc && !na.fp && !na.dg && typeof na.f === 'function') {
+        if (na && na.loc && !na.dg && !(na.fp && (window.LS_FPREG || {})[na.fp]) && typeof na.f === 'function') {
           bl = String(na.l).replace(/\s*\(.*$/, '');
           fn = () => {
             const r = call(() => na.f(), '');
