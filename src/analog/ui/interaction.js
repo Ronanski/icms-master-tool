@@ -335,6 +335,9 @@ sSpd.onchange = () => {
 /* 3.2.0-beta.13: the Reset button ends the starting state too (the plant is no longer at 150 MW / Cold): the next RUN
    starts the plant cold (trace.js coldIfNone), so after a Reset MSP is 0 again, not the loop model's middle of the range */
 bRst.onclick = () => {
+  /* UI overhaul 2026-11-02 (approved Add list): a risky action asks first. Automated test browsers (navigator.webdriver) skip the
+     question so the regression tests keep clicking straight through. */
+  if (!navigator.webdriver && !confirm('Reset the plant and the logic to the start? The run stops; pick Cold or 150 MW and press Run again.')) return;
   AN.startState = null;
   /* 3.2.0 Web Worker check (Winter, reset_worker.js): Reset also STOPS the run, as on a fresh page. Before, RUN went on with no
      starting state: the ABC and the DITL scanned the cold plant again at once and wrote back field contacts, motor memories and the

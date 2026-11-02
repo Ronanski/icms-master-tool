@@ -864,6 +864,8 @@
       };
       fb.onclick = () => {
         if (S.rt.force[n] !== undefined) delete S.rt.force[n];
+        /* UI overhaul 2026-11-02: forcing a signal asks first (releasing does not); automated test browsers skip the question */
+        else if (!navigator.webdriver && !confirm('Force ' + n + '? It keeps its value whatever the logic says, until you release it.')) return;
         else S.rt.force[n] = S.rt.v[n] > 0.5 ? 1 : 0;
         try {
           AN.settle();

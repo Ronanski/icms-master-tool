@@ -53,6 +53,9 @@
     upd();
   };
   reset.onclick = () => {
+    /* UI overhaul 2026-11-02 (approved Add list): a risky action asks first. Automated test browsers (navigator.webdriver) skip the
+       question so the regression tests keep clicking straight through. */
+    if (!navigator.webdriver && !confirm('Reset the DITL logic? All inputs go OFF and timers, latches, valves and motors go back to the start.')) return;
     const p = DPAUSE;
     if (SIM) {
       mode().click();
