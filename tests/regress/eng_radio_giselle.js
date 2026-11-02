@@ -88,6 +88,20 @@ async function run(name, act, reached) {
   await run('SV written + settle', B => { const c = ctl(B); sh(B).S.rt.ext[c.q.sv] = 7.5; B.AN.settle(); }, A => sh(A).S.rt.ext[ctl(A).q.sv] === 7.5 || 'SV ' + sh(A).S.rt.ext[ctl(A).q.sv]);
   /* panel.js swSet: the leg of a switch (st.fm), then settle */
   await run('switch leg (st.fm) + settle', B => { const c = ctl(B), st = sh(B).S.rt.st[c.svSw.id]; st.fm = st.pk === 'A' ? 'B' : 'A'; B.AN.settle(); }, (A, B) => { const id = ctl(A).svSw.id; return sh(A).S.rt.st[id].fm === sh(B).S.rt.st[id].fm || 'fm engine ' + sh(A).S.rt.st[id].fm + ', page ' + sh(B).S.rt.st[id].fm; });
+  /* panel.js pSet: a block setting (the tuning of the PID: its first number x 1.5), then settle */
+  const pk = n => Object.keys(ctl(n).b.p).find(k => typeof ctl(n).b.p[k] === 'number' && ctl(n).b.p[k]);
+  await run('PID tuning (b.p) + settle', B => { const p = ctl(B).b.p; p[pk(B)] *= 1.5; B.AN.settle(); }, (A, B) => { const k = pk(B), a = ctl(A).b.p[k], b = ctl(B).b.p[k]; return a === b || k + ' engine ' + a + ', page ' + b; });
+  /* plant-window.js LINEAR editor: an edit of a table (AN.lne, lnApplyEdits), then settle */
+  const tbl = n => n.AN.lt.find(t => t.xr && t.yr && t.o0 && t.o0.length > 2);
+  await run('LINEAR table edit (AN.lne) + settle', B => {
+    const t = tbl(B), pc = (v, r) => ((v - r[0]) * 100) / (r[1] - r[0]);
+    B.AN.lne[t.key] = { lx: t.o0.map(p => pc(p[0], t.xr)), ly: t.o0.map((p, i) => pc(p[1], t.yr) + (i === 1 ? 5 : 0)) };
+    B.AN.lnApplyEdits();
+    B.AN.settle();
+  }, (A, B) => { const a = JSON.stringify(A.AN.lt.find(t => t.key === tbl(B).key).p2), b = JSON.stringify(tbl(B).p2); return a === b || 'table engine ' + a.slice(0, 80) + ', page ' + b.slice(0, 80); });
+  /* tables-health.js: an F(X) table loaded by hand (AN.ln = window.ANLN), then settle */
+  const lnOf = n => { for (const s of n.AN.sheets) if (s.S) for (const b of s.S.blk) if (b.k === 'FX' && b.p.ln) return b.p.ln; };
+  await run('F(X) table loaded by hand (ANLN) + settle', B => { B.AN.ln = Object.assign({}, B.AN.ln, { [lnOf(B)]: [[0, 0], [50, 40], [100, 100]] }); B.AN.settle(); }, (A, B) => JSON.stringify(A.AN.ln) === JSON.stringify(B.AN.ln) || 'ANLN engine ' + JSON.stringify(A.AN.ln).slice(0, 80));
   /* loader.js reset */
   await run('Reset', B => B.AN.reset(), (A, B) => sh(A).S.rt.t === sh(B).S.rt.t || 't engine ' + sh(A).S.rt.t + ', page ' + sh(B).S.rt.t);
   console.log(fail ? 'FAILED ' + fail : 'ALL PASS');
