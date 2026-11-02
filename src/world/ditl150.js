@@ -226,26 +226,40 @@
   /* back to the cold DITL (what the Simulate button and Reset do) */
   /* retest #68 (R8: after Clear all ticks + Gabay Cold, SWP-A still RUNNING and in REMOTE from the run before): the cold DITL is clean,
      every motor stopped, every field contact (REMOTE, AUTO MODE, limit switch) at its default, no field trip */
+  /* 3.2.0 Web Worker check (Winter, reset_worker.js; Ningning's reading): everything a scan leaves in the DITL keyframe
+     (src/digital/parts/03d-state.js) goes back too, so a Reset after a run is the Reset of a fresh page: the DCS registers (DREG), the
+     DITL clock, the automatic rows and the analog values the world brought (_win, avw: world.js sets them again at each scan), the
+     counter edges (rq, Nn, cin), the outputs and the clock of the one world, and the dead band of the plant switches (plantsw.js) */
   D.clear = () => {
     MST = {};
     MS = {};
+    DREG = {};
+    tick.t = 0;
     for (const x of ALL()) {
       x.sig = {};
       x.usw = {};
       x._fd = null;
       x._ftrip = false;
       x.av150 = null;
+      x._win = null;
+      x.avw = null;
       if (x.nl) {
         x.nl._v = null;
         x.nl.fx = [];
         x.nl.ufx = [];
         for (const g of x.nl.gates) {
           if (g.t === 'FF') g.q = 0;
-          if (g.t === 'CNT') g.N = g.pin = g.rp = 0;
+          if (g.t === 'CNT') {
+            g.N = g.pin = g.rp = 0;
+            g.rq = g.Nn = g.cin = undefined;
+          }
           if (g.t === 'TMR') g.st = { acc: 0, out: 0, pre: 0, run: 0 };
         }
       }
     }
+    const W = window.WORLD;
+    W.out = W._o = W.tk = W._ck = W.busy = W.live = undefined;
+    if (W.plantSwClear) W.plantSwClear();
     D.on = false;
   };
   /* what an OUTPUT row of the drawing must show at 150 MW, from its text (the same rules; a command or a push button is not a state) */
