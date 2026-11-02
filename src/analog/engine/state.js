@@ -11,6 +11,7 @@ const AN_STATE_OBJ = () => ({ AN_UNIT, AN_SRC, AN_CYC, AN_SW, AN_MU, AN_ACW, AN_
 const AN_STATE_FLAGS = ['i', 'plantOn', 'procDefault', 'startState', 'steady', 'spd', 'run', 'view', 'tierK', '_cold0', 'load150'];
 /* the sheets a step takes besides the linked ones (links.js actSet): names, and the second sheet of the page (a sheet) */
 const AN_STATE_SETS = ['hmiSheets', 'plantSheets', 'unitSheets', 'checkSheets', 'worldSheets', 'p2'];
+const anStateTabs = () => ({ AN_HMI_OP, AN_HMI_AI, AN_HMI_CTL, AN_HMI_MAN, AN_HMI_FF, AN_HMI_DI, AN_HMI_DI_COLD });
 function anStateRefs() {
   const ref = new Map();
   ref.set(AN.sheets, { $all: 1 }); /* the list itself (AN_SRC.bitsOf: a cache made for this list) */
@@ -19,11 +20,19 @@ function anStateRefs() {
     const S = sh.S;
     if (!S) return;
     ref.set(S, { $S: i });
-    S.blk.forEach((b, j) => ref.set(b, { $B: [i, j] }));
+    S.blk.forEach((b, j) => {
+      ref.set(b, { $B: [i, j] });
+      /* a cache of a block that the unit model holds too (anPins) */
+      if (b._pins && typeof b._pins === 'object') ref.set(b._pins, { $Q: [i, j] });
+    });
     S.nets.forEach((n, j) => ref.set(n, { $N: [i, j] }));
   });
   /* a link between sheets by its place in the links of a sheet (links.js linksOf: S.xlk of several sheets hold the same link) */
   AN.sheets.forEach((sh, i) => (sh.lk || []).forEach((l, j) => ref.has(l) || ref.set(l, { $K: [i, j] })));
+  /* an entry of a table of the HMI snapshot (a plant model points at its anchor AN_HMI_OP[tag]) and the FROM of a DITL link of the
+     one world (world.js fakeFrom): written by their key, the other side has the same tables */
+  for (const [n, T] of Object.entries(anStateTabs())) for (const k of Object.keys(T)) if (T[k] && typeof T[k] === 'object' && !ref.has(T[k])) ref.set(T[k], { $H: [n, k] });
+  if (typeof window !== 'undefined' && window.WORLD && WORLD.fakeAll) for (const [d, o] of WORLD.fakeAll()) ref.set(o, { $F: d.name });
   /* a DITL sheet by its name (the unit model keeps the sheets it reads, AN_UNIT._dr: copied, it was 1.4 MB of drawings and the copy
      was read instead of the sheet) */
   if (typeof ditlAll === 'function') for (const d of ditlAll()) ref.set(d, { $D: d.name });
@@ -79,6 +88,15 @@ function anStateDec(x, keep) {
     if (v.$S != null) return ensure(AN.sheets[v.$S]);
     if (v.$B) return ensure(AN.sheets[v.$B[0]]).blk[v.$B[1]];
     if (v.$N) return ensure(AN.sheets[v.$N[0]]).nets[v.$N[1]];
+    if (v.$T) return ensure(AN.sheets[v.$T[0]]).rt.st[v.$T[1]];
+    if (v.$Q) {
+      const S = ensure(AN.sheets[v.$Q[0]]),
+        b = S.blk[v.$Q[1]];
+      return b._pins || anPins(S, b);
+    }
+    if (v.$R) return ensure(AN.sheets[v.$R[0]]).blk[v.$R[1]].proc.remote;
+    if (v.$H) return anStateTabs()[v.$H[0]][v.$H[1]];
+    if (v.$F) return WORLD.fakeFrom(ditlAll().find(x => x.name === v.$F));
     if (v.$K) return linksOf(AN.sheets[v.$K[0]])[v.$K[1]];
     if (v.$D) return (typeof ditlAll === 'function' && ditlAll().find(x => x.name === v.$D)) || null;
     if (v.$P) return ensure(AN.sheets[v.$P[0]]).blk[v.$P[1]].proc; /* engine/sync.js: a plant model by its block */
@@ -193,4 +211,5 @@ function anStateApply(kf) {
   if (st.h) (AN.hmiDI = AN_HMI_DI), (AN.hmiComp = hmiComp);
   anXsPut(st.xs);
   AN._asc = null; /* the step sets kept while a starting state loads */
+  AN._gen = (AN._gen || 0) + 1; /* new objects (engine/sync.js refs) */
 }

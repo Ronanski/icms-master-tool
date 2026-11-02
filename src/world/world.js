@@ -721,6 +721,9 @@
     if (!XL.has(d)) XL.set(d, { name: d.name, S: null, ditl: true });
     return XL.get(d);
   }
+  /* 3.2.0 Web Worker: the keyframe writes these by their DITL sheet (engine/state.js {$F}), the other side takes its own */
+  W.fakeFrom = fakeFrom;
+  W.fakeAll = () => (typeof ditlAll === "function" ? ditlAll() : []).filter(d => XL.has(d)).map(d => [d, XL.get(d)]);
   /* one scan of the whole world */
   /* P3 time-slicing (user 2026-11-01 "T1, 3"): one scan as a generator that yields after each DITL sheet (AN.sched runs it in slices
      between the frames); tick() runs the same generator to the end at once (W.tick, the tests), after a sliced scan still queued */

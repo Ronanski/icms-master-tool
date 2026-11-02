@@ -10,20 +10,41 @@
 let AN_SYNC = null;
 function anSyncRefs() {
   const ref = anStateRefs();
-  AN.sheets.forEach((sh, i) => sh.S && sh.S.blk.forEach((b, j) => b.proc && ref.set(b.proc, { $P: [i, j] })));
+  /* across slots (one slot is decoded alone): a plant model, its remote measurement (procRemote; b.proc1 holds it too), a block state
+     (the unit model holds some: U.zt ...; written as a copy, the copy moved). The keyframe is decoded at once and keeps them by $id */
+  AN.sheets.forEach((sh, i) => {
+    if (!sh.S) return;
+    sh.S.blk.forEach((b, j) => {
+      if (!b.proc) return;
+      ref.set(b.proc, { $P: [i, j] });
+      if (b.proc.remote && typeof b.proc.remote === 'object') ref.set(b.proc.remote, { $R: [i, j] });
+    });
+    for (const id of Object.keys(sh.S.rt.st)) if (sh.S.rt.st[id] && typeof sh.S.rt.st[id] === 'object') ref.set(sh.S.rt.st[id], { $T: [i, id] });
+  });
   return ref;
 }
-/* in place: an object keeps its identity, an array its length and items, anything else is replaced */
+/* in place, down the tree: an object keeps its identity (others hold it: the unit model, a cache), an array its items, a key that
+   is gone goes; a value that is an object of this side already (a ref: a sheet, a block, a plant model) is put as it is */
+const anSyncPlain = x => x && typeof x === 'object' && !ArrayBuffer.isView(x) && !(x instanceof Map) && !(x instanceof Set);
+function anSyncDeep(a, v, seen) {
+  if (seen.has(a)) return;
+  seen.add(a);
+  if (Array.isArray(a)) a.length = v.length;
+  for (const k of Object.keys(a)) if (!(k in v)) delete a[k];
+  for (const k of Object.keys(v)) {
+    const x = a[k],
+      w = v[k];
+    if (typeof x === 'function') continue;
+    if (x !== w && anSyncPlain(x) && anSyncPlain(w) && Array.isArray(x) === Array.isArray(w) && !anSyncOwn.has(w)) anSyncDeep(x, w, seen);
+    else a[k] = w;
+  }
+}
+/* the objects a decode gave from the refs (this side's own): never merged into */
+let anSyncOwn = new WeakSet();
 function anSyncPut(o, k, v) {
-  const a = o[k],
-    plain = x => x && typeof x === 'object' && !ArrayBuffer.isView(x) && !(x instanceof Map) && !(x instanceof Set);
-  if (plain(a) && plain(v) && Array.isArray(a) === Array.isArray(v) && !(v.$S || v.$B || v.$N || v.$P)) {
-    if (Array.isArray(a)) {
-      a.length = v.length;
-      for (let i = 0; i < v.length; i++) a[i] = v[i];
-      for (const x of Object.keys(v)) if (!/^\d+$/.test(x)) a[x] = v[x];
-    } else anStateInto(a, v);
-  } else o[k] = v;
+  const a = o[k];
+  if (a !== v && anSyncPlain(a) && anSyncPlain(v) && Array.isArray(a) === Array.isArray(v) && !anSyncOwn.has(v)) anSyncDeep(a, v, new Set());
+  else o[k] = v;
 }
 function anSyncSlots() {
   const L = [],
@@ -54,14 +75,22 @@ function anSyncSlots() {
     );
     /* each block state (the operator writes the output of a MAN station: st.val) */
     for (const id of Object.keys(S.rt.st))
-      add('s' + i + ':' + id, () => S.rt.st[id], d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => { const q = S.rt.st[id]; return q ? String(q.val) : ''; } });
+      add('s' + i + ':' + id, () => (S.rt.st[id] ? { ...S.rt.st[id] } : S.rt.st[id]) /* its content: the state itself is a ref {$T} */, d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => { const q = S.rt.st[id]; return q ? String(q.val) : ''; } });
     /* each plant model (the PLANT window writes its operating point / disturbance) */
     S.blk.forEach((b, j) => {
-      if (b.proc) add('p' + i + ':' + j, () => ({ ...b.proc }) /* its content: the model itself is written as {$P} */, d => anStateInto(b.proc, d), { w: 1, fast: () => b.proc.op + '|' + b.proc.dist + '|' + b.proc.on });
+      if (b.proc) add('p' + i + ':' + j, () => ({ ...b.proc }) /* its content: the model itself is written as {$P} */, d => anSyncDeep(b.proc, d, new Set()), { w: 1, fast: () => b.proc.op + '|' + b.proc.dist + '|' + b.proc.on });
     });
   });
   const objs = AN_STATE_OBJ();
-  for (const o in objs) for (const f of Object.keys(objs[o])) if (typeof objs[o][f] !== 'function') add('o' + o + '.' + f, () => objs[o][f], d => anSyncPut(objs[o], f, d));
+  /* the fields of each model: first the list of its fields (a run adds fields, a Reset takes them away), then each field */
+  for (const o in objs) {
+    const F = () => Object.keys(objs[o]).filter(f => typeof objs[o][f] !== 'function');
+    add('k' + o, F, d => {
+      for (const f of F()) if (!d.includes(f)) delete objs[o][f];
+      for (const f of d) if (!(f in objs[o])) objs[o][f] = undefined;
+    }, { raw: 1 });
+    for (const f of F()) add('o' + o + '.' + f, () => objs[o][f], d => anSyncPut(objs[o], f, d));
+  }
   add(
     'fl',
     () => {
@@ -125,21 +154,38 @@ function anSyncState() {
   const objs = AN_STATE_OBJ();
   let n = AN.sheets.filter(s => s.S).length + ':' + (typeof ditlAll === 'function' ? ditlAll().length : 0);
   for (const o in objs) n += '|' + Object.keys(objs[o]).length;
-  n += '|' + AN.sheets.filter(s => s.lk).length; /* the links of a sheet are made when it is first linked: refs again */
+  n += '|' + AN.sheets.filter(s => s.lk).length;
+  let np = 0,
+    ns = 0;
+  for (const sh of AN.sheets)
+    if (sh.S) {
+      for (const b of sh.S.blk) if (b._pins) np++;
+      ns += Object.keys(sh.S.rt.st).length; /* a block state made later (a slot each) */
+    }
+  n += '|' + np + '|' + ns; /* the links of a sheet are made when it is first linked: refs again */
   if (AN_SYNC && AN_SYNC.n === n) return AN_SYNC;
   const L = anSyncSlots(),
     old = AN_SYNC;
   AN_SYNC = { n, L, by: new Map(L.map(s => [s.k, s])), last: new Map(), fast: new Map(), ref: anSyncRefs() };
+  anSyncOwn = new WeakSet(AN_SYNC.ref.keys());
   /* what this side had sent or taken stays: only the new slots go across whole */
   if (old) for (const [k, v] of old.last) if (AN_SYNC.by.has(k)) AN_SYNC.last.set(k, v);
   if (old) for (const [k, v] of old.fast) if (AN_SYNC.by.has(k)) AN_SYNC.fast.set(k, v);
   return AN_SYNC;
+}
+/* the refs again when the objects they name may be new: a Reset / keyframe / init of a sheet makes new block states (AN._gen) */
+function anSyncFresh(Y) {
+  if (Y.gen === AN._gen && Y.ref) return;
+  Y.gen = AN._gen;
+  Y.ref = anSyncRefs();
+  anSyncOwn = new WeakSet(Y.ref.keys());
 }
 const anSyncJ = (s, Y) => (s.raw ? JSON.stringify(s.get()) : JSON.stringify(anStateEnc(s.get(), Y.ref)));
 /* the slots that changed: [[key, json]] or, for the values, [[key, [index, value] ...]] */
 function anSyncPatch(w) {
   const Y = anSyncState(),
     out = [];
+  anSyncFresh(Y);
   for (const s of Y.L) {
     if (w && !s.w) continue;
     if (s.ta) {
@@ -175,23 +221,31 @@ function anSyncPatch(w) {
 /* a patch in (skip = keys this side wrote itself since: the operator wins) */
 function anSyncApply(p, skip) {
   const Y = anSyncState();
+  anSyncFresh(Y);
+  let Y2 = Y;
   for (const [k, j, n] of p) {
     if (skip && skip.has(k)) continue;
-    const s = Y.by.get(k);
+    /* a slot made on the other side since (a new field after its field list): the list again */
+    let s = Y2.by.get(k);
+    if (!s) {
+      Y2 = anSyncState();
+      anSyncFresh(Y2);
+      s = Y2.by.get(k);
+    }
     if (!s) continue;
     if (s.ta) {
       const a = s.get();
       if (!a) continue;
-      let b = Y.last.get(k);
-      if (!b || b.length !== a.length) Y.last.set(k, (b = a.slice()));
+      let b = Y2.last.get(k);
+      if (!b || b.length !== a.length) Y2.last.set(k, (b = a.slice()));
       for (let i = 0; i < j.length; i += 2) a[j[i]] = b[j[i]] = Number(j[i + 1]);
       void n;
       continue;
     }
     s.put(s.raw ? JSON.parse(j) : anStateDec(JSON.parse(j), s.get()));
     /* as this side writes it now (the keys of an object put in place can come in another order) */
-    Y.last.set(k, anSyncJ(s, Y));
-    if (s.fast) Y.fast.set(k, s.fast());
+    Y2.last.set(k, anSyncJ(s, Y2));
+    if (s.fast) Y2.fast.set(k, s.fast());
   }
 }
 /* after a keyframe (or any change of the whole state): this side takes the state as it is now as seen */
