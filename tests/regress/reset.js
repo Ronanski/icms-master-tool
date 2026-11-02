@@ -6,12 +6,12 @@ const FP=`(()=>{const o={};for(const sh of AN.sheets)if(!/ABC-000/.test(sh.name)
  const v=Array.from(S.rt.v).map(x=>+(+x).toFixed(4));const st={};for(const id in S.rt.st){const s=S.rt.st[id];const q={};for(const k in s){const x=s[k];if(typeof x==='number'||typeof x==='string'||x===null)q[k]=typeof x==='number'?+x.toFixed(4):x}st[id]=q}
  o[sh.name]={v,st,force:Object.keys(S.rt.force).length,ext:JSON.stringify(S.rt.ext)}}return o})()`;
 (async()=>{
- const A=await open(html);await A.page.evaluate(()=>{for(const sh of AN.sheets)if(!/ABC-000/.test(sh.name))AN.ensure(sh);AN.reset()});const fa=await A.page.evaluate(FP);await A.browser.close();
+ const A=await open(html);await A.page.evaluate(async()=>{for(const sh of AN.sheets)if(!/ABC-000/.test(sh.name))AN.ensure(sh);await AN.reset()});const fa=await A.page.evaluate(FP);await A.browser.close();
  const B=await open(html);
- await B.page.evaluate(()=>{for(const sh of AN.sheets){if(/ABC-000/.test(sh.name))continue;const S=AN.ensure(sh);
+ await B.page.evaluate(async()=>{for(const sh of AN.sheets){if(/ABC-000/.test(sh.name))continue;const S=AN.ensure(sh);
   S.ext.filter(n=>S.nets[n].dig).forEach((n,i)=>{S.rt.force[n]=(i%2)?1:0});
   for(const b of S.blk)if(b.k==='SW'||b.k==='AMT'){S.rt.st[b.id].fm=(b.id%2)?'A':'B'}
-  for(let i=0;i<160;i++)AN.stepSet(sh,.25)}AN.reset()});
+  for(let i=0;i<160;i++)AN.stepSet(sh,.25)}await AN.reset()});
  const fb=await B.page.evaluate(FP);await B.browser.close();
  let bad=0;
  for(const n in fa){const a=fa[n],b=fb[n],dv=a.v.filter((x,i)=>Math.abs(x-b.v[i])>1e-3).length,ds=[];
