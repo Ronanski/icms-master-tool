@@ -184,10 +184,10 @@
   W.plantSw = () => (map ? map.map(m => ({ sheet: m.s.name, row: m.row + 1, tag: m.d[0], on: m.on })) : pend || []);
   /* 3.2.0 Web Worker: the state of the switches (their dead band) back from a keyframe (src/digital/parts/03d-state.js); kept until the
      list is built (the first scan) */
-  /* Reset (ditl150.js clear): every switch as before its first scan, no dead band remembered */
+  /* Reset (ditl150.js clear): the switches as on a fresh page (no list yet: the first scan with the plant model builds it, W.plantIn) */
   W.plantSwClear = () => {
     pend = null;
-    if (map) for (const m of map) m.on = null;
+    map = null;
   };
   W.plantSwSet = L => {
     pend = L;
