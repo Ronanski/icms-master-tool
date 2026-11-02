@@ -71,7 +71,8 @@
        seen there (eng-page.js watchdog) */
     timers.push(setInterval(() => say({ t: 'beat' }), 1000));
     const { AN, WORLD, ENG } = G;
-    let acc = 0,
+    let lastLive = null,
+      acc = 0,
       busy = false;
     const cs = () => AN.sheets[AN.i] || AN.sheets.find(x => /057/.test(x.name));
     timers.push(
@@ -117,7 +118,13 @@
       setInterval(() => {
         if (busy || !WORLD.scanJob) return;
         const g = WORLD.scanJob();
-        if (!g) return;
+        if (!g) {
+          /* paused: scanJob turned WORLD.live off, but no job runs to send it, so the page kept "live" (Rosé, 1 of 3 runs) */
+          if (lastLive !== WORLD.live) N.sent += ENG.send() ? 1 : 0;
+          lastLive = WORLD.live;
+          return;
+        }
+        lastLive = WORLD.live;
         busy = true;
         try {
           for (const _ of g);
