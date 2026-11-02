@@ -32098,7 +32098,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build 8b2243a'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 54e40b6'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -88350,6 +88350,13 @@ window.LS_GUIDE = (function () {
     const p = parseFloat(String(t).replace(/−/g, '-'));
     return isFinite(p) ? p : x;
   };
+  /* the band of a value as shown: every number it shows ("0.6 / 0.5" of the condenser ΔP A / B, Mina #M18: "—" before), each in the
+     band; a value of a machine not started (0) is no reading */
+  const bandOf = (t, x, rg, u) => {
+    const nums = typeof x === 'number' && isFinite(x) ? [shownNum(t, x)] : !u ? [] : (String(t).replace(/−/g, '-').match(/-?\d+(?:\.\d+)?/g) || []).map(Number),
+      has = nums.length > 0 && !(nums.every(n => n === 0) && rg[0] > 0);
+    return { has, ok: has && nums.every(n => n >= rg[0] && n <= rg[1]) };
+  };
   /* a watch label "SWP-A current (IIP1501A)" or "Lube oil cooler outlet temp · TICLO1002": the name, and the tag apart (small) */
   const splitTag = k => {
     const m = /^(.*?)\s*\(([A-Z][A-Z0-9 /,.-]*\d[A-Z0-9 /,.-]*)\)\s*$/.exec(k) || /^(.*?)\s+·\s+([A-Z][A-Z0-9-]*\d[A-Z0-9-]*)$/.exec(k);
@@ -88982,15 +88989,17 @@ window.LS_GUIDE = (function () {
                 ? ['IIP1108A / B', () => (U0().on ? Math.max(+U0().acI0 || 0, +U0().acI1 || 0) : NaN), 'A']
                 : /* Mina #M8: section 2 SWP current (SOP 205 ~ 215 A) and section 5 SWBP current (81 ~ 99 A) on the later steps: the plant
                      model (HMI 030 IIP1501A ~ C = swIa, IIP1503A ~ C = swIb): the pump the row names, else the highest running one */
-                  (f.si === 1 || f.si === 4) && /current/i.test(f.t)
+                  /current/i.test(f.t) && (f.si === 1 || f.si === 4 || /sea ?water|\bSWB?P\b|booster/i.test(f.t))
                   ? (() => {
-                      const k = f.si === 1 ? 'swIa' : 'swIb',
-                        tg = f.si === 1 ? 'IIP1501' : 'IIP1503',
+                      const bp = f.si === 4 || /booster|\bSWBP\b/i.test(f.t),
+                        k = bp ? 'swIb' : 'swIa',
+                        tg = bp ? 'IIP1503' : 'IIP1501',
                         one = /pump\s*-?\s*([ABC])\b(?!\s*\/)/i.exec(f.t),
                         j = one ? 'ABC'.indexOf(one[1].toUpperCase()) : -1;
+                      /* the seawater model runs in a cold plant too (the unit model is not "on" before the boiler): no .on test (Mina M8, steps 4 / 5) */
                       return j >= 0
-                        ? [tg + 'ABC'[j], () => (U0().on ? +U0()[k + j] || 0 : NaN), 'A']
-                        : [tg + 'A ~ C', () => (U0().on ? Math.max(+U0()[k + 0] || 0, +U0()[k + 1] || 0, +U0()[k + 2] || 0) : NaN), 'A'];
+                        ? [tg + 'ABC'[j], () => +U0()[k + j] || 0, 'A']
+                        : [tg + 'A ~ C', () => Math.max(+U0()[k + 0] || 0, +U0()[k + 1] || 0, +U0()[k + 2] || 0), 'A'];
                     })()
                   : null;
       const lvl = /hotwell level/i.test(f.t) ? 'LCV-MU1110' : /deaerator level/i.test(f.t) ? 'LCV-CD1104' : null,
@@ -89574,9 +89583,9 @@ window.LS_GUIDE = (function () {
       }
       V.b.textContent = t;
       /* the band is judged on the value as shown (Mina #M16: 8.97 shown "9.0" was "!" against 9 ~ 11) */
-      const xs = shownNum(t, x),
-        has = !!(w && w.rg && typeof x === 'number' && isFinite(x) && !(x === 0 && w.rg[0] > 0)),
-        out = has && (xs < w.rg[0] || xs > w.rg[1]),
+      const bd = w && w.rg ? bandOf(t, x, w.rg, w.u) : { has: false, ok: false },
+        has = bd.has,
+        out = has && !bd.ok,
         fld = t === 'FIELD',
         hb = w ? [fld ? 'field check' : w.rg ? bandTxt(w.rg) : w.tg || '', !fld && w.rg ? (has ? (out ? '!' : '✓') : '—') : ''] : ['', ''];
       if (V.hb.dataset.k !== hb.join('|')) {
@@ -89623,9 +89632,9 @@ window.LS_GUIDE = (function () {
       w.v.textContent = t;
       /* user 2026-10-30 (mock-up v2, Check): ✓ within the range of its hint, ! out of it; 0 of a machine not started is no reading */
       if (w.rg) {
-        const n = typeof x === 'number' && isFinite(x) ? shownNum(t, x) : NaN,
-          has = isFinite(n) && !(n === 0 && w.rg[0] > 0),
-          okv = has && n >= w.rg[0] && n <= w.rg[1];
+        const bd = bandOf(t, x, w.rg, w.u),
+          has = bd.has,
+          okv = bd.ok;
         w.ck.textContent = has ? (okv ? '✓' : '!') : '—';
         w.r.classList.toggle('ok', okv);
         w.r.classList.toggle('no', has && !okv);
