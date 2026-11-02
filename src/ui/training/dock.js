@@ -2800,7 +2800,15 @@
       const pb = B ? pbOf(B.a, 1) : null;
       adr = pb ? pb.txt : (s.fps || []).length ? (s.fps || []).slice(0, 2).join(' · ') : '';
       const ctlBox = (els.stg || []).find(o => o.k === 'S');
-      if (ctlBox) {
+      /* Mina #M15 (cloud check of f1f433a): the next control is a field action (FIELD: OPEN V-CW1001): the NEXT card does it itself
+         (it only offered "Show control ▾", and the step stood still with the action folded away) */
+      if (B && (/^FIELD\b/.test(B.a.l) || B.a.loc)) {
+        bl = String(B.a.l).replace(/\s*\(.*$/, '');
+        fn = () => {
+          B.bt.click();
+          setTimeout(() => fill(true), 250);
+        };
+      } else if (ctlBox) {
         bl = 'Show control ▾';
         fn = () => {
           els.stOpen = { i: s.i, k: 'S' };
