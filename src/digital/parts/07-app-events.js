@@ -34,6 +34,8 @@ let DPAUSE = false;
 setInterval(() => {
   const s = cur();
   if (window.WORLD && WORLD.live) return; /* the one world steps the timers / MOV / motors of EVERY sheet (src/world/world.js) */
+  /* 3.2.0 Web Worker: the engine steps them; the page (a mirror) only shows what it sends */
+  if (window.ENG && ENG.mode === 'mirror') return;
   if (!SIM || !s || !s.nl || DPAUSE) {
     tick.t = 0;
     return;

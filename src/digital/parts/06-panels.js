@@ -81,18 +81,8 @@ function buildTP() {
       const x = parseFloat(n.value);
       if (!(x >= 0)) return;
       push();
-      tmSet(g.tm, x, u.value);
-      {
-        const s1 = cur();
-        s1.tmo = s1.tmo || {};
-        s1.tmo[tmKey(g)] = [x, u.value];
-      }
-      if (g.tm.pg) {
-        const s = cur();
-        s.pdur = s.pdur || {};
-        s.pdur[g.tm.key] = { v: x, u: u.value };
-      }
-      g.st = { acc: 0, out: 0, pre: 0, run: 0 };
+      /* 3.2.0 Web Worker: the preset is an engine action (parts/03e-user.js): the engine's timer takes it too */
+      ditlUser(s0.name, 'tm', s0.nl.gates.indexOf(g), x, u.value);
       render();
     };
     n.onchange = ch;
@@ -103,13 +93,8 @@ function buildTP() {
       b.textContent = 'Skip';
       b.title = 'Finish this timer now';
       b.onclick = () => {
-        const s = cur(),
-          vv = simulate(s.nl, simIn(s));
-        tmStep(
-          g,
-          g.ins.some(q => vv[q]),
-          tmSecs(g.tm) + 1
-        );
+        const s = cur();
+        ditlUser(s.name, 'skip', s.nl.gates.indexOf(g));
         render();
       };
       d.appendChild(b);
@@ -142,8 +127,7 @@ function buildTP() {
       const x = parseFloat(n.value);
       if (!(x > 0)) return;
       push();
-      s0.mvt = s0.mvt || {};
-      s0.mvt[j] = x;
+      ditlUser(s0.name, 'mvt', j, x);
       render();
     };
     if (b.noZS) d.append(a);
@@ -156,7 +140,7 @@ function buildTP() {
       lr.className = r.lr ? 'on' : '';
       lr.title = 'MIL ' + (mil.adr || '') + ' has no input on this sheet: select LOCAL / REMOTE here';
       lr.onclick = () => {
-        r.lr = r.lr ? 0 : 1;
+        ditlUser(s0.name, 'lr', j);
         render();
       };
       d.appendChild(lr);
@@ -214,7 +198,7 @@ function buildTP() {
       const x = parseFloat(n.value);
       if (!(x > 0)) return;
       push();
-      s0.mtd = x;
+      ditlUser(s0.name, 'mtd', x);
       render();
     };
     d.append(a, n, document.createTextNode('sec'));

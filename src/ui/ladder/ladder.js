@@ -17,7 +17,7 @@
     const nl = nlOf(s);
     if (nl._v && nl._v.length === nl.n) return nl._v;
     try {
-      return simSheet(s).v;
+      return simRead(s).v;
     } catch (e) {
       return new Array(nl.n).fill(0);
     }

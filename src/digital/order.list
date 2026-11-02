@@ -6,6 +6,7 @@ parts/03-models.js
 parts/03b-sim.js
 parts/03c-read.js
 parts/03d-state.js
+parts/03e-user.js
 parts/04-render.js
 parts/05-overlay-interaction.js
 parts/06-panels.js

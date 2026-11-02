@@ -373,28 +373,17 @@ try {
   UVL = {};
 }
 let UVKEY = JSON.stringify(UVL);
-const tmKey = g => (g.tm.tag || '') + '|' + (g.tm.lab || '') + '|' + g.tm.ax.toFixed(0) + ',' + g.tm.ay.toFixed(0);
+/* tmKey: parts/03e-user.js. 3.2.0 Web Worker: the kept values go in as an engine action (ditlUser 'uv'), the engine has no localStorage */
 function uvApply(s) {
   if (!s || s.uvDone || !s.nl) return;
   s.uvDone = true;
   const u = UVL[s.name];
   if (!u) return;
-  if (u.av) s.av = { ...(s.av || {}), ...u.av };
-  if (u.mvt) s.mvt = { ...(s.mvt || {}), ...u.mvt };
-  if (u.pdur) s.pdur = { ...(s.pdur || {}), ...u.pdur };
-  if (u.mtd) s.mtd = u.mtd;
-  if (u.tmo) {
-    s.tmo = { ...(s.tmo || {}), ...u.tmo };
-    s.nl.gates.forEach(g => {
-      if (g.t !== 'TMR' || !g.tm) return;
-      const o = s.tmo[tmKey(g)];
-      if (o && o[0] >= 0) {
-        if (g.tm.pg) g.tm.fv = { v: o[0], u: o[1] };
-        else tmSet(g.tm, o[0], o[1]);
-      }
-    });
-  }
-  s.nl.avk = avOf(s);
+  ditlUser(s.name, 'uv', u);
+}
+/* the engine started from a keyframe (a worker that starts later): the kept values of the sheets already shown go to it again */
+function uvReplay() {
+  S.sheets.forEach(s => s.uvDone && UVL[s.name] && ditlUser(s.name, 'uv', UVL[s.name]));
 }
 function uvSave() {
   const o = { ...UVL };

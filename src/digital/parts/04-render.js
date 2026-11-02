@@ -61,7 +61,7 @@ function render() {
   let FRC = new Map();
   if (simOn() && s) {
     FRC = mvForced(s);
-    const R = simSheet(s);
+    const R = simRead(s);
     rowOn = R.rowOn;
     SV = R.v;
     outOn = R.outOn;
