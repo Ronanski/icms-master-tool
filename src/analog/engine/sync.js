@@ -91,6 +91,9 @@ function anSyncSlots() {
     /* each block state (the operator writes the output of a MAN station: st.val) */
     for (const id of Object.keys(S.rt.st))
       add('s' + i + ':' + id, () => (S.rt.st[id] ? { ...S.rt.st[id] } : S.rt.st[id]) /* its content: the state itself is a ref {$T} */, d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => anSyncStFast(S.rt.st[id]) });
+    /* the parameters of the blocks (the operator's tuning: PID / MAN / timer parameters): page -> engine only (the engine changes
+       some each step, a rate from its pin: those are made again there) */
+    add('bp' + i, () => S.blk.map(b => b.p || null), d => d.forEach((p, j) => S.blk[j] && p && anSyncPut(S.blk[j], 'p', p)), { w: 1, wo: 1 });
     /* each plant model (the PLANT window writes its operating point / disturbance) */
     S.blk.forEach((b, j) => {
       if (b.proc) add('p' + i + ':' + j, () => ({ ...b.proc }) /* its content: the model itself is written as {$P} */, d => anSyncDeep(b.proc, d, new Set()), { w: 1, fast: () => b.proc.op + '|' + b.proc.dist + '|' + b.proc.on });
@@ -126,7 +129,14 @@ function anSyncSlots() {
     { w: 1 }
   );
   /* the saved settings of the ABC (the PID / MAN parameters, the LINEAR edits: Reset puts them in) */
-  add('sv', () => ({ sv: AN.sv || {}, lne: AN.lne || {} }), d => ((AN.sv = d.sv), (AN.lne = d.lne)), { w: 1, raw: 1 });
+  add('sv', () => ({ sv: AN.sv || {}, lne: AN.lne || {} }), d => {
+    AN.sv = d.sv;
+    AN.lne = d.lne;
+    /* the LINEAR edits into the tables (engine/sheets.js lnApplyEdits) */
+    try {
+      lnApplyEdits();
+    } catch (e) {}
+  }, { w: 1, raw: 1 });
   /* the one-address groups (links.js shareExt) */
   add('xs', anXsGet, anXsPut, { raw: 1 });
   /* the DITL world (src/digital/parts/03d-state.js keys), by sheet name */
@@ -156,10 +166,12 @@ function anSyncSlots() {
         else delete WORLD[x];
       }, { raw: 1 });
     add('dgsw', () => (window.WORLD && WORLD.plantSw ? WORLD.plantSw() : null), d => d && window.WORLD && WORLD.plantSwSet && WORLD.plantSwSet(d), { raw: 1 });
-    add('dsim', () => ({ SIM, TSP, DPAUSE: typeof DPAUSE !== 'undefined' ? DPAUSE : false }), d => {
+    /* DITL150.on: the DITL in the 150 MW state (Simulate ON again applies it: src/digital/parts 07 / ditlStates) */
+    add('dsim', () => ({ SIM, TSP, DPAUSE: typeof DPAUSE !== 'undefined' ? DPAUSE : false, d150: !!(window.DITL150 && DITL150.on) }), d => {
       SIM = d.SIM;
       TSP = d.TSP;
       if (typeof DPAUSE !== 'undefined') DPAUSE = d.DPAUSE;
+      if (window.DITL150) DITL150.on = !!d.d150;
     }, { w: 1, raw: 1 });
   }
   return L;
@@ -228,6 +240,7 @@ function anSyncPatch(w) {
   anSyncFresh(Y);
   for (const s of Y.L) {
     if (w && !s.w) continue;
+    if (!w && s.wo) continue; /* the operator's only */
     if (s.ta) {
       const a = s.get();
       if (!a) continue;
