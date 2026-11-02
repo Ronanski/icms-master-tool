@@ -255,8 +255,12 @@ function anResetAll() {
     for (const b of S.procs || [])
       if (b.proc) {
         if (b.proc.hop && b.proc.hop.dyn) {
-          delete b.proc.hop; /* deleted, not undefined: a key left as undefined made the keyframe of a Reset after a run differ (Winter) */
-          delete b.proc.Ka;
+          /* the keys as the load left them (proc0): there as undefined where the load had them (their place in the object stays, so the
+             keyframe of a fresh page and of a Reset number the same), gone where the run made them (Winter: reset_worker "Ka" left as
+             undefined; reset_clean: the numbering moved when they were always deleted) */
+          for (const f of ['hop', 'Ka'])
+            if (b.proc0 && f in b.proc0) b.proc[f] = undefined;
+            else delete b.proc[f];
         }
         b.proc.hopReq = null;
         b.proc.integLoss = 0;
