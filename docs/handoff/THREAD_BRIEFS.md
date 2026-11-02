@@ -1,5 +1,7 @@
 # THREAD BRIEFS — role, saklaw at rule ng bawat thread
 
+> **Roster update 2026-11-03 (user #59, #62):** names below are history. Current: JENNIE : LEADER; LISA : FIXER (lead); WINTER, GISELLE, LIA : FIXER helpers (LIA = the old FIXER NINGNING); MINA : TESTER (replaces JISOO; live test, presses on the existing HMI, no coding); ROSÉ : HMI; YUNA : DESIGN; KARINA : DOCS; NINGNING : SKILLS (cloud). Source of truth: `HANDOFF.md` section 3.
+
 > Basahin ang SARILING seksyon bago magsimula, at LAGI pagkatapos ng compact (user 2026-10-30). Source: `HANDOFF.md` seksyon 5 "TEAM AT ROLES"; kapag magkaiba, ang `HANDOFF.md` ang tama at ayusin ang file na ito (DOCS thread).
 
 ## PAREHONG RULE NG LAHAT NG THREAD

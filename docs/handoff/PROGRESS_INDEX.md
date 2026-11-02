@@ -1,5 +1,7 @@
 # Progress ng bawat session, 2026-11-02 (save progress ng user)
 
+> **Roster update 2026-11-03 (user #59, #62):** names below are history. Current: JENNIE : LEADER; LISA : FIXER (lead); WINTER, GISELLE, LIA : FIXER helpers (LIA = the old FIXER NINGNING); MINA : TESTER (replaces JISOO; live test, presses on the existing HMI, no coding); ROSÉ : HMI; YUNA : DESIGN; KARINA : DOCS; NINGNING : SKILLS (cloud). Source of truth: `HANDOFF.md` section 3.
+
 User: "isave ang lahat ng progress natin ngayon simula ung una ko kayong ginawa... Lahat ng session". Bawat session ang sumulat ng sarili niyang file (PHT). Kinopya ng DOCS (KARINA) mula sa `team-files/progress/` (lokal, labas ng repo).
 
 | File | Session | Laman |

@@ -1,5 +1,7 @@
 # HMI STYLE STANDARD (iisang itsura ng lahat ng HMI page)
 
+> **2026-11-03 (user #44): the 038 AIR PREHEATER is NOT an approved style.** Section 10 below ("Estilong pumasa") is history: the 038 v15 mockup was approved as that one page, not as the style for other pages. No HMI or app style is approved yet (design picker v4: the user rejected all options). Keep today's look; make no new style until the user approves one.
+
 User 2026-10-30: "Dapat uniform ang style ng mga HMI natin." Ang lahat ng HMI page (MAKE-UP WATER, 030 SEAWATER, 007 AIR & FLUE GAS,
 036 TURBINE OIL, INSTRUMENT & PLANT AIR, CLOSED COOLING WATER at ang mga susunod) ay gumagamit ng iisang library:
 `src/ui/plant/hmi-sym.js` (`window.HSYM`). Walang page na gumagawa ng sarili niyang tubo, pump, valve o tank.

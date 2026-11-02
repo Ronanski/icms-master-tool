@@ -17,11 +17,11 @@ These are the user's standing rules. Every thread follows them every time: at se
 3. **MAIN ONLY ON "GO BETA"; STABLE AND WORKFLOWS ONLY ON "GO STABLE"**, in the same message.
 4. **MOCKUP BEFORE ANY VISUAL CODE.** The user must approve the mockup (an artifact). The app page must look EXACTLY like it ("ganyan na ganyan"), with no design of your own. The pending list is `team-files/hmi-mockups/PENDING_HMI_BUILD.md` (`docs/hmi/PENDING_HMI_BUILD.md` in the repo).
 5. **APP TEXT IN ENGLISH, NO ACRONYMS AS LABELS.** Two faceplates per equipment: control (click the equipment) and permissive + trend + monitor (the Y/N button). Y = red = complete; N = green.
-6. **CLEAN, ORGANIZED, CLEAR, NOT CLUTTERED.** One uniform HMI style: the approved 038 Air Preheater on the MAKE-UP WATER look (`docs/hmi/HMI_STYLE.md`).
+6. **CLEAN, ORGANIZED, CLEAR, NOT CLUTTERED.** One uniform HMI style (`docs/hmi/HMI_STYLE.md`). **The 038 Air Preheater is NOT an approved style (user #44, 2026-11-02);** no style is approved yet, so keep today's look and add no design of your own until the user approves one.
 7. **ALWAYS SHOW A PICTURE OF WHAT WAS MADE.** The leader checks it, including its sources, before the user sees it.
 8. **LIVE TESTS ONLY.** One step per user "G"; the user judges PASS or FAIL. Never kill processes by name.
 9. **DECISIONS AS NUMBERED OPTIONS** under "⚠ KAILANGAN NG SAGOT MO". Explain before asking for a G. Do not ask about things these rules already decide; just do them.
-10. **TAGLISH, SHORT, TIMES IN PHT.** Report honestly: what was done, its sources, what was NOT tested.
+10. **TAGLISH ONLY IN THE USER CHAT AND ARTIFACTS, ENGLISH EVERYWHERE ELSE (user #49); SHORT; TIMES IN PHT.** Report honestly: what was done, its sources, what was NOT tested.
 
 
 Ang isang SessionStart hook sa PC ng user (`~/.claude/hooks/icms-commandments.js`) ay nag-i-inject ng mga rule na ito sa bawat start, resume at compact. Kopya: `docs/handoff/COMMANDMENTS.md`.
