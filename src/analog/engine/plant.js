@@ -294,7 +294,12 @@ const AN_HMI_OP = {
   TICHR1002A: { mv: 36.0, pv: 541.0, src: '39.PNG' },
   TICHR1002: { mv: 79.4, pv: 541.0, src: '39.PNG' },
   HICHR1002A: { mv: 11.0, pv: 11.0, src: '39.PNG' },
-  HICHR1002B: { mv: 89.0, pv: 89.0, src: '39.PNG' }
+  HICHR1002B: { mv: 89.0, pv: 89.0, src: '39.PNG' },
+  /* 3.2.0 (Rosé, FA blower B at 150 MW): the fluidizing air flow, 9.png FIFA1055 26.3 T/H with FCVFA1055A1 42.8 % (blower A alone,
+     B standby; OPERATING_POINTS.md). Its PV comes from ABC-006 (a remote PV, links.js procRemote): the 150 MW load found no snapshot
+     AI on it when it took the anchors (hmi-op.js caps: no hopReq), so the loop ran on its default line, 15 T/H at 42.8 %, under
+     the ABC-006 M.3114 low-low 20 T/H, and DITL-28A started blower B */
+  FICFA1055A: { mv: 42.8, pv: 26.3, src: '9.png' }
 };
 /* 2.2.0-beta.3: the output of the SQRT (flow compensation) whose inputs come from the transmitter ai (ABC-001C: main steam flow
    = SQRT of LN31(p) x LN32(T) x AI0129); -1 when the sheet has none */
