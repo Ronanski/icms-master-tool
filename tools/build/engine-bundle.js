@@ -20,7 +20,7 @@ function bundle(o) {
     return '/* ---- ' + f + ' ---- */\n' + s;
   }).join('\n');
   /* the AN of the page (ui/main.js), the fields the engine reads */
-  const core = 'const AN={cat:"an",sheets:[],i:-1,run:false,spd:1,sv:{},lne:{},av:{},ws:{},plantUi:{}};\n' +
+  const core = 'const AN={cat:"an",sheets:[],i:-1,run:false,spd:1,ramp:0,sv:{},lne:{},av:{},ws:{},plantUi:{}};\n' +
     'Object.defineProperty(AN,"ln",{get:()=>globalThis.ANLN||{},set:v=>{globalThis.ANLN=v}});\n';
   const hooks = 'Object.assign(AN,anEngAPI());\n' +
     'AN.lnSrc=()=>(' + aln + ');\n' +
