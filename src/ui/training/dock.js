@@ -469,59 +469,11 @@
     }
     return -1;
   };
-  const PRESS = {},
-    REL = {};
-  /* a push button row of a DITL drawing (by name, machine A, or an instance "DITL-09 #B"), pressed (hold); dout = an output row of a drawing (1 / 0, null
-     without the one world) */
-  function dpress(nm, row) {
-    const s = dSheet(nm);
-    if (!s || !(window.WORLD && WORLD.on && WORLD.live)) return false;
-    return hold(s, row + ':S');
-  }
-  /* one press of a push button row: held for two scans of the one world (and 1.5 s) and released (the drawing starts on the pulse); a press
-     while it is held is the same press. In scans (simulation time), not in milliseconds: at x300 a 0.8 s press was 4 minutes of
-     plant and a press again within 3 s (15 minutes) was lost (the batch firing of the coal feeder, 10 s ON / 60 s OFF) */
-  function hold(s, k) {
-    const id = s.name + '|' + k;
-    if (PRESS[id]) return true;
-    /* a press again right after the release (no scan saw the button open between them) is no new edge: the START pulse of the drawing
-       never came and the coal feeder C never started while the guide pressed it every frame at x300. It waits one scan */
-    const wait = REL[id] != null && (WORLD.tk || 0) - REL[id] < 1;
-    PRESS[id] = { s, k, tk: WORLD.tk || 0, wait };
-    if (!wait) s.sig[k] = true;
-    WORLD.busy = true;
-    if (!WORLD.onTick)
-      WORLD.onTick = dt => {
-        for (const j in PRESS) {
-          const p = PRESS[j];
-          if (p.wait) {
-            if ((WORLD.tk || 0) - REL[j] >= 1) {
-              p.wait = false;
-              p.tk = WORLD.tk || 0;
-              p.s.sig[p.k] = true;
-              WORLD.busy = true;
-            }
-            continue;
-          }
-          p.age = (p.age || 0) + (dt || 0);
-          /* at least 1.5 s of plant too: a motor seals in through its running feedback (0.5 s) while START is held */
-          if ((WORLD.tk || 0) - p.tk >= 2 && p.age >= 1.5) {
-            p.s.sig[p.k] = false;
-            REL[j] = WORLD.tk || 0;
-            delete PRESS[j];
-          }
-        }
-      };
-    return true;
-  }
-  /* a maintained selection of a DITL input row (the AUTO MODE of a shut-off valve chosen on the CRT, DITL-32 row 5 M.1012): stays until changed */
-  function dset(nm, row, v) {
-    const s = dSheet(nm);
-    if (!s || !(window.WORLD && WORLD.on && WORLD.live)) return false;
-    s.sig[row + ':S'] = !!v;
-    WORLD.busy = true;
-    return true;
-  }
+  /* a push button row of a DITL drawing (by name, machine A, or an instance "DITL-09 #B"), pressed (held for two scans, then released), and
+     a maintained selection of an input row: engine actions of the one world (src/world/dock-eng.js WORLD.dpress / WORLD.dset, 3.2.0 Web
+     Worker: the hold runs where the scans run); dout = an output row of a drawing (1 / 0, null without the one world) */
+  const dpress = (nm, row) => !!(window.WORLD && WORLD.dpress && WORLD.dpress(nm, row));
+  const dset = (nm, row, v) => !!(window.WORLD && WORLD.dset && WORLD.dset(nm, row, v));
   function dout(nm, row) {
     const s = dSheet(nm);
     if (!s || !wlOn()) return null;
@@ -566,7 +518,7 @@
     }
     const r = pbRow(s, on ? /\bSTART\b|\bST$/ : /\bSTOP\b/);
     if (r < 0) return false;
-    return hold(s, r + ':S');
+    return dpress(s.name, r);
   }
   /* the field operator sets the contacts (the switch of the input row on its DITL sheet, the same as the Inputs tab) */
   function fieldSet(L) {
