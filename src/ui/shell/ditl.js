@@ -917,12 +917,8 @@
             title: 'Finish this timer now',
             on: () => {
               if (!SIM) return;
-              const vv = simulate(s.nl, simIn(s));
-              tmStep(
-                g,
-                g.ins.some(q => vv[q]),
-                tmSecs(g.tm) + 1
-              );
+              /* 3.2.0 Web Worker: an engine action (parts/03e-user.js), the engine finishes the timer too */
+              ditlUser(s.name, 'skip', s.nl.gates.indexOf(g));
               render();
             }
           });
@@ -987,7 +983,7 @@
     if (!s || !s.nl) return;
     let R = null;
     try {
-      if (simOn()) R = simSheet(s);
+      if (simOn()) R = simRead(s);
     } catch (e) {}
     U.concat(SU).forEach(f => {
       try {
