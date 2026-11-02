@@ -137,7 +137,7 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 1. **Tanong ≠ G.** Ang "pwede na ba magtest?" o anumang tanong ay HINDI pahintulot. Walang live test hangga't hindi mismong isinusulat ng user ang "G" sa test thread.
 2. **Laging Hakbang 1 ang simula**, sunud-sunod, ISANG hakbang bawat "G". Walang laktaw, walang sabay-sabay.
 3. **Ang user ang SAKSI** sa sarili niyang app, pagkatapos niyang pindutin ang "Update now" at makita ang tamang version sa status bar. WALANG pipindutin ang user; si Claude ang gumagawa ng lahat ng pindot.
-4. **Basahin mismo ang app bago at pagkatapos** ng bawat hakbang (text, value, kulay, posisyon); **WALANG screenshot** (user 2026-10-31, pinalitan ang "screenshot bago at pagkatapos"). **Kapag may mali (user 2026-10-30, pinalitan ang "huminto sa unang mali"):** depende sa criticality at kung may chain reaction sa susunod na hakbang. Critical o may chain = huminto at ipaayos; maliit = itala at tuloy. Ang ulat ng hakbang ay may criticality at mungkahi; ang user ang nagpapasya.
+4. **Basahin mismo ang app bago at pagkatapos** ng bawat hakbang (text, value, kulay, posisyon); **pinapayagan ang screenshot kung saan mas epektibo ang pag-check** (user 2026-11-02; pinalitan ang "WALANG screenshot" ng 2026-10-31 at ang "screenshot bago at pagkatapos"). **Kapag may mali (user 2026-10-30, pinalitan ang "huminto sa unang mali"):** depende sa criticality at kung may chain reaction sa susunod na hakbang. Critical o may chain = huminto at ipaayos; maliit = itala at tuloy. Ang ulat ng hakbang ay may criticality at mungkahi; ang user ang nagpapasya.
 5. **Ang tanong ay sinasagot ng sagot, hindi ng aksyon.** Kapag nagtanong ang user, sumagot lang; huwag magsimula ng test o ng anumang gawain dahil sa tanong.
 
 **LIVE RETEST (user 2026-10-30):** sa built-in browser ng Claude app sa PC ng user (Beta site pagkatapos ng "Update now"); si Claude ang pumipindot, saksi ang user. LAHAT ng hakbang Cold → 150 MW, pero isa-isa (isang hakbang bawat "G"). Bawat ulat ng hakbang: finding, criticality (critical / chain o maliit), mungkahi (huminto para ayusin o tuloy); ang user ang nagpapasya. Skill: `dcs-beta-live-test`.
@@ -158,7 +158,7 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 
 **PATAKARAN NG LIVE TESTER (laging sinusunod, user 2026-10-31):**
 1. Isang hakbang bawat "G" mula H1, walang laktaw.
-2. Walang screenshot: basahin mismo ang app (text, value, kulay, posisyon).
+2. Basahin mismo ang app (text, value, kulay, posisyon); pinapayagan ang screenshot kung saan mas epektibo ang pag-check (user 2026-11-02).
 3. Pindot gaya ng operator; walang FORCE at walang shortcut.
 4. Basa ng logic pagkalipas ng ≥ 30 s.
 5. Tick lang ng totoo.
@@ -179,7 +179,7 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 - **Taglish** (~80 % Tagalog), maikli, simple, buong pangungusap. Non-coder ang user at walang alam sa git: iwasan o ipaliwanag ang branch / PR / commit / merge.
 - Oras ay laging **PHT** (UTC + 8). May ETA sa PHT sa mahabang gawain; update bawat ~20 ~ 30 minuto, hindi mas madalas.
 - Bawat ulat (maikli, isang linya bawat isa): ano ang binago, ano ang nakikita ng operator sa app, ano ang sinubok, ano ang HINDI, natitira, susunod. Walang pangalan ng file / test sa ulat sa user. Walang sariling-gawang termino.
-- Huwag mag-claim na tapos / nakita / nasubok nang walang ebidensya mula sa totoong app (sa live test: basa mismo ng app, walang screenshot, user 2026-10-31).
+- Huwag mag-claim na tapos / nakita / nasubok nang walang ebidensya mula sa totoong app (sa live test: basa mismo ng app; pinapayagan ang screenshot kung saan mas epektibo, user 2026-11-02).
 - Sabihin agad sa user pagkatapos ng bawat merge.
 - Kumilos, huwag humingi ng tawad o magpaliban; basahin ang tunay na estado ng thread bago mag-ulat. Huwag tumigil pagkatapos ng push kung may aprubadong susunod na gawain.
 - Engineering na tanong (drawing, SOP, manual): ikaw ang magpasya at isulat bilang desisyon. Itanong lang ang layunin o gusto ng user. Gumamit ng decision card (pipindot lang ang user).
@@ -189,7 +189,7 @@ Lahat ng iba (audit, sand DITL, ABC ↔ DITL links, plant model MST / RH, instru
 - **Operator UI (user 2026-10-30, mockup v7 "G n yan"):** HMI process graphic ang nasa gitna, buo; ang click sa equipment ay maliit na pop-out faceplate SA TABI nito (controls + permissive mula sa SOP at logic); controls sa faceplate lang. Ang dock ay GABAY lang: hindi pumipindot, hindi nag-a-AUTO, hindi nagta-tick (maliban sa AUTO tick na nagbabasa ng logic), hindi lumalaktaw ng timer, hindi nagfo-force; huwag gamitin ang salitang "coach" sa app.
 - **Text ng app = English LANG, kahit saang bahagi (user 2026-10-31: "yung app natin, dapat english lang, kahit saang part.").** Iwasan ang acronym: kung puwedeng paglalarawan, iyon ang pangunahing label at ang tag (PV, SP, MV, tag ng equipment) ay maliit na reference. Chat at docs = Taglish.
 - **Pamantayan ng itsura ng app (user 2026-10-31):** "ang importante sa lahat ng ginagawa natin lalo n s app, dapat malinis, organized, malinaw at hindi makalat … maganda nga ang app, functional lahat, walang bugs, parang basura naman itsura, di mo alam paano gagamitin." Hindi sapat na gumagana; dapat alam agad ng gumagamit kung paano ito gamitin.
-- **Ipakita ang itsura (user 2026-10-31):** "mas ok sa susunod ipakita mo sakin ang itsura nang ginawa. need ko ng basis visually." Bawat ulat o proposal sa user ay may larawan ng ginawa. (Ang "walang screenshot" ng LIVE TESTER ay para sa pagbabasa ng app sa check; hindi nito binabago ito.)
+- **Ipakita ang itsura (user 2026-10-31):** "mas ok sa susunod ipakita mo sakin ang itsura nang ginawa. need ko ng basis visually." Bawat ulat o proposal sa user ay may larawan ng ginawa. (Pinapayagan na ang screenshot sa check ng LIVE TESTER kung saan mas epektibo, user 2026-11-02.)
 - **Visual na ayos = mockup muna (user 2026-10-31):** ang bawat VISUAL na ayos ay ipinapakita sa user bilang mockup at inaaprubahan BAGO i-code; ang purong bug fix ay puwedeng diretso sa code.
 - **Dock (user 2026-10-31, "sige g dock"):** inaprubahan ang mockup para i-code (phase 2): English lang, "Section n / 44", hindi tinatakpan ang HMI. Pinapayagan ang HMI thread na gumawa ng isang private na artifact bawat mockup.
 - **RUN = PULA, STOP = BERDE.**
