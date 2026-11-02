@@ -212,6 +212,8 @@ function anResetAll() {
   /* and what the first 150 MW load set (hmi-op.js: the DI of the HMI snapshots, ditl150.js reads them): a fresh page has none (Winter, "h") */
   delete AN.hmiDI;
   delete AN.hmiComp;
+  /* the unit model as AN.unit (unit.js anUnitStart sets it; the keyframe 'u'): a fresh page has none until a start (Winter's diag_abc4) */
+  delete AN.unit;
   AN.steady = false;
   /* the one-address groups start again as on a fresh page (links.js shareExt: the values of the run before were kept) */
   AN._xs = null;
