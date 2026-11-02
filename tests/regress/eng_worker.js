@@ -21,7 +21,8 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
   const t0 = await page.evaluate(() => { const C = AN.sheets.find(s => s.name === 'ABC-001C'); AN.i = AN.sheets.indexOf(C); AN.plantLoad150(); DITL150.apply(); AN.run = true; return C.S.rt.t; });
   /* the engine first runs the same Start at 150 MW (some seconds), then the patches come */
   const g0 = Date.now();
-  await page.waitForFunction(() => ENG.got > 0, null, { timeout: 90000 }).catch(() => {});
+  /* the Start at 150 MW runs in the engine only: wait for its state on the page (the plant time of the snapshot) */
+  await page.waitForFunction(t0 => ENG.got > 0 && !ENG.heavy && AN.sheets.find(s => s.name === 'ABC-001C').S.rt.t > t0 + 1, t0, { timeout: 120000 }).catch(() => {});
   const tw = (Date.now() - g0) / 1000;
   const ta = await page.evaluate(() => AN.sheets.find(s => s.name === 'ABC-001C').S.rt.t);
   await page.waitForTimeout(5000);

@@ -69,11 +69,18 @@
           return;
         }
         if (m.t === 'error') return fail(m.where || 'engine', m.text);
+        /* the progress bar of a long action of the engine */
+        if (m.t === 'busy') {
+          try {
+            if (window.lsBusy && lsBusy[m.f]) lsBusy[m.f](...m.a);
+          } catch (e) {}
+          return;
+        }
         if (m.t === 'msg') {
           if (typeof msg === 'function') msg(m.text);
           return;
         }
-        E.onMsg(m).catch(e => fail('page', e.message));
+        E.take(m).catch(e => fail('page', e.message));
       };
       /* the page as it is now: every ABC sheet built (the slots of both sides are the same list), its keyframe */
       try {

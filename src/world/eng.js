@@ -18,8 +18,15 @@
     DITL150: ['apply'],
     WORLD: ['tick', 'set']
   };
+  /* the long actions run in the engine ONLY (user 2026-11-02 "Worker n. Lhat n"): on the page they took seconds (Start at 150 MW
+     ~10 s) and froze the screen. The page sends them and gets a promise; it resolves when the engine is done and its whole state is
+     on the page. The short ones (settle, A / M / R, SV, MV, a valve, a press: ~0.1 s) run on both sides: an answer at once */
+  const HEAVY = new Set(['AN.reset', 'AN.loadStart', 'AN.plantLoad150', 'AN.plantCold', 'AN.plantLoad150Async', 'AN.plantColdAsync', 'DITL150.apply']);
+  const waits = new Map();
+  let nid = 0;
   const own = (o, k) => o && typeof o[k] === 'function';
   const E = (G.ENG = { mode: 'local', port: null, CALLS, sent: 0, got: 0, err: null });
+  E.HEAVY = HEAVY;
   let inCall = 0;
   const holder = h => (h === 'AN' ? G.AN : h === 'G' ? G : G[h]);
   /* the action by its name "AN.reset", "G.ditlStates", "DITL150.apply" */
@@ -56,6 +63,18 @@
           if (E.mode !== 'mirror' || inCall) return f.apply(this, a);
           /* the writes before the action first (a value typed, then settle) */
           E.flush();
+          if (HEAVY.has(h + '.' + k)) {
+            /* the page part of a starting state (hmi-op.js anLoadStart): a load picked anywhere closes the starting-state question */
+            if (k === 'loadStart')
+              try {
+                const q = G.document && G.document.getElementById('lsask');
+                if (q) q.remove();
+              } catch (x) {}
+            const id = ++nid;
+            E.heavy = (E.heavy || 0) + 1;
+            post({ t: 'op', ops: [], calls: [[h + '.' + k, G.AN.sync.encArgs ? G.AN.sync.encArgs(a) : a]], id });
+            return new Promise(ok => waits.set(id, ok));
+          }
           inCall++;
           let r;
           try {
@@ -83,11 +102,28 @@
       }
   };
   /* a message in */
+  /* a yield to the browser (a frame can be drawn): a MessageChannel message, not a timer (a timer waits 4 ms or more) */
+  if (typeof G.MessageChannel === 'function' && typeof G.document !== 'undefined') {
+    const ch = new G.MessageChannel(),
+      q = [];
+    ch.port1.onmessage = () => q.length && q.shift()();
+    E.yieldNow = () => new Promise(r => (q.push(r), ch.port2.postMessage(0)));
+  }
+  /* the page takes the messages of the engine one after the other (a patch in slices ends before the next one) */
+  let chain = Promise.resolve();
+  E.take = m => (chain = chain.catch(() => {}).then(() => E.onMsg(m)));
   E.onMsg = async m => {
     E.got++;
     E.lastAt = Date.now(); /* the time of the last message from the other side (the watchdog, src/world/eng-watch.js) */
     /* the heartbeat: a ping of the page gets a pong from the engine (the engine answers between its jobs: a hung engine does not) */
     if (m.t === 'ping') return void post({ t: 'pong', id: m.id });
+    if (m.t === 'done') {
+      const ok = waits.get(m.id);
+      waits.delete(m.id);
+      E.heavy = Math.max(0, (E.heavy || 0) - 1);
+      if (ok) ok(m.r);
+      return;
+    }
     if (m.t === 'ack') {
       E.wait = false;
       if (E.owed) (E.owed = false), E.send();
@@ -105,8 +141,9 @@
         if (!f) continue;
         inCall++;
         try {
-          const r = f.apply(holder(n.split('.')[0]), a && a.$j != null ? G.AN.sync.decArgs(a) : a);
-          if (r && typeof r.then === 'function') await r;
+          let r = f.apply(holder(n.split('.')[0]), a && a.$j != null ? G.AN.sync.decArgs(a) : a);
+          if (r && typeof r.then === 'function') r = await r;
+          E._last = r;
         } catch (e) {
           if (G.console) console.error('ENG ' + n, e);
           /* an engine action that fails is said on the page (it was silent) */
@@ -117,6 +154,21 @@
       }
       /* after an action the next patch carries everything: the page is the engine again, whatever its run of the action gave */
       if ((m.calls || []).length && E.mode === 'engine' && G.AN.sync.forget) G.AN.sync.forget();
+      /* a long action of the page: its whole state now (no gap, no ack), then its answer */
+      if (m.id != null && E.mode === 'engine') {
+        E.wait = false;
+        E._ls = 0;
+        E.send();
+        /* this one waits for no ack: what the next messages change goes at once */
+        E.wait = false;
+        let r = E._last;
+        try {
+          r = structuredClone(r);
+        } catch (x) {
+          r = null;
+        }
+        post({ t: 'done', id: m.id, r });
+      }
     } else if (m.t === 'patch') {
       if (E.busy) {
         /* an action of the page still runs: the full state comes after it; its events wait */
@@ -126,8 +178,19 @@
       m.ev = (E.evHeld || []).concat(m.ev || []);
       E.evHeld = [];
       /* the operator wins: a write not sent yet goes first */
-      const mine = E.flush();
-      G.AN.sync.apply(m.p, new Set(mine.map(x => x[0])));
+      const mine = E.flush(),
+        skip = new Set(mine.map(x => x[0]));
+      /* in slices of at most 4 ms, the page draws between them (a patch at once took ~100 ms at 6x: the long frames of the 038 page,
+         Ningning's trace); no slices where there is no MessageChannel (the node tests: at once) */
+      if (E.yieldNow && m.p.length > 8) {
+        let i = 0;
+        while (i < m.p.length) {
+          const t0 = performance.now();
+          do G.AN.sync.apply([m.p[i++]], skip);
+          while (i < m.p.length && performance.now() - t0 < 4);
+          if (i < m.p.length) await E.yieldNow();
+        }
+      } else G.AN.sync.apply(m.p, skip);
       if (E.onPatch) E.onPatch(m);
       for (const a of m.ev || [])
         try {

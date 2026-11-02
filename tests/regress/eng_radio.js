@@ -40,7 +40,10 @@ const cmp = (a, b) => { let n = 0; const ex = []; for (let i = 0; i < Math.max(a
   /* the port: messages as the worker gets them (structured clone), delivered in order */
   const toA = [], toB = [];
   A.ENG.start('engine', { postMessage: m => toB.push(structuredClone(m)) });
-  A.ENG.gap = 0; /* no timers here: every patch at once (the worker sends at most 4 a second) */
+  A.ENG.gap = 0;
+  /* the long actions run in the engine only: the page gets a promise (src/world/eng.js HEAVY) */
+  let p150 = null,
+    pRes = null;
   B.ENG.start('mirror', { postMessage: m => toA.push(structuredClone(m)) });
   let c = cmp(A.dump(), B.dump());
   ck(c.n === 0, 'keyframe of the engine into the page: ' + c.n + ' differences of ' + c.len + ' records' + (c.n ? '\n   ' + c.ex.join('\n   ') : ''));
@@ -71,10 +74,10 @@ const cmp = (a, b) => { let n = 0; const ex = []; for (let i = 0; i < Math.max(a
     if (k === 50) B.AN.latchMode('PICMS1006', 'AUTO');
     /* Reset of the ABC and of the DITL from the page, then Start at 150 MW */
     if (k === 60) {
-      B.AN.reset();
+      pRes = B.AN.reset();
       B.ctx.ditlStates();
     }
-    if (k === 62) B.AN.plantLoad150();
+    if (k === 62) p150 = B.AN.plantLoad150();
     /* DITL Simulate OFF (the Reset of the DITL bar with SIM = false: Ningning's case), then ON again */
     if (k === 66) {
       B.DITL.SIM = false;
@@ -105,6 +108,10 @@ const cmp = (a, b) => { let n = 0; const ex = []; for (let i = 0; i < Math.max(a
       ka = S50(A).S.blk[j].p.kp,
       kb = S50(B).S.blk[j].p.kp;
     ck(ka === kb, 'the PID gain written on the page is the gain in the engine: ' + kb + ' / ' + ka);
+  }
+  {
+    const r = p150 && typeof p150.then === 'function' ? await Promise.race([p150, new Promise(x => setTimeout(() => x('not resolved'), 100))]) : 'no promise';
+    ck(pRes && typeof pRes.then === 'function' && typeof r === 'number', 'Reset and Start at 150 MW ran in the engine only (the page got promises; Start at 150 MW gave ' + r + ' transmitters)');
   }
   console.log('   patch ' + (tp / 80).toFixed(1) + ' ms / scan, ' + (kb / 80).toFixed(0) + ' kB / scan');
   console.log(fail ? 'FAILED ' + fail : 'ALL PASS');
