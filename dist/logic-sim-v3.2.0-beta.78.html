@@ -19831,7 +19831,12 @@ const AN_HMI_OP = {
   TICHR1002A: { mv: 36.0, pv: 541.0, src: '39.PNG' },
   TICHR1002: { mv: 79.4, pv: 541.0, src: '39.PNG' },
   HICHR1002A: { mv: 11.0, pv: 11.0, src: '39.PNG' },
-  HICHR1002B: { mv: 89.0, pv: 89.0, src: '39.PNG' }
+  HICHR1002B: { mv: 89.0, pv: 89.0, src: '39.PNG' },
+  /* 3.2.0 (Rosé, FA blower B at 150 MW): the fluidizing air flow, 9.png FIFA1055 26.3 T/H with FCVFA1055A1 42.8 % (blower A alone,
+     B standby; OPERATING_POINTS.md). Its PV comes from ABC-006 (a remote PV, links.js procRemote): the 150 MW load found no snapshot
+     AI on it when it took the anchors (hmi-op.js caps: no hopReq), so the loop ran on its default line, 15 T/H at 42.8 %, under
+     the ABC-006 M.3114 low-low 20 T/H, and DITL-28A started blower B */
+  FICFA1055A: { mv: 42.8, pv: 26.3, src: '9.png' }
 };
 /* 2.2.0-beta.3: the output of the SQRT (flow compensation) whose inputs come from the transmitter ai (ABC-001C: main steam flow
    = SQRT of LN31(p) x LN32(T) x AI0129); -1 when the sheet has none */
@@ -24556,7 +24561,7 @@ const AN_HMI_CTL = {
   'FICFA1043B': { pv: null, sv: null, mv: 5.5, mode: 'M' } /* 2.1.0-beta.10: valve MCVFA1043B 5.5 % M (R shown, R-SV 26.0) (13.PNG) */,
   'FICFA1043C': { pv: null, sv: null, mv: 5.0, mode: 'M' } /* 2.1.0-beta.10: valve MCVFA1043C 5.0 % M (L shown, R-SV 26.0) (14.PNG) */,
   'FICFA1043D': { pv: null, sv: null, mv: 1.7, mode: 'M' } /* 2.1.0-beta.10: valve MCVFA1043D 1.7 % M (L shown, R-SV 26.0) (15.PNG) */,
-  'FICFA1055A': { pv: 26.3, sv: null, mv: 42.8, mode: 'A' } /* 2.1.0-beta.10: valve FCVFA1055A1 42.8 % A (9.png); 3.2.0 (Rose, FA blower B standby at 150 MW): its PV is the common FA flow FT-FA1055 (range 0 ~ 35 T/H = PH 35 of the loop), 9.png FIFA1055 26.3 T/H with blower A alone running (B standby): without it the loop had no anchor and gave 14.9 T/H, under ABC-006 M.3114 L.L. 20 T/H, and DITL-28A started blower B (OPERATING_POINTS.md FIFA1055) */,
+  'FICFA1055A': { pv: null, sv: null, mv: 42.8, mode: 'A' } /* 2.1.0-beta.10: valve FCVFA1055A1 42.8 % A (9.png) */,
   'FICFA1055B': { pv: null, sv: null, mv: 24.9, mode: 'M' } /* 2.1.0-beta.10: valve FCVFA1055B1 24.9 % M (9.png) */,
   'HICBR1391': { pv: null, sv: null, mv: 0.0, mode: 'R' } /* 2.1.0-beta.10: valve MVBR1391 0.0 % R TQ (A) (03.png) */,
   'HICDO1012': { pv: null, sv: null, mv: 100.0, mode: 'M' } /* 2.1.0-beta.10: valve FCVDO1012 100.0 % M (6.PNG) */,
@@ -32093,7 +32098,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build e943c88'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build ec2a21a'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -65434,7 +65439,12 @@ const AN_HMI_OP = {
   TICHR1002A: { mv: 36.0, pv: 541.0, src: '39.PNG' },
   TICHR1002: { mv: 79.4, pv: 541.0, src: '39.PNG' },
   HICHR1002A: { mv: 11.0, pv: 11.0, src: '39.PNG' },
-  HICHR1002B: { mv: 89.0, pv: 89.0, src: '39.PNG' }
+  HICHR1002B: { mv: 89.0, pv: 89.0, src: '39.PNG' },
+  /* 3.2.0 (Rosé, FA blower B at 150 MW): the fluidizing air flow, 9.png FIFA1055 26.3 T/H with FCVFA1055A1 42.8 % (blower A alone,
+     B standby; OPERATING_POINTS.md). Its PV comes from ABC-006 (a remote PV, links.js procRemote): the 150 MW load found no snapshot
+     AI on it when it took the anchors (hmi-op.js caps: no hopReq), so the loop ran on its default line, 15 T/H at 42.8 %, under
+     the ABC-006 M.3114 low-low 20 T/H, and DITL-28A started blower B */
+  FICFA1055A: { mv: 42.8, pv: 26.3, src: '9.png' }
 };
 /* 2.2.0-beta.3: the output of the SQRT (flow compensation) whose inputs come from the transmitter ai (ABC-001C: main steam flow
    = SQRT of LN31(p) x LN32(T) x AI0129); -1 when the sheet has none */
@@ -70169,7 +70179,7 @@ const AN_HMI_CTL = {
   'FICFA1043B': { pv: null, sv: null, mv: 5.5, mode: 'M' } /* 2.1.0-beta.10: valve MCVFA1043B 5.5 % M (R shown, R-SV 26.0) (13.PNG) */,
   'FICFA1043C': { pv: null, sv: null, mv: 5.0, mode: 'M' } /* 2.1.0-beta.10: valve MCVFA1043C 5.0 % M (L shown, R-SV 26.0) (14.PNG) */,
   'FICFA1043D': { pv: null, sv: null, mv: 1.7, mode: 'M' } /* 2.1.0-beta.10: valve MCVFA1043D 1.7 % M (L shown, R-SV 26.0) (15.PNG) */,
-  'FICFA1055A': { pv: 26.3, sv: null, mv: 42.8, mode: 'A' } /* 2.1.0-beta.10: valve FCVFA1055A1 42.8 % A (9.png); 3.2.0 (Rose, FA blower B standby at 150 MW): its PV is the common FA flow FT-FA1055 (range 0 ~ 35 T/H = PH 35 of the loop), 9.png FIFA1055 26.3 T/H with blower A alone running (B standby): without it the loop had no anchor and gave 14.9 T/H, under ABC-006 M.3114 L.L. 20 T/H, and DITL-28A started blower B (OPERATING_POINTS.md FIFA1055) */,
+  'FICFA1055A': { pv: null, sv: null, mv: 42.8, mode: 'A' } /* 2.1.0-beta.10: valve FCVFA1055A1 42.8 % A (9.png) */,
   'FICFA1055B': { pv: null, sv: null, mv: 24.9, mode: 'M' } /* 2.1.0-beta.10: valve FCVFA1055B1 24.9 % M (9.png) */,
   'HICBR1391': { pv: null, sv: null, mv: 0.0, mode: 'R' } /* 2.1.0-beta.10: valve MVBR1391 0.0 % R TQ (A) (03.png) */,
   'HICDO1012': { pv: null, sv: null, mv: 100.0, mode: 'M' } /* 2.1.0-beta.10: valve FCVDO1012 100.0 % M (6.PNG) */,
@@ -85817,7 +85827,7 @@ window.LS_GUIDE = (function () {
                 } catch (e) {}
                 return '';
               }, () => fstate('cw1001')),
-              { loc: 1 }
+              { loc: 1, fp: 'F:cw1001' } /* the FIELDV pop-out of V-CW1001 on page 027 (hmi-cw.js, Rose) */
             ),
             Object.assign(btn('XV-MU1109 AUTO / MAN (DITL-78)', () => xvSel(!xvAuto()), () => xvAuto() || !air() || et() < 1.69), { dg: ['DITL-78', 2] })
           ],
@@ -89369,7 +89379,7 @@ window.LS_GUIDE = (function () {
         /* Mina #M15: a field action of the step with no faceplate (FIELD: OPEN V-CW1001, prime the closed cooling line) counts too, and
            it gets its own button here (it was only under "Show control": the NEXT card stood on "MWP-B is STANDBY (AUTO)" with no press) */
         const na = (s.a || []).find(x => (x.dg || x.fp || x.loc) && !call(() => x.hide && x.hide(), false) && !call(() => x.on && x.on(), false));
-        if (na && na.loc && !na.fp && !na.dg && typeof na.f === 'function') {
+        if (na && na.loc && !na.dg && !(na.fp && (window.LS_FPREG || {})[na.fp]) && typeof na.f === 'function') {
           bl = String(na.l).replace(/\s*\(.*$/, '');
           fn = () => {
             const r = call(() => na.f(), '');
@@ -89476,7 +89486,15 @@ window.LS_GUIDE = (function () {
       const pb = B ? pbOf(B.a, 1) : null;
       adr = pb ? pb.txt : (s.fps || []).length ? (s.fps || []).slice(0, 2).join(' · ') : '';
       const ctlBox = (els.stg || []).find(o => o.k === 'S');
-      if (ctlBox) {
+      /* Mina #M15 (cloud check of f1f433a): the next control is a field action (FIELD: OPEN V-CW1001): the NEXT card does it itself
+         (it only offered "Show control ▾", and the step stood still with the action folded away) */
+      if (B && (/^FIELD\b/.test(B.a.l) || B.a.loc)) {
+        bl = String(B.a.l).replace(/\s*\(.*$/, '');
+        fn = () => {
+          B.bt.click();
+          setTimeout(() => fill(true), 250);
+        };
+      } else if (ctlBox) {
         bl = 'Show control ▾';
         fn = () => {
           els.stOpen = { i: s.i, k: 'S' };
