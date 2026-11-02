@@ -173,6 +173,22 @@ function anPull(sh) {
     }
   } catch (e) {}
 }
+/* RESET as the operator presses it, one body for the page (data/loader.js reset) and the Web Worker (tools/build/engine-bundle.js
+   AN.reset; Giselle's review of a2357e8: the Worker Reset had only anResetAll): the saved values of the operator go (forced signals,
+   values, switches; the block settings stay), the model back to the drawing, and the DITL too (retest #68: a motor started by hand
+   in the run before is stopped, not only the 150 MW state). The page keeps its own part: anSave, the panel, the message */
+function anResetRun() {
+  const keep = {};
+  for (const k in AN.sv) {
+    const q = AN.sv[k];
+    if (q && q.p && Object.keys(q.p).length) keep[k] = { pv: q.pv, p: q.p };
+  }
+  AN.sv = keep;
+  anResetAll();
+  try {
+    if (globalThis.DITL150) globalThis.DITL150.clear();
+  } catch (e) {}
+}
 /* RESET of the model: every sheet back to the drawing (tuning kept in AN.sv), then all sheets are settled: the same start as a fresh load, whatever the sheet order */
 function anResetAll() {
   anUnitStop(); /* 2.2.0-beta.9: Reset = cold boiler, the unit model stops (2.2.0-beta.11: and its load disturbance of the spray loops) */

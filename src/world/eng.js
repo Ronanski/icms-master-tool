@@ -73,7 +73,17 @@
             const id = ++nid;
             E.heavy = (E.heavy || 0) + 1;
             post({ t: 'op', ops: [], calls: [[h + '.' + k, G.AN.sync.encArgs ? G.AN.sync.encArgs(a) : a]], id });
-            return new Promise(ok => waits.set(id, ok));
+            /* the page part of the action (f.after, e.g. loader.js reset: anSave, the panel, the message), once the engine state is in */
+            const after = f.after;
+            return new Promise(ok =>
+              waits.set(id, r => {
+                if (after)
+                  try {
+                    after(r);
+                  } catch (x) {}
+                ok(r);
+              })
+            );
           }
           inCall++;
           let r;

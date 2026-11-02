@@ -442,25 +442,23 @@ function applySaved(sh) {
 }
 AN.applySaved = applySaved; /* ensure() (engine) asks the page for the saved values of a sheet through this hook */
 function reset() {
-  /* RESET = everything back to the drawing: all sheets, all forced signals, switches, sliders, timers, tuning */
-  {
-    const keep = {};
-    for (const k in AN.sv) {
-      const q = AN.sv[k];
-      if (q && q.p && Object.keys(q.p).length) keep[k] = { pv: q.pv, p: q.p };
-    }
-    AN.sv = keep;
-    anSave();
-  }
-  anResetAll(); /* the model part of the reset is in the engine (engine/sheets.js) */
-  /* 2.2.0-beta.3: Reset = cold start, the DITL 150 MW state too (src/world/ditl150.js) */
-  try {
-    /* retest #68: always (a motor started by hand in the run before is stopped too, not only the 150 MW state) */
-    if (window.DITL150) DITL150.clear();
-  } catch (e) {}
+  /* RESET = everything back to the drawing: all sheets, all forced signals, switches, sliders, timers, tuning; the DITL too
+     (2.2.0-beta.3, retest #68). The model part is in the engine (engine/sheets.js anResetRun), the same as the Worker runs */
+  anResetRun();
+  anSave();
   const sh = cs();
   if (!sh || !sh.S) return;
   for (let i = 0; i < 6; i++) stepSet(sh, 0);
+  resetShown();
+}
+/* 3.2.0 Web Worker: the Reset ran in the engine (src/world/eng.js: a long action); after its answer, with the engine state put in
+   here, the page part: the saved values kept on this device, the panel and the message */
+reset.after = () => {
+  anSave();
+  const sh = cs();
+  if (sh && sh.S) resetShown();
+};
+function resetShown() {
   AN.sel = null;
   selBox();
   buildPanel();
