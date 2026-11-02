@@ -809,7 +809,7 @@ function anDitlPos(name, j) {
 }
 /* 3.2.0-beta.59 (#116, user 2026-10-29 "DAPAT S PLANT MODEL GALING"): the run state of a DITL motor drawing (1 RUN, 0 STOP / TRIP), or
    of one output row of a drawing of two machines ("DITL-39@3" = DEBRIS FILTER S-1502 IN OPERATION); null while the one world is not
-   built. The same reading as the lamps of the Training dock and the HMI (events.js lsAlarms.motState, dock.js mst) */
+   built. The same reading as the lamps of the Training dock and the HMI (DUI.motState of src/digital/parts/03c-read.js, dock.js mst) */
 function anDitlRun(addr) {
   try {
     if (typeof S === 'undefined' || !S.sheets || !window.WORLD || !WORLD.on || !WORLD.idx || !window.DUI) return null;
@@ -826,7 +826,7 @@ function anDitlRun(addr) {
       const v = DUI.outVal(s, +m[2]);
       return v == null ? null : v === 1 ? 1 : 0;
     }
-    const st = window.lsAlarms ? lsAlarms.motState(s) : null;
+    const st = DUI.motState ? DUI.motState(s) : null;
     return st == null ? null : st === 'RUN' ? 1 : 0;
   } catch (e) {
     return null;

@@ -37,6 +37,18 @@ function anEngAPI() {
     tsat: steamTsat,
     fieldState: () => Object.assign({}, AN_SRC.field),
     engState: { capture: anStateCapture, apply: anStateApply },
+    /* engine/ds.js: the FROM / TO DITL texts of a sheet, the description of an address (the face plate defaults first) */
+    dsIdx,
+    descOf: (sh, t) => {
+      try {
+        const F = typeof AN_DEF !== 'undefined' && AN_DEF.FACE;
+        if (F && t) for (const k of ['PID', 'MAN', 'SUMA']) for (const q of F[k] || []) if (q.tag === t && q.desc) return q.desc;
+        const a = adesFind(sh, t);
+        return a ? adesText(a.rec) : '';
+      } catch (e) {
+        return '';
+      }
+    },
     /* engine/ctrls.js: the controllers of a sheet and the mode addresses of a tag */
     hmiCtrls: ctrls,
     modeNets: (tag, kinds) => modeNetsByTag(tag, kinds || MODEK.MAN),

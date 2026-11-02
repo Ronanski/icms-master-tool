@@ -345,36 +345,11 @@ addEventListener('keydown', e => {
 });
 $('bmode').onclick = () => {
   SIM = !SIM;
-  DREG = {};
-  MST = {};
-  MS = {};
   sel = null;
   WT = false;
   PEND = null;
   closeEd();
-  S.sheets.forEach(x => {
-    /* 3.2.0 retest #28 #16 (beta.45 check: the field action "SWP-A REMOTE" done while the Training was PAUSED was lost at the first
-       RUN, START SWP-A stayed blocked): entering RUN keeps the inputs set before it (the field contacts of the Training); leaving RUN
-       (VIEW, and the Reset button = leave + enter) clears them as before */
-    if (!SIM) x.sig = {};
-    x.usw = {};
-    x._fd = null;
-    if (x.nl) {
-      x.nl._v = null;
-      x.nl.fx = [];
-      x.nl.ufx = [];
-    }
-    ((x.nl && x.nl.gates) || []).forEach(g => {
-      if (g.t === 'FF') g.q = 0;
-      if (g.t === 'CNT') g.N = g.pin = g.rp = 0;
-      if (g.t === 'TMR') g.st = { acc: 0, out: 0, pre: 0, run: 0 };
-    });
-  });
-  tick.t = 0;
-  /* 2.2.0-beta.3: after "Start at 150 MW" the DITL starts again in the 150 MW state (src/world/ditl150.js) */
-  try {
-    if (SIM && window.DITL150 && DITL150.on) DITL150.apply();
-  } catch (e) {}
+  ditlStates();
   if (SIM && cur())
     msg(
       'Simulate: click an input (switch icon on the drawing, or in the panel) to turn it ON / OFF. PB rows are push buttons: press and hold.'
@@ -450,32 +425,7 @@ $('fjson').onchange = async e => {
 };
 let LSF = false,
   FAILS = [];
-const isAn = (s, i) =>
-  !!(
-    s.nl &&
-    s.nl.anRows &&
-    s.nl.anRows.has(i)
-  ); /* v26: row that feeds only limit comparators = analog input (numeric value, not a switch) */
-const anVal = (s, a) => {
-  const v = avOf(s);
-  return v && v[a.key] !== undefined ? v[a.key] : a.def;
-};
-const anValN = (s, n) => {
-  const a = (s.nl.an || []).find(x => x.net === n);
-  return a ? anVal(s, a) : 0;
-};
-const cmpOn = (s, g) => {
-  const v = anValN(s, g.ins[0]),
-    sp = g.spNet !== undefined ? anValN(s, g.spNet) : g.sp;
-  return g.cmp === '>' ? (g.eq ? v >= sp : v > sp) : g.eq ? v <= sp : v < sp;
-};
-const cmpTxt = g =>
-  (g.cmp === '>' ? 'High ' : 'Low ') +
-  g.cmp +
-  (g.eq ? '=' : '') +
-  ' ' +
-  (g.spNet !== undefined ? g.spVar : g.sp) +
-  (g.unit || '');
+/* isAn, anVal, anValN, cmpOn, cmpTxt: parts/03b-sim.js */
 function anAsk(s, a) {
   const g = a.g.map(i => s.nl.gates[i]),
     v = prompt(
@@ -509,10 +459,7 @@ const isPB = (s, i) =>
     (s.cells[i + ':' + c] || []).some(t => /(^|[^A-Z])P\.?\s?B\.?($|[^A-Z])|PUSH\s*-?\s*BUTTON/i.test(t.t))
   );
 let PBD = null;
-const lockd = (s, i) =>
-  mvForced(s).has(i) ||
-  (s.nl.mir || []).some(m => m.row === i) ||
-  grpState(s).has(i); /* v10: the input of a row = its SERVICE cell, only rows that a wire reaches */
+/* lockd: parts/03b-sim.js */
 function diag(s) {
   /* 1.22.0: the netlist of a sheet is built when the sheet is first opened (render); Health reads every sheet, so build it here too
      (before: "Cannot read properties of undefined (reading 'src')" and the Health panel did not open) */

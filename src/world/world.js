@@ -849,8 +849,17 @@
       AS.xlk = AS.xlk || {};
       if (!AS.xlk[a.n]) AS.xlk[a.n] = { from: fakeFrom(a.d), fromNets: [], tag: 'DITL ' + a.ref, ditl: true };
     }
-    /* 4. the DITL page shows the new values (P2, user 2026-11-01: only while the Logic page is on the screen; it is drawn again when
-       it opens) */
+    /* 4. the DITL page shows the new values (none in the engine alone, 3.2.0 Web Worker: no page) */
+    if (typeof document !== 'undefined') paintD(c, chCur);
+    /* 3.2.0-beta.23: after each scan (the Training dock releases its push buttons after two scans) */
+    if (W.onTick)
+      try {
+        W.onTick(dt);
+      } catch (e) {}
+    W.ms = W.ms * 0.8 + (performance.now() - t0) * 0.2;
+  }
+  /* the DITL page after a scan (P2, user 2026-11-01: only while the Logic page is on the screen; it is drawn again when it opens) */
+  function paintD(c, chCur) {
     const dShown = !(document.body.dataset.tab && document.body.dataset.tab !== 'logic') && !document.body.classList.contains('plant');
     if (AN.cat !== 'an' && c && !dShown) W._dStale = 1;
     if (AN.cat !== 'an' && c && dShown) {
@@ -862,12 +871,6 @@
           mvUI(c);
         } catch (e) {}
     }
-    /* 3.2.0-beta.23: after each scan (the Training dock releases its push buttons after two scans) */
-    if (W.onTick)
-      try {
-        W.onTick(dt);
-      } catch (e) {}
-    W.ms = W.ms * 0.8 + (performance.now() - t0) * 0.2;
   }
   /* 3.2.0-beta.6 FIRST-OUT across sheets: an input row that is 1 because of another sheet is followed to that sheet's output
      (FROM column, the same map the one world uses) and its cause, up to 4 sheets deep: "IDF STOPPED" on DITL-03A -> the row
@@ -1043,9 +1046,10 @@
     };
     return job();
   };
-  /* the world is built once both pages are there (the ABC sheets are linked again when they load, the interval above) */
+  /* the world is built once both pages are there (the ABC sheets are linked again when they load, the interval above); the engine
+     alone (3.2.0 Web Worker, no page) builds it when its host says so */
   let n = 0;
-  const iv = setInterval(() => {
+  const iv = typeof document !== 'undefined' && setInterval(() => {
     const a = document.querySelector('#anbar .tbg-run'),
       d = document.querySelector('#bar .tbg-run');
     if ((a && d) || ++n > 60) {
