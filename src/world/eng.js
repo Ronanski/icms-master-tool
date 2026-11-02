@@ -75,15 +75,25 @@
             post({ t: 'op', ops: [], calls: [[h + '.' + k, G.AN.sync.encArgs ? G.AN.sync.encArgs(a) : a]], id });
             /* the page part of the action (f.after, e.g. loader.js reset: anSave, the panel, the message), once the engine state is in */
             const after = f.after;
-            return new Promise(ok =>
-              waits.set(id, r => {
+            const self = this;
+            return new Promise(ok => {
+              const w = r => {
                 if (after)
                   try {
                     after(r);
                   } catch (x) {}
                 ok(r);
-              })
-            );
+              };
+              /* the worker stopped before its answer (E.stop): the page runs the action itself, with its own page part */
+              w.local = () => {
+                let r;
+                try {
+                  r = f.apply(self, a);
+                } catch (x) {}
+                Promise.resolve(r).then(ok, () => ok(null));
+              };
+              waits.set(id, w);
+            });
           }
           inCall++;
           let r;
@@ -247,5 +257,10 @@
   E.stop = () => {
     E.mode = 'local';
     E.port = null;
+    /* a long action still waiting for the worker (Reset, a starting state) would never answer: it runs here now (the page is the engine) */
+    const left = [...waits.values()];
+    waits.clear();
+    E.heavy = 0;
+    for (const w of left) if (w.local) w.local();
   };
 })(typeof window !== 'undefined' ? window : globalThis);
