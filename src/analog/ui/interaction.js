@@ -336,6 +336,15 @@ sSpd.onchange = () => {
    starts the plant cold (trace.js coldIfNone), so after a Reset MSP is 0 again, not the loop model's middle of the range */
 bRst.onclick = () => {
   AN.startState = null;
+  /* 3.2.0 Web Worker check (Winter, reset_worker.js): Reset also STOPS the run, as on a fresh page. Before, RUN went on with no
+     starting state: the ABC and the DITL scanned the cold plant again at once and wrote back field contacts, motor memories and the
+     speed tier, so a Reset after a run never gave the start of a fresh page. The operator picks Cold / 150 MW, then presses Run. The
+     run flags go to the engine with the flush before the call (src/world/eng.js) */
+  AN.run = false;
+  AN.tierK = undefined;
+  AN._cold0 = undefined;
+  bRun.textContent = '▶ Run';
+  bRun.classList.remove('on');
   /* 3.2.0 Web Worker: the Reset runs in the engine and answers later (a promise): the rest waits for it */
   const r = AN.reset();
   /* 3.2.0-beta.18: and the plant is COLD at once (VIEW shows boiler off, not the drawings' defaults MSP 75) */
