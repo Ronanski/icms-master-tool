@@ -27,7 +27,7 @@ function bundle(o) {
     /* the descriptions (engine/ds.js ADES): the host puts them in (the page: data/loader.js adesLoad from its #ades data) */
     'AN.ades=()=>Promise.resolve(ADES||{});AN.adesPut=d=>{ADES=d};\n' +
     'const anCur=()=>AN.sheets[AN.i]||AN.sheets.find(x=>/057/.test(x.name));\n' +
-    'AN.reset=()=>{anResetAll();const c=anCur();if(c&&c.S)for(let i=0;i<6;i++)stepSet(c,0)};\n' +
+    'AN.reset=()=>{anResetRun();const c=anCur();if(c&&c.S)for(let i=0;i<6;i++)stepSet(c,0)};\n' +
     'AN.settle=()=>{const c=anCur();if(c&&c.S)for(let i=0;i<6;i++)stepSet(c,0)};\n' +
     'AN.plantSwitch=on=>{AN.plantOn=!!on;for(const sh of AN.sheets){if(!sh.S)continue;for(const b of sh.S.procs||[])if(b.proc)b.proc.on=!!on;if(!on){sh.S.rt.pm={};sh.S.plantT=null;sh.S._rem=0}}};\n' +
     'globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad150,anPlantCold}};\n';

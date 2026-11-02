@@ -336,14 +336,18 @@ sSpd.onchange = () => {
    starts the plant cold (trace.js coldIfNone), so after a Reset MSP is 0 again, not the loop model's middle of the range */
 bRst.onclick = () => {
   AN.startState = null;
-  AN.reset();
+  /* 3.2.0 Web Worker: the Reset runs in the engine and answers later (a promise): the rest waits for it */
+  const r = AN.reset();
   /* 3.2.0-beta.18: and the plant is COLD at once (VIEW shows boiler off, not the drawings' defaults MSP 75) */
   /* retest #57: then the operator picks the starting state (no Cold by itself) */
-  coldIfNone(() => {
-    AN.settle();
-    paint();
-    panelUpd(true);
-  });
+  const then = () =>
+    coldIfNone(() => {
+      AN.settle();
+      paint();
+      panelUpd(true);
+    });
+  if (r && typeof r.then === 'function') r.then(then);
+  else then();
 };
 bFit.onclick = fitView;
 bVal.onclick = () => {
