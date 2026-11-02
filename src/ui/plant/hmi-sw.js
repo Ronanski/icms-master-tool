@@ -790,8 +790,8 @@
 <linearGradient id="swcc" x1="0" x2="1"><stop offset="0" stop-color="${S.conc[0]}"/><stop offset=".45" stop-color="${S.conc[1]}"/><stop offset="1" stop-color="${S.conc[2]}"/></linearGradient>
 <linearGradient id="swwt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${S.water[0]}"/><stop offset="1" stop-color="${S.water[1]}"/></linearGradient>
 <pattern id="swpl" width="6" height="10" patternUnits="userSpaceOnUse"><rect width="6" height="10" fill="#3a434c"/><rect x="2" width="2" height="10" fill="#7f8a94"/></pattern></defs>`;
-    const UF = "font-family:var(--uf,'IBM Plex Sans',sans-serif)",
-      MF = "font-family:var(--mf,'JetBrains Mono',monospace)";
+    const UF = "font-family:var(--uf,Roboto,sans-serif)",
+      MF = "font-family:var(--mf,'Roboto Mono',monospace)";
     const css = `<style>.sw7{font-size:8.5px;fill:${S.nm};${UF}}.sw8{font-size:8.5px;fill:${S.dim};${UF}}.sw9{font-size:9.5px;fill:${S.dim};${UF}}.sw9b{font-size:9.5px;font-weight:600;fill:${S.none};${UF}}.sw11{font-size:11px;font-weight:600;fill:${S.nm};${UF}}
 .swv{font-size:12px;fill:${S.none};${MF}}
 .swfl{fill:none;stroke-dasharray:2 14;stroke-linecap:round;animation:swfl 1.4s linear infinite}.swflr{animation-direction:reverse}@keyframes swfl{to{stroke-dashoffset:-32}}

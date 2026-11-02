@@ -60,8 +60,8 @@
       off: ['#33414e', null]
     }
   };
-  const UF = "font-family:var(--uf,'IBM Plex Sans',sans-serif)",
-    MF = "font-family:var(--mf,'JetBrains Mono',monospace)";
+  const UF = "font-family:var(--uf,Roboto,sans-serif)",
+    MF = "font-family:var(--mf,'Roboto Mono',monospace)";
   const T = (x, y, s, c, a) => `<text x="${x}" y="${y}" class="${c}"${a ? ' ' + a : ''}>${s}</text>`;
   const OL = `stroke="${C.edge}" stroke-width="1.4"`;
 

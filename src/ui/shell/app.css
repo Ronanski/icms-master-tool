@@ -12,11 +12,11 @@
 :root{color-scheme:only light}
 html:is([data-theme=dark],[data-theme=hc]){color-scheme:only dark}
 :root{
- /* UI overhaul 2026-11-02 (user G): design tokens. The user's pick from the Design Picker drops in here.
-    Default until the pick = Yuna's recommendation: IBM Plex Sans + JetBrains Mono + Pill buttons. */
- --uf:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;   /* words */
- --mf:'JetBrains Mono',ui-monospace,Consolas,monospace;                 /* numbers, tags, addresses */
- --btn-r:999px;            /* button shape: 999px = pill */
+ /* UI overhaul 2026-11-02 (user G): design tokens. The user has NOT picked a style yet (all options rejected), so the
+    tokens keep today's look (Roboto + Roboto Mono, small corner); the user's pick only changes these lines. */
+ --uf:'Roboto',system-ui,-apple-system,'Segoe UI',sans-serif;   /* words */
+ --mf:'Roboto Mono',ui-monospace,Consolas,monospace;          /* numbers, tags, addresses */
+ --btn-r:.4375rem;         /* button shape (today: small corner) */
  /* sizes: the root follows the window, everything else is in rem */
  --ctl:2.25rem;            /* control height */
  --ctl-s:2.5rem;           /* small control (overhaul: 40 px on PC, was 30) */
@@ -72,7 +72,7 @@ body.app2 :focus-visible{outline:2px solid var(--c-acc);outline-offset:1px}
 
 /* ---------- 3. one set of controls (every surface except the DCS faceplate box and the drawing) ---------- */
 body.app2 :is(button,label.b,select):not(.fp *):not(.fpop *):not(#zbar *):not(svg *):where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){
- font:600 .9375rem/1 var(--uf);min-height:var(--ctl-s);padding:0 1rem;border-radius:var(--btn-r);border:1px solid var(--c-line2);
+ font:500 .9375rem/1 var(--uf);min-height:var(--ctl-s);padding:0 1rem;border-radius:var(--btn-r);border:1px solid var(--c-line2);
  background:var(--c-ctl);color:var(--c-tx);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:.375rem;
  white-space:nowrap;box-shadow:0 1px 0 var(--c-shadow2);transition:background-color .12s,border-color .12s,color .12s;margin:0}
 body.app2 select:not(.fp *):where(:not(#gdock,#gdock *,#gdtab,#gdtab *)){padding-right:1.75rem;appearance:none;-webkit-appearance:none;

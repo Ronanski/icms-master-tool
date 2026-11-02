@@ -18,8 +18,8 @@ if (i >= 0) {
 const FD = __dirname + '/../fonts/',
   FACES = [
     /* UI overhaul 2026-11-02: two families only (was 8); the tokens --uf / --mf in app.css name them */
-    ['IBM Plex Sans', 'ibm-plex-sans', [400, 600]],
-    ['JetBrains Mono', 'jetbrains-mono', [400, 600]]
+    ['Roboto', 'roboto', [400, 500]],
+    ['Roboto Mono', 'roboto-mono', [400, 600]]
   ],
   fontCss = FACES.map(([fam, f, ws]) =>
     ws

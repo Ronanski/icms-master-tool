@@ -542,8 +542,8 @@
     const defs = `<defs><linearGradient id="cwmt" x1="0" x2="1"><stop offset="0" stop-color="${S.m[0]}"/><stop offset=".45" stop-color="${S.m[1]}"/><stop offset="1" stop-color="${S.m[2]}"/></linearGradient>
 <linearGradient id="cwmv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${S.m[2]}"/><stop offset=".4" stop-color="${S.m[1]}"/><stop offset="1" stop-color="${S.m[0]}"/></linearGradient>
 <linearGradient id="cwwc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f8f86"/><stop offset="1" stop-color="#1d4a45"/></linearGradient></defs>`;
-    const UF = "font-family:var(--uf,'IBM Plex Sans',sans-serif)",
-      MF = "font-family:var(--mf,'JetBrains Mono',monospace)";
+    const UF = "font-family:var(--uf,Roboto,sans-serif)",
+      MF = "font-family:var(--mf,'Roboto Mono',monospace)";
     const css = `<style>.cw7{font-size:8.5px;fill:${S.nm};${UF}}.cw8{font-size:8.5px;fill:${S.dim};${UF}}.cw9{font-size:9.5px;fill:${S.dim};${UF}}.cw9b{font-size:9.5px;font-weight:600;fill:${S.none};${UF}}.cw11{font-size:11px;font-weight:600;fill:${S.nm};${UF}}
 .cwv{font-size:12px;fill:${S.none};${MF}}
 .cwfl{fill:none;stroke-dasharray:2 14;stroke-linecap:round;animation:cwfl 1.4s linear infinite}@keyframes cwfl{to{stroke-dashoffset:-32}}
