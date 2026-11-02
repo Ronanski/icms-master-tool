@@ -1,7 +1,7 @@
 // The engine in a real Web Worker (3.2.0, stage d: src/world/eng-page.js + eng-host.js + eng.js), in the page from file:// with
 // ?worker=1. The worker starts from the page (keyframe), the page is the mirror. Checks: the worker starts (no error bar); RUN: the
 // plant time moves on the page (the engine runs, the patches arrive); the operator on the page (HP bypass PICMS1006 to MAN, MV 20 %,
-// AUTO again, a DITL push button) reaches the engine; after a pause the whole state of the worker (ABC + DITL keyframe) = the page
+// AUTO again, a DITL push button) reaches the engine; the speed 6x gives 6 s of plant a second; after a pause the whole state of the worker (ABC + DITL keyframe) = the page
 // mirror. Usage: node tests/regress/eng_worker.js [html]
 const { open } = require('./lib.js');
 const fs = require('fs'), url = require('url'), path = require('path');
@@ -27,6 +27,14 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
   await page.waitForTimeout(5000);
   const t1 = await page.evaluate(() => AN.sheets.find(s => s.name === 'ABC-001C').S.rt.t);
   ck(t1 > ta + 3, 'RUN: the plant time moves on the page from the worker: ' + ta.toFixed(1) + ' -> ' + t1.toFixed(1) + ' s in 5 s (first patch ' + tw.toFixed(1) + ' s after Start at 150 MW)');
+  /* the same time at 6x: 5 s of the clock = about 30 s of plant (the scan groups of the worker are those of the page) */
+  const u0 = await page.evaluate(() => ((AN.spd = 6), AN.sheets.find(s => s.name === 'ABC-001C').S.rt.t));
+  const c0 = Date.now();
+  await page.waitForTimeout(5000);
+  const u1 = await page.evaluate(() => AN.sheets.find(s => s.name === 'ABC-001C').S.rt.t);
+  const r6 = (u1 - u0) / ((Date.now() - c0) / 1000);
+  await page.evaluate(() => (AN.spd = 1));
+  ck(r6 > 6 * 0.8 && r6 < 6 * 1.2, '6x: ' + r6.toFixed(2) + ' s of plant per s of clock (6 +- 20 %; the plant time on the page, from the worker)');
   /* the operator on the page */
   await page.evaluate(() => {
     AN.latchMode('PICMS1006', 'MAN');
