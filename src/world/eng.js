@@ -86,8 +86,9 @@
         } finally {
           inCall--;
         }
-        /* the engine took it: what it changed goes back with the next patch */
       }
+      /* after an action the next patch carries everything: the page is the engine again, whatever its run of the action gave */
+      if ((m.calls || []).length && E.mode === 'engine' && G.AN.sync.forget) G.AN.sync.forget();
     } else if (m.t === 'patch') {
       /* the operator wins: a write not sent yet goes first */
       const mine = E.flush();

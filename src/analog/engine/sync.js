@@ -56,20 +56,27 @@ function anSyncSlots() {
     for (const f of ['v', 'stp', 'acc']) add('a' + i + f, () => S.rt[f], null, { ta: f });
     /* the inputs and the forces: the operator writes them (faceplate, FORCE, the Training) */
     add('x' + i, () => ({ ext: S.rt.ext, force: S.rt.force }), d => (anSyncPut(S.rt, 'ext', d.ext), anSyncPut(S.rt, 'force', d.force)), { w: 1 });
+    /* the rest of the run time and of the sheet: only the keys it has (a key that is not there is not "undefined" on the other side) */
+    const RT = ['t', 'k', 'ramp', 'pm', 'pf', 'ev'],
+      SK = ['look', 'xlk', 'plantT', '_rem'];
     add(
       'r' + i,
       () => {
-        const mn = [];
+        const mn = [],
+          r = { rt: {}, s: {}, mn };
         S.blk.forEach((b, j) => b._mn !== undefined && mn.push([j, b._mn]));
-        return { t: S.rt.t, k: S.rt.k, ramp: S.rt.ramp, pm: S.rt.pm, pf: S.rt.pf, ev: S.rt.ev, look: S.look, xlk: S.xlk, plantT: S.plantT, _rem: S._rem, mn };
+        for (const f of RT) if (f in S.rt) r.rt[f] = S.rt[f];
+        for (const f of SK) if (f in S) r.s[f] = S[f];
+        return r;
       },
       d => {
-        for (const f of ['t', 'k', 'ramp']) S.rt[f] = d[f];
-        for (const f of ['pm', 'pf', 'ev']) anSyncPut(S.rt, f, d[f]);
-        S.look = d.look;
-        S.xlk = d.xlk;
-        S.plantT = d.plantT;
-        S._rem = d._rem;
+        for (const f of RT)
+          if (!(f in d.rt)) delete S.rt[f];
+          else if (f === 'pm' || f === 'pf' || f === 'ev') anSyncPut(S.rt, f, d.rt[f]);
+          else S.rt[f] = d.rt[f];
+        for (const f of SK)
+          if (f in d.s) S[f] = d.s[f];
+          else delete S[f];
         for (const [j, m] of d.mn) S.blk[j]._mn = m;
       }
     );
@@ -110,6 +117,8 @@ function anSyncSlots() {
     },
     { w: 1 }
   );
+  /* the saved settings of the ABC (the PID / MAN parameters, the LINEAR edits: Reset puts them in) */
+  add('sv', () => ({ sv: AN.sv || {}, lne: AN.lne || {} }), d => ((AN.sv = d.sv), (AN.lne = d.lne)), { w: 1, raw: 1 });
   /* the one-address groups (links.js shareExt) */
   add('xs', anXsGet, anXsPut, { raw: 1 });
   /* the DITL world (src/digital/parts/03d-state.js keys), by sheet name */
@@ -254,4 +263,10 @@ function anSyncMark() {
   anSyncPatch();
   const Y = anSyncState();
   for (const s of Y.L) if (s.fast) Y.fast.set(s.k, s.fast());
+}
+/* the engine after an action: the next patch carries every slot (the page ran the same action; whatever came out different there is
+   put right; the action is rare, the full patch is a few hundred kB) */
+function anSyncForget() {
+  const Y = anSyncState();
+  Y.last.clear();
 }
