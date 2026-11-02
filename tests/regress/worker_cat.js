@@ -22,9 +22,11 @@ const ck = (ok, w) => { console.log((ok ? 'PASS ' : 'FAIL ') + w); if (!ok) fail
       const k = await ENG.peek();
       return { cat: k.kf && JSON.stringify(k.kf).match(/"cat":"(\w+)"/), n: k.n };
     });
+  /* RUN as the operator presses it (the page opens in VIEW: trace.js AN.view = true; a plain AN.run = true left VIEW on, so the switch
+     to the DITL page saw no run: setCat runWas = AN.run && !AN.view) */
   await page.evaluate(() => {
     AN.startState = AN.startState || 'test';
-    AN.run = true;
+    AN.runOn();
   });
   await page.waitForTimeout(2000);
   const a0 = await eng();
