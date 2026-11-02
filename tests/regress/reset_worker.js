@@ -24,6 +24,10 @@ const resetAndRead = async (page, worker) => {
     const f = x => (x == null || !isFinite(x) ? String(x) : +(+x).toPrecision(12));
     const srt = v => (v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map(k => [k, v[k]])) : v);
     const js = o => JSON.stringify(o, (k, v) => (typeof v === 'number' ? f(v) : srt(v)));
+    /* the ABC keyframe with the encoder's object numbers ($id / $ref, src/analog/engine/state.js anStateEnc) set to 0: the number is the
+       order the encoder met the objects in, not plant state; where an object is shared ($ref) or a copy stays visible (Winter's diag_abc4,
+       2026-11-02: all four comparisons equal once numbered alike) */
+    const jsK = o => JSON.stringify(o, (k, v) => (k === '$id' || k === '$ref' ? 0 : typeof v === 'number' ? f(v) : srt(v)));
     const sig = [];
     for (const s of S.sheets.concat((window.WORLD && WORLD.inst) || [])) for (const k in s.sig || {}) if (s.sig[k]) sig.push(s.name + ' ' + k);
     /* the worker stopped (ENG.fail: worker null, the red bar): no peek, the reason is read */
@@ -31,8 +35,8 @@ const resetAndRead = async (page, worker) => {
     return {
       on: !!DITL150.on, sig, sel: AN.sel == null, toast: (document.getElementById('toast') || {}).textContent || '',
       sv: js(AN.sv), ls: (() => { try { return js(JSON.parse(localStorage.getItem('ditl.an'))); } catch (e) { return 'unreadable'; } })(), probe: Object.keys(AN.sv).filter(k => /^__winter/.test(k)),
-      abc: js(AN.engState.capture()), ditl: js(ditlCapture()),
-      wabc: w ? js(w.kf) : null, wditl: w ? js(w.kd) : null, mode: window.ENG ? ENG.mode : '-', bar: !!document.getElementById('engerr'), err: window.ENG && ENG.err ? JSON.stringify(ENG.err).slice(0, 400) : ''
+      abc: jsK(AN.engState.capture()), ditl: js(ditlCapture()),
+      wabc: w ? jsK(w.kf) : null, wditl: w ? js(w.kd) : null, mode: window.ENG ? ENG.mode : '-', bar: !!document.getElementById('engerr'), err: window.ENG && ENG.err ? JSON.stringify(ENG.err).slice(0, 400) : ''
     };
   }, worker);
 };
