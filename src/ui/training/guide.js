@@ -204,8 +204,9 @@ window.LS_GUIDE = (function () {
   };
   /* a motor that the old (no one world) way starts with an extra forced memory (feeder C + M.3405 ALL IN REMOTE AND RUNNING) */
   const WLm = (a, l, fOff) => Object.assign(mot(a, l), { f: () => (WL() ? A.motor(a, 1) : fOff()) });
-  /* a push button / an output of a DITL drawing (one world ON, src/ui/training/dock.js) */
-  const dPress = (nm, row) => !!(window.LS_DOCK && LS_DOCK.dpress && LS_DOCK.dpress(nm, row));
+  /* a push button / an output of a DITL drawing (one world ON): the press is an engine action (src/world/dock-eng.js), the output is read
+     from the dock (src/ui/training/dock.js) */
+  const dPress = (nm, row) => !!(window.WORLD && WORLD.dpress && WORLD.dpress(nm, row));
   const dOut = (nm, row) => (window.LS_DOCK && LS_DOCK.dout ? LS_DOCK.dout(nm, row) : null);
   const dRun = nm => (window.LS_DOCK && LS_DOCK.runOut ? LS_DOCK.runOut(nm) : null);
   /* 3.2.0-beta.23: a condition read on the DITL while the one world runs (w), else the ABC / plant condition (o) */
@@ -1123,8 +1124,29 @@ window.LS_GUIDE = (function () {
         delete PUSH[a];
       }
   };
-  const hook = () => window.AN && (AN.onStep = onStep);
+  /* inside every step of the engine when it runs on this page (ENG.mode 'local'); with the engine in the worker (3.2.0 Web Worker) the
+     steps run there: the coach runs here after each patch, with the plant time that passed (it reads the dock and the page; its writes go
+     to the engine through the radio, src/world/eng.js) */
+  const mirror = () => !!(window.ENG && ENG.mode === 'mirror');
+  const hook = () => window.AN && (AN.onStep = dt => (mirror() ? 0 : onStep(dt)));
   hook();
+  {
+    let t0 = null;
+    const onPatch = window.ENG ? ENG.onPatch : null;
+    if (window.ENG)
+      ENG.onPatch = m => {
+        if (onPatch) onPatch(m);
+        if (!mirror()) return (t0 = null);
+        const t = simT();
+        /* a new start (Reset, a starting state) or the first patch: no time passed */
+        const dt = t0 == null || t < t0 ? 0 : t - t0;
+        t0 = t;
+        if (dt > 0)
+          try {
+            onStep(dt);
+          } catch (e) {}
+      };
+  }
   /* check the open step; returns true when it moved on */
   function scan() {
     if (!G.on) return false;
