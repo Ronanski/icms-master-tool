@@ -1,6 +1,6 @@
-// FA blower B stays on standby at 150 MW (Rosé, 2026-11-02): 9.png has blower A running (F-1055A 37.3 A), blower B standby, the common FA
-// flow FIFA1055 26.3 T/H (FT-FA1055, 0 ~ 35 T/H; OPERATING_POINTS.md). The FICFA1055A loop had no PV anchor (hmi-op.js AN_HMI_OP pv null)
-// and gave 14.9 T/H, under the low-low 20 T/H of ABC-006 M.3114, so DITL-28A started blower B by its standby AUTO start.
+// FA blower B stays on standby at 150 MW (Rosé, 2026-11-02; the cause is still open): 9.png has blower A running (F-1055A 37.3 A), blower B standby, the common FA
+// flow FIFA1055 26.3 T/H (FT-FA1055, 0 ~ 35 T/H; OPERATING_POINTS.md). In RUN the model gave about 15 T/H
+// (cloud on fd62fed: lowest 14.7), under the low-low 20 T/H of ABC-006 M.3114, so DITL-28A started blower B by its standby AUTO start.
 // Checks (local): Start at 150 MW, the DITL in service, 30 s of plant: FIFA1055 within 26.3 ± 3 T/H, over 20 T/H all the time, FA blower B
 // not running (ABC-014 M.3309 = 0), blower A running (M.3308 = 1). Usage: node tests/regress/fa_standby_150.js [html]
 const { open } = require('./lib.js');
@@ -20,7 +20,7 @@ const ck = (ok, w) => { console.log((ok ? 'PASS ' : 'FAIL ') + w); if (!ok) fail
       const n = S.nets.findIndex((x, k) => AN.nm(S, k) === nm);
       return n < 0 ? null : +S.rt.v[n];
     };
-    AN.i = AN.sheets.findIndex(s => s.name === 'ABC-014');
+    AN.go(AN.sheets.findIndex(s => s.name === 'ABC-014'));
     AN.spd = 1;
     AN.startState = AN.startState || 'plantLoad150';
     AN.runOn();
