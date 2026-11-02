@@ -258,7 +258,10 @@
       }
     }
     const W = window.WORLD;
-    W.out = W._o = W.tk = W._ck = W.busy = W.live = undefined;
+    /* as the world starts (world.js: out {}, live false; _o, tk, _ck, busy not set): the first scan reads W.out */
+    W.out = {};
+    W.live = false;
+    W._o = W.tk = W._ck = W.busy = undefined;
     if (W.plantSwClear) W.plantSwClear();
     D.on = false;
   };
