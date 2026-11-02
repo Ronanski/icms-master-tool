@@ -57,7 +57,7 @@ function anSyncSlots() {
       add('s' + i + ':' + id, () => S.rt.st[id], d => anSyncPut(S.rt.st, id, d), { w: 1, fast: () => { const q = S.rt.st[id]; return q ? String(q.val) : ''; } });
     /* each plant model (the PLANT window writes its operating point / disturbance) */
     S.blk.forEach((b, j) => {
-      if (b.proc) add('p' + i + ':' + j, () => b.proc, d => anStateInto(b.proc, d), { w: 1, fast: () => b.proc.op + '|' + b.proc.dist + '|' + b.proc.on });
+      if (b.proc) add('p' + i + ':' + j, () => ({ ...b.proc }) /* its content: the model itself is written as {$P} */, d => anStateInto(b.proc, d), { w: 1, fast: () => b.proc.op + '|' + b.proc.dist + '|' + b.proc.on });
     });
   });
   const objs = AN_STATE_OBJ();
@@ -69,6 +69,7 @@ function anSyncSlots() {
       for (const k of AN_STATE_FLAGS) r.f[k] = AN[k];
       for (const k of AN_STATE_SETS) r.s[k] = AN[k];
       r.u = AN.unit === AN_UNIT ? 1 : 0;
+      r.h = AN.hmiDI === AN_HMI_DI ? 1 : 0;
       return r;
     },
     d => {
@@ -76,9 +77,12 @@ function anSyncSlots() {
       for (const k of AN_STATE_SETS) AN[k] = d.s[k];
       if (d.u) AN.unit = AN_UNIT;
       else delete AN.unit;
+      if (d.h) (AN.hmiDI = AN_HMI_DI), (AN.hmiComp = hmiComp);
     },
     { w: 1 }
   );
+  /* the one-address groups (links.js shareExt) */
+  add('xs', anXsGet, anXsPut, { raw: 1 });
   /* the DITL world (src/digital/parts/03d-state.js keys), by sheet name */
   if (typeof ditlAll === 'function') {
     for (const s of ditlAll()) {
@@ -117,10 +121,18 @@ function anSyncSlots() {
 }
 /* the slot list and what this side last sent or took (the same sheets: built again when the sheets change) */
 function anSyncState() {
-  const n = AN.sheets.filter(s => s.S).length + ':' + (typeof ditlAll === 'function' ? ditlAll().length : 0);
+  /* the fields of the models too: a run adds fields (a field made later was never sent) */
+  const objs = AN_STATE_OBJ();
+  let n = AN.sheets.filter(s => s.S).length + ':' + (typeof ditlAll === 'function' ? ditlAll().length : 0);
+  for (const o in objs) n += '|' + Object.keys(objs[o]).length;
+  n += '|' + AN.sheets.filter(s => s.lk).length; /* the links of a sheet are made when it is first linked: refs again */
   if (AN_SYNC && AN_SYNC.n === n) return AN_SYNC;
-  const L = anSyncSlots();
+  const L = anSyncSlots(),
+    old = AN_SYNC;
   AN_SYNC = { n, L, by: new Map(L.map(s => [s.k, s])), last: new Map(), fast: new Map(), ref: anSyncRefs() };
+  /* what this side had sent or taken stays: only the new slots go across whole */
+  if (old) for (const [k, v] of old.last) if (AN_SYNC.by.has(k)) AN_SYNC.last.set(k, v);
+  if (old) for (const [k, v] of old.fast) if (AN_SYNC.by.has(k)) AN_SYNC.fast.set(k, v);
   return AN_SYNC;
 }
 const anSyncJ = (s, Y) => (s.raw ? JSON.stringify(s.get()) : JSON.stringify(anStateEnc(s.get(), Y.ref)));

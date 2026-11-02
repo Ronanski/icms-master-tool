@@ -381,7 +381,8 @@ function actSet(sh) {
    (or a test) changes it on one sheet, every other sheet of that station takes it. Before: every sheet had its own copy, so an MFT
    (I.000F on 11 sheets) needed 11 presses. A net that a link drives (xlk) or that is forced is not overwritten (the link / the
    force wins on that sheet), but a change on it still spreads to the others */
-function shareExt(set) {
+/* the groups of one address (AN._xs: e.v = the value each copy had at the last step; engine state, in the keyframe) */
+function anXs() {
   const comp = AN.sheets.filter(sh => sh.S && !/^ABC-000/.test(sh.name));
   let X = AN._xs;
   if (!X || X.n !== comp.length) {
@@ -400,6 +401,11 @@ function shareExt(set) {
     }
     X = AN._xs = { n: comp.length, g: Object.values(g).filter(l => l.length > 1) };
   }
+  return X;
+}
+function shareExt(set) {
+  void set;
+  const X = anXs();
   const cur = e => (e.S.rt.force[e.n] !== undefined ? e.S.rt.force[e.n] : e.S.rt.ext[e.n]);
   for (const l of X.g) {
     let w = null;

@@ -181,7 +181,7 @@
       if (nc ? !tr : tr) (m.s._win || (m.s._win = new Set())).add(m.row);
     }
   };
-  W.plantSw = () => (map || []).map(m => ({ sheet: m.s.name, row: m.row + 1, tag: m.d[0], on: m.on }));
+  W.plantSw = () => (map ? map.map(m => ({ sheet: m.s.name, row: m.row + 1, tag: m.d[0], on: m.on })) : pend || []);
   /* 3.2.0 Web Worker: the state of the switches (their dead band) back from a keyframe (src/digital/parts/03d-state.js); kept until the
      list is built (the first scan) */
   W.plantSwSet = L => {
