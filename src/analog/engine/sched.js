@@ -92,8 +92,10 @@ AN.sched = (() => {
 
 /* group 1: ABC */
 let anAcc = 0;
+/* 3.2.0 Web Worker (src/world/eng.js): when the engine runs in the worker, the page steps nothing (it is the mirror) */
+const anMirror = () => !!(window.ENG && ENG.mode === 'mirror');
 setInterval(() => {
-  if (!live() || !AN.run || AN._loading) {
+  if (!live() || !AN.run || AN._loading || anMirror()) {
     anAcc = 0;
     return;
   }
@@ -144,9 +146,24 @@ setInterval(() => {
 /* group 2: DITL world */
 setInterval(() => {
   const W = window.WORLD;
-  if (!W || !W.scanJob || AN.sched.has('world')) return;
+  if (!W || !W.scanJob || AN.sched.has('world') || anMirror()) return;
   const g = W.scanJob();
   if (g) AN.sched.add('world', g);
 }, 200);
 /* for the checks (the recorder that proves a sliced step = a step at once) */
 AN.stepSetG = stepSetG;
+
+/* the mirror after each patch of the engine: what a job of the page painted (the drawing, the panel, the trends, the DITL page) */
+AN.patchPaint = () => {
+    const sh = cs();
+    if (sh && sh.S) histRec(sh, 1);
+    if (anShown()) {
+      AN._pStale = 0;
+      paint();
+      panelUpd();
+    } else {
+      AN._pStale = 1;
+      panelUpd(false, true);
+    }
+    if (window.WORLD && WORLD.paintNow) WORLD.paintNow();
+};

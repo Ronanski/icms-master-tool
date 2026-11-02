@@ -861,6 +861,8 @@
       } catch (e) {}
     W.ms = W.ms * 0.8 + (performance.now() - t0) * 0.2;
   }
+  /* 3.2.0 Web Worker: the page mirror draws the DITL page after a patch of the engine (src/world/eng-page.js) */
+  W.paintNow = () => typeof document !== 'undefined' && paintD(cur(), true);
   /* the DITL page after a scan (P2, user 2026-11-01: only while the Logic page is on the screen; it is drawn again when it opens) */
   function paintD(c, chCur) {
     const dShown = !(document.body.dataset.tab && document.body.dataset.tab !== 'logic') && !document.body.classList.contains('plant');
