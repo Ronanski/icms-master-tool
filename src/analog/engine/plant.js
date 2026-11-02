@@ -246,6 +246,8 @@ function anProcList(S) {
       } else byPv[k] = b;
     }
   }
+  /* 3.2.0: the plant model as built, for Reset (sheets.js anResetAll: back to this, in the same object; the unit model holds it) */
+  for (const b of out) if (b.proc && !b.proc0) b.proc0 = anStateEnc(b.proc, new Map());
   S.procs = out;
   return out;
 }
@@ -254,6 +256,10 @@ function anProcList(S) {
    the direction (ACT) stay as before. Only loops that run in AUTO / REMOTE on the snapshot with their own valve; cascade
    masters, parallel valves and measurements shared by two controllers are not anchored (their PV is made by other loops). */
 /* actuators in series on one fan (see u below): tag -> 1 */
+/* 3.2.0: the fields of a plant model that a run writes (plant.js step, unit.js, hmi-op.js, plant-window.js): Reset takes them back. Not
+   hop / Ka: the HMI snapshot anchor of a loop is made once at the first scan (ABC-019 TICHR1002: 39.PNG 541 C; made again after a run it
+   was null, the reheat steam stayed at 185 C and the turbine roll held, CHECK full); Reset takes away the 150 MW one only (hop.dyn, sheets.js) */
+const AN_PROC_RUN = ['integ', 'y0', 'ld', 'uf', 'smul', 'sbase', 'tcap', 'fr', 'tsat', 'src', 'shold', 'scap', 'op', 'hopReq', 'fell', 'dn', 'cyc', 'mul', 'integLoss', 'integLoss0'];
 const AN_SERIES = { PICFG108: 1, PICFG108A: 1 };
 /* 3.2.0-beta.40: controller -> the hand station whose output is the real actuator of the process (ABC-020, see xman below) */
 const AN_XACT = { TICHR1002A: 'HICHR1002A' };

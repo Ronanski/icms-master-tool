@@ -112,6 +112,28 @@ function anStateInto(dst, src) {
   for (const k of Object.keys(dst)) if (!(k in src)) delete dst[k];
   for (const k of Object.keys(src)) if (src[k] !== undefined || !(k in dst) || typeof dst[k] !== 'function') dst[k] = src[k];
 }
+/* the unit / source / cycle models as the script loaded them (Reset takes them again: sheets.js anResetAll) */
+const AN_STATE_INIT = anStateEnc(AN_STATE_OBJ(), new Map());
+/* in place, down the tree: a key the run made goes, a value goes back; an object that was there at load stays the same object (others
+   hold it: a copy in its place broke the CHECK cold start, the fans gave no air) */
+function anStateInPlace(live, init) {
+  for (const k of Object.keys(live)) if (!(k in init)) delete live[k];
+  for (const k of Object.keys(init)) {
+    const a = live[k],
+      b = init[k];
+    if (typeof a === 'function') continue;
+    const plain = x => x && typeof x === 'object' && !ArrayBuffer.isView(x) && !(x instanceof Map) && !(x instanceof Set);
+    if (plain(a) && plain(b) && Array.isArray(a) === Array.isArray(b)) {
+      if (Array.isArray(a)) a.length = b.length;
+      anStateInPlace(a, b);
+    } else live[k] = b;
+  }
+}
+function anStateReset() {
+  const objs = AN_STATE_OBJ(),
+    st = anStateDec(AN_STATE_INIT, objs);
+  for (const k in objs) anStateInPlace(objs[k], st[k]);
+}
 function anStateCapture() {
   const ref = anStateRefs(),
     sh = AN.sheets.map(s => {

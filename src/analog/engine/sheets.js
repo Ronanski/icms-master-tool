@@ -176,11 +176,48 @@ function anPull(sh) {
 /* RESET of the model: every sheet back to the drawing (tuning kept in AN.sv), then all sheets are settled: the same start as a fresh load, whatever the sheet order */
 function anResetAll() {
   anUnitStop(); /* 2.2.0-beta.9: Reset = cold boiler, the unit model stops (2.2.0-beta.11: and its load disturbance of the spray loops) */
+  /* 3.2.0 (user 2026-11-02 via the leader: "dapat iisa ang state pagkatapos ng Reset, kahit ano ang ginawa bago nito"): the unit /
+     source / cycle models as the page loaded them (state.js). Before, what a run left there (the unit lists of the plant models, the
+     field states, the cycle) made the next start differ: Reset + 150 MW after a cold start gave other coal / PID values */
+  anStateReset();
+  /* and what a start left on AN: the sheets of the unit model (the next start sets them again: unit.js anUnitStart), its report */
+  AN.unitSheets = [];
+  AN.load150 = null;
+  AN.steady = false;
   for (const sh of AN.sheets) {
     if (!sh.S) continue;
     const S = sh.S;
     S.look = {};
     anInit(S);
+    /* the run state of every plant model back to what the load built (it kept ld, y0, the integrator, the cold start fields of the run
+       before), in the same object: the unit model holds these objects (a new one in its place: no air in a cold start). Only the run
+       state: the links made after the load (links.js procRemote: mode, remote, xsh) stay (restoring them broke the turbine roll) */
+    for (const b of S.procs || [])
+      if (b.proc && b.proc0) {
+        const p0 = anStateDec(b.proc0);
+        /* a model that fell to "pin" during the run (plant.js q.bad: ABC-010 FICFW1007 in a cold start) gets its links back */
+        if (b.proc.fell && b.proc1) {
+          Object.assign(b.proc, b.proc1, { ai: b.proc1.ai.slice(), aiOut: b.proc1.aiOut.slice() });
+          if (!('remote' in b.proc1)) delete b.proc.remote;
+        }
+        for (const k of AN_PROC_RUN)
+          if (k in p0) b.proc[k] = p0[k];
+          else delete b.proc[k];
+      }
+    {
+      const v = AN.sv[sh.name];
+      for (const id in (v && v.proc) || {}) {
+        const b = S.blk.find(q => String(q.id) === String(id));
+        if (b && b.proc) {
+          const q = v.proc[id];
+          if (q.ver === 2) Object.assign(b.proc, q);
+          else {
+            b.proc.on = q.on;
+            b.proc.dist = q.dist || 0;
+          }
+        }
+      }
+    }
     /* 2.1.0: the plant model of every sheet follows the same rule as a fresh load (ensure): before, a sheet loaded before the
        plant was switched on kept it OFF until RUN, so Reset on a fresh page and Reset after a run gave another start (5 sheets) */
     if (AN.procDefault === true || (AN.procDefault === undefined && AN.plantOn === true)) for (const b of S.procs || []) if (b.proc) b.proc.on = true;
@@ -209,6 +246,14 @@ function anResetAll() {
       try {
         procRemote(sh);
       } catch (e) {}
+  /* 3.2.0: the links of every plant model as they are now (not fallen), for the next Reset */
+  for (const sh of AN.sheets)
+    for (const b of (sh.S && sh.S.procs) || [])
+      if (b.proc && !b.proc.fell && !b.proc1) {
+        const pr = b.proc;
+        b.proc1 = { mode: pr.mode, ai: (pr.ai || []).slice(), aiOut: (pr.aiOut || []).slice(), pinExt: pr.pinExt };
+        if ('remote' in pr) b.proc1.remote = pr.remote;
+      }
   {
     const seen = new Set(),
       fr = sh => {
