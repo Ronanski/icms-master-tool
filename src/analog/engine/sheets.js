@@ -184,6 +184,8 @@ function anResetAll() {
   AN.unitSheets = [];
   AN.load150 = null;
   AN.steady = false;
+  /* the one-address groups start again as on a fresh page (links.js shareExt: the values of the run before were kept) */
+  AN._xs = null;
   for (const sh of AN.sheets) {
     if (!sh.S) continue;
     const S = sh.S;
