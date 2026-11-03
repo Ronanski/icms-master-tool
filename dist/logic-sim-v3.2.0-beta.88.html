@@ -32180,7 +32180,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.88';
-      c3.textContent += ' · build cbb9890'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 8b25667'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -77240,6 +77240,12 @@ body.cr #gsbar > #crband{container-type:inline-size;container-name:crband}
 body.cr #crband > #cralarm:not(#x){min-width:16rem}
 @container crband (max-width:62rem){#crband .crunit span{display:none}#cralarm .crat{display:none}}
 @container crband (max-width:52rem){#crband .crunit{display:none}}
+/* Mina #8 (beta.87, Training dock open): BED TEMP and VACUUM wrapped to a second row of the strip: the nine values stay on one line;
+   on a narrower band the spacing gets tighter first, then the units go (the tooltip still names the value) */
+#crband .crkpis:not(#x){flex-wrap:nowrap}
+#crband .crkpis .crkpi:not(#x){flex:1 1 auto;min-width:0}
+@container crband (max-width:75rem){#crband .crkpis .crkpi:not(#x){padding:0 .3125rem!important}#crband .crkpis .crkpi i{letter-spacing:0;margin-right:.25rem}#crband .crkpis .crkpi small{margin-left:.125rem}}
+@container crband (max-width:62rem){#crband .crkpis .crkpi small{display:none}}
 body.lsfield[data-tab=logic] :is(#dp,#anp,#dmeta,#anmeta,#meta,#anptab){visibility:hidden!important}
 /* R9 #42 (the Events button cut to "Even…" under the search box when the alarm chip reads "NO ALARM · 93 SUPPRESSED"): the alarm box is
    never narrower than its chips and the Events button; its text line gives way first, then the KPI strip (overflow hidden) */
@@ -82246,6 +82252,7 @@ body.app2 #gdtrb[hidden]{display:none!important}
       const v = E('b', '', '—');
       b.append(E('i', '', k), v);
       v.after(E('small', '', u));
+      t += ', ' + u; /* the unit stays in the tooltip when the strip is too narrow to show it (app.css, Mina #8) */
       b.title = sh
         ? t + '. Shown once that sheet runs (open it, or Plant ▾ beside VIEW | RUN). Click: open ' + sh + '.'
         : t + '. Shown once the plant model runs. Click: Plant view.';
@@ -86064,7 +86071,9 @@ window.LS_GUIDE = (function () {
             () => !WL() || (mwN() >= 1 && mwStby() >= 0 && MW.some((nm, j) => dRun(nm) !== 1 && mwAuto(j)) && +U().cwPrime >= 1 && et() >= 1.69 && closed() && (xvAuto() || !air())),
             () =>
               (WL() ? MW.map((nm, j) => ML[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : (remOf(nm) ? 'REM' : 'LOC') + (locRun(nm, 14) === 1 ? ' AUTO' : ' MAN'))).join(', ') : '— (one world OFF)') +
-              ' · T-1109 ' + et().toFixed(2) + ' m · XV-MU1109 ' + (xvOpen() ? 'OPEN' : 'CLOSED') + (xvAuto() ? ' AUTO' : ' MAN') + ' · V-MU1033 ' + (byp() ? 'OPEN' : 'CLOSED') + ' · V-CW1001 ' + (fstate('cw1001') ? 'OPEN' : 'CLOSED')
+              ' · T-1109 ' + et().toFixed(2) + ' m · XV-MU1109 ' + (xvOpen() ? 'OPEN' : 'CLOSED') + (xvAuto() ? ' AUTO' : ' MAN') + ' · V-MU1033 ' + (byp() ? 'OPEN' : 'CLOSED') + ' · V-CW1001 ' + (fstate('cw1001') ? 'OPEN' : 'CLOSED') +
+              /* Mina #7: the tank level falls while V-CW1001 primes the closed loop (unit.js etPrime, ASSUMED loop volume): said in the step */
+              (fstate('cw1001') && +U().cwPrime < 1 ? ' · priming the closed loop ' + Math.round(100 * (+U().cwPrime || 0)) + ' % (the tank level falls, then make up to 1.7 m)' : '')
           ),
           a: [
             dmot('DITL-112', 'MWP-A'),
@@ -87626,7 +87635,9 @@ window.LS_GUIDE = (function () {
       const R = { rem: [], au: [] };
       for (let r = 0; r < 60; r++) {
         const v = rowInfo(s, r).svc;
-        if (/REMOTE MODE SELECTED/.test(v)) R.rem.push(r);
+        /* Mina #3 (beta.87): the ACW pumps write it "A-AUX. CW PUMP REMOTE SELECTED" (DITL-76 / 77 row 5 I.0088, rows 19 / 20), no "MODE":
+           the dock saw no selector there, so ACWP-B stayed LOCAL */
+        if (/REMOTE (MODE )?SELECTED/.test(v) && !/\b(AUTO|NOT)\b/.test(v)) R.rem.push(r);
         else if (/\bAUTO MODE SELECTED\b/.test(v)) R.au.push(r);
       }
       s._mrows = R;
@@ -88937,6 +88948,12 @@ window.LS_GUIDE = (function () {
           call(() => lsEventAdd('PR-OPE-5002', /\bAO\b/.test(by) && !/CRO/.test(by) ? 'FIELD' : 'SOP', (cb.checked ? '✓ ' : '✗ ') + (f.si + 1) + '.' + (f.i + 1) + ' ' + String(f.t).slice(0, 90)));
           ls.set('ls-train', dd);
           els.trKey = JSON.stringify(dd);
+          /* Mina #3 (beta.87): "Set the LCP (Local Control Panel) of both selected and standby ACWP to remote position" (PR-OPE-5002 8.3)
+             was ticked and ACWP-B stayed LOCAL: the field operator's REMOTE is done on the selector of each motor of the step that is
+             LOCAL (the same as its FIELD: to REMOTE button) */
+          if (cb.checked && /\bremote\b/i.test(f.t) && /\bLCP\b|local control panel|selector/i.test(f.t))
+            for (const a of call(() => motorsOf(s), []))
+              if (call(() => modeOf(motAddr(a)).rem, null) === false) dremote(motAddr(a), mName(a));
           li.classList.toggle('dn', cb.checked);
           /* 3.2.0 retest #26: the Training list shows the same tick at once */
           try {
@@ -89788,6 +89805,11 @@ window.LS_GUIDE = (function () {
         say += ': ▶ RUN so the logic reads it';
         bl = '▶ RUN';
         fn = runNow;
+      } else if (r0 && call(() => !!dSheet(m.sheet).sig[r0.row + ':S'], false)) {
+        /* Mina #4 (beta.87, Worker): the field action is set on the page and the engine reads it on its next scan; for those 3 ~ 5 s the
+           row said "not a field contact" */
+        who = 'FIELD OPERATOR';
+        say += ': set, the logic reads it on its next scan';
       } else {
         who = 'CONTROL ROOM';
         say += ' (not a field contact: see the "?" of the row under Permissive)';
