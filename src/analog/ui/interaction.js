@@ -139,7 +139,7 @@ function setExt(sh, n, x) {
   S.rt.ext[n] = x;
   (sv(sh).ext = sv(sh).ext || {})[n] = x;
   anSave();
-  settle();
+  AN.settle();
 }
 function digClick(sh, n, shift) {
   if (((AN.hmiUi && AN.hmiUi.open) || (AN.plantUi && AN.plantUi.open)) && !AN.view) {
@@ -244,7 +244,7 @@ function pick(e) {
       st.val = st.val ? 0 : 1;
       (sv(sh).ai = sv(sh).ai || {})[best.id] = st.val;
       anSave();
-      settle();
+      AN.settle();
       msg('SIG.AB ' + (best.txt.find(q => !/SIG/i.test(q)) || '') + ' → ' + st.val);
       return;
     }
@@ -336,14 +336,27 @@ sSpd.onchange = () => {
    starts the plant cold (trace.js coldIfNone), so after a Reset MSP is 0 again, not the loop model's middle of the range */
 bRst.onclick = () => {
   AN.startState = null;
-  reset();
+  /* 3.2.0 Web Worker check (Winter, reset_worker.js): Reset also STOPS the run, as on a fresh page. Before, RUN went on with no
+     starting state: the ABC and the DITL scanned the cold plant again at once and wrote back field contacts, motor memories and the
+     speed tier, so a Reset after a run never gave the start of a fresh page. The operator picks Cold / 150 MW, then presses Run. The
+     run flags go to the engine with the flush before the call (src/world/eng.js) */
+  AN.run = false;
+  AN.tierK = undefined;
+  AN._cold0 = undefined;
+  bRun.textContent = '▶ Run';
+  bRun.classList.remove('on');
+  /* 3.2.0 Web Worker: the Reset runs in the engine and answers later (a promise): the rest waits for it */
+  const r = AN.reset();
   /* 3.2.0-beta.18: and the plant is COLD at once (VIEW shows boiler off, not the drawings' defaults MSP 75) */
   /* retest #57: then the operator picks the starting state (no Cold by itself) */
-  coldIfNone(() => {
-    settle();
-    paint();
-    panelUpd(true);
-  });
+  const then = () =>
+    coldIfNone(() => {
+      AN.settle();
+      paint();
+      panelUpd(true);
+    });
+  if (r && typeof r.then === 'function') r.then(then);
+  else then();
 };
 bFit.onclick = fitView;
 bVal.onclick = () => {
@@ -442,41 +455,4 @@ AN.inspAuto = on => {
 /* 2.5.0-beta.20 (UI audit): up to 1180 px the panel is a drawer OVER the drawing: closed at the start, a click on a block or a
    wire opens it (an empty panel covered half of the sheet on a tablet standing up and on a phone) */
 if (matchMedia('(max-width:1180px)').matches) showPanel(false);
-setInterval(() => {
-  if (!live() || !AN.run || AN._loading) return;
-  const sh = cs();
-  if (!sh || !sh.S) return;
-  const dt = 0.1 * AN.spd,
-    n = Math.max(1, Math.ceil(dt / 0.5));
-  histRec(sh, 1);
-  const t0_ = performance.now(),
-    K = AN.tierK || 1;
-  for (let i = 0; i < n; i++) {
-    if (K > 1) stepTier(sh, dt / n, K);
-    else stepSet(sh, dt / n);
-    /* 3.2.0-beta.21: the Training coach (src/ui/training/guide.js) acts after each step, at the time of the plant */
-    if (AN.onStep)
-      try {
-        AN.onStep(dt / n);
-      } catch (e) {}
-  }
-  /* speed (user 2026-11-01, 6x CPU): the drawing and the side panel are painted only while the Logic page shows them; on Home,
-     Training or a plant page only the trends and the hooks run (a faceplate, the plant window), and the drawing is painted when it
-     comes back (anShown below) */
-  if (anShown()) {
-    AN._pStale = 0;
-    paint();
-    panelUpd();
-  } else {
-    AN._pStale = 1;
-    panelUpd(false, true);
-  }
-  {
-    const ms = performance.now() - t0_;
-    AN._ms = AN._ms == null ? ms : AN._ms * 0.85 + ms * 0.15;
-    if (!AN.tierLock && (AN._tn = (AN._tn || 0) + 1) % 10 === 0) {
-      const k = AN.tierK || 1;
-      AN.tierK = AN._ms > 35 ? Math.min(6, k + 1) : AN._ms < 14 ? Math.max(1, k - 1) : k;
-    }
-  }
-}, 100);
+/* the run loop of the ABC (10 Hz) and the DITL scan of the one world (5 Hz): src/analog/engine/sched.js (P3, one place) */

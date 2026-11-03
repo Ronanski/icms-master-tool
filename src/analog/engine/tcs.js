@@ -104,7 +104,9 @@ const tcsLin = (pts, x) => {
 /* P2 #13: a push button row of a DITL MOV pressed from the TCS panel (row of the drawing, 1-based; no one world: nothing) */
 function tcsDitl(L) {
   try {
-    if (window.LS_DOCK && LS_DOCK.dpress) for (const [nm, r] of L) LS_DOCK.dpress(nm, r - 1);
+    /* the press in the engine (src/world/dock-eng.js; the page dock in a page without it) */
+    const P = window.WORLD && WORLD.dpress ? (nm, r) => WORLD.dpress(nm, r) : window.LS_DOCK && LS_DOCK.dpress ? (nm, r) => LS_DOCK.dpress(nm, r) : null;
+    if (P) for (const [nm, r] of L) P(nm, r - 1);
   } catch (e) {}
 }
 /* the turbine state: cold (Start cold: everything stopped, metal at the ambient) or in service (Start at 150 MW) */
@@ -933,6 +935,8 @@ function tcsState() {
   const C = tcsCrit(U);
   return {
     mode: (TCS.modes.find(m => m[0] === c.mode) || [])[2],
+    /* 3.2.0-beta.78: the numbers of the ATS mode in use (pages 19 / 20 / 22 / 25), for the CHECK of a start-up from any mode */
+    ats: c.mode && TCS.rate[c.mode] != null ? { rate: TCS.rate[c.mode], s1800: TCS.soak1800[c.mode], s3600: TCS.soak3600[c.mode], init: TCS.init[c.mode] } : null,
     step: c.step,
     stepName: c.step >= 0 ? TCS.names[c.step] : '',
     cur: c.cur,

@@ -173,14 +173,84 @@ function anPull(sh) {
     }
   } catch (e) {}
 }
+/* RESET as the operator presses it, one body for the page (data/loader.js reset) and the Web Worker (tools/build/engine-bundle.js
+   AN.reset; Giselle's review of a2357e8: the Worker Reset had only anResetAll): the saved values of the operator go (forced signals,
+   values, switches; the block settings stay), the model back to the drawing, and the DITL too (retest #68: a motor started by hand
+   in the run before is stopped, not only the 150 MW state). The page keeps its own part: anSave, the panel, the message */
+function anResetRun() {
+  const keep = {};
+  for (const k in AN.sv) {
+    const q = AN.sv[k];
+    if (q && q.p && Object.keys(q.p).length) keep[k] = { pv: q.pv, p: q.p };
+  }
+  AN.sv = keep;
+  anResetAll();
+  const W = globalThis.WORLD;
+  /* the index of the one world for every ABC sheet loaded now (the instances and their state stay: world.js build), then the DITL links
+     of the ABC inputs go: the first scan makes them (world.js tickG step 3), so a fresh page has none; a Reset after a run kept them
+     (Winter's diag_abc4: an xlk "(28)DITL-14 #B" only after a run) */
+  try {
+    if (W && W.on && W.build && AN.sheets.length) W.build();
+    if (W && W.unlinkAbc) W.unlinkAbc();
+  } catch (e) {}
+  try {
+    if (globalThis.DITL150) globalThis.DITL150.clear();
+  } catch (e) {}
+  /* a push button the dock still held (src/world/dock-eng.js) would press again at the next scan */
+  if (W) W._press = W._rel = undefined;
+}
 /* RESET of the model: every sheet back to the drawing (tuning kept in AN.sv), then all sheets are settled: the same start as a fresh load, whatever the sheet order */
 function anResetAll() {
   anUnitStop(); /* 2.2.0-beta.9: Reset = cold boiler, the unit model stops (2.2.0-beta.11: and its load disturbance of the spray loops) */
+  /* 3.2.0 (user 2026-11-02 via the leader: "dapat iisa ang state pagkatapos ng Reset, kahit ano ang ginawa bago nito"): the unit /
+     source / cycle models as the page loaded them (state.js). Before, what a run left there (the unit lists of the plant models, the
+     field states, the cycle) made the next start differ: Reset + 150 MW after a cold start gave other coal / PID values */
+  anStateReset();
+  /* and what a start left on AN: the sheets of the unit model (the next start sets them again: unit.js anUnitStart), its report */
+  AN.unitSheets = [];
+  AN.load150 = null;
+  /* and what the first 150 MW load set (hmi-op.js: the DI of the HMI snapshots, ditl150.js reads them): a fresh page has none (Winter, "h") */
+  delete AN.hmiDI;
+  delete AN.hmiComp;
+  /* the unit model as AN.unit (unit.js anUnitStart sets it; the keyframe 'u'): a fresh page has none until a start (Winter's diag_abc4) */
+  delete AN.unit;
+  AN.steady = false;
+  /* the one-address groups start again as on a fresh page (links.js shareExt: the values of the run before were kept) */
+  AN._xs = null;
   for (const sh of AN.sheets) {
     if (!sh.S) continue;
     const S = sh.S;
     S.look = {};
     anInit(S);
+    /* the run state of every plant model back to what the load built (it kept ld, y0, the integrator, the cold start fields of the run
+       before), in the same object: the unit model holds these objects (a new one in its place: no air in a cold start). Only the run
+       state: the links made after the load (links.js procRemote: mode, remote, xsh) stay (restoring them broke the turbine roll) */
+    for (const b of S.procs || [])
+      if (b.proc && b.proc0) {
+        const p0 = anStateDec(b.proc0);
+        /* a model that fell to "pin" during the run (plant.js q.bad: ABC-010 FICFW1007 in a cold start) gets its links back */
+        if (b.proc.fell && b.proc1) {
+          Object.assign(b.proc, b.proc1, { ai: b.proc1.ai.slice(), aiOut: b.proc1.aiOut.slice() });
+          if (!('remote' in b.proc1)) delete b.proc.remote;
+        }
+        for (const k of AN_PROC_RUN)
+          if (k in p0) b.proc[k] = p0[k];
+          else delete b.proc[k];
+      }
+    {
+      const v = AN.sv[sh.name];
+      for (const id in (v && v.proc) || {}) {
+        const b = S.blk.find(q => String(q.id) === String(id));
+        if (b && b.proc) {
+          const q = v.proc[id];
+          if (q.ver === 2) Object.assign(b.proc, q);
+          else {
+            b.proc.on = q.on;
+            b.proc.dist = q.dist || 0;
+          }
+        }
+      }
+    }
     /* 2.1.0: the plant model of every sheet follows the same rule as a fresh load (ensure): before, a sheet loaded before the
        plant was switched on kept it OFF until RUN, so Reset on a fresh page and Reset after a run gave another start (5 sheets) */
     if (AN.procDefault === true || (AN.procDefault === undefined && AN.plantOn === true)) for (const b of S.procs || []) if (b.proc) b.proc.on = true;
@@ -188,8 +258,12 @@ function anResetAll() {
     for (const b of S.procs || [])
       if (b.proc) {
         if (b.proc.hop && b.proc.hop.dyn) {
-          b.proc.hop = undefined;
-          b.proc.Ka = undefined;
+          /* the keys as the load left them (proc0): there as undefined where the load had them (their place in the object stays, so the
+             keyframe of a fresh page and of a Reset number the same), gone where the run made them (Winter: reset_worker "Ka" left as
+             undefined; reset_clean: the numbering moved when they were always deleted) */
+          for (const f of ['hop', 'Ka'])
+            if (b.proc0 && f in b.proc0) b.proc[f] = undefined;
+            else delete b.proc[f];
         }
         b.proc.hopReq = null;
         b.proc.integLoss = 0;
@@ -209,6 +283,14 @@ function anResetAll() {
       try {
         procRemote(sh);
       } catch (e) {}
+  /* 3.2.0: the links of every plant model as they are now (not fallen), for the next Reset */
+  for (const sh of AN.sheets)
+    for (const b of (sh.S && sh.S.procs) || [])
+      if (b.proc && !b.proc.fell && !b.proc1) {
+        const pr = b.proc;
+        b.proc1 = { mode: pr.mode, ai: (pr.ai || []).slice(), aiOut: (pr.aiOut || []).slice(), pinExt: pr.pinExt };
+        if ('remote' in pr) b.proc1.remote = pr.remote;
+      }
   {
     const seen = new Set(),
       fr = sh => {

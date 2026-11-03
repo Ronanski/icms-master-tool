@@ -721,8 +721,17 @@
     if (!XL.has(d)) XL.set(d, { name: d.name, S: null, ditl: true });
     return XL.get(d);
   }
+  /* 3.2.0 Web Worker: the keyframe writes these by their DITL sheet (engine/state.js {$F}), the other side takes its own */
+  W.fakeFrom = fakeFrom;
+  W.fakeAll = () => (typeof ditlAll === "function" ? ditlAll() : []).filter(d => XL.has(d)).map(d => [d, XL.get(d)]);
   /* one scan of the whole world */
+  /* P3 time-slicing (user 2026-11-01 "T1, 3"): one scan as a generator that yields after each DITL sheet (AN.sched runs it in slices
+     between the frames); tick() runs the same generator to the end at once (W.tick, the tests), after a sliced scan still queued */
   function tick(dt, opt) {
+    if (window.AN && AN.sched) AN.sched.flush();
+    for (const _ of tickG(dt, opt));
+  }
+  function* tickG(dt, opt) {
     const t0 = performance.now(),
       { din, ain } = W.idx,
       prev = W.out,
@@ -791,6 +800,7 @@
         if (ch || k !== W._ck) chCur = true;
         W._ck = k;
       }
+      yield;
     }
     /* 3.2.0-beta.6 FIRST-OUT: a TRIP / MFT / STOP output that goes 1 in this scan: its cause is read now (DUI.cause), before
        the other conditions follow, and written to the Event log */
@@ -842,8 +852,23 @@
       AS.xlk = AS.xlk || {};
       if (!AS.xlk[a.n]) AS.xlk[a.n] = { from: fakeFrom(a.d), fromNets: [], tag: 'DITL ' + a.ref, ditl: true };
     }
-    /* 4. the DITL page shows the new values */
-    if (AN.cat !== 'an' && c) {
+    /* 4. the DITL page shows the new values (none in the engine alone, 3.2.0 Web Worker: no page) */
+    if (typeof document !== 'undefined') paintD(c, chCur);
+    /* 3.2.0-beta.23: after each scan (the Training dock releases its push buttons after two scans) */
+    if (W.onTick)
+      try {
+        W.onTick(dt);
+      } catch (e) {}
+    W.ms = W.ms * 0.8 + (performance.now() - t0) * 0.2;
+  }
+  /* 3.2.0 Web Worker: the page mirror draws the DITL page after a patch of the engine (src/world/eng-page.js) */
+  W.paintNow = () => typeof document !== 'undefined' && paintD(cur(), true);
+  /* the DITL page after a scan (P2, user 2026-11-01: only while the Logic page is on the screen; it is drawn again when it opens) */
+  function paintD(c, chCur) {
+    const dShown = !(document.body.dataset.tab && document.body.dataset.tab !== 'logic') && !document.body.classList.contains('plant');
+    if (AN.cat !== 'an' && c && !dShown) W._dStale = 1;
+    if (AN.cat !== 'an' && c && dShown) {
+      if (W._dStale) ((W._dStale = 0), (chCur = true));
       if (chCur) render();
       else
         try {
@@ -851,12 +876,6 @@
           mvUI(c);
         } catch (e) {}
     }
-    /* 3.2.0-beta.23: after each scan (the Training dock releases its push buttons after two scans) */
-    if (W.onTick)
-      try {
-        W.onTick(dt);
-      } catch (e) {}
-    W.ms = W.ms * 0.8 + (performance.now() - t0) * 0.2;
   }
   /* 3.2.0-beta.6 FIRST-OUT across sheets: an input row that is 1 because of another sheet is followed to that sheet's output
      (FROM column, the same map the one world uses) and its cause, up to 4 sheets deep: "IDF STOPPED" on DITL-03A -> the row
@@ -914,13 +933,22 @@
       s._win = null;
       s.avw = null;
     }
+    W.unlinkAbc();
+    AN.worldSheets = [];
+  }
+  /* the DITL links of the ABC inputs (made by the first scan that feeds them, tickG step 3) go; Reset uses it too (sheets.js anResetRun),
+     so a Reset after a run has the links of a fresh page: none until the next scan (Winter's diag_abc4: "(28)DITL-14 #B" left) */
+  W.unlinkAbc = () => {
     if (W.idx)
       for (const a of W.idx.ain) {
         const AS = a.sh.S;
-        if (AS && AS.xlk && AS.xlk[a.n] && AS.xlk[a.n].ditl) delete AS.xlk[a.n];
+        if (AS && AS.xlk && AS.xlk[a.n] && AS.xlk[a.n].ditl) {
+          delete AS.xlk[a.n];
+          /* a sheet whose only links were these: no link table, as before its first scan made one (step 3: AS.xlk = AS.xlk || {}) */
+          if (!Object.keys(AS.xlk).length) delete AS.xlk;
+        }
       }
-    AN.worldSheets = [];
-  }
+  };
   /* 2.2.0-beta.3: one scan on demand (DITL 150 MW state, src/world/ditl150.js) */
   W.tick = (dt, opt) => {
     if (!W.idx) return;
@@ -966,7 +994,9 @@
     }
   };
   let last = 0;
-  setInterval(() => {
+  /* P3 (user 2026-11-01): the DITL scan of the one world is group 2 of the engine scheduler (src/analog/engine/sched.js calls this
+     every 200 ms): the job (a generator) of one scan, or null when the world does not run now */
+  W.scanJob = () => {
     /* the ABC sheets are loaded the first time the ABC page opens: build the index again when they arrive */
     if (W.on && W.idx && W._nA !== AN.sheets.length && AN.sheets.length)
       try {
@@ -976,12 +1006,13 @@
     if (!go) {
       if (W.live) W.live = false;
       last = 0;
-      return;
+      return null;
     }
     W.live = true;
     const now = performance.now();
     let dt = Math.min((now - (last || now)) / 1000, 1) * (AN.cat === 'an' ? AN.spd || 1 : TSP);
     last = now;
+    const job = function* () {
     try {
       /* 3.2.0-beta.23: while a short timer counts, a device moves or an output changed (W.busy, set by the scan: tmStep / mvStep / fdStep /
          tick), scans of 2 s,
@@ -989,14 +1020,14 @@
          jumped over in one scan and failed; the time of that frame is what the scans took (the plant follows the same time) */
       if (!W.busy || dt <= 2) {
         TMBUSY = false;
-        tick(dt);
+        yield* tickG(dt);
         W.busy = TMBUSY;
       } else {
         let used = 0;
         for (let n = 0; n < 12 && used < dt - 1e-6; n++) {
           const h = W.busy ? Math.min(2, dt - used) : dt - used;
           TMBUSY = false;
-          tick(h);
+          yield* tickG(h);
           W.busy = TMBUSY;
           used += h;
         }
@@ -1026,10 +1057,13 @@
       } catch (e) {
         console.error(e);
       }
-  }, 200);
-  /* the world is built once both pages are there (the ABC sheets are linked again when they load, the interval above) */
+    };
+    return job();
+  };
+  /* the world is built once both pages are there (the ABC sheets are linked again when they load, the interval above); the engine
+     alone (3.2.0 Web Worker, no page) builds it when its host says so */
   let n = 0;
-  const iv = setInterval(() => {
+  const iv = typeof document !== 'undefined' && setInterval(() => {
     const a = document.querySelector('#anbar .tbg-run'),
       d = document.querySelector('#bar .tbg-run');
     if ((a && d) || ++n > 60) {

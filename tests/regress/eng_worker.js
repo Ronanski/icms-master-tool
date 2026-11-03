@@ -1,0 +1,107 @@
+// The engine in a real Web Worker (3.2.0, stage d: src/world/eng-page.js + eng-host.js + eng.js), in the page from file:// with
+// ?worker=1. The worker starts from the page (keyframe), the page is the mirror. Checks: the worker starts (no error bar); RUN: the
+// plant time moves on the page (the engine runs, the patches arrive); the operator on the page (HP bypass PICMS1006 to MAN, MV 20 %,
+// AUTO again, a DITL push button) reaches the engine; the speed 6x gives 6 s of plant a second; after a pause the whole state of the worker (ABC + DITL keyframe) = the page
+// mirror; a worker that dies and an error inside an engine action: the red bar, and the page runs the engine (the watchdog). Usage: node tests/regress/eng_worker.js [html]
+const { open } = require('./lib.js');
+const fs = require('fs'), url = require('url'), path = require('path');
+const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSync('dist').find(x => /^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
+(async () => {
+  const { browser, page, errs } = await open(html);
+  let fail = 0;
+  const ck = (ok, w) => { console.log((ok ? 'PASS ' : 'FAIL ') + w); if (!ok) fail++; };
+  await page.goto(url.pathToFileURL(path.resolve(html)).href + '?worker=1');
+  await page.waitForTimeout(2500);
+  await page.evaluate(() => AN.setCat('an'));
+  await page.waitForFunction(() => window.ENG && (ENG.mode === 'mirror' || ENG.err), null, { timeout: 180000 });
+  await page.waitForFunction(() => ENG.got > 0 || ENG.err, null, { timeout: 60000 }).catch(() => {});
+  const st = await page.evaluate(() => ({ mode: ENG.mode, err: ENG.err, bar: !!document.getElementById('engerr') }));
+  ck(st.mode === 'mirror' && !st.err && !st.bar, 'the engine starts in the worker' + (st.err ? ': ' + JSON.stringify(st.err).slice(0, 300) : ''));
+  /* RUN at 1x: the plant time of ABC-001C moves on the page */
+  const t0 = await page.evaluate(() => { const C = AN.sheets.find(s => s.name === 'ABC-001C'); AN.i = AN.sheets.indexOf(C); AN.plantLoad150(); DITL150.apply(); AN.run = true; return C.S.rt.t; });
+  /* the engine first runs the same Start at 150 MW (some seconds), then the patches come */
+  const g0 = Date.now();
+  /* the Start at 150 MW runs in the engine only: wait for its state on the page (the plant time of the snapshot) */
+  await page.waitForFunction(t0 => ENG.got > 0 && !ENG.heavy && AN.sheets.find(s => s.name === 'ABC-001C').S.rt.t > t0 + 1, t0, { timeout: 120000 }).catch(() => {});
+  const tw = (Date.now() - g0) / 1000;
+  const ta = await page.evaluate(() => AN.sheets.find(s => s.name === 'ABC-001C').S.rt.t);
+  await page.waitForTimeout(5000);
+  const t1 = await page.evaluate(() => AN.sheets.find(s => s.name === 'ABC-001C').S.rt.t);
+  ck(t1 > ta + 3, 'RUN: the plant time moves on the page from the worker: ' + ta.toFixed(1) + ' -> ' + t1.toFixed(1) + ' s in 5 s (first patch ' + tw.toFixed(1) + ' s after Start at 150 MW)');
+  /* the same time at 6x: 5 s of the clock = about 30 s of plant (the scan groups of the worker are those of the page) */
+  const u0 = await page.evaluate(() => ((AN.spd = 6), AN.sheets.find(s => s.name === 'ABC-001C').S.rt.t));
+  const c0 = Date.now();
+  await page.waitForTimeout(5000);
+  const u1 = await page.evaluate(() => AN.sheets.find(s => s.name === 'ABC-001C').S.rt.t);
+  const r6 = (u1 - u0) / ((Date.now() - c0) / 1000);
+  await page.evaluate(() => (AN.spd = 1));
+  ck(r6 > 6 * 0.8 && r6 < 6 * 1.2, '6x: ' + r6.toFixed(2) + ' s of plant per s of clock (6 +- 20 %; the plant time on the page, from the worker)');
+  /* the operator on the page */
+  await page.evaluate(() => {
+    AN.latchMode('PICMS1006', 'MAN');
+    const S50 = AN.sheets.find(s => s.name === 'ABC-050'), c = AN.hmiCtrls(S50.S).find(x => x.tag === 'PICMS1006');
+    if (c.manBlk && S50.S.rt.st[c.manBlk.id]) S50.S.rt.st[c.manBlk.id].val = 20; else S50.S.rt.ext[c.manNet] = 20;
+  });
+  await page.waitForTimeout(3000);
+  await page.evaluate(() => {
+    const s = S.sheets.find(x => /DITL-15$/.test(x.name));
+    s.sig['11:S'] = true;
+  });
+  await page.waitForTimeout(1500);
+  await page.evaluate(() => { delete S.sheets.find(x => /DITL-15$/.test(x.name)).sig['11:S']; AN.latchMode('PICMS1006', 'AUTO'); });
+  await page.waitForTimeout(3000);
+  /* an MFT in the engine (BOILER EMERGENCY TRIP P.B., DITL-03A row 14) reaches the Event log of the page with its cause (FIRST-OUT) */
+  await page.evaluate(() => { lsEvents.length = 0; S.sheets.find(x => /DITL-03A/.test(x.name)).sig['13:S'] = true; });
+  await page.waitForTimeout(3000);
+  await page.evaluate(() => { S.sheets.find(x => /DITL-03A/.test(x.name)).sig['13:S'] = false; });
+  await page.waitForTimeout(2000);
+  const ev = await page.evaluate(() => lsEvents.filter(e => e.kind === 'TRIP' && /MASTER FUEL TRIP \(MFT\)/.test(e.text)).map(e => ({ sh: e.sh, t: e.text, why: (e.why || []).map(l => l.txt) })));
+  ck(ev.length === 1 && /DITL-03A/.test(ev[0].sh) && ev[0].why.some(w => /BOILER EMERGENCY TRIP P\.B\./.test(w)), 'MFT in the worker: Event log of the page "' + (ev[0] ? ev[0].t : '-') + '", cause ' + JSON.stringify(ev[0] && ev[0].why) + ' (' + ev.length + ' event)');
+  /* pause, let the last patch arrive, then the whole state of the worker against the page */
+  const r = await page.evaluate(async () => {
+    AN.run = false;
+    ENG.flush();
+    await new Promise(r => setTimeout(r, 800));
+    const w = await ENG.peek();
+    await new Promise(r => setTimeout(r, 300));
+    const a = JSON.stringify(w.kf), b = JSON.stringify(AN.engState.capture()), c = JSON.stringify(w.kd), d = JSON.stringify(ditlCapture());
+    const at = (x, y) => { let i = 0; while (i < x.length && x[i] === y[i]) i++; return i; };
+    const ia = at(a, b), id = at(c, d);
+    return { abc: a === b, ditl: c === d, la: a.length, ld: c.length, ea: a === b ? '' : a.slice(Math.max(0, ia - 60), ia + 260) + ' <> ' + b.slice(Math.max(0, ia - 60), ia + 260), ed: c === d ? '' : c.slice(Math.max(0, id - 120), id + 60) + ' <> ' + d.slice(Math.max(0, id - 120), id + 60), sent: ENG.sent, got: ENG.got };
+  });
+  ck(r.abc, 'ABC state: worker = page mirror (' + (r.la >> 10) + ' kB)' + (r.abc ? '' : '\n   ' + r.ea));
+  ck(r.ditl, 'DITL state: worker = page mirror (' + (r.ld >> 10) + ' kB)' + (r.ditl ? '' : '\n   ' + r.ed));
+  console.log('   messages: page sent ' + r.sent + ', got ' + r.got);
+  ck(!errs.length, 'no page error' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
+  /* the watchdog said nothing during all this (Start at 150 MW takes seconds in the worker too) */
+  const bar0 = await page.evaluate(() => ({ mode: ENG.mode, bar: (document.getElementById('engerr') || {}).textContent || '' }));
+  ck(bar0.mode === 'mirror' && !bar0.bar, 'no false stop of the watchdog (mode ' + bar0.mode + (bar0.bar ? ', bar: ' + bar0.bar : '') + ')');
+  await browser.close();
+  /* a worker that dies (terminate: the same for the page as a hang, nothing comes) and an error inside an engine action: the red bar,
+     and the page runs the engine by itself (the plant time goes on), each on a new page */
+  for (const [name, hit, want] of [
+    ['the worker dies (terminate)', () => ENG.worker.terminate(), /^Engine stopped \(no answer\): .* - the page runs the engine by itself now\.$/],
+    ['an error inside an engine action', () => ENG.worker.postMessage({ t: 'op', ops: [], calls: [['AN.turbine', { $j: '{not json' }]] }), /^Engine stopped \(AN\.turbine\): .* - the page runs the engine by itself now\.$/]
+  ]) {
+    const o = await open(html);
+    const p = o.page;
+    await p.goto(url.pathToFileURL(path.resolve(html)).href + '?worker=1');
+    await p.waitForTimeout(2500);
+    await p.evaluate(() => AN.setCat('an'));
+    await p.waitForFunction(() => window.ENG && (ENG.mode === 'mirror' || ENG.err), null, { timeout: 180000 });
+    await p.evaluate(() => { const C = AN.sheets.find(s => s.name === 'ABC-001C'); AN.i = AN.sheets.indexOf(C); AN.plantLoad150(); DITL150.apply(); AN.run = true; });
+    /* the Start at 150 MW in the engine first (a long action: the watchdog waits 60 s then) */
+    await p.waitForFunction(() => ENG.got > 0 && !ENG.heavy, null, { timeout: 180000 }).catch(() => {});
+    await p.waitForTimeout(3000);
+    await p.evaluate(hit);
+    const t0 = Date.now();
+    await p.waitForFunction(() => document.getElementById('engerr'), null, { timeout: 30000 }).catch(() => {});
+    const s1 = await p.evaluate(() => ({ mode: ENG.mode, bar: (document.getElementById('engerr') || {}).textContent || '', t: AN.sheets.find(s => s.name === 'ABC-001C').S.rt.t }));
+    await p.waitForTimeout(4000);
+    const t2 = await p.evaluate(() => AN.sheets.find(s => s.name === 'ABC-001C').S.rt.t);
+    ck(want.test(s1.bar) && s1.mode === 'local' && t2 > s1.t + 2, name + ': ' + (s1.bar ? '"' + s1.bar.slice(0, 160) + '"' : 'NO BAR') + ' after ' + ((Date.now() - t0 - 4000) / 1000).toFixed(1) + ' s, mode ' + s1.mode + ', plant time ' + s1.t.toFixed(1) + ' -> ' + t2.toFixed(1) + ' s in 4 s');
+    await o.browser.close();
+  }
+  console.log(fail ? 'FAILED ' + fail : 'ALL PASS');
+  process.exit(fail ? 1 : 0);
+})();

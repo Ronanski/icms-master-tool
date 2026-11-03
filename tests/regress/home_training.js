@@ -23,7 +23,9 @@ await p.evaluate(()=>(document.querySelector('#crrail .gs-set > button')).click(
 ck(await p.evaluate(()=>document.body.dataset.tab==='tools'&&getComputedStyle(document.getElementById('toolsws')).display==='block'),'⚙ > Engineering tools opens the TOOLS page');
 // 2
 await p.evaluate(()=>lsSetTab('home'));await p.waitForTimeout(300);
-await p.evaluate(()=>[...document.querySelectorAll('#homews .hmstart')].find(x=>/150 MW/.test(x.textContent)).click());await p.waitForTimeout(3000);
+await p.evaluate(()=>[...document.querySelectorAll('#homews .hmstart')].find(x=>/150 MW/.test(x.textContent)).click());
+// 3.2.0-beta.78: the starting state loads in slices with a progress bar (retest #54): wait for it, not a fixed 3 s
+await p.waitForFunction(()=>AN.startState==='plantLoad150'&&!AN._loading,null,{timeout:240000});await p.waitForTimeout(500);
 const r2=await p.evaluate(()=>({tab:document.body.dataset.tab,st:AN.startState,seg:[...document.querySelectorAll('#gsbar .seg button')].map(x=>x.textContent+(x.classList.contains('on')?'*':'')).join('|')}));
 ck(r2.tab==='operate'&&r2.st==='plantLoad150'&&r2.seg==='VIEW*|RUN','HOME At 150 MW: starting state '+r2.st+', page '+r2.tab+', switch '+r2.seg);
 // 3
@@ -33,7 +35,8 @@ await p.evaluate(()=>document.querySelector('#gsbar .seg button').click());await
 const r3b=await p.evaluate(()=>({run:AN.run,view:AN.view,seg:[...document.querySelectorAll('#gsbar .seg button')].map(x=>x.textContent+(x.classList.contains('on')?'*':'')).join('|')}));
 ck(r3==='VIEW|RUN*'&&!r3b.run&&r3b.view&&r3b.seg==='VIEW*|RUN','clock running in VIEW shows '+r3+'; VIEW stops it: '+JSON.stringify(r3b));
 // 4
-await p.evaluate(()=>{lsSetTab('logic');AN.go(AN.sheets.findIndex(s=>s.name==='ABC-010'))});await p.waitForTimeout(2600);
+// 3.2.0-beta.78: the Logic page opens on the category it had (app.js logicCat): the ABC category first, as the operator picks it
+await p.evaluate(()=>{lsSetTab('logic');AN.setCat('an');AN.go(AN.sheets.findIndex(s=>s.name==='ABC-010'))});await p.waitForTimeout(2600);
 await p.evaluate(()=>{AN.go(AN.sheets.findIndex(s=>s.name==='ABC-001C'))});await p.waitForTimeout(2600);
 await p.evaluate(()=>lsSetTab('home'));await p.waitForTimeout(300);
 const r4=await p.evaluate(()=>[...document.querySelectorAll('#homews .hmrecent .hmlist:first-child .hmchip')].map(x=>x.textContent).join());
@@ -48,7 +51,10 @@ await p.evaluate(()=>lsHome.show(0));await p.click('#trc0_0');await p.waitForTim
 const r5b=await p.evaluate(()=>({pct:document.querySelector('#trainws .trpct').textContent,ls:localStorage.getItem('ls-train')}));
 await load();await p.evaluate(()=>lsSetTab('training'));await p.waitForTimeout(400);await p.evaluate(()=>lsHome.show(0));
 const r5c=await p.evaluate(()=>({c:document.getElementById('trc0_0').checked,pct:document.querySelector('#trainws .trpct').textContent}));
-ck(/^1 of 692/.test(r5b.pct)&&r5b.ls==='{"0.0":1}'&&r5c.c&&/^1 of 692/.test(r5c.pct),'tick step 1: "'+r5b.pct+'", kept after a reload: '+r5c.c);
+// 3.2.0-beta.78: the NOTE / WARNING lines of the procedure (LS_PROC5002_LIM .note, home.js isNote) are not steps to tick: the count is
+// the steps without them (692 - 20 = 672)
+const nTick=await p.evaluate(()=>LS_PROC5002.reduce((a,s,si)=>a+s.s.filter((x,i)=>!((window.LS_PROC5002_LIM||{})[si+'.'+i]||{}).note).length,0));
+ck(new RegExp('^1 of '+nTick+' ').test(r5b.pct)&&(()=>{const o=JSON.parse(r5b.ls||'{}');return Object.keys(o).join()==='0.0'&&!!o['0.0']})()/* the tick keeps its time ("16:56"), not 1 */&&r5c.c&&new RegExp('^1 of '+nTick+' ').test(r5c.pct),'tick step 1: "'+r5b.pct+'" (expected 1 of '+nTick+'), ls '+r5b.ls+', after a reload: '+r5c.c+' "'+r5c.pct+'"');
 await p.evaluate(()=>[...document.querySelectorAll('#trainws .trbtn')].find(x=>x.textContent==='Tick field steps').click());await p.waitForTimeout(200);
 ck(await p.evaluate(()=>/^6 \/ 6 done$/.test(document.querySelector('#trainws .trcount').textContent)&&/6\/6/.test(document.querySelector('#trainws .trsec.on').textContent)),'Tick field steps: section 1 = 6 / 6');
 const si=await p.evaluate(()=>LS_PROC5002.findIndex(s=>s.s.some(x=>x.g.includes('FICFA1071'))));

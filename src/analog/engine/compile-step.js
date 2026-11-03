@@ -2175,6 +2175,7 @@ function anCompile(S) {
   return S;
 }
 function anInit(S) {
+  AN._gen = (AN._gen || 0) + 1; /* new block states: engine/sync.js takes its refs again */
   anDefaults(S);
   const N = S.nets.length,
     rt = (S.rt = {
