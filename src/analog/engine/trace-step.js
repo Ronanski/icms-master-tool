@@ -26,6 +26,15 @@ function anStepBack(names, rts, name, tg) {
     rem -= d;
   }
 }
+/* the plant time (Mina #M29, 2026-11-03): every sheet keeps its own rt.t and runs only while it is in the set that is stepped, so
+   a sheet that joins the set later (ABC-053 opened by the TICLO1002 control at 25:20) is at 0:14. The time the operator sees (status
+   bar, Event log, the alarm table) is the plant's: the latest time of any sheet; it goes back only when every sheet does (clock0,
+   a starting state) */
+function anPlantT() {
+  let t = 0;
+  for (const sh of AN.sheets || []) if (sh.S && sh.S.rt && sh.S.rt.t > t) t = sh.S.rt.t;
+  return t;
+}
 /* The clock of the sheets back to 0 and their trends emptied (the Training: "the start-up begins at t = 0", walkthrough #1; was done
    by src/ui/training/guide.js on the page only: the run time t and the plant-model trends are not writable slots, so the engine kept
    its clock; Winter's finding). An engine action: it runs in the engine and on the page (src/world/eng.js CALLS). */

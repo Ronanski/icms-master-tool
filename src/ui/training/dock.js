@@ -1635,7 +1635,8 @@
       m4 = new RegExp('(?:≤|<)\\s*' + n).exec(x),
       /* live test #46: an SOP of one number ("Normal 90", "SOP 20 A", "NL -4 m"): ±10 % of it */
       m5 = new RegExp('^(?:SOP|NL|Normal)\\b[^\\d-]*' + n + '(?!\\.PNG)').exec(x.trim());
-    if (m1) return [+m1[1], +m1[2]];
+    /* Mina #M30: a range written high to low ("-20 ~ -50 mmH2O" of the main oil tank vacuum): low first (-35.0 was "!") */
+    if (m1) return [Math.min(+m1[1], +m1[2]), Math.max(+m1[1], +m1[2])];
     if (m2) return [+m2[1] - +m2[2], +m2[1] + +m2[2]];
     if (m3) return [+m3[1], Infinity];
     if (m4) return [-Infinity, +m4[1]];
