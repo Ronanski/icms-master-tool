@@ -245,7 +245,7 @@ b.gd-tg{font-weight:600;color:var(--c-tx2)}
 #gdsecl button.dn{color:var(--c-dim)}
 #gdsecl button.dn:after{content:"✓";margin-left:auto;color:#22a052}
 #gdsecl button.on{background:var(--c-accbg);box-shadow:inset 3px 0 0 var(--c-acc)}
-#gdsecl button:disabled{opacity:.4;cursor:default}
+#gdsecl button[aria-disabled=true]{opacity:.4;cursor:default}
 html.gd-bottom #gdsecl{right:auto;left:0;top:auto;bottom:calc(100% + 6px)}
 /* the equipment of the step on the HMI */
 html.gd-tr #plmid{position:relative}
