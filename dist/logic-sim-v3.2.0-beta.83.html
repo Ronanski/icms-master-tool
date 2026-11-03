@@ -32173,12 +32173,14 @@ document.head.appendChild(
         m = SIM ? (DPAUSE ? 'PAUSED' : 'RUN') : window.WORLD && WORLD.live ? 'RUN (ABC)' : 'VIEW / TRACE'; /* 2.5.0-beta.13: the DITL bar is VIEW | ▶ Run as the ABC */
         k = SIM && !DPAUSE ? 'run' : SIM ? '' : 'view';
       }
+      /* the engine runs in the Web Worker: a clear mark (Mina, beta.82: ?worker=1 showed nothing) */
+      if (window.ENG && ENG.mode === 'mirror') m += ' · WORKER';
       c1.textContent = m;
       c1.className = k;
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.83';
-      c3.textContent += ' · build 89baedd'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build ab1ec86'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -36395,12 +36397,25 @@ AN.sched = (() => {
 /* group 1: ABC. Speed (user 2026-11-03, Mina M23: the Plant view reached x110 ~ 120 before P3 and x55 ~ 68 after): the step runs at once,
    as before 18f7a64 (interaction.js), not in 4 ms slices of the queue; the queue (AN.sched) stays for the long actions and flush */
 const anMirror = () => !!(window.ENG && ENG.mode === 'mirror');
+/* M32 (user 2026-11-03: "x300 na 6 h, 1.2 min nalang"): the plant time of a tick is the REAL time since the last tick x the speed
+   (anTick), not a fixed 0.1 s: a tick that took longer than 100 ms (x300 = 60 steps) lost the rest, so x300 ran about x100.
+   anSteps: the steps of a tick, 0.5 s each up to 20 a tick, then longer steps (at most 2 s) so that a tick stays short. The same in
+   the Web Worker (src/world/eng-host.js) */
+let anLastT = 0;
+const anTick = () => {
+  const now = performance.now(),
+    el = anLastT ? Math.min((now - anLastT) / 1000, 0.5) : 0.1;
+  anLastT = now;
+  return el * (AN.spd || 1);
+};
+const anSteps = dt => Math.max(1, Math.min(Math.ceil(dt / 0.5), Math.max(20, Math.ceil(dt / 2))));
+AN.anSteps = anSteps;
 setInterval(() => {
-  if (!live() || !AN.run || AN._loading || anMirror()) return;
+  if (!live() || !AN.run || AN._loading || anMirror()) return void (anLastT = 0);
   const sh = cs();
   if (!sh || !sh.S) return;
-  const dt = 0.1 * AN.spd,
-    n = Math.max(1, Math.ceil(dt / 0.5));
+  const dt = anTick(),
+    n = anSteps(dt);
   histRec(sh, 1);
   const t0_ = performance.now(),
     K = AN.tierK || 1;
@@ -50357,7 +50372,12 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   const want = () => {
     try {
       if (/[?&]worker=1\b/.test(location.search)) return true;
-      return localStorage.getItem('ls-worker') === '1';
+      if (/[?&]worker=0\b/.test(location.search)) return false;
+      const ls = localStorage.getItem('ls-worker');
+      if (ls === '1' || ls === '0') return ls === '1';
+      /* user 2026-11-03 ("Ediba my worker na!!!!"): the Worker is the default on the Beta web site (/beta/ over https); the page
+         engine (plain) stays as the automatic fallback when the worker fails. The apk / exe copy and file:// stay plain (GO STABLE) */
+      return location.protocol === 'https:' && /\/beta\/(index\.html)?$/.test(location.pathname);
     } catch (e) {
       return false;
     }
@@ -75875,6 +75895,7 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
     timers.push(setInterval(() => say({ t: 'beat' }), 1000));
     const { AN, WORLD, ENG } = G;
     let lastLive = null,
+      lastT = 0,
       acc = 0,
       busy = false;
     const cs = () => AN.sheets[AN.i] || AN.sheets.find(x => /057/.test(x.name));
@@ -75887,16 +75908,21 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
           if (!AN.run) N.norun = (N.norun || 0) + 1;
           else N.load = (N.load || 0) + 1;
           acc = 0;
+          lastT = 0;
           return;
         }
         /* the plant time of this tick is kept even while a world scan holds the engine (as the page scheduler, sched.js: its anAcc
-           grows before the busy check); before, a tick that met a scan was lost: 4.4 s of plant a second at 6x (eng_worker, Winter) */
-        acc += 0.1 * AN.spd;
+           grows before the busy check); before, a tick that met a scan was lost: 4.4 s of plant a second at 6x (eng_worker, Winter).
+           M32 (user 2026-11-03): the REAL time since the last tick x the speed, not a fixed 0.1 s (a late tick lost the rest: x300 ran
+           about x100); the steps as sched.js anSteps: 0.5 s up to 20 a tick, then longer, at most 2 s */
+        const now = performance.now();
+        acc += (lastT ? Math.min((now - lastT) / 1000, 0.5) : 0.1) * AN.spd;
+        lastT = now;
         if (busy) return void N.skip++;
         const sh = cs();
         if (!sh || !sh.S) return void (N.nosh = (N.nosh || 0) + 1);
         const dt = acc,
-          n = Math.max(1, Math.ceil(dt / 0.5)),
+          n = Math.max(1, Math.min(Math.ceil(dt / 0.5), Math.max(20, Math.ceil(dt / 2)))),
           K = AN.tierK || 1;
         acc = 0;
         busy = true;

@@ -736,6 +736,8 @@ document.head.appendChild(
         m = SIM ? (DPAUSE ? 'PAUSED' : 'RUN') : window.WORLD && WORLD.live ? 'RUN (ABC)' : 'VIEW / TRACE'; /* 2.5.0-beta.13: the DITL bar is VIEW | ▶ Run as the ABC */
         k = SIM && !DPAUSE ? 'run' : SIM ? '' : 'view';
       }
+      /* the engine runs in the Web Worker: a clear mark (Mina, beta.82: ?worker=1 showed nothing) */
+      if (window.ENG && ENG.mode === 'mirror') m += ' · WORKER';
       c1.textContent = m;
       c1.className = k;
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
