@@ -247,7 +247,14 @@
        instead of a reload that brings the same version back */
     var sw = navigator.serviceWorker;
     if (!sw || !window.caches) return void location.reload();
-    say('Downloading the update...');
+    /* M31: the page is ~12 MB, a minute on a slow link; a second press does not start it again, and the message stays with the MB done */
+    if (go.busy) return void say('The update is still downloading. Please wait; the app reloads by itself.');
+    go.busy = 1;
+    var hold = function (t) {
+      say(t);
+      clearTimeout(say.t);
+    };
+    hold('Downloading the update... Please wait, do not reload.');
     sw.getRegistration(dir)
       .then(function (reg) {
         if (reg)
@@ -257,10 +264,32 @@
         var scope = reg ? reg.scope : location.href.replace(/[?#].*$/, '').replace(/index\.html$/, '');
         return fetch(scope + '?t=' + Date.now(), { cache: 'no-store' }).then(function (r) {
           if (!r.ok) throw new Error('HTTP ' + r.status);
-          return r.clone().text().then(function (h) {
+          var tot = +r.headers.get('content-length') || 0,
+            got = 0,
+            parts = [],
+            mb = function (x) {
+              return (x / 1048576).toFixed(1);
+            };
+          var body = r.body && r.body.getReader ? r.body.getReader() : null;
+          var all = body
+            ? (function pump() {
+                return body.read().then(function (c) {
+                  if (c.done) return new Blob(parts, { type: 'text/html' });
+                  parts.push(c.value);
+                  got += c.value.length;
+                  hold('Downloading the update: ' + mb(got) + (tot && got <= tot ? ' / ' + mb(tot) : '') + ' MB. Please wait, do not reload.');
+                  return pump();
+                });
+              })()
+            : r.blob();
+          return all.then(function (blob) {
+            r = new Response(blob, { headers: { 'content-type': 'text/html; charset=utf-8' } });
+            return blob.text();
+          }).then(function (h) {
             var m = h.match(/<title>[^<]*?(v\d+(\.\d+)+(-beta\.\d+)?)/),
               nv = m ? m[1] : '';
             if (!nv || cmp(nv, T) <= 0) {
+              go.busy = 0;
               say('The new version is still being published. Try Update now again in a few minutes.');
               return;
             }
@@ -270,7 +299,7 @@
                 return c.put(scope, r);
               })
               .then(function () {
-                say('Downloaded: ' + nv + '. Opening...');
+                hold('Downloaded: ' + nv + '. Opening...');
                 setTimeout(function () {
                   location.reload();
                 }, 400);
@@ -279,6 +308,7 @@
         });
       })
       .catch(function () {
+        go.busy = 0;
         say('The update could not be downloaded. Try again.');
       });
   }
