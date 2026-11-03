@@ -27,16 +27,20 @@ async function mode(worker) {
     AN.i = AN.sheets.indexOf(C);
     await AN.plantLoad150();
     await DITL150.apply();
+    AN.startState = 'plantLoad150'; /* as the Start at 150 MW of the app (guide.js): a plant with a starting state runs again on ABC */
     AN.spd = 1;
   });
   if (worker) await page.waitForFunction(() => !ENG.heavy, null, { timeout: 120000 }).catch(() => {});
-  await page.evaluate(() => AN.runOn());
+  /* RUN as after the starting state (the RUN button asks for a starting state first) */
+  await page.evaluate(() => {
+    if (AN.view) AN.view = false;
+    AN.run = true;
+  });
   await page.waitForTimeout(1000);
   ck(await page.evaluate(isRun), name + ': ABC RUN on before the drawing is opened');
   /* open a DITL drawing from the dock; sample RUN every 100 ms for 2 s */
   const r = await page.evaluate(async isRunS => {
     const isRun = eval(isRunS);
-    const ev0 = (window.lsEvents ? lsEvents() : []).length;
     LS_DOCK.openD('DITL-76');
     const seen = [];
     for (let i = 0; i < 20; i++) {
@@ -48,7 +52,7 @@ async function mode(worker) {
     const tk0 = WORLD.tk || 0;
     await new Promise(r => setTimeout(r, 1500));
     const logTxt = document.body.innerText;
-    return { cat: AN.cat, run: isRun(), flips, scans: (WORLD.tk || 0) - tk0, kept: /RUN kept while opening/.test(logTxt), ev0 };
+    return { cat: AN.cat, run: isRun(), flips, scans: (WORLD.tk || 0) - tk0, kept: /RUN kept while opening/.test(logTxt) };
   }, '(' + isRun.toString() + ')');
   ck(r.cat !== 'an' && r.run && r.flips === 0, name + ': DITL-76 opened from the dock, RUN on, no toggle in 2 s (cat ' + r.cat + ', flips ' + r.flips + ')');
   ck(!r.kept, name + ': no second RUN press ("RUN kept" event) while opening');
