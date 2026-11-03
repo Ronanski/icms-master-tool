@@ -241,11 +241,46 @@
         });
       return;
     }
+    /* M31 (Mina, beta.80 -> 81): the page itself takes the new page with a fresh ?t= query (the GitHub Pages CDN can give the old page
+       to a plain request for up to 10 min after a deploy), checks its version, puts it in the cache that the service worker answers
+       from, asks the browser for the new sw.js too, and only then reloads. A page that is still the old one gives a clear message
+       instead of a reload that brings the same version back */
     var sw = navigator.serviceWorker;
-    if (sw && sw.controller) {
-      say('Downloading the update...');
-      sw.controller.postMessage('update');
-    } else location.reload();
+    if (!sw || !window.caches) return void location.reload();
+    say('Downloading the update...');
+    sw.getRegistration(dir)
+      .then(function (reg) {
+        if (reg)
+          try {
+            reg.update();
+          } catch (e) {}
+        var scope = reg ? reg.scope : location.href.replace(/[?#].*$/, '').replace(/index\.html$/, '');
+        return fetch(scope + '?t=' + Date.now(), { cache: 'no-store' }).then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.clone().text().then(function (h) {
+            var m = h.match(/<title>[^<]*?(v\d+(\.\d+)+(-beta\.\d+)?)/),
+              nv = m ? m[1] : '';
+            if (!nv || cmp(nv, T) <= 0) {
+              say('The new version is still being published. Try Update now again in a few minutes.');
+              return;
+            }
+            return caches
+              .open('logic-sim-' + scope)
+              .then(function (c) {
+                return c.put(scope, r);
+              })
+              .then(function () {
+                say('Downloaded: ' + nv + '. Opening...');
+                setTimeout(function () {
+                  location.reload();
+                }, 400);
+              });
+          });
+        });
+      })
+      .catch(function () {
+        say('The update could not be downloaded. Try again.');
+      });
   }
   function check(manual) {
     fetch(base + 'version.json?t=' + Date.now(), { cache: 'no-store' })
