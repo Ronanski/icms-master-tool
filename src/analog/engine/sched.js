@@ -136,7 +136,9 @@ setInterval(() => {
     panelUpd(false, true);
   }
   {
-    const ms = performance.now() - t0_;
+    /* M32: the light mode (tierK) is judged on the time of ONE step, not of the tick: at x300 a tick is 20 steps (~100 ms), so the
+       tick time raised tierK to 6, and the tier stepping cost more than it saved (measured on the PC: x300 at tierK 1 = x308, at 6 = x157) */
+    const ms = (performance.now() - t0_) / n;
     AN._ms = AN._ms == null ? ms : AN._ms * 0.85 + ms * 0.15;
     if (!AN.tierLock && (AN._tn = (AN._tn || 0) + 1) % 10 === 0) {
       const k = AN.tierK || 1;
