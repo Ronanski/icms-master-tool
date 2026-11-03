@@ -531,3 +531,6 @@ body.app2 #gdtrb[hidden]{display:none!important}
 @container gdock (max-width:419px){#gdock .gd-chip{grid-template-columns:minmax(0,1fr)}#gdock .gd-chip .gd-cn{display:none}#gdock .gd-chip.ok .gd-cnm:before{content:"✓ "}}
 #gdock .gd-chip .gd-cc{display:flex;align-items:center;gap:4px}
 #gdock .gd-chip .gd-cc .gd-yn{width:16px;height:14px;font-size:10px;flex:none}
+
+/* Mina M1: the SV typed in the loop row of the dock */
+.gd-svin{width:4.5rem;height:30px;padding:0 6px;border:1px solid var(--c-line2);border-radius:6px;background:var(--c-well);color:var(--c-tx);font:600 13px var(--mf)}

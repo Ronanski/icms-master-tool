@@ -1739,9 +1739,19 @@
     const fpTags = [];
     {
       const rows = [];
-      for (const t0 of (s.fps || []).slice(0, 3)) {
+      /* Mina M2 (beta.88, Step 20): "Show control" for the SOP item "set LCV-MU1110 to AUTO" showed no control (not one of the step's
+         loops): the loops a SOP item of the step names get their row too */
+      const sopT = call(
+        () =>
+          (s.field && s.field.length ? fieldList(s.field, s.it) : [])
+            .flatMap(q => String(q.t).match(/\b(?:[LFPT]CV|[LFPTA]IC)-?[A-Z]{2}\d{3,5}(?:-\d|[A-Z])?\b/g) || [])
+            .filter(x => call(() => LV().fp(LV().ctlTag(x) || x), null)),
+        []
+      );
+      for (const t0 of [...new Set((s.fps || []).concat(sopT))].slice(0, 4)) {
         const t = call(() => LV().ctlTag(t0), null) || t0,
           f = call(() => LV().fp(t), null);
+        if (fpTags.includes(t)) continue;
         if (!f) continue;
         fpTags.push(t);
         const ctl = f.kind === 'ctl',
@@ -1769,7 +1779,19 @@
           br = ctl && f.c.remote ? b('R', 'REMOTE (SV from the logic)', () => op('R', () => g.A.rem(t)), 'md') : null,
           /* MV by 1 % and by 5 % (▲▲): the step buttons that only moved this MV ("SA damper ▲▲ +5 %") are not shown any more */
           mvd = d => b(Math.abs(d) > 1 ? (d > 0 ? '▲▲' : '▼▼') : d > 0 ? '▲' : '▼', 'MV ' + (d > 0 ? '+' : '') + d + ' % (MANUAL)', () => op('MV ' + (d > 0 ? '+' : '') + d + ' %', () => (mdNow() === 'MAN' ? g.A.man(t, Math.max(0, Math.min(100, (+mvNow() || 0) + d))) : 'In ' + mdNow() + ': press M first'))),
-          svd = d => b('SV ' + (d > 0 ? '▲' : '▼'), 'SV ' + (d > 0 ? '+' : '') + d + ' (AUTO)', () => op('SV ' + (d > 0 ? '+' : '') + d, () => (mdNow() === 'AUTO' ? g.A.auto(t, Math.round(((+svNow() || 0) + d) * 10) / 10) : 'In ' + mdNow() + ': press A first'))),
+          /* Mina M1 (beta.88, Worker, FICCD1120 to 150 T/H took about 130 presses): a press read the SV of the engine, which comes back a
+             moment later, so quick presses were lost; the next press now adds to the SV just written (for 3 s), there is a ▲▲ of 5 steps
+             and the SV can be typed */
+          svW = { v: NaN, at: 0 },
+          svBase = () => (Date.now() - svW.at < 3000 && isFinite(svW.v) ? svW.v : +svNow() || 0),
+          svPut = x => {
+            const r = Math.round(x * 10) / 10,
+              e = g.A.auto(t, r);
+            if (!e) (svW.v = r), (svW.at = Date.now());
+            return e;
+          },
+          svd = d => b('SV ' + (Math.abs(d) > dsv ? (d > 0 ? '▲▲' : '▼▼') : d > 0 ? '▲' : '▼'), 'SV ' + (d > 0 ? '+' : '') + d + ' (AUTO)', () => op('SV ' + (d > 0 ? '+' : '') + d, () => (mdNow() === 'AUTO' ? svPut(svBase() + d) : 'In ' + mdNow() + ': press A first'))),
+          svIn = ctl && f.c.q && f.c.q.sv != null ? E('input', { type: 'number', cls: 'gd-svin', title: 'Type the SV and press Enter (AUTO)', 'aria-label': 'SV of ' + t, step: String(dsv) }) : null,
           v = (k, u) => {
             const x = E('b', { txt: '—' }),
               e = E('em', { txt: u });
@@ -1784,10 +1806,19 @@
           row = E('div', { cls: 'gd-ctl' }, [
             E('div', { cls: 'gd-ch' }, [E('b', { txt: t }), E('span', { cls: 'gd-cd', txt: desc.length > 40 ? desc.slice(0, 40).replace(/\s+\S*$/, '') + '…' : desc, title: desc }), mdL]),
             E('div', { cls: 'gd-vs' + (ctl ? '' : ' mv1') }, (ctl ? [pvD, svD] : []).concat([mvD])),
-            E('div', { cls: 'gd-cbs' }, [bm, ba, br, E('span', { cls: 'gd-sp' }), mvd(-5), mvd(-1), mvd(1), mvd(5)].concat(ctl && f.c.q && f.c.q.sv != null ? [svd(-dsv), svd(dsv)] : []).filter(Boolean)),
+            E('div', { cls: 'gd-cbs' }, [bm, ba, br, E('span', { cls: 'gd-sp' }), mvd(-5), mvd(-1), mvd(1), mvd(5)].concat(ctl && f.c.q && f.c.q.sv != null ? [svd(-5 * dsv), svd(-dsv), svd(dsv), svd(5 * dsv), svIn] : []).filter(Boolean)),
             ro
           ]);
         mvD.append(E('span', { cls: 'gd-mvb' }, [bar]));
+        if (svIn)
+          svIn.onkeydown = e => {
+            if (e.key !== 'Enter') return;
+            const x = parseFloat(svIn.value);
+            if (!isFinite(x)) return;
+            op('SV = ' + x, () => (mdNow() === 'AUTO' ? svPut(x) : 'In ' + mdNow() + ': press A first'));
+            svIn.value = '';
+            svIn.blur();
+          };
         els.ctl.push(() => {
           const md = mdNow(),
             pv = ctl ? call(() => LV().pvOf(LV().fp(t)), NaN) : NaN,
@@ -2776,7 +2807,8 @@
         fn = () => {
           els.stOpen = { i: s.i, k: 'S' };
           live();
-          const t = ctlBox.bd.querySelector('.gd-ctl,.gd-btn');
+          const tgs = String(tg + ' ' + tx).toUpperCase().match(/[A-Z]{2,4}-?[A-Z]{0,2}\d{3,5}[A-Z0-9-]*/g) || [],
+            t = [...ctlBox.bd.querySelectorAll('.gd-ctl')].find(r => tgs.some(x => r.textContent.toUpperCase().includes(x) || r.textContent.toUpperCase().includes(String(call(() => LV().ctlTag(x), '') || '#')))) || ctlBox.bd.querySelector('.gd-ctl,.gd-btn');
           if (t) {
             t.scrollIntoView({ block: 'center' });
             t.classList.add('gd-flash');

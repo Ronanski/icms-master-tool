@@ -706,7 +706,12 @@ function anProcStep(S, dt) {
             : 1); /* 2.2.0-beta.12: no BFWP, no start-up flow */
       /* 2.1.0-beta.11: water that leaves the drum besides the main steam (blowdown and the rest), from "Start at 150 MW":
          03.png feedwater 499.1 - main steam 474.1 = 25.0 T/H (pr.integLoss, removed by Reset) */
-      q.y = Math.max(lo, Math.min(lo + span, q.y + dt * pr.integ.k * (ffw - fst - (pr.integLoss || 0))));
+      /* Mina H1 (beta.88, Step 28: the drum overfilled to +660 mm and the operator had no way to bring it down): the mass (emergency)
+         blowdown MOV MV-BD1001 of DITL-38 (STN101, the drawing itself) takes drum water out by its position; 50 T/H fully open is
+         ASSUMED (about 11 % of the 460 T/H MCR; the size of the valve is not in the repository) */
+      const bdP = typeof anDitlPos === 'function' ? anDitlPos('DITL-38') : null,
+        bdQ = bdP > 0 ? (50 * bdP) / 100 : 0;
+      q.y = Math.max(lo, Math.min(lo + span, q.y + dt * pr.integ.k * (ffw - fst - (pr.integLoss || 0) - bdQ)));
       AN_CYC.ffw = ffw; /* the deaerator gives this water (condensate cycle balance) */
       /* 2.2.0-beta.12 (M3): SHRINK / SWELL. A fast change of the drum pressure moves the level the other way for a while (the steam
          bubbles in the water collapse when the pressure rises after a turbine trip, grow when it falls after an MFT): the level
