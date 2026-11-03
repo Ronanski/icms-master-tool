@@ -1996,12 +1996,17 @@
           } catch (e) {}
           live();
         };
-        if (cut >= 0 && fi >= cut && !au) els.after.push({ cb, li, t: f.t, by, g: f.g });
+        /* Mina L1 (beta.88 / 89, Step 2: "Monitor / Current / Pressure come back as NEXT"): PR-OPE-5002 2.17 ~ 2.21 are the checks of the
+           1st seawater pump and 2.25 ~ 2.29 the same words for the 2nd; the NEXT card now says which item and after which start */
+        const num = f.si + 1 + '.' + (f.i + 1),
+          st0 = fli.slice(0, fi).reverse().find(q => stRe.test(q.t)),
+          ctx = st0 && fi > fli.indexOf(st0) ? 'after: ' + String(st0.t).replace(/ with (proper )?coordination.*$/i, '') : '';
+        if (cut >= 0 && fi >= cut && !au) els.after.push({ cb, li, t: f.t, by, g: f.g, num, ctx });
         if (cut >= 0 && fi < cut && !au) els.before.push(cb);
         /* #20: the line-up of the DCS command: the items before the first item the logic ticks */
         if (!au && fi < (firstAu < 0 ? (cut >= 0 ? cut : 0) : firstAu)) els.gate.push(cb);
         /* the items of the Lineup stage that the operator ticks (the SUSUNOD NA GAWIN names the first one not done) */
-        if (!(cut >= 0 && fi >= cut) && !au) els.lineCb.push({ cb, t: f.t, by, g: f.g });
+        if (!(cut >= 0 && fi >= cut) && !au) els.lineCb.push({ cb, t: f.t, by, g: f.g, num, ctx });
         if (au) els.auIt.push({ k, cb, li });
         ul.append(li);
       });
@@ -2724,7 +2729,7 @@
     };
     const tick = (it, kind) => {
       who = whoOf(it.by) || (kind === 'Check' ? 'CONTROL ROOM' : 'FIELD OPERATOR');
-      say = u1(it.t);
+      say = u1(it.t) + (it.num ? ' (SOP ' + it.num + (it.ctx && it.t.length < 40 ? ', ' + it.ctx : '') + ')' : '');
       adr = it.g ? u1(it.g) : who === 'FIELD OPERATOR' ? 'field check · no DCS signal' : '';
       bl = who === 'FIELD OPERATOR' ? 'Done in field' : '✓ Done';
       fn = () => {
