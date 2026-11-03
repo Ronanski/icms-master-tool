@@ -158,6 +158,14 @@
     }
     return (fpIx && fpIx[T]) || null;
   };
+  /* Mina step 14 (beta.87, Worker, the 036 HMI in the centre): an operator command on a station of a sheet that is in no stepped set
+     (ABC-053 never opened) did nothing until that page was opened: TICLO1002 A stayed MAN. A command from a faceplate, the dock or the
+     Training puts its sheet in the stepped set (AN.checkSheets, links.js actSet; a writable slot, so the engine of the worker takes it) */
+  AN.opSheet = nm => {
+    if (!nm || !(AN.sheets || []).some(s => s.name === nm)) return;
+    const L = AN.checkSheets || [];
+    if (!L.includes(nm)) AN.checkSheets = L.concat(nm);
+  };
   AN.fpBuild = (tag, box) => {
     const nm = AN.fpFind(tag),
       sh = nm && AN.sheets.find(s => s.name === nm);
@@ -238,6 +246,7 @@
          screen (the MODE events of events.js read the sheet on screen only); a ramp of SV / MV (hold, ▲▲) is one event when it stops */
       const opT = {},
         opEv = (k, v) => {
+          AN.opSheet(sh.name);
           const say = () => {
             try {
               window.lsEventAdd && lsEventAdd(sh.name, 'DCS', 'Operator: ' + c.tag + ' ' + k + (v === undefined ? '' : ' = ' + (+v).toFixed(2).replace(/\.?0+$/, '')) + ' (faceplate)');
@@ -407,6 +416,7 @@
         mvRow.append(E('span', { cls: 'sub', txt: '(no manual input)' }));
       }
       const setMode = m => {
+        AN.opSheet(sh.name);
         if (!c.amt) return;
         const st = S.rt.st[c.amt.id];
         if (!st) return;
