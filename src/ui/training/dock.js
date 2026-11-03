@@ -1050,10 +1050,21 @@
           E('b', { txt: String(o.sk) }),
           E('span', { txt: (P[o.sk - 1] || {}).t || '' })
         ]);
-      b.disabled = lock;
+      /* Mina #M24: a section not reached yet (the Training goes in the order of PR-OPE-5002) was a disabled button: the press did nothing
+         and the menu stayed open. Now it says why and closes */
+      b.setAttribute('aria-disabled', lock ? 'true' : 'false');
+      if (lock) b.title = 'Opens after the steps before it are done (PR-OPE-5002 order)';
       b.onclick = () => {
         box.remove();
         els.secL.setAttribute('aria-expanded', 'false');
+        if (lock) {
+          if (els.ovw) {
+            els.ovw.hidden = false;
+            els.ovw._r = 1;
+            els.ovw.textContent = '⚠ Section ' + o.sk + ' opens after the steps before it are done (the Training follows the order of PR-OPE-5002).';
+          }
+          return;
+        }
         g.open(o.first);
         fill(true);
       };
@@ -1635,7 +1646,8 @@
       m4 = new RegExp('(?:≤|<)\\s*' + n).exec(x),
       /* live test #46: an SOP of one number ("Normal 90", "SOP 20 A", "NL -4 m"): ±10 % of it */
       m5 = new RegExp('^(?:SOP|NL|Normal)\\b[^\\d-]*' + n + '(?!\\.PNG)').exec(x.trim());
-    if (m1) return [+m1[1], +m1[2]];
+    /* Mina #M30: a range written high to low ("-20 ~ -50 mmH2O" of the main oil tank vacuum): low first (-35.0 was "!") */
+    if (m1) return [Math.min(+m1[1], +m1[2]), Math.max(+m1[1], +m1[2])];
     if (m2) return [+m2[1] - +m2[2], +m2[1] + +m2[2]];
     if (m3) return [+m3[1], Infinity];
     if (m4) return [-Infinity, +m4[1]];
@@ -3323,7 +3335,9 @@
     /* Mina #M14: the standby of the step still to put in AUTO comes before the valves (step 8 opened V-MU1033 before MWP-B) */
     if (!a && s.sby && s.max) {
       const nOn = ms.filter(x => call(() => x.on && x.on(), false)).length,
-        sb = nOn >= s.max ? ms.find(x => !call(() => x.on && x.on(), false) && !autoOf(motAddr(x))) : null;
+        /* Mina #M15: one standby is enough (MWP-B in AUTO: the NEXT card offered "Open faceplate: Make-up water pump C" for the valves) */
+        has = ms.some(x => !call(() => x.on && x.on(), false) && autoOf(motAddr(x))),
+        sb = nOn >= s.max && !has ? ms.find(x => !call(() => x.on && x.on(), false) && !autoOf(motAddr(x))) : null;
       if (sb) {
         a = sb;
         ad = motAddr(sb);

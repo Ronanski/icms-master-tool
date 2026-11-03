@@ -31,7 +31,7 @@
     }
   };
   function add(S, sh, kind, text, why) {
-    LOG.unshift({ t: tfmt(S.rt.t), sh: sh.name, kind, text, why });
+    LOG.unshift({ t: tfmt(AN.plantT ? AN.plantT() : S.rt.t), sh: sh.name, kind, text, why });
     if (LOG.length > MAX) LOG.length = MAX;
     unseen++;
     draw();
@@ -174,7 +174,7 @@
       return;
     }
     const cs = A.sheets[A.i] || A.sheets[0],
-      t = cs && cs.S && cs.S.rt ? cs.S.rt.t : 0;
+      t = A.plantT ? A.plantT() : cs && cs.S && cs.S.rt ? cs.S.rt.t : 0;
     /* a plant loaded again: a new table */
     if (A.startState !== base || t + 1 < lastT || almScan.reload) {
       almScan.reload = false;
@@ -288,7 +288,7 @@
     const L = k ? [k] : [...AT.keys()];
     let n = 0;
     const cs = window.AN && AN.sheets && AN.sheets[AN.i],
-      t = cs && cs.S && cs.S.rt ? cs.S.rt.t : 0;
+      t = window.AN && AN.plantT ? AN.plantT() : cs && cs.S && cs.S.rt ? cs.S.rt.t : 0;
     for (const j of L) {
       const e = AT.get(j);
       if (!e || e.ack) continue;
