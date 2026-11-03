@@ -1069,7 +1069,7 @@
     {
       const t = K('espst');
       const upd = () => {
-        if (!t || !t.isConnected) return clearInterval(iv);
+        if (!t || !t.isConnected) return iv && iv.stop();
         let on = false,
           tx = '';
         try {
@@ -1082,7 +1082,8 @@
         t.textContent = (on ? 'RUNNING' : 'STOPPED') + tx;
         t.setAttribute('fill', on ? C.run : C.stop);
       };
-      const iv = setInterval(upd, 1000);
+      /* P2: the shared driver (hmi-sym.js), only while the page is on the screen */
+      const iv = t ? HSYM.every(t, 1000, upd) : null;
       upd();
     }
     /* R9 #87: air preheater main drive, run state of DITL-43 (was: grey, no state) */
@@ -1353,8 +1354,8 @@
         (list.textContent = act.length + ' active (header ALARM list)'), list.setAttribute('fill', act.some(r => r.kind === 'TRIP') ? C.alarm : C.warn);
     };
     upd();
-    let seen = false;
-    const iv = setInterval(() => (g.isConnected ? ((seen = true), upd()) : seen && clearInterval(iv)), 1000);
+    /* P2: the shared driver (hmi-sym.js), only while the page is on the screen */
+    HSYM.every(g, 1000, upd);
     /* navigation: buttons to the related screens (the old screens open until the new set replaces them); STYLE at the right */
     const y = H - 32;
     g.append(S_('rect', { x: 0, y, width: W, height: 32, fill: C.frame }));

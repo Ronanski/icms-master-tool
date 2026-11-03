@@ -36,7 +36,8 @@ function setCat(c) {
      ABC sheets go on running from the DITL page, world.js), DITL Simulate -> ABC RUN. Before, every switch stopped it (VIEW) */
   let runWas = false;
   try {
-    runWas = AN.cat === 'an' ? !!AN.run && !AN.view : typeof SIM !== 'undefined' && !!SIM;
+    /* Mina #M26: a paused DITL page (SIM on, DPAUSE) is not running: the ABC page it opens stays paused too */
+    runWas = AN.cat === 'an' ? !!AN.run && !AN.view : typeof SIM !== 'undefined' && !!SIM && !(typeof DPAUSE !== 'undefined' && DPAUSE);
   } catch (e) {}
   if (c !== 'an') {
     const f = $('sidefl');
@@ -86,7 +87,11 @@ function setCat(c) {
       });
   } else {
     SIM = runWas;
-    if (runWas) TSP = AN.spd || 1;
+    if (runWas) {
+      TSP = AN.spd || 1;
+      /* a pause left from an earlier visit of the DITL page does not hold the run carried over (Mina #M26) */
+      if (typeof DPAUSE !== 'undefined') DPAUSE = false;
+    }
     SIDEKEY = null;
     AN.run = false;
     render();

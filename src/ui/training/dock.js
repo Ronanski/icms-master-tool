@@ -469,59 +469,11 @@
     }
     return -1;
   };
-  const PRESS = {},
-    REL = {};
-  /* a push button row of a DITL drawing (by name, machine A, or an instance "DITL-09 #B"), pressed (hold); dout = an output row of a drawing (1 / 0, null
-     without the one world) */
-  function dpress(nm, row) {
-    const s = dSheet(nm);
-    if (!s || !(window.WORLD && WORLD.on && WORLD.live)) return false;
-    return hold(s, row + ':S');
-  }
-  /* one press of a push button row: held for two scans of the one world (and 1.5 s) and released (the drawing starts on the pulse); a press
-     while it is held is the same press. In scans (simulation time), not in milliseconds: at x300 a 0.8 s press was 4 minutes of
-     plant and a press again within 3 s (15 minutes) was lost (the batch firing of the coal feeder, 10 s ON / 60 s OFF) */
-  function hold(s, k) {
-    const id = s.name + '|' + k;
-    if (PRESS[id]) return true;
-    /* a press again right after the release (no scan saw the button open between them) is no new edge: the START pulse of the drawing
-       never came and the coal feeder C never started while the guide pressed it every frame at x300. It waits one scan */
-    const wait = REL[id] != null && (WORLD.tk || 0) - REL[id] < 1;
-    PRESS[id] = { s, k, tk: WORLD.tk || 0, wait };
-    if (!wait) s.sig[k] = true;
-    WORLD.busy = true;
-    if (!WORLD.onTick)
-      WORLD.onTick = dt => {
-        for (const j in PRESS) {
-          const p = PRESS[j];
-          if (p.wait) {
-            if ((WORLD.tk || 0) - REL[j] >= 1) {
-              p.wait = false;
-              p.tk = WORLD.tk || 0;
-              p.s.sig[p.k] = true;
-              WORLD.busy = true;
-            }
-            continue;
-          }
-          p.age = (p.age || 0) + (dt || 0);
-          /* at least 1.5 s of plant too: a motor seals in through its running feedback (0.5 s) while START is held */
-          if ((WORLD.tk || 0) - p.tk >= 2 && p.age >= 1.5) {
-            p.s.sig[p.k] = false;
-            REL[j] = WORLD.tk || 0;
-            delete PRESS[j];
-          }
-        }
-      };
-    return true;
-  }
-  /* a maintained selection of a DITL input row (the AUTO MODE of a shut-off valve chosen on the CRT, DITL-32 row 5 M.1012): stays until changed */
-  function dset(nm, row, v) {
-    const s = dSheet(nm);
-    if (!s || !(window.WORLD && WORLD.on && WORLD.live)) return false;
-    s.sig[row + ':S'] = !!v;
-    WORLD.busy = true;
-    return true;
-  }
+  /* a push button row of a DITL drawing (by name, machine A, or an instance "DITL-09 #B"), pressed (held for two scans, then released), and
+     a maintained selection of an input row: engine actions of the one world (src/world/dock-eng.js WORLD.dpress / WORLD.dset, 3.2.0 Web
+     Worker: the hold runs where the scans run); dout = an output row of a drawing (1 / 0, null without the one world) */
+  const dpress = (nm, row) => !!(window.WORLD && WORLD.dpress && WORLD.dpress(nm, row));
+  const dset = (nm, row, v) => !!(window.WORLD && WORLD.dset && WORLD.dset(nm, row, v));
   function dout(nm, row) {
     const s = dSheet(nm);
     if (!s || !wlOn()) return null;
@@ -566,7 +518,7 @@
     }
     const r = pbRow(s, on ? /\bSTART\b|\bST$/ : /\bSTOP\b/);
     if (r < 0) return false;
-    return hold(s, r + ':S');
+    return dpress(s.name, r);
   }
   /* the field operator sets the contacts (the switch of the input row on its DITL sheet, the same as the Inputs tab) */
   function fieldSet(L) {
@@ -956,8 +908,8 @@
     const ask = E('div', { cls: 'gd-ask' }, [
       E('p', { txt: 'Stop the Training? The plant simulation goes on; you can resume later from the Training page.' }),
       E('div', { cls: 'gd-btns' }, [
-        E('button', { type: 'button', cls: 'gd-btn bad', txt: 'Itigil', on: stop }),
-        E('button', { type: 'button', cls: 'gd-btn', txt: 'Huwag', on: () => ask.remove() })
+        E('button', { type: 'button', cls: 'gd-btn bad', txt: 'Stop Training', on: stop }),
+        E('button', { type: 'button', cls: 'gd-btn', txt: 'Keep training', on: () => ask.remove() })
       ])
     ]);
     b.prepend(ask);
@@ -1111,6 +1063,20 @@
     els.secL.setAttribute('aria-expanded', 'true');
     const on = box.querySelector('button.on');
     if (on) on.scrollIntoView({ block: 'center' });
+    /* Mina #M11: the list closes on a click outside it or on Esc, as a menu does (it stayed open over the HMI until ☰ again) */
+    const close = () => {
+      box.remove();
+      els.secL.setAttribute('aria-expanded', 'false');
+      removeEventListener('pointerdown', out, true);
+      removeEventListener('keydown', esc, true);
+    };
+    const out = e => {
+      if (!box.isConnected) return close();
+      if (!box.contains(e.target) && e.target !== els.secL) close();
+    };
+    const esc = e => e.key === 'Escape' && close();
+    addEventListener('pointerdown', out, true);
+    addEventListener('keydown', esc, true);
   }
   /* the sheets of the step: the DITL of each motor / push button, the ABC sheet of each faceplate */
   function sheetsOf(s) {
@@ -1423,9 +1389,18 @@
   function selOf(s) {
     const ms = motorsOf(s);
     if (!ms.length) return null;
-    if (els.selI === s.i && els.sel && ms.some(a => motAddr(a) === els.sel)) return els.sel;
     const on = a => call(() => a.on(), false),
       nOn = ms.filter(on).length;
+    /* Mina #M13: the pump picked to START stays selected only until enough run; then the standby is the one shown (its REMOTE / AUTO
+       controls were hidden until its card was clicked) */
+    const kept = els.selI === s.i && els.sel && ms.find(a => motAddr(a) === els.sel);
+    if (kept && !(s.max && nOn >= s.max && on(kept) && ms.some(a => !on(a)) && els.sbOnce !== s.i)) return els.sel;
+    if (kept) {
+      /* once per step: a later click on a running pump's card stays */
+      els.sbOnce = s.i;
+      els.sel = motAddr(ms.find(a => !on(a)));
+      return els.sel;
+    }
     if (s.max && nOn >= s.max) return motAddr(ms.find(a => !on(a)) || ms[0]);
     return motAddr(pickOf(s, ms) || ms.find(a => !on(a)) || ms[0]);
   }
@@ -1529,6 +1504,9 @@
   function openD(nm, row, zoom, rows) {
     const m = /\s*#([B-D])$/.exec(String(nm));
     document.body.classList.remove('lsfield');
+    /* opening a drawing never changes RUN: setCat alone carries it over (Mina #M10 / #M20). Mina #M26 / #M27: a second RUN press here,
+       at another moment than setCat's, toggled the run (RUN / PAUSED / "RUN (ABC)"), the DITL stopped scanning and the DCS START /
+       FIELD REMOTE of the SWP did nothing */
     AN.xrefGo({ d: String(nm).replace(/\s*#\w+$/, '') });
     setTimeout(() => {
       try {
@@ -1670,6 +1648,18 @@
   }
   /* the band of a value as the operator reads it: "205 ~ 215", "≥ 0.4", "≤ 37" */
   const bandTxt = rg => (!rg ? '' : rg[1] === Infinity ? '≥ ' + rg[0] : rg[0] === -Infinity ? '≤ ' + rg[1] : rg[0] + ' ~ ' + rg[1]);
+  /* the number a value shows ("9.0", "210 A"): a band check uses it, so what the operator reads and the ✓ / ! agree */
+  const shownNum = (t, x) => {
+    const p = parseFloat(String(t).replace(/−/g, '-'));
+    return isFinite(p) ? p : x;
+  };
+  /* the band of a value as shown: every number it shows ("0.6 / 0.5" of the condenser ΔP A / B, Mina #M18: "—" before), each in the
+     band; a value of a machine not started (0) is no reading */
+  const bandOf = (t, x, rg, u) => {
+    const nums = typeof x === 'number' && isFinite(x) ? [shownNum(t, x)] : !u ? [] : (String(t).replace(/−/g, '-').match(/-?\d+(?:\.\d+)?/g) || []).map(Number),
+      has = nums.length > 0 && !(nums.every(n => n === 0) && rg[0] > 0);
+    return { has, ok: has && nums.every(n => n >= rg[0] && n <= rg[1]) };
+  };
   /* a watch label "SWP-A current (IIP1501A)" or "Lube oil cooler outlet temp · TICLO1002": the name, and the tag apart (small) */
   const splitTag = k => {
     const m = /^(.*?)\s*\(([A-Z][A-Z0-9 /,.-]*\d[A-Z0-9 /,.-]*)\)\s*$/.exec(k) || /^(.*?)\s+·\s+([A-Z][A-Z0-9-]*\d[A-Z0-9-]*)$/.exec(k);
@@ -2112,7 +2102,8 @@
           bs.append(B.am);
           /* #12: the LOCAL / REMOTE selector of a motor that is not running (the standby), set by the field operator */
           if (call(() => modeOf(B.ad).rem, null) != null) {
-            B.rm = E('button', { type: 'button', cls: 'gd-btn gd-fix', txt: 'FIELD: to REMOTE', title: 'Field operator: LOCAL / REMOTE selector of ' + a.l.replace(/^START\s+/, '') + ' to REMOTE', on: () => dremote(B.ad, a.l.replace(/^START\s+/, '')) });
+            /* Mina #M14: two standby pumps gave two identical "FIELD: to REMOTE": the pump is named */
+            B.rm = E('button', { type: 'button', cls: 'gd-btn gd-fix', txt: 'FIELD: ' + a.l.replace(/^START\s+/, '') + ' to REMOTE', title: 'Field operator: LOCAL / REMOTE selector of ' + a.l.replace(/^START\s+/, '') + ' to REMOTE', on: () => dremote(B.ad, a.l.replace(/^START\s+/, '')) });
             bs.append(B.rm);
           }
         }
@@ -2266,7 +2257,14 @@
       if (f.lim.note) continue;
       const rg = /\(([^()]*\d[^()]*~[^()]*)\)/.exec(f.t),
         lm = [f.lim.n ? f.lim.n : rg ? rg[1] : '', f.lim.a ? 'Alarm ' + f.lim.a : '', f.lim.tr ? 'Trip ' + f.lim.tr : ''].filter(Boolean);
-      if (!lm.length) continue;
+      /* Mina #M19: a "Monitor parameters" item with no SOP limit and no DCS signal (the SWBP Temperature, PR-OPE-5002 5.12: the I/O list has no
+         TT for P-1503A ~ C, the alarm list none) is read in the field: it shows as a field check, not left out */
+      if (!lm.length) {
+        if (/^\s*temperature\b/i.test(f.t)) sop.push([u1(f.t.replace(/\s*\(.*$/, '')), () => 'FIELD', '°C', x => x, 'field gauge · no DCS signal, no SOP limit']);
+        continue;
+      }
+      /* Mina #M13: an SOP sentence is not a value to watch ("All permissive are satisfied ..." filled a tile): the item stays in the list */
+      if (/permissive|satisf/i.test(f.t)) continue;
       const nm = f.t.replace(/\s*\([^()]*\d[^()]*~[^()]*\)/, '').replace(/^(Check|Verify|Ensure)\s+(that\s+)?(the\s+)?/i, '');
       /* live check #91 (beta.51): the row shows a value of the PLANT MODEL only: the PV of the DCS loop of the row's tag (PI-DO0005 =
          PICDO0005) or of the level controller; a field gauge without a model (motor current, local pressure / temperature) reads
@@ -2288,15 +2286,30 @@
          stays the SOP value */
       /* live test #49: the gauges of the SOP that the HMI reads from the plant model (unit.js AN_MU / AN_ACW): section 7 MWP current
          IIP0709A ~ C and header pressure PIMU0709 (MAKE-UP WATER page), section 8 ACWP current IIP1108A / B (027 page); the running pump */
-      const U0 = (window.AN && AN.unit) || {},
+      /* the unit model read at each paint (AN.unit is set by a start and goes at a Reset: a copy taken when the card was built stayed empty) */
+      const U0 = () => (window.AN && AN.unit) || {},
         mdl =
           f.si === 6 && /current/i.test(f.t)
-            ? ['IIP0709A ~ C', () => (U0.on ? Math.max(+U0.muI0 || 0, +U0.muI1 || 0, +U0.muI2 || 0) : NaN), 'A']
+            ? ['IIP0709A ~ C', () => (U0().on ? Math.max(+U0().muI0 || 0, +U0().muI1 || 0, +U0().muI2 || 0) : NaN), 'A']
             : f.si === 6 && /pressure/i.test(f.t)
-              ? ['PIMU0709', () => (U0.on ? +U0.muP : NaN), 'kg/cm²']
+              ? ['PIMU0709', () => (U0().on ? +U0().muP : NaN), 'kg/cm²']
               : f.si === 7 && /current/i.test(f.t)
-                ? ['IIP1108A / B', () => (U0.on ? Math.max(+U0.acI0 || 0, +U0.acI1 || 0) : NaN), 'A']
-                : null;
+                ? ['IIP1108A / B', () => (U0().on ? Math.max(+U0().acI0 || 0, +U0().acI1 || 0) : NaN), 'A']
+                : /* Mina #M8: section 2 SWP current (SOP 205 ~ 215 A) and section 5 SWBP current (81 ~ 99 A) on the later steps: the plant
+                     model (HMI 030 IIP1501A ~ C = swIa, IIP1503A ~ C = swIb): the pump the row names, else the highest running one */
+                  /current/i.test(f.t) && (f.si === 1 || f.si === 4 || /sea ?water|\bSWB?P\b|booster/i.test(f.t))
+                  ? (() => {
+                      const bp = f.si === 4 || /booster|\bSWBP\b/i.test(f.t),
+                        k = bp ? 'swIb' : 'swIa',
+                        tg = bp ? 'IIP1503' : 'IIP1501',
+                        one = /pump\s*-?\s*([ABC])\b(?!\s*\/)/i.exec(f.t),
+                        j = one ? 'ABC'.indexOf(one[1].toUpperCase()) : -1;
+                      /* the seawater model runs in a cold plant too (the unit model is not "on" before the boiler): no .on test (Mina M8, steps 4 / 5) */
+                      return j >= 0
+                        ? [tg + 'ABC'[j], () => +U0()[k + j] || 0, 'A']
+                        : [tg + 'A ~ C', () => Math.max(+U0()[k + 0] || 0, +U0()[k + 1] || 0, +U0()[k + 2] || 0), 'A'];
+                    })()
+                  : null;
       const lvl = /hotwell level/i.test(f.t) ? 'LCV-MU1110' : /deaerator level/i.test(f.t) ? 'LCV-CD1104' : null,
         gauge = /current|pressure|temperature/i.test(f.t),
         tfp = !lvl && gauge && !mdl ? tagFp() : null,
@@ -2694,12 +2707,22 @@
       } else {
         /* live test beta.74 #38: the standby is set; the banner names what the step still needs (H8: fill the expansion tank by
            XV-MU1109 or the bypass V-MU1033), done by the operator in its faceplate (no button here) */
-        const na = (s.a || []).find(x => (x.dg || x.fp) && !call(() => x.hide && x.hide(), false) && !call(() => x.on && x.on(), false));
+        /* Mina #M15: a field action of the step with no faceplate (FIELD: OPEN V-CW1001, prime the closed cooling line) counts too, and
+           it gets its own button here (it was only under "Show control": the NEXT card stood on "MWP-B is STANDBY (AUTO)" with no press) */
+        const na = (s.a || []).find(x => (x.dg || x.fp || x.loc) && !call(() => x.hide && x.hide(), false) && !call(() => x.on && x.on(), false));
+        if (na && na.loc && !na.dg && !(na.fp && (window.LS_FPREG || {})[na.fp]) && typeof na.f === 'function') {
+          bl = String(na.l).replace(/\s*\(.*$/, '');
+          fn = () => {
+            const r = call(() => na.f(), '');
+            if (r && window.msg) msg(r);
+            fill(true);
+          };
+        }
         who = na ? (/^FIELD\b/.test(na.l) || na.loc ? 'FIELD OPERATOR' : 'CONTROL ROOM') : 'CONTROL ROOM';
         ctx = mName(selA) + ' is STANDBY (AUTO)';
         say = na ? String(na.l).replace(/^FIELD:\s*/, '').replace(/\s*\((DITL-[^)]*)\)/, '') + (s.sec === 7 ? ' (fill the expansion tank T-1109 to 1.7 m)' : '') : mName(selA) + ' is STANDBY (AUTO)';
         adr = na ? (na.dg ? na.dg[0] + ' row ' + (na.dg[1] + 1) : (/\((DITL-[^)]*)\)/.exec(na.l) || [])[1] || 'field valve') : '';
-        fp = !!na;
+        fp = !!na && !bl;
       }
     } else if (auNext && !(selA && on(selA)) && !(selA && mi && mi.live && !mi.run && mi.miss.length)) {
       /* live test #52: the next SOP item in order is one the logic ticks (TICLO1002 to AUTO, ABC-053): the control room does it on its
@@ -2794,7 +2817,15 @@
       const pb = B ? pbOf(B.a, 1) : null;
       adr = pb ? pb.txt : (s.fps || []).length ? (s.fps || []).slice(0, 2).join(' · ') : '';
       const ctlBox = (els.stg || []).find(o => o.k === 'S');
-      if (ctlBox) {
+      /* Mina #M15 (cloud check of f1f433a): the next control is a field action (FIELD: OPEN V-CW1001): the NEXT card does it itself
+         (it only offered "Show control ▾", and the step stood still with the action folded away) */
+      if (B && (/^FIELD\b/.test(B.a.l) || B.a.loc)) {
+        bl = String(B.a.l).replace(/\s*\(.*$/, '');
+        fn = () => {
+          B.bt.click();
+          setTimeout(() => fill(true), 250);
+        };
+      } else if (ctlBox) {
         bl = 'Show control ▾';
         fn = () => {
           els.stOpen = { i: s.i, k: 'S' };
@@ -2859,8 +2890,10 @@
         t = fm(call(f, NaN));
       }
       V.b.textContent = t;
-      const has = !!(w && w.rg && typeof x === 'number' && isFinite(x) && !(x === 0 && w.rg[0] > 0)),
-        out = has && (x < w.rg[0] || x > w.rg[1]),
+      /* the band is judged on the value as shown (Mina #M16: 8.97 shown "9.0" was "!" against 9 ~ 11) */
+      const bd = w && w.rg ? bandOf(t, x, w.rg, w.u) : { has: false, ok: false },
+        has = bd.has,
+        out = has && !bd.ok,
         fld = t === 'FIELD',
         hb = w ? [fld ? 'field check' : w.rg ? bandTxt(w.rg) : w.tg || '', !fld && w.rg ? (has ? (out ? '!' : '✓') : '—') : ''] : ['', ''];
       if (V.hb.dataset.k !== hb.join('|')) {
@@ -2907,9 +2940,9 @@
       w.v.textContent = t;
       /* user 2026-10-30 (mock-up v2, Check): ✓ within the range of its hint, ! out of it; 0 of a machine not started is no reading */
       if (w.rg) {
-        const n = typeof x === 'number' && isFinite(x) ? x : NaN,
-          has = isFinite(n) && !(n === 0 && w.rg[0] > 0),
-          okv = has && n >= w.rg[0] && n <= w.rg[1];
+        const bd = bandOf(t, x, w.rg, w.u),
+          has = bd.has,
+          okv = bd.ok;
         w.ck.textContent = has ? (okv ? '✓' : '!') : '—';
         w.r.classList.toggle('ok', okv);
         w.r.classList.toggle('no', has && !okv);
@@ -3224,8 +3257,17 @@
         tn = st === 'TRIP' && tripNew(B.ad);
       B.bt.classList.toggle('lit-run', st === 'RUN');
       if (B.sb) B.sb.classList.toggle('lit-stop', st === 'STOP' || st === 'TRIP');
-      B.lab.textContent = st === 'RUN' ? 'RUNNING' : st === 'STOP' ? 'STOPPED' : st === 'TRIP' ? (tn ? 'TRIP · ACK' : 'TRIP') : '—';
-      B.lab.className = 'gd-mst' + (st ? ' ' + st.toLowerCase() : '') + (tn ? ' blink' : '');
+      /* Mina #M14: a valve button (XV-MU1109 OPEN / CLOSE, AUTO / MAN of DITL-78) shows the valve's own state, not RUNNING / STOPPED of a
+         motor: OPEN red, CLOSED green (the colour convention of the plant), AUTO / MAN */
+      const vk = !B.a.stop && /\b(OPEN|CLOSE|AUTO \/ MAN)\b/.exec(String(B.a.l || ''));
+      if (vk) {
+        const vt = vk[1] === 'OPEN' ? (on ? 'OPEN' : 'CLOSED') : vk[1] === 'CLOSE' ? (on ? 'CLOSED' : 'OPEN') : on ? 'AUTO' : 'MAN';
+        B.lab.textContent = vt;
+        B.lab.className = 'gd-mst' + (vt === 'OPEN' ? ' run' : vt === 'CLOSED' ? ' stop' : '');
+      } else {
+        B.lab.textContent = st === 'RUN' ? 'RUNNING' : st === 'STOP' ? 'STOPPED' : st === 'TRIP' ? (tn ? 'TRIP · ACK' : 'TRIP') : '—';
+        B.lab.className = 'gd-mst' + (st ? ' ' + st.toLowerCase() : '') + (tn ? ' blink' : '');
+      }
       if (B.ft) {
         const ftr = !!call(() => dOf(B.ad)._ftrip, false);
         B.ft.hidden = !(st === 'RUN' || ftr);
@@ -3278,6 +3320,16 @@
     /* live test beta.74 #23 #38: the motor of the step already running (H8 MWP-A), the next machine still to do: a drawing button (AUTO
        SWP-C (standby), DITL-29A #C row 4; XV-MU1109 OPEN, DITL-78 row 5) or a field valve (fp: V-MU1033), the first one in SOP order */
     if (a && (call(() => a.on && a.on(), false) || (els.mi && els.mi[ad] && els.mi[ad].sby && autoOf(ad)))) a = null;
+    /* Mina #M14: the standby of the step still to put in AUTO comes before the valves (step 8 opened V-MU1033 before MWP-B) */
+    if (!a && s.sby && s.max) {
+      const nOn = ms.filter(x => call(() => x.on && x.on(), false)).length,
+        sb = nOn >= s.max ? ms.find(x => !call(() => x.on && x.on(), false) && !autoOf(motAddr(x))) : null;
+      if (sb) {
+        a = sb;
+        ad = motAddr(sb);
+        nmA = mName(sb);
+      }
+    }
     if (!a) {
       const key = x => x.fp || (x.dg && x.dg[0]),
         d = (s.a || []).find(x => key(x) && R[key(x)] && !call(() => x.hide && x.hide(), false) && !call(() => x.on && x.on(), false));

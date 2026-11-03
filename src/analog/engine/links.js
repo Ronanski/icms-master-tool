@@ -381,7 +381,8 @@ function actSet(sh) {
    (or a test) changes it on one sheet, every other sheet of that station takes it. Before: every sheet had its own copy, so an MFT
    (I.000F on 11 sheets) needed 11 presses. A net that a link drives (xlk) or that is forced is not overwritten (the link / the
    force wins on that sheet), but a change on it still spreads to the others */
-function shareExt(set) {
+/* the groups of one address (AN._xs: e.v = the value each copy had at the last step; engine state, in the keyframe) */
+function anXs() {
   const comp = AN.sheets.filter(sh => sh.S && !/^ABC-000/.test(sh.name));
   let X = AN._xs;
   if (!X || X.n !== comp.length) {
@@ -400,6 +401,11 @@ function shareExt(set) {
     }
     X = AN._xs = { n: comp.length, g: Object.values(g).filter(l => l.length > 1) };
   }
+  return X;
+}
+function shareExt(set) {
+  void set;
+  const X = anXs();
   const cur = e => (e.S.rt.force[e.n] !== undefined ? e.S.rt.force[e.n] : e.S.rt.ext[e.n]);
   for (const l of X.g) {
     let w = null;
@@ -416,7 +422,14 @@ function shareExt(set) {
     for (const e of l) e.v = cur(e);
   }
 }
+/* P3 time-slicing (user 2026-11-01 "T1, 3"): one step of the set as a generator that yields after each sheet (AN.sched runs it in
+   slices between the frames); stepSet / stepTier run the same generator to the end at once, so a step is the same either way. A
+   synchronous step first finishes a sliced step still in the queue (AN.sched.flush) */
 function stepSet(sh, dt) {
+  if (AN.sched) AN.sched.flush();
+  for (const _ of stepSetG(sh, dt));
+}
+function* stepSetG(sh, dt) {
   const set = actSet(sh);
   for (const x of set)
     for (const l of x.lk || []) {
@@ -444,9 +457,16 @@ function stepSet(sh, dt) {
   try {
     shareExt(set);
   } catch (e) {}
-  for (const x of set) anStep(x.S, dt);
+  for (const x of set) {
+    anStep(x.S, dt);
+    yield;
+  }
 }
 function stepTier(sh, dt, K) {
+  if (AN.sched) AN.sched.flush();
+  for (const _ of stepTierG(sh, dt, K));
+}
+function* stepTierG(sh, dt, K) {
   const full = actSet(sh),
     near = new Set([sh]);
   try {
@@ -491,6 +511,7 @@ function stepTier(sh, dt, K) {
         m = Math.max(1, Math.ceil(T / 0.5));
       for (let i = 0; i < m; i++) anStep(x.S, T / m);
     }
+    yield;
   }
 }
 function procRemote(x) {

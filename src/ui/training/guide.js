@@ -183,6 +183,18 @@ window.LS_GUIDE = (function () {
   /* a motor button: START / STOP of its running memory (memory list), the same address the Inputs list forces */
   const mot = (a, l) => ({ ad: a, l: 'START ' + l, f: () => A.motor(a, 1), on: () => bit(a) > 0.5, stop: { l: 'STOP ' + l, f: () => A.motor(a, 0) } });
   const btn = (l, f, on) => ({ l, f, on });
+  /* the "Do it for me" of a trim step (the ▲ / ▼ buttons, pressed together they cancel): one press moves each station one step toward
+     the band of its value. [read, lo, hi, station, step, inv]: below lo the MV goes up (inv: down), above hi down (inv: up) */
+  const seekB = L => () => {
+    for (const [rd, lo, hi, t, d, inv] of L) {
+      const x = rd(),
+        m = Math.round(+mv(t) || 0);
+      if (!isFinite(x)) continue;
+      const k = x < lo ? 1 : x > hi ? -1 : 0;
+      if (k) A.man(t, Math.max(0, Math.min(100, m + (inv ? -k : k) * d)));
+    }
+    return '';
+  };
   const call0 = f => {
     try {
       return f();
@@ -192,8 +204,9 @@ window.LS_GUIDE = (function () {
   };
   /* a motor that the old (no one world) way starts with an extra forced memory (feeder C + M.3405 ALL IN REMOTE AND RUNNING) */
   const WLm = (a, l, fOff) => Object.assign(mot(a, l), { f: () => (WL() ? A.motor(a, 1) : fOff()) });
-  /* a push button / an output of a DITL drawing (one world ON, src/ui/training/dock.js) */
-  const dPress = (nm, row) => !!(window.LS_DOCK && LS_DOCK.dpress && LS_DOCK.dpress(nm, row));
+  /* a push button / an output of a DITL drawing (one world ON): the press is an engine action (src/world/dock-eng.js), the output is read
+     from the dock (src/ui/training/dock.js) */
+  const dPress = (nm, row) => !!(window.WORLD && WORLD.dpress && WORLD.dpress(nm, row));
   const dOut = (nm, row) => (window.LS_DOCK && LS_DOCK.dout ? LS_DOCK.dout(nm, row) : null);
   const dRun = nm => (window.LS_DOCK && LS_DOCK.runOut ? LS_DOCK.runOut(nm) : null);
   /* 3.2.0-beta.23: a condition read on the DITL while the one world runs (w), else the ABC / plant condition (o) */
@@ -522,7 +535,7 @@ window.LS_GUIDE = (function () {
                 } catch (e) {}
                 return '';
               }, () => fstate('cw1001')),
-              { loc: 1 }
+              { loc: 1, fp: 'F:cw1001' } /* the FIELDV pop-out of V-CW1001 on page 027 (hmi-cw.js, Rose) */
             ),
             Object.assign(btn('XV-MU1109 AUTO / MAN (DITL-78)', () => xvSel(!xvAuto()), () => xvAuto() || !air() || et() < 1.69), { dg: ['DITL-78', 2] })
           ],
@@ -665,14 +678,14 @@ window.LS_GUIDE = (function () {
       { st: 2, sec: 24, t: 'Start the secondary air fan (SAF)', d: 'Close the secondary air damper (0 %) before starting the fan.', c: R.SAF, a: [btn('SA damper 0 %', () => A.man('FICFA1081', 0)), mot('M.3303', 'SAF')], fps: ['FICFA1081'], field: [23] },
       /* live check #107 (PR-OPE-5002 SAF START-UP: "Adjust SAF Inlet Damper Manually up until combustion air flow increase to 200T/H (You can use
          double arrow but be cautious of the furnace pressure reaction)"): the SA flow by hand to 200 T/H, the IDF coupling with it (-15) */
-      { st: 2, sec: 24, t: 'Secondary air fan inlet damper up: secondary air 200 T/H, furnace pressure −15 mmH₂O', d: 'Do: raise the SA damper FICFA1081 (MANUAL) until the secondary air flow is 200 T/H. ▲▲ (+5 %) is allowed, but watch the furnace pressure: when it rises toward positive, raise the IDF coupling PICFG108 (MV ▲); when it is below −25, lower it. The damper is about 34 % at 200 T/H.', c: b.HOLD(10, b.ALL(b.VAL('SA', 185, 215), b.VAL('FP', -25, -5))), fps: ['FICFA1081', 'PICFG108'], a: [btn('SA damper ▲▲ +5 %', () => A.man('FICFA1081', Math.max(0, Math.min(100, Math.round(mv('FICFA1081')) + (5))))), btn('SA damper ▲ +1 %', () => A.man('FICFA1081', Math.max(0, Math.min(100, Math.round(mv('FICFA1081')) + (1))))), btn('SA damper ▼ −1 %', () => A.man('FICFA1081', Math.max(0, Math.min(100, Math.round(mv('FICFA1081')) + (-1))))), btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1)))] },
+      { st: 2, sec: 24, t: 'Secondary air fan inlet damper up: secondary air 200 T/H, furnace pressure −15 mmH₂O', d: 'Do: raise the SA damper FICFA1081 (MANUAL) until the secondary air flow is 200 T/H. ▲▲ (+5 %) is allowed, but watch the furnace pressure: when it rises toward positive, raise the IDF coupling PICFG108 (MV ▲); when it is below −25, lower it. The damper is about 34 % at 200 T/H.', c: b.HOLD(10, b.ALL(b.VAL('SA', 185, 215), b.VAL('FP', -25, -5))), fps: ['FICFA1081', 'PICFG108'], seek: seekB([[() => h().SA(), 190, 210, 'FICFA1081', 2], [() => h().FP(), -25, -5, 'PICFG108', 1, 1]]), a: [btn('SA damper ▲▲ +5 %', () => A.man('FICFA1081', Math.max(0, Math.min(100, Math.round(mv('FICFA1081')) + (5))))), btn('SA damper ▲ +1 %', () => A.man('FICFA1081', Math.max(0, Math.min(100, Math.round(mv('FICFA1081')) + (1))))), btn('SA damper ▼ −1 %', () => A.man('FICFA1081', Math.max(0, Math.min(100, Math.round(mv('FICFA1081')) + (-1))))), btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1)))] },
       /* 3.2.0-beta.23: the PAF start interlock DITL-26A row 8 "PAF LUB. OIL PUMP ALL STOPPED" = 0 (DITL-24): a lube oil pump first */
       { st: 2, sec: 25, t: 'Start primary air fan lube oil pump A (DITL-24)', d: 'The primary air fan will not start with no lube oil pump running (DITL-26A row 8 "PAF LUB. OIL PUMP ALL STOPPED"). The pump has no DCS memory on the ABC, so it is started on DITL-24.', c: C('PAF lube oil pump A running (DITL-24)', () => dRun('DITL-24') !== 0, () => (dRun('DITL-24') === 1 ? 'RUNNING' : dRun('DITL-24') === 0 ? 'STOPPED' : '— (one world OFF)')), a: [dmot('DITL-24', 'PAF LO pump A')] },
       { st: 2, sec: 25, t: 'Start the primary air fan (PAF)', d: 'Close the primary air damper (0 %) before starting the fan.', c: R.PAF, a: [btn('PA damper 0 %', () => A.man('FICFA1071', 0)), mot('M.3302', 'PAF')], fps: ['FICFA1071'], field: [24] },
       /* live check #103 / #107 (PR-OPE-5002 PAF START-UP: "Increase PAF Inlet Damper Manually (Use Single Arrow ...). Maintain the Furnace
          pressure to -15mmH2O whilst simultaneously increasing HC Speed of IDF. Target Primary Air Flow: 180T/H = No Bed") */
-      { st: 2, sec: 25, t: 'Primary air fan inlet damper up (single arrow): primary air 180 T/H, ID fan coupling up (−15 mmH₂O)', d: 'Do: raise the PA damper FICFA1071 (MANUAL) 1 % at a time (single arrow) until 180 T/H (no bed). At the same time raise the IDF hydraulic coupling PICFG108 (MV ▲) to keep the furnace pressure near −15 mmH₂O. At the end the PA damper is about 18 % and the coupling about 16 % (PA 180 + SA 200 + FA 26 ≈ 406 T/H, above 25 % MCR = 151.5 T/H, DESIGN BASE total air 606 T/H).', c: b.HOLD(10, b.ALL(b.VAL('PA', 170, 195), b.PURGE_AIR, b.VAL('FP', -25, -5))), fps: ['FICFA1071', 'PICFG108'], a: [btn('PA damper ▲ +1 %', () => A.man('FICFA1071', Math.max(0, Math.min(100, Math.round(mv('FICFA1071')) + (1))))), btn('PA damper ▼ −1 %', () => A.man('FICFA1071', Math.max(0, Math.min(100, Math.round(mv('FICFA1071')) + (-1))))), btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1)))] },
-      { st: 2, sec: 25, t: 'Furnace pressure control PICFG108 in AUTO, SV −15 mmH₂O', d: 'Do: when the hydraulic coupling is at about 16 % and the furnace pressure is steady at about −15 mmH₂O, PICFG108 A, SV −15 (PR-OPE-5002). While the MV is below 14 %, PICFG108 is FORCE MANUAL (ABC-008 M.0205): AUTO is not allowed yet. In AUTO, PICFG108 moves the coupling to hold −15.', c: b.ALL(b.MODE('PICFG108', 'AUTO'), b.SV('PICFG108', -16, -14), b.HOLD(30, b.VAL('FP', -25, -5))), fps: ['PICFG108'], a: [btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1))), btn('PICFG108 A, SV −15', () => (mv('PICFG108') < 14 ? 'PICFG108 is still FORCE MANUAL (ABC-008 M.0205: IDF coupling < 14 %): raise the MV first' : h().FP() < -25 || h().FP() > -5 ? 'Wait: furnace pressure ' + f0(h().FP()) + ' mmH₂O (must be near −15, −25 ~ −5)' : A.auto('PICFG108', -15)))] },
+      { st: 2, sec: 25, t: 'Primary air fan inlet damper up (single arrow): primary air 180 T/H, ID fan coupling up (−15 mmH₂O)', d: 'Do: raise the PA damper FICFA1071 (MANUAL) 1 % at a time (single arrow) until 180 T/H (no bed). At the same time raise the IDF hydraulic coupling PICFG108 (MV ▲) to keep the furnace pressure near −15 mmH₂O. At the end the PA damper is about 18 % and the coupling about 16 % (PA 180 + SA 200 + FA 26 ≈ 406 T/H, above 25 % MCR = 151.5 T/H, DESIGN BASE total air 606 T/H).', c: b.HOLD(10, b.ALL(b.VAL('PA', 170, 195), b.PURGE_AIR, b.VAL('FP', -25, -5))), fps: ['FICFA1071', 'PICFG108'], seek: seekB([[() => h().PA(), 175, 190, 'FICFA1071', 1], [() => h().FP(), -25, -5, 'PICFG108', 1, 1]]), a: [btn('PA damper ▲ +1 %', () => A.man('FICFA1071', Math.max(0, Math.min(100, Math.round(mv('FICFA1071')) + (1))))), btn('PA damper ▼ −1 %', () => A.man('FICFA1071', Math.max(0, Math.min(100, Math.round(mv('FICFA1071')) + (-1))))), btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1)))] },
+      { st: 2, sec: 25, t: 'Furnace pressure control PICFG108 in AUTO, SV −15 mmH₂O', d: 'Do: when the hydraulic coupling is at about 16 % and the furnace pressure is steady at about −15 mmH₂O, PICFG108 A, SV −15 (PR-OPE-5002). While the MV is below 14 %, PICFG108 is FORCE MANUAL (ABC-008 M.0205): AUTO is not allowed yet. In AUTO, PICFG108 moves the coupling to hold −15.', c: b.ALL(b.MODE('PICFG108', 'AUTO'), b.SV('PICFG108', -16, -14), b.HOLD(30, b.VAL('FP', -25, -5))), fps: ['PICFG108'], seek: seekB([[() => +mv('PICFG108'), 15, 100, 'PICFG108', 1]]) /* the drawing forces MANUAL below 14 % (M.0205): the MV up first */, a: [btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1))), btn('PICFG108 A, SV −15', () => (mv('PICFG108') < 14 ? 'PICFG108 is still FORCE MANUAL (ABC-008 M.0205: IDF coupling < 14 %): raise the MV first' : h().FP() < -25 || h().FP() > -5 ? 'Wait: furnace pressure ' + f0(h().FP()) + ' mmH₂O (must be near −15, −25 ~ −5)' : A.auto('PICFG108', -15)))] },
       /* ---- 3 purge ---- */
       {
         st: 3,
@@ -981,7 +994,8 @@ window.LS_GUIDE = (function () {
         sec: 44,
         t: 'Load ≥ 90 MW, bed > 700 °C and PA flow ≥ 220 T/H: take the burners out one by one (A, D, B, C)',
         d: 'FHI Fig. 2: the start-up burners are taken out at about 60 % load; PR-OPE-5002: start at furnace > 700 °C, finish at > 750 °C. When the coal can carry the load, close the oil valve and stop the burner, a few minutes apart. Before the last burner is stopped, the PA flow must be above 200 T/H: on coal only, the boiler trips on PRIMARY AIR FLOW L.L. (ABC-007, DITL-03F). Procedure target: 280 T/H.',
-        c: b.ALL(b.NOBIT(['M.3412', 'M.3413', 'M.3418', 'M.3419'], 'start-up burners out'), b.VAL('Tb', 700, null), C('PA flow ≥ 220 T/H (FIFA1071)', () => pv('FICFA1071') >= 220, () => (pv('FICFA1071') || 0).toFixed(0) + ' T/H')),
+        /* PR-OPE-5002 (Solid firing): "CONTINUE to remove Oil Burner until Lower Furnace temperature is > 750 C": done with the bed at 750 */
+        c: b.ALL(b.NOBIT(['M.3412', 'M.3413', 'M.3418', 'M.3419'], 'start-up burners out'), b.VAL('Tb', 750, null), C('PA flow ≥ 220 T/H (FIFA1071)', () => pv('FICFA1071') >= 220, () => (pv('FICFA1071') || 0).toFixed(0) + ' T/H')),
         ready: () => pv('FICFA1071') >= 220 && h().MW() >= 90,
         readyTxt: () => 'Wait: load ' + f0(h().MW()) + ' MW (≥ 90), PA ' + f0(pv('FICFA1071')) + ' T/H (≥ 220)',
         get a() {
@@ -1110,8 +1124,29 @@ window.LS_GUIDE = (function () {
         delete PUSH[a];
       }
   };
-  const hook = () => window.AN && (AN.onStep = onStep);
+  /* inside every step of the engine when it runs on this page (ENG.mode 'local'); with the engine in the worker (3.2.0 Web Worker) the
+     steps run there: the coach runs here after each patch, with the plant time that passed (it reads the dock and the page; its writes go
+     to the engine through the radio, src/world/eng.js) */
+  const mirror = () => !!(window.ENG && ENG.mode === 'mirror');
+  const hook = () => window.AN && (AN.onStep = dt => (mirror() ? 0 : onStep(dt)));
   hook();
+  {
+    let t0 = null;
+    const onPatch = window.ENG ? ENG.onPatch : null;
+    if (window.ENG)
+      ENG.onPatch = m => {
+        if (onPatch) onPatch(m);
+        if (!mirror()) return (t0 = null);
+        const t = simT();
+        /* a new start (Reset, a starting state) or the first patch: no time passed */
+        const dt = t0 == null || t < t0 ? 0 : t - t0;
+        t0 = t;
+        if (dt > 0)
+          try {
+            onStep(dt);
+          } catch (e) {}
+      };
+  }
   /* check the open step; returns true when it moved on */
   function scan() {
     if (!G.on) return false;
@@ -1172,6 +1207,7 @@ window.LS_GUIDE = (function () {
        bar (hmi-op.js anLoadStart), then the training starts */
     const go = () => {
       AN._gdWait = 0;
+      G.retT = G.retTb = null; /* the burner retraction timing of a run before */
       const ld = AN.loadStart
         ? AN.loadStart('cold', true)
         : Promise.resolve().then(() => {
@@ -1206,12 +1242,18 @@ window.LS_GUIDE = (function () {
         .filter((x, i, a) => a.indexOf(x) === i);
       /* 3.2.0 walkthrough #1: the start-up begins at t = 0 (the clock of the sheets counted the settling of the cold state: t = 11:29) and
          PAUSED (simulation on, time stopped, 1x): the field steps come first and the trainee presses RUN. Before: RUN at once, x10 */
+      /* the clock and the trend histories of the engine: an engine action (AN.clock0, runs in the engine and on the page: with the
+         engine in the worker a write here never reached it, the clock showed 0 while PAUSED and jumped back at RUN); the page's own
+         history of the sheets (_hs) stays here */
       try {
+        const c0 = !!AN.clock0;
+        if (c0) AN.clock0();
         for (const sh of AN.sheets)
           if (sh.S && sh.S.rt) {
+            sh._hs = [];
+            if (c0) continue;
             const rt = sh.S.rt;
             rt.t = 0;
-            sh._hs = [];
             for (const k in rt.pm || {}) if (rt.pm[k] && Array.isArray(rt.pm[k].h)) rt.pm[k].h = [];
             for (const k in rt.st || {}) if (rt.st[k] && Array.isArray(rt.st[k].h)) rt.st[k].h = [];
           }
@@ -1266,16 +1308,53 @@ window.LS_GUIDE = (function () {
       /* one burner every 3 minutes of the plant, above 700 C */
       if (U().Tb < 700) return;
       if (G.retT != null && simT() - G.retT < 180) return;
+      /* PR-OPE-5002: "When removing a burner from service, ALLOW the furnace temperature to recover": the next burner only when the bed
+         is back at its temperature of the last retraction */
+      if (G.retT != null && G.retTb != null && U().Tb < G.retTb) return;
       const nx = (s.a || []).find(a => !a.on());
       if (nx) {
         nx.f();
         G.retT = simT();
+        G.retTb = U().Tb;
       }
       return;
     }
     /* again after a minute of the plant when the step is still not done (a value the drawing held while the machine was stopping) */
     if (G.did === s.i && simT() - (G.didT || 0) < 60) return;
-    for (const a of s.a || []) if (!a.on || !a.on()) a.f();
+    /* a trim step: the seek moves the stations toward the band of the SOP; the ▲ / ▼ buttons are never pressed here (below) */
+    if (s.seek) s.seek();
+    /* max counts the machines of the step (the START / STOP buttons); its valve and field buttons are pressed as before */
+    const isM = a => !!a.stop;
+    let n = (s.a || []).filter(a => isM(a) && a.on && a.on()).length;
+    /* a button listed after the START buttons is for after the start (FAB: FICFA1055A M 41 % once the blower runs; pressed together
+       with the START, it took the damper off its 25 % start position, FCD READY M.1033 went 0 and the blower could not start) */
+    const L0 = s.a || [],
+      lastM = L0.reduce((k, a, i) => (isM(a) ? i : k), -1),
+      runN = n;
+    for (const [i, a] of L0.entries())
+      if (!a.on || !a.on()) {
+        /* the ▲ / ▼ trims are the trainee's own hand (#108, no coach); pressed together they cancel: a seek does them */
+        if (/[▲▼]/.test(a.l)) continue;
+        if (lastM >= 0 && i > lastM && runN < (s.max || 1)) continue;
+        if (isM(a) && s.max && n >= s.max) continue;
+        a.f();
+        if (isM(a)) n++;
+      }
+    /* the standby of a pump set (sby: SWBP, MWP, ACWP): FIELD REMOTE, then AUTO on its drawing, as the AUTO row of the dock card (the
+       "Do it for me" started the pumps but left the standby MANUAL: the step that wants "standby in REMOTE + AUTO" never ended) */
+    /* only once the machines really run (a pump just started is not the standby) */
+    if (s.sby && s.max && (s.a || []).filter(a => isM(a) && a.on && a.on()).length >= s.max && window.LS_DOCK)
+      for (const a of s.a || []) {
+        if (!isM(a) || !a.ad || (a.on && a.on())) continue;
+        try {
+          const ds = LS_DOCK.dOf(a.ad),
+            R = ds && LS_DOCK.amRow(ds),
+            m = LS_DOCK.modeOf(a.ad);
+          if (!R) continue;
+          if (m && m.rem === false) LS_DOCK.dremote(a.ad, a.l.replace(/^START /, ''));
+          else if (DUI.rowVal(ds, R.row) !== 1) LS_DOCK.dsel(a.ad, R.row, 1, R.svc);
+        } catch (e) {}
+      }
     G.did = s.i;
     G.didT = simT();
   }
