@@ -1797,9 +1797,17 @@
           bar.style.width = (isFinite(mv) ? Math.max(0, Math.min(100, mv)) : 0) + '%';
           mdL.textContent = md;
           mdL.className = 'gd-mdl ' + String(md).toLowerCase();
-          /* A / R pressed and the loop stays MANUAL: the logic holds it (force manual); its sheet shows why */
+          /* A / R pressed and the loop stays MANUAL: the force manual of the logic only when the station has one (the faceplate's
+             rule, hmi.js: a MAN signal at 1 or the A / M switch held by its select signal); Mina step 14 (TICLO1002, beta.87): the
+             text blamed the logic of ABC-053 with no force manual there */
           const ta = Date.now() - (+ro.dataset.a || 0);
-          if (md === 'MAN' && ta > 1500 && ta < 8000) ro.textContent = '⚠ Stays MAN: force manual of the logic (see the logic sheet below: ' + f.shn + ')';
+          if (md === 'MAN' && ta > 1500 && ta < 8000) {
+            const fsg = ctl && (f.c.sigs || []).find(z => z.role === 'MAN' && f.S.rt.v[z.n] > 0.5),
+              fm = !!fsg || !!(ctl && f.c.amt && f.S.rt.st[f.c.amt.id] && f.S.rt.st[f.c.amt.id].fman);
+            ro.textContent = fm
+              ? '⚠ Stays MAN: force manual of the logic (' + (fsg ? fsg.name + ' = 1' : 'its A / M select signal') + ', logic sheet ' + f.shn + ')'
+              : '⚠ Still MAN: no force manual on ' + f.shn + '; press A again';
+          }
           else if (!(Date.now() - (+ro.dataset.w || 0) < 4000)) ro.textContent = '';
           for (const [x, m] of [[bm, 'MAN'], [ba, 'AUTO'], [br, 'REM']]) if (x) x.classList.toggle('on', md === m);
         });
