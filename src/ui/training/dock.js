@@ -1504,15 +1504,10 @@
   function openD(nm, row, zoom, rows) {
     const m = /\s*#([B-D])$/.exec(String(nm));
     document.body.classList.remove('lsfield');
-    /* Mina #M10 / #M20: opening a drawing never changes RUN. setCat carries the run over (runWas), but it reads the ABC run of that
-       moment (a switch back to ABC turns it on again only after its sheets load), so now and then the DITL page opened PAUSED */
-    const wasRun = isRun();
+    /* opening a drawing never changes RUN: setCat alone carries it over (Mina #M10 / #M20). Mina #M26 / #M27: a second RUN press here,
+       at another moment than setCat's, toggled the run (RUN / PAUSED / "RUN (ABC)"), the DITL stopped scanning and the DCS START /
+       FIELD REMOTE of the SWP did nothing */
     AN.xrefGo({ d: String(nm).replace(/\s*#\w+$/, '') });
-    if (wasRun && !isRun())
-      try {
-        runNow();
-        window.lsEventAdd && lsEventAdd('DCS', 'RUN', 'RUN kept while opening ' + String(nm));
-      } catch (e) {}
     setTimeout(() => {
       try {
         if (window.DUI && DUI.setMach) DUI.setMach(m ? 'ABCD'.indexOf(m[1]) : 0);

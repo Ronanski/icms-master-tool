@@ -45,7 +45,8 @@
      memory) or hangs sends nothing, so the page would wait for ever with the plant still. No message for 10 s = stopped; 60 s after
      'acting' or while the page waits for a long action (ENG.heavy: a starting state takes seconds there, with no heartbeat) */
   const WD = 10000,
-    WD_CALL = 60000;
+    WD_CALL = 60000,
+    PING_WAIT = 5000;
   const watch = () => {
     clearInterval(E._wd);
     let tk = (E.inAt = Date.now());
@@ -57,7 +58,19 @@
       /* the page itself was busy (its messages still wait in the queue): no verdict on this tick */
       if (late || E.mode !== 'mirror' || !E.worker) return;
       const lim = E.busyAt || E.heavy ? WD_CALL : WD;
-      if (now - E.inAt > lim) return void fail('no answer', 'the engine in the worker stopped answering (no message for ' + lim / 1000 + ' s)');
+      /* Mina #M22: silence alone is no verdict (a busy worker can miss its heartbeat): a ping first, and the worker stops only when that
+         ping too gets no answer in PING_WAIT (any message from it counts, eng-page.js onmessage sets E.inAt) */
+      if (now - E.inAt > lim) {
+        if (!E._pingAt || E._pingAt < E.inAt) {
+          E._pingAt = now;
+          try {
+            E.worker.postMessage({ t: 'ping', id: now });
+          } catch (e) {}
+          return;
+        }
+        if (now - E._pingAt > PING_WAIT) return void fail('no answer', 'the engine in the worker stopped answering (no message for ' + Math.round((now - E.inAt) / 1000) + ' s, no answer to a ping)');
+        return;
+      }
       /* a stall: the plant runs and the worker is alive (its heartbeat comes) but no patch has come for 5 s (Winter's world run 1: the
          page never got the world). Kept for the checks (ENG.stalls: when, how long, what the engine said), and the whole state is asked
          for again ('full': the engine sends every slot and takes the page as ready) */
