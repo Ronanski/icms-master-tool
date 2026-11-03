@@ -35,18 +35,31 @@
     for (const e of ['3', '4']) L.push(['TT-CW1108-' + p + e, mtOf('TT-CW1108-' + p + e), 100, 'hi', 0, 2]);
     for (const e of ['U', 'V', 'W']) L.push(['TT-CW1108-' + p + e, mtOf('TT-CW1108-' + p + e), 165, 'hi', 0, 2]);
   }
-  /* Mina M3 (beta.88: PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B" was ticked and no pump ran): the lube oil pumps of the BFWPs
-     are local (no DCS signal; memory list STN103 has only their switches): the field flag AN_SRC.field.bfplop. Their pressure switches
-     PS-LO1115-A1 / B1 (< 1.5), -A2 / B2 (> 2.0), -A3 / B3 (< 1 kg/cm2) follow it: 2.5 kg/cm2 running, 0 stopped (ASSUMED) */
-  const lopP = () => {
-    const f = window.AN && AN.fieldState ? AN.fieldState() : null;
-    return f ? (f.bfplop ? 2.5 : 0) : NaN;
+  /* Mina M3 (beta.88 / beta.89: PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"). The auxiliary lube oil pumps are DCS motors:
+     DITL-22 "BFWP A AUX. LUB. OIL PUMP" (START P.B. M.1080, RUNNING I.0050; machine B DITL-22 #B M.1090 / I.0370). The lube oil
+     pressure switches of the pump (memory list STN103 PS-LO1115-A1 / B1 < 1.5 = I.0090 / I.0410 (DITL-22 row 7, DITL-23A row 3),
+     -A2 / B2 > 2.0 = I.0091 / I.0411, -A3 / B3 < 1 = I.0092 / I.0412) follow the oil pressure: 2.5 kg/cm2 while the aux. LOP or the
+     feedwater pump itself runs (its own shaft oil pump keeps the pressure at 150 MW), 0 when neither runs. ASSUMED: the 2.5 kg/cm2 and the
+     shaft pump (the oil system of the BFWP is not in the repository). Before (beta.89): a field flag, wrong: the pump is on the DCS */
+  const runOf = (re, k) => {
+    const s = (runOf.c = runOf.c || {})[re + k] || (W.inst || []).concat((typeof S !== 'undefined' && S.sheets) || []).find(x => new RegExp('\\)' + re + (k === 'B' ? ' #B' : '') + '$').test(x.name));
+    if (!s) return null;
+    runOf.c[re + k] = s;
+    const r = (s._runR = s._runR !== undefined ? s._runR : (window.DUI && DUI.outs(s).find(q => /\bRUNNING\b/.test(q.name) && !/NOT RUNNING/.test(q.name))) || null);
+    const o = W._o && W._o[s.name];
+    return r && o ? (o.has ? o.has(r.row) : o.includes(r.row)) : null;
   };
-  /* DITL-23A writes the rows by address (row 3 "I.0090 BFWP A LUB. OIL PRESS. LOW", row 17 I.0091 HIGH; machine B I.0410 ~ 0412, memory
-     list STN103): matched by the address and the words LUB (the 7th field), not by the address alone (other stations reuse it) */
-  for (const [a1, a2, a3] of [['I.0090', 'I.0091', 'I.0092'], ['I.0410', 'I.0411', 'I.0412']]) L.push([a1, lopP, 1.5, 'lo', 0, 0.1, /\bLUB/], [a2, lopP, 2.0, 'hi', 0, 0.1, /\bLUB/], [a3, lopP, 1.0, 'lo', 0, 0.1, /\bLUB/]);
+  const lopP = k => () => {
+    const a = runOf('DITL-22', k),
+      b = runOf('DITL-23A', k);
+    return a == null && b == null ? NaN : a || b ? 2.5 : 0;
+  };
+  /* DITL-23A / DITL-22 write the rows by address: matched by the address and the word LUB (the 7th field; other stations reuse it) */
+  for (const [k, a1, a2, a3] of [['A', 'I.0090', 'I.0091', 'I.0092'], ['B', 'I.0410', 'I.0411', 'I.0412']])
+    L.push([a1, lopP(k), 1.5, 'lo', 0, 0.1, /\bLUB/], [a2, lopP(k), 2.0, 'hi', 0, 0.1, /\bLUB/], [a3, lopP(k), 1.0, 'lo', 0, 0.1, /\bLUB/]);
   const DB0 = 10;
-  let map = null;
+  let map = null,
+    mapK = '';
   /* the rows of every sheet and machine instance whose text starts with a switch tag (the tag may follow a few words: "CONDENSER
      WATER LSLL-CD1110 LEVEL LOW LOW") */
   function build(ALL) {
@@ -56,6 +69,10 @@
     mu.length = 0;
     air.length = 0;
     for (const s of ALL) {
+      if (!s.nl && typeof netlist === 'function')
+        try {
+          s.nl = netlist(s);
+        } catch (e) {}
       const b = s._inst ? s._inst.base : s;
       for (let i = 0; i < ((b && b.rows) || []).length; i++) {
         let t = '';
@@ -164,7 +181,16 @@
   /* called by the world scan after the inputs of the logic (step 1 of tick): the switch rows join s._win (automatic, ORed with s.sig) */
   W.plantIn = ALL => {
     if (!(window.AN && AN.plantOn === true)) return;
-    if (!map) build(ALL);
+    /* Mina H2 (beta.89, Worker, Step 26: PT-FW1115-A stayed "not complete" until DITL-23A was opened): the list was made once, at the
+       first scan; a sheet whose netlist (its analog rows) or machine copy did not exist yet was never in it, and the suction pressure
+       was never written. The list is made again when the sheets with a netlist change; a switch keeps its state */
+    const key = ALL.length + ':' + ALL.reduce((n, x) => n + (x.nl ? 1 : 0), 0);
+    if (!map || mapK !== key) {
+      const old = map;
+      build(ALL);
+      mapK = key;
+      if (old) for (const m of map) { const o = old.find(q => q.s === m.s && q.row === m.row); if (o) m.on = o.on; }
+    }
     if (pend) put();
     const pc = W.condP();
     if (isFinite(pc)) for (const a of ana) (a.s.avw = a.s.avw || {})[a.key] = pc;
@@ -198,6 +224,7 @@
   W.plantSwClear = () => {
     pend = null;
     map = null;
+    mapK = '';
   };
   W.plantSwSet = L => {
     pend = L;

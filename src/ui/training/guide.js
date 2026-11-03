@@ -645,13 +645,17 @@ window.LS_GUIDE = (function () {
         ]
       },
       /* ---- 1 water ---- */
-      FIELD(1, 'Hotwell filling line-up (field)', [17]),
+      /* Mina beta.89 Step 20 (item 14 "Initiate START to selected CEP" had no START here and the field confirm closed the step with the CEP
+         stopped): PR-OPE-5002 section 18 items 1 ~ 12 are the field part before the DCS steps (FCV-CD1120 MAN, CEP START, FCV-CD1120 AUTO
+         are the next steps); items 19 ~ 26 (chemical dosing) after them */
+      FIELD1(1, 'Hotwell filling line-up (field)', [17], { it: [0, 11] }),
       { st: 1, sec: 18, t: 'Hotwell level control LCV-MU1110 in AUTO', d: 'The make-up valve now holds the condenser hotwell level.', c: b.MODE('LCV-MU1110', 'AUTO'), fps: ['LCV-MU1110'], a: [btn('A (AUTO)', () => A.auto('LCV-MU1110'))] },
       { st: 1, sec: 18, t: 'Condensate recirculation FCV-CD1120: MANUAL, MV 60 %', d: 'Open the recirculation first so the condensate pump has flow when it starts.', c: b.ALL(b.MODE('FCV-CD1120', 'MAN'), b.MV('FCV-CD1120', 55, 65)), fps: ['FCV-CD1120'], a: [btn('M, MV 60 %', () => A.man('FCV-CD1120', 60))] },
       { st: 1, sec: 18, t: 'Start the condensate pump (CEP)', d: 'The condensate pump sends water from the hotwell to the deaerator. It is also needed for the vacuum later.', c: R.CEP, a: [mot('M.3350', 'CEP-A'), mot('M.3351', 'CEP-B')] },
       { st: 1, sec: 18, t: 'FCV-CD1120 in AUTO, SV 150 T/H', d: 'The recirculation now holds the minimum flow of the condensate pump.', c: b.ALL(b.MODE('FCV-CD1120', 'AUTO'), b.SV('FCV-CD1120', 140, 160, 'T/H')), fps: ['FCV-CD1120'], a: [btn('A, SV 150 T/H', () => A.auto('FCV-CD1120', 150))] },
+      FIELD1(1, 'Condensate chemical dosing (field)', [17], { it: [18, 25] }),
       { st: 1, sec: 19, t: 'Deaerator level LCV-CD1104 in AUTO, SV 0 mm', d: 'The deaerator fills to normal level and the valve holds it there.', c: b.ALL(b.MODE('LCV-CD1104', 'AUTO'), b.SV('LCV-CD1104', -20, 20, 'mm')), fps: ['LCV-CD1104'], a: [btn('A, SV 0 mm', () => A.auto('LCV-CD1104', 0))], field: [18] },
-      { st: 1, sec: 20, t: 'Start the boiler feedwater pump (BFWP)', d: 'The feedwater pump fills the steam drum. The deaerator must have water first.', c: R.BFP, a: [fldB('bfplop', 'BFP lube oil pump (local)'), mot('M.3343', 'BFWP-A'), mot('M.3344', 'BFWP-B')] },
+      { st: 1, sec: 20, t: 'Start the boiler feedwater pump (BFWP)', d: 'Do: start the auxiliary lube oil pump of the pump you start (DITL-22, PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"): its lube oil pressure LOW (I.0090 / I.0410) blocks the start. Then start the feedwater pump. The deaerator must have water first.', c: R.BFP, a: [dmot('DITL-22', 'BFWP-A aux. lube oil pump'), dmot('DITL-22 #B', 'BFWP-B aux. lube oil pump'), mot('M.3343', 'BFWP-A'), mot('M.3344', 'BFWP-B')] },
       /* 3.2.0 P1 #4 (PR-OPE-5002 BFP start-up 4165 / 4176): the feedwater reaches the drum only through the discharge MOV of the pump */
       {
         st: 1,
