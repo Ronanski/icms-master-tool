@@ -706,20 +706,12 @@ function anProcStep(S, dt) {
             : 1); /* 2.2.0-beta.12: no BFWP, no start-up flow */
       /* 2.1.0-beta.11: water that leaves the drum besides the main steam (blowdown and the rest), from "Start at 150 MW":
          03.png feedwater 499.1 - main steam 474.1 = 25.0 T/H (pr.integLoss, removed by Reset) */
-      /* Mina H1 (beta.88, Step 28: the drum overfilled to +660 mm with no way to bring it down). PR-OPE-5002 (drum level): "Use lowering
-         header drain until to control the level and at steam drum pressure of above 10 Kg/cm2 use the MBD and CBD". The lower ring header
-         drains of flow diagram K1AU3-PD-019 Rev D (BD-1-005 / 006 1", BD-1-008 / 010 / 012 / 014 2", manual double valves V-BD1005 ~
-         V-BD1021, to the blowdown tank T-1051) are field valves (AN_SRC.field.lhd), "slightly cracked open" (FHI 2-8-TAB_9). Their flow
-         by the orifice law Q = Cd A x sqrt(2 dP rho): A = the six lines of PD-019 (nominal bore), dP = drum pressure + the water column
-         to the header. ASSUMED (not in the repository): Cd 0.6 (sharp orifice), opening x 10 % when cracked, head 3 kg/cm2, cold water
-         1000 kg/m3. Used below 10 kg/cm2 only (FHI 2-8-TAB_6-10: never while steaming); MBD / CBD flows: no valve data, not modelled */
-      let lhdQ = 0;
-      if (typeof AN_SRC !== 'undefined' && AN_SRC.field && AN_SRC.field.lhd && q.y > lo) {
-        const ps0 = S1 && pr.integ.pd >= 0 ? S1.rt.st[pr.integ.pd] : null,
-          Pd = ps0 && isFinite(ps0.val) ? Math.max(0, +ps0.val) : 0,
-          A = (4 * Math.PI * 0.0508 * 0.0508) / 4 + (2 * Math.PI * 0.0254 * 0.0254) / 4;
-        if (Pd < 10) lhdQ = 0.6 * A * 0.1 * Math.sqrt(2 * (Pd + 3) * 98066.5 * 1000) * 3.6; /* kg/s -> T/H */
-      }
+      /* Mina H1 (beta.88, Step 28). PR-OPE-5002 (drum level): "Use lowering header drain until to control the level and at steam drum
+         pressure of above 10 Kg/cm2 use the MBD and CBD". The lower ring header drains of flow diagram K1AU3-PD-019 Rev D (BD-1-005 ~
+         014, manual valves V-BD1005 ~ V-BD1021, to the blowdown tank T-1051) are field valves (AN_SRC.field.lhd). Their flow is not in
+         the documents (FHI manual, PD-019, IO / instrument lists, SOPs): AN_SRC.lhdTH (T/H while open) stays unset until that data is
+         given, so the drains take no water out yet (user rule 2026-11-03: no ASSUMED values) */
+      const lhdQ = typeof AN_SRC !== 'undefined' && AN_SRC.field && AN_SRC.field.lhd && isFinite(AN_SRC.lhdTH) && q.y > lo ? +AN_SRC.lhdTH : 0;
       q.y = Math.max(lo, Math.min(lo + span, q.y + dt * pr.integ.k * (ffw - fst - (pr.integLoss || 0) - lhdQ)));
       AN_CYC.ffw = ffw; /* the deaerator gives this water (condensate cycle balance) */
       /* 2.2.0-beta.12 (M3): SHRINK / SWELL. A fast change of the drum pressure moves the level the other way for a while (the steam

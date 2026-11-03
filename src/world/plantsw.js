@@ -35,12 +35,13 @@
     for (const e of ['3', '4']) L.push(['TT-CW1108-' + p + e, mtOf('TT-CW1108-' + p + e), 100, 'hi', 0, 2]);
     for (const e of ['U', 'V', 'W']) L.push(['TT-CW1108-' + p + e, mtOf('TT-CW1108-' + p + e), 165, 'hi', 0, 2]);
   }
-  /* Mina M3 (beta.88 / beta.89: PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"). The auxiliary lube oil pumps are DCS motors:
-     DITL-22 "BFWP A AUX. LUB. OIL PUMP" (START P.B. M.1080, RUNNING I.0050; machine B DITL-22 #B M.1090 / I.0370). The lube oil
-     pressure switches of the pump (memory list STN103 PS-LO1115-A1 / B1 < 1.5 = I.0090 / I.0410 (DITL-22 row 7, DITL-23A row 3),
-     -A2 / B2 > 2.0 = I.0091 / I.0411, -A3 / B3 < 1 = I.0092 / I.0412) follow the oil pressure: 2.5 kg/cm2 while the aux. LOP or the
-     feedwater pump itself runs (its own shaft oil pump keeps the pressure at 150 MW), 0 when neither runs. ASSUMED: the 2.5 kg/cm2 and the
-     shaft pump (the oil system of the BFWP is not in the repository). Before (beta.89): a field flag, wrong: the pump is on the DCS */
+  /* Mina M3 (beta.88 / beta.89: PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"). The auxiliary lube oil pump of each BFWP is a DCS
+     motor: DITL-22 "BFWP A AUX. LUB. OIL PUMP" (IO list STN103 O.0126 MOR-P1115A1 start, I.0050 running; machine B DITL-22 #B,
+     O.0446, I.0370). Its pressure switches on the lube oil header (memory list STN103 / KSB lube oil system O&M manual Annexure-II:
+     PS < 1.5 = I.0090 / I.0410, > 2.0 = I.0091 / I.0411, < 1.0 = I.0092 / I.0412) read the header pressure: 6.0 kg/cm2(g) with an oil
+     pump running (KSB "30 LPM LUBE OIL SYSTEM" O&M manual, Annexure-I, header pressure AOP & MOP 6.0), 0 when it is stopped (PR-OPE-5002 section 20:
+     the LOP of BFP A / B is started before the BFP, the standby LOP in AUTO). The main lube oil pump of the skid (MOP, KSB P&ID PR
+     73691 B) has no DCS signal and is not modelled (open item) */
   const runOf = (re, k) => {
     const s = (runOf.c = runOf.c || {})[re + k] || (W.inst || []).concat((typeof S !== 'undefined' && S.sheets) || []).find(x => new RegExp('\\)' + re + (k === 'B' ? ' #B' : '') + '$').test(x.name));
     if (!s) return null;
@@ -50,9 +51,8 @@
     return r && o ? (o.has ? o.has(r.row) : o.includes(r.row)) : null;
   };
   const lopP = k => () => {
-    const a = runOf('DITL-22', k),
-      b = runOf('DITL-23A', k);
-    return a == null && b == null ? NaN : a || b ? 2.5 : 0;
+    const a = runOf('DITL-22', k);
+    return a ? 6.0 : a === false ? 0 : NaN;
   };
   /* DITL-23A / DITL-22 write the rows by address: matched by the address and the word LUB (the 7th field; other stations reuse it) */
   for (const [k, a1, a2, a3] of [['A', 'I.0090', 'I.0091', 'I.0092'], ['B', 'I.0410', 'I.0411', 'I.0412']])
