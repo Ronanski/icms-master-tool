@@ -16,6 +16,8 @@
   if (!window.PLANT_V2) return;
   const NS = 'http://www.w3.org/2000/svg';
   const C = {
+    line: '#c5cdd5',
+    bg: '#0e1318',
     run: '#d64545',
     stop: '#3fa34d',
     none: '#6b7480',
@@ -87,29 +89,37 @@
     return function (g, api) {
       const pg = document.createElementNS(NS, 'g');
       pg.setAttribute('transform', 'translate(80 60)');
-      const fo = document.createElementNS(NS, 'foreignObject');
-      fo.setAttribute('width', 1760);
-      fo.setAttribute('height', 900);
-      pg.append(fo);
       g.append(pg);
-      const root = document.createElement('div');
-      root.className = 'tmpg';
-      fo.append(root);
       const st = call(() => G().steps(), [])
         .map((s, i) => Object.assign({ n: i + 1 }, s))
         .filter(s => P[3].includes(s.sec));
       const mots = new Map(),
         ctls = new Map(),
         btns = [];
-      let h = `<div class="tmpg-hd"><b>${esc(P[2])}</b><span>TEMPORARY PAGE · PR-OPE-5002 sections ${P[3].join(', ')} · same tags and faceplates as the Training steps · click a symbol or a box = its faceplate</span></div><div class="tmpg-grid">`;
+      /* user 2026-11-03 (on the first version): "kahit outline lang ng mga equipment ... text na nagbabago. Kahit wala muna kulay. Guhit
+         at text lang muna": one line colour, equipment outlines on a line, live text; no colour fills */
+      const L = C.line,
+        cut = (x, n) => (String(x).length > n ? String(x).slice(0, n - 1) + '…' : String(x)),
+        wrap = (x, n) => {
+          const w = String(x).split(' '),
+            o = [''];
+          for (const y of w) {
+            if ((o[o.length - 1] + ' ' + y).trim().length > n && o[o.length - 1]) o.push('');
+            o[o.length - 1] = (o[o.length - 1] + ' ' + y).trim();
+          }
+          return o.slice(0, 2).map((z, i, a) => (i === 1 && o.length > 2 ? cut(z + ' …', n) : z));
+        },
+        tx = (x, y, s, z, a = '') =>
+          `<text x="${x}" y="${y}" font-size="${z}" fill="${C.nm}"${a ? ' ' + a : ''}>${esc(s)}</text>`;
+      const blocks = [];
       for (const s of st) {
-        let it = '';
+        const its = [];
         for (const t0 of s.fps || []) {
           const t = call(() => LV().ctlTag(t0), null) || t0;
           if (!call(() => LV().fp(t), null)) continue;
           const k = 'c' + ctls.size;
           ctls.set(k, t);
-          it += `<button type="button" class="tmpg-ctl" data-c="${k}" title="${esc(t)} · click = faceplate"><b>${esc(t0)}</b>${t !== t0 ? `<small>${esc(t)}</small>` : ''}<span data-v="${k}">PV ----- · SV ----- · MV -----</span><i data-m="${k}">-</i></button>`;
+          its.push({ k: 'ctl', key: k, n: t0, sub: t !== t0 ? t : '' });
         }
         for (const a of s.a || []) {
           const kd = kind(a);
@@ -117,21 +127,71 @@
             if (mots.has(a.ad)) continue;
             const n = String(a.l).replace(/^START\s+/, '');
             mots.set(a.ad, n);
-            it += `<button type="button" class="tmpg-mot" data-ad="${esc(a.ad)}" title="${esc(n)} · ${esc(a.ad)} · click = faceplate"><svg viewBox="-16 -16 32 32" width="30" height="30"><circle r="13" fill="none" stroke-width="3" data-ring="${esc(a.ad)}"/><path d="M-6 -7 L8 0 L-6 7 Z" data-sym="${esc(a.ad)}"/></svg><b>${esc(n)}</b><small>${esc(a.ad)}</small><span data-st="${esc(a.ad)}">-----</span></button>`;
+            its.push({ k: 'mot', ad: a.ad, n });
           } else if (kd) {
-            const k = btns.length;
             btns.push(a);
-            const lab = String(a.l || '').trim(),
-              cls = kd === 'fld' ? 'fld' : kd === 'tcs' ? 'tcs' : 'dcs';
-            it += `<button type="button" class="tmpg-pb ${cls}" data-b="${k}" title="${esc(kd === 'dg' ? (a.dg ? a.dg[0] + ' row ' + (a.dg[1] + 1) : (/\((DITL-[^)]*)\)/.exec(a.l) || [])[1] || 'DCS') : kd === 'fld' ? 'Field operator (no DCS signal)' : 'TCS screen (turbine control system)')}"><em>${kd === 'fld' ? 'FIELD' : kd === 'tcs' ? 'TCS' : 'DCS P.B.'}</em>${esc(lab.replace(/^FIELD:\s*/, ''))}</button>`;
+            its.push({
+              k: 'pb',
+              b: btns.length - 1,
+              kd,
+              n: String(a.l || '')
+                .trim()
+                .replace(/^FIELD:\s*/, '')
+            });
           }
         }
-        if (!it) continue;
-        h += `<section class="tmpg-card"><header>Step ${s.n} · ${esc(s.t)}</header><div class="tmpg-its">${it}</div></section>`;
+        if (its.length) blocks.push({ s, its, tl: wrap('Step ' + s.n + ' · ' + s.t, 70) });
       }
-      root.innerHTML = h + '</div>';
-      const q = s => root.querySelector(s),
-        qa = s => root.querySelectorAll(s);
+      const CW = 572,
+        IW = 140,
+        PER = 4,
+        RH = 104;
+      const colY = [52, 52, 52];
+      let h =
+        tx(0, 18, P[2], 20, 'font-weight="700"') +
+        tx(
+          0,
+          38,
+          'TEMPORARY PAGE · PR-OPE-5002 sections ' +
+            P[3].join(', ') +
+            ' · the same tags and faceplates as the Training steps · click an equipment = its faceplate',
+          12,
+          `fill-opacity=".7"`
+        );
+      for (const B of blocks) {
+        const c = colY.indexOf(Math.min(...colY)),
+          x0 = c * (CW + 22),
+          y0 = colY[c],
+          rows = Math.ceil(B.its.length / PER),
+          bh = 12 + B.tl.length * 17 + rows * RH;
+        h += `<rect x="${x0}" y="${y0}" width="${CW}" height="${bh}" rx="4" fill="none" stroke="${L}" stroke-opacity=".35"/>`;
+        B.tl.forEach((l, i) => (h += tx(x0 + 10, y0 + 18 + i * 17, l, 13, 'font-weight="600"')));
+        for (let r = 0; r < rows; r++) {
+          const row = B.its.slice(r * PER, r * PER + PER),
+            yy = y0 + 12 + B.tl.length * 17 + r * RH,
+            cy = yy + 26;
+          if (row.length > 1)
+            h += `<line x1="${x0 + 10 + IW / 2}" y1="${cy}" x2="${x0 + 10 + IW / 2 + (row.length - 1) * IW}" y2="${cy}" stroke="${L}" stroke-opacity=".6"/>`;
+          row.forEach((it, i) => {
+            const cx = x0 + 10 + IW / 2 + i * IW,
+              hit = `<rect x="${cx - IW / 2 + 4}" y="${yy}" width="${IW - 8}" height="${RH - 8}" fill="transparent" pointer-events="all"/>`;
+            if (it.k === 'mot')
+              h += `<g class="tmpg-mot" data-ad="${esc(it.ad)}" style="cursor:pointer"><title>${esc(it.n)} · ${esc(it.ad)} · click = faceplate</title>${hit}<circle cx="${cx}" cy="${cy}" r="17" fill="${C.bg}" stroke="${L}" stroke-width="1.6"/><path d="M${cx - 7} ${cy - 8} L${cx + 9} ${cy} L${cx - 7} ${cy + 8} Z" fill="none" stroke="${L}" stroke-width="1.4"/>${tx(cx, cy + 34, cut(it.n, 18), 13, 'text-anchor="middle" font-weight="600"')}${tx(cx, cy + 48, it.ad, 11, 'text-anchor="middle" fill-opacity=".7"')}${tx(cx, cy + 63, '-----', 12, `text-anchor="middle" font-family="ui-monospace,monospace" data-st="${esc(it.ad)}"`)}</g>`;
+            else if (it.k === 'ctl')
+              h += `<g class="tmpg-ctl" data-c="${it.key}" style="cursor:pointer"><title>${esc(ctls.get(it.key))} · click = faceplate</title>${hit}<path d="M${cx - 14} ${cy - 9} L${cx + 14} ${cy + 9} L${cx + 14} ${cy - 9} L${cx - 14} ${cy + 9} Z" fill="${C.bg}" stroke="${L}" stroke-width="1.4"/><line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy - 16}" stroke="${L}"/><rect x="${cx - 9}" y="${cy - 24}" width="18" height="8" fill="none" stroke="${L}"/>${tx(cx, cy + 34, cut(it.n, 18), 13, 'text-anchor="middle" font-weight="600"')}${tx(cx, cy + 48, '-----', 11, `text-anchor="middle" font-family="ui-monospace,monospace" data-v="${it.key}"`)}${tx(cx, cy + 63, '-----', 11, `text-anchor="middle" font-family="ui-monospace,monospace" data-m="${it.key}"`)}</g>`;
+            else {
+              const lb = wrap(it.n, 19);
+              h += `<g class="tmpg-pb" data-b="${it.b}" style="cursor:pointer"><title>${esc(it.kd === 'fld' ? 'Field operator (no DCS signal)' : it.kd === 'tcs' ? 'TCS screen (turbine control system)' : 'DCS push button of the drawing')}</title>${hit}<rect x="${cx - 62}" y="${cy - 18}" width="124" height="36" rx="3" fill="${C.bg}" stroke="${L}" stroke-width="1.4" data-bx="${it.b}"/>${lb.map((l, j) => tx(cx, cy - 3 + j * 14 - (lb.length - 1) * 7 + 4, l, 11, 'text-anchor="middle"')).join('')}${tx(cx, cy + 34, it.kd === 'fld' ? 'FIELD' : it.kd === 'tcs' ? 'TCS' : 'DCS P.B.', 11, 'text-anchor="middle" fill-opacity=".7"')}${tx(cx, cy + 50, '', 12, `text-anchor="middle" font-family="ui-monospace,monospace" data-pd="${it.b}"`)}</g>`;
+            }
+          });
+        }
+        colY[c] = y0 + bh + 14;
+      }
+      const H = Math.max(...colY),
+        sc = H > 890 ? 890 / H : 1;
+      pg.innerHTML = `<g transform="scale(${sc})">${h}</g>`;
+      const q = s => pg.querySelector(s),
+        qa = s => pg.querySelectorAll(s);
       /* clicks: the same faceplates as the other Plant pages */
       qa('.tmpg-mot').forEach(b =>
         b.addEventListener('click', e => {
@@ -162,29 +222,22 @@
       for (const [ad, n] of mots)
         if (!R[ad] || !call(() => R[ad].el() && R[ad].el().isConnected, false))
           R[ad] = {
-            open: () => q(`[data-ad="${ad}"]`) && q(`[data-ad="${ad}"]`).click(),
+            open: () => q(`[data-ad="${ad}"]`) && q(`[data-ad="${ad}"]`).dispatchEvent(new MouseEvent('click')),
             el: () => q(`[data-ad="${ad}"]`),
             n
           };
       function tick() {
         if (!pg.isConnected) return;
-        const blink = Math.floor(Date.now() / 500) % 2;
         for (const [ad] of mots) {
           const m = call(() => D().mst(ad), null),
-            c = m === 'RUN' ? C.run : m === 'TRIP' ? (blink ? C.run : '#f59e0b') : m === 'STOP' ? C.stop : C.none,
-            md = call(() => D().modeOf(ad), null) || {};
-          const r = q(`[data-ring="${ad}"]`),
-            y = q(`[data-sym="${ad}"]`),
+            md = call(() => D().modeOf(ad), null) || {},
             t = q(`[data-st="${ad}"]`);
-          if (r) r.setAttribute('stroke', c);
-          if (y) y.setAttribute('fill', c);
           if (t) {
             const x =
               (m || '-----') +
-              (md.rem == null ? '' : md.rem ? ' · REM' : ' · LOC') +
-              (md.au == null ? '' : md.au ? ' · AUTO' : ' · MAN');
+              (md.rem == null ? '' : md.rem ? ' REM' : ' LOC') +
+              (md.au == null ? '' : md.au ? ' AUTO' : ' MAN');
             if (t.textContent !== x) t.textContent = x;
-            t.style.color = c;
           }
         }
         for (const [k, t] of ctls) {
@@ -196,23 +249,23 @@
             md = call(() => LV().modeOf(f), '?'),
             v = q(`[data-v="${k}"]`),
             m = q(`[data-m="${k}"]`);
-          const x =
-            (isFinite(pv) ? 'PV ' + fmt(pv) + ' · ' : '') +
-            (isFinite(sv) ? 'SV ' + fmt(sv) + ' · ' : '') +
-            'MV ' +
-            fmt(mv) +
-            ' %';
-          if (v && v.textContent !== x) v.textContent = x;
-          if (m) {
-            const y = /^A/.test(md) ? 'A' : /^R/.test(md) ? 'R' : /^M/.test(md) ? 'M' : md || '-';
-            if (m.textContent !== y) m.textContent = y;
-            m.style.color = y === 'M' ? C.man : y === 'R' ? C.rem : y === 'A' ? C.aut : C.none;
-          }
+          const x = (isFinite(pv) ? 'PV ' + fmt(pv) : '') + (isFinite(sv) ? ' SV ' + fmt(sv) : ''),
+            y =
+              'MV ' +
+              fmt(mv) +
+              ' % · ' +
+              (/^A/.test(md) ? 'AUTO' : /^R/.test(md) ? 'REMOTE' : /^M/.test(md) ? 'MAN' : md || '-');
+          if (v && v.textContent !== (x.trim() || ' ')) v.textContent = x.trim() || ' ';
+          if (m && m.textContent !== y) m.textContent = y;
         }
         qa('.tmpg-pb').forEach(b => {
-          const a = btns[+b.dataset.b];
-          b.classList.toggle('on', !!call(() => a.on && a.on(), false));
-          b.hidden = !!call(() => a.hide && a.hide(), false);
+          const a = btns[+b.dataset.b],
+            on = !!call(() => a.on && a.on(), false),
+            d = q(`[data-pd="${b.dataset.b}"]`),
+            r = q(`[data-bx="${b.dataset.b}"]`);
+          if (d && d.textContent !== (on ? 'DONE' : '')) d.textContent = on ? 'DONE' : '';
+          if (r) r.setAttribute('stroke-width', on ? 3 : 1.4);
+          b.style.display = call(() => a.hide && a.hide(), false) ? 'none' : '';
         });
       }
       tick();
@@ -220,32 +273,10 @@
       return pg;
     };
   }
-  if (!document.getElementById('tmpgcss')) {
-    const s = document.createElement('style');
-    s.id = 'tmpgcss';
-    s.textContent = `
-.tmpg{width:1760px;height:900px;overflow:auto;font:14px/1.3 system-ui,sans-serif;color:${C.nm};box-sizing:border-box;padding:4px 8px}
-.tmpg-hd{display:flex;gap:16px;align-items:baseline;margin:0 0 10px}.tmpg-hd b{font-size:20px;letter-spacing:.04em}
-.tmpg-hd span{color:${C.dim};font-size:13px}
-.tmpg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:start}
-.tmpg-card{background:${C.card};border:1px solid ${C.cs};border-radius:6px;padding:8px 10px}
-.tmpg-card header{font-weight:600;font-size:14px;margin:0 0 8px;color:${C.val}}
-.tmpg-its{display:flex;flex-wrap:wrap;gap:8px}
-.tmpg button{font:inherit;color:inherit;background:#0b0f13;border:1px solid #3a4550;border-radius:5px;cursor:pointer;text-align:left}
-.tmpg button:hover{border-color:#8fb3d1}
-.tmpg-mot{display:grid;grid-template-columns:34px auto;column-gap:6px;align-items:center;padding:4px 8px;min-width:170px}
-.tmpg-mot svg{grid-row:1/4}.tmpg-mot b{font-size:14px}.tmpg-mot small{color:${C.dim};font-size:12px}.tmpg-mot span{font:600 13px ui-monospace,monospace}
-.tmpg-ctl{display:grid;grid-template-columns:1fr auto;column-gap:8px;padding:5px 8px;min-width:250px}
-.tmpg-ctl b{font-size:14px}.tmpg-ctl small{grid-column:1;color:${C.dim};font-size:12px}
-.tmpg-ctl span{grid-column:1;font:13px ui-monospace,monospace;color:#5cd6ff}.tmpg-ctl i{grid-column:2;grid-row:1/4;align-self:center;font:700 18px ui-monospace,monospace;font-style:normal}
-.tmpg-pb{padding:6px 10px;font-size:13px}.tmpg-pb em{display:block;font-style:normal;font-size:11px;color:${C.dim};letter-spacing:.06em}
-.tmpg-pb.fld em{color:#e0b860}.tmpg-pb.tcs em{color:#8fc7ff}.tmpg-pb.on{border-color:${C.run};box-shadow:inset 0 0 0 1px ${C.run}}`;
-    document.head.append(s);
-  }
-  const L = (window.PLANT_SYS = window.PLANT_SYS || []);
+  const LS = (window.PLANT_SYS = window.PLANT_SYS || []);
   for (const P of PAGES) {
     PLANT_V2.screens[P[0]] = page(P);
-    L.push({
+    LS.push({
       id: P[0],
       title: P[1],
       num: '',
