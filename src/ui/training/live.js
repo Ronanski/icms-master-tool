@@ -506,6 +506,7 @@ window.LS_LIVE = (function () {
     [18, /Set SV to 150 T\/H and Set to AUTO/i, ALL(MODE('FCV-CD1120', 'AUTO'), SV('FCV-CD1120', 140, 160, 'T/H'))],
     [18, /set LCV-MU1110 to AUTO/i, MODE('LCV-MU1110', 'AUTO')],
     [19, /Set Deaerator Level control valve \(LCV-CD1104\) to AUTO/i, ALL(MODE('LCV-CD1104', 'AUTO'), SV('LCV-CD1104', -20, 20, 'mm'))],
+    [20, /^Initiate START of LOP of BFP/i, FIELD('bfplop', 'BFP lube oil pump')] /* Mina M3: local pump, field flag */,
     [20, /Initiate START to selected BFP/i, RUN.BFP],
     [20, /SET FCV-FW1130-2 to MANUAL/i, MODE('FCV-FW1130-2', 'MAN')],
     [20, /^Drum level \(-150mm\)/i, HOLD(30, VAL('lvl', -200, -100))],

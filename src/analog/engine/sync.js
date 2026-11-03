@@ -168,6 +168,13 @@ function anSyncSlots() {
       const n = s.name;
       const sh = () => ditlAll().find(x => x.name === n);
       add('ds' + n, () => ditlPick(s, DITL_SH), d => { for (const x of DITL_SH) if (x in d) s[x] = ditlDec(d[x]); else delete s[x]; }, { w: 1, raw: 1 });
+      /* Mina H2 (beta.88, Step 26, Worker): a DITL sheet with no netlist yet (its page never opened: DITL-23A) got no nets slot, so the
+         page kept its first values and the dock read the PT-FW1115-A permissive incomplete until the page was opened. Every sheet has
+         its netlist here, on both sides, so the slot lists stay the same */
+      if (!s.nl && typeof netlist === 'function')
+        try {
+          s.nl = netlist(s);
+        } catch (e) {}
       if (!s.nl) continue;
       add('dn' + n, () => ({ v: (s.nl._v || []).map(x => (x ? 1 : 0)).join(''), g: (s.nl.gates || []).map(g => ditlPick(g, DITL_G)) }), d => {
         const nl = s.nl;
