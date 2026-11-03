@@ -50,6 +50,7 @@ window.LS_GUIDE = (function () {
       t = L().ctlTag(t) || t;
       const k = shOf(t);
       if (!k) return 'no faceplate ' + t;
+      if (AN.opSheet) AN.opSheet(k);
       const c = h().ctl(k, t);
       if (c) return h().man(k, t, x), '';
       const s = station(t);
@@ -63,6 +64,7 @@ window.LS_GUIDE = (function () {
     val(t, x) {
       const s = station(t);
       if (!s) return 'no station ' + t;
+      if (AN.opSheet) AN.opSheet(shOf(t));
       s.T.rt.st[s.b.id].val = x;
       return '';
     },
@@ -70,6 +72,7 @@ window.LS_GUIDE = (function () {
       t = L().ctlTag(t) || t;
       const k = shOf(t);
       if (!k) return 'no faceplate ' + t;
+      if (AN.opSheet) AN.opSheet(k);
       if (h().ctl(k, t)) return h().autoSv(k, t, sv), '';
       /* a hand station: AUTO = .MAN 0 on every sheet (CLAUDE.md 10) */
       for (const [S2, n] of AN.modeNets(t) || []) S2.rt.ext[n] = 0;
@@ -79,6 +82,7 @@ window.LS_GUIDE = (function () {
       t = L().ctlTag(t) || t;
       const k = shOf(t);
       if (!k) return 'no faceplate ' + t;
+      if (AN.opSheet) AN.opSheet(k);
       return h().rem(k, t), '';
     },
     loc: t => (h().mode(L().ctlTag(t) || t, 'LOC'), ''),
@@ -1201,6 +1205,12 @@ window.LS_GUIDE = (function () {
         }
     return out;
   }
+  /* the sheets the steps operate that may not be linked to the sheet on the screen: stepped too (links.js actSet) */
+  function trainSheets() {
+    return ['ABC-001C', 'ABC-002', 'ABC-003A', 'ABC-003B', 'ABC-003C', 'ABC-003D', 'ABC-004A', 'ABC-005', 'ABC-007', 'ABC-008', 'ABC-010', 'ABC-011', 'ABC-012', 'ABC-013', 'ABC-020', 'ABC-028', 'ABC-031', 'ABC-032', 'ABC-050', 'ABC-052', 'ABC-054']
+      .concat(steps().flatMap(s => (s.fps || []).map(t => shOf(L().ctlTag(t) || t)).filter(Boolean)))
+      .filter((x, i, a) => a.indexOf(x) === i);
+  }
   /* start: the plant cold, RUN, step 1 */
   function start(done) {
     /* 3.2.0 retest #54 (user 2026-10-28: the page froze over 1 min, no loading sign): the cold plant loads in slices with a progress
@@ -1236,10 +1246,7 @@ window.LS_GUIDE = (function () {
       G.cur = 0;
       G.aphSb = 0;
       HH = null;
-      /* the sheets the steps operate that may not be linked to the sheet on the screen: stepped too (links.js actSet) */
-      AN.checkSheets = ['ABC-001C', 'ABC-002', 'ABC-003A', 'ABC-003B', 'ABC-003C', 'ABC-003D', 'ABC-004A', 'ABC-005', 'ABC-007', 'ABC-008', 'ABC-010', 'ABC-011', 'ABC-012', 'ABC-013', 'ABC-020', 'ABC-028', 'ABC-031', 'ABC-032', 'ABC-050', 'ABC-052', 'ABC-054']
-        .concat(steps().flatMap(s => (s.fps || []).map(t => shOf(L().ctlTag(t) || t)).filter(Boolean)))
-        .filter((x, i, a) => a.indexOf(x) === i);
+      AN.checkSheets = trainSheets();
       /* 3.2.0 walkthrough #1: the start-up begins at t = 0 (the clock of the sheets counted the settling of the cold state: t = 11:29) and
          PAUSED (simulation on, time stopped, 1x): the field steps come first and the trainee presses RUN. Before: RUN at once, x10 */
       /* the clock and the trend histories of the engine: an engine action (AN.clock0, runs in the engine and on the page: with the
@@ -1296,6 +1303,8 @@ window.LS_GUIDE = (function () {
     G.mine = {};
     G.pw = {};
     G.hold = {};
+    /* Mina step 14: a Cold from the plant puts back the sheet sets of its state: the sheets of the Training are stepped again */
+    if (G.on) AN.checkSheets = trainSheets().concat(AN.checkSheets || []).filter((x, i, a) => a.indexOf(x) === i);
     for (const k in since) delete since[k];
     try {
       localStorage.setItem('ls-train', '{}');
@@ -1319,7 +1328,9 @@ window.LS_GUIDE = (function () {
   }
   /* continue after a reload: the plant is not saved, so the training goes on only with a plant in the simulation */
   function resume() {
-    if (!AN.checkSheets || !AN.checkSheets.length) AN.checkSheets = ['ABC-001C', 'ABC-020', 'ABC-028', 'ABC-031', 'ABC-032', 'ABC-054'];
+    /* Mina step 14 (beta.87): the short list of before had no ABC-053, so TICLO1002 stayed MAN until its page was opened; the same list
+       as the start now, the sheets already in it kept */
+    AN.checkSheets = trainSheets().concat(AN.checkSheets || []).filter((x, i, a) => a.indexOf(x) === i);
     hook();
     G.on = true;
     if (AN.runOn) AN.runOn();
