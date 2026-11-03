@@ -69,6 +69,15 @@
     try {
       bs.firstChild.focus();
     } catch (e) {}
+    /* Mina #6 (beta.87): a state loaded another way (the Home Cold card) left the question open: it closes once a state is in */
+    const iv = setInterval(() => {
+      if (!d.isConnected) return clearInterval(iv);
+      const A = window.AN || {};
+      if (A.startState && !A._loadP && !A._startPending) {
+        clearInterval(iv);
+        close();
+      }
+    }, 500);
   };
   window.lsBusy = (() => {
     let el = null,
