@@ -72,6 +72,7 @@
     timers.push(setInterval(() => say({ t: 'beat' }), 1000));
     const { AN, WORLD, ENG } = G;
     let lastLive = null,
+      lastT = 0,
       acc = 0,
       busy = false;
     const cs = () => AN.sheets[AN.i] || AN.sheets.find(x => /057/.test(x.name));
@@ -84,16 +85,21 @@
           if (!AN.run) N.norun = (N.norun || 0) + 1;
           else N.load = (N.load || 0) + 1;
           acc = 0;
+          lastT = 0;
           return;
         }
         /* the plant time of this tick is kept even while a world scan holds the engine (as the page scheduler, sched.js: its anAcc
-           grows before the busy check); before, a tick that met a scan was lost: 4.4 s of plant a second at 6x (eng_worker, Winter) */
-        acc += 0.1 * AN.spd;
+           grows before the busy check); before, a tick that met a scan was lost: 4.4 s of plant a second at 6x (eng_worker, Winter).
+           M32 (user 2026-11-03): the REAL time since the last tick x the speed, not a fixed 0.1 s (a late tick lost the rest: x300 ran
+           about x100); the steps as sched.js anSteps: 0.5 s up to 20 a tick, then longer, at most 2 s */
+        const now = performance.now();
+        acc += (lastT ? Math.min((now - lastT) / 1000, 0.5) : 0.1) * AN.spd;
+        lastT = now;
         if (busy) return void N.skip++;
         const sh = cs();
         if (!sh || !sh.S) return void (N.nosh = (N.nosh || 0) + 1);
         const dt = acc,
-          n = Math.max(1, Math.ceil(dt / 0.5)),
+          n = Math.max(1, Math.min(Math.ceil(dt / 0.5), Math.max(20, Math.ceil(dt / 2)))),
           K = AN.tierK || 1;
         acc = 0;
         busy = true;
@@ -103,7 +109,8 @@
         } catch (e) {
           say({ t: 'error', where: 'ABC scan', text: String((e && e.stack) || e) });
         }
-        const ms = performance.now() - t0;
+        /* M32: the light mode is judged per step, not per tick (sched.js) */
+        const ms = (performance.now() - t0) / n;
         AN._ms = AN._ms == null ? ms : AN._ms * 0.85 + ms * 0.15;
         if (!AN.tierLock && (AN._tn = (AN._tn || 0) + 1) % 10 === 0) {
           const k = AN.tierK || 1;

@@ -93,12 +93,25 @@ AN.sched = (() => {
 /* group 1: ABC. Speed (user 2026-11-03, Mina M23: the Plant view reached x110 ~ 120 before P3 and x55 ~ 68 after): the step runs at once,
    as before 18f7a64 (interaction.js), not in 4 ms slices of the queue; the queue (AN.sched) stays for the long actions and flush */
 const anMirror = () => !!(window.ENG && ENG.mode === 'mirror');
+/* M32 (user 2026-11-03: "x300 na 6 h, 1.2 min nalang"): the plant time of a tick is the REAL time since the last tick x the speed
+   (anTick), not a fixed 0.1 s: a tick that took longer than 100 ms (x300 = 60 steps) lost the rest, so x300 ran about x100.
+   anSteps: the steps of a tick, 0.5 s each up to 20 a tick, then longer steps (at most 2 s) so that a tick stays short. The same in
+   the Web Worker (src/world/eng-host.js) */
+let anLastT = 0;
+const anTick = () => {
+  const now = performance.now(),
+    el = anLastT ? Math.min((now - anLastT) / 1000, 0.5) : 0.1;
+  anLastT = now;
+  return el * (AN.spd || 1);
+};
+const anSteps = dt => Math.max(1, Math.min(Math.ceil(dt / 0.5), Math.max(20, Math.ceil(dt / 2))));
+AN.anSteps = anSteps;
 setInterval(() => {
-  if (!live() || !AN.run || AN._loading || anMirror()) return;
+  if (!live() || !AN.run || AN._loading || anMirror()) return void (anLastT = 0);
   const sh = cs();
   if (!sh || !sh.S) return;
-  const dt = 0.1 * AN.spd,
-    n = Math.max(1, Math.ceil(dt / 0.5));
+  const dt = anTick(),
+    n = anSteps(dt);
   histRec(sh, 1);
   const t0_ = performance.now(),
     K = AN.tierK || 1;
@@ -123,7 +136,9 @@ setInterval(() => {
     panelUpd(false, true);
   }
   {
-    const ms = performance.now() - t0_;
+    /* M32: the light mode (tierK) is judged on the time of ONE step, not of the tick: at x300 a tick is 20 steps (~100 ms), so the
+       tick time raised tierK to 6, and the tier stepping cost more than it saved (measured on the PC: x300 at tierK 1 = x308, at 6 = x157) */
+    const ms = (performance.now() - t0_) / n;
     AN._ms = AN._ms == null ? ms : AN._ms * 0.85 + ms * 0.15;
     if (!AN.tierLock && (AN._tn = (AN._tn || 0) + 1) % 10 === 0) {
       const k = AN.tierK || 1;
