@@ -31398,7 +31398,8 @@ function setCat(c) {
      ABC sheets go on running from the DITL page, world.js), DITL Simulate -> ABC RUN. Before, every switch stopped it (VIEW) */
   let runWas = false;
   try {
-    runWas = AN.cat === 'an' ? !!AN.run && !AN.view : typeof SIM !== 'undefined' && !!SIM;
+    /* Mina #M26: a paused DITL page (SIM on, DPAUSE) is not running: the ABC page it opens stays paused too */
+    runWas = AN.cat === 'an' ? !!AN.run && !AN.view : typeof SIM !== 'undefined' && !!SIM && !(typeof DPAUSE !== 'undefined' && DPAUSE);
   } catch (e) {}
   if (c !== 'an') {
     const f = $('sidefl');
@@ -31448,7 +31449,11 @@ function setCat(c) {
       });
   } else {
     SIM = runWas;
-    if (runWas) TSP = AN.spd || 1;
+    if (runWas) {
+      TSP = AN.spd || 1;
+      /* a pause left from an earlier visit of the DITL page does not hold the run carried over (Mina #M26) */
+      if (typeof DPAUSE !== 'undefined') DPAUSE = false;
+    }
     SIDEKEY = null;
     AN.run = false;
     render();
@@ -32098,7 +32103,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.78';
-      c3.textContent += ' · build 2fa8816'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 3912be0'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -36260,9 +36265,13 @@ AN.sched = (() => {
     posted = false;
     if (busy) return;
     busy = true;
-    const t0 = performance.now();
+    const t0 = performance.now(),
+      /* Mina #M23: a job that waits behind the clock gets a bigger slice (4 ms kept the frames smooth but at x300 / a slow PC the
+         plant fell behind for ever): 8 ms when the oldest job waits > 120 ms, 16 ms > 300 ms */
+      age = Q.length ? t0 - Q[0].at : 0,
+      budget = age > 300 ? 16 : age > 120 ? 8 : AN_SLICE;
     try {
-      while (Q.length && performance.now() - t0 < AN_SLICE) {
+      while (Q.length && performance.now() - t0 < budget) {
         const j = Q[0],
           t1 = performance.now();
         let r;
@@ -36283,10 +36292,15 @@ AN.sched = (() => {
   mc.port1.onmessage = pump;
   return {
     add(key, g, fin) {
-      Q.push({ key, g, end: fin, cpu: 0 });
+      Q.push({ key, g, end: fin, cpu: 0, at: performance.now() });
       post();
     },
     has: key => Q.some(j => j.key === key),
+    /* how long the oldest job of a group waits (ms; 0 = none queued) */
+    age: key => {
+      const j = Q.find(x => x.key === key);
+      return j ? performance.now() - j.at : 0;
+    },
     flush() {
       if (busy) return;
       busy = true;
@@ -36314,6 +36328,18 @@ AN.sched = (() => {
 
 /* group 1: ABC */
 let anAcc = 0;
+/* the tiers (light mode xK), judged on every 100 ms tick (Mina #M23; before: once per 10 finished steps, so a plant that fell behind
+   finished few steps and waited seconds for its tier): up when the step is behind the clock (its job still queued after 300 ms) or
+   costs > 35 ms, down < 14 ms; at most one change each 0.5 s */
+function anTierTick() {
+  if (AN.tierLock) return;
+  AN._tc = (AN._tc || 0) + 1;
+  if (AN._tc < 5) return;
+  const k = AN.tierK || 1,
+    behind = AN.sched.age('abc') > 300,
+    nk = behind || AN._ms > 35 ? Math.min(6, k + 1) : AN._ms < 14 ? Math.max(1, k - 1) : k;
+  if (nk !== k) ((AN.tierK = nk), (AN._tc = 0));
+}
 /* 3.2.0 Web Worker (src/world/eng.js): when the engine runs in the worker, the page steps nothing (it is the mirror) */
 const anMirror = () => !!(window.ENG && ENG.mode === 'mirror');
 setInterval(() => {
@@ -36324,6 +36350,7 @@ setInterval(() => {
   const sh = cs();
   if (!sh || !sh.S) return;
   anAcc += 0.1 * AN.spd;
+  anTierTick();
   if (AN.sched.has('abc')) return;
   const dt = anAcc,
     n = Math.max(1, Math.ceil(dt / 0.5));
@@ -36357,10 +36384,6 @@ setInterval(() => {
       /* the tiers: the CPU time of the step (its slices), not the time between them */
       const ms = j.cpu;
       AN._ms = AN._ms == null ? ms : AN._ms * 0.85 + ms * 0.15;
-      if (!AN.tierLock && (AN._tn = (AN._tn || 0) + 1) % 10 === 0) {
-        const k = AN.tierK || 1;
-        AN.tierK = AN._ms > 35 ? Math.min(6, k + 1) : AN._ms < 14 ? Math.max(1, k - 1) : k;
-      }
     }
   );
 }, 100);
@@ -50323,7 +50346,8 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
      memory) or hangs sends nothing, so the page would wait for ever with the plant still. No message for 10 s = stopped; 60 s after
      'acting' or while the page waits for a long action (ENG.heavy: a starting state takes seconds there, with no heartbeat) */
   const WD = 10000,
-    WD_CALL = 60000;
+    WD_CALL = 60000,
+    PING_WAIT = 5000;
   const watch = () => {
     clearInterval(E._wd);
     let tk = (E.inAt = Date.now());
@@ -50335,7 +50359,19 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       /* the page itself was busy (its messages still wait in the queue): no verdict on this tick */
       if (late || E.mode !== 'mirror' || !E.worker) return;
       const lim = E.busyAt || E.heavy ? WD_CALL : WD;
-      if (now - E.inAt > lim) return void fail('no answer', 'the engine in the worker stopped answering (no message for ' + lim / 1000 + ' s)');
+      /* Mina #M22: silence alone is no verdict (a busy worker can miss its heartbeat): a ping first, and the worker stops only when that
+         ping too gets no answer in PING_WAIT (any message from it counts, eng-page.js onmessage sets E.inAt) */
+      if (now - E.inAt > lim) {
+        if (!E._pingAt || E._pingAt < E.inAt) {
+          E._pingAt = now;
+          try {
+            E.worker.postMessage({ t: 'ping', id: now });
+          } catch (e) {}
+          return;
+        }
+        if (now - E._pingAt > PING_WAIT) return void fail('no answer', 'the engine in the worker stopped answering (no message for ' + Math.round((now - E.inAt) / 1000) + ' s, no answer to a ping)');
+        return;
+      }
       /* a stall: the plant runs and the worker is alive (its heartbeat comes) but no patch has come for 5 s (Winter's world run 1: the
          page never got the world). Kept for the checks (ENG.stalls: when, how long, what the engine said), and the whole state is asked
          for again ('full': the engine sends every slot and takes the page as ready) */
@@ -88204,15 +88240,10 @@ window.LS_GUIDE = (function () {
   function openD(nm, row, zoom, rows) {
     const m = /\s*#([B-D])$/.exec(String(nm));
     document.body.classList.remove('lsfield');
-    /* Mina #M10 / #M20: opening a drawing never changes RUN. setCat carries the run over (runWas), but it reads the ABC run of that
-       moment (a switch back to ABC turns it on again only after its sheets load), so now and then the DITL page opened PAUSED */
-    const wasRun = isRun();
+    /* opening a drawing never changes RUN: setCat alone carries it over (Mina #M10 / #M20). Mina #M26 / #M27: a second RUN press here,
+       at another moment than setCat's, toggled the run (RUN / PAUSED / "RUN (ABC)"), the DITL stopped scanning and the DCS START /
+       FIELD REMOTE of the SWP did nothing */
     AN.xrefGo({ d: String(nm).replace(/\s*#\w+$/, '') });
-    if (wasRun && !isRun())
-      try {
-        runNow();
-        window.lsEventAdd && lsEventAdd('DCS', 'RUN', 'RUN kept while opening ' + String(nm));
-      } catch (e) {}
     setTimeout(() => {
       try {
         if (window.DUI && DUI.setMach) DUI.setMach(m ? 'ABCD'.indexOf(m[1]) : 0);
