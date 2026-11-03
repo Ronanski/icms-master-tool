@@ -109,7 +109,8 @@
         } catch (e) {
           say({ t: 'error', where: 'ABC scan', text: String((e && e.stack) || e) });
         }
-        const ms = performance.now() - t0;
+        /* M32: the light mode is judged per step, not per tick (sched.js) */
+        const ms = (performance.now() - t0) / n;
         AN._ms = AN._ms == null ? ms : AN._ms * 0.85 + ms * 0.15;
         if (!AN.tierLock && (AN._tn = (AN._tn || 0) + 1) % 10 === 0) {
           const k = AN.tierK || 1;
