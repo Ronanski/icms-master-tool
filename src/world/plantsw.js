@@ -157,10 +157,6 @@
       SRC[key] = r;
     }
     if (!r) return NaN;
-    /* Mina H2 (beta.88, Step 26): the BFWP suction pressure PT-FW1115-A reads the deaerator pressure of ABC-056, a sheet in no stepped
-       set: its value stood still and the START permissive stayed incomplete until a page was opened (the family of the ABC-053 bug).
-       Every ABC sheet the field switches read is stepped with the unit model (links.js actSet, AN.unitSheets) */
-    if (!(AN.unitSheets || []).includes(k)) AN.unitSheets = (AN.unitSheets || []).concat(k);
     if (r.n >= 0 && isFinite(r.S.rt.v[r.n])) return +r.S.rt.v[r.n];
     const st = r.b && r.S.rt.st[r.b.id];
     return st && isFinite(st.val) ? +st.val : NaN;

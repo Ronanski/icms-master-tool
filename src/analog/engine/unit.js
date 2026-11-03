@@ -650,6 +650,7 @@ function anUnitStart() {
   AN_SRC.field.mu1033 = false;
   AN_SRC.field.cw1001 = true; /* live test #50: the expansion tank outlet open, the closed cooling loop primed */
   AN_SRC.field.bfplop = true; /* Mina M3: the BFP lube oil pumps (local) run with the pumps */
+  AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed while steaming */
   U.cwPrime = 1;
   AN_SRC.field.esp = true;
   AN.unit = U;
@@ -695,6 +696,7 @@ function anUnitCold() {
   AN_SRC.field.mu1033 = false;
   AN_SRC.field.cw1001 = false; /* live test #50: the expansion tank outlet closed, the closed cooling loop not primed */
   AN_SRC.field.bfplop = false; /* Mina M3: the BFP lube oil pumps (local, PR-OPE-5002 19.5) stopped */
+  AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed */
   U.cwPrime = 0;
   AN_SRC.field.esp = false;
   AN_SRC.t = -1;
