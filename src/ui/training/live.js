@@ -301,7 +301,9 @@ window.LS_LIVE = (function () {
     Tw: ['Boiler water temperature', '°C', '', ''],
     oilF: ['Burner oil, total', 'T/H', 'ABC-003A', ''],
     rpm: ['Turbine speed', 'rpm', 'ABC-050', ''],
-    RHP: ['Reheat pressure', 'kg/cm2', 'ABC-052', 'PICHR1003']
+    RHP: ['Reheat pressure', 'kg/cm2', 'ABC-052', 'PICHR1003'],
+    /* audit 2026-11-03 (SOP 24.13 / 24.14): the secondary air pressure to the furnace PT-FA1088 (IO list STN101 AI0289, ABC-003A) */
+    SAP: ['Secondary air pressure (PT-FA1088)', 'mmH2O', 'ABC-003A', 'AI0289']
   };
   const getV = k => {
     if (k === 'AIR') return hv('PA') + hv('SA') + hv('FA');
@@ -506,12 +508,18 @@ window.LS_LIVE = (function () {
     [18, /Set SV to 150 T\/H and Set to AUTO/i, ALL(MODE('FCV-CD1120', 'AUTO'), SV('FCV-CD1120', 140, 160, 'T/H'))],
     [18, /set LCV-MU1110 to AUTO/i, MODE('LCV-MU1110', 'AUTO')],
     [19, /Set Deaerator Level control valve \(LCV-CD1104\) to AUTO/i, ALL(MODE('LCV-CD1104', 'AUTO'), SV('LCV-CD1104', -20, 20, 'mm'))],
-    [20, /^Initiate START of LOP of BFP/i, FIELD('bfplop', 'BFP lube oil pump')] /* Mina M3: local pump, field flag */,
+    [20, /^Initiate START of LOP of BFP/i, DC('BFWP aux. lube oil pump running (DITL-22)', () => !!(dRun('DITL-22') || dRun('DITL-22 #B')), () => 'aux. LOP A ' + (dRun('DITL-22') ? 'RUN' : 'STOP') + ', B ' + (dRun('DITL-22 #B') ? 'RUN' : 'STOP'))] /* Mina M3: DCS motor DITL-22 */,
     [20, /Initiate START to selected BFP/i, RUN.BFP],
     [20, /SET FCV-FW1130-2 to MANUAL/i, MODE('FCV-FW1130-2', 'MAN')],
     [20, /^Drum level \(-150mm\)/i, HOLD(30, VAL('lvl', -200, -100))],
     [22, /Ensure Secondary and Primary Air Damper are 100% OPEN/i, ALL(MV('FICFA1081', 95, null), MV('FICFA1071', 95, null))],
-    [23, /Ensure Fluidizing Air Damper is at least 25% OPEN/i, null],
+    /* audit 2026-11-03 (no_cheat C): the CRO items of PR-OPE-5002 that name a tag of the app tick from that tag (the SOP's own numbers) */
+    [23, /Ensure Fluidizing Air Damper is at least 25% OPEN/i, DC('Fluidizing air damper FCV-FA1055-A1 or -B1 ≥ 25 %', () => [MV('FICFA1055A', 25, null), MV('FICFA1055B', 25, null)].some(c => c.ok()), () => 'FCV-FA1055-A1 / -B1 (FICFA1055A / B MV)')],
+    [21, /^Fully OPEN FCV-DO1012 and Set to manual/i, MV('FCV-DO1012', 99, null)],
+    [21, /^Decrease opening of PCV-DO0002/i, ALL(MODE('PICDO0005', 'MAN'), PV('PICDO0005', 12.5, null, 'kg/cm2'))] /* SOP 21.16 / 21.17: PCV-DO0002 in manual, PI-D00005 = 12.5 kg/cm2 */,
+    [24, /^> ?1200 ?mmH2O = with bed/i, VAL('SAP', 1200, null)],
+    [24, /^> ?600 ?mmH2O = without bed/i, VAL('SAP', 600, null)],
+    [25, /^At DCS, Increase PAF Inlet Damper Manually/i, ALL(MODE('FICFA1071', 'MAN'), VAL('PA', 180, null), VAL('FP', -65, 35))] /* SOP 25.12 ~ 25.14: manual, target primary air flow 180 T/H (no bed) / 280 (with bed), furnace pressure inside the alarm limits of PT-FG1085 / 1086 (alarm list 20160912: L -65, normal -15, H 35 mmH2O) */,
     [26, /Dampers of secondary staging air nozzles close to limit stop/i, null],
     [33, /^Main Steam Pressure/i, null],
     [22, /IDF inlet Damper opening is about 93%/i, ALL(RUN.IDF, MV('PICFG108A', 85, 100))],
@@ -521,7 +529,7 @@ window.LS_LIVE = (function () {
     [22, /Select hydraulic coupling as furnace pressure control mode/i, MODE('PICFG108', 'MAN')],
     [22, /^Start IDF at DCS/i, RUN.IDF],
     [22, /Hydraulic Coupling Furnace Pressure Control at 13%/i, ALL(RUN.IDF, MV('PICFG108', 10, 16))],
-    [22, /maintaining furnace pressure of -15mmH2O/i, HOLD(60, ALL(RUN.IDF, VAL('FP', -25, -5)))],
+    [22, /maintaining furnace pressure of -15mmH2O/i, HOLD(60, ALL(RUN.IDF, VAL('FP', -65, 35)))],
     [22, /Adjust Primary\/Secondary Air Fan Damper Opening to 0%/i, ALL(RUN.IDF, MV('FICFA1081', null, 5))],
     [23, /At DCS, Start Selected Fluidizing Air Blower/i, RUN.FAB],
     [23, /until Fluidizing air flow increase to 26 T\/H/i, VAL('FA', 24, null)],
@@ -533,7 +541,7 @@ window.LS_LIVE = (function () {
     [25, /At DCS, Start Primary Air Fan/i, RUN.PAF],
     [25, /^180T\/H = No Bed/i, ALL(RUN.PAF, VAL('PA', 170, null))],
     [25, /^280 T\/H = With Bed/i, ALL(RUN.PAF, VAL('PA', 270, null))],
-    [25, /set the HC Control \(Furnace Pressure Control\) Mode in AUTO/i, ALL(MODE('PICFG108', 'AUTO'), VAL('FP', -25, -5))],
+    [25, /set the HC Control \(Furnace Pressure Control\) Mode in AUTO/i, ALL(MODE('PICFG108', 'AUTO'), VAL('FP', -65, 35))],
     [26, /Adjust Air Flow to >25% MCR/i, PURGE_AIR],
     [26, /^Total Air Flow > 25% MCR/i, PURGE_AIR],
     [26, /^Induced Draft Fan is running/i, RUN.IDF],
