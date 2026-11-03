@@ -57,3 +57,12 @@ Ibig sabihin, **patch ang H2 fix ng beta.90, hindi root cause**: ang dock (`03c-
 **Lower ring header drains (H1):** inalis ang Cd 0.6 / 10 % / 3 kg/cm2; ngayon 0 ang flow hangga't walang data (`AN_SRC.lhdTH`). Tapat, pero bukas muli ang H1: walang paraan ang operator para ibaba ang drum level sa Step 28.
 
 **ASSUMED register sa beta.90:** 94 NO-SOURCE na linya (beta.89: 95). Ang LOP at ang drain lang ang nabawas; ang `unit.js` (41), `tcs.js` (12), `sucP` (2.2 / 1.4) ay naroon pa rin. Paalala: ang tag na FOUND ay batay sa binanggit na dokumento sa comment; ang dokumentong wala sa repo (gaya ng KSB manual) ay hindi pa rin napatunayan.
+
+## Audit ng beta.90 cc3f69b (PR #114, 2026-11-03 ~6:35 PM PHT)
+
+- `no_cheat.js` (kapareho ng audit, hindi binago): A, B, C, D **ALL PASS**, kasama ang D sa Worker (37 comparator = scanned value). `build.js --check`: SAME (ang html ay eksaktong build ng sources).
+- **H2 root cause, tunay:** sa Worker, ang page ay mirror lang, pero bawat basa ng page (dock interlock, cause, drawing) ay nagpapatakbo ng `simulate()` sa page at isinusulat nito ang sarili nitong nets (`nl._v`, walang analog value ng engine); ang Worker ay nagpapadala lang ng nagbago sa SARILI nitong estado, kaya naiwan ang maling nets ng page. Ngayon sa mirror, kinukuwenta pero hindi na itinatago (`03b-sim.js`). Tinanggal ang dock workaround. Tugma ito sa nakita ko: ang comparator sa page ay 1 tapos naging 0 kahit hindi gumagalaw ang value.
+- **LOP:** header 2.0 kg/cm2 (KSB LOS manual p.13 Annexure-I, binasa ko mismo sa PC). Kapag tumatakbo ang aux LOP (DITL-22, kailangan muna ang FIELD REMOTE), nawawala ang "LUB OIL PRESS LOW" (row 3) mula sa model: sinubok ko headless.
+- **Bukas pa (hindi nasa docs):** DITL-23A row 17 "I.0091 LUB. OIL PRESS. HIGH" (> 2.0, Annexure-II 24.2 set point 2.0 = mismong header pressure) ay kailangan para sa START ng BFWP pero hindi modelled. Ang tanging paraan ngayon ay itakda ito sa kamay (FIELD). Ito ay finding (c): hindi masabi ng docs kung paano ito nagiging 1.
+- **25.12 / 21.15:** batay na sa SOP (PA ≥ 180 T/H, PICDO0005 MAN at 12.5 kg/cm2) at sa alarm list (furnace L -65 / H 35).
+- Natitira: 94 NO-SOURCE sa register; H1 drain walang flow (walang data).
