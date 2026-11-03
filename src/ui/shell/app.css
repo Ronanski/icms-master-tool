@@ -1224,6 +1224,12 @@ body.cr #gsbar > #crband{container-type:inline-size;container-name:crband}
 body.cr #crband > #cralarm:not(#x){min-width:16rem}
 @container crband (max-width:62rem){#crband .crunit span{display:none}#cralarm .crat{display:none}}
 @container crband (max-width:52rem){#crband .crunit{display:none}}
+/* Mina #8 (beta.87, Training dock open): BED TEMP and VACUUM wrapped to a second row of the strip: the nine values stay on one line;
+   on a narrower band the spacing gets tighter first, then the units go (the tooltip still names the value) */
+#crband .crkpis:not(#x){flex-wrap:nowrap}
+#crband .crkpis .crkpi:not(#x){flex:1 1 auto;min-width:0}
+@container crband (max-width:75rem){#crband .crkpis .crkpi:not(#x){padding:0 .3125rem!important}#crband .crkpis .crkpi i{letter-spacing:0;margin-right:.25rem}#crband .crkpis .crkpi small{margin-left:.125rem}}
+@container crband (max-width:62rem){#crband .crkpis .crkpi small{display:none}}
 body.lsfield[data-tab=logic] :is(#dp,#anp,#dmeta,#anmeta,#meta,#anptab){visibility:hidden!important}
 /* R9 #42 (the Events button cut to "Even…" under the search box when the alarm chip reads "NO ALARM · 93 SUPPRESSED"): the alarm box is
    never narrower than its chips and the Events button; its text line gives way first, then the KPI strip (overflow hidden) */

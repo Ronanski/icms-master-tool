@@ -636,7 +636,9 @@
       const R = { rem: [], au: [] };
       for (let r = 0; r < 60; r++) {
         const v = rowInfo(s, r).svc;
-        if (/REMOTE MODE SELECTED/.test(v)) R.rem.push(r);
+        /* Mina #3 (beta.87): the ACW pumps write it "A-AUX. CW PUMP REMOTE SELECTED" (DITL-76 / 77 row 5 I.0088, rows 19 / 20), no "MODE":
+           the dock saw no selector there, so ACWP-B stayed LOCAL */
+        if (/REMOTE (MODE )?SELECTED/.test(v) && !/\b(AUTO|NOT)\b/.test(v)) R.rem.push(r);
         else if (/\bAUTO MODE SELECTED\b/.test(v)) R.au.push(r);
       }
       s._mrows = R;
@@ -1947,6 +1949,12 @@
           call(() => lsEventAdd('PR-OPE-5002', /\bAO\b/.test(by) && !/CRO/.test(by) ? 'FIELD' : 'SOP', (cb.checked ? '✓ ' : '✗ ') + (f.si + 1) + '.' + (f.i + 1) + ' ' + String(f.t).slice(0, 90)));
           ls.set('ls-train', dd);
           els.trKey = JSON.stringify(dd);
+          /* Mina #3 (beta.87): "Set the LCP (Local Control Panel) of both selected and standby ACWP to remote position" (PR-OPE-5002 8.3)
+             was ticked and ACWP-B stayed LOCAL: the field operator's REMOTE is done on the selector of each motor of the step that is
+             LOCAL (the same as its FIELD: to REMOTE button) */
+          if (cb.checked && /\bremote\b/i.test(f.t) && /\bLCP\b|local control panel|selector/i.test(f.t))
+            for (const a of call(() => motorsOf(s), []))
+              if (call(() => modeOf(motAddr(a)).rem, null) === false) dremote(motAddr(a), mName(a));
           li.classList.toggle('dn', cb.checked);
           /* 3.2.0 retest #26: the Training list shows the same tick at once */
           try {
@@ -2798,6 +2806,11 @@
         say += ': ▶ RUN so the logic reads it';
         bl = '▶ RUN';
         fn = runNow;
+      } else if (r0 && call(() => !!dSheet(m.sheet).sig[r0.row + ':S'], false)) {
+        /* Mina #4 (beta.87, Worker): the field action is set on the page and the engine reads it on its next scan; for those 3 ~ 5 s the
+           row said "not a field contact" */
+        who = 'FIELD OPERATOR';
+        say += ': set, the logic reads it on its next scan';
       } else {
         who = 'CONTROL ROOM';
         say += ' (not a field contact: see the "?" of the row under Permissive)';
