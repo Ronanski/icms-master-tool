@@ -37,11 +37,12 @@
   }
   /* Mina M3 (beta.88 / beta.89: PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"). The auxiliary lube oil pump of each BFWP is a DCS
      motor: DITL-22 "BFWP A AUX. LUB. OIL PUMP" (IO list STN103 O.0126 MOR-P1115A1 start, I.0050 running; machine B DITL-22 #B,
-     O.0446, I.0370). Its pressure switches on the lube oil header (memory list STN103 / KSB lube oil system O&M manual Annexure-II:
-     PS < 1.5 = I.0090 / I.0410, > 2.0 = I.0091 / I.0411, < 1.0 = I.0092 / I.0412) read the header pressure: 6.0 kg/cm2(g) with an oil
-     pump running (KSB "30 LPM LUBE OIL SYSTEM" O&M manual, Annexure-I, header pressure AOP & MOP 6.0), 0 when it is stopped (PR-OPE-5002 section 20:
-     the LOP of BFP A / B is started before the BFP, the standby LOP in AUTO). The main lube oil pump of the skid (MOP, KSB P&ID PR
-     73691 B) has no DCS signal and is not modelled (open item) */
+     O.0446, I.0370). The lube oil HEADER pressure is held by the pressure control valve at 2.0 kg/cm2(g) while an oil pump runs (KSB
+     "30 LPM lube oil system" O&M manual, o&m-package-phase-1/L7 BFP/D .../5 LOS-O&M MANUAL, p.13 Annexure-I: lube oil supply 2.0,
+     pump delivery 6.0; KSB P&ID PR 73691 B: supply 1.5 ~ 2 kg/cm2(g)); 0 with the pump stopped (PR-OPE-5002 section 20: the LOP is
+     started before the BFP). The header switches (Annexure-II 24.1 < 1.5, 24.3 < 1.0; memory list STN103 I.0090 / I.0410 and
+     I.0092 / I.0412) follow it. NOT modelled: the "> 2.0" switch I.0091 / I.0411 (Annexure-II 24.2, set point 2.0 = the header
+     pressure itself; how it is met is not in the documents) and the MOP of the skid (no DCS signal) */
   const runOf = (re, k) => {
     const s = (runOf.c = runOf.c || {})[re + k] || (W.inst || []).concat((typeof S !== 'undefined' && S.sheets) || []).find(x => new RegExp('\\)' + re + (k === 'B' ? ' #B' : '') + '$').test(x.name));
     if (!s) return null;
@@ -52,11 +53,10 @@
   };
   const lopP = k => () => {
     const a = runOf('DITL-22', k);
-    return a ? 6.0 : a === false ? 0 : NaN;
+    return a ? 2.0 : a === false ? 0 : NaN;
   };
   /* DITL-23A / DITL-22 write the rows by address: matched by the address and the word LUB (the 7th field; other stations reuse it) */
-  for (const [k, a1, a2, a3] of [['A', 'I.0090', 'I.0091', 'I.0092'], ['B', 'I.0410', 'I.0411', 'I.0412']])
-    L.push([a1, lopP(k), 1.5, 'lo', 0, 0.1, /\bLUB/], [a2, lopP(k), 2.0, 'hi', 0, 0.1, /\bLUB/], [a3, lopP(k), 1.0, 'lo', 0, 0.1, /\bLUB/]);
+  for (const [k, a1, a3] of [['A', 'I.0090', 'I.0092'], ['B', 'I.0410', 'I.0412']]) L.push([a1, lopP(k), 1.5, 'lo', 0, 0 /* no dead band: the pressure steps 0 / 2.0 */, /\bLUB/], [a3, lopP(k), 1.0, 'lo', 0, 0, /\bLUB/]);
   const DB0 = 10;
   let map = null,
     mapK = '';
@@ -201,7 +201,7 @@
     if (isFinite(ps)) for (const a of suc) (a.s.avw = a.s.avw || {})[a.key] = ps;
     for (const m of map) {
       const [, src, sp, dir, nc, db] = m.d,
-        DB = db || DB0,
+        DB = db != null ? db : DB0,
         x = val(src);
       if (!isFinite(x)) continue;
       /* the state of the switch: tripped (level low / pressure high) with its dead band */
