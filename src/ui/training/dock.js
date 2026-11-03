@@ -2069,7 +2069,9 @@
           cls: 'gd-mst',
           txt: '—',
           title: 'Feedback of the equipment (RUNNING / STOPPED / TRIP)',
-          on: () => B.ad && tripAck(B.ad)
+          /* Mina M28 (beta.88, Step 2 SWP-C): the STANDBY box was pressed to make the pump the standby and nothing happened (it only
+             showed the state): on a standby not yet in AUTO it does what the MAN / AUTO button beside it does */
+          on: () => (B.lab.classList.contains('sbyp') && B.am ? B.am.click() : B.ad && tripAck(B.ad))
         });
         bs.append(B.lab);
         /* retest #34: a Training fault, the motor protection relay trips in the field (the motor stops, TRIP flashes until ACK, alarm,
@@ -2680,6 +2682,12 @@
       const B = (els.btns || []).find(x => x.ad === motAddr(a) && x.am);
       return B ? dName(B.am._am.s) + ' row ' + (B.am._am.row + 1) + ' · AUTO MODE SELECTED' : '';
     };
+    /* Mina #5 (beta.88, Step 2 SWP, Check after START: 13, 12, 11, 10, 9, 6, 3, 6, 5 ...): the card mixed "n items left" of one list with
+       "Lineup 3 / 14" (a position) of another; one count now: the items of the step the operator still ticks, line-up and after START */
+    const leftTx = () => {
+      const n = preLeft().length + postLeft().length;
+      return n + (n === 1 ? ' item left' : ' items left');
+    };
     const tick = (it, kind) => {
       who = whoOf(it.by) || (kind === 'Check' ? 'CONTROL ROOM' : 'FIELD OPERATOR');
       say = u1(it.t);
@@ -2707,7 +2715,7 @@
       /* #120: the condition is met; the SOP items after the START are still to tick (Check) */
       const post = (els.after || []).includes(pl[0]);
       tick(pl[0], post ? 'Check' : 'SOP');
-      ctx = (post ? 'Check after START' : 'SOP') + (pl.length > 1 ? ' · ' + pl.length + ' items left' : '');
+      ctx = (post ? 'Check after START' : 'SOP') + ' · ' + leftTx();
     } else if (rd) {
       who = 'DONE';
       say = 'Step complete' + (els.skipped === s.i ? ' (skipped: training shortcut)' : '') + '. Go to the next step.';
@@ -2778,11 +2786,7 @@
       }
     } else if (lc && !(selA && on(selA))) {
       tick(lc, 'Lineup');
-      /* the same numbers as the chip of the stage (every item of the list, the ones the logic ticks too) */
-      const so = (els.stg || []).find(o => o.k === 'L'),
-        all = so ? [...so.bd.querySelectorAll('ul.gd-fl > li:not(.gd-note)')] : [],
-        ix = all.findIndex(x => x.contains(lc.cb));
-      ctx = (ms.length ? 'Lineup ' : 'SOP item ') + (ix >= 0 ? ix + 1 + ' / ' + all.length : '') + (selA ? ' · ' + mName(selA) : '');
+      ctx = (ms.length ? 'Lineup' : 'SOP') + ' · ' + leftTx() + (selA ? ' · ' + mName(selA) : '');
     } else if ((selA && mi && mi.live && !mi.run && mi.miss.length) || ilAd) {
       const ad = selA ? selAd : ilAd,
         m = els.mi[ad],
@@ -3271,8 +3275,10 @@
         if (B.sb) B.sb.hidden = true;
         B.bt.title = 'Enough: ' + nOn + ' running. This one is the standby: put it in AUTO.';
         if (B.lab) {
+          const au = !!(B.am && autoOf(B.ad));
           B.lab.textContent = 'STANDBY';
-          B.lab.className = 'gd-mst';
+          B.lab.className = 'gd-mst' + (B.am && !au ? ' sbyp' : '');
+          B.lab.title = B.am && !au ? 'Standby: press to put it in AUTO (the same as the MAN / AUTO button)' : 'Standby in AUTO: starts when the running one trips';
         }
         continue;
       }
@@ -3300,6 +3306,7 @@
       } else {
         B.lab.textContent = st === 'RUN' ? 'RUNNING' : st === 'STOP' ? 'STOPPED' : st === 'TRIP' ? (tn ? 'TRIP · ACK' : 'TRIP') : '—';
         B.lab.className = 'gd-mst' + (st ? ' ' + st.toLowerCase() : '') + (tn ? ' blink' : '');
+        B.lab.title = 'Feedback of the equipment (RUNNING / STOPPED / TRIP)';
       }
       if (B.ft) {
         const ftr = !!call(() => dOf(B.ad)._ftrip, false);

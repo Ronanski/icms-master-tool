@@ -66,6 +66,7 @@ html.gd-bottom .gd-kvs{grid-template-columns:repeat(8,minmax(0,1fr))}
 .gd-btn.lit-stop{background:#22a052;border-color:#22a052;color:#fff}
 .gd-btn.lit-run small,.gd-btn.lit-stop small{color:#fff;opacity:.85}
 .gd-mst{border:1px solid var(--c-line2);background:var(--c-well);color:var(--c-tx2);border-radius:6px;padding:4px 10px;font:700 13px var(--mf);letter-spacing:.04em;min-height:36px;cursor:default}
+.gd-mst.sbyp{cursor:pointer;border-color:var(--c-acc,#2f6fdf)} /* Mina M28: the standby not yet in AUTO: press = AUTO */
 .gd-mst.run{color:#fff;background:#dc2626;border-color:#dc2626}
 .gd-mst.stop{color:#fff;background:#22a052;border-color:#22a052}
 .gd-mst.trip{color:#1a1200;background:#f59e0b;border-color:#f59e0b}
