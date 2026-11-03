@@ -35,6 +35,16 @@
     for (const e of ['3', '4']) L.push(['TT-CW1108-' + p + e, mtOf('TT-CW1108-' + p + e), 100, 'hi', 0, 2]);
     for (const e of ['U', 'V', 'W']) L.push(['TT-CW1108-' + p + e, mtOf('TT-CW1108-' + p + e), 165, 'hi', 0, 2]);
   }
+  /* Mina M3 (beta.88: PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B" was ticked and no pump ran): the lube oil pumps of the BFWPs
+     are local (no DCS signal; memory list STN103 has only their switches): the field flag AN_SRC.field.bfplop. Their pressure switches
+     PS-LO1115-A1 / B1 (< 1.5), -A2 / B2 (> 2.0), -A3 / B3 (< 1 kg/cm2) follow it: 2.5 kg/cm2 running, 0 stopped (ASSUMED) */
+  const lopP = () => {
+    const f = window.AN && AN.fieldState ? AN.fieldState() : null;
+    return f ? (f.bfplop ? 2.5 : 0) : NaN;
+  };
+  /* DITL-23A writes the rows by address (row 3 "I.0090 BFWP A LUB. OIL PRESS. LOW", row 17 I.0091 HIGH; machine B I.0410 ~ 0412, memory
+     list STN103): matched by the address and the words LUB (the 7th field), not by the address alone (other stations reuse it) */
+  for (const [a1, a2, a3] of [['I.0090', 'I.0091', 'I.0092'], ['I.0410', 'I.0411', 'I.0412']]) L.push([a1, lopP, 1.5, 'lo', 0, 0.1, /\bLUB/], [a2, lopP, 2.0, 'hi', 0, 0.1, /\bLUB/], [a3, lopP, 1.0, 'lo', 0, 0.1, /\bLUB/]);
   const DB0 = 10;
   let map = null;
   /* the rows of every sheet and machine instance whose text starts with a switch tag (the tag may follow a few words: "CONDENSER
@@ -55,7 +65,7 @@
         } catch (e) {}
         if (!t) continue;
         const words = t.split(/\s+/);
-        const d = L.find(x => words.slice(0, 3).includes(x[0]));
+        const d = L.find(x => words.slice(0, 3).includes(x[0]) && (!x[6] || x[6].test(t)));
         if (d) map.push({ s, row: i, d, on: null });
       }
       /* P2 #13: the DITL comparator rows on the condenser pressure transmitter (DITL-55 row 6, DITL-73 row 26 PT-CD1110) */

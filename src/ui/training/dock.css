@@ -66,6 +66,7 @@ html.gd-bottom .gd-kvs{grid-template-columns:repeat(8,minmax(0,1fr))}
 .gd-btn.lit-stop{background:#22a052;border-color:#22a052;color:#fff}
 .gd-btn.lit-run small,.gd-btn.lit-stop small{color:#fff;opacity:.85}
 .gd-mst{border:1px solid var(--c-line2);background:var(--c-well);color:var(--c-tx2);border-radius:6px;padding:4px 10px;font:700 13px var(--mf);letter-spacing:.04em;min-height:36px;cursor:default}
+.gd-mst.sbyp{cursor:pointer;border-color:var(--c-acc,#2f6fdf)} /* Mina M28: the standby not yet in AUTO: press = AUTO */
 .gd-mst.run{color:#fff;background:#dc2626;border-color:#dc2626}
 .gd-mst.stop{color:#fff;background:#22a052;border-color:#22a052}
 .gd-mst.trip{color:#1a1200;background:#f59e0b;border-color:#f59e0b}
@@ -530,3 +531,6 @@ body.app2 #gdtrb[hidden]{display:none!important}
 @container gdock (max-width:419px){#gdock .gd-chip{grid-template-columns:minmax(0,1fr)}#gdock .gd-chip .gd-cn{display:none}#gdock .gd-chip.ok .gd-cnm:before{content:"✓ "}}
 #gdock .gd-chip .gd-cc{display:flex;align-items:center;gap:4px}
 #gdock .gd-chip .gd-cc .gd-yn{width:16px;height:14px;font-size:10px;flex:none}
+
+/* Mina M1: the SV typed in the loop row of the dock */
+.gd-svin{width:4.5rem;height:30px;padding:0 6px;border:1px solid var(--c-line2);border-radius:6px;background:var(--c-well);color:var(--c-tx);font:600 13px var(--mf)}

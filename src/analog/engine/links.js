@@ -373,6 +373,15 @@ function actSet(sh) {
     }
   }
   grow();
+  /* Mina H2 (beta.88: TICLO1002 on ABC-053 at Step 14, PT-FW1115-A at Step 26): a sheet in none of the lists above stood still until
+     its page was opened, and the lists were patched one sheet at a time. A real DCS runs every control station each scan, opened or
+     not: with the plant model ON every built ABC sheet is stepped (the index sheets ABC-000x hold no logic) */
+  if (AN.plantOn)
+    for (const p of AN.sheets)
+      if (p.S && !seen.has(p) && !/^ABC-000/.test(p.name)) {
+        seen.add(p);
+        set.push(p);
+      }
   if (AN._asc) AN._asc.set(sh, set);
   return set;
 }

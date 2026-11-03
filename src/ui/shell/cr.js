@@ -79,6 +79,7 @@
       const v = E('b', '', '—');
       b.append(E('i', '', k), v);
       v.after(E('small', '', u));
+      t += ', ' + u; /* the unit stays in the tooltip when the strip is too narrow to show it (app.css, Mina #8) */
       b.title = sh
         ? t + '. Shown once that sheet runs (open it, or Plant ▾ beside VIEW | RUN). Click: open ' + sh + '.'
         : t + '. Shown once the plant model runs. Click: Plant view.';
