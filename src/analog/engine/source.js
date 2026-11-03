@@ -157,6 +157,11 @@ function anSrcSet(b, pr, S) {
 /* Start ▾ > Field equipment: the machines without a DCS signal */
 function anField(k, on) {
   if (!(k in AN_SRC.field)) return false;
+  /* Mina H1: the lower ring header drains are opened by the field operator to a part of their stroke (AN.field('lhd', 25) = 25 %) */
+  if (k === 'lhd') {
+    AN_SRC.lhdPct = typeof on === 'number' ? Math.max(0, Math.min(100, on)) : on ? 100 : 0;
+    on = AN_SRC.lhdPct > 0;
+  }
   AN_SRC.field[k] = !!on;
   AN_SRC.t = -1;
   return true;
