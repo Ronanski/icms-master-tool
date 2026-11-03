@@ -378,6 +378,7 @@ window.LS_LIVE = (function () {
   const DK = () => window.LS_DOCK;
   const DC = (want, ok, now) => ({ sig: [], res: () => true, ok: () => !!(DK() && ok()), now: () => (DK() ? now() : '—'), want, go: {} });
   const dRun = nm => DK().runOut(nm) === 1;
+  const LOP4 = ['DITL-22', 'DITL-22 #B', 'DITL-22 #C', 'DITL-22 #D'];
   const dOut = (nm, r) => DK().dout(nm, r) === 1;
   const dIn = (nm, r) => {
     const s = DK().dOf(nm);
@@ -504,17 +505,20 @@ window.LS_LIVE = (function () {
     [17, /^Open Biasing damper to 100% at Reheater and Superheater/i, ALL(MV('HICHR1002A', 95, null), MV('HICHR1002B', 95, null))],
     [18, /initiate START to selected CEP/i, RUN.CEP],
     [18, /FCV-CD1120 to MANUAL and ADJUST to 60/i, ALL(MODE('FCV-CD1120', 'MAN'), MV('FCV-CD1120', 55, 65))],
-    [18, /set the standby CEP to REMOTE/i, RUN.CEP],
+    [18, /set the standby CEP to REMOTE/i, DC('the standby CEP in REMOTE + AUTO (DITL-61A rows 5 / 4)', () => [['DITL-61A', 'DITL-61A #B'], ['DITL-61A #B', 'DITL-61A']].some(([r, s]) => dRun(r) && !dRun(s) && dIn(s, 3) && dIn(s, 4)), () => ['DITL-61A', 'DITL-61A #B'].map((nm, j) => 'CEP-' + 'AB'[j] + (dRun(nm) ? ' RUN' : (dIn(nm, 4) ? ' REM' : ' LOC') + (dIn(nm, 3) ? ' AUTO' : ' MAN'))).join(', '))] /* audit B6 */,
     [18, /Set SV to 150 T\/H and Set to AUTO/i, ALL(MODE('FCV-CD1120', 'AUTO'), SV('FCV-CD1120', 140, 160, 'T/H'))],
     [18, /set LCV-MU1110 to AUTO/i, MODE('LCV-MU1110', 'AUTO')],
     [19, /Set Deaerator Level control valve \(LCV-CD1104\) to AUTO/i, ALL(MODE('LCV-CD1104', 'AUTO'), SV('LCV-CD1104', -20, 20, 'mm'))],
-    [20, /^Initiate START of LOP of BFP/i, DC('BFWP aux. lube oil pump running (DITL-22)', () => !!(dRun('DITL-22') || dRun('DITL-22 #B')), () => 'aux. LOP A ' + (dRun('DITL-22') ? 'RUN' : 'STOP') + ', B ' + (dRun('DITL-22 #B') ? 'RUN' : 'STOP'))] /* Mina M3: DCS motor DITL-22 */,
+    [20, /^Initiate START of LOP of BFP/i, DC('a BFWP aux. lube oil pump running (DITL-22)', () => LOP4.some(nm => dRun(nm)), () => LOP4.map((nm, j) => ['A/A', 'B/A', 'A/B', 'B/B'][j] + ' ' + (dRun(nm) ? 'RUN' : 'STOP')).join(', '))] /* audit A2: the four aux. LOPs, DCS motors of DITL-22 */,
+    [20, /^Set the selected standby BFP LOP to AUTO/i, DC('the standby aux. LOP in AUTO (DITL-22 row 6 AUTO MODE SELECTED)', () => [[0, 1], [2, 3]].some(([a, b]) => (dRun(LOP4[a]) && !dRun(LOP4[b]) && dIn(LOP4[b], 5)) || (dRun(LOP4[b]) && !dRun(LOP4[a]) && dIn(LOP4[a], 5))), () => LOP4.map((nm, j) => ['A/A', 'B/A', 'A/B', 'B/B'][j] + (dIn(nm, 5) ? ' AUTO' : ' MAN')).join(', '))],
     [20, /Initiate START to selected BFP/i, RUN.BFP],
     [20, /SET FCV-FW1130-2 to MANUAL/i, MODE('FCV-FW1130-2', 'MAN')],
     [20, /^Drum level \(-150mm\)/i, HOLD(30, VAL('lvl', -200, -100))],
     [22, /Ensure Secondary and Primary Air Damper are 100% OPEN/i, ALL(MV('FICFA1081', 95, null), MV('FICFA1071', 95, null))],
     /* audit 2026-11-03 (no_cheat C): the CRO items of PR-OPE-5002 that name a tag of the app tick from that tag (the SOP's own numbers) */
     [23, /Ensure Fluidizing Air Damper is at least 25% OPEN/i, DC('Fluidizing air damper FCV-FA1055-A1 or -B1 ≥ 25 %', () => [MV('FICFA1055A', 25, null), MV('FICFA1055B', 25, null)].some(c => c.ok()), () => 'FCV-FA1055-A1 / -B1 (FICFA1055A / B MV)')],
+    [21, /^Initiate START on selected Diesel oil pump/i, DC('a diesel oil pump running (DITL-31)', () => dRun('DITL-31') || dRun('DITL-31 #B'), () => 'DOP A ' + (dRun('DITL-31') ? 'RUN' : 'STOP') + ', B ' + (dRun('DITL-31 #B') ? 'RUN' : 'STOP'))] /* audit A1 */,
+    [21, /^Set standby diesel oil pump to AUTO/i, DC('the standby diesel oil pump in AUTO (DITL-31 row 9)', () => (dRun('DITL-31') && !dRun('DITL-31 #B') && dIn('DITL-31 #B', 8)) || (dRun('DITL-31 #B') && !dRun('DITL-31') && dIn('DITL-31', 8)), () => 'DOP A ' + (dIn('DITL-31', 8) ? 'AUTO' : 'MAN') + ', B ' + (dIn('DITL-31 #B', 8) ? 'AUTO' : 'MAN'))],
     [21, /^Fully OPEN FCV-DO1012 and Set to manual/i, MV('FCV-DO1012', 99, null)],
     [21, /^Decrease opening of PCV-DO0002/i, ALL(MODE('PICDO0005', 'MAN'), PV('PICDO0005', 12.5, null, 'kg/cm2'))] /* SOP 21.16 / 21.17: PCV-DO0002 in manual, PI-D00005 = 12.5 kg/cm2 */,
     [24, /^> ?1200 ?mmH2O = with bed/i, VAL('SAP', 1200, null)],

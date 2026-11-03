@@ -122,9 +122,15 @@
       b = addrList(cellTxt(s, i, 'S'));
     return !a.length || (b.length > a.length && b[0] === a[0]) ? b : a;
   };
+  /* audit A2 (2026-11-03): DITL-22 "BFWP A AUX. LUB. OIL PUMP" is drawn for FOUR pumps, two per feedwater pump (row 2 "I.0050/370
+     I.0053/373"; IO list Station 103: I.0050 / O.0126 LOP A of BFWP-A, I.0370 / O.0446 LOP B of BFWP-A, I.0053 / O.0127 LOP A of
+     BFWP-B, I.0373 / O.0447 LOP B of BFWP-B). Machine k: BFWP letter k >> 1, LOP letter k & 1; a list of two addresses is per BFWP */
+  const isLop4 = s => !!s && /\)DITL-22$/.test(s.name);
+  const lopIdx = (k, n) => (n >= 4 ? k : n === 2 ? k >> 1 : 0);
   /* the machines of a sheet: the note of the drawing, and the longest address list */
   function machinesOf(s) {
     if (s._mach !== undefined) return s._mach;
+    if (isLop4(s)) return (s._mach = 4);
     const t = txtOf(s);
     let n = 1;
     if (/DIAGRAM IS (?:THE )?SAME|SAME\s+FOR\b|^\s*FOR\s+.*\b[B-D]\b/im.test(t)) {
@@ -226,6 +232,10 @@
   W.remap = (s, t) => {
     const I = s && s._inst;
     if (!I || !I.k) return t;
+    if (isLop4(I.base)) {
+      const sw = L => ({ A: 'B', B: 'A' })[L.toUpperCase()] || L;
+      return String(t || '').replace(/\b(BFWP|LOP)(\s*-?\(?)([A-D])(?![A-Z0-9])/gi, (m, w, sp, L) => w + sp + (/BFWP/i.test(w) ? (I.k >= 2 ? sw(L) : L) : I.k & 1 ? sw(L) : L));
+    }
     return String(t || '').replace(MRX, (m, L) => {
       if (!relative(I.base, m)) return m;
       const u = L.toUpperCase(),
@@ -240,10 +250,11 @@
     /* live test #56: machine A (k 0) of a drawing for several machines keeps its own address of the list too */
     if (!I || !t || (!I.k && !(I.n > 1))) return t;
     let x = W.remap(s, t);
-    const la = addrList(t);
-    if (la.length > 1 && la[I.k]) {
+    const la = addrList(t),
+      ix = isLop4(I.base) ? lopIdx(I.k, la.length) : I.k;
+    if (la.length > 1 && la[ix]) {
       let first = true;
-      x = x.replace(LRXG, () => (first ? ((first = false), la[I.k]) : '')).replace(/\s{2,}/g, ' ');
+      x = x.replace(LRXG, () => (first ? ((first = false), la[ix]) : '')).replace(/\s{2,}/g, ' ');
     }
     return x;
   };
@@ -261,6 +272,7 @@
           if (o.length === 1) return o[0];
         }
     }
+    if (I && isLop4(b)) return la[lopIdx(I.k, la.length)] || la[0] || null;
     return la[I ? I.k : 0] || la[0] || null;
   };
   /* index of every link, built once when the world is turned on */

@@ -13,7 +13,7 @@
    The machines that have no DCS signal (diesel oil pump P-0005, DITL-31) are FIELD equipment: AN.field (Start ▾ > Field equipment).
    Numbers marked ASSUMED are not in the repository. */
 const AN_SRC = {
-  field: { dop: true, hypo: true, pur: true, mu1033: false, esp: true, cw1001: true, lhd: false } /* 3.2.0 retest #33: hypochlorite pump (no DCS signal); R9 #77: turbine oil purifier pump P-n941 (local); live test 2026-10-30 #23: V-MU1033 expansion tank bypass (manual valve, PD-021) */,
+  field: { hypo: true, pur: true, mu1033: false, esp: true, cw1001: true, lhd: false } /* 3.2.0 retest #33: hypochlorite pump (no DCS signal); R9 #77: turbine oil purifier pump P-n941 (local); live test 2026-10-30 #23: V-MU1033 expansion tank bypass (manual valve, PD-021) */,
   Tamb: 30,
   st: null,
   t: -1,
@@ -82,7 +82,8 @@ function srcState(t0) {
       sar: U.saN >= 0 && U.sa0 > 0 && U.tafS ? srcCl((+U.tafS.rt.v[U.saN] || 0) / U.sa0) : 1,
       fab: srcBit(['M.3308', 'M.3309']),
       cep: srcBit(['M.3350', 'M.3351']),
-      dop: AN_SRC.field.dop ? 1 : 0
+      /* audit A1: the diesel oil pumps M-0702A / B are DCS motors (DITL-31; IO list STN105 O.0040 / O.0360, I.0003 / I.0323) */
+      dop: typeof anDitlRun === 'function' && (anDitlRun('DITL-31') === 1 || anDitlRun('DITL-31 #B') === 1) ? 1 : 0
     };
   /* cold reheat: the hot reheat pressure plus the reheater pressure drop (design 36.6 -> 35.1 kg/cm2 at MCR, SECT_7) */
   s.Pcrh = s.Prh * (36.6 / 35.1);
@@ -157,6 +158,11 @@ function anSrcSet(b, pr, S) {
 /* Start ▾ > Field equipment: the machines without a DCS signal */
 function anField(k, on) {
   if (!(k in AN_SRC.field)) return false;
+  /* Mina H1: the lower ring header drains are opened by the field operator to a part of their stroke (AN.field('lhd', 25) = 25 %) */
+  if (k === 'lhd') {
+    AN_SRC.lhdPct = typeof on === 'number' ? Math.max(0, Math.min(100, on)) : on ? 100 : 0;
+    on = AN_SRC.lhdPct > 0;
+  }
   AN_SRC.field[k] = !!on;
   AN_SRC.t = -1;
   return true;

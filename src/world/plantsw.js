@@ -35,28 +35,33 @@
     for (const e of ['3', '4']) L.push(['TT-CW1108-' + p + e, mtOf('TT-CW1108-' + p + e), 100, 'hi', 0, 2]);
     for (const e of ['U', 'V', 'W']) L.push(['TT-CW1108-' + p + e, mtOf('TT-CW1108-' + p + e), 165, 'hi', 0, 2]);
   }
-  /* Mina M3 (beta.88 / beta.89: PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"). The auxiliary lube oil pump of each BFWP is a DCS
-     motor: DITL-22 "BFWP A AUX. LUB. OIL PUMP" (IO list STN103 O.0126 MOR-P1115A1 start, I.0050 running; machine B DITL-22 #B,
-     O.0446, I.0370). The lube oil HEADER pressure is held by the pressure control valve at 2.0 kg/cm2(g) while an oil pump runs (KSB
+  /* Mina M3 (beta.88 / beta.89: PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"). Each BFWP has two auxiliary lube oil pumps, DCS
+     motors of DITL-22 (IO list STN103: machine A = LOP A of BFWP-A O.0126 / I.0050, B = LOP B of BFWP-A O.0446 / I.0370, C = LOP A of
+     BFWP-B O.0127 / I.0053, D = LOP B of BFWP-B O.0447 / I.0373; world.js isLop4). The lube oil HEADER pressure is held by the pressure control valve at 2.0 kg/cm2(g) while an oil pump runs (KSB
      "30 LPM lube oil system" O&M manual, o&m-package-phase-1/L7 BFP/D .../5 LOS-O&M MANUAL, p.13 Annexure-I: lube oil supply 2.0,
      pump delivery 6.0; KSB P&ID PR 73691 B: supply 1.5 ~ 2 kg/cm2(g)); 0 with the pump stopped (PR-OPE-5002 section 20: the LOP is
      started before the BFP). The header switches (Annexure-II 24.1 < 1.5, 24.3 < 1.0; memory list STN103 I.0090 / I.0410 and
-     I.0092 / I.0412) follow it. NOT modelled: the "> 2.0" switch I.0091 / I.0411 (Annexure-II 24.2, set point 2.0 = the header
-     pressure itself; how it is met is not in the documents) and the MOP of the skid (no DCS signal) */
+     I.0092 / I.0412) follow it. The "> 2.0" switch I.0091 / I.0411 (memory list "PS-LO1115-A2 ( > 2.0Kg/cm2 )"; Annexure-II 24.2 set point
+     2.0) is the oil-pressure-established contact: a pressure switch makes at its set point on a rising pressure, and the header is
+     held by the pressure control valve AT that set point (Annexure-I "Pressure Control valve (Upstream) Lube oil supply 2.0"), so it
+     makes when the header reaches 2.0 ('ge'). The MOP of the skid: no DCS signal, not modelled */
   const runOf = (re, k) => {
-    const s = (runOf.c = runOf.c || {})[re + k] || (W.inst || []).concat((typeof S !== 'undefined' && S.sheets) || []).find(x => new RegExp('\\)' + re + (k === 'B' ? ' #B' : '') + '$').test(x.name));
+    const s = (runOf.c = runOf.c || {})[re + k] || (W.inst || []).concat((typeof S !== 'undefined' && S.sheets) || []).find(x => new RegExp('\\)' + re + (k && k !== 'A' ? ' #' + k : '') + '$').test(x.name));
     if (!s) return null;
     runOf.c[re + k] = s;
     const r = (s._runR = s._runR !== undefined ? s._runR : (window.DUI && DUI.outs(s).find(q => /\bRUNNING\b/.test(q.name) && !/NOT RUNNING/.test(q.name))) || null);
     const o = W._o && W._o[s.name];
     return r && o ? (o.has ? o.has(r.row) : o.includes(r.row)) : null;
   };
+  /* audit A2: the header of BFWP-A is fed by LOP A or LOP B of BFWP-A (DITL-22 machines A, B), of BFWP-B by DITL-22 machines C, D */
   const lopP = k => () => {
-    const a = runOf('DITL-22', k);
-    return a ? 2.0 : a === false ? 0 : NaN;
+    const [m1, m2] = k === 'A' ? ['A', 'B'] : ['C', 'D'],
+      a = runOf('DITL-22', m1),
+      b = runOf('DITL-22', m2);
+    return a || b ? 2.0 : a === false && b === false ? 0 : NaN;
   };
   /* DITL-23A / DITL-22 write the rows by address: matched by the address and the word LUB (the 7th field; other stations reuse it) */
-  for (const [k, a1, a3] of [['A', 'I.0090', 'I.0092'], ['B', 'I.0410', 'I.0412']]) L.push([a1, lopP(k), 1.5, 'lo', 0, 0 /* no dead band: the pressure steps 0 / 2.0 */, /\bLUB/], [a3, lopP(k), 1.0, 'lo', 0, 0, /\bLUB/]);
+  for (const [k, a1, a2, a3] of [['A', 'I.0090', 'I.0091', 'I.0092'], ['B', 'I.0410', 'I.0411', 'I.0412']]) L.push([a2, lopP(k), 2.0, 'ge', 0, 0, /\bLUB/], [a1, lopP(k), 1.5, 'lo', 0, 0 /* no dead band: the pressure steps 0 / 2.0 */, /\bLUB/], [a3, lopP(k), 1.0, 'lo', 0, 0, /\bLUB/]);
   const DB0 = 10;
   let map = null,
     mapK = '';
@@ -205,7 +210,8 @@
         x = val(src);
       if (!isFinite(x)) continue;
       /* the state of the switch: tripped (level low / pressure high) with its dead band */
-      const tr = m.on == null ? (dir === 'lo' ? x < sp : x > sp) : m.on ? (dir === 'lo' ? x < sp + DB : x > sp - DB) : dir === 'lo' ? x < sp : x > sp;
+      /* 'ge': a switch that makes at its set point (rising), a pressure that is held AT the set point (the BFWP lube oil header) */
+      const tr = dir === 'ge' ? x >= sp : m.on == null ? (dir === 'lo' ? x < sp : x > sp) : m.on ? (dir === 'lo' ? x < sp + DB : x > sp - DB) : dir === 'lo' ? x < sp : x > sp;
       /* test tool only (tools/training/checkpoint/run.js --nostop): the switch is logged, not acted on, so one run lists every trip */
       if (W.swTest) {
         if (tr && !m.on) (W.swLog || (W.swLog = [])).push({ tag: m.d[0], sheet: m.s.name, x: Math.round(x * 10) / 10, tmin: window.AN && AN.unit ? Math.round(AN.unit.t / 60) : null });
