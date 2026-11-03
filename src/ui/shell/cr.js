@@ -56,16 +56,38 @@
       ['LOAD', 'MW', 'ABC-001C', 'ai', 'AI0419', 'Generator MW (ABC-001C AI0419)'],
       ['MSP', 'kg/cm²', 'ABC-001C', 'ai', 'AI0131', 'Main steam pressure (ABC-001C AI0131)'],
       ['DRUM LVL', 'mm', 'ABC-010', 'pv', 'LICBR1001', 'Drum level, PV of LICBR1001 (ABC-010)'],
-      ['FW FLOW', 'T/H', 'ABC-010', 'pv', 'FICFW1007', 'Feedwater flow, PV of FICFW1007 (ABC-010)']
+      ['FW FLOW', 'T/H', 'ABC-010', 'pv', 'FICFW1007', 'Feedwater flow, PV of FICFW1007 (ABC-010)'],
+      /* 3.2.0-beta.83 (user 2026-11-03 "Pano mamonitor mga major parameters ng plant?" -> "G lahat"): five more values of the unit,
+         the same sources as the UNIT screen (systems.js) and the Training dock (live.js NAMES). Bed temperature and condenser vacuum
+         have no DCS transmitter on a logic sheet (bed thermocouples on the DITL; the DCS I/O list has only the vacuum breaker valve
+         signals), so they read the plant model (unit.js U.Tb, U.vac 0 ~ 1), like the UNIT screen */
+      ['FURNACE PRESS', 'mmH₂O', 'ABC-008', 'pv', 'PICFG108', 'Furnace pressure, PV of PICFG108 (ABC-008)'],
+      ['O2', '%', 'ABC-002', 'pv', 'AICFG112', 'Flue gas O2, PV of AICFG112 (ABC-002)'],
+      ['MAIN STEAM TEMP', '°C', 'ABC-012', 'pv', 'TICMS1004', 'Main steam temperature, PV of TICMS1004 (ABC-012)'],
+      ['BED TEMP', '°C', '', 'unit', 'Tb', 'Bed temperature (plant model; the bed thermocouples are on the DITL)'],
+      [
+        'VACUUM',
+        '%',
+        '',
+        'unit',
+        'vac',
+        'Condenser vacuum (plant model, 0 ~ 100 %; the DCS I/O list has no vacuum transmitter)'
+      ]
     ].map(([k, u, sh, how, ref, t]) => {
       const b = E('button', 'crkpi');
       b.type = 'button';
       const v = E('b', '', '—');
       b.append(E('i', '', k), v);
       v.after(E('small', '', u));
-      b.title = t + '. Shown once that sheet runs (open it, or Plant ▾ beside VIEW | RUN). Click: open ' + sh + '.';
+      b.title = sh
+        ? t + '. Shown once that sheet runs (open it, or Plant ▾ beside VIEW | RUN). Click: open ' + sh + '.'
+        : t + '. Shown once the plant model runs. Click: Plant view.';
       b.onclick = () => {
         try {
+          if (!sh) {
+            if (window.lsSetTab) lsSetTab('operate');
+            return;
+          }
           if (window.lsSetTab) lsSetTab('logic');
           if (AN.cat !== 'an') AN.setCat('an');
           const i = AN.sheets.findIndex(s => s.name === sh);
@@ -85,7 +107,8 @@
       /* 3.2.0-beta.74: the alarm banner's ACK (the newest alarm not acknowledged), flashing until it is acknowledged */
       aAck = E('button', 'crack', 'ACK'),
       fChip = E('span', 'crchip frc');
-    fChip.title = 'Signals you forced (FORCE in the Inspector), on every ABC sheet: they stay until you release them. Click for the list';
+    fChip.title =
+      'Signals you forced (FORCE in the Inspector), on every ABC sheet: they stay until you release them. Click for the list';
     /* 3.2.0-beta.6 (engineering audit, signals): the chip opens ONE list of the user's forces on all ABC sheets (the Inspector
        lists only the sheet on screen), with Go to the sheet and Release. Plant-owned values (plant model) are not user forces. */
     const fList = E('div');
@@ -119,7 +142,36 @@
     alarm.append(aChip, aT, aTx, aAck, aSp, fChip, fList, aList);
     const ev = $('evbtn'),
       evMark = mark(ev);
-    P = { rail, band, alarm, moved, ev, evMark, gs, tabs, brand, set, setM, setB, sub, crumb, srchBtn, srch, seg, tbar, unit, kpis, K, aChip, aT, aTx, aAck, fChip, sp, aList };
+    P = {
+      rail,
+      band,
+      alarm,
+      moved,
+      ev,
+      evMark,
+      gs,
+      tabs,
+      brand,
+      set,
+      setM,
+      setB,
+      sub,
+      crumb,
+      srchBtn,
+      srch,
+      seg,
+      tbar,
+      unit,
+      kpis,
+      K,
+      aChip,
+      aT,
+      aTx,
+      aAck,
+      fChip,
+      sp,
+      aList
+    };
     band.append(unit, kpis, E('div', 'crgrow'));
     /* ⚙ in the rail: its menu opens beside the rail, above the bottom of the screen */
     setB.addEventListener('click', () => {
@@ -220,6 +272,12 @@
     }
     return NaN;
   }
+  /* 3.2.0-beta.83: a state of the plant model (unit.js), only while the plant model runs; vacuum 0 ~ 1 shown as % */
+  function unitVal(k) {
+    const U = AN.plantOn && AN.unit;
+    if (!U || !isFinite(U[k.ref])) return NaN;
+    return k.ref === 'vac' ? 100 * U[k.ref] : +U[k.ref];
+  }
   function pvVal(k) {
     const sh = AN.sheets.find(s => s.name === k.sh);
     if (!sh || !sh.S || !AN.hmiCtrls) return NaN;
@@ -238,7 +296,7 @@
          drum level -566 mm showed with "Unit · not started") */
       if (!(AN.plantOn && !AN.startState))
         try {
-          x = k.how === 'ai' ? aiVal(k) : pvVal(k);
+          x = k.how === 'ai' ? aiVal(k) : k.how === 'unit' ? unitVal(k) : pvVal(k);
         } catch (e) {}
       const t = fmt(x);
       if (k.v.textContent !== t) k.v.textContent = t;
@@ -252,7 +310,10 @@
       un = AL.filter(a => !a.ack).length,
       /* the newest unacknowledged first (a TRIP before an alarm), else the newest */
       vals = [...act.values()],
-      last = vals.filter(a => a.ack === false && a.kind === 'TRIP').pop() || vals.filter(a => a.ack === false).pop() || vals.pop();
+      last =
+        vals.filter(a => a.ack === false && a.kind === 'TRIP').pop() ||
+        vals.filter(a => a.ack === false).pop() ||
+        vals.pop();
     P.alarm.classList.toggle('on', n > 0);
     P.aChip.className = 'crchip ' + (n ? 'alm' : 'mut') + (un ? ' unack' : '');
     const unA = AL.filter(a => !a.ack && !a.sd && !a.rtn).length;
@@ -337,7 +398,16 @@
       L = A0.filter(a => !a.sd),
       SP = A0.filter(a => a.sd && !a.rtn);
     d.textContent = '';
-    const h = E('div', 'crfh', 'Alarm list (' + L.length + ') · ' + lsAlarms.unacked() + ' not acknowledged' + (SP.length ? ' · ' + SP.length + ' suppressed' : ''));
+    const h = E(
+      'div',
+      'crfh',
+      'Alarm list (' +
+        L.length +
+        ') · ' +
+        lsAlarms.unacked() +
+        ' not acknowledged' +
+        (SP.length ? ' · ' + SP.length + ' suppressed' : '')
+    );
     const x = E('button', 'crfx', '✕');
     x.title = 'Close';
     x.onclick = () => d.classList.remove('open');
@@ -360,12 +430,23 @@
       /* live test #11: the ones that came after the load (their group still stopped) apart from the ones standing at the load */
       const LT = SP.filter(a => a.late),
         ST = SP.filter(a => !a.late);
-      sm.textContent = 'Suppressed: ' + SP.length + ' (' + ST.length + ' standing since the plant was loaded' + (LT.length ? ', ' + LT.length + ' came later while their group was stopped' : '') + ')';
+      sm.textContent =
+        'Suppressed: ' +
+        SP.length +
+        ' (' +
+        ST.length +
+        ' standing since the plant was loaded' +
+        (LT.length ? ', ' + LT.length + ' came later while their group was stopped' : '') +
+        ')';
       g.className = 'crfsup';
       g.append(sm);
       for (const a of LT.concat(ST).slice(0, 300)) {
         const r = E('div', 'crfr' + (a.kind === 'TRIP' ? ' trip' : ''));
-        r.append(E('span', 'crfs', a.t + ' ' + a.sh), E('span', 'crfn', a.nm + (a.late ? ' · later' : '')), E('span', 'crfv', a.lv));
+        r.append(
+          E('span', 'crfs', a.t + ' ' + a.sh),
+          E('span', 'crfn', a.nm + (a.late ? ' · later' : '')),
+          E('span', 'crfv', a.lv)
+        );
         g.append(r);
       }
       d.append(g);
@@ -392,7 +473,11 @@
       const r = E('div', 'crfr'),
         v = q.S.rt.force[q.n],
         nmx = (AN.nm && AN.nm(q.S, q.n)) || 'net ' + q.n;
-      r.append(E('span', 'crfs', q.sh.name), E('span', 'crfn', nmx), E('span', 'crfv', q.S.nets[q.n] && q.S.nets[q.n].dig ? (v > 0.5 ? 'FORCE 1' : 'FORCE 0') : String(v)));
+      r.append(
+        E('span', 'crfs', q.sh.name),
+        E('span', 'crfn', nmx),
+        E('span', 'crfv', q.S.nets[q.n] && q.S.nets[q.n].dig ? (v > 0.5 ? 'FORCE 1' : 'FORCE 0') : String(v))
+      );
       const go = E('button', '', 'Go');
       go.title = 'Open ' + q.sh.name;
       go.onclick = () => AN.go(AN.sheets.indexOf(q.sh));
@@ -437,7 +522,9 @@
       opBar();
     } catch (e) {}
   }).observe(document.body, { attributes: true, attributeFilter: ['data-tab'] });
-  WIDE.addEventListener ? WIDE.addEventListener('change', () => setTimeout(opBar, 0)) : WIDE.addListener(() => setTimeout(opBar, 0));
+  WIDE.addEventListener
+    ? WIDE.addEventListener('change', () => setTimeout(opBar, 0))
+    : WIDE.addListener(() => setTimeout(opBar, 0));
   setTimeout(() => {
     try {
       opBar();

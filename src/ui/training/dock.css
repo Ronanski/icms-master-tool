@@ -2,7 +2,9 @@
    shorter (bottom); a transform on body makes its fixed parts (top bar, panels, footer) fit the smaller box */
 html.gd-side,html.gd-bottom{overflow:hidden}
 html.gd-side body{width:calc(100vw - var(--gdw,380px))!important;min-height:100vh;transform:translateZ(0)}
-html.gd-side body.cr #crband .crkpis{display:none!important}
+/* 3.2.0-beta.83: the major values of the plant stay on top with the dock open (their own row under the band, app.css); the unit name
+   gives its room so the alarm banner, the search and VIEW | RUN stay on one line */
+html.gd-side body.cr #crband .crunit{display:none}
 html.gd-bottom body{height:calc(100vh - var(--gdh,42vh))!important;min-height:0!important;transform:translateZ(0);overflow:hidden}
 /* live test 2026-10-30 #2 (the rail of the pages stayed open beside the dock and took the room of the HMI): while the Training dock is open
    the rail hides to a 14 px strip at the left edge and slides out on hover / tap; the pages start right of the strip */
