@@ -25,7 +25,14 @@ p{margin:4px 0}ul{margin:4px 0 4px 18px;padding:0}li{margin:2px 0}.s{color:#444}
 <p>Buong detalye bawat Beta: docs/versions/v3.2.0/UPDATE_REPORT.md at HANDOFF.md seksyon 2.</p>
 
 <h2>Sinubok (headless, sa build v3.2.0, bago ang release)</h2>
-<p id="tests">@@TESTS@@</p>
+<p>Lahat pasado, 0 FAIL, isa-isa (cloud, Chromium headless):</p>
+<ul>
+<li>no_cheat 7/7 (51 ABC sheet tumatakbo, 31 motor pareho sa Worker at page, SOP items mula sa signal, 37 comparator).</li>
+<li>speed_x300: page x305, Worker x305 (6 h purge 71 s).</li>
+<li>training_dock 24/24, train_cold_reset 8/8, dock_open_run 18/18, status_clock 4/4.</li>
+<li>force_manual 68/0, faceplate (68 controller, 0 maling A/M switch).</li>
+<li>Mabigat: tests.js 11/11, switches 438 control case (0 mali), blocks_io 51 sheet, 1671 block, 12021 check, 0 mali.</li>
+</ul>
 
 <h2>Hindi pa nasubok</h2>
 <ul>

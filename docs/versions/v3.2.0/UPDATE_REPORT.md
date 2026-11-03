@@ -2,6 +2,13 @@
 
 Base: pinagsama ang **2.5.0-beta.20** (PR #34 / #35, logic at data) at ang **3.1.0-beta.7** (PR #37, itsura). Plano na inaprubahan ng user (2026-10-22): P0 merge + bug fixes → P1 engine at import check → P2 shell at design system → P3 bawat screen → P4 phone / tablet, accessibility, bilis. Audit: https://claude.ai/artifact/3RbWZ8V96QbzL1y6ZMAH18 · Proposal: https://claude.ai/artifact/Qk9hqE5yBjy4EYXrXXFmPR
 
+## 3.2.0 Stable (2026-11-03, GO STABLE ng user)
+- **Utos ng user (8:52 PM PHT):** "Ipa go stable mo itong beta 91. Para mag simula tayo ng fresh."
+- **Laman:** 3.2.0-beta.91 (PR #115, main 53bc0f2), walang ibang binago; `src/version.txt` = 3.2.0, `dist/logic-sim-v3.2.0.html` (build f5e9083, `--check` SAME).
+- **Sinubok (cloud, isa-isa, sa build 3.2.0):** no_cheat 7/7; speed_x300 page x305 / Worker x305 (6 h purge 71 s); training_dock 24/24; train_cold_reset 8/8; dock_open_run 18/18; status_clock 4/4; force_manual 68/0; faceplate PASS; mabigat: tests.js 11/11, switches 438 case 0 mali, blocks_io 51 sheet / 12021 check 0 mali.
+- **Hindi nasubok:** live test ng beta.90 / beta.91 sa app ng user; buong Cold → 150 MW live; totoong Android / Windows exe.
+- **Release report:** `Release-Report-v3.2.0.pdf` (galing sa `release-report.html`).
+
 ## 3.2.0-beta.1 — P0: pagsasama ng dalawang Beta line at mga Critical bug
 - **Problem (audit 2026-10-22, C1 C2 C3 M3 M5 L2):**
   - Dalawang Beta line ang naghiwalay mula sa v2.4.0. Kapag isa lang ang i-merge, mawawala ang trabaho ng kabila.
