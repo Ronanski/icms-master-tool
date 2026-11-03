@@ -706,12 +706,24 @@ function anProcStep(S, dt) {
             : 1); /* 2.2.0-beta.12: no BFWP, no start-up flow */
       /* 2.1.0-beta.11: water that leaves the drum besides the main steam (blowdown and the rest), from "Start at 150 MW":
          03.png feedwater 499.1 - main steam 474.1 = 25.0 T/H (pr.integLoss, removed by Reset) */
-      /* Mina H1 (beta.88, Step 28). PR-OPE-5002 (drum level): "Use lowering header drain until to control the level and at steam drum
-         pressure of above 10 Kg/cm2 use the MBD and CBD". The lower ring header drains of flow diagram K1AU3-PD-019 Rev D (BD-1-005 ~
-         014, manual valves V-BD1005 ~ V-BD1021, to the blowdown tank T-1051) are field valves (AN_SRC.field.lhd). Their flow is not in
-         the documents (FHI manual, PD-019, IO / instrument lists, SOPs): AN_SRC.lhdTH (T/H while open) stays unset until that data is
-         given, so the drains take no water out yet (user rule 2026-11-03: no ASSUMED values) */
-      const lhdQ = typeof AN_SRC !== 'undefined' && AN_SRC.field && AN_SRC.field.lhd && isFinite(AN_SRC.lhdTH) && q.y > lo ? +AN_SRC.lhdTH : 0;
+      /* Mina H1 (Step 28: the drum overfilled to +660 mm). PR-OPE-5002 (drum level): "Use lowering header drain until to control the level
+         and at steam drum pressure of above 10 Kg/cm2 use the MBD and CBD". The lower ring header drains of flow diagram K1AU3-PD-019 Rev D:
+         BD-1-005 / 006 (1") and BD-1-008 / 010 / 012 / 014 (2") from the furnace water wall lower ring header, manual valves V-BD1005 ~
+         V-BD1021, to the blowdown tank T-1051 (field valves, AN.field('lhd', %)). Their flow by the orifice law of a liquid,
+         Q = Cd x A x (opening / 100) x sqrt(2 x dP x rho):
+           A   the bore of the six lines (PD-019 nominal sizes 4 x 2" + 2 x 1" = 0.00912 m2);
+           Cd  0.61, the discharge coefficient of a sharp edged orifice (ISO 5167-2, standard engineering value);
+           dP  the drum pressure (unit model, kg/cm2 G) + the water column from the drum to the lower ring header; the column is taken
+               as the refractory lined lower furnace, 7.748 m from the grate (FHI manual 2-4-9), the documented part of that height
+               (the drum stands higher, so the real column and the flow are larger);
+           rho 1000 kg/m3 (water).
+         Used only below 10 kg/cm2 (the SOP; FHI 2-8-TAB_6-10: never while steaming). MBD / CBD above 10 kg/cm2: not in this step */
+      let lhdQ = 0;
+      if (typeof AN_SRC !== 'undefined' && AN_SRC.field && AN_SRC.field.lhd && AN_SRC.lhdPct > 0 && q.y > lo) {
+        const ps0 = S1 && pr.integ.pd >= 0 ? S1.rt.st[pr.integ.pd] : null,
+          Pd = ps0 && isFinite(ps0.val) ? Math.max(0, +ps0.val) : 0;
+        if (Pd < 10) lhdQ = 0.61 * 0.00912 * (AN_SRC.lhdPct / 100) * Math.sqrt(2 * (Pd * 98066.5 + 1000 * 9.80665 * 7.748) * 1000) * 3.6; /* kg/s -> T/H */
+      }
       q.y = Math.max(lo, Math.min(lo + span, q.y + dt * pr.integ.k * (ffw - fst - (pr.integLoss || 0) - lhdQ)));
       AN_CYC.ffw = ffw; /* the deaerator gives this water (condensate cycle balance) */
       /* 2.2.0-beta.12 (M3): SHRINK / SWELL. A fast change of the drum pressure moves the level the other way for a while (the steam

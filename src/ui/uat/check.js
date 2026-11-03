@@ -374,7 +374,8 @@
              start-up level control LICBR1001B in A at SV 0, as the coal stage does (the drawing allows it while FICFW1007 and LICBR1001A
              are M). Before, the chain never filled the drum and the level check read -296 mm */
           h.autoSv('ABC-010', 'LICBR1001B', 0);
-          AN.field('dop', true);
+          /* audit A1: diesel oil pump A from its DCS drawing (DITL-31): REMOTE, START */
+          if (window.LS_DOCK) (LS_DOCK.dremote('DITL-31', 'DOP A'), LS_DOCK.dmotor('DITL-31', 1));
           for (const l of ['M.3302', 'M.3303', 'M.3304']) h.setx(null, l, 1);
         }
         /* 3.2.0-beta.78: the dampers open once the fans run (PR-OPE-5002: closed for the start, then up) */
