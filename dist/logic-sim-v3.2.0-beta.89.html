@@ -26359,10 +26359,15 @@ function linksOf(sh) {
     }
   return out;
 }
+const actSetK = new WeakMap();
 function actSet(sh) {
   /* 3.2.0 retest #54: kept while a starting state loads (hmi-op.js anGenRun: ~2900 steps of the same sets) */
   const c = AN._asc && AN._asc.get(sh);
   if (c) return c;
+  /* speed (all sheets scanned): the set is the same while its inputs are; it was made again each step (grow, the lists, the sheets) */
+  const k = [AN.hmiSheets, AN.plantSheets, AN.worldSheets, AN.unitSheets, AN.checkSheets, AN.p2, AN.plantOn, AN.sheets, AN.sheets.reduce((n, x) => n + (x.S ? 1 : 0), 0), sh.S, sh.lk],
+    m = actSetK.get(sh);
+  if (m && m.k.length === k.length && m.k.every((v, i) => v === k[i])) return m.set;
   const set = [sh],
     seen = new Set([sh]),
     grow = () => {
@@ -26403,6 +26408,7 @@ function actSet(sh) {
         set.push(p);
       }
   if (AN._asc) AN._asc.set(sh, set);
+  actSetK.set(sh, { k, set });
   return set;
 }
 /* 2.2.0-beta.13 (CLAUDE.md rule 1: one address = one signal in the whole DCS). A digital INPUT of the drawing (I.xxxx, M.xxxx,
@@ -26454,31 +26460,38 @@ function shareExt(set) {
 /* P3 time-slicing (user 2026-11-01 "T1, 3"): one step of the set as a generator that yields after each sheet (AN.sched runs it in
    slices between the frames); stepSet / stepTier run the same generator to the end at once, so a step is the same either way. A
    synchronous step first finishes a sliced step still in the queue (AN.sched.flush) */
+/* the values of the links INTO a sheet (the TO side of each link), before its step. Speed (lead 2026-11-03, all sheets scanned: Worker x300
+   gave x251; a CPU profile put 22 % of the time in this loop, Array.includes on the inputs of every sheet, every step): what each link
+   reads and writes is found once per built pair of sheets (l._c), then only the values move */
+function linksIn(x) {
+  const TS = x.S;
+  if (!TS) return;
+  for (const l of x.lk || []) {
+    if (l.to !== x) continue;
+    const FS = l.from.S;
+    if (!FS) continue;
+    let c = l._c;
+    if (!c || c.FS !== FS || c.TS !== TS) {
+      c = l._c = { FS, TS, fn: l.flagSrc != null ? -1 : l.fromNets.find(n => FS.drv[n].length) ?? l.fromNets[0], to: l.toNets.filter(n => TS.ext.includes(n)) };
+      if (c.to.length) TS.xlk = TS.xlk || {};
+    }
+    const val = l.flagSrc != null ? (FS.rt.st[l.flagSrc] && FS.rt.st[l.flagSrc].val > 0.5 ? 1 : 0) : FS.rt.v[c.fn];
+    for (const n of c.to) {
+      TS.rt.ext[n] = val;
+      (TS.xlk || (TS.xlk = {}))[n] = l;
+    }
+  }
+}
 function stepSet(sh, dt) {
   if (AN.sched) AN.sched.flush();
-  for (const _ of stepSetG(sh, dt));
+  /* speed (lead 2026-11-03): the same step as stepSetG, as a plain function; the profile put 22 % of the time on the generator itself
+     (51 sheets: one resume each) when nothing slices it */
+  const set = stepPre(sh);
+  for (const x of set) stepOne(x, dt);
 }
-function* stepSetG(sh, dt) {
+function stepPre(sh) {
   const set = actSet(sh);
-  for (const x of set)
-    for (const l of x.lk || []) {
-      if (l.to !== x) continue;
-      const FS = l.from.S,
-        TS = x.S;
-      if (!FS || !TS) continue;
-      const val =
-        l.flagSrc != null
-          ? FS.rt.st[l.flagSrc] && FS.rt.st[l.flagSrc].val > 0.5
-            ? 1
-            : 0
-          : FS.rt.v[l.fromNets.find(n => FS.drv[n].length) ?? l.fromNets[0]];
-      for (const n of l.toNets)
-        if (TS.ext.includes(n)) {
-          TS.rt.ext[n] = val;
-          TS.xlk = TS.xlk || {};
-          TS.xlk[n] = l;
-        }
-    }
+  for (const x of set) linksIn(x);
   for (const x of set)
     try {
       procRemote(x);
@@ -26486,8 +26499,20 @@ function* stepSetG(sh, dt) {
   try {
     shareExt(set);
   } catch (e) {}
-  for (const x of set) {
+  return set;
+}
+/* AN._prof = {} (a measure of the speed work): the time of each sheet's step, by name */
+function stepOne(x, dt) {
+  if (AN._prof) {
+    const t0 = performance.now();
     anStep(x.S, dt);
+    AN._prof[x.name] = (AN._prof[x.name] || 0) + performance.now() - t0;
+  } else anStep(x.S, dt);
+}
+function* stepSetG(sh, dt) {
+  const set = stepPre(sh);
+  for (const x of set) {
+    stepOne(x, dt);
     yield;
   }
 }
@@ -26507,25 +26532,7 @@ function* stepTierG(sh, dt, K) {
   const tk = (AN._tk = (AN._tk || 0) + 1),
     due = tk % K === 0,
     set = full.filter(x => near.has(x) || due);
-  for (const x of set)
-    for (const l of x.lk || []) {
-      if (l.to !== x) continue;
-      const FS = l.from.S,
-        TS = x.S;
-      if (!FS || !TS) continue;
-      const val =
-        l.flagSrc != null
-          ? FS.rt.st[l.flagSrc] && FS.rt.st[l.flagSrc].val > 0.5
-            ? 1
-            : 0
-          : FS.rt.v[l.fromNets.find(n => FS.drv[n].length) ?? l.fromNets[0]];
-      for (const n of l.toNets)
-        if (TS.ext.includes(n)) {
-          TS.rt.ext[n] = val;
-          TS.xlk = TS.xlk || {};
-          TS.xlk[n] = l;
-        }
-    }
+  for (const x of set) linksIn(x);
   for (const x of set)
     try {
       procRemote(x);
@@ -32214,7 +32221,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.89';
-      c3.textContent += ' · build b760ef0'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build f1d1118'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -72087,10 +72094,15 @@ function linksOf(sh) {
     }
   return out;
 }
+const actSetK = new WeakMap();
 function actSet(sh) {
   /* 3.2.0 retest #54: kept while a starting state loads (hmi-op.js anGenRun: ~2900 steps of the same sets) */
   const c = AN._asc && AN._asc.get(sh);
   if (c) return c;
+  /* speed (all sheets scanned): the set is the same while its inputs are; it was made again each step (grow, the lists, the sheets) */
+  const k = [AN.hmiSheets, AN.plantSheets, AN.worldSheets, AN.unitSheets, AN.checkSheets, AN.p2, AN.plantOn, AN.sheets, AN.sheets.reduce((n, x) => n + (x.S ? 1 : 0), 0), sh.S, sh.lk],
+    m = actSetK.get(sh);
+  if (m && m.k.length === k.length && m.k.every((v, i) => v === k[i])) return m.set;
   const set = [sh],
     seen = new Set([sh]),
     grow = () => {
@@ -72131,6 +72143,7 @@ function actSet(sh) {
         set.push(p);
       }
   if (AN._asc) AN._asc.set(sh, set);
+  actSetK.set(sh, { k, set });
   return set;
 }
 /* 2.2.0-beta.13 (CLAUDE.md rule 1: one address = one signal in the whole DCS). A digital INPUT of the drawing (I.xxxx, M.xxxx,
@@ -72182,31 +72195,38 @@ function shareExt(set) {
 /* P3 time-slicing (user 2026-11-01 "T1, 3"): one step of the set as a generator that yields after each sheet (AN.sched runs it in
    slices between the frames); stepSet / stepTier run the same generator to the end at once, so a step is the same either way. A
    synchronous step first finishes a sliced step still in the queue (AN.sched.flush) */
+/* the values of the links INTO a sheet (the TO side of each link), before its step. Speed (lead 2026-11-03, all sheets scanned: Worker x300
+   gave x251; a CPU profile put 22 % of the time in this loop, Array.includes on the inputs of every sheet, every step): what each link
+   reads and writes is found once per built pair of sheets (l._c), then only the values move */
+function linksIn(x) {
+  const TS = x.S;
+  if (!TS) return;
+  for (const l of x.lk || []) {
+    if (l.to !== x) continue;
+    const FS = l.from.S;
+    if (!FS) continue;
+    let c = l._c;
+    if (!c || c.FS !== FS || c.TS !== TS) {
+      c = l._c = { FS, TS, fn: l.flagSrc != null ? -1 : l.fromNets.find(n => FS.drv[n].length) ?? l.fromNets[0], to: l.toNets.filter(n => TS.ext.includes(n)) };
+      if (c.to.length) TS.xlk = TS.xlk || {};
+    }
+    const val = l.flagSrc != null ? (FS.rt.st[l.flagSrc] && FS.rt.st[l.flagSrc].val > 0.5 ? 1 : 0) : FS.rt.v[c.fn];
+    for (const n of c.to) {
+      TS.rt.ext[n] = val;
+      (TS.xlk || (TS.xlk = {}))[n] = l;
+    }
+  }
+}
 function stepSet(sh, dt) {
   if (AN.sched) AN.sched.flush();
-  for (const _ of stepSetG(sh, dt));
+  /* speed (lead 2026-11-03): the same step as stepSetG, as a plain function; the profile put 22 % of the time on the generator itself
+     (51 sheets: one resume each) when nothing slices it */
+  const set = stepPre(sh);
+  for (const x of set) stepOne(x, dt);
 }
-function* stepSetG(sh, dt) {
+function stepPre(sh) {
   const set = actSet(sh);
-  for (const x of set)
-    for (const l of x.lk || []) {
-      if (l.to !== x) continue;
-      const FS = l.from.S,
-        TS = x.S;
-      if (!FS || !TS) continue;
-      const val =
-        l.flagSrc != null
-          ? FS.rt.st[l.flagSrc] && FS.rt.st[l.flagSrc].val > 0.5
-            ? 1
-            : 0
-          : FS.rt.v[l.fromNets.find(n => FS.drv[n].length) ?? l.fromNets[0]];
-      for (const n of l.toNets)
-        if (TS.ext.includes(n)) {
-          TS.rt.ext[n] = val;
-          TS.xlk = TS.xlk || {};
-          TS.xlk[n] = l;
-        }
-    }
+  for (const x of set) linksIn(x);
   for (const x of set)
     try {
       procRemote(x);
@@ -72214,8 +72234,20 @@ function* stepSetG(sh, dt) {
   try {
     shareExt(set);
   } catch (e) {}
-  for (const x of set) {
+  return set;
+}
+/* AN._prof = {} (a measure of the speed work): the time of each sheet's step, by name */
+function stepOne(x, dt) {
+  if (AN._prof) {
+    const t0 = performance.now();
     anStep(x.S, dt);
+    AN._prof[x.name] = (AN._prof[x.name] || 0) + performance.now() - t0;
+  } else anStep(x.S, dt);
+}
+function* stepSetG(sh, dt) {
+  const set = stepPre(sh);
+  for (const x of set) {
+    stepOne(x, dt);
     yield;
   }
 }
@@ -72235,25 +72267,7 @@ function* stepTierG(sh, dt, K) {
   const tk = (AN._tk = (AN._tk || 0) + 1),
     due = tk % K === 0,
     set = full.filter(x => near.has(x) || due);
-  for (const x of set)
-    for (const l of x.lk || []) {
-      if (l.to !== x) continue;
-      const FS = l.from.S,
-        TS = x.S;
-      if (!FS || !TS) continue;
-      const val =
-        l.flagSrc != null
-          ? FS.rt.st[l.flagSrc] && FS.rt.st[l.flagSrc].val > 0.5
-            ? 1
-            : 0
-          : FS.rt.v[l.fromNets.find(n => FS.drv[n].length) ?? l.fromNets[0]];
-      for (const n of l.toNets)
-        if (TS.ext.includes(n)) {
-          TS.rt.ext[n] = val;
-          TS.xlk = TS.xlk || {};
-          TS.xlk[n] = l;
-        }
-    }
+  for (const x of set) linksIn(x);
   for (const x of set)
     try {
       procRemote(x);
