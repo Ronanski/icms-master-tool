@@ -39,3 +39,21 @@ Sinuri: `main` = 3.2.0-beta.89 (d91c83a), `dist/logic-sim-v3.2.0-beta.89.html`.
 - Live sa PC ng user: hindi. Headless lang ito (hindi live test ayon sa rule).
 - Buong Cold → 150 MW sa Worker na may tunay na pindot: hindi pa; ang no_cheat.js ay sa Cold lang (hakbang 1 ng permissive).
 - Ang 503 mano-manong item ay hindi isa-isang hinusgahan; ang C ay sumasala lang ng CRO item na may tag na nasa app.
+
+## Audit ng beta.90 (`claude/lisa-speed` 8ee3e88, 2026-11-03 ~6:10 PM PHT)
+
+Ang `no_cheat.js` sa branch ni Lisa ay kapareho ng sa audit (walang binago). Pinatakbo ko mismo sa `dist/logic-sim-v3.2.0-beta.90.html`: A, B, C PASS. Pero may idinagdag akong check **D** (ang logic mismo, hindi ang dock), at ito ay **FAIL sa Worker, PASS sa page engine**:
+
+- DITL-23A row 12 (A at #B): value 2.22 > 1.5 = dapat 1, ang logic net ng Worker = 0
+- DITL-76 row 28: 1.08 < 3.5 = dapat 1, Worker = 0
+- DITL-112 row 28 (A, #B, #C): 1.38 < 5.6 = dapat 1, Worker = 0
+
+Ibig sabihin, **patch ang H2 fix ng beta.90, hindi root cause**: ang dock (`03c-read.js` DREAD) ay kinukuwenta na ngayon ang comparator mula sa value, kaya "complete" ang nakikita, pero ang comparator ng engine sa Worker ay 0 pa rin pagkatapos ng ilang minuto ng plant time (sa simula ay 1, saka bumababa sa 0 kahit hindi gumagalaw ang value). Sa plain (page engine) nananatiling 1. Kaya maaaring "complete" ang permissive sa dock pero ang logic ng engine ay hindi papayag. Ang 6 na comparator ay may kinalaman sa START permissive ng BFWP at sa low-pressure na kondisyon ng ACWP / MWP.
+
+**LOP 6.0 kg/cm2 "KSB 30 LPM lube oil system O&M manual, Annexure-I":** WALA sa repo ang manual na ito (hinanap sa `document-references/` at sa lahat ng zip). Hindi ko masuri ang 6.0. Hangga't hindi naidaragdag ang manual (at ang pahina), ang value ay hindi napatunayan. Tama naman ngayon ang LOP bilang DCS motor ng DITL-22 (IO STN103 O.0126 / I.0050 sabi ng code; ayon din sa SOP seksyon 20).
+
+**6 CRO item:** naka-link na sa tag. Tama ang PT-FA1088 (IO list: "#1 Boiler air preheater outlet to furnace secondary air pressure") para sa 24.13 / 24.14. Mahina ang kondisyon ng 21.15 (anumang MV < 99 % ng PICDO0005) at 25.12 (MAN + MV ≥ 5 %): tumi-tick kahit maliit na galaw lang.
+
+**Lower ring header drains (H1):** inalis ang Cd 0.6 / 10 % / 3 kg/cm2; ngayon 0 ang flow hangga't walang data (`AN_SRC.lhdTH`). Tapat, pero bukas muli ang H1: walang paraan ang operator para ibaba ang drum level sa Step 28.
+
+**ASSUMED register sa beta.90:** 94 NO-SOURCE na linya (beta.89: 95). Ang LOP at ang drain lang ang nabawas; ang `unit.js` (41), `tcs.js` (12), `sucP` (2.2 / 1.4) ay naroon pa rin. Paalala: ang tag na FOUND ay batay sa binanggit na dokumento sa comment; ang dokumentong wala sa repo (gaya ng KSB manual) ay hindi pa rin napatunayan.

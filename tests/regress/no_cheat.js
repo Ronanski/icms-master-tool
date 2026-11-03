@@ -102,6 +102,41 @@ const perms = p =>
   });
   console.log('     SOP items: ' + c.auto + ' tick from a signal, ' + c.field + ' by hand (field), ' + c.tcs + ' TCS');
   ck(!c.L.length, 'C. CRO items that name a tag the app has tick from that signal' + c.L.map(x => '\n     by hand: ' + x).join(''));
+  /* D (beta.90 audit): the LOGIC itself, not the dock. Every comparator of a DITL analog input row (PT-FW1115-A > 1.5 ...): its output
+     net, as the engine computed it (in the Worker: the nets the Worker sends), must equal the comparison of the analog value the same
+     engine scanned. A dock that works the comparison out by itself can show "complete" while the engine still blocks the start */
+  const cmpChk = p =>
+    p.evaluate(() => {
+      const bad = [];
+      let n = 0;
+      for (const s of S.sheets.concat((window.WORLD && WORLD.inst) || [])) {
+        const nl = s.nl,
+          V = nl && nl._v,
+          AV = typeof avOf === 'function' ? avOf(s) : null;
+        if (!nl || !V || !AV) continue;
+        for (const g of nl.gates || []) {
+          if (g.t !== 'CMP') continue;
+          const a = (nl.an || []).find(x => x.net === g.ins[0]);
+          if (!a || AV[a.key] === undefined) continue;
+          const sa = g.spNet !== undefined ? (nl.an || []).find(x => x.net === g.spNet) : null,
+            v0 = +AV[a.key],
+            sp = sa ? +AV[sa.key] : g.sp;
+          if (!isFinite(v0) || !isFinite(sp)) continue;
+          /* a value right at the set point can differ by a scan: not counted */
+          if (Math.abs(v0 - sp) < 1e-6 * Math.max(1, Math.abs(sp))) continue;
+          const want = g.cmp === '>' ? v0 > sp : v0 < sp,
+            got = g.out.some(o => !!V[o]);
+          n++;
+          if (want !== got) bad.push(s.name + ' row ' + (a.row + 1) + ': value ' + v0 + ' ' + g.cmp + ' ' + sp + ' = ' + (want ? 1 : 0) + ', logic net ' + (got ? 1 : 0));
+        }
+      }
+      return { n, bad };
+    });
+  await W.p.waitForTimeout(15000);
+  for (const [nm, X] of [['Worker', W], ['page engine', P]]) {
+    const d = await cmpChk(X.p);
+    ck(d.n > 0 && !d.bad.length, 'D. ' + nm + ': ' + d.n + ' analog comparators of the DITL = their scanned value' + d.bad.slice(0, 8).map(x => '\n     ' + x).join(''));
+  }
   ck(!W.errs.length && !P.errs.length, 'no page error ' + JSON.stringify(W.errs.concat(P.errs).slice(0, 2)));
   await b.close();
   console.log(fail ? fail + ' FAIL' : 'ALL PASS');
