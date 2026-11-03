@@ -791,11 +791,8 @@
     qa('[data-op]').forEach(bb => bb.addEventListener('click', e => (e.stopPropagation(), doOp(bb.dataset.op))));
     boxEl.addEventListener('click', e => e.stopPropagation());
     tick();
-    let seen = false;
-    const iv = setInterval(
-      () => (g.isConnected ? ((seen = true), tick()) : seen && (clearInterval(iv), A.stop())),
-      500
-    );
+    /* P2: the shared driver, only while the page is on the screen (the scene loop stops with the page) */
+    H.every(g, 500, tick);
     const HIT = {
       TK: 'T-1920 main oil tank · level switches LSH / LSL (TCS, MAIN OIL TANK LEVEL HIGH / LOW)',
       CLA: 'H-1921A lube oil cooler (in service) · outlet TE-LO1002-1 (DCS ABC-053)',

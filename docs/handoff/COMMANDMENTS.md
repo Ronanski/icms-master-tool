@@ -12,7 +12,7 @@ These are the user's standing rules. Every thread follows them every time: at se
 
    Every detail must trace to a source; write the source down. Nothing from general knowledge, and no invented tag, permissive or value. If it is not in the docs, say "not in docs".
 2. **STOP MEANS STOP.** Start or resume nothing unless the user says so in their own words. "Consolidate X" is not a GO.
-3. **MAIN ONLY ON "GO BETA"; STABLE AND WORKFLOWS ONLY ON "GO STABLE"**, in the same message.
+3. **BETA TO MAIN WITHOUT APPROVAL (user 2026-11-03); STABLE AND WORKFLOWS ONLY ON "GO STABLE"**, in the same message.
 4. **MOCKUP BEFORE ANY VISUAL CODE.** The user must approve the mockup (an artifact). The app page must look EXACTLY like it ("ganyan na ganyan"), with no design of your own. The pending list is `team-files/hmi-mockups/PENDING_HMI_BUILD.md` (`docs/hmi/PENDING_HMI_BUILD.md` in the repo).
 5. **APP TEXT IN ENGLISH, NO ACRONYMS AS LABELS.** Two faceplates per equipment: control (click the equipment) and permissive + trend + monitor (the Y/N button). Y = red = complete; N = green.
 6. **CLEAN, ORGANIZED, CLEAR, NOT CLUTTERED.** One uniform HMI style (`docs/hmi/HMI_STYLE.md`). **The 038 Air Preheater is NOT an approved style (user #44, 2026-11-02);** no style is approved yet, so keep today's look and add no design of your own until the user approves one.

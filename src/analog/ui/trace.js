@@ -14,6 +14,8 @@ AN.view = true;
 AN.allLegs = false;
 document.body.classList.add('anview');
 bVw.classList.add('on');
+/* 3.2.0 Web Worker: Next ▶ / ◀ Back as engine actions (engine/trace-step.js, when it is in the bundle) */
+if (typeof anStepN === 'function') Object.assign(AN, { stepN: anStepN, stepBack: anStepBack });
 function fmtT(t) {
   return Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
 }
@@ -47,7 +49,9 @@ function stepFwd() {
     ch = sec <= 10 ? 0.1 : 0.25,
     n = Math.round(sec / ch);
   histRec(sh, 0);
-  for (let i = 0; i < n; i++) stepSet(sh, ch);
+  /* 3.2.0 Web Worker: one engine action (engine/trace-step.js), the radio sends it once */
+  if (AN.stepN) AN.stepN(sh.name, n, ch);
+  else for (let i = 0; i < n; i++) AN.stepSet(sh, ch);
   paint();
   panelUpd();
   msg('Next ▶ +' + sec + ' s → t = ' + fmtT(sh.S.rt.t));
@@ -76,16 +80,26 @@ function stepBack() {
   }
   const e = H[k];
   H.length = k + 1;
-  for (const q of e.snap) {
-    q.x.S.rt = structuredClone(q.rt);
-    q.x.S._tk = null;
-    q.x.S._dk = null;
-  }
-  let rem = tg - sh.S.rt.t;
-  while (rem > 1e-6) {
-    const d = Math.min(rem > 10 ? 0.25 : 0.1, rem);
-    stepSet(sh, d);
-    rem -= d;
+  /* 3.2.0 Web Worker: the restore and the steps are one engine action (engine/trace-step.js): the engine goes back too */
+  if (AN.stepBack)
+    AN.stepBack(
+      e.snap.map(q => q.x.name),
+      e.snap.map(q => q.rt),
+      sh.name,
+      tg
+    );
+  else {
+    for (const q of e.snap) {
+      q.x.S.rt = structuredClone(q.rt);
+      q.x.S._tk = null;
+      q.x.S._dk = null;
+    }
+    let rem = tg - sh.S.rt.t;
+    while (rem > 1e-6) {
+      const d = Math.min(rem > 10 ? 0.25 : 0.1, rem);
+      AN.stepSet(sh, d);
+      rem -= d;
+    }
   }
   buildPanel();
   paint();
@@ -656,82 +670,7 @@ function trMapUi(d, sh) {
   d.append(h$('div', { cls: 'r' }, [b]), box);
 }
 
-const DS_RX = /(FROM|TO)\s+DITL\s*([0-9]{2}[A-Z]?)\s*-\s*(\d+)/gi;
-function dsIdx(sh) {
-  if (sh._ds) return sh._ds;
-  const S = ensure(sh),
-    from = new Map(),
-    to = new Map(),
-    toDig = new Map(),
-    lost = [];
-  for (const t of S.tx) {
-    if (!/DITL/i.test(t.t)) continue;
-    const isFrom = /FROM/i.test(t.t);
-    DS_RX.lastIndex = 0;
-    const refs = [];
-    let m;
-    while ((m = DS_RX.exec(t.t))) refs.push('DITL ' + m[2] + '-' + m[3]);
-    /* 2.2.0-beta.3: a list after the first one ("TO DITL 02-25, DITL 03F-16, DITL 19-16", ABC-027 M.2504): every reference, not the first only */
-    if (refs.length) {
-      const L = /,\s*(?:DITL\s*)?([0-9]{2}[A-Z]?)\s*-\s*(\d+)/gi;
-      while ((m = L.exec(t.t))) if (!refs.includes('DITL ' + m[1] + '-' + m[2])) refs.push('DITL ' + m[1] + '-' + m[2]);
-    }
-    if (!refs.length) refs.push(t.t.replace(/[()]/g, '').trim());
-    const near = [];
-    for (const nn of S.nets) {
-      if (!nn.segs.length) continue;
-      let d = 1e9;
-      for (const i of nn.segs) d = Math.min(d, anPtSeg(t.x, t.y, S.seg[i]));
-      if (d <= 20) near.push({ id: nn.id, d });
-    }
-    near.sort((p, q) => p.d - q.d);
-    /* 1.22.0: a FROM text that touches a wire (<= 8) names THAT wire, even when an input wire is a bit farther
-       (ABC-004A: the four "( FROM DITL 07-64 )" were put on the SIG.AB flags B.0723 ... at 8 ~ 9 instead of M.3410 ... at 5; ABC-003B: M.025B at 18 instead of M.3434 at 5) */
-    const pick = isFrom
-      ? (near[0] && near[0].d <= 8 ? near[0] : null) || near.find(q => S.ext.includes(q.id)) || near[0]
-      : near.find(q => !S.ext.includes(q.id) && S.drv[q.id] && S.drv[q.id].some(d => d.k !== 'LINK')) || near[0];
-    if (!pick) {
-      lost.push({ t: t.t, x: Math.round(t.x), y: Math.round(t.y) });
-      continue;
-    }
-    const M = isFrom ? from : to;
-    const o = M.get(pick.id) || [];
-    for (const r of refs) if (!o.includes(r)) o.push(r);
-    M.set(pick.id, o);
-    /* 2.2.0-beta.4: the nearest DIGITAL net driven by the logic, for a TO DITL text that sits by an analog wire (ABC-001C "TO DITL
-       40-09" between the main steam pressure AI0131 and the output M.310D of its LOW LOW comparator, < 72.9 kg/cm2) */
-    if (!isFrom && S.nets[pick.id] && !S.nets[pick.id].dig) {
-      const dg = near.find(q => S.nets[q.id] && S.nets[q.id].dig && !S.ext.includes(q.id) && S.drv[q.id] && S.drv[q.id].length);
-      if (dg) for (const r of refs) toDig.set(r + '@' + pick.id, dg.id);
-    }
-  }
-  /* 2.3.0-beta.1 (LINK-3): a "TO DITL" text written under its own comparator box belongs to the wire named in S.dsTo (ABC-001C
-     "TO DITL 40-06" = O.0177 > 134 kg/cm2, not M.3109 under it; DITL-40 rows 6 ~ 9, 13) */
-  if (S.dsTo) {
-    const key = r => {
-      const m = /([0-9]{2,3}[A-Z]?)\s*-\s*(\d+)/.exec(r);
-      return m ? m[1] + '-' + +m[2] : r;
-    };
-    for (const ref in S.dsTo) {
-      const n = S.lab.findIndex((l, i) => l && String(l.t).trim() === S.dsTo[ref] && S.drv[i] && S.drv[i].length);
-      if (n < 0) continue;
-      let full = null;
-      for (const [id, o] of [...to]) {
-        const j = o.findIndex(r => key(r) === ref);
-        if (j < 0) continue;
-        full = o[j];
-        o.splice(j, 1);
-        if (!o.length) to.delete(id);
-        toDig.delete(full + '@' + id);
-      }
-      if (!full) continue;
-      const o = to.get(n) || [];
-      if (!o.includes(full)) o.push(full);
-      to.set(n, o);
-    }
-  }
-  return (sh._ds = { from, to, toDig, lost });
-}
+/* DS_RX, dsIdx: engine/ds.js */
 const TR_COL = ['#4da3ff', '#ff8a3d', '#35e08a', '#ff4dd0', '#ffd84d', '#9b8cff', '#7fe0e0', '#c0c0c0'],
   TR_DT = 0.25,
   TR_CAP = 2400;

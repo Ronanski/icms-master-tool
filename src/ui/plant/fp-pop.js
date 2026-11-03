@@ -92,6 +92,20 @@
     const ay = Math.max(14, Math.min(ht - 14, (a.top + a.bottom) / 2 - H.top - y));
     el.style.setProperty('--ay', Math.round(ay) + 'px');
   }
+  /* the window got smaller (a phone turned, the browser narrowed): an open pop-out placed for the old size stays inside the page (it
+     stood off the screen at the right and the whole page scrolled sideways: 867 px wide at 390 px) */
+  function keepIn(el) {
+    const H = host().getBoundingClientRect(),
+      w = el.offsetWidth,
+      ht = el.offsetHeight,
+      x = parseFloat(el.style.left) || 0,
+      y = parseFloat(el.style.top) || 0,
+      nx = Math.max(6, Math.min(H.width - w - 6, x)),
+      ny = Math.max(6, Math.min(H.height - ht - 6, y));
+    if (Math.abs(nx - x) > 0.5) ((el.style.left = Math.round(nx) + 'px'), (el.dataset.side = 'n'));
+    if (Math.abs(ny - y) > 0.5) el.style.top = Math.round(ny) + 'px';
+  }
+  addEventListener('resize', () => document.querySelectorAll('.fpo-near').forEach(el => el.offsetParent && keepIn(el)));
   /* dragged by its header */
   function drag(el, hd) {
     hd.addEventListener('pointerdown', e => {
@@ -566,7 +580,10 @@
   };
   /* a manual valve the field operator turns (Training: FIELD, a digital field item of the plant model, logged as "Field operator") */
   const FIELDV = {
-    'V-MU1033': { n: 'V-MU1033', t: 'Expansion tank bypass (manual)', k: 'mu1033', io: 'V-MU1033', use: 'Fills T-1109 while there is no instrument air yet (XV-MU1109 closed). Close it when LT-CW1109 reaches 1.7 m.' }
+    'V-MU1033': { n: 'V-MU1033', t: 'Expansion tank bypass (manual)', k: 'mu1033', io: 'V-MU1033', use: 'Fills T-1109 while there is no instrument air yet (XV-MU1109 closed). Close it when LT-CW1109 reaches 1.7 m.' },
+    /* Mina's retest step 8 (PR-OPE-5002 7.20 "Open Expansion tank outlet valve to prime the close cooling line (V-CW1001)", 7.22 NL 1.7 m;
+       flow diagram K1AU3-PD-021 Rev D: T-1109 outlet V-CW1001 CW-1-001 8"; not in the I/O list: a field valve, plant model AN_SRC.field) */
+    'V-CW1001': { n: 'V-CW1001', t: 'Expansion tank outlet (manual)', k: 'cw1001', io: 'V-CW1001', use: 'Primes the closed cooling line from T-1109 (PR-OPE-5002 7.20). Then keep T-1109 at NL 1.7 m, make up if necessary (7.22).' }
   };
   function fieldValve(V) {
     if (!V || !window.AN || !AN.field) return false;

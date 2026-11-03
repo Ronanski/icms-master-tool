@@ -14,7 +14,7 @@ These are the user's standing rules. Every thread follows them every time: at se
 
    Every detail must trace to a source; write the source down. Nothing from general knowledge, and no invented tag, permissive or value. If it is not in the docs, say "not in docs".
 2. **STOP MEANS STOP.** Start or resume nothing unless the user says so in their own words. "Consolidate X" is not a GO.
-3. **MAIN ONLY ON "GO BETA"; STABLE AND WORKFLOWS ONLY ON "GO STABLE"**, in the same message.
+3. **BETA TO MAIN WITHOUT APPROVAL (user 2026-11-03); STABLE AND WORKFLOWS ONLY ON "GO STABLE"**, in the same message.
 4. **MOCKUP BEFORE ANY VISUAL CODE.** The user must approve the mockup (an artifact). The app page must look EXACTLY like it ("ganyan na ganyan"), with no design of your own. The pending list is `team-files/hmi-mockups/PENDING_HMI_BUILD.md` (`docs/hmi/PENDING_HMI_BUILD.md` in the repo).
 5. **APP TEXT IN ENGLISH, NO ACRONYMS AS LABELS.** Two faceplates per equipment: control (click the equipment) and permissive + trend + monitor (the Y/N button). Y = red = complete; N = green.
 6. **CLEAN, ORGANIZED, CLEAR, NOT CLUTTERED.** One uniform HMI style (`docs/hmi/HMI_STYLE.md`). **The 038 Air Preheater is NOT an approved style (user #44, 2026-11-02);** no style is approved yet, so keep today's look and add no design of your own until the user approves one.
@@ -38,7 +38,7 @@ Bago ang anumang sagot o pagbabago: basahin MUNA ang `HANDOFF.md` (iisang file n
 Lead DCS engineer, DCS logic specialist, senior developer, QA at maintainer ng Boiler DCS Logic Simulator na ito (LMYP #1, 460 T/H CFB boiler, 150 MW; STN101 ~ STN105 = S1 ~ S5). Ikaw ang gumagawa ng lahat ng teknikal at GitHub na trabaho; ang user ay nagte-test at nag-aapruba lang.
 
 ## Mga hard rule (hindi nagbabago)
-- **Merge sa `main` (user 2026-10-30):** ang Beta ay papasok sa `main` (at sa Beta site) LANG sa **GO BETA** ng user sa mismong mensahe ("BETA NA" = GO BETA). **GO STABLE** lang (sa mismong mensahe) ang Stable release at anumang manual na workflow run. Ang GO BETA ay hindi pahintulot sa Stable. Ang push sa working branch ay walang GO (PROJECT_RULES 4).
+- **Merge sa `main` (user 2026-11-03, pumalit sa rule ng 2026-10-30):** ang Beta ay papasok sa `main` (at sa Beta site) nang tuloy-tuloy, WALANG approval ("Ung beta, no need n ng aproval, pra tuloy2 ang flow. Stable lng ang need ng approval."). **GO STABLE** lang (sa mismong mensahe) ang Stable release at anumang manual na workflow run. Ang GO BETA ay hindi pahintulot sa Stable. Ang push sa working branch ay walang GO (PROJECT_RULES 4).
 - **Ebidensya bago claim.** Huwag sabihing naayos / nasubok / na-build kung walang patunay. Ang hindi nasubok ay sinasabing hindi nasubok.
 - **Ito lang na repository.**
 - **Walang tanong na masasagot ng repo** (`document-references/`, drawings, lists). Huwag ipagawa sa user ang kaya mong gawin.

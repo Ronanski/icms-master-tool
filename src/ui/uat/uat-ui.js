@@ -274,7 +274,7 @@
               E('button', {
                 txt: '👁' + (mv === 'ok' ? ' ✔' : mv === 'bad' ? ' ✖' : ''),
                 title: 'Set the sheet up like this case and look at the drawing yourself',
-                on: () => manual(sh, it, k)
+                on: () => UATR.onPage(() => manual(sh, it, k))
               })
             ])
           ])
@@ -381,7 +381,7 @@
         E('button', {
           cls: 'go',
           txt: sbusy ? 'Running...' : '▶ Run ALL scenarios',
-          on: () => runScen(sh, sp.scenarios)
+          on: () => UATR.onPage(() => runScen(sh, sp.scenarios))
         })
       ])
     );
@@ -402,7 +402,7 @@
       d.append(E('div', { cls: 'sub', txt: 'Sa drawing: ' + sc.drawing }));
       d.append(
         E('div', { cls: 'row', style: 'padding:0 10px' }, [
-          E('button', { txt: '▶ Run this one', on: () => runScen(sh, [sc]) })
+          E('button', { txt: '▶ Run this one', on: () => UATR.onPage(() => runScen(sh, [sc])) })
         ])
       );
       if (r) {
@@ -493,7 +493,7 @@
         txt: 'Bawat controller: hinahanap ng app ang malinis na estado mula sa drawing (walang force manual / interlock), tapos A / M / R, MV, SV, trip at pagbalik, at ang sagot ng proseso. Ang inaasahan ay mula sa drawing. Nakatigil ang app habang tumatakbo; 1 ~ 8 min bawat controller.'
       }),
       E('div', { cls: 'row' }, [
-        E('button', { cls: 'go', txt: gbusy ? 'Running...' : '▶ Test ALL controllers', on: () => runGen(sh, tags) })
+        E('button', { cls: 'go', txt: gbusy ? 'Running...' : '▶ Test ALL controllers', on: () => UATR.onPage(() => runGen(sh, tags)) })
       ])
     );
     for (const tag of tags) {
@@ -509,7 +509,7 @@
           E('span', { cls: 'c', txt: x && !x.running && !x.none ? p2 + ' / ' + (p2 + f) : '' })
         ])
       );
-      d.append(E('div', { cls: 'row', style: 'padding:0 10px' }, [E('button', { txt: '▶ Test ' + tag, on: () => runGen(sh, [tag]) })]));
+      d.append(E('div', { cls: 'row', style: 'padding:0 10px' }, [E('button', { txt: '▶ Test ' + tag, on: () => UATR.onPage(() => runGen(sh, [tag])) })]));
       if (x) {
         if (x.trig) d.append(E('div', { cls: 'sub', style: 'padding:0 10px', txt: 'trip input: ' + x.trig }));
         for (const n of x.notes || []) d.append(E('div', { cls: 'sub', style: 'padding:0 10px', txt: '· ' + n }));
@@ -654,7 +654,7 @@
           cls: 'go',
           txt: '▶ Test this sheet',
           on: async () => {
-            await runSheet(sh);
+            await UATR.onPage(() => runSheet(sh));
             build();
           }
         }),
@@ -662,13 +662,13 @@
           cls: 'go',
           txt: '▶ Test ALL sheets',
           on: () => {
-            runAll();
+            UATR.onPage(runAll);
           }
         }),
         E('button', {
           txt: '🎲 Spot check (5)',
           title: '5 random cases with the rule in numbers, the expected and the actual value; check them yourself (calculator / drawing)',
-          on: () => spotCheck(sh, sp)
+          on: () => UATR.onPage(() => spotCheck(sh, sp))
         })
       ])
     );

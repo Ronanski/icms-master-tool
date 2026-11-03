@@ -1292,13 +1292,20 @@ function paint0() {
       }
     }
   }
-  const t = S.rt.t;
-  tClk.textContent =
-    't = ' +
-    Math.floor(t / 60) +
-    ':' +
-    String(Math.floor(t % 60)).padStart(2, '0') +
-    (AN.run && AN.tierK > 1 ? '  · light mode x' + AN.tierK : '');
+  anClock(S);
+}
+/* the plant time in the status bar (t = m:ss). Live test M2 (Mina, Worker f97955e): it was written only by the paint of the Logic page,
+   so on the Plant view (and the Training dock over it) it stood still while RUN; it is written every half second on every page too */
+function anClock(S) {
+  if (!S || !S.rt) return;
+  const t = S.rt.t,
+    x =
+      't = ' +
+      Math.floor(t / 60) +
+      ':' +
+      String(Math.floor(t % 60)).padStart(2, '0') +
+      (AN.run && AN.tierK > 1 ? '  · light mode x' + AN.tierK : '');
+  if (tClk.textContent !== x) tClk.textContent = x;
   tClk.title =
     AN.tierK > 1
       ? 'Slow device: the sheets that are not joined to this one are calculated every ' +
@@ -1306,6 +1313,13 @@ function paint0() {
         'th tick (the whole plant keeps running)'
       : '';
 }
+setInterval(() => {
+  try {
+    if (anShown()) return; /* the Logic page: its paint writes it */
+    const sh = AN.sheets && AN.sheets[AN.i];
+    if (sh && sh.S) anClock(sh.S);
+  } catch (e) {}
+}, 500);
 function cosPopClose() {
   const o = document.getElementById('cospop');
   if (o) {
@@ -1400,7 +1414,7 @@ function cosPop() {
         S.rt.ext[n] = v;
         (sv(sh).ext = sv(sh).ext || {})[n] = v;
         anSave();
-        settle();
+        AN.settle();
       },
       row = h$('div', { style: 'display:flex;gap:6px;margin-top:6px' });
     for (const [t, v] of [
