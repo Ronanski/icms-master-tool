@@ -1640,14 +1640,7 @@
         msg('TCS: ' + e.message);
       }
     });
-    d.head('Field equipment (no DCS signal)');
-    for (const [id, txt, on, ok] of [
-      ['dopstart', 'Diesel oil pump START', true, 'Diesel oil pump running: oil pressure in the header (ABC-028).'],
-      ['dopstop', 'Diesel oil pump STOP', false, 'Diesel oil pump stopped: no oil pressure, no oil to the burners.']
-    ])
-      btn(id, txt, 'Diesel oil pump P-0005 (DITL-31, field start; no running signal on the ABC sheets). Without it the start-up burner oil header (ABC-028 PICDO0005) has no pressure.', () =>
-        msg(AN.field && AN.field('dop', on) ? ok : 'Diesel oil pump: no plant model.')
-      );
+    /* audit A1: the diesel oil pumps are DCS motors (DITL-31): started from their drawing / the Training, not from here */
     d.head('Field valves');
     for (const [id, txt, open, ok] of [
       ['bdclose', 'Drum BLOWDOWN valve CLOSE', false, 'Blowdown closed: no water leaves the drum except the steam.'],
