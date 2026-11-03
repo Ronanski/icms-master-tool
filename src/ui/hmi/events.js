@@ -88,26 +88,8 @@
   const AT = new Map();
   let base = null,
     lastT = -1;
-  const TRO = new WeakMap();
-  /* the TRIP output of a motor drawing ("SEAWATER PUMP A TRIP · CRT (ANN)"; not "TRIP COMMAND", not "TRIP INTERLOCK CONDITION",
-     not "NOT TRIP"), and its RUNNING output */
-  function motOuts(s) {
-    let o = TRO.get(s);
-    if (o && o.nl === s.nl) return o;
-    o = { nl: s.nl, trip: null, run: null };
-    try {
-      for (const x of DUI.outs(s) || []) {
-        const n = String(x.name || '');
-        /* retest #37: not "NO TRIP PRESENT" (DITL-05: 1 when there is NO trip) */
-        if (o.trip == null && /\bTRIP\b/.test(n) && !/COMMAND|INTERLOCK|NOT TRIP|NO TRIP|\bNO\b|\bCMD\b|RESET/.test(n)) o.trip = { row: x.row, name: n.replace(/^Output row \d+ · /, '').replace(/\s+[IO]\.\S+/g, '').replace(/\s*·.*$/, '').trim() };
-        if (o.run == null && /RUNNING/.test(n) && !/NOT RUNNING|STOP|\bANY\b|LOCAL/.test(n)) o.run = { row: x.row };
-      }
-    } catch (e) {}
-    /* a motor drawing only (a RUNNING output too): the MFT sheets have their own trip lines */
-    if (!o.run) o.trip = null;
-    TRO.set(s, o);
-    return o;
-  }
+  /* TRO, motOuts: src/digital/parts/03c-read.js */
+  const motOuts = s => DREAD.motOuts(s);
   /* R9 (beta.48 check): the DITL sheets already scanned since the load. A sheet built later (the sand DITL-777 SYSTEM TRIP = 1 on a cold
      plant: MFT / BOILER STOP and NOT REMOTE CONTROL, E10210-3-777) brings its standing trip as a shutdown alarm, not a NEW one */
   const DSEEN = new Set();
@@ -126,22 +108,8 @@
   }
   const dSheets = () => (typeof S !== 'undefined' && S.sheets ? S.sheets.concat((window.WORLD && WORLD.inst) || []) : []);
   const dnm = s => String((s && s.name) || '').replace(/^\(\d+\)/, '');
-  /* the state of a motor drawing: 'TRIP' / 'RUN' / 'STOP' (null: no motor drawing, or the one world not built). The last state is
-     kept while PAUSED (the drawing holds its values) */
-  function motState(s) {
-    if (!s || !window.DUI || !(window.WORLD && WORLD.on && WORLD.idx)) return null;
-    try {
-      if (!s.nl) s.nl = netlist(s);
-      const o = motOuts(s);
-      if (!o.trip && !o.run) return null;
-      /* retest #34: a field trip (protection relay, dock FIELD TRIP) */
-      if (s._ftrip) return 'TRIP';
-      if (o.trip && DUI.outVal(s, o.trip.row) === 1) return 'TRIP';
-      return o.run && DUI.outVal(s, o.run.row) === 1 ? 'RUN' : 'STOP';
-    } catch (e) {
-      return null;
-    }
-  }
+  /* motState: src/digital/parts/03c-read.js (DUI.motState, no DOM: the unit model reads it too) */
+  const motState = s => DUI.motState(s);
   /* retest #62: the equipment group of an ABC sheet for the shutdown alarm suppression (the lamps of the Training dock, dock.js LAMPS):
      feedwater / condensate = the BFW pumps; steam, turbine, burners, furnace temperature, CCS = the boiler on coal; the rest (air,
      flue gas, furnace pressure) = the fans (ID fan, SA fan, PA fan and a fluidizing air blower). Released 10 min (plant time) after the
@@ -216,6 +184,7 @@
       DSEEN.clear();
       for (const g in grpT) delete grpT[g];
       almScan.first = true;
+      almScan.tk0 = (window.WORLD && WORLD.tk) || 0;
       MOTP.clear();
     }
     lastT = t;
@@ -233,11 +202,16 @@
           if (lv !== 'normal') now.set(sh.name + '|' + b.id, { sh: sh.name, kind: 'ALM', nm: A.nm(S, b.i[0]) || 'ALM #' + b.id, lv });
         }
     }
+    /* Mina #M15: the expansion tank T-1109 HIGH level (alarm list LT-CW1109, PD-021: H 1700 mm / L 800 mm in the DCS): the level is the
+       plant model's (unit.js etAlm, LICW1109), no ABC alarm block reads it. HIGH only: the cold tank stands at L (0.8 m), a shutdown alarm */
+    if (A.unit && A.unit.etAlm === 'H') now.set('U|LICW1109', { sh: 'MAKE-UP WATER', kind: 'ALM', nm: 'LICW1109 expansion tank T-1109 level', lv: 'HIGH' });
     if (window.WORLD && WORLD.on && WORLD.idx)
       for (const s of dSheets()) {
         if (!s.nl) continue;
         const fresh = !DSEEN.has(s.name);
-        DSEEN.add(s.name);
+        /* seen only once the world has scanned it twice since the load (Mina #M1, Worker: the page scans the alarms before the first
+           patch of the engine brings the cold DITL-777 trip, so the sheet was "seen" without it and its standing trip came as NEW) */
+        if (((WORLD.tk || 0) - (almScan.tk0 || 0)) >= 2 || (WORLD.tk || 0) < (almScan.tk0 || 0)) DSEEN.add(s.name);
         const o = motOuts(s);
         if (!o.trip && !s._ftrip) continue;
         if (motState(s) === 'TRIP')

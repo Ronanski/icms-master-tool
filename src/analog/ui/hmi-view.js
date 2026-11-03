@@ -614,7 +614,7 @@ function hmiBuild(w) {
               (sv(bb.sh).man = sv(bb.sh).man || {})[bb.b.id] = s.val;
               anSave();
               hmiSync();
-              settle();
+              AN.settle();
             },
             P2.lo,
             P2.hi,
@@ -1395,7 +1395,7 @@ hmiWrite = function (w, v, rel) {
     if (st.src.k === 'AI') s.act = x;
     (sv(sh).ai = sv(sh).ai || {})[st.src.id] = x;
     anSave();
-    settle();
+    AN.settle();
   }
 };
 function hmiToggleForce(w) {

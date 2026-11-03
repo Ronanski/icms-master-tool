@@ -589,11 +589,8 @@
       A.tank('E', V.LICW1109, 2.4, et);
     };
     tick();
-    let seen = false;
-    const iv = setInterval(
-      () => (g.isConnected ? ((seen = true), tick()) : seen && (clearInterval(iv), A.stop())),
-      500
-    );
+    /* P2: the shared driver, only while the page is on the screen (the scene loop stops with the page) */
+    H.every(g, 500, tick);
     const HIT = {
       PA: [MACH.PA.io, MACH.PA.n + ' ' + MACH.PA.t + ' · DITL-112 (red = running, green = stopped)'],
       PB: [MACH.PB.io, MACH.PB.n + ' ' + MACH.PB.t + ' · DITL-112 #B (red = running, green = stopped)'],

@@ -1450,7 +1450,8 @@
     });
     const pmUpd = () => {
       const on = !!(window.AN && AN.plantOn);
-      pmBtn.textContent = 'Plant model: ' + (on ? 'ON' : 'OFF');
+      const t = 'Plant model: ' + (on ? 'ON' : 'OFF');
+      if (pmBtn.textContent !== t) pmBtn.textContent = t; /* P2: every 300 ms, written only on a change (a hidden Tools page did a DOM write each time) */
       pmBtn.classList.toggle('on', on);
       document.body.classList.toggle('pmoff', !on);
     };
@@ -1588,8 +1589,9 @@
           msg('Plant at 150 MW: ' + n + ' transmitters set from the HMI snapshots. Press Run.');
           if (window.DITL150)
             (AN.ades ? AN.ades() : Promise.resolve())
-              .then(() => {
-                const r = DITL150.apply();
+              /* 3.2.0 Web Worker: DITL150.apply runs in the engine only there and gives a promise of its answer */
+              .then(() => DITL150.apply())
+              .then(r => {
                 if (r) msg('Plant at 150 MW: ' + n + ' ABC transmitters from the HMI snapshots, DITL in service (MFT reset). Press Run.');
               })
               .catch(() => {});

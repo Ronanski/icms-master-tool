@@ -376,7 +376,10 @@
       8,
       'CL'
     );
-    o.push(valve(EX + 45, 540, 1, 'V-CW1001', 'l'));
+    /* Mina's retest step 8: V-CW1001 = the field valve pop-out (fp-pop.js FIELDV, PR-OPE-5002 7.20); red = open, green = closed */
+    o.push(
+      `<g data-hit="CW1001" style="cursor:pointer"><rect x="${EX + 45 - 70}" y="${540 - 12}" width="82" height="24" fill="transparent"/><path d="M${EX + 45 - 7} ${540 - 8} L${EX + 45 + 7} ${540 - 8} L${EX + 45 - 7} ${540 + 8} L${EX + 45 + 7} ${540 + 8} Z" fill="${S.none}" ${OL} data-vl="CW1001"/>${T(EX + 45 - 10, 540 + 3, 'V-CW1001', 'cw8', 'text-anchor="end"')}</g>`
+    );
 
     /* ---------------- ACWP P-1108A / B (DITL-76 / 77): flow right -> left ---------------- */
     o.push(T(820, 600, 'AUX. COOLING WATER PUMPS  (DITL-76 / 77)', 'cw11'));
@@ -695,6 +698,9 @@
         xa.textContent = au == null ? '---' : au ? 'AUTO' : 'MAN';
         xa.style.fill = au == null ? S.none : au ? '#9ff0c4' : '#ffd27a';
       }
+      /* V-CW1001 (field): red = open, green = closed (plant model AN_SRC.field.cw1001) */
+      const cwv = q('[data-vl="CW1001"]');
+      if (cwv) cwv.setAttribute('fill', AN.fieldState ? (AN.fieldState().cw1001 ? S.run : S.stop) : S.none);
       const tv = q('[data-vl="TCV"]');
       if (tv) tv.setAttribute('fill', V.TCV == null ? S.none : V.TCV > 1 ? S.run : S.stop);
       /* the expansion tank water follows LICW1109 (0 ~ 2 m) */
@@ -712,14 +718,15 @@
       }
     };
     tick();
-    let seen = false;
-    const iv = setInterval(() => (g.isConnected ? ((seen = true), tick()) : seen && clearInterval(iv)), 500);
+    /* P2: the shared driver, only while the page is on the screen */
+    HSYM.every(g, 500, tick);
     const HIT = {
       ACA: [MACH.ACA.io, 'ACWP-A P-1108A · DITL-76 (red = running, green = stopped)'],
       ACB: [MACH.ACB.io, 'ACWP-B P-1108B · DITL-77 (red = running, green = stopped)'],
       XV: ['XV-MU1109', 'XV-MU1109 make-up water to expansion tank inlet shut-off · DITL-78 (red = open, green = closed)'],
       TCV: ['TCV-CW1201', 'TCV-CW1201 turbine lube oil temperature control valve · ABC-053 TICLO1002 (red = open, green = closed)'],
       ET: ['LT-CW1109', 'T-1109 expansion tank · LT-CW1109'],
+      CW1001: ['V-CW1001', 'V-CW1001 expansion tank outlet, manual valve (FIELD) (red = open, green = closed)'],
       HXA: ['TT-CW1153', 'H-1107A CCWHE-A (closed cooling water / seawater)'],
       HXB: ['TT-CW1153', 'H-1107B CCWHE-B (closed cooling water / seawater)'],
       HXC: ['TT-CW1153', 'H-1107C CCWHE-C (closed cooling water / seawater)']
@@ -747,13 +754,15 @@
       );
     };
     /* the dock's "Buksan ang faceplate" of a step motor (fp-pop.js LS_FPOP.openAd) */
+    /* the dock's faceplate of a field step (fp: 'F:cw1001', as 'F:mu1033' on MAKE-UP WATER) */
+    (window.LS_FPREG = window.LS_FPREG || {})['F:cw1001'] = { open: () => { const e = q('[data-hit="CW1001"]'); if (e) e.dispatchEvent(new MouseEvent('click')); }, el: () => q('[data-hit="CW1001"]'), n: 'V-CW1001' };
     for (const id in MACH) (window.LS_FPREG = window.LS_FPREG || {})[MACH[id].ad] = { open: () => fpHit(id), el: () => q(`[data-hit="${id}"]`), n: MACH[id].n, cur: () => (AN.unit && AN.unit.on ? AN.unit['acI' + (id === 'ACA' ? 0 : 1)] : null) };
     for (const id in HIT)
       qa(`[data-hit="${id}"]`).forEach(h => {
         const ti = document.createElementNS(NS, 'title');
-        ti.textContent = HIT[id][1] + (MACH[id] || id === 'XV' ? ' · click = faceplate' : ' · click = info card');
+        ti.textContent = HIT[id][1] + (MACH[id] || id === 'XV' || id === 'CW1001' ? ' · click = faceplate' : ' · click = info card');
         h.append(ti);
-        h.addEventListener('click', e => (e.stopPropagation(), MACH[id] ? fpHit(id) : (id === 'XV' && window.LS_FPOP && LS_FPOP.valveTag(HIT[id][0])) || info(HIT[id][0])));
+        h.addEventListener('click', e => (e.stopPropagation(), MACH[id] ? fpHit(id) : ((id === 'XV' || id === 'CW1001') && window.LS_FPOP && LS_FPOP.valveTag(HIT[id][0])) || info(HIT[id][0])));
       });
     for (const id in MACH)
       qa(`[data-mdh="${id}"]`).forEach(h => {
