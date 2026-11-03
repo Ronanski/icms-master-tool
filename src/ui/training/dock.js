@@ -656,7 +656,10 @@
     }
     /* live test #51: the ACW pumps write it "B-AUX. CW PUMP AUTO SELECTED" (DITL-77 row 4, M.1242 AUTO MODE (CRT), memory list STN103):
        a CRT memory row of a motor drawing only (the drain valves DITL-73 / 80 / 88 ... have their own AUTO SELECTED) */
-    const motor = !o && call(() => DUI.outs(ds).some(q => /RUNNING/.test(q.name) && !/NOT RUNNING/.test(q.name)), false);
+    /* a motor drawing: a RUNNING output, or a START push button row (Mina #M28: DITL-76, ACWP-A, had no AUTO chip: its outputs do not say
+       RUNNING); the drain valves (DITL-73 / 80 / 88) have OPEN / CLOSE push buttons, not START */
+    const motor =
+      !o && (call(() => DUI.outs(ds).some(q => /RUNNING/.test(q.name) && !/NOT RUNNING/.test(q.name)), false) || call(() => pbRow(ds, /\bSTART\b/) >= 0, false));
     for (let r = 0; r < 60 && !o && motor; r++) {
       const I = rowInfo(ds, r);
       if (/\bAUTO SELECTED\b/.test(I.svc) && !/REMOTE|START/.test(I.svc) && /^M\.[0-9A-F]{4}$/.test(I.tag || '')) o = { s: ds, row: r, svc: svcN(I.svc) };
