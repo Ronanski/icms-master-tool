@@ -644,7 +644,6 @@ function anUnitStart() {
   U.tco = null; /* 3.2.0-beta.66: the oil-only state of the snapshot (tcs.js tcsOilState) starts again */
   U.tc = null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
   /* 3.2.0-beta.14: the snapshot plant has its diesel oil pump in service (source.js field equipment) */
-  AN_SRC.field.dop = true;
   AN_SRC.field.hypo = true;
   AN_SRC.field.pur = true;
   AN_SRC.field.mu1033 = false;
@@ -690,7 +689,6 @@ function anUnitCold() {
   for (const h of U.sh) h.x = U.Tamb;
   for (const L of U.tbed || []) anUnitWrite(L, U.Tamb);
   /* 3.2.0-beta.14: cold = the field equipment stopped too (diesel oil pump, source.js) */
-  AN_SRC.field.dop = false;
   AN_SRC.field.hypo = false;
   AN_SRC.field.pur = false;
   AN_SRC.field.mu1033 = false;

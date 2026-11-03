@@ -22068,7 +22068,6 @@ function anUnitStart() {
   U.tco = null; /* 3.2.0-beta.66: the oil-only state of the snapshot (tcs.js tcsOilState) starts again */
   U.tc = null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
   /* 3.2.0-beta.14: the snapshot plant has its diesel oil pump in service (source.js field equipment) */
-  AN_SRC.field.dop = true;
   AN_SRC.field.hypo = true;
   AN_SRC.field.pur = true;
   AN_SRC.field.mu1033 = false;
@@ -22114,7 +22113,6 @@ function anUnitCold() {
   for (const h of U.sh) h.x = U.Tamb;
   for (const L of U.tbed || []) anUnitWrite(L, U.Tamb);
   /* 3.2.0-beta.14: cold = the field equipment stopped too (diesel oil pump, source.js) */
-  AN_SRC.field.dop = false;
   AN_SRC.field.hypo = false;
   AN_SRC.field.pur = false;
   AN_SRC.field.mu1033 = false;
@@ -23705,7 +23703,12 @@ function tcsStep(U, dt) {
   if (!c) return;
   const tb = U.tb,
     s = tcsSteam(U);
-  /* aux steam header: from the main steam through MV-AS1391 (PCV to 10 kg/cm2, PR-OPE-5002 5708 aux 10 ksc) */
+  /* aux steam header: from the main steam through MV-AS1391 (PCV to 10 kg/cm2, PR-OPE-5002 5708 aux 10 ksc); audit A3: with the one world
+     the valve is its DCS drawing DITL-51 (IO list STN102 O.0160 / O.0161, AI0752 ZT-AS1391) */
+  {
+    const p51 = typeof anDitlPos === 'function' ? anDitlPos('DITL-51', 0) : null;
+    if (p51 != null) c.asv = p51 > 0;
+  }
   const PaSS = c.asv ? Math.max(0, Math.min(10.5, U.Pd - 1)) : 0;
   c.Pa += ((PaSS - c.Pa) * dt) / TCS.tauAux;
   if (c.Pa < 7) c.gland = c.gland && c.Pa > 5;
@@ -24163,7 +24166,7 @@ function tcsState() {
    The machines that have no DCS signal (diesel oil pump P-0005, DITL-31) are FIELD equipment: AN.field (Start ▾ > Field equipment).
    Numbers marked ASSUMED are not in the repository. */
 const AN_SRC = {
-  field: { dop: true, hypo: true, pur: true, mu1033: false, esp: true, cw1001: true, lhd: false } /* 3.2.0 retest #33: hypochlorite pump (no DCS signal); R9 #77: turbine oil purifier pump P-n941 (local); live test 2026-10-30 #23: V-MU1033 expansion tank bypass (manual valve, PD-021) */,
+  field: { hypo: true, pur: true, mu1033: false, esp: true, cw1001: true, lhd: false } /* 3.2.0 retest #33: hypochlorite pump (no DCS signal); R9 #77: turbine oil purifier pump P-n941 (local); live test 2026-10-30 #23: V-MU1033 expansion tank bypass (manual valve, PD-021) */,
   Tamb: 30,
   st: null,
   t: -1,
@@ -24232,7 +24235,8 @@ function srcState(t0) {
       sar: U.saN >= 0 && U.sa0 > 0 && U.tafS ? srcCl((+U.tafS.rt.v[U.saN] || 0) / U.sa0) : 1,
       fab: srcBit(['M.3308', 'M.3309']),
       cep: srcBit(['M.3350', 'M.3351']),
-      dop: AN_SRC.field.dop ? 1 : 0
+      /* audit A1: the diesel oil pumps M-0702A / B are DCS motors (DITL-31; IO list STN105 O.0040 / O.0360, I.0003 / I.0323) */
+      dop: typeof anDitlRun === 'function' && (anDitlRun('DITL-31') === 1 || anDitlRun('DITL-31 #B') === 1) ? 1 : 0
     };
   /* cold reheat: the hot reheat pressure plus the reheater pressure drop (design 36.6 -> 35.1 kg/cm2 at MCR, SECT_7) */
   s.Pcrh = s.Prh * (36.6 / 35.1);
@@ -32254,7 +32258,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.91';
-      c3.textContent += ' · build d74bcfe'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 45d0c03'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -48430,9 +48434,15 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       b = addrList(cellTxt(s, i, 'S'));
     return !a.length || (b.length > a.length && b[0] === a[0]) ? b : a;
   };
+  /* audit A2 (2026-11-03): DITL-22 "BFWP A AUX. LUB. OIL PUMP" is drawn for FOUR pumps, two per feedwater pump (row 2 "I.0050/370
+     I.0053/373"; IO list Station 103: I.0050 / O.0126 LOP A of BFWP-A, I.0370 / O.0446 LOP B of BFWP-A, I.0053 / O.0127 LOP A of
+     BFWP-B, I.0373 / O.0447 LOP B of BFWP-B). Machine k: BFWP letter k >> 1, LOP letter k & 1; a list of two addresses is per BFWP */
+  const isLop4 = s => !!s && /\)DITL-22$/.test(s.name);
+  const lopIdx = (k, n) => (n >= 4 ? k : n === 2 ? k >> 1 : 0);
   /* the machines of a sheet: the note of the drawing, and the longest address list */
   function machinesOf(s) {
     if (s._mach !== undefined) return s._mach;
+    if (isLop4(s)) return (s._mach = 4);
     const t = txtOf(s);
     let n = 1;
     if (/DIAGRAM IS (?:THE )?SAME|SAME\s+FOR\b|^\s*FOR\s+.*\b[B-D]\b/im.test(t)) {
@@ -48534,6 +48544,10 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   W.remap = (s, t) => {
     const I = s && s._inst;
     if (!I || !I.k) return t;
+    if (isLop4(I.base)) {
+      const sw = L => ({ A: 'B', B: 'A' })[L.toUpperCase()] || L;
+      return String(t || '').replace(/\b(BFWP|LOP)(\s*-?\(?)([A-D])(?![A-Z0-9])/gi, (m, w, sp, L) => w + sp + (/BFWP/i.test(w) ? (I.k >= 2 ? sw(L) : L) : I.k & 1 ? sw(L) : L));
+    }
     return String(t || '').replace(MRX, (m, L) => {
       if (!relative(I.base, m)) return m;
       const u = L.toUpperCase(),
@@ -48548,10 +48562,11 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     /* live test #56: machine A (k 0) of a drawing for several machines keeps its own address of the list too */
     if (!I || !t || (!I.k && !(I.n > 1))) return t;
     let x = W.remap(s, t);
-    const la = addrList(t);
-    if (la.length > 1 && la[I.k]) {
+    const la = addrList(t),
+      ix = isLop4(I.base) ? lopIdx(I.k, la.length) : I.k;
+    if (la.length > 1 && la[ix]) {
       let first = true;
-      x = x.replace(LRXG, () => (first ? ((first = false), la[I.k]) : '')).replace(/\s{2,}/g, ' ');
+      x = x.replace(LRXG, () => (first ? ((first = false), la[ix]) : '')).replace(/\s{2,}/g, ' ');
     }
     return x;
   };
@@ -48569,6 +48584,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
           if (o.length === 1) return o[0];
         }
     }
+    if (I && isLop4(b)) return la[lopIdx(I.k, la.length)] || la[0] || null;
     return la[I ? I.k : 0] || la[0] || null;
   };
   /* index of every link, built once when the world is turned on */
@@ -49417,9 +49433,9 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     for (const e of ['3', '4']) L.push(['TT-CW1108-' + p + e, mtOf('TT-CW1108-' + p + e), 100, 'hi', 0, 2]);
     for (const e of ['U', 'V', 'W']) L.push(['TT-CW1108-' + p + e, mtOf('TT-CW1108-' + p + e), 165, 'hi', 0, 2]);
   }
-  /* Mina M3 (beta.88 / beta.89: PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"). The auxiliary lube oil pump of each BFWP is a DCS
-     motor: DITL-22 "BFWP A AUX. LUB. OIL PUMP" (IO list STN103 O.0126 MOR-P1115A1 start, I.0050 running; machine B DITL-22 #B,
-     O.0446, I.0370). The lube oil HEADER pressure is held by the pressure control valve at 2.0 kg/cm2(g) while an oil pump runs (KSB
+  /* Mina M3 (beta.88 / beta.89: PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"). Each BFWP has two auxiliary lube oil pumps, DCS
+     motors of DITL-22 (IO list STN103: machine A = LOP A of BFWP-A O.0126 / I.0050, B = LOP B of BFWP-A O.0446 / I.0370, C = LOP A of
+     BFWP-B O.0127 / I.0053, D = LOP B of BFWP-B O.0447 / I.0373; world.js isLop4). The lube oil HEADER pressure is held by the pressure control valve at 2.0 kg/cm2(g) while an oil pump runs (KSB
      "30 LPM lube oil system" O&M manual, o&m-package-phase-1/L7 BFP/D .../5 LOS-O&M MANUAL, p.13 Annexure-I: lube oil supply 2.0,
      pump delivery 6.0; KSB P&ID PR 73691 B: supply 1.5 ~ 2 kg/cm2(g)); 0 with the pump stopped (PR-OPE-5002 section 20: the LOP is
      started before the BFP). The header switches (Annexure-II 24.1 < 1.5, 24.3 < 1.0; memory list STN103 I.0090 / I.0410 and
@@ -49428,16 +49444,19 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
      held by the pressure control valve AT that set point (Annexure-I "Pressure Control valve (Upstream) Lube oil supply 2.0"), so it
      makes when the header reaches 2.0 ('ge'). The MOP of the skid: no DCS signal, not modelled */
   const runOf = (re, k) => {
-    const s = (runOf.c = runOf.c || {})[re + k] || (W.inst || []).concat((typeof S !== 'undefined' && S.sheets) || []).find(x => new RegExp('\\)' + re + (k === 'B' ? ' #B' : '') + '$').test(x.name));
+    const s = (runOf.c = runOf.c || {})[re + k] || (W.inst || []).concat((typeof S !== 'undefined' && S.sheets) || []).find(x => new RegExp('\\)' + re + (k && k !== 'A' ? ' #' + k : '') + '$').test(x.name));
     if (!s) return null;
     runOf.c[re + k] = s;
     const r = (s._runR = s._runR !== undefined ? s._runR : (window.DUI && DUI.outs(s).find(q => /\bRUNNING\b/.test(q.name) && !/NOT RUNNING/.test(q.name))) || null);
     const o = W._o && W._o[s.name];
     return r && o ? (o.has ? o.has(r.row) : o.includes(r.row)) : null;
   };
+  /* audit A2: the header of BFWP-A is fed by LOP A or LOP B of BFWP-A (DITL-22 machines A, B), of BFWP-B by DITL-22 machines C, D */
   const lopP = k => () => {
-    const a = runOf('DITL-22', k);
-    return a ? 2.0 : a === false ? 0 : NaN;
+    const [m1, m2] = k === 'A' ? ['A', 'B'] : ['C', 'D'],
+      a = runOf('DITL-22', m1),
+      b = runOf('DITL-22', m2);
+    return a || b ? 2.0 : a === false && b === false ? 0 : NaN;
   };
   /* DITL-23A / DITL-22 write the rows by address: matched by the address and the word LUB (the 7th field; other stations reuse it) */
   for (const [k, a1, a2, a3] of [['A', 'I.0090', 'I.0091', 'I.0092'], ['B', 'I.0410', 'I.0411', 'I.0412']]) L.push([a2, lopP(k), 2.0, 'ge', 0, 0, /\bLUB/], [a1, lopP(k), 1.5, 'lo', 0, 0 /* no dead band: the pressure steps 0 / 2.0 */, /\bLUB/], [a3, lopP(k), 1.0, 'lo', 0, 0, /\bLUB/]);
@@ -67856,7 +67875,6 @@ function anUnitStart() {
   U.tco = null; /* 3.2.0-beta.66: the oil-only state of the snapshot (tcs.js tcsOilState) starts again */
   U.tc = null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
   /* 3.2.0-beta.14: the snapshot plant has its diesel oil pump in service (source.js field equipment) */
-  AN_SRC.field.dop = true;
   AN_SRC.field.hypo = true;
   AN_SRC.field.pur = true;
   AN_SRC.field.mu1033 = false;
@@ -67902,7 +67920,6 @@ function anUnitCold() {
   for (const h of U.sh) h.x = U.Tamb;
   for (const L of U.tbed || []) anUnitWrite(L, U.Tamb);
   /* 3.2.0-beta.14: cold = the field equipment stopped too (diesel oil pump, source.js) */
-  AN_SRC.field.dop = false;
   AN_SRC.field.hypo = false;
   AN_SRC.field.pur = false;
   AN_SRC.field.mu1033 = false;
@@ -69495,7 +69512,12 @@ function tcsStep(U, dt) {
   if (!c) return;
   const tb = U.tb,
     s = tcsSteam(U);
-  /* aux steam header: from the main steam through MV-AS1391 (PCV to 10 kg/cm2, PR-OPE-5002 5708 aux 10 ksc) */
+  /* aux steam header: from the main steam through MV-AS1391 (PCV to 10 kg/cm2, PR-OPE-5002 5708 aux 10 ksc); audit A3: with the one world
+     the valve is its DCS drawing DITL-51 (IO list STN102 O.0160 / O.0161, AI0752 ZT-AS1391) */
+  {
+    const p51 = typeof anDitlPos === 'function' ? anDitlPos('DITL-51', 0) : null;
+    if (p51 != null) c.asv = p51 > 0;
+  }
   const PaSS = c.asv ? Math.max(0, Math.min(10.5, U.Pd - 1)) : 0;
   c.Pa += ((PaSS - c.Pa) * dt) / TCS.tauAux;
   if (c.Pa < 7) c.gland = c.gland && c.Pa > 5;
@@ -69955,7 +69977,7 @@ function tcsState() {
    The machines that have no DCS signal (diesel oil pump P-0005, DITL-31) are FIELD equipment: AN.field (Start ▾ > Field equipment).
    Numbers marked ASSUMED are not in the repository. */
 const AN_SRC = {
-  field: { dop: true, hypo: true, pur: true, mu1033: false, esp: true, cw1001: true, lhd: false } /* 3.2.0 retest #33: hypochlorite pump (no DCS signal); R9 #77: turbine oil purifier pump P-n941 (local); live test 2026-10-30 #23: V-MU1033 expansion tank bypass (manual valve, PD-021) */,
+  field: { hypo: true, pur: true, mu1033: false, esp: true, cw1001: true, lhd: false } /* 3.2.0 retest #33: hypochlorite pump (no DCS signal); R9 #77: turbine oil purifier pump P-n941 (local); live test 2026-10-30 #23: V-MU1033 expansion tank bypass (manual valve, PD-021) */,
   Tamb: 30,
   st: null,
   t: -1,
@@ -70024,7 +70046,8 @@ function srcState(t0) {
       sar: U.saN >= 0 && U.sa0 > 0 && U.tafS ? srcCl((+U.tafS.rt.v[U.saN] || 0) / U.sa0) : 1,
       fab: srcBit(['M.3308', 'M.3309']),
       cep: srcBit(['M.3350', 'M.3351']),
-      dop: AN_SRC.field.dop ? 1 : 0
+      /* audit A1: the diesel oil pumps M-0702A / B are DCS motors (DITL-31; IO list STN105 O.0040 / O.0360, I.0003 / I.0323) */
+      dop: typeof anDitlRun === 'function' && (anDitlRun('DITL-31') === 1 || anDitlRun('DITL-31 #B') === 1) ? 1 : 0
     };
   /* cold reheat: the hot reheat pressure plus the reheater pressure drop (design 36.6 -> 35.1 kg/cm2 at MCR, SECT_7) */
   s.Pcrh = s.Prh * (36.6 / 35.1);
@@ -73995,9 +74018,15 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
       b = addrList(cellTxt(s, i, 'S'));
     return !a.length || (b.length > a.length && b[0] === a[0]) ? b : a;
   };
+  /* audit A2 (2026-11-03): DITL-22 "BFWP A AUX. LUB. OIL PUMP" is drawn for FOUR pumps, two per feedwater pump (row 2 "I.0050/370
+     I.0053/373"; IO list Station 103: I.0050 / O.0126 LOP A of BFWP-A, I.0370 / O.0446 LOP B of BFWP-A, I.0053 / O.0127 LOP A of
+     BFWP-B, I.0373 / O.0447 LOP B of BFWP-B). Machine k: BFWP letter k >> 1, LOP letter k & 1; a list of two addresses is per BFWP */
+  const isLop4 = s => !!s && /\)DITL-22$/.test(s.name);
+  const lopIdx = (k, n) => (n >= 4 ? k : n === 2 ? k >> 1 : 0);
   /* the machines of a sheet: the note of the drawing, and the longest address list */
   function machinesOf(s) {
     if (s._mach !== undefined) return s._mach;
+    if (isLop4(s)) return (s._mach = 4);
     const t = txtOf(s);
     let n = 1;
     if (/DIAGRAM IS (?:THE )?SAME|SAME\s+FOR\b|^\s*FOR\s+.*\b[B-D]\b/im.test(t)) {
@@ -74099,6 +74128,10 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
   W.remap = (s, t) => {
     const I = s && s._inst;
     if (!I || !I.k) return t;
+    if (isLop4(I.base)) {
+      const sw = L => ({ A: 'B', B: 'A' })[L.toUpperCase()] || L;
+      return String(t || '').replace(/\b(BFWP|LOP)(\s*-?\(?)([A-D])(?![A-Z0-9])/gi, (m, w, sp, L) => w + sp + (/BFWP/i.test(w) ? (I.k >= 2 ? sw(L) : L) : I.k & 1 ? sw(L) : L));
+    }
     return String(t || '').replace(MRX, (m, L) => {
       if (!relative(I.base, m)) return m;
       const u = L.toUpperCase(),
@@ -74113,10 +74146,11 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
     /* live test #56: machine A (k 0) of a drawing for several machines keeps its own address of the list too */
     if (!I || !t || (!I.k && !(I.n > 1))) return t;
     let x = W.remap(s, t);
-    const la = addrList(t);
-    if (la.length > 1 && la[I.k]) {
+    const la = addrList(t),
+      ix = isLop4(I.base) ? lopIdx(I.k, la.length) : I.k;
+    if (la.length > 1 && la[ix]) {
       let first = true;
-      x = x.replace(LRXG, () => (first ? ((first = false), la[I.k]) : '')).replace(/\s{2,}/g, ' ');
+      x = x.replace(LRXG, () => (first ? ((first = false), la[ix]) : '')).replace(/\s{2,}/g, ' ');
     }
     return x;
   };
@@ -74134,6 +74168,7 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
           if (o.length === 1) return o[0];
         }
     }
+    if (I && isLop4(b)) return la[lopIdx(I.k, la.length)] || la[0] || null;
     return la[I ? I.k : 0] || la[0] || null;
   };
   /* index of every link, built once when the world is turned on */
@@ -74984,9 +75019,9 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
     for (const e of ['3', '4']) L.push(['TT-CW1108-' + p + e, mtOf('TT-CW1108-' + p + e), 100, 'hi', 0, 2]);
     for (const e of ['U', 'V', 'W']) L.push(['TT-CW1108-' + p + e, mtOf('TT-CW1108-' + p + e), 165, 'hi', 0, 2]);
   }
-  /* Mina M3 (beta.88 / beta.89: PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"). The auxiliary lube oil pump of each BFWP is a DCS
-     motor: DITL-22 "BFWP A AUX. LUB. OIL PUMP" (IO list STN103 O.0126 MOR-P1115A1 start, I.0050 running; machine B DITL-22 #B,
-     O.0446, I.0370). The lube oil HEADER pressure is held by the pressure control valve at 2.0 kg/cm2(g) while an oil pump runs (KSB
+  /* Mina M3 (beta.88 / beta.89: PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"). Each BFWP has two auxiliary lube oil pumps, DCS
+     motors of DITL-22 (IO list STN103: machine A = LOP A of BFWP-A O.0126 / I.0050, B = LOP B of BFWP-A O.0446 / I.0370, C = LOP A of
+     BFWP-B O.0127 / I.0053, D = LOP B of BFWP-B O.0447 / I.0373; world.js isLop4). The lube oil HEADER pressure is held by the pressure control valve at 2.0 kg/cm2(g) while an oil pump runs (KSB
      "30 LPM lube oil system" O&M manual, o&m-package-phase-1/L7 BFP/D .../5 LOS-O&M MANUAL, p.13 Annexure-I: lube oil supply 2.0,
      pump delivery 6.0; KSB P&ID PR 73691 B: supply 1.5 ~ 2 kg/cm2(g)); 0 with the pump stopped (PR-OPE-5002 section 20: the LOP is
      started before the BFP). The header switches (Annexure-II 24.1 < 1.5, 24.3 < 1.0; memory list STN103 I.0090 / I.0410 and
@@ -74995,16 +75030,19 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
      held by the pressure control valve AT that set point (Annexure-I "Pressure Control valve (Upstream) Lube oil supply 2.0"), so it
      makes when the header reaches 2.0 ('ge'). The MOP of the skid: no DCS signal, not modelled */
   const runOf = (re, k) => {
-    const s = (runOf.c = runOf.c || {})[re + k] || (W.inst || []).concat((typeof S !== 'undefined' && S.sheets) || []).find(x => new RegExp('\\)' + re + (k === 'B' ? ' #B' : '') + '$').test(x.name));
+    const s = (runOf.c = runOf.c || {})[re + k] || (W.inst || []).concat((typeof S !== 'undefined' && S.sheets) || []).find(x => new RegExp('\\)' + re + (k && k !== 'A' ? ' #' + k : '') + '$').test(x.name));
     if (!s) return null;
     runOf.c[re + k] = s;
     const r = (s._runR = s._runR !== undefined ? s._runR : (window.DUI && DUI.outs(s).find(q => /\bRUNNING\b/.test(q.name) && !/NOT RUNNING/.test(q.name))) || null);
     const o = W._o && W._o[s.name];
     return r && o ? (o.has ? o.has(r.row) : o.includes(r.row)) : null;
   };
+  /* audit A2: the header of BFWP-A is fed by LOP A or LOP B of BFWP-A (DITL-22 machines A, B), of BFWP-B by DITL-22 machines C, D */
   const lopP = k => () => {
-    const a = runOf('DITL-22', k);
-    return a ? 2.0 : a === false ? 0 : NaN;
+    const [m1, m2] = k === 'A' ? ['A', 'B'] : ['C', 'D'],
+      a = runOf('DITL-22', m1),
+      b = runOf('DITL-22', m2);
+    return a || b ? 2.0 : a === false && b === false ? 0 : NaN;
   };
   /* DITL-23A / DITL-22 write the rows by address: matched by the address and the word LUB (the 7th field; other stations reuse it) */
   for (const [k, a1, a2, a3] of [['A', 'I.0090', 'I.0091', 'I.0092'], ['B', 'I.0410', 'I.0411', 'I.0412']]) L.push([a2, lopP(k), 2.0, 'ge', 0, 0, /\bLUB/], [a1, lopP(k), 1.5, 'lo', 0, 0 /* no dead band: the pressure steps 0 / 2.0 */, /\bLUB/], [a3, lopP(k), 1.0, 'lo', 0, 0, /\bLUB/]);
@@ -81221,14 +81259,7 @@ body.app2 #gdtrb[hidden]{display:none!important}
         msg('TCS: ' + e.message);
       }
     });
-    d.head('Field equipment (no DCS signal)');
-    for (const [id, txt, on, ok] of [
-      ['dopstart', 'Diesel oil pump START', true, 'Diesel oil pump running: oil pressure in the header (ABC-028).'],
-      ['dopstop', 'Diesel oil pump STOP', false, 'Diesel oil pump stopped: no oil pressure, no oil to the burners.']
-    ])
-      btn(id, txt, 'Diesel oil pump P-0005 (DITL-31, field start; no running signal on the ABC sheets). Without it the start-up burner oil header (ABC-028 PICDO0005) has no pressure.', () =>
-        msg(AN.field && AN.field('dop', on) ? ok : 'Diesel oil pump: no plant model.')
-      );
+    /* audit A1: the diesel oil pumps are DCS motors (DITL-31): started from their drawing / the Training, not from here */
     d.head('Field valves');
     for (const [id, txt, open, ok] of [
       ['bdclose', 'Drum BLOWDOWN valve CLOSE', false, 'Blowdown closed: no water leaves the drum except the steam.'],
@@ -85296,6 +85327,7 @@ window.LS_LIVE = (function () {
   const DK = () => window.LS_DOCK;
   const DC = (want, ok, now) => ({ sig: [], res: () => true, ok: () => !!(DK() && ok()), now: () => (DK() ? now() : '—'), want, go: {} });
   const dRun = nm => DK().runOut(nm) === 1;
+  const LOP4 = ['DITL-22', 'DITL-22 #B', 'DITL-22 #C', 'DITL-22 #D'];
   const dOut = (nm, r) => DK().dout(nm, r) === 1;
   const dIn = (nm, r) => {
     const s = DK().dOf(nm);
@@ -85422,17 +85454,20 @@ window.LS_LIVE = (function () {
     [17, /^Open Biasing damper to 100% at Reheater and Superheater/i, ALL(MV('HICHR1002A', 95, null), MV('HICHR1002B', 95, null))],
     [18, /initiate START to selected CEP/i, RUN.CEP],
     [18, /FCV-CD1120 to MANUAL and ADJUST to 60/i, ALL(MODE('FCV-CD1120', 'MAN'), MV('FCV-CD1120', 55, 65))],
-    [18, /set the standby CEP to REMOTE/i, RUN.CEP],
+    [18, /set the standby CEP to REMOTE/i, DC('the standby CEP in REMOTE + AUTO (DITL-61A rows 5 / 4)', () => [['DITL-61A', 'DITL-61A #B'], ['DITL-61A #B', 'DITL-61A']].some(([r, s]) => dRun(r) && !dRun(s) && dIn(s, 3) && dIn(s, 4)), () => ['DITL-61A', 'DITL-61A #B'].map((nm, j) => 'CEP-' + 'AB'[j] + (dRun(nm) ? ' RUN' : (dIn(nm, 4) ? ' REM' : ' LOC') + (dIn(nm, 3) ? ' AUTO' : ' MAN'))).join(', '))] /* audit B6 */,
     [18, /Set SV to 150 T\/H and Set to AUTO/i, ALL(MODE('FCV-CD1120', 'AUTO'), SV('FCV-CD1120', 140, 160, 'T/H'))],
     [18, /set LCV-MU1110 to AUTO/i, MODE('LCV-MU1110', 'AUTO')],
     [19, /Set Deaerator Level control valve \(LCV-CD1104\) to AUTO/i, ALL(MODE('LCV-CD1104', 'AUTO'), SV('LCV-CD1104', -20, 20, 'mm'))],
-    [20, /^Initiate START of LOP of BFP/i, DC('BFWP aux. lube oil pump running (DITL-22)', () => !!(dRun('DITL-22') || dRun('DITL-22 #B')), () => 'aux. LOP A ' + (dRun('DITL-22') ? 'RUN' : 'STOP') + ', B ' + (dRun('DITL-22 #B') ? 'RUN' : 'STOP'))] /* Mina M3: DCS motor DITL-22 */,
+    [20, /^Initiate START of LOP of BFP/i, DC('a BFWP aux. lube oil pump running (DITL-22)', () => LOP4.some(nm => dRun(nm)), () => LOP4.map((nm, j) => ['A/A', 'B/A', 'A/B', 'B/B'][j] + ' ' + (dRun(nm) ? 'RUN' : 'STOP')).join(', '))] /* audit A2: the four aux. LOPs, DCS motors of DITL-22 */,
+    [20, /^Set the selected standby BFP LOP to AUTO/i, DC('the standby aux. LOP in AUTO (DITL-22 row 6 AUTO MODE SELECTED)', () => [[0, 1], [2, 3]].some(([a, b]) => (dRun(LOP4[a]) && !dRun(LOP4[b]) && dIn(LOP4[b], 5)) || (dRun(LOP4[b]) && !dRun(LOP4[a]) && dIn(LOP4[a], 5))), () => LOP4.map((nm, j) => ['A/A', 'B/A', 'A/B', 'B/B'][j] + (dIn(nm, 5) ? ' AUTO' : ' MAN')).join(', '))],
     [20, /Initiate START to selected BFP/i, RUN.BFP],
     [20, /SET FCV-FW1130-2 to MANUAL/i, MODE('FCV-FW1130-2', 'MAN')],
     [20, /^Drum level \(-150mm\)/i, HOLD(30, VAL('lvl', -200, -100))],
     [22, /Ensure Secondary and Primary Air Damper are 100% OPEN/i, ALL(MV('FICFA1081', 95, null), MV('FICFA1071', 95, null))],
     /* audit 2026-11-03 (no_cheat C): the CRO items of PR-OPE-5002 that name a tag of the app tick from that tag (the SOP's own numbers) */
     [23, /Ensure Fluidizing Air Damper is at least 25% OPEN/i, DC('Fluidizing air damper FCV-FA1055-A1 or -B1 ≥ 25 %', () => [MV('FICFA1055A', 25, null), MV('FICFA1055B', 25, null)].some(c => c.ok()), () => 'FCV-FA1055-A1 / -B1 (FICFA1055A / B MV)')],
+    [21, /^Initiate START on selected Diesel oil pump/i, DC('a diesel oil pump running (DITL-31)', () => dRun('DITL-31') || dRun('DITL-31 #B'), () => 'DOP A ' + (dRun('DITL-31') ? 'RUN' : 'STOP') + ', B ' + (dRun('DITL-31 #B') ? 'RUN' : 'STOP'))] /* audit A1 */,
+    [21, /^Set standby diesel oil pump to AUTO/i, DC('the standby diesel oil pump in AUTO (DITL-31 row 9)', () => (dRun('DITL-31') && !dRun('DITL-31 #B') && dIn('DITL-31 #B', 8)) || (dRun('DITL-31 #B') && !dRun('DITL-31') && dIn('DITL-31', 8)), () => 'DOP A ' + (dIn('DITL-31', 8) ? 'AUTO' : 'MAN') + ', B ' + (dIn('DITL-31 #B', 8) ? 'AUTO' : 'MAN'))],
     [21, /^Fully OPEN FCV-DO1012 and Set to manual/i, MV('FCV-DO1012', 99, null)],
     [21, /^Decrease opening of PCV-DO0002/i, ALL(MODE('PICDO0005', 'MAN'), PV('PICDO0005', 12.5, null, 'kg/cm2'))] /* SOP 21.16 / 21.17: PCV-DO0002 in manual, PI-D00005 = 12.5 kg/cm2 */,
     [24, /^> ?1200 ?mmH2O = with bed/i, VAL('SAP', 1200, null)],
@@ -86065,7 +86100,11 @@ window.LS_GUIDE = (function () {
   };
   /* P2 #13: a single-valve MOV drawing (DITL-54 start-up ejector MV-AS1395, DITL-55 steam jet air ejector MV-AS1396, DITL-56 vacuum
      breaker MV-AV1391): OPEN / CLOSE P.B. rows of the drawing (0-based), the position of the DITL valve model */
-  const movS = nm => (typeof S !== 'undefined' ? S.sheets.find(x => x.name.endsWith(')' + nm)) : null);
+  const dInG = (nm, r) => {
+    const s = movS(nm) || (window.LS_DOCK && LS_DOCK.dOf(nm));
+    return !!s && window.DUI && DUI.rowVal(s, r) === 1;
+  };
+  const movS = nm => (typeof S !== 'undefined' ? S.sheets.find(x => x.name === nm || x.name.endsWith(')' + nm)) : null);
   const movPos = nm => {
     const x = movS(nm);
     return x && typeof MST !== 'undefined' && MST[x.name] && MST[x.name][0] ? +MST[x.name][0].pos : 0;
@@ -86443,14 +86482,14 @@ window.LS_GUIDE = (function () {
       /* Mina beta.89 Step 20 (item 14 "Initiate START to selected CEP" had no START here and the field confirm closed the step with the CEP
          stopped): PR-OPE-5002 section 18 items 1 ~ 12 are the field part before the DCS steps (FCV-CD1120 MAN, CEP START, FCV-CD1120 AUTO
          are the next steps); items 19 ~ 26 (chemical dosing) after them */
-      FIELD1(1, 'Hotwell filling line-up (field)', [17], { it: [0, 11] }),
+      FIELD1(1, 'Hotwell filling line-up (field)', [17], { it: [0, 11], a: [movB('DITL-60', 'MV-MU1001', 1, 2, 11), movB('DITL-60', 'MV-MU1001', 0, 2, 11)] }) /* audit B2: PR-OPE-5002 18.3 / 18.8 hotwell filling MOV MV-MU1001 on its DCS drawing DITL-60 (IO list STN102 O.017A / O.017B); its flow is not modelled (series or bypass of LCV-MU1110: not readable on the documents) */,
       { st: 1, sec: 18, t: 'Hotwell level control LCV-MU1110 in AUTO', d: 'The make-up valve now holds the condenser hotwell level.', c: b.MODE('LCV-MU1110', 'AUTO'), fps: ['LCV-MU1110'], a: [btn('A (AUTO)', () => A.auto('LCV-MU1110'))] },
       { st: 1, sec: 18, t: 'Condensate recirculation FCV-CD1120: MANUAL, MV 60 %', d: 'Open the recirculation first so the condensate pump has flow when it starts.', c: b.ALL(b.MODE('FCV-CD1120', 'MAN'), b.MV('FCV-CD1120', 55, 65)), fps: ['FCV-CD1120'], a: [btn('M, MV 60 %', () => A.man('FCV-CD1120', 60))] },
       { st: 1, sec: 18, t: 'Start the condensate pump (CEP)', d: 'The condensate pump sends water from the hotwell to the deaerator. It is also needed for the vacuum later.', c: R.CEP, a: [mot('M.3350', 'CEP-A'), mot('M.3351', 'CEP-B')] },
       { st: 1, sec: 18, t: 'FCV-CD1120 in AUTO, SV 150 T/H', d: 'The recirculation now holds the minimum flow of the condensate pump.', c: b.ALL(b.MODE('FCV-CD1120', 'AUTO'), b.SV('FCV-CD1120', 140, 160, 'T/H')), fps: ['FCV-CD1120'], a: [btn('A, SV 150 T/H', () => A.auto('FCV-CD1120', 150))] },
       FIELD1(1, 'Condensate chemical dosing (field)', [17], { it: [18, 25] }),
-      { st: 1, sec: 19, t: 'Deaerator level LCV-CD1104 in AUTO, SV 0 mm', d: 'The deaerator fills to normal level and the valve holds it there.', c: b.ALL(b.MODE('LCV-CD1104', 'AUTO'), b.SV('LCV-CD1104', -20, 20, 'mm')), fps: ['LCV-CD1104'], a: [btn('A, SV 0 mm', () => A.auto('LCV-CD1104', 0))], field: [18] },
-      { st: 1, sec: 20, t: 'Start the boiler feedwater pump (BFWP)', d: 'Do: start the auxiliary lube oil pump of the pump you start (DITL-22, PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"): its lube oil pressure LOW (I.0090 / I.0410) blocks the start. Then start the feedwater pump. The deaerator must have water first.', c: R.BFP, a: [dmot('DITL-22', 'BFWP-A aux. lube oil pump'), dmot('DITL-22 #B', 'BFWP-B aux. lube oil pump'), mot('M.3343', 'BFWP-A'), mot('M.3344', 'BFWP-B')] },
+      { st: 1, sec: 19, t: 'Deaerator level LCV-CD1104 in AUTO, SV 0 mm', d: 'The deaerator fills to normal level and the valve holds it there.', c: b.ALL(b.MODE('LCV-CD1104', 'AUTO'), b.SV('LCV-CD1104', -20, 20, 'mm')), fps: ['LCV-CD1104'], a: [btn('A, SV 0 mm', () => A.auto('LCV-CD1104', 0)), movB('DITL-72', 'XV-CD1104-2', 1, 2, 7), movB('DITL-72', 'XV-CD1104-2', 0, 2, 7)] /* audit B3: PR-OPE-5002 19.14 / 19.15 emergency drain to the condenser XV-CD1104-2 (DITL-72; IO list STN102 O.012D) */, field: [18] },
+      { st: 1, sec: 20, t: 'Start the boiler feedwater pump (BFWP)', d: 'Do: start the auxiliary lube oil pump of the pump you start (DITL-22, PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"): its lube oil pressure LOW (I.0090 / I.0410) blocks the start. Then start the feedwater pump. The deaerator must have water first.', c: R.BFP, a: [dmot('DITL-22', 'LOP A of BFWP-A'), dmot('DITL-22 #B', 'LOP B of BFWP-A'), dmot('DITL-22 #C', 'LOP A of BFWP-B'), dmot('DITL-22 #D', 'LOP B of BFWP-B'), mot('M.3343', 'BFWP-A'), mot('M.3344', 'BFWP-B')] } /* audit A2: the four aux. LOPs of DITL-22 (IO list STN103 O.0126 / O.0446 / O.0127 / O.0447); the standby LOP in AUTO by its AUTO button (DITL-22 row 6, PR-OPE-5002 20.11) */,
       /* 3.2.0 P1 #4 (PR-OPE-5002 BFP start-up 4165 / 4176): the feedwater reaches the drum only through the discharge MOV of the pump */
       {
         st: 1,
@@ -86464,7 +86503,7 @@ window.LS_GUIDE = (function () {
          gradually, drum level -150 mm. The trainee closes the valve at -150 mm */
       { st: 1, sec: 20, t: 'Steam drum filling: start-up valve FCV-FW1130-2 in MANUAL, fill to −150 mm', d: 'The drum of the cold plant has no water yet (about −300 mm). With the feedwater pump running, open the start-up valve slowly (MANUAL, MV 20 %). At −150 mm you close it (MV 0 %) so the drum does not overfill. If it overfills (over +100 mm), the field operator cracks open the lower ring header drains (V-BD1005 ~ V-BD1021, flow diagram PD-019) until the level is back near −150 mm, then closes them (PR-OPE-5002: below 10 kg/cm² the level is controlled with the lower header drain).', c: b.ALL(b.MODE('FCV-FW1130-2', 'MAN'), b.MV('FCV-FW1130-2', null, 2), b.HOLD(10, b.VAL('lvl', -200, 100)), C('Lower ring header drains closed (PD-019)', () => !fstate('lhd'), () => 'Lower header drains ' + (fstate('lhd') ? 'OPEN (cracked)' : 'CLOSED'))), fps: ['FCV-FW1130-2'] /* OFF unless switched on */, a: [btn('M, MV 20 % (fill)', () => (h().lvl() < -170 ? A.man('FCV-FW1130-2', 20) : ''), () => h().lvl() >= -170 || mv('FCV-FW1130-2') >= 15), btn('MV 0 % (at −150 mm)', () => (h().lvl() >= -170 ? A.man('FCV-FW1130-2', 0) : ''), () => h().lvl() >= -170 && mv('FCV-FW1130-2') <= 2), /* Mina H1: the field operator drains an overfilled drum (PD-019 lower ring header drains, manual), to a part of the stroke */ ...[10, 25, 50].map(x => Object.assign(btn('FIELD: lower ring header drains ' + x + ' % open (V-BD1005 ~ V-BD1021)', () => (A.field('lhd', x), window.lsEventAdd && lsEventAdd('FIELD', 'FIELD', 'Field operator: lower ring header drains V-BD1005 ~ V-BD1021 ' + x + ' % open (PD-019)'), '')), { loc: 1, hide: () => h().lvl() <= 100 && !fstate('lhd') })), Object.assign(btn('FIELD: close the lower ring header drains', () => (A.field('lhd', 0), window.lsEventAdd && lsEventAdd('FIELD', 'FIELD', 'Field operator: lower ring header drains closed'), '')), { loc: 1, hide: () => !fstate('lhd') })], field: [19] },
       /* ---- 2 fans ---- */
-      { st: 2, sec: 21, t: 'Diesel oil pump and oil circulation (field)', d: 'Do: start the diesel oil pump and set the two oil pressure controls, in the order (1) ~ (6) below. (1) PCV-DO0002 M, 100 % (recirculation open), (2) FIELD START the diesel oil pump, (3) PCV-DO0002 M, 24 % (close gradually, the pressure rises), (4) when PICDO0005 is near its SV (≥ 11.5 kg/cm²): PICDO0005 A, SV 12.8, (5) PCV-DO1009 (return) M, 86 % (close a little, PICDO1008 rises), (6) when PICDO1008 is near its SV (≥ 9.9 kg/cm²): PICDO1008 (PCV-DO1009) A, SV 11. The diesel oil pump is in the field (no DCS signal); the start-up burners need it (PR-OPE-5002 Section 21).', fps: ['PICDO0005', 'PICDO1008'], c: b.ALL(C('Diesel oil pump running (field)', () => !!(AN.fieldState && AN.fieldState().dop), () => 'Diesel oil pump ' + (AN.fieldState && AN.fieldState().dop ? 'ON' : 'OFF')), C('PICDO0005 ≥ 11.5 kg/cm² (near SV 12.8)', () => pv('PICDO0005') >= 11.5, () => 'PICDO0005 ' + f1(pv('PICDO0005')) + ' kg/cm²'), b.MODE('PICDO0005', 'AUTO'), C('PICDO1008 ≥ 9.9 kg/cm² (near SV 11)', () => pv('PICDO1008') >= 9.9, () => 'PICDO1008 ' + f1(pv('PICDO1008')) + ' kg/cm²'), b.MODE('PICDO1008', 'AUTO')), a: [btn('PCV-DO0002 M, 100 % (open)', () => A.man('PICDO0005', 100)), fldB('dop', 'diesel oil pump'), btn('PCV-DO0002 M, 24 %', () => A.man('PICDO0005', 24)), btn('PICDO0005 A, SV 12.8', () => (pv('PICDO0005') >= 11.5 ? A.auto('PICDO0005', 12.8) : 'Wait: PICDO0005 ' + f1(pv('PICDO0005')) + ' kg/cm² (need ≥ 11.5)')), btn('PCV-DO1009 M, 86 %', () => A.man('PICDO1008', 86)), btn('PICDO1008 (PCV-DO1009) A, SV 11', () => (pv('PICDO1008') >= 9.9 ? A.auto('PICDO1008', 11) : 'Wait: PICDO1008 ' + f1(pv('PICDO1008')) + ' kg/cm² (need ≥ 9.9)'))], field: [20] },
+      { st: 2, sec: 21, t: 'Diesel oil pump and oil circulation', d: 'Do: start a diesel oil pump and set the two oil pressure controls, in the order (1) ~ (6) below. (1) PCV-DO0002 M, 100 % (recirculation open), (2) the selected diesel oil pump REMOTE + START (DCS, DITL-31), the other one REMOTE + AUTO (standby), (3) PCV-DO0002 M, 24 % (close gradually, the pressure rises), (4) when PICDO0005 is near its SV (≥ 11.5 kg/cm²): PICDO0005 A, SV 12.8, (5) PCV-DO1009 (return) M, 86 % (close a little, PICDO1008 rises), (6) when PICDO1008 is near its SV (≥ 9.9 kg/cm²): PICDO1008 (PCV-DO1009) A, SV 11. The diesel oil pumps M-0702A / B are DCS motors (DITL-31; IO list STN105 O.0040 / O.0360 start, I.0003 / I.0323 running); the start-up burners need them (PR-OPE-5002 Section 21).', fps: ['PICDO0005', 'PICDO1008'], c: b.ALL(C('a diesel oil pump running (DITL-31)', () => !WL() || ['DITL-31', 'DITL-31 #B'].some(nm => dRun(nm) === 1), () => ['DITL-31', 'DITL-31 #B'].map((nm, j) => 'DOP ' + 'AB'[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : 'STOPPED')).join(', ')), C('PICDO0005 ≥ 11.5 kg/cm² (near SV 12.8)', () => pv('PICDO0005') >= 11.5, () => 'PICDO0005 ' + f1(pv('PICDO0005')) + ' kg/cm²'), b.MODE('PICDO0005', 'AUTO'), C('PICDO1008 ≥ 9.9 kg/cm² (near SV 11)', () => pv('PICDO1008') >= 9.9, () => 'PICDO1008 ' + f1(pv('PICDO1008')) + ' kg/cm²'), b.MODE('PICDO1008', 'AUTO')), a: [btn('PCV-DO0002 M, 100 % (open)', () => A.man('PICDO0005', 100)), dmot('DITL-31', 'DOP A'), dmot('DITL-31 #B', 'DOP B'), btn('PCV-DO0002 M, 24 %', () => A.man('PICDO0005', 24)), btn('PICDO0005 A, SV 12.8', () => (pv('PICDO0005') >= 11.5 ? A.auto('PICDO0005', 12.8) : 'Wait: PICDO0005 ' + f1(pv('PICDO0005')) + ' kg/cm² (need ≥ 11.5)')), btn('PCV-DO1009 M, 86 %', () => A.man('PICDO1008', 86)), btn('PICDO1008 (PCV-DO1009) A, SV 11', () => (pv('PICDO1008') >= 9.9 ? A.auto('PICDO1008', 11) : 'Wait: PICDO1008 ' + f1(pv('PICDO1008')) + ' kg/cm² (need ≥ 9.9)'))], field: [20] },
       { st: 2, sec: 22, t: 'Prepare the ID fan (IDF): PICFG108 in MANUAL, MV 0 %, RH and SH biasing dampers open', d: 'The ID fan hydraulic coupling is closed before the fan starts (low starting current). The ID fan interlock (DITL-25A row 1) needs the flue gas bias dampers (HICHR1002A / B) open so the air has a path.', c: b.ALL(b.MODE('PICFG108', 'MAN'), b.MV('PICFG108', null, 2), b.MV('HICHR1002A', 30, null), b.MV('HICHR1002B', 60, null)), fps: ['PICFG108', 'HICHR1002A', 'HICHR1002B'], a: [btn('M, MV 0 %', () => A.man('PICFG108', 0)), btn('RH and SH biasing dampers 100 %', () => (A.man('HICHR1002A', 100), A.man('HICHR1002B', 100)))], field: [21] },
       { st: 2, sec: 22, t: 'Start the ID fan (IDF)', d: 'The ID fan draws the flue gas out of the furnace. It is the first fan to run.', note: 'Alarms of the cold plant: AI0128 / AI0385 drum pressure LOW LOW (no pressure yet), AI0592 economizer inlet temperature LOW LOW (feedwater still cold), LIBR10011 / LIBR10012 / LIBR10013 drum level LOW (LOW −100 mm, LOW LOW −178 mm per the alarm list). At the start of the cold start-up they are SUPPRESSED: not in the header, kept apart in the alarm list (ALARM chip, "suppressed"). They come in as new alarms (ACK them) if still standing 10 min (plant time) after the equipment of their group runs; they clear by themselves when the pressure, temperature and level rise.', c: R.IDF, a: [mot('M.3304', 'IDF')] },
       { st: 2, sec: 22, t: 'ID fan hydraulic coupling: PICFG108 MV 13 %', d: 'Open the coupling to 13 %. The furnace pressure is negative (gas drawn out); target about −15 mmH₂O. If it is too negative, lower the MV by 1 %; if not negative enough, raise it by 1 %.', c: b.ALL(R.IDF, b.MV('PICFG108', 10, 16)), fps: ['PICFG108'], a: [btn('MV 13 %', () => A.man('PICFG108', 13)), btn('MV −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1))), btn('MV +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1)))] },
@@ -86605,15 +86644,23 @@ window.LS_GUIDE = (function () {
       /* ---- 5 vacuum and seals ---- */
       /* 3.2.0-beta.37 (user 2026-10-25): the aux steam (from the main steam > 12 kg/cm2), the turning gear, the gland sealing and the
          ejectors before the vacuum up (PR-OPE-5002 5708, 6118, 6512); the unit model raises the vacuum only with the aux steam */
-      FIELD(5, 'Deaerator warming, condensate polisher, bed material (field)', [28, 29, 30, 31, 32, 33, 34, 35], { d: 'Field operator tasks with no DCS / TCS signal. The aux steam, turning gear, gland sealing and vacuum up are on the TCS panel (next steps).' }),
+      FIELD(5, 'Deaerator warming, condensate polisher, bed material (field)', [28, 29, 30, 31, 32, 33, 34, 35], { d: 'The field operator part of these sections. Their DCS items are the next steps (flash chamber drains, deaerator pegging, polisher MOVs, aux steam MV-AS1391, gland drains); turning gear, gland sealing and vacuum up are on the TCS panel.' }),
+      /* audit B4: PR-OPE-5002 30.4 "Check all drains at DCS going to flash chamber was in manual and close": XV-MS1023 (DITL-89), XV-CR1012
+         (DITL-74), XV-HR1021 (DITL-80), XV-HR1022 (DITL-81); row 19 CLOSE PB, row 11 AUTO SELECTED (IO list STN102 O.0125 / O.0127 / O.0128) */
+      { st: 5, sec: 30, t: 'Flash chamber drains at the DCS: manual and closed', d: 'Do: the drain pot valves going to the flash chamber not in AUTO and CLOSED (PR-OPE-5002 30.4).', c: b.ALL(...[['DITL-89', 'XV-MS1023'], ['DITL-74', 'XV-CR1012'], ['(99)DITL-80', 'XV-HR1021'], ['DITL-81', 'XV-HR1022']].map(([nm, tg]) => C(tg + ' manual and closed', () => !WL() || (!dInG(nm, 10) && movPos(nm) <= 0), () => tg + (dInG(nm, 10) ? ' AUTO' : ' MAN') + ' ' + f0(movPos(nm)) + ' %'))), a: [['DITL-89', 'XV-MS1023'], ['DITL-74', 'XV-CR1012'], ['(99)DITL-80', 'XV-HR1021'], ['DITL-81', 'XV-HR1022']].map(([nm, tg]) => movB(nm, tg, 0, 4, 18)) },
+      /* audit B5: PR-OPE-5002 31.4 "Set PCV-AS10000 to AUTO mode. SV = 1.5 ksc" (the valve is PCV-AS1030, IO list STN102 AO0403; ABC-056 PICCD1104) */
+      { st: 5, sec: 31, t: 'Deaerator pegging steam PICCD1104 (PCV-AS1030) in AUTO, SV 1.5 kg/cm²', d: 'Do: the pegging steam pressure control of the deaerator to AUTO with SV 1.5 kg/cm² (PR-OPE-5002 31.4).', c: b.ALL(b.MODE('PICCD1104', 'AUTO'), b.SV('PICCD1104', 1.5, 1.5)), fps: ['PICCD1104'], a: [btn('A, SV 1.5 kg/cm²', () => A.auto('PICCD1104', 1.5))] },
+      /* audit B1: PR-OPE-5002 34.5 "Gradually OPEN MV-CD1007", 34.12 "Fully OPEN MV-CD1008": DCS MOVs DITL-64 / DITL-65 (row 3 OPEN PB, CLOSE PB row 12 / 13;
+         IO list STN102 O.0170 / O.0171 and the CD1008 pair) */
+      { st: 5, sec: 34, t: 'Condensate polisher: inlet MOV MV-CD1007 and outlet MOV MV-CD1008 OPEN', d: 'Do: open the polisher inlet MOV MV-CD1007 gradually, then the outlet MOV MV-CD1008 fully (PR-OPE-5002 34.5, 34.12). DCS valves (DITL-64 / 65).', c: b.ALL(C('MV-CD1007 open', () => !WL() || movPos('DITL-64') > 0, () => 'MV-CD1007 ' + f0(movPos('DITL-64')) + ' %'), C('MV-CD1008 fully open', () => !WL() || movPos('DITL-65') >= 100, () => 'MV-CD1008 ' + f0(movPos('DITL-65')) + ' %')), a: [movB('DITL-64', 'MV-CD1007', 1, 2, 11), movB('DITL-65', 'MV-CD1008', 1, 2, 12)] },
       /* 3.2.0-beta.38 (CHECKLIST 0.6): the turbine auxiliaries on the TCS model (tcs.js): ATS criteria 1.14 ~ 1.19, PR-OPE-5002 5708 / 6118
          / 6512. Before (beta.37) one "field" confirm */
       /* all-steps check 2026-10-30: the section of each turbine step is the PR-OPE-5002 section that does it (14 lube oil / vapour
          extractor, 33 gland sealing with the turning gear, 35 vacuum up; the aux steam stays 31); the practice steps are section 47 */
       { st: 5, sec: 14, t: 'TCS: lube oil pump, EH oil pump, MOT vapour extractor START', d: 'Bearing oil (ATS 1.15 / 1.16), control oil (1.14) and the vapour extractor (1.18) are needed before the turning gear and all ATS steps.', c: C('Lube oil, EH oil, vapour extractor running', () => TC().aux.lop && TC().aux.eh && TC().aux.vex, () => ['lop', 'eh', 'vex'].filter(k => !TC().aux[k]).join(', ') || 'OK'), a: [btn('LUBE OIL PUMP START', () => A.tcs('lop', 1), () => TC().aux.lop), btn('EH OIL PUMP START', () => A.tcs('eh', 1), () => TC().aux.eh), btn('VAPOUR EXTRACTOR START', () => A.tcs('vex', 1), () => TC().aux.vex)] },
       { st: 5, sec: 33, t: 'Turning gear ON (about 3 rpm)', d: 'The rotor turns slowly so it does not bend while it warms up (ATS 1.19 TURBINE TURNING). Bearing oil is needed.', c: C('Turbine turning (≥ 1 rpm)', () => TC().aux.tg && TC().rpm >= 1, () => f1(+TC().rpm || 0) + ' rpm'), a: [btn('TURNING GEAR ON', () => A.tcs('tg', 1), () => TC().aux.tg)] },
-      { st: 5, sec: 31, t: 'Aux steam: open MV-AS1391 (main steam > 12 kg/cm²)', d: 'The aux steam header (10 kg/cm²) comes from the main steam (PR-OPE-5002 5727 REQUIREMENT: MS > 12 kg/cm²). It is the steam for the gland seal and the ejectors.', c: C('Aux steam header > 10 kg/cm²', () => TC().Pa > 10, () => f1(+TC().Pa || 0) + ' kg/cm²'), a: [btn('MV-AS1391 OPEN', () => A.tcs('aux', 1), () => TC().aux.asv)], wait: 1 },
-      { st: 5, sec: 33, t: 'Gland sealing (aux > 7 kg/cm², turning gear, vacuum breaker open)', d: 'PR-OPE-5002 6118: MS > 12, aux > 7 kg/cm², gland steam 220 °C, turning gear running, vacuum breaker MV-AV1391 open (ATS 1.10).', c: C('Gland steam seal header normal', () => TC().aux.gland, () => (TC().aux.gland ? 'in service' : 'off')), a: [btn('GLAND STEAM IN SERVICE', () => A.tcs('gland', 1), () => TC().aux.gland)] },
+      { st: 5, sec: 31, t: 'Aux steam: open MV-AS1391 (main steam > 12 kg/cm²)', d: 'The aux steam header (10 kg/cm²) comes from the main steam (PR-OPE-5002 5727 REQUIREMENT: MS > 12 kg/cm²). It is the steam for the gland seal and the ejectors. MV-AS1391 is a DCS valve (DITL-51): REMOTE, then OPEN.', c: C('Aux steam header > 10 kg/cm²', () => TC().Pa > 10, () => f1(+TC().Pa || 0) + ' kg/cm²'), a: [movB('DITL-51', 'MV-AS1391', 1, 4, 15), movB('DITL-51', 'MV-AS1391', 0, 4, 15)], wait: 1 } /* audit A3: PR-OPE-5002 29.1 "Gradually OPEN MV AS 1391" on its DCS drawing DITL-51 (row 5 OPEN PB M.0360, row 16 CLOSE PB M.0361; IO list STN102 O.0160 / O.0161) */,
+      { st: 5, sec: 33, t: 'Gland sealing (aux > 7 kg/cm², turning gear, vacuum breaker open)', d: 'PR-OPE-5002 6118: MS > 12, aux > 7 kg/cm², gland steam 220 °C, turning gear running, vacuum breaker MV-AV1391 open (ATS 1.10).', c: C('Gland steam seal header normal', () => TC().aux.gland, () => (TC().aux.gland ? 'in service' : 'off')), a: [btn('GLAND STEAM IN SERVICE', () => A.tcs('gland', 1), () => TC().aux.gland), ...[['DITL-53', 'MV-AS1393 (gland steam separator drain)'], ['DITL-116', 'MV-AS1397 (T/B gland steam line drain)']].map(([nm, l]) => Object.assign(btn(l + ' AUTO (' + nm + ')', () => (WL() && window.LS_DOCK ? (LS_DOCK.dsel(nm, 9, true, l + ' AUTO MODE SELECTED'), '') : ''), () => !WL() || dInG(nm, 9)), { dg: [nm, 0], ad: nm }))] } /* audit A4: PR-OPE-5002 33.12 "Put in auto ... MVAS1393 ... MVAS1397 at the DCS" (IO list STN102 O.0164 / O.016A) */,
       { st: 5, sec: 35, t: 'Vacuum up: close the vacuum breaker, ejectors (aux > 10 kg/cm²)', d: 'PR-OPE-5002 6512: gland sealing done, aux > 10 kg/cm², vacuum breaker MV-AV1391 closed, 1st and 2nd ejector (on the DCS: MV-AV1391 CLOSE on DITL-56, then MV-AS1396 and MV-AS1395 OPEN on DITL-55 / 54). About 15 minutes to reach ≥ 90 % (ATS 1.11).', c: b.ALL(C('Condenser vacuum ≥ 90 %', () => +U().vac >= 0.9, () => f0(100 * (+U().vac || 0)) + ' %'), C('LP exhaust hood spray FVCD1904 AUTO (PR-OPE-5002 6307)', () => !!TC().aux.hsp, () => (TC().aux.hsp ? 'AUTO' : 'OFF'))), a: [movB('DITL-56', 'MV-AV1391', 0, 3, 13), movB('DITL-55', 'MV-AS1396', 1, 4, 13), movB('DITL-54', 'MV-AS1395', 1, 4, 13), btn('VACUUM UP (ejectors)', () => A.tcs('vacuum', 1), () => TC().aux.ej), btn('Hood spray FVCD1904 AUTO', () => A.tcs('hood', 1), () => !!TC().aux.hsp)], wait: 1 },
       /* ---- 6 bypass at 61 kg/cm2, oil only (3.2.0-beta.37, CHECKLIST 0.5: PR-OPE-5002 BYPASS SYSTEM SERVICING -> TURBINE ROLLING ->
          SYNCH. & INITIAL LOAD -> LOAD UP -> solid fuel; FHI SECT_7 Fig. 2 COLD STARTUP: roll at 60 kg/cm2 6 h, coal 8.6 h. Before, the
@@ -91409,13 +91456,10 @@ window.LS_GUIDE = (function () {
           cls: 'trbtn',
           type: 'button',
           txt: 'Assume field steps done',
-          title: 'Ticks every FIELD and TCS step (local valves, gauges, turbine panel) so that only the DCS steps are left. Also starts the field equipment that has no DCS signal (diesel oil pump).',
+          title: 'Ticks every FIELD and TCS step (local valves, gauges, turbine panel) so that only the DCS steps are left. ',
           on: () => {
             tickHand(P().map((x, si) => si), true);
-            /* 3.2.0-beta.14: the field steps include the diesel oil pump start (no running signal on the ABC sheets, source.js) */
-            try {
-              if (window.AN && AN.field) AN.field('dop', true);
-            } catch (e) {}
+            /* audit A1: the diesel oil pumps are DCS motors (DITL-31), started in their DCS step, not here */
           }
         }),
         E('button', {
@@ -108763,7 +108807,8 @@ window.UATS = (function () {
              start-up level control LICBR1001B in A at SV 0, as the coal stage does (the drawing allows it while FICFW1007 and LICBR1001A
              are M). Before, the chain never filled the drum and the level check read -296 mm */
           h.autoSv('ABC-010', 'LICBR1001B', 0);
-          AN.field('dop', true);
+          /* audit A1: diesel oil pump A from its DCS drawing (DITL-31): REMOTE, START */
+          if (window.LS_DOCK) (LS_DOCK.dremote('DITL-31', 'DOP A'), LS_DOCK.dmotor('DITL-31', 1));
           for (const l of ['M.3302', 'M.3303', 'M.3304']) h.setx(null, l, 1);
         }
         /* 3.2.0-beta.78: the dampers open once the fans run (PR-OPE-5002: closed for the start, then up) */

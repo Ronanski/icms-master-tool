@@ -537,7 +537,12 @@ function tcsStep(U, dt) {
   if (!c) return;
   const tb = U.tb,
     s = tcsSteam(U);
-  /* aux steam header: from the main steam through MV-AS1391 (PCV to 10 kg/cm2, PR-OPE-5002 5708 aux 10 ksc) */
+  /* aux steam header: from the main steam through MV-AS1391 (PCV to 10 kg/cm2, PR-OPE-5002 5708 aux 10 ksc); audit A3: with the one world
+     the valve is its DCS drawing DITL-51 (IO list STN102 O.0160 / O.0161, AI0752 ZT-AS1391) */
+  {
+    const p51 = typeof anDitlPos === 'function' ? anDitlPos('DITL-51', 0) : null;
+    if (p51 != null) c.asv = p51 > 0;
+  }
   const PaSS = c.asv ? Math.max(0, Math.min(10.5, U.Pd - 1)) : 0;
   c.Pa += ((PaSS - c.Pa) * dt) / TCS.tauAux;
   if (c.Pa < 7) c.gland = c.gland && c.Pa > 5;
