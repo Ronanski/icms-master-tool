@@ -1298,7 +1298,7 @@ function paint0() {
    so on the Plant view (and the Training dock over it) it stood still while RUN; it is written every half second on every page too */
 function anClock(S) {
   if (!S || !S.rt) return;
-  const t = S.rt.t,
+  const t = AN.plantT ? AN.plantT() : S.rt.t,
     x =
       't = ' +
       Math.floor(t / 60) +

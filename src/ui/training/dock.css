@@ -46,6 +46,9 @@ html.gd-bottom .gd-grip:after{content:"";position:absolute;left:50%;top:8px;widt
 .gd-kvs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 10px}
 html.gd-bottom .gd-kvs{grid-template-columns:repeat(8,minmax(0,1fr))}
 .gd-kv{min-width:0;display:grid;grid-template-columns:auto 1fr;align-items:baseline;column-gap:3px}
+/* Mina #M8: a value tile of the strip that the step does not use is hidden (display:grid kept the "hidden" tile of the step before on
+   screen, its label with no value: "Seawater pump A current  A" blank at steps 4 / 5 / 7) */
+.gd-kv[hidden]{display:none!important}
 .gd-kv small{grid-column:1/-1;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--c-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gd-kv b{font:600 16.5px var(--mf);color:var(--c-acctx);font-variant-numeric:tabular-nums}
 .gd-kv em{font-style:normal;font-size:11.5px;color:var(--c-dim)}
