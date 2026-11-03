@@ -1279,44 +1279,6 @@ window.LS_GUIDE = (function () {
       }
     }, 250);
   }
-  /* M25 (user via the leader 2026-11-03, option 1): a cold plant = step 1. A Cold loaded any other way than the Training's own start
-     (Plant ▾ > Cold, Reset then Cold, a reload then Cold) starts the Training again at step 1 with no ticks; before, a reload kept
-     step 2 (lineup 15 / 16) while the step 1 purge of the new cold plant showed 0:00 / 6:00. A reload with no new Cold keeps the
-     progress (the plant has not changed) */
-  let ss0 = window.AN ? AN.startState : undefined;
-  setInterval(() => {
-    const A = window.AN;
-    if (!A) return;
-    const ss = A.startState;
-    if (ss === ss0) return;
-    ss0 = ss;
-    if (ss !== 'plantCold' || A._gdWait || A._startPending) return;
-    if (!G.cur && !Object.keys(G.mine || {}).length && !Object.keys(ls0('ls-train')).length) return;
-    G.cur = 0;
-    G.mine = {};
-    G.pw = {};
-    G.hold = {};
-    for (const k in since) delete since[k];
-    try {
-      localStorage.setItem('ls-train', '{}');
-    } catch (e) {}
-    try {
-      if (L() && L().reset) L().reset();
-    } catch (e) {}
-    save();
-    try {
-      if (G.on) open(0);
-      if (window.LS_DOCK && LS_DOCK.refresh) LS_DOCK.refresh();
-      window.lsEventAdd && lsEventAdd('DCS', 'TRAIN', 'Cold plant: the Training starts again at step 1');
-    } catch (e) {}
-  }, 500);
-  function ls0(k) {
-    try {
-      return JSON.parse(localStorage.getItem(k) || '{}') || {};
-    } catch (e) {
-      return {};
-    }
-  }
   /* continue after a reload: the plant is not saved, so the training goes on only with a plant in the simulation */
   function resume() {
     if (!AN.checkSheets || !AN.checkSheets.length) AN.checkSheets = ['ABC-001C', 'ABC-020', 'ABC-028', 'ABC-031', 'ABC-032', 'ABC-054'];
