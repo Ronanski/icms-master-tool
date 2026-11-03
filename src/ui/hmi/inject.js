@@ -58,6 +58,9 @@ const block =
   /* 2026-11-01: 039 RH / SH BIASING DAMPER (approved mockup) */
   fs.readFileSync(__dirname + '/../plant/hmi-bias.js', 'utf8') +
   '\n' +
+  /* 2026-11-03 (user): TEMPORARY HMI pages for the live test until each new HMI page is built (hmi-temp.js) */
+  fs.readFileSync(__dirname + '/../plant/hmi-temp.js', 'utf8') +
+  '\n' +
   /* 3.2.0-beta.74: the operator pop-out faceplate beside the clicked equipment (motor; the controllers of plant.js) */
   fs.readFileSync(__dirname + '/../plant/fp-pop.js', 'utf8') +
   '\n' +
