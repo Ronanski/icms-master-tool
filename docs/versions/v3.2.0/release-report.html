@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="tl"><head><meta charset="utf-8"><title>DCS Logic Simulator v3.2.0 — Release Report</title>
+<style>
+body{font:13px/1.5 Arial,Helvetica,sans-serif;color:#111;margin:28px 36px}
+h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:18px 0 6px;border-bottom:1px solid #999;padding-bottom:2px}
+p{margin:4px 0}ul{margin:4px 0 4px 18px;padding:0}li{margin:2px 0}.s{color:#444}
+</style></head><body>
+<h1>DCS Logic Simulator v3.2.0 — Release Report</h1>
+<p class="s">Stable, 2026-11-03. GO STABLE ng user (8:52 PM PHT): "Ipa go stable mo itong beta 91. Para mag simula tayo ng fresh." Base: Stable v2.4.0. Laman: 3.2.0-beta.91 (main 53bc0f2), walang ibang binago.</p>
+
+<h2>Buod</h2>
+<p>Ang 3.2.0 ang unang Stable mula v2.4.0. Iisang mundo na ang ABC (analog) at DITL (digital), may Training mula Cold hanggang 150 MW ayon sa PR-OPE-5002, plant model na may steam table, bagong HMI pages at operator faceplates, at engine na puwedeng tumakbo sa Web Worker.</p>
+
+<h2>Ano ang bago (mula v2.4.0)</h2>
+<ul>
+<li><b>Iisang mundo ABC + DITL:</b> laging magkakabit ang lahat ng sheet; ang tag ay iisang signal sa buong DCS (.MAN / .LOC / .REM bilang estado ng mode).</li>
+<li><b>Training Cold → 150 MW:</b> Training dock na may hakbang ayon sa PR-OPE-5002, field steps, interlock ng bawat motor mula sa DITL, NEXT card, mga value ng hakbang; nagsisimula na naka-PAUSED sa x1; ang Cold ay ibinabalik ang Training sa hakbang 1.</li>
+<li><b>Plant model:</b> steam table, drum, feedwater, air at flue gas, mga pump at fan, drum lower header drains (PD-019, ISO 5167), lube oil ng BFWP (KSB manual), at iba pa.</li>
+<li><b>HMI at operator UI:</b> bagong pages (007 Air & Flue Gas, 030 Seawater, Make-up Water, 036 Turbine Oil, Instrument & Plant Air, 027 Closed Cooling Water, TEMP pages), pop-out faceplate ng motor, valve at controller, alarm ACK, 9 na pangunahing value ng planta sa itaas.</li>
+<li><b>Bilis:</b> ang x300 ay x300 (6 h purge ≈ 72 s), kasama ang Training at ang Plant view.</li>
+<li><b>Web Worker:</b> ang engine ay tumatakbo sa Worker sa Beta site; sa Stable (site, apk, exe) ay sa page pa rin gaya ng dati.</li>
+<li><b>Update now:</b> may MB na progreso habang nagda-download at hindi nauulit sa pangalawang pindot.</li>
+<li><b>Audit (no-cheat):</b> test na nagsusuri na bawat ABC sheet ay tumatakbo, pareho ang permissive sa Worker at sa page, at ang mga SOP item ay tumi-tick mula sa sariling signal; listahan ng mga ASSUMED na value (docs/audit/ASSUMED_REGISTER.md).</li>
+</ul>
+<p>Buong detalye bawat Beta: docs/versions/v3.2.0/UPDATE_REPORT.md at HANDOFF.md seksyon 2.</p>
+
+<h2>Sinubok (headless, sa build v3.2.0, bago ang release)</h2>
+<p>Lahat pasado, 0 FAIL, isa-isa (cloud, Chromium headless):</p>
+<ul>
+<li>no_cheat 7/7 (51 ABC sheet tumatakbo, 31 motor pareho sa Worker at page, SOP items mula sa signal, 37 comparator).</li>
+<li>speed_x300: page x305, Worker x305 (6 h purge 71 s).</li>
+<li>training_dock 24/24, train_cold_reset 8/8, dock_open_run 18/18, status_clock 4/4.</li>
+<li>force_manual 68/0, faceplate (68 controller, 0 maling A/M switch).</li>
+<li>Mabigat: tests.js 11/11, switches 438 control case (0 mali), blocks_io 51 sheet, 1671 block, 12021 check, 0 mali.</li>
+</ul>
+
+<h2>Hindi pa nasubok</h2>
+<ul>
+<li>Ang beta.90 at beta.91 ay walang live test sa app ng user. Ang huling live test ni Mina sa Beta site ay sa beta.88 / beta.89 (Training, unang mga seksyon).</li>
+<li>Ang buong Cold → 150 MW ay hindi pa live na natapos.</li>
+<li>Totoong Android phone / tablet at Windows exe ng 3.2.0.</li>
+</ul>
+
+<h2>Kilalang isyu at bukas na item</h2>
+<ul>
+<li>95 value na walang source sa dokumento (ASSUMED / NO-SOURCE): docs/audit/ASSUMED_REGISTER.md.</li>
+<li>MV-MU1001 flow (series / bypass hindi mabasa sa drawing); compressor auto start (LCP mode wala sa dokumento).</li>
+<li>Mga HMI page na naghihintay ng mockup approval (docs/hmi/PENDING_HMI_BUILD.md).</li>
+<li>Ang eng_set test ay lumalampas sa oras (dati na, mula pa beta.85).</li>
+</ul>
+</body></html>
