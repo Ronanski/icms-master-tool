@@ -1,5 +1,5 @@
 // The speed is the one chosen (user 2026-11-03, M32: "x300 na 6 h, 1.2 min nalang"; Mina measured about x100). Local and ?worker=1:
-// Start Cold (as the Training), speed x300, RUN, the Plant view open: the plant time over 20 s of real time must be at least 0.9 x 300
+// the Training started as the operator does (its Cold, its sheets, the dock open), speed x300, RUN, the Plant view open: the plant time over 20 s of real time must be at least 0.9 x 300
 // (the 6 h ESP purge of step 1 then takes at most 80 s, not 3.6 min). Prints the measured factor and the real seconds a 6 h purge takes.
 // Usage: node tests/regress/speed_x300.js [html]
 const { open } = require('./lib.js');
@@ -19,7 +19,9 @@ async function mode(worker) {
     await page.waitForFunction(() => window.ENG && (ENG.mode === 'mirror' || ENG.err), null, { timeout: 180000 });
   }
   await page.evaluate(async spd => {
-    await AN.loadStart('cold');
+    /* as the real run (M32 on the site: x225 ~ 240 with the Training): the Training's own start (Cold, its sheets, the dock open) */
+    if (window.LS_GUIDE && LS_GUIDE.start) await new Promise(ok => LS_GUIDE.start(ok));
+    else await AN.loadStart('cold');
     AN.spd = spd;
     AN.runOn();
     if (window.lsSetTab) lsSetTab('operate');

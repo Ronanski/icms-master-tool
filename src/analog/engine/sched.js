@@ -104,7 +104,14 @@ const anTick = () => {
   anLastT = now;
   return el * (AN.spd || 1);
 };
-const anSteps = dt => Math.max(1, Math.min(Math.ceil(dt / 0.5), Math.max(20, Math.ceil(dt / 2))));
+/* M32 (the real site: Training, its sheets and the dock): the steps of a tick are the ones that fit in about 80 ms of CPU (AN._ms = the time
+   of one step, measured), 0.5 s each when there is time, longer when not, never longer than 3 s (was: at most 20 a tick of up to 2 s: on
+   the full Training a step cost more and x300 ran x225 ~ 240) */
+const anSteps = dt => {
+  const want = Math.ceil(dt / 0.5),
+    fit = Math.max(1, Math.floor(80 / (AN._ms > 0 ? AN._ms : 2)));
+  return Math.max(1, Math.min(want, Math.max(fit, Math.ceil(dt / 3))));
+};
 AN.anSteps = anSteps;
 setInterval(() => {
   if (!live() || !AN.run || AN._loading || anMirror()) return void (anLastT = 0);
