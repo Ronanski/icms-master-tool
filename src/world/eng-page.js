@@ -8,7 +8,12 @@
   const want = () => {
     try {
       if (/[?&]worker=1\b/.test(location.search)) return true;
-      return localStorage.getItem('ls-worker') === '1';
+      if (/[?&]worker=0\b/.test(location.search)) return false;
+      const ls = localStorage.getItem('ls-worker');
+      if (ls === '1' || ls === '0') return ls === '1';
+      /* user 2026-11-03 ("Ediba my worker na!!!!"): the Worker is the default on the Beta web site (/beta/ over https); the page
+         engine (plain) stays as the automatic fallback when the worker fails. The apk / exe copy and file:// stay plain (GO STABLE) */
+      return location.protocol === 'https:' && /\/beta\/(index\.html)?$/.test(location.pathname);
     } catch (e) {
       return false;
     }
