@@ -120,6 +120,30 @@ function usrModel(sh, nl) {
 /* 2.5.0-beta.14: DCS registers shared by the sheets (bottom ash step SI0130); Simulate on / off and Reset clear them */
 let DREG = {};
 function simulate(nl, act) {
+  /* audit D (beta.90, H2 root): with the engine in the Web Worker the page is a MIRROR. A read of the page (the dock's interlock, a
+     cause, the drawing) that ran a scan here wrote the page's own result into the nets and the parts (nl._v, g.q ...), with none of the
+     engine's analog values; the worker then sends only what changed in ITS state, so the wrong page nets stayed (DITL-23A row 12
+     PT-FW1115-A 2.22 > 1.5 read 0 until the page was opened). On the mirror a scan is computed and given back but not kept */
+  const mir = typeof window !== 'undefined' && window.ENG && window.ENG.mode === 'mirror';
+  if (mir) {
+    const keep = nl.gates.map(g => {
+        const o = {};
+        for (const k of DITL_G) o[k] = g[k];
+        return o;
+      }),
+      v0 = nl._v;
+    try {
+      return simulateRun(nl, act);
+    } finally {
+      nl.gates.forEach((g, i) => {
+        for (const k of DITL_G) g[k] = keep[i][k];
+      });
+      nl._v = v0;
+    }
+  }
+  return simulateRun(nl, act);
+}
+function simulateRun(nl, act) {
   /* v10: keeps the last state (seal-in / latch memory) and applies one net change per step, so cross interlocks (NOT of the other command) settle instead of flipping */
   const N = nl.n;
   let v = nl._v && nl._v.length === N ? nl._v.slice() : new Array(N).fill(0);

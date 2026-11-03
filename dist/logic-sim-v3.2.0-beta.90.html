@@ -4389,6 +4389,30 @@ function usrModel(sh, nl) {
 /* 2.5.0-beta.14: DCS registers shared by the sheets (bottom ash step SI0130); Simulate on / off and Reset clear them */
 let DREG = {};
 function simulate(nl, act) {
+  /* audit D (beta.90, H2 root): with the engine in the Web Worker the page is a MIRROR. A read of the page (the dock's interlock, a
+     cause, the drawing) that ran a scan here wrote the page's own result into the nets and the parts (nl._v, g.q ...), with none of the
+     engine's analog values; the worker then sends only what changed in ITS state, so the wrong page nets stayed (DITL-23A row 12
+     PT-FW1115-A 2.22 > 1.5 read 0 until the page was opened). On the mirror a scan is computed and given back but not kept */
+  const mir = typeof window !== 'undefined' && window.ENG && window.ENG.mode === 'mirror';
+  if (mir) {
+    const keep = nl.gates.map(g => {
+        const o = {};
+        for (const k of DITL_G) o[k] = g[k];
+        return o;
+      }),
+      v0 = nl._v;
+    try {
+      return simulateRun(nl, act);
+    } finally {
+      nl.gates.forEach((g, i) => {
+        for (const k of DITL_G) g[k] = keep[i][k];
+      });
+      nl._v = v0;
+    }
+  }
+  return simulateRun(nl, act);
+}
+function simulateRun(nl, act) {
   /* v10: keeps the last state (seal-in / latch memory) and applies one net change per step, so cross interlocks (NOT of the other command) settle instead of flipping */
   const N = nl.n;
   let v = nl._v && nl._v.length === N ? nl._v.slice() : new Array(N).fill(0);
@@ -5318,25 +5342,10 @@ const DREAD = (function () {
       /* 3.2.0-beta.28 (human run of the Training: BFWP-A START stayed locked): an ANALOG input row (DITL-23A row 12 PT-FW1115-A BFWP
          A SUCTION PRESSURE > 1.5 kg/cm2) is met when the comparator of the drawing that reads it says 1; its own net is the analog value
          (0 / 1 meaningless). Before, the interlock read the analog net: always 0, the START of the Training was locked */
-      /* Mina H2 (beta.89, Worker, Step 26: PT-FW1115-A > 1.5 read "not complete" for 45 s, right after DITL-23A was opened): with the
-         engine in the worker the comparator output came from the nets the worker sends, a moment (or a page open) late. The comparator
-         is worked out here from the analog value itself (s.avw / av / av150, the values the engine scans: 03b-sim.js avOf, CMP), the same
-         formula as the engine; the nets are used when the value is not known */
-      const AV = typeof avOf === 'function' ? avOf(s) : null,
-        avv = n => {
-          const a = an.find(x => x.net === n);
-          return a && AV && AV[a.key] !== undefined ? +AV[a.key] : a && a.def !== undefined ? +a.def : NaN;
-        };
       return rowNets(s, row, 'L').some(n => {
         if (!an.some(a => a.net === n)) return v[n];
         const g = s.nl.gates.filter(x => x.t === 'CMP' && x.ins[0] === n);
-        if (!g.length) return v[n];
-        return g.some(x => {
-          const v0 = avv(n),
-            sp = x.spNet !== undefined ? avv(x.spNet) : x.sp;
-          if (!isFinite(v0) || !isFinite(sp)) return x.out.some(o => v[o]);
-          return x.cmp === '>' ? (x.eq ? v0 >= sp : v0 > sp) : x.eq ? v0 <= sp : v0 < sp;
-        });
+        return g.length ? g.some(x => x.out.some(o => v[o])) : v[n];
       })
         ? 1
         : 0;
@@ -32226,7 +32235,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.0-beta.90';
-      c3.textContent += ' · build 415fc82'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 80cfe35'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -49391,11 +49400,12 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   }
   /* Mina M3 (beta.88 / beta.89: PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"). The auxiliary lube oil pump of each BFWP is a DCS
      motor: DITL-22 "BFWP A AUX. LUB. OIL PUMP" (IO list STN103 O.0126 MOR-P1115A1 start, I.0050 running; machine B DITL-22 #B,
-     O.0446, I.0370). Its pressure switches on the lube oil header (memory list STN103 / KSB lube oil system O&M manual Annexure-II:
-     PS < 1.5 = I.0090 / I.0410, > 2.0 = I.0091 / I.0411, < 1.0 = I.0092 / I.0412) read the header pressure: 6.0 kg/cm2(g) with an oil
-     pump running (KSB "30 LPM LUBE OIL SYSTEM" O&M manual, Annexure-I, header pressure AOP & MOP 6.0), 0 when it is stopped (PR-OPE-5002 section 20:
-     the LOP of BFP A / B is started before the BFP, the standby LOP in AUTO). The main lube oil pump of the skid (MOP, KSB P&ID PR
-     73691 B) has no DCS signal and is not modelled (open item) */
+     O.0446, I.0370). The lube oil HEADER pressure is held by the pressure control valve at 2.0 kg/cm2(g) while an oil pump runs (KSB
+     "30 LPM lube oil system" O&M manual, o&m-package-phase-1/L7 BFP/D .../5 LOS-O&M MANUAL, p.13 Annexure-I: lube oil supply 2.0,
+     pump delivery 6.0; KSB P&ID PR 73691 B: supply 1.5 ~ 2 kg/cm2(g)); 0 with the pump stopped (PR-OPE-5002 section 20: the LOP is
+     started before the BFP). The header switches (Annexure-II 24.1 < 1.5, 24.3 < 1.0; memory list STN103 I.0090 / I.0410 and
+     I.0092 / I.0412) follow it. NOT modelled: the "> 2.0" switch I.0091 / I.0411 (Annexure-II 24.2, set point 2.0 = the header
+     pressure itself; how it is met is not in the documents) and the MOP of the skid (no DCS signal) */
   const runOf = (re, k) => {
     const s = (runOf.c = runOf.c || {})[re + k] || (W.inst || []).concat((typeof S !== 'undefined' && S.sheets) || []).find(x => new RegExp('\\)' + re + (k === 'B' ? ' #B' : '') + '$').test(x.name));
     if (!s) return null;
@@ -49406,11 +49416,10 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   };
   const lopP = k => () => {
     const a = runOf('DITL-22', k);
-    return a ? 6.0 : a === false ? 0 : NaN;
+    return a ? 2.0 : a === false ? 0 : NaN;
   };
   /* DITL-23A / DITL-22 write the rows by address: matched by the address and the word LUB (the 7th field; other stations reuse it) */
-  for (const [k, a1, a2, a3] of [['A', 'I.0090', 'I.0091', 'I.0092'], ['B', 'I.0410', 'I.0411', 'I.0412']])
-    L.push([a1, lopP(k), 1.5, 'lo', 0, 0.1, /\bLUB/], [a2, lopP(k), 2.0, 'hi', 0, 0.1, /\bLUB/], [a3, lopP(k), 1.0, 'lo', 0, 0.1, /\bLUB/]);
+  for (const [k, a1, a3] of [['A', 'I.0090', 'I.0092'], ['B', 'I.0410', 'I.0412']]) L.push([a1, lopP(k), 1.5, 'lo', 0, 0 /* no dead band: the pressure steps 0 / 2.0 */, /\bLUB/], [a3, lopP(k), 1.0, 'lo', 0, 0, /\bLUB/]);
   const DB0 = 10;
   let map = null,
     mapK = '';
@@ -49555,7 +49564,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     if (isFinite(ps)) for (const a of suc) (a.s.avw = a.s.avw || {})[a.key] = ps;
     for (const m of map) {
       const [, src, sp, dir, nc, db] = m.d,
-        DB = db || DB0,
+        DB = db != null ? db : DB0,
         x = val(src);
       if (!isFinite(x)) continue;
       /* the state of the switch: tripped (level low / pressure high) with its dead band */
@@ -54575,6 +54584,30 @@ function usrModel(sh, nl) {
 /* 2.5.0-beta.14: DCS registers shared by the sheets (bottom ash step SI0130); Simulate on / off and Reset clear them */
 let DREG = {};
 function simulate(nl, act) {
+  /* audit D (beta.90, H2 root): with the engine in the Web Worker the page is a MIRROR. A read of the page (the dock's interlock, a
+     cause, the drawing) that ran a scan here wrote the page's own result into the nets and the parts (nl._v, g.q ...), with none of the
+     engine's analog values; the worker then sends only what changed in ITS state, so the wrong page nets stayed (DITL-23A row 12
+     PT-FW1115-A 2.22 > 1.5 read 0 until the page was opened). On the mirror a scan is computed and given back but not kept */
+  const mir = typeof window !== 'undefined' && window.ENG && window.ENG.mode === 'mirror';
+  if (mir) {
+    const keep = nl.gates.map(g => {
+        const o = {};
+        for (const k of DITL_G) o[k] = g[k];
+        return o;
+      }),
+      v0 = nl._v;
+    try {
+      return simulateRun(nl, act);
+    } finally {
+      nl.gates.forEach((g, i) => {
+        for (const k of DITL_G) g[k] = keep[i][k];
+      });
+      nl._v = v0;
+    }
+  }
+  return simulateRun(nl, act);
+}
+function simulateRun(nl, act) {
   /* v10: keeps the last state (seal-in / latch memory) and applies one net change per step, so cross interlocks (NOT of the other command) settle instead of flipping */
   const N = nl.n;
   let v = nl._v && nl._v.length === N ? nl._v.slice() : new Array(N).fill(0);
@@ -55506,25 +55539,10 @@ const DREAD = (function () {
       /* 3.2.0-beta.28 (human run of the Training: BFWP-A START stayed locked): an ANALOG input row (DITL-23A row 12 PT-FW1115-A BFWP
          A SUCTION PRESSURE > 1.5 kg/cm2) is met when the comparator of the drawing that reads it says 1; its own net is the analog value
          (0 / 1 meaningless). Before, the interlock read the analog net: always 0, the START of the Training was locked */
-      /* Mina H2 (beta.89, Worker, Step 26: PT-FW1115-A > 1.5 read "not complete" for 45 s, right after DITL-23A was opened): with the
-         engine in the worker the comparator output came from the nets the worker sends, a moment (or a page open) late. The comparator
-         is worked out here from the analog value itself (s.avw / av / av150, the values the engine scans: 03b-sim.js avOf, CMP), the same
-         formula as the engine; the nets are used when the value is not known */
-      const AV = typeof avOf === 'function' ? avOf(s) : null,
-        avv = n => {
-          const a = an.find(x => x.net === n);
-          return a && AV && AV[a.key] !== undefined ? +AV[a.key] : a && a.def !== undefined ? +a.def : NaN;
-        };
       return rowNets(s, row, 'L').some(n => {
         if (!an.some(a => a.net === n)) return v[n];
         const g = s.nl.gates.filter(x => x.t === 'CMP' && x.ins[0] === n);
-        if (!g.length) return v[n];
-        return g.some(x => {
-          const v0 = avv(n),
-            sp = x.spNet !== undefined ? avv(x.spNet) : x.sp;
-          if (!isFinite(v0) || !isFinite(sp)) return x.out.some(o => v[o]);
-          return x.cmp === '>' ? (x.eq ? v0 >= sp : v0 > sp) : x.eq ? v0 <= sp : v0 < sp;
-        });
+        return g.length ? g.some(x => x.out.some(o => v[o])) : v[n];
       })
         ? 1
         : 0;
@@ -74927,11 +74945,12 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
   }
   /* Mina M3 (beta.88 / beta.89: PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"). The auxiliary lube oil pump of each BFWP is a DCS
      motor: DITL-22 "BFWP A AUX. LUB. OIL PUMP" (IO list STN103 O.0126 MOR-P1115A1 start, I.0050 running; machine B DITL-22 #B,
-     O.0446, I.0370). Its pressure switches on the lube oil header (memory list STN103 / KSB lube oil system O&M manual Annexure-II:
-     PS < 1.5 = I.0090 / I.0410, > 2.0 = I.0091 / I.0411, < 1.0 = I.0092 / I.0412) read the header pressure: 6.0 kg/cm2(g) with an oil
-     pump running (KSB "30 LPM LUBE OIL SYSTEM" O&M manual, Annexure-I, header pressure AOP & MOP 6.0), 0 when it is stopped (PR-OPE-5002 section 20:
-     the LOP of BFP A / B is started before the BFP, the standby LOP in AUTO). The main lube oil pump of the skid (MOP, KSB P&ID PR
-     73691 B) has no DCS signal and is not modelled (open item) */
+     O.0446, I.0370). The lube oil HEADER pressure is held by the pressure control valve at 2.0 kg/cm2(g) while an oil pump runs (KSB
+     "30 LPM lube oil system" O&M manual, o&m-package-phase-1/L7 BFP/D .../5 LOS-O&M MANUAL, p.13 Annexure-I: lube oil supply 2.0,
+     pump delivery 6.0; KSB P&ID PR 73691 B: supply 1.5 ~ 2 kg/cm2(g)); 0 with the pump stopped (PR-OPE-5002 section 20: the LOP is
+     started before the BFP). The header switches (Annexure-II 24.1 < 1.5, 24.3 < 1.0; memory list STN103 I.0090 / I.0410 and
+     I.0092 / I.0412) follow it. NOT modelled: the "> 2.0" switch I.0091 / I.0411 (Annexure-II 24.2, set point 2.0 = the header
+     pressure itself; how it is met is not in the documents) and the MOP of the skid (no DCS signal) */
   const runOf = (re, k) => {
     const s = (runOf.c = runOf.c || {})[re + k] || (W.inst || []).concat((typeof S !== 'undefined' && S.sheets) || []).find(x => new RegExp('\\)' + re + (k === 'B' ? ' #B' : '') + '$').test(x.name));
     if (!s) return null;
@@ -74942,11 +74961,10 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
   };
   const lopP = k => () => {
     const a = runOf('DITL-22', k);
-    return a ? 6.0 : a === false ? 0 : NaN;
+    return a ? 2.0 : a === false ? 0 : NaN;
   };
   /* DITL-23A / DITL-22 write the rows by address: matched by the address and the word LUB (the 7th field; other stations reuse it) */
-  for (const [k, a1, a2, a3] of [['A', 'I.0090', 'I.0091', 'I.0092'], ['B', 'I.0410', 'I.0411', 'I.0412']])
-    L.push([a1, lopP(k), 1.5, 'lo', 0, 0.1, /\bLUB/], [a2, lopP(k), 2.0, 'hi', 0, 0.1, /\bLUB/], [a3, lopP(k), 1.0, 'lo', 0, 0.1, /\bLUB/]);
+  for (const [k, a1, a3] of [['A', 'I.0090', 'I.0092'], ['B', 'I.0410', 'I.0412']]) L.push([a1, lopP(k), 1.5, 'lo', 0, 0 /* no dead band: the pressure steps 0 / 2.0 */, /\bLUB/], [a3, lopP(k), 1.0, 'lo', 0, 0, /\bLUB/]);
   const DB0 = 10;
   let map = null,
     mapK = '';
@@ -75091,7 +75109,7 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
     if (isFinite(ps)) for (const a of suc) (a.s.avw = a.s.avw || {})[a.key] = ps;
     for (const m of map) {
       const [, src, sp, dir, nc, db] = m.d,
-        DB = db || DB0,
+        DB = db != null ? db : DB0,
         x = val(src);
       if (!isFinite(x)) continue;
       /* the state of the switch: tripped (level low / pressure high) with its dead band */
@@ -85372,10 +85390,10 @@ window.LS_LIVE = (function () {
     /* audit 2026-11-03 (no_cheat C): the CRO items of PR-OPE-5002 that name a tag of the app tick from that tag (the SOP's own numbers) */
     [23, /Ensure Fluidizing Air Damper is at least 25% OPEN/i, DC('Fluidizing air damper FCV-FA1055-A1 or -B1 ≥ 25 %', () => [MV('FICFA1055A', 25, null), MV('FICFA1055B', 25, null)].some(c => c.ok()), () => 'FCV-FA1055-A1 / -B1 (FICFA1055A / B MV)')],
     [21, /^Fully OPEN FCV-DO1012 and Set to manual/i, MV('FCV-DO1012', 99, null)],
-    [21, /^Decrease opening of PCV-DO0002/i, MV('PICDO0005', null, 99)],
+    [21, /^Decrease opening of PCV-DO0002/i, ALL(MODE('PICDO0005', 'MAN'), PV('PICDO0005', 12.5, null, 'kg/cm2'))] /* SOP 21.16 / 21.17: PCV-DO0002 in manual, PI-D00005 = 12.5 kg/cm2 */,
     [24, /^> ?1200 ?mmH2O = with bed/i, VAL('SAP', 1200, null)],
     [24, /^> ?600 ?mmH2O = without bed/i, VAL('SAP', 600, null)],
-    [25, /^At DCS, Increase PAF Inlet Damper Manually/i, ALL(MODE('FICFA1071', 'MAN'), MV('FICFA1071', 5, null))],
+    [25, /^At DCS, Increase PAF Inlet Damper Manually/i, ALL(MODE('FICFA1071', 'MAN'), VAL('PA', 180, null), VAL('FP', -65, 35))] /* SOP 25.12 ~ 25.14: manual, target primary air flow 180 T/H (no bed) / 280 (with bed), furnace pressure inside the alarm limits of PT-FG1085 / 1086 (alarm list 20160912: L -65, normal -15, H 35 mmH2O) */,
     [26, /Dampers of secondary staging air nozzles close to limit stop/i, null],
     [33, /^Main Steam Pressure/i, null],
     [22, /IDF inlet Damper opening is about 93%/i, ALL(RUN.IDF, MV('PICFG108A', 85, 100))],
@@ -85385,7 +85403,7 @@ window.LS_LIVE = (function () {
     [22, /Select hydraulic coupling as furnace pressure control mode/i, MODE('PICFG108', 'MAN')],
     [22, /^Start IDF at DCS/i, RUN.IDF],
     [22, /Hydraulic Coupling Furnace Pressure Control at 13%/i, ALL(RUN.IDF, MV('PICFG108', 10, 16))],
-    [22, /maintaining furnace pressure of -15mmH2O/i, HOLD(60, ALL(RUN.IDF, VAL('FP', -25, -5)))],
+    [22, /maintaining furnace pressure of -15mmH2O/i, HOLD(60, ALL(RUN.IDF, VAL('FP', -65, 35)))],
     [22, /Adjust Primary\/Secondary Air Fan Damper Opening to 0%/i, ALL(RUN.IDF, MV('FICFA1081', null, 5))],
     [23, /At DCS, Start Selected Fluidizing Air Blower/i, RUN.FAB],
     [23, /until Fluidizing air flow increase to 26 T\/H/i, VAL('FA', 24, null)],
@@ -85397,7 +85415,7 @@ window.LS_LIVE = (function () {
     [25, /At DCS, Start Primary Air Fan/i, RUN.PAF],
     [25, /^180T\/H = No Bed/i, ALL(RUN.PAF, VAL('PA', 170, null))],
     [25, /^280 T\/H = With Bed/i, ALL(RUN.PAF, VAL('PA', 270, null))],
-    [25, /set the HC Control \(Furnace Pressure Control\) Mode in AUTO/i, ALL(MODE('PICFG108', 'AUTO'), VAL('FP', -25, -5))],
+    [25, /set the HC Control \(Furnace Pressure Control\) Mode in AUTO/i, ALL(MODE('PICFG108', 'AUTO'), VAL('FP', -65, 35))],
     [26, /Adjust Air Flow to >25% MCR/i, PURGE_AIR],
     [26, /^Total Air Flow > 25% MCR/i, PURGE_AIR],
     [26, /^Induced Draft Fan is running/i, RUN.IDF],
@@ -86421,14 +86439,14 @@ window.LS_GUIDE = (function () {
       { st: 2, sec: 24, t: 'Start the secondary air fan (SAF)', d: 'Close the secondary air damper (0 %) before starting the fan.', c: R.SAF, a: [btn('SA damper 0 %', () => A.man('FICFA1081', 0)), mot('M.3303', 'SAF')], fps: ['FICFA1081'], field: [23] },
       /* live check #107 (PR-OPE-5002 SAF START-UP: "Adjust SAF Inlet Damper Manually up until combustion air flow increase to 200T/H (You can use
          double arrow but be cautious of the furnace pressure reaction)"): the SA flow by hand to 200 T/H, the IDF coupling with it (-15) */
-      { st: 2, sec: 24, t: 'Secondary air fan inlet damper up: secondary air 200 T/H, furnace pressure −15 mmH₂O', d: 'Do: raise the SA damper FICFA1081 (MANUAL) until the secondary air flow is 200 T/H. ▲▲ (+5 %) is allowed, but watch the furnace pressure: when it rises toward positive, raise the IDF coupling PICFG108 (MV ▲); when it is below −25, lower it. The damper is about 34 % at 200 T/H.', c: b.HOLD(10, b.ALL(b.VAL('SA', 185, 215), b.VAL('FP', -25, -5))), fps: ['FICFA1081', 'PICFG108'], seek: seekB([[() => h().SA(), 190, 210, 'FICFA1081', 2], [() => h().FP(), -25, -5, 'PICFG108', 1, 1]]), a: [btn('SA damper ▲▲ +5 %', () => A.man('FICFA1081', Math.max(0, Math.min(100, Math.round(mv('FICFA1081')) + (5))))), btn('SA damper ▲ +1 %', () => A.man('FICFA1081', Math.max(0, Math.min(100, Math.round(mv('FICFA1081')) + (1))))), btn('SA damper ▼ −1 %', () => A.man('FICFA1081', Math.max(0, Math.min(100, Math.round(mv('FICFA1081')) + (-1))))), btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1)))] },
+      { st: 2, sec: 24, t: 'Secondary air fan inlet damper up: secondary air 200 T/H, furnace pressure −15 mmH₂O', d: 'Do: raise the SA damper FICFA1081 (MANUAL) until the secondary air flow is 200 T/H. ▲▲ (+5 %) is allowed, but watch the furnace pressure: when it rises toward positive, raise the IDF coupling PICFG108 (MV ▲); when it is below −25, lower it. The damper is about 34 % at 200 T/H.', c: b.HOLD(10, b.ALL(b.VAL('SA', 185, 215), b.VAL('FP', -65, 35))), fps: ['FICFA1081', 'PICFG108'], seek: seekB([[() => h().SA(), 190, 210, 'FICFA1081', 2], [() => h().FP(), -65, 35, 'PICFG108', 1, 1]]), a: [btn('SA damper ▲▲ +5 %', () => A.man('FICFA1081', Math.max(0, Math.min(100, Math.round(mv('FICFA1081')) + (5))))), btn('SA damper ▲ +1 %', () => A.man('FICFA1081', Math.max(0, Math.min(100, Math.round(mv('FICFA1081')) + (1))))), btn('SA damper ▼ −1 %', () => A.man('FICFA1081', Math.max(0, Math.min(100, Math.round(mv('FICFA1081')) + (-1))))), btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1)))] },
       /* 3.2.0-beta.23: the PAF start interlock DITL-26A row 8 "PAF LUB. OIL PUMP ALL STOPPED" = 0 (DITL-24): a lube oil pump first */
       { st: 2, sec: 25, t: 'Start primary air fan lube oil pump A (DITL-24)', d: 'The primary air fan will not start with no lube oil pump running (DITL-26A row 8 "PAF LUB. OIL PUMP ALL STOPPED"). The pump has no DCS memory on the ABC, so it is started on DITL-24.', c: C('PAF lube oil pump A running (DITL-24)', () => dRun('DITL-24') !== 0, () => (dRun('DITL-24') === 1 ? 'RUNNING' : dRun('DITL-24') === 0 ? 'STOPPED' : '— (one world OFF)')), a: [dmot('DITL-24', 'PAF LO pump A')] },
       { st: 2, sec: 25, t: 'Start the primary air fan (PAF)', d: 'Close the primary air damper (0 %) before starting the fan.', c: R.PAF, a: [btn('PA damper 0 %', () => A.man('FICFA1071', 0)), mot('M.3302', 'PAF')], fps: ['FICFA1071'], field: [24] },
       /* live check #103 / #107 (PR-OPE-5002 PAF START-UP: "Increase PAF Inlet Damper Manually (Use Single Arrow ...). Maintain the Furnace
          pressure to -15mmH2O whilst simultaneously increasing HC Speed of IDF. Target Primary Air Flow: 180T/H = No Bed") */
-      { st: 2, sec: 25, t: 'Primary air fan inlet damper up (single arrow): primary air 180 T/H, ID fan coupling up (−15 mmH₂O)', d: 'Do: raise the PA damper FICFA1071 (MANUAL) 1 % at a time (single arrow) until 180 T/H (no bed). At the same time raise the IDF hydraulic coupling PICFG108 (MV ▲) to keep the furnace pressure near −15 mmH₂O. At the end the PA damper is about 18 % and the coupling about 16 % (PA 180 + SA 200 + FA 26 ≈ 406 T/H, above 25 % MCR = 151.5 T/H, DESIGN BASE total air 606 T/H).', c: b.HOLD(10, b.ALL(b.VAL('PA', 170, 195), b.PURGE_AIR, b.VAL('FP', -25, -5))), fps: ['FICFA1071', 'PICFG108'], seek: seekB([[() => h().PA(), 175, 190, 'FICFA1071', 1], [() => h().FP(), -25, -5, 'PICFG108', 1, 1]]), a: [btn('PA damper ▲ +1 %', () => A.man('FICFA1071', Math.max(0, Math.min(100, Math.round(mv('FICFA1071')) + (1))))), btn('PA damper ▼ −1 %', () => A.man('FICFA1071', Math.max(0, Math.min(100, Math.round(mv('FICFA1071')) + (-1))))), btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1)))] },
-      { st: 2, sec: 25, t: 'Furnace pressure control PICFG108 in AUTO, SV −15 mmH₂O', d: 'Do: when the hydraulic coupling is at about 16 % and the furnace pressure is steady at about −15 mmH₂O, PICFG108 A, SV −15 (PR-OPE-5002). While the MV is below 14 %, PICFG108 is FORCE MANUAL (ABC-008 M.0205): AUTO is not allowed yet. In AUTO, PICFG108 moves the coupling to hold −15.', c: b.ALL(b.MODE('PICFG108', 'AUTO'), b.SV('PICFG108', -16, -14), b.HOLD(30, b.VAL('FP', -25, -5))), fps: ['PICFG108'], seek: seekB([[() => +mv('PICFG108'), 15, 100, 'PICFG108', 1]]) /* the drawing forces MANUAL below 14 % (M.0205): the MV up first */, a: [btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1))), btn('PICFG108 A, SV −15', () => (mv('PICFG108') < 14 ? 'PICFG108 is still FORCE MANUAL (ABC-008 M.0205: IDF coupling < 14 %): raise the MV first' : h().FP() < -25 || h().FP() > -5 ? 'Wait: furnace pressure ' + f0(h().FP()) + ' mmH₂O (must be near −15, −25 ~ −5)' : A.auto('PICFG108', -15)))] },
+      { st: 2, sec: 25, t: 'Primary air fan inlet damper up (single arrow): primary air 180 T/H, ID fan coupling up (−15 mmH₂O)', d: 'Do: raise the PA damper FICFA1071 (MANUAL) 1 % at a time (single arrow) until 180 T/H (no bed). At the same time raise the IDF hydraulic coupling PICFG108 (MV ▲) to keep the furnace pressure near −15 mmH₂O. At the end the PA damper is about 18 % and the coupling about 16 % (PA 180 + SA 200 + FA 26 ≈ 406 T/H, above 25 % MCR = 151.5 T/H, DESIGN BASE total air 606 T/H).', c: b.HOLD(10, b.ALL(b.VAL('PA', 170, 195), b.PURGE_AIR, b.VAL('FP', -65, 35))), fps: ['FICFA1071', 'PICFG108'], seek: seekB([[() => h().PA(), 175, 190, 'FICFA1071', 1], [() => h().FP(), -65, 35, 'PICFG108', 1, 1]]), a: [btn('PA damper ▲ +1 %', () => A.man('FICFA1071', Math.max(0, Math.min(100, Math.round(mv('FICFA1071')) + (1))))), btn('PA damper ▼ −1 %', () => A.man('FICFA1071', Math.max(0, Math.min(100, Math.round(mv('FICFA1071')) + (-1))))), btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1)))] },
+      { st: 2, sec: 25, t: 'Furnace pressure control PICFG108 in AUTO, SV −15 mmH₂O', d: 'Do: when the hydraulic coupling is at about 16 % and the furnace pressure is steady at about −15 mmH₂O, PICFG108 A, SV −15 (PR-OPE-5002). While the MV is below 14 %, PICFG108 is FORCE MANUAL (ABC-008 M.0205): AUTO is not allowed yet. In AUTO, PICFG108 moves the coupling to hold −15.', c: b.ALL(b.MODE('PICFG108', 'AUTO'), b.SV('PICFG108', -16, -14), b.HOLD(30, b.VAL('FP', -65, 35))), fps: ['PICFG108'], seek: seekB([[() => +mv('PICFG108'), 15, 100, 'PICFG108', 1]]) /* the drawing forces MANUAL below 14 % (M.0205): the MV up first */, a: [btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1))), btn('PICFG108 A, SV −15', () => (mv('PICFG108') < 14 ? 'PICFG108 is still FORCE MANUAL (ABC-008 M.0205: IDF coupling < 14 %): raise the MV first' : h().FP() <= -65 || h().FP() >= 35 ? 'Wait: furnace pressure ' + f0(h().FP()) + ' mmH₂O (must be inside the alarm limits L −65 ~ H 35, normal −15: alarm list PT-FG1085 / 1086)' : A.auto('PICFG108', -15)))] },
       /* ---- 3 purge ---- */
       {
         st: 3,

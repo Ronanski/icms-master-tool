@@ -220,25 +220,10 @@ const DREAD = (function () {
       /* 3.2.0-beta.28 (human run of the Training: BFWP-A START stayed locked): an ANALOG input row (DITL-23A row 12 PT-FW1115-A BFWP
          A SUCTION PRESSURE > 1.5 kg/cm2) is met when the comparator of the drawing that reads it says 1; its own net is the analog value
          (0 / 1 meaningless). Before, the interlock read the analog net: always 0, the START of the Training was locked */
-      /* Mina H2 (beta.89, Worker, Step 26: PT-FW1115-A > 1.5 read "not complete" for 45 s, right after DITL-23A was opened): with the
-         engine in the worker the comparator output came from the nets the worker sends, a moment (or a page open) late. The comparator
-         is worked out here from the analog value itself (s.avw / av / av150, the values the engine scans: 03b-sim.js avOf, CMP), the same
-         formula as the engine; the nets are used when the value is not known */
-      const AV = typeof avOf === 'function' ? avOf(s) : null,
-        avv = n => {
-          const a = an.find(x => x.net === n);
-          return a && AV && AV[a.key] !== undefined ? +AV[a.key] : a && a.def !== undefined ? +a.def : NaN;
-        };
       return rowNets(s, row, 'L').some(n => {
         if (!an.some(a => a.net === n)) return v[n];
         const g = s.nl.gates.filter(x => x.t === 'CMP' && x.ins[0] === n);
-        if (!g.length) return v[n];
-        return g.some(x => {
-          const v0 = avv(n),
-            sp = x.spNet !== undefined ? avv(x.spNet) : x.sp;
-          if (!isFinite(v0) || !isFinite(sp)) return x.out.some(o => v[o]);
-          return x.cmp === '>' ? (x.eq ? v0 >= sp : v0 > sp) : x.eq ? v0 <= sp : v0 < sp;
-        });
+        return g.length ? g.some(x => x.out.some(o => v[o])) : v[n];
       })
         ? 1
         : 0;
