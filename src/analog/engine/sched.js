@@ -38,9 +38,13 @@ AN.sched = (() => {
     posted = false;
     if (busy) return;
     busy = true;
-    const t0 = performance.now();
+    const t0 = performance.now(),
+      /* Mina #M23: a job that waits behind the clock gets a bigger slice (4 ms kept the frames smooth but at x300 / a slow PC the
+         plant fell behind for ever): 8 ms when the oldest job waits > 120 ms, 16 ms > 300 ms */
+      age = Q.length ? t0 - Q[0].at : 0,
+      budget = age > 300 ? 16 : age > 120 ? 8 : AN_SLICE;
     try {
-      while (Q.length && performance.now() - t0 < AN_SLICE) {
+      while (Q.length && performance.now() - t0 < budget) {
         const j = Q[0],
           t1 = performance.now();
         let r;
@@ -61,10 +65,15 @@ AN.sched = (() => {
   mc.port1.onmessage = pump;
   return {
     add(key, g, fin) {
-      Q.push({ key, g, end: fin, cpu: 0 });
+      Q.push({ key, g, end: fin, cpu: 0, at: performance.now() });
       post();
     },
     has: key => Q.some(j => j.key === key),
+    /* how long the oldest job of a group waits (ms; 0 = none queued) */
+    age: key => {
+      const j = Q.find(x => x.key === key);
+      return j ? performance.now() - j.at : 0;
+    },
     flush() {
       if (busy) return;
       busy = true;
@@ -92,6 +101,18 @@ AN.sched = (() => {
 
 /* group 1: ABC */
 let anAcc = 0;
+/* the tiers (light mode xK), judged on every 100 ms tick (Mina #M23; before: once per 10 finished steps, so a plant that fell behind
+   finished few steps and waited seconds for its tier): up when the step is behind the clock (its job still queued after 300 ms) or
+   costs > 35 ms, down < 14 ms; at most one change each 0.5 s */
+function anTierTick() {
+  if (AN.tierLock) return;
+  AN._tc = (AN._tc || 0) + 1;
+  if (AN._tc < 5) return;
+  const k = AN.tierK || 1,
+    behind = AN.sched.age('abc') > 300,
+    nk = behind || AN._ms > 35 ? Math.min(6, k + 1) : AN._ms < 14 ? Math.max(1, k - 1) : k;
+  if (nk !== k) ((AN.tierK = nk), (AN._tc = 0));
+}
 /* 3.2.0 Web Worker (src/world/eng.js): when the engine runs in the worker, the page steps nothing (it is the mirror) */
 const anMirror = () => !!(window.ENG && ENG.mode === 'mirror');
 setInterval(() => {
@@ -102,6 +123,7 @@ setInterval(() => {
   const sh = cs();
   if (!sh || !sh.S) return;
   anAcc += 0.1 * AN.spd;
+  anTierTick();
   if (AN.sched.has('abc')) return;
   const dt = anAcc,
     n = Math.max(1, Math.ceil(dt / 0.5));
@@ -135,10 +157,6 @@ setInterval(() => {
       /* the tiers: the CPU time of the step (its slices), not the time between them */
       const ms = j.cpu;
       AN._ms = AN._ms == null ? ms : AN._ms * 0.85 + ms * 0.15;
-      if (!AN.tierLock && (AN._tn = (AN._tn || 0) + 1) % 10 === 0) {
-        const k = AN.tierK || 1;
-        AN.tierK = AN._ms > 35 ? Math.min(6, k + 1) : AN._ms < 14 ? Math.max(1, k - 1) : k;
-      }
     }
   );
 }, 100);
