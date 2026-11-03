@@ -38,13 +38,9 @@ AN.sched = (() => {
     posted = false;
     if (busy) return;
     busy = true;
-    const t0 = performance.now(),
-      /* Mina #M23: a job that waits behind the clock gets a bigger slice (4 ms kept the frames smooth but at x300 / a slow PC the
-         plant fell behind for ever): 8 ms when the oldest job waits > 120 ms, 16 ms > 300 ms */
-      age = Q.length ? t0 - Q[0].at : 0,
-      budget = age > 300 ? 16 : age > 120 ? 8 : AN_SLICE;
+    const t0 = performance.now();
     try {
-      while (Q.length && performance.now() - t0 < budget) {
+      while (Q.length && performance.now() - t0 < AN_SLICE) {
         const j = Q[0],
           t1 = performance.now();
         let r;
@@ -65,15 +61,10 @@ AN.sched = (() => {
   mc.port1.onmessage = pump;
   return {
     add(key, g, fin) {
-      Q.push({ key, g, end: fin, cpu: 0, at: performance.now() });
+      Q.push({ key, g, end: fin, cpu: 0 });
       post();
     },
     has: key => Q.some(j => j.key === key),
-    /* how long the oldest job of a group waits (ms; 0 = none queued) */
-    age: key => {
-      const j = Q.find(x => x.key === key);
-      return j ? performance.now() - j.at : 0;
-    },
     flush() {
       if (busy) return;
       busy = true;
@@ -99,74 +90,56 @@ AN.sched = (() => {
   };
 })();
 
-/* group 1: ABC */
-let anAcc = 0;
-/* the tiers (light mode xK), judged on every 100 ms tick (Mina #M23; before: once per 10 finished steps, so a plant that fell behind
-   finished few steps and waited seconds for its tier): up when the step is behind the clock (its job still queued after 300 ms) or
-   costs > 35 ms, down < 14 ms; at most one change each 0.5 s */
-function anTierTick() {
-  if (AN.tierLock) return;
-  AN._tc = (AN._tc || 0) + 1;
-  if (AN._tc < 5) return;
-  const k = AN.tierK || 1,
-    behind = AN.sched.age('abc') > 300,
-    nk = behind || AN._ms > 35 ? Math.min(6, k + 1) : AN._ms < 14 ? Math.max(1, k - 1) : k;
-  if (nk !== k) ((AN.tierK = nk), (AN._tc = 0));
-}
-/* 3.2.0 Web Worker (src/world/eng.js): when the engine runs in the worker, the page steps nothing (it is the mirror) */
+/* group 1: ABC. Speed (user 2026-11-03, Mina M23: the Plant view reached x110 ~ 120 before P3 and x55 ~ 68 after): the step runs at once,
+   as before 18f7a64 (interaction.js), not in 4 ms slices of the queue; the queue (AN.sched) stays for the long actions and flush */
 const anMirror = () => !!(window.ENG && ENG.mode === 'mirror');
 setInterval(() => {
-  if (!live() || !AN.run || AN._loading || anMirror()) {
-    anAcc = 0;
-    return;
-  }
+  if (!live() || !AN.run || AN._loading || anMirror()) return;
   const sh = cs();
   if (!sh || !sh.S) return;
-  anAcc += 0.1 * AN.spd;
-  anTierTick();
-  if (AN.sched.has('abc')) return;
-  const dt = anAcc,
+  const dt = 0.1 * AN.spd,
     n = Math.max(1, Math.ceil(dt / 0.5));
-  anAcc = 0;
   histRec(sh, 1);
-  const K = AN.tierK || 1;
-  AN.sched.add(
-    'abc',
-    (function* () {
-      for (let i = 0; i < n; i++) {
-        if (K > 1) yield* stepTierG(sh, dt / n, K);
-        else yield* stepSetG(sh, dt / n);
-        /* 3.2.0-beta.21: the Training coach (src/ui/training/guide.js) acts after each step, at the time of the plant */
-        if (AN.onStep)
-          try {
-            AN.onStep(dt / n);
-          } catch (e) {}
-      }
-    })(),
-    j => {
-      /* the drawing and the side panel are painted only while the Logic page shows them (interaction.js anShown); elsewhere only
-         the trends and the hooks run, and the drawing is painted when it comes back */
-      if (anShown()) {
-        AN._pStale = 0;
-        paint();
-        panelUpd();
-      } else {
-        AN._pStale = 1;
-        panelUpd(false, true);
-      }
-      /* the tiers: the CPU time of the step (its slices), not the time between them */
-      const ms = j.cpu;
-      AN._ms = AN._ms == null ? ms : AN._ms * 0.85 + ms * 0.15;
+  const t0_ = performance.now(),
+    K = AN.tierK || 1;
+  for (let i = 0; i < n; i++) {
+    if (K > 1) stepTier(sh, dt / n, K);
+    else stepSet(sh, dt / n);
+    /* 3.2.0-beta.21: the Training coach (src/ui/training/guide.js) acts after each step, at the time of the plant */
+    if (AN.onStep)
+      try {
+        AN.onStep(dt / n);
+      } catch (e) {}
+  }
+  /* speed (user 2026-11-01, 6x CPU): the drawing and the side panel are painted only while the Logic page shows them; on Home,
+     Training or a plant page only the trends and the hooks run (a faceplate, the plant window), and the drawing is painted when it
+     comes back (anShown) */
+  if (anShown()) {
+    AN._pStale = 0;
+    paint();
+    panelUpd();
+  } else {
+    AN._pStale = 1;
+    panelUpd(false, true);
+  }
+  {
+    const ms = performance.now() - t0_;
+    AN._ms = AN._ms == null ? ms : AN._ms * 0.85 + ms * 0.15;
+    if (!AN.tierLock && (AN._tn = (AN._tn || 0) + 1) % 10 === 0) {
+      const k = AN.tierK || 1;
+      AN.tierK = AN._ms > 35 ? Math.min(6, k + 1) : AN._ms < 14 ? Math.max(1, k - 1) : k;
     }
-  );
+  }
 }, 100);
 
-/* group 2: DITL world */
+/* group 2: DITL world, one whole scan every 200 ms as before 18f7a64 (world.js setInterval): the scan job run to the end at once */
 setInterval(() => {
   const W = window.WORLD;
-  if (!W || !W.scanJob || AN.sched.has('world') || anMirror()) return;
+  if (!W || !W.scanJob || anMirror()) return;
   const g = W.scanJob();
-  if (g) AN.sched.add('world', g);
+  if (!g) return;
+  AN.sched.flush();
+  for (const _ of g);
 }, 200);
 /* for the checks (the recorder that proves a sliced step = a step at once) */
 AN.stepSetG = stepSetG;
