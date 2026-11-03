@@ -301,7 +301,9 @@ window.LS_LIVE = (function () {
     Tw: ['Boiler water temperature', '°C', '', ''],
     oilF: ['Burner oil, total', 'T/H', 'ABC-003A', ''],
     rpm: ['Turbine speed', 'rpm', 'ABC-050', ''],
-    RHP: ['Reheat pressure', 'kg/cm2', 'ABC-052', 'PICHR1003']
+    RHP: ['Reheat pressure', 'kg/cm2', 'ABC-052', 'PICHR1003'],
+    /* audit 2026-11-03 (SOP 24.13 / 24.14): the secondary air pressure to the furnace PT-FA1088 (IO list STN101 AI0289, ABC-003A) */
+    SAP: ['Secondary air pressure (PT-FA1088)', 'mmH2O', 'ABC-003A', 'AI0289']
   };
   const getV = k => {
     if (k === 'AIR') return hv('PA') + hv('SA') + hv('FA');
@@ -511,7 +513,13 @@ window.LS_LIVE = (function () {
     [20, /SET FCV-FW1130-2 to MANUAL/i, MODE('FCV-FW1130-2', 'MAN')],
     [20, /^Drum level \(-150mm\)/i, HOLD(30, VAL('lvl', -200, -100))],
     [22, /Ensure Secondary and Primary Air Damper are 100% OPEN/i, ALL(MV('FICFA1081', 95, null), MV('FICFA1071', 95, null))],
-    [23, /Ensure Fluidizing Air Damper is at least 25% OPEN/i, null],
+    /* audit 2026-11-03 (no_cheat C): the CRO items of PR-OPE-5002 that name a tag of the app tick from that tag (the SOP's own numbers) */
+    [23, /Ensure Fluidizing Air Damper is at least 25% OPEN/i, DC('Fluidizing air damper FCV-FA1055-A1 or -B1 ≥ 25 %', () => [MV('FICFA1055A', 25, null), MV('FICFA1055B', 25, null)].some(c => c.ok()), () => 'FCV-FA1055-A1 / -B1 (FICFA1055A / B MV)')],
+    [21, /^Fully OPEN FCV-DO1012 and Set to manual/i, MV('FCV-DO1012', 99, null)],
+    [21, /^Decrease opening of PCV-DO0002/i, MV('PICDO0005', null, 99)],
+    [24, /^> ?1200 ?mmH2O = with bed/i, VAL('SAP', 1200, null)],
+    [24, /^> ?600 ?mmH2O = without bed/i, VAL('SAP', 600, null)],
+    [25, /^At DCS, Increase PAF Inlet Damper Manually/i, ALL(MODE('FICFA1071', 'MAN'), MV('FICFA1071', 5, null))],
     [26, /Dampers of secondary staging air nozzles close to limit stop/i, null],
     [33, /^Main Steam Pressure/i, null],
     [22, /IDF inlet Damper opening is about 93%/i, ALL(RUN.IDF, MV('PICFG108A', 85, 100))],
