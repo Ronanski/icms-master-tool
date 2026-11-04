@@ -515,10 +515,10 @@ window.LS_GUIDE = (function () {
           max: 1,
           sby: 1,
           t: 'Start a make-up water pump (MWP) and fill the expansion tank',
-          d: 'Do: START one make-up water pump, REMOTE + AUTO on the standby, then fill the expansion tank to its normal level and close the valve. Normal level is NL 1.7 m (fill with XV-MU1109 or the bypass V-MU1033). The make-up water pumps are on the DCS (DITL-112). XV-MU1109 (DITL-78) is pneumatic: it opens only with instrument air (≥ 3.5 kg/cm²); without it (Cold, before Step 11) the field operator uses the bypass V-MU1033. The header must be > 6.0 kg/cm² for the water to flow in.',
+          d: 'Do: START one make-up water pump, REMOTE + AUTO on the standby, then fill the expansion tank to its normal level and close the valve. Normal level is NL 1.7 m (fill with XV-MU1109 or the bypass V-MU1033). The make-up water pumps are on the DCS (DITL-112). XV-MU1109 (DITL-78) is pneumatic, spring opening (vendor sheet K1AU3-E2-0-123 item 39): without instrument air (Cold, before Step 11) it is OPEN and cannot be closed; with air (≥ 3.5 kg/cm²) the DCS opens and closes it. The header must be > 6.0 kg/cm² for the water to flow in.',
           c: C(
             '1 make-up water pump running, standby REMOTE + AUTO, expansion tank ≥ 1.7 m and fill valve closed' + ' (XV-MU1109 AUTO when instrument air is available)',
-            () => !WL() || (mwN() >= 1 && mwStby() >= 0 && MW.some((nm, j) => dRun(nm) !== 1 && mwAuto(j)) && +U().cwPrime >= 1 && et() >= 1.69 && closed() && (xvAuto() || !air())),
+            () => !WL() || (mwN() >= 1 && mwStby() >= 0 && MW.some((nm, j) => dRun(nm) !== 1 && mwAuto(j)) && +U().cwPrime >= 1 && et() >= 1.69 && (closed() || (!air() && !byp())) && (xvAuto() || !air())),
             () =>
               (WL() ? MW.map((nm, j) => ML[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : (remOf(nm) ? 'REM' : 'LOC') + (locRun(nm, 14) === 1 ? ' AUTO' : ' MAN'))).join(', ') : '— (one world OFF)') +
               ' · T-1109 ' + et().toFixed(2) + ' m · XV-MU1109 ' + (xvOpen() ? 'OPEN' : 'CLOSED') + (xvAuto() ? ' AUTO' : ' MAN') + ' · V-MU1033 ' + (byp() ? 'OPEN' : 'CLOSED') + ' · V-CW1001 ' + (fstate('cw1001') ? 'OPEN' : 'CLOSED') +
@@ -531,9 +531,9 @@ window.LS_GUIDE = (function () {
             dmot('DITL-112 #C', 'MWP-C'),
             /* the order is the order of the SOP (the banner names the first one not done): open the fill (XV-MU1109 with instrument air,
                else the bypass), close it at NL 1.7 m, then XV-MU1109 to AUTO when instrument air is available */
-            Object.assign(btn('XV-MU1109 OPEN (DITL-78)', () => (!WL() ? '' : xvAuto() ? 'XV-MU1109 is in AUTO: put it in MAN first to open it.' : !air() ? 'No instrument air (IA < 3.5 kg/cm²): XV-MU1109 will not open. Use the bypass V-MU1033 (field).' : (dPress('DITL-78', 4), '')), () => xvOpen() || !air() || byp() || et() >= 1.69), { dg: ['DITL-78', 4] }),
+            Object.assign(btn('XV-MU1109 OPEN (DITL-78)', () => (!WL() ? '' : xvAuto() ? 'XV-MU1109 is in AUTO: put it in MAN first to open it.' : !air() ? 'No instrument air (IA < 3.5 kg/cm²): XV-MU1109 is spring opening (vendor sheet item 39), it is already open by itself.' : (dPress('DITL-78', 4), '')), () => xvOpen() || !air() || byp() || et() >= 1.69), { dg: ['DITL-78', 4] }),
             Object.assign(btn('FIELD: OPEN V-MU1033 (bypass)', () => (byp() ? '' : (bypSet(true), '')), () => byp() || xvOpen() || et() >= 1.69), { loc: 1, fp: 'F:mu1033' }),
-            Object.assign(btn('XV-MU1109 CLOSE (DITL-78)', () => (!WL() ? '' : xvAuto() ? 'XV-MU1109 is in AUTO: the logic closes it at 85 % (1.7 m).' : (dPress('DITL-78', 8), '')), () => !xvOpen() || et() < 1.69), { dg: ['DITL-78', 8] }),
+            Object.assign(btn('XV-MU1109 CLOSE (DITL-78)', () => (!WL() ? '' : xvAuto() ? 'XV-MU1109 is in AUTO: the logic closes it at 85 % (1.7 m).' : !air() ? 'No instrument air (IA < 3.5 kg/cm²): XV-MU1109 is spring opening, it cannot close until the instrument air compressor runs (Step 11).' : (dPress('DITL-78', 8), '')), () => !xvOpen() || et() < 1.69), { dg: ['DITL-78', 8] }),
             Object.assign(btn('FIELD: CLOSE V-MU1033 (bypass)', () => (byp() ? (bypSet(false), '') : ''), () => !byp() || et() < 1.69), { loc: 1, fp: 'F:mu1033' }),
             /* live test #50: SOP 7.20 prime the closed cooling line from the tank (V-CW1001), 7.22 back to NL 1.7 m (make up if necessary) */
             Object.assign(
@@ -557,7 +557,7 @@ window.LS_GUIDE = (function () {
             ['Expansion tank level (LT-CW1109)', () => et(), 'm', x => (+x).toFixed(2), 'NL 1.7 m'],
             ['XV-MU1109', () => (xvOpen() ? 'OPEN' : 'CLOSED') + (xvAuto() ? ' · AUTO' : ' · MAN'), '', x => x, 'DITL-78'],
             ['V-MU1033 bypass', () => (byp() ? 'OPEN' : 'CLOSED'), '', x => x, 'field'],
-            ['Instrument air', () => +U().iaP || 0, 'kg/cm²', f1w, '≥ 3.5 for XV-MU1109']
+            ['Instrument air', () => +U().iaP || 0, 'kg/cm²', f1w, 'below 3.5: XV-MU1109 open (spring)']
           ]
         };
       })(),

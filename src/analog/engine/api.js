@@ -42,6 +42,11 @@ function anEngAPI() {
     swValves: () => Object.assign({}, AN_SW_V0, AN_FV0, AN_DO.fv0, AN_LM.fv0, AN_SRC.valve || {}),
     /* 3.2.1 (IRENE): the opening of one field valve (unit.js anFv / boiler.js anDoFv), read by the limit switch rows (world/plantsw.js) */
     fv: tag => (tag in AN_DO.fv0 ? anDoFv(tag) : anFv(tag)),
+    /* 3.2.1 (IRENE): the position of a DITL valve machine (0 ~ 100 %) and the pneumatic valves on the instrument air (unit.js AN_AV) */
+    ditlPos: (name, j) => anDitlPos(name, j || 0),
+    ditlRun: anDitlRun,
+    airValves: () => AN_AV,
+    avSv: anAvSv,
     /* 3.2.1 SEULGI (boiler.js): the manual valves of the diesel oil line-up, opening in % (AN_DO.fv0) */
     doValve: anDoValve,
     engState: { capture: anStateCapture, apply: anStateApply },
