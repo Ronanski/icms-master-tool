@@ -1,5 +1,28 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.25 — COAL, LIMESTONE AND SAND, mockup page 12 in the app (2026-11-04, JISOO : HMI MOCKUP)
+
+**Work done.** `docs/hmi/mockups/temp/12-coal-limestone-sand.html` → Plant view **COAL, LIMESTONE AND SAND** (`MK12`),
+`tools/hmi-mock/p12.py` → `src/ui/plant/hmi-mock-cls.js`.
+- Coal: feeders A / B / C = DITL-19 / #B / #C (motor faceplate; alarm "inlet plugging" / "belt tracking" = CRT outputs 14 / 16 ng
+  drawing, clean-out conveyor AUTO = output 23); XV-CL1061-x = DITL-20 / #B / #C (MOV faceplate, OPEN = output 6); FICCL1061A ~ C
+  (PV / SV / MV / mode), FIC-CM coal master, HS-COAL (faceplate).
+- Limestone (Rotofeed PLC): XV-LM1812 / XV-LM1815 = solenoid output ng DITL-LS170 / LS180, vent / balance / equalising = LS160 /
+  LS190 / LS200, isolating A ~ H = DITL-LS212 output rows 12 ~ 19, bypass air = rows 10 / 11, rotary feeder RUNNING = LS110 output 21,
+  vent filter = LS214 output 18; silo level at vessel pressures = plant model AN_LM (lmSilo, lmPl, lmPd).
+- Sand: XV-SD1804 / XV-SD1801 / XV-PA1800 / XV-AV1803 = DITL-771 outputs 22 / 24 / 25 / 20, vent filter = DITL-774 output 22,
+  isolating A / B = DITL-776 outputs 11 / 13, bypass air XV-PA1807 = output 12; silo level at vessel pressure = AN_SD (sdSilo, sdP).
+- NO-SOURCE ('-----'): coal bunker levels LT-CL1008-x at totalizers MIA-CL1061-x1 (I/O list AI pero walang sheet at walang plant
+  model), coal calorie correction, coal / power ratio, unit output, rotary feeder speed ST-M1311, XV-PA1805B.
+- Finding (para kay SEULGI): DITL-LS160 / 170 / 180 / 190 output "CLOSE FAULT" = 1 sa 150 MW (FULLY CLOSE indicator = 0: walang
+  fully-close limit switch ang model).
+
+**Checked (headless cloud).** 150 MW + RUN: feeders RUNNING, FICCL1061A ~ C 29.2 T/H AUTO, coal master 87.5 / 87.1 T/H REMOTE,
+HS-COAL REMOTE, XV-CL1061-x OPEN; limestone silo 69.4 %, lock / dispensing 0.0 / 0.1 kg/cm2, lahat ng valve CLOSED maliban sa bypass
+air OPEN; sand silo 50.1 %, bypass air OPEN; faceplates ng feeder A, XV-CL1061-B, coal master bumubukas; walang JS error.
+
+**Not checked.** Live test, limestone fill cycle at sand cycle mula sa page, phone size.
+
 ## 3.2.1-beta.24 — DIESEL AND BURNERS, mockup page 11 in the app (2026-11-04, JISOO : HMI MOCKUP)
 
 **Work done.** `docs/hmi/mockups/temp/11-diesel-burners.html` → Plant view **DIESEL AND BURNERS** (`MK11`), `tools/hmi-mock/p11.py` →
