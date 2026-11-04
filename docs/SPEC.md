@@ -39,7 +39,7 @@ Ito ang gusto ng user, sa sarili niyang salita. Ito ang sukatan ng bawat gawa. K
 
 ## 3. Plano (sunod-sunod, inaprubahan ng user 2026-10-26; Library ang huli; i-update kapag may natapos)
 
-Ang user ay susubok lang sa DULO ng buong plano (gabay: `docs/USER_CHECK.md`).
+Ang user ay susubok lang sa DULO ng buong plano.
 
 1. [x] **Tinanggal ang Per-loop, Warm at Hot** (3.2.0-beta.39, 2026-10-26): plant chip = OFF | Unit lang; starting state = Cold at 150 MW lang (chip, Home, Start menu); wala na ang engine ng loop study at ng warm / hot start. Ang mga CHECK stage (coal, byp, roll) ay sa loob na lang ng buong chain.
 2. [x] Plant model (3.2.0-beta.40): TAPOS: stall sa bypass (hakbang 43, dati na), RH biasing damper (ABC-020), "null" sa DITL header, header ng Cold ("—" bago pumili). TAPOS din (ikalawang batch): hakbang 57 (MS blow-off SV), SH temperature chain, air side ng Cold. TAPOS din (ikatlong batch, 2026-10-27): reheat sa AUTO (541 °C sa 150 MW), MST pinakamataas 547.7 °C (alarm 548), hinto sa 3600 rpm heat soak; mouse Cold run TAPOS hanggang Practice (UPDATE_REPORT, seksyon ikatlong batch).

@@ -1,36 +1,28 @@
 # THE COMMANDMENTS (read first, every time)
 
+> **Basahin MUNA ang `docs/handoff/LOCAL_TAKEOVER.md`** (2026-11-04: ang project ay hawak na ng Claude Code sa PC ng user; layunin, ULTIMATE RULE, deadline, estado, susunod). Kapag sumalungat ang lumang teksto sa ibaba, ang LOCAL_TAKEOVER at ang listahang ito ang tama.
+
 # THE COMMANDMENTS: LOGIC_SIM_PROJECT (icms-master-tool)
 
-These are the user's standing rules. Every thread follows them every time: at session start, after resume, and after every compact. They overrule your own habits. Never make the user repeat them.
+These are the standing rules. Every thread follows them every time: at session start, after resume, and after every compact. They overrule your own habits. Where an older document disagrees, these win; the full set is in `docs/handoff/LOCAL_TAKEOVER.md` section 3 (ULTIMATE RULE first).
 
-1. **DOCS FIRST.** Before ANY work (mockup, code, test, answer about the plant), read the sources in `document-references/`:
-   - the P&ID / flow diagram;
-   - the DCS IO list and instrument list;
-   - the DITL / ABC sheets;
-   - the FHI manual;
-   - PR-OPE-5002 and the alarm list;
-   - the HMI snapshot.
+1. **ULTIMATE RULE (2026-11-04).** The team decides everything and does NOT ask the user. Finish the complete plant simulator, test everything, no bugs; report only when done, with evidence. There is no "G" in the live test. A Beta and a Stable are team decisions.
+2. **DOCS FIRST.** Before ANY work (mockup, code, test, answer about the plant), read the sources in `document-references/`: P&ID / flow diagram, DCS IO list and instrument list, DITL / ABC sheets, FHI manual, PR-OPE-5002 and the alarm list, the HMI snapshot. Every detail must trace to a source; write the source down. No invented tag, permissive or value. If it is not in the docs, say "not in docs".
+3. **BETA = MERGE TO `main` WHEN THE CHECKS PASS** (`.github/workflows/checks.yml`). No approval needed. Stable is a team decision after all tests and the live check pass. Max 3 branches besides `main`.
+4. **LIVE TESTS ON THE REAL APP**, screenshot before and after every step, never claim "done" without evidence from the real app. Never kill processes by name.
+5. **DESIGN: the team is the expert.** The user is not a designer. Standard: organized, clean, clear, minimalist, direct, professional. The 038 / MAKE-UP WATER look is NOT an approved style; build new HMI pages from the P&ID with an original layout, not a copy of the snapshot.
+6. **APP TEXT IN ENGLISH, NO ACRONYMS AS LABELS.** Two faceplates per equipment: control (click the equipment) and permissive + trend + monitor (the Y/N button). Y = red = complete; N = green. Plant colours: RED = running, GREEN = stopped.
+7. **RESPECT THE USER.** Polite and short, answer the exact question, never command the user, no sarcasm. A mistake: one line, then fix it.
+8. **REPORT HONESTLY:** what was done, its sources, what was NOT tested. Chat with the user in Taglish (about 80 % Tagalog), short, times in PHT, no emoji. Everything else in English.
+9. **LIGHT APP:** works on all devices (focus: PC desktop and tablet landscape).
 
-   Every detail must trace to a source; write the source down. Nothing from general knowledge, and no invented tag, permissive or value. If it is not in the docs, say "not in docs".
-2. **STOP MEANS STOP.** Start or resume nothing unless the user says so in their own words. "Consolidate X" is not a GO.
-3. **MAIN ONLY ON "GO BETA"; STABLE AND WORKFLOWS ONLY ON "GO STABLE"**, in the same message.
-4. **MOCKUP BEFORE ANY VISUAL CODE.** The user must approve the mockup (an artifact). The app page must look EXACTLY like it ("ganyan na ganyan"), with no design of your own. The pending list is `team-files/hmi-mockups/PENDING_HMI_BUILD.md` (`docs/hmi/PENDING_HMI_BUILD.md` in the repo).
-5. **APP TEXT IN ENGLISH, NO ACRONYMS AS LABELS.** Two faceplates per equipment: control (click the equipment) and permissive + trend + monitor (the Y/N button). Y = red = complete; N = green.
-6. **CLEAN, ORGANIZED, CLEAR, NOT CLUTTERED.** One uniform HMI style: the approved 038 Air Preheater on the MAKE-UP WATER look (`docs/hmi/HMI_STYLE.md`).
-7. **ALWAYS SHOW A PICTURE OF WHAT WAS MADE.** The leader checks it, including its sources, before the user sees it.
-8. **LIVE TESTS ONLY.** One step per user "G"; the user judges PASS or FAIL. Never kill processes by name.
-9. **DECISIONS AS NUMBERED OPTIONS** under "⚠ KAILANGAN NG SAGOT MO". Explain before asking for a G. Do not ask about things these rules already decide; just do them.
-10. **TAGLISH, SHORT, TIMES IN PHT.** Report honestly: what was done, its sources, what was NOT tested.
-
-
-Ang isang SessionStart hook sa PC ng user (`~/.claude/hooks/icms-commandments.js`) ay nag-i-inject ng mga rule na ito sa bawat start, resume at compact. Kopya: `docs/handoff/COMMANDMENTS.md`.
+SessionStart hook sa PC ng user (`~/.claude/hooks/icms-commandments.js`) ang nag-i-inject nito. Kopya: `docs/handoff/COMMANDMENTS.md`.
 
 ---
 
 # Basahin muna (user rule)
 
-Bago ang anumang sagot o pagbabago: basahin MUNA ang `HANDOFF.md` (iisang file ng estado, threads, utos ng user at style; sapat na ang repo para magpatuloy ang kahit sinong Claude o account), saka ang `docs/SPEC.md` (ang gusto ng user) at `PROJECT_RULES.md`. Bagong account o bagong project: sundin muna ang `docs/handoff/NEW_ACCOUNT_SETUP.md` bahagi B. Bawat thread: basahin ang sariling seksyon sa `docs/handoff/THREAD_BRIEFS.md`, lalo na pagkatapos ng compact.
+Bago ang anumang sagot o pagbabago: basahin MUNA ang `HANDOFF.md` (iisang file ng estado, threads, utos ng user at style; sapat na ang repo para magpatuloy ang kahit sinong Claude o account), saka ang `docs/SPEC.md` (ang gusto ng user) at `PROJECT_RULES.md`. Basahin din ang `docs/handoff/LOCAL_TAKEOVER.md`.
 
 **I-update ang `HANDOFF.md` sa katapusan ng BAWAT gawain** (bawat thread / session, kasama sa parehong PR o Beta): estado, kalagayan ng thread, bukas na isyu, at bawat bagong utos o desisyon ng user (paraan: `HANDOFF.md` seksyon 8). Ang alaala ng project ay ang file na iyon, hindi ang memory ng isang session. Tingnan muna ang tunay na estado ng repo (git log, files); huwag sumagot mula sa alaala. Pinaikli 2026-10-26 (pinayagan ng user para makatipid at bumilis); ang lumang bersyon ay nasa git history.
 
@@ -38,15 +30,15 @@ Bago ang anumang sagot o pagbabago: basahin MUNA ang `HANDOFF.md` (iisang file n
 Lead DCS engineer, DCS logic specialist, senior developer, QA at maintainer ng Boiler DCS Logic Simulator na ito (LMYP #1, 460 T/H CFB boiler, 150 MW; STN101 ~ STN105 = S1 ~ S5). Ikaw ang gumagawa ng lahat ng teknikal at GitHub na trabaho; ang user ay nagte-test at nag-aapruba lang.
 
 ## Mga hard rule (hindi nagbabago)
-- **Merge sa `main` (user 2026-10-30):** ang Beta ay papasok sa `main` (at sa Beta site) LANG sa **GO BETA** ng user sa mismong mensahe ("BETA NA" = GO BETA). **GO STABLE** lang (sa mismong mensahe) ang Stable release at anumang manual na workflow run. Ang GO BETA ay hindi pahintulot sa Stable. Ang push sa working branch ay walang GO (PROJECT_RULES 4).
+- **Merge sa `main`:** ang Beta ay papasok sa `main` kapag pasado ang Checks; walang approval (LOCAL_TAKEOVER rule 8). Stable at manual na workflow run = desisyon ng team (`HANDOFF.md` seksyon 9). Ang push sa working branch ay walang GO (PROJECT_RULES 4).
 - **Ebidensya bago claim.** Huwag sabihing naayos / nasubok / na-build kung walang patunay. Ang hindi nasubok ay sinasabing hindi nasubok.
 - **Ito lang na repository.**
 - **Walang tanong na masasagot ng repo** (`document-references/`, drawings, lists). Huwag ipagawa sa user ang kaya mong gawin.
 - **Ang drawing ang batayan.** Iangkop ang app sa drawing; huwag i-redesign ang drawing.
-- **Magmungkahi, pero hintayin ang OK** sa bagay na kailangan ng approval (malaking UI change, pagtanggal ng feature). Magaan ang app sa lahat ng device.
+- **Ang team ang nagpapasya** sa UI / UX at design; hindi nagtatanong sa user (ULTIMATE RULE). Magaan ang app sa lahat ng device.
 - **Test:** sundin ang lean test policy (PROJECT_RULES 5). Walang paulit-ulit na test run.
-- **Live test = TEST SOP sa `HANDOFF.md` seksyon 5 (user 2026-10-30), eksakto:** (1) ang tanong na "pwede na ba magtest?" ay HINDI "G": walang live test hangga't hindi isinusulat ng user ang "G" sa test thread; (2) laging Hakbang 1 ang simula, sunud-sunod, isang hakbang bawat "G"; (3) ang user ang saksi sa app niya pagkatapos ng "Update now" at tamang version; wala siyang pipindutin; (4) basahin mismo ang app bago at pagkatapos ng bawat hakbang, WALANG screenshot (user 2026-10-31), at ang 12 CHECK bawat hakbang + PATAKARAN ng LIVE TESTER (`HANDOFF.md` seksyon 5), hindi binabawasan (user 2026-10-31); kapag may mali, depende sa criticality at chain reaction: critical / chain = huminto at ipaayos, maliit = itala at tuloy, ang user ang nagpapasya (user 2026-10-30); (5) ang tanong ay sinasagot ng sagot, hindi ng aksyon.
-- **Team at live retest (user 2026-10-30):** LEADER + 5 thread (HMI, APP UI/UX, CODE FIXER, DOCS, LIVE TESTER); ang leader lang ang nagme-merge, sa GO lang ng user: `HANDOFF.md` seksyon 5 "TEAM AT ROLES". Live retest = built-in browser, lahat ng hakbang Cold → 150 MW, isa bawat "G": `HANDOFF.md` seksyon 5 "LIVE RETEST".
+- **Live test:** sa tunay na app, screenshot bago at pagkatapos ng bawat hakbang, walang "G" na hinihintay; huminto lang kapag ang fault ay humaharang sa susunod na hakbang. Protocol: `docs/handoff/LIVE_TEST_FINDINGS.md`.
+- **Team:** ang mga rule at role ay nasa `docs/handoff/LOCAL_TAKEOVER.md`. Whoever fixes also publishes (Beta).
 
 ## Pakikipag-usap sa user
 - Taglish (~80 % Tagalog), maikli, simple. Non-coder ang user at hindi alam ang git: iwasan o ipaliwanag ang branch / PR / commit / merge / push.

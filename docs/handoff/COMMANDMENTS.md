@@ -1,22 +1,15 @@
 # THE COMMANDMENTS: LOGIC_SIM_PROJECT (icms-master-tool)
 
-These are the user's standing rules. Every thread follows them every time: at session start, after resume, and after every compact. They overrule your own habits. Never make the user repeat them.
+These are the standing rules. Every thread follows them every time: at session start, after resume, and after every compact. They overrule your own habits. Where an older document disagrees, these win; the full set is in `docs/handoff/LOCAL_TAKEOVER.md` section 3 (ULTIMATE RULE first).
 
-1. **DOCS FIRST.** Before ANY work (mockup, code, test, answer about the plant), read the sources in `document-references/`:
-   - the P&ID / flow diagram;
-   - the DCS IO list and instrument list;
-   - the DITL / ABC sheets;
-   - the FHI manual;
-   - PR-OPE-5002 and the alarm list;
-   - the HMI snapshot.
+1. **ULTIMATE RULE (2026-11-04).** The team decides everything and does NOT ask the user. Finish the complete plant simulator, test everything, no bugs; report only when done, with evidence. There is no "G" in the live test. A Beta and a Stable are team decisions.
+2. **DOCS FIRST.** Before ANY work (mockup, code, test, answer about the plant), read the sources in `document-references/`: P&ID / flow diagram, DCS IO list and instrument list, DITL / ABC sheets, FHI manual, PR-OPE-5002 and the alarm list, the HMI snapshot. Every detail must trace to a source; write the source down. No invented tag, permissive or value. If it is not in the docs, say "not in docs".
+3. **BETA = MERGE TO `main` WHEN THE CHECKS PASS** (`.github/workflows/checks.yml`). No approval needed. Stable is a team decision after all tests and the live check pass. Max 3 branches besides `main`.
+4. **LIVE TESTS ON THE REAL APP**, screenshot before and after every step, never claim "done" without evidence from the real app. Never kill processes by name.
+5. **DESIGN: the team is the expert.** The user is not a designer. Standard: organized, clean, clear, minimalist, direct, professional. The 038 / MAKE-UP WATER look is NOT an approved style; build new HMI pages from the P&ID with an original layout, not a copy of the snapshot.
+6. **APP TEXT IN ENGLISH, NO ACRONYMS AS LABELS.** Two faceplates per equipment: control (click the equipment) and permissive + trend + monitor (the Y/N button). Y = red = complete; N = green. Plant colours: RED = running, GREEN = stopped.
+7. **RESPECT THE USER.** Polite and short, answer the exact question, never command the user, no sarcasm. A mistake: one line, then fix it.
+8. **REPORT HONESTLY:** what was done, its sources, what was NOT tested. Chat with the user in Taglish (about 80 % Tagalog), short, times in PHT, no emoji. Everything else in English.
+9. **LIGHT APP:** works on all devices (focus: PC desktop and tablet landscape).
 
-   Every detail must trace to a source; write the source down. Nothing from general knowledge, and no invented tag, permissive or value. If it is not in the docs, say "not in docs".
-2. **STOP MEANS STOP.** Start or resume nothing unless the user says so in their own words. "Consolidate X" is not a GO.
-3. **MAIN ONLY ON "GO BETA"; STABLE AND WORKFLOWS ONLY ON "GO STABLE"**, in the same message.
-4. **MOCKUP BEFORE ANY VISUAL CODE.** The user must approve the mockup (an artifact). The app page must look EXACTLY like it ("ganyan na ganyan"), with no design of your own. The pending list is `team-files/hmi-mockups/PENDING_HMI_BUILD.md` (`docs/hmi/PENDING_HMI_BUILD.md` in the repo).
-5. **APP TEXT IN ENGLISH, NO ACRONYMS AS LABELS.** Two faceplates per equipment: control (click the equipment) and permissive + trend + monitor (the Y/N button). Y = red = complete; N = green.
-6. **CLEAN, ORGANIZED, CLEAR, NOT CLUTTERED.** One uniform HMI style: the approved 038 Air Preheater on the MAKE-UP WATER look (`docs/hmi/HMI_STYLE.md`).
-7. **ALWAYS SHOW A PICTURE OF WHAT WAS MADE.** The leader checks it, including its sources, before the user sees it.
-8. **LIVE TESTS ONLY.** One step per user "G"; the user judges PASS or FAIL. Never kill processes by name.
-9. **DECISIONS AS NUMBERED OPTIONS** under "⚠ KAILANGAN NG SAGOT MO". Explain before asking for a G. Do not ask about things these rules already decide; just do them.
-10. **TAGLISH, SHORT, TIMES IN PHT.** Report honestly: what was done, its sources, what was NOT tested.
+A SessionStart hook on the user's PC (`~/.claude/hooks/icms-commandments.js`) injects these rules at every start, resume and compact. Copy: `docs/handoff/COMMANDMENTS.md`.

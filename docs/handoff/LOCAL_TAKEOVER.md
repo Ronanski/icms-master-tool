@@ -35,7 +35,7 @@ Pinakabagong utos ng user (2026-11-04): tapusin bilang **kumpletong plant simula
 
 Ang mga lumang rule sa `HANDOFF.md` seksyon 5 at `CLAUDE.md` na sumasalungat dito (GO BETA, isang hakbang bawat G, walang screenshot) ay **pinalitan na** ng mga rule sa itaas.
 
-Ang project memory (mga file ng utos at aral ng user) ay nasa PC na: `C:\Users\Ronanski\.claude\projects\C--Users-Ronanski-Downloads-app-projects-ai-collections-projects-icms-master-tool\memory\` (index `MEMORY.md`). Kopya ng lumang account: `docs/handoff/PROJECT_MEMORY.md`. Mas bago ang mga rule sa seksyon 3 kaysa sa memory kapag nagkasalungat.
+Ang project memory (mga file ng utos at aral ng user) ay nasa PC na: `C:\Users\Ronanski\.claude\projects\C--Users-Ronanski-Downloads-app-projects-ai-collections-projects-icms-master-tool\memory\` (index `MEMORY.md`). Mas bago ang mga rule sa seksyon 3 kaysa sa memory kapag nagkasalungat.
 
 ## 4. Kasalukuyang estado (2026-11-04 ~11 PM PHT)
 
@@ -81,7 +81,7 @@ Sa `document-references/` (untracked, lokal lang):
 
 Naka-commit na: DITL / ABC, IO / memory list, instrument list, flow diagram (K1AU3-A1-0-001), FHI manual, PR-OPE-5002 / 5003 / 5004, alarm list, HMI snapshot, fan manual, at iba pa (`CLAUDE.md` rule 4).
 
-Mga lugar sa repo: estado `HANDOFF.md`; gusto ng user `docs/SPEC.md`; rules `PROJECT_RULES.md`, `docs/handoff/COMMANDMENTS.md`; HMI `docs/hmi/`; live findings `docs/handoff/LIVE_TEST_FINDINGS.md`; thread briefs `docs/handoff/THREAD_BRIEFS.md`; progress ng team `../team-files/progress/` (lokal).
+Mga lugar sa repo: estado `HANDOFF.md`; gusto ng user `docs/SPEC.md`; rules `PROJECT_RULES.md`, `docs/handoff/COMMANDMENTS.md`; HMI `docs/hmi/`; live findings `docs/handoff/LIVE_TEST_FINDINGS.md`; progress ng team `../team-files/progress/` (lokal).
 
 ## 8. Kasaysayan sa maikli
 
