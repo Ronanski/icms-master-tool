@@ -36,3 +36,15 @@ IRENE : PLANT MODEL, 2026-11-04 PHT. Code: `src/analog/engine/unit.js` (`AN_LP`,
 - LPH bypass MV-CD1003 at outlet MOV MV-CD1002 (ZT-CD1002 / 1003): hindi pa kasama.
 - Ang deaerator ay hindi pa gumagamit ng TT-CD1122 sa heat balance niya.
 - Live test: hindi pa.
+
+## Dagdag (3.2.1-beta.13): ang anim na value ng page 05 CONDENSATE
+
+Hiling ng coordinator (JISOO page 05, beta.12): anim na value ang '-----' dahil walang sheet o model na nagbibigay. Ngayon galing na sa model (`unit.js` `anCdTagStep`, `AN.unit.tt`; page map sa `tools/hmi-mock/p05-head.js`). Test: `tests/regress/cd_page_values.js` ALL PASS.
+
+- **TT-CD1119** (ejector condenser outlet) = hotwell + kalahati ng 1.35 C rise ng AN_LP. Source: 28.png (151.3 MW) 40 → 41 → 42 C (hotwell → TT-CD1119 → TT-CD1120), kalahati bawat isa.
+- **TT-CD1110-4** (flash chamber) = hotwell + 2 C × load. Source: 28.png 42 vs 40 C. NO-SOURCE ang hugis sa load.
+- **FT-CD1122** (condensate papuntang deaerator) = ang dinadaan ng LCV-CD1104 (`plant.js` anCycFlows fda, walang recirculation). 150 MW: 376.3 T/H (28.png FT-CD1120 380, recirculation 0.1 %). Isinara ang LCV-CD1104: 0.
+- **PT-CD1122** (deaerator inlet pressure) = PT-CD1104 + 1.6 kg/cm2. Source: 02.png 3.8 − 2.2. NO-SOURCE: pareho sa bawat flow.
+- **TT-CD1104** (storage tank water) = saturation ng PT-CD1104. Ang 02.png ay 131 C sa 2.2 kg/cm2 (sat 135.6), 4.6 C na mas mababa; hindi ginaya.
+- **FT-CD1115** (LP bypass spray) = TCV-CD1115 (ABC-052 TICHR1012 MV) × XV-CD1114 (DITL-66) × 46 T/H. NO-SOURCE: ang capacity ng valve ay kinuha sa range ng transmitter sa IO list. 28.png / 29.png: 0.0.
+- **Napansin:** ang hotwell ng model ay 36.6 C sa 150 MW, ang 28.png ay 40 C (AN_CD mula sa seawater inlet at condenser O&M). Kaya ang TT-CD1110-4 39 at TT-CD1119 37 sa app (28.png 42 / 41): tama ang agwat sa hotwell, ang hotwell mismo ang mas mababa. Hindi binago sa gawaing ito.
