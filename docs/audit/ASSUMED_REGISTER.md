@@ -12,7 +12,7 @@ Tag: **NO-SOURCE** = walang dokumento ang numero (ang code mismo ang umaamin). *
 - `src/analog/engine/plant.js`: NO-SOURCE 5, FOUND 53
 - `src/analog/engine/source.js`: NO-SOURCE 4, FOUND 10
 - `src/analog/engine/tcs.js`: NO-SOURCE 12, FOUND 24
-- `src/analog/engine/unit.js`: NO-SOURCE 37, FOUND 87
+- `src/analog/engine/unit.js`: NO-SOURCE 37, FOUND 88
 - `src/ui/fx/fx-hmi.js`: NO-SOURCE 1, FOUND 0
 - `src/ui/plant/hmi-bias.js`: NO-SOURCE 1, FOUND 5
 - `src/ui/plant/hmi-to.js`: NO-SOURCE 3, FOUND 6
@@ -132,21 +132,21 @@ Kabuuang NO-SOURCE: **76**
   - Kulang: 1 %, ACW supply 38 C; calibrated with the vendor UA and a linear valve (170 T/H x MV, NO-SOURCE: no valve curve), the snapshot gives an oil fl
 - `src/analog/engine/unit.js:1530` **NO-SOURCE (bahagi)** · `const AN_CD = {`
   - Kulang: the transmitter elevation, calibrated to 16.9 at 150 MW); current = 28.1 A x shaft power / 245.7 kW (snapshot ratio).
-- `src/analog/engine/unit.js:1925` **NO-SOURCE (bahagi)** · `const AN_FWT = {`
+- `src/analog/engine/unit.js:1926` **NO-SOURCE (bahagi)** · `const AN_FWT = {`
   - Kulang: 9 % travel is far below what flows); calibrated x 2.94 to the snapshot; FT-FW1149 14.8 x TCV-FW1150 (TICHR1002 MV) / 66.0 x XV-FW1151 (DITL-35) x sqrt(dp / 1
-- `src/analog/engine/unit.js:2100` **NO-SOURCE (bahagi)** · `const AN_MT = {`
+- `src/analog/engine/unit.js:2103` **NO-SOURCE (bahagi)** · `const AN_MT = {`
   - Kulang: running bearing to 55 C (ASSUMED) with a 30 min time constant, winding to 85 C (ASSUMED) with 15 min; vibration 1.8 mm/s (pumps) / 2.2 mm/s (IDF)
-- `src/analog/engine/unit.js:2613` **NO-SOURCE (bahagi)** · `let Qloss = 0;`
+- `src/analog/engine/unit.js:2616` **NO-SOURCE (bahagi)** · `let Qloss = 0;`
   - Kulang: 24 kcal/kg C x dT / 500 kcal/kg, ASSUMED 60) x air share + kamb (ASSUMED 1 T/H: about 1.5 kg/cm2 per hour bottled), times (Tw - Tamb) / 300, fading in as
-- `src/analog/engine/unit.js:2639` **NO-SOURCE (bahagi)** · `const`
+- `src/analog/engine/unit.js:2642` **NO-SOURCE (bahagi)** · `const`
   - Kulang: 45 (ASSUMED, calibrated: 850 C at full load, Fig 8; about 450 C with two start-up burners at 60 % and the light-off air, the
-- `src/analog/engine/unit.js:2756` **NO-SOURCE** · `frE = Math.min(1, fr0 / U.frDb),`
+- `src/analog/engine/unit.js:2759` **NO-SOURCE** · `frE = Math.min(1, fr0 / U.frDb),`
   - Kulang: The ratio counts below frDb of the steam leaving (ASSUMED 0.75)
-- `src/analog/engine/unit.js:2847` **NO-SOURCE (bahagi)** · `const run = !m.run.length`
+- `src/analog/engine/unit.js:2850` **NO-SOURCE (bahagi)** · `const run = !m.run.length`
   - Kulang: ASSUMED 30 % of the flow), positions of the DITL-38 valves while the one world runs
-- `src/analog/engine/unit.js:2894` **NO-SOURCE (bahagi)** · `const tb = isFinite(+U.Tb) ? +U.Tb : 30,`
+- `src/analog/engine/unit.js:2897` **NO-SOURCE (bahagi)** · `const tb = isFinite(+U.Tb) ? +U.Tb : 30,`
   - Kulang: fp = -A * speed^2 + Kq * (total air / 406 T/H)^2, speed of the fan manual (350 ~ 1140 rpm on the coupling, linear ASSUMED). A = 124: the IDF alone at 13 % = about -19.5 mmH2O (the operator reduces it, SOP); Kq: the purge air of the SO
-- `src/analog/engine/unit.js:2977` **NO-SOURCE (bahagi)** · `{`
+- `src/analog/engine/unit.js:2980` **NO-SOURCE (bahagi)** · `{`
   - Kulang: the share of the turbine steam that passes (bypass ASSUMED 10 %), and the pressure at the MSV inlet that the ATS reads (tcs.js tcsSteam): it follows the main steam pressur
 - `src/ui/fx/fx-hmi.js:1` **NO-SOURCE (bahagi)** · `(function () {`
   - Kulang: "assume na may power plant basic knowledge kami ... more on operations effect or function ang maganda maipaliwanag"; card
@@ -177,4 +177,4 @@ Kabuuang NO-SOURCE: **76**
 - `src/world/plantsw.js:43` **NO-SOURCE (bahagi)** · `const mtOf = t => () => (window.AN && AN.unit && AN.unit.mt && isFinite(AN.unit.mt[t]) ? AN.unit.mt[t] : NaN);`
   - Kulang: bearing HH 100, winding HH 165); dead band 2 C (ASSUMED)
 - `src/world/plantsw.js:292` **NO-SOURCE (bahagi)** · `W.sucP = () => {`
-  - Kulang: ASSUMED (not in the repository): head 2.2 kg/cm2 at the normal level (about 22 m of water), 1 kg/cm2 per 10 m of level,
+  - Kulang: ASSUMED head 2.2 less 1.4 at 499 T/H, which gave 5.9 / 6.1 against 6.7 / 7.1). The loss of a running pump is on its own

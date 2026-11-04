@@ -52,7 +52,7 @@ Hiling ng coordinator (JISOO page 06, beta.15). Galing na sa model (`unit.js` `a
 
 - **PT-TS1013 / PT-TS1017** (extraction No.2 / No.3) = snapshot × main steam / 472.7 (absolute, turbine stage). Source 4.PNG 14.07 / 5.30. Model 14.02 / 5.28.
 - **TT-TS1011** (cold reheat papuntang No.2 HPH) = cold reheat temperature ng model. 4.PNG 371, model 368.7.
-- **PT-FW1115-A / B** (BFWP suction) = suction ng `plantsw.js` sucP − strainer DP. 03.png 6.7 / 7.1, model 5.9 / 6.1 (ang sucP ay mas mababa ng ~0.8; hindi binago).
+- **PT-FW1115-A / B** (BFWP suction) = suction header (`plantsw.js` sucP) − loss ng branch ng tumatakbong pump. Header = deaerator pressure + 1.8 kg/cm2 (static head) + level. Source: dalawang snapshot, ang pump na hindi tumatakbo (strainer DP 0.00): mababang load PICD1104 2.2 → PIFW1115B 4.0; 03.png PIFW1115B 7.1 = deaerator ng model ~5.3 + 1.8. Branch loss = strainer DP × 0.4 / 0.29 (03.png: A 6.7 = B 7.1 − 0.4 sa DP 0.29; tugma rin sa mababang load: DP 0.07 → 3.9, PIFW1115A 3.9). Model 6.7 / 7.1 (dati 5.9 / 6.1 dahil ASSUMED ang head 2.2 at loss 1.4; inalis na). Ang BFWP discharge PT-FW1011 ay mula sa inlet ng pump na ito: 165.9 (03.png 165.4).
 - **TT-FW1011** (BFWP discharge) = saturation ng PT-CD1104. 03.png 162, model 160.
 - **PT-FW1160** (economizer inlet) = drum + 3.5 × (feedwater / 499.1)². Source 03.png 137.7 − 134.2. Model 137.1.
 - **ZT-FW1110-1 / -2, ZT-FW1120-1 / -2** = F(X) ng controller MV (ABC-011 LN47 / LN46, ABC-012 LN49 / LN48), hawak kapag walang hangin (airlock). Model 45.3 / 100, 15.5 / 100 (03.png 45.5 / 100.7, 14.9 / 99.7).
