@@ -1,10 +1,10 @@
 # MOTOR LOOP CHECK: standard checklist per motor (v3.2.1)
 
-Made 2026-11-04 by the thread "Build loop check dock in app", for MINA : TESTER. App version: **3.2.1-beta.17** or later (the FIELD · LOCAL PANEL buttons of the motor faceplate).
+Made 2026-11-04 by the thread "Build loop check dock in app", for MINA : TESTER. App version: **3.2.1-beta.18** or later (the FIELD · LOCAL PANEL buttons of the motor faceplate).
 
 **Scope.** Every motor on the approved mockup pages in the app with a DITL drawing: 030 CIRCULATING WATER (SWP A / B / C, SWBP A / B / C), MAKE-UP AND CLOSED COOLING WATER (MWP A / B / C, ACWP A / B), 028 CONDENSATE (CEP A / B), FEEDWATER (BFWP A / B). That is 15 motors. Left out: the air compressors (DITL-113 / 114, own local panel start), the turbine oil pumps (TCS, no DITL), the hypochlorite pumps (FIELD only).
 
-**Sources.** Each address and row comes from the drawing as the app reads it (v3.2.1-beta.17, `LS_DOCK.dOf` / `DUI.rowInfo` / `DUI.outs`), and the row numbers are the ones on the PDF. The DITL-29A (sheet 53) and DITL-30 (sheet 55) PDFs were read for the LOCAL rows, the ELECTRICAL TROUBLE symbol, the STOP path and the auto start path. "(row n)" is an input row and "(out n)" is an output row of the drawing.
+**Sources.** Each address and row comes from the drawing as the app reads it (v3.2.1-beta.18, `LS_DOCK.dOf` / `DUI.rowInfo` / `DUI.outs`), and the row numbers are the ones on the PDF. The DITL-29A (sheet 53) and DITL-30 (sheet 55) PDFs were read for the LOCAL rows, the ELECTRICAL TROUBLE symbol, the STOP path and the auto start path. "(row n)" is an input row and "(out n)" is an output row of the drawing.
 
 **How to run (user 2026-11-04).** The plant does not need to run or carry load. Treat it as an uncoupled motor: Home → Cold → RUN, then open the HMI page. Only the permissives of the drawing apply. Use only real presses: the faceplate (click the motor) and its FIELD · LOCAL PANEL block (LCP START / STOP, EMERGENCY STOP, RELAY TRIP / RESET). Each press asks EXECUTE and is logged in Events. To read an address, open "Logic DITL-xx" on the faceplate. Mark PASS or FAIL per row.
 

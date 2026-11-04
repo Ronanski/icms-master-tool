@@ -1646,7 +1646,8 @@ function anFwStep(U, dt) {
     P0 = swInterp(K.pQ, K.pP, K.q0);
   U.fwRun = run;
   U.fwQp = Math.round(q);
-  U.fwPd = Math.max(0, Math.min(250, n ? Ps + (K.sg / 10) * swInterp(K.qQ, K.qH, q) - K.kz : Ps));
+  /* the pump inlet = the suction header less its branch loss (strainer + line, 0.4 kg/cm2 at q0: 03.png, see anFwTagStep) */
+  U.fwPd = Math.max(0, Math.min(250, n ? Ps - 0.4 * (q / K.q0) * (q / K.q0) + (K.sg / 10) * swInterp(K.qQ, K.qH, q) - K.kz : Ps));
   run.forEach((r, i) => {
     U['fwI' + i] = r ? Math.round((10 * K.I0 * swInterp(K.pQ, K.pP, q)) / P0) / 10 : 0;
     U['fwDp' + i] = r ? Math.round(1000 * K.dp0 * (q / K.q0) * (q / K.q0)) / 1000 : 0;
@@ -1939,7 +1940,9 @@ function anCdTagStep(U, ld) {
    How it works:
      PT-TS1013 / 1017   the snapshot pressure x main steam / 472.7 (absolute, a turbine stage, as AN_HP);
      TT-TS1011          the cold reheat temperature of the unit model (anUnitStepX X.T.cr);
-     PT-FW1115-A / B    the pump suction (plantsw.js sucP) minus its strainer DP (AN_FW fwDp);
+     PT-FW1115-A / B    the suction header (plantsw.js sucP) minus the loss of a running pump's branch = its strainer DP (AN_FW fwDp)
+                        x 0.4 / 0.29 (03.png: running A 6.7 = idle B 7.1 - 0.4 at strainer DP 0.29; low load check: DP 0.07 -> 4.0 - 0.1
+                        = 3.9, PIFW1115A 3.9);
      TT-FW1011          the deaerator water: saturation of PT-CD1104 (the pump heating not modelled; 03.png 162 C);
      PT-FW1160          drum pressure + 3.5 kg/cm2 x (feedwater / 499.1)^2 (03.png 137.7 - 134.2);
      ZT-FW1110 / 1120   the F(X) of the controller MV (its airlock AN_AV: the MV is held without air);
@@ -2041,8 +2044,8 @@ function anFwTagStep(U) {
     'PT-TS1013': ms > 0 ? r2(Math.max(-1, stage(K.ts13))) : r2(0),
     'PT-TS1017': ms > 0 ? r2(Math.max(-1, stage(K.ts17))) : r2(0),
     'TT-TS1011': r1(cr),
-    'PT-FW1115-A': isFinite(ps) ? r1(ps - (U.fwDp0 || 0)) : null,
-    'PT-FW1115-B': isFinite(ps) ? r1(ps - (U.fwDp1 || 0)) : null,
+    'PT-FW1115-A': isFinite(ps) ? r1(ps - ((U.fwDp0 || 0) * 0.4) / 0.29) : null,
+    'PT-FW1115-B': isFinite(ps) ? r1(ps - ((U.fwDp1 || 0) * 0.4) / 0.29) : null,
     'TT-FW1011': isFinite(Pda) ? r1(Pda > 0.05 ? steamTsat(Pda) : isFinite(U.Tamb) ? U.Tamb : 30) : null,
     'PT-FW1160': isFinite(drum) ? r1(drum + 3.5 * (ffw / 499.1) * (ffw / 499.1)) : null,
     'ZT-FW1110-1': r1(z11),

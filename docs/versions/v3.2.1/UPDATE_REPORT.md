@@ -1,6 +1,6 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
-## 3.2.1-beta.17 — FIELD · LOCAL PANEL on the motor faceplate, and the motor loop check list (2026-11-04, thread "Build loop check dock in app")
+## 3.2.1-beta.18 — FIELD · LOCAL PANEL on the motor faceplate, and the motor loop check list (2026-11-04, thread "Build loop check dock in app")
 
 **Problem.** In the live loop check of 030 CIRCULATING WATER, MINA could not test LOCAL start / stop or auto cut-in without a force on
 the logic page. The user said 2026-11-04: "Local at remote dpt n start at stop", "My emergency stop din", every motor ("Kso per motor
