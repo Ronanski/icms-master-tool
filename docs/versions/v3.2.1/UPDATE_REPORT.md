@@ -1,5 +1,26 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.26 — TURBINE START, mockup page 13 in the app (2026-11-04, JISOO : HMI MOCKUP)
+
+**Work done.** `docs/hmi/mockups/temp/13-turbine-start.html` → Plant view **TURBINE START** (`MK13`), `tools/hmi-mock/p13.py` →
+`src/ui/plant/hmi-mock-ts.js`.
+- Bagong runtime hooks (`hmi-mock.js`): `data-uy="KEY|n|on|off"` = estado ng plant model (on pula kapag value >= n), `data-uyr` = ang
+  square nito; ang `ux:KEY*100` = fraction na ipinapakita bilang %; ang `tcs.` path = AN.tcs() (TCS panel state).
+- Values: CV = U.gv × 100, ICV = U.tb.icv × 100, speed U.rpm, generator MW GCP-AI1001 / 1002 (I/O list AI0419 / AI0774), condenser
+  U.cdP, bearing / lube / control / trip / EOP oil pressure at lube oil after cooler = AN.unit lo* (parehong numero ng page 04); main / control
+  / emergency oil pumps running = loMop / loCop / loEopR; 52G1 CLOSED / OPEN = DITL-03E input row 3 M.3220 52G1 OPEN (NOT).
+- ATS steps 1 ~ 8 Y / N = AN.tcs().step (huling tapos na step), exhaust hood = AN.tcs().Tx, shell expansion = AN.tcs().sexp.
+- NO-SOURCE ('-----'): MSV / RSV positions, PT-MS1006 / TT-MS1007 sa 150 MW, DS, 52L1, field breaker at generator electrical values,
+  vibration, differential expansion, rotor position, thrust bearing, stator coil, generator cooling air.
+- Finding (para kay IRENE): ang AN.tcs() ay null sa page at walang `tc` ang AN.unit (ang engine ay nasa worker), kaya '-----' ang ATS
+  steps, exhaust hood at shell expansion; kailangang ipasa ng engine ang TCS state sa page.
+
+**Checked (headless cloud).** 150 MW + RUN: CV 99.5 %, ICV 100.0 %, 3600 rpm, generator 151.3 / 151.3 MW, 52G1 CLOSED, condenser
+0.063 kg/cm2 abs, bearing oil 3.3, lube 6.1, control / trip oil 162.6, MOP A running, COP A running / B stopped, EOP stopped; walang
+JS error.
+
+**Not checked.** Live test, ATS steps (walang data sa page), turbine trip, phone size.
+
 ## 3.2.1-beta.25 — COAL, LIMESTONE AND SAND, mockup page 12 in the app (2026-11-04, JISOO : HMI MOCKUP)
 
 **Work done.** `docs/hmi/mockups/temp/12-coal-limestone-sand.html` → Plant view **COAL, LIMESTONE AND SAND** (`MK12`),

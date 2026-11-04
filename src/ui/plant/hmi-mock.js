@@ -385,13 +385,32 @@
       /* plant model values kept by tag (AN.unit.tt: the LP heater temperatures, ...): def.unit[TAG] = 'tt:IO-TAG'; an item of a list of
          the plant model: 'ux:KEY.i' (AN.unit.fnGi[0] = IDF inlet A) */
       const TT = Object.entries(def.unit || {}).filter(([, k]) => /^(tt|ux):/.test(k));
+      /* a path in the plant model; 'tcs.' = the TCS panel state (AN.tcs(): ATS step, oil pumps, hood temperature; AN.unit has no tc) */
+      const uPath = (U, kp) => {
+        const a = kp.split('.'),
+          r = a[0] === 'tcs' ? call(() => AN.tcs(), null) : U;
+        return (a[0] === 'tcs' ? a.slice(1) : a).reduce((o, x) => (o == null ? null : o[x]), r);
+      };
       const tickTT = () => {
         for (const [tag, k] of TT) {
           const U = window.AN && AN.unit,
-            v = !U || !U.on ? null : k[0] === 't' ? (U.tt ? U.tt[k.slice(3)] : null) : k.slice(3).split('.').reduce((o, x) => (o == null ? null : o[x]), U);
-          const nv = v != null && isFinite(v) ? +v : null;
+            [kp, kx] = k.slice(3).split('*'),
+            v = !U || !U.on ? null : k[0] === 't' ? (U.tt ? U.tt[kp] : null) : uPath(U, kp);
+          /* page 13: 'ux:gv*100' = a fraction of the plant model shown in % */
+          const nv = v != null && isFinite(v) ? +v * (kx ? +kx : 1) : null;
           if (PM[tag] !== nv) (PM[tag] = nv), showV(tag);
         }
+        /* page 13: [data-uy="KEY.path|n|on text|off text"] = a state of the plant model (AN.unit): on (red) when the value >= n (true
+           = 1), else off (green); the ATS step done (tc.step), the oil pumps running (tc.mop.0 ...) */
+        qa('[data-uy]').forEach(e => {
+          const [kp, n, on, off] = e.dataset.uy.split('|'),
+            U = window.AN && AN.unit,
+            v = !U || !U.on ? null : uPath(U, kp),
+            ok = v == null ? null : +v >= +n;
+          e.textContent = ok == null ? '-----' : ok ? on : off;
+          e.setAttribute('fill', ok == null ? C.none : ok ? C.run : C.stop);
+          qa(`[data-uyr="${e.dataset.uy}"]`).forEach(r => r.setAttribute('stroke', ok == null ? C.none : ok ? C.run : C.stop));
+        });
       };
       /* motor operated / on-off valves of a DITL sheet: [data-mov="SHEET|TAG|pct"] = position %, "SHEET|TAG|oc" = OPEN / CLOSED */
       const tickMov = () =>
