@@ -498,7 +498,12 @@
               : sopLeft && st !== 'RUN'
               ? 'START blocked: finish the SOP line-up first (' + sopLeft + ' left, ✕ below; tick them in the guide).'
               : miss.length && st !== 'RUN'
-              ? 'START blocked: ' + miss.length + ' permissive missing: ' + miss.map(r => String(r.svc || '').replace(/^[IMB]\.\S+\s+/, '') + (r.want ? '' : ' (must be 0)')).join('; ') + '.'
+              ? (() => {
+                  /* live test 2026-11-05: the raw drawing note "(FROM STATION WIRING)" left out, the same line once (DITL-28A FAB A STOP
+                     COMMAND was listed twice, DITL-19 showed the note) */
+                  const L = [...new Set(miss.map(r => String(r.svc || '').replace(/^[IMB]\.\S+\s+/, '').replace(/^\(FROM [^)]*\)\s*/i, '').trim() + (r.want ? '' : ' (must be 0)')))];
+                  return 'START blocked: ' + L.length + ' permissive missing: ' + L.join('; ') + '.';
+                })()
               : !run && st !== 'RUN'
                 ? 'Simulation PAUSED: press ▶ RUN before START (nothing moves while paused).'
                 : md.rem === true && lcpRows && st !== 'TRIP'
