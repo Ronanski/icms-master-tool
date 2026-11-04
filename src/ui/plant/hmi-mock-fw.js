@@ -42,7 +42,23 @@
       'DPT-FW1115-B': 'fwDp1',
       'PT-FW1011': 'fwPd',
       'TT-FW1105': 'hpT1',
-      'TT-FW1106': 'hpT2'
+      'TT-FW1106': 'hpT2',
+      /* 3.2.1 (IRENE): unit.js anFwTagStep, sources there (4.PNG, 03.png, 5.png, K1AU3-E2-0-123 items 19 / 20 / 23 / 24) */
+      'PT-TS1013': 'tt:PT-TS1013',
+      'PT-TS1017': 'tt:PT-TS1017',
+      'TT-TS1011': 'tt:TT-TS1011',
+      'PT-FW1115-A': 'tt:PT-FW1115-A',
+      'PT-FW1115-B': 'tt:PT-FW1115-B',
+      'TT-FW1011': 'tt:TT-FW1011',
+      'PT-FW1160': 'tt:PT-FW1160',
+      'ZT-FW1110-1': 'tt:ZT-FW1110-1',
+      'ZT-FW1110-2': 'tt:ZT-FW1110-2',
+      'ZT-FW1120-1': 'tt:ZT-FW1120-1',
+      'ZT-FW1120-2': 'tt:ZT-FW1120-2',
+      'FT-FW1109': 'tt:FT-FW1109',
+      'FT-FW1119': 'tt:FT-FW1119',
+      'FT-FW1149': 'tt:FT-FW1149',
+      'FT-FW1059': 'tt:FT-FW1059'
     }
   });
 })();
