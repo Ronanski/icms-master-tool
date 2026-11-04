@@ -53,3 +53,4 @@ Headless (Playwright + Chromium) checks of `dist/logic-sim-vX.Y.Z.html` (default
 | `node tests/regress/diesel_oil.js [html]` | 3.2.1 SEULGI: Diesel Oil plant model (boiler.js): 150 MW = 6.PNG, burner A / 4 burner sa oil, trip ng pump A → standby B, parehong trip, Cold SOP 20 (PCV-DO0002, strainer inlet) | ~2 min |
 | `node tests/regress/fans.js [html]` | 3.2.1 SEULGI: Fans (boiler.js AN_FN): current at pressure sa 150 MW = 7.PNG / 9.png, trip ng FA blower A → standby B (M.3114), DITL-28B current row, trip ng PAF, Cold | ~2 min |
 | `node tests/regress/hp_heaters.js [html]` | 3.2.1 IRENE: HP heaters (unit.js AN_HP): No.1 / No.2 outlet at TT-FW1160 sa 150 MW = 03.png, drains = FHI heater O&M, isara ang MV-TS1001 (DITL-94) → bumababa ang economizer inlet | ~2 min |
+| `node tests/regress/pause_ditl_page.js [html]` | 3.2.1 IRENE: VIEW (pause) + buksan ang DITL-27A page sa 150 MW: hindi humihinto ang SAF / PAF (simOn) | ~2 min |

@@ -64,3 +64,13 @@ Hook: `plantsw.js` array `bo` (DITL-28B row 12). Test: `tests/regress/fans.js` (
 - Fan curve mula sa manual (images ang curves): ang flow ay galing pa rin sa loop model.
 - Hydraulic coupling working oil, PAF lube oil pumps (DITL-24), APH motor: hindi pa.
 - Hindi nasubok sa PC ng user; wala pang loop check ni MINA.
+
+## IRENE, 2026-11-04 6:11 PM PHT: PAF / SAF huminto sa screenshot run (NAAYOS)
+- **Sanhi (bug ng app, hindi ng plant model):** kapag naka-VIEW / pause (hindi SIM) at binuksan ang isang DITL page, ang pagbasa ng logic
+  (`src/digital/parts/03b-sim.js` `simOn()`) ay hindi gumagamit ng world inputs; na-reset ang latch ng DITL-27A (SAF RUNNING), sumunod
+  ang PAF, at nag-MFT. Ang dati: `simOn()` = world lang kapag ang page ay ABC (`AN.cat === 'an'`).
+- **Ayos:** `simOn()` = SIM, o ang world ay live / naka-on: ang DITL page sa VIEW ay tingin lang, hindi na nire-reset ang latch.
+- **Patunay:** bagong test `tests/regress/pause_ditl_page.js`: FAIL sa lumang build, PASS sa bago.
+- **Dagdag (SEULGI finding):** temperature at vibration ng PAF / SAF (DITL-26B / 27B rows 5 ~ 15) at FA blower A / B (DITL-28B at #B
+  rows 1 ~ 14) galing na sa model (`unit.js` AN_MT, `plantsw.js` mtr): 150 MW bearing 55 ~ 58.6, winding 85 ~ 87 C, vibration
+  2.2 ~ 2.5 mm/s (NO-SOURCE, kapareho ng IDF); ang nakatigil = 30 C / 0.1 mm/s. Walang trip sa 150 MW (PAF, SAF, FA-A RUN).
