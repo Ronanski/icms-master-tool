@@ -488,6 +488,9 @@ function anUnitStart() {
     { pr: procsOf('ABC-007', ['FICFA1071']).map(p => p.pr), run: [labOf('ABC-007', 'M.3302')] },
     { pr: procsOf('ABC-007', ['FICFA1081']).map(p => p.pr), run: [labOf('ABC-007', 'M.3303')] }
   ].map(m => Object.assign(m, { run: m.run.filter(Boolean) }));
+  /* 3.2.1 (IRENE: FEEDWATER): the motor of the DITL drawing too (BFWP A / B = DITL-23A / #B): a FIELD TRIP (protection relay) stops the
+     water although ABC-010 M.3343 (DITL-23A output 55 RUNNING) still reads 1 */
+  U.mul[0].drw = U.mul[0].run.length === 2 ? ['DITL-23A', 'DITL-23A #B'] : null;
   U.mul[0].dis = U.mul[0].run.length === 2 ? [['DITL-38 #MV-FW1001', 'DITL-38 #MV-FW1391'], ['DITL-38 #MV-FW1002', 'DITL-38 #MV-FW1392']] : null;
   /* 2.2.0-beta.15 (M4 step 2): the start-up feedwater valve (ABC-010 LICBR1001B, single-element drum level control for the start-up,
      FCV-FW1060) is a second line into the drum beside the main valve of FICFW1007: its flow is added to the feedwater flow
@@ -646,6 +649,7 @@ function anUnitStart() {
     .concat([U.xt.cr, U.xt.hr, U.xt.aux, U.xt.fw, U.xt.lt2], U.xt.rhi, U.xt.fab, U.zt.map(z => z.L), U.lo || []);
   for (const l of lists) for (const [S2, b] of l) own.add(S2.rt.st[b.id]);
   U.own = own;
+  anBoilerStart(U); /* 3.2.1 SEULGI: the boiler-side plant model (boiler.js) */
   U.on = true;
   /* 3.2.0-beta.68: "Start at 150 MW" = the air compressors in service, the tanks at their pressure (AN_AIR, 39.PNG 7.0 kg/cm2) */
   U.iaP = U.paP = AN_AIR.P;
@@ -721,6 +725,7 @@ function anUnitCold() {
   U.iaRun = U.paRun = null; /* 3.2.1: the compressors as the DITL of the scenario (anAirStep, first step) */
   U.paW0 = U.paW1 = U.paW2 = NaN;
   U.mt = {}; /* live test #54: the motors start again from the ambient (AN_MT) */
+  anBoilerCold(U); /* 3.2.1 SEULGI: the boiler-side plant model (boiler.js) */
   tcsInit(U, 'cold');
   return true;
 }
@@ -1953,6 +1958,8 @@ function anUnitStep(dt) {
   tcsOil(U, dt);
   /* 3.2.0-beta.68: the instrument and plant air systems (INSTRUMENT & PLANT AIR HMI), see AN_AIR */
   anAirStep(U, dt);
+  /* 3.2.1 SEULGI: the boiler-side systems (boiler.js: diesel oil) */
+  anBoilerStep(U, dt);
   /* 3.2.0-beta.69: the aux cooling water loop (027 CLOSED COOLING WATER HMI), see AN_ACW */
   anAcwStep(U, dt);
   /* 3.2.1: the turbine lube oil cooler on the closed cooling water (AN_LO) */
@@ -2298,6 +2305,7 @@ function anUnitStep(dt) {
           1,
           m.run.reduce((a, r, i) => {
             if (!(+r.S.rt.v[r.n] > 0.5)) return a;
+            if (m.drw && anDitlRun(m.drw[i]) === 0) return a;
             const d = m.dis && m.dis[i];
             if (!d) return a + 1;
             const pm = anDitlPos(d[0], 0),

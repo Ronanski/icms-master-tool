@@ -27,8 +27,8 @@ Dati na: feedwater flow at drum level (`plant.js`, FICFW1007 at LICBR1001), deae
 - Trip ng BFWP-A (FIELD TRIP): PT-FW1011 bumaba sa 5.3, M.3210 LL sa DITL-23B.
 
 ## BUKAS (nakita sa test, aayusin)
-1. **Hindi nag-auto start ang BFWP-B** pagkatapos ng trip ng A, kahit LL na ang PT-FW1011. Hindi pa nasusuri kung aling permissive ang kulang (posibleng ang aux LOP ng B, DITL-22 #C / #D).
-2. **Tuloy ang feedwater flow** kahit walang BFWP na tumatakbo: ang ABC-010 M.3343 ay galing sa DITL-23A output 55 (BFWP A RUNNING), at nananatiling 1 ang output na ito pagkatapos ng FIELD TRIP (TRIP na ang motor). Bug ito ng running feedback ng drawing na ito (sa CEP ay gumagana), aayusin.
+1. **Hindi tumatakbo ang BFWP-B** pagkatapos ng trip ng A. Ang logic ay nagbibigay na ng "BFWP B AUTO STARTING" = 1 (DITL-23A #B output 10) at "BFWP AUTO START" (O.1400), pero hindi umaandar ang motor. Sinusuri pa: posibleng ang lube oil pressure ng standby pump (aux LOP ng B, DITL-22 #C / #D) na hindi tumatakbo sa estado ng 150 MW.
+2. **NAAYOS (4:40 PM):** dati, tuloy ang feedwater flow kahit walang BFWP. Ngayon, binabasa rin ng feedwater ang motor ng DITL-23A / #B: pagkatapos ng FIELD TRIP, 0 ang feedwater. Natitira: ang ABC-010 M.3343 (DITL-23A output 55 RUNNING) ay 1 pa rin pagkatapos ng FIELD TRIP; ito ang binabasa ng ibang ABC logic.
 3. **Deaerator pressure pagkatapos ng Start at 150 MW:** ~1 kg/cm2 sa simula at umaabot sa ~5 sa loob ng ilang minuto. Dapat nasa 5.3 agad.
 
 ## CALIBRATED / NO-SOURCE

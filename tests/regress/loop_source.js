@@ -6,7 +6,9 @@
 // Usage: node tests/regress/loop_source.js [html]
 const fs = require('fs');
 const { open } = require('./lib.js');
-const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSync('dist').find(x => /^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
+const html =
+  process.argv.find(a => /\.html$/.test(a)) ||
+  'dist/' + fs.readdirSync('dist').find(x => /^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 (async () => {
   const { browser, page, errs } = await open(html);
   let fail = 0;
@@ -70,7 +72,10 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
   ]) {
     const a = await pvAt(shn, tag, 0, 20),
       b = await pvAt(shn, tag, 100, 120);
-    ck(a.pv <= top && b.pv <= top && b.out > 50, `Cold ${shn} ${tag}: MV 0 % -> PV ${a.pv.toFixed(1)}, MV ${b.out.toFixed(0)} % -> PV ${b.pv.toFixed(1)} (no medium: <= ${top})`);
+    ck(
+      a.pv <= top && b.pv <= top && b.out > 50,
+      `Cold ${shn} ${tag}: MV 0 % -> PV ${a.pv.toFixed(1)}, MV ${b.out.toFixed(0)} % -> PV ${b.pv.toFixed(1)} (no medium: <= ${top})`
+    );
   }
   /* 2. At 150 MW: the snapshot */
   await state('plantLoad150');
@@ -90,15 +95,34 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
       }
       return o;
     });
-    ck(Math.abs(r.FICCD1120 - 380) < 5 && Math.abs(r.TICMS1022 - 357.5) < 20 && Math.abs(r.PICDO0005 - 12.9) < 0.5 && r.PICAS1005 > 9 && r.TICLO1002 > 40, '150 MW: snapshot values kept ' + JSON.stringify(r));
+    ck(
+      Math.abs(r.FICCD1120 - 380) < 5 &&
+        Math.abs(r.TICMS1022 - 357.5) < 20 &&
+        Math.abs(r.PICDO0005 - 12.9) < 0.5 &&
+        r.PICAS1005 > 9 &&
+        r.TICLO1002 > 40,
+      '150 MW: snapshot values kept ' + JSON.stringify(r)
+    );
   }
   /* 3. Diesel oil pump, field equipment */
   await state('plantCold');
   {
     const a = await pvAt('ABC-028', 'PICDO0005', 60, 60);
-    await page.evaluate(() => AN.field('dop', true));
+    /* 3.2.1 SEULGI: the pump runs from its DITL (DITL-31, plant model boiler.js): local panel REMOTE (row 22), then START P.B. (row 4) */
+    await page.evaluate(async () => {
+      const set = (r, v) => ((WORLD.live = true), WORLD.dset('DITL-31', r, v), (WORLD.live = false));
+      set(21, true);
+      for (let i = 0; i < 4; i++) WORLD.tick(0.5);
+      set(3, true);
+      for (let i = 0; i < 6; i++) WORLD.tick(0.5);
+      set(3, false);
+      WORLD.tick(0.5);
+    });
     const b = await pvAt('ABC-028', 'PICDO0005', 60, 120);
-    ck(a.pv < 0.5 && b.pv > 2, `Cold, diesel oil pump stopped / started: oil header at MV 60 % -> ${a.pv.toFixed(1)} / ${b.pv.toFixed(1)} kg/cm2`);
+    ck(
+      a.pv < 0.5 && b.pv > 2,
+      `Cold, diesel oil pump stopped / started: oil header at MV 60 % -> ${a.pv.toFixed(1)} / ${b.pv.toFixed(1)} kg/cm2`
+    );
   }
   ck(!errs.length, 'no page error' + (errs.length ? ' ' + errs.slice(0, 2).join(' | ') : ''));
   await browser.close();
