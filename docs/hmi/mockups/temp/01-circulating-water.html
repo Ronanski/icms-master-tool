@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Circulating Water HMI</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#1b1e21;--line:#3a3f45;--fg:#e6e6e6;--mut:#a9b0b7;--run:#ff6b6b;--stop:#4fd06a;color-scheme:dark}
+:root[data-theme="light"]{--bg:#1b1e21}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#1b1e21}}
+:root[data-theme="dark"]{--bg:#1b1e21}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',system-ui,sans-serif}
+.s{font-family:'IBM Plex Sans',system-ui,sans-serif}.m{font-family:'IBM Plex Mono',ui-monospace,monospace}
+header{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;align-items:center}
+h1{margin:0;font-size:20px;font-weight:600;letter-spacing:.5px}
+.sub{font-size:12px;color:var(--mut)}
+.leg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--mut);align-items:center}
+.chip{border:1.5px solid;font-weight:600;padding:0 7px;border-radius:3px}
+nav{display:flex;gap:14px;overflow-x:auto;padding:0 16px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap;scrollbar-width:thin}
+.nv{color:#8a939b;padding:9px 0}a.nv{color:#8fc1ff;text-decoration:none}.nv.cur{color:#fff;font-weight:600;border-bottom:2px solid #fff}
+.bar{display:flex;gap:8px;align-items:center;padding:8px 16px;font-size:12px;color:var(--mut)}
+button{font-family:inherit;background:none;color:var(--fg);border:1px solid #5a6168;border-radius:4px;min-height:44px;padding:0 12px;font-size:13px;cursor:pointer}
+.wrap{overflow:auto;-webkit-overflow-scrolling:touch;border-bottom:1px solid var(--line)}
+#dia{display:block;width:1600px;height:auto}
+.fps svg{max-width:100%;height:auto}
+.fit #dia{width:100%}
+section{padding:20px 16px;border-bottom:1px solid var(--line)}
+h2{margin:0 0 12px;font-size:16px;font-weight:600}
+.fps{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+
+#logic .lks{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:6px 24px}#logic .lk{display:flex;gap:10px;font-size:12px;line-height:1.5;padding:4px 0;border-bottom:1px solid #2a2e33}#logic .ls{flex:0 0 96px;font-weight:600;color:#e6e6e6}#logic .sub{font-size:13px;color:#a9b0b7;margin-bottom:10px}
+</style></head><body>
+<header><div><h1>CIRCULATING WATER (SEAWATER)</h1><div class="sub">Temporary page · Unit 1 · PR-OPE-5002 sections 2 to 6 · Flow diagrams K1AU3-PD-020 Rev D, PD-043</div></div>
+<div class="leg"><span><b style="color:var(--run)">RUNNING</b> red</span><span><b style="color:var(--stop)">STOPPED</b> green</span><span><span class="chip" style="color:var(--run)">Y</span> permissive complete</span><span><span class="chip" style="color:var(--stop)">N</span> not complete</span><span>Grey italic = field valve, no DCS signal</span><span>Values: snapshot 30.PNG (sample)</span></div></header>
+<nav aria-label="HMI pages"><a class="nv" href="https://claude.ai/artifact/Y6hCvfK5YCMjpSUcks1rs3" target="_blank" rel="noopener">Overview</a><span class="nv cur" aria-current="page">Circulating Water</span><a class="nv" href="https://claude.ai/artifact/FzdN7gLGASa6JDTkyCBSgP" target="_blank" rel="noopener">Make-Up &amp; Closed Cooling</a><a class="nv" href="https://claude.ai/artifact/QcfpTM5eF6mxRiNutPyy3p" target="_blank" rel="noopener">Instrument &amp; Plant Air</a><a class="nv" href="https://claude.ai/artifact/KYaMCg7nCLTnEXALKE3WJN" target="_blank" rel="noopener">Turbine Oil</a><a class="nv" href="https://claude.ai/artifact/J2D4qvmaQHLmscKQ51xx3x" target="_blank" rel="noopener">Condensate</a><a class="nv" href="https://claude.ai/artifact/MLuFYtozMSDeQBxeb3Uab7" target="_blank" rel="noopener">Feedwater</a><a class="nv" href="https://claude.ai/artifact/JBq9Y1n3nsFfYH58ByeBMn" target="_blank" rel="noopener">Drum &amp; Main Steam</a><a class="nv" href="https://claude.ai/artifact/XEtY7Xhgj132UmaieAVCLh" target="_blank" rel="noopener">Aux Steam &amp; Vacuum</a><a class="nv" href="https://claude.ai/artifact/8KiKvimCrt5D5rHEYy6dS4" target="_blank" rel="noopener">Air &amp; Flue Gas</a><a class="nv" href="https://claude.ai/artifact/M3hcqWAzx8B7yyijEpzW8f" target="_blank" rel="noopener">Purge &amp; Trip</a><a class="nv" href="https://claude.ai/artifact/8dqQQkyBod3HRtMEf5hu9e" target="_blank" rel="noopener">Diesel &amp; Burners</a><a class="nv" href="https://claude.ai/artifact/RG2DDWKBS7wkyPAhgQUTk7" target="_blank" rel="noopener">Coal, Limestone &amp; Sand</a><a class="nv" href="https://claude.ai/artifact/8QWx5jwWNWQ4xj5t58X1hK" target="_blank" rel="noopener">Turbine Start</a><a class="nv" href="https://claude.ai/artifact/Vw9BytVyewXoTc5T6cUqyj" target="_blank" rel="noopener">ESP &amp; Ash</a><a class="nv" href="https://claude.ai/artifact/94UPTgfb4xaDSm5VhqvSoi" target="_blank" rel="noopener">Sootblowers</a><a class="nv" href="https://claude.ai/artifact/AoX1jobef4HKX7mvVDkvEJ" target="_blank" rel="noopener">Sampling &amp; Dosing</a><a class="nv" href="https://claude.ai/artifact/NUZAQJHuAipNnDwur3Fx8v" target="_blank" rel="noopener">Generator</a><a class="nv" href="https://claude.ai/artifact/UKFBXRHbZmZ52NVstCXJm1" target="_blank" rel="noopener">Extraction &amp; Drains</a></nav>
+<div class="bar"><button type="button" id="fitb" aria-pressed="false">Fit to screen</button><span>Swipe sideways to see the whole page. Tap a pump for its faceplates below.</span></div>
+<div class="wrap" id="wrap"><svg id="dia" width="1600" height="856" viewBox="0 0 1600 856" role="img" aria-label="Circulating water flow: seawater pumps to header, debris filter, condenser paths A and B, booster pumps to closed cooling water heat exchangers, out to the discharge channel" style="display: block;">
+<g fill="none" stroke="#e6e6e6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+<!-- inlet pool -->
+<path d="M40 16 V96 H340 V16"></path>
+<path d="M40 56 H340" stroke-dasharray="6 5" stroke-width="1.2"></path>
+<!-- pump A discharge -->
+<path d="M296 191 H470"></path>
+<path d="M296 341 H470"></path>
+<path d="M296 491 H470"></path>
+<!-- header and bottom line -->
+<path d="M470 191 V790 H850 M850 782 V798"></path>
+<path d="M560 790 V830 H1445"></path>
+<!-- condenser inlets -->
+<path d="M660 790 V560"></path>
+<path d="M840 790 V560"></path>
+<!-- condenser outlets and top line -->
+<path d="M660 300 V60 H1560"></path>
+<path d="M840 300 V60"></path>
+<!-- booster pumps suction -->
+<path d="M1165 830 V786"></path>
+<path d="M1305 830 V786"></path>
+<path d="M1445 830 V786"></path>
+<!-- booster pumps discharge -->
+<path d="M1165 754 V630 H1545"></path>
+<path d="M1305 754 V630"></path>
+<path d="M1445 754 V630"></path>
+<!-- supply riser and manifold to heat exchangers -->
+<path d="M1545 630 V420 H1215 V380"></path>
+<path d="M1208 391 L1222 409 L1208 409 L1222 391 Z M1338 391 L1352 409 L1338 409 L1352 391 Z M1468 391 L1482 409 L1468 409 L1482 391 Z M1208 236 L1222 254 L1208 254 L1222 236 Z M1338 236 L1352 254 L1338 254 L1352 236 Z M1468 236 L1482 254 L1468 254 L1482 236 Z" fill="#1b1e21" stroke-width="1.6"></path>
+<path d="M1345 420 V380"></path>
+<path d="M1475 420 V380"></path>
+<!-- heat exchanger outlets -->
+<path d="M1215 270 V220 H1475 V270"></path>
+<path d="M1345 270 V60"></path>
+</g>
+<!-- pumps: seawater pumps (vertical) -->
+<g fill="#1b1e21" stroke="#e6e6e6" stroke-width="1.6">
+<rect x="255" y="130" width="50" height="38" rx="3"></rect><path d="M280 168 V180"></path><rect x="264" y="180" width="32" height="22" rx="2"></rect>
+<rect x="255" y="280" width="50" height="38" rx="3"></rect><path d="M280 318 V330"></path><rect x="264" y="330" width="32" height="22" rx="2"></rect>
+<rect x="255" y="430" width="50" height="38" rx="3"></rect><path d="M280 468 V480"></path><rect x="264" y="480" width="32" height="22" rx="2"></rect>
+</g>
+<g class="s" fill="#a9b0b7" font-size="13" text-anchor="middle"><text x="280" y="154">M</text><text x="280" y="304">M</text><text x="280" y="454">M</text></g>
+<!-- check valves and field valves on pump discharges -->
+<g fill="#1b1e21" stroke="#e6e6e6" stroke-width="1.6">
+<path d="M343 184 L357 191 L343 198 Z"></path><path d="M359 184 V198"></path>
+<path d="M343 334 L357 341 L343 348 Z"></path><path d="M359 334 V348"></path>
+<path d="M343 484 L357 491 L343 498 Z"></path><path d="M359 484 V498"></path>
+<path d="M416 184 L434 198 L434 184 L416 198 Z"></path>
+<path d="M416 334 L434 348 L434 334 L416 348 Z"></path>
+<path d="M416 484 L434 498 L434 484 L416 498 Z"></path>
+<path d="M318 191 V177"></path><circle cx="318" cy="169" r="8"></circle>
+<path d="M318 341 V327"></path><circle cx="318" cy="319" r="8"></circle>
+<path d="M318 491 V477"></path><circle cx="318" cy="469" r="8"></circle>
+</g>
+<g class="m" font-size="11" fill="#a9b0b7" font-style="italic" text-anchor="middle">
+<text x="350" y="216">V-SW1001</text><text x="350" y="366">V-SW1003</text><text x="350" y="516">V-SW1005</text>
+<text x="425" y="216">V-SW1002</text><text x="425" y="366">V-SW1004</text><text x="425" y="516">V-SW1006</text>
+</g>
+<g class="m" font-size="11" fill="#a9b0b7" font-style="italic">
+<text x="330" y="173">PG-SW1501A</text><text x="330" y="323">PG-SW1501B</text><text x="330" y="473">PG-SW1501C</text>
+</g>
+<!-- inlet pool text -->
+<g class="s">
+<text x="360" y="30" font-size="13" font-weight="600" fill="#e6e6e6">Seawater Pump Inlet Pool</text>
+<text x="360" y="48" class="m" font-size="11" fill="#9aa3ab">LT-SW1501</text>
+<text x="360" y="72" font-size="18" font-weight="600" fill="#ffffff">-8.76 m</text>
+<text x="360" y="90" font-size="11" fill="#a9b0b7">Alarm H -6.0 · L -9.6 · LL -9.9 m</text>
+<text x="190" y="50" font-size="11" fill="#a9b0b7" text-anchor="middle">water level</text>
+<text x="190" y="84" font-size="11" fill="#a9b0b7" text-anchor="middle">suction of seawater pumps A, B, C (vertical pumps)</text>
+<text x="870" y="822" font-size="11" fill="#a9b0b7">to booster pumps, 24 in</text>
+<text x="862" y="786" font-size="11" fill="#a9b0b7">96 in header end</text>
+</g>
+<!-- seawater pump info -->
+<g class="s">
+<text x="40" y="144" font-size="15" font-weight="600" fill="#e6e6e6">Seawater Pump A</text>
+<text x="40" y="162" class="m" font-size="12" fill="#9aa3ab">P-1501A</text>
+<text x="40" y="184" font-size="14" font-weight="600" fill="#4fd06a">STOPPED</text>
+<text x="40" y="204" font-size="12" fill="#a9b0b7">Remote · Manual</text>
+<text x="40" y="222" font-size="12" fill="#a9b0b7">Breaker OFF</text>
+<text x="280" y="222" font-size="14" font-weight="600" fill="#ffffff" text-anchor="middle">0.0 A</text>
+<text x="280" y="238" class="m" font-size="11" fill="#9aa3ab" text-anchor="middle">IT-P1501A</text>
+
+<text x="40" y="294" font-size="15" font-weight="600" fill="#e6e6e6">Seawater Pump B</text>
+<text x="40" y="312" class="m" font-size="12" fill="#9aa3ab">P-1501B</text>
+<text x="40" y="334" font-size="14" font-weight="600" fill="#ff6b6b">RUNNING</text>
+<text x="40" y="354" font-size="12" fill="#a9b0b7">Remote · Manual</text>
+<text x="40" y="372" font-size="12" fill="#a9b0b7">Breaker ON</text>
+<text x="280" y="372" font-size="14" font-weight="600" fill="#ffffff" text-anchor="middle">242.5 A</text>
+<text x="280" y="388" class="m" font-size="11" fill="#9aa3ab" text-anchor="middle">IT-P1501B</text>
+
+<text x="40" y="444" font-size="15" font-weight="600" fill="#e6e6e6">Seawater Pump C</text>
+<text x="40" y="462" class="m" font-size="12" fill="#9aa3ab">P-1501C</text>
+<text x="40" y="484" font-size="14" font-weight="600" fill="#ff6b6b">RUNNING</text>
+<text x="40" y="504" font-size="12" fill="#a9b0b7">Remote · Manual</text>
+<text x="40" y="522" font-size="12" fill="#a9b0b7">Breaker ON</text>
+<text x="280" y="522" font-size="14" font-weight="600" fill="#ffffff" text-anchor="middle">207.6 A</text>
+<text x="280" y="538" class="m" font-size="11" fill="#9aa3ab" text-anchor="middle">IT-P1501C</text>
+</g>
+<!-- permissive chips Y / N -->
+<g class="s" font-size="11" fill="#a9b0b7" text-anchor="middle"><text x="215" y="190">Permissive</text><text x="215" y="340">Permissive</text><text x="215" y="490">Permissive</text></g>
+<g fill="none" stroke-width="1.6">
+<rect x="200" y="196" width="30" height="22" rx="3" stroke="#4fd06a"></rect>
+<rect x="200" y="346" width="30" height="22" rx="3" stroke="#ff6b6b"></rect>
+<rect x="200" y="496" width="30" height="22" rx="3" stroke="#ff6b6b"></rect>
+</g>
+<g class="s" font-size="14" font-weight="600" text-anchor="middle">
+<text x="215" y="212" fill="#4fd06a">N</text><text x="215" y="362" fill="#ff6b6b">Y</text><text x="215" y="512" fill="#ff6b6b">Y</text>
+</g>
+<!-- debris filter S-1502 -->
+<g fill="#1b1e21" stroke="#e6e6e6" stroke-width="1.6"><circle cx="470" cy="600" r="16"></circle><path d="M459 589 L481 611 M481 589 L459 611"></path></g>
+<g class="s" text-anchor="end">
+<text x="440" y="560" font-size="14" font-weight="600" fill="#e6e6e6">Debris Filter S-1502</text>
+<text x="440" y="578" font-size="13" font-weight="600" fill="#4fd06a">NOT IN OPERATION</text>
+<text x="440" y="596" font-size="13" font-weight="600" fill="#ff6b6b">COMMON FAIL</text>
+<text x="440" y="612" font-size="11" fill="#a9b0b7">Backwash MV-SW1001 · local panel</text>
+</g>
+<!-- hypochlorite dosing (status only) -->
+<rect x="40" y="628" width="405" height="222" rx="4" fill="none" stroke="#3a3f45" stroke-width="1.2"></rect>
+<g class="s" font-size="12" fill="#a9b0b7">
+<text x="56" y="648" font-size="13" font-weight="600" fill="#e6e6e6">Hypochlorite Dosing</text>
+<text x="200" y="648" font-size="11">flow diagram K1AU3-PD-043</text>
+<text x="56" y="668" font-size="11">Unloading pumps P-0761A, P-0761B: <tspan font-weight="600" fill="#4fd06a">STOPPED</tspan> · AC power: <tspan font-weight="600" fill="#e6e6e6">NORMAL</tspan></text>
+</g>
+<!-- solution tank, two metering pumps, discharge to the seawater inlet channel -->
+<g fill="none" stroke="#e6e6e6" stroke-width="1.6" stroke-linejoin="round">
+<path d="M60 696 L95 680 L130 696 V782 H60 Z"></path>
+<path d="M130 760 H160 M160 705 V785 M160 705 H186 M160 785 H186"></path>
+<path d="M186 717 V693 H198 V699 H208 V705 H220 V717 Z"></path>
+<path d="M186 797 V773 H198 V779 H208 V785 H220 V797 Z"></path>
+<path d="M220 711 H410 M220 791 H410 M410 711 V840 H24 V80 H34"></path>
+<path d="M270 711 V699 M270 791 V779"></path>
+<circle cx="270" cy="692" r="7" fill="#1b1e21"></circle><circle cx="270" cy="772" r="7" fill="#1b1e21"></circle>
+<path d="M334 704 L348 711 L334 718 Z M350 704 V718" fill="#1b1e21"></path>
+<path d="M334 784 L348 791 L334 798 Z M350 784 V798" fill="#1b1e21"></path>
+</g>
+<polygon points="34,74 34,86 46,80" fill="#e6e6e6"></polygon>
+<polygon points="200,834 200,846 190,840" fill="#e6e6e6"></polygon>
+<g class="s" font-size="12" fill="#a9b0b7">
+<text x="95" y="742" text-anchor="middle" font-size="11">50 m3</text>
+<text x="60" y="800" font-size="12" fill="#e6e6e6">Solution Tank</text>
+<text x="60" y="814" class="m" font-size="11" fill="#9aa3ab">Z-0701</text>
+<text x="282" y="696" class="m" font-size="11" fill="#9aa3ab" font-style="italic">PG-CH1701A</text>
+<text x="282" y="776" class="m" font-size="11" fill="#9aa3ab" font-style="italic">PG-CH1701B</text>
+<text x="186" y="734" font-size="12" fill="#e6e6e6">Dosing Pump A</text><text x="340" y="734" font-weight="600" fill="#4fd06a">STOPPED</text>
+<text x="186" y="748" class="m" font-size="11" fill="#9aa3ab">P-0762A · Z-1701A</text>
+<text x="186" y="814" font-size="12" fill="#e6e6e6">Dosing Pump B</text><text x="340" y="814" font-weight="600" fill="#4fd06a">STOPPED</text>
+<text x="186" y="828" class="m" font-size="11" fill="#9aa3ab">P-0762B · Z-1701B</text>
+<text x="48" y="116" font-size="11">hypochlorite solution in, 1.2 m3/h per pump</text>
+</g>
+<!-- condenser -->
+<rect x="600" y="300" width="300" height="260" rx="10" fill="none" stroke="#e6e6e6" stroke-width="2"></rect>
+<g stroke="#a9b0b7" stroke-width="1" fill="none">
+<path d="M624 380 H876 M624 396 H876 M624 412 H876 M624 428 H876 M624 444 H876 M624 460 H876 M624 476 H876 M624 492 H876"></path>
+<path d="M750 368 V520" stroke-dasharray="4 4"></path>
+</g>
+<g class="s" text-anchor="middle">
+<text x="750" y="332" font-size="16" font-weight="600" fill="#e6e6e6">Condenser</text>
+<text x="750" y="350" class="m" font-size="12" fill="#9aa3ab">H-1110</text>
+<text x="680" y="542" font-size="12" fill="#a9b0b7">Path A</text>
+<text x="820" y="542" font-size="12" fill="#a9b0b7">Path B</text>
+</g>
+<!-- condenser valves -->
+<g fill="#1b1e21" stroke="#e6e6e6" stroke-width="1.6">
+<path d="M653 721 L667 739 L653 739 L667 721 Z"></path>
+<path d="M833 721 L847 739 L833 739 L847 721 Z"></path>
+<path d="M653 241 L667 259 L653 259 L667 241 Z"></path>
+<path d="M833 241 L847 259 L833 259 L847 241 Z"></path>
+</g>
+<g class="m" font-size="11" fill="#a9b0b7" font-style="italic">
+<text x="648" y="734" text-anchor="end">V-SW1007</text>
+<text x="852" y="734">V-SW1008</text>
+<text x="648" y="254" text-anchor="end">V-SW1009</text>
+<text x="852" y="254">V-SW1010</text>
+</g>
+<!-- condenser instruments -->
+<g class="s">
+<text x="648" y="600" text-anchor="end" class="m" font-size="11" fill="#9aa3ab">PT-SW1110-A1</text>
+<text x="648" y="618" text-anchor="end" font-size="15" font-weight="600" fill="#ffffff">1.0 kg/cm2</text>
+<text x="648" y="642" text-anchor="end" class="m" font-size="11" fill="#9aa3ab">TT-SW1110-A1</text>
+<text x="648" y="660" text-anchor="end" font-size="15" font-weight="600" fill="#ffffff">28.5 °C</text>
+<text x="852" y="600" class="m" font-size="11" fill="#9aa3ab">PT-SW1110-B1</text>
+<text x="852" y="618" font-size="15" font-weight="600" fill="#ffffff">1.0 kg/cm2</text>
+<text x="852" y="642" class="m" font-size="11" fill="#9aa3ab">TT-SW1110-B1</text>
+<text x="852" y="660" font-size="15" font-weight="600" fill="#ffffff">28.6 °C</text>
+<text x="648" y="130" text-anchor="end" class="m" font-size="11" fill="#9aa3ab">PT-SW1110-A2</text>
+<text x="648" y="148" text-anchor="end" font-size="15" font-weight="600" fill="#ffffff">0.4 kg/cm2</text>
+<text x="648" y="172" text-anchor="end" class="m" font-size="11" fill="#9aa3ab">TT-SW1110-A2</text>
+<text x="648" y="190" text-anchor="end" font-size="15" font-weight="600" fill="#ffffff">35.3 °C</text>
+<text x="852" y="130" class="m" font-size="11" fill="#9aa3ab">PT-SW1110-B2</text>
+<text x="852" y="148" font-size="15" font-weight="600" fill="#ffffff">0.5 kg/cm2</text>
+<text x="852" y="172" class="m" font-size="11" fill="#9aa3ab">TT-SW1110-B2</text>
+<text x="852" y="190" font-size="15" font-weight="600" fill="#ffffff">35.1 °C</text>
+</g>
+<!-- priming air ejectors (PD-020 Rev D) -->
+<rect x="985" y="84" width="205" height="122" rx="4" fill="none" stroke="#3a3f45" stroke-width="1.2"></rect>
+<g class="s" font-size="11" fill="#a9b0b7">
+<text x="999" y="104" font-size="13" font-weight="600" fill="#e6e6e6">Priming Air Ejectors</text>
+<text x="999" y="122" class="m" fill="#9aa3ab">Z-1131A, Z-1131B</text>
+<text x="999" y="140">air from plant air (PD-023)</text>
+<text x="999" y="156" class="m" font-style="italic">V-PA1092, V-PA1093</text>
+<text x="999" y="174">to condenser water box vents</text>
+<text x="999" y="190" class="m" font-style="italic">V-SW1046, V-SW1047</text>
+</g>
+<!-- tube cleaning -->
+<rect x="925" y="380" width="190" height="140" rx="4" fill="none" stroke="#3a3f45" stroke-width="1.2"></rect>
+<g class="s" font-size="12" fill="#a9b0b7">
+<text x="939" y="402" font-size="13" font-weight="600" fill="#e6e6e6">Condenser Tube Cleaning</text>
+<text x="939" y="426">System A</text><text x="1101" y="426" text-anchor="end" font-weight="600" fill="#4fd06a">STOPPED</text>
+<text x="939" y="446">System B</text><text x="1101" y="446" text-anchor="end" font-weight="600" fill="#4fd06a">STOPPED</text>
+<text x="939" y="470" class="m" font-size="11" fill="#9aa3ab">P-1113, P-1114</text>
+<text x="939" y="486" class="m" font-size="11" fill="#9aa3ab">T-1115, T-1116</text>
+<text x="939" y="506" font-size="11">Logic DITL-119</text>
+</g>
+<!-- discharge channel and siphon pit -->
+<rect x="1480" y="52" width="24" height="16" fill="#1b1e21" stroke="#e6e6e6" stroke-width="1.6"></rect>
+<g class="s" fill="#a9b0b7" font-size="12">
+<text x="1492" y="88" text-anchor="middle">Siphon pit</text>
+<text x="1560" y="40" text-anchor="end" font-size="13" font-weight="600" fill="#e6e6e6">To Seawater Discharge Channel</text>
+</g>
+<!-- heat exchangers -->
+<g fill="#1b1e21" stroke="#e6e6e6" stroke-width="1.6">
+<rect x="1160" y="270" width="110" height="110" rx="4"></rect>
+<rect x="1290" y="270" width="110" height="110" rx="4"></rect>
+<rect x="1420" y="270" width="110" height="110" rx="4"></rect>
+</g>
+<g fill="none" stroke="#a9b0b7" stroke-width="1.4">
+<path d="M1176 350 L1192 330 L1208 350 L1224 330 L1240 350 L1254 330"></path>
+<path d="M1306 350 L1322 330 L1338 350 L1354 330 L1370 350 L1384 330"></path>
+<path d="M1436 350 L1452 330 L1468 350 L1484 330 L1500 350 L1514 330"></path>
+</g>
+<g class="s" text-anchor="middle" font-size="12" fill="#e6e6e6">
+<text x="1215" y="292">Heat Exchanger A</text><text x="1215" y="308" class="m" font-size="11" fill="#9aa3ab">H-1107A</text>
+<text x="1345" y="292">Heat Exchanger B</text><text x="1345" y="308" class="m" font-size="11" fill="#9aa3ab">H-1107B</text>
+<text x="1475" y="292">Heat Exchanger C</text><text x="1475" y="308" class="m" font-size="11" fill="#9aa3ab">H-1107C</text>
+<text x="1345" y="448" font-size="13" font-weight="600">Closed Cooling Water Heat Exchangers</text><a href="https://claude.ai/artifact/FzdN7gLGASa6JDTkyCBSgP" target="_blank" rel="noopener"><text x="1345" y="468" font-size="12" font-weight="400" fill="#8fc1ff" text-decoration="underline">Water side: Make-Up and Closed Cooling page</text></a>
+<g class="m" font-size="11" fill="#a9b0b7" font-style="italic" text-anchor="end"><text x="1203" y="404">V-SW1022</text><text x="1333" y="404">V-SW1023</text><text x="1463" y="404">V-SW1024</text><text x="1203" y="249">V-SW1025</text><text x="1333" y="249">V-SW1026</text><text x="1463" y="249">V-SW1027</text></g>
+<text x="1345" y="486" font-size="11" fill="#a9b0b7">seawater side on this page</text>
+</g>
+<!-- debris filter S-1504 -->
+<g fill="#1b1e21" stroke="#e6e6e6" stroke-width="1.6"><circle cx="1545" cy="540" r="16"></circle><path d="M1534 529 L1556 551 M1556 529 L1534 551"></path></g>
+<g class="s" text-anchor="end">
+<text x="1522" y="518" font-size="14" font-weight="600" fill="#e6e6e6">Debris Filter S-1504</text>
+<text x="1522" y="538" font-size="13" font-weight="600" fill="#ff6b6b">IN OPERATION</text>
+<text x="1522" y="556" font-size="11" fill="#a9b0b7">Common fail: no</text>
+<text x="1522" y="572" font-size="11" fill="#a9b0b7">Backwash MV-SW1002 · local panel</text>
+</g>
+<!-- booster pumps -->
+<g fill="#1b1e21" stroke="#e6e6e6" stroke-width="1.6">
+<circle cx="1165" cy="770" r="16"></circle><path d="M1157 778 L1165 762 L1173 778"></path>
+<circle cx="1305" cy="770" r="16"></circle><path d="M1297 778 L1305 762 L1313 778"></path>
+<circle cx="1445" cy="770" r="16"></circle><path d="M1437 778 L1445 762 L1453 778"></path>
+<path d="M1158 651 L1172 669 L1158 669 L1172 651 Z"></path>
+<path d="M1298 651 L1312 669 L1298 669 L1312 651 Z"></path>
+<path d="M1438 651 L1452 669 L1438 669 L1452 651 Z"></path>
+<path d="M1158 707 L1165 693 L1172 707 Z"></path><path d="M1158 691 H1172"></path>
+<path d="M1298 707 L1305 693 L1312 707 Z"></path><path d="M1298 691 H1312"></path>
+<path d="M1438 707 L1445 693 L1452 707 Z"></path><path d="M1438 691 H1452"></path>
+<path d="M1158 799 L1172 817 L1158 817 L1172 799 Z"></path>
+<path d="M1298 799 L1312 817 L1298 817 L1312 799 Z"></path>
+<path d="M1438 799 L1452 817 L1438 817 L1452 799 Z"></path>
+</g>
+<g class="m" font-size="11" fill="#a9b0b7" font-style="italic">
+<text x="1179" y="704">V-SW1015</text><text x="1319" y="704">V-SW1017</text><text x="1459" y="704">V-SW1019</text>
+<text x="1179" y="664">V-SW1016</text><text x="1319" y="664">V-SW1018</text><text x="1459" y="664">V-SW1020</text>
+</g>
+<g class="m" font-size="11" fill="#a9b0b7" font-style="italic" text-anchor="middle">
+<text x="1165" y="849">V-SW1012</text><text x="1305" y="849">V-SW1013</text><text x="1445" y="849">V-SW1014</text>
+</g>
+<g fill="none" stroke-width="1.6">
+<rect x="1187" y="720" width="28" height="20" rx="3" stroke="#ff6b6b"></rect>
+<rect x="1327" y="720" width="28" height="20" rx="3" stroke="#4fd06a"></rect>
+<rect x="1467" y="720" width="28" height="20" rx="3" stroke="#ff6b6b"></rect>
+</g>
+<g class="s">
+<text x="1201" y="735" text-anchor="middle" font-size="13" font-weight="600" fill="#ff6b6b">Y</text>
+<text x="1341" y="735" text-anchor="middle" font-size="13" font-weight="600" fill="#4fd06a">N</text>
+<text x="1481" y="735" text-anchor="middle" font-size="13" font-weight="600" fill="#ff6b6b">Y</text>
+<text x="1223" y="735" font-size="14" font-weight="600" fill="#ffffff">87.3 A</text>
+<text x="1363" y="735" font-size="14" font-weight="600" fill="#ffffff">0.0 A</text>
+<text x="1503" y="735" font-size="14" font-weight="600" fill="#ffffff">87.2 A</text>
+
+<text x="1187" y="754" font-size="13" font-weight="600" fill="#e6e6e6">Booster Pump A</text>
+<text x="1187" y="770" class="m" font-size="11" fill="#9aa3ab">P-1503A</text>
+<text x="1187" y="788" font-size="13" font-weight="600" fill="#ff6b6b">RUNNING</text>
+<text x="1187" y="804" font-size="11" fill="#a9b0b7">Remote · Manual</text>
+<text x="1187" y="820" class="m" font-size="11" fill="#9aa3ab">IT-P1503A</text>
+
+<text x="1327" y="754" font-size="13" font-weight="600" fill="#e6e6e6">Booster Pump B</text>
+<text x="1327" y="770" class="m" font-size="11" fill="#9aa3ab">P-1503B</text>
+<text x="1327" y="788" font-size="13" font-weight="600" fill="#4fd06a">STOPPED</text>
+<text x="1327" y="804" font-size="11" fill="#a9b0b7">Remote · Auto</text>
+<text x="1327" y="820" class="m" font-size="11" fill="#9aa3ab">IT-P1503B</text>
+
+<text x="1467" y="754" font-size="13" font-weight="600" fill="#e6e6e6">Booster Pump C</text>
+<text x="1467" y="770" class="m" font-size="11" fill="#9aa3ab">P-1503C</text>
+<text x="1467" y="788" font-size="13" font-weight="600" fill="#ff6b6b">RUNNING</text>
+<text x="1467" y="804" font-size="11" fill="#a9b0b7">Remote · Manual</text>
+<text x="1467" y="820" class="m" font-size="11" fill="#9aa3ab">IT-P1503C</text>
+</g>
+<!-- flow arrows -->
+<g fill="#e6e6e6">
+<polygon points="464,262 476,262 470,272"></polygon>
+<polygon points="464,700 476,700 470,710"></polygon>
+<polygon points="510,784 510,796 520,790"></polygon>
+<polygon points="554,806 566,806 560,816"></polygon>
+<polygon points="990,824 990,836 1000,830"></polygon>
+<polygon points="654,775 666,775 660,765"></polygon>
+<polygon points="834,775 846,775 840,765"></polygon>
+<polygon points="654,214 666,214 660,204"></polygon>
+<polygon points="834,214 846,214 840,204"></polygon>
+<polygon points="1000,54 1000,66 1010,60"></polygon>
+<polygon points="1550,54 1550,66 1560,60"></polygon>
+<polygon points="1539,480 1551,480 1545,470"></polygon>
+<polygon points="1500,424 1500,416 1490,420"></polygon>
+<polygon points="1339,150 1351,150 1345,140"></polygon>
+</g>
+</svg></div>
+<section id="fp"><h2>Faceplates (sample: Seawater Pump B)</h2><div class="fps">
+
+<div style="width: 380px; max-width: 100%; box-sizing: border-box; background: #1b1e21; color: #e6e6e6; font-family: 'IBM Plex Sans', system-ui, sans-serif; border: 1px solid #5a6168; display: flex; flex-direction: column;">
+<div style="padding: 14px 18px; border-bottom: 1px solid #3a3f45; display: flex; justify-content: space-between; align-items: flex-start;">
+<div style="display: flex; flex-direction: column; gap: 2px;">
+<div style="font-size: 17px; font-weight: 600;">Seawater Pump B</div>
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #9aa3ab;">P-1501B · Logic DITL-29A</div>
+</div>
+<button type="button" aria-label="Close faceplate" style="background: none; border: 1px solid #5a6168; color: #e6e6e6; width: 44px; height: 44px; border-radius: 4px; font-size: 16px; cursor: pointer;">×</button>
+</div>
+<div style="padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; flex-grow: 1;">
+<div style="border: 1.5px solid #ff6b6b; border-radius: 4px; padding: 10px; text-align: center; font-size: 22px; font-weight: 600; color: #ff6b6b; letter-spacing: 1px;">RUNNING</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; font-size: 13px;">
+<div style="display: flex; flex-direction: column; gap: 2px;"><span style="color: #a9b0b7; font-size: 11px;">Field mode</span><span style="font-weight: 600;">REMOTE</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9aa3ab;">MIL-P1501B I.0528</span></div>
+<div style="display: flex; flex-direction: column; gap: 2px;"><span style="color: #a9b0b7; font-size: 11px;">Breaker</span><span style="font-weight: 600;">ON</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9aa3ab;">MIV-P1501B1 I.052A</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<span style="color: #a9b0b7; font-size: 11px;">Control mode</span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+<button type="button" style="height: 44px; background: none; border: 1px solid #5a6168; color: #a9b0b7; border-radius: 4px; font-family: inherit; font-size: 14px; cursor: pointer;">AUTO</button>
+<button type="button" aria-pressed="true" style="height: 44px; background: #e6e6e6; border: 1px solid #e6e6e6; color: #1b1e21; border-radius: 4px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">MANUAL</button>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<span style="color: #a9b0b7; font-size: 11px;">Command (manual, remote)</span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+<button type="button" style="height: 44px; background: none; border: 1.5px solid #ff6b6b; color: #ff6b6b; border-radius: 4px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">START</button>
+<button type="button" style="height: 44px; background: none; border: 1.5px solid #4fd06a; color: #4fd06a; border-radius: 4px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">STOP</button>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+<button type="button" style="height: 44px; background: none; border: 1px solid #5a6168; color: #e6e6e6; border-radius: 4px; font-family: inherit; font-size: 13px; cursor: pointer;">EXECUTE</button>
+<button type="button" style="height: 44px; background: none; border: 1px solid #5a6168; color: #e6e6e6; border-radius: 4px; font-family: inherit; font-size: 13px; cursor: pointer;">CANCEL</button>
+</div>
+</div>
+<div style="border-top: 1px solid #3a3f45; padding-top: 12px; display: flex; justify-content: space-between; align-items: flex-end;">
+<div style="display: flex; flex-direction: column; gap: 2px;">
+<span style="color: #a9b0b7; font-size: 11px;">Motor current</span>
+<span style="font-size: 24px; font-weight: 600; color: #ffffff;">242.5 A</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9aa3ab;">IT-P1501B · range 0 to 520 A</span>
+<span style="font-size: 11px; color: #a9b0b7;">Normal 205 to 215 A (PR-OPE-5002)</span>
+</div>
+<button type="button" style="height: 44px; padding: 0 12px; background: none; border: 1.5px solid #ff6b6b; color: #ff6b6b; border-radius: 4px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">Permissive  Y</button>
+</div>
+</div>
+</div>
+
+
+<div style="width: 460px; max-width: 100%; box-sizing: border-box; background: #1b1e21; color: #e6e6e6; font-family: 'IBM Plex Sans', system-ui, sans-serif; border: 1px solid #5a6168; display: flex; flex-direction: column;">
+<div style="padding: 14px 18px; border-bottom: 1px solid #3a3f45; display: flex; justify-content: space-between; align-items: flex-start;">
+<div style="display: flex; flex-direction: column; gap: 2px;">
+<div style="font-size: 17px; font-weight: 600;">Seawater Pump B · Permissive</div>
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #9aa3ab;">P-1501B · DITL-29A, DITL-29B</div>
+</div>
+<button type="button" aria-label="Close faceplate" style="background: none; border: 1px solid #5a6168; color: #e6e6e6; width: 44px; height: 44px; border-radius: 4px; font-size: 16px; cursor: pointer;">×</button>
+</div>
+<div style="padding: 14px 18px; display: flex; flex-direction: column; gap: 16px;">
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<div style="font-size: 12px; color: #a9b0b7;">Manual start from the operator station (DITL-29A)</div>
+<div style="display: flex; align-items: center; gap: 10px; font-size: 13px;"><span style="border: 1.5px solid #ff6b6b; color: #ff6b6b; font-weight: 600; width: 26px; text-align: center; border-radius: 3px;">Y</span><span style="flex-grow: 1;">Remote mode selected</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9aa3ab;">MIL-P1501B</span></div>
+<div style="display: flex; align-items: center; gap: 10px; font-size: 13px;"><span style="border: 1.5px solid #ff6b6b; color: #ff6b6b; font-weight: 600; width: 26px; text-align: center; border-radius: 3px;">Y</span><span style="flex-grow: 1;">Pump not tripped</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9aa3ab;">MIT-P1501B</span></div>
+<div style="display: flex; align-items: center; gap: 10px; font-size: 13px;"><span style="border: 1.5px solid #ff6b6b; color: #ff6b6b; font-weight: 600; width: 26px; text-align: center; border-radius: 3px;">Y</span><span style="flex-grow: 1;">Auto mode not selected</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9aa3ab;">operator station</span></div>
+<div style="display: flex; align-items: center; gap: 10px; font-size: 13px;"><span style="border: 1.5px solid #ff6b6b; color: #ff6b6b; font-weight: 600; width: 26px; text-align: center; border-radius: 3px;">Y</span><span style="flex-grow: 1;">No trip interlock (high-high, 5 s)</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9aa3ab; white-space: nowrap;">DITL-29B</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #a9b0b7;"><span>Trend · motor current IT-P1501B</span><span>last 30 min</span></div>
+<svg width="422" height="150" viewBox="0 0 422 150" role="img" aria-label="Trend frame for motor current, 0 to 520 A, drawn live in the app">
+<g fill="none" stroke="#3a3f45" stroke-width="1"><rect x="40" y="6" width="376" height="120"></rect><path d="M40 36 H416 M40 66 H416 M40 96 H416" stroke-dasharray="3 4"></path></g>
+<path d="M40 77.5 H416" fill="none" stroke="#a9b0b7" stroke-width="1" stroke-dasharray="2 3"></path>
+<circle cx="416" cy="70" r="4" fill="#ffffff"></circle>
+<g font-family="'IBM Plex Mono', monospace" font-size="11" fill="#9aa3ab" text-anchor="end"><text x="34" y="10">520</text><text x="34" y="70">260</text><text x="34" y="130">0 A</text></g>
+<g font-family="'IBM Plex Sans', sans-serif" font-size="11" fill="#a9b0b7"><text x="48" y="144">line drawn live in the app; dot = 242.5 A now</text><text x="300" y="92">normal 205 to 215 A</text></g>
+</svg>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<div style="font-size: 12px; color: #a9b0b7;">Monitor (alarm H / HH from the alarm list)</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 10px; font-size: 12px; align-items: baseline;">
+<span style="color: #a9b0b7; font-size: 11px;">Point</span><span style="color: #a9b0b7; font-size: 11px;">Tag</span><span style="color: #a9b0b7; font-size: 11px; text-align: right;">Value</span><span style="color: #a9b0b7; font-size: 11px; text-align: right;">H / HH</span>
+<span>Winding U</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9aa3ab;">TT-SW1501-BU</span><span style="text-align: right; font-weight: 600;">----- °C</span><span style="text-align: right; color: #a9b0b7;">145 / 155</span>
+<span>Winding V</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9aa3ab;">TT-SW1501-BV</span><span style="text-align: right; font-weight: 600;">----- °C</span><span style="text-align: right; color: #a9b0b7;">145 / 155</span>
+<span>Winding W</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9aa3ab;">TT-SW1501-BW</span><span style="text-align: right; font-weight: 600;">----- °C</span><span style="text-align: right; color: #a9b0b7;">145 / 155</span>
+<span>Bearing drive end</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9aa3ab;">TT-SW1501-B3</span><span style="text-align: right; font-weight: 600;">----- °C</span><span style="text-align: right; color: #a9b0b7;">95 / 100</span>
+<span>Bearing non-drive end</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9aa3ab;">TT-SW1501-B4</span><span style="text-align: right; font-weight: 600;">----- °C</span><span style="text-align: right; color: #a9b0b7;">95 / 100</span>
+<span>Vibration 1</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9aa3ab;">VT-SW1501-B1</span><span style="text-align: right; font-weight: 600;">----- mm/s</span><span style="text-align: right; color: #a9b0b7;">11.2 / 16.8</span>
+<span>Vibration 2</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9aa3ab;">VT-SW1501-B2</span><span style="text-align: right; font-weight: 600;">----- mm/s</span><span style="text-align: right; color: #a9b0b7;">11.2 / 16.8</span>
+</div>
+<div style="font-size: 11px; color: #a9b0b7;">----- = NO-SOURCE: these values are not in snapshot 30.PNG; the live page shows the plant model.</div>
+</div>
+</div>
+</div>
+</div></section>
+<section><h2>Sources</h2><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 28px; font-size: 13px; line-height: 1.55; color: #c9cfd4;">
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<div style="font-size: 15px; font-weight: 600; color: #e6e6e6;">Layout and equipment</div>
+<div>Flow diagram K1AU3-PD-020 SEAWATER SYSTEM Rev D (flow-diagram zip, RB page 14; Rev C on RA page 16): priming air ejectors Z-1131A/B (Rev D, air from PD-023 via V-PA1092/1093, to the water box vents via V-SW1046/1047; PR-OPE-5002 writes these vents as V-PA1046/1047/1113/1114); pumps P-1501A/B/C, check and V-SW1002/1004/1006, 96 in header, debris filter S-1502 with MV-SW1001, condenser H-1110 inlet V-SW1007/1008 at the bottom, outlet V-SW1009/1010 at the top, siphon pit, discharge channel; booster pumps P-1503A/B/C (inlet V-SW1012/1013/1014; outlet check V-SW1015/1017/1019 then valve V-SW1016/1018/1020), debris filter S-1504 with MV-SW1002, heat exchangers H-1107A/B/C; tube cleaning P-1113/1114, T-1115/1116.</div>
+<div>Hypochlorite dosing: flow diagram K1AU3-PD-043 HYPO-CHLORINATED DOSING SYSTEM (RA page 37): solution tank Z-0701, 50 m3, level switch LS-CH0701 (H, L, LL); unit 1 dosing pumps Z-1701A/B, 1.2 m3/h, with measuring tube, relief valve back to the tank, PG-CH1701A/B; discharge CH-1-001 / 002, 1 in, "to unit no. 1 seawater inlet channel". Unit 2 pumps Z-2701A/B not shown. PR-OPE-5002 section 3 and the IO list name the pumps P-0762A/B (dosing) and P-0761A/B (unloading). No document links P-0762A/B to Z-1701A/B; matched by function only. The unloading pumps are not drawn on PD-043.</div>
+<div>System order: PR-OPE-5002 sections 2 (sea water pump), 3 (hypo chlorinated pump), 4 and 6 (debris filter), 5 (sea water booster pump).</div>
+<div>Guide for the instruments shown: HMI snapshot 30.PNG (030 SEAWATER SYSTEM).</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<div style="font-size: 15px; font-weight: 600; color: #e6e6e6;">Tags, signals and logic</div>
+<div>DCS IO list (dcs-io-list.xls), STN103: MIR / MIT / MIL / MIS / MIV of P-1501A/B/C and P-1503A/B/C, IT-P1501A/B/C (0 to 520 A), IT-P1503A/B/C (0 to 200 A), LT-SW1501 (-14.80 to 0 m), DIR / DIT-DF1001/1002, CTCS commands (DITL-119), winding, bearing and vibration TT / VT-SW1501. STN102: PT-SW1110-A1/A2/B1/B2 (0 to 5 kg/cm2), TT-SW1110-A1/A2/B1/B2. STN105: P-0761A/B, P-0762A/B running and overload, MIA-HC0001.</div>
+<div>Start permissive: DITL-29A (start push button AND remote AND not tripped AND not auto). Trip interlock: DITL-29B (bearing temp, winding temp or vibration high-high, 5 s on-delay).</div>
+<div>Alarm limits: alarm list 2016-09-12: LT-SW1501 H -6.0, L -9.6, LL -9.9 m; SWP bearing H 95 / HH 100 °C, winding H 145 / HH 155 °C, vibration pump B H 11.2 / HH 16.8 mm/s; condenser seawater PT normal 0.4, L 0.3 kg/cm2.</div>
+<div>Normal motor current 205 to 215 A: PR-OPE-5002 section 2.</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<div style="font-size: 15px; font-weight: 600; color: #e6e6e6;">Sample values and NO-SOURCE</div>
+<div>All values on the page are from snapshot 30.PNG (2023-12-01 09:30, 147.9 MW): inlet pool -8.76 m; pump A stopped 0.0 A, B 242.5 A, C 207.6 A; condenser in 1.0 / 1.0 kg/cm2, 28.5 / 28.6 °C; out 0.4 / 0.5 kg/cm2, 35.3 / 35.1 °C; booster pumps 87.3 / 0.0 / 87.2 A; S-1502 common fail, S-1504 in operation.</div>
+<div>Not in the DCS (field or local only), shown as tag without value: PG-SW1501A/B/C local gauges, the manual valves (grey italic), DPT-SW1502 / 1504 (debris filter package panel).</div>
+<div>NO-SOURCE: winding, bearing and vibration values of the pump (not in snapshot 30.PNG; shown as -----). Flow rate of seawater: no flow transmitter in the IO list, so no flow value on the page.</div>
+<div>Not on this page: the water side of the heat exchangers (page <a href="https://claude.ai/artifact/FzdN7gLGASa6JDTkyCBSgP" target="_blank" rel="noopener" style="color:#8fc1ff">Make-Up and Closed Cooling Water</a>), the purge air of section 1 (electrostatic precipitator).</div>
+</div>
+</div>
+</section>
+<section id="logic"><h2>Logic link (ABC / DITL)</h2><div class="sub">67 tags on this page: 2 are used by an ABC or DITL sheet (full tag found in the sheet text, or the valve own signals ZSO / ZSC / MOR / MOS / ZT, or its IO address on the sheet), 25 are DCS IO points that no sheet uses (display only), 40 are not DCS points (field valves, TCS or drawing tags).</div><div class="lks"><div class="lk"><span class="ls">DITL-29A</span><span class="tg">MIT-P1501B</span></div><div class="lk"><span class="ls">DITL-39</span><span class="tg">DIT-DF1001</span></div></div><div class="lk"><span class="ls">Display only</span><span class="tg">IT-P1501A · IT-P1501B · IT-P1501C · IT-P1503A · IT-P1503B · IT-P1503C · LT-SW1501 · MIA-HC0001 · MIL-P1501B · MIV-P1501B1 · PT-SW1110-A1 · PT-SW1110-A2 · PT-SW1110-B1 · PT-SW1110-B2 · TT-SW1110-A1 · TT-SW1110-A2 · TT-SW1110-B1 · TT-SW1110-B2 · TT-SW1501-B3 · TT-SW1501-B4 · TT-SW1501-BU · TT-SW1501-BV · TT-SW1501-BW · VT-SW1501-B1 · VT-SW1501-B2</span></div><div class="lk"><span class="ls">Not DCS</span><span class="tg">DPT-SW1502 · LS-CH0701 · MV-SW1001 · MV-SW1002 · PG-CH1701A · PG-CH1701B · PG-SW1501A · PG-SW1501B · PG-SW1501C · V-PA1046 · V-PA1092 · V-PA1093 · V-SW1001 · V-SW1002 · V-SW1003 · V-SW1004 · V-SW1005 · V-SW1006 · V-SW1007 · V-SW1008 · V-SW1009 · V-SW1010 · V-SW1012 · V-SW1013 · V-SW1014 · V-SW1015 · V-SW1016 · V-SW1017 · V-SW1018 · V-SW1019 · V-SW1020 · V-SW1022 · V-SW1023 · V-SW1024 · V-SW1025 · V-SW1026 · V-SW1027 · V-SW1046 · V-SW1047 · VT-SW1501</span></div></section>
+<script>
+(function(){var w=document.getElementById('wrap'),b=document.getElementById('fitb');
+function set(f){w.classList.toggle('fit',f);b.setAttribute('aria-pressed',f);b.textContent=f?'Zoom in':'Fit to screen';try{localStorage.setItem('cwfit',f?'1':'0')}catch(e){}}
+var f=false;try{f=localStorage.getItem('cwfit')==='1'}catch(e){}set(f);
+b.addEventListener('click',function(){set(!w.classList.contains('fit'))});
+document.getElementById('dia').addEventListener('click',function(e){var r=this.getBoundingClientRect(),x=(e.clientX-r.left)*1600/r.width,y=(e.clientY-r.top)*856/r.height;if(x<330&&y>120&&y<560)document.getElementById('fp').scrollIntoView({behavior:'smooth'});});
+})();
+</script></body></html>
