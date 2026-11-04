@@ -506,7 +506,26 @@
         if (m.fieldOp && window.LS_FPOP && LS_FPOP.field)
           return void LS_FPOP.field({ n: m.n, t: m.t, d: m.d, io: m.io, why: (m.why || '') + (m.fld ? '' : ' This pump has no plant model.'), st: () => (m.fld ? mst(m) : null), fld: m.fld ? on => AN.field(m.fld, on) : null });
         if (m.mov && window.LS_FPOP && LS_FPOP.mov)
-          return void LS_FPOP.mov({ n: m.n, t: m.t, d: m.mov, info: () => movInfo(m.mov, m.tg || m.n), press: row => D().dpress(m.mov, row) });
+          return void LS_FPOP.mov({
+            n: m.n,
+            t: m.t,
+            d: m.mov,
+            info: () => movInfo(m.mov, m.tg || m.n),
+            press: row => D().dpress(m.mov, row),
+            /* live test 2026-11-05: the field REMOTE / LOCAL selector = the REMOTE input rows (DI) of this valve on its drawing */
+            sel: (() => {
+              const s = call(() => D().dOf(m.mov), null),
+                tg = m.tg || m.n,
+                own = t => !/(?:XV|MV)-[A-Z]{2}\d{4}/.test(t) || t.indexOf(tg) >= 0,
+                rows = [];
+              for (let r = 0; s && r < 64; r++) {
+                const I = call(() => DUI.rowInfo(s, r), null),
+                  t = (I && I.svc) || '';
+                if (/\bREMOTE\b/.test(t) && !/\b(LOCAL|AUTO|NOT)\b|P\.?B\b/.test(t) && own(t) && /^I\./.test((I && I.tag) || '')) rows.push(r);
+              }
+              return rows.length ? on => rows.forEach(r => fRow(m.mov, r, on, tg + ' REMOTE SELECTED (field selector)')) : null;
+            })()
+          });
         if (m.tcs && window.LS_FPOP && LS_FPOP.tcs) {
           const x = /^(mop|cop)([AB])$/.exec(m.tcs);
           return void LS_FPOP.tcs({
