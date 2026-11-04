@@ -70,7 +70,7 @@
       const tags = new Set([...qa('[data-v]')].map(e => e.dataset.v));
       for (const tag of tags) {
         api.reg({ t: 'val', tag, v: '' }, X => ((LOG[tag] = X && isFinite(X.v) ? +X.v : null), showV(tag)), null);
-        if (def.unit && def.unit[tag] && !/^tt:/.test(def.unit[tag])) api.reg({ t: 'val', tag: 'UNIT.' + def.unit[tag], v: '' }, X => ((PM[tag] = X && isFinite(X.v) ? +X.v : null), showV(tag)), null);
+        if (def.unit && def.unit[tag] && !/^(tt|ux):/.test(def.unit[tag])) api.reg({ t: 'val', tag: 'UNIT.' + def.unit[tag], v: '' }, X => ((PM[tag] = X && isFinite(X.v) ? +X.v : null), showV(tag)), null);
         showV(tag);
         qa(`[data-v="${tag}"]`).forEach(t => {
           const ti = document.createElementNS(NS, 'title');
@@ -145,7 +145,8 @@
         show();
       });
       const CT = {};
-      new Set([...qa('[data-ctl]')].map(e => e.dataset.ctl.split('|')[0])).forEach(tag => {
+      /* page 11: a controller with a faceplate click but no value hook on the page (FICDO1043A: the page shows the ZT position) */
+      new Set([...qa('[data-ctl]')].map(e => e.dataset.ctl.split('|')[0]).concat(Object.values(M).map(m => m.ctl).filter(Boolean))).forEach(tag => {
         const show = () =>
           qa(`[data-ctl^="${tag}|"]`).forEach(e => {
             const [, what, dp, u] = e.dataset.ctl.split('|'),
@@ -320,13 +321,74 @@
           e.textContent = v == null ? '-----' : v ? on : off;
           e.setAttribute('fill', v == null ? C.none : v ? C.run : kind === 'alarm' ? C.dim : C.stop);
         });
+        /* 3.2.1 page 10 PURGE AND TRIP: the Y / N of a condition read from the drawing itself.
+           [data-dy="SHEET|i or o|row+row|neg"] = input rows (DUI.rowVal) or output rows (DUI.outVal), all 1 (AND); neg = the
+           condition is the NOT of the row (e.g. "total air above 25 %" = NOT row 12 TOTAL AIR FLOW < 25% MCR). Y red = made, N green
+           = not (the approved mockup); data-on / data-off = other texts (page 11: ON / OFF, OPEN / CLOSED); [data-dyr] = its square. [data-dys="GROUP|SHEET|row|label"] = the summary of a group
+           (data-g): OK or NOT OK (n of N missing), from the output row of the drawing; [data-dfo="SHEET|row|first-last"] = MFT ACTIVE
+           and the first input row (drawing order) that is 1 at the scan the MFT came, latched until the MFT resets */
+        const dyv = spec => {
+          const [ad, io, rows, neg] = spec.split('|'),
+            s = call(() => D().dOf(ad), null);
+          if (!s) return null;
+          let v = 1;
+          for (const r of rows.split('+')) {
+            const x = call(() => (io === 'o' ? DUI.outVal(s, +r) : DUI.rowVal(s, +r)), null);
+            if (x == null) return null;
+            if (!x) v = 0;
+          }
+          return neg ? 1 - v : v;
+        };
+        const DY = {};
+        qa('[data-dy]').forEach(e => {
+          const v = dyv(e.dataset.dy),
+            col = v == null ? C.none : v ? C.run : C.stop;
+          DY[e.dataset.dy] = v;
+          e.textContent = v == null ? (e.dataset.on ? '-----' : '-') : v ? e.dataset.on || 'Y' : e.dataset.off || 'N';
+          e.setAttribute('fill', col);
+        });
+        qa('[data-dyr]').forEach(e => {
+          const v = DY[e.dataset.dyr];
+          e.setAttribute('stroke', v == null ? C.none : v ? C.run : C.stop);
+        });
+        qa('[data-dys]').forEach(e => {
+          const [g, ad, row, lab] = e.dataset.dys.split('|'),
+            ys = [...qa(`[data-dy][data-g="${g}"]`)],
+            miss = ys.filter(y => DY[y.dataset.dy] !== 1).length,
+            s = call(() => D().dOf(ad), null),
+            ok = s ? call(() => DUI.outVal(s, +row), null) : null,
+            col = ok == null ? C.none : ok ? C.run : C.stop;
+          e.textContent = ok == null ? lab + ': -----' : ok ? lab + ': OK' : lab + ': NOT OK (' + miss + ' of ' + ys.length + ' missing)';
+          e.setAttribute('fill', col);
+          qa(`[data-dysr="${g}"]`).forEach(r => r.setAttribute('stroke', col));
+        });
+        qa('[data-dfo]').forEach(e => {
+          const [ad, row, rg] = e.dataset.dfo.split('|'),
+            s = call(() => D().dOf(ad), null),
+            on = s ? call(() => DUI.outVal(s, +row), null) : null;
+          if (on == null) {
+            e.textContent = '-----';
+            e.setAttribute('fill', C.none);
+            return;
+          }
+          if (!on) e._fo = null;
+          else if (!e._fo) {
+            const [a, b] = rg.split('-').map(Number);
+            for (let r = a; r <= b && !e._fo; r++) if (call(() => DUI.rowVal(s, r), null) === 1) e._fo = String(call(() => DUI.rowInfo(s, r).svc, '') || '');
+            if (!e._fo) e._fo = '-----';
+          }
+          e.textContent = on ? 'MFT ACTIVE · first out: ' + e._fo : 'NO MFT';
+          e.setAttribute('fill', on ? C.run : C.stop);
+          qa('[data-dfor]').forEach(r => r.setAttribute('stroke', on ? C.run : C.stop));
+        });
       };
-      /* plant model values kept by tag (AN.unit.tt: the LP heater temperatures, ...): def.unit[TAG] = 'tt:IO-TAG' */
-      const TT = Object.entries(def.unit || {}).filter(([, k]) => /^tt:/.test(k));
+      /* plant model values kept by tag (AN.unit.tt: the LP heater temperatures, ...): def.unit[TAG] = 'tt:IO-TAG'; an item of a list of
+         the plant model: 'ux:KEY.i' (AN.unit.fnGi[0] = IDF inlet A) */
+      const TT = Object.entries(def.unit || {}).filter(([, k]) => /^(tt|ux):/.test(k));
       const tickTT = () => {
         for (const [tag, k] of TT) {
           const U = window.AN && AN.unit,
-            v = U && U.on && U.tt ? U.tt[k.slice(3)] : null;
+            v = !U || !U.on ? null : k[0] === 't' ? (U.tt ? U.tt[k.slice(3)] : null) : k.slice(3).split('.').reduce((o, x) => (o == null ? null : o[x]), U);
           const nv = v != null && isFinite(v) ? +v : null;
           if (PM[tag] !== nv) (PM[tag] = nv), showV(tag);
         }

@@ -1,5 +1,74 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.24 — DIESEL AND BURNERS, mockup page 11 in the app (2026-11-04, JISOO : HMI MOCKUP)
+
+**Work done.** `docs/hmi/mockups/temp/11-diesel-burners.html` → Plant view **DIESEL AND BURNERS** (`MK11`), `tools/hmi-mock/p11.py` →
+`src/ui/plant/hmi-mock-db.js`.
+- Motors: diesel oil pump A / B = DITL-31 / DITL-31 #B (boiler.js AN_DO), RUNNING / STOPPED, Remote / Auto, current IT-P0702A / B.
+- Controllers (faceplate): PICDO0005 (PCV-DO0002), HICDO1012 (FCV-DO1012), PICDO1008 (PCV-DO1009), FIC-OM oil master (PV / SV / MV /
+  mode), FICDO1043A ~ D (FCV-DO1043-x3), FICFA1043A ~ D (burner air PV, MCV-FA1043-x MV at mode).
+- Values (I/O list): PT-DO0005, PT-DO1008, ZT-DO1012, FT-DO1043-x, PT-DO1043-x2 ng logic; LT-DO0701, DPT-DO0001, IT-P0702A / B,
+  ZT-DO0002, ZT-DO1009, ZT-DO1043-x3 mula sa plant model AN_DO (walang sheet na bumabasa).
+- Burner state: IN SERVICE / OFF = DITL-10 (#B ~ #D) input row 19 BURNER x IN SERVICE; igniter ON / OFF = DITL-10 output row 16
+  ENERGIZE IGNITER TRANS.; XV-DO1043-x1 / x2 OPEN / CLOSED = DITL-16 output rows 21 / 23 (VALVE (1) / (2) CLOSED · CRT); atomizing air
+  XV-PA1043-x2 = DITL-07 input row 21 ATOM. AIR VALVE OPENED. Runtime: `data-dy` may `data-on` / `data-off` na text.
+- Runtime: ang controller ng isang machine na walang value hook sa page ay may faceplate na rin (FICDO1043A ~ D).
+- NO-SOURCE ('-----'): flame detectors BT-DO1043-x (walang model), oil master ON / OFF, total diesel oil used, purge air valves
+  XV-PA1043-x3.
+
+**Checked (headless cloud).** 150 MW + RUN: tank 4.978 m, strainer 0.029 kg/cm2, pump A RUNNING 25.4 A, B STOPPED Remote · Auto,
+PT-DO0005 12.8, PCV-DO0002 24.2 % AUTO, FCV-DO1012 100.0 % MANUAL, PT-DO1008 11.0, PCV-DO1009 85.7 % AUTO (= 6.PNG); burners OFF,
+igniters OFF, oil valves CLOSED; faceplates ng pump A, FICDO1043B, FICFA1043A, FIC-OM bumubukas; walang JS error.
+
+**Not checked.** Live test, burner light-off sequence, phone size.
+
+## 3.2.1-beta.22 — PURGE AND TRIP, mockup page 10 in the app (2026-11-04, JISOO : HMI MOCKUP)
+
+**Work done.** `docs/hmi/mockups/temp/10-purge-trip.html` → Plant view **PURGE AND TRIP** (`MK10`), `tools/hmi-mock/p10.py` →
+`src/ui/plant/hmi-mock-pt.js`.
+- Bagong hook ng runtime `hmi-mock.js`: `data-dy="SHEET|i/o|row+row|neg"` = Y / N ng input rows (DUI.rowVal) o output rows
+  (DUI.outVal) ng drawing, AND ng lahat, `neg` = ang kabaligtaran (hal. "Total air flow above 25 % MCR" = NOT DITL-01 row 12 TOTAL
+  AIR FLOW < 25% MCR); `data-dys` = buod OK / NOT OK (n of N missing) mula sa output row; `data-dfo` = MFT ACTIVE at first out.
+- Furnace purge permissive (DITL-01): IDF / SAF / any FAB / PAF running (rows 0 ~ 3), total air (NOT row 12), all burners no flame
+  (output ALL BURNER LOSS FLAME), oil valves closed (rows 8 ~ 11), coal feeders stopped (output ALL COAL FEEDER STOPPED), feeder outlet
+  valves closed (rows 16 ~ 18), limestone rotary valve stopped (NOT row 13 MIR-M1311 RUNNING), RH damper >= 30 % (row 15), SH damper
+  >= 60 % (row 19), no boiler trip command (row 14), cyclone outlet / RH outlet not H.H. (NOT DITL-03A rows 23 / 24). Buod = output
+  row 10 FURNACE PURGE PERMISSIVE.
+- Purge sequence (DITL-02): M.050E (row 14), burner S.A. dampers purge position (rows 1 ~ 4), FURNACE PURGE START P.B. (row 5),
+  IN PROGRESS (output 6), COMPLETED (output 15), MFT reset = DITL-03A MASTER FUEL TRIP (MFT) SER = 0; FURNACE PURGE OK / NO OK at
+  PURGE READY = output rows 16 / 10.
+- MFT (DITL-03A): input rows 1 ~ 18 sa ayos ng mockup; MFT ACTIVE = output row 17 MASTER FUEL TRIP (MFT) SER; first out = unang
+  input row (ayos ng drawing) na 1 sa sandaling dumating ang MFT, hawak hanggang ma-reset.
+- Ang 4 fan row ay bumubukas ng faceplate ng fan (DITL-25A / 27A / 28A / 26A).
+- NO-SOURCE ('-----'): purge time (ang 300 s ON-DELAY ng DITL-02 ay walang readout).
+
+**Checked (headless cloud).** 150 MW + RUN: PURGE PERMISSIVE NOT OK (4 of 15 missing: coal feeders, outlet valves, limestone, RH
+damper; tama sa 150 MW), purge sequence N, MFT N lahat, NO MFT. BOILER EMERGENCY TRIP P.B. (DITL-03F row 20) → MFT ACTIVE · first
+out: BOILER EMERGENCY TRIP P.B. ON (CRT); IDF faceplate bumubukas; walang JS error.
+
+**Not checked.** Live test, buong purge mula Cold (5 minuto), phone size.
+
+## 3.2.1-beta.21 — AIR AND FLUE GAS, mockup page 09 in the app (2026-11-04, JISOO : HMI MOCKUP)
+
+**Work done.** `docs/hmi/mockups/temp/09-air-flue-gas.html` → Plant view **AIR AND FLUE GAS** (`MK09`), `tools/hmi-mock/p09.py` →
+`src/ui/plant/hmi-mock-fg.js`.
+- Motors (motor faceplate): PAF DITL-26A, SAF DITL-27A, IDF DITL-25A, FA blower A / B DITL-28A / #B (boiler.js AN_FN.run), air
+  preheater DITL-43.
+- Controllers: FICFA1071 / FICFA1081 (PV / SV / MV ng MCV), PICFG108 (coupling), PICFG108A (inlet damper), HICHR1002A / B (biasing
+  dampers), TICHR1002A (reheater outlet PV / SV), AICFG112 (O2 set value).
+- Values: logic transmitter; kung wala, plant model AN_FN: IT-F1053 / 1054 / 1056 / 1055A, PT-FA1075, PT-FA1055-A / B,
+  PT-FG1141-A / B, PT-FG1151. Runtime: bagong source na `ux:KEY.i` (isang item ng listahan ng plant model, hal. `fnGi.0`).
+- NO-SOURCE ('-----'): gas-in temps sa harap ng bawat bank ng back pass, ika-4 na furnace pressure, IDF speed, total air at wall
+  damper demand lines, APH motor current; mga transmitter na wala sa logic at wala sa plant model (TT-FG1090 / 1091, DPT-FG1083 / 1084 /
+  1183 / 1184, TT-FG1009, PT-FG1009, TT-FG1095, TT-FG1110 / 1113 / 1124 / 1125 / 1132 / 1133 / 1152, PT-FG1087 / 1121 / 1134, AT-FG1131,
+  DPT-FG1052-5, stack monitor maliban sa SOx, PT-FA1078, TT-FA1073 / 1074 / 1083 / 1084).
+- Finding (para sa plant model): FT-FA1079 hot primary air = 0.7 T/H sa 150 MW (logic AI), samantalang PAF 353 T/H.
+
+**Checked (headless cloud).** 150 MW + RUN: PAF RUNNING 246 A 353 T/H, SAF 131 A 213 T/H, IDF 200 A coupling 46.1 %, FA-A 35.7 A
+25.6 T/H, ESP outlet -443 / -451, IDF outlet -7 mmH2O; faceplate ng PAF at FA blower-B bumubukas; walang JS error; `npm run check` SAME.
+
+**Not checked.** Live test, phone size, START / STOP ng fans.
+
 ## 3.2.1-beta.20 — AUX STEAM AND VACUUM, mockup page 08 in the app (2026-11-04, JISOO : HMI MOCKUP)
 
 **Work done.** `docs/hmi/mockups/temp/08-aux-steam-vacuum.html` → Plant view **AUX STEAM AND VACUUM** (`MK08`),
