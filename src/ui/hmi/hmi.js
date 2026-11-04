@@ -518,13 +518,16 @@
       const popEl = E('div', { cls: 'fpop' });
       card.append(popEl);
       let popK = null,
-        popVal = null;
+        popVal = null,
+        popLast = null; /* [k, value, time]: the value just written (live test 2026-11-05: 4 quick ▲▲ on TICLO1002 SV gave +5) */
+      const popBase = k => (popLast && popLast[0] === k && Date.now() - popLast[2] < 3000 ? popLast[1] : +popIn(k).value);
       const popIn = k => (k === 'SV' ? svIn : mvIn),
         popLo = k => (k === 'SV' ? rlo : 0),
         popHi = k => (k === 'SV' ? rhi : 100),
         popStep = k => (k === 'SV' ? niceStep(popHi(k) - popLo(k)) : 1);
       const popSet = (k, v) => {
         v = Math.max(popLo(k), Math.min(popHi(k), v));
+        popLast = [k, v, Date.now()];
         popIn(k).value = +v.toFixed(3);
         if (k === 'SV') svSet(v);
         else setMV(S, c, v);
@@ -553,7 +556,7 @@
         popVal = noKb(E('input', { cls: 'n', type: 'number', step: 'any' }));
         popVal.value = popIn(k).value;
         popVal.onchange = () => popSet(k, n(popVal.value));
-        const B = (t, d, title) => stepBtn(t, title, m => popSet(k, n(popIn(k).value) + d * m));
+        const B = (t, d, title) => stepBtn(t, title, m => popSet(k, popBase(k) + d * m));
         popEl.append(
           E('div', { cls: 'row', style: 'justify-content:space-between' }, [
             E('b', { txt: k + '  ' + c.tag }),
@@ -790,11 +793,13 @@
       try {
         desc = (AN.descOf && AN.descOf(sh, tag)) || '';
       } catch (e) {}
+      let last = null;
       const inp = noKb(E('input', { cls: 'n fv', type: 'number', step: 'any' })),
         bar = E('i', {}),
         set = v => {
           const st = S.rt.st[b.id];
           if (st) st.val = Math.max(lo, Math.min(hi, v));
+          last = [Math.max(lo, Math.min(hi, v)), Date.now()];
           /* 2.2.0-beta.2: a station in AUTO follows its set input (leg A of its SV switch); when that input is the operator's own
              set (an input of the sheet, e.g. ABC-001A HIC-ULD: TARGET MW, COS SI0243 "TARGET MW SETUP FROM CCS CRT"), the
              faceplate writes it. Before: the value was overwritten by the target at the next step, so ▼ did nothing in AUTO */
@@ -809,7 +814,10 @@
             AN.settle();
           } catch (e) {}
         },
+        /* live test 2026-11-05 (HICHR1002B: 4 quick ▲▲ gave +5, not +20): with the Worker the output read back for a few frames is the
+           value before the press; the next press adds to the value just written (for 3 s), as the Training dock SV buttons */
         cur = () => {
+          if (last && Date.now() - last[1] < 3000) return last[0];
           const v = S.rt.v[b.o[0]];
           return isFinite(v) ? v : +inp.value || 0;
         },
