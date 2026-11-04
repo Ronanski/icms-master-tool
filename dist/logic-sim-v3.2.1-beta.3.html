@@ -19964,7 +19964,9 @@ function anCycFlows(t) {
     frec = cep * 2.5 * 100 * c((AN_CYC.u.cf || 0) / 100),
     ms = s.ms || 0,
     ext = s.ext || 0;
-  return { fda, frec, hwIn: ms * (1 - 0.25 * ext), daIn: 0.25 * ext * ms, mu: 1.8 * (AN_CYC.u.hw || 0) };
+  /* 3.2.1 (IRENE): no make-up water pump feeding the header (unit.js AN_MU muFeed) = no make-up to the hotwell */
+  const muOff = typeof AN_UNIT !== 'undefined' && AN_UNIT.on && AN_UNIT.muFeed === 0;
+  return { fda, frec, hwIn: ms * (1 - 0.25 * ext), daIn: 0.25 * ext * ms, mu: muOff ? 0 : 1.8 * (AN_CYC.u.hw || 0) };
 }
 function anProcStep(S, dt) {
   const rt = S.rt,
@@ -21695,6 +21697,10 @@ function anUnitStart() {
   /* 3.2.1 the lube oil cooler outlet TE-LO1002-1 / -2 (STN102 AI0452 / AI0516, the PV of ABC-053 TICLO1002): AN_LO writes them */
   const s53 = AN.sheets.find(x => x.name === 'ABC-053');
   U.lo = s53 && s53.S ? [anUnitAIs(shStn(s53) + '|AI0452'), anUnitAIs(shStn(s53) + '|AI0516')] : [];
+  /* 3.2.1 the hotwell level LT-CD1110 (STN102 AI0640, ABC-031): AN_CD reads it (the suction head of the condensate pumps). PT-CD1117
+     (STN102 AI0564) is on no ABC sheet (ABC-015 AI0564 is STN103 ZT-FA1016): the DITL-61B row reads the model (plantsw.js) */
+  const s31 = AN.sheets.find(x => x.name === 'ABC-031');
+  U.cdHwL = s31 && s31.S ? anUnitAIs(shStn(s31) + '|AI0640') : [];
   /* the valve commands of the other outlets (output of their A / M station after the interlocks) */
   const ctlOut = (k, t) => {
     const x = AN.sheets.find(y => y.name === k),
@@ -22081,6 +22087,7 @@ function anUnitStart() {
   AN_SRC.field.mu1033 = false;
   AN_SRC.field.cw1001 = true; /* live test #50: the expansion tank outlet open, the closed cooling loop primed */
   U.loTr = NaN; /* 3.2.1 AN_LO: the lube oil starts at its steady value */
+  U.cdTs = NaN; /* 3.2.1 AN_CD: the condenser starts at its steady value */
   if (AN_SRC.valve) for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
   AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed while steaming */
   AN_SRC.lhdPct = 0;
@@ -22128,6 +22135,7 @@ function anUnitCold() {
   AN_SRC.field.mu1033 = false;
   AN_SRC.field.cw1001 = false; /* live test #50: the expansion tank outlet closed, the closed cooling loop not primed */
   U.loTr = NaN; /* 3.2.1 AN_LO: the lube oil starts at its steady value */
+  U.cdTs = NaN; /* 3.2.1 AN_CD: the condenser starts at its steady value */
   if (AN_SRC.valve) for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
   AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed */
   AN_SRC.lhdPct = 0;
@@ -22912,6 +22920,86 @@ function anAcwStep(U, dt) {
                   the logic, tcs.js (TILO1001, the bearing outlets TIGE1007 / 1008, the bearing metal) and the HMI read the same value.
    Chain: SWBP trip -> CCWHE no seawater -> ACW supply hot (AN_ACW) -> TCV-CW1201 opens (TICLO1002 in AUTO) -> at 100 % the oil gets
    hot -> the bearings get hot (tcs.js). */
+/* 3.2.1 (IRENE: CONDENSATE plant model; docs/versions/v3.2.1/CONDENSATE_PLANT_MODEL.md). The condenser and the condensate pumps
+   P-1116A / B (CEP) of flow diagram PD-016.
+   Sources:
+     condenser    O&M L15-1 (K2MC3A, section 1.1.2): thermal load 195.7 MW at the exhaust 87.78 kg/s (316.0 T/H, = AN_SW cSt), seawater
+                  31,500 T/H 30 -> 35.6 C, 68.6 mbar abs (saturation 38.65 C), cleanliness 0.85, 6898 m2, hotwell 61.9 m3, normal level
+                  FL+1814 mm (HHL +2114, LLL +1514);
+     alarm list   "Alarm List _20160912": TE-CD1110-1 ~ 4 normal 38.6 C (H 50, L 27); PT-CD1110 range -1 ~ 5 kg/cm2, normal -0.86;
+                  PT-CD1117 normal 15.5, L 14.0, LL 13.0 kg/cm2; LT-CD1110 H 150 / HH 300, L -150 / LL -300 mm;
+     CEP          KSB WKTB 6/1+2 (O&M L10-1 A01 data sheet, A02 curve Q43495D, 1780 rpm, sp. gr. 0.9926): 400 m3/h at 180 m, shut-off
+                  210 m, 160 m at 480 m3/h; shaft power 123 kW at 50, 252 kW at 400, 283 kW at 480 m3/h; min flow 100 m3/h; first stage
+                  impeller GL-4.322 m, hotwell low level GL+1700 = FL+1500 mm (so the normal level is 6.34 m above the impeller);
+     snapshot     28.png CP-A 28.1 A at 150 MW, PICD1117 16.9 kg/cm2; 4.PNG PICD1110 0.057 kg/cm2A, TICD11101 40.0 C;
+     DITL-61B     row 19 PT-CD1117 < 14.0 kg/cm2 (1 s) = M.3217 CONDENSATE PUMPS OUTLET PRESSURE LOW -> DITL-61A row 10: the standby
+                  pump in AUTO starts; DITL-61A rows 24 / 27 strainer DP > 0.1 / 0.08 kg/cm2.
+   How it works:
+     heat         Q = 195.7 MW x steam to the condenser / 316.0 T/H (the same steam as AN_SW: main steam share + LP bypass);
+     condenser    the seawater of both water boxes (AN_SW swQc) at its inlet temperature: Ts = Tin + Q / (C (1 - exp(-UA / C))),
+                  UA = 36,430 kW/K at the design flow (from the O&M point: NTU = ln(8.65 / 3.05)), x (flow / design)^0.5 (NO-SOURCE:
+                  the usual water velocity factor); Ts follows with tau 30 s (NO-SOURCE); no seawater = no condensing: Ts goes to 100 C;
+     pressure     PT-CD1110 = saturation of Ts, and the air of a condenser not in vacuum (U.vac, the ejectors) takes it to the atmosphere;
+                  hotwell temperature = Ts (alarm list normal 38.6 = saturation of the design 68.6 mbar);
+     turbine      the TCS LOW VACUUM trip at 0.447 kg/cm2A (NO-SOURCE: the TCS setting is not readable in the IBD; = the old U.vac 0.6);
+     CEP          flow of a running pump = (condensate to the deaerator + recirculation) / running pumps (plant.js AN_CYC); head from the
+                  curve; outlet = suction (condenser pressure + the water above the impeller) + head - kz (kz 0.96 kg/cm2, NO-SOURCE:
+                  the transmitter elevation, calibrated to 16.9 at 150 MW); current = 28.1 A x shaft power / 245.7 kW (snapshot ratio). */
+const AN_CD = {
+  Qd: 195700,
+  Wd: 316.024,
+  UA: 36430,
+  Cd: 31500,
+  cp: 3.994,
+  tau: 30,
+  Ptrip: 0.447,
+  qQ: [0, 100, 200, 300, 400, 450, 480, 560],
+  qH: [210, 209, 205, 196, 180, 170, 160, 130],
+  pQ: [0, 50, 400, 480],
+  pP: [105, 123, 252, 283],
+  zS: 6.336,
+  kz: 0.96,
+  kI: 28.1 / 245.7,
+  dp0: 0.019,
+  q0: 383
+};
+const anPsat = T => (Math.pow(10, 8.07131 - 1730.63 / (233.426 + T)) * 1.33322) / 980.665; /* kg/cm2A, Antoine (water) */
+function anCondStep(U, dt) {
+  const K = AN_CD,
+    sw = AN_SW,
+    ws = Math.max(0, ((U.ms || 0) * sw.cSt) / sw.mcr + (U.qlp || 0)),
+    Q = (K.Qd * ws) / K.Wd,
+    Tin = isFinite(U.swTiA) ? (U.swTiA + U.swTiB) / 2 : sw.Tin[0],
+    W = Math.max(0, (U.swQc || 0) * 1.02),
+    C = (W / 3.6) * K.cp,
+    UA = K.UA * Math.sqrt(W / K.Cd);
+  let Tss = Tin;
+  if (Q > 0) Tss = C > 1 ? Tin + Q / (C * (1 - Math.exp(-UA / C))) : 100;
+  Tss = Math.min(100, Tss);
+  if (!isFinite(U.cdTs)) U.cdTs = Tss;
+  U.cdTs += (Tss - U.cdTs) * Math.min(1, dt / K.tau);
+  const vac = isFinite(U.vac) ? Math.max(0, Math.min(1, U.vac)) : 1,
+    Ps = Math.min(1.033, anPsat(U.cdTs));
+  U.cdQ = Math.round(Q / 100) / 10; /* MW */
+  U.cdT = U.cdTs;
+  U.cdP = Ps + (1.033 - Ps) * (1 - vac);
+  /* the condensate pumps */
+  const run = [srcBit(['M.3350']) > 0.5 ? 1 : 0, srcBit(['M.3351']) > 0.5 ? 1 : 0],
+    n = run[0] + run[1],
+    u = (typeof AN_CYC !== 'undefined' && AN_CYC.u) || {},
+    Qt = n ? (Math.min(520, 21.7 * Math.max(0, u.da || 0)) + 2.5 * Math.max(0, Math.min(100, u.cf || 0))) / 0.9926 : 0,
+    q = n ? Qt / n : 0,
+    hw = anUnitVal(U.cdHwL || []),
+    Psuc = U.cdP - 1.033 + 0.09926 * (K.zS + (isFinite(hw) ? hw : 0) / 1000);
+  U.cdQp = Math.round(q);
+  U.cdHw = hw;
+  U.cdRun = run;
+  U.cdPd = Math.max(0, Math.min(25, Psuc + (n ? 0.09926 * swInterp(K.qQ, K.qH, q) : 0) - K.kz));
+  run.forEach((r, i) => {
+    U['cdI' + i] = r ? Math.round(10 * K.kI * swInterp(K.pQ, K.pP, q)) / 10 : 0;
+    U['cdDp' + i] = r ? Math.round(1000 * K.dp0 * (q / K.q0) * (q / K.q0)) / 1000 : 0;
+  });
+}
 const AN_LO = { UA: 95.8, Co: 64.5, Qb: 1032, Wmax: 170, M: 25800, Tamb: 30 };
 function anLubeCoolStep(U, dt) {
   const K = AN_LO,
@@ -23235,7 +23323,7 @@ function anUnitStep(dt) {
     U.vac = Math.max(0, Math.min(1, cw2 > U.vac ? (aux ? U.vac + dt / U.vacUp : U.vac) : U.vac + ((cw2 - U.vac) * dt) / U.vacDn));
     const tb0 = U.tb,
       l = U.vtrip;
-    if (tb0 && (tb0.st !== 'off' || (U.tc && U.tc.trip)) && (U.vac < 0.6 || (U.tc && U.tc.trip)) && l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== 1) {
+    if (tb0 && (tb0.st !== 'off' || (U.tc && U.tc.trip)) && ((isFinite(U.cdP) ? U.cdP > AN_CD.Ptrip : U.vac < 0.6) || (U.tc && U.tc.trip)) && l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== 1) {
       l.S.rt.ext[l.n] = 1;
     }
   }
@@ -23251,6 +23339,8 @@ function anUnitStep(dt) {
   anAcwStep(U, dt);
   /* 3.2.1: the turbine lube oil cooler on the closed cooling water (AN_LO) */
   anLubeCoolStep(U, dt);
+  /* 3.2.1: the condenser (pressure, hotwell temperature) and the condensate pumps (AN_CD) */
+  anCondStep(U, dt);
   /* live test #54: motor bearing / winding temperature and vibration (AN_MT) */
   anMotorStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
@@ -32833,7 +32923,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.3';
-      c3.textContent += ' · build 7e4d726'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 2f86b1c'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -50124,7 +50214,11 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
        annunciator COOLING WATER PRESSURE ABNORMAL) and DITL-21A rows 13 / 14 TT-CW1060-A2 / A1 (machine instances #B ~ #D) = the
        supply header and the ash cooler outlets of the plant model (unit.js AN_ACW acP6 / acTb) */
     [/(?:^|[^A-Z])PT-CW1156\b/, 'acP6'],
-    [/(?:^|[^A-Z])TT-CW1060-[A-D][12]\b/, 'acTb']
+    [/(?:^|[^A-Z])TT-CW1060-[A-D][12]\b/, 'acTb'],
+    /* 3.2.1 (IRENE: CONDENSATE): DITL-61B row 19 PT-CD1117 (< 14.0 kg/cm2 = M.3217, the standby condensate pump starts) and DITL-61A
+       rows 24 / 27 the strainer DP DPT-CD1001 / 1002 of pump A / B = the plant model's (unit.js AN_CD) */
+    [/(?:^|[^A-Z])PT-CD1117\b/, 'cdPd'],
+    [/DPT-CD100([12])\b/, t => 'cdDp' + (+/DPT-CD100([12])/.exec(t)[1] - 1)]
   ];
   /* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI): the tank and unit header pressure transmitters of the compressed air systems are analog
      rows of the logic (DITL-113 / 114 rows 1 ~ 3: auto start of the standby compressor < 5 kg/cm2; DITL-03G rows 9 ~ 11: MFT on
@@ -50155,6 +50249,9 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   W.condP = () => {
     const U = (window.AN && AN.unit) || {},
       v = isFinite(U.vac) ? Math.max(0, Math.min(1, U.vac)) : NaN;
+    /* 3.2.1 (IRENE: CONDENSATE): the condenser pressure of the plant model (unit.js AN_CD: saturation of the condensing temperature
+       from the seawater flow and the steam, plus the air of a condenser not in vacuum) */
+    if (U.on && isFinite(U.cdP)) return Math.round(U.cdP * 1000) / 1000;
     return isFinite(v) ? Math.round((1.033 - (1.033 - 0.057) * v) * 1000) / 1000 : NaN;
   };
   const SRC = {};
@@ -66377,7 +66474,9 @@ function anCycFlows(t) {
     frec = cep * 2.5 * 100 * c((AN_CYC.u.cf || 0) / 100),
     ms = s.ms || 0,
     ext = s.ext || 0;
-  return { fda, frec, hwIn: ms * (1 - 0.25 * ext), daIn: 0.25 * ext * ms, mu: 1.8 * (AN_CYC.u.hw || 0) };
+  /* 3.2.1 (IRENE): no make-up water pump feeding the header (unit.js AN_MU muFeed) = no make-up to the hotwell */
+  const muOff = typeof AN_UNIT !== 'undefined' && AN_UNIT.on && AN_UNIT.muFeed === 0;
+  return { fda, frec, hwIn: ms * (1 - 0.25 * ext), daIn: 0.25 * ext * ms, mu: muOff ? 0 : 1.8 * (AN_CYC.u.hw || 0) };
 }
 function anProcStep(S, dt) {
   const rt = S.rt,
@@ -68112,6 +68211,10 @@ function anUnitStart() {
   /* 3.2.1 the lube oil cooler outlet TE-LO1002-1 / -2 (STN102 AI0452 / AI0516, the PV of ABC-053 TICLO1002): AN_LO writes them */
   const s53 = AN.sheets.find(x => x.name === 'ABC-053');
   U.lo = s53 && s53.S ? [anUnitAIs(shStn(s53) + '|AI0452'), anUnitAIs(shStn(s53) + '|AI0516')] : [];
+  /* 3.2.1 the hotwell level LT-CD1110 (STN102 AI0640, ABC-031): AN_CD reads it (the suction head of the condensate pumps). PT-CD1117
+     (STN102 AI0564) is on no ABC sheet (ABC-015 AI0564 is STN103 ZT-FA1016): the DITL-61B row reads the model (plantsw.js) */
+  const s31 = AN.sheets.find(x => x.name === 'ABC-031');
+  U.cdHwL = s31 && s31.S ? anUnitAIs(shStn(s31) + '|AI0640') : [];
   /* the valve commands of the other outlets (output of their A / M station after the interlocks) */
   const ctlOut = (k, t) => {
     const x = AN.sheets.find(y => y.name === k),
@@ -68498,6 +68601,7 @@ function anUnitStart() {
   AN_SRC.field.mu1033 = false;
   AN_SRC.field.cw1001 = true; /* live test #50: the expansion tank outlet open, the closed cooling loop primed */
   U.loTr = NaN; /* 3.2.1 AN_LO: the lube oil starts at its steady value */
+  U.cdTs = NaN; /* 3.2.1 AN_CD: the condenser starts at its steady value */
   if (AN_SRC.valve) for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
   AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed while steaming */
   AN_SRC.lhdPct = 0;
@@ -68545,6 +68649,7 @@ function anUnitCold() {
   AN_SRC.field.mu1033 = false;
   AN_SRC.field.cw1001 = false; /* live test #50: the expansion tank outlet closed, the closed cooling loop not primed */
   U.loTr = NaN; /* 3.2.1 AN_LO: the lube oil starts at its steady value */
+  U.cdTs = NaN; /* 3.2.1 AN_CD: the condenser starts at its steady value */
   if (AN_SRC.valve) for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
   AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed */
   AN_SRC.lhdPct = 0;
@@ -69329,6 +69434,86 @@ function anAcwStep(U, dt) {
                   the logic, tcs.js (TILO1001, the bearing outlets TIGE1007 / 1008, the bearing metal) and the HMI read the same value.
    Chain: SWBP trip -> CCWHE no seawater -> ACW supply hot (AN_ACW) -> TCV-CW1201 opens (TICLO1002 in AUTO) -> at 100 % the oil gets
    hot -> the bearings get hot (tcs.js). */
+/* 3.2.1 (IRENE: CONDENSATE plant model; docs/versions/v3.2.1/CONDENSATE_PLANT_MODEL.md). The condenser and the condensate pumps
+   P-1116A / B (CEP) of flow diagram PD-016.
+   Sources:
+     condenser    O&M L15-1 (K2MC3A, section 1.1.2): thermal load 195.7 MW at the exhaust 87.78 kg/s (316.0 T/H, = AN_SW cSt), seawater
+                  31,500 T/H 30 -> 35.6 C, 68.6 mbar abs (saturation 38.65 C), cleanliness 0.85, 6898 m2, hotwell 61.9 m3, normal level
+                  FL+1814 mm (HHL +2114, LLL +1514);
+     alarm list   "Alarm List _20160912": TE-CD1110-1 ~ 4 normal 38.6 C (H 50, L 27); PT-CD1110 range -1 ~ 5 kg/cm2, normal -0.86;
+                  PT-CD1117 normal 15.5, L 14.0, LL 13.0 kg/cm2; LT-CD1110 H 150 / HH 300, L -150 / LL -300 mm;
+     CEP          KSB WKTB 6/1+2 (O&M L10-1 A01 data sheet, A02 curve Q43495D, 1780 rpm, sp. gr. 0.9926): 400 m3/h at 180 m, shut-off
+                  210 m, 160 m at 480 m3/h; shaft power 123 kW at 50, 252 kW at 400, 283 kW at 480 m3/h; min flow 100 m3/h; first stage
+                  impeller GL-4.322 m, hotwell low level GL+1700 = FL+1500 mm (so the normal level is 6.34 m above the impeller);
+     snapshot     28.png CP-A 28.1 A at 150 MW, PICD1117 16.9 kg/cm2; 4.PNG PICD1110 0.057 kg/cm2A, TICD11101 40.0 C;
+     DITL-61B     row 19 PT-CD1117 < 14.0 kg/cm2 (1 s) = M.3217 CONDENSATE PUMPS OUTLET PRESSURE LOW -> DITL-61A row 10: the standby
+                  pump in AUTO starts; DITL-61A rows 24 / 27 strainer DP > 0.1 / 0.08 kg/cm2.
+   How it works:
+     heat         Q = 195.7 MW x steam to the condenser / 316.0 T/H (the same steam as AN_SW: main steam share + LP bypass);
+     condenser    the seawater of both water boxes (AN_SW swQc) at its inlet temperature: Ts = Tin + Q / (C (1 - exp(-UA / C))),
+                  UA = 36,430 kW/K at the design flow (from the O&M point: NTU = ln(8.65 / 3.05)), x (flow / design)^0.5 (NO-SOURCE:
+                  the usual water velocity factor); Ts follows with tau 30 s (NO-SOURCE); no seawater = no condensing: Ts goes to 100 C;
+     pressure     PT-CD1110 = saturation of Ts, and the air of a condenser not in vacuum (U.vac, the ejectors) takes it to the atmosphere;
+                  hotwell temperature = Ts (alarm list normal 38.6 = saturation of the design 68.6 mbar);
+     turbine      the TCS LOW VACUUM trip at 0.447 kg/cm2A (NO-SOURCE: the TCS setting is not readable in the IBD; = the old U.vac 0.6);
+     CEP          flow of a running pump = (condensate to the deaerator + recirculation) / running pumps (plant.js AN_CYC); head from the
+                  curve; outlet = suction (condenser pressure + the water above the impeller) + head - kz (kz 0.96 kg/cm2, NO-SOURCE:
+                  the transmitter elevation, calibrated to 16.9 at 150 MW); current = 28.1 A x shaft power / 245.7 kW (snapshot ratio). */
+const AN_CD = {
+  Qd: 195700,
+  Wd: 316.024,
+  UA: 36430,
+  Cd: 31500,
+  cp: 3.994,
+  tau: 30,
+  Ptrip: 0.447,
+  qQ: [0, 100, 200, 300, 400, 450, 480, 560],
+  qH: [210, 209, 205, 196, 180, 170, 160, 130],
+  pQ: [0, 50, 400, 480],
+  pP: [105, 123, 252, 283],
+  zS: 6.336,
+  kz: 0.96,
+  kI: 28.1 / 245.7,
+  dp0: 0.019,
+  q0: 383
+};
+const anPsat = T => (Math.pow(10, 8.07131 - 1730.63 / (233.426 + T)) * 1.33322) / 980.665; /* kg/cm2A, Antoine (water) */
+function anCondStep(U, dt) {
+  const K = AN_CD,
+    sw = AN_SW,
+    ws = Math.max(0, ((U.ms || 0) * sw.cSt) / sw.mcr + (U.qlp || 0)),
+    Q = (K.Qd * ws) / K.Wd,
+    Tin = isFinite(U.swTiA) ? (U.swTiA + U.swTiB) / 2 : sw.Tin[0],
+    W = Math.max(0, (U.swQc || 0) * 1.02),
+    C = (W / 3.6) * K.cp,
+    UA = K.UA * Math.sqrt(W / K.Cd);
+  let Tss = Tin;
+  if (Q > 0) Tss = C > 1 ? Tin + Q / (C * (1 - Math.exp(-UA / C))) : 100;
+  Tss = Math.min(100, Tss);
+  if (!isFinite(U.cdTs)) U.cdTs = Tss;
+  U.cdTs += (Tss - U.cdTs) * Math.min(1, dt / K.tau);
+  const vac = isFinite(U.vac) ? Math.max(0, Math.min(1, U.vac)) : 1,
+    Ps = Math.min(1.033, anPsat(U.cdTs));
+  U.cdQ = Math.round(Q / 100) / 10; /* MW */
+  U.cdT = U.cdTs;
+  U.cdP = Ps + (1.033 - Ps) * (1 - vac);
+  /* the condensate pumps */
+  const run = [srcBit(['M.3350']) > 0.5 ? 1 : 0, srcBit(['M.3351']) > 0.5 ? 1 : 0],
+    n = run[0] + run[1],
+    u = (typeof AN_CYC !== 'undefined' && AN_CYC.u) || {},
+    Qt = n ? (Math.min(520, 21.7 * Math.max(0, u.da || 0)) + 2.5 * Math.max(0, Math.min(100, u.cf || 0))) / 0.9926 : 0,
+    q = n ? Qt / n : 0,
+    hw = anUnitVal(U.cdHwL || []),
+    Psuc = U.cdP - 1.033 + 0.09926 * (K.zS + (isFinite(hw) ? hw : 0) / 1000);
+  U.cdQp = Math.round(q);
+  U.cdHw = hw;
+  U.cdRun = run;
+  U.cdPd = Math.max(0, Math.min(25, Psuc + (n ? 0.09926 * swInterp(K.qQ, K.qH, q) : 0) - K.kz));
+  run.forEach((r, i) => {
+    U['cdI' + i] = r ? Math.round(10 * K.kI * swInterp(K.pQ, K.pP, q)) / 10 : 0;
+    U['cdDp' + i] = r ? Math.round(1000 * K.dp0 * (q / K.q0) * (q / K.q0)) / 1000 : 0;
+  });
+}
 const AN_LO = { UA: 95.8, Co: 64.5, Qb: 1032, Wmax: 170, M: 25800, Tamb: 30 };
 function anLubeCoolStep(U, dt) {
   const K = AN_LO,
@@ -69652,7 +69837,7 @@ function anUnitStep(dt) {
     U.vac = Math.max(0, Math.min(1, cw2 > U.vac ? (aux ? U.vac + dt / U.vacUp : U.vac) : U.vac + ((cw2 - U.vac) * dt) / U.vacDn));
     const tb0 = U.tb,
       l = U.vtrip;
-    if (tb0 && (tb0.st !== 'off' || (U.tc && U.tc.trip)) && (U.vac < 0.6 || (U.tc && U.tc.trip)) && l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== 1) {
+    if (tb0 && (tb0.st !== 'off' || (U.tc && U.tc.trip)) && ((isFinite(U.cdP) ? U.cdP > AN_CD.Ptrip : U.vac < 0.6) || (U.tc && U.tc.trip)) && l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== 1) {
       l.S.rt.ext[l.n] = 1;
     }
   }
@@ -69668,6 +69853,8 @@ function anUnitStep(dt) {
   anAcwStep(U, dt);
   /* 3.2.1: the turbine lube oil cooler on the closed cooling water (AN_LO) */
   anLubeCoolStep(U, dt);
+  /* 3.2.1: the condenser (pressure, hotwell temperature) and the condensate pumps (AN_CD) */
+  anCondStep(U, dt);
   /* live test #54: motor bearing / winding temperature and vibration (AN_MT) */
   anMotorStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
@@ -76320,7 +76507,11 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
        annunciator COOLING WATER PRESSURE ABNORMAL) and DITL-21A rows 13 / 14 TT-CW1060-A2 / A1 (machine instances #B ~ #D) = the
        supply header and the ash cooler outlets of the plant model (unit.js AN_ACW acP6 / acTb) */
     [/(?:^|[^A-Z])PT-CW1156\b/, 'acP6'],
-    [/(?:^|[^A-Z])TT-CW1060-[A-D][12]\b/, 'acTb']
+    [/(?:^|[^A-Z])TT-CW1060-[A-D][12]\b/, 'acTb'],
+    /* 3.2.1 (IRENE: CONDENSATE): DITL-61B row 19 PT-CD1117 (< 14.0 kg/cm2 = M.3217, the standby condensate pump starts) and DITL-61A
+       rows 24 / 27 the strainer DP DPT-CD1001 / 1002 of pump A / B = the plant model's (unit.js AN_CD) */
+    [/(?:^|[^A-Z])PT-CD1117\b/, 'cdPd'],
+    [/DPT-CD100([12])\b/, t => 'cdDp' + (+/DPT-CD100([12])/.exec(t)[1] - 1)]
   ];
   /* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI): the tank and unit header pressure transmitters of the compressed air systems are analog
      rows of the logic (DITL-113 / 114 rows 1 ~ 3: auto start of the standby compressor < 5 kg/cm2; DITL-03G rows 9 ~ 11: MFT on
@@ -76351,6 +76542,9 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
   W.condP = () => {
     const U = (window.AN && AN.unit) || {},
       v = isFinite(U.vac) ? Math.max(0, Math.min(1, U.vac)) : NaN;
+    /* 3.2.1 (IRENE: CONDENSATE): the condenser pressure of the plant model (unit.js AN_CD: saturation of the condensing temperature
+       from the seawater flow and the steam, plus the air of a condenser not in vacuum) */
+    if (U.on && isFinite(U.cdP)) return Math.round(U.cdP * 1000) / 1000;
     return isFinite(v) ? Math.round((1.033 - (1.033 - 0.057) * v) * 1000) / 1000 : NaN;
   };
   const SRC = {};

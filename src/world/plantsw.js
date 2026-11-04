@@ -151,7 +151,11 @@
        annunciator COOLING WATER PRESSURE ABNORMAL) and DITL-21A rows 13 / 14 TT-CW1060-A2 / A1 (machine instances #B ~ #D) = the
        supply header and the ash cooler outlets of the plant model (unit.js AN_ACW acP6 / acTb) */
     [/(?:^|[^A-Z])PT-CW1156\b/, 'acP6'],
-    [/(?:^|[^A-Z])TT-CW1060-[A-D][12]\b/, 'acTb']
+    [/(?:^|[^A-Z])TT-CW1060-[A-D][12]\b/, 'acTb'],
+    /* 3.2.1 (IRENE: CONDENSATE): DITL-61B row 19 PT-CD1117 (< 14.0 kg/cm2 = M.3217, the standby condensate pump starts) and DITL-61A
+       rows 24 / 27 the strainer DP DPT-CD1001 / 1002 of pump A / B = the plant model's (unit.js AN_CD) */
+    [/(?:^|[^A-Z])PT-CD1117\b/, 'cdPd'],
+    [/DPT-CD100([12])\b/, t => 'cdDp' + (+/DPT-CD100([12])/.exec(t)[1] - 1)]
   ];
   /* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI): the tank and unit header pressure transmitters of the compressed air systems are analog
      rows of the logic (DITL-113 / 114 rows 1 ~ 3: auto start of the standby compressor < 5 kg/cm2; DITL-03G rows 9 ~ 11: MFT on
@@ -182,6 +186,9 @@
   W.condP = () => {
     const U = (window.AN && AN.unit) || {},
       v = isFinite(U.vac) ? Math.max(0, Math.min(1, U.vac)) : NaN;
+    /* 3.2.1 (IRENE: CONDENSATE): the condenser pressure of the plant model (unit.js AN_CD: saturation of the condensing temperature
+       from the seawater flow and the steam, plus the air of a condenser not in vacuum) */
+    if (U.on && isFinite(U.cdP)) return Math.round(U.cdP * 1000) / 1000;
     return isFinite(v) ? Math.round((1.033 - (1.033 - 0.057) * v) * 1000) / 1000 : NaN;
   };
   const SRC = {};
