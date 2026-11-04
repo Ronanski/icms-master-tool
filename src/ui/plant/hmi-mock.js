@@ -1,7 +1,8 @@
 /* 3.2.1 (user 2026-11-04 "Yan ang ilagay sa app, yan ang iloloop check"): the 19 temporary HMI pages of the approved mockups
    (JISOO : HMI MOCKUP, audited by HAEWON; sources in docs/hmi/mockups/temp/) in the app, drawn EXACTLY as the mockup: the SVG of the
    mockup is kept as it is and only gets live hooks (tools/hmi-mock/*.py). This file is the one runtime of those pages:
-   - [data-st=ID]   run state of a machine: RUNNING red / STOPPED green / TRIP red blinking (LS_DOCK.mst, the one world);
+   - [data-st=ID]   run state of a machine: RUNNING red / STOPPED green / TRIP red blinking (LS_DOCK.mst, the one world); with
+                    data-short (the mockup left room for 5 letters only): RUN / STOP / TRIP;
    - [data-md=ID]   "Remote · Manual": REMOTE / LOCAL and AUTO / MAN of the machine (LS_DOCK.modeOf);
    - [data-vcb=ID]  "Breaker ON / OFF" (shown closed while the motor runs, as 030 SEAWATER);
    - [data-v=TAG]   a value: the logic transmitter when a sheet has it, else the plant model (UNIT.key of def.unit); '-----' = none;
@@ -172,7 +173,28 @@
         VT.push({ tag, kind, sym });
       });
       /* machines */
-      const mst = m => call(() => (m.fld ? (AN.fieldState && AN.fieldState()[m.fld] ? 'RUN' : 'STOP') : m.ad ? D().mst(m.ad) : null), null);
+      /* run state: field equipment of the model (fld), DITL input rows (sti: [sheet, running row, trip row], a local panel start),
+         a DITL output row (sto: [sheet, row]), else the motor of LS_DOCK */
+      const rin = (ad, row) =>
+        call(() => {
+          const s = D().dOf(ad);
+          return s ? (DUI.rowVal(s, row) ? 1 : 0) : null;
+        }, null);
+      const rout = (ad, row) => call(() => D().dout(ad, row), null);
+      const mst = m =>
+        call(() => {
+          if (m.fld) return AN.fieldState && AN.fieldState()[m.fld] ? 'RUN' : 'STOP';
+          if (m.sti) {
+            const r = rin(m.sti[0], m.sti[1]),
+              t = m.sti[2] != null ? rin(m.sti[0], m.sti[2]) : 0;
+            return r == null ? null : t ? 'TRIP' : r ? 'RUN' : 'STOP';
+          }
+          if (m.sto) {
+            const r = rout(m.sto[0], m.sto[1]);
+            return r == null ? null : r ? 'RUN' : 'STOP';
+          }
+          return m.ad ? D().mst(m.ad) : null;
+        }, null);
       /* mode of a motor: LS_DOCK.modeOf; a drawing with other names (DITL-76 / 77 "REMOTE SELECTED", "AUTO SELECTED"): its output rows */
       const outV = (ad, re) =>
         call(() => {
@@ -197,7 +219,7 @@
             ST[id] = s;
             const col = s == null ? C.none : s === 'RUN' || s === 'TRIP' ? C.run : C.stop;
             qa(`[data-st="${id}"]`).forEach(e => {
-              e.textContent = s == null ? m.lcp || '-----' : s === 'TRIP' ? 'TRIP' : s === 'RUN' ? 'RUNNING' : 'STOPPED';
+              e.textContent = s == null ? m.lcp || '-----' : s === 'TRIP' ? 'TRIP' : s === 'RUN' ? (e.dataset.short ? 'RUN' : 'RUNNING') : e.dataset.short ? 'STOP' : 'STOPPED';
               e.setAttribute('fill', col);
               e.classList.toggle('h2blink', s === 'TRIP');
             });
@@ -205,7 +227,13 @@
               e.textContent = s == null ? 'Breaker -----' : s === 'RUN' ? 'Breaker ON' : 'Breaker OFF';
             });
           }
-          if (m.ad && !m.fld) {
+          if (m.remi) {
+            const r = rin(m.remi[0], m.remi[1]);
+            qa(`[data-md="${id}"]`).forEach(e => {
+              e.textContent = r == null ? '-----' : r ? 'Remote' : 'Local';
+              e.setAttribute('fill', r == null ? C.none : C.dim);
+            });
+          } else if (m.ad && !m.fld) {
             const md = call(() => (m.modeFn ? m.modeFn() : D().modeOf(m.ad)), null),
               key = md ? String(md.rem) + String(md.au) : '';
             if (key !== MD[id]) {
