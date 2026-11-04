@@ -338,7 +338,9 @@ function anCycFlows(t) {
     frec = cep * 2.5 * 100 * c((AN_CYC.u.cf || 0) / 100),
     ms = s.ms || 0,
     ext = s.ext || 0;
-  return { fda, frec, hwIn: ms * (1 - 0.25 * ext), daIn: 0.25 * ext * ms, mu: 1.8 * (AN_CYC.u.hw || 0) };
+  /* 3.2.1 (IRENE): no make-up water pump feeding the header (unit.js AN_MU muFeed) = no make-up to the hotwell */
+  const muOff = typeof AN_UNIT !== 'undefined' && AN_UNIT.on && AN_UNIT.muFeed === 0;
+  return { fda, frec, hwIn: ms * (1 - 0.25 * ext), daIn: 0.25 * ext * ms, mu: muOff ? 0 : 1.8 * (AN_CYC.u.hw || 0) };
 }
 function anProcStep(S, dt) {
   const rt = S.rt,
