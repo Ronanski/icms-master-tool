@@ -233,6 +233,7 @@ function anUnitStop() {
   U.acT1 = U.acT2 = NaN; /* 3.2.0-beta.69: the aux cooling water temperatures start again (AN_ACW) */
   for (const m of U.mul || []) for (const p of m.pr) p.mul = undefined;
   for (const z of U.spr || []) z.pr.uf = undefined;
+  U.lpbSp = null; /* 3.2.1 anCdTagStep: the LP bypass spray controller is found again */
   if (U.fwp && U.fwp.pr) U.fwp.pr.op = undefined;
   for (const p of U.fp || []) {
     p.pr.uf = undefined;
@@ -1880,6 +1881,43 @@ function anLphStep(U, dt) {
     'TT-HD1103': r1(t.H3.dr),
     'TT-HD1105': U.hpD1,
     'TT-HD1106': U.hpD2
+  });
+  anCdTagStep(U, ld);
+}
+/* 3.2.1 (IRENE, page 05 CONDENSATE): the other condensate transmitters of the page that no sheet reads (AN.unit.tt).
+   Sources: 28.png (151.3 MW, MSF 480.3 T/H): hotwell TT-CD1110-1 / -2 40, flash chamber TT-CD1110-4 42, TT-CD1118 40, ejector condenser
+   outlet TT-CD1119 41, gland steam condenser outlet TT-CD1120 42 C, LP bypass spray FT-CD1115 0.0 (XV-CD1114 closed, TCV-CD1115 0.2 %
+   MANUAL); 02.png (60 MW): FT-CD1122 165.4 T/H, PT-CD1122 3.8 with PT-CD1104 2.2 kg/cm2, TT-CD1104 131 C; IO list FT-CD1115 0 ~ 46 T/H.
+     TT-CD1119     hotwell + half of the ejector / gland steam condenser rise of AN_LP (28.png: 40 -> 41 -> 42 C, half each);
+     TT-CD1110-4   hotwell + 2 C x load share (28.png 42 vs 40 C: the heater drains that flash in the chamber; NO-SOURCE: the load shape);
+     FT-CD1122     the condensate that the deaerator level valve passes (plant.js anCycFlows fda, without the recirculation of FT-CD1120);
+     PT-CD1122     deaerator pressure PT-CD1104 + 1.6 kg/cm2 (02.png 3.8 - 2.2; NO-SOURCE: kept the same at every flow, the water column to
+                   the deaerator inlet; no CEP = no flow, the column stays);
+     TT-CD1104     the storage tank water at the saturation of the deaerator pressure PT-CD1104 (02.png 131 C with 2.2 kg/cm2 = sat 135.6 C:
+                   4.6 C under, not modelled);
+     FT-CD1115     LP bypass spray: TCV-CD1115 opening (ABC-052 TICHR1012 MV, its airlock AN_AV) x the share of the block valve XV-CD1114
+                   (DITL-66) x 46 T/H (NO-SOURCE: the valve capacity taken as the transmitter range of the IO list). */
+function anCdTagStep(U, ld) {
+  const hw = isFinite(U.cdT) ? U.cdT : isFinite(U.Tamb) ? U.Tamb : 30,
+    r1 = x => (isFinite(x) ? Math.round(10 * x) / 10 : null),
+    L = Math.max(0, Math.min(1, ld)),
+    Pda = U.xt && U.xt.dea ? anUnitVal(U.xt.dea) : NaN,
+    f = typeof anCycFlows === 'function' ? anCycFlows(0) : null;
+  if (!U.lpbSp) {
+    const x = AN.sheets.find(y => y.name === 'ABC-052'),
+      c = x && x.S && AN.hmiCtrls ? (AN.hmiCtrls(x.S) || []).find(q => q.tag === 'TICHR1012') : null;
+    U.lpbSp = c && c.out != null ? { S: x.S, n: c.out } : { n: null };
+  }
+  const mv = U.lpbSp.n != null ? Math.max(0, Math.min(100, +U.lpbSp.S.rt.v[U.lpbSp.n] || 0)) : NaN,
+    sp = (U.spr || []).find(z => z.v[0] === 'DITL-66'),
+    uf = sp && sp.pr.uf != null ? sp.pr.uf : NaN;
+  Object.assign(U.tt, {
+    'TT-CD1119': r1(hw + (AN_LP.rise * L) / 2),
+    'TT-CD1110-4': r1(hw + 2 * L),
+    'FT-CD1122': f ? r1(f.fda) : null,
+    'PT-CD1122': isFinite(Pda) ? r1(Pda + 1.6) : null,
+    'TT-CD1104': isFinite(Pda) && Pda > 0.05 ? r1(steamTsat(Pda)) : isFinite(Pda) ? r1(isFinite(U.Tamb) ? U.Tamb : 30) : null,
+    'FT-CD1115': isFinite(mv) && isFinite(uf) ? r1((46 * anAv('TICHR1012', mv) * uf) / 100) : null
   });
 }
 const AN_LO = { UA: 95.8, Co: 64.5, Qb: 1032, Wmax: 170, M: 25800, Tamb: 30 };

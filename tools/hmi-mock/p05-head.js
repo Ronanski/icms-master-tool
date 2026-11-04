@@ -55,7 +55,14 @@
       'TT-CD1102': 'tt:TT-CD1102',
       'TT-CD1103-1': 'tt:TT-CD1103-1',
       'TT-CD1103-2': 'tt:TT-CD1103-2',
-      'TT-CD1122': 'tt:TT-CD1122'
+      'TT-CD1122': 'tt:TT-CD1122',
+      /* 3.2.1 (IRENE): unit.js anCdTagStep, sources there (28.png, 02.png, IO list) */
+      TTCD11104: 'tt:TT-CD1110-4',
+      TTCD1119: 'tt:TT-CD1119',
+      FTCD1115: 'tt:FT-CD1115',
+      FTCD1122: 'tt:FT-CD1122',
+      PTCD1122: 'tt:PT-CD1122',
+      TTCD1104: 'tt:TT-CD1104'
     }
   });
 })();
