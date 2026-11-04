@@ -87,6 +87,14 @@ FV = {
 }
 for tag, (d, what) in FV.items():
     sub1(f'<path d="{d}"></path>', f'<g data-fv="{tag}" style="cursor:pointer"><title>{tag} · {what} · field valve, click = field faceplate</title><path d="{d}"></path><rect x="{int(d.split()[0][1:]) - 6}" y="{int(d.split()[1]) - 6}" width="26" height="30" fill="transparent" stroke="none"></rect></g>')
+# the links to the other mockup pages = that page of the Plant view (mock.py)
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import mock
+_pg = mock.Page.__new__(mock.Page)
+_pg.s = inner
+_pg.links()
+inner = _pg.s
 # click areas (transparent, on top): the equipment = CONTROL faceplate, the Y / N square = PERMISSIVE · TREND · MONITOR
 HIT = []
 for k, y0 in (('A', 0), ('B', 150), ('C', 300)):

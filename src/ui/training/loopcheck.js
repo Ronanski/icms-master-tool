@@ -678,7 +678,7 @@
   /* the systems with a loop check list (docs/versions/v3.2.1/*_LOOP_CHECK.md); CW first (user / coordinator 2026-11-04) */
   const SYS = [
     { id: 'CW', n: 'Circulating Water', cards: cwCards, page: 'CWN' },
-    { id: 'MU', n: 'Make-Up / Closed Cooling Water', doc: 'MU_CCW_LOOP_CHECK.md' },
+    { id: 'MU', n: 'Make-Up / Closed Cooling Water', doc: 'MU_CCW_LOOP_CHECK.md', page: 'MK02' },
     { id: 'AIR', n: 'Instrument / Plant Air', doc: 'AIR_LOOP_CHECK.md' },
     { id: 'COND', n: 'Condensate', doc: 'CONDENSATE_LOOP_CHECK.md' }
   ];
