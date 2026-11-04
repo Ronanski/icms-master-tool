@@ -873,11 +873,11 @@
       b.onclick = () => !b.disabled && set(v);
       return [v, b];
     });
-    const fTag = E('span', 'fpo-fld', 'FIELD');
-    fTag.title = 'A manual valve: turned by the field operator at the valve (logged in Events as "Field operator")';
-    F.bd.append(row('LOCAL', B[0][1], B[1][1], fTag));
-    F.bd.append(row('THROTTLE', ...B.slice(2, 5).map(x => x[1])));
-    F.bd.append(row('', ...B.slice(5).map(x => x[1])));
+    /* two buttons per row (the width of the faceplate) */
+    F.bd.append(row('LOCAL', B[0][1], B[1][1]));
+    F.bd.append(row('THROTTLE', B[2][1], B[3][1]));
+    F.bd.append(row('', B[4][1], B[5][1]));
+    F.bd.append(row('', B[6][1], B[7][1]));
     const why = E('div', 'fpo-why');
     F.bd.append(why);
     if (FVUSE[tag]) F.bd.append(E('div', 'fpo-dim', FVUSE[tag]));

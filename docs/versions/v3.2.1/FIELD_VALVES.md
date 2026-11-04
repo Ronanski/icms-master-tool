@@ -54,3 +54,17 @@ faceplate `src/ui/plant/fp-pop.js` `fieldPct`. Test: `tests/regress/field_valves
 - Ang daloy (animation) ng pipe sa HMI page ay sumusunod pa sa tumatakbong pump, hindi pa sa valve.
 - Ang hotwell make-up ay hindi pa humihinto kapag walang MWP na nagbibigay.
 - Hindi pa live-tested sa PC ng user.
+
+## DCS command na walang interlock (utos ng user, 2026-11-04)
+- Hinanap sa I/O list (lahat ng DO) at sa text ng lahat ng DITL drawing.
+- Sa seawater, make-up, closed cooling at air: may logic sheet ang bawat DCS command:
+  - SWP: DITL-29A / 29B;
+  - SWBP: DITL-30;
+  - debris filter: DITL-39;
+  - MWP: DITL-112;
+  - XV-MU1109: DITL-78;
+  - ACWP: DITL-76 / 77;
+  - compressor: DITL-113 / 114;
+  - dryer: DITL-45.
+- Ang B / C ng iisang drawing ay machine instance (#B / #C).
+- Wala pang kailangang simpleng OPEN / CLOSE faceplate sa apat na system na ito. Susuriin ulit sa bawat bagong system (Turbine Oil ang susunod).
