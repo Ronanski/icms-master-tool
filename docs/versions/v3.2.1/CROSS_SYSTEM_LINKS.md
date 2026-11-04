@@ -16,13 +16,15 @@ ina-update sa bawat bagong system.
 9. **Closed cooling → turbine lube oil → bearings** (`TURBINE_OIL_PLANT_MODEL.md`, test `lube_oil.js`). ACW supply temperatura at flow → lube oil cooler → TE-LO1002 (PV ng TICLO1002, ABC-053) → TCV-CW1201; sa 100 % umiinit ang langis at ang bearings (tcs.js). Chain test: trip ng lahat ng SWBP → oil 72.6 °C, bearing No.3 81.5 °C pagkatapos ng 25 min.
 10. **CEP → logic → standby CEP.** Trip ng CEP A → PT-CD1117 < 14.0 (DITL-61B) → AUTO start ng CEP B. Test: `condensate.js`.
 11. **Make-up pumps → hotwell.** Walang MWP na nagbibigay → walang make-up sa hotwell (LCV-MU1110). Test: `condensate.js`.
-12. **Extraction (load) → deaerator pressure → BFWP suction → PT-FW1011 → logic** (`FEEDWATER_PLANT_MODEL.md`, test `feedwater.js`). Trip ng BFWP-A → PT-FW1011 LL (DITL-23B M.3210) → AUTO START ng BFWP-B (kailangan: suction manual valve V-FW1002 bukas = ZSO-FW1032, lube oil > 2.0, suction > 1.5) → bumabalik ang feedwater. Walang BFWP o sarado ang suction valve → 0 ang feedwater (ABC-010).
+12. **Extraction (load) → deaerator pressure → BFWP suction → PT-FW1011 → logic** (`FEEDWATER_PLANT_MODEL.md`, test `feedwater.js`). Trip ng BFWP-A → PT-FW1011 LL (DITL-23B M.3210) → AUTO START ng BFWP-B (kailangan: suction manual valve V-FW1002 bukas = ZSO-FW1032, lube oil > 2.0, suction > 1.5) → bumabalik ang feedwater. Walang BFWP o sarado ang suction valve → 0 ang feedwater (ABC-010). Bumabalik ang feedwater sa ~10 s, kaya walang drum level L.L. / MFT.
 7. **Lahat ng model → logic → model.** Pressure, level at flow → DITL / ABC rows. Ang START COMMAND ng logic ay nagpapatakbo ng equipment (ACWP, MWP, SWBP, air compressor). Test: bawat model test.
 13. **Diesel oil → burners → firing; plant air → atomizing air** (`DIESEL_OIL_PLANT_MODEL.md`, test `diesel_oil.js`, SEULGI). DITL-31 pump → header PT-DO0005 → ring → 4 burner (DITL-16 shut-off valves) → oil sa firing (`oilF`); tank level / strainer / header → DITL-31 trip at standby start. Plant air (`paPU`) → PSL-PA1043-x1 → DITL-07. Chain test: trip ng pump A → header 4.66 → B auto start.
 14. **FA blower → FA flow → standby blower; fans → current** (`FANS_PLANT_MODEL.md`, test `fans.js`, SEULGI). Trip ng FA blower A → FA flow < 20 T/H (ABC-006 M.3114) → DITL-28A #B start ng B. Current ng FA blower → DITL-28B row 12 (< 24.6 A L.L.). Field trip ng PAF / SAF → walang PA / SA flow (U.mul .drw).
 
+15. **Turbine load → extraction → HP heaters → economizer inlet** (`HP_HEATERS_PLANT_MODEL.md`, test `hp_heaters.js`). DITL-94 / 95 extraction MOV sarado → walang pag-init sa heater na iyon → bumababa ang TT-FW1160 (ABC-010).
+
 ## Wala pa (plano, kasama sa susunod na system)
 1. **Closed cooling temperature → temperatura ng bearing / winding ng motor.** Fixed pa ang AN_MT. (Ang turbine oil ay tapos na, item 9.)
 2. **Instrument air → pneumatic valves.** Sa ilalim ng 3.5, dapat hindi gumagalaw ang air-operated valve (XV-MU1109 at iba pa). Ngayon, mensahe lang sa faceplate ito. Gagawin pagkatapos ng Turbine Oil.
-3. **HP heaters → feedwater temperature → economizer.** Kasama sa susunod na bahagi ng Feedwater.
+3. **HP heaters:** tapos na ang temperatura (item 15). Kulang: shell level at level HH → pagsara ng extraction MOV, at epekto sa firing.
 4. **Chain test hanggang alarm / trip:** may chain test na hanggang bearing (`lube_oil.js`). Kulang pa ang alarm at trip ng TCS sa bearing temperatura, at ang mga motor (item 1).

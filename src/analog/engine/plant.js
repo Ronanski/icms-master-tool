@@ -763,11 +763,18 @@ function anProcStep(S, dt) {
       q.y =
         lo; /* 2.2.0-beta.12: the machine that makes the flow stopped (no BFWP, fan stopped): the flow is gone at once, not with the lag of the valve */
       q.h.length = 0;
+      q.fast = 1;
     } else if (dt > 0) {
       q.h.push([rt.t, u]);
       while (q.h.length > 2 && q.h[1][0] <= rt.t - pr.L) q.h.shift();
       const tgt = ss(q.h[0][1]);
-      q.y += (1 - Math.exp(-dt / Math.max(pr.T, 0.05))) * (tgt - q.y);
+      /* 3.2.1 (IRENE: FEEDWATER chain test): the machine back (the standby BFWP started by its AUTO START, a fan started again) gives
+         its flow through the valve as it stands with the start-up time of the machine, 5 s (NO-SOURCE), not with the lag of the loop
+         (FICFW1007 75 s): before, the feedwater took a minute to come back after the auto start of BFWP B and the drum level reached
+         L.L. (MFT) although B ran after 1.5 s */
+      const Tl = q.fast ? Math.min(pr.T, 5) : pr.T;
+      q.y += (1 - Math.exp(-dt / Math.max(Tl, 0.05))) * (tgt - q.y);
+      if (q.fast && Math.abs(tgt - q.y) < 0.02 * Math.abs(span || 1)) q.fast = 0;
       q.y = Math.max(lo, Math.min(lo + span, q.y));
     }
     /* 3.2.1 (IRENE: FEEDWATER): a source that always feeds (pr.sflo, the extraction no. 3 to the deaerator at load) is a floor of the
