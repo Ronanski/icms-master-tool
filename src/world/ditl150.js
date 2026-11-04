@@ -44,6 +44,11 @@
     [/\bMWP\s*B\b/, 0, 0, 'MWP-B stopped, R M'],
     [/BOTTOM ASH SCREW COOLER|ASH COOLER/, 0, 0, 'L-1060A ~ D ASH COOLER stopped'],
     [/CHAIN CONVEYOR/, 1, 0, 'L-1090 CHAIN CONVEYOR running'],
+    /* 3.2.1 (SEULGI, bottom ash plant model): the other machines of 16.PNG (before: no rule, they stood stopped) */
+    [/BUCKET ELEVATOR/, 1, 0, '16.PNG L-1091 BUCKET ELEVATOR running (R)'],
+    [/SCREW CONVEYOR/, 1, 0, '16.PNG L-1092 SCREW CONVEYOR running (R)'],
+    [/FILTER VENTING FAN|VENTING FAN\s*\(F-1091\)/, 1, 0, '16.PNG F-1091 VENTING FAN running (R)'],
+    [/VIBRATING SCREEN/, 0, 0, '16.PNG S-1092 VIBRATING SCREEN A / B stopped (R)'],
     [/AIR PREHEATER|\bAPH\b/, 1, 0, 'APH MAIN DRIVE MOTOR 4.7 A'],
     [/LIMESTONE FEEDER|ROTO FEEDER/, 1, 0, 'L-1311 ROTO FEEDER running'],
     /* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI): air in service at 150 MW (39.PNG instrument air buffer tanks 7.0 kg/cm2); the compressor
@@ -484,6 +489,9 @@
         for (const i of plantRows(s)) {
           const t = textOf(s, i, 'S').toUpperCase();
           if (/\bRESET\b/.test(t) && /P\.\s*B|RESET FIRST OUT/.test(t + ' ' + textOf(s, i, 'L')) && !/LOCAL|LOP/.test(t)) rs.push([s, i]);
+          /* 3.2.1 (SEULGI, bottom ash plant model): the CRT reset buttons of the bottom ash package, DITL-BA61 row 17 "B.A RESET_HMI"
+             (M.0906) and the "RESET(DCS)" rows (M.1302): the conveyors' EMG.STOP and fault latches of the cold start are acknowledged */
+          else if (/\bRESET_HMI\b|\bRESET\(DCS\)/.test(t) && /\)DITL-BA\d+$/.test(s.name)) rs.push([s, i]);
         }
         /* 2.2.0-beta.6: DITL-05 / 06 row 2 RESET FIRST OUT <- DITL-02 out 58 (the MFT reset at the end of the purge of the
            last start-up): the unit reached 150 MW after that reset, so the first-out memories are clear */
