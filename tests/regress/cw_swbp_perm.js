@@ -37,5 +37,9 @@ ck(a1.every(t=>!/Output row|CRT \(ANN\)/.test(t)),'after TRIP: alarm text is cle
 await page.evaluate(k=>{const s=LS_DOCK.dOf('DITL-29A');s.usw[k]=false;WORLD.busy=true},usr);await wait(4000);
 const a2=await page.evaluate(()=>lsActiveAlarms().list.filter(a=>/DITL-29A$/.test(String(a.sh).replace(/^\(\d+\)/,''))).map(a=>a.text));
 ck(a2.length===0,'after RESET: no SWP-A trip alarm left (active: '+JSON.stringify(a2)+')');
+// 3: hypochlorite dosing pump B and unloading pump: field START / STOP (they had "no plant model", no buttons)
+const hy=await page.evaluate(()=>{const r={};for(const k of ['hypoB','hypoU']){const a=AN.field(k,true),s1=AN.fieldState()[k];AN.field(k,false);r[k]=[a,s1,AN.fieldState()[k]]}return r});
+ck(JSON.stringify(hy.hypoB)==='[true,true,false]','dosing pump B field START / STOP: '+JSON.stringify(hy.hypoB));
+ck(JSON.stringify(hy.hypoU)==='[true,true,false]','unloading pump field START / STOP: '+JSON.stringify(hy.hypoU));
 ck(errs.length===0,'no page errors'+(errs.length?': '+errs.slice(0,3).join(' | '):''));
 await browser.close();console.log(fail?'FAILED '+fail:'ALL PASS');process.exit(fail?1:0)})();
