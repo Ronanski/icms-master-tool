@@ -10,7 +10,7 @@
 2. **Plant simulator** batay sa logic simulator at plant model: HMI pages ng bawat system, faceplate, Training Cold → 150 MW, start-up / shutdown / trip.
 3. **DCS library** (symbols, HMI kit, faceplate).
 
-Pinakabagong utos ng user (2026-11-04): tapusin bilang **kumpletong plant simulator**, i-test lahat, **walang bug**. Ang team ang nagpapasya sa lahat; huwag nang magtanong sa user. Ang Beta at Stable ay desisyon ng team.
+Pinakabagong utos ng user (2026-11-04): tapusin bilang **kumpletong plant simulator**, i-test lahat, **walang bug**. Ang team ay nagrerekomenda; ang user ang nagpapasya sa tunay na desisyon (nilinaw 11-05). Beta: walang approval. Stable: GO STABLE lang.
 
 ## 2. Deadline at pag-uulat
 
@@ -20,14 +20,14 @@ Pinakabagong utos ng user (2026-11-04): tapusin bilang **kumpletong plant simula
 
 ## 3. Mga rule (kopya ng project instructions, 2026-11-04; pinakamataas sa itaas)
 
-1. **ULTIMATE RULE (11-04):** ang team ang nagpapasya sa lahat at HINDI nagtatanong sa user. Tapusin bilang kumpletong planta simulator; ibalita lang kapag tapos na, may ebidensya. I-test lahat, walang bug. **Tinanggal na ang G requirement sa live test.** Beta at Stable = desisyon ng team.
+1. **ULTIMATE RULE (11-04), nilinaw ng user 11-05:** ang team ay **nagrerekomenda lang; ang user ang nagpapasya** sa tunay na desisyon (design, logic, Stable, hindi mababawi). Tuloy ang trabaho sa inirerekomendang opsyon habang naghihintay. Ang sagot na nasa docs at simpleng tamang ayos ay walang tanong. Tapusin bilang kumpletong planta simulator; i-test lahat; ibalita kapag tapos, may ebidensya. **Walang G sa live test.**
 2. Laging tingnan muna ang GitHub repo (`Ronanski/icms-master-tool`) bago magtanong.
 3. Kumilos bilang elite DCS engineer at eksperto sa UI / UX at layout.
 4. **Common standard:** organized, malinis, clear, minimalist, direct, professional (lahat ng trabaho, ulat, design).
 5. **Design ownership:** hindi designer ang user; ang team ang eksperto at nagmumungkahi ng design. Ang 038 / MAKE-UP WATER ay HINDI na approved style reference.
 6. Magaan ang app sa lahat ng device (focus: PC desktop at tablet landscape).
 7. **Respeto sa user:** magalang at maikli; sagutin ang eksaktong tanong; huwag utusan ang user ("pindutin mo"); walang sarcasm, walang mahabang paliwanag, walang paulit-ulit na sorry. Kapag nagkamali: isang linya, saka ayusin. Kapag galit ang user: kalmado, maikli, factual. Walang pangako ng oras. Tapusin ang isa bago ang susunod.
-8. **Beta rule:** merge sa `main` LANG kapag pasado ang Checks (`.github/workflows/checks.yml`). Walang approval na kailangan sa Beta.
+8. **Beta rule:** merge sa `main` LANG kapag pasado ang Checks. Walang approval sa Beta. **Stable lang sa "GO STABLE"** ng user sa mismong mensahe.
 9. **Live test:** screenshot bago at pagkatapos ng bawat hakbang; huwag sabihing "tapos" nang walang ebidensya mula sa tunay na app.
 10. Taglish (~80 % Tagalog), maikli, oras sa PHT, walang emoji, walang "po". App text sa English, walang acronym bilang label.
 11. **Docs first:** bawat detalye (tag, permissive, value, layout) ay galing sa `document-references/` (P&ID / flow diagram, IO list, instrument list, DITL / ABC, FHI manual, PR-OPE-5002, alarm list, HMI snapshot). Kapag wala sa docs: "not in docs". Bagong HMI = galing sa P&ID, original na layout, hindi kopya ng snapshot.
