@@ -12,13 +12,13 @@ Code: `src/analog/engine/boiler.js` `AN_BA` / `anBaStep`. Switch rows: `src/worl
 ## Ang model (field devices lang; hindi binago ang logic ng drawing)
 - Transmitter valves: inlet knife gate SV-BH1759 (DITL-BA53 OUT7), venting SV-BH1753 (OUT1), outlet SV-BH1752 (OUT8), pressing SVO / SVC-BH1750 (OUT9 / OUT10, dalawang solenoid: nananatili sa puwesto sa pagitan). Bumabalik ang ZSO / ZSC I.0482 ~ I.0489.
 - Vessel: PSH-BH1750 I.048A (>= 1.8 kg/cm2), PSL-BH1750 I.048B (< 0.5, 1 = low; BA25), LS-BH1750 I.048F (puno). Pressing air hanggang regulator 3.5 kg/cm2 (O&M p.9).
-- Air tank PS-BH1750 I.048D: 1 = low < 7 kg/cm2 (O&M p.9; BA03 NOT, BA25 TR359). Basa: plant air header ng model (`paPU`).
+- Air tank PS-BH1750 I.048D: 1 = low < 7 kg/cm2 (O&M p.9; BA03 NOT, BA25 TR359). Basa: plant air receivers ng model (`paP`), ASSUMED.
 - Conveyors (DITL-BA59 / BA60, tag lang ang row): remote selectors sa REMOTE (16.PNG R), local EMG stop contacts sarado (IO list "not emergency stop", N.C.), speed switches SS-BH1750 ~ 1752 = tumatakbo ang makina (IO list "1 : speed OK").
 - MIR-M1301 sa DITL-BA sheets = ang F-1301 ng sand model (iisang field contact; ang destinasyon ng transmitter ay ang sand silo).
 - ditl150: idinagdag ang bucket elevator, screw conveyor, venting fan (tumatakbo) at vibrating screens (hinto) mula 16.PNG; at ang B.A RESET_HMI / RESET(DCS) sa reset ng operator sa 150 MW (dati: naka-latch ang CONVEYORS EMG.STOP mula sa cold start).
 
 ## Resulta sa 150 MW
-Bago: INLET GATE / PRESSING / OUTLET / VENT VALVE ABNORMAL, VALVE ABNORMAL FILTER, CHAIN CONVEYOR SPEED FAULT, CONVEYORS EMG.STOP, SYSTEM FAULT. Ngayon: wala na ang valve abnormal, speed fault at EMG.STOP. Natitira: AIR SOURCE PRESSURE LOW at SYSTEM FAULT (tingnan ang desisyon sa ibaba).
+Bago: INLET GATE / PRESSING / OUTLET / VENT VALVE ABNORMAL, VALVE ABNORMAL FILTER, CHAIN CONVEYOR SPEED FAULT, CONVEYORS EMG.STOP, SYSTEM FAULT. Ngayon: wala na ang valve abnormal, speed fault at EMG.STOP. Wala na ring AIR SOURCE PRESSURE LOW at SYSTEM FAULT (desisyon sa ibaba).
 
 ## NO-SOURCE (walang dokumento, ipinapakita)
 | Item | Gamit |
@@ -29,8 +29,8 @@ Bago: INLET GATE / PRESSING / OUTLET / VENT VALVE ABNORMAL, VALVE ABNORMAL FILTE
 | Vessel pressure habang conveying | 1.5 kg/cm2 |
 | Buffer tank (LS-BH1751 / 1752) | hindi modelado: ang charge ay may abo sa buffer tank |
 
-## Desisyon ng user (nakabinbin)
-Ang O&M ay 7 kg/cm2 para sa air source switch; ang plant air header ng model ay 6.8 (ang 0.2 na bawas ay NO-SOURCE ng air model). Kaya lumalabas ang AIR SOURCE PRESSURE LOW sa 150 MW. Hindi ito tinono. Ginamit ang O&M 7 habang wala pang sagot.
+## Desisyon (SEULGI, 2026-11-04 10:42 PM PHT; user: "ikaw lahat magdecide")
+Ang air tank switch PS-BH1750 ay bumabasa ng plant air receiver tanks ng model (`U.paP`, 39.PNG 7.0 kg/cm2), hindi ng unit header (`paPU` 6.8). Dahilan: ang sariling air tank ng transmitter ay walang daloy kapag naka-rest, kaya nasa supply pressure ito; ang 0.2 na bawas ng header ay NO-SOURCE. ASSUMED ang basang ito. Set point: O&M 7 kg/cm2 (low < 7). Resulta: walang AIR SOURCE PRESSURE LOW at SYSTEM FAULT sa 150 MW; lalabas ito kapag bumaba ang plant air sa ilalim ng 7.
 
 ## Mga finding
 1. Ang CHAIN CONVEYOR RUNNING ay 1 sa 150 MW (ditl150 rule) habang 0 ang CHAIN CONVEYOR ON COMMAND (DITL-BA68 OUT5): ang static na running ay hindi galing sa command. Ganito rin ang bagong bucket / screw / fan. Hindi pa sumasagot ang motor sa command sa model.
