@@ -19,6 +19,7 @@ ina-update sa bawat bagong system.
 12. **Extraction (load) → deaerator pressure → BFWP suction → PT-FW1011 → logic** (`FEEDWATER_PLANT_MODEL.md`, test `feedwater.js`). Trip ng BFWP-A → PT-FW1011 LL (DITL-23B M.3210). Bukas: auto start ng BFWP-B at ang feedwater flow pagkatapos ng FIELD TRIP.
 7. **Lahat ng model → logic → model.** Pressure, level at flow → DITL / ABC rows. Ang START COMMAND ng logic ay nagpapatakbo ng equipment (ACWP, MWP, SWBP, air compressor). Test: bawat model test.
 13. **Diesel oil → burners → firing; plant air → atomizing air** (`DIESEL_OIL_PLANT_MODEL.md`, test `diesel_oil.js`, SEULGI). DITL-31 pump → header PT-DO0005 → ring → 4 burner (DITL-16 shut-off valves) → oil sa firing (`oilF`); tank level / strainer / header → DITL-31 trip at standby start. Plant air (`paPU`) → PSL-PA1043-x1 → DITL-07. Chain test: trip ng pump A → header 4.66 → B auto start.
+14. **FA blower → FA flow → standby blower; fans → current** (`FANS_PLANT_MODEL.md`, test `fans.js`, SEULGI). Trip ng FA blower A → FA flow < 20 T/H (ABC-006 M.3114) → DITL-28A #B start ng B. Current ng FA blower → DITL-28B row 12 (< 24.6 A L.L.). Field trip ng PAF / SAF → walang PA / SA flow (U.mul .drw).
 
 ## Wala pa (plano, kasama sa susunod na system)
 1. **Closed cooling temperature → temperatura ng bearing / winding ng motor.** Fixed pa ang AN_MT. (Ang turbine oil ay tapos na, item 9.)
