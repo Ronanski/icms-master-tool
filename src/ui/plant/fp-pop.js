@@ -282,13 +282,19 @@
       rEs = row('E-STOP', bEs, ...(esR == null ? [E('span', 'fpo-nd', 'not on ' + (nm || 'its drawing'))] : [])),
       rRly = row('RELAY', bTr, bRs);
     if (hasFld) F.bd.append(fSh, rLcp, rEs, rRly);
+    /* live test 2026-11-05 (ACWP-A, DITL-76 row 24 LOCAL STOP P.B. = a FALLING pulse into the reset of the run flip-flop): with the Worker
+       the release written once could be overwritten by the Worker's copy of the row (still 1), the button stayed "pressed" and the pump
+       ran on; the first STOP did nothing, a second press stopped it. The release is now written again until the row reads 0 */
     const pulse = (r, txt) => {
       dk.fieldRow(nm, r, 1, txt);
-      setTimeout(() => {
+      let n = 0;
+      const rel = () => {
         const s2 = call(() => dk.dOf(M.ad), null) || s;
         if (s2 && s2.sig) s2.sig[r + ':S'] = false;
         if (window.WORLD && WORLD.live) WORLD.busy = true;
-      }, 800);
+        if (++n < 8) setTimeout(() => (s2 && s2.sig && s2.sig[r + ':S'] ? rel() : n < 3 && setTimeout(rel, 400)), 400);
+      };
+      setTimeout(rel, 800);
     };
     const etOn = () => !!(etU && s && s.usw && s.usw[etU.key]);
     const etSet = on => {
