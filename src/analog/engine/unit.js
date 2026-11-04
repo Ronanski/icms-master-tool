@@ -834,97 +834,323 @@ function anDitlRun(addr) {
     return null;
   }
 }
-/* 3.2.0-beta.59 (#116 / #117 follow-up, user 2026-10-29: the values of the 030 SEAWATER HMI come from the plant model, not from the HMI).
-   No transmitter of these tags is on a logic sheet (the condenser seawater T / P are PICT 30 indications of STN102, LT-SW1501 of STN103,
-   the debris filter DP gauges are PACKAGE instruments: alarm list DPT-SW1502 / 1504, 0 ~ 2000 mmH2O), so the plant model makes them
-   from the machines that run and from the exhaust steam of the turbine. Anchor = the HMI snapshot 30.PNG (2 SWP running, 465.8 T/H main
-   steam): condenser inlet 1.0 / 1.0 kg/cm2, outlet 0.4 / 0.5, seawater 28.5 / 28.6 -> 35.2 / 35.1 C, forebay -8.76 m, SWP-B 242.5 A,
-   SWP-C 207.6 A, SWBP 87.3 A. PR-OPE-5002: condenser inlet normal 1.0 ~ 1.1 kg/cm2; START DEBRIS FILTER "Input cut in (DP conditions)
-   20 mBar / 80 mBar" = a clean filter with flow 20 mbar (204 mmH2O), the backwash cuts in at 80 mbar (816 mmH2O).
-     header pressure  P = 0 / 0.7 / 1.0 / 1.1 kg/cm2 with 0 / 1 / 2 / 3 SWP (ASSUMED steps between the 30.PNG point and the SOP limit);
-     relative flow    w = sqrt(P / 1.0) (the condenser and the pipes are a fixed resistance: drop ~ flow^2);
-     condenser out    P x 0.4 (A) / 0.5 (B) (30.PNG);
-     seawater rise    30.PNG rise x (exhaust steam / 465.8) / w (exhaust = turbine steam + LP bypass to the condenser);
-     filter DP        204 x w^2 x (1 + dirt): the dirt of the screen grows while water passes (ASSUMED 80 mbar after 4 h at the
-                      normal flow); at 816 mmH2O the package backwashes (MV-SW1001 / 1002, local panel, ASSUMED 60 s) and the dirt is
-                      washed out. The water passes the screen whether the filter runs or not; only a filter IN OPERATION (DITL-39)
-                      backwashes, so a filter not started fouls on (DP up to the HIGH alarm). No pump: no flow, DP 0;
-     pump current     running: the 30.PNG current x (0.4 + 0.6 x share of the flow of one pump vs 30.PNG) (ASSUMED motor load curve);
-                      stopped 0. SWP-A was stopped in 30.PNG: the mean of B and C. SWBP: 87.3 A running.
-   The forebay level follows the tide, not the pumps: the 30.PNG level. */
+/* 3.2.1 (IRENE: PLANT MODEL, CIRCULATING WATER; user 2026-11-04 "OK lang nang ok kay irene ... Tapusin muna lahat"): the seawater
+   system of flow diagram K1AU3-PD-020 Rev D, from the vendor data of the machines (the earlier model of beta.59 used fixed steps).
+   Every number has its source; the ones with none are NO-SOURCE (docs/versions/v3.2.1/CW_PLANT_MODEL.md lists them).
+   Network: forebay (LT-SW1501) -> SWP P-1501A / B / C (each: pump -> PG-SW1501x -> check valve -> discharge valve V-SW1002 / 1004 /
+   1006) -> 96" header -> debris filter S-1502 -> node N -> condenser path A (inlet V-SW1007, H-1110 tubes, outlet V-SW1009) and path
+   B (V-SW1008, V-SW1010) -> siphon pit -> discharge channel; node N -> 24" line -> SWBP P-1503A / B / C (suction PG-SW1503x1, discharge
+   PG-SW1503x2, valve V-SW1016 / 1018 / 1020) -> debris filter S-1504 -> CCW heat exchangers H-1107A / B / C -> discharge.
+   The flows are solved every step: the head of each running pump on its curve meets the losses of the lines (drop ~ flow^2).
+     SWP curve        EBARA 1350VZM, K1AU3-D1-0-064 p6 "Pump characteristic curve" (doc R1306832-8902-0102), read off the graph:
+                      head and pump efficiency vs capacity; shaft power p6 bottom; rated 18,900 m3/h x 28 m x 507 rpm, min flow 5,000,
+                      max 22,680 m3/h (p4 data sheet R1306832-8902-0101); sp. gr. 1.02 (p4) so 1 m of seawater = 0.102 kg/cm2.
+     SWP gauge        PG-SW1501 at the discharge center GL +1.8 m (p4 "DISCHARGE CENTER GL +1800"): P = 0.102 x (H - 1.8 + forebay).
+     SWP motor        TECO 2050 kW 6.6 kV, D1-0-064 p26 "Starting & operating performance": load 25 / 50 / 75 / 100 / 125 % =
+                      166 / 182 / 216 / 260 / 317 A (load = shaft power / 2050 kW; below 25 % the 25 ~ 50 % line, extrapolated).
+                      Start: soft starter (PR-OPE-5002 2.1 "SWP soft starter"), PR-OPE-5002 "Starting Current - 500A" while it ramps.
+     SWBP curve       PACO CL12151, K1AU3-D1-0-034 p8 "Pump Performance Datasheet": rated 1,000 m3/h x 15 m, 1,180 rpm, head at
+                      shut-off (rated diameter) 19.9 m, efficiency 80.25 % at rated, BEP 1,129.9 m3/h, rated power 50.87 kW;
+                      H = 19.9 - 4.9e-6 Q^2 (through the two points), efficiency = e x (2r - r^2), r = Q / 1,129.9, e from 80.25 %.
+     SWBP motor       TECO 100 HP 460 V, D1-0-034 p10: 100 % load = 120 A, Y / delta start (LRC 685 % / 3 = 274 A);
+                      PR-OPE-5002 section 5: normal 90 A, alarm 120, trip 126. Current = line through (the shaft power at the SOP point,
+                      90 A) and (74.6 kW = 100 HP, 120 A).
+     Debris filters   S-1502 DN2400 (O&M L18-4, Technical details): normal flow 37,800 m3/h, clean DP 500 mmH2O, backwash starts at
+                      800 mmH2O (PR-OPE-5002 "Input cut in 80 mBar"), flushing period 3 min, max DP 1.0 kg/cm2; S-1504 DN600 (O&M
+                      L18-5): normal flow 2,000 m3/h, clean 500, backwash 800 mmH2O. DP = clean x (flow / normal)^2 x (1 + dirt).
+     Calibration      the design point = the two vendor documents that agree: 2 SWP at 18,900 m3/h = 37,800 m3/h = the S-1502 normal
+     (one point)      flow; SWP discharge valves 100 %, condenser inlet 100 % / outlet 40 % (PR-OPE-5002 2.31), forebay -4 m (SOP NL):
+                      PG-SW1501 = 0.102 x (28 - 1.8 - 4) = 2.26 kg/cm2 (SOP 2.2 ~ 2.4), condenser inlet water box 1.05 kg/cm2 (SOP
+                      1.0 ~ 1.1), condenser drop 0.4 kg/cm2 (SOP "0.4 Kg/cm2 difference"); 2 SWBP at their SOP discharge 2.35 kg/cm2
+                      (SOP 2.3 ~ 2.4) with suction = node N (SOP suction 1 ~ 1.1). The constants of the lines come from this point.
+     Valves           the manual valves are field valves (no DCS signal; AN_SRC.valve, set by the field operator): loss = loss at 100 %
+                      / (opening)^4, flow area = opening^2 (NO-SOURCE: no valve data in the repository); closed = no flow.
+     Condenser water  in: 28.5 / 28.6 C (snapshot 30.PNG); rise = 5.6 C x (condenser steam / 316 T/H) x (31,500 T/H / seawater flow)
+                      (condenser design specification, K1AU3-D1-0-039 R0 p7: tube side 30 -> 35.6 C at 31,500 T/H, shell 316.024 T/H);
+                      condenser steam = main steam x 316 / 460 (FHI MCR 460 T/H) + LP bypass.
+   The forebay is the SOP normal level -4 m (live test beta.74 #36). UNUSUAL (in the report): the alarm list H of LT-SW1501 is -6.0 m. */
 const AN_SW = {
   swp: ['M.3353', 'M.3354', 'M.3355'],
   swbp: ['DITL-30', 'DITL-30 #B', 'DITL-30 #C'],
   df: ['DITL-39@3', 'DITL-39@14'],
-  Ph: [0, 0.7, 1.0, 1.1],
-  I0: [210, 212, 208] /* live test 2026-10-30 #10: PR-OPE-5002 section 2 Normal Current 205 ~ 215 A (UNUSUAL: 30.PNG 225.1 / 242.5 / 207.6 A, above the SOP); the model follows the SOP, ASSUMED spread */,
-  Ib: [87.3, 87.3, 87.2],
-  dp0: 204,
-  dpBw: 816,
-  dirtT: 4 * 3600,
-  bwT: 60,
-  tauP: 3,
+  /* SWP curve D1-0-064 p6 (m3/h, m, %, kW) */
+  cQ: [0, 2500, 5000, 7500, 10000, 12500, 15000, 17500, 18900, 20000, 21000, 22000, 22680],
+  cH: [47.0, 43.1, 39.9, 37.5, 35.5, 33.6, 31.7, 29.5, 28.0, 26.6, 25.4, 23.9, 22.6],
+  pQ: [0, 5000, 10000, 15000, 18900, 22680],
+  pP: [1720, 1630, 1620, 1650, 1700, 1690],
+  Qr: 18900,
+  Qmin: 5000,
+  Qmax: 22680,
+  zD: 1.8,
+  kP: 0.102 /* kg/cm2 per m of seawater, sp. gr. 1.02 */,
+  mL: [0, 25, 50, 75, 100, 125],
+  mI: [150, 166, 182, 216, 260, 317] /* 0 % = the 25 ~ 50 % line extrapolated */,
+  mkW: 2050,
+  Ist: 500,
+  /* SWBP D1-0-034 p8 / p10 */
+  bH0: 19.9,
+  bA: 4.9e-6,
+  bQr: 1000,
+  bBep: 1129.9,
+  bEff: 0.8025,
+  bkW: 74.6,
+  bI100: 120,
+  bIsop: 90,
+  bIst: 274,
+  /* debris filters (L18-4 / L18-5) */
+  f1Q: 37800,
+  f2Q: 2000,
+  dp0: 500,
+  dpBw: 800,
+  bwT: 180,
+  dirtBw: 0.6 /* (800 / 500) - 1 */,
+  dirtT: 4 * 3600 /* NO-SOURCE: 4 h at the normal flow from clean to the backwash point */,
+  /* design point (calibration) */
+  dQ: 18900,
+  dL: -4,
+  dPci: 1.05,
+  dPdc: 0.4,
+  dPbd: 2.35,
+  hv100: 0.3 /* m, NO-SOURCE: loss of the open discharge / check valve at 18,900 m3/h */,
+  ki100: 0.02 /* kg/cm2, NO-SOURCE: loss of the open condenser inlet valve at the design path flow */,
+  hb100: 0.3 /* m, NO-SOURCE: loss of the open SWBP discharge valve at 1,000 m3/h */,
+  oDes: 40 /* condenser outlet opening of the design point (SOP 2.31) */,
+  Tin: [28.5, 28.6],
+  rise0: 5.6,
+  cTH: 31500,
+  cSt: 316.024,
+  mcr: 460,
+  ramp: 10 /* s, NO-SOURCE: soft starter ramp of the SWP */,
+  bRamp: 5 /* s, NO-SOURCE: Y / delta change-over of the SWBP */,
+  tauP: 2,
   tauT: 60,
-  tauI: 2
+  tauI: 1
 };
+const swInterp = (X, Y, x) => {
+  if (x <= X[0]) return Y[0] + ((Y[1] - Y[0]) * (x - X[0])) / (X[1] - X[0]);
+  for (let i = 1; i < X.length; i++) if (x <= X[i]) return Y[i - 1] + ((Y[i] - Y[i - 1]) * (x - X[i - 1])) / (X[i] - X[i - 1]);
+  const n = X.length - 1;
+  return Y[n] + ((Y[n] - Y[n - 1]) * (x - X[n])) / (X[n] - X[n - 1]);
+};
+/* the head of a pump at speed s (affinity: H(Q, s) = s^2 H(Q / s)) */
+const swH = (Q, s) => (s > 0 ? s * s * swInterp(AN_SW.cQ, AN_SW.cH, Q / s) : 0);
+const swbH = (Q, s) => (s > 0 ? s * s * AN_SW.bH0 - AN_SW.bA * Q * Q : 0);
+/* the flow of a pump when the line after it is at head h: pump head - valve loss = h (0 if the pump cannot reach h: check valve) */
+function swPumpQ(fH, s, kv, h, qMax) {
+  if (!(s > 0) || !(kv < Infinity)) return 0;
+  const f = q => fH(q, s) - kv * q * q - h;
+  if (f(0) <= 0) return 0;
+  let a = 0,
+    b = qMax * Math.max(s, 0.05);
+  if (f(b) > 0) return b;
+  for (let i = 0; i < 40; i++) {
+    const m = (a + b) / 2;
+    if (f(m) > 0) a = m;
+    else b = m;
+  }
+  return (a + b) / 2;
+}
+const swBisect = (f, a, b, n) => {
+  for (let i = 0; i < (n || 40); i++) {
+    const m = (a + b) / 2;
+    if (f(m) > 0) a = m;
+    else b = m;
+  }
+  return (a + b) / 2;
+};
+/* valve: opening 0 ~ 100 % -> multiplier of its loss at 100 % (Infinity = closed); flow area = opening^2 (a butterfly valve opens
+   little area at a small opening; NO-SOURCE: no valve curve in the repository) */
+const swVk = pct => (pct > 0.5 ? 1 / Math.pow(Math.min(100, pct) / 100, 4) : Infinity);
+/* the line constants from the design point (once) */
+function swCal() {
+  const K = AN_SW;
+  if (K.c) return K.c;
+  const c = {};
+  c.kv = K.hv100 / (K.dQ * K.dQ); /* m per (m3/h)^2, SWP valve open */
+  /* SWBP at the SOP discharge 2.35 with suction = node N */
+  const PN = K.dPci + K.ki100,
+    hb = (K.dPbd - PN) / K.kP,
+    qb = Math.sqrt((K.bH0 - hb) / K.bA);
+  c.kbv = K.hb100 / (K.bQr * K.bQr);
+  c.qbD = qb;
+  const Pbv = K.dPbd - K.kP * c.kbv * qb * qb;
+  c.kb = Pbv / Math.pow(2 * qb, 2); /* kg/cm2 per (m3/h)^2: S-1504, CCW HX and the return of the 2 SWBP */
+  const Qt = 2 * K.dQ,
+    q = (Qt - 2 * qb) / 2; /* per condenser path */
+  c.qcD = q;
+  c.ki = K.ki100 / (q * q);
+  c.kc = K.dPdc / (q * q);
+  c.ko = (K.dPci - K.dPdc) / (q * q) / swVk(K.oDes); /* outlet loss at 100 % open */
+  const Ph = K.kP * (K.dQ ? swH(K.dQ, 1) - c.kv * K.dQ * K.dQ - K.zD + K.dL : 0),
+    dpF = (K.dp0 * Math.pow(Qt / K.f1Q, 2)) / 1e4;
+  c.kup = (Ph - dpF - PN) / (Qt * Qt); /* header -> node N (pipes, NO-SOURCE elevation lumped in) */
+  /* SWBP shaft power at the SOP point (for its current line) */
+  const eb = r => (K.bEff / (2 * (K.bQr / K.bBep) - Math.pow(K.bQr / K.bBep, 2))) * Math.max(0, 2 * r - r * r);
+  c.eb = eb;
+  c.bPsop = (1020 * 9.80665 * (qb / 3600) * hb) / 1000 / Math.max(0.25, eb(qb / K.bBep));
+  return (K.c = c);
+}
+/* the SWBP branch: the flows of the running booster pumps with node N at PN */
+function swBooster(PN, sb, vb, c) {
+  const K = AN_SW;
+  const each = Pbv => sb.map((s, i) => swPumpQ(swbH, s, c.kbv * swVk(vb[i]), (Pbv - PN) / K.kP, 2.5 * K.bQr));
+  if (!sb.some(s => s > 0) || PN <= 0) return { q: sb.map(() => 0), Q: 0, Pbv: 0 };
+  const Q = swBisect(x => each(c.kb * x * x).reduce((a, b) => a + b, 0) - x, 0, 3 * 2.5 * K.bQr, 40);
+  return { q: each(c.kb * Q * Q), Q, Pbv: c.kb * Q * Q };
+}
+/* the whole network for the speeds, the valve openings, the forebay and the dirt of S-1502 */
+function swSolve(st) {
+  const K = AN_SW,
+    c = swCal(),
+    kv = st.vd.map(p => c.kv * swVk(p)),
+    pathK = [0, 1].map(j => {
+      const ki = c.ki * swVk(st.vi[j]),
+        ko = c.ko * swVk(st.vo[j]);
+      return { ki, ko, k: ki + c.kc + ko };
+    });
+  const supplyAt = h => st.s.map((s, i) => swPumpQ(swH, s, kv[i], h, 1.6 * K.Qr));
+  const dpF = Q => (K.dp0 * Math.pow(Q / K.f1Q, 2) * (1 + st.dirt)) / 1e4;
+  const r = { q: [0, 0, 0], H: [0, 0, 0], Qt: 0, Qc: [0, 0], b: { q: [0, 0, 0], Q: 0, Pbv: 0 }, Ph: 0, PN: 0 };
+  if (!st.s.some(s => s > 0)) return r;
+  const solveAt = Qt => {
+    /* the header head that gives this total from the pumps */
+    const Hh = swBisect(h => supplyAt(h).reduce((a, b) => a + b, 0) - Qt, -200, 80, 40);
+    const Ph = K.kP * (Hh - K.zD + st.L),
+      PN = Ph - dpF(Qt) - c.kup * Qt * Qt;
+    const qc = pathK.map(p => (PN > 0 && p.k < Infinity ? Math.sqrt(PN / p.k) : 0)),
+      b = swBooster(PN, st.sb, st.vb, c);
+    return { Hh, Ph, PN, qc, b, dem: qc[0] + qc[1] + b.Q };
+  };
+  const qMax = supplyAt(-200).reduce((a, b) => a + b, 0);
+  const Qt = swBisect(Q => solveAt(Q).dem - Q, 0, qMax, 36),
+    z = solveAt(Qt);
+  r.Qt = Qt;
+  r.q = supplyAt(z.Hh);
+  r.H = r.q.map((q, i) => (st.s[i] > 0 ? swH(q, st.s[i]) : 0));
+  r.Ph = z.Ph;
+  r.PN = z.PN;
+  r.Qc = z.qc;
+  r.b = z.b;
+  r.pin = z.qc.map((q, j) => Math.max(0, z.PN - pathK[j].ki * q * q));
+  r.pout = z.qc.map((q, j) => (pathK[j].ko < Infinity ? pathK[j].ko * q * q : Math.max(0, z.PN - pathK[j].ki * q * q)));
+  r.dpF = dpF(Qt);
+  return r;
+}
+/* the field valves of the seawater system (no DCS signal): opening in %, set by the field operator; the normal line-up of a
+   running unit (PR-OPE-5002 section 2 / 5 after the start: discharge valves open, condenser inlet 100 %, outlet 40 %) */
+const AN_SW_V0 = { 'V-SW1002': 100, 'V-SW1004': 100, 'V-SW1006': 100, 'V-SW1007': 100, 'V-SW1008': 100, 'V-SW1009': 40, 'V-SW1010': 40, 'V-SW1016': 100, 'V-SW1018': 100, 'V-SW1020': 100 };
 function anSeawaterStep(U, dt) {
   const K = AN_SW,
+    c = swCal(),
+    V = (AN_SRC.valve = AN_SRC.valve || Object.assign({}, AN_SW_V0)),
+    vp = k => (isFinite(V[k]) ? V[k] : AN_SW_V0[k]),
     lag = (k, x, tau) => (U[k] = isFinite(U[k]) ? U[k] + ((x - U[k]) * Math.min(dt, tau)) / tau : x),
     sw = K.swp.map(a => srcBit([a])),
     bp = K.swbp.map(a => anDitlRun(a) || 0),
     df = K.df.map(a => {
       const r = anDitlRun(a);
       return r == null ? 1 : r;
-    }),
-    n = sw.reduce((a, b) => a + b, 0),
-    nb = bp.reduce((a, b) => a + b, 0),
-    P = K.Ph[n],
-    w = Math.sqrt(P),
-    ex = Math.max(0, (U.ms || 0) + (U.qlp || 0)),
-    rise = w > 0 ? (ex / 465.8) / w : 0;
-  U.swN = n;
-  U.swNb = nb;
-  lag('swPiA', P, K.tauP);
-  lag('swPiB', P, K.tauP);
-  lag('swPoA', P * 0.4, K.tauP);
-  lag('swPoB', P * 0.5, K.tauP);
-  U.swTiA = 28.5;
-  U.swTiB = 28.6;
-  lag('swToA', 28.5 + 6.7 * rise, K.tauT);
-  lag('swToB', 28.6 + 6.5 * rise, K.tauT);
+    });
+  /* the speed of each pump: a start ramps it (soft starter / Y-delta), a stop drops it at once (coast-down not modelled); the first
+     step after a starting state takes the running pumps at full speed (no start transient at 150 MW) */
+  const first = !U.swSpd;
+  U.swSpd = U.swSpd || [0, 0, 0];
+  U.swbSpd = U.swbSpd || [0, 0, 0];
+  sw.forEach((r, i) => (U.swSpd[i] = r ? (first ? 1 : Math.min(1, U.swSpd[i] + dt / K.ramp)) : 0));
+  bp.forEach((r, i) => (U.swbSpd[i] = r ? (first ? 1 : Math.min(1, U.swbSpd[i] + dt / K.bRamp)) : 0));
+  U.swN = sw.reduce((a, b) => a + b, 0);
+  U.swNb = bp.reduce((a, b) => a + b, 0);
   /* live test beta.74 #36: the forebay at the SOP normal level, PR-OPE-5002 section 2 "Sea Water inlet pool (fore bay) level (NL = 4m
-     below GL)" (UNUSUAL: 30.PNG LISW1501 -8.76 m, 4.76 m below the SOP NL; the model follows the SOP, as the SWP current #10) */
-  U.swLvl = -4.0;
-  /* live test beta.74 #35: the SWP discharge pressure at PG-SW1501A / B / C (local gauges), PR-OPE-5002 section 2 "Adjust SWP discharge
-     valve opening to attain 2.2 - 2.4 ksc": a running pump 2.4 / 2.3 / 2.2 with 1 / 2 / 3 pumps (fewer pumps = less flow = more head
-     on its curve; ASSUMED within the SOP band), a stopped pump the header behind its check valve */
-  sw.forEach((r, i) => lag('swPd' + i, r ? [0, 2.4, 2.3, 2.2][n] : P, K.tauP));
-  /* the debris filters: S-1502 on the SWP header, S-1504 on the SWBP line (its flow: the SWBP running, ASSUMED 1/2 each up to 1) */
+     below GL)" */
+  U.swLvl = K.dL;
+  if (!isFinite(U.swDirt1)) U.swDirt1 = 0;
+  if (!isFinite(U.swDirt2)) U.swDirt2 = 0;
+  const st = {
+    s: U.swSpd,
+    sb: U.swbSpd,
+    vd: ['V-SW1002', 'V-SW1004', 'V-SW1006'].map(vp),
+    vi: ['V-SW1007', 'V-SW1008'].map(vp),
+    vo: ['V-SW1009', 'V-SW1010'].map(vp),
+    vb: ['V-SW1016', 'V-SW1018', 'V-SW1020'].map(vp),
+    L: U.swLvl,
+    dirt: U.swDirt1
+  };
+  /* the network is solved again only when a speed, a valve, the forebay or the dirt (0.01) changed */
+  const key = [st.s.map(x => x.toFixed(3)), st.sb.map(x => x.toFixed(3)), st.vd, st.vi, st.vo, st.vb, st.L, st.dirt.toFixed(2)].join('|');
+  if (!U._swR || U._swK !== key) {
+    U._swR = swSolve(st);
+    U._swK = key;
+  }
+  const r = U._swR;
+  U.swRunout = r.q.map(q => (q > K.Qmax ? 1 : 0)) /* above the max flow of the curve (22,680 m3/h): the curve is extrapolated */;
+  /* flows (m3/h), for the HMI and the loop check */
+  r.q.forEach((q, i) => (U['swQa' + i] = Math.round(q)));
+  r.b.q.forEach((q, i) => (U['swQb' + i] = Math.round(q)));
+  U.swQt = Math.round(r.Qt);
+  U.swQcA = Math.round(r.Qc[0]);
+  U.swQcB = Math.round(r.Qc[1]);
+  U.swQc = U.swQcA + U.swQcB;
+  U.swQbT = Math.round(r.b.Q);
+  /* condenser water boxes (PT-SW1110-A1 / B1 in, A2 / B2 out) */
+  const pin = r.pin || [0, 0],
+    pout = r.pout || [0, 0];
+  lag('swPiA', pin[0], K.tauP);
+  lag('swPiB', pin[1], K.tauP);
+  lag('swPoA', pout[0], K.tauP);
+  lag('swPoB', pout[1], K.tauP);
+  /* condenser seawater temperatures */
+  U.swTiA = K.Tin[0];
+  U.swTiB = K.Tin[1];
+  const ws = Math.max(0, ((U.ms || 0) * K.cSt) / K.mcr + (U.qlp || 0));
+  [0, 1].forEach(j => {
+    const th = r.Qc[j] * 1.02 * 2; /* T/H, as if both paths had this flow (the design is per condenser) */
+    const rise = th > 100 ? K.rise0 * (ws / K.cSt) * (K.cTH / th) : 0;
+    lag(j ? 'swToB' : 'swToA', K.Tin[j] + Math.min(rise, 40), K.tauT);
+  });
+  /* PG-SW1501A / B / C: the pump side of the check valve (a stopped pump: the water column of the pit, below the gauge = 0) */
+  r.q.forEach((q, i) => lag('swPd' + i, U.swSpd[i] > 0 ? Math.max(0, K.kP * (r.H[i] - K.zD + U.swLvl)) : 0, K.tauP));
+  /* shut-off time of a running SWP below its min flow (EBARA O&M 4.2 / 4.4: open the discharge valve within 2 minutes) */
+  U.swLow = U.swLow || [0, 0, 0];
+  r.q.forEach((q, i) => (U.swLow[i] = U.swSpd[i] >= 1 && q < K.Qmin ? U.swLow[i] + dt : 0));
+  /* debris filters: DP (mmH2O); the dirt grows while water passes; a filter IN OPERATION (DITL-39) backwashes at 800 for 3 min */
   [
-    [1, w, df[0]],
-    [2, Math.min(1, nb / 2), df[1]]
+    [1, r.Qt / K.f1Q, df[0]],
+    [2, r.b.Q / K.f2Q, df[1]]
   ].forEach(([i, q, op]) => {
     const d = 'swDirt' + i,
       b = 'swBw' + i;
-    if (!isFinite(U[d])) U[d] = 0;
     if (U[b] > 0) {
       U[b] = Math.max(0, U[b] - dt);
-      U[d] = Math.max(0, U[d] - (3 * dt) / K.bwT);
-    } else U[d] += (3 * q * q * dt) / K.dirtT;
+      U[d] = Math.max(0, U[d] - (K.dirtBw * dt) / K.bwT);
+    } else U[d] += (K.dirtBw * q * q * dt) / K.dirtT;
     const dp = K.dp0 * q * q * (1 + U[d]);
     if (op && dp >= K.dpBw && !(U[b] > 0)) U[b] = K.bwT;
     lag('swDp' + i, dp, K.tauP);
   });
-  /* the motor currents */
-  K.I0.forEach((I, i) => lag('swIa' + i, sw[i] ? I * (0.4 + (0.6 * w * 2) / n) : 0, K.tauI));
-  K.Ib.forEach((I, i) => lag('swIb' + i, bp[i] ? I : 0, K.tauI));
-  /* live test 2026-10-30 #21: the SWBP suction and discharge pressure (PR-OPE-5002 section 5: suction 1 ~ 1.1 ksc, inlet 1.0 ksc,
-     discharge 2.3 ~ 2.4 kg/cm2 at PG-SW1503A / B / C, local gauges): suction = the SWP header (the SWBP takes from it), discharge 2.35
-     while its pump runs (ASSUMED mid of the SOP band), else the suction */
-  K.Ib.forEach((I, i) => {
-    lag('swBs' + i, P, K.tauP);
-    lag('swBd' + i, bp[i] && P > 0 ? 2.35 : P, K.tauP);
+  /* SWP motor current: 500 A while the soft starter ramps, then the load of the shaft power (motor table) */
+  r.q.forEach((q, i) => {
+    const s = U.swSpd[i];
+    const P = s > 0 ? swInterp(K.pQ, K.pP, q / s) * s * s * s : 0;
+    U['swKw' + i] = Math.round(P);
+    lag('swIa' + i, s <= 0 ? 0 : s < 1 ? K.Ist : swInterp(K.mL, K.mI, (100 * P) / K.mkW), K.tauI);
   });
+  /* SWBP: suction (PG-SW1503x1) = node N, discharge (PG-SW1503x2) before its valve; current from its shaft power */
+  r.b.q.forEach((q, i) => {
+    const s = U.swbSpd[i],
+      PN = Math.max(0, r.PN || 0);
+    lag('swBs' + i, PN, K.tauP);
+    lag('swBd' + i, s > 0 && PN > 0 ? PN + K.kP * swbH(q, s) : PN, K.tauP);
+    const Pw = s > 0 ? Math.max(0.4 * 50.87, (1020 * 9.80665 * (q / 3600) * swbH(q, s)) / 1000 / Math.max(0.25, c.eb(q / K.bBep))) : 0; /* floor 40 % of the rated 50.87 kW at low flow: NO-SOURCE */
+    const I = K.bIsop + ((K.bI100 - K.bIsop) * (Pw - c.bPsop)) / (K.bkW - c.bPsop);
+    lag('swIb' + i, s <= 0 ? 0 : s < 1 ? K.bIst : Math.max(0, I), K.tauI);
+  });
+}
+/* the field operator sets a manual valve of the seawater system (V-SW1002 ... 0 ~ 100 %); returns false for an unknown tag */
+function anSwValve(tag, pct) {
+  if (!(tag in AN_SW_V0)) return false;
+  AN_SRC.valve = AN_SRC.valve || Object.assign({}, AN_SW_V0);
+  AN_SRC.valve[tag] = Math.max(0, Math.min(100, +pct || 0));
+  return true;
 }
 /* 3.2.0-beta.63 (MAKE-UP WATER HMI, PR-OPE-5002 section 7): the make-up water system of flow diagram K1AU3-PD-024 Rev D and the
    expansion tank of PD-021. Demi water tanks T-0708A / B -> suction header -> MWP P-0709A / B / C (DITL-112) -> common header

@@ -35,6 +35,16 @@
     for (const e of ['3', '4']) L.push(['TT-CW1108-' + p + e, mtOf('TT-CW1108-' + p + e), 100, 'hi', 0, 2]);
     for (const e of ['U', 'V', 'W']) L.push(['TT-CW1108-' + p + e, mtOf('TT-CW1108-' + p + e), 165, 'hi', 0, 2]);
   }
+  /* 3.2.1 (CW plant model): the SWP motor temperatures and vibration of the plant model (unit.js AN_MT) on their DITL-29B rows
+     (machine instances #B / #C for pumps B / C): rows 5 / 6 TT-SW1501-x3 / x4 bearing, rows 9 ~ 11 TT-SW1501-xU / xV / xW winding,
+     rows 12 / 13 VT-SW1501-x1 / x2 vibration; OUT18 (5 s on-delay) = SEAWATER PUMP x TRIP INTERLOCK CONDITION. Set points = the HH of the
+     alarm list "Alarm List _20160912" (TE-SW1501: bearing HH 100, winding HH 155; VT-SW1501: HH 11.9 mm/s, pump B 16.8 mm/s); dead band
+     2 C / 0.5 mm/s (NO-SOURCE) */
+  for (const p of ['A', 'B', 'C']) {
+    for (const e of ['3', '4']) L.push(['TT-SW1501-' + p + e, mtOf('TT-SW1501-' + p + e), 100, 'hi', 0, 2]);
+    for (const e of ['U', 'V', 'W']) L.push(['TT-SW1501-' + p + e, mtOf('TT-SW1501-' + p + e), 155, 'hi', 0, 2]);
+    for (const e of ['1', '2']) L.push(['VT-SW1501-' + p + e, mtOf('VT-SW1501-' + p + e), p === 'B' ? 16.8 : 11.9, 'hi', 0, 0.5]);
+  }
   /* Mina M3 (beta.88 / beta.89: PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"). Each BFWP has two auxiliary lube oil pumps, DCS
      motors of DITL-22 (IO list STN103: machine A = LOP A of BFWP-A O.0126 / I.0050, B = LOP B of BFWP-A O.0446 / I.0370, C = LOP A of
      BFWP-B O.0127 / I.0053, D = LOP B of BFWP-B O.0447 / I.0373; world.js isLop4). The lube oil HEADER pressure is held by the pressure control valve at 2.0 kg/cm2(g) while an oil pump runs (KSB
