@@ -69,3 +69,16 @@
 
 /* #59: the kind of the faceplate (CONTROL / PERMISSIVE · TREND · MONITOR) */
 .fpo-box .fpo-k{white-space:nowrap;font:700 10px var(--uf,system-ui);letter-spacing:.04em;color:#93a2b2;border:1px solid #475563;border-radius:3px;padding:1px 6px}
+/* 3.2.1 FIELD · LOCAL PANEL of the motor faceplate (mockup 6gyBnteyRkiaLXvhAELyGj): the field actions ask in an amber bar */
+.fpo-box .fpo-sh.fld{color:#c3ced8}
+.fpo-box .fpo-sh.fld[hidden]{display:none}
+.fpo-box .fpo-cmd.es{border-color:#8a3a3d;color:#ffb4b6}
+.fpo-box .fpo-cmd.es:disabled{border-color:#3a4b5a;color:#e3eaf0}
+.fpo-box .fpo-nd{font-size:12px;color:#93a2b2}
+.fpo-box .fpo-ex.fld{border-color:#8a6420;background:#2a2112}
+.fpo-box .fpo-ex.fld .fpo-go{background:#7a5a1c!important;border-color:#e0b44a!important}
+/* the lit state of a command (RUN red / STOP green, the mockup) and the EMERGENCY STOP border: the general button colour of app.css
+   (body.app2 :is(button ...), an id inside its :not()) was stronger than these classes, so the state never showed on the buttons */
+.fpo-box .fpo-cmd.lit-run{background:#5a1c1f!important;border-color:#e5484d!important;color:#ffd0d2!important}
+.fpo-box .fpo-cmd.lit-stop{background:#173826!important;border-color:#2fa56a!important;color:#bdf0d3!important}
+.fpo-box .fpo-cmd.es:not(:disabled){border-color:#8a3a3d!important;color:#ffb4b6!important}
