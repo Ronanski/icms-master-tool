@@ -16,6 +16,7 @@
    - [data-ox="KEY|open text|closed text"]  open / closed of a valve in the plant model (UNIT.KEY 1 / 0);
    - [data-dsvc="DITL-xx|service text|on text|off text"]  a DITL row found by its service text (AUTO SELECTED ...), shown as text;
    - [data-ctl="TAG|pv|mv|mode|dp|unit"]  a value of a controller of the logic (PV / MV / mode); [data-hit] of a mach with ctl = its faceplate;
+   - mach.tcs       a pump of the TCS (tcs.js TCS_OIL): state of AN.unit, click = the TCS faceplate (LS_FPOP.tcs);
    - [data-go=ID]   a "page:" link of the mockup = that page of the Plant view.
    Nothing here presses or forces anything: the faceplates do, the same ones the loop check dock watches. */
 (function () {
@@ -189,6 +190,14 @@
               t = m.sti[2] != null ? rin(m.sti[0], m.sti[2]) : 0;
             return r == null ? null : t ? 'TRIP' : r ? 'RUN' : 'STOP';
           }
+          if (m.tcs) {
+            const U = AN.unit;
+            if (!U || !U.on || !U.loMop) return null;
+            if (m.tcs === 'vex') return U.loVex ? 'RUN' : 'STOP';
+            if (m.tcs === 'eop') return U.loEopR ? 'RUN' : 'STOP';
+            const x = /^(mop|cop)([AB])$/.exec(m.tcs);
+            return U['lo' + (x[1] === 'mop' ? 'Mop' : 'Cop')][x[2] === 'A' ? 0 : 1] ? 'RUN' : 'STOP';
+          }
           if (m.sto) {
             const r = rout(m.sto[0], m.sto[1]);
             return r == null ? null : r ? 'RUN' : 'STOP';
@@ -287,6 +296,23 @@
         }
         if (m.fieldOp && window.LS_FPOP && LS_FPOP.field)
           return void LS_FPOP.field({ n: m.n, t: m.t, d: m.d, io: m.io, why: (m.why || '') + (m.fld ? '' : ' This pump has no plant model.'), st: () => (m.fld ? mst(m) : null), fld: m.fld ? on => AN.field(m.fld, on) : null });
+        if (m.tcs && window.LS_FPOP && LS_FPOP.tcs) {
+          const x = /^(mop|cop)([AB])$/.exec(m.tcs);
+          return void LS_FPOP.tcs({
+            n: m.n,
+            t: m.t,
+            d: m.d,
+            why: m.why,
+            st: () => mst(m),
+            au: x
+              ? () => {
+                  const U = AN.unit;
+                  return U && U.on && U.loMop ? !!U['lo' + (x[1] === 'mop' ? 'Mop' : 'Cop') + 'Au'][x[2] === 'A' ? 0 : 1] : null;
+                }
+              : null,
+            cmd: op => (!(AN.unit && AN.unit.on) ? 'no plant model: choose Cold or 150 MW (Plant model ON)' : m.tcs === 'vex' ? (op === 'start' || op === 'stop' ? AN.turbine('vex', op === 'start' ? 1 : 0) : 'no AUTO / MANUAL') : AN.turbine('oil', { p: m.tcs, op }))
+          });
+        }
         if (m.vt && window.LS_FPOP && LS_FPOP.valveTag && LS_FPOP.valveTag(m.vt)) return;
         if (m.ctl) return; /* the controller faceplate: plant.js opens it on the same click (api.reg ctl) */
         if (known(m) && window.LS_FPOP && LS_FPOP.motor) return void LS_FPOP.motor({ ...m, part, cur: curOf(m), band: m.band || null, mon: mon(m) });

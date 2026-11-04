@@ -818,6 +818,87 @@
     me._iv = setInterval(tick, 500);
     return true;
   }
+  /* 3.2.1 (mockup pages, hmi-mock.js): a pump the TCS runs (036 turbine oil: tcs.js TCS_OIL), the same commands as the TCS OPERATION
+     box of the old 036 page. P = { n, t, d, why, st: () => 'RUN' | 'STOP' | null, au: () => true | false | null (no AUTO / MANUAL when
+     absent), cmd: op ('start' | 'stop' | 'auto' | 'man') => '' or the reason it was refused } */
+  function tcs(P) {
+    if (!P) return false;
+    const F = frame(P.n, (P.t || '') + ' · ' + (P.d || 'TCS'));
+    const me = box;
+    F.hd.querySelector('.fpo-tt').append(E('span', 'fpo-chip', 'TCS'));
+    const lR = lampEl('RUN'),
+      lS = lampEl('STOP');
+    F.bd.append(row('STATUS', lR, lS));
+    const mk = t => {
+      const b = E('button', 'fpo-cmd', t);
+      b.type = 'button';
+      return b;
+    };
+    const bA = P.au ? mk('AUTO') : null,
+      bM = P.au ? mk('MAN') : null,
+      bSt = mk('START'),
+      bSp = mk('STOP');
+    if (P.au) F.bd.append(row('MODE', bA, bM));
+    F.bd.append(row('TCS', bSt, bSp));
+    const msg = E('div', 'fpo-why', P.why || 'Turbine control system (TCS) operation of the plant model.');
+    F.bd.append(msg);
+    const ex = E('div', 'fpo-ex'),
+      exT = E('span'),
+      exGo = E('button', 'fpo-go', 'EXECUTE'),
+      exNo = E('button', '', 'CANCEL');
+    exGo.type = exNo.type = 'button';
+    ex.append(exT, exGo, exNo);
+    ex.hidden = true;
+    F.bd.append(ex);
+    let pend = null;
+    const L = { start: 'START', stop: 'STOP', auto: 'AUTO', man: 'MANUAL' };
+    const ask = op => ((pend = op), (exT.textContent = 'TCS: ' + L[op] + ' ' + P.n + '?'), (ex.hidden = false), exGo.focus());
+    exNo.onclick = () => ((pend = null), (ex.hidden = true));
+    exGo.onclick = () => {
+      const op = pend;
+      pend = null;
+      ex.hidden = true;
+      if (!op) return;
+      const r = call(() => P.cmd(op), 'no plant model') || '';
+      msg.textContent = r ? '⚠ ' + r : P.n + ' ' + L[op] + ': EXECUTED';
+      if (!r) call(() => window.lsEventAdd('TCS', 'DCS', 'Operator (TCS): ' + P.n + ' ' + (P.t || '') + ' ' + L[op]));
+      setTimeout(tick, 150);
+    };
+    bSt.onclick = () => !bSt.disabled && ask('start');
+    bSp.onclick = () => !bSp.disabled && ask('stop');
+    if (bA) (bA.onclick = () => !bA.disabled && ask('auto')), (bM.onclick = () => !bM.disabled && ask('man'));
+    const ln = E('div', 'fpo-ln'),
+      ev = E('button', 'fpo-a', 'Events');
+    ev.type = 'button';
+    ev.onclick = () => call(() => document.getElementById('evbtn').click());
+    ln.append(ev);
+    F.bd.append(ln);
+    function tick() {
+      if (!me.isConnected) return closeEl(me);
+      const st = call(P.st, null),
+        au = P.au ? call(P.au, null) : null,
+        run = isRun();
+      F.lamp.className = 'fpo-lamp ' + (st === 'RUN' ? 'run' : st === 'STOP' ? 'stop' : '');
+      F.val.textContent = st === 'RUN' ? 'RUNNING' : st === 'STOP' ? 'STOPPED' : '-----';
+      lR.className = 'fpo-lp' + (st === 'RUN' ? ' run' : '');
+      lS.className = 'fpo-lp' + (st === 'STOP' ? ' stop' : '');
+      bSt.disabled = st == null || st === 'RUN' || !run;
+      bSp.disabled = st == null || st !== 'RUN' || !run;
+      bSt.classList.toggle('lit-run', st === 'RUN');
+      bSp.classList.toggle('lit-stop', st === 'STOP');
+      if (bA) {
+        bA.disabled = au == null || au || !run;
+        bM.disabled = au == null || !au || !run;
+        bA.classList.toggle('lit-run', au === true);
+        bM.classList.toggle('lit-stop', au === false);
+      }
+    }
+    paint = tick;
+    tick();
+    place(me);
+    me._iv = setInterval(tick, 500);
+    return true;
+  }
   /* 3.2.1 (IRENE: PLANT MODEL, user 2026-11-04 "Kung ano lng ang mapapakinabangan ntn s simulation"): the useful manual valves of the
      plant model (unit.js AN_SW_V0 / AN_FV0, AN.swValve): the field operator sets the opening; red = open (any opening), green = closed */
   const FVUSE = {
@@ -1065,7 +1146,7 @@
     me._iv = setInterval(tick, 500);
     return true;
   }
-  window.LS_FPOP = { motor, valve, valveTag, valveKind, valveOpen, fieldPct, pb, field, yn, hit, openAd, place, close, info, get open() {
+  window.LS_FPOP = { motor, valve, valveTag, valveKind, valveOpen, tcs, fieldPct, pb, field, yn, hit, openAd, place, close, info, get open() {
     return anyOpen();
   } };
 })();
