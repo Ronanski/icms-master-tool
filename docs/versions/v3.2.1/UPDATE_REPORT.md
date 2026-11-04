@@ -1,5 +1,25 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.20 — AUX STEAM AND VACUUM, mockup page 08 in the app (2026-11-04, JISOO : HMI MOCKUP)
+
+**Work done.** `docs/hmi/mockups/temp/08-aux-steam-vacuum.html` → Plant view **AUX STEAM AND VACUUM** (`MK08`),
+`tools/hmi-mock/p08.py` → `src/ui/plant/hmi-mock-as.js`.
+- MOV / XV faceplate; ang drawing ng bawat valve ay galing sa service name ng DITL = ZT description sa I/O list:
+  MV-AS1391 DITL-51 (main steam to aux header, ZT-AS1391), MV-AS1392 DITL-52 (aux header drain), MV-AS1393 DITL-53 (gland steam
+  drain separator drain), MV-AS1395 DITL-54 (start-up ejector), MV-AS1396 DITL-55 (air ejectors), MV-AV1391 DITL-56 (vacuum
+  breaker, ZT-AV1391), MV-AS1394 DITL-75 (turbine warming line drain, ZT-AS1394), XV-CD1123 / 1125 DITL-67 / 68.
+- Controllers ng ABC-029 / 030: PICAS1004 (SV / MV / mode), PICAS1005, PICCD1104, TICAS1001, TICAS1017.
+- Values: logic (PT-AS1004, TT-AS1001 / 1003 / 1017, PV-GS1031) o plant model (PT-CD1110 `cdP`, TT-CD1119 / 1120 `AN.unit.tt`).
+- Bug fix (runtime, lahat ng page): ang push button ay binabasa sa salitang katabi ng "PB" (DITL-54 "START-UP EJECTOR STEAM INLET
+  SHUT-OFF MOV OPEN PB" ay naging START dati kaya walang OPEN / CLOSE).
+- NO-SOURCE ('-----'): MV-AS1011, PV-GS1034, ZT-AS1020-1 / -2, TT-AS1015, PT-GS1001, TEGS1002 / 1003, PTST11101 ~ 3,
+  TEST11101 ~ 3.
+
+**Checked (headless cloud).** 150 MW + RUN: aux header 10.2 kg/cm2 236 °C, PIC-AS1004 SV 9.4, PIC-AS1005 SV 10.2 MV 4.2 %;
+MV-AS1395 OPEN + EXECUTE → 100 %, CLOSE → 0 %; walang JS error; `npm run check` SAME.
+
+**Not checked.** Live test, phone size, iba pang push button.
+
 ## 3.2.1-beta.19 — DRUM AND MAIN STEAM, mockup page 07 in the app (2026-11-04, JISOO : HMI MOCKUP)
 
 **Work done.** `docs/hmi/mockups/temp/07-drum-main-steam.html` → Plant view **DRUM AND MAIN STEAM** (`MK07`), `tools/hmi-mock/p07.py`
