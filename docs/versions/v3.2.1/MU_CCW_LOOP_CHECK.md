@@ -56,3 +56,10 @@ inaasahan ay galing sa `MU_CCW_PLANT_MODEL.md`. Simula: RUN, plant model ON.
 3. 8 FS-CW1060 = flow low.
 4. PT-MU0709 ~2.5.
 5. Temperatura ~30 °C.
+
+## F. Manual valves (FIELD faceplate, `FIELD_VALVES.md`; Start at 150 MW)
+1. Pindutin ang V-CW1013 → CLOSE. Inaasahan: berde ang valve, ACW flow ~1334 m3/h, PT-CW1152 ~6.7.
+2. V-CW1014 → CLOSE. Inaasahan: flow 0, PT-CW1152 ~8.2 (shut-off), TT-CW1152 tumataas. Ibalik pareho sa OPEN.
+3. V-CW1007 → 5 %. Inaasahan: PT-CW1152 < 3.5, ACWP-B AUTO START (DITL-77), flow ~1500 m3/h. Ibalik sa OPEN.
+4. V-MU0007 at V-MU0011 → CLOSE. Inaasahan: PT-MU0709 ~2.5 kg/cm2, ang logic (DITL-112) ay pareho ang basa. Ibalik sa OPEN: ~9.0.
+5. Sa Start at 150 MW: lahat ng valve bumabalik sa normal (V-CW1012 / 1015 sarado, ang iba bukas).

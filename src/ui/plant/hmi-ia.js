@@ -356,7 +356,7 @@
           5,
           ''
         );
-        o.push(valve(TX[1] + TW / 2 + 40, y0 + 56, 1, '', '') + T(TX[1] + TW / 2 + 52, y0 + 46, 'FROM PLANT AIR · V-PA0013 (IA-0-030 6")', 'ia8'));
+        o.push('<g><title>V-PA0013 · cross-tie plant air to the instrument air tanks, manual valve (field)</title>' + valve(TX[1] + TW / 2 + 40, y0 + 56, 1, '', '') + '</g>' + T(TX[1] + TW / 2 + 52, y0 + 46, 'FROM PLANT AIR · V-PA0013 (IA-0-030 6")', 'ia8'));
       } else
         o.push(T(TX[1] + TW / 2 + 12, y0 + 62, 'TO IA TANKS · V-PA0013 (PA-0-033 6")', 'ia8'));
       ['B', 'A'].forEach((L, j) => {

@@ -30,3 +30,7 @@ inaasahan ay galing sa `AIR_PLANT_MODEL.md`. Simula: RUN, plant model ON.
 ## D. Cold
 1. Lahat ng compressor STOPPED. Tanks 0 kg/cm2.
 2. Field START ng IA compressor A (local panel, Training). Inaasahan: tumatakbo, tumataas ang tanks, 7.0 sa loob ng ~6 min.
+
+## E. Manual valves (FIELD faceplate, `FIELD_VALVES.md`; Start at 150 MW)
+1. V-IA1101 → CLOSE. Inaasahan: PT-IA1706 bumababa (< 2.8 sa ~90 s), PSL-IA1706 LOW, DITL-03G row 7; tanks 7.0. Ibalik sa OPEN: 6.8.
+2. V-PA0013 → OPEN, saka trip ng lahat ng IA compressor. Inaasahan: IA tanks ~6.4 mula sa plant air, walang instrument air MFT.
