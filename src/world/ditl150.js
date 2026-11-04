@@ -11,6 +11,9 @@
   /* equipment on the 150 MW snapshots (run = running, auto = standby selected in AUTO). 02.png (60 MW) is not used. */
   const EQ = [
     [/\bBFWP\s*A\b(?!\s*AUX)/, 1, 0, '03.png BFWP-A 289.4 A, R M'],
+    /* 3.2.1 (IRENE: HEATER LEVELS): 4.PNG MVTS1001 ~ 1005 "A R" (AUTO, REMOTE). Before, DITL-94 ~ 98 stood in MANUAL and a heater level
+       HI-HI (ABC-036 M.0203) did not close MV-TS1001: the drawing closes it only in AUTO */
+    [/EXTRACTION STM NO\.?\s*\d\b.*SHUT-?OFF\s*MOV/, 1, 1, '4.PNG MVTS1001 ~ 1005 open, A R'],
     [/\bBFWP\s*B\b(?!\s*AUX)/, 0, 1, '03.png BFWP-B standby, R A'],
     [/\bAUX\.?\s*LOP\b/, 0, 1, 'not on a screen: the main pump runs, the auxiliary lube oil pump is on standby'],
     [/COAL FEEDER\s*[ABC]\b|ALL COAL FEEDER/, 1, 0, '11.png feeders A / B / C running'],
@@ -136,7 +139,9 @@
        same address as row 4 "AUTO SELECTED" (memory list STN103 "AUX. COOLING WATER PUMP AUTO MODE (CRT)"), and the drawing takes
        output 51 AUTO SELECTED straight from it (one address = one signal, CLAUDE.md 1). Before, row 1 stood 0 at 150 MW, ACWP-B was
        not in AUTO and did not start when ACWP-A stopped */
-    if (/AUX\.?\s*CW PUMP AUTO PB/.test(t)) {
+    /* the same for DITL-94 ~ 98 row 1 "EXTRACTION STM NO.x SHUT-OFF MOV AUTO PB" = M.0283 ..., the address of row 21 "AUTO MODE
+       SELECTED" (3.2.1 IRENE: HEATER LEVELS) */
+    if (/AUX\.?\s*CW PUMP AUTO PB|EXTRACTION STM NO\.?\s*\d\b.*SHUT-?OFF\s*MOV AUTO PB/.test(t)) {
       const e = eqOf(t);
       return e ? e.auto : null;
     }

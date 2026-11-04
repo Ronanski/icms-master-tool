@@ -100,6 +100,16 @@
      never started on its AUTO START (O.1400) */
   const fvOf = t => () => (window.AN && AN.fv && isFinite(AN.fv(t)) ? AN.fv(t) : NaN);
   L.push(['ZSO-FW1031', fvOf('V-FW1001'), 100, 'ge', 0, 0, /\bBFWP A\b/], ['ZSO-FW1031', fvOf('V-FW1002'), 100, 'ge', 0, 0, /\bBFWP B\b/]);
+  /* 3.2.1 (IRENE: HEATER LEVELS): the level switches H.H. of the heaters (DITL-41 rows 15 ~ 27, STN102 I.029B ~ I.029F) on the
+     shell level of the plant model (unit.js AN_HD); alarm list LS-HD110x: 140 mm (No.1 HPH, No.3 LPH), 150 mm (the others) */
+  const hdOf = k => () => (window.AN && AN.unit && AN.unit.hdLvl && isFinite(AN.unit.hdLvl[k]) ? AN.unit.hdLvl[k] : NaN);
+  L.push(
+    ['LS-HD1105', hdOf('H5'), 140, 'ge', 0, 0],
+    ['LS-HD1106', hdOf('H6'), 150, 'ge', 0, 0],
+    ['LS-HD1101', hdOf('H1'), 150, 'ge', 0, 0],
+    ['LS-HD1102', hdOf('H2'), 150, 'ge', 0, 0],
+    ['LS-HD1103', hdOf('H3'), 140, 'ge', 0, 0]
+  );
   /* 3.2.1 (SEULGI : PLANT MODEL, boiler side, src/analog/engine/boiler.js AN_LM): the field switches of the limestone Rotofeed on the
      DITL-LS sheets (station 104; IO list "Station 104"; the address of station 104, so the sheet name is checked too: I.0169 of station
      103 is another signal). 1 = made: limit switches ZSO / ZSC of the dome and isolating valves, seal pressure switches PS-LM1812 /

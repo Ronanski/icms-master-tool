@@ -1,3 +1,5 @@
+// 3.2.1-beta.5: the one world (CLAUDE.md 7): start at 150 MW as the app does (AN.reset, ditlStates, AN.plantLoad150, DITL150.apply) and
+// every step ticks the DITL too (WORLD.tick); a DITL signal the scenario forces on the ABC is held with rt.force (the world writes rt.ext every scan).
 // M3 (2.2.0-beta.12): TRIPS with the unit model (src/analog/engine/unit.js). From "Start at 150 MW" the operator forces the DITL
 // signals the ABC reads (CLAUDE.md 7: the DITL is forced), and the ABC must answer as the drawing says (force manual, BU-CMD,
 // interlock) while the plant answers as the physics says. Scenarios (argv[2], default: all, one after the other):
@@ -17,13 +19,13 @@
 const {open}=require('./lib.js');const fs=require('fs');
 const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 const want=process.argv.slice(2).filter(a=>!/\.html$/.test(a));const SC=want.length?want:['tt','mft','bfwp','idf','paf','hh'];
-(async()=>{const {browser,page,errs}=await open(html);let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
+(async()=>{const {browser,page,errs}=await open(html);await page.waitForFunction(()=>AN.sheets&&AN.sheets.length>=54&&window.WORLD&&WORLD.idx&&window.DITL150,null,{timeout:120000});await page.waitForTimeout(2000);let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
 for(const sc of SC){
- const r=await page.evaluate(async(sc)=>{AN.reset();AN.plantLoad150();
+ const r=await page.evaluate(async(sc)=>{AN.run=false;AN.reset();ditlStates();AN.plantLoad150();DITL150.apply();
   const sh=k=>AN.sheets.find(s=>s.name===k).S,C1=AN.sheets.find(s=>s.name==='ABC-001C'),S=C1.S,v=S.rt.v,ALL=AN.sheets.filter(s=>s.S&&!/ABC-000/.test(s.name));
   const lab=(S,l)=>S.lab.findIndex(x=>x&&String(x.t).trim()===l),nm=(S,l)=>{for(let n=0;n<S.lab.length;n++)if((AN.nm(S,n)||'').trim()===l)return n;return -1};
   /* an input of the drawing (ext net) by its label, on one sheet or on every sheet that has it; a station prefix ("S2 I.000F") is accepted */
-  const setx=(k,l,x)=>{let n=0;for(const s of (k?[AN.sheets.find(s=>s.name===k)]:ALL)){const T=s.S;for(const e of T.ext){const t=T.lab[e]&&String(T.lab[e].t).trim();if(t===l||(t&&t.replace(/^S\d\s+/,'')===l)){if(T.rt.force[e]===undefined)T.rt.ext[e]=x;n++}}}return n};
+  const setx=(k,l,x)=>{let n=0;for(const s of (k?[AN.sheets.find(s=>s.name===k)]:ALL)){const T=s.S;for(const e of T.ext){const t=T.lab[e]&&String(T.lab[e].t).trim();if(t===l||(t&&t.replace(/^S\d\s+/,'')===l)){T.rt.force[e]=x;T.rt.ext[e]=x;n++}}}return n};
   const ctl=(k,t)=>AN.hmiCtrls(sh(k)).find(c=>c.tag===t),pk=(k,t)=>{const c=ctl(k,t);return c&&c.amt?sh(k).rt.st[c.amt.id].pk:'?'};
   const bit=(k,l)=>{const T=sh(k);let n=lab(T,l);if(n<0)n=nm(T,l);return n<0?NaN:+T.rt.v[n]},val=(k,l)=>{const T=sh(k);const n=nm(T,l);return n<0?NaN:+T.rt.v[n]};
   const pv=(k,t)=>+sh(k).rt.v[ctl(k,t).q.pv],mv=(k,t)=>+sh(k).rt.v[ctl(k,t).out];
@@ -35,7 +37,7 @@ for(const sc of SC){
   const lvl=()=>+S10.rt.v[lic.q.pv],FW=()=>+S10.rt.v[fwc.q.pv],FP=()=>pv('ABC-008','PICFG108'),PA=()=>val('ABC-006','FIFA1071.PV'),O2=()=>pv('ABC-002','AICFG112');
   const say=t=>o.log.push(t+'s MW '+MW().toFixed(1)+' MSP '+MSP().toFixed(1)+' Pd '+U.Pd.toFixed(1)+' MSF '+MSF().toFixed(0)+' coal '+coal().toFixed(1)+' FW '+FW().toFixed(0)+' lvl '+lvl().toFixed(0)+' FurnP '+FP().toFixed(0)+' PA '+PA().toFixed(0)+' O2 '+O2().toFixed(1)+' MST '+pv('ABC-012','TICMS1004').toFixed(0)+' HPB '+mv('ABC-050','PICMS1006').toFixed(1)+' LPB '+mv('ABC-052','PICHR1003').toFixed(1)+' BLO '+mv('ABC-013','PICMS1002').toFixed(1)+' BM '+bit('ABC-001C','M.2013')+' TM '+bit('ABC-001C','M.2016')+' IDF '+pk('ABC-008','PICFG108')+' '+(+sh('ABC-008').rt.v[mv7]).toFixed(1)+'/'+mv('ABC-008','PICFG108').toFixed(1));
   const mft=()=>{setx(null,'I.000F',1);for(const k of ['ABC-003B','ABC-003C','ABC-003D'])setx(k,'M.0341',1);for(const l of ['M.3400','M.3401','M.3402','M.3405'])setx(null,l,0);o.mftAt=t};
-  let t=0,mftT=null;const run=(sec,cb)=>{for(let i=0;i<sec*2;i++){AN.stepSet(C1,.5);t+=0.5;if(o.mftAt!=null&&Math.abs(t-o.mftAt-2)<0.01)for(const k of ['ABC-003B','ABC-003C','ABC-003D'])setx(k,'M.0341',0);if(cb)cb(t);if(Math.abs(t%20)<0.01)say(t)}};
+  let t=0,mftT=null;const run=(sec,cb)=>{for(let i=0;i<sec*2;i++){WORLD.live=true;AN.stepSet(C1,.5);WORLD.tick(.5);t+=0.5;if(o.mftAt!=null&&Math.abs(t-o.mftAt-2)<0.01)for(const k of ['ABC-003B','ABC-003C','ABC-003D'])setx(k,'M.0341',0);if(cb)cb(t);if(Math.abs(t%20)<0.01)say(t)}};
   run(60);say(0);const P0=MSP(),L0=lvl(),F0=coal(),FP0=FP(),FW0=FW();o.t0=t;
   if(sc==='tt'){
    /* STN104 memory list: "TURBINE TRIP FIRST OUT" (M.053F / B.125F) is one of the MFT first-out causes, like DRUM LVL HI-HI and FURNACE
