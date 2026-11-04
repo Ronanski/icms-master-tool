@@ -956,6 +956,10 @@
       b.setAttribute('fill', (+all[tag] || 0) > 0 ? '#d64545' : '#3fa34d');
     });
   }, 1000);
+  /* the mockup pages (hmi-mock.js): which kind of valve a tag is, and open (1) / closed (0) / unknown (null) */
+  const valveKind = tg => (VALVES[tg] ? 'dcs' : FIELDV[tg] ? 'field' : fvAll()[tg] != null ? 'field' : null);
+  const valveOpen = tg =>
+    call(() => (VALVES[tg] ? (VALVES[tg].isOpen() ? 1 : 0) : FIELDV[tg] ? (AN.fieldState && AN.fieldState()[FIELDV[tg].k] ? 1 : 0) : fvAll()[tg] != null ? (+fvAll()[tg] > 0 ? 1 : 0) : null), null);
   const valveTag = tg => (VALVES[tg] ? valve(VALVES[tg]) : FIELDV[tg] ? fieldValve(FIELDV[tg]) : fvAll()[tg] != null ? fieldPct(tg) : false);
   /* #59: the Y / N of a motor for the button on its page (the same test as the info faceplate): true = every logic permissive and SOP
      line-up item complete, false = not, null = no logic */
@@ -1061,7 +1065,7 @@
     me._iv = setInterval(tick, 500);
     return true;
   }
-  window.LS_FPOP = { motor, valve, valveTag, fieldPct, pb, field, yn, hit, openAd, place, close, info, get open() {
+  window.LS_FPOP = { motor, valve, valveTag, valveKind, valveOpen, fieldPct, pb, field, yn, hit, openAd, place, close, info, get open() {
     return anyOpen();
   } };
 })();

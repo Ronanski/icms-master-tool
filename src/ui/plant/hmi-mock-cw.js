@@ -247,7 +247,7 @@
 <text x="1215" y="292">Heat Exchanger A</text><text x="1215" y="308" class="m" font-size="11" fill="#9aa3ab">H-1107A</text>
 <text x="1345" y="292">Heat Exchanger B</text><text x="1345" y="308" class="m" font-size="11" fill="#9aa3ab">H-1107B</text>
 <text x="1475" y="292">Heat Exchanger C</text><text x="1475" y="308" class="m" font-size="11" fill="#9aa3ab">H-1107C</text>
-<text x="1345" y="448" font-size="13" font-weight="600">Closed Cooling Water Heat Exchangers</text><a href="https://claude.ai/artifact/FzdN7gLGASa6JDTkyCBSgP" target="_blank" rel="noopener"><text x="1345" y="468" font-size="12" font-weight="400" fill="#8fc1ff" text-decoration="underline">Water side: Make-Up and Closed Cooling page</text></a>
+<text x="1345" y="448" font-size="13" font-weight="600">Closed Cooling Water Heat Exchangers</text><text data-go="MK02" x="1345" y="468" font-size="12" font-weight="400" fill="#8fc1ff" text-decoration="underline">Water side: Make-Up and Closed Cooling page</text>
 <g class="m" font-size="11" fill="#a9b0b7" font-style="italic" text-anchor="end"><text x="1203" y="404">V-SW1022</text><text x="1333" y="404">V-SW1023</text><text x="1463" y="404">V-SW1024</text><text x="1203" y="249">V-SW1025</text><text x="1333" y="249">V-SW1026</text><text x="1463" y="249">V-SW1027</text></g>
 <text x="1345" y="486" font-size="11" fill="#a9b0b7">seawater side on this page</text>
 </g>
