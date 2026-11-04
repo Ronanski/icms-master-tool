@@ -228,6 +228,7 @@ function anUnitStop() {
   U.mt = {};
   U.iaP = U.paP = NaN; /* 3.2.0-beta.68: the air tanks are set again by the start state (AN_AIR) */
   U.avH = {}; /* 3.2.1 the positions held by the airlocks (AN_AV) */
+  U.lpT = undefined; /* 3.2.1 the LP heater temperatures start again at their steady value (AN_LP) */
   U.iaRun = U.paRun = null; /* 3.2.1: the compressors are read again from the DITL (anAirStep) */
   U.acT1 = U.acT2 = NaN; /* 3.2.0-beta.69: the aux cooling water temperatures start again (AN_ACW) */
   for (const m of U.mul || []) for (const p of m.pr) p.mul = undefined;
@@ -679,6 +680,7 @@ function anUnitStart() {
   AN_SRC.field.cw1001 = true; /* live test #50: the expansion tank outlet open, the closed cooling loop primed */
   U.loTr = NaN; /* 3.2.1 AN_LO: the lube oil starts at its steady value */
   U.cdTs = NaN; /* 3.2.1 AN_CD: the condenser starts at its steady value */
+  U.lpT = undefined; /* 3.2.1 AN_LP: the LP heaters too */
   if (AN_SRC.valve) for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
   AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed while steaming */
   AN_SRC.lhdPct = 0;
@@ -727,6 +729,7 @@ function anUnitCold() {
   AN_SRC.field.cw1001 = false; /* live test #50: the expansion tank outlet closed, the closed cooling loop not primed */
   U.loTr = NaN; /* 3.2.1 AN_LO: the lube oil starts at its steady value */
   U.cdTs = NaN; /* 3.2.1 AN_CD: the condenser starts at its steady value */
+  U.lpT = undefined; /* 3.2.1 AN_LP: the LP heaters too */
   if (AN_SRC.valve) for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
   AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed */
   AN_SRC.lhdPct = 0;
@@ -1813,6 +1816,72 @@ function anHdStep(U, dt) {
   U.hdLvl = Object.fromEntries(U.hd.map(h => [h.k, Math.round(h.y * 10) / 10]));
   U.hdHH = Object.fromEntries(U.hd.map(h => [h.k, h.hh ? 1 : 0]));
 }
+/* 3.2.1 (IRENE: LP HEATERS, docs/versions/v3.2.1/LP_HEATERS_PLANT_MODEL.md). The condensate temperatures through the No.1 / 2 / 3 LP heaters
+   and their drain temperatures (no ABC or DITL sheet reads them: the values are for the plant pages, AN.unit.tt).
+   Sources: FHI heater O&M (PC, o&m-package-phase-1 L15-5 / L15-6 / L15-7, PDF p14 "Nominal thermal characteristics", condensate 362.594 t/h):
+     No.1 LPH  extraction 0.354 kgf/cm2A (sat 72.52 C), condensate 40 -> 70.8 C, TTD 1.72, DCA 5.62 (drain out 45.62 C)
+     No.2 LPH  extraction 0.785 kgf/cm2A (sat 92.48 C), condensate 70.8 -> 90.7 C, TTD 1.78, DCA 5.61 (drain out 76.41 C)
+     No.3 LPH  extraction 1.818 kgf/cm2A (sat 116.64 C), condensate 90.7 -> 114.9 C, TTD 1.74, DCA 5.62 (drain out 96.3 C)
+     condenser O&M L15-1 p16: 68.6 mbar abs, saturation 38.65 C = the hotwell (AN_CD); the gland steam condenser and the ejector condenser
+               between the hotwell and the No.1 LPH inlet: 40 - 38.65 = 1.35 C at the design point.
+   Tags (IO list STN102): TT-CD1101 No.1 LPH inlet, TT-CD1102 No.2 LPH inlet, TT-CD1103-1 No.3 LPH inlet, TT-CD1103-2 No.3 LPH outlet,
+   TT-CD1122 deaerator inlet, TT-HD1102 / 1103 No.2 / 3 LPH drain, TT-HD1105 / 1106 No.1 / 2 HPH drain (AN_HP hpD1 / hpD2).
+   How it works: the shell pressure (abs) = design x main steam / 458.684 x the extraction MOV (DITL-97 No.3, DITL-98 No.2; the No.1 LPH has
+   none), as AN_HP / AN_HD; condensate out = saturation of the shell - TTD, never below the water that comes in; drain out = condensate in
+   + DCA while the heater drains (else the shell saturation); lag 120 s (NO-SOURCE, as AN_HP). NO-SOURCE: the 1.35 C rise taken with
+   the load share; no pipe loss to the deaerator (02.png 94 / 93 C). Not modelled: the LPH bypass MV-CD1003. */
+const AN_LP = {
+  F0: 458.684,
+  /* key, design shell kgf/cm2A, TTD, DCA, extraction MOV */
+  h: [
+    ['H1', 0.354, 1.72, 5.62, null],
+    ['H2', 0.785, 1.78, 5.61, 'DITL-98'],
+    ['H3', 1.818, 1.74, 5.62, 'DITL-97']
+  ],
+  rise: 40 - 38.65,
+  tau: 120
+};
+/* saturation temperature (C) of a pressure in kg/cm2A: the Antoine inverse of anPsat */
+const anTsatA = P => (P > 0.005 ? 1730.63 / (8.07131 - Math.log10((P * 980.665) / 1.33322)) - 233.426 : -Infinity);
+function anLphStep(U, dt) {
+  const K = AN_LP,
+    ms = Math.max(0, +U.ms || 0),
+    ld = ms / K.F0,
+    pos = n => {
+      if (!n) return 100;
+      const p = typeof anDitlPos === 'function' ? anDitlPos(n, 0) : null;
+      return p == null ? 100 : p;
+    },
+    thr = p => Math.max(0, Math.min(1, p / 20)),
+    L = U.lpT || (U.lpT = {}),
+    lag = (k, x) => (L[k] = isFinite(L[k]) && dt > 0 ? L[k] + ((x - L[k]) * Math.min(dt, K.tau)) / K.tau : x),
+    hw = isFinite(U.cdT) ? U.cdT : isFinite(U.Tamb) ? U.Tamb : 30,
+    r1 = x => Math.round(10 * x) / 10,
+    hd = U.hd || [];
+  let tin = lag('in', hw + K.rise * Math.max(0, Math.min(1, ld)));
+  const t = { in1: tin };
+  for (const [k, P0, ttd, dca, mov] of K.h) {
+    const Ps = P0 * ld * thr(pos(mov)),
+      ts = anTsatA(Ps),
+      tout = lag(k, Math.max(tin, ts - ttd)),
+      h = hd.find(x => x.k === k),
+      drains = h && h.win > 0.5;
+    t[k] = { in: tin, out: tout, Ps, dr: lag(k + 'd', drains ? tin + dca : Math.max(tin, ts)) };
+    tin = tout;
+  }
+  U.lpHt = t;
+  U.tt = Object.assign(U.tt || {}, {
+    'TT-CD1101': r1(t.H1.in),
+    'TT-CD1102': r1(t.H2.in),
+    'TT-CD1103-1': r1(t.H3.in),
+    'TT-CD1103-2': r1(t.H3.out),
+    'TT-CD1122': r1(t.H3.out),
+    'TT-HD1102': r1(t.H2.dr),
+    'TT-HD1103': r1(t.H3.dr),
+    'TT-HD1105': U.hpD1,
+    'TT-HD1106': U.hpD2
+  });
+}
 const AN_LO = { UA: 95.8, Co: 64.5, Qb: 1032, Wmax: 170, M: 25800, Tamb: 30 };
 function anLubeCoolStep(U, dt) {
   const K = AN_LO,
@@ -2271,6 +2340,8 @@ function anUnitStep(dt) {
   anFwStep(U, dt);
   anHphStep(U, dt);
   anHdStep(U, dt);
+  /* 3.2.1: the LP heater temperatures (AN_LP) */
+  anLphStep(U, dt);
   /* live test #54: motor bearing / winding temperature and vibration (AN_MT) */
   anMotorStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
