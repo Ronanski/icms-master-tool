@@ -56,3 +56,4 @@ Headless (Playwright + Chromium) checks of `dist/logic-sim-vX.Y.Z.html` (default
 | `node tests/regress/sand.js [html]` | 3.2.1 SEULGI: Sand (boiler.js AN_SD): 150 MW walang close fault / system trip (20.PNG), ISO VALVE OPEN → ROUTE OK, START → isang buong conveying cycle (O&M L5-2 4.2.1) | ~1 min |
 | `node tests/regress/hp_heaters.js [html]` | 3.2.1 IRENE: HP heaters (unit.js AN_HP): No.1 / No.2 outlet at TT-FW1160 sa 150 MW = 03.png, drains = FHI heater O&M, isara ang MV-TS1001 (DITL-94) → bumababa ang economizer inlet | ~2 min |
 | `node tests/regress/pause_ditl_page.js [html]` | 3.2.1 IRENE: VIEW (pause) + buksan ang DITL-27A page sa 150 MW: hindi humihinto ang SAF / PAF (simOn) | ~2 min |
+| `node tests/regress/heater_levels.js [html]` | 3.2.1 IRENE: heater levels (unit.js AN_HD): 5 levels steady at 150 MW, drains = pasok, No.2 HPH drains sarado → H.H. M.0203 → MV-TS1001 sarado; No.3 LPH primary MANUAL → alternate MANUAL, operator nagbubukas | ~5 min |

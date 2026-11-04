@@ -44,6 +44,10 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
     await run(300);
     o.base = g();
     WORLD.live = true;
+    /* 4.PNG: the MOV is AUTO (A R); the operator selects MANUAL first (row 1 M.0283 AUTO = 0, row 6 MANUAL MODE SELECTED), then
+       presses CLOSE (3.2.1 heater levels: the start state of 150 MW sets the AUTO of 4.PNG) */
+    WORLD.dset('DITL-94', 0, false);
+    await run(2);
     o.pr = WORLD.dpress('DITL-94', 13); /* M.0281 EXTRACTION STM NO.1 SHUT-OFF MOV CLOSE PB */
     await run(600);
     o.cl = g();
