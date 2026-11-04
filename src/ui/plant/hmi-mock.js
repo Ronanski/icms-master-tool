@@ -70,7 +70,7 @@
       const tags = new Set([...qa('[data-v]')].map(e => e.dataset.v));
       for (const tag of tags) {
         api.reg({ t: 'val', tag, v: '' }, X => ((LOG[tag] = X && isFinite(X.v) ? +X.v : null), showV(tag)), null);
-        if (def.unit && def.unit[tag] && !/^tt:/.test(def.unit[tag])) api.reg({ t: 'val', tag: 'UNIT.' + def.unit[tag], v: '' }, X => ((PM[tag] = X && isFinite(X.v) ? +X.v : null), showV(tag)), null);
+        if (def.unit && def.unit[tag] && !/^(tt|ux):/.test(def.unit[tag])) api.reg({ t: 'val', tag: 'UNIT.' + def.unit[tag], v: '' }, X => ((PM[tag] = X && isFinite(X.v) ? +X.v : null), showV(tag)), null);
         showV(tag);
         qa(`[data-v="${tag}"]`).forEach(t => {
           const ti = document.createElementNS(NS, 'title');
@@ -321,12 +321,13 @@
           e.setAttribute('fill', v == null ? C.none : v ? C.run : kind === 'alarm' ? C.dim : C.stop);
         });
       };
-      /* plant model values kept by tag (AN.unit.tt: the LP heater temperatures, ...): def.unit[TAG] = 'tt:IO-TAG' */
-      const TT = Object.entries(def.unit || {}).filter(([, k]) => /^tt:/.test(k));
+      /* plant model values kept by tag (AN.unit.tt: the LP heater temperatures, ...): def.unit[TAG] = 'tt:IO-TAG'; an item of a list of
+         the plant model: 'ux:KEY.i' (AN.unit.fnGi[0] = IDF inlet A) */
+      const TT = Object.entries(def.unit || {}).filter(([, k]) => /^(tt|ux):/.test(k));
       const tickTT = () => {
         for (const [tag, k] of TT) {
           const U = window.AN && AN.unit,
-            v = U && U.on && U.tt ? U.tt[k.slice(3)] : null;
+            v = !U || !U.on ? null : k[0] === 't' ? (U.tt ? U.tt[k.slice(3)] : null) : k.slice(3).split('.').reduce((o, x) => (o == null ? null : o[x]), U);
           const nv = v != null && isFinite(v) ? +v : null;
           if (PM[tag] !== nv) (PM[tag] = nv), showV(tag);
         }
