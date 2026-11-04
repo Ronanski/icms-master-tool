@@ -62,7 +62,7 @@ Ang project memory (mga file ng utos at aral ng user) ay nasa PC na: `C:\Users\R
 4. Live Training Cold → 150 MW (`docs/handoff/LIVE_TEST_FINDINGS.md` protocol, pero walang G); ayusin ang blocker.
 5. Natitirang HMI pages ng plant (pending list `docs/hmi/PENDING_HMI_BUILD.md`), galing sa P&ID.
 6. I-update ang `HANDOFF.md` (estado) at ang file na ito sa bawat Beta; hourly update sa user.
-7. Stable: desisyon ng team, kapag pasado ang lahat ng test at live check (`HANDOFF.md` seksyon 9).
+7. Stable: LANG sa "GO STABLE" ng user, kapag pasado ang lahat ng test at live check (`HANDOFF.md` seksyon 9).
 
 ## 6. Paano gumawa sa PC
 
