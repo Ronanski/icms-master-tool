@@ -1137,7 +1137,8 @@
       return [v, b];
     });
     /* two buttons per row (the width of the faceplate) */
-    F.bd.append(row('LOCAL', B[0][1], B[1][1]));
+    /* live test 2026-11-05: OPEN under the OPEN lamp, CLOSE under CLOSED (as XV-MU1109, V-MU1033, V-CW1001); was CLOSE · OPEN */
+    F.bd.append(row('LOCAL', B[1][1], B[0][1]));
     F.bd.append(row('THROTTLE', B[2][1], B[3][1]));
     F.bd.append(row('', B[4][1], B[5][1]));
     F.bd.append(row('', B[6][1], B[7][1]));
