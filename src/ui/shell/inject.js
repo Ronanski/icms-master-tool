@@ -49,6 +49,7 @@ const block =
   fs.readFileSync(__dirname + '/../fx/fx.css', 'utf8') +
   fs.readFileSync(__dirname + '/home.css', 'utf8') +
   fs.readFileSync(__dirname + '/../training/dock.css', 'utf8') +
+  fs.readFileSync(__dirname + '/../training/loopcheck.css', 'utf8') +
   fs.readFileSync(__dirname + '/../ladder/ladder.css', 'utf8') +
   '</style><script id="shelljs">' +
   fs.readFileSync(__dirname + '/ditl.js', 'utf8') +
@@ -95,6 +96,9 @@ const block =
   '\n' +
   /* 3.2.0-beta.23: the Training dock (guided start-up beside the app) */
   fs.readFileSync(__dirname + '/../training/dock.js', 'utf8') +
+  '\n' +
+  /* 3.2.1-beta.4: the loop check dock (one card per tag, the real press checked against the plant model, the address and the logic) */
+  fs.readFileSync(__dirname + '/../training/loopcheck.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/home.js', 'utf8') +
   '\n' +
