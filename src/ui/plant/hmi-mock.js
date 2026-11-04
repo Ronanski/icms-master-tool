@@ -6,6 +6,7 @@
    - [data-md=ID]   "Remote · Manual": REMOTE / LOCAL and AUTO / MAN of the machine (LS_DOCK.modeOf);
    - [data-vcb=ID]  "Breaker ON / OFF" (shown closed while the motor runs, as 030 SEAWATER);
    - [data-v=TAG]   a value: the logic transmitter when a sheet has it, else the plant model (UNIT.key of def.unit); '-----' = none;
+                    "SHEET|ADDRESS" = that address of the sheet (page 00: ABC-001C|SI0230 = the compensated main steam flow);
    - [data-do="DITL-xx|row|on text|off text|run|alarm"] a DITL output row (DUI.outVal): its text and colour;
    - [data-ns]      NO-SOURCE in the app (no signal and no plant model): '-----' grey, never a snapshot number;
    - [data-ynr / data-ynt=ID] the permissive Y / N square (LS_FPOP.yn: Y red = complete, N green = not);
@@ -69,7 +70,7 @@
         });
       const tags = new Set([...qa('[data-v]')].map(e => e.dataset.v));
       for (const tag of tags) {
-        api.reg({ t: 'val', tag, v: '' }, X => ((LOG[tag] = X && isFinite(X.v) ? +X.v : null), showV(tag)), null);
+        api.reg(/\|/.test(tag) ? { t: 'val', tag, ref: tag, v: '' } : { t: 'val', tag, v: '' }, X => ((LOG[tag] = X && isFinite(X.v) ? +X.v : null), showV(tag)), null);
         if (def.unit && def.unit[tag] && !/^(tt|ux):/.test(def.unit[tag])) api.reg({ t: 'val', tag: 'UNIT.' + def.unit[tag], v: '' }, X => ((PM[tag] = X && isFinite(X.v) ? +X.v : null), showV(tag)), null);
         showV(tag);
         qa(`[data-v="${tag}"]`).forEach(t => {
@@ -80,6 +81,31 @@
           t.addEventListener('click', e => (e.stopPropagation(), info(tag)));
         });
       }
+      /* page 16: [data-di="TAG|on text|off text"] = a digital input of the I/O list (MIR-Z1107A running, AL2-SP01 alarm): on (red) when
+         1, off (green) when 0 (a 4th field "neg" = the NOT of the input), '-----' grey when no sheet of the logic reads it; [data-dir=TAG] = its
+         square (red = 1); click = its I/O list line */
+      const showDi = (tag, v) => {
+        qa('[data-di]').forEach(t => {
+          const [tg, on, off, neg] = t.dataset.di.split('|'),
+            x = v == null ? null : neg ? 1 - v : v;
+          if (tg !== tag) return;
+          t.textContent = x == null ? '-----' : x ? on : off;
+          t.setAttribute('fill', x == null ? C.none : x ? C.run : C.stop);
+        });
+        qa(`[data-dir="${tag}"]`).forEach(r => r.setAttribute('stroke', v == null ? C.none : v ? C.run : C.stop));
+      };
+      new Set([...qa('[data-di]')].map(e => e.dataset.di.split('|')[0])).forEach(tag => {
+        api.reg({ t: 'val', tag, v: '' }, X => showDi(tag, X && isFinite(X.v) ? (+X.v >= 0.5 ? 1 : 0) : null), null);
+        showDi(tag, null);
+        qa('[data-di]').forEach(t => {
+          if (t.dataset.di.split('|')[0] !== tag) return;
+          const ti = document.createElementNS(NS, 'title');
+          ti.textContent = tag + ' · digital input · click = its I/O list line';
+          t.append(ti);
+          t.style.cursor = 'pointer';
+          t.addEventListener('click', e => (e.stopPropagation(), info(tag)));
+        });
+      });
       /* DITL rows by service text, plant model open / closed, controllers, page links, valves */
       const dsvc = (ad, re) =>
         call(() => {
@@ -421,7 +447,11 @@
             e.textContent = '-----';
             return e.setAttribute('fill', C.none);
           }
-          if (how === 'md') {
+          if (how === 'am') {
+            /* page 18: "AUTO · REMOTE" = both modes of the valve (its AUTO MODE input, its REMOTE output) */
+            e.textContent = (I.au == null ? '-----' : I.au ? 'AUTO' : 'MANUAL') + ' · ' + (I.rem == null ? '-----' : I.rem ? 'REMOTE' : 'LOCAL');
+            e.setAttribute('fill', C.dim);
+          } else if (how === 'md') {
             /* the mode of the valve: REMOTE / LOCAL (its REMOTE output) else AUTO / MANUAL (its AUTO MODE input) */
             e.textContent = I.rem != null ? (I.rem ? 'REMOTE' : 'LOCAL') : I.au != null ? (I.au ? 'AUTO' : 'MANUAL') : '-----';
             e.setAttribute('fill', C.dim);
@@ -433,8 +463,15 @@
             e.setAttribute('fill', I.pos > 0.5 ? C.run : C.stop);
           }
         });
+      /* page 18: [data-movr="SHEET|TAG"] = the valve symbol of a MOV: red = open (not fully closed), green = closed, grey = no position */
+      const tickMovR = () =>
+        qa('[data-movr]').forEach(e => {
+          const [nm, tg] = e.dataset.movr.split('|'),
+            I = movInfo(nm, tg);
+          e.setAttribute('stroke', !I || I.pos == null ? C.none : I.pos > 0.5 ? C.run : C.stop);
+        });
       const tick0 = tick;
-      const tickAll = () => (tick0(), tickTT(), tickMov());
+      const tickAll = () => (tick0(), tickTT(), tickMov(), tickMovR());
       tickAll();
       HSYM.every(g, 500, tickAll);
       /* faceplates: click on the equipment = CONTROL, the Y / N square = PERMISSIVE · TREND · MONITOR (#59) */
