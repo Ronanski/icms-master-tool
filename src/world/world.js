@@ -838,13 +838,31 @@
           if (!c || !/\bTRIP|\bMFT\b|RUN\s*BACK/i.test(c.name) || /\bNOT?\s+(\w+\s+)?TRIP|TRIP\s+RESET/i.test(c.name)) continue;
           const k = c.lines.map(l => l.txt).join('|'),
             g = grp.get(k);
-          if (!g) grp.set(k, { c, n: 1 });
+          if (!g) grp.set(k, { c, n: 1, rows: [row] });
           else {
             g.n++;
+            g.rows.push(row);
             if (/MASTER FUEL TRIP/i.test(c.name) && !/MASTER FUEL TRIP/i.test(g.c.name)) g.c = c;
           }
         }
-        grp.forEach(({ c, n }) => lsEventAdd(s.name, 'TRIP', c.name + ' = 1' + (n > 1 ? ' (+' + (n - 1) + ' outputs)' : ''), deeper(s, c.lines, 1)));
+        /* live test 2026-11-04 (SWP-A, SWBP-A): the alarm text is the output's name without "Output row n ·" and the "· CRT (ANN)"
+           location, and the TRIP is reset (RST "… = 0") when that output falls back to 0 (RELAY RESET), so it leaves the alarm band */
+        const tnm = x => String(x || '').replace(/^Output row \d+ · /, '').replace(/\s*·\s*[A-Z]{2,4}(?:\s*\(ANN\))?\s*$/, '').trim();
+        W._trip = W._trip || {};
+        grp.forEach(({ c, n, rows }) => {
+          const t = tnm(c.name) + (n > 1 ? ' (+' + (n - 1) + ' outputs)' : '');
+          lsEventAdd(s.name, 'TRIP', t + ' = 1', deeper(s, c.lines, 1));
+          W._trip[s.name] = W._trip[s.name] || {};
+          for (const row of rows) W._trip[s.name][row] = t;
+        });
+        const tr = W._trip[s.name];
+        if (tr)
+          for (const row in tr)
+            if (!b.has(+row) && !b.has(row)) {
+              const t = tr[row];
+              delete tr[row];
+              if (!Object.values(tr).includes(t)) lsEventAdd(s.name, 'RST', t + ' = 0');
+            }
         /* R9 #80: a NOT TRIP output that falls (1 -> 0) is the trip of the machine: "AIR PREHEATER TRIP" */
         for (const row of a) {
           if (b.has(row)) continue;

@@ -1,6 +1,6 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
-## 3.2.1-beta.27 — SAMPLING AND DOSING, GENERATOR, EXTRACTION AND DRAINS, OVERVIEW, mockup pages 16 ~ 18 at 00 in the app (2026-11-05, JISOO : HMI MOCKUP)
+## 3.2.1-beta.28 — SAMPLING AND DOSING, GENERATOR, EXTRACTION AND DRAINS, OVERVIEW, mockup pages 16 ~ 18 at 00 in the app (2026-11-05, JISOO : HMI MOCKUP)
 
 **Work done.** Ang huling apat na temporary mockup page ay nasa app na (Plant view `MK16`, `MK17`, `MK18`, `MK00`); kumpleto na ang 19 page.
 - Bagong runtime hooks (`hmi-mock.js`): `data-di="TAG|on|off|neg"` = digital input ng I/O list (pula = 1, '-----' kapag walang
