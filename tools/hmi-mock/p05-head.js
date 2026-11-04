@@ -15,7 +15,7 @@
     art: /*@@ART@@*/,
     mach: {
       CA: { n: 'CEP-A', t: 'P-1116A', ad: 'M.3350', d: 'DITL-61A', io: 'MIR-P1116A' },
-      CB: { n: 'CEP-B', t: 'P-1116B', ad: 'M.3351', d: 'DITL-61B', io: 'MIR-P1116B' },
+      CB: { n: 'CEP-B', t: 'P-1116B', ad: 'M.3351', d: 'DITL-61A #B', io: 'MIR-P1116B' },
       LA: { n: 'LICCD1110A', t: 'Hotwell make-up LCV-MU1110', ctl: 'LICCD1110A', io: 'LICCD1110A' },
       LB: { n: 'LICCD1110B', t: 'Hotwell dump LCV-CD1110', ctl: 'LICCD1110B', io: 'LICCD1110B' },
       LD: { n: 'LICCD1104', t: 'Deaerator level LCV-CD1104', ctl: 'LICCD1104', io: 'LICCD1104' },

@@ -652,6 +652,12 @@
         if (/REMOTE (MODE )?SELECTED/.test(v) && !/\b(AUTO|NOT)\b/.test(v)) R.rem.push(r);
         else if (/\bAUTO MODE SELECTED\b/.test(v)) R.au.push(r);
       }
+      /* live test 2026-11-05 (CEP-A / B, DITL-61A rows 4 / 14 "CONDENSATE PUMP A M.1182 AUTO SELECTED", no "MODE"): the faceplate AUTO
+         stayed grey (mode unknown) although amRow finds the CRT row; the mode is read from that row too */
+      if (!R.au.length) {
+        const a = call(() => amRow(s), null);
+        if (a) R.au.push(a.row);
+      }
       s._mrows = R;
     }
     const val = r => call(() => DUI.rowVal(s, r), null) === 1 || !!(s.sig && s.sig[r + ':S']),

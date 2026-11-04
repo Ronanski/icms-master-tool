@@ -757,7 +757,7 @@
     const B = P.pbs.map(([l, r, ad]) => {
       const b = E('button', 'fpo-cmd', l);
       b.type = 'button';
-      b.title = P.d + ' row ' + r + ' · ' + ad;
+      b.title = P.d + ' row ' + (r + 1) + ' · ' + ad;
       return b;
     });
     /* live test 2026-11-05 (air dryers, DITL-45): P.sel = the REMOTE input row of the local panel (I.0099 / I.0085 ...): the field operator
@@ -768,7 +768,7 @@
       bRem = E('button', 'fpo-cmd', 'REMOTE');
       bLoc = E('button', 'fpo-cmd', 'LOCAL');
       bRem.type = bLoc.type = 'button';
-      F.bd.append(row('SELECTOR', bRem, bLoc, E('span', 'fpo-fld', 'FIELD')));
+      F.bd.append(row('FIELD SELECTOR', bRem, bLoc));
     }
     F.bd.append(row('DCS', ...B));
     const why = E('div', 'fpo-why');
@@ -831,7 +831,7 @@
     B.forEach((b, i) => {
       const [l, r, ad] = P.pbs[i];
       b.onclick = () =>
-        !b.disabled && ask(P.n + ' ' + l + '?', () => (dk.dpress(P.d, r), call(() => window.lsEventAdd(P.d, 'DCS', 'Operator: ' + P.n + ' ' + l + ' (' + P.d + ' row ' + r + ' · ' + ad + ', faceplate)'))));
+        !b.disabled && ask(P.n + ' ' + l + '?', () => (dk.dpress(P.d, r), call(() => window.lsEventAdd(P.d, 'DCS', 'Operator: ' + P.n + ' ' + l + ' (' + P.d + ' row ' + (r + 1) + ' · ' + ad + ', faceplate)'))));
     });
     let k0 = '';
     function tick() {
@@ -866,7 +866,7 @@
         k0 = k;
         ilL.replaceChildren(...pv.map(p => {
           const li = E('li', ok ? 'ok' : 'bad');
-          li.append(E('i', '', p.v == null ? '-' : String(p.v)), E('span', '', p.l), E('em', '', 'row ' + p.row));
+          li.append(E('i', '', p.v == null ? '-' : String(p.v)), E('span', '', p.l), E('em', '', 'row ' + (p.row + 1))); /* the row number of the drawing (1-based, as the dock) */
           return li;
         }));
       }
@@ -1063,6 +1063,18 @@
       pv = E('span', 'fpo-v', '-----'),
       md = E('span', 'fpo-v', '-----');
     F.bd.append(row('POSITION', pv), row('STATUS', lO, lC), row('MODE', md));
+    /* live test 2026-11-05 (028 CONDENSATE at Cold: every MOV LOCAL, nothing could put one in REMOTE): P.sel(on) = the field operator
+       turns the REMOTE / LOCAL selector at the valve (the REMOTE input rows of its drawing); the CRT push buttons need REMOTE */
+    let bRem = null,
+      bLoc = null;
+    if (P.sel) {
+      bRem = E('button', 'fpo-cmd', 'REMOTE');
+      bLoc = E('button', 'fpo-cmd', 'LOCAL');
+      bRem.type = bLoc.type = 'button';
+      F.bd.append(row('FIELD SELECTOR', bRem, bLoc));
+      bRem.onclick = () => !bRem.disabled && ask({ l: 'selector to REMOTE', q: 'FIELD: ' + P.n + ' selector to REMOTE?', fn: () => P.sel(true) });
+      bLoc.onclick = () => !bLoc.disabled && ask({ l: 'selector to LOCAL', q: 'FIELD: ' + P.n + ' selector to LOCAL?', fn: () => P.sel(false) });
+    }
     const I0 = call(P.info, null) || { pbs: [] },
       btns = I0.pbs.map(p => {
         const b = E('button', 'fpo-cmd', p.l);
@@ -1084,7 +1096,7 @@
     let pend = null;
     function ask(p) {
       pend = p;
-      exT.textContent = p.l + ' ' + P.n + '?';
+      exT.textContent = p.q || p.l + ' ' + P.n + '?';
       ex.hidden = false;
       exGo.focus();
     }
@@ -1094,6 +1106,13 @@
       pend = null;
       ex.hidden = true;
       if (!p) return;
+      if (p.fn) {
+        call(p.fn);
+        msg.textContent = P.n + ' ' + p.l + ': done (field operator)';
+        call(() => window.lsEventAdd('FIELD', 'FIELD', 'Field operator: ' + P.n + ' ' + p.l));
+        setTimeout(tick, 150);
+        return;
+      }
       const r = call(() => P.press(p.row), 'no logic') || '';
       msg.textContent = typeof r === 'string' && r ? '⚠ ' + r : P.n + ' ' + p.l + ': EXECUTED';
       if (!(typeof r === 'string' && r)) call(() => window.lsEventAdd('CRT', 'DCS', 'Operator (CRT): ' + P.n + ' ' + (P.t || '') + ' ' + p.l));
@@ -1117,7 +1136,17 @@
       lO.className = 'fpo-lp' + (pos != null && pos > 0.5 ? ' run' : '');
       lC.className = 'fpo-lp' + (pos != null && pos <= 0.5 ? ' stop' : '');
       md.textContent = [I.rem == null ? '' : I.rem ? 'REMOTE' : 'LOCAL', I.au == null ? '' : I.au ? 'AUTO' : 'MANUAL'].filter(Boolean).join(' · ') || '-----';
-      btns.forEach(b => (b.disabled = !run));
+      const rem = I.rem == null ? null : !!I.rem /* the drawing gives 0 / 1 */,
+        loc = rem === false;
+      btns.forEach(b => (b.disabled = !run || (loc && !!P.sel)));
+      if (bRem) {
+        bRem.disabled = !run || rem === true;
+        bLoc.disabled = !run || rem === false;
+        bRem.classList.toggle('on', rem === true);
+        bLoc.classList.toggle('on', rem === false);
+        if (loc && !pend && !/EXECUTED|done/.test(msg.textContent)) msg.textContent = 'Selector at LOCAL: the DCS push buttons work only in REMOTE. Turn the field selector to REMOTE first.';
+        else if (!loc && /^Selector at LOCAL/.test(msg.textContent)) msg.textContent = 'Push buttons of the DCS screen (CRT), read from the DITL sheet ' + (P.d || '') + '.';
+      }
     }
     paint = tick;
     tick();
