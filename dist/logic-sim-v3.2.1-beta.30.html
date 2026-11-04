@@ -34416,7 +34416,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.30';
-      c3.textContent += ' · build 929a8ee'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 3c5294e'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -108728,6 +108728,22 @@ window.PLANT_SYS = [
       const curOf = m => (m.cur ? () => cur(m.cur) : null);
       const mon = m => m.mon || [];
       const known = m => m.ad && !m.fld && !/@/.test(m.ad) && call(() => D().dOf(m.ad), null);
+      /* a field write of an input row, written again while the Worker copy still shows the old value (the beta.29 LCP STOP lesson:
+         the 'ds' sync of the Worker overwrote a page write made between two of its frames) */
+      const fRow = (ad, row, on, txt) => {
+        D().fieldRow(ad, row, on ? 1 : 0, txt);
+        let n = 0;
+        const chk = () => {
+          const s0 = call(() => D().dOf(ad), null);
+          if (!s0 || !s0.sig) return;
+          if (!!s0.sig[row + ':S'] !== !!on) {
+            s0.sig[row + ':S'] = !!on;
+            if (window.WORLD && WORLD.live) WORLD.busy = true;
+          }
+          if (++n < 6) setTimeout(chk, 400);
+        };
+        setTimeout(chk, 400);
+      };
       const open = (id, part) => {
         const m = M[id];
         if (!m) return;
@@ -108757,6 +108773,45 @@ window.PLANT_SYS = [
               : null,
             cmd: op => (!(AN.unit && AN.unit.on) ? 'no plant model: choose Cold or 150 MW (Plant model ON)' : m.tcs === 'vex' ? (op === 'start' || op === 'stop' ? AN.turbine('vex', op === 'start' ? 1 : 0) : 'no AUTO / MANUAL') : AN.turbine('oil', { p: m.tcs, op }))
           });
+        }
+        /* live test 2026-11-05 (INSTRUMENT AND PLANT AIR): a machine started at its local panel (sti: [sheet, RUNNING row, TRIP row]) had
+           only the I/O card, nothing on the page could start an air compressor. The FIELD pop-out: START / STOP = the field operator at the
+           local panel (the RUNNING row, as the Training dock; unit.js anAirStep reads it), TRIP / RESET = its TRIP contact */
+        if (m.sti && window.LS_FPOP && LS_FPOP.field)
+          return void LS_FPOP.field({
+            n: m.n,
+            t: m.t,
+            d: m.sti[0],
+            io: m.io,
+            why: 'Started and stopped at its local panel (no DCS START / STOP). The DCS reads RUNNING (' + m.sti[0] + ' row ' + (m.sti[1] + 1) + ') and TRIP (row ' + (m.sti[2] + 1) + ').',
+            st: () => mst(m),
+            fld: on => fRow(m.sti[0], m.sti[1], on, (on ? 'START ' : 'STOP ') + m.n + ' (local panel)'),
+            trip: m.sti[2] != null ? on => fRow(m.sti[0], m.sti[2], on, (on ? 'TRIP ' : 'RESET ') + m.n + ' (local panel)') : null
+          });
+        /* live test 2026-11-05: an air dryer of DITL-45 (sto = its RUNNING output row, remi = its REMOTE input row): START P.B. = the input
+           row of the RUNNING output (rows 4 / 15), STOP P.B. 4 rows below (rows 8 / 19), both need REMOTE (I.0085 / I.0099) */
+        if (m.sto && m.remi && window.LS_FPOP && LS_FPOP.pb) {
+          const s = call(() => D().dOf(m.sto[0]), null),
+            r0 = m.sto[1],
+            ad = r => String(call(() => DUI.rowInfo(s, r).svc, '') || '').split(/[\s/]/)[0];
+          if (
+            s &&
+            LS_FPOP.pb({
+              n: m.n,
+              t: m.t,
+              d: m.sto[0],
+              io: m.io,
+              st: { row: r0, on: 'RUNNING', off: 'STOPPED' },
+              pbs: [
+                ['START', r0, ad(r0)],
+                ['STOP', r0 + 4, ad(r0 + 4)]
+              ],
+              perm: [{ row: m.remi[1], l: 'REMOTE (field selector of the local panel)' }],
+              permWhy: 'REMOTE (turn the selector to REMOTE first)',
+              sel: m.remi[1]
+            })
+          )
+            return;
         }
         if (m.vt && window.LS_FPOP && LS_FPOP.valveTag && LS_FPOP.valveTag(m.vt)) return;
         if (m.ctl) return; /* the controller faceplate: plant.js opens it on the same click (api.reg ctl) */
@@ -110713,6 +110768,16 @@ window.PLANT_SYS = [
       b.title = P.d + ' row ' + r + ' · ' + ad;
       return b;
     });
+    /* live test 2026-11-05 (air dryers, DITL-45): P.sel = the REMOTE input row of the local panel (I.0099 / I.0085 ...): the field operator
+       turns it (LS_DOCK.fieldRow, every row of the same address); the DCS push buttons need REMOTE */
+    let bRem = null,
+      bLoc = null;
+    if (P.sel != null) {
+      bRem = E('button', 'fpo-cmd', 'REMOTE');
+      bLoc = E('button', 'fpo-cmd', 'LOCAL');
+      bRem.type = bLoc.type = 'button';
+      F.bd.append(row('SELECTOR', bRem, bLoc, E('span', 'fpo-fld', 'FIELD')));
+    }
     F.bd.append(row('DCS', ...B));
     const why = E('div', 'fpo-why');
     F.bd.append(why);
@@ -110753,6 +110818,24 @@ window.PLANT_SYS = [
     link('Logic ' + P.d, () => (close(), logicGo(dk, P.d)));
     link('Events', () => call(() => document.getElementById('evbtn').click()));
     F.bd.append(ln);
+    const selSet = on => {
+      dk.fieldRow(P.d, P.sel, on ? 1 : 0, P.n + ' selector to ' + (on ? 'REMOTE' : 'LOCAL'));
+      let n = 0;
+      const chk = () => {
+        const s2 = call(() => dk.dOf(P.d), null);
+        if (!s2 || !s2.sig) return;
+        if (!!s2.sig[P.sel + ':S'] !== !!on) {
+          s2.sig[P.sel + ':S'] = !!on;
+          if (window.WORLD && WORLD.live) WORLD.busy = true;
+        }
+        if (++n < 6) setTimeout(chk, 400);
+      };
+      setTimeout(chk, 400);
+    };
+    if (bRem) {
+      bRem.onclick = () => !bRem.disabled && ask('FIELD: ' + P.n + ' selector to REMOTE?', () => selSet(true));
+      bLoc.onclick = () => !bLoc.disabled && ask('FIELD: ' + P.n + ' selector to LOCAL?', () => selSet(false));
+    }
     B.forEach((b, i) => {
       const [l, r, ad] = P.pbs[i];
       b.onclick = () =>
@@ -110769,8 +110852,15 @@ window.PLANT_SYS = [
       F.val.textContent = on ? P.st.on : P.st.off || 'STOPPED';
       lOn.className = 'fpo-lp' + (on ? ' run' : '');
       lOff.className = 'fpo-lp' + (!on ? ' stop' : '');
+      const rem = P.sel == null ? true : call(() => window.DUI.rowVal(s, P.sel), null) === 1;
+      if (bRem) {
+        bRem.disabled = rem || !run;
+        bLoc.disabled = !rem || !run;
+        bRem.classList.toggle('on', rem);
+        bLoc.classList.toggle('on', !rem);
+      }
       B[0].disabled = on || !run || !ok;
-      if (B[1]) B[1].disabled = !on || !run;
+      if (B[1]) B[1].disabled = !on || !run || !rem;
       B[0].classList.toggle('lit-run', on);
       if (B[1]) B[1].classList.toggle('lit-stop', !on);
       why.textContent = !run ? 'Simulation PAUSED: press ▶ RUN first (nothing moves while paused).' : !ok && !on ? P.pbs[0][0] + ' blocked: no ' + (P.permWhy || 'permissive') + '.' : '';
@@ -110803,11 +110893,14 @@ window.PLANT_SYS = [
     const F = frame(P.n, (P.t || '') + ' · ' + (P.d || 'field'));
     const me = box;
     const lR = lampEl('RUN'),
-      lS = lampEl('STOP');
-    F.bd.append(row('STATUS', lR, lS));
+      lS = lampEl('STOP'),
+      lT = lampEl('TRIP');
+    F.bd.append(P.trip ? row('STATUS', lR, lS, lT) : row('STATUS', lR, lS));
     F.bd.append(E('div', 'fpo-why', P.why || 'Field equipment: no DCS command. Started at the local panel.'));
     let bSt = null,
       bSp = null,
+      bTr = null,
+      bRs = null,
       ex = null;
     if (P.fld) {
       bSt = E('button', 'fpo-cmd', 'START');
@@ -110835,6 +110928,17 @@ window.PLANT_SYS = [
       const go = on => (P.fld(on), call(() => window.lsEventAdd('FIELD', 'FIELD', 'Field operator: ' + (on ? 'START ' : 'STOP ') + P.n + ' (local panel)')));
       bSt.onclick = () => !bSt.disabled && ask('FIELD: START ' + P.n + ' at the local panel?', () => go(true));
       bSp.onclick = () => !bSp.disabled && ask('FIELD: STOP ' + P.n + ' at the local panel?', () => go(false));
+      /* live test 2026-11-05 (air compressors of INSTRUMENT AND PLANT AIR: started at the local panel, the DCS reads RUNNING / TRIP):
+         P.trip(on) = the TRIP contact of the local panel (a protection trip of the test tool, RESET = back to 0) */
+      if (P.trip) {
+        bTr = E('button', 'fpo-cmd', 'TRIP');
+        bRs = E('button', 'fpo-cmd', 'RESET');
+        bTr.type = bRs.type = 'button';
+        F.bd.insertBefore(row('RELAY', bTr, bRs), ex);
+        const tr = on => (P.trip(on), call(() => window.lsEventAdd('FIELD', 'FIELD', 'Field operator: ' + (on ? 'TRIP ' : 'RESET the trip of ') + P.n + ' (local panel)')));
+        bTr.onclick = () => !bTr.disabled && ask('FIELD: TRIP ' + P.n + ' at its protection relay?', () => tr(true));
+        bRs.onclick = () => !bRs.disabled && ask('FIELD: RESET the trip of ' + P.n + '?', () => tr(false));
+      }
     }
     const ln = E('div', 'fpo-ln');
     if (P.io) {
@@ -110852,13 +110956,18 @@ window.PLANT_SYS = [
       if (!me.isConnected) return closeEl(me);
       const st = call(P.st, null),
         run = isRun();
-      F.lamp.className = 'fpo-lamp ' + (st === 'RUN' ? 'run' : st === 'STOP' ? 'stop' : '');
-      F.val.textContent = st === 'RUN' ? 'RUNNING' : st === 'STOP' ? 'STOPPED' : '-----';
+      F.lamp.className = 'fpo-lamp ' + (st === 'RUN' ? 'run' : st === 'STOP' ? 'stop' : st === 'TRIP' ? 'trip' : '');
+      F.val.textContent = st === 'RUN' ? 'RUNNING' : st === 'STOP' ? 'STOPPED' : st === 'TRIP' ? 'TRIP' : '-----';
       lR.className = 'fpo-lp' + (st === 'RUN' ? ' run' : '');
       lS.className = 'fpo-lp' + (st === 'STOP' ? ' stop' : '');
+      lT.className = 'fpo-lp' + (st === 'TRIP' ? ' trip' : '');
       if (bSt) {
-        bSt.disabled = st === 'RUN' || !run;
+        bSt.disabled = st === 'RUN' || st === 'TRIP' || !run;
         bSp.disabled = st !== 'RUN' || !run;
+        if (bTr) {
+          bTr.disabled = st !== 'RUN' || !run;
+          bRs.disabled = st !== 'TRIP' || !run;
+        }
         bSt.classList.toggle('lit-run', st === 'RUN');
         bSp.classList.toggle('lit-stop', st === 'STOP');
       }
