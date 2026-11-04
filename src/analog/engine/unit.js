@@ -268,6 +268,9 @@ function anUnitStart() {
   /* the turbine inlet pressure (ABC-050 PT-MS1006-1 / -2, the PV of the HP bypass): the same steam, after the main steam line */
   const s50 = AN.sheets.find(x => x.name === 'ABC-050');
   U.tin = s50 && s50.S ? [anUnitAIs(shStn(s50) + '|AI0416'), anUnitAIs(shStn(s50) + '|AI0512')] : [];
+  /* 3.2.1 the lube oil cooler outlet TE-LO1002-1 / -2 (STN102 AI0452 / AI0516, the PV of ABC-053 TICLO1002): AN_LO writes them */
+  const s53 = AN.sheets.find(x => x.name === 'ABC-053');
+  U.lo = s53 && s53.S ? [anUnitAIs(shStn(s53) + '|AI0452'), anUnitAIs(shStn(s53) + '|AI0516')] : [];
   /* the valve commands of the other outlets (output of their A / M station after the interlocks) */
   const ctlOut = (k, t) => {
     const x = AN.sheets.find(y => y.name === k),
@@ -629,12 +632,14 @@ function anUnitStart() {
   /* P1 #6 COAL FEEDER OUTLET DISCHARGE VALVE (DITL-20, #B, #C = feeder A / B / C: M.0478 / 0488 / 0498 OPEN P.B. of the memory list
      STN104): the coal of a feeder reaches the furnace only through its open outlet valve */
   U.cfo = ['DITL-20', 'DITL-20 #B', 'DITL-20 #C'];
+  /* 3.2.1 the MV of TICLO1002 = TCV-CW1201 (STN102 AO0469), cooling water to the lube oil cooler (AN_LO) */
+  U.loMv = ctlOut('ABC-053', 'TICLO1002') || manOut('ABC-053', 'TICLO1002');
   /* the transmitters this model writes: the plant model of a loop on them stops writing (ABC-001C PIC-COBM: main steam pressure) */
   const own = new Set();
   const lists = [U.msp, U.drum, U.msf, U.spd || []]
     .concat(U.mw, U.tin, U.rhp, U.pist, U.o2, [U.pa], U.tbed, U.aphT, U.saP, U.idfS.length ? [U.idfS] : [])
     .concat(...U.sh.map(h => h.L))
-    .concat([U.xt.cr, U.xt.hr, U.xt.aux, U.xt.fw, U.xt.lt2], U.xt.rhi, U.xt.fab, U.zt.map(z => z.L));
+    .concat([U.xt.cr, U.xt.hr, U.xt.aux, U.xt.fw, U.xt.lt2], U.xt.rhi, U.xt.fab, U.zt.map(z => z.L), U.lo || []);
   for (const l of lists) for (const [S2, b] of l) own.add(S2.rt.st[b.id]);
   U.own = own;
   U.on = true;
@@ -651,6 +656,7 @@ function anUnitStart() {
   AN_SRC.field.pur = true;
   AN_SRC.field.mu1033 = false;
   AN_SRC.field.cw1001 = true; /* live test #50: the expansion tank outlet open, the closed cooling loop primed */
+  U.loTr = NaN; /* 3.2.1 AN_LO: the lube oil starts at its steady value */
   if (AN_SRC.valve) for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
   AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed while steaming */
   AN_SRC.lhdPct = 0;
@@ -697,6 +703,7 @@ function anUnitCold() {
   AN_SRC.field.pur = false;
   AN_SRC.field.mu1033 = false;
   AN_SRC.field.cw1001 = false; /* live test #50: the expansion tank outlet closed, the closed cooling loop not primed */
+  U.loTr = NaN; /* 3.2.1 AN_LO: the lube oil starts at its steady value */
   if (AN_SRC.valve) for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
   AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed */
   AN_SRC.lhdPct = 0;
@@ -1465,6 +1472,64 @@ function anAcwStep(U, dt) {
   U.acT6 = U.acT2;
   U.acTb = n ? U.acT2 + 1 : U.acT2;
 }
+/* 3.2.1 (IRENE: PLANT MODEL, TURBINE OIL; user 2026-11-04 cross-system: "Kung mag adjust ka dito, mag aadjust din doon ang effect").
+   The lube oil cooler H-1921A (B standby) on the closed cooling water: oil from the bearings (main oil tank) -> cooler -> bearings; cooling
+   water from the ACW supply (TT-CW1153, AN_ACW) through TCV-CW1201 (ABC-053 TICLO1002 MV) -> return. Sources:
+     cooler       O&M L2 TG 2-3 LUBE OIL COOLER R2 (H-n921A / B, plate type, 146.94 m2, 2 x 100 %): oil 2,660 L/min max, cooling water
+                  170,000 kg/h max, water inlet 37 C max, oil outlet 46 C, 1,300 kW max -> clean UA 95.8 kW/K (counter flow, oil
+                  63.0 -> 46 C, water 37 -> 43.6 C); Mass Balance K1AU3-MB-021 items 12 / 13: 170 T/H, 34 -> 41 C;
+     snapshot     36.PNG (149 MW): oil in TILO1001 62 C, out 46 C; 27.PNG: TCV-CW1201 53.1 %, ACW supply 38 C;
+     calibrated   with the vendor UA and a linear valve (170 T/H x MV, NO-SOURCE: no valve curve), the snapshot gives an oil flow of 64.5 kW/K
+                  (2,250 L/min, below the 2,660 maximum; ISO VG 32 0.86 kg/L x 2.0 kJ/kg K) and a bearing heat of 1,032 kW (16 C x 64.5);
+     heat         1,032 kW x speed / 3600 while the lube oil flows (bearing oil pressure above 1.05 kg/cm2, tcs.js), NO-SOURCE shape (as the
+                  16 C x speed of tcs.js); the water flow also needs the ACW loop (x ACW flow / 1500);
+     oil tank     one temperature node (the return oil), 25,800 kJ/K (about 15 m3 of oil, NO-SOURCE: the tank volume is not in the docs);
+                  the cooler outlet = the return - heat removed / oil flow. TE-LO1002-1 / -2 = the outlet: the PV of TICLO1002, so
+                  the logic, tcs.js (TILO1001, the bearing outlets TIGE1007 / 1008, the bearing metal) and the HMI read the same value.
+   Chain: SWBP trip -> CCWHE no seawater -> ACW supply hot (AN_ACW) -> TCV-CW1201 opens (TICLO1002 in AUTO) -> at 100 % the oil gets
+   hot -> the bearings get hot (tcs.js). */
+const AN_LO = { UA: 95.8, Co: 64.5, Qb: 1032, Wmax: 170, M: 25800, Tamb: 30 };
+function anLubeCoolStep(U, dt) {
+  const K = AN_LO,
+    sp = Math.max(0, Math.min(1, (U.tb ? U.tb.rpm : 0) / 3600)),
+    flow = (+U.loBrg || 0) > 1.05,
+    mv = U.loMv ? Math.max(0, Math.min(100, +U.loMv.S.rt.v[U.loMv.n] || 0)) : 53.1,
+    acw = Math.max(0, Math.min(1, (+U.acQ || 0) / 1500)),
+    W = (K.Wmax * mv * acw) / 100 /* T/H */,
+    Cw = (W * 1000 * 4.18) / 3600,
+    Tw = isFinite(U.acT2) ? U.acT2 : K.Tamb,
+    Qb = flow ? K.Qb * sp : 0;
+  let q = 0;
+  const hx = Ti => {
+    if (!flow || !(Cw > 0)) return 0;
+    const cmin = Math.min(K.Co, Cw),
+      cr = cmin / Math.max(K.Co, Cw),
+      ntu = K.UA / cmin,
+      e = Math.abs(1 - cr) > 1e-6 ? (1 - Math.exp(-ntu * (1 - cr))) / (1 - cr * Math.exp(-ntu * (1 - cr))) : ntu / (1 + ntu);
+    return Math.max(0, e * cmin * (Ti - Tw));
+  };
+  /* the first step after a starting state: at its steady value (bisection on the return temperature) */
+  if (!isFinite(U.loTr)) {
+    let a = Tw,
+      b = 120;
+    if (Qb > 0 && hx(b) > Qb)
+      for (let i = 0; i < 40; i++) {
+        const m = (a + b) / 2;
+        if (hx(m) < Qb) a = m;
+        else b = m;
+      }
+    U.loTr = Qb > 0 && Cw > 0 ? (a + b) / 2 : Math.max(Tw, K.Tamb);
+  }
+  q = hx(U.loTr);
+  U.loTr += ((Qb - q) * dt) / K.M;
+  if (!flow) U.loTr += ((K.Tamb - U.loTr) * Math.min(dt, 3600)) / 3600; /* no circulation: the tank goes to the room */
+  U.loTr = Math.max(0, Math.min(99, U.loTr));
+  U.loCoolOut = flow ? U.loTr - q / K.Co : U.loTr;
+  U.loCwF = Math.round(W);
+  U.loCwOut = Cw > 0 ? Tw + q / Cw : Tw;
+  U.loQ = Math.round(q);
+  for (const L of U.lo || []) anUnitWrite(L, U.loCoolOut);
+}
 /* 3.2.0 live test #54: MOTOR BEARING / WINDING TEMPERATURE AND VIBRATION of the seawater pumps P-1501A / B / C, the aux. cooling water
    pumps P-1108A / B and the ID fan (I/O list STN103: TT-SW1501-x3 / x4 / xU / xV / xW AI0720 ~ 0758, VT-SW1501-x1 / x2; TT-CW1108-x3 /
    x4 / xU / xV / xW AI0912 ~ 0932; TT-FG1056-1 ~ 4 / U / V / W AI0672 ~ 0678, VT-FG1056-1 ~ 4 AI0528 ~ 0531). PR-OPE-5002 2.19 / 2.21
@@ -1760,6 +1825,8 @@ function anUnitStep(dt) {
   anAirStep(U, dt);
   /* 3.2.0-beta.69: the aux cooling water loop (027 CLOSED COOLING WATER HMI), see AN_ACW */
   anAcwStep(U, dt);
+  /* 3.2.1: the turbine lube oil cooler on the closed cooling water (AN_LO) */
+  anLubeCoolStep(U, dt);
   /* live test #54: motor bearing / winding temperature and vibration (AN_MT) */
   anMotorStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
