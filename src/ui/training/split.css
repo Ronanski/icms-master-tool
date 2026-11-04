@@ -1,0 +1,71 @@
+/* 3.2.1 (user 2026-11-05, mockup https://claude.ai/artifact/LZf2whSWvZqX7ncNnYGy27 approved "Ok approved yan"): LOOP CHECK SPLIT VIEW.
+   HMI (Plant view workspace) left | logic sheet right, a tag table + controller tags + alarms and events below. Every divider is dragged;
+   each panel docks or floats (View menu). Sizes: --spl-x (HMI width), --spl-b (bottom height), --spl-t (tag table share of the bottom). */
+body.lssplit #plantws {
+  display: grid !important;
+  right: auto !important;
+  width: var(--spl-x, 50vw) !important;
+  bottom: calc(var(--footH, 0px) + var(--spl-bv, 0px)) !important;
+  top: calc(var(--topH, 0px) + 44px) !important;
+}
+body.lssplit #mid {
+  margin-left: calc(var(--spl-x, 50vw) + 8px) !important;
+  margin-top: 44px !important;
+  height: calc(100vh - var(--topH, 0px) - var(--footH, 0px) - 44px - var(--spl-bv, 0px)) !important;
+}
+body.lssplit.spl-nohmi #plantws { display: none !important; }
+body.lssplit.spl-nohmi #mid { margin-left: 0 !important; }
+body.lssplit.spl-nologic #mid { visibility: hidden !important; }
+body.lssplit.spl-nologic #plantws { width: calc(100vw - var(--railW, 57px)) !important; }
+#splbar, #splvd, #splhd, #splbot, .splfl, #splmenu { font: 12.5px var(--uf, system-ui); color: var(--c-tx, #e3e8ec); box-sizing: border-box; }
+#splbar { position: fixed; left: var(--railW, 57px); right: 0; top: var(--topH, 0px); height: 44px; z-index: 55; display: flex; align-items: center; gap: 10px; padding: 0 12px; background: var(--c-strip, #131a1f); border-bottom: 1px solid var(--c-line, #2b343c); flex-wrap: nowrap; overflow-x: auto; }
+#splbar .st { font: 600 11px var(--uf, system-ui); letter-spacing: .06em; text-transform: uppercase; color: var(--c-dim, #9aa6b1); white-space: nowrap; }
+#splbar select { height: 30px; min-width: 260px; max-width: 360px; border-radius: 6px; border: 1px solid var(--c-line, #2b343c); background: var(--c-pane, #1d242a); color: inherit; font: inherit; padding: 0 8px; }
+#splbar button, #splmenu button, .splfl .fh button, #splbot .ph button { height: 30px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--c-line, #2b343c); background: var(--c-pane, #1d242a); color: inherit; font: inherit; cursor: pointer; white-space: nowrap; }
+#splbar button.on, #splmenu button.on { background: #2f5d7c; border-color: #4fa3d9; color: #fff; }
+#splbar .pg { display: flex; flex-direction: column; gap: 3px; min-width: 150px; }
+#splbar .pg span { font-size: 11px; color: var(--c-dim, #9aa6b1); white-space: nowrap; }
+#splbar .pg i { display: block; height: 6px; background: #252e35; border-radius: 3px; overflow: hidden; }
+#splbar .pg i b { display: block; height: 6px; background: #4fa3d9; }
+#splbar .pg.all i b { background: #6fcf97; }
+#splbar .gap { flex: 1; }
+#splvd { position: fixed; top: calc(var(--topH, 0px) + 44px); bottom: calc(var(--footH, 0px) + var(--spl-bv, 0px)); left: calc(var(--railW, 57px) + var(--spl-x, 50vw)); width: 8px; z-index: 56; cursor: col-resize; background: var(--c-pane, #1d242a); border-left: 1px solid var(--c-line, #2b343c); border-right: 1px solid var(--c-line, #2b343c); }
+#splhd { position: fixed; left: var(--railW, 57px); right: 0; bottom: calc(var(--footH, 0px) + var(--spl-bv, 0px)); height: 8px; z-index: 56; cursor: row-resize; background: var(--c-pane, #1d242a); border-top: 1px solid var(--c-line, #2b343c); border-bottom: 1px solid var(--c-line, #2b343c); }
+#splvd::after, #splhd::after, #splbot .vd2::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); border: 0 dotted #6b7884; }
+#splvd::after, #splbot .vd2::after { width: 0; height: 40px; border-left-width: 2px; }
+#splhd::after { width: 40px; height: 0; border-top-width: 2px; }
+#splbot { position: fixed; left: var(--railW, 57px); right: 0; bottom: var(--footH, 0px); height: var(--spl-bv, 0px); z-index: 55; display: flex; background: var(--c-bg, #0f1418); }
+#splbot .pan { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+#splbot .vd2 { position: relative; width: 8px; cursor: col-resize; background: var(--c-pane, #1d242a); border-left: 1px solid var(--c-line, #2b343c); border-right: 1px solid var(--c-line, #2b343c); flex: none; }
+.splp .ph { height: 34px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 12px; background: var(--c-strip, #161c21); border-bottom: 1px solid var(--c-line, #2b343c); }
+.splp .ph b { font-weight: 600; }
+.splp .ph .d { color: var(--c-dim, #9aa6b1); }
+.splp .ph .g { flex: 1; }
+.splp .ph button { height: 24px !important; padding: 0 8px !important; font-size: 11px !important; }
+.splp .bd { flex: 1; overflow: auto; min-height: 0; }
+.splp table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.splp th { position: sticky; top: 0; background: #1a2026; color: var(--c-dim, #9aa6b1); text-align: left; font-weight: 600; padding: 6px 10px; z-index: 1; }
+.splp td { padding: 5px 10px; border-bottom: 1px solid #222a31; font-family: var(--mf, monospace); white-space: nowrap; }
+.splp td.n { font-family: var(--uf, system-ui); white-space: normal; min-width: 180px; }
+.splp td.v1 { color: #ff8b8b; } .splp td.v0 { color: #6fcf97; }
+.splp tr.chg td { background: #1c2a22; }
+.splp td.ok { color: #6fcf97; font-weight: 600; } .splp td.bad { color: #f2948c; font-weight: 600; }
+.splp td button.ex { min-width: 34px; height: 24px; border-radius: 4px; border: 1px solid var(--c-line, #2b343c); background: var(--c-pane, #1d242a); color: inherit; font: inherit; cursor: pointer; }
+.splp .sub { padding: 7px 12px; background: var(--c-strip, #161c21); border-top: 1px solid var(--c-line, #2b343c); border-bottom: 1px solid var(--c-line, #2b343c); display: flex; gap: 12px; align-items: center; }
+.splp .ev { display: grid; grid-template-columns: 58px 56px minmax(0, 1fr); gap: 8px; padding: 6px 12px; border-bottom: 1px solid #222a31; font-size: 12px; }
+.splp .ev .t { font-family: var(--mf, monospace); color: var(--c-dim, #9aa6b1); }
+.splp .ev.alm { background: #3a1b19; } .splp .ev.alm .k { color: #f2948c; font-weight: 600; }
+.splp .ev .k { color: #8cc4ea; }
+.splp .empty { padding: 14px; color: var(--c-dim, #9aa6b1); }
+.splfl { position: fixed; z-index: 57; background: var(--c-strip, #161c21); border: 1px solid #4fa3d9; border-radius: 8px; box-shadow: 0 14px 36px rgba(0, 0, 0, .6); display: flex; flex-direction: column; overflow: hidden; resize: both; min-width: 280px; min-height: 160px; }
+.splfl .ph { cursor: move; background: #1f2a33; }
+#splmenu { position: fixed; z-index: 58; width: 330px; background: #1a2026; border: 1px solid #3a4650; border-radius: 8px; box-shadow: 0 12px 32px rgba(0, 0, 0, .55); padding: 10px; display: none; flex-direction: column; gap: 6px; }
+#splmenu.open { display: flex; }
+#splmenu .r { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+#splmenu .seg { display: flex; border: 1px solid var(--c-line, #2b343c); border-radius: 5px; overflow: hidden; }
+#splmenu .seg button { border: 0 !important; border-radius: 0 !important; height: 28px !important; padding: 0 10px !important; }
+#splmenu .ft { border-top: 1px solid var(--c-line, #2b343c); margin-top: 4px; padding-top: 8px; display: flex; gap: 6px; }
+#splmenu .ft button { flex: 1; height: 28px !important; }
+/* the sheet list of the Logic page: in the split the Batch picker chooses the drawing, the drawing gets the width */
+body.lssplit #side { display: none !important; }
+body.lssplit #dp { max-width: 34% !important; }
