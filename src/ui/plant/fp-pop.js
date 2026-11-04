@@ -206,6 +206,12 @@
     s.append(E('i'), t);
     return s;
   };
+  /* the "Logic DITL-xx" link (MINA, beta.8 live loop check: it only closed the faceplate): the Logic view first, then the drawing,
+     the same order as the Training dock (dock.js: lsSetTab('logic') before openD) */
+  const logicGo = (dk, nm) => {
+    call(() => window.lsSetTab && window.lsSetTab('logic'));
+    call(() => dk.openD(nm, null));
+  };
   /* ---------- the motor faceplate ---------- */
   function motor(M) {
     const dk = D();
@@ -315,7 +321,7 @@
       ln.append(a);
     };
     if (M.io) link('I/O wiring', () => call(() => window.lsInfo(M.io)));
-    if (nm) link('Logic ' + nm, () => (close(), call(() => dk.openD(nm, null))));
+    if (nm) link('Logic ' + nm, () => (close(), logicGo(dk, nm)));
     link('Events', () => call(() => document.getElementById('evbtn').click()));
     F.bd.append(ln);
     const H = hist[M.n] || (hist[M.n] = []);
@@ -339,7 +345,11 @@
     bAu.onclick = () => amr && !bAu.disabled && ask(M.n + ' to AUTO (standby)?', () => dk.dsel(nm, amr.row, 1, M.n + ' AUTO MODE SELECTED'));
     bMa.onclick = () => amr && ask(M.n + ' to MAN?', () => dk.dsel(nm, amr.row, 0, M.n + ' AUTO MODE SELECTED'));
     bSt.onclick = () => !bSt.disabled && ask('START ' + M.n + '?', () => (dk.dmotor(M.ad, 1), call(() => window.lsEventAdd(nm, 'DCS', 'Operator: START ' + M.n + ' (faceplate)'))));
-    bSp.onclick = () => !bSp.disabled && ask('STOP ' + M.n + '?', () => (dk.dmotor(M.ad, 0), call(() => window.lsEventAdd(nm, 'DCS', 'Operator: STOP ' + M.n + ' (faceplate)'))));
+    /* MINA, beta.8 live loop check: STOP + EXECUTE in AUTO did nothing and the faceplate said nothing. The drawing accepts the DCS STOP
+       only in MAN (DITL-29A rows 17 ~ 19 and DITL-30 row 14 / 16: STOP P.B. AND REMOTE AND NOT AUTO): a STOP the logic did not take
+       (still RUNNING 3 s after the press, in AUTO) says so below */
+    let spAt = 0;
+    bSp.onclick = () => !bSp.disabled && ask('STOP ' + M.n + '?', () => ((spAt = Date.now()), dk.dmotor(M.ad, 0), call(() => window.lsEventAdd(nm, 'DCS', 'Operator: STOP ' + M.n + ' (faceplate)'))));
     let k0 = '';
     function tick() {
       if (!me.isConnected) return closeEl(me);
@@ -373,13 +383,17 @@
       bSt.classList.toggle('lit-run', st === 'RUN');
       bSp.classList.toggle('lit-stop', st === 'STOP');
       /* one line: why a button is closed */
+      if (st !== 'RUN' || md.au !== true) spAt = 0;
+      const spNo = spAt && st === 'RUN' && md.au === true && Date.now() - spAt > 3000;
       why.textContent =
-        st === 'TRIP'
+        spNo
+          ? 'STOP not taken: the drawing accepts the DCS STOP in MAN only (' + (nm || 'its drawing') + ': STOP P.B. AND NOT AUTO). Press MAN, then STOP.'
+          : st === 'TRIP'
           ? 'TRIP: find the cause and reset it in the field before starting again.'
           : loc
             ? 'Selector at LOCAL: AUTO, START and STOP from the DCS are blocked. Set the field selector to REMOTE first.'
             : sby
-              ? 'STANDBY, ready: the logic starts it when the running pump trips or the header pressure drops. DCS START is in MAN only.'
+              ? 'STANDBY, ready: its drawing starts it by itself (auto cut-in' + (/^DITL-(29A|30)\b/.test(nm || '') ? ': when a running pump trips, not on a normal STOP' : '') + '). DCS START is in MAN only.'
               : sopLeft && st !== 'RUN'
               ? 'START blocked: finish the SOP line-up first (' + sopLeft + ' left, ✕ below; tick them in the guide).'
               : miss.length && st !== 'RUN'
@@ -518,7 +532,7 @@
       ln.append(a);
     };
     if (V.io) link('I/O wiring', () => call(() => window.lsInfo(V.io)));
-    link('Logic ' + V.d, () => (close(), call(() => dk.openD(V.d, null))));
+    link('Logic ' + V.d, () => (close(), logicGo(dk, V.d)));
     link('Events', () => call(() => document.getElementById('evbtn').click()));
     F.bd.append(ln);
     const ev = t => call(() => window.lsEventAdd(V.d, 'DCS', 'Operator: ' + V.n + ' ' + t + ' (faceplate)'));
@@ -699,7 +713,7 @@
       ln.append(a);
     };
     if (P.io) link('I/O wiring', () => call(() => window.lsInfo(P.io)));
-    link('Logic ' + P.d, () => (close(), call(() => dk.openD(P.d, null))));
+    link('Logic ' + P.d, () => (close(), logicGo(dk, P.d)));
     link('Events', () => call(() => document.getElementById('evbtn').click()));
     F.bd.append(ln);
     B.forEach((b, i) => {
