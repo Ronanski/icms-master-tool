@@ -1730,7 +1730,15 @@ const AN_MT = {
     ['SWP-C', 'M.3355', 'SW1501-C', ['3', '4'], ['1', '2'], 1.8],
     ['ACWP-A', 'DITL-76', 'CW1108-A', ['3', '4'], [], 1.8],
     ['ACWP-B', 'DITL-77', 'CW1108-B', ['3', '4'], [], 1.8],
-    ['IDF', 'IDF', 'FG1056-', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2]
+    ['IDF', 'IDF', 'FG1056-', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2],
+    /* 3.2.1 (IRENE, SEULGI finding): PAF / SAF (DITL-26B / 27B rows 5 ~ 15) and the FA blowers A / B (DITL-28B and its #B, rows 1 ~ 14):
+       motor and fan bearings 1 ~ 4, windings U / V / W, vibration 1 ~ 4; the same NO-SOURCE running values as the IDF (no snapshot or
+       vendor value of these temperatures in the repository; the DITL comparators: bearing 90 / 95, winding 145 C, FA blower 110 / 120 /
+       155 C) */
+    ['PAF', 'DITL-26A', 'FA1053-', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2],
+    ['SAF', 'DITL-27A', 'FA1054-', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2],
+    ['FAB-A', 'DITL-28A', 'FA1055-A', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2],
+    ['FAB-B', 'DITL-28A #B', 'FA1055-B', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2]
   ],
   Tb: 55,
   Tw: 85,

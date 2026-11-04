@@ -112,6 +112,7 @@
     mu.length = 0;
     air.length = 0;
     bo.length = 0;
+    mtr.length = 0;
     for (const s of ALL) {
       if (!s.nl && typeof netlist === 'function')
         try {
@@ -141,6 +142,13 @@
         if (/PT-CD1110\b/.test(t)) ana.push({ s, key: a.key });
         else if (/(?:^|[^A-Z])PT-FW1115-[AB]\b/.test(t)) suc.push({ s, key: a.key }); /* not DPT-FW1115 (the strainer) */
         else if (m) mu.push({ s, key: a.key, f: typeof m[1] === 'function' ? m[1](t, a, s) : m[1] });
+        else if (MTR.test(t)) {
+          /* 3.2.1 (IRENE): the fan / blower bearing and winding temperatures and vibration of the plant model (unit.js AN_MT, U.mt);
+             the drawing of FA blower A serves B (DITL-28B #B): its own blower */
+          let g = MTR.exec(t)[1];
+          if (/#\s*B$/.test(s.name)) g = g.replace('FA1055-A', 'FA1055-B');
+          mtr.push({ s, key: a.key, g });
+        }
         else {
           const m = AIR.find(([re]) => re.test(t));
           if (m) air.push({ s, key: a.key, f: m[1] });
@@ -154,6 +162,9 @@
   }
   /* P2 #13 (INSTRUMENT_VALVE_COVERAGE.md): the condenser pressure follows the vacuum of the unit model (unit.js U.vac, 0 = no vacuum,
      1 = in service): 1.033 kg/cm2A (atmosphere) to 0.057 kg/cm2A (4.PNG PICD1110 at 150 MW) */
+  /* 3.2.1 (IRENE): DITL-25B / 26B / 27B / 28B analog rows TT- / VT- of the IDF, PAF, SAF and FA blowers */
+  const MTR = /(?:^|[^A-Z])([TV]T-(?:FG1056-|FA1053-|FA1054-|FA1055-[AB])[1-4UVW])\b/,
+    mtr = [];
   const ana = [],
     suc = [],
     mu = [],
@@ -273,6 +284,7 @@
     const U = AN.unit || {};
     for (const a of mu) if (isFinite(U[a.f])) (a.s.avw = a.s.avw || {})[a.key] = Math.round(U[a.f] * 1000) / 1000;
     for (const a of air) if (isFinite(U[a.f])) (a.s.avw = a.s.avw || {})[a.key] = Math.round(U[a.f] * 1000) / 1000;
+    for (const a of mtr) if (U.mt && isFinite(U.mt[a.g])) (a.s.avw = a.s.avw || {})[a.key] = Math.round(U.mt[a.g] * 10) / 10;
     for (const a of bo) if (isFinite(U[a.f])) (a.s.avw = a.s.avw || {})[a.key] = Math.round(U[a.f] * 1000) / 1000;
     const ps = suc.length ? W.sucP() : NaN;
     if (isFinite(ps)) for (const a of suc) (a.s.avw = a.s.avw || {})[a.key] = ps;
