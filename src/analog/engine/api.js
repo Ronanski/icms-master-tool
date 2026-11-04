@@ -44,9 +44,18 @@ function anEngAPI() {
     fv: tag => (tag in AN_DO.fv0 ? anDoFv(tag) : anFv(tag)),
     /* 3.2.1 SEULGI (boiler.js): the manual valves of the diesel oil line-up, opening in % (AN_DO.fv0) */
     doValve: anDoValve,
+    /* 3.2.1 SEULGI (boiler.js AN_BA): the numbers of the bottom ash model (set points of its field switches) */
+    baK: AN_BA,
     engState: { capture: anStateCapture, apply: anStateApply },
     /* engine/sync.js: what changed, both ways (worker -> page, page -> worker) */
-    sync: { patch: anSyncPatch, apply: anSyncApply, mark: anSyncMark, forget: anSyncForget, encArgs: anSyncEncArgs, decArgs: anSyncDecArgs },
+    sync: {
+      patch: anSyncPatch,
+      apply: anSyncApply,
+      mark: anSyncMark,
+      forget: anSyncForget,
+      encArgs: anSyncEncArgs,
+      decArgs: anSyncDecArgs
+    },
     /* engine/trace-step.js: Next / Back of the ABC trace, one engine action each */
     stepN: anStepN,
     stepBack: anStepBack,
@@ -57,7 +66,8 @@ function anEngAPI() {
     descOf: (sh, t) => {
       try {
         const F = typeof AN_DEF !== 'undefined' && AN_DEF.FACE;
-        if (F && t) for (const k of ['PID', 'MAN', 'SUMA']) for (const q of F[k] || []) if (q.tag === t && q.desc) return q.desc;
+        if (F && t)
+          for (const k of ['PID', 'MAN', 'SUMA']) for (const q of F[k] || []) if (q.tag === t && q.desc) return q.desc;
         const a = adesFind(sh, t);
         return a ? adesText(a.rec) : '';
       } catch (e) {
