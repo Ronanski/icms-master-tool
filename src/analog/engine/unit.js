@@ -1574,6 +1574,50 @@ function anCondStep(U, dt) {
     U['cdDp' + i] = r ? Math.round(1000 * K.dp0 * (q / K.q0) * (q / K.q0)) / 1000 : 0;
   });
 }
+/* 3.2.1 (IRENE: FEEDWATER plant model; docs/versions/v3.2.1/FEEDWATER_PLANT_MODEL.md). The boiler feed water pumps P-1115A / B
+   (BFWP) of flow diagram PD-016 / 003.
+   Sources:
+     BFWP         KSB HGC 5/1+6 (O&M L7 BFP, sheet 1 / 2 of the data sheet, curve Q43446D at 3580 rpm, 158.4 C, sp. gr. 0.9093):
+                  491.04 T/H at 1750 m, shut-off 2254.6 m, discharge 165.1 kg/cm2g at suction 6.0, 2946 kW (motor 3550 kW),
+                  minimum recirculation 151 m3/h (ARC valve); curve 2250 m at 100, 2140 at 300, 2010 at 400, 1620 at 600 m3/h; power
+                  1700 kW at 150, 2230 at 300, 2580 at 400, 3100 at 600 m3/h;
+     snapshot     03.png (150.5 MW): BFWP-A 289.4 A, PIFW1011 165.4 kg/cm2, DPIFW1115A 0.29 kg/cm2, feedwater 499.1 T/H;
+     DITL-23B     row 25 PT-FW1011 < 155 kg/cm2 = M.3210 BFWP OUTLET PRESSURE LOW (the standby BFWP in AUTO starts, DITL-22 / 23A);
+                  row 26 DPT-FW1115-A strainer DP > 0.8 / 0.9 kg/cm2, alarm > 0.6.
+   How it works: flow of a running pump = the feedwater to the drum (plant.js AN_CYC.ffw) / running pumps, at least the ARC minimum
+   flow 151 m3/h; outlet PT-FW1011 = suction (plantsw.js sucP) + head of the curve (the data sheet: 6.0 + 1750 m x 0.9093 / 10 =
+   165.1 kg/cm2g; kz 0); running = the DITL-23A machine (A) / #B (B);
+   current = 289.4 A x shaft power / its power at 150 MW (snapshot ratio); strainer DP = 0.29 x (flow / 549)^2. */
+const AN_FW = {
+  sg: 0.9093,
+  qQ: [0, 100, 200, 300, 400, 500, 540, 600, 700],
+  qH: [2254.6, 2250, 2215, 2140, 2010, 1840, 1750, 1620, 1380],
+  pQ: [0, 150, 300, 400, 540, 600],
+  pP: [1170, 1700, 2230, 2580, 2946, 3100],
+  qMin: 151,
+  kz: 0,
+  I0: 289.4,
+  q0: 549,
+  dp0: 0.29
+};
+function anFwStep(U, dt) {
+  const K = AN_FW,
+    dr = d => (typeof anDitlRun === 'function' ? anDitlRun(d) : null),
+    run = [['DITL-23A', 'M.3343'], ['DITL-23A #B', 'M.3344']].map(([d, m]) => (dr(d) != null ? (dr(d) === 1 ? 1 : 0) : srcBit([m]) > 0.5 ? 1 : 0)),
+    n = run[0] + run[1],
+    ffw = typeof AN_CYC !== 'undefined' && isFinite(AN_CYC.ffw) ? Math.max(0, AN_CYC.ffw) : 0,
+    q = n ? Math.max(K.qMin, ffw / K.sg / n) : 0,
+    ps = typeof window !== 'undefined' && window.WORLD && WORLD.sucP ? WORLD.sucP() : NaN,
+    Ps = isFinite(ps) ? ps : 0,
+    P0 = swInterp(K.pQ, K.pP, K.q0);
+  U.fwRun = run;
+  U.fwQp = Math.round(q);
+  U.fwPd = Math.max(0, Math.min(250, n ? Ps + (K.sg / 10) * swInterp(K.qQ, K.qH, q) - K.kz : Ps));
+  run.forEach((r, i) => {
+    U['fwI' + i] = r ? Math.round((10 * K.I0 * swInterp(K.pQ, K.pP, q)) / P0) / 10 : 0;
+    U['fwDp' + i] = r ? Math.round(1000 * K.dp0 * (q / K.q0) * (q / K.q0)) / 1000 : 0;
+  });
+}
 const AN_LO = { UA: 95.8, Co: 64.5, Qb: 1032, Wmax: 170, M: 25800, Tamb: 30 };
 function anLubeCoolStep(U, dt) {
   const K = AN_LO,
@@ -1915,6 +1959,8 @@ function anUnitStep(dt) {
   anLubeCoolStep(U, dt);
   /* 3.2.1: the condenser (pressure, hotwell temperature) and the condensate pumps (AN_CD) */
   anCondStep(U, dt);
+  /* 3.2.1: the boiler feed water pumps (AN_FW) */
+  anFwStep(U, dt);
   /* live test #54: motor bearing / winding temperature and vibration (AN_MT) */
   anMotorStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);

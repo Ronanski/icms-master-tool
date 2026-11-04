@@ -259,7 +259,7 @@ function anProcList(S) {
 /* 3.2.0: the fields of a plant model that a run writes (plant.js step, unit.js, hmi-op.js, plant-window.js): Reset takes them back. Not
    hop / Ka: the HMI snapshot anchor of a loop is made once at the first scan (ABC-019 TICHR1002: 39.PNG 541 C; made again after a run it
    was null, the reheat steam stayed at 185 C and the turbine roll held, CHECK full); Reset takes away the 150 MW one only (hop.dyn, sheets.js) */
-const AN_PROC_RUN = ['integ', 'y0', 'ld', 'uf', 'smul', 'sbase', 'tcap', 'fr', 'tsat', 'src', 'shold', 'scap', 'op', 'hopReq', 'fell', 'dn', 'cyc', 'mul', 'integLoss', 'integLoss0'];
+const AN_PROC_RUN = ['integ', 'y0', 'ld', 'uf', 'smul', 'sbase', 'tcap', 'fr', 'tsat', 'src', 'shold', 'scap', 'sflo', 'op', 'hopReq', 'fell', 'dn', 'cyc', 'mul', 'integLoss', 'integLoss0'];
 const AN_SERIES = { PICFG108: 1, PICFG108A: 1 };
 /* 3.2.0-beta.40: controller -> the hand station whose output is the real actuator of the process (ABC-020, see xman below) */
 const AN_XACT = { TICHR1002A: 'HICHR1002A' };
@@ -602,6 +602,7 @@ function anProcStep(S, dt) {
         /* 3.2.0-beta.14 (source.js): no medium = the bottom of the range (or the ambient); never above the pressure of the source */
         if (pr.smul != null) y = pr.smul * y + (1 - pr.smul) * (pr.sbase != null ? pr.sbase : lo);
         if (pr.scap != null) y = Math.min(y, Math.max(lo, pr.scap));
+        if (pr.sflo != null) y = Math.max(y, pr.sflo); /* 3.2.1: a source that always feeds (deaerator extraction) */
         /* not exactly the bottom: the SELECT CIRCUIT of the drawing reads 0 as a lost transmitter and holds its last value (user rule
            v1.20.34; ABC-030 aux steam stayed 10.1 kg/cm2 in a cold plant), as the unit model does for the first stage pressure */
         if (pr.src) y = Math.max(y, lo + 1e-3 * span);

@@ -155,7 +155,11 @@
     /* 3.2.1 (IRENE: CONDENSATE): DITL-61B row 19 PT-CD1117 (< 14.0 kg/cm2 = M.3217, the standby condensate pump starts) and DITL-61A
        rows 24 / 27 the strainer DP DPT-CD1001 / 1002 of pump A / B = the plant model's (unit.js AN_CD) */
     [/(?:^|[^A-Z])PT-CD1117\b/, 'cdPd'],
-    [/DPT-CD100([12])\b/, t => 'cdDp' + (+/DPT-CD100([12])/.exec(t)[1] - 1)]
+    [/DPT-CD100([12])\b/, t => 'cdDp' + (+/DPT-CD100([12])/.exec(t)[1] - 1)],
+    /* 3.2.1 (IRENE: FEEDWATER): DITL-23B row 25 PT-FW1011 (< 155 kg/cm2 = M.3210, the standby BFWP starts) and row 26 the strainer DP
+       DPT-FW1115-A / B (machine instance #B) = the plant model's (unit.js AN_FW) */
+    [/(?:^|[^A-Z])PT-FW1011\b/, 'fwPd'],
+    [/DPT-FW1115-?([AB])\b/, t => 'fwDp' + 'AB'.indexOf(/DPT-FW1115-?([AB])/.exec(t)[1])]
   ];
   /* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI): the tank and unit header pressure transmitters of the compressed air systems are analog
      rows of the logic (DITL-113 / 114 rows 1 ~ 3: auto start of the standby compressor < 5 kg/cm2; DITL-03G rows 9 ~ 11: MFT on

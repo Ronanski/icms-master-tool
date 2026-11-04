@@ -93,6 +93,7 @@ function srcState(t0) {
   s.Paux = Math.min(srcPv('ABC-030', 'PICAS1005'), Math.max(s.Pms, s.Pcrh));
   /* no. 4 extraction to the deaerator (ABC-056 PT-TS1022 0 ~ 5 kg/cm2): proportional to the turbine steam (ASSUMED 4.5 at MCR) */
   s.Pext = 4.5 * s.ext * Math.min(1, ms / m0);
+  s.Pex3 = 5.3 * s.ext * Math.min(1.05, ms / 474.1);
   AN_SRC.t = t;
   return (AN_SRC.st = s);
 }
@@ -133,7 +134,11 @@ const SRC_RULES = (() => {
   R.FICCD1120 = s => ({ mul: s.cep });
   R.LICCD1104 = s => ({ hold: !s.cep });
   R.LICCD1110A = s => ({ hold: !s.cep });
-  R.PICCD1104 = s => ({ cap: Math.max(s.Paux, s.Pext) });
+  /* 3.2.1 (IRENE: FEEDWATER): the deaerator gets the turbine extraction while the unit is on load (MV-TS1003 "T/B extraction 3 to
+     deaerator", 4.PNG 100 %): its pressure is not below the extraction pressure, whatever the pegging steam valve does (the pegging
+     PIC holds SV 1.5 only at low load). Extraction no. 3 pressure 5.30 kg/cm2 at 148.8 MW (4.PNG PITS1017), proportional to the turbine
+     steam (NO-SOURCE: linear); 5.png DEAERATOR PV 5.9 */
+  R.PICCD1104 = s => ({ cap: Math.max(s.Paux, s.Pext, s.Pex3), floor: s.Pex3 });
   /* loop 14, feedwater heaters: the drain level is the extraction steam that condenses (turbine on load) */
   for (const t of ['LICHD11051', 'LICHD11061', 'LICHD11011', 'LICHD11021', 'LICHD11031']) R[t] = s => ({ mul: s.ext });
   /* loop 15, turbine oil: the oil is heated by the bearings of the turning turbine */
@@ -145,7 +150,7 @@ function anSrcSet(b, pr, S) {
   const s = srcState(S.rt.t),
     f = s && SRC_RULES[(b.txt || [])[1]];
   if (!f) {
-    if (pr.src) pr.src = pr.smul = pr.sbase = pr.scap = pr.shold = undefined;
+    if (pr.src) pr.src = pr.smul = pr.sbase = pr.scap = pr.shold = pr.sflo = undefined;
     return;
   }
   const r = f(s) || {};
@@ -154,6 +159,7 @@ function anSrcSet(b, pr, S) {
   pr.sbase = r.base;
   pr.scap = r.cap != null ? (isFinite(r.cap) ? Math.max(0, r.cap) : 0) : undefined;
   pr.shold = !!r.hold;
+  pr.sflo = r.floor != null && isFinite(r.floor) ? Math.max(0, r.floor) : undefined;
 }
 /* Start ▾ > Field equipment: the machines without a DCS signal */
 function anField(k, on) {
