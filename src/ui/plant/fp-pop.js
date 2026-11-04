@@ -248,6 +248,56 @@
     bSt.type = bSp.type = 'button';
     const rCmd = row('DCS', bSt, bSp);
     F.bd.append(rCmd);
+    /* 3.2.1 FIELD · LOCAL PANEL (user 2026-11-04, mockup https://claude.ai/artifact/6gyBnteyRkiaLXvhAELyGj approved "Ok goods yn"): the
+       field operator at the motor's local control panel and its protection relay, on every motor whose drawing has the inputs (no force
+       on the logic page). Each button is an input of THIS motor's own drawing (the B / C copy for pump B / C):
+         LCP START / STOP = the "LOCAL START P.B." / "LOCAL STOP P.B." row (DITL-29A rows 23 / 26), a pulse; the drawing takes it only
+                            with the selector at LOCAL (AND NOT REMOTE), so the buttons are open only at LOCAL;
+         EMERGENCY STOP   = the "EMERGENCY STOP P.B." row, only where the drawing has one (DITL-21A row 18); else grey, "not on DITL-xx";
+         RELAY TRIP       = the ELECTRICAL TROUBLE symbol of the drawing (s.nl.usr, the one the logic page toggles): the motor trips in
+                            any mode and stays tripped until RESET, like a relay.
+       Nothing else is asked: no plant load, no running plant (user: "kht shutdown pre, pwede mg test nyan"); the drawing decides. */
+    const svcRows = re => {
+      const o = [];
+      if (!s) return o;
+      for (let r = 0; r < 64; r++) {
+        const v = call(() => DUI.rowInfo(s, r).svc, '');
+        if (v && re.test(v)) o.push(r);
+      }
+      return o;
+    };
+    const lsR = svcRows(/LOCAL\s+START\s+P\.?\s*B/i).pop(),
+      lpR = svcRows(/LOCAL\s+STOP\s+P\.?\s*B/i).pop(),
+      esR = svcRows(/EMERGENCY\s+STOP\s+P\.?\s*B/i).pop(),
+      etU = s && s.nl ? (s.nl.usr || []).find(x => /ELECTRIC/i.test(x.label || '')) : null;
+    const hasFld = lsR != null || lpR != null || esR != null || !!etU;
+    const fSh = E('div', 'fpo-sh fld', 'FIELD · LOCAL PANEL'),
+      bLs = E('button', 'fpo-cmd', 'START'),
+      bLp = E('button', 'fpo-cmd', 'STOP'),
+      bEs = E('button', 'fpo-cmd es', 'EMERGENCY STOP'),
+      bTr = E('button', 'fpo-cmd', 'TRIP'),
+      bRs = E('button', 'fpo-cmd', 'RESET');
+    for (const b of [bLs, bLp, bEs, bTr, bRs]) b.type = 'button';
+    const rLcp = row('LCP', bLs, bLp),
+      rEs = row('E-STOP', bEs, ...(esR == null ? [E('span', 'fpo-nd', 'not on ' + (nm || 'its drawing'))] : [])),
+      rRly = row('RELAY', bTr, bRs);
+    if (hasFld) F.bd.append(fSh, rLcp, rEs, rRly);
+    const pulse = (r, txt) => {
+      dk.fieldRow(nm, r, 1, txt);
+      setTimeout(() => {
+        const s2 = call(() => dk.dOf(M.ad), null) || s;
+        if (s2 && s2.sig) s2.sig[r + ':S'] = false;
+        if (window.WORLD && WORLD.live) WORLD.busy = true;
+      }, 800);
+    };
+    const etOn = () => !!(etU && s && s.usw && s.usw[etU.key]);
+    const etSet = on => {
+      if (!etU || !s) return;
+      s.usw = s.usw || {};
+      s.usw[etU.key] = !!on;
+      if (window.WORLD && WORLD.live) WORLD.busy = true;
+      call(() => window.lsEventAdd(nm, 'FIELD', 'Field operator: ' + (on ? 'TRIP ' : 'RESET ') + M.n + ' protection relay (ELECTRICAL TROUBLE)'));
+    };
     const why = E('div', 'fpo-why');
     F.bd.append(why);
     /* EXECUTE / CANCEL */
@@ -260,9 +310,13 @@
     ex.hidden = true;
     F.bd.append(ex);
     let pend = null;
-    const ask = (t, f) => {
+    /* a field action asks in an amber bar inside the FIELD block (the mockup); a DCS one in the blue bar below the reason line */
+    const ask = (t, f, fld) => {
       pend = f;
       exT.textContent = t;
+      ex.classList.toggle('fld', !!fld);
+      if (fld) F.bd.insertBefore(ex, why);
+      else why.after(ex);
       ex.hidden = false;
       exGo.focus();
     };
@@ -350,6 +404,11 @@
        (still RUNNING 3 s after the press, in AUTO) says so below */
     let spAt = 0;
     bSp.onclick = () => !bSp.disabled && ask('STOP ' + M.n + '?', () => ((spAt = Date.now()), dk.dmotor(M.ad, 0), call(() => window.lsEventAdd(nm, 'DCS', 'Operator: STOP ' + M.n + ' (faceplate)'))));
+    bLs.onclick = () => !bLs.disabled && ask('FIELD: START ' + M.n + ' at the local panel?', () => pulse(lsR, M.n + ' LOCAL START P.B. (local panel)'), 1);
+    bLp.onclick = () => !bLp.disabled && ask('FIELD: STOP ' + M.n + ' at the local panel?', () => pulse(lpR, M.n + ' LOCAL STOP P.B. (local panel)'), 1);
+    bEs.onclick = () => !bEs.disabled && ask('FIELD: EMERGENCY STOP ' + M.n + '?', () => pulse(esR, M.n + ' EMERGENCY STOP P.B. (field)'), 1);
+    bTr.onclick = () => !bTr.disabled && ask('FIELD: TRIP ' + M.n + ' at its protection relay?', () => etSet(true), 1);
+    bRs.onclick = () => !bRs.disabled && ask('FIELD: RESET the protection relay of ' + M.n + '?', () => etSet(false), 1);
     let k0 = '';
     function tick() {
       if (!me.isConnected) return closeEl(me);
@@ -382,14 +441,31 @@
       bSp.disabled = loc || st !== 'RUN';
       bSt.classList.toggle('lit-run', st === 'RUN');
       bSp.classList.toggle('lit-stop', st === 'STOP');
+      if (hasFld) {
+        const et = etOn();
+        bLs.disabled = lsR == null || !loc || st === 'RUN' || st === 'TRIP';
+        bLp.disabled = lpR == null || !loc || st !== 'RUN';
+        bLs.classList.toggle('lit-run', st === 'RUN');
+        bLp.classList.toggle('lit-stop', st === 'STOP' && loc);
+        bEs.disabled = esR == null || st !== 'RUN';
+        bTr.disabled = !etU || et;
+        bRs.disabled = !etU || !et;
+        bTr.classList.toggle('lit-run', et);
+        for (const el of [fSh, rLcp, rEs, rRly]) el.hidden = part === 'info';
+      }
       /* one line: why a button is closed */
       if (st !== 'RUN' || md.au !== true) spAt = 0;
       const spNo = spAt && st === 'RUN' && md.au === true && Date.now() - spAt > 3000;
+      const lcpRows = [lsR, lpR].filter(x => x != null).map(x => x + 1).join(' / ');
       why.textContent =
         spNo
           ? 'STOP not taken: the drawing accepts the DCS STOP in MAN only (' + (nm || 'its drawing') + ': STOP P.B. AND NOT AUTO). Press MAN, then STOP.'
+          : st === 'TRIP' && etOn()
+          ? 'TRIP: protection relay (ELECTRICAL TROUBLE on ' + (nm || 'its drawing') + '). RESET the relay in the field, then START again.'
           : st === 'TRIP'
           ? 'TRIP: find the cause and reset it in the field before starting again.'
+          : loc && lcpRows
+            ? 'Selector at LOCAL: AUTO, START and STOP from the DCS are blocked. The local panel starts and stops it.'
           : loc
             ? 'Selector at LOCAL: AUTO, START and STOP from the DCS are blocked. Set the field selector to REMOTE first.'
             : sby
@@ -400,6 +476,8 @@
               ? 'START blocked: ' + miss.length + ' permissive missing (0 below).'
               : !run && st !== 'RUN'
                 ? 'Simulation PAUSED: press ▶ RUN before START (nothing moves while paused).'
+                : md.rem === true && lcpRows && st !== 'TRIP'
+                ? 'Selector at REMOTE: the local panel START and STOP are blocked (' + (nm || 'its drawing') + ' rows ' + lcpRows + ' work only in LOCAL). Use DCS START / STOP.'
                 : '';
       why.hidden = part === 'info' || !why.textContent;
       /* #59: the Y / N of the info faceplate (and of the page's button: M.onYN) = every logic permissive and SOP line-up item complete */
