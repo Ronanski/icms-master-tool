@@ -89,7 +89,14 @@ Code: `src/analog/engine/unit.js` `AN_HD` / `anHdStep`. Test: `tests/regress/hea
   - Tumataas ang level, at nag-MANUAL din ang alternate.
   - Binuksan ng operator ang alternate sa 60 %, kaya bumalik ang level (max 24, end -44 mm).
 
+## Dagdag (3.2.1, pagkatapos ng beta.6): LPH H.H. → DITL-97 at TCS
+
+- Walang binago sa code: gumagana na ang kadena. Sarado ang dalawang drain ng No.3 LPH → level H.H. 140 mm (ABC-039 M.0233) pagkatapos ng 258 s.
+- DITL-97 row 19 (AUTO) ay nagsasara ng extraction No.4 MOV (100 → 0 %), kaya huminto ang level sa 145 mm (walang extraction steam).
+- Ang DITL-115 row 4 "NO.3 LPH LEVEL H.H." (M.0233, papunta sa TCS, water induction) = 1.
+- Pareho ang M.0213 (No.2 LPH) papunta sa DITL-98 at DITL-115 row 5 (iisang address, CLAUDE.md 1).
+- Test: `heater_levels.js` (huling check).
+
 ## Hindi pa ginawa
 - Temperatura ng drain ng LPH (TT-HD1102 / 1103), at FT-HD1102 / 1103 sa ABC kung mayroon.
-- Epekto ng level H.H. ng LPH sa DITL-97 / 98 at sa TCS (DITL-115, water induction).
 - Hindi pa live-tested sa PC ng user.

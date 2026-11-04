@@ -29,9 +29,10 @@ ina-update sa bawat bagong system.
 
 18. **Heater drains → level → extraction MOV** (`HEATER_LEVELS_PLANT_MODEL.md`, test `heater_levels.js`). Ang extraction ng AN_HP at ang design ng LPH → shell level (LT-HD110x, ABC-035 ~ 039) → split-range drain valves (LN38 / LN39) → cascade sa susunod na heater / deaerator / condenser. Level H.H. → ABC-036 M.0203 → DITL-94 sinasara ang MV-TS1001 → walang steam sa No.2 HPH → bumababa ang economizer inlet. Level switch LS-HD110x → DITL-41.
 19. **Instrument air → pneumatic valves** (`AIR_VALVES_PLANT_MODEL.md`, test `air_valves.js`). PT-IA1706 < 3.5 → 27 modulating valve na may airlock ay hawak ang puwesto (deaerator, hotwell, condensate, feedwater, spray, heater drains, lube oil, diesel oil, blow-off, aux steam) → ang proseso ay sumusunod sa nakahawak na valve, hindi sa MV. Ang on/off XV ay papunta sa spring position ayon sa vendor sheet → limit switch ng DITL; XV-MU1109 bukas → napupuno ang expansion tank.
+20. **Hotwell → LP heaters → deaerator inlet temperature** (`LP_HEATERS_PLANT_MODEL.md`, test `lp_heaters.js`). Hotwell (AN_CD) + 1.35 C → No.1 / 2 / 3 LPH: saturation ng shell (extraction × main steam × MOV DITL-97 / 98) − TTD → TT-CD1101 ~ 1103-2 / TT-CD1122; drains TT-HD1102 / 1103 = inlet + DCA. LPH3 H.H. → DITL-97 sarado → bumababa ang deaerator inlet.
 
 ## Wala pa (plano, kasama sa susunod na system)
 1. **Closed cooling temperature → temperatura ng bearing / winding ng motor.** Fixed pa ang AN_MT. (Ang turbine oil ay tapos na, item 9.)
-2. **Instrument air → pneumatic valves:** tapos na ang control valves at XV (item 19). Kulang: ang mga damper (`K1AU3-E2-0-142`, sa PC).
+2. **Instrument air → pneumatic valves:** tapos na ang control valves at XV (item 19). Ang mga damper ng `K1AU3-E2-0-142` ay electric (AUMA), walang epekto ang hangin. Kulang: IDF discharge damper PCD-FG1056-1 at biasing dampers TCV-FG1116 / 1117 (pneumatic, may buffer tank PT-IA1064-A / B, walang sheet; boiler side).
 3. **HP heaters:** tapos na ang temperatura (item 15) at ang level (item 18). Kulang: epekto sa firing.
 4. **Chain test hanggang alarm / trip:** may chain test na hanggang bearing (`lube_oil.js`). Kulang pa ang alarm at trip ng TCS sa bearing temperatura, at ang mga motor (item 1).

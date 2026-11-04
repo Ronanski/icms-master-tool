@@ -54,5 +54,10 @@ IRENE : PLANT MODEL, 2026-11-04 PHT. Code: `src/analog/engine/unit.js` (`AN_AV`,
 ## Hindi pa nagawa
 
 - Bump (biglang galaw) kapag bumalik ang hangin, at ang pagbaba ng presyon sa bawat valve habang ginagamit.
-- Ang mga damper (ABC air at flue gas dampers): may sariling drawing `K1AU3-E2-0-142 Drawing of control damper` sa PC, hindi pa nababasa.
 - Live test: hindi pa.
+
+## Mga damper (binasa 2026-11-04 8:20 PM PHT)
+
+- **K1AU3-E2-0-142 RA "Drawing of control damper"** (sa PC, 23 pahina, scanned): Value Valves XZ-FEA738, 12" butterfly, 44 pcs, **AUMA SA07.6 / AC01.2 ELECTRIC actuator** (460 V 3 ph, 4-20 mA control at feedback, limit at torque switch). Walang tag sa drawing; ang 44 ay tugma sa 2 unit × 22 secondary air wall dampers MCV-FA1005 ~ (instrument list, sheet SECONDARY AIR FAN, PD-053, "CONTROL DAMPER MOV"). **Hindi gumagamit ng hangin ang actuator**, kaya tama na sinusundan nila ang command kapag nawala ang instrument air: (b) tama, may ebidensya.
+- Ganoon din ang iba pang "MOV" na damper sa instrument list: MCV-FA1053-1 (PAF inlet), MCV-FA1054-1 (SAF inlet), MCV-FA1043-A ~ D (burner hot SA inlet): electric.
+- **Pneumatic na damper:** PCD-FG1056-1 (IDF discharge, "PNEUMATIC CONTROL DAMPER", package IDF) at ang flue gas biasing dampers TCV-FG1116-A ~ D / TCV-FG1117-A ~ D (may sariling air buffer tank A / B, PT-IA1064-A / B, PD-023). Walang sheet sa K1AU3-E2-0-123, -140 o -142, at walang laki ng buffer tank: (c) hindi mabasa ang drawing, kaya sinusundan pa rin nila ang command. Boiler side ito (SEULGI).
