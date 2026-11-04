@@ -1,5 +1,48 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.26 — TURBINE START, ESP AND ASH, SOOTBLOWERS, mockup pages 13 ~ 15 in the app (2026-11-04, JISOO : HMI MOCKUP)
+
+**Work done.** `docs/hmi/mockups/temp/13-turbine-start.html` → Plant view **TURBINE START** (`MK13`), `tools/hmi-mock/p13.py` →
+`src/ui/plant/hmi-mock-ts.js`.
+- Bagong runtime hooks (`hmi-mock.js`): `data-uy="KEY|n|on|off"` = estado ng plant model (on pula kapag value >= n), `data-uyr` = ang
+  square nito; ang `ux:KEY*100` = fraction na ipinapakita bilang %; ang `tcs.` path = AN.tcs() (TCS panel state).
+- Values: CV = U.gv × 100, ICV = U.tb.icv × 100, speed U.rpm, generator MW GCP-AI1001 / 1002 (I/O list AI0419 / AI0774), condenser
+  U.cdP, bearing / lube / control / trip / EOP oil pressure at lube oil after cooler = AN.unit lo* (parehong numero ng page 04); main / control
+  / emergency oil pumps running = loMop / loCop / loEopR; 52G1 CLOSED / OPEN = DITL-03E input row 3 M.3220 52G1 OPEN (NOT).
+- ATS steps 1 ~ 8 Y / N = AN.tcs().step (huling tapos na step), exhaust hood = AN.tcs().Tx, shell expansion = AN.tcs().sexp.
+- NO-SOURCE ('-----'): MSV / RSV positions, PT-MS1006 / TT-MS1007 sa 150 MW, DS, 52L1, field breaker at generator electrical values,
+  vibration, differential expansion, rotor position, thrust bearing, stator coil, generator cooling air.
+- Finding (para kay IRENE): ang AN.tcs() ay null sa page at walang `tc` ang AN.unit (ang engine ay nasa worker), kaya '-----' ang ATS
+  steps, exhaust hood at shell expansion; kailangang ipasa ng engine ang TCS state sa page.
+
+**Checked (headless cloud).** 150 MW + RUN: CV 99.5 %, ICV 100.0 %, 3600 rpm, generator 151.3 / 151.3 MW, 52G1 CLOSED, condenser
+0.063 kg/cm2 abs, bearing oil 3.3, lube 6.1, control / trip oil 162.6, MOP A running, COP A running / B stopped, EOP stopped; walang
+JS error.
+
+**Page 14 ESP AND ASH** (`MK14`, `tools/hmi-mock/p14.py` → `src/ui/plant/hmi-mock-ea.js`).
+- Screw ash coolers A ~ D = DITL-21A / #B / #C / #D (motor faceplate; RUNNING / STOPPED = input row 1 FORWARD RUNNING); chain
+  conveyor L-1090, bucket elevator L-1091, screw conveyor L-1092, vibrating screens S-1092 A / B, bag filter fan F-1091 = DITL-BA59
+  RUNNING inputs (rows 8 ~ 14); DPICFG108 (furnace DP) at SICL1060A (screw speed) faceplates; DPT-FG1081 / 1082, PT / TT-CW1156,
+  TT-BH1060-x1 / x2, TT-CW1060-x1 / x2, LT-BH1750 (I/O list).
+- NO-SOURCE: ang buong ESP (walang snapshot at signal), fly ash silo, cooler inlet valves XV-BH1060A ~ D, cooler currents, silo outlet
+  XV-BH1756; ang PT / TT-CW1156, TT-BH1060, TT-CW1060 at LT-BH1750 ay '-----' pa (walang sheet na bumabasa at walang plant model).
+- Checked: bed DP 1426 / 1432 mmH2O, DPICFG108 PV 1429 / SV 1475 MANUAL, coolers STOPPED, chain / bucket / screw conveyor at fan
+  RUNNING, screens STOPPED; faceplates ng cooler A at DPICFG108 bumubukas; walang JS error.
+
+**Page 15 SOOTBLOWERS** (`MK15`, `tools/hmi-mock/p15.py` → `src/ui/plant/hmi-mock-sb.js`).
+- Bawat blower label N-1011 ~ 1038 = output "N-10xx SOOTBLOWER OPERATING" ng DITL-80A ~ 80E (pula habang bumubuga); N-1040 / 1042 =
+  DITL-80F AIR PREHEATER SOOTBLOWER OPERATING. Blowing permissive = DITL-80A output 21; steam supply valve / drain temperatures >
+  220 °C / all retracted / remote = DITL-80A inputs 2, 24, 23, 14, 15, 13; MV-SB1001 = DITL-80S FULL CLOSED; alarms = DITL-80S OPEN /
+  CLOSE OVER TIME, DITL-80Q WARMING UP FAILURE; XV-SB1054 / XV-SB1059 = DITL-80R SOV (L) / (R) OPENED; PICSB1052 (ang tag ng logic;
+  PIC-SB1053 ang nakasulat sa mockup) faceplate.
+- NO-SOURCE: ilang blower ang bumubuga, forward / reverse at warm-up timers, MV-SB1001 %, IT-SB01, PT-SB1040 / 1042, TT-SB1056 / 1057.
+- Finding: "All blowers on retract position" (M.4008) = N sa 150 MW, pero lahat retracted sa snapshot 18 (walang retract limit switch
+  sa model).
+- Checked: PT-SB1052 0.4 kg/cm2, PICSB1052 0.2 % MANUAL, MV-SB1001 CLOSED, lahat ng blower hindi bumubuga, remote Y; faceplate ng
+  PICSB1052 bumubukas; walang JS error.
+
+**Not checked.** Live test, ATS steps (walang data sa page), turbine trip, phone size.
+
 ## 3.2.1-beta.25 — COAL, LIMESTONE AND SAND, mockup page 12 in the app (2026-11-04, JISOO : HMI MOCKUP)
 
 **Work done.** `docs/hmi/mockups/temp/12-coal-limestone-sand.html` → Plant view **COAL, LIMESTONE AND SAND** (`MK12`),
