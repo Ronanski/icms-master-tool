@@ -19885,7 +19885,7 @@ function anProcList(S) {
 /* 3.2.0: the fields of a plant model that a run writes (plant.js step, unit.js, hmi-op.js, plant-window.js): Reset takes them back. Not
    hop / Ka: the HMI snapshot anchor of a loop is made once at the first scan (ABC-019 TICHR1002: 39.PNG 541 C; made again after a run it
    was null, the reheat steam stayed at 185 C and the turbine roll held, CHECK full); Reset takes away the 150 MW one only (hop.dyn, sheets.js) */
-const AN_PROC_RUN = ['integ', 'y0', 'ld', 'uf', 'smul', 'sbase', 'tcap', 'fr', 'tsat', 'src', 'shold', 'scap', 'op', 'hopReq', 'fell', 'dn', 'cyc', 'mul', 'integLoss', 'integLoss0'];
+const AN_PROC_RUN = ['integ', 'y0', 'ld', 'uf', 'smul', 'sbase', 'tcap', 'fr', 'tsat', 'src', 'shold', 'scap', 'sflo', 'op', 'hopReq', 'fell', 'dn', 'cyc', 'mul', 'integLoss', 'integLoss0'];
 const AN_SERIES = { PICFG108: 1, PICFG108A: 1 };
 /* 3.2.0-beta.40: controller -> the hand station whose output is the real actuator of the process (ABC-020, see xman below) */
 const AN_XACT = { TICHR1002A: 'HICHR1002A' };
@@ -20228,6 +20228,7 @@ function anProcStep(S, dt) {
         /* 3.2.0-beta.14 (source.js): no medium = the bottom of the range (or the ambient); never above the pressure of the source */
         if (pr.smul != null) y = pr.smul * y + (1 - pr.smul) * (pr.sbase != null ? pr.sbase : lo);
         if (pr.scap != null) y = Math.min(y, Math.max(lo, pr.scap));
+        if (pr.sflo != null) y = Math.max(y, pr.sflo); /* 3.2.1: a source that always feeds (deaerator extraction) */
         /* not exactly the bottom: the SELECT CIRCUIT of the drawing reads 0 as a lost transmitter and holds its last value (user rule
            v1.20.34; ABC-030 aux steam stayed 10.1 kg/cm2 in a cold plant), as the unit model does for the first stage pressure */
         if (pr.src) y = Math.max(y, lo + 1e-3 * span);
@@ -23000,6 +23001,50 @@ function anCondStep(U, dt) {
     U['cdDp' + i] = r ? Math.round(1000 * K.dp0 * (q / K.q0) * (q / K.q0)) / 1000 : 0;
   });
 }
+/* 3.2.1 (IRENE: FEEDWATER plant model; docs/versions/v3.2.1/FEEDWATER_PLANT_MODEL.md). The boiler feed water pumps P-1115A / B
+   (BFWP) of flow diagram PD-016 / 003.
+   Sources:
+     BFWP         KSB HGC 5/1+6 (O&M L7 BFP, sheet 1 / 2 of the data sheet, curve Q43446D at 3580 rpm, 158.4 C, sp. gr. 0.9093):
+                  491.04 T/H at 1750 m, shut-off 2254.6 m, discharge 165.1 kg/cm2g at suction 6.0, 2946 kW (motor 3550 kW),
+                  minimum recirculation 151 m3/h (ARC valve); curve 2250 m at 100, 2140 at 300, 2010 at 400, 1620 at 600 m3/h; power
+                  1700 kW at 150, 2230 at 300, 2580 at 400, 3100 at 600 m3/h;
+     snapshot     03.png (150.5 MW): BFWP-A 289.4 A, PIFW1011 165.4 kg/cm2, DPIFW1115A 0.29 kg/cm2, feedwater 499.1 T/H;
+     DITL-23B     row 25 PT-FW1011 < 155 kg/cm2 = M.3210 BFWP OUTLET PRESSURE LOW (the standby BFWP in AUTO starts, DITL-22 / 23A);
+                  row 26 DPT-FW1115-A strainer DP > 0.8 / 0.9 kg/cm2, alarm > 0.6.
+   How it works: flow of a running pump = the feedwater to the drum (plant.js AN_CYC.ffw) / running pumps, at least the ARC minimum
+   flow 151 m3/h; outlet PT-FW1011 = suction (plantsw.js sucP) + head of the curve (the data sheet: 6.0 + 1750 m x 0.9093 / 10 =
+   165.1 kg/cm2g; kz 0); running = the DITL-23A machine (A) / #B (B);
+   current = 289.4 A x shaft power / its power at 150 MW (snapshot ratio); strainer DP = 0.29 x (flow / 549)^2. */
+const AN_FW = {
+  sg: 0.9093,
+  qQ: [0, 100, 200, 300, 400, 500, 540, 600, 700],
+  qH: [2254.6, 2250, 2215, 2140, 2010, 1840, 1750, 1620, 1380],
+  pQ: [0, 150, 300, 400, 540, 600],
+  pP: [1170, 1700, 2230, 2580, 2946, 3100],
+  qMin: 151,
+  kz: 0,
+  I0: 289.4,
+  q0: 549,
+  dp0: 0.29
+};
+function anFwStep(U, dt) {
+  const K = AN_FW,
+    dr = d => (typeof anDitlRun === 'function' ? anDitlRun(d) : null),
+    run = [['DITL-23A', 'M.3343'], ['DITL-23A #B', 'M.3344']].map(([d, m]) => (dr(d) != null ? (dr(d) === 1 ? 1 : 0) : srcBit([m]) > 0.5 ? 1 : 0)),
+    n = run[0] + run[1],
+    ffw = typeof AN_CYC !== 'undefined' && isFinite(AN_CYC.ffw) ? Math.max(0, AN_CYC.ffw) : 0,
+    q = n ? Math.max(K.qMin, ffw / K.sg / n) : 0,
+    ps = typeof window !== 'undefined' && window.WORLD && WORLD.sucP ? WORLD.sucP() : NaN,
+    Ps = isFinite(ps) ? ps : 0,
+    P0 = swInterp(K.pQ, K.pP, K.q0);
+  U.fwRun = run;
+  U.fwQp = Math.round(q);
+  U.fwPd = Math.max(0, Math.min(250, n ? Ps + (K.sg / 10) * swInterp(K.qQ, K.qH, q) - K.kz : Ps));
+  run.forEach((r, i) => {
+    U['fwI' + i] = r ? Math.round((10 * K.I0 * swInterp(K.pQ, K.pP, q)) / P0) / 10 : 0;
+    U['fwDp' + i] = r ? Math.round(1000 * K.dp0 * (q / K.q0) * (q / K.q0)) / 1000 : 0;
+  });
+}
 const AN_LO = { UA: 95.8, Co: 64.5, Qb: 1032, Wmax: 170, M: 25800, Tamb: 30 };
 function anLubeCoolStep(U, dt) {
   const K = AN_LO,
@@ -23341,6 +23386,8 @@ function anUnitStep(dt) {
   anLubeCoolStep(U, dt);
   /* 3.2.1: the condenser (pressure, hotwell temperature) and the condensate pumps (AN_CD) */
   anCondStep(U, dt);
+  /* 3.2.1: the boiler feed water pumps (AN_FW) */
+  anFwStep(U, dt);
   /* live test #54: motor bearing / winding temperature and vibration (AN_MT) */
   anMotorStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
@@ -24908,6 +24955,7 @@ function srcState(t0) {
   s.Paux = Math.min(srcPv('ABC-030', 'PICAS1005'), Math.max(s.Pms, s.Pcrh));
   /* no. 4 extraction to the deaerator (ABC-056 PT-TS1022 0 ~ 5 kg/cm2): proportional to the turbine steam (ASSUMED 4.5 at MCR) */
   s.Pext = 4.5 * s.ext * Math.min(1, ms / m0);
+  s.Pex3 = 5.3 * s.ext * Math.min(1.05, ms / 474.1);
   AN_SRC.t = t;
   return (AN_SRC.st = s);
 }
@@ -24948,7 +24996,11 @@ const SRC_RULES = (() => {
   R.FICCD1120 = s => ({ mul: s.cep });
   R.LICCD1104 = s => ({ hold: !s.cep });
   R.LICCD1110A = s => ({ hold: !s.cep });
-  R.PICCD1104 = s => ({ cap: Math.max(s.Paux, s.Pext) });
+  /* 3.2.1 (IRENE: FEEDWATER): the deaerator gets the turbine extraction while the unit is on load (MV-TS1003 "T/B extraction 3 to
+     deaerator", 4.PNG 100 %): its pressure is not below the extraction pressure, whatever the pegging steam valve does (the pegging
+     PIC holds SV 1.5 only at low load). Extraction no. 3 pressure 5.30 kg/cm2 at 148.8 MW (4.PNG PITS1017), proportional to the turbine
+     steam (NO-SOURCE: linear); 5.png DEAERATOR PV 5.9 */
+  R.PICCD1104 = s => ({ cap: Math.max(s.Paux, s.Pext, s.Pex3), floor: s.Pex3 });
   /* loop 14, feedwater heaters: the drain level is the extraction steam that condenses (turbine on load) */
   for (const t of ['LICHD11051', 'LICHD11061', 'LICHD11011', 'LICHD11021', 'LICHD11031']) R[t] = s => ({ mul: s.ext });
   /* loop 15, turbine oil: the oil is heated by the bearings of the turning turbine */
@@ -24960,7 +25012,7 @@ function anSrcSet(b, pr, S) {
   const s = srcState(S.rt.t),
     f = s && SRC_RULES[(b.txt || [])[1]];
   if (!f) {
-    if (pr.src) pr.src = pr.smul = pr.sbase = pr.scap = pr.shold = undefined;
+    if (pr.src) pr.src = pr.smul = pr.sbase = pr.scap = pr.shold = pr.sflo = undefined;
     return;
   }
   const r = f(s) || {};
@@ -24969,6 +25021,7 @@ function anSrcSet(b, pr, S) {
   pr.sbase = r.base;
   pr.scap = r.cap != null ? (isFinite(r.cap) ? Math.max(0, r.cap) : 0) : undefined;
   pr.shold = !!r.hold;
+  pr.sflo = r.floor != null && isFinite(r.floor) ? Math.max(0, r.floor) : undefined;
 }
 /* Start ▾ > Field equipment: the machines without a DCS signal */
 function anField(k, on) {
@@ -32923,7 +32976,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.3';
-      c3.textContent += ' · build 2f86b1c'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build f434b62'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -50218,7 +50271,11 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     /* 3.2.1 (IRENE: CONDENSATE): DITL-61B row 19 PT-CD1117 (< 14.0 kg/cm2 = M.3217, the standby condensate pump starts) and DITL-61A
        rows 24 / 27 the strainer DP DPT-CD1001 / 1002 of pump A / B = the plant model's (unit.js AN_CD) */
     [/(?:^|[^A-Z])PT-CD1117\b/, 'cdPd'],
-    [/DPT-CD100([12])\b/, t => 'cdDp' + (+/DPT-CD100([12])/.exec(t)[1] - 1)]
+    [/DPT-CD100([12])\b/, t => 'cdDp' + (+/DPT-CD100([12])/.exec(t)[1] - 1)],
+    /* 3.2.1 (IRENE: FEEDWATER): DITL-23B row 25 PT-FW1011 (< 155 kg/cm2 = M.3210, the standby BFWP starts) and row 26 the strainer DP
+       DPT-FW1115-A / B (machine instance #B) = the plant model's (unit.js AN_FW) */
+    [/(?:^|[^A-Z])PT-FW1011\b/, 'fwPd'],
+    [/DPT-FW1115-?([AB])\b/, t => 'fwDp' + 'AB'.indexOf(/DPT-FW1115-?([AB])/.exec(t)[1])]
   ];
   /* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI): the tank and unit header pressure transmitters of the compressed air systems are analog
      rows of the logic (DITL-113 / 114 rows 1 ~ 3: auto start of the standby compressor < 5 kg/cm2; DITL-03G rows 9 ~ 11: MFT on
@@ -66395,7 +66452,7 @@ function anProcList(S) {
 /* 3.2.0: the fields of a plant model that a run writes (plant.js step, unit.js, hmi-op.js, plant-window.js): Reset takes them back. Not
    hop / Ka: the HMI snapshot anchor of a loop is made once at the first scan (ABC-019 TICHR1002: 39.PNG 541 C; made again after a run it
    was null, the reheat steam stayed at 185 C and the turbine roll held, CHECK full); Reset takes away the 150 MW one only (hop.dyn, sheets.js) */
-const AN_PROC_RUN = ['integ', 'y0', 'ld', 'uf', 'smul', 'sbase', 'tcap', 'fr', 'tsat', 'src', 'shold', 'scap', 'op', 'hopReq', 'fell', 'dn', 'cyc', 'mul', 'integLoss', 'integLoss0'];
+const AN_PROC_RUN = ['integ', 'y0', 'ld', 'uf', 'smul', 'sbase', 'tcap', 'fr', 'tsat', 'src', 'shold', 'scap', 'sflo', 'op', 'hopReq', 'fell', 'dn', 'cyc', 'mul', 'integLoss', 'integLoss0'];
 const AN_SERIES = { PICFG108: 1, PICFG108A: 1 };
 /* 3.2.0-beta.40: controller -> the hand station whose output is the real actuator of the process (ABC-020, see xman below) */
 const AN_XACT = { TICHR1002A: 'HICHR1002A' };
@@ -66738,6 +66795,7 @@ function anProcStep(S, dt) {
         /* 3.2.0-beta.14 (source.js): no medium = the bottom of the range (or the ambient); never above the pressure of the source */
         if (pr.smul != null) y = pr.smul * y + (1 - pr.smul) * (pr.sbase != null ? pr.sbase : lo);
         if (pr.scap != null) y = Math.min(y, Math.max(lo, pr.scap));
+        if (pr.sflo != null) y = Math.max(y, pr.sflo); /* 3.2.1: a source that always feeds (deaerator extraction) */
         /* not exactly the bottom: the SELECT CIRCUIT of the drawing reads 0 as a lost transmitter and holds its last value (user rule
            v1.20.34; ABC-030 aux steam stayed 10.1 kg/cm2 in a cold plant), as the unit model does for the first stage pressure */
         if (pr.src) y = Math.max(y, lo + 1e-3 * span);
@@ -69514,6 +69572,50 @@ function anCondStep(U, dt) {
     U['cdDp' + i] = r ? Math.round(1000 * K.dp0 * (q / K.q0) * (q / K.q0)) / 1000 : 0;
   });
 }
+/* 3.2.1 (IRENE: FEEDWATER plant model; docs/versions/v3.2.1/FEEDWATER_PLANT_MODEL.md). The boiler feed water pumps P-1115A / B
+   (BFWP) of flow diagram PD-016 / 003.
+   Sources:
+     BFWP         KSB HGC 5/1+6 (O&M L7 BFP, sheet 1 / 2 of the data sheet, curve Q43446D at 3580 rpm, 158.4 C, sp. gr. 0.9093):
+                  491.04 T/H at 1750 m, shut-off 2254.6 m, discharge 165.1 kg/cm2g at suction 6.0, 2946 kW (motor 3550 kW),
+                  minimum recirculation 151 m3/h (ARC valve); curve 2250 m at 100, 2140 at 300, 2010 at 400, 1620 at 600 m3/h; power
+                  1700 kW at 150, 2230 at 300, 2580 at 400, 3100 at 600 m3/h;
+     snapshot     03.png (150.5 MW): BFWP-A 289.4 A, PIFW1011 165.4 kg/cm2, DPIFW1115A 0.29 kg/cm2, feedwater 499.1 T/H;
+     DITL-23B     row 25 PT-FW1011 < 155 kg/cm2 = M.3210 BFWP OUTLET PRESSURE LOW (the standby BFWP in AUTO starts, DITL-22 / 23A);
+                  row 26 DPT-FW1115-A strainer DP > 0.8 / 0.9 kg/cm2, alarm > 0.6.
+   How it works: flow of a running pump = the feedwater to the drum (plant.js AN_CYC.ffw) / running pumps, at least the ARC minimum
+   flow 151 m3/h; outlet PT-FW1011 = suction (plantsw.js sucP) + head of the curve (the data sheet: 6.0 + 1750 m x 0.9093 / 10 =
+   165.1 kg/cm2g; kz 0); running = the DITL-23A machine (A) / #B (B);
+   current = 289.4 A x shaft power / its power at 150 MW (snapshot ratio); strainer DP = 0.29 x (flow / 549)^2. */
+const AN_FW = {
+  sg: 0.9093,
+  qQ: [0, 100, 200, 300, 400, 500, 540, 600, 700],
+  qH: [2254.6, 2250, 2215, 2140, 2010, 1840, 1750, 1620, 1380],
+  pQ: [0, 150, 300, 400, 540, 600],
+  pP: [1170, 1700, 2230, 2580, 2946, 3100],
+  qMin: 151,
+  kz: 0,
+  I0: 289.4,
+  q0: 549,
+  dp0: 0.29
+};
+function anFwStep(U, dt) {
+  const K = AN_FW,
+    dr = d => (typeof anDitlRun === 'function' ? anDitlRun(d) : null),
+    run = [['DITL-23A', 'M.3343'], ['DITL-23A #B', 'M.3344']].map(([d, m]) => (dr(d) != null ? (dr(d) === 1 ? 1 : 0) : srcBit([m]) > 0.5 ? 1 : 0)),
+    n = run[0] + run[1],
+    ffw = typeof AN_CYC !== 'undefined' && isFinite(AN_CYC.ffw) ? Math.max(0, AN_CYC.ffw) : 0,
+    q = n ? Math.max(K.qMin, ffw / K.sg / n) : 0,
+    ps = typeof window !== 'undefined' && window.WORLD && WORLD.sucP ? WORLD.sucP() : NaN,
+    Ps = isFinite(ps) ? ps : 0,
+    P0 = swInterp(K.pQ, K.pP, K.q0);
+  U.fwRun = run;
+  U.fwQp = Math.round(q);
+  U.fwPd = Math.max(0, Math.min(250, n ? Ps + (K.sg / 10) * swInterp(K.qQ, K.qH, q) - K.kz : Ps));
+  run.forEach((r, i) => {
+    U['fwI' + i] = r ? Math.round((10 * K.I0 * swInterp(K.pQ, K.pP, q)) / P0) / 10 : 0;
+    U['fwDp' + i] = r ? Math.round(1000 * K.dp0 * (q / K.q0) * (q / K.q0)) / 1000 : 0;
+  });
+}
 const AN_LO = { UA: 95.8, Co: 64.5, Qb: 1032, Wmax: 170, M: 25800, Tamb: 30 };
 function anLubeCoolStep(U, dt) {
   const K = AN_LO,
@@ -69855,6 +69957,8 @@ function anUnitStep(dt) {
   anLubeCoolStep(U, dt);
   /* 3.2.1: the condenser (pressure, hotwell temperature) and the condensate pumps (AN_CD) */
   anCondStep(U, dt);
+  /* 3.2.1: the boiler feed water pumps (AN_FW) */
+  anFwStep(U, dt);
   /* live test #54: motor bearing / winding temperature and vibration (AN_MT) */
   anMotorStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
@@ -71426,6 +71530,7 @@ function srcState(t0) {
   s.Paux = Math.min(srcPv('ABC-030', 'PICAS1005'), Math.max(s.Pms, s.Pcrh));
   /* no. 4 extraction to the deaerator (ABC-056 PT-TS1022 0 ~ 5 kg/cm2): proportional to the turbine steam (ASSUMED 4.5 at MCR) */
   s.Pext = 4.5 * s.ext * Math.min(1, ms / m0);
+  s.Pex3 = 5.3 * s.ext * Math.min(1.05, ms / 474.1);
   AN_SRC.t = t;
   return (AN_SRC.st = s);
 }
@@ -71466,7 +71571,11 @@ const SRC_RULES = (() => {
   R.FICCD1120 = s => ({ mul: s.cep });
   R.LICCD1104 = s => ({ hold: !s.cep });
   R.LICCD1110A = s => ({ hold: !s.cep });
-  R.PICCD1104 = s => ({ cap: Math.max(s.Paux, s.Pext) });
+  /* 3.2.1 (IRENE: FEEDWATER): the deaerator gets the turbine extraction while the unit is on load (MV-TS1003 "T/B extraction 3 to
+     deaerator", 4.PNG 100 %): its pressure is not below the extraction pressure, whatever the pegging steam valve does (the pegging
+     PIC holds SV 1.5 only at low load). Extraction no. 3 pressure 5.30 kg/cm2 at 148.8 MW (4.PNG PITS1017), proportional to the turbine
+     steam (NO-SOURCE: linear); 5.png DEAERATOR PV 5.9 */
+  R.PICCD1104 = s => ({ cap: Math.max(s.Paux, s.Pext, s.Pex3), floor: s.Pex3 });
   /* loop 14, feedwater heaters: the drain level is the extraction steam that condenses (turbine on load) */
   for (const t of ['LICHD11051', 'LICHD11061', 'LICHD11011', 'LICHD11021', 'LICHD11031']) R[t] = s => ({ mul: s.ext });
   /* loop 15, turbine oil: the oil is heated by the bearings of the turning turbine */
@@ -71478,7 +71587,7 @@ function anSrcSet(b, pr, S) {
   const s = srcState(S.rt.t),
     f = s && SRC_RULES[(b.txt || [])[1]];
   if (!f) {
-    if (pr.src) pr.src = pr.smul = pr.sbase = pr.scap = pr.shold = undefined;
+    if (pr.src) pr.src = pr.smul = pr.sbase = pr.scap = pr.shold = pr.sflo = undefined;
     return;
   }
   const r = f(s) || {};
@@ -71487,6 +71596,7 @@ function anSrcSet(b, pr, S) {
   pr.sbase = r.base;
   pr.scap = r.cap != null ? (isFinite(r.cap) ? Math.max(0, r.cap) : 0) : undefined;
   pr.shold = !!r.hold;
+  pr.sflo = r.floor != null && isFinite(r.floor) ? Math.max(0, r.floor) : undefined;
 }
 /* Start ▾ > Field equipment: the machines without a DCS signal */
 function anField(k, on) {
@@ -76511,7 +76621,11 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
     /* 3.2.1 (IRENE: CONDENSATE): DITL-61B row 19 PT-CD1117 (< 14.0 kg/cm2 = M.3217, the standby condensate pump starts) and DITL-61A
        rows 24 / 27 the strainer DP DPT-CD1001 / 1002 of pump A / B = the plant model's (unit.js AN_CD) */
     [/(?:^|[^A-Z])PT-CD1117\b/, 'cdPd'],
-    [/DPT-CD100([12])\b/, t => 'cdDp' + (+/DPT-CD100([12])/.exec(t)[1] - 1)]
+    [/DPT-CD100([12])\b/, t => 'cdDp' + (+/DPT-CD100([12])/.exec(t)[1] - 1)],
+    /* 3.2.1 (IRENE: FEEDWATER): DITL-23B row 25 PT-FW1011 (< 155 kg/cm2 = M.3210, the standby BFWP starts) and row 26 the strainer DP
+       DPT-FW1115-A / B (machine instance #B) = the plant model's (unit.js AN_FW) */
+    [/(?:^|[^A-Z])PT-FW1011\b/, 'fwPd'],
+    [/DPT-FW1115-?([AB])\b/, t => 'fwDp' + 'AB'.indexOf(/DPT-FW1115-?([AB])/.exec(t)[1])]
   ];
   /* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI): the tank and unit header pressure transmitters of the compressed air systems are analog
      rows of the logic (DITL-113 / 114 rows 1 ~ 3: auto start of the standby compressor < 5 kg/cm2; DITL-03G rows 9 ~ 11: MFT on

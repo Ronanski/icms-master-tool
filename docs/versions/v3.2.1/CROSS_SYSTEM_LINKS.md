@@ -2,7 +2,7 @@
 
 IRENE : PLANT MODEL, 2026-11-04 PHT. Tanong ng user: "In sync naman sya? May chain reaction? Kung mag adjust ka dito, mag aadjust din
 doon ang effect?" Iisa ang plant model (`src/analog/engine/unit.js` `anUnitStep`). Bawat step ay sunud-sunod: seawater → make-up →
-turbine oil → air → closed cooling → lube oil cooler → condenser at CEP → motors. Ang bawat system ay bumabasa ng value ng iba sa parehong step. Ang listahang ito ay
+turbine oil → air → closed cooling → lube oil cooler → condenser at CEP → BFWP → motors. Ang bawat system ay bumabasa ng value ng iba sa parehong step. Ang listahang ito ay
 ina-update sa bawat bagong system.
 
 ## Gumagana na
@@ -16,10 +16,11 @@ ina-update sa bawat bagong system.
 9. **Closed cooling → turbine lube oil → bearings** (`TURBINE_OIL_PLANT_MODEL.md`, test `lube_oil.js`). ACW supply temperatura at flow → lube oil cooler → TE-LO1002 (PV ng TICLO1002, ABC-053) → TCV-CW1201; sa 100 % umiinit ang langis at ang bearings (tcs.js). Chain test: trip ng lahat ng SWBP → oil 72.6 °C, bearing No.3 81.5 °C pagkatapos ng 25 min.
 10. **CEP → logic → standby CEP.** Trip ng CEP A → PT-CD1117 < 14.0 (DITL-61B) → AUTO start ng CEP B. Test: `condensate.js`.
 11. **Make-up pumps → hotwell.** Walang MWP na nagbibigay → walang make-up sa hotwell (LCV-MU1110). Test: `condensate.js`.
+12. **Extraction (load) → deaerator pressure → BFWP suction → PT-FW1011 → logic** (`FEEDWATER_PLANT_MODEL.md`, test `feedwater.js`). Trip ng BFWP-A → PT-FW1011 LL (DITL-23B M.3210). Bukas: auto start ng BFWP-B at ang feedwater flow pagkatapos ng FIELD TRIP.
 7. **Lahat ng model → logic → model.** Pressure, level at flow → DITL / ABC rows. Ang START COMMAND ng logic ay nagpapatakbo ng equipment (ACWP, MWP, SWBP, air compressor). Test: bawat model test.
 
 ## Wala pa (plano, kasama sa susunod na system)
 1. **Closed cooling temperature → temperatura ng bearing / winding ng motor.** Fixed pa ang AN_MT. (Ang turbine oil ay tapos na, item 9.)
 2. **Instrument air → pneumatic valves.** Sa ilalim ng 3.5, dapat hindi gumagalaw ang air-operated valve (XV-MU1109 at iba pa). Ngayon, mensahe lang sa faceplate ito. Gagawin pagkatapos ng Turbine Oil.
-3. **Hotwell / deaerator → feedwater (BFP suction).** Kasama sa Feedwater, susunod.
+3. **HP heaters → feedwater temperature → economizer.** Kasama sa susunod na bahagi ng Feedwater.
 4. **Chain test hanggang alarm / trip:** may chain test na hanggang bearing (`lube_oil.js`). Kulang pa ang alarm at trip ng TCS sa bearing temperatura, at ang mga motor (item 1).

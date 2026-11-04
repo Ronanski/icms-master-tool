@@ -9,9 +9,9 @@ Tag: **NO-SOURCE** = walang dokumento ang numero (ang code mismo ang umaamin). *
 - `src/analog/engine/face-defaults.js`: NO-SOURCE 1, FOUND 0
 - `src/analog/engine/hmi-op.js`: NO-SOURCE 1, FOUND 103
 - `src/analog/engine/plant.js`: NO-SOURCE 5, FOUND 53
-- `src/analog/engine/source.js`: NO-SOURCE 4, FOUND 9
+- `src/analog/engine/source.js`: NO-SOURCE 4, FOUND 10
 - `src/analog/engine/tcs.js`: NO-SOURCE 12, FOUND 24
-- `src/analog/engine/unit.js`: NO-SOURCE 36, FOUND 69
+- `src/analog/engine/unit.js`: NO-SOURCE 36, FOUND 70
 - `src/ui/fx/fx-hmi.js`: NO-SOURCE 1, FOUND 0
 - `src/ui/plant/hmi-bias.js`: NO-SOURCE 1, FOUND 5
 - `src/ui/plant/hmi-to.js`: NO-SOURCE 3, FOUND 6
@@ -19,7 +19,7 @@ Tag: **NO-SOURCE** = walang dokumento ang numero (ang code mismo ang umaamin). *
 - `src/ui/training/guide.js`: NO-SOURCE 1, FOUND 63
 - `src/ui/uat/check.js`: NO-SOURCE 1, FOUND 82
 - `src/world/ditl150.js`: NO-SOURCE 2, FOUND 20
-- `src/world/plantsw.js`: NO-SOURCE 4, FOUND 15
+- `src/world/plantsw.js`: NO-SOURCE 4, FOUND 16
 
 Kabuuang NO-SOURCE: **74**
 
@@ -35,17 +35,17 @@ Kabuuang NO-SOURCE: **74**
   - Kulang: 7 T/H per %, ASSUMED linear up to the CEP capacity 520 T/H), make-up 14 % = the 25 T/H that leaves the drum (1.8 T/H per %), the deae
 - `src/analog/engine/plant.js:576` **NO-SOURCE (bahagi)** · `const hu = AN_HMI_OP[AN_KUP[(b.txt || [])[1]]];`
   - Kulang: 42 C, about 139 C at 100 %, linear in the valve ASSUMED). The range limit above gave 162 C at 30.2 %: a shut spray 2 put the finishing SH inlet at 582 C, 120 C above th
-- `src/analog/engine/plant.js:616` **NO-SOURCE** · `const su = S.procs.find(x => (x.txt || [])[1] === 'LICBR1001B'),`
+- `src/analog/engine/plant.js:617` **NO-SOURCE** · `const su = S.procs.find(x => (x.txt || [])[1] === 'LICBR1001B'),`
   - Kulang: Its size is not in the repository: 30 % of the feedwater range at 100 % open is ASSUMED (a typical start-up valve)
-- `src/analog/engine/plant.js:731` **NO-SOURCE** · `if (S1 && pr.integ.pd >= 0) {`
+- `src/analog/engine/plant.js:732` **NO-SOURCE** · `if (S1 && pr.integ.pd >= 0) {`
   - Kulang: the level read is the water level minus ks x (pressure - its lag of tauS), so a pressure step gives a transient of ks mm per kg/cm2 that fades in tauS (ASSUMED: ks 10 mm per kg/cm2, tauS 60 s; not in the repository)
 - `src/analog/engine/source.js:1` **NO-SOURCE (bahagi)** · `const AN_SRC = {`
   - Kulang: Numbers marked ASSUMED are not in the repository.
 - `src/analog/engine/source.js:94` **NO-SOURCE (bahagi)** · `s.Pext = 4.5 * s.ext * Math.min(1, ms / m0);`
   - Kulang: proportional to the turbine steam (ASSUMED 4.5 at MCR)
-- `src/analog/engine/source.js:107` **NO-SOURCE** · `R['FICDO1043' + x] = s => ({ mul: srcCl(s.Pdo / 3) });`
+- `src/analog/engine/source.js:108` **NO-SOURCE** · `R['FICDO1043' + x] = s => ({ mul: srcCl(s.Pdo / 3) });`
   - Kulang: needs header pressure (ASSUMED full flow from 3 kg/cm2)
-- `src/analog/engine/source.js:120` **NO-SOURCE** · `bypass shut); TT-HR1012 after the LP bypass is kept warm by the warming valve XV-HR1010 while the hot reheat has pressure (DITL-83;`
+- `src/analog/engine/source.js:121` **NO-SOURCE** · `bypass shut); TT-HR1012 after the LP bypass is kept warm by the warming valve XV-HR1010 while the hot reheat has pressure (DITL-83;`
   - Kulang: the outlet temperature needs steam through the bypass (ASSUMED full from 3 % of the MCR flow)
 - `src/analog/engine/tcs.js:1` **NO-SOURCE (bahagi)** · `const TCS = {`
   - Kulang: The numbers that the drawings give as "REFER TO IBD" (graphic, not readable here) are taken from PR-OPE-5002 and marked so; the time constants of the metal are ASSUMED (marked). The state is AN_UNIT.tc; the operator acts on the TCS panel with AN.turbine(cmd) (unit.js anTurbine).
@@ -129,19 +129,19 @@ Kabuuang NO-SOURCE: **74**
   - Kulang: 1 %, ACW supply 38 C; calibrated with the vendor UA and a linear valve (170 T/H x MV, NO-SOURCE: no valve curve), the snapshot gives an oil fl
 - `src/analog/engine/unit.js:1497` **NO-SOURCE (bahagi)** · `const AN_CD = {`
   - Kulang: the transmitter elevation, calibrated to 16.9 at 150 MW); current = 28.1 A x shaft power / 245.7 kW (snapshot ratio).
-- `src/analog/engine/unit.js:1619` **NO-SOURCE (bahagi)** · `const AN_MT = {`
+- `src/analog/engine/unit.js:1663` **NO-SOURCE (bahagi)** · `const AN_MT = {`
   - Kulang: running bearing to 55 C (ASSUMED) with a 30 min time constant, winding to 85 C (ASSUMED) with 15 min; vibration 1.8 mm/s (pumps) / 2.2 mm/s (IDF)
-- `src/analog/engine/unit.js:2013` **NO-SOURCE (bahagi)** · `let Qloss = 0;`
+- `src/analog/engine/unit.js:2059` **NO-SOURCE (bahagi)** · `let Qloss = 0;`
   - Kulang: 24 kcal/kg C x dT / 500 kcal/kg, ASSUMED 60) x air share + kamb (ASSUMED 1 T/H: about 1.5 kg/cm2 per hour bottled), times (Tw - Tamb) / 300, fading in as
-- `src/analog/engine/unit.js:2039` **NO-SOURCE (bahagi)** · `const`
+- `src/analog/engine/unit.js:2085` **NO-SOURCE (bahagi)** · `const`
   - Kulang: 45 (ASSUMED, calibrated: 850 C at full load, Fig 8; about 450 C with two start-up burners at 60 % and the light-off air, the
-- `src/analog/engine/unit.js:2156` **NO-SOURCE** · `frE = Math.min(1, fr0 / U.frDb),`
+- `src/analog/engine/unit.js:2202` **NO-SOURCE** · `frE = Math.min(1, fr0 / U.frDb),`
   - Kulang: The ratio counts below frDb of the steam leaving (ASSUMED 0.75)
-- `src/analog/engine/unit.js:2247` **NO-SOURCE (bahagi)** · `const run = !m.run.length`
+- `src/analog/engine/unit.js:2293` **NO-SOURCE (bahagi)** · `const run = !m.run.length`
   - Kulang: ASSUMED 30 % of the flow), positions of the DITL-38 valves while the one world runs
-- `src/analog/engine/unit.js:2291` **NO-SOURCE (bahagi)** · `const tb = isFinite(+U.Tb) ? +U.Tb : 30,`
+- `src/analog/engine/unit.js:2337` **NO-SOURCE (bahagi)** · `const tb = isFinite(+U.Tb) ? +U.Tb : 30,`
   - Kulang: fp = -A * speed^2 + Kq * (total air / 406 T/H)^2, speed of the fan manual (350 ~ 1140 rpm on the coupling, linear ASSUMED). A = 124: the IDF alone at 13 % = about -19.5 mmH2O (the operator reduces it, SOP); Kq: the purge air of the SO
-- `src/analog/engine/unit.js:2373` **NO-SOURCE (bahagi)** · `{`
+- `src/analog/engine/unit.js:2419` **NO-SOURCE (bahagi)** · `{`
   - Kulang: the share of the turbine steam that passes (bypass ASSUMED 10 %), and the pressure at the MSV inlet that the ATS reads (tcs.js tcsSteam): it follows the main steam pressur
 - `src/ui/fx/fx-hmi.js:1` **NO-SOURCE (bahagi)** · `(function () {`
   - Kulang: "assume na may power plant basic knowledge kami ... more on operations effect or function ang maganda maipaliwanag"; card
@@ -171,5 +171,5 @@ Kabuuang NO-SOURCE: **74**
   - Kulang: 2 kg/cm2 (ASSUMED)
 - `src/world/plantsw.js:30` **NO-SOURCE (bahagi)** · `const mtOf = t => () => (window.AN && AN.unit && AN.unit.mt && isFinite(AN.unit.mt[t]) ? AN.unit.mt[t] : NaN);`
   - Kulang: bearing HH 100, winding HH 165); dead band 2 C (ASSUMED)
-- `src/world/plantsw.js:173` **NO-SOURCE (bahagi)** · `W.sucP = () => {`
+- `src/world/plantsw.js:177` **NO-SOURCE (bahagi)** · `W.sucP = () => {`
   - Kulang: ASSUMED (not in the repository): head 2.2 kg/cm2 at the normal level (about 22 m of water), 1 kg/cm2 per 10 m of level,
