@@ -133,6 +133,7 @@ const html =
     AN.plantLoad150();
     DITL150.apply();
     await run(120);
+    WORLD.live = true;
     o.pos97a = AN.ditlPos('DITL-97', 0);
     man('ABC-039', 'LICHD11031', 0);
     man('ABC-039', 'LICHD11032', 0);
@@ -142,6 +143,7 @@ const html =
       if (bit('ABC-039', 'M.0233') === 1) o.hh3At = i + 1;
     }
     await run(90);
+    WORLD.live = true;
     o.pos97b = AN.ditlPos('DITL-97', 0);
     o.tcs3 = DUI.rowVal(sh('DITL-115'), 3);
     o.l3hh = Math.round(U().hdLvl.H3);
@@ -159,7 +161,7 @@ const html =
   ck(r.ls6 === 1, 'level switch LS-HD1106 H.H. ON (DITL-41 row 18)');
   ck(r.l3a > r.l150.H3 + 20 && r.pk3alt === 'B', 'No.3 LPH primary MANUAL 0 %: the level rises (' + r.l3a + ' mm after 60 s), the alternate station is MANUAL too (' + r.pk3alt + ', ABC-039 A/M = LICHD11031.MAN)');
   ck(r.l3max < 140 && r.l3end < r.l3a, 'operator opens the alternate 60 %: level max ' + r.l3max + ', end ' + r.l3end + ' mm (below the H.H. 140)');
-  ck(r.hh3At != null && r.pos97a > 90 && r.pos97b < 10 && r.tcs3 === 1, 'No.3 LPH drains closed: M.0233 after ' + r.hh3At + ' s (level ' + r.l3hh + ' mm), DITL-97 extraction No.4 MOV ' + r.pos97a + ' -> ' + r.pos97b + ' %, DITL-115 row 4 (TCS) = ' + r.tcs3);
+  ck(r.hh3At != null && r.pos97a > 90 && r.pos97b != null && r.pos97b < 10 && r.tcs3 === 1, 'No.3 LPH drains closed: M.0233 after ' + r.hh3At + ' s (level ' + r.l3hh + ' mm), DITL-97 extraction No.4 MOV ' + r.pos97a + ' -> ' + r.pos97b + ' %, DITL-115 row 4 (TCS) = ' + r.tcs3);
   if (errs.length) console.log('page errors: ' + errs.slice(0, 3).join(' | '));
   console.log(fail ? 'FAILED ' + fail : 'ALL PASS');
   await browser.close();
