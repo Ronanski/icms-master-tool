@@ -259,7 +259,10 @@
         const bad = !!o.unk || o.some(x => runRow(x.s, x.row));
         if (!b || (b.bad && !bad) || (b.bad === bad && o.length < b.o.length)) b = { o, bad };
       }
-      if (b) b.o.forEach(add);
+      /* live test 2026-11-04 (SWBP DITL-30 rows 17-19): the cheapest way is only one of several; the row keeps its group (this net and
+         the value it needs), so a later scan sees the group met by another input (SWP-A or C running instead of B) and does not list
+         the row as missing */
+      if (b) b.o.forEach(x => add({ ...x, alts: (x.alts || []).concat({ s, n, want }) }));
       return out;
     };
     if (g.t === 'NOT') return nx(g.ins[0], 1 - want);
@@ -385,7 +388,15 @@
     const rows = [...P.values()].map(r => {
       const info = rowInfo(r.s, r.row),
         v = DUI.rowVal(r.s, r.row);
-      return { ...info, s: r.s, other: r.s !== s ? dName(r.s) : '', cmp: r.cmp || '', want: r.want, ok: v === r.want, start: r.s === s && /\bSTART\b/.test(info.svc) && !/PERMI/.test(info.svc) };
+      /* one of several ways (an OR to 1, an AND to 0): met when its group net already has the value it needs */
+      const grp = (r.alts || []).some(a => {
+        try {
+          return (simSheet(a.s).v[a.n] ? 1 : 0) === a.want;
+        } catch (e) {
+          return false;
+        }
+      });
+      return { ...info, s: r.s, other: r.s !== s ? dName(r.s) : '', cmp: r.cmp || '', want: r.want, ok: v === r.want || grp, start: r.s === s && /\bSTART\b/.test(info.svc) && !/PERMI/.test(info.svc) };
     });
     const miss = rows.filter(r => !r.ok && !r.start);
     return { sheet: nm, rows: rows.filter(r => !r.start), miss, pb: pb || rows.some(r => r.start), live, eq: eq0 };
