@@ -275,6 +275,14 @@ function anUnitStart() {
      (STN102 AI0564) is on no ABC sheet (ABC-015 AI0564 is STN103 ZT-FA1016): the DITL-61B row reads the model (plantsw.js) */
   const s31 = AN.sheets.find(x => x.name === 'ABC-031');
   U.cdHwL = s31 && s31.S ? anUnitAIs(shStn(s31) + '|AI0640') : [];
+  /* 3.2.1 (IRENE: HEATER LEVELS): the level transmitters of the five feedwater heaters (STN102 LT-HD110x-1 / -2) and the outputs of
+     their primary / alternate drain level controllers (ABC-035 ~ 039): AN_HD writes the levels and reads the valves */
+  U.hd = AN_HD.h.map(([k, sh, ais, c1, c2]) => {
+    const s = AN.sheets.find(x => x.name === sh);
+    if (!s || !s.S) return null;
+    const L = ais.map(ai => anUnitAIs(shStn(s) + '|' + ai)).filter(l => l.length);
+    return { k, L, v1: null, v2: null, c1, c2, sh, y: NaN };
+  }).filter(Boolean);
   /* the valve commands of the other outlets (output of their A / M station after the interlocks) */
   const ctlOut = (k, t) => {
     const x = AN.sheets.find(y => y.name === k),
@@ -646,7 +654,8 @@ function anUnitStart() {
   const lists = [U.msp, U.drum, U.msf, U.spd || []]
     .concat(U.mw, U.tin, U.rhp, U.pist, U.o2, [U.pa], U.tbed, U.aphT, U.saP, U.idfS.length ? [U.idfS] : [])
     .concat(...U.sh.map(h => h.L))
-    .concat([U.xt.cr, U.xt.hr, U.xt.aux, U.xt.fw, U.xt.lt2], U.xt.rhi, U.xt.fab, U.zt.map(z => z.L), U.lo || []);
+    .concat([U.xt.cr, U.xt.hr, U.xt.aux, U.xt.fw, U.xt.lt2], U.xt.rhi, U.xt.fab, U.zt.map(z => z.L), U.lo || [])
+    .concat(...(U.hd || []).map(h => h.L));
   for (const l of lists) for (const [S2, b] of l) own.add(S2.rt.st[b.id]);
   U.own = own;
   anBoilerStart(U); /* 3.2.1 SEULGI: the boiler-side plant model (boiler.js) */
@@ -656,6 +665,8 @@ function anUnitStart() {
   U.iaRun = U.paRun = null; /* 3.2.1: the compressors as the DITL of the scenario (anAirStep, first step) */
   U.paW0 = U.paW1 = U.paW2 = NaN;
   U.mt = {}; /* live test #54: the running motors start at their steady temperature (AN_MT) */
+  for (const h of U.hd || []) h.y = NaN; /* 3.2.1: the heater levels start again from the transmitters (AN_HD) */
+  U.hdSeed = true; /* 3.2.1: the drain valves of the heaters start at their steady opening at 150 MW (AN_HD) */
   U.frT = undefined;
   U.tco = null; /* 3.2.0-beta.66: the oil-only state of the snapshot (tcs.js tcsOilState) starts again */
   U.tc = null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
@@ -725,6 +736,8 @@ function anUnitCold() {
   U.iaRun = U.paRun = null; /* 3.2.1: the compressors as the DITL of the scenario (anAirStep, first step) */
   U.paW0 = U.paW1 = U.paW2 = NaN;
   U.mt = {}; /* live test #54: the motors start again from the ambient (AN_MT) */
+  for (const h of U.hd || []) h.y = NaN; /* 3.2.1: the heater levels start again from the transmitters (AN_HD) */
+  U.hdSeed = false;
   anBoilerCold(U); /* 3.2.1 SEULGI: the boiler-side plant model (boiler.js) */
   tcsInit(U, 'cold');
   return true;
@@ -1669,6 +1682,130 @@ function anHphStep(U, dt) {
   U.hpD2 = Math.round(10 * (e2 > 0.5 ? U.hpT1 + K.dca2 : U.hpT2)) / 10; /* TT-HD1106 */
   U.hpD1 = Math.round(10 * (U.hpF1 > 0.5 ? Tin + K.dca1 : U.hpT1)) / 10; /* TT-HD1105 */
   U.hpPs = [Ps1, Ps2];
+  U.hpMov = [pos('DITL-95'), pos('DITL-94')]; /* MV-TS1002 / MV-TS1001 position % */
+}
+/* 3.2.1 (IRENE: HEATER LEVELS, docs/versions/v3.2.1/HEATER_LEVELS_PLANT_MODEL.md). The shell (drain) level of the No.2 / No.1 HP and
+   No.3 / No.2 / No.1 LP heaters and their drain valves.
+   Sources:
+     drains       FHI heater O&M (PC, o&m-package-phase-1 L15-3 ~ L15-7, section 1.1.2 "Nominal thermal characteristics"): extraction
+                  (= its condensate) No.2 HPH 45.147, No.1 HPH 25.33 (+ the No.2 drain), No.3 LPH 15.246, No.2 LPH 12.27 (+ 15.246 =
+                  27.516 out), No.1 LPH 17.861 (+ 27.516 = 45.377 out) t/h at the design feedwater (HP 458.684, LP 362.594 t/h);
+     cascade      PD-018 / IO list: No.2 HPH -> No.1 HPH (LCV-HD1106-1) -> deaerator (LCV-HD1105-1); No.3 LPH -> No.2 -> No.1 LPH
+                  (LCV-HD1103-1 / 1102-1) -> condenser (LCV-HD1101-1); the alternate valves LCV-HD110x-2 to the condenser / flash chamber;
+     shell        section 1.1.1 "Physical characteristics": horizontal; inside diameter / overall length No.1 HPH 1156 / 9595 (K2MC2A-001),
+                  No.2 HPH 1250 / 9138.5, No.1 LPH 1130 / 13612, No.2 LPH 1080 / 10679, No.3 LPH 1030 / 10674 mm;
+     levels       alarm list (LT-HD110x, from the normal level, mm): H.H. No.1 HPH / No.3 LPH 140, the others 150 (the LS-HD110x level
+                  switch, DITL-41; ABC-036 M.0203 = No.2 HPH HI-HI -> DITL-94 closes MV-TS1001); H 40 / 50, L -40 / -50;
+     valves       02.png (60 MW): No.3 LPH primary 32.4 % at FIQHD1103 7.7 T/H; No.2 LPH primary 99.9 % at FIQHD1102 3.4 T/H with its
+                  alternate 53.7 %; No.1 LPH primary 13.6 %. The HP valves have no snapshot in service (02.png: manual, 0.1 %).
+   How it works (each heater, each step):
+     in           its extraction (the HP heaters: AN_HP, with its MOV; the LP heaters: design x main steam / 458.684 x the MOV of DITL-97
+                  (MV-TS1004, No.3 LPH) / DITL-98 (MV-TS1005, No.2 LPH)) + the primary drain of the heater before it;
+     out          primary + alternate valve: capacity at 100 % x MV / 100 x sqrt(main steam / 458.684) (the shell pressures and their
+                  differences follow the load); an empty shell (below -300 mm) passes no more than it gets;
+     level        d(level) / dt = (in - out) / (water density x surface), surface = diameter x length x 0.7 (NO-SOURCE: the tube bundle
+                  and the heads take the rest); the water density of the design drain temperature (steam table).
+   NO-SOURCE: the capacity of the HP valves (the design flow at 50 %) and of every alternate valve (= its primary); 0.7. */
+const AN_HD = {
+  /* key, ABC sheet, level AIs, primary / alternate controller, design extraction t/h, heater before (cascade), H.H. mm, shell ID m,
+     length m, water kg/m3, primary capacity t/h at 100 % (150 MW), extraction MOV (DITL) */
+  h: [
+    ['H6', 'ABC-036', ['AI0677', 'AI0853'], 'LICHD11061', 'LICHD11062', 45.147, null, 150, 1.25, 9.1385, 864, 45.147 / 0.5, 'DITL-94'],
+    ['H5', 'ABC-035', ['AI0676', 'AI0852'], 'LICHD11051', 'LICHD11052', 25.33, 'H6', 140, 1.156, 9.595, 900, (25.33 + 45.147) / 0.5, 'DITL-95'],
+    ['H3', 'ABC-039', ['AI0675', 'AI0851'], 'LICHD11031', 'LICHD11032', 15.246, null, 140, 1.03, 10.674, 961, 7.7 / 0.324 / Math.sqrt(203.7 / 458.684), 'DITL-97'],
+    ['H2', 'ABC-038', ['AI0674', 'AI0850'], 'LICHD11021', 'LICHD11022', 12.27, 'H3', 150, 1.08, 10.679, 974, 3.4 / 0.999 / Math.sqrt(203.7 / 458.684), 'DITL-98'],
+    ['H1', 'ABC-037', ['AI0673', 'AI0849'], 'LICHD11011', 'LICHD11012', 17.861, 'H2', 150, 1.13, 13.612, 990, (17.861 * 203.7 / 458.684 + 13.1) / 0.136 / Math.sqrt(203.7 / 458.684), null]
+  ],
+  F0: 458.684,
+  fA: 0.7,
+  /* the alternate of the No.2 LPH: 02.png 53.7 % for the rest of its drain (13.1 - 3.4 T/H at 60 MW); the other alternates = their primary */
+  alt: { H2: (13.1 - 3.4) / 0.537 / Math.sqrt(203.7 / 458.684) }
+};
+function anHdStep(U, dt) {
+  if (!U.hd || !U.hd.length) return;
+  const K = AN_HD,
+    ms = Math.max(0, +U.ms || 0),
+    ld = ms / K.F0,
+    sq = Math.sqrt(Math.max(0, ld)),
+    pos = n => {
+      if (!n) return 100;
+      const p = typeof anDitlPos === 'function' ? anDitlPos(n, 0) : null;
+      return p == null ? 100 : p;
+    },
+    thr = p => Math.max(0, Math.min(1, p / 20)),
+    mv = o => (o ? Math.max(0, Math.min(100, +o.S.rt.v[o.n] || 0)) : 0),
+    out = {};
+  const ctl = (k, t) => {
+    const x = AN.sheets.find(y => y.name === k),
+      c = x && x.S && AN.hmiCtrls ? (AN.hmiCtrls(x.S) || []).find(q => q.tag === t) : null;
+    return c && c.out != null ? { S: x.S, n: c.out } : null;
+  };
+  for (const h of U.hd) {
+    const d = K.h.find(x => x[0] === h.k);
+    if (!d) continue;
+    const [k, , , , , ext, from, hh, D, Ls, rho, cap1, mov] = d;
+    if (!h.v1) h.v1 = ctl(h.sh, h.c1);
+    if (!h.v2) h.v2 = ctl(h.sh, h.c2);
+    if (!isFinite(h.y)) {
+      const v = anUnitVal(h.L[0]);
+      h.y = isFinite(v) ? v : 0;
+      h.off = h.L.map(l => (isFinite(anUnitVal(l)) ? anUnitVal(l) - h.y : 0));
+    }
+    /* in: the condensate of its extraction + the cascade */
+    let ein;
+    if (k === 'H6') ein = isFinite(U.hpF2) ? U.hpF2 : 0;
+    else if (k === 'H5') ein = isFinite(U.hpF1) && isFinite(U.hpF2) ? U.hpF1 - U.hpF2 : 0;
+    else ein = ext * ld * thr(pos(mov));
+    const win = ein + (from && out[from] ? out[from] : 0);
+    const c2 = (K.alt[k] != null ? K.alt[k] : cap1) * sq;
+    /* the split range of the drawing (ABC-035 ~ 039): the primary controller MV goes to the primary valve by an F(X) (LN38 ...) and,
+       while the primary is AUTO (M.0236 ... = NOT .MAN), to the alternate station by a second F(X) (LN39 ..., EX-MV); the valve
+       opening is that F(X) output (the AO is 100 % minus it: the valve opens on a falling signal) */
+    if (h.v1 && !h.fx) {
+      const S2 = h.v1.S,
+        fxs = S2.blk.filter(b => b.k === 'FX' && b.pins.some(p => p.role === 'in' && p.n === h.v1.n)),
+        outOf = b => (b.pins.find(p => p.role === 'out') || {}).n,
+        toSub = b => S2.blk.some(q => q.k === 'SUB' && q.pins.some(p => p.role === 'in' && p.n === outOf(b)));
+      h.fx = { p: fxs.find(toSub) || null, a: fxs.find(b => !toSub(b)) || null };
+    }
+    const fxv = (b, x) => (b && typeof anFXs === 'function' ? Math.max(0, Math.min(100, anFXs(b.p, x).y)) : x);
+    /* "Start at 150 MW": the snapshot has no drain valve opening at full load (02.png is 60 MW), so the primary controller starts at the
+       MV whose two valves pass the drain of the load, as the operator found it */
+    if (U.hdSeed && sq > 0 && h.v1 && h.fx) {
+      const flow = x => cap1 * sq * (fxv(h.fx.p, x) / 100) + c2 * (h.fx.a ? fxv(h.fx.a, x) / 100 : 0);
+      let a = 0,
+        b = 100;
+      for (let i = 0; i < 30; i++) {
+        const m = (a + b) / 2;
+        if (flow(m) < win) a = m;
+        else b = m;
+      }
+      const x = (a + b) / 2,
+        c = (AN.hmiCtrls(h.v1.S) || []).find(q => q.out === h.v1.n);
+      if (c) {
+        if (h.v1.S.rt.st[c.b.id] && typeof hmiPidSet === 'function') hmiPidSet(h.v1.S.rt.st[c.b.id], c.b, x);
+        h.v1.S.rt.v[h.v1.n] = x;
+      }
+    }
+    let w1 = cap1 * sq * ((h.fx && h.fx.p ? fxv(h.fx.p, mv(h.v1)) : mv(h.v1)) / 100),
+      w2 = c2 * (mv(h.v2) / 100);
+    const M = (rho * D * Ls * K.fA) / 1000 /* kg per mm */;
+    if (h.y <= -300 && w1 + w2 > win) {
+      const f = (w1 + w2) > 0 ? win / (w1 + w2) : 0;
+      w1 *= f;
+      w2 *= f;
+    }
+    h.y = Math.max(-320, Math.min(350, h.y + ((win - w1 - w2) * 1000 / 3600 * dt) / M));
+    h.win = win;
+    h.w1 = w1;
+    h.w2 = w2;
+    h.hh = h.y >= hh;
+    out[k] = w1;
+    h.L.forEach((l, i) => anUnitWrite(l, h.y + (h.off[i] || 0)));
+  }
+  if (U.hdSeed && sq > 0) U.hdSeed = false;
+  U.hdLvl = Object.fromEntries(U.hd.map(h => [h.k, Math.round(h.y * 10) / 10]));
+  U.hdHH = Object.fromEntries(U.hd.map(h => [h.k, h.hh ? 1 : 0]));
 }
 const AN_LO = { UA: 95.8, Co: 64.5, Qb: 1032, Wmax: 170, M: 25800, Tamb: 30 };
 function anLubeCoolStep(U, dt) {
@@ -2024,6 +2161,7 @@ function anUnitStep(dt) {
   /* 3.2.1: the boiler feed water pumps (AN_FW) */
   anFwStep(U, dt);
   anHphStep(U, dt);
+  anHdStep(U, dt);
   /* live test #54: motor bearing / winding temperature and vibration (AN_MT) */
   anMotorStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);

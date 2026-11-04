@@ -1950,6 +1950,20 @@ function netlistCore(sh, strict) {
       const p = w.find(q => !q.neg && q.adr === o.adr);
       if (p && p.z.row !== o.z.row && !NL.mir.some(m => m.row === o.z.row)) NL.mir.push({ row: o.z.row, n: p.z.n, adr: '-' + o.adr, neg: 1 });
     });
+    /* 3.2.1 (IRENE: HEATER LEVELS, CLAUDE.md 1 "one address = one signal"): the same address written again, without the minus, on a
+       later input wire is the same bit (DITL-94 ~ 98 row 21 "M.0283 ... AUTO MODE SELECTED" = row 1 "M.0283 ... AUTO PB", the AUTO / MANUAL
+       key of the faceplate). Before, row 21 was a separate input: the operator's MANUAL left it 1 and CLOSE did nothing */
+    const firstOf = {};
+    NL.src
+      .slice()
+      .sort((x, y) => x.row - y.row)
+      .forEach(z => {
+        const tg = ((sh.cells && sh.cells[z.row + ':T']) || []).map(q => q.t.trim()).filter(q => /^M\.[0-9A-F]{4}$/.test(q));
+        if (tg.length !== 1) return;
+        const f = firstOf[tg[0]];
+        if (!f) firstOf[tg[0]] = z;
+        else if (f.row !== z.row && !NL.mir.some(m => m.row === z.row)) NL.mir.push({ row: z.row, n: f.n, adr: tg[0] });
+      });
   }
   /* v28: a numbered circle in the FROM column of an input row = the signal comes from the connector with the same number in the logic (DITL-21A row 5 <- (4) <- end of the row 26 wire): the row follows that net, it is not a hand switch */
   cons
