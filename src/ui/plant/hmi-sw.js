@@ -66,10 +66,10 @@
     /* status DI of STN105 only (I/O list: running and overload of each pump, from the local panel HCDSP; P-0762A running = I.0329), no DCS
        command and no logic sheet reads them: the dosing pump the Training starts in the field (hypo) is P-0762A, its DI follows that start
        (live test 2026-10-30 #6: P-0762A said "field (local)", the other three "STN105 DI": all four are STN105 DI) */
-    HUA: { n: 'P-0761A', t: 'Unloading', lcp: 'LOCAL', io: 'MIR-P0761A', d: 'STN105 DI' },
+    HUA: { n: 'P-0761A', t: 'Unloading', fld: 'hypoU', lcp: 'LOCAL', io: 'MIR-P0761A', d: 'STN105 DI' },
     HUB: { n: 'P-0761B', t: 'Unloading', lcp: 'LOCAL', io: 'MIR-P0761B', d: 'STN105 DI' },
     HDA: { n: 'P-0762A', t: 'NaOCl dosing', fld: 'hypo', io: 'MIR-P0762A', d: 'STN105 DI' },
-    HDB: { n: 'P-0762B', t: 'NaOCl dosing', lcp: 'LOCAL', io: 'MIR-P0762B', d: 'STN105 DI' }
+    HDB: { n: 'P-0762B', t: 'NaOCl dosing', fld: 'hypoB', lcp: 'LOCAL', io: 'MIR-P0762B', d: 'STN105 DI' }
   };
   /* motor current tag of a pump (the value: plant model, unit.js AN_SW) */
   const AMP = {
