@@ -259,7 +259,7 @@ function anProcList(S) {
 /* 3.2.0: the fields of a plant model that a run writes (plant.js step, unit.js, hmi-op.js, plant-window.js): Reset takes them back. Not
    hop / Ka: the HMI snapshot anchor of a loop is made once at the first scan (ABC-019 TICHR1002: 39.PNG 541 C; made again after a run it
    was null, the reheat steam stayed at 185 C and the turbine roll held, CHECK full); Reset takes away the 150 MW one only (hop.dyn, sheets.js) */
-const AN_PROC_RUN = ['integ', 'y0', 'ld', 'uf', 'smul', 'sbase', 'tcap', 'fr', 'tsat', 'src', 'shold', 'scap', 'op', 'hopReq', 'fell', 'dn', 'cyc', 'mul', 'integLoss', 'integLoss0'];
+const AN_PROC_RUN = ['integ', 'y0', 'ld', 'uf', 'smul', 'sbase', 'tcap', 'fr', 'tsat', 'src', 'shold', 'scap', 'sflo', 'op', 'hopReq', 'fell', 'dn', 'cyc', 'mul', 'integLoss', 'integLoss0'];
 const AN_SERIES = { PICFG108: 1, PICFG108A: 1 };
 /* 3.2.0-beta.40: controller -> the hand station whose output is the real actuator of the process (ABC-020, see xman below) */
 const AN_XACT = { TICHR1002A: 'HICHR1002A' };
@@ -338,7 +338,9 @@ function anCycFlows(t) {
     frec = cep * 2.5 * 100 * c((AN_CYC.u.cf || 0) / 100),
     ms = s.ms || 0,
     ext = s.ext || 0;
-  return { fda, frec, hwIn: ms * (1 - 0.25 * ext), daIn: 0.25 * ext * ms, mu: 1.8 * (AN_CYC.u.hw || 0) };
+  /* 3.2.1 (IRENE): no make-up water pump feeding the header (unit.js AN_MU muFeed) = no make-up to the hotwell */
+  const muOff = typeof AN_UNIT !== 'undefined' && AN_UNIT.on && AN_UNIT.muFeed === 0;
+  return { fda, frec, hwIn: ms * (1 - 0.25 * ext), daIn: 0.25 * ext * ms, mu: muOff ? 0 : 1.8 * (AN_CYC.u.hw || 0) };
 }
 function anProcStep(S, dt) {
   const rt = S.rt,
@@ -600,6 +602,7 @@ function anProcStep(S, dt) {
         /* 3.2.0-beta.14 (source.js): no medium = the bottom of the range (or the ambient); never above the pressure of the source */
         if (pr.smul != null) y = pr.smul * y + (1 - pr.smul) * (pr.sbase != null ? pr.sbase : lo);
         if (pr.scap != null) y = Math.min(y, Math.max(lo, pr.scap));
+        if (pr.sflo != null) y = Math.max(y, pr.sflo); /* 3.2.1: a source that always feeds (deaerator extraction) */
         /* not exactly the bottom: the SELECT CIRCUIT of the drawing reads 0 as a lost transmitter and holds its last value (user rule
            v1.20.34; ABC-030 aux steam stayed 10.1 kg/cm2 in a cold plant), as the unit model does for the first stage pressure */
         if (pr.src) y = Math.max(y, lo + 1e-3 * span);
@@ -760,13 +763,24 @@ function anProcStep(S, dt) {
       q.y =
         lo; /* 2.2.0-beta.12: the machine that makes the flow stopped (no BFWP, fan stopped): the flow is gone at once, not with the lag of the valve */
       q.h.length = 0;
+      q.fast = 1;
     } else if (dt > 0) {
       q.h.push([rt.t, u]);
       while (q.h.length > 2 && q.h[1][0] <= rt.t - pr.L) q.h.shift();
       const tgt = ss(q.h[0][1]);
-      q.y += (1 - Math.exp(-dt / Math.max(pr.T, 0.05))) * (tgt - q.y);
+      /* 3.2.1 (IRENE: FEEDWATER chain test): the machine back (the standby BFWP started by its AUTO START, a fan started again) gives
+         its flow through the valve as it stands with the start-up time of the machine, 5 s (NO-SOURCE), not with the lag of the loop
+         (FICFW1007 75 s): before, the feedwater took a minute to come back after the auto start of BFWP B and the drum level reached
+         L.L. (MFT) although B ran after 1.5 s */
+      const Tl = q.fast ? Math.min(pr.T, 5) : pr.T;
+      q.y += (1 - Math.exp(-dt / Math.max(Tl, 0.05))) * (tgt - q.y);
+      if (q.fast && Math.abs(tgt - q.y) < 0.02 * Math.abs(span || 1)) q.fast = 0;
       q.y = Math.max(lo, Math.min(lo + span, q.y));
     }
+    /* 3.2.1 (IRENE: FEEDWATER): a source that always feeds (pr.sflo, the extraction no. 3 to the deaerator at load) is a floor of the
+       state too, not only of the target: before, Start at 150 MW began at ~1 kg/cm2 and took minutes (the lag of the loop) to reach 5.3,
+       the BFWP suction was ~1.7 kg/cm2 meanwhile */
+    if (pr.sflo != null && dt > 0 && isFinite(q.y) && q.y < pr.sflo) q.y = Math.min(lo + span, pr.sflo);
     if (gate === 'zero' && b.p.lt === 'flow') q.y = lo;
     if (dt <= 0 && q.u != null) continue;
     const y = pr.integ && q.sw ? Math.max(lo, Math.min(lo + span, q.y - q.sw)) : q.y;
