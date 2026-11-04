@@ -677,8 +677,13 @@ function grpState(s) {
    DUI.outVal -> simSheet) evaluated the latches without the inputs from the other sheets (_win): DITL-27A saw "IDF RUNNING" = 0 and
    its SAF latch was reset, at RUN the PAF followed (DITL-26A row 18 SAF STOPPED -> TR120 -> reset). The one world with its links keeps
    its inputs while the ABC page is paused too */
+/* 3.2.1 (IRENE, coordinator 2026-11-04 "ayusin ang paghinto ng PAF at SAF"): the same on the DITL page. At 150 MW the operator pauses
+   (VIEW) and opens the DITL page (AN.cat 'dig', SIM off): every read there (motState, the plant model's anDitlRun, the side panel)
+   evaluated DITL-27A without its world inputs, the SAF latch was reset, the PAF followed, and at RUN the MFT came (PAF / SAF STOPPED).
+   The one world is always ON (CLAUDE.md rule 7): its links hold its inputs on every page; WORLD.set(false) (a test of one DITL sheet
+   alone) is still the sheet by itself */
 function simOn() {
-  return SIM || !!(window.WORLD && (WORLD.live || (WORLD.on && WORLD.idx && window.AN && AN.cat === 'an')));
+  return SIM || !!(window.WORLD && (WORLD.live || (WORLD.on && WORLD.idx)));
 }
 function simIn(s) {
   const sim = simOn(),
