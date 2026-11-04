@@ -16,7 +16,7 @@
    - [data-ox="KEY|open text|closed text"]  open / closed of a valve in the plant model (UNIT.KEY 1 / 0);
    - [data-dsvc="DITL-xx|service text|on text|off text"]  a DITL row found by its service text (AUTO SELECTED ...), shown as text;
    - [data-ctl="TAG|pv|mv|mode|dp|unit"]  a value of a controller of the logic (PV / MV / mode); [data-hit] of a mach with ctl = its faceplate;
-   - [data-mov]     a MOV / XV of a DITL sheet (position % or OPEN / CLOSED); mach.mov = its faceplate (LS_FPOP.mov);
+   - [data-mov]     a MOV / XV of a DITL sheet ("pct" position %, "oc" OPEN / CLOSED, "md" REMOTE / AUTO mode); mach.mov = its faceplate (LS_FPOP.mov);
    - mach.tcs       a pump of the TCS (tcs.js TCS_OIL): state of AN.unit, click = the TCS faceplate (LS_FPOP.tcs);
    - [data-go=ID]   a "page:" link of the mockup = that page of the Plant view.
    Nothing here presses or forces anything: the faceplates do, the same ones the loop check dock watches. */
@@ -121,11 +121,13 @@
             const I = DUI.rowInfo(s, r),
               t = (I && I.svc) || '';
             if (!/P\.?B\b/.test(t) || /LOCAL/.test(t) || !own(t)) continue;
-            const w = /(OPEN|CLOSE|STOP|AUTO|MANUAL|ISOLATE|REINSTATE|START|RESET)\b/.exec(t);
-            if (w && !pbs.some(p => p.l === w[1])) pbs.push({ l: w[1], row: r });
+            const w = /(OPEN|CLOSED?|STOP|AUTO|MANUAL|ISOLATE|REINSTATE|START|RESET)\b/.exec(t),
+              l = w && (w[1] === 'CLOSED' ? 'CLOSE' : w[1]);
+            if (l && !pbs.some(p => p.l === l)) pbs.push({ l, row: r });
           }
-          const ro = outs.find(x => own(x.name) && /REMOTE SELECTED/.test(x.name));
-          return { pos, pbs, au: ri(/AUTO MODE SELECTED/), rem: ro ? D().dout(nm, ro.row) : null };
+          /* REMOTE: "REMOTE SELECTED" (DITL-60 ...), "MCV REMOTE MODE SELECTED" (DITL-38), "SHUT-OFF MOV REMOTE" (DITL-94 ~ 98) */
+          const ro = outs.find(x => own(x.name) && /\bREMOTE\b/.test(x.name) && !/LOCAL/.test(x.name));
+          return { pos, pbs, au: ri(/AUTO MODE(?: SELECTED)?\b/), rem: ro ? D().dout(nm, ro.row) : null };
         }, null);
       const OX = {};
       new Set([...qa('[data-ox]')].map(e => e.dataset.ox.split('|')[0])).forEach(k => {
@@ -335,7 +337,11 @@
             e.textContent = '-----';
             return e.setAttribute('fill', C.none);
           }
-          if (how === 'pct') {
+          if (how === 'md') {
+            /* the mode of the valve: REMOTE / LOCAL (its REMOTE output) else AUTO / MANUAL (its AUTO MODE input) */
+            e.textContent = I.rem != null ? (I.rem ? 'REMOTE' : 'LOCAL') : I.au != null ? (I.au ? 'AUTO' : 'MANUAL') : '-----';
+            e.setAttribute('fill', C.dim);
+          } else if (how === 'pct') {
             e.textContent = fmt(I.pos, 1) + ' %';
             e.setAttribute('fill', C.val);
           } else {

@@ -74,6 +74,8 @@ const block =
   '\n' +
   fs.readFileSync(__dirname + '/../plant/hmi-mock-cd.js', 'utf8') +
   '\n' +
+  fs.readFileSync(__dirname + '/../plant/hmi-mock-fw.js', 'utf8') +
+  '\n' +
   /* 3.2.0-beta.74: the operator pop-out faceplate beside the clicked equipment (motor; the controllers of plant.js) */
   fs.readFileSync(__dirname + '/../plant/fp-pop.js', 'utf8') +
   '\n' +
