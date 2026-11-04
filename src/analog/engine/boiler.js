@@ -621,7 +621,10 @@ function sdPub(U) {
      contacts ES-L-1090 ~ 1092 closed (IO list "not emergency stop", N.C. from local; DITL-BA62 NOT), speed switches SS-BH1750 ~ 1752 made
      while the machine turns (IO list "1 : speed OK"), block switches not made.
    NO-SOURCE: valve stroke 2 s, charging of the vessel 30 s, conveying of one batch 60 s, vessel pressure while conveying 1.5 kg/cm2,
-     the buffer tank (not modelled: the charge assumes ash in the buffer tank). The air tank reads the plant air header of the model. */
+     the buffer tank (not modelled: the charge assumes ash in the buffer tank). The air tank PS-BH1750 reads the plant air receiver tanks of the
+     model (U.paP, 39.PNG 7.0 kg/cm2), ASSUMED: the transmitter's own air tank is charged at rest with no flow, so it stands at the
+     supply pressure, not at the unit header under full plant use (U.paPU 6.8, whose 0.2 drop is NO-SOURCE); decided by SEULGI 2026-11-04
+     (user: "ikaw lahat magdecide"). Low = below 7 kg/cm2 (O&M L6 p.9). */
 const AN_BA = {
   stroke: 2,
   tFill: 30,
@@ -633,6 +636,11 @@ const AN_BA = {
   airSw: 7,
   lsh: 100
 };
+/* the transmitter's air tank: the plant air receivers (no flow into it at rest), else the header */
+function baTank(U) {
+  /* before the first step of the air model (the 150 MW start): the receivers at their start pressure (unit.js AN_AIR.P) */
+  return isFinite(U.paP) ? U.paP : typeof AN_AIR !== 'undefined' ? AN_AIR.P : 0;
+}
 function anBaStart(U) {
   U.ba = { v: {}, sw: {}, lv: 0, p: 0, press: 0 };
   /* at rest (O&M L6 primary conditions): every valve closed, the vessel empty and at atmosphere; the field switches are known before
@@ -644,7 +652,7 @@ function anBaStart(U) {
   }
   W.psh = 0;
   W.psl = 1;
-  W.air = isFinite(U.paPU) && U.paPU >= AN_BA.airSw ? 0 : 1;
+  W.air = baTank(U) >= AN_BA.airSw ? 0 : 1;
   W.lsh = 0;
   W.rem = 1;
   W.es = 1;
@@ -693,7 +701,7 @@ function anBaStep(U, dt) {
   }
   W.psh = B.p >= K.pHi ? 1 : 0;
   W.psl = B.p < K.pLo ? 1 : 0;
-  W.air = pa < K.airSw ? 1 : 0;
+  W.air = baTank(U) < K.airSw ? 1 : 0;
   W.lsh = B.lv >= K.lsh ? 1 : 0;
   W.rem = 1;
   W.es = 1;

@@ -4,9 +4,9 @@
 //  150 MW at rest (16.PNG: chain conveyor, bucket elevator, screw conveyor and venting fan running in REMOTE; O&M L6 p.7 primary
 //    conditions): the four transmitter valves closed (ZSC made, no VALVE ABNORMAL on DITL-BA38 / BA39), vessel pressure low switch made,
 //    no CONVEYORS EMG.STOP (DITL-BA62), no SPEED FAULT (DITL-BA66 / 67 / 68);
-//  the air tank switch PS-BH1750 reads the plant air header of the model against the O&M set point 7 kg/cm2;
-//  one charging (O&M L6 5 a, LOP "Charging"): with the air switch made (the set point lowered IN THIS TEST ONLY to the header of the
-//    model, to exercise the valves), the sand silo venting fan F-1301 started (the destination is the sand silo; DITL-BA05 row 14),
+//  the air tank switch PS-BH1750 reads the plant air receivers of the model (7.0, 39.PNG) against the O&M set point 7 kg/cm2: not low,
+//    no AIR SOURCE PRESSURE LOW, no SYSTEM FAULT (DITL-BA25 / BA48);
+//  one charging (O&M L6 5 a, LOP "Charging"): the sand silo venting fan F-1301 started (the destination is the sand silo; DITL-BA05 row 14),
 //    RESET(DCS), then LI1-S-1090 CHARGING (LOP): the inlet gate valve opens (ZSO), the vessel fills.
 // Usage: node tests/regress/bottom_ash.js [html]
 const fs = require('fs');
@@ -48,7 +48,8 @@ const html =
       emg: o('DITL-BA62', 2),
       spd: [o('DITL-BA66', 16), o('DITL-BA67', 14), o('DITL-BA68', 14)],
       lv: AN.unit.baLv,
-      pa: AN.unit.paPU
+      pa: AN.unit.paP,
+      sf: o('DITL-BA48', 4)
     });
     const z = {};
     AN.run = false;
@@ -59,9 +60,6 @@ const html =
     await run(20);
     z.rest = snap();
     /* the charge: the air switch made (test only), the latched faults reset, then the LOP charging button */
-    const sw0 = AN.baK.airSw;
-    AN.baK.airSw = Math.min(sw0, AN.unit.paPU - 0.1);
-    await run(3);
     /* DITL-BA02 row 10 RESET_HMI (-> RESET(DCS) M.1302), DITL-BA01 row 3 LI1-S-1090 CHARGING_INPUT (-> I.0490) */
     const push = async (n, k) => {
       const s = sh(n);
@@ -79,7 +77,6 @@ const html =
     await push('DITL-BA01', 2);
     await run(6);
     z.chg = snap();
-    AN.baK.airSw = sw0;
     delete v774.sig['5:S'];
     return z;
   });
@@ -94,8 +91,13 @@ const html =
     'conveyors: no EMG.STOP latch, no speed fault (16.PNG running in REMOTE) ' + JSON.stringify(s)
   );
   ck(
-    s.air === (s.pa < 7 ? 1 : 0),
-    'air tank switch PS-BH1750 = plant air header ' + s.pa + ' kg/cm2 vs O&M 7 kg/cm2: ' + s.air
+    s.air === 0 && s.pa >= 7 && s.sf === 0,
+    'air tank switch PS-BH1750 not low (receivers ' +
+      s.pa +
+      ' kg/cm2 vs O&M 7), no SYSTEM FAULT: ' +
+      s.air +
+      ' / ' +
+      s.sf
   );
   ck(
     r.fan === 1,
