@@ -21597,9 +21597,11 @@ function anBoilerStart(U) {
   U.doSp = null;
   U.doZ = {};
   for (const k in AN_DO.fv0) if (AN_SRC.valve) delete AN_SRC.valve[k];
+  anFanStart(U);
 }
 /* called by anUnitCold: the pumps are the DITL's (stopped in a cold plant); the tank keeps its level */
 function anBoilerCold(U) {
+  U.fnZ = {};
   U.doP1 = U.doP2 = NaN;
   U.doSp = null;
   U.doZ = {};
@@ -21676,9 +21678,126 @@ function anDieselOilStep(U, dt) {
   w(A.zf, zl('f', xf * 100));
   A.zb.forEach((l, i) => w(l, zl('b' + i, xc[i] * 100)));
 }
+/* 3.2.1 SEULGI: FANS, AIR AND FLUE GAS (docs/versions/v3.2.1/FANS_PLANT_MODEL.md). The air and gas FLOWS stay those of the loop model
+   (unit.js: FICFA1071 / FICFA1081 with the PAF / SAF running, PICFG108 with the IDF); this part adds what the loop model did not have:
+   - FA blowers F-1055A / B (DITL-28A and its machine instance #B, IO STN103 I.0046 / I.0366): the fluidizing air (FICFA1055A, ABC-014,
+     PV FIFA1055 = FT-FA1055 AI0545) needs a blower running with its outlet SOV open (XV-FA1055-A3 / B3, DITL-28C rows 9 "OUTLET SOV
+     CLOSED" I.0045 / I.008F, or its OPEN COMMAND output 25: the closed limit of instance #B stays 1 after the command, a finding
+     of the DITL valve model, FANS_PLANT_MODEL.md). No blower = no FA flow -> ABC-006 M.3114 "FAB OUTLET AIR FLOW L.L. < 20 T/H" -> DITL-28A #B standby start.
+     Each blower gives flow by its inlet damper (FCV-FA1055-A1 / B1, ABC-014 FICFA1055A / B MV; linear, NO-SOURCE), 26.3 T/H at 42.8 %.
+     PAF / SAF field trip: their air stops (unit.js U.mul with the motor drawings DITL-26A / 27A).
+   - motor currents IT-F1053 PAF / IT-F1054 SAF / IT-F1056 IDF / IT-F1055A / B (STN103 AI0454 / 0469 / 0453 / 0452 / 0468): the current
+     of the snapshot times (no-load share fI + the rest x air power / air power of the snapshot), air power = flow x pressure rise
+     (fan law; fI NO-SOURCE). IT-F1055A / B also feed DITL-28B row 12 "FAB A CURRENT" < 24.6 A (L.L.).
+   - pressures: PAF outlet PT-FA1075 (AI0160) and FA header PT-FA1055-A / B (AI0294 / 0417) with the square of their flow (system
+     curve); ESP outlet / IDF inlet PT-FG1141-A / B (AI0416 / 0772) and IDF outlet PT-FG1151 (AI0432) with the square of the total air.
+   Anchors: 7.PNG (151 MW) PAF 253.6 A, SAF 134.0 A, IDF 199.6 A, PIFA1075 1551 at FIFA1071 354.0, PIFA1085 1427 at FIFA1081 213.0,
+   PIFG1141A / B -442 / -450, PIFG1151 -7, TAF 592.1 T/H; 9.png (150 MW) FA BLOWER-A 37.3 A, FIFA1055 26.3 T/H, PIFA1055A 3257 /
+   PIFA1055B 3315 mmH2O (B stopped with its outlet SOV closed reads the header: the transmitters are on the common side, from the
+   snapshot). */
+const AN_FN = {
+  I0: { paf: 253.6, saf: 134.0, idf: 199.6, fa: 37.3 },
+  fI: 0.45,
+  pa: { Q0: 354.0, P0: 1551 },
+  sa: { Q0: 213.0, P0: 1427 },
+  ga: { T0: 592.1, Pi: [-442, -450], Po: -7 },
+  fa: { Q0: 26.3, z0: 42.8, P0: [3257, 3315] },
+  run: {
+    paf: 'DITL-26A',
+    saf: 'DITL-27A',
+    idf: 'DITL-25A',
+    fa: ['DITL-28A', 'DITL-28A #B'],
+    sov: ['DITL-28C', 'DITL-28C #B']
+  }
+};
+function fnRow(n, r) {
+  try {
+    const s = S.sheets.concat(WORLD.inst || []).find(x => x.name.endsWith(n));
+    return s && typeof DUI !== 'undefined' ? DUI.rowVal(s, r) : null;
+  } catch (e) {
+    return null;
+  }
+}
+function fnOut(n, r) {
+  try {
+    const s = S.sheets.concat(WORLD.inst || []).find(x => x.name.endsWith(n));
+    return s && typeof DUI !== 'undefined' ? DUI.outVal(s, r) : null;
+  } catch (e) {
+    return null;
+  }
+}
+const fnRun = n => (typeof anDitlRun === 'function' ? anDitlRun(n) === 1 : false);
+function anFanStart(U) {
+  const F = (U.fn = { ai: {} }),
+    A = F.ai;
+  A.pa = doAIs('ABC-007', 'AI0160');
+  const T = (AN.sheets.find(x => x.name === 'ABC-014') || {}).S;
+  F.fa = T && AN.hmiCtrls ? (AN.hmiCtrls(T) || []).find(q => q.tag === 'FICFA1055A') : null;
+  F.mvA = doOut('ABC-014', 'FICFA1055A');
+  F.mvB = doOut('ABC-014', 'FICFA1055B');
+  F.faAI = doAIs('ABC-006', 'AI0545');
+  F.qpa = doAIs('ABC-006', 'AI0484');
+  F.qsa = doAIs('ABC-006', 'AI0513');
+  for (const l of [A.pa]) for (const [S2, b] of l) U.own.add(S2.rt.st[b.id]);
+  /* a field trip of the PAF / SAF (protection relay) stops their air: the running state of the motor drawing too (unit.js U.mul .drw,
+     as the BFWP), not only the running bit M.3302 / M.3303 of ABC-007 */
+  if (U.mul && U.mul[1] && U.mul[1].run.length === 1) U.mul[1].drw = ['DITL-26A'];
+  if (U.mul && U.mul[2] && U.mul[2].run.length === 1) U.mul[2].drw = ['DITL-27A'];
+  U.fnZ = {};
+}
+function anFanStep(U, dt) {
+  const F = U.fn,
+    K = AN_FN;
+  if (!F) return;
+  const z = U.fnZ || (U.fnZ = {}),
+    lag = (k, x, tau) => (z[k] = isFinite(z[k]) ? z[k] + ((x - z[k]) * Math.min(dt, tau)) / tau : x),
+    val = l => anUnitVal(l || []);
+  /* FA blowers: running, outlet SOV not closed, inlet damper */
+  const fr = K.run.fa.map(fnRun),
+    sov = K.run.sov.map(n => fnOut(n, 25) === 1 || fnRow(n, 8) === 0),
+    za = doX(F.mvA, 0.428) * 100,
+    zb = doX(F.mvB, 0.249) * 100,
+    g = [fr[0] && sov[0] ? za : 0, fr[1] && sov[1] ? zb : 0];
+  /* the FA flow is this model's: the target of the loop model of FICFA1055A (plant.js: y = smul * y + (1 - smul) * sbase, its own lag),
+     the flow of the snapshot at the damper of the snapshot (9.png 26.3 T/H at 42.8 %), linear in the opening (NO-SOURCE) */
+  if (F.fa && F.fa.b && F.fa.b.proc) {
+    F.fa.b.proc.smul = 0;
+    F.fa.b.proc.sbase = (K.fa.Q0 * (g[0] + g[1])) / K.fa.z0;
+  }
+  U.fnG = g;
+  const qfa = Math.max(0, val(F.faAI)) || 0,
+    pfa = K.fa.P0[0] * Math.pow(qfa / K.fa.Q0, 2);
+  U.fnFaP = K.fa.P0.map(p => lag('fp' + p, (p / K.fa.P0[0]) * pfa, 2));
+  U.fnFaQ = qfa;
+  const qi = g.map(x => (g[0] + g[1] > 0 ? (qfa * x) / (g[0] + g[1]) : 0));
+  const cur = (I0, on, x) => (on ? I0 * (K.fI + (1 - K.fI) * Math.max(0, x)) : 0);
+  U.fnI = U.fnI || [0, 0, 0, 0, 0];
+  U.fnIa = lag('ia', cur(K.I0.fa, fr[0], (qi[0] * pfa) / (K.fa.Q0 * K.fa.P0[0])), 2);
+  U.fnIb = lag('ib', cur(K.I0.fa, fr[1], (qi[1] * pfa) / (K.fa.Q0 * K.fa.P0[0])), 2);
+  /* PAF / SAF: flow of the loop model, outlet pressure on the system curve */
+  const qpa = Math.max(0, val(F.qpa)) || 0,
+    qsa = Math.max(0, val(F.qsa)) || 0,
+    ppa = K.pa.P0 * Math.pow(qpa / K.pa.Q0, 2),
+    psa = K.sa.P0 * Math.pow(qsa / K.sa.Q0, 2);
+  U.fnPaP = lag('pp', ppa, 2);
+  if (F.ai.pa.length) anUnitWrite(F.ai.pa, U.fnPaP);
+  U.fnPafI = lag('ip', cur(K.I0.paf, fnRun(K.run.paf), (qpa * ppa) / (K.pa.Q0 * K.pa.P0)), 2);
+  U.fnSafI = lag('is', cur(K.I0.saf, fnRun(K.run.saf), (qsa * psa) / (K.sa.Q0 * K.sa.P0)), 2);
+  /* IDF: the flue gas is the total air (unit.js U.taf); inlet suction and outlet with its square */
+  const taf = U.taf && U.tafS ? U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0) : 0,
+    rg = Math.pow(taf / K.ga.T0, 2),
+    idf = fnRun(K.run.idf);
+  U.fnGi = K.ga.Pi.map((p, i) => lag('gi' + i, idf ? p * rg : 0, 2));
+  U.fnGo = lag('go', idf ? K.ga.Po * rg : 0, 2);
+  const dpg = U.fnGo - (U.fnGi[0] + U.fnGi[1]) / 2,
+    dpg0 = K.ga.Po - (K.ga.Pi[0] + K.ga.Pi[1]) / 2;
+  U.fnIdfI = lag('ii', cur(K.I0.idf, idf, ((taf / K.ga.T0) * dpg) / dpg0), 2);
+  U.fnI = [U.fnPafI, U.fnSafI, U.fnIdfI, U.fnIa, U.fnIb];
+}
 /* the boiler-side systems, once per step of the unit model (after the air compressors: the atomizing air is plant air) */
 function anBoilerStep(U, dt) {
   anDieselOilStep(U, dt);
+  anFanStep(U, dt);
 }
 /* 2.2.0-beta.9 (M2, user: "sundin ang plant physics"): UNIT MODEL. The boiler and the turbine as ONE plant, so that a load change
    moves the plant and not only the demands of the drawing:
@@ -33252,7 +33371,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.3';
-      c3.textContent += ' · build 72c2f71'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 7a3f7e1'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -50538,7 +50657,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
           if (m) air.push({ s, key: a.key, f: m[1] });
           else {
             const q = BO.find(([re]) => re.test(t)); /* 3.2.1 SEULGI: boiler side (boiler.js) */
-            if (q) bo.push({ s, key: a.key, f: q[1] });
+            if (q) bo.push({ s, key: a.key, f: typeof q[1] === 'function' ? q[1](t, a, s) : q[1] });
           }
         }
       }
@@ -50599,7 +50718,9 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   const BO = [
     [/LT-DO0701\b/, 'doLv'],
     [/DPT-DO0001\b/, 'doDp'],
-    [/(?:^|[^A-Z])PT-DO0005\b/, 'doP1']
+    [/(?:^|[^A-Z])PT-DO0005\b/, 'doP1'],
+    /* fans (boiler.js AN_FN): DITL-28B row 12 "FAB A CURRENT" < 24.6 A (L.L.); the machine instance #B is FA blower B */
+    [/IT-F1055[AB]\b/, (t, a, s) => (/#B$/.test(s.name) ? 'fnIb' : 'fnIa')]
   ];
   /* 3.2.0-beta.50 (live check #94): the BFWP suction pressure PT-FW1115-A / -B (DITL-23A row 12, START permissive > 1.5 kg/cm2) is the
      deaerator pressure (ABC-056 AI0417 PT-CD1104) plus the static head of the deaerator water (its level, ABC-031 AI0672 LT-CD1104) less the
@@ -68480,9 +68601,11 @@ function anBoilerStart(U) {
   U.doSp = null;
   U.doZ = {};
   for (const k in AN_DO.fv0) if (AN_SRC.valve) delete AN_SRC.valve[k];
+  anFanStart(U);
 }
 /* called by anUnitCold: the pumps are the DITL's (stopped in a cold plant); the tank keeps its level */
 function anBoilerCold(U) {
+  U.fnZ = {};
   U.doP1 = U.doP2 = NaN;
   U.doSp = null;
   U.doZ = {};
@@ -68559,9 +68682,126 @@ function anDieselOilStep(U, dt) {
   w(A.zf, zl('f', xf * 100));
   A.zb.forEach((l, i) => w(l, zl('b' + i, xc[i] * 100)));
 }
+/* 3.2.1 SEULGI: FANS, AIR AND FLUE GAS (docs/versions/v3.2.1/FANS_PLANT_MODEL.md). The air and gas FLOWS stay those of the loop model
+   (unit.js: FICFA1071 / FICFA1081 with the PAF / SAF running, PICFG108 with the IDF); this part adds what the loop model did not have:
+   - FA blowers F-1055A / B (DITL-28A and its machine instance #B, IO STN103 I.0046 / I.0366): the fluidizing air (FICFA1055A, ABC-014,
+     PV FIFA1055 = FT-FA1055 AI0545) needs a blower running with its outlet SOV open (XV-FA1055-A3 / B3, DITL-28C rows 9 "OUTLET SOV
+     CLOSED" I.0045 / I.008F, or its OPEN COMMAND output 25: the closed limit of instance #B stays 1 after the command, a finding
+     of the DITL valve model, FANS_PLANT_MODEL.md). No blower = no FA flow -> ABC-006 M.3114 "FAB OUTLET AIR FLOW L.L. < 20 T/H" -> DITL-28A #B standby start.
+     Each blower gives flow by its inlet damper (FCV-FA1055-A1 / B1, ABC-014 FICFA1055A / B MV; linear, NO-SOURCE), 26.3 T/H at 42.8 %.
+     PAF / SAF field trip: their air stops (unit.js U.mul with the motor drawings DITL-26A / 27A).
+   - motor currents IT-F1053 PAF / IT-F1054 SAF / IT-F1056 IDF / IT-F1055A / B (STN103 AI0454 / 0469 / 0453 / 0452 / 0468): the current
+     of the snapshot times (no-load share fI + the rest x air power / air power of the snapshot), air power = flow x pressure rise
+     (fan law; fI NO-SOURCE). IT-F1055A / B also feed DITL-28B row 12 "FAB A CURRENT" < 24.6 A (L.L.).
+   - pressures: PAF outlet PT-FA1075 (AI0160) and FA header PT-FA1055-A / B (AI0294 / 0417) with the square of their flow (system
+     curve); ESP outlet / IDF inlet PT-FG1141-A / B (AI0416 / 0772) and IDF outlet PT-FG1151 (AI0432) with the square of the total air.
+   Anchors: 7.PNG (151 MW) PAF 253.6 A, SAF 134.0 A, IDF 199.6 A, PIFA1075 1551 at FIFA1071 354.0, PIFA1085 1427 at FIFA1081 213.0,
+   PIFG1141A / B -442 / -450, PIFG1151 -7, TAF 592.1 T/H; 9.png (150 MW) FA BLOWER-A 37.3 A, FIFA1055 26.3 T/H, PIFA1055A 3257 /
+   PIFA1055B 3315 mmH2O (B stopped with its outlet SOV closed reads the header: the transmitters are on the common side, from the
+   snapshot). */
+const AN_FN = {
+  I0: { paf: 253.6, saf: 134.0, idf: 199.6, fa: 37.3 },
+  fI: 0.45,
+  pa: { Q0: 354.0, P0: 1551 },
+  sa: { Q0: 213.0, P0: 1427 },
+  ga: { T0: 592.1, Pi: [-442, -450], Po: -7 },
+  fa: { Q0: 26.3, z0: 42.8, P0: [3257, 3315] },
+  run: {
+    paf: 'DITL-26A',
+    saf: 'DITL-27A',
+    idf: 'DITL-25A',
+    fa: ['DITL-28A', 'DITL-28A #B'],
+    sov: ['DITL-28C', 'DITL-28C #B']
+  }
+};
+function fnRow(n, r) {
+  try {
+    const s = S.sheets.concat(WORLD.inst || []).find(x => x.name.endsWith(n));
+    return s && typeof DUI !== 'undefined' ? DUI.rowVal(s, r) : null;
+  } catch (e) {
+    return null;
+  }
+}
+function fnOut(n, r) {
+  try {
+    const s = S.sheets.concat(WORLD.inst || []).find(x => x.name.endsWith(n));
+    return s && typeof DUI !== 'undefined' ? DUI.outVal(s, r) : null;
+  } catch (e) {
+    return null;
+  }
+}
+const fnRun = n => (typeof anDitlRun === 'function' ? anDitlRun(n) === 1 : false);
+function anFanStart(U) {
+  const F = (U.fn = { ai: {} }),
+    A = F.ai;
+  A.pa = doAIs('ABC-007', 'AI0160');
+  const T = (AN.sheets.find(x => x.name === 'ABC-014') || {}).S;
+  F.fa = T && AN.hmiCtrls ? (AN.hmiCtrls(T) || []).find(q => q.tag === 'FICFA1055A') : null;
+  F.mvA = doOut('ABC-014', 'FICFA1055A');
+  F.mvB = doOut('ABC-014', 'FICFA1055B');
+  F.faAI = doAIs('ABC-006', 'AI0545');
+  F.qpa = doAIs('ABC-006', 'AI0484');
+  F.qsa = doAIs('ABC-006', 'AI0513');
+  for (const l of [A.pa]) for (const [S2, b] of l) U.own.add(S2.rt.st[b.id]);
+  /* a field trip of the PAF / SAF (protection relay) stops their air: the running state of the motor drawing too (unit.js U.mul .drw,
+     as the BFWP), not only the running bit M.3302 / M.3303 of ABC-007 */
+  if (U.mul && U.mul[1] && U.mul[1].run.length === 1) U.mul[1].drw = ['DITL-26A'];
+  if (U.mul && U.mul[2] && U.mul[2].run.length === 1) U.mul[2].drw = ['DITL-27A'];
+  U.fnZ = {};
+}
+function anFanStep(U, dt) {
+  const F = U.fn,
+    K = AN_FN;
+  if (!F) return;
+  const z = U.fnZ || (U.fnZ = {}),
+    lag = (k, x, tau) => (z[k] = isFinite(z[k]) ? z[k] + ((x - z[k]) * Math.min(dt, tau)) / tau : x),
+    val = l => anUnitVal(l || []);
+  /* FA blowers: running, outlet SOV not closed, inlet damper */
+  const fr = K.run.fa.map(fnRun),
+    sov = K.run.sov.map(n => fnOut(n, 25) === 1 || fnRow(n, 8) === 0),
+    za = doX(F.mvA, 0.428) * 100,
+    zb = doX(F.mvB, 0.249) * 100,
+    g = [fr[0] && sov[0] ? za : 0, fr[1] && sov[1] ? zb : 0];
+  /* the FA flow is this model's: the target of the loop model of FICFA1055A (plant.js: y = smul * y + (1 - smul) * sbase, its own lag),
+     the flow of the snapshot at the damper of the snapshot (9.png 26.3 T/H at 42.8 %), linear in the opening (NO-SOURCE) */
+  if (F.fa && F.fa.b && F.fa.b.proc) {
+    F.fa.b.proc.smul = 0;
+    F.fa.b.proc.sbase = (K.fa.Q0 * (g[0] + g[1])) / K.fa.z0;
+  }
+  U.fnG = g;
+  const qfa = Math.max(0, val(F.faAI)) || 0,
+    pfa = K.fa.P0[0] * Math.pow(qfa / K.fa.Q0, 2);
+  U.fnFaP = K.fa.P0.map(p => lag('fp' + p, (p / K.fa.P0[0]) * pfa, 2));
+  U.fnFaQ = qfa;
+  const qi = g.map(x => (g[0] + g[1] > 0 ? (qfa * x) / (g[0] + g[1]) : 0));
+  const cur = (I0, on, x) => (on ? I0 * (K.fI + (1 - K.fI) * Math.max(0, x)) : 0);
+  U.fnI = U.fnI || [0, 0, 0, 0, 0];
+  U.fnIa = lag('ia', cur(K.I0.fa, fr[0], (qi[0] * pfa) / (K.fa.Q0 * K.fa.P0[0])), 2);
+  U.fnIb = lag('ib', cur(K.I0.fa, fr[1], (qi[1] * pfa) / (K.fa.Q0 * K.fa.P0[0])), 2);
+  /* PAF / SAF: flow of the loop model, outlet pressure on the system curve */
+  const qpa = Math.max(0, val(F.qpa)) || 0,
+    qsa = Math.max(0, val(F.qsa)) || 0,
+    ppa = K.pa.P0 * Math.pow(qpa / K.pa.Q0, 2),
+    psa = K.sa.P0 * Math.pow(qsa / K.sa.Q0, 2);
+  U.fnPaP = lag('pp', ppa, 2);
+  if (F.ai.pa.length) anUnitWrite(F.ai.pa, U.fnPaP);
+  U.fnPafI = lag('ip', cur(K.I0.paf, fnRun(K.run.paf), (qpa * ppa) / (K.pa.Q0 * K.pa.P0)), 2);
+  U.fnSafI = lag('is', cur(K.I0.saf, fnRun(K.run.saf), (qsa * psa) / (K.sa.Q0 * K.sa.P0)), 2);
+  /* IDF: the flue gas is the total air (unit.js U.taf); inlet suction and outlet with its square */
+  const taf = U.taf && U.tafS ? U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0) : 0,
+    rg = Math.pow(taf / K.ga.T0, 2),
+    idf = fnRun(K.run.idf);
+  U.fnGi = K.ga.Pi.map((p, i) => lag('gi' + i, idf ? p * rg : 0, 2));
+  U.fnGo = lag('go', idf ? K.ga.Po * rg : 0, 2);
+  const dpg = U.fnGo - (U.fnGi[0] + U.fnGi[1]) / 2,
+    dpg0 = K.ga.Po - (K.ga.Pi[0] + K.ga.Pi[1]) / 2;
+  U.fnIdfI = lag('ii', cur(K.I0.idf, idf, ((taf / K.ga.T0) * dpg) / dpg0), 2);
+  U.fnI = [U.fnPafI, U.fnSafI, U.fnIdfI, U.fnIa, U.fnIb];
+}
 /* the boiler-side systems, once per step of the unit model (after the air compressors: the atomizing air is plant air) */
 function anBoilerStep(U, dt) {
   anDieselOilStep(U, dt);
+  anFanStep(U, dt);
 }
 
 /* ---- engine/unit.js ---- */
@@ -77202,7 +77442,7 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
           if (m) air.push({ s, key: a.key, f: m[1] });
           else {
             const q = BO.find(([re]) => re.test(t)); /* 3.2.1 SEULGI: boiler side (boiler.js) */
-            if (q) bo.push({ s, key: a.key, f: q[1] });
+            if (q) bo.push({ s, key: a.key, f: typeof q[1] === 'function' ? q[1](t, a, s) : q[1] });
           }
         }
       }
@@ -77263,7 +77503,9 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
   const BO = [
     [/LT-DO0701\b/, 'doLv'],
     [/DPT-DO0001\b/, 'doDp'],
-    [/(?:^|[^A-Z])PT-DO0005\b/, 'doP1']
+    [/(?:^|[^A-Z])PT-DO0005\b/, 'doP1'],
+    /* fans (boiler.js AN_FN): DITL-28B row 12 "FAB A CURRENT" < 24.6 A (L.L.); the machine instance #B is FA blower B */
+    [/IT-F1055[AB]\b/, (t, a, s) => (/#B$/.test(s.name) ? 'fnIb' : 'fnIa')]
   ];
   /* 3.2.0-beta.50 (live check #94): the BFWP suction pressure PT-FW1115-A / -B (DITL-23A row 12, START permissive > 1.5 kg/cm2) is the
      deaerator pressure (ABC-056 AI0417 PT-CD1104) plus the static head of the deaerator water (its level, ABC-031 AI0672 LT-CD1104) less the
