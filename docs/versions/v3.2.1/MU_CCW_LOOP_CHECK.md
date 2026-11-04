@@ -63,3 +63,7 @@ inaasahan ay galing sa `MU_CCW_PLANT_MODEL.md`. Simula: RUN, plant model ON.
 3. V-CW1007 → 5 %. Inaasahan: PT-CW1152 < 3.5, ACWP-B AUTO START (DITL-77), flow ~1500 m3/h. Ibalik sa OPEN.
 4. V-MU0007 at V-MU0011 → CLOSE. Inaasahan: PT-MU0709 ~2.5 kg/cm2, ang logic (DITL-112) ay pareho ang basa. Ibalik sa OPEN: ~9.0.
 5. Sa Start at 150 MW: lahat ng valve bumabalik sa normal (V-CW1012 / 1015 sarado, ang iba bukas).
+
+## G. Turbine oil sa closed cooling (`TURBINE_OIL_PLANT_MODEL.md`; Start at 150 MW)
+1. 036 TURBINE OIL: TILO10021 / 22 ~46 °C, TILO1001 ~62 °C, TCV-CW1201 ~52 %.
+2. Trip ng lahat ng SWBP (DITL-30 A / B / C, test tool). Inaasahan: pagkatapos ng 10 min, ACW supply ~52 °C at TCV-CW1201 100 %; pagkatapos ng 25 min, TILO10021 ~73 °C at TIGE1007 ~82 °C.

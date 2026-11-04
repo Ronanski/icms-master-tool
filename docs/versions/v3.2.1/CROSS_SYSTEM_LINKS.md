@@ -13,10 +13,11 @@ ina-update sa bawat bagong system.
 5. **Instrument air → MFT.** IA pressure → DITL-03G (2 sa 3 < 3.5) at PSL-IA1706 (2.8). Test: `air_model.js`.
 6. **CW pump → condenser vacuum → turbine trip.** Kapag walang CW pump o condensate pump, bumababa ang vacuum at nagti-trip ang turbine sa LOW VACUUM (TCS). Nasa code. Running bit pa lang ang basa, hindi pa ang CW flow ng bagong model.
 8. **Manual valves → flow / pressure → logic** (`FIELD_VALVES.md`, test `field_valves.js`). CCWHE valves → ACW flow at paglamig; ACWP discharge 5 % → PT-CW1152 < 3.5 → ACWP-B auto start; MWP discharge → PT-MU0709 → fill ng expansion tank (kailangan > 6); V-IA1101 → PSL-IA1706 → MFT; V-PA0013 → plant air ang bumubuhay sa instrument air.
+9. **Closed cooling → turbine lube oil → bearings** (`TURBINE_OIL_PLANT_MODEL.md`, test `lube_oil.js`). ACW supply temperatura at flow → lube oil cooler → TE-LO1002 (PV ng TICLO1002, ABC-053) → TCV-CW1201; sa 100 % umiinit ang langis at ang bearings (tcs.js). Chain test: trip ng lahat ng SWBP → oil 72.6 °C, bearing No.3 81.5 °C pagkatapos ng 25 min.
 7. **Lahat ng model → logic → model.** Pressure, level at flow → DITL / ABC rows. Ang START COMMAND ng logic ay nagpapatakbo ng equipment (ACWP, MWP, SWBP, air compressor). Test: bawat model test.
 
 ## Wala pa (plano, kasama sa susunod na system)
-1. **Closed cooling temperature → turbine oil cooler at temperatura ng bearing / winding ng motor.** Fixed pa ang AN_MT. Kasama sa Turbine Oil (susunod).
+1. **Closed cooling temperature → temperatura ng bearing / winding ng motor.** Fixed pa ang AN_MT. (Ang turbine oil ay tapos na, item 9.)
 2. **Instrument air → pneumatic valves.** Sa ilalim ng 3.5, dapat hindi gumagalaw ang air-operated valve (XV-MU1109 at iba pa). Ngayon, mensahe lang sa faceplate ito. Gagawin pagkatapos ng Turbine Oil.
 3. **CW flow / seawater temperature → condenser vacuum.** Kasama sa Condensate (condenser).
-4. **Chain test:** isang test na sumusunod sa buong kadena. Halimbawa: trip ng SWBP → umiinit ang CCW → umiinit ang turbine oil at bearing → alarm / trip ng logic. Gagawin kapag nakakabit na ang 1.
+4. **Chain test hanggang alarm / trip:** may chain test na hanggang bearing (`lube_oil.js`). Kulang pa ang alarm at trip ng TCS sa bearing temperatura, at ang mga motor (item 1).
