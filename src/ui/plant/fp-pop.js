@@ -913,6 +913,80 @@
     me._iv = setInterval(tick, 500);
     return true;
   }
+  /* 3.2.1-beta.12: a MOV / XV of a DITL sheet (mockup pages): POSITION, OPEN / CLOSED, REMOTE / AUTO, and its CRT push buttons
+     (the input rows of the sheet: OPEN, CLOSE, STOP, ISOLATE, REINSTATE ...); each press asks EXECUTE / CANCEL, then presses the row */
+  function mov(P) {
+    if (!P) return false;
+    const F = frame(P.n, (P.t || '') + ' · ' + (P.d || 'DITL'));
+    const me = box;
+    F.hd.querySelector('.fpo-tt').append(E('span', 'fpo-chip', P.d || 'DITL'));
+    const lO = lampEl('OPEN'),
+      lC = lampEl('CLOSED'),
+      pv = E('span', 'fpo-v', '-----'),
+      md = E('span', 'fpo-v', '-----');
+    F.bd.append(row('POSITION', pv), row('STATUS', lO, lC), row('MODE', md));
+    const I0 = call(P.info, null) || { pbs: [] },
+      btns = I0.pbs.map(p => {
+        const b = E('button', 'fpo-cmd', p.l);
+        b.type = 'button';
+        b.onclick = () => !b.disabled && ask(p);
+        return b;
+      });
+    if (btns.length) F.bd.append(row('COMMAND', ...btns));
+    const msg = E('div', 'fpo-why', btns.length ? 'Push buttons of the DCS screen (CRT), read from the DITL sheet ' + (P.d || '') + '.' : 'No CRT push button on the DITL sheet ' + (P.d || '') + '.');
+    F.bd.append(msg);
+    const ex = E('div', 'fpo-ex'),
+      exT = E('span'),
+      exGo = E('button', 'fpo-go', 'EXECUTE'),
+      exNo = E('button', '', 'CANCEL');
+    exGo.type = exNo.type = 'button';
+    ex.append(exT, exGo, exNo);
+    ex.hidden = true;
+    F.bd.append(ex);
+    let pend = null;
+    function ask(p) {
+      pend = p;
+      exT.textContent = p.l + ' ' + P.n + '?';
+      ex.hidden = false;
+      exGo.focus();
+    }
+    exNo.onclick = () => ((pend = null), (ex.hidden = true));
+    exGo.onclick = () => {
+      const p = pend;
+      pend = null;
+      ex.hidden = true;
+      if (!p) return;
+      const r = call(() => P.press(p.row), 'no logic') || '';
+      msg.textContent = typeof r === 'string' && r ? '⚠ ' + r : P.n + ' ' + p.l + ': EXECUTED';
+      if (!(typeof r === 'string' && r)) call(() => window.lsEventAdd('CRT', 'DCS', 'Operator (CRT): ' + P.n + ' ' + (P.t || '') + ' ' + p.l));
+      setTimeout(tick, 150);
+    };
+    const ln = E('div', 'fpo-ln'),
+      ev = E('button', 'fpo-a', 'Events');
+    ev.type = 'button';
+    ev.onclick = () => call(() => document.getElementById('evbtn').click());
+    ln.append(ev);
+    F.bd.append(ln);
+    function tick() {
+      if (!me.isConnected) return closeEl(me);
+      const I = call(P.info, null) || {},
+        pos = I.pos,
+        run = isRun(),
+        st = pos == null ? null : pos >= 99.5 ? 'OPEN' : pos <= 0.5 ? 'CLOSED' : 'TRAVEL';
+      pv.textContent = pos == null ? '-----' : (+pos).toFixed(1) + ' %';
+      F.lamp.className = 'fpo-lamp ' + (pos == null ? '' : pos > 0.5 ? 'run' : 'stop');
+      F.val.textContent = st || '-----';
+      lO.className = 'fpo-lp' + (pos != null && pos > 0.5 ? ' run' : '');
+      lC.className = 'fpo-lp' + (pos != null && pos <= 0.5 ? ' stop' : '');
+      md.textContent = [I.rem == null ? '' : I.rem ? 'REMOTE' : 'LOCAL', I.au == null ? '' : I.au ? 'AUTO' : 'MANUAL'].filter(Boolean).join(' · ') || '-----';
+      btns.forEach(b => (b.disabled = !run));
+    }
+    paint = tick;
+    tick();
+    place(me);
+    me._iv = setInterval(tick, 500);
+    return true;
+  }
   /* 3.2.1 (IRENE: PLANT MODEL, user 2026-11-04 "Kung ano lng ang mapapakinabangan ntn s simulation"): the useful manual valves of the
      plant model (unit.js AN_SW_V0 / AN_FV0, AN.swValve): the field operator sets the opening; red = open (any opening), green = closed */
   const FVUSE = {
@@ -1160,7 +1234,7 @@
     me._iv = setInterval(tick, 500);
     return true;
   }
-  window.LS_FPOP = { motor, valve, valveTag, valveKind, valveOpen, tcs, fieldPct, pb, field, yn, hit, openAd, place, close, info, get open() {
+  window.LS_FPOP = { motor, valve, valveTag, valveKind, valveOpen, tcs, mov, fieldPct, pb, field, yn, hit, openAd, place, close, info, get open() {
     return anyOpen();
   } };
 })();

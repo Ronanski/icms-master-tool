@@ -1,5 +1,60 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.13 — faceplate fixes from MINA's live loop check of 030 CIRCULATING WATER (2026-11-04, thread "Build loop check dock in app")
+
+**Problem.** MINA, live loop check on beta.8 (user PC): (1) the "Logic DITL-29A" link of the SWP-A faceplate only closed the faceplate;
+(2) DCS STOP + EXECUTE of a running pump in AUTO did nothing and the faceplate said nothing; (3) the STANDBY text said "or the header
+pressure drops", but the drawing has no header pressure for the SWP.
+
+**Source.** DITL-29A (PDF, sheet 53): STOP = STOP P.B. (row 17) AND REMOTE (row 18) AND NOT AUTO (row 19); auto start = AUTO (row 4) AND
+[(B TRIP row 8 AND B RUNNING off-delay 2 s row 9) OR (B RUNNING AND B TRIP INTERLOCK row 11) OR the same for C (rows 12 ~ 15)]. DITL-30
+(sheet 55): the same for the SWBP (STOP rows 14 / 16, auto start rows 8 ~ 11). So (2) is right in the logic; only the faceplate was silent.
+
+**Work done (`src/ui/plant/fp-pop.js`).**
+- The "Logic DITL-xx" link (motor, DCS valve, push-button faceplates) opens the Logic view first, then the drawing (the order of the
+  Training dock). Before: `openD` alone, the Plant view stayed on top.
+- A DCS STOP not taken in AUTO (still RUNNING 3 s after EXECUTE) shows: "STOP not taken: the drawing accepts the DCS STOP in MAN only
+  (DITL-29A: STOP P.B. AND NOT AUTO). Press MAN, then STOP." The buttons are not changed.
+- STANDBY text: "its drawing starts it by itself (auto cut-in: when a running pump trips, not on a normal STOP)" for DITL-29A / DITL-30.
+
+**Checked (headless cloud, Chromium, Home → Cold, RUN).** SWP-A: REMOTE, START (peak ~500 A, then 229 A), AUTO, STOP → still RUNNING
+and the new line shown; MAN, STOP → STOPPED; AUTO → the new STANDBY text. The Logic link opened DITL-29A with SIMULATION RUNNING.
+Also seen (no change made): LOCAL START / STOP P.B. rows 23 / 26 start and stop the SWP; ELECTRICAL TROUBLE of a running SWP-B / SWBP-A
+(the pentagon of the drawing) trips it and the AUTO standby starts (auto cut-in works in the logic and the plant model).
+`npm run check` SAME.
+
+**Not checked / not reproduced.** Live test on the user PC. The plant reset on the first Loop check press after "At 150 MW" + RUN: in
+the cloud (page and worker engine) the only reset is the one of the 150 MW load itself. The page list mouse click: the Systems list
+click works in the cloud; a native drop-down list cannot be clicked in headless.
+
+**Open (needs the user).** MINA's proposal: FIELD buttons on the motor faceplate (LOCAL START / STOP P.B., TRIP of the protection relay,
+high bearing / winding temperature, vibration) so the loop check needs no force. This is a visual change of the faceplate: mockup first
+(rule 4). The Loop check dock cards are on hold (user: do not use the dock during the live check).
+
+## 3.2.1-beta.12 — 028 CONDENSATE, mockup page 05 in the app (2026-11-04, JISOO : HMI MOCKUP)
+
+**Work done.** `docs/hmi/mockups/temp/05-condensate.html` → Plant view **028 CONDENSATE** (`MK05`), `tools/hmi-mock/p05.py` →
+`src/ui/plant/hmi-mock-cd.js`; loop check COND → page `MK05`.
+- CEP-A / B = DITL-61A / 61B (M.3350 / M.3351), RUN / STOP, Y / N, current at DP ng plant model (AN_CD `cdI0/1`, `cdDp0/1`).
+- Bagong MOV / XV faceplate `LS_FPOP.mov` (fp-pop.js): POSITION, OPEN / CLOSED, REMOTE / AUTO, at ang CRT push buttons na binasa mula
+  sa input rows ng DITL sheet (OPEN, CLOSE, STOP, AUTO, ISOLATE, REINSTATE ...), bawat isa may EXECUTE / CANCEL → pindot ng row.
+  Valves: MV-MU1001 (DITL-60), XV-CD1006 (62), XV-CD1004 / 1005 (63, flash chamber spray), MV-CD1007 (64), MV-CD1008 (65),
+  XV-CD1114 (66), XV-CD1123 (67), XV-CD1125 (68), MV-CD1001 / 1002 / 1003 (69 / 70 / 71).
+- Controllers ng logic: LICCD1110A, LICCD1110B, LICCD1104, FICCD1120, FICCD1121 (MV % at mode; click = faceplate).
+- Values: logic transmitter kung mayroon (FT-CD1120, FT-CD1121, PT-CD1104, LT-CD1104-1 / 2 / 3), kung wala plant model:
+  PT-CD1110 `cdP`, LT-CD1110 `cdHw`, PT-CD1117 `cdPd`; TT-CD1110-1 / -2 / -3 at TT-CD1118 = `cdT` (condenser saturation = hotwell,
+  condenser O&M L15-1 p16); TT-CD1120 = TT-CD1101 ng AN_LP (ang ejector at gland steam condenser rise ay bago ang No.1 LPH inlet);
+  LP heater temps = `AN.unit.tt`.
+- NO-SOURCE (walang logic sheet at walang plant model, '-----'): TT-CD1110-4 flash chamber, TT-CD1119, FT-CD1115, FT-CD1122,
+  PT-CD1122, TT-CD1104. Para sa IRENE (plant model).
+- Bug fix ng runtime: ang `tt:` value ay nag-flicker sa '-----' (dalawang source sa iisang tag); ngayon iisa.
+
+**Checked (headless cloud).** 150 MW + RUN: CEP-A RUNNING 28.1 A, pump outlet 16.8 kg/cm2, condensate flow 379.8 T/H, LCV-CD1104
+17.5 % AUTO, FCV-CD1121 100 % MANUAL, MV-CD1001 / 1002 100 %; XV-CD1004 faceplate OPEN + EXECUTE → 100 % OPEN, CLOSE + EXECUTE →
+0 % CLOSED; walang JS error; `npm run check` SAME.
+
+**Not checked.** Live test sa PC ng user; bawat push button ng bawat valve (isa lang ang sinubok); phone size.
+
 ## 3.2.1-beta.11 — 036 TURBINE OIL, mockup page 04 in the app (2026-11-04, JISOO : HMI MOCKUP)
 
 **Work done.** `docs/hmi/mockups/temp/04-turbine-oil.html` → Plant view **036 TURBINE OIL** (`MK04`), `tools/hmi-mock/p04.py` →
