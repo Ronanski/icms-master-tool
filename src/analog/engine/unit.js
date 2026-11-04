@@ -235,6 +235,8 @@ function anUnitStop() {
   for (const z of U.spr || []) z.pr.uf = undefined;
   U.lpbSp = null; /* 3.2.1 anCdTagStep: the LP bypass spray controller is found again */
   U.fwC = null; /* 3.2.1 anFwTagStep: its controllers and F(X) are found again */
+  U.asC = null; /* 3.2.1 anAsTagStep: page 08 values */
+  U.asT15 = U.asTgs = undefined;
   if (U.fwp && U.fwp.pr) U.fwp.pr.op = undefined;
   for (const p of U.fp || []) {
     p.pr.uf = undefined;
@@ -1886,6 +1888,7 @@ function anLphStep(U, dt) {
   });
   anCdTagStep(U, ld);
   anFwTagStep(U);
+  anAsTagStep(U, dt);
 }
 /* 3.2.1 (IRENE, page 05 CONDENSATE): the other condensate transmitters of the page that no sheet reads (AN.unit.tt).
    Sources: 28.png (151.3 MW, MSF 480.3 T/H): hotwell TT-CD1110-1 / -2 40, flash chamber TT-CD1110-4 42, TT-CD1118 40, ejector condenser
@@ -1955,6 +1958,82 @@ function anCdTagStep(U, ld) {
      FT-FW1059          40 T/H x TCV-FW1060 (TICMS1022 MV) x XV-FW1061 (DITL-79) x sqrt(dp / 130.5) (NO-SOURCE: no data sheet, the
                         capacity taken as the IO range; 4.PNG 1.8 T/H at 0.1 % with the block valve closed is not modelled).
    Not on any DCS sheet: XV-TS1700 / 1710 (NO-SOURCE, not modelled). */
+/* 3.2.1 (IRENE: page 08 AUX STEAM AND VACUUM; docs/versions/v3.2.1/AUX_STEAM_PLANT_MODEL.md). The values of page 08 that no ABC / DITL
+   sheet reads, in AN.unit.tt for the plant page.
+   Sources:
+     TCS IO list   iolist-tcs HMI_AI: PTST11101 ~ 3 "LP TURBINE EXHAUST HOOD STEAM PRESS. (CONDENSER VACUUM) (A / B / C)" kg/cm2 abs,
+                   TEST11101 ~ 3 "LP TURBINE EXHAUST HOOD STEAM TEMP." 0 ~ 150 C, PTGS10011 / 2 "GLAND STEAM SEAL HEADER PRESS." -1 ~ 2
+                   kg/cm2g, TEGS1002 "GLAND STEAM SEAL HEADER TEMP.", TEGS1003 "GLAND STEAM SEAL LP INLET TEMP.", ZTGS1034 "STEAM
+                   PACKING UNLOADING VALVE POSITION", ZTAS1011 / MVAS1011 "HP TURBINE WARMING VALVE POSITION";
+     DCS IO list   STN102 AI0643 TT-AS1015 gland steam desuperheater outlet, AI0706 / AI0720 ZT-AS1020-1 / -2;
+     ABC-030       PIC-AS1005 MV -> F(X) LN17 (valve 1) / LN16 (valve 2) (29.PNG MV 4.2 -> 0.1 / 32.2 %; the F(X) gives 0 / 32.3);
+     29.PNG 150 MW condenser 0.056 / 0.053 / 0.053 kg/cm2A, hood 38 / 38 / 37 C (= the saturation of the condenser: wet steam on load);
+                   gland header 0.32 kg/cm2, TEGS1002 / 1003 364 / 362 C, TT-AS1015 257 C, aux header TT-AS1003 236 C, PV-GS1034
+                   42.6 % (the unloading valve spills the HP packing leak-off on load to the No.1 LPH: the plant self-seals);
+     PR-OPE-5002   GLAND SEALING: TIAS1015 220 C (cold 150 ~ 260); HP TURBINE WARMING: TCS opens MV-AS1011 to 40 ~ 42 %, closes it at the end.
+   How it works:
+     PTST11101 ~ 3 = PT-CD1110 (the model condenser U.cdP); TEST11101 ~ 3 = the LP exhaust hood of the TCS model (tcs.js c.Tx, start-up),
+     the condenser saturation without it (Start at 150 MW);
+     ZT-AS1020-1 / -2 = the F(X) of the PIC-AS1005 MV (held by the airlock without air, AN_AV);
+     gland header (in service: the TCS gland sealing, or a turbine on load): 0.32 kg/cm2 = 29.PNG, the TCS steam seal set point is not
+     in the docs (CALIBRATED); out of service 0;
+     ASSUMED (no load curve in the docs): from no load (fed from the aux steam header, TT-AS1015 = TT-AS1003) to 150 MW (self-sealing, 29.PNG)
+     linear in the load: TT-AS1015 + 21 C, TEGS1002 + 107 C over TT-AS1015, TEGS1003 = TEGS1002 - 2, PV-GS1034 42.6 %; the temperatures
+     follow with 300 s;
+     MV-AS1011 = 40 % while the TCS is in HP TURBINE WARMING (step 0, phase warm), else 0. */
+function anAsTagStep(U, dt) {
+  const r1 = x => (isFinite(x) ? Math.round(10 * x) / 10 : null),
+    r3 = x => (isFinite(x) ? Math.round(1000 * x) / 1000 : null),
+    C = U.asC || (U.asC = {}),
+    c = U.tc,
+    Ta = isFinite(U.Tamb) ? U.Tamb : 30,
+    L = Math.max(0, Math.min(1, (+U.MW || 0) / 150)),
+    gland = c ? !!c.gland : (U.tb && U.tb.rpm > 100) || (+U.MW || 0) > 0,
+    Ps = isFinite(U.cdP) ? anTsatA(U.cdP) : NaN,
+    hood = c && isFinite(c.Tx) ? c.Tx : isFinite(Ps) ? Ps : Ta;
+  /* PIC-AS1005 MV -> the two valves (ABC-030 F(X)) */
+  if (C.S === undefined) {
+    const x = AN.sheets.find(y => y.name === 'ABC-030'),
+      k = x && x.S && AN.hmiCtrls ? (AN.hmiCtrls(x.S) || []).find(q => q.tag === 'PICAS1005') : null;
+    C.S = k && k.out != null ? x.S : null;
+    C.n = k ? k.out : null;
+    C.f1 = C.S ? C.S.blk.find(b => b.k === 'FX' && b.p && b.p.ln === 'LN17') || null : null;
+    C.f2 = C.S ? C.S.blk.find(b => b.k === 'FX' && b.p && b.p.ln === 'LN16') || null : null;
+    C.taux = anUnitAIs('2|AI0642');
+  }
+  let mv = C.S ? Math.max(0, Math.min(100, +C.S.rt.v[C.n] || 0)) : NaN;
+  if (AN_AV.hold.PICAS1005) {
+    const H = U.avH || (U.avH = {}),
+      P = anAvP();
+    if (!isFinite(P) || P >= AN_AV.lock || !isFinite(mv)) H['mv:PICAS1005'] = mv;
+    else if (H['mv:PICAS1005'] == null || !isFinite(H['mv:PICAS1005'])) H['mv:PICAS1005'] = mv;
+    mv = H['mv:PICAS1005'];
+  }
+  const fx = b => (b && isFinite(mv) ? Math.max(0, Math.min(100, anFXs(b.p, mv).y)) : NaN),
+    Taux = anUnitVal(C.taux || []),
+    t15 = gland ? (isFinite(Taux) ? Taux : Ta) + 21 * L : Ta,
+    tgs = gland ? t15 + 107 * L : Ta,
+    lag = (k, x) => (U[k] = isFinite(U[k]) && dt > 0 ? U[k] + ((x - U[k]) * Math.min(dt, 300)) / 300 : x);
+  lag('asT15', t15);
+  lag('asTgs', tgs);
+  Object.assign(U.tt || (U.tt = {}), {
+    PTST11101: r3(U.cdP),
+    PTST11102: r3(U.cdP),
+    PTST11103: r3(U.cdP),
+    TEST11101: r1(hood),
+    TEST11102: r1(hood),
+    TEST11103: r1(hood),
+    'ZT-AS1020-1': r1(fx(C.f1)),
+    'ZT-AS1020-2': r1(fx(C.f2)),
+    'TT-AS1015': r1(U.asT15),
+    PTGS10011: gland ? 0.32 : 0,
+    PTGS10012: gland ? 0.32 : 0,
+    TEGS1002: r1(U.asTgs),
+    TEGS1003: r1(U.asTgs - 2 * L),
+    'PV-GS1034': gland ? r1(42.6 * L) : 0,
+    'ZT-AS1011': c && c.cur === 0 && c.ph === 'warm' ? 40 : 0
+  });
+}
 const AN_FWT = {
   ms0: 472.7,
   ts13: 14.07,
