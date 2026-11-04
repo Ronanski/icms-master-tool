@@ -20396,6 +20396,10 @@ function anProcStep(S, dt) {
       q.y += (1 - Math.exp(-dt / Math.max(pr.T, 0.05))) * (tgt - q.y);
       q.y = Math.max(lo, Math.min(lo + span, q.y));
     }
+    /* 3.2.1 (IRENE: FEEDWATER): a source that always feeds (pr.sflo, the extraction no. 3 to the deaerator at load) is a floor of the
+       state too, not only of the target: before, Start at 150 MW began at ~1 kg/cm2 and took minutes (the lag of the loop) to reach 5.3,
+       the BFWP suction was ~1.7 kg/cm2 meanwhile */
+    if (pr.sflo != null && dt > 0 && isFinite(q.y) && q.y < pr.sflo) q.y = Math.min(lo + span, pr.sflo);
     if (gate === 'zero' && b.p.lt === 'flow') q.y = lo;
     if (dt <= 0 && q.u != null) continue;
     const y = pr.integ && q.sw ? Math.max(lo, Math.min(lo + span, q.y - q.sw)) : q.y;
@@ -22754,7 +22758,12 @@ const AN_FV0 = {
   'V-CW1010': 100, 'V-CW1011': 100, 'V-CW1012': 0, 'V-CW1013': 100, 'V-CW1014': 100, 'V-CW1015': 0,
   'V-MU0001': 100, 'V-MU0002': 100, 'V-MU0003': 100, 'V-MU0004': 100, 'V-MU0005': 100,
   'V-MU0007': 100, 'V-MU0009': 100, 'V-MU0011': 100, 'V-MU0013': 100, 'V-MU0015': 100, 'V-MU0017': 100,
-  'V-IA1101': 100, 'V-PA1087': 100, 'V-PA0013': 0
+  'V-IA1101': 100, 'V-PA1087': 100, 'V-PA0013': 0,
+  /* 3.2.1 (IRENE: FEEDWATER): the BFWP suction manual valves, PR-OPE-5002 19.16 "Fully OPEN BFPs suction (V-FW1002/V-FW1001) ...
+     Check if the limit switch is touched" (IO list STN102 I.028F ZSO-FW1031 BFWP-A / I.032F ZSO-FW1032 BFWP-B suction manual valve
+     open; V-FW1001 = A, V-FW1002 = B by the number order of the discharge MOVs MV-FW1001 A / MV-FW1002 B). Normal line-up: both open
+     (the standby pump lined up for its auto start) */
+  'V-FW1001': 100, 'V-FW1002': 100
 };
 /* the opening of a field valve (0 ~ 100 %), the normal line-up while the field operator has not turned it */
 const anFv = tag => {
@@ -23286,7 +23295,8 @@ const AN_FW = {
 function anFwStep(U, dt) {
   const K = AN_FW,
     dr = d => (typeof anDitlRun === 'function' ? anDitlRun(d) : null),
-    run = [['DITL-23A', 'M.3343'], ['DITL-23A #B', 'M.3344']].map(([d, m]) => (dr(d) != null ? (dr(d) === 1 ? 1 : 0) : srcBit([m]) > 0.5 ? 1 : 0)),
+    /* a running pump with its suction manual valve closed (V-FW1001 / 1002) gives no head (dry: the motor protection is not modelled) */
+    run = [['DITL-23A', 'M.3343', 'V-FW1001'], ['DITL-23A #B', 'M.3344', 'V-FW1002']].map(([d, m, v]) => (anFv(v) < 5 ? 0 : dr(d) != null ? (dr(d) === 1 ? 1 : 0) : srcBit([m]) > 0.5 ? 1 : 0)),
     n = run[0] + run[1],
     ffw = typeof AN_CYC !== 'undefined' && isFinite(AN_CYC.ffw) ? Math.max(0, AN_CYC.ffw) : 0,
     q = n ? Math.max(K.qMin, ffw / K.sg / n) : 0,
@@ -23984,6 +23994,8 @@ function anUnitStep(dt) {
           m.run.reduce((a, r, i) => {
             if (!(+r.S.rt.v[r.n] > 0.5)) return a;
             if (m.drw && anDitlRun(m.drw[i]) === 0) return a;
+            /* 3.2.1 (IRENE): no water through a BFWP whose suction manual valve is closed (V-FW1001 / 1002) */
+            if (m.drw && anFv(['V-FW1001', 'V-FW1002'][i]) < 5) return a;
             const d = m.dis && m.dis[i];
             if (!d) return a + 1;
             const pm = anDitlPos(d[0], 0),
@@ -28997,8 +29009,11 @@ function anEngAPI() {
     tsat: steamTsat,
     fieldState: () => Object.assign({}, AN_SRC.field),
     /* 3.2.1 (CW plant model): the manual valves of the seawater system, opening in % (unit.js AN_SW_V0) */
-    swValve: anSwValve,
-    swValves: () => Object.assign({}, AN_SW_V0, AN_FV0, AN_SRC.valve || {}),
+    /* 3.2.1 (IRENE): with the diesel oil line-up of boiler.js (AN_DO.fv0, anDoValve), so the one field valve faceplate serves both */
+    swValve: (tag, pct) => anSwValve(tag, pct) || anDoValve(tag, pct),
+    swValves: () => Object.assign({}, AN_SW_V0, AN_FV0, AN_DO.fv0, AN_SRC.valve || {}),
+    /* 3.2.1 (IRENE): the opening of one field valve (unit.js anFv / boiler.js anDoFv), read by the limit switch rows (world/plantsw.js) */
+    fv: tag => (tag in AN_DO.fv0 ? anDoFv(tag) : anFv(tag)),
     /* 3.2.1 SEULGI (boiler.js): the manual valves of the diesel oil line-up, opening in % (AN_DO.fv0) */
     doValve: anDoValve,
     engState: { capture: anStateCapture, apply: anStateApply },
@@ -33237,7 +33252,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.3';
-      c3.textContent += ' · build b8f4fbc'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 72c2f71'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -50470,6 +50485,13 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   };
   /* DITL-23A / DITL-22 write the rows by address: matched by the address and the word LUB (the 7th field; other stations reuse it) */
   for (const [k, a1, a2, a3] of [['A', 'I.0090', 'I.0091', 'I.0092'], ['B', 'I.0410', 'I.0411', 'I.0412']]) L.push([a2, lopP(k), 2.0, 'ge', 0, 0, /\bLUB/], [a1, lopP(k), 1.5, 'lo', 0, 0 /* no dead band: the pressure steps 0 / 2.0 */, /\bLUB/], [a3, lopP(k), 1.0, 'lo', 0, 0, /\bLUB/]);
+  /* 3.2.1 (IRENE: FEEDWATER): DITL-23A row 11 (machine instance #B for pump B) "ZSO-FW1031 BFWP A / B SUCTION MANUAL VALVE OPEN"
+     (IO list STN102 I.028F ZSO-FW1031 / I.032F ZSO-FW1032), a START permissive of the HV soft starter (with the lube oil > 2.0 and the
+     suction pressure > 1.5): the limit switch of the field valve V-FW1001 / 1002 of the plant model (unit.js AN_FV0), touched at fully
+     open (PR-OPE-5002 19.16 "Fully OPEN ... Check if the limit switch is touched"). Before: the row stayed 0 and the standby BFWP B
+     never started on its AUTO START (O.1400) */
+  const fvOf = t => () => (window.AN && AN.fv && isFinite(AN.fv(t)) ? AN.fv(t) : NaN);
+  L.push(['ZSO-FW1031', fvOf('V-FW1001'), 100, 'ge', 0, 0, /\bBFWP A\b/], ['ZSO-FW1031', fvOf('V-FW1002'), 100, 'ge', 0, 0, /\bBFWP B\b/]);
   const DB0 = 10;
   let map = null,
     mapK = '';
@@ -67253,6 +67275,10 @@ function anProcStep(S, dt) {
       q.y += (1 - Math.exp(-dt / Math.max(pr.T, 0.05))) * (tgt - q.y);
       q.y = Math.max(lo, Math.min(lo + span, q.y));
     }
+    /* 3.2.1 (IRENE: FEEDWATER): a source that always feeds (pr.sflo, the extraction no. 3 to the deaerator at load) is a floor of the
+       state too, not only of the target: before, Start at 150 MW began at ~1 kg/cm2 and took minutes (the lag of the loop) to reach 5.3,
+       the BFWP suction was ~1.7 kg/cm2 meanwhile */
+    if (pr.sflo != null && dt > 0 && isFinite(q.y) && q.y < pr.sflo) q.y = Math.min(lo + span, pr.sflo);
     if (gate === 'zero' && b.p.lt === 'flow') q.y = lo;
     if (dt <= 0 && q.u != null) continue;
     const y = pr.integ && q.sw ? Math.max(lo, Math.min(lo + span, q.y - q.sw)) : q.y;
@@ -69617,7 +69643,12 @@ const AN_FV0 = {
   'V-CW1010': 100, 'V-CW1011': 100, 'V-CW1012': 0, 'V-CW1013': 100, 'V-CW1014': 100, 'V-CW1015': 0,
   'V-MU0001': 100, 'V-MU0002': 100, 'V-MU0003': 100, 'V-MU0004': 100, 'V-MU0005': 100,
   'V-MU0007': 100, 'V-MU0009': 100, 'V-MU0011': 100, 'V-MU0013': 100, 'V-MU0015': 100, 'V-MU0017': 100,
-  'V-IA1101': 100, 'V-PA1087': 100, 'V-PA0013': 0
+  'V-IA1101': 100, 'V-PA1087': 100, 'V-PA0013': 0,
+  /* 3.2.1 (IRENE: FEEDWATER): the BFWP suction manual valves, PR-OPE-5002 19.16 "Fully OPEN BFPs suction (V-FW1002/V-FW1001) ...
+     Check if the limit switch is touched" (IO list STN102 I.028F ZSO-FW1031 BFWP-A / I.032F ZSO-FW1032 BFWP-B suction manual valve
+     open; V-FW1001 = A, V-FW1002 = B by the number order of the discharge MOVs MV-FW1001 A / MV-FW1002 B). Normal line-up: both open
+     (the standby pump lined up for its auto start) */
+  'V-FW1001': 100, 'V-FW1002': 100
 };
 /* the opening of a field valve (0 ~ 100 %), the normal line-up while the field operator has not turned it */
 const anFv = tag => {
@@ -70149,7 +70180,8 @@ const AN_FW = {
 function anFwStep(U, dt) {
   const K = AN_FW,
     dr = d => (typeof anDitlRun === 'function' ? anDitlRun(d) : null),
-    run = [['DITL-23A', 'M.3343'], ['DITL-23A #B', 'M.3344']].map(([d, m]) => (dr(d) != null ? (dr(d) === 1 ? 1 : 0) : srcBit([m]) > 0.5 ? 1 : 0)),
+    /* a running pump with its suction manual valve closed (V-FW1001 / 1002) gives no head (dry: the motor protection is not modelled) */
+    run = [['DITL-23A', 'M.3343', 'V-FW1001'], ['DITL-23A #B', 'M.3344', 'V-FW1002']].map(([d, m, v]) => (anFv(v) < 5 ? 0 : dr(d) != null ? (dr(d) === 1 ? 1 : 0) : srcBit([m]) > 0.5 ? 1 : 0)),
     n = run[0] + run[1],
     ffw = typeof AN_CYC !== 'undefined' && isFinite(AN_CYC.ffw) ? Math.max(0, AN_CYC.ffw) : 0,
     q = n ? Math.max(K.qMin, ffw / K.sg / n) : 0,
@@ -70847,6 +70879,8 @@ function anUnitStep(dt) {
           m.run.reduce((a, r, i) => {
             if (!(+r.S.rt.v[r.n] > 0.5)) return a;
             if (m.drw && anDitlRun(m.drw[i]) === 0) return a;
+            /* 3.2.1 (IRENE): no water through a BFWP whose suction manual valve is closed (V-FW1001 / 1002) */
+            if (m.drw && anFv(['V-FW1001', 'V-FW1002'][i]) < 5) return a;
             const d = m.dis && m.dis[i];
             if (!d) return a + 1;
             const pm = anDitlPos(d[0], 0),
@@ -75884,8 +75918,11 @@ function anEngAPI() {
     tsat: steamTsat,
     fieldState: () => Object.assign({}, AN_SRC.field),
     /* 3.2.1 (CW plant model): the manual valves of the seawater system, opening in % (unit.js AN_SW_V0) */
-    swValve: anSwValve,
-    swValves: () => Object.assign({}, AN_SW_V0, AN_FV0, AN_SRC.valve || {}),
+    /* 3.2.1 (IRENE): with the diesel oil line-up of boiler.js (AN_DO.fv0, anDoValve), so the one field valve faceplate serves both */
+    swValve: (tag, pct) => anSwValve(tag, pct) || anDoValve(tag, pct),
+    swValves: () => Object.assign({}, AN_SW_V0, AN_FV0, AN_DO.fv0, AN_SRC.valve || {}),
+    /* 3.2.1 (IRENE): the opening of one field valve (unit.js anFv / boiler.js anDoFv), read by the limit switch rows (world/plantsw.js) */
+    fv: tag => (tag in AN_DO.fv0 ? anDoFv(tag) : anFv(tag)),
     /* 3.2.1 SEULGI (boiler.js): the manual valves of the diesel oil line-up, opening in % (AN_DO.fv0) */
     doValve: anDoValve,
     engState: { capture: anStateCapture, apply: anStateApply },
@@ -77112,6 +77149,13 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
   };
   /* DITL-23A / DITL-22 write the rows by address: matched by the address and the word LUB (the 7th field; other stations reuse it) */
   for (const [k, a1, a2, a3] of [['A', 'I.0090', 'I.0091', 'I.0092'], ['B', 'I.0410', 'I.0411', 'I.0412']]) L.push([a2, lopP(k), 2.0, 'ge', 0, 0, /\bLUB/], [a1, lopP(k), 1.5, 'lo', 0, 0 /* no dead band: the pressure steps 0 / 2.0 */, /\bLUB/], [a3, lopP(k), 1.0, 'lo', 0, 0, /\bLUB/]);
+  /* 3.2.1 (IRENE: FEEDWATER): DITL-23A row 11 (machine instance #B for pump B) "ZSO-FW1031 BFWP A / B SUCTION MANUAL VALVE OPEN"
+     (IO list STN102 I.028F ZSO-FW1031 / I.032F ZSO-FW1032), a START permissive of the HV soft starter (with the lube oil > 2.0 and the
+     suction pressure > 1.5): the limit switch of the field valve V-FW1001 / 1002 of the plant model (unit.js AN_FV0), touched at fully
+     open (PR-OPE-5002 19.16 "Fully OPEN ... Check if the limit switch is touched"). Before: the row stayed 0 and the standby BFWP B
+     never started on its AUTO START (O.1400) */
+  const fvOf = t => () => (window.AN && AN.fv && isFinite(AN.fv(t)) ? AN.fv(t) : NaN);
+  L.push(['ZSO-FW1031', fvOf('V-FW1001'), 100, 'ge', 0, 0, /\bBFWP A\b/], ['ZSO-FW1031', fvOf('V-FW1002'), 100, 'ge', 0, 0, /\bBFWP B\b/]);
   const DB0 = 10;
   let map = null,
     mapK = '';
@@ -105243,7 +105287,17 @@ window.PLANT_SYS = [
     'V-MU0017': 'MWP-C minimum flow recirculation (SOP: OPEN).',
     'V-IA1101': 'Instrument air to unit 1 (PT-IA1706). Closed = the unit 1 header bleeds down.',
     'V-PA1087': 'Plant air to unit 1 (PT-PA1705). Closed = the unit 1 header bleeds down.',
-    'V-PA0013': 'Cross-tie: plant air to the instrument air tanks. Normally closed.'
+    'V-PA0013': 'Cross-tie: plant air to the instrument air tanks. Normally closed.',
+    /* 3.2.1 (IRENE, for SEULGI boiler.js AN_DO.fv0): the diesel oil line-up, PD-022 1/5 Rev D, PR-OPE-5002 section 20 */
+    'V-DO0003': 'Diesel oil service tank T-0701 outlet. Closed = the oil pumps have no oil.',
+    'V-DO0004': 'Diesel oil strainer inlet (DPT-DO0001). Closed = no oil to the pumps.',
+    'V-DO0015': 'Diesel oil pump A suction.',
+    'V-DO0007': 'Diesel oil pump A discharge.',
+    'V-DO0016': 'Diesel oil pump B suction.',
+    'V-DO0009': 'Diesel oil pump B discharge.',
+    /* 3.2.1 (IRENE: FEEDWATER, unit.js AN_FV0) */
+    'V-FW1001': 'BFWP-A suction (limit switch ZSO-FW1031). SOP 19.16: fully open. Closed = the pump has no water and cannot start.',
+    'V-FW1002': 'BFWP-B suction (limit switch ZSO-FW1032). SOP 19.16: fully open. Closed = the pump has no water and cannot start.'
   };
   const fvAll = () => call(() => (AN.swValves ? AN.swValves() : null), null) || {};
   function fieldPct(tag) {
