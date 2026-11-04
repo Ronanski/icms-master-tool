@@ -62,9 +62,10 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
   ck(b.run[0] === 1 && b.run[1] === 0 && Math.abs(b.Pd - 165.4) < 3.5 && Math.abs(b.I[0] - 289.4) < 5 && b.d25 === b.Pd, `150 MW BFWP-A ${b.q} m3/h (feedwater ${b.ffw} T/H), suction ${r.da} (03.png 6.7), PT-FW1011 ${b.Pd} kg/cm2 (03.png 165.4), ${b.I[0]} A (289.4), DITL-23B row 25 reads ${b.d25}`);
   ck(Math.abs(b.dp[0] - 0.29) < 0.03 && b.d26 === b.dp[0], `strainer DP ${b.dp[0]} kg/cm2 (03.png 0.29), DITL-23B row 26 reads ${b.d26}`);
   ck(r.trMin < 155 && r.tr.d25 < 155, `BFWP A tripped: PT-FW1011 down to ${r.trMin} kg/cm2, DITL-23B row 25 reads ${r.tr.d25} (< 155 = M.3210 LL)`);
-  /* OPEN (FEEDWATER_PLANT_MODEL.md): the standby BFWP B is not started by the logic in this test, and the feedwater flow of ABC-010
-     stays (M.3343 follows the RUNNING row, not the field trip); printed, not judged */
-  console.log(`INFO BFWP B after the trip: running ${r.tr.run[1]} (after ${r.trB} s), feedwater ${r.tr.ffw} T/H`);
+  ck(r.tr.run[1] === 1 || r.tr.ffw < 5, `no BFWP running after the trip: feedwater ${r.tr.ffw} T/H (ABC-010 FICFW1007 follows the DITL-23A motor)`);
+  /* OPEN (FEEDWATER_PLANT_MODEL.md): the logic gives BFWP B AUTO STARTING but the motor does not run (lube oil permissive of the
+     standby pump, under study); printed, not judged */
+  console.log(`INFO BFWP B after the trip: running ${r.tr.run[1]} (after ${r.trB} s)`);
   ck(!errs.length, 'no page error' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
   await browser.close();
   console.log(fail ? 'FAILED ' + fail : 'ALL PASS');

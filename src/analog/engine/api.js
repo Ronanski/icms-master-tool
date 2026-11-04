@@ -39,6 +39,8 @@ function anEngAPI() {
     /* 3.2.1 (CW plant model): the manual valves of the seawater system, opening in % (unit.js AN_SW_V0) */
     swValve: anSwValve,
     swValves: () => Object.assign({}, AN_SW_V0, AN_FV0, AN_SRC.valve || {}),
+    /* 3.2.1 SEULGI (boiler.js): the manual valves of the diesel oil line-up, opening in % (AN_DO.fv0) */
+    doValve: anDoValve,
     engState: { capture: anStateCapture, apply: anStateApply },
     /* engine/sync.js: what changed, both ways (worker -> page, page -> worker) */
     sync: { patch: anSyncPatch, apply: anSyncApply, mark: anSyncMark, forget: anSyncForget, encArgs: anSyncEncArgs, decArgs: anSyncDecArgs },

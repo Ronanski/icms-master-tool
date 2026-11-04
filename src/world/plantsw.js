@@ -27,6 +27,19 @@
      kg/cm2; DITL-03G rows 7 / 27, the MFT and the annunciator) follows the unit header of the plant model (unit.js AN_AIR iaPU) */
   const iaU = () => (window.AN && AN.unit && isFinite(AN.unit.iaPU) ? AN.unit.iaPU : NaN);
   L.push(['PSL-IA1706', iaU, 2.8, 'lo', 0, 0.2], ['PSL-IA1706-NC', iaU, 2.8, 'lo', 1, 0.2]); /* dead band 0.2 kg/cm2 (ASSUMED) */
+  /* 3.2.1 (SEULGI : PLANT MODEL, boiler side, src/analog/engine/boiler.js AN_DO): the burner package switches of DITL-07 (machine
+     instances #B ~ #D = burners B ~ D), BMS permissives (M&S BMS description 1612 13-4-105 2.2 / 7.2):
+     row 10 PSH-DO1043-x1 "DIESEL OIL SUPPLY PRESS. NOT HIGH" = the gun pressure (PT-DO1043-x2) below 5.9 kg/cm2 (alarm list PSL-DO1043-x1
+     H 5.9); row 12 PSL-PA1043-x1 "ATOMIZING AIR PRESS. NOT LOW" = the atomizing air above 3.0 kg/cm2 (alarm list PSL-PA1043-x1 L 3.0).
+     The atomizing air is plant air (PD-022 2/5, BMS 5.2 "mechanical air control valve ... 4-7 bar"; M&S load curve 1612 13-4-71
+     "compressed air 4.0 bar"): the unit 1 plant air header of the plant model (unit.js AN_AIR paPU) held at 4.0 bar (4.08 kg/cm2) by
+     the burner's regulator. Dead band 0.2 kg/cm2 (NO-SOURCE) */
+  const doPb = i => () => (window.AN && AN.unit && Array.isArray(AN.unit.doPb) && isFinite(AN.unit.doPb[i]) ? AN.unit.doPb[i] : NaN),
+    atom = () => (window.AN && AN.unit && isFinite(AN.unit.paPU) ? Math.min(AN.unit.paPU, 4.0 / 0.980665) : NaN);
+  'ABCD'.split('').forEach((x, i) => {
+    L.push(['PSH-DO1043-' + x + '1', doPb(i), 5.9, 'hi', 1, 0.2]);
+    L.push(['PSL-PA1043-' + x + '1', atom, 3.0, 'lo', 1, 0.2]);
+  });
   /* live test #54: the ACWP motor temperatures of the plant model (unit.js AN_MT) on their DITL rows: DITL-76 / 77 rows 13 ~ 17
      "TT-CW1108-x3 / x4 ... BEARING TEMP > 100 C" (M.2620 ~ 2621 / M.2630 ~ 2631) and "TT-CW1108-xU / xV / xW ... WINDING TEMP > 165 C"
      (M.2622 ~ 2624 / M.2632 ~ 2634) = the HH of the alarm list (TE-CW1108: bearing HH 100, winding HH 165); dead band 2 C (ASSUMED) */
@@ -91,6 +104,7 @@
     suc.length = 0;
     mu.length = 0;
     air.length = 0;
+    bo.length = 0;
     for (const s of ALL) {
       if (!s.nl && typeof netlist === 'function')
         try {
@@ -123,6 +137,10 @@
         else {
           const m = AIR.find(([re]) => re.test(t));
           if (m) air.push({ s, key: a.key, f: m[1] });
+          else {
+            const q = BO.find(([re]) => re.test(t)); /* 3.2.1 SEULGI: boiler side (boiler.js) */
+            if (q) bo.push({ s, key: a.key, f: q[1] });
+          }
         }
       }
     }
@@ -173,6 +191,16 @@
     [/PT-PA0705-?A\b/, 'paPA'],
     [/PT-PA0705-?B\b/, 'paPB'],
     [/PT-PA170[56]\b/, 'paPU']
+  ];
+  /* 3.2.1 (SEULGI : PLANT MODEL, boiler side, src/analog/engine/boiler.js AN_DO): the local transmitters of the diesel oil pumps are
+     analog rows of DITL-31 (and its machine instance #B): row 15 LT-DO0701 "OIL SERVICE TANK LEVEL" < 0.2 m and row 17 DPT-DO0001
+     "DOP OF BURNER FILTER DIFF. PRESSURE" > 0.8 kg/cm2 = pump trip; row 28 PT-DO0005 "DOP OUTLET PRESSURE" < 5 = L.L. (standby AUTO
+     start), < 7 = LOW. Their value is the plant model's, the same number as the HMI. [row text, unit model key] */
+  const bo = [];
+  const BO = [
+    [/LT-DO0701\b/, 'doLv'],
+    [/DPT-DO0001\b/, 'doDp'],
+    [/(?:^|[^A-Z])PT-DO0005\b/, 'doP1']
   ];
   /* 3.2.0-beta.50 (live check #94): the BFWP suction pressure PT-FW1115-A / -B (DITL-23A row 12, START permissive > 1.5 kg/cm2) is the
      deaerator pressure (ABC-056 AI0417 PT-CD1104) plus the static head of the deaerator water (its level, ABC-031 AI0672 LT-CD1104) less the
@@ -236,6 +264,7 @@
     const U = AN.unit || {};
     for (const a of mu) if (isFinite(U[a.f])) (a.s.avw = a.s.avw || {})[a.key] = Math.round(U[a.f] * 1000) / 1000;
     for (const a of air) if (isFinite(U[a.f])) (a.s.avw = a.s.avw || {})[a.key] = Math.round(U[a.f] * 1000) / 1000;
+    for (const a of bo) if (isFinite(U[a.f])) (a.s.avw = a.s.avw || {})[a.key] = Math.round(U[a.f] * 1000) / 1000;
     const ps = suc.length ? W.sucP() : NaN;
     if (isFinite(ps)) for (const a of suc) (a.s.avw = a.s.avw || {})[a.key] = ps;
     for (const m of map) {
