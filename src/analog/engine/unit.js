@@ -646,6 +646,7 @@ function anUnitStart() {
     .concat([U.xt.cr, U.xt.hr, U.xt.aux, U.xt.fw, U.xt.lt2], U.xt.rhi, U.xt.fab, U.zt.map(z => z.L), U.lo || []);
   for (const l of lists) for (const [S2, b] of l) own.add(S2.rt.st[b.id]);
   U.own = own;
+  anBoilerStart(U); /* 3.2.1 SEULGI: the boiler-side plant model (boiler.js) */
   U.on = true;
   /* 3.2.0-beta.68: "Start at 150 MW" = the air compressors in service, the tanks at their pressure (AN_AIR, 39.PNG 7.0 kg/cm2) */
   U.iaP = U.paP = AN_AIR.P;
@@ -721,6 +722,7 @@ function anUnitCold() {
   U.iaRun = U.paRun = null; /* 3.2.1: the compressors as the DITL of the scenario (anAirStep, first step) */
   U.paW0 = U.paW1 = U.paW2 = NaN;
   U.mt = {}; /* live test #54: the motors start again from the ambient (AN_MT) */
+  anBoilerCold(U); /* 3.2.1 SEULGI: the boiler-side plant model (boiler.js) */
   tcsInit(U, 'cold');
   return true;
 }
@@ -1909,6 +1911,8 @@ function anUnitStep(dt) {
   tcsOil(U, dt);
   /* 3.2.0-beta.68: the instrument and plant air systems (INSTRUMENT & PLANT AIR HMI), see AN_AIR */
   anAirStep(U, dt);
+  /* 3.2.1 SEULGI: the boiler-side systems (boiler.js: diesel oil) */
+  anBoilerStep(U, dt);
   /* 3.2.0-beta.69: the aux cooling water loop (027 CLOSED COOLING WATER HMI), see AN_ACW */
   anAcwStep(U, dt);
   /* 3.2.1: the turbine lube oil cooler on the closed cooling water (AN_LO) */
