@@ -430,6 +430,9 @@ function motModel(sh, nl) {
           Math.abs(q.y - cy) < 6.5 &&
           (q.x > R0 - 2 || (q.x > S1 + 60 && q.x < R0))
       )
+      /* live test 2026-11-05 (DITL-60 output row 7 MOV FULLY OPEN took I.033B FULLY CLOSED of the row above, so FULLY OPEN and FULLY
+         CLOSED were both 1 with the valve closed; same on DITL-94 ~ 98): the address nearest to the row, not the first one found */
+      .sort((p, r) => Math.abs(p.y - cy) - Math.abs(r.y - cy))
       .map(q => AB(q.t))
       .filter(a => L[a]);
     /* 2.5.0-beta.11 (DITL PDF audit, DITL-21A rows 57 / 62 MIT / LIS3): the address is written UNDER the field label (MIT-xxx,
