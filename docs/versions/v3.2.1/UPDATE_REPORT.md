@@ -1,5 +1,26 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.15 — FEEDWATER, mockup page 06 in the app (2026-11-04, JISOO : HMI MOCKUP)
+
+**Work done.** `docs/hmi/mockups/temp/06-feedwater.html` → Plant view **FEEDWATER** (`MK06`), `tools/hmi-mock/p06.py` →
+`src/ui/plant/hmi-mock-fw.js`.
+- BFWP-A / B = DITL-23A / DITL-23A #B; current, strainer DP at discharge pressure = plant model AN_FW (`fwI0/1`, `fwDp0/1`, `fwPd`).
+- MOV / XV faceplate (`LS_FPOP.mov`): MV-FW1001 / 1391 / 1002 / 1392 (DITL-38 instances), MV-TS1001 ~ 1005 (DITL-94 ~ 98, extraction
+  NO.1 ~ NO.5), XV-FW1111-1 / -2 (DITL-32 / #B), XV-FW1121-1 / -2 (DITL-33 / #B), XV-FW1151 (DITL-35), XV-FW1061 (DITL-79).
+- Controllers ng logic: FICFW1007 (main, PV / SV), LICBR1001B (start-up), TICHR1002, TICMS1022, LICHD11051, LICHD11061.
+- HP heater outlet TT-FW1105 / 1106 = AN_HP `hpT1` / `hpT2`; levels, feedwater flow, deaerator = logic.
+- Runtime: ang push button na "CLOSED PB" (DITL-38) ay nababasa na; REMOTE ng "MCV REMOTE MODE SELECTED" / "SHUT-OFF MOV REMOTE";
+  bagong `data-mov` "md" (REMOTE / AUTO mode ng valve).
+- Inalis ang mga snapshot note ("snapshot 5.png", "snapshot 4.PNG") at ang mode sa main FCV na wala sa mockup.
+- NO-SOURCE ('-----'): PT-TS1017, PT-TS1013, TT-TS1011, PT-FW1115-A / B, TT-FW1011, PT-FW1160, FT-FW1109, FT-FW1119, FT-FW1149,
+  FT-FW1059, ZT-FW1110-1 / -2, ZT-FW1120-1 / -2 (walang ABC sheet at walang plant model); XV-TS1700 / 1710 (walang DCS sheet).
+
+**Checked (headless cloud).** 150 MW + RUN: BFWP-A RUNNING 292.1 A, discharge 161.3 kg/cm2, feedwater 499.8 / 500.1 T/H, HPH outlet
+197 / 248 °C; MV-FW1391 OPEN + EXECUTE → 100 %, CLOSE → 0 %; walang JS error; `npm run check` SAME.
+
+**Not checked.** MV-TS1003 (AUTO): CLOSE + EXECUTE ay hindi gumalaw; hindi pa nasuri kung interlock ito ng DITL-96 o bug. Live test,
+phone size, ang iba pang push button.
+
 ## 3.2.1-beta.13 — faceplate fixes from MINA's live loop check of 030 CIRCULATING WATER (2026-11-04, thread "Build loop check dock in app")
 
 **Problem.** MINA, live loop check on beta.8 (user PC): (1) the "Logic DITL-29A" link of the SWP-A faceplate only closed the faceplate;
