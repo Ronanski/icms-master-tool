@@ -32,6 +32,6 @@ ina-update sa bawat bagong system.
 
 ## Wala pa (plano, kasama sa susunod na system)
 1. **Closed cooling temperature → temperatura ng bearing / winding ng motor.** Fixed pa ang AN_MT. (Ang turbine oil ay tapos na, item 9.)
-2. **Instrument air → pneumatic valves:** tapos na ang control valves at XV (item 19). Kulang: ang mga damper (`K1AU3-E2-0-142`, sa PC).
+2. **Instrument air → pneumatic valves:** tapos na ang control valves at XV (item 19). Ang mga damper ng `K1AU3-E2-0-142` ay electric (AUMA), walang epekto ang hangin. Kulang: IDF discharge damper PCD-FG1056-1 at biasing dampers TCV-FG1116 / 1117 (pneumatic, may buffer tank PT-IA1064-A / B, walang sheet; boiler side).
 3. **HP heaters:** tapos na ang temperatura (item 15) at ang level (item 18). Kulang: epekto sa firing.
 4. **Chain test hanggang alarm / trip:** may chain test na hanggang bearing (`lube_oil.js`). Kulang pa ang alarm at trip ng TCS sa bearing temperatura, at ang mga motor (item 1).
