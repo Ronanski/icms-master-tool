@@ -32,7 +32,7 @@ Code: `src/analog/engine/unit.js` `AN_AIR` / `anAirStep`. Test: `tests/regress/a
   - Ang model ang may-ari ng RUNNING contact (DITL-113 / 114 rows 6 / 13 / 20). Binabasa ito ng logic: auto start, DITL-42 "COMPRESSOR STOPPED".
 - **Tanks:** dP/dt = (Q in − Q gamit) × 1.033 / V / 3600 (isothermal, free air m3/h). Sa 7.0 kg/cm2, hawak ng PIC: ang compressor ay nagbibigay lang ng ginagamit. Sa ibaba nito, buong capacity bawat compressor.
 - **Gamit (consumption):** proportional sa absolute pressure (fixed openings).
-- **Power:** proportional sa flow ng compressor, hindi bababa sa surge flow (ang sobra ay blow-off). 100 % = PA 600 kW, IA 165 kW.
+- **Power:** proportional sa flow ng compressor, hindi bababa sa surge flow (ang sobra ay blow-off). 100 % = PA 600 kW, IA 176 kW.
 - **Current:** current sa 100 % × kW / kW sa 100 % (PA 69.9 A sa 671 kW; IA 286 A sa 190 kW). Start: PA 3 × 69.9 A nang 10 s, IA 1522 A nang 3 s. Ang IT-C070xx ay hanggang sa range nito (140 / 500 A).
 - **Winding temperature (PA, TE-M0703-x1):** 30 °C + 80 °C × (I / 69.9)², time constant 10 min.
 - **Unit header:** tank pressure − 0.2 kg/cm2 sa design na gamit (kasama ang square ng gamit).
@@ -40,7 +40,7 @@ Code: `src/analog/engine/unit.js` `AN_AIR` / `anAirStep`. Test: `tests/regress/a
 
 ## Resulta (cloud test, Start at 150 MW, plant model ON)
 - Tumatakbo ang IA-A at PA-A. Tanks 7.0 kg/cm2, unit header 6.8.
-- IA-A current 186 A (124 kW), PA-A current 43.8 A (420 kW, blow-off sa surge flow), PA winding 61 °C.
+- IA-A current ~212 A (141 kW; dati 186 A bago ang Mass Balance), PA-A current 43.8 A (420 kW, blow-off sa surge flow), PA winding 61 °C.
 - Trip ng IA-A: bumaba ang tanks sa 4.85, M.0300 ON, START COMMAND sa B at C (ayon sa drawing). B (REMOTE) ang tumakbo, C (LOCAL) hindi. Bumalik sa 7.0.
 - Pareho sa PA (M.0310).
 - Trip ng lahat ng IA compressor: header 1.2 kg/cm2 pagkatapos ng 5 min. Instrument air MFT rows ng DITL-03G (rows 7, 8, 10, 11, 27) = 1, at PSL-IA1706 LOW.
@@ -51,7 +51,7 @@ Code: `src/analog/engine/unit.js` `AN_AIR` / `anAirStep`. Test: `tests/regress/a
 - Logic → model: START COMMAND (DITL-113 / 114 output rows 56 / 63 / 70); TRIP contacts rows 7 / 14 / 21; dryer RUNNING ng DITL-45 (#B, #C).
 
 ## NO-SOURCE (hindi nakita sa docs; nakasulat ang ginamit)
-- Capacity ng compressor: PA 5800 m3/h (= range ng dryer flow meter; check: 600 kW ÷ 97 m3/min = 6.2 kW bawat m3/min), IA 1600 m3/h (165 kW sa parehong 6.2 kW bawat m3/min).
+- Power ng IA compressor sa buong flow: 176 kW (1500 m3/h sa ratio ng PA, 600 kW ÷ 85 m3/min). Ang capacity ay may source na: Mass Balance MB-023, PA 5100, IA 1500 Nm3/h (`MASS_BALANCE_CHECK.md`).
 - Gamit sa 7.0 kg/cm2: IA 1200, PA 1500 m3/h (pareho sa 3.2.0-beta.68).
 - Surge flow 70 % ng capacity.
 - Soft start current limit ng PA (3 × FLC, 10 s) at start time ng IA (3 s).

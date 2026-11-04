@@ -6,7 +6,7 @@ inaasahan ay galing sa `AIR_PLANT_MODEL.md`. Simula: RUN, plant model ON.
 ## A. Panimula (Start at 150 MW)
 1. IA compressor A at PA compressor A RUNNING; B at C STOPPED.
 2. PT-IA0706-A / B 7.0, PT-IA1706 6.8 kg/cm2. PT-PA0705-A / B 7.0, PT-PA1705 6.8 kg/cm2.
-3. IT-C0704A ~186 A. IT-C0703A ~43.8 A. TE-M0703-A1 ~61 °C.
+3. IT-C0704A ~212 A. IT-C0703A ~43.8 A. TE-M0703-A1 ~61 °C.
 4. FI-D0704A ~1200 m3/h, FI-D0703A ~1500 m3/h (dryer A in service).
 5. Walang alarm na "PRESSURE LOW", PSL-IA1706 NORMAL.
 
@@ -16,7 +16,7 @@ inaasahan ay galing sa `AIR_PLANT_MODEL.md`. Simula: RUN, plant model ON.
    - sa < 5.0 nang 3 s: M.0300 ACTIVE;
    - START COMMAND (5 s pulse) sa B at C;
    - IA compressor B lang ang tatakbo (REMOTE). C ay LOCAL, hindi tatakbo;
-   - IT-C0704B: 500 A (range) nang ~3 s, saka ~186 A;
+   - IT-C0704B: 500 A (range) nang ~3 s, saka ~212 A;
    - bumabalik ang tanks sa 7.0.
 2. **Trip ng PA compressor A (I.0011).** Pareho: M.0310, PA compressor B tumatakbo, IT-C0703B 140 A (range) nang ~10 s, saka ~43.8 A.
 3. Ang compressor A ay hindi kusang babalik (trip). Annunciator "A-INST. AIR COMPRESSOR STOPPED" / "A-PLANT AIR COMPRESSOR STOPPED" (DITL-42).

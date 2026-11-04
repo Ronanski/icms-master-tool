@@ -22613,6 +22613,9 @@ const AN_MU = {
   pQ: [0, 30, 60, 80.4, 90, 120, 150],
   pHP: [18.9, 22.7, 27.0, 29.6, 31.6, 35.4, 37.0],
   qRec: 10,
+  /* UNUSUAL (docs/versions/v3.2.1/DATA_ANSWERS.md item 6): the vendor BHP curve gives ~26 A at the recirculation flow, the snapshot
+     28.png reads MWP-A 20.5 / MWP-C 20.8 A (SOP 20 A); CLAUDE.md: the snapshot is the operating point, so the shaft power is scaled */
+  pCal: 0.74,
   mL: [26.4, 51.7, 76.6, 101.5, 126.6],
   mI: [18.6, 32.8, 44.7, 58.0, 70.1],
   mkW: 37.3 /* 50 HP */,
@@ -22624,7 +22627,7 @@ const AN_MU = {
   et0: 0.8,
   etMax: 2.0,
   etRate: 0.003,
-  etQ: 10,
+  etQ: 20 /* T/H, Mass Balance K1AU3-MB-024 item 17 and MB-021 item 1 (make-up to the unit 1 expansion tank) */,
   etPrime: 0.4 /* m of tank level that the priming of the closed loop takes (NO-SOURCE) */,
   etPrimeT: 120 /* s (NO-SOURCE) */,
   etH: 1.7,
@@ -22673,7 +22676,7 @@ function anMakeupStep(U, dt) {
   lag('muP', K.kP * (lv + K.z + Math.max(0, H)), K.tauP);
   run.forEach((r, i) => {
     const s = U.muSpd[i],
-      P = s > 0 ? 0.7457 * swInterp(K.pQ, K.pHP, U.muQ[i] / s) * s * s * s : 0;
+      P = s > 0 ? K.pCal * 0.7457 * swInterp(K.pQ, K.pHP, U.muQ[i] / s) * s * s * s : 0;
     U['muKw' + i] = Math.round(P * 10) / 10;
     lag('muI' + i, s <= 0 ? 0 : s < 1 ? K.Ist : Math.max(0, swInterp(K.mL, K.mI, (100 * P) / K.mkW)), K.tauI);
     lag('muDp' + i, r ? K.dp : 0, K.tauP);
@@ -22902,10 +22905,11 @@ function anMotorStep(U, dt) {
                   at 7.0 the compressors give only the use, below it each gives its capacity;
      use          the consumption at 7.0 (NO-SOURCE: IA 1200, PA 1500 m3/h, as 3.2.0-beta.68) through fixed openings: proportional to the
                   absolute pressure;
-     capacity     NO-SOURCE (not in D1-0-059): PA 5800 m3/h = the dryer flow meter range (one compressor per dryer, PD-023; check:
-                  600 kW / 97 m3/min = 6.2 kW per m3/min), IA 1600 m3/h = 165 kW at the same 6.2 kW per m3/min;
+     capacity     Mass Balance Diagram K1AU3-MB-023 (A2-0-001 Rev A) sheets 1/2 and 2/2, items 2 / 4 / 6: PA 5100 Nm3/h, IA 1500 Nm3/h
+                  per compressor (the MB operating point has 2 running: 10200 / 3000; the SOP and the snapshot have 1); IA power at full
+                  flow 176 kW = 1500 m3/h at the PA ratio 600 kW / 85 m3/min (NO-SOURCE ratio, the IA compressor power is not in the docs);
      power        proportional to the compressor flow, not below the surge flow (the anti-surge loop blows off the rest): 70 % of the
-                  capacity (NO-SOURCE); 100 % = PA 600 kW (TRE60-600kW), IA 165 kW (motor rating);
+                  capacity (NO-SOURCE); 100 % = PA 600 kW (TRE60-600kW), IA 176 kW (above);
      current      the motor current at 100 % times kW / kW 100 % (PA 69.9 A at 671 kW = 900 HP; IA 286 A at 190 kW); start: PA soft start
                   3 x 69.9 A for 10 s (NO-SOURCE: the current limit of the soft starter), IA 532 % x 286 A for 3 s (NO-SOURCE: the time);
      winding T    PA motor (TE-M0703-x1, I/O list): 30 C + 80 C x (I / 69.9)^2 (the rise limit of the spec at full load), 10 min;
@@ -22919,8 +22923,8 @@ const AN_AIR = {
   dD: 0.15,
   fs: 0.7,
   sys: {
-    ia: { c: 'DITL-113', d: '@14', V: 10, Qc: 1600, Qd: 1200, kW: 165, I100: 286, kW100: 190, Ist: 286 * 5.32, tSt: 3, Imax: 500 },
-    pa: { c: 'DITL-114', d: '@3', V: 20, Qc: 5800, Qd: 1500, kW: 600, I100: 69.9, kW100: 671, Ist: 3 * 69.9, tSt: 10, Imax: 140 }
+    ia: { c: 'DITL-113', d: '@14', V: 10, Qc: 1500, Qd: 1200, kW: 176, I100: 286, kW100: 190, Ist: 286 * 5.32, tSt: 3, Imax: 500 },
+    pa: { c: 'DITL-114', d: '@3', V: 20, Qc: 5100, Qd: 1500, kW: 600, I100: 69.9, kW100: 671, Ist: 3 * 69.9, tSt: 10, Imax: 140 }
   },
   rows: [5, 12, 19],
   dry: ['DITL-45', 'DITL-45 #B', 'DITL-45 #C'],
@@ -32701,7 +32705,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.3';
-      c3.textContent += ' · build 0333873'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 5c5feb5'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -68898,6 +68902,9 @@ const AN_MU = {
   pQ: [0, 30, 60, 80.4, 90, 120, 150],
   pHP: [18.9, 22.7, 27.0, 29.6, 31.6, 35.4, 37.0],
   qRec: 10,
+  /* UNUSUAL (docs/versions/v3.2.1/DATA_ANSWERS.md item 6): the vendor BHP curve gives ~26 A at the recirculation flow, the snapshot
+     28.png reads MWP-A 20.5 / MWP-C 20.8 A (SOP 20 A); CLAUDE.md: the snapshot is the operating point, so the shaft power is scaled */
+  pCal: 0.74,
   mL: [26.4, 51.7, 76.6, 101.5, 126.6],
   mI: [18.6, 32.8, 44.7, 58.0, 70.1],
   mkW: 37.3 /* 50 HP */,
@@ -68909,7 +68916,7 @@ const AN_MU = {
   et0: 0.8,
   etMax: 2.0,
   etRate: 0.003,
-  etQ: 10,
+  etQ: 20 /* T/H, Mass Balance K1AU3-MB-024 item 17 and MB-021 item 1 (make-up to the unit 1 expansion tank) */,
   etPrime: 0.4 /* m of tank level that the priming of the closed loop takes (NO-SOURCE) */,
   etPrimeT: 120 /* s (NO-SOURCE) */,
   etH: 1.7,
@@ -68958,7 +68965,7 @@ function anMakeupStep(U, dt) {
   lag('muP', K.kP * (lv + K.z + Math.max(0, H)), K.tauP);
   run.forEach((r, i) => {
     const s = U.muSpd[i],
-      P = s > 0 ? 0.7457 * swInterp(K.pQ, K.pHP, U.muQ[i] / s) * s * s * s : 0;
+      P = s > 0 ? K.pCal * 0.7457 * swInterp(K.pQ, K.pHP, U.muQ[i] / s) * s * s * s : 0;
     U['muKw' + i] = Math.round(P * 10) / 10;
     lag('muI' + i, s <= 0 ? 0 : s < 1 ? K.Ist : Math.max(0, swInterp(K.mL, K.mI, (100 * P) / K.mkW)), K.tauI);
     lag('muDp' + i, r ? K.dp : 0, K.tauP);
@@ -69187,10 +69194,11 @@ function anMotorStep(U, dt) {
                   at 7.0 the compressors give only the use, below it each gives its capacity;
      use          the consumption at 7.0 (NO-SOURCE: IA 1200, PA 1500 m3/h, as 3.2.0-beta.68) through fixed openings: proportional to the
                   absolute pressure;
-     capacity     NO-SOURCE (not in D1-0-059): PA 5800 m3/h = the dryer flow meter range (one compressor per dryer, PD-023; check:
-                  600 kW / 97 m3/min = 6.2 kW per m3/min), IA 1600 m3/h = 165 kW at the same 6.2 kW per m3/min;
+     capacity     Mass Balance Diagram K1AU3-MB-023 (A2-0-001 Rev A) sheets 1/2 and 2/2, items 2 / 4 / 6: PA 5100 Nm3/h, IA 1500 Nm3/h
+                  per compressor (the MB operating point has 2 running: 10200 / 3000; the SOP and the snapshot have 1); IA power at full
+                  flow 176 kW = 1500 m3/h at the PA ratio 600 kW / 85 m3/min (NO-SOURCE ratio, the IA compressor power is not in the docs);
      power        proportional to the compressor flow, not below the surge flow (the anti-surge loop blows off the rest): 70 % of the
-                  capacity (NO-SOURCE); 100 % = PA 600 kW (TRE60-600kW), IA 165 kW (motor rating);
+                  capacity (NO-SOURCE); 100 % = PA 600 kW (TRE60-600kW), IA 176 kW (above);
      current      the motor current at 100 % times kW / kW 100 % (PA 69.9 A at 671 kW = 900 HP; IA 286 A at 190 kW); start: PA soft start
                   3 x 69.9 A for 10 s (NO-SOURCE: the current limit of the soft starter), IA 532 % x 286 A for 3 s (NO-SOURCE: the time);
      winding T    PA motor (TE-M0703-x1, I/O list): 30 C + 80 C x (I / 69.9)^2 (the rise limit of the spec at full load), 10 min;
@@ -69204,8 +69212,8 @@ const AN_AIR = {
   dD: 0.15,
   fs: 0.7,
   sys: {
-    ia: { c: 'DITL-113', d: '@14', V: 10, Qc: 1600, Qd: 1200, kW: 165, I100: 286, kW100: 190, Ist: 286 * 5.32, tSt: 3, Imax: 500 },
-    pa: { c: 'DITL-114', d: '@3', V: 20, Qc: 5800, Qd: 1500, kW: 600, I100: 69.9, kW100: 671, Ist: 3 * 69.9, tSt: 10, Imax: 140 }
+    ia: { c: 'DITL-113', d: '@14', V: 10, Qc: 1500, Qd: 1200, kW: 176, I100: 286, kW100: 190, Ist: 286 * 5.32, tSt: 3, Imax: 500 },
+    pa: { c: 'DITL-114', d: '@3', V: 20, Qc: 5100, Qd: 1500, kW: 600, I100: 69.9, kW100: 671, Ist: 3 * 69.9, tSt: 10, Imax: 140 }
   },
   rows: [5, 12, 19],
   dry: ['DITL-45', 'DITL-45 #B', 'DITL-45 #C'],
