@@ -473,7 +473,7 @@
               : sopLeft && st !== 'RUN'
               ? 'START blocked: finish the SOP line-up first (' + sopLeft + ' left, ✕ below; tick them in the guide).'
               : miss.length && st !== 'RUN'
-              ? 'START blocked: ' + miss.length + ' permissive missing (0 below).'
+              ? 'START blocked: ' + miss.length + ' permissive missing: ' + miss.map(r => String(r.svc || '').replace(/^[IMB]\.\S+\s+/, '') + (r.want ? '' : ' (must be 0)')).join('; ') + '.'
               : !run && st !== 'RUN'
                 ? 'Simulation PAUSED: press ▶ RUN before START (nothing moves while paused).'
                 : md.rem === true && lcpRows && st !== 'TRIP'
