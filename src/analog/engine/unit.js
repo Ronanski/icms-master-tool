@@ -227,6 +227,7 @@ function anUnitStop() {
   U.cwPrime = NaN; /* live test #50: the closed cooling loop primed as V-CW1001 of the start state (AN_MU) */
   U.mt = {};
   U.iaP = U.paP = NaN; /* 3.2.0-beta.68: the air tanks are set again by the start state (AN_AIR) */
+  U.iaRun = U.paRun = null; /* 3.2.1: the compressors are read again from the DITL (anAirStep) */
   U.acT1 = U.acT2 = NaN; /* 3.2.0-beta.69: the aux cooling water temperatures start again (AN_ACW) */
   for (const m of U.mul || []) for (const p of m.pr) p.mul = undefined;
   for (const z of U.spr || []) z.pr.uf = undefined;
@@ -639,6 +640,8 @@ function anUnitStart() {
   U.on = true;
   /* 3.2.0-beta.68: "Start at 150 MW" = the air compressors in service, the tanks at their pressure (AN_AIR, 39.PNG 7.0 kg/cm2) */
   U.iaP = U.paP = AN_AIR.P;
+  U.iaRun = U.paRun = null; /* 3.2.1: the compressors as the DITL of the scenario (anAirStep, first step) */
+  U.paW0 = U.paW1 = U.paW2 = NaN;
   U.mt = {}; /* live test #54: the running motors start at their steady temperature (AN_MT) */
   U.frT = undefined;
   U.tco = null; /* 3.2.0-beta.66: the oil-only state of the snapshot (tcs.js tcsOilState) starts again */
@@ -700,6 +703,8 @@ function anUnitCold() {
   AN_SRC.t = -1;
   /* 3.2.0-beta.68: cold = the air compressors stopped, the air tanks empty (AN_AIR) */
   U.iaP = U.paP = 0;
+  U.iaRun = U.paRun = null; /* 3.2.1: the compressors as the DITL of the scenario (anAirStep, first step) */
+  U.paW0 = U.paW1 = U.paW2 = NaN;
   U.mt = {}; /* live test #54: the motors start again from the ambient (AN_MT) */
   tcsInit(U, 'cold');
   return true;
@@ -1446,40 +1451,57 @@ function anMotorStep(U, dt) {
     vib.forEach((e, i) => (mt['VT-' + base + e] = run ? v1 + 0.1 * i : K.vib0));
   }
 }
-/* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI, PR-OPE-5002 sections 9 ~ 12): the compressed air systems of flow diagram K1AU3-PD-023
-   Rev C sheet 1/6 (plant air) and 2/6 (instrument air). Each system: compressors C-0703A / B / C (PA) or C-0704A / B / C (IA), started
-   at their local panel (the RUNNING / TRIP contacts of DITL-114 / DITL-113 rows 6 / 13 / 20, 7 / 14 / 21) -> dryers D-0703A ~ C /
-   D-0704A ~ C (DITL-45 and its machine instances #B / #C: PLANT AIR DRYER RUNNING output row 4, INSTRUMENT AIR DRYER RUNNING row 15)
-   -> air tanks T-0705A / B (10 m3) or T-0706A / B (5 m3) -> unit 1 (PT-PA1705 / PT-IA1706), unit 2 and the utility area. The
-   transmitters feed the logic as analog rows (DITL-114 / 113 rows 1 ~ 3, the auto start of a standby compressor at < 5 kg/cm2;
-   DITL-03G rows 9 ~ 11, the MFT on instrument air < 3.5 kg/cm2, 2 of 3), so the plant model makes them and the world writes them into
-   those rows (plantsw.js); the HMI shows the same number. Anchor: 39.PNG instrument air buffer tanks 7.0 kg/cm2 (unit at 150 MW);
-   alarm list: tanks and unit header L 5.0, IA LL 3.5, PSL-IA1706 / PSL-PA1705 2.8 kg/cm2; I/O list ranges (0 ~ 10 kg/cm2, dryer
-   outlet flow 0 ~ 2700 (IA) / 0 ~ 5800 (PA) m3/h, compressor current 0 ~ 500 (IA) / 0 ~ 140 (PA) A).
-     tanks        one or more compressors running: up to 7.0 kg/cm2 at 0.06 kg/cm2/s (ASSUMED, 0 -> 7 in 2 min; the load / unload
-                  band of the compressor panel is not in the repository); none running: down at 0.033 kg/cm2/s (ASSUMED: the
-                  consumption empties 2 tanks in about 3.5 min); tank A and B are one header (tank B 0.05 lower, ASSUMED);
-     unit header  the tank pressure less 0.2 kg/cm2 of line loss (ASSUMED);
-     dryer outlet the tank pressure plus 0.15 while a compressor runs (the dryers are upstream of the tanks), else the tank pressure;
-     dryer flow   the consumption (ASSUMED IA 1200, PA 1500 m3/h: half of one dryer's range) split over the dryers in service; no dryer
-                  in service: over the three (their inlet valves stay open, refrigeration off); 0 while no compressor runs;
-     current      while running: IA 400 A (ASSUMED, a 380 V motor for the 2700 m3/h dryer), PA 55 A (ASSUMED, the 6.6 kV VCB motor);
-     winding T    PA motor (TE-M0703-x1 ~ 3, I/O list): 35 C stopped, 85 C running (ASSUMED), time constant 10 min. */
+/* 3.2.1 (IRENE: INSTRUMENT AND PLANT AIR plant model from the vendor data; docs/versions/v3.2.1/AIR_PLANT_MODEL.md; replaces the
+   3.2.0-beta.68 fixed rates). The compressed air systems of flow diagram K1AU3-PD-023 Rev C sheet 1/6 (plant air) and 2/6 (instrument
+   air): compressors C-0703A / B / C (PA) or C-0704A / B / C (IA) -> dryers D-0703A ~ C / D-0704A ~ C (DITL-45 and its machine instances
+   #B / #C) -> air tanks T-0705A / B or T-0706A / B -> unit 1 (PT-PA1705 / PT-IA1706), unit 2 and the utility area.
+   Sources:
+     compressors  K1AU3-D1-0-059 (IHI): turbo compressors with the constant pressure control loop (PIC, inlet guide vane), the anti-surge
+                  loop (blow-off valve) and the motor overload loop (flow sheets HT225374 PA "TRE60-600kW TURBO COMPRESSOR", HT225405 IA
+                  "T2A TYPE TURBO COMP."); discharge transmitter PT-1DA 0 ~ 1.5 MPa;
+     PA motor     TECO 3A057H186-74409: 900 HP, 2 pole, 6600 V, 69.9 A at 100 % load, LRC 560 A, soft start; winding RTD alarm 145 /
+                  trip 155 C, temperature rise limit 80 C (class F);
+     IA motor     TECO-YASKAWA FELA-8T 165 kW 460 V 2 P (order M40328-1): 286 A at 190 kW; starting current with a reactor 80 % tap
+                  532 % (the torque / current curve);
+     tanks        D1-0-059 document index and PD-023: T-0705A / B 10 m3 (PA), T-0706A / B 5 m3 (IA), max. working pressure 0.98 MPa;
+     pressure     PR-OPE-5002 "Ensure Plant Air Compressor is running and compressed air pressure is up to 7 Kg/cm2"; 39.PNG 7.0;
+     alarm list   tanks and unit header L 5.0, IA LL 3.5, PSL-IA1706 / PSL-PA1705 2.8 kg/cm2;
+     I/O list     ranges 0 ~ 10 kg/cm2, dryer outlet flow 0 ~ 2700 (IA) / 0 ~ 5800 (PA) m3/h, compressor current 0 ~ 500 (IA) / 0 ~ 140
+                  (PA) A (the transmitter holds its range top).
+   How it works (per system):
+     compressor   runs when the logic gives its START COMMAND (DITL-113 / 114 output rows 56 / 63 / 70 = M.0300 / M.0310 AND NOT
+                  RUNNING AND NOT TRIP, 5 s pulse; the local panel starts it when it is in REMOTE) or when the field operator starts it at
+                  the local panel; it stops on its TRIP contact (rows 7 / 14 / 21, a field trip of the test tool). The model owns the RUNNING
+                  contact (rows 6 / 13 / 20, I.0015 / I.0095 / I.0335 IA, I.0010 / I.0090 / I.0330 PA): the logic reads it (DITL-42
+                  "COMPRESSOR STOPPED", the auto start). The state of the scenario (Start at 150 MW, Cold) is taken at its first step;
+     tanks        one header: dP/dt = (Q in - Q use) x 1.033 / V / 3600 (isothermal, free air m3/h, V of both tanks); the PIC holds 7.0:
+                  at 7.0 the compressors give only the use, below it each gives its capacity;
+     use          the consumption at 7.0 (NO-SOURCE: IA 1200, PA 1500 m3/h, as 3.2.0-beta.68) through fixed openings: proportional to the
+                  absolute pressure;
+     capacity     NO-SOURCE (not in D1-0-059): PA 5800 m3/h = the dryer flow meter range (one compressor per dryer, PD-023; check:
+                  600 kW / 97 m3/min = 6.2 kW per m3/min), IA 1600 m3/h = 165 kW at the same 6.2 kW per m3/min;
+     power        proportional to the compressor flow, not below the surge flow (the anti-surge loop blows off the rest): 70 % of the
+                  capacity (NO-SOURCE); 100 % = PA 600 kW (TRE60-600kW), IA 165 kW (motor rating);
+     current      the motor current at 100 % times kW / kW 100 % (PA 69.9 A at 671 kW = 900 HP; IA 286 A at 190 kW); start: PA soft start
+                  3 x 69.9 A for 10 s (NO-SOURCE: the current limit of the soft starter), IA 532 % x 286 A for 3 s (NO-SOURCE: the time);
+     winding T    PA motor (TE-M0703-x1, I/O list): 30 C + 80 C x (I / 69.9)^2 (the rise limit of the spec at full load), 10 min;
+     unit header  the tank pressure less 0.2 kg/cm2 at the design use (NO-SOURCE), with the use squared;
+     dryer outlet the tank pressure plus 0.15 kg/cm2 at the design use (NO-SOURCE), with the flow squared; flow over the dryers in
+                  service, over the three while none is (their inlet valves stay open). */
 const AN_AIR = {
   P: 7.0,
-  up: 0.06,
-  dn: 0.033,
-  dB: 0.05,
+  Pa: 1.033,
   loss: 0.2,
   dD: 0.15,
+  fs: 0.7,
   sys: {
-    ia: { c: 'DITL-113', d: '@14', Q: 1200, I: 400 },
-    pa: { c: 'DITL-114', d: '@3', Q: 1500, I: 55 }
+    ia: { c: 'DITL-113', d: '@14', V: 10, Qc: 1600, Qd: 1200, kW: 165, I100: 286, kW100: 190, Ist: 286 * 5.32, tSt: 3, Imax: 500 },
+    pa: { c: 'DITL-114', d: '@3', V: 20, Qc: 5800, Qd: 1500, kW: 600, I100: 69.9, kW100: 671, Ist: 3 * 69.9, tSt: 10, Imax: 140 }
   },
   rows: [5, 12, 19],
   dry: ['DITL-45', 'DITL-45 #B', 'DITL-45 #C'],
-  Tw: [35, 85, 600],
-  tauI: 2
+  Tw: [30, 80, 600],
+  tauI: 1
 };
 /* an input row of a DITL drawing (a field contact: the RUNNING / TRIP of a compressor set at its local panel); null while no world */
 function anDitlIn(name, row) {
@@ -1496,29 +1518,96 @@ function anDitlIn(name, row) {
     return null;
   }
 }
+/* 3.2.1: the sheet of a DITL drawing (or machine instance) by its name, for the contacts the plant model owns */
+function anDitlSheet(name) {
+  try {
+    if (typeof S === 'undefined' || !S.sheets || !window.WORLD || !WORLD.on || !window.DUI) return null;
+    const C = AN_UNIT._dr || (AN_UNIT._dr = {});
+    let s = C[name];
+    if (!s) {
+      s = S.sheets.concat(WORLD.inst || []).find(x => x.name.endsWith(name)) || null;
+      if (s) C[name] = s;
+    }
+    return s;
+  } catch (e) {
+    return null;
+  }
+}
 function anAirStep(U, dt) {
   const K = AN_AIR,
     lag = (k, x, tau) => (U[k] = isFinite(U[k]) ? U[k] + ((x - U[k]) * Math.min(dt, tau)) / tau : x);
   for (const k in K.sys) {
     const Y = K.sys[k],
-      run = K.rows.map(r => (anDitlIn(Y.c, r) && !anDitlIn(Y.c, r + 1) ? 1 : 0)),
+      s = anDitlSheet(Y.c),
       trip = K.rows.map(r => anDitlIn(Y.c, r + 1) || 0),
       dry = K.dry.map(d => anDitlRun(d + Y.d) || 0),
-      n = run.reduce((a, b) => a + b, 0),
       nd = dry.reduce((a, b) => a + b, 0);
-    U[k + 'N'] = n;
+    /* the compressors: the state of the scenario at the first step, then the START COMMAND of the logic (only a compressor whose
+       local panel is in REMOTE), its TRIP contact, and a start / stop at the local panel (the field operator writes the RUNNING
+       contact: guide.js LS_DOCK.fieldRow, PR-OPE-5002 "Ensure the compressor is in Local Position ... Initiate RUN") */
+    let run = U[k + 'Run'];
+    if (!Array.isArray(run)) {
+      if (!s) continue;
+      run = U[k + 'Run'] = K.rows.map(r => anDitlIn(Y.c, r) || 0);
+      U[k + 'Ts'] = K.rows.map(() => 1e9);
+      U[k + 'Wr'] = run.slice();
+      /* the control location of the local panel is not a DCS signal (D1-0-059 Modbus flag "Control Location", NO-SOURCE): in
+         service = the running compressor and the next one in REMOTE (the standby of the auto start); Cold = all in LOCAL */
+      const j = run.indexOf(1),
+        sb = j < 0 ? -1 : [1, 2].map(d => (j + d) % run.length).find(i => !run[i]);
+      U[k + 'Rem'] = run.map((r, i) => (r || i === sb ? 1 : 0));
+    }
+    const ts = U[k + 'Ts'] || (U[k + 'Ts'] = K.rows.map(() => 1e9)),
+      wr = U[k + 'Wr'] || (U[k + 'Wr'] = run.slice()),
+      rem = U[k + 'Rem'] || (U[k + 'Rem'] = K.rows.map(() => 0));
+    K.rows.forEach((r, i) => {
+      const fld = s ? (s.sig[r + ':S'] ? 1 : 0) : wr[i];
+      if (fld !== wr[i]) {
+        run[i] = fld; /* the field operator at the local panel */
+        if (fld) ts[i] = 0;
+      }
+      if (trip[i]) run[i] = 0;
+      else if (!run[i] && rem[i] && s && DUI.outVal(s, r) === 1) {
+        run[i] = 1;
+        ts[i] = 0;
+      }
+      if (run[i]) ts[i] += dt;
+      wr[i] = run[i];
+      if (s) s.sig[r + ':S'] = !!run[i]; /* the RUNNING contact of the local panel */
+    });
+    const on = run.map((r, i) => (r && ts[i] >= Y.tSt ? 1 : 0)),
+      n = on.reduce((a, b) => a + b, 0);
+    U[k + 'N'] = run.reduce((a, b) => a + b, 0);
     run.forEach((r, i) => (U[k + 'R' + i] = r));
     trip.forEach((r, i) => (U[k + 'T' + i] = r));
     dry.forEach((r, i) => (U[k + 'D' + i] = r));
-    const P0 = isFinite(U[k + 'P']) ? U[k + 'P'] : 0;
-    U[k + 'P'] = n ? Math.min(K.P, P0 + K.up * dt) : Math.max(0, P0 - K.dn * dt);
-    U[k + 'PA'] = U[k + 'P'];
-    U[k + 'PB'] = Math.max(0, U[k + 'P'] - K.dB);
-    U[k + 'PU'] = Math.max(0, U[k + 'P'] - K.loss);
-    U[k + 'PD'] = U[k + 'P'] + (n ? K.dD : 0);
-    dry.forEach((r, i) => lag(k + 'F' + i, n && (nd ? r : 1) ? Y.Q / (nd || dry.length) : 0, 3));
-    run.forEach((r, i) => lag(k + 'I' + i, r ? Y.I : 0, K.tauI));
-    if (k === 'pa') run.forEach((r, i) => lag('paW' + i, r ? K.Tw[1] : K.Tw[0], K.Tw[2]));
+    /* the tanks */
+    const P0 = isFinite(U[k + 'P']) ? Math.max(0, U[k + 'P']) : 0,
+      use = (Y.Qd * (P0 + K.Pa)) / (K.P + K.Pa);
+    let P = P0 + (((n * Y.Qc - use) * K.Pa) / Y.V / 3600) * dt,
+      qin = n * Y.Qc;
+    if (n && P >= K.P) {
+      P = K.P; /* the constant pressure loop of the compressor panel */
+      qin = use;
+    }
+    P = Math.max(0, P);
+    U[k + 'P'] = P;
+    U[k + 'PA'] = U[k + 'PB'] = P;
+    U[k + 'Q'] = qin;
+    U[k + 'Use'] = use;
+    U[k + 'PU'] = Math.max(0, P - K.loss * (use / Y.Qd) ** 2);
+    U[k + 'PD'] = P + K.dD * (qin / Y.Qd) ** 2;
+    dry.forEach((r, i) => lag(k + 'F' + i, qin && (nd ? r : 1) ? qin / (nd || dry.length) : 0, 3));
+    /* the motors */
+    run.forEach((r, i) => {
+      const f = on[i] ? Math.max(K.fs, qin / n / Y.Qc) : 0,
+        kW = f * Y.kW,
+        I = !r ? 0 : ts[i] < Y.tSt ? Y.Ist : (Y.I100 * kW) / Y.kW100;
+      U[k + 'Kw' + i] = Math.round(kW * 10) / 10;
+      lag(k + 'Im' + i, I, K.tauI);
+      U[k + 'I' + i] = Math.min(Y.Imax, U[k + 'Im' + i]); /* IT-C070xx: the range of the transmitter */
+      if (k === 'pa') lag('paW' + i, K.Tw[0] + K.Tw[1] * (I / Y.I100) ** 2, K.Tw[2]);
+    });
   }
 }
 function anUnitOwns(T, ids) {
