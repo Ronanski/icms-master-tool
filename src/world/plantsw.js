@@ -146,7 +146,7 @@
           if (m) air.push({ s, key: a.key, f: m[1] });
           else {
             const q = BO.find(([re]) => re.test(t)); /* 3.2.1 SEULGI: boiler side (boiler.js) */
-            if (q) bo.push({ s, key: a.key, f: q[1] });
+            if (q) bo.push({ s, key: a.key, f: typeof q[1] === 'function' ? q[1](t, a, s) : q[1] });
           }
         }
       }
@@ -207,7 +207,9 @@
   const BO = [
     [/LT-DO0701\b/, 'doLv'],
     [/DPT-DO0001\b/, 'doDp'],
-    [/(?:^|[^A-Z])PT-DO0005\b/, 'doP1']
+    [/(?:^|[^A-Z])PT-DO0005\b/, 'doP1'],
+    /* fans (boiler.js AN_FN): DITL-28B row 12 "FAB A CURRENT" < 24.6 A (L.L.); the machine instance #B is FA blower B */
+    [/IT-F1055[AB]\b/, (t, a, s) => (/#B$/.test(s.name) ? 'fnIb' : 'fnIa')]
   ];
   /* 3.2.0-beta.50 (live check #94): the BFWP suction pressure PT-FW1115-A / -B (DITL-23A row 12, START permissive > 1.5 kg/cm2) is the
      deaerator pressure (ABC-056 AI0417 PT-CD1104) plus the static head of the deaerator water (its level, ABC-031 AI0672 LT-CD1104) less the
