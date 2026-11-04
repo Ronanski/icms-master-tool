@@ -478,6 +478,22 @@
       const curOf = m => (m.cur ? () => cur(m.cur) : null);
       const mon = m => m.mon || [];
       const known = m => m.ad && !m.fld && !/@/.test(m.ad) && call(() => D().dOf(m.ad), null);
+      /* a field write of an input row, written again while the Worker copy still shows the old value (the beta.29 LCP STOP lesson:
+         the 'ds' sync of the Worker overwrote a page write made between two of its frames) */
+      const fRow = (ad, row, on, txt) => {
+        D().fieldRow(ad, row, on ? 1 : 0, txt);
+        let n = 0;
+        const chk = () => {
+          const s0 = call(() => D().dOf(ad), null);
+          if (!s0 || !s0.sig) return;
+          if (!!s0.sig[row + ':S'] !== !!on) {
+            s0.sig[row + ':S'] = !!on;
+            if (window.WORLD && WORLD.live) WORLD.busy = true;
+          }
+          if (++n < 6) setTimeout(chk, 400);
+        };
+        setTimeout(chk, 400);
+      };
       const open = (id, part) => {
         const m = M[id];
         if (!m) return;
@@ -507,6 +523,45 @@
               : null,
             cmd: op => (!(AN.unit && AN.unit.on) ? 'no plant model: choose Cold or 150 MW (Plant model ON)' : m.tcs === 'vex' ? (op === 'start' || op === 'stop' ? AN.turbine('vex', op === 'start' ? 1 : 0) : 'no AUTO / MANUAL') : AN.turbine('oil', { p: m.tcs, op }))
           });
+        }
+        /* live test 2026-11-05 (INSTRUMENT AND PLANT AIR): a machine started at its local panel (sti: [sheet, RUNNING row, TRIP row]) had
+           only the I/O card, nothing on the page could start an air compressor. The FIELD pop-out: START / STOP = the field operator at the
+           local panel (the RUNNING row, as the Training dock; unit.js anAirStep reads it), TRIP / RESET = its TRIP contact */
+        if (m.sti && window.LS_FPOP && LS_FPOP.field)
+          return void LS_FPOP.field({
+            n: m.n,
+            t: m.t,
+            d: m.sti[0],
+            io: m.io,
+            why: 'Started and stopped at its local panel (no DCS START / STOP). The DCS reads RUNNING (' + m.sti[0] + ' row ' + (m.sti[1] + 1) + ') and TRIP (row ' + (m.sti[2] + 1) + ').',
+            st: () => mst(m),
+            fld: on => fRow(m.sti[0], m.sti[1], on, (on ? 'START ' : 'STOP ') + m.n + ' (local panel)'),
+            trip: m.sti[2] != null ? on => fRow(m.sti[0], m.sti[2], on, (on ? 'TRIP ' : 'RESET ') + m.n + ' (local panel)') : null
+          });
+        /* live test 2026-11-05: an air dryer of DITL-45 (sto = its RUNNING output row, remi = its REMOTE input row): START P.B. = the input
+           row of the RUNNING output (rows 4 / 15), STOP P.B. 4 rows below (rows 8 / 19), both need REMOTE (I.0085 / I.0099) */
+        if (m.sto && m.remi && window.LS_FPOP && LS_FPOP.pb) {
+          const s = call(() => D().dOf(m.sto[0]), null),
+            r0 = m.sto[1],
+            ad = r => String(call(() => DUI.rowInfo(s, r).svc, '') || '').split(/[\s/]/)[0];
+          if (
+            s &&
+            LS_FPOP.pb({
+              n: m.n,
+              t: m.t,
+              d: m.sto[0],
+              io: m.io,
+              st: { row: r0, on: 'RUNNING', off: 'STOPPED' },
+              pbs: [
+                ['START', r0, ad(r0)],
+                ['STOP', r0 + 4, ad(r0 + 4)]
+              ],
+              perm: [{ row: m.remi[1], l: 'REMOTE (field selector of the local panel)' }],
+              permWhy: 'REMOTE (turn the selector to REMOTE first)',
+              sel: m.remi[1]
+            })
+          )
+            return;
         }
         if (m.vt && window.LS_FPOP && LS_FPOP.valveTag && LS_FPOP.valveTag(m.vt)) return;
         if (m.ctl) return; /* the controller faceplate: plant.js opens it on the same click (api.reg ctl) */

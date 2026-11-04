@@ -577,7 +577,22 @@
             )
           );
         popEl.style.display = 'block';
-        popEl.style.top = box.offsetTop + box.offsetHeight + 4 + 'px';
+        const top = box.offsetTop + box.offsetHeight + 4;
+        popEl.style.top = top + 'px';
+        /* live test 2026-11-05 (TICLO1002 on MAKE-UP AND CLOSED COOLING WATER, 1375 x 902): in the pop-out faceplate (#plfp, max-height,
+           scrolls) the MV pop-up below the MV box ended under the bottom edge, its ▲▼ and 0 / 50 / 100 out of sight until the operator
+           scrolled inside the faceplate. When it does not fit below, it opens above the box; else it is scrolled into view */
+        const sc = popEl.closest('#plfp,#opp');
+        if (sc) {
+          const S0 = sc.getBoundingClientRect(),
+            P0 = popEl.getBoundingClientRect(),
+            h = P0.height;
+          if (P0.bottom > S0.bottom) {
+            const up = top - h - box.offsetHeight - 8;
+            if (P0.top - h - box.offsetHeight - 8 >= S0.top) popEl.style.top = up + 'px';
+            else popEl.scrollIntoView({ block: 'nearest' });
+          }
+        }
       };
       svBox.addEventListener('click', e => {
         if (e.target.closest('.fpop')) return;
