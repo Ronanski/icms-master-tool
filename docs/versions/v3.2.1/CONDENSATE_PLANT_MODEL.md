@@ -39,6 +39,7 @@ pressure at temperatura mula sa physics, ang CEP sa pump curve, at ang link sa l
 
 ## Hindi tugma (nakatala)
 - Condenser 0.063 kg/cm2A ng model; snapshot 4.PNG 0.057, design O&M 0.070. Hotwell 36.6 °C ng model; snapshot 40.0, alarm list 38.6. Hindi rin tugma ang snapshot sa sarili nito: ang saturation ng 0.057 ay 35 °C. Physics ang ginamit.
+- Sinuri muli (3.2.1, IRENE 2026-11-04): ang dahilan ng 36.6 °C ay ang seawater. Sa 30.PNG ang seawater ay 28.5 → 35.2 °C (tumaas ng 6.7 °C); sa model 28.5 → 33.5 (5.0 °C) dahil ang condenser flow ng model ay 35,350 m3/h (CW_PLANT_MODEL.md UNUSUAL 3: naka-calibrate sa SOP pressures, +15 % sa D1-0-039 31,500 T/H). Ang 200 MW na heat sa 6.7 °C ay ~27,000 T/H lang. Hindi pinilit ang hotwell sa 40 °C: masisira ang pressure (40 °C = 0.075 kg/cm2A, malayo sa 0.056 ng snapshot) at ang CW model. Para itama nang buo, kailangan ng tunay na seawater flow o ng condenser DP sa snapshot (wala sa docs).
 
 ## CALIBRATED / NO-SOURCE
 - UA factor (flow ÷ design)^0.5 at time constant 30 s: NO-SOURCE.

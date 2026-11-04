@@ -290,16 +290,18 @@
     [/PILM1812\.PV/, 'lmPd']
   ];
   /* 3.2.0-beta.50 (live check #94): the BFWP suction pressure PT-FW1115-A / -B (DITL-23A row 12, START permissive > 1.5 kg/cm2) is the
-     deaerator pressure (ABC-056 AI0417 PT-CD1104) plus the static head of the deaerator water (its level, ABC-031 AI0672 LT-CD1104) less the
-     suction loss at the feedwater flow. Before: the row kept its default 0.75 and the trainee had to FIELD-force it at Hakbang 25.
-     ASSUMED (not in the repository): head 2.2 kg/cm2 at the normal level (about 22 m of water), 1 kg/cm2 per 10 m of level, loss
-     1.4 kg/cm2 at 499 T/H (so 5.9 + 2.2 - 1.4 = 6.7 kg/cm2, PIFW1115A of the 150 MW snapshot) */
+     deaerator pressure (ABC-056 AI0417 PT-CD1104) plus the static head of the deaerator water (its level, ABC-031 AI0672 LT-CD1104).
+     Before: the row kept its default 0.75 and the trainee had to FIELD-force it at Hakbang 25.
+     3.2.1 (IRENE 2026-11-04, the two snapshots, docs/hmi/OPERATING_POINTS.md): the pump that is not running (strainer DP 0.00) reads
+     the deaerator pressure plus the static head: low load PICD1104 2.2, PIFW1115B 4.0 (head 1.8 kg/cm2); 03.png 150 MW PIFW1115B 7.1 =
+     the model deaerator ~5.3 + 1.8. So the common suction header has no loss to see (before: ASSUMED head 2.2 less 1.4 at 499 T/H, which
+     gave 5.9 / 6.1 against 6.7 / 7.1). The loss of a running pump is on its own branch (unit.js anFwTagStep, PT-FW1115-A / B).
+     The level: 1 kg/cm2 per 10 m of water (LT-CD1104 mm). */
   W.sucP = () => {
     const pd = val(['ABC-056', null, 'AI0417']),
-      lv = val(['ABC-031', null, 'AI0672']),
-      f = (window.AN_CYC && AN_CYC.ffw) || 0;
+      lv = val(['ABC-031', null, 'AI0672']);
     if (!isFinite(pd)) return NaN;
-    const r = Math.max(0, pd + Math.max(0, 2.2 + (isFinite(lv) ? lv : 0) / 1e4) - 1.4 * (f / 499) * (f / 499));
+    const r = Math.max(0, pd + Math.max(0, 1.8 + (isFinite(lv) ? lv : 0) / 1e4));
     return Math.round(r * 100) / 100;
   };
   W.condP = () => {
