@@ -266,23 +266,28 @@
       }
       return o;
     };
-    const lsR = svcRows(/LOCAL\s+START\s+P\.?\s*B/i).pop(),
+    /* live test 2026-11-05 (ASH COOLER A, DITL-21A: "LOCAL START/FORWARD P.B." row 22 I.0257, and the E-stop is a "NOT EMERGENCY STOP"
+       field contact, row 18 I.0256, 0 at Cold): both are read too; esN = that contact (EMERGENCY STOP = 0, RELEASE = 1) */
+    const isI = r => /^I\./.test(call(() => DUI.rowInfo(s, r).tag, '') || '');
+    const lsR = svcRows(/LOCAL\s+START(?:\s*\/\s*FOR\w*)?\s+P\.?\s*B|LOCAL\s+START\s*\/\s*FOR/i).filter(r => !/\bNOT\b/i.test(call(() => DUI.rowInfo(s, r).svc, ''))).pop(),
       lpR = svcRows(/LOCAL\s+STOP\s+P\.?\s*B/i).pop(),
       esR = svcRows(/EMERGENCY\s+STOP\s+P\.?\s*B/i).pop(),
+      esN = esR == null ? svcRows(/\bNOT\s+EMERGENCY\s+STOP\b/i).filter(isI).shift() : null,
       etU = s && s.nl ? (s.nl.usr || []).find(x => /ELECTRIC/i.test(x.label || '')) : null,
       /* live test 2026-11-05 (AIR PREHEATER DITL-43 row 5 I.0651 NOT TRIP = 0 at Cold, no way to reset it on the page): a drawing with no
          ELECTRICAL TROUBLE symbol but a NOT TRIP field contact: RELAY TRIP = the contact to 0, RESET = to 1 (the Training FIELD NOT TRIP) */
       ntR = etU ? null : svcRows(/\bNOT\s+TRIP\b/i).filter(r => /^I\./.test(call(() => DUI.rowInfo(s, r).tag, '') || '')).shift();
-    const hasFld = lsR != null || lpR != null || esR != null || !!etU || ntR != null;
+    const hasFld = lsR != null || lpR != null || esR != null || esN != null || !!etU || ntR != null;
     const fSh = E('div', 'fpo-sh fld', 'FIELD · LOCAL PANEL'),
       bLs = E('button', 'fpo-cmd', 'START'),
       bLp = E('button', 'fpo-cmd', 'STOP'),
       bEs = E('button', 'fpo-cmd es', 'EMERGENCY STOP'),
       bTr = E('button', 'fpo-cmd', 'TRIP'),
-      bRs = E('button', 'fpo-cmd', 'RESET');
-    for (const b of [bLs, bLp, bEs, bTr, bRs]) b.type = 'button';
+      bRs = E('button', 'fpo-cmd', 'RESET'),
+      bEr = E('button', 'fpo-cmd', 'RELEASE');
+    for (const b of [bLs, bLp, bEs, bTr, bRs, bEr]) b.type = 'button';
     const rLcp = row('LCP', bLs, bLp),
-      rEs = row('E-STOP', bEs, ...(esR == null ? [E('span', 'fpo-nd', 'not on ' + (nm || 'its drawing'))] : [])),
+      rEs = row('E-STOP', bEs, ...(esN != null ? [bEr] : esR == null ? [E('span', 'fpo-nd', 'not on ' + (nm || 'its drawing'))] : [])),
       rRly = row('RELAY', bTr, bRs);
     if (hasFld) F.bd.append(fSh, rLcp, rEs, rRly);
     /* live test 2026-11-05 (ACWP-A, DITL-76 row 24 LOCAL STOP P.B. = a FALLING pulse into the reset of the run flip-flop): with the Worker
@@ -431,7 +436,10 @@
     bSp.onclick = () => !bSp.disabled && ask('STOP ' + M.n + '?', () => ((spAt = Date.now()), dk.dmotor(M.ad, 0), call(() => window.lsEventAdd(nm, 'DCS', 'Operator: STOP ' + M.n + ' (faceplate)'))));
     bLs.onclick = () => !bLs.disabled && ask('FIELD: START ' + M.n + ' at the local panel?', () => pulse(lsR, M.n + ' LOCAL START P.B. (local panel)'), 1);
     bLp.onclick = () => !bLp.disabled && ask('FIELD: STOP ' + M.n + ' at the local panel?', () => pulse(lpR, M.n + ' LOCAL STOP P.B. (local panel)'), 1);
-    bEs.onclick = () => !bEs.disabled && ask('FIELD: EMERGENCY STOP ' + M.n + '?', () => pulse(esR, M.n + ' EMERGENCY STOP P.B. (field)'), 1);
+    bEs.onclick = () =>
+      !bEs.disabled &&
+      ask('FIELD: EMERGENCY STOP ' + M.n + '?', () => (esN != null ? dk.fieldRow(nm, esN, 0, M.n + ' EMERGENCY STOP (field)') : pulse(esR, M.n + ' EMERGENCY STOP P.B. (field)')), 1);
+    bEr.onclick = () => !bEr.disabled && ask('FIELD: RELEASE the emergency stop of ' + M.n + '?', () => dk.fieldRow(nm, esN, 1, M.n + ' emergency stop released (field)'), 1);
     bTr.onclick = () => !bTr.disabled && ask('FIELD: TRIP ' + M.n + ' at its protection relay?', () => etSet(true), 1);
     bRs.onclick = () => !bRs.disabled && ask('FIELD: RESET the protection relay of ' + M.n + '?', () => etSet(false), 1);
     let k0 = '';
@@ -472,7 +480,11 @@
         bLp.disabled = lpR == null || !loc || st !== 'RUN';
         bLs.classList.toggle('lit-run', st === 'RUN');
         bLp.classList.toggle('lit-stop', st === 'STOP' && loc);
-        bEs.disabled = esR == null || st !== 'RUN';
+        if (esN != null) {
+          const esOn = call(() => DUI.rowVal(s, esN), 1) === 0;
+          bEs.disabled = esOn || !run;
+          bEr.disabled = !esOn || !run;
+        } else bEs.disabled = esR == null || st !== 'RUN';
         bTr.disabled = (!etU && ntR == null) || et;
         bRs.disabled = (!etU && ntR == null) || !et;
         bTr.classList.toggle('lit-run', et);
