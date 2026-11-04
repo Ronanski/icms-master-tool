@@ -21513,7 +21513,8 @@ function anDoFv(tag) {
 }
 /* the field operator sets a diesel oil manual valve; false for an unknown tag */
 function anDoValve(tag, pct) {
-  if (!(tag in AN_DO.fv0)) return false;
+  if (!(tag in AN_DO.fv0) && !(typeof AN_LM !== 'undefined' && tag in AN_LM.fv0))
+    return false; /* + limestone HV01 / HV11 */
   AN_SRC.valve = AN_SRC.valve || {};
   AN_SRC.valve[tag] = Math.max(0, Math.min(100, +pct || 0));
   return true;
@@ -21609,7 +21610,10 @@ function anBoilerStart(U) {
   U.doSp = null;
   U.doZ = {};
   for (const k in AN_DO.fv0) if (AN_SRC.valve) delete AN_SRC.valve[k];
+  for (const k in AN_LM.fv0) if (AN_SRC.valve) delete AN_SRC.valve[k];
   anFanStart(U);
+  anLmStart(U);
+  anSdStart(U);
 }
 /* called by anUnitCold: the pumps are the DITL's (stopped in a cold plant); the tank keeps its level */
 function anBoilerCold(U) {
@@ -21618,6 +21622,8 @@ function anBoilerCold(U) {
   U.doSp = null;
   U.doZ = {};
   for (const k in AN_DO.fv0) if (AN_SRC.valve) delete AN_SRC.valve[k];
+  anLmStart(U); /* limestone: at rest, the vessels keep the start content (NO-SOURCE) */
+  anSdStart(U);
 }
 /* one step of the diesel oil system */
 function anDieselOilStep(U, dt) {
@@ -21806,10 +21812,245 @@ function anFanStep(U, dt) {
   U.fnIdfI = lag('ii', cur(K.I0.idf, idf, ((taf / K.ga.T0) * dpg) / dpg0), 2);
   U.fnI = [U.fnPafI, U.fnSafI, U.fnIdfI, U.fnIa, U.fnIb];
 }
+/* ===== LIMESTONE INJECTION (019 LIMESTONE INJECTION SYSTEM; docs/versions/v3.2.1/LIMESTONE_SAND_PLANT_MODEL.md) =====
+   The field devices of the Rotofeed (HWA JANN / Clyde Bergemann, O&M L5-3 "Limestone", on the PC: document-references/
+   o&m-package-phase-1/L5 Fly Ash_Sand_Limestone/L5-3 Limestone.pdf) under the DITL logic of the drawing (limestone_logic.xls,
+   DITL-LS10 ~ LS240, station 104). The logic is not changed: the model only answers its solenoid commands with the switches of
+   the field (IO list "Station 104"):
+     dome valves  vent XV-LM1814A (O.0249 -> ZSO / ZSC I.017B / I.017C), lock vessel inlet XV-LM1812 (O.0243 -> I.0177 / I.0178,
+                  seal PS-LM1812 I.016D), dispensing vessel inlet XV-LM1815 (O.0244 -> I.0179 / I.017A, seal PS-LM1815 I.016E),
+                  balance XV-LM1814B (O.024A -> I.017D / I.017E). O&M 2.10: a dome valve is "closed and sealed" when its seal
+                  pressure is > 5 bar (the inflating seal is fed by the control air: the plant air header of the unit model, paPU);
+                  open = seal deflated (< 5 bar). Stroke 2 s, seal inflation 1 s: NO-SOURCE (O&M 2.8 only gives the 5 s fault timer:
+                  the valve must reach its end within it).
+     equalising   XV-LM1814C (O.0248): conveying air into the lock vessel (regulator PCV11 3.5 barg, O&M 3.2.5).
+     conveying    XV-LM1814D ~ F (O.0247, IO list "conveying air valve open solenoid"); isolating valves XV-LM1811A ~ H (O.0252 ~
+                  O.0259 -> I.0200 ~ I.020F), stroke 3 s NO-SOURCE.
+     vessels      lock vessel 0.7 m3, dispensing vessel 1.4 m3 (O&M L5-3 section 1), bulk density 1280 kg/m3 (for volume) ->
+                  896 / 1792 kg. LSH-LM1812 (I.0168) covered at 90 % of the lock vessel, LSL-LM1815 (I.0169 = 1 uncovered: DITL-LS20
+                  OUT3 = enabled AND I.0169) at 30 % of the dispensing vessel: NO-SOURCE (the probe heights are not in the O&M).
+                  Silo to lock vessel by gravity in 20 s, lock to dispensing vessel in 20 s: NO-SOURCE (O&M 2.8: the short fill
+                  timer 30 s and the dome valve open timer 30 s are the backups, so the transfer is shorter).
+     feeder       L-1311 Rotofeed (O.024C start -> I.0170 MIR-M1311 running): volumetric, 0 ~ 14 T/H (O&M section 1 maximum
+                  14,000 kg/h; DITL-LS240 OUT3 "ACTURE ROTOFEEDER SPEED 0~14T/H") = the SOx control output (ABC-005 AICFG10571,
+                  the speed of INV-M1311) while the dispensing vessel has material.
+     pressures    PT-LM1811 lock vessel (AI0434), PT-LM1812 dispensing vessel = conveying pressure (AI0433), 0 ~ 6 kg/cm2.
+                  At rest 0.0 / 0.1 (snapshot 19.PNG, limestone feeding STOP, conveying air closed). Conveying air on: 0.8 kg/cm2 +
+                  0.05 per T/H of limestone: NO-SOURCE (between the DITL-LS230 LOW 0.5 and the O&M 2.5 blockage 1.5 bar; design
+                  back pressure 1020 mmAq at the boiler). Time constants 1 s (vent), 4 s (equalising), 3 s (conveying): NO-SOURCE.
+     air tank     PS-PA1811 (I.016A) made below 4 bar (O&M 2.9 "air tank pressure < 4 bar") of the plant air header.
+     vent fan     F-1313 (O.024E start command -> I.0173 MIR-LM1313 running, IO list). */
+const AN_LM = {
+  m: { lock: 0.7 * 1280, disp: 1.4 * 1280 },
+  lsh: 0.9,
+  lsl: 0.3,
+  tFill: 20,
+  tXfer: 20,
+  qMax: 14,
+  stroke: 2,
+  seal: 1,
+  iso: 3,
+  sealBar: 5,
+  tankBar: 4,
+  pRest: 0.1,
+  pAir: 0.8,
+  kQ: 0.05,
+  pEq: 3.5 / 0.980665,
+  /* the manual valves of the Rotofeed pneumatic panel PCB-1311 (O&M L5-3 3.2 / 3.5, the names of the O&M): control air isolation HV01
+     (closed = the dome valve seals deflate, 3.5.4) and conveying air isolation HV11 (3.2.4); open in service */
+  fv0: { HV01: 100, HV11: 100 }
+};
+function lmOut(n, r) {
+  return fnOut(')' + n, r) === 1;
+}
+function anLmStart(U) {
+  const L = (U.lm = { v: {}, sw: {} });
+  L.mDisp =
+    AN_LM.m.disp *
+    0.6; /* NO-SOURCE: the dispensing vessel above its LSL at the 150 MW start (19.PNG: feeding STOP, no filling) */
+  L.mLock = 0;
+  L.pl = 0;
+  L.pd = AN_LM.pRest;
+  L.sp = doOut('ABC-005', 'AICFG10571');
+  L.silo = 69.4; /* 19.PNG LILM1800 69.4 % */
+  lmPub(U);
+}
+/* a dome / isolating valve: position 0 (closed) ~ 1 (open) toward its solenoid, the seal inflated after it is closed */
+function lmValve(L, k, cmd, dt, stroke, seal) {
+  const v = (L.v[k] = L.v[k] || { x: 0, s: seal ? AN_LM.seal : 0 });
+  v.x = Math.max(0, Math.min(1, v.x + (cmd ? 1 : -1) * (dt / stroke)));
+  if (seal) v.s = v.x <= 0 ? Math.min(AN_LM.seal, v.s + dt) : 0;
+  return v;
+}
+function anLmStep(U, dt) {
+  const L = U.lm;
+  if (!L) return;
+  const K = AN_LM,
+    fv = t => {
+      const V = (typeof AN_SRC !== 'undefined' && AN_SRC.valve) || {};
+      return isFinite(V[t]) ? V[t] : K.fv0[t];
+    },
+    pa = isFinite(U.paPU) ? U.paPU * 0.980665 : 0 /* the plant air header, bar */,
+    air = fv('HV01') > 0 ? pa : 0 /* control air of the panel (seals, solenoids) */,
+    v = {};
+  v.vent = lmValve(L, 'vent', lmOut('DITL-LS160', 1), dt, K.stroke, 1);
+  v.lock = lmValve(L, 'lock', lmOut('DITL-LS170', 1), dt, K.stroke, 1);
+  v.disp = lmValve(L, 'disp', lmOut('DITL-LS180', 1), dt, K.stroke, 1);
+  v.bal = lmValve(L, 'bal', lmOut('DITL-LS190', 1), dt, K.stroke, 1);
+  const eq = lmOut('DITL-LS200', 1),
+    conv = lmOut('DITL-LS210', 2) && fv('HV11') > 0 && pa > K.tankBar;
+  const iso = 'ABCDEFGH'.split('').map((x, i) => lmValve(L, 'iso' + x, lmOut('DITL-LS212', 11 + i), dt, K.iso, 0));
+  const route = iso.some(q => q.x >= 1);
+  /* the feeder (the VFD runs on its start command; no trip in the model) */
+  L.run = lmOut('DITL-LS110', 6);
+  L.fan = lmOut('DITL-LS214', 13);
+  const mv = L.sp ? +L.sp.S.rt.v[L.sp.n] : 0;
+  L.q = L.run && route && conv && L.mDisp > 0 ? (Math.max(0, Math.min(100, isFinite(mv) ? mv : 0)) / 100) * K.qMax : 0;
+  /* material: silo -> lock (lock dome open), lock -> dispensing (dispensing dome open), dispensing -> conveying line (feeder) */
+  const sil = L.silo > 0 ? (v.lock.x * K.m.lock * dt) / K.tFill : 0,
+    toLock = Math.min(sil, K.m.lock - L.mLock);
+  L.mLock += toLock;
+  L.silo = Math.max(0, L.silo - (toLock / 1280 / 530) * 100); /* silo 530 m3 (O&M L5-3) */
+  const xf = Math.min(L.mLock, (v.disp.x * K.m.lock * dt) / K.tXfer, K.m.disp - L.mDisp);
+  L.mLock -= xf;
+  L.mDisp = Math.max(0, L.mDisp + xf - (L.q * 1000 * dt) / 3600);
+  /* pressures (kg/cm2): the dispensing vessel is the conveying line; the lock vessel vents, is pressed by the equalising air, or
+     shares the dispensing vessel through its open dome / balance valve */
+  const lag = (x, y, tau) => x + (y - x) * Math.min(1, dt / tau);
+  L.pd = lag(L.pd, conv ? (route ? K.pAir + K.kQ * L.q : K.pEq) : K.pRest, 3);
+  if (v.disp.x > 0 || v.bal.x > 0) L.pl = lag(L.pl, L.pd, 1);
+  else if (v.vent.x > 0) L.pl = lag(L.pl, 0, 1);
+  else if (eq && fv('HV11') > 0 && pa > K.tankBar) L.pl = lag(L.pl, K.pEq, 4);
+  if (eq && (v.disp.x > 0 || v.bal.x > 0)) L.pd = Math.max(L.pd, L.pl);
+  /* the field switches (1 = made) */
+  const sealOk = q => q.x <= 0 && q.s >= K.seal && air > K.sealBar;
+  const W = L.sw;
+  W.ventO = v.vent.x >= 1 ? 1 : 0;
+  W.ventC = v.vent.x <= 0 ? 1 : 0;
+  W.lockO = v.lock.x >= 1 ? 1 : 0;
+  W.lockC = v.lock.x <= 0 ? 1 : 0;
+  W.dispO = v.disp.x >= 1 ? 1 : 0;
+  W.dispC = v.disp.x <= 0 ? 1 : 0;
+  W.balO = v.bal.x >= 1 ? 1 : 0;
+  W.balC = v.bal.x <= 0 ? 1 : 0;
+  W.lockSeal = sealOk(v.lock) ? 1 : 0;
+  W.dispSeal = sealOk(v.disp) ? 1 : 0;
+  W.lsh = L.mLock >= K.lsh * K.m.lock ? 1 : 0;
+  W.lsl = L.mDisp < K.lsl * K.m.disp ? 1 : 0;
+  W.tank = pa < K.tankBar ? 1 : 0; /* the air receiver of the system (PS-PA1811) is fed by the plant air */
+  W.run = L.run ? 1 : 0;
+  W.fan = L.fan ? 1 : 0;
+  iso.forEach((q, i) => {
+    W['isoO' + i] = q.x >= 1 ? 1 : 0;
+    W['isoC' + i] = q.x <= 0 ? 1 : 0;
+  });
+  lmPub(U);
+}
+function lmPub(U) {
+  const L = U.lm;
+  U.lmPl = Math.max(0, L.pl);
+  U.lmPd = Math.max(0, L.pd);
+  U.lmQ = L.q || 0;
+  U.lmLock = (100 * L.mLock) / AN_LM.m.lock;
+  U.lmDisp = (100 * L.mDisp) / AN_LM.m.disp;
+  U.lmSilo = L.silo;
+}
+/* ===== SAND INJECTION (020 SAND INJECTION SYSTEM; docs/versions/v3.2.1/LIMESTONE_SAND_PLANT_MODEL.md) =====
+   The field devices of the DensePhase vessel (HWA JANN / HCE, O&M L5-2 "Sand", on the PC) under the DITL logic of the sand drawings
+   DITL-771 ~ 777 (E10210-3-771 ~ 777, station 103; the rows carry the terminal text, no address):
+     inlet dome valve XV-SD1804 (SV-SD1804A, DITL-771 OUT21 / OUT22) -> DITL-772 rows 7 / 8 FULLY OPEN / CLOSE LS, row 3 SEAL PRESSURE
+       SW (PS-SD1804, made = sealed: O&M 5.3 "seal pressure switch is not enable when dome valve closed" = the close fault);
+     vent valve XV-AV1803 (SV-AV1803, OUT20), outlet valve XV-SD1801 (SV-SD1801, OUT23 / OUT24), conveying air XV-PA1800
+       (SV-PA1800, OUT25) -> DITL-775 rows 1 ~ 6; isolating valves XV-SD1802A / B (DITL-776 OUT11 / OUT13) -> DITL-776 rows 7 ~ 10;
+     vessel high level LSH-SD1801 (DITL-771 row 11), vessel pressure low PS-SD1800 (DITL-772 row 4: < 0.3 bar, O&M section 0 e);
+     air buffer tank PS-PA1800 (DITL-775 row 7: < 4 bar, O&M 5.6), silo LSH / LSL-SD1800 (DITL-774 rows 3 / 4), vent filter
+       M-1301 running (DITL-774 row 10, DITL-777 row 7) on its start command (DITL-774 OUT22 O.060A).
+   Numbers: vessel 0.113 m3 x 1440 kg/m3 = 163 kg, silo 100 m3, max 6000 kg/h (O&M L5-2 section 1); conveying of one batch 55 s
+   ("Peak Air Duration 55 seconds"); silo 50.1 % at 150 MW (20.PNG). NO-SOURCE: valve stroke 2 s, seal 1 s, fill of the vessel 15 s
+   (the filling timer is 20 s, O&M 4.2.1), vessel pressure while conveying 2.0 kg/cm2, silo LSH / LSL at the LT-SD1800 alarms 85 / 30 %
+   (alarm list; the switch heights are not given). */
+const AN_SD = {
+  m: 0.113 * 1440,
+  silo: 100,
+  tFill: 15,
+  tConv: 55,
+  stroke: 2,
+  seal: 1,
+  sealBar: 5,
+  tankBar: 4,
+  pLowBar: 0.3,
+  pConv: 2.0,
+  lsh: 0.9,
+  siloH: 85,
+  siloL: 30
+};
+function sdOut(n, ...rows) {
+  return rows.some(r => fnOut(')' + n, r) === 1);
+}
+function anSdStart(U) {
+  U.sd = { v: {}, sw: {}, m: 0, p: 0, silo: 50.1 /* 20.PNG LISD1800 */ };
+  sdPub(U);
+}
+function anSdStep(U, dt) {
+  const D = U.sd;
+  if (!D) return;
+  const K = AN_SD,
+    pa = isFinite(U.paPU) ? U.paPU * 0.980665 : 0,
+    vv = (k, cmd, seal) => lmValve(D, k, cmd, dt, K.stroke, seal);
+  const dv = vv('dv', sdOut('DITL-771', 20, 21), 1),
+    vent = vv('vent', sdOut('DITL-771', 19), 0),
+    out = vv('out', sdOut('DITL-771', 22, 23), 0),
+    ca = vv('ca', sdOut('DITL-771', 24) && pa > K.tankBar, 0),
+    iso = [vv('isoA', sdOut('DITL-776', 10), 0), vv('isoB', sdOut('DITL-776', 12), 0)];
+  D.fan = sdOut('DITL-774', 21);
+  /* filling: silo -> vessel through the inlet dome valve (the vent lets the air out) */
+  const fill = D.silo > 0 ? Math.min((dv.x * K.m * dt) / K.tFill, K.m - D.m) : 0;
+  D.m += fill;
+  D.silo = Math.max(0, D.silo - (fill / 1440 / K.silo) * 100);
+  /* conveying: conveying air + outlet + a route to the boiler; the batch leaves in 55 s, the vessel pressure falls when it is empty */
+  const route = iso.some(q => q.x >= 1),
+    conv = ca.x > 0 && out.x > 0 && route,
+    q = conv && D.m > 0 ? Math.min(D.m, (K.m * dt) / K.tConv) : 0;
+  D.m -= q;
+  D.q = (q / dt) * 3.6; /* T/H */
+  const tgt = ca.x > 0 && out.x > 0 && !route ? pa / 0.980665 : conv && D.m > 0 ? K.pConv : 0;
+  D.p += (tgt - D.p) * Math.min(1, dt / (vent.x > 0 ? 1 : 3));
+  const W = D.sw;
+  const sealOk = v => v.x <= 0 && v.s >= AN_LM.seal && pa > K.sealBar;
+  W.dvO = dv.x >= 1 ? 1 : 0;
+  W.dvC = dv.x <= 0 ? 1 : 0;
+  W.seal = sealOk(dv) ? 1 : 0;
+  W.ventO = vent.x >= 1 ? 1 : 0;
+  W.ventC = vent.x <= 0 ? 1 : 0;
+  W.outO = out.x >= 1 ? 1 : 0;
+  W.outC = out.x <= 0 ? 1 : 0;
+  W.caO = ca.x >= 1 ? 1 : 0;
+  W.caC = ca.x <= 0 ? 1 : 0;
+  W.isoAO = iso[0].x >= 1 ? 1 : 0;
+  W.isoBO = iso[1].x >= 1 ? 1 : 0;
+  W.isoAC = iso[0].x <= 0 ? 1 : 0;
+  W.isoBC = iso[1].x <= 0 ? 1 : 0;
+  W.lsh = D.m >= K.lsh * K.m ? 1 : 0;
+  W.plow = D.p * 0.980665 < K.pLowBar ? 1 : 0;
+  W.tank = pa < K.tankBar ? 1 : 0;
+  W.siloH = D.silo >= K.siloH ? 1 : 0;
+  W.siloL = D.silo <= K.siloL ? 1 : 0;
+  W.fan = D.fan ? 1 : 0;
+  sdPub(U);
+}
+function sdPub(U) {
+  const D = U.sd;
+  U.sdP = Math.max(0, D.p);
+  U.sdM = (100 * D.m) / AN_SD.m;
+  U.sdSilo = D.silo;
+  U.sdQ = D.q || 0;
+}
 /* the boiler-side systems, once per step of the unit model (after the air compressors: the atomizing air is plant air) */
 function anBoilerStep(U, dt) {
   anDieselOilStep(U, dt);
   anFanStep(U, dt);
+  anLmStep(U, dt);
+  anSdStep(U, dt);
 }
 /* 2.2.0-beta.9 (M2, user: "sundin ang plant physics"): UNIT MODEL. The boiler and the turbine as ONE plant, so that a load change
    moves the plant and not only the demands of the drawing:
@@ -29193,7 +29434,7 @@ function anEngAPI() {
     /* 3.2.1 (CW plant model): the manual valves of the seawater system, opening in % (unit.js AN_SW_V0) */
     /* 3.2.1 (IRENE): with the diesel oil line-up of boiler.js (AN_DO.fv0, anDoValve), so the one field valve faceplate serves both */
     swValve: (tag, pct) => anSwValve(tag, pct) || anDoValve(tag, pct),
-    swValves: () => Object.assign({}, AN_SW_V0, AN_FV0, AN_DO.fv0, AN_SRC.valve || {}),
+    swValves: () => Object.assign({}, AN_SW_V0, AN_FV0, AN_DO.fv0, AN_LM.fv0, AN_SRC.valve || {}),
     /* 3.2.1 (IRENE): the opening of one field valve (unit.js anFv / boiler.js anDoFv), read by the limit switch rows (world/plantsw.js) */
     fv: tag => (tag in AN_DO.fv0 ? anDoFv(tag) : anFv(tag)),
     /* 3.2.1 SEULGI (boiler.js): the manual valves of the diesel oil line-up, opening in % (AN_DO.fv0) */
@@ -33434,7 +33675,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.3';
-      c3.textContent += ' · build 9fa1ddd'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build a9df883'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -50674,6 +50915,60 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
      never started on its AUTO START (O.1400) */
   const fvOf = t => () => (window.AN && AN.fv && isFinite(AN.fv(t)) ? AN.fv(t) : NaN);
   L.push(['ZSO-FW1031', fvOf('V-FW1001'), 100, 'ge', 0, 0, /\bBFWP A\b/], ['ZSO-FW1031', fvOf('V-FW1002'), 100, 'ge', 0, 0, /\bBFWP B\b/]);
+  /* 3.2.1 (SEULGI : PLANT MODEL, boiler side, src/analog/engine/boiler.js AN_LM): the field switches of the limestone Rotofeed on the
+     DITL-LS sheets (station 104; IO list "Station 104"; the address of station 104, so the sheet name is checked too: I.0169 of station
+     103 is another signal). 1 = made: limit switches ZSO / ZSC of the dome and isolating valves, seal pressure switches PS-LM1812 /
+     PS-LM1815 (> 5 bar = closed and sealed, O&M L5-3 2.10), LSH-LM1812, LSL-LM1815 (1 = uncovered), PS-PA1811 (< 4 bar), MIR-M1311
+     feeder running, MIR-LM1313 vent fan running */
+  const lmSw = k => () => (window.AN && AN.unit && AN.unit.lm && isFinite(AN.unit.lm.sw[k]) ? AN.unit.lm.sw[k] : NaN),
+    LMS = /\)DITL-LS\d+$/;
+  [
+    ['I.017B', 'ventO', /VENT DV FO/],
+    ['I.017C', 'ventC', /VENT DV FC/],
+    ['I.0177', 'lockO', /IN DV FO/],
+    ['I.0178', 'lockC', /IN DV FC/],
+    ['I.0179', 'dispO', /DISP\. DV FO/],
+    ['I.017A', 'dispC', /DISP\. DV FC/],
+    ['I.017D', 'balO', /BALANCE DV FO/],
+    ['I.017E', 'balC', /BALANCE DV FC/],
+    ['I.016D', 'lockSeal', /SEAL PS/],
+    ['I.016E', 'dispSeal', /SEAL PS/],
+    ['I.0168', 'lsh', /LOCK VESSEL LSH/],
+    ['I.0169', 'lsl', /DISPENSING VESSEL LSL/],
+    ['I.016A', 'tank', /AIR TANK PRESSURE LOW/],
+    ['I.0170', 'run', /ROTOFEEDER RUNNING/],
+    ['I.0173', 'fan', /RUNNING/]
+  ].forEach(([a, k, re]) => L.push([a, lmSw(k), 0.5, 'hi', 0, 0, re, LMS]));
+  'ABCDEFGH'.split('').forEach((x, i) => {
+    L.push(['I.02' + (2 * i).toString(16).toUpperCase().padStart(2, '0'), lmSw('isoO' + i), 0.5, 'hi', 0, 0, /ISOLATING VALVE . OPEN LIMIT/, LMS]);
+    L.push(['I.02' + (2 * i + 1).toString(16).toUpperCase().padStart(2, '0'), lmSw('isoC' + i), 0.5, 'hi', 0, 0, /ISOLATING VALVE . CLOSE LIMIT/, LMS]);
+  });
+  /* 3.2.1 (SEULGI, boiler.js AN_SD): the field switches of the sand vessel on the sand drawings DITL-771 ~ 777 (rows by their terminal
+     text, no address on these drawings; 1 = made) */
+  const sdSw = k => () => (window.AN && AN.unit && AN.unit.sd && isFinite(AN.unit.sd.sw[k]) ? AN.unit.sd.sw[k] : NaN);
+  [
+    ['INLET', 'dvO', /^INLET DV FULLY OPEN LS/, /\)DITL-772$/],
+    ['INLET', 'dvC', /^INLET DV FULLY CLOSE LS/, /\)DITL-772$/],
+    ['INLET', 'seal', /^INLET DV SEAL PRESSURE SW/, /\)DITL-772$/],
+    ['VESSEL', 'plow', /^VESSEL PRESSURE LOW/, /\)DITL-772$/],
+    ['VESSEL', 'outO', /^VESSEL OUTLET VALVE OPEN/, /\)DITL-772$/],
+    ['VESSEL', 'lsh', /^VESSEL LEVEL HIGH/, /\)DITL-771$/],
+    ['VENT', 'ventO', /^VENT VALVE FULLY OPEN LS/, /\)DITL-775$/],
+    ['VENT', 'ventC', /^VENT VALVE FULLY CLOSE LS/, /\)DITL-775$/],
+    ['OUTLET', 'outO', /^OUTLET VALVE FULLY OPEN LS/, /\)DITL-775$/],
+    ['OUTLET', 'outC', /^OUTLET VALVE FULLY CLOSE LS/, /\)DITL-775$/],
+    ['CONV.', 'caO', /^CONV\. AIR VALVE FULLY OPEN LS/, /\)DITL-775$/],
+    ['CONV.', 'caC', /^CONV\. AIR VALVE FULLY CLOSE LS/, /\)DITL-775$/],
+    ['AIR', 'tank', /^AIR RECE\. TANK PRESSURE LOW/, /\)DITL-775$/],
+    ['ISO.', 'isoAO', /^ISO\. VALVE -1 FULLY OPEN LS/, /\)DITL-776$/],
+    ['ISO.', 'isoBO', /^ISO\. VALVE -2 FULLY OPEN LS/, /\)DITL-776$/],
+    ['ISO.', 'isoAC', /^ISO\. VALVE -1 FULLY CLOSE LS/, /\)DITL-776$/],
+    ['ISO.', 'isoBC', /^ISO\. VALVE -2 FULLY CLOSE LS/, /\)DITL-776$/],
+    ['SAND', 'siloH', /^SAND SILO LH/, /\)DITL-774$/],
+    ['SAND', 'siloL', /^SAND SILO LOW/, /\)DITL-774$/],
+    ['SAND', 'fan', /^SAND SILO VENT FILTER RUNNING/, /\)DITL-774$/],
+    ['VENT', 'fan', /^VENT FILTER RUNNING$/, /\)DITL-777$/]
+  ].forEach(([w, k, re, sh]) => L.push([w, sdSw(k), 0.5, 'hi', 0, 0, re, sh]));
   const DB0 = 10;
   let map = null,
     mapK = '';
@@ -50701,7 +50996,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
         } catch (e) {}
         if (!t) continue;
         const words = t.split(/\s+/);
-        const d = L.find(x => words.slice(0, 3).includes(x[0]) && (!x[6] || x[6].test(t)));
+        const d = L.find(x => words.slice(0, 3).includes(x[0]) && (!x[6] || x[6].test(t)) && (!x[7] || x[7].test(s.name)));
         if (d) map.push({ s, row: i, d, on: null });
       }
       /* P2 #13: the DITL comparator rows on the condenser pressure transmitter (DITL-55 row 6, DITL-73 row 26 PT-CD1110) */
@@ -50794,7 +51089,10 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     [/DPT-DO0001\b/, 'doDp'],
     [/(?:^|[^A-Z])PT-DO0005\b/, 'doP1'],
     /* fans (boiler.js AN_FN): DITL-28B row 12 "FAB A CURRENT" < 24.6 A (L.L.); the machine instance #B is FA blower B */
-    [/IT-F1055[AB]\b/, (t, a, s) => (/#B$/.test(s.name) ? 'fnIb' : 'fnIa')]
+    [/IT-F1055[AB]\b/, (t, a, s) => (/#B$/.test(s.name) ? 'fnIb' : 'fnIa')],
+    /* limestone (boiler.js AN_LM): DITL-LS60 / LS230 analog rows PT-LM1811 lock vessel, PT-LM1812 dispensing vessel (kg/cm2) */
+    [/PILM1811\.PV/, 'lmPl'],
+    [/PILM1812\.PV/, 'lmPd']
   ];
   /* 3.2.0-beta.50 (live check #94): the BFWP suction pressure PT-FW1115-A / -B (DITL-23A row 12, START permissive > 1.5 kg/cm2) is the
      deaerator pressure (ABC-056 AI0417 PT-CD1104) plus the static head of the deaerator water (its level, ABC-031 AI0672 LT-CD1104) less the
@@ -68592,7 +68890,8 @@ function anDoFv(tag) {
 }
 /* the field operator sets a diesel oil manual valve; false for an unknown tag */
 function anDoValve(tag, pct) {
-  if (!(tag in AN_DO.fv0)) return false;
+  if (!(tag in AN_DO.fv0) && !(typeof AN_LM !== 'undefined' && tag in AN_LM.fv0))
+    return false; /* + limestone HV01 / HV11 */
   AN_SRC.valve = AN_SRC.valve || {};
   AN_SRC.valve[tag] = Math.max(0, Math.min(100, +pct || 0));
   return true;
@@ -68688,7 +68987,10 @@ function anBoilerStart(U) {
   U.doSp = null;
   U.doZ = {};
   for (const k in AN_DO.fv0) if (AN_SRC.valve) delete AN_SRC.valve[k];
+  for (const k in AN_LM.fv0) if (AN_SRC.valve) delete AN_SRC.valve[k];
   anFanStart(U);
+  anLmStart(U);
+  anSdStart(U);
 }
 /* called by anUnitCold: the pumps are the DITL's (stopped in a cold plant); the tank keeps its level */
 function anBoilerCold(U) {
@@ -68697,6 +68999,8 @@ function anBoilerCold(U) {
   U.doSp = null;
   U.doZ = {};
   for (const k in AN_DO.fv0) if (AN_SRC.valve) delete AN_SRC.valve[k];
+  anLmStart(U); /* limestone: at rest, the vessels keep the start content (NO-SOURCE) */
+  anSdStart(U);
 }
 /* one step of the diesel oil system */
 function anDieselOilStep(U, dt) {
@@ -68885,10 +69189,245 @@ function anFanStep(U, dt) {
   U.fnIdfI = lag('ii', cur(K.I0.idf, idf, ((taf / K.ga.T0) * dpg) / dpg0), 2);
   U.fnI = [U.fnPafI, U.fnSafI, U.fnIdfI, U.fnIa, U.fnIb];
 }
+/* ===== LIMESTONE INJECTION (019 LIMESTONE INJECTION SYSTEM; docs/versions/v3.2.1/LIMESTONE_SAND_PLANT_MODEL.md) =====
+   The field devices of the Rotofeed (HWA JANN / Clyde Bergemann, O&M L5-3 "Limestone", on the PC: document-references/
+   o&m-package-phase-1/L5 Fly Ash_Sand_Limestone/L5-3 Limestone.pdf) under the DITL logic of the drawing (limestone_logic.xls,
+   DITL-LS10 ~ LS240, station 104). The logic is not changed: the model only answers its solenoid commands with the switches of
+   the field (IO list "Station 104"):
+     dome valves  vent XV-LM1814A (O.0249 -> ZSO / ZSC I.017B / I.017C), lock vessel inlet XV-LM1812 (O.0243 -> I.0177 / I.0178,
+                  seal PS-LM1812 I.016D), dispensing vessel inlet XV-LM1815 (O.0244 -> I.0179 / I.017A, seal PS-LM1815 I.016E),
+                  balance XV-LM1814B (O.024A -> I.017D / I.017E). O&M 2.10: a dome valve is "closed and sealed" when its seal
+                  pressure is > 5 bar (the inflating seal is fed by the control air: the plant air header of the unit model, paPU);
+                  open = seal deflated (< 5 bar). Stroke 2 s, seal inflation 1 s: NO-SOURCE (O&M 2.8 only gives the 5 s fault timer:
+                  the valve must reach its end within it).
+     equalising   XV-LM1814C (O.0248): conveying air into the lock vessel (regulator PCV11 3.5 barg, O&M 3.2.5).
+     conveying    XV-LM1814D ~ F (O.0247, IO list "conveying air valve open solenoid"); isolating valves XV-LM1811A ~ H (O.0252 ~
+                  O.0259 -> I.0200 ~ I.020F), stroke 3 s NO-SOURCE.
+     vessels      lock vessel 0.7 m3, dispensing vessel 1.4 m3 (O&M L5-3 section 1), bulk density 1280 kg/m3 (for volume) ->
+                  896 / 1792 kg. LSH-LM1812 (I.0168) covered at 90 % of the lock vessel, LSL-LM1815 (I.0169 = 1 uncovered: DITL-LS20
+                  OUT3 = enabled AND I.0169) at 30 % of the dispensing vessel: NO-SOURCE (the probe heights are not in the O&M).
+                  Silo to lock vessel by gravity in 20 s, lock to dispensing vessel in 20 s: NO-SOURCE (O&M 2.8: the short fill
+                  timer 30 s and the dome valve open timer 30 s are the backups, so the transfer is shorter).
+     feeder       L-1311 Rotofeed (O.024C start -> I.0170 MIR-M1311 running): volumetric, 0 ~ 14 T/H (O&M section 1 maximum
+                  14,000 kg/h; DITL-LS240 OUT3 "ACTURE ROTOFEEDER SPEED 0~14T/H") = the SOx control output (ABC-005 AICFG10571,
+                  the speed of INV-M1311) while the dispensing vessel has material.
+     pressures    PT-LM1811 lock vessel (AI0434), PT-LM1812 dispensing vessel = conveying pressure (AI0433), 0 ~ 6 kg/cm2.
+                  At rest 0.0 / 0.1 (snapshot 19.PNG, limestone feeding STOP, conveying air closed). Conveying air on: 0.8 kg/cm2 +
+                  0.05 per T/H of limestone: NO-SOURCE (between the DITL-LS230 LOW 0.5 and the O&M 2.5 blockage 1.5 bar; design
+                  back pressure 1020 mmAq at the boiler). Time constants 1 s (vent), 4 s (equalising), 3 s (conveying): NO-SOURCE.
+     air tank     PS-PA1811 (I.016A) made below 4 bar (O&M 2.9 "air tank pressure < 4 bar") of the plant air header.
+     vent fan     F-1313 (O.024E start command -> I.0173 MIR-LM1313 running, IO list). */
+const AN_LM = {
+  m: { lock: 0.7 * 1280, disp: 1.4 * 1280 },
+  lsh: 0.9,
+  lsl: 0.3,
+  tFill: 20,
+  tXfer: 20,
+  qMax: 14,
+  stroke: 2,
+  seal: 1,
+  iso: 3,
+  sealBar: 5,
+  tankBar: 4,
+  pRest: 0.1,
+  pAir: 0.8,
+  kQ: 0.05,
+  pEq: 3.5 / 0.980665,
+  /* the manual valves of the Rotofeed pneumatic panel PCB-1311 (O&M L5-3 3.2 / 3.5, the names of the O&M): control air isolation HV01
+     (closed = the dome valve seals deflate, 3.5.4) and conveying air isolation HV11 (3.2.4); open in service */
+  fv0: { HV01: 100, HV11: 100 }
+};
+function lmOut(n, r) {
+  return fnOut(')' + n, r) === 1;
+}
+function anLmStart(U) {
+  const L = (U.lm = { v: {}, sw: {} });
+  L.mDisp =
+    AN_LM.m.disp *
+    0.6; /* NO-SOURCE: the dispensing vessel above its LSL at the 150 MW start (19.PNG: feeding STOP, no filling) */
+  L.mLock = 0;
+  L.pl = 0;
+  L.pd = AN_LM.pRest;
+  L.sp = doOut('ABC-005', 'AICFG10571');
+  L.silo = 69.4; /* 19.PNG LILM1800 69.4 % */
+  lmPub(U);
+}
+/* a dome / isolating valve: position 0 (closed) ~ 1 (open) toward its solenoid, the seal inflated after it is closed */
+function lmValve(L, k, cmd, dt, stroke, seal) {
+  const v = (L.v[k] = L.v[k] || { x: 0, s: seal ? AN_LM.seal : 0 });
+  v.x = Math.max(0, Math.min(1, v.x + (cmd ? 1 : -1) * (dt / stroke)));
+  if (seal) v.s = v.x <= 0 ? Math.min(AN_LM.seal, v.s + dt) : 0;
+  return v;
+}
+function anLmStep(U, dt) {
+  const L = U.lm;
+  if (!L) return;
+  const K = AN_LM,
+    fv = t => {
+      const V = (typeof AN_SRC !== 'undefined' && AN_SRC.valve) || {};
+      return isFinite(V[t]) ? V[t] : K.fv0[t];
+    },
+    pa = isFinite(U.paPU) ? U.paPU * 0.980665 : 0 /* the plant air header, bar */,
+    air = fv('HV01') > 0 ? pa : 0 /* control air of the panel (seals, solenoids) */,
+    v = {};
+  v.vent = lmValve(L, 'vent', lmOut('DITL-LS160', 1), dt, K.stroke, 1);
+  v.lock = lmValve(L, 'lock', lmOut('DITL-LS170', 1), dt, K.stroke, 1);
+  v.disp = lmValve(L, 'disp', lmOut('DITL-LS180', 1), dt, K.stroke, 1);
+  v.bal = lmValve(L, 'bal', lmOut('DITL-LS190', 1), dt, K.stroke, 1);
+  const eq = lmOut('DITL-LS200', 1),
+    conv = lmOut('DITL-LS210', 2) && fv('HV11') > 0 && pa > K.tankBar;
+  const iso = 'ABCDEFGH'.split('').map((x, i) => lmValve(L, 'iso' + x, lmOut('DITL-LS212', 11 + i), dt, K.iso, 0));
+  const route = iso.some(q => q.x >= 1);
+  /* the feeder (the VFD runs on its start command; no trip in the model) */
+  L.run = lmOut('DITL-LS110', 6);
+  L.fan = lmOut('DITL-LS214', 13);
+  const mv = L.sp ? +L.sp.S.rt.v[L.sp.n] : 0;
+  L.q = L.run && route && conv && L.mDisp > 0 ? (Math.max(0, Math.min(100, isFinite(mv) ? mv : 0)) / 100) * K.qMax : 0;
+  /* material: silo -> lock (lock dome open), lock -> dispensing (dispensing dome open), dispensing -> conveying line (feeder) */
+  const sil = L.silo > 0 ? (v.lock.x * K.m.lock * dt) / K.tFill : 0,
+    toLock = Math.min(sil, K.m.lock - L.mLock);
+  L.mLock += toLock;
+  L.silo = Math.max(0, L.silo - (toLock / 1280 / 530) * 100); /* silo 530 m3 (O&M L5-3) */
+  const xf = Math.min(L.mLock, (v.disp.x * K.m.lock * dt) / K.tXfer, K.m.disp - L.mDisp);
+  L.mLock -= xf;
+  L.mDisp = Math.max(0, L.mDisp + xf - (L.q * 1000 * dt) / 3600);
+  /* pressures (kg/cm2): the dispensing vessel is the conveying line; the lock vessel vents, is pressed by the equalising air, or
+     shares the dispensing vessel through its open dome / balance valve */
+  const lag = (x, y, tau) => x + (y - x) * Math.min(1, dt / tau);
+  L.pd = lag(L.pd, conv ? (route ? K.pAir + K.kQ * L.q : K.pEq) : K.pRest, 3);
+  if (v.disp.x > 0 || v.bal.x > 0) L.pl = lag(L.pl, L.pd, 1);
+  else if (v.vent.x > 0) L.pl = lag(L.pl, 0, 1);
+  else if (eq && fv('HV11') > 0 && pa > K.tankBar) L.pl = lag(L.pl, K.pEq, 4);
+  if (eq && (v.disp.x > 0 || v.bal.x > 0)) L.pd = Math.max(L.pd, L.pl);
+  /* the field switches (1 = made) */
+  const sealOk = q => q.x <= 0 && q.s >= K.seal && air > K.sealBar;
+  const W = L.sw;
+  W.ventO = v.vent.x >= 1 ? 1 : 0;
+  W.ventC = v.vent.x <= 0 ? 1 : 0;
+  W.lockO = v.lock.x >= 1 ? 1 : 0;
+  W.lockC = v.lock.x <= 0 ? 1 : 0;
+  W.dispO = v.disp.x >= 1 ? 1 : 0;
+  W.dispC = v.disp.x <= 0 ? 1 : 0;
+  W.balO = v.bal.x >= 1 ? 1 : 0;
+  W.balC = v.bal.x <= 0 ? 1 : 0;
+  W.lockSeal = sealOk(v.lock) ? 1 : 0;
+  W.dispSeal = sealOk(v.disp) ? 1 : 0;
+  W.lsh = L.mLock >= K.lsh * K.m.lock ? 1 : 0;
+  W.lsl = L.mDisp < K.lsl * K.m.disp ? 1 : 0;
+  W.tank = pa < K.tankBar ? 1 : 0; /* the air receiver of the system (PS-PA1811) is fed by the plant air */
+  W.run = L.run ? 1 : 0;
+  W.fan = L.fan ? 1 : 0;
+  iso.forEach((q, i) => {
+    W['isoO' + i] = q.x >= 1 ? 1 : 0;
+    W['isoC' + i] = q.x <= 0 ? 1 : 0;
+  });
+  lmPub(U);
+}
+function lmPub(U) {
+  const L = U.lm;
+  U.lmPl = Math.max(0, L.pl);
+  U.lmPd = Math.max(0, L.pd);
+  U.lmQ = L.q || 0;
+  U.lmLock = (100 * L.mLock) / AN_LM.m.lock;
+  U.lmDisp = (100 * L.mDisp) / AN_LM.m.disp;
+  U.lmSilo = L.silo;
+}
+/* ===== SAND INJECTION (020 SAND INJECTION SYSTEM; docs/versions/v3.2.1/LIMESTONE_SAND_PLANT_MODEL.md) =====
+   The field devices of the DensePhase vessel (HWA JANN / HCE, O&M L5-2 "Sand", on the PC) under the DITL logic of the sand drawings
+   DITL-771 ~ 777 (E10210-3-771 ~ 777, station 103; the rows carry the terminal text, no address):
+     inlet dome valve XV-SD1804 (SV-SD1804A, DITL-771 OUT21 / OUT22) -> DITL-772 rows 7 / 8 FULLY OPEN / CLOSE LS, row 3 SEAL PRESSURE
+       SW (PS-SD1804, made = sealed: O&M 5.3 "seal pressure switch is not enable when dome valve closed" = the close fault);
+     vent valve XV-AV1803 (SV-AV1803, OUT20), outlet valve XV-SD1801 (SV-SD1801, OUT23 / OUT24), conveying air XV-PA1800
+       (SV-PA1800, OUT25) -> DITL-775 rows 1 ~ 6; isolating valves XV-SD1802A / B (DITL-776 OUT11 / OUT13) -> DITL-776 rows 7 ~ 10;
+     vessel high level LSH-SD1801 (DITL-771 row 11), vessel pressure low PS-SD1800 (DITL-772 row 4: < 0.3 bar, O&M section 0 e);
+     air buffer tank PS-PA1800 (DITL-775 row 7: < 4 bar, O&M 5.6), silo LSH / LSL-SD1800 (DITL-774 rows 3 / 4), vent filter
+       M-1301 running (DITL-774 row 10, DITL-777 row 7) on its start command (DITL-774 OUT22 O.060A).
+   Numbers: vessel 0.113 m3 x 1440 kg/m3 = 163 kg, silo 100 m3, max 6000 kg/h (O&M L5-2 section 1); conveying of one batch 55 s
+   ("Peak Air Duration 55 seconds"); silo 50.1 % at 150 MW (20.PNG). NO-SOURCE: valve stroke 2 s, seal 1 s, fill of the vessel 15 s
+   (the filling timer is 20 s, O&M 4.2.1), vessel pressure while conveying 2.0 kg/cm2, silo LSH / LSL at the LT-SD1800 alarms 85 / 30 %
+   (alarm list; the switch heights are not given). */
+const AN_SD = {
+  m: 0.113 * 1440,
+  silo: 100,
+  tFill: 15,
+  tConv: 55,
+  stroke: 2,
+  seal: 1,
+  sealBar: 5,
+  tankBar: 4,
+  pLowBar: 0.3,
+  pConv: 2.0,
+  lsh: 0.9,
+  siloH: 85,
+  siloL: 30
+};
+function sdOut(n, ...rows) {
+  return rows.some(r => fnOut(')' + n, r) === 1);
+}
+function anSdStart(U) {
+  U.sd = { v: {}, sw: {}, m: 0, p: 0, silo: 50.1 /* 20.PNG LISD1800 */ };
+  sdPub(U);
+}
+function anSdStep(U, dt) {
+  const D = U.sd;
+  if (!D) return;
+  const K = AN_SD,
+    pa = isFinite(U.paPU) ? U.paPU * 0.980665 : 0,
+    vv = (k, cmd, seal) => lmValve(D, k, cmd, dt, K.stroke, seal);
+  const dv = vv('dv', sdOut('DITL-771', 20, 21), 1),
+    vent = vv('vent', sdOut('DITL-771', 19), 0),
+    out = vv('out', sdOut('DITL-771', 22, 23), 0),
+    ca = vv('ca', sdOut('DITL-771', 24) && pa > K.tankBar, 0),
+    iso = [vv('isoA', sdOut('DITL-776', 10), 0), vv('isoB', sdOut('DITL-776', 12), 0)];
+  D.fan = sdOut('DITL-774', 21);
+  /* filling: silo -> vessel through the inlet dome valve (the vent lets the air out) */
+  const fill = D.silo > 0 ? Math.min((dv.x * K.m * dt) / K.tFill, K.m - D.m) : 0;
+  D.m += fill;
+  D.silo = Math.max(0, D.silo - (fill / 1440 / K.silo) * 100);
+  /* conveying: conveying air + outlet + a route to the boiler; the batch leaves in 55 s, the vessel pressure falls when it is empty */
+  const route = iso.some(q => q.x >= 1),
+    conv = ca.x > 0 && out.x > 0 && route,
+    q = conv && D.m > 0 ? Math.min(D.m, (K.m * dt) / K.tConv) : 0;
+  D.m -= q;
+  D.q = (q / dt) * 3.6; /* T/H */
+  const tgt = ca.x > 0 && out.x > 0 && !route ? pa / 0.980665 : conv && D.m > 0 ? K.pConv : 0;
+  D.p += (tgt - D.p) * Math.min(1, dt / (vent.x > 0 ? 1 : 3));
+  const W = D.sw;
+  const sealOk = v => v.x <= 0 && v.s >= AN_LM.seal && pa > K.sealBar;
+  W.dvO = dv.x >= 1 ? 1 : 0;
+  W.dvC = dv.x <= 0 ? 1 : 0;
+  W.seal = sealOk(dv) ? 1 : 0;
+  W.ventO = vent.x >= 1 ? 1 : 0;
+  W.ventC = vent.x <= 0 ? 1 : 0;
+  W.outO = out.x >= 1 ? 1 : 0;
+  W.outC = out.x <= 0 ? 1 : 0;
+  W.caO = ca.x >= 1 ? 1 : 0;
+  W.caC = ca.x <= 0 ? 1 : 0;
+  W.isoAO = iso[0].x >= 1 ? 1 : 0;
+  W.isoBO = iso[1].x >= 1 ? 1 : 0;
+  W.isoAC = iso[0].x <= 0 ? 1 : 0;
+  W.isoBC = iso[1].x <= 0 ? 1 : 0;
+  W.lsh = D.m >= K.lsh * K.m ? 1 : 0;
+  W.plow = D.p * 0.980665 < K.pLowBar ? 1 : 0;
+  W.tank = pa < K.tankBar ? 1 : 0;
+  W.siloH = D.silo >= K.siloH ? 1 : 0;
+  W.siloL = D.silo <= K.siloL ? 1 : 0;
+  W.fan = D.fan ? 1 : 0;
+  sdPub(U);
+}
+function sdPub(U) {
+  const D = U.sd;
+  U.sdP = Math.max(0, D.p);
+  U.sdM = (100 * D.m) / AN_SD.m;
+  U.sdSilo = D.silo;
+  U.sdQ = D.q || 0;
+}
 /* the boiler-side systems, once per step of the unit model (after the air compressors: the atomizing air is plant air) */
 function anBoilerStep(U, dt) {
   anDieselOilStep(U, dt);
   anFanStep(U, dt);
+  anLmStep(U, dt);
+  anSdStep(U, dt);
 }
 
 /* ---- engine/unit.js ---- */
@@ -76298,7 +76837,7 @@ function anEngAPI() {
     /* 3.2.1 (CW plant model): the manual valves of the seawater system, opening in % (unit.js AN_SW_V0) */
     /* 3.2.1 (IRENE): with the diesel oil line-up of boiler.js (AN_DO.fv0, anDoValve), so the one field valve faceplate serves both */
     swValve: (tag, pct) => anSwValve(tag, pct) || anDoValve(tag, pct),
-    swValves: () => Object.assign({}, AN_SW_V0, AN_FV0, AN_DO.fv0, AN_SRC.valve || {}),
+    swValves: () => Object.assign({}, AN_SW_V0, AN_FV0, AN_DO.fv0, AN_LM.fv0, AN_SRC.valve || {}),
     /* 3.2.1 (IRENE): the opening of one field valve (unit.js anFv / boiler.js anDoFv), read by the limit switch rows (world/plantsw.js) */
     fv: tag => (tag in AN_DO.fv0 ? anDoFv(tag) : anFv(tag)),
     /* 3.2.1 SEULGI (boiler.js): the manual valves of the diesel oil line-up, opening in % (AN_DO.fv0) */
@@ -77534,6 +78073,60 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
      never started on its AUTO START (O.1400) */
   const fvOf = t => () => (window.AN && AN.fv && isFinite(AN.fv(t)) ? AN.fv(t) : NaN);
   L.push(['ZSO-FW1031', fvOf('V-FW1001'), 100, 'ge', 0, 0, /\bBFWP A\b/], ['ZSO-FW1031', fvOf('V-FW1002'), 100, 'ge', 0, 0, /\bBFWP B\b/]);
+  /* 3.2.1 (SEULGI : PLANT MODEL, boiler side, src/analog/engine/boiler.js AN_LM): the field switches of the limestone Rotofeed on the
+     DITL-LS sheets (station 104; IO list "Station 104"; the address of station 104, so the sheet name is checked too: I.0169 of station
+     103 is another signal). 1 = made: limit switches ZSO / ZSC of the dome and isolating valves, seal pressure switches PS-LM1812 /
+     PS-LM1815 (> 5 bar = closed and sealed, O&M L5-3 2.10), LSH-LM1812, LSL-LM1815 (1 = uncovered), PS-PA1811 (< 4 bar), MIR-M1311
+     feeder running, MIR-LM1313 vent fan running */
+  const lmSw = k => () => (window.AN && AN.unit && AN.unit.lm && isFinite(AN.unit.lm.sw[k]) ? AN.unit.lm.sw[k] : NaN),
+    LMS = /\)DITL-LS\d+$/;
+  [
+    ['I.017B', 'ventO', /VENT DV FO/],
+    ['I.017C', 'ventC', /VENT DV FC/],
+    ['I.0177', 'lockO', /IN DV FO/],
+    ['I.0178', 'lockC', /IN DV FC/],
+    ['I.0179', 'dispO', /DISP\. DV FO/],
+    ['I.017A', 'dispC', /DISP\. DV FC/],
+    ['I.017D', 'balO', /BALANCE DV FO/],
+    ['I.017E', 'balC', /BALANCE DV FC/],
+    ['I.016D', 'lockSeal', /SEAL PS/],
+    ['I.016E', 'dispSeal', /SEAL PS/],
+    ['I.0168', 'lsh', /LOCK VESSEL LSH/],
+    ['I.0169', 'lsl', /DISPENSING VESSEL LSL/],
+    ['I.016A', 'tank', /AIR TANK PRESSURE LOW/],
+    ['I.0170', 'run', /ROTOFEEDER RUNNING/],
+    ['I.0173', 'fan', /RUNNING/]
+  ].forEach(([a, k, re]) => L.push([a, lmSw(k), 0.5, 'hi', 0, 0, re, LMS]));
+  'ABCDEFGH'.split('').forEach((x, i) => {
+    L.push(['I.02' + (2 * i).toString(16).toUpperCase().padStart(2, '0'), lmSw('isoO' + i), 0.5, 'hi', 0, 0, /ISOLATING VALVE . OPEN LIMIT/, LMS]);
+    L.push(['I.02' + (2 * i + 1).toString(16).toUpperCase().padStart(2, '0'), lmSw('isoC' + i), 0.5, 'hi', 0, 0, /ISOLATING VALVE . CLOSE LIMIT/, LMS]);
+  });
+  /* 3.2.1 (SEULGI, boiler.js AN_SD): the field switches of the sand vessel on the sand drawings DITL-771 ~ 777 (rows by their terminal
+     text, no address on these drawings; 1 = made) */
+  const sdSw = k => () => (window.AN && AN.unit && AN.unit.sd && isFinite(AN.unit.sd.sw[k]) ? AN.unit.sd.sw[k] : NaN);
+  [
+    ['INLET', 'dvO', /^INLET DV FULLY OPEN LS/, /\)DITL-772$/],
+    ['INLET', 'dvC', /^INLET DV FULLY CLOSE LS/, /\)DITL-772$/],
+    ['INLET', 'seal', /^INLET DV SEAL PRESSURE SW/, /\)DITL-772$/],
+    ['VESSEL', 'plow', /^VESSEL PRESSURE LOW/, /\)DITL-772$/],
+    ['VESSEL', 'outO', /^VESSEL OUTLET VALVE OPEN/, /\)DITL-772$/],
+    ['VESSEL', 'lsh', /^VESSEL LEVEL HIGH/, /\)DITL-771$/],
+    ['VENT', 'ventO', /^VENT VALVE FULLY OPEN LS/, /\)DITL-775$/],
+    ['VENT', 'ventC', /^VENT VALVE FULLY CLOSE LS/, /\)DITL-775$/],
+    ['OUTLET', 'outO', /^OUTLET VALVE FULLY OPEN LS/, /\)DITL-775$/],
+    ['OUTLET', 'outC', /^OUTLET VALVE FULLY CLOSE LS/, /\)DITL-775$/],
+    ['CONV.', 'caO', /^CONV\. AIR VALVE FULLY OPEN LS/, /\)DITL-775$/],
+    ['CONV.', 'caC', /^CONV\. AIR VALVE FULLY CLOSE LS/, /\)DITL-775$/],
+    ['AIR', 'tank', /^AIR RECE\. TANK PRESSURE LOW/, /\)DITL-775$/],
+    ['ISO.', 'isoAO', /^ISO\. VALVE -1 FULLY OPEN LS/, /\)DITL-776$/],
+    ['ISO.', 'isoBO', /^ISO\. VALVE -2 FULLY OPEN LS/, /\)DITL-776$/],
+    ['ISO.', 'isoAC', /^ISO\. VALVE -1 FULLY CLOSE LS/, /\)DITL-776$/],
+    ['ISO.', 'isoBC', /^ISO\. VALVE -2 FULLY CLOSE LS/, /\)DITL-776$/],
+    ['SAND', 'siloH', /^SAND SILO LH/, /\)DITL-774$/],
+    ['SAND', 'siloL', /^SAND SILO LOW/, /\)DITL-774$/],
+    ['SAND', 'fan', /^SAND SILO VENT FILTER RUNNING/, /\)DITL-774$/],
+    ['VENT', 'fan', /^VENT FILTER RUNNING$/, /\)DITL-777$/]
+  ].forEach(([w, k, re, sh]) => L.push([w, sdSw(k), 0.5, 'hi', 0, 0, re, sh]));
   const DB0 = 10;
   let map = null,
     mapK = '';
@@ -77561,7 +78154,7 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
         } catch (e) {}
         if (!t) continue;
         const words = t.split(/\s+/);
-        const d = L.find(x => words.slice(0, 3).includes(x[0]) && (!x[6] || x[6].test(t)));
+        const d = L.find(x => words.slice(0, 3).includes(x[0]) && (!x[6] || x[6].test(t)) && (!x[7] || x[7].test(s.name)));
         if (d) map.push({ s, row: i, d, on: null });
       }
       /* P2 #13: the DITL comparator rows on the condenser pressure transmitter (DITL-55 row 6, DITL-73 row 26 PT-CD1110) */
@@ -77654,7 +78247,10 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
     [/DPT-DO0001\b/, 'doDp'],
     [/(?:^|[^A-Z])PT-DO0005\b/, 'doP1'],
     /* fans (boiler.js AN_FN): DITL-28B row 12 "FAB A CURRENT" < 24.6 A (L.L.); the machine instance #B is FA blower B */
-    [/IT-F1055[AB]\b/, (t, a, s) => (/#B$/.test(s.name) ? 'fnIb' : 'fnIa')]
+    [/IT-F1055[AB]\b/, (t, a, s) => (/#B$/.test(s.name) ? 'fnIb' : 'fnIa')],
+    /* limestone (boiler.js AN_LM): DITL-LS60 / LS230 analog rows PT-LM1811 lock vessel, PT-LM1812 dispensing vessel (kg/cm2) */
+    [/PILM1811\.PV/, 'lmPl'],
+    [/PILM1812\.PV/, 'lmPd']
   ];
   /* 3.2.0-beta.50 (live check #94): the BFWP suction pressure PT-FW1115-A / -B (DITL-23A row 12, START permissive > 1.5 kg/cm2) is the
      deaerator pressure (ABC-056 AI0417 PT-CD1104) plus the static head of the deaerator water (its level, ABC-031 AI0672 LT-CD1104) less the

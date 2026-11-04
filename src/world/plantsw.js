@@ -100,6 +100,60 @@
      never started on its AUTO START (O.1400) */
   const fvOf = t => () => (window.AN && AN.fv && isFinite(AN.fv(t)) ? AN.fv(t) : NaN);
   L.push(['ZSO-FW1031', fvOf('V-FW1001'), 100, 'ge', 0, 0, /\bBFWP A\b/], ['ZSO-FW1031', fvOf('V-FW1002'), 100, 'ge', 0, 0, /\bBFWP B\b/]);
+  /* 3.2.1 (SEULGI : PLANT MODEL, boiler side, src/analog/engine/boiler.js AN_LM): the field switches of the limestone Rotofeed on the
+     DITL-LS sheets (station 104; IO list "Station 104"; the address of station 104, so the sheet name is checked too: I.0169 of station
+     103 is another signal). 1 = made: limit switches ZSO / ZSC of the dome and isolating valves, seal pressure switches PS-LM1812 /
+     PS-LM1815 (> 5 bar = closed and sealed, O&M L5-3 2.10), LSH-LM1812, LSL-LM1815 (1 = uncovered), PS-PA1811 (< 4 bar), MIR-M1311
+     feeder running, MIR-LM1313 vent fan running */
+  const lmSw = k => () => (window.AN && AN.unit && AN.unit.lm && isFinite(AN.unit.lm.sw[k]) ? AN.unit.lm.sw[k] : NaN),
+    LMS = /\)DITL-LS\d+$/;
+  [
+    ['I.017B', 'ventO', /VENT DV FO/],
+    ['I.017C', 'ventC', /VENT DV FC/],
+    ['I.0177', 'lockO', /IN DV FO/],
+    ['I.0178', 'lockC', /IN DV FC/],
+    ['I.0179', 'dispO', /DISP\. DV FO/],
+    ['I.017A', 'dispC', /DISP\. DV FC/],
+    ['I.017D', 'balO', /BALANCE DV FO/],
+    ['I.017E', 'balC', /BALANCE DV FC/],
+    ['I.016D', 'lockSeal', /SEAL PS/],
+    ['I.016E', 'dispSeal', /SEAL PS/],
+    ['I.0168', 'lsh', /LOCK VESSEL LSH/],
+    ['I.0169', 'lsl', /DISPENSING VESSEL LSL/],
+    ['I.016A', 'tank', /AIR TANK PRESSURE LOW/],
+    ['I.0170', 'run', /ROTOFEEDER RUNNING/],
+    ['I.0173', 'fan', /RUNNING/]
+  ].forEach(([a, k, re]) => L.push([a, lmSw(k), 0.5, 'hi', 0, 0, re, LMS]));
+  'ABCDEFGH'.split('').forEach((x, i) => {
+    L.push(['I.02' + (2 * i).toString(16).toUpperCase().padStart(2, '0'), lmSw('isoO' + i), 0.5, 'hi', 0, 0, /ISOLATING VALVE . OPEN LIMIT/, LMS]);
+    L.push(['I.02' + (2 * i + 1).toString(16).toUpperCase().padStart(2, '0'), lmSw('isoC' + i), 0.5, 'hi', 0, 0, /ISOLATING VALVE . CLOSE LIMIT/, LMS]);
+  });
+  /* 3.2.1 (SEULGI, boiler.js AN_SD): the field switches of the sand vessel on the sand drawings DITL-771 ~ 777 (rows by their terminal
+     text, no address on these drawings; 1 = made) */
+  const sdSw = k => () => (window.AN && AN.unit && AN.unit.sd && isFinite(AN.unit.sd.sw[k]) ? AN.unit.sd.sw[k] : NaN);
+  [
+    ['INLET', 'dvO', /^INLET DV FULLY OPEN LS/, /\)DITL-772$/],
+    ['INLET', 'dvC', /^INLET DV FULLY CLOSE LS/, /\)DITL-772$/],
+    ['INLET', 'seal', /^INLET DV SEAL PRESSURE SW/, /\)DITL-772$/],
+    ['VESSEL', 'plow', /^VESSEL PRESSURE LOW/, /\)DITL-772$/],
+    ['VESSEL', 'outO', /^VESSEL OUTLET VALVE OPEN/, /\)DITL-772$/],
+    ['VESSEL', 'lsh', /^VESSEL LEVEL HIGH/, /\)DITL-771$/],
+    ['VENT', 'ventO', /^VENT VALVE FULLY OPEN LS/, /\)DITL-775$/],
+    ['VENT', 'ventC', /^VENT VALVE FULLY CLOSE LS/, /\)DITL-775$/],
+    ['OUTLET', 'outO', /^OUTLET VALVE FULLY OPEN LS/, /\)DITL-775$/],
+    ['OUTLET', 'outC', /^OUTLET VALVE FULLY CLOSE LS/, /\)DITL-775$/],
+    ['CONV.', 'caO', /^CONV\. AIR VALVE FULLY OPEN LS/, /\)DITL-775$/],
+    ['CONV.', 'caC', /^CONV\. AIR VALVE FULLY CLOSE LS/, /\)DITL-775$/],
+    ['AIR', 'tank', /^AIR RECE\. TANK PRESSURE LOW/, /\)DITL-775$/],
+    ['ISO.', 'isoAO', /^ISO\. VALVE -1 FULLY OPEN LS/, /\)DITL-776$/],
+    ['ISO.', 'isoBO', /^ISO\. VALVE -2 FULLY OPEN LS/, /\)DITL-776$/],
+    ['ISO.', 'isoAC', /^ISO\. VALVE -1 FULLY CLOSE LS/, /\)DITL-776$/],
+    ['ISO.', 'isoBC', /^ISO\. VALVE -2 FULLY CLOSE LS/, /\)DITL-776$/],
+    ['SAND', 'siloH', /^SAND SILO LH/, /\)DITL-774$/],
+    ['SAND', 'siloL', /^SAND SILO LOW/, /\)DITL-774$/],
+    ['SAND', 'fan', /^SAND SILO VENT FILTER RUNNING/, /\)DITL-774$/],
+    ['VENT', 'fan', /^VENT FILTER RUNNING$/, /\)DITL-777$/]
+  ].forEach(([w, k, re, sh]) => L.push([w, sdSw(k), 0.5, 'hi', 0, 0, re, sh]));
   const DB0 = 10;
   let map = null,
     mapK = '';
@@ -127,7 +181,7 @@
         } catch (e) {}
         if (!t) continue;
         const words = t.split(/\s+/);
-        const d = L.find(x => words.slice(0, 3).includes(x[0]) && (!x[6] || x[6].test(t)));
+        const d = L.find(x => words.slice(0, 3).includes(x[0]) && (!x[6] || x[6].test(t)) && (!x[7] || x[7].test(s.name)));
         if (d) map.push({ s, row: i, d, on: null });
       }
       /* P2 #13: the DITL comparator rows on the condenser pressure transmitter (DITL-55 row 6, DITL-73 row 26 PT-CD1110) */
@@ -220,7 +274,10 @@
     [/DPT-DO0001\b/, 'doDp'],
     [/(?:^|[^A-Z])PT-DO0005\b/, 'doP1'],
     /* fans (boiler.js AN_FN): DITL-28B row 12 "FAB A CURRENT" < 24.6 A (L.L.); the machine instance #B is FA blower B */
-    [/IT-F1055[AB]\b/, (t, a, s) => (/#B$/.test(s.name) ? 'fnIb' : 'fnIa')]
+    [/IT-F1055[AB]\b/, (t, a, s) => (/#B$/.test(s.name) ? 'fnIb' : 'fnIa')],
+    /* limestone (boiler.js AN_LM): DITL-LS60 / LS230 analog rows PT-LM1811 lock vessel, PT-LM1812 dispensing vessel (kg/cm2) */
+    [/PILM1811\.PV/, 'lmPl'],
+    [/PILM1812\.PV/, 'lmPd']
   ];
   /* 3.2.0-beta.50 (live check #94): the BFWP suction pressure PT-FW1115-A / -B (DITL-23A row 12, START permissive > 1.5 kg/cm2) is the
      deaerator pressure (ABC-056 AI0417 PT-CD1104) plus the static head of the deaerator water (its level, ABC-031 AI0672 LT-CD1104) less the

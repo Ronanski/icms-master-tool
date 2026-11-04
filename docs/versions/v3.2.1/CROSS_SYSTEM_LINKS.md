@@ -23,6 +23,10 @@ ina-update sa bawat bagong system.
 
 15. **Turbine load → extraction → HP heaters → economizer inlet** (`HP_HEATERS_PLANT_MODEL.md`, test `hp_heaters.js`). DITL-94 / 95 extraction MOV sarado → walang pag-init sa heater na iyon → bumababa ang TT-FW1160 (ABC-010).
 
+16. **Plant air → limestone dome valve seals → fill cycle permissive** (`LIMESTONE_SAND_PLANT_MODEL.md`, test `limestone.js`, SEULGI). Plant air header (`paPU`) at HV01 → seal PS-LM1812 / PS-LM1815 (> 5 bar) → DITL-LS170 / LS180 CLOSE FAULT (15 s) → B.1250 / B.1251 at fill cycle inhibit (DITL-LS10). Ang solenoid commands ng DITL-LS160 ~ LS212 → limit switches ng dome at isolating valves.
+
+17. **Sand vessel → DITL-771 ~ 777 sequence** (`LIMESTONE_SAND_PLANT_MODEL.md`, test `sand.js`, SEULGI). Ang mga solenoid ng DITL-771 / 776 ay nagpapagalaw sa field valves. Ang mga limit switch, seal PS, vessel PS-SD1800 (< 0.3 bar) at LSH ay bumabalik sa DITL-772 / 775 / 776, kaya tumatakbo ang isang conveying cycle. Plant air → seal at air tank PS-PA1800.
+
 ## Wala pa (plano, kasama sa susunod na system)
 1. **Closed cooling temperature → temperatura ng bearing / winding ng motor.** Fixed pa ang AN_MT. (Ang turbine oil ay tapos na, item 9.)
 2. **Instrument air → pneumatic valves.** Sa ilalim ng 3.5, dapat hindi gumagalaw ang air-operated valve (XV-MU1109 at iba pa). Ngayon, mensahe lang sa faceplate ito. Gagawin pagkatapos ng Turbine Oil.
