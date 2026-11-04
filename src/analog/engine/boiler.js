@@ -170,6 +170,7 @@ function anBoilerStart(U) {
   for (const k in AN_LM.fv0) if (AN_SRC.valve) delete AN_SRC.valve[k];
   anFanStart(U);
   anLmStart(U);
+  anSdStart(U);
 }
 /* called by anUnitCold: the pumps are the DITL's (stopped in a cold plant); the tank keeps its level */
 function anBoilerCold(U) {
@@ -179,6 +180,7 @@ function anBoilerCold(U) {
   U.doZ = {};
   for (const k in AN_DO.fv0) if (AN_SRC.valve) delete AN_SRC.valve[k];
   anLmStart(U); /* limestone: at rest, the vessels keep the start content (NO-SOURCE) */
+  anSdStart(U);
 }
 /* one step of the diesel oil system */
 function anDieselOilStep(U, dt) {
@@ -510,9 +512,100 @@ function lmPub(U) {
   U.lmDisp = (100 * L.mDisp) / AN_LM.m.disp;
   U.lmSilo = L.silo;
 }
+/* ===== SAND INJECTION (020 SAND INJECTION SYSTEM; docs/versions/v3.2.1/LIMESTONE_SAND_PLANT_MODEL.md) =====
+   The field devices of the DensePhase vessel (HWA JANN / HCE, O&M L5-2 "Sand", on the PC) under the DITL logic of the sand drawings
+   DITL-771 ~ 777 (E10210-3-771 ~ 777, station 103; the rows carry the terminal text, no address):
+     inlet dome valve XV-SD1804 (SV-SD1804A, DITL-771 OUT21 / OUT22) -> DITL-772 rows 7 / 8 FULLY OPEN / CLOSE LS, row 3 SEAL PRESSURE
+       SW (PS-SD1804, made = sealed: O&M 5.3 "seal pressure switch is not enable when dome valve closed" = the close fault);
+     vent valve XV-AV1803 (SV-AV1803, OUT20), outlet valve XV-SD1801 (SV-SD1801, OUT23 / OUT24), conveying air XV-PA1800
+       (SV-PA1800, OUT25) -> DITL-775 rows 1 ~ 6; isolating valves XV-SD1802A / B (DITL-776 OUT11 / OUT13) -> DITL-776 rows 7 ~ 10;
+     vessel high level LSH-SD1801 (DITL-771 row 11), vessel pressure low PS-SD1800 (DITL-772 row 4: < 0.3 bar, O&M section 0 e);
+     air buffer tank PS-PA1800 (DITL-775 row 7: < 4 bar, O&M 5.6), silo LSH / LSL-SD1800 (DITL-774 rows 3 / 4), vent filter
+       M-1301 running (DITL-774 row 10, DITL-777 row 7) on its start command (DITL-774 OUT22 O.060A).
+   Numbers: vessel 0.113 m3 x 1440 kg/m3 = 163 kg, silo 100 m3, max 6000 kg/h (O&M L5-2 section 1); conveying of one batch 55 s
+   ("Peak Air Duration 55 seconds"); silo 50.1 % at 150 MW (20.PNG). NO-SOURCE: valve stroke 2 s, seal 1 s, fill of the vessel 15 s
+   (the filling timer is 20 s, O&M 4.2.1), vessel pressure while conveying 2.0 kg/cm2, silo LSH / LSL at the LT-SD1800 alarms 85 / 30 %
+   (alarm list; the switch heights are not given). */
+const AN_SD = {
+  m: 0.113 * 1440,
+  silo: 100,
+  tFill: 15,
+  tConv: 55,
+  stroke: 2,
+  seal: 1,
+  sealBar: 5,
+  tankBar: 4,
+  pLowBar: 0.3,
+  pConv: 2.0,
+  lsh: 0.9,
+  siloH: 85,
+  siloL: 30
+};
+function sdOut(n, ...rows) {
+  return rows.some(r => fnOut(')' + n, r) === 1);
+}
+function anSdStart(U) {
+  U.sd = { v: {}, sw: {}, m: 0, p: 0, silo: 50.1 /* 20.PNG LISD1800 */ };
+  sdPub(U);
+}
+function anSdStep(U, dt) {
+  const D = U.sd;
+  if (!D) return;
+  const K = AN_SD,
+    pa = isFinite(U.paPU) ? U.paPU * 0.980665 : 0,
+    vv = (k, cmd, seal) => lmValve(D, k, cmd, dt, K.stroke, seal);
+  const dv = vv('dv', sdOut('DITL-771', 20, 21), 1),
+    vent = vv('vent', sdOut('DITL-771', 19), 0),
+    out = vv('out', sdOut('DITL-771', 22, 23), 0),
+    ca = vv('ca', sdOut('DITL-771', 24) && pa > K.tankBar, 0),
+    iso = [vv('isoA', sdOut('DITL-776', 10), 0), vv('isoB', sdOut('DITL-776', 12), 0)];
+  D.fan = sdOut('DITL-774', 21);
+  /* filling: silo -> vessel through the inlet dome valve (the vent lets the air out) */
+  const fill = D.silo > 0 ? Math.min((dv.x * K.m * dt) / K.tFill, K.m - D.m) : 0;
+  D.m += fill;
+  D.silo = Math.max(0, D.silo - (fill / 1440 / K.silo) * 100);
+  /* conveying: conveying air + outlet + a route to the boiler; the batch leaves in 55 s, the vessel pressure falls when it is empty */
+  const route = iso.some(q => q.x >= 1),
+    conv = ca.x > 0 && out.x > 0 && route,
+    q = conv && D.m > 0 ? Math.min(D.m, (K.m * dt) / K.tConv) : 0;
+  D.m -= q;
+  D.q = (q / dt) * 3.6; /* T/H */
+  const tgt = ca.x > 0 && out.x > 0 && !route ? pa / 0.980665 : conv && D.m > 0 ? K.pConv : 0;
+  D.p += (tgt - D.p) * Math.min(1, dt / (vent.x > 0 ? 1 : 3));
+  const W = D.sw;
+  const sealOk = v => v.x <= 0 && v.s >= AN_LM.seal && pa > K.sealBar;
+  W.dvO = dv.x >= 1 ? 1 : 0;
+  W.dvC = dv.x <= 0 ? 1 : 0;
+  W.seal = sealOk(dv) ? 1 : 0;
+  W.ventO = vent.x >= 1 ? 1 : 0;
+  W.ventC = vent.x <= 0 ? 1 : 0;
+  W.outO = out.x >= 1 ? 1 : 0;
+  W.outC = out.x <= 0 ? 1 : 0;
+  W.caO = ca.x >= 1 ? 1 : 0;
+  W.caC = ca.x <= 0 ? 1 : 0;
+  W.isoAO = iso[0].x >= 1 ? 1 : 0;
+  W.isoBO = iso[1].x >= 1 ? 1 : 0;
+  W.isoAC = iso[0].x <= 0 ? 1 : 0;
+  W.isoBC = iso[1].x <= 0 ? 1 : 0;
+  W.lsh = D.m >= K.lsh * K.m ? 1 : 0;
+  W.plow = D.p * 0.980665 < K.pLowBar ? 1 : 0;
+  W.tank = pa < K.tankBar ? 1 : 0;
+  W.siloH = D.silo >= K.siloH ? 1 : 0;
+  W.siloL = D.silo <= K.siloL ? 1 : 0;
+  W.fan = D.fan ? 1 : 0;
+  sdPub(U);
+}
+function sdPub(U) {
+  const D = U.sd;
+  U.sdP = Math.max(0, D.p);
+  U.sdM = (100 * D.m) / AN_SD.m;
+  U.sdSilo = D.silo;
+  U.sdQ = D.q || 0;
+}
 /* the boiler-side systems, once per step of the unit model (after the air compressors: the atomizing air is plant air) */
 function anBoilerStep(U, dt) {
   anDieselOilStep(U, dt);
   anFanStep(U, dt);
   anLmStep(U, dt);
+  anSdStep(U, dt);
 }

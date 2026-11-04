@@ -128,6 +128,32 @@
     L.push(['I.02' + (2 * i).toString(16).toUpperCase().padStart(2, '0'), lmSw('isoO' + i), 0.5, 'hi', 0, 0, /ISOLATING VALVE . OPEN LIMIT/, LMS]);
     L.push(['I.02' + (2 * i + 1).toString(16).toUpperCase().padStart(2, '0'), lmSw('isoC' + i), 0.5, 'hi', 0, 0, /ISOLATING VALVE . CLOSE LIMIT/, LMS]);
   });
+  /* 3.2.1 (SEULGI, boiler.js AN_SD): the field switches of the sand vessel on the sand drawings DITL-771 ~ 777 (rows by their terminal
+     text, no address on these drawings; 1 = made) */
+  const sdSw = k => () => (window.AN && AN.unit && AN.unit.sd && isFinite(AN.unit.sd.sw[k]) ? AN.unit.sd.sw[k] : NaN);
+  [
+    ['INLET', 'dvO', /^INLET DV FULLY OPEN LS/, /\)DITL-772$/],
+    ['INLET', 'dvC', /^INLET DV FULLY CLOSE LS/, /\)DITL-772$/],
+    ['INLET', 'seal', /^INLET DV SEAL PRESSURE SW/, /\)DITL-772$/],
+    ['VESSEL', 'plow', /^VESSEL PRESSURE LOW/, /\)DITL-772$/],
+    ['VESSEL', 'outO', /^VESSEL OUTLET VALVE OPEN/, /\)DITL-772$/],
+    ['VESSEL', 'lsh', /^VESSEL LEVEL HIGH/, /\)DITL-771$/],
+    ['VENT', 'ventO', /^VENT VALVE FULLY OPEN LS/, /\)DITL-775$/],
+    ['VENT', 'ventC', /^VENT VALVE FULLY CLOSE LS/, /\)DITL-775$/],
+    ['OUTLET', 'outO', /^OUTLET VALVE FULLY OPEN LS/, /\)DITL-775$/],
+    ['OUTLET', 'outC', /^OUTLET VALVE FULLY CLOSE LS/, /\)DITL-775$/],
+    ['CONV.', 'caO', /^CONV\. AIR VALVE FULLY OPEN LS/, /\)DITL-775$/],
+    ['CONV.', 'caC', /^CONV\. AIR VALVE FULLY CLOSE LS/, /\)DITL-775$/],
+    ['AIR', 'tank', /^AIR RECE\. TANK PRESSURE LOW/, /\)DITL-775$/],
+    ['ISO.', 'isoAO', /^ISO\. VALVE -1 FULLY OPEN LS/, /\)DITL-776$/],
+    ['ISO.', 'isoBO', /^ISO\. VALVE -2 FULLY OPEN LS/, /\)DITL-776$/],
+    ['ISO.', 'isoAC', /^ISO\. VALVE -1 FULLY CLOSE LS/, /\)DITL-776$/],
+    ['ISO.', 'isoBC', /^ISO\. VALVE -2 FULLY CLOSE LS/, /\)DITL-776$/],
+    ['SAND', 'siloH', /^SAND SILO LH/, /\)DITL-774$/],
+    ['SAND', 'siloL', /^SAND SILO LOW/, /\)DITL-774$/],
+    ['SAND', 'fan', /^SAND SILO VENT FILTER RUNNING/, /\)DITL-774$/],
+    ['VENT', 'fan', /^VENT FILTER RUNNING$/, /\)DITL-777$/]
+  ].forEach(([w, k, re, sh]) => L.push([w, sdSw(k), 0.5, 'hi', 0, 0, re, sh]));
   const DB0 = 10;
   let map = null,
     mapK = '';
