@@ -677,7 +677,7 @@
   const SEC = { A: 'A · At 150 MW', B: 'B · Seawater pumps (DITL-29A / 29B)', C: 'C · Condenser path A / B (field valves)', D: 'D · Debris filters (DITL-39)', E: 'E · Booster pumps (DITL-30)' };
   /* the systems with a loop check list (docs/versions/v3.2.1/*_LOOP_CHECK.md); CW first (user / coordinator 2026-11-04) */
   const SYS = [
-    { id: 'CW', n: 'Circulating Water', cards: cwCards, page: 'SW' },
+    { id: 'CW', n: 'Circulating Water', cards: cwCards, page: 'CWN' },
     { id: 'MU', n: 'Make-Up / Closed Cooling Water', doc: 'MU_CCW_LOOP_CHECK.md' },
     { id: 'AIR', n: 'Instrument / Plant Air', doc: 'AIR_LOOP_CHECK.md' },
     { id: 'COND', n: 'Condensate', doc: 'CONDENSATE_LOOP_CHECK.md' }
