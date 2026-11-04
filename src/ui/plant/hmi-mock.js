@@ -145,7 +145,8 @@
         show();
       });
       const CT = {};
-      new Set([...qa('[data-ctl]')].map(e => e.dataset.ctl.split('|')[0])).forEach(tag => {
+      /* page 11: a controller with a faceplate click but no value hook on the page (FICDO1043A: the page shows the ZT position) */
+      new Set([...qa('[data-ctl]')].map(e => e.dataset.ctl.split('|')[0]).concat(Object.values(M).map(m => m.ctl).filter(Boolean))).forEach(tag => {
         const show = () =>
           qa(`[data-ctl^="${tag}|"]`).forEach(e => {
             const [, what, dp, u] = e.dataset.ctl.split('|'),
@@ -323,7 +324,7 @@
         /* 3.2.1 page 10 PURGE AND TRIP: the Y / N of a condition read from the drawing itself.
            [data-dy="SHEET|i or o|row+row|neg"] = input rows (DUI.rowVal) or output rows (DUI.outVal), all 1 (AND); neg = the
            condition is the NOT of the row (e.g. "total air above 25 %" = NOT row 12 TOTAL AIR FLOW < 25% MCR). Y red = made, N green
-           = not (the approved mockup); [data-dyr] = its square. [data-dys="GROUP|SHEET|row|label"] = the summary of a group
+           = not (the approved mockup); data-on / data-off = other texts (page 11: ON / OFF, OPEN / CLOSED); [data-dyr] = its square. [data-dys="GROUP|SHEET|row|label"] = the summary of a group
            (data-g): OK or NOT OK (n of N missing), from the output row of the drawing; [data-dfo="SHEET|row|first-last"] = MFT ACTIVE
            and the first input row (drawing order) that is 1 at the scan the MFT came, latched until the MFT resets */
         const dyv = spec => {
@@ -343,7 +344,7 @@
           const v = dyv(e.dataset.dy),
             col = v == null ? C.none : v ? C.run : C.stop;
           DY[e.dataset.dy] = v;
-          e.textContent = v == null ? '-' : v ? 'Y' : 'N';
+          e.textContent = v == null ? (e.dataset.on ? '-----' : '-') : v ? e.dataset.on || 'Y' : e.dataset.off || 'N';
           e.setAttribute('fill', col);
         });
         qa('[data-dyr]').forEach(e => {
