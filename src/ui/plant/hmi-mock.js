@@ -9,7 +9,13 @@
    - [data-ns]      NO-SOURCE in the app (no signal and no plant model): '-----' grey, never a snapshot number;
    - [data-ynr / data-ynt=ID] the permissive Y / N square (LS_FPOP.yn: Y red = complete, N green = not);
    - [data-hit=ID]  click = the CONTROL faceplate (fp-pop.js), [data-yn=ID] click = PERMISSIVE · TREND · MONITOR;
-   - <g><title>V-xx... the field valves of the plant model: the FIELD faceplate of fp-pop.js (its own document click handler).
+   - <g><title>V-xx... the field valves of the plant model: the FIELD faceplate of fp-pop.js (its own document click handler);
+   - [data-vt=TAG]  a valve tag label of the mockup: when fp-pop.js knows the valve (LS_FPOP.valveTag), click = its faceplate and the
+                    nearest valve symbol is the same click, red = open / green = closed for a field valve of the plant model;
+   - [data-ox="KEY|open text|closed text"]  open / closed of a valve in the plant model (UNIT.KEY 1 / 0);
+   - [data-dsvc="DITL-xx|service text|on text|off text"]  a DITL row found by its service text (AUTO SELECTED ...), shown as text;
+   - [data-ctl="TAG|pv|mv|mode|dp|unit"]  a value of a controller of the logic (PV / MV / mode); [data-hit] of a mach with ctl = its faceplate;
+   - [data-go=ID]   a "page:" link of the mockup = that page of the Plant view.
    Nothing here presses or forces anything: the faceplates do, the same ones the loop check dock watches. */
 (function () {
   if (!window.PLANT_V2) return;
@@ -71,8 +77,116 @@
           t.addEventListener('click', e => (e.stopPropagation(), info(tag)));
         });
       }
+      /* DITL rows by service text, plant model open / closed, controllers, page links, valves */
+      const dsvc = (ad, re) =>
+        call(() => {
+          const s = D().dOf(ad);
+          if (!s) return null;
+          for (let r = 0; r < 64; r++) {
+            const I = DUI.rowInfo(s, r);
+            if (!I) continue;
+            if (new RegExp(re).test(I.svc || '')) return DUI.rowVal(s, r) === 1 || !!(s.sig && s.sig[r + ':S']);
+          }
+          return null;
+        }, null);
+      const OX = {};
+      new Set([...qa('[data-ox]')].map(e => e.dataset.ox.split('|')[0])).forEach(k => {
+        const show = () =>
+          qa(`[data-ox^="${k}|"]`).forEach(e => {
+            const [, on, off] = e.dataset.ox.split('|'),
+              v = OX[k];
+            e.textContent = v == null ? '-----' : v ? on : off;
+            e.setAttribute('fill', v == null ? C.none : v ? C.run : C.stop);
+          });
+        api.reg({ t: 'val', tag: 'UNIT.' + k, v: '' }, X => ((OX[k] = X && isFinite(X.v) ? (+X.v > 0 ? 1 : 0) : null), show()), null);
+        show();
+      });
+      const CT = {};
+      new Set([...qa('[data-ctl]')].map(e => e.dataset.ctl.split('|')[0])).forEach(tag => {
+        const show = () =>
+          qa(`[data-ctl^="${tag}|"]`).forEach(e => {
+            const [, what, dp, u] = e.dataset.ctl.split('|'),
+              X = CT[tag];
+            if (what === 'mode') {
+              const m = X ? X.m : '';
+              e.textContent = m === 'M' ? 'Manual' : m === 'A' ? 'Auto' : m === 'R' ? 'Remote' : '-----';
+              e.setAttribute('fill', X ? C.dim : C.none);
+            } else {
+              const v = X ? X[what] : null;
+              e.textContent = v == null || !isFinite(v) ? '-----' : fmt(v, +dp || 0) + (u || '');
+              e.setAttribute('fill', v == null || !isFinite(v) ? C.none : C.val);
+            }
+          });
+        const hit = [...qa('[data-hit]')].find(h => M[h.dataset.hit] && M[h.dataset.hit].ctl === tag) || null;
+        api.reg({ t: 'ctl', tag }, X => ((CT[tag] = X || null), show()), hit);
+        show();
+      });
+      qa('[data-go]').forEach(e => {
+        e.style.cursor = 'pointer';
+        const ti = document.createElementNS(NS, 'title');
+        ti.textContent = 'click = open this page';
+        e.append(ti);
+        e.addEventListener('click', ev => {
+          ev.stopPropagation();
+          const pk = document.querySelector('#plantws .plpick');
+          if (pk && [...pk.options].some(o => o.value === e.dataset.go)) {
+            pk.value = e.dataset.go;
+            pk.dispatchEvent(new Event('change'));
+          }
+        });
+      });
+      /* valves: the label and the nearest valve symbol (bowtie path) open the faceplate fp-pop.js knows for the tag */
+      const bows = [...pg.querySelectorAll('path')]
+        .map(p => {
+          const n = (p.getAttribute('d') || '').match(/^M([\d.]+) ([\d.]+) L([\d.]+) ([\d.]+) L([\d.]+) ([\d.]+) L([\d.]+) ([\d.]+) Z$/);
+          return n ? { p, x: (+n[1] + +n[3]) / 2, y: (+n[2] + +n[4]) / 2, used: 0 } : null;
+        })
+        .filter(Boolean);
+      const VT = [];
+      qa('[data-vt]').forEach(e => {
+        const tag = e.dataset.vt,
+          kind = call(() => (LS_FPOP.valveKind ? LS_FPOP.valveKind(tag) : null), null);
+        if (!kind) return;
+        const x = +e.getAttribute('x'),
+          y = +e.getAttribute('y') - 4,
+          w = (e.textContent.length || 8) * 6.6,
+          a = e.getAttribute('text-anchor'),
+          xl = a === 'end' ? x - w : a === 'middle' ? x - w / 2 : x,
+          xr = xl + w;
+        let best = null,
+          bd = 1e9;
+        for (const b of bows) {
+          const d = Math.hypot(b.x < xl ? xl - b.x : b.x > xr ? b.x - xr : 0, b.y - y);
+          if (!b.used && d < bd) (bd = d), (best = b);
+        }
+        const sym = best && bd < 40 ? ((best.used = 1), best.p) : null;
+        const go = ev => (ev.stopPropagation(), call(() => LS_FPOP.valveTag(tag)));
+        for (const el of sym ? [e, sym] : [e]) {
+          el.style.cursor = 'pointer';
+          el.style.pointerEvents = 'auto';
+          const ti = document.createElementNS(NS, 'title');
+          ti.textContent = tag + (kind === 'field' ? ' · field valve of the plant model' : ' · valve of the logic') + ' (red = open, green = closed) · click = faceplate';
+          el.append(ti);
+          el.addEventListener('click', go);
+        }
+        VT.push({ tag, kind, sym });
+      });
       /* machines */
       const mst = m => call(() => (m.fld ? (AN.fieldState && AN.fieldState()[m.fld] ? 'RUN' : 'STOP') : m.ad ? D().mst(m.ad) : null), null);
+      /* mode of a motor: LS_DOCK.modeOf; a drawing with other names (DITL-76 / 77 "REMOTE SELECTED", "AUTO SELECTED"): its output rows */
+      const outV = (ad, re) =>
+        call(() => {
+          const s = D().dOf(ad),
+            o = s && DUI.outs(s).find(x => re.test(x.name));
+          return o ? D().dout(ad, o.row) : null;
+        }, null);
+      for (const id in M)
+        if (M[id].outMode)
+          M[id].modeFn = () => {
+            const r = outV(M[id].ad, /REMOTE SELECTED/),
+              a = outV(M[id].ad, /AUTO SELECTED/);
+            return { rem: r == null ? null : r === 1, au: a == null ? null : a === 1 };
+          };
       const ST = {},
         MD = {};
       const tick = () => {
@@ -92,7 +206,7 @@
             });
           }
           if (m.ad && !m.fld) {
-            const md = call(() => D().modeOf(m.ad), null),
+            const md = call(() => (m.modeFn ? m.modeFn() : D().modeOf(m.ad)), null),
               key = md ? String(md.rem) + String(md.au) : '';
             if (key !== MD[id]) {
               MD[id] = key;
@@ -108,6 +222,17 @@
             qa(`[data-ynt="${id}"]`).forEach(e => ((e.textContent = ok == null ? '-' : ok ? 'Y' : 'N'), e.setAttribute('fill', col)));
           }
         }
+        for (const v of VT)
+          if (v.sym) {
+            const o = call(() => LS_FPOP.valveOpen(v.tag), null);
+            v.sym.setAttribute('fill', o == null ? C.bg : o ? C.run : C.stop);
+          }
+        qa('[data-dsvc]').forEach(e => {
+          const [ad, re, on, off] = e.dataset.dsvc.split('|'),
+            v = dsvc(ad, re);
+          e.textContent = v == null ? '-----' : v ? on : off;
+          e.setAttribute('fill', v == null ? C.none : C.dim);
+        });
         /* DITL output rows (the debris filter IN OPERATION / COMMON FAIL of DITL-39) */
         qa('[data-do]').forEach(e => {
           const [ad, row, on, off, kind] = e.dataset.do.split('|'),
@@ -134,6 +259,8 @@
         }
         if (m.fieldOp && window.LS_FPOP && LS_FPOP.field)
           return void LS_FPOP.field({ n: m.n, t: m.t, d: m.d, io: m.io, why: (m.why || '') + (m.fld ? '' : ' This pump has no plant model.'), st: () => (m.fld ? mst(m) : null), fld: m.fld ? on => AN.field(m.fld, on) : null });
+        if (m.vt && window.LS_FPOP && LS_FPOP.valveTag && LS_FPOP.valveTag(m.vt)) return;
+        if (m.ctl) return; /* the controller faceplate: plant.js opens it on the same click (api.reg ctl) */
         if (known(m) && window.LS_FPOP && LS_FPOP.motor) return void LS_FPOP.motor({ ...m, part, cur: curOf(m), band: m.band || null, mon: mon(m) });
         info(m.io);
       };
