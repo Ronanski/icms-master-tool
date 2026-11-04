@@ -1629,6 +1629,47 @@ function anFwStep(U, dt) {
     U['fwDp' + i] = r ? Math.round(1000 * K.dp0 * (q / K.q0) * (q / K.q0)) / 1000 : 0;
   });
 }
+/* 3.2.1 (IRENE: HP HEATERS; docs/versions/v3.2.1/HP_HEATERS_PLANT_MODEL.md). Feedwater after the BFWP: deaerator -> No.1 HPH
+   (extraction no. 2, MV-TS1002 DITL-95) -> No.2 HPH (extraction no. 1, MV-TS1001 DITL-94) -> economizer inlet (TT-FW1160 / PT-FW1160).
+   Sources: FHI heater O&M (PC, o&m-package-phase-1 L15-3 / L15-4, PDF p14 "Nominal thermal characteristics", feedwater 458.684 t/h):
+     No.2 HPH  extraction 37.48 kgf/cm2A (sat 245.37 C), FW 195.7 -> 245.4 C, TTD -0.05, drain 45.147 t/h 201.3 C (DCA 5.6 over FW in)
+     No.1 HPH  extraction 14.12 kgf/cm2A (sat 194.63 C), FW out = sat + 1.07 (TTD -1.07) = 195.7 C, extraction 7.035 kg/s = 25.33 t/h;
+               the drains of both to the deaerator: deaerator O&M (L15-2 p14) "HPH condensate" 69.35 t/h 166.3 C (FW in 158.4 C)
+   The extraction pressure goes with the turbine steam (U.ms / 458.684, a turbine stage: NO-SOURCE shape, no turbine heat balance in the
+   repository or on the PC); a shut-off MOV less than 20 % open throttles it (NO-SOURCE). The heater gives FW out = saturation of its
+   shell + TTD, never below FW in; the extraction (= drain) flow from its heat duty, scaled on the design point. Metal / water lag 120 s
+   (NO-SOURCE). Not modelled: the shell level (ABC-035 / 036 loops keep their generic model), the heater bypass on level HH. */
+const AN_HP = { F0: 458.684, P1: 37.48 - 1.0332, P2: 14.12 - 1.0332, ttd1: 1.07, ttd2: 0.05, dT1: 195.7 - 158.4, dT2: 245.4 - 195.7, m1: 25.33, m2: 45.147, dca1: 166.3 - 158.4, dca2: 201.3 - 195.7, tau: 120 };
+function anHphStep(U, dt) {
+  const K = AN_HP,
+    ms = Math.max(0, +U.ms || 0),
+    pos = n => {
+      const p = typeof anDitlPos === 'function' ? anDitlPos(n, 0) : null;
+      return p == null ? 100 : p;
+    },
+    thr = p => Math.max(0, Math.min(1, p / 20)),
+    /* shell pressures (kg/cm2 g): extraction x turbine steam x MOV */
+    Ps2 = (K.P1 + 1.0332) * (ms / K.F0) * thr(pos('DITL-94')) - 1.0332,
+    Ps1 = (K.P2 + 1.0332) * (ms / K.F0) * thr(pos('DITL-95')) - 1.0332,
+    /* deaerator pressure PT-CD1104 (ABC-056 AI0417): the water to the BFWP is at its saturation */
+    Pda = U.xt && U.xt.dea ? anUnitVal(U.xt.dea) : NaN,
+    Tin = isFinite(Pda) && Pda > 0.05 ? steamTsat(Pda) : isFinite(U.Tamb) ? U.Tamb : 30,
+    sat = P => (P > -0.9 ? steamTsat(P) : 0),
+    t1 = Math.max(Tin, sat(Ps1) + K.ttd1),
+    t2 = Math.max(t1, sat(Ps2) + K.ttd2),
+    ffw = typeof AN_CYC !== 'undefined' && isFinite(AN_CYC.ffw) ? Math.max(0, AN_CYC.ffw) : 0,
+    lag = (k, x) => (U[k] = isFinite(U[k]) && dt > 0 ? U[k] + ((x - U[k]) * Math.min(dt, K.tau)) / K.tau : x);
+  U.hpT1 = Math.round(10 * lag('hpT1x', t1)) / 10;
+  U.hpT2 = Math.round(10 * lag('hpT2x', t2)) / 10;
+  const f = ffw / K.F0,
+    e1 = ffw > 1 ? (K.m1 * f * Math.max(0, U.hpT1 - Tin)) / K.dT1 : 0,
+    e2 = ffw > 1 ? (K.m2 * f * Math.max(0, U.hpT2 - U.hpT1)) / K.dT2 : 0;
+  U.hpF2 = Math.round(10 * e2) / 10; /* FT-HD1106: No.2 HPH drain = its extraction */
+  U.hpF1 = Math.round(10 * (e1 + e2)) / 10; /* FT-HD1105: No.1 HPH drain = its extraction + the No.2 drain (cascade) */
+  U.hpD2 = Math.round(10 * (e2 > 0.5 ? U.hpT1 + K.dca2 : U.hpT2)) / 10; /* TT-HD1106 */
+  U.hpD1 = Math.round(10 * (U.hpF1 > 0.5 ? Tin + K.dca1 : U.hpT1)) / 10; /* TT-HD1105 */
+  U.hpPs = [Ps1, Ps2];
+}
 const AN_LO = { UA: 95.8, Co: 64.5, Qb: 1032, Wmax: 170, M: 25800, Tamb: 30 };
 function anLubeCoolStep(U, dt) {
   const K = AN_LO,
@@ -1974,6 +2015,7 @@ function anUnitStep(dt) {
   anCondStep(U, dt);
   /* 3.2.1: the boiler feed water pumps (AN_FW) */
   anFwStep(U, dt);
+  anHphStep(U, dt);
   /* live test #54: motor bearing / winding temperature and vibration (AN_MT) */
   anMotorStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
@@ -2419,7 +2461,8 @@ function anUnitStepX(dt, mso) {
         tdea = isFinite(pd) && pd > 0.05 ? steamTsat(pd) : U.Tamb,
         tdea0 = isFinite(X.dea0) && X.dea0 > 0.05 ? steamTsat(X.dea0) : 120,
         ld = U.MW0 > 0 ? Math.max(0, Math.min(1.1, (U.MW || 0) / U.MW0)) : 0;
-      anUnitWrite(X.fw, lag('fw', tdea + Math.max(0, X.fw0 - tdea0) * ld, 600));
+      /* 3.2.1 (IRENE: HP HEATERS): the outlet of the No.2 HPH of the heater model (anHphStep), 03.png TIFW1106 243 / TIFW1160 244 C */
+      anUnitWrite(X.fw, isFinite(U.hpT2) ? U.hpT2 : lag('fw', tdea + Math.max(0, X.fw0 - tdea0) * ld, 600));
     }
     /* the second drum level transmitter: the same water as the other two */
     if (isFinite(X.lt2Off) && X.lt2.length) {

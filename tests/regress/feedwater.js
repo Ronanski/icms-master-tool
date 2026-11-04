@@ -49,13 +49,18 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
     S.sheets.find(x => x.name.endsWith('DITL-23A'))._ftrip = true;
     o.trMin = 999;
     o.trB = null;
+    const d6 = sh('DITL-06');
+    o.mft = 0;
     for (let i = 0; i < 30; i++) {
       await run(0.5);
       const x = g();
       o.trMin = Math.min(o.trMin, x.Pd);
       if (o.trB == null && x.run[1] === 1) o.trB = (i + 1) / 2;
     }
-    await run(60);
+    for (let i = 0; i < 12; i++) {
+      await run(5);
+      if (DUI.outVal(d6, 1) === 1) o.mft = 1;
+    }
     o.tr = g();
     AN.swValve('V-FW1002', 0);
     await run(5);
@@ -69,6 +74,7 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
   ck(Math.abs(b.dp[0] - 0.29) < 0.03 && b.d26 === b.dp[0], `strainer DP ${b.dp[0]} kg/cm2 (03.png 0.29), DITL-23B row 26 reads ${b.d26}`);
   ck(r.trMin < 155, `BFWP A tripped: PT-FW1011 down to ${r.trMin} kg/cm2 (< 155 = M.3210 LL, the AUTO START of B)`);
   ck(r.tr.run[1] === 1 && r.trB != null && r.tr.ffw > 0.8 * r.base.ffw && r.tr.Pd > 155 && r.tr.d25 === r.tr.Pd, `BFWP B started by its AUTO START after ${r.trB} s: ${r.tr.q} m3/h, PT-FW1011 ${r.tr.Pd} kg/cm2, feedwater ${r.tr.ffw} T/H after 60 s (before the trip ${r.base.ffw}), ${r.tr.I[1]} A, DITL-23B row 25 reads ${r.tr.d25}`);
+  ck(r.mft === 0, `no boiler trip (DITL-06 BOILER TRIP SIGNAL PRESENT stays 0): the feedwater comes back in seconds, the drum level stays above L.L.`);
   ck(r.sv.run[1] === 0 && r.sv.ffw < 5, `V-FW1002 (suction of the running BFWP B) closed in the field: B gives no water, feedwater ${r.sv.ffw} T/H`);
   ck(!errs.length, 'no page error' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
   await browser.close();
