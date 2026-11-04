@@ -28,9 +28,10 @@ ina-update sa bawat bagong system.
 17. **Sand vessel → DITL-771 ~ 777 sequence** (`LIMESTONE_SAND_PLANT_MODEL.md`, test `sand.js`, SEULGI). Ang mga solenoid ng DITL-771 / 776 ay nagpapagalaw sa field valves. Ang mga limit switch, seal PS, vessel PS-SD1800 (< 0.3 bar) at LSH ay bumabalik sa DITL-772 / 775 / 776, kaya tumatakbo ang isang conveying cycle. Plant air → seal at air tank PS-PA1800.
 
 18. **Heater drains → level → extraction MOV** (`HEATER_LEVELS_PLANT_MODEL.md`, test `heater_levels.js`). Ang extraction ng AN_HP at ang design ng LPH → shell level (LT-HD110x, ABC-035 ~ 039) → split-range drain valves (LN38 / LN39) → cascade sa susunod na heater / deaerator / condenser. Level H.H. → ABC-036 M.0203 → DITL-94 sinasara ang MV-TS1001 → walang steam sa No.2 HPH → bumababa ang economizer inlet. Level switch LS-HD110x → DITL-41.
+19. **Instrument air → pneumatic valves** (`AIR_VALVES_PLANT_MODEL.md`, test `air_valves.js`). PT-IA1706 < 3.5 → 27 modulating valve na may airlock ay hawak ang puwesto (deaerator, hotwell, condensate, feedwater, spray, heater drains, lube oil, diesel oil, blow-off, aux steam) → ang proseso ay sumusunod sa nakahawak na valve, hindi sa MV. Ang on/off XV ay papunta sa spring position ayon sa vendor sheet → limit switch ng DITL; XV-MU1109 bukas → napupuno ang expansion tank.
 
 ## Wala pa (plano, kasama sa susunod na system)
 1. **Closed cooling temperature → temperatura ng bearing / winding ng motor.** Fixed pa ang AN_MT. (Ang turbine oil ay tapos na, item 9.)
-2. **Instrument air → pneumatic valves.** Sa ilalim ng 3.5, dapat hindi gumagalaw ang air-operated valve (XV-MU1109 at iba pa). Ngayon, mensahe lang sa faceplate ito. Gagawin pagkatapos ng Turbine Oil.
+2. **Instrument air → pneumatic valves:** tapos na ang control valves at XV (item 19). Kulang: ang mga damper (`K1AU3-E2-0-142`, sa PC).
 3. **HP heaters:** tapos na ang temperatura (item 15) at ang level (item 18). Kulang: epekto sa firing.
 4. **Chain test hanggang alarm / trip:** may chain test na hanggang bearing (`lube_oil.js`). Kulang pa ang alarm at trip ng TCS sa bearing temperatura, at ang mga motor (item 1).

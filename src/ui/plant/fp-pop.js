@@ -575,12 +575,12 @@
       clRow: 8,
       auSel: v => (D().dset('DITL-78', 0, v), D().dsel('DITL-78', 2, v, 'EXPANSION TANK INLET VLV XV-MU1109 AUTO SELECTED (M.1252)')),
       auto: 'opens below 40 % of LT-CW1109, closes above 85 % (1.7 m) · DITL-78',
-      why: () => (window.AN && AN.unit && (+AN.unit.iaP || 0) < 3.5 ? 'No instrument air (below 3.5 kg/cm²): the pneumatic valve cannot open. Use the field bypass V-MU1033.' : '')
+      why: () => (window.AN && AN.unit && (+AN.unit.iaP || 0) < 3.5 ? 'No instrument air (below 3.5 kg/cm²): XV-MU1109 is spring opening (vendor sheet K1AU3-E2-0-123 item 39), it is open and cannot be closed.' : '')
     }
   };
   /* a manual valve the field operator turns (Training: FIELD, a digital field item of the plant model, logged as "Field operator") */
   const FIELDV = {
-    'V-MU1033': { n: 'V-MU1033', t: 'Expansion tank bypass (manual)', k: 'mu1033', io: 'V-MU1033', use: 'Fills T-1109 while there is no instrument air yet (XV-MU1109 closed). Close it when LT-CW1109 reaches 1.7 m.' },
+    'V-MU1033': { n: 'V-MU1033', t: 'Expansion tank bypass (manual)', k: 'mu1033', io: 'V-MU1033', use: 'Second fill path of T-1109 (PR-OPE-5002 section 7: XV-MU1109 or the bypass V-MU1033). Close it when LT-CW1109 reaches 1.7 m.' },
     /* Mina's retest step 8 (PR-OPE-5002 7.20 "Open Expansion tank outlet valve to prime the close cooling line (V-CW1001)", 7.22 NL 1.7 m;
        flow diagram K1AU3-PD-021 Rev D: T-1109 outlet V-CW1001 CW-1-001 8"; not in the I/O list: a field valve, plant model AN_SRC.field) */
     'V-CW1001': { n: 'V-CW1001', t: 'Expansion tank outlet (manual)', k: 'cw1001', io: 'V-CW1001', use: 'Primes the closed cooling line from T-1109 (PR-OPE-5002 7.20). Then keep T-1109 at NL 1.7 m, make up if necessary (7.22).' }
