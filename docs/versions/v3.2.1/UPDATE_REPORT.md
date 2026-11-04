@@ -1,5 +1,47 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.17 — FIELD · LOCAL PANEL on the motor faceplate, and the motor loop check list (2026-11-04, thread "Build loop check dock in app")
+
+**Problem.** In the live loop check of 030 CIRCULATING WATER, MINA could not test LOCAL start / stop or auto cut-in without a force on
+the logic page. The user said 2026-11-04: "Local at remote dpt n start at stop", "My emergency stop din", every motor ("Kso per motor
+yn"), realistic ("Mktotohanan"), and it must work with the plant shut down ("kht shutdown pre, pwede mg test nyan"). The mockup
+https://claude.ai/artifact/6gyBnteyRkiaLXvhAELyGj was approved ("Ok goods yn").
+
+**Source.** DITL-29A / DITL-30 PDF: LOCAL START P.B. row 23 and LOCAL STOP P.B. row 26, each AND NOT REMOTE (row 22). The ELECTRICAL
+TROUBLE symbol goes into the TRIP OR. The auto start path is AUTO AND (other pump TRIP with its RUNNING 2 s off-delay). EMERGENCY STOP
+P.B. was searched in all 248 drawings: only DITL-21A row 18 (bottom ash screw cooler) has one; the LS sheets have PLANT EMERGENCY STOP
+(not a motor button).
+
+**Work done.**
+- `src/ui/plant/fp-pop.js`: the motor faceplate (CONTROL) has a new block, FIELD · LOCAL PANEL. Its rows are found in the motor's own
+  drawing (the B / C copy for pump B / C):
+  - LCP START / STOP: a pulse on the LOCAL START P.B. / LOCAL STOP P.B. row. Open only at LOCAL (START when stopped and not tripped,
+    STOP when running).
+  - EMERGENCY STOP: open only where the drawing has the row. Otherwise grey, with "not on DITL-xx".
+  - RELAY TRIP / RESET: the ELECTRICAL TROUBLE symbol (`s.nl.usr`). It trips in any mode and holds until RESET.
+  Each press asks EXECUTE in an amber bar and is logged in Events as "Field operator". Nothing needs the plant running or at load;
+  the drawing decides. The block is shown only when the drawing has at least one of these inputs. New reason lines: LOCAL ("The local
+  panel starts and stops it"), REMOTE ("the local panel START and STOP are blocked (DITL-xx rows a / b work only in LOCAL)"), and
+  relay TRIP.
+- `src/ui/plant/fp-pop.css`: styles of the mockup. The lit RUN (red) / STOP (green) colour of the command buttons now shows. Before,
+  the general button colour of app.css (`body.app2 :is(button ...)`) covered it on every faceplate.
+- `docs/versions/v3.2.1/MOTOR_LOOP_CHECK.md`: the standard loop check (signal path) and function test (logic) for each of the
+  15 motors on the approved pages, one row per action, with the expected HMI result and the drawing address.
+
+**Checked (headless cloud, Chromium, Home → Cold → RUN, real faceplate clicks).**
+- LCP START → RUNNING and LCP STOP → STOPPED on SWP A / B / C, MWP A / B / C, ACWP A / B and CEP A / B.
+- SWBP A / B / C and BFWP A / B did not start from Cold, as their drawings require (SWBP: one SWP running; BFWP: lube oil and
+  suction). SWBP-A started by LCP START once SWP-B was running.
+- SWP-A relay TRIP with SWP-B in REMOTE · AUTO: SWP-A TRIP and SWP-B started (about 500 A, then 230 A). RESET cleared it.
+- At REMOTE the LCP buttons are grey. The EMERGENCY STOP note reads "not on DITL-29A" / "not on DITL-30". No JS error.
+- `npm run check` SAME.
+
+**Not checked.** Live test on the user PC. The DCS STOP path in AUTO for MWP / ACWP / CEP / BFWP (not read from their PDFs; the
+checklist asks the tester to record it). Phone layout of the longer faceplate.
+
+**Seen, not changed.** DITL-61A #B (CEP-B) address column in the app: rows 11 / 13 are swapped against the A sheet, and rows 20 ~ 28
+show M.3217. To check against the PDF.
+
 ## 3.2.1-beta.15 — FEEDWATER, mockup page 06 in the app (2026-11-04, JISOO : HMI MOCKUP)
 
 **Work done.** `docs/hmi/mockups/temp/06-feedwater.html` → Plant view **FEEDWATER** (`MK06`), `tools/hmi-mock/p06.py` →
