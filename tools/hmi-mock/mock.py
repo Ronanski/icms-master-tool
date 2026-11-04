@@ -61,8 +61,8 @@ class Page:
     def ns(self, x, y):
         self.text(x, y, 'data-ns="1"')
 
-    def mach(self, id, st=None, md=None, vcb=None, ynt=None, ynr=None, hits=(), yn=None):
-        if st: self.text(*st, f'data-st="{id}"')
+    def mach(self, id, st=None, md=None, vcb=None, ynt=None, ynr=None, hits=(), yn=None, short=False):
+        if st: self.text(*st, f'data-st="{id}"' + (' data-short="1"' if short else ''))
         if md: self.text(*md, f'data-md="{id}"')
         if vcb: self.text(*vcb, f'data-vcb="{id}"')
         if ynt: self.text(*ynt, f'data-ynt="{id}"')
