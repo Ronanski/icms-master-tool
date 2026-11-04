@@ -188,8 +188,12 @@
               e.setAttribute('fill', v == null || !isFinite(v) ? C.none : C.val);
             }
           });
-        const hit = [...qa('[data-hit]')].find(h => M[h.dataset.hit] && M[h.dataset.hit].ctl === tag) || null;
+        const hits = [...qa('[data-hit]')].filter(h => M[h.dataset.hit] && M[h.dataset.hit].ctl === tag),
+          hit = hits[0] || null;
         api.reg({ t: 'ctl', tag }, X => ((CT[tag] = X || null), show()), hit);
+        /* live test 2026-11-05 (AIR AND FLUE GAS: MCV-FA1053-1 = FICFA1071 too, its label opened nothing): every other label of the same
+           controller opens the faceplate of the first one */
+        hits.slice(1).forEach(h => h.addEventListener('click', e => (e.stopPropagation(), hit.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: e.clientX, clientY: e.clientY })))));
         show();
       });
       qa('[data-go]').forEach(e => {
