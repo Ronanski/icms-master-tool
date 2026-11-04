@@ -1076,7 +1076,12 @@ const AN_FV0 = {
   'V-CW1010': 100, 'V-CW1011': 100, 'V-CW1012': 0, 'V-CW1013': 100, 'V-CW1014': 100, 'V-CW1015': 0,
   'V-MU0001': 100, 'V-MU0002': 100, 'V-MU0003': 100, 'V-MU0004': 100, 'V-MU0005': 100,
   'V-MU0007': 100, 'V-MU0009': 100, 'V-MU0011': 100, 'V-MU0013': 100, 'V-MU0015': 100, 'V-MU0017': 100,
-  'V-IA1101': 100, 'V-PA1087': 100, 'V-PA0013': 0
+  'V-IA1101': 100, 'V-PA1087': 100, 'V-PA0013': 0,
+  /* 3.2.1 (IRENE: FEEDWATER): the BFWP suction manual valves, PR-OPE-5002 19.16 "Fully OPEN BFPs suction (V-FW1002/V-FW1001) ...
+     Check if the limit switch is touched" (IO list STN102 I.028F ZSO-FW1031 BFWP-A / I.032F ZSO-FW1032 BFWP-B suction manual valve
+     open; V-FW1001 = A, V-FW1002 = B by the number order of the discharge MOVs MV-FW1001 A / MV-FW1002 B). Normal line-up: both open
+     (the standby pump lined up for its auto start) */
+  'V-FW1001': 100, 'V-FW1002': 100
 };
 /* the opening of a field valve (0 ~ 100 %), the normal line-up while the field operator has not turned it */
 const anFv = tag => {
@@ -1608,7 +1613,8 @@ const AN_FW = {
 function anFwStep(U, dt) {
   const K = AN_FW,
     dr = d => (typeof anDitlRun === 'function' ? anDitlRun(d) : null),
-    run = [['DITL-23A', 'M.3343'], ['DITL-23A #B', 'M.3344']].map(([d, m]) => (dr(d) != null ? (dr(d) === 1 ? 1 : 0) : srcBit([m]) > 0.5 ? 1 : 0)),
+    /* a running pump with its suction manual valve closed (V-FW1001 / 1002) gives no head (dry: the motor protection is not modelled) */
+    run = [['DITL-23A', 'M.3343', 'V-FW1001'], ['DITL-23A #B', 'M.3344', 'V-FW1002']].map(([d, m, v]) => (anFv(v) < 5 ? 0 : dr(d) != null ? (dr(d) === 1 ? 1 : 0) : srcBit([m]) > 0.5 ? 1 : 0)),
     n = run[0] + run[1],
     ffw = typeof AN_CYC !== 'undefined' && isFinite(AN_CYC.ffw) ? Math.max(0, AN_CYC.ffw) : 0,
     q = n ? Math.max(K.qMin, ffw / K.sg / n) : 0,
@@ -2306,6 +2312,8 @@ function anUnitStep(dt) {
           m.run.reduce((a, r, i) => {
             if (!(+r.S.rt.v[r.n] > 0.5)) return a;
             if (m.drw && anDitlRun(m.drw[i]) === 0) return a;
+            /* 3.2.1 (IRENE): no water through a BFWP whose suction manual valve is closed (V-FW1001 / 1002) */
+            if (m.drw && anFv(['V-FW1001', 'V-FW1002'][i]) < 5) return a;
             const d = m.dis && m.dis[i];
             if (!d) return a + 1;
             const pm = anDitlPos(d[0], 0),

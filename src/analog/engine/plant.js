@@ -770,6 +770,10 @@ function anProcStep(S, dt) {
       q.y += (1 - Math.exp(-dt / Math.max(pr.T, 0.05))) * (tgt - q.y);
       q.y = Math.max(lo, Math.min(lo + span, q.y));
     }
+    /* 3.2.1 (IRENE: FEEDWATER): a source that always feeds (pr.sflo, the extraction no. 3 to the deaerator at load) is a floor of the
+       state too, not only of the target: before, Start at 150 MW began at ~1 kg/cm2 and took minutes (the lag of the loop) to reach 5.3,
+       the BFWP suction was ~1.7 kg/cm2 meanwhile */
+    if (pr.sflo != null && dt > 0 && isFinite(q.y) && q.y < pr.sflo) q.y = Math.min(lo + span, pr.sflo);
     if (gate === 'zero' && b.p.lt === 'flow') q.y = lo;
     if (dt <= 0 && q.u != null) continue;
     const y = pr.integ && q.sw ? Math.max(lo, Math.min(lo + span, q.y - q.sw)) : q.y;

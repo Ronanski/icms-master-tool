@@ -19,17 +19,20 @@ Dati na: feedwater flow at drum level (`plant.js`, FICFW1007 at LICBR1001), deae
 - **Current:** 289.4 A × shaft power ÷ power sa 150 MW (snapshot).
 - **Strainer DP:** 0.29 × (flow ÷ 549)².
 - **Tumatakbo:** ang motor ng DITL-23A (A) at DITL-23A #B (B).
-- **Deaerator pressure (bago):** sa load, hindi bababa sa extraction no. 3: 5.3 × steam ÷ 474.1 T/H. Dati ay ~1 kg/cm2 sa 150 MW (ang pegging lang ang binibilang), kaya ~1.7 lang ang BFWP suction.
+- **Deaerator pressure (bago):** sa load, hindi bababa sa extraction no. 3: 5.3 × steam ÷ 474.1 T/H. Dati ay ~1 kg/cm2 sa 150 MW (ang pegging lang ang binibilang), kaya ~1.7 lang ang BFWP suction. Mula 4:42 PM: floor din ito ng estado ng loop (`plant.js`), kaya 5.3 agad pagka-Start at 150 MW.
+- **Suction manual valve (bago, 4:42 PM):** V-FW1001 (A) / V-FW1002 (B), field valve sa `AN_FV0` (normal: bukas). Source: PR-OPE-5002 19.16 "Fully OPEN BFPs suction (V-FW1002/V-FW1001) ... Check if the limit switch is touched"; IO list STN102 I.028F ZSO-FW1031 (A) / I.032F ZSO-FW1032 (B). Ang A = 1001 at B = 1002 ay ayon sa numero ng discharge MOV (MV-FW1001 = A, MV-FW1002 = B). Ang limit switch (DITL-23A row 11, at #B) = valve 100 % (`plantsw.js`). Sarado ang suction = walang tubig mula sa pump na iyon.
 
 ## Resulta (cloud test, 150 MW, pagkatapos ng 5 min)
 - BFWP-A 540 m3/h, PT-FW1011 164.5 kg/cm2 (snapshot 165.4), 287.1 A (289.4), strainer DP 0.28 (0.29). Pareho ang basa ng DITL-23B.
-- BFWP suction 5.33 kg/cm2 (snapshot 6.7).
-- Trip ng BFWP-A (FIELD TRIP): PT-FW1011 bumaba sa 5.3, M.3210 LL sa DITL-23B.
+- BFWP suction ~6.1 kg/cm2 agad (snapshot 6.7); dati 1.8 sa simula, 5.3 pagkatapos ng 5 min.
+- Trip ng BFWP-A (FIELD TRIP): PT-FW1011 bumaba < 155, M.3210 LL sa DITL-23B → BFWP-B AUTO START (O.1400) → B tumatakbo pagkatapos ng 1.5 s; pagkatapos ng 60 s: 570 m3/h, PT-FW1011 158.7, 294.6 A, feedwater 520 T/H (bago ang trip 491).
+- V-FW1002 sinara sa field habang B lang ang tumatakbo: 0 ang feedwater.
 
 ## BUKAS (nakita sa test, aayusin)
-1. **Hindi tumatakbo ang BFWP-B** pagkatapos ng trip ng A. Ang logic ay nagbibigay na ng "BFWP B AUTO STARTING" = 1 (DITL-23A #B output 10) at "BFWP AUTO START" (O.1400), pero hindi umaandar ang motor. Sinusuri pa: posibleng ang lube oil pressure ng standby pump (aux LOP ng B, DITL-22 #C / #D) na hindi tumatakbo sa estado ng 150 MW.
+1. **NAAYOS (4:42 PM): BFWP-B auto start.** Ang dahilan ay hindi ang lube oil (I.0411 = 1). Sa drawing DITL-23A, ang START ng HV soft starter ay kailangan ng AND ng lube oil > 2.0, suction pressure > 1.5 AT "SUCTION MANUAL VALVE OPEN" (row 11, ZSO-FW1031 / 1032). Walang nagbibigay ng row na iyon sa #B (0 lagi). Ngayon ito ang limit switch ng V-FW1002 sa plant model.
 2. **NAAYOS (4:29 PM):** dati, tuloy ang feedwater flow kahit walang BFWP. Ngayon, binabasa rin ng feedwater ang motor ng DITL-23A / #B: pagkatapos ng FIELD TRIP, 0 ang feedwater. Natitira: ang ABC-010 M.3343 (DITL-23A output 55 RUNNING) ay 1 pa rin pagkatapos ng FIELD TRIP; ito ang binabasa ng ibang ABC logic.
-3. **Deaerator pressure pagkatapos ng Start at 150 MW:** ~1 kg/cm2 sa simula at umaabot sa ~5 sa loob ng ilang minuto. Dapat nasa 5.3 agad.
+3. **NAAYOS (4:42 PM): deaerator pressure pagkatapos ng Start at 150 MW** ay 5.3 agad (dati ~1 at ilang minuto bago umabot sa 5).
+4. **Tugma sa snapshot:** 02.png (60.3 MW, 203.7 T/H) PICD1104 2.2 kg/cm2, TICD1104 131 °C; model sa 203.7 T/H: 5.3 × 203.7 ÷ 474.1 = 2.3. 5.png (152.5 MW) DEAERATOR PV 5.9; model 5.3 (4.PNG PITS1017).
 
 ## CALIBRATED / NO-SOURCE
 - Extraction no. 3 na linear sa steam: NO-SOURCE.

@@ -854,7 +854,17 @@
     'V-MU0017': 'MWP-C minimum flow recirculation (SOP: OPEN).',
     'V-IA1101': 'Instrument air to unit 1 (PT-IA1706). Closed = the unit 1 header bleeds down.',
     'V-PA1087': 'Plant air to unit 1 (PT-PA1705). Closed = the unit 1 header bleeds down.',
-    'V-PA0013': 'Cross-tie: plant air to the instrument air tanks. Normally closed.'
+    'V-PA0013': 'Cross-tie: plant air to the instrument air tanks. Normally closed.',
+    /* 3.2.1 (IRENE, for SEULGI boiler.js AN_DO.fv0): the diesel oil line-up, PD-022 1/5 Rev D, PR-OPE-5002 section 20 */
+    'V-DO0003': 'Diesel oil service tank T-0701 outlet. Closed = the oil pumps have no oil.',
+    'V-DO0004': 'Diesel oil strainer inlet (DPT-DO0001). Closed = no oil to the pumps.',
+    'V-DO0015': 'Diesel oil pump A suction.',
+    'V-DO0007': 'Diesel oil pump A discharge.',
+    'V-DO0016': 'Diesel oil pump B suction.',
+    'V-DO0009': 'Diesel oil pump B discharge.',
+    /* 3.2.1 (IRENE: FEEDWATER, unit.js AN_FV0) */
+    'V-FW1001': 'BFWP-A suction (limit switch ZSO-FW1031). SOP 19.16: fully open. Closed = the pump has no water and cannot start.',
+    'V-FW1002': 'BFWP-B suction (limit switch ZSO-FW1032). SOP 19.16: fully open. Closed = the pump has no water and cannot start.'
   };
   const fvAll = () => call(() => (AN.swValves ? AN.swValves() : null), null) || {};
   function fieldPct(tag) {
