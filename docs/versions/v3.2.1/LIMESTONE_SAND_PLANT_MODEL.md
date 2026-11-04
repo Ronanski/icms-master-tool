@@ -1,7 +1,7 @@
-# Limestone injection plant model (3.2.1, SEULGI : PLANT MODEL boiler side)
+# Limestone and sand injection plant model (3.2.1, SEULGI : PLANT MODEL boiler side)
 
 Code: `src/analog/engine/boiler.js` `AN_LM` / `anLmStep`. Switch rows: `src/world/plantsw.js` (`lmSw`). Test: `tests/regress/limestone.js`.
-Sand injection: hindi pa (susunod).
+Sand: `AN_SD` / `anSdStep`, switch rows `sdSw`, test `tests/regress/sand.js` (seksyon sa ibaba).
 
 ## Mga source
 - O&M L5-3 "Limestone" (HWA JANN / Clyde Bergemann Rotofeed). Nasa PC lang: `document-references/o&m-package-phase-1/L5 Fly Ash_Sand_Limestone/L5-3 Limestone.pdf`. Mga bahagi: section 1 (design data), 2.2 ~ 2.10 (sequence, timers, alarms), 3.2 / 3.5 (start-up, isolation).
@@ -65,3 +65,66 @@ Mga manual valve (field action, `AN.swValve`): HV01, ang control air isolation n
 - Ang buong fill cycle (step 1 ~ 8), ang pagtakbo ng feeder at ang conveying pressure. Hindi ito maabot dahil sa finding 1.
 - Ang air tank low (I.016A), dahil walang paraan pa para ibaba ang plant air header sa test.
 - Wala pa sa ABC ang PT-LM1811 / 1812 at ang silo level (AI0432 ~ AI0434). Nasa unit keys pa lang ito: `lmPl`, `lmPd`, `lmSilo`.
+
+# Sand injection (020 SAND INJECTION SYSTEM)
+
+## Mga source
+- O&M L5-2 "Sand" (HWA JANN / HCE DensePhase). Nasa PC lang: `document-references/o&m-package-phase-1/L5 Fly Ash_Sand_Limestone/L5-2 Sand.pdf`. Mga bahagi: section 0 (sequence), section 1 (design data), 4.2.1 (cycle at timers) at 5 (faults).
+- Mga drawing DITL-771 ~ 777: `sand-sootblower-logic.zip`, E10210-3-771 ~ 777, station 103.
+- IO list "Station 103": I.0560 ~ I.057A at O.0600 ~ O.0612.
+- Alarm list: LT-SD1800 at PT-SD1800.
+- Snapshot 20.PNG: sand injection naka-STOP, sarado ang lahat ng valve, LISD1800 50.1 %, PISD1800 0.0.
+
+## Ang model
+Field devices lang ang ginawa ko. Hindi ko binago ang logic.
+
+| Device | Command (DITL-771 / 776 out) | Switch (in) |
+|---|---|---|
+| Inlet dome valve XV-SD1804 | OUT21 / OUT22 (SV-SD1804A) | DITL-772 rows 7 / 8, seal PS-SD1804 row 3 (made = sealed, O&M 5.3) |
+| Vent valve XV-AV1803 | OUT20 (SV-AV1803) | DITL-775 rows 1 / 2 |
+| Outlet valve XV-SD1801 | OUT23 / OUT24 | DITL-775 rows 3 / 4, DITL-772 row 1 |
+| Conveying air XV-PA1800 | OUT25 | DITL-775 rows 5 / 6 |
+| Isolating valves XV-SD1802A / B | DITL-776 OUT11 / OUT13 | DITL-776 rows 7 ~ 10 |
+| Vessel LSH-SD1801 | | DITL-771 row 11 |
+| Vessel PS-SD1800 | | DITL-772 row 4, made < 0.3 bar (O&M section 0 e) |
+| Air buffer tank PS-PA1800 | | DITL-775 row 7, made < 4 bar (O&M 5.6) |
+| Silo LSH / LSL-SD1800 | | DITL-774 rows 3 / 4 |
+| Vent filter M-1301 | DITL-774 OUT22 (O.060A) | DITL-774 row 10, DITL-777 row 7 |
+
+Paalala: ang DITL-771 OUT19 "CONTROL O.0607" ay ang remote input na dumadaan lang (net ng row 5). Hindi ito ang vent solenoid.
+
+## Mga numero
+| Value | Ginamit | Source |
+|---|---|---|
+| Vessel | 0.113 m3 x 1440 kg/m3 = 163 kg | O&M L5-2 section 1 |
+| Silo | 100 m3, 50.1 % sa simula | O&M section 1, 20.PNG |
+| Pagkonbey ng isang batch | 55 s | O&M section 1, "Peak Air Duration 55 seconds" |
+| Pressure switch ng vessel | < 0.3 bar | O&M section 0 e |
+| Air tank low | < 4 bar | O&M 5.6 |
+| Pagpuno ng vessel | 15 s para mapuno | **NO-SOURCE** (ang filling timer ng drawing ay 20 s) |
+| Pressure ng vessel habang nagkokonbey | 2.0 kg/cm2 | **NO-SOURCE** (supply ay 5 barg, O&M) |
+| Silo LSH / LSL | 85 / 30 % | **NO-SOURCE** (ang LT-SD1800 alarm H / L ng alarm list; hindi alam ang taas ng switch) |
+| Stroke 2 s, seal 1 s | | **NO-SOURCE** |
+
+## Ano ang nagbago sa nakikita ng operator
+- **Bago:** sa 150 MW, naka-ON ang INLET DV CLOSE FAULT, ang B.1200 at ang SYSTEM TRIP. Hindi masisimulan ang sand system.
+- **Ngayon:** sarado at naka-seal ang dome valve, gaya ng 20.PNG. Kapag pinindot ang ISO VALVE OPEN, bumubukas ang dalawang isolating valve at nagiging ROUTE OK. Kapag nasa REMOTE ang PCB-300 at pinindot ang START, isang buong cycle ang tumatakbo ayon sa O&M 4.2.1:
+  1. Bumubukas ang vent.
+  2. Pagkalipas ng 3 s, bumubukas ang inlet dome valve.
+  3. Napupuno ang vessel hanggang 83 % sa loob ng 20 s timer.
+  4. Sumasara at nagse-seal ang dome valve.
+  5. Bumubukas ang outlet at ang conveying air, at tumataas ang pressure sa 2.0.
+  6. Lumalabas ang buong batch, bumababa ang pressure sa ilalim ng 0.3 bar, at sumasara ang outlet at ang conveying air.
+
+## Mga natagpuan (hindi plant model)
+4. **DITL-771, hindi umuulit ang cycle. Uri: (c), may pangalan ang eksaktong bahagi.**
+   - Sa drawing, ang FF na "DONE" (M.081C) ay nire-reset ng sarili nitong TR314 (3 s).
+   - Sa app (sand netlist, `tools/data/sand_model.py`), walang RESET ang FF na iyon (gate 47, r = []). Nananatiling 1 ang M.081C, kaya laging naka-reset ang start FF.
+   - Ganoon din ang FF ng LINE BLOCKAGE (gate 44, r = []).
+   - Isang cycle lang ang tumatakbo pagkatapos ng START. Hindi ko binago ang parser.
+5. **DITL-771 row 5 (SIL-SD1300 REMOTE)** ay hindi itinatakda ng `ditl150.js`. Sa test, ako ang naglagay nito sa REMOTE bilang field action.
+
+## Hindi pa nasubok
+- Ang ikalawang cycle (dahil sa finding 4) at ang line blockage.
+- Ang air tank low.
+- Wala pa sa ABC ang PISD1800 at LISD1800 (AI0432 / AI0387, station 103). Nasa unit keys pa lang ang mga ito: `sdP` at `sdSilo`.
