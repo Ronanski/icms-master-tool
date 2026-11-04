@@ -1450,7 +1450,7 @@ function anAcwStep(U, dt) {
   U.acCool = n && hx > 0 ? 1 : 0;
   if (Ch > 0) {
     /* the return (pump discharge, TT-CW1152) is the node; the first step after a starting state starts at its steady value */
-    if (first || !isFinite(U.acT1)) U.acT1 = hx > 0 ? K.Tsw + Qload / hx : Math.min(60, K.Tamb + 10);
+    if (first || !isFinite(U.acT1)) U.acT1 = hx > 0 && Q > 0.5 * K.dQ ? K.Tsw + Qload / hx : Math.min(60, K.Tamb + 10); /* 3.2.1: a throttled first step does not start hot */
     U.acT1 += ((Qload - hx * (U.acT1 - K.Tsw)) * dt) / K.M;
     U.acT1 = Math.max(K.Tsw, Math.min(99, U.acT1));
     U.acT2 = U.acT1 - (hx * (U.acT1 - K.Tsw)) / Ch;
