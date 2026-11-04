@@ -1461,7 +1461,7 @@ function anMotorStep(U, dt) {
                   "T2A TYPE TURBO COMP."); discharge transmitter PT-1DA 0 ~ 1.5 MPa;
      PA motor     TECO 3A057H186-74409: 900 HP, 2 pole, 6600 V, 69.9 A at 100 % load, LRC 560 A, soft start; winding RTD alarm 145 /
                   trip 155 C, temperature rise limit 80 C (class F);
-     IA motor     TECO-YASKAWA FELA-8T 165 kW 460 V 2 P (order M40328-1): 286 A at 190 kW; starting current with a reactor 80 % tap
+     IA motor     TECO-YASKAWA FELA-8T 190 kW CONT 460 V 2 P (outline P1309238 RATINGS; the thermal sheet says 165 kW): 286 A at 190 kW; starting current with a reactor 80 % tap
                   532 % (the torque / current curve);
      tanks        D1-0-059 document index and PD-023: T-0705A / B 10 m3 (PA), T-0706A / B 5 m3 (IA), max. working pressure 0.98 MPa;
      pressure     PR-OPE-5002 "Ensure Plant Air Compressor is running and compressed air pressure is up to 7 Kg/cm2"; 39.PNG 7.0;

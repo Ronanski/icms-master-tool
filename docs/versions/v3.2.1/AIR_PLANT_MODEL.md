@@ -15,7 +15,7 @@ Code: `src/analog/engine/unit.js` `AN_AIR` / `anAirStep`. Test: `tests/regress/a
   - Instrument tag listing: PT-1DA discharge 0 ~ 1.5 MPa; TE-1DA H 55 / trip 60 °C; vibration VE-02 40 / 60, VE-03 30 / 45 µm.
   - Hindi nakasulat ang capacity (m3/h) at ang set point ng PIC / unload / reload (Modbus list: may address, walang value).
 - **PA motor, TECO 3A057H186-74409 (sa D1-0-059):** 900 HP, 2 pole, 6600 V, 69.9 A sa 100 % load, LRC 560 A, soft start, winding RTD alarm 145 / trip 155 °C, bearing 95 / 100 °C, temp rise limit 80 °C (class F).
-- **IA motor, TECO-YASKAWA FELA-8T (order M40328-1):** 165 kW, 460 V, 2 P; 286 A sa 190 kW; starting current sa reactor 80 % tap = 532 % (torque / current curve).
+- **IA motor, TECO-YASKAWA FELA-8T (order M40328-1, outline P1309238):** 190 kW CONT, 460 V, 2 P (RATINGS table; ang thermal sheet ay may 165 kW); 286 A sa 190 kW; starting current sa reactor 80 % tap = 532 % (torque / current curve).
 - **Tanks:** D1-0-059 document index at PD-023: T-0705A / B 10 m3 (PA), T-0706A / B 5 m3 (IA); max working pressure 0.98 MPa.
 - **Dryer, K1AU3-D1-0-065 (JMEC):** refrigerated dryer J2E-1500SN (PA), J2E-400SN (IA), may air filter bago at pagkatapos. Walang capacity sa m3/h na nakasulat.
 - **Air buffer tank, K1AU3-D1-0-070:** para sa biasing damper (T-1064A/B) at turning gear (T-1128), hindi bahagi ng compressed air header na ito.
@@ -59,7 +59,7 @@ Code: `src/analog/engine/unit.js` `AN_AIR` / `anAirStep`. Test: `tests/regress/a
 - REMOTE / LOCAL ng local panel: walang DCS signal. Sa 150 MW: ang tumatakbo at ang susunod na compressor ay REMOTE (standby ng auto start). Sa Cold: lahat LOCAL.
 
 ## UNUSUAL (para sa user)
-- Ang IA motor data ay "286 A at 190 kW" pero 165 kW ang rating ng motor. Ginamit ang 286 A sa 190 kW bilang batayan.
+- Sagot na (DATA_ANSWERS.md): ang IA motor ay 190 kW ayon sa RATINGS table ng outline P1309238; 165 kW ay nasa thermal withstand sheet lang. Ang 165 kW ay ginamit lang bilang power ng compressor sa buong flow (NO-SOURCE).
 - Ang START COMMAND ng drawing ay napupunta sa LAHAT ng hindi tumatakbo at hindi naka-trip na compressor. Ang local panel (REMOTE / LOCAL) ang pumipili kung alin ang tatakbo.
 
 ## Keys (`AN.unit`)
