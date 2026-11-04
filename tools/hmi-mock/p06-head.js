@@ -15,8 +15,8 @@
     h: /*@@H@@*/,
     art: /*@@ART@@*/,
     mach: {
-      PA: { n: 'BFWP-A', t: 'P-1115A', ad: 'DITL-23A', d: 'DITL-23A', io: 'MIR-P1115A' },
-      PB: { n: 'BFWP-B', t: 'P-1115B', ad: 'DITL-23A #B', d: 'DITL-23A #B', io: 'MIR-P1115B' },
+      PA: { n: 'BFWP-A', t: 'P-1115A', ad: 'DITL-23A', d: 'DITL-23A', io: 'MIR-P1115A', aux: [['Lube oil pump A', 'DITL-22'], ['Lube oil pump B', 'DITL-22 #B']] },
+      PB: { n: 'BFWP-B', t: 'P-1115B', ad: 'DITL-23A #B', d: 'DITL-23A #B', io: 'MIR-P1115B', aux: [['Lube oil pump A', 'DITL-22 #C'], ['Lube oil pump B', 'DITL-22 #D']] },
       C1061: { n: 'LICHD11061', t: 'No.2 HP heater drain LCV-HD1106-1', ctl: 'LICHD11061', io: 'LICHD11061' },
       C1051: { n: 'LICHD11051', t: 'No.1 HP heater drain LCV-HD1105-1', ctl: 'LICHD11051', io: 'LICHD11051' },
       CSU: { n: 'LICBR1001B', t: 'Start-up FCV-FW1130-2', ctl: 'LICBR1001B', io: 'LICBR1001B' },

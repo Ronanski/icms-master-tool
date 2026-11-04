@@ -269,8 +269,11 @@
     const lsR = svcRows(/LOCAL\s+START\s+P\.?\s*B/i).pop(),
       lpR = svcRows(/LOCAL\s+STOP\s+P\.?\s*B/i).pop(),
       esR = svcRows(/EMERGENCY\s+STOP\s+P\.?\s*B/i).pop(),
-      etU = s && s.nl ? (s.nl.usr || []).find(x => /ELECTRIC/i.test(x.label || '')) : null;
-    const hasFld = lsR != null || lpR != null || esR != null || !!etU;
+      etU = s && s.nl ? (s.nl.usr || []).find(x => /ELECTRIC/i.test(x.label || '')) : null,
+      /* live test 2026-11-05 (AIR PREHEATER DITL-43 row 5 I.0651 NOT TRIP = 0 at Cold, no way to reset it on the page): a drawing with no
+         ELECTRICAL TROUBLE symbol but a NOT TRIP field contact: RELAY TRIP = the contact to 0, RESET = to 1 (the Training FIELD NOT TRIP) */
+      ntR = etU ? null : svcRows(/\bNOT\s+TRIP\b/i).filter(r => /^I\./.test(call(() => DUI.rowInfo(s, r).tag, '') || '')).shift();
+    const hasFld = lsR != null || lpR != null || esR != null || !!etU || ntR != null;
     const fSh = E('div', 'fpo-sh fld', 'FIELD · LOCAL PANEL'),
       bLs = E('button', 'fpo-cmd', 'START'),
       bLp = E('button', 'fpo-cmd', 'STOP'),
@@ -296,8 +299,12 @@
       };
       setTimeout(rel, 800);
     };
-    const etOn = () => !!(etU && s && s.usw && s.usw[etU.key]);
+    const etOn = () => (etU ? !!(s && s.usw && s.usw[etU.key]) : ntR != null && call(() => DUI.rowVal(s, ntR), 1) === 0);
     const etSet = on => {
+      if (ntR != null && !etU) {
+        dk.fieldRow(nm, ntR, on ? 0 : 1, M.n + (on ? ' TRIP' : ' NOT TRIP (trip reset in the field)'));
+        return;
+      }
       if (!etU || !s) return;
       s.usw = s.usw || {};
       s.usw[etU.key] = !!on;
@@ -371,6 +378,18 @@
       F.bd.insertBefore(ilH, ilL);
       F.bd.insertBefore(sopL, ilL.nextSibling);
       F.bd.insertBefore(sopH, sopL);
+    }
+    /* live test 2026-11-05 (FEEDWATER: the BFWP start needs its auxiliary lube oil pump, DITL-22 / #B / #C / #D, PR-OPE-5002 19.5, and
+       the page draws no symbol for it): M.aux = [[label, drawing]] = the auxiliary motors of this machine, each opens its own faceplate */
+    if (M.aux && M.aux.length && part !== 'info') {
+      const ab = M.aux.map(([l, ad]) => {
+        const b = E('button', 'fpo-cmd', l);
+        b.type = 'button';
+        b.title = 'Open the faceplate of ' + l + ' (' + ad + ')';
+        b.onclick = () => call(() => motor({ n: l + ' · ' + M.n, t: ad, ad, d: ad, part: 'control' }));
+        return b;
+      });
+      F.bd.append(row('AUXILIARY', ...ab));
     }
     /* links */
     const ln = E('div', 'fpo-ln');
@@ -454,8 +473,8 @@
         bLs.classList.toggle('lit-run', st === 'RUN');
         bLp.classList.toggle('lit-stop', st === 'STOP' && loc);
         bEs.disabled = esR == null || st !== 'RUN';
-        bTr.disabled = !etU || et;
-        bRs.disabled = !etU || !et;
+        bTr.disabled = (!etU && ntR == null) || et;
+        bRs.disabled = (!etU && ntR == null) || !et;
         bTr.classList.toggle('lit-run', et);
         for (const el of [fSh, rLcp, rEs, rRly]) el.hidden = part === 'info';
       }
@@ -1114,7 +1133,14 @@
         return;
       }
       const r = call(() => P.press(p.row), 'no logic') || '';
-      msg.textContent = typeof r === 'string' && r ? '⚠ ' + r : P.n + ' ' + p.l + ': EXECUTED';
+      /* live test 2026-11-05: what in the logic keeps the command from going through (XV-FW1111-1 OPEN at Cold: MFT, steam flow < 10 %) */
+      const blk = !(typeof r === 'string' && r) && P.block ? call(() => P.block(p.row), null) : null;
+      msg.textContent =
+        typeof r === 'string' && r
+          ? '⚠ ' + r
+          : blk && blk.length
+            ? '⚠ ' + p.l + ' blocked by the logic: ' + blk.map(x => String(x.svc || '').replace(/^[IMB]\.\S+\s+/, '') + (x.want ? '' : ' (must be 0)') + (x.other ? ' [' + x.other + ']' : '')).join('; ') + '.'
+            : P.n + ' ' + p.l + ': EXECUTED';
       if (!(typeof r === 'string' && r)) call(() => window.lsEventAdd('CRT', 'DCS', 'Operator (CRT): ' + P.n + ' ' + (P.t || '') + ' ' + p.l));
       setTimeout(tick, 150);
     };
