@@ -11,6 +11,7 @@ engine/compile-step.js
 engine/ranges-fx.js
 engine/plant.js
 engine/steam.js
+engine/boiler.js
 engine/unit.js
 engine/tcs.js
 engine/source.js
