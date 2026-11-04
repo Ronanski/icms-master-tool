@@ -1152,37 +1152,52 @@ function anSwValve(tag, pct) {
   AN_SRC.valve[tag] = Math.max(0, Math.min(100, +pct || 0));
   return true;
 }
-/* 3.2.0-beta.63 (MAKE-UP WATER HMI, PR-OPE-5002 section 7): the make-up water system of flow diagram K1AU3-PD-024 Rev D and the
-   expansion tank of PD-021. Demi water tanks T-0708A / B -> suction header -> MWP P-0709A / B / C (DITL-112) -> common header
-   (PT-MU0709) -> #1 condenser (LCV-MU1110 / MV-MU1001), deaerator and boiler initial fill, expansion tank T-1109 (XV-MU1109, DITL-78),
-   unit 2. The transmitters are local (STN105 / STN103) and feed the logic only as analog rows (DITL-112 LT-MU0708-A / B,
-   PT-MU0709, DPT-MU0709; DITL-76 / 77 / 78 LT-CW1109), so the plant model makes them; the world writes them into those rows
-   (plantsw.js) and the HMI shows the same number. Anchor = the HMI snapshots 28.png / 27.PNG (2 MWP running): demi tanks 13.8 /
-   13.7 m, header 9.0 ~ 9.1 kg/cm2, MWP 20.5 / 20.7 / 20.8 A, strainer DP 0.00 ~ 0.04 kg/cm2, expansion tank 0.80 m.
-     demi tanks      the snapshot level, constant (the water treatment refills them; not modelled);
-     header          no MWP: the static head of the tank water (0.1 kg/cm2 per m, ASSUMED); 1 / 2 / 3 MWP: 9.0 / 9.1 / 9.15 kg/cm2
-                     (ASSUMED: the pumps work near their shut-off head at the small make-up flow; SOP: > 6.0 kg/cm2);
-     strainer DP     0.03 kg/cm2 while its pump runs (ASSUMED clean strainer, inside the snapshot 0.00 ~ 0.04), 0 stopped;
-     current         the snapshot current while running, 0 stopped;
-     expansion tank  start 0.80 m (27.PNG); fills while XV-MU1109 is commanded open (DITL-78 row 4) and the header is above 6 kg/cm2
-                     (SOP: fill to NL 1.7 m) at 0.003 m/s (ASSUMED, 0.8 -> 1.7 m in 5 min, 10 m3/h through the 3" line); the
-                     closed loop loses no water (ASSUMED);
-     make-up flow    FT-MU1001 = the hotwell make-up of the cycle model (plant.js 1.8 T/H per % of LCV-MU1110) + the expansion tank
-                     filling, only while an MWP runs. */
+/* 3.2.1 (IRENE: PLANT MODEL, MAKE-UP WATER; user 2026-11-04 "tama connection, flow, at plant model, at dapat may communication sya sa
+   logic na ABC DITL"; replaces the fixed steps of 3.2.0-beta.63). Flow diagram K1AU3-PD-024 Rev D (+ expansion tank of PD-021 Rev D):
+   demi water tanks T-0708A / B -> suction header -> MWP P-0709A / B / C (DITL-112, machine instances #B / #C) -> common header
+   (PT-MU0709) -> #1 condenser hotwell (LCV-MU1110 ABC-031 / MV-MU1001 DITL-60), expansion tank T-1109 (XV-MU1109 DITL-78 / bypass
+   V-MU1033), each pump's recirculation line (SOP: V-MU0013 / 15 / 17 OPEN). Sources (docs/versions/v3.2.1/MU_CCW_PLANT_MODEL.md):
+     pump curve   KAO HONG KEW-65/200 performance curve KEW102066C (K1AU3-D1-0-032 p6): rated 80 m3/h (1.34 CMM) x 60 m x 3500 rpm,
+                  the head curve through the rated point (shut-off 65 m), MIN.FLOW 0.167 CMM = 10 m3/h; shaft power = the mean of the
+                  170 / 192 mm BHP curves (the rated impeller lies between them: shut-off head 65 m between 57.5 and 72.2 m);
+     motor        TECO AEHLWA-R 50 HP 2P 460 V (p8: FLC 58.2 A, LRC 775 % = 451 A, direct on line or Y / delta; p11 load characteristic:
+                  18.6 / 32.8 / 44.7 / 58.0 / 70.1 A at 26.4 / 51.7 / 76.6 / 101.5 / 126.6 % load);
+     header       PT-MU0709 = 0.1 kg/cm2 per m (water, sg 1.0, p6) x (tank level + z + pump head at the flow of each running pump);
+                  z = 11.3 m CALIBRATED on the HMI snapshot 28.png (2 MWP running at their recirculation flow, levels 13.8 / 13.7 m,
+                  PIMU0709 9.0 kg/cm2): 90 - 13.8 - 64.9 m (the heights of the tanks and of the transmitter are not in the repository);
+     flow         FT-MU1001 = the hotwell make-up of the cycle model (plant.js 1.8 T/H per % of LCV-MU1110) + the expansion tank filling;
+                  each running MWP also returns its recirculation 10 m3/h (p6 MIN.FLOW) to the tank;
+     strainer DP  0.03 kg/cm2 while its pump runs (28.png DPIMU0709A / B / C 0.029 / 0.042 / 0.001; no strainer curve: NO-SOURCE shape);
+     demi tanks   the snapshot level, constant (the water treatment refills them; not modelled); LS-MU0708-A / B (alarm list 0.2 m,
+                  DITL-112 rows 19 / 21) follow it (plantsw.js);
+     expansion tank (as 3.2.0-beta.63 / live test #50) fills while XV-MU1109 (DITL-78 row 4) or V-MU1033 is open and the header is above
+                  6 kg/cm2 (SOP 7) at 0.003 m/s (NO-SOURCE), primes the closed loop at the first opening of V-CW1001 (NO-SOURCE volume).
+   Logic: DITL-112 START / trip of each MWP drives the pumps here; PT-MU0709 (< 5.5 kg/cm2 = M.2506 L.L. = standby AUTO start),
+   LT-MU0708-A / B (< 0.2 m), DPT-MU0709-A / B / C (>= 1.0 kg/cm2) go back into DITL-112, LT-CW1109 into DITL-76 / 77 / 78. */
 const AN_MU = {
   mwp: ['DITL-112', 'DITL-112 #B', 'DITL-112 #C'],
   xv: 'DITL-78@3',
   mv: 'DITL-60',
   lv: [13.8, 13.7],
-  Ph: [9.0, 9.1, 9.15],
-  I0: [20.5, 20.7, 20.8],
+  cQ: [0, 30, 60, 80.4, 90, 105, 120, 135, 150],
+  cH: [65.0, 64.7, 63.2, 60.3, 58.8, 55.5, 52.1, 47.5, 43.5],
+  pQ: [0, 30, 60, 80.4, 90, 120, 150],
+  pHP: [18.9, 22.7, 27.0, 29.6, 31.6, 35.4, 37.0],
+  qRec: 10,
+  mL: [26.4, 51.7, 76.6, 101.5, 126.6],
+  mI: [18.6, 32.8, 44.7, 58.0, 70.1],
+  mkW: 37.3 /* 50 HP */,
+  Ist: 451,
+  ramp: 2 /* s, direct on line (NO-SOURCE time) */,
+  kP: 0.1,
+  z: 11.3,
   dp: 0.03,
   et0: 0.8,
   etMax: 2.0,
   etRate: 0.003,
   etQ: 10,
-  etPrime: 0.4 /* m of tank level that the priming of the closed loop takes (ASSUMED) */,
-  etPrimeT: 120 /* s (ASSUMED) */,
+  etPrime: 0.4 /* m of tank level that the priming of the closed loop takes (NO-SOURCE) */,
+  etPrimeT: 120 /* s (NO-SOURCE) */,
   etH: 1.7,
   etL: 0.8,
   etLL: 0.3,
@@ -1194,24 +1209,50 @@ function anMakeupStep(U, dt) {
     lag = (k, x, tau) => (U[k] = isFinite(U[k]) ? U[k] + ((x - U[k]) * Math.min(dt, tau)) / tau : x),
     run = K.mwp.map(a => anDitlRun(a) || 0),
     n = run.reduce((a, b) => a + b, 0);
+  const first = !U.muSpd;
+  U.muSpd = U.muSpd || [0, 0, 0];
+  run.forEach((r, i) => (U.muSpd[i] = r ? (first ? 1 : Math.min(1, U.muSpd[i] + dt / K.ramp)) : 0));
   U.muN = n;
   U.muLvA = K.lv[0];
   U.muLvB = K.lv[1];
-  lag('muP', n ? K.Ph[n - 1] : 0.1 * Math.max(K.lv[0], K.lv[1]), K.tauP);
-  K.I0.forEach((I, i) => lag('muI' + i, run[i] ? I : 0, K.tauI));
-  run.forEach((r, i) => lag('muDp' + i, r ? K.dp : 0, K.tauP));
   U.muXv = anDitlRun(K.xv) === 1 ? 1 : 0;
   const mv = anDitlPos(K.mv);
   U.muMv = mv == null ? null : mv;
   if (!isFinite(U.etLvl)) U.etLvl = K.et0;
   /* live test 2026-10-30 #23: or through the bypass V-MU1033 (manual, field operator; PR-OPE-5002 section 7 "XV-MU1109 ... or Bypass valve V-MU1033") */
   U.muByp = typeof AN_SRC !== 'undefined' && AN_SRC.field && AN_SRC.field.mu1033 ? 1 : 0;
+  /* the flow out of the header: the hotwell make-up and the expansion tank filling (the header pressure of the step before decides
+     whether the tank fills), plus the recirculation of each running pump */
   const fill = (U.muXv || U.muByp) && U.muP > 6 && U.etLvl < K.etMax;
   U.muFill = fill ? 1 : 0;
+  const hw = typeof AN_CYC !== 'undefined' ? Math.max(0, 1.8 * (AN_CYC.u.hw || 0)) : 0,
+    qOut = n ? hw + (fill ? K.etQ : 0) : 0,
+    sp = U.muSpd.filter(s => s > 0),
+    ss = sp.reduce((a, b) => a + b, 0),
+    lv = Math.max(K.lv[0], K.lv[1]);
+  /* the running pumps share the flow by speed (identical pumps in parallel), each with its recirculation */
+  let H = 0;
+  U.muQ = [0, 0, 0];
+  if (ss > 0) {
+    U.muSpd.forEach((s, i) => {
+      if (s > 0) U.muQ[i] = (qOut * s) / ss + K.qRec * s;
+    });
+    const j = U.muSpd.findIndex(s => s > 0),
+      s = U.muSpd[j];
+    H = s * s * swInterp(K.cQ, K.cH, U.muQ[j] / s);
+  }
+  lag('muP', K.kP * (lv + K.z + Math.max(0, H)), K.tauP);
+  run.forEach((r, i) => {
+    const s = U.muSpd[i],
+      P = s > 0 ? 0.7457 * swInterp(K.pQ, K.pHP, U.muQ[i] / s) * s * s * s : 0;
+    U['muKw' + i] = Math.round(P * 10) / 10;
+    lag('muI' + i, s <= 0 ? 0 : s < 1 ? K.Ist : Math.max(0, swInterp(K.mL, K.mI, (100 * P) / K.mkW)), K.tauI);
+    lag('muDp' + i, r ? K.dp : 0, K.tauP);
+  });
   if (fill) U.etLvl = Math.min(K.etMax, U.etLvl + K.etRate * dt);
   /* live test #50: PR-OPE-5002 7.20 "Open Expansion tank outlet valve to prime the close cooling line (V-CW1001)" and 7.22 "Ensure
      Expansion tank is at NL = 1.7m and make up if necessary": the first opening of V-CW1001 after a cold plant fills the closed loop
-     from the tank (K.etPrime m of tank level over K.etPrimeT s, ASSUMED: the loop volume is not in the repository); then the level stays */
+     from the tank (K.etPrime m of tank level over K.etPrimeT s, NO-SOURCE: the loop volume is not in the repository); then the level stays */
   if (!isFinite(U.cwPrime)) U.cwPrime = AN_SRC.field.cw1001 ? 1 : 0;
   if (AN_SRC.field.cw1001 && U.cwPrime < 1) {
     const d = Math.min(1 - U.cwPrime, dt / K.etPrimeT);
@@ -1222,64 +1263,148 @@ function anMakeupStep(U, dt) {
   /* live test #50: the alarms of LT-CW1109 (alarm list LT: H 1700 mm (DCS), L 800 mm (DCS); LS: LSLL-CW1109 300 mm = DITL-77 row 26
      M.1238 "EXPANSION TANK LEVEL < 0.3 M", the ACWP trip). UNUSUAL: the H alarm is the normal level NL 1.7 m of the SOP */
   U.etAlm = U.etLvl <= K.etLL ? 'LL' : U.etLvl <= K.etL ? 'L' : U.etLvl > K.etH ? 'H' : '';
-  const hw = typeof AN_CYC !== 'undefined' ? Math.max(0, 1.8 * (AN_CYC.u.hw || 0)) : 0;
-  lag('muF', n ? hw + (fill ? K.etQ : 0) : 0, K.tauP);
+  lag('muF', qOut, K.tauP);
 }
-/* 3.2.0-beta.69 (027 CLOSED COOLING WATER HMI, PR-OPE-5002 sections 7 ~ 8): the aux cooling water loop of flow diagram K1AU3-PD-021
-   Rev D. Return header CW-1-002 20" + expansion tank T-1109 (V-CW1001) -> suction CW-1-003 20" -> ACWP P-1108A / B (DITL-76 / 77:
-   strainer DPT-CW1108-A / B) -> common discharge CW-1-007 20" (PT / TT-CW1152) -> CCWHE H-1107A / B / C (seawater of the SWBP) ->
+/* 3.2.1 (IRENE: PLANT MODEL, CLOSED COOLING WATER; replaces the fixed steps of 3.2.0-beta.69). Flow diagram K1AU3-PD-021 Rev D: return
+   header CW-1-002 20" + expansion tank T-1109 (V-CW1001) -> suction CW-1-003 20" -> ACWP P-1108A / B (DITL-76 / 77; strainers
+   DPT-CW1108-A / B) -> common discharge CW-1-007 20" (PT / TT-CW1152) -> CCWHE H-1107A / B / C (seawater of the SWBP, unit.js AN_SW) ->
    supply CW-1-014 20" (PT / TT-CW1153) -> the users (turbine oil coolers TCV-CW1201, generator air coolers, BFP, bottom ash screw
-   conveyors PT / TT-CW1156, fans, APH, air compressors and dryers, sampling) -> return. PT-CW1152 and DPT-CW1108-A / B are analog rows
-   of DITL-76 / 77 (standby AUTO start < 3.5 kg/cm2, trip > 0.8 kg/cm2 5 s): the world writes them there (plantsw.js), so the logic
-   and the HMI read the same number. Anchor = the HMI snapshot 27.PNG (148 MW, ACWP-A running): PICW1152 6.4, PICW1153 5.2 kg/cm2,
-   TICW1152 40, TICW1153 38 C, ACWP-A 28.2 A, DPICW1108A 0.27 kg/cm2; TICW1156 37 C, PICW1156 5.3, TICW1060 36 ~ 38 C (other pages).
-     pressure     no ACWP: the static head of the expansion tank (1.0 kg/cm2 + its level, ASSUMED); 1 / 2 ACWP: 6.4 / 6.7 kg/cm2 at the
-                  pump discharge (6.4 = 27.PNG, 6.7 ASSUMED), 1.2 kg/cm2 lost in the CCWHE (27.PNG 6.4 -> 5.2); the bottom ash
-                  header PT-CW1156 = the supply header (ASSUMED, the same line);
-     strainer DP  0.27 kg/cm2 while its pump runs (27.PNG), 0 stopped;
-     current      28.2 A while running (27.PNG; SOP normal 30 A, alarm 33.7), 0 stopped;
-     temperature  the heat of the users q = 0.4 + 0.6 x load / 150 MW (ASSUMED: the compressors, BFP and coolers work at no load too);
-                  with an ACWP and an SWBP running the supply (TT-CW1153) goes to 28.5 C (seawater, 30.PNG) + 9.5 x q (38 C at full
-                  load, 27.PNG) and the return / pump discharge (TT-CW1152) is 2 x q above it (40 C); with an ACWP but no SWBP the
-                  CCWHE takes no heat away and the loop warms to 60 C (TE-CW1152 HH of the alarm list) in about 20 min; no ACWP:
-                  no flow, the water goes to the room temperature 30 C (ASSUMED); the bottom ash cooler outlets TT-CW1060 = the
-                  supply + 1 C while an ACWP runs (ASSUMED, the ash heat is not modelled; the snapshot reads 36 ~ 38 C at 37 C). */
+   coolers L-1060A ~ D PT / TT-CW1156 and TT-CW1060, fans, APH, air compressors and dryers, sampling) -> return. Sources
+   (docs/versions/v3.2.1/MU_CCW_PLANT_MODEL.md):
+     pump curve   PACO KP1415-1/2 "Pump Performance Datasheet" (K1AU3-D1-0-033 p8): rated 1500 m3/h x 50 m x 1750 rpm, impeller
+                  377.44 mm curve (shut-off 67.8 m), shaft power curve (250 kW rated), MCSF 932.4 m3/h, water 991 kg/m3;
+     motor        TECO AFJH-WR 300 kW 4P 6600 V (p10): FLC 32.1 A, eff 95.0 %, PF 86.0 %, soft start, LRC <= 240 A; current =
+                  shaft power / (1.732 x 6.6 kV x eff x PF);
+     line         ONE design point = HMI snapshot 27.PNG (148 MW, ACWP-A): PICW1152 6.4, PICW1153 5.2 kg/cm2, expansion tank 0.80 m, at
+                  the rated 1500 m3/h (= 2 CCWHE x 750 m3/h of D1-0-041; the ACWP current there, 26.8 A, is the snapshot's 28.2 A
+                  within 5 %): suction static = 6.4 - 4.955 = 1.445 kg/cm2 (tank level + its height, CALIBRATED: the height is not in
+                  the repository), CCWHE + its piping 1.2 kg/cm2 at 1500 m3/h (of it the CCWHE 0.571 = 0.056 MPa of D1-0-041), the
+                  users 3.755 kg/cm2 at 1500 m3/h; both as loss = k Q^2; two pumps in parallel share the flow;
+     strainer DP  0.27 kg/cm2 at 1500 m3/h (27.PNG), x (Q / 1500)^2;
+     CCWHE        Hisaka (D1-0-041) per unit: ACW 750 m3/h 50 -> 34 C, seawater 1000 m3/h 30 -> 42.12 C, 13,830 kW, counter flow,
+                  357.5 m2: clean UA = 13830 / LMTD 5.72 = 2418 kW/K. 2 of the 3 in service (NO-SOURCE: the design flow 1500 = 2 x
+                  750). The UA in service is CALIBRATED on 27.PNG (return 40 C, supply 38 C at 1500 m3/h = 3,452 kW, seawater
+                  28.5 C, 2 SWBP): 7.2 % of the clean UA (UNUSUAL: fouled plates, or the snapshot heat load is not the design one);
+                  effectiveness-NTU, counter flow, with the seawater of the running SWBP (U.swQbT) shared by the units in service;
+     heat load    3,480 kW x (0.4 + 0.6 x load / 150 MW) (27.PNG 3,452 kW at 148 MW; the split ASSUMED as 3.2.0-beta.69);
+     temperature  one node for the water of the loop, 180,000 kJ/K (about 43 m3, NO-SOURCE: the loop volume is not in the repository;
+                  10 min to settle at full load, ~17 min from 40 to 60 C without seawater); no ACWP: no flow, the water goes to the
+                  room temperature 30 C (NO-SOURCE) in 30 min; the bottom ash cooler outlets TT-CW1060 = the supply + 1 C while an
+                  ACWP runs (ASSUMED, the ash heat is not modelled; the snapshot reads 36 ~ 38 C at 37 C).
+   Logic: DITL-76 / 77 START / trip drive the pumps here; PT-CW1152 (< 3.5 kg/cm2 = standby AUTO start), DPT-CW1108-A / B (> 0.8 trip),
+   LT-CW1109 (< 0.3 m trip) go back into DITL-76 / 77; PT-CW1156 (DITL-41 < 3.5 / > 7 kg/cm2 annunciator), TT-CW1060 (DITL-21A) and the
+   flow switches FS-CW1060 (DITL-21B, low flow) follow this model (plantsw.js). */
 const AN_ACW = {
   acwp: ['DITL-76', 'DITL-77'],
-  Ph: [6.4, 6.7],
-  dPx: 1.2,
+  cQ: [0, 300, 600, 900, 1200, 1500, 1800, 2100, 2400],
+  cH: [67.8, 66.7, 64.3, 60.7, 55.8, 50.0, 42.5, 34.4, 25.6],
+  pP: [194, 210, 224, 238, 246, 250, 246, 235, 217],
+  rho: 0.0991 /* kg/cm2 per m (991 kg/m3) */,
+  kV: 6.6,
+  eff: 0.95,
+  pf: 0.86,
+  Ist: 240,
+  ramp: 10 /* s, soft starter (NO-SOURCE time, as the SWP) */,
+  dQ: 1500,
+  dP1: 6.4,
+  dP2: 5.2,
+  dLv: 0.8,
   dp: 0.27,
-  I0: 28.2,
+  hxN: 2,
+  heat: 3480,
+  UA: 174.8 /* kW/K per CCWHE in service, CALIBRATED (see above): NTU 0.2025 at 27.PNG with 2 SWBP (2,450 m3/h of the CW model) */,
+  M: 180000,
   Tsw: 28.5,
   Tamb: 30,
-  Thot: 60,
   tauP: 3,
   tauI: 2,
-  tauT: 600,
   tauA: 1800
 };
+/* the line constants from the design point (kg/cm2 per (m3/h)^2) */
+const acwCal = (() => {
+  let c = null;
+  return () => {
+    if (c) return c;
+    const K = AN_ACW,
+      Ps = K.dP1 - K.rho * swInterp(K.cQ, K.cH, K.dQ);
+    c = { z: Ps - K.rho * K.dLv, kA: (K.dP1 - K.dP2) / (K.dQ * K.dQ), kU: (K.dP2 - Ps) / (K.dQ * K.dQ) };
+    return c;
+  };
+})();
+/* the flow of the loop with the pumps at speeds s[] (0 = stopped): sum of the pump flows at the head the line needs */
+function acwSolve(s) {
+  const K = AN_ACW,
+    c = acwCal(),
+    k = c.kA + c.kU,
+    qOf = (si, dp) => {
+      if (!(si > 0) || K.rho * si * si * K.cH[0] <= dp) return 0;
+      return swBisect(q => K.rho * si * si * swInterp(K.cQ, K.cH, q / si) - dp, 0, 1.6 * K.cQ[K.cQ.length - 1] * si, 40);
+    };
+  if (!s.some(x => x > 0)) return { Q: 0, q: s.map(() => 0) };
+  const Q = swBisect(x => s.reduce((a, si) => a + qOf(si, k * x * x), 0) - x, 0, 2 * 1.6 * K.cQ[K.cQ.length - 1], 40);
+  return { Q, q: s.map(si => qOf(si, k * Q * Q)) };
+}
 function anAcwStep(U, dt) {
   const K = AN_ACW,
+    c = acwCal(),
     lag = (k, x, tau) => (U[k] = isFinite(U[k]) ? U[k] + ((x - U[k]) * Math.min(dt, tau)) / tau : x),
     run = K.acwp.map(a => anDitlRun(a) || 0),
     n = run.reduce((a, b) => a + b, 0),
-    lv = isFinite(U.etLvl) ? U.etLvl : 0.8,
-    stat = 1.0 + 0.1 * lv,
-    q = 0.4 + 0.6 * Math.max(0, Math.min(1, (isFinite(U.MW) ? U.MW : 0) / 150)),
-    cool = (U.swNb || 0) > 0;
+    lv = isFinite(U.etLvl) ? U.etLvl : K.dLv,
+    stat = c.z + K.rho * lv;
+  const first = !U.acSpd;
+  U.acSpd = U.acSpd || [0, 0];
+  run.forEach((r, i) => (U.acSpd[i] = r ? (first ? 1 : Math.min(1, U.acSpd[i] + dt / K.ramp)) : 0));
   U.acN = n;
-  U.acCool = n && cool ? 1 : 0;
-  lag('acP1', n ? K.Ph[n - 1] : stat, K.tauP);
-  lag('acP2', n ? K.Ph[n - 1] - K.dPx : stat, K.tauP);
+  const key = U.acSpd.map(x => x.toFixed(3)).join(',');
+  if (!U._acR || U._acK !== key) {
+    U._acR = acwSolve(U.acSpd);
+    U._acK = key;
+  }
+  const r = U._acR,
+    Q = r.Q;
+  U.acQ = Math.round(Q);
+  lag('acP1', stat + (c.kA + c.kU) * Q * Q, K.tauP);
+  lag('acP2', stat + c.kU * Q * Q, K.tauP);
   U.acP6 = U.acP2;
-  run.forEach((r, i) => {
-    lag('acDp' + i, r ? K.dp : 0, K.tauP);
-    lag('acI' + i, r ? K.I0 : 0, K.tauI);
+  r.q.forEach((q, i) => {
+    const s = U.acSpd[i],
+      P = s > 0 ? swInterp(K.cQ, K.pP, q / s) * s * s * s : 0;
+    U['acKw' + i] = Math.round(P);
+    lag('acDp' + i, s > 0 ? K.dp * Math.pow(q / K.dQ, 2) : 0, K.tauP);
+    lag('acI' + i, s <= 0 ? 0 : s < 1 ? K.Ist : (1000 * P) / (1732.05 * K.kV * K.eff * K.pf), K.tauI);
   });
-  const ts = n ? (cool ? K.Tsw + 9.5 * q : K.Thot) : K.Tamb;
-  if (!isFinite(U.acT2)) U.acT2 = ts;
-  lag('acT2', ts, n ? K.tauT : K.tauA);
-  lag('acT1', n ? Math.min(K.Thot + 2, U.acT2 + 2 * q) : K.Tamb, n ? 60 : K.tauA);
+  /* heat: the users, the CCWHE (effectiveness-NTU, counter flow) with the seawater of the running SWBP */
+  const ld = Math.max(0, Math.min(1, (isFinite(U.MW) ? U.MW : 0) / 150)),
+    Qload = K.heat * (0.4 + 0.6 * ld),
+    Ch = (Q * 991 * 4.18) / 3600 /* kW/K */,
+    Qsw = Math.max(0, U.swQbT || 0),
+    Cc = (Qsw * 1025 * 3.99) / 3600;
+  let hx = 0;
+  if (Ch > 0 && Cc > 0) {
+    const ch = Ch / K.hxN,
+      cc = Cc / K.hxN,
+      cmin = Math.min(ch, cc),
+      cr = cmin / Math.max(ch, cc),
+      ntu = K.UA / cmin,
+      e = cr < 0.999 ? (1 - Math.exp(-ntu * (1 - cr))) / (1 - cr * Math.exp(-ntu * (1 - cr))) : ntu / (1 + ntu);
+    hx = e * cmin * K.hxN; /* kW per K of (return - seawater) */
+  }
+  U.acCool = n && hx > 0 ? 1 : 0;
+  if (Ch > 0) {
+    /* the return (pump discharge, TT-CW1152) is the node; the first step after a starting state starts at its steady value */
+    if (first || !isFinite(U.acT1)) U.acT1 = hx > 0 ? K.Tsw + Qload / hx : Math.min(60, K.Tamb + 10);
+    U.acT1 += ((Qload - hx * (U.acT1 - K.Tsw)) * dt) / K.M;
+    U.acT1 = Math.max(K.Tsw, Math.min(99, U.acT1));
+    U.acT2 = U.acT1 - (hx * (U.acT1 - K.Tsw)) / Ch;
+    U.acHx = Math.round(hx * (U.acT1 - K.Tsw));
+  } else {
+    if (!isFinite(U.acT1)) U.acT1 = K.Tamb;
+    if (!isFinite(U.acT2)) U.acT2 = K.Tamb;
+    lag('acT1', K.Tamb, K.tauA);
+    lag('acT2', K.Tamb, K.tauA);
+    U.acHx = 0;
+  }
   U.acT6 = U.acT2;
   U.acTb = n ? U.acT2 + 1 : U.acT2;
 }

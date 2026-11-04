@@ -45,6 +45,14 @@
     for (const e of ['U', 'V', 'W']) L.push(['TT-SW1501-' + p + e, mtOf('TT-SW1501-' + p + e), 155, 'hi', 0, 2]);
     for (const e of ['1', '2']) L.push(['VT-SW1501-' + p + e, mtOf('VT-SW1501-' + p + e), p === 'B' ? 16.8 : 11.9, 'hi', 0, 0.5]);
   }
+  /* 3.2.1 (IRENE: MAKE-UP / CLOSED COOLING plant model, unit.js AN_MU / AN_ACW). DITL-112 rows 19 / 21 LS-MU0708-A / B "DEMI. WATER
+     TANK LEVEL (A) / (B) LOW" = the demi tank level of the plant model below 0.2 m (alarm list LS-MU0708-A / B 0.2 m; dead band 0.05 m
+     NO-SOURCE). DITL-21B rows 27 / 28 (machine instances #B ~ #D for coolers B ~ D) FS-CW1060-x1 / x2 "BOTTOM ASH SCREW COOLER ...
+     COOLING WATER FLOW LOW" = the flow of the closed cooling loop below 150 m3/h (10 % of the 1,500 m3/h design: NO-SOURCE, the
+     switches are of the screw cooler package and have no set point in the alarm list; in practice: no ACWP running) */
+  const uOf = k => () => (window.AN && AN.unit && isFinite(AN.unit[k]) ? AN.unit[k] : NaN);
+  L.push(['LS-MU0708-A', uOf('muLvA'), 0.2, 'lo', 0, 0.05], ['LS-MU0708-B', uOf('muLvB'), 0.2, 'lo', 0, 0.05]);
+  for (const p of ['A', 'B', 'C', 'D']) for (const e of ['1', '2']) L.push(['FS-CW1060-' + p + e, uOf('acQ'), 150, 'lo', 0, 50]);
   /* Mina M3 (beta.88 / beta.89: PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"). Each BFWP has two auxiliary lube oil pumps, DCS
      motors of DITL-22 (IO list STN103: machine A = LOP A of BFWP-A O.0126 / I.0050, B = LOP B of BFWP-A O.0446 / I.0370, C = LOP A of
      BFWP-B O.0127 / I.0053, D = LOP B of BFWP-B O.0447 / I.0373; world.js isLop4). The lube oil HEADER pressure is held by the pressure control valve at 2.0 kg/cm2(g) while an oil pump runs (KSB
@@ -138,7 +146,12 @@
     /* 3.2.0-beta.69 (027 CLOSED COOLING WATER HMI): DITL-76 / 77 row 25 strainer DP (trip > 0.8 kg/cm2 5 s), DITL-76 row 28 the common
        discharge pressure (< 3.5 kg/cm2 = standby AUTO start); the plant model's (unit.js AN_ACW) */
     [/DPT-CW1108-([AB])\b/, t => 'acDp' + 'AB'.indexOf(/DPT-CW1108-([AB])/.exec(t)[1])],
-    [/(?:^|[^A-Z])PT-CW1152\b/, 'acP1']
+    [/(?:^|[^A-Z])PT-CW1152\b/, 'acP1'],
+    /* 3.2.1 (IRENE): DITL-41 row 14 PT-CW1156 "COOLING WATER OF BOTTOM ASH PRESSURE" (< 3.5 / > 7 kg/cm2 = M.250F / M.250E, the
+       annunciator COOLING WATER PRESSURE ABNORMAL) and DITL-21A rows 13 / 14 TT-CW1060-A2 / A1 (machine instances #B ~ #D) = the
+       supply header and the ash cooler outlets of the plant model (unit.js AN_ACW acP6 / acTb) */
+    [/(?:^|[^A-Z])PT-CW1156\b/, 'acP6'],
+    [/(?:^|[^A-Z])TT-CW1060-[A-D][12]\b/, 'acTb']
   ];
   /* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI): the tank and unit header pressure transmitters of the compressed air systems are analog
      rows of the logic (DITL-113 / 114 rows 1 ~ 3: auto start of the standby compressor < 5 kg/cm2; DITL-03G rows 9 ~ 11: MFT on
