@@ -175,6 +175,7 @@ function anBoilerStart(U) {
   anFanStart(U);
   anLmStart(U);
   anSdStart(U);
+  anBaStart(U);
 }
 /* called by anUnitCold: the pumps are the DITL's (stopped in a cold plant); the tank keeps its level */
 function anBoilerCold(U) {
@@ -185,6 +186,7 @@ function anBoilerCold(U) {
   for (const k in AN_DO.fv0) if (AN_SRC.valve) delete AN_SRC.valve[k];
   anLmStart(U); /* limestone: at rest, the vessels keep the start content (NO-SOURCE) */
   anSdStart(U);
+  anBaStart(U);
 }
 /* one step of the diesel oil system */
 function anDieselOilStep(U, dt) {
@@ -606,10 +608,107 @@ function sdPub(U) {
   U.sdSilo = D.silo;
   U.sdQ = D.q || 0;
 }
+/* ===== BOTTOM ASH TRANSMITTER AND CONVEYORS (016 BOTTOM ASH REMOVAL SYSTEM, PICT 16 / 17; docs/versions/v3.2.1/BOTTOM_ASH_PLANT_MODEL.md)
+   The field devices of the bottom ash handling system (J.A.T. Engineering 130225, O&M L6 "Bottom ash" on the PC) under the drawings
+   DITL-BA01 ~ BA74 (130225C-BA-xx, station 103, IO list "Station 103" B/A Feeding / B/A Handling).
+   Ash transmitter (HD600 vessel): inlet knife gate valve SV-BH1759 (DITL-BA53 OUT7), venting valve SV-BH1753 (OUT1), outlet valve
+     SV-BH1752 (OUT8), pressing valve SVO / SVC-BH1750 (OUT9 / OUT10, double solenoid: it stays where it is between the commands) ->
+     ZSO / ZSC I.0482 ~ I.0489 (DITL-BA03, BA11, BA38, BA39); vessel pressure switches PSH-BH1750 I.048A (1.8 kg/cm2) and PSL-BH1750
+     I.048B (0.5 kg/cm2, 1 = low: DITL-BA25 TR358), air tank PS-BH1750 I.048D (1 = low < 7 kg/cm2: DITL-BA03 NOT, BA25 TR359), vessel
+     high level LS-BH1750 I.048F. O&M L6 p.7 ~ 10: primary conditions "all valves closed, air source > 7 Kg/cm2, transmitter < 0.5
+     Kg/cm2"; pressing at the regulator 3.5 Kg/cm2-G, outlet opens at 1.8, cleaning below 0.5.
+   Mechanical conveyors (DITL-BA59 / BA60 rows by tag, no address): remote selectors MIL-x at REMOTE (16.PNG "R"), local emergency stop
+     contacts ES-L-1090 ~ 1092 closed (IO list "not emergency stop", N.C. from local; DITL-BA62 NOT), speed switches SS-BH1750 ~ 1752 made
+     while the machine turns (IO list "1 : speed OK"), block switches not made.
+   NO-SOURCE: valve stroke 2 s, charging of the vessel 30 s, conveying of one batch 60 s, vessel pressure while conveying 1.5 kg/cm2,
+     the buffer tank (not modelled: the charge assumes ash in the buffer tank). The air tank reads the plant air header of the model. */
+const AN_BA = {
+  stroke: 2,
+  tFill: 30,
+  tConv: 60,
+  pReg: 3.5,
+  pHi: 1.8,
+  pLo: 0.5,
+  pConv: 1.5,
+  airSw: 7,
+  lsh: 100
+};
+function anBaStart(U) {
+  U.ba = { v: {}, sw: {}, lv: 0, p: 0, press: 0 };
+  /* at rest (O&M L6 primary conditions): every valve closed, the vessel empty and at atmosphere; the field switches are known before
+     the first step, so the start of the DITL (ditl150.js) reads them */
+  const W = U.ba.sw;
+  for (const k of ['inl', 'vent', 'out', 'prs']) {
+    W[k + 'O'] = 0;
+    W[k + 'C'] = 1;
+  }
+  W.psh = 0;
+  W.psl = 1;
+  W.air = isFinite(U.paPU) && U.paPU >= AN_BA.airSw ? 0 : 1;
+  W.lsh = 0;
+  W.rem = 1;
+  W.es = 1;
+  baPub(U);
+}
+function anBaStep(U, dt) {
+  const B = U.ba;
+  if (!B) return;
+  const K = AN_BA,
+    o = r => fnOut(')DITL-BA53', r) === 1,
+    vv = (k, cmd) => lmValve(B, k, cmd, dt, K.stroke, 0),
+    pa = isFinite(U.paPU) ? U.paPU : 0; /* kg/cm2 */
+  /* the pressing valve has two solenoids: open on SVO, close on SVC, it stays between them */
+  if (o(8)) B.press = 1;
+  if (o(9)) B.press = 0;
+  const inl = vv('inl', o(6)),
+    vent = vv('vent', o(0)),
+    out = vv('out', o(7)),
+    prs = vv('prs', B.press);
+  /* charging: ash falls from the buffer tank while the inlet gate is open (the vent lets the air out) */
+  B.lv = Math.min(100, B.lv + (inl.x * 100 * dt) / K.tFill);
+  /* conveying: outlet open with pressing air, the batch leaves in tConv */
+  const conv = out.x > 0 && prs.x > 0 && B.p > K.pLo;
+  if (conv) B.lv = Math.max(0, B.lv - (100 * dt) / K.tConv);
+  const air = prs.x > 0 ? Math.min(K.pReg, pa) : 0,
+    tgt =
+      vent.x > 0 || inl.x > 0
+        ? 0
+        : out.x > 0
+          ? prs.x > 0 && B.lv > 0
+            ? Math.min(K.pConv, air)
+            : 0
+          : prs.x > 0
+            ? air
+            : B.p;
+  B.p += (tgt - B.p) * Math.min(1, dt / (vent.x > 0 || inl.x > 0 ? 1 : out.x > 0 ? 3 : 5));
+  const W = B.sw;
+  for (const [k, v] of [
+    ['inl', inl],
+    ['vent', vent],
+    ['out', out],
+    ['prs', prs]
+  ]) {
+    W[k + 'O'] = v.x >= 1 ? 1 : 0;
+    W[k + 'C'] = v.x <= 0 ? 1 : 0;
+  }
+  W.psh = B.p >= K.pHi ? 1 : 0;
+  W.psl = B.p < K.pLo ? 1 : 0;
+  W.air = pa < K.airSw ? 1 : 0;
+  W.lsh = B.lv >= K.lsh ? 1 : 0;
+  W.rem = 1;
+  W.es = 1;
+  baPub(U);
+}
+function baPub(U) {
+  const B = U.ba;
+  U.baP = Math.max(0, B.p);
+  U.baLv = B.lv;
+}
 /* the boiler-side systems, once per step of the unit model (after the air compressors: the atomizing air is plant air) */
 function anBoilerStep(U, dt) {
   anDieselOilStep(U, dt);
   anFanStep(U, dt);
   anLmStep(U, dt);
   anSdStep(U, dt);
+  anBaStep(U, dt);
 }
