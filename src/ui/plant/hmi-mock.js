@@ -512,6 +512,7 @@
             d: m.mov,
             info: () => movInfo(m.mov, m.tg || m.n),
             press: row => D().dpress(m.mov, row),
+            block: row => (D().pbBlock ? D().pbBlock(m.mov, row) : null),
             /* live test 2026-11-05: the field REMOTE / LOCAL selector = the REMOTE input rows (DI) of this valve on its drawing */
             sel: (() => {
               const s = call(() => D().dOf(m.mov), null),
@@ -521,7 +522,7 @@
               for (let r = 0; s && r < 64; r++) {
                 const I = call(() => DUI.rowInfo(s, r), null),
                   t = (I && I.svc) || '';
-                if (/\bREMOTE\b/.test(t) && !/\b(LOCAL|AUTO|NOT)\b|P\.?B\b/.test(t) && own(t) && /^I\./.test((I && I.tag) || '')) rows.push(r);
+                if (/\bREMOTE\b/.test(t) && !/\b(LOCAL|AUTO|NOT)\b|P\.?B\b/.test(t) && own(t) && !/^M\./.test((I && I.tag) || '')) rows.push(r); /* a field contact: I. address, or none written (DITL-38 copies) */
               }
               return rows.length ? on => rows.forEach(r => fRow(m.mov, r, on, tg + ' REMOTE SELECTED (field selector)')) : null;
             })()
