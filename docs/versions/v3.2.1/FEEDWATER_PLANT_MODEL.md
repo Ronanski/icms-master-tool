@@ -45,3 +45,29 @@ Dati na: feedwater flow at drum level (`plant.js`, FICFW1007 at LICBR1001), deae
 - HP heaters (TT-FW1105 / 1106, drains), economizer inlet PT-FW1160.
 - Temperatura at vibration ng BFWP motor at pump (DITL-23B rows 10 ~ 24): default pa.
 - Hindi pa live-tested sa PC ng user.
+
+## Dagdag (3.2.1-beta.16): ang mga value ng page 06 FEEDWATER
+
+Hiling ng coordinator (JISOO page 06, beta.15). Galing na sa model (`unit.js` `anFwTagStep`, `AN.unit.tt`; page map sa `tools/hmi-mock/p06-head.js`). Test: `tests/regress/fw_page_values.js` ALL PASS (150 MW, main steam 471 T/H).
+
+- **PT-TS1013 / PT-TS1017** (extraction No.2 / No.3) = snapshot × main steam / 472.7 (absolute, turbine stage). Source 4.PNG 14.07 / 5.30. Model 14.02 / 5.28.
+- **TT-TS1011** (cold reheat papuntang No.2 HPH) = cold reheat temperature ng model. 4.PNG 371, model 368.7.
+- **PT-FW1115-A / B** (BFWP suction) = suction ng `plantsw.js` sucP − strainer DP. 03.png 6.7 / 7.1, model 5.9 / 6.1 (ang sucP ay mas mababa ng ~0.8; hindi binago).
+- **TT-FW1011** (BFWP discharge) = saturation ng PT-CD1104. 03.png 162, model 160.
+- **PT-FW1160** (economizer inlet) = drum + 3.5 × (feedwater / 499.1)². Source 03.png 137.7 − 134.2. Model 137.1.
+- **ZT-FW1110-1 / -2, ZT-FW1120-1 / -2** = F(X) ng controller MV (ABC-011 LN47 / LN46, ABC-012 LN49 / LN48), hawak kapag walang hangin (airlock). Model 45.3 / 100, 15.5 / 100 (03.png 45.5 / 100.7, 14.9 / 99.7).
+- **FT-FW1109 / FT-FW1119** (SH spray No.1 / No.2) = Cv ng valve (vendor sheets K1AU3-E2-0-123 items 19 / 20 / 23 / 24, mga punto ng travel) × block valve × √(PT-FW1011 − presyon sa spray point). Spray point = drum − 6.4 / 9.3 × (main steam / 474.1)² (03.png PIBR1130 127.8, PIBR1150 124.9). Model 37.3 / 28.8 (03.png 37.5 / 28.2).
+  - **UNUSUAL:** ang No.2 spray ayon sa sheet (equal % sa 14.9 % travel) ay 9.6 T/H lang, pero 28.2 sa 03.png. Ang snapshot ang tunay na operating point (CLAUDE.md 4), kaya × 2.94 ang No.2. Hindi alam ang sanhi (posibleng characterization ng positioner).
+- **FT-FW1149** (RH spray) = 14.8 × TCV-FW1150 / 66.0 × XV-FW1151 × √(dp / 130.5). Source 5.png. NO-SOURCE: linear valve at tap sa BFWP discharge (walang sheet ang TCV-FW1150). Model 19.5 sa 150 MW dahil 79.4 % ang MV sa Start at 150 MW (ibang snapshot).
+- **FT-FW1059** (HP bypass spray) = 40 T/H × TCV-FW1060 × XV-FW1061 × √(dp / 130.5). NO-SOURCE: walang sheet, ang capacity ay ang range sa IO list. Ang 4.PNG 1.8 T/H sa 0.1 % at sarado ang block valve ay hindi ginaya (offset o tagas).
+- **XV-TS1700 / 1710:** wala sa anumang DCS sheet: NO-SOURCE, hindi ginawa.
+- Walang BFWP head (sarado ang V-FW1001 / 1002): 0 ang lahat ng spray.
+
+## MV-TS1003 sa AUTO: hindi gumagalaw sa CLOSE + EXECUTE (tama, ayon sa drawing)
+
+Binasa ang netlist ng DITL-96 (EXTRACTION STM NO.3 SHUT-OFF MOV MV-TS1003). Ang CLOSE command (MOS-TS1003, O.0139) ay:
+
+- OR ng (a) **row 13 CLOSE PB (M.0301) AT row 5 MANUAL MODE SELECTED (NOT M.0303)**, at (b) row 20 AUTO MODE SELECTED AT (row 19 DEAERATOR LEVEL HI-HI M.0161 O row 18 TURBINE TRIP I.0400 O row 17 HOUSE OPERATION M.3101);
+- AT row 11 REMOTE (I.001D), at hindi pa FULLY CLOSED (row 10).
+
+Kaya sa AUTO, hindi tinatanggap ang CLOSE P.B. ng operator. Ang logic lang ang nagsasara (DA level H.H., turbine trip, house operation). Para isara ng kamay: pindutin muna ang MAN. Finding (b): tama, may ebidensya (DITL-96 rows 5, 13, 17 ~ 20). Ganoon din ang DITL-94 (rows 5, 13, 19, 20).
