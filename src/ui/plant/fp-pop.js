@@ -760,6 +760,16 @@
       b.title = P.d + ' row ' + r + ' · ' + ad;
       return b;
     });
+    /* live test 2026-11-05 (air dryers, DITL-45): P.sel = the REMOTE input row of the local panel (I.0099 / I.0085 ...): the field operator
+       turns it (LS_DOCK.fieldRow, every row of the same address); the DCS push buttons need REMOTE */
+    let bRem = null,
+      bLoc = null;
+    if (P.sel != null) {
+      bRem = E('button', 'fpo-cmd', 'REMOTE');
+      bLoc = E('button', 'fpo-cmd', 'LOCAL');
+      bRem.type = bLoc.type = 'button';
+      F.bd.append(row('SELECTOR', bRem, bLoc, E('span', 'fpo-fld', 'FIELD')));
+    }
     F.bd.append(row('DCS', ...B));
     const why = E('div', 'fpo-why');
     F.bd.append(why);
@@ -800,6 +810,24 @@
     link('Logic ' + P.d, () => (close(), logicGo(dk, P.d)));
     link('Events', () => call(() => document.getElementById('evbtn').click()));
     F.bd.append(ln);
+    const selSet = on => {
+      dk.fieldRow(P.d, P.sel, on ? 1 : 0, P.n + ' selector to ' + (on ? 'REMOTE' : 'LOCAL'));
+      let n = 0;
+      const chk = () => {
+        const s2 = call(() => dk.dOf(P.d), null);
+        if (!s2 || !s2.sig) return;
+        if (!!s2.sig[P.sel + ':S'] !== !!on) {
+          s2.sig[P.sel + ':S'] = !!on;
+          if (window.WORLD && WORLD.live) WORLD.busy = true;
+        }
+        if (++n < 6) setTimeout(chk, 400);
+      };
+      setTimeout(chk, 400);
+    };
+    if (bRem) {
+      bRem.onclick = () => !bRem.disabled && ask('FIELD: ' + P.n + ' selector to REMOTE?', () => selSet(true));
+      bLoc.onclick = () => !bLoc.disabled && ask('FIELD: ' + P.n + ' selector to LOCAL?', () => selSet(false));
+    }
     B.forEach((b, i) => {
       const [l, r, ad] = P.pbs[i];
       b.onclick = () =>
@@ -816,8 +844,15 @@
       F.val.textContent = on ? P.st.on : P.st.off || 'STOPPED';
       lOn.className = 'fpo-lp' + (on ? ' run' : '');
       lOff.className = 'fpo-lp' + (!on ? ' stop' : '');
+      const rem = P.sel == null ? true : call(() => window.DUI.rowVal(s, P.sel), null) === 1;
+      if (bRem) {
+        bRem.disabled = rem || !run;
+        bLoc.disabled = !rem || !run;
+        bRem.classList.toggle('on', rem);
+        bLoc.classList.toggle('on', !rem);
+      }
       B[0].disabled = on || !run || !ok;
-      if (B[1]) B[1].disabled = !on || !run;
+      if (B[1]) B[1].disabled = !on || !run || !rem;
       B[0].classList.toggle('lit-run', on);
       if (B[1]) B[1].classList.toggle('lit-stop', !on);
       why.textContent = !run ? 'Simulation PAUSED: press ▶ RUN first (nothing moves while paused).' : !ok && !on ? P.pbs[0][0] + ' blocked: no ' + (P.permWhy || 'permissive') + '.' : '';
@@ -850,11 +885,14 @@
     const F = frame(P.n, (P.t || '') + ' · ' + (P.d || 'field'));
     const me = box;
     const lR = lampEl('RUN'),
-      lS = lampEl('STOP');
-    F.bd.append(row('STATUS', lR, lS));
+      lS = lampEl('STOP'),
+      lT = lampEl('TRIP');
+    F.bd.append(P.trip ? row('STATUS', lR, lS, lT) : row('STATUS', lR, lS));
     F.bd.append(E('div', 'fpo-why', P.why || 'Field equipment: no DCS command. Started at the local panel.'));
     let bSt = null,
       bSp = null,
+      bTr = null,
+      bRs = null,
       ex = null;
     if (P.fld) {
       bSt = E('button', 'fpo-cmd', 'START');
@@ -882,6 +920,17 @@
       const go = on => (P.fld(on), call(() => window.lsEventAdd('FIELD', 'FIELD', 'Field operator: ' + (on ? 'START ' : 'STOP ') + P.n + ' (local panel)')));
       bSt.onclick = () => !bSt.disabled && ask('FIELD: START ' + P.n + ' at the local panel?', () => go(true));
       bSp.onclick = () => !bSp.disabled && ask('FIELD: STOP ' + P.n + ' at the local panel?', () => go(false));
+      /* live test 2026-11-05 (air compressors of INSTRUMENT AND PLANT AIR: started at the local panel, the DCS reads RUNNING / TRIP):
+         P.trip(on) = the TRIP contact of the local panel (a protection trip of the test tool, RESET = back to 0) */
+      if (P.trip) {
+        bTr = E('button', 'fpo-cmd', 'TRIP');
+        bRs = E('button', 'fpo-cmd', 'RESET');
+        bTr.type = bRs.type = 'button';
+        F.bd.insertBefore(row('RELAY', bTr, bRs), ex);
+        const tr = on => (P.trip(on), call(() => window.lsEventAdd('FIELD', 'FIELD', 'Field operator: ' + (on ? 'TRIP ' : 'RESET the trip of ') + P.n + ' (local panel)')));
+        bTr.onclick = () => !bTr.disabled && ask('FIELD: TRIP ' + P.n + ' at its protection relay?', () => tr(true));
+        bRs.onclick = () => !bRs.disabled && ask('FIELD: RESET the trip of ' + P.n + '?', () => tr(false));
+      }
     }
     const ln = E('div', 'fpo-ln');
     if (P.io) {
@@ -899,13 +948,18 @@
       if (!me.isConnected) return closeEl(me);
       const st = call(P.st, null),
         run = isRun();
-      F.lamp.className = 'fpo-lamp ' + (st === 'RUN' ? 'run' : st === 'STOP' ? 'stop' : '');
-      F.val.textContent = st === 'RUN' ? 'RUNNING' : st === 'STOP' ? 'STOPPED' : '-----';
+      F.lamp.className = 'fpo-lamp ' + (st === 'RUN' ? 'run' : st === 'STOP' ? 'stop' : st === 'TRIP' ? 'trip' : '');
+      F.val.textContent = st === 'RUN' ? 'RUNNING' : st === 'STOP' ? 'STOPPED' : st === 'TRIP' ? 'TRIP' : '-----';
       lR.className = 'fpo-lp' + (st === 'RUN' ? ' run' : '');
       lS.className = 'fpo-lp' + (st === 'STOP' ? ' stop' : '');
+      lT.className = 'fpo-lp' + (st === 'TRIP' ? ' trip' : '');
       if (bSt) {
-        bSt.disabled = st === 'RUN' || !run;
+        bSt.disabled = st === 'RUN' || st === 'TRIP' || !run;
         bSp.disabled = st !== 'RUN' || !run;
+        if (bTr) {
+          bTr.disabled = st !== 'RUN' || !run;
+          bRs.disabled = st !== 'TRIP' || !run;
+        }
         bSt.classList.toggle('lit-run', st === 'RUN');
         bSp.classList.toggle('lit-stop', st === 'STOP');
       }
@@ -1137,7 +1191,8 @@
       return [v, b];
     });
     /* two buttons per row (the width of the faceplate) */
-    F.bd.append(row('LOCAL', B[0][1], B[1][1]));
+    /* live test 2026-11-05: OPEN under the OPEN lamp, CLOSE under CLOSED (as XV-MU1109, V-MU1033, V-CW1001); was CLOSE · OPEN */
+    F.bd.append(row('LOCAL', B[1][1], B[0][1]));
     F.bd.append(row('THROTTLE', B[2][1], B[3][1]));
     F.bd.append(row('', B[4][1], B[5][1]));
     F.bd.append(row('', B[6][1], B[7][1]));
