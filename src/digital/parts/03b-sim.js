@@ -775,7 +775,15 @@ function mvStep(s, v, dt) {
         r.init = 1;
         r.pos = wantOpen ? 100 : 0;
       }
-      r.run = wantOpen ? (r.pos < 100 ? 1 : 0) : r.pos > 0 ? -1 : 0;
+      /* 3.2.1: a pneumatic on / off valve of the control valve package goes to its spring position as the instrument air goes
+         (unit.js AN_AV, anAvSv); the others follow the coil */
+      const av = typeof window !== 'undefined' && window.AN && window.AN.avSv,
+        tg = av ? av(b.tag, wantOpen, r.pos) : null;
+      r.tgt = tg == null ? null : tg;
+      if (tg == null || tg >= 100 || tg <= 0) {
+        const w = tg == null ? wantOpen : tg >= 100;
+        r.run = w ? (r.pos < 100 ? 1 : 0) : r.pos > 0 ? -1 : 0;
+      } else r.run = Math.abs(tg - r.pos) < 0.5 ? 0 : tg > r.pos ? 1 : -1;
     } else if (trip) r.run = 0;
     else if (rem) {
       if (o && c) r.run = 0;
@@ -783,7 +791,13 @@ function mvStep(s, v, dt) {
       else if (c && r.pos > 0) r.run = -1;
     }
     if (r.run) TMBUSY = true;
+    const p0 = r.pos;
     r.pos = Math.max(0, Math.min(100, r.pos + (r.run * dt * 100) / mvTr(s, j)));
+    /* an air valve that stops part way (its actuator pressure below full travel) */
+    if (b.sv && r.tgt != null && r.tgt > 0 && r.tgt < 100 && (p0 - r.tgt) * (r.pos - r.tgt) <= 0) {
+      r.pos = r.tgt;
+      r.run = 0;
+    }
     if ((r.run > 0 && r.pos >= 100) || (r.run < 0 && r.pos <= 0)) r.run = 0;
     const tq0 = r.tq;
     r.tq =

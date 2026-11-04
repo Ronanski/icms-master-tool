@@ -133,11 +133,15 @@ function doOut(sheet, tag) {
     S = sh && sh.S;
   if (!S) return null;
   const c = AN.hmiCtrls ? (AN.hmiCtrls(S) || []).find(q => q.tag === tag) : null;
-  if (c && c.out != null) return { S, n: c.out };
+  if (c && c.out != null) return { S, n: c.out, t: tag };
   const b = S.blk.find(z => z.k === 'MAN' && (z.tag === tag || (z.txt || []).includes(tag)));
-  return b && b.o && b.o[0] != null && b.o[0] >= 0 ? { S, n: b.o[0] } : null;
+  return b && b.o && b.o[0] != null && b.o[0] >= 0 ? { S, n: b.o[0], t: tag } : null;
 }
-const doX = (o, d) => (o && isFinite(o.S.rt.v[o.n]) ? Math.max(0, Math.min(100, +o.S.rt.v[o.n])) / 100 : d);
+/* 3.2.1: a pneumatic valve with an airlock stays in place below 3.5 kg/cm2 of instrument air (unit.js AN_AV) */
+const doX = (o, d) =>
+  o && isFinite(o.S.rt.v[o.n])
+    ? Math.max(0, Math.min(100, typeof anAv === 'function' ? anAv(o.t, +o.S.rt.v[o.n]) : +o.S.rt.v[o.n])) / 100
+    : d;
 /* called by anUnitStart after U.own is made: the transmitters this model writes */
 function anBoilerStart(U) {
   const D = (U.do = { ai: {}, ctl: {} });

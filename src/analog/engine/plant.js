@@ -373,7 +373,7 @@ function anProcStep(S, dt) {
       continue;
     }
     /* the command of controller g of sheet GS (the owner sheet, or another sheet for a measurement shared across sheets) */
-    const uOfS = (GS, g) => {
+    const uOfS0 = (GS, g) => {
         const t = GS.rt.st[g.id] || {},
           v = GS.rt.v,
           S = GS;
@@ -415,6 +415,9 @@ function anProcStep(S, dt) {
         }
         return t.out == null ? 0 : t.out;
       },
+      /* 3.2.1: the opening that reaches the process: a pneumatic valve with an airlock stays in place below 3.5 kg/cm2 of
+         instrument air (unit.js AN_AV) */
+      uOfS = (GS, g) => (typeof anAv === 'function' ? anAv((g.txt || [])[1], uOfS0(GS, g)) : uOfS0(GS, g)),
       uOf = g => uOfS(S, g);
     let u = (() => {
       /* two controllers on the same PV (valves in parallel, e.g. A and B side): the PV answers the average of their open commands (v1.20.58) */ const sh =

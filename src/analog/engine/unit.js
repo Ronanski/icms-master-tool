@@ -227,6 +227,7 @@ function anUnitStop() {
   U.cwPrime = NaN; /* live test #50: the closed cooling loop primed as V-CW1001 of the start state (AN_MU) */
   U.mt = {};
   U.iaP = U.paP = NaN; /* 3.2.0-beta.68: the air tanks are set again by the start state (AN_AIR) */
+  U.avH = {}; /* 3.2.1 the positions held by the airlocks (AN_AV) */
   U.iaRun = U.paRun = null; /* 3.2.1: the compressors are read again from the DITL (anAirStep) */
   U.acT1 = U.acT2 = NaN; /* 3.2.0-beta.69: the aux cooling water temperatures start again (AN_ACW) */
   for (const m of U.mul || []) for (const p of m.pr) p.mul = undefined;
@@ -287,7 +288,7 @@ function anUnitStart() {
   const ctlOut = (k, t) => {
     const x = AN.sheets.find(y => y.name === k),
       c = x && x.S && AN.hmiCtrls ? (AN.hmiCtrls(x.S) || []).find(q => q.tag === t) : null;
-    return c && c.out != null ? { S: x.S, n: c.out, c } : null;
+    return c && c.out != null ? { S: x.S, n: c.out, c, t } : null;
   };
   U.vlv = [
     ['ABC-050', 'PICMS1006', U.hpb, 1 /* to the cold reheat */],
@@ -295,7 +296,7 @@ function anUnitStart() {
   ]
     .map(([k, t, f, rh]) => {
       const o = ctlOut(k, t);
-      return o ? { S: o.S, n: o.n, f, rh } : null;
+      return o ? { S: o.S, n: o.n, f, rh, t } : null;
     })
     .filter(Boolean);
   /* 2.2.0-beta.14: the oil flow of the four start-up burners (PV of FICDO1043A ~ D after the gate of the drawing) */
@@ -626,7 +627,7 @@ function anUnitStart() {
       const nm = (AN.nm(S2, b.o[0]) || '').trim();
       if (ai ? nm === ai : (AN.descOf ? AN.descOf(x, nm) || '' : '').startsWith('ZT-FA' + t.slice(5) + ' ')) L.push([S2, b]);
     }
-    if (L.length) U.zt.push({ src, L, y: NaN });
+    if (L.length) U.zt.push({ src, L, y: NaN, t });
   }
   /* P1 #5 SPRAY BLOCK VALVES (DITL shut-off valves; positions of the DITL valve model while the one world runs): no spray water with
      the block valve shut, whatever the control valve (plant.js pr.uf = the share of the command that reaches the process).
@@ -662,6 +663,7 @@ function anUnitStart() {
   U.on = true;
   /* 3.2.0-beta.68: "Start at 150 MW" = the air compressors in service, the tanks at their pressure (AN_AIR, 39.PNG 7.0 kg/cm2) */
   U.iaP = U.paP = AN_AIR.P;
+  U.avH = {};
   U.iaRun = U.paRun = null; /* 3.2.1: the compressors as the DITL of the scenario (anAirStep, first step) */
   U.paW0 = U.paW1 = U.paW2 = NaN;
   U.mt = {}; /* live test #54: the running motors start at their steady temperature (AN_MT) */
@@ -733,6 +735,7 @@ function anUnitCold() {
   AN_SRC.t = -1;
   /* 3.2.0-beta.68: cold = the air compressors stopped, the air tanks empty (AN_AIR) */
   U.iaP = U.paP = 0;
+  U.avH = {};
   U.iaRun = U.paRun = null; /* 3.2.1: the compressors as the DITL of the scenario (anAirStep, first step) */
   U.paW0 = U.paW1 = U.paW2 = NaN;
   U.mt = {}; /* live test #54: the motors start again from the ambient (AN_MT) */
@@ -1281,7 +1284,9 @@ function anMakeupStep(U, dt) {
   U.muN = n;
   U.muLvA = K.lv[0];
   U.muLvB = K.lv[1];
-  U.muXv = anDitlRun(K.xv) === 1 ? 1 : 0;
+  /* 3.2.1 the valve itself (the DITL-78 machine), not only its command: XV-MU1109 is spring opening (AN_AV), it opens without air */
+  const xp = anDitlPos('DITL-78', 0);
+  U.muXv = xp != null ? (xp > 0 ? 1 : 0) : anDitlRun(K.xv) === 1 ? 1 : 0;
   const mv = anDitlPos(K.mv);
   U.muMv = mv == null ? null : mv;
   if (!isFinite(U.etLvl)) U.etLvl = K.et0;
@@ -1787,8 +1792,9 @@ function anHdStep(U, dt) {
         h.v1.S.rt.v[h.v1.n] = x;
       }
     }
-    let w1 = cap1 * sq * ((h.fx && h.fx.p ? fxv(h.fx.p, mv(h.v1)) : mv(h.v1)) / 100),
-      w2 = c2 * (mv(h.v2) / 100);
+    /* 3.2.1 the drain valves have an airlock (AN_AV): below 3.5 kg/cm2 of instrument air they stay where they are */
+    let w1 = cap1 * sq * (anAv(h.c1, h.fx && h.fx.p ? fxv(h.fx.p, mv(h.v1)) : mv(h.v1)) / 100),
+      w2 = c2 * (anAv(h.c2, mv(h.v2)) / 100);
     const M = (rho * D * Ls * K.fA) / 1000 /* kg per mm */;
     if (h.y <= -300 && w1 + w2 > win) {
       const f = (w1 + w2) > 0 ? win / (w1 + w2) : 0;
@@ -1812,7 +1818,7 @@ function anLubeCoolStep(U, dt) {
   const K = AN_LO,
     sp = Math.max(0, Math.min(1, (U.tb ? U.tb.rpm : 0) / 3600)),
     flow = (+U.loBrg || 0) > 1.05,
-    mv = U.loMv ? Math.max(0, Math.min(100, +U.loMv.S.rt.v[U.loMv.n] || 0)) : 53.1,
+    mv = U.loMv ? Math.max(0, Math.min(100, anAv('TICLO1002', +U.loMv.S.rt.v[U.loMv.n] || 0))) : 53.1,
     acw = Math.max(0, Math.min(1, (+U.acQ || 0) / 1500)),
     W = (K.Wmax * mv * acw) / 100 /* T/H */,
     Cw = (W * 1000 * 4.18) / 3600,
@@ -1950,6 +1956,109 @@ const AN_AIR = {
   Tw: [30, 80, 600],
   tauI: 1
 };
+/* 3.2.1 (IRENE): the pneumatic valves on the instrument air of unit 1 (U.iaPU = PT-IA1706). Source: FHI control valve package
+   K1AU3-E2-0-123 R1 "Drawing of Control valve" (as built, on the user's PC: instrument-engineer-data-asbuilt), one specification
+   sheet per valve (Actuator: Action, Air Pressure Available / Required, Spring Precompression, Pressure @ Full Valve Travel;
+   Accessories: Airlock, Solenoid Valve):
+     modulating valves with an airlock (RK 2-8 kg/cm2G; the Siemens sheets of LCV-MU1110, FCV-CD1120, LCV-HD1101 ~ 1103 add "Air fail
+     fixed at 3.5 kg/cm2g"), a lock-up valve (TCV-FW1110-1 / -2: SMC IL-201) or a double acting piston "Fail in Place"
+     (LCV-CD1104, FCV-FW1130-1) STAY WHERE THEY ARE below the lock pressure: the command of the DCS still moves (the PID winds up),
+     the valve does not. The lock pressure 3.5 kg/cm2g is the one printed on the Siemens sheets; the Copes sheets give the
+     airlock RK 2-8 (the adjustable range) without the set point, and the SMC IL-201 sheet none: 3.5 is used for them too (NO-SOURCE
+     set point, same airlock model).
+     on / off valves (XV, a solenoid that vents the actuator, no airlock) go to their SPRING position as the air goes: "Spring
+     Opening (Direct)" = open without air, "Spring Closing (Reverse)" = closed without air. The actuator gets the header through
+     the filter regulator SMC AW40 set to 3.5 kg/cm2g ("Air Pressure Available"): its travel away from the spring position is
+     (pressure - spring precompression) / (pressure at full travel - precompression), the two pressures of each sheet (bar g).
+     The DITL netlist agrees with every sheet: the coil is inverted (energised = closed) exactly on the spring opening valves.
+     XV-FW1111-1 / XV-FW1121-1 have an airlock (SMC VSA 3-way): they stay in place (3.5, NO-SOURCE set point).
+   Not in the package (no sheet: they keep following their command): PCV-MS1020 / PCV-HR1010 bypass, TCV-FW1060 / FW1150,
+   PCV-AS1010, TCV-CD1115 / 1124 / 1126, XV-FW1151, XV-HR1010-1, XV-CR1013, the air dampers. */
+const AN_AV = {
+  lock: 3.5,
+  reg: 3.5,
+  bar: 0.980665 /* bar per kg/cm2 */,
+  /* controller (its MV is the valve command) -> the valve and its sheet (item of the package index) */
+  hold: {
+    LICCD1110A: 'LCV-MU1110 (item 17, airlock RK 2-8, fail fixed 3.5)',
+    FICCD1120: 'FCV-CD1120 (item 18, airlock RK 2-8, fail fixed 3.5)',
+    LICCD1104: 'LCV-CD1104 (item 14, double acting, fail in place, airlock RK 2-8 x2)',
+    LICCD1110B: 'LCV-CD1110 (item 15, airlock RK 2-8)',
+    FICCD1121: 'FCV-CD1121 (item 11, airlock RK 2-8)',
+    PICCD1104: 'PCV-AS1030 (item 8, airlock RK 2-8)',
+    PICAS1005: 'PCV-AS1020-1 / -2 (items 6 / 7, airlock RK 2-8)',
+    PICMS1002: 'PCV-MS1001 (item 1, fail fixed, airlock Fisher 167DA, air fail fixed at 3.5)',
+    PICSB1052: 'PCV-SB1053 (item 9, airlock RK 2-8)',
+    TICBR1130: 'TCV-FW1110-1 / -2 (items 19 / 20, lock-up valve SMC IL-201)',
+    TICBR1150: 'TCV-FW1120-1 / -2 (items 23 / 24, airlock RK 2-8)',
+    FICFW1007: 'FCV-FW1130-1 (item 27, double acting, fail in place, airlock RK 2-8 x2)',
+    LICBR1001B: 'FCV-FW1130-2 (item 28, airlock RK 2-8)',
+    LICHD11011: 'LCV-HD1101-1 (item 29, airlock RK 2-8, fail fixed 3.5)',
+    LICHD11012: 'LCV-HD1101-2 (item 30, airlock RK 2-8, fail fixed 3.5)',
+    LICHD11021: 'LCV-HD1102-1 (item 31, airlock RK 2-8, fail fixed 3.5)',
+    LICHD11022: 'LCV-HD1102-2 (item 32, airlock RK 2-8, fail fixed 3.5)',
+    LICHD11031: 'LCV-HD1103-1 (item 33, airlock RK 2-8, fail fixed 3.5)',
+    LICHD11032: 'LCV-HD1103-2 (item 34, airlock RK 2-8, fail fixed 3.5)',
+    LICHD11051: 'LCV-HD1105-1 (item 35, airlock RK 2-8)',
+    LICHD11052: 'LCV-HD1105-2 (item 36, airlock RK 2-8)',
+    LICHD11061: 'LCV-HD1106-1 (item 37, airlock RK 2-8)',
+    LICHD11062: 'LCV-HD1106-2 (item 38, airlock RK 2-8)',
+    TICLO1002: 'TCV-CW1201 (item 40, airlock RK 2-8)',
+    PICDO0005: 'PCV-DO0002 (item 41, airlock RK 2-8)',
+    PICDO1008: 'PCV-DO1009 (item 42, airlock RK 2-8)',
+    HICDO1012: 'FCV-DO1012 (item 43, airlock RK 2-8)'
+  },
+  /* on / off valves by the tag of the DITL solenoid: spring position (100 open / 0 closed, or 'hold'), precompression and full
+     travel pressures (bar g; the psig of the Siemens sheets x 0.0689) */
+  sv: {
+    MS1011: [100, 1.586, 2.62] /* item 2: 23 / 38 psig */,
+    MS1023: [100, 0.6, 1.1] /* item 3 */,
+    CR1011: [100, 0.4, 2.1] /* item 4 */,
+    CR1012: [100, 0.4, 2.1],
+    HR1021: [100, 2.0, 3.1] /* item 5 */,
+    HR1022: [100, 2.0, 3.1],
+    SB1054: [0, 2.2, 3.0] /* item 10, spring closing */,
+    SB1059: [0, 2.2, 3.0],
+    CD1005: [100, 0.276, 0.896] /* item 12: 4 / 13 psig */,
+    CD1006: [100, 0.276, 1.103] /* item 13: 4 / 16 psig */,
+    'CD1104-2': [100, 0.621, 1.448] /* item 16: 9 / 21 psig */,
+    'FW1111-1': ['hold'] /* item 21, airlock SMC VSA 3-way */,
+    'FW1121-1': ['hold'] /* item 25 */,
+    MU1109: [100, 1.0, 1.9] /* item 39 */,
+    FS1005: [100, 0.6, 1.7] /* item 44 */,
+    CD1004: [100, 0.276, 1.931] /* item 45: 4 / 28 psig */
+  }
+};
+/* the unit header pressure the valves see (kg/cm2), NaN while the plant model is OFF or the air model has not run */
+function anAvP() {
+  if (typeof AN_UNIT === 'undefined' || !AN_UNIT.on) return NaN;
+  const P = +AN_UNIT.iaPU;
+  return isFinite(P) ? P : NaN;
+}
+/* the opening that reaches the process for the command x of controller tag: held below the lock pressure */
+function anAv(tag, x) {
+  if (!tag || !AN_AV.hold[tag]) return x;
+  const P = anAvP(),
+    H = AN_UNIT.avH || (AN_UNIT.avH = {});
+  if (!isFinite(P) || P >= AN_AV.lock || !isFinite(x)) {
+    H[tag] = x;
+    return x;
+  }
+  if (H[tag] == null || !isFinite(H[tag])) H[tag] = x;
+  return H[tag];
+}
+/* the target position (0 ~ 100) of the DITL solenoid valve tag commanded open (want) at position pos; null = not an air valve of the package */
+function anAvSv(tag, want, pos) {
+  const d = tag && AN_AV.sv[tag];
+  if (!d) return null;
+  const P = anAvP(),
+    cmd = want ? 100 : 0;
+  if (!isFinite(P)) return cmd;
+  if (d[0] === 'hold') return P >= AN_AV.lock ? cmd : pos;
+  const pb = Math.min(P, AN_AV.reg) * AN_AV.bar,
+    f = Math.max(0, Math.min(1, (pb - d[1]) / (d[2] - d[1])));
+  return d[0] + (cmd - d[0]) * f;
+}
 /* an input row of a DITL drawing (a field contact: the RUNNING / TRIP of a compressor set at its local panel); null while no world */
 function anDitlIn(name, row) {
   try {
@@ -2246,7 +2355,7 @@ function anUnitStep(dt) {
   U.mb = 0;
   U.mhp = 0;
   for (const x of U.vlv) {
-    const o = Math.max(0, Math.min(100, +x.S.rt.v[x.n] || 0)),
+    const o = Math.max(0, Math.min(100, anAv(x.t, +x.S.rt.v[x.n] || 0))),
       q = (((x.f * U.m0 * o) / 100) * P1) / U.P0;
     U.mb += q;
     if (x.rh) U.mhp += q;
@@ -2485,7 +2594,7 @@ function anUnitStep(dt) {
   if (U.paN >= 0 && U.pa0 > 0 && U.pa.length) scaled(U.pa, Math.max(0, +U.tafS.rt.v[U.paN]) / U.pa0);
   /* ---- 2.2.0-beta.15 (M4 step 2): the start-up feedwater valve adds to the feedwater flow ---- */
   if (U.suv && U.fwp && U.fwp.pr) {
-    const o = Math.max(0, Math.min(100, +U.suv.S.rt.v[U.suv.n] || 0)),
+    const o = Math.max(0, Math.min(100, anAv('LICBR1001B', +U.suv.S.rt.v[U.suv.n] || 0))),
       fw0 = U.fwp.pr.hop && U.fwp.pr.hop.pv > 0 ? U.fwp.pr.hop.pv : 500;
     U.fwp.pr.op = (U.ksu * fw0 * o) / 100;
   }
@@ -2641,7 +2750,7 @@ function anUnitStepX(dt, mso) {
   }
   /* valve position = valve command */
   for (const z of U.zt || []) {
-    const c = Math.max(0, Math.min(100, +z.src.S.rt.v[z.src.n] || 0));
+    const c = Math.max(0, Math.min(100, anAv(z.t, +z.src.S.rt.v[z.src.n] || 0)));
     z.y = !isFinite(z.y) ? c : z.y + ((c - z.y) * Math.min(dt, U.tauZT)) / U.tauZT;
     anUnitWrite(z.L, z.y);
   }

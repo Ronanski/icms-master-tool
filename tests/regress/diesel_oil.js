@@ -122,6 +122,11 @@ const html =
     AN.plantCold();
     await run(20);
     o.cold = snap();
+    /* 3.2.1 (IRENE, AN_AV): the oil valves have an airlock, they do not move without instrument air; the SOP starts the
+       instrument air compressor (Step 10) before the diesel oil (Step 21): local panel RUNNING of compressor A (DITL-113 row 6) */
+    set('DITL-113', 5, true);
+    await run(120);
+    o.iaCold = AN.unit.iaPU;
     /* SOP 20: PCV-DO0002, PCV-DO1009 M 100 %, FCV-DO1012 100 %, then START pump A */
     H.man('ABC-028', 'PICDO0005', 100);
     H.man('ABC-029', 'PICDO1008', 100);
