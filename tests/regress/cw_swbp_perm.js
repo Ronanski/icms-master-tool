@@ -32,7 +32,7 @@ await page.evaluate(()=>window.LS_FPOP&&LS_FPOP.close());
 const usr=await page.evaluate(()=>{const s=LS_DOCK.dOf('DITL-29A');const u=(s.nl.usr||[]).find(x=>/ELECTRICAL/.test(x.txt||x.name||x.svc||''))||(s.nl.usr||[])[0];if(!u)return null;s.usw=s.usw||{};s.usw[u.key]=true;WORLD.busy=true;return u.key});
 ck(!!usr,'SWP-A ELECTRICAL TROUBLE switch found ('+usr+')');await wait(4000);
 const a1=await page.evaluate(()=>lsActiveAlarms().list.filter(a=>/DITL-29A$/.test(String(a.sh).replace(/^\(\d+\)/,''))).map(a=>a.text));
-ck(a1.length>0,'after TRIP: SWP-A trip alarm active: '+JSON.stringify(a1));
+ck(a1.length===1,'after TRIP: exactly one SWP-A trip alarm (no duplicate): '+JSON.stringify(a1));
 ck(a1.every(t=>!/Output row|CRT \(ANN\)/.test(t)),'after TRIP: alarm text is clean (no "Output row", no "CRT (ANN)")');
 await page.evaluate(k=>{const s=LS_DOCK.dOf('DITL-29A');s.usw[k]=false;WORLD.busy=true},usr);await wait(4000);
 const a2=await page.evaluate(()=>lsActiveAlarms().list.filter(a=>/DITL-29A$/.test(String(a.sh).replace(/^\(\d+\)/,''))).map(a=>a.text));
