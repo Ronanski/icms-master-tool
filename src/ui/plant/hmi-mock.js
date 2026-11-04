@@ -121,7 +121,10 @@
             const I = DUI.rowInfo(s, r),
               t = (I && I.svc) || '';
             if (!/P\.?B\b/.test(t) || /LOCAL/.test(t) || !own(t)) continue;
-            const w = /(OPEN|CLOSED?|STOP|AUTO|MANUAL|ISOLATE|REINSTATE|START|RESET)\b/.exec(t),
+            /* the word just before "PB" (DITL-54 "START-UP EJECTOR ... MOV OPEN PB" = OPEN, not START), else the last command word
+               ("ISOLATE HTR #1 PB") */
+            const W = /(OPEN|CLOSED?|STOP|AUTO|MANUAL|ISOLATE|REINSTATE|START|RESET)(?![-\w])/g,
+              w = /(OPEN|CLOSED?|STOP|AUTO|MANUAL|ISOLATE|REINSTATE|START|RESET)\s+P\.?B\b/.exec(t) || [...t.matchAll(W)].pop(),
               l = w && (w[1] === 'CLOSED' ? 'CLOSE' : w[1]);
             if (l && !pbs.some(p => p.l === l)) pbs.push({ l, row: r });
           }
