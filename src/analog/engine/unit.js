@@ -651,6 +651,7 @@ function anUnitStart() {
   AN_SRC.field.pur = true;
   AN_SRC.field.mu1033 = false;
   AN_SRC.field.cw1001 = true; /* live test #50: the expansion tank outlet open, the closed cooling loop primed */
+  if (AN_SRC.valve) for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
   AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed while steaming */
   AN_SRC.lhdPct = 0;
   U.cwPrime = 1;
@@ -696,6 +697,7 @@ function anUnitCold() {
   AN_SRC.field.pur = false;
   AN_SRC.field.mu1033 = false;
   AN_SRC.field.cw1001 = false; /* live test #50: the expansion tank outlet closed, the closed cooling loop not primed */
+  if (AN_SRC.valve) for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
   AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed */
   AN_SRC.lhdPct = 0;
   U.cwPrime = 0;
@@ -1043,6 +1045,26 @@ function swSolve(st) {
 }
 /* the field valves of the seawater system (no DCS signal): opening in %, set by the field operator; the normal line-up of a
    running unit (PR-OPE-5002 section 2 / 5 after the start: discharge valves open, condenser inlet 100 %, outlet 40 %) */
+/* 3.2.1 (IRENE: PLANT MODEL, user 2026-11-04 "Kung ano lng ang mapapakinabangan ntn s simulation"): the useful manual valves of the
+   closed cooling, make-up and air systems (field valves, no DCS signal; opening in %, normal line-up at 150 MW):
+     closed cooling (PD-021 Rev D, hmi-cw.js): ACWP suction V-CW1002 / 1004, discharge V-CW1007 / 1009 (SOP: 5 % at start, then open to
+       PG-CW1108 7 kg/cm2), CCWHE H-1107A / B / C inlet V-CW1010 / 1011 / 1012, outlet V-CW1013 / 1014 / 1015 (2 of 3 in service, MB-021:
+       2 x 750 T/H; C standby = closed, NO-SOURCE which one stands by);
+     make-up (PD-024 Rev D): demi tank outlets V-MU0001 / 0002, MWP suction V-MU0003 / 4 / 5, discharge V-MU0007 / 9 / 11, recirculation
+       V-MU0013 / 15 / 17 (SOP: OPEN);
+     air (PD-023 Rev C): unit 1 header isolation V-IA1101 (IA) / V-PA1087 (PA), cross-tie PA -> IA tanks V-PA0013 (normally closed). */
+const AN_FV0 = {
+  'V-CW1002': 100, 'V-CW1004': 100, 'V-CW1007': 100, 'V-CW1009': 100,
+  'V-CW1010': 100, 'V-CW1011': 100, 'V-CW1012': 0, 'V-CW1013': 100, 'V-CW1014': 100, 'V-CW1015': 0,
+  'V-MU0001': 100, 'V-MU0002': 100, 'V-MU0003': 100, 'V-MU0004': 100, 'V-MU0005': 100,
+  'V-MU0007': 100, 'V-MU0009': 100, 'V-MU0011': 100, 'V-MU0013': 100, 'V-MU0015': 100, 'V-MU0017': 100,
+  'V-IA1101': 100, 'V-PA1087': 100, 'V-PA0013': 0
+};
+/* the opening of a field valve (0 ~ 100 %), the normal line-up while the field operator has not turned it */
+const anFv = tag => {
+  const V = (typeof AN_SRC !== 'undefined' && AN_SRC.valve) || {};
+  return isFinite(V[tag]) ? V[tag] : tag in AN_FV0 ? AN_FV0[tag] : AN_SW_V0[tag];
+};
 const AN_SW_V0 = { 'V-SW1002': 100, 'V-SW1004': 100, 'V-SW1006': 100, 'V-SW1007': 100, 'V-SW1008': 100, 'V-SW1009': 40, 'V-SW1010': 40, 'V-SW1016': 100, 'V-SW1018': 100, 'V-SW1020': 100 };
 function anSeawaterStep(U, dt) {
   const K = AN_SW,
@@ -1152,7 +1174,7 @@ function anSeawaterStep(U, dt) {
 }
 /* the field operator sets a manual valve of the seawater system (V-SW1002 ... 0 ~ 100 %); returns false for an unknown tag */
 function anSwValve(tag, pct) {
-  if (!(tag in AN_SW_V0)) return false;
+  if (!(tag in AN_SW_V0) && !(tag in AN_FV0)) return false;
   AN_SRC.valve = AN_SRC.valve || Object.assign({}, AN_SW_V0);
   AN_SRC.valve[tag] = Math.max(0, Math.min(100, +pct || 0));
   return true;
@@ -1233,29 +1255,38 @@ function anMakeupStep(U, dt) {
      whether the tank fills), plus the recirculation of each running pump */
   const fill = (U.muXv || U.muByp) && U.muP > 6 && U.etLvl < K.etMax;
   U.muFill = fill ? 1 : 0;
-  const hw = typeof AN_CYC !== 'undefined' ? Math.max(0, 1.8 * (AN_CYC.u.hw || 0)) : 0,
-    qOut = n ? hw + (fill ? K.etQ : 0) : 0,
-    sp = U.muSpd.filter(s => s > 0),
-    ss = sp.reduce((a, b) => a + b, 0),
+  /* 3.2.1 the field valves (AN_FV0): a pump has water when a demi tank outlet (V-MU0001 / 0002) and its suction (V-MU0003 / 4 / 5) are
+     open; it feeds the header through its discharge (V-MU0007 / 9 / 11) and returns its recirculation through V-MU0013 / 15 / 17; a
+     running pump with no water or with both closed = no flow (shut-off power); no pump feeding = the header at its static pressure */
+  const op = t => anFv(t) > 0,
+    tk = op('V-MU0001') || op('V-MU0002'),
+    wet = [0, 1, 2].map(i => tk && op('V-MU000' + (3 + i))),
+    dis = [0, 1, 2].map(i => op('V-MU' + String(7 + 2 * i).padStart(4, '0'))),
+    rec = [0, 1, 2].map(i => op('V-MU00' + (13 + 2 * i))),
+    feed = U.muSpd.map((s, i) => (s > 0 && wet[i] && dis[i] ? s : 0)),
+    ss = feed.reduce((a, b) => a + b, 0),
+    hw = typeof AN_CYC !== 'undefined' ? Math.max(0, 1.8 * (AN_CYC.u.hw || 0)) : 0,
+    qOut = ss > 0 ? hw + (fill ? K.etQ : 0) : 0,
     lv = Math.max(K.lv[0], K.lv[1]);
-  /* the running pumps share the flow by speed (identical pumps in parallel), each with its recirculation */
+  /* the feeding pumps share the flow by speed (identical pumps in parallel), each with its recirculation */
   let H = 0;
   U.muQ = [0, 0, 0];
+  U.muSpd.forEach((s, i) => {
+    if (s > 0 && wet[i]) U.muQ[i] = (ss > 0 && feed[i] ? (qOut * s) / ss : 0) + (rec[i] ? K.qRec * s : 0);
+  });
   if (ss > 0) {
-    U.muSpd.forEach((s, i) => {
-      if (s > 0) U.muQ[i] = (qOut * s) / ss + K.qRec * s;
-    });
-    const j = U.muSpd.findIndex(s => s > 0),
-      s = U.muSpd[j];
+    const j = feed.findIndex(s => s > 0),
+      s = feed[j];
     H = s * s * swInterp(K.cQ, K.cH, U.muQ[j] / s);
   }
+  U.muFeed = feed.filter(s => s > 0).length;
   lag('muP', K.kP * (lv + K.z + Math.max(0, H)), K.tauP);
   run.forEach((r, i) => {
     const s = U.muSpd[i],
       P = s > 0 ? K.pCal * 0.7457 * swInterp(K.pQ, K.pHP, U.muQ[i] / s) * s * s * s : 0;
     U['muKw' + i] = Math.round(P * 10) / 10;
     lag('muI' + i, s <= 0 ? 0 : s < 1 ? K.Ist : Math.max(0, swInterp(K.mL, K.mI, (100 * P) / K.mkW)), K.tauI);
-    lag('muDp' + i, r ? K.dp : 0, K.tauP);
+    lag('muDp' + i, r && wet[i] ? K.dp : 0, K.tauP);
   });
   if (fill) U.etLvl = Math.min(K.etMax, U.etLvl + K.etRate * dt);
   /* live test #50: PR-OPE-5002 7.20 "Open Expansion tank outlet valve to prime the close cooling line (V-CW1001)" and 7.22 "Ensure
@@ -1319,6 +1350,7 @@ const AN_ACW = {
   dLv: 0.8,
   dp: 0.27,
   hxN: 2,
+  kd100: 0.05 /* kg/cm2, NO-SOURCE: loss of the open ACWP discharge valve at 1500 m3/h (inside the 27.PNG calibration) */,
   heat: 3480,
   UA: 174.8 /* kW/K per CCWHE in service, CALIBRATED (see above): NTU 0.2025 at 27.PNG with 2 SWBP (2,450 m3/h of the CW model) */,
   M: 180000,
@@ -1340,17 +1372,18 @@ const acwCal = (() => {
   };
 })();
 /* the flow of the loop with the pumps at speeds s[] (0 = stopped): sum of the pump flows at the head the line needs */
-function acwSolve(s) {
+function acwSolve(s, kv, kA) {
   const K = AN_ACW,
     c = acwCal(),
-    k = c.kA + c.kU,
-    qOf = (si, dp) => {
-      if (!(si > 0) || K.rho * si * si * K.cH[0] <= dp) return 0;
-      return swBisect(q => K.rho * si * si * swInterp(K.cQ, K.cH, q / si) - dp, 0, 1.6 * K.cQ[K.cQ.length - 1] * si, 40);
+    k = (kA == null ? c.kA : kA) + c.kU,
+    qOf = (si, dp, i) => {
+      const v = (kv && kv[i]) || 0;
+      if (!(si > 0) || !(v < Infinity) || K.rho * si * si * K.cH[0] <= dp) return 0;
+      return swBisect(q => K.rho * si * si * swInterp(K.cQ, K.cH, q / si) - v * q * q - dp, 0, 1.6 * K.cQ[K.cQ.length - 1] * si, 40);
     };
-  if (!s.some(x => x > 0)) return { Q: 0, q: s.map(() => 0) };
-  const Q = swBisect(x => s.reduce((a, si) => a + qOf(si, k * x * x), 0) - x, 0, 2 * 1.6 * K.cQ[K.cQ.length - 1], 40);
-  return { Q, q: s.map(si => qOf(si, k * Q * Q)) };
+  if (!s.some(x => x > 0) || !(k < Infinity)) return { Q: 0, q: s.map(() => 0) };
+  const Q = swBisect(x => s.reduce((a, si, i) => a + qOf(si, k * x * x, i), 0) - x, 0, 2 * 1.6 * K.cQ[K.cQ.length - 1], 40);
+  return { Q, q: s.map((si, i) => qOf(si, k * Q * Q, i)) };
 }
 function anAcwStep(U, dt) {
   const K = AN_ACW,
@@ -1364,15 +1397,31 @@ function anAcwStep(U, dt) {
   U.acSpd = U.acSpd || [0, 0];
   run.forEach((r, i) => (U.acSpd[i] = r ? (first ? 1 : Math.min(1, U.acSpd[i] + dt / K.ramp)) : 0));
   U.acN = n;
-  const key = U.acSpd.map(x => x.toFixed(3)).join(',');
+  /* 3.2.1 the field valves (AN_FV0): a closed suction = the pump has no water (no flow); the discharge throttles its pump (loss = loss
+     at 100 % / opening^4, as the seawater valves; closed = no flow); the CCWHE in service = inlet and outlet open, the CCWHE part of
+     the line (0.571 of the 1.2 kg/cm2 at 1500 m3/h, D1-0-041) shared by them (none = the loop blocked) */
+  const op = t => Math.max(0, Math.min(100, anFv(t))) / 100,
+    suc = [op('V-CW1002'), op('V-CW1004')],
+    dis = [op('V-CW1007'), op('V-CW1009')],
+    hxo = [0, 1, 2].map(i => Math.min(op('V-CW' + (1010 + i)), op('V-CW' + (1013 + i)))),
+    nHx = hxo.reduce((a, o) => a + (o > 0 ? 1 : 0), 0),
+    fx = 0.571 / 1.2,
+    sc = hxo.reduce((a, o) => a + o * o, 0) /* parallel paths: flow area ~ opening^2 */,
+    kA = nHx ? c.kA * (1 - fx + fx * Math.pow(K.hxN / sc, 2)) : Infinity,
+    kv = dis.map(o => (o > 0 ? (K.kd100 / (K.dQ * K.dQ)) * (1 / Math.pow(o, 4) - 1) : Infinity)) /* 100 % = the calibration (27.PNG) */,
+    sp = U.acSpd.map((x, i) => (suc[i] > 0 ? x : 0));
+  U.acHxN = nHx;
+  const key = sp.map(x => x.toFixed(3)).join(',') + '|' + dis.join(',') + '|' + hxo.join(',');
   if (!U._acR || U._acK !== key) {
-    U._acR = acwSolve(U.acSpd);
+    U._acR = acwSolve(sp, kv, kA);
     U._acK = key;
   }
   const r = U._acR,
     Q = r.Q;
   U.acQ = Math.round(Q);
-  lag('acP1', stat + (c.kA + c.kU) * Q * Q, K.tauP);
+  /* no CCWHE in service: the pumps run against the closed valves (shut-off head at PT-CW1152) */
+  const shut = Math.max(0, ...sp.map((x, i) => (x > 0 && dis[i] > 0 ? K.rho * x * x * K.cH[0] : 0)));
+  lag('acP1', nHx ? stat + (kA + c.kU) * Q * Q : stat + shut, K.tauP);
   lag('acP2', stat + c.kU * Q * Q, K.tauP);
   U.acP6 = U.acP2;
   r.q.forEach((q, i) => {
@@ -1390,13 +1439,13 @@ function anAcwStep(U, dt) {
     Cc = (Qsw * 1025 * 3.99) / 3600;
   let hx = 0;
   if (Ch > 0 && Cc > 0) {
-    const ch = Ch / K.hxN,
-      cc = Cc / K.hxN,
+    const ch = Ch / Math.max(1, nHx),
+      cc = Cc / Math.max(1, nHx),
       cmin = Math.min(ch, cc),
       cr = cmin / Math.max(ch, cc),
       ntu = K.UA / cmin,
       e = cr < 0.999 ? (1 - Math.exp(-ntu * (1 - cr))) / (1 - cr * Math.exp(-ntu * (1 - cr))) : ntu / (1 + ntu);
-    hx = e * cmin * K.hxN; /* kW per K of (return - seawater) */
+    hx = e * cmin * nHx; /* kW per K of (return - seawater) */
   }
   U.acCool = n && hx > 0 ? 1 : 0;
   if (Ch > 0) {
@@ -1498,9 +1547,11 @@ const AN_AIR = {
   loss: 0.2,
   dD: 0.15,
   fs: 0.7,
+  fU: 0.5 /* NO-SOURCE: the share of unit 1 in the use (unit 1, unit 2, utility area; no consumption list in the docs) */,
+  Kx: 1500 /* free air m3/h at 1 kg/cm2 difference, V-PA0013 6" fully open (NO-SOURCE) */,
   sys: {
-    ia: { c: 'DITL-113', d: '@14', V: 10, Qc: 1500, Qd: 1200, kW: 176, I100: 286, kW100: 190, Ist: 286 * 5.32, tSt: 3, Imax: 500 },
-    pa: { c: 'DITL-114', d: '@3', V: 20, Qc: 5100, Qd: 1500, kW: 600, I100: 69.9, kW100: 671, Ist: 3 * 69.9, tSt: 10, Imax: 140 }
+    ia: { c: 'DITL-113', d: '@14', iso: 'V-IA1101', V: 10, Qc: 1500, Qd: 1200, kW: 176, I100: 286, kW100: 190, Ist: 286 * 5.32, tSt: 3, Imax: 500 },
+    pa: { c: 'DITL-114', d: '@3', iso: 'V-PA1087', V: 20, Qc: 5100, Qd: 1500, kW: 600, I100: 69.9, kW100: 671, Ist: 3 * 69.9, tSt: 10, Imax: 140 }
   },
   rows: [5, 12, 19],
   dry: ['DITL-45', 'DITL-45 #B', 'DITL-45 #C'],
@@ -1540,8 +1591,15 @@ function anDitlSheet(name) {
 function anAirStep(U, dt) {
   const K = AN_AIR,
     lag = (k, x, tau) => (U[k] = isFinite(U[k]) ? U[k] + ((x - U[k]) * Math.min(dt, tau)) / tau : x);
+  /* 3.2.1 the cross-tie PA -> IA tanks V-PA0013 (PD-023, field valve, normally closed): free air = Kx x opening x sqrt(PA - IA) while the
+     PA tanks are higher (check valve), the pressures of the step before */
+  const dX = (+U.paP || 0) - (+U.iaP || 0),
+    qx = anFv('V-PA0013') > 0 && dX > 0 ? (K.Kx * anFv('V-PA0013') * Math.sqrt(dX)) / 100 : 0;
+  U.xQ = Math.round(qx);
   for (const k in K.sys) {
     const Y = K.sys[k],
+      xin = k === 'ia' ? qx : -qx,
+      iso = anFv(Y.iso) > 0,
       s = anDitlSheet(Y.c),
       trip = K.rows.map(r => anDitlIn(Y.c, r + 1) || 0),
       dry = K.dry.map(d => anDitlRun(d + Y.d) || 0),
@@ -1587,19 +1645,22 @@ function anAirStep(U, dt) {
     dry.forEach((r, i) => (U[k + 'D' + i] = r));
     /* the tanks */
     const P0 = isFinite(U[k + 'P']) ? Math.max(0, U[k + 'P']) : 0,
-      use = (Y.Qd * (P0 + K.Pa)) / (K.P + K.Pa);
-    let P = P0 + (((n * Y.Qc - use) * K.Pa) / Y.V / 3600) * dt,
+      use = ((Y.Qd * (P0 + K.Pa)) / (K.P + K.Pa)) * (iso ? 1 : 1 - K.fU);
+    let P = P0 + (((n * Y.Qc + xin - use) * K.Pa) / Y.V / 3600) * dt,
       qin = n * Y.Qc;
     if (n && P >= K.P) {
       P = K.P; /* the constant pressure loop of the compressor panel */
-      qin = use;
+      qin = Math.max(0, use - xin);
     }
     P = Math.max(0, P);
     U[k + 'P'] = P;
     U[k + 'PA'] = U[k + 'PB'] = P;
     U[k + 'Q'] = qin;
     U[k + 'Use'] = use;
-    U[k + 'PU'] = Math.max(0, P - K.loss * (use / Y.Qd) ** 2);
+    /* the unit 1 header: through its isolation valve (V-IA1101 / V-PA1087); closed = the unit users bleed it down (NO-SOURCE: 60 s) */
+    if (iso) U[k + 'PU'] = Math.max(0, P - K.loss * (use / Y.Qd) ** 2);
+    else lag(k + 'PU', 0, 60);
+    U[k + 'Iso'] = iso ? 1 : 0;
     U[k + 'PD'] = P + K.dD * (qin / Y.Qd) ** 2;
     dry.forEach((r, i) => lag(k + 'F' + i, qin && (nd ? r : 1) ? qin / (nd || dry.length) : 0, 3));
     /* the motors */

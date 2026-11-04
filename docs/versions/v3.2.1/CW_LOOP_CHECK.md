@@ -39,3 +39,6 @@ screenshot. Ang inaasahan ay galing sa `CW_PLANT_MODEL.md` (vendor curve + SOP).
 
 ## F. Hindi sakop ng model na ito
 Hypochlorite (field lang), priming air ejector, tube cleaning, tide ng forebay.
+
+## Manual valves (FIELD faceplate, 3.2.1-beta.3)
+1. Pindutin ang V-SW1002 / 1009: bubukas ang FIELD faceplate (CLOSE / OPEN / 5 ~ 75 %). Pula = bukas, berde = sarado. Ang epekto ay ayon sa CW_PLANT_MODEL.md.

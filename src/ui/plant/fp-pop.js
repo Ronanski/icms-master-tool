@@ -818,7 +818,135 @@
     me._iv = setInterval(tick, 500);
     return true;
   }
-  const valveTag = tg => (VALVES[tg] ? valve(VALVES[tg]) : FIELDV[tg] ? fieldValve(FIELDV[tg]) : false);
+  /* 3.2.1 (IRENE: PLANT MODEL, user 2026-11-04 "Kung ano lng ang mapapakinabangan ntn s simulation"): the useful manual valves of the
+     plant model (unit.js AN_SW_V0 / AN_FV0, AN.swValve): the field operator sets the opening; red = open (any opening), green = closed */
+  const FVUSE = {
+    'V-SW1002': 'SWP-A discharge. SOP 1.4: 10 % at start, then open.',
+    'V-SW1004': 'SWP-B discharge. SOP 1.4: 10 % at start, then open.',
+    'V-SW1006': 'SWP-C discharge. SOP 1.4: 10 % at start, then open.',
+    'V-SW1007': 'Condenser A inlet (SOP 1.7: open).',
+    'V-SW1008': 'Condenser B inlet (SOP 1.7: open).',
+    'V-SW1009': 'Condenser A outlet. SOP 1.12: 22 % while filling, then 40 % (2.31).',
+    'V-SW1010': 'Condenser B outlet. SOP 1.12: 22 % while filling, then 40 % (2.31).',
+    'V-SW1016': 'SWBP-A discharge.',
+    'V-SW1018': 'SWBP-B discharge.',
+    'V-SW1020': 'SWBP-C discharge.',
+    'V-CW1002': 'ACWP-A suction. Closed = the pump has no water.',
+    'V-CW1004': 'ACWP-B suction. Closed = the pump has no water.',
+    'V-CW1007': 'ACWP-A discharge. SOP: 5 % at start, then open until PG-CW1108A reads 7 kg/cm².',
+    'V-CW1009': 'ACWP-B discharge. SOP: 5 % at start, then open until PG-CW1108B reads 7 kg/cm².',
+    'V-CW1010': 'CCWHE A inlet (closed cooling side). 2 of the 3 CCWHE in service.',
+    'V-CW1011': 'CCWHE B inlet (closed cooling side).',
+    'V-CW1012': 'CCWHE C inlet (closed cooling side). Standby.',
+    'V-CW1013': 'CCWHE A outlet (closed cooling side).',
+    'V-CW1014': 'CCWHE B outlet (closed cooling side).',
+    'V-CW1015': 'CCWHE C outlet (closed cooling side). Standby.',
+    'V-MU0001': 'Demi water tank T-0708A outlet.',
+    'V-MU0002': 'Demi water tank T-0708B outlet.',
+    'V-MU0003': 'MWP-A suction.',
+    'V-MU0004': 'MWP-B suction.',
+    'V-MU0005': 'MWP-C suction.',
+    'V-MU0007': 'MWP-A discharge.',
+    'V-MU0009': 'MWP-B discharge.',
+    'V-MU0011': 'MWP-C discharge.',
+    'V-MU0013': 'MWP-A minimum flow recirculation (SOP: OPEN).',
+    'V-MU0015': 'MWP-B minimum flow recirculation (SOP: OPEN).',
+    'V-MU0017': 'MWP-C minimum flow recirculation (SOP: OPEN).',
+    'V-IA1101': 'Instrument air to unit 1 (PT-IA1706). Closed = the unit 1 header bleeds down.',
+    'V-PA1087': 'Plant air to unit 1 (PT-PA1705). Closed = the unit 1 header bleeds down.',
+    'V-PA0013': 'Cross-tie: plant air to the instrument air tanks. Normally closed.'
+  };
+  const fvAll = () => call(() => (AN.swValves ? AN.swValves() : null), null) || {};
+  function fieldPct(tag) {
+    if (!(tag in fvAll()) || !window.AN || !AN.swValve) return false;
+    const pc = () => +fvAll()[tag] || 0;
+    const F = frame(tag, 'Manual valve (field)');
+    const me = box;
+    F.hd.querySelector('.fpo-tt').append(E('span', 'fpo-chip', 'FIELD'));
+    const lO = lampEl('OPEN'),
+      lC = lampEl('CLOSED');
+    F.bd.append(row('POSITION', lO, lC));
+    /* the SOP openings: 5 % (ACWP discharge at start), 10 % (SWP discharge at start), 22 / 40 % (condenser outlets, 1.12 / 2.31) */
+    const B = [0, 100, 5, 10, 22, 40, 50, 75].map(v => {
+      const b = E('button', 'fpo-cmd', v === 0 ? 'CLOSE' : v === 100 ? 'OPEN' : v + ' %');
+      b.type = 'button';
+      b.onclick = () => !b.disabled && set(v);
+      return [v, b];
+    });
+    const fTag = E('span', 'fpo-fld', 'FIELD');
+    fTag.title = 'A manual valve: turned by the field operator at the valve (logged in Events as "Field operator")';
+    F.bd.append(row('LOCAL', B[0][1], B[1][1], fTag));
+    F.bd.append(row('THROTTLE', ...B.slice(2, 5).map(x => x[1])));
+    F.bd.append(row('', ...B.slice(5).map(x => x[1])));
+    const why = E('div', 'fpo-why');
+    F.bd.append(why);
+    if (FVUSE[tag]) F.bd.append(E('div', 'fpo-dim', FVUSE[tag]));
+    const ln = E('div', 'fpo-ln'),
+      a = E('button', 'fpo-a', 'Events');
+    a.type = 'button';
+    a.onclick = () => call(() => document.getElementById('evbtn').click());
+    ln.append(a);
+    F.bd.append(ln);
+    const set = v => {
+      AN.swValve(tag, v);
+      call(() => window.lsEventAdd('FIELD', 'FIELD', 'Field operator: ' + tag + ' ' + (v === 0 ? 'CLOSED' : v === 100 ? 'OPEN' : v + ' % open') + ' (local)'));
+      setTimeout(tick, 150);
+    };
+    function tick() {
+      if (!me.isConnected) return closeEl(me);
+      const p = pc(),
+        run = isRun(),
+        op = p > 0;
+      F.lamp.className = 'fpo-lamp ' + (op ? 'run' : 'stop');
+      F.val.textContent = op ? Math.round(p) + ' % OPEN' : 'CLOSED';
+      lO.className = 'fpo-lp' + (op ? ' run' : '');
+      lC.className = 'fpo-lp' + (!op ? ' stop' : '');
+      B.forEach(([v, b]) => {
+        b.disabled = !run || Math.round(p) === v;
+        b.classList.toggle('lit-run', v > 0 && Math.round(p) === v);
+        b.classList.toggle('lit-stop', v === 0 && !op);
+      });
+      why.textContent = run ? '' : 'Simulation PAUSED: press ▶ RUN first (nothing moves while paused).';
+      why.hidden = !why.textContent;
+    }
+    tick();
+    place(me);
+    me._iv = setInterval(tick, 500);
+    return true;
+  }
+  /* the manual valves on the HMI pages: a <g> whose <title> starts with the tag of a field valve of the plant model (and no faceplate of
+     its own) opens fieldPct; its body shows the line-up live (red = open, green = closed) */
+  const fvTagOf = g => {
+    const t = g && g.firstElementChild && g.firstElementChild.tagName === 'title' ? g.firstElementChild.textContent : '',
+      m = /^(V-[A-Z]{2}\d{4})\b/.exec(t || '');
+    return m && m[1] in fvAll() ? m[1] : null;
+  };
+  document.addEventListener(
+    'click',
+    e => {
+      let g = e.target && e.target.closest && e.target.closest('svg g'),
+        tag = null;
+      if (!g || g.closest('[data-hit]')) return;
+      for (let i = 0; i < 3 && g && !(tag = fvTagOf(g)); i++) g = g.parentNode && g.parentNode.closest && g.parentNode.closest('svg g');
+      if (tag && fieldPct(tag)) e.stopPropagation();
+    },
+    true
+  );
+  setInterval(() => {
+    const all = fvAll();
+    if (!Object.keys(all).length) return;
+    document.querySelectorAll('svg g > title').forEach(ti => {
+      const g = ti.parentNode;
+      if (g.closest('[data-hit]')) return;
+      const tag = fvTagOf(g);
+      if (!tag) return;
+      const b = g.querySelector('path');
+      if (!b) return;
+      g.style.cursor = 'pointer';
+      b.setAttribute('fill', (+all[tag] || 0) > 0 ? '#d64545' : '#3fa34d');
+    });
+  }, 1000);
+  const valveTag = tg => (VALVES[tg] ? valve(VALVES[tg]) : FIELDV[tg] ? fieldValve(FIELDV[tg]) : fvAll()[tg] != null ? fieldPct(tg) : false);
   /* #59: the Y / N of a motor for the button on its page (the same test as the info faceplate): true = every logic permissive and SOP
      line-up item complete, false = not, null = no logic */
   function yn(M) {
@@ -923,7 +1051,7 @@
     me._iv = setInterval(tick, 500);
     return true;
   }
-  window.LS_FPOP = { motor, valve, valveTag, pb, field, yn, hit, openAd, place, close, info, get open() {
+  window.LS_FPOP = { motor, valve, valveTag, fieldPct, pb, field, yn, hit, openAd, place, close, info, get open() {
     return anyOpen();
   } };
 })();

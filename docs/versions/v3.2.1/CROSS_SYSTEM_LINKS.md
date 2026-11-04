@@ -12,6 +12,7 @@ ina-update sa bawat bagong system.
 4. **Make-up header → fill ng expansion tank.** Kailangan ng PT-MU0709 > 6 at XV-MU1109 / V-MU1033 bukas. Nasa code.
 5. **Instrument air → MFT.** IA pressure → DITL-03G (2 sa 3 < 3.5) at PSL-IA1706 (2.8). Test: `air_model.js`.
 6. **CW pump → condenser vacuum → turbine trip.** Kapag walang CW pump o condensate pump, bumababa ang vacuum at nagti-trip ang turbine sa LOW VACUUM (TCS). Nasa code. Running bit pa lang ang basa, hindi pa ang CW flow ng bagong model.
+8. **Manual valves → flow / pressure → logic** (`FIELD_VALVES.md`, test `field_valves.js`). CCWHE valves → ACW flow at paglamig; ACWP discharge 5 % → PT-CW1152 < 3.5 → ACWP-B auto start; MWP discharge → PT-MU0709 → fill ng expansion tank (kailangan > 6); V-IA1101 → PSL-IA1706 → MFT; V-PA0013 → plant air ang bumubuhay sa instrument air.
 7. **Lahat ng model → logic → model.** Pressure, level at flow → DITL / ABC rows. Ang START COMMAND ng logic ay nagpapatakbo ng equipment (ACWP, MWP, SWBP, air compressor). Test: bawat model test.
 
 ## Wala pa (plano, kasama sa susunod na system)
