@@ -294,9 +294,10 @@
     }
     return out;
   }
-  function permOf(s) {
+  /* live test 2026-11-05: stR0 = another push button row (a valve OPEN / CLOSE P.B.), noRun = do not aim at a RUNNING output */
+  function permOf(s, stR0, noRun) {
     const nl = s.nl,
-      stR = pbRow(s, /\bSTART\b|\bST$/);
+      stR = stR0 != null ? stR0 : pbRow(s, /\bSTART\b|\bST$/);
     if (stR < 0) return null;
     const C = ctx(s),
       stN = new Set(DUI.rowNets(s, stR, 'L') || []);
@@ -325,6 +326,7 @@
     /* the target: the RUNNING output of the motor (what the start must reach, through its trips), else the flip-flop set by the
        START P.B., else the first start command output */
     let t = null;
+    if (!noRun)
     try {
       const ro = DUI.outs(s).find(o => /RUNNING/.test(o.name) && !/NOT RUNNING|STOP/.test(o.name)),
         on = ro && (nl.outs || []).find(o => o.row === ro.row);
@@ -333,7 +335,8 @@
     if (t == null)
     for (const g of nl.gates || [])
       if (g.t === 'FF' && (g.s || []).some(m => reach(m))) {
-        t = g.s.find(m => reach(m));
+        /* a valve push button (noRun): the flip-flop OUTPUT, so a RESET that holds it (DITL-32: MFT, steam flow < 10 %) is listed */
+        t = noRun && g.out && g.out.length ? g.out[0] : g.s.find(m => reach(m));
         break;
       }
     if (t == null) {
@@ -342,6 +345,24 @@
     }
     if (t == null) return null;
     return needNet(s, t, 1, P, 0, new Set(), []);
+  }
+  /* live test 2026-11-05 (XV-FW1111-1 OPEN did nothing at Cold, the faceplate said EXECUTED): the input rows that keep the command of
+     a push button row from going through, [{ svc, want, now, other }] (empty = nothing blocks it) */
+  function pbBlock(addr, row) {
+    const s = dOf(addr);
+    if (!s || !window.DUI) return null;
+    try {
+      if (!s.nl) s.nl = netlist(s);
+      const L = permOf(s, row, true) || [];
+      return L.filter(r => r.row !== undefined)
+        .map(r => {
+          const rs = r.s || s;
+          return { svc: rowInfo(rs, r.row).svc, want: r.want, now: DUI.rowVal(rs, r.row), other: rs !== s ? dName(rs) : '' };
+        })
+        .filter(x => x.now !== x.want);
+    } catch (e) {
+      return null;
+    }
   }
   function interlock(addr) {
     const s = dOf(addr),
@@ -3552,6 +3573,7 @@
     needNet,
     leaves,
     permOf,
+    pbBlock,
     dpress,
     dset,
     dout,
