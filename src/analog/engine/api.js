@@ -47,6 +47,7 @@ function anEngAPI() {
     ditlRun: anDitlRun,
     airValves: () => AN_AV,
     avSv: anAvSv,
+    fxs: (p, x) => anFXs(p, x),
     /* 3.2.1 SEULGI (boiler.js): the manual valves of the diesel oil line-up, opening in % (AN_DO.fv0) */
     doValve: anDoValve,
     engState: { capture: anStateCapture, apply: anStateApply },

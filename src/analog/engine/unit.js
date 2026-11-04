@@ -234,6 +234,7 @@ function anUnitStop() {
   for (const m of U.mul || []) for (const p of m.pr) p.mul = undefined;
   for (const z of U.spr || []) z.pr.uf = undefined;
   U.lpbSp = null; /* 3.2.1 anCdTagStep: the LP bypass spray controller is found again */
+  U.fwC = null; /* 3.2.1 anFwTagStep: its controllers and F(X) are found again */
   if (U.fwp && U.fwp.pr) U.fwp.pr.op = undefined;
   for (const p of U.fp || []) {
     p.pr.uf = undefined;
@@ -1883,6 +1884,7 @@ function anLphStep(U, dt) {
     'TT-HD1106': U.hpD2
   });
   anCdTagStep(U, ld);
+  anFwTagStep(U);
 }
 /* 3.2.1 (IRENE, page 05 CONDENSATE): the other condensate transmitters of the page that no sheet reads (AN.unit.tt).
    Sources: 28.png (151.3 MW, MSF 480.3 T/H): hotwell TT-CD1110-1 / -2 40, flash chamber TT-CD1110-4 42, TT-CD1118 40, ejector condenser
@@ -1918,6 +1920,139 @@ function anCdTagStep(U, ld) {
     'PT-CD1122': isFinite(Pda) ? r1(Pda + 1.6) : null,
     'TT-CD1104': isFinite(Pda) && Pda > 0.05 ? r1(steamTsat(Pda)) : isFinite(Pda) ? r1(isFinite(U.Tamb) ? U.Tamb : 30) : null,
     'FT-CD1115': isFinite(mv) && isFinite(uf) ? r1((46 * anAv('TICHR1012', mv) * uf) / 100) : null
+  });
+}
+/* 3.2.1 (IRENE, page 06 FEEDWATER): the turbine extraction, feedwater and spray transmitters of the page that no sheet reads (AN.unit.tt).
+   Sources:
+     4.PNG (004 EXTRACTION STEAM, 148.8 MW, MSF 472.7 T/H): PT-TS1013 (No.2 extraction) 14.07, PT-TS1017 (No.3 extraction) 5.30 kg/cm2,
+       TT-TS1011 (cold reheat to the No.2 HPH) 371 C, FT-FW1059 1.8 T/H with TCV-FW1060 0.1 % MANUAL and XV-FW1061 closed;
+     03.png (003 MAIN WATER / STEAM, 150.5 MW, MSF 474.1): PIFW1011 165.4, drum PIBR10011 134.2, PIBR1130 (after SH panel #1) 127.8,
+       PIBR1150 (finishing SH inlet) 124.9, PIFW1160 137.7 kg/cm2, TIFW1011 162 C, PIFW1115A / B 6.7 / 7.1 with DPIFW1115A 0.29,
+       TICBR1130 MV 57.6 -> TCV-FW1110-1 45.5 / -2 100.7 %, FIQFW1109 37.5; TICBR1150 MV 30.2 -> TCV-FW1120-1 14.9 / -2 99.7 %, FIQFW1119 28.2;
+     5.png (005 REHEATER STEAM, 152.5 MW, MSF 482.2): TCV-FW1150 66.0 % AUTO, XV-FW1151 open, FIQFW1149 14.8 T/H;
+     control valve data sheets K1AU3-E2-0-123 R1 (PC), items 19 / 20 / 23 / 24 (Copes-Vulcan): TCV-FW1110-1 linear, Cv 0.17 / 3.29 /
+       9.49 / 14 at 2 / 25 / 68 / 100 % travel, 35000 kg/h at 165.3 -> 142.2 kg/cm2 g; TCV-FW1110-2 cascade 0.05 / 0.99 / 1.67 at
+       6 / 59 / 100 %; TCV-FW1120-1 equal % 0.17 / 2.46 / 8.84 / 15 at 10 / 48 / 75 / 100 %; TCV-FW1120-2 equal % 0.05 / 0.99 / 1.5 at
+       19 / 90 / 100 %; the start-up valves (-2) in parallel with the main (-1), each behind its block valve XV-FW1111-1 / -2 (DITL-32 /
+       #B), XV-FW1121-1 / -2 (DITL-33 / #B);
+     ABC-011 / 012 F(X) LN47 / LN46, LN49 / LN48: the controller MV to valve (1) / (2) (MV 57.6 -> 45.6 / 100, MV 30.2 -> 14.9 / 100).
+   How it works:
+     PT-TS1013 / 1017   the snapshot pressure x main steam / 472.7 (absolute, a turbine stage, as AN_HP);
+     TT-TS1011          the cold reheat temperature of the unit model (anUnitStepX X.T.cr);
+     PT-FW1115-A / B    the pump suction (plantsw.js sucP) minus its strainer DP (AN_FW fwDp);
+     TT-FW1011          the deaerator water: saturation of PT-CD1104 (the pump heating not modelled; 03.png 162 C);
+     PT-FW1160          drum pressure + 3.5 kg/cm2 x (feedwater / 499.1)^2 (03.png 137.7 - 134.2);
+     ZT-FW1110 / 1120   the F(X) of the controller MV (its airlock AN_AV: the MV is held without air);
+     FT-FW1109 / 1119   0.7674 T/H x (Cv(-1) x XV-1 + Cv(-2) x XV-2) x sqrt(PT-FW1011 - spray point), Cv from the travel by the sheet
+                        points; spray point = drum - 6.4 / 9.3 kg/cm2 x (main steam / 474.1)^2 (03.png); 0.7674 from item 19 COND 1. The
+                        No.1 spray gives 37.3 T/H at the 03.png point (37.5). The No.2 spray gives 9.6 T/H by its sheet against 28.2 in
+                        03.png: UNUSUAL (the equal % curve at 14.9 % travel is far below what flows); calibrated x 2.94 to the snapshot;
+     FT-FW1149          14.8 x TCV-FW1150 (TICHR1002 MV) / 66.0 x XV-FW1151 (DITL-35) x sqrt(dp / 130.5) (NO-SOURCE: linear valve, the tap
+                        at the pump discharge, dp to the reheat inlet 165.4 - 34.9);
+     FT-FW1059          40 T/H x TCV-FW1060 (TICMS1022 MV) x XV-FW1061 (DITL-79) x sqrt(dp / 130.5) (NO-SOURCE: no data sheet, the
+                        capacity taken as the IO range; 4.PNG 1.8 T/H at 0.1 % with the block valve closed is not modelled).
+   Not on any DCS sheet: XV-TS1700 / 1710 (NO-SOURCE, not modelled). */
+const AN_FWT = {
+  ms0: 472.7,
+  ts13: 14.07,
+  ts17: 5.3,
+  K: 35000 / (9.49 * Math.sqrt(165.3 - 142.2)) / 1000,
+  cv: {
+    a1: [[0, 0], [2, 0.17], [25, 3.29], [68, 9.49], [100, 14]],
+    a2: [[0, 0], [6, 0.05], [59, 0.99], [100, 1.67]],
+    b1: [[0, 0], [10, 0.17], [48, 2.46], [75, 8.84], [100, 15]],
+    b2: [[0, 0], [19, 0.05], [90, 0.99], [100, 1.5]]
+  },
+  k2: 2.94
+};
+function anFwTagStep(U) {
+  const K = AN_FWT,
+    r1 = x => (isFinite(x) ? Math.round(10 * x) / 10 : null),
+    r2 = x => (isFinite(x) ? Math.round(100 * x) / 100 : null),
+    ms = Math.max(0, +U.ms || 0),
+    stage = P => (P + 1.0332) * (ms / K.ms0) - 1.0332,
+    C = U.fwC || (U.fwC = {}),
+    sh = n => AN.sheets.find(y => y.name === n),
+    ctl = (n, t) => {
+      if (C[t] !== undefined) return C[t];
+      const x = sh(n),
+        c = x && x.S && AN.hmiCtrls ? (AN.hmiCtrls(x.S) || []).find(q => q.tag === t) : null;
+      return (C[t] = c && c.out != null ? { S: x.S, n: c.out } : null);
+    },
+    mvOf = (n, t) => {
+      const c = ctl(n, t);
+      return c ? Math.max(0, Math.min(100, +c.S.rt.v[c.n] || 0)) : NaN;
+    },
+    fxs = (n, t, ln) => {
+      const k = n + ln;
+      if (C[k] === undefined) {
+        const x = sh(n),
+          c = ctl(n, t);
+        C[k] = x && c ? x.S.blk.find(b => b.k === 'FX' && b.p && b.p.ln === ln) || null : null;
+      }
+      return C[k];
+    },
+    fx = (n, t, ln, m) => {
+      const b = fxs(n, t, ln);
+      return b && typeof anFXs === 'function' ? Math.max(0, Math.min(100, anFXs(b.p, m).y)) : NaN;
+    },
+    pos = n => {
+      const p = typeof anDitlPos === 'function' ? anDitlPos(n, 0) : null;
+      return p == null ? NaN : p / 100;
+    },
+    cv = (L, x) => {
+      if (!isFinite(x)) return NaN;
+      for (let i = 1; i < L.length; i++) if (x <= L[i][0]) return L[i - 1][1] + ((L[i][1] - L[i - 1][1]) * (x - L[i - 1][0])) / (L[i][0] - L[i - 1][0]);
+      return L[L.length - 1][1];
+    },
+    drum = (() => {
+      const L = C.drum || (C.drum = anUnitAIs('1|AI0128'));
+      return anUnitVal(L);
+    })(),
+    Pda = U.xt && U.xt.dea ? anUnitVal(U.xt.dea) : NaN,
+    ps = typeof window !== 'undefined' && window.WORLD && WORLD.sucP ? WORLD.sucP() : NaN,
+    pd = isFinite(U.fwPd) ? U.fwPd : NaN,
+    ffw = typeof AN_CYC !== 'undefined' && isFinite(AN_CYC.ffw) ? Math.max(0, AN_CYC.ffw) : 0,
+    lf = (ms / 474.1) * (ms / 474.1),
+    sq = P => (isFinite(pd) && isFinite(P) ? Math.sqrt(Math.max(0, pd - P)) : NaN);
+  /* the spray valves follow their controller MV, held by the airlock without air (AN_AV) */
+  const H = U.avH || (U.avH = {}),
+    held = (t, m) => {
+      if (!AN_AV.hold[t]) return m;
+      const P = anAvP();
+      if (!isFinite(P) || P >= AN_AV.lock || !isFinite(m)) return (H['mv:' + t] = m);
+      if (H['mv:' + t] == null || !isFinite(H['mv:' + t])) H['mv:' + t] = m;
+      return H['mv:' + t];
+    },
+    m1 = held('TICBR1130', mvOf('ABC-011', 'TICBR1130')),
+    m2 = held('TICBR1150', mvOf('ABC-012', 'TICBR1150')),
+    z11 = fx('ABC-011', 'TICBR1130', 'LN47', m1),
+    z12 = fx('ABC-011', 'TICBR1130', 'LN46', m1),
+    z21 = fx('ABC-012', 'TICBR1150', 'LN49', m2),
+    z22 = fx('ABC-012', 'TICBR1150', 'LN48', m2),
+    w1 = K.K * (cv(K.cv.a1, z11) * pos('DITL-32') + cv(K.cv.a2, z12) * pos('DITL-32 #B')) * sq(drum - 6.4 * lf),
+    w2 = K.k2 * K.K * (cv(K.cv.b1, z21) * pos('DITL-33') + cv(K.cv.b2, z22) * pos('DITL-33 #B')) * sq(drum - 9.3 * lf),
+    Prh = isFinite(U.Prh) ? U.Prh : 0,
+    dr = isFinite(pd) ? Math.sqrt(Math.max(0, pd - Prh) / (165.4 - 34.9)) : NaN,
+    wrh = (14.8 * held('TICHR1002', mvOf('ABC-019', 'TICHR1002'))) / 66.0 * pos('DITL-35') * dr,
+    whp = (40 * held('TICMS1022', mvOf('ABC-051', 'TICMS1022'))) / 100 * pos('DITL-79') * dr,
+    cr = U.xt && U.xt.T ? U.xt.T.cr : NaN;
+  Object.assign(U.tt || (U.tt = {}), {
+    'PT-TS1013': ms > 0 ? r2(Math.max(-1, stage(K.ts13))) : r2(0),
+    'PT-TS1017': ms > 0 ? r2(Math.max(-1, stage(K.ts17))) : r2(0),
+    'TT-TS1011': r1(cr),
+    'PT-FW1115-A': isFinite(ps) ? r1(ps - (U.fwDp0 || 0)) : null,
+    'PT-FW1115-B': isFinite(ps) ? r1(ps - (U.fwDp1 || 0)) : null,
+    'TT-FW1011': isFinite(Pda) ? r1(Pda > 0.05 ? steamTsat(Pda) : isFinite(U.Tamb) ? U.Tamb : 30) : null,
+    'PT-FW1160': isFinite(drum) ? r1(drum + 3.5 * (ffw / 499.1) * (ffw / 499.1)) : null,
+    'ZT-FW1110-1': r1(z11),
+    'ZT-FW1110-2': r1(z12),
+    'ZT-FW1120-1': r1(z21),
+    'ZT-FW1120-2': r1(z22),
+    'FT-FW1109': r1(w1),
+    'FT-FW1119': r1(w2),
+    'FT-FW1149': r1(wrh),
+    'FT-FW1059': r1(whp)
   });
 }
 const AN_LO = { UA: 95.8, Co: 64.5, Qb: 1032, Wmax: 170, M: 25800, Tamb: 30 };
