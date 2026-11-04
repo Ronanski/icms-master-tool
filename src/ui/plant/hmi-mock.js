@@ -16,6 +16,7 @@
    - [data-ox="KEY|open text|closed text"]  open / closed of a valve in the plant model (UNIT.KEY 1 / 0);
    - [data-dsvc="DITL-xx|service text|on text|off text"]  a DITL row found by its service text (AUTO SELECTED ...), shown as text;
    - [data-ctl="TAG|pv|mv|mode|dp|unit"]  a value of a controller of the logic (PV / MV / mode); [data-hit] of a mach with ctl = its faceplate;
+   - [data-mov]     a MOV / XV of a DITL sheet (position % or OPEN / CLOSED); mach.mov = its faceplate (LS_FPOP.mov);
    - mach.tcs       a pump of the TCS (tcs.js TCS_OIL): state of AN.unit, click = the TCS faceplate (LS_FPOP.tcs);
    - [data-go=ID]   a "page:" link of the mockup = that page of the Plant view.
    Nothing here presses or forces anything: the faceplates do, the same ones the loop check dock watches. */
@@ -69,7 +70,7 @@
       const tags = new Set([...qa('[data-v]')].map(e => e.dataset.v));
       for (const tag of tags) {
         api.reg({ t: 'val', tag, v: '' }, X => ((LOG[tag] = X && isFinite(X.v) ? +X.v : null), showV(tag)), null);
-        if (def.unit && def.unit[tag]) api.reg({ t: 'val', tag: 'UNIT.' + def.unit[tag], v: '' }, X => ((PM[tag] = X && isFinite(X.v) ? +X.v : null), showV(tag)), null);
+        if (def.unit && def.unit[tag] && !/^tt:/.test(def.unit[tag])) api.reg({ t: 'val', tag: 'UNIT.' + def.unit[tag], v: '' }, X => ((PM[tag] = X && isFinite(X.v) ? +X.v : null), showV(tag)), null);
         showV(tag);
         qa(`[data-v="${tag}"]`).forEach(t => {
           const ti = document.createElementNS(NS, 'title');
@@ -90,6 +91,41 @@
             if (new RegExp(re).test(I.svc || '')) return DUI.rowVal(s, r) === 1 || !!(s.sig && s.sig[r + ':S']);
           }
           return null;
+        }, null);
+      /* a MOV / XV of a DITL sheet: position (MST of the sheet; a sheet with two valves: its FULLY OPEN / CLOSED outputs of the tag),
+         REMOTE / AUTO, the CRT push buttons of its input rows (OPEN, CLOSE, STOP, AUTO, ISOLATE, REINSTATE ...) */
+      const movInfo = (nm, tg) =>
+        call(() => {
+          const s = D().dOf(nm);
+          if (!s) return null;
+          const ms = (typeof MST !== 'undefined' && MST[s.name]) || [],
+            own = t => !tg || !/(?:XV|MV)-[A-Z]{2}\d{4}/.test(t) || t.indexOf(tg) >= 0;
+          let pos = ms.length === 1 && ms[0].pos != null ? +ms[0].pos : null;
+          const outs = DUI.outs(s) || [];
+          if (pos == null) {
+            const o = outs.find(x => own(x.name) && /FULLY OPEN/.test(x.name)),
+              c = outs.find(x => own(x.name) && /FULLY CLOSED/.test(x.name)),
+              vo = o ? D().dout(nm, o.row) : null,
+              vc = c ? D().dout(nm, c.row) : null;
+            pos = vo === 1 && vc !== 1 ? 100 : vc === 1 ? 0 : vo == null && vc == null ? null : 50;
+          }
+          const pbs = [],
+            ri = (re, any) => {
+              for (let r = 0; r < 64; r++) {
+                const I = DUI.rowInfo(s, r);
+                if (I && re.test(I.svc || '') && own(I.svc || '')) return any ? r : DUI.rowVal(s, r) ? 1 : 0;
+              }
+              return null;
+            };
+          for (let r = 0; r < 64; r++) {
+            const I = DUI.rowInfo(s, r),
+              t = (I && I.svc) || '';
+            if (!/P\.?B\b/.test(t) || /LOCAL/.test(t) || !own(t)) continue;
+            const w = /(OPEN|CLOSE|STOP|AUTO|MANUAL|ISOLATE|REINSTATE|START|RESET)\b/.exec(t);
+            if (w && !pbs.some(p => p.l === w[1])) pbs.push({ l: w[1], row: r });
+          }
+          const ro = outs.find(x => own(x.name) && /REMOTE SELECTED/.test(x.name));
+          return { pos, pbs, au: ri(/AUTO MODE SELECTED/), rem: ro ? D().dout(nm, ro.row) : null };
         }, null);
       const OX = {};
       new Set([...qa('[data-ox]')].map(e => e.dataset.ox.split('|')[0])).forEach(k => {
@@ -112,6 +148,7 @@
             if (what === 'mode') {
               const m = X ? X.m : '';
               e.textContent = m === 'M' ? 'Manual' : m === 'A' ? 'Auto' : m === 'R' ? 'Remote' : '-----';
+              if (dp === 'U') e.textContent = e.textContent.toUpperCase();
               e.setAttribute('fill', X ? C.dim : C.none);
             } else {
               const v = X ? X[what] : null;
@@ -279,8 +316,37 @@
           e.setAttribute('fill', v == null ? C.none : v ? C.run : kind === 'alarm' ? C.dim : C.stop);
         });
       };
-      tick();
-      HSYM.every(g, 500, tick);
+      /* plant model values kept by tag (AN.unit.tt: the LP heater temperatures, ...): def.unit[TAG] = 'tt:IO-TAG' */
+      const TT = Object.entries(def.unit || {}).filter(([, k]) => /^tt:/.test(k));
+      const tickTT = () => {
+        for (const [tag, k] of TT) {
+          const U = window.AN && AN.unit,
+            v = U && U.on && U.tt ? U.tt[k.slice(3)] : null;
+          const nv = v != null && isFinite(v) ? +v : null;
+          if (PM[tag] !== nv) (PM[tag] = nv), showV(tag);
+        }
+      };
+      /* motor operated / on-off valves of a DITL sheet: [data-mov="SHEET|TAG|pct"] = position %, "SHEET|TAG|oc" = OPEN / CLOSED */
+      const tickMov = () =>
+        qa('[data-mov]').forEach(e => {
+          const [nm, tg, how] = e.dataset.mov.split('|'),
+            I = movInfo(nm, tg);
+          if (!I || I.pos == null) {
+            e.textContent = '-----';
+            return e.setAttribute('fill', C.none);
+          }
+          if (how === 'pct') {
+            e.textContent = fmt(I.pos, 1) + ' %';
+            e.setAttribute('fill', C.val);
+          } else {
+            e.textContent = I.pos >= 99.5 ? 'OPEN' : I.pos <= 0.5 ? 'CLOSED' : 'TRAVEL ' + fmt(I.pos, 0) + ' %';
+            e.setAttribute('fill', I.pos > 0.5 ? C.run : C.stop);
+          }
+        });
+      const tick0 = tick;
+      const tickAll = () => (tick0(), tickTT(), tickMov());
+      tickAll();
+      HSYM.every(g, 500, tickAll);
       /* faceplates: click on the equipment = CONTROL, the Y / N square = PERMISSIVE · TREND · MONITOR (#59) */
       const curOf = m => (m.cur ? () => cur(m.cur) : null);
       const mon = m => m.mon || [];
@@ -296,6 +362,8 @@
         }
         if (m.fieldOp && window.LS_FPOP && LS_FPOP.field)
           return void LS_FPOP.field({ n: m.n, t: m.t, d: m.d, io: m.io, why: (m.why || '') + (m.fld ? '' : ' This pump has no plant model.'), st: () => (m.fld ? mst(m) : null), fld: m.fld ? on => AN.field(m.fld, on) : null });
+        if (m.mov && window.LS_FPOP && LS_FPOP.mov)
+          return void LS_FPOP.mov({ n: m.n, t: m.t, d: m.mov, info: () => movInfo(m.mov, m.tg || m.n), press: row => D().dpress(m.mov, row) });
         if (m.tcs && window.LS_FPOP && LS_FPOP.tcs) {
           const x = /^(mop|cop)([AB])$/.exec(m.tcs);
           return void LS_FPOP.tcs({

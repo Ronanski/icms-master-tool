@@ -1,5 +1,29 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.12 — 028 CONDENSATE, mockup page 05 in the app (2026-11-04, JISOO : HMI MOCKUP)
+
+**Work done.** `docs/hmi/mockups/temp/05-condensate.html` → Plant view **028 CONDENSATE** (`MK05`), `tools/hmi-mock/p05.py` →
+`src/ui/plant/hmi-mock-cd.js`; loop check COND → page `MK05`.
+- CEP-A / B = DITL-61A / 61B (M.3350 / M.3351), RUN / STOP, Y / N, current at DP ng plant model (AN_CD `cdI0/1`, `cdDp0/1`).
+- Bagong MOV / XV faceplate `LS_FPOP.mov` (fp-pop.js): POSITION, OPEN / CLOSED, REMOTE / AUTO, at ang CRT push buttons na binasa mula
+  sa input rows ng DITL sheet (OPEN, CLOSE, STOP, AUTO, ISOLATE, REINSTATE ...), bawat isa may EXECUTE / CANCEL → pindot ng row.
+  Valves: MV-MU1001 (DITL-60), XV-CD1006 (62), XV-CD1004 / 1005 (63, flash chamber spray), MV-CD1007 (64), MV-CD1008 (65),
+  XV-CD1114 (66), XV-CD1123 (67), XV-CD1125 (68), MV-CD1001 / 1002 / 1003 (69 / 70 / 71).
+- Controllers ng logic: LICCD1110A, LICCD1110B, LICCD1104, FICCD1120, FICCD1121 (MV % at mode; click = faceplate).
+- Values: logic transmitter kung mayroon (FT-CD1120, FT-CD1121, PT-CD1104, LT-CD1104-1 / 2 / 3), kung wala plant model:
+  PT-CD1110 `cdP`, LT-CD1110 `cdHw`, PT-CD1117 `cdPd`; TT-CD1110-1 / -2 / -3 at TT-CD1118 = `cdT` (condenser saturation = hotwell,
+  condenser O&M L15-1 p16); TT-CD1120 = TT-CD1101 ng AN_LP (ang ejector at gland steam condenser rise ay bago ang No.1 LPH inlet);
+  LP heater temps = `AN.unit.tt`.
+- NO-SOURCE (walang logic sheet at walang plant model, '-----'): TT-CD1110-4 flash chamber, TT-CD1119, FT-CD1115, FT-CD1122,
+  PT-CD1122, TT-CD1104. Para sa IRENE (plant model).
+- Bug fix ng runtime: ang `tt:` value ay nag-flicker sa '-----' (dalawang source sa iisang tag); ngayon iisa.
+
+**Checked (headless cloud).** 150 MW + RUN: CEP-A RUNNING 28.1 A, pump outlet 16.8 kg/cm2, condensate flow 379.8 T/H, LCV-CD1104
+17.5 % AUTO, FCV-CD1121 100 % MANUAL, MV-CD1001 / 1002 100 %; XV-CD1004 faceplate OPEN + EXECUTE → 100 % OPEN, CLOSE + EXECUTE →
+0 % CLOSED; walang JS error; `npm run check` SAME.
+
+**Not checked.** Live test sa PC ng user; bawat push button ng bawat valve (isa lang ang sinubok); phone size.
+
 ## 3.2.1-beta.11 — 036 TURBINE OIL, mockup page 04 in the app (2026-11-04, JISOO : HMI MOCKUP)
 
 **Work done.** `docs/hmi/mockups/temp/04-turbine-oil.html` → Plant view **036 TURBINE OIL** (`MK04`), `tools/hmi-mock/p04.py` →

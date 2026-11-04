@@ -680,7 +680,7 @@
     { id: 'CW', n: 'Circulating Water', cards: cwCards, page: 'CWN' },
     { id: 'MU', n: 'Make-Up / Closed Cooling Water', doc: 'MU_CCW_LOOP_CHECK.md', page: 'MK02' },
     { id: 'AIR', n: 'Instrument / Plant Air', doc: 'AIR_LOOP_CHECK.md', page: 'MK03' },
-    { id: 'COND', n: 'Condensate', doc: 'CONDENSATE_LOOP_CHECK.md' }
+    { id: 'COND', n: 'Condensate', doc: 'CONDENSATE_LOOP_CHECK.md', page: 'MK05' }
   ];
   /* ---------- state ---------- */
   const KEY = 'ls-lc-v1-';
