@@ -94,6 +94,14 @@ const block =
   '\n' +
   fs.readFileSync(__dirname + '/../plant/hmi-mock-sb.js', 'utf8') +
   '\n' +
+  fs.readFileSync(__dirname + '/../plant/hmi-mock-sp.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/../plant/hmi-mock-gn.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/../plant/hmi-mock-ex.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/../plant/hmi-mock-ov.js', 'utf8') +
+  '\n' +
   /* 3.2.0-beta.74: the operator pop-out faceplate beside the clicked equipment (motor; the controllers of plant.js) */
   fs.readFileSync(__dirname + '/../plant/fp-pop.js', 'utf8') +
   '\n' +
