@@ -813,7 +813,9 @@
           const v = S.rt.v[b.o[0]];
           return isFinite(v) ? v : +inp.value || 0;
         },
-        fine = niceStep(span),
+        /* live test 2026-11-05 (HICHR1002A bias damper: 0.1 / 0.5 % per press, 10 -> 30 % took 40 presses): an output in % steps
+           1 / 5 %, as the MV of a controller */
+        fine = /%/.test(u || '') ? 1 : niceStep(span),
         coarse = fine * 5;
       inp.onchange = () => set(+inp.value);
       const manB = E('button', {
