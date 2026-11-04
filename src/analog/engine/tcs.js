@@ -572,8 +572,14 @@ function tcsStep(U, dt) {
        MW, 9195) and takes 70 % of the windage heat (ASSUMED). Without it: 82 C at 3600 rpm with no load, over the 80 C of 1.12 (hold) */
     hs = c.hsp && (U.MW || 0) < 22.5 ? 0.3 : 1,
     XSS =
-      Ta + 15 + 37 * hs * sp * sp * Math.max(0.35, 1 - (U.MW || 0) / 7.5) + 120 * Math.max(0, 0.9 - (U.vac || 0)) * sp;
-  c.Tx += ((XSS - c.Tx) * dt) / TCS.tauX;
+      Ta + 15 + 37 * hs * sp * sp * Math.max(0.35, 1 - (U.MW || 0) / 7.5) + 120 * Math.max(0, 0.9 - (U.vac || 0)) * sp,
+    /* 3.2.1 (IRENE, 29.PNG 151 MW: TEST11101 ~ 3 38 / 38 / 37 C = the saturation of the condenser 0.056 kg/cm2A): on load the steam
+       carries the windage away and the hood is wet steam at the condenser saturation. ASSUMED: from the windage value at 7.5 MW to the
+       saturation at 22.5 MW (15 % load, the hood spray limit of PR-OPE-5002 9195), linear; below 7.5 MW unchanged */
+    Tsc = isFinite(U.cdP) && typeof anTsatA === 'function' ? anTsatA(U.cdP) : NaN,
+    fL = Math.max(0, Math.min(1, ((U.MW || 0) - 7.5) / 15)),
+    XS = isFinite(Tsc) && fL > 0 ? XSS + (Tsc + 120 * Math.max(0, 0.9 - (U.vac || 0)) * sp - XSS) * fL : XSS;
+  c.Tx += ((XS - c.Tx) * dt) / TCS.tauX;
   /* holds (PR-OPE-5002 8570 ~ 8576, ATS page 19 *1): vacuum low, exhaust hood temp. high, bearing oil press. low, thermal stress
      high (the steam outside Fig. 2 / 3); not inside the critical zone (8561) */
   const C = tcsCrit(U);
