@@ -27,6 +27,8 @@ ina-update sa bawat bagong system.
 
 17. **Sand vessel → DITL-771 ~ 777 sequence** (`LIMESTONE_SAND_PLANT_MODEL.md`, test `sand.js`, SEULGI). Ang mga solenoid ng DITL-771 / 776 ay nagpapagalaw sa field valves. Ang mga limit switch, seal PS, vessel PS-SD1800 (< 0.3 bar) at LSH ay bumabalik sa DITL-772 / 775 / 776, kaya tumatakbo ang isang conveying cycle. Plant air → seal at air tank PS-PA1800.
 
+18. **Plant air + sand venting fan → bottom ash transmitter** (`BOTTOM_ASH_PLANT_MODEL.md`, test `bottom_ash.js`, SEULGI). Plant air header (`paPU`) → PS-BH1750 (< 7 kg/cm2) → AIR SOURCE PRESSURE LOW / SYSTEM FAULT (DITL-BA25 / BA48). F-1301 ng sand model → MIR-M1301 sa DITL-BA03 / BA05 (charge permissive). Mga solenoid ng DITL-BA53 → limit switches ng transmitter valves.
+
 ## Wala pa (plano, kasama sa susunod na system)
 1. **Closed cooling temperature → temperatura ng bearing / winding ng motor.** Fixed pa ang AN_MT. (Ang turbine oil ay tapos na, item 9.)
 2. **Instrument air → pneumatic valves.** Sa ilalim ng 3.5, dapat hindi gumagalaw ang air-operated valve (XV-MU1109 at iba pa). Ngayon, mensahe lang sa faceplate ito. Gagawin pagkatapos ng Turbine Oil.
