@@ -120,6 +120,7 @@ Paalala: ang DITL-771 OUT19 "CONTROL O.0607" ay ang remote input na dumadaan lan
 4. **DITL-771, hindi umuulit ang cycle. Uri: (c), may pangalan ang eksaktong bahagi.**
    - Sa drawing, ang FF na "DONE" (M.081C) ay nire-reset ng sarili nitong TR314 (3 s).
    - Sa app (sand netlist, `tools/data/sand_model.py`), walang RESET ang FF na iyon (gate 47, r = []). Nananatiling 1 ang M.081C, kaya laging naka-reset ang start FF.
+   - **NAAYOS 2026-11-04 11:05 PM PHT (SEULGI):** `02b-sand.js` `sdResetFix` ikinabit ang R ng DONE (TR314) at ng LINE BLOCKAGE (VESSEL PRES. LOW) ayon sa PDF; umuulit na ang cycle (`sand.js` 6 PASS). Ebidensya: `UNLINK_AUDIT.md`.
    - Ganoon din ang FF ng LINE BLOCKAGE (gate 44, r = []).
    - Isang cycle lang ang tumatakbo pagkatapos ng START. Hindi ko binago ang parser.
 5. **DITL-771 row 5 (SIL-SD1300 REMOTE)** ay hindi itinatakda ng `ditl150.js`. Sa test, ako ang naglagay nito sa REMOTE bilang field action.
