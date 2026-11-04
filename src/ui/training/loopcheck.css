@@ -1,0 +1,65 @@
+/* 3.2.1-beta.4 LOOP CHECK DOCK (src/ui/training/loopcheck.js), after the team mockup https://claude.ai/artifact/4UbnHivhBbaUUB7WNJ7k4u:
+   a panel beside the app like the Training dock; one card per tag with three checks (plant model, signal / address, logic row).
+   Colours of the mockup: Y / PASS red, N / FAIL green (the project rule: Y = red = made), waiting amber, the card under test blue */
+#lcdock{--lc-pass:#b3261e;--lc-fail:#1e7d3a;--lc-wait:#9a6a00;--lc-acc:#1f5fa8;--lc-chip:#e4e9ef}
+html[data-theme=dark] #lcdock{--lc-pass:#f0766e;--lc-fail:#5fcf86;--lc-wait:#e0b44a;--lc-acc:#6ea8ea;--lc-chip:#222d39}
+html.lc-side,html.lc-bottom{overflow:hidden}
+html.lc-side body{width:calc(100vw - var(--lcw,380px))!important;min-height:100vh;transform:translateZ(0);overflow:visible!important}
+html.lc-bottom body{height:calc(100vh - var(--lch,45vh))!important;min-height:0!important;transform:translateZ(0);overflow:visible!important}
+#lcdock{position:fixed;z-index:400;display:flex;flex-direction:column;box-sizing:border-box;background:var(--c-pane);color:var(--c-tx);
+ font:400 14px/1.45 var(--uf);box-shadow:0 0 18px var(--c-shadow)}
+#lcdock[hidden]{display:none!important}
+html.lc-side body>#lcdock{top:0;right:calc(-1 * var(--lcw,380px));width:var(--lcw,380px);height:100vh;border-left:1px solid var(--c-line2)}
+html.lc-bottom body>#lcdock{left:0;right:0;bottom:calc(-1 * var(--lch,45vh));height:var(--lch,45vh);border-top:1px solid var(--c-line2)}
+#lcdock *{box-sizing:border-box}
+#lcdock .lc-hd{display:flex;align-items:center;gap:8px;padding:10px 12px 8px;border-bottom:1px solid var(--c-line)}
+#lcdock .lc-tt{flex:1;min-width:0;display:flex;flex-direction:column}
+#lcdock .lc-tt b{font-size:1.05rem;font-weight:600}
+#lcdock .lc-dim{color:var(--c-dim);font-size:.8rem}
+#lcdock button{font:500 .8rem/1.2 var(--uf);padding:5px 10px;min-height:0;border-radius:4px;border:1px solid var(--c-line2);background:var(--c-pane);color:var(--c-tx);cursor:pointer;box-shadow:none}
+#lcdock button:hover{border-color:var(--c-lineh)}
+#lcdock button:focus-visible{outline:2px solid var(--lc-acc);outline-offset:1px}
+#lcdock button:disabled{opacity:.5;cursor:default}
+#lcdock button.pri{background:var(--lc-acc);border-color:var(--lc-acc);color:var(--c-pane)}
+#lcdock .lc-ic{border:0;background:transparent;font-size:1rem;padding:4px 8px}
+#lcdock .lc-sys{display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-bottom:1px solid var(--c-line)}
+#lcdock .lc-sb{display:flex;justify-content:space-between;gap:8px;border:0;background:transparent;text-align:left;padding:5px 8px;font-weight:400;font-size:.85rem}
+#lcdock .lc-sb.on{background:var(--lc-chip);font-weight:600}
+#lcdock .lc-n{font-family:var(--mf);font-variant-numeric:tabular-nums;font-size:.78rem;color:var(--c-dim)}
+#lcdock .lc-stat{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:6px 12px 0;font-size:.78rem;color:var(--c-dim)}
+#lcdock .lc-stat .y,#lcdock .lc-stat .w{font-weight:600}
+#lcdock .lc-mini{padding:3px 8px;font-size:.75rem}
+#lcdock .lc-sum{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px}
+#lcdock .lc-sum div{background:var(--lc-chip);border-radius:4px;padding:4px 9px;font-size:.82rem}
+#lcdock .lc-sum b{font-family:var(--mf);font-variant-numeric:tabular-nums}
+#lcdock .lc-body{flex:1;min-height:0;overflow:auto;padding:0 12px 12px;display:flex;flex-direction:column;gap:8px}
+#lcdock .lc-sec{font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--c-dim);margin:8px 0 0}
+#lcdock .lc-card{border:1px solid var(--c-line2);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+#lcdock .lc-card.todo{cursor:pointer}
+#lcdock .lc-card.todo:hover{border-color:var(--c-lineh)}
+#lcdock .lc-card.next{border-color:var(--lc-acc);box-shadow:0 0 0 1px var(--lc-acc)}
+#lcdock .lc-h{display:flex;gap:10px;align-items:flex-start}
+#lcdock .lc-a{flex:1;min-width:0}
+#lcdock .lc-tag{font-family:var(--mf);font-weight:500;font-size:.85rem;overflow-wrap:anywhere}
+#lcdock .lc-act{font-size:.82rem}
+#lcdock .lc-res{font-weight:600;font-size:.72rem;padding:2px 7px;border-radius:3px;border:1px solid currentColor;white-space:nowrap}
+#lcdock .lc-cks{display:grid;grid-template-columns:1fr;gap:4px}
+#lcdock .lc-ck{background:var(--lc-chip);border-radius:4px;padding:5px 8px;font-size:.76rem;min-width:0;overflow-wrap:anywhere}
+#lcdock .lc-ck b{display:block;font-size:.64rem;letter-spacing:.05em;text-transform:uppercase;color:var(--c-dim);font-weight:500}
+#lcdock .y{color:var(--lc-pass);font-weight:600}
+#lcdock .n{color:var(--lc-fail);font-weight:600}
+#lcdock .w{color:var(--lc-wait);font-weight:600}
+#lcdock .lc-why{font-size:.78rem;color:var(--lc-fail)}
+#lcdock .lc-un{font-size:.78rem;color:var(--lc-wait)}
+#lcdock .lc-msg{font-size:.78rem;color:var(--c-dim)}
+#lcdock .lc-msg.warn{color:var(--lc-wait);font-weight:500}
+#lcdock .lc-btns{display:flex;gap:6px;flex-wrap:wrap}
+#lcdock .lc-ft{border-top:1px solid var(--c-line);padding:8px 12px;display:flex;flex-direction:column;gap:6px;max-height:34%;overflow:auto}
+#lcdock .lc-lbl{font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--c-dim)}
+#lcdock .lc-fl{display:flex;flex-direction:column;gap:2px}
+#lcdock .lc-fi{border:0;background:transparent;text-align:left;padding:2px 0;font-weight:400;font-size:.78rem;color:var(--lc-fail);overflow-wrap:anywhere}
+#lcdock .lc-fb{display:flex;gap:6px}
+/* phone / portrait (the panel below the app): the systems on one row, the FAIL list shorter */
+html.lc-bottom #lcdock .lc-sys{flex-direction:row;overflow-x:auto;padding:6px 12px}
+html.lc-bottom #lcdock .lc-sb{flex:0 0 auto;gap:6px}
+html.lc-bottom #lcdock .lc-ft{max-height:22%}
