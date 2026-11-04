@@ -1,5 +1,30 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.19 — DRUM AND MAIN STEAM, mockup page 07 in the app (2026-11-04, JISOO : HMI MOCKUP)
+
+**Work done.** `docs/hmi/mockups/temp/07-drum-main-steam.html` → Plant view **DRUM AND MAIN STEAM** (`MK07`), `tools/hmi-mock/p07.py`
+→ `src/ui/plant/hmi-mock-ms.js`.
+- Values ng logic: drum pressure at level (LICBR1001B PV = compensated level, ABC-010; LT-BR1001-1 / 2 / 3), superheater temps,
+  main steam flow / pressure, main steam temp = TICMS1004 PV (ABC-012), turbine inlet PT-MS1006-1, HP bypass, cold / hot reheat.
+- Controllers: PICMS1002, PICMS1006, TICMS1022, TICHR1002, PICHR1003, TICHR1012, HICBR1391, PICHR1391 (click = faceplate).
+- MOV / XV faceplate: MV-BD1001 (DITL-38, ang drawing mismo), MV-BD1002 / MV-MS1391 / MV-MS1392 (DITL-38 instances, world.js W.MCV),
+  MV-TS1001 (DITL-94), XV-MS1011 (DITL-88), XV-CR1011 (DITL-73), XV-HR1021 / 1022 (DITL-80 / 81).
+- Turbine speed = plant model `AN.unit.rpm`.
+- NO-SOURCE ('-----', walang ABC sheet at walang plant model): TT-BR1020 / 1030 / 1040, TT-BR1110, TT-BR1120-1 / -2, PT-BR1130,
+  PT-BR1150, TT-MS1007, PT-HR1001, PT-FW1160, FT-FW1109 / 1119 / 1149 / 1059, ZT-FW1110 / 1120; turbine stop / control / reheat
+  valve positions; XV-CR1901, FV-CR1902 (wala sa DCS sheet).
+
+**Added in beta.19 (thread "Finish, test, and release simulator", 2026-11-04 10:50 PM PHT).** (1) PR #134 page 07 rebased on beta.18 (was
+numbered beta.16, clash). (2) Page 07 now shows the same plant model value as page 06 for PT-FW1160, FT-FW1109 / 1119 / 1149 / 1059 and
+ZT-FW1110-1 / -2, ZT-FW1120-1 / -2 (IRENE beta.16 `anFwTagStep`; before: '-----' on page 07, a number on page 06). New test
+`tests/regress/ms_page_values.js` ALL PASS cloud. (3) SEULGI bottom ash plant model (PR #121, `BOTTOM_ASH_PLANT_MODEL.md`, test
+`bottom_ash.js` PASS cloud). Observation, not changed: drum level LT-BR1001-1 / 2 / 3 reads -79 / -84 / -74 at Start at 150 MW.
+
+**Checked (headless cloud).** 150 MW + RUN: drum 134.2 kg/cm2, main steam 486.7 T/H 122.6 kg/cm2 540 °C, 3600 rpm; XV-MS1011 OPEN +
+EXECUTE → OPEN, CLOSE → CLOSED; walang JS error; `npm run check` SAME.
+
+**Not checked.** Live test, phone size, iba pang push button.
+
 ## 3.2.1-beta.18 — FIELD · LOCAL PANEL on the motor faceplate, and the motor loop check list (2026-11-04, thread "Build loop check dock in app")
 
 **Problem.** In the live loop check of 030 CIRCULATING WATER, MINA could not test LOCAL start / stop or auto cut-in without a force on

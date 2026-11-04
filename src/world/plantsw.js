@@ -164,6 +164,31 @@
     ['SAND', 'fan', /^SAND SILO VENT FILTER RUNNING/, /\)DITL-774$/],
     ['VENT', 'fan', /^VENT FILTER RUNNING$/, /\)DITL-777$/]
   ].forEach(([w, k, re, sh]) => L.push([w, sdSw(k), 0.5, 'hi', 0, 0, re, sh]));
+  /* 3.2.1 (SEULGI, boiler.js AN_BA): the field switches of the bottom ash transmitter (IO list station 103 I.0482 ~ I.048F, by address on
+     the DITL-BA sheets: station 104 reuses these addresses for the coal feeders) and of the mechanical conveyors (DITL-BA59 / BA60 rows by
+     tag, no address). 1 = made: ZSO / ZSC of the inlet, outlet, venting and pressing valves, PSH-BH1750, PSL-BH1750 (1 = low),
+     PS-BH1750 (1 = air tank low), LS-BH1750; remote selectors at REMOTE, local emergency stop contacts closed (N.C.), speed switches */
+  const baSw = k => () => (window.AN && AN.unit && AN.unit.ba && isFinite(AN.unit.ba.sw[k]) ? AN.unit.ba.sw[k] : NaN),
+    BAS = /\)DITL-BA\d+$/;
+  [
+    ['I.0482', 'inlO'], ['I.0483', 'inlC'], ['I.0484', 'outO'], ['I.0485', 'outC'], ['I.0486', 'ventO'], ['I.0487', 'ventC'],
+    ['I.0488', 'prsO'], ['I.0489', 'prsC'], ['I.048A', 'psh'], ['I.048B', 'psl'], ['I.048D', 'air'], ['I.048F', 'lsh']
+  ].forEach(([a, k]) => L.push([a, baSw(k), 0.5, 'hi', 0, 0, null, BAS]));
+  [
+    ['MIL-L-1090', 'rem'], ['MIL-L-1091', 'rem'], ['MIL-L-1092', 'rem'], ['MIL-S-1092-A', 'rem'], ['MIL-S-1092-B', 'rem'], ['MIL-F-1091', 'rem'],
+    ['ES-L-1090', 'es'], ['ES-L-1091', 'es'], ['ES-L-1092', 'es']
+  ].forEach(([a, k]) => L.push([a, baSw(k), 0.5, 'hi', 0, 0, null, /\)DITL-BA59$/]));
+  /* the bottom ash transmitter conveys to the sand silo (DITL-BA02 row 12 SAND SILO HI LEVEL, DITL-BA05 / BA03 rows MIR-M1301): its charge
+     waits for the sand silo venting fan F-1301 running, the same field contact as the sand drawings (boiler.js AN_SD fan; 20.PNG: stopped) */
+  L.push(['MIR-M1301', sdSw('fan'), 0.5, 'hi', 0, 0, null, BAS]);
+  /* the speed switch is made while its machine turns: the running contact of the same machine (DITL-BA59 outputs 8 ~ 10) */
+  const baRun = r => () => {
+    if (!(window.AN && AN.unit && AN.unit.ba)) return NaN;
+    const s = (baRun.s = baRun.s || ((typeof S !== 'undefined' && S.sheets) || []).find(x => /\)DITL-BA59$/.test(x.name)));
+    const o = s && W._o && W._o[s.name];
+    return o ? ((o.has ? o.has(r) : o.includes(r)) ? 1 : 0) : NaN;
+  };
+  [['SS-BH1750', 7], ['SS-BH1751', 8], ['SS-BH1752', 9]].forEach(([a, r]) => L.push([a, baRun(r), 0.5, 'hi', 0, 0, null, /\)DITL-BA60$/]));
   const DB0 = 10;
   let map = null,
     mapK = '';
