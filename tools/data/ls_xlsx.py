@@ -465,9 +465,15 @@ def convert(bk, name, code):
     byc = {}
     for c, r in wv:
         byc.setdefault(c, set()).add(r)
+    # 3.2.1 (LS212 rows 15 / 17): not when the upper piece ends on a horizontal wire and the lower piece starts in a corner (a
+    # horizontal wire that turns down at this column): two wires, the LibreOffice render shows the gap (UNLINK_AUDIT.md)
+    hz = set(wh)
+    corner = lambda c, r: ((r, c) in hz) != ((r, c - 1) in hz)
     for c, rs in byc.items():
         L = sorted(rs)
         for a, b in zip(L, L[1:]):
+            if ((a + 1, c) in hz or (a + 1, c - 1) in hz) and corner(c, b):
+                continue
             if 1 < b - a <= 3 and not any((c, x) in box_v for x in range(a + 1, b)):
                 for x in range(a + 1, b):
                     wv.add((c, x))
@@ -594,7 +600,8 @@ def pins(G, ln, ci, T):
                 continue
             c.append('used')
             L = ins if side == 'L' else outs
-            w = next((p for p in L if abs(p[1] - cy) < 0.4), None)
+            # 3.2.1 (LS210 TR419 -> M.1835 AND): the circle may sit 0.5 above the wire (pins are 2.25 apart: 0.9 is safe)
+            w = next((p for p in L if abs(p[1] - cy) < 0.9), None)
             if w:
                 q = w[0]
                 # the wire is drawn to the box under the circle: it ends at the circle

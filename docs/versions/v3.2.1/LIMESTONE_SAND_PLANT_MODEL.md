@@ -53,16 +53,19 @@ Mga manual valve (field action, `AN.swValve`): HV01, ang control air isolation n
 - **Ngayon:** sarado at naka-seal ang mga valve at walang fault, gaya ng 19.PNG. Kapag sinara ang HV01, lumalambot ang seal at lumalabas ang CLOSE FAULT pagkalipas ng 15 s, kasama ang B.1250 / B.1251. Kapag binuksan ulit ang HV01, nawawala ang fault.
 
 ## Mga natagpuan (hindi plant model)
-1. **DITL-LS212, hindi mabuksan ang isolating valves A ~ H mula sa CRT. Uri: (c), may pangalan ang eksaktong bahagi.**
-   - **Row 10 M.184C** "HMI SWITCH". Sa drawing, ito rin ang address ng output ng FF na "SET / RESET HMI SWITCH". Binabasa ito ng app (`mirModel`) bilang salamin ng output, kaya hindi ito kayang i-set ng pindot.
-   - **Linya ng row 15 (M.182D PERMIT) at row 17 (M.1846 PLANT EMERGENCY STOP).** Sa app, iisang net (n4) ang dalawa: ang raw shape ay iisang connector sa x 147.5, mula y -159.4 hanggang -100.9. Pero sa render ng LibreOffice, may puwang ang linya sa ilalim ng dot. Kaya laging naka-ON ang RESET ng FF pagkalipas ng 60 s.
-   - **Epekto:** walang M.183E "ISOLATING VALVES ALL OPENED", kaya hindi ma-enable ang fill cycle (DITL-LS10).
-   - **Hindi ko binago ang parser.** Para ito sa logic reader at kailangan ng pasya.
+1. **DITL-LS212, hindi mabuksan ang isolating valves A ~ H mula sa CRT. Uri: (a), naayos na (2026-11-05 12:00 AM PHT).**
+   - Ang HMI switch M.184C ay hawak na ng sariling SET / RESET latch; magkahiwalay na ang wire ng row 15 PERMIT at row 17 PLANT EMERGENCY STOP; ang "LINE 3" ay nakakabit sa sariling output. Ebidensya: `UNLINK_AUDIT.md`.
+   - Kasama: LS210 conveying air (bilog ng TR419) at LS100 M.1830 (bilog ng ENABLED).
+   - Ngayon: isang pindot ng ISOLATING VALVE OPEN → bukas ang 8 valve, sarado ang 2 bypass, ALL OPENED = 1, bukas ang conveying air pagkalipas ng 12 s; FEEDER START → tumatakbo ang feeder, LIMESTONE SYSTEM READY = 1; PLANT EMERGENCY STOP 60 s → nare-reset ang switch at sumasara ang valves.
+1b. **DITL-LS10, hindi ma-ENABLE ang fill cycle. Uri: (c), nagsasalungat ang drawing sa eksaktong bahaging ito: E10211 sheet 10, ang input ng row 7 sa AND ng M.180F.**
+   - Sa AND ng M.180F FILLING CYCLE ENABLED, ang row 7 I.0171 ROTOFEEDER FAULT (MIT-M1311, IO list "#1 Limestone feeder trip") ay pumapasok nang WALANG bilog (walang negation circle sa drawing object at sa render). Sa parehong sheet, ang AND ng M.183F READY ay may bilog sa parehong signal, at ang LS110 feeder start ay may bilog din.
+   - Kaya ang ENABLE ay kailangan ng FAULT = 1, at ang READY at feeder ay kailangan ng FAULT = 0: hindi sabay mangyayari. Hindi ko binago ang drawing (rule: ang drawing ang batayan). Kailangan ng planta o ng vendor (HCE) ang tamang basa.
+   - Epekto: hindi pa maabot ang step 1 ~ 8 ng fill cycle.
 2. **DITL-LS110 row 21, "I.0173 ROTOFEEDER RUNNING".** Sa IO list, ang I.0173 ay MIR-LM1313, ang running ng silo vent fan. Ang I.0170 ang running ng feeder. Ang address ang sinunod (rule 1), kaya ang HMI indicator na "ROTOFEED RUNNING" ng LS110 ay nagpapakita ng vent fan.
 3. **Ang rule ng `ditl150.js` na "LIMESTONE FEEDER | ROTO FEEDER running"** ay hindi tumatama sa mga row ng LS ("ROTOFEEDER", walang space). Tama naman ito, dahil naka-STOP ang feeder sa 19.PNG (SIM1311 0.0).
 
 ## Hindi pa nasubok
-- Ang buong fill cycle (step 1 ~ 8), ang pagtakbo ng feeder at ang conveying pressure. Hindi ito maabot dahil sa finding 1.
+- Ang buong fill cycle (step 1 ~ 8). Hindi ito maabot dahil sa finding 1b. Nasubok na ang isolating valves, conveying air, feeder at READY (`limestone.js`).
 - Ang air tank low (I.016A), dahil walang paraan pa para ibaba ang plant air header sa test.
 - Wala pa sa ABC ang PT-LM1811 / 1812 at ang silo level (AI0432 ~ AI0434). Nasa unit keys pa lang ito: `lmPl`, `lmPd`, `lmSilo`.
 

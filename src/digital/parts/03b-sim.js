@@ -155,7 +155,7 @@ function simulateRun(nl, act) {
     (nl.ufx || []).forEach(n => (w[n] = 1));
     const MR = nl.mir || [];
     nl.src.forEach(s => {
-      if (act.has(s.row) && !MR.some(m => m.row === s.row)) w[s.n] = 1;
+      if (act.has(s.row) && !MR.some(m => m.row === s.row && !m.hmi)) w[s.n] = 1;
     });
     MR.forEach(m => {
       if (m.neg ? !v[m.n] : v[m.n])
@@ -837,7 +837,7 @@ const cmpTxt = g =>
   (g.unit || '');
 const lockd = (s, i) =>
   mvForced(s).has(i) ||
-  (s.nl.mir || []).some(m => m.row === i) ||
+  (s.nl.mir || []).some(m => m.row === i && !m.hmi) ||
   grpState(s).has(i); /* v10: the input of a row = its SERVICE cell, only rows that a wire reaches */
 const KN = { on: 'ON DELAY', off: 'OFF DELAY', pulse: 'PULSE', npulse: 'PULSE (falling)', flash: 'FLASHER' };
 /* SIMULATE on / off (the bmode button, 07-app-events.js) and Reset: the DITL states start again (3.2.0 Web Worker: no DOM, the engine
