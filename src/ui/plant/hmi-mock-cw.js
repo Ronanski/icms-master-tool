@@ -347,9 +347,9 @@
       DF2: { n: 'S-1504', t: 'Debris filter', io: 'DIR-DF1002', d: 'DITL-39', df: { pbs: [['AUTO START', 18, 'M.0792'], ['AUTO STOP', 20, 'M.0793']], st: 14, dp: 'DPISW1504', perm: [], why: '' } },
       CTA: { n: 'CTCS-A', t: 'P-1113', io: 'DOP-CTCS1001', d: 'DITL-119' },
       CTB: { n: 'CTCS-B', t: 'P-1114', io: 'DOP-CTCS1002', d: 'DITL-119' },
-      HUA: { n: 'P-0761A', t: 'Unloading', io: 'MIR-P0761A', d: 'STN105 DI', fieldOp: true, why: HYPO },
+      HUA: { n: 'P-0761A', t: 'Unloading', fld: 'hypoU', io: 'MIR-P0761A', d: 'STN105 DI', fieldOp: true, why: HYPO },
       HDA: { n: 'P-0762A', t: 'NaOCl dosing', fld: 'hypo', io: 'MIR-P0762A', d: 'STN105 DI', fieldOp: true, why: HYPO },
-      HDB: { n: 'P-0762B', t: 'NaOCl dosing', io: 'MIR-P0762B', d: 'STN105 DI', fieldOp: true, why: HYPO }
+      HDB: { n: 'P-0762B', t: 'NaOCl dosing', fld: 'hypoB', io: 'MIR-P0762B', d: 'STN105 DI', fieldOp: true, why: HYPO }
     },
     unit: {
       LISW1501: 'swLvl',
