@@ -1,4 +1,4 @@
-# Plant model: page 08 AUX STEAM AND VACUUM, mga value (3.2.1-beta.21)
+# Plant model: page 08 AUX STEAM AND VACUUM, mga value (3.2.1-beta.22)
 
 Ang page 08 (JISOO, beta.20) ay may 14 value na '-----' dahil walang ABC / DITL sheet na bumabasa sa mga ito (TCS tag o DCS AI na
 display lang). Galing na ang mga ito sa plant model: `src/analog/engine/unit.js` anAsTagStep → `AN.unit.tt`, binabasa ng page sa
