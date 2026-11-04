@@ -33,6 +33,10 @@
     [/CONDENSATE PUMP\s*-?B\b/, 0, 1, '28.png CP-B (P-1116B) standby, R A'],
     [/\bDOP\s*A\b|DIESEL OIL PUMP\s*A\b/, 1, 0, 'P-0702A DIESEL OIL PUMP 25.4 A, R M'],
     [/\bDOP\s*B\b|DIESEL OIL PUMP\s*B\b/, 0, 1, 'P-0702B standby, R A'],
+    /* 3.2.1 (IRENE, MU / CCW plant model): the aux. cooling water pumps had no rule: at 150 MW both stood stopped, so the closed
+       cooling loop had no flow (27.PNG: ACWP-A running 28.2 A R M, ACWP-B 0.0 A R A standby) */
+    [/\bA-AUX\.?\s*CW PUMP\b|AUX\.?\s*COOLING WATER PUMP\s*[-(]?\s*A\b|\bACWP\s*-?A\b/, 1, 0, '27.PNG ACWP-A (P-1108A) 28.2 A, R M'],
+    [/\bB-AUX\.?\s*CW PUMP\b|AUX\.?\s*COOLING WATER PUMP\s*[-(]?\s*B\b|\bACWP\s*-?B\b/, 0, 1, '27.PNG ACWP-B (P-1108B) 0.0 A, R A standby'],
     [/\bMWP\s*[AC]\b/, 1, 0, 'MWP-A 20.5 A, MWP-C 20.8 A'],
     [/\bMWP\s*B\b/, 0, 0, 'MWP-B stopped, R M'],
     [/BOTTOM ASH SCREW COOLER|ASH COOLER/, 0, 0, 'L-1060A ~ D ASH COOLER stopped'],
@@ -128,6 +132,14 @@
        computed by the drawing from the analog position (DITL-03H HP BYPASS ... POS. < 10 %) */
     if (/PURGE/.test(t)) return null;
     if (/\bPOS(\.|ITION)/.test(t) && /[<>]/.test(t)) return null;
+    /* 3.2.1 (IRENE, MU / CCW plant model): DITL-76 / 77 row 1 "x-AUX. CW PUMP AUTO PB" is not a pulse: it is M.1232 / M.1242, the
+       same address as row 4 "AUTO SELECTED" (memory list STN103 "AUX. COOLING WATER PUMP AUTO MODE (CRT)"), and the drawing takes
+       output 51 AUTO SELECTED straight from it (one address = one signal, CLAUDE.md 1). Before, row 1 stood 0 at 150 MW, ACWP-B was
+       not in AUTO and did not start when ACWP-A stopped */
+    if (/AUX\.?\s*CW PUMP AUTO PB/.test(t)) {
+      const e = eqOf(t);
+      return e ? e.auto : null;
+    }
     if (/P\.\s*B\.?|\bPB\b|PUSH ?BUTTON|\bCOMMAND\b|\bRESET\b|ACKNOW|LAMP TEST|\bTEST\b|AUTO START|STARTING|STOPPING/.test(t))
       return 0;
     /* HI-HI / LO-LO level switches: not made on load (the MOV TORQUE switch is left to the MOV model: a drain MOV shut on
