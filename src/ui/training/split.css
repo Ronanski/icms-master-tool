@@ -42,7 +42,7 @@ body.lssplit.spl-nologic #plantws { width: calc(100vw - var(--railW, 57px)) !imp
 .splp .ph .d { color: var(--c-dim, #9aa6b1); }
 .splp .ph .g { flex: 1; }
 .splp .ph button { height: 24px !important; padding: 0 8px !important; font-size: 11px !important; }
-.splp .bd { flex: 1; overflow: auto; min-height: 0; }
+.splp .bd { flex: 1; overflow: auto; min-height: 0; pointer-events: auto; font: inherit; fill: initial; stroke: none; }
 .splp table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .splp th { position: sticky; top: 0; background: #1a2026; color: var(--c-dim, #9aa6b1); text-align: left; font-weight: 600; padding: 6px 10px; z-index: 1; }
 .splp td { padding: 5px 10px; border-bottom: 1px solid #222a31; font-family: var(--mf, monospace); white-space: nowrap; }
@@ -69,3 +69,14 @@ body.lssplit.spl-nologic #plantws { width: calc(100vw - var(--railW, 57px)) !imp
 /* the sheet list of the Logic page: in the split the Batch picker chooses the drawing, the drawing gets the width */
 body.lssplit #side { display: none !important; }
 body.lssplit #dp { max-width: 34% !important; }
+
+.splp td button.ex.inj { margin-left: 6px; }
+.splp td button.ex.inj.on { border-color: #c0392b; color: #ff8a80; }
+.splp td button.ex.inj:disabled { opacity: .4; cursor: not-allowed; }
+/* tablet landscape and small PC (1024 - 1279 px): the whole tag table fits the panel, no side scroll */
+@media (max-width: 1279px) {
+  .splp th, .splp td { padding: 4px 6px; }
+  .splp td.n { min-width: 110px; }
+  .splp td:has(> button.ex) { white-space: normal; }
+  .splp td button.ex.inj { margin: 4px 0 0; display: block; }
+}
