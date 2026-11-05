@@ -386,6 +386,11 @@
         if (a.sd) sup++;
         else act.set(a.k, { t: a.t, text: a.nm + ' ' + a.lv, sh: a.sh, kind: a.kind, ack: a.ack });
       }
+    /* live test 2026-11-05 (SWP-A, MWP-A: "2 ALARMS" for one trip): a motor TRIP of the alarm table ("SEAWATER PUMP A TRIP") and the
+       first-out TRIP event of the same drawing are one alarm; the event is not counted a second time */
+    const nm0 = x => String(x || '').replace(/^\(\d+\)/, '');
+    const mot = new Set(AL.filter(a => !a.rtn && !a.sd && a.kind === 'TRIP').map(a => nm0(a.sh)));
+    for (const [k, e] of act) if (e && e.text && / = 1$/.test(e.text) && mot.has(nm0(e.sh)) && !/\bMFT\b|MASTER FUEL/i.test(e.text)) act.delete(k);
     return { act, sup, AL };
   }
   window.lsActiveAlarms = () => {

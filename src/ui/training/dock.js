@@ -259,7 +259,10 @@
         const bad = !!o.unk || o.some(x => runRow(x.s, x.row));
         if (!b || (b.bad && !bad) || (b.bad === bad && o.length < b.o.length)) b = { o, bad };
       }
-      if (b) b.o.forEach(add);
+      /* live test 2026-11-04 (SWBP DITL-30 rows 17-19): the cheapest way is only one of several; the row keeps its group (this net and
+         the value it needs), so a later scan sees the group met by another input (SWP-A or C running instead of B) and does not list
+         the row as missing */
+      if (b) b.o.forEach(x => add({ ...x, alts: (x.alts || []).concat({ s, n, want }) }));
       return out;
     };
     if (g.t === 'NOT') return nx(g.ins[0], 1 - want);
@@ -291,9 +294,10 @@
     }
     return out;
   }
-  function permOf(s) {
+  /* live test 2026-11-05: stR0 = another push button row (a valve OPEN / CLOSE P.B.), noRun = do not aim at a RUNNING output */
+  function permOf(s, stR0, noRun) {
     const nl = s.nl,
-      stR = pbRow(s, /\bSTART\b|\bST$/);
+      stR = stR0 != null ? stR0 : pbRow(s, /\bSTART\b|\bST$/);
     if (stR < 0) return null;
     const C = ctx(s),
       stN = new Set(DUI.rowNets(s, stR, 'L') || []);
@@ -322,6 +326,7 @@
     /* the target: the RUNNING output of the motor (what the start must reach, through its trips), else the flip-flop set by the
        START P.B., else the first start command output */
     let t = null;
+    if (!noRun)
     try {
       const ro = DUI.outs(s).find(o => /RUNNING/.test(o.name) && !/NOT RUNNING|STOP/.test(o.name)),
         on = ro && (nl.outs || []).find(o => o.row === ro.row);
@@ -330,7 +335,8 @@
     if (t == null)
     for (const g of nl.gates || [])
       if (g.t === 'FF' && (g.s || []).some(m => reach(m))) {
-        t = g.s.find(m => reach(m));
+        /* a valve push button (noRun): the flip-flop OUTPUT, so a RESET that holds it (DITL-32: MFT, steam flow < 10 %) is listed */
+        t = noRun && g.out && g.out.length ? g.out[0] : g.s.find(m => reach(m));
         break;
       }
     if (t == null) {
@@ -339,6 +345,24 @@
     }
     if (t == null) return null;
     return needNet(s, t, 1, P, 0, new Set(), []);
+  }
+  /* live test 2026-11-05 (XV-FW1111-1 OPEN did nothing at Cold, the faceplate said EXECUTED): the input rows that keep the command of
+     a push button row from going through, [{ svc, want, now, other }] (empty = nothing blocks it) */
+  function pbBlock(addr, row) {
+    const s = dOf(addr);
+    if (!s || !window.DUI) return null;
+    try {
+      if (!s.nl) s.nl = netlist(s);
+      const L = permOf(s, row, true) || [];
+      return L.filter(r => r.row !== undefined)
+        .map(r => {
+          const rs = r.s || s;
+          return { svc: rowInfo(rs, r.row).svc, want: r.want, now: DUI.rowVal(rs, r.row), other: rs !== s ? dName(rs) : '' };
+        })
+        .filter(x => x.now !== x.want);
+    } catch (e) {
+      return null;
+    }
   }
   function interlock(addr) {
     const s = dOf(addr),
@@ -385,7 +409,15 @@
     const rows = [...P.values()].map(r => {
       const info = rowInfo(r.s, r.row),
         v = DUI.rowVal(r.s, r.row);
-      return { ...info, s: r.s, other: r.s !== s ? dName(r.s) : '', cmp: r.cmp || '', want: r.want, ok: v === r.want, start: r.s === s && /\bSTART\b/.test(info.svc) && !/PERMI/.test(info.svc) };
+      /* one of several ways (an OR to 1, an AND to 0): met when its group net already has the value it needs */
+      const grp = (r.alts || []).some(a => {
+        try {
+          return (simSheet(a.s).v[a.n] ? 1 : 0) === a.want;
+        } catch (e) {
+          return false;
+        }
+      });
+      return { ...info, s: r.s, other: r.s !== s ? dName(r.s) : '', cmp: r.cmp || '', want: r.want, ok: v === r.want || grp, start: r.s === s && /\bSTART\b/.test(info.svc) && !/PERMI/.test(info.svc) };
     });
     const miss = rows.filter(r => !r.ok && !r.start);
     return { sheet: nm, rows: rows.filter(r => !r.start), miss, pb: pb || rows.some(r => r.start), live, eq: eq0 };
@@ -640,6 +672,12 @@
            the dock saw no selector there, so ACWP-B stayed LOCAL */
         if (/REMOTE (MODE )?SELECTED/.test(v) && !/\b(AUTO|NOT)\b/.test(v)) R.rem.push(r);
         else if (/\bAUTO MODE SELECTED\b/.test(v)) R.au.push(r);
+      }
+      /* live test 2026-11-05 (CEP-A / B, DITL-61A rows 4 / 14 "CONDENSATE PUMP A M.1182 AUTO SELECTED", no "MODE"): the faceplate AUTO
+         stayed grey (mode unknown) although amRow finds the CRT row; the mode is read from that row too */
+      if (!R.au.length) {
+        const a = call(() => amRow(s), null);
+        if (a) R.au.push(a.row);
       }
       s._mrows = R;
     }
@@ -3535,6 +3573,7 @@
     needNet,
     leaves,
     permOf,
+    pbBlock,
     dpress,
     dset,
     dout,

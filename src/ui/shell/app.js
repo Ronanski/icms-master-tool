@@ -718,6 +718,8 @@
     buildPlantChip(start);
     const gOp = E('div', { cls: 'tb g-op' }, [start.w]);
     pvPop = () => pvWindow(start.w, gOp, run, chip, clock);
+    /* 3.2.1 split view (training/split.js): View › HMI › Float = this PLANT VIEW window */
+    window.lsPlantWindow = () => pvPop();
     const tbar = E('div', { cls: 'tbar' }, [gRun, gDitl, gZoom, gView, gNav, gSheet, gOp]);
     const srch = E('div', { cls: 'gs-search' }, [ansb, gscope]);
     /* narrow screens: the search is one icon; it opens as a full-width row under the bar */

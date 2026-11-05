@@ -266,32 +266,50 @@
       }
       return o;
     };
-    const lsR = svcRows(/LOCAL\s+START\s+P\.?\s*B/i).pop(),
+    /* live test 2026-11-05 (ASH COOLER A, DITL-21A: "LOCAL START/FORWARD P.B." row 22 I.0257, and the E-stop is a "NOT EMERGENCY STOP"
+       field contact, row 18 I.0256, 0 at Cold): both are read too; esN = that contact (EMERGENCY STOP = 0, RELEASE = 1) */
+    const isI = r => /^I\./.test(call(() => DUI.rowInfo(s, r).tag, '') || '');
+    const lsR = svcRows(/LOCAL\s+START(?:\s*\/\s*FOR\w*)?\s+P\.?\s*B|LOCAL\s+START\s*\/\s*FOR/i).filter(r => !/\bNOT\b/i.test(call(() => DUI.rowInfo(s, r).svc, ''))).pop(),
       lpR = svcRows(/LOCAL\s+STOP\s+P\.?\s*B/i).pop(),
       esR = svcRows(/EMERGENCY\s+STOP\s+P\.?\s*B/i).pop(),
-      etU = s && s.nl ? (s.nl.usr || []).find(x => /ELECTRIC/i.test(x.label || '')) : null;
-    const hasFld = lsR != null || lpR != null || esR != null || !!etU;
+      esN = esR == null ? svcRows(/\bNOT\s+EMERGENCY\s+STOP\b/i).filter(isI).shift() : null,
+      etU = s && s.nl ? (s.nl.usr || []).find(x => /ELECTRIC/i.test(x.label || '')) : null,
+      /* live test 2026-11-05 (AIR PREHEATER DITL-43 row 5 I.0651 NOT TRIP = 0 at Cold, no way to reset it on the page): a drawing with no
+         ELECTRICAL TROUBLE symbol but a NOT TRIP field contact: RELAY TRIP = the contact to 0, RESET = to 1 (the Training FIELD NOT TRIP) */
+      ntR = etU ? null : svcRows(/\bNOT\s+TRIP\b/i).filter(r => /^I\./.test(call(() => DUI.rowInfo(s, r).tag, '') || '')).shift();
+    const hasFld = lsR != null || lpR != null || esR != null || esN != null || !!etU || ntR != null;
     const fSh = E('div', 'fpo-sh fld', 'FIELD · LOCAL PANEL'),
       bLs = E('button', 'fpo-cmd', 'START'),
       bLp = E('button', 'fpo-cmd', 'STOP'),
       bEs = E('button', 'fpo-cmd es', 'EMERGENCY STOP'),
       bTr = E('button', 'fpo-cmd', 'TRIP'),
-      bRs = E('button', 'fpo-cmd', 'RESET');
-    for (const b of [bLs, bLp, bEs, bTr, bRs]) b.type = 'button';
+      bRs = E('button', 'fpo-cmd', 'RESET'),
+      bEr = E('button', 'fpo-cmd', 'RELEASE');
+    for (const b of [bLs, bLp, bEs, bTr, bRs, bEr]) b.type = 'button';
     const rLcp = row('LCP', bLs, bLp),
-      rEs = row('E-STOP', bEs, ...(esR == null ? [E('span', 'fpo-nd', 'not on ' + (nm || 'its drawing'))] : [])),
+      rEs = row('E-STOP', bEs, ...(esN != null ? [bEr] : esR == null ? [E('span', 'fpo-nd', 'not on ' + (nm || 'its drawing'))] : [])),
       rRly = row('RELAY', bTr, bRs);
     if (hasFld) F.bd.append(fSh, rLcp, rEs, rRly);
+    /* live test 2026-11-05 (ACWP-A, DITL-76 row 24 LOCAL STOP P.B. = a FALLING pulse into the reset of the run flip-flop): with the Worker
+       the release written once could be overwritten by the Worker's copy of the row (still 1), the button stayed "pressed" and the pump
+       ran on; the first STOP did nothing, a second press stopped it. The release is now written again until the row reads 0 */
     const pulse = (r, txt) => {
       dk.fieldRow(nm, r, 1, txt);
-      setTimeout(() => {
+      let n = 0;
+      const rel = () => {
         const s2 = call(() => dk.dOf(M.ad), null) || s;
         if (s2 && s2.sig) s2.sig[r + ':S'] = false;
         if (window.WORLD && WORLD.live) WORLD.busy = true;
-      }, 800);
+        if (++n < 8) setTimeout(() => (s2 && s2.sig && s2.sig[r + ':S'] ? rel() : n < 3 && setTimeout(rel, 400)), 400);
+      };
+      setTimeout(rel, 800);
     };
-    const etOn = () => !!(etU && s && s.usw && s.usw[etU.key]);
+    const etOn = () => (etU ? !!(s && s.usw && s.usw[etU.key]) : ntR != null && call(() => DUI.rowVal(s, ntR), 1) === 0);
     const etSet = on => {
+      if (ntR != null && !etU) {
+        dk.fieldRow(nm, ntR, on ? 0 : 1, M.n + (on ? ' TRIP' : ' NOT TRIP (trip reset in the field)'));
+        return;
+      }
       if (!etU || !s) return;
       s.usw = s.usw || {};
       s.usw[etU.key] = !!on;
@@ -366,6 +384,18 @@
       F.bd.insertBefore(sopL, ilL.nextSibling);
       F.bd.insertBefore(sopH, sopL);
     }
+    /* live test 2026-11-05 (FEEDWATER: the BFWP start needs its auxiliary lube oil pump, DITL-22 / #B / #C / #D, PR-OPE-5002 19.5, and
+       the page draws no symbol for it): M.aux = [[label, drawing]] = the auxiliary motors of this machine, each opens its own faceplate */
+    if (M.aux && M.aux.length && part !== 'info') {
+      const ab = M.aux.map(([l, ad]) => {
+        const b = E('button', 'fpo-cmd', l);
+        b.type = 'button';
+        b.title = 'Open the faceplate of ' + l + ' (' + ad + ')';
+        b.onclick = () => call(() => motor({ n: l + ' · ' + M.n, t: ad, ad, d: ad, part: 'control' }));
+        return b;
+      });
+      F.bd.append(row('AUXILIARY', ...ab));
+    }
     /* links */
     const ln = E('div', 'fpo-ln');
     const link = (t, f) => {
@@ -406,7 +436,10 @@
     bSp.onclick = () => !bSp.disabled && ask('STOP ' + M.n + '?', () => ((spAt = Date.now()), dk.dmotor(M.ad, 0), call(() => window.lsEventAdd(nm, 'DCS', 'Operator: STOP ' + M.n + ' (faceplate)'))));
     bLs.onclick = () => !bLs.disabled && ask('FIELD: START ' + M.n + ' at the local panel?', () => pulse(lsR, M.n + ' LOCAL START P.B. (local panel)'), 1);
     bLp.onclick = () => !bLp.disabled && ask('FIELD: STOP ' + M.n + ' at the local panel?', () => pulse(lpR, M.n + ' LOCAL STOP P.B. (local panel)'), 1);
-    bEs.onclick = () => !bEs.disabled && ask('FIELD: EMERGENCY STOP ' + M.n + '?', () => pulse(esR, M.n + ' EMERGENCY STOP P.B. (field)'), 1);
+    bEs.onclick = () =>
+      !bEs.disabled &&
+      ask('FIELD: EMERGENCY STOP ' + M.n + '?', () => (esN != null ? dk.fieldRow(nm, esN, 0, M.n + ' EMERGENCY STOP (field)') : pulse(esR, M.n + ' EMERGENCY STOP P.B. (field)')), 1);
+    bEr.onclick = () => !bEr.disabled && ask('FIELD: RELEASE the emergency stop of ' + M.n + '?', () => dk.fieldRow(nm, esN, 1, M.n + ' emergency stop released (field)'), 1);
     bTr.onclick = () => !bTr.disabled && ask('FIELD: TRIP ' + M.n + ' at its protection relay?', () => etSet(true), 1);
     bRs.onclick = () => !bRs.disabled && ask('FIELD: RESET the protection relay of ' + M.n + '?', () => etSet(false), 1);
     let k0 = '';
@@ -447,9 +480,13 @@
         bLp.disabled = lpR == null || !loc || st !== 'RUN';
         bLs.classList.toggle('lit-run', st === 'RUN');
         bLp.classList.toggle('lit-stop', st === 'STOP' && loc);
-        bEs.disabled = esR == null || st !== 'RUN';
-        bTr.disabled = !etU || et;
-        bRs.disabled = !etU || !et;
+        if (esN != null) {
+          const esOn = call(() => DUI.rowVal(s, esN), 1) === 0;
+          bEs.disabled = esOn || !run;
+          bEr.disabled = !esOn || !run;
+        } else bEs.disabled = esR == null || st !== 'RUN';
+        bTr.disabled = (!etU && ntR == null) || et;
+        bRs.disabled = (!etU && ntR == null) || !et;
         bTr.classList.toggle('lit-run', et);
         for (const el of [fSh, rLcp, rEs, rRly]) el.hidden = part === 'info';
       }
@@ -473,7 +510,12 @@
               : sopLeft && st !== 'RUN'
               ? 'START blocked: finish the SOP line-up first (' + sopLeft + ' left, ✕ below; tick them in the guide).'
               : miss.length && st !== 'RUN'
-              ? 'START blocked: ' + miss.length + ' permissive missing (0 below).'
+              ? (() => {
+                  /* live test 2026-11-05: the raw drawing note "(FROM STATION WIRING)" left out, the same line once (DITL-28A FAB A STOP
+                     COMMAND was listed twice, DITL-19 showed the note) */
+                  const L = [...new Set(miss.map(r => String(r.svc || '').replace(/^[IMB]\.\S+\s+/, '').replace(/^\(FROM [^)]*\)\s*/i, '').trim() + (r.want ? '' : ' (must be 0)')))];
+                  return 'START blocked: ' + L.length + ' permissive missing: ' + L.join('; ') + '.';
+                })()
               : !run && st !== 'RUN'
                 ? 'Simulation PAUSED: press ▶ RUN before START (nothing moves while paused).'
                 : md.rem === true && lcpRows && st !== 'TRIP'
@@ -751,9 +793,19 @@
     const B = P.pbs.map(([l, r, ad]) => {
       const b = E('button', 'fpo-cmd', l);
       b.type = 'button';
-      b.title = P.d + ' row ' + r + ' · ' + ad;
+      b.title = P.d + ' row ' + (r + 1) + ' · ' + ad;
       return b;
     });
+    /* live test 2026-11-05 (air dryers, DITL-45): P.sel = the REMOTE input row of the local panel (I.0099 / I.0085 ...): the field operator
+       turns it (LS_DOCK.fieldRow, every row of the same address); the DCS push buttons need REMOTE */
+    let bRem = null,
+      bLoc = null;
+    if (P.sel != null) {
+      bRem = E('button', 'fpo-cmd', 'REMOTE');
+      bLoc = E('button', 'fpo-cmd', 'LOCAL');
+      bRem.type = bLoc.type = 'button';
+      F.bd.append(row('FIELD SELECTOR', bRem, bLoc));
+    }
     F.bd.append(row('DCS', ...B));
     const why = E('div', 'fpo-why');
     F.bd.append(why);
@@ -794,10 +846,28 @@
     link('Logic ' + P.d, () => (close(), logicGo(dk, P.d)));
     link('Events', () => call(() => document.getElementById('evbtn').click()));
     F.bd.append(ln);
+    const selSet = on => {
+      dk.fieldRow(P.d, P.sel, on ? 1 : 0, P.n + ' selector to ' + (on ? 'REMOTE' : 'LOCAL'));
+      let n = 0;
+      const chk = () => {
+        const s2 = call(() => dk.dOf(P.d), null);
+        if (!s2 || !s2.sig) return;
+        if (!!s2.sig[P.sel + ':S'] !== !!on) {
+          s2.sig[P.sel + ':S'] = !!on;
+          if (window.WORLD && WORLD.live) WORLD.busy = true;
+        }
+        if (++n < 6) setTimeout(chk, 400);
+      };
+      setTimeout(chk, 400);
+    };
+    if (bRem) {
+      bRem.onclick = () => !bRem.disabled && ask('FIELD: ' + P.n + ' selector to REMOTE?', () => selSet(true));
+      bLoc.onclick = () => !bLoc.disabled && ask('FIELD: ' + P.n + ' selector to LOCAL?', () => selSet(false));
+    }
     B.forEach((b, i) => {
       const [l, r, ad] = P.pbs[i];
       b.onclick = () =>
-        !b.disabled && ask(P.n + ' ' + l + '?', () => (dk.dpress(P.d, r), call(() => window.lsEventAdd(P.d, 'DCS', 'Operator: ' + P.n + ' ' + l + ' (' + P.d + ' row ' + r + ' · ' + ad + ', faceplate)'))));
+        !b.disabled && ask(P.n + ' ' + l + '?', () => (dk.dpress(P.d, r), call(() => window.lsEventAdd(P.d, 'DCS', 'Operator: ' + P.n + ' ' + l + ' (' + P.d + ' row ' + (r + 1) + ' · ' + ad + ', faceplate)'))));
     });
     let k0 = '';
     function tick() {
@@ -810,8 +880,15 @@
       F.val.textContent = on ? P.st.on : P.st.off || 'STOPPED';
       lOn.className = 'fpo-lp' + (on ? ' run' : '');
       lOff.className = 'fpo-lp' + (!on ? ' stop' : '');
+      const rem = P.sel == null ? true : call(() => window.DUI.rowVal(s, P.sel), null) === 1;
+      if (bRem) {
+        bRem.disabled = rem || !run;
+        bLoc.disabled = !rem || !run;
+        bRem.classList.toggle('on', rem);
+        bLoc.classList.toggle('on', !rem);
+      }
       B[0].disabled = on || !run || !ok;
-      if (B[1]) B[1].disabled = !on || !run;
+      if (B[1]) B[1].disabled = !on || !run || !rem;
       B[0].classList.toggle('lit-run', on);
       if (B[1]) B[1].classList.toggle('lit-stop', !on);
       why.textContent = !run ? 'Simulation PAUSED: press ▶ RUN first (nothing moves while paused).' : !ok && !on ? P.pbs[0][0] + ' blocked: no ' + (P.permWhy || 'permissive') + '.' : '';
@@ -825,7 +902,7 @@
         k0 = k;
         ilL.replaceChildren(...pv.map(p => {
           const li = E('li', ok ? 'ok' : 'bad');
-          li.append(E('i', '', p.v == null ? '-' : String(p.v)), E('span', '', p.l), E('em', '', 'row ' + p.row));
+          li.append(E('i', '', p.v == null ? '-' : String(p.v)), E('span', '', p.l), E('em', '', 'row ' + (p.row + 1))); /* the row number of the drawing (1-based, as the dock) */
           return li;
         }));
       }
@@ -844,11 +921,14 @@
     const F = frame(P.n, (P.t || '') + ' · ' + (P.d || 'field'));
     const me = box;
     const lR = lampEl('RUN'),
-      lS = lampEl('STOP');
-    F.bd.append(row('STATUS', lR, lS));
+      lS = lampEl('STOP'),
+      lT = lampEl('TRIP');
+    F.bd.append(P.trip ? row('STATUS', lR, lS, lT) : row('STATUS', lR, lS));
     F.bd.append(E('div', 'fpo-why', P.why || 'Field equipment: no DCS command. Started at the local panel.'));
     let bSt = null,
       bSp = null,
+      bTr = null,
+      bRs = null,
       ex = null;
     if (P.fld) {
       bSt = E('button', 'fpo-cmd', 'START');
@@ -876,6 +956,17 @@
       const go = on => (P.fld(on), call(() => window.lsEventAdd('FIELD', 'FIELD', 'Field operator: ' + (on ? 'START ' : 'STOP ') + P.n + ' (local panel)')));
       bSt.onclick = () => !bSt.disabled && ask('FIELD: START ' + P.n + ' at the local panel?', () => go(true));
       bSp.onclick = () => !bSp.disabled && ask('FIELD: STOP ' + P.n + ' at the local panel?', () => go(false));
+      /* live test 2026-11-05 (air compressors of INSTRUMENT AND PLANT AIR: started at the local panel, the DCS reads RUNNING / TRIP):
+         P.trip(on) = the TRIP contact of the local panel (a protection trip of the test tool, RESET = back to 0) */
+      if (P.trip) {
+        bTr = E('button', 'fpo-cmd', 'TRIP');
+        bRs = E('button', 'fpo-cmd', 'RESET');
+        bTr.type = bRs.type = 'button';
+        F.bd.insertBefore(row('RELAY', bTr, bRs), ex);
+        const tr = on => (P.trip(on), call(() => window.lsEventAdd('FIELD', 'FIELD', 'Field operator: ' + (on ? 'TRIP ' : 'RESET the trip of ') + P.n + ' (local panel)')));
+        bTr.onclick = () => !bTr.disabled && ask('FIELD: TRIP ' + P.n + ' at its protection relay?', () => tr(true));
+        bRs.onclick = () => !bRs.disabled && ask('FIELD: RESET the trip of ' + P.n + '?', () => tr(false));
+      }
     }
     const ln = E('div', 'fpo-ln');
     if (P.io) {
@@ -893,13 +984,18 @@
       if (!me.isConnected) return closeEl(me);
       const st = call(P.st, null),
         run = isRun();
-      F.lamp.className = 'fpo-lamp ' + (st === 'RUN' ? 'run' : st === 'STOP' ? 'stop' : '');
-      F.val.textContent = st === 'RUN' ? 'RUNNING' : st === 'STOP' ? 'STOPPED' : '-----';
+      F.lamp.className = 'fpo-lamp ' + (st === 'RUN' ? 'run' : st === 'STOP' ? 'stop' : st === 'TRIP' ? 'trip' : '');
+      F.val.textContent = st === 'RUN' ? 'RUNNING' : st === 'STOP' ? 'STOPPED' : st === 'TRIP' ? 'TRIP' : '-----';
       lR.className = 'fpo-lp' + (st === 'RUN' ? ' run' : '');
       lS.className = 'fpo-lp' + (st === 'STOP' ? ' stop' : '');
+      lT.className = 'fpo-lp' + (st === 'TRIP' ? ' trip' : '');
       if (bSt) {
-        bSt.disabled = st === 'RUN' || !run;
+        bSt.disabled = st === 'RUN' || st === 'TRIP' || !run;
         bSp.disabled = st !== 'RUN' || !run;
+        if (bTr) {
+          bTr.disabled = st !== 'RUN' || !run;
+          bRs.disabled = st !== 'TRIP' || !run;
+        }
         bSt.classList.toggle('lit-run', st === 'RUN');
         bSp.classList.toggle('lit-stop', st === 'STOP');
       }
@@ -1003,6 +1099,18 @@
       pv = E('span', 'fpo-v', '-----'),
       md = E('span', 'fpo-v', '-----');
     F.bd.append(row('POSITION', pv), row('STATUS', lO, lC), row('MODE', md));
+    /* live test 2026-11-05 (028 CONDENSATE at Cold: every MOV LOCAL, nothing could put one in REMOTE): P.sel(on) = the field operator
+       turns the REMOTE / LOCAL selector at the valve (the REMOTE input rows of its drawing); the CRT push buttons need REMOTE */
+    let bRem = null,
+      bLoc = null;
+    if (P.sel) {
+      bRem = E('button', 'fpo-cmd', 'REMOTE');
+      bLoc = E('button', 'fpo-cmd', 'LOCAL');
+      bRem.type = bLoc.type = 'button';
+      F.bd.append(row('FIELD SELECTOR', bRem, bLoc));
+      bRem.onclick = () => !bRem.disabled && ask({ l: 'selector to REMOTE', q: 'FIELD: ' + P.n + ' selector to REMOTE?', fn: () => P.sel(true) });
+      bLoc.onclick = () => !bLoc.disabled && ask({ l: 'selector to LOCAL', q: 'FIELD: ' + P.n + ' selector to LOCAL?', fn: () => P.sel(false) });
+    }
     const I0 = call(P.info, null) || { pbs: [] },
       btns = I0.pbs.map(p => {
         const b = E('button', 'fpo-cmd', p.l);
@@ -1024,7 +1132,7 @@
     let pend = null;
     function ask(p) {
       pend = p;
-      exT.textContent = p.l + ' ' + P.n + '?';
+      exT.textContent = p.q || p.l + ' ' + P.n + '?';
       ex.hidden = false;
       exGo.focus();
     }
@@ -1034,8 +1142,22 @@
       pend = null;
       ex.hidden = true;
       if (!p) return;
+      if (p.fn) {
+        call(p.fn);
+        msg.textContent = P.n + ' ' + p.l + ': done (field operator)';
+        call(() => window.lsEventAdd('FIELD', 'FIELD', 'Field operator: ' + P.n + ' ' + p.l));
+        setTimeout(tick, 150);
+        return;
+      }
       const r = call(() => P.press(p.row), 'no logic') || '';
-      msg.textContent = typeof r === 'string' && r ? '⚠ ' + r : P.n + ' ' + p.l + ': EXECUTED';
+      /* live test 2026-11-05: what in the logic keeps the command from going through (XV-FW1111-1 OPEN at Cold: MFT, steam flow < 10 %) */
+      const blk = !(typeof r === 'string' && r) && P.block ? call(() => P.block(p.row), null) : null;
+      msg.textContent =
+        typeof r === 'string' && r
+          ? '⚠ ' + r
+          : blk && blk.length
+            ? '⚠ ' + p.l + ' blocked by the logic: ' + blk.map(x => String(x.svc || '').replace(/^[IMB]\.\S+\s+/, '') + (x.want ? '' : ' (must be 0)') + (x.other ? ' [' + x.other + ']' : '')).join('; ') + '.'
+            : P.n + ' ' + p.l + ': EXECUTED';
       if (!(typeof r === 'string' && r)) call(() => window.lsEventAdd('CRT', 'DCS', 'Operator (CRT): ' + P.n + ' ' + (P.t || '') + ' ' + p.l));
       setTimeout(tick, 150);
     };
@@ -1057,7 +1179,17 @@
       lO.className = 'fpo-lp' + (pos != null && pos > 0.5 ? ' run' : '');
       lC.className = 'fpo-lp' + (pos != null && pos <= 0.5 ? ' stop' : '');
       md.textContent = [I.rem == null ? '' : I.rem ? 'REMOTE' : 'LOCAL', I.au == null ? '' : I.au ? 'AUTO' : 'MANUAL'].filter(Boolean).join(' · ') || '-----';
-      btns.forEach(b => (b.disabled = !run));
+      const rem = I.rem == null ? null : !!I.rem /* the drawing gives 0 / 1 */,
+        loc = rem === false;
+      btns.forEach(b => (b.disabled = !run || (loc && !!P.sel)));
+      if (bRem) {
+        bRem.disabled = !run || rem === true;
+        bLoc.disabled = !run || rem === false;
+        bRem.classList.toggle('on', rem === true);
+        bLoc.classList.toggle('on', rem === false);
+        if (loc && !pend && !/EXECUTED|done/.test(msg.textContent)) msg.textContent = 'Selector at LOCAL: the DCS push buttons work only in REMOTE. Turn the field selector to REMOTE first.';
+        else if (!loc && /^Selector at LOCAL/.test(msg.textContent)) msg.textContent = 'Push buttons of the DCS screen (CRT), read from the DITL sheet ' + (P.d || '') + '.';
+      }
     }
     paint = tick;
     tick();
@@ -1131,7 +1263,8 @@
       return [v, b];
     });
     /* two buttons per row (the width of the faceplate) */
-    F.bd.append(row('LOCAL', B[0][1], B[1][1]));
+    /* live test 2026-11-05: OPEN under the OPEN lamp, CLOSE under CLOSED (as XV-MU1109, V-MU1033, V-CW1001); was CLOSE · OPEN */
+    F.bd.append(row('LOCAL', B[1][1], B[0][1]));
     F.bd.append(row('THROTTLE', B[2][1], B[3][1]));
     F.bd.append(row('', B[4][1], B[5][1]));
     F.bd.append(row('', B[6][1], B[7][1]));

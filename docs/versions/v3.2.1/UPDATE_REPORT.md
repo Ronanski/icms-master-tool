@@ -1,5 +1,178 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.28 — SAMPLING AND DOSING, GENERATOR, EXTRACTION AND DRAINS, OVERVIEW, mockup pages 16 ~ 18 at 00 in the app (2026-11-05, JISOO : HMI MOCKUP)
+
+**Work done.** Ang huling apat na temporary mockup page ay nasa app na (Plant view `MK16`, `MK17`, `MK18`, `MK00`); kumpleto na ang 19 page.
+- Bagong runtime hooks (`hmi-mock.js`): `data-di="TAG|on|off|neg"` = digital input ng I/O list (pula = 1, '-----' kapag walang
+  sheet na bumabasa), `data-dir` = square nito; MOV `am` = "AUTO · REMOTE"; `data-movr` = kulay ng valve symbol ng MOV (pula bukas,
+  berde sarado); `data-v="SHEET|ADDRESS"` = address ng sheet (ABC-001C SI0230 = compensated main steam flow, gaya ng top bar).
+- **Page 16 SAMPLING AND DOSING** (`p16.py` → `hmi-mock-sp.js`): analyzers AT-SP1001 ~ 1021 (I/O list AI0320 ~ AI0358), alarms
+  AL1-SP01 / AL2-SP01 / AL3-SP01 / AL-Z1110 (I.053C ~ I.053F), dosing pumps MIR-Z1107A ~ Z1109B (I.0120 ~ I.012A), agitator MIR-Z1101A
+  (I.012C), tank level switches LSH / LSL / LSLL-CH1101 / 1103 / 1105 (I.0130 ~ I.0138). Pump capacity = design data ng PD-042.
+  NO-SOURCE: LAHAT ng value at estado ay '-----': walang ABC / DITL sheet na bumabasa at walang water chemistry sa plant model; ang
+  snapshot 21 numbers ay hindi inilagay.
+- **Page 17 GENERATOR** (`p17.py` → `hmi-mock-gn.js`): 52G1 / 52L1 = DITL-03E input 3 / 2 (M.3220 / M.3221); GCB 52G1 ON = DITL-89
+  input 15 (I.0931), OFF = DITL-03H input 18 (MIG-52G1-2); DS / ES, remote, ready to synchronize, generator trip = I/O list DI
+  (MIG-52G1-3 ~ 6, MIL-52G1, RY-52G, RY-52L, MIT-GEN; walang sheet → '-----'); generator MW GCP-AI1001 / 1002; bearing No. 3 / 4 metal,
+  outlet oil, vibration = turbine oil model (tcs.js tcsOil, ASSUMED doon, gaya ng page 04). NO-SOURCE: TCS-only values (TCA3xx, TCA775
+  MVar, PF, Hz, kV, kA, field V / A, energy), cooling air, stator coil, 86G-A / B, leakage, field breaker.
+- **Page 18 EXTRACTION AND DRAINS** (`p18.py` → `hmi-mock-ex.js`): shut-off MOVs MV-TS1001 ~ 1005 = DITL-94 ~ 98 (position, OPEN /
+  CLOSED, AUTO · REMOTE, MOV faceplate); drain MOVs MV-TS1391 / 1397 / 1392 / 1396 / 1393 / 1399 / 1398 / 1394 / 1390 / 1395 / 1389 /
+  1400 = DITL-99 ~ 110 (DITL-0D rows 14 ~ 25); flash pipe XV-FS1005 + LS-FS1410 / 1411 = DITL-57; PT-TS1013 / 1017, TT-TS1011 = plant
+  model (unit.js anFwTagStep); PT-TS1022 = logic; condenser = U.cdP. NO-SOURCE: air-assisted check valves XV-TS1700 ~ 1740 (wala sa DCS
+  I/O list); TT-TS1014 / 1018 / 1023 / 1027, PT-TS1026, PICR19011 ~ 13 ay '-----' (walang sheet at model).
+- **Page 00 OVERVIEW** (`p00.py` → `hmi-mock-ov.js`): bawat title = link sa page nito; values GCP-AI1001, PT-MS1002, TICMS1004 PV,
+  ABC-001C SI0230, FICFW1007 PV, LICBR1001B PV (compensated), PT-FG1085, FIC-CM, 52G1 / 52L1 DITL-03E, condenser cdP, turbine rpm; CCS
+  HIC-ULD, EIC-TM, PIC-COBM, HIC-BM, FIC-CM (PV / SV / mode + faceplate sa click). NO-SOURCE: total air flow (suma sa loob ng ABC, walang
+  transmitter), load rate, high limit, load up rate.
+
+**Checked (headless cloud, 150 MW + RUN).** Page 16: 21 analyzer at 20 DI '-----' (tama: walang source). Page 17: 151.3 / 151.3 MW,
+52G1 / 52L1 CLOSED, GCB ON Y / OFF N, bearing No. 3 / 4 69 / 67 °C, outlet oil 55 / 56 °C. Page 18: MV-TS1001 ~ 1005 100 % OPEN AUTO ·
+REMOTE, drains 0 % CLOSED, XV-FS1005 CLOSED, level hi / lo N, PT-TS1013 14.11, PT-TS1017 5.32, PT-TS1022 1.29 kg/cm2, TT-TS1011 369 °C;
+faceplate ng MV-TS1001, MV-TS1391, XV-FS1005 bumubukas. Page 00: 151.3 MW, 122.6 kg/cm2, 540 °C, 474.1 T/H, 508.8 T/H, drum 17 mm,
+-21 mmH2O, coal 87.5 T/H REMOTE, CCS lahat AUTO (FIC-CM REMOTE), HIC-BM faceplate bumubukas. Walang JS error. Hindi live-tested.
+
+**Findings (para kay IRENE / SEULGI).**
+- DITL-99 ~ 110 (extraction drain MOVs): input TRIP = 1 at TORQUE = 1 sa 150 MW (DRN VLV MOV TRIP CRT ANN = 1).
+- DITL-94 ~ 98 (extraction shut-off MOVs): input FULLY CLOSED = 1 kasabay ng FULLY OPEN = 1, at output TRIP (CRT ANN) = 1 sa 150 MW.
+- Ang sampling, dosing at generator DI ng I/O list ay walang sheet na bumabasa: hindi mafo-force sa loop check hangga't walang field
+  signal sa model.
+
+## 3.2.1-beta.26 — TURBINE START, ESP AND ASH, SOOTBLOWERS, mockup pages 13 ~ 15 in the app (2026-11-04, JISOO : HMI MOCKUP)
+
+**Work done.** `docs/hmi/mockups/temp/13-turbine-start.html` → Plant view **TURBINE START** (`MK13`), `tools/hmi-mock/p13.py` →
+`src/ui/plant/hmi-mock-ts.js`.
+- Bagong runtime hooks (`hmi-mock.js`): `data-uy="KEY|n|on|off"` = estado ng plant model (on pula kapag value >= n), `data-uyr` = ang
+  square nito; ang `ux:KEY*100` = fraction na ipinapakita bilang %; ang `tcs.` path = AN.tcs() (TCS panel state).
+- Values: CV = U.gv × 100, ICV = U.tb.icv × 100, speed U.rpm, generator MW GCP-AI1001 / 1002 (I/O list AI0419 / AI0774), condenser
+  U.cdP, bearing / lube / control / trip / EOP oil pressure at lube oil after cooler = AN.unit lo* (parehong numero ng page 04); main / control
+  / emergency oil pumps running = loMop / loCop / loEopR; 52G1 CLOSED / OPEN = DITL-03E input row 3 M.3220 52G1 OPEN (NOT).
+- ATS steps 1 ~ 8 Y / N = AN.tcs().step (huling tapos na step), exhaust hood = AN.tcs().Tx, shell expansion = AN.tcs().sexp.
+- NO-SOURCE ('-----'): MSV / RSV positions, PT-MS1006 / TT-MS1007 sa 150 MW, DS, 52L1, field breaker at generator electrical values,
+  vibration, differential expansion, rotor position, thrust bearing, stator coil, generator cooling air.
+- Finding (para kay IRENE): ang AN.tcs() ay null sa page at walang `tc` ang AN.unit (ang engine ay nasa worker), kaya '-----' ang ATS
+  steps, exhaust hood at shell expansion; kailangang ipasa ng engine ang TCS state sa page.
+
+**Checked (headless cloud).** 150 MW + RUN: CV 99.5 %, ICV 100.0 %, 3600 rpm, generator 151.3 / 151.3 MW, 52G1 CLOSED, condenser
+0.063 kg/cm2 abs, bearing oil 3.3, lube 6.1, control / trip oil 162.6, MOP A running, COP A running / B stopped, EOP stopped; walang
+JS error.
+
+**Page 14 ESP AND ASH** (`MK14`, `tools/hmi-mock/p14.py` → `src/ui/plant/hmi-mock-ea.js`).
+- Screw ash coolers A ~ D = DITL-21A / #B / #C / #D (motor faceplate; RUNNING / STOPPED = input row 1 FORWARD RUNNING); chain
+  conveyor L-1090, bucket elevator L-1091, screw conveyor L-1092, vibrating screens S-1092 A / B, bag filter fan F-1091 = DITL-BA59
+  RUNNING inputs (rows 8 ~ 14); DPICFG108 (furnace DP) at SICL1060A (screw speed) faceplates; DPT-FG1081 / 1082, PT / TT-CW1156,
+  TT-BH1060-x1 / x2, TT-CW1060-x1 / x2, LT-BH1750 (I/O list).
+- NO-SOURCE: ang buong ESP (walang snapshot at signal), fly ash silo, cooler inlet valves XV-BH1060A ~ D, cooler currents, silo outlet
+  XV-BH1756; ang PT / TT-CW1156, TT-BH1060, TT-CW1060 at LT-BH1750 ay '-----' pa (walang sheet na bumabasa at walang plant model).
+- Checked: bed DP 1426 / 1432 mmH2O, DPICFG108 PV 1429 / SV 1475 MANUAL, coolers STOPPED, chain / bucket / screw conveyor at fan
+  RUNNING, screens STOPPED; faceplates ng cooler A at DPICFG108 bumubukas; walang JS error.
+
+**Page 15 SOOTBLOWERS** (`MK15`, `tools/hmi-mock/p15.py` → `src/ui/plant/hmi-mock-sb.js`).
+- Bawat blower label N-1011 ~ 1038 = output "N-10xx SOOTBLOWER OPERATING" ng DITL-80A ~ 80E (pula habang bumubuga); N-1040 / 1042 =
+  DITL-80F AIR PREHEATER SOOTBLOWER OPERATING. Blowing permissive = DITL-80A output 21; steam supply valve / drain temperatures >
+  220 °C / all retracted / remote = DITL-80A inputs 2, 24, 23, 14, 15, 13; MV-SB1001 = DITL-80S FULL CLOSED; alarms = DITL-80S OPEN /
+  CLOSE OVER TIME, DITL-80Q WARMING UP FAILURE; XV-SB1054 / XV-SB1059 = DITL-80R SOV (L) / (R) OPENED; PICSB1052 (ang tag ng logic;
+  PIC-SB1053 ang nakasulat sa mockup) faceplate.
+- NO-SOURCE: ilang blower ang bumubuga, forward / reverse at warm-up timers, MV-SB1001 %, IT-SB01, PT-SB1040 / 1042, TT-SB1056 / 1057.
+- Finding: "All blowers on retract position" (M.4008) = N sa 150 MW, pero lahat retracted sa snapshot 18 (walang retract limit switch
+  sa model).
+- Checked: PT-SB1052 0.4 kg/cm2, PICSB1052 0.2 % MANUAL, MV-SB1001 CLOSED, lahat ng blower hindi bumubuga, remote Y; faceplate ng
+  PICSB1052 bumubukas; walang JS error.
+
+**Not checked.** Live test, ATS steps (walang data sa page), turbine trip, phone size.
+
+## 3.2.1-beta.25 — COAL, LIMESTONE AND SAND, mockup page 12 in the app (2026-11-04, JISOO : HMI MOCKUP)
+
+**Work done.** `docs/hmi/mockups/temp/12-coal-limestone-sand.html` → Plant view **COAL, LIMESTONE AND SAND** (`MK12`),
+`tools/hmi-mock/p12.py` → `src/ui/plant/hmi-mock-cls.js`.
+- Coal: feeders A / B / C = DITL-19 / #B / #C (motor faceplate; alarm "inlet plugging" / "belt tracking" = CRT outputs 14 / 16 ng
+  drawing, clean-out conveyor AUTO = output 23); XV-CL1061-x = DITL-20 / #B / #C (MOV faceplate, OPEN = output 6); FICCL1061A ~ C
+  (PV / SV / MV / mode), FIC-CM coal master, HS-COAL (faceplate).
+- Limestone (Rotofeed PLC): XV-LM1812 / XV-LM1815 = solenoid output ng DITL-LS170 / LS180, vent / balance / equalising = LS160 /
+  LS190 / LS200, isolating A ~ H = DITL-LS212 output rows 12 ~ 19, bypass air = rows 10 / 11, rotary feeder RUNNING = LS110 output 21,
+  vent filter = LS214 output 18; silo level at vessel pressures = plant model AN_LM (lmSilo, lmPl, lmPd).
+- Sand: XV-SD1804 / XV-SD1801 / XV-PA1800 / XV-AV1803 = DITL-771 outputs 22 / 24 / 25 / 20, vent filter = DITL-774 output 22,
+  isolating A / B = DITL-776 outputs 11 / 13, bypass air XV-PA1807 = output 12; silo level at vessel pressure = AN_SD (sdSilo, sdP).
+- NO-SOURCE ('-----'): coal bunker levels LT-CL1008-x at totalizers MIA-CL1061-x1 (I/O list AI pero walang sheet at walang plant
+  model), coal calorie correction, coal / power ratio, unit output, rotary feeder speed ST-M1311, XV-PA1805B.
+- Finding (para kay SEULGI): DITL-LS160 / 170 / 180 / 190 output "CLOSE FAULT" = 1 sa 150 MW (FULLY CLOSE indicator = 0: walang
+  fully-close limit switch ang model).
+
+**Checked (headless cloud).** 150 MW + RUN: feeders RUNNING, FICCL1061A ~ C 29.2 T/H AUTO, coal master 87.5 / 87.1 T/H REMOTE,
+HS-COAL REMOTE, XV-CL1061-x OPEN; limestone silo 69.4 %, lock / dispensing 0.0 / 0.1 kg/cm2, lahat ng valve CLOSED maliban sa bypass
+air OPEN; sand silo 50.1 %, bypass air OPEN; faceplates ng feeder A, XV-CL1061-B, coal master bumubukas; walang JS error.
+
+**Not checked.** Live test, limestone fill cycle at sand cycle mula sa page, phone size.
+
+## 3.2.1-beta.24 — DIESEL AND BURNERS, mockup page 11 in the app (2026-11-04, JISOO : HMI MOCKUP)
+
+**Work done.** `docs/hmi/mockups/temp/11-diesel-burners.html` → Plant view **DIESEL AND BURNERS** (`MK11`), `tools/hmi-mock/p11.py` →
+`src/ui/plant/hmi-mock-db.js`.
+- Motors: diesel oil pump A / B = DITL-31 / DITL-31 #B (boiler.js AN_DO), RUNNING / STOPPED, Remote / Auto, current IT-P0702A / B.
+- Controllers (faceplate): PICDO0005 (PCV-DO0002), HICDO1012 (FCV-DO1012), PICDO1008 (PCV-DO1009), FIC-OM oil master (PV / SV / MV /
+  mode), FICDO1043A ~ D (FCV-DO1043-x3), FICFA1043A ~ D (burner air PV, MCV-FA1043-x MV at mode).
+- Values (I/O list): PT-DO0005, PT-DO1008, ZT-DO1012, FT-DO1043-x, PT-DO1043-x2 ng logic; LT-DO0701, DPT-DO0001, IT-P0702A / B,
+  ZT-DO0002, ZT-DO1009, ZT-DO1043-x3 mula sa plant model AN_DO (walang sheet na bumabasa).
+- Burner state: IN SERVICE / OFF = DITL-10 (#B ~ #D) input row 19 BURNER x IN SERVICE; igniter ON / OFF = DITL-10 output row 16
+  ENERGIZE IGNITER TRANS.; XV-DO1043-x1 / x2 OPEN / CLOSED = DITL-16 output rows 21 / 23 (VALVE (1) / (2) CLOSED · CRT); atomizing air
+  XV-PA1043-x2 = DITL-07 input row 21 ATOM. AIR VALVE OPENED. Runtime: `data-dy` may `data-on` / `data-off` na text.
+- Runtime: ang controller ng isang machine na walang value hook sa page ay may faceplate na rin (FICDO1043A ~ D).
+- NO-SOURCE ('-----'): flame detectors BT-DO1043-x (walang model), oil master ON / OFF, total diesel oil used, purge air valves
+  XV-PA1043-x3.
+
+**Checked (headless cloud).** 150 MW + RUN: tank 4.978 m, strainer 0.029 kg/cm2, pump A RUNNING 25.4 A, B STOPPED Remote · Auto,
+PT-DO0005 12.8, PCV-DO0002 24.2 % AUTO, FCV-DO1012 100.0 % MANUAL, PT-DO1008 11.0, PCV-DO1009 85.7 % AUTO (= 6.PNG); burners OFF,
+igniters OFF, oil valves CLOSED; faceplates ng pump A, FICDO1043B, FICFA1043A, FIC-OM bumubukas; walang JS error.
+
+**Not checked.** Live test, burner light-off sequence, phone size.
+
+## 3.2.1-beta.22 — PURGE AND TRIP, mockup page 10 in the app (2026-11-04, JISOO : HMI MOCKUP)
+
+**Work done.** `docs/hmi/mockups/temp/10-purge-trip.html` → Plant view **PURGE AND TRIP** (`MK10`), `tools/hmi-mock/p10.py` →
+`src/ui/plant/hmi-mock-pt.js`.
+- Bagong hook ng runtime `hmi-mock.js`: `data-dy="SHEET|i/o|row+row|neg"` = Y / N ng input rows (DUI.rowVal) o output rows
+  (DUI.outVal) ng drawing, AND ng lahat, `neg` = ang kabaligtaran (hal. "Total air flow above 25 % MCR" = NOT DITL-01 row 12 TOTAL
+  AIR FLOW < 25% MCR); `data-dys` = buod OK / NOT OK (n of N missing) mula sa output row; `data-dfo` = MFT ACTIVE at first out.
+- Furnace purge permissive (DITL-01): IDF / SAF / any FAB / PAF running (rows 0 ~ 3), total air (NOT row 12), all burners no flame
+  (output ALL BURNER LOSS FLAME), oil valves closed (rows 8 ~ 11), coal feeders stopped (output ALL COAL FEEDER STOPPED), feeder outlet
+  valves closed (rows 16 ~ 18), limestone rotary valve stopped (NOT row 13 MIR-M1311 RUNNING), RH damper >= 30 % (row 15), SH damper
+  >= 60 % (row 19), no boiler trip command (row 14), cyclone outlet / RH outlet not H.H. (NOT DITL-03A rows 23 / 24). Buod = output
+  row 10 FURNACE PURGE PERMISSIVE.
+- Purge sequence (DITL-02): M.050E (row 14), burner S.A. dampers purge position (rows 1 ~ 4), FURNACE PURGE START P.B. (row 5),
+  IN PROGRESS (output 6), COMPLETED (output 15), MFT reset = DITL-03A MASTER FUEL TRIP (MFT) SER = 0; FURNACE PURGE OK / NO OK at
+  PURGE READY = output rows 16 / 10.
+- MFT (DITL-03A): input rows 1 ~ 18 sa ayos ng mockup; MFT ACTIVE = output row 17 MASTER FUEL TRIP (MFT) SER; first out = unang
+  input row (ayos ng drawing) na 1 sa sandaling dumating ang MFT, hawak hanggang ma-reset.
+- Ang 4 fan row ay bumubukas ng faceplate ng fan (DITL-25A / 27A / 28A / 26A).
+- NO-SOURCE ('-----'): purge time (ang 300 s ON-DELAY ng DITL-02 ay walang readout).
+
+**Checked (headless cloud).** 150 MW + RUN: PURGE PERMISSIVE NOT OK (4 of 15 missing: coal feeders, outlet valves, limestone, RH
+damper; tama sa 150 MW), purge sequence N, MFT N lahat, NO MFT. BOILER EMERGENCY TRIP P.B. (DITL-03F row 20) → MFT ACTIVE · first
+out: BOILER EMERGENCY TRIP P.B. ON (CRT); IDF faceplate bumubukas; walang JS error.
+
+**Not checked.** Live test, buong purge mula Cold (5 minuto), phone size.
+
+## 3.2.1-beta.21 — AIR AND FLUE GAS, mockup page 09 in the app (2026-11-04, JISOO : HMI MOCKUP)
+
+**Work done.** `docs/hmi/mockups/temp/09-air-flue-gas.html` → Plant view **AIR AND FLUE GAS** (`MK09`), `tools/hmi-mock/p09.py` →
+`src/ui/plant/hmi-mock-fg.js`.
+- Motors (motor faceplate): PAF DITL-26A, SAF DITL-27A, IDF DITL-25A, FA blower A / B DITL-28A / #B (boiler.js AN_FN.run), air
+  preheater DITL-43.
+- Controllers: FICFA1071 / FICFA1081 (PV / SV / MV ng MCV), PICFG108 (coupling), PICFG108A (inlet damper), HICHR1002A / B (biasing
+  dampers), TICHR1002A (reheater outlet PV / SV), AICFG112 (O2 set value).
+- Values: logic transmitter; kung wala, plant model AN_FN: IT-F1053 / 1054 / 1056 / 1055A, PT-FA1075, PT-FA1055-A / B,
+  PT-FG1141-A / B, PT-FG1151. Runtime: bagong source na `ux:KEY.i` (isang item ng listahan ng plant model, hal. `fnGi.0`).
+- NO-SOURCE ('-----'): gas-in temps sa harap ng bawat bank ng back pass, ika-4 na furnace pressure, IDF speed, total air at wall
+  damper demand lines, APH motor current; mga transmitter na wala sa logic at wala sa plant model (TT-FG1090 / 1091, DPT-FG1083 / 1084 /
+  1183 / 1184, TT-FG1009, PT-FG1009, TT-FG1095, TT-FG1110 / 1113 / 1124 / 1125 / 1132 / 1133 / 1152, PT-FG1087 / 1121 / 1134, AT-FG1131,
+  DPT-FG1052-5, stack monitor maliban sa SOx, PT-FA1078, TT-FA1073 / 1074 / 1083 / 1084).
+- Finding (para sa plant model): FT-FA1079 hot primary air = 0.7 T/H sa 150 MW (logic AI), samantalang PAF 353 T/H.
+
+**Checked (headless cloud).** 150 MW + RUN: PAF RUNNING 246 A 353 T/H, SAF 131 A 213 T/H, IDF 200 A coupling 46.1 %, FA-A 35.7 A
+25.6 T/H, ESP outlet -443 / -451, IDF outlet -7 mmH2O; faceplate ng PAF at FA blower-B bumubukas; walang JS error; `npm run check` SAME.
+
+**Not checked.** Live test, phone size, START / STOP ng fans.
+
 ## 3.2.1-beta.20 — AUX STEAM AND VACUUM, mockup page 08 in the app (2026-11-04, JISOO : HMI MOCKUP)
 
 **Work done.** `docs/hmi/mockups/temp/08-aux-steam-vacuum.html` → Plant view **AUX STEAM AND VACUUM** (`MK08`),
