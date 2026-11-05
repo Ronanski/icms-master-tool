@@ -74,6 +74,18 @@ const an=await page.evaluate(()=>{LS_SPLIT.setBatch('MK02:ACA',false,true);retur
 ck(an.some(x=>/IT-P1108A/.test(x))&&an.some(x=>/DPT-CW1108-A/.test(x)),'ACWP-A batch has its current and strainer pressure: '+JSON.stringify(an));
 const ax=await page.evaluate(async()=>{LS_SPLIT.setBatch('MK05:i:LTCD1110',false,true);await new Promise(r=>setTimeout(r,800));const tr=[...document.querySelectorAll('.splp[data-p="tags"] tbody tr')][0];const b=tr&&tr.querySelector('button.ex');if(!b)return 'no button';b.click();await new Promise(r=>setTimeout(r,500));const t2=[...document.querySelectorAll('.splp[data-p="tags"] tbody tr')][0];return t2.innerText.replace(/\t/g,' | ')});
 ck(/0 % = -436 mm/.test(ax)&&/[✓✗]/.test(ax),'analog expected = a point of the I/O list range: '+ax);
+// Inject (user 2026-11-05): the expected point is forced on the logic signal, holds with the plant model ON, shows on the HMI; Release frees it
+// real mouse clicks (beta.40: a global .bd { pointer-events: none } made the Expected button dead for the mouse while el.click() passed)
+const R0='.splp[data-p="tags"] tbody tr:first-child ';
+for(let k=0;k<6&&!/50 %/.test(await page.evaluate(s=>document.querySelector(s).textContent,R0+'button.ex:not(.inj)'));k++){await clk(R0+'button.ex:not(.inj)');await wait(300)}
+const injOk=await clk(R0+'button.inj');await wait(4000);
+const inj=await page.evaluate(R0=>{const tr0=document.querySelector(R0.trim());const r=LS_SPLIT.rows();return {plant:AN.plantOn,exp:tr0.querySelector('button.ex:not(.inj)').textContent,logic:r[0].v,hmi:r[1]&&r[1].v,row:tr0.innerText.replace(/\t/g,' | '),btn:(tr0.querySelector('button.inj')||{}).textContent,ev:[...document.querySelectorAll('.splp[data-p="ev"] .ev, .splfl[data-p="ev"] .ev')].map(e=>e.innerText).filter(t=>/injected/.test(t)).length}},R0);
+inj.click=injOk;await clk(R0+'button.inj');await wait(800);
+Object.assign(inj,await page.evaluate(R0=>{const tr0=document.querySelector(R0.trim());return {after:(tr0.querySelector('button.inj')||{}).textContent,forced:/forced/.test(tr0.innerText)}},R0));
+ck(inj.ev>=1,'Inject shows in the events of the batch ('+inj.ev+')');
+ck(inj.logic!=null&&Math.abs(inj.logic-parseFloat(String(inj.exp).split('=')[1]))<1&&/forced/.test(inj.row)&&inj.btn==='Release'&&/[✓]/.test(inj.row),'Inject 50 %: logic held at the point, forced, ✓ ('+JSON.stringify(inj)+')');
+ck(inj.hmi!=null&&Math.abs(inj.hmi-inj.logic)<0.6,'Inject: the HMI shows the forced value ('+inj.hmi+' / '+inj.logic+')');
+ck(inj.after==='Inject'&&!inj.forced,'Release: the signal is given back');
 const rbo=await page.evaluate(()=>{const b=[...document.querySelectorAll('.tabs button')].find(b=>b.textContent.trim()==='Split');const r=b.getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]});
 await page.mouse.click(rbo[0],rbo[1]);await wait(800);
 ck(await page.evaluate(()=>!LS_SPLIT.on&&!document.body.classList.contains('lssplit')&&!document.querySelector('.splfl')),'Split again: off, nothing left on the page');
