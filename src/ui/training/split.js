@@ -324,6 +324,8 @@
           : () => call(() => S2.rt.v[r.n], null)
       });
       if (e.di) delete L2[L2.length - 1].an;
+      /* user 2026-11-05: the value injected for the loop check is a FORCE of this logic signal, so the plant model cannot change it */ else
+        L2[L2.length - 1].fn = { sh: F.sh, S2, n: r.n };
     } else if (F && F.ios && F.ios.length)
       for (const q of F.ios) {
         const dig = /^[IOMB]\./.test(q.io.a);
@@ -343,6 +345,10 @@
               : () => call(() => q.S2.rt.v[q.n], null)
         };
         if (!dig || !q.S2) row.an = '';
+        if (!dig && q.S2) {
+          const shO = (AN.sheets || []).find(z => z.name === q.sh);
+          if (shO) row.fn = { sh: shO, S2: q.S2, n: q.n };
+        }
         L2.push(row);
       }
     else
@@ -923,6 +929,21 @@
   }
   /* ---------- painting ---------- */
   let k0 = '';
+  /* the force on the logic signal of an analog row (undefined = not forced) */
+  const fOf = x => (x.fn ? call(() => x.fn.S2.rt.force[x.fn.n], undefined) : undefined);
+  /* Inject / Release in the Events log (the events of the batch name its equipment) */
+  const injEv = (x, what) =>
+    call(() => {
+      const e0 = eq();
+      window.lsEventAdd &&
+        lsEventAdd(
+          x.fn.sh.name,
+          'FORCE',
+          (e0 ? e0.n + ' · ' : '') +
+            x.adr +
+            (what ? ' injected ' + what + ' (forced, loop check)' : ' released (back to the field)')
+        );
+    });
   function paint(force) {
     if (!on) return;
     const e0 = eq(),
@@ -972,8 +993,14 @@
       batch +
       '|' +
       L2.map(
-        x => x.k + (x.an != null && typeof x.now === 'number' ? x.now.toFixed(1) : x.now) + (r[x.k] && r[x.k].exp)
+        x =>
+          x.k +
+          (x.an != null && typeof x.now === 'number' ? x.now.toFixed(1) : x.now) +
+          (r[x.k] && r[x.k].exp) +
+          'f' +
+          fOf(x)
       ).join('') +
+      (window.AN && AN.view ? 'V' : 'R') +
       '|' +
       ctlTag;
     if (force || key !== k0) {
@@ -1037,6 +1064,41 @@
             );
             b.className = 'ex';
             exA.append(b);
+            /* user 2026-11-05: Inject = the loop calibrator. The expected point is forced on the logic signal (the same FORCE as the
+               logic sheet), so it holds while the plant model is ON and shows on the HMI; Release gives the signal back */
+            const fv = fOf(x);
+            if (x.fn && q.exp != null) {
+              const want = x.rg[0] + ((x.rg[1] - x.rg[0]) * q.exp) / 100,
+                held = fv !== undefined && Math.abs(fv - want) < 1e-9;
+              const bi = Bt(
+                held ? 'Release' : 'Inject',
+                held
+                  ? 'Give the signal back to the field (the plant model, or the value typed in the logic)'
+                  : 'Hold ' +
+                      fmtA(q.exp) +
+                      ' on this logic signal (forced): the plant model cannot change it until Release',
+                () => {
+                  call(() => AN.setForce(x.fn.sh, x.fn.n, held ? undefined : want));
+                  injEv(x, held ? null : fmtA(q.exp));
+                  paint(true);
+                }
+              );
+              bi.className = 'ex inj' + (held ? ' on' : '');
+              /* VIEW = look and trace only, no force (user rule 2026-10-23): Inject waits for RUN; Release stays possible */
+              if (!held && window.AN && AN.view) {
+                bi.disabled = true;
+                bi.title = 'VIEW mode: press RUN to inject a value';
+              }
+              exA.append(bi);
+            } else if (fv !== undefined) {
+              const bi = Bt('Release', 'This signal is forced: give it back to the field', () => {
+                call(() => AN.setForce(x.fn.sh, x.fn.n, undefined));
+                injEv(x, null);
+                paint(true);
+              });
+              bi.className = 'ex inj on';
+              exA.append(bi);
+            }
           } else exA.textContent = '—';
           const rsA =
             !x.rg || q.exp == null
@@ -1053,7 +1115,11 @@
             E(
               'td',
               'v1',
-              x.now == null ? '-----' : typeof x.now === 'number' ? x.now.toFixed(1) + (x.an ? ' ' + x.an : '') : x.now
+              (x.now == null
+                ? '-----'
+                : typeof x.now === 'number'
+                  ? x.now.toFixed(1) + (x.an ? ' ' + x.an : '')
+                  : x.now) + (fOf(x) !== undefined ? ' · forced' : '')
             ),
             E(
               'td',
