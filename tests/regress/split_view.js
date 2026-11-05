@@ -21,9 +21,12 @@ const g=await page.evaluate(()=>{const p=document.getElementById('plantws').getB
 ck(g.on&&g.cls&&g.tab==='logic'&&g.disp==='grid'&&g.pw>300,'split on: logic tab and the HMI shown ('+JSON.stringify(g)+')');
 ck(await clk('[data-hit="ACA"]'),'ACWP-A on the HMI');await wait(1500);
 const b1=await page.evaluate(()=>[LS_SPLIT.batch,LS_SPLIT.rows().filter(r=>r.adr==='I.0088').map(r=>r.where.join(';')),LS_SPLIT.rows().length,AN.cat]);
-ck(/DITL-76$/.test(b1[0]),'faceplate -> batch '+b1[0]);
+ck(b1[0]==='MK02:ACA','faceplate -> batch = the equipment ACWP-A ('+b1[0]+')');
 ck(b1[1].length>=1&&/r5/.test(b1[1].join()),'tag table: I.0088 used in '+JSON.stringify(b1[1]));
 ck(b1[2]>=15,'tag table rows: '+b1[2]);
+const eqs=await page.evaluate(()=>{LS_SPLIT.setBatch('MK03:iac0',false);const r=LS_SPLIT.rows();const o={n:r.length,bad:r.filter(x=>/COMPRESSOR [BC]/.test(x.name)).length,eq:document.querySelectorAll('#splbar select option').length};LS_SPLIT.setBatch('MK02:ACA',false);return o});
+ck(eqs.n>=2&&eqs.bad===0,'compressor A batch: only its rows ('+JSON.stringify(eqs)+')');
+ck(eqs.eq>=60,'Batch list = the equipment of the HMI pages: '+eqs.eq);
 ck(await btn('REMOTE')==='ok','faceplate REMOTE');await wait(300);await btn('EXECUTE');await wait(2500);
 const v=await page.evaluate(()=>LS_SPLIT.rows().filter(r=>r.adr==='I.0088').map(r=>r.v));
 ck(v.length&&v.every(x=>x===1),'I.0088 live = 1 after REMOTE ('+v+')');
