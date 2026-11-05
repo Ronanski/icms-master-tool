@@ -893,6 +893,17 @@
     fp = fpLive = null;
     lay();
   }
+  /* live test 2026-11-05: Escape closes the controller faceplate too, as the motor / valve pop-outs (fp-pop.js); the MV / SV pop-up first */
+  addEventListener(
+    'keydown',
+    e => {
+      if (e.key !== 'Escape' || !fp || !fp.isConnected) return;
+      const pop = fp.querySelector('.fpop');
+      if (pop && pop.style.display === 'block') pop.style.display = 'none';
+      else fpClose();
+    },
+    true
+  );
   /* 3.2.0 P3: on a wide screen the faceplate is a panel docked at the right (the graphic gets narrower, same zoom); narrow =
      the pop-up over the graphic as before */
   function lay() {
@@ -962,6 +973,8 @@
   }
   setInterval(fpTick, 250);
   window.lsPlantFp = fpOpen; /* for the tests */
+  /* the logic signal of an HMI value, the same link the page shows (loop check split view: an instrument batch); undefined = the links are not read yet */
+  window.lsPlantResolve = it => (IX ? resolve(it) || null : undefined);
   window.lsPlantLinks = () => LV.map(o => ({ tag: o.it.tag || o.it.ref || '', t: o.it.t, on: !!o.r })); /* for the tests (retest #60) */
   function reg(it, set, hit) {
     LV.push({ it, set, hit, r: null });

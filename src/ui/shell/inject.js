@@ -50,6 +50,7 @@ const block =
   fs.readFileSync(__dirname + '/home.css', 'utf8') +
   fs.readFileSync(__dirname + '/../training/dock.css', 'utf8') +
   fs.readFileSync(__dirname + '/../training/loopcheck.css', 'utf8') +
+  fs.readFileSync(__dirname + '/../training/split.css', 'utf8') +
   fs.readFileSync(__dirname + '/../ladder/ladder.css', 'utf8') +
   '</style><script id="shelljs">' +
   fs.readFileSync(__dirname + '/ditl.js', 'utf8') +
@@ -99,6 +100,9 @@ const block =
   '\n' +
   /* 3.2.1-beta.4: the loop check dock (one card per tag, the real press checked against the plant model, the address and the logic) */
   fs.readFileSync(__dirname + '/../training/loopcheck.js', 'utf8') +
+  '\n' +
+  /* 3.2.1: the loop check split view (HMI | logic, tag table, controller tags, events) */
+  fs.readFileSync(__dirname + '/../training/split.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/home.js', 'utf8') +
   '\n' +

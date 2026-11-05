@@ -4,7 +4,7 @@
    model, the cooler outlet TE-LO1002-1 / -2 of the logic (ABC-053). */
 (function () {
   if (!window.LS_MOCK) return;
-  const WHY = 'Turbine control system (TCS): no DCS logic sheet. The same command as the TCS OPERATION box of the old 036 page.';
+  const WHY = 'Run by the turbine control system (TCS), not by a DCS logic sheet.';
   LS_MOCK.add({
     id: 'MK04',
     title: '036 TURBINE OIL',
