@@ -623,11 +623,14 @@
     };
   }
   /* a page into the Plant view list, before the page it replaces later (def.before) */
+  /* 3.2.1 split view (training/split.js): the equipment of every page = the loop check batches */
+  const DEFS = [];
   function add(def) {
+    DEFS.push(def);
     PLANT_V2.screens[def.id] = page(def);
     const L = (window.PLANT_SYS = window.PLANT_SYS || []),
       i = def.before ? L.findIndex(x => x.id === def.before) : -1;
     L.splice(i >= 0 ? i : L.length, 0, { fitAll: 1, id: def.id, title: def.title, num: def.num, name: def.name, src: def.src || '', w: 1920, h: 1000, v2: true, screen: def.id, style: 'steel', items: [] });
   }
-  window.LS_MOCK = { add, page };
+  window.LS_MOCK = { add, page, defs: DEFS };
 })();

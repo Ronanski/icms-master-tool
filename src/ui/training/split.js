@@ -56,11 +56,48 @@
     ['tags', 'Tag tables'],
     ['ev', 'Alarms and events']
   ];
-  /* ---------- the batch: one DITL drawing ---------- */
+  /* ---------- the batch: one EQUIPMENT of the HMI pages (user 2026-11-05 "per equipment lang na batch"): every signal of its
+     drawing(s), only the rows of that machine when a drawing holds several (DITL-113: 3 compressors, DITL-45: 2 dryers) ---------- */
   const allD = () => call(() => S.sheets.concat((window.WORLD && WORLD.inst) || []).filter(s => /DITL/.test(s.name)), []);
   const dName = s => call(() => D().dName(s), s.name.replace(/^\(\d+\)/, ''));
-  const sheet = () => (batch ? call(() => D().dOf(batch), null) : null);
   const tagOf = I => (I && (I.tag || (/^\s*([IMOB]\.[0-9A-F]{4})\b/.exec(I.svc || '') || [])[1])) || '';
+  let EQ = null;
+  function eqList() {
+    if (EQ && EQ.length) return EQ;
+    const L2 = [],
+      defs = (window.LS_MOCK && LS_MOCK.defs) || [],
+      order = (window.PLANT_SYS || []).map(x => x.id),
+      ds = defs.slice().sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    const nm = ad => call(() => dName(D().dOf(ad)), null);
+    const pre = t => String(t || '').replace(/^Output row \d+ · /, '').replace(/\s*(RUNNING|IN OPERATION)\b.*$/, '').trim();
+    for (const def of ds)
+      for (const id in def.mach || {}) {
+        const m = def.mach[id];
+        const e = { key: def.id + ':' + id, page: def.title || def.id, n: m.n, t: m.t || '', sh: [], filt: '', ctl: m.ctl || '' };
+        if (m.sti) {
+          const s = call(() => D().dOf(m.sti[0]), null);
+          e.sh.push(m.sti[0]);
+          e.filt = s ? pre(call(() => DUI.rowInfo(s, m.sti[1]).svc, '')) : '';
+        } else if (m.sto) {
+          const s = call(() => D().dOf(m.sto[0]), null),
+            o = s && (call(() => DUI.outs(s), []) || []).find(q => q.row === m.sto[1]);
+          e.sh.push(m.sto[0]);
+          e.filt = o ? pre(o.name) : '';
+        } else if (m.mov) {
+          e.sh.push(m.mov);
+          e.own = m.tg || m.n;
+        } else if (m.ad && !m.fld && !/@/.test(m.ad)) {
+          const a = nm(m.ad);
+          if (a) e.sh.push(a);
+          if (m.d && /DITL/.test(m.d) && m.d !== a && nm(m.d)) e.sh.push(m.d);
+        } else if (m.df && m.d) e.sh.push(m.d);
+        if (!e.sh.length && !e.ctl) continue;
+        L2.push(e);
+      }
+    EQ = L2;
+    return L2;
+  }
+  const eq = () => eqList().find(e => e.key === batch) || null;
   function usedIn(s, row, adr, out) {
     const L2 = [];
     if (adr)
@@ -80,21 +117,33 @@
   let rowsC = null,
     rowsK = '';
   function rows() {
-    const s = sheet();
-    if (!s) return [];
-    if (rowsK === s.name && rowsC) return rowsC;
+    const e = eq();
+    if (!e) return [];
+    if (rowsK === e.key && rowsC) return rowsC;
     const L2 = [];
-    for (let r = 0; r < 64; r++) {
-      const I = call(() => DUI.rowInfo(s, r), null);
-      if (!I || !(I.tag || I.svc)) continue;
-      const adr = tagOf(I);
-      L2.push({ k: 'i' + r, adr: adr || 'r' + (r + 1), name: String(I.svc || '').replace(/^\s*[IMOB]\.[0-9A-F]{4}\s*/, ''), where: [dName(s) + ' r' + (r + 1)].concat(usedIn(s, r, adr, false)), v: () => call(() => DUI.rowVal(s, r), null) });
+    const mine = t => {
+      t = String(t || '');
+      if (e.filt) return t.includes(e.filt);
+      if (e.own) return !/(?:XV|MV)-[A-Z]{2}\d{4}/.test(t) || t.includes(e.own);
+      return true;
+    };
+    for (const nm of e.sh) {
+      const s = call(() => D().dOf(nm), null);
+      if (!s) continue;
+      const dn = dName(s);
+      for (let r = 0; r < 64; r++) {
+        const I = call(() => DUI.rowInfo(s, r), null);
+        if (!I || !(I.tag || I.svc) || !mine(I.svc)) continue;
+        const adr = tagOf(I);
+        L2.push({ k: dn + ':i' + r, adr: adr || 'r' + (r + 1), name: String(I.svc || '').replace(/^\s*[IMOB]\.[0-9A-F]{4}\s*/, ''), where: [dn + ' r' + (r + 1)].concat(usedIn(s, r, adr, false)), v: () => call(() => DUI.rowVal(s, r), null) });
+      }
+      for (const o of call(() => DUI.outs(s), []) || []) {
+        const n2 = String(o.name || '').replace(/^Output row \d+ · /, '');
+        if (!mine(n2)) continue;
+        L2.push({ k: dn + ':o' + o.row, adr: 'OUT' + (o.row + 1), name: n2, where: [dn + ' output'].concat(usedIn(s, o.row, '', true)), v: () => call(() => DUI.outVal(s, o.row), null) });
+      }
     }
-    for (const o of call(() => DUI.outs(s), []) || []) {
-      const nm = String(o.name || '').replace(/^Output row \d+ · /, '');
-      L2.push({ k: 'o' + o.row, adr: 'OUT' + (o.row + 1), name: nm, where: [dName(s) + ' output'].concat(usedIn(s, o.row, '', true)), v: () => call(() => DUI.outVal(s, o.row), null) });
-    }
-    rowsK = s.name;
+    rowsK = e.key;
     rowsC = L2;
     return L2;
   }
@@ -323,41 +372,51 @@
     );
     m.append(ft);
   }
-  /* ---------- batches ---------- */
-  let list = null;
+  /* ---------- batches: the equipment, grouped by HMI page, in the page order of the Plant view ---------- */
   function fillSel() {
-    if (!list) list = allD().map(dName).filter((v, i, a) => a.indexOf(v) === i);
-    const sel = els.sel;
-    if (sel.options.length === list.length) return;
-    sel.textContent = '';
-    for (const n of list) {
-      const s = call(() => D().dOf(n), null),
-        o = E('option', '', n + (s && s.title ? ' · ' + String(s.title).slice(0, 48) : ''));
-      o.value = n;
-      sel.append(o);
+    const L2 = eqList(),
+      sel = els.sel;
+    if (sel._n !== L2.length) {
+      sel._n = L2.length;
+      sel.textContent = '';
+      let g = null,
+        pg = '';
+      for (const e of L2) {
+        if (e.page !== pg) {
+          pg = e.page;
+          g = E('optgroup');
+          g.label = pg;
+          sel.append(g);
+        }
+        const o = E('option', '', e.n + (e.t ? ' · ' + e.t : '') + (e.sh.length ? ' · ' + e.sh.join(', ') : ''));
+        o.value = e.key;
+        g.append(o);
+      }
     }
     sel.value = batch;
   }
   function step(d) {
-    fillSel();
-    const i = Math.max(0, list.indexOf(batch));
-    setBatch(list[(i + d + list.length) % list.length], true);
+    const L2 = eqList();
+    if (!L2.length) return;
+    const i = Math.max(0, L2.findIndex(e => e.key === batch));
+    setBatch(L2[(i + d + L2.length) % L2.length].key, true);
   }
-  function setBatch(n, open) {
-    if (!n) return;
-    batch = n;
+  function setBatch(k, open) {
+    const e = eqList().find(x => x.key === k);
+    if (!e) return;
+    batch = k;
     rowsC = null;
+    if (e.ctl) ctlTag = e.ctl;
     save();
     fillSel();
-    if (els.sel) els.sel.value = n;
-    if (open) call(() => D().openD(n, null));
+    if (open && e.sh[0]) call(() => D().openD(e.sh[0], null));
     paint(true);
   }
   /* ---------- painting ---------- */
   let k0 = '';
   function paint(force) {
     if (!on) return;
-    const s = sheet(),
+    const e0 = eq(),
       L2 = rows(),
       r = res();
     /* what was seen of each row (0 and 1), for the result and the progress */
@@ -383,7 +442,7 @@
     const nb = Object.keys(R).filter(b => prog(b).n).length;
     els.pa.firstChild.textContent = 'Overall · ' + allOk + ' ✓ · ' + nb + ' batch' + (nb === 1 ? '' : 'es') + ' started';
     els.pa.lastChild.firstChild.style.width = Math.min(100, all ? (100 * allOk) / Math.max(all, 1) : 0) + '%';
-    els.tg._d.textContent = s ? dName(s) + (s.title ? ' · ' + s.title : '') : 'pick a batch, or open a faceplate on the HMI';
+    els.tg._d.textContent = e0 ? e0.n + (e0.t ? ' · ' + e0.t : '') + ' · ' + e0.page + (e0.sh.length ? ' · ' + e0.sh.join(', ') : '') : 'pick an equipment in Batch, or open a faceplate on the HMI';
     const key = batch + '|' + L2.map(x => x.now + (r[x.k] && r[x.k].exp)).join('') + '|' + ctlTag;
     if (force || key !== k0) {
       k0 = key;
@@ -477,8 +536,8 @@
     evB = '';
   function evPaint() {
     const LOG = window.lsEvents || [];
-    const s = sheet(),
-      nm = s ? dName(s) : '',
+    const e0 = eq(),
+      nm = e0 ? e0.sh.map(x => String(x).replace(/ #.*/, '')).join('|') : '',
       L2 = rows();
     if (LOG.length === evN && evB === batch) return;
     evN = LOG.length;
@@ -490,12 +549,14 @@
     const hit = e => {
       const t = String(e.text || ''),
         sh = String(e.sh || '').replace(/^\(\d+\)/, '');
-      if (nm && (sh === nm || t.includes(nm))) return true;
+      const shs = nm ? nm.split('|') : [];
+      if (e0 && e0.n && t.includes(e0.n)) return true;
+      if (shs.includes(sh) && (!e0 || !(e0.filt || e0.own) || t.includes(e0.filt || e0.own))) return true;
       for (const a of names) if (t.includes(a)) return true;
-      return !!(els._mach && t.includes(els._mach));
+      return false;
     };
     const ev = LOG.filter(hit).slice(-200).reverse();
-    els.ev._d.textContent = nm ? nm + ' · ' + ev.length : 'this batch';
+    els.ev._d.textContent = e0 ? e0.n + ' · ' + ev.length : 'this batch';
     if (!ev.length) bd.append(E('div', 'empty', 'No event of this batch yet. Every press, field action, alarm and return shows here.'));
     for (const e of ev) {
       const alm = /ALM|TRIP/.test(e.kind || '') && !/RTN/.test(e.kind || '');
@@ -528,7 +589,7 @@
     if (on) {
       call(() => window.lsSetTab && lsSetTab('logic'));
       call(() => window.lsPlant && plantRaw(true));
-      if (batch) call(() => D().openD(batch, null));
+      if (batch) setBatch(batch, true);
     } else {
       els.mn.classList.remove('open');
       for (const id of ['tags', 'ev']) if (els[id === 'tags' ? 'tg' : 'ev'].parentElement === document.body) els.bot.append(els[id === 'tags' ? 'tg' : 'ev']);
@@ -566,10 +627,9 @@
         F[k] = function (P) {
           const r = f0.apply(this, arguments);
           if (on && P) {
-            const d = P.ad || P.d;
-            els._mach = P.n || '';
-            const nm = d && call(() => D().dName(D().dOf(d)), null);
-            if (nm && /DITL/.test(nm)) setBatch(nm, true);
+            /* the equipment of the faceplate (its name on the HMI page) */
+            const e = eqList().find(x => x.n === P.n);
+            if (e) setBatch(e.key, true);
           }
           return r;
         };
@@ -581,6 +641,8 @@
     if (on && tg && tg !== ctlTag && /^[A-Z]{2,}[-A-Z]*\d/.test(tg)) {
       ctlTag = tg.trim();
       k0 = '';
+      const e = eqList().find(x => x.ctl === ctlTag);
+      if (e && e.key !== batch) setBatch(e.key, false);
     }
   }
   function railBtn() {
