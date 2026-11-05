@@ -1,6 +1,6 @@
 # HANDOFF — iisang file para magpatuloy ang kahit sinong Claude o account
 
-> **2026-11-04 11 PM PHT: LOCAL TAKEOVER.** Ang buong project ay ipinasa sa Claude Code sa PC ng user. Basahin MUNA ang `docs/handoff/LOCAL_TAKEOVER.md`: layunin, ULTIMATE RULE (pinalitan ang GO BETA / "G" rules sa ibaba), deadline 6:00 AM PHT 2026-11-05, hourly updates, estado ng beta.19, bukas na PR, susunod na gagawin, at mga reference sa PC.
+> **2026-11-05 6:30 PM PHT: FULL TURNOVER (WENDY).** Basahin MUNA ang `docs/handoff/LOCAL_TAKEOVER.md`: layunin, rules na umiiral ngayon (RECOMMEND ONLY: ang user ang nagpapasya; STOP = STOP; pinalitan ang ULTIMATE RULE at ang 6 AM deadline ng 11-04), setup, roles, tapos na (beta.41), bukas na PR, bukas na findings (LP heater isolation, REINSTATE / DITL-69 limit switch, Split → Plant view, Expected), kulang pa, at prompt para sa bagong session.
 
 > **Ito lang ang kailangan.** Kapag binigay ang repo na ito sa bagong Claude, session o account, basahin ang file na ito MUNA: nandito ang kasalukuyang estado, ang mga thread / trabaho, ang mga utos at desisyon ng user (dating nasa project memory), at ang style. Detalye ng bawat Beta: `docs/versions/v3.2.0/UPDATE_REPORT.md` at git history.
 >
