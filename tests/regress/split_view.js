@@ -69,6 +69,11 @@ const ib=await page.evaluate(async()=>{const n=[...document.querySelectorAll('#s
 ck(ib.n>=400,'instrument batches: '+ib.n);
 ck(ib.r[0]&&ib.r[0][0]==='AI0640'&&ib.r[0][1].includes('ABC-031')&&ib.sh==='ABC-031'&&ib.pg==='MK05','LTCD1110 -> AI0640 on ABC-031, HMI on 028 CONDENSATE ('+JSON.stringify(ib)+')');
 ck(ib.r[1]&&ib.r[1][0]==='HMI'&&ib.r[0][2]!=null&&Math.abs(ib.r[1][2]-ib.r[0][2])<0.6,'LTCD1110: HMI value = logic value ('+ib.r[0][2]+' / '+(ib.r[1]&&ib.r[1][2])+')');
+// analogs (user 2026-11-05 "included ang mga analogs"): the motor batch carries its current / pressure; an analog row has a range point to check
+const an=await page.evaluate(()=>{LS_SPLIT.setBatch('MK02:ACA',false,true);return LS_SPLIT.rows().map(x=>x.adr+' '+x.name).filter(x=>/P1108A|CW1108-A/.test(x))});
+ck(an.some(x=>/IT-P1108A/.test(x))&&an.some(x=>/DPT-CW1108-A/.test(x)),'ACWP-A batch has its current and strainer pressure: '+JSON.stringify(an));
+const ax=await page.evaluate(async()=>{LS_SPLIT.setBatch('MK05:i:LTCD1110',false,true);await new Promise(r=>setTimeout(r,800));const tr=[...document.querySelectorAll('.splp[data-p="tags"] tbody tr')][0];const b=tr&&tr.querySelector('button.ex');if(!b)return 'no button';b.click();await new Promise(r=>setTimeout(r,500));const t2=[...document.querySelectorAll('.splp[data-p="tags"] tbody tr')][0];return t2.innerText.replace(/\t/g,' | ')});
+ck(/0 % = -436 mm/.test(ax)&&/[✓✗]/.test(ax),'analog expected = a point of the I/O list range: '+ax);
 const rbo=await page.evaluate(()=>{const b=[...document.querySelectorAll('.tabs button')].find(b=>b.textContent.trim()==='Split');const r=b.getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]});
 await page.mouse.click(rbo[0],rbo[1]);await wait(800);
 ck(await page.evaluate(()=>!LS_SPLIT.on&&!document.body.classList.contains('lssplit')&&!document.querySelector('.splfl')),'Split again: off, nothing left on the page');
