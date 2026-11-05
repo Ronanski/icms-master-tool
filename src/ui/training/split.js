@@ -163,75 +163,9 @@
        signals of its PID on the ABC sheet: the mode inputs (TAG.MAN / .LOC / .REM, 0 / 1, the same nets the faceplate writes), the A/M
        station select signals, then PV, SV and MV live from the sheet */
     if (e.ins) {
-      const F = insFind(e);
-      if (F && F.S2) {
-        const { r, S2, lab, uses } = F;
-        L2.push({
-          k: e.key + ':logic',
-          adr: r.a || lab || 'net',
-          an: e.di ? null : '',
-          name: (F.desc || e.n) + ' · in the logic',
-          where: uses,
-          v: e.di
-            ? () => {
-                const v = call(() => S2.rt.v[r.n], null);
-                return v == null ? null : v > 0.5 ? 1 : 0;
-              }
-            : () => call(() => S2.rt.v[r.n], null)
-        });
-        if (e.di) delete L2[L2.length - 1].an;
-      } else if (F && F.ios && F.ios.length)
-        for (const q of F.ios) {
-          const dig = /^[IOMB]\./.test(q.io.a);
-          const row = {
-            k: e.key + ':io' + q.io.a,
-            adr: q.io.a + ' · STN10' + q.io.st,
-            name:
-              q.io.tag + ' · ' + q.io.d + (q.S2 ? ' · in the logic' : ' · I/O list signal, not used on a logic sheet'),
-            where: q.S2 ? [q.sh] : ['I/O list'],
-            v: !q.S2
-              ? () => null
-              : dig
-                ? () => {
-                    const v = call(() => q.S2.rt.v[q.n], null);
-                    return v == null ? null : v > 0.5 ? 1 : 0;
-                  }
-                : () => call(() => q.S2.rt.v[q.n], null)
-          };
-          if (!dig || !q.S2) row.an = '';
-          L2.push(row);
-        }
-      else
-        L2.push({
-          k: e.key + ':nolog',
-          adr: '—',
-          an: '',
-          name:
-            F && F.r && F.r.k === 'unit'
-              ? 'Plant model only: no transmitter in the logic'
-              : F
-                ? 'Not in the I/O list: no DCS signal (the HMI shows the plant model, or ----- )'
-                : 'Looking for the signal in the logic and the I/O list…',
-          where: [],
-          v: () => null
-        });
-      /* the value the operator reads on the HMI page (the same [data-v] text) */
-      L2.push({
-        k: e.key + ':hmi',
-        adr: 'HMI',
-        an: '',
-        name: 'Value on the HMI page · ' + e.page,
-        where: [e.page],
-        v: () =>
-          call(() => {
-            const t = document.querySelector(e.di ? `#plantws [data-di^="${e.ins}|"]` : `#plantws [data-v="${e.ins}"]`);
-            if (!t) return null;
-            const x = parseFloat(t.textContent);
-            return isFinite(x) ? x : t.textContent.trim() || null;
-          }, null)
-      });
-      /* still looking (sheets / links / I/O list loading): read again on the next paint */
-      if (F) {
+      const IR = insRows(e);
+      L2.push(...IR.L);
+      if (IR.ready) {
         rowsK = e.key;
         rowsC = L2;
       }
@@ -263,12 +197,15 @@
             where: [sh.name],
             v: dg(g.n)
           });
-        const u = (c.b && c.b.p && c.b.p.unit) || '';
+        const u = (c.b && c.b.p && c.b.p.unit) || '',
+          P = (c.b && c.b.p) || {},
+          rgC = isFinite(P.rlo) && isFinite(P.rhi) && P.rhi > P.rlo ? [+P.rlo, +P.rhi] : null;
         if (c.q && c.q.pv != null)
           L2.push({
             k: sh.name + ':pv',
             adr: 'PV',
             an: u,
+            rg: rgC,
             name: 'Process value · ' + lb(c.q.pv),
             where: [sh.name],
             v: nv(c.q.pv)
@@ -278,6 +215,7 @@
             k: sh.name + ':sv',
             adr: 'SV',
             an: u,
+            rg: rgC,
             name: 'Set value · ' + lb(c.q.sv),
             where: [sh.name],
             v: nv(c.q.sv)
@@ -287,6 +225,7 @@
             k: sh.name + ':mv',
             adr: 'MV',
             an: '%',
+            rg: [0, 100],
             name: 'Output to the valve / drive · ' + lb(c.out),
             where: [sh.name],
             v: nv(c.out)
@@ -330,9 +269,141 @@
         });
       }
     }
-    rowsK = e.key;
-    rowsC = L2;
+    /* the analog signals of the equipment (user 2026-11-05 "included ang mga analogs"): the instruments of its HMI page whose tag carries
+       its number (P-1108A: IIP1108A current, DPICW1108A pressure; MV-MU1001: FIMU1001), each with its logic / I/O list row and its HMI value */
+    let ready = true;
+    for (const ie of eqIns(e)) {
+      const IR = insRows(ie);
+      L2.push(...IR.L);
+      if (!IR.ready) ready = false;
+    }
+    if (ready) {
+      rowsK = e.key;
+      rowsC = L2;
+    }
     return L2;
+  }
+  function eqIns(e) {
+    const T = [];
+    const a = /\b[A-Z]{2,3}-([A-Z]{2}\d{4}(?:-?\d)?)\b/.exec(e.n || ''),
+      b = /\b[A-Z]{1,2}-(\d{4}[A-Z]?)\b/.exec(e.t || '') || /\b[A-Z]{1,2}-(\d{4}[A-Z]?)\b/.exec(e.n || '');
+    if (a) T.push(a[1].replace(/-/g, ''));
+    if (b) T.push(b[1]);
+    if (!T.length) return [];
+    return eqList().filter(
+      x =>
+        x.ins &&
+        x.page === e.page &&
+        T.some(t =>
+          String(x.ins)
+            .toUpperCase()
+            .replace(/[^A-Z0-9]/g, '')
+            .includes(t)
+        )
+    );
+  }
+  /* the rows of an instrument (user 2026-11-05 "Di lng dpt digital signals iloopcheck, included ang mga analogs"): its signal in the
+     logic or its I/O list line(s), then the value on the HMI page; analog rows carry the range of the I/O list (rg) for the 0 / 25 / 50
+     / 75 / 100 % check. ready = found (the rows are kept) */
+  function insRows(e) {
+    const L2 = [];
+    const F = insFind(e);
+    if (F && F.S2) {
+      const { r, S2, lab, uses } = F;
+      L2.push({
+        k: e.key + ':logic',
+        adr: r.a || lab || 'net',
+        an: e.di ? null : '',
+        name: (F.desc || e.n) + ' · in the logic',
+        where: uses,
+        v: e.di
+          ? () => {
+              const v = call(() => S2.rt.v[r.n], null);
+              return v == null ? null : v > 0.5 ? 1 : 0;
+            }
+          : () => call(() => S2.rt.v[r.n], null)
+      });
+      if (e.di) delete L2[L2.length - 1].an;
+    } else if (F && F.ios && F.ios.length)
+      for (const q of F.ios) {
+        const dig = /^[IOMB]\./.test(q.io.a);
+        const row = {
+          k: e.key + ':io' + q.io.a,
+          adr: q.io.a + ' · STN10' + q.io.st,
+          name:
+            q.io.tag + ' · ' + q.io.d + (q.S2 ? ' · in the logic' : ' · I/O list signal, not used on a logic sheet'),
+          where: q.S2 ? [q.sh] : ['I/O list'],
+          v: !q.S2
+            ? () => null
+            : dig
+              ? () => {
+                  const v = call(() => q.S2.rt.v[q.n], null);
+                  return v == null ? null : v > 0.5 ? 1 : 0;
+                }
+              : () => call(() => q.S2.rt.v[q.n], null)
+        };
+        if (!dig || !q.S2) row.an = '';
+        L2.push(row);
+      }
+    else
+      L2.push({
+        k: e.key + ':nolog',
+        adr: '—',
+        an: '',
+        name:
+          F && F.r && F.r.k === 'unit'
+            ? 'Plant model only: no transmitter in the logic'
+            : F
+              ? 'Not in the I/O list: no DCS signal (the HMI shows the plant model, or ----- )'
+              : 'Looking for the signal in the logic and the I/O list…',
+        where: [],
+        v: () => null
+      });
+    /* the value the operator reads on the HMI page (the same [data-v] text) */
+    L2.push({
+      k: e.key + ':hmi',
+      adr: 'HMI',
+      an: '',
+      name: 'Value of ' + e.n + ' on the HMI page · ' + e.page,
+      where: [e.page],
+      v: () =>
+        call(() => {
+          const t = document.querySelector(e.di ? `#plantws [data-di^="${e.ins}|"]` : `#plantws [data-v="${e.ins}"]`);
+          if (!t) return null;
+          const x = parseFloat(t.textContent);
+          return isFinite(x) ? x : t.textContent.trim() || null;
+        }, null)
+    });
+    /* the range of the I/O list on the analog rows (logic and HMI), for the 0 / 25 / 50 / 75 / 100 % check */
+    const io0 = ioOf(e.ins);
+    let rg0 = null,
+      u0 = '';
+    for (const x of L2) {
+      if (x.an == null) continue;
+      const q = F && F.ios && F.ios.find(z => x.k === e.key + ':io' + z.io.a);
+      const src = q ? q.io : x.k === e.key + ':logic' ? io0 : null;
+      if (src && isFinite(src.lo) && isFinite(src.hi) && src.hi > src.lo) {
+        x.rg = [+src.lo, +src.hi];
+        x.an = src.u || x.an;
+        if (!rg0) ((rg0 = x.rg), (u0 = x.an));
+      }
+    }
+    const h = L2.find(x => x.k === e.key + ':hmi');
+    if (h && rg0) ((h.rg = rg0), (h.an = u0));
+    return { L: L2, ready: !!F };
+  }
+  /* the I/O list line of an HMI indicator name (LIMU0708A = LT-MU0708-A) */
+  function ioOf(tag) {
+    const io = ioList();
+    if (!io) return null;
+    const k = String(tag)
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '');
+    return (
+      [k, k.replace(/^(DP|[LPFTAZSI])I(?=[A-Z])/, '$1T'), k.replace(/^(T)I(?=[A-Z])/, '$1E')]
+        .map(c => io.get(c))
+        .find(Boolean) || null
+    );
   }
   const res = () => (R[batch] = R[batch] || {});
   function prog(b) {
@@ -363,7 +434,8 @@
                 const k = String(q.tag)
                   .toUpperCase()
                   .replace(/[^A-Z0-9]/g, '');
-                if (!m.has(k)) m.set(k, { st, a, d: String(q.d || '').trim(), tag: q.tag });
+                if (!m.has(k))
+                  m.set(k, { st, a, d: String(q.d || '').trim(), tag: q.tag, lo: q.lo, hi: q.hi, u: q.u || '' });
               }
             IOL = m;
             for (const k in insMemo) if (insMemo[k] && insMemo[k].io === null) delete insMemo[k];
@@ -861,6 +933,14 @@
       const v = x.v();
       if (x.an != null) {
         x.now = v == null || v === '' ? null : isFinite(+v) ? +v : String(v);
+        /* analog loop check: the expected is a point of the range (0 / 25 / 50 / 75 / 100 %); ✓ within 1 % of the span */
+        const qa = r[x.k];
+        if (x.rg && qa && qa.exp != null) {
+          const sp = x.rg[1] - x.rg[0],
+            want = x.rg[0] + (sp * qa.exp) / 100;
+          qa.ok = typeof x.now === 'number' && Math.abs(x.now - want) <= sp * 0.01;
+          if (qa.ok && !qa.seen.includes(qa.exp)) qa.seen.push(qa.exp);
+        }
         continue;
       }
       if (v !== 0 && v !== 1) continue;
@@ -878,7 +958,7 @@
       all += q.n;
       allOk += q.ok;
     }
-    const nD = L2.filter(x => x.an == null).length;
+    const nD = L2.filter(x => x.an == null || x.rg).length;
     els.pb.firstChild.textContent = 'This batch · ' + p.ok + ' ✓ of ' + nD + ' signals';
     els.pb.lastChild.firstChild.style.width = (nD ? (100 * p.ok) / nD : 0) + '%';
     const nb = Object.keys(R).filter(b => prog(b).n).length;
@@ -929,19 +1009,63 @@
         const q = r[x.k] || { exp: null, seen: [] },
           row = E('tr');
         if (x.an != null) {
-          /* an analog value of the controller (PV / SV / MV): live from the ABC sheet, no 0 / 1 expected */
+          /* an analog value: live; with a range (I/O list, controller) the tester picks the point to check: – → 0 → 25 → 50 → 75 →
+             100 % of the range (shown in its unit) → – */
+          const fmtA = p => {
+            const w = x.rg[0] + ((x.rg[1] - x.rg[0]) * p) / 100;
+            return p + ' % = ' + (Math.abs(w) >= 100 ? w.toFixed(0) : w.toFixed(1)) + (x.an ? ' ' + x.an : '');
+          };
+          const exA = E('td');
+          if (x.rg) {
+            const P = [0, 25, 50, 75, 100];
+            const b = Bt(
+              q.exp == null ? '–' : fmtA(q.exp),
+              'Click: the point of the range to check (– → 0 → 25 → 50 → 75 → 100 %); range ' +
+                x.rg[0] +
+                ' – ' +
+                x.rg[1] +
+                ' ' +
+                (x.an || ''),
+              () => {
+                const q2 = (r[x.k] = r[x.k] || { exp: null, seen: [] });
+                const i = P.indexOf(q2.exp);
+                q2.exp = q2.exp == null ? 0 : i < P.length - 1 ? P[i + 1] : null;
+                q2.ok = false;
+                save();
+                paint(true);
+              }
+            );
+            b.className = 'ex';
+            exA.append(b);
+          } else exA.textContent = '—';
+          const rsA =
+            !x.rg || q.exp == null
+              ? E('td', '', x.rg ? 'not yet' : 'live')
+              : q.ok
+                ? E('td', 'ok', '✓')
+                : E('td', 'bad', '✗');
+          if (x.rg && q.exp != null && q.ok) row.className = 'chg';
           row.append(
             E('td', '', x.adr),
             E('td', 'n', x.name),
             E('td', 'n', x.where.join(', ')),
-            E('td', '', '—'),
+            exA,
             E(
               'td',
               'v1',
               x.now == null ? '-----' : typeof x.now === 'number' ? x.now.toFixed(1) + (x.an ? ' ' + x.an : '') : x.now
             ),
-            E('td', '', '—'),
-            E('td', '', 'live')
+            E(
+              'td',
+              '',
+              x.rg && q.seen && q.seen.length
+                ? q.seen
+                    .slice()
+                    .sort((a, b) => a - b)
+                    .join(' / ') + ' %'
+                : '—'
+            ),
+            rsA
           );
           tb.append(row);
           continue;
