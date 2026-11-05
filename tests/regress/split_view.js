@@ -24,7 +24,7 @@ const b1=await page.evaluate(()=>[LS_SPLIT.batch,LS_SPLIT.rows().filter(r=>r.adr
 ck(b1[0]==='MK02:ACA','faceplate -> batch = the equipment ACWP-A ('+b1[0]+')');
 ck(b1[1].length>=1&&/r5/.test(b1[1].join()),'tag table: I.0088 used in '+JSON.stringify(b1[1]));
 ck(b1[2]>=15,'tag table rows: '+b1[2]);
-const eqs=await page.evaluate(()=>{LS_SPLIT.setBatch('MK03:iac0',false);const r=LS_SPLIT.rows();const o={n:r.length,bad:r.filter(x=>/COMPRESSOR [BC]/.test(x.name)).length,eq:document.querySelectorAll('#splbar select option').length};LS_SPLIT.setBatch('MK02:ACA',false);return o});
+const eqs=await page.evaluate(()=>{LS_SPLIT.setBatch('MK03:iac0',false,true);const r=LS_SPLIT.rows();const o={n:r.length,bad:r.filter(x=>/COMPRESSOR [BC]/.test(x.name)).length,eq:document.querySelectorAll('#splbar select option').length};LS_SPLIT.setBatch('MK02:ACA',false,true);return o});
 ck(eqs.n>=2&&eqs.bad===0,'compressor A batch: only its rows ('+JSON.stringify(eqs)+')');
 ck(eqs.eq>=60,'Batch list = the equipment of the HMI pages: '+eqs.eq);
 ck(await btn('REMOTE')==='ok','faceplate REMOTE');await wait(300);await btn('EXECUTE');await wait(2500);
@@ -34,6 +34,11 @@ const ev=await page.evaluate(()=>document.querySelectorAll('#splbot .splp[data-p
 ck(ev>=1,'events of the batch: '+ev);
 await page.keyboard.press('Escape');await wait(400);
 ck(await clk('[data-hit="TIC"]'),'TICLO1002 on the HMI');await wait(1500);
+// the controller faceplate now opens its ABC sheet on the right; this test never picked a starting state (AN.plantCold above), so the app
+// asks for one on the sheet change: answer "Not now" as an operator would
+const ask=await page.evaluate(()=>{const d=document.getElementById('lsask');if(!d)return 0;const b=[...d.querySelectorAll('button')].find(x=>x.textContent.trim()==='Not now');if(b)b.click();return 1});
+if(ask){console.log('NOTE starting-state prompt answered "Not now"');await wait(500);}
+ck(await page.evaluate(()=>AN.cat==='an'&&/ABC-053/.test(AN.sheets[AN.i].name)),'controller faceplate -> its ABC sheet on the right');
 const ct=await page.evaluate(()=>{const t=document.getElementById('splctl');return t?t.innerText.split('\n').join(' | '):''});
 ck(/TICLO1002/.test(ct)&&/°C/.test(ct),'controller tags: '+ct.slice(0,200));
 // drag the HMI | logic divider 200 px to the right
@@ -52,6 +57,13 @@ if(shot)await page.screenshot({path:shot});
 const fb=await page.evaluate(()=>{const p=document.querySelector('.splp[data-p="ev"]');const b=[...p.querySelectorAll('button')].find(x=>x.textContent==='Float');const r=b.getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]});
 await page.mouse.click(fb[0],fb[1]);await wait(500);
 ck(await page.evaluate(()=>!!document.querySelector('.splfl[data-p="ev"]')),'events panel floats');
+// a controller batch picked in Batch (user 2026-11-05 "dapat nagrereflect ung command mo sa controller doon mismo sa logic"): its ABC sheet on the right, the HMI on its page, the mode and PV / SV / MV rows live
+const cb=await page.evaluate(async()=>{LS_SPLIT.setBatch('MK06:CSU',true);await new Promise(r=>setTimeout(r,2500));const r=LS_SPLIT.rows();return {sh:AN.sheets[AN.i]&&AN.sheets[AN.i].name,cat:AN.cat,pg:(document.querySelector('select.plpick')||{}).value,adr:r.map(x=>x.adr)}});
+ck(cb.sh==='ABC-010'&&cb.cat==='an','controller batch LICBR1001B -> ABC-010 on the right ('+JSON.stringify(cb)+')');
+ck(cb.pg==='MK06','controller batch -> HMI on the Feedwater page ('+cb.pg+')');
+ck(cb.adr.includes('LICBR1001B.MAN')&&cb.adr.includes('PV')&&cb.adr.includes('MV'),'controller batch rows: '+cb.adr.join(', '));
+const nf=await page.evaluate(()=>{const o=[...document.querySelectorAll('#splbar select option')].filter(o=>!/DITL/.test(o.textContent));const bad=[];for(const x of o){LS_SPLIT.setBatch(x.value,false,true);if(!LS_SPLIT.rows().length)bad.push(x.value)}LS_SPLIT.setBatch('MK06:CSU',false,true);return {n:o.length,bad}});
+ck(nf.n>=50&&nf.bad.length===0,'every controller batch found on the ABC sheets ('+nf.n+', not found: '+nf.bad.join(' ')+')');
 const rbo=await page.evaluate(()=>{const b=[...document.querySelectorAll('.tabs button')].find(b=>b.textContent.trim()==='Split');const r=b.getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]});
 await page.mouse.click(rbo[0],rbo[1]);await wait(800);
 ck(await page.evaluate(()=>!LS_SPLIT.on&&!document.body.classList.contains('lssplit')&&!document.querySelector('.splfl')),'Split again: off, nothing left on the page');
