@@ -45,7 +45,8 @@
   let L = Object.assign({}, DEF, ls.get('ls-spl-lay', {}));
   let on = false,
     batch = ls.get('ls-spl-batch', ''),
-    ctlTag = '';
+    ctlTag = '',
+    fpTag = '';
   /* results: { sheetName: { row key: { exp: 0|1|null, seen: [0|1] } } } */
   const R = ls.get('ls-spl-res', {});
   const save = () => (ls.set('ls-spl-lay', L), ls.set('ls-spl-res', R), ls.set('ls-spl-batch', batch));
@@ -58,7 +59,8 @@
   ];
   /* ---------- the batch: one EQUIPMENT of the HMI pages (user 2026-11-05 "per equipment lang na batch"): every signal of its
      drawing(s), only the rows of that machine when a drawing holds several (DITL-113: 3 compressors, DITL-45: 2 dryers) ---------- */
-  const allD = () => call(() => S.sheets.concat((window.WORLD && WORLD.inst) || []).filter(s => /DITL/.test(s.name)), []);
+  const allD = () =>
+    call(() => S.sheets.concat((window.WORLD && WORLD.inst) || []).filter(s => /DITL/.test(s.name)), []);
   const dName = s => call(() => D().dName(s), s.name.replace(/^\(\d+\)/, ''));
   const tagOf = I => (I && (I.tag || (/^\s*([IMOB]\.[0-9A-F]{4})\b/.exec(I.svc || '') || [])[1])) || '';
   let EQ = null;
@@ -69,11 +71,23 @@
       order = (window.PLANT_SYS || []).map(x => x.id),
       ds = defs.slice().sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
     const nm = ad => call(() => dName(D().dOf(ad)), null);
-    const pre = t => String(t || '').replace(/^Output row \d+ · /, '').replace(/\s*(RUNNING|IN OPERATION)\b.*$/, '').trim();
+    const pre = t =>
+      String(t || '')
+        .replace(/^Output row \d+ · /, '')
+        .replace(/\s*(RUNNING|IN OPERATION)\b.*$/, '')
+        .trim();
     for (const def of ds)
       for (const id in def.mach || {}) {
         const m = def.mach[id];
-        const e = { key: def.id + ':' + id, page: def.title || def.id, n: m.n, t: m.t || '', sh: [], filt: '', ctl: m.ctl || '' };
+        const e = {
+          key: def.id + ':' + id,
+          page: def.title || def.id,
+          n: m.n,
+          t: m.t || '',
+          sh: [],
+          filt: '',
+          ctl: m.ctl || ''
+        };
         if (m.sti) {
           const s = call(() => D().dOf(m.sti[0]), null);
           e.sh.push(m.sti[0]);
@@ -110,8 +124,11 @@
         }
       }
     const W = window.WORLD && WORLD.idx;
-    if (W && out) for (const e of W.ain || []) if (e.d === s && e.row === row) L2.push(e.sh + (e.ref ? ' (' + e.ref + ')' : ''));
-    if (W && !out && W.din && W.din.get) for (const e of W.din.get(s) || []) if (e && e.row === row) L2.push((e.sh && e.sh.name ? e.sh.name : e.sh || 'ABC') + '');
+    if (W && out)
+      for (const e of W.ain || []) if (e.d === s && e.row === row) L2.push(e.sh + (e.ref ? ' (' + e.ref + ')' : ''));
+    if (W && !out && W.din && W.din.get)
+      for (const e of W.din.get(s) || [])
+        if (e && e.row === row) L2.push((e.sh && e.sh.name ? e.sh.name : e.sh || 'ABC') + '');
     return [...new Set(L2)];
   }
   let rowsC = null,
@@ -121,6 +138,68 @@
     if (!e) return [];
     if (rowsK === e.key && rowsC) return rowsC;
     const L2 = [];
+    /* user 2026-11-05 "dapat nagrereflect ung command mo sa controller doon mismo sa logic": a controller batch (no DITL drawing) = the
+       signals of its PID on the ABC sheet: the mode inputs (TAG.MAN / .LOC / .REM, 0 / 1, the same nets the faceplate writes), the A/M
+       station select signals, then PV, SV and MV live from the sheet */
+    if (!e.sh.length && e.ctl) {
+      const F = ctlFind(e.ctl);
+      if (F) {
+        const { sh, S2, c } = F,
+          nv = n => () => call(() => S2.rt.v[n], null),
+          dg = n => () => {
+            const v = call(() => S2.rt.v[n], null);
+            return v == null ? null : v > 0.5 ? 1 : 0;
+          },
+          lb = n => (S2.lab[n] && S2.lab[n].t) || '(no tag on the drawing)';
+        for (const m of c.modes || [])
+          L2.push({
+            k: sh.name + ':m' + m.n,
+            adr: m.name,
+            name: 'Mode ' + m.kind + ' (faceplate button)',
+            where: [sh.name],
+            v: dg(m.n)
+          });
+        for (const g of c.sigs || [])
+          L2.push({
+            k: sh.name + ':s' + g.n,
+            adr: /^n\d+$/.test(g.name) ? '(no tag)' : g.name,
+            name: 'Auto / manual station select (' + g.role + ' leg)',
+            where: [sh.name],
+            v: dg(g.n)
+          });
+        const u = (c.b && c.b.p && c.b.p.unit) || '';
+        if (c.q && c.q.pv != null)
+          L2.push({
+            k: sh.name + ':pv',
+            adr: 'PV',
+            an: u,
+            name: 'Process value · ' + lb(c.q.pv),
+            where: [sh.name],
+            v: nv(c.q.pv)
+          });
+        if (c.q && c.q.sv != null)
+          L2.push({
+            k: sh.name + ':sv',
+            adr: 'SV',
+            an: u,
+            name: 'Set value · ' + lb(c.q.sv),
+            where: [sh.name],
+            v: nv(c.q.sv)
+          });
+        if (c.out != null)
+          L2.push({
+            k: sh.name + ':mv',
+            adr: 'MV',
+            an: '%',
+            name: 'Output to the valve / drive · ' + lb(c.out),
+            where: [sh.name],
+            v: nv(c.out)
+          });
+      }
+      rowsK = e.key;
+      rowsC = L2;
+      return L2;
+    }
     const mine = t => {
       t = String(t || '');
       if (e.filt) return t.includes(e.filt);
@@ -135,12 +214,24 @@
         const I = call(() => DUI.rowInfo(s, r), null);
         if (!I || !(I.tag || I.svc) || !mine(I.svc)) continue;
         const adr = tagOf(I);
-        L2.push({ k: dn + ':i' + r, adr: adr || 'r' + (r + 1), name: String(I.svc || '').replace(/^\s*[IMOB]\.[0-9A-F]{4}\s*/, ''), where: [dn + ' r' + (r + 1)].concat(usedIn(s, r, adr, false)), v: () => call(() => DUI.rowVal(s, r), null) });
+        L2.push({
+          k: dn + ':i' + r,
+          adr: adr || 'r' + (r + 1),
+          name: String(I.svc || '').replace(/^\s*[IMOB]\.[0-9A-F]{4}\s*/, ''),
+          where: [dn + ' r' + (r + 1)].concat(usedIn(s, r, adr, false)),
+          v: () => call(() => DUI.rowVal(s, r), null)
+        });
       }
       for (const o of call(() => DUI.outs(s), []) || []) {
         const n2 = String(o.name || '').replace(/^Output row \d+ · /, '');
         if (!mine(n2)) continue;
-        L2.push({ k: dn + ':o' + o.row, adr: 'OUT' + (o.row + 1), name: n2, where: [dn + ' output'].concat(usedIn(s, o.row, '', true)), v: () => call(() => DUI.outVal(s, o.row), null) });
+        L2.push({
+          k: dn + ':o' + o.row,
+          adr: 'OUT' + (o.row + 1),
+          name: n2,
+          where: [dn + ' output'].concat(usedIn(s, o.row, '', true)),
+          v: () => call(() => DUI.outVal(s, o.row), null)
+        });
       }
     }
     rowsK = e.key;
@@ -156,19 +247,88 @@
     return { n, ok };
   }
   /* ---------- the controller of the batch (an ABC PID / MAN station named on the faceplate) ---------- */
-  function ctl() {
-    if (!ctlTag || !window.AN) return null;
+  /* the ABC sheet of a controller tag (its PID block): { sh, S2, c } */
+  const ctlMemo = {};
+  function ctlFind(tag) {
+    if (!tag || !window.AN) return null;
+    /* the ABC sheets load in the background only when the ABC page is opened (loader.js): start it here, then paint again */
+    if (!(AN.sheets || []).length) {
+      if (!ctlFind.p)
+        ctlFind.p = call(
+          () =>
+            (AN.data || AN.loadData()).then(() => {
+              rowsC = null;
+              k0 = '';
+              const e = eq();
+              /* a controller batch picked before the sheets were there: open its ABC sheet now */
+              if (on && e && !e.sh.length && e.ctl) setBatch(batch, true, true);
+              else paint(true);
+            }),
+          null
+        );
+      return null;
+    }
+    const m = ctlMemo[tag];
+    if (m) {
+      const S2 = call(() => AN.ensure(m.sh), null);
+      const c = m.c || (S2 && (call(() => AN.hmiCtrls(S2), []) || []).find(c => c.tag === tag));
+      if (S2 && c) return { sh: m.sh, S2, c };
+    }
     for (const sh of AN.sheets || []) {
       const S2 = call(() => AN.ensure(sh), null);
       if (!S2) continue;
-      const c = (call(() => AN.hmiCtrls(S2), []) || []).find(c => c.tag === ctlTag);
+      const c = (call(() => AN.hmiCtrls(S2), []) || []).find(c => c.tag === tag);
       if (!c) continue;
+      ctlMemo[tag] = { sh };
+      return { sh, S2, c };
+    }
+    /* not a PID: a MAN station of the ABC sheets (HIC-BM, EIC-TM, HIC-ULD, HICDO1012 ...), as plant.js links them to the faceplate */
+    for (const sh of AN.sheets || []) {
+      const S2 = call(() => AN.ensure(sh), null);
+      if (!S2) continue;
+      const b = (S2.blk || []).find(
+        b =>
+          b.k === 'MAN' &&
+          b.o &&
+          b.o[0] != null &&
+          (b.tag || (b.txt || []).find(x => x && x !== 'MAN' && !/^S\d-MDL/.test(x))) === tag
+      );
+      if (!b) continue;
+      const modes = [];
+      let pv = null;
+      (S2.lab || []).forEach((l, n) => {
+        const t = l && l.t ? l.t.trim() : '';
+        const k = t.startsWith(tag + '.') ? t.slice(tag.length + 1).toUpperCase() : '';
+        if (/^(MAN|LOC|REM|AUTO|AUT|LOCAL|REMOTE|MANUAL)$/.test(k) && !modes.some(z => z.n === n || z.name === t))
+          modes.push({ n, name: t, kind: k });
+        if (k === 'PV' && pv == null) pv = n;
+      });
+      const c = { tag, b, q: { pv, sv: null }, modes, sigs: [], out: b.o[0], man: 1 };
+      ctlMemo[tag] = { sh, c };
+      return { sh, S2, c };
+    }
+    return null;
+  }
+  function ctl() {
+    const F = ctlFind(ctlTag);
+    if (!F) return null;
+    {
+      const sh = F.sh,
+        S2 = F.S2,
+        c = F.c;
       const p = (c.b && c.b.p) || {},
         v = n => (n == null ? null : S2.rt.v[n]),
         man = (c.modes || []).find(m => m.kind === 'MAN'),
         loc = (c.modes || []).find(m => m.kind === 'LOC');
       const md = man && S2.rt.v[man.n] > 0.5 ? 'MAN' : 'AUTO';
-      return { sh: sh.name, p, pv: v(c.q && c.q.pv), sv: v(c.q && c.q.sv), mv: v(c.out), md: md + (loc && S2.rt.v[loc.n] > 0.5 ? ' · LOC' : '') };
+      return {
+        sh: sh.name,
+        p,
+        pv: v(c.q && c.q.pv),
+        sv: v(c.q && c.q.sv),
+        mv: v(c.out),
+        md: md + (loc && S2.rt.v[loc.n] > 0.5 ? ' · LOC' : '')
+      };
     }
     return null;
   }
@@ -180,7 +340,9 @@
       tt = E('b', '', title),
       d = E('span', 'd'),
       g = E('span', 'g'),
-      fb = Bt(L.fl[id] ? 'Dock' : 'Float', 'Float this panel as its own window, or dock it back', () => setFloat(id, !L.fl[id])),
+      fb = Bt(L.fl[id] ? 'Dock' : 'Float', 'Float this panel as its own window, or dock it back', () =>
+        setFloat(id, !L.fl[id])
+      ),
       hb = Bt('✕', 'Hide this panel (View menu shows it again)', () => setHide(id, true));
     hb.setAttribute('aria-label', 'Hide ' + title);
     ph.append(tt, d, g, fb, hb);
@@ -212,7 +374,19 @@
     const vw = Bt('View ▾', 'Show / hide, dock / float each panel', e => (e.stopPropagation(), menu()));
     const cs = Bt('Export CSV', 'The results of every batch as a CSV file', exportCsv);
     const ex = Bt('Close split', 'Back to the normal Logic page', () => toggle(false));
-    bar.append(E('span', 'st', 'Loop check'), E('span', 'st', 'Batch'), sel, pv, nx, pb, pa, E('span', 'gap'), vw, cs, ex);
+    bar.append(
+      E('span', 'st', 'Loop check'),
+      E('span', 'st', 'Batch'),
+      sel,
+      pv,
+      nx,
+      pb,
+      pa,
+      E('span', 'gap'),
+      vw,
+      cs,
+      ex
+    );
     const vd = E('div');
     vd.id = 'splvd';
     vd.setAttribute('aria-label', 'Drag to resize the HMI and the logic');
@@ -230,9 +404,21 @@
     mn.id = 'splmenu';
     document.body.append(bar, vd, hd, bot, mn);
     Object.assign(els, { bar, sel, pb, pa, vd, hd, bot, tg, vd2, ev, mn, vw });
-    drag(vd, (dx, dy, s) => ((L.x = Math.max(0.15, Math.min(0.85, (s.x + dx) / workW()))), layout()), () => ({ x: L.x * workW() }));
-    drag(hd, (dx, dy, s) => ((L.b = Math.max(120, Math.min(innerHeight * 0.75, s.b - dy))), layout()), () => ({ b: L.b }));
-    drag(vd2, (dx, dy, s) => ((L.t = Math.max(0.2, Math.min(0.85, (s.t + dx) / workW()))), layout()), () => ({ t: L.t * workW() }));
+    drag(
+      vd,
+      (dx, dy, s) => ((L.x = Math.max(0.15, Math.min(0.85, (s.x + dx) / workW()))), layout()),
+      () => ({ x: L.x * workW() })
+    );
+    drag(
+      hd,
+      (dx, dy, s) => ((L.b = Math.max(120, Math.min(innerHeight * 0.75, s.b - dy))), layout()),
+      () => ({ b: L.b })
+    );
+    drag(
+      vd2,
+      (dx, dy, s) => ((L.t = Math.max(0.2, Math.min(0.85, (s.t + dx) / workW()))), layout()),
+      () => ({ t: L.t * workW() })
+    );
     document.addEventListener('click', e => {
       if (!mn.contains(e.target) && e.target !== vw) mn.classList.remove('open');
     });
@@ -247,7 +433,12 @@
         s = st0();
       h.setPointerCapture(e.pointerId);
       const m = ev => mv(ev.clientX - x0, ev.clientY - y0, s);
-      const u = () => (h.removeEventListener('pointermove', m), h.removeEventListener('pointerup', u), save(), layout());
+      const u = () => (
+        h.removeEventListener('pointermove', m),
+        h.removeEventListener('pointerup', u),
+        save(),
+        layout()
+      );
       h.addEventListener('pointermove', m);
       h.addEventListener('pointerup', u);
     });
@@ -257,7 +448,12 @@
     const R2 = document.documentElement.style,
       rw = railW(),
       ww = innerWidth - rw,
-      botOn = on && !(L.hide.tags && L.hide.ev) && !(L.fl.tags && L.fl.ev) && !(L.hide.tags && L.fl.ev) && !(L.fl.tags && L.hide.ev);
+      botOn =
+        on &&
+        !(L.hide.tags && L.hide.ev) &&
+        !(L.fl.tags && L.fl.ev) &&
+        !(L.hide.tags && L.fl.ev) &&
+        !(L.fl.tags && L.hide.ev);
     R2.setProperty('--railW', rw + 'px');
     R2.setProperty('--spl-x', Math.round(L.x * ww) + 'px');
     R2.setProperty('--spl-bv', (botOn ? Math.round(L.b) : 0) + 'px');
@@ -279,15 +475,29 @@
         if (p.parentElement !== document.body) document.body.append(p);
         p.classList.add('splfl');
         const ps = L.pos[id] || { x: 200 + (id === 'ev' ? 460 : 0), y: 200, w: 520, h: 300 };
-        Object.assign(p.style, { left: ps.x + 'px', top: ps.y + 'px', width: ps.w + 'px', height: ps.h + 'px', display: 'flex', flex: '' });
+        Object.assign(p.style, {
+          left: ps.x + 'px',
+          top: ps.y + 'px',
+          width: ps.w + 'px',
+          height: ps.h + 'px',
+          display: 'flex',
+          flex: ''
+        });
         if (!p._mv) {
           p._mv = 1;
           p.querySelector('.ph').addEventListener('pointerdown', e => {
             if (e.target.closest('button') || !p.classList.contains('splfl')) return;
             const x0 = e.clientX - p.offsetLeft,
               y0 = e.clientY - p.offsetTop;
-            const m = ev => ((p.style.left = Math.max(0, ev.clientX - x0) + 'px'), (p.style.top = Math.max(0, ev.clientY - y0) + 'px'));
-            const u = () => (removeEventListener('pointermove', m), removeEventListener('pointerup', u), keepPos(id, p));
+            const m = ev => (
+              (p.style.left = Math.max(0, ev.clientX - x0) + 'px'),
+              (p.style.top = Math.max(0, ev.clientY - y0) + 'px')
+            );
+            const u = () => (
+              removeEventListener('pointermove', m),
+              removeEventListener('pointerup', u),
+              keepPos(id, p)
+            );
             addEventListener('pointermove', m);
             addEventListener('pointerup', u);
           });
@@ -310,7 +520,10 @@
     selfRs = false;
   }
   let selfRs = false;
-  const keepPos = (id, p) => ((L.pos[id] = { x: p.offsetLeft, y: p.offsetTop, w: p.offsetWidth, h: p.offsetHeight }), save());
+  const keepPos = (id, p) => (
+    (L.pos[id] = { x: p.offsetLeft, y: p.offsetTop, w: p.offsetWidth, h: p.offsetHeight }),
+    save()
+  );
   function setFloat(id, v) {
     L.fl[id] = !!v;
     save();
@@ -354,7 +567,9 @@
       } else if (id === 'hmi') {
         /* the HMI floats as its own window: the PLANT VIEW window of the app */
         const a = Bt('Dock', '', null),
-          b = Bt('Float', 'The HMI in its own window (PLANT VIEW window); Dock in that window brings it back', () => call(() => window.lsPlantWindow && lsPlantWindow()));
+          b = Bt('Float', 'The HMI in its own window (PLANT VIEW window); Dock in that window brings it back', () =>
+            call(() => window.lsPlantWindow && lsPlantWindow())
+          );
         a.classList.add('on');
         sg.append(a, b);
       } else {
@@ -367,7 +582,11 @@
     }
     const ft = E('div', 'ft');
     ft.append(
-      Bt('Reset layout', 'Sizes and docks as at the start', () => ((L = Object.assign({}, DEF, { hide: {}, fl: {}, pos: {} })), save(), layout(), menuPaint())),
+      Bt(
+        'Reset layout',
+        'Sizes and docks as at the start',
+        () => ((L = Object.assign({}, DEF, { hide: {}, fl: {}, pos: {} })), save(), layout(), menuPaint())
+      ),
       Bt('Save layout', 'Keep this layout (it is kept in this browser)', () => (save(), m.classList.remove('open')))
     );
     m.append(ft);
@@ -398,10 +617,13 @@
   function step(d) {
     const L2 = eqList();
     if (!L2.length) return;
-    const i = Math.max(0, L2.findIndex(e => e.key === batch));
+    const i = Math.max(
+      0,
+      L2.findIndex(e => e.key === batch)
+    );
     setBatch(L2[(i + d + L2.length) % L2.length].key, true);
   }
-  function setBatch(k, open) {
+  function setBatch(k, open, fromHmi) {
     const e = eqList().find(x => x.key === k);
     if (!e) return;
     batch = k;
@@ -410,6 +632,20 @@
     save();
     fillSel();
     if (open && e.sh[0]) call(() => D().openD(e.sh[0], null));
+    else if (open && e.ctl) {
+      const F = ctlFind(e.ctl);
+      /* its ABC sheet, zoomed and centred on the PID / MAN block so the value of the faceplate command is read there (AN.showTag) */
+      if (F) call(() => (AN.showTag ? AN.showTag(e.ctl, F.sh.name) : AN.xrefGo({ a: F.sh.name })));
+    }
+    /* picked in Batch / ‹ ›: the HMI on the left shows the page of the equipment (not when the HMI itself picked it) */
+    if (!fromHmi) {
+      const pk = document.querySelector('select.plpick'),
+        pg = k.split(':')[0];
+      if (pk && pk.value !== pg && [...pk.options].some(o => o.value === pg)) {
+        pk.value = pg;
+        pk.dispatchEvent(new Event('change'));
+      }
+    }
     paint(true);
   }
   /* ---------- painting ---------- */
@@ -422,6 +658,10 @@
     /* what was seen of each row (0 and 1), for the result and the progress */
     for (const x of L2) {
       const v = x.v();
+      if (x.an != null) {
+        x.now = v == null || !isFinite(+v) ? null : +v;
+        continue;
+      }
       if (v !== 0 && v !== 1) continue;
       const q = (r[x.k] = r[x.k] || { exp: null, seen: [] });
       if (!q.seen.includes(v)) q.seen.push(v);
@@ -437,13 +677,22 @@
       all += q.n;
       allOk += q.ok;
     }
-    els.pb.firstChild.textContent = 'This batch · ' + p.ok + ' ✓ of ' + L2.length + ' signals';
-    els.pb.lastChild.firstChild.style.width = (L2.length ? (100 * p.ok) / L2.length : 0) + '%';
+    const nD = L2.filter(x => x.an == null).length;
+    els.pb.firstChild.textContent = 'This batch · ' + p.ok + ' ✓ of ' + nD + ' signals';
+    els.pb.lastChild.firstChild.style.width = (nD ? (100 * p.ok) / nD : 0) + '%';
     const nb = Object.keys(R).filter(b => prog(b).n).length;
-    els.pa.firstChild.textContent = 'Overall · ' + allOk + ' ✓ · ' + nb + ' batch' + (nb === 1 ? '' : 'es') + ' started';
+    els.pa.firstChild.textContent =
+      'Overall · ' + allOk + ' ✓ · ' + nb + ' batch' + (nb === 1 ? '' : 'es') + ' started';
     els.pa.lastChild.firstChild.style.width = Math.min(100, all ? (100 * allOk) / Math.max(all, 1) : 0) + '%';
-    els.tg._d.textContent = e0 ? e0.n + (e0.t ? ' · ' + e0.t : '') + ' · ' + e0.page + (e0.sh.length ? ' · ' + e0.sh.join(', ') : '') : 'pick an equipment in Batch, or open a faceplate on the HMI';
-    const key = batch + '|' + L2.map(x => x.now + (r[x.k] && r[x.k].exp)).join('') + '|' + ctlTag;
+    els.tg._d.textContent = e0
+      ? e0.n + (e0.t ? ' · ' + e0.t : '') + ' · ' + e0.page + (e0.sh.length ? ' · ' + e0.sh.join(', ') : '')
+      : 'pick an equipment in Batch, or open a faceplate on the HMI';
+    const key =
+      batch +
+      '|' +
+      L2.map(x => (x.an != null && x.now != null ? x.now.toFixed(1) : x.now) + (r[x.k] && r[x.k].exp)).join('') +
+      '|' +
+      ctlTag;
     if (force || key !== k0) {
       k0 = key;
       tagTable(L2, r);
@@ -456,29 +705,64 @@
     const keep = bd.scrollTop;
     bd.textContent = '';
     if (!L2.length) {
-      bd.append(E('div', 'empty', 'No batch yet: pick a drawing in Batch, or click a motor or valve on the HMI.'));
+      bd.append(
+        E(
+          'div',
+          'empty',
+          batch && eq() && eq().ctl
+            ? eq().ctl + ': not found in the ABC sheets'
+            : 'No batch yet: pick a drawing in Batch, or click a motor or valve on the HMI.'
+        )
+      );
     } else {
       const t = E('table'),
         th = E('thead'),
         tr = E('tr');
-      for (const h of ['Address', 'Signal', 'Used in (DITL / ABC)', 'Expected', 'Value · live', 'Seen', 'Result']) tr.append(E('th', '', h));
+      for (const h of ['Address', 'Signal', 'Used in (DITL / ABC)', 'Expected', 'Value · live', 'Seen', 'Result'])
+        tr.append(E('th', '', h));
       th.append(tr);
       const tb = E('tbody');
       for (const x of L2) {
         const q = r[x.k] || { exp: null, seen: [] },
           row = E('tr');
-        const exB = Bt(q.exp == null ? '–' : String(q.exp), 'Click: the value this signal must have in the step you test (– → 1 → 0)', () => {
-          const q2 = (r[x.k] = r[x.k] || { exp: null, seen: [] });
-          q2.exp = q2.exp == null ? 1 : q2.exp === 1 ? 0 : null;
-          save();
-          paint(true);
-        });
+        if (x.an != null) {
+          /* an analog value of the controller (PV / SV / MV): live from the ABC sheet, no 0 / 1 expected */
+          row.append(
+            E('td', '', x.adr),
+            E('td', 'n', x.name),
+            E('td', 'n', x.where.join(', ')),
+            E('td', '', '—'),
+            E('td', 'v1', x.now == null ? '-----' : x.now.toFixed(1) + (x.an ? ' ' + x.an : '')),
+            E('td', '', '—'),
+            E('td', '', 'live')
+          );
+          tb.append(row);
+          continue;
+        }
+        const exB = Bt(
+          q.exp == null ? '–' : String(q.exp),
+          'Click: the value this signal must have in the step you test (– → 1 → 0)',
+          () => {
+            const q2 = (r[x.k] = r[x.k] || { exp: null, seen: [] });
+            q2.exp = q2.exp == null ? 1 : q2.exp === 1 ? 0 : null;
+            save();
+            paint(true);
+          }
+        );
         exB.className = 'ex';
         const ex = E('td');
         ex.append(exB);
         const vv = E('td', x.now === 1 ? 'v1' : x.now === 0 ? 'v0' : '', x.now == null ? '-----' : String(x.now));
         const rs = q.exp == null ? E('td', '', 'not yet') : x.now === q.exp ? E('td', 'ok', '✓') : E('td', 'bad', '✗');
-        row.append(E('td', '', x.adr), E('td', 'n', x.name), E('td', 'n', x.where.join(', ')), ex, vv, E('td', '', (q.seen || []).slice().sort().join(' / ') || '—'), rs);
+        row.append(
+          E('td', '', x.adr),
+          E('td', 'n', x.name),
+          E('td', 'n', x.where.join(', ')),
+          ex,
+          vv,
+          E('td', '', (q.seen || []).slice().sort().join(' / ') || '—'),
+          rs
+        );
         if (q.exp != null && x.now === q.exp) row.className = 'chg';
         tb.append(row);
       }
@@ -504,14 +788,19 @@
     t._k = key;
     t.textContent = '';
     const h = E('tr');
-    for (const x of ['Tag', 'Range', 'P · I · D', 'Alarm H / L', 'Action', 'PV', 'SV', 'MV', 'Mode']) h.append(E('th', '', x));
+    for (const x of ['Tag', 'Range', 'P · I · D', 'Alarm H / L', 'Action', 'PV', 'SV', 'MV', 'Mode'])
+      h.append(E('th', '', x));
     const th = E('thead');
     th.append(h);
     t.append(th);
     const tb = E('tbody'),
       r = E('tr');
     if (!c) {
-      const td = E('td', 'n', ctlTag ? ctlTag + ': not found in the ABC sheets' : 'Open a controller faceplate on the HMI to show it here.');
+      const td = E(
+        'td',
+        'n',
+        ctlTag ? ctlTag + ': not found in the ABC sheets' : 'Open a controller faceplate on the HMI to show it here.'
+      );
       td.colSpan = 9;
       r.append(td);
     } else {
@@ -557,11 +846,18 @@
     };
     const ev = LOG.filter(hit).slice(-200).reverse();
     els.ev._d.textContent = e0 ? e0.n + ' · ' + ev.length : 'this batch';
-    if (!ev.length) bd.append(E('div', 'empty', 'No event of this batch yet. Every press, field action, alarm and return shows here.'));
+    if (!ev.length)
+      bd.append(
+        E('div', 'empty', 'No event of this batch yet. Every press, field action, alarm and return shows here.')
+      );
     for (const e of ev) {
       const alm = /ALM|TRIP/.test(e.kind || '') && !/RTN/.test(e.kind || '');
       const r = E('div', 'ev' + (alm ? ' alm' : ''));
-      r.append(E('span', 't', e.t || ''), E('span', 'k', e.kind === 'ALM' ? 'ALARM' : e.kind || ''), E('span', '', (e.sh ? String(e.sh).replace(/^\(\d+\)/, '') + ' · ' : '') + (e.text || '')));
+      r.append(
+        E('span', 't', e.t || ''),
+        E('span', 'k', e.kind === 'ALM' ? 'ALARM' : e.kind || ''),
+        E('span', '', (e.sh ? String(e.sh).replace(/^\(\d+\)/, '') + ' · ' : '') + (e.text || ''))
+      );
       bd.append(r);
     }
   }
@@ -572,7 +868,17 @@
     for (const b in R)
       for (const k in R[b]) {
         const x = R[b][k];
-        lines.push([b, k, x.exp == null ? '' : x.exp, (x.seen || []).join('/'), x.exp == null ? 'not yet' : x.ok ? 'OK' : 'NOT OK'].map(q).join(','));
+        lines.push(
+          [
+            b,
+            k,
+            x.exp == null ? '' : x.exp,
+            (x.seen || []).join('/'),
+            x.exp == null ? 'not yet' : x.ok ? 'OK' : 'NOT OK'
+          ]
+            .map(q)
+            .join(',')
+        );
       }
     const a = E('a');
     a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }));
@@ -592,7 +898,9 @@
       if (batch) setBatch(batch, true);
     } else {
       els.mn.classList.remove('open');
-      for (const id of ['tags', 'ev']) if (els[id === 'tags' ? 'tg' : 'ev'].parentElement === document.body) els.bot.append(els[id === 'tags' ? 'tg' : 'ev']);
+      for (const id of ['tags', 'ev'])
+        if (els[id === 'tags' ? 'tg' : 'ev'].parentElement === document.body)
+          els.bot.append(els[id === 'tags' ? 'tg' : 'ev']);
     }
     ls.set('ls-spl-on', on);
     layout();
@@ -629,7 +937,7 @@
           if (on && P) {
             /* the equipment of the faceplate (its name on the HMI page) */
             const e = eqList().find(x => x.n === P.n);
-            if (e) setBatch(e.key, true);
+            if (e) setBatch(e.key, true, true);
           }
           return r;
         };
@@ -638,11 +946,14 @@
     /* a controller faceplate of the HMI (plant.js #plfp): its tag for the controller table */
     const fp = document.getElementById('plfp');
     const tg = fp && fp.isConnected ? (fp.querySelector('b') || {}).textContent : '';
-    if (on && tg && tg !== ctlTag && /^[A-Z]{2,}[-A-Z]*\d/.test(tg)) {
-      ctlTag = tg.trim();
+    /* only when the faceplate of ANOTHER controller is opened: a batch picked in Batch while a faceplate stays open is kept */
+    if (!tg) fpTag = '';
+    if (on && tg && tg.trim() !== fpTag && /^[A-Z]{2,}[-A-Z]*\d/.test(tg)) {
+      fpTag = tg.trim();
+      ctlTag = fpTag;
       k0 = '';
       const e = eqList().find(x => x.ctl === ctlTag);
-      if (e && e.key !== batch) setBatch(e.key, false);
+      if (e && e.key !== batch) setBatch(e.key, true, true);
     }
   }
   function railBtn() {
@@ -651,7 +962,8 @@
     if (!lc) return false;
     const b = E('button', '', 'Split');
     b.type = 'button';
-    b.title = 'Loop check split view: HMI | logic side by side, the tag table, the controller tags and the events of one batch';
+    b.title =
+      'Loop check split view: HMI | logic side by side, the tag table, the controller tags and the events of one batch';
     b.dataset.ic = 'columns';
     b.setAttribute('aria-label', 'Loop check split view');
     b.onclick = () => toggle();
@@ -668,11 +980,18 @@
   }, 400);
   const boot = () => (railBtn() ? 0 : setTimeout(boot, 500));
   setTimeout(boot, 600);
-  window.LS_SPLIT = { toggle, setBatch, get on() {
+  window.LS_SPLIT = {
+    toggle,
+    setBatch,
+    get on() {
       return on;
-    }, get batch() {
+    },
+    get batch() {
       return batch;
-    }, rows: () => rows().map(x => ({ adr: x.adr, name: x.name, where: x.where, v: x.v() })), get layout() {
+    },
+    rows: () => rows().map(x => ({ adr: x.adr, name: x.name, where: x.where, v: x.v() })),
+    get layout() {
       return L;
-    } };
+    }
+  };
 })();
