@@ -7,6 +7,11 @@
 //  control air isolation HV01 closed (O&M L5-3 3.5.4: the seals deflate): seal switches open, after the fault timer the lock /
 //    dispensing dome valve CLOSE FAULT (the drawing's on-delay 15 s; the O&M 2.8 writes 5 s) and B.1250 / B.1251 (O&M 2.10.2 / 2.10.6 "not closed and sealed");
 //  HV01 open again: the seals inflate, the faults clear.
+//  isolating valves (DITL-LS212, E10211 sheet 212): the HMI SWITCH M.184C pressed once is held by its SET / RESET latch, the 8
+//    isolating valve solenoids open, the bypass valves close, ISOLATING VALVES ALL OPENED M.183E (DITL-LS10 row 12) made; the
+//    conveying air valve opens 12 s later (DITL-LS210 TR418, TR419 inverted); FEEDER START (DITL-LS110 row 8): the feeder runs,
+//    LIMESTONE SYSTEM READY M.183F; PLANT EMERGENCY STOP (row 17, its own wire, not the PERMIT of row 15) for 60 s (TR440): the
+//    latch resets and the valves close.
 // Usage: node tests/regress/limestone.js [html]
 const fs = require('fs');
 const { open } = require('./lib.js');
@@ -62,6 +67,38 @@ const html =
     AN.swValve('HV01', 100);
     await run(10);
     z.back = snap();
+    const set = (n, row, v) => {
+      WORLD.live = true;
+      const ok = WORLD.dset(sh(n).name, row, v);
+      WORLD.live = false;
+      return ok;
+    };
+    const press = async (n, row) => {
+      set(n, row, true);
+      await run(1);
+      set(n, row, false);
+    };
+    const iso = () => ({
+      sw: i('DITL-LS212', 9),
+      sol: [11, 12, 13, 14, 15, 16, 17, 18].map(r => o('DITL-LS212', r)),
+      byp: [o('DITL-LS212', 9), o('DITL-LS212', 10)],
+      all: i('DITL-LS10', 11),
+      air: i('DITL-LS110', 18),
+      run: i('DITL-LS10', 10),
+      rdy: o('DITL-LS10', 10)
+    });
+    z.iso0 = iso();
+    await press('DITL-LS212', 9); /* CRT: ISOLATING VALVE A~H OPEN */
+    await run(30);
+    z.iso1 = iso();
+    await press('DITL-LS110', 7); /* CRT: FEEDER START */
+    await run(10);
+    z.iso2 = iso();
+    set('DITL-LS212', 16, true); /* PLANT EMERGENCY STOP held */
+    await run(70);
+    set('DITL-LS212', 16, false);
+    await run(5);
+    z.iso3 = iso();
     return z;
   });
   const s = r.rest;
@@ -86,6 +123,27 @@ const html =
   ck(
     r.back.seal.every(x => x === 1) && r.back.cf.every(x => x === 0),
     'HV01 open again: sealed, faults clear ' + JSON.stringify(r.back)
+  );
+  ck(
+    r.iso0.sw === 0 && r.iso0.sol.every(x => x === 0) && r.iso0.byp.every(x => x === 1) && r.iso0.all === 0,
+    '150 MW at rest: isolating valves closed, bypass valves open ' + JSON.stringify(r.iso0)
+  );
+  ck(
+    r.iso1.sw === 1 &&
+      r.iso1.sol.every(x => x === 1) &&
+      r.iso1.byp.every(x => x === 0) &&
+      r.iso1.all === 1 &&
+      r.iso1.air === 1,
+    'HMI SWITCH pressed once: held by the latch, 8 isolating valves open, ALL OPENED, conveying air open ' +
+      JSON.stringify(r.iso1)
+  );
+  ck(
+    r.iso2.run === 1 && r.iso2.rdy === 1,
+    'FEEDER START: feeder running, LIMESTONE SYSTEM READY ' + JSON.stringify(r.iso2)
+  );
+  ck(
+    r.iso3.sw === 0 && r.iso3.sol.every(x => x === 0) && r.iso3.all === 0,
+    'PLANT EMERGENCY STOP 60 s: the switch resets, the isolating valves close ' + JSON.stringify(r.iso3)
   );
   if (errs && errs.length) console.log('page errors: ' + errs.slice(0, 3).join(' | '));
   await browser.close();

@@ -78,8 +78,20 @@ const html =
       mMax = Math.max(mMax, s.m);
       pMax = Math.max(pMax, s.p);
       if (s.m > 50 && s.sw.dvC && s.sw.seal) sealedFull = true;
+      if (sealedFull && !z.end && s.m === 0 && s.sw.plow === 1 && s.sw.outC === 1 && s.sw.caC === 1) z.end = s;
     }
-    z.end = snap();
+    z.end = z.end || snap();
+    /* 3.2.1 SEULGI: the DONE flip-flop M.081C resets through TR314 (3 s, UNLINK_AUDIT.md): the cycle starts again by itself */
+    let fills = 0,
+      was = 0;
+    for (let k = 0; k < 120; k++) {
+      await run(1);
+      const m = snap().m;
+      if (m > 50 && was <= 50) fills++;
+      was = m;
+    }
+    z.fills = fills;
+    z.lb = o('DITL-771', DUI.outs(sh('DITL-771')).find(q => /LINE BLOCKAGE/.test(q.name)).row);
     Object.assign(z, { mMax, pMax, sealedFull });
     return z;
   });
@@ -100,6 +112,10 @@ const html =
   ck(
     r.end.m === 0 && r.end.sw.plow === 1 && r.end.sw.outC === 1 && r.end.sw.caC === 1,
     'batch conveyed: vessel empty, pressure < 0.3 bar, outlet and conveying air closed ' + JSON.stringify(r.end)
+  );
+  ck(
+    r.fills >= 1 && r.lb === 0,
+    'the cycle repeats (DONE resets through TR314 3 s): ' + r.fills + ' more fill(s) in 120 s, no LINE BLOCKAGE'
   );
   if (errs && errs.length) console.log('page errors: ' + errs.slice(0, 3).join(' | '));
   await browser.close();

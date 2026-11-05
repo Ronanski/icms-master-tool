@@ -394,7 +394,13 @@
         sb.rows.forEach((r, i) => {
           const c = sb.cells[i + ':F'];
           if (!c) return;
-          for (const f of refsOf(c.map(x => x.t).join(' '))) {
+          /* 3.2.1 (SEULGI): a limestone FROM "LINE 3" with no sheet = the output LINE 3 of the same sheet (DITL-LS212 row 15 M.182D
+             VALVE STATE CHANGE PERMIT <- out LINE 3 M.182D; DITL-LS60 row 4 M.1837 <- out LINE 13 M.1837: the same address) */
+          let ft = c.map(x => x.t).join(' ');
+          const lsm = /\)DITL-LS(\d{2,3})$/.exec(sb.name),
+            lln = /^\s*LINE\s*(\d{1,2})\s*$/i.exec(ft);
+          if (lsm && lln) ft = 'SHEET ' + lsm[1] + ' - LINE ' + lln[1];
+          for (const f of refsOf(ft)) {
             const o = outRow(f.code, f.nn, sb);
             if (!o) continue;
             /* 2.2.0-beta.6: machine k of this row on a drawing made for one machine: the output whose TO column names this row
