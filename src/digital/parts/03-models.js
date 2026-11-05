@@ -327,8 +327,14 @@ function mirModel(sh, nl) {
       .sort((a, b) => Math.abs(a.y1 - t.y) - Math.abs(b.y1 - t.y))[0];
     if (!sg) continue;
     L[t.t].forEach(i => {
-      if (!res.some(m => m.row === i) && !nl.src.some(z => z.row === i && z.n === sg.n))
-        res.push({ row: i, n: sg.n, adr: t.t });
+      if (!res.some(m => m.row === i) && !nl.src.some(z => z.row === i && z.n === sg.n)) {
+        /* 3.2.1 (DITL-LS212 row 10 M.184C, "SET / RESET HMI SWITCH"): the row sets the very latch whose output is its address =
+           an HMI switch bit. The press writes the bit (SET), the latch holds it, the RESET clears it: the row is the press OR the
+           latch output (hmi), not the output alone (that could never be set) */
+        const src = nl.src.find(z => z.row === i),
+          hmi = nl.gates.some(g => g.t === 'FF' && (g.out || []).includes(sg.n) && src && (g.s || []).includes(src.n));
+        res.push(hmi ? { row: i, n: sg.n, adr: t.t, hmi: 1 } : { row: i, n: sg.n, adr: t.t });
+      }
     });
   }
   return res;

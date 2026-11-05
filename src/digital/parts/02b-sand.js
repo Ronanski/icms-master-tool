@@ -21,7 +21,8 @@ function sdNL(sh) {
   const gates = [];
   d.gates.forEach(g => {
     const box = g.box;
-    if (g.t === 'AND' || g.t === 'OR' || g.t === 'NOT') gates.push({ t: g.t, ins: g.ins, out: g.out, box, done: true, ev: 1, sd: 1, hid: g.hid });
+    if (g.t === 'AND' || g.t === 'OR' || g.t === 'NOT')
+      gates.push({ t: g.t, ins: g.ins, out: g.out, box, done: true, ev: 1, sd: 1, hid: g.hid });
     else if (g.t === 'TMR')
       gates.push({
         t: 'TMR',
@@ -46,6 +47,7 @@ function sdNL(sh) {
       });
     else if (g.t === 'FF') gates.push({ t: 'FF', s: g.s, r: g.r, out: g.out, q: 0, box, rt: true });
   });
+  sdResetFix(sh, gates);
   const NL = {
     v: 10,
     sd: 1,
@@ -75,4 +77,25 @@ function sdNL(sh) {
     lamps: []
   };
   return NL;
+}
+
+/* 3.2.1 (SEULGI, docs/versions/v3.2.1/UNLINK_AUDIT.md "DITL-771 RESET of DONE and LINE BLOCKAGE"): two RESET pins the PDF reader
+   (tools/data/sand_sheet.py) left empty on DITL-771 (E10210-3-771, read on the PDF): the DONE flip-flop M.081C is reset by its own
+   output through TR314 (ON DELAY 3 s), so DONE is a 3 s pulse and the conveying cycle repeats; the LINE BLOCKAGE flip-flop (set by
+   TR315 600 s) is reset by VESSEL PRES. LOW (the same wire that enters the NOT before TR315). Found by structure, not by net number */
+function sdResetFix(sh, gates) {
+  if (!/\)DITL-771$/.test(sh.name || '')) return;
+  const tm = tag => gates.find(g => g.t === 'TMR' && g.tm && g.tm.tag === tag);
+  const t314 = tm('TR314'),
+    t315 = tm('TR315');
+  if (t314) {
+    const ff = gates.find(g => g.t === 'FF' && !(g.r || []).length && (g.out || []).includes(t314.ins[0]));
+    if (ff) ff.r = [t314.out[0]];
+  }
+  if (t315) {
+    const ff = gates.find(g => g.t === 'FF' && !(g.r || []).length && (g.s || []).includes(t315.out[0])),
+      and = gates.find(g => g.t === 'AND' && (g.out || []).includes(t315.ins[0])),
+      not = and && gates.find(g => g.t === 'NOT' && and.ins.includes(g.out[0]));
+    if (ff && not) ff.r = [not.ins[0]];
+  }
 }
