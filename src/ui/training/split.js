@@ -76,7 +76,26 @@
         .replace(/^Output row \d+ · /, '')
         .replace(/\s*(RUNNING|IN OPERATION)\b.*$/, '')
         .trim();
-    for (const def of ds)
+    for (const def of ds) {
+      /* user 2026-11-05 "Wala ung mga instrument?": every transmitter value [data-v] and digital input [data-di] of the page is a
+         batch too (field -> logic -> HMI), after the equipment of the page */
+      const ins = [];
+      for (const m of def.art.matchAll(/data-v="([^"]+)"/g))
+        if (!ins.some(x => x.tag === m[1])) ins.push({ tag: m[1], di: 0 });
+      for (const m of def.art.matchAll(/data-di="([^"|]+)/g))
+        if (!ins.some(x => x.tag === m[1])) ins.push({ tag: m[1], di: 1 });
+      const pageIns = ins.map(x => ({
+        key: def.id + ':i:' + x.tag,
+        page: def.title || def.id,
+        n: x.tag.replace(/^ABC-\w+\|/, ''),
+        t: x.di ? 'Instrument · digital input' : 'Instrument',
+        sh: [],
+        filt: '',
+        ctl: '',
+        ins: x.tag,
+        di: x.di,
+        unit: (def.unit || {})[x.tag] || ''
+      }));
       for (const id in def.mach || {}) {
         const m = def.mach[id];
         const e = {
@@ -108,6 +127,8 @@
         if (!e.sh.length && !e.ctl) continue;
         L2.push(e);
       }
+      L2.push(...pageIns);
+    }
     EQ = L2;
     return L2;
   }
@@ -141,6 +162,81 @@
     /* user 2026-11-05 "dapat nagrereflect ung command mo sa controller doon mismo sa logic": a controller batch (no DITL drawing) = the
        signals of its PID on the ABC sheet: the mode inputs (TAG.MAN / .LOC / .REM, 0 / 1, the same nets the faceplate writes), the A/M
        station select signals, then PV, SV and MV live from the sheet */
+    if (e.ins) {
+      const F = insFind(e);
+      if (F && F.S2) {
+        const { r, S2, lab, uses } = F;
+        L2.push({
+          k: e.key + ':logic',
+          adr: r.a || lab || 'net',
+          an: e.di ? null : '',
+          name: (F.desc || e.n) + ' · in the logic',
+          where: uses,
+          v: e.di
+            ? () => {
+                const v = call(() => S2.rt.v[r.n], null);
+                return v == null ? null : v > 0.5 ? 1 : 0;
+              }
+            : () => call(() => S2.rt.v[r.n], null)
+        });
+        if (e.di) delete L2[L2.length - 1].an;
+      } else if (F && F.ios && F.ios.length)
+        for (const q of F.ios) {
+          const dig = /^[IOMB]\./.test(q.io.a);
+          const row = {
+            k: e.key + ':io' + q.io.a,
+            adr: q.io.a + ' · STN10' + q.io.st,
+            name:
+              q.io.tag + ' · ' + q.io.d + (q.S2 ? ' · in the logic' : ' · I/O list signal, not used on a logic sheet'),
+            where: q.S2 ? [q.sh] : ['I/O list'],
+            v: !q.S2
+              ? () => null
+              : dig
+                ? () => {
+                    const v = call(() => q.S2.rt.v[q.n], null);
+                    return v == null ? null : v > 0.5 ? 1 : 0;
+                  }
+                : () => call(() => q.S2.rt.v[q.n], null)
+          };
+          if (!dig || !q.S2) row.an = '';
+          L2.push(row);
+        }
+      else
+        L2.push({
+          k: e.key + ':nolog',
+          adr: '—',
+          an: '',
+          name:
+            F && F.r && F.r.k === 'unit'
+              ? 'Plant model only: no transmitter in the logic'
+              : F
+                ? 'Not in the I/O list: no DCS signal (the HMI shows the plant model, or ----- )'
+                : 'Looking for the signal in the logic and the I/O list…',
+          where: [],
+          v: () => null
+        });
+      /* the value the operator reads on the HMI page (the same [data-v] text) */
+      L2.push({
+        k: e.key + ':hmi',
+        adr: 'HMI',
+        an: '',
+        name: 'Value on the HMI page · ' + e.page,
+        where: [e.page],
+        v: () =>
+          call(() => {
+            const t = document.querySelector(e.di ? `#plantws [data-di^="${e.ins}|"]` : `#plantws [data-v="${e.ins}"]`);
+            if (!t) return null;
+            const x = parseFloat(t.textContent);
+            return isFinite(x) ? x : t.textContent.trim() || null;
+          }, null)
+      });
+      /* still looking (sheets / links / I/O list loading): read again on the next paint */
+      if (F) {
+        rowsK = e.key;
+        rowsC = L2;
+      }
+      return L2;
+    }
     if (!e.sh.length && e.ctl) {
       const F = ctlFind(e.ctl);
       if (F) {
@@ -247,6 +343,105 @@
     return { n, ok };
   }
   /* ---------- the controller of the batch (an ABC PID / MAN station named on the faceplate) ---------- */
+  /* the logic signal of an instrument of the HMI page, found as the HMI value itself is (plant.js resolve: TAG.PV, the AI of the tag, the
+     I/O list address): { r, sh, S2, lab, uses (every sheet whose drawing names that signal), desc (I/O list) } */
+  const insMemo = {};
+  /* the I/O list by tag (engine/ds.js descriptions: station -> address -> { tag, d }), loaded once */
+  let IOL = null,
+    IOLp = null;
+  function ioList() {
+    if (IOL) return IOL;
+    if (!IOLp && AN.ades)
+      IOLp = call(
+        () =>
+          AN.ades().then(Dd => {
+            const m = new Map();
+            for (const st in Dd)
+              for (const a in Dd[st]) {
+                const q = Dd[st][a];
+                if (!q || !q.tag) continue;
+                const k = String(q.tag)
+                  .toUpperCase()
+                  .replace(/[^A-Z0-9]/g, '');
+                if (!m.has(k)) m.set(k, { st, a, d: String(q.d || '').trim(), tag: q.tag });
+              }
+            IOL = m;
+            for (const k in insMemo) if (insMemo[k] && insMemo[k].io === null) delete insMemo[k];
+            rowsC = null;
+            k0 = '';
+            paint(true);
+          }),
+        null
+      );
+    return null;
+  }
+  function insFind(e) {
+    if (insMemo[e.key]) return insMemo[e.key];
+    if (!(AN.sheets || []).length) {
+      ctlFind('-');
+      return null;
+    }
+    /* "SHEET|ADDRESS" of the page (00 OVERVIEW ABC-001C|SI0230): that address of that sheet */
+    const cmp = /^(ABC-\w+)\|(.+)$/.exec(e.ins);
+    let r;
+    if (cmp) {
+      const S0 = call(() => AN.ensure(AN.sheets.find(z => z.name === cmp[1])), null),
+        n = S0 ? (S0.lab || []).findIndex(l => l && l.t && l.t.trim() === cmp[2]) : -1;
+      r = n >= 0 ? { sh: cmp[1], n, a: cmp[2] } : null;
+    } else {
+      r = call(() => window.lsPlantResolve && lsPlantResolve({ t: 'val', tag: e.ins }), undefined);
+      if (r === undefined) return null; /* the Plant view has not read its links yet */
+    }
+    if (!r) {
+      /* not on a logic sheet by its HMI name: its line(s) of the I/O list (the indicator LIMU0708A = transmitter LT-MU0708-A; PT-FG1087 =
+         PT-FG1087-1 and -2), each with its live value when a logic sheet reads that address */
+      const io = ioList();
+      if (!io) return null;
+      const k = String(e.ins)
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, ''),
+        cand = [k, k.replace(/^(DP|[LPFTAZSI])I(?=[A-Z])/, '$1T'), k.replace(/^(T)I(?=[A-Z])/, '$1E')];
+      let L = cand
+        .map(c => io.get(c))
+        .filter(Boolean)
+        .slice(0, 1);
+      if (!L.length)
+        for (const [kk, q] of io)
+          if (
+            cand.some(c => kk.startsWith(c) && kk.length - c.length >= 1 && kk.length - c.length <= 2 && /\d$/.test(c))
+          )
+            L.push(q);
+      const ios = L.slice(0, 12).map(q => {
+        for (const z of AN.sheets) {
+          /* the address of the same station only (AI0388 of STN101 is not AI0388 of another station) */
+          if (z.stn == null) call(() => AN.adesFind(z, 'AI0001'));
+          if (z.stn != null && String(z.stn) !== String(q.st)) continue;
+          const Z = call(() => AN.ensure(z), null),
+            n = Z ? (Z.lab || []).findIndex(l => l && l.t && l.t.trim() === q.a) : -1;
+          if (n >= 0) return { io: q, sh: z.name, S2: Z, n };
+        }
+        return { io: q };
+      });
+      return (insMemo[e.key] = { ios });
+    }
+    if (!r.sh || r.n == null) return (insMemo[e.key] = { r });
+    const sh = AN.sheets.find(z => z.name === r.sh),
+      S2 = sh && call(() => AN.ensure(sh), null);
+    if (!S2) return { r };
+    const lab = (S2.lab[r.n] && S2.lab[r.n].t && S2.lab[r.n].t.trim()) || '';
+    const uses = [r.sh];
+    if (lab)
+      for (const z of AN.sheets) {
+        if (z === sh) continue;
+        const Z = call(() => AN.ensure(z), null);
+        if (Z && (Z.lab || []).some(l => l && l.t && l.t.trim() === lab)) uses.push(z.name);
+      }
+    const desc = call(() => {
+      const a = r.a && AN.adesFind ? AN.adesFind(sh, r.a) : null;
+      return a && a.rec ? String(a.rec.d || a.rec.desc || '').trim() : '';
+    }, '');
+    return (insMemo[e.key] = { r, sh, S2, lab, uses, desc });
+  }
   /* the ABC sheet of a controller tag (its PID block): { sh, S2, c } */
   const ctlMemo = {};
   function ctlFind(tag) {
@@ -261,7 +456,7 @@
               k0 = '';
               const e = eq();
               /* a controller batch picked before the sheets were there: open its ABC sheet now */
-              if (on && e && !e.sh.length && e.ctl) setBatch(batch, true, true);
+              if (on && e && !e.sh.length && (e.ctl || e.ins)) setBatch(batch, true, true);
               else paint(true);
             }),
           null
@@ -631,12 +826,6 @@
     if (e.ctl) ctlTag = e.ctl;
     save();
     fillSel();
-    if (open && e.sh[0]) call(() => D().openD(e.sh[0], null));
-    else if (open && e.ctl) {
-      const F = ctlFind(e.ctl);
-      /* its ABC sheet, zoomed and centred on the PID / MAN block so the value of the faceplate command is read there (AN.showTag) */
-      if (F) call(() => (AN.showTag ? AN.showTag(e.ctl, F.sh.name) : AN.xrefGo({ a: F.sh.name })));
-    }
     /* picked in Batch / ‹ ›: the HMI on the left shows the page of the equipment (not when the HMI itself picked it) */
     if (!fromHmi) {
       const pk = document.querySelector('select.plpick'),
@@ -645,6 +834,18 @@
         pk.value = pg;
         pk.dispatchEvent(new Event('change'));
       }
+    }
+    if (open && e.sh[0]) call(() => D().openD(e.sh[0], null));
+    else if (open && e.ctl) {
+      const F = ctlFind(e.ctl);
+      /* its ABC sheet, zoomed and centred on the PID / MAN block so the value of the faceplate command is read there (AN.showTag) */
+      if (F) call(() => (AN.showTag ? AN.showTag(e.ctl, F.sh.name) : AN.xrefGo({ a: F.sh.name })));
+    } else if (open && e.ins) {
+      /* an instrument: the ABC sheet that reads it, centred on its signal when a block names it */
+      const F = insFind(e);
+      const q = F && F.ios && F.ios.find(x => x.S2);
+      if (F && F.sh) call(() => (F.lab && AN.showTag && AN.showTag(F.lab, F.sh.name)) || AN.xrefGo({ a: F.sh.name }));
+      else if (q) call(() => (AN.showTag && AN.showTag(q.io.a, q.sh)) || AN.xrefGo({ a: q.sh }));
     }
     paint(true);
   }
@@ -659,7 +860,7 @@
     for (const x of L2) {
       const v = x.v();
       if (x.an != null) {
-        x.now = v == null || !isFinite(+v) ? null : +v;
+        x.now = v == null || v === '' ? null : isFinite(+v) ? +v : String(v);
         continue;
       }
       if (v !== 0 && v !== 1) continue;
@@ -690,7 +891,9 @@
     const key =
       batch +
       '|' +
-      L2.map(x => (x.an != null && x.now != null ? x.now.toFixed(1) : x.now) + (r[x.k] && r[x.k].exp)).join('') +
+      L2.map(
+        x => x.k + (x.an != null && typeof x.now === 'number' ? x.now.toFixed(1) : x.now) + (r[x.k] && r[x.k].exp)
+      ).join('') +
       '|' +
       ctlTag;
     if (force || key !== k0) {
@@ -732,7 +935,11 @@
             E('td', 'n', x.name),
             E('td', 'n', x.where.join(', ')),
             E('td', '', '—'),
-            E('td', 'v1', x.now == null ? '-----' : x.now.toFixed(1) + (x.an ? ' ' + x.an : '')),
+            E(
+              'td',
+              'v1',
+              x.now == null ? '-----' : typeof x.now === 'number' ? x.now.toFixed(1) + (x.an ? ' ' + x.an : '') : x.now
+            ),
             E('td', '', '—'),
             E('td', '', 'live')
           );
