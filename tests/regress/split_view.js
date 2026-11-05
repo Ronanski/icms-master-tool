@@ -64,6 +64,11 @@ ck(cb.pg==='MK06','controller batch -> HMI on the Feedwater page ('+cb.pg+')');
 ck(cb.adr.includes('LICBR1001B.MAN')&&cb.adr.includes('PV')&&cb.adr.includes('MV'),'controller batch rows: '+cb.adr.join(', '));
 const nf=await page.evaluate(()=>{const o=[...document.querySelectorAll('#splbar select option')].filter(o=>!/DITL/.test(o.textContent));const bad=[];for(const x of o){LS_SPLIT.setBatch(x.value,false,true);if(!LS_SPLIT.rows().length)bad.push(x.value)}LS_SPLIT.setBatch('MK06:CSU',false,true);return {n:o.length,bad}});
 ck(nf.n>=50&&nf.bad.length===0,'every controller batch found on the ABC sheets ('+nf.n+', not found: '+nf.bad.join(' ')+')');
+// the instruments of the HMI pages are batches too (user 2026-11-05 "Wala ung mga instrument?"): LTCD1110 = AI0640 on ABC-031, the HMI shows the same value
+const ib=await page.evaluate(async()=>{const n=[...document.querySelectorAll('#splbar select option')].filter(o=>/:i:/.test(o.value)).length;LS_SPLIT.setBatch('MK05:i:LTCD1110',true);await new Promise(r=>setTimeout(r,2500));const r=LS_SPLIT.rows();return {n,sh:AN.sheets[AN.i].name,pg:(document.querySelector('select.plpick')||{}).value,r:r.map(x=>[x.adr,x.where.join(','),x.v])}});
+ck(ib.n>=400,'instrument batches: '+ib.n);
+ck(ib.r[0]&&ib.r[0][0]==='AI0640'&&ib.r[0][1].includes('ABC-031')&&ib.sh==='ABC-031'&&ib.pg==='MK05','LTCD1110 -> AI0640 on ABC-031, HMI on 028 CONDENSATE ('+JSON.stringify(ib)+')');
+ck(ib.r[1]&&ib.r[1][0]==='HMI'&&ib.r[0][2]!=null&&Math.abs(ib.r[1][2]-ib.r[0][2])<0.6,'LTCD1110: HMI value = logic value ('+ib.r[0][2]+' / '+(ib.r[1]&&ib.r[1][2])+')');
 const rbo=await page.evaluate(()=>{const b=[...document.querySelectorAll('.tabs button')].find(b=>b.textContent.trim()==='Split');const r=b.getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]});
 await page.mouse.click(rbo[0],rbo[1]);await wait(800);
 ck(await page.evaluate(()=>!LS_SPLIT.on&&!document.body.classList.contains('lssplit')&&!document.querySelector('.splfl')),'Split again: off, nothing left on the page');
