@@ -468,3 +468,6 @@ function resetShown() {
     'Reset done: values, forced signals, switches and timers are back to the start. Block settings (rate, stroke time, tuning, limits) are kept: use "Reset this block to default" in the block panel.'
   );
 }
+
+/* split view (split.js): the ABC sheets of a controller batch are needed before the ABC page was ever opened */
+AN.loadData = loadData;
