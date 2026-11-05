@@ -973,6 +973,8 @@
   }
   setInterval(fpTick, 250);
   window.lsPlantFp = fpOpen; /* for the tests */
+  /* the logic signal of an HMI value, the same link the page shows (loop check split view: an instrument batch); undefined = the links are not read yet */
+  window.lsPlantResolve = it => (IX ? resolve(it) || null : undefined);
   window.lsPlantLinks = () => LV.map(o => ({ tag: o.it.tag || o.it.ref || '', t: o.it.t, on: !!o.r })); /* for the tests (retest #60) */
   function reg(it, set, hit) {
     LV.push({ it, set, hit, r: null });
