@@ -44,6 +44,13 @@ Folder: `C:\Users\Ronanski\Downloads\app-projects-ai-collections\projects\icms-m
 - `o&m-package-phase-1/`: vendor O&M L1 ~ L37 (L1 boiler, L2 TG, L4 burner, L5 limestone / sand, L6 bottom ash, L7 BFP lube oil, L14-4 diesel pump, L16 fans, L18 debris filters, L20 APH, L22 DCS) at master list K1AU3-R1-0-001 R15.
 - `instrument-engineer-data-asbuilt/`: K1AU3-E2 drawings (control valves, orifices, drum level gauge, DCS graphic design).
 - Kopya ng CW vendor PDFs (14): project files `cw-plant-model/vendor/`.
-- WALA kahit saan: drum water volume, turbine heat balance diagram, historian / trend data.
+- Idinagdag ng user 2026-11-06 (PC lang, FHI property, huwag i-commit):
+  - `Boiler Pressure Parts/`: K1AU3-B-0-001 ~ 008 as-built (general arrangement, panel erection, superheater, steam drum, economizer, risers, supports, reheater).
+  - `Boiler Non-Pressure Parts/`: K1AU3-C-0-001 ~ 008 (buckstay, seal pot at cyclone vortex finder, casing, air at flue gas duct, lagging, sootblower support, refractory, TG noise cover). Ang K3AU2 files ay Phase 2: huwag gamiting source sa Unit 1.
+  - `Equipment List/`: K1AU3-L1-0-002 R0 at RA. `Boiler Hydrostatic Test Procedure/`: K1AU3-R3-0-101, 102. `Boiler Structural Steel Drawing/`: K1AU3-S1-0-001, K3AU2-S1-0-001.
+  - `Turbine Generator/`: generator data sheet GAE-2013-0136, site test procedures, wiring diagrams.
+  - Hiwa-hiwalay: BFP motor data sheet, MV-BD1001 at MV-BD1002 valve drawings, Chimney K1AU3-D1-0-058, Plant Air Compressor manual.
+  - Maraming scan ang mga ito at may password-free encryption: basahin gamit ang pdf.js sa Chrome.
+- WALA kahit saan: turbine heat balance diagram, historian / trend data.
 
 Ang mga dobleng zip (`iolist-dcs.zip`, `memorylist-per-station.zip`, `plant-operation-procedure.zip`, `dcs-manuals.zip`, `controller-para.zip`, `fx-drum-flow-calculations.zip`) ay tinanggal 2026-11-06: pareho ang laman (md5) ng mga file sa itaas. Nasa git history kung kailangan.

@@ -1,2 +1,7 @@
 .vite/
 node_modules/
+
+# Plant documents stay on the user's PC only (public repo). Files already tracked are not affected.
+document-references/*
+!document-references/INDEX.md
+.claude/launch.json

@@ -1,6 +1,6 @@
 # HANDOFF — iisang file ng estado (para sa kahit sinong Claude o account)
 
-Huling update: **2026-11-06 6:10 PM PHT** (TZUYU : AUDIT NG DOCUMENTS AT REFERENCES, user "Ayusin nio. Ano b latest n sinabi ko. Db wala go beta"): nilinis ang docs. Iisang rules na lang (COMMANDMENTS sa `CLAUDE.md`); ang file na ito ay estado lang. Ang lumang buong HANDOFF (hanggang 2026-11-06, 92 KB) ay nasa `archive/handoff/HANDOFF-until-2026-11-06.md`.
+Huling update: **2026-11-07 PHT** (LEADER, user "approved ko lahat" sa cleanup): nilinis ang lumang docs at branches; ang mga bagong plant document ay PC-only na (`.gitignore`). Isang rules file na lang ang binabasa ng hook: `docs/handoff/COMMANDMENTS.md`.
 
 Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat Beta: `docs/versions/v3.2.1/UPDATE_REPORT.md` at git log.
 
@@ -18,7 +18,7 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 - **beta.41** (2026-11-05): split view Inject / Release para sa analog loop check (live PASS ni MINA sa PC 1600 px at tablet 1024 × 768).
 - **Rule ng merge (COMMANDMENT 3):** Beta = merge sa `main` kapag pasado ang Checks, walang GO BETA (user 2026-11-06). Stable at manual workflow = GO STABLE lang.
 - **Beta site:** kusang nade-deploy pagkatapos ng berdeng Checks sa `main` (`site.yml`, `/beta/`; banner "Update now").
-- **Bukas na PR (2026-11-06):** #158 docs cleanup (KARINA; may conflict at may pinalitang rules; mungkahi: isara, napalitan ng docs cleanup ng TZUYU), #96 UI overhaul at #93 HMI kit (11-02, luma), #95 docs draft (11-03, luma). Desisyon ng user ang pagsara ng #93 / #95 / #96.
+- **Bukas na PR (2026-11-07):** #96 UI overhaul at #93 HMI kit (parehong may conflict; hintay ng desisyon sa style at HMI study). Sarado: #158 at #95. Nasa `team-files/progress/from-pr95/` ang progress files; ang lumang branches ay may backup sa PC (`refs/backup/2026-11-07/*`).
 
 ## 3. Mga thread (2026-11-06)
 - **JENNIE : COORDINATOR** — project chat; hands off (direkta ang user sa bawat thread).
@@ -27,7 +27,6 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 - **SEULGI : PLANT MODEL (boiler side)** — `src/analog/engine/boiler.js`: diesel, fans, limestone, sand, bottom ash. #141 naka-merge (beta.42). Huwag i-prettier ang `plantsw.js`.
 - **JISOO : HMI MOCKUP** — 19 HMI pages (00 ~ 18) nasa app na (temp style). Done.
 - **HAEWON : AUDITOR** — HMI audit PASS. **YERI** — PC data search. **WENDY** — full turnover (`LOCAL_TAKEOVER.md`).
-- **KARINA : DOCS** — PR #158 (napalitan ng cleanup na ito).
 - **TZUYU : AUDIT NG DOCUMENTS AT REFERENCES** — audit (Claude Doc https://claude.ai/artifact/DuDeRGgJHSCqzRtdmpsbNU) at ang docs cleanup na ito.
 - Naka-save na ideya (huwag pang gawin): CodePLC-style Work Order / fault-finding mode.
 
@@ -54,6 +53,8 @@ Docs at references (audit 2026-11-06, hindi pa naayos):
 - Walang section sa UPDATE_REPORT v3.2.1 ang ilang Beta; may listahan na mula sa git log sa dulo ng file na iyon.
 
 ## 5. Kulang pa
+- Desisyon ng user: 344 MB plant documents na nasa public repo at history.
+- Ikabit sa model ang drum 32 t (DATA_ANSWERS item 7); ikumpara sa app ang BFP motor, generator at compressor data (`document-references/INDEX.md`).
 - Live loop check at function test ng natitirang equipment (`docs/versions/v3.2.1/MOTOR_LOOP_CHECK.md` pagkatapos ng CW; lahat ng MOV / control valve at analog instrument gamit ang split view); page 07 test; debris filters, hypochlorite, manual valves.
 - Gaps: ID fan cold start; Sampling page blanks; per-signal ABC / DITL tracing; AI range / alarm / IO checks; DITL 9 sa 31 hindi pa na-verify.
 - Plant model: LP heater isolation / bypass; transmitter root valves; APH sootblower; ESP.
