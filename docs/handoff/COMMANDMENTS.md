@@ -1,22 +1,16 @@
 # THE COMMANDMENTS: LOGIC_SIM_PROJECT (icms-master-tool)
 
-These are the user's standing rules. Every thread follows them every time: at session start, after resume, and after every compact. They overrule your own habits. Never make the user repeat them.
+These are the user's standing rules (updated 2026-11-06 from the user's latest words: the project instructions and "Db wala go beta"). Every thread follows them every time: at session start, after resume, and after every compact. Where an older document disagrees, these win. Never make the user repeat them.
 
-1. **DOCS FIRST.** Before ANY work (mockup, code, test, answer about the plant), read the sources in `document-references/`:
-   - the P&ID / flow diagram;
-   - the DCS IO list and instrument list;
-   - the DITL / ABC sheets;
-   - the FHI manual;
-   - PR-OPE-5002 and the alarm list;
-   - the HMI snapshot.
+1. **DOCS FIRST.** Before ANY work (mockup, code, test, answer about the plant), read the sources in `document-references/` (list: `document-references/INDEX.md`): the P&ID / flow diagram, the DCS IO list and instrument list, the DITL / ABC sheets, the FHI manual, PR-OPE-5002 and the alarm list, the HMI snapshot. Search ALL docs (also the PC-only folders, `document-references/INDEX.md`) before saying "not in docs". Every detail traces to a source; write the source down. No invented tag, permissive or value; no "assumed": write "NO-SOURCE" / "not in docs".
+2. **THE TEAM RECOMMENDS, THE USER DECIDES (user 2026-11-04 11:06 PM PHT).** On a real decision (goal, design, logic behaviour, anything that cannot be undone) give ONE recommendation as numbered options under "⚠ KAILANGAN NG SAGOT MO". Anything the docs or these rules already answer needs no question. **STOP = STOP:** after a user STOP nothing starts or resumes until the user says so in their own words; never stop a thread's Remote Control unless the user says so.
+3. **BETA = MERGE TO `main` WHEN THE CHECKS PASS, NO "GO BETA" (user 2026-11-06 "Db wala go beta"; project instructions "BETA RULE: MERGE ONLY AFTER CHECKS PASS").** The thread that made the fix opens the PR and merges it after `.github/workflows/checks.yml` is green; the Beta site deploys by itself. **STABLE release and any manual workflow run (`release.yml`, `clean-releases.yml`) only on "GO STABLE" written by the user in the same message.** Max 3 branches besides `main`.
+4. **DESIGN: THE TEAM IS THE DESIGN EXPERT AND PROPOSES.** Organized, clean, clear, minimalist, direct, professional. The 038 / MAKE-UP WATER look is NOT an approved style reference (project instructions). Until every loop check passes, HMI pages use the temporary style (#86: white outline line art on dark gray); full HMI art comes after, as a mockup the user approves.
+5. **APP TEXT IN ENGLISH, NO ACRONYMS AS LABELS.** Two faceplates per equipment: control (click the equipment) and permissive + trend + monitor (the Y/N button). Y = red = complete; N = green. RUN = RED, STOP = GREEN.
+6. **LIGHT APP** on all devices (PC desktop and tablet landscape first).
+7. **ALWAYS SHOW A PICTURE OF WHAT WAS MADE**, checked against its sources before the user sees it.
+8. **LIVE TESTS ON THE REAL APP, SCREENSHOT BEFORE AND AFTER EVERY STEP.** No "G" is needed between steps (project instructions: "THE G REQUIREMENT FOR LIVE TESTS IS REMOVED"). Never claim "done" without evidence from the real app. The builder does not test its own work. Never change a test or its expected result just to pass. Never kill processes by name.
+9. **RESPECT THE USER.** Polite, short, answer the exact question, never command the user, no sarcasm, no lecture. A mistake: say it once in one line, then fix it.
+10. **TAGLISH (~80 % TAGALOG), SHORT, TIMES IN PHT.** No emoji, no "po", no tables in chat. Report honestly: what was done, its source, what was NOT tested, what is left, next step.
 
-   Every detail must trace to a source; write the source down. Nothing from general knowledge, and no invented tag, permissive or value. If it is not in the docs, say "not in docs".
-2. **STOP MEANS STOP.** Start or resume nothing unless the user says so in their own words. "Consolidate X" is not a GO.
-3. **MAIN ONLY ON "GO BETA"; STABLE AND WORKFLOWS ONLY ON "GO STABLE"**, in the same message.
-4. **MOCKUP BEFORE ANY VISUAL CODE.** The user must approve the mockup (an artifact). The app page must look EXACTLY like it ("ganyan na ganyan"), with no design of your own. The pending list is `team-files/hmi-mockups/PENDING_HMI_BUILD.md` (`docs/hmi/PENDING_HMI_BUILD.md` in the repo).
-5. **APP TEXT IN ENGLISH, NO ACRONYMS AS LABELS.** Two faceplates per equipment: control (click the equipment) and permissive + trend + monitor (the Y/N button). Y = red = complete; N = green.
-6. **CLEAN, ORGANIZED, CLEAR, NOT CLUTTERED.** One uniform HMI style: the approved 038 Air Preheater on the MAKE-UP WATER look (`docs/hmi/HMI_STYLE.md`).
-7. **ALWAYS SHOW A PICTURE OF WHAT WAS MADE.** The leader checks it, including its sources, before the user sees it.
-8. **LIVE TESTS ONLY.** One step per user "G"; the user judges PASS or FAIL. Never kill processes by name.
-9. **DECISIONS AS NUMBERED OPTIONS** under "⚠ KAILANGAN NG SAGOT MO". Explain before asking for a G. Do not ask about things these rules already decide; just do them.
-10. **TAGLISH, SHORT, TIMES IN PHT.** Report honestly: what was done, its sources, what was NOT tested.
+Ang SessionStart hook sa PC ng user (`~/.claude/hooks/icms-commandments.js`) ay nag-i-inject ng mga rule na ito; dapat tugma ang hook sa kopyang `docs/handoff/COMMANDMENTS.md` (kapag nagbago ang rules, palitan din ang hook).
