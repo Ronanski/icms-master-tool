@@ -8,7 +8,7 @@ Permanenteng rules. Ang COMMANDMENTS sa itaas ng `CLAUDE.md` ang nananaig kapag 
 3. Taglish, simple, para sa non-coder.
 
 ## 2. Batayan (source of truth), sunod-sunod
-Lahat ay nasa `document-references/` (listahan sa `CLAUDE.md` rule 4):
+Lahat ay nasa `document-references/` sa PC ng user at sa private repo na Ronanski/icms-plant-documents, hindi sa public repo (listahan sa `CLAUDE.md` rule 4):
 1. DCS logic drawings (ABC / DITL PDF, DWG) — logic, signal path, page link.
 2. I/O list at memory lists STN101 ~ 105 — address, tag, station.
 3. F(X) linear curves, PID / PIDV / SUMA / MAN parameters, compensations.
