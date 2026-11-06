@@ -1,5 +1,7 @@
 # PENDING HMI BUILD (approved mockups waiting to be coded)
 
+> **2026-11-06 (TZUYU): LUMA ang listahang ito (huling 038 v15, 2026-10-31).** Ang 19 temp HMI pages (00 ~ 18) ay nasa app na (beta.8 ~ 28). Walang GO BETA na kailangan: Beta = merge kapag pasado ang Checks. Full HMI art = mockup muna, pagkatapos ng loop check. Umiiral na rules: COMMANDMENTS sa `CLAUDE.md`.
+
 User rule (2026-10-31): the app page made by the HMI thread must look EXACTLY like the approved mockup ("ganyan na ganyan").
 No own design. Before reporting, the HMI thread puts a screenshot of the app page beside the mockup; the leader compares,
 and only then is it shown to the user. Code goes into the app only after the user's GO BETA.

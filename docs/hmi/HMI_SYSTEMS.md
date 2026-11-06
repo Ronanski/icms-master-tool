@@ -1,5 +1,7 @@
 # Bagong HMI: listahan ng system at flow (roadmap step 6)
 
+> **2026-11-06 (TZUYU): Ang plano ng page sa ibaba (STEEL HSYM, mockup bawat page) ay luma.** Ang kasalukuyang 19 temp pages ay nasa `docs/handoff/LOCAL_TAKEOVER.md` seksyon 5. Umiiral na rules: COMMANDMENTS sa `CLAUDE.md`.
+
 Ginawa 2026-10-26 (HMI sample, branch claude/project-thread-1h2161; numero ng Beta ibibigay sa pagsasama). Batayan: 35 snapshot ng control room (`document-references/hmi-snapshot-sample.zip`, buod sa `OPERATING_POINTS.md`), ang ABC sheets at ang I/O list. Ang snapshot ay **gabay lang** (anong equipment, saan dumadaloy, anong instrumento). Ang bagong HMI ay sariling drawing (vector, magaan), hindi kopya ng larawan.
 
 ## 1. Mga desisyon sa disenyo (para sa lahat ng screen)

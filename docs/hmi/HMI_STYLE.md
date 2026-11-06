@@ -1,5 +1,7 @@
 # HMI STYLE STANDARD (iisang itsura ng lahat ng HMI page)
 
+> **2026-11-06 (TZUYU): LUMA ang "aprubadong style" sa file na ito.** Ayon sa project instructions, ang 038 / MAKE-UP WATER ay HINDI na approved style reference; ang team ang design expert at nagmumungkahi. Hanggang pumasa ang lahat ng loop check, temp style ang HMI (#86: puting outline sa dark gray, `src/ui/plant/hmi-temp.js` / `hmi-mock*.js`). Ang file na ito ay reference ng HSYM library lang. Umiiral na rules: COMMANDMENTS sa `CLAUDE.md`.
+
 User 2026-10-30: "Dapat uniform ang style ng mga HMI natin." Ang lahat ng HMI page (MAKE-UP WATER, 030 SEAWATER, 007 AIR & FLUE GAS,
 036 TURBINE OIL, INSTRUMENT & PLANT AIR, CLOSED COOLING WATER at ang mga susunod) ay gumagamit ng iisang library:
 `src/ui/plant/hmi-sym.js` (`window.HSYM`). Walang page na gumagawa ng sarili niyang tubo, pump, valve o tank.
