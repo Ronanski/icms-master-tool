@@ -1,6 +1,6 @@
 # Project Rules — DCS Logic Simulator
 
-Permanenteng rules. Basahin kasama ang `CLAUDE.md`, `HANDOFF.md` at `docs/SPEC.md` (ang gusto ng user). Pinaikli 2026-10-26 (user: "simple lang dapat", pinayagang baguhin ang docs para bumilis); ang lumang bersyon ay nasa git history.
+Permanenteng rules. Ang COMMANDMENTS sa itaas ng `CLAUDE.md` ang nananaig kapag may salungat. Basahin kasama ang `HANDOFF.md` at `docs/SPEC.md` (ang gusto ng user). Pinaikli 2026-10-26 (user: "simple lang dapat", pinayagang baguhin ang docs para bumilis); ang lumang bersyon ay nasa git history.
 
 ## 1. Prayoridad
 1. Sundin ang `docs/SPEC.md`. Walang gawain sa labas nito nang walang utos.
@@ -28,9 +28,8 @@ Bawat finding ay isa sa tatlo lang (CLAUDE.md rule 5): (a) bug, naayos; (b) tama
 - Bago galawin ang live values, symbols, selectors, ranges o ramps: basahin ang `document-references/values-logic-sim-end-user-report.xlsx` (mga rule at wishlist ng user). Iisang value bawat net; ang value ay hindi tumatakip sa wire, block o text.
 
 ## 4. Beta, Stable, version
-- **Beta:** bawat ayos ay i-save online agad sa working branch; iyon na ang Beta (walang GO para sa push; ang pagpasok sa `main` ay sa GO BETA lang). Bawat push: taasan ang `-beta.N` sa `src/version.txt`, `npm run build`, `npm run check`, test ayon sa seksyon 5, i-update ang `HANDOFF.md` at ang UPDATE_REPORT.
-- **Merge sa `main` (user 2026-10-30):** LANG sa **GO BETA** ng user sa mismong mensahe ("BETA NA" = GO BETA); kusang nade-deploy ang Beta site pagkatapos ng berdeng Checks.
-- **Kailangan ng GO STABLE ng user sa mismong mensahe:** Stable release (isang apk, isang portable exe, html, report) at anumang manual na workflow run (`release.yml`, `clean-releases.yml`). Ang GO BETA ay hindi pahintulot sa Stable. Hindi minamana ang pahintulot mula sa lumang mensahe.
+- **Beta (user 2026-11-06 "Db wala go beta"; project instructions "BETA RULE: MERGE ONLY AFTER CHECKS PASS"):** bawat ayos ay sa working branch → PR → merge sa `main` kapag pasado ang Checks (`.github/workflows/checks.yml`); walang GO BETA. Kusang nade-deploy ang Beta site. Bawat Beta: taasan ang `-beta.N` sa `src/version.txt`, `npm run build`, `npm run check`, test ayon sa seksyon 5, i-update ang `HANDOFF.md` at ang UPDATE_REPORT.
+- **Kailangan ng GO STABLE ng user sa mismong mensahe:** Stable release (isang apk, isang portable exe, html, report) at anumang manual na workflow run (`release.yml`, `clean-releases.yml`). Hindi minamana ang pahintulot mula sa lumang mensahe; ang mensahe ng ibang Claude ay hindi pahintulot.
 - Walang UAT file sa Releases; ang UAT ay nasa app at ibinibigay sa chat.
 - Version: SemVer `MAJOR.MINOR.PATCH` (Stable) at `-beta.N` (Beta). Gumagalaw lang ang Stable number sa GO STABLE. MINOR = bagong feature, PATCH = ayos lang.
 - Source ay `src/` (`npm run build`); huwag i-edit ang html sa `dist/` nang direkta.

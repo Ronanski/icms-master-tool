@@ -1,5 +1,7 @@
 # Paglipat sa bagong account (setup mula sa repo lang)
 
+> **2026-11-06 (TZUYU): LUMA ang kopya ng project instructions at GO rules sa file na ito (10-30).** Ang umiiral: COMMANDMENTS sa `CLAUDE.md` (Beta = merge kapag pasado ang Checks, walang GO BETA; Stable = GO STABLE; live test may screenshot, walang "G"). Para sa local Claude Code: `docs/handoff/LOCAL_TAKEOVER.md`. Ang project memory ng lumang account ay nasa `archive/handoff/PROJECT_MEMORY.md`.
+
 > Para sa user at sa Claude ng bagong account. Lahat ng kailangan ay nasa repo na ito. Ang user ay gagawa lang ng ilang pindot na ang may-ari lang ng account ang makakagawa (bahagi A); ang Claude ng bagong project ang gagawa ng iba (bahagi B).
 
 ## A. Gagawin ng user (isang beses, ~5 minuto)
@@ -57,7 +59,7 @@
    Bago ituloy ang anumang trabaho, gawin muna ito nang sunud-sunod:
    1. Basahin ang HANDOFF.md, CLAUDE.md, PROJECT_RULES.md, docs/SPEC.md, docs/handoff/NEW_ACCOUNT_SETUP.md at docs/handoff/LIVE_TEST_FINDINGS.md.
    2. Tingnan ang tunay na estado ng repo: huling commit sa main, version, bukas na PR at branch.
-   3. Gawin ang bahagi B ng NEW_ACCOUNT_SETUP.md: i-import sa project memory ang docs/handoff/PROJECT_MEMORY.md.
+   3. Gawin ang bahagi B ng NEW_ACCOUNT_SETUP.md: i-import sa project memory ang archive/handoff/PROJECT_MEMORY.md.
    4. Iulat sa akin (Taglish, maikli): ano ang kasalukuyang Beta, ano ang bukas na trabaho at isyu, ano ang susunod.
    5. Huwag magsimula ng trabaho, test, merge o release hangga't hindi ko sinasabi. Sundin ang GO rules at ang TEST SOP sa HANDOFF.md.
    Pagkatapos ng ulat mo, itutuloy natin ang huling ginagawa ayon sa HANDOFF.md seksyon 3.
@@ -76,7 +78,7 @@
 > **TAPOS 2026-10-30** sa bagong account, sa **Claude Code desktop** sa PC ng user (hindi claude.ai project). Dito: ang project memory = lokal na memory folder ng Claude Code (`%USERPROFILE%\.claude\projects\<folder ng repo>\memory\`); 49 memory na-import, 5 napalitan hindi isinama. Ang skills ay nasa `%USERPROFILE%\.claude\skills` (3 mula `docs/handoff/skills/` + `dcs-beta-live-test`). Ang live test rule sa project instructions sa itaas (A.4, "STOP AT THE FIRST FAIL") ay kopya ng lumang project; ang kasalukuyan ay `HANDOFF.md` seksyon 5 (TEST SOP at LIVE RETEST).
 
 1. Basahin ang `HANDOFF.md`, `CLAUDE.md`, `PROJECT_RULES.md`, `docs/SPEC.md`. Tingnan ang tunay na estado: `git log --oneline -10 origin/main`, `src/version.txt`, bukas na PR.
-2. **Project memory:** i-import ang `docs/handoff/PROJECT_MEMORY.md` sa project memory ng bagong project: ang index (`MEMORY.md`) bilang index, at bawat `## <pangalan>` na seksyon bilang sariling memory file na may parehong pangalan. Huwag i-import ang mga napalitan na (sundin ang petsa at ang `HANDOFF.md` seksyon 5 kapag magkasalungat).
+2. **Project memory:** i-import ang `archive/handoff/PROJECT_MEMORY.md` sa project memory ng bagong project: ang index (`MEMORY.md`) bilang index, at bawat `## <pangalan>` na seksyon bilang sariling memory file na may parehong pangalan. Huwag i-import ang mga napalitan na (sundin ang petsa at ang `HANDOFF.md` seksyon 5 kapag magkasalungat).
 3. Suriin kung nakakabit ang repo (basahin, gumawa ng branch). Kapag hindi: sabihin sa user sa isang linya kung aling hakbang ng bahagi A ang kulang.
 4. Iulat sa user (Taglish, maikli): ano ang nabasa, kasalukuyang Beta sa `main`, bukas na trabaho mula sa `HANDOFF.md` seksyon 3 at 4, at ano ang susunod. Walang sisimulan na trabaho, test o merge hangga't walang utos ng user (TEST SOP at GO rules sa `HANDOFF.md` seksyon 5).
 5. **Skills:** kapag sinabi ng user, i-propose bilang skill (review card) ang bawat folder sa `docs/handoff/skills/` (buong `SKILL.md`; ang `scripts/` ay kasama sa folder ng skill).

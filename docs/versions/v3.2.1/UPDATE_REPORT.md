@@ -436,3 +436,33 @@ SWBP start 274 A ± 10 %, SWP start 500 ± 30 A (ayon sa `cw_model.js`), SWP cur
 `CW_PLANT_MODEL.md`). Ang SWP current sa labas ng SOP 205 ~ 215 A ay UNUSUAL, hindi FAIL (A2).
 
 **As left / status.** Headless (cloud), totoong click sa faceplate: tingnan ang ulat sa thread. HINDI pa live-tested sa PC ng user.
+
+
+## Mga Beta na walang sariling section (listahan mula sa git log, idinagdag 2026-11-06 TZUYU)
+Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HANDOFF-until-2026-11-06.md`) at sa plant model / loop check docs ng folder na ito.
+
+- **beta.1** (2026-11-04, 4d1918a): CW (seawater) plant model from vendor data
+- **beta.2** (2026-11-04, 1bc1a03): Make-Up Water and Closed Cooling Water plant model from vendor data, linked to the DITL
+- **beta.3** (2026-11-04, cd6a1c8): Instrument and Plant Air plant model from vendor data, linked to the DITL
+- **beta.5** (2026-11-04, b282db5): heater levels plant model, unit_trip on the one world (#122)
+- **beta.6** (2026-11-04, 88a5298): instrument air to pneumatic valves (#124)
+- **beta.7** (2026-11-04, f64e4f8): LP heater temperatures; control damper drawing read (#125)
+- **beta.14** (2026-11-04, 2360384): page 05 CONDENSATE values from the plant model (#132)
+- **beta.16** (2026-11-04, b505a6f): page 06 FEEDWATER values from the plant model (#135)
+- **beta.17** (2026-11-04, fe519df): BFWP suction from the two snapshots; hotwell reviewed (#136)
+- **beta.23** (2026-11-04, 20dde8f): page 08 AUX STEAM AND VACUUM values from the plant model (#145)
+- **beta.27** (2026-11-05, 1dee1c7): Merge main (beta.26) into mina/cw-fixes, version 3.2.1-beta.27
+- **beta.29** (2026-11-05, 41d1511): ACWP local STOP works on the first press (Worker), one alarm per motor trip
+- **beta.30** (2026-11-05, 9f5282a): controller MV / SV pop-up stays inside the faceplate, manual valve OPEN · CLOSE order
+- **beta.31** (2026-11-05, af86c91): CEP AUTO, MOV lamp wiring (nearest address), MOV field selector
+- **beta.32** (2026-11-05, 12d06ed): BFWP lube oil pumps, DITL-38 selector, valve block reason, air preheater trip reset, Escape on controller
+- **beta.33** (2026-11-05, c7b0e7e): every label of a controller opens it, % MAN station steps 1 / 5 %
+- **beta.34** (2026-11-05, 2071ed8): quick ▲▲ presses add up (MAN station, controller pop-up) with the Worker
+- **beta.35** (2026-11-05, 4ae9f29): ash cooler local START/FORWARD and NOT EMERGENCY STOP release
+- **beta.36** (2026-11-05, cc8d965): loop check split view (HMI | logic, tag table, controller tags, events, dock / float)
+- **beta.37** (2026-11-05, 4a159fc): split view batch = one equipment of the HMI pages
+- **beta.38** (2026-11-05, 65e8c7f): split view controller batch opens its ABC sheet
+- **beta.39** (2026-11-05, 150d2f5): split view instrument batches
+- **beta.40** (2026-11-05, 3742f93): split view analog loop check
+- **beta.41** (2026-11-05, 86fe376): split view Inject / Release for the analog loop check
+- **beta.42** (2026-11-05, fa3318c): merge main into PR #141 (sand DITL-771 reset, limestone DITL-LS212 isolating valves)
