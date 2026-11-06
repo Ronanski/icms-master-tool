@@ -1,5 +1,7 @@
 # Live test findings (start-up, Cold → 150 MW) — kopya sa repo
 
+> **2026-11-06 (TZUYU): Talaan ito ng LUMANG Training live test (beta.74 / 76, 10-30 ~ 31).** Ang protocol dito ("G" bawat hakbang, walang screenshot, table) ay PINALITAN: live test na may screenshot bago at pagkatapos, walang "G" sa pagitan ng hakbang (COMMANDMENT 8 sa `CLAUDE.md`). Ang 12 CHECK ay nasa `HANDOFF.md` seksyon 6. Ang findings ay reference para sa susunod na Cold → 150 MW test.
+
 > Kopya ng findings artifact ng lumang account (https://claude.ai/artifact/3riJ4F7xGZx87Z4BCWCWwB, private, baka hindi mabuksan ng bagong account), 2026-10-30 8:00 PM PHT. Ang repo na ito ang batayan mula ngayon: i-update ang file na ito sa bawat live test.
 
 ## Buod (2026-10-31 8:00 PM PHT)
