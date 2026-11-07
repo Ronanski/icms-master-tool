@@ -475,3 +475,4 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.49** (2026-11-07): an isolated heater changes the plant: colder feedwater makes less steam per coal, the extraction stays in the turbine and adds MW, more steam to the condenser (HEAT_BALANCE.md)
 - **beta.50** (2026-11-07): water side of all five heaters: inlet, outlet and bypass valves change the temperature, the extraction and the flow; HH 140 on all five (ABC-035 ~ 039). Source: plant-study 11-heater-valves.md
 - **beta.51** (2026-11-07): Feedwater page: valve V-FW1010 symbol opens its faceplate and shows its color
+- **beta.52** (2026-11-07): MOV: STOP stops the valve; the torque switch no longer stays on and blocks CLOSE; the faceplate judges a press by what the valve does; polisher inlet and outlet names (Mina F22 to F27)
