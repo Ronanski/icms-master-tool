@@ -43,7 +43,7 @@ const TCS_IBD_PV = [
   [/PT-LOn007/, U => U.loTrip],
   [/TE-STn110/, (U, c) => c.Tx],
   [/SE-STn001/, U => (U.tb ? U.tb.rpm : 0)],
-  [/PT-CRn901/, U => tcsCrp(U)],
+  [/PT-CRn901|HP TURBINE EXHAUST .*STEAM PRESS/, U => tcsCrp(U)],
   [/GENERATOR LOAD/, U => ((+U.MW || 0) / 150) * 100]
 ];
 /* comparators: 'sheet@x,y': [on, off], on < off = low side (on at or below), on > off = high side (on at or above); or a function of U */

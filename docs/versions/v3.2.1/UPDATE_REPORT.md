@@ -555,3 +555,5 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.79** (2026-11-07): Turbine IBD sheets drawn from the netlist with the app own layout; the lines of the IBD taken out of the app (they stay in the git history of beta.78)
 
 - **beta.80** (2026-11-07): IBD reader: input names read from their own box only. Fixes TA-9, where the vacuum and main steam temperature rows were taken for Boiler MFT, so those two rows did not reach the trip
+
+- **beta.81** (2026-11-07): IBD input tags back: beta.80 lost them, so the trip sheets had no field values
