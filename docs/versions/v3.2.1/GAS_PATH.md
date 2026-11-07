@@ -43,3 +43,6 @@ A heater out sends colder water to the economizer, and it takes more from the ga
 
 ## ESP (b5)
 ESP in service: dust 2.9 mg/Nm3 and opacity 12.5 % at full gas, snapshot 7.PNG. ESP out of service: the inlet dust of the design basis, 31,000 mg/Nm3, opacity 100 %. Field state AN_SRC.field.esp. Fly ash conveying stays out of scope; silos unlimited.
+
+## Boiler water heat-up (b1)
+Heat stored 953 MJ/K: water 175.6 t and evaporative steel 437.7 t. The water takes heat by furnace rise, 0.32 MW/K, from 164 MW at MCR over 510 C. Specific heats and enthalpies are table values. Not checked against plant data.
