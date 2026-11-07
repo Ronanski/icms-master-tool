@@ -1,5 +1,11 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.97 — Ash cooler E-stop pattern, final (2026-11-08, JENNIE)
+
+**Work done.** Beta.95 and 96 carried the broken text pattern; this one has the right pattern.
+
+**Not tested.** Live; item sent to Mina.
+
 ## 3.2.1-beta.96 — Ash cooler E-stop pattern (2026-11-08, JENNIE)
 
 **Work done.** The E-stop rule of beta.95 had a broken text pattern and did nothing; fixed.
