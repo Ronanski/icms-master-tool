@@ -629,3 +629,5 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.100** (2026-11-08): Ash cooler emergency stop row reads released, so a cooler can start. ESP ON and OFF in the TCS / Field menu
 
 - **beta.101** (2026-11-08): Ash cooler sheets read the chain conveyor run contact I.0163 from the plant model
+
+- **beta.102** (2026-11-08): While DITL timers or valves move, the world scans each 0.5 s up to x60, so x10 follows the same timers as x1
