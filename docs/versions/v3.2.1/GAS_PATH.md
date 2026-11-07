@@ -40,3 +40,6 @@ Silos: limestone and sand levels stand still, scope 2026-11-07.
 
 ## Colder feedwater (b4)
 A heater out sends colder water to the economizer, and it takes more from the gas: gas to the air heater falls 0.36 C per C of feedwater (43 C gas drop over 120 C gas to water, snapshot gas 365 C and Tab 3 feedwater 245.4 C). Hot air and gas out follow.
+
+## ESP (b5)
+ESP in service: dust 2.9 mg/Nm3 and opacity 12.5 % at full gas, snapshot 7.PNG. ESP out of service: the inlet dust of the design basis, 31,000 mg/Nm3, opacity 100 %. Field state AN_SRC.field.esp. Fly ash conveying stays out of scope; silos unlimited.
