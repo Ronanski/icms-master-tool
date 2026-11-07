@@ -627,3 +627,5 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.99** (2026-11-08): Turbine trip reaches MFT cause 18: DITL-03H row 3 TCS-DI1003 is linked to I.0400. Before, the fuel stayed on after a turbine trip
 
 - **beta.100** (2026-11-08): Ash cooler emergency stop row reads released, so a cooler can start. ESP ON and OFF in the TCS / Field menu
+
+- **beta.101** (2026-11-08): Ash cooler sheets read the chain conveyor run contact I.0163 from the plant model

@@ -68,6 +68,8 @@
   for (const p of ['A', 'B', 'C', 'D']) for (const e of ['1', '2']) L.push(['FS-CW1060-' + p + e, uOf('acQ'), 150, 'lo', 0, 50]);
   /* the ash coolers need the chain conveyor running and no local emergency stop (DITL-21A, IO list MIR-L1090, LIS3-L1060x) */
   L.push(['MIR-L1090', uOf('baConv'), 0.5, 'hi']);
+  /* the same contact on the cooler sheets: DITL-21A row 10 I.0163 CHAIN CONVEYOR RUNNING, FROM BAH LOGIC (no link): Mina beta.100 read 0, cooler trip */
+  L.push(['I.0163', uOf('baConv'), 0.5, 'hi', 0, undefined, /CHAIN CONVEYOR/, /DITL-21A/]);
   /* the emergency stop LIS3-L1060x sits in the inverter panel box, it has no row: its answer is the row I.0256 / 536 / 646 / 686 (DITL-21A out 62,
      row 18 NOT EMERGENCY STOP). A released N.C. stop gives 1. The tag LIS3 matched no row, so the row stood 0 and tripped the cooler */
   for (const a of ['I.0256', 'I.0536', 'I.0646', 'I.0686']) L.push([a, () => 1, 0.5, 'hi', 0, undefined, /EMERGENCY STOP/, /DITL-21A/]);
