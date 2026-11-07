@@ -29,8 +29,8 @@ ck(/MODE · REMOTE/.test(await txt()),'MV-FW1001 MODE REMOTE ('+(await txt()).ma
 await page.evaluate(()=>window.LS_FPOP&&LS_FPOP.close());await wait(300);
 // 3
 ck(await clk('[data-hit="X11A"]'),'XV-FW1111-1 on the page');await wait(700);
-ck(await btn('OPEN')==='ok','OPEN');await wait(300);await btn('EXECUTE');await wait(1500);
+ck(await btn('OPEN')==='ok','OPEN');await wait(300);await btn('EXECUTE');await wait(4000);/* beta.52: the press is judged 3 s later, by what the valve did */
 const t3=await txt();
-ck(/blocked by the logic/.test(t3)&&/MFT/.test(t3),'the reason is shown: '+(t3.match(/⚠[^·]*/)||[''])[0]);
+ck(/The logic asks for/.test(t3)&&/MFT/.test(t3),'the reason is shown: '+(t3.match(/⚠[^·]*/)||[''])[0]);
 ck(errs.length===0,'no page errors'+(errs.length?': '+errs.slice(0,3).join(' | '):''));
 await browser.close();console.log(fail?'FAILED '+fail:'ALL PASS');process.exit(fail?1:0)})();
