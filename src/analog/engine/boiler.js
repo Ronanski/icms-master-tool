@@ -35,8 +35,8 @@
 const AN_DO = {
   Qp: 25 /* T/H per pump, MB-022 item 2-1 / 2-2 */,
   Prv: 16.5 /* kg/cm2, pump relief = 15 x 1.1 (ALLWEILER 8.2, MB-022 15 kg/cm2) */,
-  Ka: 12.5 / (0.242 * Math.sqrt(12.8)) /* PCV-DO0002, 6.PNG */,
-  Kf: 12.5 / (1.001 * Math.sqrt(12.8 - 11.0)) /* FCV-DO1012, 6.PNG */,
+  Ka: 12.8 /* PCV-DO0002, valve sheet CV p218 */,
+  Kf: 13.1 /* FCV-DO1012, valve sheet CV p228 */,
   Kr: 12.5 / (0.857 * Math.sqrt(11.0)) /* PCV-DO1009, 6.PNG */,
   g: 0.6144 * 0.980665 /* T/H per kg/cm2 at the gun: 614.4 kg/h per bar (M&S 1612 13-4-71) */,
   Kb:

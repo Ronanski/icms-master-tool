@@ -336,14 +336,14 @@ function anCycFlows(t) {
     /* a feedwater heater with its tubes and its bypass shut stops the condensate (unit.js anHtrPath) */
     cdp = typeof AN_UNIT !== 'undefined' && AN_UNIT.on && isFinite(AN_UNIT.cdPath) ? AN_UNIT.cdPath : 1,
     fda = cep * cdp * Math.min(520, 21.7 * Math.max(0, AN_CYC.u.da || 0)),
-    frec = cep * 2.5 * 100 * c((AN_CYC.u.cf || 0) / 100),
+    frec = cep * 2.23 /* FCV-CD1120, valve sheet p96, 223 T/H */ * 100 * c((AN_CYC.u.cf || 0) / 100),
     /* the steam of the turbine and of the HP bypass (MB-011 item 8, MB-012 items 6, 10: bypass -> cold reheat -> reheater -> LP
        bypass -> condenser) both come back as water; only vented steam leaves the cycle */
     ms = (s.ms || 0) + (s.mhp || 0),
     ext = s.ext || 0;
   /* 3.2.1 (IRENE): no make-up water pump feeding the header (unit.js AN_MU muFeed) = no make-up to the hotwell */
   const muOff = typeof AN_UNIT !== 'undefined' && AN_UNIT.on && AN_UNIT.muFeed === 0;
-  return { fda, frec, hwIn: ms * (1 - 0.25 * ext), daIn: 0.25 * ext * ms, mu: muOff ? 0 : 1.8 * (AN_CYC.u.hw || 0) };
+  return { fda, frec, hwIn: ms * (1 - 0.25 * ext), daIn: 0.25 * ext * ms, mu: muOff ? 0 : 0.58 /* LCV-MU1110, valve sheet p90 */ * (AN_CYC.u.hw || 0) };
 }
 AN_CYC.flows = anCycFlows;
 /* one water inventory: kg of water per mm of level of each vessel, so the three levels add up to one balance.
