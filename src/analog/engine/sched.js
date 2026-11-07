@@ -100,7 +100,7 @@ const anMirror = () => !!(window.ENG && ENG.mode === 'mirror');
 let anLastT = 0;
 const anTick = () => {
   const now = performance.now(),
-    el = anLastT ? Math.min((now - anLastT) / 1000, 0.5) : 0.1;
+    el = anLastT ? Math.min((now - anLastT) / 1000, 2) : 0.1;
   anLastT = now;
   return el * (AN.spd || 1);
 };

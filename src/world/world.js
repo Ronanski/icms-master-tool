@@ -1046,7 +1046,10 @@
     }
     W.live = true;
     const now = performance.now();
-    let dt = Math.min((now - (last || now)) / 1000, 1) * (AN.cat === 'an' ? AN.spd || 1 : TSP);
+    /* Mina F37: the real time since the last scan is kept up to 2 s (a job that took longer lost the rest), and what a frame could not scan is owed
+       to the next one (W._owe, at most 60 s of plant), so the DITL keeps the time of the plant */
+    let dt = Math.min((now - (last || now)) / 1000, 2) * (AN.cat === 'an' ? AN.spd || 1 : TSP) + (W._owe || 0);
+    W._owe = 0;
     last = now;
     const job = function* () {
     try {
@@ -1060,13 +1063,15 @@
         W.busy = TMBUSY;
       } else {
         let used = 0;
-        for (let n = 0; n < 12 && used < dt - 1e-6; n++) {
+        const t0 = performance.now();
+        for (let n = 0; n < 12 && used < dt - 1e-6 && (n < 2 || performance.now() - t0 < 120); n++) {
           const h = W.busy ? Math.min(2, dt - used) : dt - used;
           TMBUSY = false;
           yield* tickG(h);
           W.busy = TMBUSY;
           used += h;
         }
+        W._owe = Math.min(60, dt - used);
         dt = used;
       }
     } catch (e) {
@@ -1081,7 +1086,10 @@
         /* 3.2.0-beta.23: in steps of 0.5 s and with the Training coach after each, like the ABC Run (src/analog/ui/interaction.js):
            the plant model goes on the same while the DITL page is on the screen (one RUN for the app) */
         if (sh && sh.S) {
-          const k = Math.max(1, Math.min(240, Math.ceil(dt / 0.5)));
+          /* Mina F37: the steps of the ABC tick (sched.js anSteps: what fits in 80 ms, 0.5 s each when there is time, never more than 3 s). Fixed 0.5 s
+             steps took a second a job at x300 and the Logic page ran x90 */
+          const k = AN.anSteps ? AN.anSteps(dt) : Math.max(1, Math.min(240, Math.ceil(dt / 0.5))),
+            t1 = performance.now();
           for (let i = 0; i < k; i++) {
             AN.stepSet(sh, dt / k);
             if (AN.onStep)
@@ -1089,6 +1097,8 @@
                 AN.onStep(dt / k);
               } catch (e) {}
           }
+          const ms = (performance.now() - t1) / k;
+          AN._ms = AN._ms == null ? ms : AN._ms * 0.85 + ms * 0.15;
         }
       } catch (e) {
         console.error(e);

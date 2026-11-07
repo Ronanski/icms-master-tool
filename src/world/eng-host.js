@@ -93,7 +93,7 @@
            M32 (user 2026-11-03): the REAL time since the last tick x the speed, not a fixed 0.1 s (a late tick lost the rest: x300 ran
            about x100); the steps as sched.js anSteps: 0.5 s up to 20 a tick, then longer, at most 2 s */
         const now = performance.now();
-        acc += (lastT ? Math.min((now - lastT) / 1000, 0.5) : 0.1) * AN.spd;
+        acc += (lastT ? Math.min((now - lastT) / 1000, 2) : 0.1) * AN.spd; /* Mina F37: up to 2 s, a world scan can hold the engine that long */
         lastT = now;
         if (busy) return void N.skip++;
         const sh = cs();
