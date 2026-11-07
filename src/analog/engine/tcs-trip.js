@@ -69,7 +69,17 @@ const TCS_IBD_PV = [
   [/^ICV\([AB]\) FULL CLOSE/, U => (U.tb && U.tb.icv > 0.001 ? 0 : 1)],
   [/^CV\([AB]\) FULL CLOSE/, U => (U.gv > 0.001 ? 0 : 1)],
   [/^52G CLOSED/, U => (U.tb && (U.tb.st === 'sync' || U.tb.st === 'load') ? 1 : 0)],
-  [/^52G OPEN COMMAND FROM ATS/, (U, c) => (c.sd52 ? 1 : 0)]
+  [/^52G OPEN COMMAND FROM ATS/, (U, c) => (c.sd52 ? 1 : 0)],
+  /* positions in % (ZT): MSV, RSV as the stop valves; CV, ICV as the control valves of the model; A4 ~ A6 / B4 ~ B6 of 905 are the ICV (TA-37, TA-38) */
+  [/^ZT-STn903|^ZT-STn905-[AB][123]/, (U, c) => tcsVp(U, c) * 100],
+  [/^ZT-STn904/, U => Math.min(100, (+U.gv || 0) * 100)],
+  [/^ZT-STn905-[AB][456]/, U => (U.tb ? U.tb.icv * 100 : 0)],
+  [/^PS-LOn004/, U => U.loBrg],
+  [/^PT-LOn923/, U => U.loEop],
+  [/^ICV TO CV TRANSFER COMPLETED?$/, U => (U.tb && U.tb.xfer ? 1 : 0)],
+  [/^52G OPEN$/, U => (U.tb && (U.tb.st === 'sync' || U.tb.st === 'load') ? 0 : 1)],
+  [/^TURBINE TRIP$/, (U, c) => (c.trip ? 1 : 0)],
+  [/^MSV([AB]) FULL OPEN/, (U, c) => (tcsVp(U, c) >= 1 ? 1 : 0)]
 ];
 /* comparators with a variable limit; every fixed set point is read from the words under the block on the sheet (tools/data/ibd_build.mjs) */
 const TCS_MST_LOW = U => tcsSteam(U).mst <= tcsLin(TCS_MST, tcsFst(U));
