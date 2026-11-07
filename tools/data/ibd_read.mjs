@@ -5,6 +5,7 @@
 // Usage: node tools/data/ibd_read.mjs <dir with p<n>.json> <n>...   prints the netlist of each page
 import fs from 'fs';
 const EPS = 0.8;
+const GATEW = /^(A|OR|S|R|CMP|DI|DT|PO|FLK|FG|LS|MID|ANN|SOE|ATS|[0-9].[0-9])$/;
 export function readPage(J) {
   const frame = s => Math.abs(s[0] - s[2]) > 1000 || Math.abs(s[1] - s[3]) > 700;
   const title = s => Math.max(s[0], s[2]) > 680 && Math.max(s[1], s[3]) < 140;
@@ -165,12 +166,15 @@ export function readPage(J) {
   /* a net nothing drives: the words at its left end name it */
   const driven = new Set(gates.map(g => g.out)),
     used2 = new Set(gates.flatMap(g => (g.ins || []).concat(g.wipe ? [g.wipe] : [])));
-  const nameAt = (x, y) =>
-    words
-      .filter(w => w.x < x + 330 && x - w.x < 330 && Math.abs(w.cy - y) < 17 && !/^(A|OR|S|R|CMP|DI|DT|PO|FLK|FG|LS|MID|\d\/\d)$/.test(w.s.trim()))
-      .sort((a, b) => b.y - a.y || a.x - b.x)
+  /* the name of an input: the words of its box, on the left of the wire end; a dashed line can start inside the box, then they are on the right */
+  const nameAt = (x, y) => {
+    const near = words.filter(w => Math.abs(w.cy - y) < 18 && !GATEW.test(w.s.trim()));
+    const left = near.filter(w => w.x < x && x - w.x < 300 && Math.abs(w.cy - y) < 13),
+      L = left.length ? left : near.filter(w => w.x >= x && w.x - x < 240);
+    return L.sort((p, q) => q.y - p.y || p.x - q.x)
       .map(w => w.s.trim())
       .join(' ');
+  };
   const inputs = [];
   for (const n of used2) {
     if (driven.has(n)) continue;
