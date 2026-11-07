@@ -141,6 +141,8 @@ const latchMode = (tag, kind, own) => {
 };
 /* the mode status written by the logic during a scan: latchMode without its settle */
 const modeStatus = (tag, kind) => {
+  /* only on a compiled plant: a walk of the sheets from inside a scan compiled them there, and beta.103 lost the Worker hand-over */
+  if ((AN.sheets || []).some(x => !x.S && !/^ABC-000/.test(x.name))) return;
   for (const k in MODEK) for (const [S2, n] of modeNetsByTag(tag, MODEK[k], null)) S2.rt.ext[n] = k === kind ? 1 : 0;
 };
 function ctrls(S) {

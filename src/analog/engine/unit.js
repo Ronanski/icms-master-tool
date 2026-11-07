@@ -1036,6 +1036,8 @@ const swBisect = (f, a, b, n) => {
    little area at a small opening; NO-SOURCE: no valve curve in the repository) */
 const swVk = pct => (pct > 0.5 ? 1 / Math.pow(Math.min(100, pct) / 100, 4) : Infinity);
 /* the line constants from the design point (once) */
+/* SWBP efficiency: a plain function, a function kept in K.c does not cross the Worker snapshot (Mina beta.103, c.eb is not a function) */
+const swEb = (K, r) => (K.bEff / (2 * (K.bQr / K.bBep) - Math.pow(K.bQr / K.bBep, 2))) * Math.max(0, 2 * r - r * r);
 function swCal() {
   const K = AN_SW;
   if (K.c) return K.c;
@@ -1059,8 +1061,7 @@ function swCal() {
     dpF = (K.dp0 * Math.pow(Qt / K.f1Q, 2)) / 1e4;
   c.kup = (Ph - dpF - PN) / (Qt * Qt); /* header -> node N (pipes, NO-SOURCE elevation lumped in) */
   /* SWBP shaft power at the SOP point (for its current line) */
-  const eb = r => (K.bEff / (2 * (K.bQr / K.bBep) - Math.pow(K.bQr / K.bBep, 2))) * Math.max(0, 2 * r - r * r);
-  c.eb = eb;
+  const eb = r => swEb(K, r);
   c.bPsop = (1020 * 9.80665 * (qb / 3600) * hb) / 1000 / Math.max(0.25, eb(qb / K.bBep));
   return (K.c = c);
 }
@@ -1256,7 +1257,7 @@ function anSeawaterStep(U, dt) {
       PN = Math.max(0, r.PN || 0);
     lag('swBs' + i, PN, K.tauP);
     lag('swBd' + i, s > 0 && PN > 0 ? PN + K.kP * swbH(q, s) : PN, K.tauP);
-    const Pw = s > 0 ? Math.max(0.4 * 50.87, (1020 * 9.80665 * (q / 3600) * swbH(q, s)) / 1000 / Math.max(0.25, c.eb(q / K.bBep))) : 0; /* floor 40 % of the rated 50.87 kW at low flow: NO-SOURCE */
+    const Pw = s > 0 ? Math.max(0.4 * 50.87, (1020 * 9.80665 * (q / 3600) * swbH(q, s)) / 1000 / Math.max(0.25, swEb(K, q / K.bBep))) : 0; /* floor 40 % of the rated 50.87 kW at low flow: NO-SOURCE */
     const I = K.bIsop + ((K.bI100 - K.bIsop) * (Pw - c.bPsop)) / (K.bkW - c.bPsop);
     if (s <= 0) U['swIb' + i] = 0;
     else lag('swIb' + i, s < 1 ? K.bIst : Math.max(0, I), K.tauI);
