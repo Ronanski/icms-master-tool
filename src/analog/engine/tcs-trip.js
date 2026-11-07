@@ -134,9 +134,9 @@ function tcsIbdStep(U, c, dt) {
       if (c.rst && !ib.rst0)
         ib.pb.auto = 2; /* held 2 s: a (WO) of the trip sheets needs the command through its own scan */
       for (const [net, name] of s.i) {
-        if (/TURBINE RESET/.test(name)) v[net] = ib.pb.rst > 0 ? 1 : 0;
+        if (/RESET ON|TURBINE RESET/.test(name)) v[net] = ib.pb.rst > 0 ? 1 : 0;
         else if (/AUTO RESET/.test(name)) v[net] = ib.pb.auto > 0 ? 1 : 0;
-        else if (/PB/.test(name)) v[net] = ib.pb.trip > 0 ? 1 : 0;
+        else if (/PB|CONTROL ROOM|TCS HMI/.test(name)) v[net] = ib.pb.trip > 0 ? 1 : 0;
       }
     }
     for (const k in ib.fx) if (k.startsWith(id + ':')) v[+k.split(':')[1]] = ib.fx[k];
