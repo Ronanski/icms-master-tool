@@ -1668,6 +1668,13 @@
       btn(id, txt, 'Field hand valve of the drum blowdown (not a DCS station). PR-OPE-5003: "Before stopping BFP, set the drum level near HH (blow down valve must be close)".', () =>
         msg(AN.blowdown && AN.blowdown(open) ? ok : 'Blowdown: no drum level loop.')
       );
+    /* the precipitator runs from the EP PLC panel (PR-OPE-5002 1.1): no DCS station; AN.field had no control, dust and opacity follow it */
+    d.head('Precipitator');
+    for (const [id, txt, on, ok] of [
+      ['espoff', 'ESP OFF', false, 'ESP off: dust and opacity rise.'],
+      ['espon', 'ESP ON', true, 'ESP on.']
+    ])
+      btn(id, txt, 'ESP at its EP PLC panel (not a DCS station).', () => msg(AN.field && AN.field('esp', on) ? ok : 'ESP: no plant model.'));
   }
   /* 3.2.0-beta.20 (user 2026-10-24 "dpt common tools yn s simulate", pick B of https://claude.ai/artifact/ShJf2VmTtFDsMGFCMD5zeT):
      the PLANT chip beside VIEW | RUN, on every page (ABC, DITL, Plant view). It tells the plant model and the starting state at a
