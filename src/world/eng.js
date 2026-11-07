@@ -209,13 +209,25 @@
       /* in slices of at most 4 ms, the page draws between them (a patch at once took ~100 ms at 6x: the long frames of the 038 page,
          Ningning's trace); no slices where there is no MessageChannel (the node tests: at once) */
       if (E.yieldNow && m.p.length > 8) {
+        /* Mina F11: with busy frames a slice runs once a frame, so a whole state (after every action, or a stall) took over 20 s, every
+           next patch waited for its ack, a press took 10 ~ 24 s. The slice grows while the patch lasts (4 ms, 24 ms after 1 s): a small
+           patch draws as before, a whole state always ends */
         let i = 0;
-        while (i < m.p.length) {
-          const t0 = performance.now();
-          do G.AN.sync.apply([m.p[i++]], skip);
-          while (i < m.p.length && performance.now() - t0 < 4);
-          if (i < m.p.length) await E.yieldNow();
+        const t00 = performance.now();
+        E.applying = true;
+        try {
+          while (i < m.p.length) {
+            const t0 = performance.now(),
+              lim = 4 + Math.min(20, (t0 - t00) / 50);
+            /* 32 slots a call: each call of apply looks through all sheets first (0.2 ms), most of the time of a patch when it was one slot a call */
+            do G.AN.sync.apply(m.p.slice(i, (i += 32)), skip);
+            while (i < m.p.length && performance.now() - t0 < lim);
+            if (i < m.p.length) await E.yieldNow();
+          }
+        } finally {
+          E.applying = false;
         }
+        E.patchAt = Date.now();
       } else G.AN.sync.apply(m.p, skip);
       /* the paint after it: an error of the paint is the page's (local mode: the same paint error stops nothing), not of the data,
          so it does not stop the worker (Winter: eng-page.js fail('page') took the whole engine back for a paint error) */

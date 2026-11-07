@@ -80,7 +80,8 @@
          page never got the world). Kept for the checks (ENG.stalls: when, how long, what the engine said), and the whole state is asked
          for again ('full': the engine sends every slot and takes the page as ready) */
       if (!AN.run || !E.patchAt) E.patchAt = now; /* paused: no patch is due */
-      else if (!E.heavy && !E.busyAt && now - E.patchAt > 5000 && now - (E._stallAt || 0) > 10000) {
+      /* a patch still going in is no stall: asking the whole state again then made the next patch as long, for ever (Mina F11) */
+      else if (!E.heavy && !E.busyAt && !E.applying && now - E.patchAt > 5000 && now - (E._stallAt || 0) > 10000) {
         E._stallAt = now;
         const st = { at: now, since: now - E.patchAt, got: E.got, sent: E.sent };
         (E.stalls = E.stalls || []).push(st);
