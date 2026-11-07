@@ -633,3 +633,5 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.102** (2026-11-08): While DITL timers or valves move, the world scans each 0.5 s up to x60, so x10 follows the same timers as x1
 
 - **beta.103** (2026-11-08): A force of the logic on a station also writes its mode status, so PA and SA go to their house operation flow after a turbine trip
+
+- **beta.104** (2026-11-08): Burner gun stroke 3 s and oil valve stroke 0.8 s, inside the DITL-14 and DITL-15 timers, so OFF ends in a retract with no false LIGHT OFF UNSUCCESSFUL
