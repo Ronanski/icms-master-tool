@@ -1,5 +1,11 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.63 — Air preheater and O2 from FHI Tab 3 (2026-11-07, JENNIE)
+
+**Work done.** O2 from the coal analysis of Tab 3 (5.46 T of air per T of coal), one value on both analyzers; air preheater gas and air temperatures from the Tab 3 balance, rotor stop included; HMI pages use the same equations. See GAS_PATH.md.
+
+**Not tested.** Live. Part load air stays open: the logic curves give more air than FHI Fig 12.
+
 ## 3.2.1-beta.28 — SAMPLING AND DOSING, GENERATOR, EXTRACTION AND DRAINS, OVERVIEW, mockup pages 16 ~ 18 at 00 in the app (2026-11-05, JISOO : HMI MOCKUP)
 
 **Work done.** Ang huling apat na temporary mockup page ay nasa app na (Plant view `MK16`, `MK17`, `MK18`, `MK00`); kumpleto na ang 19 page.

@@ -254,11 +254,12 @@
     TIFG1110: E => E.T(359, 1),
     TIFG1111: E => E.T(383, 1),
     TIFG1113: E => E.T(369, 1),
-    TIFG1124: E => E.T(313, 1),
-    TIFG1125: E => E.T(317, 1),
-    TIFG1132: E => E.T(146, 1),
-    TIFG1133: E => E.T(134, 1),
-    TIFG1152: E => E.T(148, 1),
+    /* the air preheater: Tab 3, boiler.js AN_GAS; the two sides of the snapshot differ by a few degrees */
+    TIFG1124: E => E.gi - 2,
+    TIFG1125: E => E.gi + 2,
+    TIFG1132: E => E.go,
+    TIFG1133: E => E.go,
+    TIFG1152: E => E.go + 8 * E.g,
     TIFA1052: E => E.T(287, 1),
     /* gas path pressures: furnace pressure + (snapshot drop) x gas^2 (IDF stopped: open to the stack) */
     PIFG10872: E => E.pf,
@@ -279,10 +280,10 @@
     DPIFG1083: E => 70 * clamp(E.pa, 0, 1.3),
     DPIFG1183: E => 41 * clamp(E.pa, 0, 1.3),
     /* air side: fan heat (outlet = inlet + rise x flow^2), pressures x flow^2 */
-    TIFA1073: E => (E.paf ? E.tpa + 31 * clamp(E.pa, 0, 1.3) ** 2 : E.tpa),
-    TIFA1074: E => (E.paf ? E.tpa + 32 * clamp(E.pa, 0, 1.3) ** 2 : E.tpa),
-    TIFA1083: E => (E.saf ? E.tsa + 24 * clamp(E.sa, 0, 1.3) ** 2 : E.tsa),
-    TIFA1084: E => (E.saf ? E.tsa + 24 * clamp(E.sa, 0, 1.3) ** 2 : E.tsa),
+    TIFA1073: E => AN.aphAir(E.tpa, E.paf ? E.pa : 0, 'p'),
+    TIFA1074: E => AN.aphAir(E.tpa, E.paf ? E.pa : 0, 'p'),
+    TIFA1083: E => AN.aphAir(E.tsa, E.saf ? E.sa : 0, 's'),
+    TIFA1084: E => AN.aphAir(E.tsa, E.saf ? E.sa : 0, 's'),
     PIFA1075: E => (E.paf ? 1551 * clamp(E.pa, 0, 1.3) ** 2 : 0),
     PIFA1078: E => (E.paf ? 1444 * clamp(E.pa, 0, 1.3) ** 2 : 0),
     PIFA1055A: E => (E.fabA ? 3257 : 0),
@@ -937,6 +938,8 @@
     const amb = E.tpa;
     E.T = (t0, after) => amb + (t0 - amb) * E.kb * (after ? 0.85 + 0.15 * clamp(E.g, 0.2, 1.2) : 1);
     E.P = p0 => (E.idf ? E.pf + (p0 - -16) * E.g * E.g : E.pf);
+    E.gi = AN.aphIn(amb, E.kb, E.g);
+    E.go = AN.aphOut(E.gi, E.fpa || 0, AN.aphAir(amb, E.pa, 'p'), E.tpo == null ? amb : E.tpo, E.fsa || 0, AN.aphAir(E.tsa, E.sa, 's'), E.tso == null ? amb : E.tso, E.ffa || 0);
   }
   /* ---------- live links ---------- */
   function airFlueGas(g, api) {
@@ -969,6 +972,8 @@
     const later = () => rq || (rq = requestAnimationFrame(() => ((rq = 0), recalc())));
     const inp = (k, ref, tag) => live(ref || '', tag || '', v => ((E[k] = v), later()));
     inp('fpa', 'pv:FICFA1071');
+    inp('tpo', '', 'TIFA1076');
+    inp('tso', '', 'TIFA1086');
     inp('fsa', 'pv:FICFA1081');
     inp('ffa', '', 'FIFA1055');
     inp('pf0', '', 'PIFG1085');

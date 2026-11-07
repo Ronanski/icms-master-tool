@@ -376,6 +376,49 @@ function anFanStep(U, dt) {
   U.fnIdfI = lagI('ii', cur(K.I0.idf, idf, ((taf / K.ga.T0) * dpg) / dpg0), 2);
   U.fnI = [U.fnPafI, U.fnSafI, U.fnIdfI, U.fnIa, U.fnIb];
 }
+/* AIR PREHEATER AND FLUE GAS (FHI Tab 3, Figures 7, 12, 13; docs/versions/v3.2.1/GAS_PATH.md).
+   afs       air for burning 1 T of coal: 5.46 T, from the ultimate analysis of Tab 3 (C 42.97, H 2.75, S 1.49, O 11.42 %). With it
+             21 x (1 - air needed / air given) gives Fig 7 from Fig 12 and 13: 40 % 8.9 (8.8), 50 % 4.8 (4.6), 60 % 3.7 (3.6), 100 % 3.8 (3.6).
+   ePA, eSA  how close each air comes to the gas entering: (285.8 - 45) / (322 - 45), (301.6 - 39) / (322 - 39), Tab 3. Held at
+             all loads: the change with flow is NO-SOURCE.
+   kCp, gm   gas side of the same heat: 354 x 240.8 + 218 x 262.6 T/H x C of air takes the gas 681 T/H (air 598 + coal less ash) from
+             322 to 135 C, so air cp / gas cp 0.894; gm = gas per T of air.
+   gi        gas entering at no load falls with the bed and a little with the gas flow (kept from the 150 MW estimate of the HMI);
+             no curve below MCR in the docs. */
+const AN_GAS = { afs: 5.46, gi: 322, ePA: 240.8 / 277, eSA: 262.6 / 283, kCp: 0.894, gm: 681 / 598, dtP: 10, dtS: 4, tauG: 60, tauR: 120 };
+const anAphClamp = (x, a, b) => Math.max(a, Math.min(b, x));
+/* gas entering the air preheater: k = bed rise over its MCR rise, g = gas flow over the MCR flow */
+const anAphIn = (amb, k, g) => amb + (AN_GAS.gi - amb) * k * (0.85 + 0.15 * anAphClamp(g, 0.2, 1.2));
+/* air leaving the fans, with the square of the flow: Tab 3 ambient 35, PA 45, SA 39 C. kind 'p' or 's' */
+const anAphAir = (amb, q, kind) => amb + (kind === 'p' ? AN_GAS.dtP : AN_GAS.dtS) * anAphClamp(q, 0, 1.3) ** 2;
+/* gas leaving: the gas gives what the air took */
+function anAphOut(gi, fpa, tpa, tpa2, fsa, tsa, tsa2, ffa) {
+  const air = fpa + fsa + ffa,
+    q = fpa * Math.max(0, tpa2 - tpa) + fsa * Math.max(0, tsa2 - tsa);
+  return air > 1 ? gi - (AN_GAS.kCp * q) / (air * AN_GAS.gm) : gi;
+}
+function anAphStep(U, dt) {
+  if (!U.aphL) return;
+  const K = AN_GAS,
+    z = U.fnZ,
+    amb = U.Tamb,
+    v = U.tafS && U.taf.length === 3 ? U.taf.map(n => Math.max(0, +U.tafS.rt.v[n] || 0)) : [0, 0, 0],
+    k = anAphClamp((U.Tb - amb) / Math.max(1, U.Tb0 - amb), 0, 1.3),
+    g = fnRun(AN_FN.run.idf) ? anAphClamp((v[0] + v[1] + v[2]) / 594, 0, 1.4) : 0,
+    gi = anAphIn(amb, k, g),
+    tpa = anAphAir(amb, fnRun(AN_FN.run.paf) ? v[0] / AN_FN.pa.Q0 : 0, 'p'),
+    tsa = anAphAir(amb, fnRun(AN_FN.run.saf) ? v[1] / AN_FN.sa.Q0 : 0, 's');
+  z.gi = isFinite(z.gi) ? z.gi + ((gi - z.gi) * Math.min(dt, K.tauG)) / K.tauG : gi;
+  /* the rotor carries the heat across: stopped, the air stops heating as the metal cools */
+  const r = fnRun('DITL-43') ? 1 : 0;
+  z.rot = isFinite(z.rot) ? z.rot + ((r - z.rot) * Math.min(dt, K.tauR)) / K.tauR : r;
+  const pa = tpa + K.ePA * z.rot * Math.max(0, z.gi - tpa),
+    sa = tsa + K.eSA * z.rot * Math.max(0, z.gi - tsa);
+  U.aphGi = z.gi;
+  U.aphGo = anAphOut(z.gi, v[0], tpa, pa, v[1], tsa, sa, v[2]);
+  anUnitWrite(U.aphL.pa, pa);
+  anUnitWrite(U.aphL.sa, sa);
+}
 /* ===== LIMESTONE INJECTION (019 LIMESTONE INJECTION SYSTEM; docs/versions/v3.2.1/LIMESTONE_SAND_PLANT_MODEL.md) =====
    The field devices of the Rotofeed (HWA JANN / Clyde Bergemann, O&M L5-3 "Limestone", on the PC: document-references/
    o&m-package-phase-1/L5 Fly Ash_Sand_Limestone/L5-3 Limestone.pdf) under the DITL logic of the drawing (limestone_logic.xls,
@@ -719,6 +762,7 @@ function baPub(U) {
 function anBoilerStep(U, dt) {
   anDieselOilStep(U, dt);
   anFanStep(U, dt);
+  anAphStep(U, dt);
   anLmStep(U, dt);
   anSdStep(U, dt);
   anBaStep(U, dt);

@@ -38,6 +38,9 @@ function anEngAPI() {
     fieldState: () => Object.assign({}, AN_SRC.field),
     /* 3.2.1 (CW plant model): the manual valves of the seawater system, opening in % (unit.js AN_SW_V0) */
     /* 3.2.1 (IRENE): with the diesel oil line-up of boiler.js (AN_DO.fv0, anDoValve), so the one field valve faceplate serves both */
+    aphIn: anAphIn,
+    aphAir: anAphAir,
+    aphOut: anAphOut,
     bedSS: (U, fs, as) => anBedSS(U, fs, as),
     bedStep: (U, dt, rpm, pa, fa) => anBedStep(U, dt, rpm, pa, fa),
     swValve: (tag, pct) => anSwValve(tag, pct) || anDoValve(tag, pct),
