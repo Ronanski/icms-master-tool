@@ -43,6 +43,8 @@
     [/\bMWP\s*[AC]\b/, 1, 0, 'MWP-A 20.5 A, MWP-C 20.8 A'],
     [/\bMWP\s*B\b/, 0, 0, 'MWP-B stopped, R M'],
     [/BOTTOM ASH SCREW COOLER|ASH COOLER/, 0, 0, 'L-1060A ~ D ASH COOLER stopped'],
+    /* the STOP contact of a running conveyor is 0: it matched the rule below and held the ash coolers off (DITL-21A, Mina item 2) */
+    [/CHAIN CONVEYOR.*STOP/, 0, 0, 'L-1090 CHAIN CONVEYOR STOP contact'],
     [/CHAIN CONVEYOR/, 1, 0, 'L-1090 CHAIN CONVEYOR running'],
     /* 3.2.1 (SEULGI, bottom ash plant model): the other machines of 16.PNG (before: no rule, they stood stopped) */
     [/BUCKET ELEVATOR/, 1, 0, '16.PNG L-1091 BUCKET ELEVATOR running (R)'],
