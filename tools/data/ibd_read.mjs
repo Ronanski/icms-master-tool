@@ -50,6 +50,23 @@ export function readPage(J) {
       ffs.push(g);
     }
   }
+  /* the edges of a box with words in it (ANN, SOE, a push button, a valve block) are not wires: two wires that end on one box are two signals */
+  {
+    const hs = segs.filter(s => H(s) && len(s) > 8 && len(s) < 260 && !used.has(s)),
+      vs = segs.filter(s => V(s) && len(s) > 8 && len(s) < 120 && !used.has(s));
+    for (const v of vs)
+      for (const w of vs) {
+        if (w === v || w[0] <= v[0] || w[0] - v[0] > 260) continue;
+        const lo = Math.max(Math.min(v[1], v[3]), Math.min(w[1], w[3])),
+          hi = Math.min(Math.max(v[1], v[3]), Math.max(w[1], w[3]));
+        if (Math.abs(Math.min(v[1], v[3]) - lo) > 0.8 || Math.abs(Math.min(w[1], w[3]) - lo) > 0.8 || Math.abs(Math.max(v[1], v[3]) - hi) > 0.8 || Math.abs(Math.max(w[1], w[3]) - hi) > 0.8) continue;
+        const top = hs.find(s => Math.abs(s[1] - hi) < 0.8 && Math.min(s[0], s[2]) <= v[0] + 0.8 && Math.max(s[0], s[2]) >= w[0] - 0.8),
+          bot = hs.find(s => Math.abs(s[1] - lo) < 0.8 && Math.min(s[0], s[2]) <= v[0] + 0.8 && Math.max(s[0], s[2]) >= w[0] - 0.8);
+        if (!top || !bot) continue;
+        if (!words.some(q => q.cx > v[0] && q.cx < w[0] && q.cy > lo && q.cy < hi)) continue;
+        for (const s of [v, w, top, bot]) used.add(s);
+      }
+  }
   /* a dashed line (an analog signal): collinear dashes become one wire */
   const dashes = segs.filter(s => (H(s) || V(s)) && len(s) >= 1.5 && len(s) <= 14 && !used.has(s));
   const dashed = [];
@@ -96,6 +113,26 @@ export function readPage(J) {
       cy = (Math.min(...ys) + Math.max(...ys)) / 2;
     nots.push({ cx, cy, r: (Math.max(...xs) - Math.min(...xs)) / 2 });
   }
+  /* a wire drawn straight through a NOT circle is two nets: cut it at the circle */
+  for (const n of nots) {
+    if (words.some(w => Math.hypot(w.cx - n.cx, w.cy - n.cy) < n.r + 1)) continue;
+    for (let i = wires.length - 1; i >= 0; i--) {
+      const s = wires[i];
+      const hor = H(s) && Math.abs(s[1] - n.cy) < 1,
+        ver = V(s) && Math.abs(s[0] - n.cx) < 1;
+      if (hor && Math.min(s[0], s[2]) < n.cx - n.r + 0.5 && Math.max(s[0], s[2]) > n.cx + n.r - 0.5) {
+        const lo = Math.min(s[0], s[2]),
+          hi = Math.max(s[0], s[2]);
+        wires[i] = [lo, s[1], n.cx - n.r, s[1]];
+        wires.push([n.cx + n.r, s[1], hi, s[1]]);
+      } else if (ver && Math.min(s[1], s[3]) < n.cy - n.r + 0.5 && Math.max(s[1], s[3]) > n.cy + n.r - 0.5) {
+        const lo = Math.min(s[1], s[3]),
+          hi = Math.max(s[1], s[3]);
+        wires[i] = [s[0], hi, s[0], n.cy + n.r];
+        wires.push([s[0], n.cy - n.r, s[0], lo]);
+      }
+    }
+  }
   /* nets */
   const P = wires.map((_, i) => i),
     find = i => (P[i] === i ? i : (P[i] = find(P[i]))),
@@ -131,7 +168,9 @@ export function readPage(J) {
   for (const [x, y] of dots) {
     const hit = [];
     wires.forEach((s, i) => {
-      const e = i >= D0 || len(s) < 16 ? 7.5 : 1.5,
+      /* a short piece of a dashed line; not the stub after a NOT, its gap is the circle */
+      const stub = nots.some(n => Math.abs(Math.hypot(s[0] - n.cx, s[1] - n.cy) - n.r) < 2 || Math.abs(Math.hypot(s[2] - n.cx, s[3] - n.cy) - n.r) < 2);
+      const e = i >= D0 || (len(s) < 16 && !stub) ? 7.5 : 1.5,
         m = H(s) ? Math.abs(y - s[1]) < 1.5 && x >= Math.min(s[0], s[2]) - e && x <= Math.max(s[0], s[2]) + e : Math.abs(x - s[0]) < 1.5 && y >= Math.min(s[1], s[3]) - e && y <= Math.max(s[1], s[3]) + e;
       if (m) hit.push(i);
     });
@@ -189,7 +228,7 @@ export function readPage(J) {
   /* the name of an input: the words of its box, on the left of the wire end; a dashed line can start inside the box, then they are on the right */
   const nameAt = (x, y) => {
     const near = words.filter(w => Math.abs(w.cy - y) < 18 && !GATEW.test(w.s.trim()));
-    const left = near.filter(w => w.x < x && x - w.x < 300 && Math.abs(w.cy - y) < 13),
+    const left = near.filter(w => w.x < x && x - w.x < 300 && Math.abs(w.cy - y) < 17),
       L = left.length ? left : near.filter(w => w.x >= x && w.x - x < 240);
     /* the tag sits in the right part of the box, past the place a dashed line starts */
     const tags = near.filter(w => /^[A-Z]+-[A-Z]+n[0-9]/.test(w.s.trim()) && !L.includes(w) && Math.abs(w.cy - y) < 13 && Math.abs(w.x - x) < 200);
