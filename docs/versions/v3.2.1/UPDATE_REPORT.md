@@ -1,5 +1,11 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.72 — Gas out holds with no air, furnace label (2026-11-07, JENNIE)
+
+**Work done.** Gas leaving the air heater no longer jumps to the inlet value when the fans stop. The status strip value is the furnace temperature of Fig 8 and is now named so; the logic reads the lower bed thermocouples, about 10 % higher (F72).
+
+**Not tested.** Live; item sent to Mina.
+
 ## 3.2.1-beta.71 — ESP sets stack dust (2026-11-07, JENNIE)
 
 **Work done.** Stack dust and opacity follow the ESP field state. See GAS_PATH.md.

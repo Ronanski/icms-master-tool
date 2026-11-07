@@ -64,7 +64,7 @@
       ['FURNACE PRESS', 'mmH₂O', 'ABC-008', 'pv', 'PICFG108', 'Furnace pressure, PV of PICFG108 (ABC-008)'],
       ['O2', '%', 'ABC-002', 'pv', 'AICFG112', 'Flue gas O2, PV of AICFG112 (ABC-002)'],
       ['MAIN STEAM TEMP', '°C', 'ABC-012', 'pv', 'TICMS1004', 'Main steam temperature, PV of TICMS1004 (ABC-012)'],
-      ['BED TEMP', '°C', '', 'unit', 'Tb', 'Bed temperature (plant model; the bed thermocouples are on the DITL)'],
+      ['FURNACE TEMP', '°C', '', 'unit', 'Tb', 'Furnace temperature, FHI Fig 8. The lower bed thermocouples read about 10 % higher, and the coal permissive reads those'],
       [
         'VACUUM',
         '%',
