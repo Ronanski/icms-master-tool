@@ -157,9 +157,8 @@ const AN_UNIT = {
   Cw: 1324 /* 1508 x 175.6 / 200 t: water of economizer, drum, furnace, evaporator 175.6 t (T8 Tab 2) */,
   kcool: 60 /* 2.2.0-beta.21: cooling of the unfired boiler by the air, T/H steam-equivalent at the anchor air and 300 C (ASSUMED, Fig. 5) */,
   kamb: 1 /* 2.2.0-beta.21: bottled boiler loss to the ambient, T/H steam-equivalent at 300 C (ASSUMED) */,
-  tauB: 900 /* kept for the start tables; the lag is worked out in the step, bedCc, bedCh */,
-  bedCc: 1280 /* MJ/K, bed + refractory */,
-  bedCh: 153 /* MJ/K, bed solids 170 t x 0.9 kJ/kg K */,
+  tauB: 900,
+  tauBc: 14400,
   Tb0: 850,
   /* 3.2.0-beta.15 (phase B, utilities): CONDENSER VACUUM. The turbine exhausts to the condenser, cooled by the seawater pumps (SWP-A ~ C
      M.3353 ~ M.3355) with the condensate pumps (CP-A / B M.3350 / M.3351) taking the water out (PR-OPE-5002: SWP, CEP and VACUUM UP
@@ -2756,7 +2755,7 @@ function anUnitStep0(dt) {
     };
   /* 3.2.0-beta.38: the turbine auxiliaries and the ATS program (tcs.js) */
   if (U.tc && !trip) tcsStep(U, dt);
-  else if (U.tc) tcsTripHold(U);
+  else if (U.tc) tcsTripHold(U, dt);
   if (trip && tb.st !== 'off') {
     /* the TCS closes the ICV too (the HP valves below); in a start-up the machine is lost: stop valves shut, GCB open (I.0932, the
        generator protection), no transfer, no DCS mode */
@@ -2873,13 +2872,10 @@ function anUnitStep0(dt) {
          alone at O2 4 ~ 5 % about 800 C). 2.2.0-beta.15: on the fuel, not on the steam made (the fixed loss of the firing line
          made a small fire too cold) */
       Tbss = anBedSS(U, Fe / Math.max(1, U.F0), as);
-    /* the lag is heat stored over heat carried by the gas, plant-study/13-thermal-masses.md. Cold: bed 170 t + refractory 986 ~ 1264 t, about
-       1280 MJ/K, with air at 1.0 kJ/kg K. Hot: bed solids alone, 153 MJ/K, with gas at 1.1 kJ/kg K: 850 s at 594 T/H. Refractory density is not
-       in the docs: the mass carries a band of +-11 %. Check: 2 burners 50 MW, 406 T/H: 470 C, lag 3.1 h. Full mass below coal start, 483 C
-       (Fig 2); bed only from 600 C */
+    /* below the start of coal (Fig 2, 483 C) the refractory and the bed charge are the heat sink, and there is no coal burning in the bed:
+       FHI Fig 2 110 C at 1 h, 483 C at 6 h; PR-OPE-5002 gradient 1 C/min, FHI limit 153 C/h. The hot lag tauB takes over by 600 C */
     const kh = Math.max(0, Math.min(1, (U.Tb - 483) / (600 - 483))),
-      airKg = Math.max(30, U.taf && U.tafS ? U.taf.reduce((a, n) => a + Math.max(0, +U.tafS.rt.v[n] || 0), 0) / 3.6 : 0),
-      tauBed = (U.bedCc * 1000) / airKg + ((U.bedCh * 1000) / (airKg * 1.1) - (U.bedCc * 1000) / airKg) * kh;
+      tauBed = U.tauBc + (U.tauB - U.tauBc) * kh;
     U.Tb += ((Math.max(U.Tamb, Tbss) - U.Tb) * dt) / tauBed;
   }
   /* 3.2.0-beta.23: the furnace and cyclone thermocouples (TIFG1090 / 1091 lower layer under / above, TIFG1095 / 1096 cyclone,
