@@ -28,8 +28,8 @@ const AN_UNIT = {
   /* other steam outlets of the main steam line, flow at 100 % open and the anchor pressure, as a share of the anchor flow (the valve
      sizes are not in the repository, ASSUMED): ABC-050 PICMS1006 HP turbine bypass PCV-MS1020 (main steam -> cold reheat) and
      ABC-013 PICMS1002 main steam blow-off PCV-MS1001 (start-up vent to the silencer) */
-  hpb: 0.3,
-  blo: 0.1,
+  hpb: 0.48 /* PCV-MS1020, valve sheet L21: 141.7 T/H at 62 % stroke, trim Cv 215 = about 227 T/H (plant-study/12-assumptions.md) */,
+  blo: 0.46 /* PCV-MS1001, valve sheet E2-0-123 p5: 184 T/H at 76 % travel, full Cv 232 = about 217 T/H */,
   /* 2.2.0-beta.11 (M2 steps 1 ~ 3): reheat, temperatures, O2.
      - Reheat pressure (ABC-052 PT-HR1003-1 / -2, ABC-019 PT-CR1006 cold reheat, ABC-052 PT-ST1001 first stage): the IP / LP turbine
        is a fixed nozzle, so its inlet pressure is proportional to the steam through it (design: RH 181.9 T/H at 36.6 / 35.1 kg/cm2
@@ -46,7 +46,7 @@ const AN_UNIT = {
      - O2 (ABC-002 AT-FG1122 / 1123): O2 = 21 x (1 - stoichiometric air / total air), total air = PA + SA + FA of ABC-006 (FT-FA1071,
        FT-FA1081, FT-FA1055), stoichiometric air per T/H of coal AN_GAS.afs (boiler.js, FHI Tab 3); it replaced the anchor (O2 4.3 % at the snapshot air and coal: excess air
        about 26 %; design 20 %). Analyzer lag tauO2 (ASSUMED). PA to the furnace FT-FA1079 (ABC-006 indicator) follows the PAF flow */
-  lpb: 0.8 /* 2.2.0-beta.16: was 0.3; sized so that at 7.5 kg/cm2 it passes the HP bypass flow of the bypass servicing with the valve
+  lpb: 1.05 /* PCV-HR1010, L21: 87.4 T/H at 8.3 ata at 81 % stroke, trim Cv 1700 = about 117 T/H. Before, 0.8. */ /* 2.2.0-beta.16: was 0.3; sized so that at 7.5 kg/cm2 it passes the HP bypass flow of the bypass servicing with the valve
     in its working range (PR-OPE-5002: steam flow > 40 T/H, RH pressure 7.5 ksc held by the LP bypass in AUTO): 0.8 x 475 x 7.6 / 34.4 =
     84 T/H, about 60 % open at 50 T/H (ASSUMED; a two-stage bypass is usually sized for 60 ~ 100 % of the boiler flow) */,
   tauRH: 10,
@@ -58,7 +58,7 @@ const AN_UNIT = {
      about 75 s); rhb = size of the RH blow-off as a share of the anchor flow at the anchor reheat pressure (ASSUMED, as the main steam
      blow-off) */
   Crh: 400,
-  rhb: 0.1,
+  rhb: 0.42 /* RH blow-off: silencer Z-1006 200 T/H (Equipment List p2); no valve sheet in the docs */,
   /* 2.2.0-beta.17 (M4 step 4, turbine roll / sync / load up; PR-OPE-5002 4.4 ~ 4.6): the turbine and its TCS are a black box outside
      the DCS drawings (the DCS only sees the TCS digital inputs of the I/O list and the TARGET MW feedback AI0420). State U.tb:
      st 'off' (stop valves shut) -> 'roll' (rpm ramps at rollRate, IP START MODE: the ICV lets roll steam from the hot reheat, icvRoll)
@@ -93,8 +93,8 @@ const AN_UNIT = {
     [1, 1]
   ],
   /* temperature fall below 60 % MCR, C per unit of load share (02.png: MST 541 -> 517 and RHT 541 -> 499 at 0.443 MCR) */
-  slopeSH: (541 - 517) / (0.6 - 203.7 / 460),
-  slopeRH: (541 - 499) / (0.6 - 203.7 / 460),
+  slopeSH: (541 - 524) / (0.6 - 0.4) /* FHI Fig 6: 541 at 60 %, 524 at 40 %, one curve for SH and RH. Manual outranks the snapshot 02.png */,
+  slopeRH: (541 - 524) / (0.6 - 0.4),
   /* 3.2.0-beta.38 (CHECKLIST 0.6, ATS 1.4 / 1.6 / 1.71 / 1.72 at the roll): the SH / RH outlet in a start-up versus the boiler load,
      FHI SECT_7 Fig. 2 COLD STARTUP (one curve "SH / RH Out. Temp."): about 415 C from the roll to the IP / HP transfer (15 % load),
      505 C at 30 % (start coal), 541 C from 60 %. Read off the chart (+-5 C); 418 at the roll keeps the steam inside the ATS window
@@ -154,7 +154,7 @@ const AN_UNIT = {
      PR-OPE-5002: batch firing at 400 ~ 450 C to see that the coal burns, continuous feeding above 600 C); the rest leaves unburnt */
   Tburn0: 350,
   Tburn1: 600,
-  Cw: 1508,
+  Cw: 1324 /* 1508 x 175.6 / 200 t: water of economizer, drum, furnace, evaporator 175.6 t (T8 Tab 2) */,
   kcool: 60 /* 2.2.0-beta.21: cooling of the unfired boiler by the air, T/H steam-equivalent at the anchor air and 300 C (ASSUMED, Fig. 5) */,
   kamb: 1 /* 2.2.0-beta.21: bottled boiler loss to the ambient, T/H steam-equivalent at 300 C (ASSUMED) */,
   tauB: 900,
