@@ -535,7 +535,7 @@ function anLmStep(U, dt) {
   const sil = L.silo > 0 ? (v.lock.x * K.m.lock * dt) / K.tFill : 0,
     toLock = Math.min(sil, K.m.lock - L.mLock);
   L.mLock += toLock;
-  L.silo = Math.max(0, L.silo - (toLock / 1280 / 530) * 100); /* silo 530 m3 (O&M L5-3) */
+  /* the silo level stands: silos are unlimited in this simulator (scope 2026-11-07) */
   const xf = Math.min(L.mLock, (v.disp.x * K.m.lock * dt) / K.tXfer, K.m.disp - L.mDisp);
   L.mLock -= xf;
   L.mDisp = Math.max(0, L.mDisp + xf - (L.q * 1000 * dt) / 3600);
@@ -633,7 +633,7 @@ function anSdStep(U, dt, pa0) {
   /* filling: silo -> vessel through the inlet dome valve (the vent lets the air out) */
   const fill = D.silo > 0 ? Math.min((dv.x * K.m * dt) / K.tFill, K.m - D.m) : 0;
   D.m += fill;
-  D.silo = Math.max(0, D.silo - (fill / 1440 / K.silo) * 100);
+  /* the silo level stands: silos are unlimited in this simulator (scope 2026-11-07) */
   /* conveying: conveying air + outlet + a route to the boiler; the batch leaves in 55 s, the vessel pressure falls when it is empty */
   const route = iso.some(q => q.x >= 1),
     conv = ca.x > 0 && out.x > 0 && route,
@@ -777,11 +777,23 @@ function baPub(U) {
   U.baLv = B.lv;
 }
 /* the boiler-side systems, once per step of the unit model (after the air compressors: the atomizing air is plant air) */
+/* SOx at the stack. Raw SO2 of the coal, S 1.49 % (Tab 3), about 1890 ppm in the MCR gas. Limestone CaCO3 93.66 % (Tab 3) gives Ca/S.
+   The bed holds lime, so the capture follows Ca/S with a lag: tau 2 h NO-SOURCE. Fit to the snapshot: 41 ppm at limestone 11 % of 14 T/H
+   (Ca/S 0.346): capture = exp(-11 x Ca/S). soxF is the factor on the anchor of source.js R.AICFG10571 */
+const AN_SOX = { z0: 0.346, k: 11, tau: 7200, max: 1890 / 41 };
+function anSoxStep(U, dt) {
+  const K = AN_SOX;
+  if (!isFinite(U.soxZ)) U.soxZ = K.z0;
+  const c = U.Fc || 0;
+  if (c > 1) U.soxZ += ((((U.lmQ || 0) * 0.9366) / 100 / ((c * 0.0149) / 32) - U.soxZ) * Math.min(dt, K.tau)) / K.tau;
+  U.soxF = Math.min(K.max, Math.exp(-K.k * (U.soxZ - K.z0)));
+}
 function anBoilerStep(U, dt) {
   anDieselOilStep(U, dt);
   anFanStep(U, dt);
   anAphStep(U, dt);
   anLmStep(U, dt);
+  anSoxStep(U, dt);
   anSdStep(U, dt);
   anBaStep(U, dt);
 }

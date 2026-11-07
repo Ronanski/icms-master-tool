@@ -117,7 +117,7 @@ const SRC_RULES = (() => {
   /* loop 6, furnace differential pressure: the bed is fluidized by the primary air (PA fan running) */
   R.DPICFG108 = s => ({ mul: s.paf });
   /* loop 7, SOx at the stack: from the coal that burns */
-  R.AICFG10571 = s => ({ mul: s.coal });
+  R.AICFG10571 = s => ({ mul: s.coal * (typeof AN_UNIT !== 'undefined' && isFinite(AN_UNIT.soxF) ? AN_UNIT.soxF : 1) });
   /* loop 11, bypass desuperheaters: the outlet temperature needs steam through the bypass (ASSUMED full from 3 % of the MCR flow) */
   /* TT-MS1022 is on the cold reheat side of the HP bypass: it also sees the HP turbine exhaust (03.png: 357.5 C at 150 MW with the
      bypass shut); TT-HR1012 after the LP bypass is kept warm by the warming valve XV-HR1010 while the hot reheat has pressure (DITL-83;
