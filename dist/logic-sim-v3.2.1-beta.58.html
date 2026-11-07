@@ -5124,7 +5124,8 @@ function mvStep(s, v, dt) {
         ? 1
         : 0; /* v12b: torque switch (TS) trips when the valve is at the end and the motor is still commanded (seats the valve, breaks the seal-in) */
     /* Mina F26: one more scan while the seat switch is made: the command drops at the end of travel, and a switch left on blocks the next CLOSE */
-    if (r.tq) TMBUSY = true;
+    /* on the change only: a command that stays on at the end of travel keeps the switch made, and a world "busy" for ever cut x300 to about x45 (Mina) */
+    if (r.tq !== tq0) TMBUSY = true;
     if (st(r.pos) !== s0 || r.run !== run0 || r.tq !== tq0) ch = true;
   });
   return ch;
@@ -34616,7 +34617,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.58';
-      c3.textContent += ' · build d1eba19'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 8282a7d'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -38105,14 +38106,27 @@ function paint0() {
 }
 /* the plant time in the status bar (t = m:ss). Live test M2 (Mina, Worker f97955e): it was written only by the paint of the Logic page,
    so on the Plant view (and the Training dock over it) it stood still while RUN; it is written every half second on every page too */
+/* the speed that really runs, shown beside the set speed: the plant seconds of the last few real seconds (user 2026-11-07: x300 ran about x45 and nothing said so) */
+let anRxT = 0,
+  anRxP = 0,
+  anRx = 0;
 function anClock(S) {
   if (!S || !S.rt) return;
   const t = AN.plantT ? AN.plantT() : S.rt.t,
-    x =
+    wall = performance.now();
+  if (!AN.run) anRxT = anRx = 0;
+  else if (!anRxT) (anRxT = wall), (anRxP = t);
+  else if (wall - anRxT >= 3000) {
+    anRx = (1000 * (t - anRxP)) / (wall - anRxT);
+    anRxT = wall;
+    anRxP = t;
+  }
+  const x =
       't = ' +
       Math.floor(t / 60) +
       ':' +
       String(Math.floor(t % 60)).padStart(2, '0') +
+      (AN.run && anRx > 0 ? '  · speed x' + (AN.spd || 1) + ', real x' + Math.round(anRx) : '') +
       (AN.run && AN.tierK > 1 ? '  · light mode x' + AN.tierK : '');
   if (tClk.textContent !== x) tClk.textContent = x;
   tClk.title =
@@ -57958,7 +57972,8 @@ function mvStep(s, v, dt) {
         ? 1
         : 0; /* v12b: torque switch (TS) trips when the valve is at the end and the motor is still commanded (seats the valve, breaks the seal-in) */
     /* Mina F26: one more scan while the seat switch is made: the command drops at the end of travel, and a switch left on blocks the next CLOSE */
-    if (r.tq) TMBUSY = true;
+    /* on the change only: a command that stays on at the end of travel keeps the switch made, and a world "busy" for ever cut x300 to about x45 (Mina) */
+    if (r.tq !== tq0) TMBUSY = true;
     if (st(r.pos) !== s0 || r.run !== run0 || r.tq !== tq0) ch = true;
   });
   return ch;

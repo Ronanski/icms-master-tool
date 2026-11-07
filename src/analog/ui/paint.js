@@ -1296,14 +1296,27 @@ function paint0() {
 }
 /* the plant time in the status bar (t = m:ss). Live test M2 (Mina, Worker f97955e): it was written only by the paint of the Logic page,
    so on the Plant view (and the Training dock over it) it stood still while RUN; it is written every half second on every page too */
+/* the speed that really runs, shown beside the set speed: the plant seconds of the last few real seconds (user 2026-11-07: x300 ran about x45 and nothing said so) */
+let anRxT = 0,
+  anRxP = 0,
+  anRx = 0;
 function anClock(S) {
   if (!S || !S.rt) return;
   const t = AN.plantT ? AN.plantT() : S.rt.t,
-    x =
+    wall = performance.now();
+  if (!AN.run) anRxT = anRx = 0;
+  else if (!anRxT) (anRxT = wall), (anRxP = t);
+  else if (wall - anRxT >= 3000) {
+    anRx = (1000 * (t - anRxP)) / (wall - anRxT);
+    anRxT = wall;
+    anRxP = t;
+  }
+  const x =
       't = ' +
       Math.floor(t / 60) +
       ':' +
       String(Math.floor(t % 60)).padStart(2, '0') +
+      (AN.run && anRx > 0 ? '  · speed x' + (AN.spd || 1) + ', real x' + Math.round(anRx) : '') +
       (AN.run && AN.tierK > 1 ? '  · light mode x' + AN.tierK : '');
   if (tClk.textContent !== x) tClk.textContent = x;
   tClk.title =

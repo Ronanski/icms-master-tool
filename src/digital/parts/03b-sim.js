@@ -809,7 +809,8 @@ function mvStep(s, v, dt) {
         ? 1
         : 0; /* v12b: torque switch (TS) trips when the valve is at the end and the motor is still commanded (seats the valve, breaks the seal-in) */
     /* Mina F26: one more scan while the seat switch is made: the command drops at the end of travel, and a switch left on blocks the next CLOSE */
-    if (r.tq) TMBUSY = true;
+    /* on the change only: a command that stays on at the end of travel keeps the switch made, and a world "busy" for ever cut x300 to about x45 (Mina) */
+    if (r.tq !== tq0) TMBUSY = true;
     if (st(r.pos) !== s0 || r.run !== run0 || r.tq !== tq0) ch = true;
   });
   return ch;

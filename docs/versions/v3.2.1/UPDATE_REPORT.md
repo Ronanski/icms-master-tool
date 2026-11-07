@@ -482,3 +482,4 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.56** (2026-11-07): bed inventory: ash and limestone in, the four screw coolers out; furnace pressure drop DPIFG1081 / 1082 is the weight on the grate
 - **beta.57** (2026-11-07): CFB loop: no fluidizing air at the seal pots keeps the solids in the cyclone legs and the bed empties; they return with the air
 - **beta.58** (2026-11-07): Light Split view and Plant view: SMIL motion stepped 10 times a second, still in Split; body :has rules replaced by classes. Split at 4x CPU 2-3 to 24-34 fps headless. Inject stays in the loop check: off while the Guide runs, released when Split closes. A banner stands in every view while a signal is forced. Test `tests/regress/light_inject.js`
+- **beta.58** (2026-11-07): the status bar shows the real speed beside the set speed; a MOV held at its end no longer keeps the world busy (x300 ran about x45, from beta.52)
