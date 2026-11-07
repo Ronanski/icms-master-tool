@@ -14,7 +14,7 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 
 ## 2. Kasalukuyang estado
 - **Stable:** v3.2.0 (2026-11-03, GO STABLE ng user; = 3.2.0-beta.91, tag at GitHub Release `v3.2.0`). Hindi live-tested ang beta.90 / 91.
-- **Beta sa `main`:** **3.2.1-beta.42** (d48f958, 2026-11-06 3:10 AM PHT): PR #141 pinasok: sand DITL-771 DONE (TR314 3 s) / LINE BLOCKAGE reset (umuulit ang conveying cycle), limestone DITL-LS212 isolating valves A ~ H bumubukas mula sa CRT. Hindi live-tested.
+- **Beta sa `main`:** **3.2.1-beta.43** (2026-11-07): ang 150 MW start ay naghihintay na sa DITL bago ang Run.
 - **beta.41** (2026-11-05): split view Inject / Release para sa analog loop check (live PASS ni MINA sa PC 1600 px at tablet 1024 × 768).
 - **Rule ng merge (COMMANDMENT 3):** Beta = merge sa `main` kapag pasado ang Checks, walang GO BETA (user 2026-11-06). Stable at manual workflow = GO STABLE lang.
 - **Beta site:** kusang nade-deploy pagkatapos ng berdeng Checks sa `main` (`site.yml`, `/beta/`; banner "Update now").
@@ -53,6 +53,7 @@ Docs at references (audit 2026-11-06, hindi pa naayos):
 - Walang section sa UPDATE_REPORT v3.2.1 ang ilang Beta; may listahan na mula sa git log sa dulo ng file na iyon.
 
 ## 5. Kulang pa
+- History ng public repo: nilinis 2026-11-07 (bagong commit IDs). Ang lumang PR refs (`refs/pull/*`) ay hawak pa ng GitHub at may plant documents pa; GitHub Support lang ang makakapag-alis. Lumang Windows / apk links ay hindi apektado; ang lokal na lumang history ay nasa `refs/backup/2026-11-07/*`.
 - Ikabit sa model ang drum 32 t (DATA_ANSWERS item 7); ikumpara sa app ang BFP motor, generator at compressor data (`document-references/INDEX.md`).
 - Live loop check at function test ng natitirang equipment (`docs/versions/v3.2.1/MOTOR_LOOP_CHECK.md` pagkatapos ng CW; lahat ng MOV / control valve at analog instrument gamit ang split view); page 07 test; debris filters, hypochlorite, manual valves.
 - Gaps: ID fan cold start; Sampling page blanks; per-signal ABC / DITL tracing; AI range / alarm / IO checks; DITL 9 sa 31 hindi pa na-verify.

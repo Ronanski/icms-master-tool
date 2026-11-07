@@ -1598,8 +1598,9 @@
           AN.settle();
           AN.paint();
           msg('Plant at 150 MW: ' + n + ' transmitters set from the HMI snapshots. Press Run.');
+          /* the DITL is part of the start: AN._startP waits for it, else a Run right after the pick scans a cold DITL */
           if (window.DITL150)
-            (AN.ades ? AN.ades() : Promise.resolve())
+            return (AN.ades ? AN.ades() : Promise.resolve())
               /* 3.2.0 Web Worker: DITL150.apply runs in the engine only there and gives a promise of its answer */
               .then(() => DITL150.apply())
               .then(r => {
