@@ -805,6 +805,7 @@ function anTurbine(cmd, arg) {
   }
   /* 3.2.0-beta.38 (CHECKLIST 0.6): the TCS / ATS model (tcs.js): the auxiliaries and the ATS step push buttons. 'roll' = ATS AUTO
      from the next step up to ACCELERATION (3600 rpm), 'sync' = EXCITATION + SYNCH. & INITIAL LOAD, 'loadup' = LOAD UP to the target */
+  if (cmd === 'shutdown' && !U.tc) tcsFromOil(U);
   if (U.tc) {
     const c = U.tc;
     if (cmd === 'roll') {
@@ -2726,7 +2727,8 @@ function anUnitStep0(dt) {
     U.vac = Math.max(0, Math.min(1, cw2 > U.vac ? (aux ? U.vac + dt / U.vacUp : U.vac) : U.vac + ((cw2 - U.vac) * dt) / U.vacDn));
     const tb0 = U.tb,
       l = U.vtrip;
-    if (tb0 && (tb0.st !== 'off' || tcsTripNow(U)) && ((isFinite(U.cdP) ? U.cdP > AN_CD.Ptrip : U.vac < 0.6) || tcsTripNow(U)) && l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== 1) {
+    /* I.0400 follows the valves (IBD TA-6, tcsI0400); a model without a vacuum value keeps its own rule */
+    if (tb0 && tb0.st !== 'off' && !isFinite(U.cdP) && U.vac < 0.6 && l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== 1) {
       l.S.rt.ext[l.n] = 1;
     }
   }

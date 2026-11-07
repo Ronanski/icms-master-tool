@@ -3823,6 +3823,7 @@ function sdNL(sh) {
     segs,
     pout: [],
     tcs: d.tcs,
+    anl: d.anl,
     an: d.an || [],
     anRows: new Set((d.an || []).map(a => a.row)),
     mv: [],
@@ -4089,7 +4090,7 @@ function tcsSheet(q) {
     syms: [],
     lyr: '',
     bv: BV,
-    sd: { tcs: 1, n: q.n, seg, gates, src, outs, term: [], dots, xcon: [], an }
+    sd: { tcs: 1, n: q.n, seg, gates, src, outs, term: [], dots, xcon: [], an, anl: [...new Set(B.flatMap(b => (/CMP|MID|FG|LS/.test(b.t) ? b.ins.concat(/MID|FG|LS/.test(b.t) ? [b.out] : []) : [])))] }
   };
 }
 /* the TCS sheets come after the DITL sheets; they are part of S.sheets, so the search, the viewer and the panel know them */
@@ -4227,6 +4228,7 @@ function tcsSim(s) {
     raw = (st && st.v) || [],
     v = new Array(nl.n).fill(0);
   for (let n = 0; n < nl.n; n++) v[n] = raw[n] > 0.5 ? 1 : 0;
+  for (const n of nl.anl || []) v[n] = 0;
   nl._v = v;
   s.avw = {};
   for (const a of nl.an) if (isFinite(raw[a.net])) s.avw[a.key] = +(+raw[a.net]).toFixed(Math.abs(raw[a.net]) < 100 ? 2 : 1);
@@ -23584,6 +23586,7 @@ function anTurbine(cmd, arg) {
   }
   /* 3.2.0-beta.38 (CHECKLIST 0.6): the TCS / ATS model (tcs.js): the auxiliaries and the ATS step push buttons. 'roll' = ATS AUTO
      from the next step up to ACCELERATION (3600 rpm), 'sync' = EXCITATION + SYNCH. & INITIAL LOAD, 'loadup' = LOAD UP to the target */
+  if (cmd === 'shutdown' && !U.tc) tcsFromOil(U);
   if (U.tc) {
     const c = U.tc;
     if (cmd === 'roll') {
@@ -25505,7 +25508,8 @@ function anUnitStep0(dt) {
     U.vac = Math.max(0, Math.min(1, cw2 > U.vac ? (aux ? U.vac + dt / U.vacUp : U.vac) : U.vac + ((cw2 - U.vac) * dt) / U.vacDn));
     const tb0 = U.tb,
       l = U.vtrip;
-    if (tb0 && (tb0.st !== 'off' || tcsTripNow(U)) && ((isFinite(U.cdP) ? U.cdP > AN_CD.Ptrip : U.vac < 0.6) || tcsTripNow(U)) && l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== 1) {
+    /* I.0400 follows the valves (IBD TA-6, tcsI0400); a model without a vacuum value keeps its own rule */
+    if (tb0 && tb0.st !== 'off' && !isFinite(U.cdP) && U.vac < 0.6 && l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== 1) {
       l.S.rt.ext[l.n] = 1;
     }
   }
@@ -26536,7 +26540,7 @@ function tcsCmd(U, cmd, arg) {
       c.opHold = false;
       return '';
   }
-  const k = { warm: 0, prep: 1, rub: 2, accel: 3, excite: 4, sync: 5, loadup: 6, normal: 7 }[cmd];
+  const k = { warm: 0, prep: 1, rub: 2, accel: 3, excite: 4, sync: 5, loadup: 6, normal: 7, shutdown: 8 }[cmd];
   if (k == null) return null;
   return tcsStepIn(U, k, arg);
 }
@@ -26567,7 +26571,7 @@ function tcsStepIn(U, k, arg) {
       ')'
     );
   if (c.step >= k) return 'Already done: ' + TCS.names[k];
-  const miss = tcsMiss(U, TCS_A[k]);
+  const miss = k === 8 ? '' : tcsMiss(U, TCS_A[k]);
   if (miss) return 'CRITERIA A' + k + ' (' + TCS.names[k] + ') missing: ' + miss;
   c.cur = k;
   c.ph = 'in';
@@ -26754,6 +26758,22 @@ function tcsStep(U, dt) {
         c.holdMin = TCS.hold(c.mode);
         tcsGcb(U, true);
       } else if (c.ph === 'init' && U.MW >= 0.9 * tb.aim && c.tm >= c.holdMin * 60) tcsDone(U, 5);
+      break;
+    case 8 /* SHUT-DOWN (775 page 29, 776 page 14 criteria 2.11): generator load < 20 %, 52G open command, 41 open, turbine trip */:
+      if (c.ph === 'in') {
+        c.hold = U.MW < 0.2 * 150 ? '' : 'Waiting: generator load must be below 20 % to shut down';
+        if (U.MW < 0.2 * 150) c.ph = '52g';
+      } else if (c.ph === '52g') {
+        c.sd52 = true;
+        tcsGcb(U, false);
+        Object.assign(tb, { st: 'roll', xfer: false, tgt: 0, aim: 0 });
+        c.ph = '41';
+      } else if (c.ph === '41') {
+        c.sd52 = false;
+        Object.assign(tcsGen(U), { f41: false, V: 0 });
+        c.exc = false;
+        c.ph = 'trip';
+      } else if (c.ph === 'trip') tcsTripManual(U);
       break;
     case 6 /* LOAD UP (page 26 ~ 27): ICV -> CV transfer, load up rate 5 %/min (in the TCS, unit.js) */:
       if (tb.st !== 'load') {
@@ -27099,6 +27119,20 @@ const TCS_MST = [
 const tcsFst = U => (U.pist && U.pist.length ? anUnitVal(U.pist[0]) : NaN); /* PT-ST1001 */
 const tcsCrp = U => (U.rhp && U.rhp.length > 2 ? anUnitVal(U.rhp[2]) : NaN); /* PT-CR1006 */
 /* the value of a field signal by its tag on the sheet; NaN = no value in the model */
+/* stop valve position 1 open, 0 full close: the master trip of TA-1 dumps the trip oil and the valves close (U.tauTrip); reset opens them */
+const tcsVp = (U, c) => (c.vp == null ? (c.vp = U.tb && U.tb.st !== 'off' ? 1 : 0) : c.vp);
+function tcsValves(U, c, ib, dt) {
+  tcsVp(U, c);
+  if (!ib.r1) return;
+  c.vp = ib.v['TA-1'] && ib.v['TA-1'][TA1_RESET] > 0.5 ? Math.min(1, c.vp + dt / 10) : Math.max(0, c.vp - dt / U.tauTrip);
+}
+/* I.0400 TURBINE TRIP to the DCS is TA-6 out 16 (valve position, or TCS MAJOR TROUBLE); before the first reset of a cold plant it stays 0 so the ATS can start */
+function tcsI0400(U, ib) {
+  const l = U.vtrip,
+    x = ib.r1 && ib.v['TA-6'] && ib.v['TA-6'][16] > 0.5 ? 1 : 0;
+  if (ib.ext || !l || l.S.rt.force[l.n] !== undefined || !l.S.ext.includes(l.n)) return;
+  if (l.S.rt.ext[l.n] !== x) l.S.rt.ext[l.n] = x;
+}
 const TCS_IBD_PV = [
   [/PT-STn110/, U => U.cdP],
   [/TE-MSn902/, U => tcsSteam(U).mst],
@@ -27113,7 +27147,14 @@ const TCS_IBD_PV = [
   [/TE-STn110/, (U, c) => c.Tx],
   [/SE-STn001/, U => (U.tb ? U.tb.rpm : 0)],
   [/PT-CRn901|HP TURBINE EXHAUST .*STEAM PRESS[.] [(][ABC]/, U => tcsCrp(U)],
-  [/GENERATOR LOAD/, U => ((+U.MW || 0) / 150) * 100]
+  [/GENERATOR LOAD/, U => ((+U.MW || 0) / 150) * 100],
+  /* the valves (IBD TA-6, TA-31 ~ 38) */
+  [/^MSV\([AB]\) FULL CLOSE/, (U, c) => (tcsVp(U, c) <= 0 ? 1 : 0)],
+  [/^RSV\([AB]\) FULL CLOSE/, (U, c) => (tcsVp(U, c) <= 0 ? 1 : 0)],
+  [/^ICV\([AB]\) FULL CLOSE/, U => (U.tb && U.tb.icv > 0.001 ? 0 : 1)],
+  [/^CV\([AB]\) FULL CLOSE/, U => (U.gv > 0.001 ? 0 : 1)],
+  [/^52G CLOSED/, U => (U.tb && (U.tb.st === 'sync' || U.tb.st === 'load') ? 1 : 0)],
+  [/^52G OPEN COMMAND FROM ATS/, (U, c) => (c.sd52 ? 1 : 0)]
 ];
 /* comparators with a variable limit; every fixed set point is read from the words under the block on the sheet (tools/data/ibd_build.mjs) */
 const TCS_MST_LOW = U => tcsSteam(U).mst <= tcsLin(TCS_MST, tcsFst(U));
@@ -27204,6 +27245,7 @@ const tcsIbdT = x => {
 function tcsIbdStep(U, c, dt) {
   const ib = tcsIb(c),
     B = tcsIbdBind();
+  tcsValves(U, c, ib, dt);
   for (const r of B) {
     const s = r.s,
       id = s.id,
@@ -27288,6 +27330,7 @@ function tcsIbdStep(U, c, dt) {
     if (a && ib.v['TA-9'][a[0]] > 0.5) c.mop = [true, true];
     tcsOilSet(c);
   }
+  tcsI0400(U, ib);
   ib.rst0 = !!c.rst;
   ib.pb.trip = Math.max(0, (ib.pb.trip || 0) - dt);
   ib.pb.rst = Math.max(0, (ib.pb.rst || 0) - dt);
@@ -35626,7 +35669,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.99';
-      c3.textContent += ' · build 0d78379'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build d302b11'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -57716,6 +57759,7 @@ function sdNL(sh) {
     segs,
     pout: [],
     tcs: d.tcs,
+    anl: d.anl,
     an: d.an || [],
     anRows: new Set((d.an || []).map(a => a.row)),
     mv: [],
@@ -57984,7 +58028,7 @@ function tcsSheet(q) {
     syms: [],
     lyr: '',
     bv: BV,
-    sd: { tcs: 1, n: q.n, seg, gates, src, outs, term: [], dots, xcon: [], an }
+    sd: { tcs: 1, n: q.n, seg, gates, src, outs, term: [], dots, xcon: [], an, anl: [...new Set(B.flatMap(b => (/CMP|MID|FG|LS/.test(b.t) ? b.ins.concat(/MID|FG|LS/.test(b.t) ? [b.out] : []) : [])))] }
   };
 }
 /* the TCS sheets come after the DITL sheets; they are part of S.sheets, so the search, the viewer and the panel know them */
@@ -58122,6 +58166,7 @@ function tcsSim(s) {
     raw = (st && st.v) || [],
     v = new Array(nl.n).fill(0);
   for (let n = 0; n < nl.n; n++) v[n] = raw[n] > 0.5 ? 1 : 0;
+  for (const n of nl.anl || []) v[n] = 0;
   nl._v = v;
   s.avw = {};
   for (const a of nl.an) if (isFinite(raw[a.net])) s.avw[a.key] = +(+raw[a.net]).toFixed(Math.abs(raw[a.net]) < 100 ? 2 : 1);
@@ -73047,6 +73092,7 @@ function anTurbine(cmd, arg) {
   }
   /* 3.2.0-beta.38 (CHECKLIST 0.6): the TCS / ATS model (tcs.js): the auxiliaries and the ATS step push buttons. 'roll' = ATS AUTO
      from the next step up to ACCELERATION (3600 rpm), 'sync' = EXCITATION + SYNCH. & INITIAL LOAD, 'loadup' = LOAD UP to the target */
+  if (cmd === 'shutdown' && !U.tc) tcsFromOil(U);
   if (U.tc) {
     const c = U.tc;
     if (cmd === 'roll') {
@@ -74968,7 +75014,8 @@ function anUnitStep0(dt) {
     U.vac = Math.max(0, Math.min(1, cw2 > U.vac ? (aux ? U.vac + dt / U.vacUp : U.vac) : U.vac + ((cw2 - U.vac) * dt) / U.vacDn));
     const tb0 = U.tb,
       l = U.vtrip;
-    if (tb0 && (tb0.st !== 'off' || tcsTripNow(U)) && ((isFinite(U.cdP) ? U.cdP > AN_CD.Ptrip : U.vac < 0.6) || tcsTripNow(U)) && l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== 1) {
+    /* I.0400 follows the valves (IBD TA-6, tcsI0400); a model without a vacuum value keeps its own rule */
+    if (tb0 && tb0.st !== 'off' && !isFinite(U.cdP) && U.vac < 0.6 && l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== 1) {
       l.S.rt.ext[l.n] = 1;
     }
   }
@@ -76001,7 +76048,7 @@ function tcsCmd(U, cmd, arg) {
       c.opHold = false;
       return '';
   }
-  const k = { warm: 0, prep: 1, rub: 2, accel: 3, excite: 4, sync: 5, loadup: 6, normal: 7 }[cmd];
+  const k = { warm: 0, prep: 1, rub: 2, accel: 3, excite: 4, sync: 5, loadup: 6, normal: 7, shutdown: 8 }[cmd];
   if (k == null) return null;
   return tcsStepIn(U, k, arg);
 }
@@ -76032,7 +76079,7 @@ function tcsStepIn(U, k, arg) {
       ')'
     );
   if (c.step >= k) return 'Already done: ' + TCS.names[k];
-  const miss = tcsMiss(U, TCS_A[k]);
+  const miss = k === 8 ? '' : tcsMiss(U, TCS_A[k]);
   if (miss) return 'CRITERIA A' + k + ' (' + TCS.names[k] + ') missing: ' + miss;
   c.cur = k;
   c.ph = 'in';
@@ -76219,6 +76266,22 @@ function tcsStep(U, dt) {
         c.holdMin = TCS.hold(c.mode);
         tcsGcb(U, true);
       } else if (c.ph === 'init' && U.MW >= 0.9 * tb.aim && c.tm >= c.holdMin * 60) tcsDone(U, 5);
+      break;
+    case 8 /* SHUT-DOWN (775 page 29, 776 page 14 criteria 2.11): generator load < 20 %, 52G open command, 41 open, turbine trip */:
+      if (c.ph === 'in') {
+        c.hold = U.MW < 0.2 * 150 ? '' : 'Waiting: generator load must be below 20 % to shut down';
+        if (U.MW < 0.2 * 150) c.ph = '52g';
+      } else if (c.ph === '52g') {
+        c.sd52 = true;
+        tcsGcb(U, false);
+        Object.assign(tb, { st: 'roll', xfer: false, tgt: 0, aim: 0 });
+        c.ph = '41';
+      } else if (c.ph === '41') {
+        c.sd52 = false;
+        Object.assign(tcsGen(U), { f41: false, V: 0 });
+        c.exc = false;
+        c.ph = 'trip';
+      } else if (c.ph === 'trip') tcsTripManual(U);
       break;
     case 6 /* LOAD UP (page 26 ~ 27): ICV -> CV transfer, load up rate 5 %/min (in the TCS, unit.js) */:
       if (tb.st !== 'load') {
@@ -76568,6 +76631,20 @@ const TCS_MST = [
 const tcsFst = U => (U.pist && U.pist.length ? anUnitVal(U.pist[0]) : NaN); /* PT-ST1001 */
 const tcsCrp = U => (U.rhp && U.rhp.length > 2 ? anUnitVal(U.rhp[2]) : NaN); /* PT-CR1006 */
 /* the value of a field signal by its tag on the sheet; NaN = no value in the model */
+/* stop valve position 1 open, 0 full close: the master trip of TA-1 dumps the trip oil and the valves close (U.tauTrip); reset opens them */
+const tcsVp = (U, c) => (c.vp == null ? (c.vp = U.tb && U.tb.st !== 'off' ? 1 : 0) : c.vp);
+function tcsValves(U, c, ib, dt) {
+  tcsVp(U, c);
+  if (!ib.r1) return;
+  c.vp = ib.v['TA-1'] && ib.v['TA-1'][TA1_RESET] > 0.5 ? Math.min(1, c.vp + dt / 10) : Math.max(0, c.vp - dt / U.tauTrip);
+}
+/* I.0400 TURBINE TRIP to the DCS is TA-6 out 16 (valve position, or TCS MAJOR TROUBLE); before the first reset of a cold plant it stays 0 so the ATS can start */
+function tcsI0400(U, ib) {
+  const l = U.vtrip,
+    x = ib.r1 && ib.v['TA-6'] && ib.v['TA-6'][16] > 0.5 ? 1 : 0;
+  if (ib.ext || !l || l.S.rt.force[l.n] !== undefined || !l.S.ext.includes(l.n)) return;
+  if (l.S.rt.ext[l.n] !== x) l.S.rt.ext[l.n] = x;
+}
 const TCS_IBD_PV = [
   [/PT-STn110/, U => U.cdP],
   [/TE-MSn902/, U => tcsSteam(U).mst],
@@ -76582,7 +76659,14 @@ const TCS_IBD_PV = [
   [/TE-STn110/, (U, c) => c.Tx],
   [/SE-STn001/, U => (U.tb ? U.tb.rpm : 0)],
   [/PT-CRn901|HP TURBINE EXHAUST .*STEAM PRESS[.] [(][ABC]/, U => tcsCrp(U)],
-  [/GENERATOR LOAD/, U => ((+U.MW || 0) / 150) * 100]
+  [/GENERATOR LOAD/, U => ((+U.MW || 0) / 150) * 100],
+  /* the valves (IBD TA-6, TA-31 ~ 38) */
+  [/^MSV\([AB]\) FULL CLOSE/, (U, c) => (tcsVp(U, c) <= 0 ? 1 : 0)],
+  [/^RSV\([AB]\) FULL CLOSE/, (U, c) => (tcsVp(U, c) <= 0 ? 1 : 0)],
+  [/^ICV\([AB]\) FULL CLOSE/, U => (U.tb && U.tb.icv > 0.001 ? 0 : 1)],
+  [/^CV\([AB]\) FULL CLOSE/, U => (U.gv > 0.001 ? 0 : 1)],
+  [/^52G CLOSED/, U => (U.tb && (U.tb.st === 'sync' || U.tb.st === 'load') ? 1 : 0)],
+  [/^52G OPEN COMMAND FROM ATS/, (U, c) => (c.sd52 ? 1 : 0)]
 ];
 /* comparators with a variable limit; every fixed set point is read from the words under the block on the sheet (tools/data/ibd_build.mjs) */
 const TCS_MST_LOW = U => tcsSteam(U).mst <= tcsLin(TCS_MST, tcsFst(U));
@@ -76673,6 +76757,7 @@ const tcsIbdT = x => {
 function tcsIbdStep(U, c, dt) {
   const ib = tcsIb(c),
     B = tcsIbdBind();
+  tcsValves(U, c, ib, dt);
   for (const r of B) {
     const s = r.s,
       id = s.id,
@@ -76757,6 +76842,7 @@ function tcsIbdStep(U, c, dt) {
     if (a && ib.v['TA-9'][a[0]] > 0.5) c.mop = [true, true];
     tcsOilSet(c);
   }
+  tcsI0400(U, ib);
   ib.rst0 = !!c.rst;
   ib.pb.trip = Math.max(0, (ib.pb.trip || 0) - dt);
   ib.pb.rst = Math.max(0, (ib.pb.rst || 0) - dt);
@@ -88740,6 +88826,7 @@ body.lssplit #dp { max-width: 34% !important; }
       });
     tcs('tcsroll', 'Turbine ROLL', 'TCS panel: open the stop valves, IP start mode, 120 rpm/min to 3600 rpm (PR-OPE-5002 4.4). Needs Start cold and the plant running.', 'roll', null, 'TCS: turbine rolling, 120 rpm/min to 3600 (OPERATE > UNIT shows the speed).');
     tcs('tcssync', 'SYNC + initial load 4.5 MW', 'TCS panel at 3600 rpm: GCB 52G1 closed (ABC-050 I.0931 = 1, I.0932 = 0), initial load 4.5 MW on the ICV (PR-OPE-5002 4.5).', 'sync', null, 'TCS: generator synchronised, initial load 4.5 MW.');
+    tcs('tcsshut', 'Turbine SHUT-DOWN', 'ATS step 8: below 20 % load: 52G open, 41 open, turbine trip (ATS sequence page 29)', 'shutdown', undefined, () => true);
     tcs('tcsholdoff', 'HOLD OFF', 'TCS panel: release the ATS hold after its condition has cleared (ATS sequence page 11)', 'holdoff', undefined, () => true);
     tcs('tcsload', 'LOAD UP to 45 MW', 'TCS panel: target 45 MW at 5 %/min (7.5 MW/min). ICV -> CV transfer at 20 MW (I.0418 = 1), DCS control mode permissive I.0081 at 45 MW (PR-OPE-5002 4.6).', 'loadup', 45, 'TCS: load up to 45 MW at 7.5 MW/min.');
     btn('tcstarget', 'TARGET MW…', 'TCS panel: a target MW of your own (reached at 7.5 MW/min) while the DCS control mode is OFF. Once I.0082 = 1 (boiler master and PIC-COBM in AUTO above 230 T/H) the TCS follows the turbine master EIC-TM of the DCS instead.', () => {

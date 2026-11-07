@@ -66,6 +66,7 @@ function sdNL(sh) {
     segs,
     pout: [],
     tcs: d.tcs,
+    anl: d.anl,
     an: d.an || [],
     anRows: new Set((d.an || []).map(a => a.row)),
     mv: [],
