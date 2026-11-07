@@ -1699,6 +1699,7 @@ function anCondStep(U, dt) {
     hw = anUnitVal(U.cdHwL || []),
     Psuc = U.cdP - 1.033 + 0.09926 * (K.zS + (isFinite(hw) ? hw : 0) / 1000);
   U.cdQp = Math.round(q);
+  U.cdQt = Math.round(Qt); /* Mina F28: FT-CD1120 of DITL-64 row 28 reads the plant, it stood at the default 75 T/H */
   U.cdHw = hw;
   U.cdRun = run;
   U.cdPd = Math.max(0, Math.min(25, Psuc + (n ? 0.09926 * swInterp(K.qQ, K.qH, q) : 0) - K.kz));
