@@ -624,8 +624,10 @@
           if (!/^(TCS|GMCB)$/.test(cellTxt(sb, i, 'L').trim()) || cellTxt(sb, i, 'F').trim()) return;
           const have = din.get(s) && din.get(s).get(i);
           if (have && have.length) return;
+          /* 3.2.1: DITL-03H row 3 names the contact, not the address: TCS-DI1003 "#1 Turbine trip" = I.0400 (IO list STN102). Unlinked, MFT
+             cause 18 read 0 for ever and a turbine trip left the fuel on (FHI T9 p24: on turbine valve closure all fuel trips) */
           const la = rowList(sb, i),
-            adr = la[k] || (la.length === 1 ? la[0] : null);
+            adr = la[k] || (la.length === 1 ? la[0] : null) || (cellTxt(sb, i, 'T').trim() === 'TCS-DI1003' ? 'I.0400' : null);
           if (!adr || !/^I\.[0-9A-F]{4}$/.test(adr)) return;
           for (const sh of AN.sheets) {
             if (/^ABC-000/.test(sh.name)) continue;

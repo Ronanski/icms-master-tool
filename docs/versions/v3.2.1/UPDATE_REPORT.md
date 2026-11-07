@@ -623,3 +623,5 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.90** (2026-11-07): TCS page: Load IBD drawing reads a file made on this PC, kept only in this browser; without it the page shows the app sheets. The drawing never enters the repository, dist or the Beta. Clean input names in the netlist
 
 - **beta.98** (2026-11-08): Burner atomizing air valve strokes in 1 s, inside the 1.5 s of DITL-14 TR150 / 160. At x1 the 3 s default gave LIGHT OFF UNSUCCESSFUL and MFT on the first light (Mina F74)
+
+- **beta.99** (2026-11-08): Turbine trip reaches MFT cause 18: DITL-03H row 3 TCS-DI1003 is linked to I.0400. Before, the fuel stayed on after a turbine trip
