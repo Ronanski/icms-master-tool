@@ -211,8 +211,7 @@
   const TABS = [
     ['home', 'Home', 'Start here: what do you want to do, starting state of the plant, recent sheets'],
     ['operate', 'Plant view', 'Plant graphics with the faceplates (A / M / R, SV, MV) like the operator station; on a PC it opens in its own window'],
-    ['logic', 'Logic', 'The ABC (analog) and DITL (digital) drawings: trace, run, force'],
-    ['tcs', 'TCS', 'Turbine control system: the sheets of the Interlock Block Diagram, simulated'],
+    ['logic', 'Logic', 'The ABC (analog), DITL (digital) and TCS (turbine) drawings: trace, run, force'],
     ['library', 'Library', 'I/O list, memory list, wiring, relay / SER, calculations'],
     ['training', 'Training', 'The start-up procedure PR-OPE-5002 step by step, with a check box for every step'],
     ['tools', 'Tools', 'Block tests, audit, health, project files, drawing edit', 1]
@@ -463,8 +462,11 @@
     const h = foot && foot.querySelector('.shint');
     if (h) h.textContent = h.title = HINTS[tab] || '';
   }
+  /* DITL and TCS share the DITL viewer; each tab comes back to its own last sheet */
   function setSub(c) {
-    if (window.AN && AN.setCat && AN.cat !== c) AN.setCat(c);
+    const d = c === 'an' ? 'an' : 'dig';
+    if (window.AN && AN.setCat && AN.cat !== d) AN.setCat(d);
+    if (d === 'dig' && window.LS_TCSV) LS_TCSV.tab(c);
   }
   /* wraps an element so that it shows only on the ABC page (an-only) or only on the DITL page (dit-only); the element's own
      class list is left to its owner script (the DITL page rewrites the class of its buttons) */
@@ -651,14 +653,15 @@
     const tabs = E('div', { cls: 'tabs' });
     TABS.forEach(([k, l, t, hid]) => {
       if (hid) return;
-      const b = E('button', { txt: l, title: t, on: () => (k === 'tcs' ? window.LS_TCSL && LS_TCSL.open() : (k === 'operate' && pvPop && pvPop()) || setTab(k)) });
+      const b = E('button', { txt: l, title: t, on: () => (k === 'operate' && pvPop && pvPop()) || setTab(k) });
       tabBtns[k] = b;
       tabs.append(b);
     });
     const sub = E('div', { cls: 'sub' });
     [
       ['an', 'ABC', 'Analog logic (boiler control): 54 sheets'],
-      ['dig', 'DITL', 'Digital interlock logic: all the DITL sheets']
+      ['dig', 'DITL', 'Digital interlock logic: all the DITL sheets'],
+      ['tcs', 'TCS', 'Turbine control system: the sheets of the Interlock Block Diagram']
     ].forEach(([k, l, t]) => {
       const b = E('button', { txt: l, title: t, on: () => setSub(k) });
       subBtns[k] = b;
@@ -1549,7 +1552,9 @@
     setInterval(() => {
       const an_ = document.body.classList.contains('an');
       subBtns.an.classList.toggle('on', an_);
-      subBtns.dig.classList.toggle('on', !an_);
+      const tc_ = !an_ && !!(window.LS_TCSV && LS_TCSV.on());
+      subBtns.dig.classList.toggle('on', !an_ && !tc_);
+      subBtns.tcs.classList.toggle('on', tc_);
       pmUpd();
     }, 300);
     addEventListener('resize', place);

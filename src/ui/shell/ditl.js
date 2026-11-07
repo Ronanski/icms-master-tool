@@ -117,6 +117,7 @@
      input LINE 3 of LS-20 (the row there whose FROM names this sheet and line) */
   const LSR = /\bSHEET\s*(\d{2,3})\s*-\s*LINE\s*(\d{1,2})\b/gi;
   const refs = (t, sh, ri, col) => {
+    if (sh && sh.tcs) return (String(t || '').match(/\b(?:T[A-E]|GD)-\d+/g) || []).map(x => ({ tcs: x }));
     const o = [],
       used = [];
     let s = String(t || ''),
@@ -164,6 +165,7 @@
     return d ? d.rows.findIndex((_, k) => (d.cells[k + ':F'] || []).some(t => t.t.replace(/\s/g, '') === bk)) : -1;
   };
   const labelOf = r => {
+    if (r.tcs) return r.tcs;
     if (r.abc) return r.abc + ' (analog)';
     if (r.nn === undefined) {
       const i = sheetOf(r.code),
@@ -299,6 +301,16 @@
     return true;
   }
   function goRef(r) {
+    if (r.tcs) {
+      const i = S.sheets.findIndex(x => x.tcs === r.tcs);
+      if (i < 0) return false;
+      hist.push({ cat: 'dig', i: S.cur, vb: (VB[S.cur] || []).slice() });
+      updBack();
+      S.cur = i;
+      sel = null;
+      render();
+      return true;
+    }
     if (r.abc) {
       if (!window.AN) return false;
       hist.push({ cat: 'dig', i: S.cur, vb: (VB[S.cur] || []).slice() });
@@ -467,7 +479,8 @@
         const w = Math.max(0, 400 - (Date.now() - t0));
         t0 = 0;
         setTimeout(() => {
-          s.sig[k] = false;
+          if (s.tcs) tcsInput(s, s.rows[i].tn, null);
+          else s.sig[k] = false;
           render();
         }, w);
       };
@@ -476,7 +489,8 @@
         e.preventDefault();
         if (!SIM) enter();
         t0 = Date.now();
-        s.sig[k] = true;
+        if (s.tcs) tcsInput(s, s.rows[i].tn, true);
+        else s.sig[k] = true;
         opLog(s, i, 'PRESSED');
         render();
       };
@@ -491,14 +505,15 @@
           enter();
           DPAUSE = false;
         }
-        s.sig[k] = !s.sig[k];
-        opLog(s, i, '= ' + (s.sig[k] ? 1 : 0));
+        if (s.tcs) tcsToggle(s, i);
+        else s.sig[k] = !s.sig[k];
+        opLog(s, i, s.tcs ? 'switched' : '= ' + (s.sig[k] ? 1 : 0));
         render();
       };
     UL.push(R => {
       const on = R ? R.rowOn.has(i) : false,
         a = auto(s, i);
-      b.textContent = pb && !grpT ? (on ? 'PRESSED' : 'PRESS') : on ? '1 · ON' : '0 · OFF';
+      b.textContent = (pb && !grpT ? (on ? 'PRESSED' : 'PRESS') : on ? '1 · ON' : '0 · OFF') + (s.tcs && tcsHeld(s, s.rows[i].tn) ? ' · HELD' : '');
       b.className = 'dp-v' + (on ? ' on' : '') + (pb && !grpT ? ' pb' : '') + (a ? ' auto' : '');
     });
   }
@@ -844,6 +859,8 @@
       })
     ]);
     dp.append(hd, E('p', { cls: 'dp-note', txt: 'Run, then click an input to switch it. PB = press and hold. A dashed (auto) input follows the equipment or another sheet.' }), selBox);
+    if (s.tcs && window.LS_TCSD)
+      dp.append(E('div', { cls: 'dp-r dp-tpr' }, [E('div', { cls: 'dp-l' }, [E('div', { cls: 'dp-d', txt: 'The IBD drawing stays on this PC' })]), E('button', { cls: 'dp-tpe', txt: LS_TCSD.on() ? 'Remove IBD drawing' : 'Load IBD drawing', title: 'Show the TCS sheets with the lines and words of the IBD file on this PC', on: LS_TCSD.pick })]));
     if (pk && pk.s !== s) pk = null;
     buildSel();
     /* inputs */
@@ -875,6 +892,11 @@
           st = E('div', { cls: 'dp-d' });
         n.value = anVal(s, a);
         n.onchange = () => {
+          if (s.tcs) {
+            if (!SIM) return msg('Press RUN to hold a value.');
+            tcsInput(s, a.net, n.value === '' ? null : +n.value);
+            return render();
+          }
           const x = parseFloat(n.value);
           if (!isFinite(x)) return;
           s.av = s.av || {};
@@ -917,7 +939,7 @@
             }
           }
         });
-      dp.append(th, E('div', { cls: 'dp-r dp-tpr' }, [E('div', { cls: 'dp-l' }, [E('div', { cls: 'dp-d', txt: 'Presets as drawn; change them for a test' })]), te]));
+      dp.append(th, s.tcs ? '' : E('div', { cls: 'dp-r dp-tpr' }, [E('div', { cls: 'dp-l' }, [E('div', { cls: 'dp-d', txt: 'Presets as drawn; change them for a test' })]), te]));
       T.forEach(g => {
         const v = E('span', { cls: 'dp-tv' }),
           bar = E('span', { cls: 'dp-bar' }, [E('i')]),
@@ -939,7 +961,7 @@
           v.textContent = fmt(acc) + ' / ' + fmt(P) + ' · OUT ' + (g.st.out && simOn() ? '1' : '0');
           v.classList.toggle('on', !!(g.st.out && simOn()));
           bar.firstChild.style.width = Math.max(0, Math.min(100, (acc / Math.max(P, 1e-9)) * 100)) + '%';
-          sk.disabled = !SIM;
+          sk.disabled = !SIM || !!s.tcs;
         });
       });
     }
@@ -1136,7 +1158,7 @@
     }
     if (!dit || !open) return;
     const s = cur(),
-      k = S.cur + '|' + (s && s.name) + '|' + !!(s && s.nl) + '|' + (s && s.nl && s.nl.v);
+      k = S.cur + '|' + (s && s.name) + '|' + !!(s && s.nl) + '|' + (s && s.nl && s.nl.v) + '|' + !!(s && s.drw);
     if (k !== key) {
       key = k;
       build();

@@ -8,6 +8,7 @@
    compute the sheet again on the page and write what the engine keeps (nets, latches, counters, the step register, nl.ufx) without the
    engine's inputs of this scan (WORLD.live, the rows from other sheets). Elsewhere (no worker, the engine itself): simSheet */
 function simRead(s) {
+  if (s.tcs) return simSheet(s);
   const W = window.WORLD;
   if (!(window.ENG && ENG.mode === 'mirror' && W && W.on && W.idx)) return simSheet(s);
   const lv = W.live;

@@ -120,6 +120,7 @@ function usrModel(sh, nl) {
 /* 2.5.0-beta.14: DCS registers shared by the sheets (bottom ash step SI0130); Simulate on / off and Reset clear them */
 let DREG = {};
 function simulate(nl, act) {
+  if (nl.tcs) return nl._v || new Array(nl.n).fill(0);
   /* audit D (beta.90, H2 root): with the engine in the Web Worker the page is a MIRROR. A read of the page (the dock's interlock, a
      cause, the drawing) that ran a scan here wrote the page's own result into the nets and the parts (nl._v, g.q ...), with none of the
      engine's analog values; the worker then sends only what changed in ITS state, so the wrong page nets stayed (DITL-23A row 12
@@ -270,6 +271,7 @@ function simSheet(s) {
   return r;
 }
 function simSheet0(s) {
+  if (s.tcs) return tcsSim(s);
   s.nl.ufx = (s.nl.usr || []).filter(u => s.usw && s.usw[u.key]).map(u => u.n);
   /* 2.5.0-beta.11 (DITL PDF audit): off-sheet connector "(n) FROM DITL-xx" = the net of connector (n) "TO DITL-<this>" on that sheet
      (its last computed value; the one world runs every sheet, alone the other sheet keeps its last state) */
@@ -843,6 +845,7 @@ const anValN = (s, n) => {
   return a ? anVal(s, a) : 0;
 };
 const cmpOn = (s, g) => {
+  if (s.tcs) return !!(s.nl._v && s.nl._v[g.out[0]]);
   const v = anValN(s, g.ins[0]),
     sp = g.spNet !== undefined ? anValN(s, g.spNet) : g.sp;
   return g.cmp === '>' ? (g.eq ? v >= sp : v > sp) : g.eq ? v <= sp : v < sp;

@@ -437,6 +437,7 @@ const DITL_CATS = [
   'SAND INJECTION (SD1300)'
 ];
 function ditlCat(x) {
+  if (x.tcs) return x.cat;
   if (isSB(x)) return 'SOOTBLOWER';
   if (/^\(B\d+\)/.test(x.name || '')) return 'BOTTOM ASH HD600 / CONVEYORS'; /* 2.5.0-beta.14 */
   if (/^\(L\d+\)/.test(x.name || '')) return 'LIMESTONE INJECTION (ROTOFEED)'; /* 2.5.0-beta.15 */
@@ -535,7 +536,8 @@ function drawSide() {
   sd.classList.toggle('min', SIDEMIN === '1');
   $('sidetg').textContent = SIDEMIN === '1' ? '▶' : '◀';
   const cn = S.sheets[S.cur] ? S.sheets[S.cur].name : '';
-  $('sidect').textContent = 'Sheets (' + S.sheets.length + ')';
+  const TCSL = !!(S.sheets[S.cur] && S.sheets[S.cur].tcs);
+  $('sidect').textContent = 'Sheets (' + S.sheets.filter(x => !!x.tcs === TCSL).length + ')';
   $('sidevt').textContent = cn ? cn + '  ·  ' + (S.cur + 1) + '/' + S.sheets.length : 'Sheets';
   /* 2.5.0-beta.13 (user: "sa left pane, wala ang option na by order/category"): By order / By category as the ABC sheet list */
   let so = $('dsort');
@@ -562,7 +564,7 @@ function drawSide() {
     $('sidebody').insertBefore(so, $('sidefl'));
   }
   so.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.m === SIDESM));
-  const key = S.sheets.map(x => x.name + (x.bv !== BV ? '!' : '')).join('|') + '#' + SIDEFL + '#' + SIDESM;
+  const key = S.sheets.map(x => x.name + (x.bv !== BV ? '!' : '')).join('|') + '#' + SIDEFL + '#' + SIDESM + '#' + TCSL;
   if (key !== SIDEKEY) {
     SIDEKEY = key;
     list.innerHTML = '';
@@ -571,6 +573,7 @@ function drawSide() {
     /* 2.5.0-beta.11 (user: "DAPAT BY CATEGORY DIN ANG SHEET LIST SA DITL"): grouped by system, as the ABC list (category headers in
        the order of the contents sheets DITL-0A ~ 0D); the search still filters by name and title */
     S.sheets.forEach((x, i) => {
+      if (!!x.tcs !== TCSL) return;
       if (f && (x.name + ' ' + (x.title || '') + ' ' + ditlCat(x)).toLowerCase().indexOf(f) < 0) return;
       if (SIDESM === 'order') return sideBtn(x, i, list);
       (G[ditlCat(x)] = G[ditlCat(x)] || []).push(i);
@@ -585,7 +588,7 @@ function drawSide() {
       b.dataset.i = i;
       const l1 = document.createElement('span');
       l1.className = 'sn';
-      l1.textContent = (x.bv !== BV ? '⚠ ' : '') + x.name;
+      l1.textContent = (x.bv !== BV ? '⚠ ' : '') + (x.tcs ? x.meta.dwg : x.name);
       b.appendChild(l1);
       if (x.title) {
         const l2 = document.createElement('span');

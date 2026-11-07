@@ -7,6 +7,7 @@ function sdNL(sh) {
     segs = [],
     seg = d.seg.slice();
   sh.raw.ln.forEach((q, k) => {
+    if (d.tcs && seg[k] === undefined) return;
     const h = Math.abs(q[1] - q[3]) < 0.05;
     segs.push({
       k,
@@ -21,6 +22,7 @@ function sdNL(sh) {
   const gates = [];
   d.gates.forEach(g => {
     const box = g.box;
+    if (g.gt) return void gates.push(g.gt);
     if (g.t === 'AND' || g.t === 'OR' || g.t === 'NOT')
       gates.push({ t: g.t, ins: g.ins, out: g.out, box, done: true, ev: 1, sd: 1, hid: g.hid });
     else if (g.t === 'TMR')
@@ -63,8 +65,9 @@ function sdNL(sh) {
     dots: d.dots.map(z => ({ x: z.x, y: z.y, n: z.n })),
     segs,
     pout: [],
-    an: [],
-    anRows: new Set(),
+    tcs: d.tcs,
+    an: d.an || [],
+    anRows: new Set((d.an || []).map(a => a.row)),
     mv: [],
     mir: [],
     ind: [],
