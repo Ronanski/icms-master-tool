@@ -467,3 +467,4 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.41** (2026-11-05, 86fe376): split view Inject / Release for the analog loop check
 - **beta.42** (2026-11-05, fa3318c): merge main into PR #141 (sand DITL-771 reset, limestone DITL-LS212 isolating valves)
 - **beta.43** (2026-11-07): 150 MW start waits for the DITL before Run (test `tests/regress/ditl150_startp.js`)
+- **beta.44** (2026-11-07): plant Phase 1 start: HP bypass steam returns to the water cycle; LOW VACUUM trip 0.26 kg/cm2 abs from IBD TA-10
