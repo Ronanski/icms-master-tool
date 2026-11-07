@@ -563,3 +563,5 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.83** (2026-11-07): IBD reader: box edges are no wires, a wire is cut at its NOT circle, a stub after a NOT is not joined: nets with two drivers from 62 to 3 (typical sheets 16 and 18, TE-7)
 
 - **beta.84** (2026-11-07): Oil pumps run through the sheets TB-1, TB-2, TB-21, TB-22: standby AUTO start needs the other pump running 10 s or 15 s and its discharge low; a control oil pump stops on bearing oil very low trip; TCS major trouble starts the main oil pumps. A plain STOP of the running pump no longer starts the standby. The EOP keeps the model rule
+
+- **beta.85** (2026-11-07): Turbine IBD page: blocks stand where the IBD has them, so a sheet reads in its order; fit to page, full names wrapped, wires in separate channels, set point under each comparator, own header with the sheet, Inputs list by a button
