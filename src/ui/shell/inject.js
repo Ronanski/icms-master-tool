@@ -67,6 +67,8 @@ const block =
   '\n' +
   fs.readFileSync(__dirname + '/why.js', 'utf8') +
   '\n' +
+  fs.readFileSync(__dirname + '/tcslogic.js', 'utf8') +
+  '\n' +
   /* 3.2.0-beta.7: F(X) curves page */
   fs.readFileSync(__dirname + '/../fx/fx-info.js', 'utf8') +
   '\n' +

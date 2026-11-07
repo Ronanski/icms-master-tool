@@ -368,10 +368,12 @@ errB.onclick = () => {
 const mkCat = () => {
   const d = h$('div', { cls: 'cat' }),
     a = h$('button', { txt: 'Digital · DITL', title: 'Digital interlock logic' }),
-    b = h$('button', { txt: 'Analog · ABC', title: 'Analog interlock control logic (boiler)' });
+    b = h$('button', { txt: 'Analog · ABC', title: 'Analog interlock control logic (boiler)' }),
+    c = h$('button', { txt: 'Turbine · IBD', title: 'Turbine control system: Interlock Block Diagram sheets' });
   a.onclick = () => setCat('dig');
   b.onclick = () => setCat('an');
-  d.append(a, b);
+  c.onclick = () => window.LS_TCSL && LS_TCSL.open();
+  d.append(a, b, c);
   d._u = () => {
     a.classList.toggle('on', AN.cat === 'dig');
     b.classList.toggle('on', AN.cat === 'an');
