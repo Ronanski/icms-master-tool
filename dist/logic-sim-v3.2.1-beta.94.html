@@ -25479,7 +25479,8 @@ function anUnitStep0(dt) {
        WARMING UP, REQUIREMENT: MS Pressure > 12 Kg/cm2", MV-AS1391). No aux steam: the vacuum does not rise (it is held, not lost) */
     /* 3.2.0-beta.38: with the TCS model (tcs.js) the ejectors raise the vacuum: aux steam > 10, gland sealing in service, vacuum breaker
        MV-AV1391 closed (PR-OPE-5002 6545); an open vacuum breaker breaks it */
-    const tcx = U.tc;
+    /* an ATS program that began at a trip from Start 150 MW: the snapshot keeps the vacuum as at load, not through the start-up ejector line-up */
+    const tcx = U.tc && !U.tc.fromLoad ? U.tc : null;
     /* P2 #13 (INSTRUMENT_VALVE_COVERAGE.md): with the one world the ejectors and the vacuum breaker are the DITL MOVs, not a separate
        panel state: start-up ejector MV-AS1395 (DITL-54), steam jet air ejector MV-AS1396 (DITL-55), vacuum breaker MV-AV1391 (DITL-56).
        The TCS VACUUM UP command presses them (tcs.js tcsDitl); a breaker opened on the DITL breaks the vacuum */
@@ -26578,6 +26579,7 @@ function tcsDone(U, k) {
 /* one step of dt s: auxiliaries, metal, ATS program. Called by anUnitStep before the turbine black box; tb.rpm / tb.st / tb.icv are set
    here while the ATS controls the speed */
 function tcsStep(U, dt) {
+  tcsGenStep(U, dt);
   const c = U.tc;
   if (!c) return;
   const tb = U.tb,
@@ -26724,12 +26726,19 @@ function tcsStep(U, dt) {
       }
       break;
     case 4 /* EXCITATION (page 23): AVR start, generator voltage OK */:
-      c.exc = true;
-      if (c.tm >= 30) tcsDone(U, 4);
+      {
+        const g = tcsGen(U);
+        g.ex = true;
+        c.exc = g.f41;
+        if (g.f41 && g.V >= 1) tcsDone(U, 4);
+      }
       break;
     case 5 /* SYNCH. & INITIAL LOAD (page 24 ~ 25): ASD closes 52G, initial load, hold timer (Fig. 3) */:
       if (c.ph === 'in') {
-        if (c.tm < 60) break; /* ASD: speed and voltage matched (ASSUMED 1 min) */
+        const g = tcsGen(U);
+        g.start = true;
+        if (!g.close) break;
+        g.start = false;
         tb.st = 'sync';
         tb.tgt = 0;
         tb.aim = (TCS.init[c.mode] * 150) / 100;
@@ -26883,6 +26892,7 @@ function tcsFromOil(U) {
   const o = U.tco;
   tcsInit(U, 'load');
   if (o) Object.assign(U.tc, o);
+  U.tc.fromLoad = true;
   U.tco = null;
 }
 function tcsOilState(U) {
@@ -26985,6 +26995,7 @@ function tcsGcb(U, on) {
 function tcsTrip(U) {
   const c = U.tc;
   if (!c) return;
+  tcsGenTrip(U);
   Object.assign(c, { step: -1, cur: -1, ph: '', rst: false, exc: false, auto: false });
   tcsMode(U);
 }
@@ -27006,6 +27017,7 @@ function tcsState() {
     tmMin: c.tm / 60,
     soakMin: c.soakMin,
     holdMin: c.holdMin,
+    gen: U.gen ? { f41: U.gen.f41, volt: U.gen.V >= 1, sync: U.gen.x25, on25: U.gen.on25, msg: U.gen.last } : null,
     hold: c.hold,
     rpm: U.tb ? U.tb.rpm : 0,
     Pa: c.Pa,
@@ -27404,6 +27416,48 @@ function tcsIbdMissing() {
       if (g[0] === 'CMP' && !g[3] && !TCS_IBD_SP[s.id + '@' + g[4] + ',' + g[5]])
         L.push(s.id + '@' + g[4] + ',' + g[5]);
   return L;
+}
+/* 3.2.1 plan c4: the generator side of the ATS steps 4 and 5: field switch 41 and AVR (G-4), automatic synchronizing and the close order of 52G (G-1B). The 230 kV side is
+   not modelled: 52L stays closed. No relay is modelled either, so no protection operates by itself; a protection held on TA-9 trips the turbine through the IBD logic. Times
+   with no number in the drawings are marked model time. */
+const TCS_GEN = { volt: 30 /* s, model time: voltage build-up after 41 */, asd: 60 /* s, model time: ASD matches speed and voltage */, x3: 3 /* G-1B */, to: 300 /* G-1B 5 min */ };
+function tcsGen(U) {
+  if (U.gen) return U.gen;
+  const on = !!U.tb && (U.tb.st === 'sync' || U.tb.st === 'load');
+  return (U.gen = { f41: on, V: on ? 1 : 0, rated: on, ex: false, start: false, x25: false, tx: 0, ty: 0, on25: false, close: false, last: '' });
+}
+function tcsGenStep(U, dt) {
+  const g = tcsGen(U),
+    tb = U.tb,
+    g52 = tb.st === 'sync' || tb.st === 'load',
+    rpm = tb.rpm;
+  /* TURBINE RATED SPEED: ON >= 3550, OFF <= 3540 (IBD TD-1) */
+  if (rpm >= 3550) g.rated = true;
+  else if (rpm <= 3540) g.rated = false;
+  /* G-4: 41_CLOSE_CMD = ES_AND_52G_OPEN AND TURBINE_RATED_SPEED AND NOT 41_TRIP AND 41_CLOSE_REQ; EXCITATION AUTO START is a pulse of ATS step 4 */
+  if (g.ex && !g52 && g.rated) g.f41 = true;
+  g.ex = false;
+  g.V = g.f41 ? Math.min(1, g.V + dt / TCS_GEN.volt) : 0;
+  /* G-1B: the automatic synchronizing, 52L closed. 84GI = generator voltage on; the 5 min timer takes 25X1 away */
+  const gv = g.V >= 1,
+    can = g.f41 && !g52 && gv;
+  if (can && g.start && !g.x25 && g.ty < TCS_GEN.to) g.x25 = true;
+  if (!can) g.x25 = false;
+  g.tx = g.x25 ? g.tx + dt : 0;
+  const y1 = g.x25 && g.tx >= TCS_GEN.x3;
+  g.ty = y1 ? g.ty + dt : 0;
+  if (g.ty >= TCS_GEN.to) {
+    g.x25 = false;
+    g.start = false;
+    g.last = 'Auto synchronizing timed out (5 min): start it again';
+  }
+  g.on25 = y1 && g.ty >= TCS_GEN.asd;
+  /* 52G_CLOSE_ORDER = 52G_REMOTE AND 52G_AUTO AND 25_ON AND protection not operated AND 41 and 52L closed */
+  g.close = g.on25 && can;
+}
+/* a turbine trip: 52G is open, so ST TRIP opens 41 and the AVR (G-4) */
+function tcsGenTrip(U) {
+  Object.assign(tcsGen(U), { f41: false, V: 0, ex: false, start: false, x25: false, tx: 0, ty: 0, on25: false, close: false });
 }
 /* 3.2.0-beta.14 (plan "per-loop at unit plant model", phase A; user 2026-10-23: "since walang steam, dapat walang ma-generate na PV
    ito kahit anong SV MV mo"): the SOURCE of each loop. The loop model of plant.js makes the PV from the valve command alone (PV =
@@ -35566,7 +35620,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.94';
-      c3.textContent += ' · build c207177'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 6cfd02a'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -74879,7 +74933,8 @@ function anUnitStep0(dt) {
        WARMING UP, REQUIREMENT: MS Pressure > 12 Kg/cm2", MV-AS1391). No aux steam: the vacuum does not rise (it is held, not lost) */
     /* 3.2.0-beta.38: with the TCS model (tcs.js) the ejectors raise the vacuum: aux steam > 10, gland sealing in service, vacuum breaker
        MV-AV1391 closed (PR-OPE-5002 6545); an open vacuum breaker breaks it */
-    const tcx = U.tc;
+    /* an ATS program that began at a trip from Start 150 MW: the snapshot keeps the vacuum as at load, not through the start-up ejector line-up */
+    const tcx = U.tc && !U.tc.fromLoad ? U.tc : null;
     /* P2 #13 (INSTRUMENT_VALVE_COVERAGE.md): with the one world the ejectors and the vacuum breaker are the DITL MOVs, not a separate
        panel state: start-up ejector MV-AS1395 (DITL-54), steam jet air ejector MV-AS1396 (DITL-55), vacuum breaker MV-AV1391 (DITL-56).
        The TCS VACUUM UP command presses them (tcs.js tcsDitl); a breaker opened on the DITL breaks the vacuum */
@@ -75980,6 +76035,7 @@ function tcsDone(U, k) {
 /* one step of dt s: auxiliaries, metal, ATS program. Called by anUnitStep before the turbine black box; tb.rpm / tb.st / tb.icv are set
    here while the ATS controls the speed */
 function tcsStep(U, dt) {
+  tcsGenStep(U, dt);
   const c = U.tc;
   if (!c) return;
   const tb = U.tb,
@@ -76126,12 +76182,19 @@ function tcsStep(U, dt) {
       }
       break;
     case 4 /* EXCITATION (page 23): AVR start, generator voltage OK */:
-      c.exc = true;
-      if (c.tm >= 30) tcsDone(U, 4);
+      {
+        const g = tcsGen(U);
+        g.ex = true;
+        c.exc = g.f41;
+        if (g.f41 && g.V >= 1) tcsDone(U, 4);
+      }
       break;
     case 5 /* SYNCH. & INITIAL LOAD (page 24 ~ 25): ASD closes 52G, initial load, hold timer (Fig. 3) */:
       if (c.ph === 'in') {
-        if (c.tm < 60) break; /* ASD: speed and voltage matched (ASSUMED 1 min) */
+        const g = tcsGen(U);
+        g.start = true;
+        if (!g.close) break;
+        g.start = false;
         tb.st = 'sync';
         tb.tgt = 0;
         tb.aim = (TCS.init[c.mode] * 150) / 100;
@@ -76285,6 +76348,7 @@ function tcsFromOil(U) {
   const o = U.tco;
   tcsInit(U, 'load');
   if (o) Object.assign(U.tc, o);
+  U.tc.fromLoad = true;
   U.tco = null;
 }
 function tcsOilState(U) {
@@ -76387,6 +76451,7 @@ function tcsGcb(U, on) {
 function tcsTrip(U) {
   const c = U.tc;
   if (!c) return;
+  tcsGenTrip(U);
   Object.assign(c, { step: -1, cur: -1, ph: '', rst: false, exc: false, auto: false });
   tcsMode(U);
 }
@@ -76408,6 +76473,7 @@ function tcsState() {
     tmMin: c.tm / 60,
     soakMin: c.soakMin,
     holdMin: c.holdMin,
+    gen: U.gen ? { f41: U.gen.f41, volt: U.gen.V >= 1, sync: U.gen.x25, on25: U.gen.on25, msg: U.gen.last } : null,
     hold: c.hold,
     rpm: U.tb ? U.tb.rpm : 0,
     Pa: c.Pa,
@@ -76810,6 +76876,50 @@ function tcsIbdMissing() {
       if (g[0] === 'CMP' && !g[3] && !TCS_IBD_SP[s.id + '@' + g[4] + ',' + g[5]])
         L.push(s.id + '@' + g[4] + ',' + g[5]);
   return L;
+}
+
+/* ---- engine/tcs-gen.js ---- */
+/* 3.2.1 plan c4: the generator side of the ATS steps 4 and 5: field switch 41 and AVR (G-4), automatic synchronizing and the close order of 52G (G-1B). The 230 kV side is
+   not modelled: 52L stays closed. No relay is modelled either, so no protection operates by itself; a protection held on TA-9 trips the turbine through the IBD logic. Times
+   with no number in the drawings are marked model time. */
+const TCS_GEN = { volt: 30 /* s, model time: voltage build-up after 41 */, asd: 60 /* s, model time: ASD matches speed and voltage */, x3: 3 /* G-1B */, to: 300 /* G-1B 5 min */ };
+function tcsGen(U) {
+  if (U.gen) return U.gen;
+  const on = !!U.tb && (U.tb.st === 'sync' || U.tb.st === 'load');
+  return (U.gen = { f41: on, V: on ? 1 : 0, rated: on, ex: false, start: false, x25: false, tx: 0, ty: 0, on25: false, close: false, last: '' });
+}
+function tcsGenStep(U, dt) {
+  const g = tcsGen(U),
+    tb = U.tb,
+    g52 = tb.st === 'sync' || tb.st === 'load',
+    rpm = tb.rpm;
+  /* TURBINE RATED SPEED: ON >= 3550, OFF <= 3540 (IBD TD-1) */
+  if (rpm >= 3550) g.rated = true;
+  else if (rpm <= 3540) g.rated = false;
+  /* G-4: 41_CLOSE_CMD = ES_AND_52G_OPEN AND TURBINE_RATED_SPEED AND NOT 41_TRIP AND 41_CLOSE_REQ; EXCITATION AUTO START is a pulse of ATS step 4 */
+  if (g.ex && !g52 && g.rated) g.f41 = true;
+  g.ex = false;
+  g.V = g.f41 ? Math.min(1, g.V + dt / TCS_GEN.volt) : 0;
+  /* G-1B: the automatic synchronizing, 52L closed. 84GI = generator voltage on; the 5 min timer takes 25X1 away */
+  const gv = g.V >= 1,
+    can = g.f41 && !g52 && gv;
+  if (can && g.start && !g.x25 && g.ty < TCS_GEN.to) g.x25 = true;
+  if (!can) g.x25 = false;
+  g.tx = g.x25 ? g.tx + dt : 0;
+  const y1 = g.x25 && g.tx >= TCS_GEN.x3;
+  g.ty = y1 ? g.ty + dt : 0;
+  if (g.ty >= TCS_GEN.to) {
+    g.x25 = false;
+    g.start = false;
+    g.last = 'Auto synchronizing timed out (5 min): start it again';
+  }
+  g.on25 = y1 && g.ty >= TCS_GEN.asd;
+  /* 52G_CLOSE_ORDER = 52G_REMOTE AND 52G_AUTO AND 25_ON AND protection not operated AND 41 and 52L closed */
+  g.close = g.on25 && can;
+}
+/* a turbine trip: 52G is open, so ST TRIP opens 41 and the AVR (G-4) */
+function tcsGenTrip(U) {
+  Object.assign(tcsGen(U), { f41: false, V: 0, ex: false, start: false, x25: false, tx: 0, ty: 0, on25: false, close: false });
 }
 
 /* ---- engine/source.js ---- */
