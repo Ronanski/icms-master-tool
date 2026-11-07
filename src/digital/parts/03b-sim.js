@@ -257,7 +257,19 @@ function xconPeer(s, c) {
   }
   return (c.pk = r);
 }
+/* speed (F37: 13 % of an ABC step): the plant model reads the DITL outputs many times in one step and each read solved the whole sheet again. Nothing changes
+   the DITL inputs inside anUnitStep, so one solve per sheet per unit step (LS_SIMM.on = the number of the step, 0 = no memory) */
+const LS_SIMM = (typeof globalThis !== 'undefined' ? globalThis : window).LS_SIMM || ((typeof globalThis !== 'undefined' ? globalThis : window).LS_SIMM = { on: 0, n: 0 });
 function simSheet(s) {
+  if (LS_SIMM.on && s._smN === LS_SIMM.on) return s._smR;
+  const r = simSheet0(s);
+  if (LS_SIMM.on) {
+    s._smN = LS_SIMM.on;
+    s._smR = r;
+  }
+  return r;
+}
+function simSheet0(s) {
   s.nl.ufx = (s.nl.usr || []).filter(u => s.usw && s.usw[u.key]).map(u => u.n);
   /* 2.5.0-beta.11 (DITL PDF audit): off-sheet connector "(n) FROM DITL-xx" = the net of connector (n) "TO DITL-<this>" on that sheet
      (its last computed value; the one world runs every sheet, alone the other sheet keeps its last state) */
