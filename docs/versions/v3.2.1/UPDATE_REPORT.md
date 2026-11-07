@@ -1,5 +1,11 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.67 — Bed heat-up (F66) (2026-11-07, JENNIE)
+
+**Work done.** Below the start of coal (483 C, FHI Fig 2) the bed moves with a 4 h lag: refractory and bed charge are the heat sink. Live on beta.63 it rose 13 C/min; the source says 1 C/min (PR-OPE-5002), limit 153 C/h (FHI). Above 600 C the old 900 s lag stays.
+
+**Not tested.** Live. The lag is set from Fig 2 (110 C at 1 h), so the rate with real oil flows needs the next Cold run.
+
 ## 3.2.1-beta.64 — Fan current and FA header pressure, one law (2026-11-07, JENNIE)
 
 **Work done.** The HMI fan currents used a law of their own (0.3 + 0.7 x flow cubed); now the engine law (0.45 + 0.55). FA blower current and FA header pressure on the HMI follow the flow instead of standing at the snapshot.
