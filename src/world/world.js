@@ -801,12 +801,16 @@
       s.nl.avk = avOf(s);
       let R = simSheet(s),
         ch = false;
+      if (W.pulseScan) W.pulseScan(s, R);
       for (const g of s.nl.gates) if (g.t === 'TMR' && tmStep(g, g.ins.some(n => R.v[n]), dt)) ch = true;
       if (mvStep(s, R.v, dt)) ch = true;
       if (motStep(s, R.v, dt)) ch = true;
       if (fdStep(s, dt)) ch = true;
       if (invStep(s, R.v, dt)) ch = true;
-      if (ch) R = simSheet(s);
+      if (ch) {
+        R = simSheet(s);
+        if (W.pulseScan) W.pulseScan(s, R);
+      }
       out[s.name] = R.outOn;
       /* 3.2.0-beta.23: an output that changed in this scan (a push button seen, a step of a sequence): the next scans are short (W.busy) */
       if (!TMBUSY) {

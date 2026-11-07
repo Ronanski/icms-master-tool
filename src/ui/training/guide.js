@@ -291,16 +291,11 @@ window.LS_GUIDE = (function () {
      (14)Ditl80K / (16)Ditl80M, memory list STN102): 80K row 20 PLANT AIR / STEAM SELECT (1: PLANT AIR) = M.4212 "S/B SELECT PLANT AIR /
      STEAM P.B.(CRT)"; 80M row 6 M.417D AIR HEATER SOOTBLOWER START P.B. -> out 373 REMOTE START COMMAND -> 80K row 6 -> TR317 3 s ->
      SB PANEL O.077C MAIN POWER LINE FORWARD STARTER (with 80K row 5 M.4008 all lances on retract position, from DITL80L = the SB panel).
-     The forward starter is a 3 s pulse: it is latched in the plant step (onStep) so that x300 does not miss it */
+     The forward starter is a 3 s pulse: Mina F62: the engine latches it in the scan (src/world/dock-eng.js WORLD.seen), the page sees only the patches */
   const sbK = () => (typeof S !== 'undefined' ? S.sheets.find(x => /^\(S\d+\)DITL-80K$/.test(x.name)) : null);
   const aphSbFwd = () => {
-    const s = sbK(),
-      p = s && s.nl && (s.nl.pout || []).find(q => q.adr === 'O.077C');
-    try {
-      return !!(p && WL() && simSheet(s).v[p.n]);
-    } catch (e) {
-      return false;
-    }
+    const s = sbK();
+    return !!(s && WL() && WORLD.seen && WORLD.seen[s.name + '|O.077C']);
   };
   /* the lance retract limits of the SB panel (M.4008 on DITL-80 / 80A / 80G / 80K / 80S; no logic drawing of their source, 80L is the
      panel box): the field operator checks every lance at its retract position (PR-OPE-5002 sec 17 "Ensure soot blower lance is in
@@ -814,8 +809,8 @@ window.LS_GUIDE = (function () {
         sec: 27,
         t: 'Start the air heater soot blowing',
         d: 'Press the air heater soot blower START. The logic sends a 3 s forward starter command to the soot blower panel when the soot blower system is in MANUAL and every lance is retracted. Tags: M.417D (DITL-80M row 6), O.077C (DITL-80K).',
-        c: C('APH S/B forward starter O.077C (DITL-80K)', () => !WL() || !!G.aphSb, () => (WL() ? (G.aphSb || aphSbFwd() ? 'FORWARD STARTER ON' : 'not started') : '— (one world OFF)')),
-        a: [Object.assign(btn('APH S/B START (M.417D, DITL-80M)', () => (WL() ? dPress('DITL-80M', 5) : ''), () => !!G.aphSb), { dg: ['DITL-80M', 5], ad: 'DITL-80M@5' })]
+        c: C('APH S/B forward starter O.077C (DITL-80K)', () => !WL() || !!G.aphSb || aphSbFwd(), () => (WL() ? (G.aphSb || aphSbFwd() ? 'FORWARD STARTER ON' : 'not started') : '— (one world OFF)')),
+        a: [Object.assign(btn('APH S/B START (M.417D, DITL-80M)', () => (WL() ? dPress('DITL-80M', 5) : ''), () => !!G.aphSb || aphSbFwd()), { dg: ['DITL-80M', 5], ad: 'DITL-80M@5' })]
       },
       {
         st: 3,
@@ -1314,6 +1309,7 @@ window.LS_GUIDE = (function () {
       G.pw = {};
       G.cur = 0;
       G.aphSb = 0;
+      if (window.WORLD && WORLD.pulseClear) WORLD.pulseClear();
       HH = null;
       AN.checkSheets = trainSheets();
       /* 3.2.0 walkthrough #1: the start-up begins at t = 0 (the clock of the sheets counted the settling of the cold state: t = 11:29) and
@@ -1505,7 +1501,7 @@ window.LS_GUIDE = (function () {
     },
     mine: () => G.mine,
     /* live test #57: the APH sootblower was started (forward starter O.077C seen), for the SOP tick of sec 27 (live.js) */
-    aphSb: () => !!G.aphSb
+    aphSb: () => !!G.aphSb || aphSbFwd()
   };
   return API;
 })();
