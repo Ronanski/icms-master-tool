@@ -58,7 +58,7 @@ for (let p = 15; p <= 99; p++) {
     /* a link that comes in usually enters a named box: the wire on the far side of the box is the signal of this sheet */
     const dep = e[0] > c.cx,
       box = dep ? R.inputs.find(i => Math.abs(i.y - c.cy) < 5 && i.x > c.cx && i.x - c.cx < 330) : null;
-    refs.push({ n: num.s.trim(), to: m.join('/'), net: box ? box.net : R.netOf[e[2]], dep });
+    refs.push({ n: num.s.trim(), to: m.join('/'), net: box ? box.net : R.netOf[e[2]], dep, x: c.cx, y: c.cy });
   }
   /* nets as small numbers */
   const ids = new Map();
@@ -74,15 +74,15 @@ for (let p = 15; p <= 99; p++) {
     if (g.t === 'R' && g.ff) continue;
     if (g.t === 'S' && g.r) {
       ffs.add(g.r);
-      G.push(['FF', g.ins.map(nn), nn(g.out), g.r.ins.map(nn), Math.round(g.x0), Math.round(g.y0)]);
+      G.push(['FF', g.ins.map(nn), nn(g.out), g.r.ins.map(nn), Math.round(g.x0), Math.round(g.y0), Math.round(g.x1 - g.x0), Math.round(g.y1 - g.y0)]);
       continue;
     }
     if (g.t === 'S' || g.t === 'R') continue;
-    const r = [g.t, g.ins.map(nn), nn(g.out), g.t === 'WO' ? [nn(g.wipe)] : g.t === 'CMP' ? setPoint(J, g) : g.tm || 0, Math.round(g.x0), Math.round(g.y0)];
+    const r = [g.t, g.ins.map(nn), nn(g.out), g.t === 'WO' ? [nn(g.wipe)] : g.t === 'CMP' ? setPoint(J, g) : g.tm || 0, Math.round(g.x0), Math.round(g.y0), g.x1 ? Math.round(g.x1 - g.x0) : 0, g.y1 ? Math.round(g.y1 - g.y0) : 0];
     G.push(r);
   }
-  const I = R.inputs.map(i => [nn(i.net), i.name.replace(/\s+/g, ' ').slice(0, 90)]);
-  const X = refs.map(r => [nn(r.net), r.n, r.to, r.dep ? 1 : 0]);
+  const I = R.inputs.map(i => [nn(i.net), i.name.replace(/\s+/g, ' ').slice(0, 120), Math.round(i.x), Math.round(i.y)]);
+  const X = refs.map(r => [nn(r.net), r.n, r.to, r.dep ? 1 : 0, Math.round(r.x), Math.round(r.y)]);
   data.push({ id, sh: p, t: title, n: ids.size, g: G, i: I, x: X });
 }
 fs.writeFileSync(
