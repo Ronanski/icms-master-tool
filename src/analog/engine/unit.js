@@ -1554,7 +1554,7 @@ function anAcwStep(U, dt) {
                   the usual water velocity factor); Ts follows with tau 30 s (NO-SOURCE); no seawater = no condensing: Ts goes to 100 C;
      pressure     PT-CD1110 = saturation of Ts, and the air of a condenser not in vacuum (U.vac, the ejectors) takes it to the atmosphere;
                   hotwell temperature = Ts (alarm list normal 38.6 = saturation of the design 68.6 mbar);
-     turbine      the TCS LOW VACUUM trip at 0.447 kg/cm2A (NO-SOURCE: the TCS setting is not readable in the IBD; = the old U.vac 0.6);
+     turbine      the TCS LOW VACUUM trip at 0.26 kg/cm2 abs (IBD 310SC90-794 rev 2 sheet TA-10: 2 of 3, ON >= 0.26, OFF <= 0.22; LOW alarm 0.14);
      CEP          flow of a running pump = (condensate to the deaerator + recirculation) / running pumps (plant.js AN_CYC); head from the
                   curve; outlet = suction (condenser pressure + the water above the impeller) + head - kz (kz 0.96 kg/cm2, NO-SOURCE:
                   the transmitter elevation, calibrated to 16.9 at 150 MW); current = 28.1 A x shaft power / 245.7 kW (snapshot ratio). */
@@ -1565,7 +1565,7 @@ const AN_CD = {
   Cd: 31500,
   cp: 3.994,
   tau: 30,
-  Ptrip: 0.447,
+  Ptrip: 0.26,
   qQ: [0, 100, 200, 300, 400, 450, 480, 560],
   qH: [210, 209, 205, 196, 180, 170, 160, 130],
   pQ: [0, 50, 400, 480],
