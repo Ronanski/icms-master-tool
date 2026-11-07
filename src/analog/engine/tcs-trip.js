@@ -323,6 +323,26 @@ function tcsTripFault(U, a) {
   T.f[r.k] = a.on !== 0 && a.on !== false;
   return '';
 }
+/* the text of the sheets (plan c2, src/ui/shell/tcslogic.js): field tag, comparator, vote. Tags with the unit digit 1 of the n of the IBD */
+const TCS_TRIP_TXT = {
+  vac: ['PT-ST1110-1, 2, 3', 'at or above 0.26, reset 0.22 kg/cm2 abs', '2 out of 3, latched'],
+  mst: ['TE-MS1902-1, 2, 3', 'trip line of first stage pressure, 3 s, after 20 % load', '2 out of 3'],
+  thf: ['ZE-ST1003-1, 2, 3', 'rotor position +0.8 or -1.18 mm', '2 out of 3'],
+  thr: ['ZE-ST1003-1, 2, 3', 'rotor position +0.8 or -1.18 mm', '2 out of 3'],
+  ctl: ['PT-LO1006-1, 2, 3', 'at or below 112, reset 117 kg/cm2', '2 out of 3'],
+  brg: ['PT-LO1003-1, 2, 3', 'at or below 0.7, reset 1.05 kg/cm2', '2 out of 3'],
+  hood: ['TE-ST1110-1, 2, 3', 'at or above 107, reset 104 C', '2 out of 3'],
+  toil: ['PT-LO1007-1, 2, 3', 'at or below 81, reset 86 kg/cm2, 2 s, 60 s after a reset', '2 out of 3, latched'],
+  bos: ['SE-ST1001', '111.75 %, reset 111.25 %', '2 out of 3'],
+  eos: ['SE-ST1001', '110.5 %, reset 110 %', '2 out of 3'],
+  v1: ['VE-ST1001-1, 2', '0.200 mm and another shaft 0.125 mm, 3 s', ''],
+  v2: ['VE-ST1002-1, 2', '0.200 mm and another shaft 0.125 mm, 3 s', ''],
+  v3: ['VE-GE1001-1, 2', '0.200 mm and another shaft 0.125 mm, 3 s', ''],
+  v4: ['VE-GE1002-1, 2', '0.200 mm and another shaft 0.125 mm, 3 s', ''],
+  hpt: ['TE-ST1003-1, 2, 3', 'at or above 420, reset 415 C', '2 out of 3'],
+  hpd: ['PT-ST1001 minus PT-CR1901', 'limit table of first stage pressure, at 30 % load or above', '2 out of 3'],
+  hpp: ['PT-CR1901-1, 2, 3', 'at or above 44.9, reset 42.9 kg/cm2', '2 out of 3']
+};
 /* what the TCS panel shows */
 function tcsTripState(U) {
   const c = U.tc,
@@ -337,7 +357,11 @@ function tcsTripState(U) {
       u: r.u || '',
       on: !!(T.on[r.k] || T.f[r.k]),
       pv: r.pv ? +r.pv(U, c) : null,
-      modelled: !!r.pv
+      modelled: !!r.pv,
+      fault: !!T.f[r.k],
+      tag: (TCS_TRIP_TXT[r.k] || [])[0] || '',
+      lim: (TCS_TRIP_TXT[r.k] || [])[1] || '',
+      vote: (TCS_TRIP_TXT[r.k] || [])[2] || ''
     }))
   };
 }

@@ -547,3 +547,5 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.68** (2026-11-07): Step 48 air heater soot blowing ends with the real press in Worker (F62): the engine latches the 3 s forward starter O.077C in the scan and sends it to the page, the Guide no longer computes a sheet again on the page. Check says "not done" until the step's condition is met. Test `tests/regress/guide_step48.js`
 
 - **beta.75** (2026-11-07): Turbine trip logic from IBD TA-9 and TA-1 (plan c1): 22 causes with set points, first-out in the Event log and under the plant chip, Turbine trip and Turbine reset buttons. New file `src/analog/engine/tcs-trip.js`. Boiler MFT now trips the turbine (TA-9). Rows with no model value (thrust, HP exhaust temperature, TCS major trouble, generator protection, ATS shutdown) are field contacts by `AN.turbine('fault', { k, on })`
+
+- **beta.76** (2026-11-07): Turbine logic sheets (plan c2, first batch): Logic page, button Turbine IBD: TA-1, TA-9 to TA-22 with live values, field contacts can be pressed. 12 of 76 logic sheets. New file `src/ui/shell/tcslogic.js`
