@@ -499,7 +499,7 @@ function tcsCmd(U, cmd, arg) {
       c.opHold = false;
       return '';
   }
-  const k = { warm: 0, prep: 1, rub: 2, accel: 3, excite: 4, sync: 5, loadup: 6, normal: 7 }[cmd];
+  const k = { warm: 0, prep: 1, rub: 2, accel: 3, excite: 4, sync: 5, loadup: 6, normal: 7, shutdown: 8 }[cmd];
   if (k == null) return null;
   return tcsStepIn(U, k, arg);
 }
@@ -530,7 +530,7 @@ function tcsStepIn(U, k, arg) {
       ')'
     );
   if (c.step >= k) return 'Already done: ' + TCS.names[k];
-  const miss = tcsMiss(U, TCS_A[k]);
+  const miss = k === 8 ? '' : tcsMiss(U, TCS_A[k]);
   if (miss) return 'CRITERIA A' + k + ' (' + TCS.names[k] + ') missing: ' + miss;
   c.cur = k;
   c.ph = 'in';
@@ -717,6 +717,22 @@ function tcsStep(U, dt) {
         c.holdMin = TCS.hold(c.mode);
         tcsGcb(U, true);
       } else if (c.ph === 'init' && U.MW >= 0.9 * tb.aim && c.tm >= c.holdMin * 60) tcsDone(U, 5);
+      break;
+    case 8 /* SHUT-DOWN (775 page 29, 776 page 14 criteria 2.11): generator load < 20 %, 52G open command, 41 open, turbine trip */:
+      if (c.ph === 'in') {
+        c.hold = U.MW < 0.2 * 150 ? '' : 'Waiting: generator load must be below 20 % to shut down';
+        if (U.MW < 0.2 * 150) c.ph = '52g';
+      } else if (c.ph === '52g') {
+        c.sd52 = true;
+        tcsGcb(U, false);
+        Object.assign(tb, { st: 'roll', xfer: false, tgt: 0, aim: 0 });
+        c.ph = '41';
+      } else if (c.ph === '41') {
+        c.sd52 = false;
+        Object.assign(tcsGen(U), { f41: false, V: 0 });
+        c.exc = false;
+        c.ph = 'trip';
+      } else if (c.ph === 'trip') tcsTripManual(U);
       break;
     case 6 /* LOAD UP (page 26 ~ 27): ICV -> CV transfer, load up rate 5 %/min (in the TCS, unit.js) */:
       if (tb.st !== 'load') {

@@ -228,7 +228,7 @@ function tcsSheet(q) {
     syms: [],
     lyr: '',
     bv: BV,
-    sd: { tcs: 1, n: q.n, seg, gates, src, outs, term: [], dots, xcon: [], an }
+    sd: { tcs: 1, n: q.n, seg, gates, src, outs, term: [], dots, xcon: [], an, anl: [...new Set(B.flatMap(b => (/CMP|MID|FG|LS/.test(b.t) ? b.ins.concat(/MID|FG|LS/.test(b.t) ? [b.out] : []) : [])))] }
   };
 }
 /* the TCS sheets come after the DITL sheets; they are part of S.sheets, so the search, the viewer and the panel know them */
@@ -366,6 +366,7 @@ function tcsSim(s) {
     raw = (st && st.v) || [],
     v = new Array(nl.n).fill(0);
   for (let n = 0; n < nl.n; n++) v[n] = raw[n] > 0.5 ? 1 : 0;
+  for (const n of nl.anl || []) v[n] = 0;
   nl._v = v;
   s.avw = {};
   for (const a of nl.an) if (isFinite(raw[a.net])) s.avw[a.key] = +(+raw[a.net]).toFixed(Math.abs(raw[a.net]) < 100 ? 2 : 1);

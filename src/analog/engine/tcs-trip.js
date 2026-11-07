@@ -34,6 +34,20 @@ const TCS_MST = [
 const tcsFst = U => (U.pist && U.pist.length ? anUnitVal(U.pist[0]) : NaN); /* PT-ST1001 */
 const tcsCrp = U => (U.rhp && U.rhp.length > 2 ? anUnitVal(U.rhp[2]) : NaN); /* PT-CR1006 */
 /* the value of a field signal by its tag on the sheet; NaN = no value in the model */
+/* stop valve position 1 open, 0 full close: the master trip of TA-1 dumps the trip oil and the valves close (U.tauTrip); reset opens them */
+const tcsVp = (U, c) => (c.vp == null ? (c.vp = U.tb && U.tb.st !== 'off' ? 1 : 0) : c.vp);
+function tcsValves(U, c, ib, dt) {
+  tcsVp(U, c);
+  if (!ib.r1) return;
+  c.vp = ib.v['TA-1'] && ib.v['TA-1'][TA1_RESET] > 0.5 ? Math.min(1, c.vp + dt / 10) : Math.max(0, c.vp - dt / U.tauTrip);
+}
+/* I.0400 TURBINE TRIP to the DCS is TA-6 out 16 (valve position, or TCS MAJOR TROUBLE); before the first reset of a cold plant it stays 0 so the ATS can start */
+function tcsI0400(U, ib) {
+  const l = U.vtrip,
+    x = ib.r1 && ib.v['TA-6'] && ib.v['TA-6'][16] > 0.5 ? 1 : 0;
+  if (ib.ext || !l || l.S.rt.force[l.n] !== undefined || !l.S.ext.includes(l.n)) return;
+  if (l.S.rt.ext[l.n] !== x) l.S.rt.ext[l.n] = x;
+}
 const TCS_IBD_PV = [
   [/PT-STn110/, U => U.cdP],
   [/TE-MSn902/, U => tcsSteam(U).mst],
@@ -48,7 +62,14 @@ const TCS_IBD_PV = [
   [/TE-STn110/, (U, c) => c.Tx],
   [/SE-STn001/, U => (U.tb ? U.tb.rpm : 0)],
   [/PT-CRn901|HP TURBINE EXHAUST .*STEAM PRESS[.] [(][ABC]/, U => tcsCrp(U)],
-  [/GENERATOR LOAD/, U => ((+U.MW || 0) / 150) * 100]
+  [/GENERATOR LOAD/, U => ((+U.MW || 0) / 150) * 100],
+  /* the valves (IBD TA-6, TA-31 ~ 38) */
+  [/^MSV\([AB]\) FULL CLOSE/, (U, c) => (tcsVp(U, c) <= 0 ? 1 : 0)],
+  [/^RSV\([AB]\) FULL CLOSE/, (U, c) => (tcsVp(U, c) <= 0 ? 1 : 0)],
+  [/^ICV\([AB]\) FULL CLOSE/, U => (U.tb && U.tb.icv > 0.001 ? 0 : 1)],
+  [/^CV\([AB]\) FULL CLOSE/, U => (U.gv > 0.001 ? 0 : 1)],
+  [/^52G CLOSED/, U => (U.tb && (U.tb.st === 'sync' || U.tb.st === 'load') ? 1 : 0)],
+  [/^52G OPEN COMMAND FROM ATS/, (U, c) => (c.sd52 ? 1 : 0)]
 ];
 /* comparators with a variable limit; every fixed set point is read from the words under the block on the sheet (tools/data/ibd_build.mjs) */
 const TCS_MST_LOW = U => tcsSteam(U).mst <= tcsLin(TCS_MST, tcsFst(U));
@@ -139,6 +160,7 @@ const tcsIbdT = x => {
 function tcsIbdStep(U, c, dt) {
   const ib = tcsIb(c),
     B = tcsIbdBind();
+  tcsValves(U, c, ib, dt);
   for (const r of B) {
     const s = r.s,
       id = s.id,
@@ -223,6 +245,7 @@ function tcsIbdStep(U, c, dt) {
     if (a && ib.v['TA-9'][a[0]] > 0.5) c.mop = [true, true];
     tcsOilSet(c);
   }
+  tcsI0400(U, ib);
   ib.rst0 = !!c.rst;
   ib.pb.trip = Math.max(0, (ib.pb.trip || 0) - dt);
   ib.pb.rst = Math.max(0, (ib.pb.rst || 0) - dt);
