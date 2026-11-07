@@ -1,5 +1,11 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.64 — Fan current and FA header pressure, one law (2026-11-07, JENNIE)
+
+**Work done.** The HMI fan currents used a law of their own (0.3 + 0.7 x flow cubed); now the engine law (0.45 + 0.55). FA blower current and FA header pressure on the HMI follow the flow instead of standing at the snapshot.
+
+**Not tested.** Live.
+
 ## 3.2.1-beta.63 — Air preheater and O2 from FHI Tab 3 (2026-11-07, JENNIE)
 
 **Work done.** O2 from the coal analysis of Tab 3 (5.46 T of air per T of coal), one value on both analyzers; air preheater gas and air temperatures from the Tab 3 balance, rotor stop included; HMI pages use the same equations. See GAS_PATH.md.

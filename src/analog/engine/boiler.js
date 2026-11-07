@@ -291,6 +291,8 @@ const AN_FN = {
     sov: ['DITL-28C', 'DITL-28C #B']
   }
 };
+/* motor current: no-load share + the rest x air power over the snapshot one. Same law on the HMI (api.js fanI) */
+const anFanI = (I0, on, x) => (on ? I0 * (AN_FN.fI + (1 - AN_FN.fI) * Math.max(0, x)) : 0);
 function fnRow(n, r) {
   try {
     const s = S.sheets.concat(WORLD.inst || []).find(x => x.name.endsWith(n));
@@ -352,7 +354,7 @@ function anFanStep(U, dt) {
   U.fnFaP = K.fa.P0.map(p => lag('fp' + p, (p / K.fa.P0[0]) * pfa, 2));
   U.fnFaQ = qfa;
   const qi = g.map(x => (g[0] + g[1] > 0 ? (qfa * x) / (g[0] + g[1]) : 0));
-  const cur = (I0, on, x) => (on ? I0 * (K.fI + (1 - K.fI) * Math.max(0, x)) : 0);
+  const cur = anFanI;
   U.fnI = U.fnI || [0, 0, 0, 0, 0];
   U.fnIa = lagI('ia', cur(K.I0.fa, fr[0], (qi[0] * pfa) / (K.fa.Q0 * K.fa.P0[0])), 2);
   U.fnIb = lagI('ib', cur(K.I0.fa, fr[1], (qi[1] * pfa) / (K.fa.Q0 * K.fa.P0[0])), 2);
