@@ -21,3 +21,7 @@ Calculated, not vendor data. A shut extraction stays in the turbine down to the 
 - No.2 LP heater: 12.27 T/H x 311.4 kJ/kg, 1.0 MW.
 
 Same coal, colder feedwater: steam x 1 / (1 + 4.6 x dT / 2382). No.2 HP heater out, dT 49.7 C: steam -8.8 %. So the two effects nearly cancel in MW and the heat rate gets worse. Boiler response to colder feedwater (gas side, steam temperature) is for Phase 2. Load limit with heaters out: NO-SOURCE.
+
+## Heater water side (beta.50)
+
+Valves from PD-017, PD-018. Tubes shut and bypass open: the water skips the heater and its extraction stays in the turbine. Tubes and bypass both shut: no flow through that line. No.1 LP heater: 8.42 T/H x 257.2 kJ/kg, 0.6 MW. Split between tubes and bypass while both are open: by opening, NO-SOURCE.

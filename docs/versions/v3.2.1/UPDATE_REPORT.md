@@ -473,3 +473,4 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.47** (2026-11-07): alarm limits from alarm list 2016-09-12 (58 tags, first stage C corrected by hand); primary air to the furnace FIFA1079 live (name clash with the fan count); turbine speed live at every load, limits for 3600 rpm; one condenser box shut sends its heat to the other box
 - **beta.48** (2026-11-07): Worker: a press acts fast again (a whole state 1.5 s to 0.17 s, a normal patch 100 to 22 ms); a patch going in is not called a stall (Mina F11)
 - **beta.49** (2026-11-07): an isolated heater changes the plant: colder feedwater makes less steam per coal, the extraction stays in the turbine and adds MW, more steam to the condenser (HEAT_BALANCE.md)
+- **beta.50** (2026-11-07): water side of all five heaters: inlet, outlet and bypass valves change the temperature, the extraction and the flow; HH 140 on all five (ABC-035 ~ 039). Source: plant-study 11-heater-valves.md

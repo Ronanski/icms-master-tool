@@ -1099,6 +1099,9 @@ function swSolve(st) {
        V-MU0013 / 15 / 17 (SOP: OPEN);
      air (PD-023 Rev C): unit 1 header isolation V-IA1101 (IA) / V-PA1087 (PA), cross-tie PA -> IA tanks V-PA0013 (normally closed). */
 const AN_FV0 = {
+  /* the water side of the feedwater heaters (PD-017, team-files/plant-study/11-heater-valves.md): manual gear valves, no DCS signal */
+  'V-FW1009': 100, 'V-FW1010': 100, 'V-FW1011': 0, 'V-FW1012': 100, 'V-FW1013': 100, 'V-FW1014': 0,
+  'V-CD1026': 100, 'V-CD1027': 100, 'V-CD1028': 0, 'V-CD1029': 100, 'V-CD1030': 100, 'V-CD1031': 0,
   'V-CW1002': 100, 'V-CW1004': 100, 'V-CW1007': 100, 'V-CW1009': 100,
   'V-CW1010': 100, 'V-CW1011': 100, 'V-CW1012': 0, 'V-CW1013': 100, 'V-CW1014': 100, 'V-CW1015': 0,
   'V-MU0001': 100, 'V-MU0002': 100, 'V-MU0003': 100, 'V-MU0004': 100, 'V-MU0005': 100,
@@ -1110,6 +1113,14 @@ const AN_FV0 = {
      (the standby pump lined up for its auto start) */
   'V-FW1001': 100, 'V-FW1002': 100
 };
+/* the water of a heater: inlet, outlet, bypass openings (%) -> share through the tubes (s) and whether the line passes at all (p).
+   The split between the tubes and the bypass by opening: bypass hydraulics NO-SOURCE */
+function anHtrPath(i, o, b) {
+  const th = p => Math.max(0, Math.min(1, p / 20)),
+    w = Math.min(th(i), th(o)),
+    y = th(b);
+  return { s: w + y > 0 ? w / (w + y) : 1, p: Math.min(1, w + y) };
+}
 /* the opening of a field valve (0 ~ 100 %), the normal line-up while the field operator has not turned it */
 const anFv = tag => {
   const V = (typeof AN_SRC !== 'undefined' && AN_SRC.valve) || {};
@@ -1681,8 +1692,8 @@ function anFwStep(U, dt) {
    The extraction pressure goes with the turbine steam (U.ms / 458.684, a turbine stage: NO-SOURCE shape, no turbine heat balance in the
    repository or on the PC); a shut-off MOV less than 20 % open throttles it (NO-SOURCE). The heater gives FW out = saturation of its
    shell + TTD, never below FW in; the extraction (= drain) flow from its heat duty, scaled on the design point. Metal / water lag 120 s
-   (NO-SOURCE). Not modelled: the shell level (ABC-035 / 036 loops keep their generic model), the heater bypass on level HH. */
-const AN_HP = { dhX: [1160.1, 917.1, 454.8, 311.4] /* kJ/kg down to the exhaust 2378.4: No.2 HPH hot reheat 3538.5, No.1 HPH 3295.5, No.3 LPH 2833.2, No.2 LPH 2689.8 (HEAT_BALANCE.md) */, cpFw: 4.6 /* kJ/kg per C, feedwater 195.7 to 245.4 C */, dhB: 2382 /* kJ/kg, main steam 3446.7 less feedwater 1064.4 */, F0: 458.684, P1: 37.48 - 1.0332, P2: 14.12 - 1.0332, ttd1: 1.07, ttd2: 0.05, dT1: 195.7 - 158.4, dT2: 245.4 - 195.7, m1: 25.33, m2: 45.147, dca1: 166.3 - 158.4, dca2: 201.3 - 195.7, tau: 120 };
+   (NO-SOURCE). The water side valves: AN_FV0, anHtrPath. */
+const AN_HP = { dhX: [1160.1, 917.1, 454.8, 311.4, 257.2] /* kJ/kg down to the exhaust 2378.4: No.2 HPH hot reheat 3538.5, No.1 HPH 3295.5, No.3 LPH 2833.2, No.2 LPH 2689.8, No.1 LPH saturated 2635.6 (HEAT_BALANCE.md) */, cpFw: 4.6 /* kJ/kg per C, feedwater 195.7 to 245.4 C */, dhB: 2382 /* kJ/kg, main steam 3446.7 less feedwater 1064.4 */, F0: 458.684, P1: 37.48 - 1.0332, P2: 14.12 - 1.0332, ttd1: 1.07, ttd2: 0.05, dT1: 195.7 - 158.4, dT2: 245.4 - 195.7, m1: 25.33, m2: 45.147, dca1: 166.3 - 158.4, dca2: 201.3 - 195.7, tau: 120 };
 function anHphStep(U, dt) {
   const K = AN_HP,
     ms = Math.max(0, +U.ms || 0),
@@ -1698,10 +1709,13 @@ function anHphStep(U, dt) {
     Pda = U.xt && U.xt.dea ? anUnitVal(U.xt.dea) : NaN,
     Tin = isFinite(Pda) && Pda > 0.05 ? steamTsat(Pda) : isFinite(U.Tamb) ? U.Tamb : 30,
     sat = P => (P > -0.9 ? steamTsat(P) : 0),
-    t1 = Math.max(Tin, sat(Ps1) + K.ttd1),
-    t2 = Math.max(t1, sat(Ps2) + K.ttd2),
+    w1 = anHtrPath(anFv('V-FW1009'), anFv('V-FW1010'), anFv('V-FW1011')),
+    w2 = anHtrPath(anFv('V-FW1012'), anFv('V-FW1013'), anFv('V-FW1014')),
+    t1 = Tin + w1.s * Math.max(0, sat(Ps1) + K.ttd1 - Tin),
+    t2 = t1 + w2.s * Math.max(0, sat(Ps2) + K.ttd2 - t1),
     ffw = typeof AN_CYC !== 'undefined' && isFinite(AN_CYC.ffw) ? Math.max(0, AN_CYC.ffw) : 0,
     lag = (k, x) => (U[k] = isFinite(U[k]) && dt > 0 ? U[k] + ((x - U[k]) * Math.min(dt, K.tau)) / K.tau : x);
+  U.fwPath = Math.min(w1.p, w2.p); /* both the tubes and the bypass of a heater shut = no feedwater */
   U.hpT1 = Math.round(10 * lag('hpT1x', t1)) / 10;
   U.hpT2 = Math.round(10 * lag('hpT2x', t2)) / 10;
   const f = ffw / K.F0,
@@ -1719,7 +1733,9 @@ function anHphStep(U, dt) {
     t2o = Math.max(t1o, sat((K.P1 + 1.0332) * (ms / K.F0) - 1.0332) + K.ttd2),
     e1o = ffw > 1 ? (K.m1 * f * Math.max(0, t1o - Tin)) / K.dT1 : 0,
     e2o = ffw > 1 ? (K.m2 * f * Math.max(0, t2o - t1o)) / K.dT2 : 0,
-    x = [Math.max(0, e2o - e2), Math.max(0, e1o - e1), (15.25 * ms * (1 - pos('DITL-97') / 100)) / K.F0, (12.27 * ms * (1 - pos('DITL-98') / 100)) / K.F0];
+    ls = U.lpS || {},
+    sh = k => (isFinite(ls[k]) ? ls[k] : 1),
+    x = [Math.max(0, e2o - e2), Math.max(0, e1o - e1), (15.25 * ms * (1 - (pos('DITL-97') / 100) * sh('H3'))) / K.F0, (12.27 * ms * (1 - (pos('DITL-98') / 100) * sh('H2'))) / K.F0, (8.42 * ms * (1 - sh('H1'))) / K.F0];
   U.xtra = x[0] + x[1] + x[2] + x[3]; /* T/H more to the condenser */
   U.dMWx = (x.reduce((a, q, i) => a + q * K.dhX[i], 0) * 0.985) / 3600;
   U.hpFac = 1 / (1 + (K.cpFw * Math.max(0, t2o - U.hpT2)) / K.dhB);
@@ -1750,11 +1766,11 @@ const AN_HD = {
   /* key, ABC sheet, level AIs, primary / alternate controller, design extraction t/h, heater before (cascade), H.H. mm, shell ID m,
      length m, water kg/m3, primary capacity t/h at 100 % (150 MW), extraction MOV (DITL) */
   h: [
-    ['H6', 'ABC-036', ['AI0677', 'AI0853'], 'LICHD11061', 'LICHD11062', 45.147, null, 150, 1.25, 9.1385, 864, 45.147 / 0.5, 'DITL-94'],
+    ['H6', 'ABC-036', ['AI0677', 'AI0853'], 'LICHD11061', 'LICHD11062', 45.147, null, 140, 1.25, 9.1385, 864, 45.147 / 0.5, 'DITL-94'],
     ['H5', 'ABC-035', ['AI0676', 'AI0852'], 'LICHD11051', 'LICHD11052', 25.33, 'H6', 140, 1.156, 9.595, 900, (25.33 + 45.147) / 0.5, 'DITL-95'],
     ['H3', 'ABC-039', ['AI0675', 'AI0851'], 'LICHD11031', 'LICHD11032', 15.246, null, 140, 1.03, 10.674, 961, 7.7 / 0.324 / Math.sqrt(203.7 / 458.684), 'DITL-97'],
-    ['H2', 'ABC-038', ['AI0674', 'AI0850'], 'LICHD11021', 'LICHD11022', 12.27, 'H3', 150, 1.08, 10.679, 974, 3.4 / 0.999 / Math.sqrt(203.7 / 458.684), 'DITL-98'],
-    ['H1', 'ABC-037', ['AI0673', 'AI0849'], 'LICHD11011', 'LICHD11012', 17.861, 'H2', 150, 1.13, 13.612, 990, (17.861 * 203.7 / 458.684 + 13.1) / 0.136 / Math.sqrt(203.7 / 458.684), null]
+    ['H2', 'ABC-038', ['AI0674', 'AI0850'], 'LICHD11021', 'LICHD11022', 12.27, 'H3', 140, 1.08, 10.679, 974, 3.4 / 0.999 / Math.sqrt(203.7 / 458.684), 'DITL-98'],
+    ['H1', 'ABC-037', ['AI0673', 'AI0849'], 'LICHD11011', 'LICHD11012', 17.861, 'H2', 140, 1.13, 13.612, 990, (17.861 * 203.7 / 458.684 + 13.1) / 0.136 / Math.sqrt(203.7 / 458.684), null]
   ],
   F0: 458.684,
   fA: 0.7,
@@ -1795,7 +1811,7 @@ function anHdStep(U, dt) {
     let ein;
     if (k === 'H6') ein = isFinite(U.hpF2) ? U.hpF2 : 0;
     else if (k === 'H5') ein = isFinite(U.hpF1) && isFinite(U.hpF2) ? U.hpF1 - U.hpF2 : 0;
-    else ein = ext * ld * thr(pos(mov));
+    else ein = ext * ld * thr(pos(mov)) * (U.lpS && isFinite(U.lpS[k]) ? U.lpS[k] : 1);
     const win = ein + (from && out[from] ? out[from] : 0);
     const c2 = (K.alt[k] != null ? K.alt[k] : cap1) * sq;
     /* the split range of the drawing (ABC-035 ~ 039): the primary controller MV goes to the primary valve by an F(X) (LN38 ...) and,
@@ -1861,7 +1877,7 @@ function anHdStep(U, dt) {
    How it works: the shell pressure (abs) = design x main steam / 458.684 x the extraction MOV (DITL-97 No.3, DITL-98 No.2; the No.1 LPH has
    none), as AN_HP / AN_HD; condensate out = saturation of the shell - TTD, never below the water that comes in; drain out = condensate in
    + DCA while the heater drains (else the shell saturation); lag 120 s (NO-SOURCE, as AN_HP). NO-SOURCE: the 1.35 C rise taken with
-   the load share; no pipe loss to the deaerator (02.png 94 / 93 C). Not modelled: the LPH bypass MV-CD1003. */
+   the load share; no pipe loss to the deaerator (02.png 94 / 93 C). */
 const AN_LP = {
   F0: 458.684,
   /* key, design shell kgf/cm2A, TTD, DCA, extraction MOV */
@@ -1890,12 +1906,24 @@ function anLphStep(U, dt) {
     hw = isFinite(U.cdT) ? U.cdT : isFinite(U.Tamb) ? U.Tamb : 30,
     r1 = x => Math.round(10 * x) / 10,
     hd = U.hd || [];
+  /* No.1 LPH: motor valves MV-CD1001 / 1002 / bypass 1003 (DITL-69 / 70 / 71); No.2, No.3: gear valves */
+  const dp = (n, d) => {
+      const p = typeof anDitlPos === 'function' ? anDitlPos(n, 0) : null;
+      return p == null ? d : p;
+    },
+    wL = {
+      H1: anHtrPath(dp('DITL-69', 100), dp('DITL-70', 100), dp('DITL-71', 0)),
+      H2: anHtrPath(anFv('V-CD1026'), anFv('V-CD1027'), anFv('V-CD1028')),
+      H3: anHtrPath(anFv('V-CD1029'), anFv('V-CD1030'), anFv('V-CD1031'))
+    };
+  U.lpS = { H1: wL.H1.s, H2: wL.H2.s, H3: wL.H3.s };
+  U.cdPath = Math.min(wL.H1.p, wL.H2.p, wL.H3.p); /* both the tubes and the bypass of a heater shut = no condensate */
   let tin = lag('in', hw + K.rise * Math.max(0, Math.min(1, ld)));
   const t = { in1: tin };
   for (const [k, P0, ttd, dca, mov] of K.h) {
     const Ps = P0 * ld * thr(pos(mov)),
       ts = anTsatA(Ps),
-      tout = lag(k, Math.max(tin, ts - ttd)),
+      tout = lag(k, tin + (wL[k] ? wL[k].s : 1) * Math.max(0, ts - ttd - tin)),
       h = hd.find(x => x.k === k),
       drains = h && h.win > 0.5;
     t[k] = { in: tin, out: tout, Ps, dr: lag(k + 'd', drains ? tin + dca : Math.max(tin, ts)) };
