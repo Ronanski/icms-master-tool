@@ -10,3 +10,14 @@ Walang vendor heat balance sa documents. Ito ay calculated mula sa mass balance 
 - Bahagi ng shaft power: HP 25 %, IP / LP 75 %.
 
 Hindi ito vendor data. Rated point lang ito; ang mas mababang load ay titimplahin sa FHI curves at procedures.
+
+## Isolated heaters (beta.49)
+
+Calculated, not vendor data. A shut extraction stays in the turbine down to the exhaust 2378.4 kJ/kg:
+
+- No.2 HP heater: 45.147 T/H x 1160.1 kJ/kg, 14.3 MW.
+- No.1 HP heater: 25.33 T/H x 917.1 kJ/kg, 6.4 MW.
+- No.3 LP heater: 15.25 T/H x 454.8 kJ/kg, 1.9 MW.
+- No.2 LP heater: 12.27 T/H x 311.4 kJ/kg, 1.0 MW.
+
+Same coal, colder feedwater: steam x 1 / (1 + 4.6 x dT / 2382). No.2 HP heater out, dT 49.7 C: steam -8.8 %. So the two effects nearly cancel in MW and the heat rate gets worse. Boiler response to colder feedwater (gas side, steam temperature) is for Phase 2. Load limit with heaters out: NO-SOURCE.
