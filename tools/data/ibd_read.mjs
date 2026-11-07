@@ -50,6 +50,7 @@ export function readPage(J) {
       ffs.push(g);
     }
   }
+  const rects = [];
   /* the edges of a box with words in it (ANN, SOE, a push button, a valve block) are not wires: two wires that end on one box are two signals */
   {
     const hs = segs.filter(s => H(s) && len(s) > 8 && len(s) < 260 && !used.has(s)),
@@ -65,6 +66,7 @@ export function readPage(J) {
         if (!top || !bot) continue;
         if (!words.some(q => q.cx > v[0] && q.cx < w[0] && q.cy > lo && q.cy < hi)) continue;
         for (const s of [v, w, top, bot]) used.add(s);
+        rects.push({ x0: v[0], x1: w[0], y0: lo, y1: hi });
       }
   }
   /* a dashed line (an analog signal): collinear dashes become one wire */
@@ -232,7 +234,10 @@ export function readPage(J) {
       L = left.length ? left : near.filter(w => w.x >= x && w.x - x < 240);
     /* the tag sits in the right part of the box, past the place a dashed line starts */
     const tags = near.filter(w => /^[A-Z]+-[A-Z]+n[0-9]/.test(w.s.trim()) && !L.includes(w) && Math.abs(w.cy - y) < 13 && Math.abs(w.x - x) < 200);
+    /* the number in the off-page circle and its sheet reference are no part of the name */
+    const ref = w => /^[0-9]+$/.test(w.s.trim()) || /^SH-/.test(w.s.trim()) || /^(T[A-E]|GD|G)-[0-9]/.test(w.s.trim()) || /^[(]310S/.test(w.s.trim()) || /^[(][*][0-9][)]$/.test(w.s.trim());
     return L.concat(tags)
+      .filter(w => !ref(w))
       .sort((p, q) => q.y - p.y || p.x - q.x)
       .map(w => w.s.trim())
       .join(' ');
@@ -241,17 +246,24 @@ export function readPage(J) {
   for (const n of used2) {
     if (driven.has(n)) continue;
     const e = ends.filter(([, , i]) => net(i) === n).sort((a, b) => a[0] - b[0])[0];
-    inputs.push({ net: n, name: e ? nameAt(e[0], e[1]) : '', x: e && e[0], y: e && e[1] });
+    const nm = e ? nameAt(e[0], e[1]) : '';
+    const bw = e ? words.filter(w => w.x < e[0] && e[0] - w.x < 300 && Math.abs(w.cy - e[1]) < 13 && nm.includes(w.s.trim())) : [];
+    inputs.push({ net: n, name: nm, x: e && e[0], y: e && e[1], bx: bw.length ? Math.min(...bw.map(w => w.x)) : null });
   }
+  /* what a wire ends on: a box (ANN, SOE, ATS, a valve block) or a named tag: the page draws the wire to it */
+  const sinks = rects.map(r => ({ ...r, nets: [] }));
+  for (const [x, y, i] of ends)
+    for (const r of sinks)
+      if (Math.abs(x - r.x0) < 2.5 && y > r.y0 - 1 && y < r.y1 + 1 && driven.has(net(i)) && !r.nets.some(q => q[0] === net(i))) r.nets.push([net(i), y]);
   const outputs = [];
   for (const g of gates) {
     if (!g.out || used2.has(g.out)) continue;
     const e = ends.filter(([, , i]) => net(i) === g.out).sort((a, b) => b[0] - a[0])[0];
     const nm = e ? words.filter(w => w.x > e[0] - 2 && w.x - e[0] < 330 && Math.abs(w.cy - e[1]) < 17).map(w => w.s.trim()).join(' ') : '';
-    outputs.push({ net: g.out, name: nm });
+    outputs.push({ net: g.out, name: nm, x: e && e[0], y: e && e[1] });
   }
   const netOf = wires.map((_, i) => net(i));
-  return { gates, inputs, outputs, wires: wires.length, nots: nots.length, wireSegs: wires, netOf };
+  return { gates, inputs, outputs, sinks, wires: wires.length, nots: nots.length, wireSegs: wires, netOf };
 }
 if (process.argv[1] && process.argv[1].endsWith('ibd_read.mjs')) {
   for (const p of process.argv.slice(3)) {

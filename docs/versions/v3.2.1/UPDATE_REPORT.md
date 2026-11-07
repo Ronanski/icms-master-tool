@@ -577,3 +577,5 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.88** (2026-11-07): TCS is its own page on the left rail, out of the ABC and DITL Logic page: sheet list with space and wrapped names, Values, Trace, Inspector, Inputs. Titles of TA-6, TA-20, TA-22 read from the IBD
 
 - **beta.89** (2026-11-07): Turbine reset in Worker: trip, reset and field contacts write only in the engine, so the page keeps the answer of the engine and the plant chip clears after a reset
+
+- **beta.90** (2026-11-07): TCS page: Load IBD drawing reads a file made on this PC, kept only in this browser; without it the page shows the app sheets. The drawing never enters the repository, dist or the Beta. Clean input names in the netlist
