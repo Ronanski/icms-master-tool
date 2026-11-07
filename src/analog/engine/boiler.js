@@ -728,6 +728,8 @@ function anBaStart(U) {
   baPub(U);
 }
 function anBaStep(U, dt) {
+  /* chain conveyor L-1090: runs at load (16.PNG); from Cold on its ON COMMAND, DITL-BA68 output 5 */
+  U.baConv = !U.cold || fnOut('DITL-BA68', 5) === 1 ? 1 : 0;
   const B = U.ba;
   if (!B) return;
   const K = AN_BA,

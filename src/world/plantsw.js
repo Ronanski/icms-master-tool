@@ -66,6 +66,9 @@
   const uOf = k => () => (window.AN && AN.unit && isFinite(AN.unit[k]) ? AN.unit[k] : NaN);
   L.push(['LS-MU0708-A', uOf('muLvA'), 0.2, 'lo', 0, 0.05], ['LS-MU0708-B', uOf('muLvB'), 0.2, 'lo', 0, 0.05]);
   for (const p of ['A', 'B', 'C', 'D']) for (const e of ['1', '2']) L.push(['FS-CW1060-' + p + e, uOf('acQ'), 150, 'lo', 0, 50]);
+  /* the ash coolers need the chain conveyor running and no local emergency stop (DITL-21A, IO list MIR-L1090, LIS3-L1060x) */
+  L.push(['MIR-L1090', uOf('baConv'), 0.5, 'hi']);
+  for (const p of ['A', 'B', 'C', 'D']) L.push(['LIS3-L1060' + p, () => 1, 0.5, 'hi']);
   /* Mina M3 (beta.88 / beta.89: PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"). Each BFWP has two auxiliary lube oil pumps, DCS
      motors of DITL-22 (IO list STN103: machine A = LOP A of BFWP-A O.0126 / I.0050, B = LOP B of BFWP-A O.0446 / I.0370, C = LOP A of
      BFWP-B O.0127 / I.0053, D = LOP B of BFWP-B O.0447 / I.0373; world.js isLop4). The lube oil HEADER pressure is held by the pressure control valve at 2.0 kg/cm2(g) while an oil pump runs (KSB
