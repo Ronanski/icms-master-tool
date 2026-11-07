@@ -455,6 +455,7 @@ function anUnitStart() {
   }
   U.pa = ais('ABC-006', 'AI0166');
   U.bedDp = [[ais('ABC-006', 'AI0134'), 1426], [ais('ABC-006', 'AI0262'), 1432]];
+  U.soxAI = anUnitAIs('1|AI0466'); /* stack SOx, boiler.js anSoxStep */
   U.bedSc = [['ABC-009A', 'SICL1060A'], ['ABC-009A', 'SICL1060B'], ['ABC-009A', 'SICL1060C'], ['ABC-009B', 'SICL1060D']].map(([k, t]) => {
     /* MAN stations, in rpm (compile-step.js): their output pin */
     const x = shOf(k),
@@ -668,7 +669,7 @@ function anUnitStart() {
   /* the transmitters this model writes: the plant model of a loop on them stops writing (ABC-001C PIC-COBM: main steam pressure) */
   const own = new Set();
   const lists = [U.msp, U.drum, U.msf, U.spd || []]
-    .concat(U.mw, U.tin, U.rhp, U.pist, U.o2, [U.pa], U.tbed, U.aphT, U.saP, U.idfS.length ? [U.idfS] : [])
+    .concat(U.mw, U.tin, U.rhp, U.pist, U.o2, [U.pa], U.tbed, U.aphT, U.saP, U.idfS.length ? [U.idfS] : [], (U.bedDp || []).map(x => x[0]), [U.soxAI])
     .concat(...U.sh.map(h => h.L))
     .concat([U.xt.cr, U.xt.hr, U.xt.aux, U.xt.fw, U.xt.lt2], U.xt.rhi, U.xt.fab, U.zt.map(z => z.L), U.lo || [])
     .concat(...(U.hd || []).map(h => h.L));
@@ -3074,7 +3075,8 @@ function anUnitStep0(dt) {
   }
   /* bed inventory and the furnace pressure drop */
   if (U.paNet >= 0) {
-    const rpm = (U.bedSc || []).reduce((a, o) => a + Math.max(0, Math.min(5, +o.S.rt.v[o.n] || 0)), 0),
+    /* only a running cooler takes ash out (DITL-21A and its instances); 16.PNG: all four stopped at 150 MW */
+    const rpm = (U.bedSc || []).reduce((a, o, i) => a + (typeof anDitlRun === 'function' && anDitlRun(['DITL-21A', 'DITL-21A #B', 'DITL-21A #C', 'DITL-21A #D'][i]) === 1 ? Math.max(0, Math.min(5, +o.S.rt.v[o.n] || 0)) : 0), 0),
       k = anBedStep(U, dt, rpm, Math.max(0, +U.tafS.rt.v[U.paNet]), U.taf && U.taf.length === 3 ? Math.max(0, +U.tafS.rt.v[U.taf[2]]) : null);
     for (const [L, a] of U.bedDp || []) if (L.length) anUnitWrite(L, a * k);
   }

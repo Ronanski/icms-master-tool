@@ -792,6 +792,8 @@ function anSoxStep(U, dt) {
   const c = U.Fc || 0;
   if (c > 1) U.soxZ += ((((U.lmQ || 0) * 0.9366) / 100 / ((c * 0.0149) / 32) - U.soxZ) * Math.min(dt, K.tau)) / K.tau;
   U.soxF = Math.min(K.max, Math.exp(-K.k * (U.soxZ - K.z0)));
+  /* written here: the loop model limited the factor (Mina item 8, flat at 96 ppm) */
+  if (U.soxAI && U.soxAI.length) anUnitWrite(U.soxAI, 41 * U.soxF * Math.min(1.1, c / Math.max(1, U.F0)));
 }
 function anBoilerStep(U, dt) {
   anDieselOilStep(U, dt);
