@@ -212,6 +212,7 @@
     ['home', 'Home', 'Start here: what do you want to do, starting state of the plant, recent sheets'],
     ['operate', 'Plant view', 'Plant graphics with the faceplates (A / M / R, SV, MV) like the operator station; on a PC it opens in its own window'],
     ['logic', 'Logic', 'The ABC (analog) and DITL (digital) drawings: trace, run, force'],
+    ['tcs', 'TCS', 'Turbine control system: the sheets of the Interlock Block Diagram, simulated'],
     ['library', 'Library', 'I/O list, memory list, wiring, relay / SER, calculations'],
     ['training', 'Training', 'The start-up procedure PR-OPE-5002 step by step, with a check box for every step'],
     ['tools', 'Tools', 'Block tests, audit, health, project files, drawing edit', 1]
@@ -350,7 +351,7 @@
     return true;
   }
   function setTab(t, keep) {
-    if (!TABS.some(x => x[0] === t)) t = 'logic';
+    if (t === 'tcs' || !TABS.some(x => x[0] === t)) t = 'logic';
     /* user 2026-10-30: while the Training dock is on, the centre is the HMI (the Training list and Home are not shown) */
     try {
       if (window.LS_DOCK && LS_DOCK.tabFix) t = LS_DOCK.tabFix(t);
@@ -650,17 +651,16 @@
     const tabs = E('div', { cls: 'tabs' });
     TABS.forEach(([k, l, t, hid]) => {
       if (hid) return;
-      const b = E('button', { txt: l, title: t, on: () => (k === 'operate' && pvPop && pvPop()) || setTab(k) });
+      const b = E('button', { txt: l, title: t, on: () => (k === 'tcs' ? window.LS_TCSL && LS_TCSL.open() : (k === 'operate' && pvPop && pvPop()) || setTab(k)) });
       tabBtns[k] = b;
       tabs.append(b);
     });
     const sub = E('div', { cls: 'sub' });
     [
       ['an', 'ABC', 'Analog logic (boiler control): 54 sheets'],
-      ['dig', 'DITL', 'Digital interlock logic: all the DITL sheets'],
-      ['ibd', 'Turbine', 'Turbine control system: the sheets of the Interlock Block Diagram']
+      ['dig', 'DITL', 'Digital interlock logic: all the DITL sheets']
     ].forEach(([k, l, t]) => {
-      const b = E('button', { txt: l, title: t, on: () => (k === 'ibd' ? window.LS_TCSL && LS_TCSL.open() : setSub(k)) });
+      const b = E('button', { txt: l, title: t, on: () => setSub(k) });
       subBtns[k] = b;
       sub.append(b);
     });
@@ -813,7 +813,7 @@
         if (!b.title) b.title = b.textContent.trim();
       }
     );
-    const TIC = { Home: 'home', 'Plant view': 'plant', Logic: 'logic', Library: 'book', Training: 'learn', Tools: 'tool' };
+    const TIC = { Home: 'home', 'Plant view': 'plant', Logic: 'logic', TCS: 'wave', Library: 'book', Training: 'learn', Tools: 'tool' };
     tabs.querySelectorAll('button').forEach(b => {
       const k = TIC[b.textContent.trim()];
       if (k) {

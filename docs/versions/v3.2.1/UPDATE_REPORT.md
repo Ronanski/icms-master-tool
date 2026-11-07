@@ -573,3 +573,5 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.85** (2026-11-07): Turbine IBD page: blocks stand where the IBD has them, so a sheet reads in its order; fit to page, full names wrapped, wires in separate channels, set point under each comparator, own header with the sheet, Inputs list by a button
 
 - **beta.86** (2026-11-07): Turbine trip logic runs at Start 150 MW too (no ATS program there, the cause of AN.tcs() null, not Worker): Turbine protection under the plant chip, Turbine trip and reset. Logic page: third tab Turbine beside ABC and DITL opens the IBD sheets
+
+- **beta.88** (2026-11-07): TCS is its own page on the left rail, out of the ABC and DITL Logic page: sheet list with space and wrapped names, Values, Trace, Inspector, Inputs. Titles of TA-6, TA-20, TA-22 read from the IBD
