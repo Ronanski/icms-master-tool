@@ -434,8 +434,12 @@
        (still RUNNING 3 s after the press, in AUTO) says so below */
     let spAt = 0;
     bSp.onclick = () => !bSp.disabled && ask('STOP ' + M.n + '?', () => ((spAt = Date.now()), dk.dmotor(M.ad, 0), call(() => window.lsEventAdd(nm, 'DCS', 'Operator: STOP ' + M.n + ' (faceplate)'))));
-    bLs.onclick = () => !bLs.disabled && ask('FIELD: START ' + M.n + ' at the local panel?', () => pulse(lsR, M.n + ' LOCAL START P.B. (local panel)'), 1);
-    bLp.onclick = () => !bLp.disabled && ask('FIELD: STOP ' + M.n + ' at the local panel?', () => pulse(lpR, M.n + ' LOCAL STOP P.B. (local panel)'), 1);
+    /* Mina F18: a local panel press the drawing refused said nothing (BFWP-A at LOCAL, lube oil off: the old "Selector at LOCAL" line
+       stayed). The press is remembered; still stopped (or still running) 4 s later = not taken, and the line says why */
+    let lsAt = 0,
+      lpAt = 0;
+    bLs.onclick = () => !bLs.disabled && ask('FIELD: START ' + M.n + ' at the local panel?', () => ((lsAt = Date.now()), pulse(lsR, M.n + ' LOCAL START P.B. (local panel)')), 1);
+    bLp.onclick = () => !bLp.disabled && ask('FIELD: STOP ' + M.n + ' at the local panel?', () => ((lpAt = Date.now()), pulse(lpR, M.n + ' LOCAL STOP P.B. (local panel)')), 1);
     bEs.onclick = () =>
       !bEs.disabled &&
       ask('FIELD: EMERGENCY STOP ' + M.n + '?', () => (esN != null ? dk.fieldRow(nm, esN, 0, M.n + ' EMERGENCY STOP (field)') : pulse(esR, M.n + ' EMERGENCY STOP P.B. (field)')), 1);
@@ -494,13 +498,30 @@
       if (st !== 'RUN' || md.au !== true) spAt = 0;
       const spNo = spAt && st === 'RUN' && md.au === true && Date.now() - spAt > 3000;
       const lcpRows = [lsR, lpR].filter(x => x != null).map(x => x + 1).join(' / ');
+      /* live test 2026-11-05: the raw drawing note "(FROM STATION WIRING)" left out, the same line once (DITL-28A FAB A STOP COMMAND was
+         listed twice, DITL-19 showed the note) */
+      const missTxt = () => {
+        const L = [...new Set(miss.map(r => String(r.svc || '').replace(/^[IMB].S+s+/, '').replace(/^(FROM [^)]*)s*/i, '').trim() + (r.want ? '' : ' (must be 0)')))];
+        return L.length + ' permissive missing: ' + L.join('; ') + '.';
+      };
+      const now0 = Date.now();
+      if (!loc || st === 'RUN' || now0 - lsAt > 60e3) lsAt = 0;
+      if (!loc || st !== 'RUN' || now0 - lpAt > 60e3) lpAt = 0;
+      const lsNo = lsAt && st === 'STOP' && now0 - lsAt > 4000,
+        lpNo = lpAt && st === 'RUN' && now0 - lpAt > 4000;
       why.textContent =
-        spNo
+        lsNo
+          ? 'LCP START not taken: ' + (miss.length ? missTxt() : 'the drawing did not start it. See ' + (nm || 'its drawing') + '.')
+          : lpNo
+          ? 'LCP STOP not taken: the drawing did not stop it. See ' + (nm || 'its drawing') + '.'
+          : spNo
           ? 'STOP not taken: the drawing accepts the DCS STOP in MAN only (' + (nm || 'its drawing') + ': STOP P.B. AND NOT AUTO). Press MAN, then STOP.'
           : st === 'TRIP' && etOn()
           ? 'TRIP: protection relay (ELECTRICAL TROUBLE on ' + (nm || 'its drawing') + '). RESET the relay in the field, then START again.'
           : st === 'TRIP'
           ? 'TRIP: find the cause and reset it in the field before starting again.'
+          : loc && lcpRows && st === 'STOP' && miss.length
+            ? 'Selector at LOCAL, START blocked: ' + missTxt()
           : loc && lcpRows
             ? 'Selector at LOCAL: AUTO, START and STOP from the DCS are blocked. The local panel starts and stops it.'
           : loc
@@ -510,12 +531,7 @@
               : sopLeft && st !== 'RUN'
               ? 'START blocked: finish the SOP line-up first (' + sopLeft + ' left, ✕ below; tick them in the guide).'
               : miss.length && st !== 'RUN'
-              ? (() => {
-                  /* live test 2026-11-05: the raw drawing note "(FROM STATION WIRING)" left out, the same line once (DITL-28A FAB A STOP
-                     COMMAND was listed twice, DITL-19 showed the note) */
-                  const L = [...new Set(miss.map(r => String(r.svc || '').replace(/^[IMB]\.\S+\s+/, '').replace(/^\(FROM [^)]*\)\s*/i, '').trim() + (r.want ? '' : ' (must be 0)')))];
-                  return 'START blocked: ' + L.length + ' permissive missing: ' + L.join('; ') + '.';
-                })()
+              ? 'START blocked: ' + missTxt()
               : !run && st !== 'RUN'
                 ? 'Simulation PAUSED: press ▶ RUN before START (nothing moves while paused).'
                 : md.rem === true && lcpRows && st !== 'TRIP'
@@ -530,8 +546,8 @@
         const x = call(f, null);
         v.textContent = x == null || !isFinite(+x) ? '-----' : (+x).toFixed(1);
       }
-      chip.textContent = st === 'TRIP' ? 'TRIP' : st === 'RUN' ? 'RUNNING' : loc ? 'NOT READY' : sby ? 'STANDBY' : miss.length ? 'INTERLOCK' : st === 'STOP' ? 'READY' : '';
-      chip.className = 'fpo-chip ' + (st === 'TRIP' ? 'trip' : miss.length && !loc && st !== 'RUN' ? 'ilk' : '');
+      chip.textContent = st === 'TRIP' ? 'TRIP' : st === 'RUN' ? 'RUNNING' : loc && miss.length ? 'INTERLOCK' : loc ? 'NOT READY' : sby ? 'STANDBY' : miss.length ? 'INTERLOCK' : st === 'STOP' ? 'READY' : '';
+      chip.className = 'fpo-chip ' + (st === 'TRIP' ? 'trip' : miss.length && st !== 'RUN' ? 'ilk' : '');
       /* current */
       if (M.cur) {
         const v = call(() => M.cur(), null);
@@ -1116,9 +1132,13 @@
         const b = E('button', 'fpo-cmd', p.l);
         b.type = 'button';
         b.onclick = () => !b.disabled && ask(p);
+        b._pb = p;
         return b;
-      });
-    if (btns.length) F.bd.append(row('COMMAND', ...btns));
+      }),
+      bMode = btns.filter(b => b._pb.sel != null),
+      bCmd = btns.filter(b => b._pb.sel == null);
+    if (bMode.length) F.bd.append(row('AUTO / MANUAL', ...bMode));
+    if (bCmd.length) F.bd.append(row('COMMAND', ...bCmd));
     const msg = E('div', 'fpo-why', btns.length ? 'Push buttons of the DCS screen (CRT), read from the DITL sheet ' + (P.d || '') + '.' : 'No CRT push button on the DITL sheet ' + (P.d || '') + '.');
     F.bd.append(msg);
     const ex = E('div', 'fpo-ex'),
@@ -1142,6 +1162,13 @@
       pend = null;
       ex.hidden = true;
       if (!p) return;
+      /* the AUTO / MANUAL selection: a maintained bit of the drawing */
+      if (p.sel != null) {
+        call(() => P.mode(p.row, p.sel));
+        msg.textContent = P.n + ' ' + p.l + ': EXECUTED';
+        setTimeout(tick, 150);
+        return;
+      }
       if (p.fn) {
         call(p.fn);
         msg.textContent = P.n + ' ' + p.l + ': done (field operator)';
@@ -1162,10 +1189,13 @@
         setTimeout(() => {
           if (mine !== mov.seq || !me.isConnected) return;
           const p1 = (call(P.info, null) || {}).pos,
+            auto = !!(call(P.info, null) || {}).au && bMode.length > 0,
             moved = p0 == null || p1 == null || Math.abs(p1 - p0) > 0.3,
             blk = moved || !P.block ? null : call(() => P.block(p.row), null);
           msg.textContent = moved
             ? P.n + ' ' + p.l + ': EXECUTED'
+            : auto
+            ? '⚠ ' + p.l + ' not taken: the valve is in AUTO, the logic moves it. Press MANUAL first.'
             : '⚠ ' + p.l + ' not taken: the valve did not move' + (blk && blk.length ? '. The logic asks for: ' + blk.map(x => String(x.svc || '').replace(/^[IMB].S+s+/, '') + (x.want ? '' : ' (must be 0)')).join(', ') : '. A timer of the drawing can hold the press; try again later');
         }, wait);
       }
@@ -1192,7 +1222,8 @@
       md.textContent = [I.rem == null ? '' : I.rem ? 'REMOTE' : 'LOCAL', I.au == null ? '' : I.au ? 'AUTO' : 'MANUAL'].filter(Boolean).join(' · ') || '-----';
       const rem = I.rem == null ? null : !!I.rem /* the drawing gives 0 / 1 */,
         loc = rem === false;
-      btns.forEach(b => (b.disabled = !run || (loc && !!P.sel)));
+      btns.forEach(b => (b.disabled = !run || (loc && !!P.sel) || (b._pb.sel != null && !!b._pb.sel === !!I.au)));
+      bMode.forEach(b => b.classList.toggle('on', !!b._pb.sel === !!I.au));
       if (bRem) {
         bRem.disabled = !run || rem === true;
         bLoc.disabled = !run || rem === false;

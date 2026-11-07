@@ -164,6 +164,33 @@
       add({ rt: { t } }, { name: 'DCS' }, 'DCS', nm + ' STOPPED (' + a + ' = 0; not by the STOP button of the Training)');
     }
   }
+  /* the service text of a tag from the I/O list (window.WIRING: the tag is the 4th column, the service the 5th): first letter + system + number
+     (FIFA1079 = FT-FA1079, LIHD11021 = LT-HD1102-1, TIFG1090C = TE-FG1090-C, PIST10012 = PT-ST1001-B); the transmitter's own suffix is
+     kept when the list has it, else the plain service of that point */
+  let WD = null;
+  function ioDesc(tag) {
+    if (!WD) {
+      WD = new Map();
+      for (const r of window.WIRING || []) {
+        const m = /^([A-Z])[TE]-([A-Z]{2}\d{4})-?(\w?)/.exec(r[3] || '');
+        if (!m || !r[4]) continue;
+        const k = m[1] + m[2];
+        if (m[3] && !WD.has(k + m[3])) WD.set(k + m[3], String(r[4]));
+        if (!WD.has(k)) WD.set(k, String(r[4]));
+      }
+    }
+    const m = /^([A-Z])[A-Z]([A-Z]{2}\d{4})(\w?)/.exec(tag || '');
+    if (!m) return '';
+    const k = m[1] + m[2],
+      n = /^\d$/.test(m[3]) ? 'ABCD'[+m[3] - 1] : '';
+    return WD.get(k + m[3]) || (n && WD.get(k + n)) || WD.get(k) || '';
+  }
+  function almName(b) {
+    const tag = b.txt && b.txt[1];
+    if (!tag || !/^[A-Z]{2,}/.test(tag)) return '';
+    const d = ioDesc(tag);
+    return d ? tag + ' ' + d : tag;
+  }
   function almScan() {
     const A = window.AN;
     if (!A || !A.sheets || (A.plantOn && !A.startState)) return;
@@ -199,7 +226,8 @@
           try {
             lv = A.almLv(b, S.rt.v[b.i[0]]);
           } catch (e) {}
-          if (lv !== 'normal') now.set(sh.name + '|' + b.id, { sh: sh.name, kind: 'ALM', nm: A.nm(S, b.i[0]) || 'ALM #' + b.id, lv });
+          /* Mina F2: the name of the alarm is the tag on the ALM block and its description, not the name of the net before it ("SQRT out", "AI0674") */
+          if (lv !== 'normal') now.set(sh.name + '|' + b.id, { sh: sh.name, kind: 'ALM', nm: almName(b) || A.nm(S, b.i[0]) || 'ALM #' + b.id, lv });
         }
     }
     /* Mina #M15: the expansion tank T-1109 HIGH level (alarm list LT-CW1109, PD-021: H 1700 mm / L 800 mm in the DCS): the level is the
@@ -250,9 +278,12 @@
            air cooling to the ambient 30 °C): the suppression belongs to the equipment group of the sheet, not to the moment of the
            load. A LOW / LOW-LOW alarm of a group whose equipment is stopped is suppressed (a shutdown alarm), also when it comes
            later or changes level; a HIGH alarm or a TRIP always comes through */
+        /* Mina F6: the unit loaded at 150 MW is running: nothing there is a shutdown alarm. What stands at that load is a real standing alarm:
+           acknowledged (the operator did not cause it now), counted and listed, a HIGH never hidden */
+        const atLoad = A.startState === 'plantLoad150',
+          stand = atLoad && (first || !!x.fresh);
         const sd =
-          first ||
-          !!x.fresh ||
+          (!atLoad && (first || !!x.fresh)) ||
           (x.kind === 'ALM' &&
             /LOW/.test(x.lv) &&
             (A.startState === 'plantCold' || !!(e && e.sd && !e.rtn)) &&
@@ -260,8 +291,9 @@
         /* live test #11 (94 at the start, 96 in the header later, "standing since the plant was loaded"): an alarm suppressed after the
            load (its group still stopped) is marked late and logged, so the count and the text say where it came from */
         const late = sd && !first && !(e && e.sd && !e.rtn && !e.late) ? true : !!(e && e.late && sd);
-        AT.set(k, { ...x, t: tfmt(t), ack: sd, rtn: false, sd, late });
+        AT.set(k, { ...x, t: tfmt(t), ack: sd || stand, rtn: false, sd, late });
         if (first) nNew++;
+        else if (stand) continue;
         else if (!sd) add({ rt: { t } }, { name: x.sh }, x.kind, x.nm + ' ' + x.lv);
         else if (late && (!e || e.rtn)) add({ rt: { t } }, { name: x.sh }, x.kind, x.nm + ' ' + x.lv + ' (suppressed: the equipment of its group is stopped; released 10 min after it runs)');
       }
@@ -282,7 +314,7 @@
         if (e.ack) AT.delete(k);
         else e.rtn = true;
       }
-    if (first && nNew) add({ rt: { t } }, { name: 'DCS' }, 'ALM', nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing at the start: acknowledged and suppressed (shutdown state; listed apart in the alarm list of the header ALARM chip)');
+    if (first && nNew) add({ rt: { t } }, { name: 'DCS' }, 'ALM', A.startState === 'plantLoad150' ? nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing when the unit was loaded at 150 MW: acknowledged, in the alarm list of the header ALARM chip' : nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing at the start: acknowledged and suppressed (shutdown state; listed apart in the alarm list of the header ALARM chip)');
   }
   function ack(k) {
     const L = k ? [k] : [...AT.keys()];

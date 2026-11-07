@@ -1294,6 +1294,7 @@ const AN_MU = {
   etL: 0.8,
   etLL: 0.3,
   tauP: 3,
+  tauH: 1 /* s, the header pressure: a full water line answers at once (NO-SOURCE number). DITL-112 gives the first pump only TR25 3 s to clear M.2506 before the AUTO pumps start (Mina F21) */,
   tauI: 2
 };
 function anMakeupStep(U, dt) {
@@ -1344,7 +1345,7 @@ function anMakeupStep(U, dt) {
     H = s * s * swInterp(K.cQ, K.cH, U.muQ[j] / s);
   }
   U.muFeed = feed.filter(s => s > 0).length;
-  lag('muP', K.kP * (lv + K.z + Math.max(0, H)), K.tauP);
+  lag('muP', K.kP * (lv + K.z + Math.max(0, H)), K.tauH);
   run.forEach((r, i) => {
     const s = U.muSpd[i],
       P = s > 0 ? K.pCal * 0.7457 * swInterp(K.pQ, K.pHP, U.muQ[i] / s) * s * s * s : 0;

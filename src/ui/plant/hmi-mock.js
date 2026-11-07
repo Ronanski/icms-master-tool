@@ -154,9 +154,18 @@
               l = w && (w[1] === 'CLOSED' ? 'CLOSE' : w[1]);
             if (l && !pbs.some(p => p.l === l)) pbs.push({ l, row: r });
           }
+          /* Mina F29: the AUTO PB of these drawings is a maintained bit, not a pulse: one address on the AUTO PB, AUTO MODE SELECTED and (with a
+             minus) MANUAL MODE SELECTED rows (DITL-94 rows 1, 21, 6 M.0283, DITL-99 ~ 110, DITL-52 ~ 57, DITL-62 ~ 68, DITL-73 / 80 / 88). The
+             operator had no way to MANUAL: the CRT selection is AUTO / MANUAL on that row */
+          const auV = ri(/AUTO (?:MODE )?SELECTED\b|AUTO MODE\b/),
+            ap = pbs.find(p => p.l === 'AUTO');
+          if (ap && auV != null && !pbs.some(p => p.l === 'MANUAL')) {
+            ap.sel = 1;
+            pbs.push({ l: 'MANUAL', row: ap.row, sel: 0 });
+          }
           /* REMOTE: "REMOTE SELECTED" (DITL-60 ...), "MCV REMOTE MODE SELECTED" (DITL-38), "SHUT-OFF MOV REMOTE" (DITL-94 ~ 98) */
           const ro = outs.find(x => own(x.name) && /\bREMOTE\b/.test(x.name) && !/LOCAL/.test(x.name));
-          return { pos, pbs, au: ri(/AUTO MODE(?: SELECTED)?\b/), rem: ro ? D().dout(nm, ro.row) : null };
+          return { pos, pbs, au: auV, rem: ro ? D().dout(nm, ro.row) : null };
         }, null);
       const OX = {};
       new Set([...qa('[data-ox]')].map(e => e.dataset.ox.split('|')[0])).forEach(k => {
@@ -516,6 +525,7 @@
             d: m.mov,
             info: () => movInfo(m.mov, m.tg || m.n),
             press: row => D().dpress(m.mov, row),
+            mode: (row, v) => D().dsel(m.mov, row, v, (m.tg || m.n) + (v ? ' AUTO' : ' MANUAL')),
             block: row => (D().pbBlock ? D().pbBlock(m.mov, row) : null),
             /* live test 2026-11-05: the field REMOTE / LOCAL selector = the REMOTE input rows (DI) of this valve on its drawing */
             sel: (() => {

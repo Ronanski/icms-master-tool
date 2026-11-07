@@ -174,7 +174,7 @@ function anBoilerStart(U) {
   for (const k in AN_LM.fv0) if (AN_SRC.valve) delete AN_SRC.valve[k];
   anFanStart(U);
   anLmStart(U);
-  anSdStart(U);
+  anSdStart(U, 6.8 /* the plant air header at load, kg/cm2 (AN_BA note), before its first step */);
   anBaStart(U);
 }
 /* called by anUnitCold: the pumps are the DITL's (stopped in a cold plant); the tank keeps its level */
@@ -550,15 +550,17 @@ const AN_SD = {
 function sdOut(n, ...rows) {
   return rows.some(r => fnOut(')' + n, r) === 1);
 }
-function anSdStart(U) {
+function anSdStart(U, pa0) {
   U.sd = { v: {}, sw: {}, m: 0, p: 0, silo: 50.1 /* 20.PNG LISD1800 */ };
-  sdPub(U);
+  /* Mina F7: the field switches stand from the first scan. With no switch yet the DITL read "dome valve not closed, no seal" for one scan at
+     the 150 MW load: INLET DV CLOSE FAULT, SYSTEM TRIP on DITL-777, reset 2 s later */
+  anSdStep(U, 1e-3, pa0);
 }
-function anSdStep(U, dt) {
+function anSdStep(U, dt, pa0) {
   const D = U.sd;
   if (!D) return;
   const K = AN_SD,
-    pa = isFinite(U.paPU) ? U.paPU * 0.980665 : 0,
+    pa = (isFinite(U.paPU) ? U.paPU : pa0 || 0) * 0.980665,
     vv = (k, cmd, seal) => lmValve(D, k, cmd, dt, K.stroke, seal);
   const dv = vv('dv', sdOut('DITL-771', 20, 21), 1),
     vent = vv('vent', sdOut('DITL-771', 19), 0),
