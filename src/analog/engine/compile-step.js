@@ -2515,7 +2515,10 @@ function anInit(S) {
           rt.st[sw.id]
         ) {
           rt.st[sw.id].al = 'A';
-          if (t.amt && rt.st[t.amt.id] && anHasRemote(S, b)) rt.st[t.amt.id].rmSw = sw.id;
+          if (t.amt && rt.st[t.amt.id] && anHasRemote(S, b)) {
+            rt.st[t.amt.id].rmSw = sw.id;
+            rt.st[t.amt.id].mtag = (b.txt || [])[1];
+          }
         }
       } catch (e) {}
     }

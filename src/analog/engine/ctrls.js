@@ -139,6 +139,10 @@ const latchMode = (tag, kind, own) => {
     AN.settle();
   } catch (e) {}
 };
+/* the mode status written by the logic during a scan: latchMode without its settle */
+const modeStatus = (tag, kind) => {
+  for (const k in MODEK) for (const [S2, n] of modeNetsByTag(tag, MODEK[k], null)) S2.rt.ext[n] = k === kind ? 1 : 0;
+};
 function ctrls(S) {
   const out = [];
   for (const b of S.blk) {

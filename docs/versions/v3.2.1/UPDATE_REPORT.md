@@ -631,3 +631,5 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.101** (2026-11-08): Ash cooler sheets read the chain conveyor run contact I.0163 from the plant model
 
 - **beta.102** (2026-11-08): While DITL timers or valves move, the world scans each 0.5 s up to x60, so x10 follows the same timers as x1
+
+- **beta.103** (2026-11-08): A force of the logic on a station also writes its mode status, so PA and SA go to their house operation flow after a turbine trip
