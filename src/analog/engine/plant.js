@@ -360,6 +360,7 @@ AN_CYC.kgmm = {
   da: () => 3.3 * 13.14 * 0.909,
   dr: () => 2 * 0.8242 * 12.481 * (anWaterRho(typeof AN_UNIT !== 'undefined' && isFinite(AN_UNIT.Tw) ? AN_UNIT.Tw : 30) / 1000)
 };
+AN_CYC.vacLoss = (U, T) => (6 * Math.max(-1, T - 38.65) * 0.7 * U.ms) / 3600;
 AN_CYC.y = {};
 AN_CYC.levels = () => ({ ...AN_CYC.y });
 AN_CYC.rate = x => 1000 / 3600 / AN_CYC.kgmm[x]();
