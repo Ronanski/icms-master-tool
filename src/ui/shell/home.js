@@ -513,6 +513,24 @@
     train = E('div', { id: 'trainws', role: 'region', 'aria-label': 'Training' });
     const pick = E('select', { id: 'trpick', 'aria-label': 'Section of the procedure' });
     pick.onchange = () => show(+pick.value);
+    /* Mina F32, F36: a press that cannot be undone asks on the button itself: press again within 5 s. The browser's confirm box is not shown in every
+     window (the built-in pane answers No by itself, so "Skip the 6 h" did nothing) */
+  const arm2 = (b, ask, f) => {
+    if (b.dataset.arm) {
+      clearTimeout(b._armT);
+      delete b.dataset.arm;
+      b.textContent = b._armX;
+      return f();
+    }
+    b._armX = b.textContent;
+    b.dataset.arm = '1';
+    b.textContent = ask;
+    b._armT = setTimeout(() => {
+      delete b.dataset.arm;
+      b.textContent = b._armX;
+    }, 5000);
+  };
+    const armRun = (e, f) => (window.AN && AN.run ? arm2(e.currentTarget, 'Press again: this reloads the plant', f) : f());
     train.append(
       E('div', { cls: 'trhead' }, [
         E('div', { cls: 'trtitle' }, [E('b', { txt: 'Start-up procedure' }), E('span', { txt: 'PR-OPE-5002 Rev 03 + sync, load up to 150 MW and load change practice · ' + P().length + ' sections' })]),
@@ -525,8 +543,9 @@
           title: 'Guided start-up beside the logic: the plant cold, RUN, one step at a time with the interlock of each motor, the faceplates and the values to watch',
           /* 3.2.0 walkthrough #10: a new Cold start-up = a clean checklist (the ticks of an earlier run stayed: 13 ticked at Cold); #15: the
              button says it is loading until the cold plant is in */
-          on: e => {
-            const b = e && e.currentTarget,
+          on: e0 => armRun(e0, () => {
+            const e = e0,
+              b = e && e.currentTarget,
               [tn] = total(),
               was = { hand: ls.get('ls-train', {}), auto: LV() ? Object.assign({}, LV().done()) : {} };
             ls.set('ls-train', {});
@@ -569,7 +588,7 @@
             /* 3.2.0 retest #54: the progress bar from the click (the logic of the ABC page is read first, then the cold plant loads) */
             if (window.lsBusy) lsBusy.show('Loading the Cold plant…');
             setTimeout(() => abcReady(() => (window.LS_DOCK ? LS_DOCK.start(() => (back(), fillTrain())) : back())), 40);
-          }
+          })
         }),
         E('button', {
           cls: 'trbtn trresume',
@@ -584,7 +603,7 @@
           type: 'button',
           txt: 'Practise: Cold start',
           title: 'Sets the plant cold, clears the AUTO ticks, starts the simulation (RUN) and opens the Plant view: do the steps there, they tick here',
-          on: () =>
+          on: e0 => armRun(e0, () =>
             abcReady(() => {
               const b = $('loadcold');
               if (b) b.click();
@@ -595,14 +614,14 @@
                 if (AN.runOn) AN.runOn();
                 goPlant();
               });
-            })
+            }))
         }),
         E('button', {
           cls: 'trbtn',
           type: 'button',
           txt: 'Practise: 150 MW load change',
           title: 'Sets the plant at 150 MW, clears the ticks of the two PRACTICE sections, starts the simulation (RUN) and opens the AUTO (CCS) practice: change the load there',
-          on: () =>
+          on: e0 => arm2(e0.currentTarget, 'Press again: this loads 150 MW', () =>
             abcReady(() => {
               const b = $('load150');
               if (b) b.click();
@@ -612,7 +631,7 @@
                 if (AN.runOn) AN.runOn();
                 if (L) show(L.practice);
               });
-            })
+            }))
         }),
         E('button', {
           cls: 'trbtn',
