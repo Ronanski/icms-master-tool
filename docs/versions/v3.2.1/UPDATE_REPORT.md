@@ -1,5 +1,11 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.74 — Audit values, second batch (2026-11-07, JENNIE)
+
+**Work done.** Heater drain valve capacities and alternates, RH and HP bypass spray flows, from the valve sheets.
+
+**Not tested.** Live; item sent to Mina.
+
 ## 3.2.1-beta.73 — Audit values from the documents, first batch (2026-11-07, JENNIE)
 
 **Work done.** Valve sizes HP bypass, LP bypass, main steam and RH blow-off from the valve sheets; SH and RH fall below 60 % from FHI Fig 6; boiler water 175.6 t; air heater gas in at part load from L20.
