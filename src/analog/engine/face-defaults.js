@@ -105,40 +105,40 @@ const AN_DEF = {
       hh: 58,
       h: 50,
       l: 20,
-      ll: 12,
+      ll: 12.2,
       u: 'T/H',
       desc: 'Start-up burner A secondary air flow (0-65 T/H)',
-      basis: 'Burner hot SA flow: normal 25-40, trip band same as the drawn "<18.7%" comparator'
+      basis: 'alarm list 2016-09-12, FT-FA1043-A'
     },
     {
       tag: 'FIFA1043B',
       hh: 58,
       h: 50,
       l: 20,
-      ll: 12,
+      ll: 12.2,
       u: 'T/H',
       desc: 'Start-up burner B secondary air flow',
-      basis: 'same as burner A'
+      basis: 'alarm list 2016-09-12, FT-FA1043-B'
     },
     {
       tag: 'FIFA1043C',
       hh: 58,
       h: 50,
       l: 20,
-      ll: 12,
+      ll: 12.2,
       u: 'T/H',
       desc: 'Start-up burner C secondary air flow',
-      basis: 'same as burner A'
+      basis: 'alarm list 2016-09-12, FT-FA1043-C'
     },
     {
       tag: 'FIFA1043D',
       hh: 58,
       h: 50,
       l: 20,
-      ll: 12,
+      ll: 12.2,
       u: 'T/H',
       desc: 'Start-up burner D secondary air flow',
-      basis: 'same as burner A'
+      basis: 'alarm list 2016-09-12, FT-FA1043-D'
     },
     {
       tag: 'FIFA1081',
@@ -152,33 +152,33 @@ const AN_DEF = {
     },
     {
       tag: 'FIFA1071',
-      hh: 610,
-      h: 560,
-      l: 120,
-      ll: 60,
+      hh: 460,
+      h: null,
+      l: null,
+      ll: 240,
       u: 'T/H',
       desc: 'PA fan inlet air flow (0-648 T/H)',
-      basis: 'normal 300-480 T/H; H = 86 %, HH = 94 % of range'
+      basis: 'alarm list 2016-09-12, FT-FA1071'
     },
     {
       tag: 'FIFA1055',
-      hh: 33,
-      h: 30,
-      l: 25,
+      hh: null,
+      h: 27.3,
+      l: 21,
       ll: 20,
       u: 'T/H',
       desc: 'FA blower outlet common air flow (0-35 T/H)',
-      basis: 'LL = 20 T/H is the "FA BLOWER FLOW < LOW LOW" comparator written on ABC-006'
+      basis: 'alarm list 2016-09-12, FT-FA1055'
     },
     {
       tag: 'FIFA1079',
-      hh: 480,
-      h: 440,
-      l: 150,
-      ll: 100,
+      hh: 510,
+      h: null,
+      l: null,
+      ll: 190,
       u: 'T/H',
       desc: 'Air preheater outlet to furnace primary air flow (0-510 T/H)',
-      basis: 'normal 250-380 T/H'
+      basis: 'alarm list 2016-09-12, FT-FA1079'
     },
     {
       tag: 'TAF',
@@ -272,55 +272,55 @@ const AN_DEF = {
     },
     {
       tag: 'PIFA1085',
-      hh: 2700,
-      h: 2400,
-      l: 800,
-      ll: 500,
+      hh: 1900,
+      h: null,
+      l: null,
+      ll: 800,
       u: 'mmH2O',
       desc: 'SAF outlet to air preheater air pressure (0-3000)',
-      basis: 'normal 1500-2000 mmH2O'
+      basis: 'alarm list 2016-09-12, PT-FA1085'
     },
     {
       tag: 'PIFA1088',
-      hh: 2700,
-      h: 2400,
-      l: 1000,
-      ll: 900,
+      hh: 1900,
+      h: null,
+      l: null,
+      ll: 800,
       u: 'mmH2O',
       desc: 'Air preheater to furnace secondary air pressure (0-3000)',
-      basis: 'LL = 900 is the "< 900 mmH2O" comparator on ABC-003A'
+      basis: 'alarm list 2016-09-12, PT-FA1088'
     },
     {
       tag: 'PIFG1085',
-      hh: 300,
-      h: 100,
-      l: -250,
-      ll: -400,
+      hh: 87,
+      h: 35,
+      l: -65,
+      ll: -115,
       u: 'mmH2O',
       desc: 'Furnace pressure A (-600..600)',
-      basis: 'balanced draft: normal -50..-100 mmH2O; MFT-type limits +300 / -400'
+      basis: 'alarm list 2016-09-12, PT-FG1085'
     },
-    { tag: 'PIFG1086', hh: 300, h: 100, l: -250, ll: -400, u: 'mmH2O', desc: 'Furnace pressure B', basis: 'same' },
-    { tag: 'PIFG10871', hh: 300, h: 100, l: -250, ll: -400, u: 'mmH2O', desc: 'Furnace pressure C-1', basis: 'same' },
+    { tag: 'PIFG1086', hh: 87, h: 35, l: -65, ll: -115, u: 'mmH2O', desc: 'Furnace pressure B', basis: 'alarm list 2016-09-12, PT-FG1086' },
+    { tag: 'PIFG10871', hh: 87, h: 35, l: -65, ll: -115, u: 'mmH2O', desc: 'Furnace pressure C-1', basis: 'alarm list 2016-09-12, PT-FG1087-1' },
     {
       tag: 'DPIFG1081',
-      hh: 2200,
+      hh: 2100,
       h: 1900,
-      l: 1150,
-      ll: 900,
+      l: 1200,
+      ll: 1000,
       u: 'mmH2O',
       desc: 'Furnace plenum / upper layer differential pressure A (0-2500)',
-      basis: 'bed dP normal 1400-1700; L = 1150 is the "< 1150 mmH2O" comparator on ABC-009A'
+      basis: 'alarm list 2016-09-12, DPT-FG1081'
     },
     {
       tag: 'DPIFG1082',
-      hh: 2200,
+      hh: 2100,
       h: 1900,
-      l: 1150,
-      ll: 900,
+      l: 1200,
+      ll: 1000,
       u: 'mmH2O',
       desc: 'Furnace plenum / upper layer differential pressure B',
-      basis: 'same'
+      basis: 'alarm list 2016-09-12, DPT-FG1082'
     },
     {
       tag: 'TIFG1091A',
@@ -380,15 +380,15 @@ const AN_DEF = {
     },
     {
       tag: 'AIFG1122',
-      hh: 8,
-      h: 6,
-      l: 2,
-      ll: 1,
+      hh: 7,
+      h: 5,
+      l: 2.5,
+      ll: 2,
       u: '%',
       desc: 'Flue gas O2 A (0-25 %)',
-      basis: 'CFB economiser O2 normal 3-4 %'
+      basis: 'alarm list 2016-09-12, AT-FG1122'
     },
-    { tag: 'AIFG1123', hh: 8, h: 6, l: 2, ll: 1, u: '%', desc: 'Flue gas O2 B', basis: 'same' },
+    { tag: 'AIFG1123', hh: 7, h: 5, l: 2.5, ll: 2, u: '%', desc: 'Flue gas O2 B', basis: 'alarm list 2016-09-12, AT-FG1123' },
     {
       tag: 'SILO1756',
       hh: 1160,
@@ -426,124 +426,124 @@ const AN_DEF = {
     { tag: 'LIBR10013', hh: 254, h: 127, l: -178, ll: -254, u: 'mm', desc: 'Drum level (3)', basis: 'alarm list LT-BR1001-3' },
     {
       tag: 'PIBR10011',
-      hh: 168,
-      h: 158,
-      l: 110,
-      ll: 90,
+      hh: 150,
+      h: 144,
+      l: 70,
+      ll: 60,
       u: 'kg/cm2',
       desc: 'Drum pressure (1) (0-250)',
-      basis: 'drum about 145 kg/cm2g at full load; safety valve about 175'
+      basis: 'alarm list 2016-09-12, PT-BR1001-1'
     },
-    { tag: 'PIBR10012', hh: 168, h: 158, l: 110, ll: 90, u: 'kg/cm2', desc: 'Drum pressure (2)', basis: 'same' },
+    { tag: 'PIBR10012', hh: 150, h: 144, l: 70, ll: 60, u: 'kg/cm2', desc: 'Drum pressure (2)', basis: 'alarm list 2016-09-12, PT-BR1001-2' },
     {
       tag: 'TIFW1160',
-      hh: 285,
-      h: 270,
-      l: 150,
-      ll: 120,
+      hh: null,
+      h: null,
+      l: null,
+      ll: null,
       u: '°C',
       desc: 'Economiser No.1 inlet water temperature (0-300)',
-      basis: 'feed water 240-255 °C at full load'
+      basis: 'alarm list 2016-09-12, TE-FW1160'
     },
     {
       tag: 'TIBR11401',
-      hh: 550,
-      h: 530,
-      l: 430,
-      ll: 400,
+      hh: 520,
+      h: 510,
+      l: null,
+      ll: null,
       u: '°C',
       desc: 'Superheater No.2 outlet steam temperature (1)',
-      basis: 'normal 480-510 °C'
+      basis: 'alarm list 2016-09-12, TE-BR1140-1'
     },
     {
       tag: 'TIBR11402',
-      hh: 550,
-      h: 530,
-      l: 430,
-      ll: 400,
+      hh: 520,
+      h: 510,
+      l: null,
+      ll: null,
       u: '°C',
       desc: 'Superheater No.2 outlet steam temperature (2)',
-      basis: 'same'
+      basis: 'alarm list 2016-09-12, TE-BR1140-2'
     },
     {
       tag: 'TIBR11301',
-      hh: 490,
-      h: 470,
-      l: 350,
-      ll: 320,
+      hh: 440,
+      h: 430,
+      l: 365,
+      ll: 355,
       u: '°C',
       desc: 'Superheater No.2 inlet steam temperature (1)',
-      basis: 'normal 400-440 °C after the spray'
+      basis: 'alarm list 2016-09-12, TE-BR1130-1'
     },
     {
       tag: 'TIBR11302',
-      hh: 490,
-      h: 470,
-      l: 350,
-      ll: 320,
+      hh: 440,
+      h: 430,
+      l: 365,
+      ll: 355,
       u: '°C',
       desc: 'Superheater No.2 inlet steam temperature (2)',
-      basis: 'same'
+      basis: 'alarm list 2016-09-12, TE-BR1130-2'
     },
     {
       tag: 'TIBR11501',
-      hh: 540,
-      h: 520,
-      l: 440,
-      ll: 420,
+      hh: 520,
+      h: 510,
+      l: 365,
+      ll: 355,
       u: '°C',
       desc: 'Finishing superheater inlet steam temperature (1)',
-      basis: 'normal 460-500 °C'
+      basis: 'alarm list 2016-09-12, TE-BR1150-1'
     },
     {
       tag: 'TIBR11502',
-      hh: 540,
-      h: 520,
-      l: 440,
-      ll: 420,
+      hh: 520,
+      h: 510,
+      l: 365,
+      ll: 355,
       u: '°C',
       desc: 'Finishing superheater inlet steam temperature (2)',
-      basis: 'same'
+      basis: 'alarm list 2016-09-12, TE-BR1150-2'
     },
     {
       tag: 'TIMS10041',
-      hh: 560,
-      h: 550,
-      l: 520,
-      ll: 500,
+      hh: 555,
+      h: 548,
+      l: 525,
+      ll: 520,
       u: '°C',
       desc: 'Main steam temperature (1), finishing S/H outlet',
-      basis: 'rated 540 °C'
+      basis: 'alarm list 2016-09-12, TE-MS1004-1'
     },
     {
       tag: 'TIMS10042',
-      hh: 560,
-      h: 550,
-      l: 520,
-      ll: 500,
+      hh: 548,
+      h: null,
+      l: null,
+      ll: null,
       u: '°C',
       desc: 'Main steam temperature (2)',
-      basis: 'rated 540 °C'
+      basis: 'alarm list 2016-09-12, TE-MS1004-2'
     },
     {
       tag: 'PIMS10061',
-      hh: 147,
-      h: 143,
-      l: 110,
-      ll: 90,
+      hh: 134,
+      h: 130,
+      l: 100,
+      ll: 72.9,
       u: 'kg/cm2',
       desc: 'Turbine main steam pressure (1) (0-150)',
-      basis: 'rated 137 kg/cm2g (13.7 MPa)'
+      basis: 'alarm list 2016-09-12, PT-MS1006-1'
     },
     {
       tag: 'PIMS10062',
-      hh: 147,
-      h: 143,
-      l: 110,
-      ll: 90,
+      hh: 134,
+      h: 130,
+      l: 100,
+      ll: 72.9,
       u: 'kg/cm2',
       desc: 'Turbine main steam pressure (2)',
-      basis: 'same'
+      basis: 'alarm list 2016-09-12, PT-MS1006-2'
     },
     {
       tag: 'PIST10011',
@@ -557,155 +557,155 @@ const AN_DEF = {
     },
     {
       tag: 'PIST10012',
-      hh: 120,
-      h: 110,
+      hh: 105,
+      h: 93.8,
       l: 5,
       ll: 1,
       u: 'kg/cm2',
       desc: 'HP turbine first stage pressure B',
-      basis: 'same'
+      basis: 'alarm list 2016-09-12, PT-ST1001-2'
     },
     {
       tag: 'PIST10013',
-      hh: 120,
-      h: 110,
-      l: 5,
-      ll: 1,
+      hh: 125,
+      h: 62.5,
+      l: -1,
+      ll: -1,
       u: 'kg/cm2',
       desc: 'HP turbine first stage pressure C',
-      basis: 'same'
+      basis: 'alarm list 2016-09-12, PT-ST1001-3'
     },
     {
       tag: 'TIHR10021',
-      hh: 560,
-      h: 550,
-      l: 515,
-      ll: 500,
+      hh: 548,
+      h: null,
+      l: null,
+      ll: null,
       u: '°C',
       desc: 'Reheater outlet header temperature (1)',
-      basis: 'rated 540 °C'
+      basis: 'alarm list 2016-09-12, TE-HR1002-1'
     },
     {
       tag: 'TIHR10022',
-      hh: 560,
-      h: 550,
-      l: 515,
-      ll: 500,
+      hh: 548,
+      h: null,
+      l: null,
+      ll: null,
       u: '°C',
       desc: 'Reheater outlet header temperature (2)',
-      basis: 'rated 540 °C'
+      basis: 'alarm list 2016-09-12, TE-HR1002-2'
     },
     {
       tag: 'TICR10051',
-      hh: 400,
-      h: 380,
-      l: 280,
-      ll: 250,
+      hh: null,
+      h: null,
+      l: null,
+      ll: null,
       u: '°C',
       desc: 'Desuperheater temperature (1), reheater inlet',
-      basis: 'cold reheat about 330-350 °C'
+      basis: 'alarm list 2016-09-12, TE-CR1005-1'
     },
     {
       tag: 'TICR10052',
-      hh: 400,
-      h: 380,
-      l: 280,
-      ll: 250,
+      hh: null,
+      h: null,
+      l: null,
+      ll: null,
       u: '°C',
       desc: 'Desuperheater temperature (2), reheater inlet',
-      basis: 'same'
+      basis: 'alarm list 2016-09-12, TE-CR1005-2'
     },
     {
       tag: 'PICR1006',
-      hh: 36,
-      h: 33,
-      l: 5,
-      ll: 2,
+      hh: 41,
+      h: 40.5,
+      l: 11,
+      ll: 8,
       u: 'kg/cm2',
       desc: 'Reheater inlet header pressure (0-50)',
-      basis: 'cold reheat about 25-29 kg/cm2g at full load'
+      basis: 'alarm list 2016-09-12, PT-CR1006'
     },
-    { tag: 'PICR1003', hh: 36, h: 33, l: 5, ll: 2, u: 'kg/cm2', desc: 'Cold reheat steam pressure', basis: 'same' },
+    { tag: 'PICR1003', hh: 41, h: 40.5, l: 11, ll: 8, u: 'kg/cm2', desc: 'Cold reheat steam pressure', basis: 'alarm list 2016-09-12, PT-CR1003' },
     {
       tag: 'TICR1004',
-      hh: 400,
-      h: 380,
-      l: 250,
-      ll: 200,
+      hh: null,
+      h: null,
+      l: null,
+      ll: null,
       u: '°C',
       desc: 'Cold reheat steam temperature',
-      basis: 'about 330-350 °C'
+      basis: 'alarm list 2016-09-12, TE-CR1004'
     },
     {
       tag: 'PIHR10031',
-      hh: 34,
-      h: 31,
-      l: 5,
-      ll: 2,
+      hh: 41,
+      h: 39,
+      l: 11,
+      ll: 8,
       u: 'kg/cm2',
       desc: 'Hot reheat steam pressure (1)',
-      basis: 'about 24-27 kg/cm2g at full load'
+      basis: 'alarm list 2016-09-12, PT-HR1003-1'
     },
-    { tag: 'PIHR10032', hh: 34, h: 31, l: 5, ll: 2, u: 'kg/cm2', desc: 'Hot reheat steam pressure (2)', basis: 'same' },
+    { tag: 'PIHR10032', hh: 41, h: 39, l: 11, ll: 8, u: 'kg/cm2', desc: 'Hot reheat steam pressure (2)', basis: 'alarm list 2016-09-12, PT-HR1003-2' },
     {
       tag: 'TIHR1004',
-      hh: 560,
-      h: 550,
-      l: 515,
-      ll: 500,
+      hh: 548,
+      h: null,
+      l: null,
+      ll: null,
       u: '°C',
       desc: 'Hot reheat steam temperature',
-      basis: 'rated 540 °C'
+      basis: 'alarm list 2016-09-12, TE-HR1004'
     },
     {
       tag: 'TIMS10221',
-      hh: 400,
-      h: 380,
-      l: 250,
-      ll: 200,
+      hh: null,
+      h: null,
+      l: null,
+      ll: null,
       u: '°C',
       desc: 'HP turbine bypass outlet temperature (1)',
-      basis: 'joins cold reheat'
+      basis: 'alarm list 2016-09-12, TE-MS1022-1'
     },
     {
       tag: 'TIMS10222',
-      hh: 400,
-      h: 380,
-      l: 250,
-      ll: 200,
+      hh: null,
+      h: null,
+      l: null,
+      ll: null,
       u: '°C',
       desc: 'HP turbine bypass outlet temperature (2)',
-      basis: 'same'
+      basis: 'alarm list 2016-09-12, TE-MS1022-2'
     },
     {
       tag: 'PIMS1021',
-      hh: 36,
-      h: 33,
-      l: 5,
-      ll: 2,
+      hh: 41,
+      h: 40.5,
+      l: 11,
+      ll: 8,
       u: 'kg/cm2',
       desc: 'HP turbine bypass outlet pressure',
-      basis: 'joins cold reheat'
+      basis: 'alarm list 2016-09-12, PT-MS1021'
     },
     {
       tag: 'TIHR10121',
-      hh: 250,
+      hh: null,
       h: 220,
-      l: 100,
-      ll: 70,
+      l: null,
+      ll: null,
       u: '°C',
       desc: 'LP turbine bypass outlet temperature (1) (0-300)',
-      basis: 'after the spray to the condenser'
+      basis: 'alarm list 2016-09-12, TE-HR1012-1'
     },
     {
       tag: 'TIHR10122',
-      hh: 250,
+      hh: null,
       h: 220,
-      l: 100,
-      ll: 70,
+      l: null,
+      ll: null,
       u: '°C',
       desc: 'LP turbine bypass outlet temperature (2)',
-      basis: 'same'
+      basis: 'alarm list 2016-09-12, TE-HR1012-2'
     },
     {
       tag: 'ZIHR1391',
@@ -719,23 +719,23 @@ const AN_DEF = {
     },
     {
       tag: 'PIAS1004',
-      hh: 13.5,
-      h: 12,
-      l: 6,
-      ll: 4,
+      hh: null,
+      h: null,
+      l: 7,
+      ll: null,
       u: 'kg/cm2',
       desc: 'Auxiliary steam supply pressure, main steam pipe (0-15)',
-      basis: 'aux steam header about 10 kg/cm2g'
+      basis: 'alarm list 2016-09-12, PT-AS1004'
     },
     {
       tag: 'PIAS1005',
-      hh: 13.5,
-      h: 12,
-      l: 6,
-      ll: 4,
+      hh: null,
+      h: null,
+      l: 7,
+      ll: null,
       u: 'kg/cm2',
       desc: 'Auxiliary steam supply pressure, cold reheat',
-      basis: 'same'
+      basis: 'alarm list 2016-09-12, PT-AS1005'
     },
     {
       tag: 'LICD11041',
@@ -769,23 +769,23 @@ const AN_DEF = {
     },
     {
       tag: 'LIHD11051',
-      hh: 200,
-      h: 100,
-      l: -100,
-      ll: -200,
+      hh: 142,
+      h: 42,
+      l: -38,
+      ll: -38,
       u: 'mm',
       desc: 'No.1 HP heater level (1) (-300..310)',
-      basis: 'HH = extraction closes'
+      basis: 'alarm list 2016-09-12, LT-HD1105-1'
     },
-    { tag: 'LIHD11052', hh: 200, h: 100, l: -100, ll: -200, u: 'mm', desc: 'No.1 HP heater level (2)', basis: 'same' },
-    { tag: 'LIHD11061', hh: 200, h: 100, l: -100, ll: -200, u: 'mm', desc: 'No.2 HP heater level (1)', basis: 'same' },
-    { tag: 'LIHD11062', hh: 200, h: 100, l: -100, ll: -200, u: 'mm', desc: 'No.2 HP heater level (2)', basis: 'same' },
-    { tag: 'LIHD11011', hh: 200, h: 100, l: -100, ll: -200, u: 'mm', desc: 'No.1 LP heater level (1)', basis: 'same' },
-    { tag: 'LIHD11012', hh: 200, h: 100, l: -100, ll: -200, u: 'mm', desc: 'No.1 LP heater level (2)', basis: 'same' },
-    { tag: 'LIHD11021', hh: 200, h: 100, l: -100, ll: -200, u: 'mm', desc: 'No.2 LP heater level (1)', basis: 'same' },
-    { tag: 'LIHD11022', hh: 200, h: 100, l: -100, ll: -200, u: 'mm', desc: 'No.2 LP heater level (2)', basis: 'same' },
-    { tag: 'LIHD11031', hh: 200, h: 100, l: -100, ll: -200, u: 'mm', desc: 'No.3 LP heater level (1)', basis: 'same' },
-    { tag: 'LIHD11032', hh: 200, h: 100, l: -100, ll: -200, u: 'mm', desc: 'No.3 LP heater level (2)', basis: 'same' },
+    { tag: 'LIHD11052', hh: 154, h: 54, l: -26, ll: -26, u: 'mm', desc: 'No.1 HP heater level (2)', basis: 'alarm list 2016-09-12, LT-HD1105-2' },
+    { tag: 'LIHD11061', hh: 156, h: 56, l: -44, ll: -44, u: 'mm', desc: 'No.2 HP heater level (1)', basis: 'alarm list 2016-09-12, LT-HD1106-1' },
+    { tag: 'LIHD11062', hh: 156, h: 56, l: -44, ll: -44, u: 'mm', desc: 'No.2 HP heater level (2)', basis: 'alarm list 2016-09-12, LT-HD1106-2' },
+    { tag: 'LIHD11011', hh: 50, h: 10, l: -57, ll: -57, u: 'mm', desc: 'No.1 LP heater level (1)', basis: 'alarm list 2016-09-12, LT-HD1101-1' },
+    { tag: 'LIHD11012', hh: 50, h: 10, l: -59, ll: -59, u: 'mm', desc: 'No.1 LP heater level (2)', basis: 'alarm list 2016-09-12, LT-HD1101-2' },
+    { tag: 'LIHD11021', hh: 50, h: 10, l: -40, ll: -40, u: 'mm', desc: 'No.2 LP heater level (1)', basis: 'alarm list 2016-09-12, LT-HD1102-1' },
+    { tag: 'LIHD11022', hh: 137, h: 37, l: -63, ll: -63, u: 'mm', desc: 'No.2 LP heater level (2)', basis: 'alarm list 2016-09-12, LT-HD1102-2' },
+    { tag: 'LIHD11031', hh: 50, h: 10, l: -38, ll: -38, u: 'mm', desc: 'No.3 LP heater level (1)', basis: 'alarm list 2016-09-12, LT-HD1103-1' },
+    { tag: 'LIHD11032', hh: 138, h: 38, l: -42, ll: -42, u: 'mm', desc: 'No.3 LP heater level (2)', basis: 'alarm list 2016-09-12, LT-HD1103-2' },
     {
       tag: 'TILO10021',
       hh: 55,
@@ -808,13 +808,13 @@ const AN_DEF = {
     },
     {
       tag: 'TCSAI1004',
-      hh: 3300,
-      h: 3060,
-      l: 2950,
-      ll: 2800,
+      hh: 3978,
+      h: null,
+      l: null,
+      ll: null,
       u: 'rpm',
       desc: 'Turbine rated speed (0-4000 rpm)',
-      basis: 'rated 3000 rpm: HH = 110 % overspeed'
+      basis: 'rated 3600 rpm; HH = electronic overspeed trip 110.5 %, IBD TA-15; no other limit in the alarm list'
     },
     {
       tag: 'GCPAI1001',

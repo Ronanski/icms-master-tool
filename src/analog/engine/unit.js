@@ -453,8 +453,8 @@ function anUnitStart() {
     U.taf0 = taf0;
   }
   U.pa = ais('ABC-006', 'AI0166');
-  U.paN = U.tafS ? netOf(U.tafS, 'FIFA1071.PV') : -1;
-  U.pa0 = U.paN >= 0 ? +U.tafS.rt.v[U.paN] : NaN;
+  U.paNet = U.tafS ? netOf(U.tafS, 'FIFA1071.PV') : -1;
+  U.pa0 = U.paNet >= 0 ? +U.tafS.rt.v[U.paNet] : NaN;
   /* ---- 2.2.0-beta.12 (M3): trips ---- */
   const labOf = (k, l) => {
       const x = shOf(k);
@@ -1179,9 +1179,10 @@ function anSeawaterStep(U, dt) {
   U.swTiA = K.Tin[0];
   U.swTiB = K.Tin[1];
   const ws = Math.max(0, ((U.ms || 0) * K.cSt) / K.mcr + (U.qlp || 0));
+  const thC = (r.Qc[0] + r.Qc[1]) * 1.02; /* T/H through the condenser: the design rise is per condenser */
   [0, 1].forEach(j => {
-    const th = r.Qc[j] * 1.02 * 2; /* T/H, as if both paths had this flow (the design is per condenser) */
-    const rise = th > 100 ? K.rise0 * (ws / K.cSt) * (K.cTH / th) : 0;
+    /* one box shut: its share of the heat goes to the other box (heat = water x rise) */
+    const rise = r.Qc[j] * 1.02 > 100 ? K.rise0 * (ws / K.cSt) * (K.cTH / thC) : 0;
     lag(j ? 'swToB' : 'swToA', K.Tin[j] + Math.min(rise, 40), K.tauT);
   });
   /* PG-SW1501A / B / C: the pump side of the check valve (a stopped pump: the water column of the pit, below the gauge = 0) */
@@ -1580,6 +1581,8 @@ const AN_CD = {
 /* MW lost to the back pressure. docs/versions/v3.2.1/HEAT_BALANCE.md: calculated from the mass balance (exhaust quality 0.92 closes the
    balance at 150 MW). At constant entropy dh/dT = x hfg / T = 7.1 kJ/kg per C at 38.65 C; with 0.85 LP efficiency (NO-SOURCE) 6 kJ/kg per C,
    on the exhaust steam, 0.70 of the main steam (309.7 / 446 T/H, MB-013). A better vacuum gives a small gain, capped at 1 C. */
+/* FIFA1079 / FIFA1071 at load: 328.2 / 354.0 T/H (HMI snapshot, a check value; no document gives the split of the primary air) */
+const AN_PA_FURN = 328.2 / 354.0;
 function anVacMW(U) {
   if (!isFinite(U.cdT) || !(U.ms > 0)) return 0;
   const dT = Math.max(-1, U.cdT - AN_CD.Tref);
@@ -2779,8 +2782,8 @@ function anUnitStep(dt) {
     dirt(U.di.perm, tb.perm ? 1 : 0);
     if (U.di.onCmd >= 0 && +v[U.di.onCmd] > 0.5 && U.di.perm && +v[U.di.perm.n] > 0.5) dirt(U.di.on, 1);
     if (U.di.offCmd >= 0 && +v[U.di.offCmd] > 0.5) dirt(U.di.on, 0);
-    if (U.spd && U.spd.length) anUnitWrite(U.spd, tb.rpm);
   }
+  if (U.spd && U.spd.length) anUnitWrite(U.spd, tb.rpm);
   U.t += dt;
   /* transmitters */
   anUnitWrite(U.msp, Pms);
@@ -2931,7 +2934,7 @@ function anUnitStep(dt) {
     for (const L of U.o2) anUnitWrite(L, i => Math.max(0, Math.min(21, U.o2v + (L.a0[i] - U.O20) * ko)));
   }
   /* PA to the furnace follows the PAF flow */
-  if (U.paN >= 0 && U.pa0 > 0 && U.pa.length) scaled(U.pa, Math.max(0, +U.tafS.rt.v[U.paN]) / U.pa0);
+  if (U.paNet >= 0 && U.pa.length) anUnitWrite(U.pa, Math.max(0, +U.tafS.rt.v[U.paNet]) * AN_PA_FURN);
   /* ---- 2.2.0-beta.15 (M4 step 2): the start-up feedwater valve adds to the feedwater flow ---- */
   if (U.suv && U.fwp && U.fwp.pr) {
     const o = Math.max(0, Math.min(100, anAv('LICBR1001B', +U.suv.S.rt.v[U.suv.n] || 0))),
