@@ -42,6 +42,7 @@
     [/\bB-AUX\.?\s*CW PUMP\b|AUX\.?\s*COOLING WATER PUMP\s*[-(]?\s*B\b|\bACWP\s*-?B\b/, 0, 1, '27.PNG ACWP-B (P-1108B) 0.0 A, R A standby'],
     [/\bMWP\s*[AC]\b/, 1, 0, 'MWP-A 20.5 A, MWP-C 20.8 A'],
     [/\bMWP\s*B\b/, 0, 0, 'MWP-B stopped, R M'],
+    [/NOT\s+EMERGENCY\s+STOP/, 1, 0, 'local emergency stop released (N.C. contact), DITL-21A row 18'],
     [/BOTTOM ASH SCREW COOLER|ASH COOLER/, 0, 0, 'L-1060A ~ D ASH COOLER stopped'],
     /* the STOP contact of a running conveyor is 0: it matched the rule below and held the ash coolers off (DITL-21A, Mina item 2) */
     [/CHAIN CONVEYOR.*STOP/, 0, 0, 'L-1090 CHAIN CONVEYOR STOP contact'],
