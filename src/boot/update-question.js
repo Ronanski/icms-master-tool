@@ -199,7 +199,7 @@
       v +
       '</b> · installed: ' +
       T +
-      '. Update now to test the same build.</span><span id=updbs style="display:inline-flex;gap:8px"></span>';
+      '. Update now reloads the app: the plant state is lost, the Guide keeps its ticks only, so a test starts again from Step 1.</span><span id=updbs style="display:inline-flex;gap:8px"></span>';
     function bt(t, f, c) {
       var b = document.createElement('button');
       b.textContent = t;

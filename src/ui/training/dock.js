@@ -3150,7 +3150,9 @@
       els.cond.className = 'gd-cond' + (ok ? ' ok' : '');
       /* Mina F43: a step that must stop on a level asks for x10 near it, else x300 runs past it in one look at the screen */
       if (s.slow && call(() => s.slow(), false) && +((window.AN && AN.spd) || 1) > 10) setSpeed(10);
-      els.cond.textContent = (ok ? '✓ ' : '◌ ') + (s.c.want ? 'Needed: ' + s.c.want : 'Needed') + (now ? '  ·  Now: ' + now : '') + (hd ? '  ·  held ' + f0(hd[0]) + ' / ' + f0(hd[1]) + ' s' : '');
+      /* Mina F51, F56: what the operator must do now, before the rest of the line */
+      const askT = s.ask ? call(() => s.ask(), '') : '';
+      els.cond.textContent = (askT ? '⚠ ' + askT + '  ·  ' : '') + (ok ? '✓ ' : '◌ ') + (s.c.want ? 'Needed: ' + s.c.want : 'Needed') + (now ? '  ·  Now: ' + now : '') + (hd ? '  ·  held ' + f0(hd[0]) + ' / ' + f0(hd[1]) + ' s' : '');
     } else if (els.cond) {
       /* 3.2.0 walkthrough #5: the 6 h of the ESP purge, in plant time */
       const hd = call(() => g.holdOf(s), null),
@@ -3473,6 +3475,15 @@
   function fpPaint(s, selAd, rd) {
     const b = els.nxF;
     if (!b) return;
+    /* Mina F50: a step whose first act is on its controllers: the top button goes there, not to the motor */
+    if (s.topCtl && !rd && call(() => s.topCtl(), false)) {
+      b.hidden = false;
+      const tt = 'Open the controls: ' + (s.topTx || (s.fps || []).join(', ')) + ' ▸';
+      if (b.textContent !== tt) b.textContent = tt;
+      b.title = 'The controllers of this step';
+      b.onclick = () => ((els.stOpen = { i: s.i, k: 'S' }), live());
+      return;
+    }
     const ms = motorsOf(s),
       R = window.LS_FPREG || {};
     let ad = selAd || (ms[0] && motAddr(ms[0])),

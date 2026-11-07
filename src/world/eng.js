@@ -13,7 +13,7 @@
   /* the engine actions: names on AN (engine/api.js and the page hooks), DITL (src/digital/parts), WORLD / DITL150 */
   const CALLS = {
     /* not setForce: a page function (ui/panel.js), its force goes as a write and its settle as an action */
-    AN: ['reset', 'settle', 'loadStart', 'plantLoad150', 'plantCold', 'plantLoad150Async', 'plantColdAsync', 'plantSwitch', 'latchMode', 'turbine', 'field', 'swValve', 'oilValve', 'blowdown', 'stepSet', 'stepTier', 'actSet', 'stepN', 'stepBack', 'clock0'],
+    AN: ['reset', 'settle', 'loadStart', 'plantLoad150', 'plantCold', 'plantLoad150Async', 'plantColdAsync', 'plantSwitch', 'latchMode', 'stVal', 'turbine', 'field', 'swValve', 'oilValve', 'blowdown', 'stepSet', 'stepTier', 'actSet', 'stepN', 'stepBack', 'clock0'],
     G: ['ditlStates', 'ditlUser'],
     DITL150: ['apply'],
     WORLD: ['tick', 'set']
