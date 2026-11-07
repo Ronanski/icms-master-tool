@@ -27,7 +27,7 @@ Gas 322 to 135 C. PA 45 to 285.8 C. SA 39 to 301.6 C.
 - Each air comes to 86.9 % (PA) and 92.8 % (SA) of the way to the gas entering. Held at all loads: change with flow is NO-SOURCE.
 - Gas leaving comes from the heat the air took. Gas flow 681 T/H (air 598 + coal less ash), air to gas specific heat 0.894, from the Tab 3 balance.
 - Rotor stopped: heating fades over 120 s. Time NO-SOURCE.
-- Gas entering below MCR: no curve in the docs. Kept the HMI law on bed temperature and gas flow.
+- Gas entering below MCR: L20 air heater duties, 322, 285, 272 C at 100, 60, 40 %, tied to furnace rise.
 
 
 ## Part load: air against FHI (open)

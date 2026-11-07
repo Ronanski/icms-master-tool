@@ -401,14 +401,17 @@ function anFanStep(U, dt) {
              all loads: the change with flow is NO-SOURCE.
    kCp, gm   gas side of the same heat: 354 x 240.8 + 218 x 262.6 T/H x C of air takes the gas 681 T/H (air 598 + coal less ash) from
              322 to 135 C, so air cp / gas cp 0.894; gm = gas per T of air.
-   gi        gas entering at no load falls with the bed and a little with the gas flow (kept from the 150 MW estimate of the HMI);
-             no curve below MCR in the docs.
+   gi        gas entering at MCR; below it the duties of the air heater manual L20, anAphIn.
    eco       colder feedwater takes more from the gas: the economizer cools the gas 43 C of the 120 C between gas in (365, snapshot
              TIFG1110 / 1113) and feedwater 245.4 (Tab 3), so gas to the air heater falls 0.36 C per C of feedwater. */
 const AN_GAS = { afs: 5.46, gi: 322, ePA: 240.8 / 277, eSA: 262.6 / 283, kCp: 0.894, gm: 681 / 598, eco: 43 / 120, dtP: 10, dtS: 4, tauG: 60, tauR: 120 };
 const anAphClamp = (x, a, b) => Math.max(a, Math.min(b, x));
 /* gas entering the air preheater: k = bed rise over its MCR rise, g = gas flow over the MCR flow */
-const anAphIn = (amb, k, g, fwDrop) => Math.max(amb, amb + (AN_GAS.gi - amb) * k * (0.85 + 0.15 * anAphClamp(g, 0.2, 1.2)) - AN_GAS.eco * Math.max(0, fwDrop || 0));
+/* gas in by furnace rise, L20 air heater duties 322 / 285 / 272 C at 100 / 60 / 40 %, at the furnace rise of Fig 8 (1, 0.895, 0.778); to ambient below */
+const anAphIn = (amb, k, g, fwDrop) => {
+  const t = k >= 0.895 ? 285 + ((322 - 285) * (k - 0.895)) / 0.105 : k >= 0.778 ? 272 + ((285 - 272) * (k - 0.778)) / 0.117 : amb + ((272 - amb) * Math.max(0, k)) / 0.778;
+  return Math.max(amb, t - AN_GAS.eco * Math.max(0, fwDrop || 0));
+};
 /* air leaving the fans, with the square of the flow: Tab 3 ambient 35, PA 45, SA 39 C. kind 'p' or 's' */
 const anAphAir = (amb, q, kind) => amb + (kind === 'p' ? AN_GAS.dtP : AN_GAS.dtS) * anAphClamp(q, 0, 1.3) ** 2;
 /* gas leaving: the gas gives what the air took */
