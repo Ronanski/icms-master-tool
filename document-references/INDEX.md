@@ -1,5 +1,7 @@
 # document-references — index (2026-11-06, TZUYU)
 
+**Mula 2026-11-07: ang mga file ay wala na sa public repo.** Nasa PC ng user ang mga ito at nasa private repo na Ronanski/icms-plant-documents ang dating naka-commit. Index na lang ang naiwan dito. Huwag mag-commit ng plant document sa public repo.
+
 Ito ang listahan ng lahat ng reference. Basahin bago sabihing "not in docs" (COMMANDMENT 1). Ang path ay mula sa folder na ito.
 
 ## Logic ng DCS

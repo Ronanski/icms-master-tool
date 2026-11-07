@@ -53,7 +53,6 @@ Docs at references (audit 2026-11-06, hindi pa naayos):
 - Walang section sa UPDATE_REPORT v3.2.1 ang ilang Beta; may listahan na mula sa git log sa dulo ng file na iyon.
 
 ## 5. Kulang pa
-- Desisyon ng user: 344 MB plant documents na nasa public repo at history.
 - Ikabit sa model ang drum 32 t (DATA_ANSWERS item 7); ikumpara sa app ang BFP motor, generator at compressor data (`document-references/INDEX.md`).
 - Live loop check at function test ng natitirang equipment (`docs/versions/v3.2.1/MOTOR_LOOP_CHECK.md` pagkatapos ng CW; lahat ng MOV / control valve at analog instrument gamit ang split view); page 07 test; debris filters, hypochlorite, manual valves.
 - Gaps: ID fan cold start; Sampling page blanks; per-signal ABC / DITL tracing; AI range / alarm / IO checks; DITL 9 sa 31 hindi pa na-verify.
