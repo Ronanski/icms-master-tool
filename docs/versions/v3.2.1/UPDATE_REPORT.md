@@ -466,3 +466,4 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.40** (2026-11-05, 3742f93): split view analog loop check
 - **beta.41** (2026-11-05, 86fe376): split view Inject / Release for the analog loop check
 - **beta.42** (2026-11-05, fa3318c): merge main into PR #141 (sand DITL-771 reset, limestone DITL-LS212 isolating valves)
+- **beta.43** (2026-11-07): 150 MW start waits for the DITL before Run (test `tests/regress/ditl150_startp.js`)
