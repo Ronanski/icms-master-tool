@@ -304,7 +304,11 @@ function tcsTripHold(U, dt) {
   tcsTripLog(ib.first);
 }
 /* TA-1 TURBINE TRIP P.B. */
+/* the action runs on the mirror page too; only the engine writes the trip state: a write here would mark the whole slot as the page's own,
+   the page would skip the engine's answer and keep the old first out (Mina item 14 / 16: TRIPPED after a good reset) */
+const tcsMirror = () => !!(window.ENG && ENG.mode === 'mirror');
 function tcsTripManual(U) {
+  if (tcsMirror()) return '';
   const c = tcsOilState(U),
     ib = tcsIb(c);
   if (c.trip) return 'The turbine is already tripped: ' + c.trip;
@@ -313,12 +317,14 @@ function tcsTripManual(U) {
 }
 /* TA-1 TURBINE RESET P.B.: the gates decide; a held TA-9 keeps the A gate at 0 */
 function tcsTripReset(U) {
+  if (tcsMirror()) return '';
   const ib = tcsIb(tcsOilState(U));
   ib.pb.rst = 1.5;
   return '';
 }
 /* a signal of a sheet held at a value (a field contact, a test) */
 function tcsTripFault(U, a) {
+  if (tcsMirror()) return '';
   const ib = tcsIb(tcsOilState(U)),
     k = a.id + ':' + a.net;
   if (a.on == null) delete ib.fx[k];

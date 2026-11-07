@@ -1811,8 +1811,9 @@
               on: guard(() =>
                 withAN(() => {
                   const r = AN.turbine(cmd);
-                  say(r ? 'TCS: ' + r : 'TCS: ' + txt + ' done');
-                  if (!pop.hidden) render();
+                  say(r ? 'TCS: ' + r : 'TCS: ' + txt + ' pressed');
+                  /* the engine answers with its next scans */
+                  setTimeout(() => !pop.hidden && render(), 2500);
                 })
               )
             });
