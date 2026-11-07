@@ -35539,7 +35539,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.93';
-      c3.textContent += ' · build ee156b3'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 061dae1'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -53296,6 +53296,8 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     }
     /* a normally closed contact is closed (1) while nobody presses it: BOILER EMERGENCY TRIP P.B.(1) (N.C.) */
     if (/N\.\s*C\./.test(t) && /P\.\s*B|PUSH/.test(t)) return 1;
+    /* the local emergency stop of a machine at load is released: DITL-21A NOT EMERGENCY STOP (Mina item 2) */
+    if (/\bNOT\s+EMERGENCY\s+STOP\b/.test(t)) return 1;
     if (/INADEQUATE/.test(t)) return 0;
     if (/\bADEQUATE\b/.test(t)) return 1;
     /* the purge sequence is a start-up step: not a state of the unit on load; a valve position compared with a value is
@@ -82435,6 +82437,8 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
     }
     /* a normally closed contact is closed (1) while nobody presses it: BOILER EMERGENCY TRIP P.B.(1) (N.C.) */
     if (/N\.\s*C\./.test(t) && /P\.\s*B|PUSH/.test(t)) return 1;
+    /* the local emergency stop of a machine at load is released: DITL-21A NOT EMERGENCY STOP (Mina item 2) */
+    if (/\bNOT\s+EMERGENCY\s+STOP\b/.test(t)) return 1;
     if (/INADEQUATE/.test(t)) return 0;
     if (/\bADEQUATE\b/.test(t)) return 1;
     /* the purge sequence is a start-up step: not a state of the unit on load; a valve position compared with a value is

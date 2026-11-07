@@ -136,6 +136,8 @@
     }
     /* a normally closed contact is closed (1) while nobody presses it: BOILER EMERGENCY TRIP P.B.(1) (N.C.) */
     if (/N\.\s*C\./.test(t) && /P\.\s*B|PUSH/.test(t)) return 1;
+    /* the local emergency stop of a machine at load is released: DITL-21A NOT EMERGENCY STOP (Mina item 2) */
+    if (/\bNOT\s+EMERGENCY\s+STOP\b/.test(t)) return 1;
     if (/INADEQUATE/.test(t)) return 0;
     if (/\bADEQUATE\b/.test(t)) return 1;
     /* the purge sequence is a start-up step: not a state of the unit on load; a valve position compared with a value is
