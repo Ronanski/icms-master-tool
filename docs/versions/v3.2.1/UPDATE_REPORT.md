@@ -1,5 +1,11 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.94 — Audit values, third batch (2026-11-08, JENNIE)
+
+**Work done.** Valve sheet sizes: PCV-DO0002, FCV-DO1012, FCV-CD1120, LCV-MU1110, TCV-CD1115. Vacuum rise from the starting ejector curve.
+
+**Not tested.** Live; item sent to Mina.
+
 ## 3.2.1-beta.93 — Steam temperature lag from steel, cooler E-stop (2026-11-08, JENNIE)
 
 **Work done.** Steam temperature lag 362 s, worked from superheater steel 232 t. Ash cooler emergency stop released at load.
