@@ -1063,7 +1063,10 @@
          tick), scans of 2 s,
          at most 12 a frame: at x300 a frame is 60 s and a burner light-off of a few seconds (igniter insert, trial for ignition) was
          jumped over in one scan and failed; the time of that frame is what the scans took (the plant follows the same time) */
-      if (!W.busy || dt <= 2) {
+      /* 3.2.1: 2 s scans at x10 jumped over DITL timers of 1.5 to 3 s: TR150 hid a stroke fault (F74), TR164 missed the end of a 3 s pulse and left
+         M.040A set, so one REINSTATE did not open MV-CD1001 (Mina a7). Up to x60 a busy world scans each 0.5 s */
+      const scanH = dt <= 12 ? 0.5 : 2;
+      if (!W.busy || dt <= scanH) {
         TMBUSY = false;
         yield* tickG(dt);
         W.busy = TMBUSY;
@@ -1071,7 +1074,7 @@
         let used = 0;
         const t0 = performance.now();
         for (let n = 0; n < 12 && used < dt - 1e-6 && (n < 2 || performance.now() - t0 < 120); n++) {
-          const h = W.busy ? Math.min(2, dt - used) : dt - used;
+          const h = W.busy ? Math.min(scanH, dt - used) : dt - used;
           TMBUSY = false;
           yield* tickG(h);
           W.busy = TMBUSY;
