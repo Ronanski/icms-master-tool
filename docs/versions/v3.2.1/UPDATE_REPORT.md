@@ -557,3 +557,5 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.80** (2026-11-07): IBD reader: input names read from their own box only. Fixes TA-9, where the vacuum and main steam temperature rows were taken for Boiler MFT, so those two rows did not reach the trip
 
 - **beta.81** (2026-11-07): IBD input tags back: beta.80 lost them, so the trip sheets had no field values
+
+- **beta.82** (2026-11-07): IBD netlist repaired: links enter through their named box, memories (S / R) read, TA-22 binding narrowed, so the trip reaches TA-1 again. Fixed set points read from the IBD text: 123 of 135 comparators, 6 more by the tables of TA-11 and TA-21, 6 with no number. Test `tests/regress/tcs_ibd_desk.js`

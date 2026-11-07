@@ -3,8 +3,8 @@
    reads the result: TA-1 net TA1_RESET = 1 the turbine is reset; a fall of it is the trip, and the rows of TA-9 standing at that scan are the
    first out. U.tc.trip = the first-out name, read by unit.js (it writes I.0400 TURBINE TRIP).
    Symbols, sheet 13: S / R reset has priority; DI delay pick up; DT delay drop out; PO one shot; (WO) A AND NOT C; MID median; 2/3.
-   The set point digits on the drawing are strokes, not text: TCS_IBD_SP holds them by sheet and block, read from the sheet images
-   (team-files/plant-study/05-turbine-electrical.md sections 4 and 5). A comparator with no entry stays 0 and is listed by AN.tcsIbdMissing().
+   Fixed set points come with the netlist, read from the words under each comparator; the variable limits of TA-11 and TA-21 are the tables
+   below. A comparator with neither stays 0 and is listed by AN.tcsIbdMissing().
    One value per quantity: the model has one transmitter where the plant has three, so A, B and C read the same value. */
 const TCS_MFT_ROW = 12; /* DITL-03A out 13 = MFT (guide.js purge step) */
 const TA1_RESET = 3; /* TA-1 the A gate: all trip conditions off and reset */
@@ -43,67 +43,19 @@ const TCS_IBD_PV = [
   [/PT-LOn007/, U => U.loTrip],
   [/TE-STn110/, (U, c) => c.Tx],
   [/SE-STn001/, U => (U.tb ? U.tb.rpm : 0)],
-  [/PT-CRn901|HP TURBINE EXHAUST .*STEAM PRESS/, U => tcsCrp(U)],
+  [/PT-CRn901|HP TURBINE EXHAUST .*STEAM PRESS[.] [(][ABC]/, U => tcsCrp(U)],
   [/GENERATOR LOAD/, U => ((+U.MW || 0) / 150) * 100]
 ];
-/* comparators: 'sheet@x,y': [on, off], on < off = low side (on at or below), on > off = high side (on at or above); or a function of U */
-const hi = (a, b) => [a, b];
+/* comparators with a variable limit; every fixed set point is read from the words under the block on the sheet (tools/data/ibd_build.mjs) */
+const TCS_MST_LOW = U => tcsSteam(U).mst <= tcsLin(TCS_MST, tcsFst(U));
+const TCS_DP_HIGH = U => tcsFst(U) - tcsCrp(U) >= tcsLin(TCS_DP, tcsFst(U));
 const TCS_IBD_SP = {
-  'TA-10@473,686': hi(0.26, 0.22),
-  'TA-10@473,630': hi(0.26, 0.22),
-  'TA-10@473,574': hi(0.26, 0.22),
-  'TA-10@647,400': hi(0.14, 0.12) /* LOW */,
-  'TA-10@647,319': [0.12, 0.14] /* NORMAL */,
-  'TA-10@647,238': hi(1.0, 0.96),
-  'TA-11@549,560': U => tcsSteam(U).mst <= tcsLin(TCS_MST, tcsFst(U)),
-  'TA-11@549,362': U => tcsSteam(U).mst <= tcsLin(TCS_MST, tcsFst(U)),
-  'TA-11@549,221': U => tcsSteam(U).mst <= tcsLin(TCS_MST, tcsFst(U)),
-  'TA-11@687,664': [290, 295] /* LOW, annunciator */,
-  'TA-11@442,447': hi(20, 17) /* generator load % */,
-  'TA-12@548,698': hi(0.8, 0.7),
-  'TA-12@548,584': hi(0.8, 0.7),
-  'TA-12@548,470': hi(0.8, 0.7),
-  'TA-12@548,642': [-1.18, -1.08],
-  'TA-12@548,529': [-1.18, -1.08],
-  'TA-12@548,415': [-1.18, -1.08],
-  'TA-12@647,339': hi(0.6, 0.5),
-  'TA-12@647,286': [-0.98, -0.88],
-  'TA-13@549,722': [112, 117],
-  'TA-13@549,666': [112, 117],
-  'TA-13@549,609': [112, 117],
-  'TA-13@695,548': [133, 138] /* LOW */,
-  'TA-13@549,482': [0.7, 1.05],
-  'TA-13@549,426': [0.7, 1.05],
-  'TA-13@549,369': [0.7, 1.05],
-  'TA-13@696,329': [1.05, 1.33] /* LOW */,
-  'TA-13@696,269': hi(1.02, 0.71) /* NORMAL */,
-  'TA-14@553,707': hi(107, 104),
-  'TA-14@553,650': hi(107, 104),
-  'TA-14@553,594': hi(107, 104),
-  'TA-14@553,525': hi(80, 77) /* HIGH */,
-  'TA-14@553,455': [81, 86],
-  'TA-14@553,398': [81, 86],
-  'TA-14@553,342': [81, 86],
-  'TA-15@525,707': hi(4023, 4005) /* 111.75 %, 111.25 % */,
-  'TA-15@525,642': hi(4023, 4005),
-  'TA-15@525,577': hi(4023, 4005),
-  'TA-15@525,355': hi(3978, 3960) /* 110.5 %, 110 % */,
-  'TA-15@525,298': hi(3978, 3960),
-  'TA-15@525,242': hi(3978, 3960),
-  'TA-15@525,476': [2400, 2450],
-  'TA-15@525,411': [0.67, 2],
-  'TA-20@465,691': hi(420, 415),
-  'TA-20@465,606': hi(420, 415),
-  'TA-20@465,522': hi(420, 415),
-  'TA-20@524,425': hi(400, 395),
-  'TA-21@586,581': U => tcsFst(U) - tcsCrp(U) >= tcsLin(TCS_DP, tcsFst(U)),
-  'TA-21@586,440': U => tcsFst(U) - tcsCrp(U) >= tcsLin(TCS_DP, tcsFst(U)),
-  'TA-21@586,295': U => tcsFst(U) - tcsCrp(U) >= tcsLin(TCS_DP, tcsFst(U)),
-  'TA-21@422,182': hi(30, 27) /* generator load % */,
-  'TA-22@476,682': hi(44.9, 42.9),
-  'TA-22@476,626': hi(44.9, 42.9),
-  'TA-22@476,569': hi(44.9, 42.9),
-  'TA-22@555,434': hi(42.7, 40.7) /* HIGH with the turbine tripped */
+  'TA-11@549,560': TCS_MST_LOW,
+  'TA-11@549,362': TCS_MST_LOW,
+  'TA-11@549,221': TCS_MST_LOW,
+  'TA-21@586,581': TCS_DP_HIGH,
+  'TA-21@586,440': TCS_DP_HIGH,
+  'TA-21@586,295': TCS_DP_HIGH
 };
 const TCS_IBD = {
   by: {},
@@ -208,13 +160,14 @@ function tcsIbdStep(U, c, dt) {
             .sort((p, w) => p - w);
           o = q.length ? q[(q.length - 1) >> 1] : NaN;
         } else if (t === 'CMP') {
-          const key = id + '@' + g[4] + ',' + g[5],
-            sp = TCS_IBD_SP[key],
-            pv = v[ins[0]];
+          const sp = TCS_IBD_SP[id + '@' + g[4] + ',' + g[5]];
+          let pv = v[ins[0]];
+          /* the speed set points of TA-15 are written in % of 3600 rpm */
+          if (x && x[3] === '%' && id === 'TA-15') pv = (pv / 3600) * 100;
           if (typeof sp === 'function') o = sp(U) ? 1 : 0;
-          else if (!sp || !isFinite(pv)) o = 0;
-          else if (sp[0] >= sp[1]) o = pv >= sp[0] || (v[out] > 0.5 && pv > sp[1]) ? 1 : 0;
-          else o = pv <= sp[0] || (v[out] > 0.5 && pv < sp[1]) ? 1 : 0;
+          else if (!x || !isFinite(pv)) o = 0;
+          else if (x[0]) o = pv >= x[1] || (v[out] > 0.5 && pv > x[2]) ? 1 : 0;
+          else o = pv <= x[1] || (v[out] > 0.5 && pv < x[2]) ? 1 : 0;
         } else if (t === 'DI' || t === 'DT' || t === 'PO') {
           const k = id + ':' + i,
             T = tcsIbdT(x),
@@ -354,6 +307,7 @@ function tcsIbdMissing() {
   const L = [];
   for (const s of TCS_IBD_SHEETS)
     for (const g of s.g)
-      if (g[0] === 'CMP' && !TCS_IBD_SP[s.id + '@' + g[4] + ',' + g[5]]) L.push(s.id + '@' + g[4] + ',' + g[5]);
+      if (g[0] === 'CMP' && !g[3] && !TCS_IBD_SP[s.id + '@' + g[4] + ',' + g[5]])
+        L.push(s.id + '@' + g[4] + ',' + g[5]);
   return L;
 }
