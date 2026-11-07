@@ -1,5 +1,11 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.96 — Ash cooler E-stop pattern (2026-11-08, JENNIE)
+
+**Work done.** The E-stop rule of beta.95 had a broken text pattern and did nothing; fixed.
+
+**Not tested.** Live; item sent to Mina.
+
 ## 3.2.1-beta.95 — Ash cooler E-stop at load (2026-11-08, JENNIE)
 
 **Work done.** The NOT EMERGENCY STOP row matched the stopped cooler rule first; it now reads 1 at 150 MW.
