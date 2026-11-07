@@ -78,7 +78,7 @@ const AN_UNIT = {
   MWperm: 45,
   MWinit: 4.5 /* PR-OPE-5002: initial load 4.5 MW */,
   rateUp: 7.5 /* MW/min = 5 % / min (PR-OPE-5002 LOAD UP), AI0421 max load-up rate 0 ~ 5 %/min */,
-  tauT: 120,
+  tauT: 362 /* metal over steam: SH steel 232 t (B-0-001) x 0.5 kJ/kg K = 116 MJ/K, over 128 kg/s x 2.5 kJ/kg K = 0.32 MW/K */,
   /* 3.2.0-beta.39 (roadmap 2): share of the low-load / start-up fall of the SH temperature (dn) at the spray 1 outlet, the SH no.2 pickup and the
      finishing SH pickup (ASSUMED: superheat of each stage at the anchor, 61 / 68 / 80 C of the 209 C over saturation) */
   fsh: [0.3, 0.3, 0.4],
@@ -166,7 +166,7 @@ const AN_UNIT = {
      before the turbine is rolled). The vacuum (share 0 ~ 1) rises in vacUp s once a SWP and a CEP run (ASSUMED 15 min with the
      vacuum pumps, a field step) and is lost in vacDn s when they stop (ASSUMED 1 min). The turbine cannot be rolled below 90 %; a
      turning or loaded turbine is tripped by the TCS below 60 % (LOW VACUUM TRIP -> ABC-050 I.0400 TURBINE TRIP) */
-  vacUp: 900,
+  vacUp: 1846 /* ED 066 p15: starting ejector 0.345 kg/cm2 A at 20 min, 65 % of full vacuum */,
   vacDn: 60
 };
 /* the AI blocks of one address on every sheet (station | address, like "Start at 150 MW") */
@@ -2068,7 +2068,7 @@ function anCdTagStep(U, ld) {
     'FT-CD1122': f ? r1(f.fda) : null,
     'PT-CD1122': isFinite(Pda) ? r1(Pda + 1.6) : null,
     'TT-CD1104': isFinite(Pda) && Pda > 0.05 ? r1(steamTsat(Pda)) : isFinite(Pda) ? r1(isFinite(U.Tamb) ? U.Tamb : 30) : null,
-    'FT-CD1115': isFinite(mv) && isFinite(uf) ? r1((46 * anAv('TICHR1012', mv) * uf) / 100) : null
+    'FT-CD1115': isFinite(mv) && isFinite(uf) ? r1((68 * anAv('TICHR1012', mv) * uf) / 100) : null
   });
 }
 /* 3.2.1 (IRENE, page 06 FEEDWATER): the turbine extraction, feedwater and spray transmitters of the page that no sheet reads (AN.unit.tt).
