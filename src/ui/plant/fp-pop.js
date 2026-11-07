@@ -1150,14 +1150,25 @@
         return;
       }
       const r = call(() => P.press(p.row), 'no logic') || '';
-      /* live test 2026-11-05: what in the logic keeps the command from going through (XV-FW1111-1 OPEN at Cold: MFT, steam flow < 10 %) */
-      const blk = !(typeof r === 'string' && r) && P.block ? call(() => P.block(p.row), null) : null;
-      msg.textContent =
-        typeof r === 'string' && r
-          ? '⚠ ' + r
-          : blk && blk.length
-            ? '⚠ ' + p.l + ' blocked by the logic: ' + blk.map(x => String(x.svc || '').replace(/^[IMB]\.\S+\s+/, '') + (x.want ? '' : ' (must be 0)') + (x.other ? ' [' + x.other + ']' : '')).join('; ') + '.'
-            : P.n + ' ' + p.l + ': EXECUTED';
+      /* Mina F22, F23, F26: a press is judged by what the valve does, not by the inputs in the moment of the press (FULLY OPEN is 1 when CLOSE
+         is pressed and that is no block). A travel command that moves nothing in its time gets the reason; a sequence (ISOLATE, REINSTATE)
+         moves its valve only after the bypass: 14 s */
+      const hard = typeof r === 'string' && r,
+        p0 = (call(P.info, null) || {}).pos,
+        wait = /^(OPEN|CLOSE)$/.test(p.l) ? 3000 : /^(ISOLATE|REINSTATE)$/.test(p.l) ? 14000 : 0;
+      msg.textContent = hard ? '⚠ ' + r : wait ? P.n + ' ' + p.l + ': sent' : P.n + ' ' + p.l + ': EXECUTED';
+      if (!hard && wait) {
+        const mine = (mov.seq = (mov.seq || 0) + 1);
+        setTimeout(() => {
+          if (mine !== mov.seq || !me.isConnected) return;
+          const p1 = (call(P.info, null) || {}).pos,
+            moved = p0 == null || p1 == null || Math.abs(p1 - p0) > 0.3,
+            blk = moved || !P.block ? null : call(() => P.block(p.row), null);
+          msg.textContent = moved
+            ? P.n + ' ' + p.l + ': EXECUTED'
+            : '⚠ ' + p.l + ' not taken: the valve did not move' + (blk && blk.length ? '. The logic asks for: ' + blk.map(x => String(x.svc || '').replace(/^[IMB].S+s+/, '') + (x.want ? '' : ' (must be 0)')).join(', ') : '. A timer of the drawing can hold the press; try again later');
+        }, wait);
+      }
       if (!(typeof r === 'string' && r)) call(() => window.lsEventAdd('CRT', 'DCS', 'Operator (CRT): ' + P.n + ' ' + (P.t || '') + ' ' + p.l));
       setTimeout(tick, 150);
     };

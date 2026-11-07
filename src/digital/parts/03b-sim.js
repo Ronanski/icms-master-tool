@@ -731,15 +731,18 @@ function mvOut(s, act) {
     mv = (s.nl && s.nl.mv) || [];
   if (!mv.length) return M;
   const rt = mvRT(s);
+  /* Mina F26, F27: DITL-64 row 13 reads FROM 64-55, its own TORQUE output, and that output read row 13: a loop that stayed 1 for ever and
+     blocked CLOSE. The field contact of such a row is its own switch (sig), not the row the output feeds */
+  const fld = i => (s._win && s._win.has && s._win.has(i) ? !!s.sig[i + ':S'] : act.has(i));
   mv.forEach((b, j) => {
     const r = rt[j];
     b.fb.forEach(f => {
       let v = 0;
       if (f.ty === 'ZSO') v = r.pos >= 100;
       else if (f.ty === 'ZSC') v = r.pos <= 0;
-      else if (f.ty === 'MIL') v = f.mir >= 0 ? act.has(f.mir) : !!r.lr;
-      else if (f.ty === 'MIT') v = f.mir >= 0 && act.has(f.mir);
-      else if (f.ty === 'TS') v = (f.mir >= 0 && act.has(f.mir)) || r.tq;
+      else if (f.ty === 'MIL') v = f.mir >= 0 ? fld(f.mir) : !!r.lr;
+      else if (f.ty === 'MIT') v = f.mir >= 0 && fld(f.mir);
+      else if (f.ty === 'TS') v = (f.mir >= 0 && fld(f.mir)) || r.tq;
       M.set(f.row, v ? 1 : 0);
     });
   });
@@ -789,6 +792,7 @@ function mvStep(s, v, dt) {
       if (o && c) r.run = 0;
       else if (o && r.pos < 100) r.run = 1;
       else if (c && r.pos > 0) r.run = -1;
+      /* Mina F25: the commands are sealed in on the drawing (DITL-64 MOR / MOS, OR with its own output): STOP drops them and the motor stops */ else if (!o && !c) r.run = 0;
     }
     if (r.run) TMBUSY = true;
     const p0 = r.pos;
@@ -804,6 +808,8 @@ function mvStep(s, v, dt) {
       !b.sv && ((r.pos <= 0 && c && !o) || (r.pos >= 100 && o && !c))
         ? 1
         : 0; /* v12b: torque switch (TS) trips when the valve is at the end and the motor is still commanded (seats the valve, breaks the seal-in) */
+    /* Mina F26: one more scan while the seat switch is made: the command drops at the end of travel, and a switch left on blocks the next CLOSE */
+    if (r.tq) TMBUSY = true;
     if (st(r.pos) !== s0 || r.run !== run0 || r.tq !== tq0) ch = true;
   });
   return ch;
