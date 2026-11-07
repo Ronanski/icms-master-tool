@@ -14,6 +14,7 @@ engine/steam.js
 engine/boiler.js
 engine/unit.js
 engine/tcs.js
+engine/tcs-trip.js
 engine/source.js
 engine/hmi-op.js
 engine/sheets.js

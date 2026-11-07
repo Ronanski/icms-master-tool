@@ -1800,6 +1800,27 @@
           ]),
           E('small', { txt: 'Target load = the TCS target while the DCS control mode is OFF. In CCS, change HIC-ULD (ABC-001A faceplate).' })
         );
+        /* plan c1: IBD TA-1 TURBINE TRIP / TURBINE RESET push buttons and the first-out of TA-9 (src/analog/engine/tcs-trip.js) */
+        const tc = AN.tcs ? AN.tcs() : null;
+        if (tc && tc.trip) {
+          const act = (cmd, txt) =>
+            E('button', {
+              cls: 'plgo',
+              txt,
+              on: guard(() =>
+                withAN(() => {
+                  const r = AN.turbine(cmd);
+                  say(r ? 'TCS: ' + r : 'TCS: ' + txt + ' done');
+                  if (!pop.hidden) render();
+                })
+              )
+            });
+          pop.append(
+            E('h5', { txt: 'Turbine protection' }),
+            E('small', { txt: tc.trip.first ? 'TRIPPED, first out: ' + tc.trip.first : 'No turbine trip' }),
+            E('div', { cls: 'plrow' }, [act('trip', 'Turbine trip'), act('tripreset', 'Turbine reset')])
+          );
+        }
       }
       if (locked()) pop.append(E('p', { cls: 'plnote', txt: 'VIEW: press RUN to change these.' }));
     }
