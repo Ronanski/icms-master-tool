@@ -793,6 +793,9 @@ function anTurbine(cmd, arg) {
   if (!U.on || !U.tb) return 'No unit model: start from Cold first';
   const tb = U.tb;
   /* 3.2.0-beta.66: the 036 TURBINE OIL pumps at the 150 MW snapshot (no TCS model): the oil-only state of tcs.js */
+  if (cmd === 'trip') return tcsTripManual(U);
+  if (cmd === 'tripreset') return tcsTripReset(U);
+  if (cmd === 'fault') return tcsTripFault(U, arg);
   if (!U.tc && cmd === 'oil') return tcsOilCmd(tcsOilState(U), arg || {});
   if (!U.tc && cmd === 'vex') {
     tcsOilState(U).vex = arg !== 0 && arg !== false;
@@ -2719,7 +2722,7 @@ function anUnitStep0(dt) {
     U.vac = Math.max(0, Math.min(1, cw2 > U.vac ? (aux ? U.vac + dt / U.vacUp : U.vac) : U.vac + ((cw2 - U.vac) * dt) / U.vacDn));
     const tb0 = U.tb,
       l = U.vtrip;
-    if (tb0 && (tb0.st !== 'off' || (U.tc && U.tc.trip)) && ((isFinite(U.cdP) ? U.cdP > AN_CD.Ptrip : U.vac < 0.6) || (U.tc && U.tc.trip)) && l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== 1) {
+    if (tb0 && (tb0.st !== 'off' || tcsTripNow(U)) && ((isFinite(U.cdP) ? U.cdP > AN_CD.Ptrip : U.vac < 0.6) || tcsTripNow(U)) && l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== 1) {
       l.S.rt.ext[l.n] = 1;
     }
   }
@@ -2756,6 +2759,9 @@ function anUnitStep0(dt) {
   /* 3.2.0-beta.38: the turbine auxiliaries and the ATS program (tcs.js) */
   if (U.tc && !trip) tcsStep(U, dt);
   else if (U.tc) tcsTripHold(U, dt);
+  /* Start at 150 MW: no ATS program, the trip logic of the IBD runs all the same (tcs-trip.js) */
+  else if (!trip) tcsTripScan(U, dt);
+  else tcsTripHold(U, dt);
   if (trip && tb.st !== 'off') {
     /* the TCS closes the ICV too (the HP valves below); in a start-up the machine is lost: stop valves shut, GCB open (I.0932, the
        generator protection), no transfer, no DCS mode */

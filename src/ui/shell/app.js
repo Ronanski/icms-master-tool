@@ -657,9 +657,10 @@
     const sub = E('div', { cls: 'sub' });
     [
       ['an', 'ABC', 'Analog logic (boiler control): 54 sheets'],
-      ['dig', 'DITL', 'Digital interlock logic: all the DITL sheets']
+      ['dig', 'DITL', 'Digital interlock logic: all the DITL sheets'],
+      ['ibd', 'Turbine', 'Turbine control system: the sheets of the Interlock Block Diagram']
     ].forEach(([k, l, t]) => {
-      const b = E('button', { txt: l, title: t, on: () => setSub(k) });
+      const b = E('button', { txt: l, title: t, on: () => (k === 'ibd' ? window.LS_TCSL && LS_TCSL.open() : setSub(k)) });
       subBtns[k] = b;
       sub.append(b);
     });
@@ -1801,8 +1802,8 @@
           E('small', { txt: 'Target load = the TCS target while the DCS control mode is OFF. In CCS, change HIC-ULD (ABC-001A faceplate).' })
         );
         /* plan c1: IBD TA-1 TURBINE TRIP / TURBINE RESET push buttons and the first-out of TA-9 (src/analog/engine/tcs-trip.js) */
-        const tc = AN.tcs ? AN.tcs() : null;
-        if (tc && tc.trip) {
+        const tt = AN.tcsTrip ? AN.tcsTrip() : null;
+        if (tt) {
           const act = (cmd, txt) =>
             E('button', {
               cls: 'plgo',
@@ -1817,7 +1818,7 @@
             });
           pop.append(
             E('h5', { txt: 'Turbine protection' }),
-            E('small', { txt: tc.trip.first ? 'TRIPPED, first out: ' + tc.trip.first : 'No turbine trip' }),
+            E('small', { txt: tt.first ? 'TRIPPED, first out: ' + tt.first : 'No turbine trip' }),
             E('div', { cls: 'plrow' }, [act('trip', 'Turbine trip'), act('tripreset', 'Turbine reset')])
           );
         }

@@ -251,9 +251,11 @@ function tcsTripFirst(c) {
 }
 /* every step of the TCS, no trip standing (tcsStep) */
 function tcsTripScan(U, dt) {
-  const c = U.tc,
+  const c = tcsOilState(U),
     tb = U.tb,
     ib = tcsIb(c);
+  /* Start at 150 MW has no ATS program (U.tc null): the oil state carries the trip, the running turbine is reset */
+  if (!U.tc) c.rst = !!(tb && tb.st !== 'off');
   /* the I.0400 of the drawing went back to 0 by itself (a forced test input): the name of that trip goes with it */
   if (ib.ext) {
     ib.ext = false;
@@ -284,7 +286,7 @@ function tcsTripScan(U, dt) {
 }
 /* I.0400 stands: the sheets go on, so a Turbine reset is seen; a trip that did not pass TA-1 still gets its name */
 function tcsTripHold(U, dt) {
-  const c = U.tc,
+  const c = tcsOilState(U),
     ib = tcsIb(c);
   tcsIbdStep(U, c, dt);
   if (ib.v['TA-1'][TA1_RESET] > 0.5 && c.trip) {
@@ -303,7 +305,7 @@ function tcsTripHold(U, dt) {
 }
 /* TA-1 TURBINE TRIP P.B. */
 function tcsTripManual(U) {
-  const c = U.tc,
+  const c = tcsOilState(U),
     ib = tcsIb(c);
   if (c.trip) return 'The turbine is already tripped: ' + c.trip;
   ib.pb.trip = 1.5;
@@ -311,26 +313,33 @@ function tcsTripManual(U) {
 }
 /* TA-1 TURBINE RESET P.B.: the gates decide; a held TA-9 keeps the A gate at 0 */
 function tcsTripReset(U) {
-  const ib = tcsIb(U.tc);
+  const ib = tcsIb(tcsOilState(U));
   ib.pb.rst = 1.5;
   return '';
 }
 /* a signal of a sheet held at a value (a field contact, a test) */
 function tcsTripFault(U, a) {
-  const ib = tcsIb(U.tc),
+  const ib = tcsIb(tcsOilState(U)),
     k = a.id + ':' + a.net;
   if (a.on == null) delete ib.fx[k];
   else ib.fx[k] = a.on ? 1 : 0;
   return '';
 }
+/* the first-out name of a standing trip, with or without the ATS program */
+const tcsTripNow = U => {
+  const c = U.tc || U.tco;
+  return c ? c.trip : '';
+};
 /* what the TCS panel shows */
 function tcsTripState(U) {
-  const ib = tcsIb(U.tc);
+  const c = U.tc || U.tco;
+  if (!c) return null;
+  const ib = tcsIb(c);
   return { first: ib.first, at: ib.at };
 }
 /* the live values of one sheet, for the drawing */
 function tcsIbdState(id) {
-  const c = AN_UNIT.tc,
+  const c = AN_UNIT.tc || AN_UNIT.tco,
     ib = c && c.ib;
   return ib ? { v: ib.v[id] || [], fx: ib.fx } : null;
 }
