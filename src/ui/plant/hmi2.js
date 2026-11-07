@@ -306,8 +306,9 @@
     AIFG10574: E => (E.idf && E.o2 != null ? E.o2 * (4.0 / 4.3) : 21),
     AIFG10572: E => (E.idf ? 69 * clamp(E.kb, 0, 1.3) ** 2 : 0),
     AIFG10573: E => (E.idf && E.o2 != null && E.kb > 0.3 ? Math.max(0, 2.5 - E.o2) * 150 : 0),
-    AIFG10575: E => 2.9 * clamp(E.g, 0, 1.3),
-    AIFG10576: E => 12.5 * clamp(E.g, 0, 1.3),
+    /* dust and opacity: with the ESP in service 7.PNG; with it out the inlet dust of the design basis, 31,000 mg/Nm3 (L19-1) passes */
+    AIFG10575: E => (AN.fieldState && AN.fieldState().esp === false ? 31000 : 2.9) * clamp(E.g, 0, 1.3),
+    AIFG10576: E => (AN.fieldState && AN.fieldState().esp === false ? 100 : 12.5 * clamp(E.g, 0, 1.3)),
     FIFG10577: E => 21.5 * E.g,
     TIFG10578: E => E.T(50, 0)
   };

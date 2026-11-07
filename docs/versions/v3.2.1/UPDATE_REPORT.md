@@ -1,5 +1,11 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.71 — ESP sets stack dust (2026-11-07, JENNIE)
+
+**Work done.** Stack dust and opacity follow the ESP field state. See GAS_PATH.md.
+
+**Not tested.** Live; item sent to Mina.
+
 ## 3.2.1-beta.70 — Economizer with colder feedwater (2026-11-07, JENNIE)
 
 **Work done.** Gas to the air heater falls with colder feedwater. See GAS_PATH.md.
