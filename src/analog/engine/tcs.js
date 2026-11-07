@@ -409,7 +409,7 @@ function tcsMiss(U, list) {
   const C = tcsCrit(U);
   return list
     .map(k => C[k])
-    .filter(x => x && !x.ok)
+    .filter(x => x && !x.ok && !(U.tc.byp && U.tc.byp[x.no]))
     .map(
       x =>
         x.no + ' ' + x.txt + (x.val != null && isFinite(x.val) ? ' [' + (+x.val).toFixed(x.val < 2 ? 2 : 1) + ']' : '')
@@ -418,6 +418,16 @@ function tcsMiss(U, list) {
 }
 /* the operator on the TCS panel: auxiliaries and the ATS step push buttons. Returns '' (done) or the reason it is refused */
 function tcsCmd(U, cmd, arg) {
+  /* CRITERIA BYPASS (310SC90-775 p.3, p.10): the operator takes one unsatisfied criterion out of the step-in and step criteria; a second press puts it back. A hold is not bypassed */
+  if (cmd === 'critbypass') {
+    const k = String(arg || '').trim(),
+      c0 = U.tc;
+    if (!tcsCrit(U)[k]) return 'No ATS criterion ' + k;
+    c0.byp = c0.byp || {};
+    if (c0.byp[k]) delete c0.byp[k];
+    else c0.byp[k] = true;
+    return '';
+  }
   const c = U.tc || tcsInit(U, 'cold'),
     tb = U.tb;
   const on = arg !== 0 && arg !== false;
@@ -981,7 +991,7 @@ function tcsTrip(U) {
   const c = U.tc;
   if (!c) return;
   tcsGenTrip(U);
-  Object.assign(c, { step: -1, cur: -1, ph: '', rst: false, exc: false, auto: false });
+  Object.assign(c, { step: -1, cur: -1, ph: '', rst: false, exc: false, auto: false, byp: {} });
   tcsMode(U);
 }
 /* what the TCS panel shows */
@@ -1035,6 +1045,7 @@ function tcsState() {
       auto: c.auto
     },
     crit: C,
+    byp: Object.keys(c.byp || {}),
     trip: tcsTripState(U),
     next: c.cur < 0 && c.step < 7 ? tcsMiss(U, TCS_A[Math.min(7, c.step + 1)] || []) : ''
   };
