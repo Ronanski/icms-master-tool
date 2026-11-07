@@ -1106,6 +1106,9 @@ const AN_FV0 = {
   'V-CW1010': 100, 'V-CW1011': 100, 'V-CW1012': 0, 'V-CW1013': 100, 'V-CW1014': 100, 'V-CW1015': 0,
   'V-MU0001': 100, 'V-MU0002': 100, 'V-MU0003': 100, 'V-MU0004': 100, 'V-MU0005': 100,
   'V-MU0007': 100, 'V-MU0009': 100, 'V-MU0011': 100, 'V-MU0013': 100, 'V-MU0015': 100, 'V-MU0017': 100,
+  /* the line to T-1109 MU-1-021 (PD-024): V-MU1031, XV-MU1109 with its bypass V-MU1033, V-MU1032. PR-OPE-5002 section 7 "Ensure Expansion
+     tank inlet valve is open (V-MU1031 and V-MU1032)". XV-MU1109 is spring opening: with no instrument air these are the only way to stop the fill (Mina F33) */
+  'V-MU1031': 100, 'V-MU1032': 100,
   'V-IA1101': 100, 'V-PA1087': 100, 'V-PA0013': 0,
   /* 3.2.1 (IRENE: FEEDWATER): the BFWP suction manual valves, PR-OPE-5002 19.16 "Fully OPEN BFPs suction (V-FW1002/V-FW1001) ...
      Check if the limit switch is touched" (IO list STN102 I.028F ZSO-FW1031 BFWP-A / I.032F ZSO-FW1032 BFWP-B suction manual valve
@@ -1318,7 +1321,8 @@ function anMakeupStep(U, dt) {
   U.muByp = typeof AN_SRC !== 'undefined' && AN_SRC.field && AN_SRC.field.mu1033 ? 1 : 0;
   /* the flow out of the header: the hotwell make-up and the expansion tank filling (the header pressure of the step before decides
      whether the tank fills), plus the recirculation of each running pump */
-  const fill = (U.muXv || U.muByp) && U.muP > 6 && U.etLvl < K.etMax;
+  U.muLine = anFv('V-MU1031') > 0 && anFv('V-MU1032') > 0 ? 1 : 0;
+  const fill = U.muLine && (U.muXv || U.muByp) && U.muP > 6 && U.etLvl < K.etMax;
   U.muFill = fill ? 1 : 0;
   /* 3.2.1 the field valves (AN_FV0): a pump has water when a demi tank outlet (V-MU0001 / 0002) and its suction (V-MU0003 / 4 / 5) are
      open; it feeds the header through its discharge (V-MU0007 / 9 / 11) and returns its recirculation through V-MU0013 / 15 / 17; a

@@ -1196,7 +1196,7 @@
             ? P.n + ' ' + p.l + ': EXECUTED'
             : auto
             ? '⚠ ' + p.l + ' not taken: the valve is in AUTO, the logic moves it. Press MANUAL first.'
-            : '⚠ ' + p.l + ' not taken: the valve did not move' + (blk && blk.length ? '. The logic asks for: ' + blk.map(x => String(x.svc || '').replace(/^[IMB].S+s+/, '') + (x.want ? '' : ' (must be 0)')).join(', ') : '. A timer of the drawing can hold the press; try again later');
+            : '⚠ ' + p.l + ' not taken: the valve did not move' + (blk && blk.length ? '. The logic asks for: ' + blk.map(x => String(x.svc || '').replace(/^[IMB].S+s+/, '') + (x.want ? '' : ' (must be 0)')).join(', ') : /^(ISOLATE|REINSTATE)$/.test(p.l) ? '. The drawing holds this press for 90 s after the last ISOLATE or REINSTATE; press it again after that' : '. A timer of the drawing can hold the press; try again later');
         }, wait);
       }
       if (!(typeof r === 'string' && r)) call(() => window.lsEventAdd('CRT', 'DCS', 'Operator (CRT): ' + P.n + ' ' + (P.t || '') + ' ' + p.l));
@@ -1273,6 +1273,8 @@
     'V-MU0013': 'MWP-A minimum flow recirculation (SOP: OPEN).',
     'V-MU0015': 'MWP-B minimum flow recirculation (SOP: OPEN).',
     'V-MU0017': 'MWP-C minimum flow recirculation (SOP: OPEN).',
+    'V-MU1031': 'Expansion tank inlet, before XV-MU1109 (SOP: OPEN). With no instrument air XV-MU1109 stays open: close this valve to stop the fill at 1.7 m.',
+    'V-MU1032': 'Expansion tank inlet, after XV-MU1109 (SOP: OPEN).',
     'V-IA1101': 'Instrument air to unit 1 (PT-IA1706). Closed = the unit 1 header bleeds down.',
     'V-PA1087': 'Plant air to unit 1 (PT-PA1705). Closed = the unit 1 header bleeds down.',
     'V-PA0013': 'Cross-tie: plant air to the instrument air tanks. Normally closed.',
