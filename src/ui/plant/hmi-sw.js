@@ -61,8 +61,8 @@
        feedback comes back to the DCS: the run state is on the local control panel (LCP) */
     CTA: { n: 'CTCS-A', t: 'P-1113', lcp: 'STATUS AT LCP', io: 'DOP-CTCS1001', d: 'DITL-119' },
     CTB: { n: 'CTCS-B', t: 'P-1114', lcp: 'STATUS AT LCP', io: 'DOP-CTCS1002', d: 'DITL-119' },
-    ACA: { n: 'ACWP-A', t: 'P-1108A', ad: 'DITL-76', io: 'MIR-P1108A', d: 'DITL-76' },
-    ACB: { n: 'ACWP-B', t: 'P-1108B', ad: 'DITL-77', io: 'MIR-P1108B', d: 'DITL-77' },
+    ACA: { n: 'ACWP-A', t: 'P-1108A', ad: 'DITL-76', io: 'MIR-P1108A', d: 'DITL-76', outMode: 1, remRows: [19], auRow: 0 },
+    ACB: { n: 'ACWP-B', t: 'P-1108B', ad: 'DITL-77', io: 'MIR-P1108B', d: 'DITL-77', outMode: 1, remRows: [19], auRow: 0 },
     /* status DI of STN105 only (I/O list: running and overload of each pump, from the local panel HCDSP; P-0762A running = I.0329), no DCS
        command and no logic sheet reads them: the dosing pump the Training starts in the field (hypo) is P-0762A, its DI follows that start
        (live test 2026-10-30 #6: P-0762A said "field (local)", the other three "STN105 DI": all four are STN105 DI) */
@@ -944,9 +944,10 @@
           st: () => (M.fld ? mst(M) : null),
           fld: M.fld ? on => AN.field(M.fld, on) : null
         });
-      if (!window.LS_FPOP || !c) return go();
+      /* Mina F16: ACWP-A / B have no current tag here: the faceplate of the drawing all the same, the plant model gives the current */
+      if (!window.LS_FPOP || (!c && !/^AC/.test(id))) return go();
       /* SOP section 2: SWP normal current 205 ~ 215 A */
-      LS_FPOP.hit({ ...M, cur: () => (LOG[c] != null ? LOG[c] : PM[c]), band: /^SW/.test(id) ? [205, 215] : null }, go);
+      LS_FPOP.hit({ ...M, cur: c ? () => (LOG[c] != null ? LOG[c] : PM[c]) : () => (AN.unit && AN.unit.on ? AN.unit['acI' + (id === 'ACA' ? 0 : 1)] : null), band: /^SW/.test(id) ? [205, 215] : null }, go);
     };
     /* the dock's "Buksan ang faceplate" of a step motor (fp-pop.js LS_FPOP.openAd) */
     for (const id in CUR) {

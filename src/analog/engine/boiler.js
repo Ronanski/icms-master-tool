@@ -332,6 +332,7 @@ function anFanStep(U, dt) {
   if (!F) return;
   const z = U.fnZ || (U.fnZ = {}),
     lag = (k, x, tau) => (z[k] = isFinite(z[k]) ? z[k] + ((x - z[k]) * Math.min(dt, tau)) / tau : x),
+    lagI = (k, x, tau) => (x > 0 ? lag(k, x, tau) : (z[k] = 0)) /* Mina F15: a stopped motor carries no current */,
     val = l => anUnitVal(l || []);
   /* FA blowers: running, outlet SOV not closed, inlet damper */
   const fr = K.run.fa.map(fnRun),
@@ -353,8 +354,8 @@ function anFanStep(U, dt) {
   const qi = g.map(x => (g[0] + g[1] > 0 ? (qfa * x) / (g[0] + g[1]) : 0));
   const cur = (I0, on, x) => (on ? I0 * (K.fI + (1 - K.fI) * Math.max(0, x)) : 0);
   U.fnI = U.fnI || [0, 0, 0, 0, 0];
-  U.fnIa = lag('ia', cur(K.I0.fa, fr[0], (qi[0] * pfa) / (K.fa.Q0 * K.fa.P0[0])), 2);
-  U.fnIb = lag('ib', cur(K.I0.fa, fr[1], (qi[1] * pfa) / (K.fa.Q0 * K.fa.P0[0])), 2);
+  U.fnIa = lagI('ia', cur(K.I0.fa, fr[0], (qi[0] * pfa) / (K.fa.Q0 * K.fa.P0[0])), 2);
+  U.fnIb = lagI('ib', cur(K.I0.fa, fr[1], (qi[1] * pfa) / (K.fa.Q0 * K.fa.P0[0])), 2);
   /* PAF / SAF: flow of the loop model, outlet pressure on the system curve */
   const qpa = Math.max(0, val(F.qpa)) || 0,
     qsa = Math.max(0, val(F.qsa)) || 0,
@@ -362,8 +363,8 @@ function anFanStep(U, dt) {
     psa = K.sa.P0 * Math.pow(qsa / K.sa.Q0, 2);
   U.fnPaP = lag('pp', ppa, 2);
   if (F.ai.pa.length) anUnitWrite(F.ai.pa, U.fnPaP);
-  U.fnPafI = lag('ip', cur(K.I0.paf, fnRun(K.run.paf), (qpa * ppa) / (K.pa.Q0 * K.pa.P0)), 2);
-  U.fnSafI = lag('is', cur(K.I0.saf, fnRun(K.run.saf), (qsa * psa) / (K.sa.Q0 * K.sa.P0)), 2);
+  U.fnPafI = lagI('ip', cur(K.I0.paf, fnRun(K.run.paf), (qpa * ppa) / (K.pa.Q0 * K.pa.P0)), 2);
+  U.fnSafI = lagI('is', cur(K.I0.saf, fnRun(K.run.saf), (qsa * psa) / (K.sa.Q0 * K.sa.P0)), 2);
   /* IDF: the flue gas is the total air (unit.js U.taf); inlet suction and outlet with its square */
   const taf = U.taf && U.tafS ? U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0) : 0,
     rg = Math.pow(taf / K.ga.T0, 2),
@@ -372,7 +373,7 @@ function anFanStep(U, dt) {
   U.fnGo = lag('go', idf ? K.ga.Po * rg : 0, 2);
   const dpg = U.fnGo - (U.fnGi[0] + U.fnGi[1]) / 2,
     dpg0 = K.ga.Po - (K.ga.Pi[0] + K.ga.Pi[1]) / 2;
-  U.fnIdfI = lag('ii', cur(K.I0.idf, idf, ((taf / K.ga.T0) * dpg) / dpg0), 2);
+  U.fnIdfI = lagI('ii', cur(K.I0.idf, idf, ((taf / K.ga.T0) * dpg) / dpg0), 2);
   U.fnI = [U.fnPafI, U.fnSafI, U.fnIdfI, U.fnIa, U.fnIb];
 }
 /* ===== LIMESTONE INJECTION (019 LIMESTONE INJECTION SYSTEM; docs/versions/v3.2.1/LIMESTONE_SAND_PLANT_MODEL.md) =====

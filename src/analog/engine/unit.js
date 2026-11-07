@@ -1235,7 +1235,9 @@ function anSeawaterStep(U, dt) {
     const s = U.swSpd[i];
     const P = s > 0 ? swInterp(K.pQ, K.pP, q / s) * s * s * s : 0;
     U['swKw' + i] = Math.round(P);
-    lag('swIa' + i, s <= 0 ? 0 : s < 1 ? K.Ist : swInterp(K.mL, K.mI, (100 * P) / K.mkW), K.tauI);
+    /* Mina F15: an open breaker carries no current: stopped = 0 at once, the lag is for the start only */
+    if (s <= 0) U['swIa' + i] = 0;
+    else lag('swIa' + i, s < 1 ? K.Ist : swInterp(K.mL, K.mI, (100 * P) / K.mkW), K.tauI);
   });
   /* SWBP: suction (PG-SW1503x1) = node N, discharge (PG-SW1503x2) before its valve; current from its shaft power */
   r.b.q.forEach((q, i) => {
@@ -1245,7 +1247,8 @@ function anSeawaterStep(U, dt) {
     lag('swBd' + i, s > 0 && PN > 0 ? PN + K.kP * swbH(q, s) : PN, K.tauP);
     const Pw = s > 0 ? Math.max(0.4 * 50.87, (1020 * 9.80665 * (q / 3600) * swbH(q, s)) / 1000 / Math.max(0.25, c.eb(q / K.bBep))) : 0; /* floor 40 % of the rated 50.87 kW at low flow: NO-SOURCE */
     const I = K.bIsop + ((K.bI100 - K.bIsop) * (Pw - c.bPsop)) / (K.bkW - c.bPsop);
-    lag('swIb' + i, s <= 0 ? 0 : s < 1 ? K.bIst : Math.max(0, I), K.tauI);
+    if (s <= 0) U['swIb' + i] = 0;
+    else lag('swIb' + i, s < 1 ? K.bIst : Math.max(0, I), K.tauI);
   });
 }
 /* the field operator sets a manual valve of the seawater system (V-SW1002 ... 0 ~ 100 %); returns false for an unknown tag */
@@ -1365,7 +1368,8 @@ function anMakeupStep(U, dt) {
     const s = U.muSpd[i],
       P = s > 0 ? K.pCal * 0.7457 * swInterp(K.pQ, K.pHP, U.muQ[i] / s) * s * s * s : 0;
     U['muKw' + i] = Math.round(P * 10) / 10;
-    lag('muI' + i, s <= 0 ? 0 : s < 1 ? K.Ist : Math.max(0, swInterp(K.mL, K.mI, (100 * P) / K.mkW)), K.tauI);
+    if (s <= 0) U['muI' + i] = 0;
+    else lag('muI' + i, s < 1 ? K.Ist : Math.max(0, swInterp(K.mL, K.mI, (100 * P) / K.mkW)), K.tauI);
     lag('muDp' + i, r && wet[i] ? K.dp : 0, K.tauP);
   });
   if (fill) U.etLvl = Math.min(K.etMax, U.etLvl + K.etRate * dt);
@@ -1509,7 +1513,8 @@ function anAcwStep(U, dt) {
       P = s > 0 ? swInterp(K.cQ, K.pP, q / s) * s * s * s : 0;
     U['acKw' + i] = Math.round(P);
     lag('acDp' + i, s > 0 ? K.dp * Math.pow(q / K.dQ, 2) : 0, K.tauP);
-    lag('acI' + i, s <= 0 ? 0 : s < 1 ? K.Ist : (1000 * P) / (1732.05 * K.kV * K.eff * K.pf), K.tauI);
+    if (s <= 0) U['acI' + i] = 0;
+    else lag('acI' + i, s < 1 ? K.Ist : (1000 * P) / (1732.05 * K.kV * K.eff * K.pf), K.tauI);
   });
   /* heat: the users, the CCWHE (effectiveness-NTU, counter flow) with the seawater of the running SWBP */
   const ld = Math.max(0, Math.min(1, (isFinite(U.MW) ? U.MW : 0) / 150)),
@@ -1906,6 +1911,14 @@ function anHdStep(U, dt) {
       if (c) {
         if (h.v1.S.rt.st[c.b.id] && typeof hmiPidSet === 'function') hmiPidSet(h.v1.S.rt.st[c.b.id], c.b, x);
         h.v1.S.rt.v[h.v1.n] = x;
+      }
+      /* Mina F14: the alternate starts where the primary puts it. It kept its 60 MW snapshot opening (02.png 53.7 %): the No.2 LP heater drained at
+         once and stood LOW-LOW, then the controller came back over 5 minutes */
+      if (h.v2 && h.fx.a) {
+        const x2 = fxv(h.fx.a, x),
+          c3 = (AN.hmiCtrls(h.v2.S) || []).find(q => q.out === h.v2.n);
+        if (c3 && h.v2.S.rt.st[c3.b.id] && typeof hmiPidSet === 'function') hmiPidSet(h.v2.S.rt.st[c3.b.id], c3.b, x2);
+        h.v2.S.rt.v[h.v2.n] = x2;
       }
     }
     /* 3.2.1 the drain valves have an airlock (AN_AV): below 3.5 kg/cm2 of instrument air they stay where they are */

@@ -191,6 +191,7 @@
     const d = ioDesc(tag);
     return d ? tag + ' ' + d : tag;
   }
+  const MSEEN = new Map();
   function almScan() {
     const A = window.AN;
     if (!A || !A.sheets || (A.plantOn && !A.startState)) return;
@@ -209,6 +210,7 @@
       AT.clear();
       NTS.clear();
       DSEEN.clear();
+      MSEEN.clear();
       for (const g in grpT) delete grpT[g];
       almScan.first = true;
       almScan.tk0 = (window.WORLD && WORLD.tk) || 0;
@@ -242,6 +244,13 @@
         if (((WORLD.tk || 0) - (almScan.tk0 || 0)) >= 2 || (WORLD.tk || 0) < (almScan.tk0 || 0)) DSEEN.add(s.name);
         const o = motOuts(s);
         if (!o.trip && !s._ftrip) continue;
+        /* Mina F12: a motor that starts by its logic (the auto cut-in of a standby, a low header) has its own line: no press of the operator or the
+           field operator on this drawing in the last lines */
+        const ms = motState(s),
+          ms0 = MSEEN.get(s.name);
+        MSEEN.set(s.name, ms);
+        if (ms0 === 'STOP' && ms === 'RUN' && !LOG.slice(0, 12).some(e => e.sh === dnm(s) && /START/.test(e.text || '')))
+          add({ rt: { t } }, { name: dnm(s) }, 'DCS', (o.trip ? o.trip.name.replace(/\s+TRIP$/, '').replace(/^Output row \d+ · /, '').replace(/\s*·.*$/, '') : dnm(s)) + ' started by its logic (auto start)');
         if (motState(s) === 'TRIP')
           now.set('D|' + s.name, {
             sh: dnm(s),
