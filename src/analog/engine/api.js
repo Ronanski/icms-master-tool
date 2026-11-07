@@ -107,6 +107,7 @@ function anEngAPI() {
     modeNetsBy: modeNetsByTag,
     MODEK,
     latchMode,
+    modeStatus,
     descWire
   };
 }

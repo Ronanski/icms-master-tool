@@ -1368,6 +1368,20 @@ function anStep(S, dt) {
         if (s.fm === 'A') pickB = false;
         else if (s.fm === 'B') pickB = true;
         s.pk = pickB ? 'B' : 'A';
+        /* 3.2.1: a force of the drawing changes the station, so its mode status follows: ABC-007 M.018D needs FICFA1071.LOC after the force at house operation;
+           .REM stayed 1 and the PA set point never went to 230 T/H (Mina turbine trip) */
+        if (s.rmSw != null && s.mtag && s.al) {
+          if (s.fman) s.lf = 1;
+          if (s.lf) {
+            const q = rt.st[s.rmSw],
+              kd = s.pk !== s.al ? 'MAN' : q && q.pk === 'A' ? 'REM' : 'LOC';
+            if (kd !== s.lk) {
+              s.lk = kd;
+              if (AN.modeStatus) AN.modeStatus(s.mtag, kd);
+            }
+            if (!s.fman && kd !== 'MAN') s.lf = 0;
+          }
+        }
         let y;
         const n = pickB ? b.b : b.a;
         if (n >= 0) {
