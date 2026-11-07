@@ -38,6 +38,10 @@ const TCS_IBD_PV = [
   [/PT-STn110/, U => U.cdP],
   [/TE-MSn902/, U => tcsSteam(U).mst],
   [/PT-STn001/, U => tcsFst(U)],
+  [/PT-LOn922-A/, U => U.loPa],
+  [/PT-LOn922-B/, U => U.loPb],
+  [/PT-LOn931-A/, U => U.loCa],
+  [/PT-LOn931-B/, U => U.loCb],
   [/PT-LOn006/, U => U.loCtl],
   [/PT-LOn003/, U => U.loBrg],
   [/PT-LOn007/, U => U.loTrip],
@@ -57,6 +61,17 @@ const TCS_IBD_SP = {
   'TA-21@586,440': TCS_DP_HIGH,
   'TA-21@586,295': TCS_DP_HIGH
 };
+/* the oil pumps run through their sheets (TB-1, TB-2, TB-21, TB-22): the pump state goes in as the memories of the sheet, the sheet may change it:
+   AUTO start of the standby (other pump running 10 s or 15 s AND its discharge LOW), stop of a control oil pump on BEARING OIL PRESS. VERY LOW
+   TRIP. auto, run: nets of the AUTO and RUN memories, fb: the running contact. The operator's commands stay in tcsOilCmd */
+const TCS_IBD_PUMP = {
+  'TB-1': { k: 'mop', i: 0, auto: 1, run: 11, fb: 21 },
+  'TB-2': { k: 'mop', i: 1, auto: 1, run: 11, fb: 21 },
+  'TB-21': { k: 'cop', i: 0, auto: 0, run: 11, fb: 23 },
+  'TB-22': { k: 'cop', i: 1, auto: 0, run: 11, fb: 23 }
+};
+/* TB-22: the A gate after the 15 s timer has no word the reader finds; the sheet is the same as TB-21 */
+const TCS_IBD_PATCH = { 'TB-22': [['A', [14, 18], 15, 0, 0, 0]] };
 const TCS_IBD = {
   by: {},
   bind: null
@@ -81,8 +96,10 @@ function tcsIbdBind() {
   if (TCS_IBD.bind) return TCS_IBD.bind;
   const L = [];
   for (const s of TCS_IBD_SHEETS) TCS_IBD.by[s.id] = s;
+  for (const id in TCS_IBD_PATCH) if (TCS_IBD.by[id]) TCS_IBD.by[id].g.push(...TCS_IBD_PATCH[id]);
   for (const s of TCS_IBD_SHEETS) {
-    const r = { s, link: [], pv: [], mft: [] };
+    const r = { s, link: [], pv: [], mft: [] },
+      driven = new Set(s.g.map(g => g[2]));
     for (const [net, num, to, dep] of s.x) {
       if (!dep) continue;
       const b = TCS_IBD.by[to.split('/')[0]],
@@ -92,7 +109,7 @@ function tcsIbdBind() {
     for (const [net, name] of s.i) {
       if (/BOILER MFT/.test(name)) r.mft.push(net);
       const p = TCS_IBD_PV.find(q => q[0].test(name));
-      if (p) r.pv.push([net, p[1]]);
+      if (p && !driven.has(net)) r.pv.push([net, p[1]]);
     }
     L.push(r);
   }
@@ -138,6 +155,11 @@ function tcsIbdStep(U, c, dt) {
         else if (/AUTO RESET/.test(name)) v[net] = ib.pb.auto > 0 ? 1 : 0;
         else if (/PB|CONTROL ROOM|TCS HMI/.test(name)) v[net] = ib.pb.trip > 0 ? 1 : 0;
       }
+    }
+    const pu = TCS_IBD_PUMP[id];
+    if (pu && c[pu.k]) {
+      v[pu.auto] = c[pu.k + 'Au'][pu.i] ? 1 : 0;
+      v[pu.run] = v[pu.fb] = c[pu.k][pu.i] ? 1 : 0;
     }
     for (const k in ib.fx) if (k.startsWith(id + ':')) v[+k.split(':')[1]] = ib.fx[k];
     /* two passes: a chain of gates settles in one step */
@@ -190,6 +212,16 @@ function tcsIbdStep(U, c, dt) {
         v[out] = o;
       });
     for (const k in ib.fx) if (k.startsWith(id + ':')) v[+k.split(':')[1]] = ib.fx[k];
+  }
+  /* what the sheets did to the pumps; TB-1 and TB-2 note: TCS MAJOR TROUBLE starts the main oil pumps */
+  if (c.mop) {
+    for (const id in TCS_IBD_PUMP) {
+      const pu = TCS_IBD_PUMP[id];
+      c[pu.k][pu.i] = ib.v[id][pu.run] > 0.5;
+    }
+    const a = TCS_IBD.by['TA-9'].i.find(i => /TCS MAJOR TROUBLE/.test(i[1]));
+    if (a && ib.v['TA-9'][a[0]] > 0.5) c.mop = [true, true];
+    tcsOilSet(c);
   }
   ib.rst0 = !!c.rst;
   ib.pb.trip = Math.max(0, (ib.pb.trip || 0) - dt);

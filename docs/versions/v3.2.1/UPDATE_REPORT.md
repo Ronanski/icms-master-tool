@@ -561,3 +561,5 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.82** (2026-11-07): IBD netlist repaired: links enter through their named box, memories (S / R) read, TA-22 binding narrowed, so the trip reaches TA-1 again. Fixed set points read from the IBD text: 123 of 135 comparators, 6 more by the tables of TA-11 and TA-21, 6 with no number. Test `tests/regress/tcs_ibd_desk.js`
 
 - **beta.83** (2026-11-07): IBD reader: box edges are no wires, a wire is cut at its NOT circle, a stub after a NOT is not joined: nets with two drivers from 62 to 3 (typical sheets 16 and 18, TE-7)
+
+- **beta.84** (2026-11-07): Oil pumps run through the sheets TB-1, TB-2, TB-21, TB-22: standby AUTO start needs the other pump running 10 s or 15 s and its discharge low; a control oil pump stops on bearing oil very low trip; TCS major trouble starts the main oil pumps. A plain STOP of the running pump no longer starts the standby. The EOP keeps the model rule
