@@ -1,5 +1,23 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.97 — Ash cooler E-stop pattern, final (2026-11-08, JENNIE)
+
+**Work done.** Beta.95 and 96 carried the broken text pattern; this one has the right pattern.
+
+**Not tested.** Live; item sent to Mina.
+
+## 3.2.1-beta.96 — Ash cooler E-stop pattern (2026-11-08, JENNIE)
+
+**Work done.** The E-stop rule of beta.95 had a broken text pattern and did nothing; fixed.
+
+**Not tested.** Live; item sent to Mina.
+
+## 3.2.1-beta.95 — Ash cooler E-stop at load (2026-11-08, JENNIE)
+
+**Work done.** The NOT EMERGENCY STOP row matched the stopped cooler rule first; it now reads 1 at 150 MW.
+
+**Not tested.** Live; item sent to Mina.
+
 ## 3.2.1-beta.94 — Audit values, third batch (2026-11-08, JENNIE)
 
 **Work done.** Valve sheet sizes: PCV-DO0002, FCV-DO1012, FCV-CD1120, LCV-MU1110, TCV-CD1115. Vacuum rise from the starting ejector curve.
