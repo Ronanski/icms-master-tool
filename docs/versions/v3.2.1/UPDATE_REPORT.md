@@ -476,3 +476,4 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.50** (2026-11-07): water side of all five heaters: inlet, outlet and bypass valves change the temperature, the extraction and the flow; HH 140 on all five (ABC-035 ~ 039). Source: plant-study 11-heater-valves.md
 - **beta.51** (2026-11-07): Feedwater page: valve V-FW1010 symbol opens its faceplate and shows its color
 - **beta.52** (2026-11-07): MOV: STOP stops the valve; the torque switch no longer stays on and blocks CLOSE; the faceplate judges a press by what the valve does; polisher inlet and outlet names (Mina F22 to F27)
+- **beta.53** (2026-11-07): Phase 2 begins: bed temperature follows FHI Fig 8 and Fig 12 above 40 % load (was 95 C too hot at 60 %); the start-up law stays below

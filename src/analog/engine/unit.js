@@ -1594,6 +1594,22 @@ const AN_CD = {
    on the exhaust steam, 0.70 of the main steam (309.7 / 446 T/H, MB-013). A better vacuum gives a small gain, capped at 1 C. */
 /* FIFA1079 / FIFA1071 at load: 328.2 / 354.0 T/H (HMI snapshot, a check value; no document gives the split of the primary air) */
 const AN_PA_FURN = 328.2 / 354.0;
+/* bed temperature at steady firing. FHI Fig 8 (furnace temperature) on the coal share of Fig 13, scaled to the bed of the anchor; more air than
+   Fig 12 gives at that firing cools it with the same exponent 0.45. Below 40 % load no curve is printed: the start-up law of beta.15 (a small
+   fire with the light-off air, 450 C with two burners) stays, and the lower of the two holds. Before: the start-up law alone, 95 C too hot at
+   60 % load. Fuel share at 40, 50, 60, 70, 85, 100 % load: 38.5, 47, 56, 64, 77, 89.5 T/H of 89.5 */
+const AN_BED = { s: [0.43, 0.525, 0.626, 0.715, 0.86, 1], t: [660, 722, 755, 778, 808, 840], a: [0.612, 0.557, 0.622, 0.716, 0.861, 1] };
+function anBedSS(U, fs, as) {
+  const K = AN_BED,
+    start = U.Tamb + (U.Tb0 - U.Tamb) * Math.pow(Math.min(3, fs / as), 0.45),
+    x = Math.min(1.1, fs),
+    ip = Y => {
+      if (x <= K.s[0]) return Y[0];
+      for (let i = 1; i < K.s.length; i++) if (x <= K.s[i]) return Y[i - 1] + ((Y[i] - Y[i - 1]) * (x - K.s[i - 1])) / (K.s[i] - K.s[i - 1]);
+      return Y[Y.length - 1] + ((x - 1) * (Y[Y.length - 1] - Y[Y.length - 2])) / (1 - K.s[K.s.length - 2]);
+    };
+  return Math.min(start, U.Tamb + (ip(K.t) * (U.Tb0 / 840) - U.Tamb) * Math.pow(ip(K.a) / as, 0.45));
+}
 function anVacMW(U) {
   if (!isFinite(U.cdT) || !(U.ms > 0)) return 0;
   const dT = Math.max(-1, U.cdT - AN_CD.Tref);
@@ -2777,7 +2793,7 @@ function anUnitStep(dt) {
          450 C with two start-up burners at 60 % and the light-off air, the coal batch permissive of PR-OPE-5002 400 ~ 450 C; coal
          alone at O2 4 ~ 5 % about 800 C). 2.2.0-beta.15: on the fuel, not on the steam made (the fixed loss of the firing line
          made a small fire too cold) */
-      Tbss = U.Tamb + (U.Tb0 - U.Tamb) * Math.pow(Math.min(3, Fe / Math.max(1, U.F0) / as), 0.45);
+      Tbss = anBedSS(U, Fe / Math.max(1, U.F0), as);
     U.Tb += ((Math.max(U.Tamb, Tbss) - U.Tb) * dt) / U.tauB;
   }
   /* 3.2.0-beta.23: the furnace and cyclone thermocouples (TIFG1090 / 1091 lower layer under / above, TIFG1095 / 1096 cyclone,
