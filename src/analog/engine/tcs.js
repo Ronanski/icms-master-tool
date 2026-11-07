@@ -483,13 +483,6 @@ function tcsCmd(U, cmd, arg) {
     case 'hold':
       c.opHold = on;
       return '';
-    /* IBD TA-1 and TA-9 (tcs-trip.js) */
-    case 'trip':
-      return tcsTripManual(U);
-    case 'tripreset':
-      return tcsTripReset(U);
-    case 'fault':
-      return tcsTripFault(U, arg);
   }
   const k = { warm: 0, prep: 1, rub: 2, accel: 3, excite: 4, sync: 5, loadup: 6, normal: 7 }[cmd];
   if (k == null) return null;
