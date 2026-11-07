@@ -470,3 +470,4 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.44** (2026-11-07): plant Phase 1 start: HP bypass steam returns to the water cycle; LOW VACUUM trip 0.26 kg/cm2 abs from IBD TA-10
 - **beta.45** (2026-11-07): one water inventory: deaerator and drum level rates from their drawings; drum rate follows water density. Test `tests/regress/water_inventory.js`
 - **beta.46** (2026-11-07): MW follows the vacuum; HP / IP LP shares from a calculated heat balance (HEAT_BALANCE.md)
+- **beta.47** (2026-11-07): alarm limits from alarm list 2016-09-12 (58 tags, first stage C corrected by hand); primary air to the furnace FIFA1079 live (name clash with the fan count); turbine speed live at every load, limits for 3600 rpm; one condenser box shut sends its heat to the other box
