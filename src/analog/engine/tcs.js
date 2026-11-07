@@ -483,6 +483,13 @@ function tcsCmd(U, cmd, arg) {
     case 'hold':
       c.opHold = on;
       return '';
+    /* IBD TA-1 and TA-9 (tcs-trip.js) */
+    case 'trip':
+      return tcsTripManual(U);
+    case 'tripreset':
+      return tcsTripReset(U);
+    case 'fault':
+      return tcsTripFault(U, arg);
   }
   const k = { warm: 0, prep: 1, rub: 2, accel: 3, excite: 4, sync: 5, loadup: 6, normal: 7 }[cmd];
   if (k == null) return null;
@@ -714,8 +721,8 @@ function tcsStep(U, dt) {
     const tg = c.tg && c.brgOk;
     tb.rpm = tg ? Math.min(3, tb.rpm + dt) : Math.max(0, tb.rpm - dt);
   }
-  /* a loss of the bearing oil trips a turning machine (1.15) */
-  c.trip = !c.brgOk && tb.rpm > 4 ? 'BEARING OIL PRESS. LOW' : '';
+  /* the trips of IBD TA-9 (tcs-trip.js), bearing oil among them */
+  tcsTripScan(U, dt);
 }
 /* 3.2.0-beta.66 (036 TURBINE OIL HMI, PR-OPE-5002 "TURBINE CONTROL OIL": pre-start check, MAIN OIL PUMP & VAPOR EXTRACTOR, OIL
    PURIFIER, CONTROL OIL PUMP start-up). The pumps and their automatic start as the SOP note and the TCS I/O list (iolist-tcs HMI_AI /
@@ -988,6 +995,7 @@ function tcsState() {
       auto: c.auto
     },
     crit: C,
+    trip: tcsTripState(U),
     next: c.cur < 0 && c.step < 7 ? tcsMiss(U, TCS_A[Math.min(7, c.step + 1)] || []) : ''
   };
 }

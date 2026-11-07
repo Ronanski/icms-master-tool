@@ -2755,6 +2755,7 @@ function anUnitStep0(dt) {
     };
   /* 3.2.0-beta.38: the turbine auxiliaries and the ATS program (tcs.js) */
   if (U.tc && !trip) tcsStep(U, dt);
+  else if (U.tc) tcsTripHold(U);
   if (trip && tb.st !== 'off') {
     /* the TCS closes the ICV too (the HP valves below); in a start-up the machine is lost: stop valves shut, GCB open (I.0932, the
        generator protection), no transfer, no DCS mode */
