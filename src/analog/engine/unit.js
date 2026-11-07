@@ -2706,7 +2706,8 @@ function anUnitStep0(dt) {
        WARMING UP, REQUIREMENT: MS Pressure > 12 Kg/cm2", MV-AS1391). No aux steam: the vacuum does not rise (it is held, not lost) */
     /* 3.2.0-beta.38: with the TCS model (tcs.js) the ejectors raise the vacuum: aux steam > 10, gland sealing in service, vacuum breaker
        MV-AV1391 closed (PR-OPE-5002 6545); an open vacuum breaker breaks it */
-    const tcx = U.tc;
+    /* an ATS program that began at a trip from Start 150 MW: the snapshot keeps the vacuum as at load, not through the start-up ejector line-up */
+    const tcx = U.tc && !U.tc.fromLoad ? U.tc : null;
     /* P2 #13 (INSTRUMENT_VALVE_COVERAGE.md): with the one world the ejectors and the vacuum breaker are the DITL MOVs, not a separate
        panel state: start-up ejector MV-AS1395 (DITL-54), steam jet air ejector MV-AS1396 (DITL-55), vacuum breaker MV-AV1391 (DITL-56).
        The TCS VACUUM UP command presses them (tcs.js tcsDitl); a breaker opened on the DITL breaks the vacuum */

@@ -548,6 +548,7 @@ function tcsDone(U, k) {
 /* one step of dt s: auxiliaries, metal, ATS program. Called by anUnitStep before the turbine black box; tb.rpm / tb.st / tb.icv are set
    here while the ATS controls the speed */
 function tcsStep(U, dt) {
+  tcsGenStep(U, dt);
   const c = U.tc;
   if (!c) return;
   const tb = U.tb,
@@ -694,12 +695,19 @@ function tcsStep(U, dt) {
       }
       break;
     case 4 /* EXCITATION (page 23): AVR start, generator voltage OK */:
-      c.exc = true;
-      if (c.tm >= 30) tcsDone(U, 4);
+      {
+        const g = tcsGen(U);
+        g.ex = true;
+        c.exc = g.f41;
+        if (g.f41 && g.V >= 1) tcsDone(U, 4);
+      }
       break;
     case 5 /* SYNCH. & INITIAL LOAD (page 24 ~ 25): ASD closes 52G, initial load, hold timer (Fig. 3) */:
       if (c.ph === 'in') {
-        if (c.tm < 60) break; /* ASD: speed and voltage matched (ASSUMED 1 min) */
+        const g = tcsGen(U);
+        g.start = true;
+        if (!g.close) break;
+        g.start = false;
         tb.st = 'sync';
         tb.tgt = 0;
         tb.aim = (TCS.init[c.mode] * 150) / 100;
@@ -853,6 +861,7 @@ function tcsFromOil(U) {
   const o = U.tco;
   tcsInit(U, 'load');
   if (o) Object.assign(U.tc, o);
+  U.tc.fromLoad = true;
   U.tco = null;
 }
 function tcsOilState(U) {
@@ -955,6 +964,7 @@ function tcsGcb(U, on) {
 function tcsTrip(U) {
   const c = U.tc;
   if (!c) return;
+  tcsGenTrip(U);
   Object.assign(c, { step: -1, cur: -1, ph: '', rst: false, exc: false, auto: false });
   tcsMode(U);
 }
@@ -976,6 +986,7 @@ function tcsState() {
     tmMin: c.tm / 60,
     soakMin: c.soakMin,
     holdMin: c.holdMin,
+    gen: U.gen ? { f41: U.gen.f41, volt: U.gen.V >= 1, sync: U.gen.x25, on25: U.gen.on25, msg: U.gen.last } : null,
     hold: c.hold,
     rpm: U.tb ? U.tb.rpm : 0,
     Pa: c.Pa,
