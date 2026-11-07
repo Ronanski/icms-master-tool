@@ -17,7 +17,7 @@ const load=async()=>{await p.goto('file://'+require('path').resolve(html));await
 await load();await p.evaluate(()=>{localStorage.removeItem('ls-train');localStorage.removeItem('ls-recent')});
 // 1
 const r1=await p.evaluate(()=>({tab:document.body.dataset.tab,vis:getComputedStyle(document.getElementById('homews')).display,rail:[...document.querySelectorAll('#crrail .tabs button')].map(x=>x.textContent.trim()).join(),cards:[...document.querySelectorAll('#homews .hmcard b')].map(x=>x.textContent).join('|')}));
-ck(r1.tab==='home'&&r1.vis==='block'&&r1.rail==='Home,Plant view,Logic,TCS,Library,Training,Loop check,Split','opens on HOME, rail '+r1.rail);
+ck(r1.tab==='home'&&r1.vis==='block'&&r1.rail==='Home,Plant view,Logic,Library,Training,Loop check,Split','opens on HOME, rail '+r1.rail);
 ck(/Continue/.test(r1.cards)&&/Operate the plant/.test(r1.cards)&&/Learn the start-up/.test(r1.cards)&&/F\(X\) curves/.test(r1.cards),'HOME cards: '+r1.cards);
 await p.evaluate(()=>(document.querySelector('#crrail .gs-set > button')).click());await p.waitForTimeout(200);await p.click('#engtools');await p.waitForTimeout(400);
 ck(await p.evaluate(()=>document.body.dataset.tab==='tools'&&getComputedStyle(document.getElementById('toolsws')).display==='block'),'⚙ > Engineering tools opens the TOOLS page');
@@ -70,6 +70,6 @@ ck(await p.evaluate(()=>!!document.querySelector('#trainws .trtag.nf')&&/field i
 // 6
 await p.setViewportSize({width:390,height:844});await p.waitForTimeout(900);
 const r6=await p.evaluate(()=>{const s=document.getElementById('trpick');s.value='19';s.dispatchEvent(new Event('change'));return {sel:getComputedStyle(s).display,list:getComputedStyle(document.querySelector('#trainws .trlist')).display,h:document.querySelector('#trainws .trshead h3').textContent,nav:[...document.querySelectorAll('#crnav .tabs button')].map(x=>x.textContent.trim()).join(),ow:document.documentElement.scrollWidth}});
-ck(r6.sel!=='none'&&r6.list==='none'&&r6.h==='Steam drum filling'&&r6.nav==='Home,Plant view,Logic,TCS,Library,Training,Loop check,Split'&&r6.ow<=390,'phone: '+JSON.stringify(r6));
+ck(r6.sel!=='none'&&r6.list==='none'&&r6.h==='Steam drum filling'&&r6.nav==='Home,Plant view,Logic,Library,Training,Loop check,Split'&&r6.ow<=390,'phone: '+JSON.stringify(r6));
 ck(!errs.length,'no page error'+(errs.length?': '+errs.slice(0,3).join(' | '):''));
 console.log(f?'FAILED '+f:'ALL PASS');await b.close();process.exit(f?1:0)})();

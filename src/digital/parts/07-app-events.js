@@ -142,7 +142,7 @@ svg.addEventListener('pointerdown', e => {
   const s = cur();
   if (SIM && s) {
     const h = hit(e);
-    if (h && h.c === 'S' && fbk(s, h.i, 'S') && isPB(s, h.i) && !lockd(s, h.i)) {
+    if (h && h.c === 'S' && !s.tcs && fbk(s, h.i, 'S') && isPB(s, h.i) && !lockd(s, h.i)) {
       if ((s.nl.grp || []).some(g => g.master === h.i && g.toggle)) {
         s.sig[h.k] = !s.sig[h.k];
         dn.pb = 2;
@@ -278,7 +278,8 @@ svg.addEventListener('pointerup', e => {
         );
         return;
       }
-      s.sig[h.k] = !s.sig[h.k];
+      if (s.tcs) tcsToggle(s, h.i);
+      else s.sig[h.k] = !s.sig[h.k];
       render();
     }
     return;
@@ -316,14 +317,14 @@ addEventListener('keydown', e => {
     (document.activeElement && document.activeElement.isContentEditable)
   )
     return;
-  if (e.key === 'PageDown' && S.cur < S.sheets.length - 1) {
+  if (e.key === 'PageDown' && shFam(1)) {
     e.preventDefault();
     S.cur++;
     sel = null;
     render();
     return;
   }
-  if (e.key === 'PageUp' && S.cur > 0) {
+  if (e.key === 'PageUp' && shFam(-1)) {
     e.preventDefault();
     S.cur--;
     sel = null;
@@ -363,14 +364,14 @@ $('shsel').onchange = e => {
   render();
 };
 $('shprev').onclick = () => {
-  if (S.cur > 0) {
+  if (shFam(-1)) {
     S.cur--;
     sel = null;
     render();
   }
 };
 $('shnext').onclick = () => {
-  if (S.cur < S.sheets.length - 1) {
+  if (shFam(1)) {
     S.cur++;
     sel = null;
     render();
@@ -635,7 +636,7 @@ addEventListener('load', async () => {
   const e0 = document.getElementById('pre');
   if (!e0 || !window.PRE_N) return;
   const stale = S.sheets.some(x => x.bv !== BV);
-  if (S.sheets.length >= PRE_N && !stale) return;
+  if (S.sheets.length >= PRE_N && !stale) return void tcsSheetsAdd();
   if (typeof DecompressionStream === 'undefined') {
     msg('This browser is too old to open the built-in sheets. Update Chrome / Safari.');
     return;
@@ -682,6 +683,7 @@ addEventListener('load', async () => {
             0,
             out.findIndex(x => /DITL-56$/.test(x.name))
           );
+    tcsSheetsAdd();
     VB = {};
     hist = [];
     fut = [];

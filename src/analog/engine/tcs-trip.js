@@ -328,7 +328,7 @@ function tcsTripFault(U, a) {
   const ib = tcsIb(tcsOilState(U)),
     k = a.id + ':' + a.net;
   if (a.on == null) delete ib.fx[k];
-  else ib.fx[k] = a.on ? 1 : 0;
+  else ib.fx[k] = a.on === true ? 1 : a.on === false ? 0 : +a.on;
   return '';
 }
 /* the first-out name of a standing trip, with or without the ATS program */
@@ -347,7 +347,7 @@ function tcsTripState(U) {
 function tcsIbdState(id) {
   const c = AN_UNIT.tc || AN_UNIT.tco,
     ib = c && c.ib;
-  return ib ? { v: ib.v[id] || [], fx: ib.fx } : null;
+  return ib ? { v: ib.v[id] || [], fx: ib.fx, t: ib.t } : null;
 }
 /* the comparators of the sheets with no set point yet (no assumed value: they stay 0) */
 function tcsIbdMissing() {

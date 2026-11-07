@@ -2,6 +2,7 @@
 parts/01-parse-build.js
 parts/02-netlist.js
 parts/02b-sand.js
+parts/02c-tcs.js
 parts/03-models.js
 parts/03b-sim.js
 parts/03c-read.js

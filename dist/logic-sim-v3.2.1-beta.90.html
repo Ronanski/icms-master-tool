@@ -3764,6 +3764,7 @@ function sdNL(sh) {
     segs = [],
     seg = d.seg.slice();
   sh.raw.ln.forEach((q, k) => {
+    if (d.tcs && seg[k] === undefined) return;
     const h = Math.abs(q[1] - q[3]) < 0.05;
     segs.push({
       k,
@@ -3778,6 +3779,7 @@ function sdNL(sh) {
   const gates = [];
   d.gates.forEach(g => {
     const box = g.box;
+    if (g.gt) return void gates.push(g.gt);
     if (g.t === 'AND' || g.t === 'OR' || g.t === 'NOT')
       gates.push({ t: g.t, ins: g.ins, out: g.out, box, done: true, ev: 1, sd: 1, hid: g.hid });
     else if (g.t === 'TMR')
@@ -3820,8 +3822,9 @@ function sdNL(sh) {
     dots: d.dots.map(z => ({ x: z.x, y: z.y, n: z.n })),
     segs,
     pout: [],
-    an: [],
-    anRows: new Set(),
+    tcs: d.tcs,
+    an: d.an || [],
+    anRows: new Set((d.an || []).map(a => a.row)),
     mv: [],
     mir: [],
     ind: [],
@@ -3855,6 +3858,390 @@ function sdResetFix(sh, gates) {
       not = and && gates.find(g => g.t === 'NOT' && and.ins.includes(g.out[0]));
     if (ff && not) ff.r = [not.ins[0]];
   }
+}
+/* DITL (digital logic) - TCS sheets: the Interlock Block Diagram 310SC90-794 rev 2 as sheets of the Logic page, in the same viewer, sheet list and panel as DITL.
+   A sheet is built here from the netlist TCS_IBD_SHEETS (src/analog/engine/tcs-ibd-data.js): each block stands where the IBD has it, the app draws its own symbols
+   and routes the wires. The logic runs once, in the engine (src/analog/engine/tcs-trip.js); a sheet reads the values of that scan (tcsSim). */
+const TCS_NAME = { A: 'AND', OR: 'OR', NOT: 'NOT', '2/3': '2/3', WO: 'WO', MID: 'MID', CMP: 'CMP', FF: 'S / R', LS: 'LS', FG: 'FG', FLK: 'FLK', PO: 'PO', DI: 'DI', DT: 'DT' };
+const tcsCat = id =>
+  /^\d/.test(id)
+    ? 'TYPICAL LOGIC'
+    : { TA: 'TURBINE TRIP AND TESTS', TB: 'TURBINE PUMPS AND MOTORS', TC: 'TURBINE VALVES', TD: 'TURBINE ALARMS', TE: 'TURBINE GROUP CONTROL', GD: 'GENERATOR' }[id.slice(0, 2)] || 'OTHER';
+const tcsWrap = (t, n) => {
+  const L = [];
+  let c = '';
+  for (const w of String(t).split(' ')) {
+    if (c && (c + ' ' + w).length > n) {
+      L.push(c);
+      c = w;
+    } else c = c ? c + ' ' + w : w;
+  }
+  if (c) L.push(c);
+  return L;
+};
+function tcsSheet(q) {
+  const K = 0.32,
+    Y = y => 842 - y,
+    PX = x => +(x * K).toFixed(2),
+    PY = y => +(-y * K).toFixed(2),
+    ln = [],
+    seg = [],
+    pl = [],
+    ci = [],
+    tx = [],
+    rows = [],
+    cells = {},
+    rb = [],
+    src = [],
+    outs = [],
+    an = [],
+    gates = [];
+  const text = (t, x, y, h, a) => ({ t, ix: PX(x), iy: PY(y), x: PX(x), y: PY(y), h: h || 2.05, r: 0, a: a || 0, b: 0, l: 'TXT1' });
+  const wire = (n, P) => {
+    for (let k = 1; k < P.length; k++) {
+      const [a, b] = [P[k - 1], P[k]];
+      if (a[0] === b[0] && a[1] === b[1]) continue;
+      ln.push([PX(a[0]), PY(a[1]), PX(b[0]), PY(b[1]), 'CON']);
+      seg.push(n);
+    }
+  };
+  /* the sheet frame and its title */
+  [[[18, 18], [1173, 18]], [[1173, 18], [1173, 824]], [[1173, 824], [18, 824]], [[18, 824], [18, 18]], [[18, 796], [1173, 796]]].forEach(([a, b]) => {
+    ln.push([PX(a[0]), PY(a[1]), PX(b[0]), PY(b[1]), 'SYM']);
+    seg.push(undefined);
+  });
+  tx.push(text((/^\d/.test(q.id) ? 'TYPICAL ' : '') + q.id + '  ' + q.t, 30, 815, 2.6), text('TCS SHEET ' + q.sh + ' OF 99', 1160, 815, 2.05, 2));
+  /* blocks: the left edge takes the pins, the right edge gives the output */
+  const B = [];
+  q.g.forEach((g, gi) => {
+    const [t, ins, out, x, gx, gy, gw, gh] = g;
+    if (!gx) return; /* a gate the engine adds, not a block of the sheet */
+    const not = t === 'NOT',
+      w = not ? 16 : Math.max(gw || 28, 26),
+      h = not ? 12 : Math.max(gh || 16, 16),
+      bx = not ? gx - 8 : gx,
+      by = not ? Y(gy) - 6 : Y(gy) - h;
+    B.push({ t, gi, g, ins: ins.concat(t === 'FF' || t === 'WO' ? x : []), out, x: bx, y: by, w, h });
+  });
+  const use = new Map();
+  B.forEach(b => b.ins.forEach(n => (use.get(n) || use.set(n, []).get(n)).push(b)));
+  const driven = new Set(B.map(b => b.out));
+  const SRC = new Map();
+  B.forEach(b => b.out >= 0 && SRC.set(b.out, [b.x + b.w, b.y + b.h / 2]));
+  /* input rows: an input of the sheet, or a link that comes in */
+  const lk = new Map(q.x.filter(x => x[3]).map(x => [x[0], x]));
+  const rowIn = (net, name, ex, y, left, L) => {
+    const i = rows.length,
+      isA = (use.get(net) || []).length && use.get(net).every(b => /CMP|MID|FG|LS/.test(b.t)),
+      sw = isA ? 46 : 12,
+      lines = tcsWrap(name, Math.max(20, Math.floor(((ex - 3 - left) * K) / 1.13))),
+      d = (lines.length * 7.5) / 2;
+    cells[i + ':S'] = lines.map((l, k) => text(l, ex - 3, y + 2.5 + (k - (lines.length - 1) / 2) * 8, 2.05, 2));
+    const vx = { S: [PX(left), PX(ex + sw)] };
+    if (L) {
+      ci.push([PX(L[4]), PY(y), 10 * K, 'SYM']);
+      tx.push(text(L[1], L[4], y + 3, 2.05, 1));
+      cells[i + ':F'] = [text(L[2], L[4] + 13, y + 3, 2.05)];
+      vx.F = [PX(L[4] - 10), PX(left - 1)];
+    }
+    rows.push({ n: i + 1, y: +(PY(y) - 1.2).toFixed(2), vx, tn: net });
+    rb.push([+(PY(y) - d * K - 1).toFixed(2), +(PY(y) + d * K + 1).toFixed(2)]);
+    src.push({ n: net, row: i });
+    if (isA) an.push({ row: i, key: 'n' + net, label: name, unit: '', def: 0, net, g: [] });
+    if (!driven.has(net)) SRC.set(net, [ex + sw, y]);
+  };
+  q.i.forEach(i => i[2] != null && rowIn(i[0], i[1], i[2], Y(i[3]), i[4] || i[2] - 205, lk.get(i[0])));
+  q.x.forEach(x => {
+    if (!x[3] || x[4] == null || q.i.some(i => i[0] === x[0] && i[2] != null) || driven.has(x[0])) return;
+    rowIn(x[0], 'From ' + x[2] + ' link ' + x[1], x[4] + 90, Y(x[5]), x[4] + 14, null);
+  });
+  /* the wires into one block: pins in the order of their sources, channels so that they do not cross */
+  const route = (dx, pins, nets) => {
+    const L = nets.map((n, k) => ({ n, s: SRC.get(n), p: pins[k] })).filter(c => c.s);
+    L.sort((a, b) => a.s[1] - b.s[1]);
+    L.forEach((c, k) => (c.p = pins[k]));
+    const down = L.filter(c => c.s[1] < c.p),
+      up = L.filter(c => c.s[1] >= c.p).reverse();
+    const lane = (arr, base) =>
+      arr.forEach((c, k) => {
+        const back = c.s[0] > dx - 6,
+          cx = dx - 7 - base - k * 4;
+        wire(
+          c.n,
+          back
+            ? [c.s, [c.s[0] + 7, c.s[1]], [c.s[0] + 7, c.p + 16 + k * 4], [cx, c.p + 16 + k * 4], [cx, c.p], [dx, c.p]]
+            : [c.s, [cx, c.s[1]], [cx, c.p], [dx, c.p]]
+        );
+      });
+    lane(down, 0);
+    lane(up, down.length * 4);
+  };
+  B.forEach(b => route(b.x, b.ins.map((_, k) => b.y + (b.h * (k + 1)) / (b.ins.length + 1)), b.ins));
+  q.x.forEach(o => {
+    if (o[3] || o[4] == null) return;
+    const y = Y(o[5]),
+      i = rows.length;
+    route(o[4] - 10, [y], [o[0]]);
+    ci.push([PX(o[4]), PY(y), 10 * K, 'SYM']);
+    tx.push(text(o[1], o[4], y + 3, 2.05, 1));
+    cells[i + ':RT'] = [text(o[2], o[4], y + 20, 2.05, 1)];
+    rows.push({ n: i + 1, y: +(PY(y) - 1.2).toFixed(2), vx: { RT: [PX(o[4] - 12), PX(o[4] + 30)] }, tn: o[0] });
+    rb.push([+(PY(y + 26)).toFixed(2), +(PY(y - 12)).toFixed(2)]);
+    outs.push({ n: o[0], row: i });
+  });
+  /* the symbols; each one is a gate of the netlist, so it is selected and traced like a DITL gate */
+  B.forEach(b => {
+    const { x, y, w, h, t, gi, g } = b,
+      box = { x1: PX(x), x2: PX(x + w), y1: PY(y + h), y2: PY(y) },
+      P = a => a.map(p => [PX(p[0]), PY(p[1])]),
+      ex = g[3],
+      arc = (cx, cy, rx, ry, a0, a1) => {
+        const o = [];
+        for (let k = 0; k <= 12; k++) {
+          const u = ((a0 + ((a1 - a0) * k) / 12) * Math.PI) / 180;
+          o.push([cx + rx * Math.cos(u), cy + ry * Math.sin(u)]);
+        }
+        return o;
+      };
+    if (t === 'A') pl.push([P([[x, y], ...arc(x + w * 0.5, y + h / 2, w * 0.5, h / 2, -90, 90), [x, y + h]]), 1, 'SYM']);
+    else if (t === 'OR')
+      pl.push([P([[x, y], ...arc(x + w * 0.35, y + h / 2, w * 0.65, h / 2, -90, 90), [x, y + h], ...arc(x - w * 0.12, y + h / 2, w * 0.2, h / 2, 90, -90)]), 1, 'SYM']);
+    else if (t === 'NOT') {
+      pl.push([P([[x, y], [x + w - 5, y + h / 2], [x, y + h]]), 1, 'SYM']);
+      ci.push([PX(x + w - 2.5), PY(y + h / 2), 2.5 * K, 'SYM']);
+    } else pl.push([P([[x, y], [x + w, y], [x + w, y + h], [x, y + h]]), 1, 'SYM']);
+    if (t !== 'NOT') tx.push(text(TCS_NAME[t] || t, x + w * (t === 'A' || t === 'OR' ? 0.42 : 0.5), y + h / 2, 1.9, 4));
+    const o = {
+      box,
+      miss: [],
+      gi,
+      out: [b.out],
+      ins: g[1],
+      t: t === 'A' ? 'AND' : t
+    };
+    if (t === 'FF') Object.assign(o, { s: g[1], r: ex, q: 0, ins: undefined, rt: true });
+    else if (t === 'WO') o.r = ex;
+    else if (t === 'CMP') {
+      const c = Array.isArray(ex) ? ex : null;
+      Object.assign(o, { cmp: c && !c[0] ? '<' : '>', eq: true, sp: c ? c[1] : 'the table of the sheet', unit: c ? ' ' + c[3] : '', c });
+      tx.push(text(c ? (c[0] ? '≥ ' : '≤ ') + c[1] + ' ' + c[3] : 'table', x + w / 2, y + h + 8, 1.9, 1));
+      const a = an.find(z => z.net === g[1][0]);
+      if (a) {
+        a.g.push(gates.length);
+        if (c) a.unit = c[3];
+      }
+    } else if (t === 'DI' || t === 'DT' || t === 'PO') {
+      const m = /^([0-9.]+) *(s|sec|min)/i.exec(String(ex || '')),
+        k = t === 'DI' ? 'on' : t === 'DT' ? 'off' : 'pulse';
+      Object.assign(o, {
+        t: 'TMR',
+        k,
+        st: { acc: 0, out: 0, pre: 0, run: 0 },
+        tm: {
+          lab: k === 'on' ? 'ON DELAY' : k === 'off' ? 'OFF DELAY' : 'PULSE',
+          key: 'T' + gi,
+          tag: t,
+          ax: (box.x1 + box.x2) / 2,
+          ay: (box.y1 + box.y2) / 2,
+          rr: (box.y2 - box.y1) / 2,
+          bx1: box.x1,
+          bx2: box.x2,
+          nt: null,
+          ut: null,
+          fv: { v: m ? +m[1] : 0, u: m && /min/i.test(m[2]) ? 'MIN' : 'SEC' }
+        }
+      });
+      if (ex) tx.push(text(String(ex), x + w / 2, y + h + 8, 1.9, 1));
+    }
+    gates.push({ gt: o, box });
+  });
+  /* junction dots: a wire end on the middle of another wire of the same net */
+  const dots = [];
+  ln.forEach((a, i) => {
+    if (seg[i] === undefined) return;
+    [[a[0], a[1]], [a[2], a[3]]].forEach(p =>
+      ln.some((b, j) => {
+        if (j === i || seg[j] !== seg[i]) return false;
+        const on =
+          Math.abs(p[1] - b[1]) < 0.01 && Math.abs(b[1] - b[3]) < 0.01
+            ? p[0] > Math.min(b[0], b[2]) + 0.01 && p[0] < Math.max(b[0], b[2]) - 0.01
+            : Math.abs(p[0] - b[0]) < 0.01 && Math.abs(b[0] - b[2]) < 0.01 && p[1] > Math.min(b[1], b[3]) + 0.01 && p[1] < Math.max(b[1], b[3]) - 0.01;
+        if (on && !dots.some(d => d.x === p[0] && d.y === p[1])) dots.push({ x: p[0], y: p[1], n: seg[i] });
+        return on;
+      })
+    );
+  });
+  const NO = [0, 0];
+  return {
+    name: 'TCS-' + q.id,
+    title: q.t,
+    tcs: q.id,
+    cat: tcsCat(q.id),
+    meta: { dwg: (/^\d/.test(q.id) ? 'Typical ' : '') + q.id, title: q.t, no: q.sh },
+    raw: { ln, pl, ci, ar: [], so: [], lamp: [] },
+    tx,
+    rows,
+    rng: { F: NO, L: NO, T: NO, S: NO, RS: NO, RL: NO, RT: NO },
+    vr: { F: NO, L: NO, T: NO, S: NO, RS: NO, RL: NO, RT: NO },
+    rb,
+    cells,
+    sig: {},
+    syms: [],
+    lyr: '',
+    bv: BV,
+    sd: { tcs: 1, n: q.n, seg, gates, src, outs, term: [], dots, xcon: [], an }
+  };
+}
+/* the TCS sheets come after the DITL sheets; they are part of S.sheets, so the search, the viewer and the panel know them */
+function tcsSheetsAdd() {
+  const L = typeof AN !== 'undefined' && AN.tcsIbdSheets ? AN.tcsIbdSheets() : [];
+  if (!L.length) return;
+  const nm = S.sheets[S.cur] && S.sheets[S.cur].name;
+  S.sheets = S.sheets.filter(x => !x.tcs).concat(L.map(tcsSheet));
+  const i = S.sheets.findIndex(x => x.name === nm);
+  if (i >= 0) S.cur = i;
+}
+/* the drawing of the IBD never comes with the app: on the PC that holds it, the sheets take its lines and words (a file made by tools/data/ibd_build.mjs,
+   kept in this browser, src/ui/shell/tcsdraw.js). Same viewer, same gates, same nets: only the picture of the sheet changes. L = null: the app's own drawing.
+   The title block is left out, like the DITL sheets */
+function tcsDraw(L) {
+  const K = 0.32,
+    X = x => +(x * K).toFixed(2),
+    Y = y => +(-y * K).toFixed(2),
+    title = (x, y) => x >= 636 && y >= 663,
+    key = (a, b) => [a[0], a[1], b[0], b[1]].map(v => v.toFixed(1)).join() + '|' + [b[0], b[1], a[0], a[1]].map(v => v.toFixed(1)).join(),
+    parse = d => {
+      const out = [],
+        re = /([MLCZ])([^MLCZ]*)/g;
+      let c = null,
+        m;
+      while ((m = re.exec(d))) {
+        const n = m[2].trim().split(/[ ,]+/).filter(Boolean).map(Number);
+        if (m[1] === 'M') out.push((c = { p: [[n[0], n[1]]], z: 0, cv: 0 }));
+        else if (m[1] === 'L') c.p.push([n[0], n[1]]);
+        else if (m[1] === 'Z') c.z = 1;
+        else {
+          const [x0, y0] = c.p[c.p.length - 1];
+          c.cv = 1;
+          for (let i = 1; i <= 8; i++) {
+            const t = i / 8,
+              u = 1 - t,
+              B = (a, b, e, f) => u * u * u * a + 3 * u * u * t * b + 3 * u * t * t * e + t * t * t * f;
+            c.p.push([B(x0, n[0], n[2], n[4]), B(y0, n[1], n[3], n[5])]);
+          }
+        }
+      }
+      return out;
+    };
+  for (const s of S.sheets) {
+    if (!s.tcs) continue;
+    if (!s._app) s._app = { raw: s.raw, tx: s.tx, seg: s.sd.seg, dots: s.sd.dots };
+    const D = L && L.find(q => q.id === s.tcs && q.n === s.sd.gates.length);
+    s.drw = D ? 1 : 0;
+    if (!D) Object.assign(s, { raw: s._app.raw, tx: s._app.tx }), Object.assign(s.sd, { seg: s._app.seg, dots: s._app.dots });
+    else {
+      const ln = [],
+        seg = [],
+        pl = [],
+        wk = new Set();
+      for (const n in D.w)
+        for (const q of parse(D.w[n]))
+          for (let i = 1; i < q.p.length; i++) {
+            ln.push([X(q.p[i - 1][0]), Y(q.p[i - 1][1]), X(q.p[i][0]), Y(q.p[i][1]), 'CON']);
+            seg.push(+n);
+            key(q.p[i - 1], q.p[i]).split('|').forEach(k => wk.add(k));
+          }
+      /* the other lines: a live wire is not drawn twice, the frame first (Fit reads it) */
+      parse(D.d).forEach((q, j) => {
+        if (q.p.length < 2) return;
+        if (q.z) q.p.push(q.p[0]);
+        if (j === 0) {
+          for (let i = 1; i < q.p.length; i++) {
+            ln.push([X(q.p[i - 1][0]), Y(q.p[i - 1][1]), X(q.p[i][0]), Y(q.p[i][1]), 'SYM']);
+            seg.push(undefined);
+          }
+          return;
+        }
+        if (q.p.every(a => title(a[0], a[1]))) return;
+        let c = [q.p[0]];
+        const flush = () => {
+          if (c.length > 1) pl.push([c.map(a => [X(a[0]), Y(a[1])]), 0, 'SYM']);
+        };
+        for (let i = 1; i < q.p.length; i++) {
+          if (!q.cv && wk.has(key(q.p[i - 1], q.p[i]).split('|')[0])) {
+            flush();
+            c = [q.p[i]];
+          } else c.push(q.p[i]);
+        }
+        flush();
+      });
+      s.raw = { ln, pl, ci: [], ar: [], so: [], lamp: [] };
+      s.sd.seg = seg;
+      s.sd.dots = [];
+      s.tx = D.t
+        .filter(t => !title(t[1], t[2]))
+        .map(([t, x, y, h, a, w]) => ({ t, ix: X(x), iy: Y(y), x: X(x), y: Y(y), h: +(h * K * 0.86).toFixed(2), r: a || 0, a: 0, b: 0, l: 'TXT1', w: w > 0 ? +(w * K).toFixed(2) : 0 }));
+    }
+    s.nl = null;
+    s._ext = null;
+  }
+  VB = {};
+}
+/* an input of a TCS sheet is held in the engine: tcsTripFault (on = 1 / 0 / a value, null = back to the plant) */
+const tcsHeld = (s, n) => {
+  const st = AN.tcsIbd(s.tcs);
+  return !!(st && st.fx && s.tcs + ':' + n in st.fx);
+};
+function tcsInput(s, n, on) {
+  const q = AN.turbine('fault', { id: s.tcs, net: n, on });
+  if (q) msg(q);
+}
+function tcsToggle(s, i) {
+  const n = s.rows[i].tn;
+  tcsInput(s, n, tcsHeld(s, n) ? null : !(s.nl._v && s.nl._v[n]));
+}
+const shFam = d => !!S.sheets[S.cur + d] && !!S.sheets[S.cur + d].tcs === !!S.sheets[S.cur].tcs;
+/* the Logic tabs DITL and TCS: both show the DITL viewer, each comes back to its own last sheet */
+if (typeof window !== 'undefined') {
+  const last = { dig: null, tcs: 'TCS-TA-9' };
+  window.LS_TCSV = {
+    on: () => !!(S.sheets[S.cur] && S.sheets[S.cur].tcs),
+    tab(c) {
+      const s = S.sheets[S.cur],
+        was = s && s.tcs ? 'tcs' : 'dig';
+      if (!s || was === c) return;
+      last[was] = s.name;
+      const i = S.sheets.findIndex(x => (last[c] ? x.name === last[c] : !x.tcs));
+      if (i >= 0) {
+        S.cur = i;
+        sel = null;
+        render();
+      }
+    }
+  };
+}
+/* one sheet in RUN: the values of the engine's scan */
+function tcsSim(s) {
+  const st = typeof AN !== 'undefined' && AN.tcsIbd ? AN.tcsIbd(s.tcs) : null,
+    nl = s.nl,
+    raw = (st && st.v) || [],
+    v = new Array(nl.n).fill(0);
+  for (let n = 0; n < nl.n; n++) v[n] = raw[n] > 0.5 ? 1 : 0;
+  nl._v = v;
+  s.avw = {};
+  for (const a of nl.an) if (isFinite(raw[a.net])) s.avw[a.key] = +(+raw[a.net]).toFixed(Math.abs(raw[a.net]) < 100 ? 2 : 1);
+  nl.avk = avOf(s);
+  const T = (st && st.t) || {};
+  for (const g of nl.gates)
+    if (g.t === 'TMR') {
+      g.st.acc = T[s.tcs + ':' + g.gi] || 0;
+      g.st.out = v[g.out[0]];
+    }
+  const rowOn = new Set(),
+    outOn = new Set();
+  for (const z of nl.src) if (v[z.n]) rowOn.add(z.row);
+  for (const o of nl.outs) if (v[o.n]) outOn.add(o.row);
+  return { rowOn, v, outOn };
 }
 /* DITL (digital logic) - Simulation models of the digital blocks (movements, solenoid valves, motors). Part of ONE script (joined by src/digital/order.list, in this order). */
 /* ---------- MOV block model (v9) ----------
@@ -4439,6 +4826,7 @@ function usrModel(sh, nl) {
 /* 2.5.0-beta.14: DCS registers shared by the sheets (bottom ash step SI0130); Simulate on / off and Reset clear them */
 let DREG = {};
 function simulate(nl, act) {
+  if (nl.tcs) return nl._v || new Array(nl.n).fill(0);
   /* audit D (beta.90, H2 root): with the engine in the Web Worker the page is a MIRROR. A read of the page (the dock's interlock, a
      cause, the drawing) that ran a scan here wrote the page's own result into the nets and the parts (nl._v, g.q ...), with none of the
      engine's analog values; the worker then sends only what changed in ITS state, so the wrong page nets stayed (DITL-23A row 12
@@ -4589,6 +4977,7 @@ function simSheet(s) {
   return r;
 }
 function simSheet0(s) {
+  if (s.tcs) return tcsSim(s);
   s.nl.ufx = (s.nl.usr || []).filter(u => s.usw && s.usw[u.key]).map(u => u.n);
   /* 2.5.0-beta.11 (DITL PDF audit): off-sheet connector "(n) FROM DITL-xx" = the net of connector (n) "TO DITL-<this>" on that sheet
      (its last computed value; the one world runs every sheet, alone the other sheet keeps its last state) */
@@ -5162,6 +5551,7 @@ const anValN = (s, n) => {
   return a ? anVal(s, a) : 0;
 };
 const cmpOn = (s, g) => {
+  if (s.tcs) return !!(s.nl._v && s.nl._v[g.out[0]]);
   const v = anValN(s, g.ins[0]),
     sp = g.spNet !== undefined ? anValN(s, g.spNet) : g.sp;
   return g.cmp === '>' ? (g.eq ? v >= sp : v > sp) : g.eq ? v <= sp : v < sp;
@@ -5619,6 +6009,7 @@ function ditlApply(k) {
    compute the sheet again on the page and write what the engine keeps (nets, latches, counters, the step register, nl.ufx) without the
    engine's inputs of this scan (WORLD.live, the rows from other sheets). Elsewhere (no worker, the engine itself): simSheet */
 function simRead(s) {
+  if (s.tcs) return simSheet(s);
   const W = window.WORLD;
   if (!(window.ENG && ENG.mode === 'mirror' && W && W.on && W.idx)) return simSheet(s);
   const lv = W.live;
@@ -5724,6 +6115,10 @@ function tx(t, p) {
   e.style.fontFamily = "Consolas,'Cascadia Mono',monospace";
   /* 3.2.0-beta.35: machine B / C / D of a shared drawing: its letter and its own address (WORLD.showText) */
   e.textContent = TXMAP ? TXMAP(t.t) : t.t;
+  if (t.w) {
+    e.setAttribute('textLength', t.w);
+    e.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+  }
   return e;
 }
 const SIDE = { L: ['F', 'L', 'T', 'S'], R: ['RS', 'RL', 'RT'] };
@@ -5915,7 +6310,7 @@ function render() {
     ext(t.x, t.y);
     tx(t, g);
   }
-  for (const k in s.cells) {
+  if (!s.drw) for (const k in s.cells) {
     /* 2.5.0-beta.8: a page link (FROM / TO column) is drawn as a link */
     const lk = /:(F|RT)$/.test(k) && window.DUI && DUI.refs && DUI.refs(s.cells[k].map(t => t.t).join(' ')).length;
     for (const t of s.cells[k]) {
@@ -6108,7 +6503,7 @@ function render() {
     (s.nl.an || []).forEach(a => {
       if (a.row < 0) return;
       const r = s.rows[a.row],
-        xr = VR.S[1],
+        xr = r.vx && r.vx.S ? r.vx.S[1] : VR.S[1],
         v = anVal(s, a),
         on = a.g.some(i => cmpOn(s, s.nl.gates[i])),
         L = LIVES[LIVE];
@@ -6861,6 +7256,7 @@ const DITL_CATS = [
   'SAND INJECTION (SD1300)'
 ];
 function ditlCat(x) {
+  if (x.tcs) return x.cat;
   if (isSB(x)) return 'SOOTBLOWER';
   if (/^\(B\d+\)/.test(x.name || '')) return 'BOTTOM ASH HD600 / CONVEYORS'; /* 2.5.0-beta.14 */
   if (/^\(L\d+\)/.test(x.name || '')) return 'LIMESTONE INJECTION (ROTOFEED)'; /* 2.5.0-beta.15 */
@@ -6959,7 +7355,8 @@ function drawSide() {
   sd.classList.toggle('min', SIDEMIN === '1');
   $('sidetg').textContent = SIDEMIN === '1' ? '▶' : '◀';
   const cn = S.sheets[S.cur] ? S.sheets[S.cur].name : '';
-  $('sidect').textContent = 'Sheets (' + S.sheets.length + ')';
+  const TCSL = !!(S.sheets[S.cur] && S.sheets[S.cur].tcs);
+  $('sidect').textContent = 'Sheets (' + S.sheets.filter(x => !!x.tcs === TCSL).length + ')';
   $('sidevt').textContent = cn ? cn + '  ·  ' + (S.cur + 1) + '/' + S.sheets.length : 'Sheets';
   /* 2.5.0-beta.13 (user: "sa left pane, wala ang option na by order/category"): By order / By category as the ABC sheet list */
   let so = $('dsort');
@@ -6986,7 +7383,7 @@ function drawSide() {
     $('sidebody').insertBefore(so, $('sidefl'));
   }
   so.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.m === SIDESM));
-  const key = S.sheets.map(x => x.name + (x.bv !== BV ? '!' : '')).join('|') + '#' + SIDEFL + '#' + SIDESM;
+  const key = S.sheets.map(x => x.name + (x.bv !== BV ? '!' : '')).join('|') + '#' + SIDEFL + '#' + SIDESM + '#' + TCSL;
   if (key !== SIDEKEY) {
     SIDEKEY = key;
     list.innerHTML = '';
@@ -6995,6 +7392,7 @@ function drawSide() {
     /* 2.5.0-beta.11 (user: "DAPAT BY CATEGORY DIN ANG SHEET LIST SA DITL"): grouped by system, as the ABC list (category headers in
        the order of the contents sheets DITL-0A ~ 0D); the search still filters by name and title */
     S.sheets.forEach((x, i) => {
+      if (!!x.tcs !== TCSL) return;
       if (f && (x.name + ' ' + (x.title || '') + ' ' + ditlCat(x)).toLowerCase().indexOf(f) < 0) return;
       if (SIDESM === 'order') return sideBtn(x, i, list);
       (G[ditlCat(x)] = G[ditlCat(x)] || []).push(i);
@@ -7009,7 +7407,7 @@ function drawSide() {
       b.dataset.i = i;
       const l1 = document.createElement('span');
       l1.className = 'sn';
-      l1.textContent = (x.bv !== BV ? '⚠ ' : '') + x.name;
+      l1.textContent = (x.bv !== BV ? '⚠ ' : '') + (x.tcs ? x.meta.dwg : x.name);
       b.appendChild(l1);
       if (x.title) {
         const l2 = document.createElement('span');
@@ -7436,7 +7834,7 @@ svg.addEventListener('pointerdown', e => {
   const s = cur();
   if (SIM && s) {
     const h = hit(e);
-    if (h && h.c === 'S' && fbk(s, h.i, 'S') && isPB(s, h.i) && !lockd(s, h.i)) {
+    if (h && h.c === 'S' && !s.tcs && fbk(s, h.i, 'S') && isPB(s, h.i) && !lockd(s, h.i)) {
       if ((s.nl.grp || []).some(g => g.master === h.i && g.toggle)) {
         s.sig[h.k] = !s.sig[h.k];
         dn.pb = 2;
@@ -7572,7 +7970,8 @@ svg.addEventListener('pointerup', e => {
         );
         return;
       }
-      s.sig[h.k] = !s.sig[h.k];
+      if (s.tcs) tcsToggle(s, h.i);
+      else s.sig[h.k] = !s.sig[h.k];
       render();
     }
     return;
@@ -7610,14 +8009,14 @@ addEventListener('keydown', e => {
     (document.activeElement && document.activeElement.isContentEditable)
   )
     return;
-  if (e.key === 'PageDown' && S.cur < S.sheets.length - 1) {
+  if (e.key === 'PageDown' && shFam(1)) {
     e.preventDefault();
     S.cur++;
     sel = null;
     render();
     return;
   }
-  if (e.key === 'PageUp' && S.cur > 0) {
+  if (e.key === 'PageUp' && shFam(-1)) {
     e.preventDefault();
     S.cur--;
     sel = null;
@@ -7657,14 +8056,14 @@ $('shsel').onchange = e => {
   render();
 };
 $('shprev').onclick = () => {
-  if (S.cur > 0) {
+  if (shFam(-1)) {
     S.cur--;
     sel = null;
     render();
   }
 };
 $('shnext').onclick = () => {
-  if (S.cur < S.sheets.length - 1) {
+  if (shFam(1)) {
     S.cur++;
     sel = null;
     render();
@@ -7929,7 +8328,7 @@ addEventListener('load', async () => {
   const e0 = document.getElementById('pre');
   if (!e0 || !window.PRE_N) return;
   const stale = S.sheets.some(x => x.bv !== BV);
-  if (S.sheets.length >= PRE_N && !stale) return;
+  if (S.sheets.length >= PRE_N && !stale) return void tcsSheetsAdd();
   if (typeof DecompressionStream === 'undefined') {
     msg('This browser is too old to open the built-in sheets. Update Chrome / Safari.');
     return;
@@ -7976,6 +8375,7 @@ addEventListener('load', async () => {
             0,
             out.findIndex(x => /DITL-56$/.test(x.name))
           );
+    tcsSheetsAdd();
     VB = {};
     hist = [];
     fut = [];
@@ -26943,7 +27343,7 @@ function tcsTripFault(U, a) {
   const ib = tcsIb(tcsOilState(U)),
     k = a.id + ':' + a.net;
   if (a.on == null) delete ib.fx[k];
-  else ib.fx[k] = a.on ? 1 : 0;
+  else ib.fx[k] = a.on === true ? 1 : a.on === false ? 0 : +a.on;
   return '';
 }
 /* the first-out name of a standing trip, with or without the ATS program */
@@ -26962,7 +27362,7 @@ function tcsTripState(U) {
 function tcsIbdState(id) {
   const c = AN_UNIT.tc || AN_UNIT.tco,
     ib = c && c.ib;
-  return ib ? { v: ib.v[id] || [], fx: ib.fx } : null;
+  return ib ? { v: ib.v[id] || [], fx: ib.fx, t: ib.t } : null;
 }
 /* the comparators of the sheets with no set point yet (no assumed value: they stay 0) */
 function tcsIbdMissing() {
@@ -35134,7 +35534,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.90';
-      c3.textContent += ' · build a20db0b'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build e462194'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -57157,6 +57557,7 @@ function sdNL(sh) {
     segs = [],
     seg = d.seg.slice();
   sh.raw.ln.forEach((q, k) => {
+    if (d.tcs && seg[k] === undefined) return;
     const h = Math.abs(q[1] - q[3]) < 0.05;
     segs.push({
       k,
@@ -57171,6 +57572,7 @@ function sdNL(sh) {
   const gates = [];
   d.gates.forEach(g => {
     const box = g.box;
+    if (g.gt) return void gates.push(g.gt);
     if (g.t === 'AND' || g.t === 'OR' || g.t === 'NOT')
       gates.push({ t: g.t, ins: g.ins, out: g.out, box, done: true, ev: 1, sd: 1, hid: g.hid });
     else if (g.t === 'TMR')
@@ -57213,8 +57615,9 @@ function sdNL(sh) {
     dots: d.dots.map(z => ({ x: z.x, y: z.y, n: z.n })),
     segs,
     pout: [],
-    an: [],
-    anRows: new Set(),
+    tcs: d.tcs,
+    an: d.an || [],
+    anRows: new Set((d.an || []).map(a => a.row)),
     mv: [],
     mir: [],
     ind: [],
@@ -57248,6 +57651,392 @@ function sdResetFix(sh, gates) {
       not = and && gates.find(g => g.t === 'NOT' && and.ins.includes(g.out[0]));
     if (ff && not) ff.r = [not.ins[0]];
   }
+}
+
+/* ---- src/digital/parts/02c-tcs.js ---- */
+/* DITL (digital logic) - TCS sheets: the Interlock Block Diagram 310SC90-794 rev 2 as sheets of the Logic page, in the same viewer, sheet list and panel as DITL.
+   A sheet is built here from the netlist TCS_IBD_SHEETS (src/analog/engine/tcs-ibd-data.js): each block stands where the IBD has it, the app draws its own symbols
+   and routes the wires. The logic runs once, in the engine (src/analog/engine/tcs-trip.js); a sheet reads the values of that scan (tcsSim). */
+const TCS_NAME = { A: 'AND', OR: 'OR', NOT: 'NOT', '2/3': '2/3', WO: 'WO', MID: 'MID', CMP: 'CMP', FF: 'S / R', LS: 'LS', FG: 'FG', FLK: 'FLK', PO: 'PO', DI: 'DI', DT: 'DT' };
+const tcsCat = id =>
+  /^\d/.test(id)
+    ? 'TYPICAL LOGIC'
+    : { TA: 'TURBINE TRIP AND TESTS', TB: 'TURBINE PUMPS AND MOTORS', TC: 'TURBINE VALVES', TD: 'TURBINE ALARMS', TE: 'TURBINE GROUP CONTROL', GD: 'GENERATOR' }[id.slice(0, 2)] || 'OTHER';
+const tcsWrap = (t, n) => {
+  const L = [];
+  let c = '';
+  for (const w of String(t).split(' ')) {
+    if (c && (c + ' ' + w).length > n) {
+      L.push(c);
+      c = w;
+    } else c = c ? c + ' ' + w : w;
+  }
+  if (c) L.push(c);
+  return L;
+};
+function tcsSheet(q) {
+  const K = 0.32,
+    Y = y => 842 - y,
+    PX = x => +(x * K).toFixed(2),
+    PY = y => +(-y * K).toFixed(2),
+    ln = [],
+    seg = [],
+    pl = [],
+    ci = [],
+    tx = [],
+    rows = [],
+    cells = {},
+    rb = [],
+    src = [],
+    outs = [],
+    an = [],
+    gates = [];
+  const text = (t, x, y, h, a) => ({ t, ix: PX(x), iy: PY(y), x: PX(x), y: PY(y), h: h || 2.05, r: 0, a: a || 0, b: 0, l: 'TXT1' });
+  const wire = (n, P) => {
+    for (let k = 1; k < P.length; k++) {
+      const [a, b] = [P[k - 1], P[k]];
+      if (a[0] === b[0] && a[1] === b[1]) continue;
+      ln.push([PX(a[0]), PY(a[1]), PX(b[0]), PY(b[1]), 'CON']);
+      seg.push(n);
+    }
+  };
+  /* the sheet frame and its title */
+  [[[18, 18], [1173, 18]], [[1173, 18], [1173, 824]], [[1173, 824], [18, 824]], [[18, 824], [18, 18]], [[18, 796], [1173, 796]]].forEach(([a, b]) => {
+    ln.push([PX(a[0]), PY(a[1]), PX(b[0]), PY(b[1]), 'SYM']);
+    seg.push(undefined);
+  });
+  tx.push(text((/^\d/.test(q.id) ? 'TYPICAL ' : '') + q.id + '  ' + q.t, 30, 815, 2.6), text('TCS SHEET ' + q.sh + ' OF 99', 1160, 815, 2.05, 2));
+  /* blocks: the left edge takes the pins, the right edge gives the output */
+  const B = [];
+  q.g.forEach((g, gi) => {
+    const [t, ins, out, x, gx, gy, gw, gh] = g;
+    if (!gx) return; /* a gate the engine adds, not a block of the sheet */
+    const not = t === 'NOT',
+      w = not ? 16 : Math.max(gw || 28, 26),
+      h = not ? 12 : Math.max(gh || 16, 16),
+      bx = not ? gx - 8 : gx,
+      by = not ? Y(gy) - 6 : Y(gy) - h;
+    B.push({ t, gi, g, ins: ins.concat(t === 'FF' || t === 'WO' ? x : []), out, x: bx, y: by, w, h });
+  });
+  const use = new Map();
+  B.forEach(b => b.ins.forEach(n => (use.get(n) || use.set(n, []).get(n)).push(b)));
+  const driven = new Set(B.map(b => b.out));
+  const SRC = new Map();
+  B.forEach(b => b.out >= 0 && SRC.set(b.out, [b.x + b.w, b.y + b.h / 2]));
+  /* input rows: an input of the sheet, or a link that comes in */
+  const lk = new Map(q.x.filter(x => x[3]).map(x => [x[0], x]));
+  const rowIn = (net, name, ex, y, left, L) => {
+    const i = rows.length,
+      isA = (use.get(net) || []).length && use.get(net).every(b => /CMP|MID|FG|LS/.test(b.t)),
+      sw = isA ? 46 : 12,
+      lines = tcsWrap(name, Math.max(20, Math.floor(((ex - 3 - left) * K) / 1.13))),
+      d = (lines.length * 7.5) / 2;
+    cells[i + ':S'] = lines.map((l, k) => text(l, ex - 3, y + 2.5 + (k - (lines.length - 1) / 2) * 8, 2.05, 2));
+    const vx = { S: [PX(left), PX(ex + sw)] };
+    if (L) {
+      ci.push([PX(L[4]), PY(y), 10 * K, 'SYM']);
+      tx.push(text(L[1], L[4], y + 3, 2.05, 1));
+      cells[i + ':F'] = [text(L[2], L[4] + 13, y + 3, 2.05)];
+      vx.F = [PX(L[4] - 10), PX(left - 1)];
+    }
+    rows.push({ n: i + 1, y: +(PY(y) - 1.2).toFixed(2), vx, tn: net });
+    rb.push([+(PY(y) - d * K - 1).toFixed(2), +(PY(y) + d * K + 1).toFixed(2)]);
+    src.push({ n: net, row: i });
+    if (isA) an.push({ row: i, key: 'n' + net, label: name, unit: '', def: 0, net, g: [] });
+    if (!driven.has(net)) SRC.set(net, [ex + sw, y]);
+  };
+  q.i.forEach(i => i[2] != null && rowIn(i[0], i[1], i[2], Y(i[3]), i[4] || i[2] - 205, lk.get(i[0])));
+  q.x.forEach(x => {
+    if (!x[3] || x[4] == null || q.i.some(i => i[0] === x[0] && i[2] != null) || driven.has(x[0])) return;
+    rowIn(x[0], 'From ' + x[2] + ' link ' + x[1], x[4] + 90, Y(x[5]), x[4] + 14, null);
+  });
+  /* the wires into one block: pins in the order of their sources, channels so that they do not cross */
+  const route = (dx, pins, nets) => {
+    const L = nets.map((n, k) => ({ n, s: SRC.get(n), p: pins[k] })).filter(c => c.s);
+    L.sort((a, b) => a.s[1] - b.s[1]);
+    L.forEach((c, k) => (c.p = pins[k]));
+    const down = L.filter(c => c.s[1] < c.p),
+      up = L.filter(c => c.s[1] >= c.p).reverse();
+    const lane = (arr, base) =>
+      arr.forEach((c, k) => {
+        const back = c.s[0] > dx - 6,
+          cx = dx - 7 - base - k * 4;
+        wire(
+          c.n,
+          back
+            ? [c.s, [c.s[0] + 7, c.s[1]], [c.s[0] + 7, c.p + 16 + k * 4], [cx, c.p + 16 + k * 4], [cx, c.p], [dx, c.p]]
+            : [c.s, [cx, c.s[1]], [cx, c.p], [dx, c.p]]
+        );
+      });
+    lane(down, 0);
+    lane(up, down.length * 4);
+  };
+  B.forEach(b => route(b.x, b.ins.map((_, k) => b.y + (b.h * (k + 1)) / (b.ins.length + 1)), b.ins));
+  q.x.forEach(o => {
+    if (o[3] || o[4] == null) return;
+    const y = Y(o[5]),
+      i = rows.length;
+    route(o[4] - 10, [y], [o[0]]);
+    ci.push([PX(o[4]), PY(y), 10 * K, 'SYM']);
+    tx.push(text(o[1], o[4], y + 3, 2.05, 1));
+    cells[i + ':RT'] = [text(o[2], o[4], y + 20, 2.05, 1)];
+    rows.push({ n: i + 1, y: +(PY(y) - 1.2).toFixed(2), vx: { RT: [PX(o[4] - 12), PX(o[4] + 30)] }, tn: o[0] });
+    rb.push([+(PY(y + 26)).toFixed(2), +(PY(y - 12)).toFixed(2)]);
+    outs.push({ n: o[0], row: i });
+  });
+  /* the symbols; each one is a gate of the netlist, so it is selected and traced like a DITL gate */
+  B.forEach(b => {
+    const { x, y, w, h, t, gi, g } = b,
+      box = { x1: PX(x), x2: PX(x + w), y1: PY(y + h), y2: PY(y) },
+      P = a => a.map(p => [PX(p[0]), PY(p[1])]),
+      ex = g[3],
+      arc = (cx, cy, rx, ry, a0, a1) => {
+        const o = [];
+        for (let k = 0; k <= 12; k++) {
+          const u = ((a0 + ((a1 - a0) * k) / 12) * Math.PI) / 180;
+          o.push([cx + rx * Math.cos(u), cy + ry * Math.sin(u)]);
+        }
+        return o;
+      };
+    if (t === 'A') pl.push([P([[x, y], ...arc(x + w * 0.5, y + h / 2, w * 0.5, h / 2, -90, 90), [x, y + h]]), 1, 'SYM']);
+    else if (t === 'OR')
+      pl.push([P([[x, y], ...arc(x + w * 0.35, y + h / 2, w * 0.65, h / 2, -90, 90), [x, y + h], ...arc(x - w * 0.12, y + h / 2, w * 0.2, h / 2, 90, -90)]), 1, 'SYM']);
+    else if (t === 'NOT') {
+      pl.push([P([[x, y], [x + w - 5, y + h / 2], [x, y + h]]), 1, 'SYM']);
+      ci.push([PX(x + w - 2.5), PY(y + h / 2), 2.5 * K, 'SYM']);
+    } else pl.push([P([[x, y], [x + w, y], [x + w, y + h], [x, y + h]]), 1, 'SYM']);
+    if (t !== 'NOT') tx.push(text(TCS_NAME[t] || t, x + w * (t === 'A' || t === 'OR' ? 0.42 : 0.5), y + h / 2, 1.9, 4));
+    const o = {
+      box,
+      miss: [],
+      gi,
+      out: [b.out],
+      ins: g[1],
+      t: t === 'A' ? 'AND' : t
+    };
+    if (t === 'FF') Object.assign(o, { s: g[1], r: ex, q: 0, ins: undefined, rt: true });
+    else if (t === 'WO') o.r = ex;
+    else if (t === 'CMP') {
+      const c = Array.isArray(ex) ? ex : null;
+      Object.assign(o, { cmp: c && !c[0] ? '<' : '>', eq: true, sp: c ? c[1] : 'the table of the sheet', unit: c ? ' ' + c[3] : '', c });
+      tx.push(text(c ? (c[0] ? '≥ ' : '≤ ') + c[1] + ' ' + c[3] : 'table', x + w / 2, y + h + 8, 1.9, 1));
+      const a = an.find(z => z.net === g[1][0]);
+      if (a) {
+        a.g.push(gates.length);
+        if (c) a.unit = c[3];
+      }
+    } else if (t === 'DI' || t === 'DT' || t === 'PO') {
+      const m = /^([0-9.]+) *(s|sec|min)/i.exec(String(ex || '')),
+        k = t === 'DI' ? 'on' : t === 'DT' ? 'off' : 'pulse';
+      Object.assign(o, {
+        t: 'TMR',
+        k,
+        st: { acc: 0, out: 0, pre: 0, run: 0 },
+        tm: {
+          lab: k === 'on' ? 'ON DELAY' : k === 'off' ? 'OFF DELAY' : 'PULSE',
+          key: 'T' + gi,
+          tag: t,
+          ax: (box.x1 + box.x2) / 2,
+          ay: (box.y1 + box.y2) / 2,
+          rr: (box.y2 - box.y1) / 2,
+          bx1: box.x1,
+          bx2: box.x2,
+          nt: null,
+          ut: null,
+          fv: { v: m ? +m[1] : 0, u: m && /min/i.test(m[2]) ? 'MIN' : 'SEC' }
+        }
+      });
+      if (ex) tx.push(text(String(ex), x + w / 2, y + h + 8, 1.9, 1));
+    }
+    gates.push({ gt: o, box });
+  });
+  /* junction dots: a wire end on the middle of another wire of the same net */
+  const dots = [];
+  ln.forEach((a, i) => {
+    if (seg[i] === undefined) return;
+    [[a[0], a[1]], [a[2], a[3]]].forEach(p =>
+      ln.some((b, j) => {
+        if (j === i || seg[j] !== seg[i]) return false;
+        const on =
+          Math.abs(p[1] - b[1]) < 0.01 && Math.abs(b[1] - b[3]) < 0.01
+            ? p[0] > Math.min(b[0], b[2]) + 0.01 && p[0] < Math.max(b[0], b[2]) - 0.01
+            : Math.abs(p[0] - b[0]) < 0.01 && Math.abs(b[0] - b[2]) < 0.01 && p[1] > Math.min(b[1], b[3]) + 0.01 && p[1] < Math.max(b[1], b[3]) - 0.01;
+        if (on && !dots.some(d => d.x === p[0] && d.y === p[1])) dots.push({ x: p[0], y: p[1], n: seg[i] });
+        return on;
+      })
+    );
+  });
+  const NO = [0, 0];
+  return {
+    name: 'TCS-' + q.id,
+    title: q.t,
+    tcs: q.id,
+    cat: tcsCat(q.id),
+    meta: { dwg: (/^\d/.test(q.id) ? 'Typical ' : '') + q.id, title: q.t, no: q.sh },
+    raw: { ln, pl, ci, ar: [], so: [], lamp: [] },
+    tx,
+    rows,
+    rng: { F: NO, L: NO, T: NO, S: NO, RS: NO, RL: NO, RT: NO },
+    vr: { F: NO, L: NO, T: NO, S: NO, RS: NO, RL: NO, RT: NO },
+    rb,
+    cells,
+    sig: {},
+    syms: [],
+    lyr: '',
+    bv: BV,
+    sd: { tcs: 1, n: q.n, seg, gates, src, outs, term: [], dots, xcon: [], an }
+  };
+}
+/* the TCS sheets come after the DITL sheets; they are part of S.sheets, so the search, the viewer and the panel know them */
+function tcsSheetsAdd() {
+  const L = typeof AN !== 'undefined' && AN.tcsIbdSheets ? AN.tcsIbdSheets() : [];
+  if (!L.length) return;
+  const nm = S.sheets[S.cur] && S.sheets[S.cur].name;
+  S.sheets = S.sheets.filter(x => !x.tcs).concat(L.map(tcsSheet));
+  const i = S.sheets.findIndex(x => x.name === nm);
+  if (i >= 0) S.cur = i;
+}
+/* the drawing of the IBD never comes with the app: on the PC that holds it, the sheets take its lines and words (a file made by tools/data/ibd_build.mjs,
+   kept in this browser, src/ui/shell/tcsdraw.js). Same viewer, same gates, same nets: only the picture of the sheet changes. L = null: the app's own drawing.
+   The title block is left out, like the DITL sheets */
+function tcsDraw(L) {
+  const K = 0.32,
+    X = x => +(x * K).toFixed(2),
+    Y = y => +(-y * K).toFixed(2),
+    title = (x, y) => x >= 636 && y >= 663,
+    key = (a, b) => [a[0], a[1], b[0], b[1]].map(v => v.toFixed(1)).join() + '|' + [b[0], b[1], a[0], a[1]].map(v => v.toFixed(1)).join(),
+    parse = d => {
+      const out = [],
+        re = /([MLCZ])([^MLCZ]*)/g;
+      let c = null,
+        m;
+      while ((m = re.exec(d))) {
+        const n = m[2].trim().split(/[ ,]+/).filter(Boolean).map(Number);
+        if (m[1] === 'M') out.push((c = { p: [[n[0], n[1]]], z: 0, cv: 0 }));
+        else if (m[1] === 'L') c.p.push([n[0], n[1]]);
+        else if (m[1] === 'Z') c.z = 1;
+        else {
+          const [x0, y0] = c.p[c.p.length - 1];
+          c.cv = 1;
+          for (let i = 1; i <= 8; i++) {
+            const t = i / 8,
+              u = 1 - t,
+              B = (a, b, e, f) => u * u * u * a + 3 * u * u * t * b + 3 * u * t * t * e + t * t * t * f;
+            c.p.push([B(x0, n[0], n[2], n[4]), B(y0, n[1], n[3], n[5])]);
+          }
+        }
+      }
+      return out;
+    };
+  for (const s of S.sheets) {
+    if (!s.tcs) continue;
+    if (!s._app) s._app = { raw: s.raw, tx: s.tx, seg: s.sd.seg, dots: s.sd.dots };
+    const D = L && L.find(q => q.id === s.tcs && q.n === s.sd.gates.length);
+    s.drw = D ? 1 : 0;
+    if (!D) Object.assign(s, { raw: s._app.raw, tx: s._app.tx }), Object.assign(s.sd, { seg: s._app.seg, dots: s._app.dots });
+    else {
+      const ln = [],
+        seg = [],
+        pl = [],
+        wk = new Set();
+      for (const n in D.w)
+        for (const q of parse(D.w[n]))
+          for (let i = 1; i < q.p.length; i++) {
+            ln.push([X(q.p[i - 1][0]), Y(q.p[i - 1][1]), X(q.p[i][0]), Y(q.p[i][1]), 'CON']);
+            seg.push(+n);
+            key(q.p[i - 1], q.p[i]).split('|').forEach(k => wk.add(k));
+          }
+      /* the other lines: a live wire is not drawn twice, the frame first (Fit reads it) */
+      parse(D.d).forEach((q, j) => {
+        if (q.p.length < 2) return;
+        if (q.z) q.p.push(q.p[0]);
+        if (j === 0) {
+          for (let i = 1; i < q.p.length; i++) {
+            ln.push([X(q.p[i - 1][0]), Y(q.p[i - 1][1]), X(q.p[i][0]), Y(q.p[i][1]), 'SYM']);
+            seg.push(undefined);
+          }
+          return;
+        }
+        if (q.p.every(a => title(a[0], a[1]))) return;
+        let c = [q.p[0]];
+        const flush = () => {
+          if (c.length > 1) pl.push([c.map(a => [X(a[0]), Y(a[1])]), 0, 'SYM']);
+        };
+        for (let i = 1; i < q.p.length; i++) {
+          if (!q.cv && wk.has(key(q.p[i - 1], q.p[i]).split('|')[0])) {
+            flush();
+            c = [q.p[i]];
+          } else c.push(q.p[i]);
+        }
+        flush();
+      });
+      s.raw = { ln, pl, ci: [], ar: [], so: [], lamp: [] };
+      s.sd.seg = seg;
+      s.sd.dots = [];
+      s.tx = D.t
+        .filter(t => !title(t[1], t[2]))
+        .map(([t, x, y, h, a, w]) => ({ t, ix: X(x), iy: Y(y), x: X(x), y: Y(y), h: +(h * K * 0.86).toFixed(2), r: a || 0, a: 0, b: 0, l: 'TXT1', w: w > 0 ? +(w * K).toFixed(2) : 0 }));
+    }
+    s.nl = null;
+    s._ext = null;
+  }
+  VB = {};
+}
+/* an input of a TCS sheet is held in the engine: tcsTripFault (on = 1 / 0 / a value, null = back to the plant) */
+const tcsHeld = (s, n) => {
+  const st = AN.tcsIbd(s.tcs);
+  return !!(st && st.fx && s.tcs + ':' + n in st.fx);
+};
+function tcsInput(s, n, on) {
+  const q = AN.turbine('fault', { id: s.tcs, net: n, on });
+  if (q) msg(q);
+}
+function tcsToggle(s, i) {
+  const n = s.rows[i].tn;
+  tcsInput(s, n, tcsHeld(s, n) ? null : !(s.nl._v && s.nl._v[n]));
+}
+const shFam = d => !!S.sheets[S.cur + d] && !!S.sheets[S.cur + d].tcs === !!S.sheets[S.cur].tcs;
+/* the Logic tabs DITL and TCS: both show the DITL viewer, each comes back to its own last sheet */
+if (typeof window !== 'undefined') {
+  const last = { dig: null, tcs: 'TCS-TA-9' };
+  window.LS_TCSV = {
+    on: () => !!(S.sheets[S.cur] && S.sheets[S.cur].tcs),
+    tab(c) {
+      const s = S.sheets[S.cur],
+        was = s && s.tcs ? 'tcs' : 'dig';
+      if (!s || was === c) return;
+      last[was] = s.name;
+      const i = S.sheets.findIndex(x => (last[c] ? x.name === last[c] : !x.tcs));
+      if (i >= 0) {
+        S.cur = i;
+        sel = null;
+        render();
+      }
+    }
+  };
+}
+/* one sheet in RUN: the values of the engine's scan */
+function tcsSim(s) {
+  const st = typeof AN !== 'undefined' && AN.tcsIbd ? AN.tcsIbd(s.tcs) : null,
+    nl = s.nl,
+    raw = (st && st.v) || [],
+    v = new Array(nl.n).fill(0);
+  for (let n = 0; n < nl.n; n++) v[n] = raw[n] > 0.5 ? 1 : 0;
+  nl._v = v;
+  s.avw = {};
+  for (const a of nl.an) if (isFinite(raw[a.net])) s.avw[a.key] = +(+raw[a.net]).toFixed(Math.abs(raw[a.net]) < 100 ? 2 : 1);
+  nl.avk = avOf(s);
+  const T = (st && st.t) || {};
+  for (const g of nl.gates)
+    if (g.t === 'TMR') {
+      g.st.acc = T[s.tcs + ':' + g.gi] || 0;
+      g.st.out = v[g.out[0]];
+    }
+  const rowOn = new Set(),
+    outOn = new Set();
+  for (const z of nl.src) if (v[z.n]) rowOn.add(z.row);
+  for (const o of nl.outs) if (v[o.n]) outOn.add(o.row);
+  return { rowOn, v, outOn };
 }
 
 /* ---- src/digital/parts/03-models.js ---- */
@@ -57836,6 +58625,7 @@ function usrModel(sh, nl) {
 /* 2.5.0-beta.14: DCS registers shared by the sheets (bottom ash step SI0130); Simulate on / off and Reset clear them */
 let DREG = {};
 function simulate(nl, act) {
+  if (nl.tcs) return nl._v || new Array(nl.n).fill(0);
   /* audit D (beta.90, H2 root): with the engine in the Web Worker the page is a MIRROR. A read of the page (the dock's interlock, a
      cause, the drawing) that ran a scan here wrote the page's own result into the nets and the parts (nl._v, g.q ...), with none of the
      engine's analog values; the worker then sends only what changed in ITS state, so the wrong page nets stayed (DITL-23A row 12
@@ -57986,6 +58776,7 @@ function simSheet(s) {
   return r;
 }
 function simSheet0(s) {
+  if (s.tcs) return tcsSim(s);
   s.nl.ufx = (s.nl.usr || []).filter(u => s.usw && s.usw[u.key]).map(u => u.n);
   /* 2.5.0-beta.11 (DITL PDF audit): off-sheet connector "(n) FROM DITL-xx" = the net of connector (n) "TO DITL-<this>" on that sheet
      (its last computed value; the one world runs every sheet, alone the other sheet keeps its last state) */
@@ -58559,6 +59350,7 @@ const anValN = (s, n) => {
   return a ? anVal(s, a) : 0;
 };
 const cmpOn = (s, g) => {
+  if (s.tcs) return !!(s.nl._v && s.nl._v[g.out[0]]);
   const v = anValN(s, g.ins[0]),
     sp = g.spNet !== undefined ? anValN(s, g.spNet) : g.sp;
   return g.cmp === '>' ? (g.eq ? v >= sp : v > sp) : g.eq ? v <= sp : v < sp;
@@ -59022,6 +59814,7 @@ function ditlApply(k) {
    compute the sheet again on the page and write what the engine keeps (nets, latches, counters, the step register, nl.ufx) without the
    engine's inputs of this scan (WORLD.live, the rows from other sheets). Elsewhere (no worker, the engine itself): simSheet */
 function simRead(s) {
+  if (s.tcs) return simSheet(s);
   const W = window.WORLD;
   if (!(window.ENG && ENG.mode === 'mirror' && W && W.on && W.idx)) return simSheet(s);
   const lv = W.live;
@@ -75919,7 +76712,7 @@ function tcsTripFault(U, a) {
   const ib = tcsIb(tcsOilState(U)),
     k = a.id + ':' + a.net;
   if (a.on == null) delete ib.fx[k];
-  else ib.fx[k] = a.on ? 1 : 0;
+  else ib.fx[k] = a.on === true ? 1 : a.on === false ? 0 : +a.on;
   return '';
 }
 /* the first-out name of a standing trip, with or without the ATS program */
@@ -75938,7 +76731,7 @@ function tcsTripState(U) {
 function tcsIbdState(id) {
   const c = AN_UNIT.tc || AN_UNIT.tco,
     ib = c && c.ib;
-  return ib ? { v: ib.v[id] || [], fx: ib.fx } : null;
+  return ib ? { v: ib.v[id] || [], fx: ib.fx, t: ib.t } : null;
 }
 /* the comparators of the sheets with no set point yet (no assumed value: they stay 0) */
 function tcsIbdMissing() {
@@ -85024,6 +85817,7 @@ body.lssplit #dp { max-width: 34% !important; }
      input LINE 3 of LS-20 (the row there whose FROM names this sheet and line) */
   const LSR = /\bSHEET\s*(\d{2,3})\s*-\s*LINE\s*(\d{1,2})\b/gi;
   const refs = (t, sh, ri, col) => {
+    if (sh && sh.tcs) return (String(t || '').match(/\b(?:T[A-E]|GD)-\d+/g) || []).map(x => ({ tcs: x }));
     const o = [],
       used = [];
     let s = String(t || ''),
@@ -85071,6 +85865,7 @@ body.lssplit #dp { max-width: 34% !important; }
     return d ? d.rows.findIndex((_, k) => (d.cells[k + ':F'] || []).some(t => t.t.replace(/\s/g, '') === bk)) : -1;
   };
   const labelOf = r => {
+    if (r.tcs) return r.tcs;
     if (r.abc) return r.abc + ' (analog)';
     if (r.nn === undefined) {
       const i = sheetOf(r.code),
@@ -85206,6 +86001,16 @@ body.lssplit #dp { max-width: 34% !important; }
     return true;
   }
   function goRef(r) {
+    if (r.tcs) {
+      const i = S.sheets.findIndex(x => x.tcs === r.tcs);
+      if (i < 0) return false;
+      hist.push({ cat: 'dig', i: S.cur, vb: (VB[S.cur] || []).slice() });
+      updBack();
+      S.cur = i;
+      sel = null;
+      render();
+      return true;
+    }
     if (r.abc) {
       if (!window.AN) return false;
       hist.push({ cat: 'dig', i: S.cur, vb: (VB[S.cur] || []).slice() });
@@ -85374,7 +86179,8 @@ body.lssplit #dp { max-width: 34% !important; }
         const w = Math.max(0, 400 - (Date.now() - t0));
         t0 = 0;
         setTimeout(() => {
-          s.sig[k] = false;
+          if (s.tcs) tcsInput(s, s.rows[i].tn, null);
+          else s.sig[k] = false;
           render();
         }, w);
       };
@@ -85383,7 +86189,8 @@ body.lssplit #dp { max-width: 34% !important; }
         e.preventDefault();
         if (!SIM) enter();
         t0 = Date.now();
-        s.sig[k] = true;
+        if (s.tcs) tcsInput(s, s.rows[i].tn, true);
+        else s.sig[k] = true;
         opLog(s, i, 'PRESSED');
         render();
       };
@@ -85398,14 +86205,15 @@ body.lssplit #dp { max-width: 34% !important; }
           enter();
           DPAUSE = false;
         }
-        s.sig[k] = !s.sig[k];
-        opLog(s, i, '= ' + (s.sig[k] ? 1 : 0));
+        if (s.tcs) tcsToggle(s, i);
+        else s.sig[k] = !s.sig[k];
+        opLog(s, i, s.tcs ? 'switched' : '= ' + (s.sig[k] ? 1 : 0));
         render();
       };
     UL.push(R => {
       const on = R ? R.rowOn.has(i) : false,
         a = auto(s, i);
-      b.textContent = pb && !grpT ? (on ? 'PRESSED' : 'PRESS') : on ? '1 · ON' : '0 · OFF';
+      b.textContent = (pb && !grpT ? (on ? 'PRESSED' : 'PRESS') : on ? '1 · ON' : '0 · OFF') + (s.tcs && tcsHeld(s, s.rows[i].tn) ? ' · HELD' : '');
       b.className = 'dp-v' + (on ? ' on' : '') + (pb && !grpT ? ' pb' : '') + (a ? ' auto' : '');
     });
   }
@@ -85751,6 +86559,8 @@ body.lssplit #dp { max-width: 34% !important; }
       })
     ]);
     dp.append(hd, E('p', { cls: 'dp-note', txt: 'Run, then click an input to switch it. PB = press and hold. A dashed (auto) input follows the equipment or another sheet.' }), selBox);
+    if (s.tcs && window.LS_TCSD)
+      dp.append(E('div', { cls: 'dp-r dp-tpr' }, [E('div', { cls: 'dp-l' }, [E('div', { cls: 'dp-d', txt: 'The IBD drawing stays on this PC' })]), E('button', { cls: 'dp-tpe', txt: LS_TCSD.on() ? 'Remove IBD drawing' : 'Load IBD drawing', title: 'Show the TCS sheets with the lines and words of the IBD file on this PC', on: LS_TCSD.pick })]));
     if (pk && pk.s !== s) pk = null;
     buildSel();
     /* inputs */
@@ -85782,6 +86592,11 @@ body.lssplit #dp { max-width: 34% !important; }
           st = E('div', { cls: 'dp-d' });
         n.value = anVal(s, a);
         n.onchange = () => {
+          if (s.tcs) {
+            if (!SIM) return msg('Press RUN to hold a value.');
+            tcsInput(s, a.net, n.value === '' ? null : +n.value);
+            return render();
+          }
           const x = parseFloat(n.value);
           if (!isFinite(x)) return;
           s.av = s.av || {};
@@ -85824,7 +86639,7 @@ body.lssplit #dp { max-width: 34% !important; }
             }
           }
         });
-      dp.append(th, E('div', { cls: 'dp-r dp-tpr' }, [E('div', { cls: 'dp-l' }, [E('div', { cls: 'dp-d', txt: 'Presets as drawn; change them for a test' })]), te]));
+      dp.append(th, s.tcs ? '' : E('div', { cls: 'dp-r dp-tpr' }, [E('div', { cls: 'dp-l' }, [E('div', { cls: 'dp-d', txt: 'Presets as drawn; change them for a test' })]), te]));
       T.forEach(g => {
         const v = E('span', { cls: 'dp-tv' }),
           bar = E('span', { cls: 'dp-bar' }, [E('i')]),
@@ -85846,7 +86661,7 @@ body.lssplit #dp { max-width: 34% !important; }
           v.textContent = fmt(acc) + ' / ' + fmt(P) + ' · OUT ' + (g.st.out && simOn() ? '1' : '0');
           v.classList.toggle('on', !!(g.st.out && simOn()));
           bar.firstChild.style.width = Math.max(0, Math.min(100, (acc / Math.max(P, 1e-9)) * 100)) + '%';
-          sk.disabled = !SIM;
+          sk.disabled = !SIM || !!s.tcs;
         });
       });
     }
@@ -86043,7 +86858,7 @@ body.lssplit #dp { max-width: 34% !important; }
     }
     if (!dit || !open) return;
     const s = cur(),
-      k = S.cur + '|' + (s && s.name) + '|' + !!(s && s.nl) + '|' + (s && s.nl && s.nl.v);
+      k = S.cur + '|' + (s && s.name) + '|' + !!(s && s.nl) + '|' + (s && s.nl && s.nl.v) + '|' + !!(s && s.drw);
     if (k !== key) {
       key = k;
       build();
@@ -86296,8 +87111,7 @@ body.lssplit #dp { max-width: 34% !important; }
   const TABS = [
     ['home', 'Home', 'Start here: what do you want to do, starting state of the plant, recent sheets'],
     ['operate', 'Plant view', 'Plant graphics with the faceplates (A / M / R, SV, MV) like the operator station; on a PC it opens in its own window'],
-    ['logic', 'Logic', 'The ABC (analog) and DITL (digital) drawings: trace, run, force'],
-    ['tcs', 'TCS', 'Turbine control system: the sheets of the Interlock Block Diagram, simulated'],
+    ['logic', 'Logic', 'The ABC (analog), DITL (digital) and TCS (turbine) drawings: trace, run, force'],
     ['library', 'Library', 'I/O list, memory list, wiring, relay / SER, calculations'],
     ['training', 'Training', 'The start-up procedure PR-OPE-5002 step by step, with a check box for every step'],
     ['tools', 'Tools', 'Block tests, audit, health, project files, drawing edit', 1]
@@ -86548,8 +87362,11 @@ body.lssplit #dp { max-width: 34% !important; }
     const h = foot && foot.querySelector('.shint');
     if (h) h.textContent = h.title = HINTS[tab] || '';
   }
+  /* DITL and TCS share the DITL viewer; each tab comes back to its own last sheet */
   function setSub(c) {
-    if (window.AN && AN.setCat && AN.cat !== c) AN.setCat(c);
+    const d = c === 'an' ? 'an' : 'dig';
+    if (window.AN && AN.setCat && AN.cat !== d) AN.setCat(d);
+    if (d === 'dig' && window.LS_TCSV) LS_TCSV.tab(c);
   }
   /* wraps an element so that it shows only on the ABC page (an-only) or only on the DITL page (dit-only); the element's own
      class list is left to its owner script (the DITL page rewrites the class of its buttons) */
@@ -86736,14 +87553,15 @@ body.lssplit #dp { max-width: 34% !important; }
     const tabs = E('div', { cls: 'tabs' });
     TABS.forEach(([k, l, t, hid]) => {
       if (hid) return;
-      const b = E('button', { txt: l, title: t, on: () => (k === 'tcs' ? window.LS_TCSL && LS_TCSL.open() : (k === 'operate' && pvPop && pvPop()) || setTab(k)) });
+      const b = E('button', { txt: l, title: t, on: () => (k === 'operate' && pvPop && pvPop()) || setTab(k) });
       tabBtns[k] = b;
       tabs.append(b);
     });
     const sub = E('div', { cls: 'sub' });
     [
       ['an', 'ABC', 'Analog logic (boiler control): 54 sheets'],
-      ['dig', 'DITL', 'Digital interlock logic: all the DITL sheets']
+      ['dig', 'DITL', 'Digital interlock logic: all the DITL sheets'],
+      ['tcs', 'TCS', 'Turbine control system: the sheets of the Interlock Block Diagram']
     ].forEach(([k, l, t]) => {
       const b = E('button', { txt: l, title: t, on: () => setSub(k) });
       subBtns[k] = b;
@@ -87634,7 +88452,9 @@ body.lssplit #dp { max-width: 34% !important; }
     setInterval(() => {
       const an_ = document.body.classList.contains('an');
       subBtns.an.classList.toggle('on', an_);
-      subBtns.dig.classList.toggle('on', !an_);
+      const tc_ = !an_ && !!(window.LS_TCSV && LS_TCSV.on());
+      subBtns.dig.classList.toggle('on', !an_ && !tc_);
+      subBtns.tcs.classList.toggle('on', tc_);
       pmUpd();
     }, 300);
     addEventListener('resize', place);
@@ -89656,390 +90476,11 @@ body.lssplit #dp { max-width: 34% !important; }
   put();
 })();
 
-/* 3.2.1 plan c2: TCS, a page of its own on the rail: the sheets of the Interlock Block Diagram 310SC90-794 rev 2, simulated. Each block stands where
-   the IBD has it, so a sheet reads in the IBD's order, top to bottom; the wires are routed here, the lines of the drawing are not in the app. The
-   gates run in the engine (src/analog/engine/tcs-trip.js). Same working style as ABC and DITL: sheet list, Values, Trace, Inspector, Inputs. A wire
-   at 1 is red; a traced wire is blue. The Inputs list holds an input at 1 or 0. */
+/* The IBD drawing on the PC that holds it: the user picks the file made by tools/data/ibd_build.mjs, it stays in this browser (IndexedDB), the TCS sheets of the
+   Logic page take its lines and words (tcsDraw, src/digital/parts/02c-tcs.js). The file never comes with the app. */
 (function () {
-  const NS = 'http://www.w3.org/2000/svg';
-  const E = (t, c, x) => {
-    const e = document.createElement(t);
-    if (c) e.className = c;
-    if (x != null) e.textContent = x;
-    return e;
-  };
-  const NAME = {
-    A: 'AND',
-    '2/3': '2/3',
-    WO: 'WO',
-    MID: 'MID',
-    CMP: 'CMP',
-    FF: 'S / R',
-    LS: 'LS',
-    FG: 'FG',
-    FLK: 'FLK',
-    PO: 'PO',
-    DI: 'DI',
-    DT: 'DT',
-    OR: 'OR',
-    NOT: 'NOT'
-  };
-  const LONG = {
-    A: 'AND gate',
-    OR: 'OR gate',
-    NOT: 'NOT gate',
-    '2/3': '2 out of 3 gate',
-    WO: 'Wipe-out: input passes unless wiped',
-    FF: 'Memory, reset has priority',
-    MID: 'Median',
-    CMP: 'Comparator',
-    DI: 'Timer, delay pick up',
-    DT: 'Timer, delay drop out',
-    PO: 'Timer, one shot',
-    FG: 'Function generator',
-    LS: 'Low selector',
-    FLK: 'Flicker'
-  };
-  const FS = 10;
-  let cur = 'TA-9',
-    box = null,
-    tm = 0,
-    live = [],
-    vals = [],
-    blocks = [],
-    sel = null,
-    side = 'ins',
-    showV = true,
-    trace = true,
-    traced = new Set(),
-    DR = null;
-  const css = `#tcsl{position:fixed;left:var(--railW,4rem);top:0;right:0;bottom:0;z-index:120;display:flex;background:var(--panel,#1b2530);color:var(--tx,#edf3f8);font:14px Inter,system-ui,sans-serif}
-#tcsl nav{width:18rem;overflow:auto;border-right:1px solid var(--line,#34475a);padding:.5rem;flex:none}
-#tcsl nav button{display:block!important;width:100%!important;height:auto!important;min-height:0!important;white-space:normal!important;text-align:left!important;overflow:visible!important;text-overflow:clip!important;background:none;border:0;border-bottom:1px solid var(--line,#34475a);border-radius:0;color:inherit;padding:.625rem .5rem;margin:0;font:inherit;line-height:1.4;cursor:pointer}
-#tcsl nav button b{display:block;font-weight:600}
-#tcsl nav button.on{background:var(--panel2,#233140)}
-#tcsl section{flex:1;display:flex;flex-direction:column;min-width:0}
-#tcsl .hd{display:flex;align-items:center;gap:.5rem;padding:.5rem 1rem;flex-wrap:wrap}
-#tcsl .hd b{flex:1;min-width:12rem}
-#tcsl .x{background:none;border:1px solid var(--line,#34475a);border-radius:6px;color:inherit;padding:.25rem .625rem;cursor:pointer;font:inherit}
-#tcsl .x.on{background:var(--panel2,#233140);border-color:#5b7a97}
-#tcsl .bd{flex:1;display:flex;min-height:0}
-#tcsl .sv{flex:1;min-width:0;background:#f4f5f6}#tcsl svg{display:block;width:100%;height:100%}
-#tcsl .sd{width:19rem;flex:none;overflow:auto;border-left:1px solid var(--line,#34475a);padding:.625rem}
-#tcsl .sd h4{margin:.5rem 0 .25rem;font-size:13px}#tcsl .sd p{margin:.25rem 0;font-size:13px;overflow-wrap:anywhere}
-#tcsl .ir{display:flex;gap:.375rem;align-items:center;padding:.375rem 0;border-bottom:1px solid var(--line,#34475a)}
-#tcsl .ir span{flex:1;font-size:13px;min-width:0;overflow-wrap:anywhere}
-#tcsl .ir button{background:var(--in,#141c25);color:inherit;border:1px solid var(--line,#34475a);border-radius:4px;padding:2px 7px;cursor:pointer;font:inherit}
-#tcsl .ir button.on{border-color:#d32020;color:#ff8d8d}
-@media (max-width:1100px){#tcsl nav{width:11rem}#tcsl .sd{width:14rem}}`;
-  const sheets = () => (AN.tcsIbdSheets ? AN.tcsIbdSheets() : []);
-  const Y = y => 842 - y;
-  const fmtV = v =>
-    v == null || !isFinite(v)
-      ? 'no value'
-      : Math.abs(v) >= 100
-        ? (+v).toFixed(0)
-        : Math.abs(v) === 1 || v === 0
-          ? String(v)
-          : (+v).toFixed(2);
-  const stNow = () => (AN.tcsIbd ? AN.tcsIbd(cur) : null);
-  function paint() {
-    if (!box || box.hidden) return;
-    const st = stNow();
-    if (!st) return;
-    for (const [p, n] of live) {
-      const on = st.v[n] > 0.5,
-        t = traced.has(n);
-      p.setAttribute('stroke', t ? '#2f6fd0' : on ? '#d32020' : DR && DR[cur] ? 'none' : '#7d8a96');
-      p.setAttribute('stroke-width', t ? 2 : on ? 1.6 : 0.9);
-    }
-    for (const [e, n] of vals) {
-      e.textContent = showV ? fmtV(st.v[n]) : '';
-      e.setAttribute('fill', st.v[n] > 0.5 ? '#d32020' : '#3a4650');
-    }
-    for (const b of box.querySelectorAll('.sd .ir button')) {
-      const f = st.fx[cur + ':' + b.dataset.n];
-      b.classList.toggle('on', b.dataset.v === '1' ? f === 1 : b.dataset.v === '0' ? f === 0 : f == null);
-    }
-    if (side === 'insp') inspector(st);
-  }
-  /* words wrapped to lines of n characters */
-  function wrap(t, n) {
-    const L = [];
-    let c = '';
-    for (const w of String(t).split(' ')) {
-      if (c && (c + ' ' + w).length > n) {
-        L.push(c);
-        c = w;
-      } else c = c ? c + ' ' + w : w;
-    }
-    if (c) L.push(c);
-    return L;
-  }
-  const netName = (s, n) => {
-    const i = s.i.find(q => q[0] === n);
-    if (i && i[1]) return i[1];
-    const x = s.x.find(q => q[0] === n);
-    if (x) return (x[3] ? 'From ' : 'To ') + x[2] + ' link ' + x[1];
-    const b = blocks.find(q => q.out === n);
-    return b ? 'Output of ' + (NAME[b.t] || b.t) : 'Net ' + n;
-  };
-  /* the nets that feed block b, back to the inputs of the sheet */
-  function fanIn(b) {
-    const S = new Set(),
-      todo = b.ins.slice();
-    while (todo.length) {
-      const n = todo.pop();
-      if (S.has(n)) continue;
-      S.add(n);
-      const d = blocks.find(q => q.out === n);
-      if (d) todo.push(...d.ins);
-    }
-    return S;
-  }
-  function pick(b) {
-    sel = b;
-    traced = trace ? fanIn(b) : new Set();
-    side = 'insp';
-    tabs();
-    panel();
-    paint();
-  }
-  function inspector(st) {
-    const pr = box.querySelector('.sd'),
-      s = sheets().find(x => x.id === cur);
-    pr.textContent = '';
-    if (!sel) {
-      pr.append(E('p', '', 'Press a block on the sheet.'));
-      return;
-    }
-    const b = sel,
-      x = b.g0[3];
-    pr.append(E('h4', '', LONG[b.t] || b.t));
-    if (b.t === 'CMP')
-      pr.append(
-        E('p', '', Array.isArray(x) ? 'Set point: ' + spText(x) : 'Set point: variable, from the table of the sheet')
-      );
-    if (typeof x === 'string') pr.append(E('p', '', 'Time: ' + x));
-    pr.append(E('h4', '', 'Inputs'));
-    for (const n of b.g0[1]) pr.append(E('p', '', netName(s, n) + ' = ' + fmtV(st.v[n])));
-    if (b.t === 'FF' || b.t === 'WO') {
-      pr.append(E('h4', '', b.t === 'FF' ? 'Reset' : 'Wipe'));
-      for (const n of x) pr.append(E('p', '', netName(s, n) + ' = ' + fmtV(st.v[n])));
-    }
-    pr.append(E('h4', '', 'Output'), E('p', '', fmtV(st.v[b.out])));
-  }
-  const spText = x => (x[0] ? 'ON ≥ ' : 'ON ≤ ') + x[1] + ', OFF ' + (x[0] ? '≤ ' : '≥ ') + x[2] + ' ' + x[3];
-  function panel() {
-    const pr = box.querySelector('.sd'),
-      s = sheets().find(x => x.id === cur);
-    pr.textContent = '';
-    pr.style.display = side ? '' : 'none';
-    if (side !== 'ins' || !s) return;
-    for (const i of s.i) {
-      const r = E('div', 'ir');
-      r.append(E('span', '', i[1] || 'Input ' + i[0]));
-      for (const [v, l] of [
-        ['', 'Auto'],
-        ['1', '1'],
-        ['0', '0']
-      ]) {
-        const b = E('button', '', l);
-        b.dataset.n = i[0];
-        b.dataset.v = v;
-        b.onclick = () => {
-          const q = AN.turbine('fault', { id: cur, net: i[0], on: v === '' ? null : v === '1' });
-          if (q) alert(q);
-          paint();
-        };
-        r.append(b);
-      }
-      pr.append(r);
-    }
-  }
-  function sheet() {
-    const sv = box.querySelector('.sv'),
-      s = sheets().find(x => x.id === cur);
-    box.querySelector('.ttl').textContent =
-      'TCS · ' + cur + (s && s.t ? ' ' + s.t : '') + (s ? ' · sheet ' + s.sh + ' of 99' : '');
-    sv.textContent = '';
-    live = [];
-    vals = [];
-    sel = null;
-    traced = new Set();
-    if (!s) return;
-    const g = document.createElementNS(NS, 'svg');
-    const add = (n, a, t) => {
-      const e = document.createElementNS(NS, n);
-      for (const k in a) e.setAttribute(k, a[k]);
-      if (t != null) e.textContent = t;
-      g.append(e);
-      return e;
-    };
-    /* blocks where the IBD has them; a block's left edge takes its pins, its right edge gives the output */
-    blocks = s.g.map(g0 => {
-      const [t, ins, out, x, gx, gy, gw, gh] = g0,
-        not = t === 'NOT',
-        w = not ? 11 : Math.max(gw || 28, 24),
-        h = not ? 11 : Math.max(gh || 16, 14);
-      return {
-        t,
-        ins: ins.concat(t === 'FF' || t === 'WO' ? x : []),
-        out,
-        x: not ? gx - 5.5 : gx,
-        y: not ? Y(gy) - 5.5 : Y(gy) - h,
-        w,
-        h,
-        g0
-      };
-    });
-    /* the IBD drawing the user loaded on this PC: its own lines and words, the live wires over them; the blocks stay clickable */
-    const dr = DR && DR[cur];
-    if (dr && dr.n === s.g.length) {
-      g.setAttribute('viewBox', '0 0 1191 842');
-      add('path', { d: dr.d, fill: 'none', stroke: '#14191d', 'stroke-width': 0.5 });
-      add('path', { d: dr.f, fill: '#14191d', stroke: 'none' });
-      for (const n in dr.w)
-        live.push([add('path', { d: dr.w[n], fill: 'none', stroke: 'none', 'stroke-width': 1.6 }), +n]);
-      for (const [w, x, y, h, a, tw] of dr.t) {
-        const e = add(
-          'text',
-          {
-            x,
-            y,
-            'font-size': h * 0.86,
-            'font-family': 'Consolas, JetBrains Mono, monospace',
-            fill: '#14191d',
-            'pointer-events': 'none',
-            transform: a ? 'rotate(' + -a + ' ' + x + ' ' + y + ')' : ''
-          },
-          w
-        );
-        if (tw > 0) {
-          e.setAttribute('textLength', tw);
-          e.setAttribute('lengthAdjust', 'spacingAndGlyphs');
-        }
-      }
-      for (const b of blocks)
-        add('rect', { x: b.x, y: b.y, width: b.w, height: b.h, fill: 'transparent', style: 'cursor:pointer' }).onclick =
-          () => pick(b);
-      for (const i of s.i)
-        if (i[2] != null)
-          vals.push([add('text', { x: i[2] + 3, y: Y(i[3]) - 3, 'font-size': 8, fill: '#3a4650' }, ''), i[0]]);
-      sv.append(g);
-      panel();
-      paint();
-      return;
-    }
-    const src = new Map();
-    for (const b of blocks) if (b.out >= 0) src.set(b.out, [b.x + b.w, b.y + b.h / 2]);
-    const labels = new Map(s.x.filter(x => x[3]).map(x => [x[0], 'from ' + x[2]]));
-    for (const i of s.i) if (!src.has(i[0]) && i[2] != null) src.set(i[0], [i[2], Y(i[3])]);
-    for (const x of s.x) if (x[3] && !src.has(x[0]) && x[4] != null) src.set(x[0], [x[4] + 12, Y(x[5])]);
-    /* the wires into one block: pins in the order of their sources, channels so that they do not cross */
-    const route = (dx, pins, nets) => {
-      const L = nets.map((n, k) => ({ n, s: src.get(n), p: pins[k] })).filter(q => q.s);
-      L.sort((a, b) => a.s[1] - b.s[1]);
-      L.forEach((q, k) => (q.p = pins[k]));
-      const down = L.filter(q => q.s[1] < q.p),
-        up = L.filter(q => q.s[1] >= q.p).reverse();
-      const lane = (arr, base) =>
-        arr.forEach((q, k) => {
-          const back = q.s[0] > dx - 6,
-            c = dx - 7 - base - k * 4;
-          const d = back
-            ? 'M' + q.s[0] + ' ' + q.s[1] + 'h7V' + (q.p + 16 + k * 4) + 'H' + c + 'V' + q.p + 'H' + dx
-            : 'M' + q.s[0] + ' ' + q.s[1] + 'H' + c + 'V' + q.p + 'H' + dx;
-          live.push([add('path', { d, fill: 'none', stroke: '#7d8a96', 'stroke-width': 0.9 }), q.n]);
-        });
-      lane(down, 0);
-      lane(up, down.length * 4);
-    };
-    for (const b of blocks) {
-      const nn = b.ins,
-        pins = nn.map((_, k) => b.y + (b.h * (k + 1)) / (nn.length + 1));
-      route(b.x, pins, nn);
-    }
-    const outs = s.x.filter(x => !x[3] && x[4] != null);
-    for (const o of outs) route(o[4] - 11, [Y(o[5])], [o[0]]);
-    for (const b of blocks) {
-      let e;
-      if (b.t === 'NOT')
-        e = add('circle', {
-          cx: b.x + 5.5,
-          cy: b.y + 5.5,
-          r: 5.5,
-          fill: '#fff',
-          stroke: '#1b2530',
-          'stroke-width': 0.8,
-          style: 'cursor:pointer'
-        });
-      else {
-        e = add('rect', {
-          x: b.x,
-          y: b.y,
-          width: b.w,
-          height: b.h,
-          fill: '#fff',
-          stroke: '#1b2530',
-          'stroke-width': 0.8,
-          style: 'cursor:pointer'
-        });
-        add(
-          'text',
-          {
-            x: b.x + b.w / 2,
-            y: b.y + Math.min(b.h / 2 + 3.5, 13),
-            'text-anchor': 'middle',
-            'font-size': FS,
-            fill: '#14191d',
-            'pointer-events': 'none'
-          },
-          NAME[b.t] || b.t
-        );
-        const x = b.g0[3];
-        const sub = b.t === 'CMP' ? (Array.isArray(x) ? spText(x) : 'variable') : typeof x === 'string' ? x : '';
-        if (sub)
-          add(
-            'text',
-            { x: b.x + b.w / 2, y: b.y + b.h + 9, 'text-anchor': 'middle', 'font-size': 8, fill: '#3a4650' },
-            sub
-          );
-      }
-      e.onclick = () => pick(b);
-    }
-    for (const i of s.i) {
-      if (i[2] == null) continue;
-      const lab = i[1] + (labels.has(i[0]) ? ' (' + labels.get(i[0]) + ')' : ''),
-        L = wrap(lab, 44);
-      L.forEach((l, k) =>
-        add(
-          'text',
-          {
-            x: i[2] - 3,
-            y: Y(i[3]) + 3 + (k - (L.length - 1) / 2) * 10,
-            'text-anchor': 'end',
-            'font-size': FS - 1,
-            fill: '#14191d'
-          },
-          l
-        )
-      );
-      vals.push([add('text', { x: i[2] + 3, y: Y(i[3]) - 3, 'font-size': 8, fill: '#3a4650' }, ''), i[0]]);
-    }
-    for (const o of outs) {
-      add('circle', { cx: o[4], cy: Y(o[5]), r: 10, fill: '#fff', stroke: '#1b2530', 'stroke-width': 0.8 });
-      add('text', { x: o[4], y: Y(o[5]) + 3, 'text-anchor': 'middle', 'font-size': FS - 1, fill: '#14191d' }, o[1]);
-      add('text', { x: o[4], y: Y(o[5]) + 20, 'text-anchor': 'middle', 'font-size': 8, fill: '#3a4650' }, 'to ' + o[2]);
-    }
-    sv.append(g);
-    const bb = g.getBBox();
-    g.setAttribute('viewBox', [bb.x - 8, bb.y - 8, bb.width + 16, bb.height + 16].join(' '));
-    panel();
-    paint();
-  }
-  /* the drawing of the IBD never comes with the app: the user picks the file made on this PC (tools/data/ibd_build.mjs); it stays in this browser */
   const DBN = 'ls-ibd-drawing';
+  let on = false;
   const db = () =>
     new Promise((ok, no) => {
       const r = indexedDB.open(DBN, 1);
@@ -90068,14 +90509,14 @@ body.lssplit #dp { max-width: 34% !important; }
     } catch (e) {}
   }
   const take = v => {
-    DR = v && v.sheets ? Object.fromEntries(v.sheets.map(q => [q.id, q])) : null;
-    if (box) box.querySelector('.ld').textContent = DR ? 'Remove IBD drawing' : 'Load IBD drawing';
+    on = !!(v && v.sheets);
+    tcsDraw(on ? v.sheets : null);
+    render();
   };
-  function pickFile() {
-    if (DR) {
+  function pick() {
+    if (on) {
       take(null);
       dbPut(null);
-      sheet();
       return;
     }
     const i = document.createElement('input');
@@ -90090,111 +90531,19 @@ body.lssplit #dp { max-width: 34% !important; }
         if (!v.sheets || !/310SC90-794/.test(v.doc || '')) throw new Error('not the IBD drawing file');
         take(v);
         dbPut(v);
-        sheet();
       } catch (e) {
-        alert('This file cannot be read: ' + e.message);
+        msg('This file cannot be read: ' + e.message);
       }
     };
     i.click();
   }
-  function nav() {
-    const n = box.querySelector('nav');
-    n.textContent = '';
-    for (const s of sheets()) {
-      const b = E('button', s.id === cur ? 'on' : '');
-      b.append(E('b', '', s.id));
-      if (s.t) b.append(s.t);
-      b.onclick = () => {
-        cur = s.id;
-        nav();
-        sheet();
-      };
-      n.append(b);
-    }
-  }
-  function tabs() {
-    const q = box.querySelectorAll('.hd .x');
-    q[0].classList.toggle('on', showV);
-    q[1].classList.toggle('on', trace);
-    q[2].classList.toggle('on', side === 'insp');
-    q[3].classList.toggle('on', side === 'ins');
-  }
-  function close() {
-    if (!box || box.hidden) return;
-    box.hidden = true;
-    box.style.display = 'none';
-    clearInterval(tm);
-    railOn(false);
-  }
-  /* the button of the rail stays lit while the page is open */
-  const railOn = on => {
-    const b = [...document.querySelectorAll('#crrail button, #gsbar .tabs button')].find(
-      x => x.textContent.trim() === 'TCS'
-    );
-    if (b) b.classList.toggle('on', on);
-  };
-  function open() {
-    if (!box) {
-      const st = E('style');
-      st.textContent = css;
-      document.head.append(st);
-      box = E('div');
-      box.id = 'tcsl';
-      const sec = E('section'),
-        hd = E('div', 'hd'),
-        bd = E('div', 'bd');
-      const tb = (l, f) => {
-        const b = E('button', 'x', l);
-        b.onclick = () => {
-          f();
-          tabs();
-          panel();
-          paint();
-        };
-        return b;
-      };
-      hd.append(
-        E('b', 'ttl'),
-        tb('Values', () => (showV = !showV)),
-        tb('Trace', () => {
-          trace = !trace;
-          traced = trace && sel ? fanIn(sel) : new Set();
-        }),
-        tb('Inspector', () => (side = side === 'insp' ? '' : 'insp')),
-        tb('Inputs', () => (side = side === 'ins' ? '' : 'ins')),
-        Object.assign(E('button', 'x ld', 'Load IBD drawing'), { onclick: pickFile })
-      );
-      bd.append(E('div', 'sv'), E('div', 'sd'));
-      sec.append(hd, bd);
-      box.append(E('nav'), sec);
-      document.body.append(box);
-      /* another page of the rail closes this one */
-      document.addEventListener(
-        'click',
-        e => {
-          const b = e.target.closest && e.target.closest('#crrail button, #gsbar .tabs button');
-          if (b && b.textContent.trim() !== 'TCS') close();
-        },
-        true
-      );
-    }
-    box.hidden = false;
-    box.style.display = 'flex';
-    if (!DR)
-      dbGet().then(v => {
-        if (v) {
-          take(v);
-          sheet();
-        }
-      });
-    railOn(true);
-    tabs();
-    nav();
-    sheet();
-    clearInterval(tm);
-    tm = setInterval(paint, 1000);
-  }
-  window.LS_TCSL = { open, close };
+  window.LS_TCSD = { pick, on: () => on };
+  /* a drawing kept in this browser comes back when the sheets are there */
+  const t = setInterval(() => {
+    if (typeof S === 'undefined' || !S.sheets.some(x => x.tcs)) return;
+    clearInterval(t);
+    dbGet().then(v => v && take(v));
+  }, 500);
 })();
 
 /* 3.2.0-beta.7 (user 2026-10-23: "may explanation ang bawat linear ... saan ito nanggaling hanggang sa huling pupuntahan, purpose, function,

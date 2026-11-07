@@ -37,6 +37,10 @@ function tx(t, p) {
   e.style.fontFamily = "Consolas,'Cascadia Mono',monospace";
   /* 3.2.0-beta.35: machine B / C / D of a shared drawing: its letter and its own address (WORLD.showText) */
   e.textContent = TXMAP ? TXMAP(t.t) : t.t;
+  if (t.w) {
+    e.setAttribute('textLength', t.w);
+    e.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+  }
   return e;
 }
 const SIDE = { L: ['F', 'L', 'T', 'S'], R: ['RS', 'RL', 'RT'] };
@@ -228,7 +232,7 @@ function render() {
     ext(t.x, t.y);
     tx(t, g);
   }
-  for (const k in s.cells) {
+  if (!s.drw) for (const k in s.cells) {
     /* 2.5.0-beta.8: a page link (FROM / TO column) is drawn as a link */
     const lk = /:(F|RT)$/.test(k) && window.DUI && DUI.refs && DUI.refs(s.cells[k].map(t => t.t).join(' ')).length;
     for (const t of s.cells[k]) {
@@ -421,7 +425,7 @@ function render() {
     (s.nl.an || []).forEach(a => {
       if (a.row < 0) return;
       const r = s.rows[a.row],
-        xr = VR.S[1],
+        xr = r.vx && r.vx.S ? r.vx.S[1] : VR.S[1],
         v = anVal(s, a),
         on = a.g.some(i => cmpOn(s, s.nl.gates[i])),
         L = LIVES[LIVE];
