@@ -336,12 +336,15 @@ function anCycFlows(t) {
     cep = (AN.steady && typeof srcBit === 'function' ? srcBit(['M.3350', 'M.3351']) : s.cep) ? 1 : 0,
     fda = cep * Math.min(520, 21.7 * Math.max(0, AN_CYC.u.da || 0)),
     frec = cep * 2.5 * 100 * c((AN_CYC.u.cf || 0) / 100),
-    ms = s.ms || 0,
+    /* the steam of the turbine and of the HP bypass (MB-011 item 8, MB-012 items 6, 10: bypass -> cold reheat -> reheater -> LP
+       bypass -> condenser) both come back as water; only vented steam leaves the cycle */
+    ms = (s.ms || 0) + (s.mhp || 0),
     ext = s.ext || 0;
   /* 3.2.1 (IRENE): no make-up water pump feeding the header (unit.js AN_MU muFeed) = no make-up to the hotwell */
   const muOff = typeof AN_UNIT !== 'undefined' && AN_UNIT.on && AN_UNIT.muFeed === 0;
   return { fda, frec, hwIn: ms * (1 - 0.25 * ext), daIn: 0.25 * ext * ms, mu: muOff ? 0 : 1.8 * (AN_CYC.u.hw || 0) };
 }
+AN_CYC.flows = anCycFlows;
 function anProcStep(S, dt) {
   const rt = S.rt,
     v = rt.v,
