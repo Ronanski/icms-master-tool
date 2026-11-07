@@ -821,6 +821,7 @@ function anTurbine(cmd, arg) {
     }
     if (cmd === 'sync') {
       if (tb.st === 'sync' || tb.st === 'load') return 'Already synchronised';
+      if (c.step >= 1 && c.step < 3 && tb.rpm > 3550) c.step = 3;
       if (c.step < 3) return c.step < 1 ? 'Roll the turbine first' : 'Not at 3600 rpm / ACCELERATION not finished (' + tb.rpm.toFixed(0) + ' rpm)';
       const r = c.cur >= 0 ? '' : tcsStepIn(U, c.step + 1);
       if (r) return r;
@@ -2765,18 +2766,17 @@ function anUnitStep0(dt) {
   else if (!trip) tcsTripScan(U, dt);
   else tcsTripHold(U, dt);
   if (trip && tb.st !== 'off') {
-    /* the TCS closes the ICV too (the HP valves below); in a start-up the machine is lost: stop valves shut, GCB open (I.0932, the
-       generator protection), no transfer, no DCS mode */
+    /* the machine is lost at any start: stop valves shut, 52G open by ST TRIP (IBD TA-6, 310SD03-743 sheet 4 E-1), no transfer, no DCS mode, the ATS off (310SC90-775
+       page 6). Coming back is the ATS again, there is no reload on reset: at Start 150 MW the ATS program starts here */
     tb.icv = Math.max(0, tb.icv - dt / U.tauTrip);
-    if (U.cold) {
-      Object.assign(tb, { st: 'off', xfer: false, tgt: 0, aim: 0 });
-      tcsTrip(U);
-      dirt(U.di.gcbOn, 0);
-      dirt(U.di.gcbOff, 1);
-      dirt(U.di.xfer, 0);
-      dirt(U.di.perm, 0);
-      dirt(U.di.on, 0);
-    }
+    if (!U.tc) tcsFromOil(U);
+    Object.assign(tb, { st: 'off', xfer: false, tgt: 0, aim: 0 });
+    tcsTrip(U);
+    dirt(U.di.gcbOn, 0);
+    dirt(U.di.gcbOff, 1);
+    dirt(U.di.xfer, 0);
+    dirt(U.di.perm, 0);
+    dirt(U.di.on, 0);
   }
   U.turb = tb.st !== 'off';
   const onGrid = tb.st === 'sync' || tb.st === 'load';
@@ -2807,7 +2807,7 @@ function anUnitStep0(dt) {
     U.tcsT = 0;
     tb.icv = 0;
   } else if (trip) {
-    /* turbine trip: the TCS closes the valves; the load set point is gone (the TCS reloads the unit when the trip is reset) */
+    /* turbine trip: the TCS closes the valves; the load set point is gone */
     U.gv = Math.max(0, U.gv - dt / U.tauTrip);
     U.tcsT = 0;
   } else if (tb.st === 'roll') {
@@ -2917,6 +2917,8 @@ function anUnitStep0(dt) {
         )
       : 0;
   U.MW += ((MWss - U.MW) * dt) / U.tauMW;
+  /* 52G open: no load on the machine */
+  if (U.tc && (tb.st === 'off' || tb.st === 'roll')) U.MW = 0;
   U.rpm = tb.rpm;
   U.icvp = 100 * tb.icv;
   U.tbn = { off: 0, roll: 1, sync: 2, load: 3 }[tb.st];

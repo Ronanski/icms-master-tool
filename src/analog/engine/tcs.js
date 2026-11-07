@@ -44,7 +44,7 @@ const TCS = {
     warm: [81.6, 400, 7.0, 415],
     hot: [110, 455, 7.0, 485]
   },
-  /* Fig. 2 / 3 (page 21): allowable steam temperature against the metal temperature, upper and lower limit lines */
+  /* Fig. 2 / 3 (776 page 21): allowable steam temperature against the metal temperature; the allowable band is upper limit to target (776 page 5) */
   fig2: {
     up: [
       [0, 420],
@@ -52,9 +52,9 @@ const TCS = {
       [314, 538],
       [538, 538]
     ],
-    lo: [
-      [0, 305],
-      [318, 305],
+    tg: [
+      [0, 380],
+      [407, 380],
       [538, 471]
     ]
   },
@@ -65,10 +65,11 @@ const TCS = {
       [366, 538],
       [538, 538]
     ],
-    lo: [
-      [0, 205],
-      [309, 205],
-      [538, 430]
+    tg: [
+      [0, 395],
+      [425, 395],
+      [496, 465],
+      [538, 465]
     ]
   },
   rub: 200 /* rpm, PR-OPE-5002 8325 "target speed 200 rpm for rub check"; complete below 100 rpm (criteria page 14 Fig. 1) */,
@@ -223,9 +224,9 @@ function tcsCrit(U) {
     st = TCS.steam[c.mode] || TCS.steam.amb,
     tb = U.tb || {},
     f2u = tcsLin(TCS.fig2.up, c.Thp),
-    f2l = tcsLin(TCS.fig2.lo, c.Thp),
+    f2l = tcsLin(TCS.fig2.tg, c.Thp),
     f3u = tcsLin(TCS.fig3.up, c.Trh),
-    f3l = tcsLin(TCS.fig3.lo, c.Trh),
+    f3l = tcsLin(TCS.fig3.tg, c.Trh),
     f = (no, txt, ok, val) => ({ no, txt, ok: !!ok, val });
   return {
     1.3: f('1.3', 'MAIN STEAM PRESS. NOT LOW (≥ ' + st[0] + ' kg/cm2)', s.msp >= st[0], s.msp),
@@ -269,7 +270,7 @@ function tcsCrit(U) {
       'TURBINE TURNING (turning gear)',
       (c.tg && c.brgOk && U.tb && U.tb.rpm >= 1) || (U.tb && U.tb.rpm >= 4)
     ),
-    '1.20': f('1.20', 'TURBINE RESET', c.rst),
+    '1.20': f('1.20', 'TURBINE RESET', !tcsTripNow(U)),
     1.21: f('1.21', 'MSV OPEN', c.rst),
     1.8: f('1.8', 'HP / LP BYPASS CONTROL IN AUTO', tcsByp(U)),
     1.48: f('1.48', '52G CLOSED', tb.st === 'sync' || tb.st === 'load'),
@@ -599,7 +600,7 @@ function tcsStep(U, dt) {
   const run = !c.hold;
   const rate = TCS.rate[c.mode] || 120;
   const ramp = aim => {
-    if (!run) return;
+    if (!run || tb.rpm >= aim) return;
     tb.rpm = Math.min(aim, tb.rpm + (rate * dt) / 60);
   };
   /* ATS AUTO: the next step by itself (the lines H of the sequence) */
@@ -830,6 +831,13 @@ function tcsIO(U) {
 }
 /* the oil state: the TCS model (U.tc, start-up / shutdown) or, at the "Start at 150 MW" snapshot (no TCS model, U.tc null), an oil-only
    state in service (36.PNG: MOP-A / COP-A running, B in AUTO, vapour extractor running) so the 036 page and its pumps work there too */
+/* Start at 150 MW keeps no ATS program; a turbine trip needs one to come back: the pumps and the trip logic carry over */
+function tcsFromOil(U) {
+  const o = U.tco;
+  tcsInit(U, 'load');
+  if (o) Object.assign(U.tc, o);
+  U.tco = null;
+}
 function tcsOilState(U) {
   if (U.tc) return U.tc;
   if (!U.tco) {
@@ -961,7 +969,7 @@ function tcsState() {
     Tx: c.Tx,
     sexp: c.sexp,
     /* R9 #77: the oil pressures of the TCS panel (PR-OPE-5002 sections 14 / 16 operating limits): MOP (lop) running = lube oil
-       6.1 kg/cm2g (5.6 ~ 6.6), bearing oil 1.4 kg/cm2g (PGLO1008 > 1.05, the EOP starts at <= 1.05); COP (eh) = control oil 148 kg/cm2g
+       6.1 kg/cm2g (5.6 ~ 6.6), bearing oil 1.4 kg/cm2g (PGLO1008 > 1.05, the EOP starts at <= 1.05, IBD TB-5); COP (eh) = control oil 148 kg/cm2g
        (133 ~ 163); the vapour extractor = main oil tank vacuum -35 mmH2O (PGLO1920 -20 ~ -50). Stopped: 0 */
     /* 3.2.0-beta.66: the values of the oil model (tcsOil, AN_UNIT lo*): the same numbers as the 036 TURBINE OIL HMI */
     oil: { lube: U.loLube || 0, brg: U.loBrg || 0, ctl: U.loCtl || 0, vac: U.loVac || 0 },
