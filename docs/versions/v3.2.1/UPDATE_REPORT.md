@@ -1,5 +1,11 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.92 — Water heat from the furnace (2026-11-07, JENNIE)
+
+**Work done.** Boiler water takes heat by furnace rise, so it cannot pass the bed; heat stored includes the evaporative steel. From Mina item 12d.
+
+**Not tested.** Live; item sent to Mina.
+
 ## 3.2.1-beta.91 — Ash coolers can start (2026-11-07, JENNIE)
 
 **Work done.** Chain conveyor running and the local emergency stop contacts of the coolers now reach DITL-21A, from Mina item 2.
