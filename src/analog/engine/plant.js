@@ -323,8 +323,7 @@ function anCompNet(S, ai) {
    Anchored at the 150 MW snapshot (hmi-op.js, 28.png / 03.png): deaerator valve 17.5 % = condensate 380 T/H (21.7 T/H per %,
    ASSUMED linear up to the CEP capacity 520 T/H), make-up 14 % = the 25 T/H that leaves the drum (1.8 T/H per %), the deaerator
    also gets 25 % of the main steam on load (extractions and heater drains: 380 + 118.5 = feedwater 499 T/H). Recirculation
-   2.5 T/H per % (SOP: 60 % open about 150 T/H minimum flow). ASSUMED level rates (not in the repository): hotwell 0.01, deaerator
-   0.004 mm/s per T/H. The recirculation goes back to the condenser, so the hotwell loses only the deaerator flow; the deaerator
+   2.5 T/H per % (SOP: 60 % open about 150 T/H minimum flow). Level rates: AN_CYC.kgmm below. The recirculation goes back to the condenser, so the hotwell loses only the deaerator flow; the deaerator
    loses the feedwater of the drum balance (AN_CYC.ffw) */
 const AN_CYC = { u: {}, ffw: 0 };
 if (typeof window !== 'undefined') window.AN_CYC = AN_CYC; /* read by the world (plantsw.js BFWP suction pressure) */
@@ -345,6 +344,29 @@ function anCycFlows(t) {
   return { fda, frec, hwIn: ms * (1 - 0.25 * ext), daIn: 0.25 * ext * ms, mu: muOff ? 0 : 1.8 * (AN_CYC.u.hw || 0) };
 }
 AN_CYC.flows = anCycFlows;
+/* one water inventory: kg of water per mm of level of each vessel, so the three levels add up to one balance.
+   Deaerator storage tank T-1104: K2MC2G-001, ID 3.30 m x shell 13.14 m at its centre line, water at 158.4 C (density 909 kg/m3).
+   Drum: K1AU3D-101 Rev 4, R824.2 inside, shell 12.481 m, water density at the saturation temperature of the drum pressure.
+   Hotwell: its plan area is not printed on K2MC3A-100, NO-SOURCE, the old rate is kept. */
+const AN_WATER_RHO = [[20, 998], [100, 958], [200, 865], [250, 799], [300, 712], [340, 611], [360, 528]];
+function anWaterRho(T) {
+  const R = AN_WATER_RHO;
+  if (T <= R[0][0]) return R[0][1];
+  for (let i = 1; i < R.length; i++) if (T <= R[i][0]) return R[i - 1][1] + ((R[i][1] - R[i - 1][1]) * (T - R[i - 1][0])) / (R[i][0] - R[i - 1][0]);
+  return R[R.length - 1][1];
+}
+AN_CYC.kgmm = {
+  hw: () => 1000 / 3600 / 0.01,
+  da: () => 3.3 * 13.14 * 0.909,
+  dr: () => 2 * 0.8242 * 12.481 * (anWaterRho(typeof AN_UNIT !== 'undefined' && isFinite(AN_UNIT.Tw) ? AN_UNIT.Tw : 30) / 1000)
+};
+AN_CYC.y = {};
+AN_CYC.levels = () => ({ ...AN_CYC.y });
+AN_CYC.rate = x => 1000 / 3600 / AN_CYC.kgmm[x]();
+AN_CYC.net = () => {
+  const f = anCycFlows('net');
+  return f.mu + f.hwIn + f.daIn - (AN_CYC.dl || 0);
+};
 function anProcStep(S, dt) {
   const rt = S.rt,
     v = rt.v,
@@ -733,7 +755,9 @@ function anProcStep(S, dt) {
           Pd = ps0 && isFinite(ps0.val) ? Math.max(0, +ps0.val) : 0;
         if (Pd < 10) lhdQ = 0.61 * 0.00912 * (AN_SRC.lhdPct / 100) * Math.sqrt(2 * (Pd * 98066.5 + 1000 * 9.80665 * 7.748) * 1000) * 3.6; /* kg/s -> T/H */
       }
-      q.y = Math.max(lo, Math.min(lo + span, q.y + dt * pr.integ.k * (ffw - fst - (pr.integLoss || 0) - lhdQ)));
+      q.y = Math.max(lo, Math.min(lo + span, q.y + dt * AN_CYC.rate('dr') * (ffw - fst - (pr.integLoss || 0) - lhdQ)));
+      AN_CYC.y.dr = q.y;
+      AN_CYC.dl = fst + (pr.integLoss || 0) + lhdQ; /* water and steam that leave the drum */
       AN_CYC.ffw = ffw; /* the deaerator gives this water (condensate cycle balance) */
       /* 2.2.0-beta.12 (M3): SHRINK / SWELL. A fast change of the drum pressure moves the level the other way for a while (the steam
          bubbles in the water collapse when the pressure rises after a turbine trip, grow when it falls after an MFT): the level
@@ -759,9 +783,10 @@ function anProcStep(S, dt) {
       } else if (pr.cyc === 'cf') {
         const tgt = Math.max(lo, Math.min(lo + span, f.fda + f.frec));
         q.y += (1 - Math.exp(-dt / Math.max(pr.T, 0.05))) * (tgt - q.y);
-      } else if (pr.cyc === 'hw') q.y += dt * 0.01 * (f.hwIn + f.mu - f.fda);
-      else q.y += dt * 0.004 * (f.fda + f.daIn - AN_CYC.ffw);
+      } else if (pr.cyc === 'hw') q.y += dt * AN_CYC.rate('hw') * (f.hwIn + f.mu - f.fda);
+      else q.y += dt * AN_CYC.rate('da') * (f.fda + f.daIn - AN_CYC.ffw);
       q.y = Math.max(lo, Math.min(lo + span, q.y));
+      if (pr.cyc === 'hw' || pr.cyc === 'da') AN_CYC.y[pr.cyc] = q.y;
       q.h.length = 0;
     } else if (dt > 0 && pr.shold) {
       q.h.length = 0; /* 3.2.0-beta.14 (source.js): the pump that moves the water is stopped: the tank level stays */
