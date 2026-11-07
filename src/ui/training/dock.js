@@ -36,6 +36,23 @@
     }
   };
   const GD = () => window.LS_GUIDE;
+  /* Mina F32, F36: a press that cannot be undone asks on the button itself: press again within 5 s. The browser's confirm box is not shown in every
+     window (the built-in pane answers No by itself, so "Skip the 6 h" did nothing) */
+  const arm2 = (b, ask, f) => {
+    if (b.dataset.arm) {
+      clearTimeout(b._armT);
+      delete b.dataset.arm;
+      b.textContent = b._armX;
+      return f();
+    }
+    b._armX = b.textContent;
+    b.dataset.arm = '1';
+    b.textContent = ask;
+    b._armT = setTimeout(() => {
+      delete b.dataset.arm;
+      b.textContent = b._armX;
+    }, 5000);
+  };
   const LV = () => window.LS_LIVE;
   const U = () => (window.AN && AN.unit) || {};
   const f0 = x => (x == null || !isFinite(x) ? '—' : String(Math.round(x)).replace(/^-0$/, '0'));
@@ -2276,9 +2293,8 @@
             type: 'button',
             cls: 'gd-btn',
             txt: 'Skip the ' + Math.round(s.pre / 3600) + ' h (training shortcut)',
-            title: 'Only when the purge is already done in the field: asks to confirm and is logged in Events',
-            on: () => {
-              if (!confirm('Skip the ' + Math.round(s.pre / 3600) + ' h ESP purge? This is a training shortcut: the purge is taken as done in the field. It is logged in Events.')) return;
+            title: 'Only when the purge is already done in the field: press twice; it is logged in Events',
+            on: e => arm2(e.currentTarget, 'Press again: skip the purge, logged in Events', () => {
               call(() => AN.field('esp', true));
               if (window.lsEventAdd) lsEventAdd('ESP', 'FIELD', 'Training shortcut: ' + Math.round(s.pre / 3600) + ' h ESP purge skipped (taken as done in the field)');
               const dd = ls.get('ls-train', {});
@@ -2293,7 +2309,7 @@
                  then the trainee's "Susunod ›" */
               els.skipped = s.i;
               fill(true);
-            }
+            })
           }))
         );
     }
