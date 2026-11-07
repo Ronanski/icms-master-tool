@@ -1065,6 +1065,24 @@ function anStep(S, dt) {
         }
   }
   const rd = n => (n >= 0 ? v[n] : 0);
+  /* speed (F37, one step 12.7 ms): one writer for all the blocks; it was a new closure for each of the 3600 blocks of each step */
+  let bo = null;
+  const out = x0 => {
+    for (const n of bo) {
+      const x = S.aoN && S.aoN.has(n) && x0 === x0 ? Math.max(0, Math.min(100, x0)) : x0;
+      if (MU[n]) {
+        if (rt.stp[n] !== rt.k) {
+          rt.stp[n] = rt.k;
+          rt.acc[n] = x;
+        } else if (x > rt.acc[n]) rt.acc[n] = x;
+        v[n] = rt.acc[n];
+      } else v[n] = x;
+      const pr = S.pre && S.pre[n];
+      if (pr)
+        for (const q of [pr].concat(pr.alt || []))
+          if (q.eq === 0 ? v[q.c] < 0.5 : v[q.c] > 0.5) v[n] = q.src != null ? v[q.src] : q.val;
+    }
+  };
   for (const b of S.ord) {
     if (b.k === 'LINK') {
       /* 2.3.0-beta.1: an AND link (ABC-004A "COAL FEEDER B & C ALL IN MANUAL" = FICCL1061B.MAN and FICCL1061C.MAN) */
@@ -1077,23 +1095,8 @@ function anStep(S, dt) {
       continue;
     }
     const s = rt.st[b.id],
-      P = b.p,
-      out = x0 => {
-        for (const n of b.o) {
-          const x = S.aoN && S.aoN.has(n) && x0 === x0 ? Math.max(0, Math.min(100, x0)) : x0;
-          if (MU[n]) {
-            if (rt.stp[n] !== rt.k) {
-              rt.stp[n] = rt.k;
-              rt.acc[n] = x;
-            } else if (x > rt.acc[n]) rt.acc[n] = x;
-            v[n] = rt.acc[n];
-          } else v[n] = x;
-          const pr = S.pre && S.pre[n];
-          if (pr)
-            for (const q of [pr].concat(pr.alt || []))
-              if (q.eq === 0 ? v[q.c] < 0.5 : v[q.c] > 0.5) v[n] = q.src != null ? v[q.src] : q.val;
-        }
-      };
+      P = b.p;
+    bo = b.o;
     switch (b.k) {
       case 'AI': {
         const r = b.rng,

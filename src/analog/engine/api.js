@@ -38,6 +38,17 @@ function anEngAPI() {
     fieldState: () => Object.assign({}, AN_SRC.field),
     /* 3.2.1 (CW plant model): the manual valves of the seawater system, opening in % (unit.js AN_SW_V0) */
     /* 3.2.1 (IRENE): with the diesel oil line-up of boiler.js (AN_DO.fv0, anDoValve), so the one field valve faceplate serves both */
+    /* Mina F57: the value of a MAN station as an engine action. A page write waits for its slot, and the latchMode of the same press brought a patch back
+       with the old value first, so a press in the dock was lost (the faceplate has no latchMode with its value) */
+    stVal: (nm, id, x, nets) => {
+      const s = AN.sheets.find(q => q.name === nm),
+        st = s && s.S && s.S.rt.st[id];
+      if (st) {
+        st.val = x;
+        st.trk = null; /* a sheet that was not stepped yet holds an old tracking value: its first step would put it back */
+      }
+      if (s && s.S) for (const n of nets || []) s.S.rt.ext[n] = x;
+    },
     fanI: anFanI,
     aphIn: anAphIn,
     aphAir: anAphAir,

@@ -754,7 +754,18 @@
           cutWhy.style.display = cg ? '' : 'none';
           if (!cg) cutList.textContent = '';
         }
-        fmEl.textContent = fm_ ? 'FORCE MANUAL (' + (fsg ? fsg.name + ' = 1' : 'logic') + '): AUTO not allowed' : '';
+        /* Mina F56: the reason in words, from the logic of the drawing (AN.why: the comparator behind the signal, "PICFG108.MV 3.0 < 14"), not "M.0205 = 1" */
+        let fmTx = '';
+        if (fm_) {
+          try {
+            const W = fsg && AN.why ? AN.why(sh, fsg.n).lines.filter(l => l.d > 0) : [],
+              r = W.find(l => /[<>]/.test(l.txt || '')) || W[W.length - 1];
+            fmTx = (r && r.txt) || (fsg ? fsg.name + ' = 1' : 'logic');
+          } catch (e) {
+            fmTx = fsg ? fsg.name + ' = 1' : 'logic';
+          }
+        }
+        fmEl.textContent = fm_ ? 'FORCE MANUAL: ' + fmTx + '. AUTO not allowed' : '';
         fmWhy.style.display = fm_ ? '' : 'none';
         if (!fm_ && fmList.childNodes.length) fmList.textContent = '';
         bAuto.disabled = !!fm_;

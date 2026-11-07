@@ -293,9 +293,25 @@ const AN_FN = {
 };
 /* motor current: no-load share + the rest x air power over the snapshot one. Same law on the HMI (api.js fanI) */
 const anFanI = (I0, on, x) => (on ? I0 * (AN_FN.fI + (1 - AN_FN.fI) * Math.max(0, x)) : 0);
+/* speed (F37): a DITL sheet by its name, kept: these two run many times a step and made a new list of all sheets each time */
+const fnShC = new Map();
+let fnShK = -1;
+function fnSh(n) {
+  const k = S.sheets.length * 1000 + ((WORLD.inst && WORLD.inst.length) || 0);
+  if (k !== fnShK) {
+    fnShK = k;
+    fnShC.clear();
+  }
+  let s = fnShC.get(n);
+  if (s === undefined) {
+    s = S.sheets.concat(WORLD.inst || []).find(x => x.name.endsWith(n)) || null;
+    fnShC.set(n, s);
+  }
+  return s;
+}
 function fnRow(n, r) {
   try {
-    const s = S.sheets.concat(WORLD.inst || []).find(x => x.name.endsWith(n));
+    const s = fnSh(n);
     return s && typeof DUI !== 'undefined' ? DUI.rowVal(s, r) : null;
   } catch (e) {
     return null;
@@ -303,7 +319,7 @@ function fnRow(n, r) {
 }
 function fnOut(n, r) {
   try {
-    const s = S.sheets.concat(WORLD.inst || []).find(x => x.name.endsWith(n));
+    const s = fnSh(n);
     return s && typeof DUI !== 'undefined' ? DUI.outVal(s, r) : null;
   } catch (e) {
     return null;

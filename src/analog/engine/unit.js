@@ -2647,6 +2647,15 @@ function anUnitOwnsPv(S, n) {
 }
 /* one step of dt seconds (called by the plant step of ABC-001C) */
 function anUnitStep(dt) {
+  const M = (typeof globalThis !== 'undefined' ? globalThis : window).LS_SIMM;
+  if (M) M.on = ++M.n;
+  try {
+    anUnitStep0(dt);
+  } finally {
+    if (M) M.on = 0;
+  }
+}
+function anUnitStep0(dt) {
   const U = AN_UNIT;
   if (!U.on || !(dt > 0)) return;
   const S = U.S,

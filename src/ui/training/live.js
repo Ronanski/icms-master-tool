@@ -169,7 +169,8 @@ window.LS_LIVE = (function () {
         ds = dr && S.rt.st[dr.id];
       if (ds && ds.pk) return ds.pk === 'A' ? 'AUTO' : 'MAN';
     } catch (e) {}
-    return '?';
+    /* Mina F57: a hand station with no AUTO of its own (HICDO1012) is always in the hand of the operator; '?' refused every arrow of the dock */
+    return f.kind === 'man' ? 'MAN' : '?';
   }
   const U = () => (typeof AN !== 'undefined' && AN.unit) || {};
   let HH = null,
@@ -502,7 +503,7 @@ window.LS_LIVE = (function () {
     /* live test #71: the biasing dampers (ABC-020 hand stations; 10 % = the lowest DCS position, ML of the parameter sheet) */
     [17, /^Ensure biasing dampers are closed/i, ALL(MV('HICHR1002A', null, 12), MV('HICHR1002B', null, 12))],
     [17, /Initiate START air pre-heater drive motor/i, RUNN(['DITL-43'], 1, 'air preheater')],
-    [17, /^Open Biasing damper to 100% at Reheater and Superheater/i, ALL(MV('HICHR1002A', 95, null), MV('HICHR1002B', 95, null))],
+    [17, /^Open Biasing damper to 100% at Reheater and Superheater/i, ALL(MV('HICHR1002A', 99.5, null), MV('HICHR1002B', 99.5, null))],
     [18, /initiate START to selected CEP/i, RUN.CEP],
     [18, /FCV-CD1120 to MANUAL and ADJUST to 60/i, ALL(MODE('FCV-CD1120', 'MAN'), MV('FCV-CD1120', 55, 65))],
     [18, /set the standby CEP to REMOTE/i, DC('the standby CEP in REMOTE + AUTO (DITL-61A rows 5 / 4)', () => [['DITL-61A', 'DITL-61A #B'], ['DITL-61A #B', 'DITL-61A']].some(([r, s]) => dRun(r) && !dRun(s) && dIn(s, 3) && dIn(s, 4)), () => ['DITL-61A', 'DITL-61A #B'].map((nm, j) => 'CEP-' + 'AB'[j] + (dRun(nm) ? ' RUN' : (dIn(nm, 4) ? ' REM' : ' LOC') + (dIn(nm, 3) ? ' AUTO' : ' MAN'))).join(', '))] /* audit B6 */,
@@ -527,8 +528,8 @@ window.LS_LIVE = (function () {
     [26, /Dampers of secondary staging air nozzles close to limit stop/i, null],
     [33, /^Main Steam Pressure/i, null],
     [22, /IDF inlet Damper opening is about 93%/i, ALL(RUN.IDF, MV('PICFG108A', 85, 100))],
-    [25, /Ensure Biasing Damper/i, ALL(MV('HICHR1002A', 95, null), MV('HICHR1002B', 95, null))],
-    [22, /Ensure Biasing Damper/i, ALL(MV('HICHR1002A', 95, null), MV('HICHR1002B', 95, null))],
+    [25, /Ensure Biasing Damper/i, ALL(MV('HICHR1002A', 99.5, null), MV('HICHR1002B', 99.5, null))],
+    [22, /Ensure Biasing Damper/i, ALL(MV('HICHR1002A', 99.5, null), MV('HICHR1002B', 99.5, null))],
     [22, /IDF Damper is fully closed and hydraulic coupling/i, MV('PICFG108', null, 2)],
     [22, /Select hydraulic coupling as furnace pressure control mode/i, MODE('PICFG108', 'MAN')],
     [22, /^Start IDF at DCS/i, RUN.IDF],

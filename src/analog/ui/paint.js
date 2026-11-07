@@ -1317,8 +1317,7 @@ function anClock(S) {
       Math.floor(t / 60) +
       ':' +
       String(Math.floor(t % 60)).padStart(2, '0') +
-      (AN.run && anRx > 0 ? '  · speed x' + (AN.spd || 1) + ', real x' + Math.round(anRx) : '') +
-      (AN.run && AN.tierK > 1 ? '  · busy PC: far sheets every ' + AN.tierK + ' steps' : '');
+      (AN.run && anRx > 0 ? '  · speed x' + (AN.spd || 1) + ', real x' + Math.round(anRx) : '');
   if (tClk.textContent !== x) tClk.textContent = x;
   tClk.title =
     AN.tierK > 1
