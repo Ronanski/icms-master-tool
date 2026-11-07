@@ -603,16 +603,6 @@ window.LS_GUIDE = (function () {
           c: C('V-MU1031 open, XV-MU1109 in AUTO (DITL-78 row 3)', () => !WL() || (line() && auto()), () => 'Instrument air ' + (+U().iaP || 0).toFixed(1) + ' kg/cm² · V-MU1031 ' + (line() ? 'OPEN' : 'CLOSED') + ' · XV-MU1109 ' + (auto() ? 'AUTO' : 'MAN')),
           a: [
             Object.assign(
-              btn('FIELD: OPEN V-MU1031', () => {
-                window.AN.swValve('V-MU1031', 100);
-                try {
-                  window.lsEventAdd && lsEventAdd('FIELD', 'FIELD', 'Field operator: OPEN expansion tank line valve V-MU1031 (local)');
-                } catch (e) {}
-                return '';
-              }, line),
-              { loc: 1 }
-            ),
-            Object.assign(
               btn('XV-MU1109 AUTO (DITL-78)', () => {
                 if (!air()) return 'Wait for instrument air: 3.5 kg/cm² or more.';
                 LS_DOCK.dset('DITL-78', 0, true);
@@ -620,6 +610,17 @@ window.LS_GUIDE = (function () {
                 return '';
               }, auto),
               { dg: ['DITL-78', 2] }
+            ),
+            /* Mina F45: only when the line is shut and the air has closed XV-MU1109; opened before that it fills the tank past 1.7 m */
+            Object.assign(
+              btn('FIELD: OPEN V-MU1031', () => {
+                window.AN.swValve('V-MU1031', 100);
+                try {
+                  window.lsEventAdd && lsEventAdd('FIELD', 'FIELD', 'Field operator: OPEN expansion tank line valve V-MU1031 (local)');
+                } catch (e) {}
+                return '';
+              }, () => line() || !auto() || +U().muXv === 1),
+              { loc: 1 }
             )
           ],
           w: [['Instrument air', () => +U().iaP || 0, 'kg/cm²', f1w, 'XV-MU1109 AUTO at 3.5 or more']]
@@ -721,7 +722,7 @@ window.LS_GUIDE = (function () {
       },
       /* 3.2.0 walkthrough #7: the cold drum is not filled (hmi-op.js AN_COLD_DRUM); PR-OPE-5002 STEAM DRUM FILLING: FCV-FW1130-2 MANUAL, opened
          gradually, drum level -150 mm. The trainee closes the valve at -150 mm */
-      { st: 1, sec: 20, t: 'Steam drum filling: start-up valve FCV-FW1130-2 in MANUAL, fill to −150 mm', d: 'The drum of the cold plant has no water yet (about −300 mm). With the feedwater pump running, open the start-up valve slowly (MANUAL, MV 20 %). At −150 mm you close it (MV 0 %) so the drum does not overfill. If it overfills (over +100 mm), the field operator cracks open the lower ring header drains (V-BD1005 ~ V-BD1021, flow diagram PD-019) until the level is back near −150 mm, then closes them (PR-OPE-5002: below 10 kg/cm² the level is controlled with the lower header drain).', c: b.ALL(b.MODE('FCV-FW1130-2', 'MAN'), b.MV('FCV-FW1130-2', null, 2), b.HOLD(10, b.VAL('lvl', -200, 100)), C('Lower ring header drains closed (PD-019)', () => !fstate('lhd'), () => 'Lower header drains ' + (fstate('lhd') ? 'OPEN (cracked)' : 'CLOSED'))), fps: ['FCV-FW1130-2'] /* OFF unless switched on */, a: [btn('M, MV 20 % (fill)', () => (h().lvl() < -170 ? A.man('FCV-FW1130-2', 20) : ''), () => h().lvl() >= -170 || mv('FCV-FW1130-2') >= 15), btn('MV 0 % (at −150 mm)', () => (h().lvl() >= -170 ? A.man('FCV-FW1130-2', 0) : ''), () => h().lvl() >= -170 && mv('FCV-FW1130-2') <= 2), /* Mina H1: the field operator drains an overfilled drum (PD-019 lower ring header drains, manual), to a part of the stroke */ ...[10, 25, 50].map(x => Object.assign(btn('FIELD: lower ring header drains ' + x + ' % open (V-BD1005 ~ V-BD1021)', () => (A.field('lhd', x), window.lsEventAdd && lsEventAdd('FIELD', 'FIELD', 'Field operator: lower ring header drains V-BD1005 ~ V-BD1021 ' + x + ' % open (PD-019)'), '')), { loc: 1, hide: () => h().lvl() <= 100 && !fstate('lhd') })), Object.assign(btn('FIELD: close the lower ring header drains', () => (A.field('lhd', 0), window.lsEventAdd && lsEventAdd('FIELD', 'FIELD', 'Field operator: lower ring header drains closed'), '')), { loc: 1, hide: () => !fstate('lhd') })], field: [19] },
+      { st: 1, sec: 20, slow: () => h().lvl() >= -220 && h().lvl() < -150 && mv('FCV-FW1130-2') > 2 /* Mina F51: x10 before the stop level */, t: 'Steam drum filling: start-up valve FCV-FW1130-2 in MANUAL, fill to −150 mm', d: 'The drum of the cold plant has no water yet (about −300 mm). With the feedwater pump running, open the start-up valve slowly (MANUAL, MV 20 %). At −150 mm you close it (MV 0 %) so the drum does not overfill. If it overfills (over +100 mm), the field operator cracks open the lower ring header drains (V-BD1005 ~ V-BD1021, flow diagram PD-019) until the level is back near −150 mm, then closes them (PR-OPE-5002: below 10 kg/cm² the level is controlled with the lower header drain).', c: b.ALL(b.MODE('FCV-FW1130-2', 'MAN'), b.MV('FCV-FW1130-2', null, 2), b.HOLD(10, b.VAL('lvl', -200, 100)), C('Lower ring header drains closed (PD-019)', () => !fstate('lhd'), () => 'Lower header drains ' + (fstate('lhd') ? 'OPEN (cracked)' : 'CLOSED'))), fps: ['FCV-FW1130-2'] /* OFF unless switched on */, a: [btn('M, MV 20 % (fill)', () => (h().lvl() < -170 ? A.man('FCV-FW1130-2', 20) : ''), () => h().lvl() >= -170 || mv('FCV-FW1130-2') >= 15), btn('MV 0 % (at −150 mm)', () => (h().lvl() >= -170 ? A.man('FCV-FW1130-2', 0) : ''), () => h().lvl() >= -170 && mv('FCV-FW1130-2') <= 2), /* Mina H1: the field operator drains an overfilled drum (PD-019 lower ring header drains, manual), to a part of the stroke */ ...[10, 25, 50].map(x => Object.assign(btn('FIELD: lower ring header drains ' + x + ' % open (V-BD1005 ~ V-BD1021)', () => (A.field('lhd', x), window.lsEventAdd && lsEventAdd('FIELD', 'FIELD', 'Field operator: lower ring header drains V-BD1005 ~ V-BD1021 ' + x + ' % open (PD-019)'), '')), { loc: 1, hide: () => h().lvl() <= 100 && !fstate('lhd') })), Object.assign(btn('FIELD: close the lower ring header drains', () => (A.field('lhd', 0), window.lsEventAdd && lsEventAdd('FIELD', 'FIELD', 'Field operator: lower ring header drains closed'), '')), { loc: 1, hide: () => !fstate('lhd') })], field: [19] },
       /* ---- 2 fans ---- */
       { st: 2, sec: 21, t: 'Diesel oil pump and oil circulation', d: 'Do: start a diesel oil pump and set the two oil pressure controls, in the order (1) ~ (6) below. (1) PCV-DO0002 M, 100 % (recirculation open), (2) the selected diesel oil pump REMOTE + START (DCS, DITL-31), the other one REMOTE + AUTO (standby), (3) PCV-DO0002 M, 24 % (close gradually, the pressure rises), (4) when PICDO0005 is near its SV (≥ 11.5 kg/cm²): PICDO0005 A, SV 12.8, (5) PCV-DO1009 (return) M, 86 % (close a little, PICDO1008 rises), (6) when PICDO1008 is near its SV (≥ 9.9 kg/cm²): PICDO1008 (PCV-DO1009) A, SV 11. The diesel oil pumps M-0702A / B are DCS motors (DITL-31; IO list STN105 O.0040 / O.0360 start, I.0003 / I.0323 running); the start-up burners need them (PR-OPE-5002 Section 21).', fps: ['PICDO0005', 'PICDO1008'], c: b.ALL(C('a diesel oil pump running (DITL-31)', () => !WL() || ['DITL-31', 'DITL-31 #B'].some(nm => dRun(nm) === 1), () => ['DITL-31', 'DITL-31 #B'].map((nm, j) => 'DOP ' + 'AB'[j] + ' ' + (dRun(nm) === 1 ? 'RUNNING' : 'STOPPED')).join(', ')), C('PICDO0005 ≥ 11.5 kg/cm² (near SV 12.8)', () => pv('PICDO0005') >= 11.5, () => 'PICDO0005 ' + f1(pv('PICDO0005')) + ' kg/cm²'), b.MODE('PICDO0005', 'AUTO'), C('PICDO1008 ≥ 9.9 kg/cm² (near SV 11)', () => pv('PICDO1008') >= 9.9, () => 'PICDO1008 ' + f1(pv('PICDO1008')) + ' kg/cm²'), b.MODE('PICDO1008', 'AUTO')), a: [btn('PCV-DO0002 M, 100 % (open)', () => A.man('PICDO0005', 100)), dmot('DITL-31', 'DOP A'), dmot('DITL-31 #B', 'DOP B'), btn('PCV-DO0002 M, 24 %', () => A.man('PICDO0005', 24)), btn('PICDO0005 A, SV 12.8', () => (pv('PICDO0005') >= 11.5 ? A.auto('PICDO0005', 12.8) : 'Wait: PICDO0005 ' + f1(pv('PICDO0005')) + ' kg/cm² (need ≥ 11.5)')), btn('PCV-DO1009 M, 86 %', () => A.man('PICDO1008', 86)), btn('PICDO1008 (PCV-DO1009) A, SV 11', () => (pv('PICDO1008') >= 9.9 ? A.auto('PICDO1008', 11) : 'Wait: PICDO1008 ' + f1(pv('PICDO1008')) + ' kg/cm² (need ≥ 9.9)'))], field: [20] },
       { st: 2, sec: 22, t: 'Prepare the ID fan (IDF): PICFG108 in MANUAL, MV 0 %, RH and SH biasing dampers open', d: 'The ID fan hydraulic coupling is closed before the fan starts (low starting current). The ID fan interlock (DITL-25A row 1) needs the flue gas bias dampers (HICHR1002A / B) open so the air has a path.', c: b.ALL(b.MODE('PICFG108', 'MAN'), b.MV('PICFG108', null, 2), b.MV('HICHR1002A', 30, null), b.MV('HICHR1002B', 60, null)), fps: ['PICFG108', 'HICHR1002A', 'HICHR1002B'], a: [btn('M, MV 0 %', () => A.man('PICFG108', 0)), btn('RH and SH biasing dampers 100 %', () => (A.man('HICHR1002A', 100), A.man('HICHR1002B', 100)))], field: [21] },

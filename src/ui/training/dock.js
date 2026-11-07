@@ -376,6 +376,12 @@
       const ar = atRow(addr),
         on = ar != null ? (s.nl.outs || []).find(o => o.row === ar) : null;
       L = on ? needNet(s, on.n, 1, null, 0, new Set(), []) : permOf(s);
+      /* Mina F46: a MOV has no START: its permissive is no trip (DITL-60 row 4 goes through a NOT, normal 0) and REMOTE, added below. The fall-back read
+         output row 4 of a motor drawing, on a MOV that row is TRIP or TORQUE, shown as "must be 1" */
+      if (!L && (s.nl.mv || []).length) {
+        L = [];
+        for (let r = 0; r < 40; r++) if (/\bTRIP\b/.test(rowInfo(s, r).svc) && !/P\.?B\b/.test(rowInfo(s, r).svc)) L.push({ row: r, want: 0 });
+      }
       if (!L) L = (DUI.need(s, 4) || []).map(r => (r.row !== undefined ? { row: r.row, want: r.want } : { txt: r.txt }));
     } catch (e) {
       return null;
@@ -1380,7 +1386,7 @@
     ov.dataset.k = k;
     /* live test 2026-10-30 #7 (H5 / H6: the "HAKBANG n" tag lay on the value box of S-1502 and on the label of SWBP-A): the tag goes to the
        first place beside the box that covers no text of the HMI (above, below, left, right), not always on top of the box */
-    const tl = 'HAKBANG ' + (GD().cur + 1),
+    const tl = 'STEP ' + (GD().cur + 1),
       tw = tl.length * 6.6 + 12,
       th = 15,
       svg = document.getElementById('plsvg'),
@@ -2535,6 +2541,17 @@
       /* live test 2026-10-30 #3 (H4 hypochlorite pump): a step done only by the field operator at a local panel (no DCS command) says so
          (was "Gawin sa DCS · Controller (A / M, MV, SV) at mga button ng hakbang") */
       fldOnly = !hasMot && (s.a || []).length > 0 && (s.a || []).every(a => a.loc || /^FIELD\b/.test(a.l || ''));
+    /* Mina F50: the Lineup of a step with controllers leads to them */
+    if (sopPre && sopPre.children.length && hasCtl && s.fps && s.fps.length)
+      sopPre.append(
+        E('button', {
+          type: 'button',
+          cls: 'gd-btn',
+          txt: 'Open the controls: ' + s.fps.join(', ') + ' ▸',
+          title: 'The controllers of this step are in the next stage',
+          on: () => ((els.stOpen = { i: s.i, k: 'S' }), live())
+        })
+      );
     const stBoxes = [
       sopPre && sopPre.children.length ? stg('L', hasMot ? 'Lineup' : 'SOP', (hasMot ? 'Before START · ' : 'Do and tick · ') + 'PR-OPE-5002 section ' + secs, [sopPre]) : null,
       (els.il || []).length ? stg('P', 'Permissive', 'Start permission of the logic (interlock)', [ilWrap]) : null,
@@ -2580,9 +2597,11 @@
         .trim(),
       /* the drawing of pump A serves B and C (DITL-29A #B): the letter of the machine is the step's own (SWP-B) */
       m = /^(.*\S)\s+([A-Z])$/.exec(t),
-      L = (/-([A-Z])$/.exec(l) || [])[1];
+      L = (/[- ]([A-Z])$/.exec(l) || [])[1];
     if (!t || /^DITL/i.test(t)) return l;
-    const base = m && L ? m[1] : t;
+    /* Mina F49, F52: several machines on one drawing title (LOP A of BFWP-A ... ): the step's own name */
+    if (!m && / #[A-Z]|^DITL-22$/.test(motAddr(a) || '')) return l;
+    const base = m && L ? m[1].replace(/\s[A-D]$/, '') : t;
     return base.charAt(0) + base.slice(1).toLowerCase() + (m ? ' ' + (L || m[2]) : '');
   };
   const lineN = () => {
