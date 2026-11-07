@@ -1,5 +1,11 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.91 — Ash coolers can start (2026-11-07, JENNIE)
+
+**Work done.** Chain conveyor running and the local emergency stop contacts of the coolers now reach DITL-21A, from Mina item 2.
+
+**Not tested.** Live; item sent to Mina.
+
 ## 3.2.1-beta.87 — Bed pressure drop, SOx, ash coolers (2026-11-07, JENNIE)
 
 **Work done.** From Mina items 2, 3, 8: bed pressure drop transmitters follow the inventory, SOx is written by the plant model, ash leaves only by a running cooler, the chain conveyor STOP contact reads 0 while it runs.
