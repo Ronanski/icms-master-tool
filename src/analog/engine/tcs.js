@@ -217,6 +217,15 @@ function tcsSteam(U) {
     rht: isFinite(rht) ? rht : U.Tw
   };
 }
+/* a limit with its reset band (the ON / OFF of the IBD comparators): the state stays until the value is past the other number */
+function tcsBand(c, k, v, bad, ok) {
+  const B = c.band || (c.band = {}),
+    hi = bad > ok;
+  if (!isFinite(v)) return !B[k];
+  if (hi ? v >= bad : v <= bad) B[k] = 1;
+  else if (hi ? v <= ok : v >= ok) B[k] = 0;
+  return !B[k];
+}
 /* the criteria (page 3 / 5 ~ 14) that the model has: true = satisfied. txt = the name on the ATS criteria display */
 function tcsCrit(U) {
   const c = U.tc,
@@ -258,10 +267,10 @@ function tcsCrit(U) {
       s.rht
     ),
     '1.10': f('1.10', 'GLAND STEAM SEAL HEADER PRESS. NOT LOW', c.gland && c.Pa > 7),
-    1.11: f('1.11', 'CONDENSER VACUUM OK', U.vac >= 0.9, U.vac),
-    1.12: f('1.12', 'LP TURBINE EXHAUST HOOD STEAM TEMP. NOT HIGH (≤ 80 C)', c.Tx <= 80, c.Tx),
-    1.14: f('1.14', 'CONTROL OIL PRESS. NOT LOW', c.eh),
-    1.15: f('1.15', 'BEARING OIL PRESS. NOT LOW', c.brgOk !== undefined ? c.brgOk : c.lop),
+    1.11: f('1.11', 'CONDENSER VACUUM OK', isFinite(U.cdP) ? tcsBand(c, '1.11', U.cdP, 0.14, 0.12) : U.vac >= 0.9, isFinite(U.cdP) ? U.cdP : U.vac),
+    1.12: f('1.12', 'LP TURBINE EXHAUST HOOD STEAM TEMP. NOT HIGH (≤ 80 C)', tcsBand(c, '1.12', c.Tx, 80, 77), c.Tx),
+    1.14: f('1.14', 'CONTROL OIL PRESS. NOT LOW', tcsBand(c, '1.14', U.loCtl, 133, 138), U.loCtl),
+    1.15: f('1.15', 'BEARING OIL PRESS. NOT LOW', tcsBand(c, '1.15', U.loBrg, 1.05, 1.33), U.loBrg),
     1.16: f('1.16', 'BEARING OIL TEMP. OK', c.brgOk !== undefined ? c.brgOk : c.lop),
     1.17: f('1.17', 'MAIN OIL TANK LEVEL OK', true),
     1.18: f('1.18', 'MAIN OIL TANK VAPOUR EXTRACTOR RUNNING', c.vex),
@@ -388,8 +397,8 @@ const TCS_A = {
 const TCS_B = {
   0: ['1.10', '1.11', '1.15', '1.16', '1.18'],
   1: ['1.3', '1.4', '1.5', '1.6', '1.8', '1.10', '1.11', '1.12', '1.14', '1.15', '1.16', '1.17', '1.18'],
-  2: TCS_A[3],
-  3: TCS_A[3],
+  2: TCS_A[3].filter(x => x !== '1.71' && x !== '1.72'),
+  3: TCS_A[3].filter(x => x !== '1.71' && x !== '1.72'),
   4: TCS_A[4].filter(x => x !== '2.4'),
   5: TCS_A[5].filter(x => x !== '2.4'),
   6: TCS_A[6].filter(x => x !== '1.5' && x !== '1.6'),
@@ -483,6 +492,11 @@ function tcsCmd(U, cmd, arg) {
       return '';
     case 'hold':
       c.opHold = on;
+      return '';
+    case 'holdoff':
+      if (c.hold && !/press HOLD OFF/.test(c.hold)) return 'The hold condition stands: ' + c.hold;
+      c.holdL = false;
+      c.opHold = false;
       return '';
   }
   const k = { warm: 0, prep: 1, rub: 2, accel: 3, excite: 4, sync: 5, loadup: 6, normal: 7 }[cmd];
@@ -588,15 +602,17 @@ function tcsStep(U, dt) {
   if (!C['1.11'].ok) why.push('CONDENSER VACUUM LOW');
   if (!C['1.12'].ok) why.push('EXHAUST HOOD TEMP. HIGH');
   if (!C['1.15'].ok) why.push('BEARING OIL PRESS. LOW');
-  if (c.cur >= 2 && c.cur <= 3 && (!C['1.71'].ok || !C['1.72'].ok))
-    why.push('THERMAL STRESS HIGH (steam / metal mismatch)');
+  const inCrit = tb.rpm > TCS.crit[0] && tb.rpm < TCS.crit[1],
+    noHold = inCrit || (c.cur === 6 && !tb.xfer),
+    cond = why.length > 0;
+  if (cond && !noHold) c.holdL = true;
+  if (!cond && c.holdL) why.push('Hold cleared: press HOLD OFF');
   if (c.cur >= 0 && TCS_B[c.cur]) {
     const mb = tcsMiss(U, TCS_B[c.cur]);
     if (mb) why.push('CRITERIA B' + c.cur + ': ' + mb);
   }
   if (c.opHold) why.push('HOLD ON (operator)');
-  const inCrit = tb.rpm > TCS.crit[0] && tb.rpm < TCS.crit[1];
-  c.hold = inCrit ? '' : why.join('; ');
+  c.hold = noHold ? '' : why.join('; ');
   const run = !c.hold;
   const rate = TCS.rate[c.mode] || 120;
   const ramp = aim => {
@@ -621,7 +637,8 @@ function tcsStep(U, dt) {
         and outer > 180 C); turbine reset, MSV open, load limiter upper */:
       if (c.ph === 'in') {
         c.mode = tcsMode(U);
-        if (c.Tcvi > 150 && c.Tcvo > 150) c.ph = 'reset';
+        c.rst = true;
+        if (c.Tcvi > 150 || c.Tcvo > 150) c.ph = 'reset';
         else {
           c.ph = 'chest';
           c.tm = 0;
