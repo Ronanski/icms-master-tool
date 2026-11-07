@@ -1813,7 +1813,8 @@ function anHphStep(U, dt) {
     x = [Math.max(0, e2o - e2), Math.max(0, e1o - e1), (15.25 * ms * (1 - (pos('DITL-97') / 100) * sh('H3'))) / K.F0, (12.27 * ms * (1 - (pos('DITL-98') / 100) * sh('H2'))) / K.F0, (8.42 * ms * (1 - sh('H1'))) / K.F0];
   U.xtra = x[0] + x[1] + x[2] + x[3]; /* T/H more to the condenser */
   U.dMWx = (x.reduce((a, q, i) => a + q * K.dhX[i], 0) * 0.985) / 3600;
-  U.hpFac = 1 / (1 + (K.cpFw * Math.max(0, t2o - U.hpT2)) / K.dhB);
+  U.fwDrop = Math.max(0, t2o - U.hpT2); /* feedwater colder than with both heaters in: boiler.js anAphIn */
+  U.hpFac = 1 / (1 + (K.cpFw * U.fwDrop) / K.dhB);
 }
 /* 3.2.1 (IRENE: HEATER LEVELS, docs/versions/v3.2.1/HEATER_LEVELS_PLANT_MODEL.md). The shell (drain) level of the No.2 / No.1 HP and
    No.3 / No.2 / No.1 LP heaters and their drain valves.
