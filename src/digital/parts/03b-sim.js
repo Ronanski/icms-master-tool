@@ -656,8 +656,14 @@ function mvRT(s) {
   return r;
 }
 function mvTr(s, j) {
-  const v = s.mvt && +s.mvt[j];
-  return v > 0 ? v : s.nl.mv[j] && s.nl.mv[j].sv ? 3 : 10;
+  const v = s.mvt && +s.mvt[j],
+    b = s.nl.mv[j];
+  if (v > 0) return v;
+  /* 3.2.1 F74: the atomizing air valve of a burner. DITL-14 TR150 / 160: 1.5 s after the oil valve leaves closed, I.0008 ATOM. AIR VALVE
+     OPENED must be made, or M.0141 LIGHT OFF UNSUCCESSFUL. Air and oil get their command together (DITL-13 row 24 and TR894 row 22), so
+     the stroke must be under 1.5 s. The real stroke is not in the documents: 1 s stands inside that limit */
+  if (b && /^PA1043-[A-D]2$/.test(b.tag)) return 1;
+  return b && b.sv ? 3 : 10;
 }
 function mvForced(s) {
   const F = new Map(),

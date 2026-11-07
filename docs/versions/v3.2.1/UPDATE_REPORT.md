@@ -621,3 +621,5 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.89** (2026-11-07): Turbine reset in Worker: trip, reset and field contacts write only in the engine, so the page keeps the answer of the engine and the plant chip clears after a reset
 
 - **beta.90** (2026-11-07): TCS page: Load IBD drawing reads a file made on this PC, kept only in this browser; without it the page shows the app sheets. The drawing never enters the repository, dist or the Beta. Clean input names in the netlist
+
+- **beta.98** (2026-11-08): Burner atomizing air valve strokes in 1 s, inside the 1.5 s of DITL-14 TR150 / 160. At x1 the 3 s default gave LIGHT OFF UNSUCCESSFUL and MFT on the first light (Mina F74)
