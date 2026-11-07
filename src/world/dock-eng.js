@@ -78,6 +78,25 @@
     return true;
   };
   W.onTick = release;
+  /* Mina F62: a short pulse of the drawing that a Guide check needs (DITL-80K O.077C, 3 s by TR317). The page gets the engine's nets only with
+     a patch (four a second at most), so at high speed it would not see the pulse; the engine latches it in the scan and WORLD.seen (a slot of
+     the DITL keyframe) goes to the page. The list: only outputs that are short on the drawing; a check of a state that stays reads the state */
+  const PULSES = [[/DITL-80K$/, 'O.077C']];
+  const adrOf = new Map(); /* by sheet name: a Reset makes the sheets again and their netlists come one by one, so no list of objects is kept */
+  W.pulseScan = (s, R) => {
+    let adr = adrOf.get(s.name);
+    if (adr === undefined) {
+      const f = PULSES.find(([re]) => re.test(s.name));
+      adr = f ? f[1] : null;
+      adrOf.set(s.name, adr);
+    }
+    if (!adr) return;
+    const p = (s.nl.pout || []).find(q => q.adr === adr);
+    if (p && R.v[p.n]) (W.seen = W.seen || {})[s.name + '|' + adr] = 1;
+  };
+  W.pulseClear = () => {
+    delete W.seen;
+  };
   /* the radio: both run in the engine too (src/world/eng.js, wrapped at ENG.start) */
-  if (G.ENG && G.ENG.CALLS && G.ENG.CALLS.WORLD) for (const k of ['dpress', 'dset']) if (!G.ENG.CALLS.WORLD.includes(k)) G.ENG.CALLS.WORLD.push(k);
+  if (G.ENG && G.ENG.CALLS && G.ENG.CALLS.WORLD) for (const k of ['dpress', 'dset', 'pulseClear']) if (!G.ENG.CALLS.WORLD.includes(k)) G.ENG.CALLS.WORLD.push(k);
 })(typeof window !== 'undefined' ? window : globalThis);

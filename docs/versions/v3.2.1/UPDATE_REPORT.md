@@ -507,3 +507,5 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.62** (2026-11-07): FT-CD1120 on DITL-64 reads the plant (F28)
 - **beta.65** (2026-11-07): Skip the purge and the Training buttons ask on the button, no browser dialog (F32, F36). Test `tests/regress/guide_press2.js`; rail list in home_training.js updated
 - **beta.66** (2026-11-07): HICDO1012 in the dock moves (F57); hand stations by an engine action; Step 31 top button goes to the controls (F50); drum stop ask and band (F51); Step 42 asks 16 % first, faceplate says why in words (F56); bias damper check 99.5 % (F60); Update banner warns the plant is lost (F61). Engine step 12.7 to about 10 ms. Tests guide_step31.js
+
+- **beta.68** (2026-11-07): Step 48 air heater soot blowing ends with the real press in Worker (F62): the engine latches the 3 s forward starter O.077C in the scan and sends it to the page, the Guide no longer computes a sheet again on the page. Check says "not done" until the step's condition is met. Test `tests/regress/guide_step48.js`

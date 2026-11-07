@@ -231,7 +231,7 @@
   function needNet(s, n, want, P, d, seen, out) {
     if (!s.nl) s.nl = netlist(s);
     const C = ctx(s),
-      v = simSheet(s).v,
+      v = simRead(s).v /* Mina F62: in the Worker simSheet computes the sheet again on the page, without the engine's inputs, and writes over the mirror */,
       k = s.name + ':' + n + ':' + want,
       st = P && P.s === s;
     if (st && P.stN.has(n)) return out;
@@ -435,7 +435,7 @@
       /* one of several ways (an OR to 1, an AND to 0): met when its group net already has the value it needs */
       const grp = (r.alts || []).some(a => {
         try {
-          return (simSheet(a.s).v[a.n] ? 1 : 0) === a.want;
+          return (simRead(a.s).v[a.n] ? 1 : 0) === a.want;
         } catch (e) {
           return false;
         }
@@ -547,7 +547,7 @@
     try {
       if (!s.nl) s.nl = netlist(s);
       const o = (s.nl.pout || []).find(q => q.adr === adr);
-      return o ? (simSheet(s).v[o.n] ? 1 : 0) : null;
+      return o ? (simRead(s).v[o.n] ? 1 : 0) : null;
     } catch (e) {
       return null;
     }
@@ -2704,7 +2704,8 @@
         /* Y / N as on the card and the faceplate (Y complete, N not complete) */
         P: mi ? (mi.run ? 'running' : mi.sby ? 'standby' : mi.miss.length ? 'N' : 'Y') : mis.length ? (pOk ? 'Y' : 'N') : '',
         S: selA ? (runSel ? 'RUNNING' : mi && mi.sby ? (autoOf(selAd) ? 'STANDBY AUTO' : 'MAN') : 'not started') : rd ? 'done' : '',
-        C: rd ? 'done' : li('C') || (W.length ? wOk + ' / ' + W.length + ' OK' : '')
+        /* Mina F62: "1 / 1 OK" counted the values to watch and said nothing of the condition that ends the step */
+        C: rd ? 'done' : s.c && !call(() => s.c.ok(), false) ? 'not done' : li('C') || (W.length ? wOk + ' / ' + W.length + ' OK' : '')
       };
     const cur = els.stg.find(o => !ok[o.k]) || els.stg[els.stg.length - 1];
     els.stCur = cur.k;
