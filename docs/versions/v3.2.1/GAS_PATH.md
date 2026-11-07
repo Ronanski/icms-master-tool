@@ -33,3 +33,8 @@ Colder feedwater changing the gas temperature belongs to the economizer work (b4
 
 ## Part load: air against FHI (open)
 The logic has its own curves on ABC-002: BM vs AIR DEMAND, TCF vs PA FLOW DEMAND, TFF vs TAF DEMAND, BM vs O2 DEMAND. They give more air at part load than Fig 12. Model at 120 MW after 42 min: coal 69 T/H, PA 323, SA 160, total 509 T/H, O2 5.4 %; O2 set point of the logic 4.2 %, Fig 7 3.6 %. The trim stands near 0.86. The simulator follows the logic. No part load air snapshot is in the docs, so this stays open for the match of Figures 2 to 13 (b6).
+
+## SOx and limestone (b5)
+Raw SO2 from the coal, S 1.49 % (Tab 3): about 1890 ppm in the MCR gas. Ca/S from limestone CaCO3 93.66 % (Tab 3). At Fig 13 feed Ca/S is 2.7.
+Capture = exp(-11 x Ca/S), fitted to one snapshot: 41 ppm at limestone 11 % of 14 T/H (Ca/S 0.346). Fit, not a design value. The bed holds lime, lag 2 h NO-SOURCE.
+Silos: limestone and sand levels stand still, scope 2026-11-07.

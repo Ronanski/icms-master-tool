@@ -1,5 +1,11 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.69 — Silos unlimited, limestone sets SOx (2026-11-07, JENNIE)
+
+**Work done.** Limestone and sand silo levels stand still. Stack SOx follows Ca/S with a 2 h lag. See GAS_PATH.md.
+
+**Not tested.** Live; item sent to Mina.
+
 ## 3.2.1-beta.67 — Bed heat-up (F66) (2026-11-07, JENNIE)
 
 **Work done.** Below the start of coal (483 C, FHI Fig 2) the bed moves with a 4 h lag: refractory and bed charge are the heat sink. Live on beta.63 it rose 13 C/min; the source says 1 C/min (PR-OPE-5002), limit 153 C/h (FHI). Above 600 C the old 900 s lag stays.
