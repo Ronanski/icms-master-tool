@@ -1178,7 +1178,7 @@ function anSeawaterStep(U, dt) {
   /* condenser seawater temperatures */
   U.swTiA = K.Tin[0];
   U.swTiB = K.Tin[1];
-  const ws = Math.max(0, ((U.ms || 0) * K.cSt) / K.mcr + (U.qlp || 0));
+  const ws = Math.max(0, ((U.ms || 0) * K.cSt) / K.mcr + (U.qlp || 0) + (U.xtra || 0));
   const thC = (r.Qc[0] + r.Qc[1]) * 1.02; /* T/H through the condenser: the design rise is per condenser */
   [0, 1].forEach(j => {
     /* one box shut: its share of the heat goes to the other box (heat = water x rise) */
@@ -1593,7 +1593,7 @@ const anPsat = T => (Math.pow(10, 8.07131 - 1730.63 / (233.426 + T)) * 1.33322) 
 function anCondStep(U, dt) {
   const K = AN_CD,
     sw = AN_SW,
-    ws = Math.max(0, ((U.ms || 0) * sw.cSt) / sw.mcr + (U.qlp || 0)),
+    ws = Math.max(0, ((U.ms || 0) * sw.cSt) / sw.mcr + (U.qlp || 0) + (U.xtra || 0)),
     Q = (K.Qd * ws) / K.Wd,
     Tin = isFinite(U.swTiA) ? (U.swTiA + U.swTiB) / 2 : sw.Tin[0],
     W = Math.max(0, (U.swQc || 0) * 1.02),
@@ -1682,7 +1682,7 @@ function anFwStep(U, dt) {
    repository or on the PC); a shut-off MOV less than 20 % open throttles it (NO-SOURCE). The heater gives FW out = saturation of its
    shell + TTD, never below FW in; the extraction (= drain) flow from its heat duty, scaled on the design point. Metal / water lag 120 s
    (NO-SOURCE). Not modelled: the shell level (ABC-035 / 036 loops keep their generic model), the heater bypass on level HH. */
-const AN_HP = { F0: 458.684, P1: 37.48 - 1.0332, P2: 14.12 - 1.0332, ttd1: 1.07, ttd2: 0.05, dT1: 195.7 - 158.4, dT2: 245.4 - 195.7, m1: 25.33, m2: 45.147, dca1: 166.3 - 158.4, dca2: 201.3 - 195.7, tau: 120 };
+const AN_HP = { dhX: [1160.1, 917.1, 454.8, 311.4] /* kJ/kg down to the exhaust 2378.4: No.2 HPH hot reheat 3538.5, No.1 HPH 3295.5, No.3 LPH 2833.2, No.2 LPH 2689.8 (HEAT_BALANCE.md) */, cpFw: 4.6 /* kJ/kg per C, feedwater 195.7 to 245.4 C */, dhB: 2382 /* kJ/kg, main steam 3446.7 less feedwater 1064.4 */, F0: 458.684, P1: 37.48 - 1.0332, P2: 14.12 - 1.0332, ttd1: 1.07, ttd2: 0.05, dT1: 195.7 - 158.4, dT2: 245.4 - 195.7, m1: 25.33, m2: 45.147, dca1: 166.3 - 158.4, dca2: 201.3 - 195.7, tau: 120 };
 function anHphStep(U, dt) {
   const K = AN_HP,
     ms = Math.max(0, +U.ms || 0),
@@ -1713,6 +1713,16 @@ function anHphStep(U, dt) {
   U.hpD1 = Math.round(10 * (U.hpF1 > 0.5 ? Tin + K.dca1 : U.hpT1)) / 10; /* TT-HD1105 */
   U.hpPs = [Ps1, Ps2];
   U.hpMov = [pos('DITL-95'), pos('DITL-94')]; /* MV-TS1002 / MV-TS1001 position % */
+  /* docs/versions/v3.2.1/HEAT_BALANCE.md: an extraction that is shut stays in the turbine and works down to the condenser, and colder
+     feedwater takes more of the boiler heat per kg of steam. Measured from the same heaters with the MOVs open, so the start-up curves stay */
+  const t1o = Math.max(Tin, sat((K.P2 + 1.0332) * (ms / K.F0) - 1.0332) + K.ttd1),
+    t2o = Math.max(t1o, sat((K.P1 + 1.0332) * (ms / K.F0) - 1.0332) + K.ttd2),
+    e1o = ffw > 1 ? (K.m1 * f * Math.max(0, t1o - Tin)) / K.dT1 : 0,
+    e2o = ffw > 1 ? (K.m2 * f * Math.max(0, t2o - t1o)) / K.dT2 : 0,
+    x = [Math.max(0, e2o - e2), Math.max(0, e1o - e1), (15.25 * ms * (1 - pos('DITL-97') / 100)) / K.F0, (12.27 * ms * (1 - pos('DITL-98') / 100)) / K.F0];
+  U.xtra = x[0] + x[1] + x[2] + x[3]; /* T/H more to the condenser */
+  U.dMWx = (x.reduce((a, q, i) => a + q * K.dhX[i], 0) * 0.985) / 3600;
+  U.hpFac = 1 / (1 + (K.cpFw * Math.max(0, t2o - U.hpT2)) / K.dhB);
 }
 /* 3.2.1 (IRENE: HEATER LEVELS, docs/versions/v3.2.1/HEATER_LEVELS_PLANT_MODEL.md). The shell (drain) level of the No.2 / No.1 HP and
    No.3 / No.2 / No.1 LP heaters and their drain valves.
@@ -2548,7 +2558,7 @@ function anUnitStep(dt) {
   U.burn = bf;
   U.unb = F * (1 - bf);
   U.Fc = F; /* 3.2.0-beta.14: coal of the feeders (source.js: SOx) */
-  U.Qs += ((Qss - U.Qs) * dt) / U.tauF;
+  U.Qs += ((Qss * (isFinite(U.hpFac) ? U.hpFac : 1) - U.Qs) * dt) / U.tauF;
   /* ---- 2.2.0-beta.12 (M3): station wiring S2 -> S1, turbine trip ---- */
   for (const [a, tg] of U.bcast || []) {
     const x = a.S.rt.force[a.n] !== undefined ? a.S.rt.force[a.n] : a.S.rt.ext[a.n];
@@ -2768,7 +2778,7 @@ function anUnitStep(dt) {
     MWss = onGrid
       ? Math.max(
           0,
-          U.c * ((1 - U.cIP) * U.ms + U.cIP * qip) - (U.c * U.m0 - U.MW0) * Math.min(1, qip / (0.3 * U.m0)) - anVacMW(U)
+          U.c * ((1 - U.cIP) * U.ms + U.cIP * qip) - (U.c * U.m0 - U.MW0) * Math.min(1, qip / (0.3 * U.m0)) - anVacMW(U) + (U.dMWx || 0)
         )
       : 0;
   U.MW += ((MWss - U.MW) * dt) / U.tauMW;
