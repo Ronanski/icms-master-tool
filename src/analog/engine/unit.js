@@ -73,7 +73,7 @@ const AN_UNIT = {
      "Start at 150 MW" keeps its own. */
   rollRate: 120 /* rpm/min, PR-OPE-5002 cold start (the holds at 1800 / 3600 rpm of the procedure are the operator's; not modelled) */,
   icvRoll: 0.13 /* ICV opening for the roll steam (about 14 T/H at 7.6 kg/cm2 reheat, ASSUMED) */,
-  cIP: 0.6,
+  cIP: 0.75 /* calculated: HP 38 MW, IP / LP 113 MW of the shaft, HEAT_BALANCE.md */,
   MWxf: 20,
   MWperm: 45,
   MWinit: 4.5 /* PR-OPE-5002: initial load 4.5 MW */,
@@ -1566,6 +1566,7 @@ const AN_CD = {
   cp: 3.994,
   tau: 30,
   Ptrip: 0.26,
+  Tref: 38.65 /* C, condenser design steam side, K2MC3A */,
   qQ: [0, 100, 200, 300, 400, 450, 480, 560],
   qH: [210, 209, 205, 196, 180, 170, 160, 130],
   pQ: [0, 50, 400, 480],
@@ -1576,6 +1577,15 @@ const AN_CD = {
   dp0: 0.019,
   q0: 383
 };
+/* MW lost to the back pressure. docs/versions/v3.2.1/HEAT_BALANCE.md: calculated from the mass balance (exhaust quality 0.92 closes the
+   balance at 150 MW). At constant entropy dh/dT = x hfg / T = 7.1 kJ/kg per C at 38.65 C; with 0.85 LP efficiency (NO-SOURCE) 6 kJ/kg per C,
+   on the exhaust steam, 0.70 of the main steam (309.7 / 446 T/H, MB-013). A better vacuum gives a small gain, capped at 1 C. */
+function anVacMW(U) {
+  if (!isFinite(U.cdT) || !(U.ms > 0)) return 0;
+  const dT = Math.max(-1, U.cdT - AN_CD.Tref);
+  U.dMWv = (6 * dT * 0.7 * U.ms) / 3600;
+  return U.dMWv;
+}
 const anPsat = T => (Math.pow(10, 8.07131 - 1730.63 / (233.426 + T)) * 1.33322) / 980.665; /* kg/cm2A, Antoine (water) */
 function anCondStep(U, dt) {
   const K = AN_CD,
@@ -2755,7 +2765,7 @@ function anUnitStep(dt) {
     MWss = onGrid
       ? Math.max(
           0,
-          U.c * ((1 - U.cIP) * U.ms + U.cIP * qip) - (U.c * U.m0 - U.MW0) * Math.min(1, qip / (0.3 * U.m0))
+          U.c * ((1 - U.cIP) * U.ms + U.cIP * qip) - (U.c * U.m0 - U.MW0) * Math.min(1, qip / (0.3 * U.m0)) - anVacMW(U)
         )
       : 0;
   U.MW += ((MWss - U.MW) * dt) / U.tauMW;

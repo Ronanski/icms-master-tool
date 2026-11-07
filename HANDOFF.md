@@ -14,7 +14,7 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 
 ## 2. Kasalukuyang estado
 - **Stable:** v3.2.0 (2026-11-03, GO STABLE ng user; = 3.2.0-beta.91, tag at GitHub Release `v3.2.0`). Hindi live-tested ang beta.90 / 91.
-- **Beta sa `main`:** **3.2.1-beta.45** (2026-11-07): Yugto 1: iisang imbentaryo ng tubig. Bukas: `unit_load` at `loaddown` FAIL, pareho sa beta.44 (hindi humahawak sa 150 MW ang test; iniimbestigahan).
+- **Beta sa `main`:** **3.2.1-beta.46** (2026-11-07): Yugto 1: MW tumutugon sa vacuum; heat balance calculated mula sa mass balance. Bukas: nag-crash ang headless Chrome sa mahabang test, walang crash sa live.
 - **beta.41** (2026-11-05): split view Inject / Release para sa analog loop check (live PASS ni MINA sa PC 1600 px at tablet 1024 × 768).
 - **Rule ng merge (COMMANDMENT 3):** Beta = merge sa `main` kapag pasado ang Checks, walang GO BETA (user 2026-11-06). Stable at manual workflow = GO STABLE lang.
 - **Beta site:** kusang nade-deploy pagkatapos ng berdeng Checks sa `main` (`site.yml`, `/beta/`; banner "Update now").
