@@ -453,6 +453,14 @@ function anUnitStart() {
     U.taf0 = taf0;
   }
   U.pa = ais('ABC-006', 'AI0166');
+  U.bedDp = [[ais('ABC-006', 'AI0134'), 1426], [ais('ABC-006', 'AI0262'), 1432]];
+  U.bedSc = [['ABC-009A', 'SICL1060A'], ['ABC-009A', 'SICL1060B'], ['ABC-009A', 'SICL1060C'], ['ABC-009B', 'SICL1060D']].map(([k, t]) => {
+    /* MAN stations, in rpm (compile-step.js): their output pin */
+    const x = shOf(k),
+      b = x && x.S ? x.S.blk.find(q => q.k === 'MAN' && (q.txt || []).includes(t)) : null,
+      p = b && (b.pins || []).find(q => q.role === 'out');
+    return p ? { S: x.S, n: p.n } : null;
+  }).filter(Boolean);
   U.paNet = U.tafS ? netOf(U.tafS, 'FIFA1071.PV') : -1;
   U.pa0 = U.paNet >= 0 ? +U.tafS.rt.v[U.paNet] : NaN;
   /* ---- 2.2.0-beta.12 (M3): trips ---- */
@@ -687,6 +695,7 @@ function anUnitStart() {
   U.loTr = NaN; /* 3.2.1 AN_LO: the lube oil starts at its steady value */
   U.cdTs = NaN; /* 3.2.1 AN_CD: the condenser starts at its steady value */
   U.lpT = undefined; /* 3.2.1 AN_LP: the LP heaters too */
+  U.bedI = NaN; /* the bed inventory starts again (anBedStep) */
   if (AN_SRC.valve) for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
   AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed while steaming */
   AN_SRC.lhdPct = 0;
@@ -738,6 +747,7 @@ function anUnitCold() {
   U.loTr = NaN; /* 3.2.1 AN_LO: the lube oil starts at its steady value */
   U.cdTs = NaN; /* 3.2.1 AN_CD: the condenser starts at its steady value */
   U.lpT = undefined; /* 3.2.1 AN_LP: the LP heaters too */
+  U.bedI = NaN; /* the bed inventory starts again (anBedStep) */
   if (AN_SRC.valve) for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
   AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed */
   AN_SRC.lhdPct = 0;
@@ -1614,6 +1624,22 @@ function anBedSS(U, fs, as) {
       return Y[Y.length - 1] + ((x - 1) * (Y[Y.length - 1] - Y[Y.length - 2])) / (1 - K.s[K.s.length - 2]);
     };
   return Math.min(start, U.Tamb + (ip(K.t) * (U.Tb0 / 840) - U.Tamb) * Math.pow(ip(K.a) / as, 0.45));
+}
+/* bed inventory (t of solids in the furnace). The overall furnace pressure drop is its weight on the grate: 15.51 x 7.68 m = 119 m2 (T2), so
+   1 mmH2O = 1 kg/m2 = 0.119 t; 1426 mmH2O (snapshot DPIFG1081) = 170 t. In: ash of the coal 6.82 % (T3), limestone less its CO2 (93.66 % CaCO3,
+   T3: 0.59 stays), sand. Of the ash and limestone 20 % stays as bottom ash (ASH L5-1, scanned page, read with care), the rest leaves as fly ash.
+   Out: the four screw coolers, 2 T/H at normal, 4 T/H at 5 rpm (BAC E130122B): 0.8 T/H per rpm. The fan flow that fluidizes: NO-SOURCE, full
+   reading above 30 % of the anchor primary air. Initial charge at Cold 100 t (T9 p3). */
+const AN_BI = { t0: 169.7, tCold: 100, kA: 0.0682, kL: 0.59, kB: 0.2, q: 0.8 };
+function anBedStep(U, dt, rpm, pa) {
+  const K = AN_BI;
+  if (!isFinite(U.bedI)) U.bedI = U.cold ? K.tCold : K.t0;
+  const sol = K.kA * (U.Fc || 0) * (U.burn || 0) + K.kL * (U.lmQ || 0);
+  U.bedIn = K.kB * sol + (U.sdQ || 0);
+  U.bedOut = K.q * rpm;
+  U.bedI = Math.max(0, U.bedI + ((U.bedIn - U.bedOut) * dt) / 3600);
+  U.bedK = Math.max(0, Math.min(1, pa / 106)) * (U.bedI / K.t0);
+  return U.bedK;
 }
 function anVacMW(U) {
   if (!isFinite(U.cdT) || !(U.ms > 0)) return 0;
@@ -2991,6 +3017,12 @@ function anUnitStep(dt) {
        read 23.1 / 18.9 %) */
     const ko = Math.max(0, Math.min(1, (21 - U.o2v) / Math.max(0.5, 21 - U.O20)));
     for (const L of U.o2) anUnitWrite(L, i => Math.max(0, Math.min(21, U.o2v + (L.a0[i] - U.O20) * ko)));
+  }
+  /* bed inventory and the furnace pressure drop */
+  if (U.paNet >= 0) {
+    const rpm = (U.bedSc || []).reduce((a, o) => a + Math.max(0, Math.min(5, +o.S.rt.v[o.n] || 0)), 0),
+      k = anBedStep(U, dt, rpm, Math.max(0, +U.tafS.rt.v[U.paNet]));
+    for (const [L, a] of U.bedDp || []) if (L.length) anUnitWrite(L, a * k);
   }
   /* PA to the furnace follows the PAF flow */
   if (U.paNet >= 0 && U.pa.length) anUnitWrite(U.pa, Math.max(0, +U.tafS.rt.v[U.paNet]) * AN_PA_FURN);
