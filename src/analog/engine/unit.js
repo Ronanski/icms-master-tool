@@ -1843,15 +1843,15 @@ const AN_HD = {
      length m, water kg/m3, primary capacity t/h at 100 % (150 MW), extraction MOV (DITL) */
   h: [
     ['H6', 'ABC-036', ['AI0677', 'AI0853'], 'LICHD11061', 'LICHD11062', 45.147, null, 140, 1.25, 9.1385, 864, 45.147 / 0.5, 'DITL-94'],
-    ['H5', 'ABC-035', ['AI0676', 'AI0852'], 'LICHD11051', 'LICHD11052', 25.33, 'H6', 140, 1.156, 9.595, 900, (25.33 + 45.147) / 0.5, 'DITL-95'],
-    ['H3', 'ABC-039', ['AI0675', 'AI0851'], 'LICHD11031', 'LICHD11032', 15.246, null, 140, 1.03, 10.674, 961, 7.7 / 0.324 / Math.sqrt(203.7 / 458.684), 'DITL-97'],
-    ['H2', 'ABC-038', ['AI0674', 'AI0850'], 'LICHD11021', 'LICHD11022', 12.27, 'H3', 140, 1.08, 10.679, 974, 3.4 / 0.999 / Math.sqrt(203.7 / 458.684), 'DITL-98'],
-    ['H1', 'ABC-037', ['AI0673', 'AI0849'], 'LICHD11011', 'LICHD11012', 17.861, 'H2', 140, 1.13, 13.612, 990, (17.861 * 203.7 / 458.684 + 13.1) / 0.136 / Math.sqrt(203.7 / 458.684), null]
+    ['H5', 'ABC-035', ['AI0676', 'AI0852'], 'LICHD11051', 'LICHD11052', 25.33, 'H6', 140, 1.156, 9.595, 900, 91 /* LCV-HD1105 sheet, E2-0-123 */, 'DITL-95'],
+    ['H3', 'ABC-039', ['AI0675', 'AI0851'], 'LICHD11031', 'LICHD11032', 15.246, null, 140, 1.03, 10.674, 961, 21.3 /* LCV sheet, E2-0-123 */, 'DITL-97'],
+    ['H2', 'ABC-038', ['AI0674', 'AI0850'], 'LICHD11021', 'LICHD11022', 12.27, 'H3', 140, 1.08, 10.679, 974, 35.3 /* LCV sheet, E2-0-123 */, 'DITL-98'],
+    ['H1', 'ABC-037', ['AI0673', 'AI0849'], 'LICHD11011', 'LICHD11012', 17.861, 'H2', 140, 1.13, 13.612, 990, 69.9 /* LCV sheet, E2-0-123 */, null]
   ],
   F0: 458.684,
   fA: 0.7,
-  /* the alternate of the No.2 LPH: 02.png 53.7 % for the rest of its drain (13.1 - 3.4 T/H at 60 MW); the other alternates = their primary */
-  alt: { H2: (13.1 - 3.4) / 0.537 / Math.sqrt(203.7 / 458.684) }
+  /* the alternates from their valve sheets, E2-0-123 (team-files/plant-study/12-assumptions.md); H5 = its primary */
+  alt: { H6: 142, H3: 27.0, H2: 37.5, H1: 57.3 }
 };
 function anHdStep(U, dt) {
   if (!U.hd || !U.hd.length) return;
@@ -2255,8 +2255,8 @@ function anFwTagStep(U) {
     w2 = K.k2 * K.K * (cv(K.cv.b1, z21) * pos('DITL-33') + cv(K.cv.b2, z22) * pos('DITL-33 #B')) * sq(drum - 9.3 * lf),
     Prh = isFinite(U.Prh) ? U.Prh : 0,
     dr = isFinite(pd) ? Math.sqrt(Math.max(0, pd - Prh) / (165.4 - 34.9)) : NaN,
-    wrh = (14.8 * held('TICHR1002', mvOf('ABC-019', 'TICHR1002'))) / 66.0 * pos('DITL-35') * dr,
-    whp = (40 * held('TICMS1022', mvOf('ABC-051', 'TICMS1022'))) / 100 * pos('DITL-79') * dr,
+    wrh = (29.5 * held('TICHR1002', mvOf('ABC-019', 'TICHR1002'))) / 100 * pos('DITL-35') * dr /* 29.5 T/H at 100 %, Cv 6.2, dp 34, L21 */,
+    whp = (67 * held('TICMS1022', mvOf('ABC-051', 'TICMS1022'))) / 100 * pos('DITL-79') * dr /* 67 T/H at 100 %, Cv 10.3, dp 61, L21 */,
     cr = U.xt && U.xt.T ? U.xt.T.cr : NaN;
   Object.assign(U.tt || (U.tt = {}), {
     'PT-TS1013': ms > 0 ? r2(Math.max(-1, stage(K.ts13))) : r2(0),
