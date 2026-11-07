@@ -171,7 +171,10 @@ export function readPage(J) {
     const near = words.filter(w => Math.abs(w.cy - y) < 18 && !GATEW.test(w.s.trim()));
     const left = near.filter(w => w.x < x && x - w.x < 300 && Math.abs(w.cy - y) < 13),
       L = left.length ? left : near.filter(w => w.x >= x && w.x - x < 240);
-    return L.sort((p, q) => q.y - p.y || p.x - q.x)
+    /* the tag sits in the right part of the box, past the place a dashed line starts */
+    const tags = near.filter(w => /^[A-Z]+-[A-Z]+n[0-9]/.test(w.s.trim()) && !L.includes(w) && Math.abs(w.cy - y) < 13 && Math.abs(w.x - x) < 200);
+    return L.concat(tags)
+      .sort((p, q) => q.y - p.y || p.x - q.x)
       .map(w => w.s.trim())
       .join(' ');
   };
