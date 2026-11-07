@@ -1,5 +1,11 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.77 — Bed lag from masses (2026-11-07, JENNIE)
+
+**Work done.** The bed lag is now heat stored over heat carried by the gas, from the refractory and bed masses of the drawings, in place of the 4 h fit and the 900 s value. See GAS_PATH.md.
+
+**Not tested.** Live; item sent to Mina.
+
 ## 3.2.1-beta.74 — Audit values, second batch (2026-11-07, JENNIE)
 
 **Work done.** Heater drain valve capacities and alternates, RH and HP bypass spray flows, from the valve sheets.

@@ -43,3 +43,6 @@ A heater out sends colder water to the economizer, and it takes more from the ga
 
 ## ESP (b5)
 ESP in service: dust 2.9 mg/Nm3 and opacity 12.5 % at full gas, snapshot 7.PNG. ESP out of service: the inlet dust of the design basis, 31,000 mg/Nm3, opacity 100 %. Field state AN_SRC.field.esp. Fly ash conveying stays out of scope; silos unlimited.
+
+## Bed lag (b1)
+Lag = heat stored / heat carried by the gas. Steel, refractory: plant-study/13-thermal-masses.md (PC only). Cold 1280 MJ/K: bed 170 t, refractory 986 to 1264 t (density not printed in plant documents, band +-11 %). Hot: bed solids 153 MJ/K. Two burners, 50 MW, 406 T/H: steady 470 C, the SOP light-off figure of 400 to 450 C; lag 3.1 h. At 594 T/H hot: 850 s. Specific heats 0.9, 1.0, 1.1 kJ/kg K are textbook values. Not checked against plant data.
