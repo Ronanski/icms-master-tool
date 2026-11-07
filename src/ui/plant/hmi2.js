@@ -938,7 +938,7 @@
     const amb = E.tpa;
     E.T = (t0, after) => amb + (t0 - amb) * E.kb * (after ? 0.85 + 0.15 * clamp(E.g, 0.2, 1.2) : 1);
     E.P = p0 => (E.idf ? E.pf + (p0 - -16) * E.g * E.g : E.pf);
-    E.gi = AN.aphIn(amb, E.kb, E.g);
+    E.gi = AN.aphIn(amb, E.kb, E.g, AN.unit && AN.unit.fwDrop);
     E.go = AN.aphOut(E.gi, E.fpa || 0, AN.aphAir(amb, E.pa, 'p'), E.tpo == null ? amb : E.tpo, E.fsa || 0, AN.aphAir(E.tsa, E.sa, 's'), E.tso == null ? amb : E.tso, E.ffa || 0);
   }
   /* ---------- live links ---------- */
