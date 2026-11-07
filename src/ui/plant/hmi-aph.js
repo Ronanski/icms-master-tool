@@ -334,6 +334,8 @@
     /* the inputs of the estimate: the same as 007 */
     const inp = (k, ref, tag) => live(ref, tag, v => ((E[k] = v), later()));
     inp('fpa', 'pv:FICFA1071');
+    inp('tpo', '', 'TIFA1076');
+    inp('tso', '', 'TIFA1086');
     inp('fsa', 'pv:FICFA1081');
     inp('ffa', '', 'FIFA1055');
     inp('pf0', '', 'PIFG1085');

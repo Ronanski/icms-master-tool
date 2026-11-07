@@ -618,6 +618,8 @@
     const later = () => rq || (rq = setTimeout(() => ((rq = 0), paint()), 60));
     const inp = (k, ref, tag) => val(tag, ref, v => ((E[k] = v), later()));
     inp('fpa', 'pv:FICFA1071');
+    inp('tpo', '', 'TIFA1076');
+    inp('tso', '', 'TIFA1086');
     inp('fsa', 'pv:FICFA1081');
     inp('ffa', '', 'FIFA1055');
     inp('pf0', '', 'PIFG1085');

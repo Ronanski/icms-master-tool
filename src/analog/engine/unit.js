@@ -44,7 +44,7 @@ const AN_UNIT = {
        The headers after the spray (ABC-011 TT-BR1140 SH no.2 outlet, ABC-012 TT-MS1004 finishing SH outlet) are the spray outlet
        plus the heat pickup of the next superheater, taken at the anchor (ASSUMED constant), with the metal lag tauT (ASSUMED).
      - O2 (ABC-002 AT-FG1122 / 1123): O2 = 21 x (1 - stoichiometric air / total air), total air = PA + SA + FA of ABC-006 (FT-FA1071,
-       FT-FA1081, FT-FA1055), stoichiometric air per T/H of coal from the anchor (O2 4.3 % at the snapshot air and coal: excess air
+       FT-FA1081, FT-FA1055), stoichiometric air per T/H of coal AN_GAS.afs (boiler.js, FHI Tab 3); it replaced the anchor (O2 4.3 % at the snapshot air and coal: excess air
        about 26 %; design 20 %). Analyzer lag tauO2 (ASSUMED). PA to the furnace FT-FA1079 (ABC-006 indicator) follows the PAF flow */
   lpb: 0.8 /* 2.2.0-beta.16: was 0.3; sized so that at 7.5 kg/cm2 it passes the HP bypass flow of the bypass servicing with the valve
     in its working range (PR-OPE-5002: steam flow > 40 T/H, RH pressure 7.5 ksc held by the LP bypass in AUTO): 0.8 x 475 x 7.6 / 34.4 =
@@ -448,7 +448,7 @@ function anUnitStart() {
     O20 = o2a.length ? o2a.reduce((a, q) => a + q, 0) / o2a.length : NaN;
   U.afs = 0;
   if (U.taf.length === 3 && isFinite(O20) && O20 > 0 && O20 < 21 && taf0 > 0 && F0 > 0) {
-    U.afs = ((1 - O20 / 21) * taf0) / F0; /* T/H of air per T/H of coal, stoichiometric */
+    U.afs = AN_GAS.afs; /* T/H of air per T/H of coal, stoichiometric, boiler.js */
     U.O20 = U.o2v = O20;
     U.taf0 = taf0;
   }
@@ -542,6 +542,7 @@ function anUnitStart() {
       .map(k => anUnitAnchor(anUnitAIs(k)))
       .filter(l => l.length);
   U.aphT = aiList(/^TIFA(1086|1087|1076|1077)$/);
+  U.aphL = { pa: aiList(/^TIFA(1076|1077)$/).flat(), sa: aiList(/^TIFA(1086|1087)$/).flat() }; /* boiler.js anAphStep */
   U.saP = aiList(/^PIFA(1085|1088)$/);
   U.saN = U.tafS ? netOf(U.tafS, 'FIFA1081.PV') : -1;
   U.sa0 = U.saN >= 0 ? +U.tafS.rt.v[U.saN] : NaN;
@@ -2866,7 +2867,6 @@ function anUnitStep(dt) {
   if (U.tbed && U.tbed.length) {
     const k = Math.max(0, (U.Tb - U.Tamb) / Math.max(1, U.Tb0 - U.Tamb));
     for (const L of U.tbed) anUnitWrite(L, i => U.Tamb + (L.a0[i] - U.Tamb) * k);
-    for (const L of U.aphT || []) anUnitWrite(L, i => U.Tamb + (L.a0[i] - U.Tamb) * k);
   }
   if (U.saP && U.saP.length && U.sa0 > 0) {
     const r = Math.max(0, +U.tafS.rt.v[U.saN] || 0) / U.sa0;
@@ -3040,15 +3040,13 @@ function anUnitStep(dt) {
       for (const L of h.L) anUnitWrite(L, i => Math.max(tsat, Math.min(cap, L.a0[i] + h.x - h.pv0 + h.d)));
     } else for (const L of h.L) shifted(L, h.x - h.pv0 + h.d);
   }
-  /* O2 of the flue gas: 21 x (1 - stoichiometric air / total air), analyzer lag; each analyzer keeps its offset of the snapshot */
+  /* O2 of the flue gas: 21 x (1 - stoichiometric air / total air), analyzer lag. Both analyzers read it: FHI gives one curve (Fig 7) and
+     the 6.4 / 2.2 % of one snapshot has no source, it stood the B side on LOW-LOW at 150 MW */
   if (U.afs > 0) {
     const taf = U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0),
       o2s = Math.max(0, Math.min(21, 21 * (1 - (Fe * U.afs) / Math.max(1, taf))));
     U.o2v += ((o2s - U.o2v) * dt) / U.tauO2;
-    /* 3.2.0 roadmap 3: each analyzer keeps its offset of the snapshot only in the flue gas: in air (no fire, 21 %) both read 21 (Cold
-       read 23.1 / 18.9 %) */
-    const ko = Math.max(0, Math.min(1, (21 - U.o2v) / Math.max(0.5, 21 - U.O20)));
-    for (const L of U.o2) anUnitWrite(L, i => Math.max(0, Math.min(21, U.o2v + (L.a0[i] - U.O20) * ko)));
+    for (const L of U.o2) anUnitWrite(L, U.o2v);
   }
   /* bed inventory and the furnace pressure drop */
   if (U.paNet >= 0) {

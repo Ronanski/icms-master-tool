@@ -1,0 +1,22 @@
+// O2 and the air preheater against FHI Tab 3, Figures 7, 12, 13, at 150 MW and in Cold. Usage: node tests/regress/gas_path.js [html]
+const {open}=require('./lib.js');const fs=require('fs');
+const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
+(async()=>{const {browser,page,errs}=await open(html);let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
+await page.waitForFunction(()=>AN.sheets&&AN.sheets.length>=54&&window.WORLD&&WORLD.idx&&S.sheets.length>=PRE_N,null,{timeout:120000});await page.waitForTimeout(1500);
+const rd=()=>page.evaluate(()=>{const m=AN.plAIs(),g=t=>{const l=m.get(t);return l&&l.length?+l[0].S.rt.v[l[0].n]:null},U=AN.unit;return {a:g('AT-FG1122'),b:g('AT-FG1123'),pa:g('TT-FA1076'),sa:g('TT-FA1086'),o2:U.o2v,gi:U.aphGi,go:U.aphGo}});
+await page.evaluate(async()=>{await AN.ades();WORLD.set(true);document.getElementById('load150').click();await AN._startP;
+ const C=AN.sheets.find(s=>s.name==='ABC-001C');for(let k=0;k<480;k++){WORLD.live=true;AN.stepSet(C,.5);WORLD.tick(.5)}});
+const r=await rd();console.log(JSON.stringify(r));
+ck(r.o2>3.2&&r.o2<4.3,'O2 at 150 MW near Fig 7 3.6 and the set point 3.5: '+r.o2.toFixed(2));
+ck(r.a===r.b,'one curve: both analyzers read the same: '+r.a+', '+r.b);
+ck(r.gi>312&&r.gi<332,'gas entering, Tab 3 322: '+r.gi.toFixed(0));
+ck(r.go>122&&r.go<145,'gas leaving, Tab 3 135 at ambient 35: '+r.go.toFixed(0));
+ck(r.pa>275&&r.pa<296,'PA leaving, Tab 3 285.8: '+r.pa);
+ck(r.sa>291&&r.sa<312,'SA leaving, Tab 3 301.6: '+r.sa);
+const f=await page.evaluate(()=>[[365,38.5,8.8],[332,47,4.6],[371,56,3.6],[427,64,3.6],[596,89.5,3.6]].map(([a,c,w])=>[w,21*(1-c*5.46/a)]));
+for(const [w,g] of f)ck(Math.abs(g-w)<0.35,'Fig 12 air and Fig 13 coal give Fig 7 O2 '+w+': '+g.toFixed(2));
+await page.evaluate(async()=>{await AN.loadStart('cold',true);const C=AN.sheets.find(s=>s.name==='ABC-001C');for(let k=0;k<60;k++){AN.stepSet(C,.5)}});
+const c=await rd();console.log(JSON.stringify(c));
+ck(c.pa<40&&c.sa<40,'Cold: no hot air: '+c.pa+', '+c.sa);
+ck(c.a>20&&c.b>20,'Cold: air in the analyzers: '+c.a+', '+c.b);
+ck(!errs.length,'no page error '+errs.slice(0,2).join(' | '));console.log(fail?'FAILED '+fail:'ALL PASS');await browser.close();process.exit(fail?1:0)})();
