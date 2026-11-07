@@ -357,8 +357,34 @@
     P.fN = f;
     P.fChip.textContent = f + ' FORCED';
     P.fChip.style.display = f ? '' : 'none';
+    fBar(f);
   }
   /* the user's forces: S.rt.force minus what the plant model owns (S.rt.pf), the same rule as the Inspector list */
+  /* user 2026-11-07: while any signal is forced a banner stands in every view, on top of the page. The chip alone was easy to miss */
+  function fBar(f) {
+    let b = $('crfbar');
+    if (!b) {
+      if (!f) return;
+      b = E('div');
+      b.id = 'crfbar';
+      b.setAttribute('role', 'alert');
+      const t = E('span'),
+        ls = E('button', '', 'List'),
+        all = E('button', '', 'Release all');
+      ls.type = all.type = 'button';
+      ls.onclick = e => (e.stopPropagation(), P.fChip.click());
+      all.onclick = () => (userForces().forEach(q => AN.setForce(q.sh, q.n, undefined)), fBar(0));
+      b.append(t, ls, all);
+      document.body.append(b);
+    }
+    b.hidden = !f;
+    if (!f) return;
+    const a = $('cralarm');
+    b.style.top = (a ? Math.round(a.getBoundingClientRect().bottom) : 0) + 'px';
+    const L = userForces(),
+      N = L.slice(0, 3).map(q => (AN.nm && AN.nm(q.S, q.n)) || q.sh.name);
+    b.firstChild.textContent = L.length + (L.length > 1 ? ' signals' : ' signal') + ' FORCED, the plant cannot change ' + (L.length > 1 ? 'them' : 'it') + ': ' + N.join(', ') + (L.length > 3 ? ' ...' : '');
+  }
   function userForces() {
     const r = [];
     for (const sh of (window.AN && AN.sheets) || []) {
@@ -542,5 +568,26 @@
     } catch (e) {
       clearInterval(iv);
     }
+  }, 300);
+  /* light app: two classes on the body instead of body:has(#side:not(.min)) and body:has(#dp:not(.min)): with those rules every element added
+     anywhere made the browser search the whole document for #side and #dp (Chrome trace of the Split view: style time on one element) */
+  const sync = () => {
+    const c = document.body.classList,
+      s = document.getElementById('side'),
+      d = document.getElementById('dp');
+    c.toggle('side-open', !!s && !s.classList.contains('min'));
+    c.toggle('dp-open', !!d && !d.classList.contains('min'));
+  };
+  const seen = new Set();
+  const iv2 = setInterval(() => {
+    for (const id of ['side', 'dp']) {
+      const e = document.getElementById(id);
+      if (e && !seen.has(id)) {
+        seen.add(id);
+        new MutationObserver(sync).observe(e, { attributes: true, attributeFilter: ['class'] });
+      }
+    }
+    sync();
+    if (seen.size === 2) clearInterval(iv2);
   }, 300);
 })();

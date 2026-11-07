@@ -932,6 +932,10 @@
   /* the force on the logic signal of an analog row (undefined = not forced) */
   const fOf = x => (x.fn ? call(() => x.fn.S2.rt.force[x.fn.n], undefined) : undefined);
   /* Inject / Release in the Events log (the events of the batch name its equipment) */
+  /* user 2026-11-07: Inject belongs to the loop check: what was injected here is released when the Split view closes, and nothing is injected while
+     the Guide runs a start-up */
+  const INJ = new Set();
+  const guideOn = () => !!(window.LS_GUIDE && LS_GUIDE.on);
   const injEv = (x, what) =>
     call(() => {
       const e0 = eq();
@@ -1079,6 +1083,7 @@
                       ' on this logic signal (forced): the plant model cannot change it until Release',
                 () => {
                   call(() => AN.setForce(x.fn.sh, x.fn.n, held ? undefined : want));
+                  held ? INJ.delete(x) : INJ.add(x);
                   injEv(x, held ? null : fmtA(q.exp));
                   paint(true);
                 }
@@ -1089,10 +1094,15 @@
                 bi.disabled = true;
                 bi.title = 'VIEW mode: press RUN to inject a value';
               }
+              if (!held && guideOn()) {
+                bi.disabled = true;
+                bi.title = 'Inject is for the loop check only: stop the Training first';
+              }
               exA.append(bi);
             } else if (fv !== undefined) {
               const bi = Bt('Release', 'This signal is forced: give it back to the field', () => {
                 call(() => AN.setForce(x.fn.sh, x.fn.n, undefined));
+                INJ.delete(x);
                 injEv(x, null);
                 paint(true);
               });
@@ -1285,6 +1295,12 @@
   /* ---------- on / off ---------- */
   function toggle(v) {
     on = v == null ? !on : !!v;
+    if (!on)
+      for (const x of INJ) {
+        call(() => AN.setForce(x.fn.sh, x.fn.n, undefined));
+        injEv(x, null);
+        INJ.delete(x);
+      }
     build();
     wrapPlant();
     document.body.classList.toggle('lssplit', on);
