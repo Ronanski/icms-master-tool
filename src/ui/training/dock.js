@@ -3107,6 +3107,8 @@
       } catch (e) {}
       const hd = call(() => g.holdOf(s), null);
       els.cond.className = 'gd-cond' + (ok ? ' ok' : '');
+      /* Mina F43: a step that must stop on a level asks for x10 near it, else x300 runs past it in one look at the screen */
+      if (s.slow && call(() => s.slow(), false) && +((window.AN && AN.spd) || 1) > 10) setSpeed(10);
       els.cond.textContent = (ok ? '✓ ' : '◌ ') + (s.c.want ? 'Needed: ' + s.c.want : 'Needed') + (now ? '  ·  Now: ' + now : '') + (hd ? '  ·  held ' + f0(hd[0]) + ' / ' + f0(hd[1]) + ' s' : '');
     } else if (els.cond) {
       /* 3.2.0 walkthrough #5: the 6 h of the ESP purge, in plant time */
@@ -3452,7 +3454,7 @@
     }
     if (!a) {
       const key = x => x.fp || (x.dg && x.dg[0]),
-        d = (s.a || []).find(x => key(x) && R[key(x)] && !call(() => x.hide && x.hide(), false) && !call(() => x.on && x.on(), false));
+        d = (s.a || []).find(x => key(x) && (R[key(x)] || /^F:/.test(key(x))) && !call(() => x.hide && x.hide(), false) && !call(() => x.on && x.on(), false));
       if (d) {
         ad = key(d);
         a = d;
@@ -3468,10 +3470,14 @@
     const t = 'Open faceplate: ' + nmA + ' ▸';
     if (b.textContent !== t) b.textContent = t;
     b.title = 'The operator acts on the HMI faceplate: REMOTE / LOCAL (field), AUTO / MAN, START / STOP, the permissive of the SOP and of the logic';
+    /* Mina F42, F44: a valve of the step opens the valve card on any page. The motor card was the fall-back when the page of the valve was not on
+       the screen, so V-CW1001 got START / STOP / VCB */
+    const vTag = /^(?:[A-Z]{1,3}-)?[A-Z]{1,3}-?[A-Z]{2}\d{4}/.test(nmA) ? (/\b[A-Z]{1,3}-[A-Z]{2}\d{4}\b/.exec(nmA) || [''])[0] : '';
     b.onclick = () => {
+      if (vTag && LS_FPOP.valveKind && LS_FPOP.valveKind(vTag) && call(() => LS_FPOP.valveTag(vTag), false)) return;
       if (call(() => LS_FPOP.openAd(ad), false)) return;
       goStep(s);
-      setTimeout(() => call(() => LS_FPOP.openAd(ad), false) || call(() => LS_FPOP.motor({ ad, n: nmA, d: MOTOR[ad] }), false), 700);
+      setTimeout(() => call(() => LS_FPOP.openAd(ad), false) || (MOTOR[ad] ? call(() => LS_FPOP.motor({ ad, n: nmA, d: MOTOR[ad] }), false) : false), 700);
     };
   }
   /* the steps move on by themselves (RUN): the open step is checked every half second */

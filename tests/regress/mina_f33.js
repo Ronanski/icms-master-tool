@@ -11,7 +11,7 @@ const r=await page.evaluate(async()=>{await AN.ades();WORLD.set(true);const C=AN
   const m=S.sheets.find(x=>x.name.endsWith(')DITL-112'));for(let r=0;r<40;r++){const I=DUI.rowInfo(m,r);if(/REMOTE MODE SELECTED/.test(I.svc||''))m.sig[r+':S']=true}
   const m2=S.sheets.concat(WORLD.inst).find(x=>x.name.endsWith('DITL-112 #B'));for(let r=0;r<40;r++){const I=DUI.rowInfo(m2,r);if(/REMOTE MODE SELECTED/.test(I.svc||''))m2.sig[r+':S']=true}
   run(1);LS_DOCK.dmotor('DITL-112',1);run(3);WORLD.dset('DITL-112 #B',14,true);run(2);
-  o.xv=U.muXv;o.fill0=U.muFill;U.etLvl=1.68;run(6);o.lv=U.etLvl;o.next1=St.a.filter(x=>(x.dg||x.fp||x.loc)&&!/^START /.test(x.l)&&(!x.on||!x.on())).map(x=>x.l);
+  o.xv=U.muXv;o.fill0=U.muFill;o.cwEarly=!!St.a.find(x=>/V-CW1001/.test(x.l)).on();o.kind=LS_FPOP.valveKind('V-CW1001');o.slow=St.slow?(U.etLvl=1.5,run(1),St.slow()):null;U.etLvl=1.68;run(6);o.lv=U.etLvl;o.next1=St.a.filter(x=>(x.dg||x.fp||x.loc)&&!/^START /.test(x.l)&&(!x.on||!x.on())).map(x=>x.l);
   const pick=t=>St.a.find(x=>x.l.includes(t));pick('CLOSE V-MU1031').f();run(4);o.line=U.muLine;o.fill1=U.muFill;const l1=U.etLvl;run(10);o.held=U.etLvl-l1;
   o.next2=St.a.filter(x=>(x.dg||x.fp||x.loc)&&!/^START /.test(x.l)&&(!x.on||!x.on())).map(x=>x.l);
   pick('OPEN V-CW1001').f();run(130);o.lvP=U.etLvl;o.prime=U.cwPrime;o.next3=St.a.filter(x=>(x.dg||x.fp||x.loc)&&!/^START /.test(x.l)&&(!x.on||!x.on())).map(x=>x.l);
@@ -21,6 +21,7 @@ const r=await page.evaluate(async()=>{await AN.ades();WORLD.set(true);const C=AN
 console.log(JSON.stringify(r));
 ck(r.auto&&r.idx[1]>r.idx[0],'the XV-MU1109 AUTO step comes after the fill, step '+(r.idx[1]+1));
 ck(r.xv===1&&r.fill0===1,'no air: XV-MU1109 open, the tank fills');
+ck(r.cwEarly,'V-CW1001 is not asked before the fill is done');ck(r.kind==='field','V-CW1001 is a field valve card');ck(r.slow===true,'x10 near the level');
 ck(!(r.next1[0]||'').includes('XV-MU1109 CLOSE')&&(r.next1[0]||'').includes('CLOSE V-MU1031'),'at 1.7 m the next action is V-MU1031: '+r.next1[0]);
 ck(r.line===0&&r.fill1===0&&Math.abs(r.held)<1e-6,'V-MU1031 shut stops the fill');
 ck((r.next2[0]||'').includes('V-CW1001'),'then V-CW1001: '+r.next2[0]);

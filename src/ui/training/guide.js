@@ -524,6 +524,7 @@ window.LS_GUIDE = (function () {
           sec: 7,
           max: 1,
           sby: 1,
+          slow: () => et() >= 1.4 && et() < 1.69 && !fillShut() && +U().muFill === 1,
           t: 'Start a make-up water pump (MWP) and fill the expansion tank',
           d: 'Do: START one make-up water pump, REMOTE + AUTO on the standby, then fill the expansion tank to its normal level NL 1.7 m and stop the fill. XV-MU1109 (DITL-78) is pneumatic, spring opening (vendor sheet K1AU3-E2-0-123 item 39): without instrument air (Cold, before section 10) it is OPEN and cannot close, so the tank fills through it as soon as the header is above 6 kg/cm². At 1.7 m the field operator closes the line valve V-MU1031. Then OPEN V-CW1001 to prime the closed cooling line; the level falls, so open V-MU1031 to make up to 1.7 m and close it again. XV-MU1109 goes to AUTO after the instrument air (section 10).',
           c: C(
@@ -557,7 +558,7 @@ window.LS_GUIDE = (function () {
                   window.lsEventAdd && lsEventAdd('FIELD', 'FIELD', 'Field operator: OPEN expansion tank outlet valve V-CW1001 (prime the closed cooling line)');
                 } catch (e) {}
                 return '';
-              }, () => fstate('cw1001')),
+              }, () => fstate('cw1001') || et() < 1.69 || !fillShut()) /* Mina F43: PR-OPE-5002 section 7: EXPANSION TANK FILLING first, then CLOSE COOLING LINE PRIMING */,
               { loc: 1, fp: 'F:cw1001' } /* the FIELDV pop-out of V-CW1001 on page 027 (hmi-cw.js, Rose) */
             ),
             Object.assign(btn('XV-MU1109 AUTO / MAN (DITL-78)', () => xvSel(!xvAuto()), () => xvAuto() || !air() || et() < 1.69), { dg: ['DITL-78', 2] })
