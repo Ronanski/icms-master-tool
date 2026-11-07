@@ -67,9 +67,6 @@ const block =
   '\n' +
   fs.readFileSync(__dirname + '/why.js', 'utf8') +
   '\n' +
-  "window.LS_TCSL_DATA='" +
-  fs.readFileSync(__dirname + '/tcslogic-draw.txt', 'utf8') +
-  "';" +
   fs.readFileSync(__dirname + '/tcslogic.js', 'utf8') +
   '\n' +
   /* 3.2.0-beta.7: F(X) curves page */
