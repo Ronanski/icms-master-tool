@@ -333,7 +333,9 @@ function anCycFlows(t) {
     c = x => Math.max(0, Math.min(1, x)),
     /* while a starting state loads, the scan cache of srcState is the state before: read the pump bits now */
     cep = (AN.steady && typeof srcBit === 'function' ? srcBit(['M.3350', 'M.3351']) : s.cep) ? 1 : 0,
-    fda = cep * Math.min(520, 21.7 * Math.max(0, AN_CYC.u.da || 0)),
+    /* a feedwater heater with its tubes and its bypass shut stops the condensate (unit.js anHtrPath) */
+    cdp = typeof AN_UNIT !== 'undefined' && AN_UNIT.on && isFinite(AN_UNIT.cdPath) ? AN_UNIT.cdPath : 1,
+    fda = cep * cdp * Math.min(520, 21.7 * Math.max(0, AN_CYC.u.da || 0)),
     frec = cep * 2.5 * 100 * c((AN_CYC.u.cf || 0) / 100),
     /* the steam of the turbine and of the HP bypass (MB-011 item 8, MB-012 items 6, 10: bypass -> cold reheat -> reheater -> LP
        bypass -> condenser) both come back as water; only vented steam leaves the cycle */
@@ -756,6 +758,8 @@ function anProcStep(S, dt) {
           Pd = ps0 && isFinite(ps0.val) ? Math.max(0, +ps0.val) : 0;
         if (Pd < 10) lhdQ = 0.61 * 0.00912 * (AN_SRC.lhdPct / 100) * Math.sqrt(2 * (Pd * 98066.5 + 1000 * 9.80665 * 7.748) * 1000) * 3.6; /* kg/s -> T/H */
       }
+      /* a feedwater heater with its tubes and its bypass shut stops the feedwater (unit.js anHtrPath) */
+      if (typeof AN_UNIT !== 'undefined' && AN_UNIT.on && isFinite(AN_UNIT.fwPath)) ffw *= AN_UNIT.fwPath;
       q.y = Math.max(lo, Math.min(lo + span, q.y + dt * AN_CYC.rate('dr') * (ffw - fst - (pr.integLoss || 0) - lhdQ)));
       AN_CYC.y.dr = q.y;
       AN_CYC.dl = fst + (pr.integLoss || 0) + lhdQ; /* water and steam that leave the drum */
