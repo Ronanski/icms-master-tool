@@ -53,7 +53,8 @@
     side = 'ins',
     showV = true,
     trace = true,
-    traced = new Set();
+    traced = new Set(),
+    DR = null;
   const css = `#tcsl{position:fixed;left:var(--railW,4rem);top:0;right:0;bottom:0;z-index:120;display:flex;background:var(--panel,#1b2530);color:var(--tx,#edf3f8);font:14px Inter,system-ui,sans-serif}
 #tcsl nav{width:18rem;overflow:auto;border-right:1px solid var(--line,#34475a);padding:.5rem;flex:none}
 #tcsl nav button{display:block!important;width:100%!important;height:auto!important;min-height:0!important;white-space:normal!important;text-align:left!important;overflow:visible!important;text-overflow:clip!important;background:none;border:0;border-bottom:1px solid var(--line,#34475a);border-radius:0;color:inherit;padding:.625rem .5rem;margin:0;font:inherit;line-height:1.4;cursor:pointer}
@@ -91,7 +92,7 @@
     for (const [p, n] of live) {
       const on = st.v[n] > 0.5,
         t = traced.has(n);
-      p.setAttribute('stroke', t ? '#2f6fd0' : on ? '#d32020' : '#7d8a96');
+      p.setAttribute('stroke', t ? '#2f6fd0' : on ? '#d32020' : DR && DR[cur] ? 'none' : '#7d8a96');
       p.setAttribute('stroke-width', t ? 2 : on ? 1.6 : 0.9);
     }
     for (const [e, n] of vals) {
@@ -234,6 +235,44 @@
         g0
       };
     });
+    /* the IBD drawing the user loaded on this PC: its own lines and words, the live wires over them; the blocks stay clickable */
+    const dr = DR && DR[cur];
+    if (dr && dr.n === s.g.length) {
+      g.setAttribute('viewBox', '0 0 1191 842');
+      add('path', { d: dr.d, fill: 'none', stroke: '#14191d', 'stroke-width': 0.5 });
+      add('path', { d: dr.f, fill: '#14191d', stroke: 'none' });
+      for (const n in dr.w)
+        live.push([add('path', { d: dr.w[n], fill: 'none', stroke: 'none', 'stroke-width': 1.6 }), +n]);
+      for (const [w, x, y, h, a, tw] of dr.t) {
+        const e = add(
+          'text',
+          {
+            x,
+            y,
+            'font-size': h * 0.86,
+            'font-family': 'Consolas, JetBrains Mono, monospace',
+            fill: '#14191d',
+            'pointer-events': 'none',
+            transform: a ? 'rotate(' + -a + ' ' + x + ' ' + y + ')' : ''
+          },
+          w
+        );
+        if (tw > 0) {
+          e.setAttribute('textLength', tw);
+          e.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+        }
+      }
+      for (const b of blocks)
+        add('rect', { x: b.x, y: b.y, width: b.w, height: b.h, fill: 'transparent', style: 'cursor:pointer' }).onclick =
+          () => pick(b);
+      for (const i of s.i)
+        if (i[2] != null)
+          vals.push([add('text', { x: i[2] + 3, y: Y(i[3]) - 3, 'font-size': 8, fill: '#3a4650' }, ''), i[0]]);
+      sv.append(g);
+      panel();
+      paint();
+      return;
+    }
     const src = new Map();
     for (const b of blocks) if (b.out >= 0) src.set(b.out, [b.x + b.w, b.y + b.h / 2]);
     const labels = new Map(s.x.filter(x => x[3]).map(x => [x[0], 'from ' + x[2]]));
@@ -341,6 +380,65 @@
     panel();
     paint();
   }
+  /* the drawing of the IBD never comes with the app: the user picks the file made on this PC (tools/data/ibd_build.mjs); it stays in this browser */
+  const DBN = 'ls-ibd-drawing';
+  const db = () =>
+    new Promise((ok, no) => {
+      const r = indexedDB.open(DBN, 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('d');
+      r.onsuccess = () => ok(r.result);
+      r.onerror = () => no(r.error);
+    });
+  async function dbGet() {
+    try {
+      const d = await db();
+      return await new Promise(ok => {
+        const q = d.transaction('d').objectStore('d').get('v');
+        q.onsuccess = () => ok(q.result || null);
+        q.onerror = () => ok(null);
+      });
+    } catch (e) {
+      return null;
+    }
+  }
+  async function dbPut(v) {
+    try {
+      const d = await db(),
+        s = d.transaction('d', 'readwrite').objectStore('d');
+      if (v) s.put(v, 'v');
+      else s.delete('v');
+    } catch (e) {}
+  }
+  const take = v => {
+    DR = v && v.sheets ? Object.fromEntries(v.sheets.map(q => [q.id, q])) : null;
+    if (box) box.querySelector('.ld').textContent = DR ? 'Remove IBD drawing' : 'Load IBD drawing';
+  };
+  function pickFile() {
+    if (DR) {
+      take(null);
+      dbPut(null);
+      sheet();
+      return;
+    }
+    const i = document.createElement('input');
+    i.type = 'file';
+    i.accept = '.gz,.json';
+    i.onchange = async () => {
+      const f = i.files && i.files[0];
+      if (!f) return;
+      try {
+        const b = new Uint8Array(await f.arrayBuffer()),
+          v = JSON.parse(/gz$/i.test(f.name) ? await gunz(b) : new TextDecoder().decode(b));
+        if (!v.sheets || !/310SC90-794/.test(v.doc || '')) throw new Error('not the IBD drawing file');
+        take(v);
+        dbPut(v);
+        sheet();
+      } catch (e) {
+        alert('This file cannot be read: ' + e.message);
+      }
+    };
+    i.click();
+  }
   function nav() {
     const n = box.querySelector('nav');
     n.textContent = '';
@@ -405,7 +503,8 @@
           traced = trace && sel ? fanIn(sel) : new Set();
         }),
         tb('Inspector', () => (side = side === 'insp' ? '' : 'insp')),
-        tb('Inputs', () => (side = side === 'ins' ? '' : 'ins'))
+        tb('Inputs', () => (side = side === 'ins' ? '' : 'ins')),
+        Object.assign(E('button', 'x ld', 'Load IBD drawing'), { onclick: pickFile })
       );
       bd.append(E('div', 'sv'), E('div', 'sd'));
       sec.append(hd, bd);
@@ -423,6 +522,13 @@
     }
     box.hidden = false;
     box.style.display = 'flex';
+    if (!DR)
+      dbGet().then(v => {
+        if (v) {
+          take(v);
+          sheet();
+        }
+      });
     railOn(true);
     tabs();
     nav();

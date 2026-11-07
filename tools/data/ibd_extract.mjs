@@ -16,7 +16,8 @@ for (let p = 1; p <= d.numPages; p++) {
   let m = [1, 0, 0, 1, 0, 0];
   const st = [],
     segs = [],
-    curves = [];
+    curves = [],
+    paths = [];
   ol.fnArray.forEach((f, i) => {
     const a = ol.argsArray[i];
     if (f === O.save) st.push(m.slice());
@@ -25,6 +26,8 @@ for (let p = 1; p <= d.numPages; p++) {
     else if (f === O.constructPath) {
       const ops = a[0],
         c = a[1];
+      let dd = '';
+      const P = (x, y) => r1(x) + ' ' + r1(842 - y);
       let k = 0,
         x0 = 0,
         y0 = 0,
@@ -33,6 +36,7 @@ for (let p = 1; p <= d.numPages; p++) {
       for (const op of ops) {
         if (op === O.moveTo) {
           [x0, y0] = ap(m, c[k], c[k + 1]);
+          dd += 'M' + P(x0, y0);
           sx = x0;
           sy = y0;
           k += 2;
@@ -40,17 +44,22 @@ for (let p = 1; p <= d.numPages; p++) {
           const [x, y] = ap(m, c[k], c[k + 1]);
           k += 2;
           segs.push([r1(x0), r1(y0), r1(x), r1(y)]);
+          dd += 'L' + P(x, y);
           x0 = x;
           y0 = y;
         } else if (op === O.curveTo) {
-          const [x, y] = ap(m, c[k + 4], c[k + 5]);
+          const [x, y] = ap(m, c[k + 4], c[k + 5]),
+            [a, b] = ap(m, c[k], c[k + 1]),
+            [e, g2] = ap(m, c[k + 2], c[k + 3]);
           k += 6;
+          dd += 'C' + P(a, b) + ' ' + P(e, g2) + ' ' + P(x, y);
           curves.push([r1(x0), r1(y0), r1(x), r1(y)]);
           x0 = x;
           y0 = y;
         } else if (op === O.curveTo2 || op === O.curveTo3) {
           const [x, y] = ap(m, c[k + 2], c[k + 3]);
           k += 4;
+          dd += 'L' + P(x, y);
           curves.push([r1(x0), r1(y0), r1(x), r1(y)]);
           x0 = x;
           y0 = y;
@@ -58,17 +67,27 @@ for (let p = 1; p <= d.numPages; p++) {
           const [x, y] = ap(m, c[k], c[k + 1]),
             [x2, y2] = ap(m, c[k] + c[k + 2], c[k + 1] + c[k + 3]);
           k += 4;
+          dd += 'M' + P(x, y) + 'L' + P(x2, y) + 'L' + P(x2, y2) + 'L' + P(x, y2) + 'Z';
           segs.push([r1(x), r1(y), r1(x2), r1(y)], [r1(x2), r1(y), r1(x2), r1(y2)], [r1(x2), r1(y2), r1(x), r1(y2)], [r1(x), r1(y2), r1(x), r1(y)]);
         } else if (op === O.closePath) {
           segs.push([r1(x0), r1(y0), r1(sx), r1(sy)]);
+          dd += 'Z';
           x0 = sx;
           y0 = sy;
         }
       }
+      /* the op after the path says how it is painted */
+      let fill = false;
+      for (let j = i + 1; j < Math.min(i + 4, ol.fnArray.length); j++) {
+        const nx = ol.fnArray[j];
+        if (nx === O.fill || nx === O.eoFill || nx === O.fillStroke || nx === O.eoFillStroke) fill = true;
+        if (nx === O.stroke || nx === O.endPath || nx === O.closeStroke) break;
+      }
+      paths.push([fill ? 1 : 0, dd]);
     }
   });
   const texts = tc.items.filter(t => t.str.trim()).map(t => ({ s: t.str, x: r1(t.transform[4]), y: r1(t.transform[5]), h: r1(Math.hypot(t.transform[2], t.transform[3])), w: r1(t.width), a: Math.round((Math.atan2(t.transform[1], t.transform[0]) * 180) / Math.PI), f: t.fontName }));
-  fs.writeFileSync(process.argv[3] + '/p' + p + '.json', JSON.stringify({ p, segs, curves, texts }));
+  fs.writeFileSync(process.argv[3] + '/p' + p + '.json', JSON.stringify({ p, segs, curves, texts, paths }));
   const cnt = re => texts.filter(t => re.test(t.s.trim())).length;
   sum.push([p, segs.length, curves.length, texts.length, 'A' + cnt(/^A$/), 'OR' + cnt(/^OR$/), 'CMP' + cnt(/^CMP$/), 'DI' + cnt(/^(DI|DT)$/), 'S' + cnt(/^S$/), 'R' + cnt(/^R$/), 'V' + cnt(/^\d\/\d$/)].join(' '));
 }
