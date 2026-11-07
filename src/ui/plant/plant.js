@@ -41,6 +41,7 @@
     VALS = () => window.PLANT_VALS || [];
   let ws = null,
     svg = null,
+    smilIv = 0,
     cur = null,
     vb = null,
     btn = null;
@@ -180,6 +181,19 @@
   /* 2.2.0-beta.19: a reference written on the item (systems.js `ref`): 'SHEET|LABEL' = the net of that sheet with that label
      (AI0419, SI0230, M.201F, I.0082) or that name ('MAN HIC-BM out'); 'pv:TAG' / 'mv:TAG' = the PV / MV of a faceplate (PID or MAN).
      For the values and flags that the HMI draws without a tag (033 CCS OPERATION, the header bar) */
+  /* light app (user 2026-11-07, Split 3 to 5 fps at 4x CPU, Chrome trace): the SMIL motion of 007 and 030 (177 elements) ran at the screen rate and
+     repainted the drawing every frame. It stands paused and takes one step 10 times a second; in the Split view, a check of values, it stays still */
+  function smilRun(on) {
+    clearInterval(smilIv);
+    smilIv = 0;
+    if (!svg || !svg.pauseAnimations) return;
+    svg.pauseAnimations();
+    if (!on) return;
+    smilIv = setInterval(() => {
+      if (document.hidden || document.body.classList.contains('lssplit')) return;
+      svg.setCurrentTime(svg.getCurrentTime() + 0.1);
+    }, 100);
+  }
   function byRef(ref) {
     if (!ref || !IX) return null;
     /* R9 #60: 'unit:Tb' = a state of the unit model (the furnace temperature averages of 007 = the bed temperature of the model) */
@@ -1242,7 +1256,7 @@
     /* P2 (user 2026-11-01): a hidden plant page does nothing: its SMIL motion (007, 030) stops, the shared driver of the pages
        (hmi-sym.js) stops by itself and starts again here */
     try {
-      if (svg && svg.pauseAnimations) on ? svg.unpauseAnimations() : svg.pauseAnimations();
+      smilRun(on);
       if (on && window.HSYM && HSYM.wake) HSYM.wake();
     } catch (e) {}
     if (btn) btn.classList.toggle('on', !!on);
