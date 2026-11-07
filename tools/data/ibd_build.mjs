@@ -26,7 +26,7 @@ for (let p = 15; p <= 99; p++) {
     tb = J.texts.filter(t => t.x > 630 && t.y < 175);
   const id = (tb.filter(t => t.x > 1000 && t.y > 145).sort((a, b) => b.h - a.h)[0] || { s: 'P' + p }).s.trim();
   const title = tb
-    .filter(t => t.y > 116 && t.y < 175 && t.x > 690 && t.x < 1040 && t.s.trim() !== '-' && !/^(SERVICE|TYPE|PAGE|Scale)$/.test(t.s.trim()))
+    .filter(t => t.y > 116 && t.y < 175 && t.x > 660 && t.x < 1040 && t.s.trim() !== '-' && !/^(SERVICE|TYPE|PAGE|Scale)$/.test(t.s.trim()))
     .sort((a, b) => b.y - a.y)
     .map(t => t.s.trim())
     .join(' ');
