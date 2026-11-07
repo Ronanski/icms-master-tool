@@ -280,6 +280,7 @@
     /* 3.2.1 (IRENE: CONDENSATE): DITL-61B row 19 PT-CD1117 (< 14.0 kg/cm2 = M.3217, the standby condensate pump starts) and DITL-61A
        rows 24 / 27 the strainer DP DPT-CD1001 / 1002 of pump A / B = the plant model's (unit.js AN_CD) */
     [/(?:^|[^A-Z])PT-CD1117\b/, 'cdPd'],
+    [/(?:^|[^A-Z])FT-CD1120\b/, 'cdQt'],
     [/DPT-CD100([12])\b/, t => 'cdDp' + (+/DPT-CD100([12])/.exec(t)[1] - 1)],
     /* 3.2.1 (IRENE: FEEDWATER): DITL-23B row 25 PT-FW1011 (< 155 kg/cm2 = M.3210, the standby BFWP starts) and row 26 the strainer DP
        DPT-FW1115-A / B (machine instance #B) = the plant model's (unit.js AN_FW) */
