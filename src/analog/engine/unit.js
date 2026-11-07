@@ -154,7 +154,8 @@ const AN_UNIT = {
      PR-OPE-5002: batch firing at 400 ~ 450 C to see that the coal burns, continuous feeding above 600 C); the rest leaves unburnt */
   Tburn0: 350,
   Tburn1: 600,
-  Cw: 1324 /* 1508 x 175.6 / 200 t: water of economizer, drum, furnace, evaporator 175.6 t (T8 Tab 2) */,
+  Cw: 1726 /* water 175.6 t (T8 Tab 2) x 4.18 + evaporative steel 437.7 t (B-0-001) x 0.5 kJ/kg K = 953 MJ/K, in units of 0.554 MW */,
+  uaW: 0.58 /* heat to the water by furnace rise: 460 T/H x (2640 - 1360) kJ/kg = 164 MW over 850 - 340 C = 0.32 MW/K, in the same units */,
   kcool: 60 /* 2.2.0-beta.21: cooling of the unfired boiler by the air, T/H steam-equivalent at the anchor air and 300 C (ASSUMED, Fig. 5) */,
   kamb: 1 /* 2.2.0-beta.21: bottled boiler loss to the ambient, T/H steam-equivalent at 300 C (ASSUMED) */,
   tauB: 900,
@@ -2860,12 +2861,14 @@ function anUnitStep0(dt) {
     Qloss = unf * (U.kcool * as + U.kamb) * Math.max(0, (U.Tw - U.Tamb) / 300);
   }
   if (U.cold) {
-    const ts = tsatOf(U.Pd);
+    const ts = tsatOf(U.Pd),
+      /* the water can only take heat from a hotter furnace (Mina item 12d: water 147 C with bed 141 C) */
+      qW = Math.min(U.Qs, U.uaW * Math.max(0, U.Tb - U.Tw));
     if (U.Tw < ts - 0.01) {
-      U.Tw = Math.max(U.Tamb, Math.min(ts, U.Tw + ((U.Qs - Qloss) * dt) / U.Cw));
+      U.Tw = Math.max(U.Tamb, Math.min(ts, U.Tw + ((qW - Qloss) * dt) / U.Cw));
       U.Pd = Math.max(0, U.Pd - ((U.ms + U.mb) * dt) / U.C);
     } else {
-      U.Pd = Math.max(0, U.Pd + ((U.Qs - Qloss - U.ms - U.mb) * dt) / (U.C + U.Cw * steamDTsat(U.Pd)));
+      U.Pd = Math.max(0, U.Pd + ((qW - Qloss - U.ms - U.mb) * dt) / (U.C + U.Cw * steamDTsat(U.Pd)));
       U.Tw = tsatOf(U.Pd);
     }
   } else {
