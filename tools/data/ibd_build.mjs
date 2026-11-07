@@ -5,6 +5,19 @@ import fs from 'fs';
 import { readPage } from './ibd_read.mjs';
 const dir = process.argv[2];
 const NO_LOGIC = new Set([41, 42, 47, 50, 57, 89, 93]); /* charts and notes: no gate */
+/* the symbol font of the ON / OFF lines is shifted by 29; two glyphs are the comparison signs */
+const dec = t => (t.f === 'g_d0_f5' ? [...t.s].map(c => (c === 'Ӎ' ? '≥' : c === 'ӌ' ? '≤' : c.charCodeAt(0) < 128 ? String.fromCharCode(c.charCodeAt(0) + 29) : c)).join('') : t.s);
+/* the set point written under a comparator: [1 high side or 0 low side, on, off, unit]; null = none or a variable limit */
+function setPoint(J, g) {
+  const line = J.texts
+    .filter(t => t.y < g.y0 + 1 && g.y0 - t.y < 34 && t.x > g.x0 - 42 && t.x < g.x1 + 60)
+    .sort((a, b) => b.y - a.y || a.x - b.x)
+    .map(t => dec(t).trim())
+    .join(' ');
+  const on = /ON *([≥≤]) *([-+]?[0-9.]+) *([^ ]*)/.exec(line),
+    off = /OFF *([≥≤]) *([-+]?[0-9.]+)/.exec(line);
+  return on ? [on[1] === '≥' ? 1 : 0, +on[2], off ? +off[2] : +on[2], on[3].replace(/[^%a-zA-Z.]/g, '')] : null;
+}
 const data = [];
 for (let p = 15; p <= 99; p++) {
   if (NO_LOGIC.has(p)) continue;
@@ -42,7 +55,10 @@ for (let p = 15; p <= 99; p++) {
     ]);
     const e = ends.filter(([x, y]) => Math.abs(Math.hypot(x - c.cx, y - c.cy) - c.r) < 8).sort((a, b) => Math.hypot(a[0] - c.cx, a[1] - c.cy) - Math.hypot(b[0] - c.cx, b[1] - c.cy))[0];
     if (!e) continue;
-    refs.push({ n: num.s.trim(), to: m.join('/'), net: R.netOf[e[2]], dep: e[0] > c.cx });
+    /* a link that comes in usually enters a named box: the wire on the far side of the box is the signal of this sheet */
+    const dep = e[0] > c.cx,
+      box = dep ? R.inputs.find(i => Math.abs(i.y - c.cy) < 5 && i.x > c.cx && i.x - c.cx < 330) : null;
+    refs.push({ n: num.s.trim(), to: m.join('/'), net: box ? box.net : R.netOf[e[2]], dep });
   }
   /* nets as small numbers */
   const ids = new Map();
@@ -62,7 +78,7 @@ for (let p = 15; p <= 99; p++) {
       continue;
     }
     if (g.t === 'S' || g.t === 'R') continue;
-    const r = [g.t, g.ins.map(nn), nn(g.out), g.t === 'WO' ? [nn(g.wipe)] : g.tm || 0, Math.round(g.x0), Math.round(g.y0)];
+    const r = [g.t, g.ins.map(nn), nn(g.out), g.t === 'WO' ? [nn(g.wipe)] : g.t === 'CMP' ? setPoint(J, g) : g.tm || 0, Math.round(g.x0), Math.round(g.y0)];
     G.push(r);
   }
   const I = R.inputs.map(i => [nn(i.net), i.name.replace(/\s+/g, ' ').slice(0, 90)]);

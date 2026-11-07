@@ -33,12 +33,12 @@ export function readPage(J) {
     if (!/^(A|OR|S|R|CMP|DI|DT|PO|FLK|FG|LS|MID|\d\/\d)$/.test(t)) continue;
     const b = box(w);
     if (!b) {
-      gates.push({ t, x: w.x, y: w.y, bad: 'no box' });
+      gates.push({ t, x: w.x, y: w.y, cx: w.cx, cy: w.cy, bad: 'no box' });
       continue;
     }
     for (const s of [b.l, b.r, b.top, b.bot]) used.add(s);
     const tm = words.find(o => /^[0-9.]+ *(s|sec|min)$/i.test(o.s.trim()) && Math.abs(o.cx - w.cx) < 20 && Math.abs(o.cy - w.cy) < 18);
-    gates.push({ t, tm: tm ? tm.s.trim() : null, x0: b.l[0], x1: b.r[0], y0: Math.min(b.l[1], b.l[3]), y1: Math.max(b.l[1], b.l[3]), by0: b.bot[1], by1: b.top[1], ins: [], out: null });
+    gates.push({ t, cx: w.cx, cy: w.cy, tm: tm ? tm.s.trim() : null, x0: b.l[0], x1: b.r[0], y0: Math.min(b.l[1], b.l[3]), y1: Math.max(b.l[1], b.l[3]), by0: b.bot[1], by1: b.top[1], ins: [], out: null });
   }
   /* S and R of one flip-flop */
   const ffs = [];
@@ -151,7 +151,27 @@ export function readPage(J) {
     }
     g.ins = [...inN];
   }
+  /* a memory: S over R, in one box or two; the R may be a letter in a circle (reset has priority, sheet 13). The wires go by height */
+  for (const g of gates.filter(g => g.t === 'S' && !g.bad)) {
+    const r = gates.find(x => x.t === 'R' && x !== g && Math.abs(x.cx - g.cx) < 5 && g.cy - x.cy > 4 && g.cy - x.cy < 22);
+    if (!r) continue;
+    const mid = (g.cy + r.cy) / 2,
+      S1 = new Set(),
+      R1 = new Set();
+    let out = g.out || r.out || null;
+    for (const [x, y, i] of ends) {
+      if (y < r.cy - 9 || y > g.cy + 9) continue;
+      if (x <= g.x0 + EPS && g.x0 - x < 9) (y > mid ? S1 : R1).add(net(i));
+      if (Math.abs(x - g.x1) < EPS + 1) out = net(i);
+    }
+    g.ins = [...S1];
+    g.out = out;
+    g.r = { ins: [...R1] };
+    r.ff = g;
+  }
   for (const n of nots) {
+    /* a letter in the circle: a lamp, a link, the R of a memory; not a NOT */
+    if (words.some(w => Math.hypot(w.cx - n.cx, w.cy - n.cy) < n.r + 1)) continue;
     const hit = ends.filter(([x, y]) => Math.abs(Math.hypot(x - n.cx, y - n.cy) - n.r) < 1.5);
     const a = hit.sort((p, q) => p[0] - q[0] || q[1] - p[1]);
     if (a.length >= 2) gates.push({ t: 'NOT', x0: n.cx, y0: n.cy, ins: [net(a[0][2])], out: net(a[a.length - 1][2]) });
