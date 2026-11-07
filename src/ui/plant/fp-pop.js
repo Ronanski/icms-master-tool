@@ -61,7 +61,23 @@
   }, 5000);
   const host = () => document.getElementById('plmid') || document.body;
   /* beside the clicked equipment: right of it, else left, else below; inside the HMI area; never over the step tag of the dock */
+  /* Mina F13: the faceplate of one equipment opens where it stood before, when it is opened from the same place */
+  const POS = {};
   function place(el, r) {
+    const key = el.getAttribute('aria-label') || '',
+      was = !r && POS[key],
+      ar = last && (last.r || { left: last.x, top: last.y });
+    if (was && ar && Math.abs(was.ax - ar.left) < 3 && Math.abs(was.ay - ar.top) < 3) {
+      el.style.left = was.x;
+      el.style.top = was.y;
+      el.dataset.side = was.side;
+      keepIn(el);
+      return;
+    }
+    placeNew(el, r);
+    if (!r && ar) POS[key] = { ax: ar.left, ay: ar.top, x: el.style.left, y: el.style.top, side: el.dataset.side };
+  }
+  function placeNew(el, r) {
     const h = host(),
       H = h.getBoundingClientRect(),
       w = el.offsetWidth,
@@ -130,6 +146,7 @@
   function closeEl(el) {
     if (!el) return;
     clearInterval(el._iv);
+    clearInterval(el._iv2);
     el.remove();
     for (const k in BOX) if (BOX[k] === el) delete BOX[k];
     if (box === el) box = paint = null;
@@ -326,15 +343,15 @@
     exGo.type = exNo.type = 'button';
     ex.append(exT, exGo, exNo);
     ex.hidden = true;
-    F.bd.append(ex);
+    F.bd.insertBefore(ex, why);
     let pend = null;
     /* a field action asks in an amber bar inside the FIELD block (the mockup); a DCS one in the blue bar below the reason line */
     const ask = (t, f, fld) => {
       pend = f;
       exT.textContent = t;
       ex.classList.toggle('fld', !!fld);
-      if (fld) F.bd.insertBefore(ex, why);
-      else why.after(ex);
+      /* Mina F13: above the reason line, whose length no longer moves the EXECUTE button */
+      F.bd.insertBefore(ex, why);
       ex.hidden = false;
       exGo.focus();
     };
@@ -617,6 +634,14 @@
     tick();
     place(me);
     me._iv = setInterval(tick, 500);
+    /* Mina F20: the current follows the page during the start inrush (the same reading, 5 times a second) */
+    if (M.cur)
+      me._iv2 = setInterval(() => {
+        const v = call(() => M.cur(), null);
+        if (v == null || !me.isConnected) return;
+        const t = (+v).toFixed(1) + ' A';
+        if (cur.textContent !== t) (cur.textContent = t), (F.val.textContent = t);
+      }, 200);
     return true;
   }
   /* ---------- the valve faceplate (live test beta.74, spec item 2: OPEN / CLOSE, AUTO / MAN, ZSO / ZSC) ----------
@@ -648,7 +673,7 @@
     exGo.type = exNo.type = 'button';
     ex.append(exT, exGo, exNo);
     ex.hidden = true;
-    F.bd.append(ex);
+    F.bd.insertBefore(ex, why);
     let pend = null;
     const ask = (t, f) => ((pend = f), (exT.textContent = t), (ex.hidden = false), exGo.focus());
     exNo.onclick = () => ((pend = null), (ex.hidden = true));
@@ -832,7 +857,7 @@
     exGo.type = exNo.type = 'button';
     ex.append(exT, exGo, exNo);
     ex.hidden = true;
-    F.bd.append(ex);
+    F.bd.insertBefore(ex, why);
     let pend = null;
     const ask = (t, f) => ((pend = f), (exT.textContent = t), (ex.hidden = false), exGo.focus());
     exNo.onclick = () => ((pend = null), (ex.hidden = true));
@@ -1053,7 +1078,7 @@
     exGo.type = exNo.type = 'button';
     ex.append(exT, exGo, exNo);
     ex.hidden = true;
-    F.bd.append(ex);
+    F.bd.insertBefore(ex, msg);
     let pend = null;
     const L = { start: 'START', stop: 'STOP', auto: 'AUTO', man: 'MANUAL' };
     const ask = op => ((pend = op), (exT.textContent = 'TCS: ' + L[op] + ' ' + P.n + '?'), (ex.hidden = false), exGo.focus());
@@ -1148,7 +1173,7 @@
     exGo.type = exNo.type = 'button';
     ex.append(exT, exGo, exNo);
     ex.hidden = true;
-    F.bd.append(ex);
+    F.bd.insertBefore(ex, msg);
     let pend = null;
     function ask(p) {
       pend = p;

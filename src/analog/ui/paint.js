@@ -1304,10 +1304,11 @@ function anClock(S) {
   if (!S || !S.rt) return;
   const t = AN.plantT ? AN.plantT() : S.rt.t,
     wall = performance.now();
-  if (!AN.run) anRxT = anRx = 0;
+  if (!AN.run) anRxT = anRx = AN.realX = 0;
   else if (!anRxT) (anRxT = wall), (anRxP = t);
   else if (wall - anRxT >= 3000) {
     anRx = (1000 * (t - anRxP)) / (wall - anRxT);
+    AN.realX = anRx;
     anRxT = wall;
     anRxP = t;
   }

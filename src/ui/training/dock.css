@@ -10,7 +10,7 @@ html.gd-bottom body{height:calc(100vh - var(--gdh,42vh))!important;min-height:0!
    the rail hides to a 14 px strip at the left edge and slides out on hover / tap; the pages start right of the strip */
 html.gd-tr:not(.gd-min){--railW:14px}
 html.gd-tr:not(.gd-min) body.cr #crrail{width:4rem;transform:translateX(calc(14px - 100%));transition:transform .15s ease .3s}
-html.gd-tr:not(.gd-min) body.cr #crrail:is(:hover,:focus-within){transform:none;transition-delay:0s;box-shadow:4px 0 14px var(--c-shadow)}
+html.gd-tr:not(.gd-min) body.cr #crrail:is(:hover,:focus-within){transform:none;transition:none;box-shadow:4px 0 14px var(--c-shadow)}
 html.gd-tr:not(.gd-min) body.cr #crrail::after{content:"";position:absolute;right:4px;top:50%;width:4px;height:48px;margin-top:-24px;border-radius:2px;background:var(--c-raildim);opacity:.7}
 html.gd-tr:not(.gd-min) body.cr #crrail:is(:hover,:focus-within)::after{display:none}
 html.gd-tr:not(.gd-min) body.cr #crrail:not(:hover):not(:focus-within)>*{visibility:hidden}

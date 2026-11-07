@@ -581,7 +581,7 @@
     st.before(foot);
     foot.append(chip);
     if (clock) {
-      clock.classList.add('an-only', 'sclock');
+      clock.classList.add('sclock'); /* Mina F39: the plant time on the Logic page too */
       foot.append(clock);
     }
     foot.append(st, E('span', { cls: 'shint' }), E('span', { cls: 'spm', txt: 'PLANT MODEL OFF', title: 'The plant model is OFF (TOOLS > Simulation): the PV does not answer the valves' }));

@@ -816,8 +816,13 @@
   function paintSpeed() {
     const v = +((window.AN && AN.spd) || 1);
     (els.spd || []).forEach(b => b.classList.toggle('on', +b.dataset.v === v));
-    if (els.spdB && els.spdB.textContent !== '×' + v + ' ▾') els.spdB.textContent = '×' + v + ' ▾';
+    /* Mina F37: the speed this PC really gives, when it is more than 20 % under the setting (one ABC step costs 8 to 12 ms and a step is 3 s at most,
+       so about x300 is the ceiling of a free PC): the button says so */
+    const rx = +(window.AN && AN.realX) || 0,
+      tx = '×' + v + (rx > 0 && rx < v * 0.8 ? ' (real ×' + Math.round(rx) + ')' : '') + ' ▾';
+    if (els.spdB && els.spdB.textContent !== tx) els.spdB.textContent = tx;
   }
+  setInterval(() => els.spdB && paintSpeed(), 1500);
   /* 3.2.0 walkthrough #1 #16: the Training starts PAUSED; RUN / PAUSE from the panel (the ABC page or the DITL page, whichever is open) */
   const isRun = () =>
     !!(window.AN && ((AN.cat === 'an' && AN.run && !AN.view) || (AN.cat !== 'an' && typeof SIM !== 'undefined' && SIM && !(typeof DPAUSE !== 'undefined' && DPAUSE))));
@@ -3043,7 +3048,8 @@
     }
     stepNx();
     if (tab() !== 'logic') lvOff();
-    if ((tab() === 'training' || tab() === 'home') && document.documentElement.classList.contains('gd-tr') && window.lsSetTab) lsSetTab('operate');
+    /* Mina F38: Home opens while the Guide runs; only the Training list goes back to the plant page */
+    if (tab() === 'training' && document.documentElement.classList.contains('gd-tr') && window.lsSetTab) lsSetTab('operate');
     hmiMark(s);
     if (!s) return;
     /* 3.2.0 retest #26: a tick made in the Training list shows here (the list and the panel are the same ticks, ls-train) */

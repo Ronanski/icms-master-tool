@@ -179,6 +179,10 @@
     }, 5000);
   }
   function ask(v) {
+    /* Mina F41: not in the middle of a run: the banner waits until the plant is paused */
+    if (window.AN && AN.run) return void setTimeout(function () {
+      ask(v);
+    }, 15000);
     var d = document.getElementById('updask');
     if (d) d.remove();
     d = document.createElement('div');
