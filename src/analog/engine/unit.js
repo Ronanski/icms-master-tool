@@ -696,6 +696,7 @@ function anUnitStart() {
   U.cdTs = NaN; /* 3.2.1 AN_CD: the condenser starts at its steady value */
   U.lpT = undefined; /* 3.2.1 AN_LP: the LP heaters too */
   U.bedI = NaN; /* the bed inventory starts again (anBedStep) */
+  U.bedLeg = 0;
   if (AN_SRC.valve) for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
   AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed while steaming */
   AN_SRC.lhdPct = 0;
@@ -1630,14 +1631,31 @@ function anBedSS(U, fs, as) {
    T3: 0.59 stays), sand. Of the ash and limestone 20 % stays as bottom ash (ASH L5-1, scanned page, read with care), the rest leaves as fly ash.
    Out: the four screw coolers, 2 T/H at normal, 4 T/H at 5 rpm (BAC E130122B): 0.8 T/H per rpm. The fan flow that fluidizes: NO-SOURCE, full
    reading above 30 % of the anchor primary air. Initial charge at Cold 100 t (T9 p3). */
-const AN_BI = { t0: 169.7, tCold: 100, kA: 0.0682, kL: 0.59, kB: 0.2, q: 0.8 };
-function anBedStep(U, dt, rpm, pa) {
+/* The loop: the cyclones catch the solids and the seal pots give them back while the fluidizing air blows. Below the FA blower flow low low of ABC-006
+   (20 T/H) the seal pots stop passing: the solids stay in the cyclone legs and the bed empties, and they come back with the air. The rate is
+   NO-SOURCE: the circulation rate is not in the documents. */
+const AN_BI = { t0: 169.7, tCold: 100, kA: 0.0682, kL: 0.59, kB: 0.2, q: 0.8, faLL: 20, loop: 60 };
+function anBedStep(U, dt, rpm, pa, fa) {
   const K = AN_BI;
   if (!isFinite(U.bedI)) U.bedI = U.cold ? K.tCold : K.t0;
   const sol = K.kA * (U.Fc || 0) * (U.burn || 0) + K.kL * (U.lmQ || 0);
   U.bedIn = K.kB * sol + (U.sdQ || 0);
   U.bedOut = K.q * rpm;
   U.bedI = Math.max(0, U.bedI + ((U.bedIn - U.bedOut) * dt) / 3600);
+  /* the solids held in the cyclone legs (t) */
+  U.bedLeg = U.bedLeg || 0;
+  const mv = ((K.loop * (pa > 106 ? 1 : 0)) * dt) / 3600,
+    seal = fa == null || fa >= K.faLL;
+  U.bedSeal = seal ? 1 : 0;
+  if (!seal) {
+    const d = Math.min(mv, U.bedI);
+    U.bedI -= d;
+    U.bedLeg += d;
+  } else {
+    const d = Math.min(mv * 4, U.bedLeg);
+    U.bedI += d;
+    U.bedLeg -= d;
+  }
   U.bedK = Math.max(0, Math.min(1, pa / 106)) * (U.bedI / K.t0);
   return U.bedK;
 }
@@ -3021,7 +3039,7 @@ function anUnitStep(dt) {
   /* bed inventory and the furnace pressure drop */
   if (U.paNet >= 0) {
     const rpm = (U.bedSc || []).reduce((a, o) => a + Math.max(0, Math.min(5, +o.S.rt.v[o.n] || 0)), 0),
-      k = anBedStep(U, dt, rpm, Math.max(0, +U.tafS.rt.v[U.paNet]));
+      k = anBedStep(U, dt, rpm, Math.max(0, +U.tafS.rt.v[U.paNet]), U.taf && U.taf.length === 3 ? Math.max(0, +U.tafS.rt.v[U.taf[2]]) : null);
     for (const [L, a] of U.bedDp || []) if (L.length) anUnitWrite(L, a * k);
   }
   /* PA to the furnace follows the PAF flow */
