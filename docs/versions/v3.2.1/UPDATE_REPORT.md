@@ -1,11 +1,5 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
-## 3.2.1-beta.77 — Bed lag from masses (2026-11-07, JENNIE)
-
-**Work done.** The bed lag is now heat stored over heat carried by the gas, from the refractory and bed masses of the drawings, in place of the 4 h fit and the 900 s value. See GAS_PATH.md.
-
-**Not tested.** Live; item sent to Mina.
-
 ## 3.2.1-beta.74 — Audit values, second batch (2026-11-07, JENNIE)
 
 **Work done.** Heater drain valve capacities and alternates, RH and HP bypass spray flows, from the valve sheets.
@@ -555,3 +549,5 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.75** (2026-11-07): Turbine trip logic from IBD TA-9 and TA-1 (plan c1): 22 causes with set points, first-out in the Event log and under the plant chip, Turbine trip and Turbine reset buttons. New file `src/analog/engine/tcs-trip.js`. Boiler MFT now trips the turbine (TA-9). Rows with no model value (thrust, HP exhaust temperature, TCS major trouble, generator protection, ATS shutdown) are field contacts by `AN.turbine('fault', { k, on })`
 
 - **beta.76** (2026-11-07): Turbine logic sheets (plan c2, first batch): Logic page, button Turbine IBD: TA-1, TA-9 to TA-22 with live values, field contacts can be pressed. 12 of 76 logic sheets. New file `src/ui/shell/tcslogic.js`
+
+- **beta.78** (2026-11-07): Turbine sheets are the real IBD drawing now (plan c2): 78 sheets read from the PDF by `tools/data/ibd_read.mjs`, gate by gate, simulated; the turbine trip goes through TA-9 and TA-1 and the engine reads the result. Reset follows the drawing: (WO) and the TA-1 A gate decide, no refusal in code. The list view of beta.76 is gone. Set points by sheet in `tcs-trip.js`; comparators without one stay 0, listed by `AN.tcsIbdMissing()`
