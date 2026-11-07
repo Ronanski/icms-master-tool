@@ -508,9 +508,10 @@ function motStep(s, v, dt) {
    A contact is written only when the device moves, so a contact the operator toggles by hand stays until the next command */
 const FD = {
   'DITL-16': [
-    { on: 3, off: 1, e: 'FIZSE-DO1043-A5', r: 'FIZSR-DO1043-A5', t: 10 },
+    /* 3.2.1 DITL-15: after the purge valves close the gun has 5 s to reach I.0011 (TR20), or SHUTDOWN FAILURE: 3 s, stroke not in the documents */
+    { on: 3, off: 1, e: 'FIZSE-DO1043-A5', r: 'FIZSR-DO1043-A5', t: 3 },
     { hold: 5, e: 'FIZSE-DO1043-A4', r: 'FIZSR-DO1043-A4', t: 5 },
-    { hold: 22, e: 'FIZSO-DO1043-A2', r: 'FIZSC-DO1043-A2', t: 3 }
+    { hold: 22, e: 'FIZSO-DO1043-A2', r: 'FIZSC-DO1043-A2', t: 0.8 }
   ],
   'DITL-18': [{ hold: 23, e: 'FIBI8-DO1043-A', t: 1 }, { flame: 1, e: 'FIBI9-DO1043-A', t: 2 }, { rest: 1, e: 'FIBI10-DO1043-A' }],
   /* 3.2.0 retest #53: the debris filter panels (LCP) of DITL-39. REMOTE AUTO START P.B. M.0790 (row 8, pulse TR390 -> O.0281 DOR-DF1001)
@@ -663,6 +664,8 @@ function mvTr(s, j) {
      OPENED must be made, or M.0141 LIGHT OFF UNSUCCESSFUL. Air and oil get their command together (DITL-13 row 24 and TR894 row 22), so
      the stroke must be under 1.5 s. The real stroke is not in the documents: 1 s stands inside that limit */
   if (b && /^PA1043-[A-D]2$/.test(b.tag)) return 1;
+  /* the oil valves must show closed inside TR894, the 1 s the air stays on after their command drops, else DITL-14 gives M.0141 at each OFF: under 1 s, not in the documents */
+  if (b && /^DO1043-[A-D]1$/.test(b.tag)) return 0.8;
   return b && b.sv ? 3 : 10;
 }
 function mvForced(s) {
