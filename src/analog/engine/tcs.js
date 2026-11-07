@@ -874,12 +874,7 @@ function tcsOil(U, dt) {
     lag = (k, x) => (U[k] = isFinite(U[k]) ? U[k] + ((x - U[k]) * Math.min(dt, K.tau)) / K.tau : x),
     lube = () => Math.max(U.loPa || 0, U.loPb || 0),
     ctl = () => Math.max(U.loCa || 0, U.loCb || 0);
-  /* the automatic starts on the falling header (the operator saw the pressure drop: SOP 2620); the headers of the last step */
-  const has = k => isFinite(U[k]);
-  for (let i = 0; i < 2; i++) {
-    if (c.mopAu[i] && !c.mop[i] && has('loPa') && lube() <= K.mopLo) c.mop[i] = true;
-    if (c.copAu[i] && !c.cop[i] && has('loCa') && ctl() <= K.copLo && lube() > K.brgLo) c.cop[i] = true;
-  }
+  /* the automatic starts are in the sheets TB-1, TB-2, TB-21, TB-22 (tcs-trip.js) */
   tcsOilSet(c);
   lag('loPa', c.mop[0] ? K.mop : 0);
   lag('loPb', c.mop[1] ? K.mop : 0);
