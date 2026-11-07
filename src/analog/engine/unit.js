@@ -158,6 +158,7 @@ const AN_UNIT = {
   kcool: 60 /* 2.2.0-beta.21: cooling of the unfired boiler by the air, T/H steam-equivalent at the anchor air and 300 C (ASSUMED, Fig. 5) */,
   kamb: 1 /* 2.2.0-beta.21: bottled boiler loss to the ambient, T/H steam-equivalent at 300 C (ASSUMED) */,
   tauB: 900,
+  tauBc: 14400,
   Tb0: 850,
   /* 3.2.0-beta.15 (phase B, utilities): CONDENSER VACUUM. The turbine exhausts to the condenser, cooled by the seawater pumps (SWP-A ~ C
      M.3353 ~ M.3355) with the condensate pumps (CP-A / B M.3350 / M.3351) taking the water out (PR-OPE-5002: SWP, CEP and VACUUM UP
@@ -2867,7 +2868,11 @@ function anUnitStep0(dt) {
          alone at O2 4 ~ 5 % about 800 C). 2.2.0-beta.15: on the fuel, not on the steam made (the fixed loss of the firing line
          made a small fire too cold) */
       Tbss = anBedSS(U, Fe / Math.max(1, U.F0), as);
-    U.Tb += ((Math.max(U.Tamb, Tbss) - U.Tb) * dt) / U.tauB;
+    /* below the start of coal (Fig 2, 483 C) the refractory and the bed charge are the heat sink, and there is no coal burning in the bed:
+       FHI Fig 2 110 C at 1 h, 483 C at 6 h; PR-OPE-5002 gradient 1 C/min, FHI limit 153 C/h. The hot lag tauB takes over by 600 C */
+    const kh = Math.max(0, Math.min(1, (U.Tb - 483) / (600 - 483))),
+      tauBed = U.tauBc + (U.tauB - U.tauBc) * kh;
+    U.Tb += ((Math.max(U.Tamb, Tbss) - U.Tb) * dt) / tauBed;
   }
   /* 3.2.0-beta.23: the furnace and cyclone thermocouples (TIFG1090 / 1091 lower layer under / above, TIFG1095 / 1096 cyclone,
      TIFG1009 furnace) follow the bed: ambient + (snapshot - ambient) x bed rise / anchor bed rise. Before, they kept the 150 MW
