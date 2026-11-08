@@ -1172,6 +1172,7 @@ function anGenAsync(g, prog) {
     AN._asc = new Map();
     const fin = () => {
       AN._loading = false;
+      AN.loadN = (AN.loadN || 0) + 1; /* 3.2.1: a starting state has loaded (live.js drops the AUTO ticks not true in it) */
       AN._asc = null;
       try {
         if (mc) mc.port1.close();
