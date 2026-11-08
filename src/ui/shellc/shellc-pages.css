@@ -21,8 +21,8 @@ body.sc #plantws .plbar #pllive.on{color:var(--sc-stop)!important}
 body.sc #plantws .plbar :focus-visible{outline:2px solid var(--sc-steel)!important;outline-offset:2px}
 /* full screen: the page bar and the breadcrumb go, the values strip stays; "Leave full screen" at the top right of the page */
 body.sc.scfull #plantws .plbar,body.sc.scfull .sccrumb{display:none!important}
-.scfsout{display:none}
-body.sc.scfull[data-tab="operate"] .scfsout{display:inline-flex;align-items:center;position:fixed;top:calc(var(--top) + .5rem);right:.75rem;z-index:79;min-height:2rem!important;padding:0 .875rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:1rem!important;color:var(--sc-ink)!important;font:600 .75rem var(--sc-ui)!important;box-shadow:0 .125rem .5rem rgba(34,46,57,.12)!important;cursor:pointer}
+.scfsout,.scfsout[hidden],body.sc:not(.scfull) .scfsout{display:none!important}
+body.sc.scfull[data-tab="operate"] .scfsout:not([hidden]){display:inline-flex!important;align-items:center;position:fixed;top:calc(var(--top) + .5rem);right:.75rem;z-index:79;min-height:2rem!important;padding:0 .875rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:1rem!important;color:var(--sc-ink)!important;font:600 .75rem var(--sc-ui)!important;box-shadow:0 .125rem .5rem rgba(34,46,57,.12)!important;cursor:pointer}
 
 /* ---------- (b) the two faceplates in the C look (fp-pop.js .fpo-box and the controller faceplate #plfp) ---------- */
 body.sc .fpo-box,body.sc #plfp.fpo-near{background:var(--sc-white)!important;border:1px solid var(--sc-steel)!important;border-radius:.5rem!important;box-shadow:0 .75rem 2rem rgba(34,46,57,.22)!important;color:var(--sc-ink)!important;font:400 .875rem/1.4 var(--sc-ui)!important}

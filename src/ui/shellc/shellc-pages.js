@@ -30,6 +30,8 @@
     fsOut = null;
   function full(on) {
     document.body.classList.toggle('scfull', on);
+    /* Mina beta.213: the button showed with no Full screen pressed (a button rule of the app beat display:none): hidden unless on */
+    if (fsOut) fsOut.hidden = !on;
     try {
       if (on && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
       if (!on && document.fullscreenElement) document.exitFullscreen().catch(() => {});
@@ -56,6 +58,7 @@
     b.append(fs, ev);
     fsOut = E('button', 'scfsout', 'Leave full screen');
     fsOut.type = 'button';
+    fsOut.hidden = true;
     fsOut.onclick = () => full(false);
     document.body.append(fsOut);
     return true;
