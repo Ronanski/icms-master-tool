@@ -121,11 +121,23 @@
     seg.append(bOp, bEn);
     /* Mina beta.209: "Old layout" in the strip reloaded the page and lost the running plant with no warning; it is on the start screen
        now (no plant yet there), lsShellC.oldLayout */
-    pills.append(trip, alm, spd, seg);
+    /* Mina beta.210: RUN / PAUSE was covered on the overview (it is in the bar under the strip): the simulation's own Run / Pause
+       (AN.runOn / AN.pauseOn, the Run button of the app) in the strip, on every screen */
+    const runB = E('button', 'pill run');
+    runB.type = 'button';
+    const runT = E('span', '', 'Paused');
+    runB.append(E('span', 'dot'), runT);
+    runB.onclick = () => {
+      try {
+        if (AN.run && !AN.view) AN.pauseOn();
+        else AN.runOn();
+      } catch (e) {}
+    };
+    pills.append(trip, alm, runB, spd, seg);
     strip.append(vals, pills);
     band.prepend(strip);
     document.body.classList.add('sc');
-    S = { cells, trip, tripT, alm, almT, spdB, bOp, bEn };
+    S = { cells, trip, tripT, alm, almT, spdB, bOp, bEn, runB, runT };
     setTimeout(() => dispatchEvent(new Event('resize')), 0);
     setInterval(tick, 1000);
     tick();
@@ -184,6 +196,11 @@
     S.alm.classList.toggle('alm', n > 0);
     S.alm.classList.toggle('new', un > 0);
     S.almT.textContent = n ? n + (n === 1 ? ' alarm' : ' alarms') + (un ? ' · ' + un + ' new' : '') : 'No alarm';
+    const on = !!(window.AN && AN.run && !AN.view);
+    S.runB.classList.toggle('on', on);
+    const rt = on ? 'Running' : 'Paused';
+    if (S.runT.textContent !== rt) S.runT.textContent = rt;
+    S.runB.title = on ? 'The simulation runs. Click: pause' : 'The simulation is paused. Click: run';
     const sel = speedSel();
     const sp = 'Speed ×' + (sel ? sel.value : '1');
     if (S.spdB.textContent !== sp) S.spdB.textContent = sp;

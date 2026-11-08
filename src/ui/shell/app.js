@@ -1679,8 +1679,14 @@
       if (AN._loading) return msg('Wait: a starting state is still loading.');
       const nm = prompt('Name of this save point:', svName());
       if (!nm) return;
+      svSave(nm);
+    });
+    /* Mina beta.210: the save itself, apart from the name question (prompt() is blocked in some browsers and app views: the Instructor
+       console of the new layout asks the name in the page) */
+    const svSave = nm => {
+      if (AN._loading) return Promise.resolve(msg('Wait: a starting state is still loading.'));
       msg('Saving the whole plant...');
-      svCap()
+      return svCap()
         .then(sv => {
           const G = window.LS_GUIDE,
             L = window.LS_LIVE;
@@ -1692,9 +1698,16 @@
           return svDo('readwrite', st => st.put(sv)).then(() => msg('Saved: ' + nm + '. LOAD a save point puts the plant back here.'));
         })
         .catch(e => msg('Could not save: ' + e.message));
-    });
-    /* 3.2.1 re-shell C step 2: the start screen's Continue loads the newest save point through this */
-    window.lsSaves = { list: () => svList(), load: e => svLoad(e) };
+    };
+    /* 3.2.1 re-shell C step 2: the start screen's Continue loads the newest save point through this; the Instructor console saves,
+       loads and deletes with it (names asked in the page) */
+    window.lsSaves = {
+      list: () => svList(),
+      load: e => svLoad(e),
+      save: nm => svSave(nm),
+      name: () => svName(),
+      del: e => svDo('readwrite', st => st.delete(e.id)).then(() => msg('Deleted: ' + e.name))
+    };
     const svLoad = e => {
       if (AN.pauseOn && AN.run) AN.pauseOn();
       msg('Loading save point ' + e.name + '...');
