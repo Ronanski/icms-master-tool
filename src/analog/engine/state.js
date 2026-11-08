@@ -8,7 +8,7 @@
    copied: the other side keeps its own ===== */
 const AN_STATE_OBJ = () => ({ AN_UNIT, AN_SRC, AN_CYC, AN_SW, AN_MU, AN_ACW, AN_MT, AN_AIR });
 /* the flags of AN that the engine reads (plain values) */
-const AN_STATE_FLAGS = ['i', 'plantOn', 'procDefault', 'startState', 'steady', 'spd', 'run', 'view', 'tierK', '_cold0', 'load150', 'ramp', 'cat'];
+const AN_STATE_FLAGS = ['i', 'plantOn', 'procDefault', 'startState', 'steady', 'spd', 'run', 'view', 'tierK', '_cold0', 'load150', 'ramp', 'cat', 'restartKind' /* Mina beta.169: the PLANT chip (Warm / Hot restart) reads it on the page in Worker mode */];
 /* the sheets a step takes besides the linked ones (links.js actSet): names, and the second sheet of the page (a sheet) */
 const AN_STATE_SETS = ['hmiSheets', 'plantSheets', 'unitSheets', 'checkSheets', 'worldSheets', 'p2'];
 const anStateTabs = () => ({ AN_HMI_OP, AN_HMI_AI, AN_HMI_CTL, AN_HMI_MAN, AN_HMI_FF, AN_HMI_DI, AN_HMI_DI_COLD });

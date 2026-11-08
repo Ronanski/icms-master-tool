@@ -498,6 +498,11 @@ function* stepSetG(sh, dt) {
 }
 function stepTier(sh, dt, K) {
   if (AN.sched) AN.sched.flush();
+  /* 3.2.1 (Mina beta.156 / 157 MFT at 150 MW after x60 on a slow PC): the light mode holds the inputs of the far sheets for K steps, so
+     a loop between a near and a far sheet (PA flow, furnace pressure: fan loops of seconds) ran with a K x dt = 6 s dead time and swung
+     until the furnace pressure / total air LOW-LOW MFT. The hold is never longer than the longest plant step (1 s, sched.js AN_STEP_MAX) */
+  K = Math.max(1, Math.min(K, Math.floor(1 / Math.max(1e-6, dt))));
+  if (K <= 1) return void stepSet(sh, dt);
   for (const _ of stepTierG(sh, dt, K));
 }
 function* stepTierG(sh, dt, K) {
