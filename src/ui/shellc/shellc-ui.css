@@ -76,3 +76,5 @@ body.sc #sfoot :is(#st,.shint,.smsg){white-space:nowrap!important;overflow:hidde
 /* the overview in a narrower page (Training dock open): 3 tiles a row, as the tablet */
 html.gd-side body.sc #scov .scgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
 body.sc > .scbx[hidden]{display:none}
+/* the scale of the overview trend line (shellc-home.js, Mina step 2 note 11c) */
+#scov .scscale{margin-top:-.25rem;text-align:right;font:400 .6875rem var(--sc-num);font-variant-numeric:tabular-nums;color:var(--sc-ink2);min-height:.875rem}
