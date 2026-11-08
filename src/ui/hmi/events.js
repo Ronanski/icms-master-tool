@@ -31,7 +31,7 @@
     }
   };
   function add(S, sh, kind, text, why) {
-    LOG.unshift({ t: tfmt(AN.plantT ? AN.plantT() : S.rt.t), sh: sh.name, kind, text, why });
+    LOG.unshift({ t: tfmt(AN.plantT ? AN.plantT() : S.rt.t), sh: sh.name, kind, text: words(text), why }); /* full names (WORDS) */
     if (LOG.length > MAX) LOG.length = MAX;
     unseen++;
     draw();
@@ -111,14 +111,20 @@
   /* Mina beta.170 (Faults): the header said "DITL-19 TRIP · DITL-19" for the coal feeder (DITL-19 has no TRIP output: the name came from
      the sheet) and the events said PAF / SAF / IDF / FAB-A / CEP-A (rule: no acronyms as labels). The name of the equipment: the TRIP
      output, else the RUNNING output of the drawing, in words */
+  /* Mina beta.175 (3.2.1-beta.178): the full names (no "ID fan", "PA fan", "BFWP A" either), for EVERY text of the log (add(): the
+     faceplate and dock presses too, "Operator: START PAF (faceplate)") and of the alarm list. I/O list services: F-1056 induced draft
+     fan, F-1053 primary air fan, F-1054 secondary air fan, F-1055A / B fluidizing air blower, P-1115A / B boiler feed water pump,
+     P-1116A / B condensate pump */
   const WORDS = [
-    [/\bIDF\b/g, 'ID fan'],
-    [/\bSAF\b/g, 'SA fan'],
-    [/\bPAF\b/g, 'PA fan'],
-    [/\bFAB-?([A-C])\b/g, 'FA blower $1'],
-    [/\bFAB\b/g, 'FA blower'],
+    [/\b(?:IDF|ID fan)\b/g, 'induced draft fan'],
+    [/\b(?:SAF|SA fan)\b/g, 'secondary air fan'],
+    [/\b(?:PAF|PA fan)\b/g, 'primary air fan'],
+    [/\b(?:FAB-?|FA blower )([A-C])\b/g, 'fluidizing air blower $1'],
+    [/\b(?:FAB|FA blower)\b/g, 'fluidizing air blower'],
     [/\bCEP-?([AB])\b/g, 'condensate pump $1'],
-    [/\bBFWP-([AB])\b/g, 'BFWP $1']
+    [/\bCEP\b/g, 'condensate pump'],
+    [/\bBFWP[- ]?([AB])\b/g, 'boiler feed water pump $1'],
+    [/\bBFWP\b/g, 'boiler feed water pump']
   ];
   const words = x => WORDS.reduce((a, [re, w]) => a.replace(re, w), String(x || ''));
   const clean = x => String(x || '').replace(/^Output row \d+ · /, '').replace(/\s*·.*$/, '').replace(/\s*\b[IMB]\.[0-9A-F]{4}\S*/g, '').trim();
@@ -323,7 +329,7 @@
         /* live test #11 (94 at the start, 96 in the header later, "standing since the plant was loaded"): an alarm suppressed after the
            load (its group still stopped) is marked late and logged, so the count and the text say where it came from */
         const late = sd && !first && !(e && e.sd && !e.rtn && !e.late) ? true : !!(e && e.late && sd);
-        AT.set(k, { ...x, t: tfmt(t), ack: sd || stand, rtn: false, sd, late });
+        AT.set(k, { ...x, nm: words(x.nm), t: tfmt(t), ack: sd || stand, rtn: false, sd, late });
         if (first) nNew++;
         else if (stand) continue;
         else if (!sd) add({ rt: { t } }, { name: x.sh }, x.kind, x.nm + ' ' + x.lv);
