@@ -7,7 +7,7 @@ permissions: { contents: read }
 jobs:
   sim:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -33,6 +33,16 @@ jobs:
         run: |
           set -o pipefail
           node tests/regress/ditl150.js 2>&1 | tee -a sim.log
+      - name: Unit load 150 to 60 to 150 MW (snapshots 02.png / 4.PNG, MST, RHT, coal, O2, drum level)
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node tests/regress/unit_load.js 2>&1 | tee -a sim.log
+      - name: Plant model against the HMI snapshots (PV at the snapshot MV)
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node tests/regress/hmi_op.js 2>&1 | tee -a sim.log
       - name: Summary (PASS / FAIL lines)
         if: always()
         run: |
