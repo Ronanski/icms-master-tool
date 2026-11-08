@@ -633,6 +633,24 @@
               });
             }))
         }),
+        /* plan e4 (Mina beta.112: the shutdown section could only be reached through the console): 150 MW, then the NORMAL SHUTDOWN section */
+        E('button', {
+          cls: 'trbtn',
+          type: 'button',
+          txt: 'Practise: Normal shutdown',
+          title: 'Sets the plant at 150 MW, clears the ticks of the shutdown and bottle-up sections, starts the simulation (RUN) and opens NORMAL SHUTDOWN (PR-OPE-5003)',
+          on: e0 => arm2(e0.currentTarget, 'Press again: this loads 150 MW', () =>
+            abcReady(() => {
+              const b = $('load150');
+              if (b) b.click();
+              (AN._startP || Promise.resolve()).then(() => {
+                const L = LV();
+                if (L) L.reset(L.base + 4);
+                if (AN.runOn) AN.runOn();
+                if (L) show(L.base + 4);
+              });
+            }))
+        }),
         E('button', {
           cls: 'trbtn',
           type: 'button',

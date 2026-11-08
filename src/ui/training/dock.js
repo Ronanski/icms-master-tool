@@ -1848,7 +1848,17 @@
           ba = b('A', 'AUTO (SV of the operator)', () => op('A', () => g.A.auto(t)), 'md'),
           br = ctl && f.c.remote ? b('R', 'REMOTE (SV from the logic)', () => op('R', () => g.A.rem(t)), 'md') : null,
           /* MV by 1 % and by 5 % (▲▲): the step buttons that only moved this MV ("SA damper ▲▲ +5 %") are not shown any more */
-          mvd = d => b(Math.abs(d) > 1 ? (d > 0 ? '▲▲' : '▼▼') : d > 0 ? '▲' : '▼', 'MV ' + (d > 0 ? '+' : '') + d + ' % (MANUAL)', () => op('MV ' + (d > 0 ? '+' : '') + d + ' %', () => (mdNow() === 'MAN' ? g.A.man(t, Math.max(0, Math.min(100, (+mvNow() || 0) + d))) : 'In ' + mdNow() + ': press M first'))),
+          /* Mina beta.112: a MAN station in its own unit (HIC-MWRL 0 ~ 10 MW/min) moved by 1 and showed "%": the steps are 1 % of its range
+             (0.1 MW/min), the limits and the unit are the station's */
+          mP = f.kind === 'man' && f.b && f.b.p ? f.b.p : null,
+          mU = mP && String(mP.u || '%').trim() !== '%' ? String(mP.u).trim() : '%',
+          mLo = mP && mP.lo != null ? +mP.lo : 0,
+          mHi = mP && mP.hi != null ? +mP.hi : 100,
+          mK = mU === '%' ? 1 : Math.abs(mHi - mLo) <= 20 ? 0.1 : 1,
+          mvd = d0 => {
+            const d = Math.round(d0 * mK * 10) / 10;
+            return b(Math.abs(d0) > 1 ? (d > 0 ? '▲▲' : '▼▼') : d > 0 ? '▲' : '▼', 'MV ' + (d > 0 ? '+' : '') + d + ' ' + mU + ' (MANUAL)', () => op('MV ' + (d > 0 ? '+' : '') + d + ' ' + mU, () => (mdNow() === 'MAN' ? g.A.man(t, Math.round(Math.max(mLo, Math.min(mHi, (+mvNow() || 0) + d)) * 10) / 10) : 'In ' + mdNow() + ': press M first')));
+          },
           /* Mina M1 (beta.88, Worker, FICCD1120 to 150 T/H took about 130 presses): a press read the SV of the engine, which comes back a
              moment later, so quick presses were lost; the next press now adds to the SV just written (for 3 s), there is a ▲▲ of 5 steps
              and the SV can be typed */
@@ -1869,7 +1879,7 @@
           },
           [pvD, pvB, pvU] = v('PV', ''),
           [svD, svB, svU] = v('SV', ''),
-          [mvD, mvB] = v('MV', '%'),
+          [mvD, mvB] = v('MV', mU),
           bar = E('i'),
           mdL = E('span', { cls: 'gd-mdl' }),
           desc = String((f.c && f.c.desc) || '').replace(/\s+/g, ' ').trim(),
