@@ -36185,7 +36185,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.156';
-      c3.textContent += ' · build 749cb7c'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build c56ea96'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -90696,9 +90696,7 @@ body.lssplit #dp { max-width: 34% !important; }
     };
     const svPick = (L, what) => {
       if (!L.length) return msg('No save point yet: press SAVE first.'), null;
-      const x = prompt(what + ': type its number
-' + L.map((e, i) => i + 1 + '. ' + e.name).join('
-'), String(L.length));
+      const x = prompt(what + ': type its number\n' + L.map((e, i) => i + 1 + '. ' + e.name).join('\n'), String(L.length));
       const i = +x - 1;
       return x && L[i] ? L[i] : null;
     };
@@ -90749,6 +90747,18 @@ body.lssplit #dp { max-width: 34% !important; }
         })
         .catch(x => msg('Could not delete: ' + x.message))
     );
+    /* 3.2.1 trend recorder (live.js REC): one row per minute of plant time; the CSV goes to the PC comparison script */
+    btn('recdl', 'Download recorder CSV', 'The plant values recorded each minute of plant time since the last starting state (MW, steam flow and pressure, MST, RHT, coal, air, O2, bed, drum level, feedwater, furnace pressure). For the comparison with the plant trends on the PC.', () => {
+      const L = window.LS_LIVE;
+      if (!L || !L.rec || !L.rec().length) return msg('The recorder has no rows yet: it writes one each minute of plant time while the plant runs.');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([L.recCsv()], { type: 'text/csv' }));
+      a.download = 'logic-sim-trend-' + new Date().toISOString().slice(0, 16).replace(/[T:]/g, '-') + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      msg('Recorder: ' + L.rec().length + ' rows downloaded.');
+    });
     d.head('TCS panel (turbine)');
     const tcs = (id, label, title, cmd, arg, ok) =>
       btn(id, label, title, () => {
@@ -94934,6 +94944,44 @@ window.LS_LIVE = (function () {
     if (k === 'Pd' || k === 'Tb' || k === 'Tw' || k === 'oilF' || k === 'rpm') return +U()[k];
     return hv(k);
   };
+  /* 3.2.1 TREND RECORDER (user 2026-11-08 testing plan 3): one row each minute of plant time while the plant model runs: the values the
+     plant trends of the user hold (scenario 1 / 2), for the PC-only comparison script (team-files/tools/trend-compare). A new starting
+     state or a save point loaded starts a new record */
+  const REC_K = ['MW', 'MSF', 'MSP', 'MST', 'coal', 'PA', 'SA', 'FA', 'O2', 'Tb', 'lvl', 'FW', 'FP', 'Pd', 'RHP'];
+  const REC = { rows: [], last: -1, n: 0 };
+  const recRow = () => {
+    const r = { t: Math.round(+U().t || 0) };
+    for (const k of REC_K) {
+      let v = null;
+      try {
+        v = getV(k);
+      } catch (e) {}
+      r[k] = isFinite(v) ? Math.round(+v * 100) / 100 : '';
+    }
+    let rht = null;
+    try {
+      rht = pvOf(fp('TICHR1002'));
+    } catch (e) {}
+    r.RHT = isFinite(rht) ? Math.round(+rht * 10) / 10 : '';
+    return r;
+  };
+  setInterval(() => {
+    try {
+      const u = window.AN && AN.unit;
+      if (!u || !u.on || AN._loading) return;
+      if (((window.AN && AN.loadN) || 0) !== REC.n) (REC.n = AN.loadN || 0), (REC.rows = []), (REC.last = -1);
+      const m = Math.floor((+u.t || 0) / 60);
+      if (m < REC.last) (REC.rows = []), (REC.last = -1); /* time went back: a save point or a Reset */
+      if (m === REC.last) return;
+      REC.last = m;
+      REC.rows.push(recRow());
+      if (REC.rows.length > 6000) REC.rows.shift();
+    } catch (e) {}
+  }, 1000);
+  const recCsv = () => {
+    const H = ['t_min'].concat(REC_K, ['RHT']);
+    return [H.join(',')].concat(REC.rows.map(r => [Math.round(r.t / 60)].concat(REC_K.map(k => r[k]), [r.RHT]).join(','))).join('\r\n');
+  };
   const VAL = (k, lo, hi) => ({
     sig: [k],
     res: () => k in NAMES,
@@ -95572,7 +95620,7 @@ window.LS_LIVE = (function () {
   };
   /* 3.2.0-beta.21: the condition makers, for the guided Training (guide.js) */
   const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4, X5, X6, X7 };
-  return { kind, state, rows, scan, reset, load, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2, B, H, modeOf, mvOf, pvOf, svOf, getV, NAMES, f1 };
+  return { rec: () => REC.rows, recCsv, recClear: () => ((REC.rows = []), (REC.last = -1)), kind, state, rows, scan, reset, load, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2, B, H, modeOf, mvOf, pvOf, svOf, getV, NAMES, f1 };
 })();
 
 /* ===== 3.2.0-beta.21 GUIDED TRAINING (user pick 2026-10-24, proposal https://claude.ai/artifact/FnjLxFZYXnFqc9fjvRdHWJ, "Oo, gawin ayon
@@ -98040,6 +98088,41 @@ window.LS_GUIDE = (function () {
     if (els.spdB && els.spdB.textContent !== tx) els.spdB.textContent = tx;
   }
   setInterval(() => els.spdB && paintSpeed(), 1500);
+  /* 3.2.1 (user 2026-11-08 testing plan 5): while the Training step is a HOLD (hold 90 MW 8 ~ 10 min, purge 5 min, drum level 30 s ...)
+     and its condition is met, the plant runs x10 by itself (only when the speed was lower); the speed of the trainee comes back when
+     the step is done, moves on, or its condition is lost. Logged as an event. A PC that cannot give x10 runs as fast as it can */
+  const HX = { on: false, prev: 1, step: -1 };
+  setInterval(() => {
+    try {
+      const g = GD();
+      if (!g || !g.on || !isRun()) {
+        if (HX.on) (HX.on = false), setSpeed(HX.prev);
+        return;
+      }
+      const L = g.steps(),
+        st = L[g.cur],
+        c = st && st.c;
+      let hold = false;
+      if (c && c.hold && !(g.ready && g.ready()))
+        try {
+          hold = !!c.ok();
+        } catch (e) {}
+      if (hold && !HX.on) {
+        const v = +((window.AN && AN.spd) || 1);
+        if (v < 10) {
+          HX.on = true;
+          HX.prev = v;
+          HX.step = g.cur;
+          setSpeed(10);
+          if (window.lsEventAdd) lsEventAdd('DCS', 'DCS', 'Training: speed x10 during the hold of step ' + (g.cur + 1));
+        }
+      } else if (HX.on && (!hold || g.cur !== HX.step)) {
+        HX.on = false;
+        setSpeed(HX.prev);
+        if (window.lsEventAdd) lsEventAdd('DCS', 'DCS', 'Training: speed back to x' + HX.prev + ' after the hold');
+      }
+    } catch (e) {}
+  }, 1000);
   /* 3.2.0 walkthrough #1 #16: the Training starts PAUSED; RUN / PAUSE from the panel (the ABC page or the DITL page, whichever is open) */
   const isRun = () =>
     !!(window.AN && ((AN.cat === 'an' && AN.run && !AN.view) || (AN.cat !== 'an' && typeof SIM !== 'undefined' && SIM && !(typeof DPAUSE !== 'undefined' && DPAUSE))));
