@@ -104,7 +104,9 @@ function render() {
       S.sheets.forEach((x, i) => {
         const o = document.createElement('option');
         o.value = i;
-        o.textContent = (x.bv !== BV ? '⚠ ' : '') + x.name;
+        /* Mina beta.156 (sweep 27): two drawings are named DITL-80, (99) HRH drain pot DP-HR01 and (S3) the sootblower control logic of
+           its package: the title tells them apart in the list */
+        o.textContent = (x.bv !== BV ? '⚠ ' : '') + x.name + (x.title ? ' · ' + String(x.title).slice(0, 44) : '');
         if (i === S.cur) o.selected = true;
         ss.appendChild(o);
       });
