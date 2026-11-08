@@ -75,7 +75,7 @@
       const [kind, ...rest] = k.split(':');
       if (kind === 'm') add(S, sh, 'MODE', rest[0] + ' → ' + b);
       else if (kind === 'f') add(S, sh, 'FM', rest[0] + (b ? ' FORCE MANUAL ← ' : ' force manual cleared ← ') + rest[1] + ' = ' + b, b ? cause(sh, rest[1]) : null);
-      else if (kind === 't') add(S, sh, b ? 'TRIP' : 'RST', rest.join(':') + ' = ' + b, b ? cause(sh, rest.join(':')) : null);
+      else if (kind === 't') add(S, sh, b ? 'TRIP' : 'RST', full(rest.join(':')) + ' = ' + b, b ? cause(sh, rest.join(':')) : null);
     }
     prev = now;
   }
@@ -108,6 +108,24 @@
   }
   const dSheets = () => (typeof S !== 'undefined' && S.sheets ? S.sheets.concat((window.WORLD && WORLD.inst) || []) : []);
   const dnm = s => String((s && s.name) || '').replace(/^\(\d+\)/, '');
+  /* Mina 2026-11-08 #2 (rule: no acronyms as labels): the equipment in an alarm or event by its full name (the names of the Training dock
+     lamps, dock.js LAMPS); a motor drawing with no named TRIP output is named by its drawing title (DITL-19 "COAL FEEDER A START/STOP" =
+     Coal feeder A), not "DITL-19" */
+  const FULL = [
+    [/\bIDF\b/g, 'Induced draft fan'],
+    [/\bPAF\b/g, 'Primary air fan'],
+    [/\bSAF\b/g, 'Secondary air fan'],
+    [/\bFAB[- ]?([AB])\b/g, 'Fluidizing air blower $1'],
+    [/\bCEP[- ]?([AB])\b/g, 'Condensate pump $1'],
+    [/\bBFWP[- ]?([AB])\b/g, 'Boiler feedwater pump $1']
+  ];
+  const full = t => FULL.reduce((x, [re, w]) => x.replace(re, w), String(t || ''));
+  const eqName = s => {
+    const t = String((s && s.title) || '')
+      .replace(/\s+(START\s*\/\s*STOP|START|STOP|OPEN\s*\/\s*CLOSE)\b.*$/i, '')
+      .trim();
+    return t ? full(t.charAt(0) + t.slice(1).toLowerCase().replace(/\b([a-z])$/, c => c.toUpperCase())) : dnm(s);
+  };
   /* motState: src/digital/parts/03c-read.js (DUI.motState, no DOM: the unit model reads it too) */
   const motState = s => DUI.motState(s);
   /* retest #62: the equipment group of an ABC sheet for the shutdown alarm suppression (the lamps of the Training dock, dock.js LAMPS):
@@ -161,7 +179,7 @@
       const nm = MOT[a],
         op = LOG.slice(0, 12).some(e => /^Operator: STOP /.test(e.text || '') && (e.text || '').includes(nm));
       if (op) continue;
-      add({ rt: { t } }, { name: 'DCS' }, 'DCS', nm + ' STOPPED (' + a + ' = 0; not by the STOP button of the Training)');
+      add({ rt: { t } }, { name: 'DCS' }, 'DCS', full(nm) + ' STOPPED (' + a + ' = 0; not by the STOP button of the Training)');
     }
   }
   /* the service text of a tag from the I/O list (window.WIRING: the tag is the 4th column, the service the 5th): first letter + system + number
@@ -256,7 +274,7 @@
           now.set('D|' + s.name, {
             sh: dnm(s),
             kind: 'TRIP',
-            nm: o.trip ? o.trip.name.replace(/\s+TRIP$/, '') : dnm(s),
+            nm: o.trip ? full(o.trip.name.replace(/\s+TRIP$/, '')) : eqName(s),
             lv: 'TRIP',
             fresh
           });
@@ -273,7 +291,7 @@
           v = DUI.outVal(s, o.row);
         } catch (e) {}
         if (v === 1) NTS.add(s.name);
-        else if (v === 0 && NTS.has(s.name)) now.set('N|' + s.name, { sh: dnm(s), kind: 'TRIP', nm: o.name, lv: 'TRIP' });
+        else if (v === 0 && NTS.has(s.name)) now.set('N|' + s.name, { sh: dnm(s), kind: 'TRIP', nm: full(o.name), lv: 'TRIP' });
       }
     const first = !!almScan.first;
     almScan.first = false;

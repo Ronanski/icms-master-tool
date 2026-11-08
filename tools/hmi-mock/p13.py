@@ -58,6 +58,26 @@ p.inner(1094, 852, 'Lube oil after cooler ' + V('TT-LOCOOL', 0, ' °C'))
 p.inner(1094, 888, 'Generator MW C / D ' + V('GCP-AI1001', 1) + ' / ' + V('GCP-AI1002', 1, ' MW'))
 p.inner(1094, 924, 'Stator coil ' + V('GEN.TSMAX') + ' °C')  # unit.js anGenTemp, snapshot P35SHAFT
 p.inner(1094, 960, 'Generator cooling air ' + V('GEN.TAIR') + ' °C')
+# Mina 2026-11-08 #4: at Fit with the dock open (1366 x 768) the page is drawn at ~0.43 and the 11 ~ 14 px text was ~5 ~ 6 px on the
+# screen. The lamp band (the 8 ATS steps, y 140 ~ 230) and the three check lists (x 24 / 554 / 1094, y 700 ~ 980) get a bigger font in the
+# same style (colour, weight, place); the second line of a check item moves down 3 with its bigger font. The columns take it (the longest
+# item, 53 characters at 17, is ~470 of 530).
+import re
+def _big(m):
+    a = m.group(1)
+    x = float(re.search(r' x="([\d.]+)"', a).group(1))
+    y = float(re.search(r' y="([\d.]+)"', a).group(1))
+    fs = int(re.search(r' font-size="(\d+)"', a).group(1))
+    if 140 <= y <= 230:
+        nf = {14: 20, 12: 15, 11: 13}.get(fs, fs)
+    elif 700 <= y <= 980 and x in (24.0, 554.0, 1094.0):
+        nf = {12: 17, 11: 14}.get(fs, fs)
+        if fs == 11:
+            a = re.sub(r' y="[\d.]+"', f' y="{y + 3:g}"', a, count=1)
+    else:
+        return m.group(0)
+    return '<text' + re.sub(r' font-size="\d+"', f' font-size="{nf}"', a, count=1) + '>'
+p.s = re.sub(r'<text((?=[^>]* x="[\d.]+")(?=[^>]* y="[\d.]+")(?=[^>]* font-size="\d+")[^>]*)>', _big, p.s)
 bad = p.check()
 assert not bad, bad
 p.write('p13-head.js', 'hmi-mock-ts.js')

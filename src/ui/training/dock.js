@@ -42,17 +42,20 @@
     if (b.dataset.arm) {
       clearTimeout(b._armT);
       delete b.dataset.arm;
-      b.textContent = b._armX;
+      b.replaceChildren(...b._armX);
       return f();
     }
-    b._armX = b.textContent;
+    /* the label and its push-button tag (small) come back as they were */
+    b._armX = [...b.childNodes];
     b.dataset.arm = '1';
     b.textContent = ask;
     b._armT = setTimeout(() => {
       delete b.dataset.arm;
-      b.textContent = b._armX;
+      b.replaceChildren(...b._armX);
     }, 5000);
   };
+  /* Mina 2026-11-08 #3: a trip or a shut-down of the step (TURBINE TRIP (TA-1)) is never one click on a label: it asks first, as above */
+  const askTrip = a => !a.loc && /\bTRIPS?\b|\bSHUT-?DOWN\b/i.test(a.l || '') && !/\bRESET\b/i.test(a.l || '');
   const LV = () => window.LS_LIVE;
   const U = () => (window.AN && AN.unit) || {};
   const f0 = x => (x == null || !isFinite(x) ? '—' : String(Math.round(x)).replace(/^-0$/, '0'));
@@ -2157,6 +2160,10 @@
       const pb = pbOf(a, 1);
       const bt = E('button', { type: 'button', cls: 'gd-btn' + (a.stop ? ' go gd-st' : '') }, [a.l, pb ? E('small', { txt: pb.txt }) : null]);
       bt.onclick = () => {
+        if (askTrip(a) && bt.dataset.block !== '1') {
+          if (!bt.dataset.arm) return arm2(bt, 'Press again: ' + String(a.l).replace(/\s*\(.*$/, ''), () => {});
+          arm2(bt, '', () => {});
+        }
         if (a.stop && ad) {
           els.sel = ad;
           els.selI = s.i;
@@ -2429,7 +2436,8 @@
       const f = call(() => LV().fp(t), null),
         fpBox = els.fps && [...els.fps.children].find(x => (x.querySelector('.gd-fph b') || {}).textContent === t),
         u = ((/\[\s*-?[\d.]+\s*~\s*-?[\d.]+\s*([^\]\d][^\]]*)\]/.exec((fpBox && fpBox.textContent) || '') || [])[1] || '').trim();
-      if (f && f.kind === 'man') own.push([t + ' output (MV)', () => call(() => LV().mvOf(LV().fp(t)), NaN), '%', f1, '']);
+      /* Mina 2026-11-08 #3: a manual station shows its value in the unit of its faceplate (HIC-ULD: MW, face-defaults MAN unit = b.p.u, compile-step.js), not % */
+      if (f && f.kind === 'man') own.push([t + ' output (MV)', () => call(() => LV().mvOf(LV().fp(t)), NaN), (f.b && f.b.p && (f.b.p.u || f.b.p.unit)) || u || '%', f1, '']);
       else own.push([(nice(f && f.c && f.c.desc) || t) + ' · ' + t, () => call(() => LV().pvOf(LV().fp(t)), NaN), u, f1, call(() => 'SV ' + f1(LV().svOf(LV().fp(t))), '')]);
     }
     const ms = (s.a || []).filter(a => a.stop && a.on);
