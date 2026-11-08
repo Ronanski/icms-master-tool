@@ -625,7 +625,7 @@
             abcReady(() => {
               /* Mina beta.116: a reload of 150 MW while the plant ran (Worker) tripped it in 20 s (BU-CMD, furnace pressure HH, MFT): the
                  simulation is paused while the starting state loads, the practise turns it on after */
-              if (AN.pauseOn) AN.pauseOn();
+              if (AN.run && !AN.view && AN.pauseOn) AN.pauseOn(); /* only a running plant: in VIEW pauseOn switched the view and asked for a starting state (Mina beta.123) */
               const b = $('load150');
               if (b) b.click();
               (AN._startP || Promise.resolve()).then(() => {
@@ -646,7 +646,7 @@
             abcReady(() => {
               /* Mina beta.116: a reload of 150 MW while the plant ran (Worker) tripped it in 20 s (BU-CMD, furnace pressure HH, MFT): the
                  simulation is paused while the starting state loads, the practise turns it on after */
-              if (AN.pauseOn) AN.pauseOn();
+              if (AN.run && !AN.view && AN.pauseOn) AN.pauseOn(); /* only a running plant: in VIEW pauseOn switched the view and asked for a starting state (Mina beta.123) */
               const b = $('load150');
               if (b) b.click();
               (AN._startP || Promise.resolve()).then(() => {

@@ -660,3 +660,4 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.123** (2026-11-08): Reheat temperature at part load: below the spray range the natural curve (plant trend 521 C at 90 MW) is the value with the biasing dampers at their end; their assumed extra gain no longer lifts it to 536 C.
 - **beta.124** (2026-11-08): Page 13 protection band: RESET / first out read from the TCS trip state (was ----- at 150 MW and [object Object] after a trip), NORMAL step at the 150 MW snapshot, larger text.
 - **beta.125** (2026-11-08): HIC-MWRL (and any station that an A / M switch tracks): the operator's value also goes on the manual leg of that switch, so the tracking no longer puts the old value back every scan.
+- **beta.126** (2026-11-08): Practise buttons pause only a running plant (in VIEW the pause asked for a starting state); Practise: Normal shutdown opens the shutdown step again after the dock settles.
