@@ -69,6 +69,15 @@
     const c = document.querySelector('.sccrumb'),
       w = c && c.offsetWidth ? c.offsetWidth : 0;
     bar.style.setProperty('--sccw', w + 'px');
+    /* shell audit M23: where the page starts under the page bar and the turbine panel (the tablet faceplate panel starts there) */
+    const m = $('plmid');
+    if (m) {
+      const M = m.getBoundingClientRect(),
+        tb = tsp && !tsp.hidden ? tsp.getBoundingClientRect() : null,
+        bb = bar.offsetParent ? bar.getBoundingClientRect() : null,
+        y = Math.max(0, tb && tb.height ? tb.bottom - M.top : 0, bb && bb.height ? bb.bottom - M.top : 0);
+      m.style.setProperty('--scph', Math.round(y) + 'px');
+    }
     const L = call(() => window.lsEvents, null),
       e = L && L[0],
       t = e ? (e.sh && e.sh !== 'DCS' ? e.sh + ': ' : '') + (e.text || '') + (e.t ? ' · ' + e.t : '') : '';

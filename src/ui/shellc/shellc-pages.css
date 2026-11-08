@@ -8,13 +8,16 @@ body.sc #plantws #plleft{position:absolute;left:0;top:0;bottom:0;width:min(20rem
 body.sc #plantws.lsopen #plleft{display:block}
 body.sc #plantws #plvals{display:none!important}
 body.sc #plantws #plmid{background:var(--sc-page)}
-body.sc #plantws .plbar{display:flex!important;align-items:center;gap:.5rem!important;flex-wrap:nowrap;min-height:2.75rem!important;padding:0 1rem 0 calc(var(--sccw,9rem) + 1.25rem)!important;background:var(--sc-paper)!important;border-bottom:1px solid var(--sc-line)!important;font-family:var(--sc-ui)}
+/* shell audit M17 / M18 (nothing cut, S6): the bar wraps to a second line instead of pushing LIVE past the right edge, and the last event
+   line wraps instead of an ellipsis */
+body.sc #plantws .plbar{display:flex!important;align-items:center;gap:.5rem!important;flex-wrap:wrap!important;row-gap:.25rem!important;min-height:3rem!important;padding:.25rem 1rem .25rem calc(var(--sccw,9rem) + 1.5rem)!important;background:var(--sc-paper)!important;border-bottom:1px solid var(--sc-line)!important;font-family:var(--sc-ui)}
 body.sc #plantws .plbar :is(#pltitle,.plchips,.plvb,.plfull,.plpick,#plsys){display:none!important}
 body.sc #plantws .plbar .plnav{order:2;display:inline-flex;gap:.25rem}
 body.sc #plantws .plbar .scfs{order:1}
 body.sc #plantws .plbar #pllive{order:3}
-body.sc #plantws .plbar .scpev{order:9;margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:400 .75rem var(--sc-ui);color:var(--sc-ink2)}
-body.sc #plantws .plbar button{min-height:2rem!important;height:auto!important;padding:0 .625rem!important;border:1px solid var(--sc-line2)!important;border-radius:.25rem!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 .75rem var(--sc-ui)!important;box-shadow:none!important;cursor:pointer}
+body.sc #plantws .plbar .scpev{order:9;flex:1 1 16rem;margin-left:auto;min-width:0;text-align:right;white-space:normal;overflow-wrap:anywhere;font:400 .75rem/1.35 var(--sc-ui);color:var(--sc-ink2)}
+body.sc #plantws .plbar #pllive{white-space:nowrap}
+body.sc #plantws .plbar button{min-height:2rem!important;height:auto!important;padding:0 .75rem!important;border:1px solid var(--sc-line2)!important;border-radius:.25rem!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 .75rem var(--sc-ui)!important;box-shadow:none!important;cursor:pointer}
 body.sc #plantws .plbar button:hover{border-color:var(--sc-steel)!important}
 body.sc #plantws .plbar .scfs{border:0!important;background:transparent!important;color:var(--sc-steel)!important;font:500 .8125rem var(--sc-ui)!important;text-decoration:underline;text-underline-offset:2px;padding:0 .25rem!important}
 body.sc #plantws .plbar #pllive.on{color:var(--sc-stop)!important}
@@ -22,7 +25,7 @@ body.sc #plantws .plbar :focus-visible{outline:2px solid var(--sc-steel)!importa
 /* full screen: the page bar and the breadcrumb go, the values strip stays; "Leave full screen" at the top right of the page */
 body.sc.scfull #plantws .plbar,body.sc.scfull .sccrumb{display:none!important}
 .scfsout,.scfsout[hidden],body.sc:not(.scfull) .scfsout{display:none!important}
-body.sc.scfull[data-tab="operate"] .scfsout:not([hidden]){display:inline-flex!important;align-items:center;position:fixed;top:calc(var(--top) + .5rem);right:.75rem;z-index:79;min-height:2rem!important;padding:0 .875rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:1rem!important;color:var(--sc-ink)!important;font:600 .75rem var(--sc-ui)!important;box-shadow:0 .125rem .5rem rgba(34,46,57,.12)!important;cursor:pointer}
+body.sc.scfull[data-tab="operate"] .scfsout:not([hidden]){display:inline-flex!important;align-items:center;position:fixed;top:calc(var(--top) + .5rem);right:.75rem;z-index:var(--z-float,60);min-height:2rem!important;padding:0 1rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:1rem!important;color:var(--sc-ink)!important;font:600 .75rem var(--sc-ui)!important;box-shadow:0 .125rem .5rem rgba(34,46,57,.12)!important;cursor:pointer}
 
 /* ---------- (b) the two faceplates in the C look (fp-pop.js .fpo-box and the controller faceplate #plfp) ---------- */
 body.sc .fpo-box,body.sc #plfp.fpo-near{background:var(--sc-white)!important;border:1px solid var(--sc-steel)!important;border-radius:.5rem!important;box-shadow:0 .75rem 2rem rgba(34,46,57,.22)!important;color:var(--sc-ink)!important;font:400 .875rem/1.4 var(--sc-ui)!important}
@@ -72,20 +75,22 @@ body.sc .fpo-box .fpo-il li em{color:var(--sc-ink2)}
 body.sc .fpo-box .fpo-ln{border-top-color:var(--sc-line)}
 body.sc .fpo-box .fpo-a{color:var(--sc-steel)!important}
 /* tablet (narrow, shellc-pages.js scnarrow): the faceplate is a panel at the right of the page, the graphic stays beside it */
-body.sc.scnarrow #plmid > :is(.fpo-box,#plfp.fpo-near){left:auto!important;right:0!important;top:0!important;bottom:0;width:min(22rem,44%)!important;max-height:none!important;height:auto;border-radius:0!important;border-width:0 0 0 3px!important;box-shadow:none!important}
-body.sc.scnarrow #plmid:has(#fpop2) > #fpop{bottom:50%}
-body.sc.scnarrow #plmid:has(#fpop) > #fpop2{top:50%!important;border-top-width:1px!important}
+/* shell audit M23: the panel starts under the page bar (and the turbine panel), --scph from shellc-pages.js */
+body.sc.scnarrow #plmid > :is(.fpo-box,#plfp.fpo-near){left:auto!important;right:0!important;top:var(--scph,0px)!important;bottom:0;width:min(22rem,44%)!important;max-height:none!important;height:auto;border-radius:0!important;border-width:0 0 0 3px!important;box-shadow:none!important}
+body.sc.scnarrow #plmid:has(#fpop2) > #fpop{bottom:calc((100% - var(--scph,0px)) / 2)}
+body.sc.scnarrow #plmid:has(#fpop) > #fpop2{top:calc(var(--scph,0px) + (100% - var(--scph,0px)) / 2)!important;border-top-width:1px!important}
 
 /* ---------- (c) the turbine start panel on the Steam and turbine page ---------- */
-#sctsp{position:relative;flex:none;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:.25rem 1rem;margin:0;border-radius:0!important;border-width:0 0 1px!important;box-shadow:none!important;padding:.5rem .75rem .625rem;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:.5rem;box-shadow:0 .25rem 1rem rgba(34,46,57,.14);font-family:var(--sc-ui);color:var(--sc-ink)}
+#sctsp{position:relative;flex:none;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:.25rem 1rem;margin:0;border-radius:0!important;border-width:0 0 1px!important;box-shadow:none!important;padding:.5rem .75rem;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:.5rem;box-shadow:0 .25rem 1rem rgba(34,46,57,.14);font-family:var(--sc-ui);color:var(--sc-ink)}
 #sctsp[hidden]{display:none}
-#sctsp .sctsh{flex:1 1 100%;display:flex;align-items:center;gap:.5rem;font:600 .625rem var(--sc-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--sc-ink2)}
+#sctsp .sctsh{flex:1 1 100%;display:flex;align-items:center;gap:.5rem;font:600 .75rem var(--sc-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--sc-ink2)}
 #sctsp .sctsh span{flex:1}
-#sctsp .sctsx{min-height:1.5rem!important;padding:0 .5rem!important;border:0!important;background:transparent!important;color:var(--sc-steel)!important;font:500 .75rem var(--sc-ui)!important;text-transform:none;letter-spacing:0;text-decoration:underline;box-shadow:none!important;cursor:pointer}
-#sctsp .sctsv{display:flex;flex-wrap:wrap;gap:.125rem .75rem;margin:0;font-size:.75rem;color:var(--sc-ink2)}
+/* shell audit M21: Hide at least 24 px high (S3, PC) */
+#sctsp .sctsx{display:inline-flex!important;align-items:center;justify-content:center;height:auto!important;min-height:1.5rem!important;min-width:3rem;padding:0 .5rem!important;border:0!important;background:transparent!important;color:var(--sc-steel)!important;font:500 .75rem var(--sc-ui)!important;text-transform:none;letter-spacing:0;text-decoration:underline;box-shadow:none!important;cursor:pointer}
+#sctsp .sctsv{display:flex;flex-wrap:wrap;gap:.25rem .75rem;margin:0;font-size:.75rem;color:var(--sc-ink2)}
 #sctsp .sctsv b{font:600 .75rem var(--sc-num);color:var(--sc-ink)}
 #sctsp .sctsn{margin-left:-.5rem}
-#sctsp .sctsb{display:flex;flex-wrap:wrap;gap:.375rem}
+#sctsp .sctsb{display:flex;flex-wrap:wrap;gap:.5rem}
 #sctsp .sctsb button{min-height:2.25rem!important;height:auto!important;padding:0 .75rem!important;border:1px solid var(--sc-line2)!important;border-radius:.25rem!important;background:var(--sc-band)!important;color:var(--sc-ink)!important;font:600 .8125rem var(--sc-ui)!important;box-shadow:none!important;cursor:pointer}
 #sctsp .sctsb button:hover:not(:disabled){border-color:var(--sc-steel)!important}
 #sctsp .sctsb button.stop{background:var(--sc-white)!important;border-color:var(--sc-stop)!important;color:var(--sc-stop)!important}
@@ -94,6 +99,17 @@ body.sc.scnarrow #plmid:has(#fpop) > #fpop2{top:50%!important;border-top-width:1
 #sctsp.fold .sctsv,#sctsp.fold .sctsb{display:none}
 body:not(.sc) #sctsp{display:none!important}
 /* Mina beta.213: Y / N of the permissive rows (COMMANDMENT 5: Y red = complete, N green = not complete) */
-body.sc .fpo-box .fpo-il li i{width:1.125rem;line-height:1.125rem;border-radius:.1875rem;color:var(--sc-white);font:700 .6875rem var(--sc-ui)}
+body.sc .fpo-box .fpo-il li i{width:1.25rem;line-height:1.25rem;border-radius:.25rem;color:var(--sc-white);font:700 .75rem var(--sc-ui)}
 body.sc .fpo-box .fpo-il li.ok i{background:var(--sc-run)}
 body.sc .fpo-box .fpo-il li.bad i{background:var(--sc-stop)}
+/* ---------- targets: 40 px on a tablet (1024 wide, S3, M20 / M21), 44 px on a touch screen (design-auditor pass) ---------- */
+@media (max-width:1279px){
+  body.sc #plantws .plbar button,#sctsp .sctsx,#sctsp .sctsb button,body.sc.scfull[data-tab="operate"] .scfsout:not([hidden]){min-height:2.5rem!important}
+  body.sc #plantws .plbar .plstep{min-width:2.5rem!important;width:2.5rem!important}
+  /* the breadcrumb of the page bar (shellc-home.js) at the same height as the bar buttons */
+  body.sc .sccrumb{min-height:2.5rem!important}
+}
+@media (pointer:coarse){
+  body.sc #plantws .plbar button,#sctsp .sctsx,#sctsp .sctsb button,body.sc.scfull[data-tab="operate"] .scfsout:not([hidden]),body.sc .sccrumb{min-height:2.75rem!important}
+  body.sc #plantws .plbar .plstep{min-width:2.75rem!important;width:2.75rem!important}
+}
