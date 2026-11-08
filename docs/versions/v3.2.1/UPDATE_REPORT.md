@@ -1,5 +1,13 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.172 — Practice: O2 analyzer A fails (e5 recovery, 2026-11-08, LISA)
+
+**Work done.** New Training section PRACTICE: O2 ANALYZER A FAILS (live.js X9, guide stage 15) and the home button "Practise: O2 analyzer A fails". Steps: fault analyzer A signal lost (I/O list AI0273 AT-FG1122, SIG.AB B.0671); AICFG112 follows analyzer B (ABC-002 select, AI0433 AT-FG1123); the O2 trim in AUTO and the O2 inside the alarm list band L 2.5 ~ H 5 % for 2 min; I&C clears the fault. The BFWP A trip and the O2 sections are sequential now (a step waits for the one before it): the last step of the O2 section ticked before the fault.
+
+**Checked in the page.** Practise button loads 150 MW and runs; fault: AI0273 0, B.0671 1, AICFG112 PV 4.1 = analyzer B 4.1; steps 1 and 2 ticked.
+
+**Not tested.** The 2 min hold and the clear step after the SEQ change, live; item sent to Mina.
+
 ## 3.2.1-beta.171 — Practice: BFWP A trip at 150 MW (e5 recovery, 2026-11-08, LISA)
 
 **Work done.** New Training section PRACTICE: BFWP A TRIP AT 150 MW (live.js X8, guide stage 14) and the home button "Practise: BFWP A trip" (loads 150 MW, pauses first if running). Steps: standby BFWP B in REMOTE + AUTO (DITL-23A #B rows 24 / 18; 03.png BFWP-B standby); fault BFWP A trips (Faults, MIT-P1115A; DITL-23A out 65 TRIP resets the running latch out 55); BFWP B starts by itself (BFWP B AUTO STARTING) or from the CRT; feedwater and drum level inside the alarm list H / L (+127 / -100 mm, LT-BR1001-2) for 2 min; relay reset, BFWP A becomes the standby. No run-back: none is drawn on the ABC or DITL sheets. The checks read the logic.

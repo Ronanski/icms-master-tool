@@ -751,14 +751,29 @@ window.LS_LIVE = (function () {
      AUTO STARTING (M.1144) = A tripped or stopped AND B AUTO MODE SELECTED (row 18, M.1142), B in REMOTE (row 24). 03.png: BFWP-B
      standby at 150 MW. No run-back on any ABC or DITL drawing (no "RUN BACK" text on the 54 ABC and the DITL sheets). Drum level:
      alarm list LT-BR1001-2 H +127 / L -100 mm */
-  const X8 = [
+  const X8 = SEQ(BASE_N + 7, [
     ['Standby BFWP B ready for its AUTO start: REMOTE and AUTO MODE SELECTED (DITL-23A #B rows 24 / 18; 03.png BFWP-B standby).', ALL(INC('DITL-23A #B', 17, 'BFWP B AUTO MODE SELECTED'), INC('DITL-23A #B', 23, 'BFWP B REMOTE MODE SELECTED'))],
     ['Fault: BFWP A trips in the field (Faults, MIT-P1115A). Its ELECTRIC TROUBLE makes BFWP A TRIP (DITL-23A out 65) and resets the running latch (out 55).', BIT('M.3343', 0, 'BFWP A running')],
     ['BFWP B starts by itself (DITL-23A #B BFWP B AUTO STARTING: A tripped, B in AUTO). If it does not, start it from the CRT.', BIT('M.3344', 1, 'BFWP B running')],
     ['Feedwater and drum level recover on BFWP B: FICFW1007 follows its SV, drum level inside the alarm list H / L (+127 / -100 mm, LT-BR1001-2) for 2 min.', HOLD(120, VAL('lvl', -100, 127))],
     ['Reset the BFWP A relay in the field (Faults: press it again), acknowledge the TRIP; BFWP A is now the standby: REMOTE + AUTO MODE SELECTED (DITL-23A rows 24 / 18).', ALL(DC('BFWP A relay reset in the field', () => !(window.WORLD && WORLD.ftrip && WORLD.ftrip().some(f => f.id === 'mt.bfwpa' && f.on)), () => (window.WORLD && WORLD.ftrip && WORLD.ftrip().some(f => f.id === 'mt.bfwpa' && f.on) ? 'tripped' : 'reset')), INC('DITL-23A', 17, 'BFWP A AUTO MODE SELECTED'))]
-  ];
-  const XS = [X1, X2, X3, X4, X5, X6, X7, X8];
+  ]);
+  /* plan e5 recovery (LISA): O2 analyzer A fails. I/O list STN101 AI0273 AT-FG1122 (0 ~ 25 %, SIG.AB B.0671) and AI0433 AT-FG1123
+     (SIG.AB B.0701); ABC-002 selects the O2 of AICFG112 by the SIG.AB flags (engine/faults.js check: PV follows analyzer B). Alarm
+     list AT-FG1122 / 1123: HH 7, H 5, L 2.5, LL 2 % */
+  const O2B = () => {
+    const f = fp('AICFG112'),
+      x = f ? pvOf(f) : NaN,
+      b = val('AI0433');
+    return { x, b, ok: isFinite(x) && isFinite(b) && Math.abs(x - b) <= 0.2 };
+  };
+  const X9 = SEQ(BASE_N + 8, [
+    ['Fault: O2 analyzer A (AT-FG1122) signal lost (Faults). The AI goes to 0 % and its signal abnormal flag B.0671 is set (I/O list AI0273, SIG.AB B.0671).', BIT('B.0671', 1, 'O2 analyzer A signal abnormal')],
+    ['ABC-002 drops analyzer A: the O2 of AICFG112 follows analyzer B (AI0433, AT-FG1123), no step in the trim.', DC('AICFG112 PV = analyzer B AI0433 (within 0.2 %)', () => O2B().ok, () => 'PV ' + f1(O2B().x) + ' %, analyzer B ' + f1(O2B().b) + ' %')],
+    ['Check the O2 trim on analyzer B: AICFG112 in AUTO, flue gas O2 inside the alarm list band L 2.5 ~ H 5 % (AT-FG1123) for 2 min.', HOLD(120, ALL(MODE('AICFG112', 'AUTO'), PV('AICFG112', 2.5, 5, '%')))],
+    ['I&C repairs analyzer A: clear the fault (Faults: press it again). B.0671 back to 0, analyzer A back in the select.', BIT('B.0671', 0, 'O2 analyzer A healthy')]
+  ]);
+  const XS = [X1, X2, X3, X4, X5, X6, X7, X8, X9];
   if (!PROC.some(s => s.x)) {
     PROC.push({ t: 'SYNCHRONIZATION AND INITIAL LOAD (APP)', x: 1, note: 'Added by the app: PR-OPE-5002 ends at Solid firing. Targets from the cold start scenario of the app (it reaches 150 MW) and the FHI design data.', s: X1.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'LOAD UP TO 150 MW (APP)', x: 1, note: 'Added by the app. PR-OPE-5002 sec 44: boiler follow until 90 MW; then coordinated control to 150 MW (FHI MCR 460 T/H).', s: X2.map(x => ({ t: x[0], g: [] })) });
@@ -768,6 +783,7 @@ window.LS_LIVE = (function () {
     PROC.push({ t: 'SHUTDOWN TO BOTTLE-UP (APP)', x: 1, note: 'Added by the app from PR-OPE-5004-01 (shutdown to bottle-up): after the turbine trip, the boiler is boxed up with the drum at +200 mm.', s: X6.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'TURBINE TRIP AT LOAD AND HOT RESTART (APP)', x: 1, note: 'Added by the app from the FHI CFB manual Part 2 Sect 8 Tab 9 (loss of load, hot standby, hot restart).', s: X7.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'PRACTICE: BFWP A TRIP AT 150 MW (APP)', x: 1, note: 'Added by the app (e5 faults): a field trip of BFWP A; the standby BFWP B takes the load by the logic of DITL-23A.', s: X8.map(x => ({ t: x[0], g: [] })) });
+    PROC.push({ t: 'PRACTICE: O2 ANALYZER A FAILS (APP)', x: 1, note: 'Added by the app (e5 faults): the O2 analyzer A of the AICFG112 select fails; ABC-002 follows analyzer B by the SIG.AB flag.', s: X9.map(x => ({ t: x[0], g: [] })) });
   }
 
   /* ---------- the general rules (step text + its tags), after the table ---------- */
@@ -1023,7 +1039,7 @@ window.LS_LIVE = (function () {
     return r && r[0] ? r[0].sh : null;
   };
   /* 3.2.0-beta.21: the condition makers, for the guided Training (guide.js) */
-  const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4, X5, X6, X7, X8 };
+  const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4, X5, X6, X7, X8, X9 };
   /* recNow: a row at once (tests/regress/load_ramp.js steps the plant faster than the 1 s timer) */
   const recNow = () => {
     REC.last = Math.floor((+U().t || 0) / 60);
