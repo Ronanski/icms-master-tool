@@ -608,6 +608,29 @@
         }
       }
     }
+    /* 3.2.1 (Mina beta.146 ~ 154: 52G1 stayed CLOSED on pages 13 / 17 after a turbine trip): DITL-03E rows 2 / 3 "52L1 OPEN FOR HOUSE
+       OPERATION ON (FROM STATION WIRING) S2 M.3221" and "52G1 OPEN (FROM STATION WIRING) S2 M.3220" had no source. The station wiring
+       carries the station 2 inputs (unit.js U.bcast, ABC-013 "52G1 OPEN M.3220 (FROM S2 L0932)", "52L1 OPEN FOR HOUSE OPERATION M.3221
+       (FROM S2 L0937)"): M.3220 = I.0932 GCB 52G1 off, M.3221 = I.0937 52L1 open, the ABC-050 inputs the unit model writes */
+    for (const [rn, adr] of [
+      [2, 'I.0937'],
+      [3, 'I.0932']
+    ]) {
+      const d = S.sheets.find(x => x.name.endsWith(')DITL-03E')),
+        i = d ? d.rows.findIndex(r => +r.n === rn) : -1;
+      if (!d || i < 0) continue;
+      const have = din.get(d) && din.get(d).get(i);
+      if (have && have.length) continue;
+      const sh = AN.sheets.find(x => x.name === 'ABC-050');
+      let T = null;
+      try {
+        T = sh && AN.ensure(sh);
+      } catch (e) {}
+      const n = T && T.ext ? T.ext.find(j => String(AN.nm(T, j) || '').replace(/^S\d\s*/, '').trim() === adr) : undefined;
+      if (n == null) continue;
+      nlOf(d);
+      addIn(d, i, { k: 'a', sh, n, ref: 'ABC-050 ' + adr + ' (station wiring)' });
+    }
     /* 3.2.1 c2 gap 2 (LISA, 310SC90-773 rev 2 DI 59 / 60 / 63 / 64, TCS -> DCS): the drain valve commands of the TCS. IBD TE-1 net 66 / 67
        (the WO gates of HP TURBINE WARMING LINE DRAIN VALVE OPEN / CLOSE, page 90) = TCS-DI1033 / 1034 I.0407 / I.0408 = DITL-75 rows 8 / 11;
        IBD TE-6 net 45 / 18 (TURBINE GLAND STEAM LINE DRAIN VALVE FULL OPEN / CLOSE, page 94) = TCS-DI1037 / 1038 I.040B / I.040C = the
