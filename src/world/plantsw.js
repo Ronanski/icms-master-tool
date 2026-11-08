@@ -202,7 +202,13 @@
   [['SS-BH1750', 7], ['SS-BH1751', 8], ['SS-BH1752', 9]].forEach(([a, r]) => L.push([a, baRun(r), 0.5, 'hi', 0, 0, null, /\)DITL-BA60$/]));
   /* the ash screw cooler speed switch SS-BH1060-x (DITL-21A row 20, I.0258 / 538 / 648 / 688) is made while its cooler turns: the run state of the
      cooler machine. It had no source in the Worker (Mina beta.106: SPEED LOW at 15.9 s, cooler stopped) */
-  'ABCD'.split('').forEach((x, i) => L.push(['SS-BH1060-' + x, () => (window.AN && AN.ditlRun ? (AN.ditlRun(i ? 'DITL-21A #' + x : 'DITL-21A') === 1 ? 1 : 0) : NaN), 0.5, 'hi', 0, 0, /SPEED NOT LOW/, /DITL-21A/]));
+  /* Mina beta.108: the rows of machine #B read the tag of A (SS-BH1060-A, the letter of the tag is not remapped), so the A entry caught
+     them and #B followed cooler A. Each machine now has its own entry, held to its own sheet, for its own tag and the tag as drawn */
+  'ABCD'.split('').forEach((x, i) => {
+    const sh = i ? new RegExp('DITL-21A #' + x + '$') : /DITL-21A$/,
+      fn = () => (window.AN && AN.ditlRun ? (AN.ditlRun(i ? 'DITL-21A #' + x : 'DITL-21A') === 1 ? 1 : 0) : NaN);
+    for (const t of i ? ['SS-BH1060-' + x, 'SS-BH1060-A'] : ['SS-BH1060-A']) L.push([t, fn, 0.5, 'hi', 0, 0, /SPEED NOT LOW/, sh]);
+  });
   const DB0 = 10;
   let map = null,
     mapK = '';
