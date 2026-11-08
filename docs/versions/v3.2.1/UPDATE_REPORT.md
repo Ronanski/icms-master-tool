@@ -647,3 +647,4 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.110** (2026-11-08): Bed temperature holds at part load (start-up law fades out above 30 % fuel share; was capping the bed at 741 °C at 90 MW). MW per steam flow from the plant trends (MW = 0.3362 x steam - 11.9: 150 MW at 481 T/H, 90 MW at 304 T/H).
 - **beta.111** (2026-11-08): Training adds the Bottle-up section (PR-OPE-5004-01): steam lines isolated, drum +200 mm, BFP stop, burners out, biasing dampers 100 %, PA fan / FA blowers / SA fan / ID fan stop, furnace pressure -20 ~ +20 mmH2O on the damper.
 - **beta.112** (2026-11-08): Ash cooler speed switch of machines B, C, D follows its own cooler (the rows of #B carried the tag of A and followed cooler A).
+- **beta.113** (2026-11-08): Main steam temperature on a load ramp: the superheater pickup moves with the tube metal lag like the spray outlet (was 550 C on the way up, 532 C on the way down).

@@ -3115,7 +3115,12 @@ function anUnitStep0(dt) {
     if (!isFinite(pv)) continue;
     h.x += ((pv - h.x) * dt) / U.tauT;
     const dn = U.shDn || 0,
-      pk = h.pk0 - (h.r === 'sh2' ? U.fsh[1] * dn : U.fsh[2] * dn + (U.shA2 || 0) * (1 - gx));
+      pkT = h.pk0 - (h.r === 'sh2' ? U.fsh[1] * dn : U.fsh[2] * dn + (U.shA2 || 0) * (1 - gx));
+    /* 3.2.1 b6 (Mina beta.111: MST 550 C at 118 MW on a 0.75 MW/min ramp up, 532 C on the way down; plant 535 ~ 542 C): the pickup of the
+       superheater followed the load at once while the spray outlet before it moved with the metal lag tauT, so a ramp put the main steam
+       9 C off. The pickup is heat of the same tube metal: it moves with the same lag (the steady values do not change) */
+    h.pk = h.pk == null ? pkT : h.pk + ((pkT - h.pk) * dt) / U.tauT;
+    const pk = h.pk;
     h.d = pk * fr - h.pk0;
     /* 2.2.0-beta.14 (cold): the header after the spray cannot be above the gas (bed) nor below saturation either */
     if (U.cold) {
