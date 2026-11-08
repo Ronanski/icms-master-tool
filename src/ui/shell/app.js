@@ -1815,20 +1815,22 @@
      the ones of the old Start ▾ menu (its buttons stay in the page, hidden, so nothing that clicks them changes) and the engine's
      own AN.plantSwitch / AN.turbine. VIEW: the panel shows the state, the choices wait for RUN. */
   function buildPlantChip(start) {
-    const MOVED = ['load150', 'loadcold'];
+    const MOVED = ['load150', 'loadcold', 'loadwarm', 'loadhot'];
     for (const id of MOVED) {
       const b = start.m.querySelector('#' + id);
       if (b) b.classList.add('lsmoved');
     }
     for (const h of start.m.querySelectorAll('.mh'))
       if (/^Starting state/.test(h.textContent)) h.classList.add('lsmoved');
-    const NAMES = { plantCold: 'Cold', plantLoad150: '150 MW' };
+    /* Mina beta.154: Warm / Hot restart were only in the TCS / Field menu: they are starting states of the unit as Cold and 150 MW */
+    const NAMES = { plantCold: 'Cold', plantLoad150: '150 MW', plantWarm: 'Warm restart', plantHot: 'Hot restart' };
+    const stNow = () => (AN.startState === 'plantCold' && AN.restartKind === 'warm' ? 'plantWarm' : AN.startState === 'plantCold' && AN.restartKind === 'hot' ? 'plantHot' : AN.startState);
     const model = () => (!(window.AN && AN.plantOn) ? 'off' : 'unit');
     let pick = null;
     const txt = () => {
       const m = model();
       if (m === 'off') return 'OFF';
-      return 'Unit · ' + (NAMES[AN.startState] || 'not started');
+      return 'Unit · ' + (NAMES[stNow()] || 'not started');
     };
     const chip = E('button', { id: 'plchip', cls: 'plchip', title: 'Plant model and starting state: OFF, Unit (Cold to 150 MW)' }, [
       E('i', { 'aria-hidden': 'true' }),
@@ -1910,11 +1912,14 @@
         })
       );
       if (m === 'unit') {
-        const st = AN.startState && NAMES[AN.startState] ? AN.startState : null,
+        const st = stNow() && NAMES[stNow()] ? stNow() : null,
           click = id => () =>
             withAN(() => {
               plantOn(true);
               pick = null;
+              /* Mina beta.154: a starting state picked on the chip while the plant runs gave a dead plant; pause first, as the Practise
+                 buttons do (home.js) */
+              if (AN.run && !AN.view && AN.pauseOn) AN.pauseOn();
               const b = $(id);
               if (b) b.click();
               upd();
@@ -1930,7 +1935,9 @@
           seg(
             [
               ['plantCold', 'Cold', click('loadcold')],
-              ['plantLoad150', '150 MW', click('load150')]
+              ['plantLoad150', '150 MW', click('load150')],
+              ['plantWarm', 'Warm', click('loadwarm')],
+              ['plantHot', 'Hot', click('loadhot')]
             ],
             st
           ),

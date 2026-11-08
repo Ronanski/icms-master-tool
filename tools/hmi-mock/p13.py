@@ -15,6 +15,8 @@ V = lambda tag, dp=0, u='': f'<tspan data-v="{tag}" data-u="{u}" data-dp="{dp}">
 NS = '<tspan data-ns="1">-----</tspan>'
 UY = lambda k, n, on, off: f'<tspan data-uy="{k}|{n}|{on}|{off}">-----</tspan>'
 # ATS steps
+# the start-up mode of the TCS (tcs.js TCS.modes: AMBIENT COLD, COLD 1, COLD 2, WARM, HOT), text of the plant model (hmi-mock.js data-ut)
+p.sub1('Automatic turbine start-up (ATS) steps</text>', 'Automatic turbine start-up (ATS) steps</text><text x="1576" y="34" font-size="14" fill="#a9b0b7" text-anchor="end">start-up mode <tspan data-ut="tcs.mode" font-weight="600" fill="#ffffff">-----</tspan></text>')
 for i, x in enumerate((166, 358, 550, 742, 934, 1126, 1318, 1510)):
     spec = f'tcs.step|{i}|Y|N' if i < 8 else 'tcs.st9|1|Y|N'  # step 9 SHUT-DOWN stays Y after its trip (tcs.js st9)
     p.text(x, 170, f'data-uy="{spec}"')

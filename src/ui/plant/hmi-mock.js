@@ -481,6 +481,12 @@
         }
         /* page 13: [data-uy="KEY.path|n|on text|off text"] = a state of the plant model (AN.unit): on (red) when the value >= n (true
            = 1), else off (green); the ATS step done (tc.step), the oil pumps running (tc.mop.0 ...) */
+        /* page 13: [data-ut="KEY.path"] = a text of the plant model (the start-up mode of the TCS: WARM, HOT ...) */
+        qa('[data-ut]').forEach(e => {
+          const U = window.AN && AN.unit,
+            v = !U || !U.on ? null : uPath(U, e.dataset.ut);
+          e.textContent = v == null || v === '' ? '-----' : String(v);
+        });
         qa('[data-uy]').forEach(e => {
           const [kp, n, on, off] = e.dataset.uy.split('|'),
             U = window.AN && AN.unit,
