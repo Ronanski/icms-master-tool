@@ -86,12 +86,16 @@ const AN_UNIT = {
   tauO2: 20,
   mcr: 460 /* T/H, boiler MCR (SECT_7) */,
   /* SH spray versus load (Fig 10), as a share of the spray at MCR: [load share of MCR, spray share] */
+  /* 3.2.1 b6: plant trends 2026-11-08: spray 2 MV 30 at 150 MW, 10 to 13 at 105 MW (MSF 351 = 0.763 MCR), 0 at 90 MW (0.661); zero near 0.707 */
   sprayCurve: [
-    [0.6, 0],
-    [0.7, 0.407],
+    [0.707, 0],
     [0.85, 0.722],
     [1, 1]
   ],
+  /* natural steam temperature below the spray range, steam share of MCR: plant trends (90 MW MST 522, RHT 521, 2 h hold) and 02.png (60 MW
+     MST 517, RHT 499); below 0.443 the FHI Fig 6 slope */
+  natSH: [[0.443, 517], [0.661, 522], [0.707, 541]],
+  natRH: [[0.443, 499], [0.661, 521], [0.707, 541]],
   /* temperature fall below 60 % MCR, C per unit of load share (02.png: MST 541 -> 517 and RHT 541 -> 499 at 0.443 MCR) */
   slopeSH: (541 - 524) / (0.6 - 0.4) /* FHI Fig 6: 541 at 60 %, 524 at 40 %, one curve for SH and RH. Manual outranks the snapshot 02.png */,
   slopeRH: (541 - 524) / (0.6 - 0.4),
@@ -1631,7 +1635,10 @@ const AN_PA_FURN = 328.2 / 354.0;
    Fig 12 gives at that firing cools it with the same exponent 0.45. Below 40 % load no curve is printed: the start-up law of beta.15 (a small
    fire with the light-off air, 450 C with two burners) stays, and the lower of the two holds. Before: the start-up law alone, 95 C too hot at
    60 % load. Fuel share at 40, 50, 60, 70, 85, 100 % load: 38.5, 47, 56, 64, 77, 89.5 T/H of 89.5 */
-const AN_BED = { s: [0.43, 0.525, 0.626, 0.715, 0.86, 1], t: [660, 722, 755, 778, 808, 840], a: [0.612, 0.557, 0.622, 0.716, 0.861, 1] };
+/* 3.2.1 b6: plant DCS trends 2026-11-08 (team-files/plant-study/14): TIFG1090 952 to 962 C from 90 to 150 MW with the plant air, 855 C at 40 MW
+   against 909 C at 150 MW the same day. The Fig 8 fall (660 to 840) and the extra air cooling are not seen on this plant: t follows the trend ratios,
+   the air term has exponent 0 */
+const AN_BED = { s: [0.43, 0.525, 0.626, 0.715, 0.86, 1], t: [798, 819, 840, 840, 840, 840], a: [0.612, 0.557, 0.622, 0.716, 0.861, 1] };
 function anBedSS(U, fs, as) {
   const K = AN_BED,
     start = U.Tamb + (U.Tb0 - U.Tamb) * Math.pow(Math.min(3, fs / as), 0.45),
@@ -1641,7 +1648,7 @@ function anBedSS(U, fs, as) {
       for (let i = 1; i < K.s.length; i++) if (x <= K.s[i]) return Y[i - 1] + ((Y[i] - Y[i - 1]) * (x - K.s[i - 1])) / (K.s[i] - K.s[i - 1]);
       return Y[Y.length - 1] + ((x - 1) * (Y[Y.length - 1] - Y[Y.length - 2])) / (1 - K.s[K.s.length - 2]);
     };
-  return Math.min(start, U.Tamb + (ip(K.t) * (U.Tb0 / 840) - U.Tamb) * Math.pow(ip(K.a) / as, 0.45));
+  return Math.min(start, U.Tamb + (ip(K.t) * (U.Tb0 / 840) - U.Tamb) * Math.pow(ip(K.a) / as, 0));
 }
 /* bed inventory (t of solids in the furnace). The overall furnace pressure drop is its weight on the grate: 15.51 x 7.68 m = 119 m2 (T2), so
    1 mmH2O = 1 kg/m2 = 0.119 t; 1426 mmH2O (snapshot DPIFG1081) = 170 t. In: ash of the coal 6.82 % (T3), limestone less its CO2 (93.66 % CaCO3,
@@ -3033,6 +3040,13 @@ function anUnitStep0(dt) {
        C with slopeRH): outside the ATS window, no roll. The spray drawings agree that no spray can help there: DITL-33 opens the SH
        spray SOV only with the finishing SH inlet >= 350 C and steam > 46 T/H, DITL-35 the RH spray only after the ICV to CV transfer */
     let dn = e.s * below;
+    if (e.s > 0) {
+      const N = e.r ? U.natSH : U.natRH;
+      let T = N[N.length - 1][1];
+      if (xl < N[0][0]) T = N[0][1] - e.s * (N[0][0] - xl);
+      else for (let i = 1; i < N.length; i++) if (xl <= N[i][0]) { T = N[i - 1][1] + ((N[i][1] - N[i - 1][1]) * (xl - N[i - 1][0])) / (N[i][0] - N[i - 1][0]); break; }
+      dn = Math.max(0, 541 - T);
+    }
     if ((U.cold || (U.tc && U.tc.step < 7)) && e.s > 0) {
       const p0 = (U.tc && U.suRoll[U.tc.mode]) || U.suCurve[0][1],
         c = U.suCurve.map(([a, b]) => [a, Math.max(b, p0)]),
