@@ -528,6 +528,8 @@
       unseen = 0;
       draw();
     };
+    /* Mina 2026-11-08 (findings 11-08 #4 / #6): Escape closes the event log, as the other pop-ups */
+    addEventListener('keydown', e => e.key === 'Escape' && box.style.display === 'block' && (box.style.display = 'none'));
     const st = $('st');
     foot.insertBefore(btn, st);
     document.body.append(box);

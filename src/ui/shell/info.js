@@ -449,6 +449,8 @@
     return true;
   }
   window.lsInfo = open;
+  /* Mina 2026-11-08: the Plant view closes the card when the page changes (plant.js select) */
+  window.lsInfoClose = close;
   setTimeout(ades, 3000);
   let n = 0;
   const iv = setInterval(() => {
