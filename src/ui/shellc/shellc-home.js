@@ -349,10 +349,21 @@
     ['150 MW', 'load150', 'The unit at 150 MW (control-room snapshot)']
   ];
   function loadState(id) {
+    /* Giselle beta.221: with the app on the digital sheets (AN.cat 'dig', the last page was a DITL sheet) the analog sheets were never
+       read, so this waited 60 s and loaded nothing. Like the Home page's Practise buttons (home.js abcReady): the analog sheets first,
+       and no starting-state question meanwhile */
+    try {
+      AN._startPending = 1;
+      if (AN.cat !== 'an') AN.setCat('an');
+    } catch (e) {}
     return new Promise(ok => {
       let k = 0;
       const iv = setInterval(() => {
-        const r = window.AN && AN.sheets && AN.sheets.length >= 54 && AN.loadStart;
+        const r = window.AN && AN.cat === 'an' && AN.sheets && AN.sheets.length >= 54 && AN.loadStart;
+        if (r || k >= 239)
+          try {
+            if (!AN._gdWait) AN._startPending = 0;
+          } catch (e) {}
         if (!r && ++k < 240) return;
         clearInterval(iv);
         const b = r && document.getElementById(id);
@@ -428,7 +439,8 @@
       stale = true;
       let k = 0;
       const iv = setInterval(() => {
-        const r = window.AN && AN.sheets && AN.sheets.length >= 54 && window.DITL150;
+        if (k === 0) call(() => AN.cat !== 'an' && AN.setCat('an'));
+        const r = window.AN && AN.cat === 'an' && AN.sheets && AN.sheets.length >= 54 && window.DITL150;
         if (!r && ++k < 240) return;
         clearInterval(iv);
         if (r) call(() => lsSaves.load(last).then(showOv));

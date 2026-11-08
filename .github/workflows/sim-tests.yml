@@ -43,6 +43,11 @@ jobs:
         run: |
           set -o pipefail
           node tests/regress/load_ramp.js 2>&1 | tee -a sim.log
+      - name: Re-shell layout C smoke test (ls-shell = c; start screen, strip, tiles, alarm list, Instructor, Engineer tools, trip pill; old layout without it)
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node tests/regress/shellc.js 2>&1 | tee -a sim.log
       - name: Summary (PASS / FAIL lines)
         if: always()
         run: |
