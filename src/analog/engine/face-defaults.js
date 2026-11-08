@@ -739,33 +739,35 @@ const AN_DEF = {
     },
     {
       tag: 'LICD11041',
-      hh: 700,
-      h: 400,
-      l: -400,
-      ll: -800,
+      hh: 300,
+      h: 200,
+      l: -150,
+      ll: -2174,
       u: 'mm',
       desc: 'Deaerator storage tank level (1) (-2335..1095)',
-      basis: 'zero near normal level'
+      /* 3.2.1 d3 (LISA): alarm list 2016-09-12 LT-CD1104-1 / -2 / -3 (range -2220 ~ 1050 mm from the normal level): HH +300, H +200 (3124 mm),
+         normal 0, L -150 (2770 mm), LL -2174. Before: 700 / 400 / -400 / -800, no source ("zero near normal level") */
+      basis: 'alarm list 2016-09-12, LT-CD1104-1'
     },
     {
       tag: 'LICD11042',
-      hh: 700,
-      h: 400,
-      l: -400,
-      ll: -800,
+      hh: 300,
+      h: 200,
+      l: -150,
+      ll: -2174,
       u: 'mm',
       desc: 'Deaerator storage tank level (2)',
-      basis: 'same'
+      basis: 'alarm list 2016-09-12, LT-CD1104-2'
     },
     {
       tag: 'LICD11043',
-      hh: 700,
-      h: 400,
-      l: -400,
-      ll: -800,
+      hh: 300,
+      h: 200,
+      l: -150,
+      ll: -2174,
       u: 'mm',
       desc: 'Deaerator storage tank level (3)',
-      basis: 'same'
+      basis: 'alarm list 2016-09-12, LT-CD1104-3'
     },
     {
       tag: 'LIHD11051',
