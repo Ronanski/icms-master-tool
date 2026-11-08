@@ -54,6 +54,7 @@ const block =
   fs.readFileSync(__dirname + '/../ladder/ladder.css', 'utf8') +
   /* 3.2.1 re-shell layout C, step 1: the new status strip, only with ?shell=c */
   fs.readFileSync(__dirname + '/../shellc/shellc.css', 'utf8') +
+  fs.readFileSync(__dirname + '/../shellc/shellc-eng.css', 'utf8') + /* step 4: Engineer mode */
   '</style><script id="shelljs">' +
   fs.readFileSync(__dirname + '/ditl.js', 'utf8') +
   '\n' +
@@ -121,6 +122,7 @@ const block =
   '\n' +
   /* step 2: start screen, overview, alarm list with Events */
   fs.readFileSync(__dirname + '/../shellc/shellc-home.js', 'utf8') +
+  '\n' + fs.readFileSync(__dirname + '/../shellc/shellc-eng.js', 'utf8') + /* step 4: Engineer mode */
   '</script>' +
   B;
 const k = s.lastIndexOf('</body>');
