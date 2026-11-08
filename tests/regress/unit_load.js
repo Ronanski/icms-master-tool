@@ -64,6 +64,9 @@ ck(near(a.MW,150,3)&&near(a.MSF,474.1,5)&&near(a.MSP,a.SV,5),'Start at 150 MW st
 ck(near(a.MST,542,5)&&near(a.RHT,542,5)&&near(a.RHP,34.0,5),'150 MW: MST '+a.MST.toFixed(0)+', RHT '+a.RHT.toFixed(0)+', RHP '+a.RHP.toFixed(1)+' (4.PNG 542 / 542 / 34.0)');
 await page.evaluate(()=>{const u=window.__u;u.SU.rt.ext[u.tgt]=60});
 await run(600,1);const b=await st();say('TARGET 60, after 10 min',b);
+/* 3.2.1 b6: what stopped the plant, if anything (the trips and the first outs of the event log) */
+console.log('     events: '+await page.evaluate(()=>{const L=window.lsEvents||[];return L.filter(e=>/TRIP|MFT|first out|STOPPED|MANUAL|HIC-MWRL|ULD/i.test(JSON.stringify(e))).slice(-20).map(e=>JSON.stringify(e).slice(0,160)).join(' || ')}));
+console.log('     MWRL '+await page.evaluate(()=>{const f=window.LS_LIVE&&LS_LIVE.fp('HIC-MWRL');return f?LS_LIVE.mvOf(f):'?'}));
 ck(b.dem<125&&b.dem>115&&near(b.MW,b.D,3),'load down at 3 MW/min: demand '+b.dem.toFixed(1)+' after 10 min; MW '+b.MW.toFixed(1)+' follows the turbine demand SI0236 '+b.D.toFixed(1)+' (LAG 150 s of ABC-001C)');
 await run(1200+1200,1);const c=await st();say('60 MW, settled',c);
 ck(near(c.MW,60.3,5)&&near(c.MW,c.D,3),'60 MW: MW '+c.MW.toFixed(1)+' (02.png 60.3)');
