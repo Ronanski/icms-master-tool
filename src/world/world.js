@@ -834,6 +834,27 @@
           }
         });
     }
+    /* 3.2.1 d2 (LISA): station 2 to station 1 by the station wiring. ABC-001C reads M.3230 "S/B steam supply motor valve open (BC FROM S2)"
+       and M.3236 "SOOTBLOER PROGRAM END (BC FROM S2)" (memory list 101). Memory list 102 gives the same names to the station 2 signals: the
+       motor valve ZSO-SB1001 I.024A (I/O list STN102), which the sootblower drawings read as 80S-55 (DITL-80S row 6 FULL OPENED, its out 55
+       also goes "TO ABC-001C"), and M.400D SOOTBLOER PROGRAM END, read as 80-89 (DITL-80 row 7). Unlinked, both stayed 0 */
+    {
+      const a1 = AN.sheets.find(x => x.name === 'ABC-001C');
+      let T = null;
+      try {
+        T = a1 && AN.ensure(a1);
+      } catch (e) {}
+      const sb = S.sheets.find(x => isSB(x));
+      if (T && sb)
+        for (const [adr, code, nn] of [
+          ['M.3230', '80S', 55],
+          ['M.3236', '80', 89]
+        ]) {
+          const o = outRow(code, nn, sb),
+            n = T.ext.find(j => String(AN.nm(T, j) || '').replace(/^S\d\s*/, '').trim() === adr);
+          if (o && n != null) ain.push({ sh: a1, n, d: o.d, row: o.row, ref: code + '-' + nn + ' (station wiring ' + adr + ')' });
+        }
+    }
     W.idx = { din, ain };
     W._nA = AN.sheets.length;
     W.stat = {
