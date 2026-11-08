@@ -2720,11 +2720,57 @@ function anUnitOwnsPv(S, n) {
   return U.on && n != null && (U.alink || []).some(([a, t]) => t.S === S && t.n === n);
 }
 /* one step of dt seconds (called by the plant step of ABC-001C) */
+/* 3.2.1 c4: the generator electrical values of page 17 (GENERATOR). Sources: data sheet GAE-2013-0136 R2 (Mitsubishi Hitachi TFLQQ-KD,
+   176.5 MVA, 0.85 lag, 13.8 kV, 60 Hz, 3600 rpm, Xd unsaturated 1.99 pu) and snapshot 37.PNG (151.1 MW: 33.1 MVar, power factor 0.977,
+   13.8 ~ 13.9 kV, 6.3 ~ 6.6 kA, field 46.0 VDC / 8.7 A, 7266257 MWh, 882996 MVarh). The voltage regulator (AVR) holds the power
+   factor of the snapshot (0.977) while synchronised; current = MVA / (1.732 x 13.8 kV); the exciter field follows the internal
+   voltage E = |1 + j Xd I| (calculated with the data sheet Xd, no saturation), scaled to the snapshot point (E = 2.19 pu at 151.1 MW
+   / 33.1 MVar), so 1.0 pu at no load = 4.0 A / 21 VDC. The field breaker = the TCS excitation on (tc.exc, ATS step 4 EXCITATION). */
+const AN_GEN = { kV: 13.8, Hz: 60, S: 176.5, xd: 1.99, pf: 0.977, If: 8.7, Vf: 46.0, E0: 0, MWh: 7266257, MVArh: 882996 };
+AN_GEN.E0 = Math.hypot(1 + (AN_GEN.xd * 151.1 * Math.tan(Math.acos(AN_GEN.pf))) / AN_GEN.S, (AN_GEN.xd * 151.1) / AN_GEN.S);
+function anGenEl() {
+  const U = AN.unit;
+  if (!U || !U.on) return null;
+  const tb = U.tb || {},
+    c = U.tc,
+    syn = tb.st === 'sync' || tb.st === 'load',
+    fcb = syn || !!(c && c.exc),
+    P = syn ? Math.max(0, +U.MW || 0) : 0,
+    Q = syn ? P * Math.tan(Math.acos(AN_GEN.pf)) : 0,
+    p = P / AN_GEN.S,
+    q = Q / AN_GEN.S,
+    E = fcb ? Math.hypot(1 + AN_GEN.xd * q, AN_GEN.xd * p) / AN_GEN.E0 : 0,
+    kA = Math.hypot(P, Q) / (Math.sqrt(3) * AN_GEN.kV),
+    g = U.genE || (U.genE = { MWh: AN_GEN.MWh, MVArh: AN_GEN.MVArh });
+  return {
+    fcb: fcb ? 1 : 0,
+    kV: fcb ? (AN_GEN.kV * Math.min(tb.rpm || 0, 3600)) / 3600 : 0,
+    Hz: syn ? AN_GEN.Hz : ((tb.rpm || 0) / 3600) * AN_GEN.Hz,
+    MVAr: Q,
+    pf: syn && P > 0 ? AN_GEN.pf : null,
+    kA,
+    Vf: AN_GEN.Vf * E,
+    If: AN_GEN.If * E,
+    MWh: g.MWh,
+    MVArh: g.MVArh
+  };
+}
+/* the energy meters of page 17 count the sim time while synchronised */
+function anGenInt(dt) {
+  const U = AN.unit;
+  if (!U || !U.on || !(dt > 0)) return;
+  const G = anGenEl();
+  if (!G) return;
+  const P = G.kA * Math.sqrt(3) * AN_GEN.kV * (G.pf || 0);
+  U.genE.MWh += (P * dt) / 3600;
+  U.genE.MVArh += (G.MVAr * dt) / 3600;
+}
 function anUnitStep(dt) {
   const M = (typeof globalThis !== 'undefined' ? globalThis : window).LS_SIMM;
   if (M) M.on = ++M.n;
   try {
     anUnitStep0(dt);
+    anGenInt(dt);
   } finally {
     if (M) M.on = 0;
   }
