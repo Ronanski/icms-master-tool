@@ -277,14 +277,12 @@
     }
   }
   /* (d) the Training dock makes the page narrower than the window: the strip takes its 2-row form by the width of the band (container
-     rules in shellc-ui.css), and the page under it moves down by the same height. The left rail slides out over the band: the first value
+     rules in shellc-ui.css). The left rail slides out over the band: the first value
      starts right of it */
   function layout() {
     const band = $('crband');
     if (!band) return;
-    const narrowBand = band.clientWidth < 1280 && innerWidth > 1279;
-    if (narrowBand) B().style.setProperty('--top', '5.75rem');
-    else B().style.removeProperty('--top');
+    /* the height of the band (--top) is set by shellc.js from the rows of the strip (Jennie, beta.216); nothing here writes --top */
     const rail = $('crrail');
     let pad = '';
     if (rail && rail.offsetParent !== null && !rail.matches(':hover,:focus-within')) {

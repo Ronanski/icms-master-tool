@@ -21,8 +21,8 @@ body.sc #plantws .plbar #pllive.on{color:var(--sc-stop)!important}
 body.sc #plantws .plbar :focus-visible{outline:2px solid var(--sc-steel)!important;outline-offset:2px}
 /* full screen: the page bar and the breadcrumb go, the values strip stays; "Leave full screen" at the top right of the page */
 body.sc.scfull #plantws .plbar,body.sc.scfull .sccrumb{display:none!important}
-.scfsout{display:none}
-body.sc.scfull[data-tab="operate"] .scfsout{display:inline-flex;align-items:center;position:fixed;top:calc(var(--top) + .5rem);right:.75rem;z-index:79;min-height:2rem!important;padding:0 .875rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:1rem!important;color:var(--sc-ink)!important;font:600 .75rem var(--sc-ui)!important;box-shadow:0 .125rem .5rem rgba(34,46,57,.12)!important;cursor:pointer}
+.scfsout,.scfsout[hidden],body.sc:not(.scfull) .scfsout{display:none!important}
+body.sc.scfull[data-tab="operate"] .scfsout:not([hidden]){display:inline-flex!important;align-items:center;position:fixed;top:calc(var(--top) + .5rem);right:.75rem;z-index:79;min-height:2rem!important;padding:0 .875rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:1rem!important;color:var(--sc-ink)!important;font:600 .75rem var(--sc-ui)!important;box-shadow:0 .125rem .5rem rgba(34,46,57,.12)!important;cursor:pointer}
 
 /* ---------- (b) the two faceplates in the C look (fp-pop.js .fpo-box and the controller faceplate #plfp) ---------- */
 body.sc .fpo-box,body.sc #plfp.fpo-near{background:var(--sc-white)!important;border:1px solid var(--sc-steel)!important;border-radius:.5rem!important;box-shadow:0 .75rem 2rem rgba(34,46,57,.22)!important;color:var(--sc-ink)!important;font:400 .875rem/1.4 var(--sc-ui)!important}
@@ -77,12 +77,12 @@ body.sc.scnarrow #plmid:has(#fpop2) > #fpop{bottom:50%}
 body.sc.scnarrow #plmid:has(#fpop) > #fpop2{top:50%!important;border-top-width:1px!important}
 
 /* ---------- (c) the turbine start panel on the Steam and turbine page ---------- */
-#sctsp{position:absolute;left:.75rem;bottom:.75rem;z-index:7;max-width:min(27rem,calc(100% - 1.5rem));padding:.5rem .75rem .625rem;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:.5rem;box-shadow:0 .25rem 1rem rgba(34,46,57,.14);font-family:var(--sc-ui);color:var(--sc-ink)}
+#sctsp{position:relative;flex:none;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:.25rem 1rem;margin:0;border-radius:0!important;border-width:0 0 1px!important;box-shadow:none!important;padding:.5rem .75rem .625rem;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:.5rem;box-shadow:0 .25rem 1rem rgba(34,46,57,.14);font-family:var(--sc-ui);color:var(--sc-ink)}
 #sctsp[hidden]{display:none}
-#sctsp .sctsh{display:flex;align-items:center;gap:.5rem;font:600 .625rem var(--sc-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--sc-ink2)}
+#sctsp .sctsh{flex:1 1 100%;display:flex;align-items:center;gap:.5rem;font:600 .625rem var(--sc-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--sc-ink2)}
 #sctsp .sctsh span{flex:1}
 #sctsp .sctsx{min-height:1.5rem!important;padding:0 .5rem!important;border:0!important;background:transparent!important;color:var(--sc-steel)!important;font:500 .75rem var(--sc-ui)!important;text-transform:none;letter-spacing:0;text-decoration:underline;box-shadow:none!important;cursor:pointer}
-#sctsp .sctsv{display:flex;flex-wrap:wrap;gap:.125rem .75rem;margin:.25rem 0 .5rem;font-size:.75rem;color:var(--sc-ink2)}
+#sctsp .sctsv{display:flex;flex-wrap:wrap;gap:.125rem .75rem;margin:0;font-size:.75rem;color:var(--sc-ink2)}
 #sctsp .sctsv b{font:600 .75rem var(--sc-num);color:var(--sc-ink)}
 #sctsp .sctsn{margin-left:-.5rem}
 #sctsp .sctsb{display:flex;flex-wrap:wrap;gap:.375rem}
@@ -93,3 +93,7 @@ body.sc.scnarrow #plmid:has(#fpop) > #fpop2{top:50%!important;border-top-width:1
 #sctsp .sctsb button:focus-visible,#sctsp .sctsx:focus-visible{outline:2px solid var(--sc-steel)!important;outline-offset:2px}
 #sctsp.fold .sctsv,#sctsp.fold .sctsb{display:none}
 body:not(.sc) #sctsp{display:none!important}
+/* Mina beta.213: Y / N of the permissive rows (COMMANDMENT 5: Y red = complete, N green = not complete) */
+body.sc .fpo-box .fpo-il li i{width:1.125rem;line-height:1.125rem;border-radius:.1875rem;color:var(--sc-white);font:700 .6875rem var(--sc-ui)}
+body.sc .fpo-box .fpo-il li.ok i{background:var(--sc-run)}
+body.sc .fpo-box .fpo-il li.bad i{background:var(--sc-stop)}
