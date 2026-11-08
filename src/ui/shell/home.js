@@ -658,6 +658,28 @@
               });
             }))
         }),
+        /* plan e5: 150 MW, then the TURBINE TRIP AT LOAD AND HOT RESTART section */
+        E('button', {
+          cls: 'trbtn',
+          type: 'button',
+          txt: 'Practise: Turbine trip and hot restart',
+          title: 'Sets the plant at 150 MW, clears the ticks of that section, starts the simulation (RUN) and opens TURBINE TRIP AT LOAD AND HOT RESTART (FHI Tab 9)',
+          on: e0 => arm2(e0.currentTarget, 'Press again: this loads 150 MW', () =>
+            abcReady(() => {
+              /* Mina beta.116: a reload of 150 MW while the plant ran (Worker) tripped it in 20 s (BU-CMD, furnace pressure HH, MFT): the
+                 simulation is paused while the starting state loads, the practise turns it on after */
+              if (AN.run && !AN.view && AN.pauseOn) AN.pauseOn(); /* only a running plant: in VIEW pauseOn switched the view and asked for a starting state (Mina beta.123) */
+              const b = $('load150');
+              if (b) b.click();
+              (AN._startP || Promise.resolve()).then(() => {
+                const L = LV();
+                if (L) L.reset(L.base + 6);
+                if (AN.runOn) AN.runOn();
+                if (L) show(L.base + 6);
+                if (window.LS_GUIDE && LS_GUIDE.openStage) LS_GUIDE.openStage(13);
+              });
+            }))
+        }),
         E('button', {
           cls: 'trbtn',
           type: 'button',
