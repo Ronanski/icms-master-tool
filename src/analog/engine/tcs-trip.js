@@ -314,6 +314,10 @@ function tcsIbdStep(U, c, dt) {
       v[pu.run] = v[pu.fb] = c[pu.k][pu.i] ? 1 : 0;
     }
     for (const k in ib.fx) if (k.startsWith(id + ':')) v[+k.split(':')[1]] = ib.fx[k];
+    if (id === 'TA-9' && ib.pb.sd > 0) {
+      const r = s.i.find(i => /TURBINE SHUTDOWN COMMAND/.test(i[1]));
+      if (r) v[r[0]] = 1;
+    }
     /* two passes: a chain of gates settles in one step */
     for (let pass = 0; pass < 2; pass++)
       s.g.forEach((g, i) => {
@@ -380,6 +384,7 @@ function tcsIbdStep(U, c, dt) {
   ib.rst0 = !!c.rst;
   ib.pb.trip = Math.max(0, (ib.pb.trip || 0) - dt);
   ib.pb.rst = Math.max(0, (ib.pb.rst || 0) - dt);
+  ib.pb.sd = Math.max(0, (ib.pb.sd || 0) - dt);
   ib.pb.auto = Math.max(0, (ib.pb.auto || 0) - dt);
 }
 /* the event of the engine only: a mirror page gets it from the worker */
@@ -469,11 +474,21 @@ function tcsTripManual(U) {
   ib.pb.trip = 1.5;
   return '';
 }
+/* the ATS SHUT-DOWN (step 8, 775 page 29): the TURBINE SHUTDOWN COMMAND input of TA-9 (row 18), held as a push button */
+function tcsTripShutdown(U) {
+  if (tcsMirror()) return '';
+  const c = tcsOilState(U),
+    ib = tcsIb(c);
+  if (c.trip) return 'The turbine is already tripped: ' + c.trip;
+  ib.pb.sd = 1.5;
+  return '';
+}
 /* TA-1 TURBINE RESET P.B.: the gates decide; a held TA-9 keeps the A gate at 0 */
 function tcsTripReset(U) {
   if (tcsMirror()) return '';
   const ib = tcsIb(tcsOilState(U));
   ib.pb.rst = 1.5;
+  if (U.tc) U.tc.sdDone = false;
   return '';
 }
 /* a signal of a sheet held at a value (a field contact, a test) */
