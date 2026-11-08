@@ -225,15 +225,23 @@
      "#1 Boiler sand injection system remote"; DITL-771 row 5 -> M.081D REMOTE CONTROL -> DITL-777 row 3; NOT REMOTE CONTROL is in the OR of
      SYSTEM TRIP, E10210-3-777) had no source and read 0. 20.PNG at 149.5 MW: "SAND SYSTEM REMOTE" checked (1). The selector stands at REMOTE */
   L.push(['(SIL-SD1300)', baSw('rem'), 0.5, 'hi', 0, 0, null, /\)DITL-77\d$/]);
-  /* 3.2.1 d1 (LISA): the sootblower lances at rest. 18.PNG (150 MW): "N1011 ~ N1038, N1040, N1042 STOP / ENAB, all RETRACT, no blowing"
-     (S/B NO. 0, ALL RETRACT). The position signals the program reads stand at that state: the retract limit switch of each lance (DITL-80G
-     row 12 ZSR-N1011 and its 27 copies), the reset positions of the air heater blowers N-1040 / N-1042 (DITL-80K rows 24 / 22), and the
-     "ALL ON RETRACT" memories that DITL-80L makes from them (M.4008, M.4246, M.4240, M.4242; DITL-80L is not in the app). The travel of a
-     lance while it blows is NO-SOURCE (no stroke time in the documents), so these stay at rest */
-  const sbRest = () => 1;
-  L.push(['SOOTBLOWER', sbRest, 0.5, 'hi', 0, 0, /SOOTBLOWER RETRACT POSITION/, /\)DITL-80G( #N-\d+)?$/]);
-  L.push(['AIR', sbRest, 0.5, 'hi', 0, 0, /S\/B RESET POSITION/, /\)DITL-80K$/]);
-  for (const m of ['M.4008', 'M.4246', 'M.4240', 'M.4242']) L.push([m, sbRest, 0.5, 'hi', 0, 0, /ALL ON RETRACT/, /\)DITL-80[GKO]?$/]);
+  /* 3.2.1 d1 (LISA): the sootblower positions from the lance travel of world.js (sbLance; Diamond Power N11639-SC1). 18.PNG (150 MW): all
+     retracted, no blowing, the state they start from. The retract limit switch of each lance (DITL-80G row 12 ZSR-N1011 and its 27 copies),
+     ANY ON EXTEND (M.4232: a lance at its front end) and the ALL ON RETRACT memories that DITL-80L makes (M.4008 every lance and N-1040 /
+     N-1042; M.4246 N-1011 ~ 22, 25, 26; M.4240 N-1023, 24, 27 ~ 34; M.4242 N-1035 ~ 38; DITL-80L is not in the app, read on its PDF). The air
+     heater blowers N-1040 / N-1042 (DITL-80K) have no travel data in the table: their reset positions stand at rest (18.PNG) */
+  const sbL = () => (W.sbLances ? W.sbLances() : []),
+    sbIn = (a, b) => L0 => L0.n >= a && L0.n <= b,
+    sbGrp = {
+      'M.4008': () => true,
+      'M.4246': L0 => (L0.n >= 1011 && L0.n <= 1022) || L0.n === 1025 || L0.n === 1026,
+      'M.4240': L0 => L0.n === 1023 || L0.n === 1024 || sbIn(1027, 1034)(L0),
+      'M.4242': sbIn(1035, 1038)
+    };
+  L.push(['SOOTBLOWER', m => (m && m.s._lance ? (m.s._lance.x <= 0 ? 1 : 0) : 1), 0.5, 'hi', 0, 0, /SOOTBLOWER RETRACT POSITION/, /\)DITL-80G( #N-\d+)?$/]);
+  L.push(['M.4232', () => (sbL().some(x => x._lance.x >= x._lance.len) ? 1 : 0), 0.5, 'hi', 0, 0, /ANY ON EXTEND/, /\)DITL-80G( #N-\d+)?$/]);
+  L.push(['AIR', () => 1, 0.5, 'hi', 0, 0, /S\/B RESET POSITION/, /\)DITL-80K$/]);
+  for (const k in sbGrp) L.push([k, () => (sbL().every(x => !sbGrp[k](x._lance) || x._lance.x <= 0) ? 1 : 0), 0.5, 'hi', 0, 0, /ALL ON RETRACT/, /\)DITL-80[GKO]?( #N-\d+)?$/]);
   const sdSilo = () => (window.AN && AN.unit && AN.unit.sd && isFinite(AN.unit.sd.silo) ? AN.unit.sd.silo : NaN);
   L.push(['LISD1800.PV', sdSilo, 60, 'lo', 0, 0, /< ?60 ?%/, /\)DITL-BA6[35]$/]);
   L.push(['LISD1800.PV', sdSilo, 80, 'hi', 0, 0, /> ?80 ?%/, /\)DITL-BA65$/]);
@@ -413,8 +421,8 @@
     return isFinite(v) ? Math.round((1.033 - (1.033 - 0.057) * v) * 1000) / 1000 : NaN;
   };
   const SRC = {};
-  function val(src) {
-    if (typeof src === 'function') return src();
+  function val(src, m) {
+    if (typeof src === 'function') return src(m);
     const [k, net, ai] = src,
       key = src.join('|');
     let r = SRC[key];
@@ -460,7 +468,7 @@
     for (const m of map) {
       const [, src, sp, dir, nc, db] = m.d,
         DB = db != null ? db : DB0,
-        x = val(src);
+        x = val(src, m);
       if (!isFinite(x)) continue;
       /* the state of the switch: tripped (level low / pressure high) with its dead band */
       /* 'ge': a switch that makes at its set point (rising), a pressure that is held AT the set point (the BFWP lube oil header) */

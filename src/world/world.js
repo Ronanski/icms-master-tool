@@ -1014,6 +1014,30 @@
     if (window.AN && AN.sched) AN.sched.flush();
     for (const _ of tickG(dt, opt));
   }
+  /* 3.2.1 d1 (LISA): sootblower lance travel. Diamond Power N11639-SC1 "Sootblower steam data" (IK4M manual, o&m L10-2, page 93): travel
+     speed 50.8 mm/s for every unit; travel 6210 mm (IK4M, unit operation 244 s = out and back), 3050 mm (IK4M-PT, 120 s), 2580 mm ("Above #1
+     Common Eco", IK4M-PT, 102 s). The groups of DITL-80O give the tags: N-1011 ~ 22, 25, 26 = the 14 IK4M; N-1023, 24, 27 ~ 34 = the 10 IK4M-PT;
+     N-1035 ~ 38 = the 4 of the common economizer. The EXTEND COMMAND of the sheet (wire to DITL-80T row 4, M.4016, net 14) starts one travel:
+     out to the front end, then back (the unit operation time of the table is out and back); the RETRACT COMMAND (DITL-80T row 6, M.4017,
+     net 0) brings it back at once. s._lance.x = mm out of the wall box (0 = on its retract limit) */
+  const SB80G = /\)DITL-80G( #N-\d+)?$/,
+    SB_V = 50.8,
+    sbLen = n => (n >= 1035 ? 2580 : n === 1023 || n === 1024 || (n >= 1027 && n <= 1034) ? 3050 : 6210);
+  function sbLance(s, v, dt) {
+    const m = /#N-(\d+)$/.exec(s.name),
+      n = m ? +m[1] : 1011,
+      L = s._lance || (s._lance = { n, len: sbLen(n), x: 0, dir: 0 });
+    if (v[0]) L.dir = -1;
+    else if (v[14] && L.dir === 0 && L.x <= 0) L.dir = 1;
+    if (L.dir > 0) {
+      L.x = Math.min(L.len, L.x + SB_V * dt);
+      if (L.x >= L.len) L.dir = -1;
+    } else if (L.dir < 0) {
+      L.x = Math.max(0, L.x - SB_V * dt);
+      if (L.x <= 0) L.dir = 0;
+    }
+  }
+  W.sbLances = () => S.sheets.concat(W.inst || []).filter(x => x._lance);
   /* the outputs of one scan as text, to see when the world has settled */
   const outSig = o =>
     Object.keys(o)
@@ -1096,6 +1120,8 @@
       }
       /* 3.2.1 d2: a wire with a TO reference at its end (wireTo above) */
       if (s._xn) for (const n of s._xn) if (R.v[n]) R.outOn.add('n' + n);
+      /* 3.2.1 d1 (LISA): the lance of a sootblower (DITL-80G and its 27 copies) travels on the commands of the sheet */
+      if (SB80G.test(s.name)) sbLance(s, R.v, dt);
       out[s.name] = R.outOn;
       /* 3.2.0-beta.23: an output that changed in this scan (a push button seen, a step of a sequence): the next scans are short (W.busy) */
       if (!TMBUSY) {
