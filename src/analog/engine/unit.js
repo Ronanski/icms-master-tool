@@ -15,6 +15,9 @@
        written here so they can be changed) */
 const AN_UNIT = {
   on: false,
+  /* sweep 34 (Mina beta.175: AN.unit.MW read NaN once right after a chip load): a load begins with the Reset (anStateInPlace back to
+     this object), which had no MW, so MW was undefined until the starting state set it (MW0 / 0). The generator gives 0 MW until then */
+  MW: 0,
   a: (484 - 302) / (89.7 - 55.4) /* T/H of steam per T/H of coal: plant trends 2026-11-08 holds at 150 and 90 MW (5.31; the snapshots 03.png / 02.png gave 5.78, coal 3.6 % high at 90 MW in Mina's b6 run) */,
   c: (149.8 - 90.3) / (481 - 304) /* MW per T/H of steam: plant trends 2026-11-08 (holds at 150 and 90 MW); the snapshots gave 0.3336 */,
   mwK: 0.3362 * 481 - 149.8 /* MW lost at the anchor line: MW = c x steam - mwK on the plant trend (149.8 MW at 481 T/H); the snapshot anchor 150.5 at 474.1 was 3 MW above it */,
@@ -3086,8 +3089,15 @@ function anUnitStep0(dt) {
       Tbss = anBedSS(U, Fe / Math.max(1, U.F0), as);
     /* below the start of coal (Fig 2, 483 C) the refractory and the bed charge are the heat sink, and there is no coal burning in the bed:
        FHI Fig 2 110 C at 1 h, 483 C at 6 h; PR-OPE-5002 gradient 1 C/min, FHI limit 153 C/h. The hot lag tauB takes over by 600 C */
-    const kh = Math.max(0, Math.min(1, (U.Tb - 483) / (600 - 483))),
-      tauBed = U.tauBc + (U.tauB - U.tauBc) * kh;
+    const kh = Math.max(0, Math.min(1, (U.Tb - 483) / (600 - 483)));
+    let tauBed = U.tauBc + (U.tauB - U.tauBc) * kh;
+    /* sweep item 25 (Mina beta.163: Hot state with every fan stopped, bed 708 -> 652 C in 1.3 min): an UNFIRED bed that cools loses its
+       heat to the air the fans push through it; banked (no air) it keeps it for hours. FHI Fig 4 HOT STARTUP: fuel off at -1.0 h,
+       furnace 780 -> 700 C at 0.0 h with no fans (about 80 C/h: tau = (780 - 30) / 80 h = 33,750 s); fans and blowers started at 0.0 h,
+       700 -> 650 C at 0.1 h (about 8 C/min at the purge air, share about 0.3: tau about 4,640 s). tau = 33,750 / (1 + 20.9 x air share),
+       air share = total air / anchor air (no floor). Used only unfired (fuel share < 2 %) and cooling; the fired bed keeps tauB */
+    const raw = U.taf0 > 0 ? Math.max(0, taf / U.taf0) : 1;
+    if (Fe < 0.02 * U.F0 && Tbss < U.Tb) tauBed = Math.max(tauBed, 33750 / (1 + 20.9 * raw));
     U.Tb += ((Math.max(U.Tamb, Tbss) - U.Tb) * dt) / tauBed;
   }
   /* 3.2.0-beta.23: the furnace and cyclone thermocouples (TIFG1090 / 1091 lower layer under / above, TIFG1095 / 1096 cyclone,

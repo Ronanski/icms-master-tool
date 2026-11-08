@@ -1679,8 +1679,14 @@
       if (AN._loading) return msg('Wait: a starting state is still loading.');
       const nm = prompt('Name of this save point:', svName());
       if (!nm) return;
+      svSave(nm);
+    });
+    /* Mina beta.210: the save itself, apart from the name question (prompt() is blocked in some browsers and app views: the Instructor
+       console of the new layout asks the name in the page) */
+    const svSave = nm => {
+      if (AN._loading) return Promise.resolve(msg('Wait: a starting state is still loading.'));
       msg('Saving the whole plant...');
-      svCap()
+      return svCap()
         .then(sv => {
           const G = window.LS_GUIDE,
             L = window.LS_LIVE;
@@ -1692,24 +1698,36 @@
           return svDo('readwrite', st => st.put(sv)).then(() => msg('Saved: ' + nm + '. LOAD a save point puts the plant back here.'));
         })
         .catch(e => msg('Could not save: ' + e.message));
-    });
+    };
+    /* 3.2.1 re-shell C step 2: the start screen's Continue loads the newest save point through this; the Instructor console saves,
+       loads and deletes with it (names asked in the page) */
+    window.lsSaves = {
+      list: () => svList(),
+      load: e => svLoad(e),
+      save: nm => svSave(nm),
+      name: () => svName(),
+      del: e => svDo('readwrite', st => st.delete(e.id)).then(() => msg('Deleted: ' + e.name))
+    };
+    const svLoad = e => {
+      if (AN.pauseOn && AN.run) AN.pauseOn();
+      msg('Loading save point ' + e.name + '...');
+      return Promise.resolve(DITL150.savePut({ kf: e.kf, kd: e.kd })).then(() => {
+        const G = window.LS_GUIDE,
+          Lv = window.LS_LIVE;
+        if (e.tr && e.tr.lat && Lv && Lv.load) Lv.load(e.tr.lat);
+        if (e.tr && e.tr.cur != null && G && G.on && G.open) G.open(e.tr.cur);
+        if (AN.pauseOn && AN.run) AN.pauseOn();
+        if (AN.paint) AN.paint();
+        if (window.lsEventAdd) lsEventAdd('DCS', 'DCS', 'Save point loaded: ' + e.name);
+        msg('Plant back at: ' + e.name + '. Paused: press Run to go on.');
+      });
+    };
     btn('loadsave', 'LOAD a save point…', 'Puts the whole plant back as it was saved, then pauses: press Run to go on.', () =>
       svList()
         .then(L => {
           const e = svPick(L, 'Load which save point');
           if (!e) return;
-          if (AN.pauseOn && AN.run) AN.pauseOn();
-          msg('Loading save point ' + e.name + '...');
-          return Promise.resolve(DITL150.savePut({ kf: e.kf, kd: e.kd })).then(() => {
-            const G = window.LS_GUIDE,
-              Lv = window.LS_LIVE;
-            if (e.tr && e.tr.lat && Lv && Lv.load) Lv.load(e.tr.lat);
-            if (e.tr && e.tr.cur != null && G && G.on && G.open) G.open(e.tr.cur);
-            if (AN.pauseOn && AN.run) AN.pauseOn();
-            if (AN.paint) AN.paint();
-            if (window.lsEventAdd) lsEventAdd('DCS', 'DCS', 'Save point loaded: ' + e.name);
-            msg('Plant back at: ' + e.name + '. Paused: press Run to go on.');
-          });
+          return svLoad(e);
         })
         .catch(x => msg('Could not load: ' + x.message))
     );
