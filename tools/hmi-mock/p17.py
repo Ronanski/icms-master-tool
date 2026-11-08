@@ -66,12 +66,14 @@ p.inner(390, 860, V('VEGE10011', 3) + ' / ' + V('VEGE10012', 3, ' mm'))
 p.inner(780, 748, V('TEGE1002', 0, ' °C'))
 p.inner(780, 804, V('TEGE1008', 0, ' °C'))
 p.inner(780, 860, V('VEGE10021', 3) + ' / ' + V('VEGE10022', 3, ' mm'))
+# cooling air, exciter air, stator coil = the generator model (unit.js anGenTemp, snapshot P35SHAFT)
+G = iter(['GEN.TA1', 'GEN.TA2', 'GEN.TA3', 'GEN.TA4', 'GEN.TEX', 'GEN.TS1', 'GEN.TS2', 'GEN.TS3', 'GEN.TS4', 'GEN.TS5', 'GEN.TS6'])
 for x in (1170, 1560):
     for y in (748, 804, 860):
         if (x, y) == (1170, 860):
-            p.inner(x, y, NS + ' °C')
+            p.inner(x, y, V(next(G), 0) + ' °C')
         else:
-            p.inner(x, y, NS + ' / ' + NS + ' °C')
+            p.inner(x, y, V(next(G), 0) + ' / ' + V(next(G), 0) + ' °C')
 bad = p.check()
 assert not bad, bad
 p.write('p17-head.js', 'hmi-mock-gn.js')

@@ -17,6 +17,8 @@
     art: /*@@ART@@*/,
     mach: {},
     unit: {
+      'GEN.TSMAX': 'ux:gen.tsMax',
+      'GEN.TAIR': 'ux:gen.tAir',
       'VIST-MAX': 'ux:loVt',
       'TIST-THF': 'ux:loThF',
       'TIST-THR': 'ux:loThR',

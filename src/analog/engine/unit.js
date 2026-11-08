@@ -2771,8 +2771,33 @@ function anGenEl() {
     Vf: AN_GEN.Vf * E,
     If: AN_GEN.If * E,
     MWh: g.MWh,
-    MVArh: g.MVArh
+    MVArh: g.MVArh,
+    ta: (U.genT && U.genT.ta) || null,
+    tAir: U.genT ? U.genT.ta.reduce((a, b) => a + b, 0) / 4 : null,
+    ts: (U.genT && U.genT.ts) || null,
+    tsMax: U.genT ? Math.max(...U.genT.ts) : null,
+    tex: U.genT ? U.genT.ex : null
   };
+}
+/* 3.2.1: the generator temperatures of pages 13 / 17 from snapshot P35SHAFT (035 SHAFT MONITOR, 130 MW, 3596 rpm): air cooler outlet
+   TIGE10041 ~ 44 39 / 38 / 43 / 44 C, AC exciter outlet air TIGE1005 80 C, stator coil TIGE10061 ~ 66 81 / 84 / 81 / 83 / 79 / 84 C.
+   The stator copper loss goes with the current squared: stator = cooler air (mean 41) + its snapshot rise x (kA / 5.57)^2, 5.57 kA =
+   the current of the generator model at 130 MW; the exciter air = 41 + 39 x (field current / 7.85 A)^2 (7.85 A = the model field at
+   130 MW). The cooler outlet air stays at the snapshot while the shaft turns (NO-SOURCE: its change with the cooling water); at rest
+   all go to the ambient. Lag 600 s (NO-SOURCE: the thermal time of the winding) */
+const AN_GENT = { ta: [39, 38, 43, 44], ts: [81, 84, 81, 83, 79, 84], ex: 80, tA: 41, kA: 5.57, If: 7.85, tau: 600 };
+function anGenTemp(U, G, dt) {
+  const K = AN_GENT,
+    Ta = U.Tamb || 30,
+    turn = U.tb && U.tb.rpm > 100,
+    T = U.genT || (U.genT = { ta: K.ta.slice(), ts: K.ts.slice(), ex: K.ex }),
+    a = Math.min(1, dt / K.tau),
+    r = (G.kA / K.kA) ** 2,
+    rf = (G.If / K.If) ** 2;
+  K.ta.forEach((v, i) => (T.ta[i] += ((turn ? v : Ta) - T.ta[i]) * a));
+  const air = turn ? K.tA : Ta;
+  K.ts.forEach((v, i) => (T.ts[i] += (air + (v - K.tA) * r - T.ts[i]) * a));
+  T.ex += (air + (K.ex - K.tA) * rf - T.ex) * a;
 }
 /* the energy meters of page 17 count the sim time while synchronised */
 function anGenInt(dt) {
@@ -2780,6 +2805,7 @@ function anGenInt(dt) {
   if (!U || !U.on || !(dt > 0)) return;
   const G = anGenEl();
   if (!G) return;
+  anGenTemp(U, G, dt);
   const P = G.kA * Math.sqrt(3) * AN_GEN.kV * (G.pf || 0);
   U.genE.MWh += (P * dt) / 3600;
   U.genE.MVArh += (G.MVAr * dt) / 3600;
