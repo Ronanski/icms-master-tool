@@ -463,6 +463,7 @@ AN.gsc = (() => {
     anfind.style.top = r.bottom + 4 + 'px';
     anfind.style.display = 'block';
     anfind.innerHTML = '';
+    anfind._q = q; /* sweep 3: the query whose rows the list holds (the focus shows them again at once) */
     const hd = h$('div', { cls: 'fh', txt: 'Searching…' });
     anfind.append(hd);
     try {
@@ -577,8 +578,25 @@ AN.gsc = (() => {
     clearTimeout(tm);
     tm = setTimeout(run, 160);
   });
+  /* sweep 3 (Mina F58: a result row took two tries, the list opened late): the focus shows the rows of the same query again at once
+     (close() only hides them; before, the focus searched again and the list stood empty, "Searching…", under the first click), and
+     the first focus loads the lists the search reads, so the first search has its rows at once */
+  let pre = false;
   ansb.addEventListener('focus', () => {
-    if (ansb.value.trim().length >= 2 && anfind.style.display !== 'block') run();
+    if (!pre) {
+      pre = true;
+      Promise.resolve().then(() => adesLoad()).catch(() => {});
+      Promise.resolve().then(() => loadData()).catch(() => {});
+    }
+    const q = ansb.value.trim().toLowerCase();
+    if (q.length < 2 || anfind.style.display === 'block') return;
+    if (anfind._q === q && anfind.querySelector('button')) {
+      const r = ansb.getBoundingClientRect();
+      anfind.style.left = Math.max(4, Math.min(r.left, innerWidth - Math.min(600, innerWidth * 0.96) - 4)) + 'px';
+      anfind.style.top = r.bottom + 4 + 'px';
+      anfind.style.display = 'block';
+      anfind._tok = (anfind._tok || 0) + 1;
+    } else run();
   });
   ansb.addEventListener('keydown', e => {
     e.stopPropagation();
