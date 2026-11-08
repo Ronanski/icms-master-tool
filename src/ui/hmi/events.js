@@ -246,6 +246,8 @@
     return d ? tag + ' ' + d : tag;
   }
   const MSEEN = new Map();
+  /* sweep 2: the suppressed alarms already written once since the load */
+  const LATEK = new Set();
   /* transmitters that the drawing alarms by comparators (not by an ALM block): tag, sheet, AI address, limits (kg/cm2) */
   const XALM = [{ tag: 'PIMS1002', d: 'main steam pressure (PT-MS1002, finishing superheater outlet header)', sh: 'ABC-001C', ai: 'AI0131', hh: 134, h: 130, l: 100, ll: 72.9 }];
   function xalmVal(A, p) {
@@ -278,6 +280,7 @@
       NTS.clear();
       DSEEN.clear();
       MSEEN.clear();
+      LATEK.clear();
       for (const g in grpT) delete grpT[g];
       almScan.first = true;
       almScan.tk0 = (window.WORLD && WORLD.tk) || 0;
@@ -382,7 +385,13 @@
         if (first) nNew++;
         else if (stand) continue;
         else if (!sd) add({ rt: { t } }, { name: x.sh }, x.kind, x.nm + ' ' + x.lv);
-        else if (late && (!e || e.rtn)) add({ rt: { t } }, { name: x.sh }, x.kind, x.nm + ' ' + x.lv + ' (suppressed: the equipment of its group is stopped; released 10 min after it runs)');
+        /* sweep 2 (Mina F35: the event count climbed at rest, 86 -> 206 with one real alarm): a suppressed LOW of a stopped group that
+           comes and goes around its limit (the ALM compare has no hysteresis, panel.js almLv; no hysteresis value in the DCS textbook:
+           none is invented) wrote this line and a "back to normal" at every crossing. Now once per point per load (LATEK) */
+        else if (late && (!e || e.rtn) && !LATEK.has(k)) {
+          LATEK.add(k);
+          add({ rt: { t } }, { name: x.sh }, x.kind, x.nm + ' ' + x.lv + ' (suppressed: the equipment of its group is stopped; released 10 min after it runs)');
+        }
       }
     }
     /* retest #62: a group released (its equipment running for 10 min of plant time): its shutdown alarms still standing are real
@@ -397,7 +406,8 @@
         }
     for (const [k, e] of AT)
       if (!now.has(k) && !e.rtn) {
-        add({ rt: { t } }, { name: e.sh }, 'RTN', e.nm + ' ' + (e.kind === 'TRIP' ? 'TRIP reset' : 'back to normal'));
+        /* sweep 2: a suppressed alarm (sd) that clears writes no line: it was never announced (its first line, if any, is LATEK) */
+        if (!(e.sd && e.kind === 'ALM')) add({ rt: { t } }, { name: e.sh }, 'RTN', e.nm + ' ' + (e.kind === 'TRIP' ? 'TRIP reset' : 'back to normal'));
         if (e.ack) AT.delete(k);
         else e.rtn = true;
       }
