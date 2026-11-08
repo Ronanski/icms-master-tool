@@ -323,7 +323,7 @@ const AN_HMI_CTL = {
   LICHD11032: { pv: null, sv: null, mv: 0.1, mode: 'A' },
   'LICBR1001B': { pv: null, sv: null, mv: 0.6, mode: 'M' } /* start-up drum level valve FCVFW11302 0.6 % M (03.png) */,
   'AICFG10571': { pv: 41.0, sv: 200.0, mv: 11.0, mode: 'M' },
-  'AICFG112': { pv: null, sv: 3.5, mv: 50.0, mode: 'R' } /* 2.2.0-beta.7: MV from the drawing: SA demand 211.5 T/H x O2 trim = SAF FLOW CTL R-SV 215.3 (7.PNG) -> trim 1.0 = S1-LN15(50 %), the MH of AICFG112 (PID summary). Before: the O2 model was anchored at the manual 100 % of the cold start and went to 2.4 % */,
+  'AICFG112': { pv: null, sv: 3.5, mv: 72.5, mode: 'M' } /* 3.2.1 b6: plant trends 2026-11-08: the O2 sensors fail often (user), the trim is held: SA = (LN5 air - PA - FA) x 1.09 at 150 and 90 MW = S1-LN15(72.5 %) */ /* 2.2.0-beta.7: MV from the drawing: SA demand 211.5 T/H x O2 trim = SAF FLOW CTL R-SV 215.3 (7.PNG) -> trim 1.0 = S1-LN15(50 %), the MH of AICFG112 (PID summary). Before: the O2 model was anchored at the manual 100 % of the cold start and went to 2.4 % */,
   'DPICFG108': { pv: 1434.0, sv: 1475.0, mv: 0.0, mode: 'M' },
   'EIC-TM': { pv: 148.6, sv: 150.0, mv: 75.0, mode: 'A' },
   'FIC-CF': { pv: 72.8, sv: 73.0, mv: 72.8, mode: 'R' } /* 2.2.0-beta.1: not on a screen; from the drawing: PV = average of the 3 feeder MVs (72.8 %), MV = feeder AUTO-MV (bias 0.0), SV = FIC-CM.MV 73.0 % */,
@@ -426,7 +426,7 @@ const AN_HMI_MAN = {
   'HIC-MWRL': [3.0, '33.PNG OUTPUT CHANGE RATE SET (MW/MIN)'],
   /* 2.2.0-beta.7: ABC-002 HIC-TADBS (station -50 ~ +50) -> F(X) S1-LN14 "PA FLOW BIAS" (x 0 % -> -30 T/H, 50 % -> 0, 100 % -> +30):
      7.PNG PAF FLOW BIAS -30.0 T/H = station -50. PA demand = S1-LN12(coal 81 T/H) 380 - 30 = 350 T/H (7.PNG PAF FLOW CTL R-SV 354.6) */
-  'HIC-TADBS': [-50.0, '7.PNG PAF FLOW BIAS -30.0 T/H']
+  'HIC-TADBS': [-26.7, 'plant trends 2026-11-08: PA 16 to 21 T/H above the model at every load, less 4 T/H of coal: bias -16 T/H (7.PNG had -30)']
 };
 /* 2.1.0-beta.11: digital inputs that the drawing names only by a text beside the wire (no address): [sheet, text, nth (same text
    counted top to bottom), value, why]. ABC-004A: the 8 "BNR SUPPLY OIL VALVE CLOSE" inputs of HS-COAL (I/O list STN104
