@@ -1267,7 +1267,10 @@ function anLoadStart(kind, on) {
       return (cold ? anPlantColdAsync : anPlantLoad150Async)(k => B && B.prog(k / est));
     })
     .then(n => {
-      if (rs) anUnitRestart(rs);
+      if (rs) {
+        anUnitRestart(rs);
+        anRestartDrum();
+      }
       AN.startState = cold ? 'plantCold' : 'plantLoad150';
       AN.restartKind = rs;
       return n;
@@ -1280,6 +1283,25 @@ function anLoadStart(kind, on) {
   };
   p.then(end, end);
   return p;
+}
+/* WARM / HOT restart (Mina beta.170: the header read -296 mm, the empty drum of Cold): the unit was bottled up with the drum filled to
+   +200 mm (PR-OPE-5004-01 bottle-up step 4 "Fill steam drum to +200 mm"). The three transmitters are set for that level at the restart
+   drum pressure (the density compensation of ABC-010 changes with it), and the level model of ABC-010 starts again from that PV
+   (plant.js: a new model state takes q.y = PV). The level the drum loses while it stands (cooling, blowdown) is not in the docs: NO-SOURCE */
+const AN_BU_DRUM = 200;
+function anRestartDrum() {
+  try {
+    const sh = AN.sheets.find(x => x.name === 'ABC-010'),
+      S = sh && sh.S;
+    if (!S) return;
+    /* the drum pressure transmitters read the restart pressure first (one step of the sheets that carry them) */
+    const c = AN.sheets.find(x => x.name === 'ABC-001C');
+    if (c && c.S) stepSet(c, 0);
+    stepSet(sh, 0);
+    hmiComp(ai => /^AI0(130|258|386)$/.test(ai), (ai, w) => AN_BU_DRUM + w);
+    for (const b of S.procs || []) if (b.proc && b.proc.integ) delete S.rt.pm[b.id];
+    stepSet(sh, 0);
+  } catch (e) {}
 }
 /* the drum level of a cold plant before the STEAM DRUM FILLING of PR-OPE-5002 (mm, ASSUMED: low, under the -150 mm fill target) */
 const AN_COLD_DRUM = -300;
