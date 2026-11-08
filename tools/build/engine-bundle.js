@@ -41,6 +41,12 @@ function dFiles() {
   const l = fs.readFileSync(path.join(D, 'order.list'), 'utf8').split(/\r?\n/).map(s => s.trim()).filter(s => s && s[0] !== '#');
   return l.slice(0, l.indexOf('parts/03e-user.js') + 1).map(f => path.join(D, f));
 }
+function wiringSlim() {
+  const vm = require('vm'), w = {};
+  vm.runInNewContext(fs.readFileSync(path.join(root, 'src', 'ui', 'plant', 'wiring.js'), 'utf8'), { window: w });
+  const rows = (w.WIRING || []).filter(x => /^[IO]\.[0-9A-F]{4}$/.test(x[2]) && x[3]).map(x => [x[0], x[1], x[2], x[3]]);
+  return '/* ---- src/ui/plant/wiring.js (slim: I/O rows, station, address, tag) ---- */\nwindow.WIRING=' + JSON.stringify(rows) + ';\n';
+}
 function worldBundle(o) {
   const rd = f => fs.readFileSync(f, 'utf8');
   const an = bundle(o).replace('globalThis.ENGINE=', 'globalThis.AN=AN;globalThis.ENGINE=');
@@ -49,6 +55,10 @@ function worldBundle(o) {
     dFiles().map(f => '/* ---- ' + path.relative(root, f).split(path.sep).join('/') + ' ---- */\n' + rd(f)).join('\n') +
     '\n;globalThis.DITL={get S(){return S},set S(v){S=v},get SIM(){return SIM},set SIM(v){SIM=v},get MST(){return MST},get MS(){return MS},get DREG(){return DREG},ditlStates,ditlCapture,ditlApply,simSheet,netlist};\n' +
     an +
+    /* 3.2.1 (Mina beta.170: page 17 '52G1 off' stayed N in Worker mode): world.js links rows by the tag of the I/O list (window.WIRING:
+       DITL-03H row 18 MIG-52G1-2 = I.0932, the sootblower starters MOR / MOS). The page list (src/ui/plant/wiring.js, 0.9 MB) is not in the
+       worker: a slim copy with the station, the address and the tag of the I/O rows (the only columns world.js reads) */
+    wiringSlim() +
     ['world.js', 'plantsw.js', 'ditl150.js', 'eng.js', 'dock-eng.js'].map(f => '/* ---- src/world/' + f + ' ---- */\n' + rd(path.join(root, 'src', 'world', f))).join('\n')
   );
 }
