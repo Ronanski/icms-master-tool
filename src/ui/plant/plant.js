@@ -1066,6 +1066,16 @@
     fill();
   }
   function select(o) {
+    /* Mina 2026-11-08 (findings 11-08 #4): a faceplate opened on one page (LICBR1001 on the UNIT page) stayed over the next pages until
+       its ✕: another page closes it, the controller faceplate and the motor / valve pop-out of fp-pop.js alike */
+    if (cur && o && cur.id !== o.id) {
+      fpClose();
+      try {
+        if (window.LS_FPOP) LS_FPOP.close();
+        /* the UNIT page: a controller click opens the info card (window.lsInfo, info.js) */
+        if (window.lsInfoClose) lsInfoClose();
+      } catch (e) {}
+    }
     cur = o;
     for (const b of D.querySelectorAll('#pllist button,#plantws .plchip')) b.classList.toggle('on', b.dataset.id === o.id);
     $('pltitle').textContent = o.title;

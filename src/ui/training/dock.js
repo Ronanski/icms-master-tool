@@ -928,6 +928,11 @@
     /* user G 2026-10-31 (dock mock-up): a narrow dock (tablet) shows the speed as one "×1 ▾" button that opens the four */
     els.spdB = E('button', { type: 'button', cls: 'gd-spdb', title: 'Simulation speed', 'aria-haspopup': 'true', on: () => els.seg.classList.toggle('open') });
     els.seg = E('div', { cls: 'gd-seg', role: 'group', 'aria-label': 'Simulation speed' }, els.spd);
+    /* Mina 2026-11-08 (findings 11-08 #6): Escape closes the speed menu (one listener; it reads the menu of the dock built last) */
+    if (!window.__gdSpdEsc) {
+      window.__gdSpdEsc = 1;
+      addEventListener('keydown', e => e.key === 'Escape' && els.seg && els.seg.classList.remove('open'));
+    }
     const hd = E('div', { cls: 'gd-hd' }, [
       E('b', { txt: 'Training' }),
       els.run,
