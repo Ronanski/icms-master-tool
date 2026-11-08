@@ -2328,6 +2328,9 @@ function anFwTagStep(U) {
   /* the spray valves follow their controller MV, held by the airlock without air (AN_AV) */
   const H = U.avH || (U.avH = {}),
     held = (t, m) => {
+      /* 3.2.1 e5 (engine/faults.js): a spray valve stuck in the field */
+      const sk = typeof anFaultStuck === 'function' ? anFaultStuck(t, m) : null;
+      if (sk != null) return sk;
       if (!AN_AV.hold[t]) return m;
       const P = anAvP();
       if (!isFinite(P) || P >= AN_AV.lock || !isFinite(m)) return (H['mv:' + t] = m);
@@ -2589,6 +2592,11 @@ function anAvP() {
 }
 /* the opening that reaches the process for the command x of controller tag: held below the lock pressure */
 function anAv(tag, x) {
+  /* 3.2.1 e5 (LISA, engine/faults.js): a control valve stuck in the field stays where it was when it stuck, whatever the command */
+  if (tag && typeof anFaultStuck === 'function') {
+    const s = anFaultStuck(tag, x);
+    if (s != null) return s;
+  }
   if (!tag || !AN_AV.hold[tag]) return x;
   const P = anAvP(),
     H = AN_UNIT.avH || (AN_UNIT.avH = {});
