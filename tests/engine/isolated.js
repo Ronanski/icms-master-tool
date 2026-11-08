@@ -14,7 +14,8 @@ const STEPS=60,DT=.5;
  const order=full.__ord||[];
  const sheets=full.sheets.map(s=>({name:s.name,json:JSON.stringify(s.R)}));/* the drawings as the reader gave them, before any use */
  /* the isolated context: only the language itself; AN is the one object the engine may use */
- const ctx={console,Math,JSON,Object,Array,Set,Map,Float64Array,Int32Array,Uint8Array,Number,String,parseFloat,parseInt,isFinite,isNaN,Infinity,NaN,Date,RegExp,Error,Symbol,structuredClone};
+ /* 3.2.1 p4: the job queue of the engine (sched.js) slices its work by a MessageChannel message, a timer as the fallback (platform, not page) */
+ const ctx={console,Math,JSON,Object,Array,Set,Map,Float64Array,Int32Array,Uint8Array,Number,String,parseFloat,parseInt,isFinite,isNaN,Infinity,NaN,Date,RegExp,Error,Symbol,structuredClone,MessageChannel,setTimeout,clearTimeout,performance};
  vm.createContext(ctx);
  ctx.__aln=fs.readFileSync(path.join(root,'src/data/aln.json'),'utf8');
  vm.runInContext('var AN={plantOn:true,ramp:0,sv:{},lne:{},ln:{},sheets:[],lnSrc:()=>JSON.parse(__aln)}',ctx);
