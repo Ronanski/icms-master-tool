@@ -1206,7 +1206,17 @@ window.LS_GUIDE = (function () {
       { st: 14, sec: 52, t: 'Fault: BFWP A trips in the field', d: 'The protection relay of BFWP A opens the MCC (Faults list, MIT-P1115A). On DITL-23A its ELECTRIC TROUBLE makes BFWP A TRIP (out 65) and resets the running latch (out 55).', c: b.X8[1][1], a: [btn('FAULT: BFWP A trips', () => (window.WORLD && WORLD.ftrip ? (window.lsEventAdd && lsEventAdd('FIELD', 'FAULT', 'FAULT: ' + WORLD.ftrip('mt.bfwpa', true)), '') : ''), () => bit('M.3343') < 0.5)] },
       { st: 14, sec: 52, t: 'BFWP B takes over', d: 'DITL-23A #B: BFWP B AUTO STARTING (M.1144) = BFWP A tripped AND BFWP B AUTO MODE SELECTED; it starts by itself. If it does not (not in AUTO or REMOTE), start it from the CRT. No run-back is drawn for a BFWP trip on this unit (no RUN BACK on the ABC or DITL sheets): the load stays.', c: b.X8[2][1], a: [mot('M.3344', 'BFWP B')] },
       { st: 14, sec: 52, t: 'Feedwater and drum level recover', d: 'FICFW1007 follows its SV on BFWP B; the drum level must stay inside the alarm list limits H +127 / L -100 mm (LT-BR1001-2) for 2 min. Watch the feedwater flow against the steam flow.', c: b.X8[3][1], fps: ['LICBR1001', 'FICFW1007'] },
-      { st: 14, sec: 52, t: 'Reset the relay; BFWP A becomes the standby', d: 'The field resets the BFWP A relay (Faults: press it again) and the operator acknowledges the TRIP. Then BFWP A is the standby: REMOTE and AUTO MODE SELECTED (DITL-23A rows 24 / 18).', c: b.X8[4][1], a: [btn('FIELD: reset the BFWP A relay', () => (window.WORLD && WORLD.ftrip ? (window.lsEventAdd && lsEventAdd('FIELD', 'FAULT', 'FAULT: ' + WORLD.ftrip('mt.bfwpa', false)), '') : ''))] },
+      /* sweep 31 (Mina 11-08: step 5 had only the FIELD button, the AUTO of BFWP A was on the Feedwater page faceplate only): the standby
+         card of the dock as for the MWP / SWBP sets (max 1 running, sby): BFWP A REMOTE + AUTO MODE SELECTED there; the relay reset is
+         its field action (loc) until the fault is cleared */
+      { st: 14, sec: 52, max: 1, sby: 1, t: 'Reset the relay; BFWP A becomes the standby', d: 'The field resets the BFWP A relay (Faults: press it again) and the operator acknowledges the TRIP. Then BFWP A is the standby: REMOTE and AUTO MODE SELECTED (DITL-23A rows 24 / 18).', c: b.X8[4][1], a: [
+          Object.assign(
+            btn('FIELD: reset the BFWP A relay', () => (window.WORLD && WORLD.ftrip ? (window.lsEventAdd && lsEventAdd('FIELD', 'FAULT', 'FAULT: ' + WORLD.ftrip('mt.bfwpa', false)), '') : ''), () => !(window.WORLD && WORLD.ftrip && WORLD.ftrip().some(x => x.id === 'mt.bfwpa' && x.on))),
+            { loc: 1 }
+          ),
+          mot('M.3344', 'BFWP B'),
+          mot('M.3343', 'BFWP A')
+        ] },
       /* ---- 15 O2 analyzer A fails (e5 recovery, LISA; the checks are live.js X9; I/O list AI0273 / AI0433, ABC-002, alarm list AT-FG1122 / 1123) ---- */
       { st: 15, sec: 53, t: 'Fault: O2 analyzer A signal lost', d: 'The O2 analyzer A (AT-FG1122, I/O list AI0273, 0 ~ 25 %) loses its signal: the AI reads 0 % and its signal abnormal flag B.0671 (I/O list SIG.AB) is set. The O2 sensors of this plant fail often.', c: b.X9[0][1], a: [btn('FAULT: O2 analyzer A signal lost', () => (AN.fault ? (window.lsEventAdd && lsEventAdd('FIELD', 'FAULT', 'FAULT: ' + AN.fault('ai.o2a.lo', true)), '') : ''))] },
       { st: 15, sec: 53, t: 'AICFG112 follows analyzer B', d: 'ABC-002: the select circuit of the O2 takes out the analyzer with SIG.AB; the PV of AICFG112 is analyzer B (AT-FG1123, AI0433). No step in the O2 trim: compare the two analyzers on the faceplate.', c: b.X9[1][1], fps: ['AICFG112'] },

@@ -1716,7 +1716,8 @@
           k = LV().kind(si, i).k;
         } catch (e) {}
         /* R9 #81 #82: the Tag no. and Operating Limits of the SOP table; a line of a NOTE is shown as the note, not a tick */
-        const lim = (window.LS_PROC5002_LIM || {})[si + '.' + i] || {};
+        /* an item of the sections the app adds (live.js X1 ~ X10) can name who does it (by: AO / CRO, sweep 26) */
+        const lim = (window.LS_PROC5002_LIM || {})[si + '.' + i] || (x.by ? { by: x.by } : {});
         out.push({ si, i, t: x.t, k, lim, g: lim.g || (x.g || []).join(', ') });
       });
     return out;
