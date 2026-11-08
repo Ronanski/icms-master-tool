@@ -217,6 +217,10 @@
        command is on (DITL-BA63 outputs VIBRATING SCREEN-A / -B ON COMMAND); the delay of the motor contact is NO-SOURCE (none) */
   L.push(['MIL-M1301', baSw('rem'), 0.5, 'hi', 0, 0, null, BAS]);
   L.push(['REMOTE', baSw('rem'), 0.5, 'hi', 0, 0, /^REMOTE$/, /\)DITL-774$/]); /* the drawing reads "I.0572 REMOTE", the row text "REMOTE" */
+  /* 3.2.1 (LISA, Mina fresh 150 MW: header SYSTEM TRIP DITL-777): the sand injection system remote selector SIL-SD1300 (I/O list STN103 I.057A
+     "#1 Boiler sand injection system remote"; DITL-771 row 5 -> M.081D REMOTE CONTROL -> DITL-777 row 3; NOT REMOTE CONTROL is in the OR of
+     SYSTEM TRIP, E10210-3-777) had no source and read 0. 20.PNG at 149.5 MW: "SAND SYSTEM REMOTE" checked (1). The selector stands at REMOTE */
+  L.push(['(SIL-SD1300)', baSw('rem'), 0.5, 'hi', 0, 0, null, /\)DITL-77\d$/]);
   const sdSilo = () => (window.AN && AN.unit && AN.unit.sd && isFinite(AN.unit.sd.silo) ? AN.unit.sd.silo : NaN);
   L.push(['LISD1800.PV', sdSilo, 60, 'lo', 0, 0, /< ?60 ?%/, /\)DITL-BA6[35]$/]);
   L.push(['LISD1800.PV', sdSilo, 80, 'hi', 0, 0, /> ?80 ?%/, /\)DITL-BA65$/]);
