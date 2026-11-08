@@ -3,7 +3,8 @@
 (tools/hmi-mock/mock.py). ATS steps 1 ~ 8 = tcs.js AN.tcs().step (the last finished step, 0 ~ 7); main steam PT-MS1006 / TT-MS1007
 (logic AI); CV = unit.js U.gv, ICV = U.tb.icv, speed U.rpm; generator MW GCP-AI1001 / 1002 (I/O list AI0419 / AI0774); 52G1 = DITL-03E
 input row 3 M.3220 52G1 OPEN (NOT = closed); oil = AN.unit (loMop / loCop / loEopR as page 04, loLube / loCtl / loTrip / loEop / loBrg /
-loCoolOut); exhaust hood / shell expansion = AN.tcs() Tx / sexp, condenser U.cdP. Run: python3 tools/hmi-mock/p13.py"""
+loCoolOut); exhaust hood / shell expansion = AN.tcs() Tx / sexp, condenser U.cdP. e6 (2026-11-08): the shut-down step and the turbine
+protection band (y 1020 ~ 1340) carry their hooks in the mockup source itself (data-tpb / data-tt / data-tfo, hmi-mock.js). Run: python3 tools/hmi-mock/p13.py"""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mock import Page
