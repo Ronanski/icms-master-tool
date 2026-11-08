@@ -107,7 +107,8 @@
     return o.x;
   }
   const dSheets = () => (typeof S !== 'undefined' && S.sheets ? S.sheets.concat((window.WORLD && WORLD.inst) || []) : []);
-  const dnm = s => String((s && s.name) || '').replace(/^\(\d+\)/, '');
+  /* the code of the sheet: "(L10)DITL-LS10" and "(D71)DITL-771" too (only digits were taken off before) */
+  const dnm = s => String((s && s.name) || '').replace(/^\(\w+\)/, '');
   /* Mina beta.170 (Faults): the header said "DITL-19 TRIP · DITL-19" for the coal feeder (DITL-19 has no TRIP output: the name came from
      the sheet) and the events said PAF / SAF / IDF / FAB-A / CEP-A (rule: no acronyms as labels). The name of the equipment: the TRIP
      output, else the RUNNING output of the drawing, in words */
@@ -124,11 +125,36 @@
     [/\bCEP-?([AB])\b/g, 'condensate pump $1'],
     [/\bCEP\b/g, 'condensate pump'],
     [/\bBFWP[- ]?([AB])\b/g, 'boiler feed water pump $1'],
-    [/\bBFWP\b/g, 'boiler feed water pump']
+    [/\bBFWP\b/g, 'boiler feed water pump'],
+    /* Jennie 2026-11-08 (the rest of the motor drawings, from their titles): DITL-31 DIESEL OIL PUMP A, DITL-30 SEAWATER BOOSTER PUMP A,
+       DITL-111 INDUSTRIAL WATER PUMP A, DITL-112 MAKE-UP WATER PUMP A, DITL-22 BFWP A AUX. LUB. OIL PUMP (its output rows say "AUX. LOP A") */
+    [/\bDOP\b/g, 'diesel oil pump'],
+    [/\bSWBP\b/g, 'seawater booster pump'],
+    [/\bIWP\b/g, 'industrial water pump'],
+    [/\bMWP\b/g, 'make-up water pump'],
+    [/\bAUX\.\s*(?:LOP|LUB\.\s*OIL PUMP)/g, 'auxiliary lube oil pump'],
+    [/\bLOP\b/g, 'lube oil pump'],
+    [/\bLUB\.\s*OIL PUMP\b/g, 'lube oil pump'],
+    [/\bLUB\.\s*OIL\b/g, 'lube oil']
   ];
   const words = x => WORDS.reduce((a, [re, w]) => a.replace(re, w), String(x || ''));
-  const clean = x => String(x || '').replace(/^Output row \d+ · /, '').replace(/\s*·.*$/, '').replace(/\s*\b[IMB]\.[0-9A-F]{4}\S*/g, '').trim();
+  /* an address of any kind (I. / M. / B. / O.: "O.0608 SYSTEM RUNNING" of DITL-771 gave "O.0608 SYSTEM") */
+  const clean = x => String(x || '').replace(/^Output row \d+ · /, '').replace(/\s*·.*$/, '').replace(/\s*\b[IMBO]\.[0-9A-F]{4}\S*/g, '').trim();
+  /* Jennie 2026-11-08: the drawings whose RUNNING / TRIP row has no equipment name ("SYSTEM", "VENT FILTER", "ROTOFEED"): the name
+     from the drawing itself. DITL-771 / 777 title SAND INJECTION SYSTEM; DITL-774 rows 10 / 12 SAND SILO VENT FILTER RUNNING / TRIP;
+     DITL-LS10 row 11 LIMESTONE SYSTEM READY; DITL-LS110 row 21 ROTOFEEDER RUNNING (F=MIR-LM1311); DITL-LS214 vent filter (F=MIR-LM1313,
+     I/O list "Limestone silo vent fan running", DPS-LM1811 "limestone silo vent filter purge fault") */
+  const EQN = {
+    'DITL-771': 'SAND INJECTION SYSTEM',
+    'DITL-777': 'SAND INJECTION SYSTEM',
+    'DITL-774': 'SAND SILO VENT FILTER',
+    'DITL-LS10': 'LIMESTONE SYSTEM',
+    'DITL-LS110': 'LIMESTONE ROTOFEEDER',
+    'DITL-LS214': 'LIMESTONE SILO VENT FILTER'
+  };
   function eqName(s, o) {
+    const fix = EQN[dnm(s).replace(/\s+#.*$/, '')];
+    if (fix) return fix;
     if (o && o.trip) return words(clean(o.trip.name).replace(/\s+TRIP$/, ''));
     try {
       const r = (DUI.outs(s) || []).find(q => /\bRUNNING\b/.test(String(q.name || '')) && !/\bALL\b/.test(String(q.name || '')));
@@ -525,6 +551,10 @@
   /* 3.2.0-beta.6: an event from outside the ABC sheet on screen (the DITL first-out of the one world) */
   window.lsEventAdd = (shName, kind, text, why) => {
     const cs = window.AN && AN.sheets && AN.sheets[AN.i];
+    /* Jennie 2026-11-08: a TRIP / reset line of a drawing whose output has no equipment name (DITL-LS214 "VENT FILTER TRIP OR RUN
+       FAULT", DITL-777 "SYSTEM TRIP") starts with the name of its equipment (EQN) */
+    const eq = EQN[String(shName || '').replace(/^\(\w+\)/, '').replace(/\s+#.*$/, '')];
+    if (eq && /^(TRIP|RST)$/.test(kind) && String(text || '').indexOf(eq) < 0) text = eq + ': ' + text;
     add(cs && cs.S && cs.S.rt ? cs.S : { rt: { t: 0 } }, { name: shName }, kind, text, why);
   };
 })();
