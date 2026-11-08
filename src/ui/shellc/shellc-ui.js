@@ -44,8 +44,16 @@
         a.select();
       }, 0);
   }
+  /* shell audit M24 / M25: closing the search closes the box AND its result list (the list stayed over other panes) */
+  function hideList() {
+    const f = $('anfind');
+    if (f && f.style.display !== 'none') f.style.display = 'none';
+  }
   function closeSearch() {
     B().classList.remove('scsearch');
+    hideList();
+    const a = $('ansb');
+    if (a && document.activeElement === a) a.blur();
   }
   /* "/" and Ctrl+K: the app's own key handler focuses #ansb; the box is shown first so the focus lands (capture, before it) */
   addEventListener(
@@ -69,7 +77,8 @@
     },
     true
   );
-  addEventListener('keydown', e => e.key === 'Escape' && B().classList.contains('scsearch') && document.activeElement === $('ansb') && closeSearch());
+  /* Escape closes the whole search wherever the focus is (capture: the search box stops the key for the rest of the page) */
+  addEventListener('keydown', e => e.key === 'Escape' && B().classList.contains('scsearch') && closeSearch(), true);
   /* every result: Open (the row itself) and Why? (the info card of the tag, look only, as a search opens it) */
   function decorate() {
     const f = $('anfind');
@@ -307,7 +316,8 @@
     if (!strip) strip = buildStrip();
     if (found && strip) {
       clearInterval(iv);
-      const t = () => (tickBanners(), pillRow(), layout());
+      /* a result list left on screen with the search closed (another view took the focus) goes too */
+      const t = () => (tickBanners(), pillRow(), layout(), !B().classList.contains('scsearch') && document.activeElement !== $('ansb') && hideList());
       setInterval(t, 1000);
       addEventListener('resize', layout);
       t();

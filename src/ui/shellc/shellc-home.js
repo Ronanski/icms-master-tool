@@ -143,11 +143,14 @@
       const pl = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
       svg.append(pl);
       const lamp = E('div', 'sclamp');
-      b.append(h, kv, svg, lamp);
-      if (!T.v.length) svg.style.display = 'none';
+      /* Mina step 2 note 11c: the scale of the trend line (its top and bottom value), so a small change does not look like a big step */
+      const sc = E('div', 'scscale');
+      sc.setAttribute('aria-hidden', 'true');
+      b.append(h, kv, svg, sc, lamp);
+      if (!T.v.length) (svg.style.display = 'none'), (sc.style.display = 'none');
       b.onclick = () => openPage(T.pg);
       grid.append(b);
-      return { b, vs, pl, lamp };
+      return { b, vs, pl, lamp, sc };
     });
     almTile = E('button', 'sctile scalm');
     almTile.type = 'button';
@@ -199,13 +202,25 @@
         t.lamp.append(dot, E('span', '', m.trip ? m.trip + ' tripped · ' + m.run + ' running' : m.run ? m.run + ' running' : 'all stopped'));
       }
       /* the trend line of the first value: last 30 min, one point each 10 s of the clock */
+      /* Mina step 2 note 11c: (a) the line starts at the first real sample, at its place in the 30 min (the newest at the right end),
+         never from 0; (b) the scale spans at least 2 % of the value (87.4 -> 88.6 t/h is a small change, it looks small) */
       const pts = HIST[i];
       if (pts.length > 1) {
         let lo = Math.min(...pts),
           hi = Math.max(...pts);
-        if (hi - lo < 1e-6) (lo -= 1), (hi += 1);
-        t.pl.setAttribute('points', pts.map((y, k) => (k * 180) / 179 + ',' + (36 - ((y - lo) / (hi - lo)) * 32).toFixed(1)).join(' '));
-      } else t.pl.removeAttribute('points');
+        const mid = (hi + lo) / 2,
+          half = Math.max((hi - lo) / 2, Math.abs(mid) * 0.01, 0.5 * Math.pow(10, -T.v[0][3]));
+        lo = mid - half;
+        hi = mid + half;
+        const n = pts.length;
+        t.pl.setAttribute('points', pts.map((y, k) => (180 - ((n - 1 - k) * 180) / 179).toFixed(1) + ',' + (36 - ((y - lo) / (hi - lo)) * 32).toFixed(1)).join(' '));
+        const d = T.v[0][3],
+          u = T.v[0][2];
+        t.sc.textContent = 'scale ' + fmt(lo, d) + ' – ' + fmt(hi, d) + ' ' + u;
+      } else {
+        t.pl.removeAttribute('points');
+        t.sc.textContent = '';
+      }
     });
     /* the alarm tile: the newest six */
     const AL = allAlarms().slice(-6).reverse();
@@ -230,6 +245,8 @@
       if (!T.v.length) return;
       const x = gv(T.v[0][1]);
       if (!isFinite(x)) return;
+      /* (a) the reader gives 0 before the plant values arrive: a first 0 followed by a real value is not a sample */
+      if (HIST[i].length && HIST[i].length <= 2 && x !== 0 && HIST[i].every(y => y === 0)) HIST[i].length = 0;
       HIST[i].push(x);
       if (HIST[i].length > 180) HIST[i].shift();
     });
