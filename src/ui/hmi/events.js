@@ -411,7 +411,7 @@
         if (e.ack) AT.delete(k);
         else e.rtn = true;
       }
-    if (first && nNew) add({ rt: { t } }, { name: 'DCS' }, 'ALM', A.startState === 'plantLoad150' ? nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing when the unit was loaded at 150 MW: acknowledged, in the alarm list of the header ALARM chip' : nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing at the start: acknowledged and suppressed (shutdown state; listed apart in the alarm list of the header ALARM chip)');
+    if (first && nNew) add({ rt: { t } }, { name: 'DCS' }, 'ALM', A.startState === 'plantLoad150' ? nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing when the unit was loaded at 150 MW: acknowledged, in the alarm list' : nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing at the start: acknowledged and suppressed (shutdown state; listed apart in the alarm list)');
   }
   function ack(k) {
     const L = k ? [k] : [...AT.keys()];

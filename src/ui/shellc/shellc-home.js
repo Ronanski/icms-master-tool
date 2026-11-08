@@ -134,8 +134,14 @@
     document.body.classList.remove('scov');
   }
   window.lsShellC = Object.assign(window.lsShellC || {}, { showOv, hideOv, openPage });
+  /* a start state or save point loaded (and not run yet): the lamps wait for the first scan */
+  let stale = false,
+    lastSS = null;
   function tickOv() {
     if (!ov) return;
+    const ss = window.AN ? AN.startState : null;
+    if (ss !== lastSS) (lastSS = ss), (stale = true);
+    if (window.AN && AN.run && !AN.view) stale = false;
     const n0 = none();
     TILES.forEach((T, i) => {
       const t = tiles[i];
@@ -146,7 +152,11 @@
       });
       const m = n0 ? null : machines(T.pg);
       t.lamp.textContent = '';
-      if (m && m.n) {
+      /* Mina beta.210: after a start state loaded while paused the machine states of the drawings are not scanned yet (they came right
+         after RUN): grey until the plant has run */
+      if (stale && m && m.n) {
+        t.lamp.append(E('span', 'dot none'), E('span', '', 'press Run to read the machines'));
+      } else if (m && m.n) {
         const dot = E('span', 'dot ' + (m.trip ? 'trip' : m.run ? 'run' : 'stop'));
         t.lamp.append(dot, E('span', '', m.trip ? m.trip + ' tripped · ' + m.run + ' running' : m.run ? m.run + ' running' : 'all stopped'));
       }
@@ -198,9 +208,14 @@
     al.setAttribute('aria-label', 'Alarm list');
     al.hidden = true;
     document.body.append(al);
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && !al.hidden) al.hidden = true;
-    });
+    /* Mina beta.210: Esc did not close the list (a handler of the app stops the key first): caught in the capture phase */
+    document.addEventListener(
+      'keydown',
+      e => {
+        if (e.key === 'Escape' && !al.hidden) al.hidden = true;
+      },
+      true
+    );
   }
   function openAl(tab) {
     if (!al) return;
@@ -328,6 +343,9 @@
     };
     const go = toEng => {
       close();
+      /* Mina beta.210: the old "No starting state picked" question showed behind the loading bar: the state is picked here */
+      if (window.AN) AN._askNo = 1;
+      stale = true;
       loadState(sel).then(() => (toEng ? window.lsSetTab && lsSetTab('logic') : showOv()));
     };
     card('Operator', 'Run the plant from the overview and its pages, with the training guide', () => go(false));
@@ -351,6 +369,8 @@
     cont.onclick = () => {
       if (!last) return;
       close();
+      if (window.AN) AN._askNo = 1;
+      stale = true;
       let k = 0;
       const iv = setInterval(() => {
         const r = window.AN && AN.sheets && AN.sheets.length >= 54 && window.DITL150;
@@ -381,7 +401,9 @@
       } catch (e) {}
       location.search = location.search.replace(/([?&])shell=c&?/, '$1').replace(/[?&]$/, '');
     };
-    const ver = E('span', 'scver', typeof APP_VERSION !== 'undefined' ? 'Version ' + APP_VERSION : '');
+    /* Mina beta.210: no version on the start screen (APP_VERSION is not a global): the version of the page title "Logic Sim v…" */
+    const vm = /v(\d+\.\d+\.\d+(?:-beta\.\d+)?)/.exec(document.title || ''),
+      ver = E('span', 'scver', vm ? 'Version ' + vm[1] : '');
     foot.append(gear, skip, old, ver);
     box.append(cards, lab, chips, cont, foot);
     st.append(box);
@@ -392,6 +414,13 @@
     setTimeout(() => call(() => cards.firstChild.focus()), 50);
   }
 
+  /* Mina beta.210: the old Home showed for about 1 s before the start screen: a plain cover in the colour of the start screen until it is built */
+  const cover = E('div');
+  cover.id = 'scboot';
+  const putCover = () => document.body && !document.getElementById('scboot') && document.body.append(cover);
+  if (document.body) putCover();
+  else document.addEventListener('DOMContentLoaded', putCover);
+  setTimeout(() => cover.remove(), 30000);
   /* wait for the new strip (shellc.js) and the app */
   let n = 0;
   const iv = setInterval(() => {
@@ -403,6 +432,7 @@
     buildOv();
     buildAl();
     buildStart();
+    cover.remove();
     setInterval(() => {
       tickOv();
       fillAl();

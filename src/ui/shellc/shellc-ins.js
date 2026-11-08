@@ -101,13 +101,39 @@
     body.append(r);
     /* save points */
     body.append(head('Save point'));
+    /* Mina beta.210: SAVE asked the name with prompt(), which the built-in browser blocks: the name is asked here, and the save points
+       are listed with Load and Delete (lsSaves of app.js, the same save, load and delete as the old menu) */
     r = row();
-    r.append(
-      btn('Save now', 'Keeps the whole plant at this moment in this browser under a name', () => press('savenow')),
-      btn('Load…', 'Puts the whole plant back as it was saved, then pauses', () => press('loadsave')),
-      btn('Delete…', 'Removes one save point from this browser', () => press('delsave'))
-    );
+    const nm = E('input', 'scinp');
+    nm.type = 'text';
+    nm.id = 'scsvname';
+    nm.setAttribute('aria-label', 'Name of the save point');
+    nm.value = call(() => lsSaves.name(), '');
+    const sv = btn('Save now', 'Keeps the whole plant at this moment in this browser under this name', () => {
+      const t = nm.value.trim();
+      if (!t) return nm.focus();
+      sv.disabled = true;
+      Promise.resolve(call(() => lsSaves.save(t))).then(() => fill(), () => fill());
+    });
+    r.append(nm, sv);
     body.append(r);
+    const svl = E('div', 'scsvl');
+    body.append(svl);
+    call(() =>
+      lsSaves.list().then(L => {
+        svl.textContent = '';
+        if (!L.length) return svl.append(E('p', 'scnone', 'No save point yet.'));
+        for (const e of L.slice().reverse()) {
+          const rr = E('div', 'scsvr');
+          const ld = btn('Load', 'Puts the whole plant back as it was saved, then pauses');
+          arm(ld, 'Load', () => ((con.hidden = true), call(() => lsSaves.load(e))));
+          const dl = btn('Delete', 'Removes this save point from this browser; it cannot be undone');
+          arm(dl, 'Delete', () => Promise.resolve(call(() => lsSaves.del(e))).then(fill));
+          rr.append(E('span', '', e.name), ld, dl);
+          svl.append(rr);
+        }
+      })
+    );
     /* speed */
     body.append(head('Speed'));
     r = row();
@@ -236,9 +262,14 @@
     con.setAttribute('aria-label', 'Instructor console');
     con.hidden = true;
     document.body.append(con);
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && !con.hidden) con.hidden = true;
-    });
+    /* Mina beta.210: Esc did not close the lists (a handler of the app stops the key first): caught in the capture phase */
+    document.addEventListener(
+      'keydown',
+      e => {
+        if (e.key === 'Escape' && !con.hidden) con.hidden = true;
+      },
+      true
+    );
     card = E('div');
     card.id = 'sccard';
     card.setAttribute('role', 'region');
