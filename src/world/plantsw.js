@@ -143,8 +143,24 @@
   ].forEach(([a, k, re]) => L.push([a, lmSw(k), 0.5, 'hi', 0, 0, re, LMS]));
   /* 3.2.1 d1 (LISA): DITL-01 row 14 MIR-M1311 LIMESTONE FEEDER ROTARY VALVE RUNNING is I.0170 (I/O list "#1 Limestone feeder running"), the same contact as ROTOFEEDER RUNNING above */
   L.push(['MIR-M1311', lmSw('run'), 0.5, 'hi', 0, 0, null, /\)DITL-01$/]);
-  /* 3.2.1 d1 (LISA): DITL-56 row 7 TURBINE SPEED UNDER 2400 RPM I.0406 (location TCS): the turbine speed of the plant model; no ABC sheet carries I.0406. Dead band 10 rpm (NO-SOURCE) */
-  L.push(['I.0406', uOf('rpm'), 2400, 'lo', 0, 10, null, /\)DITL-56$/]);
+  /* 3.2.1 d1 (LISA): DITL-56 row 7 TURBINE SPEED UNDER 2400 RPM I.0406 (location TCS); no ABC sheet carries I.0406.
+     c2 gap 5 (310SC90-773 rev 2 DI 29 TCS-DI1029, IBD TA-15): the TCS sends it from the TA-15 comparator of the median speed (net 15, ON below
+     2400, OFF at 2450 rpm, drawn at 525,476). Before the TCS state exists: the model speed below 2400 */
+  L.push([
+    'I.0406',
+    () => {
+      const st = window.AN && AN.tcsIbd && AN.tcsIbd('TA-15');
+      if (st && st.v && st.v.length) return st.v[15] > 0.5 ? 1 : 0;
+      const r = uOf('rpm')();
+      return isFinite(r) ? (r < 2400 ? 1 : 0) : NaN;
+    },
+    0.5,
+    'hi',
+    0,
+    0,
+    null,
+    /\)DITL-56$/
+  ]);
   'ABCDEFGH'.split('').forEach((x, i) => {
     L.push(['I.02' + (2 * i).toString(16).toUpperCase().padStart(2, '0'), lmSw('isoO' + i), 0.5, 'hi', 0, 0, /ISOLATING VALVE . OPEN LIMIT/, LMS]);
     L.push(['I.02' + (2 * i + 1).toString(16).toUpperCase().padStart(2, '0'), lmSw('isoC' + i), 0.5, 'hi', 0, 0, /ISOLATING VALVE . CLOSE LIMIT/, LMS]);
