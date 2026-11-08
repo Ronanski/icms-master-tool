@@ -35891,7 +35891,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.121';
-      c3.textContent += ' · build 919b930'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 7613730'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -52503,6 +52503,67 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
         }
       }
     }
+    /* 3.2.1 d2 (LISA): the PLC sheets with no FROM column read their inputs by address (CLAUDE.md rule 1: one address = one signal in its
+       station). Sand E10210-3-771 ~ 777 = station 103, limestone DITL-LS = station 104.
+       - an output row of another sheet of the same set that writes the address (sand: 771 row 7 M.0851 SAND SILO LEVEL L <- 774 out
+         M.0851; 777 row 6 O.060A VENT FILTER RUN COMMAND <- 774 out O.060A ...);
+       - an output row that names the address with its station, "S3 I.000F", "S4 I.0560": DITL-03A MFT "S1 I.000F S2 I.000F S3 I.000F
+         MFT S4 I.0560" is the MFT of the sand rows I.000F and of the limestone rows I.0560 MFT (BOILER STOP);
+       - two memories that the drawings of these stations name and no sheet in the app writes, from their names (memory lists):
+         M.1829 ANY BURNER IN SERVICE (list 104) = burner A / B / C / D IN SERVICE (M.0139 / 0239 / 1639 / 1739, DITL-12 / 12A / 12B /
+         12C out 70); M.3224 52G1 OPENED OR 52L1 OPENED (list 102, station wiring) = I.0932 GCB 52G1 off or I.0937 52L1 open (I/O list
+         STN102, the ABC-050 / ABC-013 inputs). Several sources of a row are an OR (tick below) */
+    const byStn = [];
+    {
+      const SG = s => (/^\(D7\d\)/.test(s.name) ? '3' : /\)DITL-LS\d+$/.test(s.name) ? '4' : '');
+      const P = new Map(),
+        put = (k, q) => P.has(k) || P.set(k, q);
+      for (const d of S.sheets) {
+        if (!d.nl) continue;
+        const g = SG(d);
+        for (const o of d.nl.outs || []) {
+          const t = cellTxt(d, o.row, 'RS');
+          for (const m of t.matchAll(/\bS([1-5])\s+([IMOB]\.[0-9A-F]{4})\b/g)) put(m[1] + ' ' + m[2], { d, row: o.row });
+          if (g) for (const m of t.matchAll(/\b[IMOB]\.[0-9A-F]{4}\b/g)) put(g + ' ' + m[0], { d, row: o.row });
+        }
+      }
+      const abcIn = (nm, adr) => {
+        const sh = AN.sheets.find(x => x.name === nm);
+        let T = null;
+        try {
+          T = sh && AN.ensure(sh);
+        } catch (e) {}
+        const n = T && T.ext ? T.ext.find(j => String(AN.nm(T, j) || '').replace(/^S\d\s*/, '').trim() === adr) : undefined;
+        return n == null ? null : { k: 'a', sh, n, ref: nm + ' ' + adr };
+      };
+      const ANY = {
+        'M.1829': () => ['12', '12A', '12B', '12C'].map(c => outRow(c, 70)).filter(Boolean).map(o => ({ k: 'd', d: o.d, row: o.row, ref: codeOf(o.d.name) + '-70' })),
+        'M.3224': () => [abcIn('ABC-050', 'I.0932'), abcIn('ABC-013', 'M.3221') || abcIn('ABC-050', 'I.0937')].filter(Boolean)
+      };
+      for (const s of S.sheets) {
+        const g = SG(s);
+        if (!g || !s.nl) continue;
+        for (const q of s.nl.src || []) {
+          const have = din.get(s) && din.get(s).get(q.row);
+          if (have && have.length) continue;
+          const t = cellTxt(s, q.row, 'T') + ' ' + cellTxt(s, q.row, 'S');
+          for (const m of t.matchAll(/\b[IMOB]\.[0-9A-F]{4}\b/g)) {
+            const o = P.get(g + ' ' + m[0]);
+            if (o && o.d !== s) {
+              addIn(s, q.row, { k: 'd', d: o.d, row: o.row, ref: codeOf(o.d.name) + ' ' + m[0] });
+              byStn.push(s.name + ' r' + s.rows[q.row].n + ' ' + m[0] + ' <- ' + o.d.name + ' row ' + (+o.d.rows[o.row].n));
+              break;
+            }
+            if (g === '4' && ANY[m[0]]) {
+              const L = ANY[m[0]]();
+              for (const x of L) addIn(s, q.row, x);
+              if (L.length) byStn.push(s.name + ' r' + s.rows[q.row].n + ' ' + m[0] + ' <- any of ' + L.map(x => x.ref).join(', '));
+              break;
+            }
+          }
+        }
+      }
+    }
     let fa = 0,
       ta = 0;
     const wsh = new Set();
@@ -52828,6 +52889,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       fromAbc,
       tcsIn,
       wireTo,
+      byStn,
       abcMiss,
       plc,
       toDitl: ta,
@@ -82168,6 +82230,67 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
         }
       }
     }
+    /* 3.2.1 d2 (LISA): the PLC sheets with no FROM column read their inputs by address (CLAUDE.md rule 1: one address = one signal in its
+       station). Sand E10210-3-771 ~ 777 = station 103, limestone DITL-LS = station 104.
+       - an output row of another sheet of the same set that writes the address (sand: 771 row 7 M.0851 SAND SILO LEVEL L <- 774 out
+         M.0851; 777 row 6 O.060A VENT FILTER RUN COMMAND <- 774 out O.060A ...);
+       - an output row that names the address with its station, "S3 I.000F", "S4 I.0560": DITL-03A MFT "S1 I.000F S2 I.000F S3 I.000F
+         MFT S4 I.0560" is the MFT of the sand rows I.000F and of the limestone rows I.0560 MFT (BOILER STOP);
+       - two memories that the drawings of these stations name and no sheet in the app writes, from their names (memory lists):
+         M.1829 ANY BURNER IN SERVICE (list 104) = burner A / B / C / D IN SERVICE (M.0139 / 0239 / 1639 / 1739, DITL-12 / 12A / 12B /
+         12C out 70); M.3224 52G1 OPENED OR 52L1 OPENED (list 102, station wiring) = I.0932 GCB 52G1 off or I.0937 52L1 open (I/O list
+         STN102, the ABC-050 / ABC-013 inputs). Several sources of a row are an OR (tick below) */
+    const byStn = [];
+    {
+      const SG = s => (/^\(D7\d\)/.test(s.name) ? '3' : /\)DITL-LS\d+$/.test(s.name) ? '4' : '');
+      const P = new Map(),
+        put = (k, q) => P.has(k) || P.set(k, q);
+      for (const d of S.sheets) {
+        if (!d.nl) continue;
+        const g = SG(d);
+        for (const o of d.nl.outs || []) {
+          const t = cellTxt(d, o.row, 'RS');
+          for (const m of t.matchAll(/\bS([1-5])\s+([IMOB]\.[0-9A-F]{4})\b/g)) put(m[1] + ' ' + m[2], { d, row: o.row });
+          if (g) for (const m of t.matchAll(/\b[IMOB]\.[0-9A-F]{4}\b/g)) put(g + ' ' + m[0], { d, row: o.row });
+        }
+      }
+      const abcIn = (nm, adr) => {
+        const sh = AN.sheets.find(x => x.name === nm);
+        let T = null;
+        try {
+          T = sh && AN.ensure(sh);
+        } catch (e) {}
+        const n = T && T.ext ? T.ext.find(j => String(AN.nm(T, j) || '').replace(/^S\d\s*/, '').trim() === adr) : undefined;
+        return n == null ? null : { k: 'a', sh, n, ref: nm + ' ' + adr };
+      };
+      const ANY = {
+        'M.1829': () => ['12', '12A', '12B', '12C'].map(c => outRow(c, 70)).filter(Boolean).map(o => ({ k: 'd', d: o.d, row: o.row, ref: codeOf(o.d.name) + '-70' })),
+        'M.3224': () => [abcIn('ABC-050', 'I.0932'), abcIn('ABC-013', 'M.3221') || abcIn('ABC-050', 'I.0937')].filter(Boolean)
+      };
+      for (const s of S.sheets) {
+        const g = SG(s);
+        if (!g || !s.nl) continue;
+        for (const q of s.nl.src || []) {
+          const have = din.get(s) && din.get(s).get(q.row);
+          if (have && have.length) continue;
+          const t = cellTxt(s, q.row, 'T') + ' ' + cellTxt(s, q.row, 'S');
+          for (const m of t.matchAll(/\b[IMOB]\.[0-9A-F]{4}\b/g)) {
+            const o = P.get(g + ' ' + m[0]);
+            if (o && o.d !== s) {
+              addIn(s, q.row, { k: 'd', d: o.d, row: o.row, ref: codeOf(o.d.name) + ' ' + m[0] });
+              byStn.push(s.name + ' r' + s.rows[q.row].n + ' ' + m[0] + ' <- ' + o.d.name + ' row ' + (+o.d.rows[o.row].n));
+              break;
+            }
+            if (g === '4' && ANY[m[0]]) {
+              const L = ANY[m[0]]();
+              for (const x of L) addIn(s, q.row, x);
+              if (L.length) byStn.push(s.name + ' r' + s.rows[q.row].n + ' ' + m[0] + ' <- any of ' + L.map(x => x.ref).join(', '));
+              break;
+            }
+          }
+        }
+      }
+    }
     let fa = 0,
       ta = 0;
     const wsh = new Set();
@@ -82493,6 +82616,7 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
       fromAbc,
       tcsIn,
       wireTo,
+      byStn,
       abcMiss,
       plc,
       toDitl: ta,
