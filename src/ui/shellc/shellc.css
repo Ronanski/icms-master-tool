@@ -45,3 +45,68 @@ body.sc #gsbar > #crband{position:relative;gap:.5rem!important;padding:0 .5rem!i
 #scstrip .spdm button.on{background:var(--sc-steel)!important;border-color:var(--sc-steel)!important;color:var(--sc-white)!important}
 #scstrip .old{min-height:2rem!important;padding:0 .5rem!important;border:0!important;background:transparent!important;color:var(--sc-ink2)!important;font:500 .6875rem var(--sc-ui)!important;text-decoration:underline;box-shadow:none!important;cursor:pointer}
 #scstrip :focus-visible{outline:2px solid var(--sc-steel)!important;outline-offset:2px}
+/* ===== step 2: overview, breadcrumb, alarm list, start screen ===== */
+#scov{display:none;position:fixed;top:var(--top);left:var(--railW,0);right:0;bottom:var(--foot);z-index:80;overflow:auto;background:var(--sc-page);font-family:var(--sc-ui);color:var(--sc-ink)}
+body.sc.scov #scov{display:flex;flex-direction:column}
+#scov .scbar{display:flex;align-items:center;gap:.375rem;padding:.5rem 1rem;font-size:.8125rem;border-bottom:1px solid var(--sc-line);background:var(--sc-paper)}
+.scbc{color:var(--sc-steel);text-decoration:underline}.scsep{color:var(--sc-ink2)}
+#scov .scgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem;padding:.75rem 1rem 1rem}
+@media (max-width:1279px){#scov .scgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+#scov .sctile{display:flex;flex-direction:column;align-items:stretch;gap:.375rem;min-height:9.5rem!important;height:auto!important;padding:.75rem .875rem!important;text-align:left;background:var(--sc-paper)!important;border:1px solid var(--sc-line2)!important;border-radius:.375rem!important;color:var(--sc-ink)!important;box-shadow:none!important;cursor:pointer;font:inherit!important;white-space:normal}
+#scov .sctile:hover{border-color:var(--sc-steel)!important}
+#scov .sctile:focus-visible{outline:2px solid var(--sc-steel)!important;outline-offset:2px}
+#scov .sctile h3{margin:0;font:600 .9375rem var(--sc-ui)}
+#scov .sckv{display:grid;grid-template-columns:1fr auto;gap:.125rem .75rem;font-size:.8125rem;color:var(--sc-ink2)}
+#scov .sckv b{font:600 .875rem var(--sc-num);font-variant-numeric:tabular-nums;color:var(--sc-ink);text-align:right;white-space:nowrap}
+#scov .scspark{width:100%;height:2.5rem;flex:1 1 auto;min-height:1.5rem}
+#scov .scspark polyline{fill:none;stroke:var(--sc-steel);stroke-width:1.5;vector-effect:non-scaling-stroke}
+#scov .sclamp{display:flex;align-items:center;gap:.375rem;font-size:.75rem;color:var(--sc-ink2);min-height:1rem}
+#scov .sclamp .dot{width:.625rem;height:.625rem;border-radius:50%;flex:none}
+.sclamp .dot.run{background:var(--sc-run)}.sclamp .dot.stop{background:var(--sc-stop)}.sclamp .dot.trip{background:var(--sc-run);animation:scblink 1s steps(2,start) infinite}
+#scov .scalm{grid-column:span 2;background:#f6e7cf!important;border-color:var(--sc-amber)!important}
+#scov .scalm:not(.on){background:var(--sc-paper)!important;border-color:var(--sc-line2)!important}
+#scov .scar{display:grid;grid-template-columns:6rem minmax(0,1fr) auto;gap:.5rem;font-size:.8125rem}
+#scov .scar .sct{font-family:var(--sc-num);color:var(--sc-ink2)}
+#scov .scar .scn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#scov .scar .scs{font-weight:600;color:var(--sc-ink2)}
+#scov .scar.new .scs{color:#5c3f0b}
+.scnone{margin:0;font-size:.8125rem;color:var(--sc-ink2)}
+.sccrumb{display:none;position:fixed;top:calc(var(--top) + .375rem);left:calc(var(--railW,0px) + .5rem);z-index:79;align-items:center;gap:.375rem;min-height:2rem!important;padding:0 .75rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:1rem!important;color:var(--sc-ink)!important;font:500 .8125rem var(--sc-ui)!important;box-shadow:0 .125rem .5rem rgba(34,46,57,.12)!important;cursor:pointer}
+body.sc[data-tab="operate"]:not(.scov) .sccrumb{display:inline-flex}
+body.sc.pvout .sccrumb{display:none!important}
+#scal{position:fixed;top:calc(var(--top) + .25rem);right:.5rem;z-index:130;width:min(36rem,calc(100vw - 1rem));max-height:calc(100vh - var(--top) - var(--foot) - 1rem);display:flex;flex-direction:column;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:.5rem;box-shadow:0 .75rem 2rem rgba(34,46,57,.22);font-family:var(--sc-ui);color:var(--sc-ink)}
+#scal[hidden]{display:none!important}
+#scal .schd{display:flex;align-items:center;gap:.5rem;padding:.5rem;border-bottom:1px solid var(--sc-line)}
+#scal .sctabs{display:flex;gap:.25rem;flex:1}
+#scal .sctabs button,#scal .scx,#scal .scack,#scal .scrow button{min-height:2rem!important;padding:0 .75rem!important;border:1px solid var(--sc-line2)!important;border-radius:.25rem!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 .8125rem var(--sc-ui)!important;box-shadow:none!important;cursor:pointer}
+#scal .sctabs button.on{background:var(--sc-steel)!important;border-color:var(--sc-steel)!important;color:var(--sc-white)!important}
+#scal .scack{margin:.5rem .5rem 0;align-self:flex-start}
+#scal .scbody{overflow:auto;padding:.25rem .5rem .5rem}
+#scal .scrow{display:grid;grid-template-columns:5.5rem minmax(0,1fr) auto;align-items:center;gap:.5rem;padding:.375rem .25rem;border-bottom:1px solid var(--sc-line);font-size:.8125rem}
+#scal .scrow.ev{grid-template-columns:5.5rem 3.5rem minmax(0,1fr)}
+#scal .scrow .sct{font-family:var(--sc-num);color:var(--sc-ink2)}
+#scal .scrow .sck2{font:600 .6875rem var(--sc-num);color:var(--sc-ink2)}
+#scal .scrow .scn{overflow-wrap:anywhere}
+#scal .scrow.new .scn{font-weight:600}
+#scal .scrow.trip.new .scn{color:var(--sc-run)}
+#scal .scrow .scs{font-size:.75rem;color:var(--sc-ink2)}
+#scstart{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:1rem;background:var(--sc-page);font-family:var(--sc-ui);color:var(--sc-ink);overflow:auto}
+#scstart .scsbox{width:min(46rem,100%);display:grid;gap:1rem}
+#scstart h1{margin:0;font:600 1.5rem var(--sc-ui);text-align:center;text-wrap:balance}
+#scstart .scsub{margin:-.5rem 0 0;text-align:center;color:var(--sc-ink2);font-size:.875rem}
+#scstart .sccards{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media (max-width:600px){#scstart .sccards{grid-template-columns:1fr}}
+#scstart .sccard{display:flex;flex-direction:column;align-items:flex-start;gap:.5rem;min-height:9rem!important;height:auto!important;padding:1.25rem!important;text-align:left;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:.5rem!important;color:var(--sc-ink)!important;box-shadow:none!important;cursor:pointer;white-space:normal;font:inherit!important}
+#scstart .sccard:hover,#scstart .sccard:focus-visible{border-color:var(--sc-steel)!important;outline:2px solid var(--sc-steel);outline-offset:1px}
+#scstart .sccard b{font:600 1.25rem var(--sc-ui);color:var(--sc-steel)}
+#scstart .sccard span{font-size:.875rem;color:var(--sc-ink2)}
+#scstart .sclab{text-align:center;font:600 .6875rem var(--sc-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--sc-ink2)}
+#scstart .scchips{display:flex;justify-content:center;flex-wrap:wrap;gap:.5rem;margin-top:-.5rem}
+#scstart .scchips button{min-height:2.25rem!important;padding:0 1rem!important;border:1px solid var(--sc-line2)!important;border-radius:1.25rem!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 .875rem var(--sc-ui)!important;box-shadow:none!important;cursor:pointer}
+#scstart .scchips button.on{background:var(--sc-steel)!important;border-color:var(--sc-steel)!important;color:var(--sc-white)!important}
+#scstart .sccont{display:flex;align-items:center;gap:.75rem;min-height:2.75rem!important;padding:0 1rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:.375rem!important;color:var(--sc-ink)!important;font:inherit!important;box-shadow:none!important;cursor:pointer;text-align:left}
+#scstart .sccont span{font-size:.8125rem;color:var(--sc-ink2)}
+#scstart .sccont:disabled{opacity:.7;cursor:default}
+#scstart .scsfoot{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+#scstart .scgear,#scstart .scskip{min-height:2rem!important;padding:0 .5rem!important;border:0!important;background:transparent!important;color:var(--sc-steel)!important;font:500 .8125rem var(--sc-ui)!important;text-decoration:underline;box-shadow:none!important;cursor:pointer}
+#scstart .scver{margin-left:auto;font:400 .75rem var(--sc-num);color:var(--sc-ink2)}
