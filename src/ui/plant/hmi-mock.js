@@ -473,6 +473,9 @@
         if (a[0] === 'tcs' && r == null && a[1] === 'step' && U && U.on && U.tb && U.tb.st !== 'off' && +U.MW > 0) return 7;
         /* page 13 step 9 SHUT-DOWN: not done on the loaded turbine of the snapshot */
         if (a[0] === 'tcs' && r == null && a[1] === 'st9' && U && U.on) return 0;
+        /* page 13 exhaust hood temperature (Mina beta.143: '-----' at 150 MW): with no TCS model the exhaust steam is at the condenser
+           saturation temperature of the plant model (unit.js anCondStep U.cdT, about 39 C at 150 MW), the hood spray in service */
+        if (a[0] === 'tcs' && r == null && a[1] === 'Tx' && U && U.on) return isFinite(U.cdT) ? U.cdT : null;
         /* page 13: MSV / RSV open (the turbine reset) on the same loaded turbine */
         if (a[0] === 'tcs' && r == null && a[1] === 'rst' && U && U.on && U.tb) return U.tb.st !== 'off' && +U.MW > 0 ? 1 : 0;
         return (a[0] === 'tcs' || a[0] === 'gen' ? a.slice(1) : a).reduce((o, x) => (o == null ? null : o[x]), r);
