@@ -17,6 +17,9 @@
     art: /*@@ART@@*/,
     mach: {},
     unit: {
+      'VIST-MAX': 'ux:loVt',
+      'TIST-THF': 'ux:loThF',
+      'TIST-THR': 'ux:loThR',
       'GEN.KV': 'ux:gen.kV',
       'GEN.VF': 'ux:gen.Vf',
       'GEN.IF': 'ux:gen.If',
