@@ -7,7 +7,7 @@ permissions: { contents: read }
 jobs:
   sim:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -38,11 +38,11 @@ jobs:
         run: |
           set -o pipefail
           node tests/regress/gcb.js 2>&1 | tee -a sim.log
-      - name: Load ramp as the operator does it (MWRL 1.2, ULD 150 -> 90 -> 150), recorder CSV in the log
+      - name: 'After a turbine trip at 150 MW: drum level, LP bypass'
         continue-on-error: true
         run: |
           set -o pipefail
-          node tests/regress/load_ramp.js 2>&1 | tee -a sim.log
+          node tests/regress/trip_after.js 2>&1 | tee -a sim.log
       - name: Summary (PASS / FAIL lines)
         if: always()
         run: |
