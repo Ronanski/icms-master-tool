@@ -746,7 +746,19 @@ window.LS_LIVE = (function () {
     ['Hot restart (Tab 9 p22): the bed at the start-up burner elevation above 700 C (purge bypass permit M.3339): press FURNACE PURGE START, the purge completes at once (no 5 min) and the MFT resets.', ALL(BIT('M.3339', 1, 'furnace lower layer > 700 C (purge by-pass)'), BIT('I.000F', 0, 'MFT reset'))],
     ['Start the coal feeders: bed above 700 C without burners, or above 550 C with the burners in service (Tab 9 p23 item 7).', ANYBIT(['M.3400', 'M.3401', 'M.3402'], 'a coal feeder running')]
   ];
-  const XS = [X1, X2, X3, X4, X5, X6, X7];
+  /* plan e5 recovery (LISA): a BFWP A field trip at 150 MW. DITL-23A (PDF sheet 41; "THE DIAGRAM IS THE SAME FOR BFWP B": DITL-23A #B):
+     out 65 BFWP A TRIP (MIT-P1115A) = TRIP COMMAND or ELECTRIC TROUBLE; the TRIP resets the RUNNING latch (out 55 MIR-P1115A); BFWP B
+     AUTO STARTING (M.1144) = A tripped or stopped AND B AUTO MODE SELECTED (row 18, M.1142), B in REMOTE (row 24). 03.png: BFWP-B
+     standby at 150 MW. No run-back on any ABC or DITL drawing (no "RUN BACK" text on the 54 ABC and the DITL sheets). Drum level:
+     alarm list LT-BR1001-2 H +127 / L -100 mm */
+  const X8 = [
+    ['Standby BFWP B ready for its AUTO start: REMOTE and AUTO MODE SELECTED (DITL-23A #B rows 24 / 18; 03.png BFWP-B standby).', ALL(INC('DITL-23A #B', 17, 'BFWP B AUTO MODE SELECTED'), INC('DITL-23A #B', 23, 'BFWP B REMOTE MODE SELECTED'))],
+    ['Fault: BFWP A trips in the field (Faults, MIT-P1115A). Its ELECTRIC TROUBLE makes BFWP A TRIP (DITL-23A out 65) and resets the running latch (out 55).', BIT('M.3343', 0, 'BFWP A running')],
+    ['BFWP B starts by itself (DITL-23A #B BFWP B AUTO STARTING: A tripped, B in AUTO). If it does not, start it from the CRT.', BIT('M.3344', 1, 'BFWP B running')],
+    ['Feedwater and drum level recover on BFWP B: FICFW1007 follows its SV, drum level inside the alarm list H / L (+127 / -100 mm, LT-BR1001-2) for 2 min.', HOLD(120, VAL('lvl', -100, 127))],
+    ['Reset the BFWP A relay in the field (Faults: press it again), acknowledge the TRIP; BFWP A is now the standby: REMOTE + AUTO MODE SELECTED (DITL-23A rows 24 / 18).', ALL(DC('BFWP A relay reset in the field', () => !(window.WORLD && WORLD.ftrip && WORLD.ftrip().some(f => f.id === 'mt.bfwpa' && f.on)), () => (window.WORLD && WORLD.ftrip && WORLD.ftrip().some(f => f.id === 'mt.bfwpa' && f.on) ? 'tripped' : 'reset')), INC('DITL-23A', 17, 'BFWP A AUTO MODE SELECTED'))]
+  ];
+  const XS = [X1, X2, X3, X4, X5, X6, X7, X8];
   if (!PROC.some(s => s.x)) {
     PROC.push({ t: 'SYNCHRONIZATION AND INITIAL LOAD (APP)', x: 1, note: 'Added by the app: PR-OPE-5002 ends at Solid firing. Targets from the cold start scenario of the app (it reaches 150 MW) and the FHI design data.', s: X1.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'LOAD UP TO 150 MW (APP)', x: 1, note: 'Added by the app. PR-OPE-5002 sec 44: boiler follow until 90 MW; then coordinated control to 150 MW (FHI MCR 460 T/H).', s: X2.map(x => ({ t: x[0], g: [] })) });
@@ -755,6 +767,7 @@ window.LS_LIVE = (function () {
     PROC.push({ t: 'NORMAL SHUTDOWN TO TURBINE TRIP (APP)', x: 1, note: 'Added by the app from PR-OPE-5003-01 (normal shutdown) steps 4.1 ~ 4.20: 150 MW to the turbine trip at 30 MW.', s: X5.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'SHUTDOWN TO BOTTLE-UP (APP)', x: 1, note: 'Added by the app from PR-OPE-5004-01 (shutdown to bottle-up): after the turbine trip, the boiler is boxed up with the drum at +200 mm.', s: X6.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'TURBINE TRIP AT LOAD AND HOT RESTART (APP)', x: 1, note: 'Added by the app from the FHI CFB manual Part 2 Sect 8 Tab 9 (loss of load, hot standby, hot restart).', s: X7.map(x => ({ t: x[0], g: [] })) });
+    PROC.push({ t: 'PRACTICE: BFWP A TRIP AT 150 MW (APP)', x: 1, note: 'Added by the app (e5 faults): a field trip of BFWP A; the standby BFWP B takes the load by the logic of DITL-23A.', s: X8.map(x => ({ t: x[0], g: [] })) });
   }
 
   /* ---------- the general rules (step text + its tags), after the table ---------- */
@@ -1010,7 +1023,7 @@ window.LS_LIVE = (function () {
     return r && r[0] ? r[0].sh : null;
   };
   /* 3.2.0-beta.21: the condition makers, for the guided Training (guide.js) */
-  const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4, X5, X6, X7 };
+  const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4, X5, X6, X7, X8 };
   /* recNow: a row at once (tests/regress/load_ramp.js steps the plant faster than the 1 s timer) */
   const recNow = () => {
     REC.last = Math.floor((+U().t || 0) / 60);
