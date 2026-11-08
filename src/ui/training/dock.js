@@ -1318,7 +1318,7 @@
     put([30], 'UNIT', /^HP BYPASS$/, /^LP BYPASS$/);
     put([37, 38, 39, 40, 41, 42], 'UNIT', /^Turbine \(TCS/);
     put([44], 'UNIT', /^COAL MASTER$/);
-    put([45, 46, 47, 48, 49, 50], 'UNIT', /^TARGET MW$/, /^TURBINE MASTER$/);
+    put([45, 46, 47, 48, 49, 50, 51], 'UNIT', /^TARGET MW$/, /^TURBINE MASTER$/);
     return M;
   })();
   function hmiTargets(s) {

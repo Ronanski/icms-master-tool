@@ -667,3 +667,4 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.130** (2026-11-08): Page 13 push buttons take a click anywhere on the button and log the press before the trip lines (TURBINE TRIP press was missing from Events).
 - **beta.131** (2026-11-08): Cold start bed heat-up fitted to the plant cold start trend (339 C at 1.5 h, 523 C at 4 h, 726 C at 6 h on oil; was 141 C at 2 h): cold bed lag 9000 s, start-up exponent 0.168.
 - **beta.132** (2026-11-08): Steam per coal from the plant trends (5.31 T/H per T/H, 484 T/H at 89.7 and 302 at 55.4; was 5.78 from two snapshots): coal at 90 MW about 56 T/H (plant 55.4, was 57.4).
+- **beta.133** (2026-11-08): Training section TURBINE TRIP AT LOAD AND HOT RESTART from the FHI CFB manual Tab 9 (trip at 150 MW, first outs, fans kept running, drum level, hot restart above 700 C bed with no purge, coal feeders); button Practise: Turbine trip and hot restart.
