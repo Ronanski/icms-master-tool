@@ -56,6 +56,7 @@ const block =
   fs.readFileSync(__dirname + '/../shellc/shellc.css', 'utf8') +
   fs.readFileSync(__dirname + '/../shellc/shellc-pages.css', 'utf8') +
   fs.readFileSync(__dirname + '/../shellc/shellc-ui.css', 'utf8') +
+  fs.readFileSync(__dirname + '/../shellc/shellc-eng.css', 'utf8') + /* step 4: Engineer mode */
   '</style><script id="shelljs">' +
   fs.readFileSync(__dirname + '/ditl.js', 'utf8') +
   '\n' +
@@ -130,6 +131,7 @@ const block =
   fs.readFileSync(__dirname + '/../shellc/shellc-ins.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/../shellc/shellc-ui.js', 'utf8') +
+  '\n' + fs.readFileSync(__dirname + '/../shellc/shellc-eng.js', 'utf8') + /* step 4: Engineer mode */
   '</script>' +
   B;
 const k = s.lastIndexOf('</body>');
