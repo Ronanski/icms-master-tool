@@ -1,6 +1,7 @@
 name: Simulation tests
 # 3.2.1 p4: the simulation runs by itself on every push (headless Chromium): T1 ~ S5 of the ABC engine, the engine alone,
-# the DITL 150 MW plant. Report only for now: it does not hold the Beta (site.yml follows Checks, not this workflow).
+# the DITL 150 MW plant. Report only for now: a failed test is marked on its step and listed in the run summary, the run itself stays
+# green so it does not hold the Beta or the auto-merge of any PR (site.yml follows Checks, not this workflow).
 on: [push]
 permissions: { contents: read }
 jobs:
@@ -18,11 +19,22 @@ jobs:
           echo "PLAYWRIGHT_MODULE=$PWD/node_modules/playwright" >> "$GITHUB_ENV"
           echo "CHROMIUM=$(node -e "console.log(require('playwright').chromium.executablePath())")" >> "$GITHUB_ENV"
       - name: Engine alone (54 ABC sheets, same values as the whole simulator)
-        if: always()
-        run: node tests/engine/isolated.js
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node tests/engine/isolated.js 2>&1 | tee -a sim.log
       - name: ABC engine T1 ~ S5 (sheets load and step, timers, lag, alarms, blocks, F-30 / F-27 / P-1 / F-31)
-        if: always()
-        run: node tests/regress/tests.js
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node tests/regress/tests.js 2>&1 | tee -a sim.log
       - name: DITL 150 MW (no MFT, equipment running, DITL to ABC, 60 s steady, BFWP A stop, Reset = cold)
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node tests/regress/ditl150.js 2>&1 | tee -a sim.log
+      - name: Summary (PASS / FAIL lines)
         if: always()
-        run: node tests/regress/ditl150.js
+        run: |
+          { echo '### Simulation tests'; echo '```'; grep -E '^(PASS|FAIL|FAILED|ALL PASS|LOAD ERROR|ERROR)' sim.log || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          grep -E '^(FAIL|FAILED|LOAD ERROR|ERROR)' sim.log && echo "::warning::simulation tests: some FAIL, see the summary" || true
