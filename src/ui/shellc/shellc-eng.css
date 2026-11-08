@@ -11,7 +11,7 @@ html.lc-side body.sceng{width:auto!important;transform:none!important}
 body:not(.sceng) #scebar{display:none!important}
 body.sceng #scebar{display:flex;align-items:center;gap:.5rem;flex:0 0 100%;width:100%;height:2.75rem;align-self:flex-start;overflow:hidden;padding:.25rem .75rem;box-sizing:border-box;background:var(--sc-paper);border-top:1px solid var(--sc-line);border-bottom:1px solid var(--sc-line2);font:400 .8125rem var(--sc-ui);color:var(--sc-ink)}
 #scebar .scecr{display:flex;align-items:center;gap:.375rem;min-width:0;overflow:hidden}
-#scebar .scecr b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#scebar .scecr .scehere{display:block!important;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #scebar .scesep{color:var(--sc-ink2)}
 #scebar .scesp{flex:1 1 auto}
 #scebar .scelab{font:600 .6875rem var(--sc-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--sc-ink2);margin-left:.5rem;white-space:nowrap}
@@ -77,3 +77,6 @@ body.sceng #scepane:not([hidden]){position:fixed;left:var(--scex);right:0;top:va
 /* the page bar of a narrow pane wraps; the step-2 page crumb (Operator) is not shown here: the Engineer bar has the place */
 body.sc.sceng #plantws .plbar{flex-wrap:wrap!important;row-gap:.25rem;padding-left:1rem!important}
 body.sceng .sccrumb{display:none!important}
+/* the VIEW | RUN of the strip: in the Engineer mode the bar has it (marked by shellc-eng.js); the full-screen exit of the Operator pages
+   is not part of this view */
+html body.sc.sceng #gsbar #scstrip .seg.sce-hide,html body.sc.sceng .sce-hide,body.sceng .scfsout{display:none!important}

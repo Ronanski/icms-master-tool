@@ -158,7 +158,7 @@
       const pk = picker();
       if (pk && window.lsShellC && lsShellC.openPage) lsShellC.openPage(pk.value);
     });
-    els.cHere = E('b', '', '');
+    els.cHere = E('span', 'scehere', '');
     cr.append(els.cPlant, E('span', 'scesep', '›'), els.cPage, E('span', 'scesep', '›'), els.cHere);
     const seg = (lab, opts, tip) => {
       const g = E('span', 'sceseg');
@@ -439,6 +439,7 @@
     const bv = [...document.querySelectorAll('#crband .seg button')];
     const vOn = bv.find(b => b.textContent.trim() === 'VIEW'),
       rOn = bv.find(b => b.textContent.trim() === 'RUN');
+    if (vOn && !vOn.parentElement.classList.contains('sce-hide')) vOn.parentElement.classList.add('sce-hide');
     els.vr[0].setAttribute('aria-pressed', String(!!(vOn && vOn.classList.contains('on'))));
     els.vr[1].setAttribute('aria-pressed', String(!!(rOn && rOn.classList.contains('on'))));
     const pmOn = !!call(() => AN.plantOn, false);
