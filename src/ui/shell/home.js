@@ -623,6 +623,9 @@
           title: 'Sets the plant at 150 MW, clears the ticks of the two PRACTICE sections, starts the simulation (RUN) and opens the AUTO (CCS) practice: change the load there',
           on: e0 => arm2(e0.currentTarget, 'Press again: this loads 150 MW', () =>
             abcReady(() => {
+              /* Mina beta.116: a reload of 150 MW while the plant ran (Worker) tripped it in 20 s (BU-CMD, furnace pressure HH, MFT): the
+                 simulation is paused while the starting state loads, the practise turns it on after */
+              if (AN.pauseOn) AN.pauseOn();
               const b = $('load150');
               if (b) b.click();
               (AN._startP || Promise.resolve()).then(() => {
@@ -641,6 +644,9 @@
           title: 'Sets the plant at 150 MW, clears the ticks of the shutdown and bottle-up sections, starts the simulation (RUN) and opens NORMAL SHUTDOWN (PR-OPE-5003)',
           on: e0 => arm2(e0.currentTarget, 'Press again: this loads 150 MW', () =>
             abcReady(() => {
+              /* Mina beta.116: a reload of 150 MW while the plant ran (Worker) tripped it in 20 s (BU-CMD, furnace pressure HH, MFT): the
+                 simulation is paused while the starting state loads, the practise turns it on after */
+              if (AN.pauseOn) AN.pauseOn();
               const b = $('load150');
               if (b) b.click();
               (AN._startP || Promise.resolve()).then(() => {
