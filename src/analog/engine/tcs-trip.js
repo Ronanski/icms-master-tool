@@ -102,18 +102,53 @@ const TCS_IBD_PV = [
   [/^52G OPEN$/, U => (U.tb && (U.tb.st === 'sync' || U.tb.st === 'load') ? 0 : 1)],
   [/^TURBINE TRIP$/, (U, c) => (c.trip ? 1 : 0)],
   [/^MSV([AB]) FULL OPEN/, (U, c) => (tcsVp(U, c) >= 1 ? 1 : 0)],
-  /* 3.2.1 c2 (LISA, 310SC90-773 rev 2 DIGITAL OUTPUT 31 ~ 35, DCS -> TCS): the heater levels VERY HIGH close the extraction non-return
-     valves (TC-36 / 41 / 44 / 45) = the DCS level switches on DITL-41 (LS-HD1101 / 1105 / 1103 / 1102 rows, the heater model through
-     plantsw.js); the deaerator VERY HIGH (TC-42, DO O.0483 LBHH-CD1104) = LT-CD1104 (ABC-031 AI0672) at or above its HH +300 mm (alarm list).
-     The plant votes LT-HD110x-1,2 and LT-CD1104-1,2,3: the voting is NO-SOURCE; the model has one transmitter, so the votes read the same value */
-  [/^NO\.1 LP HEATER LEVEL VERY HIGH/, () => tcsDitlIn('DITL-41', 'LS-HD1101')],
-  [/^NO\.1 HP HEATER LEVEL VERY HIGH/, () => tcsDitlIn('DITL-41', 'LS-HD1105')],
-  [/^NO\.2 LP HEATER LEVEL VERY HIGH/, () => tcsDitlIn('DITL-41', 'LS-HD1102')],
-  [/^NO\.3 LP HEATER LEVEL VERY HIGH/, () => tcsDitlIn('DITL-41', 'LS-HD1103')],
-  [/^DEAERATOR STORAGE TANK LEVEL VERY HIGH/, () => (tcsAbcV('ABC-031', 'AI0672') >= 300 ? 1 : 0)]
+  /* 3.2.1 c2 (LISA, 310SC90-773 rev 2 DIGITAL OUTPUT 31 ~ 35, DCS -> TCS): the heater / deaerator levels VERY HIGH close the extraction
+     non-return valves (TC-36 / 41 / 42 / 44 / 45). The DCS sends them from DITL-115 TURBINE SYSTEM INTERFACE SIGNALS (location TCS), outputs
+     NO.1 LPH / NO.1 HPH / DEAERATOR STORAGE TANK / NO.3 LPH / NO.2 LPH LEVEL H.H. (M.0183 / 0193 / 0161 / 0233 / 0213 of ABC-037 / 035 / 031 /
+     039 / 038, the DCS logic with its own voting). The model has one transmitter, so A, B (C) read the same value */
+  [/^NO\.1 LP HEATER LEVEL VERY HIGH/, () => tcsDitlOut('DITL-115', /^NO\.1 LPH LEVEL H\.H/)],
+  [/^NO\.1 HP HEATER LEVEL VERY HIGH/, () => tcsDitlOut('DITL-115', /^NO\.1 HPH LEVEL H\.H/)],
+  [/^NO\.2 LP HEATER LEVEL VERY HIGH/, () => tcsDitlOut('DITL-115', /^NO\.2 LPH LEVEL H\.H/)],
+  [/^NO\.3 LP HEATER LEVEL VERY HIGH/, () => tcsDitlOut('DITL-115', /^NO\.3 LPH LEVEL H\.H/)],
+  [/^DEAERATOR STORAGE TANK LEVEL VERY HIGH/, () => tcsDitlOut('DITL-115', /^DEAERATOR STORAGE TANK LEVEL H\.H/)]
 ];
-/* c2: the value of a DITL input row (by the tag in its TAG column) and of an ABC net (by its name), as the DCS has them now; 0 / NaN when absent */
-const TCS_DCS = { row: {}, abc: {} };
+/* c2 gap 2 (310SC90-773 rev 2 DO 36 / 38 / 39 / 43 / 44 / 45, DCS -> TCS): the answer back of the drain valves, sent by DITL-115. By net, as
+   the reader did not read every name (TE-6 net 19 is the FULL CLOSE answer back, circle 61 AS01 on the IBD page 94; nets 7 and 26 the FULL
+   OPEN answer back, circle 62). MV-ASn393 (IBD TE-1) is the drain valve that the DCS drives as MV-AS1394 (DITL-75, the TCS commands I.0407 /
+   I.0408 of the I/O list), MV-ASn397 (TE-6) is MV-AS1397 (DITL-116) */
+const TCS_IBD_NET = {
+  'TE-1': {
+    40: () => tcsDitlOut('DITL-115', /^TURBINE WARMING VALVE INLET DRAIN MOTOR VALVE OP/),
+    44: () => tcsDitlOut('DITL-115', /^TURBINE WARMING VALVE INLET DRAIN MOTOR VALVE CL/)
+  },
+  'TE-3': { 1: () => tcsDitlOut('DITL-115', /^TURBINE WARMING VALVE INLET DRAIN MOTOR VALVE AU/) },
+  'TE-6': {
+    7: () => tcsDitlOut('DITL-115', /^TURBINE GLAND STEAM LINE DRAIN VALVE OPEN/),
+    26: () => tcsDitlOut('DITL-115', /^TURBINE GLAND STEAM LINE DRAIN VALVE OPEN/),
+    19: () => tcsDitlOut('DITL-115', /^TURBINE GLAND STEAM LINE DRAIN VALVE CLOSE/)
+  },
+  'TE-8': { 0: () => tcsDitlOut('DITL-115', /^TURBINE GLAND STEAM LINE DRAIN VALVE AUTO/) }
+};
+/* c2: the value of a DITL input row (by the tag in its TAG column), of a DITL output (by its RS text) and of an ABC net (by its name), as the
+   DCS has them now; 0 / NaN when absent */
+const TCS_DCS = { row: {}, abc: {}, out: {} };
+function tcsDitlOut(sh, re) {
+  try {
+    if (typeof S === 'undefined' || !S.sheets) return 0;
+    const k = sh + '|' + re.source;
+    let r = TCS_DCS.out[k];
+    if (!r || S.sheets[r.i] !== r.s) {
+      const i = S.sheets.findIndex(x => new RegExp('\\)' + sh + '$').test(x.name)),
+        s = S.sheets[i];
+      if (s && !s.nl && typeof netlist === 'function') s.nl = netlist(s);
+      const o = s && s.nl ? s.nl.outs.find(q => re.test((s.cells[q.row + ':RS'] || []).map(t => t.t).join(' ').trim())) : null;
+      r = TCS_DCS.out[k] = { i, s, n: o ? o.n : -1 };
+    }
+    return r.s && r.n >= 0 && r.s.nl && r.s.nl._v && r.s.nl._v[r.n] ? 1 : 0;
+  } catch (e) {
+    return 0;
+  }
+}
 function tcsDitlIn(sh, tag) {
   try {
     if (typeof S === 'undefined' || !S.sheets) return 0;
@@ -221,6 +256,9 @@ function tcsIbdBind() {
       const p = TCS_IBD_PV.find(q => q[0].test(name));
       if (p && !driven.has(net)) r.pv.push([net, p[1]]);
     }
+    /* c2: the inputs given by net (TCS_IBD_NET) */
+    const nf = TCS_IBD_NET[s.id];
+    if (nf) for (const k in nf) if (!driven.has(+k) && !r.pv.some(q => q[0] === +k)) r.pv.push([+k, nf[k]]);
     L.push(r);
   }
   return (TCS_IBD.bind = L);
