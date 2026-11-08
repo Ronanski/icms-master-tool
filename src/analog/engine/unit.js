@@ -3120,6 +3120,8 @@ function anUnitStep0(dt) {
       const h0 = U.sh.find(h => h.r === 'sh2');
       pr.ld = h0 ? h0.x - h0.pv0 + (h0.d || 0) : (pr.sg || -1) * (A * (1 - gx) + dn);
     } else pr.ld = (pr.sg || -1) * (A * (1 - gx) + dn);
+    /* the reheater (no chain role): below the spray range its natural curve is the value with the dampers at their end (plant.js ss) */
+    pr.nsat = !e.r && e.s > 0 && !(U.cold || (U.tc && U.tc.step < 7)) ? 1 - gx : 0;
   }
   /* the headers after the spray: spray outlet + the pickup of the next superheater, metal lag. 3.2.0-beta.39 (roadmap 2): the pickup falls with its
      share of dn, the finishing SH pickup is short of the spray 2 authority below the spray of Fig 10, and without firing (fr) the pickup
