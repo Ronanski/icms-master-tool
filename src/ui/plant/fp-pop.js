@@ -323,6 +323,12 @@
     };
     const etOn = () => (etU ? !!(s && s.usw && s.usw[etU.key]) : ntR != null && call(() => DUI.rowVal(s, ntR), 1) === 0);
     const etSet = on => {
+      /* a RESET of the relay also ends a trainer fault of this drawing (WORLD.ftrip: an engine action, page and Worker; it takes off every
+         ELECTRIC TROUBLE of the drawing and the field trip s._ftrip that holds the motor stopped) */
+      if (!on && s && window.WORLD && WORLD.ftOf && WORLD.ftrip) {
+        const id = call(() => WORLD.ftOf(s.name), null);
+        if (id) call(() => window.lsEventAdd(nm, 'FIELD', 'FAULT: ' + WORLD.ftrip(id, false)));
+      }
       if (ntR != null && !etU) {
         dk.fieldRow(nm, ntR, on ? 0 : 1, M.n + (on ? ' TRIP' : ' NOT TRIP (trip reset in the field)'));
         return;
