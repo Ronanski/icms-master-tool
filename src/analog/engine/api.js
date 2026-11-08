@@ -61,6 +61,7 @@ function anEngAPI() {
           si = b && b.svI >= 0 ? b.i[b.svI] : null,
           dr = si != null ? (S.drv[si] || []).find(z => z.k === 'AMT') : null;
         if (dr && dr.o && dr.o[0] != null && !S.ext.includes(dr.a) && S.rt.st[dr.id] && S.rt.st[dr.id].pk === 'A') {
+          S.rt.st[id].op = x;
           S.rt.v[dr.o[0]] = x;
           for (const n of b.o || []) if (n != null && n >= 0) S.rt.v[n] = x;
           if (dr.a != null && dr.a >= 0) S.rt.v[dr.a] = x;
