@@ -62,7 +62,8 @@ try{
  ck(await tool('Logic side by side',()=>document.body.classList.contains('scet-logic')&&(document.getElementById('plantws')||{}).offsetWidth>0&&(document.getElementById('mid')||{}).offsetWidth>0),'Engineer: Logic side by side, plant page and sheet both shown');
  /* 7. turbine trip from the Instructor: the pill and the 2 unit rows */
  await click(page,'#scstrip .pill.ins');await wait(500);
- await click(page,'#scins button','Turbine trip');await wait(200);await click(page,'#scins button','Press again');await wait(300);
+ /* exact text: the practice section "Turbine trip and hot restart" is a button of the same console */
+ await click(page,'#scins button',/^\s*Turbine trip\s*$/);await wait(200);await click(page,'#scins button',/^\s*Press again: Turbine trip\s*$/);await wait(300);
  await page.keyboard.press('Escape');
  await step(page,30);await wait(1600);
  const tr=await page.evaluate(()=>({pill:(document.querySelector('#scstrip .pill.trip')||{}).textContent||'',st:AN.unit&&AN.unit.tb&&AN.unit.tb.st,rows:window.lsShellC&&lsShellC.alarms?lsShellC.alarms().filter(a=>a.unit).map(a=>a.nm):[]}));
