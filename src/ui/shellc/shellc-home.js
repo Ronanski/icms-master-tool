@@ -71,6 +71,45 @@
     }, 100);
   }
 
+  /* Mina beta.213: the alarm list had no row for the turbine trip or the MFT (they are logic signals, not motor alarms of lsAlarms):
+     the unit trips are rows of their own at the top (ABC-050 I.0400 turbine trip, I.000F MFT, the same as the trip pill), with their
+     own Acknowledge; the strip counts the same rows (lsShellC.alarms) */
+  const UACK = {},
+    USEEN = {};
+  function unitTrips() {
+    const out = [];
+    if (none()) return out;
+    let tt = 0,
+      mft = 0;
+    try {
+      const l = AN.unit && AN.unit.vtrip;
+      tt = l && +l.S.rt.v[l.n] > 0.5 ? 1 : 0;
+    } catch (e) {}
+    try {
+      mft = +LS_LIVE.val("I.000F") > 0.5 ? 1 : 0;
+    } catch (e) {}
+    const clk = () => call(() => (lsEvents[0] && lsEvents[0].t) || "", "");
+    for (const [k, on, nm] of [["U|TT", tt, "TURBINE TRIP (ABC-050 I.0400)"], ["U|MFT", mft, "MASTER FUEL TRIP (MFT, I.000F)"]]) {
+      if (!on) {
+        delete UACK[k];
+        delete USEEN[k];
+        continue;
+      }
+      if (!USEEN[k]) USEEN[k] = clk();
+      out.push({ k, nm, lv: "", t: USEEN[k], kind: "TRIP", ack: !!UACK[k], unit: 1 });
+    }
+    return out;
+  }
+  function allAlarms() {
+    return [...call(() => lsAlarms.list().filter(a => !a.rtn && !a.sd), []), ...unitTrips()];
+  }
+  const ackOne = a => (a.unit ? (UACK[a.k] = 1) : call(() => lsAlarms.ack(a.k)));
+  const ackAllU = () => {
+    for (const a of unitTrips()) UACK[a.k] = 1;
+    call(() => lsAlarms.ack());
+  };
+  window.lsShellC = Object.assign(window.lsShellC || {}, { alarms: allAlarms });
+
   /* ---------- overview ---------- */
   let ov = null,
     crumb = null,
@@ -134,8 +173,14 @@
     document.body.classList.remove('scov');
   }
   window.lsShellC = Object.assign(window.lsShellC || {}, { showOv, hideOv, openPage });
+  /* a start state or save point loaded (and not run yet): the lamps wait for the first scan */
+  let stale = false,
+    lastSS = null;
   function tickOv() {
     if (!ov) return;
+    const ss = window.AN ? AN.startState : null;
+    if (ss !== lastSS) (lastSS = ss), (stale = true);
+    if (window.AN && AN.run && !AN.view) stale = false;
     const n0 = none();
     TILES.forEach((T, i) => {
       const t = tiles[i];
@@ -146,7 +191,11 @@
       });
       const m = n0 ? null : machines(T.pg);
       t.lamp.textContent = '';
-      if (m && m.n) {
+      /* Mina beta.210: after a start state loaded while paused the machine states of the drawings are not scanned yet (they came right
+         after RUN): grey until the plant has run */
+      if (stale && m && m.n) {
+        t.lamp.append(E('span', 'dot none'), E('span', '', 'press Run to read the machines'));
+      } else if (m && m.n) {
         const dot = E('span', 'dot ' + (m.trip ? 'trip' : m.run ? 'run' : 'stop'));
         t.lamp.append(dot, E('span', '', m.trip ? m.trip + ' tripped · ' + m.run + ' running' : m.run ? m.run + ' running' : 'all stopped'));
       }
@@ -160,7 +209,7 @@
       } else t.pl.removeAttribute('points');
     });
     /* the alarm tile: the newest six */
-    const AL = call(() => lsAlarms.list().filter(a => !a.rtn && !a.sd), []).slice(-6).reverse();
+    const AL = allAlarms().slice(-6).reverse();
     almTile.textContent = '';
     almTile.append(E('h3', '', 'Alarms · newest first'));
     if (!AL.length) almTile.append(E('p', 'scnone', 'No alarm'));
@@ -198,9 +247,14 @@
     al.setAttribute('aria-label', 'Alarm list');
     al.hidden = true;
     document.body.append(al);
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && !al.hidden) al.hidden = true;
-    });
+    /* Mina beta.210: Esc did not close the list (a handler of the app stops the key first): caught in the capture phase */
+    document.addEventListener(
+      'keydown',
+      e => {
+        if (e.key === 'Escape' && !al.hidden) al.hidden = true;
+      },
+      true
+    );
   }
   function openAl(tab) {
     if (!al) return;
@@ -213,7 +267,7 @@
   function fillAl() {
     if (!al || al.hidden) return;
     /* redrawn only when the list changed, so a button is never replaced under the mouse */
-    const sig = alTab + '|' + call(() => lsAlarms.list().map(a => a.k + (a.ack ? 1 : 0) + (a.rtn ? 1 : 0)).join(), '') + '|' + call(() => lsEvents.length, 0);
+    const sig = alTab + '|' + allAlarms().map(a => a.k + (a.ack ? 1 : 0)).join() + '|' + call(() => lsEvents.length, 0);
     if (sig === alSig) return;
     alSig = sig;
     al.textContent = '';
@@ -228,7 +282,7 @@
       b.onclick = () => ((alTab = k), (alSig = ''), fillAl());
       tabs.append(b);
     };
-    const AL = call(() => lsAlarms.list().filter(a => !a.rtn && !a.sd), []).reverse(),
+    const AL = allAlarms().reverse(),
       un = AL.filter(a => !a.ack).length;
     tb('alarms', 'Alarms ' + AL.length);
     tb('events', 'Events ' + call(() => lsEvents.length, 0));
@@ -244,7 +298,7 @@
       const ackAll = E('button', 'scack', 'Acknowledge all (' + un + ')');
       ackAll.type = 'button';
       ackAll.disabled = !un;
-      ackAll.onclick = () => (call(() => lsAlarms.ack()), (alSig = ''), fillAl());
+      ackAll.onclick = () => (ackAllU(), (alSig = ''), fillAl());
       al.append(ackAll);
       if (!AL.length) body.append(E('p', 'scnone', 'No alarm'));
       for (const a of AL) {
@@ -253,7 +307,7 @@
         if (!a.ack) {
           const b = E('button', '', 'Acknowledge');
           b.type = 'button';
-          b.onclick = () => (call(() => lsAlarms.ack(a.k)), (alSig = ''), fillAl());
+          b.onclick = () => (ackOne(a), (alSig = ''), fillAl());
           r.append(b);
         } else r.append(E('span', 'scs', 'acknowledged'));
         body.append(r);
@@ -328,6 +382,9 @@
     };
     const go = toEng => {
       close();
+      /* Mina beta.210: the old "No starting state picked" question showed behind the loading bar: the state is picked here */
+      if (window.AN) AN._askNo = 1;
+      stale = true;
       loadState(sel).then(() => (toEng ? window.lsSetTab && lsSetTab('logic') : showOv()));
     };
     card('Operator', 'Run the plant from the overview and its pages, with the training guide', () => go(false));
@@ -351,6 +408,8 @@
     cont.onclick = () => {
       if (!last) return;
       close();
+      if (window.AN) AN._askNo = 1;
+      stale = true;
       let k = 0;
       const iv = setInterval(() => {
         const r = window.AN && AN.sheets && AN.sheets.length >= 54 && window.DITL150;
@@ -371,8 +430,20 @@
     const skip = E('button', 'scskip', 'Open without a start state');
     skip.type = 'button';
     skip.onclick = close;
-    const ver = E('span', 'scver', typeof APP_VERSION !== 'undefined' ? 'Version ' + APP_VERSION : '');
-    foot.append(gear, skip, ver);
+    /* Mina beta.209: "Old layout" moved here from the strip (there it reloaded a running plant); no plant runs yet on this screen */
+    const old = E('button', 'scskip', 'Old layout');
+    old.type = 'button';
+    old.title = 'The old layout of the app (the new one comes back with the link ?shell=c)';
+    old.onclick = () => {
+      try {
+        localStorage.removeItem('ls-shell');
+      } catch (e) {}
+      location.search = location.search.replace(/([?&])shell=c&?/, '$1').replace(/[?&]$/, '');
+    };
+    /* Mina beta.210: no version on the start screen (APP_VERSION is not a global): the version of the page title "Logic Sim v…" */
+    const vm = /v(\d+\.\d+\.\d+(?:-beta\.\d+)?)/.exec(document.title || ''),
+      ver = E('span', 'scver', vm ? 'Version ' + vm[1] : '');
+    foot.append(gear, skip, old, ver);
     box.append(cards, lab, chips, cont, foot);
     st.append(box);
     document.body.append(st);
@@ -382,6 +453,13 @@
     setTimeout(() => call(() => cards.firstChild.focus()), 50);
   }
 
+  /* Mina beta.210: the old Home showed for about 1 s before the start screen: a plain cover in the colour of the start screen until it is built */
+  const cover = E('div');
+  cover.id = 'scboot';
+  const putCover = () => document.body && !document.getElementById('scboot') && document.body.append(cover);
+  if (document.body) putCover();
+  else document.addEventListener('DOMContentLoaded', putCover);
+  setTimeout(() => cover.remove(), 30000);
   /* wait for the new strip (shellc.js) and the app */
   let n = 0;
   const iv = setInterval(() => {
@@ -393,6 +471,7 @@
     buildOv();
     buildAl();
     buildStart();
+    cover.remove();
     setInterval(() => {
       tickOv();
       fillAl();

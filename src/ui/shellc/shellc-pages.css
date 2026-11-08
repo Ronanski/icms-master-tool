@@ -1,0 +1,95 @@
+/* ===== RE-SHELL LAYOUT C, step 3 (shellc-pages.js): the system page in the new frame, the two faceplates in the C look, the turbine
+   start panel. Only with body.sc. Colours: the --sc-* tokens of shellc.css (the Leonardo set of mockup C). The HMI art of the pages keeps
+   its temporary style (#86) until every loop check passes (COMMANDMENT 4). ===== */
+
+/* ---------- (a) the page: the whole width under the strip; the overview replaces the systems list and the snapshot values ---------- */
+body.sc #plantws,body.sc #plantws.noval{grid-template-columns:1fr!important;background:var(--sc-page)!important}
+body.sc #plantws #plleft{position:absolute;left:0;top:0;bottom:0;width:min(20rem,86vw);z-index:6;display:none}
+body.sc #plantws.lsopen #plleft{display:block}
+body.sc #plantws #plvals{display:none!important}
+body.sc #plantws #plmid{background:var(--sc-page)}
+body.sc #plantws .plbar{display:flex!important;align-items:center;gap:.5rem!important;flex-wrap:nowrap;min-height:2.75rem!important;padding:0 1rem 0 calc(var(--sccw,9rem) + 1.25rem)!important;background:var(--sc-paper)!important;border-bottom:1px solid var(--sc-line)!important;font-family:var(--sc-ui)}
+body.sc #plantws .plbar :is(#pltitle,.plchips,.plvb,.plfull,.plpick,#plsys){display:none!important}
+body.sc #plantws .plbar .plnav{order:2;display:inline-flex;gap:.25rem}
+body.sc #plantws .plbar .scfs{order:1}
+body.sc #plantws .plbar #pllive{order:3}
+body.sc #plantws .plbar .scpev{order:9;margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:400 .75rem var(--sc-ui);color:var(--sc-ink2)}
+body.sc #plantws .plbar button{min-height:2rem!important;height:auto!important;padding:0 .625rem!important;border:1px solid var(--sc-line2)!important;border-radius:.25rem!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 .75rem var(--sc-ui)!important;box-shadow:none!important;cursor:pointer}
+body.sc #plantws .plbar button:hover{border-color:var(--sc-steel)!important}
+body.sc #plantws .plbar .scfs{border:0!important;background:transparent!important;color:var(--sc-steel)!important;font:500 .8125rem var(--sc-ui)!important;text-decoration:underline;text-underline-offset:2px;padding:0 .25rem!important}
+body.sc #plantws .plbar #pllive.on{color:var(--sc-stop)!important}
+body.sc #plantws .plbar :focus-visible{outline:2px solid var(--sc-steel)!important;outline-offset:2px}
+/* full screen: the page bar and the breadcrumb go, the values strip stays; "Leave full screen" at the top right of the page */
+body.sc.scfull #plantws .plbar,body.sc.scfull .sccrumb{display:none!important}
+.scfsout{display:none}
+body.sc.scfull[data-tab="operate"] .scfsout{display:inline-flex;align-items:center;position:fixed;top:calc(var(--top) + .5rem);right:.75rem;z-index:79;min-height:2rem!important;padding:0 .875rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:1rem!important;color:var(--sc-ink)!important;font:600 .75rem var(--sc-ui)!important;box-shadow:0 .125rem .5rem rgba(34,46,57,.12)!important;cursor:pointer}
+
+/* ---------- (b) the two faceplates in the C look (fp-pop.js .fpo-box and the controller faceplate #plfp) ---------- */
+body.sc .fpo-box,body.sc #plfp.fpo-near{background:var(--sc-white)!important;border:1px solid var(--sc-steel)!important;border-radius:.5rem!important;box-shadow:0 .75rem 2rem rgba(34,46,57,.22)!important;color:var(--sc-ink)!important;font:400 .875rem/1.4 var(--sc-ui)!important}
+body.sc .fpo-box::before{display:none}
+body.sc .fpo-box .fpo-h,body.sc #plfp .plfph{background:#e9eff5!important;border-bottom:1px solid var(--sc-line)!important;border-radius:.5rem .5rem 0 0}
+body.sc .fpo-box .fpo-tt b,body.sc #plfp .plfph b{font:600 .9375rem var(--sc-ui)!important;color:var(--sc-ink)!important}
+body.sc .fpo-box .fpo-tt small{font:400 .75rem var(--sc-num);color:var(--sc-ink2)}
+body.sc .fpo-box .fpo-hv{font:600 .875rem var(--sc-num);color:var(--sc-ink)}
+body.sc .fpo-box .fpo-lamp{border:0;background:var(--sc-line2);box-shadow:none}
+body.sc .fpo-box .fpo-lamp.run,body.sc .fpo-box .fpo-lamp.trip{background:var(--sc-run);box-shadow:none}
+body.sc .fpo-box .fpo-lamp.stop{background:var(--sc-stop);box-shadow:none}
+body.sc .fpo-box .fpo-x,body.sc #plfp .plfph .b{background:transparent!important;border:1px solid transparent!important;color:var(--sc-ink2)!important;box-shadow:none!important}
+body.sc .fpo-box .fpo-x:hover,body.sc #plfp .plfph .b:hover{border-color:var(--sc-line2)!important}
+body.sc .fpo-box :is(.fpo-chip,.fpo-k,.fpo-fld){background:var(--sc-white);border-color:var(--sc-line2);color:var(--sc-ink2)}
+body.sc .fpo-box .fpo-chip.ilk{background:#f6e7cf;border-color:var(--sc-amber);color:#5c3f0b}
+body.sc .fpo-box .fpo-chip.trip{background:#f8e3e2;border-color:var(--sc-run);color:var(--sc-run)}
+body.sc .fpo-box :is(.fpo-l,.fpo-sh,.fpo-sh.fld,.fpo-dim,.fpo-nd){color:var(--sc-ink2)}
+body.sc .fpo-box .fpo-lp{color:var(--sc-ink2)}
+body.sc .fpo-box .fpo-lp i{background:var(--sc-band);border-color:var(--sc-line2)}
+body.sc .fpo-box .fpo-lp.run,body.sc .fpo-box .fpo-lp.trip{color:var(--sc-run)}
+body.sc .fpo-box .fpo-lp.run i,body.sc .fpo-box .fpo-lp.trip i{background:var(--sc-run);box-shadow:none}
+body.sc .fpo-box .fpo-lp.stop{color:var(--sc-stop)}
+body.sc .fpo-box .fpo-lp.stop i{background:var(--sc-stop);box-shadow:none}
+body.sc .fpo-box button{background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:.25rem!important;color:var(--sc-ink)!important;font:600 .8125rem var(--sc-ui)!important;box-shadow:none!important}
+body.sc .fpo-box button:hover:not(:disabled){border-color:var(--sc-steel)!important}
+body.sc .fpo-box button:focus-visible{outline:2px solid var(--sc-steel);outline-offset:2px}
+body.sc .fpo-box .fpo-seg{border-color:var(--sc-line2)}
+body.sc .fpo-box .fpo-seg button{border:0!important;border-radius:0!important}
+body.sc .fpo-box .fpo-seg button+button{border-left:1px solid var(--sc-line2)!important}
+body.sc .fpo-box .fpo-seg button.on{background:var(--sc-steel)!important;color:var(--sc-white)!important}
+/* the command buttons: RUN red, STOP green (COMMANDMENT 5), lit = the state now */
+body.sc .fpo-box .fpo-cmd.lit-run{background:#f8e3e2!important;border-color:var(--sc-run)!important;color:var(--sc-run)!important}
+body.sc .fpo-box .fpo-cmd.lit-stop{background:#e3f1e9!important;border-color:var(--sc-stop)!important;color:var(--sc-stop)!important}
+body.sc .fpo-box .fpo-cmd.es:not(:disabled){border-color:var(--sc-run)!important;color:var(--sc-run)!important}
+body.sc .fpo-box .fpo-why{background:var(--sc-paper);border-left-color:var(--sc-line2);color:var(--sc-ink2)}
+body.sc .fpo-box .fpo-ex{background:#e9eff5;border-color:var(--sc-steel)}
+body.sc .fpo-box .fpo-go{background:var(--sc-steel)!important;border-color:var(--sc-steel)!important;color:var(--sc-white)!important}
+body.sc .fpo-box .fpo-ex.fld{background:#f6e7cf;border-color:var(--sc-amber)}
+body.sc .fpo-box .fpo-ex.fld .fpo-go{background:var(--sc-amber)!important;border-color:var(--sc-amber)!important}
+body.sc .fpo-box .fpo-vb{background:var(--sc-paper);border-color:var(--sc-line);color:var(--sc-ink);font-family:var(--sc-num)}
+body.sc .fpo-box .fpo-vb.hi{border-color:var(--sc-amber);color:#5c3f0b}
+body.sc .fpo-box .fpo-tr{background:var(--sc-paper);border-color:var(--sc-line)}
+body.sc .fpo-box .fpo-tr rect{fill:#dfe6ec}
+body.sc .fpo-box .fpo-il li.ok{color:var(--sc-ink)}
+body.sc .fpo-box .fpo-il li.bad{color:#5c3f0b}
+body.sc .fpo-box .fpo-il li em{color:var(--sc-ink2)}
+body.sc .fpo-box .fpo-ln{border-top-color:var(--sc-line)}
+body.sc .fpo-box .fpo-a{color:var(--sc-steel)!important}
+/* tablet (narrow, shellc-pages.js scnarrow): the faceplate is a panel at the right of the page, the graphic stays beside it */
+body.sc.scnarrow #plmid > :is(.fpo-box,#plfp.fpo-near){left:auto!important;right:0!important;top:0!important;bottom:0;width:min(22rem,44%)!important;max-height:none!important;height:auto;border-radius:0!important;border-width:0 0 0 3px!important;box-shadow:none!important}
+body.sc.scnarrow #plmid:has(#fpop2) > #fpop{bottom:50%}
+body.sc.scnarrow #plmid:has(#fpop) > #fpop2{top:50%!important;border-top-width:1px!important}
+
+/* ---------- (c) the turbine start panel on the Steam and turbine page ---------- */
+#sctsp{position:absolute;left:.75rem;bottom:.75rem;z-index:7;max-width:min(27rem,calc(100% - 1.5rem));padding:.5rem .75rem .625rem;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:.5rem;box-shadow:0 .25rem 1rem rgba(34,46,57,.14);font-family:var(--sc-ui);color:var(--sc-ink)}
+#sctsp[hidden]{display:none}
+#sctsp .sctsh{display:flex;align-items:center;gap:.5rem;font:600 .625rem var(--sc-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--sc-ink2)}
+#sctsp .sctsh span{flex:1}
+#sctsp .sctsx{min-height:1.5rem!important;padding:0 .5rem!important;border:0!important;background:transparent!important;color:var(--sc-steel)!important;font:500 .75rem var(--sc-ui)!important;text-transform:none;letter-spacing:0;text-decoration:underline;box-shadow:none!important;cursor:pointer}
+#sctsp .sctsv{display:flex;flex-wrap:wrap;gap:.125rem .75rem;margin:.25rem 0 .5rem;font-size:.75rem;color:var(--sc-ink2)}
+#sctsp .sctsv b{font:600 .75rem var(--sc-num);color:var(--sc-ink)}
+#sctsp .sctsn{margin-left:-.5rem}
+#sctsp .sctsb{display:flex;flex-wrap:wrap;gap:.375rem}
+#sctsp .sctsb button{min-height:2.25rem!important;height:auto!important;padding:0 .75rem!important;border:1px solid var(--sc-line2)!important;border-radius:.25rem!important;background:var(--sc-band)!important;color:var(--sc-ink)!important;font:600 .8125rem var(--sc-ui)!important;box-shadow:none!important;cursor:pointer}
+#sctsp .sctsb button:hover:not(:disabled){border-color:var(--sc-steel)!important}
+#sctsp .sctsb button.stop{background:var(--sc-white)!important;border-color:var(--sc-stop)!important;color:var(--sc-stop)!important}
+#sctsp .sctsb button:disabled{opacity:.45;cursor:not-allowed}
+#sctsp .sctsb button:focus-visible,#sctsp .sctsx:focus-visible{outline:2px solid var(--sc-steel)!important;outline-offset:2px}
+#sctsp.fold .sctsv,#sctsp.fold .sctsb{display:none}
+body:not(.sc) #sctsp{display:none!important}

@@ -35,9 +35,6 @@ body.sceng #scetools{position:fixed;left:var(--railW,0px);top:var(--topH,0px);bo
 /* ---- the plant page (left) and the logic sheet (right) ---- */
 html body.sc.sceng #plantws{display:grid!important;left:calc(var(--railW,0px) + var(--scetw))!important;right:auto!important;width:var(--scepw)!important;border-right:1px solid var(--sc-line2)}
 body.sceng.scenopl #plantws{display:none!important}
-/* beside the logic the page is alone: its page list and value list stay in the Operator mode (the page picker of the page bar stays) */
-body.sceng #plantws{grid-template-columns:minmax(0,1fr)!important}
-body.sceng #plleft,body.sceng #plvals{display:none!important}
 html body.sc.sceng #mid{margin-left:calc(var(--scetw) + var(--scepw))!important}
 /* the sheet list of the Logic page: the sheet picker of the band chooses the sheet, the drawing gets the width (as in the split view) */
 body.sceng #side{display:none!important}
@@ -78,5 +75,5 @@ body.sceng #scepane:not([hidden]){position:fixed;left:var(--scex);right:0;top:va
 #scepane .sceit small{font-size:.75rem;color:var(--sc-ink2)}
 #scepane .scenone{margin:0;color:var(--sc-ink2)}
 /* the page bar of a narrow pane wraps; the step-2 page crumb (Operator) is not shown here: the Engineer bar has the place */
-body.sceng #plantws .plbar{flex-wrap:wrap;row-gap:.25rem}
+body.sc.sceng #plantws .plbar{flex-wrap:wrap!important;row-gap:.25rem;padding-left:1rem!important}
 body.sceng .sccrumb{display:none!important}

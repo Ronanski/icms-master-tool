@@ -864,6 +864,16 @@ function anTurbine(cmd, arg) {
   }
   /* 3.2.0-beta.38 (CHECKLIST 0.6): the TCS / ATS model (tcs.js): the auxiliaries and the ATS step push buttons. 'roll' = ATS AUTO
      from the next step up to ACCELERATION (3600 rpm), 'sync' = EXCITATION + SYNCH. & INITIAL LOAD, 'loadup' = LOAD UP to the target */
+  /* Mina 2026-11-09 (re-shell step 3): ROLL was accepted while the turbine was tripped and said "rolling" while the speed fell. A trip is
+     latched in the TCS (IBD TA-1: the trip stays until TURBINE RESET P.B. and the gates allow it): ROLL, SYNC and LOAD UP are refused
+     until the turbine is reset */
+  if (cmd === 'roll' || cmd === 'sync' || cmd === 'loadup') {
+    let tr = '';
+    try {
+      tr = tcsOilState(U).trip || '';
+    } catch (e) {}
+    if (tr) return 'The turbine is tripped (' + tr + '): press TURBINE RESET first';
+  }
   if (cmd === 'shutdown' && !U.tc) tcsFromOil(U);
   if (U.tc) {
     const c = U.tc;
