@@ -1811,9 +1811,10 @@
       ['bdopen', 'Drum BLOWDOWN valve OPEN', true, 'Blowdown open: 25 T/H (03.png, 150 MW).']
     ])
       btn(id, txt, 'Field hand valve of the drum blowdown (not a DCS station). PR-OPE-5003: "Before stopping BFP, set the drum level near HH (blow down valve must be close)".', () => {
-        const r = AN.blowdown && AN.blowdown(open);
-        if (r && window.lsEventAdd) lsEventAdd('DRUM', 'FIELD', 'Field operator: ' + txt + ' (hand valve)');
-        msg(r ? ok : 'Blowdown: no drum level loop.');
+        const done = !!(AN.blowdown && AN.blowdown(open));
+        msg(done ? ok : 'Blowdown: no drum level loop.');
+        /* sweep 16: a field action is logged in the Event log, as the other field actions (dock.js fieldRow) */
+        if (done && window.lsEventAdd) lsEventAdd('Field', 'FIELD', 'Field operator: drum blowdown valve ' + (open ? 'OPEN' : 'CLOSE'));
       });
     /* the precipitator runs from the EP PLC panel (PR-OPE-5002 1.1): no DCS station; AN.field had no control, dust and opacity follow it */
     d.head('Precipitator');
@@ -1821,11 +1822,11 @@
       ['espoff', 'ESP OFF', false, 'ESP off: dust and opacity rise.'],
       ['espon', 'ESP ON', true, 'ESP on.']
     ])
-      /* Mina beta.100 (sweep item 16): ESP ON / OFF wrote no Event line; a field action is logged like the other field buttons */
       btn(id, txt, 'ESP at its EP PLC panel (not a DCS station).', () => {
-        const r = AN.field && AN.field('esp', on);
-        if (r && window.lsEventAdd) lsEventAdd('ESP', 'FIELD', 'Field operator: ' + txt + ' at the EP PLC panel');
-        msg(r ? ok : 'ESP: no plant model.');
+        const done = !!(AN.field && AN.field('esp', on));
+        msg(done ? ok : 'ESP: no plant model.');
+        /* sweep 16 (Mina 11-07: no Event line for ESP ON / OFF): logged as a field action at the EP PLC panel */
+        if (done && window.lsEventAdd) lsEventAdd('ESP', 'FIELD', 'Field operator: electrostatic precipitator ' + (on ? 'ON' : 'OFF') + ' (EP PLC panel)');
       });
   }
   /* 3.2.0-beta.20 (user 2026-10-24 "dpt common tools yn s simulate", pick B of https://claude.ai/artifact/ShJf2VmTtFDsMGFCMD5zeT):

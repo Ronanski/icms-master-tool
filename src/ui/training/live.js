@@ -750,7 +750,7 @@ window.LS_LIVE = (function () {
   const BYP700 = DC('furnace lower layer > 700 C (purge by-pass, DITL-02 row 25 M.3339), now or in the last 2 min', () => byNow() || Date.now() - byAt < 120000, () => 'M.3339 = ' + (byNow() ? 1 : 0) + (byAt && !byNow() ? ' (was 1 ' + Math.round((Date.now() - byAt) / 1000) + ' s ago)' : ''));
   const X7 = [
     ['At 150 MW press TURBINE TRIP (page 13, IBD TA-1). All fuel trips by itself (Tab 9 p19 item 7, DITL turbine trip -> MFT).', BIT('I.000F', 1, 'MFT after the turbine trip')],
-    ['Read the first out of the turbine trip (page 13) and of the MFT; HP / LP bypass open to cool the reheater (Tab 9 p25). With no bypass and cyclone exit above 535 C the PA fan stops by itself and the RH biasing damper closes (p20).', null],
+    ['Read the first out of the turbine trip (page 13) and of the MFT; HP / LP bypass open to cool the reheater (Tab 9 p25). With no bypass and cyclone exit above 535 C the PA fan stops by itself and the RH biasing damper closes (p20).', null, 'CRO' /* sweep 26 (Mina 11-08 step 139): the first outs are read on the CRT: a control room item (the By column of the SOP tables), not the field */],
     ['Keep the ID fan, SA fan, PA fan and FA blowers running to remove the volatiles and burn the fuel left in the bed (Tab 9 p21 item 3); drum level in sight: -200 ~ +200 mm through the shrink.', HOLD(60, ALL(BIT('M.3304', 1, 'ID fan running'), BIT('M.3303', 1, 'SA fan running'), VAL('lvl', -200, 200)))],
     /* Mina beta.152: the check read the model bed Tb >= 625 while the text and the logic say 700 C; and nothing reset the MFT. DITL-02 out 16
        FURNACE PURGE COMPLETED = (MFT I.0560 AND NO BOILER TRIP COMMAND I.0561, delayed) AND M.3339 FURNACE LOWER LAYER > 700 C (PURGE
@@ -798,16 +798,16 @@ window.LS_LIVE = (function () {
   ]);
   const XS = [X1, X2, X3, X4, X5, X6, X7, X8, X9, X10];
   if (!PROC.some(s => s.x)) {
-    PROC.push({ t: 'SYNCHRONIZATION AND INITIAL LOAD (APP)', x: 1, note: 'Added by the app: PR-OPE-5002 ends at Solid firing. Targets from the cold start scenario of the app (it reaches 150 MW) and the FHI design data.', s: X1.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'LOAD UP TO 150 MW (APP)', x: 1, note: 'Added by the app. PR-OPE-5002 sec 44: boiler follow until 90 MW; then coordinated control to 150 MW (FHI MCR 460 T/H).', s: X2.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'PRACTICE: LOAD CHANGE IN AUTO (APP)', x: 1, note: 'Added by the app. Press "Practise: 150 MW load change" (or continue after Load up). See how the coordinated control holds the demand: you only move the target MW.', s: X3.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'PRACTICE: LOAD CHANGE BY HAND (MANUAL) (APP)', x: 1, note: 'Added by the app. Press "Practise: 150 MW load change". You are the CCS: the turbine master sets the MW, the boiler master sets the fire; keep the pressure.', s: X4.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'NORMAL SHUTDOWN TO TURBINE TRIP (APP)', x: 1, note: 'Added by the app from PR-OPE-5003-01 (normal shutdown) steps 4.1 ~ 4.20: 150 MW to the turbine trip at 30 MW.', s: X5.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'SHUTDOWN TO BOTTLE-UP (APP)', x: 1, note: 'Added by the app from PR-OPE-5004-01 (shutdown to bottle-up): after the turbine trip, the boiler is boxed up with the drum at +200 mm.', s: X6.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'TURBINE TRIP AT LOAD AND HOT RESTART (APP)', x: 1, note: 'Added by the app from the FHI CFB manual Part 2 Sect 8 Tab 9 (loss of load, hot standby, hot restart).', s: X7.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'PRACTICE: BFWP A TRIP AT 150 MW (APP)', x: 1, note: 'Added by the app (e5 faults): a field trip of BFWP A; the standby BFWP B takes the load by the logic of DITL-23A.', s: X8.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'PRACTICE: O2 ANALYZER A FAILS (APP)', x: 1, note: 'Added by the app (e5 faults): the O2 analyzer A of the AICFG112 select fails; ABC-002 follows analyzer B by the SIG.AB flag.', s: X9.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'PRACTICE: PA FAN TRIP AT 150 MW (APP)', x: 1, note: 'Added by the app (e5 faults): a field trip of the PA fan; the MFT of DITL-03A follows, then the hot restart (FHI Tab 9).', s: X10.map(x => ({ t: x[0], g: [] })) });
+    PROC.push({ t: 'SYNCHRONIZATION AND INITIAL LOAD (APP)', x: 1, note: 'Added by the app: PR-OPE-5002 ends at Solid firing. Targets from the cold start scenario of the app (it reaches 150 MW) and the FHI design data.', s: X1.map(x => ({ t: x[0], g: [], by: x[2] })) });
+    PROC.push({ t: 'LOAD UP TO 150 MW (APP)', x: 1, note: 'Added by the app. PR-OPE-5002 sec 44: boiler follow until 90 MW; then coordinated control to 150 MW (FHI MCR 460 T/H).', s: X2.map(x => ({ t: x[0], g: [], by: x[2] })) });
+    PROC.push({ t: 'PRACTICE: LOAD CHANGE IN AUTO (APP)', x: 1, note: 'Added by the app. Press "Practise: 150 MW load change" (or continue after Load up). See how the coordinated control holds the demand: you only move the target MW.', s: X3.map(x => ({ t: x[0], g: [], by: x[2] })) });
+    PROC.push({ t: 'PRACTICE: LOAD CHANGE BY HAND (MANUAL) (APP)', x: 1, note: 'Added by the app. Press "Practise: 150 MW load change". You are the CCS: the turbine master sets the MW, the boiler master sets the fire; keep the pressure.', s: X4.map(x => ({ t: x[0], g: [], by: x[2] })) });
+    PROC.push({ t: 'NORMAL SHUTDOWN TO TURBINE TRIP (APP)', x: 1, note: 'Added by the app from PR-OPE-5003-01 (normal shutdown) steps 4.1 ~ 4.20: 150 MW to the turbine trip at 30 MW.', s: X5.map(x => ({ t: x[0], g: [], by: x[2] })) });
+    PROC.push({ t: 'SHUTDOWN TO BOTTLE-UP (APP)', x: 1, note: 'Added by the app from PR-OPE-5004-01 (shutdown to bottle-up): after the turbine trip, the boiler is boxed up with the drum at +200 mm.', s: X6.map(x => ({ t: x[0], g: [], by: x[2] })) });
+    PROC.push({ t: 'TURBINE TRIP AT LOAD AND HOT RESTART (APP)', x: 1, note: 'Added by the app from the FHI CFB manual Part 2 Sect 8 Tab 9 (loss of load, hot standby, hot restart).', s: X7.map(x => ({ t: x[0], g: [], by: x[2] })) });
+    PROC.push({ t: 'PRACTICE: BFWP A TRIP AT 150 MW (APP)', x: 1, note: 'Added by the app (e5 faults): a field trip of BFWP A; the standby BFWP B takes the load by the logic of DITL-23A.', s: X8.map(x => ({ t: x[0], g: [], by: x[2] })) });
+    PROC.push({ t: 'PRACTICE: O2 ANALYZER A FAILS (APP)', x: 1, note: 'Added by the app (e5 faults): the O2 analyzer A of the AICFG112 select fails; ABC-002 follows analyzer B by the SIG.AB flag.', s: X9.map(x => ({ t: x[0], g: [], by: x[2] })) });
+    PROC.push({ t: 'PRACTICE: PA FAN TRIP AT 150 MW (APP)', x: 1, note: 'Added by the app (e5 faults): a field trip of the PA fan; the MFT of DITL-03A follows, then the hot restart (FHI Tab 9).', s: X10.map(x => ({ t: x[0], g: [], by: x[2] })) });
   }
 
   /* ---------- the general rules (step text + its tags), after the table ---------- */

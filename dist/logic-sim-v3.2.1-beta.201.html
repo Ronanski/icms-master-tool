@@ -36359,7 +36359,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.201';
-      c3.textContent += ' · build 638bcfc'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build ec625d7'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -91374,9 +91374,10 @@ body.lssplit #dp { max-width: 34% !important; }
       ['bdopen', 'Drum BLOWDOWN valve OPEN', true, 'Blowdown open: 25 T/H (03.png, 150 MW).']
     ])
       btn(id, txt, 'Field hand valve of the drum blowdown (not a DCS station). PR-OPE-5003: "Before stopping BFP, set the drum level near HH (blow down valve must be close)".', () => {
-        const r = AN.blowdown && AN.blowdown(open);
-        if (r && window.lsEventAdd) lsEventAdd('DRUM', 'FIELD', 'Field operator: ' + txt + ' (hand valve)');
-        msg(r ? ok : 'Blowdown: no drum level loop.');
+        const done = !!(AN.blowdown && AN.blowdown(open));
+        msg(done ? ok : 'Blowdown: no drum level loop.');
+        /* sweep 16: a field action is logged in the Event log, as the other field actions (dock.js fieldRow) */
+        if (done && window.lsEventAdd) lsEventAdd('Field', 'FIELD', 'Field operator: drum blowdown valve ' + (open ? 'OPEN' : 'CLOSE'));
       });
     /* the precipitator runs from the EP PLC panel (PR-OPE-5002 1.1): no DCS station; AN.field had no control, dust and opacity follow it */
     d.head('Precipitator');
@@ -91384,11 +91385,11 @@ body.lssplit #dp { max-width: 34% !important; }
       ['espoff', 'ESP OFF', false, 'ESP off: dust and opacity rise.'],
       ['espon', 'ESP ON', true, 'ESP on.']
     ])
-      /* Mina beta.100 (sweep item 16): ESP ON / OFF wrote no Event line; a field action is logged like the other field buttons */
       btn(id, txt, 'ESP at its EP PLC panel (not a DCS station).', () => {
-        const r = AN.field && AN.field('esp', on);
-        if (r && window.lsEventAdd) lsEventAdd('ESP', 'FIELD', 'Field operator: ' + txt + ' at the EP PLC panel');
-        msg(r ? ok : 'ESP: no plant model.');
+        const done = !!(AN.field && AN.field('esp', on));
+        msg(done ? ok : 'ESP: no plant model.');
+        /* sweep 16 (Mina 11-07: no Event line for ESP ON / OFF): logged as a field action at the EP PLC panel */
+        if (done && window.lsEventAdd) lsEventAdd('ESP', 'FIELD', 'Field operator: electrostatic precipitator ' + (on ? 'ON' : 'OFF') + ' (EP PLC panel)');
       });
   }
   /* 3.2.0-beta.20 (user 2026-10-24 "dpt common tools yn s simulate", pick B of https://claude.ai/artifact/ShJf2VmTtFDsMGFCMD5zeT):
@@ -95987,7 +95988,7 @@ window.LS_LIVE = (function () {
   const BYP700 = DC('furnace lower layer > 700 C (purge by-pass, DITL-02 row 25 M.3339), now or in the last 2 min', () => byNow() || Date.now() - byAt < 120000, () => 'M.3339 = ' + (byNow() ? 1 : 0) + (byAt && !byNow() ? ' (was 1 ' + Math.round((Date.now() - byAt) / 1000) + ' s ago)' : ''));
   const X7 = [
     ['At 150 MW press TURBINE TRIP (page 13, IBD TA-1). All fuel trips by itself (Tab 9 p19 item 7, DITL turbine trip -> MFT).', BIT('I.000F', 1, 'MFT after the turbine trip')],
-    ['Read the first out of the turbine trip (page 13) and of the MFT; HP / LP bypass open to cool the reheater (Tab 9 p25). With no bypass and cyclone exit above 535 C the PA fan stops by itself and the RH biasing damper closes (p20).', null],
+    ['Read the first out of the turbine trip (page 13) and of the MFT; HP / LP bypass open to cool the reheater (Tab 9 p25). With no bypass and cyclone exit above 535 C the PA fan stops by itself and the RH biasing damper closes (p20).', null, 'CRO' /* sweep 26 (Mina 11-08 step 139): the first outs are read on the CRT: a control room item (the By column of the SOP tables), not the field */],
     ['Keep the ID fan, SA fan, PA fan and FA blowers running to remove the volatiles and burn the fuel left in the bed (Tab 9 p21 item 3); drum level in sight: -200 ~ +200 mm through the shrink.', HOLD(60, ALL(BIT('M.3304', 1, 'ID fan running'), BIT('M.3303', 1, 'SA fan running'), VAL('lvl', -200, 200)))],
     /* Mina beta.152: the check read the model bed Tb >= 625 while the text and the logic say 700 C; and nothing reset the MFT. DITL-02 out 16
        FURNACE PURGE COMPLETED = (MFT I.0560 AND NO BOILER TRIP COMMAND I.0561, delayed) AND M.3339 FURNACE LOWER LAYER > 700 C (PURGE
@@ -96035,16 +96036,16 @@ window.LS_LIVE = (function () {
   ]);
   const XS = [X1, X2, X3, X4, X5, X6, X7, X8, X9, X10];
   if (!PROC.some(s => s.x)) {
-    PROC.push({ t: 'SYNCHRONIZATION AND INITIAL LOAD (APP)', x: 1, note: 'Added by the app: PR-OPE-5002 ends at Solid firing. Targets from the cold start scenario of the app (it reaches 150 MW) and the FHI design data.', s: X1.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'LOAD UP TO 150 MW (APP)', x: 1, note: 'Added by the app. PR-OPE-5002 sec 44: boiler follow until 90 MW; then coordinated control to 150 MW (FHI MCR 460 T/H).', s: X2.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'PRACTICE: LOAD CHANGE IN AUTO (APP)', x: 1, note: 'Added by the app. Press "Practise: 150 MW load change" (or continue after Load up). See how the coordinated control holds the demand: you only move the target MW.', s: X3.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'PRACTICE: LOAD CHANGE BY HAND (MANUAL) (APP)', x: 1, note: 'Added by the app. Press "Practise: 150 MW load change". You are the CCS: the turbine master sets the MW, the boiler master sets the fire; keep the pressure.', s: X4.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'NORMAL SHUTDOWN TO TURBINE TRIP (APP)', x: 1, note: 'Added by the app from PR-OPE-5003-01 (normal shutdown) steps 4.1 ~ 4.20: 150 MW to the turbine trip at 30 MW.', s: X5.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'SHUTDOWN TO BOTTLE-UP (APP)', x: 1, note: 'Added by the app from PR-OPE-5004-01 (shutdown to bottle-up): after the turbine trip, the boiler is boxed up with the drum at +200 mm.', s: X6.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'TURBINE TRIP AT LOAD AND HOT RESTART (APP)', x: 1, note: 'Added by the app from the FHI CFB manual Part 2 Sect 8 Tab 9 (loss of load, hot standby, hot restart).', s: X7.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'PRACTICE: BFWP A TRIP AT 150 MW (APP)', x: 1, note: 'Added by the app (e5 faults): a field trip of BFWP A; the standby BFWP B takes the load by the logic of DITL-23A.', s: X8.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'PRACTICE: O2 ANALYZER A FAILS (APP)', x: 1, note: 'Added by the app (e5 faults): the O2 analyzer A of the AICFG112 select fails; ABC-002 follows analyzer B by the SIG.AB flag.', s: X9.map(x => ({ t: x[0], g: [] })) });
-    PROC.push({ t: 'PRACTICE: PA FAN TRIP AT 150 MW (APP)', x: 1, note: 'Added by the app (e5 faults): a field trip of the PA fan; the MFT of DITL-03A follows, then the hot restart (FHI Tab 9).', s: X10.map(x => ({ t: x[0], g: [] })) });
+    PROC.push({ t: 'SYNCHRONIZATION AND INITIAL LOAD (APP)', x: 1, note: 'Added by the app: PR-OPE-5002 ends at Solid firing. Targets from the cold start scenario of the app (it reaches 150 MW) and the FHI design data.', s: X1.map(x => ({ t: x[0], g: [], by: x[2] })) });
+    PROC.push({ t: 'LOAD UP TO 150 MW (APP)', x: 1, note: 'Added by the app. PR-OPE-5002 sec 44: boiler follow until 90 MW; then coordinated control to 150 MW (FHI MCR 460 T/H).', s: X2.map(x => ({ t: x[0], g: [], by: x[2] })) });
+    PROC.push({ t: 'PRACTICE: LOAD CHANGE IN AUTO (APP)', x: 1, note: 'Added by the app. Press "Practise: 150 MW load change" (or continue after Load up). See how the coordinated control holds the demand: you only move the target MW.', s: X3.map(x => ({ t: x[0], g: [], by: x[2] })) });
+    PROC.push({ t: 'PRACTICE: LOAD CHANGE BY HAND (MANUAL) (APP)', x: 1, note: 'Added by the app. Press "Practise: 150 MW load change". You are the CCS: the turbine master sets the MW, the boiler master sets the fire; keep the pressure.', s: X4.map(x => ({ t: x[0], g: [], by: x[2] })) });
+    PROC.push({ t: 'NORMAL SHUTDOWN TO TURBINE TRIP (APP)', x: 1, note: 'Added by the app from PR-OPE-5003-01 (normal shutdown) steps 4.1 ~ 4.20: 150 MW to the turbine trip at 30 MW.', s: X5.map(x => ({ t: x[0], g: [], by: x[2] })) });
+    PROC.push({ t: 'SHUTDOWN TO BOTTLE-UP (APP)', x: 1, note: 'Added by the app from PR-OPE-5004-01 (shutdown to bottle-up): after the turbine trip, the boiler is boxed up with the drum at +200 mm.', s: X6.map(x => ({ t: x[0], g: [], by: x[2] })) });
+    PROC.push({ t: 'TURBINE TRIP AT LOAD AND HOT RESTART (APP)', x: 1, note: 'Added by the app from the FHI CFB manual Part 2 Sect 8 Tab 9 (loss of load, hot standby, hot restart).', s: X7.map(x => ({ t: x[0], g: [], by: x[2] })) });
+    PROC.push({ t: 'PRACTICE: BFWP A TRIP AT 150 MW (APP)', x: 1, note: 'Added by the app (e5 faults): a field trip of BFWP A; the standby BFWP B takes the load by the logic of DITL-23A.', s: X8.map(x => ({ t: x[0], g: [], by: x[2] })) });
+    PROC.push({ t: 'PRACTICE: O2 ANALYZER A FAILS (APP)', x: 1, note: 'Added by the app (e5 faults): the O2 analyzer A of the AICFG112 select fails; ABC-002 follows analyzer B by the SIG.AB flag.', s: X9.map(x => ({ t: x[0], g: [], by: x[2] })) });
+    PROC.push({ t: 'PRACTICE: PA FAN TRIP AT 150 MW (APP)', x: 1, note: 'Added by the app (e5 faults): a field trip of the PA fan; the MFT of DITL-03A follows, then the hot restart (FHI Tab 9).', s: X10.map(x => ({ t: x[0], g: [], by: x[2] })) });
   }
 
   /* ---------- the general rules (step text + its tags), after the table ---------- */
@@ -97517,7 +97518,17 @@ window.LS_GUIDE = (function () {
       { st: 14, sec: 52, t: 'Fault: BFWP A trips in the field', d: 'The protection relay of BFWP A opens the MCC (Faults list, MIT-P1115A). On DITL-23A its ELECTRIC TROUBLE makes BFWP A TRIP (out 65) and resets the running latch (out 55).', c: b.X8[1][1], a: [btn('FAULT: BFWP A trips', () => (window.WORLD && WORLD.ftrip ? (window.lsEventAdd && lsEventAdd('FIELD', 'FAULT', 'FAULT: ' + WORLD.ftrip('mt.bfwpa', true)), '') : ''), () => bit('M.3343') < 0.5)] },
       { st: 14, sec: 52, t: 'BFWP B takes over', d: 'DITL-23A #B: BFWP B AUTO STARTING (M.1144) = BFWP A tripped AND BFWP B AUTO MODE SELECTED; it starts by itself. If it does not (not in AUTO or REMOTE), start it from the CRT. No run-back is drawn for a BFWP trip on this unit (no RUN BACK on the ABC or DITL sheets): the load stays.', c: b.X8[2][1], a: [mot('M.3344', 'BFWP B')] },
       { st: 14, sec: 52, t: 'Feedwater and drum level recover', d: 'FICFW1007 follows its SV on BFWP B; the drum level must stay inside the alarm list limits H +127 / L -100 mm (LT-BR1001-2) for 2 min. Watch the feedwater flow against the steam flow.', c: b.X8[3][1], fps: ['LICBR1001', 'FICFW1007'] },
-      { st: 14, sec: 52, t: 'Reset the relay; BFWP A becomes the standby', d: 'The field resets the BFWP A relay (Faults: press it again) and the operator acknowledges the TRIP. Then BFWP A is the standby: REMOTE and AUTO MODE SELECTED (DITL-23A rows 24 / 18).', c: b.X8[4][1], a: [btn('FIELD: reset the BFWP A relay', () => (window.WORLD && WORLD.ftrip ? (window.lsEventAdd && lsEventAdd('FIELD', 'FAULT', 'FAULT: ' + WORLD.ftrip('mt.bfwpa', false)), '') : ''))] },
+      /* sweep 31 (Mina 11-08: step 5 had only the FIELD button, the AUTO of BFWP A was on the Feedwater page faceplate only): the standby
+         card of the dock as for the MWP / SWBP sets (max 1 running, sby): BFWP A REMOTE + AUTO MODE SELECTED there; the relay reset is
+         its field action (loc) until the fault is cleared */
+      { st: 14, sec: 52, max: 1, sby: 1, t: 'Reset the relay; BFWP A becomes the standby', d: 'The field resets the BFWP A relay (Faults: press it again) and the operator acknowledges the TRIP. Then BFWP A is the standby: REMOTE and AUTO MODE SELECTED (DITL-23A rows 24 / 18).', c: b.X8[4][1], a: [
+          Object.assign(
+            btn('FIELD: reset the BFWP A relay', () => (window.WORLD && WORLD.ftrip ? (window.lsEventAdd && lsEventAdd('FIELD', 'FAULT', 'FAULT: ' + WORLD.ftrip('mt.bfwpa', false)), '') : ''), () => !(window.WORLD && WORLD.ftrip && WORLD.ftrip().some(x => x.id === 'mt.bfwpa' && x.on))),
+            { loc: 1 }
+          ),
+          mot('M.3344', 'BFWP B'),
+          mot('M.3343', 'BFWP A')
+        ] },
       /* ---- 15 O2 analyzer A fails (e5 recovery, LISA; the checks are live.js X9; I/O list AI0273 / AI0433, ABC-002, alarm list AT-FG1122 / 1123) ---- */
       { st: 15, sec: 53, t: 'Fault: O2 analyzer A signal lost', d: 'The O2 analyzer A (AT-FG1122, I/O list AI0273, 0 ~ 25 %) loses its signal: the AI reads 0 % and its signal abnormal flag B.0671 (I/O list SIG.AB) is set. The O2 sensors of this plant fail often.', c: b.X9[0][1], a: [btn('FAULT: O2 analyzer A signal lost', () => (AN.fault ? (window.lsEventAdd && lsEventAdd('FIELD', 'FAULT', 'FAULT: ' + AN.fault('ai.o2a.lo', true)), '') : ''))] },
       { st: 15, sec: 53, t: 'AICFG112 follows analyzer B', d: 'ABC-002: the select circuit of the O2 takes out the analyzer with SIG.AB; the PV of AICFG112 is analyzer B (AT-FG1123, AI0433). No step in the O2 trim: compare the two analyzers on the faceplate.', c: b.X9[1][1], fps: ['AICFG112'] },
@@ -99679,7 +99690,8 @@ window.LS_GUIDE = (function () {
           k = LV().kind(si, i).k;
         } catch (e) {}
         /* R9 #81 #82: the Tag no. and Operating Limits of the SOP table; a line of a NOTE is shown as the note, not a tick */
-        const lim = (window.LS_PROC5002_LIM || {})[si + '.' + i] || {};
+        /* an item of the sections the app adds (live.js X1 ~ X10) can name who does it (by: AO / CRO, sweep 26) */
+        const lim = (window.LS_PROC5002_LIM || {})[si + '.' + i] || (x.by ? { by: x.by } : {});
         out.push({ si, i, t: x.t, k, lim, g: lim.g || (x.g || []).join(', ') });
       });
     return out;
