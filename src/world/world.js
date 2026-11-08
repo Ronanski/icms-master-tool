@@ -285,8 +285,23 @@
     if (la.length > 1 && la[ix]) {
       let first = true;
       x = x.replace(LRXG, () => (first ? ((first = false), la[ix]) : '')).replace(/\s{2,}/g, ' ');
+      /* Mina 2026-11-07 (sweep 19): the tag of machine A on the copy of another machine (DITL-21A #B row 20 "SS-BH1060-A I.0538", rows
+         19 / 21 "MIL-L1060A", "LIS4-L1060A"): the tag of the copy's own machine, only when the I/O list gives that tag the very
+         address the copy reads (SS-BH1060-B = I.0538, MIL-L1060B = I.0533, LIS4-L1060B = I.0537). A one-address row keeps its tag
+         (DITL-112 LS-MU0708-A is demi tank A on every pump copy). Not the BFWP / lube oil drawings (their letters cross, isLop4) */
+      if (I.k && !isLop4(I.base) && LET[I.k]) x = x.replace(TAGA, (m, p) => (ioAddr(p + LET[I.k]) === la[ix] ? p + LET[I.k] : m));
     }
     return x;
+  };
+  /* a tag that ends with the letter of machine A ("SS-BH1060-A", "MIL-L1060A"); ioAddr = its address in the I/O list */
+  const TAGA = /\b([A-Z]{1,5}\d?-[A-Z]{0,3}\d{3,4}-?)A\b/g;
+  let ioA = null;
+  const ioAddr = t => {
+    if (!ioA) {
+      if (!(window.WIRING && window.WIRING.length)) return null;
+      ioA = new Map(window.WIRING.map(r => [r[3], r[2]]));
+    }
+    return ioA.get(t) || null;
   };
   W.addrK = (s, i) => {
     const I = s && s._inst,
