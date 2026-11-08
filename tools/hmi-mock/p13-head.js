@@ -14,6 +14,10 @@
     before: 'SW',
     w: /*@@W@@*/,
     h: /*@@H@@*/,
+    tall: 1,
+    fz: 1.35,
+    /* the long lines keep less growth (they would run into the next column or the panel edge): factor by "x,y" or by the column "x,*" */
+    fzAt: { '24,50': 1, '24,356': 1, '206,*': 1, '30,1236': 1, '30,1256': 1, '30,1276': 1, '470,1236': 1, '470,1256': 1, '470,1276': 1, '898,*': 1.15, '1248,*': 1.15 },
     art: /*@@ART@@*/,
     mach: {},
     unit: {

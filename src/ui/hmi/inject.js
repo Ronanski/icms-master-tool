@@ -94,6 +94,8 @@ const block =
   '\n' +
   fs.readFileSync(__dirname + '/../plant/hmi-mock-sb.js', 'utf8') +
   '\n' +
+  fs.readFileSync(__dirname + '/../plant/hmi-mock-pb.js', 'utf8') +
+  '\n' +
   fs.readFileSync(__dirname + '/../plant/hmi-mock-sp.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/../plant/hmi-mock-gn.js', 'utf8') +

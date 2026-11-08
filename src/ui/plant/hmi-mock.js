@@ -35,12 +35,19 @@
   };
   const fmt = (x, dp) => (x == null || !isFinite(x) ? '-----' : (+x).toFixed(dp).replace(/^-(0(?:\.0+)?)$/, '$1'));
   const D = () => window.LS_DOCK;
-  /* def = { id, title, num, name, w, h, art, mach: { ID: { n, t, ad, io, d, cur, band, fld, df, lcp, vcb } }, unit: { TAG: key }, after } */
+  /* def = { id, title, num, name, w, h, art, mach: { ID: { n, t, ad, io, d, cur, band, fld, df, lcp, vcb } }, unit: { TAG: key }, after,
+     tall, fz, fzAt } */
+  /* Mina beta.175 (page 13 TURBINE START, 1600 x 1410: text about 6 px high at Fit with the dock open, 1366 x 768): a TALL page (def.tall)
+     gets a frame of its own size (no 1920 x 1000 frame with empty sides: the art at scale 1), opens fitted to the WIDTH from the top
+     (plant.js fitW: drag to see the lower part, as 007), and its text grows by def.fz, except the lines of def.fzAt ("x,y" or the column
+     "x,*": their own factor, 1 = as drawn; the long notes and lists that would run into the next column) */
+  const frameOf = def => (def.tall ? { w: def.w + 32, h: 54 + def.h + 16 + 32 } : { w: 1920, h: 1000 });
   function page(def) {
     return function (g, api) {
-      const W = 1920,
+      const F = frameOf(def),
+        W = F.w,
         top = 54,
-        bot = 968,
+        bot = F.h - 32,
         k = Math.min(W / def.w, (bot - top) / def.h),
         x0 = (W - def.w * k) / 2;
       const bg = document.createElementNS(NS, 'rect');
@@ -51,6 +58,15 @@
       pg.setAttribute('class', 'mk');
       pg.setAttribute('font-family', "'IBM Plex Sans',system-ui,sans-serif");
       pg.innerHTML = `<style>.mk .m{font-family:'IBM Plex Mono',ui-monospace,monospace}.mk .s{font-family:'IBM Plex Sans',system-ui,sans-serif}.mk .h2blink{animation:h2blink 1s steps(2,start) infinite}</style>` + def.art;
+      if (def.fz) {
+        const at = def.fzAt || {};
+        pg.querySelectorAll('text[font-size]').forEach(t => {
+          const x = t.getAttribute('x'),
+            y = t.getAttribute('y'),
+            f = at[x + ',' + y] != null ? at[x + ',' + y] : at[x + ',*'] != null ? at[x + ',*'] : def.fz;
+          if (f !== 1) t.setAttribute('font-size', String(Math.round(+t.getAttribute('font-size') * f * 10) / 10));
+        });
+      }
       g.append(pg);
       const q = s => pg.querySelector(s),
         qa = s => pg.querySelectorAll(s);
@@ -590,7 +606,7 @@
         if (m.df && window.LS_FPOP && LS_FPOP.pb) {
           const s = call(() => D().dOf(m.d), null),
             perm = (m.df.perm || []).map(r => ({ row: r, l: String(call(() => DUI.rowInfo(s, r).svc, '') || 'row ' + r) }));
-          if (LS_FPOP.pb({ n: m.n, t: m.t, d: m.d, io: m.io, st: { row: m.df.st, on: 'IN OPERATION', off: 'STOPPED' }, pbs: m.df.pbs, perm, permWhy: m.df.why, vals: m.df.dp ? [[m.df.dp, () => cur(m.df.dp), 'mmH2O']] : [] }))
+          if (LS_FPOP.pb({ n: m.n, t: m.t, d: m.d, io: m.io, st: { row: m.df.st, on: m.df.on || 'IN OPERATION', off: m.df.off || 'STOPPED' }, pbs: m.df.pbs, perm, permWhy: m.df.why, vals: m.df.dp ? [[m.df.dp, () => cur(m.df.dp), 'mmH2O']] : [] }))
             return;
         }
         if (m.fieldOp && window.LS_FPOP && LS_FPOP.field)
@@ -717,7 +733,8 @@
     PLANT_V2.screens[def.id] = page(def);
     const L = (window.PLANT_SYS = window.PLANT_SYS || []),
       i = def.before ? L.findIndex(x => x.id === def.before) : -1;
-    L.splice(i >= 0 ? i : L.length, 0, { fitAll: 1, id: def.id, title: def.title, num: def.num, name: def.name, src: def.src || '', w: 1920, h: 1000, v2: true, screen: def.id, style: 'steel', items: [] });
+    const F = frameOf(def);
+    L.splice(i >= 0 ? i : L.length, 0, { fitAll: def.tall ? 0 : 1, fitW: def.tall ? 1 : 0, id: def.id, title: def.title, num: def.num, name: def.name, src: def.src || '', w: F.w, h: F.h, v2: true, screen: def.id, style: 'steel', items: [] });
   }
   window.LS_MOCK = { add, page, defs: DEFS };
 })();

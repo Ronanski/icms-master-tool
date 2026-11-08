@@ -242,7 +242,7 @@
   L.push(['SOOTBLOWER', m => (m && m.s._lance ? (m.s._lance.x <= 0 ? 1 : 0) : 1), 0.5, 'hi', 0, 0, /SOOTBLOWER RETRACT POSITION/, /\)DITL-80G( #N-\d+)?$/]);
   L.push(['M.4232', () => (sbL().some(x => x._lance.x >= x._lance.len) ? 1 : 0), 0.5, 'hi', 0, 0, /ANY ON EXTEND/, /\)DITL-80G( #N-\d+)?$/]);
   L.push(['AIR', () => 1, 0.5, 'hi', 0, 0, /S\/B RESET POSITION/, /\)DITL-80K$/]);
-  /* DITL-80S row 17 reads M.4008 too (S/B STEAM SUPPLY MOTOR VALVE CLOSE COMMAND; 80L PDF "TO: 80-5, 80A-14, 80S-17, 80K-5") */
+  /* DITL-80S row 17 reads M.4008 too (S/B STEAM SUPPLY MOTOR VALVE CLOSE COMMAND; DITL-80L PDF sheet 15: "TO: 80-5, 80A-14, 80S-17, 80K-5") */
   for (const k in sbGrp) L.push([k, () => (sbL().every(x => !sbGrp[k](x._lance) || x._lance.x <= 0) ? 1 : 0), 0.5, 'hi', 0, 0, /ALL ON RETRACT/, /\)DITL-80[AGKOS]?( #N-\d+)?$/]);
   const sdSilo = () => (window.AN && AN.unit && AN.unit.sd && isFinite(AN.unit.sd.silo) ? AN.unit.sd.silo : NaN);
   L.push(['LISD1800.PV', sdSilo, 60, 'lo', 0, 0, /< ?60 ?%/, /\)DITL-BA6[35]$/]);

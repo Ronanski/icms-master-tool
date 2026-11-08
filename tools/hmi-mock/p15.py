@@ -49,12 +49,6 @@ for y, spec in ((430, 'DITL-80A|i|1'), (470, 'DITL-80A|i|23|neg'), (510, 'DITL-8
     p.text(1328, y, f'data-dy="{spec}"')
     p.rect(1314, y - 16, f'data-dyr="{spec}"')
 p.mach('PIC', hits=[(1370, 56, 110, 20)])
-# Mina beta.176 (page 15: a click on a blower box opened nothing): each blower box = its push-button faceplate (fp-pop.js pb, as the other
-# pages): STATUS = its "N-10xx SOOTBLOWER OPERATING" output, the CRT push button of the blower = SKIPPED (L=CRT, DITL-80A row 27,
-# 80B ~ 80E the row under the START COMMAND, 80F row 27 for the air heater blowers). The start of a blower is the program (DITL-80 step
-# counter), not a CRT button. The mach list is in p15-head.js
-for x, y, n in [(int(a), int(b), c) for a, b, c in re.findall(r'<text[^>]*\bx="(\d+)" y="(\d+)"[^>]*>(N-10\d\d)</text>', p.s)]:
-    p.mach('B' + n[2:], hits=[(POS[x] - 4, y - 17, 54, 26)])
 bad = p.check()
 assert not bad, bad
 p.write('p15-head.js', 'hmi-mock-sb.js')
