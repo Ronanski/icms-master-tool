@@ -19,7 +19,7 @@ const STEPS=60,DT=.5;
  vm.createContext(ctx);
  ctx.__aln=fs.readFileSync(path.join(root,'src/data/aln.json'),'utf8');
  vm.runInContext('var AN={plantOn:true,ramp:0,sv:{},lne:{},ln:{},sheets:[],lnSrc:()=>JSON.parse(__aln)}',ctx);
- let api;try{api=vm.runInContext('(function(){'+core+'\n;return {ensure,stepSet,anStep,anResetAll}})()',ctx,{filename:'engine-core'})}catch(e){console.log('LOAD ERROR:',e.message);process.exit(1)}
+ let api;try{api=vm.runInContext('(function(){'+core+'\n;/* 3.2.1 p4: the engine API (engine/api.js: nm, stVal, ...) on AN, as boot.js does */if(typeof anEngAPI==="function")Object.assign(AN,anEngAPI());return {ensure,stepSet,anStep,anResetAll}})()',ctx,{filename:'engine-core'})}catch(e){console.log('LOAD ERROR:',e.message);process.exit(1)}
  console.log('engine core:',coreFiles.length,'files,',(core.length/1024|0),'KB: no document, no window, no UI');
  ctx.__sheets=sheets;vm.runInContext('AN.sheets=__sheets.map(s=>({name:s.name,R:JSON.parse(s.json)}))',ctx);
  const iso=vm.runInContext('AN.sheets',ctx);
