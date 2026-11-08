@@ -1,5 +1,13 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.149 — Reset gives the cold DITL at once (2026-11-08, LISA)
+
+**Work done.** Simulation test ditl150 "Reset: DITL cold again" (FAIL since before beta.121): after Reset the MFT of DITL-03A came only at the third scan, because Reset clears every flip-flop and the trip travels one scan per sheet (DITL-25A IDF STOPPED -> 03B -> 03A). The first scan of a cold DITL (after a start or a Reset, not at 150 MW) now repeats with no time until no output changes (12 at most), so the cold DITL stands MFT tripped with every motor stopped at once (src/world/ditl150.js: the DITL starts cold, MFT tripped). The test is not changed.
+
+**Checked in the page.** 150 MW load: MFT 0; Reset: MFT 1 at the first scan (before: third).
+
+**Not tested.** Live; item sent to Mina.
+
 ## 3.2.1-beta.148 — Heater levels steady at the 150 MW start (2026-11-08, LISA)
 
 **Work done.** Mina saw NO.1 HPH level (2) LOW-LOW and NO.1 / NO.2 LPH level HIGH at a steady 150 MW. Two causes in the heater model (unit.js AN_HD): (1) the level started from its transmitter, which the loop model of the drawing had moved at the end of the load under the 02.png (60 MW) valve openings (LPH2 -5 -> -97 mm), so the controller refilled it past HIGH; it now starts at the SV of its primary controller (the 150 MW start is a steady state). (2) The drain valves were seeded on the first step only, when the inflow was not steady yet (HPH1 108 t/h, then 79 t/h), leaving out 109 t/h against in 79 t/h; they are now seeded until every inflow holds. Alarm limits unchanged (alarm list LT-HD1102, LT-HD1105-2).
