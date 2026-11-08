@@ -52,8 +52,10 @@
      (out 14). The label "Sand" = the system, the labels XV-SD1802A / B = the isolating valves */
   const cl = defOf('MK12');
   if (cl) {
-    cl.mach.SDSYS = pbf('SAND SYSTEM', 'Sand injection system', 'DITL-771', 14, 'SYSTEM ON', [['START', 2], ['STOP', 3]], 'SYSTEM OFF');
-    cl.mach.SDISO = pbf('ISOLATING VALVES', 'Sand isolating valves XV-SD1802A / B', 'DITL-776', 13, 'ROUTE OK', [['OPEN', 2]], 'ROUTE NOT OK');
+    /* design review 2026-11-08 (Yuna): the faceplate title is the tag or the short name, the sub line the full name (as the debris
+       filters: S-1504 / Debris filter), not in capitals */
+    cl.mach.SDSYS = pbf('Sand system', 'Sand injection system', 'DITL-771', 14, 'SYSTEM ON', [['START', 2], ['STOP', 3]], 'SYSTEM OFF');
+    cl.mach.SDISO = pbf('XV-SD1802A / B', 'Sand isolating valves', 'DITL-776', 13, 'ROUTE OK', [['OPEN', 2]], 'ROUTE NOT OK');
     cl.art = cl.art
       .replace(/<text([^>]*?)>Sand<\/text>/, '<text$1 data-hit="SDSYS" style="cursor:pointer">Sand</text>')
       .replace(/<text([^>]*?)>(XV-SD1802[AB])<\/text>/g, '<text$1 data-hit="SDISO" style="cursor:pointer">$2</text>');
