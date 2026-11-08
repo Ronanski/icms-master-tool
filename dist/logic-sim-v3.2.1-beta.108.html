@@ -27226,6 +27226,28 @@ const TCS_MST = [
   [104.2, 427.2],
   [150, 432]
 ];
+/* 3.2.1 d3 (LISA): the ANN column of the same tables (IBD TA-21 and TA-11, set point tables beside the charts, columns ANN and TRIP): the HIGH and LOW alarm lines */
+const TCS_DP_ANN = [
+  [0, 24.72],
+  [31.9, 24.72],
+  [51.5, 37.02],
+  [72.2, 50.22],
+  [104.2, 70.92],
+  [107.4, 72.92],
+  [111.1, 75.42],
+  [150, 75.42]
+];
+const TCS_MST_ANN = [
+  [0, 410.3],
+  [33.4, 410.3],
+  [42.8, 432],
+  [55.2, 434.6],
+  [61.7, 436.6],
+  [72.2, 438.4],
+  [88, 440.5],
+  [104.2, 442.2],
+  [150, 447]
+];
 const tcsFst = U => (U.pist && U.pist.length ? anUnitVal(U.pist[0]) : NaN); /* PT-ST1001 */
 const tcsCrp = U => (U.rhp && U.rhp.length > 2 ? anUnitVal(U.rhp[2]) : NaN); /* PT-CR1006 */
 /* the value of a field signal by its tag on the sheet; NaN = no value in the model */
@@ -27285,7 +27307,17 @@ const TCS_IBD_SP = {
   'TA-11@549,221': TCS_MST_LOW,
   'TA-21@586,581': TCS_DP_HIGH,
   'TA-21@586,440': TCS_DP_HIGH,
-  'TA-21@586,295': TCS_DP_HIGH
+  'TA-21@586,295': TCS_DP_HIGH,
+  /* d3: the alarm comparators (HIGH / LOW (*2)), the ANN column */
+  'TA-11@687,664': U => tcsSteam(U).mst <= tcsLin(TCS_MST_ANN, tcsFst(U)),
+  'TA-21@586,732': U => tcsFst(U) - tcsCrp(U) >= tcsLin(TCS_DP_ANN, tcsFst(U)),
+  /* TE-6: ON <= 150 C, OFF >= 155 C (words on the sheet with a gap the reader did not join) */
+  'TE-6@408,498': [0, 150, 155, 'C'],
+  /* the partial close test of the control valves (TA-33, TA-34: ON <= PRESENT POSITION -10 %) and the eccentricity (TD-4: ON >= ACTUAL VALUE x 1.1) are not
+     modelled: no test runs and the eccentricity has no value, so these comparators stay 0 */
+  'TA-33@465,381': () => false,
+  'TA-34@465,381': () => false,
+  'TD-4@408,686': () => false
 };
 /* the oil pumps run through their sheets (TB-1, TB-2, TB-21, TB-22): the pump state goes in as the memories of the sheet, the sheet may change it:
    AUTO start of the standby (other pump running 10 s or 15 s AND its discharge LOW), stop of a control oil pump on BEARING OIL PRESS. VERY LOW
@@ -27413,10 +27445,11 @@ function tcsIbdStep(U, c, dt) {
           let pv = v[ins[0]];
           /* the speed set points of TA-15 are written in % of 3600 rpm */
           if (x && x[3] === '%' && id === 'TA-15') pv = (pv / 3600) * 100;
+          const xs = Array.isArray(sp) ? sp : x;
           if (typeof sp === 'function') o = sp(U) ? 1 : 0;
-          else if (!x || !isFinite(pv)) o = 0;
-          else if (x[0]) o = pv >= x[1] || (v[out] > 0.5 && pv > x[2]) ? 1 : 0;
-          else o = pv <= x[1] || (v[out] > 0.5 && pv < x[2]) ? 1 : 0;
+          else if (!xs || !isFinite(pv)) o = 0;
+          else if (xs[0]) o = pv >= xs[1] || (v[out] > 0.5 && pv > xs[2]) ? 1 : 0;
+          else o = pv <= xs[1] || (v[out] > 0.5 && pv < xs[2]) ? 1 : 0;
         } else if (t === 'DI' || t === 'DT' || t === 'PO') {
           const k = id + ':' + i,
             T = tcsIbdT(x),
@@ -35796,7 +35829,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.108';
-      c3.textContent += ' · build 4d36997'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build fa39150'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -76882,6 +76915,28 @@ const TCS_MST = [
   [104.2, 427.2],
   [150, 432]
 ];
+/* 3.2.1 d3 (LISA): the ANN column of the same tables (IBD TA-21 and TA-11, set point tables beside the charts, columns ANN and TRIP): the HIGH and LOW alarm lines */
+const TCS_DP_ANN = [
+  [0, 24.72],
+  [31.9, 24.72],
+  [51.5, 37.02],
+  [72.2, 50.22],
+  [104.2, 70.92],
+  [107.4, 72.92],
+  [111.1, 75.42],
+  [150, 75.42]
+];
+const TCS_MST_ANN = [
+  [0, 410.3],
+  [33.4, 410.3],
+  [42.8, 432],
+  [55.2, 434.6],
+  [61.7, 436.6],
+  [72.2, 438.4],
+  [88, 440.5],
+  [104.2, 442.2],
+  [150, 447]
+];
 const tcsFst = U => (U.pist && U.pist.length ? anUnitVal(U.pist[0]) : NaN); /* PT-ST1001 */
 const tcsCrp = U => (U.rhp && U.rhp.length > 2 ? anUnitVal(U.rhp[2]) : NaN); /* PT-CR1006 */
 /* the value of a field signal by its tag on the sheet; NaN = no value in the model */
@@ -76941,7 +76996,17 @@ const TCS_IBD_SP = {
   'TA-11@549,221': TCS_MST_LOW,
   'TA-21@586,581': TCS_DP_HIGH,
   'TA-21@586,440': TCS_DP_HIGH,
-  'TA-21@586,295': TCS_DP_HIGH
+  'TA-21@586,295': TCS_DP_HIGH,
+  /* d3: the alarm comparators (HIGH / LOW (*2)), the ANN column */
+  'TA-11@687,664': U => tcsSteam(U).mst <= tcsLin(TCS_MST_ANN, tcsFst(U)),
+  'TA-21@586,732': U => tcsFst(U) - tcsCrp(U) >= tcsLin(TCS_DP_ANN, tcsFst(U)),
+  /* TE-6: ON <= 150 C, OFF >= 155 C (words on the sheet with a gap the reader did not join) */
+  'TE-6@408,498': [0, 150, 155, 'C'],
+  /* the partial close test of the control valves (TA-33, TA-34: ON <= PRESENT POSITION -10 %) and the eccentricity (TD-4: ON >= ACTUAL VALUE x 1.1) are not
+     modelled: no test runs and the eccentricity has no value, so these comparators stay 0 */
+  'TA-33@465,381': () => false,
+  'TA-34@465,381': () => false,
+  'TD-4@408,686': () => false
 };
 /* the oil pumps run through their sheets (TB-1, TB-2, TB-21, TB-22): the pump state goes in as the memories of the sheet, the sheet may change it:
    AUTO start of the standby (other pump running 10 s or 15 s AND its discharge LOW), stop of a control oil pump on BEARING OIL PRESS. VERY LOW
@@ -77069,10 +77134,11 @@ function tcsIbdStep(U, c, dt) {
           let pv = v[ins[0]];
           /* the speed set points of TA-15 are written in % of 3600 rpm */
           if (x && x[3] === '%' && id === 'TA-15') pv = (pv / 3600) * 100;
+          const xs = Array.isArray(sp) ? sp : x;
           if (typeof sp === 'function') o = sp(U) ? 1 : 0;
-          else if (!x || !isFinite(pv)) o = 0;
-          else if (x[0]) o = pv >= x[1] || (v[out] > 0.5 && pv > x[2]) ? 1 : 0;
-          else o = pv <= x[1] || (v[out] > 0.5 && pv < x[2]) ? 1 : 0;
+          else if (!xs || !isFinite(pv)) o = 0;
+          else if (xs[0]) o = pv >= xs[1] || (v[out] > 0.5 && pv > xs[2]) ? 1 : 0;
+          else o = pv <= xs[1] || (v[out] > 0.5 && pv < xs[2]) ? 1 : 0;
         } else if (t === 'DI' || t === 'DT' || t === 'PO') {
           const k = id + ':' + i,
             T = tcsIbdT(x),
