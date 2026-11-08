@@ -3,7 +3,7 @@
    output (DITL-80A ~ 80E; the air heater blowers N-1040 / 1042 = DITL-80F AIR PREHEATER SOOTBLOWER OPERATING): red while it blows.
    Permissives DITL-80A, steam supply valve DITL-80S, drain valves DITL-80R, alarms DITL-80S / 80Q, pressure control PICSB1052 (the
    logic tag; the mockup writes PIC-SB1053). NO-SOURCE: number of blowers blowing, forward / reverse and warm-up timers, MV-SB1001
-   position %. */
+   position %. A click on a blower box: its push-button faceplate (STATUS = its OPERATING output, SKIP = its CRT push button). */
 (function () {
   if (!window.LS_MOCK) return;
   LS_MOCK.add({
@@ -16,7 +16,37 @@
     h: /*@@H@@*/,
     art: /*@@ART@@*/,
     mach: {
-      PIC: { n: 'PICSB1052', t: 'Sootblower steam pressure PCV-SB1053', ctl: 'PICSB1052', io: 'PICSB1052' }
+      PIC: { n: 'PICSB1052', t: 'Sootblower steam pressure PCV-SB1053', ctl: 'PICSB1052', io: 'PICSB1052' },
+      B1011: { n: 'N-1011', t: 'Sootblower N-1011', d: 'DITL-80A', df: { pbs: [['SKIP', 26, 'M.4010']], st: 25, perm: [], why: '' } },
+      B1012: { n: 'N-1012', t: 'Sootblower N-1012', d: 'DITL-80B', df: { pbs: [['SKIP', 2, 'M.4018']], st: 1, perm: [], why: '' } },
+      B1013: { n: 'N-1013', t: 'Sootblower N-1013', d: 'DITL-80B', df: { pbs: [['SKIP', 6, 'M.4020']], st: 5, perm: [], why: '' } },
+      B1014: { n: 'N-1014', t: 'Sootblower N-1014', d: 'DITL-80B', df: { pbs: [['SKIP', 10, 'M.4028']], st: 9, perm: [], why: '' } },
+      B1015: { n: 'N-1015', t: 'Sootblower N-1015', d: 'DITL-80B', df: { pbs: [['SKIP', 14, 'M.4030']], st: 13, perm: [], why: '' } },
+      B1016: { n: 'N-1016', t: 'Sootblower N-1016', d: 'DITL-80B', df: { pbs: [['SKIP', 18, 'M.4038']], st: 17, perm: [], why: '' } },
+      B1017: { n: 'N-1017', t: 'Sootblower N-1017', d: 'DITL-80B', df: { pbs: [['SKIP', 22, 'M.4040']], st: 21, perm: [], why: '' } },
+      B1018: { n: 'N-1018', t: 'Sootblower N-1018', d: 'DITL-80B', df: { pbs: [['SKIP', 26, 'M.4048']], st: 25, perm: [], why: '' } },
+      B1019: { n: 'N-1019', t: 'Sootblower N-1019', d: 'DITL-80C', df: { pbs: [['SKIP', 2, 'M.4050']], st: 1, perm: [], why: '' } },
+      B1020: { n: 'N-1020', t: 'Sootblower N-1020', d: 'DITL-80C', df: { pbs: [['SKIP', 6, 'M.4058']], st: 5, perm: [], why: '' } },
+      B1021: { n: 'N-1021', t: 'Sootblower N-1021', d: 'DITL-80C', df: { pbs: [['SKIP', 10, 'M.4060']], st: 9, perm: [], why: '' } },
+      B1022: { n: 'N-1022', t: 'Sootblower N-1022', d: 'DITL-80C', df: { pbs: [['SKIP', 14, 'M.4068']], st: 13, perm: [], why: '' } },
+      B1023: { n: 'N-1023', t: 'Sootblower N-1023', d: 'DITL-80C', df: { pbs: [['SKIP', 18, 'M.4070']], st: 17, perm: [], why: '' } },
+      B1024: { n: 'N-1024', t: 'Sootblower N-1024', d: 'DITL-80C', df: { pbs: [['SKIP', 22, 'M.4078']], st: 21, perm: [], why: '' } },
+      B1025: { n: 'N-1025', t: 'Sootblower N-1025', d: 'DITL-80C', df: { pbs: [['SKIP', 26, 'M.4080']], st: 25, perm: [], why: '' } },
+      B1026: { n: 'N-1026', t: 'Sootblower N-1026', d: 'DITL-80D', df: { pbs: [['SKIP', 2, 'M.4088']], st: 1, perm: [], why: '' } },
+      B1027: { n: 'N-1027', t: 'Sootblower N-1027', d: 'DITL-80D', df: { pbs: [['SKIP', 6, 'M.4090']], st: 5, perm: [], why: '' } },
+      B1028: { n: 'N-1028', t: 'Sootblower N-1028', d: 'DITL-80D', df: { pbs: [['SKIP', 10, 'M.4098']], st: 9, perm: [], why: '' } },
+      B1029: { n: 'N-1029', t: 'Sootblower N-1029', d: 'DITL-80D', df: { pbs: [['SKIP', 14, 'M.4100']], st: 13, perm: [], why: '' } },
+      B1030: { n: 'N-1030', t: 'Sootblower N-1030', d: 'DITL-80D', df: { pbs: [['SKIP', 18, 'M.4108']], st: 17, perm: [], why: '' } },
+      B1031: { n: 'N-1031', t: 'Sootblower N-1031', d: 'DITL-80D', df: { pbs: [['SKIP', 22, 'M.4110']], st: 21, perm: [], why: '' } },
+      B1032: { n: 'N-1032', t: 'Sootblower N-1032', d: 'DITL-80D', df: { pbs: [['SKIP', 26, 'M.4118']], st: 25, perm: [], why: '' } },
+      B1033: { n: 'N-1033', t: 'Sootblower N-1033', d: 'DITL-80E', df: { pbs: [['SKIP', 2, 'M.4120']], st: 1, perm: [], why: '' } },
+      B1034: { n: 'N-1034', t: 'Sootblower N-1034', d: 'DITL-80E', df: { pbs: [['SKIP', 6, 'M.4128']], st: 5, perm: [], why: '' } },
+      B1035: { n: 'N-1035', t: 'Sootblower N-1035', d: 'DITL-80E', df: { pbs: [['SKIP', 10, 'M.4130']], st: 9, perm: [], why: '' } },
+      B1036: { n: 'N-1036', t: 'Sootblower N-1036', d: 'DITL-80E', df: { pbs: [['SKIP', 14, 'M.4138']], st: 13, perm: [], why: '' } },
+      B1037: { n: 'N-1037', t: 'Sootblower N-1037', d: 'DITL-80E', df: { pbs: [['SKIP', 18, 'M.4140']], st: 17, perm: [], why: '' } },
+      B1038: { n: 'N-1038', t: 'Sootblower N-1038', d: 'DITL-80E', df: { pbs: [['SKIP', 22, 'M.4148']], st: 21, perm: [], why: '' } },
+      B1040: { n: 'N-1040', t: 'Air preheater sootblower N-1040', d: 'DITL-80F', df: { pbs: [['SKIP', 26, 'M.4178']], st: 25, perm: [], why: '' } },
+      B1042: { n: 'N-1042', t: 'Air preheater sootblower N-1042', d: 'DITL-80F', df: { pbs: [['SKIP', 26, 'M.4178']], st: 25, perm: [], why: '' } }
     },
     unit: {}
   });

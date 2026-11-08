@@ -737,17 +737,6 @@ window.LS_LIVE = (function () {
   ];
   /* plan e5 (FHI CFB manual Part 2 Sect 8 Tab 9 p20 ~ 25: loss of load, normal shutdown to hot standby, HOT RESTART): a turbine trip at
      150 MW and the hot restart. The bed of the model: TIFG1090 700 C = Tb about 625 C (the 954 / 850 snapshot ratio) */
-  /* Mina beta.173 step 141: M.3339 is only a DITL-02 input row (row 25, from the station wiring), not in the address index, so BIT('M.3339')
-     read nothing and the step never ticked. Read the row of the drawing */
-  /* the bed falls under 700 C within seconds of the reset (Mina: 698 C 12 s after the press), so the by-pass counts when it was seen in
-     the last 2 min of real time, not only at the scan of the reset */
-  let byAt = 0;
-  const byNow = () => {
-    const on = !!(DK() && dIn('DITL-02', 24));
-    if (on) byAt = Date.now();
-    return on;
-  };
-  const BYP700 = DC('furnace lower layer > 700 C (purge by-pass, DITL-02 row 25 M.3339), now or in the last 2 min', () => byNow() || Date.now() - byAt < 120000, () => 'M.3339 = ' + (byNow() ? 1 : 0) + (byAt && !byNow() ? ' (was 1 ' + Math.round((Date.now() - byAt) / 1000) + ' s ago)' : ''));
   const X7 = [
     ['At 150 MW press TURBINE TRIP (page 13, IBD TA-1). All fuel trips by itself (Tab 9 p19 item 7, DITL turbine trip -> MFT).', BIT('I.000F', 1, 'MFT after the turbine trip')],
     ['Read the first out of the turbine trip (page 13) and of the MFT; HP / LP bypass open to cool the reheater (Tab 9 p25). With no bypass and cyclone exit above 535 C the PA fan stops by itself and the RH biasing damper closes (p20).', null],
@@ -755,7 +744,7 @@ window.LS_LIVE = (function () {
     /* Mina beta.152: the check read the model bed Tb >= 625 while the text and the logic say 700 C; and nothing reset the MFT. DITL-02 out 16
        FURNACE PURGE COMPLETED = (MFT I.0560 AND NO BOILER TRIP COMMAND I.0561, delayed) AND M.3339 FURNACE LOWER LAYER > 700 C (PURGE
        BY-PASS, row 25) AND FURNACE PURGE START P.B. (row 6): with the bed above 700 C the purge start completes the purge at once, the MFT resets */
-    ['Hot restart (Tab 9 p22): the bed at the start-up burner elevation above 700 C (purge bypass permit M.3339): press FURNACE PURGE START, the purge completes at once (no 5 min) and the MFT resets.', ALL(BYP700, BIT('I.000F', 0, 'MFT reset'))],
+    ['Hot restart (Tab 9 p22): the bed at the start-up burner elevation above 700 C (purge bypass permit M.3339): press FURNACE PURGE START, the purge completes at once (no 5 min) and the MFT resets.', ALL(BIT('M.3339', 1, 'furnace lower layer > 700 C (purge by-pass)'), BIT('I.000F', 0, 'MFT reset'))],
     ['Start the coal feeders: bed above 700 C without burners, or above 550 C with the burners in service (Tab 9 p23 item 7).', ANYBIT(['M.3400', 'M.3401', 'M.3402'], 'a coal feeder running')]
   ];
   /* plan e5 recovery (LISA): a BFWP A field trip at 150 MW. DITL-23A (PDF sheet 41; "THE DIAGRAM IS THE SAME FOR BFWP B": DITL-23A #B):
