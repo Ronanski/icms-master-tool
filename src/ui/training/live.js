@@ -679,7 +679,16 @@ window.LS_LIVE = (function () {
     ['ID fan coupling below 16 % goes to MANUAL by itself; lower it 1 % at a time to 0 % (-15 mmH2O), then STOP the ID fan.', NOBIT(['M.3304'], 'ID fan stopped')],
     ['Furnace pressure to DAMPER CONTROL: damper 5 %, then about 2.5 % until the furnace pressure is -20 ~ +20 mmH2O.', HOLD(60, VAL('FP', -20, 20))]
   ];
-  const XS = [X1, X2, X3, X4, X5, X6];
+  /* plan e5 (FHI CFB manual Part 2 Sect 8 Tab 9 p20 ~ 25: loss of load, normal shutdown to hot standby, HOT RESTART): a turbine trip at
+     150 MW and the hot restart. The bed of the model: TIFG1090 700 C = Tb about 625 C (the 954 / 850 snapshot ratio) */
+  const X7 = [
+    ['At 150 MW press TURBINE TRIP (page 13, IBD TA-1). All fuel trips by itself (Tab 9 p19 item 7, DITL turbine trip -> MFT).', BIT('I.000F', 1, 'MFT after the turbine trip')],
+    ['Read the first out of the turbine trip (page 13) and of the MFT; HP / LP bypass open to cool the reheater (Tab 9 p25). With no bypass and cyclone exit above 535 C the PA fan stops by itself and the RH biasing damper closes (p20).', null],
+    ['Keep the ID fan, SA fan, PA fan and FA blowers running to remove the volatiles and burn the fuel left in the bed (Tab 9 p21 item 3); drum level in sight: -200 ~ +200 mm through the shrink.', HOLD(60, ALL(BIT('M.3304', 1, 'ID fan running'), BIT('M.3303', 1, 'SA fan running'), VAL('lvl', -200, 200)))],
+    ['Hot restart (Tab 9 p22): the bed at the start-up burner elevation above 700 C (purge bypass permit): no purge cycle. Check the bed.', VAL('Tb', 625, null)],
+    ['Start the coal feeders: bed above 700 C without burners, or above 550 C with the burners in service (Tab 9 p23 item 7).', ANYBIT(['M.3400', 'M.3401', 'M.3402'], 'a coal feeder running')]
+  ];
+  const XS = [X1, X2, X3, X4, X5, X6, X7];
   if (!PROC.some(s => s.x)) {
     PROC.push({ t: 'SYNCHRONIZATION AND INITIAL LOAD (APP)', x: 1, note: 'Added by the app: PR-OPE-5002 ends at Solid firing. Targets from the cold start scenario of the app (it reaches 150 MW) and the FHI design data.', s: X1.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'LOAD UP TO 150 MW (APP)', x: 1, note: 'Added by the app. PR-OPE-5002 sec 44: boiler follow until 90 MW; then coordinated control to 150 MW (FHI MCR 460 T/H).', s: X2.map(x => ({ t: x[0], g: [] })) });
@@ -687,6 +696,7 @@ window.LS_LIVE = (function () {
     PROC.push({ t: 'PRACTICE: LOAD CHANGE BY HAND (MANUAL) (APP)', x: 1, note: 'Added by the app. Press "Practise: 150 MW load change". You are the CCS: the turbine master sets the MW, the boiler master sets the fire; keep the pressure.', s: X4.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'NORMAL SHUTDOWN TO TURBINE TRIP (APP)', x: 1, note: 'Added by the app from PR-OPE-5003-01 (normal shutdown) steps 4.1 ~ 4.20: 150 MW to the turbine trip at 30 MW.', s: X5.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'SHUTDOWN TO BOTTLE-UP (APP)', x: 1, note: 'Added by the app from PR-OPE-5004-01 (shutdown to bottle-up): after the turbine trip, the boiler is boxed up with the drum at +200 mm.', s: X6.map(x => ({ t: x[0], g: [] })) });
+    PROC.push({ t: 'TURBINE TRIP AT LOAD AND HOT RESTART (APP)', x: 1, note: 'Added by the app from the FHI CFB manual Part 2 Sect 8 Tab 9 (loss of load, hot standby, hot restart).', s: X7.map(x => ({ t: x[0], g: [] })) });
   }
 
   /* ---------- the general rules (step text + its tags), after the table ---------- */
@@ -908,6 +918,6 @@ window.LS_LIVE = (function () {
     return r && r[0] ? r[0].sh : null;
   };
   /* 3.2.0-beta.21: the condition makers, for the guided Training (guide.js) */
-  const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4, X5, X6 };
+  const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4, X5, X6, X7 };
   return { kind, state, rows, scan, reset, load, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2, B, H, modeOf, mvOf, pvOf, svOf, getV, NAMES, f1 };
 })();

@@ -1223,10 +1223,12 @@ function anLoadStart(kind, on) {
     const q = document.getElementById('lsask');
     if (q) q.remove();
   } catch (e) {}
-  const cold = kind === 'cold',
+  /* WARM / HOT restart (unit.js anUnitRestart): the Cold load, then the heat the boiler and the turbine keep */
+  const rs = kind === 'warm' || kind === 'hot' ? kind : null;
+  const cold = kind === 'cold' || !!rs,
     B = window.lsBusy,
     est = (cold ? 46 : 40) * Math.max(1, AN.sheets.length - 1);
-  if (B) B.show(cold ? 'Loading the Cold plant…' : 'Loading 150 MW…');
+  if (B) B.show(rs ? 'Loading the ' + rs.toUpperCase() + ' restart…' : cold ? 'Loading the Cold plant…' : 'Loading 150 MW…');
   /* retest #69 (R8 second pass: Hakbang 2 never showed ✓ TAPOS with 2 SWP running): a sheet is built only when something opens it
      (ensure). A starting state loaded before ABC-001C was built left the unit model OFF (anUnitStart needs that sheet) and the other
      unbuilt sheets out of the load: the Gabay conditions never came true. Every sheet is built first, one per slice (no freeze) */
@@ -1255,7 +1257,9 @@ function anLoadStart(kind, on) {
       return (cold ? anPlantColdAsync : anPlantLoad150Async)(k => B && B.prog(k / est));
     })
     .then(n => {
+      if (rs) anUnitRestart(rs);
       AN.startState = cold ? 'plantCold' : 'plantLoad150';
+      AN.restartKind = rs;
       return n;
     });
   AN._loadP = p;

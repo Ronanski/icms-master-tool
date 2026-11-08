@@ -15,7 +15,7 @@
        written here so they can be changed) */
 const AN_UNIT = {
   on: false,
-  a: (474.1 - 203.7) / (88.6 - 41.8) /* T/H of steam per T/H of coal */,
+  a: (484 - 302) / (89.7 - 55.4) /* T/H of steam per T/H of coal: plant trends 2026-11-08 holds at 150 and 90 MW (5.31; the snapshots 03.png / 02.png gave 5.78, coal 3.6 % high at 90 MW in Mina's b6 run) */,
   c: (149.8 - 90.3) / (481 - 304) /* MW per T/H of steam: plant trends 2026-11-08 (holds at 150 and 90 MW); the snapshots gave 0.3336 */,
   mwK: 0.3362 * 481 - 149.8 /* MW lost at the anchor line: MW = c x steam - mwK on the plant trend (149.8 MW at 481 T/H); the snapshot anchor 150.5 at 474.1 was 3 MW above it */,
   /* storage and firing lag from the TUNING OF THE PLANT (PID summary: PIC-COBM Kp 3.0, Ti 165 s, Td 7 s): the pressure of a drum
@@ -164,7 +164,13 @@ const AN_UNIT = {
   kcool: 60 /* 2.2.0-beta.21: cooling of the unfired boiler by the air, T/H steam-equivalent at the anchor air and 300 C (ASSUMED, Fig. 5) */,
   kamb: 1 /* 2.2.0-beta.21: bottled boiler loss to the ambient, T/H steam-equivalent at 300 C (ASSUMED) */,
   tauB: 900,
-  tauBc: 14400,
+  /* 3.2.1 b6 (plant cold start trend 2026-11-08, plant-study 14 Scenario 2): the oil-only heat-up of the plant is faster than FHI Fig 2 (bed
+     TIFG1090 339 C at 1.5 h, 523 C at 4 h, 726 C at 6 h; simulator 141 C at 2 h). Fit on the bed of the model (TIFG1090 = 30 + 1.127 x
+     (Tb - 30), the 954 / 850 snapshot ratio): lag 1.9 h at 1.5 h, 2.6 h at 4 h -> 9000 s; the trend outranks the design curve */
+  tauBc: 9000,
+  /* the start-up law exponent (fuel share / air share)^k: plant oil-only plateau TIFG1090 730 C on 4.5 T/H oil with PA 177 + SA 222 T/H
+     (k = ln 0.756 / ln 0.19 = 0.168), check 796 C on 6 T/H oil at 10 h (model 765). Was 0.45 ASSUMED */
+  kBedSU: 0.168,
   Tb0: 850,
   /* 3.2.0-beta.15 (phase B, utilities): CONDENSER VACUUM. The turbine exhausts to the condenser, cooled by the seawater pumps (SWP-A ~ C
      M.3353 ~ M.3355) with the condensate pumps (CP-A / B M.3350 / M.3351) taking the water out (PR-OPE-5002: SWP, CEP and VACUUM UP
@@ -797,6 +803,28 @@ function anUnitCold() {
   U.hdSeed = false;
   anBoilerCold(U); /* 3.2.1 SEULGI: the boiler-side plant model (boiler.js) */
   tcsInit(U, 'cold');
+  return true;
+}
+/* plan (user 2026-11-08, proposal of the leader): WARM and HOT restart states. The equipment is as Cold (all stopped: the trainee starts
+   the utilities, fans and burners again), the boiler and the turbine keep their heat. FHI SECT_7 Fig 3 WARM STARTUP (after 8 ~ 56 h):
+   at the restart furnace 360 C, SH / RH 315 C, SH pressure 40 kg/cm2; Fig 4 HOT STARTUP (under 8 h): furnace 700 C, SH / RH 430 C,
+   100 kg/cm2. The bed of the model is the furnace curve scaled to the anchor (850 C model at the Fig 8 840 C). Turbine metal: inside
+   the TCS mode band (tcs.js modes: warm 230 ~ 420 C, hot above 420 C), 350 / 460 C (exact metal NO-SOURCE; the steam of Fig 3 / 4 at
+   the restart is 315 / 430 C). Warm needs the furnace purge (bed below 700 C, PR-OPE-5002 SU:129); hot is the logic's to decide */
+const AN_RESTART = { warm: { Pd: 40, Tf: 360, Tm: 350 }, hot: { Pd: 100, Tf: 700, Tm: 460 } };
+function anUnitRestart(kind) {
+  const U = AN_UNIT,
+    K = AN_RESTART[kind];
+  if (!U.on || !K) return false;
+  U.Pd = K.Pd;
+  U.Tw = steamTsat(U.Pd);
+  U.Tb = U.Tamb + ((K.Tf - U.Tamb) * (U.Tb0 - U.Tamb)) / (840 - U.Tamb);
+  if (U.tc) {
+    const c = U.tc;
+    c.Thp = c.Trh = c.Tcvi = c.Tcvo = K.Tm;
+    tcsMode(U);
+  }
+  U.restart = kind;
   return true;
 }
 /* 2.2.0-beta.21 (M5 shutdown): the plant at 150 MW WITH the start-up / shutdown physics on (U.cold: the water heat storage of the
@@ -1663,7 +1691,7 @@ const AN_PA_FURN = 328.2 / 354.0;
 const AN_BED = { s: [0.43, 0.525, 0.626, 0.715, 0.86, 1], t: [798, 819, 840, 840, 840, 840], a: [0.612, 0.557, 0.622, 0.716, 0.861, 1] };
 function anBedSS(U, fs, as) {
   const K = AN_BED,
-    start = U.Tamb + (U.Tb0 - U.Tamb) * Math.pow(Math.min(3, fs / as), 0.45),
+    start = U.Tamb + (U.Tb0 - U.Tamb) * Math.pow(Math.min(3, fs / as), U.kBedSU != null ? U.kBedSU : 0.45),
     x = Math.min(1.1, fs),
     ip = Y => {
       if (x <= K.s[0]) return Y[0];

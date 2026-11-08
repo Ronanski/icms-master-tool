@@ -209,7 +209,8 @@
          step 8, 310SC90-775 p.29) and TURBINE TRIP / RESET (IBD 310SC90-794 TA-1). RUN only: VIEW does not control */
       qa('[data-tpb]').forEach(e => {
         e.style.cursor = 'pointer';
-        e.style.pointerEvents = 'auto';
+        /* Mina beta.121: the push button frame has no fill, so a click inside it hit nothing: the whole button takes the click */
+        e.style.pointerEvents = 'all';
         const ti = document.createElementNS(NS, 'title');
         ti.textContent = 'TCS push button · click = press (RUN)';
         e.append(ti);
@@ -227,8 +228,10 @@
             });
             return;
           }
+          /* the press is logged first: a TURBINE TRIP brings its trip and MFT lines in the same scan (Mina: the press line was missing) */
+          call(() => window.lsEventAdd && lsEventAdd('TCS', 'TCS', 'Operator: ' + nm + ' (page 13)'));
           const r = call(() => AN.turbine(cmd), '');
-          call(() => window.lsEventAdd && lsEventAdd('TCS', 'TCS', 'Operator: ' + nm + (typeof r === 'string' && r ? ' (' + r + ')' : '')));
+          if (typeof r === 'string' && r) call(() => window.lsEventAdd && lsEventAdd('TCS', 'TCS', nm + ': ' + r));
         });
       });
       qa('[data-go]').forEach(e => {
