@@ -1,5 +1,11 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.137 — Sand SYSTEM TRIP at the 150 MW load (2026-11-08, LISA)
+
+**Work done.** The header showed SYSTEM TRIP (D77)DITL-777 on a fresh 150 MW load. Cause: NOT REMOTE CONTROL in the OR of SYSTEM TRIP (E10210-3-777). The remote selector SIL-SD1300 (STN103 I.057A, DITL-771 row 5 -> M.081D -> DITL-777 row 3) had no source and read 0. It now stands at REMOTE, as on 20.PNG at 149.5 MW (SAND SYSTEM REMOTE checked). The MFT input of DITL-777 is 0 after the load (it was not the cause); SYSTEM TRIP on DITL-777 has no latch.
+
+**Not tested.** Live; item sent to Mina.
+
 ## 3.2.1-beta.136 — I.041D / I.041E service text (2026-11-08, LISA)
 
 **Work done.** The I/O view showed the old WIRING.xls text "52G1 opened" / "52L1 opened for house load" on S2 I.041D / I.041E. Corrected to the DCS I/O list STN102 (ades.json station 2) and 310SC90-773 rev 2: TCS-DI1050 "#1 HP-CV full close", TCS-DI1051-1 "#1 MSV(A) test". No logic reads these two inputs. The breakers keep their own inputs (I.0931 / I.0932, I.0937).
