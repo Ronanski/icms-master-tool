@@ -20814,9 +20814,22 @@ function anProcStep(S, dt) {
           let up = 0;
           xsl.forEach((x, j) => {
             const g0 = xg(x),
-              m = xman(x),
-              lo0 = m ? 0 : x.b.p.lo == null ? 0 : x.b.p.lo,
+              m = xman(x);
+            let lo0 = m ? 0 : x.b.p.lo == null ? 0 : x.b.p.lo,
               hi0 = m ? 100 : x.b.p.hi == null ? 100 : x.b.p.hi;
+            /* Mina beta.157 (RHT 513 C at 90 MW, plant 521, TICHR1002A at its end): the damper behind a controller (ABC-020: HICHR1002A.MV =
+               LN7 of the PID output, -50 ~ +50 with slope 1, + SI0121 = LN3 of the unit load, 36.9 % at 90 MW) reaches only what the
+               drawing lets the PID move it: 86.9 % at 90 MW, not 100 %. The room left is the room of the PID output, one to one */
+            if (m) {
+              const u = uOfS(x.S, x.b),
+                plo = x.b.p.lo == null ? 0 : x.b.p.lo,
+                phi = x.b.p.hi == null ? 100 : x.b.p.hi,
+                cmd = xcmd(x);
+              if (isFinite(u) && isFinite(cmd)) {
+                hi0 = Math.min(100, cmd + Math.max(0, phi - u));
+                lo0 = Math.max(0, cmd - Math.max(0, u - plo));
+              }
+            }
             up += Math.max(0, g0(lo0) - xa[j], g0(hi0) - xa[j]);
           });
           y -= pr.nsat * span * up;
@@ -36314,7 +36327,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.171';
-      c3.textContent += ' · build de412cb'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 1a228fb'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -71426,9 +71439,22 @@ function anProcStep(S, dt) {
           let up = 0;
           xsl.forEach((x, j) => {
             const g0 = xg(x),
-              m = xman(x),
-              lo0 = m ? 0 : x.b.p.lo == null ? 0 : x.b.p.lo,
+              m = xman(x);
+            let lo0 = m ? 0 : x.b.p.lo == null ? 0 : x.b.p.lo,
               hi0 = m ? 100 : x.b.p.hi == null ? 100 : x.b.p.hi;
+            /* Mina beta.157 (RHT 513 C at 90 MW, plant 521, TICHR1002A at its end): the damper behind a controller (ABC-020: HICHR1002A.MV =
+               LN7 of the PID output, -50 ~ +50 with slope 1, + SI0121 = LN3 of the unit load, 36.9 % at 90 MW) reaches only what the
+               drawing lets the PID move it: 86.9 % at 90 MW, not 100 %. The room left is the room of the PID output, one to one */
+            if (m) {
+              const u = uOfS(x.S, x.b),
+                plo = x.b.p.lo == null ? 0 : x.b.p.lo,
+                phi = x.b.p.hi == null ? 100 : x.b.p.hi,
+                cmd = xcmd(x);
+              if (isFinite(u) && isFinite(cmd)) {
+                hi0 = Math.min(100, cmd + Math.max(0, phi - u));
+                lo0 = Math.max(0, cmd - Math.max(0, u - plo));
+              }
+            }
             up += Math.max(0, g0(lo0) - xa[j], g0(hi0) - xa[j]);
           });
           y -= pr.nsat * span * up;
@@ -96110,12 +96136,21 @@ window.LS_GUIDE = (function () {
   const L = () => window.LS_LIVE;
   const PROC = () => window.LS_PROC5002 || [];
   let HH = null,
-    HOf = null;
-  /* the plant helpers of check.js (the same reading and writing as the CHECK scenarios), kept while the ABC sheets stay the same */
+    HOf = null,
+    HRt = null;
+  /* the plant helpers of check.js (the same reading and writing as the CHECK scenarios), kept while the ABC sheets stay the same.
+     Mina beta.157: after LOAD of a save point the dock read MW 0, MSP 128.7 and MSF 468.8 for the whole run: a keyframe gives every sheet
+     a new run-time object (engine/state.js anStateApply, S.rt = r.rt), so the helpers are made again when that object changes */
+  const rtNow = () => {
+    const sh = AN.sheets && AN.sheets.find(x => x.name === 'ABC-001C');
+    return sh && sh.S ? sh.S.rt : null;
+  };
   const h = () => {
-    if (!HH || HOf !== AN.sheets) {
+    const rt = rtNow();
+    if (!HH || HOf !== AN.sheets || HRt !== rt) {
       HH = CHECK.H();
       HOf = AN.sheets;
+      HRt = rt;
     }
     return HH;
   };
