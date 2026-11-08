@@ -1,6 +1,6 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
-## 3.2.1-beta.137 — Sand SYSTEM TRIP at the 150 MW load (2026-11-08, LISA)
+## 3.2.1-beta.138 — Sand SYSTEM TRIP at the 150 MW load (2026-11-08, LISA)
 
 **Work done.** The header showed SYSTEM TRIP (D77)DITL-777 on a fresh 150 MW load. Cause: NOT REMOTE CONTROL in the OR of SYSTEM TRIP (E10210-3-777). The remote selector SIL-SD1300 (STN103 I.057A, DITL-771 row 5 -> M.081D -> DITL-777 row 3) had no source and read 0. It now stands at REMOTE, as on 20.PNG at 149.5 MW (SAND SYSTEM REMOTE checked). The MFT input of DITL-777 is 0 after the load (it was not the cause); SYSTEM TRIP on DITL-777 has no latch.
 
@@ -682,3 +682,4 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.133** (2026-11-08): Training section TURBINE TRIP AT LOAD AND HOT RESTART from the FHI CFB manual Tab 9 (trip at 150 MW, first outs, fans kept running, drum level, hot restart above 700 C bed with no purge, coal feeders); button Practise: Turbine trip and hot restart.
 - **beta.134** (2026-11-08): New starting states Warm restart (FHI Fig 3: drum 40 kg/cm2, bed about 360 C, turbine WARM) and Hot restart (Fig 4: 100 kg/cm2, bed about 700 C, turbine HOT); equipment stopped as in Cold.
 - **beta.135** (2026-11-08): TCS initial load hold also waits for the LP exhaust hood below 52 C before load up (PR-OPE-5002 9123).
+- **beta.137** (2026-11-08): Page 17 GENERATOR shows the generator electrical values from a generator model (data sheet GAE-2013-0136 R2 and control room snapshot 37): voltage 13.8 kV, frequency, reactive power and power factor 0.977 (33 MVar at 151 MW), stator current 6.5 kA, exciter field 46 VDC / 8.7 A at full load (field follows the internal voltage, data sheet Xd), field breaker = TCS excitation, energy meters counting from the snapshot reading.
