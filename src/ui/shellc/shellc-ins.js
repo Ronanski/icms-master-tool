@@ -263,10 +263,10 @@
     con.hidden = true;
     document.body.append(con);
     /* Mina beta.210: Esc did not close the lists (a handler of the app stops the key first): caught in the capture phase */
-    document.addEventListener(
+    window.addEventListener(
       'keydown',
       e => {
-        if (e.key === 'Escape' && !con.hidden) con.hidden = true;
+        if ((e.key === 'Escape' || e.key === 'Esc') && !con.hidden) con.hidden = true;
       },
       true
     );

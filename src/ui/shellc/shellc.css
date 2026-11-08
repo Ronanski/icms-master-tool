@@ -57,11 +57,18 @@ body.sc #gsbar #scstrip .seg button{min-width:0!important;letter-spacing:0!impor
 body.sc #gsbar #scstrip .seg button.on{background:var(--sc-steel)!important;color:var(--sc-white)!important;box-shadow:none!important}
 body.sc #gsbar #scstrip .pill b{display:inline!important;font:700 .75rem var(--sc-num)!important}
 body.sc #gsbar #scstrip .scv{flex-wrap:nowrap}
+/* Mina beta.216 (HIGH): at 1366 the search, Run / Pause, Instructor and the old VIEW | RUN and PLANT chip shared one row with the
+   values, and the 11 cells shrank to 35 px, the numbers printed over each other. The values have a row of their own at every width;
+   the buttons go to the row under it (the top bar takes the height of both rows, shellc.js) */
+body.sc #gsbar #scstrip{flex-wrap:wrap!important;align-content:center;row-gap:.25rem}
+body.sc #gsbar #scstrip .scv{flex:1 1 100%!important;flex-wrap:wrap!important;row-gap:.25rem}
+body.sc #gsbar #scstrip .scp{margin-left:auto}
+body.sc #gsbar #scstrip .sck{min-width:5.5rem}
 @media (max-width:1279px){body.sc #gsbar #scstrip .scv{flex:1 1 100%}}
 /* ===== step 5: Instructor console and the training step card ===== */
 body.sc #gsbar #scstrip .pill.ins{border-color:var(--sc-violet)!important;color:var(--sc-violet)!important}
 body.sc #gsbar #scstrip .pill.ins.on{background:var(--sc-violet)!important;color:var(--sc-white)!important}
-#scins{position:fixed;top:calc(var(--top) + .25rem);right:.5rem;z-index:131;width:min(34rem,calc(100vw - 1rem));max-height:calc(100vh - var(--top) - var(--foot) - 1rem);display:flex;flex-direction:column;background:var(--sc-white);border:1px solid var(--sc-violet);border-radius:.5rem;box-shadow:0 .75rem 2rem rgba(34,46,57,.22);font-family:var(--sc-ui);color:var(--sc-ink)}
+#scins{position:fixed;top:calc(var(--scb,var(--top)) + .25rem);right:.5rem;z-index:131;width:min(34rem,calc(100vw - 1rem));max-height:calc(100vh - var(--top) - var(--foot) - 1rem);display:flex;flex-direction:column;background:var(--sc-white);border:1px solid var(--sc-violet);border-radius:.5rem;box-shadow:0 .75rem 2rem rgba(34,46,57,.22);font-family:var(--sc-ui);color:var(--sc-ink)}
 #scins[hidden]{display:none!important}
 #scins .scihd{display:flex;align-items:center;justify-content:space-between;padding:.5rem .75rem;border-bottom:1px solid var(--sc-line)}
 #scins .scihd b{font:600 .9375rem var(--sc-ui);color:var(--sc-violet)}
@@ -75,7 +82,7 @@ body.sc #gsbar #scstrip .pill.ins.on{background:var(--sc-violet)!important;color
 #scins button.trip{border-color:var(--sc-run)!important;color:var(--sc-run)!important}
 #scins button[data-arm]{background:var(--sc-run)!important;border-color:var(--sc-run)!important;color:var(--sc-white)!important}
 #scins .scx{padding:0 .625rem!important}
-#sccard{position:fixed;right:.75rem;bottom:calc(var(--foot) + .75rem);z-index:85;width:min(22rem,calc(100vw - 1.5rem));display:grid;gap:.5rem;padding:.75rem .875rem;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:.5rem;box-shadow:0 .5rem 1.5rem rgba(34,46,57,.18);font-family:var(--sc-ui);color:var(--sc-ink)}
+#sccard{position:fixed;right:.75rem;bottom:calc(var(--foot) + .75rem);z-index:95;width:min(22rem,calc(100vw - 1.5rem));display:grid;gap:.5rem;padding:.75rem .875rem;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:.5rem;box-shadow:0 .5rem 1.5rem rgba(34,46,57,.18);font-family:var(--sc-ui);color:var(--sc-ink)}
 #sccard[hidden]{display:none!important}
 #sccard .scctop{display:flex;align-items:center;justify-content:space-between;font:500 .6875rem var(--sc-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--sc-ink2)}
 #sccard .sclink{min-height:2rem!important;padding:0 .25rem!important;border:0!important;background:transparent!important;color:var(--sc-steel)!important;font:600 .8125rem var(--sc-ui)!important;box-shadow:none!important;cursor:pointer;text-transform:none;letter-spacing:0}
@@ -99,7 +106,8 @@ body.sc .sccrumb{display:none!important}
 body.sc.plant[data-tab="operate"]:not(.scov) .sccrumb:not(:has(b:empty)){display:inline-flex!important}
 #scboot{position:fixed;inset:0;z-index:299;background:#eef0f2}
 #scstart .scsbox{margin:0 auto}
-#scstart .scsub,#scstart .sccard span,#scstart .sccont span,#scstart .scgear,#scstart .scskip{font-size:.875rem!important}
+/* Mina beta.216: the start screen links were still 11.5 px: the app rule for buttons (body.app2 ... :not(#zbar *)) counts an id, so these rules carry two */
+#scstart:not(#scnone) .scsub,#scstart:not(#scnone) .sccard span,#scstart:not(#scnone) .sccont span,#scstart:not(#scnone) .scgear,#scstart:not(#scnone) .scskip{font-size:.875rem!important}
 #scstart .scver{font-size:.8125rem}
 #scins .scinp{flex:1 1 12rem;min-width:0;min-height:2rem;padding:0 .5rem;border:1px solid var(--sc-line2);border-radius:.25rem;font:400 .8125rem var(--sc-ui);color:var(--sc-ink);background:var(--sc-white)}
 #scins .scsvl{display:grid;gap:.25rem}
@@ -107,7 +115,7 @@ body.sc.plant[data-tab="operate"]:not(.scov) .sccrumb:not(:has(b:empty)){display
 #scins .scsvr span{flex:1;min-width:0;overflow-wrap:anywhere}
 body.sc.sccard #scov .scgrid{padding-bottom:12rem}
 /* ===== step 2: overview, breadcrumb, alarm list, start screen ===== */
-#scov{display:none;position:fixed;top:var(--top);left:var(--railW,0);right:0;bottom:var(--foot);z-index:80;overflow:auto;background:var(--sc-page);font-family:var(--sc-ui);color:var(--sc-ink)}
+#scov{display:none;position:fixed;top:var(--scb,var(--top));left:var(--scl,var(--railW,0));right:0;bottom:var(--foot);z-index:89;overflow:auto;background:var(--sc-page);font-family:var(--sc-ui);color:var(--sc-ink)}
 body.sc.scov #scov{display:flex;flex-direction:column}
 #scov .scbar{display:flex;align-items:center;gap:.375rem;padding:.5rem 1rem;font-size:.8125rem;border-bottom:1px solid var(--sc-line);background:var(--sc-paper)}
 .scbc{color:var(--sc-steel);text-decoration:underline}.scsep{color:var(--sc-ink2)}
@@ -132,10 +140,10 @@ body.sc.scov #scov{display:flex;flex-direction:column}
 #scov .scar .scs{font-weight:600;color:var(--sc-ink2)}
 #scov .scar.new .scs{color:#5c3f0b}
 .scnone{margin:0;font-size:.8125rem;color:var(--sc-ink2)}
-.sccrumb{display:none;position:fixed;top:calc(var(--top) + .375rem);left:calc(var(--railW,0px) + .5rem);z-index:79;align-items:center;gap:.375rem;min-height:2rem!important;padding:0 .75rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:1rem!important;color:var(--sc-ink)!important;font:500 .8125rem var(--sc-ui)!important;box-shadow:0 .125rem .5rem rgba(34,46,57,.12)!important;cursor:pointer}
+.sccrumb{display:none;position:fixed;top:calc(var(--scb,var(--top)) + .375rem);left:calc(var(--scl,var(--railW,0px)) + .5rem);z-index:79;align-items:center;gap:.375rem;min-height:2rem!important;padding:0 .75rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:1rem!important;color:var(--sc-ink)!important;font:500 .8125rem var(--sc-ui)!important;box-shadow:0 .125rem .5rem rgba(34,46,57,.12)!important;cursor:pointer}
 body.sc[data-tab="operate"]:not(.scov) .sccrumb{display:inline-flex}
 body.sc.pvout .sccrumb{display:none!important}
-#scal{position:fixed;top:calc(var(--top) + .25rem);right:.5rem;z-index:130;width:min(36rem,calc(100vw - 1rem));max-height:calc(100vh - var(--top) - var(--foot) - 1rem);display:flex;flex-direction:column;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:.5rem;box-shadow:0 .75rem 2rem rgba(34,46,57,.22);font-family:var(--sc-ui);color:var(--sc-ink)}
+#scal{position:fixed;top:calc(var(--scb,var(--top)) + .25rem);right:.5rem;z-index:130;width:min(36rem,calc(100vw - 1rem));max-height:calc(100vh - var(--top) - var(--foot) - 1rem);display:flex;flex-direction:column;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:.5rem;box-shadow:0 .75rem 2rem rgba(34,46,57,.22);font-family:var(--sc-ui);color:var(--sc-ink)}
 #scal[hidden]{display:none!important}
 #scal .schd{display:flex;align-items:center;gap:.5rem;padding:.5rem;border-bottom:1px solid var(--sc-line)}
 #scal .sctabs{display:flex;gap:.25rem;flex:1}

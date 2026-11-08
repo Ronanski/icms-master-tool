@@ -210,6 +210,43 @@
         dispatchEvent(new Event('resize'));
       }
     } catch (e) {}
+    /* Mina beta.219: with the Training dock open the strip started under the left rail ("Load" and Search hidden) and its right end
+       (RUN) went under the dock; on the overview the overview's own bar covered the button row. The strip keeps clear of the rail and
+       of the dock, and everything placed under the top bar takes the bar's real bottom (--scb) */
+    try {
+      const st = document.getElementById('scstrip'),
+        band = document.getElementById('crband'),
+        br = band.getBoundingClientRect(),
+        /* Mina beta.220: the rail and the dock are position: fixed, whose offsetParent is always null: seen by their boxes instead */
+        vis = el => !!(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden' && getComputedStyle(el).display !== 'none'),
+        rail = document.getElementById('crrail'),
+        dock = document.getElementById('gdock');
+      let ml = 0,
+        mr = 0;
+      let rl = 0;
+      if (vis(rail)) {
+        const r = rail.getBoundingClientRect();
+        rl = Math.max(0, Math.ceil(r.right));
+        if (r.top < br.bottom && r.right > br.left + 1) ml = Math.ceil(r.right - br.left) + 6;
+      }
+      if (vis(dock)) {
+        const d = dock.getBoundingClientRect();
+        if (d.top < br.bottom - 1 && d.left < br.right - 1 && d.left > br.left) mr = Math.ceil(br.right - d.left) + 6;
+      }
+      /* the whole bar (the strip and the app's own buttons beside it) keeps clear: padding of the bar, over the !important of shellc.css */
+      const mls = Math.max(8, ml) + 'px',
+        mrs = Math.max(8, mr) + 'px';
+      if (band.style.getPropertyValue('padding-left') !== mls) band.style.setProperty('padding-left', mls, 'important');
+      if (band.style.getPropertyValue('padding-right') !== mrs) band.style.setProperty('padding-right', mrs, 'important');
+      void st;
+      /* the overview starts right of the rail as it is drawn (with the dock open --railW is 14 px while the rail stays wide) */
+      const rls = rl + 'px';
+      if (document.documentElement.style.getPropertyValue('--scl') !== rls) document.documentElement.style.setProperty('--scl', rls);
+      /* the lowest of the bar and the strip's rows (a row that outgrows the bar is never covered) */
+      const rows = [...st.children].map(c => c.getBoundingClientRect()).filter(r => r.height > 0),
+        b = Math.ceil(Math.max(band.getBoundingClientRect().bottom, ...rows.map(r => r.bottom + 4))) + 'px';
+      if (document.documentElement.style.getPropertyValue('--scb') !== b) document.documentElement.style.setProperty('--scb', b);
+    } catch (e) {}
     const on = !!(window.AN && AN.run && !AN.view);
     S.runB.classList.toggle('on', on);
     const rt = on ? 'Running' : 'Paused';
