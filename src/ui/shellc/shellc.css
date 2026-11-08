@@ -1,0 +1,47 @@
+/* RE-SHELL LAYOUT C, step 1 (user approved the mockup and the build plan 2026-11-09): the colour set of the new shell and its status strip.
+   Only active with body.sc (link ?shell=c). The old app is not changed when body.sc is off. Colours: the Leonardo set of the mockup
+   (team-files/reshell, artifact RNYt8ceyxutMvDyEt2UFnu) */
+body.sc{
+  --sc-page:#eef0f2; --sc-paper:#f7f8f8; --sc-white:#ffffff; --sc-band:#e6e9eb;
+  --sc-ink:#222e39; --sc-ink2:#4d5b6a; --sc-line:#ccd1d6; --sc-line2:#a1aab3;
+  --sc-steel:#2b6ca5; --sc-run:#ce3a34; --sc-stop:#1f8149; --sc-amber:#966816; --sc-violet:#7656b8;
+  --sc-ui:"IBM Plex Sans",system-ui,"Segoe UI",sans-serif; --sc-num:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --top:3.5rem;
+}
+@media (max-width:1279px){body.sc{--top:5.75rem}}
+/* the old unit name, the old values and the old alarm line give their place to the new strip; search and VIEW | RUN stay */
+body.sc #crband > .crunit, body.sc #crband > .crkpis{display:none!important}
+/* the old alarm line is hidden, but its alarm list (with ACK) and the forced-signal list still open under the new strip */
+body.sc #crband > #cralarm{position:absolute!important;right:.5rem;top:0;height:100%;width:0!important;min-width:0!important;padding:0!important;margin:0!important;border:0!important;background:none!important;overflow:visible!important;flex:none!important}
+body.sc #crband > #cralarm > :not(#cralist):not(#crflist){display:none!important}
+body.sc #gsbar > #crband{position:relative;gap:.5rem!important;padding:0 .5rem!important;background:var(--sc-band)!important;border-bottom:1px solid var(--sc-line2)!important}
+#scstrip{display:flex;align-items:center;gap:.375rem;flex:1 1 auto;min-width:0;height:100%;font-family:var(--sc-ui);color:var(--sc-ink)}
+@media (max-width:1279px){#scstrip{flex-wrap:wrap;align-content:center;row-gap:.25rem}}
+#scstrip .scv{display:flex;flex-wrap:wrap;flex:1 1 auto;min-width:0;gap:0}
+#scstrip .sck{display:flex;flex-direction:column;justify-content:center;min-width:4.25rem;max-width:6.5rem;padding:.125rem .5rem;border-left:1px solid var(--sc-line);line-height:1.15;cursor:default}
+#scstrip .sck:first-child{border-left:0}
+#scstrip .sck i{font:500 .625rem/1.15 var(--sc-ui);font-style:normal;color:var(--sc-ink2);white-space:normal}
+#scstrip .sck b{font:600 .9375rem/1.2 var(--sc-num);font-variant-numeric:tabular-nums;color:var(--sc-ink);white-space:nowrap}
+#scstrip .sck small{font:400 .625rem var(--sc-ui);color:var(--sc-ink2)}
+#scstrip .sck.na b{color:var(--sc-line2)}
+#scstrip .scp{display:flex;align-items:center;gap:.375rem;flex:none}
+#scstrip .pill{display:inline-flex;align-items:center;gap:.375rem;min-height:2rem!important;height:auto!important;padding:0 .75rem!important;border:1px solid var(--sc-line2)!important;border-radius:1rem!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 .75rem var(--sc-ui)!important;white-space:nowrap;cursor:pointer;box-shadow:none!important}
+#scstrip .pill:hover{border-color:var(--sc-steel)!important}
+#scstrip .pill .dot{width:.625rem;height:.625rem;border-radius:50%;background:var(--sc-stop);flex:none}
+#scstrip .pill.trip{border-color:var(--sc-run)!important;color:var(--sc-run)!important}
+#scstrip .pill.trip .dot{background:var(--sc-run)}
+#scstrip .pill.alm{background:#f6e7cf!important;border-color:var(--sc-amber)!important;color:#5c3f0b!important}
+#scstrip .pill.alm .dot{background:var(--sc-amber)}
+#scstrip .pill.alm.new{animation:scblink 1s steps(2,start) infinite}
+@keyframes scblink{to{background:var(--sc-white)}}
+@media (prefers-reduced-motion:reduce){#scstrip .pill.alm.new{animation:none}}
+#scstrip .seg{display:inline-flex;border:1px solid var(--sc-steel);border-radius:.375rem;overflow:hidden;flex:none}
+#scstrip .seg button{min-height:2rem!important;height:auto!important;padding:0 .75rem!important;border:0!important;border-radius:0!important;background:var(--sc-white)!important;color:var(--sc-steel)!important;font:600 .75rem var(--sc-ui)!important;box-shadow:none!important;cursor:pointer}
+#scstrip .seg button.on{background:var(--sc-steel)!important;color:var(--sc-white)!important}
+#scstrip .spd{position:relative}
+#scstrip .spdm{position:absolute;right:0;top:calc(100% + .25rem);z-index:120;display:none;gap:.25rem;padding:.375rem;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:.375rem;box-shadow:0 .5rem 1.5rem rgba(34,46,57,.18)}
+#scstrip .spd.open .spdm{display:flex}
+#scstrip .spdm button{min-height:2rem!important;padding:0 .625rem!important;border:1px solid var(--sc-line2)!important;border-radius:.25rem!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 .75rem var(--sc-num)!important}
+#scstrip .spdm button.on{background:var(--sc-steel)!important;border-color:var(--sc-steel)!important;color:var(--sc-white)!important}
+#scstrip .old{min-height:2rem!important;padding:0 .5rem!important;border:0!important;background:transparent!important;color:var(--sc-ink2)!important;font:500 .6875rem var(--sc-ui)!important;text-decoration:underline;box-shadow:none!important;cursor:pointer}
+#scstrip :focus-visible{outline:2px solid var(--sc-steel)!important;outline-offset:2px}

@@ -1,0 +1,179 @@
+/* ===== RE-SHELL LAYOUT C, step 1 of 7 (user approved the mockup C and the build plan on 2026-11-09):
+   the new status strip, built BESIDE the old app. It shows only when the user opens the app with ?shell=c (kept in ls-shell until
+   "Old layout" is pressed or the link has ?shell=old). It READS the plant (the same values the Training recorder writes, LS_LIVE.getV)
+   and drives only the controls the old app already has (alarm list, speed, Plant view / Logic). Nothing here touches the engine.
+   The 11 values: user decisions of 2026-11-08 (team-files/reshell/BRIEF.md item 6). ===== */
+(function () {
+  const KEY = 'ls-shell';
+  try {
+    const q = new URLSearchParams(location.search).get('shell');
+    if (q === 'c') localStorage.setItem(KEY, 'c');
+    else if (q === 'old') localStorage.removeItem(KEY);
+  } catch (e) {}
+  let want = false;
+  try {
+    want = localStorage.getItem(KEY) === 'c';
+  } catch (e) {}
+  if (!want) return;
+
+  const E = (t, cls, txt) => {
+    const e = document.createElement(t);
+    if (cls) e.className = cls;
+    if (txt != null) e.textContent = txt;
+    return e;
+  };
+  /* [label, unit, how to read, decimals, source for the tooltip] */
+  const L = () => window.LS_LIVE;
+  const g = k => () => +L().getV(k);
+  const rht = () => {
+    const f = L().fp('TICHR1002');
+    return f ? L().pvOf(f) : NaN;
+  };
+  const K = [
+    ['Load', 'MW', g('MW'), 1, 'Generator MW, ABC-001C AI0419'],
+    ['Main steam pressure', 'kg/cm²', g('MSP'), 1, 'PT-MS1002, ABC-001C AI0131'],
+    ['Main steam temperature', '°C', g('MST'), 0, 'PV of TICMS1004, ABC-012'],
+    ['Main steam flow', 't/h', g('MSF'), 1, 'Compensated main steam flow, ABC-001C SI0230'],
+    ['Reheat steam pressure', 'kg/cm²', g('RHP'), 1, 'PV of PICHR1003, ABC-052'],
+    ['Reheat steam temperature', '°C', rht, 0, 'PV of TICHR1002, ABC-019'],
+    ['Drum level', 'mm', g('lvl'), 0, 'PV of LICBR1001, ABC-010'],
+    ['Bed temperature', '°C', g('Tb'), 0, 'Plant model bed temperature (FHI Fig 8)'],
+    ['Furnace pressure', 'mmH₂O', g('FP'), 0, 'PV of PICFG108, ABC-008'],
+    ['Total coal flow', 't/h', g('coal'), 1, 'Coal master PV, ABC-004A'],
+    ['Total air flow', 't/h', g('AIR'), 1, 'Primary + secondary + fluidizing air, ABC-006']
+  ];
+  let S = null;
+  function build() {
+    const band = document.getElementById('crband');
+    if (!band || !window.LS_LIVE) return false;
+    const strip = E('div');
+    strip.id = 'scstrip';
+    strip.setAttribute('role', 'region');
+    strip.setAttribute('aria-label', 'Major plant values');
+    const vals = E('div', 'scv');
+    const cells = K.map(([n, u, , , src]) => {
+      const c = E('div', 'sck'),
+        v = E('b', '', '—');
+      c.append(E('i', '', n), v, E('small', '', u));
+      c.title = n + ', ' + u + '. Source: ' + src + '.';
+      vals.append(c);
+      return { c, v };
+    });
+    const pills = E('div', 'scp');
+    const trip = E('button', 'pill');
+    trip.type = 'button';
+    const tripT = E('span', '', 'No trip');
+    trip.append(E('span', 'dot'), tripT);
+    trip.title = 'Trip status. Click: the alarm list';
+    const alm = E('button', 'pill');
+    alm.type = 'button';
+    const almT = E('span', '', 'No alarm');
+    alm.append(E('span', 'dot'), almT);
+    alm.title = 'Alarms of the whole DCS. Click: the alarm list with Acknowledge';
+    const openAlarms = () => {
+      const c = document.querySelector('#cralarm .crchip:not(.frc)');
+      if (c) c.click();
+    };
+    trip.onclick = openAlarms;
+    alm.onclick = openAlarms;
+    /* speed: the app's own speed control (the Simulation speed select), shown as ×1 ▾ with the choices */
+    const spd = E('div', 'spd'),
+      spdB = E('button', 'pill', 'Speed ×1'),
+      spdM = E('div', 'spdm');
+    spdB.type = 'button';
+    spdB.title = 'Simulation speed';
+    spdB.setAttribute('aria-haspopup', 'true');
+    spdB.onclick = () => {
+      const sel = speedSel();
+      spdM.textContent = '';
+      if (sel)
+        for (const o of sel.options) {
+          const b = E('button', o.value === sel.value ? 'on' : '', '×' + o.value);
+          b.type = 'button';
+          b.onclick = () => {
+            sel.value = o.value;
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+            spd.classList.remove('open');
+          };
+          spdM.append(b);
+        }
+      spd.classList.toggle('open');
+    };
+    spd.append(spdB, spdM);
+    document.addEventListener('click', e => {
+      if (!spd.contains(e.target)) spd.classList.remove('open');
+    });
+    /* Operator = the plant pages, Engineer = the logic sheets (step 4 brings the side-by-side view) */
+    const seg = E('div', 'seg');
+    seg.setAttribute('role', 'group');
+    seg.setAttribute('aria-label', 'Mode');
+    const bOp = E('button', '', 'Operator'),
+      bEn = E('button', '', 'Engineer');
+    bOp.type = bEn.type = 'button';
+    bOp.onclick = () => window.lsSetTab && lsSetTab('operate');
+    bEn.onclick = () => window.lsSetTab && lsSetTab('logic');
+    seg.append(bOp, bEn);
+    const old = E('button', 'old', 'Old layout');
+    old.type = 'button';
+    old.title = 'Back to the old layout (the new layout comes back with the link ?shell=c)';
+    old.onclick = () => {
+      try {
+        localStorage.removeItem(KEY);
+      } catch (e) {}
+      location.search = location.search.replace(/([?&])shell=c&?/, '$1').replace(/[?&]$/, '');
+    };
+    pills.append(trip, alm, spd, seg, old);
+    strip.append(vals, pills);
+    band.prepend(strip);
+    document.body.classList.add('sc');
+    S = { cells, trip, tripT, alm, almT, spdB, bOp, bEn };
+    setTimeout(() => dispatchEvent(new Event('resize')), 0);
+    setInterval(tick, 1000);
+    tick();
+    return true;
+  }
+  function speedSel() {
+    return [...document.querySelectorAll('select')].find(x => x.title === 'Simulation speed') || null;
+  }
+  const fmt = (x, d) => (isFinite(x) ? x.toFixed(d).replace(/^-(0(?:\.0)?)$/, '$1') : '—');
+  function tick() {
+    if (!S) return;
+    const none = window.AN && AN.plantOn && !AN.startState;
+    K.forEach(([, , rd, d], i) => {
+      let x = NaN;
+      if (!none)
+        try {
+          x = rd();
+        } catch (e) {}
+      const t = fmt(x, d);
+      if (S.cells[i].v.textContent !== t) S.cells[i].v.textContent = t;
+      S.cells[i].c.classList.toggle('na', !isFinite(x));
+    });
+    let act = [];
+    try {
+      act = window.lsActiveAlarms ? lsActiveAlarms().list : [];
+    } catch (e) {}
+    const trips = act.filter(a => a && a.kind === 'TRIP');
+    S.trip.classList.toggle('trip', trips.length > 0);
+    S.tripT.textContent = trips.length ? 'Trip · ' + String(trips[trips.length - 1].text || '').replace(/ = 1$/, '') : 'No trip';
+    let un = 0;
+    try {
+      un = window.lsAlarms ? lsAlarms.list().filter(a => !a.ack && !a.sd && !a.rtn).length : 0;
+    } catch (e) {}
+    const n = act.length;
+    S.alm.classList.toggle('alm', n > 0);
+    S.alm.classList.toggle('new', un > 0);
+    S.almT.textContent = n ? n + (n === 1 ? ' alarm' : ' alarms') + (un ? ' · ' + un + ' new' : '') : 'No alarm';
+    const sel = speedSel();
+    const sp = 'Speed ×' + (sel ? sel.value : '1');
+    if (S.spdB.textContent !== sp) S.spdB.textContent = sp;
+    const tab = document.body.dataset.tab;
+    S.bOp.classList.toggle('on', tab === 'operate');
+    S.bEn.classList.toggle('on', tab === 'logic');
+  }
+  /* the old shell builds #crband after load; wait for it (30 s at most) */
+  let n = 0;
+  const iv = setInterval(() => {
+    if (build() || ++n > 60) clearInterval(iv);
+  }, 500);
+})();
