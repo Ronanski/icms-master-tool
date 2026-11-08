@@ -280,7 +280,9 @@
       const bows = [...pg.querySelectorAll('path')]
         .map(p => {
           const n = (p.getAttribute('d') || '').match(/^M([\d.]+) ([\d.]+) L([\d.]+) ([\d.]+) L([\d.]+) ([\d.]+) L([\d.]+) ([\d.]+) Z$/);
-          return n ? { p, x: (+n[1] + +n[3]) / 2, y: (+n[2] + +n[4]) / 2, used: 0 } : null;
+          return n
+            ? { p, x: (+n[1] + +n[3]) / 2, y: (+n[2] + +n[4]) / 2, x0: Math.min(+n[1], +n[3]), y0: Math.min(+n[2], +n[4]), x1: Math.max(+n[1], +n[3]), y1: Math.max(+n[2], +n[4]), used: 0 }
+            : null;
         })
         .filter(Boolean);
       const VT = [];
@@ -302,7 +304,18 @@
         }
         const sym = best && bd < 40 ? ((best.used = 1), best.p) : null;
         const go = ev => (ev.stopPropagation(), call(() => LS_FPOP.valveTag(tag)));
-        for (const el of sym ? [e, sym] : [e]) {
+        /* sweep item 7 (Mina 11-07, FEEDWATER V-FW1011): a real mouse click on the valve symbol missed, a dispatched click opened it. The
+           bowtie is two small triangles that meet at one point in the middle, where the pipe runs: the middle (where a click lands) has
+           almost nothing to hit. A clear box over the whole symbol, on top of the page, takes the click */
+        let hb = null;
+        if (sym) {
+          hb = document.createElementNS(NS, 'rect');
+          for (const [k, v] of Object.entries({ x: best.x0 - 4, y: best.y0 - 4, width: best.x1 - best.x0 + 8, height: best.y1 - best.y0 + 8, fill: 'transparent', stroke: 'none', 'data-vth': tag }))
+            hb.setAttribute(k, v);
+          hb.style.pointerEvents = 'all';
+          pg.append(hb);
+        }
+        for (const el of sym ? [e, sym, hb] : [e]) {
           el.style.cursor = 'pointer';
           el.style.pointerEvents = 'auto';
           const ti = document.createElementNS(NS, 'title');

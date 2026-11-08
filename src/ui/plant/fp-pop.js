@@ -1448,6 +1448,17 @@
       if (!b) return;
       g.style.cursor = 'pointer';
       b.setAttribute('fill', (+all[tag] || 0) > 0 ? '#d64545' : '#3fa34d');
+      /* sweep item 7: a clear box over the whole valve takes a real click (a thin or crossed symbol has little to hit) */
+      if (!g.querySelector(':scope > rect[data-fvh]'))
+        call(() => {
+          const r = g.getBBox();
+          if (!r.width && !r.height) return;
+          const h = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          for (const [k, v] of Object.entries({ x: r.x - 3, y: r.y - 3, width: r.width + 6, height: r.height + 6, fill: 'transparent', stroke: 'none', 'data-fvh': tag }))
+            h.setAttribute(k, v);
+          h.style.pointerEvents = 'all';
+          g.append(h);
+        });
     });
   }, 1000);
   /* the mockup pages (hmi-mock.js): which kind of valve a tag is, and open (1) / closed (0) / unknown (null) */
