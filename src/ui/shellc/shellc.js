@@ -70,7 +70,9 @@
     const almT = E('span', '', 'No alarm');
     alm.append(E('span', 'dot'), almT);
     alm.title = 'Alarms of the whole DCS. Click: the alarm list with Acknowledge';
+    /* step 2: the new alarm list (shellc-home.js) with its Events tab; the old list while that is not there */
     const openAlarms = () => {
+      if (window.lsShellC && lsShellC.openAl) return lsShellC.openAl();
       const c = document.querySelector('#cralarm .crchip:not(.frc)');
       if (c) c.click();
     };
@@ -110,8 +112,12 @@
     const bOp = E('button', '', 'Operator'),
       bEn = E('button', '', 'Engineer');
     bOp.type = bEn.type = 'button';
-    bOp.onclick = () => window.lsSetTab && lsSetTab('operate');
-    bEn.onclick = () => window.lsSetTab && lsSetTab('logic');
+    /* step 2: Operator opens the overview of the unit (shellc-home.js) */
+    bOp.onclick = () => (window.lsShellC && lsShellC.showOv ? lsShellC.showOv() : window.lsSetTab && lsSetTab('operate'));
+    bEn.onclick = () => {
+      if (window.lsShellC && lsShellC.hideOv) lsShellC.hideOv();
+      if (window.lsSetTab) lsSetTab('logic');
+    };
     seg.append(bOp, bEn);
     const old = E('button', 'old', 'Old layout');
     old.type = 'button';
