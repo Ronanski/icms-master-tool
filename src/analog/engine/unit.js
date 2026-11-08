@@ -479,6 +479,13 @@ function anUnitStart() {
       return n >= 0 ? { S: x.S, n } : null;
     },
     procsOf = (k, tags) => tags.map(t => procOf(k, t)).filter(Boolean);
+  /* 3.2.1 d2 (LISA): station wiring S1 -> S2. ABC-020 reads S2 M.3154 "BOILER STEAM FLOW < 15% MCR (69T/H) (BC FROM S1)" (memory list 102);
+     memory list 101 gives the same name to M.2002, the comparator of ABC-001C (and M.3154 "STN101 STATION WIRING"). Nothing wrote it: 0 */
+  {
+    const a = labOf('ABC-001C', 'M.2002'),
+      t = labOf('ABC-020', 'S2 M.3154') || labOf('ABC-020', 'M.3154');
+    if (a && t && t.S.ext.includes(t.n) && !a.S.ext.includes(a.n)) U.alink.push([a, t]);
+  }
   /* station wiring: STN102 digital inputs broadcast to STN101 (memory list "BC FROM S2"); written only on nets that are inputs of
      the drawing (S.ext) and not forced by the user */
   U.bcast = [
