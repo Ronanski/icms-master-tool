@@ -2361,7 +2361,8 @@
       }
     }
     if (s.need) {
-      const cb = E('button', { type: 'button', cls: 'gd-btn go', txt: s.pre ? Math.round(s.pre / 3600) + ' h purge done' : 'Done in field' });
+      /* Mina beta.152 (step 139 read the first outs): a confirm step done in the control room (s.cr) says so, not "in the field" */
+      const cb = E('button', { type: 'button', cls: 'gd-btn go', txt: s.pre ? Math.round(s.pre / 3600) + ' h purge done' : s.cr ? 'Done' : 'Done in field' });
       els.fieldCb = cb;
       /* retest #55: a card with a field time (the 6 h ESP purge): "Tapos na" only when the time is over (dock live: els.preCb); the
          purge not started yet can be skipped only as a training shortcut, asked and logged */
@@ -2691,7 +2692,7 @@
         ? stg(
             'S',
             hasMot ? 'Start' : s.need && !(s.a || []).length ? 'Confirm' : fldOnly ? 'Field' : 'Control room',
-            hasMot ? 'START / STOP · MAN / AUTO' : s.need && !(s.a || []).length ? 'Done in the field' : fldOnly ? 'Field operator at the local panel · no DCS control' : 'Controller (A / M, MV, SV) and the buttons of the step',
+            hasMot ? 'START / STOP · MAN / AUTO' : s.need && !(s.a || []).length ? (s.cr ? 'Done in the control room' : 'Done in the field') : fldOnly ? 'Field operator at the local panel · no DCS control' : 'Controller (A / M, MV, SV) and the buttons of the step',
             [card]
           )
         : null,
@@ -3068,17 +3069,17 @@
         fp = true;
       }
     } else if (s.need) {
-      /* a field card: tick its items, then confirm (the 6 h purge: start it, RUN) */
-      who = 'FIELD OPERATOR';
+      /* a field card: tick its items, then confirm (the 6 h purge: start it, RUN); s.cr: a confirm step of the control room */
+      who = s.cr ? 'CONTROL ROOM' : 'FIELD OPERATOR';
       if (els.preGo && !els.preGo.hidden && !call(() => GD().holdOf(s), null)) {
         say = 'Start the ' + Math.round(s.pre / 3600) + ' h purge in plant time, then ▶ RUN';
         adr = 'H-1201 / F-1201 · EP PLC panel · no DCS command';
         bl = 'Start purge';
         fn = () => els.preGo.click();
       } else if (els.fieldCb && !els.fieldCb.disabled) {
-        say = 'Confirm done in the field: ' + u1(els.doTxt || s.t);
-        adr = 'field · no DCS command';
-        bl = 'Done in field';
+        say = (s.cr ? 'Confirm when done: ' : 'Confirm done in the field: ') + u1(els.doTxt || s.t);
+        adr = s.cr ? 'control room · read only' : 'field · no DCS command';
+        bl = s.cr ? 'Done' : 'Done in field';
         fn = () => els.fieldCb.click();
       } else say = els.cond && els.cond.textContent ? els.cond.textContent : u1(els.doTxt || s.t);
     } else {
@@ -3237,7 +3238,7 @@
       /* #115 (live check: "Pindutin ang Simulan ang 6 h purge" and "Naka-PAUSE ang oras" stayed under ✓ TAPOS of Hakbang 1): a done step
          has no reminder of what to press */
       if (els.psd) els.psd.hidden = rd;
-      if (rd) els.okt.textContent = '✓ DONE' + (els.skipped === s.i ? ' (skipped: training shortcut)' : s.c && s.c.now ? ': ' + call(() => s.c.now(), '') : s.need ? ': confirmed in the field' : '');
+      if (rd) els.okt.textContent = '✓ DONE' + (els.skipped === s.i ? ' (skipped: training shortcut)' : s.c && s.c.now ? ': ' + call(() => s.c.now(), '') : s.need ? (s.cr ? ': confirmed' : ': confirmed in the field') : '');
     }
     /* 3.2.0 retest #27: the items after the START open when the equipment runs */
     /* retest #45: the AUTO items tick here as soon as the logic latches them (was: only when the step was drawn again) */
@@ -3300,6 +3301,8 @@
         : s.need
           ? s.pre
             ? 'Press "Start the ' + Math.round(s.pre / 3600) + ' h purge", then ▶ RUN.'
+            : s.cr
+            ? 'Press "Done" when it is done.'
             : 'Press "Done in field" when it is done.'
           : '';
       }
