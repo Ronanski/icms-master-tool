@@ -525,6 +525,10 @@
     const dw = Math.max(...['anp', 'opp', 'dp'].map(id => ($(id) && $(id).offsetParent ? $(id).offsetWidth : 0))),
       rt = Math.round(dw + 16) + 'px';
     if (els.why.style.right !== rt) els.why.style.right = rt;
+    /* shell audit M36 (Yuna 2026-11-09, MEASURE_STANDARD S7 "no box over another"): the zoom bar of the sheet goes 8 px above the Why box;
+       the Why box itself sits above the footer and the training card bar (CSS --scewhyb, M30) */
+    const sh = Math.round(els.why.offsetHeight || 0) + 'px';
+    if (B.style.getPropertyValue('--scewhyh') !== sh) B.style.setProperty('--scewhyh', sh);
   }
   setInterval(() => call(tick), 400);
   window.lsShellC = Object.assign(window.lsShellC || {}, { engTool: setTool });
