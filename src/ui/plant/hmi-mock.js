@@ -590,7 +590,7 @@
         if (m.df && window.LS_FPOP && LS_FPOP.pb) {
           const s = call(() => D().dOf(m.d), null),
             perm = (m.df.perm || []).map(r => ({ row: r, l: String(call(() => DUI.rowInfo(s, r).svc, '') || 'row ' + r) }));
-          if (LS_FPOP.pb({ n: m.n, t: m.t, d: m.d, io: m.io, st: { row: m.df.st, on: 'IN OPERATION', off: 'STOPPED' }, pbs: m.df.pbs, perm, permWhy: m.df.why, vals: m.df.dp ? [[m.df.dp, () => cur(m.df.dp), 'mmH2O']] : [] }))
+          if (LS_FPOP.pb({ n: m.n, t: m.t, d: m.d, io: m.io, st: { row: m.df.st, on: m.df.on || 'IN OPERATION', off: m.df.off || 'STOPPED' }, pbs: m.df.pbs, perm, permWhy: m.df.why, vals: m.df.dp ? [[m.df.dp, () => cur(m.df.dp), 'mmH2O']] : [] }))
             return;
         }
         if (m.fieldOp && window.LS_FPOP && LS_FPOP.field)
