@@ -1954,7 +1954,7 @@ function anHdStep(U, dt) {
       const v = anUnitVal(h.L[0]);
       h.y = isFinite(v) ? v : 0;
       h.off = h.L.map(l => (isFinite(anUnitVal(l)) ? anUnitVal(l) - h.y : 0));
-      /* 3.2.1-beta.146 (LISA, Mina fresh 150 MW: NO.1 / NO.2 LPH level HIGH): "Start at 150 MW" is a steady state, so the level stands at
+      /* 3.2.1-beta.148 (LISA, Mina fresh 150 MW: NO.1 / NO.2 LPH level HIGH): "Start at 150 MW" is a steady state, so the level stands at
          the SV of its primary controller (snapshot SV, ABC-035 ~ 039). Before, it started from the transmitter, which the loop model of
          the drawing moved at the end of the load while the snapshot MV of 02.png (60 MW, LCV-HD1102 99.9 %) was on it: LPH2 -5 -> -97 mm,
          then the controller refilled it past HIGH (alarm list LT-HD1102 H 10 mm) */
@@ -2025,7 +2025,7 @@ function anHdStep(U, dt) {
     out[k] = w1;
     h.L.forEach((l, i) => anUnitWrite(l, h.y + (h.off[i] || 0)));
   }
-  /* 3.2.1-beta.146 (LISA, Mina: NO.1 HPH level (2) LOW-LOW at 150 MW): the inflow of the first step is not steady (HPH1 108 t/h, then 79 t/h
+  /* 3.2.1-beta.148 (LISA, Mina: NO.1 HPH level (2) LOW-LOW at 150 MW): the inflow of the first step is not steady (HPH1 108 t/h, then 79 t/h
      one step later: the extraction and the HPH2 cascade start), so a seed on that step left out 109 t/h against in 79 t/h. The drains are
      seeded again on each step until every inflow holds (within 0.5 t/h of the last step), 50 steps at most */
   if (U.hdSeed && sq > 0) {
@@ -2827,7 +2827,9 @@ function anUnitStep0(dt) {
   }
   /* 3.2.0-beta.15: condenser vacuum (see AN_UNIT vacUp): with no seawater or condensate pump the TCS trips the turbine on LOW VACUUM */
   {
-    const cw = srcBit(['M.3353', 'M.3354', 'M.3355']) && srcBit(['M.3350', 'M.3351']) ? 1 : 0;
+    const sea = srcBit(['M.3353', 'M.3354', 'M.3355']) ? 1 : 0,
+      cep = srcBit(['M.3350', 'M.3351']) ? 1 : 0,
+      cw = sea && cep ? 1 : 0;
     if (!isFinite(U.vac)) U.vac = 1;
     /* raised by the vacuum pumps at a steady rate, lost first order. 3.2.0-beta.37 (CHECKLIST 0.5, user 2026-10-25 "bakit wala ang
        vacuum up at gland steam at auxiliary steam"): PR-OPE-5002 VACUUM UP needs the steam ejectors and the gland sealing, both on
@@ -2852,7 +2854,27 @@ function anUnitStep0(dt) {
     const aux = tcx ? tcx.ej && !tcx.vb && tcx.Pa > 10 && tcx.gland : U.Pd > 12,
       cw2 = tcx && tcx.vb ? 0 : cw;
     U.aux = aux ? 1 : 0;
-    U.vac = Math.max(0, Math.min(1, cw2 > U.vac ? (aux ? U.vac + dt / U.vacUp : U.vac) : U.vac + ((cw2 - U.vac) * dt) / U.vacDn));
+    /* Mina beta.136 (normal shutdown, 47 MW): CEP-A stopped on hotwell low and the turbine tripped on LOW VACUUM 17 s later (vacDn 60 s).
+       With the seawater on the steam still condenses; only the air ejector stops (its inter / after condensers are cooled by the
+       condensate, ED 066 p2 flowsheet: cooling water 362.6 t/h normal, 80 t/h design). The condenser then gains its air in-leakage:
+       25.5 kg/h (ED 066 p2, design air of the SJAE suction) in the evacuated volume 338 m3 (ED 066 p15, starting ejector curve), at
+       40 C: dP/dt = 25.5 / 3600 x 287 x 313 / 338 = 1.88 Pa/s = 0.0000192 kg/cm2 per s (about 1.1 mbar per minute; from 0.07 to the
+       0.26 trip in about 2.7 h). No seawater or an open vacuum breaker: lost in vacDn as before */
+    const Ps0 = isFinite(U.cdTs) ? Math.min(1.033, anPsat(U.cdTs)) : 0.07,
+      airR = (25.5 / 3600) * 287 * 313 / 338 / 98066.5;
+    U.vac = Math.max(
+      0,
+      Math.min(
+        1,
+        sea && !cep && !(tcx && tcx.vb)
+          ? U.vac - (airR * dt) / Math.max(0.1, 1.033 - Ps0)
+          : cw2 > U.vac
+            ? aux
+              ? U.vac + dt / U.vacUp
+              : U.vac
+            : U.vac + ((cw2 - U.vac) * dt) / U.vacDn
+      )
+    );
     const tb0 = U.tb,
       l = U.vtrip;
     /* I.0400 follows the valves (IBD TA-6, tcsI0400); a model without a vacuum value keeps its own rule */
