@@ -847,6 +847,41 @@
     if (els.spdB && els.spdB.textContent !== tx) els.spdB.textContent = tx;
   }
   setInterval(() => els.spdB && paintSpeed(), 1500);
+  /* 3.2.1 (user 2026-11-08 testing plan 5): while the Training step is a HOLD (hold 90 MW 8 ~ 10 min, purge 5 min, drum level 30 s ...)
+     and its condition is met, the plant runs x10 by itself (only when the speed was lower); the speed of the trainee comes back when
+     the step is done, moves on, or its condition is lost. Logged as an event. A PC that cannot give x10 runs as fast as it can */
+  const HX = { on: false, prev: 1, step: -1 };
+  setInterval(() => {
+    try {
+      const g = GD();
+      if (!g || !g.on || !isRun()) {
+        if (HX.on) (HX.on = false), setSpeed(HX.prev);
+        return;
+      }
+      const L = g.steps(),
+        st = L[g.cur],
+        c = st && st.c;
+      let hold = false;
+      if (c && c.hold && !(g.ready && g.ready()))
+        try {
+          hold = !!c.ok();
+        } catch (e) {}
+      if (hold && !HX.on) {
+        const v = +((window.AN && AN.spd) || 1);
+        if (v < 10) {
+          HX.on = true;
+          HX.prev = v;
+          HX.step = g.cur;
+          setSpeed(10);
+          if (window.lsEventAdd) lsEventAdd('DCS', 'DCS', 'Training: speed x10 during the hold of step ' + (g.cur + 1));
+        }
+      } else if (HX.on && (!hold || g.cur !== HX.step)) {
+        HX.on = false;
+        setSpeed(HX.prev);
+        if (window.lsEventAdd) lsEventAdd('DCS', 'DCS', 'Training: speed back to x' + HX.prev + ' after the hold');
+      }
+    } catch (e) {}
+  }, 1000);
   /* 3.2.0 walkthrough #1 #16: the Training starts PAUSED; RUN / PAUSE from the panel (the ABC page or the DITL page, whichever is open) */
   const isRun = () =>
     !!(window.AN && ((AN.cat === 'an' && AN.run && !AN.view) || (AN.cat !== 'an' && typeof SIM !== 'undefined' && SIM && !(typeof DPAUSE !== 'undefined' && DPAUSE))));
