@@ -248,7 +248,8 @@ window.LS_LIVE = (function () {
     },
     now: () => {
       const f = fp(t);
-      return (f ? f.t : t) + ' MV ' + (f ? f1(mvOf(f)) : '—') + ' %';
+      /* a MAN station has the unit of its parameters (HIC-ULD MW, Mina beta.170), a controller output is % */
+      return (f ? f.t : t) + ' MV ' + (f ? f1(mvOf(f)) : '—') + ' ' + ((f && f.kind === 'man' && f.b && f.b.p && f.b.p.u) || '%');
     },
     want: t + ' MV ' + wr(lo, hi, '%'),
     go: { tag: t }

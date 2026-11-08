@@ -108,6 +108,28 @@
   }
   const dSheets = () => (typeof S !== 'undefined' && S.sheets ? S.sheets.concat((window.WORLD && WORLD.inst) || []) : []);
   const dnm = s => String((s && s.name) || '').replace(/^\(\d+\)/, '');
+  /* Mina beta.170 (Faults): the header said "DITL-19 TRIP · DITL-19" for the coal feeder (DITL-19 has no TRIP output: the name came from
+     the sheet) and the events said PAF / SAF / IDF / FAB-A / CEP-A (rule: no acronyms as labels). The name of the equipment: the TRIP
+     output, else the RUNNING output of the drawing, in words */
+  const WORDS = [
+    [/\bIDF\b/g, 'ID fan'],
+    [/\bSAF\b/g, 'SA fan'],
+    [/\bPAF\b/g, 'PA fan'],
+    [/\bFAB-?([A-C])\b/g, 'FA blower $1'],
+    [/\bFAB\b/g, 'FA blower'],
+    [/\bCEP-?([AB])\b/g, 'condensate pump $1'],
+    [/\bBFWP-([AB])\b/g, 'BFWP $1']
+  ];
+  const words = x => WORDS.reduce((a, [re, w]) => a.replace(re, w), String(x || ''));
+  const clean = x => String(x || '').replace(/^Output row \d+ · /, '').replace(/\s*·.*$/, '').replace(/\s*\b[IMB]\.[0-9A-F]{4}\S*/g, '').trim();
+  function eqName(s, o) {
+    if (o && o.trip) return words(clean(o.trip.name).replace(/\s+TRIP$/, ''));
+    try {
+      const r = (DUI.outs(s) || []).find(q => /\bRUNNING\b/.test(String(q.name || '')) && !/\bALL\b/.test(String(q.name || '')));
+      if (r) return words(clean(r.name).replace(/\s*\bRUNNING\b.*$/, ''));
+    } catch (e) {}
+    return dnm(s);
+  }
   /* motState: src/digital/parts/03c-read.js (DUI.motState, no DOM: the unit model reads it too) */
   const motState = s => DUI.motState(s);
   /* retest #62: the equipment group of an ABC sheet for the shutdown alarm suppression (the lamps of the Training dock, dock.js LAMPS):
@@ -159,9 +181,9 @@
       MOTP.set(a, v);
       if (was !== 1 || v !== 0) continue;
       const nm = MOT[a],
-        op = LOG.slice(0, 12).some(e => /^Operator: STOP /.test(e.text || '') && (e.text || '').includes(nm));
+        op = LOG.slice(0, 12).some(e => /^Operator: STOP /.test(e.text || '') && ((e.text || '').includes(nm) || (e.text || '').includes(words(nm))));
       if (op) continue;
-      add({ rt: { t } }, { name: 'DCS' }, 'DCS', nm + ' STOPPED (' + a + ' = 0; not by the STOP button of the Training)');
+      add({ rt: { t } }, { name: 'DCS' }, 'DCS', words(nm) + ' STOPPED (' + a + ' = 0; not by the STOP button of the Training)');
     }
   }
   /* the service text of a tag from the I/O list (window.WIRING: the tag is the 4th column, the service the 5th): first letter + system + number
@@ -251,12 +273,12 @@
           ms0 = MSEEN.get(s.name);
         MSEEN.set(s.name, ms);
         if (seen0 && ms0 === 'STOP' && ms === 'RUN' && !LOG.slice(0, 12).some(e => e.sh === dnm(s) && /START/.test(e.text || '')))
-          add({ rt: { t } }, { name: dnm(s) }, 'DCS', (o.trip ? o.trip.name.replace(/\s+TRIP$/, '').replace(/^Output row \d+ · /, '').replace(/\s*·.*$/, '') : dnm(s)) + ' started by its logic (auto start)');
+          add({ rt: { t } }, { name: dnm(s) }, 'DCS', eqName(s, o) + ' started by its logic (auto start)');
         if (motState(s) === 'TRIP')
           now.set('D|' + s.name, {
             sh: dnm(s),
             kind: 'TRIP',
-            nm: o.trip ? o.trip.name.replace(/\s+TRIP$/, '') : dnm(s),
+            nm: eqName(s, o),
             lv: 'TRIP',
             fresh
           });

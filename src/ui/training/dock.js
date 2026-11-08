@@ -2167,6 +2167,19 @@
         }
         if (bt.dataset.block === '1') return;
         if (pausedWarn(a)) return;
+        /* Mina beta.170 (practise 51): TURBINE TRIP (TA-1) tripped the turbine on the first click of the chip. A trip command (a label
+           with TRIP, not a trainer FAULT / FIELD button, not a RESET) asks for a second press within 4 s, like the emergency trip push
+           buttons of the panel that need a deliberate action */
+        if (/\bTRIP\b/i.test(a.l) && !/^(FAULT|FIELD)\b|RESET|ACK/i.test(a.l) && !(bt._arm && Date.now() - bt._arm < 4000)) {
+          bt._arm = Date.now();
+          if (els.ovw) {
+            els.ovw.hidden = false;
+            els.ovw._r = 1;
+            els.ovw.textContent = '⚠ ' + a.l + ': press it again within 4 s to send the trip.';
+          }
+          return;
+        }
+        bt._arm = 0;
         /* retest #65 (R8: SWP-A started with 0 / 15 BAGO I-START items ticked); live test 2026-10-30 #20 (H5 / H7: the debris filter AUTO
            START with its line-up 0 / 1): every DCS command of the step (START, AUTO START, OPEN, AUTO) waits for the SOP items before it
            (the items above the first item the logic ticks); was a warning with a second press as an override, START only */
@@ -2429,7 +2442,8 @@
       const f = call(() => LV().fp(t), null),
         fpBox = els.fps && [...els.fps.children].find(x => (x.querySelector('.gd-fph b') || {}).textContent === t),
         u = ((/\[\s*-?[\d.]+\s*~\s*-?[\d.]+\s*([^\]\d][^\]]*)\]/.exec((fpBox && fpBox.textContent) || '') || [])[1] || '').trim();
-      if (f && f.kind === 'man') own.push([t + ' output (MV)', () => call(() => LV().mvOf(LV().fp(t)), NaN), '%', f1, '']);
+      /* Mina beta.170: "HIC-ULD output (MV) 80.0 %" for a MW value: the unit is the one of the MAN station (its parameters, b.p.u: HIC-ULD MW) */
+      if (f && f.kind === 'man') own.push([t + ' output (MV)', () => call(() => LV().mvOf(LV().fp(t)), NaN), (f.b && f.b.p && f.b.p.u) || '%', f1, '']);
       else own.push([(nice(f && f.c && f.c.desc) || t) + ' · ' + t, () => call(() => LV().pvOf(LV().fp(t)), NaN), u, f1, call(() => 'SV ' + f1(LV().svOf(LV().fp(t))), '')]);
     }
     const ms = (s.a || []).filter(a => a.stop && a.on);

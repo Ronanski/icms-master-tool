@@ -71,7 +71,7 @@
         '',
         'unit',
         'vac',
-        'Condenser vacuum (plant model, 0 ~ 100 %; the DCS I/O list has no vacuum transmitter)'
+        'Condenser vacuum, % of the atmosphere: (1.033 - condenser pressure) / 1.033, the pressure of the plant model (condenser PT-CD1110, STN102 AI0532, 0.056 kg/cm2A on the snapshot = 94.6 %)'
       ]
     ].map(([k, u, sh, how, ref, t]) => {
       const b = E('button', 'crkpi');
@@ -273,11 +273,15 @@
     }
     return NaN;
   }
-  /* 3.2.0-beta.83: a state of the plant model (unit.js), only while the plant model runs; vacuum 0 ~ 1 shown as % */
+  /* 3.2.0-beta.83: a state of the plant model (unit.js), only while the plant model runs. 3.2.1 (Mina beta.170: VACUUM 100.0 % in every
+     state, also with a seawater pump lost): U.vac is the 0 ~ 1 state of the ejectors and the breaker, not the vacuum. The vacuum is read
+     from the condenser pressure of the model (U.cdP, kg/cm2 A: the saturation pressure of the condensing steam plus the air when vacuum is
+     lost), as a % of the atmosphere 1.033 kg/cm2 (the I/O list condenser pressure PT-CD1110, STN102 AI0532, 0 ~ 6 kg/cm2A) */
   function unitVal(k) {
     const U = AN.plantOn && AN.unit;
     if (!U || !isFinite(U[k.ref])) return NaN;
-    return k.ref === 'vac' ? 100 * U[k.ref] : +U[k.ref];
+    if (k.ref === 'vac') return isFinite(U.cdP) ? Math.max(0, (100 * (1.033 - U.cdP)) / 1.033) : 100 * U[k.ref];
+    return +U[k.ref];
   }
   function pvVal(k) {
     const sh = AN.sheets.find(s => s.name === k.sh);

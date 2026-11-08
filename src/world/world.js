@@ -1076,10 +1076,13 @@
     'mt.idf': { t: 'ID fan trips in the field (MIT-F1056)', sh: 'DITL-25A' },
     'mt.cfa': { t: 'Coal feeder A trips in the field (MIR-CL1061-A)', sh: 'DITL-19' },
     'mt.cepa': { t: 'Condensate pump A trips in the field (MIT-P1116A)', sh: 'DITL-61A' },
-    'mt.swpa': { t: 'Seawater pump A trips in the field (MIT-P1501A)', sh: 'DITL-29A' }
+    /* Mina beta.170: "Seawater pump A trip" tripped a pump that stands STOPPED at 150 MW (snapshot: SWP-A stopped R M, SWP-B 242.5 A and
+       SWP-C 207.6 A running; ditl150.js), so nothing followed. The fault trips SWP-B, a running pump (machine B of DITL-29A) */
+    'mt.swpb': { t: 'Seawater pump B trips in the field (MIT-P1501B)', sh: 'DITL-29A #B' }
   };
   W.ft = W.ft || new Set();
-  const ftSheet = c => S.sheets.find(x => x.name.endsWith(')' + c));
+  /* a drawing by its name, or a machine copy "DITL-29A #B" (W.inst) */
+  const ftSheet = c => S.sheets.concat(W.inst || []).find(x => x.name.endsWith(')' + c));
   /* WORLD.ftrip(): the list with the state; WORLD.ftrip(id, on): the fault on / cleared (an ENG call: page and Worker); returns the text */
   W.ftrip = (id, on) => {
     if (id == null) return Object.keys(FT).map(k => ({ id: k, g: 'mt', t: FT[k].t, on: W.ft.has(k) }));
