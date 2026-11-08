@@ -330,6 +330,22 @@ window.LS_LIVE = (function () {
       rht = pvOf(fp('TICHR1002'));
     } catch (e) {}
     r.RHT = isFinite(rht) ? Math.round(+rht * 10) / 10 : '';
+    /* the water inventory (Mina beta.146 ~ 154: hotwell -300 on a feedwater surge): hotwell level, deaerator level and its valve
+       LCV-CD1104, the condensate flow, the hotwell make-up valve LCV-MU1110 */
+    const u = U(),
+      w = (k, x) => (r[k] = isFinite(x) ? Math.round(+x * 10) / 10 : '');
+    w('HW', u.cdHw);
+    w('CDQ', u.cdQt);
+    const g = (t, fn) => {
+      try {
+        return fn(fp(t));
+      } catch (e) {
+        return NaN;
+      }
+    };
+    w('DA', g('LICCD1104', pvOf));
+    w('DAMV', g('LICCD1104', mvOf));
+    w('MUMV', g('LICCD1110A', mvOf));
     return r;
   };
   setInterval(() => {
@@ -346,8 +362,9 @@ window.LS_LIVE = (function () {
     } catch (e) {}
   }, 1000);
   const recCsv = () => {
-    const H = ['t_min'].concat(REC_K, ['RHT']);
-    return [H.join(',')].concat(REC.rows.map(r => [Math.round(r.t / 60)].concat(REC_K.map(k => r[k]), [r.RHT]).join(','))).join('\r\n');
+    const X = ['RHT', 'HW', 'CDQ', 'DA', 'DAMV', 'MUMV'],
+      H = ['t_min'].concat(REC_K, X);
+    return [H.join(',')].concat(REC.rows.map(r => [Math.round(r.t / 60)].concat(REC_K.map(k => r[k]), X.map(k => r[k])).join(','))).join('\r\n');
   };
   const VAL = (k, lo, hi) => ({
     sig: [k],
@@ -723,7 +740,10 @@ window.LS_LIVE = (function () {
     ['At 150 MW press TURBINE TRIP (page 13, IBD TA-1). All fuel trips by itself (Tab 9 p19 item 7, DITL turbine trip -> MFT).', BIT('I.000F', 1, 'MFT after the turbine trip')],
     ['Read the first out of the turbine trip (page 13) and of the MFT; HP / LP bypass open to cool the reheater (Tab 9 p25). With no bypass and cyclone exit above 535 C the PA fan stops by itself and the RH biasing damper closes (p20).', null],
     ['Keep the ID fan, SA fan, PA fan and FA blowers running to remove the volatiles and burn the fuel left in the bed (Tab 9 p21 item 3); drum level in sight: -200 ~ +200 mm through the shrink.', HOLD(60, ALL(BIT('M.3304', 1, 'ID fan running'), BIT('M.3303', 1, 'SA fan running'), VAL('lvl', -200, 200)))],
-    ['Hot restart (Tab 9 p22): the bed at the start-up burner elevation above 700 C (purge bypass permit): no purge cycle. Check the bed.', VAL('Tb', 625, null)],
+    /* Mina beta.152: the check read the model bed Tb >= 625 while the text and the logic say 700 C; and nothing reset the MFT. DITL-02 out 16
+       FURNACE PURGE COMPLETED = (MFT I.0560 AND NO BOILER TRIP COMMAND I.0561, delayed) AND M.3339 FURNACE LOWER LAYER > 700 C (PURGE
+       BY-PASS, row 25) AND FURNACE PURGE START P.B. (row 6): with the bed above 700 C the purge start completes the purge at once, the MFT resets */
+    ['Hot restart (Tab 9 p22): the bed at the start-up burner elevation above 700 C (purge bypass permit M.3339): press FURNACE PURGE START, the purge completes at once (no 5 min) and the MFT resets.', ALL(BIT('M.3339', 1, 'furnace lower layer > 700 C (purge by-pass)'), BIT('I.000F', 0, 'MFT reset'))],
     ['Start the coal feeders: bed above 700 C without burners, or above 550 C with the burners in service (Tab 9 p23 item 7).', ANYBIT(['M.3400', 'M.3401', 'M.3402'], 'a coal feeder running')]
   ];
   const XS = [X1, X2, X3, X4, X5, X6, X7];
@@ -895,6 +915,10 @@ window.LS_LIVE = (function () {
            150 MW, and "51.1 press TURBINE TRIP" at a vacuum trip. A practice section after the start-up (shutdown, bottle-up, trip and
            restart) ticks only while the guide is on that section: its conditions are true in a normal run too */
         if (si >= BASE_N && gsec !== si) return;
+        /* Mina beta.152 (Practise turbine trip at 150 MW): after the trip "✓ 26.10 All Coal Feeder Stop", "✓ 25.12 Increase PAF inlet damper",
+           "✓ 22.18 Adjust the hydraulic coupling" ticked by themselves. While the guide is in a practice stage (after the start-up), the
+           start-up sections do not tick: a trip makes their conditions true without the start-up being done */
+        if (si < BASE_N && gsec >= BASE_N) return;
         if (si === PURGE && !fans) return;
         if (q.c.hold) {
           if (since[key] == null) since[key] = t;
@@ -987,5 +1011,10 @@ window.LS_LIVE = (function () {
   };
   /* 3.2.0-beta.21: the condition makers, for the guided Training (guide.js) */
   const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4, X5, X6, X7 };
-  return { rec: () => REC.rows, recCsv, recClear: () => ((REC.rows = []), (REC.last = -1)), kind, state, rows, scan, reset, load, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2, B, H, modeOf, mvOf, pvOf, svOf, getV, NAMES, f1 };
+  /* recNow: a row at once (tests/regress/load_ramp.js steps the plant faster than the 1 s timer) */
+  const recNow = () => {
+    REC.last = Math.floor((+U().t || 0) / 60);
+    REC.rows.push(recRow());
+  };
+  return { rec: () => REC.rows, recCsv, recNow, recClear: () => ((REC.rows = []), (REC.last = -1)), kind, state, rows, scan, reset, load, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2, B, H, modeOf, mvOf, pvOf, svOf, getV, NAMES, f1 };
 })();

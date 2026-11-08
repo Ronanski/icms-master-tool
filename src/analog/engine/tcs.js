@@ -750,7 +750,11 @@ function tcsStep(U, dt) {
         Object.assign(tcsGen(U), { f41: false, V: 0 });
         c.exc = false;
         c.ph = 'trip';
-      } else if (c.ph === 'trip') tcsTripManual(U);
+      } else if (c.ph === 'trip') {
+        /* Mina beta.146: the first out read MANUAL TRIP. The ATS trips the turbine by its TURBINE SHUTDOWN COMMAND, IBD TA-9 input 18 */
+        c.sdDone = true;
+        tcsTripShutdown(U);
+      }
       break;
     case 6 /* LOAD UP (page 26 ~ 27): ICV -> CV transfer, load up rate 5 %/min (in the TCS, unit.js) */:
       if (tb.st !== 'load') {
@@ -1022,6 +1026,8 @@ function tcsState() {
     /* 3.2.0-beta.78: the numbers of the ATS mode in use (pages 19 / 20 / 22 / 25), for the CHECK of a start-up from any mode */
     ats: c.mode && TCS.rate[c.mode] != null ? { rate: TCS.rate[c.mode], s1800: TCS.soak1800[c.mode], s3600: TCS.soak3600[c.mode], init: TCS.init[c.mode] } : null,
     step: c.step,
+    /* page 13 step 9 SHUT-DOWN: done once the ATS shut-down has tripped the turbine (the trip resets the ATS steps); a TURBINE RESET clears it */
+    st9: c.sdDone || c.step >= 8 ? 1 : 0,
     rst: c.rst ? 1 : 0 /* page 13: MSV / RSV open = the turbine reset (criteria 1.21) */,
     stepName: c.step >= 0 ? TCS.names[c.step] : '',
     cur: c.cur,

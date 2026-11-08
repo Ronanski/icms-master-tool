@@ -1666,7 +1666,8 @@
     const svName = () => {
       const U = AN.unit || {},
         tm = new Date();
-      return (U.on ? (+U.MW || 0).toFixed(1) + ' MW' : 'plant') + ' · sim ' + Math.round((+U.t || 0) / 60) + ' min · ' + tm.toTimeString().slice(0, 5);
+      /* Mina beta.154: the plant minutes of the name did not match the clock of the app; the name is the load and the time of day */
+      return (U.on ? (+U.MW || 0).toFixed(1) + ' MW' : 'plant') + ' · ' + tm.toTimeString().slice(0, 5);
     };
     const svPick = (L, what) => {
       if (!L.length) return msg('No save point yet: press SAVE first.'), null;
@@ -1717,6 +1718,8 @@
         .then(L => {
           const e = svPick(L, 'Delete which save point');
           if (!e) return;
+          /* Mina beta.154: a confirm before a delete (it cannot be undone) */
+          if (!confirm('Delete the save point "' + e.name + '"? It cannot be undone.')) return;
           return svDo('readwrite', st => st.delete(e.id)).then(() => msg('Deleted: ' + e.name));
         })
         .catch(x => msg('Could not delete: ' + x.message))
@@ -1824,20 +1827,22 @@
      the ones of the old Start ▾ menu (its buttons stay in the page, hidden, so nothing that clicks them changes) and the engine's
      own AN.plantSwitch / AN.turbine. VIEW: the panel shows the state, the choices wait for RUN. */
   function buildPlantChip(start) {
-    const MOVED = ['load150', 'loadcold'];
+    const MOVED = ['load150', 'loadcold', 'loadwarm', 'loadhot'];
     for (const id of MOVED) {
       const b = start.m.querySelector('#' + id);
       if (b) b.classList.add('lsmoved');
     }
     for (const h of start.m.querySelectorAll('.mh'))
       if (/^Starting state/.test(h.textContent)) h.classList.add('lsmoved');
-    const NAMES = { plantCold: 'Cold', plantLoad150: '150 MW' };
+    /* Mina beta.154: Warm / Hot restart were only in the TCS / Field menu: they are starting states of the unit as Cold and 150 MW */
+    const NAMES = { plantCold: 'Cold', plantLoad150: '150 MW', plantWarm: 'Warm restart', plantHot: 'Hot restart' };
+    const stNow = () => (AN.startState === 'plantCold' && AN.restartKind === 'warm' ? 'plantWarm' : AN.startState === 'plantCold' && AN.restartKind === 'hot' ? 'plantHot' : AN.startState);
     const model = () => (!(window.AN && AN.plantOn) ? 'off' : 'unit');
     let pick = null;
     const txt = () => {
       const m = model();
       if (m === 'off') return 'OFF';
-      return 'Unit · ' + (NAMES[AN.startState] || 'not started');
+      return 'Unit · ' + (NAMES[stNow()] || 'not started');
     };
     const chip = E('button', { id: 'plchip', cls: 'plchip', title: 'Plant model and starting state: OFF, Unit (Cold to 150 MW)' }, [
       E('i', { 'aria-hidden': 'true' }),
@@ -1919,11 +1924,14 @@
         })
       );
       if (m === 'unit') {
-        const st = AN.startState && NAMES[AN.startState] ? AN.startState : null,
+        const st = stNow() && NAMES[stNow()] ? stNow() : null,
           click = id => () =>
             withAN(() => {
               plantOn(true);
               pick = null;
+              /* Mina beta.154: a starting state picked on the chip while the plant runs gave a dead plant; pause first, as the Practise
+                 buttons do (home.js) */
+              if (AN.run && !AN.view && AN.pauseOn) AN.pauseOn();
               const b = $(id);
               if (b) b.click();
               upd();
@@ -1939,7 +1947,9 @@
           seg(
             [
               ['plantCold', 'Cold', click('loadcold')],
-              ['plantLoad150', '150 MW', click('load150')]
+              ['plantLoad150', '150 MW', click('load150')],
+              ['plantWarm', 'Warm', click('loadwarm')],
+              ['plantHot', 'Hot', click('loadhot')]
             ],
             st
           ),
