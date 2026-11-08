@@ -66,7 +66,6 @@
         clearInterval(iv);
         pk.value = pg;
         pk.dispatchEvent(new Event('change'));
-        if (crumb) crumb.querySelector('b').textContent = TILES.find(x => x.pg === pg).t;
       } else if (++k > 40) clearInterval(iv);
     }, 100);
   }
@@ -248,10 +247,10 @@
     al.hidden = true;
     document.body.append(al);
     /* Mina beta.210: Esc did not close the list (a handler of the app stops the key first): caught in the capture phase */
-    document.addEventListener(
+    window.addEventListener(
       'keydown',
       e => {
-        if (e.key === 'Escape' && !al.hidden) al.hidden = true;
+        if ((e.key === 'Escape' || e.key === 'Esc') && !al.hidden) al.hidden = true;
       },
       true
     );
