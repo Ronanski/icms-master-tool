@@ -29,6 +29,7 @@ function anEngAPI() {
     plantLive: anPlantLive,
     turbine: anTurbine,
     tcs: () => tcsState(),
+    unitRestart: k => anUnitRestart(k),
     tcsTrip: () => tcsTripState(AN_UNIT),
     tcsIbd: id => tcsIbdState(id),
     tcsIbdSheets: () => TCS_IBD_SHEETS,

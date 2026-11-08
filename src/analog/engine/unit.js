@@ -805,6 +805,28 @@ function anUnitCold() {
   tcsInit(U, 'cold');
   return true;
 }
+/* plan (user 2026-11-08, proposal of the leader): WARM and HOT restart states. The equipment is as Cold (all stopped: the trainee starts
+   the utilities, fans and burners again), the boiler and the turbine keep their heat. FHI SECT_7 Fig 3 WARM STARTUP (after 8 ~ 56 h):
+   at the restart furnace 360 C, SH / RH 315 C, SH pressure 40 kg/cm2; Fig 4 HOT STARTUP (under 8 h): furnace 700 C, SH / RH 430 C,
+   100 kg/cm2. The bed of the model is the furnace curve scaled to the anchor (850 C model at the Fig 8 840 C). Turbine metal: inside
+   the TCS mode band (tcs.js modes: warm 230 ~ 420 C, hot above 420 C), 350 / 460 C (exact metal NO-SOURCE; the steam of Fig 3 / 4 at
+   the restart is 315 / 430 C). Warm needs the furnace purge (bed below 700 C, PR-OPE-5002 SU:129); hot is the logic's to decide */
+const AN_RESTART = { warm: { Pd: 40, Tf: 360, Tm: 350 }, hot: { Pd: 100, Tf: 700, Tm: 460 } };
+function anUnitRestart(kind) {
+  const U = AN_UNIT,
+    K = AN_RESTART[kind];
+  if (!U.on || !K) return false;
+  U.Pd = K.Pd;
+  U.Tw = steamTsat(U.Pd);
+  U.Tb = U.Tamb + ((K.Tf - U.Tamb) * (U.Tb0 - U.Tamb)) / (840 - U.Tamb);
+  if (U.tc) {
+    const c = U.tc;
+    c.Thp = c.Trh = c.Tcvi = c.Tcvo = K.Tm;
+    tcsMode(U);
+  }
+  U.restart = kind;
+  return true;
+}
 /* 2.2.0-beta.21 (M5 shutdown): the plant at 150 MW WITH the start-up / shutdown physics on (U.cold: the water heat storage of the
    drum, the steam temperature capped by the gas, the oil of the start-up burners, the bed temperature, a turbine trip = machine off
    and GCB open, the TCS inputs of the DCS written by the model). The anchors of "Start at 150 MW" stay as they are: the plant is at
