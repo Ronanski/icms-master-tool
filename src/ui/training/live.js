@@ -723,7 +723,10 @@ window.LS_LIVE = (function () {
     ['At 150 MW press TURBINE TRIP (page 13, IBD TA-1). All fuel trips by itself (Tab 9 p19 item 7, DITL turbine trip -> MFT).', BIT('I.000F', 1, 'MFT after the turbine trip')],
     ['Read the first out of the turbine trip (page 13) and of the MFT; HP / LP bypass open to cool the reheater (Tab 9 p25). With no bypass and cyclone exit above 535 C the PA fan stops by itself and the RH biasing damper closes (p20).', null],
     ['Keep the ID fan, SA fan, PA fan and FA blowers running to remove the volatiles and burn the fuel left in the bed (Tab 9 p21 item 3); drum level in sight: -200 ~ +200 mm through the shrink.', HOLD(60, ALL(BIT('M.3304', 1, 'ID fan running'), BIT('M.3303', 1, 'SA fan running'), VAL('lvl', -200, 200)))],
-    ['Hot restart (Tab 9 p22): the bed at the start-up burner elevation above 700 C (purge bypass permit): no purge cycle. Check the bed.', VAL('Tb', 625, null)],
+    /* Mina beta.152: the check read the model bed Tb >= 625 while the text and the logic say 700 C; and nothing reset the MFT. DITL-02 out 16
+       FURNACE PURGE COMPLETED = (MFT I.0560 AND NO BOILER TRIP COMMAND I.0561, delayed) AND M.3339 FURNACE LOWER LAYER > 700 C (PURGE
+       BY-PASS, row 25) AND FURNACE PURGE START P.B. (row 6): with the bed above 700 C the purge start completes the purge at once, the MFT resets */
+    ['Hot restart (Tab 9 p22): the bed at the start-up burner elevation above 700 C (purge bypass permit M.3339): press FURNACE PURGE START, the purge completes at once (no 5 min) and the MFT resets.', ALL(BIT('M.3339', 1, 'furnace lower layer > 700 C (purge by-pass)'), BIT('I.000F', 0, 'MFT reset'))],
     ['Start the coal feeders: bed above 700 C without burners, or above 550 C with the burners in service (Tab 9 p23 item 7).', ANYBIT(['M.3400', 'M.3401', 'M.3402'], 'a coal feeder running')]
   ];
   const XS = [X1, X2, X3, X4, X5, X6, X7];
