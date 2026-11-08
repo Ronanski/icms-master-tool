@@ -16,7 +16,8 @@
 const AN_UNIT = {
   on: false,
   a: (474.1 - 203.7) / (88.6 - 41.8) /* T/H of steam per T/H of coal */,
-  c: (150.5 - 60.3) / (474.1 - 203.7) /* MW per T/H of steam */,
+  c: (149.8 - 90.3) / (481 - 304) /* MW per T/H of steam: plant trends 2026-11-08 (holds at 150 and 90 MW); the snapshots gave 0.3336 */,
+  mwK: 0.3362 * 481 - 149.8 /* MW lost at the anchor line: MW = c x steam - mwK on the plant trend (149.8 MW at 481 T/H); the snapshot anchor 150.5 at 474.1 was 3 MW above it */,
   /* storage and firing lag from the TUNING OF THE PLANT (PID summary: PIC-COBM Kp 3.0, Ti 165 s, Td 7 s): the pressure of a drum
      whose steam flow the TCS holds is an integrator, and a PI on an integrator with a lag is stable only when the lag is well below
      Ti. With 700 / 150 s the loop of the plant tuning oscillated (MSP 70 ~ 126 kg/cm2 at 85 MW, the PID at +-25 %); with
@@ -1662,7 +1663,12 @@ function anBedSS(U, fs, as) {
       for (let i = 1; i < K.s.length; i++) if (x <= K.s[i]) return Y[i - 1] + ((Y[i] - Y[i - 1]) * (x - K.s[i - 1])) / (K.s[i] - K.s[i - 1]);
       return Y[Y.length - 1] + ((x - 1) * (Y[Y.length - 1] - Y[Y.length - 2])) / (1 - K.s[K.s.length - 2]);
     };
-  return Math.min(start, U.Tamb + (ip(K.t) * (U.Tb0 / 840) - U.Tamb) * Math.pow(ip(K.a) / as, 0));
+  const tab = U.Tamb + (ip(K.t) * (U.Tb0 / 840) - U.Tamb) * Math.pow(ip(K.a) / as, 0);
+  /* 3.2.1 b6 (Mina beta.108 rerun: bed 841 / 771 / 741 at 150 / 105 / 90 MW, still falling; plant 954 / 955 / 955): the start-up law is for
+     the small fire below 40 % load only. At part load the plant keeps more air than its coal share (PA 318 T/H at 90 MW), so fs / as < 1
+     and the start-up law capped the bed under the trend. It now fades out between 30 and 43 % fuel share (no jump at 40 % load) */
+  const w = Math.max(0, Math.min(1, (fs - 0.3) / (K.s[0] - 0.3)));
+  return Math.min(start + (tab - start) * w, tab);
 }
 /* bed inventory (t of solids in the furnace). The overall furnace pressure drop is its weight on the grate: 15.51 x 7.68 m = 119 m2 (T2), so
    1 mmH2O = 1 kg/m2 = 0.119 t; 1426 mmH2O (snapshot DPIFG1081) = 170 t. In: ash of the coal 6.82 % (T3), limestone less its CO2 (93.66 % CaCO3,
@@ -2953,7 +2959,7 @@ function anUnitStep0(dt) {
     MWss = onGrid
       ? Math.max(
           0,
-          U.c * ((1 - U.cIP) * U.ms + U.cIP * qip) - (U.c * U.m0 - U.MW0) * Math.min(1, qip / (0.3 * U.m0)) - anVacMW(U) + (U.dMWx || 0)
+          U.c * ((1 - U.cIP) * U.ms + U.cIP * qip) - (U.mwK != null ? U.mwK : U.c * U.m0 - U.MW0) * Math.min(1, qip / (0.3 * U.m0)) - anVacMW(U) + (U.dMWx || 0)
         )
       : 0;
   U.MW += ((MWss - U.MW) * dt) / U.tauMW;

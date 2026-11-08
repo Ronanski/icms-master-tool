@@ -644,3 +644,4 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 
 - **beta.108** (2026-11-08): Ash cooler speed switch follows its running cooler in the Worker
 - **beta.109** (2026-11-08): Training adds the Normal shutdown section (PR-OPE-5003-01 steps 4.1 ~ 4.20): load rates 1.2 / 0.6 / 0.4 MW/min, hold 90 and 45 MW, burners in at bed 750 °C, coal out at 700 °C, turbine SHUT-DOWN at 30 MW (MFT on this unit).
+- **beta.110** (2026-11-08): Bed temperature holds at part load (start-up law fades out above 30 % fuel share; was capping the bed at 741 °C at 90 MW). MW per steam flow from the plant trends (MW = 0.3362 x steam - 11.9: 150 MW at 481 T/H, 90 MW at 304 T/H).
