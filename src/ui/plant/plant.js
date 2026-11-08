@@ -1207,6 +1207,9 @@
     });
     svg.addEventListener('pointermove', e => {
       if (!drag || !vb) return;
+      /* sweep item 7: a press whose release never reached the drawing left an old drag; a move with no button held is not a drag (it
+         panned the page and took the next click away) */
+      if (e.pointerType === 'mouse' && !e.buttons) return void (drag = null);
       if (!drag.moved) {
         if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 6) return;
         drag.moved = dragged = true;
@@ -1219,7 +1222,7 @@
       vb = [drag.v[0] - (e.clientX - drag.x) * s, drag.v[1] - (e.clientY - drag.y) * s, vb[2], vb[3]];
       svg.setAttribute('viewBox', vb.join(' '));
     });
-    svg.addEventListener('pointerup', () => (drag = null));
+    addEventListener('pointerup', () => (drag = null), true);
     svg.addEventListener('pointercancel', () => (drag = null));
     /* the click that ends a drag does not open a faceplate */
     svg.addEventListener(
