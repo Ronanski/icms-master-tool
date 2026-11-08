@@ -1733,6 +1733,29 @@
       a.remove();
       msg('Recorder: ' + L.rec().length + ' rows downloaded.');
     });
+    /* 3.2.1 e5 FAULTS (engine/faults.js): what the field does; the logic of the drawings decides what follows. Each press puts the
+       fault on, a second press clears it; every fault and clear is an event "FAULT: ..." */
+    d.head('Faults (trainer)');
+    const fltLog = t => window.lsEventAdd && lsEventAdd('FIELD', 'FAULT', 'FAULT: ' + t);
+    const fltBtn = f =>
+      btn('flt-' + f.id.replace(/\W/g, '-'), f.t, 'Field fault: ' + f.t + '. Press again to clear it.', () => {
+        const L = AN.fault ? AN.fault() : [],
+          now = L.find(q => q.id === f.id),
+          r = AN.fault(f.id, !(now && now.on));
+        if (!r) return msg('Fault ' + f.t + ': not on any loaded sheet (load a starting state first).');
+        fltLog(r);
+        msg('FAULT: ' + r);
+      });
+    for (const f of AN.fault ? AN.fault() : []) fltBtn(f);
+    btn('flt-clear', 'Clear all faults', 'Puts the field back: every fault that is on is cleared.', () => {
+      const on = (AN.fault ? AN.fault() : []).filter(q => q.on);
+      if (!on.length) return msg('No fault is on.');
+      for (const q of on) {
+        const r = AN.fault(q.id, false);
+        if (r) fltLog(r);
+      }
+      msg('Faults cleared: ' + on.length);
+    });
     d.head('TCS panel (turbine)');
     const tcs = (id, label, title, cmd, arg, ok) =>
       btn(id, label, title, () => {

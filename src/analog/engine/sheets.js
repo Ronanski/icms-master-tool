@@ -185,6 +185,8 @@ function anResetRun() {
   }
   AN.sv = keep;
   anResetAll();
+  /* 3.2.1 e5: Reset puts the field back, every fault goes (engine/faults.js) */
+  if (typeof anFaultClearAll === 'function') anFaultClearAll();
   const W = globalThis.WORLD;
   /* the index of the one world for every ABC sheet loaded now (the instances and their state stay: world.js build), then the DITL links
      of the ABC inputs go: the first scan makes them (world.js tickG step 3), so a fresh page has none; a Reset after a run kept them

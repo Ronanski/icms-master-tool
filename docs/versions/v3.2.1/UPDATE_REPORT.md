@@ -1,5 +1,13 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.157 — Faults 1: transmitter fails (e5, 2026-11-08, LISA)
+
+**Work done.** New "Faults (trainer)" list in the starting state menu, below the Save points. A transmitter fault puts the AI at the end of its I/O list range (signal lost = lo, over range = hi) on every ABC sheet of its station and sets its SIG.AB flag (the I/O list SIG.AB address); the select circuits and interlocks of the drawings decide what follows. O2 analyzer A AT-FG1122 (AI0273, 0 ~ 25 %, B.0671), drum level transmitter 1 LT-BR1001-1 (AI0130, -422 ~ 820 mm, B.0642), main steam pressure PT-MS1002 (AI0131, 0 ~ 150 kg/cm2, B.0643). A second press clears it; Clear all faults and Reset clear every fault. Each fault and clear is an event "FAULT: ...". Runs in the page and in the Worker (ENG call AN.fault).
+
+**Checked in the page (150 MW).** O2 A lost: AI0273 0, B.0671 = 1, AICFG112 PV follows analyzer B (3.66 %). Drum level 1 lost: AI0130 -422, LICBR1001 PV stays at the other transmitters (18 mm). MSP lost: AI0131 0, B.0643 = 1, PIC-COBM PV 0 (single transmitter: the drawing decides). Clear: all back.
+
+**Not tested.** Live; items sent to Mina.
+
 ## 3.2.1-beta.156 — Sootblower lance travel (d1, 2026-11-08, LISA)
 
 **Work done.** The sootblower lances now travel. Source: Diamond Power N11639-SC1 Sootblower steam data (IK4M manual, o&m L10-2 page 93): 50.8 mm/s; 6210 mm for the 14 IK4M (N-1011 ~ 22, 25, 26: unit operation 244 s, out and back), 3050 mm for the 10 IK4M-PT (N-1023, 24, 27 ~ 34: 120 s), 2580 mm for the 4 of the common economizer (N-1035 ~ 38: 102 s); the groups match DITL-80O. The EXTEND COMMAND of DITL-80G (and of each copy) sends the lance out to its front end and back; the RETRACT COMMAND brings it back. The retract limit switch of each lance, ANY ON EXTEND (M.4232) and the ALL ON RETRACT memories (M.4008, M.4246, M.4240, M.4242) follow the lances. The air heater blowers N-1040 / N-1042 have no travel data and stand at rest.

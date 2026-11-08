@@ -27,6 +27,7 @@ engine/sync.js
 engine/ctrls.js
 engine/names.js
 engine/trace-step.js
+engine/faults.js
 engine/api.js
 ui/main.js
 ui/hmi-view.js

@@ -27,6 +27,7 @@ function anEngAPI() {
     loadStart: anLoadStart,
     plantLoad150Async: anPlantLoad150Async,
     plantLive: anPlantLive,
+    fault: anFault,
     turbine: anTurbine,
     tcs: () => tcsState(),
     gen: () => anGenEl(),
