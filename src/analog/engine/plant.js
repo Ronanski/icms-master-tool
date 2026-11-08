@@ -358,7 +358,10 @@ function anWaterRho(T) {
   return R[R.length - 1][1];
 }
 AN_CYC.kgmm = {
-  hw: () => 1000 / 3600 / 0.01,
+  /* Mina beta.116 (Normal shutdown, 30 MW: hotwell -7 -> -272 mm in 6 min, CEP-A stopped, vacuum trip): the old rate was 27.8 m2 of
+     water. Condenser O&M section 1 p2: hotwell capacity 61.9 m3; K2MC3A-100: HHL 900 mm from the bottom -> 61.9 / 0.9 = 68.8 m2
+     (plant-study 12-assumptions; the outline 12.32 x 7.3 m = 90 m2 is the upper bound) */
+  hw: () => 61.9 / 0.9,
   da: () => 3.3 * 13.14 * 0.909,
   dr: () => 2 * 0.8242 * 12.481 * (anWaterRho(typeof AN_UNIT !== 'undefined' && isFinite(AN_UNIT.Tw) ? AN_UNIT.Tw : 30) / 1000)
 };
