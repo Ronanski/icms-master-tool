@@ -217,13 +217,16 @@
       const st = document.getElementById('scstrip'),
         band = document.getElementById('crband'),
         br = band.getBoundingClientRect(),
-        vis = el => el && el.offsetParent !== null && getComputedStyle(el).visibility !== 'hidden',
+        /* Mina beta.220: the rail and the dock are position: fixed, whose offsetParent is always null: seen by their boxes instead */
+        vis = el => !!(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden' && getComputedStyle(el).display !== 'none'),
         rail = document.getElementById('crrail'),
         dock = document.getElementById('gdock');
       let ml = 0,
         mr = 0;
+      let rl = 0;
       if (vis(rail)) {
         const r = rail.getBoundingClientRect();
+        rl = Math.max(0, Math.ceil(r.right));
         if (r.top < br.bottom && r.right > br.left + 1) ml = Math.ceil(r.right - br.left) + 6;
       }
       if (vis(dock)) {
@@ -236,6 +239,9 @@
       if (band.style.getPropertyValue('padding-left') !== mls) band.style.setProperty('padding-left', mls, 'important');
       if (band.style.getPropertyValue('padding-right') !== mrs) band.style.setProperty('padding-right', mrs, 'important');
       void st;
+      /* the overview starts right of the rail as it is drawn (with the dock open --railW is 14 px while the rail stays wide) */
+      const rls = rl + 'px';
+      if (document.documentElement.style.getPropertyValue('--scl') !== rls) document.documentElement.style.setProperty('--scl', rls);
       /* the lowest of the bar and the strip's rows (a row that outgrows the bar is never covered) */
       const rows = [...st.children].map(c => c.getBoundingClientRect()).filter(r => r.height > 0),
         b = Math.ceil(Math.max(band.getBoundingClientRect().bottom, ...rows.map(r => r.bottom + 4))) + 'px';
