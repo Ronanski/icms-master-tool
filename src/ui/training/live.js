@@ -330,6 +330,22 @@ window.LS_LIVE = (function () {
       rht = pvOf(fp('TICHR1002'));
     } catch (e) {}
     r.RHT = isFinite(rht) ? Math.round(+rht * 10) / 10 : '';
+    /* the water inventory (Mina beta.146 ~ 154: hotwell -300 on a feedwater surge): hotwell level, deaerator level and its valve
+       LCV-CD1104, the condensate flow, the hotwell make-up valve LCV-MU1110 */
+    const u = U(),
+      w = (k, x) => (r[k] = isFinite(x) ? Math.round(+x * 10) / 10 : '');
+    w('HW', u.cdHw);
+    w('CDQ', u.cdQt);
+    const g = (t, fn) => {
+      try {
+        return fn(fp(t));
+      } catch (e) {
+        return NaN;
+      }
+    };
+    w('DA', g('LICCD1104', pvOf));
+    w('DAMV', g('LICCD1104', mvOf));
+    w('MUMV', g('LICCD1110A', mvOf));
     return r;
   };
   setInterval(() => {
@@ -346,8 +362,9 @@ window.LS_LIVE = (function () {
     } catch (e) {}
   }, 1000);
   const recCsv = () => {
-    const H = ['t_min'].concat(REC_K, ['RHT']);
-    return [H.join(',')].concat(REC.rows.map(r => [Math.round(r.t / 60)].concat(REC_K.map(k => r[k]), [r.RHT]).join(','))).join('\r\n');
+    const X = ['RHT', 'HW', 'CDQ', 'DA', 'DAMV', 'MUMV'],
+      H = ['t_min'].concat(REC_K, X);
+    return [H.join(',')].concat(REC.rows.map(r => [Math.round(r.t / 60)].concat(REC_K.map(k => r[k]), X.map(k => r[k])).join(','))).join('\r\n');
   };
   const VAL = (k, lo, hi) => ({
     sig: [k],
