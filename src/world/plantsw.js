@@ -200,6 +200,9 @@
     return o ? ((o.has ? o.has(r) : o.includes(r)) ? 1 : 0) : NaN;
   };
   [['SS-BH1750', 7], ['SS-BH1751', 8], ['SS-BH1752', 9]].forEach(([a, r]) => L.push([a, baRun(r), 0.5, 'hi', 0, 0, null, /\)DITL-BA60$/]));
+  /* the ash screw cooler speed switch SS-BH1060-x (DITL-21A row 20, I.0258 / 538 / 648 / 688) is made while its cooler turns: the run state of the
+     cooler machine. It had no source in the Worker (Mina beta.106: SPEED LOW at 15.9 s, cooler stopped) */
+  'ABCD'.split('').forEach((x, i) => L.push(['SS-BH1060-' + x, () => (window.AN && AN.ditlRun ? (AN.ditlRun(i ? 'DITL-21A #' + x : 'DITL-21A') === 1 ? 1 : 0) : NaN), 0.5, 'hi', 0, 0, /SPEED NOT LOW/, /DITL-21A/]));
   const DB0 = 10;
   let map = null,
     mapK = '';
