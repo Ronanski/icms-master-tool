@@ -1219,6 +1219,15 @@ const anPlantLoad150Async = prog => anGenAsync(anPlantLoad150S(), prog);
    on = the plant model ON first. One load at a time (AN._loadP); resolves with the anchors, sets AN.startState */
 function anLoadStart(kind, on) {
   if (AN._loadP) return AN._loadP;
+  /* Mina beta.187 (fresh page, Home > At 150 MW pressed before the ABC page was ever opened): with no ABC sheets yet the load built
+     nothing and the press did nothing. The ABC data first (loader.js loadData, the page side only; the engine has its sheets), then the load */
+  if (!AN.sheets.length && typeof loadData === 'function' && typeof document !== 'undefined') {
+    const p = (AN._loadP = loadData().then(() => {
+      if (AN._loadP === p) AN._loadP = null;
+      return AN.sheets.length ? anLoadStart(kind, on) : 0;
+    }));
+    return p;
+  }
   /* retest #59: a load picked anywhere closes the starting-state question */
   try {
     const q = document.getElementById('lsask');
