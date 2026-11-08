@@ -52,6 +52,21 @@ function anEngAPI() {
         st.trk = null; /* a sheet that was not stepped yet holds an old tracking value: its first step would put it back */
       }
       if (s && s.S) for (const n of nets || []) s.S.rt.ext[n] = x;
+      /* Mina beta.121 ~ 123 (HIC-MWRL: the press is logged, 2.9 for 0.6 s, then 3.0 again): an A / M switch whose output the station
+         tracks (plant.js AMT trkFrom: on the B leg the station follows the switch output, ds.trk) put the old value back every scan. The
+         operator's value goes on the manual leg (B, the COS manual input) of every such switch too, so the tracking carries it */
+      try {
+        const S0 = s && s.S;
+        if (S0)
+          for (const z of S0.blk)
+            if (z.k === 'AMT' && (z.trkFrom || []).some(d => d.id === id) && z.b >= 0 && S0.rt.force[z.b] === undefined) {
+              const xb = z.bg != null && z.bg !== 0 ? x / z.bg : x;
+              if (S0.ext.includes(z.b)) S0.rt.ext[z.b] = xb;
+              S0.rt.v[z.b] = xb;
+              if (z.o && z.o[0] != null && z.o[0] >= 0) S0.rt.v[z.o[0]] = x;
+              if (S0.rt.st[z.id]) (S0.rt.st[z.id].hold = x), (S0.rt.st[z.id].y = x);
+            }
+      } catch (e) {}
       /* Mina beta.114 / 115 (Worker: HIC-MWRL stayed 3.0 after the operator's presses): a station whose AUTO leg is its OWN output
          through the AMT (ABC-001B HIC-MWRL) reads that loop back on the next scan. The operator's value goes on the loop too (the AMT
          out and the station outputs), as the snapshot load does (hmi-op.js, 2.2.0-beta.9) */
