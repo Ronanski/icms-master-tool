@@ -311,6 +311,44 @@ window.LS_LIVE = (function () {
     if (k === 'Pd' || k === 'Tb' || k === 'Tw' || k === 'oilF' || k === 'rpm') return +U()[k];
     return hv(k);
   };
+  /* 3.2.1 TREND RECORDER (user 2026-11-08 testing plan 3): one row each minute of plant time while the plant model runs: the values the
+     plant trends of the user hold (scenario 1 / 2), for the PC-only comparison script (team-files/tools/trend-compare). A new starting
+     state or a save point loaded starts a new record */
+  const REC_K = ['MW', 'MSF', 'MSP', 'MST', 'coal', 'PA', 'SA', 'FA', 'O2', 'Tb', 'lvl', 'FW', 'FP', 'Pd', 'RHP'];
+  const REC = { rows: [], last: -1, n: 0 };
+  const recRow = () => {
+    const r = { t: Math.round(+U().t || 0) };
+    for (const k of REC_K) {
+      let v = null;
+      try {
+        v = getV(k);
+      } catch (e) {}
+      r[k] = isFinite(v) ? Math.round(+v * 100) / 100 : '';
+    }
+    let rht = null;
+    try {
+      rht = pvOf(fp('TICHR1002'));
+    } catch (e) {}
+    r.RHT = isFinite(rht) ? Math.round(+rht * 10) / 10 : '';
+    return r;
+  };
+  setInterval(() => {
+    try {
+      const u = window.AN && AN.unit;
+      if (!u || !u.on || AN._loading) return;
+      if (((window.AN && AN.loadN) || 0) !== REC.n) (REC.n = AN.loadN || 0), (REC.rows = []), (REC.last = -1);
+      const m = Math.floor((+u.t || 0) / 60);
+      if (m < REC.last) (REC.rows = []), (REC.last = -1); /* time went back: a save point or a Reset */
+      if (m === REC.last) return;
+      REC.last = m;
+      REC.rows.push(recRow());
+      if (REC.rows.length > 6000) REC.rows.shift();
+    } catch (e) {}
+  }, 1000);
+  const recCsv = () => {
+    const H = ['t_min'].concat(REC_K, ['RHT']);
+    return [H.join(',')].concat(REC.rows.map(r => [Math.round(r.t / 60)].concat(REC_K.map(k => r[k]), [r.RHT]).join(','))).join('\r\n');
+  };
   const VAL = (k, lo, hi) => ({
     sig: [k],
     res: () => k in NAMES,
@@ -949,5 +987,5 @@ window.LS_LIVE = (function () {
   };
   /* 3.2.0-beta.21: the condition makers, for the guided Training (guide.js) */
   const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4, X5, X6, X7 };
-  return { kind, state, rows, scan, reset, load, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2, B, H, modeOf, mvOf, pvOf, svOf, getV, NAMES, f1 };
+  return { rec: () => REC.rows, recCsv, recClear: () => ((REC.rows = []), (REC.last = -1)), kind, state, rows, scan, reset, load, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2, B, H, modeOf, mvOf, pvOf, svOf, getV, NAMES, f1 };
 })();

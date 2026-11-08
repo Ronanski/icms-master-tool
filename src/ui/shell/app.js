@@ -1670,9 +1670,7 @@
     };
     const svPick = (L, what) => {
       if (!L.length) return msg('No save point yet: press SAVE first.'), null;
-      const x = prompt(what + ': type its number
-' + L.map((e, i) => i + 1 + '. ' + e.name).join('
-'), String(L.length));
+      const x = prompt(what + ': type its number\n' + L.map((e, i) => i + 1 + '. ' + e.name).join('\n'), String(L.length));
       const i = +x - 1;
       return x && L[i] ? L[i] : null;
     };
@@ -1723,6 +1721,18 @@
         })
         .catch(x => msg('Could not delete: ' + x.message))
     );
+    /* 3.2.1 trend recorder (live.js REC): one row per minute of plant time; the CSV goes to the PC comparison script */
+    btn('recdl', 'Download recorder CSV', 'The plant values recorded each minute of plant time since the last starting state (MW, steam flow and pressure, MST, RHT, coal, air, O2, bed, drum level, feedwater, furnace pressure). For the comparison with the plant trends on the PC.', () => {
+      const L = window.LS_LIVE;
+      if (!L || !L.rec || !L.rec().length) return msg('The recorder has no rows yet: it writes one each minute of plant time while the plant runs.');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([L.recCsv()], { type: 'text/csv' }));
+      a.download = 'logic-sim-trend-' + new Date().toISOString().slice(0, 16).replace(/[T:]/g, '-') + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      msg('Recorder: ' + L.rec().length + ' rows downloaded.');
+    });
     d.head('TCS panel (turbine)');
     const tcs = (id, label, title, cmd, arg, ok) =>
       btn(id, label, title, () => {
