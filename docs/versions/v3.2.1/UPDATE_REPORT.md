@@ -1,5 +1,13 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.156 — Sootblower lance travel (d1, 2026-11-08, LISA)
+
+**Work done.** The sootblower lances now travel. Source: Diamond Power N11639-SC1 Sootblower steam data (IK4M manual, o&m L10-2 page 93): 50.8 mm/s; 6210 mm for the 14 IK4M (N-1011 ~ 22, 25, 26: unit operation 244 s, out and back), 3050 mm for the 10 IK4M-PT (N-1023, 24, 27 ~ 34: 120 s), 2580 mm for the 4 of the common economizer (N-1035 ~ 38: 102 s); the groups match DITL-80O. The EXTEND COMMAND of DITL-80G (and of each copy) sends the lance out to its front end and back; the RETRACT COMMAND brings it back. The retract limit switch of each lance, ANY ON EXTEND (M.4232) and the ALL ON RETRACT memories (M.4008, M.4246, M.4240, M.4242) follow the lances. The air heater blowers N-1040 / N-1042 have no travel data and stand at rest.
+
+**Checked in the page.** All 28 lances at 0 at the start (all retract = 1); N-1011 out 508 mm after 10 s (its retract switch, M.4008 and M.4246 = 0, M.4240 = 1); front end at 122 s, back at 0 after the full cycle (M.4008 = 1 again).
+
+**Not tested.** A full sootblower program run; item sent to Mina.
+
 ## 3.2.1-beta.152 — Sootblower lances at rest (d1, 2026-11-08, LISA)
 
 **Work done.** The sootblower position rows had no source and read 0 ("not retracted"). They now stand at the rest state of 18.PNG (150 MW: all 30 sootblowers retracted, no blowing): the retract limit switch of each lance (DITL-80G row 12 and its 27 copies), the reset positions of N-1040 / N-1042 (DITL-80K rows 24 / 22), and the ALL ON RETRACT memories M.4008 / 4246 / 4240 / 4242 (made by DITL-80L, not in the app). Lance travel while blowing stays NO-SOURCE. Sootblower trips and the plant air / steam select (M.4212, STEAM on 18.PNG) are field / operator inputs, right as drawn.
