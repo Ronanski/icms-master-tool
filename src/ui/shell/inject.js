@@ -124,6 +124,9 @@ const block =
   fs.readFileSync(__dirname + '/../shellc/shellc-home.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/../shellc/shellc-pages.js', 'utf8') +
+  '\n' +
+  /* step 5: Instructor console and the training step card */
+  fs.readFileSync(__dirname + '/../shellc/shellc-ins.js', 'utf8') +
   '</script>' +
   B;
 const k = s.lastIndexOf('</body>');
