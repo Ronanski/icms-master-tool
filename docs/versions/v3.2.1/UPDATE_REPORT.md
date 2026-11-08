@@ -1,5 +1,13 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.148 — Heater levels steady at the 150 MW start (2026-11-08, LISA)
+
+**Work done.** Mina saw NO.1 HPH level (2) LOW-LOW and NO.1 / NO.2 LPH level HIGH at a steady 150 MW. Two causes in the heater model (unit.js AN_HD): (1) the level started from its transmitter, which the loop model of the drawing had moved at the end of the load under the 02.png (60 MW) valve openings (LPH2 -5 -> -97 mm), so the controller refilled it past HIGH; it now starts at the SV of its primary controller (the 150 MW start is a steady state). (2) The drain valves were seeded on the first step only, when the inflow was not steady yet (HPH1 108 t/h, then 79 t/h), leaving out 109 t/h against in 79 t/h; they are now seeded until every inflow holds. Alarm limits unchanged (alarm list LT-HD1102, LT-HD1105-2).
+
+**Checked in the page (not a live test).** Fresh 150 MW load, RUN: in = out on all five heaters from the 5th step; levels within a few mm of their SV over the run.
+
+**Not tested.** Live; item sent to Mina.
+
 ## 3.2.1-beta.139 — Sand SYSTEM TRIP at the 150 MW load (2026-11-08, LISA)
 
 **Work done.** The header showed SYSTEM TRIP (D77)DITL-777 on a fresh 150 MW load. Cause: NOT REMOTE CONTROL in the OR of SYSTEM TRIP (E10210-3-777). The remote selector SIL-SD1300 (STN103 I.057A, DITL-771 row 5 -> M.081D -> DITL-777 row 3) had no source and read 0. It now stands at REMOTE, as on 20.PNG at 149.5 MW (SAND SYSTEM REMOTE checked). The MFT input of DITL-777 is 0 after the load (it was not the cause); SYSTEM TRIP on DITL-777 has no latch.
