@@ -650,3 +650,4 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.113** (2026-11-08): Main steam temperature on a load ramp: the superheater pickup moves with the tube metal lag like the spray outlet (was 550 C on the way up, 532 C on the way down).
 - **beta.114** (2026-11-08): HIC-MWRL load rate keeps the operator's value (it read its own old output back); MAN station faceplates in their own unit step 0.1 (MW/min); Training button Practise: Normal shutdown.
 - **beta.115** (2026-11-08): Normal shutdown follows the drawing below 220 T/H steam: HIC-BM and EIC-TM go MANUAL by the back-up command M.2013 near 63 MW, the trainee lowers EIC-TM and HIC-BM by hand to 45 and 30 MW.
+- **beta.116** (2026-11-08): HIC-MWRL operator value written onto its own AUTO loop too (the Worker kept 3.0); Practise: Normal shutdown opens the guided dock at the first shutdown step.

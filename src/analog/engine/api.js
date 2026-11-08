@@ -52,6 +52,20 @@ function anEngAPI() {
         st.trk = null; /* a sheet that was not stepped yet holds an old tracking value: its first step would put it back */
       }
       if (s && s.S) for (const n of nets || []) s.S.rt.ext[n] = x;
+      /* Mina beta.114 / 115 (Worker: HIC-MWRL stayed 3.0 after the operator's presses): a station whose AUTO leg is its OWN output
+         through the AMT (ABC-001B HIC-MWRL) reads that loop back on the next scan. The operator's value goes on the loop too (the AMT
+         out and the station outputs), as the snapshot load does (hmi-op.js, 2.2.0-beta.9) */
+      try {
+        const S = s && s.S,
+          b = S && S.blk.find(q => q.id === id && q.k === 'MAN'),
+          si = b && b.svI >= 0 ? b.i[b.svI] : null,
+          dr = si != null ? (S.drv[si] || []).find(z => z.k === 'AMT') : null;
+        if (dr && dr.o && dr.o[0] != null && !S.ext.includes(dr.a) && S.rt.st[dr.id] && S.rt.st[dr.id].pk === 'A') {
+          S.rt.v[dr.o[0]] = x;
+          for (const n of b.o || []) if (n != null && n >= 0) S.rt.v[n] = x;
+          if (dr.a != null && dr.a >= 0) S.rt.v[dr.a] = x;
+        }
+      } catch (e) {}
     },
     fanI: anFanI,
     aphIn: anAphIn,
