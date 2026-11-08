@@ -54,8 +54,8 @@ p.inner(1094, 780, 'Emergency oil pump ' + UY('loEopR', 1, 'running', 'stopped')
 p.inner(1094, 816, 'Control oil / trip oil ' + V('PT-CTL', 1) + ' / ' + V('PT-TRIP', 1, ' kg/cm2'))
 p.inner(1094, 852, 'Lube oil after cooler ' + V('TT-LOCOOL', 0, ' °C'))
 p.inner(1094, 888, 'Generator MW C / D ' + V('GCP-AI1001', 1) + ' / ' + V('GCP-AI1002', 1, ' MW'))
-p.inner(1094, 924, 'Stator coil ' + NS + ' °C')
-p.inner(1094, 960, 'Generator cooling air ' + NS + ' °C')
+p.inner(1094, 924, 'Stator coil ' + V('GEN.TSMAX') + ' °C')  # unit.js anGenTemp, snapshot P35SHAFT
+p.inner(1094, 960, 'Generator cooling air ' + V('GEN.TAIR') + ' °C')
 bad = p.check()
 assert not bad, bad
 p.write('p13-head.js', 'hmi-mock-ts.js')
