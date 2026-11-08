@@ -653,3 +653,4 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.116** (2026-11-08): HIC-MWRL operator value written onto its own AUTO loop too (the Worker kept 3.0); Practise: Normal shutdown opens the guided dock at the first shutdown step.
 - **beta.117** (2026-11-08): Ash cooler speed switch reads SPEED LOW while its cooler is stopped at 150 MW (the load set every SPEED NOT LOW row to 1).
 - **beta.118** (2026-11-08): HIC-MWRL: the operator's value is kept by the station (s.op) and wins over its own loop read-back.
+- **beta.119** (2026-11-08): Hotwell water area 68.8 m2 from the condenser O&M (61.9 m3 to HHL 900 mm); was 27.8 m2, so the level moved 2.5 times too fast and emptied in 6 min at 30 MW.
