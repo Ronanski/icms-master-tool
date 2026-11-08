@@ -1,5 +1,13 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.167 — Faults 3: control valve sticks (e5, 2026-11-08, LISA)
+
+**Work done.** The Faults list gets three stuck control valves: feedwater FCV-FW1130-1 (FICFW1007), SH spray TCV-FW1110 (TICBR1130), deaerator level LCV-CD1104 (LICCD1104) (valve of each controller: unit.js AN_AV, the valve sheets of the package index). The valve stays at the opening it had when it stuck; the controller output keeps moving (wind-up) until the operator takes MANUAL. Every valve model reads its opening through the airlock function anAv (plant.js loop models, unit.js) or the spray valve hold (unit.js), which now return the stuck opening. Clear: the valve follows its command again. Reset clears it. Events FAULT: ....
+
+**Checked.** Static: the three valve models pass through the stuck check. In the page at 150 MW the feedwater fault goes on and off with its events.
+
+**Not tested.** The wind-up with a changing demand, live; items sent to Mina.
+
 ## 3.2.1-beta.165 — Faults 2: motor field trips (e5, 2026-11-08, LISA)
 
 **Work done.** The Faults list gets the field trip of seven running motors: BFWP A, PA fan, SA fan, ID fan, coal feeder A, condensate pump A, seawater pump A. The fault sets the ELECTRIC TROUBLE flag of the motor drawing (DITL-23A PDF sheet 41: BFWP A TRIP, MIT-P1115A, = TRIP COMMAND or ELECTRIC TROUBLE; the TRIP resets the RUNNING latch MIR-P1115A), so the logic trips the motor and decides what follows; the motor shows TRIP (as the dock FIELD: TRIP). Coal feeder A stops by its motor model (DITL-19). Clear = the relay reset in the field; the operator starts the motor again. Reset clears every field trip. Events FAULT: ....

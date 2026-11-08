@@ -16,8 +16,21 @@ const AN_FAULT_LIST = [
   /* main steam pressure: STN101 AI0131 PT-MS1002 "#1 Boiler finishing superheater outlet main steam pressure", 0 ~ 150 kg/cm2, SIG.AB
      B.0643 (ABC-001C boiler master, ABC-050 HP bypass) */
   { id: 'ai.msp.lo', g: 'ai', stn: 1, ai: 'AI0131', end: 'lo', t: 'Main steam pressure transmitter (PT-MS1002) signal lost' },
-  { id: 'ai.msp.hi', g: 'ai', stn: 1, ai: 'AI0131', end: 'hi', t: 'Main steam pressure transmitter (PT-MS1002) over range' }
+  { id: 'ai.msp.hi', g: 'ai', stn: 1, ai: 'AI0131', end: 'hi', t: 'Main steam pressure transmitter (PT-MS1002) over range' },
+  /* Group 3 - a control valve sticks: the valve stays at the opening it had when it stuck; the controller keeps moving its output (wind-up)
+     until the operator takes MANUAL. The valve of each controller: unit.js AN_AV (the valve sheets of the package index). Every valve model
+     reads its opening through anAv (plant.js loop models, unit.js) */
+  { id: 'cv.fw', g: 'cv', tag: 'FICFW1007', t: 'Feedwater control valve FCV-FW1130-1 (FICFW1007) stuck' },
+  { id: 'cv.shs', g: 'cv', tag: 'TICBR1130', t: 'SH spray valve TCV-FW1110 (TICBR1130) stuck' },
+  { id: 'cv.dea', g: 'cv', tag: 'LICCD1104', t: 'Deaerator level valve LCV-CD1104 (LICCD1104) stuck' }
 ];
+/* the stuck valves: tag -> the opening it stays at (NaN until the next read takes the opening of that moment) */
+const AN_FAULT_STUCK = {};
+function anFaultStuck(tag, x) {
+  if (!(tag in AN_FAULT_STUCK)) return null;
+  if (!isFinite(AN_FAULT_STUCK[tag]) && isFinite(x)) AN_FAULT_STUCK[tag] = x;
+  return isFinite(AN_FAULT_STUCK[tag]) ? AN_FAULT_STUCK[tag] : null;
+}
 const AN_FAULT_ON = {};
 /* the I/O list record of the AI of a fault (range and SIG.AB address), read on a sheet of its station */
 function anFaultRec(f) {
@@ -62,6 +75,13 @@ function anFault(id, on) {
   const f = AN_FAULT_LIST.find(q => q.id === id);
   if (!f) return '';
   /* one end at a time: the other end of the same transmitter goes off first */
+  if (f.g === 'cv') {
+    if (on) AN_FAULT_STUCK[f.tag] = NaN;
+    else delete AN_FAULT_STUCK[f.tag];
+    if (on) AN_FAULT_ON[f.id] = 1;
+    else delete AN_FAULT_ON[f.id];
+    return on ? f.t + ' at its opening of this moment (the controller output moves on: take MANUAL)' : 'cleared: ' + f.t + ' (the valve follows its command again)';
+  }
   if (on) for (const q of AN_FAULT_LIST) if (q !== f && q.g === f.g && q.ai === f.ai && AN_FAULT_ON[q.id]) anFault(q.id, false);
   const n = anFaultPut(f, !!on);
   if (!n) return '';
@@ -73,4 +93,5 @@ function anFault(id, on) {
 /* Reset clears the field: every fault goes (the forces and the flags are cleared by the Reset itself) */
 function anFaultClearAll() {
   for (const k in AN_FAULT_ON) delete AN_FAULT_ON[k];
+  for (const k in AN_FAULT_STUCK) delete AN_FAULT_STUCK[k];
 }
