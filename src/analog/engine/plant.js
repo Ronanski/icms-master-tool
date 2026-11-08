@@ -65,8 +65,12 @@ function anProcEst(b) {
   /* 3.2.0-beta.53 (live check #103 / #105: total air still rising minutes after the damper stopped, furnace pressure -87 mmH2O and
      +7 for 30 s in AUTO): an air flow follows its damper and the furnace draft its ID fan in a few seconds (gas, no storage).
      Air flow loops (FICFA) and the furnace pressure (PICFG108 / 108A) take at most 5 s */
+  /* 3.2.1 (Mina beta.170: the drum level ran away after a turbine trip, +13 -> +370 mm, the feedwater 100 ~ 140 T/H above the steam):
+     the feedwater flow answers its control valve in seconds too (water, no storage between the valve FCV-FW1130-1 and FT-FW1007); the
+     Ti of FICFW1007 (75 s, ABC-010 PID parameters) is the tuning, so the flow took minutes to follow the valve after the 3-element set
+     point fell. Feedwater flow loops (FICFW) take at most 5 s (NO-SOURCE for the exact time: the valve stroke is not in the docs) */
   const tg = String((b.txt || [])[1] || ''),
-    fast = (lt === 'flow' && /^FICFA/.test(tg)) || /^PICFG108/.test(tg);
+    fast = (lt === 'flow' && /^FIC(FA|FW)/.test(tg)) || /^PICFG108/.test(tg);
   const T = P.ti > 0 ? Math.min(fast ? 5 : 600, Math.max(3, P.ti)) : TAU[lt] || 30,
     L = P.td > 0 ? Math.min(T / 3, Math.max(0.5, P.td * 2)) : lt === 'flow' ? 1 : Math.min(15, Math.max(1, T / 12)),
     K = Math.min(1, Math.max(0.2, (0.8 * T) / (kp * L)));
@@ -742,14 +746,25 @@ function anProcStep(S, dt) {
             z => z.k === 'AI' && z.o && S1.lab[z.o[0]] && String(S1.lab[z.o[0]].t).trim() === 'AI0128'
           );
           pr.integ.pd = pd ? pd.id : -1;
+          /* the AI outputs of the compensation (ABC-001C: SQRT of F(AI0131 main steam pressure) x F(AI0420 temperature) x AI0129) */
+          pr.integ.co = S1.blk
+            .filter(z => z.k === 'AI' && z.o && z.o.length && S1.lab[z.o[0]] && /^AI0(131|420)$/.test(String(S1.lab[z.o[0]].t).trim()))
+            .map(z => z.o[0]);
         }
-        const st = pr.integ.ai >= 0 ? S1.rt.st[pr.integ.ai] : null;
-        fst =
-          pr.integ.cn >= 0 && isFinite(S1.rt.v[pr.integ.cn])
-            ? +S1.rt.v[pr.integ.cn]
-            : st
-              ? (st.act != null ? +st.act : +st.val) || 0
-              : 0;
+        const st = pr.integ.ai >= 0 ? S1.rt.st[pr.integ.ai] : null,
+          raw = st ? (st.act != null ? +st.act : +st.val) || 0 : 0;
+        /* 3.2.1 (Mina beta.170 Faults: the main steam pressure transmitter lost -> drum level HIGH-HIGH -> MFT in 50 s): the steam that
+           leaves the drum is the plant, not the reading of a transmitter. While a compensation transmitter is failed by the trainer
+           (faults.js: its AI output forced), the balance takes the raw flow with the last good compensation factor; the drawing still
+           gets the wrong compensated flow (ABC-001C has no SIG.AB switch on it), so the 3-element feedwater falls and the level FALLS */
+        const bad = (pr.integ.co || []).some(o => S1.rt.force && S1.rt.force[o] != null);
+        if (pr.integ.cn >= 0 && isFinite(S1.rt.v[pr.integ.cn])) {
+          const c = +S1.rt.v[pr.integ.cn];
+          if (!bad) {
+            fst = c;
+            if (raw > 1) pr.integ.kc = c / raw;
+          } else fst = raw * (pr.integ.kc > 0 ? pr.integ.kc : 1);
+        } else fst = raw;
       }
       let ffw = +v[pr.integ.fw] || 0;
       const fwp = pr.integ.fwp,

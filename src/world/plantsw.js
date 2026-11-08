@@ -228,7 +228,8 @@
   /* 3.2.1 d1 (LISA): the sootblower positions from the lance travel of world.js (sbLance; Diamond Power N11639-SC1). 18.PNG (150 MW): all
      retracted, no blowing, the state they start from. The retract limit switch of each lance (DITL-80G row 12 ZSR-N1011 and its 27 copies),
      ANY ON EXTEND (M.4232: a lance at its front end) and the ALL ON RETRACT memories that DITL-80L makes (M.4008 every lance and N-1040 /
-     N-1042; M.4246 N-1011 ~ 22, 25, 26; M.4240 N-1023, 24, 27 ~ 34; M.4242 N-1035 ~ 38; DITL-80L is not in the app, read on its PDF). The air
+     N-1042; M.4246 N-1011 ~ 22, 25, 26; M.4240 N-1023, 24, 27 ~ 34; M.4242 N-1035 ~ 38; DITL-80L is not in the app, read on its PDF).
+     Mina beta.173: DITL-80A row 13 M.4008 (FROM DITL80L) too: it is the "All blowers on retract position" of page 18. The air
      heater blowers N-1040 / N-1042 (DITL-80K) have no travel data in the table: their reset positions stand at rest (18.PNG) */
   const sbL = () => (W.sbLances ? W.sbLances() : []),
     sbIn = (a, b) => L0 => L0.n >= a && L0.n <= b,
@@ -241,7 +242,7 @@
   L.push(['SOOTBLOWER', m => (m && m.s._lance ? (m.s._lance.x <= 0 ? 1 : 0) : 1), 0.5, 'hi', 0, 0, /SOOTBLOWER RETRACT POSITION/, /\)DITL-80G( #N-\d+)?$/]);
   L.push(['M.4232', () => (sbL().some(x => x._lance.x >= x._lance.len) ? 1 : 0), 0.5, 'hi', 0, 0, /ANY ON EXTEND/, /\)DITL-80G( #N-\d+)?$/]);
   L.push(['AIR', () => 1, 0.5, 'hi', 0, 0, /S\/B RESET POSITION/, /\)DITL-80K$/]);
-  for (const k in sbGrp) L.push([k, () => (sbL().every(x => !sbGrp[k](x._lance) || x._lance.x <= 0) ? 1 : 0), 0.5, 'hi', 0, 0, /ALL ON RETRACT/, /\)DITL-80[GKO]?( #N-\d+)?$/]);
+  for (const k in sbGrp) L.push([k, () => (sbL().every(x => !sbGrp[k](x._lance) || x._lance.x <= 0) ? 1 : 0), 0.5, 'hi', 0, 0, /ALL ON RETRACT/, /\)DITL-80[AGKO]?( #N-\d+)?$/]);
   const sdSilo = () => (window.AN && AN.unit && AN.unit.sd && isFinite(AN.unit.sd.silo) ? AN.unit.sd.silo : NaN);
   L.push(['LISD1800.PV', sdSilo, 60, 'lo', 0, 0, /< ?60 ?%/, /\)DITL-BA6[35]$/]);
   L.push(['LISD1800.PV', sdSilo, 80, 'hi', 0, 0, /> ?80 ?%/, /\)DITL-BA65$/]);
