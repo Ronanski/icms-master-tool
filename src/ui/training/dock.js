@@ -2217,7 +2217,9 @@
            buttons of the panel that need a deliberate action */
         /* design review 2026-11-08 (Yuna): one style for every press that cannot be undone (arm2: "Skip the purge", "this loads 150 MW"):
            the button itself says "Press again: …" for 5 s; its push button line (sheet, row, tag) stays under it */
-        if (/\bTRIP\b/i.test(a.l) && !/^(FAULT|FIELD)\b|RESET|ACK/i.test(a.l) && !bt.dataset.arm) {
+        /* Mina beta.189: the trainer FAULT buttons of the practices ("FAULT: PA fan trips", "FAULT: BFWP A trips", "FAULT: O2 analyzer A
+           signal lost") tripped at the first press: they ask for the second press too (a FIELD reset and an I&C clear do not) */
+        if (((/\bTRIP\b/i.test(a.l) && !/^(FAULT|FIELD)\b|RESET|ACK/i.test(a.l)) || /^FAULT:/.test(a.l)) && !bt.dataset.arm) {
           bt._armK = [...bt.childNodes];
           bt.dataset.arm = '1';
           bt.replaceChildren('Press again: ' + a.l, ...bt._armK.slice(1));
