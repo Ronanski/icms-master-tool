@@ -2170,16 +2170,23 @@
         /* Mina beta.170 (practise 51): TURBINE TRIP (TA-1) tripped the turbine on the first click of the chip. A trip command (a label
            with TRIP, not a trainer FAULT / FIELD button, not a RESET) asks for a second press within 4 s, like the emergency trip push
            buttons of the panel that need a deliberate action */
-        if (/\bTRIP\b/i.test(a.l) && !/^(FAULT|FIELD)\b|RESET|ACK/i.test(a.l) && !(bt._arm && Date.now() - bt._arm < 4000)) {
-          bt._arm = Date.now();
-          if (els.ovw) {
-            els.ovw.hidden = false;
-            els.ovw._r = 1;
-            els.ovw.textContent = '⚠ ' + a.l + ': press it again within 4 s to send the trip.';
-          }
+        /* design review 2026-11-08 (Yuna): one style for every press that cannot be undone (arm2: "Skip the purge", "this loads 150 MW"):
+           the button itself says "Press again: …" for 5 s; its push button line (sheet, row, tag) stays under it */
+        if (/\bTRIP\b/i.test(a.l) && !/^(FAULT|FIELD)\b|RESET|ACK/i.test(a.l) && !bt.dataset.arm) {
+          bt._armK = [...bt.childNodes];
+          bt.dataset.arm = '1';
+          bt.replaceChildren('Press again: ' + a.l, ...bt._armK.slice(1));
+          bt._armT = setTimeout(() => {
+            delete bt.dataset.arm;
+            bt.replaceChildren(...bt._armK);
+          }, 5000);
           return;
         }
-        bt._arm = 0;
+        if (bt.dataset.arm) {
+          clearTimeout(bt._armT);
+          delete bt.dataset.arm;
+          bt.replaceChildren(...bt._armK);
+        }
         /* retest #65 (R8: SWP-A started with 0 / 15 BAGO I-START items ticked); live test 2026-10-30 #20 (H5 / H7: the debris filter AUTO
            START with its line-up 0 / 1): every DCS command of the step (START, AUTO START, OPEN, AUTO) waits for the SOP items before it
            (the items above the first item the logic ticks); was a warning with a second press as an override, START only */
