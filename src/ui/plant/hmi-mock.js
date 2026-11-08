@@ -205,6 +205,32 @@
         hits.slice(1).forEach(h => h.addEventListener('click', e => (e.stopPropagation(), hit.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: e.clientX, clientY: e.clientY })))));
         show();
       });
+      /* e6 (user G 2026-11-08, mockup 13-turbine-protection-v1): page 13 TCS push buttons [data-tpb=cmd]: ATS SHUT-DOWN / HOLD OFF (tcs.js
+         step 8, 310SC90-775 p.29) and TURBINE TRIP / RESET (IBD 310SC90-794 TA-1). RUN only: VIEW does not control */
+      qa('[data-tpb]').forEach(e => {
+        e.style.cursor = 'pointer';
+        e.style.pointerEvents = 'auto';
+        const ti = document.createElementNS(NS, 'title');
+        ti.textContent = 'TCS push button · click = press (RUN)';
+        e.append(ti);
+        e.addEventListener('click', ev => {
+          ev.stopPropagation();
+          const view = document.body.classList.contains('an') ? !!(window.AN && AN.view && !AN.run) : call(() => !SIM, false);
+          const cmd = e.dataset.tpb,
+            nm = { shutdown: 'SHUT-DOWN', holdoff: 'HOLD OFF', trip: 'TURBINE TRIP', tripreset: 'TURBINE RESET' }[cmd] || cmd;
+          if (view) {
+            /* VIEW: the label says why nothing happened, for 2 s */
+            qa(`text[data-tpb="${cmd}"]`).forEach(t => {
+              const o = t.textContent;
+              t.textContent = 'VIEW: press RUN';
+              setTimeout(() => (t.textContent = o), 2000);
+            });
+            return;
+          }
+          const r = call(() => AN.turbine(cmd), '');
+          call(() => window.lsEventAdd && lsEventAdd('TCS', 'TCS', 'Operator: ' + nm + (typeof r === 'string' && r ? ' (' + r + ')' : '')));
+        });
+      });
       qa('[data-go]').forEach(e => {
         e.style.cursor = 'pointer';
         const ti = document.createElementNS(NS, 'title');
@@ -484,7 +510,25 @@
           e.setAttribute('stroke', !I || I.pos == null ? C.none : I.pos > 0.5 ? C.run : C.stop);
         });
       const tick0 = tick;
-      const tickAll = () => (tick0(), tickTT(), tickMov(), tickMovR());
+      /* e6: page 13 turbine protection: TRIPPED / RESET and the first out of TA-9 (tcs.js U.tc.trip, '' = reset) */
+      const tickTP = () => {
+        if (!pg.querySelector('[data-tt]')) return;
+        const U = window.AN && AN.unit,
+          T = U && U.on ? call(() => AN.tcs(), null) : null,
+          fo = T ? String(T.trip || '') : null;
+        qa('[data-tt]').forEach(e => {
+          if (fo == null) return (e.textContent = '-----'), e.setAttribute('fill', C.none);
+          if (e.dataset.tt === 'st') (e.textContent = fo ? 'TRIPPED' : 'RESET'), e.setAttribute('fill', fo ? C.run : C.stop);
+          else e.textContent = 'First out: ' + (fo || 'none');
+        });
+        qa('[data-ttr]').forEach(r => r.setAttribute('stroke', fo == null ? C.none : fo ? C.run : C.stop));
+        qa('[data-tfo]').forEach(c => {
+          const on = !!fo && fo.toUpperCase() === c.dataset.tfo;
+          c.setAttribute('fill', on ? C.run : 'none');
+          c.setAttribute('stroke', on ? C.run : C.dim);
+        });
+      };
+      const tickAll = () => (tick0(), tickTT(), tickMov(), tickMovR(), tickTP());
       tickAll();
       HSYM.every(g, 500, tickAll);
       /* faceplates: click on the equipment = CONTROL, the Y / N square = PERMISSIVE · TREND · MONITOR (#59) */
