@@ -425,6 +425,35 @@
           }
         })
       );
+    /* 3.2.1 d2 (LISA): a TO reference written at the end of a wire, not in an output row. The sootblower drawing DITL-80G has no output
+       column: "DITL80N-30" is written on the wire of the coil N-1011 S/B STARTER ON, "DITL80T-4" / "DITL80T-6" on M.4016 / M.4017 (memory
+       list 102: SB1 SOOTBLOWER FORWARD / BACKWARD STARTER ON). The net of that wire is the source of the row (DITL-80N row 30 FROM DITL80G,
+       DITL-80T rows 4 / 6 FROM DITL80G); the sheet exports the net as "n<net>" in its output set (tick below) */
+    const wireTo = [];
+    for (const sb of S.sheets) {
+      if (!isSB(sb) || !sb.nl || !sb.nl.segs) continue;
+      for (const t of sb.tx || []) {
+        const m = /^DITL\s?(\d{2,3}[A-Z]?)-(\d{1,2})$/.exec(String(t.t || '').trim());
+        if (!m) continue;
+        let bn = -1,
+          bd = 8;
+        for (const g of sb.nl.segs) {
+          const dx = g.x2 - g.x1,
+            dy = g.y2 - g.y1,
+            L2 = dx * dx + dy * dy,
+            u = L2 > 0 ? Math.max(0, Math.min(1, ((t.x - g.x1) * dx + (t.y - g.y1) * dy) / L2)) : 0,
+            dd2 = Math.hypot(t.x - (g.x1 + u * dx), t.y - (g.y1 + u * dy));
+          if (dd2 < bd) ((bd = dd2), (bn = g.n));
+        }
+        if (bn < 0) continue;
+        const d = dSheet(m[1].toUpperCase(), sb),
+          it = d && d !== sb && ditlItem(d, +m[2]);
+        if (!it || it.side !== 'L') continue;
+        (sb._xn = sb._xn || new Set()).add(bn);
+        addIn(d, it.i, { k: 'd', d: sb, row: 'n' + bn, ref: codeOf(sb.name) + ' ' + String(t.t).trim() });
+        wireTo.push(d.name + ' r' + (+d.rows[it.i].n) + ' <- ' + sb.name + ' net ' + bn);
+      }
+    }
     let fa = 0,
       ta = 0;
     const wsh = new Set();
@@ -728,6 +757,7 @@
       fromDitl: fa,
       fromAbc,
       tcsIn,
+      wireTo,
       abcMiss,
       plc,
       toDitl: ta,
@@ -816,6 +846,8 @@
         R = simSheet(s);
         if (W.pulseScan) W.pulseScan(s, R);
       }
+      /* 3.2.1 d2: a wire with a TO reference at its end (wireTo above) */
+      if (s._xn) for (const n of s._xn) if (R.v[n]) R.outOn.add('n' + n);
       out[s.name] = R.outOn;
       /* 3.2.0-beta.23: an output that changed in this scan (a push button seen, a step of a sequence): the next scans are short (W.busy) */
       if (!TMBUSY) {

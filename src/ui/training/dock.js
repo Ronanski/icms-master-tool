@@ -482,7 +482,8 @@
     for (const q of srcs) {
       if (q.k === 'd') {
         if (!q.d.nl) q.d.nl = netlist(q.d);
-        const on = (q.d.nl.outs || []).find(x => x.row === q.row);
+        /* 3.2.1 d2: a wire with a TO reference (world.js wireTo): row "n<net>" */
+        const on = (q.d.nl.outs || []).find(x => x.row === q.row) || (/^n\d+$/.test(q.row) ? { n: +q.row.slice(1) } : null);
         const L = on ? needNet(q.d, on.n, want ? 1 : 0, null, 0, new Set(), []) : [];
         for (const r of L) leaves(r.s, r.row, r.want, d + 1, seen, out);
       } else if (q.sh && !out.abc.includes(q.sh.name)) out.abc.push(q.sh.name);

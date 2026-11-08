@@ -35838,7 +35838,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.110';
-      c3.textContent += ' · build 0c7dbbd'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 25fa40a'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -52330,6 +52330,35 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
           }
         })
       );
+    /* 3.2.1 d2 (LISA): a TO reference written at the end of a wire, not in an output row. The sootblower drawing DITL-80G has no output
+       column: "DITL80N-30" is written on the wire of the coil N-1011 S/B STARTER ON, "DITL80T-4" / "DITL80T-6" on M.4016 / M.4017 (memory
+       list 102: SB1 SOOTBLOWER FORWARD / BACKWARD STARTER ON). The net of that wire is the source of the row (DITL-80N row 30 FROM DITL80G,
+       DITL-80T rows 4 / 6 FROM DITL80G); the sheet exports the net as "n<net>" in its output set (tick below) */
+    const wireTo = [];
+    for (const sb of S.sheets) {
+      if (!isSB(sb) || !sb.nl || !sb.nl.segs) continue;
+      for (const t of sb.tx || []) {
+        const m = /^DITL\s?(\d{2,3}[A-Z]?)-(\d{1,2})$/.exec(String(t.t || '').trim());
+        if (!m) continue;
+        let bn = -1,
+          bd = 8;
+        for (const g of sb.nl.segs) {
+          const dx = g.x2 - g.x1,
+            dy = g.y2 - g.y1,
+            L2 = dx * dx + dy * dy,
+            u = L2 > 0 ? Math.max(0, Math.min(1, ((t.x - g.x1) * dx + (t.y - g.y1) * dy) / L2)) : 0,
+            dd2 = Math.hypot(t.x - (g.x1 + u * dx), t.y - (g.y1 + u * dy));
+          if (dd2 < bd) ((bd = dd2), (bn = g.n));
+        }
+        if (bn < 0) continue;
+        const d = dSheet(m[1].toUpperCase(), sb),
+          it = d && d !== sb && ditlItem(d, +m[2]);
+        if (!it || it.side !== 'L') continue;
+        (sb._xn = sb._xn || new Set()).add(bn);
+        addIn(d, it.i, { k: 'd', d: sb, row: 'n' + bn, ref: codeOf(sb.name) + ' ' + String(t.t).trim() });
+        wireTo.push(d.name + ' r' + (+d.rows[it.i].n) + ' <- ' + sb.name + ' net ' + bn);
+      }
+    }
     let fa = 0,
       ta = 0;
     const wsh = new Set();
@@ -52633,6 +52662,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       fromDitl: fa,
       fromAbc,
       tcsIn,
+      wireTo,
       abcMiss,
       plc,
       toDitl: ta,
@@ -52721,6 +52751,8 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
         R = simSheet(s);
         if (W.pulseScan) W.pulseScan(s, R);
       }
+      /* 3.2.1 d2: a wire with a TO reference at its end (wireTo above) */
+      if (s._xn) for (const n of s._xn) if (R.v[n]) R.outOn.add('n' + n);
       out[s.name] = R.outOn;
       /* 3.2.0-beta.23: an output that changed in this scan (a push button seen, a step of a sequence): the next scans are short (W.busy) */
       if (!TMBUSY) {
@@ -81789,6 +81821,35 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
           }
         })
       );
+    /* 3.2.1 d2 (LISA): a TO reference written at the end of a wire, not in an output row. The sootblower drawing DITL-80G has no output
+       column: "DITL80N-30" is written on the wire of the coil N-1011 S/B STARTER ON, "DITL80T-4" / "DITL80T-6" on M.4016 / M.4017 (memory
+       list 102: SB1 SOOTBLOWER FORWARD / BACKWARD STARTER ON). The net of that wire is the source of the row (DITL-80N row 30 FROM DITL80G,
+       DITL-80T rows 4 / 6 FROM DITL80G); the sheet exports the net as "n<net>" in its output set (tick below) */
+    const wireTo = [];
+    for (const sb of S.sheets) {
+      if (!isSB(sb) || !sb.nl || !sb.nl.segs) continue;
+      for (const t of sb.tx || []) {
+        const m = /^DITL\s?(\d{2,3}[A-Z]?)-(\d{1,2})$/.exec(String(t.t || '').trim());
+        if (!m) continue;
+        let bn = -1,
+          bd = 8;
+        for (const g of sb.nl.segs) {
+          const dx = g.x2 - g.x1,
+            dy = g.y2 - g.y1,
+            L2 = dx * dx + dy * dy,
+            u = L2 > 0 ? Math.max(0, Math.min(1, ((t.x - g.x1) * dx + (t.y - g.y1) * dy) / L2)) : 0,
+            dd2 = Math.hypot(t.x - (g.x1 + u * dx), t.y - (g.y1 + u * dy));
+          if (dd2 < bd) ((bd = dd2), (bn = g.n));
+        }
+        if (bn < 0) continue;
+        const d = dSheet(m[1].toUpperCase(), sb),
+          it = d && d !== sb && ditlItem(d, +m[2]);
+        if (!it || it.side !== 'L') continue;
+        (sb._xn = sb._xn || new Set()).add(bn);
+        addIn(d, it.i, { k: 'd', d: sb, row: 'n' + bn, ref: codeOf(sb.name) + ' ' + String(t.t).trim() });
+        wireTo.push(d.name + ' r' + (+d.rows[it.i].n) + ' <- ' + sb.name + ' net ' + bn);
+      }
+    }
     let fa = 0,
       ta = 0;
     const wsh = new Set();
@@ -82092,6 +82153,7 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
       fromDitl: fa,
       fromAbc,
       tcsIn,
+      wireTo,
       abcMiss,
       plc,
       toDitl: ta,
@@ -82180,6 +82242,8 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
         R = simSheet(s);
         if (W.pulseScan) W.pulseScan(s, R);
       }
+      /* 3.2.1 d2: a wire with a TO reference at its end (wireTo above) */
+      if (s._xn) for (const n of s._xn) if (R.v[n]) R.outOn.add('n' + n);
       out[s.name] = R.outOn;
       /* 3.2.0-beta.23: an output that changed in this scan (a push button seen, a step of a sequence): the next scans are short (W.busy) */
       if (!TMBUSY) {
@@ -95983,7 +96047,8 @@ window.LS_GUIDE = (function () {
     for (const q of srcs) {
       if (q.k === 'd') {
         if (!q.d.nl) q.d.nl = netlist(q.d);
-        const on = (q.d.nl.outs || []).find(x => x.row === q.row);
+        /* 3.2.1 d2: a wire with a TO reference (world.js wireTo): row "n<net>" */
+        const on = (q.d.nl.outs || []).find(x => x.row === q.row) || (/^n\d+$/.test(q.row) ? { n: +q.row.slice(1) } : null);
         const L = on ? needNet(q.d, on.n, want ? 1 : 0, null, 0, new Set(), []) : [];
         for (const r of L) leaves(r.s, r.row, r.want, d + 1, seen, out);
       } else if (q.sh && !out.abc.includes(q.sh.name)) out.abc.push(q.sh.name);
