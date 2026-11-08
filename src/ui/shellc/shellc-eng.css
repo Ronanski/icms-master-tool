@@ -108,3 +108,10 @@ body.sceng .sccrumb{display:none!important}
 /* the VIEW | RUN of the strip: in the Engineer mode the bar has it (marked by shellc-eng.js); the full-screen exit of the Operator pages
    is not part of this view */
 html body.sc.sceng #gsbar #scstrip .seg.sce-hide,html body.sc.sceng .sce-hide,body.sceng .scfsout{display:none!important}
+/* Loop check buttons (shell audit, Jennie 2026-11-09: card buttons 26 px on a tablet). loopcheck.css is not changed: with ?shell=c only
+   (body.sc), in the Engineer pane and in the old dock alike, its buttons are 40 px at tablet width and 44 px on a touch screen
+   (MEASURE_STANDARD S3; design-auditor touch 44), text 13 px (S1, the .8rem of loopcheck.css is about 11 px here). The FAIL list rows
+   (.lc-fi) are text links in a list and keep their height */
+html body.sc #lcdock button:not(.lc-fi){font-size:13px}
+@media (max-width:1279px){html body.sc #lcdock button:not(.lc-fi){min-height:40px!important;padding-top:4px;padding-bottom:4px}}
+@media (pointer:coarse){html body.sc #lcdock button:not(.lc-fi){min-height:44px!important}}
