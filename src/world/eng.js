@@ -15,13 +15,13 @@
     /* not setForce: a page function (ui/panel.js), its force goes as a write and its settle as an action */
     AN: ['reset', 'settle', 'loadStart', 'plantLoad150', 'plantCold', 'plantLoad150Async', 'plantColdAsync', 'plantSwitch', 'latchMode', 'stVal', 'turbine', 'field', 'swValve', 'oilValve', 'blowdown', 'stepSet', 'stepTier', 'actSet', 'stepN', 'stepBack', 'clock0'],
     G: ['ditlStates', 'ditlUser'],
-    DITL150: ['apply'],
+    DITL150: ['apply', 'savePut'],
     WORLD: ['tick', 'set']
   };
   /* the long actions run in the engine ONLY (user 2026-11-02 "Worker n. Lhat n"): on the page they took seconds (Start at 150 MW
      ~10 s) and froze the screen. The page sends them and gets a promise; it resolves when the engine is done and its whole state is
      on the page. The short ones (settle, A / M / R, SV, MV, a valve, a press: ~0.1 s) run on both sides: an answer at once */
-  const HEAVY = new Set(['AN.reset', 'AN.loadStart', 'AN.plantLoad150', 'AN.plantCold', 'AN.plantLoad150Async', 'AN.plantColdAsync', 'DITL150.apply']);
+  const HEAVY = new Set(['AN.reset', 'AN.loadStart', 'AN.plantLoad150', 'AN.plantCold', 'AN.plantLoad150Async', 'AN.plantColdAsync', 'DITL150.apply', 'DITL150.savePut']);
   const waits = new Map();
   let nid = 0;
   const own = (o, k) => o && typeof o[k] === 'function';
