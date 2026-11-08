@@ -68,6 +68,33 @@
   const LET = ['A', 'B', 'C', 'D'];
   /* the valves of the DITL-38 table (STN101 MV-BD1001 / 1002, STN102 the rest) */
   W.MCV = ['MV-BD1001', 'MV-BD1002', 'MV-FW1001', 'MV-FW1391', 'MV-FW1002', 'MV-FW1392', 'MV-MS1391', 'MV-MS1392'];
+  /* 3.2.1 d2 (LISA): the sootblowers N-1011 ~ N-1038. DITL-80G is drawn for N-1011 and says "(AS ABOVE BLOCK) N-1012 ~ N-1015
+     SOOTBLOWER CONTROL LOGIC"; DITL-80H / 80I / 80J hold only the boxes "(AS SHEET DITL80G BLOCK)" N-1016 ~ N-1023 / N-1024 ~ N-1031 /
+     N-1032 ~ N-1038. One machine each, named by its tag. Its own addresses: memory list 102 (SB1 ~ SB28 = N-1011 ~ N-1038, "SB1~12,15,16"
+     = the drawing's "N-1011~22,25,26"): SKIP/OPERATING SWITCH, START COMMAND, SKIPED, PROGRAM AUTO OPERATING, RETRACT P.B., START P.B.,
+     FORWARD / BACKWARD STARTER ON (8 in a row from SB_B8), START CONDITION, MANUAL START, RETRACT COMMAND (3 in a row from SB_B3), SYSTEM
+     PROGRAM ON (M.4270 + k), START ABNORMAL (M.4380 + k), START ON (M.4410 + k); the field contacts ZSE / ZSR / MIF / MIR / MIT and the
+     starters MOR / MOS by their tag in the I/O list (window.WIRING) */
+  W.SB = { first: 'N-1011', n: 28 };
+  const SB_B8 = '4010,4018,4020,4028,4030,4038,4040,4048,4050,4058,4060,4068,4070,4078,4080,4088,4090,4098,4100,4108,4110,4118,4120,4128,4130,4138,4140,4148'.split(','),
+    SB_B3 = '4300,4303,4306,4309,430C,4310,4313,4316,4319,431C,4320,4323,4326,4329,432C,4330,4333,4336,4339,433C,4340,4343,4346,4349,434C,4350,4353,4356'.split(',');
+  const hx = (a, d) => (parseInt(a, 16) + d).toString(16).toUpperCase().padStart(4, '0');
+  function sbMap(k) {
+    const m = {};
+    for (let j = 0; j < 8; j++) m['M.' + hx('4010', j)] = 'M.' + hx(SB_B8[k - 1], j);
+    for (let j = 0; j < 3; j++) m['M.' + hx('4300', j)] = 'M.' + hx(SB_B3[k - 1], j);
+    for (const b of ['4270', '4380', '4410']) m['M.' + b] = 'M.' + hx(b, k - 1);
+    const tag = 'N' + (1010 + k);
+    for (const r of window.WIRING || []) {
+      const t = /^([A-Z]{3})-N1011$/.exec(r[3] || '');
+      if (!t || !/^[IO]\.[0-9A-F]{4}$/.test(r[2])) continue;
+      const o = (window.WIRING || []).find(x => x[3] === t[1] + '-' + tag && /^[IO]\.[0-9A-F]{4}$/.test(x[2]));
+      if (o) m[r[2]] = o[2];
+    }
+    return m;
+  }
+  /* N-1011 alone (not the ranges "N-1011~38", "N-1011~22,25,26") */
+  const SB1RX = /\bN-?1011(?![~\d])/g;
   const txtOf = s => {
     if (s._alltx === undefined)
       s._alltx = Object.values(s.cells || {})
@@ -232,6 +259,8 @@
   W.remap = (s, t) => {
     const I = s && s._inst;
     if (!I || !I.k) return t;
+    /* 3.2.1 d2: a sootblower of DITL-80G: its tag for N-1011 */
+    if (I.sb) return String(t || '').replace(SB1RX, m => (m[1] === '-' ? I.lbl : I.lbl.replace('-', '')));
     if (isLop4(I.base)) {
       const sw = L => ({ A: 'B', B: 'A' })[L.toUpperCase()] || L;
       return String(t || '').replace(/\b(BFWP|LOP)(\s*-?\(?)([A-D])(?![A-Z0-9])/gi, (m, w, sp, L) => w + sp + (/BFWP/i.test(w) ? (I.k >= 2 ? sw(L) : L) : I.k & 1 ? sw(L) : L));
@@ -250,6 +279,7 @@
     /* live test #56: machine A (k 0) of a drawing for several machines keeps its own address of the list too */
     if (!I || !t || (!I.k && !(I.n > 1))) return t;
     let x = W.remap(s, t);
+    if (I.sb) return x.replace(/\b[IMO]\.[0-9A-F]{4}\b/g, a => I.amap[a] || a);
     const la = addrList(t),
       ix = isLop4(I.base) ? lopIdx(I.k, la.length) : I.k;
     if (la.length > 1 && la[ix]) {
@@ -262,6 +292,7 @@
     const I = s && s._inst,
       b = I ? I.base : s,
       la = rowList(b, i);
+    if (I && I.sb) return la[0] ? I.amap[la[0]] || la[0] : null;
     if (I && I.k && la.length < 2) {
       /* 3.2.0-beta.34: one address and a text that turns into ANOTHER row of the same drawing (DITL-24 PAF LOP A: row 25 "LOP A STOPPED"
          I.005C and row 26 "LOP B STOPPED" I.037C; for LOP B the two swap): the address of that row */
@@ -316,6 +347,43 @@
         });
       }
     }
+    {
+      const g = S.sheets.find(x => /^\(S\d+\)DITL-80G$/.test(x.name)),
+        L = g && W.instOf.get(g);
+      if (L && L.length === 1) {
+        g._inst.lbl = W.SB.first;
+        for (let k = 2; k <= W.SB.n; k++) {
+          const tag = 'N-' + (1010 + k),
+            nm = g.name + ' #' + tag,
+            x = old.get(nm) || makeInst(g, k - 1, tag);
+          x._inst.sb = 1;
+          x._inst.amap = sbMap(k);
+          x._xn = null;
+          W.inst.push(x);
+          L.push(x);
+        }
+      }
+    }
+    /* 3.2.1 d2: the row of a sootblower sheet that names one sootblower (output RS text without its addresses), for the copies of DITL-80G */
+    const sbN = t => String(t || '').replace(/\b[IMOB]\.[0-9A-F]{4}\b/g, ' ').replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
+    let sbIdx = null;
+    const sbOut = txt => {
+      if (!sbIdx) {
+        sbIdx = new Map();
+        for (const d of S.sheets)
+          if (isSB(d) && d.nl)
+            for (const o of d.nl.outs || []) {
+              const k = sbN(cellTxt(d, o.row, 'RS'));
+              if (k && !sbIdx.has(k)) sbIdx.set(k, { d, row: o.row });
+            }
+      }
+      return sbIdx.get(sbN(txt)) || null;
+    };
+    const sbRow = (d, txt) => {
+      const w = sbN(txt);
+      for (let j = 0; j < d.rows.length; j++) if (sbN(cellTxt(d, j, 'S')) === w) return j;
+      return -1;
+    };
     const inst = (base, k) => {
       const L = W.instOf.get(base);
       return L ? L[k] || null : null;
@@ -400,6 +468,20 @@
           const lsm = /\)DITL-LS(\d{2,3})$/.exec(sb.name),
             lln = /^\s*LINE\s*(\d{1,2})\s*$/i.exec(ft);
           if (lsm && lln) ft = 'SHEET ' + lsm[1] + ' - LINE ' + lln[1];
+          /* 3.2.1 d2: a copy of DITL-80G (N-1012 ~ N-1038): a row that names N-1011 reads the output of its own sootblower (DITL-80B row 2
+             N-1012 SOOTBLOWER OPERATING TO DITL80G, DITL-80M row 5 N-1012 REMOTE START COMMAND TO DITL80G); none found: no link (never N-1011's) */
+          if (s._inst && s._inst.sb) {
+            const st = cellTxt(sb, i, 'S');
+            SB1RX.lastIndex = 0;
+            if (SB1RX.test(st)) {
+              const q = sbOut(W.remap(s, st));
+              if (q) {
+                addIn(s, i, { k: 'd', d: q.d, row: q.row, ref: codeOf(q.d.name) + '-' + (+q.d.rows[q.row].n + 50) });
+                dd++;
+              }
+              return;
+            }
+          }
           for (const f of refsOf(ft)) {
             const o = outRow(f.code, f.nn, sb);
             if (!o) continue;
@@ -452,6 +534,15 @@
         (sb._xn = sb._xn || new Set()).add(bn);
         addIn(d, it.i, { k: 'd', d: sb, row: 'n' + bn, ref: codeOf(sb.name) + ' ' + String(t.t).trim() });
         wireTo.push(d.name + ' r' + (+d.rows[it.i].n) + ' <- ' + sb.name + ' net ' + bn);
+        /* the copies (N-1012 ~ N-1038): the row of the same sheet that names their tag (DITL-80N row 41 N-1022 SOOTBLOWER STARTER ON) */
+        for (const x of W.instOf.get(sb).slice(1)) {
+          if (!x._inst.sb) continue;
+          const j = sbRow(d, W.remap(x, cellTxt(d, it.i, 'S')));
+          if (j < 0 || j === it.i) continue;
+          (x._xn = x._xn || new Set()).add(bn);
+          addIn(d, j, { k: 'd', d: x, row: 'n' + bn, ref: codeOf(sb.name) + ' ' + x._inst.lbl });
+          wireTo.push(d.name + ' r' + (+d.rows[j].n) + ' <- ' + x.name + ' net ' + bn);
+        }
       }
     }
     let fa = 0,
