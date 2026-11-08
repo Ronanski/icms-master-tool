@@ -627,6 +627,21 @@ function anProcStep(S, dt) {
          makes the flow is stopped (no BFWP: no feedwater; fan stopped: no air), the PV is then the bottom of the range */
       ss = c => {
         let y = ss0(c) + anc + ((pr.dist || 0) / 100) * span + (pr.op || 0) + (pr.ld || 0);
+        /* 3.2.1 b6 (Mina beta.111: reheat 536 C at 90 MW, plant 521 C with its controller at SV 541, so at its limit): the natural curve of
+           the unit model (unit.js natRH) is the temperature with every actuator at its limit. Below the spray range (pr.nsat = 1 - spray
+           share) the most the other actuators (the RH / SH flue gas biasing damper, ABC-020) can still raise is taken off, so a damper at
+           its end gives the plant value instead of adding its assumed gain on top */
+        if (pr.nsat > 0 && xsl.length) {
+          let up = 0;
+          xsl.forEach((x, j) => {
+            const g0 = xg(x),
+              m = xman(x),
+              lo0 = m ? 0 : x.b.p.lo == null ? 0 : x.b.p.lo,
+              hi0 = m ? 100 : x.b.p.hi == null ? 100 : x.b.p.hi;
+            up += Math.max(0, g0(lo0) - xa[j], g0(hi0) - xa[j]);
+          });
+          y -= pr.nsat * span * up;
+        }
         /* 2.2.0-beta.12: pr.fr = firing ratio of the unit model (steam made / steam flowing, 0 ~ 1) on a steam temperature: without firing the
            superheat is lost and the temperature goes to the saturation temperature pr.tsat of the drum (MFT), whatever the spray does */
         if (pr.fr != null && pr.tsat != null) y = pr.tsat + (y - pr.tsat) * pr.fr;
