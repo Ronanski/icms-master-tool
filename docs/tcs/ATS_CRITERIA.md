@@ -12,39 +12,47 @@ Mga step: 0 HP TBN WARMING, 1 PREPARATION, 2 RUB CHECK, 3 ACCELERATION, 4 EXCITA
 
 ## Talaan (page 3, IP start mode) laban sa app
 
-Ang "App beta.38" ay kung binabasa ito ng TCS model (`src/analog/engine/tcs.js`, `tcsCrit`). Ang "beta.37" ay ang dati (turbine na black box: off → roll → sync → load).
+Binasa ulit ang page 3 noong 2026-11-08: ang dating talaan ay isang column ang layo (hal. 2.3 ay D2 at A3, hindi A2 at B2). Ang "Ginagamit" ay mula sa scan; △ = sequential action; HOLD = hold column. App = `src/analog/engine/tcs.js` (`tcsCrit`, `TCS_A`, `TCS_B`). Ang mga listahan ng A / B sa code ay hindi pa ganap na tugma sa scan (TCS_A[1], TCS_A[7], walang 2.3 / 2.5 / 2.7 sa mga A).
 
-| No. | Criteria | Ginagamit sa step | beta.37 | App beta.38 |
-|---|---|---|---|---|
-| 1.1 / 1.2 | TSI OK, TCS NORMAL | B1, A2 ~ B7 | WALA | WALA pa (walang TSI fault sa model; laging OK) |
-| 1.3 | Main steam press. not low | B1, A2 ~ B7 | WALA | MAYROON: cold 60, warm 81.6, hot 110 kg/cm2 (PR-OPE-5002 8254 / 8407) |
-| 1.4 | Main steam temp. not low | B1, A2 ~ B7 | WALA | MAYROON: ≥ 400 °C (hot 455) |
-| 1.5 | Reheat steam press. not low | B1, A2 ~ B5 | WALA | MAYROON: ≥ 7.5 kg/cm2 |
-| 1.6 | Reheat steam temp. not low | B1, A2 ~ B5 | WALA | MAYROON: ≥ 415 °C (hot 485) |
-| 1.71 | MS temp. mismatch OK | A2, A3 | WALA | MAYROON: Fig. 2 (page 21) laban sa HP first stage metal |
-| 1.72 | RH temp. mismatch OK | A2, A3 | WALA | MAYROON: Fig. 3 laban sa reheat bowl metal |
-| 1.8 | HP / LP bypass control in AUTO | B1, A2 ~ B6 | WALA | MAYROON: PICMS1006 at PICHR1003 sa AUTO |
-| 1.10 | Gland steam seal header press. not low | A0 ~ B7 | WALA | MAYROON: gland sealing (aux > 7, turning gear, vacuum breaker bukas) |
-| 1.11 | Condenser vacuum OK | A0 ~ B7, HOLD | MAYROON | MAYROON: ≥ 90 %, vacuum up kailangan ng aux > 10, gland, sarado ang vacuum breaker, ejector |
-| 1.12 | LP exhaust hood temp. not high | B1, A2 ~ B7, HOLD | WALA | MAYROON: ≤ 80 °C; ang initial load ay hawak hanggang < 52 °C (PR-OPE-5002 9123) |
-| 1.14 | Control oil press. not low | B1, A2 ~ B7 | WALA | MAYROON: EH oil pump |
-| 1.15 / 1.16 | Bearing oil press. / temp. | A0 ~ B7, HOLD | WALA | MAYROON: lube oil pump; trip kapag nawala habang umiikot |
-| 1.17 | Main oil tank level OK | B1, A2 ~ B7 | WALA | laging OK (walang leak sa model) |
-| 1.18 | MOT vapour extractor running | A0 ~ B7 | WALA | MAYROON |
-| 1.19 | Turbine turning (turning gear) | A0, B0, A1, A2 | WALA | MAYROON: 3 rpm, kailangan ng lube oil |
-| 1.20 / 1.21 | Turbine reset, MSV open | A1 (△), B1 ~ B7 | WALA | MAYROON: sa dulo ng PREPARATION |
-| 1.24 ~ 1.31 | Vibration, eccentricity, diff. expansion, bearing metal | B1 ~ B7 | WALA | WALA pa (laging OK; walang mekanikal na fault) |
-| 1.32 ~ 1.35 | Chest / metal temp. diff. OK | B1 ~ B7 | WALA | bahagi: CV chest inner / outer sa PREPARATION |
-| 1.42 ~ 1.47 | AVR / excitation / gen. voltage | A4 ~ B7 | WALA | MAYROON: step 4 EXCITATION (30 s) |
-| 1.48 | 52G closed | A5 (△) ~ B7 | MAYROON | MAYROON |
-| 2.3 | Rub check complete speed | A2, B2 | WALA | MAYROON: 200 rpm, coast < 100 rpm (ambient cold at cold 1 lang) |
-| 2.4 | Turbine rated speed | A3 ~ D3, A4 | MAYROON | MAYROON: 1800 at 3600 rpm heat soak (Fig. 1 / 2), walang hold sa 1372 ~ 1723 rpm |
-| 2.5 | Gen. load > initial load | A5, B5 | MAYROON | MAYROON: 3 % (hot 5 %), hold 40 / 15 / 0 min (Fig. 3) |
-| 2.6 | IP to HP transfer complete | A6, B6 | MAYROON | MAYROON |
-| 2.81 ~ 2.85 | CV chest warming | A1 (△) | WALA | MAYROON: 60 min, o diff < 50 °C at outer > 180 °C |
-| 2.92 | HP turbine warming complete | A0, B0 | WALA | MAYROON: HP metal > 150 °C |
+| No. | Criteria | Ginagamit (776 p.3) | App 3.2.1 |
+|---|---|---|---|
+| 1.1 / 1.2 | TSI OK, TCS NORMAL | B1 A2 B2 A3 B3 A4 B4 A5 B5 A6 B6 B7 | Wala (laging OK; walang TSI fault sa model) |
+| 1.3 / 1.4 | Main steam press. / temp. not low | B1 A2 B2 A3 B3 A4 B4 A5 B5 A6 B6 B7 | Mayroon: PR-OPE-5002 (cold 60, warm 81.6, hot 110 kg/cm2; ≥ 400 °C, hot 455). 776 p.5: blangko ang numero |
+| 1.5 / 1.6 | Reheat steam press. / temp. not low | B1 A2 B2 A3 B3 A4 B4 A5 B5 | Mayroon: ≥ 7.0 kg/cm2, ≥ 415 °C (hot 485), PR-OPE-5002 |
+| 1.71 / 1.72 | MS / RH temp. mismatch OK | A2 A3 | Mayroon: upper limit hanggang target (776 p.5, Fig. 2 / 3 p.21). Step-in lang |
+| 1.8 | HP / LP bypass control in AUTO | B1 A2 B2 A3 B3 A4 B4 A5 B5 A6 B6 | Mayroon: PICMS1006 at PICHR1003 sa AUTO |
+| 1.10 | Gland steam seal header press. not low | A0 B0 B1 A2 B2 A3 B3 A4 B4 A5 B5 A6 B6 B7 | Proxy: gland sealing at aux > 7 (IBD TD-3 ≤ 0.1 kg/cm2g, hindi pa ginagamit) |
+| 1.11 | Condenser vacuum OK | A0 B0 B1 A2 B2 A3 B3 A4 B4 A5 B5 A6 B6 B7 HOLD | Mayroon: IBD TA-10 band, LOW ON ≥ 0.14, OFF ≤ 0.12 kg/cm2 abs |
+| 1.12 | LP exhaust hood temp. not high | B1 A2 B2 A3 B3 A4 B4 A5 B5 A6 B6 B7 HOLD | Mayroon: IBD TA-14 band, ON ≥ 80, OFF ≤ 77 °C |
+| 1.14 | Control oil press. not low | B1 A2 B2 A3 B3 A4 B4 A5 B5 A6 B6 B7 | Mayroon: IBD TA-13 band, ON ≤ 133, OFF ≥ 138 kg/cm2g |
+| 1.15 | Bearing oil press. not low | A0 B0 B1 A2 B2 A3 B3 A4 B4 A5 B5 A6 B6 B7 HOLD | Mayroon: IBD TA-13 band, ON ≤ 1.05, OFF ≥ 1.33 kg/cm2g |
+| 1.16 | Bearing oil temp. OK | A0 B0 B1 A2 B2 A3 B3 A4 B4 A5 B5 A6 B6 B7 | Proxy: oil in service (IBD TD-1 temperature windows, hindi pa ginagamit) |
+| 1.17 | Main oil tank level OK | B1 A2 B2 A3 B3 A4 B4 A5 B5 A6 B6 B7 | Laging OK |
+| 1.18 | MOT vapour extractor running | A0 B0 B1 A2 B2 A3 B3 A4 B4 A5 B5 A6 B6 B7 | Mayroon |
+| 1.19 | Turbine turning | A0 B0 B1 A2 | Mayroon: turning gear o ≥ 4 rpm |
+| 1.20 | Turbine reset | B1△ D1 A2 B2 A3 B3 A4 B4 A5 B5 A6 B6 B7 | Mayroon: walang turbine trip (TA-1) |
+| 1.21 | MSV open | B1△ D1 A2 B2 A3 B3 A4 B4 A5 B5 A6 B6 B7 | Mayroon: reset ng step 1 |
+| 1.22 / 1.23 / 1.25 | RSV, load limiter, drains | D1 A2 B2 A3 B3 A4 B4 A5 B5 A6 B6 B7 B1△ | Wala pa |
+| 1.24 | Vibration not high | B1 A2 B2 A3 B3 A4 B4 A5 B5 A6 B6 B7 HOLD | Wala (walang vibration model; IBD TA-18 ≥ 0.125 mm) |
+| 1.27 ~ 1.31 | Eccentricity, diff. expansion, metal temps | B1 A2 B2 A3 B3 A4 B4 A5 B5 A6 B6 B7 HOLD | Wala (laging OK) |
+| 1.32 ~ 1.35 | Chest / metal temp. diff. OK | B1 A2 B2 A3 B3 A4 B4 A5 B5 A6 B6 B7 D1 | Bahagi: CV chest sa step 1; Fig. 4 ~ 7 wala pa |
+| 1.40 / 1.41 | (776 p.3) | A0 B0 B1 A2 B2 A3 B3 A4 B4 A5 B5 A6 B6 B7 | Wala pa |
+| 1.42 ~ 1.47 | AVR / excitation / gen. voltage | D4 A5 B5 A6 B6 B7 A4 B4 | Mayroon: G-4 logic (41 sa rated speed, voltage), tcs-gen.js |
+| 1.48 | 52G closed | B5△ D5 A6 B6 B7 | Mayroon: G-1B close order |
+| 1.49 ~ 1.51 | 52G open, 41 open, turbine tripped | B8△ D8 | Mayroon: step 8 SHUT-DOWN |
+| 1.52 | (776 p.3) | B5△ | Wala pa |
+| 2.1 | Shell expansion OK | B3△ | Mayroon: > 3 mm pagkatapos ng 1800 soak |
+| 2.3 | Rub check complete speed | D2 A3 | Mayroon: Fig. 1 p.14 (coast < 100 rpm; hindi kailangan maliban sa ambient cold / cold 1) |
+| 2.4 | Turbine rated speed | D3 A4 B4 A5 | Mayroon: > 3550 rpm |
+| 2.5 | Gen. load > initial load | D5 A6 | Mayroon: 3 % (hot 5 %) |
+| 2.6 | IP to HP transfer complete | D6 A7 | Mayroon |
+| 2.7 | V/F (start up) not operated | A4 B4 | Wala pa (G-8A) |
+| 2.11 | Turbine shut-down load | B8△ | Mayroon: gen. load < 20 % (776 p.14) |
+| 2.81 ~ 2.85 | CV chest warming | B1△ | Mayroon: reset muna, tapos 60 min o diff < 50 °C at outer > 180 °C |
+| 2.92 | HP turbine warming complete | D0 A1 | Mayroon: HP metal > 150 °C |
+| 3.1 | House load (52G closed, 52L open) | B5 | Wala (52L laging closed) |
 
-**Buod beta.38:** ang wala pang model: TSI / TCS fault, vibration, eccentricity, diff. expansion, bearing metal, MOT level (laging OK: ideal na planta, desisyon ng user 2026-10-17; magagamit lang bilang sinadyang fault sa susunod).
+**Hold:** nakakandado hanggang HOLD OFF; walang hold sa critical speed band at sa ICV → CV transfer (775 p.11). **Criteria bypass:** isang criterion bawat pindot (775 p.3, p.10).
 
 **Steam sa roll (boiler side):** ang SH / RH outlet sa start-up ay sumusunod sa FHI SECT_7 Fig. 2 / 3 / 4 (cold 418 °C, warm 430 °C, hot 490 °C mula roll hanggang transfer; 505 °C sa 30 % load; 541 °C mula 60 %). Ang dating extrapolation ng load test ay 468 °C sa 12 % load: hindi makaka-roll. Ang SH at RH spray ay hindi makakatulong doon ayon sa drawing (DITL-33: SOV bukas lang kapag finishing SH inlet ≥ 350 °C at steam > 46 T/H; DITL-35: RH spray pagkatapos lang ng ICV → CV transfer).
 
