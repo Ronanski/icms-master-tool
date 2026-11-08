@@ -853,6 +853,10 @@ window.LS_LIVE = (function () {
            after the load is a change too): an AUTO step ticks only in a section the start-up has reached (a tick in the section
            before it, or the section of the Gabay step now), never ahead of the trainee */
         if (!reached(si) && !(gsec >= 0 && si <= gsec)) return;
+        /* Mina beta.136 (normal shutdown run): "✓ 51.4 Hot restart", "51.5 Start the coal feeders", "51.3 Keep the fans running" ticked at
+           150 MW, and "51.1 press TURBINE TRIP" at a vacuum trip. A practice section after the start-up (shutdown, bottle-up, trip and
+           restart) ticks only while the guide is on that section: its conditions are true in a normal run too */
+        if (si >= BASE_N && gsec !== si) return;
         if (si === PURGE && !fans) return;
         if (q.c.hold) {
           if (since[key] == null) since[key] = t;
