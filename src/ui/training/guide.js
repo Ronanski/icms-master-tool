@@ -1558,6 +1558,8 @@ window.LS_GUIDE = (function () {
       else if (!G.on) resume();
       open(i);
       if (window.LS_DOCK && LS_DOCK.fill) LS_DOCK.fill();
+      /* Mina beta.116 / 123: the dock came back to the first open step (104); the stage is opened again once the resume has settled */
+      setTimeout(() => (open(i), window.LS_DOCK && LS_DOCK.fill && LS_DOCK.fill(true)), 1500);
     },
     A,
     h,
