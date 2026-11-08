@@ -773,7 +773,18 @@ window.LS_LIVE = (function () {
     ['Check the O2 trim on analyzer B: AICFG112 in AUTO, flue gas O2 inside the alarm list band L 2.5 ~ H 5 % (AT-FG1123) for 2 min.', HOLD(120, ALL(MODE('AICFG112', 'AUTO'), PV('AICFG112', 2.5, 5, '%')))],
     ['I&C repairs analyzer A: clear the fault (Faults: press it again). B.0671 back to 0, analyzer A back in the select.', BIT('B.0671', 0, 'O2 analyzer A healthy')]
   ]);
-  const XS = [X1, X2, X3, X4, X5, X6, X7, X8, X9];
+  /* plan e5 recovery (LISA): a PA fan field trip at 150 MW. DITL-26A: ELECTRIC TROUBLE -> PAF TRIP (MIT-F1053), the running latch
+     resets (MIR-F1053). DITL-03A row 5 PAF STOPPED is in the OR of the MFT (rows 2 ~ 19 -> FF -> out 63 MFT): the drawing trips the boiler,
+     no run-back (no RUN BACK on the ABC or DITL sheets). The MFT goes to the TCS (IBD TA-9 BOILER MFT): the turbine trips too. After it:
+     FHI Tab 9 p21 (fans on, purge the volatiles, drum level in sight) and p22 (hot restart above 700 C, purge bypass M.3339, DITL-02) */
+  const X10 = SEQ(BASE_N + 9, [
+    ['Fault: the PA fan trips in the field (Faults, MIT-F1053). Its ELECTRIC TROUBLE makes PAF TRIP on DITL-26A.', BIT('M.3302', 0, 'PA fan running')],
+    ['The drawing trips the boiler: PAF STOPPED is an MFT condition (DITL-03A row 5 -> MFT out 63); the MFT trips the turbine through the TCS (IBD TA-9). No run-back is drawn.', BIT('I.000F', 1, 'MFT after the PA fan trip')],
+    ['Read the first out of the MFT (PAF STOPPED) on the purge and trip page; keep the ID fan and SA fan running (FHI Tab 9 p21) and the drum level in sight, -200 ~ +200 mm, for 1 min.', HOLD(60, ALL(BIT('M.3304', 1, 'ID fan running'), BIT('M.3303', 1, 'SA fan running'), VAL('lvl', -200, 200)))],
+    ['Reset the PA fan relay in the field (Faults: press it again) and start the PA fan from the CRT.', BIT('M.3302', 1, 'PA fan running')],
+    ['Hot restart (FHI Tab 9 p22): bed above 700 C (purge bypass permit M.3339, DITL-02 row 25): press FURNACE PURGE START, the purge completes at once and the MFT resets. Below 700 C the full 5 min purge is needed.', ALL(BIT('M.3339', 1, 'furnace lower layer > 700 C (purge by-pass)'), BIT('I.000F', 0, 'MFT reset'))]
+  ]);
+  const XS = [X1, X2, X3, X4, X5, X6, X7, X8, X9, X10];
   if (!PROC.some(s => s.x)) {
     PROC.push({ t: 'SYNCHRONIZATION AND INITIAL LOAD (APP)', x: 1, note: 'Added by the app: PR-OPE-5002 ends at Solid firing. Targets from the cold start scenario of the app (it reaches 150 MW) and the FHI design data.', s: X1.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'LOAD UP TO 150 MW (APP)', x: 1, note: 'Added by the app. PR-OPE-5002 sec 44: boiler follow until 90 MW; then coordinated control to 150 MW (FHI MCR 460 T/H).', s: X2.map(x => ({ t: x[0], g: [] })) });
@@ -784,6 +795,7 @@ window.LS_LIVE = (function () {
     PROC.push({ t: 'TURBINE TRIP AT LOAD AND HOT RESTART (APP)', x: 1, note: 'Added by the app from the FHI CFB manual Part 2 Sect 8 Tab 9 (loss of load, hot standby, hot restart).', s: X7.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'PRACTICE: BFWP A TRIP AT 150 MW (APP)', x: 1, note: 'Added by the app (e5 faults): a field trip of BFWP A; the standby BFWP B takes the load by the logic of DITL-23A.', s: X8.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'PRACTICE: O2 ANALYZER A FAILS (APP)', x: 1, note: 'Added by the app (e5 faults): the O2 analyzer A of the AICFG112 select fails; ABC-002 follows analyzer B by the SIG.AB flag.', s: X9.map(x => ({ t: x[0], g: [] })) });
+    PROC.push({ t: 'PRACTICE: PA FAN TRIP AT 150 MW (APP)', x: 1, note: 'Added by the app (e5 faults): a field trip of the PA fan; the MFT of DITL-03A follows, then the hot restart (FHI Tab 9).', s: X10.map(x => ({ t: x[0], g: [] })) });
   }
 
   /* ---------- the general rules (step text + its tags), after the table ---------- */
@@ -1039,7 +1051,7 @@ window.LS_LIVE = (function () {
     return r && r[0] ? r[0].sh : null;
   };
   /* 3.2.0-beta.21: the condition makers, for the guided Training (guide.js) */
-  const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4, X5, X6, X7, X8, X9 };
+  const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4, X5, X6, X7, X8, X9, X10 };
   /* recNow: a row at once (tests/regress/load_ramp.js steps the plant faster than the 1 s timer) */
   const recNow = () => {
     REC.last = Math.floor((+U().t || 0) / 60);
