@@ -454,6 +454,8 @@
       const uPath = (U, kp) => {
         const a = kp.split('.'),
           r = a[0] === 'tcs' ? call(() => AN.tcs(), null) : U;
+        /* the 150 MW snapshot has no TCS state (U.tc null): the turbine is in NORMAL OPERATION (ATS step 7 done; faceplate sample of 4.PNG) */
+        if (a[0] === 'tcs' && r == null && a[1] === 'step' && U && U.on && U.tb && U.tb.st !== 'off' && +U.MW > 0) return 7;
         return (a[0] === 'tcs' ? a.slice(1) : a).reduce((o, x) => (o == null ? null : o[x]), r);
       };
       const tickTT = () => {
@@ -513,9 +515,12 @@
       /* e6: page 13 turbine protection: TRIPPED / RESET and the first out of TA-9 (tcs.js U.tc.trip, '' = reset) */
       const tickTP = () => {
         if (!pg.querySelector('[data-tt]')) return;
+        /* Mina beta.121: "-----" at 150 MW (the snapshot has no TCS state: AN.tcs() null) and "[object Object]" after a trip: the first
+           out is AN.tcsTrip().first (tcs-trip.js tcsTripState); no TCS state with the plant model on = not tripped */
         const U = window.AN && AN.unit,
-          T = U && U.on ? call(() => AN.tcs(), null) : null,
-          fo = T ? String(T.trip || '') : null;
+          tt = U && U.on ? call(() => (AN.tcsTrip ? AN.tcsTrip() : null), null) : null,
+          f0 = tt && typeof tt === 'object' ? tt.first : tt,
+          fo = !U || !U.on ? null : typeof f0 === 'string' ? f0 : f0 && typeof f0 === 'object' ? String(f0.first || f0.name || '') : '';
         qa('[data-tt]').forEach(e => {
           if (fo == null) return (e.textContent = '-----'), e.setAttribute('fill', C.none);
           if (e.dataset.tt === 'st') (e.textContent = fo ? 'TRIPPED' : 'RESET'), e.setAttribute('fill', fo ? C.run : C.stop);
