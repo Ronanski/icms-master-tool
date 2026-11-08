@@ -198,8 +198,11 @@ function tagHi() {
 async function loadData() {
   if (AN.data) return AN.data;
   AN.data = (async () => {
+    /* Mina beta.187 (hidden pane, site data cleared): after 219 s no sheets, no Worker, no message. The saved settings come from
+       IndexedDB (main.js KV); an open that never answers (a database still being deleted, a connection held by another tab) held the
+       drawings for ever. They wait 3 s at most; the settings are applied when they come (main.js AN.kv) */
     try {
-      await AN.kv;
+      await Promise.race([AN.kv, new Promise(r => setTimeout(r, 3000))]);
     } catch (e) {}
     try {
       await adesLoad();
