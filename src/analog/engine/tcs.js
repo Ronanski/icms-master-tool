@@ -1013,6 +1013,7 @@ function tcsState() {
     /* 3.2.0-beta.78: the numbers of the ATS mode in use (pages 19 / 20 / 22 / 25), for the CHECK of a start-up from any mode */
     ats: c.mode && TCS.rate[c.mode] != null ? { rate: TCS.rate[c.mode], s1800: TCS.soak1800[c.mode], s3600: TCS.soak3600[c.mode], init: TCS.init[c.mode] } : null,
     step: c.step,
+    rst: c.rst ? 1 : 0 /* page 13: MSV / RSV open = the turbine reset (criteria 1.21) */,
     stepName: c.step >= 0 ? TCS.names[c.step] : '',
     cur: c.cur,
     curName: c.cur >= 0 ? TCS.names[c.cur] : '',
