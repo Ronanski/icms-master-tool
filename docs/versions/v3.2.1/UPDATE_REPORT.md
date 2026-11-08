@@ -656,3 +656,4 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.119** (2026-11-08): Hotwell water area 68.8 m2 from the condenser O&M (61.9 m3 to HHL 900 mm); was 27.8 m2, so the level moved 2.5 times too fast and emptied in 6 min at 30 MW.
 - **beta.120** (2026-11-08): HMI page 13 TURBINE START: ATS step 9 SHUT-DOWN with its push buttons, and the turbine protection band: TRIPPED / RESET, first out, TURBINE TRIP / RESET push buttons, the 23 trip inputs of TA-9 (mockup 13-turbine-protection-v1, approved by the user).
 - **beta.121** (2026-11-08): The Practise buttons pause the simulation while 150 MW loads (a reload of a running plant tripped it in 20 s).
+- **beta.122** (2026-11-08): Bottle-up steps: close the drum blowdown valve before the BFP stop (PR-OPE-5003), FA blowers to MANUAL before the stop (the AUTO standby restarted), ID fan coupling in MANUAL lowered with each fan damper (furnace kept near -15 mmH2O).
