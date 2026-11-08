@@ -23349,6 +23349,8 @@ function anUnitStart() {
     tg: labOf('ABC-053', 'I.0417'),
     /* ZSO-CD1115 LP turbine bypass desuperheater spray water control valve open (STN102 I.0892, ABC-052): the valve TCV-CD1115 at full stroke */
     lpbZso: labOf('ABC-052', 'I.0892'),
+    /* memory list STN101 / 104 M.0001 ALWAYS "1" (ABC-029, ABC-001B): nothing wrote it, it read 0 */
+    one: [labOf('ABC-029', 'M.0001'), labOf('ABC-001B', 'M.0001')].filter(Boolean),
     hd: [
       [labOf('ABC-035', 'I.029E'), 'H5', 140],
       [labOf('ABC-038', 'I.029C'), 'H2', 150],
@@ -25648,6 +25650,7 @@ function anUnitStep0(dt) {
       c = U.tc,
       m = c && c.mode,
       H = U.hdLvl || {};
+    for (const l of U.di.one || []) w(l, 1);
     for (const l of U.di.warm || []) w(l, m === 'warm' ? 1 : 0);
     for (const l of U.di.hot || []) w(l, m === 'hot' ? 1 : 0);
     w(U.di.tg, c && c.tg && tb.rpm < 4 ? 1 : 0);
@@ -35829,7 +35832,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.108';
-      c3.textContent += ' · build fa39150'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 81a84ca'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -73032,6 +73035,8 @@ function anUnitStart() {
     tg: labOf('ABC-053', 'I.0417'),
     /* ZSO-CD1115 LP turbine bypass desuperheater spray water control valve open (STN102 I.0892, ABC-052): the valve TCV-CD1115 at full stroke */
     lpbZso: labOf('ABC-052', 'I.0892'),
+    /* memory list STN101 / 104 M.0001 ALWAYS "1" (ABC-029, ABC-001B): nothing wrote it, it read 0 */
+    one: [labOf('ABC-029', 'M.0001'), labOf('ABC-001B', 'M.0001')].filter(Boolean),
     hd: [
       [labOf('ABC-035', 'I.029E'), 'H5', 140],
       [labOf('ABC-038', 'I.029C'), 'H2', 150],
@@ -75331,6 +75336,7 @@ function anUnitStep0(dt) {
       c = U.tc,
       m = c && c.mode,
       H = U.hdLvl || {};
+    for (const l of U.di.one || []) w(l, 1);
     for (const l of U.di.warm || []) w(l, m === 'warm' ? 1 : 0);
     for (const l of U.di.hot || []) w(l, m === 'hot' ? 1 : 0);
     w(U.di.tg, c && c.tg && tb.rpm < 4 ? 1 : 0);
