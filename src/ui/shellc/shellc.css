@@ -257,3 +257,22 @@ body.sc.cr:not(.pvwin){padding-left:0!important}
   body.sc{--tool:48px}
   body.sc #gsbar .tbar .crwhere :is(.sub,.seg) button{min-height:40px!important;height:40px!important;font-size:13px!important}
 }
+/* Live check 2026-11-09 (user: "daming hindi na-reshell"): with the app on its dark theme every old panel of the frame stayed dark
+   inside the light shell C (tool bar ABC | DITL | TCS, Library, Loop check, Inspector, the zoom bar, the loading box, the start-state
+   question, the footer). Under shell C the frame takes the shell colours whatever the app theme is. The meaning colours (run, manual,
+   alarm) keep the app's own light values. The HMI drawings and the logic sheets are not part of this: their look waits for the mockup
+   the user approves */
+html body.sc,html[data-theme=dark] body.sc{
+  --c-bg:#eef0f2;--c-pane:#ffffff;--c-strip:#ffffff;--c-ribbon:#f7f8f8;--c-ctl:#ffffff;--c-ctlh:#eef0f2;--c-well:#f7f8f8;--c-plate:#ffffff;
+  --c-line:#ccd1d6;--c-line2:#a1aab3;--c-lineh:#4d5b6a;--c-tx:#222e39;--c-tx2:#4d5b6a;--c-dim:#4d5b6a;--c-white:#ffffff;
+  --c-shadow:rgba(34,46,57,.18);--c-shadow2:rgba(34,46,57,.08);
+  --c-acc:#2b6ca5;--c-accbg:#e8f0f7;--c-accbd:#9dbad6;--c-acctx:#234f78;--c-accon:#2b6ca5;
+  --c-run:#15803d;--c-runbg:#15803d;--c-runbd:#15803d;--c-runtx:#ffffff;--c-runon:#166534;
+  --c-man:#d97706;--c-mantx:#1a1200;--c-alm:#dc2626;
+  --c-runsoft:#e8f6ee;--c-runtx2:#166534;--c-mansoft:#fff6e5;--c-mantx2:#92400e;--c-almsoft:#fdecec;--c-almtx:#b91c1c;
+  --c-status:#e6e9eb;--c-statustx:#4d5b6a;--c-statusdim:#4d5b6a;--c-desk:#e6e9eb;
+  color-scheme:light;
+}
+body.sc:has(#scstart) #lsask{display:none!important}
+/* the app's short names are set on html from the dark values: they are set again here so the frame reads the shell colours */
+html body.sc,html[data-theme] body.sc{--bg:var(--c-bg);--panel:var(--c-pane);--line:var(--c-line);--tx:var(--c-tx);--dim:var(--c-dim);--panel2:var(--c-ribbon);--in:var(--c-well);--bd:var(--c-line2);--hv:var(--c-ctlh);--hv2:var(--c-ctlh);--rowl:var(--c-ribbon);--sel2:var(--c-acc);--sbg:var(--c-strip);--acc:var(--c-run);--c-bg2:var(--c-well);--c-fp:var(--c-plate);--c-hi:var(--c-tx);--c-hovbd:var(--c-lineh);--c-pop:var(--c-pane);--c-row:var(--c-line)}

@@ -373,6 +373,10 @@
     });
   }
   function buildStart() {
+    /* live check 2026-11-09: the old dark "No starting state picked" question showed on top of this start screen; the start state
+       is picked here, so the old question is not asked by itself (the RUN press with no state still asks) */
+    if (window.AN) AN._askNo = 1;
+    call(() => document.getElementById('lsask').remove());
     const st = E('div');
     st.id = 'scstart';
     st.setAttribute('role', 'dialog');
