@@ -60,6 +60,23 @@
     }
   }, 5000);
   const host = () => document.getElementById('plmid') || document.body;
+  /* Mina beta.175 (PA fan practice, 1366 x 768: "Open faceplate: Primary air fan" of the dock opened at x 881 ~ 1209, under the dock):
+     the Training dock is a fixed panel OVER the right (or bottom) part of the Plant view. The free area of a pop-out is the Plant view
+     minus the dock, for every pop-out (opened from the dock or from the graphic) */
+  const area = () => {
+    const R = host().getBoundingClientRect(),
+      a = { left: R.left, top: R.top, right: R.right, bottom: R.bottom },
+      d = document.getElementById('gdock'),
+      D = d && d.offsetParent !== null ? d.getBoundingClientRect() : null;
+    if (D && D.width && D.height) {
+      if (document.documentElement.classList.contains('gd-bottom')) {
+        if (D.top < a.bottom && D.top > a.top + 120) a.bottom = D.top;
+      } else if (D.left < a.right && D.left > a.left + 200) a.right = D.left;
+    }
+    a.width = a.right - a.left;
+    a.height = a.bottom - a.top;
+    return a;
+  };
   /* beside the clicked equipment: right of it, else left, else below; inside the HMI area; never over the step tag of the dock */
   /* Mina F13: the faceplate of one equipment opens where it stood before, when it is opened from the same place */
   const POS = {};
@@ -78,8 +95,7 @@
     if (!r && ar) POS[key] = { ax: ar.left, ay: ar.top, x: el.style.left, y: el.style.top, side: el.dataset.side };
   }
   function placeNew(el, r) {
-    const h = host(),
-      H = h.getBoundingClientRect(),
+    const H = area(),
       w = el.offsetWidth,
       ht = el.offsetHeight,
       a0 = r || (last && (last.r || { left: last.x, right: last.x, top: last.y, bottom: last.y, width: 0, height: 0 })) || { left: H.left + H.width / 2, right: H.left + H.width / 2, top: H.top + 40, bottom: H.top + 40 },
@@ -96,6 +112,8 @@
     if (a.right + 14 + w <= H.right - 6) x = a.right + 14 - H.left;
     else if (a.left - 14 - w >= H.left + 6) ((x = a.left - 14 - w - H.left), (side = 'r'));
     else ((x = Math.max(6, Math.min(H.width - w - 6, a.left - H.left))), (side = 'n'));
+    /* the equipment itself under the dock (the graphic runs on under it): the pop-out stays in the free area, left of the dock */
+    if (x > H.width - w - 6) ((x = Math.max(6, H.width - w - 6)), (side = 'n'));
     let y = Math.max(6, Math.min(H.height - ht - 6, (a.top + a.bottom) / 2 - H.top - 60));
     /* the "HAKBANG n" tag of the step stays in view: the pop-out goes below (or above) it when it would cover it */
     const tg = document.querySelector('#gdhl:not([hidden]) .gd-hlt'),
@@ -111,7 +129,7 @@
   /* the window got smaller (a phone turned, the browser narrowed): an open pop-out placed for the old size stays inside the page (it
      stood off the screen at the right and the whole page scrolled sideways: 867 px wide at 390 px) */
   function keepIn(el) {
-    const H = host().getBoundingClientRect(),
+    const H = area(),
       w = el.offsetWidth,
       ht = el.offsetHeight,
       x = parseFloat(el.style.left) || 0,
@@ -121,7 +139,20 @@
     if (Math.abs(nx - x) > 0.5) ((el.style.left = Math.round(nx) + 'px'), (el.dataset.side = 'n'));
     if (Math.abs(ny - y) > 0.5) el.style.top = Math.round(ny) + 'px';
   }
-  addEventListener('resize', () => document.querySelectorAll('.fpo-near').forEach(el => el.offsetParent && keepIn(el)));
+  addEventListener('resize', () => document.querySelectorAll('.fpo-near, .fpo-box').forEach(el => el.offsetParent && keepIn(el)));
+  /* Mina beta.175: the Plant view gets narrower AFTER the pop-out was placed (the dock opens or its page changes at the click of a dock
+     link): the open pop-outs move back into the free area */
+  try {
+    let ro = null;
+    const watch = () => {
+      const h = document.getElementById('plmid');
+      if (!h || ro) return;
+      ro = new ResizeObserver(() => document.querySelectorAll('.fpo-near, .fpo-box').forEach(el => el.offsetParent && keepIn(el)));
+      ro.observe(h);
+    };
+    watch();
+    if (!ro) setTimeout(watch, 3000);
+  } catch (e) {}
   /* dragged by its header */
   function drag(el, hd) {
     hd.addEventListener('pointerdown', e => {
@@ -323,6 +354,12 @@
     };
     const etOn = () => (etU ? !!(s && s.usw && s.usw[etU.key]) : ntR != null && call(() => DUI.rowVal(s, ntR), 1) === 0);
     const etSet = on => {
+      /* a RESET of the relay also ends a trainer fault of this drawing (WORLD.ftrip: an engine action, page and Worker; it takes off every
+         ELECTRIC TROUBLE of the drawing and the field trip s._ftrip that holds the motor stopped) */
+      if (!on && s && window.WORLD && WORLD.ftOf && WORLD.ftrip) {
+        const id = call(() => WORLD.ftOf(s.name), null);
+        if (id) call(() => window.lsEventAdd(nm, 'FIELD', 'FAULT: ' + WORLD.ftrip(id, false)));
+      }
       if (ntR != null && !etU) {
         dk.fieldRow(nm, ntR, on ? 0 : 1, M.n + (on ? ' TRIP' : ' NOT TRIP (trip reset in the field)'));
         return;

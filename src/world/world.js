@@ -1099,6 +1099,12 @@
     return on ? f.t : 'cleared: ' + f.t + ' (relay reset in the field: START it again)';
   };
   W.ftClear = () => W.ft.clear();
+  /* the trainer fault that stands on a drawing (its name), or null: the RESET of the protection relay on the motor faceplate clears it
+     (Mina beta.175 PA fan practice step 4: RESET there took off the ELECTRIC TROUBLE but s._ftrip held the fan stopped, START did nothing) */
+  W.ftOf = nm => [...W.ft].find(k => {
+    const s = ftSheet(FT[k].sh);
+    return !!s && s.name === nm;
+  }) || null;
   /* the outputs of one scan as text, to see when the world has settled */
   const outSig = o =>
     Object.keys(o)

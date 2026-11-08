@@ -790,10 +790,10 @@ window.LS_LIVE = (function () {
      no run-back (no RUN BACK on the ABC or DITL sheets). The MFT goes to the TCS (IBD TA-9 BOILER MFT): the turbine trips too. After it:
      FHI Tab 9 p21 (fans on, purge the volatiles, drum level in sight) and p22 (hot restart above 700 C, purge bypass M.3339, DITL-02) */
   const X10 = SEQ(BASE_N + 9, [
-    ['Fault: the PA fan trips in the field (Faults, MIT-F1053). Its ELECTRIC TROUBLE makes PAF TRIP on DITL-26A.', BIT('M.3302', 0, 'PA fan running')],
+    ['Fault: the PA fan trips in the field (Faults, MIT-F1053). Its ELECTRIC TROUBLE makes PAF TRIP on DITL-26A.', BIT('M.3302', 0, 'PA fan stopped')],
     ['The drawing trips the boiler: PAF STOPPED is an MFT condition (DITL-03A row 5 -> MFT out 63); the MFT trips the turbine through the TCS (IBD TA-9). No run-back is drawn.', BIT('I.000F', 1, 'MFT after the PA fan trip')],
     ['Read the first out of the MFT (PAF STOPPED) on the purge and trip page; keep the ID fan and SA fan running (FHI Tab 9 p21) and the drum level in sight, -200 ~ +200 mm, for 1 min.', HOLD(60, ALL(BIT('M.3304', 1, 'ID fan running'), BIT('M.3303', 1, 'SA fan running'), VAL('lvl', -200, 200)))],
-    ['Reset the PA fan relay in the field (Faults: press it again) and start the PA fan from the CRT.', BIT('M.3302', 1, 'PA fan running')],
+    ['Reset the PA fan relay in the field (Faults: press it again, or RESET on the PA fan faceplate) and start the PA fan from the CRT.', BIT('M.3302', 1, 'PA fan running')],
     ['Hot restart (FHI Tab 9 p22): bed above 700 C (purge bypass permit M.3339, DITL-02 row 25): press FURNACE PURGE START, the purge completes at once and the MFT resets. Below 700 C the full 5 min purge is needed.', ALL(BYP700, BIT('I.000F', 0, 'MFT reset'))]
   ]);
   const XS = [X1, X2, X3, X4, X5, X6, X7, X8, X9, X10];
