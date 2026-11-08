@@ -1,5 +1,13 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.171 — Practice: BFWP A trip at 150 MW (e5 recovery, 2026-11-08, LISA)
+
+**Work done.** New Training section PRACTICE: BFWP A TRIP AT 150 MW (live.js X8, guide stage 14) and the home button "Practise: BFWP A trip" (loads 150 MW, pauses first if running). Steps: standby BFWP B in REMOTE + AUTO (DITL-23A #B rows 24 / 18; 03.png BFWP-B standby); fault BFWP A trips (Faults, MIT-P1115A; DITL-23A out 65 TRIP resets the running latch out 55); BFWP B starts by itself (BFWP B AUTO STARTING) or from the CRT; feedwater and drum level inside the alarm list H / L (+127 / -100 mm, LT-BR1001-2) for 2 min; relay reset, BFWP A becomes the standby. No run-back: none is drawn on the ABC or DITL sheets. The checks read the logic.
+
+**Checked in the page.** Practise button: 150 MW loaded and running. Fault: BFWP A 0, BFWP B 1 within 7 s (its AUTO start); drum level 16 -> -65 mm in 80 s; steps 1 ~ 3 ticked by the checks.
+
+**Not tested.** The 2 min hold and the last step, live; item sent to Mina.
+
 ## 3.2.1-beta.167 — Faults 3: control valve sticks (e5, 2026-11-08, LISA)
 
 **Work done.** The Faults list gets three stuck control valves: feedwater FCV-FW1130-1 (FICFW1007), SH spray TCV-FW1110 (TICBR1130), deaerator level LCV-CD1104 (LICCD1104) (valve of each controller: unit.js AN_AV, the valve sheets of the package index). The valve stays at the opening it had when it stuck; the controller output keeps moving (wind-up) until the operator takes MANUAL. Every valve model reads its opening through the airlock function anAv (plant.js loop models, unit.js) or the spray valve hold (unit.js), which now return the stuck opening. Clear: the valve follows its command again. Reset clears it. Events FAULT: ....
