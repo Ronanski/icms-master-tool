@@ -502,7 +502,17 @@ function anUnitStart() {
     perm: labOf('ABC-001C', 'I.0081'),
     on: labOf('ABC-001C', 'I.0082'),
     onCmd: netOf(S, 'O.0178'),
-    offCmd: netOf(S, 'O.0179')
+    offCmd: netOf(S, 'O.0179'),
+    /* 3.2.1 d1 (LISA): ABC inputs of the I/O list STN102 with no writer before: TCS-DI1042 / 1043 turbine start-up warm / hot mode (I.0413 / I.0414, ABC-050 and ABC-051),
+       TCS-DI1030 turning gear engaged (I.0417, ABC-053), LS-HD1105 / 1102 / 1103 heater level H.H. (I.029E / I.029C / I.029D, ABC-035 / 038 / 039) */
+    warm: [labOf('ABC-050', 'I.0413'), labOf('ABC-051', 'I.0413')].filter(Boolean),
+    hot: [labOf('ABC-050', 'I.0414'), labOf('ABC-051', 'I.0414')].filter(Boolean),
+    tg: labOf('ABC-053', 'I.0417'),
+    hd: [
+      [labOf('ABC-035', 'I.029E'), 'H5', 140],
+      [labOf('ABC-038', 'I.029C'), 'H2', 150],
+      [labOf('ABC-039', 'I.029D'), 'H3', 140]
+    ]
   };
   {
     const st2 = stOf('ABC-053');
@@ -2788,6 +2798,19 @@ function anUnitStep0(dt) {
     dirt(U.di.xfer, 0);
     dirt(U.di.perm, 0);
     dirt(U.di.on, 0);
+  }
+  {
+    /* d1: the TCS mode, the turning gear and the heater level switches as the ABC inputs (U.di above); the heater set points as the DITL rows (plantsw.js, alarm list LS-HD110x) */
+    const w = (l, x) => {
+        if (l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== x) l.S.rt.ext[l.n] = x;
+      },
+      c = U.tc,
+      m = c && c.mode,
+      H = U.hdLvl || {};
+    for (const l of U.di.warm || []) w(l, m === 'warm' ? 1 : 0);
+    for (const l of U.di.hot || []) w(l, m === 'hot' ? 1 : 0);
+    w(U.di.tg, c && c.tg && tb.rpm < 4 ? 1 : 0);
+    for (const [l, k, sp] of U.di.hd || []) if (isFinite(H[k])) w(l, H[k] >= sp ? 1 : 0);
   }
   U.turb = tb.st !== 'off';
   const onGrid = tb.st === 'sync' || tb.st === 'load';
