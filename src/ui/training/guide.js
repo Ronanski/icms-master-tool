@@ -1115,27 +1115,28 @@ window.LS_GUIDE = (function () {
       { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Hold 90 MW for 8 ~ 10 min', d: 'PR-OPE-5003: hold at 90 MW before going lower. Drum level ±150 mm.', c: b.X5[2][1], wait: 1 },
       { st: 11, sec: 49, req: ['bm', 'tm'], t: 'HIC-MWRL 0.6 MW/min, HIC-ULD toward 45 MW: the CCS lets go near 63 MW', d: 'PR-OPE-5003: 90 to 45 MW at 0.6 MW per minute. At 72 MW (or feedwater 230 T/H) the drum level goes to single element. Near 63 MW the steam flow falls below 220 T/H: the back-up command M.2013 (ABC-001C) puts HIC-BM and EIC-TM in MANUAL by itself (CLAUDE.md BU-CMD); HIC-ULD then tracks the MW.', c: b.X5[3][1], fps: ['HIC-MWRL', 'HIC-ULD', 'HIC-BM'] },
       { st: 11, sec: 49, t: 'By hand: EIC-TM to 45 MW, HIC-BM with it', d: 'You are the CCS now. Lower the turbine master EIC-TM about 0.6 MW per minute and the boiler master HIC-BM with it so the main steam pressure stays 115 ~ 131 kg/cm². Too fast on EIC-TM: the pressure rises; too fast on HIC-BM: it falls. At 60 MW: staging air upper 10 %, lower 15 ~ 20 %.', c: b.X5[4][1], fps: ['EIC-TM', 'HIC-BM'] },
-      { st: 11, sec: 49, t: 'Bed 750 °C: PA and SA air to MANUAL', d: 'PR-OPE-5003: at a bed of 750 °C put the SA and PA fans in manual, stop the limestone and the sand, and run the air heater soot blower continuously.', c: b.X5[5][1], fps: ['FICFA1071', 'FICFA1081'], a: [btn('FICFA1071 M', () => A.man('FICFA1071', mv('FICFA1071'))), btn('FICFA1081 M', () => A.man('FICFA1081', mv('FICFA1081')))] },
+      { st: 11, sec: 49, t: 'Bed 750 °C: PA and SA air to MANUAL', d: 'PR-OPE-5003: at a bed of 750 °C put the SA and PA fans in manual, stop the limestone and the sand, and run the air heater soot blower continuously. ABC-004A: with the PA or SA air flow control out of REMOTE the coal master FIC-CM goes MANUAL by itself (M.0130 force manual and tracking, also on any fuel flow signal abnormal or a feeder demand above 83.3 %): from here you set the coal by hand on FIC-CM.', c: b.X5[5][1], fps: ['FICFA1071', 'FICFA1081', 'FIC-CM'], a: [btn('FICFA1071 M', () => A.man('FICFA1071', mv('FICFA1071'))), btn('FICFA1081 M', () => A.man('FICFA1081', mv('FICFA1081')))] },
       {
         st: 11,
         sec: 49,
         t: 'Light the start-up burners one by one (A, D, B, C)',
-        d: 'PR-OPE-5003: SA pressure above 1200 mmH₂O, then light the burners one at a time and move the fire from coal to diesel (2.5 T/H coal = 1 T/H diesel), up to 4 T/H oil per feeder.',
+        d: 'PR-OPE-5003: SA pressure above 1200 mmH₂O, then light the burners one at a time and move the fire from coal to diesel (2.5 T/H coal = 1 T/H diesel), up to 4 T/H oil per feeder. The coal master FIC-CM is MANUAL now: lower it as the oil comes in (about 2.5 T/H of coal less for each 1 T/H of oil) and keep the main steam pressure 115 ~ 131 kg/cm².',
+        fps: ['FIC-CM'],
         c: b.X5[6][1],
         get a() {
-          return WL() ? [bIgn('A'), bOn('A'), bIgn('D'), bOn('D'), bIgn('B'), bOn('B'), bIgn('C'), bOn('C')] : [];
+          return WL() ? [bIgn('A'), bOn('A'), bIgn('D'), bOn('D'), bIgn('B'), bOn('B'), bIgn('C'), bOn('C'), step('FIC-CM ▼ −1 %', 'FIC-CM', -1), step('FIC-CM ▲ +1 %', 'FIC-CM', 1)] : [step('FIC-CM ▼ −1 %', 'FIC-CM', -1), step('FIC-CM ▲ +1 %', 'FIC-CM', 1)];
         }
       },
-      { st: 11, sec: 49, t: 'Hold 45 MW with the burners in', d: 'PR-OPE-5003: hold at 45 MW. Drum level ±150 mm.', c: b.X5[7][1], wait: 1 },
+      { st: 11, sec: 49, t: 'Hold 45 MW with the burners in', d: 'PR-OPE-5003: hold at 45 MW. Drum level ±150 mm. Keep moving the coal from FIC-CM (MANUAL) to the oil; the bed falls toward 700 °C as the coal comes down.', fps: ['FIC-CM', 'HIC-BM'], a: [step('FIC-CM ▼ −1 %', 'FIC-CM', -1), step('FIC-CM ▲ +1 %', 'FIC-CM', 1)], c: b.X5[7][1], wait: 1 },
       { st: 11, sec: 49, need: 1, t: 'At 40 MW: extractions 3, 2, 1 out; deaerator PCVAS1030 2.5 kg/cm²', d: 'PR-OPE-5003: done at the TCS and in the field. Confirm when done.' },
       { st: 11, sec: 49, t: 'By hand: EIC-TM to 30 MW, HIC-BM with it', d: 'PR-OPE-5003: 45 to 30 MW at 0.4 MW per minute, the main steam pressure 115 ~ 131 kg/cm².', c: b.X5[9][1], fps: ['EIC-TM', 'HIC-BM'] },
       {
         st: 11,
         sec: 49,
         t: 'Bed 700 °C: stop the coal feeders',
-        d: 'PR-OPE-5003: at a bed of 700 °C stop the coal feeders and lower the PA fan to about 20 %. The burners carry the boiler.',
+        d: 'PR-OPE-5003: at a bed of 700 °C stop the coal feeders and lower the PA fan to about 20 %. The burners carry the boiler. If the bed stays above 700 °C, the coal is still too high: lower FIC-CM first.',
         c: b.X5[10][1],
-        a: [btn('STOP feeder A', () => A.motor('M.3400', 0), () => bit('M.3400') < 0.5), btn('STOP feeder B', () => A.motor('M.3401', 0), () => bit('M.3401') < 0.5), btn('STOP feeder C', () => A.motor('M.3402', 0), () => bit('M.3402') < 0.5)]
+        a: [step('FIC-CM ▼ −1 %', 'FIC-CM', -1), step('FIC-CM ▲ +1 %', 'FIC-CM', 1), btn('STOP feeder A', () => A.motor('M.3400', 0), () => bit('M.3400') < 0.5), btn('STOP feeder B', () => A.motor('M.3401', 0), () => bit('M.3401') < 0.5), btn('STOP feeder C', () => A.motor('M.3402', 0), () => bit('M.3402') < 0.5)]
       },
       {
         st: 11,
