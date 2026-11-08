@@ -16,7 +16,7 @@ NS = '<tspan data-ns="1">-----</tspan>'
 UY = lambda k, n, on, off: f'<tspan data-uy="{k}|{n}|{on}|{off}">-----</tspan>'
 # ATS steps
 for i, x in enumerate((166, 358, 550, 742, 934, 1126, 1318, 1510)):
-    spec = f'tcs.step|{i}|Y|N'
+    spec = f'tcs.step|{i}|Y|N' if i < 8 else 'tcs.st9|1|Y|N'  # step 9 SHUT-DOWN stays Y after its trip (tcs.js st9)
     p.text(x, 170, f'data-uy="{spec}"')
     p.rect(x - 14, 154, f'data-uyr="{spec}"')
 # turbine and generator
