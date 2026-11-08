@@ -1857,7 +1857,12 @@
           mK = mU === '%' ? 1 : Math.abs(mHi - mLo) <= 20 ? 0.1 : 1,
           mvd = d0 => {
             const d = Math.round(d0 * mK * 10) / 10;
-            return b(Math.abs(d0) > 1 ? (d > 0 ? '▲▲' : '▼▼') : d > 0 ? '▲' : '▼', 'MV ' + (d > 0 ? '+' : '') + d + ' ' + mU + ' (MANUAL)', () => op('MV ' + (d > 0 ? '+' : '') + d + ' ' + mU, () => (mdNow() === 'MAN' ? g.A.man(t, Math.round(Math.max(mLo, Math.min(mHi, (+mvNow() || 0) + d)) * 10) / 10) : 'In ' + mdNow() + ': press M first')));
+            return b(Math.abs(d0) > 1 ? (d > 0 ? '▲▲' : '▼▼') : d > 0 ? '▲' : '▼', 'MV ' + (d > 0 ? '+' : '') + d + ' ' + mU + ' (MANUAL)', () => op('MV ' + (d > 0 ? '+' : '') + d + ' ' + mU, () => {
+              if (mdNow() === 'MAN') return g.A.man(t, Math.round(Math.max(mLo, Math.min(mHi, (+mvNow() || 0) + d)) * 10) / 10);
+              /* Mina beta.116 ~ 118: HIC-ULD in AUTO = ▼▼ moves the TARGET MW (the operator's set of the AUTO leg), as the plant view faceplate */
+              const tg = mdNow() === 'AUTO' && g.A.target ? g.A.target(t) : null;
+              return tg != null && isFinite(tg) ? g.A.target(t, Math.round((tg + d) * 10) / 10) : 'In ' + mdNow() + ': press M first';
+            }));
           },
           /* Mina M1 (beta.88, Worker, FICCD1120 to 150 T/H took about 130 presses): a press read the SV of the engine, which comes back a
              moment later, so quick presses were lost; the next press now adds to the SV just written (for 3 s), there is a ▲▲ of 5 steps

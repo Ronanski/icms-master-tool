@@ -60,6 +60,32 @@ window.LS_GUIDE = (function () {
       AN.stVal(k, s.b.id, x, (s.b.i || []).filter((n, i, L) => n >= 0 && L.indexOf(n) === i && s.T.ext.includes(n) && !(s.T.xlk && s.T.xlk[n]) && (AN.nm(s.T, n) || '').trim() === t + '.MV'));
       return '';
     },
+    /* Mina (beta.116 ~ 118 bisect): a hand station in AUTO whose AUTO leg is the operator's own set (an input of the sheet: ABC-001A
+       HIC-ULD TARGET MW, COS SI0243 "TARGET MW SETUP FROM CCS CRT") moves that set, as the plant view faceplate (hmi.js set): ▼▼ in
+       AUTO = a new target MW, the CCS ramps to it. x == null: the set now; null = the station has no such set */
+    target(t, x) {
+      const s = station(t);
+      if (!s) return null;
+      const S = s.T,
+        b = s.b,
+        si = b.svI >= 0 ? b.i[b.svI] : null,
+        dr = si != null ? (S.drv[si] || []).find(z => z.k === 'AMT') : null,
+        ds = dr && S.rt.st[dr.id];
+      if (!(dr && ds && ds.pk === 'A' && dr.a != null && S.ext.includes(dr.a) && !(S.xlk && S.xlk[dr.a]))) return null;
+      if (x == null) {
+        const e = S.rt.ext[dr.a];
+        return isFinite(e) ? +e : +S.rt.v[dr.a];
+      }
+      const p = b.p || {},
+        lo = p.lo != null ? +p.lo : -Infinity,
+        hi = p.hi != null ? +p.hi : Infinity;
+      if (AN.opSheet) AN.opSheet(shOf(t));
+      S.rt.ext[dr.a] = Math.max(lo, Math.min(hi, x));
+      try {
+        AN.settle();
+      } catch (e) {}
+      return '';
+    },
     /* the value of a hand station without a mode change (HIC-TADBS) */
     val(t, x) {
       const s = station(t);
