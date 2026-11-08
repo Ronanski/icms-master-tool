@@ -182,7 +182,7 @@ window.LS_GUIDE = (function () {
   /* user 2026-10-29 (#108): the 17 coaches of the cold start were removed; the trainee does every trim on the faceplates of the step */
 
   /* ---------- the steps ---------- */
-  const STAGES = ['Utilities', 'Water: hotwell, deaerator, drum', 'Fans and draft', 'Furnace purge', 'Burners and warm-up', 'Vacuum and seals', 'Bypass at 61 kg/cm²', 'Turbine: roll, sync, 45 MW', 'Coal at 45 MW', 'Load up to 150 MW', 'Practice: load change', 'Normal shutdown'];
+  const STAGES = ['Utilities', 'Water: hotwell, deaerator, drum', 'Fans and draft', 'Furnace purge', 'Burners and warm-up', 'Vacuum and seals', 'Bypass at 61 kg/cm²', 'Turbine: roll, sync, 45 MW', 'Coal at 45 MW', 'Load up to 150 MW', 'Practice: load change', 'Normal shutdown', 'Bottle-up'];
   const B = () => L().B;
   /* a motor button: START / STOP of its running memory (memory list), the same address the Inputs list forces */
   const mot = (a, l) => ({ ad: a, l: 'START ' + l, f: () => A.motor(a, 1), on: () => bit(a) > 0.5, stop: { l: 'STOP ' + l, f: () => A.motor(a, 0) } });
@@ -1132,7 +1132,18 @@ window.LS_GUIDE = (function () {
         d: 'PR-OPE-5003: take out extractions 5 and 4, then trip the turbine. ATS step 8 opens 52G and 41 and trips the turbine below 20 % load. On this unit the turbine trip makes an MFT (DITL drawing); the procedure then keeps the start-up burners and the bypass: that part waits for the bottle-up section.',
         c: b.X5[10][1],
         a: [btn('Turbine SHUT-DOWN (ATS step 8)', () => A.tcs('shutdown')), btn('Turbine trip (TA-1)', () => A.tcs('trip'))]
-      }
+      },
+      /* ---- 12 bottle-up (plan e4, PR-OPE-5004-01; the checks are live.js X6) ---- */
+      { st: 12, sec: 50, need: 1, t: 'Steam lines isolated, drain pots open', d: 'PR-OPE-5004: close MV-MS1391, PCV-MS1001 (blow off), the HP bypass isolation and the auxiliary steam isolation; open the TG drain pots (upstream valve first); open hot reheat blow off MV-HR1391 to release the line, then close it. Field and TCS: confirm when done.' },
+      { st: 12, sec: 50, t: 'Fill the drum to +200 mm', d: 'PR-OPE-5004: steam drum +200 mm (it shrinks as it cools), deaerator 0 mm. Use the start-up feedwater valve.', c: b.X6[1][1], fps: ['LICBR1001B'] },
+      { st: 12, sec: 50, t: 'Stop the boiler feed pump', d: 'PR-OPE-5004: close the outlet MOV of the BFP in service (MV-FW1001 / MV-FW1002), then STOP it. Then stop the dosing pump, close LCV-CD1104 and stop the make-up water pump.', c: b.X6[2][1], a: [btn('STOP BFWP-A', () => A.motor('M.3343', 0), () => bit('M.3343') < 0.5), btn('STOP BFWP-B', () => A.motor('M.3344', 0), () => bit('M.3344') < 0.5)] },
+      { st: 12, sec: 50, t: 'Start-up burners out', d: 'PR-OPE-5004: oil FCV 25 %, OFF, igniter and oil gun retracted. On this unit the turbine trip made an MFT, so the burners are already out: check it.', c: b.X6[3][1] },
+      { st: 12, sec: 50, need: 1, t: 'Diesel system released, reheat header drains open', d: 'PR-OPE-5004: PCV-DO0002 and PCV-DO1009 to MANUAL, open PCV-DO0002, PCV-DO1009 and FCV-DO1012 to 100 %, stop the diesel pump; open the cold and hot reheat header drains when the pressure is near 0 kg/cm². Confirm when done.' },
+      { st: 12, sec: 50, t: 'RH and SH biasing dampers 100 %', d: 'PR-OPE-5004: before the draft is stopped.', c: b.X6[5][1], fps: ['HICHR1002A', 'HICHR1002B'], a: [btn('HICHR1002A M 100 %', () => A.man('HICHR1002A', 100)), btn('HICHR1002B M 100 %', () => A.man('HICHR1002B', 100))] },
+      { st: 12, sec: 50, t: 'PA fan and FA blowers: dampers down, STOP', d: 'PR-OPE-5004: SAF inlet damper to 20 % (5 % steps), PAF inlet damper to 0 % (1 % steps), keep the furnace pressure at about −15 mmH₂O; then stop the PA fan and the FA blowers.', c: b.X6[6][1], fps: ['FICFA1071', 'FICFA1081', 'PICFG108'], a: [btn('STOP PAF', () => A.motor('M.3302', 0), () => bit('M.3302') < 0.5), btn('STOP FAB-A', () => A.motor('M.3308', 0), () => bit('M.3308') < 0.5), btn('STOP FAB-B', () => A.motor('M.3309', 0), () => bit('M.3309') < 0.5)] },
+      { st: 12, sec: 50, t: 'SA fan: damper down, STOP', d: 'PR-OPE-5004: SAF inlet damper down in 5 % steps, furnace pressure −15 mmH₂O, then stop the SA fan.', c: b.X6[7][1], fps: ['FICFA1081', 'PICFG108'], a: [btn('STOP SAF', () => A.motor('M.3303', 0), () => bit('M.3303') < 0.5)] },
+      { st: 12, sec: 50, t: 'ID fan: coupling to 0 %, STOP', d: 'PR-OPE-5004: below 16 % the coupling goes to MANUAL by itself. Lower it 1 % at a time to 0 % (furnace −15 mmH₂O), then stop the ID fan.', c: b.X6[8][1], fps: ['PICFG108'], a: [step('PICFG108 ▼ −1 %', 'PICFG108', -1), btn('STOP IDF', () => A.motor('M.3304', 0), () => bit('M.3304') < 0.5)] },
+      { st: 12, sec: 50, t: 'Furnace pressure on the damper: −20 ~ +20 mmH₂O', d: 'PR-OPE-5004: change the furnace pressure control to DAMPER CONTROL, damper 5 %, then about 2.5 % until the furnace is −20 ~ +20 mmH₂O. The boiler is bottled up.', c: b.X6[9][1], wait: 1 }
     ];
     ST = ST.flat();
     ST.forEach((s, i) => (s.i = i));
