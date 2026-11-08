@@ -141,6 +141,10 @@
     ['I.0170', 'run', /ROTOFEEDER RUNNING/],
     ['I.0173', 'fan', /RUNNING/]
   ].forEach(([a, k, re]) => L.push([a, lmSw(k), 0.5, 'hi', 0, 0, re, LMS]));
+  /* 3.2.1 d1 (LISA): DITL-01 row 14 MIR-M1311 LIMESTONE FEEDER ROTARY VALVE RUNNING is I.0170 (I/O list "#1 Limestone feeder running"), the same contact as ROTOFEEDER RUNNING above */
+  L.push(['MIR-M1311', lmSw('run'), 0.5, 'hi', 0, 0, null, /\)DITL-01$/]);
+  /* 3.2.1 d1 (LISA): DITL-56 row 7 TURBINE SPEED UNDER 2400 RPM I.0406 (location TCS): the turbine speed of the plant model; no ABC sheet carries I.0406. Dead band 10 rpm (NO-SOURCE) */
+  L.push(['I.0406', uOf('rpm'), 2400, 'lo', 0, 10, null, /\)DITL-56$/]);
   'ABCDEFGH'.split('').forEach((x, i) => {
     L.push(['I.02' + (2 * i).toString(16).toUpperCase().padStart(2, '0'), lmSw('isoO' + i), 0.5, 'hi', 0, 0, /ISOLATING VALVE . OPEN LIMIT/, LMS]);
     L.push(['I.02' + (2 * i + 1).toString(16).toUpperCase().padStart(2, '0'), lmSw('isoC' + i), 0.5, 'hi', 0, 0, /ISOLATING VALVE . CLOSE LIMIT/, LMS]);
