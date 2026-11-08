@@ -39,13 +39,13 @@ p.rect(1348, 458, 'data-dyr="DITL-03E|i|1|neg"')
 p.inner(1060, 560, 'field breaker ' + UY('gen.fcb', 1, 'CLOSED', 'OPEN') + ' · field ' + V('GEN.VF', 1) + ' V DC, ' + V('GEN.IF', 1) + ' A')
 p.inner(1060, 578, V('GEN.KV', 1) + ' kV · ' + V('GEN.KA', 2) + ' kA · ' + V('GEN.HZ', 1) + ' Hz · ' + V('GEN.MVAR', 1) + ' MVar · power factor ' + V('GEN.PF', 3))
 # ATS monitoring criteria
-p.inner(554, 708, 'Vibration high · ' + NS + ' mm')
+p.inner(554, 708, 'Vibration high · ' + V('VIST-MAX', 3) + ' mm')  # tcs.js U.loVt, snapshot P35SHAFT
 p.inner(554, 744, 'Differential expansion high · ' + NS + ' mm')
 p.inner(554, 780, 'Exhaust hood temperature high · ' + V('TT-HOOD', 0, ' °C'))
 p.inner(554, 816, 'Condenser vacuum low · ' + V('PT-CD', 3, ' kg/cm2 abs'))
 p.inner(554, 852, 'Bearing oil pressure low · ' + V('PT-BRG', 1, ' kg/cm2'))
 p.inner(554, 924, 'Shell expansion ' + V('ZI-SEXP', 1, ' mm') + ' · rotor position ' + NS + ' mm')
-p.inner(554, 960, 'Thrust bearing ' + NS + ' °C')
+p.inner(554, 960, 'Thrust bearing ' + V('TIST-THF') + ' / ' + V('TIST-THR') + ' °C')  # front / rear, tcs.js loThF / loThR
 # oil and generator now
 p.inner(1094, 708, 'Main oil pump A ' + UY('loMop.0', 1, 'running', 'stopped') + ', discharge ' + V('PT-LUBE', 1, ' kg/cm2'))
 p.inner(1094, 744, 'Control oil pump B ' + UY('loCop.1', 1, 'running', 'stopped') + ', ' + V('PT-CTL', 1, ' kg/cm2'))

@@ -75,9 +75,9 @@
         showV(tag);
         qa(`[data-v="${tag}"]`).forEach(t => {
           const ti = document.createElementNS(NS, 'title');
-          /* page 17: GEN.* = the generator model only (no I/O list line: the values come from the generator panel, data sheet + snapshot 37) */
-          if (/^GEN./.test(tag)) {
-            ti.textContent = 'generator model (data sheet and control room snapshot 37)';
+          /* pages 13 / 17: GEN.*, VIST-MAX, TIST-THF / R = a model value only (no I/O list line: the values come from the generator panel, data sheet + snapshot 37) */
+          if (/^(GEN.|VIST-MAX$|TIST-TH[FR]$)/.test(tag)) {
+            ti.textContent = /^GEN/.test(tag) ? 'generator model (data sheet and control room snapshot 37)' : 'turbine shaft model (shaft monitor snapshot 35)';
             return t.append(ti);
           }
           ti.textContent = tag + (def.unit && def.unit[tag] ? ' · logic transmitter, else the plant model' : '') + ' · click = its I/O list line';
