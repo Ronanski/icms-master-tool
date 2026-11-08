@@ -627,7 +627,10 @@
           /* 3.2.1: DITL-03H row 3 names the contact, not the address: TCS-DI1003 "#1 Turbine trip" = I.0400 (IO list STN102). Unlinked, MFT
              cause 18 read 0 for ever and a turbine trip left the fuel on (FHI T9 p24: on turbine valve closure all fuel trips) */
           const la = rowList(sb, i),
-            adr = la[k] || (la.length === 1 ? la[0] : null) || (cellTxt(sb, i, 'T').trim() === 'TCS-DI1003' ? 'I.0400' : null);
+            tg = cellTxt(sb, i, 'T').trim(),
+            /* 3.2.1 d1 (LISA): a row that names the field tag, not the address: the I/O list (src/ui/plant/wiring.js) gives it. DITL-03H row 18 MIG-52G1-2 = I.0932 GCB 52G1 off */
+            wr = !la.length && window.WIRING ? window.WIRING.find(x => x[3] === tg && /^I\.[0-9A-F]{4}$/.test(x[2])) : null,
+            adr = la[k] || (la.length === 1 ? la[0] : null) || (tg === 'TCS-DI1003' ? 'I.0400' : wr ? wr[2] : null);
           if (!adr || !/^I\.[0-9A-F]{4}$/.test(adr)) return;
           for (const sh of AN.sheets) {
             if (/^ABC-000/.test(sh.name)) continue;
