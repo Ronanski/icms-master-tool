@@ -1510,6 +1510,43 @@ function rowFix(sh) {
     }
   }
 }
+/* 3.2.1 d1 (LISA, read on the PDFs): texts of an INPUT row that the reader put in the band of the next row, which then showed as a row with
+   no wire. [sheet, text or '*', cell, from row, to row (0 = a loose text of the sheet, not a row)]. DITL-09 rows 16 / 18 / 24: the address list
+   is written on the wire of the push button, under the row; DITL-21C / 21D row 16: the second line of the SERVICE; DITL-69 row 2 / 3 and
+   DITL-80S row 10: the time and tag of a timer drawn beside the rows */
+const ROWFIXL = [
+  ['09', 'I.0046/366/686/1006', 'T', 17, 16],
+  ['09', 'I.0047/367/687/1007', 'T', 19, 18],
+  ['09', 'I.0045/365/685/1005', 'T', 25, 24],
+  ['21C', 'MANUAL SEQUENCE MODE', 'S', 17, 16],
+  ['21D', '< 1600 mmH2O', 'S', 17, 16],
+  ['69', '3', 'S', 2, 0],
+  ['69', 'SEC.', 'S', 3, 0],
+  ['80S', 'TR1001', 'S', 10, 0]
+];
+function rowFixL(sh) {
+  if (!sh || !sh.cells || !sh.rows || sh._rfl) return;
+  sh._rfl = 1;
+  const me = (/DITL-(\w+)$/.exec(sh.name) || [])[1],
+    ix = n => sh.rows.findIndex(r => +r.n === n);
+  for (const [nm, tx, c, a, b] of ROWFIXL) {
+    if (nm !== me) continue;
+    const i = ix(a),
+      k = i + ':' + c;
+    if (i < 0 || !sh.cells[k]) continue;
+    const mv = sh.cells[k].filter(t => tx === '*' || t.t === tx);
+    if (!mv.length) continue;
+    sh.cells[k] = sh.cells[k].filter(t => !mv.includes(t));
+    if (!sh.cells[k].length) delete sh.cells[k];
+    if (!b) sh.tx.push(...mv);
+    else {
+      const j = ix(b);
+      if (j < 0) continue;
+      (sh.cells[j + ':' + c] = sh.cells[j + ':' + c] || []).push(...mv);
+      sh.cells[j + ':' + c].sort((p, q) => q.y - p.y);
+    }
+  }
+}
 /* 3.2.0 live test #57: on the narrow sootblower form (DITL-80G / 80K: FROM | NO. | SERVICE) the FROM text starts a little left of the
    FROM column line (80K "80M-373" at x 21.6 < 22.5, "DITL-43-70" at 19.4), so the reader left it out of the cell and the page link was
    lost: the APH sootblower REMOTE START COMMAND of 80M never reached 80K row 6 (the PDF 80K / 80G FROM column). One word up to 4 units
@@ -1550,6 +1587,7 @@ function netlist(sh) {
   rowFix(sh);
   fromFix(sh);
   tagFix(sh);
+  rowFixL(sh);
   const a = netlistCore(sh, false),
     c = mdCount(a, sh);
   if (!c) return a;
@@ -35732,7 +35770,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.108';
-      c3.textContent += ' · build b028ce8'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 76c60fa'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -55522,6 +55560,43 @@ function rowFix(sh) {
     }
   }
 }
+/* 3.2.1 d1 (LISA, read on the PDFs): texts of an INPUT row that the reader put in the band of the next row, which then showed as a row with
+   no wire. [sheet, text or '*', cell, from row, to row (0 = a loose text of the sheet, not a row)]. DITL-09 rows 16 / 18 / 24: the address list
+   is written on the wire of the push button, under the row; DITL-21C / 21D row 16: the second line of the SERVICE; DITL-69 row 2 / 3 and
+   DITL-80S row 10: the time and tag of a timer drawn beside the rows */
+const ROWFIXL = [
+  ['09', 'I.0046/366/686/1006', 'T', 17, 16],
+  ['09', 'I.0047/367/687/1007', 'T', 19, 18],
+  ['09', 'I.0045/365/685/1005', 'T', 25, 24],
+  ['21C', 'MANUAL SEQUENCE MODE', 'S', 17, 16],
+  ['21D', '< 1600 mmH2O', 'S', 17, 16],
+  ['69', '3', 'S', 2, 0],
+  ['69', 'SEC.', 'S', 3, 0],
+  ['80S', 'TR1001', 'S', 10, 0]
+];
+function rowFixL(sh) {
+  if (!sh || !sh.cells || !sh.rows || sh._rfl) return;
+  sh._rfl = 1;
+  const me = (/DITL-(\w+)$/.exec(sh.name) || [])[1],
+    ix = n => sh.rows.findIndex(r => +r.n === n);
+  for (const [nm, tx, c, a, b] of ROWFIXL) {
+    if (nm !== me) continue;
+    const i = ix(a),
+      k = i + ':' + c;
+    if (i < 0 || !sh.cells[k]) continue;
+    const mv = sh.cells[k].filter(t => tx === '*' || t.t === tx);
+    if (!mv.length) continue;
+    sh.cells[k] = sh.cells[k].filter(t => !mv.includes(t));
+    if (!sh.cells[k].length) delete sh.cells[k];
+    if (!b) sh.tx.push(...mv);
+    else {
+      const j = ix(b);
+      if (j < 0) continue;
+      (sh.cells[j + ':' + c] = sh.cells[j + ':' + c] || []).push(...mv);
+      sh.cells[j + ':' + c].sort((p, q) => q.y - p.y);
+    }
+  }
+}
 /* 3.2.0 live test #57: on the narrow sootblower form (DITL-80G / 80K: FROM | NO. | SERVICE) the FROM text starts a little left of the
    FROM column line (80K "80M-373" at x 21.6 < 22.5, "DITL-43-70" at 19.4), so the reader left it out of the cell and the page link was
    lost: the APH sootblower REMOTE START COMMAND of 80M never reached 80K row 6 (the PDF 80K / 80G FROM column). One word up to 4 units
@@ -55562,6 +55637,7 @@ function netlist(sh) {
   rowFix(sh);
   fromFix(sh);
   tagFix(sh);
+  rowFixL(sh);
   const a = netlistCore(sh, false),
     c = mdCount(a, sh);
   if (!c) return a;
