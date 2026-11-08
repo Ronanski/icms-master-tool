@@ -35891,7 +35891,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.121';
-      c3.textContent += ' · build 476464e'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build a0fdc81'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -52537,6 +52537,8 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
         return n == null ? null : { k: 'a', sh, n, ref: nm + ' ' + adr };
       };
       const ANY = {
+        /* M.050A ALL COAL FEEDERS STOP (memory list 104) = DITL-01 out 72 ALL COAL FEEDER STOPPED (its address text M.050A; DITL-03F row 3 reads it) */
+        'M.050A': () => [outRow('01', 72)].filter(Boolean).map(o => ({ k: 'd', d: o.d, row: o.row, ref: '01-72' })),
         'M.1829': () => ['12', '12A', '12B', '12C'].map(c => outRow(c, 70)).filter(Boolean).map(o => ({ k: 'd', d: o.d, row: o.row, ref: codeOf(o.d.name) + '-70' })),
         'M.3224': () => [abcIn('ABC-050', 'I.0932'), abcIn('ABC-013', 'M.3221') || abcIn('ABC-050', 'I.0937')].filter(Boolean)
       };
@@ -82285,6 +82287,8 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
         return n == null ? null : { k: 'a', sh, n, ref: nm + ' ' + adr };
       };
       const ANY = {
+        /* M.050A ALL COAL FEEDERS STOP (memory list 104) = DITL-01 out 72 ALL COAL FEEDER STOPPED (its address text M.050A; DITL-03F row 3 reads it) */
+        'M.050A': () => [outRow('01', 72)].filter(Boolean).map(o => ({ k: 'd', d: o.d, row: o.row, ref: '01-72' })),
         'M.1829': () => ['12', '12A', '12B', '12C'].map(c => outRow(c, 70)).filter(Boolean).map(o => ({ k: 'd', d: o.d, row: o.row, ref: codeOf(o.d.name) + '-70' })),
         'M.3224': () => [abcIn('ABC-050', 'I.0932'), abcIn('ABC-013', 'M.3221') || abcIn('ABC-050', 'I.0937')].filter(Boolean)
       };

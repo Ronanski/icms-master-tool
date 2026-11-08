@@ -579,6 +579,8 @@
         return n == null ? null : { k: 'a', sh, n, ref: nm + ' ' + adr };
       };
       const ANY = {
+        /* M.050A ALL COAL FEEDERS STOP (memory list 104) = DITL-01 out 72 ALL COAL FEEDER STOPPED (its address text M.050A; DITL-03F row 3 reads it) */
+        'M.050A': () => [outRow('01', 72)].filter(Boolean).map(o => ({ k: 'd', d: o.d, row: o.row, ref: '01-72' })),
         'M.1829': () => ['12', '12A', '12B', '12C'].map(c => outRow(c, 70)).filter(Boolean).map(o => ({ k: 'd', d: o.d, row: o.row, ref: codeOf(o.d.name) + '-70' })),
         'M.3224': () => [abcIn('ABC-050', 'I.0932'), abcIn('ABC-013', 'M.3221') || abcIn('ABC-050', 'I.0937')].filter(Boolean)
       };
