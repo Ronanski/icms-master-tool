@@ -23347,6 +23347,8 @@ function anUnitStart() {
     warm: [labOf('ABC-050', 'I.0413'), labOf('ABC-051', 'I.0413')].filter(Boolean),
     hot: [labOf('ABC-050', 'I.0414'), labOf('ABC-051', 'I.0414')].filter(Boolean),
     tg: labOf('ABC-053', 'I.0417'),
+    /* ZSO-CD1115 LP turbine bypass desuperheater spray water control valve open (STN102 I.0892, ABC-052): the valve TCV-CD1115 at full stroke */
+    lpbZso: labOf('ABC-052', 'I.0892'),
     hd: [
       [labOf('ABC-035', 'I.029E'), 'H5', 140],
       [labOf('ABC-038', 'I.029C'), 'H2', 150],
@@ -25649,6 +25651,7 @@ function anUnitStep0(dt) {
     for (const l of U.di.warm || []) w(l, m === 'warm' ? 1 : 0);
     for (const l of U.di.hot || []) w(l, m === 'hot' ? 1 : 0);
     w(U.di.tg, c && c.tg && tb.rpm < 4 ? 1 : 0);
+    if (U.lpbSp && U.lpbSp.n != null) w(U.di.lpbZso, anAv('TICHR1012', Math.max(0, Math.min(100, +U.lpbSp.S.rt.v[U.lpbSp.n] || 0))) >= 99 ? 1 : 0);
     for (const [l, k, sp] of U.di.hd || []) if (isFinite(H[k])) w(l, H[k] >= sp ? 1 : 0);
   }
   U.turb = tb.st !== 'off';
@@ -35793,7 +35796,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.108';
-      c3.textContent += ' · build 07f13aa'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 4d36997'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -72994,6 +72997,8 @@ function anUnitStart() {
     warm: [labOf('ABC-050', 'I.0413'), labOf('ABC-051', 'I.0413')].filter(Boolean),
     hot: [labOf('ABC-050', 'I.0414'), labOf('ABC-051', 'I.0414')].filter(Boolean),
     tg: labOf('ABC-053', 'I.0417'),
+    /* ZSO-CD1115 LP turbine bypass desuperheater spray water control valve open (STN102 I.0892, ABC-052): the valve TCV-CD1115 at full stroke */
+    lpbZso: labOf('ABC-052', 'I.0892'),
     hd: [
       [labOf('ABC-035', 'I.029E'), 'H5', 140],
       [labOf('ABC-038', 'I.029C'), 'H2', 150],
@@ -75296,6 +75301,7 @@ function anUnitStep0(dt) {
     for (const l of U.di.warm || []) w(l, m === 'warm' ? 1 : 0);
     for (const l of U.di.hot || []) w(l, m === 'hot' ? 1 : 0);
     w(U.di.tg, c && c.tg && tb.rpm < 4 ? 1 : 0);
+    if (U.lpbSp && U.lpbSp.n != null) w(U.di.lpbZso, anAv('TICHR1012', Math.max(0, Math.min(100, +U.lpbSp.S.rt.v[U.lpbSp.n] || 0))) >= 99 ? 1 : 0);
     for (const [l, k, sp] of U.di.hd || []) if (isFinite(H[k])) w(l, H[k] >= sp ? 1 : 0);
   }
   U.turb = tb.st !== 'off';
