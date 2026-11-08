@@ -245,3 +245,10 @@ body.sc #sfoot :is(#st,.shint,.smsg){flex:1 1 0!important}
 }
 /* design-auditor animation: the blinking trip lamp stops for people who turn motion off */
 @media (prefers-reduced-motion:reduce){.sclamp .dot.trip{animation:none}}
+/* User 2026-11-09 ("ano ba yang nasa gilid sa kaliwa? kala ko ba reshell"): the old dark page rail is not part of layout C (mockup C has
+   no rail). Every button of it has its place in the new shell: Home / Plant view = Overview (Operator), Logic = Engineer, Library /
+   Loop check / Split = the Engineer tool rail, Training = the Instructor console and the training card, the gear = Settings in the strip.
+   The rail is hidden and its width is 0 for every box of the app (body wins over the --railW the dock and Split set on html) */
+body.sc #crrail{display:none!important}
+body.sc{--railW:0px!important}
+body.sc.cr:not(.pvwin){padding-left:0!important}
