@@ -57,6 +57,13 @@ body.sc #gsbar #scstrip .seg button{min-width:0!important;letter-spacing:0!impor
 body.sc #gsbar #scstrip .seg button.on{background:var(--sc-steel)!important;color:var(--sc-white)!important;box-shadow:none!important}
 body.sc #gsbar #scstrip .pill b{display:inline!important;font:700 .75rem var(--sc-num)!important}
 body.sc #gsbar #scstrip .scv{flex-wrap:nowrap}
+/* Mina beta.216 (HIGH): at 1366 the search, Run / Pause, Instructor and the old VIEW | RUN and PLANT chip shared one row with the
+   values, and the 11 cells shrank to 35 px, the numbers printed over each other. The values have a row of their own at every width;
+   the buttons go to the row under it (the top bar takes the height of both rows, shellc.js) */
+body.sc #gsbar #scstrip{flex-wrap:wrap!important;align-content:center;row-gap:.25rem}
+body.sc #gsbar #scstrip .scv{flex:1 1 100%!important;flex-wrap:wrap!important;row-gap:.25rem}
+body.sc #gsbar #scstrip .scp{margin-left:auto}
+body.sc #gsbar #scstrip .sck{min-width:5.5rem}
 @media (max-width:1279px){body.sc #gsbar #scstrip .scv{flex:1 1 100%}}
 /* ===== step 5: Instructor console and the training step card ===== */
 body.sc #gsbar #scstrip .pill.ins{border-color:var(--sc-violet)!important;color:var(--sc-violet)!important}
