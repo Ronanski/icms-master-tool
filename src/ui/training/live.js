@@ -1011,5 +1011,10 @@ window.LS_LIVE = (function () {
   };
   /* 3.2.0-beta.21: the condition makers, for the guided Training (guide.js) */
   const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4, X5, X6, X7 };
-  return { rec: () => REC.rows, recCsv, recClear: () => ((REC.rows = []), (REC.last = -1)), kind, state, rows, scan, reset, load, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2, B, H, modeOf, mvOf, pvOf, svOf, getV, NAMES, f1 };
+  /* recNow: a row at once (tests/regress/load_ramp.js steps the plant faster than the 1 s timer) */
+  const recNow = () => {
+    REC.last = Math.floor((+U().t || 0) / 60);
+    REC.rows.push(recRow());
+  };
+  return { rec: () => REC.rows, recCsv, recNow, recClear: () => ((REC.rows = []), (REC.last = -1)), kind, state, rows, scan, reset, load, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2, B, H, modeOf, mvOf, pvOf, svOf, getV, NAMES, f1 };
 })();
