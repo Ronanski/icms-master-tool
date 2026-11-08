@@ -371,8 +371,18 @@
     const skip = E('button', 'scskip', 'Open without a start state');
     skip.type = 'button';
     skip.onclick = close;
+    /* Mina beta.209: "Old layout" moved here from the strip (there it reloaded a running plant); no plant runs yet on this screen */
+    const old = E('button', 'scskip', 'Old layout');
+    old.type = 'button';
+    old.title = 'The old layout of the app (the new one comes back with the link ?shell=c)';
+    old.onclick = () => {
+      try {
+        localStorage.removeItem('ls-shell');
+      } catch (e) {}
+      location.search = location.search.replace(/([?&])shell=c&?/, '$1').replace(/[?&]$/, '');
+    };
     const ver = E('span', 'scver', typeof APP_VERSION !== 'undefined' ? 'Version ' + APP_VERSION : '');
-    foot.append(gear, skip, ver);
+    foot.append(gear, skip, old, ver);
     box.append(cards, lab, chips, cont, foot);
     st.append(box);
     document.body.append(st);

@@ -45,6 +45,19 @@ body.sc #gsbar > #crband{position:relative;gap:.5rem!important;padding:0 .5rem!i
 #scstrip .spdm button.on{background:var(--sc-steel)!important;border-color:var(--sc-steel)!important;color:var(--sc-white)!important}
 #scstrip .old{min-height:2rem!important;padding:0 .5rem!important;border:0!important;background:transparent!important;color:var(--sc-ink2)!important;font:500 .6875rem var(--sc-ui)!important;text-decoration:underline;box-shadow:none!important;cursor:pointer}
 #scstrip :focus-visible{outline:2px solid var(--sc-steel)!important;outline-offset:2px}
+/* Mina beta.209: the old rules of the top bar (#gsbar b {display:none}, the VIEW | RUN colours and the hidden .seg on some pages) reached
+   into the strip: the values were never drawn and Engineer turned green. The strip keeps its own look on every page */
+body.sc #gsbar #scstrip .sck b{display:block!important;font:600 1rem/1.2 var(--sc-num)!important;color:var(--sc-ink)!important}
+body.sc #gsbar #scstrip .sck.na b{color:var(--sc-line2)!important}
+body.sc #gsbar #scstrip .sck i{font:500 .75rem/1.15 var(--sc-ui)!important;font-style:normal!important}
+body.sc #gsbar #scstrip .sck small{font:400 .75rem/1.15 var(--sc-ui)!important}
+body.sc #gsbar #scstrip .sck{flex:1 1 0;min-width:0;max-width:7.5rem;padding:.125rem .375rem}
+body.sc #gsbar #scstrip .seg{display:inline-flex!important}
+body.sc #gsbar #scstrip .seg button{min-width:0!important;letter-spacing:0!important}
+body.sc #gsbar #scstrip .seg button.on{background:var(--sc-steel)!important;color:var(--sc-white)!important;box-shadow:none!important}
+body.sc #gsbar #scstrip .pill b{display:inline!important;font:700 .75rem var(--sc-num)!important}
+body.sc #gsbar #scstrip .scv{flex-wrap:nowrap}
+@media (max-width:1279px){body.sc #gsbar #scstrip .scv{flex:1 1 100%}}
 /* ===== step 2: overview, breadcrumb, alarm list, start screen ===== */
 #scov{display:none;position:fixed;top:var(--top);left:var(--railW,0);right:0;bottom:var(--foot);z-index:80;overflow:auto;background:var(--sc-page);font-family:var(--sc-ui);color:var(--sc-ink)}
 body.sc.scov #scov{display:flex;flex-direction:column}

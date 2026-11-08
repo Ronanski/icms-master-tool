@@ -119,16 +119,9 @@
       if (window.lsSetTab) lsSetTab('logic');
     };
     seg.append(bOp, bEn);
-    const old = E('button', 'old', 'Old layout');
-    old.type = 'button';
-    old.title = 'Back to the old layout (the new layout comes back with the link ?shell=c)';
-    old.onclick = () => {
-      try {
-        localStorage.removeItem(KEY);
-      } catch (e) {}
-      location.search = location.search.replace(/([?&])shell=c&?/, '$1').replace(/[?&]$/, '');
-    };
-    pills.append(trip, alm, spd, seg, old);
+    /* Mina beta.209: "Old layout" in the strip reloaded the page and lost the running plant with no warning; it is on the start screen
+       now (no plant yet there), lsShellC.oldLayout */
+    pills.append(trip, alm, spd, seg);
     strip.append(vals, pills);
     band.prepend(strip);
     document.body.classList.add('sc');
@@ -155,18 +148,39 @@
       if (S.cells[i].v.textContent !== t) S.cells[i].v.textContent = t;
       S.cells[i].c.classList.toggle('na', !isFinite(x));
     });
-    let act = [];
+    /* Mina beta.209: the pill named the newest equipment trip (SAND INJECTION SYSTEM) after a turbine trip. The unit trips come first:
+       the turbine trip to the DCS (ABC-050 I.0400, TA-6 out 16, unit.js U.vtrip) and the MFT (I.000F, the address the Training reads);
+       an equipment trip of the alarm list only when the unit is not tripped */
+    let tt = 0,
+      mft = 0;
     try {
-      act = window.lsActiveAlarms ? lsActiveAlarms().list : [];
+      const l = AN.unit && AN.unit.vtrip;
+      tt = l && +l.S.rt.v[l.n] > 0.5 ? 1 : 0;
     } catch (e) {}
-    const trips = act.filter(a => a && a.kind === 'TRIP');
-    S.trip.classList.toggle('trip', trips.length > 0);
-    S.tripT.textContent = trips.length ? 'Trip · ' + String(trips[trips.length - 1].text || '').replace(/ = 1$/, '') : 'No trip';
-    let un = 0;
     try {
-      un = window.lsAlarms ? lsAlarms.list().filter(a => !a.ack && !a.sd && !a.rtn).length : 0;
+      mft = +L().val('I.000F') > 0.5 ? 1 : 0;
     } catch (e) {}
-    const n = act.length;
+    if (none) tt = mft = 0;
+    /* one count with the alarm list (shellc-home.js): the standing alarms of lsAlarms (not returned, not suppressed) */
+    let AL = [];
+    try {
+      AL = window.lsAlarms ? lsAlarms.list().filter(a => !a.rtn && !a.sd) : [];
+    } catch (e) {}
+    const eqT = AL.filter(a => a.kind === 'TRIP');
+    S.trip.classList.toggle('trip', !!(tt || mft || eqT.length));
+    S.tripT.textContent =
+      tt && mft
+        ? 'Turbine trip · MFT'
+        : tt
+          ? 'Turbine trip'
+          : mft
+            ? 'Boiler trip (MFT)'
+            : eqT.length
+              ? eqT.length + (eqT.length === 1 ? ' equipment trip' : ' equipment trips')
+              : 'No trip';
+    S.trip.title = (tt || mft ? 'Unit trip: turbine trip ABC-050 I.0400, master fuel trip I.000F. ' : '') + (eqT.length ? 'Equipment trips: ' + eqT.map(a => a.nm).join(', ') + '. ' : '') + 'Click: the alarm list';
+    const un = AL.filter(a => !a.ack).length;
+    const n = AL.length;
     S.alm.classList.toggle('alm', n > 0);
     S.alm.classList.toggle('new', un > 0);
     S.almT.textContent = n ? n + (n === 1 ? ' alarm' : ' alarms') + (un ? ' · ' + un + ' new' : '') : 'No alarm';
