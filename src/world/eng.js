@@ -16,7 +16,7 @@
     AN: ['reset', 'settle', 'loadStart', 'plantLoad150', 'plantCold', 'plantLoad150Async', 'plantColdAsync', 'plantSwitch', 'latchMode', 'stVal', 'turbine', 'field', 'swValve', 'oilValve', 'blowdown', 'stepSet', 'stepTier', 'actSet', 'stepN', 'stepBack', 'clock0', 'fault'],
     G: ['ditlStates', 'ditlUser'],
     DITL150: ['apply', 'savePut'],
-    WORLD: ['tick', 'set']
+    WORLD: ['tick', 'set', 'ftrip']
   };
   /* the long actions run in the engine ONLY (user 2026-11-02 "Worker n. Lhat n"): on the page they took seconds (Start at 150 MW
      ~10 s) and froze the screen. The page sends them and gets a promise; it resolves when the engine is done and its whole state is

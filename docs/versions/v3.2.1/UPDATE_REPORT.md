@@ -1,5 +1,13 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.164 — Faults 2: motor field trips (e5, 2026-11-08, LISA)
+
+**Work done.** The Faults list gets the field trip of seven running motors: BFWP A, PA fan, SA fan, ID fan, coal feeder A, condensate pump A, seawater pump A. The fault sets the ELECTRIC TROUBLE flag of the motor drawing (DITL-23A PDF sheet 41: BFWP A TRIP, MIT-P1115A, = TRIP COMMAND or ELECTRIC TROUBLE; the TRIP resets the RUNNING latch MIR-P1115A), so the logic trips the motor and decides what follows; the motor shows TRIP (as the dock FIELD: TRIP). Coal feeder A stops by its motor model (DITL-19). Clear = the relay reset in the field; the operator starts the motor again. Reset clears every field trip. Events FAULT: ....
+
+**Checked in the page (DITL 150 MW state).** BFWP A, condensate pump A, ID fan: RUNNING 1 -> 0, TRIP; the ID fan trip gives the MFT (DITL-03A). Coal feeder A stops; after the clear it runs again (its start command is still on). Seawater pump A is the standby at 150 MW (stopped), so its trip changes nothing there.
+
+**Not tested.** Live; items sent to Mina.
+
 ## 3.2.1-beta.157 — Faults 1: transmitter fails (e5, 2026-11-08, LISA)
 
 **Work done.** New "Faults (trainer)" list in the starting state menu, below the Save points. A transmitter fault puts the AI at the end of its I/O list range (signal lost = lo, over range = hi) on every ABC sheet of its station and sets its SIG.AB flag (the I/O list SIG.AB address); the select circuits and interlocks of the drawings decide what follows. O2 analyzer A AT-FG1122 (AI0273, 0 ~ 25 %, B.0671), drum level transmitter 1 LT-BR1001-1 (AI0130, -422 ~ 820 mm, B.0642), main steam pressure PT-MS1002 (AI0131, 0 ~ 150 kg/cm2, B.0643). A second press clears it; Clear all faults and Reset clear every fault. Each fault and clear is an event "FAULT: ...". Runs in the page and in the Worker (ENG call AN.fault).

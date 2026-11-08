@@ -1038,6 +1038,41 @@
     }
   }
   W.sbLances = () => S.sheets.concat(W.inst || []).filter(x => x._lance);
+  /* 3.2.1 e5 FAULTS group 2 (LISA): a running motor trips in the field. The motor sheets draw the field contact of the protection relay as
+     the flag "ELECTRIC(AL) TROUBLE" inside the logic (DITL-23A, PDF sheet 41: output 65 BFWP A TRIP MIT-P1115A = OR of row 23 TRIP COMMAND
+     and the ELECTRIC TROUBLE flag; the TRIP resets the RUNNING latch, output 55 MIR-P1115A). The app has that flag as the user switch of
+     the sheet (nl.usr key ET...); the fault sets it, so the logic of the drawing trips the motor and decides what follows (standby start,
+     run-back, MFT). The motor sheet gets the field trip state too (s._ftrip: TRIP on the faceplate and in the alarms, as the dock). Coal
+     feeder A has no ET flag: its motor model (DITL-19, MIR-CL1061-A I.0130, STN104) stops on s._ftrip. Clear = the relay reset in the
+     field; the operator starts the motor again. I/O list STN103 MIT: P1115A I.0057, F1053 I.0361, F1054 I.0521, F1056 I.0041, P1116A
+     I.0081, P1501A I.032B */
+  const FT = {
+    'mt.bfwpa': { t: 'BFWP A trips in the field (MIT-P1115A)', sh: 'DITL-23A' },
+    'mt.paf': { t: 'PA fan trips in the field (MIT-F1053)', sh: 'DITL-26A' },
+    'mt.saf': { t: 'SA fan trips in the field (MIT-F1054)', sh: 'DITL-27A' },
+    'mt.idf': { t: 'ID fan trips in the field (MIT-F1056)', sh: 'DITL-25A' },
+    'mt.cfa': { t: 'Coal feeder A trips in the field (MIR-CL1061-A)', sh: 'DITL-19' },
+    'mt.cepa': { t: 'Condensate pump A trips in the field (MIT-P1116A)', sh: 'DITL-61A' },
+    'mt.swpa': { t: 'Seawater pump A trips in the field (MIT-P1501A)', sh: 'DITL-29A' }
+  };
+  W.ft = W.ft || new Set();
+  const ftSheet = c => S.sheets.find(x => x.name.endsWith(')' + c));
+  /* WORLD.ftrip(): the list with the state; WORLD.ftrip(id, on): the fault on / cleared (an ENG call: page and Worker); returns the text */
+  W.ftrip = (id, on) => {
+    if (id == null) return Object.keys(FT).map(k => ({ id: k, g: 'mt', t: FT[k].t, on: W.ft.has(k) }));
+    const f = FT[id],
+      s = f && ftSheet(f.sh);
+    if (!s) return '';
+    if (!s.nl && typeof netlist === 'function') s.nl = netlist(s);
+    s.usw = s.usw || {};
+    for (const u of (s.nl && s.nl.usr) || []) if (/^ET/.test(u.key)) s.usw[u.key] = !!on;
+    s._ftrip = !!on;
+    if (on) W.ft.add(id);
+    else W.ft.delete(id);
+    W.busy = true;
+    return on ? f.t : 'cleared: ' + f.t + ' (relay reset in the field: START it again)';
+  };
+  W.ftClear = () => W.ft.clear();
   /* the outputs of one scan as text, to see when the world has settled */
   const outSig = o =>
     Object.keys(o)
