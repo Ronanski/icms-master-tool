@@ -40,7 +40,11 @@
     ['fx', 'Curves', 'The linear curves of the analog drawings (function of x): points, chart, what each one does'],
     ['loop', 'Loop check', 'Check one loop step by step: a real press on the plant page against the logic'],
     ['recent', 'Recent', 'Sheets and faceplates you opened'],
-    ['sheet', 'Sheet tools', 'Legend and style, diagnostics, settings file, linear curve tables, drawing health, controller tuning']
+    [
+      'sheet',
+      'Sheet tools',
+      'Legend and style, diagnostics, settings file, linear curve tables, drawing health, controller tuning'
+    ]
   ];
   let tool = 'logic';
   let on = false,
@@ -88,7 +92,11 @@
   }
   /* the tags of an analog sheet (the names of its wires) against the tags of each page: its transmitter values (data-v) and its
      controllers (mach ctl / io); the page with the most is the page of that sheet. A digital sheet: the page whose machine is drawn on it */
-  const nz = x => String(x || '').toUpperCase().split('.')[0].replace(/[^A-Z0-9]/g, '');
+  const nz = x =>
+    String(x || '')
+      .toUpperCase()
+      .split('.')[0]
+      .replace(/[^A-Z0-9]/g, '');
   function pageOf(c) {
     const b = base(c.name);
     if (!b) return null;
@@ -114,14 +122,20 @@
         }
         let n = 0;
         for (const t of T) if (tags.has(t)) n++;
-        if (n > bn) (bn = n), (best = d.id);
+        if (n > bn) ((bn = n), (best = d.id));
       }
       return best;
     }
     for (const d of defs)
       for (const id in d.mach || {}) {
         const m = d.mach[id];
-        const L = [m.d, m.mov, m.sti && m.sti[0], m.sto && m.sto[0], m.ad && !/@/.test(m.ad) ? call(() => LS_DOCK.dName(LS_DOCK.dOf(m.ad)), null) : null];
+        const L = [
+          m.d,
+          m.mov,
+          m.sti && m.sti[0],
+          m.sto && m.sto[0],
+          m.ad && !/@/.test(m.ad) ? call(() => LS_DOCK.dName(LS_DOCK.dOf(m.ad)), null) : null
+        ];
         if (L.some(x => x && base(x) === b)) return d.id;
       }
     return null;
@@ -169,15 +183,27 @@
       return [E('span', 'scelab', lab), g, bs];
     };
     const band = t => [...document.querySelectorAll('#crband .seg button')].find(b => b.textContent.trim() === t);
-    const [l1, g1, vr] = seg('Logic', [
-      ['View', 'View: look and trace; nothing runs, the inputs are locked', () => call(() => band('VIEW').click())],
-      ['Run', 'Run: the logic runs; switch and force the inputs', () => call(() => band('RUN').click())]
-    ], 'Logic view or run');
+    const [l1, g1, vr] = seg(
+      'Logic',
+      [
+        ['View', 'View: look and trace; nothing runs, the inputs are locked', () => call(() => band('VIEW').click())],
+        ['Run', 'Run: the logic runs; switch and force the inputs', () => call(() => band('RUN').click())]
+      ],
+      'Logic view or run'
+    );
     const pm = v => () => call(() => window.AN && !!AN.plantOn !== v && $('pmbtn').click());
-    const [l2, g2, pmb] = seg('Plant model', [
-      ['On', 'On: the boiler and turbine model with the steam table; the measured values follow the valves', pm(true)],
-      ['Off', 'Off: you type the plant values; only the drawn logic runs', pm(false)]
-    ], 'Plant model on or off');
+    const [l2, g2, pmb] = seg(
+      'Plant model',
+      [
+        [
+          'On',
+          'On: the boiler and turbine model with the steam table; the measured values follow the valves',
+          pm(true)
+        ],
+        ['Off', 'Off: you type the plant values; only the drawn logic runs', pm(false)]
+      ],
+      'Plant model on or off'
+    );
     els.vr = vr;
     els.pmb = pmb;
     bar.append(cr, E('span', 'scesp'), l1, g1, l2, g2);
@@ -206,7 +232,12 @@
     els.wl = E('div', 'scelinks');
     els.wOpen = Bt('scelk', 'Open analog sheet', 'Open the analog sheet where the cause starts', null);
     els.wInfo = Bt('scelk', 'Signal details', 'The info card of this signal: source, users, effects, wiring', null);
-    els.wForce = Bt('scelk', 'Force a signal', 'Run mode, and the panel of the sheet with Force 1 / 0 for the selected signal', force);
+    els.wForce = Bt(
+      'scelk',
+      'Force a signal',
+      'Run mode, and the panel of the sheet with Force 1 / 0 for the selected signal',
+      force
+    );
     els.wl.append(els.wOpen, els.wInfo, els.wForce);
     why.append(els.wh, els.wb, els.wl);
     els.why = why;
@@ -242,7 +273,15 @@
   function refit() {
     setTimeout(() => {
       dispatchEvent(new Event('resize'));
-      setTimeout(() => call(() => [...document.querySelectorAll('#gsbar button')].find(b => b.textContent.trim() === 'Fit' && b.offsetParent).click()), 120);
+      setTimeout(
+        () =>
+          call(() =>
+            [...document.querySelectorAll('#gsbar button')]
+              .find(b => b.textContent.trim() === 'Fit' && b.offsetParent)
+              .click()
+          ),
+        120
+      );
     }, 0);
   }
   const msg = t => call(() => (window.anMsg ? anMsg(t) : window.msg && window.msg(t)));
@@ -283,32 +322,58 @@
             call(() => lsPlantFp(t));
           })
         );
-      if (!(rs.fp || []).length) l2.append(E('p', 'scenone', 'None yet: click a controller or valve on the plant page.'));
+      if (!(rs.fp || []).length)
+        l2.append(E('p', 'scenone', 'None yet: click a controller or valve on the plant page.'));
       p.append(l2);
       return;
     }
     /* Sheet tools: the buttons the app already has (ribbon, Legend and style panel, Tools page) */
-    const btnT = re => [...document.querySelectorAll('#gsbar button, #toolsws button')].find(b => re.test(b.textContent.trim()));
+    const btnT = re =>
+      [...document.querySelectorAll('#gsbar button, #toolsws button')].find(b => re.test(b.textContent.trim()));
     const isAn = call(() => AN.cat === 'an', false);
     const lg = () => {
       setTool('logic');
-      setTimeout(() => call(() => [...document.querySelectorAll('#gsbar button')].find(b => b.textContent.trim() === 'Legend' && b.offsetParent).click()), 50);
+      setTimeout(
+        () =>
+          call(() =>
+            [...document.querySelectorAll('#gsbar button')]
+              .find(b => b.textContent.trim() === 'Legend' && b.offsetParent)
+              .click()
+          ),
+        50
+      );
     };
     const L = E('div', 'scetl2');
     L.append(
       item('Legend and style', 'colours of symbols, valves and wires; wire style', lg),
-      item('Diagnostics and settings file', 'storage check, diagnostic report, save or load the sheet settings (in Legend and style, Saving)', lg, isAn ? '' : 'Open an analog sheet first'),
+      item(
+        'Diagnostics and settings file',
+        'storage check, diagnostic report, save or load the sheet settings (in Legend and style, Saving)',
+        lg,
+        isAn ? '' : 'Open an analog sheet first'
+      ),
       /* the import / export panel of the tables (tables-health.js lnOpen; the LN tables button itself opens the Curves page) */
       item('Linear curve tables', 'add, replace or download the tables of the curves', () => call(() => AN.lnOpen())),
-      item('Drawing health', 'sheets, blocks, inputs and pin problems of the drawings', () => call(() => btnT(/^Health/).click())),
+      item('Drawing health', 'sheets, blocks, inputs and pin problems of the drawings', () =>
+        call(() => btnT(/^Health/).click())
+      ),
       /* the gain / integral / derivative rows of a controller show in the panel only while the test panel (Tools · UAT) is open
          (plant-window.js); that panel is in the test build only */
       $('uatb')
-        ? item('Controller tuning', 'gain, integral and derivative: opens the test panel; then select a controller on an analog sheet', () => {
-            setTool('logic');
-            call(() => $('uatb').click());
-          })
-        : item('Controller tuning', 'gain, integral and derivative of each controller', null, 'Not in this build: the tuning rows show only with the test panel (Tools · UAT) of the test build')
+        ? item(
+            'Controller tuning',
+            'gain, integral and derivative: opens the test panel; then select a controller on an analog sheet',
+            () => {
+              setTool('logic');
+              call(() => $('uatb').click());
+            }
+          )
+        : item(
+            'Controller tuning',
+            'gain, integral and derivative of each controller',
+            null,
+            'Not in this build: the tuning rows show only with the test panel (Tools · UAT) of the test build'
+          )
     );
     p.append(L);
   }
@@ -322,11 +387,20 @@
     /* the side panel of the sheet (analog: the Inspector with Force 1 / 0 and Force to; digital: the Panel), opened with its own button */
     const an = call(() => AN.cat === 'an', false),
       pn = $(an ? 'anp' : 'dp');
-    if (!(pn && pn.offsetWidth)) call(() => [...document.querySelectorAll('#gsbar button')].find(b => b.textContent.trim() === (an ? 'Inspector' : 'Panel') && b.offsetParent).click());
+    if (!(pn && pn.offsetWidth))
+      call(() =>
+        [...document.querySelectorAll('#gsbar button')]
+          .find(b => b.textContent.trim() === (an ? 'Inspector' : 'Panel') && b.offsetParent)
+          .click()
+      );
     /* Run moves the analog pane to its Faceplate tab (hmi.js): the Inspector tab has the force buttons */
     if (an)
       setTimeout(() => {
-        call(() => [...document.querySelectorAll('#opp .hmitabs button')].find(b => b.textContent.trim() === 'Inspector' && b.offsetParent).click());
+        call(() =>
+          [...document.querySelectorAll('#opp .hmitabs button')]
+            .find(b => b.textContent.trim() === 'Inspector' && b.offsetParent)
+            .click()
+        );
         call(() => AN.panelUpd(true));
       }, 150);
   }
@@ -434,7 +508,8 @@
     if (els.cPage.textContent !== pn) els.cPage.textContent = pn;
     els.cPage.hidden = !pn;
     const c = curSheet();
-    const here = tool === 'logic' ? (c ? c.name + (c.title ? ' · ' + c.title : '') : 'Logic') : TOOLS.find(x => x[0] === tool)[1];
+    const here =
+      tool === 'logic' ? (c ? c.name + (c.title ? ' · ' + c.title : '') : 'Logic') : TOOLS.find(x => x[0] === tool)[1];
     if (els.cHere.textContent !== here) els.cHere.textContent = here;
     const bv = [...document.querySelectorAll('#crband .seg button')];
     const vOn = bv.find(b => b.textContent.trim() === 'VIEW'),
