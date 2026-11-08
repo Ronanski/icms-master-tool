@@ -182,7 +182,7 @@ window.LS_GUIDE = (function () {
   /* user 2026-10-29 (#108): the 17 coaches of the cold start were removed; the trainee does every trim on the faceplates of the step */
 
   /* ---------- the steps ---------- */
-  const STAGES = ['Utilities', 'Water: hotwell, deaerator, drum', 'Fans and draft', 'Furnace purge', 'Burners and warm-up', 'Vacuum and seals', 'Bypass at 61 kg/cm²', 'Turbine: roll, sync, 45 MW', 'Coal at 45 MW', 'Load up to 150 MW', 'Practice: load change'];
+  const STAGES = ['Utilities', 'Water: hotwell, deaerator, drum', 'Fans and draft', 'Furnace purge', 'Burners and warm-up', 'Vacuum and seals', 'Bypass at 61 kg/cm²', 'Turbine: roll, sync, 45 MW', 'Coal at 45 MW', 'Load up to 150 MW', 'Practice: load change', 'Normal shutdown'];
   const B = () => L().B;
   /* a motor button: START / STOP of its running memory (memory list), the same address the Inputs list forces */
   const mot = (a, l) => ({ ad: a, l: 'START ' + l, f: () => A.motor(a, 1), on: () => bit(a) > 0.5, stop: { l: 'STOP ' + l, f: () => A.motor(a, 0) } });
@@ -1097,7 +1097,42 @@ window.LS_GUIDE = (function () {
       { st: 10, sec: 47, t: 'Practice: lower HIC-ULD to 120 MW (▼▼)', d: 'In AUTO you move only the target MW. The CCS reduces the coal and the air.', c: b.OUT('HIC-ULD', null, 121, 'MW'), fps: ['HIC-ULD'] },
       { st: 10, sec: 47, t: 'Watch: 120 MW, coal about 72 T/H, MSP held', d: 'MW falls by 3 MW per minute and PIC-COBM holds 123 kg/cm².', c: b.HOLD(120, b.ALL(b.VAL('MW', 117, 123), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150))), wait: 1 },
       { st: 10, sec: 47, t: 'Return HIC-ULD to 150 MW (▲▲)', d: 'Raise the target again.', c: b.OUT('HIC-ULD', 149, null, 'MW'), fps: ['HIC-ULD'] },
-      { st: 10, sec: 47, t: 'Hold 150 MW', d: 'MSP 118 ~ 128, drum level ±150 mm, O₂ 3 ~ 6 %.', c: b.HOLD(300, b.ALL(b.VAL('MW', 147, 153), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150), b.VAL('O2', 3, 6))), wait: 1 }
+      { st: 10, sec: 47, t: 'Hold 150 MW', d: 'MSP 118 ~ 128, drum level ±150 mm, O₂ 3 ~ 6 %.', c: b.HOLD(300, b.ALL(b.VAL('MW', 147, 153), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150), b.VAL('O2', 3, 6))), wait: 1 },
+      /* ---- 11 normal shutdown (plan e4, PR-OPE-5003-01 steps 4.1 ~ 4.20; the checks are live.js X5) ---- */
+      { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Load change rate HIC-MWRL 1.2 MW/min', d: 'PR-OPE-5003: 150 to 90 MW at 1.2 MW per minute. The CCS stays in AUTO; you set only the rate and the target MW.', c: b.X5[0][1], fps: ['HIC-MWRL'] },
+      { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Lower HIC-ULD to 90 MW (▼)', d: 'The CCS lowers the coal and the air with the load.', c: b.X5[1][1], fps: ['HIC-ULD'] },
+      { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Hold 90 MW for 8 ~ 10 min', d: 'PR-OPE-5003: hold at 90 MW before going lower. Drum level ±150 mm.', c: b.X5[2][1], wait: 1 },
+      { st: 11, sec: 49, req: ['bm', 'tm'], t: 'HIC-MWRL 0.6 MW/min, HIC-ULD to 45 MW', d: 'PR-OPE-5003: 90 to 45 MW at 0.6 MW per minute. At 72 MW (or feedwater 230 T/H) the drum level goes to single element; below 120 T/H steam flow to the start-up level control. At 60 MW: staging air upper 10 %, lower 15 ~ 20 %.', c: b.X5[3][1], fps: ['HIC-MWRL', 'HIC-ULD'] },
+      { st: 11, sec: 49, t: 'Bed 750 °C: PA and SA air to MANUAL', d: 'PR-OPE-5003: at a bed of 750 °C put the SA and PA fans in manual, stop the limestone and the sand, and run the air heater soot blower continuously.', c: b.X5[4][1], fps: ['FICFA1071', 'FICFA1081'], a: [btn('FICFA1071 M', () => A.man('FICFA1071', mv('FICFA1071'))), btn('FICFA1081 M', () => A.man('FICFA1081', mv('FICFA1081')))] },
+      {
+        st: 11,
+        sec: 49,
+        t: 'Light the start-up burners one by one (A, D, B, C)',
+        d: 'PR-OPE-5003: SA pressure above 1200 mmH₂O, then light the burners one at a time and move the fire from coal to diesel (2.5 T/H coal = 1 T/H diesel), up to 4 T/H oil per feeder.',
+        c: b.X5[5][1],
+        get a() {
+          return WL() ? [bIgn('A'), bOn('A'), bIgn('D'), bOn('D'), bIgn('B'), bOn('B'), bIgn('C'), bOn('C')] : [];
+        }
+      },
+      { st: 11, sec: 49, t: 'Hold 45 MW with the burners in', d: 'PR-OPE-5003: hold at 45 MW. Drum level ±150 mm.', c: b.X5[6][1], wait: 1 },
+      { st: 11, sec: 49, need: 1, t: 'At 40 MW: extractions 3, 2, 1 out; deaerator PCVAS1030 2.5 kg/cm²', d: 'PR-OPE-5003: done at the TCS and in the field. Confirm when done.' },
+      { st: 11, sec: 49, t: 'HIC-MWRL 0.4 MW/min, HIC-ULD to 30 MW', d: 'PR-OPE-5003: 45 to 30 MW at 0.4 MW per minute.', c: b.X5[8][1], fps: ['HIC-MWRL', 'HIC-ULD'] },
+      {
+        st: 11,
+        sec: 49,
+        t: 'Bed 700 °C: stop the coal feeders',
+        d: 'PR-OPE-5003: at a bed of 700 °C stop the coal feeders and lower the PA fan to about 20 %. The burners carry the boiler.',
+        c: b.X5[9][1],
+        a: [btn('STOP feeder A', () => A.motor('M.3400', 0), () => bit('M.3400') < 0.5), btn('STOP feeder B', () => A.motor('M.3401', 0), () => bit('M.3401') < 0.5), btn('STOP feeder C', () => A.motor('M.3402', 0), () => bit('M.3402') < 0.5)]
+      },
+      {
+        st: 11,
+        sec: 49,
+        t: '30 MW: turbine SHUT-DOWN (MFT follows)',
+        d: 'PR-OPE-5003: take out extractions 5 and 4, then trip the turbine. ATS step 8 opens 52G and 41 and trips the turbine below 20 % load. On this unit the turbine trip makes an MFT (DITL drawing); the procedure then keeps the start-up burners and the bypass: that part waits for the bottle-up section.',
+        c: b.X5[10][1],
+        a: [btn('Turbine SHUT-DOWN (ATS step 8)', () => A.tcs('shutdown')), btn('Turbine trip (TA-1)', () => A.tcs('trip'))]
+      }
     ];
     ST = ST.flat();
     ST.forEach((s, i) => (s.i = i));

@@ -649,12 +649,28 @@ window.LS_LIVE = (function () {
     ['Raise the boiler master first (about 67 % for 150 MW), then the turbine master to 150 MW; keep MSP 118 ~ 128 kg/cm2.', HOLD(120, ALL(VAL('MW', 147, 153), VAL('MSP', 118, 128)))],
     ['Put HIC-BM back to AUTO once its back-up command is gone (M.2013 = 0), then EIC-TM to AUTO.', ALL(MODE('HIC-BM', 'AUTO'), MODE('EIC-TM', 'AUTO'))]
   ]);
-  const XS = [X1, X2, X3, X4];
+  /* plan e4 (PR-OPE-5003-01 NORMAL SHUTDOWN, steps 4.1 ~ 4.20): 150 MW down to the turbine trip at 30 MW. Rates and holds from the
+     procedure; the turbine trip at 30 MW makes an MFT on this unit (DITL turbine trip -> MFT path, plant-study 06-logic) */
+  const X5 = [
+    ['Set the load change rate HIC-MWRL to 1.2 MW/min (PR-OPE-5003: 150 ~ 90 MW at 1.2 MW/min).', OUT('HIC-MWRL', 1.1, 1.3, 'MW/min')],
+    ['Lower the unit load demand HIC-ULD to 90 MW.', OUT('HIC-ULD', null, 91, 'MW')],
+    ['Hold 90 MW for 8 ~ 10 min: drum level ±150 mm.', HOLD(480, ALL(VAL('MW', 87, 93), VAL('lvl', -150, 150)))],
+    ['Set HIC-MWRL to 0.6 MW/min and lower HIC-ULD to 45 MW (at 72 MW or 230 T/H feedwater: drum level single element; at 60 MW: staging air upper 10 %, lower 15 ~ 20 %).', ALL(OUT('HIC-MWRL', 0.5, 0.7, 'MW/min'), OUT('HIC-ULD', null, 46, 'MW'))],
+    ['Bed 750 °C: PA and SA flow controls to MANUAL (FICFA1071, FICFA1081); stop limestone and sand; APH soot blower continuous.', ALL(VAL('Tb', null, 760), MODE('FICFA1071', 'MAN'), MODE('FICFA1081', 'MAN'))],
+    ['Light the start-up burners one by one (SA pressure > 1200 mmH2O); move coal to diesel (2.5 T/H coal = 1 T/H diesel) up to 4 T/H oil per feeder.', BURN4],
+    ['Hold 45 MW: drum level ±150 mm.', HOLD(120, ALL(VAL('MW', 43, 47), VAL('lvl', -150, 150), BURN4))],
+    ['At 40 MW: take out extractions 3, 2 and 1; deaerator pressure PCVAS1030 to 2.5 kg/cm2 (field and TCS: confirm).', null],
+    ['Set HIC-MWRL to 0.4 MW/min and lower HIC-ULD to 30 MW.', ALL(OUT('HIC-MWRL', 0.3, 0.5, 'MW/min'), OUT('HIC-ULD', null, 31, 'MW'))],
+    ['Bed 700 °C: stop the coal feeders A, B and C; lower the PA fan to about 20 %.', ALL(VAL('Tb', null, 710), NOFEED)],
+    ['At 30 MW: take out extractions 5 and 4, then turbine SHUT-DOWN (ATS step 8: 52G open, 41 open, turbine trip). On this unit the turbine trip makes an MFT.', BIT('I.000F', 1, 'MFT after the turbine trip')]
+  ];
+  const XS = [X1, X2, X3, X4, X5];
   if (!PROC.some(s => s.x)) {
     PROC.push({ t: 'SYNCHRONIZATION AND INITIAL LOAD (APP)', x: 1, note: 'Added by the app: PR-OPE-5002 ends at Solid firing. Targets from the cold start scenario of the app (it reaches 150 MW) and the FHI design data.', s: X1.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'LOAD UP TO 150 MW (APP)', x: 1, note: 'Added by the app. PR-OPE-5002 sec 44: boiler follow until 90 MW; then coordinated control to 150 MW (FHI MCR 460 T/H).', s: X2.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'PRACTICE: LOAD CHANGE IN AUTO (APP)', x: 1, note: 'Added by the app. Press "Practise: 150 MW load change" (or continue after Load up). See how the coordinated control holds the demand: you only move the target MW.', s: X3.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'PRACTICE: LOAD CHANGE BY HAND (MANUAL) (APP)', x: 1, note: 'Added by the app. Press "Practise: 150 MW load change". You are the CCS: the turbine master sets the MW, the boiler master sets the fire; keep the pressure.', s: X4.map(x => ({ t: x[0], g: [] })) });
+    PROC.push({ t: 'NORMAL SHUTDOWN TO TURBINE TRIP (APP)', x: 1, note: 'Added by the app from PR-OPE-5003-01 (normal shutdown) steps 4.1 ~ 4.20: 150 MW to the turbine trip at 30 MW.', s: X5.map(x => ({ t: x[0], g: [] })) });
   }
 
   /* ---------- the general rules (step text + its tags), after the table ---------- */
@@ -876,6 +892,6 @@ window.LS_LIVE = (function () {
     return r && r[0] ? r[0].sh : null;
   };
   /* 3.2.0-beta.21: the condition makers, for the guided Training (guide.js) */
-  const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4 };
+  const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4, X5 };
   return { kind, state, rows, scan, reset, load, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2, B, H, modeOf, mvOf, pvOf, svOf, getV, NAMES, f1 };
 })();
