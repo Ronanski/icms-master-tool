@@ -12,46 +12,22 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 5. Tunay na estado: `git log --oneline -10 origin/main`, `src/version.txt`, bukas na PR. Kapag iba ang repo sa file na ito, ang repo ang tama; ayusin ang file na ito.
 6. Bagong session o account / local Claude Code sa PC: `docs/handoff/LOCAL_TAKEOVER.md` (setup at prompt).
 
-## 2. Kasalukuyang estado
-- **Stable:** v3.2.0 (2026-11-03, GO STABLE ng user; = 3.2.0-beta.91, tag at GitHub Release `v3.2.0`). Hindi live-tested ang beta.90 / 91.
-- **Beta sa `main`:** **3.2.1-beta.90** (2026-11-07): IBD input names, TA-9 vacuum at main steam rows; dati: IBD sheets mula sa netlist, walang linya ng drawing; dati: tunay na IBD sheets, gate by gate (c2); dati: Turbine IBD sheets, unang batch (c2); beta.75: turbine trip logic mula sa IBD TA-9 (c1); dati: Step 48 air heater soot blowing natatapos sa Worker (F62); beta.67: bed heat-up (F66); beta.66: HICDO1012 sa dock, Step 31, Step 42, mas mabilis na step; beta.65: Skip at Training buttons: pindot ulit sa button; beta.62: FT-CD1120 sa DITL-64 mula sa plant; beta.61: Guide MOV permissive, controls link, pangalan ng pumps; beta.60: Mina low findings at F14, Home kasama ang Guide, orasan sa Logic; beta.59: Guide valve card, Step 8 order, speed fix; beta.58: totoong bilis sa status bar; regression ng x300; Split at Plant view mas magaan; Inject sa loop check lang; banner kapag may forced signal; beta.57: seal pots; bed inventory; Cold Guide hakbang 8 (F33: V-MU1031 ang pampahinto ng fill kapag walang instrument air); beta.54: Mina findings (dahilan ng tinanggihang LCP START, walang suppressed sa load, pangalan ng alarm, MANUAL sa MOV, MWP auto start); beta.53: Yugto 2 simula, bed temperature sa Fig 8; MOV STOP, CLOSE at faceplate message; water side valves ng limang heater; beta.49: epekto ng isolated heater sa steam at MW; beta.48: Worker press delay (F11) naayos; beta.47: alarm limits mula sa alarm list, FIFA1079 at turbine speed buhay na, condenser box heat. Bukas: mahabang headless test nag-crash, walang crash sa live; LICD1104 limits di pa nasusuri (dalawang scale); limits na FHI ay wala pang numero.
-- **TCS (3.2.1):** Logic → ABC | DITL | TCS, 78 sheets sa DITL viewer (`src/digital/parts/02c-tcs.js`), gates sa engine (`tcs-trip.js`), generator 41 / auto sync (`tcs-gen.js`). I.0400 = TA-6 (valve position). ATS step 8 shut-down. Local IBD drawing: Load IBD drawing sa panel (`src/ui/shell/tcsdraw.js`), hindi kasama sa app. 508 sa 803 TCS input walang source pa; walang ATS criteria bypass pa; relays at 52L hindi naka-model.
-- **beta.41** (2026-11-05): split view Inject / Release para sa analog loop check (live PASS ni MINA sa PC 1600 px at tablet 1024 × 768).
-- **Rule ng merge (COMMANDMENT 3):** Beta = merge sa `main` kapag pasado ang Checks, walang GO BETA (user 2026-11-06). Stable at manual workflow = GO STABLE lang.
-- **Beta site:** kusang nade-deploy pagkatapos ng berdeng Checks sa `main` (`site.yml`, `/beta/`; banner "Update now").
-- **Bukas na PR (2026-11-07):** #96 UI overhaul at #93 HMI kit (parehong may conflict; hintay ng desisyon sa style at HMI study). Sarado: #158 at #95. Nasa `team-files/progress/from-pr95/` ang progress files; ang lumang branches ay may backup sa PC (`refs/backup/2026-11-07/*`).
+## 2. Kasalukuyang estado (2026-11-08 PHT)
+- **Stable:** v3.2.0 (2026-11-03, GO STABLE ng user). Stable 3.2.1 = GO STABLE lang.
+- **Beta sa `main`:** 3.2.1-beta.164 (2026-11-08). Ang listahan bawat Beta: `docs/versions/v3.2.1/UPDATE_REPORT.md`.
+- **Ngayong araw (beta.109 ~ 164):** normal shutdown at bottle-up sa Training; turbine trip at hot restart practice (purge by-pass M.3339); Warm / Hot restart sa PLANT chip; page 13 turbine protection band, start-up mode, MSV / RSV, 52G1 / 52L1 (DITL-03E station wiring); page 17 generator model (data sheet GAE-2013-0136 + snapshot 37) at generator temperatures (snapshot 35); bearings at vibration mula sa snapshot 35; vacuum pagkahinto ng CEP = air in-leakage (ED 066); SAVE / LOAD ng buong planta; trend recorder + CSV; x10 sa Training hold; d1 lahat ng 107 signal may source (Lisa); faults (Lisa, e5, bahagi 1).
+- **Testing (user 2026-11-08):** GitHub "Simulation tests" (`.github/workflows/sim-tests.yml`, report lang, hindi humaharang): engine alone, ABC T1 ~ S6, DITL 150 MW, 52G1 (`gcb.js`), load ramp gaya ng operator (`load_ramp.js`), 40 min hold (`hold150.js`). Checks: lahat ng script ng html ay pinaparse na (dati 4 lang sa 17). Paghahambing sa plant trends: PC lang, `team-files/tools/trend-compare/compare.cjs`.
+- **Rule ng version:** sa push, version ng `main` + 1 (iwas banggaan ng sabay na PR).
 
-## 3. Mga thread (2026-11-06)
-- **JENNIE : COORDINATOR** — project chat; hands off (direkta ang user sa bawat thread).
-- **MINA : TESTER** — live loop check at function test, split view (beta.36 ~ 41). Huling gawa: LP heater isolation test (seksyon 4).
-- **IRENE : PLANT MODEL** — turbine side + final hookup (`plant.js`, `unit.js`, `world/plantsw.js`, `tcs.js`, `fp-pop.js`).
-- **SEULGI : PLANT MODEL (boiler side)** — `src/analog/engine/boiler.js`: diesel, fans, limestone, sand, bottom ash. #141 naka-merge (beta.42). Huwag i-prettier ang `plantsw.js`.
-- **JISOO : HMI MOCKUP** — 19 HMI pages (00 ~ 18) nasa app na (temp style). Done.
-- **HAEWON : AUDITOR** — HMI audit PASS. **YERI** — PC data search. **WENDY** — full turnover (`LOCAL_TAKEOVER.md`).
-- **TZUYU : AUDIT NG DOCUMENTS AT REFERENCES** — audit (Claude Doc https://claude.ai/artifact/DuDeRGgJHSCqzRtdmpsbNU) at ang docs cleanup na ito.
-- Naka-save na ideya (huwag pang gawin): CodePLC-style Work Order / fault-finding mode.
+## 3. Team (2026-11-08)
+- **JENNIE** (lead at coder), **MINA** (live tester lang: screen, buttons, Training flow), **LISA** (fixer, `lisa-worktree`). Job cards: `team-files/tools/live-activity/jobs/`; test list: `team-files/MINA_NEXT.md`.
 
-## 4. Bukas na findings
-Mula sa live test ni MINA 2026-11-05 (beta.41, 028 CONDENSATE, MV-CD1001, DITL-69):
-1. ISOLATE: tama ang logic, pero hindi naka-model ang LP heater isolation / bypass (hindi gumagalaw ang pump outlet 16.9, PT-CD1122 6.9, heater outlet 72 / 92 / 116 °C).
-2. REINSTATE: "EXECUTED" pero nanatiling 0 % ang valve; ang limit switch FULLY OPEN (I.0280) / FULLY CLOSED sa DITL-69 ay hindi sumusunod sa valve.
-3. Pagkagaling sa Split, logic sheet ang lumalabas sa Plant view sa halip na HMI.
-4. HMI Expected ay hindi sumusunod sa logic row (split view).
-5. Root valve ng transmitter: wala pa sa app.
-
-Plant model at logic:
-- LS10 row 7 ROTOFEEDER FAULT walang NOT sa ENABLE gate (salungat sa drawing, hindi binago); LS212 rows 18 ~ 20 (MFT I.0560, 52G1 M.3224, coal feeders M.050A) hindi nakakabit; BA conveyors RUNNING static.
-- DITL-28C #B SOV limit switches; pneumatic dampers PCD-FG1056-1, TCV-FG1116 / 1117 fail action hindi alam; AN_MT walang PAF / SAF / FA motor temps.
-- UNUSUAL para sa user: hotwell 36.6 laban sa 40 °C; MWP current ~20.7 / 28 A; CCWHE UA 7 % ng clean; SWP current 228 A laban sa SOP 205 ~ 215.
-- Starting point 150 MW nagti-trip sa RUN (MFT DITL-03A row 17, "SAF STOPPED = 1"; sanhi hindi pa na-trace); HP bypass hindi sinasara ng saradong MV-MS1391.
-- CW live test (beta.18 / 19) HIGH SWBP START permissive at MED trip alarm RESET: naayos sa code (beta.21, f49f91d); live retest wala pang tala.
-- Pre-existing regression FAIL (pareho sa `main`): ditl150 "Reset" 1, sop_bawal 10, loop_source 1.
-
-Docs at references (audit 2026-11-06, hindi pa naayos):
-- `document-references/tcs-references/Generator Logic.pdf` at `Generator Protection.pdf` ay iisang file (pareho ang md5): kulang ang tunay na isa.
-- `tcs-references/Trip interlock test 2X650MW.pdf` ay galing sa ibang planta: huwag gamiting citation ng LMYP #1.
-- `docs/audit/ASSUMED_REGISTER.md`: 70 ASSUMED na kailangang palitan ng source o NO-SOURCE.
-- Walang section sa UPDATE_REPORT v3.2.1 ang ilang Beta; may listahan na mula sa git log sa dulo ng file na iyon.
+## 4. Bukas na findings (2026-11-08)
+- **HIGH:** MFT sa steady 150 MW sa mataas na bilis (x60 sa mabagal na PC): hanggang 3 s ang hakbang, umuuga ang PA flow at furnace pressure. Ayos na handa: hakbang ≤ 1 s (sched.js, eng-host.js), hinihintay ang GitHub hold test sa 0.5 / 1 / 3 s.
+- Hotwell −300 sa feedwater surge (CEP stop): naghihintay ng recorder CSV na may water columns (beta.161).
+- RHT 512.7 sa 90 MW (planta 521); MST overshoot sa pag-akyat: retest sa load ramp.
+- Single Line Diagram: wala sa PC (transformer, 52L1 side ng generator).
+- Detalye at ebidensya: `team-files/findings-2026-11-08-mina.md`.
 
 ## 5. Kulang pa
 - History ng public repo: nilinis 2026-11-07 (bagong commit IDs). Ang lumang PR refs (`refs/pull/*`) ay hawak pa ng GitHub at may plant documents pa; GitHub Support lang ang makakapag-alis. Lumang Windows / apk links ay hindi apektado; ang lokal na lumang history ay nasa `refs/backup/2026-11-07/*`.
