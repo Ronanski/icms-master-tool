@@ -966,9 +966,14 @@
         bLoc.classList.toggle('on', !rem);
       }
       B[0].disabled = on || !run || !ok;
-      if (B[1]) B[1].disabled = !on || !run || !rem;
+      /* design review 2026-11-08 (Yuna): the second push button is the STOP of the first only when it says so (STOP / CLOSE / AUTO STOP).
+         Another command (the SKIP of a sootblower, DITL-80x row r + 1) is its own press: enabled in RUN, not lit green as a "stopped" */
+      if (B[1]) {
+        const isStop = /\b(STOP|CLOSE)\b/.test(P.pbs[1][0]);
+        B[1].disabled = !run || (isStop && (!on || !rem));
+        B[1].classList.toggle('lit-stop', isStop && !on);
+      }
       B[0].classList.toggle('lit-run', on);
-      if (B[1]) B[1].classList.toggle('lit-stop', !on);
       why.textContent = !run ? 'Simulation PAUSED: press ▶ RUN first (nothing moves while paused).' : !ok && !on ? P.pbs[0][0] + ' blocked: no ' + (P.permWhy || 'permissive') + '.' : '';
       why.hidden = !why.textContent;
       for (const [v, f] of V) {
