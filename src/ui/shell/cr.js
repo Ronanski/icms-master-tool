@@ -66,12 +66,14 @@
       ['MAIN STEAM TEMP', '°C', 'ABC-012', 'pv', 'TICMS1004', 'Main steam temperature, PV of TICMS1004 (ABC-012)'],
       ['FURNACE TEMP', '°C', '', 'unit', 'Tb', 'Furnace temperature, FHI Fig 8. The lower bed thermocouples read about 10 % higher, and the coal permissive reads those'],
       [
-        'VACUUM',
-        '%',
+        /* Mina beta.170: VACUUM 0 ~ 100 % (U.vac, whether the vacuum is up) read 100.0 % in every state. The operator reads the condenser
+           pressure: PT-CD1110 (TCS, ST11101, the model U.cdP, kg/cm2 abs; page 13, TA-10 trip at 0.26) */
+        'CONDENSER',
+        'kg/cm² abs',
         '',
         'unit',
-        'vac',
-        'Condenser vacuum (plant model, 0 ~ 100 %; the DCS I/O list has no vacuum transmitter)'
+        'cdP',
+        'Condenser pressure PT-CD1110 (TCS), kg/cm2 absolute. Normal about 0.07 at 150 MW; turbine trip at 0.26 (TA-10)'
       ]
     ].map(([k, u, sh, how, ref, t]) => {
       const b = E('button', 'crkpi');
@@ -299,7 +301,7 @@
         try {
           x = k.how === 'ai' ? aiVal(k) : k.how === 'unit' ? unitVal(k) : pvVal(k);
         } catch (e) {}
-      const t = fmt(x);
+      const t = k.ref === 'cdP' && isFinite(x) ? x.toFixed(3) : fmt(x);
       if (k.v.textContent !== t) k.v.textContent = t;
       k.b.classList.toggle('na', !isFinite(x));
     }
