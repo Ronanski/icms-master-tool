@@ -1,5 +1,11 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.136 — I.041D / I.041E service text (2026-11-08, LISA)
+
+**Work done.** The I/O view showed the old WIRING.xls text "52G1 opened" / "52L1 opened for house load" on S2 I.041D / I.041E. Corrected to the DCS I/O list STN102 (ades.json station 2) and 310SC90-773 rev 2: TCS-DI1050 "#1 HP-CV full close", TCS-DI1051-1 "#1 MSV(A) test". No logic reads these two inputs. The breakers keep their own inputs (I.0931 / I.0932, I.0937).
+
+**Not tested.** Live; item sent to Mina.
+
 ## 3.2.1-beta.97 — Ash cooler E-stop pattern, final (2026-11-08, JENNIE)
 
 **Work done.** Beta.95 and 96 carried the broken text pattern; this one has the right pattern.
