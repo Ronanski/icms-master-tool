@@ -806,6 +806,26 @@
     menuPut(false);
     layout();
   }
+  /* sweep 20: the Training start page in the panel while a section runs (as after Stop Training, but the guide goes on); pracOff = the
+     running step again (as open()) */
+  function pracOn() {
+    build();
+    els.prac = 1;
+    menuOn = true;
+    layout();
+    menuPut(true);
+    call(() => window.lsHome && lsHome.train());
+    if (els.foot) els.foot.hidden = true;
+  }
+  function pracOff() {
+    if (!els.prac) return;
+    els.prac = 0;
+    menuOn = false;
+    menuPut(false);
+    lastCur = -1;
+    layout();
+    fill(true);
+  }
   /* drag the edge of the panel: width (side) or height (bottom) */
   function grip(g) {
     let st = null;
@@ -1029,6 +1049,7 @@
   /* ---------- open / close ---------- */
   function open() {
     build();
+    els.prac = 0;
     menuOn = false;
     menuPut(false);
     /* 3.2.0-beta.25: the one world is always ON (no switch); turned on again only if a test turned it off */
@@ -1047,6 +1068,7 @@
     } catch (e) {}
     fpLive = [];
     fpKey = '';
+    els.prac = 0;
     menuOn = true;
     layout();
     menuPut(true);
@@ -1156,6 +1178,20 @@
       else S.push({ sk, first: k, last: k });
     });
     const box = E('div', { id: 'gdsecl', role: 'menu' }, [E('div', { cls: 'gd-h', txt: 'SECTIONS · PR-OPE-5002' })]);
+    /* Mina 2026-11-07 / 11-08 (sweep 20): with a section open the Training start page (Cold start, the Practise buttons) showed only
+       after Stop Training. "Practise and start" puts it in this panel; the running step waits ("Back to the running step" or a section
+       below brings it back). The loads keep their "Press again" (home.js arm2) */
+    {
+      const pb = E('button', { type: 'button', role: 'menuitem', cls: 'gd-prac' }, [E('b', { txt: els.prac ? '↩' : '▶' }), E('span', { txt: els.prac ? 'Back to the running step' : 'Practise and start' })]);
+      pb.title = els.prac ? 'Shows the running step again' : 'The Training start page in this panel: Cold start and the Practise buttons (the running step waits)';
+      pb.onclick = () => {
+        box.remove();
+        els.secL.setAttribute('aria-expanded', 'false');
+        if (els.prac) pracOff();
+        else pracOn();
+      };
+      box.append(pb);
+    }
     for (const o of S) {
       const lock = o.first > (els.maxI || 0),
         b = E('button', { type: 'button', role: 'menuitem', cls: (o.sk === cur ? 'on ' : '') + (o.last < g.cur ? 'dn' : '') }, [
@@ -1177,6 +1213,7 @@
           }
           return;
         }
+        if (els.prac) pracOff();
         g.open(o.first);
         fill(true);
       };
@@ -1801,6 +1838,8 @@
   function fill(force) {
     const g = GD();
     if (!dock || !g || !g.on || isMin()) return;
+    /* the Training start page is in the panel (pracOn): the step waits under it */
+    if (els.prac) return;
     const L = g.steps(),
       i = g.cur,
       s = L[i];

@@ -246,6 +246,7 @@ b.gd-tg{font-weight:600;color:var(--c-tx2)}
 #gdsecl button{display:flex;gap:8px;width:100%;text-align:left;border:0;background:none;color:var(--c-tx);font:400 13px var(--uf);padding:5px 12px;cursor:pointer}
 #gdsecl button b{width:24px;flex:none;color:var(--c-dim);font:400 12px var(--mf)}
 #gdsecl button.dn{color:var(--c-dim)}
+#gdsecl button.gd-prac{font-weight:600;border-bottom:1px solid var(--c-line2);margin-bottom:2px}
 #gdsecl button.dn:after{content:"✓";margin-left:auto;color:#22a052}
 #gdsecl button.on{background:var(--c-accbg);box-shadow:inset 3px 0 0 var(--c-acc)}
 #gdsecl button[aria-disabled=true]{opacity:.4;cursor:default}
