@@ -38,11 +38,11 @@ jobs:
         run: |
           set -o pipefail
           node tests/regress/gcb.js 2>&1 | tee -a sim.log
-      - name: 'After a turbine trip at 150 MW: drum level, LP bypass'
+      - name: 'Air and O2 hold at 150 MW, 30 min, no operator action'
         continue-on-error: true
         run: |
           set -o pipefail
-          node tests/regress/trip_after.js 2>&1 | tee -a sim.log
+          node tests/regress/air_hold.js 2>&1 | tee -a sim.log
       - name: Summary (PASS / FAIL lines)
         if: always()
         run: |
