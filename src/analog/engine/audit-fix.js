@@ -82,6 +82,11 @@ const AN_AUDIT_FIX = {
     /* ABC-054-1: PV of PICHR1391 = "HRP / 052  S2 SI0180" */
     { id: 'ABC-054-1', op: 'xtag', n: 21, t: 'S2 SI0180' }
   ],
+  'ABC-052': [
+    /* 3.2.1 d2 (LISA): input "a" of the T switch before RB-MV (SI0197, LP bypass PCV-HR1010) = connector "LPB / 050  SI0163" (ABC-052 PDF,
+       grid D-E 6): ABC-050 SI0163 (its SW output, connector LPB). The reader named the wire "LPB" (the circle text), so it had no source and read 0 */
+    { id: 'ABC-052-1', op: 'xtag', n: 100, t: 'S2 SI0163' }
+  ],
   'ABC-057': [
     /* ABC-057-1: "FURNACE FRONT / REAR WALL AUTO MODE (CRT) S3 M.144A", "... MANUAL MODE (CRT) S3 M.144B" */
     { id: 'ABC-057-1', op: 'lab', n: 79, was: '', t: 'S3 M.144A' },
