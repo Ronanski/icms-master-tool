@@ -39,6 +39,12 @@
     MF = "'Roboto Mono', 'JetBrains Mono', Consolas, monospace";
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  /* a value of the engine's plant model (AN.unit key, or its element i), else the estimate f() of this page */
+  const uv = (k, i, f) => {
+    const U = window.AN && AN.plantOn && AN.unit,
+      x = U ? (i == null ? U[k] : U[k] && U[k][i]) : undefined;
+    return x != null && isFinite(x) ? +x : f();
+  };
 
   /* ---------- geometry of the Air & Flue Gas screen (process area, drawn OY px under the title and alarm bar) ---------- */
   const OY = 56;
@@ -286,16 +292,18 @@
     TIFA1084: E => AN.aphAir(E.tsa, E.saf ? E.sa : 0, 's'),
     PIFA1075: E => (E.paf ? 1551 * clamp(E.pa, 0, 1.3) ** 2 : 0),
     PIFA1078: E => (E.paf ? 1444 * clamp(E.pa, 0, 1.3) ** 2 : 0),
-    PIFA1055A: E => (E.fabA ? 3257 * clamp(E.fa, 0, 1.3) ** 2 : 0),
-    PIFA1055B: E => (E.fabB ? 3315 * clamp(E.fa, 0, 1.3) ** 2 : 0),
+    /* Mina item 5 (beta.72, sweep item 6): FAB-A 37.3 A and PIFA1055A 3257 never moved and the PAF current was 4 ~ 5 A above the engine:
+       this page had its own estimates. The engine values (boiler.js anFanStep: U.fnFaP, U.fnPafI ...) first, the estimate only without them */
+    PIFA1055A: E => uv('fnFaP', 0, () => (E.fabA ? 3257 * clamp(E.fa, 0, 1.3) ** 2 : 0)),
+    PIFA1055B: E => uv('fnFaP', 1, () => (E.fabB ? 3315 * clamp(E.fa, 0, 1.3) ** 2 : 0)),
     TIFA1055A: E => (E.fabA ? E.tpa + 51 : E.tpa),
     TIFA1055B: E => (E.fabB ? E.tpa + 46 : E.tpa),
     /* motor currents: the law of the engine, boiler.js anFanI; air power = flow^3 on the system curve */
-    IIF1056: E => AN.fanI(199.6, E.idf, clamp(E.g, 0, 1.3) ** 3),
-    IIF1053: E => AN.fanI(253.6, E.paf, clamp(E.pa, 0, 1.3) ** 3),
-    IIF1054: E => AN.fanI(134, E.saf, clamp(E.sa, 0, 1.3) ** 3),
-    IIF1055A: E => AN.fanI(37.3, E.fabA, clamp(E.fa, 0, 1.3) ** 3),
-    IIF1055B: E => AN.fanI(37.3, E.fabB, clamp(E.fa, 0, 1.3) ** 3),
+    IIF1056: E => uv('fnIdfI', null, () => AN.fanI(199.6, E.idf, clamp(E.g, 0, 1.3) ** 3)),
+    IIF1053: E => uv('fnPafI', null, () => AN.fanI(253.6, E.paf, clamp(E.pa, 0, 1.3) ** 3)),
+    IIF1054: E => uv('fnSafI', null, () => AN.fanI(134, E.saf, clamp(E.sa, 0, 1.3) ** 3)),
+    IIF1055A: E => uv('fnIa', null, () => AN.fanI(37.3, E.fabA, clamp(E.fa, 0, 1.3) ** 3)),
+    IIF1055B: E => uv('fnIb', null, () => AN.fanI(37.3, E.fabB, clamp(E.fa, 0, 1.3) ** 3)),
     IIFA1052M1: E => (E.idf ? 4.7 : 0),
     SILO1756: E => (E.idf ? 872 * clamp(E.scoop / 46.1, 0, 2.2) ** 0.5 : 0),
     PISB1040: () => 0,
