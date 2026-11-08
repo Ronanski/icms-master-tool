@@ -107,10 +107,14 @@ const anTick = () => {
 /* M32 (the real site: Training, its sheets and the dock): the steps of a tick are the ones that fit in about 80 ms of CPU (AN._ms = the time
    of one step, measured), 0.5 s each when there is time, longer when not, never longer than 3 s (was: at most 20 a tick of up to 2 s: on
    the full Training a step cost more and x300 ran x225 ~ 240) */
+const AN_STEP_MAX = 1; /* s, the longest step of the plant (was 3) */
 const anSteps = dt => {
   const want = Math.ceil(dt / 0.5),
     fit = Math.max(1, Math.floor(80 / (AN._ms > 0 ? AN._ms : 2)));
-  return Math.max(1, Math.min(want, Math.max(fit, Math.ceil(dt / 3))));
+  /* Mina beta.156 / 157 (HIGH): at x60 on a slow PC the steps were up to 3 s and the PA flow and furnace pressure loops swung until a
+     TAF / furnace LOW-LOW MFT at a steady 150 MW. A step is never longer than AN_STEP_MAX (1 s): above what the PC can give the real
+     speed is lower (the speed button says it), the plant stays right */
+  return Math.max(1, Math.min(want, Math.max(fit, Math.ceil(dt / AN_STEP_MAX))));
 };
 AN.anSteps = anSteps;
 setInterval(() => {

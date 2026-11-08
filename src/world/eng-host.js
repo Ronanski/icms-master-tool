@@ -100,7 +100,7 @@
         if (!sh || !sh.S) return void (N.nosh = (N.nosh || 0) + 1);
         const dt = acc,
           /* M32: the steps that fit in about 80 ms (sched.js anSteps), 0.5 s each when there is time, never longer than 3 s */
-          n = Math.max(1, Math.min(Math.ceil(dt / 0.5), Math.max(Math.max(1, Math.floor(80 / (AN._ms > 0 ? AN._ms : 2))), Math.ceil(dt / 3)))),
+          n = Math.max(1, Math.min(Math.ceil(dt / 0.5), Math.max(Math.max(1, Math.floor(80 / (AN._ms > 0 ? AN._ms : 2))), Math.ceil(dt / 1)))) /* never longer than 1 s (sched.js AN_STEP_MAX, Mina beta.157) */,
           K = AN.tierK || 1;
         acc = 0;
         busy = true;
