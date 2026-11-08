@@ -658,3 +658,4 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.121** (2026-11-08): The Practise buttons pause the simulation while 150 MW loads (a reload of a running plant tripped it in 20 s).
 - **beta.122** (2026-11-08): Bottle-up steps: close the drum blowdown valve before the BFP stop (PR-OPE-5003), FA blowers to MANUAL before the stop (the AUTO standby restarted), ID fan coupling in MANUAL lowered with each fan damper (furnace kept near -15 mmH2O).
 - **beta.123** (2026-11-08): Reheat temperature at part load: below the spray range the natural curve (plant trend 521 C at 90 MW) is the value with the biasing dampers at their end; their assumed extra gain no longer lifts it to 536 C.
+- **beta.124** (2026-11-08): Page 13 protection band: RESET / first out read from the TCS trip state (was ----- at 150 MW and [object Object] after a trip), NORMAL step at the 150 MW snapshot, larger text.
