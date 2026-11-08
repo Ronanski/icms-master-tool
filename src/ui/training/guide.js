@@ -1381,7 +1381,16 @@ window.LS_GUIDE = (function () {
   function early() {
     const L0 = steps(),
       out = [];
-    for (let i = G.cur + 1; i < L0.length && out.length < 3; i++)
+    /* Mina beta.175 (step 141, hot restart of the turbine trip practice: "Ahead of the procedure: PA fan (a later step)"): the practice
+       sections after the start-up (section index sec - 1 >= LS_LIVE.base, live.js BASE_N) are separate exercises on a running unit, not
+       later steps of one order. A start-up step compares with the later start-up steps only; a practice step with the later steps of
+       its own section only (the PA fan start of practice 54 is not "ahead" of practice 51) */
+    const base = window.LS_LIVE && LS_LIVE.base != null ? LS_LIVE.base : null,
+      prac = s => base != null && !!(s && s.sec) && s.sec - 1 >= base,
+      me = L0[G.cur] || {},
+      same = s => (prac(me) ? !!s && s.sec === me.sec : !prac(s));
+    for (let i = G.cur + 1; i < L0.length && out.length < 3; i++) {
+      if (!same(L0[i])) continue;
       for (const a of L0[i].a || [])
         if (a.stop && a.on && a.on() && !(L0[G.cur].a || []).some(x => x.l === a.l) && !out.includes(a.l.replace(/^START /, ''))) {
           /* the same pump may be one of the choices of this or an earlier step */
@@ -1389,6 +1398,7 @@ window.LS_GUIDE = (function () {
           for (let j = 0; j <= G.cur; j++) if ((L0[j].a || []).some(x => x.l === a.l)) before = true;
           if (!before) out.push(a.l.replace(/^START /, ''));
         }
+    }
     return out;
   }
   /* the sheets the steps operate that may not be linked to the sheet on the screen: stepped too (links.js actSet) */
