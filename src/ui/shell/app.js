@@ -1626,6 +1626,16 @@
         e => msg('Could not load the cold state: ' + e.message)
       );
     });
+    /* WARM / HOT restart (FHI SECT_7 Fig 3 / Fig 4): the Cold equipment line-up with the heat the boiler and the turbine keep */
+    const rst = (id, kind, label, title, done) =>
+      btn(id, label, title, () => {
+        AN._startP = AN.loadStart(kind, true).then(
+          () => (AN.paint(), msg(done)),
+          e => msg('Could not load the ' + kind + ' restart: ' + e.message)
+        );
+      });
+    rst('loadwarm', 'warm', 'Warm restart (down 8 ~ 56 h)', 'FHI Fig 3: drum 40 kg/cm2, bed about 360 C, turbine metal in the WARM band; every machine stopped as in Cold. The furnace purge is needed (bed below 700 C)', 'Warm restart: drum 40 kg/cm2, bed about 360 C, turbine WARM. Press Run, then start the utilities, fans, purge and burners as in the cold start.');
+    rst('loadhot', 'hot', 'Hot restart (down under 8 h)', 'FHI Fig 4: drum 100 kg/cm2, bed about 700 C, turbine metal in the HOT band; every machine stopped as in Cold', 'Hot restart: drum 100 kg/cm2, bed about 700 C, turbine HOT. Press Run, then start the utilities and fans; the logic decides the purge.');
     d.head('TCS panel (turbine)');
     const tcs = (id, label, title, cmd, arg, ok) =>
       btn(id, label, title, () => {
