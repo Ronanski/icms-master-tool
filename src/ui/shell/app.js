@@ -1666,7 +1666,8 @@
     const svName = () => {
       const U = AN.unit || {},
         tm = new Date();
-      return (U.on ? (+U.MW || 0).toFixed(1) + ' MW' : 'plant') + ' · sim ' + Math.round((+U.t || 0) / 60) + ' min · ' + tm.toTimeString().slice(0, 5);
+      /* Mina beta.154: the plant minutes of the name did not match the clock of the app; the name is the load and the time of day */
+      return (U.on ? (+U.MW || 0).toFixed(1) + ' MW' : 'plant') + ' · ' + tm.toTimeString().slice(0, 5);
     };
     const svPick = (L, what) => {
       if (!L.length) return msg('No save point yet: press SAVE first.'), null;
@@ -1717,6 +1718,8 @@
         .then(L => {
           const e = svPick(L, 'Delete which save point');
           if (!e) return;
+          /* Mina beta.154: a confirm before a delete (it cannot be undone) */
+          if (!confirm('Delete the save point "' + e.name + '"? It cannot be undone.')) return;
           return svDo('readwrite', st => st.delete(e.id)).then(() => msg('Deleted: ' + e.name));
         })
         .catch(x => msg('Could not delete: ' + x.message))

@@ -915,6 +915,10 @@ window.LS_LIVE = (function () {
            150 MW, and "51.1 press TURBINE TRIP" at a vacuum trip. A practice section after the start-up (shutdown, bottle-up, trip and
            restart) ticks only while the guide is on that section: its conditions are true in a normal run too */
         if (si >= BASE_N && gsec !== si) return;
+        /* Mina beta.152 (Practise turbine trip at 150 MW): after the trip "✓ 26.10 All Coal Feeder Stop", "✓ 25.12 Increase PAF inlet damper",
+           "✓ 22.18 Adjust the hydraulic coupling" ticked by themselves. While the guide is in a practice stage (after the start-up), the
+           start-up sections do not tick: a trip makes their conditions true without the start-up being done */
+        if (si < BASE_N && gsec >= BASE_N) return;
         if (si === PURGE && !fans) return;
         if (q.c.hold) {
           if (since[key] == null) since[key] = t;
