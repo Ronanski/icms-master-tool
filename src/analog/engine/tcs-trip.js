@@ -110,7 +110,10 @@ const TCS_IBD_PV = [
   [/^NO\.1 HP HEATER LEVEL VERY HIGH/, () => tcsDitlOut('DITL-115', /^NO\.1 HPH LEVEL H\.H/)],
   [/^NO\.2 LP HEATER LEVEL VERY HIGH/, () => tcsDitlOut('DITL-115', /^NO\.2 LPH LEVEL H\.H/)],
   [/^NO\.3 LP HEATER LEVEL VERY HIGH/, () => tcsDitlOut('DITL-115', /^NO\.3 LPH LEVEL H\.H/)],
-  [/^DEAERATOR STORAGE TANK LEVEL VERY HIGH/, () => tcsDitlOut('DITL-115', /^DEAERATOR STORAGE TANK LEVEL H\.H/)]
+  [/^DEAERATOR STORAGE TANK LEVEL VERY HIGH/, () => tcsDitlOut('DITL-115', /^DEAERATOR STORAGE TANK LEVEL H\.H/)],
+  /* c2 gap 3 (310SC90-773 rev 2 DO 42 DOZSO-AV1391, DCS -> TCS): CONDENSER VACUUM BREAK COMPLETE = the DITL-115 output of the same name
+     (I.0215 ZSO-AV1391, the vacuum breaker position of DITL-56); IBD TE-6 #32 and TE-7 #5. Read only */
+  [/CONDENSER VACUUM BREAK COMPLETE$/, () => tcsDitlOut('DITL-115', /^CONDENSER VACUUM BREAK COMPLETE/)]
 ];
 /* c2 gap 2 (310SC90-773 rev 2 DO 36 / 38 / 39 / 43 / 44 / 45, DCS -> TCS): the answer back of the drain valves, sent by DITL-115. By net, as
    the reader did not read every name (TE-6 net 19 is the FULL CLOSE answer back, circle 61 AS01 on the IBD page 94; nets 7 and 26 the FULL
