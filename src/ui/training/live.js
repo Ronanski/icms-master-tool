@@ -664,13 +664,28 @@ window.LS_LIVE = (function () {
     ['Bed 700 °C: stop the coal feeders A, B and C; lower the PA fan to about 20 %.', ALL(VAL('Tb', null, 710), NOFEED)],
     ['At 30 MW: take out extractions 5 and 4, then turbine SHUT-DOWN (ATS step 8: 52G open, 41 open, turbine trip). On this unit the turbine trip makes an MFT.', BIT('I.000F', 1, 'MFT after the turbine trip')]
   ];
-  const XS = [X1, X2, X3, X4, X5];
+  /* plan e4 (PR-OPE-5004-01 SHUTDOWN TO BOTTLE-UP): after the turbine trip (on this unit the trip makes an MFT, so the start-up burners are
+     already out). Valves of the field and the TCS are confirmed; motors, drum level, dampers and the furnace pressure are read */
+  const X6 = [
+    ['Close MV-MS1391, PCV-MS1001 (blow off), the HP bypass isolation valve and the auxiliary steam isolation valve; open the TG drain pots (upstream valve first), then hot reheat blow off MV-HR1391 to release the line and close it (field: confirm).', null],
+    ['Fill the steam drum to +200 mm (and the deaerator to 0 mm).', VAL('lvl', 150, 250)],
+    ['Close the BFP outlet valve (MV-FW1001 / MV-FW1002), then STOP the BFP in service; stop the dosing pump, close LCV-CD1104, stop the make-up water pump.', NOBIT(['M.3343', 'M.3344'], 'BFWP stopped')],
+    ['Start-up burners out: oil FCV 25 %, OFF, igniter and oil gun retracted (after the MFT of the turbine trip they are already out).', NOBIT(['M.3412', 'M.3413', 'M.3418', 'M.3419'], 'start-up burners out')],
+    ['Diesel: PCV-DO0002 and PCV-DO1009 to MANUAL, open PCV-DO0002, PCV-DO1009 and FCV-DO1012 100 %, stop the diesel pump; open the CR / HR header drains near 0 kg/cm2 (field: confirm).', null],
+    ['RH and SH biasing dampers 100 % before the draft is stopped.', ALL(MV('HICHR1002A', 99.5, null), MV('HICHR1002B', 99.5, null))],
+    ['SAF inlet damper to 20 % (-5 % steps), PAF inlet damper to 0 % (-1 % steps), furnace pressure about -15 mmH2O; STOP the PA fan and the FA blowers.', NOBIT(['M.3302', 'M.3308', 'M.3309'], 'PA fan and FA blowers stopped')],
+    ['SAF inlet damper down (-5 % steps), furnace pressure -15 mmH2O; STOP the SA fan.', NOBIT(['M.3303'], 'SA fan stopped')],
+    ['ID fan coupling below 16 % goes to MANUAL by itself; lower it 1 % at a time to 0 % (-15 mmH2O), then STOP the ID fan.', NOBIT(['M.3304'], 'ID fan stopped')],
+    ['Furnace pressure to DAMPER CONTROL: damper 5 %, then about 2.5 % until the furnace pressure is -20 ~ +20 mmH2O.', HOLD(60, VAL('FP', -20, 20))]
+  ];
+  const XS = [X1, X2, X3, X4, X5, X6];
   if (!PROC.some(s => s.x)) {
     PROC.push({ t: 'SYNCHRONIZATION AND INITIAL LOAD (APP)', x: 1, note: 'Added by the app: PR-OPE-5002 ends at Solid firing. Targets from the cold start scenario of the app (it reaches 150 MW) and the FHI design data.', s: X1.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'LOAD UP TO 150 MW (APP)', x: 1, note: 'Added by the app. PR-OPE-5002 sec 44: boiler follow until 90 MW; then coordinated control to 150 MW (FHI MCR 460 T/H).', s: X2.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'PRACTICE: LOAD CHANGE IN AUTO (APP)', x: 1, note: 'Added by the app. Press "Practise: 150 MW load change" (or continue after Load up). See how the coordinated control holds the demand: you only move the target MW.', s: X3.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'PRACTICE: LOAD CHANGE BY HAND (MANUAL) (APP)', x: 1, note: 'Added by the app. Press "Practise: 150 MW load change". You are the CCS: the turbine master sets the MW, the boiler master sets the fire; keep the pressure.', s: X4.map(x => ({ t: x[0], g: [] })) });
     PROC.push({ t: 'NORMAL SHUTDOWN TO TURBINE TRIP (APP)', x: 1, note: 'Added by the app from PR-OPE-5003-01 (normal shutdown) steps 4.1 ~ 4.20: 150 MW to the turbine trip at 30 MW.', s: X5.map(x => ({ t: x[0], g: [] })) });
+    PROC.push({ t: 'SHUTDOWN TO BOTTLE-UP (APP)', x: 1, note: 'Added by the app from PR-OPE-5004-01 (shutdown to bottle-up): after the turbine trip, the boiler is boxed up with the drum at +200 mm.', s: X6.map(x => ({ t: x[0], g: [] })) });
   }
 
   /* ---------- the general rules (step text + its tags), after the table ---------- */
@@ -892,6 +907,6 @@ window.LS_LIVE = (function () {
     return r && r[0] ? r[0].sh : null;
   };
   /* 3.2.0-beta.21: the condition makers, for the guided Training (guide.js) */
-  const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4, X5 };
+  const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4, X5, X6 };
   return { kind, state, rows, scan, reset, load, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2, B, H, modeOf, mvOf, pvOf, svOf, getV, NAMES, f1 };
 })();
