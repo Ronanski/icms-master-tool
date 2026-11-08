@@ -164,8 +164,12 @@
     new Promise((ok, no) => {
       const go = () => {
         if (!E.worker) return no(new Error('the worker stopped before the hand-over'));
-        /* a starting state loading here (in slices, seconds): it ends first */
-        if (AN._loading || AN._loadP) return void setTimeout(go, 100);
+        /* a starting state loading here (in slices, seconds): it ends first. Mina beta.176 (hidden Browser pane: the worker answered
+           1 to 2.5 min after the boot): a setTimeout chain in a hidden page is throttled by the browser (1 s, then one wake-up a minute
+           for a chain), so the hand-over waits for the end of the load itself (AN._loadP, hmi-op.js anLoadStart; its slices go by
+           message, not throttled); the timer only for a load without that promise */
+        if (AN._loadP && typeof AN._loadP.then === 'function') return void AN._loadP.then(go, go);
+        if (AN._loading) return void setTimeout(go, 100);
         try {
           /* a scan of the page that is half done (the scheduler runs jobs in slices) is finished first */
           if (AN.sched && AN.sched.flush) AN.sched.flush();
