@@ -11,6 +11,8 @@ async function loadEngine(opt={}){
  const ls=new Map(),localStorage={getItem:k=>ls.has(k)?ls.get(k):null,setItem:(k,v)=>ls.set(k,String(v)),removeItem:k=>ls.delete(k),clear:()=>ls.clear()};
  const ctx={indexedDB:{open(){const r={};setTimeout(()=>r.onerror&&r.onerror(),0);return r}},document:doc,localStorage,sessionStorage:localStorage,console,setTimeout,clearTimeout,setInterval:()=>0,clearInterval(){},requestAnimationFrame:()=>0,cancelAnimationFrame(){},addEventListener(){},removeEventListener(){},navigator:{userAgent:'node',clipboard:stub('clipboard')},location:{protocol:'file:',pathname:'/',href:'file:///',hostname:'',search:'',hash:''},
   atob:s=>Buffer.from(s,'base64').toString('binary'),btoa:s=>Buffer.from(s,'binary').toString('base64'),Response,Blob,DecompressionStream,TextDecoder,TextEncoder,performance,structuredClone,Uint8Array,Float64Array,Int32Array,URL,fetch:()=>Promise.reject(new Error('no network')),Image:function(){},HTMLElement:function(){},matchMedia:()=>({matches:false,addEventListener(){}}),getComputedStyle:()=>stub('cs'),devicePixelRatio:1,innerWidth:1280,innerHeight:720,open(){},alert(){},confirm:()=>true,prompt:()=>null};
+ ctx.MutationObserver=ctx.ResizeObserver=ctx.IntersectionObserver=class{observe(){}disconnect(){}};
+ ctx.MessageChannel=class{constructor(){this.port1={postMessage(){},close(){}};this.port2={postMessage(){},close(){},onmessage:null}}};ctx.queueMicrotask=queueMicrotask;
  ctx.window=ctx;ctx.self=ctx;ctx.globalThis=ctx;vm.createContext(ctx);
  const run=(file,code)=>vm.runInContext(code,ctx,{filename:file});
  // the same scripts as the page, in the same order (the head scripts only define gunz)
