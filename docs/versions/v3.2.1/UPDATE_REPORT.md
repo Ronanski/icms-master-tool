@@ -637,3 +637,5 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.104** (2026-11-08): Burner gun stroke 3 s and oil valve stroke 0.8 s, inside the DITL-14 and DITL-15 timers, so OFF ends in a retract with no false LIGHT OFF UNSUCCESSFUL
 
 - **beta.105** (2026-11-08): Worker hand-over at 150 MW: mode status from a force only on the PA and SA stations of a running plant, SWBP efficiency out of the snapshot
+
+- **beta.106** (2026-11-08): Burner oil valve stroke 0.5 s, so a normal OFF closes the oil before the atomizing air and gives no LIGHT OFF UNSUCCESSFUL pulse at x1
