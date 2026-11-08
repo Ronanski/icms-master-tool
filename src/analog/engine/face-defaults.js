@@ -788,23 +788,29 @@ const AN_DEF = {
     { tag: 'LIHD11032', hh: 138, h: 38, l: -42, ll: -42, u: 'mm', desc: 'No.3 LP heater level (2)', basis: 'alarm list 2016-09-12, LT-HD1103-2' },
     {
       tag: 'TILO10021',
-      hh: 55,
-      h: 48,
-      l: 30,
-      ll: 25,
+      hh: null,
+      h: 52,
+      l: 38,
+      ll: null,
       u: '°C',
       desc: 'Turbine oil cooler outlet oil temperature A',
-      basis: 'normal 40-45 °C'
+      /* 3.2.1 (LISA): the alarm list has no set point for TE-LO1002-1 / -2 (FHI package, "-"). The TCS alarms them: IBD 310SC90-794
+         sheet TD-1 TURBINE ALARM (1), input "DCS TE-LOn002-1 - MAX": at rated speed OK 40 ~ 50 C, not OK at 52 C and above (back at 50) and
+         at 38 C and below (back at 40) -> TCS MINOR TROUBLE. Before: H 48 / HH 55 / L 30 / LL 25, NO-SOURCE ("normal 40-45") */
+      basis: 'IBD 310SC90-794 TD-1: high 52 C, low 38 C at rated speed'
     },
     {
       tag: 'TILO10022',
-      hh: 55,
-      h: 48,
-      l: 30,
-      ll: 25,
+      hh: null,
+      h: 52,
+      l: 38,
+      ll: null,
       u: '°C',
       desc: 'Turbine oil cooler outlet oil temperature B',
-      basis: 'same'
+      /* 3.2.1 (LISA): the alarm list has no set point for TE-LO1002-1 / -2 (FHI package, "-"). The TCS alarms them: IBD 310SC90-794
+         sheet TD-1 TURBINE ALARM (1), input "DCS TE-LOn002-1 - MAX": at rated speed OK 40 ~ 50 C, not OK at 52 C and above (back at 50) and
+         at 38 C and below (back at 40) -> TCS MINOR TROUBLE. Before: H 48 / HH 55 / L 30 / LL 25, NO-SOURCE ("normal 40-45") */
+      basis: 'IBD 310SC90-794 TD-1: high 52 C, low 38 C at rated speed'
     },
     {
       tag: 'TCSAI1004',
