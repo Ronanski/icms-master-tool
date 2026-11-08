@@ -22,7 +22,7 @@
       on,
       off: off || 'STOPPED',
       get pbs() {
-        return pbs.map(([l, r]) => [l, r, adr(d, r)]);
+        return pbs.map(([l, r, k, v]) => [l, r, adr(d, r), k, v]);
       },
       perm: [],
       why: ''
@@ -58,6 +58,17 @@
     cl.mach.SDISO = pbf('XV-SD1802A / B', 'Sand isolating valves', 'DITL-776', 13, 'ROUTE OK', [['OPEN', 2]], 'ROUTE NOT OK');
     cl.art = cl.art
       .replace(/<text([^>]*?)>Sand<\/text>/, '<text$1 data-hit="SDSYS" style="cursor:pointer">Sand</text>')
-      .replace(/<text([^>]*?)>(XV-SD1802[AB])<\/text>/g, '<text$1 data-hit="SDISO" style="cursor:pointer">$2</text>');
+      .replace(/<text([^>]*?)>(XV-SD1802[AB])<\/text>/g, '<text$1 data-hit="SDISO" style="cursor:pointer">$2</text>')
+      /* LIMESTONE (sweep item 8, Mina item 8a beta.73: no start path). The order of the drawings DITL-LS10 / LS212 / LS110: FILL CYCLE
+         START PB (LS10 row 3 M.1800, STOP row 5 M.1801) -> FILLING CYCLE ENABLED FLAG (out 3 M.180F) -> VALVE STATE CHANGE PERMIT (LS212
+         M.182D) -> the maintained HMI switch ISOLATING VALVE A~H OPEN/CLOSE SW (LS212 row 10 M.184C; ISOLATING VALVE O/C FLAG out 19
+         M.1810) -> FEEDER START COMMAND PB (LS110 row 8 M.1847, STOP row 9 M.1848; ROTOFEED START/STOP COMMAND out 6 O.024C MOR-M1311).
+         The model (boiler.js AN_LM) answers these commands. Labels: Limestone = the system, XV-LM1811A ~ H, the rotary feeder L-1311 */
+      .replace(/<text([^>]*?)>Limestone<\/text>/, '<text$1 data-hit="LMSYS" style="cursor:pointer">Limestone</text>')
+      .replace(/<text([^>]*?)>(XV-LM1811[A-H])<\/text>/g, '<text$1 data-hit="LMISO" style="cursor:pointer">$2</text>')
+      .replace(/<text([^>]*?)>rotary feeder L-1311<\/text>/, '<text$1 data-hit="LMFD" style="cursor:pointer">rotary feeder L-1311</text>');
+    cl.mach.LMSYS = pbf('Limestone system', 'Limestone injection, filling cycle', 'DITL-LS10', 3, 'FILL CYCLE ON', [['START', 2], ['STOP', 4]], 'FILL CYCLE OFF');
+    cl.mach.LMISO = pbf('XV-LM1811A ~ H', 'Limestone isolating valves', 'DITL-LS212', 19, 'OPEN', [['OPEN', 9, 'set', 1], ['CLOSE', 9, 'set', 0]], 'CLOSED');
+    cl.mach.LMFD = pbf('L-1311', 'Limestone rotary feeder', 'DITL-LS110', 6, 'RUNNING', [['START', 7], ['STOP', 8]]);
   }
 })();

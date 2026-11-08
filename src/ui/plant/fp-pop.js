@@ -943,9 +943,12 @@
       bLoc.onclick = () => !bLoc.disabled && ask('FIELD: ' + P.n + ' selector to LOCAL?', () => selSet(false));
     }
     B.forEach((b, i) => {
-      const [l, r, ad] = P.pbs[i];
+      /* [label, row, address] = a push button (a pulse); [label, row, address, 'set', 1 / 0] = a maintained HMI switch of the drawing set
+         or reset (DITL-LS212 ISOLATING VALVE A~H OPEN/CLOSE SW; WORLD.dset, an engine action) */
+      const [l, r, ad, k, v] = P.pbs[i];
       b.onclick = () =>
-        !b.disabled && ask(P.n + ' ' + l + '?', () => (dk.dpress(P.d, r), call(() => window.lsEventAdd(P.d, 'DCS', 'Operator: ' + P.n + ' ' + l + ' (' + P.d + ' row ' + (r + 1) + ' · ' + ad + ', faceplate)'))));
+        !b.disabled &&
+        ask(P.n + ' ' + l + '?', () => (k === 'set' && window.WORLD && WORLD.dset ? WORLD.dset(P.d, r, !!v) : dk.dpress(P.d, r), call(() => window.lsEventAdd(P.d, 'DCS', 'Operator: ' + P.n + ' ' + l + ' (' + P.d + ' row ' + (r + 1) + ' · ' + ad + (k === 'set' ? ' = ' + (v ? 1 : 0) : '') + ', faceplate)'))));
     });
     let k0 = '';
     function tick() {
