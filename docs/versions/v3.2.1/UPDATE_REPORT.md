@@ -1,5 +1,11 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.152 — Sootblower lances at rest (d1, 2026-11-08, LISA)
+
+**Work done.** The sootblower position rows had no source and read 0 ("not retracted"). They now stand at the rest state of 18.PNG (150 MW: all 30 sootblowers retracted, no blowing): the retract limit switch of each lance (DITL-80G row 12 and its 27 copies), the reset positions of N-1040 / N-1042 (DITL-80K rows 24 / 22), and the ALL ON RETRACT memories M.4008 / 4246 / 4240 / 4242 (made by DITL-80L, not in the app). Lance travel while blowing stays NO-SOURCE. Sootblower trips and the plant air / steam select (M.4212, STEAM on 18.PNG) are field / operator inputs, right as drawn.
+
+**Not tested.** Live; item sent to Mina.
+
 ## 3.2.1-beta.151 — Sand rows linked (d1, 2026-11-08, LISA)
 
 **Work done.** Thirteen sand input rows (DITL-771 ~ 777, station 103) had no source. Eleven now read the sand output of the same signal (SYSTEM READY, SYSTEM TRIP M.0880, ROUTE OK M.0872, INLET DV OPEN M.081B, SYSTEM ON M.0810, AIR TANK PRESSURE L M.0860, INLET DV OPEN / CLOSE FAULT, VENTING FAN ON COMMAND M.1375 from DITL-BA21); names from memory list 103. DITL-771 rows 12 / 13 read the seal pressure and vessel pressure low switches of the sand model (I.0573 / I.0575). The rest of the group are operator buttons or field trips (team-files/d1-unlinked-rows.md).
