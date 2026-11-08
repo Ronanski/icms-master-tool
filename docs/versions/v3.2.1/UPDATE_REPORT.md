@@ -1,5 +1,11 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.151 — Sand rows linked (d1, 2026-11-08, LISA)
+
+**Work done.** Thirteen sand input rows (DITL-771 ~ 777, station 103) had no source. Eleven now read the sand output of the same signal (SYSTEM READY, SYSTEM TRIP M.0880, ROUTE OK M.0872, INLET DV OPEN M.081B, SYSTEM ON M.0810, AIR TANK PRESSURE L M.0860, INLET DV OPEN / CLOSE FAULT, VENTING FAN ON COMMAND M.1375 from DITL-BA21); names from memory list 103. DITL-771 rows 12 / 13 read the seal pressure and vessel pressure low switches of the sand model (I.0573 / I.0575). The rest of the group are operator buttons or field trips (team-files/d1-unlinked-rows.md).
+
+**Not tested.** Live; item sent to Mina.
+
 ## 3.2.1-beta.149 — Reset gives the cold DITL at once (2026-11-08, LISA)
 
 **Work done.** Simulation test ditl150 "Reset: DITL cold again" (FAIL since before beta.121): after Reset the MFT of DITL-03A came only at the third scan, because Reset clears every flip-flop and the trip travels one scan per sheet (DITL-25A IDF STOPPED -> 03B -> 03A). The first scan of a cold DITL (after a start or a Reset, not at 150 MW) now repeats with no time until no output changes (12 at most), so the cold DITL stands MFT tripped with every motor stopped at once (src/world/ditl150.js: the DITL starts cold, MFT tripped). The test is not changed.

@@ -189,7 +189,11 @@
     ['SAND', 'siloH', /^SAND SILO LH/, /\)DITL-774$/],
     ['SAND', 'siloL', /^SAND SILO LOW/, /\)DITL-774$/],
     ['SAND', 'fan', /^SAND SILO VENT FILTER RUNNING/, /\)DITL-774$/],
-    ['VENT', 'fan', /^VENT FILTER RUNNING$/, /\)DITL-777$/]
+    ['VENT', 'fan', /^VENT FILTER RUNNING$/, /\)DITL-777$/],
+    /* 3.2.1 d1 (LISA): DITL-771 rows 12 / 13 read the same contacts by address (I.0573 PS-SD1804 seal pressure, I.0575 PS-SD1800 vessel
+       pressure low, I/O list STN103) */
+    ['INLET', 'seal', /^INLET DV SEAL PR\. OK/, /\)DITL-771$/],
+    ['VESSEL', 'plow', /^VESSEL PRES\. LOW/, /\)DITL-771$/]
   ].forEach(([w, k, re, sh]) => L.push([w, sdSw(k), 0.5, 'hi', 0, 0, re, sh]));
   /* 3.2.1 (SEULGI, boiler.js AN_BA): the field switches of the bottom ash transmitter (IO list station 103 I.0482 ~ I.048F, by address on
      the DITL-BA sheets: station 104 reuses these addresses for the coal feeders) and of the mechanical conveyors (DITL-BA59 / BA60 rows by

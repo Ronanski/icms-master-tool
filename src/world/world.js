@@ -612,6 +612,34 @@
        (the WO gates of HP TURBINE WARMING LINE DRAIN VALVE OPEN / CLOSE, page 90) = TCS-DI1033 / 1034 I.0407 / I.0408 = DITL-75 rows 8 / 11;
        IBD TE-6 net 45 / 18 (TURBINE GLAND STEAM LINE DRAIN VALVE FULL OPEN / CLOSE, page 94) = TCS-DI1037 / 1038 I.040B / I.040C = the
        "TURBINE GLAND STEAM LINE GROUP" rows 8 / 11 of DITL-52, 53 and 116. The TCS sheet exports the net (n<net>, tick) */
+    /* 3.2.1 d1 (LISA): sand rows whose producer is another sand sheet of station 103 by the same signal name (the rows carry no address or
+       one the outputs do not write). Memory list 103: M.0810 SAND SYSTEM START, M.0860 SAND AIR TANK PRESSURE LOW, M.0880 SAND SYSTEM
+       TRIP (the M.0880 text of DITL-771 belongs to its SYSTEM TRIP row; its ROUTE OK row is M.0872, DITL-776 OUT14 "M.0872 ROUTE OK" as on
+       DITL-772 / 777). M.1375 SAND SILO BAG FILTER VENTING FAN ON COMMAND = DITL-BA21 OUT9 "TO SAND VENTING FAN ON COMMAND" */
+    const sdLink = [];
+    for (const [sh, rn, from, on] of [
+      ['DITL-771', 2, 'DITL-777', 16] /* SYSTEM READY M.0881 */,
+      ['DITL-771', 6, 'DITL-777', 13] /* SYSTEM TRIP M.0880 */,
+      ['DITL-771', 9, 'DITL-776', 14] /* ROUTE OK M.0872 */,
+      ['DITL-772', 6, 'DITL-771', 22] /* INLET DV OPEN M.081B */,
+      ['DITL-773', 1, 'DITL-771', 22] /* INLET DV OPEN M.081B */,
+      ['DITL-774', 6, 'DITL-BA21', 9] /* VENTING FAN ON COMMAND M.1375 */,
+      ['DITL-774', 7, 'DITL-771', 15] /* SYSTEM (ON) M.0810 */,
+      ['DITL-776', 4, 'DITL-771', 15] /* SYSTEM ON M.0810 */,
+      ['DITL-777', 4, 'DITL-775', 14] /* AIR TANK PRESSURE L M.0860 */,
+      ['DITL-777', 8, 'DITL-772', 19] /* INLET DV OPEN FAULT M.0836 */,
+      ['DITL-777', 9, 'DITL-772', 17] /* INLET DV CLOSE FAULT M.0835 */
+    ]) {
+      const d = S.sheets.find(x => x.name.endsWith(')' + sh)),
+        f = S.sheets.find(x => x.name.endsWith(')' + from)),
+        i = d ? d.rows.findIndex(r => +r.n === rn) : -1;
+      if (!d || !f || i < 0) continue;
+      const nf = nlOf(f);
+      if (!nf.outs.some(q => q.row === on - 1)) continue;
+      nlOf(d);
+      addIn(d, i, { k: 'd', d: f, row: on - 1, ref: from + ' OUT' + on });
+      sdLink.push(d.name + ' r' + rn + ' <- ' + f.name + ' OUT' + on);
+    }
     const tcsOut = [];
     for (const [id, net, sh, rn] of [
       ['TE-1', 66, 'DITL-75', 8],
@@ -959,6 +987,7 @@
       wireTo,
       byStn,
       tcsOut,
+      sdLink,
       abcMiss,
       plc,
       toDitl: ta,
