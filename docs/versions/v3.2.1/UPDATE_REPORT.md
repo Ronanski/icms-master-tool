@@ -669,3 +669,4 @@ Ang detalye ng bawat isa ay nasa commit, sa lumang HANDOFF (`archive/handoff/HAN
 - **beta.132** (2026-11-08): Steam per coal from the plant trends (5.31 T/H per T/H, 484 T/H at 89.7 and 302 at 55.4; was 5.78 from two snapshots): coal at 90 MW about 56 T/H (plant 55.4, was 57.4).
 - **beta.133** (2026-11-08): Training section TURBINE TRIP AT LOAD AND HOT RESTART from the FHI CFB manual Tab 9 (trip at 150 MW, first outs, fans kept running, drum level, hot restart above 700 C bed with no purge, coal feeders); button Practise: Turbine trip and hot restart.
 - **beta.134** (2026-11-08): New starting states Warm restart (FHI Fig 3: drum 40 kg/cm2, bed about 360 C, turbine WARM) and Hot restart (Fig 4: 100 kg/cm2, bed about 700 C, turbine HOT); equipment stopped as in Cold.
+- **beta.135** (2026-11-08): TCS initial load hold also waits for the LP exhaust hood below 52 C before load up (PR-OPE-5002 9123).
