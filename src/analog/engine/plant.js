@@ -635,9 +635,22 @@ function anProcStep(S, dt) {
           let up = 0;
           xsl.forEach((x, j) => {
             const g0 = xg(x),
-              m = xman(x),
-              lo0 = m ? 0 : x.b.p.lo == null ? 0 : x.b.p.lo,
+              m = xman(x);
+            let lo0 = m ? 0 : x.b.p.lo == null ? 0 : x.b.p.lo,
               hi0 = m ? 100 : x.b.p.hi == null ? 100 : x.b.p.hi;
+            /* Mina beta.157 (RHT 513 C at 90 MW, plant 521, TICHR1002A at its end): the damper behind a controller (ABC-020: HICHR1002A.MV =
+               LN7 of the PID output, -50 ~ +50 with slope 1, + SI0121 = LN3 of the unit load, 36.9 % at 90 MW) reaches only what the
+               drawing lets the PID move it: 86.9 % at 90 MW, not 100 %. The room left is the room of the PID output, one to one */
+            if (m) {
+              const u = uOfS(x.S, x.b),
+                plo = x.b.p.lo == null ? 0 : x.b.p.lo,
+                phi = x.b.p.hi == null ? 100 : x.b.p.hi,
+                cmd = xcmd(x);
+              if (isFinite(u) && isFinite(cmd)) {
+                hi0 = Math.min(100, cmd + Math.max(0, phi - u));
+                lo0 = Math.max(0, cmd - Math.max(0, u - plo));
+              }
+            }
             up += Math.max(0, g0(lo0) - xa[j], g0(hi0) - xa[j]);
           });
           y -= pr.nsat * span * up;
