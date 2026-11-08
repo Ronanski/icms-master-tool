@@ -213,7 +213,13 @@
     });
   if (want())
     addEventListener('load', () => {
-      const go = () => (window.AN && AN.sheets && AN.sheets.length >= 54 && window.WORLD && WORLD.idx ? E.boot().catch(() => {}) : setTimeout(go, 500));
+      /* Mina beta.187 / 189 (fresh /beta/ with no #a= hash, page visible): the ABC sheets load only when the ABC page opens (setCat 'an'
+         -> loadData), so the boot waited for ever (97 s, 219 s) and RUN ran the page engine. The boot loads the ABC data itself, with the
+         same loader as the ABC page (loader.js loadData: once, the page opening later gets the same data) */
+      const go = () => {
+        if (window.AN && AN.sheets && !AN.sheets.length && !AN.data && typeof loadData === 'function') loadData().catch(() => {});
+        return window.AN && AN.sheets && AN.sheets.length >= 54 && window.WORLD && WORLD.idx ? E.boot().catch(() => {}) : setTimeout(go, 500);
+      };
       setTimeout(go, 1000);
     });
 })();
