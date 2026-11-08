@@ -1,5 +1,13 @@
 # UPDATE REPORT — v3.2.1 (Beta)
 
+## 3.2.1-beta.174 — Practice: PA fan trip at 150 MW (e5 recovery, 2026-11-08, LISA)
+
+**Work done.** New Training section PRACTICE: PA FAN TRIP AT 150 MW (live.js X10, guide stage 16) and the home button "Practise: PA fan trip". Steps: fault PA fan trips (Faults, MIT-F1053; DITL-26A ELECTRIC TROUBLE -> PAF TRIP); the drawing trips the boiler (DITL-03A row 5 PAF STOPPED -> MFT), the turbine trips through the TCS (IBD TA-9), no run-back drawn; first out, ID / SA fans on, drum level -200 ~ +200 mm for 1 min (FHI Tab 9 p21); relay reset and PA fan restart; hot restart by the purge bypass above 700 C (FHI Tab 9 p22, DITL-02 row 25 M.3339) and MFT reset.
+
+**Checked in the page.** Practise button loads 150 MW and runs; fault: PA fan 1 -> 0, MFT 0 -> 1 within 10 s; steps 1 and 2 ticked.
+
+**Not tested.** Steps 3 ~ 5 (restart, purge bypass), live; item sent to Mina.
+
 ## 3.2.1-beta.172 — Practice: O2 analyzer A fails (e5 recovery, 2026-11-08, LISA)
 
 **Work done.** New Training section PRACTICE: O2 ANALYZER A FAILS (live.js X9, guide stage 15) and the home button "Practise: O2 analyzer A fails". Steps: fault analyzer A signal lost (I/O list AI0273 AT-FG1122, SIG.AB B.0671); AICFG112 follows analyzer B (ABC-002 select, AI0433 AT-FG1123); the O2 trim in AUTO and the O2 inside the alarm list band L 2.5 ~ H 5 % for 2 min; I&C clears the fault. The BFWP A trip and the O2 sections are sequential now (a step waits for the one before it): the last step of the O2 section ticked before the fault.

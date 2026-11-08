@@ -720,6 +720,26 @@
               });
             }))
         }),
+        /* e5 recovery (LISA): 150 MW, then PRACTICE: PA FAN TRIP AT 150 MW (live.js X10, guide stage 16) */
+        E('button', {
+          cls: 'trbtn',
+          type: 'button',
+          txt: 'Practise: PA fan trip',
+          title: 'Sets the plant at 150 MW, clears the ticks of that section, starts the simulation (RUN) and opens PA FAN TRIP AT 150 MW (the MFT of DITL-03A, then the hot restart of FHI Tab 9)',
+          on: e0 => arm2(e0.currentTarget, 'Press again: this loads 150 MW', () =>
+            abcReady(() => {
+              if (AN.run && !AN.view && AN.pauseOn) AN.pauseOn();
+              const b = $('load150');
+              if (b) b.click();
+              (AN._startP || Promise.resolve()).then(() => {
+                const L = LV();
+                if (L) L.reset(L.base + 9);
+                if (AN.runOn) AN.runOn();
+                if (L) show(L.base + 9);
+                if (window.LS_GUIDE && LS_GUIDE.openStage) LS_GUIDE.openStage(16);
+              });
+            }))
+        }),
         E('button', {
           cls: 'trbtn',
           type: 'button',
