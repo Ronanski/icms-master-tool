@@ -14,12 +14,21 @@ window.LS_GUIDE = (function () {
   const L = () => window.LS_LIVE;
   const PROC = () => window.LS_PROC5002 || [];
   let HH = null,
-    HOf = null;
-  /* the plant helpers of check.js (the same reading and writing as the CHECK scenarios), kept while the ABC sheets stay the same */
+    HOf = null,
+    HRt = null;
+  /* the plant helpers of check.js (the same reading and writing as the CHECK scenarios), kept while the ABC sheets stay the same.
+     Mina beta.157: after LOAD of a save point the dock read MW 0, MSP 128.7 and MSF 468.8 for the whole run: a keyframe gives every sheet
+     a new run-time object (engine/state.js anStateApply, S.rt = r.rt), so the helpers are made again when that object changes */
+  const rtNow = () => {
+    const sh = AN.sheets && AN.sheets.find(x => x.name === 'ABC-001C');
+    return sh && sh.S ? sh.S.rt : null;
+  };
   const h = () => {
-    if (!HH || HOf !== AN.sheets) {
+    const rt = rtNow();
+    if (!HH || HOf !== AN.sheets || HRt !== rt) {
       HH = CHECK.H();
       HOf = AN.sheets;
+      HRt = rt;
     }
     return HH;
   };
