@@ -66,12 +66,14 @@
       ['MAIN STEAM TEMP', '°C', 'ABC-012', 'pv', 'TICMS1004', 'Main steam temperature, PV of TICMS1004 (ABC-012)'],
       ['FURNACE TEMP', '°C', '', 'unit', 'Tb', 'Furnace temperature, FHI Fig 8. The lower bed thermocouples read about 10 % higher, and the coal permissive reads those'],
       [
-        'VACUUM',
-        '%',
+        /* Mina beta.170: VACUUM 0 ~ 100 % (U.vac, whether the vacuum is up) read 100.0 % in every state. The operator reads the condenser
+           pressure: PT-CD1110 (TCS, ST11101, the model U.cdP, kg/cm2 abs; page 13, TA-10 trip at 0.26) */
+        'CONDENSER',
+        'kg/cm² abs',
         '',
         'unit',
-        'vac',
-        'Condenser vacuum, % of the atmosphere: (1.033 - condenser pressure) / 1.033, the pressure of the plant model (condenser PT-CD1110, STN102 AI0532, 0.056 kg/cm2A on the snapshot = 94.6 %)'
+        'cdP',
+        'Condenser pressure PT-CD1110 (TCS), kg/cm2 absolute. Normal about 0.07 at 150 MW; turbine trip at 0.26 (TA-10)'
       ]
     ].map(([k, u, sh, how, ref, t]) => {
       const b = E('button', 'crkpi');
@@ -273,15 +275,11 @@
     }
     return NaN;
   }
-  /* 3.2.0-beta.83: a state of the plant model (unit.js), only while the plant model runs. 3.2.1 (Mina beta.170: VACUUM 100.0 % in every
-     state, also with a seawater pump lost): U.vac is the 0 ~ 1 state of the ejectors and the breaker, not the vacuum. The vacuum is read
-     from the condenser pressure of the model (U.cdP, kg/cm2 A: the saturation pressure of the condensing steam plus the air when vacuum is
-     lost), as a % of the atmosphere 1.033 kg/cm2 (the I/O list condenser pressure PT-CD1110, STN102 AI0532, 0 ~ 6 kg/cm2A) */
+  /* 3.2.0-beta.83: a state of the plant model (unit.js), only while the plant model runs; vacuum 0 ~ 1 shown as % */
   function unitVal(k) {
     const U = AN.plantOn && AN.unit;
     if (!U || !isFinite(U[k.ref])) return NaN;
-    if (k.ref === 'vac') return isFinite(U.cdP) ? Math.max(0, (100 * (1.033 - U.cdP)) / 1.033) : 100 * U[k.ref];
-    return +U[k.ref];
+    return k.ref === 'vac' ? 100 * U[k.ref] : +U[k.ref];
   }
   function pvVal(k) {
     const sh = AN.sheets.find(s => s.name === k.sh);
@@ -303,7 +301,7 @@
         try {
           x = k.how === 'ai' ? aiVal(k) : k.how === 'unit' ? unitVal(k) : pvVal(k);
         } catch (e) {}
-      const t = fmt(x);
+      const t = k.ref === 'cdP' && isFinite(x) ? x.toFixed(3) : fmt(x);
       if (k.v.textContent !== t) k.v.textContent = t;
       k.b.classList.toggle('na', !isFinite(x));
     }
