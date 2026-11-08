@@ -2949,9 +2949,16 @@ function anUnitStep0(dt) {
     const k = Math.max(0, (U.Tb - U.Tamb) / Math.max(1, U.Tb0 - U.Tamb));
     for (const L of U.tbed) anUnitWrite(L, i => U.Tamb + (L.a0[i] - U.Tamb) * k);
   }
+  /* 3.2.1 (LISA, Mina Normal shutdown on beta.115: PIFA1085 LOW-LOW at 65 MW, SA 160 T/H): the SA pressures are the bed back pressure at
+     the SA ports plus the duct / air preheater / nozzle drop. Before, all of it went with the square of the SA flow (805 mmH2O at 160 T/H).
+     Split 600 / 827 of the 1427 anchor from the SAF start procedure ("SAF pressure above 1200 mmH2O with bed, above 600 mmH2O without bed",
+     SU 4954-5090): 600 = the bed back pressure at the anchor bed DP (DPIFG1081 1426 mmH2O, 7.PNG), read from the bed model (U.bedK = bed DP
+     / 1426, read only); the rest with the square of the SA flow. PIFA1088 the same with its own anchor (1273). The SA port dampers that
+     ABC-057 closes with load (S3-LN1 ~ 22) are not in it: damper characteristic NO-SOURCE */
   if (U.saP && U.saP.length && U.sa0 > 0) {
-    const r = Math.max(0, +U.tafS.rt.v[U.saN] || 0) / U.sa0;
-    for (const L of U.saP) anUnitWrite(L, i => L.a0[i] * r * r);
+    const r = Math.max(0, +U.tafS.rt.v[U.saN] || 0) / U.sa0,
+      bk = 600 * Math.max(0, isFinite(U.bedK) ? U.bedK : 1);
+    for (const L of U.saP) anUnitWrite(L, i => bk + Math.max(0, L.a0[i] - 600) * r * r);
   }
   if (U.idfS && U.idfS.length) {
     const on = !U.idf || +U.idf.S.rt.v[U.idf.n] > 0.5,
