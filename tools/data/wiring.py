@@ -46,6 +46,12 @@ for shn in ['AIO', 'DI', 'DO']:
                 v = get(k)
                 if v and v not in rec[k]:
                     rec[k].append(v)
+# 3.2.1 (LISA): the WIRING.xls service text of two TCS inputs is older than the DCS I/O list STN102 (team-files/plant-study/logic-decoded/ades.json,
+# station 2) and 310SC90-773 rev 2 DO 98 / 99; the breakers have their own inputs (I.0931 / I.0932 GCB 52G1, I.0937 52L1 open for house load)
+FIX_D = {('2', 'I.041D'): '#1 HP-CV full close', ('2', 'I.041E'): '#1 MSV(A) test'}
+for r in out:
+    if (r['s'], r['a']) in FIX_D:
+        r['d'] = FIX_D[(r['s'], r['a'])]
 # compact: one array per signal, field order in F
 F = ['k', 's', 'a', 'tag', 'd', 'sig', 'board', 'fcab', 'stn', 'node', 'slot', 'ch', 'fcstb', 'ext', 'exttb', 'cab', 'spec', 'core', 'mpl2', 'tbs', 'tbn', 'xcab', 'xspec', 'xcore', 'mpl', 'jb', 'tb']
 rows = [[(','.join(r[f]) if isinstance(r.get(f), list) else r.get(f, '')) for f in F] for r in out]
