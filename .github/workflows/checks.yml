@@ -23,10 +23,10 @@ jobs:
           grep -qE "c3\.textContent ?= ?'v$V'" "$F" || { echo "version label does not say v$V"; exit 1; }
       - name: The sources build exactly the committed html (src/ is the truth)
         run: node tools/build/build.js --check
-      - name: Scripts of the html parse
+      - name: Scripts of the html parse (every script, also the ones with an id; the old check read only the 4 without one)
         run: |
           node -e "
           const s=require('fs').readFileSync('dist/'+require('fs').readdirSync('dist').find(x=>/^logic-sim-v.*\.html$/.test(x)),'utf8');
-          const m=[...s.matchAll(/<script>([\s\S]*?)<\/script>/g)];let bad=0;
-          for(const x of m){try{new Function(x[1])}catch(e){bad++;console.log(e.message)}}
+          const m=[...s.matchAll(/<script(\s[^>]*)?>([\s\S]*?)<\/script>/g)].filter(x=>!/type=.(?!text\/javascript|module)/.test(x[1]||''));let bad=0;
+          for(const x of m){try{new Function(x[2])}catch(e){bad++;console.log((x[1]||'').trim(),e.message)}}
           if(bad||!m.length)process.exit(1);console.log('scripts ok',m.length)"
