@@ -985,7 +985,25 @@
     if (window.AN && AN.sched) AN.sched.flush();
     for (const _ of tickG(dt, opt));
   }
+  /* the outputs of one scan as text, to see when the world has settled */
+  const outSig = o =>
+    Object.keys(o)
+      .sort()
+      .map(k => k + ':' + [...o[k]].join(','))
+      .join('|');
   function* tickG(dt, opt) {
+    /* 3.2.1 (LISA, sim test ditl150 "Reset: DITL cold again"): the cold DITL is MFT tripped with every motor stopped (src/world/ditl150.js;
+       DITL-03A MFT = FF set by IDF / SAF / PAF STOPPED, E10210 DITL-03A). After a start or a Reset (DITL150.clear: every FF 0, W.tk not
+       set) the trip reached the MFT only after one scan per hop (DITL-25A -> 03B -> 03A: the third scan). The first scan of a cold DITL
+       now repeats the scan with no time (dt 0) until no output changes, 12 at most: the DITL stands in its cold state at once */
+    if (W.tk === undefined && !(window.DITL150 && DITL150.on)) {
+      W.tk = 0;
+      for (let k = 0; k < 12; k++) {
+        const a = outSig(W.out);
+        for (const _ of tickG(0, opt));
+        if (outSig(W.out) === a) break;
+      }
+    }
     const t0 = performance.now(),
       { din, ain } = W.idx,
       prev = W.out,
