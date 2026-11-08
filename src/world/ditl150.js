@@ -302,6 +302,8 @@
     W.live = false;
     W._o = W.tk = W._ck = W.busy = undefined;
     if (W.plantSwClear) W.plantSwClear();
+    /* 3.2.1 e5: Reset puts the field back: no motor field trip stays (world.js WORLD.ftrip) */
+    if (W.ftClear) W.ftClear();
     D.on = false;
   };
   /* what an OUTPUT row of the drawing must show at 150 MW, from its text (the same rules; a command or a push button is not a state) */

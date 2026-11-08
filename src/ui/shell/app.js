@@ -1750,14 +1750,26 @@
         msg('FAULT: ' + r);
       });
     for (const f of AN.fault ? AN.fault() : []) fltBtn(f);
+    /* group 2: a running motor trips in the field (world.js WORLD.ftrip) */
+    const ftL = () => (window.WORLD && WORLD.ftrip ? WORLD.ftrip() : []);
+    for (const f of ftL())
+      btn('flt-' + f.id.replace(/\W/g, '-'), f.t, 'Field fault: ' + f.t + ' (its protection relay opens the MCC). Press again to reset the relay; the operator starts it again.', () => {
+        const now = ftL().find(q => q.id === f.id),
+          r = WORLD.ftrip(f.id, !(now && now.on));
+        if (!r) return msg('Fault ' + f.t + ': not found.');
+        fltLog(r);
+        msg('FAULT: ' + r);
+      });
     btn('flt-clear', 'Clear all faults', 'Puts the field back: every fault that is on is cleared.', () => {
-      const on = (AN.fault ? AN.fault() : []).filter(q => q.on);
-      if (!on.length) return msg('No fault is on.');
+      const on = (AN.fault ? AN.fault() : []).filter(q => q.on),
+        om = ftL().filter(q => q.on);
+      if (!on.length && !om.length) return msg('No fault is on.');
       for (const q of on) {
         const r = AN.fault(q.id, false);
         if (r) fltLog(r);
       }
-      msg('Faults cleared: ' + on.length);
+      for (const q of om) fltLog(WORLD.ftrip(q.id, false));
+      msg('Faults cleared: ' + (on.length + om.length));
     });
     d.head('TCS panel (turbine)');
     const tcs = (id, label, title, cmd, arg, ok) =>
