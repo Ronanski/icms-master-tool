@@ -22,7 +22,10 @@ function tcsGenStep(U, dt) {
   /* G-1B: the automatic synchronizing, 52L closed. 84GI = generator voltage on; the 5 min timer takes 25X1 away */
   const gv = g.V >= 1,
     can = g.f41 && !g52 && gv;
-  if (can && g.start && !g.x25 && g.ty < TCS_GEN.to) g.x25 = true;
+  /* c2 gap 4 (310SC90-773 rev 2 DO 79 TCS-DO1006 AUTO SYN START PB ON, pulse, SH-G-3): the DCS output O.0492 = DITL-115 "AUTO SYNCHRONIZE
+     START COMMAND" starts the synchronizing too (25X1 seal-in, same conditions). The ATS step 5 path (g.start) stays as it is */
+  const pb = typeof tcsDitlOut === 'function' && tcsDitlOut('DITL-115', /^AUTO SYNCHRONIZE START COMMAND/);
+  if (can && (g.start || pb) && !g.x25 && g.ty < TCS_GEN.to) g.x25 = true;
   if (!can) g.x25 = false;
   g.tx = g.x25 ? g.tx + dt : 0;
   const y1 = g.x25 && g.tx >= TCS_GEN.x3;
