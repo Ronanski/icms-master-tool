@@ -35846,7 +35846,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.115';
-      c3.textContent += ' · build 4a91473'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 84f8b72'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -52746,6 +52746,27 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
                   .forEach((i, j) => ain.push({ sh: a4, n: i, d, row: j ? 22 : 20, ref: d.name + ' out ' + (j ? 23 : 21) + ' VALVE(' + (j + 1) + ') CLOSED' }));
           }
         });
+    }
+    /* 3.2.1 d2 (LISA): station 2 to station 1 by the station wiring. ABC-001C reads M.3230 "S/B steam supply motor valve open (BC FROM S2)"
+       and M.3236 "SOOTBLOER PROGRAM END (BC FROM S2)" (memory list 101). Memory list 102 gives the same names to the station 2 signals: the
+       motor valve ZSO-SB1001 I.024A (I/O list STN102), which the sootblower drawings read as 80S-55 (DITL-80S row 6 FULL OPENED, its out 55
+       also goes "TO ABC-001C"), and M.400D SOOTBLOER PROGRAM END, read as 80-89 (DITL-80 row 7). Unlinked, both stayed 0 */
+    {
+      const a1 = AN.sheets.find(x => x.name === 'ABC-001C');
+      let T = null;
+      try {
+        T = a1 && AN.ensure(a1);
+      } catch (e) {}
+      const sb = S.sheets.find(x => isSB(x));
+      if (T && sb)
+        for (const [adr, code, nn] of [
+          ['M.3230', '80S', 55],
+          ['M.3236', '80', 89]
+        ]) {
+          const o = outRow(code, nn, sb),
+            n = T.ext.find(j => String(AN.nm(T, j) || '').replace(/^S\d\s*/, '').trim() === adr);
+          if (o && n != null) ain.push({ sh: a1, n, d: o.d, row: o.row, ref: code + '-' + nn + ' (station wiring ' + adr + ')' });
+        }
     }
     W.idx = { din, ain };
     W._nA = AN.sheets.length;
@@ -82342,6 +82363,27 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
                   .forEach((i, j) => ain.push({ sh: a4, n: i, d, row: j ? 22 : 20, ref: d.name + ' out ' + (j ? 23 : 21) + ' VALVE(' + (j + 1) + ') CLOSED' }));
           }
         });
+    }
+    /* 3.2.1 d2 (LISA): station 2 to station 1 by the station wiring. ABC-001C reads M.3230 "S/B steam supply motor valve open (BC FROM S2)"
+       and M.3236 "SOOTBLOER PROGRAM END (BC FROM S2)" (memory list 101). Memory list 102 gives the same names to the station 2 signals: the
+       motor valve ZSO-SB1001 I.024A (I/O list STN102), which the sootblower drawings read as 80S-55 (DITL-80S row 6 FULL OPENED, its out 55
+       also goes "TO ABC-001C"), and M.400D SOOTBLOER PROGRAM END, read as 80-89 (DITL-80 row 7). Unlinked, both stayed 0 */
+    {
+      const a1 = AN.sheets.find(x => x.name === 'ABC-001C');
+      let T = null;
+      try {
+        T = a1 && AN.ensure(a1);
+      } catch (e) {}
+      const sb = S.sheets.find(x => isSB(x));
+      if (T && sb)
+        for (const [adr, code, nn] of [
+          ['M.3230', '80S', 55],
+          ['M.3236', '80', 89]
+        ]) {
+          const o = outRow(code, nn, sb),
+            n = T.ext.find(j => String(AN.nm(T, j) || '').replace(/^S\d\s*/, '').trim() === adr);
+          if (o && n != null) ain.push({ sh: a1, n, d: o.d, row: o.row, ref: code + '-' + nn + ' (station wiring ' + adr + ')' });
+        }
     }
     W.idx = { din, ain };
     W._nA = AN.sheets.length;
