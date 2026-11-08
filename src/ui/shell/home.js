@@ -648,6 +648,7 @@
                 if (L) L.reset(L.base + 4);
                 if (AN.runOn) AN.runOn();
                 if (L) show(L.base + 4);
+                if (window.LS_GUIDE && LS_GUIDE.openStage) LS_GUIDE.openStage(11);
               });
             }))
         }),

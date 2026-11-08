@@ -1538,6 +1538,16 @@ window.LS_GUIDE = (function () {
     fieldOf,
     live,
     open,
+    /* plan e4 (Mina beta.114: "Practise: Normal shutdown" loaded 150 MW but the dock stayed on step 104): the guided dock on at the first
+       step of a stage, without a new plant load */
+    openStage(st) {
+      const i = steps().findIndex(x => x.st === st);
+      if (i < 0) return;
+      if (window.LS_DOCK && LS_DOCK.resume) LS_DOCK.resume();
+      else if (!G.on) resume();
+      open(i);
+      if (window.LS_DOCK && LS_DOCK.fill) LS_DOCK.fill();
+    },
     A,
     h,
     get cur() {
