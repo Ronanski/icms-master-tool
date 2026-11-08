@@ -452,7 +452,7 @@
     gear.title = 'Settings of the app';
     gear.onclick = () => {
       close();
-      const g = document.querySelector('#crrail .gs-set > button');
+      const g = document.querySelector('#scstrip .scgearb') || document.querySelector('#crrail .gs-set > button');
       if (g) setTimeout(() => g.click(), 50);
     };
     const skip = E('button', 'scskip', 'Open without a start state');
