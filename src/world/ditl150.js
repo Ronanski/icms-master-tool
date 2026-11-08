@@ -126,6 +126,9 @@
     if (/\b52G1?\b|\bGCB\b/.test(t) && /\bOFF\b|OPEN/.test(t)) return 0;
     /* a compound condition ("... NOT RUNNING AND SPEED L/LL") is left to the logic */
     if (/\bNOT\b/.test(t) && /\bAND\b/.test(t)) return null;
+    /* Mina beta.114: the ash screw cooler speed switch SS-BH1060-x "SPEED NOT LOW" read 1 with the cooler STOPPED (16.PNG: all four stopped
+       at 150 MW): the NOT rule below made it 1. It follows its own cooler (plantsw.js SS-BH1060-x), so the load leaves it to that */
+    if (/SPEED NOT LOW/.test(t) && /SS-BH1060|COOLER/.test(t)) return null;
     if (/\bNOT\b/.test(t)) {
       const b = rowVal(t.replace(/\bNOT\b/, ' '));
       return b == null ? null : b ? 0 : 1;
