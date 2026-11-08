@@ -75,9 +75,9 @@
         showV(tag);
         qa(`[data-v="${tag}"]`).forEach(t => {
           const ti = document.createElementNS(NS, 'title');
-          /* page 17: GEN.* = the generator model only (no I/O list line: the values come from the generator panel, data sheet + snapshot 37) */
-          if (/^GEN./.test(tag)) {
-            ti.textContent = 'generator model (data sheet and control room snapshot 37)';
+          /* pages 13 / 17: GEN.*, VIST-MAX, TIST-THF / R = a model value only (no I/O list line: the values come from the generator panel, data sheet + snapshot 37) */
+          if (/^(GEN.|VIST-MAX$|TIST-TH[FR]$)/.test(tag)) {
+            ti.textContent = /^GEN/.test(tag) ? 'generator model (data sheet and control room snapshot 37)' : 'turbine shaft model (shaft monitor snapshot 35)';
             return t.append(ti);
           }
           ti.textContent = tag + (def.unit && def.unit[tag] ? ' · logic transmitter, else the plant model' : '') + ' · click = its I/O list line';
@@ -464,6 +464,8 @@
           r = a[0] === 'tcs' ? call(() => AN.tcs(), null) : a[0] === 'gen' ? call(() => AN.gen(), null) : U;
         /* the 150 MW snapshot has no TCS state (U.tc null): the turbine is in NORMAL OPERATION (ATS step 7 done; faceplate sample of 4.PNG) */
         if (a[0] === 'tcs' && r == null && a[1] === 'step' && U && U.on && U.tb && U.tb.st !== 'off' && +U.MW > 0) return 7;
+        /* page 13: MSV / RSV open (the turbine reset) on the same loaded turbine */
+        if (a[0] === 'tcs' && r == null && a[1] === 'rst' && U && U.on && U.tb) return U.tb.st !== 'off' && +U.MW > 0 ? 1 : 0;
         return (a[0] === 'tcs' || a[0] === 'gen' ? a.slice(1) : a).reduce((o, x) => (o == null ? null : o[x]), r);
       };
       const tickTT = () => {

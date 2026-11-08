@@ -1322,7 +1322,9 @@ window.LS_GUIDE = (function () {
        CLAUDE.md 10) stays MANUAL until the operator presses A: the guide goes back to that step, so its card says why and what to do */
     for (const r of s.req || []) {
       const j = L0.findIndex(x => x.id === r);
-      if (j >= 0 && j < G.cur && !stepOk(L0[j])) {
+      /* Mina beta.136 (normal shutdown): near 63 MW the BU-CMD puts HIC-BM to MANUAL by design (M.2013), and "›" after step 119 jumped
+         back to the start-up. The guide goes back only to a step of the same stage (the start-up steps belong to the start-up) */
+      if (j >= 0 && j < G.cur && L0[j].st === s.st && !stepOk(L0[j])) {
         open(j);
         return true;
       }

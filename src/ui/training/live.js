@@ -779,10 +779,36 @@ window.LS_LIVE = (function () {
     }
   };
   /* one pass over every auto step; returns the keys that changed */
+  /* Mina beta.122 (fresh 150 MW load): the Normal shutdown list kept "auto ✓" on ULD to 90 / hold 90 / MWRL 0.6 from an older run while
+     the plant stood at 150 MW. When a starting state has loaded, an AUTO tick whose condition is not true in the new plant is dropped
+     (only in the practice / shutdown / trip sections after the start-up; the start-up keeps its ticks, 3.2.0-beta.16) */
+  let seenN = 0;
+  function afterLoad() {
+    let n = 0;
+    for (const key in LAT) {
+      const [si, i] = key.split('.').map(Number);
+      if (si < BASE_N) continue; /* the start-up sections (Cold to 150 MW) keep their ticks */
+      const q = kind(si, i);
+      if (q.k !== 'auto') continue;
+      let ok = false;
+      try {
+        ok = q.c.ok();
+      } catch (e) {}
+      if (!ok) delete LAT[key], delete since[key], n++;
+    }
+    if (n) wrt(LAT);
+    return n;
+  }
   function scan() {
     const ch = [];
+    const ld = !!(window.AN && AN._loading),
+      nL = (window.AN && AN.loadN) || 0;
+    if (!ld && nL !== seenN && PROC.length) {
+      seenN = nL;
+      afterLoad();
+    }
     /* retest #9 #54: nothing ticks while a starting state loads in slices (the plant is half loaded) */
-    if (!live() || !PROC.length || (window.AN && AN._loading)) return ch;
+    if (!live() || !PROC.length || ld) return ch;
     const t = simT();
     let hand = {};
     try {
@@ -827,6 +853,10 @@ window.LS_LIVE = (function () {
            after the load is a change too): an AUTO step ticks only in a section the start-up has reached (a tick in the section
            before it, or the section of the Gabay step now), never ahead of the trainee */
         if (!reached(si) && !(gsec >= 0 && si <= gsec)) return;
+        /* Mina beta.136 (normal shutdown run): "✓ 51.4 Hot restart", "51.5 Start the coal feeders", "51.3 Keep the fans running" ticked at
+           150 MW, and "51.1 press TURBINE TRIP" at a vacuum trip. A practice section after the start-up (shutdown, bottle-up, trip and
+           restart) ticks only while the guide is on that section: its conditions are true in a normal run too */
+        if (si >= BASE_N && gsec !== si) return;
         if (si === PURGE && !fans) return;
         if (q.c.hold) {
           if (since[key] == null) since[key] = t;

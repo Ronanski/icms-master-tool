@@ -964,17 +964,26 @@ function tcsOil(U, dt) {
   lag('loTb4', out + (flow ? 10 * sp : 0));
   /* 3.2.0-beta (user 2026-10-30 "OK v3 + bearing temp at vibration", 036 TURBINE OIL tab 1): the bearing metal temperatures and the
      shaft vibrations of the TCS I/O list HMI_AI: 1TEST1009 / 1010 (No.1 / 2 turbine journal), 1TEGE1001 / 1002 (No.3 / 4), 0 ~ 150 C;
-     1VEST10011 / 12, 10021 / 22, 1VEGE10011 / 12, 10021 / 22 (X / Y), 0 ~ 0.4 mm. ASSUMED (no snapshot value): metal = the cooler
-     outlet + 25 / 28 / 22 / 20 C x speed / 3600 with oil, + 60 C x speed / 3600 without oil (no film); a lag of 20 s. Vibration X =
-     0.03 / 0.04 / 0.03 / 0.02 mm x (speed / 3600)^2 + 0.03 mm at the first critical speed (about 1700 rpm, bell 250 rpm); Y = 0.8 X. */
+     1VEST10011 / 12, 10021 / 22, 1VEGE10011 / 12, 10021 / 22 (X / Y), 0 ~ 0.4 mm. 3.2.1: the values at speed from snapshot P35SHAFT
+     (035 SHAFT MONITOR, 3596 rpm, 130 MW) with the lube oil after the cooler 46 C (36.PNG TILO10021 / 22): bearing metal No.1 / 2 / 3 / 4
+     91 / 102 / 80 / 78 C = the cooler outlet + 45 / 56 / 34 / 32 C x speed / 3600 (was ASSUMED 25 / 28 / 22 / 20), thrust bearing front
+     TIST10111 / 12 54 / 55 C and rear TIST10121 / 22 63 / 60 C = + 8.5 / + 15.5 C; vibration X / Y 0.033 / 0.035, 0.038 / 0.028, 0.016 /
+     0.016, 0.063 / 0.037 mm x (speed / 3600)^2 (the square law and the first critical speed bump of 0.03 mm at about 1700 rpm, bell 250
+     rpm, stay ASSUMED). Without oil + 60 C x speed / 3600 (no film); a lag of 20 s. */
   const rpm = U.tb ? U.tb.rpm : 0,
     crit = 0.03 * Math.exp(-(((rpm - 1700) / 250) ** 2)),
     lagS = (k, x) => (U[k] = isFinite(U[k]) ? U[k] + ((x - U[k]) * Math.min(dt, 20)) / 20 : x);
-  [25, 28, 22, 20].forEach((d, i) => lagS('loM' + (i + 1), out + (flow ? d : 60) * sp));
-  [0.03, 0.04, 0.03, 0.02].forEach((v, i) => {
+  [45, 56, 34, 32].forEach((d, i) => lagS('loM' + (i + 1), out + (flow ? d : 60) * sp));
+  lagS('loThF', out + (flow ? 8.5 : 60) * sp);
+  lagS('loThR', out + (flow ? 15.5 : 60) * sp);
+  const VX = [0.033, 0.038, 0.016, 0.063],
+    VY = [0.035, 0.028, 0.016, 0.037];
+  VX.forEach((v, i) => {
     U['loVx' + (i + 1)] = v * sp * sp + (rpm > 4 ? crit : 0);
-    U['loVy' + (i + 1)] = 0.8 * U['loVx' + (i + 1)];
+    U['loVy' + (i + 1)] = VY[i] * sp * sp + (rpm > 4 ? 0.8 * crit : 0);
   });
+  /* page 13 ATS criteria 1.24 "vibration high": the highest turbine shaft vibration (VIST1001x / 1002x) */
+  U.loVt = Math.max(U.loVx1, U.loVy1, U.loVx2, U.loVy2);
   /* the run states and modes for the 036 page (with or without the TCS model) */
   U.loMop = c.mop.slice();
   U.loMopAu = c.mopAu.slice();
@@ -1013,6 +1022,7 @@ function tcsState() {
     /* 3.2.0-beta.78: the numbers of the ATS mode in use (pages 19 / 20 / 22 / 25), for the CHECK of a start-up from any mode */
     ats: c.mode && TCS.rate[c.mode] != null ? { rate: TCS.rate[c.mode], s1800: TCS.soak1800[c.mode], s3600: TCS.soak3600[c.mode], init: TCS.init[c.mode] } : null,
     step: c.step,
+    rst: c.rst ? 1 : 0 /* page 13: MSV / RSV open = the turbine reset (criteria 1.21) */,
     stepName: c.step >= 0 ? TCS.names[c.step] : '',
     cur: c.cur,
     curName: c.cur >= 0 ? TCS.names[c.cur] : '',

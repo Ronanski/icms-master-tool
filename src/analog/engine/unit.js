@@ -1954,7 +1954,7 @@ function anHdStep(U, dt) {
       const v = anUnitVal(h.L[0]);
       h.y = isFinite(v) ? v : 0;
       h.off = h.L.map(l => (isFinite(anUnitVal(l)) ? anUnitVal(l) - h.y : 0));
-      /* 3.2.1-beta.140 (LISA, Mina fresh 150 MW: NO.1 / NO.2 LPH level HIGH): "Start at 150 MW" is a steady state, so the level stands at
+      /* 3.2.1-beta.146 (LISA, Mina fresh 150 MW: NO.1 / NO.2 LPH level HIGH): "Start at 150 MW" is a steady state, so the level stands at
          the SV of its primary controller (snapshot SV, ABC-035 ~ 039). Before, it started from the transmitter, which the loop model of
          the drawing moved at the end of the load while the snapshot MV of 02.png (60 MW, LCV-HD1102 99.9 %) was on it: LPH2 -5 -> -97 mm,
          then the controller refilled it past HIGH (alarm list LT-HD1102 H 10 mm) */
@@ -2025,7 +2025,7 @@ function anHdStep(U, dt) {
     out[k] = w1;
     h.L.forEach((l, i) => anUnitWrite(l, h.y + (h.off[i] || 0)));
   }
-  /* 3.2.1-beta.140 (LISA, Mina: NO.1 HPH level (2) LOW-LOW at 150 MW): the inflow of the first step is not steady (HPH1 108 t/h, then 79 t/h
+  /* 3.2.1-beta.146 (LISA, Mina: NO.1 HPH level (2) LOW-LOW at 150 MW): the inflow of the first step is not steady (HPH1 108 t/h, then 79 t/h
      one step later: the extraction and the HPH2 cascade start), so a seed on that step left out 109 t/h against in 79 t/h. The drains are
      seeded again on each step until every inflow holds (within 0.5 t/h of the last step), 50 steps at most */
   if (U.hdSeed && sq > 0) {
